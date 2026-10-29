@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 import ArkLib.Interaction.Oracle.RuntimeSoundness
-import VCVio.OracleComp.EvalDist.MeasureSpec
+import VCVio.OracleComp.EvalDist.AnswerMeasure
 
 /-!
 # Guessing a hidden runtime bit
@@ -193,11 +193,12 @@ lemma guess_success (guess : Bool) (secret : Nat) :
   convert mass.trans ?_ using 1
   · rfl
   · simp only [Option.map_some, Option.some.injEq]
-    rw [prEvent_eq_evalDist_of_discrete, OracleComp.evalDist_liftM_query]
+    rw [prEvent_eq_evalDist_of_discrete,
+      OracleComp.evalDist_liftM_query_apply (spec := coinSpec) () MeasurableSet.of_discrete]
     have event : {hidden : Bool | (guess = hidden) = True} = {guess} := by
       ext hidden
       simp only [Set.mem_ofPred_eq, Set.mem_singleton_iff, eq_iff_iff, true_iff, eq_comm]
-    rw [event, OracleSpec.IsUniformMeasureSpec.toMeasure_singleton]
+    rw [event, OracleSpec.UniformAnswerMeasure.toMeasure_singleton]
     rfl
 
 local instance : MeasurableSpace (RunResult runtime Boundary) := ⊤
@@ -429,7 +430,7 @@ lemma fixed_guess_success (guess hidden : Bool) (secret : Nat) :
       convert mass using 1
       rfl
     _ = _ := by
-      cases guess <;> cases hidden <;> simp [evalDist_pure]
+      cases guess <;> cases hidden <;> simp
 
 /-- An analytic matching hidden state has success one, so a fixed-state half bound is invalid. -/
 lemma fixed_hidden_half_fails (guess : Bool) (secret : Nat) :

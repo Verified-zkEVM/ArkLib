@@ -333,8 +333,11 @@ theorem truncateLocalT_exhibitedKernelMultiplier_mem_localIntermediateSpace {m r
       (hT _) (pow_mem_restrictWeightAtMost (hiddenErrorFactor_mem (a := 0) ?_ ?_) h))
       (mem_restrictWeightAtMost.mpr fun e he => (?_ : _ ≤ (W : ℤ) + r))))
   all_goals first
-    | (intro j; simp [balanceWeight, firstWeight, localFirstJetWeight, higherBalanceWeight,
-        localT, localY] <;> split_ifs <;> omega)
+    | (intro j
+       simp only [balanceWeight, firstWeight, localFirstJetWeight, higherBalanceWeight, localT,
+         localY, Int.reduceNeg, mul_neg, mul_one, mul_zero, add_zero, zero_add, neg_add_cancel,
+         Int.neg_natCast_le_ofNat, CharP.cast_eq_zero, Nat.cast_ite, Nat.cast_one, Std.le_refl]
+       all_goals (split_ifs <;> omega))
     | (simp [balanceWeight, firstWeight, localFirstJetWeight, higherBalanceWeight,
         localT, localU, localAux])
     | (obtain ⟨h1, h2, h3, h4⟩ := hsrc e he

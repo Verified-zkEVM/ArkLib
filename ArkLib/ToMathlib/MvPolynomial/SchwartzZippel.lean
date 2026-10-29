@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import Mathlib.Algebra.MvPolynomial.SchwartzZippel
+public import Mathlib.Algebra.Order.Ring.NNRat
 
 /-!
 # The Schwartz–Zippel bound as a zero count

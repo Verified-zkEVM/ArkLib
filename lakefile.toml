@@ -18,12 +18,12 @@ linter.style.header = false
 [[require]]
 name = "VCVio"
 git = "https://github.com/Verified-zkEVM/VCVio"
-rev = "e417e35ac452c3994173eda268a8eee0d26115d2"
+rev = "6214f907760776ceab8b1f828c9015f549e66e31"
 
 [[require]]
 name = "«doc-gen4»"
 git = "https://github.com/leanprover/doc-gen4"
-rev = "v4.34.0"
+rev = "v4.35.0"
 
 [[require]]
 name = "checkdecls"
@@ -33,7 +33,7 @@ rev = "lean4.18.0"
 [[require]]
 name = "CompPoly"
 git = "https://github.com/Verified-zkEVM/CompPoly"
-rev = "v4.34.0-patch2"
+rev = "v4.35.0"
 
 [[lean_lib]]
 name = "ArkLibLintPlugin"
@@ -102,6 +102,13 @@ allowNonModules = true
 name = "sumcheck-runtime"
 srcDir = "scripts"
 root = "SumcheckRuntime"
+allowNonModules = true
+
+# Compiled edge cases and exact instruction counts for the named measured FRI extractor.
+[[lean_exe]]
+name = "fri-extractor-runtime"
+srcDir = "scripts"
+root = "FriExtractorRuntime"
 allowNonModules = true
 
 # Lean-native, exception-free source-policy gate. Since the executable imports Lake, it must link

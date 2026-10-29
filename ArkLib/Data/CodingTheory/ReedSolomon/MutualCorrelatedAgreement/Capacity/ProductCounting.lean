@@ -33,7 +33,6 @@ gap, the stage count, terminal height, and the degree cap.
 ## References
 
 * [DKT26]
-* [DKTZ26]
 -/
 
 @[expose] public section

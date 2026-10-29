@@ -5,7 +5,7 @@ Authors: Alexander Hicks, Aleph
 -/
 module
 
-public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Frs.Pinning
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.SubspaceDesign
 
 /-!
 # MCA bound for folded Reed-Solomon codes up to capacity
@@ -32,102 +32,6 @@ namespace CodingTheory
 open scoped NNReal
 open CoreDefinitions ProximityGap
 open FrsInternal
-open scoped NNReal in
-open scoped BigOperators in
-private theorem strongLineDecodable_of_subspaceDesign
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
-    {s r a b : ℕ} (τ : ℕ → ℝ) (C : Submodule F (ι → Fin s → F))
-    (hdesign : IsSubspaceDesign s τ C)
-    (hr : 0 < r) (ε : ℝ) (hε : 2 / (r : ℝ) < ε)
-    (δ : NNReal) (hδ : (δ : ℝ) ≤ 1 - τ r - ε)
-    (hb : 2 ≤ b)
-    (hretain : (b : ℝ) * ((r : ℝ) + ε) ≤ (a : ℝ) * ε) :
-    StrongLineDecodable (C : Set (ι → Fin s → F)) δ a b := by
-  classical
-  have hrR : (0 : ℝ) < r := by exact_mod_cast hr
-  have hεpos : 0 < ε := lt_trans (by positivity : (0 : ℝ) < 2 / (r : ℝ)) hε
-  intro f₀ f₁ U hU T hTclose ha
-  have hspanlt := subspaceDesign_lineCloseSpan_finrank_lt τ C hdesign
-    f₀ f₁ U hU (δ : ℝ) ε r hr hδ hε
-  have hspanle : Module.finrank F (lineCloseSpan f₀ f₁ U (δ : ℝ)) ≤ r :=
-    Nat.le_of_lt hspanlt
-  obtain ⟨S, hterm, hpot⟩ := exists_terminal_line_pinning τ C hdesign
-    f₀ f₁ U (δ : ℝ) ε hU hspanle hεpos T hTclose hδ ∅
-  rw [linePinnedSeedsOn_empty,
-    pinnedSubspace_empty (lineCloseSpan f₀ f₁ U (δ : ℝ))] at hpot
-  have haR : (a : ℝ) ≤ T.card := by exact_mod_cast ha
-  have haeps : (a : ℝ) * ε ≤ (T.card : ℝ) * ε :=
-    mul_le_mul_of_nonneg_right haR hεpos.le
-  have hdR : (Module.finrank F (lineCloseSpan f₀ f₁ U (δ : ℝ)) : ℝ) < r := by
-    exact_mod_cast hspanlt
-  have hA0 : (0 : ℝ) ≤ (linePinnedSeedsOn T f₀ f₁ U S).card := Nat.cast_nonneg _
-  have hdim :
-      ((linePinnedSeedsOn T f₀ f₁ U S).card : ℝ) *
-          ((Module.finrank F (lineCloseSpan f₀ f₁ U (δ : ℝ)) : ℝ) + ε) ≤
-        ((linePinnedSeedsOn T f₀ f₁ U S).card : ℝ) * ((r : ℝ) + ε) := by
-    apply mul_le_mul_of_nonneg_left _ hA0
-    linarith only [hdR]
-  have hchain : (b : ℝ) * ((r : ℝ) + ε) ≤
-      ((linePinnedSeedsOn T f₀ f₁ U S).card : ℝ) * ((r : ℝ) + ε) :=
-    hretain.trans (haeps.trans (hpot.trans hdim))
-  have hden : 0 < (r : ℝ) + ε := by linarith only [hrR, hεpos]
-  have hbR : (b : ℝ) ≤ (linePinnedSeedsOn T f₀ f₁ U S).card :=
-    le_of_mul_le_mul_right hchain hden
-  have hbNat : b ≤ (linePinnedSeedsOn T f₀ f₁ U S).card := by
-    exact_mod_cast hbR
-  have hterm' : lineCloseSpan f₀ f₁ U (δ : ℝ) ⊓
-      vanishOnCoordinates (F := F) (s := s) S = ⊥ := by
-    simpa only [pinnedSubspace] using hterm
-  obtain ⟨u₀, hu₀, u₁, hu₁, halign⟩ :=
-    pinned_lineSeeds_lie_on_affine_codeword_line C f₀ f₁ U (δ : ℝ)
-      T hTclose hU S hterm' (hb.trans hbNat)
-  refine ⟨u₀, hu₀, u₁, hu₁, hbNat.trans (Finset.card_le_card ?_)⟩
-  intro γ hγ
-  have hdata : γ ∈ T ∧ ∀ i ∈ S, U γ i = f₀ i + γ • f₁ i := by
-    simpa only [linePinnedSeedsOn, Finset.mem_filter] using hγ
-  apply Finset.mem_filter.mpr
-  exact ⟨hdata.1, halign γ hγ⟩
-
-open scoped NNReal in
-private theorem strongLineDecodable_two_mul_of_profile_le
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
-    {s t : ℕ} (τ : ℕ → ℝ) (R : ℝ)
-    (C : Submodule F (ι → Fin s → F))
-    (hdesign : IsSubspaceDesign s τ C)
-    (ht : 3 ≤ t)
-    (δ : NNReal)
-    (hprofile : τ (2 * t) ≤ R + 1 / (2 * (t : ℝ)))
-    (hδ : (δ : ℝ) ≤ 1 - R - 2 / (t : ℝ)) :
-    StrongLineDecodable (C : Set (ι → Fin s → F)) δ
-      (3 * t ^ 3) (2 * t) := by
-  have htpos : 0 < t := by omega
-  have htR : (0 : ℝ) < t := by exact_mod_cast htpos
-  have htR3 : (3 : ℝ) ≤ t := by exact_mod_cast ht
-  have hden : (0 : ℝ) < 2 * (t : ℝ) := by positivity
-  have hrad : (δ : ℝ) ≤
-      1 - τ (2 * t) - 3 / (2 * (t : ℝ)) := by
-    have hid : 1 / (2 * (t : ℝ)) + 3 / (2 * (t : ℝ)) = 2 / (t : ℝ) := by
-      field_simp
-      ring
-    nlinarith only [hprofile, hδ, hid]
-  have heps : 2 / (((2 * t : ℕ) : ℝ)) < 3 / (2 * (t : ℝ)) := by
-    push_cast
-    exact div_lt_div_of_pos_right (by norm_num) hden
-  have hret : (((2 * t : ℕ) : ℝ)) *
-        ((((2 * t : ℕ) : ℝ)) + 3 / (2 * (t : ℝ))) ≤
-      (((3 * t ^ 3 : ℕ) : ℝ)) * (3 / (2 * (t : ℝ))) := by
-    have hsq : (9 : ℝ) ≤ (t : ℝ) ^ 2 := by
-      have hmul : (0 : ℝ) ≤ ((t : ℝ) - 3) * ((t : ℝ) + 3) :=
-        mul_nonneg (sub_nonneg.mpr htR3) (by linarith)
-      nlinarith only [hmul]
-    push_cast
-    field_simp
-    nlinarith only [hsq]
-  exact strongLineDecodable_of_subspaceDesign τ C hdesign (by omega)
-    (3 / (2 * (t : ℝ))) heps δ hrad (by omega) hret
-
 open scoped NNReal in
 open Code in
 private theorem frs_mcaError_le_proof
@@ -229,44 +133,20 @@ private theorem frs_mcaError_le_proof
   have hlist' : Code.Lambda (C : Set (ι → Fin s → F))
       ((δ : ℝ) * (((2 * t : ℕ) : ℝ)) / ((((2 * t : ℕ) : ℝ)) - 1)) ≤ (t : ℕ∞) := by
     simpa only [Nat.cast_sub hsub, Nat.cast_one] using hlist
-  by_cases hfield : (t + 1) ^ 2 < Fintype.card F
-  · have hstrong : StrongLineDecodable (C : Set (ι → Fin s → F)) δ
-        (Fintype.card ι * t + 3 * t ^ 3) (Fintype.card ι + 1) :=
-      strongLineDecodable_boost_of_lambda_le C hweak (by omega) hlist' hfield
-    have hline := strongLineDecodable_to_isLineDecodable
-      (F := F) (C : Set (ι → Fin s → F)) δ hstrong
-    have hδlt : δ < 1 := by
-      rw [← NNReal.coe_lt_coe]
-      change δr < (1 : ℝ)
-      dsimp [δr]
-      have htwo : (0 : ℝ) < 2 / t := div_pos (by norm_num) htR
-      nlinarith only [hR0, htwo]
-    have hmca := IsLineDecodable.mcaError_le C δ
-      (Fintype.card ι * t + 3 * t ^ 3)
-      (by exact_mod_cast hδpos) hδlt hline
-    change mcaError (AffineLineGenerator F) C δr ≤ _ at hmca
-    have hnorm : ENNReal.ofReal
-        (((Fintype.card ι : ℝ) * t + 3 * (t : ℝ) ^ 3) / Fintype.card F) =
-        ((Fintype.card ι * t + 3 * t ^ 3 : ℕ) : ENNReal) /
-          (Fintype.card F : ENNReal) := by
-      rw [ENNReal.ofReal_div_of_pos (by positivity)]
-      have hnum : (Fintype.card ι : ℝ) * t + 3 * (t : ℝ) ^ 3 =
-          ((Fintype.card ι * t + 3 * t ^ 3 : ℕ) : ℝ) := by
-        push_cast
-        ring
-      rw [hnum, ENNReal.ofReal_natCast, ENNReal.ofReal_natCast]
-    rw [hnorm]
-    exact hmca
-  · have hq : Fintype.card F ≤ (t + 1) ^ 2 := by omega
-    have hqP : Fintype.card F ≤ Fintype.card ι * t + 3 * t ^ 3 := by
-      have hn : 1 ≤ Fintype.card ι := Fintype.card_pos
-      nlinarith only [hq, hn, ht3, sq_nonneg (t - 1)]
-    refine (mcaError_le_one (AffineLineGenerator F) C δr).trans ?_
-    rw [← ENNReal.ofReal_one]
-    apply ENNReal.ofReal_le_ofReal
-    rw [le_div_iff₀ (by positivity)]
-    norm_num only [one_mul]
-    exact_mod_cast hqP
+  have hδlt : δ < 1 := by
+    rw [← NNReal.coe_lt_coe]
+    change δr < (1 : ℝ)
+    dsimp [δr]
+    have htwo : (0 : ℝ) < 2 / t := div_pos (by norm_num) htR
+    nlinarith only [hR0, htwo]
+  have hbudget : (t + 1) ^ 2 ≤ Fintype.card ι * t + 3 * t ^ 3 := by
+    have hn : 1 ≤ Fintype.card ι := Fintype.card_pos
+    nlinarith only [hn, ht3, sq_nonneg (t - 1)]
+  have hmca := mcaError_le_of_strongLineDecodable C δ _ht_pos
+    (by exact_mod_cast hδpos) hδlt hweak
+    (by simpa only [Nat.cast_mul, Nat.cast_ofNat] using hlist') hbudget
+  change mcaError (AffineLineGenerator F) C δr ≤ _ at hmca
+  simpa only [Nat.cast_add, Nat.cast_mul, Nat.cast_pow, Nat.cast_ofNat] using hmca
 
 /-- A capacity-regime MCA bound for an admissibly folded Reed--Solomon code. For an integer
 `t > 0` and folding parameter `s > 4t²`,

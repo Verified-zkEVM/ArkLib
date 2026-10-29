@@ -36,7 +36,7 @@ uniform cap-sensitive bound at exponent `2 * K`.
 
 ## References
 
-* [DKTZ26]
+* [DKT26]
 -/
 
 @[expose] public section

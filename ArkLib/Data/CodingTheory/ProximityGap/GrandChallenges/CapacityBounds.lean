@@ -12,11 +12,13 @@ public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges
 # Capacity-bound witnesses for the Grand MCA Challenge
 
 This extension turns capacity bounds into one-sided witnesses for the Grand MCA Challenge while
-keeping the core grid and witness API independent of external admits.
+keeping the core grid and witness API independent of the bound catalogue. The Johnson-range
+input is proved from [DKT26], with the printed constant from [BCHKS25] Theorem 4.6.
 
 ## References
 
-- [BCHKS25] Theorem 4.6.
+- [BCHKS25] Theorem 4.6 (printed constant).
+- [DKT26] (proof).
 -/
 
 @[expose] public section

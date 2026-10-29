@@ -1,7 +1,12 @@
 # Paper Audit: Open Problems in List Decoding and Correlated Agreement
 
 This page records a paper-to-ArkLib audit for *Open Problems in List Decoding and Correlated
-Agreement* (dated April 8, 2026).
+Agreement*.
+
+**Statement numbers on this page follow the 2026-07-06 source**; the authors' latest source
+(2026-08-15) numbers its statements the same way. The 2026-04-08 PDF numbers parts of §3 and §4
+differently; the mapping is in [`../papers/ABF26.md`](../papers/ABF26.md) § *Version Notes*. When
+re-checking a row, use the current source.
 
 The goal is to list the paper's named formal items and check whether each one is already present in
 ArkLib, missing, or present in a materially different form.
@@ -11,11 +16,18 @@ ArkLib, missing, or present in a materially different form.
 - `present`: there is a close match in ArkLib.
 - `present-but-different`: the underlying concept exists, but the interface, statement shape, or
   abstraction level differs materially from the paper.
-- `present-but-incomplete`: the relevant theorem/symbol exists, but the cited file still contains
-  `sorry`.
+- `present-but-incomplete`: the relevant theorem/symbol exists, but is still `sorryAx`-tainted.
+  The test is membership of the declaration in `scripts/axiom_baseline.json`'s `sorry` list, not
+  the presence of an unrelated `sorry` somewhere in the cited file.
 - `partial`: a strict part or specialization is present, but the full paper item is missing.
 - `missing`: no close formalization was found. Where a supporting layer exists but does not by
   itself constitute the paper item, the `Lean refs` column says so.
+- `out-of-scope`: the paper item is not a formalization target at all — either the paper declines
+  to state it, or it is downstream policy/profile material rather than reusable mathematics.
+- `present-but-corrected`: ArkLib formalizes a corrected form of a paper item that is wrong as
+  printed; the Notes column gives the defect.
+- `documented`: the paper item is explanatory, and ArkLib covers it in prose next to the cited
+  declarations rather than by a standalone theorem.
 
 ## Notes
 
@@ -27,10 +39,14 @@ ArkLib, missing, or present in a materially different form.
   Those are marked `present-but-different` rather than `missing`.
 - Open items are listed as `missing` or `partial`. For the narrative account of what remains, see
   [`../papers/ABF26.md`](../papers/ABF26.md) § *Open Formalization Gaps*.
+- **Verify a `present-but-incomplete` row before trusting it.** These rows go stale fastest: a
+  proof lands and the row is not refreshed. Every declaration named in a `present` row is
+  axiom-clean. Cross-check a declaration against `scripts/axiom_baseline.json` with:
+  `python3 -c "import json;print([d for d in json.load(open('scripts/axiom_baseline.json'))['sorry'] if d == 'SYMBOL' or d.endswith('.SYMBOL')])"`
 
 ## Section 1 — Grand Challenges
 
-| Paper item | Status | Lean refs | Notes |
+| Paper item (§1) | Status | Lean refs | Notes |
 | --- | --- | --- | --- |
 | Grand MCA Challenge | present | `grandMcaChallenge`, `GrandMcaAnswer.to_challenge`, `McaPrizeResolution.to_prize` in [GrandChallenges.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges.lean) | Uses affine-line `mcaError` and accepts either an adjacent grid crossing or an all-good endpoint at radius one. `PrizeDomainAdmissible` and `prizeCode_rate_eq` ensure that the selected Reed--Solomon codes have rates `1/2`, `1/4`, `1/8`, and `1/16`. |
 | Grand List Decoding Challenge | present | `grandListDecodingChallenge`, `GrandListAnswer.to_challenge`, `ListPrizeResolution.to_prize` in [GrandChallenges.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges.lean) | Uses `Code.Lambda` on a positive-width interleaving and the same adjacent-crossing or all-good endpoint answer shape. |
@@ -64,7 +80,7 @@ ArkLib, missing, or present in a materially different form.
 
 ## Section 3: List Decoding
 
-| Paper item | Status | Lean refs | Notes |
+| Paper item (§3) | Status | Lean refs | Notes |
 | --- | --- | --- | --- |
 | Definition 3.1 Johnson functions `J_{q,\ell}`, `J_q`, `J` | present | `Jqℓ` in [ArkLib/Data/CodingTheory/JohnsonBound/Family.lean](../../../ArkLib/Data/CodingTheory/JohnsonBound/Family.lean); `J` (= the paper's `J_q`) in [ArkLib/Data/CodingTheory/JohnsonBound/Lemmas.lean](../../../ArkLib/Data/CodingTheory/JohnsonBound/Lemmas.lean) and `Jcap` (= the paper's `J`) in [ArkLib/Data/CodingTheory/JohnsonBound/Basic.lean](../../../ArkLib/Data/CodingTheory/JohnsonBound/Basic.lean) — `Lemmas.lean` is the upstream file, and the byte-identical downstream copy of `J` that used to sit in `Basic.lean` under the name `J'` has been deleted | Full three-function family. **Divergence from the printed PDF:** the PDF's list factor `\ell/(\ell-1)` is a typo (it makes `J_{q,\ell} > J_q`, inverts monotonicity in `\ell`, and diverges at `\ell = 1`); Lean uses the correct `(\ell-1)/\ell`, matching [codingtheory] and the authors' current tex (fixed upstream 2026-06-13). `Jqℓ` is now **defined** as `J q (((ℓ-1)/ℓ) * δ)`, with `Jqℓ_eq_J` the (`rfl`) bridge and `Jqℓ_eq_mul_one_sub_sqrt` recovering the printed shape; and `sqrt_le_J` is stated as `Jcap δ ≤ J q δ`, which is the paper's `J(δ) ≤ J_q(δ)`. So the three functions are one family, not three spellings of the radius. |
 | Theorem 3.2 Johnson bound | present | `johnson_bound_lambda_le_ell` in [ArkLib/Data/CodingTheory/JohnsonBound/Family.lean](../../../ArkLib/Data/CodingTheory/JohnsonBound/Family.lean); numeric core `johnson_card_le_ell`; underlying condition-based form `johnson_bound`, `johnson_bound_alphabet_free` in [ArkLib/Data/CodingTheory/JohnsonBound/Basic.lean](../../../ArkLib/Data/CodingTheory/JohnsonBound/Basic.lean) | Proved in the paper's guard-free `Lambda`/`Jqℓ` packaging, for the paper's full range `ℓ ≥ 1` (`ℓ = 1` degenerates to a radius-0 list; `ℓ = 0` is genuinely false as encoded — a `ℚ`-division artefact recorded in the docstring). The internal radicand-positive branch uses the Johnson argument; the complementary Plotkin corner uses `plotkin_card_le_ell`. |
@@ -85,46 +101,46 @@ ArkLib, missing, or present in a materially different form.
 
 ## Section 4: Correlated Agreement Conjectures
 
-| Paper item | Status | Lean refs | Notes |
+| Paper item (§4) | Status | Lean refs | Notes |
 | --- | --- | --- | --- |
 | §4.1 proximity-gap error `εpg(C,δ)` | present | `epsPg`, `epsPg_eq_zero_of_one_le`, and `epsPg_singleton_zero_pos` in [Errors.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean) | Numeric proximity-gap error with a nonnegative radius. |
-| Definition 4.1 correlated agreement error `εca(C,δ_fld,δ_int)` | present | `epsCa`, `epsCa'`, `epsCaCurves`, `epsCaAffineSpaces` and the three predicate bridges in [Errors.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean) | Numeric correlated-agreement values with separate fold and interleaved radii. |
+| Definition 4.1 correlated agreement error `εca(C,δ_fld,δ_int)` | present | `caError` (indexed by a proximity generator), its affine-line instances `epsCa` and `epsCa'`, and the three predicate bridges in [Errors.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean) | Numeric correlated-agreement values with separate fold and interleaved radii. |
 | Remark 4.2 discretization of proximity loss | present | `epsCa_eq_of_floor_eq` in [Errors.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean) | Constancy on integer-agreement floor cells. |
 | Definition 4.3 mutual correlated agreement error `εmca(C,δ)` | present | `CoreDefinitions.mcaError` / `IsMCA` in [Basic.lean](../../../ArkLib/Data/CodingTheory/ProximityGenerator/Basic.lean); `epsMca` in [Errors.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean) | `epsMca` is transparent notation for the affine-line specialization. |
-| Remark 4.4 MCA with proximity loss | missing | none | No matching notion was found. |
+| Remark 4.4 MCA with proximity loss | out-of-scope | none | **Not a formalization gap.** The remark explicitly declines to define the notion: "While it is conceivable to define a version of mutual correlated agreement with proximity loss, analogous to correlated agreement, this remains to be thoroughly explored, and so we do not attempt to define such a notion in this paper." There is no statement here to formalize. |
 | Fact 4.5 `εpg ≤ εca ≤ εmca` | present | `epsPg_le_epsCa_le_epsMca`, with canonical second leg `epsCa_le_mcaError_affineLine`, in [Errors.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean) | Proved for module codes. |
 | Lemma 4.6 MCA equals CA below unique decoding radius | present | `mcaError_le_epsCa_of_pos_of_two_mul_lt_dist`, with derived equality `mcaError_eq_epsCa_of_pos_of_two_mul_lt_dist`, in [Errors.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean) | **Proved in-tree and axiom-clean.** The MCA-to-CA direction follows [ACFY25] Lemma 4.10 by injecting bad affine-line parameters into the pair-error coordinates. The reverse direction is the general Fact 4.5 comparison. |
-| Lemma 4.7 interleaving stability for MCA | present | Generic `mcaError_moduleInterleavedCode_eq_of_card_le` in [Interleaving.lean](../../../ArkLib/Data/CodingTheory/ProximityGenerator/Interleaving.lean); affine-line wrappers `mcaError_interleaved_le`, `mcaError_le_moduleInterleavedCode`, and `mcaError_interleaved_eq` in [Errors.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean) | **Proved in-tree.** The forward direction chooses one row functional outside the proper bad submodules when the seed space has at most `|F|` elements. The reverse direction embeds a base family as constant rows. |
-| §4.3 `prop:mca-information-set-lower-bound` | present | `linear_mcaError_ge_information_set` in [InformationSetLowerBound.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/InformationSetLowerBound.lean) | Gives `εmca(C,δ) ≥ min(⌊δn⌋/|F|,1)` below the minimum-distance radius. |
+| Theorem 4.7 ([Jo26]) interleaving stability for MCA | present | Generic `mcaError_moduleInterleavedCode_eq_of_card_le` in [Interleaving.lean](../../../ArkLib/Data/CodingTheory/ProximityGenerator/Interleaving.lean); affine-line wrappers `mcaError_interleaved_le`, `mcaError_le_moduleInterleavedCode`, and `mcaError_interleaved_eq` in [Errors.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean) | **Proved in-tree.** The forward direction chooses one row functional outside the proper bad submodules when the seed space has at most `\|F\|` elements. The reverse direction embeds a base family as constant rows. |
 | Theorem 4.8 AHIV17 general-code unique-decoding bound | missing | related but different [ArkLib/Data/CodingTheory/ProximityGap/AHIV22.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/AHIV22.lean) | AHIV22 is present, but not this general `εmca/εca` statement. |
-| Theorem 4.9 RS unique-decoding results | present-but-incomplete | `rs_epsCa_le_in_unique_decoding_range` in [CapacityBounds.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds.lean), plus the predicate-style BCIKS20 results | Item 2 is an external [BCHKS25] admit. ArkLib's degree-`< k` normalization gives a conservative consequence of the source's degree-`≤ d` statement: a tighter radius regime and the larger, hence weaker, RHS obtained with `ρ = k/n`. |
-| Remark 4.10 small proximity-loss simplification | present | `rs_epsCa_le_of_no_radius_level_crossing` in [CapacityBounds.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds.lean) | Derived in-tree from T4.9.2 and `epsCa_eq_of_floor_eq`; the explicit no-grid-crossing hypothesis is necessary. It inherits only T4.9.2's admit. |
-| Theorem 4.11 1.5-Johnson regime for general linear codes | present-but-incomplete | `linear_mcaError_le_one_point_five_johnson`, `linear_epsCa_le_one_point_five_johnson` in [CapacityBounds.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds.lean) | Two external admits over the sources' field alphabet. The [GaoKL24] form retains positive `δ`; the [BenSassonGKS20] form uses separate radii `δ_fld < δ_src` so ArkLib's non-strict close event lies inside the source's strict event. |
-| Theorem 4.12 RS MCA in the Johnson range | present-but-incomplete | `rs_mcaError_le_in_johnson_range` in [CapacityBounds.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds.lean); witness bridge in [GrandChallenges/CapacityBounds.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges/CapacityBounds.lean) | External [BCHKS25] admit in the source-native line case: reduced rate `ρ = (dim C - 1)/n` and `m = max(⌈√ρ/(1-√ρ-δ)⌉,3)`. The stronger ABF26 slack translation with `rate+1/n` and denominator `2η` is not asserted. |
-| Theorem 4.13 MCA from subspace-design codes | present-but-incomplete | `subspace_design_mcaError_le` in [CapacityBounds.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds.lean) | External [GG25] admit on canonical `mcaError`; the affine specialization uses the source's `4t³`, correcting ABF26's `4t²` typo. |
-| Theorem 4.14 folded RS MCA up to capacity | present-but-incomplete | `frs_mcaError_le` in [CapacityBounds.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds.lean) | External [GG25] admit in the source-native integer parameter `t`, with radius `1-ρ-2/t`, bound `(nt+3t³)/q`, alphabet-normalized rate `k/(sn)`, admissibility, `q>sn`, and the generator guard required by the subspace-design chain. |
-| BCGM25 univariate-powers MCA bound | present-but-incomplete | `univariatePowersGenerator` in [Basic.lean](../../../ArkLib/Data/CodingTheory/ProximityGenerator/Basic.lean), and `linear_mcaError_powers_le` in [CapacityBounds.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds.lean) | External [BCGM25] admit stated directly on canonical generator-parametric `mcaError`, with the degree-dependent Definition 8.1 bound. |
+| Theorem 4.9 RS unique-decoding results | present | Item 1: `rs_epsCa_le_of_le_relUDR` in [BCIKS20/EpsCa.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/EpsCa.lean), the `epsCa` form of `RS_correlatedAgreement_affineLines_uniqueDecodingRegime` in [BCIKS20/AffineLines/UniqueDecoding.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/AffineLines/UniqueDecoding.lean). Item 2: `rs_epsCa_le_in_unique_decoding_range` in [CapacityBounds/UniqueDecoding.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/UniqueDecoding.lean) | **Both items proved in-tree and axiom-clean.** The umbrella `RS_correlatedAgreement_affineLines` is not the item-1 reference: its list-decoding branch is a `sorry`. For item 2, ArkLib's degree-`< k` normalization gives a conservative consequence of the source's degree-`≤ d` statement: a tighter radius regime and the larger, hence weaker, RHS obtained with `ρ = k/n`. |
+| Remark 4.10 small proximity-loss simplification | present | `rs_epsCa_le_of_no_radius_level_crossing` in [CapacityBounds.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds.lean) | **Proved in-tree and axiom-clean**, derived from T4.9.2 and `epsCa_eq_of_floor_eq`; the explicit no-grid-crossing hypothesis is necessary. |
+| Theorem 4.11 1.5-Johnson regime for general linear codes | present | `linear_mcaError_le_one_point_five_johnson` in [CapacityBounds/JohnsonMca.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/JohnsonMca.lean) and `linear_epsCa_le_one_point_five_johnson` in [CapacityBounds/JohnsonCa.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/JohnsonCa.lean) | **Both proved in-tree and axiom-clean**, over the sources' field alphabet. The [GaoKL24] form retains positive `δ`; the [BenSassonGKS20] form uses separate radii `δ_fld < δ_src` so ArkLib's non-strict close event lies inside the source's strict event. |
+| Theorem 4.12 RS MCA in the Johnson range | present | `rs_mcaError_le_in_johnson_range` in [CapacityBounds.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds.lean); witness bridge in [GrandChallenges/CapacityBounds.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges/CapacityBounds.lean) | **Proved in-tree and axiom-clean** from [DKT26], with the [BCHKS25] Theorem 4.6 printed constant in the source-native line case: reduced rate `ρ = (dim C - 1)/n` and `m = max(⌈√ρ/(1-√ρ-δ)⌉,3)`. The sharper `rs_mcaError_le_johnsonExceptionCount` exposes the DKT26 exceptional-set bound for general coordinate types. The stronger ABF26 slack translation with `rate+1/n` and denominator `2η` is not asserted. |
+| Theorem 4.13 MCA from subspace-design codes | present (**PROVEN**) | `subspace_design_mcaError_le` in [CapacityBounds.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds.lean) | Proved on canonical `mcaError` at `1 - τ(2t) - 3/(2t)` with error `(tn + 4t³)/|F|`. GG25 Corollary 4.9 prints `τ(tℓ+ℓ)`, but its proof gives `τ((ℓ+1)t)`. The cubic term also corrects ABF26's `4t²` typo. |
+| Theorem 4.14 folded RS MCA up to capacity | present | `frs_mcaError_le` in [CapacityBounds/Frs.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Frs.lean) | **Proved in-tree and axiom-clean**, in the source-native integer parameter `t`, with radius `1-ρ-2/t`, bound `(nt+3t³)/q`, alphabet-normalized rate `k/(sn)`, admissibility, `q>sn`, and the generator guard required by the subspace-design chain. |
+| BCGM25 univariate-powers MCA bound | present | `univariatePowersGenerator` in [Basic.lean](../../../ArkLib/Data/CodingTheory/ProximityGenerator/Basic.lean), and `linear_mcaError_powers_le` in [CapacityBounds/Powers.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Powers.lean) | **Proved in-tree and axiom-clean**, stated directly on canonical generator-parametric `mcaError`, with the degree-dependent [BCGM25] Definition 8.1 bound. It is the engine behind Theorem 4.11's affine-line specialization. |
 | Theorem 4.15 random RS MCA up to capacity | missing | none | No random-domain RS MCA result was found. |
-| Theorem 4.16 lower bound on CA near capacity | present-but-incomplete | `exists_rs_epsCa_large_near_capacity` in [CapacityBounds.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds.lean) | External [KKH26] family statement. Rate deviation and capacity slack are controlled at the source-supported `O(1/log₂ n)` scale; the field family carries `β > max(c+2,12/5)` and two-sided `|F| = Θ(n^β)` pins, in addition to prime-field smooth domains. The unsupported extracted `1/n` rate pin is not asserted. |
-| CS25 Theorem 3 base-field CA lower bound | present-but-incomplete | `subfieldCaFactor`, `subfield_epsCa_lower_bound` in [CapacityBounds.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds.lean) | External [CS25] admit with the proper-subfield, subfield-domain, and integral-radius conditions explicit; the unbound `g(x)` argument in the printed theorem is recorded as an inference. |
-| Theorem 4.17 complete CA breakdown theorem | present-but-incomplete | `rs_epsCa_eq_one_of_entropy_rate` in [CapacityBounds.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds.lean) | External [CS25] Corollary 1 admit in the source's integer error count `f`, with `q ≥ max(10,n)` and the full entropy band. No unsupported arbitrary-real-radius extension is asserted. |
-| Theorem 4.18 CA jump at the Johnson bound | present-but-incomplete | `exists_rs_epsCa_large_at_johnson_radius` in [CapacityBounds.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds.lean) | External [BCHKS25] eventual-family admit. It uses the source's pair-distance `≥ 7/8`, yielding CA at every interleaved threshold strictly below `7/8`; no fixed `q ≥ 1024`, exact length window, or unsupported `7/8+1/n` strengthening is claimed. |
-| Lemma 4.19 CA bounded below by sampling probability | present-but-incomplete | `linear_close_probability_le_epsCa` in [CapacityBounds.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds.lean) | External [DG25dist] Theorem 2.5 admit, checked against ePrint 2025/2010. |
-| Definition 4.20 line-decoding | present-but-corrected | `CodingTheory.IsLineDecodable` in [LineDecoding.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/LineDecoding.lean) | ArkLib follows GG25 Definition 3.1 and requires the concluding challenges to be both close and aligned. ABF26 omits the close-set intersection; the zero code of length two over `𝔽₃` gives a counterexample to its printed Definition 4.20/Theorem 4.21 pair. Cardinality thresholds `a,b` remain natural numbers. |
-| Theorem 4.21 line-decoding implies MCA | present-but-incomplete | `IsLineDecodable.mcaError_le` in [LineDecoding.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/LineDecoding.lean) | External [GG25] Theorem 3.5 admit for the corrected close-and-aligned definition, on canonical affine-line `mcaError`, with `δ ∈ (0,1)`. It is not a consequence of ABF26's printed aligned-only definition. |
+| Lemma 4.16 MCA information-set lower bound | present | `linear_mcaError_ge_information_set` in [InformationSetLowerBound.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/InformationSetLowerBound.lean) | Gives `εmca(C,δ) ≥ min(⌊δn⌋/\|F\|,1)` below the minimum-distance radius. Not in the 2026-04-08 PDF. |
+| Theorem 4.17 lower bound on CA near capacity | present-but-incomplete | `exists_rs_epsCa_large_near_capacity` in [CapacityBounds.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds.lean) | External [KKH26] family statement. Rate deviation and capacity slack are controlled at the source-supported `O(1/log₂ n)` scale; the field family carries `β > max(c+2,12/5)` and two-sided `\|F\| = Θ(n^β)` pins, in addition to prime-field smooth domains. The unsupported extracted `1/n` rate pin is not asserted. |
+| Theorem 4.18 base-field CA lower bound | present | `subfieldCaFactor` in [CapacityBounds/Subfield/Algebra.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Subfield/Algebra.lean), `subfield_epsCa_lower_bound` in [CapacityBounds/Subfield.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Subfield.lean) | **Proved in-tree and axiom-clean.** [CS25] Theorem 3, numbered `Theorem 4.18` in the current source. Stated with the proper-subfield, subfield-domain, and integral-radius conditions explicit; the unbound `g(x)` argument in the printed theorem is recorded as an inference. |
+| §4 complete CA breakdown (interpretation of Theorem 4.18) | present | `rs_epsCa_eq_one_of_entropy_rate` in [CapacityBounds/Entropy.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Entropy.lean) | **Proved in-tree and axiom-clean.** Not a numbered statement in the current source: it is the prose interpretation following Theorem 4.18 ("the lower bound is close to 1 once `H_\|B\|(δ) ≳ …`"), formalized after [CS25] Corollary 1 in the source's integer error count `f`, with `q ≥ max(10,n)` and the full entropy band. No unsupported arbitrary-real-radius extension is asserted. |
+| Theorem 4.19 CA jump at the Johnson bound | present | `exists_rs_epsCa_large_at_johnson_radius` in [CapacityBounds/JohnsonLower.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/JohnsonLower.lean) | **Proved in-tree and axiom-clean** as an eventual-family statement after [BCHKS25] Corollary 1.7. It uses the source's pair-distance `≥ 7/8`, yielding CA at every interleaved threshold strictly below `7/8`; no fixed `q ≥ 1024`, exact length window, or unsupported `7/8+1/n` strengthening is claimed. |
+| Lemma 4.20 CA bounded below by sampling probability | present | `linear_close_probability_le_epsCa` in [CapacityBounds/Sampling.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Sampling.lean) | **Proved in-tree and axiom-clean**, after [DG25dist] Theorem 2.5, checked against ePrint 2025/2010. |
+| Definition 4.21 line-decoding | present-but-corrected | `CodingTheory.IsLineDecodable` in [LineDecoding.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/LineDecoding.lean) | ArkLib follows GG25 Definition 3.1 and requires the concluding challenges to be both close and aligned. ABF26 omits the close-set intersection; the zero code of length two over `𝔽₃` gives a counterexample to its printed Definition 4.21/Theorem 4.22 pair. ABF26 states the thresholds as probabilities `α, β`; ArkLib keeps cardinality thresholds `a, b`, with `α = a/\|F\|` and `β = b/\|F\|`. |
+| Theorem 4.22 line-decoding implies MCA | present | `IsLineDecodable.mcaError_le` in [LineDecoding.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/LineDecoding.lean) | **Proved in-tree and axiom-clean**, after [GG25] Theorem 3.5, for the corrected close-and-aligned definition, on canonical affine-line `mcaError`, with `δ ∈ (0,1)`. It is not a consequence of ABF26's printed aligned-only definition. |
 
 ## Section 5: Connections Between List Decoding and Correlated Agreement
 
-| Paper item | Status | Lean refs | Notes |
+| Paper item (§5) | Status | Lean refs | Notes |
 | --- | --- | --- | --- |
-| Theorem 5.1 list decoding implies MCA | present-but-incomplete | `linear_mcaError_le_of_Lambda_le` in [Connections/ListDecodingAndCA.lean](../../../ArkLib/Data/CodingTheory/Connections/ListDecodingAndCA.lean) | External [GCXK25] admit with the source's `δ < Δ_C` hypothesis. The unrestricted real-radius `mcaError` avoids truncating a negative Johnson lift and needs no extra `η ≤ δ` guard. |
-| Theorem 5.2 small CA error implies list size `≤ |F|` | present-but-incomplete | `rs_Lambda_le_card_of_epsCa_lt` in [Connections/ListDecodingAndCA.lean](../../../ArkLib/Data/CodingTheory/Connections/ListDecodingAndCA.lean) | External [BCHKS25] Theorem 1.9 admit with the source's non-strict list-size conclusion and a strict interleaved threshold below the joint-distance witness. |
-| Theorem 5.3 CA implies list decoding for a related RS code | present-but-incomplete | `rs_Lambda_extended_le_of_epsCa_int_radius`, `rs_Lambda_extended_le_of_epsCa` in [Connections/ListDecodingAndCA.lean](../../../ArkLib/Data/CodingTheory/Connections/ListDecodingAndCA.lean) | The source-native integer theorem is the sole external [CS25] admit; the real-radius theorem is derived in-tree and keeps the source's tighter `δ < (n-k-1)/n` regime and `n<q`. |
-| Theorem 5.4 separation between list decoding and CA | present-but-incomplete | `rs_epsCa_large_below_johnson_radius` in [Connections/ListDecodingAndCA.lean](../../../ArkLib/Data/CodingTheory/Connections/ListDecodingAndCA.lean) | External [BenSassonGKS20] Lemma 3.3 admit with characteristic two, full-domain cardinality, `q ≥ 8`, and an interleaved threshold strictly below the source's exact `3/4` joint distance. |
+| Theorem 5.1 list decoding implies MCA | present | `linear_mcaError_le_of_Lambda_le` in [Connections/ListDecodingAndCA/GCXK25.lean](../../../ArkLib/Data/CodingTheory/Connections/ListDecodingAndCA/GCXK25.lean) | **Proved in-tree and axiom-clean**, after [GCXK25] Theorem 3, with the source's `δ < Δ_C` hypothesis. The unrestricted real-radius `mcaError` avoids truncating a negative Johnson lift and needs no extra `η ≤ δ` guard. |
+| Theorem 5.2 small CA error implies list size `≤ \|F\|` | present | `rs_Lambda_le_card_of_epsCa_lt` in [Connections/ListDecodingAndCA/BCHKS25.lean](../../../ArkLib/Data/CodingTheory/Connections/ListDecodingAndCA/BCHKS25.lean) | **Proved in-tree and axiom-clean**, after [BCHKS25] Theorem 1.9, with the source's non-strict list-size conclusion and a strict interleaved threshold below the joint-distance witness. |
+| Theorem 5.3 CA implies list decoding for a related RS code | present | `rs_Lambda_extended_le_of_epsCa_int_radius` in [Connections/ListDecodingAndCA/CS25.lean](../../../ArkLib/Data/CodingTheory/Connections/ListDecodingAndCA/CS25.lean) and the derived `rs_Lambda_extended_le_of_epsCa` in [Connections/ListDecodingAndCA.lean](../../../ArkLib/Data/CodingTheory/Connections/ListDecodingAndCA.lean) | **Both proved in-tree and axiom-clean**: the source-native integer theorem after [CS25] Theorem 2, and the real-radius theorem derived from it, which keeps the source's tighter `δ < (n-k-1)/n` regime and `n<q`. |
+| Theorem 5.4 separation between list decoding and CA | missing | none | **Not stated: false as printed.** [BenSassonGKS20] Lemma 3.3's trace witness has a term of degree `q/8`, outside the dimension-`q/8` code; over `F₈` the constants code has `ε_ca ≤ 3/4`, not `≥ 7/8`. Stronger binary-field separations are proved, and formalized in Lean, in [DKTZ26]. |
 
 ## Section 6: Toy Problem
 
-| Paper item | Status | Lean refs | Notes |
+| Paper item (§6) | Status | Lean refs | Notes |
 | --- | --- | --- | --- |
 | Definition 6.1 toy problem relation `R_C^ℓ` | present | `ToyProblem.RelationFor` in [Definitions.lean](../../../ArkLib/ProofSystem/ToyProblem/Definitions.lean); bundled-language bridge in [General.lean](../../../ArkLib/ProofSystem/ToyProblem/Spec/General.lean) | Stated for a fixed linear encoder into an arbitrary finite module alphabet; the bridge identifies language membership with existence of the protocol witness. |
 | Definition 6.3 relaxed toy relation `R̃_C,δ^ℓ` | present | `ToyProblem.RelaxedRelationFor` in [Definitions.lean](../../../ArkLib/ProofSystem/ToyProblem/Definitions.lean); bundled-language bridges in [General.lean](../../../ArkLib/ProofSystem/ToyProblem/Spec/General.lean) and [SimplifiedIOR.lean](../../../ArkLib/ProofSystem/ToyProblem/Spec/SimplifiedIOR.lean) | Uses one common agreement-coordinate set across all rows and is publicly connected to the witness-bearing C6.2/C6.9 relations. |
@@ -145,7 +161,7 @@ ArkLib, missing, or present in a materially different form.
 
 ## Appendix A: Additional Preliminaries
 
-| Paper item | Status | Lean refs | Notes |
+| Paper item (Appendix A) | Status | Lean refs | Notes |
 | --- | --- | --- | --- |
 | Definition A.1 completeness for IORs | present-but-different | `Reduction.completeness`, `Reduction.perfectCompleteness` in [ArkLib/OracleReduction/Security/Basic.lean](../../../ArkLib/OracleReduction/Security/Basic.lean) | Present in ArkLib's more general oracle-reduction framework rather than the paper's `(x,y,w)` relation presentation. |
 | Remark A.2 IOP as IOR to trivial relation | present-but-different | same framework in [ArkLib/OracleReduction/Security/Basic.lean](../../../ArkLib/OracleReduction/Security/Basic.lean) | Conceptually supported by the framework, but not isolated as this exact remark. |
@@ -156,7 +172,7 @@ ArkLib, missing, or present in a materially different form.
 
 ## Appendix B
 
-| Paper item | Status | Lean refs | Notes |
+| Paper item (Appendix B) | Status | Lean refs | Notes |
 | --- | --- | --- | --- |
 | Claim B.1 collision bound for random functions | present | `Probability.exists_large_image_of_pairwise_collision_bound` in [ArkLib/Data/Probability/Combinatorial.lean](../../../ArkLib/Data/Probability/Combinatorial.lean) | Proven sorry-free. Route (via two `private` helper lemmas in the same file): a fiber partition + diagonal decomposition, then Cauchy–Schwarz over the fibers (Mathlib's `sq_sum_le_card_mul_sum_sq` over `ℝ`); main theorem by contradiction via `ENNReal.tsum_lt_tsum` strict averaging. |
 
@@ -180,11 +196,12 @@ The largest mismatches between the paper and ArkLib are structural rather than m
    [ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/AffineLines/Main.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/AffineLines/Main.lean)
    still leaves the non-unique-decoding branch as `sorry`.
 
-4. Several "present" proximity-gap and MCA files are still proof-incomplete.
-   This is true in
-   [ArkLib/Data/CodingTheory/ProximityGap/AHIV22.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/AHIV22.lean),
-   multiple files under
-   [ArkLib/Data/CodingTheory/ProximityGap/BCIKS20](../../../ArkLib/Data/CodingTheory/ProximityGap/BCIKS20).
+4. Some "present" proximity-gap files are proof-incomplete: the
+   [ArkLib/Data/CodingTheory/ProximityGap/BCIKS20](../../../ArkLib/Data/CodingTheory/ProximityGap/BCIKS20)
+   directory carries `sorry` sites in `WeightedAgreement.lean`, `Curves.lean`, `ListDecoding/`,
+   and `AffineLines/Main.lean`.
+   [AHIV22.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/AHIV22.lean) and
+   `AHIV22Support.lean` are `sorry`-free.
 
 5. ~~Several code families used centrally by the paper are absent.~~ **Resolved.**
    Folded Reed-Solomon ([ReedSolomon/Folded.lean](../../../ArkLib/Data/CodingTheory/ReedSolomon/Folded.lean)),

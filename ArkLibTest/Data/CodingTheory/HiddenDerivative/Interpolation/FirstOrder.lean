@@ -218,7 +218,7 @@ example :
   have hcard : (exceptional.card : ENat) < ENat.card (RatFunc (ZMod 5)) := by
     rw [ENat.card_eq_top_of_infinite]
     exact ENat.natCast_lt_top _
-  obtain ⟨z, hz⟩ := Finset.exists_not_mem_of_card_lt_enatCard hcard
+  obtain ⟨z, hz⟩ := Finset.exists_notMem_of_card_lt_enatCard hcard
   refine ⟨exceptional, hbound, z, hz, 0, WithBot.bot_lt_coe 2, ?_, ?_⟩
   · intro i hi
     simp [receivedLine]

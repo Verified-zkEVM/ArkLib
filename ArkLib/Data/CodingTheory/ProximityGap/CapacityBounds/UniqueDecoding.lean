@@ -121,7 +121,7 @@ theorem rs_epsCa_le_in_unique_decoding_range
       ENNReal.ofReal bound := by
   classical
   dsimp
-  unfold epsCa
+  simp only [epsCa_eq]
   refine iSup_le fun u => ?_
   by_cases hj : Code.jointProximity
       (C := (ReedSolomon.code domain k : Set (ι → F))) (u := u) δ_int

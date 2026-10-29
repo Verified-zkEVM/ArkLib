@@ -247,6 +247,8 @@ theorem lowRateFiniteLengthChallengeHeight_le_inv_slack_sq
     dsimp only [cr, lowRateRankBoundConstant]
     positivity
   have hcB : 0 ≤ cB := by
+    have := firstOrderLowRateBeta_pos hrho
+    have : 0 < lowRateFiniteLengthSlope rho := hc
     dsimp only [cB, lowRateJetBoundConstant, lowRateMultiplicityBoundConstant,
       lowRateFiniteLengthRankRoundingConstant]
     positivity
