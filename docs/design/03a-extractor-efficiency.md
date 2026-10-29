@@ -101,8 +101,8 @@ knowledge soundness to soundness need no inhabitation assumption. These results 
 form's prefix quantifiers and terminal semantics; they are distinct from the terminal
 relation-soundness equivalence.
 
-The remaining carrier cases are characterized in
-[#1396](https://github.com/Verified-zkEVM/ArkLib/pull/1396): the equivalence holds uniformly over
+The open pull request [#1396](https://github.com/Verified-zkEVM/ArkLib/pull/1396), not yet
+merged, characterizes the remaining carrier cases: the equivalence holds uniformly over
 relations and errors exactly when the input-witness type is inhabited or
 `StmtIn × FullTranscript pSpec × WitOut` is empty. Otherwise total backward extraction is
 impossible, even for rejected transcripts and unrelated output witnesses. This is a constraint of
