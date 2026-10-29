@@ -239,7 +239,7 @@ theorem hasExactPowerAgreement_constant_iff (domain : ι ↪ F) (w : Fin (ℓ + 
         have hc : Q.coeff 0 = powerBatchedWord w z i := by
           rw [← hiQ, hconst hQ (domain i) 0, coeff_zero_eq_eval_zero]
         rw [eq_C_of_degree_le_zero (Order.lt_succ_iff.mp hQ), hc]
-        simp [Polynomial.powerBatch, powerBatchedWord, map_sum, smul_C]
+        simp [Polynomial.powerBatch, Polynomial.generatorBatch, powerBatchedWord, map_sum, smul_C]
       refine ⟨fun t ↦ C (w t i), fun t ↦ degree_C_lt, hQP, ?_⟩
       ext j
       rw [mem_commonCurveAgreementSet]
@@ -252,7 +252,7 @@ theorem hasExactPowerAgreement_constant_iff (domain : ι ↪ F) (w : Fin (ℓ + 
     · rw [Finset.not_nonempty_iff_eq_empty] at hne
       let P : Fin (ℓ + 1) → F[X] := fun t ↦ if t = 0 then Q else 0
       have hQP : Q = Polynomial.powerBatch P z := by
-        simp [P, Polynomial.powerBatch]
+        simp [P, Polynomial.powerBatch, Polynomial.generatorBatch]
       refine ⟨P, fun t ↦ ?_, hQP, ?_⟩
       · simp only [P]
         split_ifs
