@@ -13,6 +13,7 @@ public import ArkLib.ProofSystem.Binius.BinaryBasefold.General
 import all ArkLib.ProofSystem.Binius.BinaryBasefold.Relations
 -- The initial-fold identity unfolds the dependent fold implementation.
 import all ArkLib.ProofSystem.Binius.BinaryBasefold.Prelude.Folding
+public import ArkLib.OracleReduction.Security.GuardedBridges
 public import ArkLib.OracleReduction.Composition.Sequential.Append.GuardedRoundByRound
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Relations.Initial
 
@@ -444,5 +445,69 @@ theorem contextualReduction_perfectCompleteness (Context : Type) (γ : ℕ) {σ 
       (relation := contextualStrictInputRelation K β Context (ϑ := ϑ) (h_rate := h_rate))
       (init := init) (impl := impl) :=
   openingReduction_perfectCompleteness K β (contextualQuery Context) (Equiv.refl _) γ init impl
+
+/-- Ordinary knowledge soundness of evaluation opening at the concrete Binary Basefold error. -/
+theorem openingVerifier_knowledgeSoundness (γ : ℕ) {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    OracleProof.knowledgeSoundness init impl
+      (inputRelation K β evalQuery witnessEquiv (ϑ := ϑ) (h_rate := h_rate))
+      (openingVerifier K β evalQuery γ (ϑ := ϑ) (h_rate := h_rate))
+      (FullBinaryBasefold.concreteBinaryBasefoldKnowledgeError L ℓ R γ) := by
+  apply Verifier.knowledgeSoundness_error_mono init impl
+    (openingError_sum_le_concrete K β γ (ϑ := ϑ) (h_rate := h_rate))
+  exact Verifier.GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundness
+    (Verifier.GuardedForm.ofEmpty _ (fun _ => (false, fun i : Empty => nomatch i)))
+    (openingVerifier_rbrKnowledgeSoundness K β evalQuery witnessEquiv γ init impl)
+
+/-- Evaluation opening is perfectly complete on exact encodings and ordinarily knowledge sound
+for unique-radius compatibility at the concrete Binary Basefold error. -/
+theorem openingReduction_perfectCompleteness_and_knowledgeSoundness (γ : ℕ) {σ : Type}
+    (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    OracleProof.perfectCompleteness
+        (oracleProof := openingReduction K β evalQuery witnessEquiv γ
+          (ϑ := ϑ) (h_rate := h_rate))
+        (relation := strictInputRelation K β evalQuery witnessEquiv
+          (ϑ := ϑ) (h_rate := h_rate)) (init := init) (impl := impl) ∧
+      OracleProof.knowledgeSoundness init impl
+        (inputRelation K β evalQuery witnessEquiv (ϑ := ϑ) (h_rate := h_rate))
+        (openingVerifier K β evalQuery γ (ϑ := ϑ) (h_rate := h_rate))
+        (FullBinaryBasefold.concreteBinaryBasefoldKnowledgeError L ℓ R γ) :=
+  ⟨openingReduction_perfectCompleteness K β evalQuery witnessEquiv γ init impl,
+    openingVerifier_knowledgeSoundness K β evalQuery witnessEquiv γ init impl⟩
+
+/-- Contextual evaluation opening is ordinarily knowledge sound at the concrete error. -/
+theorem contextualVerifier_knowledgeSoundness (Context : Type) (γ : ℕ) {σ : Type}
+    (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    OracleProof.knowledgeSoundness init impl
+      (contextualInputRelation K β Context (ϑ := ϑ) (h_rate := h_rate))
+      (contextualVerifier K β Context γ (ϑ := ϑ) (h_rate := h_rate))
+      (FullBinaryBasefold.concreteBinaryBasefoldKnowledgeError L ℓ R γ) :=
+  openingVerifier_knowledgeSoundness K β (contextualQuery Context) (Equiv.refl _) γ init impl
+
+/-- Contextual evaluation opening is perfectly complete on exact encodings and ordinarily
+knowledge sound for unique-radius compatibility at the concrete Binary Basefold error. -/
+theorem contextualReduction_perfectCompleteness_and_knowledgeSoundness (Context : Type) (γ : ℕ)
+    {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    OracleProof.perfectCompleteness
+        (oracleProof := contextualReduction K β Context γ (ϑ := ϑ) (h_rate := h_rate))
+        (relation := contextualStrictInputRelation K β Context (ϑ := ϑ) (h_rate := h_rate))
+        (init := init) (impl := impl) ∧
+      OracleProof.knowledgeSoundness init impl
+        (contextualInputRelation K β Context (ϑ := ϑ) (h_rate := h_rate))
+        (contextualVerifier K β Context γ (ϑ := ϑ) (h_rate := h_rate))
+        (FullBinaryBasefold.concreteBinaryBasefoldKnowledgeError L ℓ R γ) :=
+  ⟨contextualReduction_perfectCompleteness K β Context γ init impl,
+    contextualVerifier_knowledgeSoundness K β Context γ init impl⟩
+
+attribute [local instance] MLIOPCS.Oₘ MLIOPCS.O_challenges
+
+/-- The multilinear opening oracle reduction is ordinarily knowledge sound at the concrete error. -/
+theorem mliopcs_knowledgeSoundness (γ : ℕ) {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    OracleProof.knowledgeSoundness init impl
+      (mliopcs K β γ (ϑ := ϑ) (h_rate := h_rate)).toRelInput
+      (mliopcs K β γ (ϑ := ϑ) (h_rate := h_rate)).oracleReduction.toOracleVerifier
+      (FullBinaryBasefold.concreteBinaryBasefoldKnowledgeError L ℓ R γ) :=
+  openingVerifier_knowledgeSoundness K β id mlpWitnessEquiv γ init impl
 
 end Binius.BinaryBasefold.Opening

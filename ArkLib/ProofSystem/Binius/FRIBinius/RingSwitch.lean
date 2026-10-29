@@ -243,4 +243,50 @@ theorem fullReduction_perfectCompleteness_and_rbrKnowledgeSoundness
     fullVerifier_rbrKnowledgeSoundness κ K β h_rate h_dim γ init impl,
     fullError_sum_le κ K β h_rate γ⟩
 
+omit [DecidableEq K] [Fact (β 0 = 1)] [NeZero R] in
+/-- The frontend is ordinarily knowledge sound for first-oracle compatibility. -/
+theorem verifier_knowledgeSoundness {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    (verifier κ K β h_rate h_dim).knowledgeSoundness init impl
+      (TensorPrefix.relIn (biniusProfile κ L K β) h_dim
+        (inputInterface κ K β (ϑ := ϑ) h_rate))
+      ((TensorPrefix.commitment (inputInterface κ K β (ϑ := ϑ) h_rate)).evalRelWithContext
+        (Context κ (L := L) (ℓ := ℓ)))
+      ((κ : ℝ≥0) / Fintype.card L + (ℓ' : ℝ≥0) * (2 / Fintype.card L)) := by
+  apply TensorPrefix.knowledgeSoundness
+  change (BinaryBasefold.Opening.abstractInput K β (ϑ := ϑ) (h_rate := h_rate)).Functional
+  exact BinaryBasefold.Opening.abstractInput_functional K β
+
+/-- The full verifier is ordinarily knowledge sound at the frontend and Binary Basefold errors. -/
+theorem fullVerifier_knowledgeSoundness {σ : Type} (γ : ℕ) (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    OracleProof.knowledgeSoundness init impl
+      (TensorPrefix.relIn (biniusProfile κ L K β) h_dim
+        (inputInterface κ K β (ϑ := ϑ) h_rate))
+      (fullVerifier κ K β h_rate h_dim γ)
+      ((κ : ℝ≥0) / Fintype.card L + (ℓ' : ℝ≥0) * (2 / Fintype.card L) +
+        BinaryBasefold.FullBinaryBasefold.concreteBinaryBasefoldKnowledgeError L ℓ' R γ) := by
+  apply Verifier.knowledgeSoundness_error_mono init impl
+    (fullError_sum_le κ K β (ϑ := ϑ) h_rate γ)
+  exact Verifier.GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundness
+    (Verifier.GuardedForm.ofEmpty _ (fun _ => (false, fun i : Empty => nomatch i)))
+    (fullVerifier_rbrKnowledgeSoundness κ K β h_rate h_dim γ init impl)
+
+/-- The prefix followed by Binary Basefold is perfectly complete on exact encodings and
+ordinarily knowledge sound at the frontend loss plus the concrete Binary Basefold error. -/
+theorem fullReduction_perfectCompleteness_and_knowledgeSoundness {σ : Type} (γ : ℕ)
+    (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    OracleProof.perfectCompleteness
+        (oracleProof := fullReduction κ K β h_rate h_dim γ)
+        (relation := TensorPrefix.relIn (biniusProfile κ L K β) h_dim
+          (inputInterface κ K β (ϑ := ϑ) h_rate).strictView) (init := init) (impl := impl) ∧
+      OracleProof.knowledgeSoundness init impl
+        (TensorPrefix.relIn (biniusProfile κ L K β) h_dim
+          (inputInterface κ K β (ϑ := ϑ) h_rate))
+        (fullVerifier κ K β h_rate h_dim γ)
+        ((κ : ℝ≥0) / Fintype.card L + (ℓ' : ℝ≥0) * (2 / Fintype.card L) +
+          BinaryBasefold.FullBinaryBasefold.concreteBinaryBasefoldKnowledgeError L ℓ' R γ) :=
+  ⟨fullReduction_perfectCompleteness κ K β h_rate h_dim γ init impl,
+    fullVerifier_knowledgeSoundness κ K β h_rate h_dim γ init impl⟩
+
 end Binius.FRIBinius.RingSwitch

@@ -264,5 +264,26 @@ theorem perfectCompleteness_and_rbrKnowledgeSoundness
       (fun _ _ h => h) init impl
   exact ⟨hgeneric.1, hgeneric.2.1, hgeneric.2.2⟩
 
+/-- Prefix packing is knowledge sound with error `κ/|L| + 2ℓ'/|L|`. -/
+theorem knowledgeSoundness (h : a.Functional) {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    (verifier P h_l a).knowledgeSoundness init impl (relIn P h_l a)
+      ((commitment a).evalRelWithContext ((Fin ℓ → L) × (Fin κ → L)))
+      ((κ : ℝ≥0) / Fintype.card L + (ℓ' : ℝ≥0) * (2 / Fintype.card L)) :=
+  RingSwitch.knowledgeSoundness (PackingData.ofBasis P.basis) ℓ' (layout P h_l)
+    (messageEquiv P) (BatchingStrategy.eqFold L κ) (commitment a) (commitment_functional a h)
+    (fun _ _ h => h) init impl
+
+/-- Prefix packing is perfectly complete and knowledge sound with error `κ/|L| + 2ℓ'/|L|`. -/
+theorem perfectCompleteness_and_knowledgeSoundness
+    (h : a.Functional) {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    (reduction P h_l a).perfectCompleteness init impl (relIn P h_l a)
+        ((commitment a).evalRelWithContext ((Fin ℓ → L) × (Fin κ → L))) ∧
+      (verifier P h_l a).knowledgeSoundness init impl (relIn P h_l a)
+        ((commitment a).evalRelWithContext ((Fin ℓ → L) × (Fin κ → L)))
+        ((κ : ℝ≥0) / Fintype.card L + (ℓ' : ℝ≥0) * (2 / Fintype.card L)) :=
+  ⟨perfectCompleteness P h_l a init impl, knowledgeSoundness P h_l a h init impl⟩
+
 end Security
 end RingSwitching.Packing.TensorPrefix
