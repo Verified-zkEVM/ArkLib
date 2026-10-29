@@ -21,6 +21,11 @@ public import ArkLib.OracleReduction.Security.RbrGame
   content. Round-by-round knowledge soundness in the cryptographic sense needs, in addition, a cost
   bound for each stage of a named extractor, such as the one named in
   `Verifier.rbrKnowledgeSoundnessWith`. No predicate here states such a bound.
+
+  For inhabited input-witness types, `Security.Implications` identifies the averaged and worst-case
+  existential forms with round-by-round soundness of the induced languages, separately for each
+  form. These are language-soundness equivalences, distinct from the terminal relation-soundness
+  equivalence. They do not characterize `rbrKnowledgeSoundnessOneShot` or native certificates.
 -/
 
 @[expose] public section
@@ -477,8 +482,9 @@ existence of a later intermediate witness that satisfies the knowledge state fun
 challenge, while the witness extracted from it fails the knowledge state function before it.
 
 The extractor is unconstrained, so this contract carries no efficiency content; see the module
-documentation. Whether it collapses to a round-by-round relation-soundness notion, as the
-terminal notion collapses to `Verifier.relationSoundness`, is not established. -/
+documentation. For inhabited input-witness types, `Security.Implications` identifies it with
+round-by-round soundness of the induced languages. This is distinct from the terminal equivalence
+with `Verifier.relationSoundness`; the one-shot and native notions are not characterized here. -/
 def rbrKnowledgeSoundness (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0) : Prop :=
