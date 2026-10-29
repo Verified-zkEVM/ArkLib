@@ -777,7 +777,7 @@ noncomputable def simplifiedRbrKnowledgeStateFunction (k s : ℕ) (hdvd : s ∣ 
     SimplifiedIOR.mem_outputRelationFor_of_probEvent_pos_oracleVerifier_run
       (k := k) init impl (encoder k s hdvd domain) δ stmtIn tr witOut h
 
-/-- Worst-case round-by-round knowledge soundness for C6.9, naming the exact
+/-- Round-by-round knowledge soundness for C6.9, naming the exact
 executable IRS extractor and its knowledge-state function in the public
 theorem type.  This is the deterministic Definition A.5 contract used by
 the combination-round argument. -/
@@ -812,7 +812,7 @@ theorem simplifiedOracleVerifier_rbrKnowledgeSoundnessWith_rbrExtractor
   · exact absurd hi (by omega)
 
 /-- Averaged C6.9 round-by-round knowledge soundness for the same exact
-executable extractor, derived from the worst-case-prefix theorem. -/
+executable extractor, derived from the fixed-prefix theorem. -/
 theorem simplifiedOracleVerifier_rbrKnowledgeSoundnessAveragedWith_rbrExtractor
     [SampleableType F] [Nonempty ι]
     (k s : ℕ) (hdvd : s ∣ k) [NeZero (k / s)] (domain : ι ↪ F)
@@ -837,7 +837,7 @@ theorem simplifiedOracleVerifier_rbrKnowledgeSoundnessAveragedWith_rbrExtractor
       k s hdvd domain hfull δ hδ init impl)
 
 omit [DecidableEq ι] in
-/-- Existential worst-case C6.9 RBR knowledge soundness, retained only as a
+/-- Existential C6.9 RBR knowledge soundness, retained only as a
 corollary of the exact-object theorem. -/
 theorem simplifiedOracleVerifier_rbrKnowledgeSoundness
     [SampleableType F] [Nonempty ι]
@@ -928,7 +928,7 @@ noncomputable def rbrKnowledgeStateFunction (k s t : ℕ) (hdvd : s ∣ k)
     Spec.accepts_of_probEvent_pos_verifier_run (k := k) (t := t)
       init impl (encoder k s hdvd domain) stmtIn tr witOut _ h
 
-/-- Worst-case-per-fixed-prefix round-by-round knowledge soundness for the
+/-- Round-by-round knowledge soundness for the
 exact named executable interleaved-RS extractor and its knowledge-state
 function.  Both objects occur in the proposition type, rather than being
 hidden behind existential quantifiers. -/
@@ -979,7 +979,7 @@ theorem oracleVerifier_rbrKnowledgeSoundnessWith_rbrExtractor
   · exact absurd hi (by omega)
 
 omit [DecidableEq ι] in
-/-- Existential worst-case RBR knowledge soundness, retained as a compatibility
+/-- Existential RBR knowledge soundness, retained as a compatibility
 corollary of the exact-object theorem. -/
 theorem oracleVerifier_rbrKnowledgeSoundness
     [SampleableType F] [SampleableType ι] [Nonempty ι]
@@ -1006,7 +1006,7 @@ theorem oracleVerifier_rbrKnowledgeSoundness
 
 /-- Averaged round-by-round knowledge soundness for the exact named executable
 extractor and knowledge-state function, derived from the stronger
-worst-case-per-prefix theorem without hiding either object. -/
+fixed-prefix theorem without hiding either object. -/
 theorem oracleVerifier_rbrKnowledgeSoundnessAveragedWith_rbrExtractor
     [SampleableType F] [SampleableType ι] [Nonempty ι]
     (k s t : ℕ) (hdvd : s ∣ k) [NeZero (k / s)] (domain : ι ↪ F)

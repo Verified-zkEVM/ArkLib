@@ -29,7 +29,7 @@ an identity equivalence. There is one message and one challenge, with no extra s
 The output is the initial product-sumcheck statement on `A_c · p`, retaining `(q,c)`, the same
 commitment oracle collection and the same packed polynomial. `RingSwitch` appends product sumcheck
 directly. Completeness uses only the operational batching rule and scalar reconstruction.
-Worst-case round-by-round knowledge soundness uses a separation certificate and injective
+Round-by-round knowledge soundness uses a separation certificate and injective
 coefficient transport. Equal component evaluations among compatible polynomials at each fixed query
 and oracle statement suffice for the standalone head theorem. Polynomial functionality supplies
 that premise as a corollary; full ring-switching security retains functionality through sumcheck.
@@ -444,7 +444,7 @@ theorem bad_event_le_of_fixed_candidates
 /-- The single fresh challenge incurs exactly the strategy's separation bound. -/
 def rbrError (_i : (pSpec (M := M) data bat.toBatchingRule).ChallengeIdx) : ℝ≥0 := bat.error
 
-/-- Worst-case round-by-round knowledge soundness for the head requires only equal
+/-- Round-by-round knowledge soundness for the head requires only equal
 component evaluations among compatible polynomials at each fixed query and oracle statement. -/
 theorem rbrKnowledgeSoundnessWith_of_partials_eq
     (hpartials : ∀ (q : layout.Query) (ost : ∀ j, pc.OStmt j)
@@ -465,7 +465,7 @@ theorem rbrKnowledgeSoundnessWith_of_partials_eq
   exact bad_event_le_of_partials_eq data m layout bat pc hinj stmt.1 stmt.2
     (messageEquiv (tr ⟨0, by change 0 < 1; decide⟩)) (hpartials stmt.1.1 stmt.2)
 
-/-- Functional compatibility implies worst-case round-by-round knowledge soundness for the
+/-- Functional compatibility implies round-by-round knowledge soundness for the
 concrete extractor and knowledge states. -/
 theorem rbrKnowledgeSoundnessWith
     (hfunctional : pc.Functional) (hinj : Function.Injective (algebraMap data.P C))

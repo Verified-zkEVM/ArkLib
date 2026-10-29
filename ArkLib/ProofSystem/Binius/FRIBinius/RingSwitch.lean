@@ -18,7 +18,7 @@ The same packed polynomial and its first oracle then enter the Binary Basefold
 opening. That opening's zero-round frontier discards the retained query context while
 formatting the evaluation claim; no additional formatting phase is inserted.
 
-Completeness uses exact first-codeword encodings. Worst-case round-by-round knowledge soundness
+Completeness uses exact first-codeword encodings. Round-by-round knowledge soundness
 uses unique-radius compatibility, whose functionality follows from encoding injectivity and code
 distance. The challenge
 errors are the frontend's exact `κ/|L| + 2ℓ'/|L|` and the opening's error function.
@@ -148,7 +148,7 @@ theorem fullError_sum_le (γ : ℕ) :
       (ϑ := ϑ) (h_rate := h_rate))
 
 omit [DecidableEq K] [Fact (β 0 = 1)] [NeZero R] in
-/-- The frontend is worst-case round-by-round knowledge sound for first-oracle compatibility. -/
+/-- The frontend is round-by-round knowledge sound for first-oracle compatibility. -/
 theorem verifier_rbrKnowledgeSoundness {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (verifier κ K β h_rate h_dim).toVerifier.rbrKnowledgeSoundness init impl
@@ -160,7 +160,7 @@ theorem verifier_rbrKnowledgeSoundness {σ : Type} (init : ProbComp σ)
   change (BinaryBasefold.Opening.abstractInput K β (ϑ := ϑ) (h_rate := h_rate)).Functional
   exact BinaryBasefold.Opening.abstractInput_functional K β
 
-/-- The full verifier is worst-case round-by-round knowledge sound. -/
+/-- The full verifier is round-by-round knowledge sound. -/
 theorem fullVerifier_rbrKnowledgeSoundness {σ : Type} (γ : ℕ) (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     ((fullVerifier κ K β h_rate h_dim γ).toVerifier
@@ -224,7 +224,7 @@ theorem fullReduction_perfectCompleteness {σ : Type} (γ : ℕ) (init : ProbCom
       (pure state) impl
 
 /-- The prefix reduction followed by Binary Basefold is perfectly complete on exact encodings
-and worst-case round-by-round knowledge sound at the sum of the frontend and opening errors. -/
+and round-by-round knowledge sound at the sum of the frontend and opening errors. -/
 theorem fullReduction_perfectCompleteness_and_rbrKnowledgeSoundness
     {σ : Type} (γ : ℕ) (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     OracleProof.perfectCompleteness

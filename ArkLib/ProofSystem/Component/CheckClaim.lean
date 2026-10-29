@@ -143,7 +143,8 @@ def knowledgeStateFunction :
     rw [StateT.run_pure] at hx
     simp [map_pure] at hx
 
-/-- The `CheckClaim` reduction satisfies perfect round-by-round knowledge soundness. -/
+/-- The `CheckClaim` reduction satisfies perfect prover-averaged round-by-round knowledge
+soundness. -/
 theorem verifier_rbrKnowledgeSoundnessAveraged :
     (verifier oSpec Statement pred).rbrKnowledgeSoundnessAveraged init impl
       (relIn Statement pred) (relOut Statement) 0 := by

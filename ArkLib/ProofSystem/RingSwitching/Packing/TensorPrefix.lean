@@ -232,7 +232,7 @@ theorem pr_exists_target_collision_le_of_embedded_eval_eq
 abbrev rbrError := RingSwitch.rbrError (M := P.A) (PackingData.ofBasis P.basis) ℓ'
   (BatchingStrategy.eqFold L κ)
 
-/-- The verifier inherits the shared worst-case round-by-round security proof. -/
+/-- The verifier inherits the shared round-by-round security proof. -/
 theorem rbrKnowledgeSoundness (h : a.Functional) {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (verifier P h_l a).toVerifier.rbrKnowledgeSoundness init impl (relIn P h_l a)
@@ -247,7 +247,7 @@ theorem rbrError_sum : ∑ i, rbrError (ℓ' := ℓ') P i =
   RingSwitch.rbrError_sum (M := P.A) (PackingData.ofBasis P.basis) ℓ'
     (BatchingStrategy.eqFold L κ)
 
-/-- Prefix packing is complete and worst-case round-by-round knowledge sound, with total
+/-- Prefix packing is complete and round-by-round knowledge sound, with total
 challenge error `κ / card L + 2ℓ' / card L`. -/
 theorem perfectCompleteness_and_rbrKnowledgeSoundness
     (h : a.Functional) {σ : Type} (init : ProbComp σ)

@@ -39,7 +39,8 @@ The `prover` / `verifier` / `oracleReduction` triple is complete.
 Completeness (C6.2, `oracleReduction_perfectCompleteness`) and
 round-by-round knowledge soundness (L6.8,
 `oracleVerifier_rbrKnowledgeSoundness`, with
-`oracleVerifier_rbrKnowledgeSoundnessAveraged` as its averaged corollary) are **fully proven** here. Plain
+`oracleVerifier_rbrKnowledgeSoundnessAveraged` as its prover-averaged corollary) are
+**fully proven** here. Plain
 knowledge soundness (L6.6, `oracleVerifier_knowledgeSoundness_winningSetUpperBound`) is **fully
 proven** in the sibling file `Spec/KnowledgeSoundness.lean`. The generic theorem
 uses the sharper Definition 6.11 winning-set expression
@@ -93,7 +94,7 @@ How each step of Construction 6.2 lands on an ArkLib / VCVio primitive:
   (VCVio's query-simulation semantics).
 * completeness game ↦ `OracleReduction.perfectCompleteness`.
 * knowledge-soundness games (paper App A.1, Defs A.2 / A.4 / A.5) ↦
-  `OracleVerifier.knowledgeSoundness` / `OracleVerifier.rbrKnowledgeSoundnessAveraged`.
+  `OracleVerifier.knowledgeSoundness` / `OracleVerifier.rbrKnowledgeSoundness`.
   Two caveats: extraction **time** (the paper's `O(enc + ecor)` extractor
   cost) is outside ArkLib's cost-free model, and the verifier's query
   complexity (`2t + 1`) is documented, not enforced.
@@ -434,10 +435,10 @@ The honest-completeness, knowledge-soundness, and round-by-round
 knowledge-soundness lemmas below are all stated against these
 oracle-flavour objects: completeness via
 `OracleReduction.perfectCompleteness`, L6.6 via
-`OracleVerifier.knowledgeSoundness`, and L6.8 via
-`OracleVerifier.rbrKnowledgeSoundnessAveraged`. The latter two are
+`OracleVerifier.knowledgeSoundness`, and L6.8 via the fixed-prefix
+`OracleVerifier.rbrKnowledgeSoundness`, with a prover-averaged corollary. The latter two are
 definitionally `toVerifier.knowledgeSoundness` /
-`toVerifier.rbrKnowledgeSoundnessAveraged`, so the oracle-flavour statements
+`toVerifier.rbrKnowledgeSoundness`, so the oracle-flavour statements
 carry no extra proof burden over the bundled-input forms.
 
 **Extractor-failure polarity.** In `Verifier.knowledgeSoundness`, extraction
@@ -449,7 +450,7 @@ The generic existence theorems (`oracleVerifier_knowledgeSoundness_winningSetUpp
 `oracleVerifier_rbrKnowledgeSoundnessAveraged`, and the alphabet-generic
 `verifier_knowledgeSoundness` in `Spec/SimplifiedIOR.lean`) use the classical
 `chooseRelaxedWitness` selector; `Impl/IRS.lean` supplies the principal
-executable path — exact named straightline and worst-case/averaged RBR
+executable path — exact named straightline and fixed-prefix and prover-averaged RBR
 extractors for both the three-round protocol and the virtual-oracle reduction.
 -/
 
@@ -1358,7 +1359,7 @@ lemma spotcheck_round_game_bound [Nonempty ι]
     exact ENNReal.coe_le_coe.mpr hbase
 
 omit [DecidableEq ι] [Fintype A] in
-/-- Worst-case-per-fixed-prefix round-by-round knowledge soundness of
+/-- Round-by-round knowledge soundness of
 the toy protocol in the alphabet-generic classical-extractor form.  Concrete
 IRS clients should prefer `Impl.IRS.oracleVerifier_rbrKnowledgeSoundness`,
 whose extractor is executable and named. -/
@@ -1397,8 +1398,8 @@ theorem oracleVerifier_rbrKnowledgeSoundness
   · exact absurd hi (by omega)
 
 omit [DecidableEq ι] [Fintype A] in
-/-- Averaged round-by-round knowledge soundness, retained under the established
-public API name as a corollary of the stronger worst-case-per-prefix theorem. -/
+/-- Prover-averaged round-by-round knowledge soundness, a corollary of the stronger fixed-prefix
+theorem. -/
 theorem oracleVerifier_rbrKnowledgeSoundnessAveraged
     [SampleableType F] [SampleableType ι] [Nonempty ι] [Finite A]
     {σ : Type} (init : ProbComp σ)

@@ -27,7 +27,7 @@ rounds defined in `CoreInteractionPhase/Protocol.lean`, and of their sequence.
 * `nonLastSingleBlockOracleVerifier_rbrKnowledgeSoundness`,
   `lastBlockOracleVerifier_rbrKnowledgeSoundness`,
   `nonLastBlocksOracleVerifier_rbrKnowledgeSoundness`,
-  `sumcheckFoldOracleVerifier_rbrKnowledgeSoundness`: worst-case round-by-round knowledge
+  `sumcheckFoldOracleVerifier_rbrKnowledgeSoundness`: round-by-round knowledge
   soundness between the round relations at the ends, from the rounds' theorems by
   `OracleVerifier.append_rbrKnowledgeSoundness_of_guarded_first`,
   `OracleVerifier.seqCompose_rbrKnowledgeSoundness_of_guarded` and
@@ -202,7 +202,7 @@ def lastBlockRbrKnowledgeError (k : (pSpecLastBlock (L := L) (ϑ := ϑ)).Challen
     ⟨(ℓ / ϑ - 1) * ϑ + ij.1, lastBlockIdx_mul_ϑ_add_fin_lt_ℓ ij.1⟩ ij.2
 
 omit [DecidableEq 𝔽q] in
-/-- Worst-case round-by-round knowledge soundness of the last block, from the round relation at
+/-- Round-by-round knowledge soundness of the last block, from the round relation at
 its first round to the round relation at round `ℓ`, with error `lastBlockRbrKnowledgeError`. -/
 theorem lastBlockOracleVerifier_rbrKnowledgeSoundness :
     (lastBlockOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
@@ -268,7 +268,7 @@ def nonLastSingleBlockRbrKnowledgeError (bIdx : Fin (ℓ / ϑ - 1)) :
       (nonLastSingleBlockCommitIdx bIdx)) ∘ ChallengeIdx.sumEquiv.symm
 
 omit [DecidableEq 𝔽q] in
-/-- Worst-case round-by-round knowledge soundness of the `bIdx`-th non-last block, from the round
+/-- Round-by-round knowledge soundness of the `bIdx`-th non-last block, from the round
 relation at its first round to the round relation at the first round of the next block, with
 error `nonLastSingleBlockRbrKnowledgeError`. -/
 theorem nonLastSingleBlockOracleVerifier_rbrKnowledgeSoundness
@@ -332,7 +332,7 @@ def nonLastBlocksRbrKnowledgeError
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ij.1 ij.2
 
 omit [DecidableEq 𝔽q] in
-/-- Worst-case round-by-round knowledge soundness of the non-last blocks, from the round relation
+/-- Round-by-round knowledge soundness of the non-last blocks, from the round relation
 at round `0` to the round relation at the first round of the last block, with error
 `nonLastBlocksRbrKnowledgeError`. -/
 theorem nonLastBlocksOracleVerifier_rbrKnowledgeSoundness :
@@ -378,7 +378,7 @@ def sumcheckFoldKnowledgeError :
     ChallengeIdx.sumEquiv.symm
 
 omit [DecidableEq 𝔽q] in
-/-- Worst-case round-by-round knowledge soundness of the sum-check-and-fold rounds, from the
+/-- Round-by-round knowledge soundness of the sum-check-and-fold rounds, from the
 round relation at round `0` to the round relation at round `ℓ`, with error
 `sumcheckFoldKnowledgeError`. -/
 theorem sumcheckFoldOracleVerifier_rbrKnowledgeSoundness :

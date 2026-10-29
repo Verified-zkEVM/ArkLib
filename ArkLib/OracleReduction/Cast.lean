@@ -25,9 +25,9 @@ public import VCVio.OracleComp.Constructions.SampleableType.Measure
   properties.
 
   **Verified vs. admitted.** The *execution* lemmas (including the oracle-side
-  `OracleVerifier.cast_toVerifier`) and the round-by-round knowledge-soundness transfer
-  (`Verifier.cast_rbrKnowledgeSoundnessAveraged` and its oracle-side corollary) are proven. The
-  completeness transfer lemmas are commented out entirely and remain future work.
+  `OracleVerifier.cast_toVerifier`) and the prover-averaged round-by-round knowledge-soundness
+  transfer (`Verifier.cast_rbrKnowledgeSoundnessAveraged` and its oracle-side corollary) are
+  proven. The completeness transfer lemmas are commented out entirely and remain future work.
 -/
 
 @[expose] public section
@@ -367,7 +367,7 @@ namespace Verifier
 
 variable (V : Verifier oSpec StmtIn StmtOut pSpec₁)
 
-/-- Round-by-round knowledge soundness transfers across a `ProtocolSpec` cast.
+/-- Prover-averaged round-by-round knowledge soundness transfers across a `ProtocolSpec` cast.
 This is the base case that `OracleVerifier.cast_rbrKnowledgeSoundnessAveraged` reduces to. -/
 @[simp]
 theorem cast_rbrKnowledgeSoundnessAveraged (ε : pSpec₁.ChallengeIdx → ℝ≥0)
@@ -466,8 +466,8 @@ namespace OracleVerifier
 
 variable (V : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec₁)
 
-/-- Round-by-round knowledge soundness transfers across a `ProtocolSpec` cast, on the oracle
-side; reduces to `Verifier.cast_rbrKnowledgeSoundnessAveraged`. -/
+/-- Prover-averaged round-by-round knowledge soundness transfers across a `ProtocolSpec` cast, on
+the oracle side; reduces to `Verifier.cast_rbrKnowledgeSoundnessAveraged`. -/
 @[simp]
 theorem cast_rbrKnowledgeSoundnessAveraged (ε : pSpec₁.ChallengeIdx → ℝ≥0)
     (hRbrKs : V.rbrKnowledgeSoundnessAveraged init impl relIn relOut ε) :

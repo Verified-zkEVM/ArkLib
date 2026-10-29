@@ -17,7 +17,7 @@ public import Mathlib.Data.Matrix.Basic
 `MLPEvalStatement` and `WitMLP` describe multilinear evaluation claims and witnesses.
 `AbstractOStmtIn` equips a commitment oracle family with a relation for knowledge soundness
 and an honest subrelation for completeness. `MLIOPCS` bundles an opening protocol, perfect
-completeness and averaged round-by-round knowledge soundness; its worst-case strengthening
+completeness and prover-averaged round-by-round knowledge soundness; its fixed-prefix strengthening
 is `MLIOPCS.RbrKnowledgeSound`.
 
 ## References
@@ -97,7 +97,8 @@ def AbstractOStmtIn.toRelInput (aOStmtIn : AbstractOStmtIn L ℓ') :
 def AbstractOStmtIn.toStrictRelInput (aOStmtIn : AbstractOStmtIn L ℓ') :=
   aOStmtIn.strictView.toRelInput
 
-/-- A multilinear opening protocol with completeness and round-by-round security. -/
+/-- A multilinear opening protocol with completeness and prover-averaged round-by-round knowledge
+soundness. `MLIOPCS.RbrKnowledgeSound` states the fixed-prefix strengthening. -/
 structure MLIOPCS extends (AbstractOStmtIn L ℓ') where
   /-- Protocol specification -/
   numRounds : ℕ
@@ -118,9 +119,9 @@ structure MLIOPCS extends (AbstractOStmtIn L ℓ') where
       (oracleProof := oracleReduction)
   -- RBR knowledge error function for the MLIOPCS
   rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0
-  -- RBR knowledge soundness property
-  rbrKnowledgeSoundnessAveraged : ∀ {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)
-  },
+  -- Prover-averaged RBR knowledge soundness property
+  rbrKnowledgeSoundnessAveraged : ∀ {σ : Type} {init : ProbComp σ}
+    {impl : QueryImpl []ₒ (StateT σ ProbComp)},
     OracleProof.rbrKnowledgeSoundnessAveraged
       (verifier := oracleReduction.toOracleVerifier)
       (init := init)
@@ -138,7 +139,7 @@ instance instOstmtMLIOPCS : ∀ (i : aOStmtIn.ιₛᵢ), OracleInterface (aOStmt
 
 end OStmt
 
-section WorstCase
+section FixedPrefix
 
 attribute [local instance] MLIOPCS.Oₘ MLIOPCS.O_challenges
 
@@ -150,7 +151,7 @@ def MLIOPCS.RbrKnowledgeSound (M : MLIOPCS L ℓ') : Prop :=
     OracleProof.rbrKnowledgeSoundness init impl M.toRelInput
       M.oracleReduction.toOracleVerifier M.rbrKnowledgeError
 
-end WorstCase
+end FixedPrefix
 
 end ProtocolTypes
 end Preliminaries

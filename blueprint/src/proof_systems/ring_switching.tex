@@ -227,7 +227,7 @@ decoding radius.
     Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged}
   \uses{def:full_ring_switching, thm:ring_switching_soundness}
   \label{thm:binius_ring_switching_soundness}
-  In the concrete setup above, the full Binius verifier is worst-case round-by-round
+  In the concrete setup above, the full Binius verifier is round-by-round
   knowledge sound for its
   relaxed, unique-decoding-radius input relation. Decoder functionality discharges commitment
   binding. Its challenge-index error sum is bounded by
@@ -237,11 +237,11 @@ decoding radius.
   \]
   where $\varepsilon_{\mathrm{BBF}}$ is the concrete Binary Basefold opening's closed-form upper
   bound. Exact codeword encodings give the separate completeness relation in
-  Theorem~\ref{thm:ring_switching_completeness}. Worst-case round-by-round knowledge soundness
+  Theorem~\ref{thm:ring_switching_completeness}. Round-by-round knowledge soundness
   also implies the prover-averaged form with the same error.
 \end{theorem}
 
 Every checking verifier aborts on a failed check. The prefix and full-composition results above
-prove round-by-round guarantees; they do not derive a worst-case contract from an opening
+prove round-by-round guarantees; they do not derive a fixed-prefix contract from an opening
 hypothesis that is only averaged over provers. Ordinary knowledge soundness is not asserted here:
 the framework conversion from round-by-round to ordinary knowledge soundness remains admitted.

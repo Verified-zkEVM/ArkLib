@@ -118,7 +118,7 @@ The key security property of RandomQuery depends on the notion of oracle distanc
 \end{definition}
 
 \begin{theorem}[RandomQuery Knowledge Soundness]
-    If the oracle type has distance bound $d$, then the RandomQuery oracle reduction satisfies round-by-round knowledge soundness with error probability $\frac{d}{|\mathsf{Query}|}$.
+    If the oracle type has distance bound $d$, then the RandomQuery oracle reduction satisfies prover-averaged round-by-round knowledge soundness with error probability $\frac{d}{|\mathsf{Query}|}$.
     \lean{RandomQuery.oracleVerifier_rbrKnowledgeSoundnessAveraged}
     \uses{def:randomquery_oracle_reduction, def:oracle_distance}
 \end{theorem}

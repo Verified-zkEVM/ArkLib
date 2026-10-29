@@ -27,7 +27,7 @@ statement extended by `c`. The step sends no challenge.
 * `finalSumcheckKnowledgeStateFunction`: before the message, the round relation at `ℓ`; after it,
   the closing equation and the final folding state. Its backward step decodes the multilinear
   polynomial from the first oracle (`Steps/FinalSumcheck/Extraction.lean`).
-* `finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWith`: worst-case round-by-round
+* `finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWith`: round-by-round
   knowledge soundness at `finalSumcheckRbrExtractor` and `finalSumcheckKnowledgeStateFunction`, with
   existential and averaged forms.
 
@@ -417,7 +417,7 @@ noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbCo
       (𝓑 := 𝓑) s tr] at hcheck
     exact ⟨of_decide_eq_true hcheck, hrel⟩
 
-/-- Worst-case round-by-round knowledge soundness of the final sum-check step, at the extractor
+/-- Round-by-round knowledge soundness of the final sum-check step, at the extractor
 `finalSumcheckRbrExtractor`, the knowledge-state function `finalSumcheckKnowledgeStateFunction` and
 the error `finalSumcheckKnowledgeError`. The step sends no challenge, so there is no
 extraction-failure event to bound; the content is the knowledge-state function's obligations. -/
@@ -436,7 +436,7 @@ theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWith {σ : Type}
   Verifier.rbrKnowledgeSoundnessWith_of_isEmpty_challengeIdx _ _
 
 omit [DecidableEq 𝔽q] in
-/-- Worst-case round-by-round knowledge soundness of the final sum-check step: the existential
+/-- Round-by-round knowledge soundness of the final sum-check step: the existential
 form of `finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWith`. -/
 theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundness {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :

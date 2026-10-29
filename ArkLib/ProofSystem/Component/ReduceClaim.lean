@@ -166,7 +166,8 @@ def knowledgeStateFunction (hRel : ∀ stmtIn witOut,
     cases (Option.some.inj hx)
     exact hRel stmtIn witOut hrel
 
-/-- The `ReduceClaim` oracle reduction satisfies perfect round-by-round knowledge soundness.
+/-- The `ReduceClaim` oracle reduction satisfies perfect prover-averaged round-by-round
+knowledge soundness.
 
 Note that since there is no challenge round, all the work is done in the definition of the
 knowledge state function. -/
@@ -349,7 +350,8 @@ def oracleKnowledgeStateFunction (hRel : ∀ stmtIn oStmtIn witOut,
     cases (Option.some.inj hxc)
     exact hRel stmtIn oStmtIn witOut hrel
 
-/-- The `ReduceClaim` oracle reduction satisfies perfect round-by-round knowledge soundness.
+/-- The `ReduceClaim` oracle reduction satisfies perfect prover-averaged round-by-round
+knowledge soundness.
 
 Note that since there is no challenge round, all the work is done in the definition of the
 knowledge state function. -/

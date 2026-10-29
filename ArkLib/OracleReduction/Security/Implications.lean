@@ -34,8 +34,8 @@ namespace Verifier
 
 section Implications
 
-/-- Round-by-round knowledge soundness with error `rbrKnowledgeError` implies round-by-round
-soundness with the same error `rbrKnowledgeError`. -/
+/-- Prover-averaged round-by-round knowledge soundness with error `rbrKnowledgeError` implies
+prover-averaged round-by-round soundness with the same error `rbrKnowledgeError`. -/
 theorem rbrKnowledgeSoundnessAveraged_implies_rbrSoundnessAveraged
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
@@ -136,9 +136,10 @@ theorem rbrKnowledgeSoundnessAveraged_implies_rbrSoundnessAveraged
     exact (prEvent_eq_zero_of_forall_not _ _ fun _ hbad ↦
       Fin.succ_ne_zero i.1 hbad.2.1).trans_le zero_le
 
-/-- Round-by-round soundness implies knowledge soundness with an unbounded extractor.
-Nonempty input witnesses are necessary in general: already for a zero-round protocol, empty input
-witnesses and nonempty output witnesses preclude extraction from a nonempty statement type. -/
+/-- Prover-averaged round-by-round soundness implies prover-averaged round-by-round knowledge
+soundness with an unbounded extractor. Nonempty input witnesses are necessary in general: already
+for a zero-round protocol, empty input witnesses and nonempty output witnesses preclude extraction
+from a nonempty statement type. -/
 theorem rbrSoundnessAveraged_implies_rbrKnowledgeSoundnessAveraged [Nonempty WitIn]
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
@@ -182,9 +183,9 @@ theorem rbrSoundnessAveraged_implies_rbrKnowledgeSoundnessAveraged [Nonempty Wit
         rw [← hmap, prEvent_map]
       _ ≤ _ := hS stmt hstmt WitIn WitOut wit prover i
 
-/-- Round-by-round knowledge soundness places no efficiency or access restriction on the
-extractor, so it coincides with round-by-round soundness of the induced languages when input
-witnesses are nonempty. -/
+/-- Prover-averaged round-by-round knowledge soundness places no efficiency or access restriction
+on the extractor, so it coincides with prover-averaged round-by-round soundness of the induced
+languages when input witnesses are nonempty. -/
 theorem rbrSoundnessAveraged_iff_rbrKnowledgeSoundnessAveraged [Nonempty WitIn]
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
@@ -194,7 +195,7 @@ theorem rbrSoundnessAveraged_iff_rbrKnowledgeSoundnessAveraged [Nonempty WitIn]
   ⟨rbrSoundnessAveraged_implies_rbrKnowledgeSoundnessAveraged init impl,
     rbrKnowledgeSoundnessAveraged_implies_rbrSoundnessAveraged init impl⟩
 
-/-- Worst-case round-by-round knowledge soundness implies soundness of the induced languages,
+/-- Round-by-round knowledge soundness implies soundness of the induced languages,
 with the same error at every fixed transcript prefix. -/
 theorem rbrKnowledgeSoundness_implies_rbrSoundness
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
@@ -209,7 +210,7 @@ theorem rbrKnowledgeSoundness_implies_rbrSoundness
   rintro challenge ⟨hprev, w, hnext⟩
   exact ⟨w, fun hw => hprev ⟨_, hw⟩, hnext⟩
 
-/-- Worst-case round-by-round soundness implies knowledge soundness with an unbounded extractor.
+/-- Round-by-round soundness implies knowledge soundness with an unbounded extractor.
 Nonempty input witnesses are necessary in general: already for a zero-round protocol, empty input
 witnesses and nonempty output witnesses preclude extraction from a nonempty statement type. -/
 theorem rbrSoundness_implies_rbrKnowledgeSoundness [Nonempty WitIn]
@@ -228,7 +229,7 @@ theorem rbrSoundness_implies_rbrKnowledgeSoundness [Nonempty WitIn]
     exact fun challenge hbad =>
       (S.toKnowledgeStateFunctionOfRel_failure init impl i stmt tr challenge hbad).2
 
-/-- With no efficiency or access restriction on extraction, worst-case round-by-round knowledge
+/-- With no efficiency or access restriction on extraction, round-by-round knowledge
 soundness coincides with soundness of the induced languages for nonempty input witnesses. -/
 theorem rbrSoundness_iff_rbrKnowledgeSoundness [Nonempty WitIn]
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
@@ -239,7 +240,8 @@ theorem rbrSoundness_iff_rbrKnowledgeSoundness [Nonempty WitIn]
   ⟨rbrSoundness_implies_rbrKnowledgeSoundness init impl,
     rbrKnowledgeSoundness_implies_rbrSoundness init impl⟩
 
-/-- Round-by-round soundness is the specialization of knowledge soundness to `Unit` witnesses. -/
+/-- Prover-averaged round-by-round soundness is the specialization of prover-averaged knowledge
+soundness to `Unit` witnesses. -/
 theorem rbrSoundnessAveraged_iff_rbrKnowledgeSoundnessAveraged_unit
     {langIn : Set StmtIn} {langOut : Set StmtOut}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
@@ -252,7 +254,7 @@ theorem rbrSoundnessAveraged_iff_rbrKnowledgeSoundnessAveraged_unit
       (verifier := verifier) (ε := ε)
       (relIn := langIn ×ˢ (Set.univ : Set Unit)) (relOut := langOut ×ˢ (Set.univ : Set Unit)))
 
-/-- Worst-case round-by-round soundness is knowledge soundness specialized to `Unit` witnesses. -/
+/-- Round-by-round soundness is knowledge soundness specialized to `Unit` witnesses. -/
 theorem rbrSoundness_iff_rbrKnowledgeSoundness_unit
     {langIn : Set StmtIn} {langOut : Set StmtOut}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}

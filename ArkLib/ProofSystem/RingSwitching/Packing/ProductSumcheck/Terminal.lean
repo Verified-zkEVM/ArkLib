@@ -226,7 +226,8 @@ def knowledgeStateFunction {σ : Type} (init : ProbComp σ)
   toFun_full stmt tr p h := check_and_mem_of_prEvent_pos multiplier pc init impl stmt.1 stmt.2 tr
     p h
 
-/-- Exact worst-case knowledge with no challenge error, including when m is zero. -/
+/-- Exact fixed-prefix round-by-round knowledge soundness with no challenge error, including when
+m is zero. -/
 theorem rbrKnowledgeSoundnessWith {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     Verifier.rbrKnowledgeSoundnessWith init impl

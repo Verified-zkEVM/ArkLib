@@ -16,8 +16,8 @@ public import ArkLib.OracleReduction.Composition.Sequential.Append.GuardedRoundB
 
 A zero-round projection discards public query context and wraps the packed polynomial in
 `WitMLP`. Appending an `MLIOPCS` gives an opening at the contextual evaluation relation used
-by ring switching. Completeness uses honest compatibility; worst-case round-by-round knowledge
-soundness requires the corresponding worst-case certificate of the supplied opening.
+by ring switching. Completeness uses honest compatibility; round-by-round knowledge
+soundness requires the corresponding fixed-prefix certificate of the supplied opening.
 -/
 
 @[expose] public section
@@ -143,7 +143,7 @@ theorem perfectCompleteness {σ : Type} (init : ProbComp σ)
   · intro state
     exact M.perfectCompleteness
 
-/-- Worst-case security of a general opening transports to its contextual adapter. -/
+/-- Fixed-prefix security of a general opening transports to its contextual adapter. -/
 theorem rbrKnowledgeSoundness (hM : M.RbrKnowledgeSound)
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     OracleProof.rbrKnowledgeSoundness init impl

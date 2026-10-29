@@ -510,15 +510,16 @@ theorem verifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
     simpa only [inputRelation, Set.mem_ofPred_eq] using
       (bad_event_iff R deg D stmt tr r).mp hr
 
-/-- Round-by-round knowledge soundness for the verifier. `IsDomain R` bounds by `deg / |R|` the
-probability of agreement at a uniform challenge for round polynomials with unequal sums. -/
+/-- Prover-averaged round-by-round knowledge soundness for the verifier. `IsDomain R` bounds by
+`deg / |R|` the probability of agreement at a uniform challenge for round polynomials with unequal
+sums. -/
 theorem verifier_rbrKnowledgeSoundnessAveraged [Fintype R] [IsDomain R] :
     (verifier R deg D oSpec).rbrKnowledgeSoundnessAveraged init impl
     (inputRelation R deg D) (outputRelation R deg) (fun _ => (deg : ℝ≥0) / (Fintype.card R)) := by
   exact Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
     (verifier_rbrKnowledgeSoundness R deg D oSpec)
 
-/-- Round-by-round knowledge soundness for the oracle verifier. -/
+/-- Prover-averaged round-by-round knowledge soundness for the oracle verifier. -/
 theorem oracleVerifier_rbrKnowledgeSoundnessAveraged [Fintype R] [IsDomain R] :
     (oracleVerifier R deg D oSpec).rbrKnowledgeSoundnessAveraged init impl
     (inputRelation R deg D) (outputRelation R deg) (fun _ => (deg : ℝ≥0) / (Fintype.card R)) := by
@@ -1008,7 +1009,7 @@ theorem verifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
       exact extractorLens_rbr_knowledge_soundness i)
     (Simple.verifier_rbrKnowledgeSoundness R deg D oSpec)
 
-/-- Round-by-round knowledge soundness for the lifted round verifier. -/
+/-- Prover-averaged round-by-round knowledge soundness for the lifted round verifier. -/
 theorem verifier_rbrKnowledgeSoundnessAveraged [Fintype R] [IsDomain R] :
     (verifier R n deg D oSpec i).rbrKnowledgeSoundnessAveraged init impl
     (relationRound R n deg D i.castSucc) (relationRound R n deg D i.succ)
@@ -1050,7 +1051,8 @@ theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
     (lensKS := by simpa using extractorLens_rbr_knowledge_soundness i)
     (Simple.oracleVerifier_rbrKnowledgeSoundness R deg D oSpec)
 
-/-- Round-by-round knowledge soundness for a single round, transported from the simple round. -/
+/-- Prover-averaged round-by-round knowledge soundness for a single round, transported from the
+simple round. -/
 theorem oracleVerifier_rbrKnowledgeSoundnessAveraged [Fintype R] [IsDomain R] :
     (oracleVerifier R n deg D oSpec i).rbrKnowledgeSoundnessAveraged init impl
     (relationRound R n deg D i.castSucc) (relationRound R n deg D i.succ)

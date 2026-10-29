@@ -790,7 +790,7 @@ theorem liftContext_knowledgeSoundness [Inhabited InnerStmtOut] [Inhabited Inner
       simpa [hw'] using lensKS.lift_knowledgeSound x z.1.1.1.2.2 w True.intro hin)
   · exact False.elim (hbad.1 _ rfl (hShortcut (z.2.getD default) True.intro))
 
-/-- Context lifting preserves averaged round-by-round soundness with the same error. -/
+/-- Context lifting preserves prover-averaged round-by-round soundness with the same error. -/
 theorem liftContext_rbrSoundnessAveraged [Inhabited InnerStmtOut]
     {outerLangIn : Set OuterStmtIn} {outerLangOut : Set OuterStmtOut}
     {innerLangIn : Set InnerStmtIn} {innerLangOut : Set InnerStmtOut}
@@ -800,7 +800,8 @@ theorem liftContext_rbrSoundnessAveraged [Inhabited InnerStmtOut]
     [lensSound : lens.IsSound outerLangIn outerLangOut innerLangIn innerLangOut
       (V.compatStatement lens)]
     (h : V.rbrSoundnessAveraged init impl innerLangIn innerLangOut rbrSoundnessError) :
-      (V.liftContext lens).rbrSoundnessAveraged init impl outerLangIn outerLangOut rbrSoundnessError := by
+      (V.liftContext lens).rbrSoundnessAveraged init impl outerLangIn outerLangOut
+        rbrSoundnessError := by
   obtain ⟨S, hbound⟩ := h
   refine ⟨S.liftContext lens V outerLangIn outerLangOut innerLangIn innerLangOut, ?_⟩
   intro x hx Aux OW a P i
@@ -811,7 +812,8 @@ theorem liftContext_rbrSoundnessAveraged [Inhabited InnerStmtOut]
   intro z hz
   simpa only [StateFunction.liftContext, hx, false_or] using hz
 
-/-- Context lifting preserves averaged round-by-round knowledge soundness with the same error. -/
+/-- Context lifting preserves prover-averaged round-by-round knowledge soundness with the same
+error. -/
 theorem liftContext_rbrKnowledgeSoundnessAveraged [Inhabited InnerStmtOut] [Inhabited InnerWitIn]
     {outerRelIn : Set (OuterStmtIn × OuterWitIn)} {outerRelOut : Set (OuterStmtOut × OuterWitOut)}
     {innerRelIn : Set (InnerStmtIn × InnerWitIn)} {innerRelOut : Set (InnerStmtOut × InnerWitOut)}

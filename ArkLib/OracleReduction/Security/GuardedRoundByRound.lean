@@ -18,13 +18,13 @@ facts a round-by-round proof needs about such a verifier.
   guarded verifier forces its guard to pass and the event to hold at its verdict. This discharges
   the terminal obligation `KnowledgeStateFunction.toFun_full`.
 * `Verifier.rbrKnowledgeSoundnessWith_of_two_message`: for a prover-message,
-  verifier-challenge protocol, worst-case round-by-round knowledge soundness
+  verifier-challenge protocol, round-by-round knowledge soundness
   (`Verifier.rbrKnowledgeSoundnessWith`) follows from a bound on the extraction-failure
   event `rbrExtractionFailureEvent` for every input statement and every length-one transcript
-  prefix, that is, every prover message. The averaged notion follows through
+  prefix, that is, every prover message. The prover-averaged notion follows through
   `Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged`.
 * `Verifier.rbrKnowledgeSoundnessWith_of_isEmpty_challengeIdx`: a protocol with no
-  verifier challenge is worst-case round-by-round knowledge sound at any extractor, knowledge-state
+  verifier challenge is round-by-round knowledge sound at any extractor, knowledge-state
   function and error, since there is no extraction-failure event to bound.
 
 The guarded form of a query-guard-return oracle verifier, which
@@ -70,10 +70,10 @@ theorem GuardedForm.check_and_of_prEvent_pos {n : ℕ} {pSpec : ProtocolSpec n}
     obtain ⟨s, -, hs⟩ := hx
     simp [StateT.run'_eq] at hs
 
-/-- **Worst-case round-by-round knowledge soundness of a message-then-challenge round.** For a
+/-- **Round-by-round knowledge soundness of a message-then-challenge round.** For a
 protocol in which the prover sends one message and the verifier then sends one challenge, a bound
 on the extraction-failure event at the challenge, for every input statement and every prover
-message, is worst-case round-by-round knowledge soundness at that error, with the given
+message, is round-by-round knowledge soundness at that error, with the given
 extractor and knowledge-state function. -/
 theorem rbrKnowledgeSoundnessWith_of_two_message {pSpec : ProtocolSpec 2}
     [∀ i, SampleableType (pSpec.Challenge i)]
@@ -95,9 +95,9 @@ theorem rbrKnowledgeSoundnessWith_of_two_message {pSpec : ProtocolSpec 2}
   · exact absurd (hDir0.symm.trans hj) (by decide)
   · exact hbound stmtIn transcript
 
-/-- **Worst-case round-by-round knowledge soundness without challenges.** A protocol with no
+/-- **Round-by-round knowledge soundness without challenges.** A protocol with no
 verifier challenge has no extraction-failure event to bound, so every extractor and
-knowledge-state function give worst-case round-by-round knowledge soundness, at any error. The
+knowledge-state function give round-by-round knowledge soundness, at any error. The
 substance of such a step lies in its knowledge-state function's obligations. -/
 theorem rbrKnowledgeSoundnessWith_of_isEmpty_challengeIdx {n : ℕ}
     {pSpec : ProtocolSpec n} [∀ i, SampleableType (pSpec.Challenge i)]

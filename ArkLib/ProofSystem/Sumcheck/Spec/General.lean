@@ -241,8 +241,8 @@ theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
     (fun _ _ => (deg : ℝ≥0) / Fintype.card R)
     (fun i => SingleRound.oracleVerifier_rbrKnowledgeSoundness i)
 
-/-- Round-by-round knowledge soundness with error `deg / |R|` per challenge for the full
-sum-check protocol. -/
+/-- Prover-averaged round-by-round knowledge soundness with error `deg / |R|` per challenge for
+the full sum-check protocol, a corollary of the fixed-prefix theorem. -/
 theorem oracleVerifier_rbrKnowledgeSoundnessAveraged [Fintype R] [IsDomain R] :
     (oracleVerifier R deg D n oSpec).rbrKnowledgeSoundnessAveraged init impl
       (relationRound R n deg D 0) (relationRound R n deg D (.last n))

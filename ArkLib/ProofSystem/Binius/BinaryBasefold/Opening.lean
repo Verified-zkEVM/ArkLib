@@ -21,7 +21,7 @@ public import ArkLib.ProofSystem.Binius.BinaryBasefold.Relations.Initial
 
 The opening protocol reformats an evaluation claim without communication, then runs the
 Binary Basefold core and query protocol. Exact first-codeword encodings give perfect completeness;
-unique-radius compatibility gives worst-case round-by-round knowledge soundness.
+unique-radius compatibility gives round-by-round knowledge soundness.
 The strict input relation uses exact first-codeword encodings; the relaxed input relation uses
 unique-decoding-radius compatibility.
 -/
@@ -164,7 +164,7 @@ def frontKnowledgeStateFunction {σ : Type} (init : ProbComp σ)
     simpa only [frontExtractor, Equiv.apply_symm_apply] using hp
 
 omit [SampleableType L] [DecidableEq K] in
-/-- Worst-case round-by-round security with no challenge positions. -/
+/-- Round-by-round security with no challenge positions. -/
 theorem frontVerifier_rbrKnowledgeSoundnessWith {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     Verifier.rbrKnowledgeSoundnessWith init impl
@@ -250,7 +250,7 @@ instance instChallengeSampleable (γ : ℕ) : ∀ j, SampleableType
       (h_ℓ_add_R_rate := h_rate)).Challenge j) :=
   instSampleableTypeChallengeAppend
 
-/-- Worst-case round-by-round knowledge soundness of the opening verifier. -/
+/-- Round-by-round knowledge soundness of the opening verifier. -/
 theorem openingVerifier_rbrKnowledgeSoundness (γ : ℕ) {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     Verifier.rbrKnowledgeSoundness init impl
@@ -391,7 +391,7 @@ def mliopcs (γ : ℕ) : MLIOPCS L ℓ where
     exact OracleProof.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged
       (openingVerifier_rbrKnowledgeSoundness K β id mlpWitnessEquiv γ init impl)
 
-/-- The multilinear opening protocol satisfies worst-case round-by-round security. -/
+/-- The multilinear opening protocol satisfies round-by-round security. -/
 theorem mliopcs_rbrKnowledgeSound (γ : ℕ) :
     (mliopcs K β γ (ϑ := ϑ) (h_rate := h_rate)).RbrKnowledgeSound := by
   intro σ init impl
@@ -422,7 +422,7 @@ def contextualStrictInputRelation (Context : Type) :=
   strictInputRelation K β (contextualQuery (L := L) (ℓ := ℓ) Context)
     (Equiv.refl (MultilinearPoly L ℓ)) (ϑ := ϑ) (h_rate := h_rate)
 
-/-- Worst-case round-by-round security for contextual evaluation opening. -/
+/-- Round-by-round security for contextual evaluation opening. -/
 theorem contextualVerifier_rbrKnowledgeSoundness (Context : Type) (γ : ℕ) {σ : Type}
     (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :

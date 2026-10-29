@@ -9,10 +9,10 @@ public import ArkLib.OracleReduction.Composition.Sequential.Append.StateFunction
 public import ArkLib.OracleReduction.Security.GuardedRoundByRound
 
 /-!
-# Worst-case round-by-round knowledge soundness of a guarded sequential composition
+# Round-by-round knowledge soundness of a guarded sequential composition
 
 If the first verifier is **guarded** (`Verifier.GuardedForm`: it returns a deterministic verdict
-when its check passes and aborts otherwise) and both components are worst-case round-by-round
+when its check passes and aborts otherwise) and both components are round-by-round
 knowledge sound, then so is their sequential composition, with each challenge's error inherited
 from its component. The components share only the intermediate relation.
 
@@ -34,7 +34,7 @@ function's `toFun_full` then applies.
   with the extractor and knowledge state function named, so that it iterates.
 * `Verifier.append_rbrKnowledgeSoundness_of_guarded_first` and
   `Verifier.append_rbrKnowledgeSoundnessAveraged_of_guarded_first`: the existential and
-  averaged corollaries, with `OracleVerifier` wrappers.
+  prover-averaged corollaries, with `OracleVerifier` wrappers.
 
 ## Supporting API
 
@@ -565,7 +565,7 @@ variable {ι : Type} {oSpec : OracleSpec ι} {Stmt₁ Wit₁ Stmt₂ Wit₂ Stmt
   {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
   {rel₁ : Set (Stmt₁ × Wit₁)} {rel₂ : Set (Stmt₂ × Wit₂)} {rel₃ : Set (Stmt₃ × Wit₃)}
 
-/-- **Worst-case round-by-round knowledge soundness composes when the first verifier is
+/-- **Round-by-round knowledge soundness composes when the first verifier is
 guarded.** The composed extractor is `Extractor.RoundByRound.append` at the first verifier's
 verdict map, and the composed knowledge state function is
 `KnowledgeStateFunction.appendGuarded`. The challenge error at each round is inherited from the
@@ -636,7 +636,7 @@ variable {ι : Type} {oSpec : OracleSpec ι}
   {rel₁ : Set ((Stmt₁ × ∀ i, OStmt₁ i) × Wit₁)} {rel₂ : Set ((Stmt₂ × ∀ i, OStmt₂ i) × Wit₂)}
   {rel₃ : Set ((Stmt₃ × ∀ i, OStmt₃ i) × Wit₃)}
 
-/-- Oracle verifiers inherit the guarded worst-case composition theorem through their ordinary
+/-- Oracle verifiers inherit the guarded fixed-prefix composition theorem through their ordinary
 verifier semantics. The guard and the component hypotheses concern the converted verifiers. -/
 theorem append_rbrKnowledgeSoundness_of_guarded_first
     (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)

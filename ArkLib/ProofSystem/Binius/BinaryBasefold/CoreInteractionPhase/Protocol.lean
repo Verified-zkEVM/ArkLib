@@ -22,7 +22,7 @@ fold-commit round, and the last block is `ϑ` fold-relay rounds.
 ## Main definitions and statements
 
 * `foldRelayOracleVerifier`, `foldCommitOracleVerifier` and their reductions: one round. Their
-  worst-case round-by-round knowledge soundness (`…_rbrKnowledgeSoundness`) comes from
+  round-by-round knowledge soundness (`…_rbrKnowledgeSoundness`) comes from
   the steps' theorems by `OracleVerifier.append_rbrKnowledgeSoundness_of_guarded_first`,
   guarded by the fold step's check; the averaged forms and perfect completeness are included. The
   error is the fold step's on its challenge, `foldRelayKnowledgeError` and
@@ -148,7 +148,7 @@ def foldRelayKnowledgeError (i : Fin ℓ) : (pSpecFoldRelay (L := L)).ChallengeI
     relayKnowledgeError ∘ ChallengeIdx.sumEquiv.symm
 
 omit [DecidableEq 𝔽q] in
-/-- Worst-case round-by-round knowledge soundness of the fold-relay round, from the round
+/-- Round-by-round knowledge soundness of the fold-relay round, from the round
 relation at `i` to the round relation at `i + 1`, with error `foldRelayKnowledgeError`. -/
 theorem foldRelayOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
     (hNCR : ¬ IsCommitmentRound ℓ ϑ i) :
@@ -257,7 +257,7 @@ def foldCommitKnowledgeError (i : Fin ℓ) :
     (commitKnowledgeError 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) ∘ ChallengeIdx.sumEquiv.symm
 
 omit [DecidableEq 𝔽q] in
-/-- Worst-case round-by-round knowledge soundness of the fold-commit round, from the round
+/-- Round-by-round knowledge soundness of the fold-commit round, from the round
 relation at `i` to the round relation at `i + 1`, with error `foldCommitKnowledgeError`. -/
 theorem foldCommitOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
     (hCR : IsCommitmentRound ℓ ϑ i) :

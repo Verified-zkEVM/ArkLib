@@ -8,7 +8,7 @@ module
 public import ArkLib.OracleReduction.Composition.Sequential.Append.StateFunction
 
 /-!
-# Worst-case round-by-round soundness of sequential composition
+# Round-by-round soundness of sequential composition
 
 Bounding every fixed transcript prefix avoids restricting an arbitrary combined prover to a
 component. A pure first verifier determines the intermediate statement at the seam. Its state
@@ -31,7 +31,7 @@ variable {ι : Type} {oSpec : OracleSpec ι}
   {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
   {lang₁ : Set Stmt₁} {lang₂ : Set Stmt₂} {lang₃ : Set Stmt₃}
 
-/-- Worst-case round-by-round soundness composes when the first verifier is pure. The
+/-- Round-by-round soundness composes when the first verifier is pure. The
 challenge error at each round is inherited from the corresponding component. No assumptions
 on an honest prover or on the shared oracle's state transitions are needed. -/
 theorem append_rbrSoundness_of_pure_first
@@ -123,8 +123,10 @@ variable {ι : Type} {oSpec : OracleSpec ι}
   {lang₁ : Set (Stmt₁ × ∀ i, OStmt₁ i)} {lang₂ : Set (Stmt₂ × ∀ i, OStmt₂ i)}
   {lang₃ : Set (Stmt₃ × ∀ i, OStmt₃ i)}
 
-/-- Oracle verifiers inherit the round-by-round composition theorem through their ordinary
-verifier semantics. The fixed-prefix hypotheses and purity concern those converted verifiers. -/
+/-- Oracle verifiers inherit the prover-averaged corollary of the round-by-round composition
+theorem through their ordinary verifier semantics: fixed-prefix component guarantees yield the
+prover-averaged composite guarantee. The fixed-prefix hypotheses and purity concern those converted
+verifiers. -/
 theorem append_rbrSoundnessAveraged_of_pure_first
     (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
     (V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂)

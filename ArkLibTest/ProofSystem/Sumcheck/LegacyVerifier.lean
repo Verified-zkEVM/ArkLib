@@ -154,7 +154,8 @@ depends on axioms:
 #print axioms Sumcheck.Spec.SingleRound.Simple.oracleVerifier_rbrKnowledgeSoundness
 
 /--
-info: 'Sumcheck.Spec.SingleRound.Simple.oracleVerifier_rbrKnowledgeSoundnessAveraged' depends on axioms:
+info: 'Sumcheck.Spec.SingleRound.Simple.oracleVerifier_rbrKnowledgeSoundnessAveraged'
+depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in

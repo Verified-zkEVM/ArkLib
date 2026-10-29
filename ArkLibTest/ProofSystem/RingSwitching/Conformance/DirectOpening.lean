@@ -17,15 +17,15 @@ itself (`oStmtIn`), so this is a transparent specification fixture rather than a
 The opening has no rounds: the verifier reads the polynomial from its
 oracle and accepts exactly when the claimed evaluation is its value at the claimed point.
 
-* `verifier_rbrKnowledgeSoundness`: the verifier is worst-case round-by-round knowledge
+* `verifier_rbrKnowledgeSoundness`: the verifier is round-by-round knowledge
   sound at `oStmtIn.toRelInput`, at every error. The extractor reads the witness off the oracle
   statement.
 * `oracleProof_perfectCompleteness`: the honest prover, which sends nothing, is accepted on every
   input with an honest oracle statement.
-* `mliopcs`: the opening as an `MLIOPCS`. Its averaged knowledge-soundness field is filled from the
-  worst-case proof by
+* `mliopcs`: the opening as an `MLIOPCS`. Its prover-averaged knowledge-soundness field is filled
+  from the fixed-prefix proof by
   `OracleProof.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged`, and
-  `mliopcs_rbrKnowledgeSound` is its worst-case hypothesis.
+  `mliopcs_rbrKnowledgeSound` is its fixed-prefix hypothesis.
 -/
 
 open OracleSpec OracleComp ProtocolSpec RingSwitching
@@ -65,7 +65,7 @@ theorem guardedForm_out_fst
     ((guardedForm (L := L) (ℓ' := ℓ')).out s tr).1 =
       decide (s.1.original_claim = MvPolynomial.eval s.1.t_eval_point (s.2 ()).val) := rfl
 
-/-- The opening verifier is worst-case round-by-round knowledge sound at every error: it has no
+/-- The opening verifier is round-by-round knowledge sound at every error: it has no
 challenges, and on acceptance the polynomial held by the oracle is a witness for the claim. -/
 theorem verifier_rbrKnowledgeSoundness {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
@@ -134,8 +134,8 @@ theorem oracleProof_perfectCompleteness {σ : Type} {init : ProbComp σ}
   rw [hout]
   rfl
 
-/-- The direct opening as an `MLIOPCS`, at error `0`. Its averaged round-by-round knowledge
-soundness field is filled from the worst-case proof. -/
+/-- The direct opening as an `MLIOPCS`, at error `0`. Its prover-averaged round-by-round
+knowledge soundness field is filled from the fixed-prefix proof. -/
 noncomputable def mliopcs : MLIOPCS L ℓ' where
   toAbstractOStmtIn := oStmtIn
   numRounds := 0
@@ -149,7 +149,8 @@ noncomputable def mliopcs : MLIOPCS L ℓ' where
     OracleProof.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged
       (verifier_rbrKnowledgeSoundness _ _ _)
 
-/-- The direct opening satisfies the worst-case hypothesis of the full ring-switching composite. -/
+/-- The direct opening satisfies the fixed-prefix hypothesis of the full ring-switching
+composite. -/
 theorem mliopcs_rbrKnowledgeSound :
     (mliopcs (L := L) (ℓ' := ℓ')).RbrKnowledgeSound :=
   verifier_rbrKnowledgeSoundness _ _ _
@@ -164,7 +165,7 @@ example (Context : Type) {σ : Type} (init : ProbComp σ)
       (init := init) (impl := impl) :=
   Packing.OpeningAdapter.perfectCompleteness _ Context init impl
 
-/-- The same adapter transports the general opening's worst-case certificate. -/
+/-- The same adapter transports the general opening's fixed-prefix certificate. -/
 example (Context : Type) {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     OracleProof.rbrKnowledgeSoundness init impl

@@ -25,7 +25,7 @@ sends the constant `c := f⁽ˡ⁾(0, …, 0)` and the verifier checks `s_ℓ = 
   multiplier `multiplier`.
 * `coreInteractionOracleReduction_perfectCompleteness`: perfect completeness from the strict round
   relation at round `0` to the strict final sum-check output relation.
-* `coreInteractionOracleVerifier_rbrKnowledgeSoundness`: worst-case round-by-round
+* `coreInteractionOracleVerifier_rbrKnowledgeSoundness`: round-by-round
   knowledge soundness from the round relation at round `0` to the final sum-check output
   relation, with error `coreInteractionOracleRbrKnowledgeError`; guarded by the checks of the
   sum-check-and-fold rounds (`sumcheckFoldOracleVerifierGuardedForm`). Its averaged form is
@@ -132,7 +132,7 @@ def coreInteractionOracleRbrKnowledgeError :
     (finalSumcheckKnowledgeError (L := L)) ∘ ChallengeIdx.sumEquiv.symm
 
 omit [DecidableEq 𝔽q] in
-/-- Worst-case round-by-round knowledge soundness of the core interaction, from the round relation
+/-- Round-by-round knowledge soundness of the core interaction, from the round relation
 at round `0` to the final sum-check output relation, with error
 `coreInteractionOracleRbrKnowledgeError`. -/
 theorem coreInteractionOracleVerifier_rbrKnowledgeSoundness :

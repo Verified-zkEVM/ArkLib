@@ -56,7 +56,7 @@ protocol; retaining `q` does not prove those restrictions.
 `RingSwitch.perfectCompleteness` uses a sampleable commutative challenge ring and the layout's
 reconstruction law. It does not require a separation certificate or no-zero-divisors assumption.
 
-`BatchingStrategy` adds a collision certificate to a rule. Full worst-case round-by-round
+`BatchingStrategy` adds a collision certificate to a rule. Full round-by-round
 knowledge soundness requires a finite sampleable challenge ring with no zero divisors,
 `pc.Functional`, and injectivity of `algebraMap P C`. Functionality fixes the compatible packed
 polynomial before each challenge. The explicit finite sum in `RingSwitch.rbrError_sum` is
@@ -95,13 +95,13 @@ no second certified phase implementation.
 `Binius/FRIBinius/RingSwitch` appends the Binary Basefold contextual opening. Its existing
 zero-round frontier projects the final evaluation and formats the witness, with no extra wire
 phase. Exact first-codeword encodings give completeness; unique-radius compatibility gives
-worst-case round-by-round security. `fullError_sum_le` transports the full challenge sum
+round-by-round security. `fullError_sum_le` transports the full challenge sum
 to the frontend loss plus the backend's closed-form upper bound. The concrete nonconstant
 `GF(16)/GF(2)` acceptance fixture instantiates both and bounds that sum strictly below one.
 
 `OpeningAdapter` converts a standard `MLIOPCS` to a contextual opening by a zero-round
-projection, with completeness and worst-case round-by-round security transport. Averaged
-corollaries follow from the framework's worst-case implication. Conversion to ordinary
+projection, with completeness and round-by-round security transport. Prover-averaged
+corollaries follow from the framework's fixed-prefix implication. Conversion to ordinary
 knowledge soundness remains admitted.
 
 The full `RingSwitch/{UnequalRankSuffix,Quirky}` fixtures use packing rank four over `GF(16)`, opening rank three

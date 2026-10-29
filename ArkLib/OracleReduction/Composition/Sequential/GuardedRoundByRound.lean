@@ -9,16 +9,16 @@ public import ArkLib.OracleReduction.Composition.Sequential.General
 public import ArkLib.OracleReduction.Composition.Sequential.Append.GuardedRoundByRound
 
 /-!
-# Worst-case round-by-round knowledge soundness of a finite guarded sequential composition
+# Round-by-round knowledge soundness of a finite guarded sequential composition
 
 `Verifier.seqCompose_rbrKnowledgeSoundnessWith_of_guarded`: if every component verifier is
-guarded and worst-case round-by-round knowledge sound between consecutive relations, so is their
+guarded and round-by-round knowledge sound between consecutive relations, so is their
 sequential composition. Each combined challenge's error is its component's, through
 `seqComposeChallengeIdxToSigma`. The proof iterates the binary
 `Verifier.append_rbrKnowledgeSoundnessWith_of_guarded_first`. The error bookkeeping of each
 step is `ProtocolSpec.apply_seqComposeChallengeIdxToSigma_eq_sumElim`.
 
-The existential and averaged corollaries and `OracleVerifier` wrappers are included.
+The existential and prover-averaged corollaries and `OracleVerifier` wrappers are included.
 -/
 
 @[expose] public section
@@ -31,7 +31,7 @@ namespace Verifier
 variable {ι : Type} {oSpec : OracleSpec ι}
   {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
-/-- Named worst-case round-by-round certificates compose along a finite guarded chain.
+/-- Named round-by-round certificates compose along a finite guarded chain.
 The extractor and knowledge state iterate guarded append with a terminal identity; the error
 of each combined challenge is its component error under `seqComposeChallengeIdxToSigma`.
 Every guard is used, including the last component's guard before the terminal identity. -/

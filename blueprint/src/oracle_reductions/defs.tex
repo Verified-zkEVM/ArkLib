@@ -458,15 +458,17 @@ For knowledge soundness, we need to consider different types of extractors that 
 
 \begin{definition}[Round-by-Round Extractor]
     \label{def:rbr_extractor}
-    A \textbf{round-by-round extractor} with index $m$ is given:
+    Given intermediate witness types $W_0, \ldots, W_n$, a \textbf{round-by-round extractor}
+    extracts the input witness backward from the output witness, one round at a time. It consists
+    of three functions, each also given the input statement $x_{\text{in}}$:
     \begin{itemize}
-        \item the input statement $x_{\text{in}}$,
-        \item a partial transcript of length $m$,
-        \item the prover's query log
+        \item $\mathsf{extractOut}$ maps a full transcript and an output witness to an
+        intermediate witness in $W_n$;
+        \item $\mathsf{extractMid}$, for each round $m < n$, maps the transcript up to round $m+1$
+        and an intermediate witness in $W_{m+1}$ to one in $W_m$;
+        \item $\mathsf{extractIn}$ maps an intermediate witness in $W_0$ to an input witness.
     \end{itemize}
-    and returns a witness to the statement.
-
-    Note that the RBR extractor does not need to take in the output statement or witness.
+    The extractor reads no query log.
     \lean{Extractor.RoundByRound}
     \uses{def:transcript}
 \end{definition}
@@ -592,18 +594,18 @@ To define round-by-round (knowledge) soundness, we need to define the notion of 
     \begin{itemize}
         \item there exists a state function for the verifier and the input/output languages, such that
         \item for all initial statements $x_{\text{in}} \notin L_{\text{in}}$,
-        \item for all initial witnesses,
-        \item for all provers,
         \item for all challenge rounds $i$,
+        \item for all transcript prefixes $\tau$ up to round $i$,
     \end{itemize}
-    the probability that:
+    the probability, over the next challenge $c$ chosen uniformly at random, that:
     \begin{itemize}
-        \item the state function is false for the partial transcript output by the prover
-        \item the state function is true for the partial transcript appended by next challenge (chosen randomly)
+        \item the state function is false at $\tau$, and
+        \item the state function is true at $\tau$ extended by $c$
     \end{itemize}
-    is at most $\epsilon(i)$.
-    \lean{Verifier.rbrSoundnessAveraged}
-    \uses{def:verifier, def:state_function, def:prover_run_to_round}
+    is at most $\epsilon(i)$. This is the formulation of~\cite{CCHLRRW19} and~\cite{ABF26}, and
+    the form in which the library's principal protocol proofs establish round-by-round security.
+    \lean{Verifier.rbrSoundness}
+    \uses{def:verifier, def:state_function}
 \end{definition}
 
 \begin{definition}[Round-by-Round Knowledge Soundness]
@@ -611,23 +613,35 @@ To define round-by-round (knowledge) soundness, we need to define the notion of 
     A protocol with verifier $\mathcal{V}$ satisfies \textbf{round-by-round knowledge soundness} with respect to input
     relation $R_{\text{in}}$, output relation $R_{\text{out}}$, and error function $\epsilon: \text{ChallengeIdx} \to \mathbb{R}_{\geq 0}$ if:
     \begin{itemize}
-        \item there exists a knowledge state function for the verifier and the languages of the input/output relations,
-        \item there exists a round-by-round extractor,
+        \item there exist a family of intermediate witness types, a round-by-round extractor, and a
+        knowledge state function for the verifier and the input/output relations, such that
         \item for all initial statements,
-        \item for all initial witnesses,
-        \item for all provers,
         \item for all challenge rounds $i$,
+        \item for all transcript prefixes $\tau$ up to round $i$,
     \end{itemize}
-    the probability that:
+    the probability, over the next challenge $c$ chosen uniformly at random, that some
+    intermediate witness $w$ satisfies:
     \begin{itemize}
-        \item the extracted witness does not satisfy the input relation
-        \item the state function is false for the partial transcript output by the prover
-        \item the state function is true for the partial transcript appended by next challenge (chosen randomly)
+        \item the knowledge state function is true for $w$ at $\tau$ extended by $c$, and
+        \item it is false at $\tau$ for the witness extracted back from $w$
     \end{itemize}
-    is at most $\epsilon(i)$.
-    \lean{Verifier.rbrKnowledgeSoundnessAveraged}
-    \uses{def:verifier, def:knowledge_state_function, def:rbr_extractor, def:prover_run_to_round}
+    is at most $\epsilon(i)$. As for round-by-round soundness, the bound holds at every fixed
+    transcript prefix.
+    \lean{Verifier.rbrKnowledgeSoundness}
+    \uses{def:verifier, def:knowledge_state_function, def:rbr_extractor}
 \end{definition}
+
+\begin{remark}[Prover-Averaged Variants]
+    The library also defines prover-averaged variants of both notions, in which the prefix is
+    produced by running a prover up to round $i$ and the bound is on the resulting mixture. The
+    fixed-prefix notions imply their prover-averaged variants with the same error, since the next
+    challenge is drawn independently of the prefix; the converse fails.
+    \lean{Verifier.rbrSoundnessAveraged, Verifier.rbrKnowledgeSoundnessAveraged,
+      Verifier.rbrSoundness_implies_rbrSoundnessAveraged,
+      Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged}
+    \uses{def:round_by_round_soundness, def:round_by_round_knowledge_soundness,
+      def:prover_run_to_round}
+\end{remark}
 
 % \begin{remark}[Alternative Formulations of RBR Knowledge Soundness]
 %     There are different ways to formulate round-by-round knowledge soundness, differing in whether
@@ -670,7 +684,7 @@ fixes the output witness before a randomized verifier runs, so the usual argumen
 
 \begin{theorem}[RBR Soundness Implies Soundness]
     \label{thm:rbr_soundness_implies_soundness}
-    For a guarded verifier, fixed-prefix round-by-round soundness with error function $\epsilon$
+    For a guarded verifier, round-by-round soundness with error function $\epsilon$
     implies soundness with error $\sum_i \epsilon(i)$, where the sum is over all challenge rounds
     $i$.
     \lean{Verifier.GuardedForm.soundness_of_rbrSoundness}
@@ -681,13 +695,13 @@ fixes the output witness before a randomized verifier runs, so the usual argumen
     \label{thm:rbr_knowledge_soundness_implies_rbr_soundness}
     Round-by-round knowledge soundness with error function $\epsilon$ implies round-by-round
     soundness with the same error function $\epsilon$.
-    \lean{Verifier.rbrKnowledgeSoundnessAveraged_implies_rbrSoundnessAveraged}
+    \lean{Verifier.rbrKnowledgeSoundness_implies_rbrSoundness}
     \uses{def:round_by_round_knowledge_soundness, def:round_by_round_soundness}
 \end{theorem}
 
 \begin{theorem}[RBR Knowledge Soundness Implies Knowledge Soundness]
     \label{thm:rbr_knowledge_soundness_implies_knowledge_soundness}
-    For a guarded verifier, fixed-prefix round-by-round knowledge soundness with error function
+    For a guarded verifier, round-by-round knowledge soundness with error function
     $\epsilon$ implies knowledge soundness with error $\sum_i \epsilon(i)$, where the sum is over
     all challenge rounds $i$. The extractor folds the round-by-round extractor backward along the
     transcript.
@@ -748,7 +762,7 @@ For oracle reductions, the security definitions are analogous to those for stand
     \label{def:oracle_verifier_rbr_soundness}
     Round-by-round soundness of an oracle verifier is defined by converting it to a standard verifier
     and applying the standard round-by-round soundness definition.
-    \lean{OracleVerifier.rbrSoundnessAveraged}
+    \lean{OracleVerifier.rbrSoundness}
     \uses{def:oracle_verifier, def:round_by_round_soundness, def:oracle_verifier_to_verifier}
 \end{definition}
 
@@ -756,7 +770,7 @@ For oracle reductions, the security definitions are analogous to those for stand
     \label{def:oracle_verifier_rbr_knowledge_soundness}
     Round-by-round knowledge soundness of an oracle verifier is defined by converting it to a standard
     verifier and applying the standard round-by-round knowledge soundness definition.
-    \lean{OracleVerifier.rbrKnowledgeSoundnessAveraged}
+    \lean{OracleVerifier.rbrKnowledgeSoundness}
     \uses{def:oracle_verifier, def:round_by_round_knowledge_soundness, def:oracle_verifier_to_verifier}
 \end{definition}
 
@@ -856,13 +870,13 @@ By default, the properties we consider are perfect completeness and (straightlin
 
 % \begin{definition}[Round-by-Round Soundness]
 %     \label{def:round_by_round_soundness}
-%     \lean{Verifier.rbrSoundnessAveraged}
+%     \lean{Verifier.rbrSoundness}
 %     \uses{def:oracle_reduction}
 % \end{definition}
 
 % \begin{definition}[Round-by-Round Knowledge Soundness]
 %     \label{def:round_by_round_knowledge_soundness}
-%     \lean{Verifier.rbrKnowledgeSoundnessAveraged}
+%     \lean{Verifier.rbrKnowledgeSoundness}
 %     \uses{def:oracle_reduction}
 % \end{definition}
 

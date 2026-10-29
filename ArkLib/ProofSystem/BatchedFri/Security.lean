@@ -263,7 +263,7 @@ def batchStateFunction
       stmt tr (fun out ↦ out ∈ (outputRelation s d hdom δ).language)).mp hpos
     exact hnot hp.2
 
-/-- Worst-case round-by-round soundness for the batching verifier. There are no prover
+/-- Round-by-round soundness for the batching verifier. There are no prover
 messages; the only transition is the uniformly sampled seed. -/
 theorem round_soundness
     (hdom : 2 ^ (∑ i, (s i).1) * d ≤ 2 ^ n) (δ ε : ℝ≥0)

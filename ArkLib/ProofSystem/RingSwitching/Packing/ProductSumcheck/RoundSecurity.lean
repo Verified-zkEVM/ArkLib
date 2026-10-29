@@ -104,7 +104,8 @@ def knowledgeStateFunction {σ : Type} (init : ProbComp σ)
 def rbrError [Fintype C] (_j : (pSpec C).ChallengeIdx) : ℝ≥0 :=
   2 / Fintype.card C
 
-/-- Worst-case knowledge soundness at every fixed transcript prefix, with the round extractor. -/
+/-- Round-by-round knowledge soundness at every fixed transcript prefix, with the round
+extractor. -/
 theorem rbrKnowledgeSoundnessWith [NoZeroDivisors C] [Fintype C] [SampleableType C]
     (hfunctional : pc.Functional) {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :

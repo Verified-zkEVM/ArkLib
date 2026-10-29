@@ -35,7 +35,7 @@ def loopRbrError [Fintype C] : (loopSpec C m).ChallengeIdx → ℝ≥0 :=
 theorem loopRbrError_eq [Fintype C] (i : (loopSpec C m).ChallengeIdx) :
     loopRbrError (C := C) i = 2 / Fintype.card C := rfl
 
-/-- The finite loop is worst-case round-by-round knowledge sound. -/
+/-- The finite loop is round-by-round knowledge sound. -/
 theorem loop_rbrKnowledgeSoundness [NoZeroDivisors C] [Fintype C] [SampleableType C]
     (hfunctional : pc.Functional) {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
@@ -68,7 +68,7 @@ theorem rbrError_eq [Fintype C] (i : (pSpec C m).ChallengeIdx) :
     subst j
     contradiction
 
-/-- Worst-case round-by-round knowledge soundness on the original commitment opening. -/
+/-- Round-by-round knowledge soundness on the original commitment opening. -/
 theorem rbrKnowledgeSoundness [NoZeroDivisors C] [Fintype C] [SampleableType C]
     (hfunctional : pc.Functional) {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :

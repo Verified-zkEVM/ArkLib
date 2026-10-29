@@ -18,8 +18,8 @@ The original query and batching challenge remain beside that final evaluation cl
 
 The program sends one encoded component family, one degree-two polynomial per retained variable,
 and the final value. It samples one batching challenge and one scalar per retained variable.
-Completeness holds over commutative rings using an operational batching rule. Worst-case
-round-by-round knowledge soundness uses a certified strategy, functional commitment semantics,
+Completeness holds over commutative rings using an operational batching rule. Round-by-round
+knowledge soundness uses a certified strategy, functional commitment semantics,
 injective packed-coefficient transport and a finite challenge ring with no zero divisors.
 The challenge-index error sum is exactly `bat.error + m * (2 / card C)`, including `m = 0`.
 -/
@@ -166,7 +166,7 @@ theorem rbrError_tail [Fintype C] (i : (ProductSumcheck.pSpec C m).ChallengeIdx)
   simp only [rbrError, Function.comp_apply, Equiv.symm_apply_apply, Sum.elim_inr]
   exact ProductSumcheck.rbrError_eq i
 
-/-- The concrete reduction is worst-case round-by-round knowledge sound on the original opening. -/
+/-- The concrete reduction is round-by-round knowledge sound on the original opening. -/
 theorem rbrKnowledgeSoundness [NoZeroDivisors C] [Fintype C] [SampleableType C]
     (hfunctional : pc.Functional) (hinj : Function.Injective (algebraMap data.P C))
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
@@ -220,7 +220,7 @@ theorem append_rbrError_sum [Fintype C] {n : ℕ} (openingSpec : ProtocolSpec n)
   simp only [Sum.elim_inl, Sum.elim_inr]
   rw [rbrError_sum]
 
-/-- Completeness and worst-case round-by-round knowledge soundness with total challenge error `ε +
+/-- Completeness and round-by-round knowledge soundness with total challenge error `ε +
   2m/|C|`. -/
 theorem perfectCompleteness_and_rbrKnowledgeSoundness
     [NoZeroDivisors C] [Fintype C] [SampleableType C]
@@ -265,7 +265,7 @@ theorem append_perfectCompleteness [SampleableType C]
   · exact perfectCompleteness data m layout messageEquiv rule pc init impl
   · exact hopening
 
-/-- A contextual opening with worst-case round-by-round knowledge soundness closes the reduction. -/
+/-- A contextual opening with round-by-round knowledge soundness closes the reduction. -/
 theorem append_rbrKnowledgeSoundness [NoZeroDivisors C] [Fintype C]
     [SampleableType C] (bat : BatchingStrategy C data.ιE) (pc : PackedCommitment data.P m)
     (hfunctional : pc.Functional) (hinj : Function.Injective (algebraMap data.P C))

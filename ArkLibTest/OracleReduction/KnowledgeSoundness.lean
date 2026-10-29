@@ -20,7 +20,7 @@ variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 -- Proof-system witnesses need not be Boolean.
 example : Prop := Proof.knowledgeSoundness init impl relation verifier 0
 
-example : Prop := Proof.rbrKnowledgeSoundnessAveraged init impl relation verifier (fun _ => 0)
+example : Prop := Proof.rbrKnowledgeSoundness init impl relation verifier (fun _ => 0)
 
 -- A noncomputable classical selector is a straightline extractor: the type bounds no cost.
 noncomputable example : Extractor.Straightline oSpec Nat Nat Bool pSpec :=

@@ -25,7 +25,7 @@ unique witness consistent with the first oracle, but agrees with it at the chall
   polynomial, the extraction failure probability over the challenge alone is at most
   `foldKnowledgeError`, the Schwartz–Zippel term `2 / |L|` plus the bound of
   `prob_incrementalFoldingBadEvent_fresh_le` on the fresh incremental folding bad event.
-* `foldOracleVerifier_rbrKnowledgeSoundnessWith`: worst-case round-by-round knowledge
+* `foldOracleVerifier_rbrKnowledgeSoundnessWith`: round-by-round knowledge
   soundness at `foldRbrExtractor`, `foldKnowledgeStateFunction` and `foldKnowledgeError`;
   `foldOracleVerifier_rbrKnowledgeSoundness` and
   `foldOracleVerifier_rbrKnowledgeSoundnessAveraged` are its existential and averaged forms.
@@ -893,7 +893,7 @@ lemma prob_foldStep_rbrExtractionFailureEvent_le (i : Fin ℓ)
       simp
 
 omit [DecidableEq 𝔽q] in
-/-- Worst-case round-by-round knowledge soundness of the fold step, at the extractor
+/-- Round-by-round knowledge soundness of the fold step, at the extractor
 `foldRbrExtractor`, the knowledge-state function `foldKnowledgeStateFunction` and the error
 `foldKnowledgeError`: for every input statement and every sent round polynomial, the extraction
 failure probability over the challenge alone is at most the Schwartz–Zippel term plus the fresh
@@ -921,7 +921,7 @@ theorem foldOracleVerifier_rbrKnowledgeSoundnessWith (i : Fin ℓ) :
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
 
 omit [DecidableEq 𝔽q] in
-/-- Worst-case round-by-round knowledge soundness of the fold step, with error
+/-- Round-by-round knowledge soundness of the fold step, with error
 `foldKnowledgeError`: the existential form of
 `foldOracleVerifier_rbrKnowledgeSoundnessWith`. -/
 theorem foldOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ) :

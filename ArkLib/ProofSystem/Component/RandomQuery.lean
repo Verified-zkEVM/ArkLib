@@ -251,7 +251,8 @@ instance : Fintype ((pSpec OStatement).Challenge ⟨0, by simp⟩) := by
 
 open NNReal
 
-/-- The `RandomQuery` oracle reduction is round-by-round knowledge sound.
+/-- The `RandomQuery` oracle reduction is prover-averaged round-by-round knowledge sound; the
+  proof first establishes the fixed-prefix bound.
 
   The key fact governing the soundness of this reduction is a property of the form
   `∀ a b : OStatement, a ≠ b → #{q | oracle a q = oracle b q} ≤ d`.

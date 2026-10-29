@@ -26,7 +26,7 @@ oracle to the oracle statements. The step sends no challenge.
   is the content of the step's knowledge soundness
   (`hasIncrementalBadEvent_commit_step_backward`,
   `oracleFoldingConsistent_commit_step_backward`).
-* `commitOracleVerifier_rbrKnowledgeSoundnessWith`: worst-case round-by-round knowledge
+* `commitOracleVerifier_rbrKnowledgeSoundnessWith`: round-by-round knowledge
   soundness at `commitRbrExtractor` and `commitKnowledgeStateFunction`, with existential and
   averaged forms.
 
@@ -338,7 +338,7 @@ def commitKnowledgeStateFunction (i : Fin ℓ) (hCR : IsCommitmentRound ℓ ϑ i
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hCR).check_and_of_prEvent_pos h).2
 
 omit [SampleableType L] [DecidableEq 𝔽q] in
-/-- Worst-case round-by-round knowledge soundness of the commit step, at the extractor
+/-- Round-by-round knowledge soundness of the commit step, at the extractor
 `commitRbrExtractor`, the knowledge-state function `commitKnowledgeStateFunction` and the error
 `commitKnowledgeError`. The step sends no challenge, so there is no extraction-failure event to
 bound; the content is the knowledge-state function's obligations. -/
@@ -359,7 +359,7 @@ theorem commitOracleVerifier_rbrKnowledgeSoundnessWith (i : Fin ℓ)
   Verifier.rbrKnowledgeSoundnessWith_of_isEmpty_challengeIdx _ _
 
 omit [SampleableType L] [DecidableEq 𝔽q] in
-/-- Worst-case round-by-round knowledge soundness of the commit step: the existential form of
+/-- Round-by-round knowledge soundness of the commit step: the existential form of
 `commitOracleVerifier_rbrKnowledgeSoundnessWith`. -/
 theorem commitOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
     (hCR : IsCommitmentRound ℓ ϑ i) :
