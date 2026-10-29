@@ -96,6 +96,24 @@ theorem IsSubspaceDesign.mono_tau {ι : Type*} [Fintype ι]
     IsSubspaceDesign s τ₂ C := fun r A hAC hAr =>
   (h r A hAC hAr).trans (mul_le_mul_of_nonneg_left (hτ r) (Nat.cast_nonneg _))
 
+/-- A nonzero subspace-design code has a nonnegative profile at every positive dimension. -/
+theorem IsSubspaceDesign.profile_nonneg {ι : Type*} [Fintype ι]
+    {F : Type*} [Field F] {s : ℕ} {τ : ℕ → ℝ}
+    {C : Submodule F (ι → Fin s → F)}
+    (h : IsSubspaceDesign s τ C) (hC : C ≠ ⊥) {r : ℕ} (hr : 0 < r) :
+    0 ≤ τ r := by
+  classical
+  obtain ⟨a, haC, ha0⟩ := Submodule.exists_mem_ne_zero_of_ne_bot hC
+  let A : Submodule F (ι → Fin s → F) := Submodule.span F {a}
+  have hA1 : Module.finrank F A = 1 := finrank_span_singleton ha0
+  have hdes := h r A ((Submodule.span_singleton_le_iff_mem a C).mpr haC)
+    (by rw [hA1]; exact hr)
+  have hleft : (0 : ℝ) ≤
+      (∑ i : ι, (Module.finrank F ↥(A ⊓ LinearMap.ker
+        (LinearMap.proj (R := F) (φ := fun _ : ι ↦ Fin s → F) i)) : ℝ)) /
+          Fintype.card ι := by positivity
+  simpa [hA1] using hleft.trans hdes
+
 /-- The kernel of the `i`-th projection is the set of words vanishing at `i`. This is the
 comprehension form of the subspace `Aᵢ` appearing in `IsSubspaceDesign`. -/
 lemma ker_proj_eq_vanish_at {ι : Type*} {F : Type*} [Semiring F] {s : ℕ} (i : ι) :

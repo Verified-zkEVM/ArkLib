@@ -8,14 +8,17 @@ module
 public import ArkLib.Data.CodingTheory.ProximityGenerator.MCAGenerator
 public import ArkLib.Data.CodingTheory.ProximityGenerator.ExceptionalSet
 public import Mathlib.Combinatorics.Enumerative.DoubleCounting
+public import ArkLib.Data.Finset.PairwiseIntersection
+public import ArkLib.Data.Finset.TupleIntersection
 
 /-!
 # Mutual correlated agreement for MDS generators
 
 Every MDS generator whose code has full dimension `ℓ ≥ 2` has mutual correlated agreement for
-every module code, with error `mdsMCAError`. The unique-decoding regime is proved
-(`mcaError_le_mdsMCAError_of_lt`); of the list-decoding regime, the maximal-domain lemmas
-(Lemmas 6.4–6.6 [BCGM25]) are proved and the final count is open.
+every module code, with error `mdsMCAError` (Theorem 6.1 [BCGM25]). Both regimes are proved:
+the unique-decoding regime by `mcaError_le_mdsMCAError_of_lt`, the list-decoding regime by the
+seed count `card_filter_isMCA_le_of_isMDSGenerator_of_le_one_sub`, which partitions the bad seeds
+and bounds the parts by Claims 6.7–6.9 [BCGM25].
 
 ## Main statements
 
@@ -42,9 +45,18 @@ every module code, with error `mdsMCAError`. The unique-decoding regime is prove
   a large maximal CA domain intersect exactly in it (Lemma 6.5 [BCGM25]).
 * `sum_card_sdiff_le_pred_mul_card_compl_of_isMDSGenerator` — maximal agreement domains at
   distinct seeds containing a large maximal CA domain `A₀` have total size at most
-  `(ℓ - 1)·|A₀ᶜ|` outside `A₀`.
+  `(ℓ - 1)·|A₀ᶜ|` outside `A₀`; this is the form Claim 6.9 consumes.
 * `card_le_pred_mul_card_compl_of_isMDSGenerator` — at most `(ℓ - 1)·|A₀ᶜ|` seeds have a maximal
   agreement domain strictly containing the maximal CA domain `A₀` (Lemma 6.6 [BCGM25]).
+* `card_filter_isMaxCADomain_mul_le_one` — at most `1 / η` maximal CA domains are large
+  (Claim 6.7 [BCGM25]), by the Corrádi bound.
+* `card_le_of_ssubset_isMaxAgreementDomain_of_isMDSGenerator` — few seeds strictly extend a large
+  maximal CA domain (Claim 6.8 [BCGM25]).
+* `card_mul_le_of_forall_not_subset_of_isMDSGenerator` — few seeds avoid every large maximal CA
+  domain (Claim 6.9 [BCGM25]), via the dense-intersection lemma
+  `Finset.exists_injective_two_mul_card_filter_lt_card_inf_inter`.
+* `card_filter_isMCA_le_of_isMDSGenerator_of_le_one_sub` — the seed count behind the
+  list-decoding regime.
 * `isMCAGenerator_of_isMDSGenerator` — MCA for MDS generators at every radius (Theorem 6.1
   [BCGM25]).
 
@@ -112,6 +124,27 @@ lemma mdsMCAError_congr [DecidableEq F] [Nonempty ι] {A' : Type} [DecidableEq A
     mdsMCAError MC' ℓ s η = mdsMCAError MC ℓ s η := by
   unfold mdsMCAError
   rw [hδ]
+
+/-- **The list-decoding branch has no degenerate cases.** If a radius `γ ≥ 0` lies in the
+list-decoding branch of `mdsMCAError`, that is `δ / (L + 1) ≤ γ ≤ 1 - (1 - δ + η) ^ (1 / (L + 1))`,
+then `ρ + η < 1` strictly, where `ρ = 1 - δ`.
+
+So the branch never meets `ρ + η = 1`, where the radii `1 - (ρ + η) ^ (1 / L)` and
+`1 - (ρ + η) ^ (1 / (L + 1))` coincide and the margin
+`(ρ + η) ^ (1 / (L + 1)) - (ρ + η) ^ (1 / L)` in `mdsMCAError` vanishes; nor `δ = 0`. If
+`ρ + η ≥ 1`, the upper limit is at most `0`, so `γ = 0`, so `δ ≤ 0`; then `ρ + η ≥ 1 + η > 1`
+puts the upper limit strictly below `0`, contradicting `γ ≥ 0`. -/
+lemma one_sub_add_lt_one_of_le_one_sub_rpow (δ η γ : ℝ) (L : ℕ) (hη : 0 < η) (hγ0 : 0 ≤ γ)
+    (hlow : δ / (L + 1) ≤ γ) (hup : γ ≤ 1 - (1 - δ + η) ^ (1 / (L + 1) : ℝ)) :
+    1 - δ + η < 1 := by
+  by_contra! h
+  have hexp : (0 : ℝ) < 1 / (L + 1) := by positivity
+  have hγ : γ = 0 := le_antisymm (by linarith [Real.one_le_rpow h hexp.le]) hγ0
+  have hδ : δ ≤ 0 := by
+    have hL : (0 : ℝ) < L + 1 := by positivity
+    have := hγ ▸ hlow
+    rwa [div_le_iff₀ hL, zero_mul] at this
+  linarith [Real.one_lt_rpow (show (1 : ℝ) < 1 - δ + η by linarith) hexp]
 
 /-- A nonzero `v : ℓ → F` is orthogonal to `G x` for at most `|ℓ| - 1` seeds `x`: the codeword
 `x ↦ G x ⬝ᵥ v` of `C_G` is nonzero, since `C_G` has dimension `|ℓ|`, so its weight is at least the
@@ -535,6 +568,268 @@ lemma card_le_pred_mul_card_compl_of_isMDSGenerator {S : Type} [Nonempty S] [Fin
   simpa using Finset.card_nsmul_le_sum Finset.univ (fun t => (B t \ A₀).card) 1
     fun t _ => Finset.card_pos.mpr (Finset.sdiff_nonempty.mpr (hA₀B t).not_subset)
 
+omit [Fintype ℓ] in
+open Classical in
+/-- **Claim 6.7 [BCGM25].** Let `0 ≤ α ≤ 1` and `η > 0` with `ρ + η ≤ α²`, and suppose the code's
+distance `d_C` satisfies `n - d_C ≤ n · ρ`. Then at most `1 / η` maximal CA domains between `U` and
+the code have at least `n · α` positions; stated division-free as `m · η ≤ 1`. -/
+lemma card_filter_isMaxCADomain_mul_le_one [Nonempty ι] (MC : ModuleCode ι F A)
+    (U : ℓ → (ι → A)) {α ρ η : ℝ} (hα0 : 0 ≤ α) (hα1 : α ≤ 1) (hη : 0 < η)
+    (hgap : ρ + η ≤ α * α)
+    (hd : ((Fintype.card ι - Code.minDist MC.carrier) : ℝ) ≤ Fintype.card ι * ρ) :
+    ((Finset.univ.filter fun A₀ : Finset ι =>
+        IsMaxCADomain MC U A₀ ∧ (Fintype.card ι : ℝ) * α ≤ A₀.card).card : ℝ) * η ≤ 1 := by
+  set n := Fintype.card ι
+  set D := n - Code.minDist MC.carrier
+  set a := ⌈(n : ℝ) * α⌉₊
+  set Fam := Finset.univ.filter fun A₀ : Finset ι =>
+    IsMaxCADomain MC U A₀ ∧ (n : ℝ) * α ≤ A₀.card
+  have hnR : (0 : ℝ) < n := by exact_mod_cast Fintype.card_pos
+  have hαa : (n : ℝ) * α ≤ a := Nat.le_ceil _
+  have hanR : (a : ℝ) ≤ n := by exact_mod_cast (Nat.ceil_le.mpr (by nlinarith) : a ≤ n)
+  have hρα : ρ < α := by nlinarith
+  have hαsq : ((n : ℝ) * α) * ((n : ℝ) * α) ≤ a * a :=
+    mul_le_mul hαa hαa (by positivity) (Nat.cast_nonneg a)
+  have hgapn : (n : ℝ) * n * (ρ + η) ≤ n * n * (α * α) :=
+    mul_le_mul_of_nonneg_left hgap (by positivity)
+  have hdle : Code.minDist MC.carrier ≤ n := by
+    rw [← Code.dist_eq_minDist]
+    exact Code.dist_le_card _
+  have hdn : (n : ℝ) * D ≤ n * (n * ρ) :=
+    mul_le_mul_of_nonneg_left (by rw [Nat.cast_sub hdle]; exact hd) hnR.le
+  have hDa : D ≤ a := by exact_mod_cast (by nlinarith : (D : ℝ) ≤ a)
+  have hpos : n * D < a * a := by
+    exact_mod_cast (by nlinarith [mul_pos (mul_pos hnR hnR) hη] : (n : ℝ) * D < a * a)
+  have hcorr := Finset.card_mul_sq_sub_card_mul_le_of_inter_card_le Fam id a D hDa hpos
+    (fun A₀ hA₀ => Nat.ceil_le.mpr (Finset.mem_filter.mp hA₀).2.2)
+    (fun A₁ h₁ A₂ h₂ hne => by
+      by_contra! hlt
+      refine hne (IsMaxCADomain.eq_of_card_compl_inter_lt_minDist
+        (Finset.mem_filter.mp h₁).2.1 (Finset.mem_filter.mp h₂).2.1 ?_)
+      have hle : (A₁ ∩ A₂).card ≤ n := Finset.card_le_univ _
+      rw [Finset.card_compl]
+      simp only [id] at hlt
+      omega)
+  simp only [show Fintype.card ι = n from rfl] at hcorr
+  rify [hpos.le, hDa] at hcorr
+  have hden : (n : ℝ) ^ 2 * η ≤ (a : ℝ) * a - n * D := by nlinarith
+  have hnum : (n : ℝ) * ((a : ℝ) - D) ≤ (n : ℝ) ^ 2 := by
+    nlinarith [(Nat.cast_nonneg D : (0 : ℝ) ≤ D)]
+  have key : (Fam.card : ℝ) * ((n : ℝ) ^ 2 * η) ≤ (n : ℝ) ^ 2 :=
+    (mul_le_mul_of_nonneg_left hden (Nat.cast_nonneg _)).trans (hcorr.trans hnum)
+  nlinarith [key, pow_pos hnR 2]
+
+open Classical in
+/-- **Claim 6.8 [BCGM25].**  Fix a maximal CA domain `A₀` with at least `n · α` positions and fewer
+than `d_C` missing, and a set `Bad` of seeds whose maximal agreement domains `T x` strictly contain
+`A₀`. Then `|Bad| ≤ n · (1 - α) · (|ℓ| - 1)`. -/
+lemma card_le_of_ssubset_isMaxAgreementDomain_of_isMDSGenerator {S : Type} [Nonempty S]
+    [Fintype S] [DecidableEq F] (G : Generator S ℓ F) (hG : IsMDSGenerator G)
+    (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
+    (hℓ : 1 ≤ Fintype.card ℓ) (MC : ModuleCode ι F A) (U : ℓ → (ι → A)) {A₀ : Finset ι}
+    (hA₀ : IsMaxCADomain MC U A₀) (hcard : (A₀ᶜ).card < Code.minDist MC.carrier) {α : ℝ}
+    (hα : (Fintype.card ι : ℝ) * α ≤ A₀.card) (Bad : Finset S) (T : S → Finset ι)
+    (hT : ∀ x ∈ Bad, IsMaxAgreementDomain MC (fun i => ∑ j, G x j • U j i) (T x))
+    (hsub : ∀ x ∈ Bad, A₀ ⊂ T x) :
+    (Bad.card : ℝ) ≤ Fintype.card ι * (1 - α) * (Fintype.card ℓ - 1) := by
+  have h := card_le_pred_mul_card_compl_of_isMDSGenerator G hG hdim MC U
+    (τ := {x // x ∈ Bad}) (xs := Subtype.val) Subtype.val_injective hA₀ hcard
+    (B := fun t => T t.1) (fun t => hT t.1 t.2) (fun t => hsub t.1 t.2)
+  rw [Fintype.card_coe] at h
+  rify [hℓ] at h
+  have hcompl : ((A₀ᶜ).card : ℝ) ≤ Fintype.card ι * (1 - α) := by
+    rw [Finset.card_compl, Nat.cast_sub (Finset.card_le_univ A₀)]
+    linarith
+  calc (Bad.card : ℝ) ≤ ((Fintype.card ℓ : ℝ) - 1) * (A₀ᶜ).card := h
+    _ ≤ ((Fintype.card ℓ : ℝ) - 1) * (Fintype.card ι * (1 - α)) :=
+        mul_le_mul_of_nonneg_left hcompl (sub_nonneg.mpr (Nat.one_le_cast.mpr hℓ))
+    _ = Fintype.card ι * (1 - α) * (Fintype.card ℓ - 1) := by ring
+
+open Classical in
+/-- **Claim 6.9 [BCGM25].**  Let `Bad` be seeds whose maximal agreement domains `T x` have at least
+`n · β` positions but contain no maximal CA domain with `n · α` positions. Then
+`|Bad| ≤ max (2 · (|ℓ| - 1) / (η · (β - α))) (|ℓ| · (|ℓ| + 1) / η)`, stated division-free as the
+disjunction of the two cleared bounds. -/
+lemma card_mul_le_of_forall_not_subset_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S]
+    [DecidableEq F] [Nonempty ι] (G : Generator S ℓ F) (hG : IsMDSGenerator G)
+    (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
+    (hℓ : 2 ≤ Fintype.card ℓ) (MC : ModuleCode ι F A) (U : ℓ → (ι → A))
+    {α β ρ η : ℝ} (hρ : 0 ≤ ρ) (hαβ : α < β) (hβ0 : 0 ≤ β)
+    (hpow : ρ + η ≤ β ^ (Fintype.card ℓ + 1))
+    (hd : (Fintype.card ι : ℝ) * (1 - ρ) ≤ Code.minDist MC.carrier)
+    (Bad : Finset S) (T : S → Finset ι)
+    (hT : ∀ x ∈ Bad, IsMaxAgreementDomain MC (fun i => ∑ j, G x j • U j i) (T x))
+    (hlarge : ∀ x ∈ Bad, (Fintype.card ι : ℝ) * β ≤ (T x).card)
+    (hB2 : ∀ x ∈ Bad, ∀ A₀ : Finset ι, IsMaxCADomain MC U A₀ →
+      (Fintype.card ι : ℝ) * α ≤ A₀.card → ¬ A₀ ⊆ T x) :
+    (Bad.card : ℝ) * η * (β - α) ≤ 2 * (Fintype.card ℓ - 1)
+      ∨ (Bad.card : ℝ) * η ≤ Fintype.card ℓ * (Fintype.card ℓ + 1) := by
+  by_contra! hcon
+  obtain ⟨hN1, hN2⟩ := hcon
+  set n := Fintype.card ι
+  set L := Fintype.card ℓ
+  have hnR : (0 : ℝ) < n := by exact_mod_cast Fintype.card_pos
+  have hBadη : (0 : ℝ) < Bad.card * η := lt_of_le_of_lt (by positivity) hN2
+  have hchoose : 2 * L.choose 2 ≤ L * (L + 1) := by
+    rw [Nat.choose_two_right]
+    calc 2 * (L * (L - 1) / 2) ≤ L * (L - 1) := Nat.mul_div_le _ _
+      _ ≤ L * (L + 1) := Nat.mul_le_mul_left _ (by omega)
+  obtain ⟨ys, hys, hgood⟩ := Finset.exists_injective_two_mul_card_filter_lt_card_inf_inter
+    (β := {x // x ∈ Bad}) (κ := ℓ) (fun x => T x.1) (μ := n * β) (θ := n * ρ) (η := η)
+    (by positivity) (by positivity) (fun x => hlarge x.1 x.2)
+    (by
+      calc (n : ℝ) ^ L * (n * ρ + n * η) = (n : ℝ) ^ (L + 1) * (ρ + η) := by ring
+        _ ≤ (n : ℝ) ^ (L + 1) * β ^ (L + 1) := mul_le_mul_of_nonneg_left hpow (by positivity)
+        _ = ((n : ℝ) * β) ^ (L + 1) := (mul_pow _ _ _).symm)
+    (by rw [Fintype.card_coe]
+        exact lt_of_le_of_lt (by exact_mod_cast hchoose) hN2)
+  rw [Fintype.card_coe] at hgood
+  have hxs : Function.Injective fun i => (ys i).1 := Subtype.val_injective.comp hys
+  have hTxs : ∀ i, IsMaxAgreementDomain MC (fun k => ∑ j, G (ys i).1 j • U j k) (T (ys i).1) :=
+    fun i => hT _ (ys i).2
+  have hmiss : ∀ X : Finset ι, (n : ℝ) * ρ < X.card → (Xᶜ).card < Code.minDist MC.carrier := by
+    intro X hX
+    have h : ((Xᶜ).card : ℝ) < Code.minDist MC.carrier := by
+      rw [Finset.card_compl, Nat.cast_sub (Finset.card_le_univ X)]
+      linarith
+    exact_mod_cast h
+  set Good := Finset.univ.filter fun x : {x // x ∈ Bad} =>
+    (n : ℝ) * ρ < (((Finset.univ.inf fun i => T (ys i).1) ∩ T x.1).card : ℝ)
+  obtain ⟨x₀, hx₀⟩ := Finset.card_pos.mp (Nat.cast_pos.mp (by linarith : (0 : ℝ) < Good.card))
+  have hAcompl : ((Finset.univ.inf fun i => T (ys i).1)ᶜ).card < Code.minDist MC.carrier := by
+    refine hmiss _ (lt_of_lt_of_le (Finset.mem_filter.mp hx₀).2 ?_)
+    exact_mod_cast Finset.card_le_card Finset.inter_subset_left
+  have hAmax : IsMaxCADomain MC U (Finset.univ.inf fun i => T (ys i).1) :=
+    isMaxCADomain_inf_of_isMDSGenerator G hG hdim MC U hxs hTxs hAcompl
+  have hAsmall : ((Finset.univ.inf fun i => T (ys i).1).card : ℝ) < n * α := by
+    by_contra! h
+    have i₀ : ℓ := Classical.choice (Fintype.card_pos_iff.mp (by omega))
+    exact hB2 _ (ys i₀).2 _ hAmax h (Finset.inf_le (Finset.mem_univ i₀))
+  set Cnt := Bad.filter fun x => (Finset.univ.inf fun i => T (ys i).1) ⊆ T x
+  have hGoodCnt : Good.card ≤ Cnt.card := by
+    refine Finset.card_le_card_of_injOn (fun x => x.1) (fun x hx => ?_)
+      (Subtype.val_injective.injOn)
+    refine Finset.mem_filter.mpr ⟨x.2, ?_⟩
+    exact subset_isMaxAgreementDomain_of_isMDSGenerator G hG hdim MC U hxs hTxs (hT x.1 x.2)
+      (hmiss _ (Finset.mem_filter.mp hx).2)
+      ((mem_projectedCodeSubmod_iff MC _ _).mpr <| projectedCode_linearCombination MC _ U
+        (G x.1) fun j => (mem_projectedCodeSubmod_iff MC _ _).mp (hAmax.prop j))
+      (by rwa [Finset.inter_self])
+  have hwA : (Finset.univ.inf fun i => T (ys i).1).card ≤ ⌈(n : ℝ) * β⌉₊ := by
+    exact_mod_cast hAsmall.le.trans
+      ((mul_le_mul_of_nonneg_left hαβ.le hnR.le).trans (Nat.le_ceil _))
+  have hcnt := (Finset.card_nsmul_le_sum (Finset.univ : Finset {x // x ∈ Cnt})
+      (fun t => (T t.1 \ Finset.univ.inf fun i => T (ys i).1).card)
+      (⌈(n : ℝ) * β⌉₊ - (Finset.univ.inf fun i => T (ys i).1).card)
+      (fun t _ => (Nat.sub_le_sub_right
+        (Nat.ceil_le.mpr (hlarge t.1 (Finset.mem_filter.mp t.2).1)) _).trans
+        (Finset.le_card_sdiff _ _))).trans
+    (sum_card_sdiff_le_pred_mul_card_compl_of_isMDSGenerator G hG hdim MC U
+      (τ := {x // x ∈ Cnt}) (xs := Subtype.val) Subtype.val_injective hAmax hAcompl
+      (B := fun t => T t.1) (fun t => hT t.1 (Finset.mem_filter.mp t.2).1)
+      (fun t => (Finset.mem_filter.mp t.2).2))
+  rw [smul_eq_mul, Finset.card_univ, Fintype.card_coe] at hcnt
+  simp only [show Fintype.card ℓ = L from rfl] at hcnt
+  rify [hwA, (le_trans one_le_two hℓ : 1 ≤ L)] at hcnt
+  have hwR : (n : ℝ) * (β - α)
+      ≤ (⌈(n : ℝ) * β⌉₊ : ℝ) - (Finset.univ.inf fun i => T (ys i).1).card := by
+    linarith [Nat.le_ceil ((n : ℝ) * β)]
+  have hcomplR : (((Finset.univ.inf fun i => T (ys i).1)ᶜ).card : ℝ) ≤ n := by
+    exact_mod_cast Finset.card_le_univ _
+  have hCntβ : (Cnt.card : ℝ) * (β - α) ≤ (L : ℝ) - 1 := by
+    nlinarith [hcnt, mul_le_mul_of_nonneg_left hwR (Nat.cast_nonneg Cnt.card),
+      mul_le_mul_of_nonneg_left hcomplR
+        (sub_nonneg.mpr (Nat.one_le_cast.mpr (le_trans one_le_two hℓ)))]
+  have hGoodR : (Good.card : ℝ) ≤ Cnt.card := by exact_mod_cast hGoodCnt
+  nlinarith [mul_le_mul_of_nonneg_right hGoodR (sub_nonneg.mpr hαβ.le)]
+
+open Classical in
+/-- **The list-decoding seed count of Theorem 6.1 [BCGM25].** At a radius `γ ≤ 1 - β`, at most
+`n · (1 - α) · (|ℓ| - 1) / η + max (2 · (|ℓ| - 1) / (η · (β - α))) (|ℓ| · (|ℓ| + 1) / η)`
+seeds witness the MCA event for a fixed family `U`. -/
+lemma card_filter_isMCA_le_of_isMDSGenerator_of_le_one_sub {S : Type} [Nonempty S] [Fintype S]
+    [DecidableEq F] [Nonempty ι] (G : Generator S ℓ F) (hG : IsMDSGenerator G)
+    (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
+    (hℓ : 2 ≤ Fintype.card ℓ) (MC : ModuleCode ι F A) (U : ℓ → (ι → A))
+    {α β ρ η γ : ℝ} (hρ : 0 ≤ ρ) (hη : 0 < η) (hα0 : 0 ≤ α) (hα1 : α ≤ 1) (hαβ : α < β)
+    (hβ0 : 0 ≤ β) (hgap : ρ + η ≤ α * α) (hpow : ρ + η ≤ β ^ (Fintype.card ℓ + 1))
+    (hd : (Fintype.card ι : ℝ) * (1 - ρ) ≤ Code.minDist MC.carrier) (hγ : γ ≤ 1 - β) :
+    ((Finset.univ.filter fun x => IsMCA G MC x U γ).card : ℝ)
+      ≤ Fintype.card ι * (1 - α) * (Fintype.card ℓ - 1) / η
+        + max (2 * (Fintype.card ℓ - 1) / (η * (β - α)))
+            (Fintype.card ℓ * (Fintype.card ℓ + 1) / η) := by
+  set n := Fintype.card ι
+  set L := Fintype.card ℓ
+  set Bad := Finset.univ.filter fun x => IsMCA G MC x U γ
+  have hnR : (0 : ℝ) < n := by exact_mod_cast Fintype.card_pos
+  have hL1R : (1 : ℝ) ≤ L := Nat.one_le_cast.mpr (by omega)
+  have hρα : ρ < α := by nlinarith
+  have hext : ∀ x ∈ Bad, ∃ T : Finset ι,
+      IsMaxAgreementDomain MC (fun i => ∑ j, G x j • U j i) T ∧ (n : ℝ) * β ≤ T.card ∧
+        ∃ j, projectedWord (U j) T ∉ projectedCodeSubmod MC T := by
+    intro x hx
+    obtain ⟨T₀, hT₀, hmem, j, hj⟩ := (Finset.mem_filter.mp hx).2
+    obtain ⟨T, hT₀T, hTmax⟩ := exists_subset_isMaxAgreementDomain MC hmem
+    refine ⟨T, hTmax, ?_, j, fun hjT => hj ?_⟩
+    · calc (n : ℝ) * β ≤ n * (1 - γ) := mul_le_mul_of_nonneg_left (by linarith) hnR.le
+        _ ≤ T₀.card := hT₀
+        _ ≤ T.card := by exact_mod_cast Finset.card_le_card hT₀T
+    · obtain ⟨c, hc, hcT⟩ := (mem_projectedCodeSubmod_iff MC T _).mp hjT
+      exact (mem_projectedCodeSubmod_iff MC T₀ _).mpr
+        ⟨c, hc, funext fun i => congrFun hcT ⟨i.1, hT₀T i.2⟩⟩
+  choose! Tx hTmax hTlarge hTbad using hext
+  set Large := Finset.univ.filter fun A₀ : Finset ι =>
+    IsMaxCADomain MC U A₀ ∧ (n : ℝ) * α ≤ A₀.card
+  set B1 := Bad.filter fun x => ∃ A₀ ∈ Large, A₀ ⊆ Tx x
+  set B2 := Bad.filter fun x => ¬ ∃ A₀ ∈ Large, A₀ ⊆ Tx x
+  have hsplit : (Bad.card : ℝ) = B1.card + B2.card := by
+    exact_mod_cast (Finset.card_filter_add_card_filter_not (s := Bad) fun x =>
+      ∃ A₀ ∈ Large, A₀ ⊆ Tx x).symm
+  have hLarge : (Large.card : ℝ) * η ≤ 1 :=
+    card_filter_isMaxCADomain_mul_le_one MC U hα0 hα1 hη hgap (by linarith)
+  have hK : (0 : ℝ) ≤ n * (1 - α) * (L - 1) :=
+    mul_nonneg (mul_nonneg hnR.le (by linarith)) (by linarith)
+  have hper : ∀ A₀ ∈ Large,
+      ((Bad.filter fun x => A₀ ⊆ Tx x).card : ℝ) ≤ n * (1 - α) * (L - 1) := by
+    intro A₀ hA₀
+    obtain ⟨hAmax, hAlarge⟩ := (Finset.mem_filter.mp hA₀).2
+    have hAcompl : (A₀ᶜ).card < Code.minDist MC.carrier := by
+      rw [← Nat.cast_lt (α := ℝ), Finset.card_compl, Nat.cast_sub (Finset.card_le_univ _)]
+      nlinarith
+    refine card_le_of_ssubset_isMaxAgreementDomain_of_isMDSGenerator G hG hdim (by omega) MC U
+      hAmax hAcompl hAlarge _ Tx (fun x hx => hTmax x (Finset.mem_filter.mp hx).1) ?_
+    intro x hx
+    obtain ⟨hxBad, hsubx⟩ := Finset.mem_filter.mp hx
+    refine Finset.ssubset_iff_subset_ne.mpr ⟨hsubx, fun heq => ?_⟩
+    obtain ⟨j, hj⟩ := hTbad x hxBad
+    exact hj (heq ▸ hAmax.prop j)
+  have hcover : B1 ⊆ Large.biUnion fun A₀ => Bad.filter fun x => A₀ ⊆ Tx x := by
+    intro x hx
+    obtain ⟨hxBad, A₀, hA₀, hsubx⟩ := Finset.mem_filter.mp hx
+    exact Finset.mem_biUnion.mpr ⟨A₀, hA₀, Finset.mem_filter.mpr ⟨hxBad, hsubx⟩⟩
+  have hB1 : (B1.card : ℝ) ≤ Large.card * (n * (1 - α) * (L - 1)) :=
+    calc (B1.card : ℝ)
+        ≤ ∑ A₀ ∈ Large, ((Bad.filter fun x => A₀ ⊆ Tx x).card : ℝ) := by
+          exact_mod_cast (Finset.card_le_card hcover).trans Finset.card_biUnion_le
+      _ ≤ ∑ _A₀ ∈ Large, (n * (1 - α) * (L - 1) : ℝ) := Finset.sum_le_sum hper
+      _ = Large.card * (n * (1 - α) * (L - 1)) := by rw [Finset.sum_const, nsmul_eq_mul]
+  have hB1R : (B1.card : ℝ) ≤ n * (1 - α) * (L - 1) / η := by
+    rw [le_div_iff₀ hη]
+    nlinarith [mul_le_mul_of_nonneg_right hB1 hη.le, mul_le_mul_of_nonneg_right hLarge hK]
+  have hB2 := card_mul_le_of_forall_not_subset_of_isMDSGenerator G hG hdim hℓ MC U hρ hαβ hβ0
+    hpow hd B2 Tx (fun x hx => hTmax x (Finset.mem_filter.mp hx).1)
+    (fun x hx => hTlarge x (Finset.mem_filter.mp hx).1)
+    (fun x hx A₀ hAmax hAlarge hsubx => (Finset.mem_filter.mp hx).2
+      ⟨A₀, Finset.mem_filter.mpr ⟨Finset.mem_univ _, hAmax, hAlarge⟩, hsubx⟩)
+  have hB2R : (B2.card : ℝ) ≤ max (2 * (L - 1) / (η * (β - α))) (L * (L + 1) / η) := by
+    rcases hB2 with h | h
+    · exact le_max_of_le_left
+        (by rw [le_div_iff₀ (mul_pos hη (sub_pos.mpr hαβ))]; linarith)
+    · exact le_max_of_le_right (by rw [le_div_iff₀ hη]; linarith)
+  rw [hsplit]
+  linarith
+
+
 /-- Every MDS generator whose code has full dimension `ℓ ≥ 2` has MCA for every module code `MC`,
 with error `mdsMCAError MC ℓ |S| η`, for every slack `0 < η < 1`. The generator-matrix hypotheses
 constrain `G` over the base field only; the tested code's alphabet is any `F`-module.
@@ -550,4 +845,51 @@ theorem isMCAGenerator_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S]
   intro γ
   by_cases hγ : (γ : ℝ) < (Code.minRelHammingDistCode MC.carrier : ℝ) / (Fintype.card ℓ + 1)
   · exact mcaError_le_mdsMCAError_of_lt G hG hdim hℓ MC η γ hγ
-  · sorry
+  simp only [mdsMCAError]
+  split_ifs with hup
+  · have hδq := congrArg (Rat.cast (K := ℝ))
+      (Code.minDist_div_card_eq_minRelHammingDistCode MC.carrier)
+    push_cast at hδq
+    have hδ1 : (Code.minRelHammingDistCode MC.carrier : ℝ) ≤ 1 := by
+      exact_mod_cast Code.minRelHammingDistCode_le_one
+    set δ : ℝ := (Code.minRelHammingDistCode MC.carrier : ℝ) with hδ_def
+    set L := Fintype.card ℓ with hL_def
+    set n := Fintype.card ι with hn_def
+    set ρ : ℝ := 1 - δ with hρ_def
+    set α : ℝ := (ρ + η) ^ (1 / L : ℝ) with hα_def
+    set β : ℝ := (ρ + η) ^ (1 / (L + 1) : ℝ) with hβ_def
+    have hnR : (0 : ℝ) < n := by exact_mod_cast Fintype.card_pos
+    have hρ : 0 ≤ ρ := by linarith
+    have hlt1 : ρ + η < 1 :=
+      one_sub_add_lt_one_of_le_one_sub_rpow δ η γ L hη.1 γ.2.1 (not_lt.mp hγ) hup
+    have hb : 0 < ρ + η := by linarith [hη.1]
+    have hα0 : 0 ≤ α := Real.rpow_nonneg hb.le _
+    have hα1 : α ≤ 1 := Real.rpow_le_one hb.le hlt1.le (by positivity)
+    have hLR : (0 : ℝ) < L := by exact_mod_cast (by omega : 0 < L)
+    have hαβ : α < β := Real.rpow_lt_rpow_of_exponent_gt hb hlt1 <| by
+      rw [div_lt_div_iff₀ (by positivity) hLR]; linarith
+    have hβ0 : 0 ≤ β := Real.rpow_nonneg hb.le _
+    have hgap : ρ + η ≤ α * α := by
+      have hαα : α * α = (ρ + η) ^ (2 / L : ℝ) := by
+        rw [hα_def, ← Real.rpow_add hb]; congr 1; ring
+      rw [hαα]
+      exact Real.self_le_rpow_of_le_one hb.le hlt1.le
+        (by rw [div_le_one hLR]; exact_mod_cast hℓ)
+    have hpow : ρ + η ≤ β ^ (L + 1) := by
+      have h := Real.rpow_inv_natCast_pow hb.le (Nat.succ_ne_zero L)
+      push_cast at h
+      rw [hβ_def, one_div, h]
+    have hd : (n : ℝ) * (1 - ρ) ≤ Code.minDist MC.carrier := by
+      rw [hρ_def, sub_sub_cancel, ← hδq, mul_div_cancel₀ _ hnR.ne']
+    refine (mcaError_le_of_exists_exceptional_set G MC γ
+      (n * (1 - α) * (L - 1) / η + max (2 * (L - 1) / (η * (β - α))) (L * (L + 1) / η))
+      fun U => ⟨_, card_filter_isMCA_le_of_isMDSGenerator_of_le_one_sub G hG hdim hℓ MC U hρ
+        hη.1 hα0 hα1 hαβ hβ0 hgap hpow (by convert hd) hup,
+        fun x hx h => hx (by simpa using h)⟩).trans (le_of_eq ?_)
+    unfold ENNReal.ofReal
+    congr 2
+    rw [add_div, ← max_div_div_right (Nat.cast_nonneg _)]
+    simp only [div_div]
+    congr 1
+    ring
+  · simpa using mcaError_le_one G MC γ

@@ -45,7 +45,6 @@ interpolant with explicit challenge-degree and height bounds.
 ## References
 
 * [DKT26]
-* [DKTZ26]
 -/
 
 @[expose] public section

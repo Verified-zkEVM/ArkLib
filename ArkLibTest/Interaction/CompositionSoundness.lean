@@ -6,7 +6,7 @@ Authors: Quang Dao
 import ArkLib.Interaction.CompositionSoundness
 import VCVio.OracleComp.Constructions.SampleableType
 import VCVio.OracleComp.EvalDist.Measure
-import VCVio.OracleComp.Constructions.SampleableType.NativeMeasure
+import VCVio.OracleComp.Constructions.SampleableType.Measure
 import VCVio.EvalDist.ProbabilityBounds
 import Mathlib.Data.ZMod.Basic
 
@@ -76,10 +76,10 @@ theorem guess_soundness {m : Type → Type} [Monad m] [LawfulMonad m]
         return prior ∨ guess = sample)
       (fun sample => guess = sample) (fun truth => truth) (by
         intro sample hne
-        simpa only [bind_assoc, pure_bind] using
+        simpa only [bind_assoc, pure_bind, prEvent_norm, id_map'] using
           (prEvent_const_of_not (respond sample) (show ¬ (prior ∨ guess = sample) by
             simp [hprior, hne])))
-    simpa only [bind_pure] using hb.trans (hsample guess)
+    simpa only [prEvent_norm, id_map'] using hb.trans (hsample guess)
   have h := prEvent_bind_le_of_forall_le prover
     (fun chosen => do
       let sample ← challenge
@@ -87,10 +87,10 @@ theorem guess_soundness {m : Type → Type} [Monad m] [LawfulMonad m]
       return prior ∨ chosen.1 = sample) (fun truth => truth) (by
       intro chosen
       convert hlocal chosen using 1
-      simp only [bind_pure]
+      simp only [prEvent_norm, id_map']
       rfl)
   convert h using 1
-  simp only [bind_pure]
+  simp only [prEvent_norm, id_map']
   rfl
 
 /-- A fresh uniform field challenge matches every fixed guess with mass `1/17`. -/
@@ -148,15 +148,10 @@ noncomputable section
 
 @[reducible] def branchSpec : OracleSpec Unit := fun _ => Fin 3
 
-instance branchRangeMeasurable (t : branchSpec.Domain) : MeasurableSpace (branchSpec.Range t) := ⊤
-
-instance branchRangeDiscrete (t : branchSpec.Domain) :
-    DiscreteMeasurableSpace (branchSpec.Range t) := ⟨fun _ => trivial⟩
-
 def branchMeasure : Measure (Fin 3) :=
   (1 / 2 : ENNReal) • Measure.dirac 0 + (1 / 2 : ENNReal) • Measure.dirac 1
 
-instance : OracleSpec.IsMeasureSpec branchSpec where
+instance : OracleSpec.AnswerMeasure branchSpec where
   toMeasure _ := branchMeasure
   isProbabilityMeasure _ := by
     constructor
@@ -201,7 +196,8 @@ theorem prefix_measure : 𝒟[run tree roles (StrategyOver.TwoParty.Focal.splitP
     prefixVerifier] =
       (1 / 2 : ENNReal) • Measure.dirac (boundary 0) +
         (1 / 2 : ENNReal) • Measure.dirac (boundary 1) := by
-  rw [prefix_execution, evalDist_bind_of_discrete, OracleComp.evalDist_query]
+  rw [prefix_execution, evalDist_bind_of_discrete, OracleComp.evalDist_query (spec := branchSpec),
+    MeasureTheory.trim_eq_self]
   change Measure.bind branchMeasure _ = _
   simp only [evalDist_pure]
   rw [Measure.bind_dirac_eq_map _ Measurable.of_discrete]
@@ -302,7 +298,8 @@ theorem finishWithQuery_mass (path : TypeTree.Path (tree.append (fun _ => TypeTr
     Pr{let answer ← finishWithQuery path () accepted}[answer = true] =
       if accepted then (1 / 2 : ENNReal) else 0 := by
   unfold finishWithQuery
-  rw [prEvent_bind_eq_lintegral_of_discrete, OracleComp.evalDist_query]
+  rw [prEvent_bind_eq_lintegral_of_discrete, OracleComp.evalDist_query (spec := branchSpec),
+    MeasureTheory.trim_eq_self]
   change (∫⁻ sample : Fin 3,
     Pr{let answer ← (pure (accepted && sample == 1) : M Bool)}[answer = true]
       ∂branchMeasure) = _

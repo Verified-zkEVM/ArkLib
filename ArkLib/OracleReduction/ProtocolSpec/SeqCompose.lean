@@ -232,6 +232,18 @@ def snd (T : FullTranscript (pSpec₁ ++ₚ pSpec₂)) : FullTranscript pSpec₂
     simpa [ProtocolSpec.append, Fin.vappend_eq_append, Fin.append_right]
       using T (Fin.natAdd m i)
 
+/-- The left projection only transports the type of the original transcript entry. -/
+theorem fst_apply_heq (tr : FullTranscript (pSpec₁ ++ₚ pSpec₂)) (i : Fin m) :
+    HEq (tr.fst i) (tr (Fin.castAdd n i)) := by
+  unfold fst
+  exact cast_heq _ _
+
+/-- The right projection only transports the type of the original transcript entry. -/
+theorem snd_apply_heq (tr : FullTranscript (pSpec₁ ++ₚ pSpec₂)) (i : Fin n) :
+    HEq (tr.snd i) (tr (Fin.natAdd m i)) := by
+  unfold snd
+  exact cast_heq _ _
+
 @[simp]
 theorem append_fst (T₁ : FullTranscript pSpec₁) (T₂ : FullTranscript pSpec₂) :
     (T₁ ++ₜ T₂).fst = T₁ := by
@@ -345,6 +357,13 @@ theorem ChallengeIdx.sumEquiv_symm_inr (i₂ : ChallengeIdx pSpec₂) :
       = Sum.inr i₂ := by
   rw [Equiv.symm_apply_eq]; simp
 
+/-- A sum over the challenge indices of an appended protocol of a function given on each part,
+read back through `ChallengeIdx.sumEquiv`, is the sum of the two parts' sums. -/
+theorem ChallengeIdx.sum_sumElim_comp_sumEquiv_symm {M : Type*} [AddCommMonoid M]
+    (f : ChallengeIdx pSpec₁ → M) (g : ChallengeIdx pSpec₂ → M) :
+    ∑ k, (Sum.elim f g ∘ ChallengeIdx.sumEquiv.symm) k = ∑ k, f k + ∑ k, g k :=
+  (Equiv.sum_comp ChallengeIdx.sumEquiv.symm (Sum.elim f g)).trans (Fintype.sum_sum_type _)
+
 /-- Sequential composition of a family of `ProtocolSpec`s, indexed by `i : Fin m`.
 
 Defined for definitional equality, so that:
@@ -434,6 +453,30 @@ theorem seqCompose_embedSum {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, Protoc
     {T : ∀ i, FullTranscript (pSpec i)} (i : Fin m) (j : Fin (n i)) :
     seqCompose T (Fin.embedSum i j) = cast (by simp) (T i j) := by
   simp [seqCompose, cast]; congr 1
+
+/-- Recover one component transcript from a sequentially composed transcript. -/
+def component {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    (tr : FullTranscript (ProtocolSpec.seqCompose pSpec)) (i : Fin m) :
+    FullTranscript (pSpec i) := fun j ↦
+  cast (by simp [ProtocolSpec.seqCompose]) (tr (Fin.embedSum i j))
+
+/-- Component extraction transports the type, without altering the stored entry. -/
+theorem component_apply_heq {m : ℕ} {n : Fin m → ℕ}
+    {pSpec : ∀ i, ProtocolSpec (n i)}
+    (tr : FullTranscript (ProtocolSpec.seqCompose pSpec)) (i : Fin m) (j : Fin (n i)) :
+    HEq (component tr i j) (tr (Fin.embedSum i j)) :=
+  cast_heq _ _
+
+/-- Component extraction loses no information, including for an empty composition. -/
+@[simp]
+theorem seqCompose_component {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    (tr : FullTranscript (ProtocolSpec.seqCompose pSpec)) :
+    seqCompose (component tr) = tr := by
+  funext j
+  obtain ⟨⟨i, j⟩, rfl⟩ := Fin.finSum'FinEquiv'.surjective j
+  simp only [Fin.finSum'FinEquiv', Equiv.coe_fn_mk]
+  rw [seqCompose_embedSum]
+  simp only [component, cast_cast, cast_eq]
 
 end FullTranscript
 
@@ -535,8 +578,8 @@ instance lawfulSubSpec_challenge_append_right :
 round index is `< m` and a right-injected one is `≥ m`. This is what rules out the two components'
 challenge queries aliasing each other after composition.
 
-Currently unconsumed: recorded because `Verifier.append_soundness` will need it, and because VCV-io
-ships the analogue for `spec₁ + spec₂`. -/
+This records structural disjointness of the challenge inclusions, analogous to the VCV-io
+instance for `spec₁ + spec₂`; ordinary append soundness uses run decomposition instead. -/
 instance disjointSubSpec_challenge_append_left_right :
     OracleSpec.DisjointSubSpec
       [pSpec₁.Challenge]ₒ [pSpec₂.Challenge]ₒ [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ :=
@@ -667,6 +710,17 @@ def seqComposeChallengeEquiv {m : ℕ} {n : Fin m → ℕ} (pSpec : ∀ i, Proto
     rfl
   right_inv := by intro; simp [seqComposeChallengeIdxToSigma, sigmaChallengeIdxToSeqCompose]
 
+/-- A sum over the challenge indices of a sequential composition of a function given component
+by component, read back through `seqComposeChallengeIdxToSigma`, is the sum over the components
+of their sums. -/
+theorem sum_seqComposeChallengeIdxToSigma {m : ℕ} {n : Fin m → ℕ}
+    {pSpec : ∀ i, ProtocolSpec (n i)} {M : Type*} [AddCommMonoid M]
+    (f : ∀ i, (pSpec i).ChallengeIdx → M) :
+    ∑ k : (seqCompose pSpec).ChallengeIdx,
+      (let ij := seqComposeChallengeIdxToSigma k; f ij.1 ij.2) = ∑ i, ∑ k, f i k :=
+  (Equiv.sum_comp (seqComposeChallengeEquiv pSpec).symm (fun ij => f ij.1 ij.2)).trans
+    (Fintype.sum_sigma _)
+
 def sigmaMessageIdxToSeqCompose {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
     (i : Fin m) (j : (pSpec i).MessageIdx) : (seqCompose pSpec).MessageIdx :=
   ⟨Fin.embedSum i j.1, by simp [j.property]⟩
@@ -701,6 +755,20 @@ instance {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
   fun ⟨k, h⟩ => Fin.fflatten₂
     (A := Direction) (B := Type) (F := fun dir type => (h : dir = .V_to_P) → SampleableType type)
     (fun i' j' h' => inst i' ⟨j', h'⟩) k h
+
+/-- **Instance pin.** At `m + 1` components, the `SampleableType` instance of a sequential
+composition's challenges is the `++ₚ` instance of its head and tail. It holds by `rfl`, since
+`Fin.fflatten₂` unfolds to `Fin.fappend₂` one component at a time. Inductive proofs that peel the
+head with `append` rewrite with it, so a change to either instance fails here rather than inside
+those proofs. -/
+theorem instSampleableTypeChallengeSeqCompose_succ {m : ℕ} {n : Fin (m + 1) → ℕ}
+    {pSpec : ∀ i, ProtocolSpec (n i)} [inst : ∀ i, ∀ j, SampleableType ((pSpec i).Challenge j)] :
+    (instSampleableTypeChallengeSeqCompose :
+        ∀ k, SampleableType ((seqCompose pSpec).Challenge k)) =
+      (instSampleableTypeChallengeAppend (pSpec₁ := pSpec 0)
+        (pSpec₂ := seqCompose fun i => pSpec i.succ) :
+        ∀ k, SampleableType ((seqCompose pSpec).Challenge k)) :=
+  rfl
 
 instance {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
     [inst : ∀ i, ∀ j, Inhabited ((pSpec i).Challenge j)] :

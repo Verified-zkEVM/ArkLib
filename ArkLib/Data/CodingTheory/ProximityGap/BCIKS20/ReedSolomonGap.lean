@@ -187,8 +187,8 @@ theorem proximity_gap_RSCodes {k t : ℕ} [NeZero k] [NeZero t] {deg : ℕ} {dom
             exact ⟨j', by simp [Fin.tail]⟩
       -- Step 2: Transfer the probability.
       have hPr_aff :
-          Pr{let y ← $ᵗ ↥(Affine.affineSubspaceAtOrigin (F := F)
-            (u' 0) (Fin.tail u'))}[
+          Pr{let y ← ($ᵗ ↥(Affine.affineSubspaceAtOrigin (F := F)
+            (u' 0) (Fin.tail u')))}[
             δᵣ(y.1, (ReedSolomon.code domain deg : Set (ι → F))) ≤ δ] >
           (errorBound δ deg domain : ℝ≥0) := by
         have hcase_code : (errorBound δ deg domain : ℝ≥0) <

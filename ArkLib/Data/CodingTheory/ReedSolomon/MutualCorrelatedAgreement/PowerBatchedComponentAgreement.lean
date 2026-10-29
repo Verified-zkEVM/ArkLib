@@ -25,7 +25,7 @@ therefore determines a tuple with at least as many common agreements as the comp
 
 ## References
 
-* [DKTZ26]
+* [DKT26]
 -/
 
 @[expose] public section

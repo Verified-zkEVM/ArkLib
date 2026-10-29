@@ -7,7 +7,7 @@ module
 
 public import ArkLib.Data.Probability.Uniform
 public import Mathlib.Algebra.MvPolynomial.SchwartzZippel
-public import Mathlib.Data.Rat.Star
+public import Mathlib.Algebra.Order.Star.Rat
 public import Mathlib.RingTheory.SimpleRing.Principal
 
 /-! ## Schwartz-Zippel derived bound

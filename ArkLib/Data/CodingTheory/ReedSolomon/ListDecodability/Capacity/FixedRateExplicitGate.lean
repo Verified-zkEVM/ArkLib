@@ -24,7 +24,6 @@ domains, and received words beyond a rate-dependent block-length threshold.
 ## References
 
 * [DKT26]
-* [DKTZ26]
 -/
 
 @[expose] public section
