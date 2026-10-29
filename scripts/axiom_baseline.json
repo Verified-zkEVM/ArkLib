@@ -25,7 +25,6 @@
     "ArkLib.Lattices.Ajtai.InnerOuter.traceCheck",
     "ArkLib.Lattices.Ajtai.InnerOuter.wTableMleEval_split",
     "ArkLib.Lattices.Ajtai.InnerOuter.zBatchPackage",
-    "Plonk.ConstraintSystem.perm",
     "Spartan.Spec.oracleReduction.firstChallenge",
     "Spartan.Spec.oracleReduction.linearCombination",
     "Spartan.Spec.oracleReduction.sendEvalClaim",
