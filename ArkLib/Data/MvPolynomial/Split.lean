@@ -163,6 +163,74 @@ theorem aeval_append_splitLast {E : Type*} [CommRing E] [Algebra R E]
   rw [cast_append (R := E), eqTilde_append, cast_append (R := R)]
   ring
 
+private theorem finFunctionFinEquiv_ones (n : ℕ) :
+    (finFunctionFinEquiv (fun _ : Fin n => (1 : Fin 2))).val = 2 ^ n - 1 := by
+  induction n with
+  | zero => simp
+  | succ n ih =>
+    rw [finFunctionFinEquiv_apply, Fin.sum_univ_castSucc]
+    simp only [Fin.val_one, one_mul, Fin.val_castSucc, Fin.val_last]
+    have hs : (∑ i : Fin n, 2 ^ i.val) = 2 ^ n - 1 := by
+      simpa [finFunctionFinEquiv_apply] using ih
+    rw [hs, pow_succ]
+    have := Nat.one_le_pow n 2 (by decide)
+    omega
+
+private theorem finFunctionFinEquiv_append_ones (u : Fin k → Fin 2) :
+    (finFunctionFinEquiv (Fin.append u (fun _ : Fin m => (1 : Fin 2)))).val =
+      2 ^ (k + m) - 2 ^ k + (finFunctionFinEquiv u).val := by
+  rw [finFunctionFinEquiv_apply, Fin.sum_univ_add]
+  simp only [Fin.append_left, Fin.append_right, Fin.val_one, one_mul,
+    Fin.val_castAdd, Fin.val_natAdd, pow_add]
+  simp_rw [← Finset.mul_sum]
+  have hs : (∑ i : Fin m, 2 ^ i.val) = 2 ^ m - 1 := by
+    simpa [finFunctionFinEquiv_apply] using finFunctionFinEquiv_ones m
+  rw [hs]
+  change (finFunctionFinEquiv u).val + 2 ^ k * (2 ^ m - 1) = _
+  have he : 2 ^ k * (2 ^ m - 1) = 2 ^ k * 2 ^ m - 2 ^ k := by
+    rw [Nat.mul_sub_left_distrib, mul_one]
+  rw [he]
+  omega
+
+/-- A final block of `2^k` consecutive entries occupies the all-one high-coordinate block.
+Its multilinear extension uses the low coordinates and the product of the high coordinates. -/
+theorem MLE'_append_suffix_eval (x : Fin (2 ^ (k + m) - 2 ^ k) → R)
+    (w : Fin (2 ^ k) → R) (r : Fin (k + m) → R) :
+    eval r (MLE' (Fin.append x w ∘ Fin.cast (Nat.sub_add_cancel
+      (Nat.pow_le_pow_right (by decide : 1 ≤ 2) (Nat.le_add_right k m))).symm)) =
+      (∑ j : Fin (2 ^ (k + m) - 2 ^ k),
+        eqTilde (finFunctionFinEquiv.symm (Fin.castLE (Nat.sub_le _ _) j) :
+          Fin (k + m) → R) r * x j) +
+      (∏ i : Fin m, r (Fin.natAdd k i)) *
+        eval (fun i : Fin k => r (Fin.castAdd m i)) (MLE' w) := by
+  have hpow : 2 ^ k ≤ 2 ^ (k + m) :=
+    Nat.pow_le_pow_right (by decide) (Nat.le_add_right k m)
+  rw [MLE'_eval, ← (finCongr (Nat.sub_add_cancel hpow)).sum_comp, Fin.sum_univ_add]
+  simp only [Function.comp_apply, finCongr_apply, Fin.cast_cast, Fin.cast_eq_self,
+    Fin.append_left, Fin.append_right]
+  congr 1
+  have hbits (j : Fin (2 ^ k)) :
+      finFunctionFinEquiv.symm
+        (Fin.cast (Nat.sub_add_cancel hpow) (Fin.natAdd (2 ^ (k + m) - 2 ^ k) j)) =
+        Fin.append (finFunctionFinEquiv.symm j) (fun _ : Fin m => (1 : Fin 2)) := by
+    apply finFunctionFinEquiv.injective
+    apply Fin.ext
+    simp only [Equiv.apply_symm_apply, Fin.val_cast, Fin.val_natAdd]
+    rw [finFunctionFinEquiv_append_ones, Equiv.apply_symm_apply]
+  simp_rw [hbits]
+  rw [MLE'_eval, Finset.mul_sum]
+  apply Finset.sum_congr rfl
+  intro j _
+  have hcast : (fun i => ((Fin.append (finFunctionFinEquiv.symm j)
+      (fun _ : Fin m => (1 : Fin 2)) i : Fin 2) : R)) =
+      Fin.append (finFunctionFinEquiv.symm j : Fin k → R) (fun _ : Fin m => (1 : R)) := by
+    funext i
+    refine Fin.addCases (fun a => ?_) (fun b => ?_) i <;> simp
+  rw [hcast, ← Fin.append_castAdd_natAdd (f := r), eqTilde_append]
+  simp only [eqTilde_eq_prod, one_mul, sub_self, zero_mul, add_zero,
+    Fin.append_left, Fin.append_right]
+  ring
+
 end MvPolynomial
 
 end

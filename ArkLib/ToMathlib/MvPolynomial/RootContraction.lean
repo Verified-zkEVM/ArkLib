@@ -18,12 +18,14 @@ variable `none` whose coefficients are polynomials in the variables `σ`, throug
 `MvPolynomial.optionEquivLeft`. Under this presentation the partial derivative in `none` is the
 univariate derivative.
 
-`rootExpansion s` substitutes `X none ^ s` for `X none`, and `rootContraction s` keeps only the
-exponents of `X none` divisible by `s` and divides them by `s`. Both are `Polynomial.expand` and
-`Polynomial.contract` transported through `optionEquivLeft`. Contraction undoes expansion. The
-coefficient of `m` in `rootContraction s P` is the coefficient of `P` at `m` with the exponent of
-`X none` multiplied by `s`, so contraction does not increase the degree in any variable `some j`.
-Over a domain of characteristic `p`, if the partial derivative in `none` vanishes, then
+`rootExpansion s` substitutes `X none ^ s` for `X none`. For `s ≠ 0`, `rootContraction s` keeps
+only the exponents of `X none` divisible by `s` and divides them by `s`. Both are
+`Polynomial.expand` and `Polynomial.contract` transported through `optionEquivLeft`. For `s ≠ 0`,
+contraction undoes expansion, and the coefficient of `m` in `rootContraction s P` is the coefficient
+of `P` at `m` with the exponent of `X none` multiplied by `s`, so contraction does not increase
+the degree in any variable `some j`. At `s = 0`, contraction repeats the outer constant
+coefficient at every exponent from zero through the original outer natural degree.
+Over a domain of characteristic `p ≠ 0`, if the partial derivative in `none` vanishes, then
 contraction by `p` divides the degree in `none` by `p` exactly.
 
 ## Main statements
@@ -99,8 +101,9 @@ theorem eval₂_rootExpansion {S : Type*} [CommSemiring S] (f : R →+* S) (s : 
   rw [eval₂_eq_eval_map, map_rootExpansion, eval_rootExpansion,
     ← eval₂_eq_eval_map]
 
-/-- Keep the exponents of `X none` divisible by `s` and divide them by `s`. The coefficients in
-the other variables are unchanged. -/
+/-- For `s ≠ 0`, keep the exponents of `X none` divisible by `s` and divide them by `s`, leaving
+the coefficients in the other variables unchanged. At `s = 0`, repeat the outer constant
+coefficient at every exponent from zero through the original outer natural degree. -/
 noncomputable def rootContraction (s : ℕ) (P : MvPolynomial (Option σ) R) :
     MvPolynomial (Option σ) R :=
   (optionEquivLeft R σ).symm (Polynomial.contract s (optionEquivLeft R σ P))
@@ -112,8 +115,8 @@ theorem rootContraction_rootExpansion {s : ℕ} (hs : s ≠ 0)
   simp only [rootContraction, rootExpansion, AlgEquiv.apply_symm_apply,
     Polynomial.contract_expand s hs, AlgEquiv.symm_apply_apply]
 
-/-- The coefficient of `m` in `rootContraction s P` is the coefficient of `P` at `m` with the
-exponent of `X none` multiplied by `s`. -/
+/-- For `s ≠ 0`, the coefficient of `m` in `rootContraction s P` is the coefficient of `P` at `m`
+with the exponent of `X none` multiplied by `s`. -/
 theorem coeff_rootContraction {s : ℕ} (hs : s ≠ 0)
     (P : MvPolynomial (Option σ) R) (m : Option σ →₀ ℕ) :
     (rootContraction s P).coeff m = P.coeff (m.some.optionElim (m none * s)) := by
@@ -122,8 +125,8 @@ theorem coeff_rootContraction {s : ℕ} (hs : s ≠ 0)
   simpa only [Finsupp.some_optionElim, Finsupp.optionElim_apply_none] using
     optionEquivLeft_coeff_some_coeff_none R σ (m.some.optionElim (m none * s)) P
 
-/-- Contraction in the distinguished variable does not increase the degree in any other
-variable. -/
+/-- Contraction by `s ≠ 0` in the distinguished variable does not increase the degree in any
+other variable. -/
 theorem degreeOf_rootContraction_some_le {s : ℕ} (hs : s ≠ 0)
     (P : MvPolynomial (Option σ) R) (j : σ) :
     (rootContraction s P).degreeOf (some j) ≤ P.degreeOf (some j) := by

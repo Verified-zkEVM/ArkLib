@@ -190,9 +190,10 @@ theorem degreeOf_optionEquivRight (p : MvPolynomial (Option σ) R) (i : σ) :
       rw [weightedTotalDegree_optionEquivRight, hw]
     _ = degreeOf (some i) p := weightedTotalDegree_piSingle _ _
 
-/-- The degree of each coefficient after moving the `none` coordinate into the coefficient ring,
-plus that coefficient's `X` degree, is bounded by the original weighted degree when the `none`
-coordinate has weight at least one and the selected remaining coordinate has weight one. -/
+/-- After making `none` the outer univariate variable, the degree in a remaining variable `j`
+of its coefficient at order `i`, plus the extracted exponent `i`, is bounded by the original
+weighted degree for `i ≤ degreeOf none V`, when `none` has weight at least one and `some j`
+has weight one. -/
 theorem degreeOf_coeff_optionEquivLeft_add_le_weight
     (w : Option σ → ℕ) (j : σ) (hwNone : 1 ≤ w none) (hwSome : w (some j) = 1)
     (V : MvPolynomial (Option σ) R) (i b : ℕ) (hi : i ≤ b)
