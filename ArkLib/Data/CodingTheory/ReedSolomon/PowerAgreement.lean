@@ -9,7 +9,7 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
 public import ArkLib.Data.CodingTheory.InterleavedCode.ExactAgreement
 public import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
 public import ArkLib.Data.Polynomial.SpecializationAvoidance
-public import ArkLib.Data.Polynomial.PowerBatch
+public import ArkLib.Data.Polynomial.GeneratorBatch
 public import Mathlib.Algebra.Polynomial.Expand
 public import Mathlib.Algebra.Polynomial.OfFn
 public import Mathlib.LinearAlgebra.Lagrange

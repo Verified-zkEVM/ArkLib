@@ -92,11 +92,12 @@ home_page/            site assets and assembled website root
   seed from a zero-evading generator. It provides the virtual evaluation oracle, extractor,
   guarded form, perfect completeness, and fixed-prefix knowledge certificates. Its output
   relation is the input relation of `Component/QuotientZeroTest.lean`; the quotient stage
-  performs the acceptance check. `Component/PowerBatch.lean` specializes this component to
-  powers of a field challenge and preserves the power-batching API.
+  performs the acceptance check. Power, affine, and multilinear weights are instances of this
+  same component, selected by the generator parameter.
   Weighted polynomial arithmetic and the vanishing-to-dot-product probability bound live in
-  `Data/Polynomial/GeneratorBatch.lean`. Generator zero-evasion bounds for powers, affine
-  coordinates, and multilinear tensors live in
+  `Data/Polynomial/GeneratorBatch.lean`; its “Power weights” section also owns
+  `Polynomial.powerBatch` and its algebra lemmas for coding-theory consumers. Generator
+  zero-evasion bounds for powers, affine coordinates, and multilinear tensors live in
   `Data/CodingTheory/ProximityGenerator/ZeroEvading.lean`. `MultilinearBasic.lean` owns the
   shared tensor definitions so this theory does not depend on Reed–Solomon agreement results.
 

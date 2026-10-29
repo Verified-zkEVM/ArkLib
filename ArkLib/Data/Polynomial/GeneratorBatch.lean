@@ -105,6 +105,44 @@ theorem prob_zeroOn_generatorBatch_le {F S : Type} [Field F]
     {y | ∃ u : Fin k → F, u ≠ 0 ∧ y = Pr{let s ← $ᵗ S}[dotProduct (G s) u = 0]} from
       ⟨v, hv, rfl⟩)) hG
 
+/-! ## Power weights -/
+
+/-- Combine a polynomial family using successive powers of a scalar challenge.
+Mathlib polynomial arithmetic is noncomputable; `GeneratorBatch.batch` gives an executable model. -/
+noncomputable def powerBatch (f : Fin k → F[X]) (α : F) : F[X] :=
+  generatorBatch f (fun i => α ^ i.val)
+
+/-- The virtual evaluation of a batch is the corresponding weighted sum. -/
+theorem powerBatch_eval (f : Fin k → F[X]) (α ζ : F) :
+    (powerBatch f α).eval ζ = ∑ i, α ^ i.val * (f i).eval ζ := by
+  exact generatorBatch_eval f _ ζ
+
+/-- Mapping a batch batches the mapped polynomials at the mapped challenge. -/
+theorem powerBatch_map {E : Type*} [Field E] (f : Fin k → F[X]) (φ : F →+* E) (α : F) :
+    (powerBatch f α).map φ = powerBatch (fun i => (f i).map φ) (φ α) := by
+  simpa only [powerBatch, Function.comp_def, map_pow] using
+    generatorBatch_map f φ (fun i => α ^ i.val)
+
+/-- Batching preserves a strict degree budget, including the zero budget and empty family. -/
+theorem degree_powerBatch_lt (f : Fin k → F[X]) (α : F) (d : ℕ)
+    (hf : ∀ i, (f i).degree < d) : (powerBatch f α).degree < d := by
+  exact degree_generatorBatch_lt f _ d hf
+
+/-- Batching preserves vanishing on a finite domain for every challenge. -/
+theorem zeroOn_powerBatch {S : Finset F} {f : Fin k → F[X]}
+    (hf : ∀ i, ZeroOn S (f i)) (α : F) : ZeroOn S (powerBatch f α) := by
+  exact zeroOn_generatorBatch hf _
+
+/-- Batching preserves an inclusive natural-degree budget. -/
+theorem natDegree_powerBatch_le {f : Fin k → F[X]} (α : F)
+    (hf : ∀ i, (f i).natDegree ≤ d) : (powerBatch f α).natDegree ≤ d := by
+  exact natDegree_generatorBatch_le _ hf
+
+/-- Batching preserves a positive strict natural-degree budget, including for an empty family. -/
+theorem natDegree_powerBatch_lt {f : Fin k → F[X]} (hd : 0 < d) (α : F)
+    (hf : ∀ i, (f i).natDegree < d) : (powerBatch f α).natDegree < d := by
+  exact natDegree_generatorBatch_lt hd _ hf
+
 end Polynomial
 
 namespace GeneratorBatch
