@@ -199,9 +199,14 @@ oracle state. Fix one stateful oracle implementation on a state space $\Sigma$ a
 state distribution $\mu$. The second component receives the state left by the first component.
 A guarantee for the second component initialized separately from $\mu$ does not cover this state.
 
-The completeness theorems below are proved under their stated hypotheses. The generic soundness,
-knowledge-soundness, and round-by-round contracts listed afterwards remain admitted in Lean;
-execution factorization alone does not establish them.
+The composition theorems below are proved under their stated hypotheses.
+Ordinary soundness and knowledge soundness use the guarded interface in
+\texttt{Append/Security.lean}, with suffix bounds valid from every deterministic shared state
+and pure extractors for knowledge soundness. Round-by-round knowledge soundness uses
+\texttt{Append/GuardedRoundByRound.lean} for binary composition and
+\texttt{Sequential/GuardedRoundByRound.lean} for finite chains. Both require fixed-prefix
+component bounds; binary composition requires a guarded first verifier, and finite-chain
+composition requires every component verifier to be guarded.
 
 \begin{theorem}[Completeness Preservation under Append]
     \label{thm:completeness_append}
@@ -255,19 +260,9 @@ execution factorization alone does not establish them.
     \uses{def:knowledge_soundness, def:verifier_append}
 \end{theorem}
 
-\begin{theorem}[Round-by-Round Soundness Preservation under Append (Admitted)]
-    \label{thm:rbr_soundness_append}
-    If verifiers $V_1$ and $V_2$ satisfy round-by-round soundness, then their sequential composition also satisfies round-by-round soundness.
-    \lean{Verifier.append_rbrSoundness}
-    \uses{def:round_by_round_soundness, def:verifier_append}
-\end{theorem}
-
-\begin{theorem}[Round-by-Round Knowledge Soundness Preservation under Append (Admitted)]
-    \label{thm:rbr_knowledge_soundness_append}
-    If verifiers $V_1$ and $V_2$ satisfy round-by-round knowledge soundness, then their sequential composition also satisfies round-by-round knowledge soundness.
-    \lean{Verifier.append_rbrKnowledgeSoundness}
-    \uses{def:round_by_round_knowledge_soundness, def:verifier_append}
-\end{theorem}
+Prover-averaged component guarantees alone do not compose: queries to the shared oracle can
+correlate a later round with the earlier transcript. Fixed-prefix guarantees and a guarded first
+verifier give the following composition theorem.
 
 \begin{theorem}[Worst-Case Round-by-Round Knowledge Soundness under a Guarded First Verifier]
     \label{thm:rbr_knowledge_soundness_append_guarded}
