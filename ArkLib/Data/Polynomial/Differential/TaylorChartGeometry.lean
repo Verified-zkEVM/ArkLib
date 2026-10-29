@@ -47,9 +47,9 @@ distinct.
   `sum_affineDegree_mul_pow_initialJetPrimeFamily_le_jetTotalDegree`: the dimension and the
   potential of the retained components.
 * `exists_forall_jetEvaluation_ne_zero_of_family`: a common center for a finite family of
-  differential equations and solutions.
-* `exists_forall_jetEvaluation_ne_zero`: a common center for finitely many solutions of one
-  differential equation.
+  polynomials with nonzero specializations of their respective differential equations.
+* `exists_forall_jetEvaluation_ne_zero`: a common center for finitely many polynomials with
+  nonzero specializations of one differential equation.
 * `injOn_polynomialJet` and `card_image_polynomialJet`: Hasse jets separate regular solutions.
 * `polynomialJet_mem_zeroLocus_initialJetEquation_sup_highTaylorCutsIdeal` and
   `polynomialJet_mem_regularAgreementCutLocus`: regular solutions lie in these loci.
@@ -70,8 +70,8 @@ open MvPolynomial
 
 /-! ### A common regular center -/
 
-/-- In an infinite domain, a finite family of polynomial solutions with nonzero differential
-specializations admits a common center at which every specialized separant is nonzero. -/
+/-- In an infinite domain, a finite family of polynomials with nonzero differential
+specializations admits a common center at which each equation's jet evaluation is nonzero. -/
 theorem exists_forall_jetEvaluation_ne_zero_of_family {R ι : Type*} [CommRing R] [IsDomain R]
     [Infinite R] {d : ℕ} (T : Finset ι) (D : ι → DifferentialPolynomial R d)
     (P : ι → Polynomial R)
