@@ -6,7 +6,6 @@ Authors: Quang Dao
 module
 
 public import ArkLib.ProofSystem.Spartan.Realization
-public import ArkLib.ProofSystem.Component.RandomEvaluation.Algebra
 
 /-!
 # Spartan's initial zero-check relation
@@ -54,18 +53,6 @@ theorem polynomial_zero_iff (x : R1CS.Statement R pp.toSizeR1CS)
     polynomial pp x oracles = 0 ↔ inputRelation pp x oracles :=
   Algebra.residualMLE_zero_iff_r1cs (2 ^ pp.ℓ_w) pp.toSizeR1CS.n_w_le_n x
     (fun i => oracles (.inl i)) (oracles (.inr 0))
-
-/-- The R1CS input relation is `RandomEvaluation.relIn` for the residual interpolation. -/
-theorem relIn_eq : relIn (R := R) pp =
-    RandomEvaluation.relIn R pp.ℓ_m (R1CS.Statement R pp.toSizeR1CS)
-      (OracleStatement (R := R) pp) (polynomial pp) := by
-  ext s
-  exact (polynomial_zero_iff pp s.1.1 s.1.2).symm
-
-/-- The output relation is `RandomEvaluation.relOut` for the residual interpolation. -/
-theorem relOut_eq : relOut (R := R) pp =
-    RandomEvaluation.relOut R pp.ℓ_m (R1CS.Statement R pp.toSizeR1CS)
-      (OracleStatement (R := R) pp) (polynomial pp) := rfl
 
 /-- The zero-check output is the first virtual polynomial's zero-valued cube sum. -/
 theorem outputRelation_iff_firstVirtual
