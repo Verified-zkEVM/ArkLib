@@ -360,8 +360,12 @@ identities. It can be bridged to operational-machine prefixes without identifyin
 
 Round-by-round state is indexed by full concrete prefixes; public projection is a separate view.
 Available sources grow under prefix extension, and no prefix receives future resources. Both
-Chiesa–Yogev-compatible whole-transcript notions and ArkLib's stronger edge-local witness notions
-are intended to coexist. The roadmap's implication proofs must state which notion they use and
+Chiesa-Yogev-compatible whole-message notions and WARP/ABF-style local witness-transport notions
+are intended to coexist, alongside their explicit native generalizations. They differ in access,
+timing, terminal laws and efficiency; no unconditional ordering is assumed. The
+[literature crosswalk](../kb/audits/interaction-literature-map.md) records these distinctions,
+including FICS/FACS tree extraction and VCVio's BGTZ interface. The roadmap's implication
+proofs must state which notion they use and
 which replay, entropy, and budget hypotheses support the `(B+r)` losses. Legacy formulations or
 archived proofs do not establish the corresponding native world-backed theorems. A reversible
 strong claim-tree interface must remain distinguishable from the relaxed probabilistic endpoint.

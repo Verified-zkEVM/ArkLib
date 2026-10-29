@@ -1,5 +1,9 @@
 bibkey: BCFW25
-source_kind: eprint
+source_kind: official-pdf
 canonical_url: https://eprint.iacr.org/2025/753
+cover_date: "2026-06-17"
+revision_date: "2026-06-18"
+pages: 76
+sha256: 22944c8ef358bf973c4eaca7617fc534f024e3658142244668ae0030b4ae904c
 committed_artifacts: []
-notes: "Buenz-Chiesa-Fenzi-Wang, Linear-Time Accumulation Schemes. ArkLib uses only Appendix D.3 (extension-code list size) via ExtensionCodes.lean. Cited in Lean as BCFW25; the earlier BuenzCFW25 spelling had no bib entry and should not reappear. Reference PDFs (not committed) are ~/abf26-refs/bcfw25.pdf (2025-05-28 build) and ~/abf26-refs/BuenzCFW25.pdf (2026-06-18 build, used for appendix numbering)."
+notes: "Buenz-Chiesa-Fenzi-Wang, Linear-Time Accumulation Schemes (WARP). Appendix D.3 is formalized in ExtensionCodes.lean. Definitions 4.1-4.2 and Appendices B/C were inspected on 2026-10-03 for the interaction-framework comparison; structural lineage is not a completed native equivalence theorem. Existing bibliography keys BCFW25 and WARP refer to this source; BuenzCFW25 has no entry. Older local reference copies are ~/abf26-refs/bcfw25.pdf (2025-05-28 build) and ~/abf26-refs/BuenzCFW25.pdf (2026-06-18 build)."
