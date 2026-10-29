@@ -36,8 +36,8 @@ def R1CS.toConstraintSystem (R : Type*) [CommSemiring R] : ConstraintSystem wher
   Index := R1CS.Size
   Stmt := fun sz => Fin sz.n_x → R
   OStmt := fun sz => R1CS.MatrixIdx → Matrix (Fin sz.m) (Fin sz.n) R
-  Wit := fun sz => Fin sz.n_w → R
-  satisfies := R1CS.relation R
+  toRelation := Interaction.Oracle.Relation.ofPredicate
+    (fun sz _ => Fin sz.n_w → R) (fun sz c w => R1CS.relation R sz c.1 c.2 w)
 
 @[simp] theorem R1CS.toConstraintSystem_satisfies
     (R : Type*) [CommSemiring R] (sz : R1CS.Size)
@@ -71,8 +71,9 @@ def Plonk.toConstraintSystem (𝓡 : Type) [CommRing 𝓡] : _root_.ConstraintSy
   Index := Plonk.Shape
   Stmt := fun s => Fin s.ℓ → 𝓡
   OStmt := fun s => Plonk.ConstraintSystem 𝓡 s.numWires s.numGates
-  Wit := fun s => Fin (s.numWires - s.ℓ) → 𝓡
-  satisfies := fun s stmt cs wit => Plonk.relation cs s.ℓ s.hℓ stmt wit
+  toRelation := Interaction.Oracle.Relation.ofPredicate
+    (fun s _ => Fin (s.numWires - s.ℓ) → 𝓡)
+    (fun s c w => Plonk.relation c.2 s.ℓ s.hℓ c.1 w)
 
 @[simp] theorem Plonk.toConstraintSystem_satisfies
     (𝓡 : Type) [CommRing 𝓡] (s : Plonk.Shape)
