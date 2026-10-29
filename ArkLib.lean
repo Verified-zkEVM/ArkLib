@@ -813,7 +813,6 @@ public import ArkLib.OracleReduction.Security.Rewinding
 public import ArkLib.OracleReduction.Security.RoundByRound
 public import ArkLib.OracleReduction.Security.SoundnessInitialization
 public import ArkLib.OracleReduction.Security.SpecialSoundness
-public import ArkLib.OracleReduction.Security.StateRestoration
 public import ArkLib.OracleReduction.Security.TranscriptTree
 public import ArkLib.OracleReduction.Security.TranscriptTree.Basic
 public import ArkLib.OracleReduction.Security.TranscriptTree.Composition
