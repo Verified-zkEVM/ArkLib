@@ -12622,40 +12622,40 @@
           "signature": "lemma witness_candidate_set_witness_vanishes [Fintype F] {k r D e : \u2115}"
         },
         {
-          "doc": "Noncomputable candidate specification inspired by Guruswami\u2013Sudan. The set is the union of the CompPoly interpolation candidates and the candidates filtered by a GS witness. The interpolation and root checks use executable CompPoly arithmetic. The witness search uses `linsolve`, whose existence test and witness selection use classical choice, so the combined specification is noncomputable. Executable decoding and its correctness results are provided separately by `GuruswamiSudan.Executable` and `GuruswamiSudan.Correctness`.",
+          "doc": "Constructive decoder candidate set inspired by Guruswami\u2013Sudan. **Definition.** The computable decoder returns the union of: * a CompPoly interpolation fast-path candidate set, and * a GS witness-filtered set computed from a constructive linear-system witness search. The implementation combines two candidate sources: 1. **CompPoly Lagrange candidate** (`compPolyCandidateSet`): A fast-path candidate constructed via CompPoly's computable Lagrange interpolation from the first `min k n` evaluation points. Included only if it passes degree and distance checks. 2. **GS witness-filtered candidates** ",
           "kind": "def",
           "line": 770,
-          "name": "GuruswamiSudan.decoderCandidateSpec",
+          "name": "GuruswamiSudan.computableDecoder",
           "namespace": "GuruswamiSudan",
-          "short_name": "decoderCandidateSpec",
-          "signature": "def decoderCandidateSpec [Fintype F] (k r D e : \u2115) (\u03c9s : Fin n \u21aa F)"
+          "short_name": "computableDecoder",
+          "signature": "def computableDecoder [Fintype F] (k r D e : \u2115) (\u03c9s : Fin n \u21aa F)"
         },
         {
-          "doc": "Every candidate has degree `< k` and distance `\u2264 e` from the received word.",
+          "doc": "Computable decoder soundness: every output polynomial has degree `< k` and distance `\u2264 e`.",
           "kind": "lemma",
           "line": 776,
-          "name": "GuruswamiSudan.mem_decoderCandidateSpec_imp",
+          "name": "GuruswamiSudan.mem_computableDecoder_imp",
           "namespace": "GuruswamiSudan",
-          "short_name": "mem_decoderCandidateSpec_imp",
-          "signature": "lemma mem_decoderCandidateSpec_imp [Fintype F] {k r D e : \u2115} {\u03c9s : Fin n \u21aa F}"
+          "short_name": "mem_computableDecoder_imp",
+          "signature": "lemma mem_computableDecoder_imp [Fintype F] {k r D e : \u2115} {\u03c9s : Fin n \u21aa F}"
         },
         {
-          "doc": "Each candidate is within `e` Hamming distance of the received word.",
+          "doc": "Each computably decoded codeword is within `e` Hamming distance of the received message.",
           "kind": "theorem",
           "line": 785,
-          "name": "GuruswamiSudan.decoderCandidateSpec_mem_impl_dist",
+          "name": "GuruswamiSudan.computableDecoder_mem_impl_dist",
           "namespace": "GuruswamiSudan",
-          "short_name": "decoderCandidateSpec_mem_impl_dist",
-          "signature": "theorem decoderCandidateSpec_mem_impl_dist"
+          "short_name": "computableDecoder_mem_impl_dist",
+          "signature": "theorem computableDecoder_mem_impl_dist"
         },
         {
-          "doc": "Alias for the candidate specification distance guarantee.",
+          "doc": "Alias for the computable decoder distance guarantee.",
           "kind": "theorem",
           "line": 796,
-          "name": "GuruswamiSudan.decoderCandidateSpec_output_dist_le",
+          "name": "GuruswamiSudan.computableDecoder_output_dist_le",
           "namespace": "GuruswamiSudan",
-          "short_name": "decoderCandidateSpec_output_dist_le",
-          "signature": "theorem decoderCandidateSpec_output_dist_le"
+          "short_name": "computableDecoder_output_dist_le",
+          "signature": "theorem computableDecoder_output_dist_le"
         },
         {
           "doc": "Alias to the `Basic` module degree bound used in lemma 5.3 of [BCIKS20].",
@@ -25251,13 +25251,13 @@
           "signature": "lemma even_add_odd_eq_of_2_ne_0"
         },
         {
-          "doc": "An explicit formula to compute `foldWordAux` when `k = 1` not involving Lagrange interpolation.",
+          "doc": "An explicit formula to compute `foldWordAux` when `k = 2` not involving Lagrange interpolation.",
           "kind": "lemma",
           "line": 80,
-          "name": "ProximityGap.foldWordAux_of_k_1",
+          "name": "ProximityGap.foldWordAux_of_k_2",
           "namespace": "ProximityGap",
-          "short_name": "foldWordAux_of_k_1",
-          "signature": "lemma foldWordAux_of_k_1 [NeZero n] {i : Fin (2 ^ (n - 1))} :"
+          "short_name": "foldWordAux_of_k_2",
+          "signature": "lemma foldWordAux_of_k_2 [NeZero n] {i : Fin (2 ^ (n - 1))} :"
         },
         {
           "doc": "The degree of the auxiliary polynomial `foldWordAux` is less than 2^k.",
