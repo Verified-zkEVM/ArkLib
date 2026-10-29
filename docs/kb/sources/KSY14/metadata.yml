@@ -1,0 +1,4 @@
+bibkey: KSY14
+source_kind: article
+committed_artifacts: []
+notes: "Kopparty-Saraf-Yekhanin, Journal of the ACM 61(5) 2014, article 28; preliminary version STOC '11. Second attribution key on univariate multiplicity codes (ABF26 Definition A.7 is tagged GW13 plus KSY14); only the definition is formalized, and the paper's own local-decodability results are out of scope. Reference PDF (not committed) is ~/abf26-refs/KoppartySY14.pdf, the 2010 preprint, whose numbering matches neither the STOC nor the JACM version."

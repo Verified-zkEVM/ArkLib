@@ -5,8 +5,12 @@ set -e
 echo "Fetching Cache..."
 lake exe cache get
 
+echo "Building Blueprint Declaration Environment..."
+lake build ArkLibBlueprint
+
 echo "Building Project Documentation..."
 lake build ArkLib:docs
+lake build ArkLibBlueprint:docs
 
 # Build the Blueprint
 if [ -d "blueprint" ]; then
@@ -20,6 +24,7 @@ if [ -d "blueprint" ]; then
         echo "To install: pip install leanblueprint"
     fi
     cd ..
+    lake exe checkdecls blueprint/lean_decls
 fi
 
 # Prepare the Website Directory

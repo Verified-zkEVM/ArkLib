@@ -1,0 +1,9 @@
+bibkey: MS77
+source_kind: local-cache
+canonical_url: https://djvu.online/file/aEh6LCFIL2mRo
+committed_artifacts: []
+local_cache_artifact: /home/alh/abf26-refs/MacWilliamsS77.djvu
+sha256: 2bcdebc8b08b8b920d38c8f6313c8742784563da480ed5dd5c40803a8b809b71
+edition: "North-Holland Mathematical Library 16; copyright 1977; corrected third printing 1981; ISBN 0-444-85009-0 / 0-444-85010-4"
+anchor: "Chapter 10, section 11, Lemma 7, equation (16), printed page 309 (DjVu scan page 323)"
+notes: "Relevant page rendered and inspected visually. The source gives a binary binomial-shell estimate for 0 < lambda < 1 with lambda*n integral, not a q-ary Hamming-ball theorem."

@@ -4,15 +4,35 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
          Ilia Vlasov, Chung Thai Nguyen
 -/
+module
 
-import ArkLib.Data.CodingTheory.Basic.DecodingRadius
+public import ArkLib.Data.CodingTheory.Basic.DecodingRadius
+public import ArkLib.Data.CodingTheory.Prelims
+public import ArkLib.Data.CodingTheory.Basic.Distance
+public import Mathlib.FieldTheory.Finiteness
+public import Mathlib.LinearAlgebra.FreeModule.PID
+public import Mathlib.RingTheory.PicardGroup
+public import Mathlib.RingTheory.RegularLocalRing.Defs
+public import Mathlib.RingTheory.SimpleRing.Principal
+public import CompPoly.Data.Nat.Bitwise
 
 /-!
 # Linear-Code Constructions and Bounds
 
 This module contains weight/projection lemmas, the singleton bound for arbitrary and
 linear codes, and basic constructions and dimension/rate facts for linear codes.
+
+## References
+
+* [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
+Agreement*][ABF26]
+* [Guruswami, V., Rudra, A., Sudan M., *Essential Coding Theory*, online copy][GRS25]
+* [Bordage, S., Chiesa, A., Guan, Z., Manzur, I., *All Polynomial Generators Preserve Distance
+with Mutual Correlated Agreement*][BCGM25]
+
 -/
+
+@[expose] public section
 
 variable {n : Type*} [Fintype n] {R : Type*} [DecidableEq R]
 
@@ -64,7 +84,7 @@ theorem projection_injective
   have hdiff : hammingDist u v ≥ ‖C‖₀ := by
     simp only [Code.dist, ne_eq, ge_iff_le]
     refine Nat.sInf_le ?_
-    refine Set.mem_setOf.mpr ?_
+    refine Set.mem_ofPred.mpr ?_
     use u
     refine exists_and_left.mp ?_
     use v
@@ -88,13 +108,18 @@ theorem projection_injective
   let diff : Set n := {i : n | ¬i ∈ S}
   have hsub : D ⊆ diff  := by
     unfold diff
-    refine Set.subset_setOf.mpr ?_
+    refine Set.subset_ofPred.mpr ?_
     intro x hxd
     solve_by_elim
   have hcard_compl : @card diff (ofFinite diff) = ‖C‖₀ - 1 := by
+    classical
     unfold diff
-    simp only [ge_iff_le, card_coe, Set.coe_setOf, card_subtype_compl] at *
-    rw[hS]
+    rw [← @Nat.card_eq_fintype_card diff (ofFinite diff)]
+    change Nat.card {i : n // i ∉ S} = ‖C‖₀ - 1
+    rw [Nat.card_eq_fintype_card]
+    rw [Fintype.card_subtype_compl (fun i : n ↦ i ∈ S)]
+    rw [Fintype.card_coe] at hS ⊢
+    rw [hS]
     have stronger : ‖C‖₀ ≤ card n := by
       apply Code.dist_le_card
     omega
@@ -164,8 +189,6 @@ lemma LinearCode_is_ModuleCode.{u, v} {ι : Type u} [Fintype ι] {F : Type v} [S
     LinearCode ι F = ModuleCode ι F F := by
   rfl
 
--- TODO: MDS code
-
 namespace LinearCode
 
 section
@@ -173,25 +196,6 @@ section
 variable {F : Type*} {A : Type*} [AddCommMonoid A]
          {ι : Type*} [Fintype ι]
          {κ : Type*} [Fintype κ]
-
-
-/-- Module code defined by left multiplication by its generator matrix.
-  For a matrix G : Matrix κ ι F (over field F) and module A over F, this generates
-  the F-submodule of (ι → A) spanned by the rows of G acting on (κ → A).
-  The matrix acts on vectors v : κ → A by: (G • v)(i) = ∑ k, G k i • v k
-  where G k i : F is the scalar and v k : A is the module element.
--/
-noncomputable def fromRowGenMat [Semiring F] (G : Matrix κ ι F) : LinearCode ι F :=
-  LinearMap.range G.vecMulLinear
-
-/-- Linear code defined by right multiplication by a generator matrix.
--/
-noncomputable def fromColGenMat [CommRing F] (G : Matrix ι κ F) : LinearCode ι F :=
-  LinearMap.range G.mulVecLin
-
-/-- Define a linear code from its (parity) check matrix -/
-noncomputable def byCheckMatrix [CommRing F] (H : Matrix ι κ F) : LinearCode κ F :=
-  LinearMap.ker H.mulVecLin
 
 /-- The Hamming distance of a linear code can also be defined as the minimum Hamming norm of a
   non-zero vector in the code -/
@@ -236,11 +240,6 @@ The dimension of a linear code.
 noncomputable def dim [Semiring F] {A : Type*} [AddCommMonoid A] [Module F A]
     (MC : ModuleCode ι F A) : ℕ := Module.finrank F MC
 
-/-- The dimension of a linear code equals the rank of its associated generator matrix.
--/
-lemma rank_eq_dim_fromColGenMat [CommRing F] {G : Matrix κ ι F} :
-    G.rank = dim (fromColGenMat G) := rfl
-
 /--
 The length of a linear code.
 -/
@@ -249,7 +248,13 @@ def length [Semiring F] {A : Type*} [AddCommMonoid A] [Module F A]
   Fintype.card ι
 
 /--
-The rate of a linear code.
+The **base-field-dimension rate** of a code: `dim MC / |ι|`, the `F`-dimension of the code
+divided by the block length alone.
+
+Over the field alphabet itself (`A = F`) this is the usual rate `ρ = k/n`. Over a module
+alphabet `A = F^s` it is *not* the alphabet-normalized rate `log_{|A|} |C| / n = dim/(s*n)`,
+since it never divides by the alphabet dimension `s`; that normalization is `alphabetRate`
+below.
 -/
 noncomputable def rate [Semiring F] {A : Type*} [AddCommMonoid A] [Module F A]
     (MC : ModuleCode ι F A) : ℚ≥0 :=
@@ -264,6 +269,283 @@ scoped syntax &"ρ" term : term
 
 scoped macro_rules
   | `(ρ $t:term) => `(LinearCode.rate $t)
+
+/--
+The **alphabet-normalized rate** of a code over the module alphabet `Fin s → F`:
+`dim MC / (s * |ι|)`.
+
+For a finite nontrivial field `F` and `s ≥ 1` this is `log_{|Σ|} |C| / n` for the alphabet
+`Σ = F^s`, the rate relative to the alphabet rather than to the base field. The formula is
+algebraically total: it assigns `0` when `s = 0` or the block length is zero. It agrees
+with `rate` exactly when `s = 1` (`alphabetRate_one_eq_rate`).
+-/
+noncomputable def alphabetRate [Semiring F] {s : ℕ}
+    (MC : ModuleCode ι F (Fin s → F)) : ℚ≥0 :=
+  (dim MC : ℚ≥0) / (s * length MC)
+
+/-- `alphabetRate` is `rate` corrected by the alphabet dimension `s`. (`ℚ≥0`-division by
+zero makes both sides `0` at `s = 0`, so no side condition is needed.) -/
+lemma alphabetRate_eq_rate_div [Semiring F] {s : ℕ}
+    (MC : ModuleCode ι F (Fin s → F)) :
+    alphabetRate MC = rate MC / s := by
+  rw [alphabetRate, rate, div_div, mul_comm]
+
+/-- Over the field alphabet itself (`s = 1`) the alphabet-normalized rate is the plain
+rate. -/
+lemma alphabetRate_one_eq_rate [Semiring F]
+    (MC : ModuleCode ι F (Fin 1 → F)) :
+    alphabetRate MC = rate MC := by
+  rw [alphabetRate_eq_rate_div, Nat.cast_one, div_one]
+
+/-- `alphabetRate` cast to `ℝ`, in the explicit form `finrank / (s * n)`. -/
+lemma alphabetRate_cast_eq [Semiring F] {s : ℕ}
+    (MC : ModuleCode ι F (Fin s → F)) :
+    (alphabetRate MC : ℝ) = (Module.finrank F MC : ℝ) / (s * Fintype.card ι) := by
+  rw [alphabetRate, dim, length]
+  push_cast
+  rfl
+
+/-- Let `c` be a word of length `ι`. For every finite `ι`-subset `T` , we define the projection of a
+word `c` to `T` as the word obtained by restricting the indexing set of `c` to `T`.
+Definition 3.7 [BCGM25]. -/
+def projectedWord (c : ι → F) (T : Finset ι) : T → F := Set.domRestrict T c
+
+/-- Let `C` be a code of length `ι`. For every finite `ι`-subset `T`, we define the projected code
+as the set of projected codewords.
+Definition 3.7 [BCGM25]. -/
+def projectedCode (C : Set (ι → F)) (T : Finset ι) : Set (T → F) :=
+  {w | ∃ c ∈ C, w = projectedWord c T}
+
+open Submodule
+
+/-- The projected code of a module code, as a submodule of `T → A`.
+Definition 3.7 [BCGM25]. -/
+def projectedCodeSubmod [Semiring F] [Module F A] (MC : ModuleCode ι F A) (T : Finset ι) :
+    Submodule F (T → A) := MC.map (LinearMap.funLeft F A (Subtype.val : T → ι))
+
+omit [Fintype ι] in
+/-- Membership in `projectedCodeSubmod` is membership in `projectedCode` of the underlying set. -/
+lemma mem_projectedCodeSubmod_iff [Semiring F] [Module F A] (MC : ModuleCode ι F A) (T : Finset ι)
+    (w : T → A) : w ∈ projectedCodeSubmod MC T ↔ w ∈ projectedCode MC.carrier T :=
+  Submodule.mem_map.trans <| exists_congr fun _ => and_congr_right fun _ => eq_comm
+
+omit [Fintype ι] in
+/-- Let `T` be a finite subset of `ι`. If every word in a collection lies in the projected code,
+then so do all `F`-linear combinations of these. -/
+lemma projectedCode_linearCombination [Semiring F] [Module F A] (MC : ModuleCode ι F A)
+    (T : Finset ι) {α : Type} [Fintype α] (U : α → (ι → A)) (c : α → F)
+    (hU : ∀ j, projectedWord (U j) T ∈ projectedCode MC.carrier T) :
+    projectedWord (fun k => ∑ j, c j • U j k) T ∈ projectedCode MC.carrier T := by
+  obtain ⟨w, hw⟩ : ∃ w ∈ MC, ∀ t ∈ T, w t = ∑ j, c j • U j t := by
+    choose w hw using hU
+    use ∑ j, c j • w j
+    exact ⟨Submodule.sum_mem _ fun j _ => Submodule.smul_mem _ _ (hw j |>.1),
+      fun t ht => by simp [show ∀ j, U j t = w j t from
+        fun j => congr_fun (hw j |>.2) ⟨t, ht⟩]⟩
+  exact ⟨w, hw.1, funext fun t => by
+    change (∑ j, c j • U j t.1) = w t.1
+    exact Eq.symm (hw.2 t t.2)⟩
+
+omit [Fintype ι] in
+/-- A coordinate set `T` is a **maximal agreement domain** between a word `u` and a module code
+`MC` if it is maximal for inclusion among the sets on which `u` projects into the code.
+Definition 6.3 [BCGM25]. -/
+def IsMaxAgreementDomain [Semiring F] [Module F A] (MC : ModuleCode ι F A) (u : ι → A)
+    (T : Finset ι) : Prop :=
+  Maximal (fun T' => projectedWord u T' ∈ projectedCodeSubmod MC T') T
+
+omit [Fintype ι] in
+/-- A coordinate set `T` is a **maximal correlated agreement (CA) domain** between a family of
+words `U` and a module code `MC` if it is maximal for inclusion among the sets on which every
+member of the family projects into the code. The interleaved membership
+`Mat(u₁, …, u_ℓ)|_T ∈ C^ℓ|_T` of the paper is stated row-wise, which is the form the mutual
+correlated agreement layer consumes (cf. `CoreDefinitions.IsMCA`).
+Definition 6.3 [BCGM25]. -/
+def IsMaxCADomain [Semiring F] [Module F A] {α : Type*} (MC : ModuleCode ι F A)
+    (U : α → (ι → A)) (T : Finset ι) : Prop :=
+  Maximal (fun T' => ∀ j, projectedWord (U j) T' ∈ projectedCodeSubmod MC T') T
+
+omit [Fintype ι] in
+/-- Every agreement set extends to a maximal agreement domain. -/
+lemma exists_subset_isMaxAgreementDomain [Finite ι] [Semiring F] [Module F A]
+    (MC : ModuleCode ι F A) {u : ι → A} {T : Finset ι}
+    (hT : projectedWord u T ∈ projectedCodeSubmod MC T) :
+    ∃ T', T ⊆ T' ∧ IsMaxAgreementDomain MC u T' :=
+  Finite.exists_le_maximal hT
+
+omit [Fintype ι] in
+/-- Every correlated agreement set extends to a maximal CA domain. -/
+lemma exists_subset_isMaxCADomain [Finite ι] [Semiring F] [Module F A] {α : Type*}
+    (MC : ModuleCode ι F A) {U : α → (ι → A)} {T : Finset ι}
+    (hT : ∀ j, projectedWord (U j) T ∈ projectedCodeSubmod MC T) :
+    ∃ T', T ⊆ T' ∧ IsMaxCADomain MC U T' :=
+  Finite.exists_le_maximal hT
+
+omit [Fintype ι] in
+/-- A maximal agreement domain between `u` and `MC` is the exact agreement set of `u` with some
+codeword: a codeword agrees with `u` on `T`, and every coordinate where it agrees with `u` lies
+in `T`. -/
+lemma IsMaxAgreementDomain.exists_codeword [Finite ι] [Semiring F] [Module F A]
+    {MC : ModuleCode ι F A}
+    {u : ι → A} {T : Finset ι} (h : IsMaxAgreementDomain MC u T) :
+    ∃ c ∈ MC, (∀ i ∈ T, u i = c i) ∧ ∀ i, u i = c i → i ∈ T := by
+  classical
+  have := Fintype.ofFinite ι
+  obtain ⟨c, hc, hcT⟩ := (mem_projectedCodeSubmod_iff MC T _).mp h.prop
+  have hagree : ∀ i ∈ T, u i = c i := fun i hi => congrFun hcT ⟨i, hi⟩
+  set T' := Finset.univ.filter fun i => u i = c i with hT'
+  have hsub : T ⊆ T' := fun i hi => Finset.mem_filter.mpr ⟨Finset.mem_univ _, hagree i hi⟩
+  have hmem : projectedWord u T' ∈ projectedCodeSubmod MC T' :=
+    (mem_projectedCodeSubmod_iff MC T' _).mpr
+      ⟨c, hc, funext fun i => (Finset.mem_filter.mp i.2).2⟩
+  exact ⟨c, hc, hagree, fun i hic =>
+    Maximal.le_of_ge h hmem hsub (Finset.mem_filter.mpr ⟨Finset.mem_univ _, hic⟩)⟩
+
+/-- **Distinct maximal CA domains overlap sparsely.** Two maximal CA domains of the same family
+whose intersection misses fewer than `d_C` positions are equal. Equivalently, distinct maximal CA
+domains `A₁ ≠ A₂` satisfy `|A₁ ∩ A₂| ≤ n - d_C`.
+
+The codewords extending the family on `A₁` and on `A₂` agree on the dense intersection, so they are
+equal; then the family extends to codewords on `A₁ ∪ A₂`, and the maximality of each domain forces
+it to be the whole union. This is the pairwise-intersection hypothesis of the Corrádi bound in
+Claim 6.7 [BCGM25]. -/
+lemma IsMaxCADomain.eq_of_card_compl_inter_lt_minDist [Semiring F] [Module F A] [DecidableEq A]
+    [DecidableEq ι] {α : Type*} {MC : ModuleCode ι F A} {U : α → (ι → A)} {A₁ A₂ : Finset ι}
+    (h₁ : IsMaxCADomain MC U A₁) (h₂ : IsMaxCADomain MC U A₂)
+    (hcard : ((A₁ ∩ A₂)ᶜ).card < Code.minDist MC.carrier) : A₁ = A₂ := by
+  choose c₁ hc₁ hc₁A using fun j => (mem_projectedCodeSubmod_iff MC A₁ _).mp (h₁.prop j)
+  choose c₂ hc₂ hc₂A using fun j => (mem_projectedCodeSubmod_iff MC A₂ _).mp (h₂.prop j)
+  have hU₁ : ∀ j, ∀ i ∈ A₁, U j i = c₁ j i := fun j i hi => congrFun (hc₁A j) ⟨i, hi⟩
+  have hU₂ : ∀ j, ∀ i ∈ A₂, U j i = c₂ j i := fun j i hi => congrFun (hc₂A j) ⟨i, hi⟩
+  have hc : ∀ j, c₁ j = c₂ j := fun j =>
+    Code.eq_of_disagreementCols_subset_of_card_lt_minDist (hc₁ j) (hc₂ j) _
+      (fun i hi => Finset.mem_compl.mpr fun hi' => Code.mem_disagreementCols.mp hi
+        ((hU₁ j i (Finset.mem_inter.mp hi').1).symm.trans (hU₂ j i (Finset.mem_inter.mp hi').2)))
+      hcard
+  have hunion : ∀ j, projectedWord (U j) (A₁ ∪ A₂) ∈ projectedCodeSubmod MC (A₁ ∪ A₂) := fun j =>
+    (mem_projectedCodeSubmod_iff MC _ _).mpr ⟨c₁ j, hc₁ j, funext fun i => by
+      rcases Finset.mem_union.mp i.2 with h | h
+      · exact hU₁ j i.1 h
+      · exact (hU₂ j i.1 h).trans (congrFun (hc j) i.1).symm⟩
+  exact (Maximal.eq_of_le h₁ hunion Finset.subset_union_left).trans
+    (Maximal.eq_of_le h₂ hunion Finset.subset_union_right).symm
+
+/-- A linear code is maximum distance separable (MDS) if its parameters meet the singleton bound. -/
+def IsMDS {ι : Type*} [Fintype ι] [CommRing F] [DecidableEq F] (LC : LinearCode ι F) : Prop :=
+  Code.dist LC.carrier = length LC - dim LC + 1
+
+/-- Every linear code over a field `F` is a finitely generated `F`-module. -/
+lemma linear_code_is_FG [Field F] (LC : LinearCode ι F) : LC.FG := Submodule.FG.of_finite
+
+/-- Module code defined by left multiplication by its generator matrix.
+For a matrix `G : Matrix κ ι F` (over field `F`) and module `A` over `F`, this generates
+the `F`-submodule of `(ι → A)` spanned by the rows of `G` acting on `(κ → A)`.
+The matrix acts on vectors `v : κ → A` by : `(G • v)(i) = ∑ k, G k i • v k`
+where `G k i : F` is the scalar and `v k : A` is the module element.
+-/
+noncomputable def fromRowGenMat [Semiring F] (G : Matrix κ ι F) : LinearCode ι F :=
+  LinearMap.range G.vecMulLinear
+
+/-- Linear code defined by right multiplication by a generator matrix. -/
+noncomputable def fromColGenMat [CommRing F] (G : Matrix ι κ F) : LinearCode ι F :=
+  LinearMap.range G.mulVecLin
+
+/-- Define a linear code from its (parity) check matrix -/
+noncomputable def byCheckMatrix [CommRing F] (H : Matrix ι κ F) : LinearCode κ F :=
+  LinearMap.ker H.mulVecLin
+
+/-- Given a linear code of length `ι` and dimension `dim` over a field `F`, there exists a
+`dim × ι` matrix over `F` which generates the code.
+Theorem 2.2.7 [GRS25]. -/
+lemma gen_matrix_exists [Field F] (LC : LinearCode ι F) :
+    ∃ (G : Matrix (Fin (dim LC)) ι F), LC = fromRowGenMat G := by
+  unfold dim
+  unfold fromRowGenMat
+  have LC_basis := Module.finBasis F LC
+  let G : Matrix (Fin (Module.finrank F ↥LC)) ι F :=
+    fun i => LC_basis i
+  use G
+  change LC = LinearMap.range G.vecMulLinear
+  rw [range_vecMulLinear]
+  change LC = Submodule.span F (Set.range fun i => (LC_basis i : ι → F))
+  ext x
+  rw [Submodule.mem_span_range_iff_exists_fun]
+  constructor
+  · intros h
+    use LC_basis.equivFun ⟨x, h⟩
+    have x_to_lin_comb : (⟨x, h⟩ : LC).1 = ∑ i, LC_basis.equivFun ⟨x, h⟩ i • (LC_basis i).1 := by
+      rw (occs := .pos [1]) [←Module.Basis.sum_equivFun LC_basis ⟨x, h⟩, @Submodule.coe_sum]
+      congr
+    simp only [Module.Basis.equivFun_apply] at x_to_lin_comb ⊢
+    exact x_to_lin_comb.symm
+  · rintro ⟨x, h⟩
+    rw [←h]
+    apply Submodule.sum_smul_mem LC x
+    intros c _
+    exact Submodule.coe_mem (LC_basis c)
+
+/-- A matrix whose rows are a basis of a linear code over a field `F`. -/
+noncomputable def matrixFromBasis [Field F] (LC : LinearCode ι F) : Matrix (Fin (dim LC)) ι F :=
+  fun i => Module.finBasis F LC i
+
+/-- A linear code is equal to the submodule spanned by the rows of the matrix whose rows form a
+basis of the code. -/
+lemma eq_span_rows [Field F] (LC : LinearCode ι F) :
+    LC = Submodule.span F (Set.range LC.matrixFromBasis) := by
+  unfold matrixFromBasis
+  ext x
+  rw [Submodule.mem_span_range_iff_exists_fun]
+  constructor
+  · intros h
+    use (Module.finBasis F LC).equivFun ⟨x, h⟩
+    have x_to_lin_comb : (⟨x, h⟩ : LC).1 =
+      ∑ i, (Module.finBasis F LC).equivFun ⟨x, h⟩ i • ((Module.finBasis F LC) i).1 := by
+      rw (occs := .pos [1]) [←Module.Basis.sum_equivFun (Module.finBasis F LC) ⟨x, h⟩,
+       @Submodule.coe_sum]
+      congr
+    simp only [Module.Basis.equivFun_apply] at x_to_lin_comb ⊢
+    exact x_to_lin_comb.symm
+  · rintro ⟨x, h⟩
+    rw [←h]
+    apply Submodule.sum_smul_mem LC x
+    intros c _
+    exact Submodule.coe_mem ((Module.finBasis F LC) c)
+
+/-- A linear code is equal to the code generated by the rows of the matrix constructed
+from a basis of the code.
+Note: eq_span_rows is good for linear-algebra-style reasoning, whereas
+eq_fromRowGenMat_matrixFromBasis is essentially a coding theory language restatement of it. -/
+lemma eq_fromRowGenMat_matrixFromBasis [Field F] (LC : LinearCode ι F) :
+    LC = fromRowGenMat (matrixFromBasis LC) := by
+  unfold fromRowGenMat
+  simp only [range_vecMulLinear, Matrix.row]
+  exact eq_span_rows LC
+
+/-- The rank of the generator matrix equals the dimension of the linear code. -/
+lemma rank_genMatrix_eq_dim [Field F] (LC : LinearCode ι F) :
+    dim LC = (matrixFromBasis LC).rank := by
+  unfold dim
+  have h := Matrix.rank_eq_finrank_span_row (matrixFromBasis LC)
+  symm
+  erw [h]
+  have := congrArg (fun K : Submodule F (ι → F) => Module.finrank F ↥K) (eq_span_rows LC)
+  exact this.symm
+
+/-- The dimension of the linear code given by a generator matrix is the rank of the matrix. -/
+lemma dim_fromRowGenMat {k n : ℕ} [Field F] {G : Matrix (Fin k) (Fin n) F} :
+    dim (fromRowGenMat G) = G.rank := by
+  unfold dim fromRowGenMat
+  rw [range_vecMulLinear, Matrix.rank_eq_finrank_span_row]
+
+/-- Given a linear code of length `ι` and dimension `dim` over a field `F`, we define its `ι × dim`
+generator matrix as a matrix whose columns are an `F`-basis of the code. -/
+noncomputable def genMatrixCols [Field F] (LC : LinearCode ι F) :
+    Matrix ι (Fin (dim LC)) F := (matrixFromBasis LC).transpose
+
+/-- The dimension of a linear code equals the rank of its associated generator matrix.
+-/
+lemma rank_eq_dim_fromColGenMat [CommRing F] {G : Matrix κ ι F} :
+    G.rank = dim (fromColGenMat G) := rfl
 
 end
 
@@ -373,8 +655,8 @@ theorem singletonBound [CommRing F] [StrongRankCondition F]
       have hxS : ∀ i ∈ S, (x : ι → F) i = 0 := by
         intro i hi
         have := congrArg (fun (f : (S → F)) => f ⟨i, hi⟩) (by simpa using hx)
-        -- simp at this
-        simpa using this
+        change (x : ι → F) i = 0 at this
+        exact this
       -- bound the weight of x by |Sᶜ|
       let A : Finset ι := Finset.univ.filter (fun i => (x : ι → F) i ≠ 0)
       have hA_subset_compl : A ⊆ Sᶜ := by
@@ -478,6 +760,30 @@ theorem singleton_bound_linear [CommRing F] [StrongRankCondition F]
       (Nat.add_le_add_right (Nat.sub_le_sub_left hdist_le_min _) 1)
   exact h1.trans hmono'
 
+/-- Singleton bound over a module alphabet: for an `F`-linear code `C ⊆ A^n` with `A` a
+finite `F`-module, `dim_F C ≤ finrank F A * (n - (d - 1))` where `d = Code.dist C`.
+
+At `A = F` this is the `dist` form of `singleton_bound_linear`; at `A = Fin s → F`, the
+block alphabet of interleaved and folded codes, the leading factor is `s`. The proof
+compares `|C| = |F| ^ dim C` with the alphabet-general `singleton_bound`. -/
+theorem singleton_bound_module {ι : Type*} [Fintype ι] {F : Type*} [Field F] [Finite F]
+    {A : Type*} [AddCommGroup A] [Module F A] [Finite A] [DecidableEq A]
+    (C : Submodule F (ι → A)) :
+    Module.finrank F C ≤
+      Module.finrank F A * (card ι - (Code.dist (C : Set (ι → A)) - 1)) := by
+  classical
+  cases nonempty_fintype F
+  cases nonempty_fintype A
+  have hcardC : Nat.card C = Fintype.card F ^ Module.finrank F C := by
+    rw [Nat.card_eq_fintype_card]; exact Module.card_eq_pow_finrank
+  have hcardA : Nat.card A = Fintype.card F ^ Module.finrank F A := by
+    rw [Nat.card_eq_fintype_card]; exact Module.card_eq_pow_finrank
+  have hsb := singleton_bound (C : Set (ι → A))
+  rw [@Fintype.card_eq_nat_card _ (ofFinite _), @Fintype.card_eq_nat_card _ (ofFinite A)] at hsb
+  have hCC : Nat.card (C : Set (ι → A)) = Nat.card C := rfl
+  rw [hCC, hcardC, hcardA, ← pow_mul] at hsb
+  exact (Nat.pow_le_pow_iff_right Fintype.one_lt_card).mp hsb
+
 end
 
 section Computable
@@ -489,6 +795,49 @@ def moduleCodeDist' {F A} {ι} [Fintype ι] [Semiring F] [Fintype A] [DecidableE
   Finset.min <| ((Finset.univ (α := MC)).filter (fun v => v ≠ 0)).image (fun v => hammingNorm v.1)
 
 end Computable
+
+/-- `IsMDS` in rate-distance form: a linear code is MDS iff its relative minimum distance
+satisfies `δ_min / n = 1 - ρ + 1/n`, where `ρ = dim / n` is the rate.
+
+This is the real-valued reading of the defining `ℕ`-equation
+`Code.dist = length - dim + 1`. `[Nonempty ι]` is needed for `(Fintype.card ι : ℝ) ≠ 0`. -/
+lemma IsMDS_iff_rate_distance
+    {ι : Type*} [Fintype ι] [Nonempty ι]
+    {F : Type*} [Field F] [DecidableEq F]
+    (LC : LinearCode ι F) :
+    IsMDS LC ↔
+      (Code.minDist ((LC : Set (ι → F))) : ℝ) / Fintype.card ι =
+        1 - (Module.finrank F LC : ℝ) / Fintype.card ι + 1 / Fintype.card ι := by
+  have hn_pos : (0 : ℝ) < (Fintype.card ι : ℝ) := by exact_mod_cast Fintype.card_pos
+  have hn_ne : (Fintype.card ι : ℝ) ≠ 0 := ne_of_gt hn_pos
+  have hk_le : Module.finrank F LC ≤ Fintype.card ι := by
+    have := Submodule.finrank_le (R := F) (M := ι → F) LC
+    simpa [Module.finrank_fintype_fun_eq_card] using this
+  unfold IsMDS
+  rw [Code.dist_eq_minDist]
+  constructor
+  · intro h
+    have h' : (Code.minDist ((LC : Set (ι → F))) : ℝ) =
+        (Fintype.card ι : ℝ) - (Module.finrank F LC : ℝ) + 1 := by
+      have h1 : (length LC - dim LC + 1 : ℕ) = (Fintype.card ι - Module.finrank F LC + 1 : ℕ) :=
+        rfl
+      rw [h1] at h
+      have : ((Code.minDist (LC : Set (ι → F)) : ℕ) : ℝ) =
+          ((Fintype.card ι - Module.finrank F LC + 1 : ℕ) : ℝ) := by exact_mod_cast h
+      rw [Nat.cast_add, Nat.cast_sub hk_le, Nat.cast_one] at this
+      linarith
+    field_simp
+    linarith
+  · intro h
+    have h' : (Code.minDist ((LC : Set (ι → F))) : ℝ) =
+        (Fintype.card ι : ℝ) - (Module.finrank F LC : ℝ) + 1 := by
+      have := (div_eq_iff hn_ne).mp h
+      field_simp at this; linarith
+    have : ((Code.minDist (LC : Set (ι → F)) : ℕ) : ℝ) =
+        ((Fintype.card ι - Module.finrank F LC + 1 : ℕ) : ℝ) := by
+      rw [Nat.cast_add, Nat.cast_sub hk_le, Nat.cast_one]
+      exact h'
+    exact_mod_cast this
 
 end LinearCode
 

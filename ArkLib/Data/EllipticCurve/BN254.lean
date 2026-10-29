@@ -3,10 +3,11 @@ Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
-import CompPoly.Fields.BN254
-import Mathlib.AlgebraicGeometry.EllipticCurve.NormalForms
+public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
+public import CompPoly.Fields.BN254
+public import Mathlib.AlgebraicGeometry.EllipticCurve.NormalForms
 
 /-!
 # BN254 Elliptic Curve
@@ -32,6 +33,8 @@ precompiles and various zero-knowledge proof systems.
 
 
 -/
+
+@[expose] public section
 
 namespace BN254
 

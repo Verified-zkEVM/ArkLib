@@ -1,0 +1,351 @@
+---
+kind: paper
+bibkey: ABF26
+title: "Open Problems in List Decoding and Correlated Agreement"
+year: "2026"
+bib_source: blueprint/src/references.bib
+canonical_url: https://proximityprize.org/
+source_metadata: ../sources/ABF26/metadata.yml
+status: seeded
+related_concepts:
+  - reed-solomon-proximity
+related_modules:
+  - ArkLib/Data/CodingTheory/Basic/Entropy.lean
+  - ArkLib/Data/CodingTheory/HammingBallVolume.lean
+  - ArkLib/Data/CodingTheory/Erasure.lean
+  - ArkLib/Data/CodingTheory/ExtensionCodes.lean
+  - ArkLib/Data/CodingTheory/JohnsonBound/Family.lean
+  - ArkLib/Data/CodingTheory/ListDecodability/Bounds/Interleaved.lean
+  - ArkLib/Data/CodingTheory/ListDecodability/Bounds/KKH26.lean
+  - ArkLib/Data/CodingTheory/ListDecodability/Bounds/KKH26Asymptotic.lean
+  - ArkLib/Data/CodingTheory/Connections/ListDecodingAndCA.lean
+  - ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds.lean
+  - ArkLib/Data/CodingTheory/ProximityGap/Errors.lean
+  - ArkLib/Data/CodingTheory/ProximityGap/InformationSetLowerBound.lean
+  - ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges.lean
+  - ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges/CapacityBounds.lean
+  - ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges/ListDecoding.lean
+  - ArkLib/Data/CodingTheory/ProximityGap/LineDecoding.lean
+  - ArkLib/Data/CodingTheory/SubspaceDesign.lean
+  - ArkLib/Data/CodingTheory/ReedSolomon/Folded.lean
+  - ArkLib/Data/CodingTheory/ReedSolomon/Interleaved.lean
+  - ArkLib/Data/CodingTheory/ReedSolomon/Multiplicity.lean
+  - ArkLib/Data/Polynomial/ClassicalWronskian.lean
+  - ArkLib/Data/Polynomial/FoldedWronskian.lean
+  - ArkLib/Data/Probability/Combinatorial.lean
+---
+
+# ABF26
+
+## At A Glance
+
+`ABF26` is Arnon–Boneh–Fenzi, *Open Problems in List Decoding and Correlated Agreement* (2026),
+the survey manuscript accompanying the Ethereum Foundation **Proximity Prize**.
+It collects the definitions, known bounds, and open problems around list decoding, proximity
+gaps, and (mutual) correlated agreement for the code families used by modern IOP-based proof
+systems, and states the prize challenges in terms of those quantities.
+
+It is the paper that the whole ABF26 layer of `ArkLib/Data/CodingTheory` formalizes.
+Section/definition numbers quoted in ArkLib docstrings (`ABF26 Definition 2.14`,
+`ABF26 Theorem 2.18`, `ABF26 Theorem 3.2`, `ABF26 Claim B.1`, …) always refer to this
+manuscript, not to the original sources it cites — those get their own keys (`GR08`, `GK16`,
+`GG25`, `GX13`, `GW13`, `KSY14`, `Joh62`, `BCFW25`).
+
+## What ArkLib Uses From This Paper
+
+- **§2 preliminaries.** Definition 2.2 (`q`-ary entropy) → `CodingTheory.qEntropy`;
+  Definition 2.3 (restricted Hamming distance) is not formalized;
+  Definition 2.4 (Hamming-ball volume) → `CodingTheory.hammingBallVolume`;
+  Definition 2.5 (the rate convention `ρ(C) = log_{|Σ|}|C| / n`, which fixes `ρ = k/(s·n)` for
+  folded codes); Definition 2.8 (`Λ(C, δ, f)` and the maximised `|Λ(C, δ)|`) →
+  `ListDecodability.Lambda`; Lemma 2.6 (MDS characterisation).
+- **§2.4 code families.** Definition 2.9 (interleaved codes, consumed via the pre-existing
+  `Code.interleavedCodeSet` / `^⋈`); Definition 2.13 (interleaved Reed–Solomon) →
+  `ReedSolomon.Interleaved.irsCode`; Definition 2.14 (`(L,s)`-admissible `ω`) →
+  `ReedSolomon.Folded.Admissible`; Definition 2.15 (folded Reed–Solomon, after `GR08`) →
+  `ReedSolomon.Folded.frsCode`, with folded-point and encoder injectivity and the exact
+  saturation formula `dim_frsCode_eq_min`.
+- **§2.5 subspace designs.** Definition 2.16 (after `GX13`) → `CodingTheory.IsSubspaceDesign`;
+  Lemma 2.17 (after `GG25`) → `CodingTheory.subspaceDesign_tau_lower`; Theorem 2.18 (after
+  `GK16`) → `CodingTheory.isSubspaceDesign_frsCode` (folded-RS half) and
+  `CodingTheory.isSubspaceDesign_umCode` (univariate-multiplicity half).
+- **§2.6 extension codes.** Definition 2.19 (extension-field presentation) →
+  `CodingTheory.ExtensionFieldPresentation`; Definition 2.20 (extension code) →
+  `CodingTheory.extensionEncode`, packaged with its proved `F`-linearity as
+  `extensionEncodeLinearMap` and with injectivity preservation `extensionEncode_injective`, plus
+  the image-level `extensionCode` / `extensionCodeSubmodule`;
+  the encoder identity on embedded messages → `extensionEncode_comp_algebraMap` (which needs
+  **no** systematicity, unlike the remark following D2.20 — see `BCFW25.md`); Lemma
+  2.21 (after `BCFW25` Lemma D.3) →
+  `CodingTheory.lambda_extensionCode_eq_lambda_interleaved`; the Diamond–Posen minimum-distance
+  equality → `CodingTheory.minDist_extensionCode`.
+- **§3 list-decoding bounds.** Definition 3.1 (the `J_{q,ℓ}`, `J_q`, `J` radius family) →
+  `JohnsonBound.Jqℓ`, the pre-existing `JohnsonBound.J`, and `JohnsonBound.Jcap`; Theorem 3.2
+  (after `Joh62`) → `CodingTheory.johnson_bound_lambda_le_ell`; Corollary 3.3 (MDS list-size
+  corollary) → the arbitrary-finite-alphabet metric theorem
+  `CodingTheory.mds_johnson_lambda_le_of_rate_distance`, with field-linear wrapper
+  `mds_johnson_lambda_le` and the three code-family instantiations
+  `rs_lambda_le_johnson_mds`, `irs_lambda_le_johnson_mds`, `frs_lambda_le_johnson_mds`. The
+  Plotkin regime → `CodingTheory.plotkin_card_le_ell`.
+- **§1 prize carriers and §4 errors.** `ProximityGap/GrandChallenges.lean` contains the
+  adjacent-grid and radius-one endpoint answers. `ProximityGap/Errors.lean` contains `epsPg`,
+  `epsCa`, and their comparisons with affine-line `mcaError`. The information-set lower bound is
+  in `InformationSetLowerBound.lean`.
+- **§1 one-sided list witnesses.** `GrandChallenges/ListDecoding.lean` holds the two
+  `ListLowerWitness` constructors, both axiom-clean, as is the whole of `GrandChallenges.lean`.
+  `ofUniqueDecodingRange` is the floor: interleaving preserves minimum distance, hence the
+  unique-decoding radius (`Code.relativeUniqueDecodingRadius_interleavedCodeSet`), and inside
+  that radius the interleaved point lists are subsingletons, so `Λ(C^⋈m, δ) ≤ 1`
+  (`InterleavedCode.lambda_interleaved_le_one_of_le_relUDR`). `ofJohnsonBound` reaches the
+  Johnson radius via `CodingTheory.lambda_interleaved_le_of_le_johnson`, which is
+  `CodingTheory.johnson_bound_lambda_le_ell` applied to the interleaved code at alphabet
+  `Fin m → F`. The radius is computed at `q = |F|^m`, the alphabet of the interleaved
+  code (Definition 2.9; Theorem 3.2 is stated for `|Σ| = q`), while the relative minimum distance
+  is unchanged. Writing `c = q/(q-1)`, the Johnson function is `J_q(δ) = δ · h(c·δ)` with
+  `h(u) = (1 - √(1 - u))/u` increasing, so where the radicand is non-negative `J_q(δ)` decreases
+  in `q` down to the alphabet-free `J(δ) = 1 - √(1 - δ)` that the challenge is phrased in, and
+  stays at or above it.
+  The MCA-side `McaLowerWitness.ofJohnsonRangeBound` also has a proved input:
+  `rs_mcaError_le_in_johnson_range` follows from the [DKT26] port, with the printed constant
+  from [BCHKS25] Theorem 4.6. Both Johnson witness constructors rest on in-tree axiom-clean
+  bounds.
+  The generic shapes — `ListLowerWitness.ofLe`, `ListUpperWitness.ofGt`, and
+  `ListUpperWitness.ofEncardGt`, the last reducing an unsafe witness to a single word with an
+  oversized point list — sit alongside the MCA ones in `GrandChallenges.lean`. Neither
+  constructor resolves the challenge; see the gap note below.
+- **§4–§5 bound catalogue.** `ProximityGap/CapacityBounds.lean` and
+  `Connections/ListDecodingAndCA.lean` state the externally sourced upper/lower bounds and
+  connections on the canonical error and list-size carriers. `LineDecoding.lean` uses the
+  close-and-aligned formulation from GG25 Definition 3.1 and its MCA consequence; this corrects
+  the missing close-set intersection in ABF26 Definition 4.21. The prize witness consuming the
+  Johnson-range upper bound, proved via [DKT26] with the [BCHKS25] printed constant, is isolated
+  in `GrandChallenges/CapacityBounds.lean`.
+- **§3.15 and the KKH appendix.** `ListDecodability/Bounds/KKH26.lean` contains the concrete
+  useful-family and sum-set templates; `KKH26Asymptotic.lean` derives the asymptotic list lower
+  bound while carrying finite-field/smooth-domain existence as an explicit hypothesis.
+- **§2 interleaving list size.** Lemma 2.10 is represented by
+  `InterleavedCode.lambda_interleaved_le_choose_mul_pow` in
+  `ListDecodability/Bounds/Interleaved.lean`, stated on the canonical `Code.Lambda` carrier.
+- **§6 toy problem and erasure correction.** `ProofSystem/ToyProblem/` formalizes Constructions
+  6.2 and 6.9, their completeness/security layer, and executable checked scalar-RS/row-wise IRS
+  erasure decoders and extractors. `CodingTheory.eq_of_consistent_with_erased` supplies the generic
+  metric-uniqueness ingredient. The paper's generic algorithm for every additive code and its
+  operation bound remain outside ArkLib's current cost model.
+- **Appendix A.2 multiplicity codes.** Definitions A.6 / A.7 (after `GW13`, `KSY14`) →
+  `ReedSolomon.Multiplicity.umEvalOnPoints` / `umCode`.
+- **Appendix B counting.** Claim B.1 →
+  `Probability.exists_large_image_of_pairwise_collision_bound`.
+
+## Main ArkLib Touchpoints
+
+- [`ArkLib/Data/CodingTheory/SubspaceDesign.lean`](../../../ArkLib/Data/CodingTheory/SubspaceDesign.lean)
+  — D2.16 / L2.17 / T2.18, the largest ABF26 module.
+- [`ArkLib/Data/Polynomial/FoldedWronskian.lean`](../../../ArkLib/Data/Polynomial/FoldedWronskian.lean)
+  — the `GK16` machinery for T2.18's folded-RS half.
+- [`ArkLib/Data/Polynomial/ClassicalWronskian.lean`](../../../ArkLib/Data/Polynomial/ClassicalWronskian.lean)
+  — GK16 Definition 9 and Lemma 10 machinery for T2.18's univariate-multiplicity half.
+- [`ArkLib/Data/CodingTheory/JohnsonBound/Family.lean`](../../../ArkLib/Data/CodingTheory/JohnsonBound/Family.lean)
+  — §3 radius family, T3.2, alphabet-generic C3.3, and field/RS wrappers.
+- [`ArkLib/Data/CodingTheory/ReedSolomon/Folded.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/Folded.lean),
+  [`Interleaved.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/Interleaved.lean),
+  [`Multiplicity.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/Multiplicity.lean)
+  — §2.4 and §A.2 code families.
+- [`ArkLib/Data/CodingTheory/ExtensionCodes.lean`](../../../ArkLib/Data/CodingTheory/ExtensionCodes.lean)
+  — D2.19/D2.20 at both encoder and code-image level, L2.21, and the DP25 distance equality.
+- [`ArkLib/Data/CodingTheory/Erasure.lean`](../../../ArkLib/Data/CodingTheory/Erasure.lean)
+  — generic metric support for §6.2.
+- [`ArkLib/ProofSystem/ToyProblem/`](../../../ArkLib/ProofSystem/ToyProblem)
+  — exact/relaxed relations, Constructions 6.2/6.9, completeness and knowledge-soundness
+  contracts, executable RS/IRS decoding/extraction, and neutral FRS reference points.
+- [`ArkLib/Data/CodingTheory/HammingBallVolume.lean`](../../../ArkLib/Data/CodingTheory/HammingBallVolume.lean),
+  [`Basic/Entropy.lean`](../../../ArkLib/Data/CodingTheory/Basic/Entropy.lean)
+  — D2.4 / D2.2 support for the §3 lower bounds.
+- [`ArkLib/Data/Probability/Combinatorial.lean`](../../../ArkLib/Data/Probability/Combinatorial.lean)
+  — Claim B.1.
+- [`ArkLib/Data/CodingTheory/ProximityGap/Errors.lean`](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean),
+  [`InformationSetLowerBound.lean`](../../../ArkLib/Data/CodingTheory/ProximityGap/InformationSetLowerBound.lean),
+  and [`GrandChallenges.lean`](../../../ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges.lean)
+  — §1 and §4 numeric MCA/CA infrastructure and prize carriers.
+- [`CapacityBounds.lean`](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds.lean),
+  [`LineDecoding.lean`](../../../ArkLib/Data/CodingTheory/ProximityGap/LineDecoding.lean),
+  and [`Connections/ListDecodingAndCA.lean`](../../../ArkLib/Data/CodingTheory/Connections/ListDecodingAndCA.lean)
+  — the §4–§5 theorem catalogue.
+- [`ListDecodability/Bounds/KKH26.lean`](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/KKH26.lean)
+  and [`KKH26Asymptotic.lean`](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/KKH26Asymptotic.lean)
+  — the appendix templates and Theorem 3.15.
+- The running faithfulness ledger is
+  [`docs/kb/audits/open-problems-list-decoding-and-correlated-agreement.md`](../audits/open-problems-list-decoding-and-correlated-agreement.md);
+  it, not this page, is the place to record per-statement coverage.
+
+## Version Notes
+
+- `ABF26` is a manuscript accompanying the Proximity Prize; there is no ePrint number, so cite
+  it by key and by section/statement number only.
+- **Two builds are in play.** The ledger follows the **2026-07-06** source; ArkLib's earliest
+  transcriptions were made against a **2026-04-08** PDF (`~/abf26-refs/ABF26.pdf`, not committed,
+  not redistributable) that predates several upstream corrections. The concrete instance that
+  matters for ArkLib:
+  **Definition 3.1 prints the Johnson list factor as `ℓ/(ℓ−1)`, but the correct factor is
+  `(ℓ−1)/ℓ`.** The printed form is mathematically wrong — `ℓ/(ℓ−1) > 1` makes
+  `J_{q,ℓ} > J_q`, i.e. a *finite* list budget would buy a larger radius than the `ℓ → ∞`
+  limit, and it makes the Johnson denominator negative. The authors fixed this upstream on
+  **2026-06-13**. ArkLib's `Jqℓ` uses `(ℓ−1)/ℓ`, matching the classical statement (GRS12
+  Exercise 7.8, key `codingtheory`); the deviation from the PDF is deliberate and documented at
+  the definition. **Verified against the 2026-07-06 build: Definition 3.1 now prints
+  `(ℓ−1)/ℓ`,** so ArkLib agrees with the current source and diverges only from the stale PDF.
+- **§3 and §4 numbering differs between the two builds.** Relative to the 2026-04-08 PDF, the
+  2026-07-06 source:
+  - inserts Theorem 3.15 ([KKH26]), so [CW07] is Theorem 3.16;
+  - restates Lemma 4.7 (`εmca(C^≡t,δ) ≤ t·εmca(C,δ)`) as Theorem 4.7 ([Jo26]), an equality;
+  - inserts Lemma 4.16, the MCA information-set lower bound, which the PDF does not contain;
+  - replaces Theorem 4.17 ([CS25] Corollary 1) with Theorem 4.18 ([CS25] Theorem 3), keeping
+    Corollary 1 only as the prose interpretation after Theorem 4.18;
+  - so the PDF's Theorem 4.16 (near-capacity CA lower bound, now attributed to [KKH26]),
+    Theorem 4.18 (CA jump at the Johnson bound), Lemma 4.19 ([DG25] sampling), Definition 4.20
+    (line-decodability) and Theorem 4.21 (line-decoding implies MCA) are 4.17, 4.19, 4.20, 4.21
+    and 4.22;
+  - states line-decodability with probability thresholds `(δ, α, β)` rather than counts
+    `(δ, a, b)`;
+  - adds Appendix C, concrete restatements of [KKH26].
+
+  Numbering in §2, §5, §6 and Appendices A–B is the same in both builds, and the authors' latest
+  source (2026-08-15) numbers everything as the 2026-07-06 source does. The audit ledger uses
+  this numbering.
+- Practical consequence: **when re-checking an ArkLib statement against ABF26, check the
+  authors' current source, not only the 2026-04-08 PDF.** A mismatch against the PDF is not by
+  itself evidence of an ArkLib transcription error — it may just be the older numbering or an
+  already-corrected formula.
+
+## Known Divergences From ArkLib
+
+Four source discrepancies affect ArkLib's formal interface. ArkLib uses the corrected forms.
+
+1. **Definition 3.1's list factor is inverted** (`ℓ/(ℓ−1)` for `(ℓ−1)/ℓ`) — see Version Notes.
+   Fixed in Lean; already fixed upstream.
+2. **Definition 2.14 omits the intra-orbit condition.** As printed, admissibility quantifies
+   over `binom(L,2)` — *distinct* pairs only — so nothing constrains `α` against itself and
+   `ω = 1` is admissible for every `L` and every `s`, contradicting the definition's own stated
+   purpose. Under the literal Def 2.14 the folded-RS distance claim is false: brute force over
+   `(ZMod 11)^k` with `L` the quadratic-residue subgroup, `s = 2`, `ω = 1` gives true minimum
+   distances `5, 4, 3, 2, 1` for `k = 1..5` against the formula's `5, 5, 4, 4, 3`.
+   `ReedSolomon.Folded.Admissible` therefore adds the intra-orbit clause
+   `α · ωⁱ ≠ α` for `0 < i < s`; together with the printed clause this is exactly injectivity
+   of `(α, i) ↦ α · ωⁱ`, which is `GR08`'s own setup. The strengthening is
+   **hypothesis-position only**, so every ArkLib FRS theorem is *weaker* than ABF26's printed
+   claim, never stronger.
+3. **Theorem 2.18 has two missing hypotheses, not one.**
+   (a) There is no order condition on `ω`. GK16 Lemma 12, the result T2.18 rests on, requires
+   `γ` to be a **generator** of `F*`; without it T2.18 is false (compiled refutation over
+   `𝔽₁₇` with `ι = Fin 7`, `s = 2`, `k = 3`, `ω = −1`). ArkLib restores it as
+   `hω_gen : orderOf ω = Fintype.card F − 1`.
+   (b) `0 ∈ L` is permitted, and with `0 ∈ L` T2.18 is false **even with** the order condition
+   (compiled refutation: `ZMod 5`, `domain = (0, 1)`, `s = 3`, `k = 2`, `ω = 2` a generator, so
+   `Σ dim Aᵢ / n = 1/2 > 1/3 = dim A · τ(1)`). In ArkLib this is excluded as a side effect of
+   the strengthened `Admissible` (the intra-orbit clause rules out `α = 0` for `s ≥ 2`), so the
+   Lean statement is correct as it stands — but the clause is load-bearing for T2.18.
+   Note that `GK16` itself is not affected by (b): its §4.2 setup requires `F_q(α) = F_{q^r}`
+   with `|S_α| = r·t`, which excludes `α = 0`.
+4. **Definition 4.21 omits the close-set intersection required by line decoding.** Its printed
+   conclusion counts every challenge satisfying affine alignment, even when the sampled line is
+   not close to the selected codeword. GG25 Definition 3.1 counts challenges satisfying both
+   proximity and alignment, and GG25 Theorem 3.5 proves the MCA implication for that definition.
+   The printed ABF26 pair is false: for the zero code of length two over `𝔽₃`, take
+   `δ = 1/2`, `a = 1`, and `b = n+1 = 3`. The printed line-decodability condition holds because
+   every codeword family is identically zero and hence aligns on all three challenges. An ambient
+   affine line whose two coordinates vanish at distinct challenges nevertheless has MCA bad-event
+   probability at least `2/3`, exceeding the claimed `a/|F| = 1/3`. Consequently
+   `IsLineDecodable` and `IsLineDecodable.mcaError_le` follow GG25 rather than the printed ABF26
+   definition and theorem. The 2026-07-06 source states the pair as Definition 4.21 /
+   Theorem 4.22 with probability thresholds `α = a/|F|` and `β = b/|F|` (so `α = 1/3` above) and
+   keeps the omission; in the 2026-04-08 PDF the pair is Definition 4.20 / Theorem 4.21.
+
+Directions in which ArkLib is *weaker* than the paper (all deliberate, none unsound):
+
+- `subspaceDesign_tau_lower` restricts L2.17's conclusion to `r ≥ 1`. This is a genuine
+  correction, not a narrowing: both ABF26 L2.17 and GG25 L2.16 are literally false at `r = 0`,
+  since `dim A ≤ 0` forces `A = ⊥` and the design inequality degenerates, leaving `τ 0`
+  unconstrained. It also adds `hτ_nonneg`, needed only to carry the `C = ⊥` branch; the
+  source-shaped `C ≠ ⊥` form is `subspaceDesign_tau_lower_of_ne_bot`.
+- D6.4/L6.5's algorithm and running-time claim are absent. Only their reusable metric uniqueness
+  ingredient is present; no vacuous cost-free existence predicate is advertised.
+
+The UM half of T2.18 is instead slightly more general than the printed survey statement:
+`isSubspaceDesign_umCode` needs no separate `|F| > |ι|` assumption because the evaluation
+domain is already an injection, and it uses the mathematically sufficient endpoint-inclusive
+guard `k ≤ ringChar F` for degree-`< k` messages.
+
+## Open Formalization Gaps
+
+- **D2.3.** Restricted Hamming distance `Δ_T` is not formalized; only the full-domain Hamming
+  and relative-distance notions exist.
+- **§3 remainder.** Theorems 3.4–3.13 have a Lean statement under
+  `ArkLib/Data/CodingTheory/ListDecodability/Bounds/`; Definition 3.1 / Theorem 3.2 /
+  Corollary 3.3 (the Johnson family) are the pre-existing `Jqℓ` / `johnson_bound_lambda_le_ell` /
+  `mds_johnson_lambda_le_of_rate_distance` under `JohnsonBound/`. **3.16 is absent by
+  design; 3.15 is present in the KKH modules.** Theorem 3.14 still awaits primary-source
+  verification of [JH01] Theorem 2; the proved `rs_codimension_one_list_size` is a different
+  internal lemma. What remains for the admitted catalogue is *proof*, plus the fidelity gaps
+  below.
+  - Proved in-tree and axiom-clean: Lemma 3.7 (Elias volume bound, by the paper's own averaging
+    argument), both halves of Theorem 3.9, Corollary 3.8, Theorem 3.13, and — the deepest
+    of them — Theorem 3.4 at [CZ25] Theorem B.5's `(k−1)`-level premise, which makes Corollary 3.5,
+    the two `η`-forms, and the univariate-multiplicity sibling axiom-clean along with it; and
+    Theorem 3.10, whose consequence `large_alphabet_card_ge_exp_of_inv_length` is axiom-clean with
+    it. The internal codimension-one Reed-Solomon interpolation lemma is also axiom-clean.
+    Six of these landed from one round of Aleph prover runs (ArkLib #724–#728, #732).
+  - Admitted with the source statement in the docstring: Theorem 3.6, Theorem 3.11, Theorem 3.12.
+    `random_linear_lambda_lower_exists` is *derived* from Theorem 3.11, so it inherits that admit.
+  - **§3 numbering follows the tex, not the cached PDF.** The cached [ABF26] build stops at Theorem
+    3.14 and numbers the [CW07] barrier 3.15; the tex inserts the [KKH26] asymptotic Reed-Solomon
+    lower bound as **Theorem 3.15** and pushes [CW07] to **3.16**. Theorem 3.15 is now derived from
+    the formalized appendix templates. Theorem 3.16 stays unformalized **by decision** — it needs
+    a computational-hardness framework.
+  - Fidelity gaps to close, in rough priority order: (i) Theorem 3.14 needs the closed-access JH01
+    primary source before a formal statement can be justified; (ii) Theorem 3.10 is stated for a
+    linear code over a field, whereas the paper states it for an arbitrary code
+    `C : Σ^k → Σ^n`;
+    (iii) Theorem 3.10's rate is pinned by equality, hence vacuous at irrational `ρ` (the `∃ n₀`
+    concern is settled: the threshold sits outside `∀ η`, so the paper's `η = Θ(1/n)` corollary is
+    reachable and is derived). The old Theorem 3.11 off-by-one and Theorem 3.12 all-real
+    overgeneralisation are closed: Lean now uses `Lambda < L` / `L ≤ Lambda` for [GLMRSW22] and
+    rational parameters for [BKR06]. The checked [MS77] source is a binary shell estimate; the
+    q-ary ball statement remains valid as a proved generalisation, not a verbatim attribution.
+  - **Two paper defects found in §3 and owed upstream**: Theorem 3.9 drops [ST20]'s integrality
+    convention *and* the non-negative-exponent guard its pigeonhole needs, and is false without
+    either; Theorem 3.4's premise, read at Theorem 2.18's printed profile, is false (it needs
+    [CZ25]'s `(k−1)` level). Both have compiled axiom-clean counterexamples.
+- **§1 challenge resolutions.** Both prize propositions remain unproved at every rate, and this
+  is the open research question rather than a formalization backlog: `mcaPrize` and
+  `listDecodingPrize` reduce to `McaPrizeResolution` / `ListPrizeResolution`, neither of which is
+  ever constructed, because each demands a full `GrandMcaResolution` / `GrandListResolution` —
+  an exact adjacent-grid crossing, or safety at every grid point. Nothing outside
+  `GrandChallenges.lean` instantiates `prizeDimension` / `prizeRate` at any `j : Fin 4`, so the
+  rates `1/4`, `1/8`, `1/16` are untouched. The nearer gap is ordinary formalization work: no
+  `McaUpperWitness` or `ListUpperWitness` is built for a concrete code (`McaUpperWitness.ofGt`,
+  `.ofEpsCaGt`, and `ListUpperWitness.ofGt`, `.ofEncardGt` are generic shapes awaiting a real
+  large-list or CA-failure construction). On the safe side both list constructors exist, at
+  the unique-decoding and Johnson radii. The remaining shortfall there is the radius, not the
+  list budget: `ℓ` is a parameter of `ofJohnsonBound` and the constructor already accepts a
+  proof of `ℓ ≤ ε* · |F|`, so the prize's bound shape is expressible, but `Jqℓ q ℓ δ_min` stays
+  capped by `J_q(δ_min)` however large `ℓ` grows.
+- **§6.** A cost model for erasure correction is open, and without it D6.4/L6.5 carry no
+  content. Definition 6.11 is `partial`: the optimal-adversary identification behind the paper's
+  "exactly" is not proved. Lemma 6.12 is formalized, as
+  `exists_winningSetFor_ncard_ge_of_lambda_lt_card` in
+  `ProofSystem/ToyProblem/SoundnessBounds.lean`, and it consumes Claim B.1 there. The ledger
+  gives the status of every other §6 row.
+- **§4, §5.** The catalogue is proved in-tree except for **two external assumptions**:
+  Theorem 4.17 ([KKH26] CA lower bound
+  near capacity), and Theorem 5.4 ([BenSassonGKS20] the list-decoding/CA separation).
+  Theorem 4.12 is proved via [DKT26] with the [BCHKS25] printed constant, so every
+  Johnson-range `McaLowerWitness` has a proved numeric input. Statements 4.9, 4.11, 4.12,
+  4.13 (at the proof-derived radius `1 - τ(2t) - 3/(2t)`), 4.14, 4.18, 4.19, 4.20, 4.22, the BCGM25 univariate-powers bound, the CA-breakdown
+  interpretation of 4.18, and 5.1-5.3 are all axiom-clean. The random-RS MCA result (T4.15)
+  and the draft-only MCA conjecture remain outside this layer. See the ledger for each
+  statement's source-side guards and normalization choices.
+
+## Source Access
+
+- Source metadata: [`../sources/ABF26/metadata.yml`](../sources/ABF26/metadata.yml)
+- Public reference: [`blueprint/src/references.bib`](../../../blueprint/src/references.bib)
+- Prize site: <https://proximityprize.org/>

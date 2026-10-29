@@ -1,0 +1,175 @@
+/-
+Copyright (c) 2026 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Quang Dao
+-/
+module
+
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.CurveCertificate
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.HeightCounting
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.CurveHeightCounting
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.AgreementCounting
+
+/-!
+# Cap-sensitive list bounds from first-order certificates
+
+Finite first-order symbolic certificates bound any finite family of polynomials that meet a degree
+and agreement threshold. Shifted coefficient-slot surplus constructs such certificates and gives
+the sharp and dimension-sensitive first-order list bounds.
+
+## Main statements
+
+* `firstOrder_finite_agreement_solutions_card_le_tight_of_exponent` gives the
+  dimension-sensitive bound for any sufficient Taylor exponent.
+* `firstOrder_finite_agreement_solutions_card_le_tight` uses the standard exponent `2 * K - 3`.
+* `firstOrder_finite_agreement_solutions_card_le_sharp` gives the uniform cap-sensitive bound.
+* `finite_firstOrder_list_bound_of_heightSlotCount_sharp` and
+  `finite_firstOrder_list_bound_of_shiftedHeightSlotCount_tight` derive these bounds from a
+  shifted-slot surplus.
+
+## References
+
+* [DKT26]
+-/
+
+@[expose] public section
+
+open PolynomialDifferential Polynomial
+
+noncomputable section
+
+namespace ReedSolomon.HiddenDerivative
+
+universe u
+
+variable {F : Type u} [Field F]
+
+open Classical in
+/-- A symbolic first-order certificate bounds every finite family of accepted polynomials by the
+dimension-sensitive list charge whenever the Taylor exponent is sufficient. -/
+theorem firstOrder_finite_agreement_solutions_card_le_tight_of_exponent
+    {D A m M μ k h n N K : ℕ}
+    {τ : ℕ}
+    (domain : Fin n ↪ F) (received : Fin n → F)
+    (columns : Fin N → SourceColumn 1)
+    (cert : FirstOrderSymbolicCertificate.{u, u} (F := F) D A m M μ k h domain received
+      (fun _ ↦ 0) columns)
+    (hτ : ∀ r ≤ 1, TaylorExponentSufficient r K τ)
+    (hK : 1 < K) (hkK : k ≤ K)
+    (hk : 0 < k) (hkA : k ≤ A) (hAn : A ≤ n)
+    (hchar : ringChar F = 0 ∨ max (K - 1) μ < ringChar F)
+    (S : Finset F[X])
+    (hS : ∀ P ∈ S, P.degree < k ∧
+      A ≤ ({i : Fin n | P.eval (domain i) = received i} : Set (Fin n)).ncard) :
+    (S.card : ℚ) ≤ firstOrderTightListWeight n A k K τ μ M := by
+  classical
+  obtain ⟨Q, hQ, hdegreeQ, hfirstQ, hsound⟩ :=
+    firstOrderSymbolicCertificate_specialization_at_zero domain received columns cert
+  have hsol : ∀ P ∈ S, differentialSpecialization Q P = 0 := by
+    intro P hP
+    exact hsound P (hS P hP).1 (hS P hP).2
+  exact finite_firstOrder_agreement_solutions_card_le_tight_of_exponent
+    Q K k μ M τ hQ hdegreeQ hfirstQ hτ domain received hK hkK hk hkA hAn hchar S hsol
+    (by
+      intro P hP
+      exact hS P hP)
+
+open Classical in
+/-- The standard exponent `2 * K - 3` gives the dimension-sensitive bound for every finite family
+of accepted polynomials. -/
+theorem firstOrder_finite_agreement_solutions_card_le_tight
+    {D A m M μ k h n N K : ℕ}
+    (domain : Fin n ↪ F) (received : Fin n → F)
+    (columns : Fin N → SourceColumn 1)
+    (cert : FirstOrderSymbolicCertificate.{u, u} (F := F) D A m M μ k h domain received
+      (fun _ ↦ 0) columns)
+    (hK : 1 < K) (hkK : k ≤ K)
+    (hk : 0 < k) (hkA : k ≤ A) (hAn : A ≤ n)
+    (hchar : ringChar F = 0 ∨ max (K - 1) μ < ringChar F)
+    (S : Finset F[X])
+    (hS : ∀ P ∈ S, P.degree < k ∧
+      A ≤ ({i : Fin n | P.eval (domain i) = received i} : Set (Fin n)).ncard) :
+    (S.card : ℚ) ≤ firstOrderTightListWeight n A k K (2 * K - 3) μ M := by
+  exact firstOrder_finite_agreement_solutions_card_le_tight_of_exponent
+    domain received columns cert
+    (fun r _ ↦ taylorExponentSufficient_two_mul_sub_three r K)
+    hK hkK hk hkA hAn hchar S hS
+
+open Classical in
+/-- A symbolic first-order certificate gives the uniform cap-sensitive bound for every finite
+family of accepted polynomials. -/
+theorem firstOrder_finite_agreement_solutions_card_le_sharp
+    {D A m M μ k h n N K : ℕ}
+    (domain : Fin n ↪ F) (received : Fin n → F)
+    (columns : Fin N → SourceColumn 1)
+    (cert : FirstOrderSymbolicCertificate.{u, u} (F := F) D A m M μ k h domain received
+      (fun _ ↦ 0) columns)
+    (hK : 1 < K) (hkK : k ≤ K)
+    (hk : 0 < k) (hkA : k ≤ A) (hAn : A ≤ n)
+    (hchar : ringChar F = 0 ∨ max (K - 1) μ < ringChar F)
+    (S : Finset F[X])
+    (hS : ∀ P ∈ S, P.degree < k ∧
+      A ≤ ({i : Fin n | P.eval (domain i) = received i} : Set (Fin n)).ncard) :
+    (S.card : ℚ) ≤
+      ((n * firstOrderListWeight K μ M : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ) := by
+  have hτ : ∀ r ≤ 1, TaylorExponentSufficient r K (2 * K) := by
+    intro r hr
+    exact taylorExponentSufficient_two_mul r K
+  have hcount := firstOrder_finite_agreement_solutions_card_le_tight_of_exponent
+    domain received columns cert hτ hK hkK hk hkA hAn hchar S hS
+  exact hcount.trans (firstOrderTightListWeight_two_mul_le n A k K μ M hk hkA hAn)
+
+open Classical in
+/-- A shifted-slot surplus constructs a first-order certificate and gives the uniform
+cap-sensitive finite-list bound. -/
+theorem finite_firstOrder_list_bound_of_heightSlotCount_sharp
+    {D A m M μ k h n K : ℕ}
+    (hD : 0 < D) (hbudget : 0 < m * A) (hkD : k ≤ D + 1)
+    (domain : Fin n ↪ F) (received : Fin n → F)
+    (hheight : firstOrderCurveShiftedRowSlotBound D A m M μ n 1 h <
+      firstOrderCurveShiftedHeightSlotCount D A m M μ 1 h)
+    (hK : 1 < K) (hkK : k ≤ K)
+    (hk : 0 < k) (hkA : k ≤ A) (hAn : A ≤ n)
+    (hchar : ringChar F = 0 ∨ max (K - 1) μ < ringChar F)
+    (S : Finset F[X])
+    (hS : ∀ P ∈ S, P.degree < k ∧
+      A ≤ ({i : Fin n | P.eval (domain i) = received i} : Set (Fin n)).ncard) :
+    (S.card : ℚ) ≤
+      ((n * firstOrderListWeight K μ M : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ) := by
+  have hcert : Nonempty (FirstOrderSymbolicCertificate.{u, u} (F := F)
+      D A m M μ k h domain received (fun _ ↦ 0)
+        (firstOrderColumns (D := D) (A := A) (m := m) (M := M) (μ := μ))) :=
+    exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount
+      hD hbudget hkD domain received (fun _ ↦ 0) hheight
+  obtain ⟨cert⟩ := hcert
+  exact firstOrder_finite_agreement_solutions_card_le_sharp domain received
+    (firstOrderColumns (D := D) (A := A) (m := m) (M := M) (μ := μ)) cert
+      hK hkK hk hkA hAn hchar S hS
+
+open Classical in
+/-- A shifted-slot surplus constructs a first-order certificate and gives the
+dimension-sensitive finite-list bound at exponent `2 * K - 3`. -/
+theorem finite_firstOrder_list_bound_of_shiftedHeightSlotCount_tight
+    {D A m M μ k h n K : ℕ}
+    (hD : 0 < D) (hbudget : 0 < m * A) (hkD : k ≤ D + 1)
+    (domain : Fin n ↪ F) (received : Fin n → F)
+    (hheight : firstOrderCurveShiftedRowSlotBound D A m M μ n 1 h <
+      firstOrderCurveShiftedHeightSlotCount D A m M μ 1 h)
+    (hK : 1 < K) (hkK : k ≤ K)
+    (hk : 0 < k) (hkA : k ≤ A) (hAn : A ≤ n)
+    (hchar : ringChar F = 0 ∨ max (K - 1) μ < ringChar F)
+    (S : Finset F[X])
+    (hS : ∀ P ∈ S, P.degree < k ∧
+      A ≤ ({i : Fin n | P.eval (domain i) = received i} : Set (Fin n)).ncard) :
+    (S.card : ℚ) ≤ firstOrderTightListWeight n A k K (2 * K - 3) μ M := by
+  have hcert : Nonempty (FirstOrderSymbolicCertificate.{u, u} (F := F)
+      D A m M μ k h domain received (fun _ ↦ 0)
+        (firstOrderColumns (D := D) (A := A) (m := m) (M := M) (μ := μ))) :=
+    exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount
+      hD hbudget hkD domain received (fun _ ↦ 0) hheight
+  obtain ⟨cert⟩ := hcert
+  exact firstOrder_finite_agreement_solutions_card_le_tight domain received
+    (firstOrderColumns (D := D) (A := A) (m := m) (M := M) (μ := μ)) cert
+    hK hkK hk hkA hAn hchar S hS
+
+end ReedSolomon.HiddenDerivative

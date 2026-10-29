@@ -1,0 +1,35 @@
+/-
+Copyright (c) 2026 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Tobias Rothmann
+-/
+module
+
+public import VCVio.CryptoFoundations.CommitmentScheme
+
+/-!
+  # Ordinary (Non-Interactive) Commitment Schemes
+
+  This file is the entry point for *ordinary* commitment schemes in ArkLib: non-interactive
+  schemes with a public parameter space `PP`, message space `M`, commitment space `C`, and
+  opening (decommitment) space `D`, together with their standard security properties
+  (correctness, hiding, binding, and trapdoor extractability).
+
+  The core definitions are **not** redefined here. They are provided by the
+  [VCVio](https://github.com/Verified-zkEVM/VCVio) library, in
+  `VCVio.CryptoFoundations.CommitmentScheme`:
+
+  - `CommitmentScheme PP M C D` — the scheme bundle (`setup`, `commit`, `verify`).
+  - `CommitmentScheme.PerfectlyCorrect` / `PerfectlyHiding` — perfect security notions.
+  - `CommitmentScheme.hidingGame` / `bindingExperiment` — game-based hiding and binding experiments.
+  - `TrapdoorExtractor` / `CommitmentScheme.extractExperiment` — trapdoor-based extraction.
+
+  Concrete ordinary schemes (e.g. the simple Ajtai commitment under `Ajtai/`) instantiate
+  `CommitmentScheme` directly. Importing this module re-exports those definitions, so
+  downstream files can depend on `ArkLib.Commitments.Ordinary.Basic` as the canonical handle.
+
+  For commitment schemes with *oracle openings* (functional commitments such as KZG), see
+  `ArkLib.Commitments.Functional.Basic` instead.
+-/
+
+@[expose] public section

@@ -3,25 +3,29 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: František Silváši, Ilia Vlasov
 -/
-import Init.Data.List.FinRange
-import Mathlib.Algebra.Field.Basic
-import Mathlib.Algebra.Polynomial.Basic
-import Mathlib.Algebra.Polynomial.Degree.Defs
-import Mathlib.Algebra.Polynomial.FieldDivision
-import Mathlib.Data.Finset.Insert
-import Mathlib.Data.Fintype.Card
-import Mathlib.Data.Matrix.Mul
-import Mathlib.Data.Matrix.Reflection
+module
 
-import ArkLib.Data.CodingTheory.Basic.DecodingRadius
-import ArkLib.Data.CodingTheory.Basic.Distance
-import ArkLib.Data.CodingTheory.Basic.LinearCode
-import ArkLib.Data.CodingTheory.Basic.RelativeDistance
-import ArkLib.Data.Polynomial.Interface
-import ArkLib.Data.CodingTheory.BerlekampWelch.ElocPoly
-import ArkLib.Data.CodingTheory.BerlekampWelch.Sorries
+public import Init.Data.List.FinRange
+public import Mathlib.Algebra.Field.Basic
+public import Mathlib.Algebra.Polynomial.Basic
+public import Mathlib.Algebra.Polynomial.Degree.Defs
+public import Mathlib.Algebra.Polynomial.FieldDivision
+public import Mathlib.Data.Finset.Insert
+public import Mathlib.Data.Fintype.Card
+public import Mathlib.Data.Matrix.Mul
+public import Mathlib.Data.Matrix.Reflection
+
+public import ArkLib.Data.CodingTheory.Basic.DecodingRadius
+public import ArkLib.Data.CodingTheory.Basic.Distance
+public import ArkLib.Data.CodingTheory.Basic.LinearCode
+public import ArkLib.Data.CodingTheory.Basic.RelativeDistance
+public import ArkLib.Data.Polynomial.Interface
+public import ArkLib.Data.CodingTheory.BerlekampWelch.ElocPoly
+public import ArkLib.Data.CodingTheory.BerlekampWelch.Sorries
 
 /-! # Berlekamp-Welch Conditions -/
+
+@[expose] public section
 
 namespace BerlekampWelch
 
@@ -84,7 +88,9 @@ lemma linsolve_is_berlekamp_welch_solution
 lemma is_berlekamp_welch_solution_ext
     (h : ∀ i, (Matrix.mulVec (BerlekampWelchMatrix e k ωs f) v) i = -(f i) * (ωs i) ^ e) :
     IsBerlekampWelchSolution e k ωs f v := by
-  aesop (add simp [IsBerlekampWelchSolution, Rhs])
+  rw [IsBerlekampWelchSolution]
+  funext i
+  simpa only [Rhs] using h i
 
 @[simp]
 lemma Rhs_add_one : Rhs (e + 1) ωs f = fun i ↦ Rhs e ωs f i * ωs i := by
@@ -93,20 +99,24 @@ lemma Rhs_add_one : Rhs (e + 1) ωs f = fun i ↦ Rhs e ωs f i * ωs i := by
   ring
 
 noncomputable def E_and_Q_to_a_solution (e : ℕ) (E Q : Polynomial F) (i : Fin n) : F :=
-  if i < e then E.toFinsupp i else Q.toFinsupp (i - e)
+  if i < e then E.coeff i else Q.coeff (i - e)
 
 @[simp]
 lemma E_and_Q_to_a_solution_coeff :
     E_and_Q_to_a_solution e E Q i = if i < e then E.coeff i else Q.coeff (i - e) := rfl
 
 def truncate (p : Polynomial F) (n : ℕ) : Polynomial F :=
-  ⟨⟨p.1.1 ∩ Finset.range n, fun i ↦ if i < n then p.1.2 i else 0, by aesop⟩⟩
+  Polynomial.ofFinsupp <| AddMonoidAlgebra.ofCoeff
+    ⟨p.support ∩ Finset.range n, fun i ↦ if i < n then p.coeff i else 0, by aesop⟩
 
 @[simp]
 lemma coeff_truncate : (truncate p n).coeff k = if k < n then p.coeff k else 0 := rfl
 
 @[simp]
-lemma truncate_zero_eq_zero : (truncate p 0) = 0 := by aesop
+lemma truncate_zero_eq_zero : (truncate p 0) = 0 := by
+  ext i
+  simp only [coeff_truncate, Nat.not_lt_zero, ↓reduceIte]
+  rfl
 
 @[simp]
 lemma natDegree_truncate [φ : NeZero n] : (truncate p n).natDegree < n := by
@@ -130,57 +140,63 @@ private lemma BerlekampWelchCondition_to_Solution [NeZero n]
   IsBerlekampWelchSolution e k ωs f (E_and_Q_to_a_solution e E Q) := by
   rcases h with ⟨h_cond, h_E_deg, h_E_coeff, h_Q_deg⟩
   refine is_berlekamp_welch_solution_ext fun i ↦ ?p₁
-  letI bound := 2 * e + k
+  let bound := 2 * e + k
+  have hb : bound = 2 * e + k := rfl
   generalize eq : BerlekampWelchMatrix _ _ _ f = M₁
-  letI leftσ : Finset _ := {j : Fin bound | j < e}
-  letI rightσ : Finset _ := univ (α := Fin bound) \ leftσ
+  let leftσ : Finset _ := {j : Fin bound | j < e}
+  let rightσ : Finset _ := univ (α := Fin bound) \ leftσ
   generalize eq₁ : ∑ j ∈ leftσ, E.coeff j * (ωs i)^j.1 = σ₁
   generalize eq₂ : ∑ j ∈ rightσ, Q.coeff (j - e) * -(ωs i)^(j - e) = σ₂
   calc _ = ∑ j : Fin bound, if ↑j < e
                             then E.coeff ↑j * M₁ i j
                             else Q.coeff (↑j - e) * M₁ i j := by
-                              simp [Matrix.mulVec_eq_sum, ite_apply]; rfl
+                              simp only [Matrix.mulVec, dotProduct, E_and_Q_to_a_solution]
+                              exact sum_congr rfl fun j _ ↦ by split_ifs <;> ring
        _ = f i * σ₁ + σ₂ := by
         rw [sum_ite]
         exact eq ▸ eq₁ ▸ eq₂ ▸
           congr_arg₂ _
-            (by rw [mul_sum]; exact sum_congr rfl fun _ _ ↦ by rw [
-                                                                 bwm_of_pos (by aesop), Rhs
-                                                               ]; ring)
-            (sum_congr (by aesop) fun j hj ↦ by rw [bwm_of_neg (by aesop)])
+            (by rw [mul_sum]; exact sum_congr rfl fun x hx ↦ by
+                  rw [bwm_of_pos (mem_filter.mp hx).2, Rhs]; ring)
+            (sum_congr
+              (by ext; simp only [rightσ, leftσ, mem_sdiff, mem_univ, mem_filter, true_and])
+              fun j hj ↦ by
+                rw [bwm_of_neg (by
+                  simpa only [rightσ, leftσ, mem_sdiff, mem_univ, mem_filter, true_and, not_lt]
+                    using hj)])
   replace eq₁ : eval (ωs i) E - ωs i ^ e * E.coeff e = σ₁ := calc
                 _ = ∑ i_1 ∈ range (e + 1), E.coeff i_1 * ωs i ^ i_1 - ωs i ^ e * E.coeff e :=
                   by rw [eval_eq_sum_range, h_E_deg]
                 _ = ∑ x ∈ range e, E.coeff x * ωs i ^ x :=
                   by rw [sum_range_succ]; ring
-                _ = σ₁ := by rw [←eq₁]; symm
-                             apply sum_nbij (i := Fin.val) <;>
-                               try intros a _; aesop (add safe (by existsi ⟨a, by omega⟩))
-                                                     (add simp Set.InjOn)
-  letI δσ := {j | j < e + k}.toFinset
-  replace eq₂ : -eval (ωs i) Q = σ₂ := calc
-                _              = -∑ j ∈ δσ.attach, ωs i ^ j.1 * Q.coeff j := by
-                  rw [
-                    eval_eq_sum, neg_inj,
-                    sum_eq_of_subset (s := δσ) _ (by simp) fun _ hj ↦
-                      by rw [mem_support_iff, ←ite_le_natDegree_coeff _ _ inferInstance] at hj
-                         aesop (add safe (by omega)),
-                    ←sum_attach
-                  ]
-                  ac_rfl
-                _              = σ₂ := by
-                  simp only [
-                    ←eq₂, mul_neg, sum_neg_distrib, neg_inj, ←sum_attach (s := rightσ)
-                  ]
-                  let F (n : {x // x ∈ δσ}) : {x // x ∈ rightσ} :=
-                    ⟨⟨n.1 + e, by aesop (add safe (by omega))⟩, by aesop⟩
-                  have : Function.Bijective F :=
-                    ⟨
-                      fun _ ↦ by aesop,
-                      fun a ↦ by use ⟨a - e, by aesop (add safe (by omega))⟩; aesop
-                    ⟩
-                  apply sum_bijective F <;> aesop (add safe [(by omega), (by ring)])
-  aesop (add safe (by ring))
+                _ = σ₁ := by
+                  rw [← eq₁]
+                  refine Finset.sum_bij' (fun l hl ↦ (⟨l, by
+                      simp only [mem_range] at hl; omega⟩ : Fin bound)) (fun j _ ↦ j.1)
+                    ?_ ?_ ?_ ?_ ?_
+                  · intro l hl
+                    simpa only [leftσ, mem_filter, mem_univ, true_and, mem_range] using hl
+                  · intro j hj
+                    simpa only [leftσ, mem_filter, mem_univ, true_and, mem_range] using hj
+                  · intro l _; rfl
+                  · intro j _; rfl
+                  · intro l _; rfl
+  replace eq₂ : -eval (ωs i) Q = σ₂ := by
+    have hQ : Q.natDegree < e + k := by omega
+    rw [← eq₂, eval_eq_sum_range' hQ, ← Finset.sum_neg_distrib]
+    refine Finset.sum_bij' (fun l hl ↦ (⟨l + e, by simp only [mem_range] at hl; omega⟩ : Fin bound))
+      (fun j _ ↦ j.1 - e) ?_ ?_ ?_ ?_ ?_
+    · intro l _; simp only [rightσ, leftσ, mem_sdiff, mem_univ, mem_filter, true_and, not_lt]; omega
+    · intro j hj
+      simp only [rightσ, leftσ, mem_sdiff, mem_univ, mem_filter, true_and, not_lt] at hj
+      simp only [mem_range]; omega
+    · intro l _; simp
+    · intro j hj
+      simp only [rightσ, leftσ, mem_sdiff, mem_univ, mem_filter, true_and, not_lt] at hj
+      ext; simp only; omega
+    · intro l _; simp
+  rw [← eq₁, ← eq₂, h_cond i, h_E_coeff]
+  ring
 
 open Fin
 open Polynomial
@@ -301,7 +317,13 @@ lemma eval_solutionToQ_zero {x : F} {v} : eval x (solutionToQ 0 k v) =
 lemma solutionToE_and_Q_E_and_Q_to_a_solution :
     E_and_Q_to_a_solution e (solutionToE e k v) (solutionToQ e k v) = v := by
   ext i
-  aesop (add simp liftF) (add safe (by omega))
+  by_cases hi : i.1 < e
+  · have hne : i.1 ≠ e := Nat.ne_of_lt hi
+    simp [E_and_Q_to_a_solution, liftF, hi, hne]
+  · have hei : e ≤ i.1 := Nat.le_of_not_gt hi
+    have hsub : i.1 - e < e + k := by omega
+    have hadd : e + (i.1 - e) = i.1 := Nat.add_sub_of_le hei
+    simp [E_and_Q_to_a_solution, liftF, hi, hsub, hadd]
 
 @[simp]
 lemma solutionToQ_zero {v : Fin (2 * 0 + 0) → F} :
@@ -466,35 +488,26 @@ lemma E_and_Q_unique
   {ωs f : Fin n → F}
   (he : 2 * e < n - k + 1)
   (hk_n : k ≤ n)
-  (h_Q : Q ≠ 0)
-  (h_Q' : Q' ≠ 0)
+  (_h_Q : Q ≠ 0)
+  (_h_Q' : Q' ≠ 0)
   (h_inj : Function.Injective ωs)
   (h_bw₁ : BerlekampWelchCondition e k ωs f E Q)
   (h_bw₂ : BerlekampWelchCondition e k ωs f E' Q') : E * Q' = E' * Q := by
-  classical
-  let R := E * Q' - E' * Q
-  have hr_deg : R.natDegree ≤ 2 * e + k - 1 := by
-    simp only [R]
-    apply Nat.le_trans (natDegree_add_le _ _)
-    simp [
-      natDegree_mul
-        (BerlekampWelch_E_ne_zero h_bw₁)
-        h_Q',
-      natDegree_neg,
-      natDegree_mul
-        (BerlekampWelch_E_ne_zero h_bw₂)
-        h_Q
-      ]
-    aesop (add safe cases BerlekampWelchCondition) (add safe (by omega))
-  by_cases hr : R = 0
-  · rw [←add_zero (E' * Q), ←hr]; ring
-  · let roots := Multiset.ofList <| (List.finRange n).map ωs
-    have hsub : (⟨roots, by simp only [Multiset.coe_nodup, roots]; rw [List.nodup_map_iff h_inj]
-                            exact List.nodup_finRange _⟩ : Finset F).val ⊆ R.roots := fun _ _ ↦ by
-      aesop (add safe cases BerlekampWelchCondition) (add safe (by ring))
-    have hcard := card_le_degree_of_subset_roots hsub
-    simp only [Order.lt_add_one_iff, ne_eq, Finset.card_mk] at *
-    cases k <;> cases e <;> aesop (add safe (by omega))
+  have hr_deg : (E * Q' - E' * Q).natDegree ≤ 2 * e + k - 1 := by
+    have h₁ := natDegree_mul_le (p := E) (q := Q')
+    have h₂ := natDegree_mul_le (p := E') (q := Q)
+    have := natDegree_sub_le (E * Q') (E' * Q)
+    have := h_bw₁.E_natDegree; have := h_bw₁.Q_natDegree
+    have := h_bw₂.E_natDegree; have := h_bw₂.Q_natDegree
+    omega
+  have hr : E * Q' - E' * Q = 0 := by
+    refine eq_zero_of_natDegree_lt_card_of_eval_eq_zero _ h_inj (fun i ↦ ?_) ?_
+    · rw [eval_sub, eval_mul, eval_mul, h_bw₁.cond i, h_bw₂.cond i]
+      ring
+    · rw [Fintype.card_fin]
+      have := NeZero.pos n
+      omega
+  exact sub_eq_zero.mp hr
 
 end
 

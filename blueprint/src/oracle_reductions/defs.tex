@@ -543,9 +543,10 @@ special soundness (via rewinding). At the moment, we only care about non-rewindi
         \item there exists a straightline extractor $E$, such that
         \item for all input statement $x_{\text{in}}$, witness $w_{\text{in}}$, and (malicious) prover,
         \item if the execution with the honest verifier results in a pair $(x_{\text{out}}, w_{\text{out}})$,
-        \item and the extractor produces some $w'_{\text{in}}$,
     \end{itemize}
-    then the probability that $(x_{\text{in}}, w'_{\text{in}})$ is not valid for $R_{\text{in}}$ and yet $(x_{\text{out}}, w_{\text{out}})$ is valid for $R_{\text{out}}$ is at most $\epsilon$.
+    then the probability that $(x_{\text{out}}, w_{\text{out}})$ is valid for $R_{\text{out}}$ and yet the extractor fails to produce a witness $w'_{\text{in}}$ such that $(x_{\text{in}}, w'_{\text{in}})$ is valid for $R_{\text{in}}$ is at most $\epsilon$.
+
+    Note that the extractor failing outright (it is a partial computation) counts as a win for the adversary: whenever the prover convinces the verifier, the extractor is obliged to succeed and produce a valid witness. (Excluding extractor failure from the bad event would render the definition vacuous, as the always-failing extractor would satisfy it for any verifier.) In contrast, runs in which the protocol execution itself fails (e.g.\ the verifier aborts) impose no obligation on the extractor, matching the convention for plain soundness.
 
     A (straightline) extractor for knowledge soundness is a deterministic algorithm that takes in the output public context after executing the oracle reduction, the side information (i.e. log of oracle queries from the malicious prover) observed during execution, and outputs the witness for the input context.
 
@@ -659,21 +660,19 @@ To define round-by-round (knowledge) soundness, we need to define the notion of 
 
 \subsubsection{Implications Between Security Notions}
 
-We have a lattice of security notions, with knowledge and round-by-round being two strengthenings of soundness.
-
-\begin{theorem}[Knowledge Soundness Implies Soundness]
-    \label{thm:knowledge_soundness_implies_soundness}
-    Knowledge soundness with knowledge error $\epsilon < 1$ implies soundness with the same
-    soundness error $\epsilon$, and for the corresponding input and output languages.
-    \lean{Verifier.knowledgeSoundness_implies_soundness}
-    \uses{def:knowledge_soundness, def:soundness}
-\end{theorem}
+Round-by-round soundness implies soundness, and round-by-round knowledge soundness implies knowledge
+soundness, only for \emph{guarded} verifiers, whose verdict makes no oracle query: a state
+function's terminal condition is checked from a fresh oracle state, while the ordinary games run the
+verifier from whatever oracle state the prover left behind, so without the guard the implications
+fail. The library states no implication from knowledge soundness to soundness: the knowledge game
+fixes the output witness before a randomized verifier runs, so the usual argument does not apply.
 
 \begin{theorem}[RBR Soundness Implies Soundness]
     \label{thm:rbr_soundness_implies_soundness}
-    Round-by-round soundness with error function $\epsilon$ implies soundness with error
-    $\sum_i \epsilon(i)$, where the sum is over all challenge rounds $i$.
-    \lean{Verifier.rbrSoundness_implies_soundness}
+    For a guarded verifier, fixed-prefix round-by-round soundness with error function $\epsilon$
+    implies soundness with error $\sum_i \epsilon(i)$, where the sum is over all challenge rounds
+    $i$.
+    \lean{Verifier.GuardedForm.soundness_of_rbrSoundnessWorstCase}
     \uses{def:round_by_round_soundness, def:soundness}
 \end{theorem}
 
@@ -687,9 +686,11 @@ We have a lattice of security notions, with knowledge and round-by-round being t
 
 \begin{theorem}[RBR Knowledge Soundness Implies Knowledge Soundness]
     \label{thm:rbr_knowledge_soundness_implies_knowledge_soundness}
-    Round-by-round knowledge soundness with error function $\epsilon$ implies knowledge soundness
-    with error $\sum_i \epsilon(i)$, where the sum is over all challenge rounds $i$.
-    \lean{Verifier.rbrKnowledgeSoundness_implies_knowledgeSoundness}
+    For a guarded verifier, fixed-prefix round-by-round knowledge soundness with error function
+    $\epsilon$ implies knowledge soundness with error $\sum_i \epsilon(i)$, where the sum is over
+    all challenge rounds $i$. The extractor folds the round-by-round extractor backward along the
+    transcript.
+    \lean{Verifier.GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundnessWorstCase}
     \uses{def:round_by_round_knowledge_soundness, def:knowledge_soundness}
 \end{theorem}
 
@@ -787,8 +788,13 @@ By default, the properties we consider are perfect completeness and (straightlin
     requirement that there exists a straightline extractor that can recover valid witnesses from
     any state-restoration prover that convinces the verifier.
 
-    \emph{Note: This definition is currently under development in the Lean formalization.}
-    % \lean{Verifier.srKnowledgeSoundness}
+    Equivalently, for every state-restoration prover, the probability that the prover outputs a
+    valid output witness and induces an accepting verifier output, while the extractor fails to
+    produce any valid input witness, is bounded by the state-restoration knowledge-soundness error.
+    The extractor is partial in the Lean formalization, so extractor failure counts as a bad event
+    on accepting executions.
+
+    \lean{Verifier.StateRestoration.knowledgeSoundness}
 \end{definition}
 
 

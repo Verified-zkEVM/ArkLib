@@ -3,8 +3,9 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Data.Set.Defs
+public import Mathlib.Data.Set.Defs
 
 /-!
 # Universal constraint system abstraction
@@ -37,6 +38,8 @@ The goals are:
 - Morphisms are one-way (completeness-preserving). Soundness-reflecting variants
   (extractors, embeddings, isos) are future work.
 -/
+
+@[expose] public section
 
 universe u v w
 

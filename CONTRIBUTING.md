@@ -56,11 +56,75 @@ The description should include:
 * Contrast with previous behavior.
 * References to issues (e.g., `Closes #123`).
 
+### Review and Merge Readiness
+
+A PR may be opened for review with unfinished proofs, provided its remaining admissions and
+validation status are clear. Before merging into `main`, it must introduce no new `sorry`/`admit`
+or additional `sorryAx` debt relative to the canonical base. Closing one gap does not offset a
+new admission elsewhere. Updating `scripts/axiom_baseline.json` cannot authorize new debt;
+baseline changes record verified closures or renames of existing debt.
+
+New declarations may depend only on a subset of Lean's three standard axioms:
+`propext`, `Classical.choice`, and `Quot.sound`. Do not introduce custom axioms, `sorryAx`,
+or native-compiler trust dependencies. The legacy admission baseline is not an exception for
+new declarations.
+
+Merge readiness also requires `./scripts/validate.sh` to pass: resolve all linter/style issues,
+all production non-`sorry` warnings, and all test warnings. Fix the source rather than suppressing
+linters. For proof changes, run `./scripts/validate.sh --axioms` and review the source-admission
+and baseline diffs against `main`, including admissions in examples or default arguments that
+may not appear as exported declarations.
+
 ## Style and Naming Guidelines
 We aim to adhere to the [Lean community's contribution guidelines](https://github.com/leanprover-community/leanprover-community.github.io/tree/lean4/templates/contribute).
-Our [linting script](`./scripts/lint-style.sh`) helps enforce some aspects of these guidelines.
+The default validation command runs ArkLib's Lean-native source-policy gate. You can run its
+text-and-import checks directly with `lake exe lint-style`. The normal `lake build` also loads a
+Lean syntax-tree plugin that rejects linter suppressions; neither gate supports exceptions. The
+text gate is an independent, fail-closed backstop: forbidden `set_option` spellings are reserved
+across the entire production source, while `nolint` attribute heads are also reserved in active code
+and literal bodies. Put policy examples in `scripts/LintStyleFixtures`, which is outside the
+library-source closure; policy-like quoted identifiers and syntax quotations are reserved for the
+same reason.
+
+### Acceptance Tests
+
+Keep compile-time examples and regression tests in `ArkLibTest/`, mirroring production paths.
+`lake test` builds them, and `./scripts/validate.sh` runs the test target with a zero-warning budget.
+Stage new tests before validation. Production modules must not import tests; both trees share the
+source-style policy and build-time lint plugin. See [ArkLibTest/README.md](ArkLibTest/README.md).
+
+Use acceptance examples with satisfiable hypotheses that exercise the claimed behavior. When an
+error bound is intended to be nontrivial, include an instance with error below one. Exercise a
+boundary or a necessary hypothesis when that distinguishes the intended statement from a weaker one.
+
+### Computability
+
+Make definitions computable wherever possible. Protocols, provers, verifiers, encoders,
+decoders, samplers, and anything whose purpose is to run a program or compute a value must
+be executable. Carry the necessary representations, decision procedures, and witnesses as data;
+do not replace an algorithm with classical choice. If the current interface lacks that data,
+redesign it or provide a verified executable implementation before calling the contribution
+merge-ready.
+
+Purely mathematical objects used in statements and proofs may remain `noncomputable` when
+there is a concrete reason. Mark those declarations individually and explain the blocker in
+the module overview; avoid blanket `noncomputable section` declarations that hide accidental
+code-generation failures. Where executable data has a mathematical view, prove their agreement.
+
+Check code generation from a caller outside any `noncomputable section`, then execute small
+concrete cases with independently known results, including relevant failure or boundary cases.
+Neither removing the keyword nor an axiom-clean theorem establishes executability: admitted
+bodies can compile to a panic. Executable specifications allow testing and other validation
+that can expose mistaken or vacuous declarations; they complement satisfiable hypotheses and
+correctness proofs rather than establishing those properties by themselves. Follow
+[the computability workflow](docs/skills/make-computable.md) when an audit finds a blocker.
 
 ### Naming Conventions
+
+The [Mathlib-style naming conventions](https://leanprover-community.github.io/contribute/naming.html)
+below are the repository standard. Consistent names give readers and tools predictable search
+terms within ArkLib and across Lean libraries. Use established mathematical terminology and
+namespace structure rather than introducing local synonyms.
 
 * **Files**: `UpperCamelCase.lean` (e.g., `BinarySearch.lean`).
 * **Types and Structures**: `UpperCamelCase` (e.g., `MonoidHom`, `Visualizer`).
@@ -74,6 +138,14 @@ Our [linting script](`./scripts/lint-style.sh`) helps enforce some aspects of th
 * **Identifiers**: 
     * Use namespaces for logical properties (e.g., `And.comm`, `Or.intro`).
     * Use descriptive names for arithmetic/algebraic properties (e.g., `mul_comm`, `add_assoc`).
+* **No paper items in names**: name a declaration for what it says, never for where it came from.
+  No author-year suffix (`..._gk16`), no numbering (`lemma_4_3`, `claimA2_...`, `thmA2`), and no
+  internal planning code (`milestone_F5`, `design_D5`). Such a name drifts the moment the source is
+  renumbered, revised, or joined by a second citation, and it tells a reader nothing the statement
+  does not. Cite the source in the module docstring's `## References` section instead (see
+  [Citation Standards](#citation-standards)). State the chosen mathematical formulation directly in
+  the declaration docstring. Keep brief provenance in the module docstring and paper-specific
+  statement/version mappings in the KB.
 
 ### Theorem Naming Logic
 
@@ -88,18 +160,32 @@ Our [linting script](`./scripts/lint-style.sh`) helps enforce some aspects of th
     * `induction_on` / `recOn`: Use when the value comes before the constructions (motive eliminates to Prop / Type).
     * `induction` / `rec`: Use when the constructions come before the value.
 * **Predicates**: Generally use prefixes (e.g., `isClosed_Icc` not `Icc_isClosed`). Exceptions include property suffixes like `_inj`, `_mono`, `_injective`, `_surjective`.
+* **Match the mathematical contract**: distinguish preservation (`map_add`, `map_smul`) from
+  commutativity, and a `≤` bound from a `<` bound. For inverse laws, check the composition order;
+  a name describing the composed operations often makes a round-trip identity clearer than a
+  left/right-inverse label. Apply the deprecation policy when improving an existing public name.
 
 ### Variable Conventions
 
-* `u`, `v`, `w`, ... : Universes
-* `α`, `β`, `γ`, ... : Generic types
-* `a`, `b`, `c`, ... : Propositions
-* `x`, `y`, `z`, ... : Elements of a generic type
-* `h`, `h₁`, ...     : Assumptions/Hypotheses
-* `p`, `q`, `r`, ... : Predicates and relations
-* `m`, `n`, `k`, ... : Natural numbers
-* `i`, `j`, `k`, ... : Integers
-* `s`, `t`, ...      : Sets or Lists
+We follow Mathlib style, adapted for algebraic code. The conventions below
+reflect actual usage across the repository; please consult adjacent files
+when in doubt.
+
+* `u`, `v`, `w`, ...           : Universes
+* `α`, `β`, `γ`, ...            : Generic types (in non-algebraic contexts)
+* `R`, `M`, `G`, `F`, ...       : Algebraic carrier types (rings, modules,
+  groups, fields) — preferred over `α`, `β` in algebraic declarations such
+  as `variable {R : Type*} [Semiring R]`
+* `a`, `b`, `c`, ...            : Propositions
+* `x`, `y`, `z`, ...            : Elements of a generic type
+* `h`, `h₁`, ...                : Assumptions / hypotheses
+* `p`, `q`                     : Polynomials or predicates (disambiguate by
+  type and surrounding context)
+* `m`, `n`, `k`, ...            : Natural numbers
+* `i`, `j`, `k`, ...            : Indices into vectors, lists, or `Fin n`
+  (these may be `ℕ`- or `ℤ`-valued; the convention is about the indexing
+  role, not the underlying type)
+* `s`, `t`, ...                : Sets or lists
 
 ### Symbol Naming Dictionary
 
@@ -142,6 +228,16 @@ When translating theorem statements into names, we use standard mappings for sym
   -/
   ```
 * **Imports**: Group imports at the top of the file.
+* **Module system**: every file under `ArkLib/` uses Lean's module system (issue #795), so a new
+  one must too. The shape is `module` after the copyright block, `public import` for every import,
+  then the module docstring, then `@[expose] public section`. Mark metaprograms — delaborators,
+  unexpanders, elaborator helpers — `meta`, and use `public meta import` for their `Lean.*` and
+  `Qq` dependencies. When a proof needs to unfold a definition a dependency did not expose, add
+  `import all M` naming the module that *declares* it. Do not write a per-declaration `@[expose]`
+  while the blanket section is present, and do not reach for `backward.privateInPublic`. Files
+  under `ArkLibTest/` stay classic on purpose. The error-to-fix table in
+  [`docs/wiki/module-system.md`](docs/wiki/module-system.md) covers every failure the port
+  produced.
 * **Operators**: Put spaces on both sides of `:`, `:=`, and infix operators. Place them before a line break rather than at the start of the next line.
 * **Hypotheses**: Prefer placing hypotheses to the left of the colon (e.g., `(h : P) : Q`) rather than using arrows (`: P → Q`) when the proof introduces them.
 * **Functions**: Prefer `fun x ↦ ...` over `λ x, ...`.
@@ -164,7 +260,28 @@ We aim for consistent representations of equivalent statements:
 
 ### Tactic Mode & Performance
 
-* **Squeezing Simp**: Do not "squeeze" terminal `simp` calls (replacing `simp` with `simp only [...]`) unless necessary for performance or stability. Un-squeezed `simp` is often more readable and robust to minor library changes.
+* **Expose the mathematical structure**: Prefer proofs whose intermediate statements and named
+  helper lemmas make the argument visible. If the same induction, extensionality argument, cast,
+  or normalization step recurs, look for a missing lemma in the module that owns the underlying
+  definition.
+* **Use automation on well-scoped goals**: `simp`, `aesop`, `grind`, `omega`, `linarith`, and
+  `nlinarith` are all acceptable. They are best used as terminal steps, or after an explicit
+  transformation that leaves a clear goal. Avoid using broad automation as an intermediate step
+  before a tactic that depends on a particular goal shape.
+* **Profile before rewriting for speed**: For a slow proof, use Lean's profiler to locate the
+  expensive declaration and tactic. Then consider narrower imports, fewer local hypotheses,
+  `simp only`, `grind only`, `linarith only`, or `nlinarith only`, or replace repeated search with
+  a reusable structural lemma. Do not perform repository-wide mechanical tactic substitutions
+  without measured evidence. Check before/after measurements before claiming a speedup, and
+  distinguish import/loading cost from proof elaboration. Keep a short, stable proof when the
+  measurements do not reveal a performance problem.
+* **Do not squeeze stable terminal `simp` calls by default**: Replacing a short terminal `simp`
+  with a long `simp only [...]` list can obscure the important lemmas and make renames more
+  disruptive. Squeeze when it improves stability or produces a measured performance benefit.
+  This follows Mathlib's guidance on
+  [squeezing simp calls](https://leanprover-community.github.io/contribute/style.html#squeezing-simp-calls),
+  [nonterminal simplification](https://leanprover-community.github.io/extras/simp.html#non-terminal-simps),
+  and [profiling slow proofs](https://leanprover-community.github.io/extras/speedup.html).
 * **Comments**: Use `--` for inline comments and `/- ... -/` for block comments.
 
 ### Transparency and API Design
@@ -191,7 +308,11 @@ Every definition and major theorem should have a docstring.
 
 * **Module Docstrings**: Each file should start with a `/-! ... -/` block containing a title, summary, notation, and references.
 * **Sectioning Comments**: Use `/-! ### Title -/` to structure large files into sections. These appear in the generated documentation.
-* **Declaration Docstrings**: Use `/-- ... -/` above definitions.
+* **Declaration Docstrings**: Use `/-- ... -/` above definitions and major theorems. State the
+  object's meaning or theorem's claim, with the relevant hypotheses and any shorthand needed to
+  understand it. Keep the explanation concise and self-contained: a reader should not need a
+  paper, a planning document, or proof-development history to understand the declaration.
+  Internal Lean declarations may be cross-referenced by name.
 * **Syntax**:
     * Use backticks for Lean names: `` `List.map` ``.
     * Use LaTeX for math: `$ f(x) = y $` (inline) or `$$ \sum_{i=0}^n i $$` (display).
@@ -199,7 +320,18 @@ Every definition and major theorem should have a docstring.
 
 ### Citation Standards
 
-When referencing papers in Lean docstrings:
+Lean files should be self-contained descriptions of the mathematics. Their declarations should
+remain understandable when a reference is revised or renumbered, or when the same definitions
+and theorems appear in several sources. The wiki and KB provide the paper-specific mappings;
+the mathematical API should not depend on a particular paper's organization or labels.
+
+In Lean sources, external references belong only in the top-level module docstring (`/-! ... -/`).
+This includes bibliographic citations, URLs, and paper-specific theorem/lemma numbers, sections,
+or figures. Keep module provenance brief and link to the corresponding `docs/kb/papers/KEY.md`
+page or audit for detailed statement/version correspondence, generalizations, and remaining gaps.
+Declaration and section docstrings focus on the mathematics.
+
+When referencing papers in the module docstring:
 
 * **Use citation keys in text**: Reference papers with citation keys like `[ACFY24]` rather than full titles or URLs.
 
@@ -216,7 +348,8 @@ When referencing papers in Lean docstrings:
 
 * **Add BibTeX entries**: All academic papers must have entries in `blueprint/src/references.bib`. When adding a new paper, add the BibTeX entry, use the citation key in your Lean file, and list it in the References section.
 
-* **Non-academic references**: Implementation references (GitHub repos, specifications) may include URLs directly and typically don't need BibTeX entries.
+* **Non-academic references**: Implementation references (GitHub repos, specifications) may include
+  URLs directly in the module docstring and typically do not need BibTeX entries.
 
 ## Code of Conduct
 

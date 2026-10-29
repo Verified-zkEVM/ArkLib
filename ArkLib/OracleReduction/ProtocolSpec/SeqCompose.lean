@@ -3,14 +3,17 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Fin.Sigma
-import ArkLib.OracleReduction.ProtocolSpec.Cast
+public import ArkLib.Data.Fin.Sigma
+public import ArkLib.OracleReduction.ProtocolSpec.Cast
 
 /-! # Sequential Composition of Protocol Specifications
 
 This file collects all definitions and theorems about sequentially composing `ProtocolSpec`s and
 their associated data. -/
+
+@[expose] public section
 
 universe u v
 
@@ -56,7 +59,7 @@ theorem append_left_injective {pSpec : ProtocolSpec n} :
     Function.Injective (@ProtocolSpec.append m n · pSpec) := by
   simp only [append, Fin.vappend_eq_append]
   intro x y h
-  simp at h
+  simp only [mk.injEq] at h
   obtain ⟨hDir, hType⟩ := h
   ext i
   · simp [Fin.append_left_injective pSpec.dir hDir]
@@ -67,7 +70,7 @@ theorem append_right_injective {pSpec : ProtocolSpec m} :
   unfold ProtocolSpec.append
   simp only [Fin.vappend_eq_append]
   intro x y h
-  simp at h
+  simp only [mk.injEq] at h
   obtain ⟨hDir, hType⟩ := h
   ext i
   · simp [Fin.append_right_injective pSpec.dir hDir]
@@ -109,6 +112,18 @@ theorem rtake_append_right :
   simp only [rtake, Fin.vappend_eq_append]
   ext i : 2 <;> simp [Fin.rtake, Fin.append_right]
 
+/-- Left type transport for `++ₚ` at a `castAdd` index: the appended spec's type
+at an index in the first half is the left spec's type. -/
+theorem append_Type_castAdd (i : Fin m) :
+    (pSpec₁ ++ₚ pSpec₂).«Type» (Fin.castAdd n i) = pSpec₁.«Type» i := by
+  simp only [Fin.vappend_eq_append, Fin.append_left]
+
+/-- Right type transport for `++ₚ` at a `natAdd` index: the appended spec's type
+at an index in the second half is the right spec's type. -/
+theorem append_Type_natAdd (i : Fin n) :
+    (pSpec₁ ++ₚ pSpec₂).«Type» (Fin.natAdd m i) = pSpec₂.«Type» i := by
+  simp only [Fin.vappend_eq_append, Fin.append_right]
+
 namespace Transcript
 
 variable {k : Fin (m + n + 1)}
@@ -117,21 +132,36 @@ variable {k : Fin (m + n + 1)}
 
 This is defined to be the full transcript for the first half if `k ≥ m`. -/
 def fst (T : (pSpec₁ ++ₚ pSpec₂).Transcript k) : pSpec₁.Transcript ⟨min k m, by omega⟩ :=
-  if hk : k ≤ m then
-    fun i => by
-    dsimp [take]; have := T ⟨i, lt_of_lt_of_le i.isLt (inf_le_left)⟩; simp at this; sorry
-    -- dcast (by sorry) (T ⟨i, lt_of_lt_of_le i.isLt (inf_le_left)⟩)
-  else
-    fun i => sorry
-    -- dcast (by sorry) (T ⟨i, by omega⟩)
+  fun i => by
+    have him : (i : ℕ) < min (k : ℕ) m := i.isLt
+    exact _root_.cast
+      (append_Type_castAdd (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂) ⟨i.val, by omega⟩)
+      (T ⟨i.val, by omega⟩)
 
 /-- The second half of a partial transcript for a concatenated protocol. -/
 def snd (T : (pSpec₁ ++ₚ pSpec₂).Transcript k) : pSpec₂.Transcript ⟨k - m, by omega⟩ :=
-  if hk : k ≤ m then
-    fun i => Fin.elim0 (by simpa [hk] using i)
-  else
-    fun i => sorry
-    -- dcast (by sorry) (T ⟨m + i, by simp_all; dsimp at i; have := i.isLt; omega⟩)
+  fun i => by
+    have him : (i : ℕ) < (k : ℕ) - m := i.isLt
+    have hk := k.isLt
+    exact _root_.cast
+      (append_Type_natAdd (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂) ⟨i.val, by omega⟩)
+      (T ⟨m + i.val, by omega⟩)
+
+/-- While a run of `pSpec₁ ++ₚ pSpec₂` is still inside the first protocol (round `k ≤ m`), the
+second protocol's half of the partial transcript is empty.
+
+This is the left-phase invariant an induction over the appended protocol's rounds needs: up to
+round `m`, an appended run carries no `pSpec₂` data at all. Stated with `HEq` because the index
+`⟨k - m, _⟩` is only propositionally `0`. -/
+theorem snd_of_le {k : Fin (m + n + 1)} (hk : k.val ≤ m)
+    (T : (pSpec₁ ++ₚ pSpec₂).Transcript k) :
+    HEq (T.snd) (default : pSpec₂.Transcript ⟨0, by omega⟩) := by
+  have h : (k.val - m) = 0 := by omega
+  have h0 : (⟨k.val - m, by omega⟩ : Fin (n + 1)) = ⟨0, by omega⟩ := Fin.ext h
+  rw! (castMode := .all) [h0]
+  apply heq_of_eq
+  funext i
+  exact Fin.elim0 i
 
 end Transcript
 
@@ -172,8 +202,8 @@ theorem take_append_left (T : FullTranscript pSpec₁) (T' : FullTranscript pSpe
     (T ++ₜ T').take m (Nat.le_add_right m n) =
       T.cast rfl (by simp [ProtocolSpec.append]) := by
   ext i
-  simp [take, append, ProtocolSpec.append, Fin.castLE,
-    FullTranscript.cast, Transcript.cast]
+  simp only [take, append, ProtocolSpec.append, Fin.castLE, FullTranscript.cast,
+    Transcript.cast, Fin.take_apply]
   have : ⟨i.val, by omega⟩ = Fin.castAdd n i := by ext; simp
   rw! (castMode := .all) [this, Fin.happend_left]
   rfl
@@ -183,10 +213,12 @@ theorem rtake_append_right (T : FullTranscript pSpec₁) (T' : FullTranscript pS
     (T ++ₜ T').rtake n (Nat.le_add_left n m) =
       T'.cast rfl (by simp [ProtocolSpec.append]) := by
   ext i
-  simp [rtake, Fin.rtake, append, Fin.cast, FullTranscript.cast, Transcript.cast]
+  simp only [rtake, Fin.rtake, append, Fin.cast, Fin.val_natAdd, FullTranscript.cast,
+    Transcript.cast, Fin.val_last, Fin.cast_eq_self, take_Type]
   have : ⟨m + n - n + i.val, by omega⟩ = Fin.natAdd m i := by ext; simp
   rw! (castMode := .all) [this, Fin.happend_right]
-  sorry
+  apply eq_of_heq
+  exact ((eqRec_heq _ _).trans (cast_heq _ _)).trans (cast_heq _ _).symm
 
 /-- The first half of a transcript for a concatenated protocol -/
 def fst (T : FullTranscript (pSpec₁ ++ₚ pSpec₂)) : FullTranscript pSpec₁ :=
@@ -200,6 +232,18 @@ def snd (T : FullTranscript (pSpec₁ ++ₚ pSpec₂)) : FullTranscript pSpec₂
     simpa [ProtocolSpec.append, Fin.vappend_eq_append, Fin.append_right]
       using T (Fin.natAdd m i)
 
+/-- The left projection only transports the type of the original transcript entry. -/
+theorem fst_apply_heq (tr : FullTranscript (pSpec₁ ++ₚ pSpec₂)) (i : Fin m) :
+    HEq (tr.fst i) (tr (Fin.castAdd n i)) := by
+  unfold fst
+  exact cast_heq _ _
+
+/-- The right projection only transports the type of the original transcript entry. -/
+theorem snd_apply_heq (tr : FullTranscript (pSpec₁ ++ₚ pSpec₂)) (i : Fin n) :
+    HEq (tr.snd i) (tr (Fin.natAdd m i)) := by
+  unfold snd
+  exact cast_heq _ _
+
 @[simp]
 theorem append_fst (T₁ : FullTranscript pSpec₁) (T₂ : FullTranscript pSpec₂) :
     (T₁ ++ₜ T₂).fst = T₁ := by
@@ -211,6 +255,15 @@ theorem append_snd (T₁ : FullTranscript pSpec₁) (T₂ : FullTranscript pSpec
     (T₁ ++ₜ T₂).snd = T₂ := by
   funext i
   simp [snd, append]
+
+/-- Splitting a transcript of an appended protocol and reassembling it is the identity. -/
+@[simp]
+theorem append_fst_snd (T : FullTranscript (pSpec₁ ++ₚ pSpec₂)) :
+    T.fst ++ₜ T.snd = T := by
+  funext i
+  induction i using Fin.addCases
+  · rw [append, Fin.happend_left]; simp [fst]
+  · rw [append, Fin.happend_right]; simp [snd]
 
 end FullTranscript
 
@@ -226,10 +279,12 @@ def MessageIdx.sumEquiv :
   toFun := Sum.elim (MessageIdx.inl) (MessageIdx.inr)
   invFun := fun ⟨i, h⟩ => by
     by_cases hi : i < m
-    · simp [Fin.vappend_eq_append, Fin.append, Fin.addCases, hi] at h
-      exact Sum.inl ⟨⟨i, hi⟩, h⟩
-    · simp [Fin.vappend_eq_append, Fin.append, Fin.addCases, hi] at h
-      exact Sum.inr ⟨⟨i - m, by omega⟩, h⟩
+    · exact Sum.inl ⟨⟨i, hi⟩, by
+        convert h using 1; simp [Fin.vappend_eq_append, Fin.append, Fin.addCases, hi];
+          congr⟩
+    · exact Sum.inr ⟨⟨i - m, by omega⟩, by
+        convert h using 1; simp [Fin.vappend_eq_append, Fin.append, Fin.addCases, hi];
+          congr⟩
   left_inv := fun i => by
     rcases i with ⟨⟨i, isLt⟩, h⟩ | ⟨⟨i, isLt⟩, h⟩ <;>
     simp [MessageIdx.inl, MessageIdx.inr, isLt]
@@ -244,16 +299,42 @@ def ChallengeIdx.inl (i : ChallengeIdx pSpec₁) : ChallengeIdx (pSpec₁ ++ₚ 
 def ChallengeIdx.inr (i : ChallengeIdx pSpec₂) : ChallengeIdx (pSpec₁ ++ₚ pSpec₂) :=
   ⟨Fin.natAdd m i.1, by simpa only [Fin.vappend_eq_append, Fin.append_right] using i.2⟩
 
+/-- Restrict challenges for an appended protocol to its first component. -/
+def Challenges.fst (challenges : (pSpec₁ ++ₚ pSpec₂).Challenges) : pSpec₁.Challenges :=
+  fun i => by
+    simpa [ChallengeIdx.inl, ProtocolSpec.append, Fin.vappend_eq_append,
+      Fin.append_left] using challenges (ChallengeIdx.inl i)
+
+/-- Restrict challenges for an appended protocol to its second component. -/
+def Challenges.snd (challenges : (pSpec₁ ++ₚ pSpec₂).Challenges) : pSpec₂.Challenges :=
+  fun i => by
+    simpa [ChallengeIdx.inr, ProtocolSpec.append, Fin.vappend_eq_append,
+      Fin.append_right] using challenges (ChallengeIdx.inr i)
+
+/-- Restrict messages for an appended protocol to its first component. -/
+def Messages.fst (messages : (pSpec₁ ++ₚ pSpec₂).Messages) : pSpec₁.Messages :=
+  fun i => by
+    simpa [MessageIdx.inl, ProtocolSpec.append, Fin.vappend_eq_append,
+      Fin.append_left] using messages (MessageIdx.inl i)
+
+/-- Restrict messages for an appended protocol to its second component. -/
+def Messages.snd (messages : (pSpec₁ ++ₚ pSpec₂).Messages) : pSpec₂.Messages :=
+  fun i => by
+    simpa [MessageIdx.inr, ProtocolSpec.append, Fin.vappend_eq_append,
+      Fin.append_right] using messages (MessageIdx.inr i)
+
 @[simps!]
 def ChallengeIdx.sumEquiv :
     ChallengeIdx pSpec₁ ⊕ ChallengeIdx pSpec₂ ≃ ChallengeIdx (pSpec₁ ++ₚ pSpec₂) where
   toFun := Sum.elim (ChallengeIdx.inl) (ChallengeIdx.inr)
   invFun := fun ⟨i, h⟩ => by
     by_cases hi : i < m
-    · simp [Fin.vappend_eq_append, Fin.append, Fin.addCases, hi] at h
-      exact Sum.inl ⟨⟨i, hi⟩, h⟩
-    · simp [Fin.vappend_eq_append, Fin.append, Fin.addCases, hi] at h
-      exact Sum.inr ⟨⟨i - m, by omega⟩, h⟩
+    · exact Sum.inl ⟨⟨i, hi⟩, by
+        convert h using 1; simp [Fin.vappend_eq_append, Fin.append, Fin.addCases, hi];
+          congr⟩
+    · exact Sum.inr ⟨⟨i - m, by omega⟩, by
+        convert h using 1; simp [Fin.vappend_eq_append, Fin.append, Fin.addCases, hi];
+          congr⟩
   left_inv := fun i => by
     rcases i with ⟨⟨i, isLt⟩, h⟩ | ⟨⟨i, isLt⟩, h⟩ <;>
     simp [ChallengeIdx.inl, ChallengeIdx.inr, isLt]
@@ -261,6 +342,27 @@ def ChallengeIdx.sumEquiv :
     by_cases hi : i < m <;>
     simp [ChallengeIdx.inl, ChallengeIdx.inr, hi]
     congr; omega
+
+/-- `sumEquiv.symm` maps a left-embedded composed challenge index back to `Sum.inl`. -/
+@[simp]
+theorem ChallengeIdx.sumEquiv_symm_inl (i₁ : ChallengeIdx pSpec₁) :
+    (ChallengeIdx.sumEquiv (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂)).symm (ChallengeIdx.inl i₁)
+      = Sum.inl i₁ := by
+  rw [Equiv.symm_apply_eq]; simp
+
+/-- `sumEquiv.symm` maps a right-embedded composed challenge index back to `Sum.inr`. -/
+@[simp]
+theorem ChallengeIdx.sumEquiv_symm_inr (i₂ : ChallengeIdx pSpec₂) :
+    (ChallengeIdx.sumEquiv (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂)).symm (ChallengeIdx.inr i₂)
+      = Sum.inr i₂ := by
+  rw [Equiv.symm_apply_eq]; simp
+
+/-- A sum over the challenge indices of an appended protocol of a function given on each part,
+read back through `ChallengeIdx.sumEquiv`, is the sum of the two parts' sums. -/
+theorem ChallengeIdx.sum_sumElim_comp_sumEquiv_symm {M : Type*} [AddCommMonoid M]
+    (f : ChallengeIdx pSpec₁ → M) (g : ChallengeIdx pSpec₂ → M) :
+    ∑ k, (Sum.elim f g ∘ ChallengeIdx.sumEquiv.symm) k = ∑ k, f k + ∑ k, g k :=
+  (Equiv.sum_comp ChallengeIdx.sumEquiv.symm (Sum.elim f g)).trans (Fintype.sum_sum_type _)
 
 /-- Sequential composition of a family of `ProtocolSpec`s, indexed by `i : Fin m`.
 
@@ -352,6 +454,30 @@ theorem seqCompose_embedSum {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, Protoc
     seqCompose T (Fin.embedSum i j) = cast (by simp) (T i j) := by
   simp [seqCompose, cast]; congr 1
 
+/-- Recover one component transcript from a sequentially composed transcript. -/
+def component {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    (tr : FullTranscript (ProtocolSpec.seqCompose pSpec)) (i : Fin m) :
+    FullTranscript (pSpec i) := fun j ↦
+  cast (by simp [ProtocolSpec.seqCompose]) (tr (Fin.embedSum i j))
+
+/-- Component extraction transports the type, without altering the stored entry. -/
+theorem component_apply_heq {m : ℕ} {n : Fin m → ℕ}
+    {pSpec : ∀ i, ProtocolSpec (n i)}
+    (tr : FullTranscript (ProtocolSpec.seqCompose pSpec)) (i : Fin m) (j : Fin (n i)) :
+    HEq (component tr i j) (tr (Fin.embedSum i j)) :=
+  cast_heq _ _
+
+/-- Component extraction loses no information, including for an empty composition. -/
+@[simp]
+theorem seqCompose_component {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    (tr : FullTranscript (ProtocolSpec.seqCompose pSpec)) :
+    seqCompose (component tr) = tr := by
+  funext j
+  obtain ⟨⟨i, j⟩, rfl⟩ := Fin.finSum'FinEquiv'.surjective j
+  simp only [Fin.finSum'FinEquiv', Equiv.coe_fn_mk]
+  rw [seqCompose_embedSum]
+  simp only [component, cast_cast, cast_eq]
+
 end FullTranscript
 
 section Append
@@ -404,45 +530,139 @@ instance [O₁ : ∀ i, OracleInterface (pSpec₁.Message i)]
 
 instance : ∀ i, OracleInterface ((pSpec₁ ++ₚ pSpec₂).Challenge i) := challengeOracleInterface
 
--- @[simp]
--- lemma challengeOracleInterface_append_domain_inl (j : pSpec₁.ChallengeIdx) :
---     [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ.domain (.inl j) = Unit := by
---   simp [OracleSpec.domain, ChallengeIdx.inl, ProtocolSpec.append, OracleInterface.toOracleSpec,
---     instOracleInterfaceChallengeAppend, challengeOracleInterface]
+/-- The challenge type of an appended protocol at a left-injected challenge index agrees with the
+challenge type of the left component. This is the transport fact needed to move challenge data
+across `++ₚ`; it is `append_Type_castAdd` at the underlying round index, since `ChallengeIdx.inl`
+is `Fin.castAdd` on rounds. -/
+theorem challenge_append_inl (i : ChallengeIdx pSpec₁) :
+    (pSpec₁ ++ₚ pSpec₂).Challenge (ChallengeIdx.inl i) = pSpec₁.Challenge i :=
+  append_Type_castAdd (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂) i.1
 
--- @[simp]
--- lemma challengeOracleInterface_append_range_inl (j : pSpec₁.ChallengeIdx) :
---     [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ.range (.inl j) = pSpec₁.Challenge j := by
---   simp [OracleSpec.range, ChallengeIdx.inl, ProtocolSpec.append, OracleInterface.toOracleSpec,
---     instOracleInterfaceChallengeAppend, challengeOracleInterface]
+/-- The challenge type of an appended protocol at a right-injected challenge index agrees with the
+challenge type of the right component. Dually to `challenge_append_inl`, this is
+`append_Type_natAdd` at the underlying round index. -/
+theorem challenge_append_inr (i : ChallengeIdx pSpec₂) :
+    (pSpec₁ ++ₚ pSpec₂).Challenge (ChallengeIdx.inr i) = pSpec₂.Challenge i :=
+  append_Type_natAdd (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂) i.1
 
--- @[simp]
--- lemma challengeOracleInterface_append_domain_inr (j : pSpec₂.ChallengeIdx) :
---     [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ.domain (.inr j) = Unit := by
---   simp [OracleSpec.domain, ChallengeIdx.inr, ProtocolSpec.append, OracleInterface.toOracleSpec,
---     instOracleInterfaceChallengeAppend, challengeOracleInterface]
+/-- The challenge oracles of the left component embed into those of the appended protocol,
+by reindexing along `ChallengeIdx.inl`. -/
+instance subSpec_challenge_append_left :
+    [pSpec₁.Challenge]ₒ ⊂ₒ [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ :=
+  subSpecOfChallengeReindex ChallengeIdx.inl (challenge_append_inl (pSpec₂ := pSpec₂))
 
--- @[simp]
--- lemma challengeOracleInterface_append_range_inr (j : pSpec₂.ChallengeIdx) :
---     [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ.range (.inr j) = pSpec₂.Challenge j := by
---   simp [OracleSpec.range, ChallengeIdx.inr, ProtocolSpec.append, OracleInterface.toOracleSpec,
---     instOracleInterfaceChallengeAppend, challengeOracleInterface]
+/-- The left inclusion is lawful, so lifting along it preserves the distribution and support of
+challenge queries. -/
+instance lawfulSubSpec_challenge_append_left :
+    [pSpec₁.Challenge]ₒ ˡ⊂ₒ [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ :=
+  lawfulSubSpecOfChallengeReindex ChallengeIdx.inl (challenge_append_inl (pSpec₂ := pSpec₂))
 
-variable [∀ i, SampleableType (pSpec₁.Challenge i)] [∀ i, SampleableType (pSpec₂.Challenge i)]
+/-- The challenge oracles of the right component embed into those of the appended protocol,
+by reindexing along `ChallengeIdx.inr`.
 
--- instance instSubSpecOfProtocolSpecAppendChallenge :
---     SubSpec ([pSpec₁.Challenge]ₒ + [pSpec₂.Challenge]ₒ) ([(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) where
---   monadLift | q => match q.1 with
---     | Sum.inl j => by
---       simpa using query (spec := [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) ⟨j.2, ()⟩
---     | Sum.inr j => by
---       simpa using query (spec := [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) j.inr ()
+Note that for the degenerate `pSpec ++ₚ pSpec` both this and `subSpec_challenge_append_left` apply,
+and typeclass resolution picks this one (declared later), routing challenges into the second copy.
+That mirrors VCV-io's `subSpec_add_left` / `subSpec_add_right` for `spec + spec`; pass the intended
+instance explicitly if the two components can coincide. -/
+instance subSpec_challenge_append_right :
+    [pSpec₂.Challenge]ₒ ⊂ₒ [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ :=
+  subSpecOfChallengeReindex ChallengeIdx.inr (challenge_append_inr (pSpec₁ := pSpec₁))
 
--- instance : SubSpec [pSpec₁.Challenge]ₒ ([(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) where
---   monadLift | query i t => instSubSpecOfProtocolSpecAppendChallenge.monadLift (query (Sum.inl i) t)
+/-- The right inclusion is lawful, so lifting along it preserves the distribution and support of
+challenge queries. -/
+instance lawfulSubSpec_challenge_append_right :
+    [pSpec₂.Challenge]ₒ ˡ⊂ₒ [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ :=
+  lawfulSubSpecOfChallengeReindex ChallengeIdx.inr (challenge_append_inr (pSpec₁ := pSpec₁))
 
--- instance : SubSpec [pSpec₂.Challenge]ₒ ([(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) where
---   monadLift | query i t => instSubSpecOfProtocolSpecAppendChallenge.monadLift (query (Sum.inr i) t)
+/-- The two inclusions occupy disjoint parts of the appended challenge interface: a left-injected
+round index is `< m` and a right-injected one is `≥ m`. This is what rules out the two components'
+challenge queries aliasing each other after composition.
+
+This records structural disjointness of the challenge inclusions, analogous to the VCV-io
+instance for `spec₁ + spec₂`; ordinary append soundness uses run decomposition instead. -/
+instance disjointSubSpec_challenge_append_left_right :
+    OracleSpec.DisjointSubSpec
+      [pSpec₁.Challenge]ₒ [pSpec₂.Challenge]ₒ [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ :=
+  disjointSubSpecOfChallengeReindex _ (challenge_append_inl (pSpec₂ := pSpec₂))
+    _ (challenge_append_inr (pSpec₁ := pSpec₁)) <| by
+      intro i i' h
+      have hv := congrArg (fun (j : ChallengeIdx (pSpec₁ ++ₚ pSpec₂)) => (j.1 : ℕ)) h
+      simp only [ChallengeIdx.inl, ChallengeIdx.inr, Fin.val_castAdd, Fin.val_natAdd] at hv
+      have := i.1.isLt
+      omega
+
+/-- `disjointSubSpec_challenge_append_left_right` with the two components swapped, matching
+VCV-io's pairing of `disjointSubSpec_add_left_right` / `disjointSubSpec_add_right_left`. -/
+instance disjointSubSpec_challenge_append_right_left :
+    OracleSpec.DisjointSubSpec
+      [pSpec₂.Challenge]ₒ [pSpec₁.Challenge]ₒ [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ where
+  disjoint_onQuery t₂ t₁ h :=
+    (disjointSubSpec_challenge_append_left_right.disjoint_onQuery t₁ t₂ h.symm)
+
+/-! ### Pinned lifts across `++ₚ`
+
+`liftM` chooses its `SubSpec` instance by unification. When `pSpec₁` and `pSpec₂` are the *same*
+protocol spec (e.g. a protocol that repeats an identical round structure), both
+`subSpec_challenge_append_left` and `subSpec_challenge_append_right` unify with the goal, and
+instance resolution picks the later-declared one — the *right* inclusion — even for a
+left-component computation. Statements that lift both components with a bare `liftM` are therefore
+not valid in general on the diagonal `pSpec ++ₚ pSpec`.
+
+The two abbreviations below pin the intended inclusion, so a statement can say which copy a
+component's challenge queries belong to. On the off-diagonal they are definitionally what `liftM`
+already produced. On the diagonal they can differ: when challenge indices exist, a component
+challenge query is tagged left or right by the respective lift. Empty or challenge-free protocols
+and pure computations do not witness such a difference. -/
+
+variable {ι : Type} {oSpec : OracleSpec ι} {α : Type}
+
+/-- Lift a left-component computation into the appended protocol, with the left challenge
+inclusion pinned. -/
+abbrev liftAppendLeft (pSpec₂ : ProtocolSpec n)
+    (oa : OracleComp (oSpec + [pSpec₁.Challenge]ₒ) α) :
+    OracleComp (oSpec + [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) α :=
+  letI : [pSpec₁.Challenge]ₒ ⊂ₒ [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ :=
+    subSpec_challenge_append_left
+  liftM oa
+
+/-- Lift a right-component computation into the appended protocol, with the right challenge
+inclusion pinned. -/
+abbrev liftAppendRight (pSpec₁ : ProtocolSpec m)
+    (oa : OracleComp (oSpec + [pSpec₂.Challenge]ₒ) α) :
+    OracleComp (oSpec + [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) α :=
+  letI : [pSpec₂.Challenge]ₒ ⊂ₒ [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ :=
+    subSpec_challenge_append_right
+  liftM oa
+
+/-! Query computation rules specify both the injected index and the response transport. -/
+
+/-- Lifting a left-component challenge query queries the appended protocol at the left-injected
+index and transports the response back along `challenge_append_inl`. -/
+@[simp] theorem liftM_challenge_append_inl (i : ChallengeIdx pSpec₁) :
+    (liftM (OracleSpec.query (spec := [pSpec₁.Challenge]ₒ) ⟨i, ()⟩) :
+        OracleQuery [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ (pSpec₁.Challenge i))
+      = ⟨⟨ChallengeIdx.inl i, ()⟩, cast (challenge_append_inl (pSpec₂ := pSpec₂) i)⟩ := rfl
+
+/-- Lifting a right-component challenge query queries the appended protocol at the right-injected
+index and transports the response back along `challenge_append_inr`. -/
+@[simp] theorem liftM_challenge_append_inr (i : ChallengeIdx pSpec₂) :
+    (liftM (OracleSpec.query (spec := [pSpec₂.Challenge]ₒ) ⟨i, ()⟩) :
+        OracleQuery [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ (pSpec₂.Challenge i))
+      = ⟨⟨ChallengeIdx.inr i, ()⟩, cast (challenge_append_inr (pSpec₁ := pSpec₁) i)⟩ := rfl
+
+/-- Lifting a left challenge query uses the left index and casts the response back. -/
+@[simp] theorem liftM_getChallenge_append_inl (i : ChallengeIdx pSpec₁) :
+    (liftM (pSpec₁.getChallenge i) :
+        OracleComp [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ (pSpec₁.Challenge i))
+      = cast (challenge_append_inl (pSpec₂ := pSpec₂) i) <$>
+          (pSpec₁ ++ₚ pSpec₂).getChallenge (ChallengeIdx.inl i) := rfl
+
+/-- Lifting a right challenge query uses the right index and casts the response back. -/
+@[simp] theorem liftM_getChallenge_append_inr (i : ChallengeIdx pSpec₂) :
+    (liftM (pSpec₂.getChallenge i) :
+        OracleComp [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ (pSpec₂.Challenge i))
+      = cast (challenge_append_inr (pSpec₁ := pSpec₁) i) <$>
+          (pSpec₁ ++ₚ pSpec₂).getChallenge (ChallengeIdx.inr i) := rfl
 
 end Append
 
@@ -456,10 +676,25 @@ def seqComposeChallengeIdxToSigma {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, 
     (k : (seqCompose pSpec).ChallengeIdx) : (i : Fin m) × (pSpec i).ChallengeIdx :=
   let ij := Fin.splitSum k.1
   ⟨ij.1, ⟨ij.2, by
-    simp [ij]; have := k.property; simp at this
+    simp only [ij]
+    have := k.property
+    simp only [seqCompose_dir] at this
     have hk : k.1 = Fin.embedSum ij.1 ij.2 := by simp [ij]
-    simp [hk] at this
+    simp only [hk, Fin.vflatten_embedSum] at this
     exact this⟩⟩
+
+/-- The challenge type of a sequential composition at a combined challenge index equals the
+challenge type of the component protocol at the decoded component challenge index. This is the
+transport fact needed whenever per-round challenge data must be moved across `seqCompose`. -/
+theorem seqCompose_challenge_eq {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    (i : (seqCompose pSpec).ChallengeIdx) :
+    (seqCompose pSpec).Challenge i =
+      (pSpec (seqComposeChallengeIdxToSigma i).1).Challenge
+        (seqComposeChallengeIdxToSigma i).2 := by
+  unfold ProtocolSpec.Challenge seqComposeChallengeIdxToSigma
+  simp only [seqCompose_type]
+  conv_lhs => rw [← Fin.embedSum_splitSum i.1]
+  rw [Fin.vflatten_embedSum]
 
 /-- The equivalence between the challenge indices of the individual protocols and the challenge
     indices of the sequential composition. -/
@@ -469,9 +704,22 @@ def seqComposeChallengeEquiv {m : ℕ} {n : Fin m → ℕ} (pSpec : ∀ i, Proto
   toFun := fun ⟨i, j⟩ => sigmaChallengeIdxToSeqCompose i j
   invFun := seqComposeChallengeIdxToSigma
   left_inv := by
-    intro ⟨_, _⟩; simp [seqComposeChallengeIdxToSigma, sigmaChallengeIdxToSeqCompose]
-    sorry
+    intro ⟨i, j⟩
+    simp only [seqComposeChallengeIdxToSigma, sigmaChallengeIdxToSeqCompose]
+    rw! (castMode := .all) [Fin.splitSum_embedSum i j.1]
+    rfl
   right_inv := by intro; simp [seqComposeChallengeIdxToSigma, sigmaChallengeIdxToSeqCompose]
+
+/-- A sum over the challenge indices of a sequential composition of a function given component
+by component, read back through `seqComposeChallengeIdxToSigma`, is the sum over the components
+of their sums. -/
+theorem sum_seqComposeChallengeIdxToSigma {m : ℕ} {n : Fin m → ℕ}
+    {pSpec : ∀ i, ProtocolSpec (n i)} {M : Type*} [AddCommMonoid M]
+    (f : ∀ i, (pSpec i).ChallengeIdx → M) :
+    ∑ k : (seqCompose pSpec).ChallengeIdx,
+      (let ij := seqComposeChallengeIdxToSigma k; f ij.1 ij.2) = ∑ i, ∑ k, f i k :=
+  (Equiv.sum_comp (seqComposeChallengeEquiv pSpec).symm (fun ij => f ij.1 ij.2)).trans
+    (Fintype.sum_sigma _)
 
 def sigmaMessageIdxToSeqCompose {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
     (i : Fin m) (j : (pSpec i).MessageIdx) : (seqCompose pSpec).MessageIdx :=
@@ -481,9 +729,11 @@ def seqComposeMessageIdxToSigma {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, Pr
     (k : (seqCompose pSpec).MessageIdx) : (i : Fin m) × (pSpec i).MessageIdx :=
   let ij := Fin.splitSum k.1
   ⟨ij.1, ⟨ij.2, by
-    simp [ij]; have := k.property; simp at this
+    simp only [ij]
+    have := k.property
+    simp only [seqCompose_dir] at this
     have hk : k.1 = Fin.embedSum ij.1 ij.2 := by simp [ij]
-    simp [hk] at this
+    simp only [hk, Fin.vflatten_embedSum] at this
     exact this⟩⟩
 
 /-- The equivalence between the message indices of the individual protocols and the message
@@ -493,8 +743,10 @@ def seqComposeMessageEquiv {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, Protoco
   toFun := fun ⟨i, msgIdx⟩ => sigmaMessageIdxToSeqCompose i msgIdx
   invFun := seqComposeMessageIdxToSigma
   left_inv := by
-    intro ⟨i, ⟨j, h⟩⟩ ; simp [seqComposeMessageIdxToSigma, sigmaMessageIdxToSeqCompose]
-    sorry
+    intro ⟨i, j⟩
+    simp only [seqComposeMessageIdxToSigma, sigmaMessageIdxToSeqCompose]
+    rw! (castMode := .all) [Fin.splitSum_embedSum i j.1]
+    rfl
   right_inv := by intro; simp [seqComposeMessageIdxToSigma, sigmaMessageIdxToSeqCompose]
 
 instance {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
@@ -503,6 +755,20 @@ instance {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
   fun ⟨k, h⟩ => Fin.fflatten₂
     (A := Direction) (B := Type) (F := fun dir type => (h : dir = .V_to_P) → SampleableType type)
     (fun i' j' h' => inst i' ⟨j', h'⟩) k h
+
+/-- **Instance pin.** At `m + 1` components, the `SampleableType` instance of a sequential
+composition's challenges is the `++ₚ` instance of its head and tail. It holds by `rfl`, since
+`Fin.fflatten₂` unfolds to `Fin.fappend₂` one component at a time. Inductive proofs that peel the
+head with `append` rewrite with it, so a change to either instance fails here rather than inside
+those proofs. -/
+theorem instSampleableTypeChallengeSeqCompose_succ {m : ℕ} {n : Fin (m + 1) → ℕ}
+    {pSpec : ∀ i, ProtocolSpec (n i)} [inst : ∀ i, ∀ j, SampleableType ((pSpec i).Challenge j)] :
+    (instSampleableTypeChallengeSeqCompose :
+        ∀ k, SampleableType ((seqCompose pSpec).Challenge k)) =
+      (instSampleableTypeChallengeAppend (pSpec₁ := pSpec 0)
+        (pSpec₂ := seqCompose fun i => pSpec i.succ) :
+        ∀ k, SampleableType ((seqCompose pSpec).Challenge k)) :=
+  rfl
 
 instance {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
     [inst : ∀ i, ∀ j, Inhabited ((pSpec i).Challenge j)] :

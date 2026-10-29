@@ -1,8 +1,10 @@
 name: Docs Integrity
 
 on:
+  # Every pull request is checked, including stacked ones whose base is another PR branch.
   pull_request:
-    branches: ["main"]
+  merge_group:
+    types: [checks_requested]
   workflow_dispatch:
 
 concurrency:
@@ -14,8 +16,8 @@ jobs:
     name: Check Docs Integrity
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Check docs integrity

@@ -1,0 +1,5 @@
+bibkey: GG25
+source_kind: eprint
+canonical_url: https://eprint.iacr.org/2025/2054
+committed_artifacts: []
+notes: "Goyal-Guruswami, Optimal Proximity Gaps for Subspace-Design Codes and (Random) Reed-Solomon Codes. ArkLib uses only Lemma 2.16, the source ABF26 cites for its Lemma 2.17. Reference PDF (not committed) is ~/abf26-refs/GG25.pdf, a revision dated March 2026 despite the 2025 key; statement numbers quoted in ArkLib are from that revision."

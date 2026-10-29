@@ -1,0 +1,5 @@
+bibkey: GGR11
+source_kind: journal
+canonical_url: https://doi.org/10.1137/090778280
+committed_artifacts: []
+notes: "SIAM Journal on Computing 40(5), pages 1432-1462. ArkLib cites Theorem 2.5 for the finite-alphabet interleaved-code list-size bound. The reference PDF is not committed."

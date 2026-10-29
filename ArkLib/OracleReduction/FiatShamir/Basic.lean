@@ -3,8 +3,9 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.OracleReduction.Security.Basic
+public import ArkLib.OracleReduction.Security.Basic
 
 /-!
   # The Basic Fiat-Shamir Transformation
@@ -16,8 +17,8 @@ import ArkLib.OracleReduction.Security.Basic
     Fiat-Shamir oracle, which for the `i`-th challenge requires the input statement and all messages
     up to round `i`
 
-  This is the _basic_ (or slow) version to be distinguished from the more efficient version based on
-  duplex sponge (see `DuplexSponge` folder).
+  This is the _basic_ (or slow) version, as opposed to the more efficient duplex-sponge version,
+  which is not formalized here.
 
   We will show that the transformation satisfies security properties as follows:
 
@@ -29,6 +30,8 @@ import ArkLib.OracleReduction.Security.Basic
 
   Our formalization mostly follows the treatment in the Chiesa-Yogev textbook.
 -/
+
+@[expose] public section
 
 universe u v
 
@@ -54,6 +57,28 @@ instance : MonadLift (StateT σ m) (StateT (σ × τ) m) where
 instance : MonadLift (StateT τ m) (StateT (σ × τ) m) where
   monadLift := fun x st => do let y ← x st.2; return (y.1, st.1, y.2)
 
+
+instance [LawfulMonad m] : LawfulMonadLift (StateT σ m) (StateT (σ × τ) m) where
+  monadLift_pure a := by
+    funext st
+    change (do let y ← (pure (a, st.1) : m _); pure (y.1, y.2, st.2)) = pure (a, st)
+    simp only [pure_bind]
+  monadLift_bind x f := by
+    funext st
+    change (do
+      let y ← (do let z ← x st.1; f z.1 z.2)
+      pure (y.1, y.2, st.2)) = (do
+        let z ← (do let y ← x st.1; pure (y.1, y.2, st.2))
+        let y ← f z.1 z.2.1
+        pure (y.1, y.2, z.2.2))
+    simp only [bind_assoc, pure_bind]
+
+/-- Lifting the first state component leaves the second component unchanged. -/
+lemma StateT.run_liftLeft {α : Type u} (x : StateT σ m α) (s : σ) (t : τ) :
+    (liftM x : StateT (σ × τ) m α).run (s, t) = (do
+      let (a, s') ← x.run s
+      pure (a, s', t)) := rfl
+
 end find_home
 
 open ProtocolSpec OracleComp OracleSpec
@@ -75,7 +100,7 @@ Prover's function for processing the next round, given the current result of the
   This is modified for Fiat-Shamir, where we only accumulate the messages and not the challenges.
 -/
 @[inline, specialize]
-def Prover.processRoundFS [∀ i, VCVCompatible (pSpec.Challenge i)] (j : Fin n)
+def Prover.processRoundFS (j : Fin n)
     (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (currentResult : OracleComp (oSpec + fsChallengeOracle StmtIn pSpec)
       (pSpec.MessagesUpTo j.castSucc × StmtIn × prover.PrvState j.castSucc)) :
@@ -97,7 +122,7 @@ Run the prover in an interactive reduction up to round index `i`, via first inpu
   to round `i`, and the prover's state after round `i`.
 -/
 @[inline, specialize]
-def Prover.runToRoundFS [∀ i, VCVCompatible (pSpec.Challenge i)] (i : Fin (n + 1))
+def Prover.runToRoundFS (i : Fin (n + 1))
     (stmt : StmtIn) (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (state : prover.PrvState 0) :
         OracleComp (oSpec + fsChallengeOracle StmtIn pSpec)
@@ -139,38 +164,3 @@ def Reduction.fiatShamir (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
       StmtIn WitIn StmtOut WitOut where
   prover := R.prover.fiatShamir
   verifier := R.verifier.fiatShamir
-
-section Execution
-
--- Show that the Fiat-Shamir prover's run gives the same output as the original prover's run
-
-
-
-end Execution
-
-section Security
-
-noncomputable section
-
-open scoped NNReal
-
-variable [∀ i, SampleableType (pSpec.Challenge i)]
-  {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-
-theorem fiatShamir_completeness (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
-    (completenessError : ℝ≥0) (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) :
-  R.completeness init impl relIn relOut completenessError →
-    R.fiatShamir.completeness (do
-        let challengeImpl : QueryImpl (srChallengeOracle StmtIn pSpec) Id :=
-          fun ⟨i, _⟩ => (default : pSpec.Challenge i)
-        return (← init, challengeImpl))
-      (impl.addLift fsChallengeQueryImpl' :
-        QueryImpl (oSpec + srChallengeOracle StmtIn pSpec)
-          (StateT (σ × QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp))
-        relIn relOut completenessError := sorry
-
--- TODO: state-restoration (knowledge) soundness implies (knowledge) soundness after Fiat-Shamir
-
-end
-
-end Security

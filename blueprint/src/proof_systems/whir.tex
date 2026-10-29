@@ -9,7 +9,7 @@
 \subsubsection{Mutual Correlated Agreement as a Proximity Generator}
 
 \begin{definition}\label{def:proximity_generator}
-\lean{Generator.ProximityGenerator}
+    % \lean{Generator.ProximityGenerator} % TODO: declaration is not currently formalized.
 \uses{def:linear_code,def:distance_from_code}
 Let $\code\subseteq \field^{\evaldomain}$ be a linear code. We say that $\mathsf{Gen}$ is a proximity generator for $\code$ with proximity bounds ${\bound}$ and $\err$ if the following implication holds for $f_0,\ldots,f_{\parl-1} : \evaldomain \rightarrow \field$ and $\delta\in(0,1-{\bound}(\rate,\parl))$. If
 \begin{align*}
@@ -20,7 +20,7 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
 \end{definition}
 
 \begin{theorem}\label{thm:proximity_gap_whir}
-\lean{RSGenerator.genRSC}
+    % \lean{RSGenerator.genRSC} % TODO: declaration is not currently formalized.
 \uses{def:proximity_generator,def:reed_solomon_code}
     Let $\code = \rscode[\field,\evaldomain,m]$ be a Reed Solomon code with rate $\rate = 2^m/|\evaldomain|$. $\gen(\alpha,\parl)=\{1,\alpha,\ldots,\alpha^{\parl-1}\}$ is a proximity generator for $\code$ with proximity bounds ${\bound}(\rate,\parl)=\sqrt{\rate}$ and $\err(C,\parl,\delta)$ defined below.
     \begin{itemize}
@@ -36,7 +36,7 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
 \end{theorem}
 
 \begin{definition}\label{def:gen_mutual_corr_agreement}
-    \lean{MutualCorrAgreement.hasMutualCorrAgreement}
+    % \lean{MutualCorrAgreement.hasMutualCorrAgreement} % TODO: declaration is not currently formalized.
     \uses{def:proximity_generator}
     Let $\code$ be a linear code. We say that $\gen$ be a proximity generator with mutual correlated agreement with proximity bounds ${\bound}^\star$ and $\err^\star$, if for $f_0,\ldots,f_{\parl-1}:\evaldomain\rightarrow\field$ and $\delta\in(0,1-{\bound}^\star(\code,\parl))$ the following holds.
     \[
@@ -52,19 +52,19 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
 \end{definition}
 
 \begin{lemma}\label{lemma:gen_mutual_corr_agreement}
-\lean{MutualCorrAgreement.mca_linearCode}
+    % \lean{MutualCorrAgreement.mca_linearCode} % TODO: declaration is not currently formalized.
 \uses{def:proximity_generator, def:gen_mutual_corr_agreement}
     Let $\code$ be a linear code with minimum distance $\delta_{\code}$ and let $\gen$ be a proximity generator for $\code$ with proximity bound ${\bound}$ and error $\err$. Then $\gen$ has mutual correlated agreement with proximity bound ${\bound}^\star(\code, \parl) = \min\{1 - \delta_{\code}/2, \bound(\code, \parl)\}$ and error $\err^\star(\code, \parl, \delta) := \err(\code, \parl, \delta)$.
 \end{lemma}
 
 \begin{lemma}
-\lean{MutualCorrAgreement.mca_rsc}
+    % \lean{MutualCorrAgreement.mca_rsc} % TODO: declaration is not currently formalized.
 \uses{lemma:gen_mutual_corr_agreement, def:reed_solomon_code}
     Let $\code := \rscode[\field, \evaldomain, m]$ be a Reed Solomon code with rate $\rate$. The function $\gen(\parl; \alpha) = (1, \alpha, \ldots, \alpha^{\parl - 1})$ is a proximity generator for $\code$ with mutual correlated agreement with proximity bound ${\bound}^\star(\code, \parl) := \frac{1 + \rate}{2}$ and error $\err^\star(\code, \parl, \delta) = \frac{(\parl - 1) \cdot 2^m}{\rate \cdot |\field|}$.
 \end{lemma}
 
 \begin{theorem}\label{conjecture:whir}
-\lean{MutualCorrAgreement.mca_johnson_bound_CONJECTURE,MutualCorrAgreement.mca_capacity_bound_CONJECTURE}
+    % \lean{MutualCorrAgreement.mca_johnson_bound_CONJECTURE,MutualCorrAgreement.mca_capacity_bound_CONJECTURE} % TODO: declarations are not currently formalized.
 \uses{def:reed_solomon_code,lemma:gen_mutual_corr_agreement}
     The function $\gen(\parl; \alpha) := (1, \alpha, \ldots, \alpha^{\parl - 1})$ is a proximity generator with mutual correlated agreement for every smooth Reed Solomon code $\code := \rscode[\field, \evaldomain, m]$ (with rate $\rate := 2^m / |\evaldomain|$). We give two conjectures, for the parameters of the proximity bound ${\bound}^\star$ and the error $\err^\star$:
     \begin{enumerate}
@@ -83,7 +83,7 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
 \subsubsection{Mutual correlated agreement preserves list decoding}
 
 \begin{lemma}\label{lemma: mutual_corrAgr_listdecoding}
-\lean{MutualCorrAgreement.mca_list_decoding}
+    % \lean{MutualCorrAgreement.mca_list_decoding} % TODO: declaration is not currently formalized.
 \uses{def:reed_solomon_code,def:interleaved_code,def:list_close_codewords,lemma:gen_mutual_corr_agreement}
     Let $\code \subseteq \field^{\evaldomain}$ be a linear code with minimum distance $\delta_{\code}$, and let $\gen$ be a proximity generator for $\code$ with mutual correlated agreement with proximity bound ${\bound}^\star$ and error $\err^\star$. Then, for every $f_0, \ldots, f_{\parl-1} : \evaldomain \to \field$ and $\delta \in (0, \min\{\delta_{\code}, 1 - {\bound}^\star(\code, \parl)\})$:
     \[
@@ -97,12 +97,12 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
 \subsubsection{Folding univariate functions}
 
 \begin{definition}\label{def:extract}
-\lean{Fold.extract_x}
+    % \lean{Fold.extract_x} % TODO: declaration is not currently formalized.
     Let $\mathsf{extract}:\evaldomain^{2^{k+1}}\rightarrow \evaldomain^{2^k}$ be a function. There exists $x \in \evaldomain$, such that $y = x^{2^{k+1}}\in\evaldomain^{2^{k+1}}$. Then $\mathsf{extract}$ returns $z = \sqrt{y} = x^{2^k}\in\evaldomain^{2^k}$ such that $y = z^2$.
 \end{definition}
 
 \begin{definition}\label{def:foldf}
-\lean{Fold.foldf}
+    % \lean{Fold.foldf} % TODO: declaration is not currently formalized.
 \uses{def:extract}
     Let $f : \evaldomain^{2^k} \to \field$ be a function, and $\alpha \in \field$. We define $\mathrm{Fold_f}(f, {\alpha}) : \evaldomain^{(2^{k+1})} \to \field$ as follows:
     \[
@@ -113,19 +113,19 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
 \end{definition}
 
 \begin{definition}\label{def:fold_k}
-\lean{Fold.fold_k_core,Fold.fold_k}
+    % \lean{Fold.fold_k_core,Fold.fold_k} % TODO: declarations are not currently formalized.
 \uses{def:foldf}
     For $k \leq m$ and $\vec{\alpha} = (\alpha_0, \ldots, \alpha_{k-1}) \in \field^k$ we define $\mathrm{Fold}(f, \vec{\alpha}) : \evaldomain^{2^k} \to \field$ to equal $\mathrm{Fold}(f, \vec{\alpha}) := f_k$ where $f_k$ is defined recursively as follows: $f_0 := f$, and $f_i := \mathrm{Fold_f}(f_{i-1}, \alpha_i)$. 
 \end{definition}
 
 \begin{definition}\label{def:fold_k_set}
-\lean{Fold.fold_k_set}
+    % \lean{Fold.fold_k_set} % TODO: declaration is not currently formalized.
 \uses{def:fold_k}
     For a set $S \subseteq \field^{\evaldomain}$ we denote $\mathrm{Fold_{S}}(S, \vec{\alpha}) := \{\mathrm{Fold_{S}}(f, \vec{\alpha}) \mid f \in S\}$.
 \end{definition}
 
 \begin{lemma}\label{lemma:fold_fg}
-\lean{Fold.fold_f_g}
+    % \lean{Fold.fold_f_g} % TODO: declaration is not currently formalized.
 \uses{def:fold_k,def:smooth_rs_code}
     Let $f : \evaldomain \to \field$ be a function, $\vec{\alpha} \in \field^k$ folding randomness and let $g := \mathrm{Fold}(f, \vec{\alpha})$. If $f \in \rscode[\field, \evaldomain, m]$ and $k \leq m$, then $g \in \rscode[\field, \evaldomain^{2^k}, m - k]$, and further the multilinear extension of $g$ is given by $\hat{g}(X_k, \ldots, X_{m-1}) := \hat{f}(\vec{\alpha}, X_k, \ldots, X_{m-1})$ where $\hat{f}$ is the multilinear extension of $f$.
 \end{lemma}
@@ -133,7 +133,7 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
 \subsubsection{Block relative distance}
 
 \begin{definition}\label{def:block}
-    \lean{BlockRelDistance.block}
+    % \lean{BlockRelDistance.block} % TODO: declaration is not currently formalized.
     Let $\evaldomain \subseteq \field$ be a smooth evaluation domain and $k \in \mathbb{N}$ be a folding parameter. For $z \in \evaldomain^{2^k}$, define $\mathrm{Block}(\evaldomain, i, k, z) := \{ x \in \evaldomain, y \in \evaldomain^{2^i} : y^{2^{k-i}} = z \}$.
 \end{definition}
 
@@ -147,7 +147,7 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
 \end{definition}
 
 \begin{definition}\label{def:min_block_rel_distance}
-\lean{BlockRelDistance.minBlockRelDistance}
+    % \lean{BlockRelDistance.minBlockRelDistance} % TODO: declaration is not currently formalized.
 \uses{def:block_rel_distance}
     For $S \subseteq \field^{\evaldomain}$, we let $\Delta_{r}(\code, i, k, f, S) := \min_{g \in S} \Delta_{r}(\code, i, k, f, g)$.
 \end{definition}
@@ -155,7 +155,7 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
 {Note that $\Delta_{r}(\code, 0, 0, f, g) = \Delta(f, g)$ for any $\code$. We define the block list decoding of a codeword.}
 
 \begin{definition}\label{def:list_close_codewords_block}
-\lean{BlockRelDistance.listBlockRelDistance}
+    % \lean{BlockRelDistance.listBlockRelDistance} % TODO: declaration is not currently formalized.
 \uses{def:block_rel_distance}
     For a smooth Reed Solomon code $\rscode := \rscode[\field, \evaldomain, m]$, proximity parameter $\delta \in [0,1]$, and $f : \evaldomain^{2^i} \to \field$, we let
     \[
@@ -173,7 +173,7 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
 \subsubsection{Folding preserves list decoding}
 
 \begin{theorem}\label{thm:folding_preserves_listdecoding}
-\lean{Fold.folding_listdecoding_if_genMutualCorrAgreement}
+    % \lean{Fold.folding_listdecoding_if_genMutualCorrAgreement} % TODO: theorem is not currently formalized.
 \uses{lemma:folding_preserves_listdecoding_base, lemma:folding_preserves_listdecoding_bound, lemma:folding_preserves_listdecoding_base_ne_subset}
     Let $\code = \rscode[\field, \evaldomain, m]$ be a smooth Reed Solomon code and $k \leq m$. For $0 \leq i \leq k$ let $\code^{(i)} := \rscode[\field, \evaldomain^{2^i}, m - i]$. Let $\gen(\parl; \alpha) = (1, \alpha, \ldots, \alpha^{\parl - 1})$ be a proximity generator with mutual correlated agreement for the codes $\code^{(0)}, \ldots, \mathcal{C}^{(k-1)}$ with proximity bound ${\bound}^\star$ and error $\err^\star$. Then for every $f : \evaldomain \to \field$ and $\delta \in \left(0, 1 - \max_{i \in [0,(k-1)]} \{ {\bound}^\star(\code^{(i)}, 2) \} \right)$,
     \[
@@ -185,7 +185,7 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
 \end{theorem}
 
 \begin{lemma}\label{lemma:folding_preserves_listdecoding_base}
-\lean{Fold.folding_preserves_listdecoding_base}
+    % \lean{Fold.folding_preserves_listdecoding_base} % TODO: lemma is not currently formalized.
 \uses{def:list_close_codewords_block,def:fold_k,def:fold_k_set}
     Let $\code := \rscode[\field, \evaldomain, m]$ be a Reed Solomon code, and $k \leq m$ be a parameter. Denote $\code' := \rscode[\field, \evaldomain^{2}, m - 1]$. Then for every $f : \evaldomain \to \field$ and $\delta \in (0, 1 - {\bound}^\star(\code', 2))$,
     \[
@@ -197,13 +197,13 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
 \end{lemma}
     
 \begin{lemma}\label{lemma:folding_preserves_listdecoding_bound}
-\lean{Fold.folding_preserves_listdecoding_bound}
+    % \lean{Fold.folding_preserves_listdecoding_bound} % TODO: lemma is not currently formalized.
 \uses{def:list_close_codewords_block,def:fold_k}
     For every $\alpha \in \field$, $\mathrm{Fold_S}(\Lambda_{r}(\code, 0, k, f, \delta), \alpha) \subseteq \Lambda_{r}(\code', 1, k, \mathrm{Fold}(f, \alpha), \delta)$.
 \end{lemma}
 
 \begin{lemma}\label{lemma:folding_preserves_listdecoding_base_ne_subset}
-\lean{Fold.folding_preserves_listdecoding_base_ne_subset}
+    % \lean{Fold.folding_preserves_listdecoding_base_ne_subset} % TODO: lemma is not currently formalized.
 \uses{def:list_close_codewords_block,def:fold_k,def:fold_k_set}
     \[
     \Pr_{\alpha \leftarrow \field} \left[
@@ -251,7 +251,7 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
 \end{lemma}
 
 \begin{theorem}\label{thm: whir_rbr_soundness}
-\lean{WhirIOP.whir_rbr_soundness}
+    % \lean{WhirIOP.whir_rbr_soundness} % TODO: theorem is not currently formalized.
 \uses{thm:folding_preserves_listdecoding,lemma:out_of_domain_sampling_crs_eq_rs,lemma:gen_mutual_corr_agreement,def:constrained_code}
     Consider $(\field, M, (k_i, m_i, \evaldomain_i, t_i)_{0 \leq i \leq M}, \widehat{w}_0, \sigma_0, m, d^\star, d)$ with the following ingrediants and conditions,
     \begin{itemize}
@@ -286,5 +286,4 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
     \item $\varepsilon^{\mathrm{fin}} \leq (1 - \delta_{M-1})^{t_M - 1}$.
 \end{itemize}
 \end{theorem}
-
 

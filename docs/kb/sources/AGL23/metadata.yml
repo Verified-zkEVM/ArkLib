@@ -1,0 +1,5 @@
+bibkey: AGL23
+source_kind: bibliography-only
+canonical_url: https://arxiv.org/abs/2308.13424
+committed_artifacts: []
+notes: "Scaffolded from references.bib for {AG} codes have no list-decoding friends: approaching the generalized Singleton bound requires exponential alphabets."

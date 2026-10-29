@@ -3,13 +3,18 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import CompPoly.Data.MvPolynomial.Notation
+module
+
+public import CompPoly.Data.MvPolynomial.Notation
+public import ArkLib.Data.Equiv.FiberCycle
 
 /-! # The Plonk relation
 
 We first define the initial relation of Plonk. The paper first defines a constraint system, then
 define what it means for the constraint system to be satisfied. This forms the core relation of
 Plonk. -/
+
+@[expose] public section
 
 namespace Plonk
 
@@ -107,12 +112,8 @@ end Gate
 
 /-- A Plonk constraint system is a vector of `numGates` gates, each parametrized by the underlying
   ring `𝓡` and `numWires`, the number of wires.
-
-  Marked `protected` so that bare `ConstraintSystem` inside `namespace Plonk` refers to the
-  universal `ConstraintSystem` in `ArkLib.ProofSystem.ConstraintSystem.Basic`. Users access
-  this definition as `Plonk.ConstraintSystem`.
 -/
-protected def ConstraintSystem (𝓡 : Type) (numWires numGates : ℕ) := Fin numGates → Gate 𝓡 numWires
+def ConstraintSystem (𝓡 : Type) (numWires numGates : ℕ) := Fin numGates → Gate 𝓡 numWires
 
 variable {𝓡 : Type} [CommRing 𝓡] {numWires numGates : ℕ}
 
@@ -126,15 +127,38 @@ namespace ConstraintSystem
 
 /-- A constraint system accepts an input vector `x` if all of its gates accept `x`. -/
 def accepts (x : Fin numWires → 𝓡)
-    (cs : Plonk.ConstraintSystem 𝓡 numWires numGates) : Prop :=
+    (cs : ConstraintSystem 𝓡 numWires numGates) : Prop :=
   ∀ i : Fin numGates, (cs i).accepts x
+
+omit [CommRing 𝓡]
+
+/-- The variable at a position in the column-major list of left, right, and output wires. -/
+def wireAt (cs : ConstraintSystem 𝓡 numWires numGates)
+    (p : Fin (3 * numGates)) : Fin numWires :=
+  let q := finProdFinEquiv.symm p
+  if q.1 = 0 then (cs q.2).a else if q.1 = 1 then (cs q.2).b else (cs q.2).c
+
+@[simp]
+theorem wireAt_left (cs : ConstraintSystem 𝓡 numWires numGates) (i : Fin numGates) :
+    cs.wireAt (finProdFinEquiv ((0 : Fin 3), i)) = (cs i).a := by
+  simp [wireAt]
+
+@[simp]
+theorem wireAt_right (cs : ConstraintSystem 𝓡 numWires numGates) (i : Fin numGates) :
+    cs.wireAt (finProdFinEquiv ((1 : Fin 3), i)) = (cs i).b := by
+  simp [wireAt]
+
+@[simp]
+theorem wireAt_output (cs : ConstraintSystem 𝓡 numWires numGates) (i : Fin numGates) :
+    cs.wireAt (finProdFinEquiv ((2 : Fin 3), i)) = (cs i).c := by
+  simp [wireAt]
 
 /-- The partition induced by a constraint system as defined in the Plonk paper.
 
 For `i ∈ [numWires]`, let `T_i ⊆ [3*numGates]` be the set of indices `j` such that `V_j = i`,
 where `V` is the flattened vector of all wire indices `(a,b,c)` from all gates.
 This creates a partition of `[3 * numGates]` based on which gates use each wire index. -/
-def partition (cs : Plonk.ConstraintSystem 𝓡 numWires numGates) :
+def partition (cs : ConstraintSystem 𝓡 numWires numGates) :
     Fin numWires → Finset (Fin (3 * numGates)) :=
   -- We first cast via the equivalence `Fin (3 * numGates) ≃ Fin 3 × Fin numGates`,
   -- then filter by matching on the first coordinate `j.1`, which determines which wire we are
@@ -145,14 +169,44 @@ def partition (cs : Plonk.ConstraintSystem 𝓡 numWires numGates) :
       else if j.1 = 1 then (cs j.2).b = i else (cs j.2).c = i)
     (Finset.univ : Finset (Fin 3 × Fin numGates)))
 
-/-- The permutation corresponding to the partition induced by a constraint system. -/
-def perm (cs : Plonk.ConstraintSystem 𝓡 numWires numGates) : Equiv.Perm (Fin (3 * numGates)) :=
-  sorry
+/-- A partition block consists exactly of the positions of one variable. -/
+theorem mem_partition_iff_wireAt (cs : ConstraintSystem 𝓡 numWires numGates)
+    (v : Fin numWires) (p : Fin (3 * numGates)) :
+    p ∈ cs.partition v ↔ cs.wireAt p = v := by
+  obtain ⟨q, rfl⟩ := (finProdFinEquiv : Fin 3 × Fin numGates ≃ Fin (3 * numGates)).surjective p
+  simp [partition, wireAt]
+  split_ifs <;> rfl
+
+/-- Rotate each variable's occurrences once, in column-major order. -/
+def perm (cs : ConstraintSystem 𝓡 numWires numGates) : Equiv.Perm (Fin (3 * numGates)) :=
+  Equiv.Perm.fiberCycle cs.wireAt
+
+@[simp]
+theorem wireAt_perm (cs : ConstraintSystem 𝓡 numWires numGates) (p : Fin (3 * numGates)) :
+    cs.wireAt (cs.perm p) = cs.wireAt p :=
+  Equiv.Perm.fiberCycle_apply cs.wireAt p
+
+/-- The cycles of the wiring permutation are exactly the nonempty variable fibers. -/
+theorem sameCycle_iff_wireAt (cs : ConstraintSystem 𝓡 numWires numGates)
+    (p q : Fin (3 * numGates)) :
+    cs.perm.SameCycle p q ↔ cs.wireAt p = cs.wireAt q :=
+  Equiv.Perm.sameCycle_fiberCycle_iff cs.wireAt p q
+
+/-- Copy constraints require equal values at occurrences of the same variable. -/
+def CopyConstraintsSatisfied (cs : ConstraintSystem 𝓡 numWires numGates)
+    (w : Fin (3 * numGates) → 𝓡) : Prop :=
+  ∀ p q, cs.wireAt p = cs.wireAt q → w p = w q
+
+/-- Copy constraints are equivalent to invariance under the wiring permutation. -/
+theorem copyConstraints_iff_invariant (cs : ConstraintSystem 𝓡 numWires numGates)
+    (w : Fin (3 * numGates) → 𝓡) :
+    cs.CopyConstraintsSatisfied w ↔ ∀ p, w (cs.perm p) = w p :=
+  (Equiv.Perm.fiberCycle_invariant_iff cs.wireAt w).symm
 
 /-- A constraint system is prepared for `ℓ` public inputs, for some `ℓ ≤ numGates, numWires`,
   if for all `i ∈ [ℓ]`, the `i`-th gate constrains the `i`-th wire to be some public value. -/
 def isPreparedFor (ℓ : ℕ) (hℓ : ℓ ≤ numGates) (hℓ' : ℓ ≤ numWires)
-    (cs : Plonk.ConstraintSystem 𝓡 numWires numGates) : Prop :=
+    (cs : ConstraintSystem 𝓡 numWires numGates) : Prop :=
   ∀ i : Fin ℓ, ∃ c, cs (Fin.castLE hℓ i) = Gate.eq (Fin.castLE hℓ' i) c
 
 end ConstraintSystem
@@ -163,7 +217,7 @@ end ConstraintSystem
 - A natural number `ℓ ≤ m` representing the number of public inputs
 - A subset `ℐ ⊂ [m]` of "public inputs" (assumed to be `{1,...,ℓ}` without loss of generality)
 -/
-def relation (cs : Plonk.ConstraintSystem 𝓡 numWires numGates) (ℓ : ℕ) (hℓ : ℓ ≤ numWires) :
+def relation (cs : ConstraintSystem 𝓡 numWires numGates) (ℓ : ℕ) (hℓ : ℓ ≤ numWires) :
     (publicInputs : Fin ℓ → 𝓡) → (privateWitness : Fin (numWires - ℓ) → 𝓡) → Prop :=
   fun (x : Fin ℓ → 𝓡) (ω : Fin (numWires - ℓ) → 𝓡) =>
     let combined := Fin.append x ω ∘ Fin.cast (by omega)

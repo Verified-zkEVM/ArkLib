@@ -3,18 +3,80 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova, František Silváši, Julian Sutherland, Ilia Vlasov
 -/
+module
 
-import ArkLib.Data.Polynomial.Bivariate
-import ArkLib.Data.Polynomial.Prelims
-import Mathlib.FieldTheory.RatFunc.Defs
-import Mathlib.RingTheory.Ideal.Quotient.Defs
-import Mathlib.RingTheory.Ideal.Span
-import Mathlib.RingTheory.PowerSeries.Substitution
+public import ArkLib.Data.Polynomial.RationalFunctions.FunctionField
+public import ArkLib.Data.Polynomial.RationalFunctions.Weight
+public import ArkLib.Data.Polynomial.RationalFunctions.RationalRootVanishing
+public import ArkLib.Data.Polynomial.RationalFunctions.Lifts
+public import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Setup
+public import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Hensel
+public import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Weight
+public import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Sequence
 
 /-!
-# Definitions and Theorems about Function Fields and Rings of Regular Functions
+# Appendix A of [BCIKS20]: Function Fields, Weights, and Hensel Lifts
 
-We define the notions of Appendix A of [BCIKS20].
+Umbrella import for the `RationalFunctions` package, which formalizes Appendix A of [BCIKS20] —
+the algebraic machinery behind the list-decoding half of the Reed-Solomon proximity-gap proof.
+Import this file for all of it, or an individual module for a narrower dependency.
+
+## Setting
+
+`H : F[X][Y]` plays the role of the paper's `H(Y, Z)`: the outer variable is `Y` and the
+coefficient variable is the paper's `Z`. For the trivariate `R : F[X][X][Y]` the outer variable is
+`Y`, the middle one is the paper's `X` and the innermost is `Z`, so `Trivariate.evalAtX x₀ R`
+(definitionally the existing `Bivariate.evalX (C x₀) R` expressions in this package) is the
+specialization `R(x₀, Y, Z)`. Generic bivariate operations on `R.coeff i` are intentional: that
+coefficient is genuinely bivariate in `(Z, X)`.
+
+## Layout
+
+* `FunctionField` (A.1) — monicization `monicizeRatFunc`/`monicize` (the paper's `H̃`), the
+  function field `𝕃 H = F(Z)[T]/(H̃)`, its ring of regular elements `𝒪 H = F[Z][T]/(H̃)`, the
+  injective embedding `𝒪 H ↪ 𝕃 H`, canonical representatives, and the substitutions `π_z` of A.3.
+* `Lifts` (A.1) — coefficient and bivariate lifts into `𝕃`, the image `T` of the polynomial
+  variable, denominator clearing for `W^k · P(T/W)`, and the extension of `π_z` to quotients
+  `β / C(Z)`.
+* `Weight` (A.2) — the weight `Λ` (`weight`, `regularWeight`) and its calculus: sub-additivity,
+  *full* additivity on `F[Z][T]`, invariance under reduction modulo `H̃`, exact `Λ(H̃)`.
+* `RationalRootVanishing` (A.3) — Lemma A.1: a regular `β` killed by more than `deg_Y H · Λ(β)`
+  substitutions is zero.
+* `HenselNumerators/Setup` (A.4) — hypotheses of the lift, `ζ = ∂R/∂Y(x₀, T/W, Z)`, its cleared
+  form `ξ = W^{d-2}·ζ ∈ 𝒪`, and the bound on `Λ(ξ)`.
+* `HenselNumerators/Hensel` (A.4) — the formal Hensel iteration: existence, uniqueness, and
+  regularity of the numerators.
+* `HenselNumerators/Weight` (A.4) — the quantitative half of Claim A.2: the `RegularWeightLe`
+  calculus and the weight induction.
+* `HenselNumerators/Sequence` (A.4) — Claim A.2 assembled: `betaSeq`, `alpha`, `gamma`, and the
+  weight bounds.
+
+## Main results
+
+* `embedding_eq_zero_of_many_rational_roots` — Lemma A.1.
+* `HenselNumerators.exists_hensel_numerator_sequence` — the qualitative half of Claim A.2. The data
+  `betaSeq`, `alpha`, `gamma` is defined from this rather than from the bundled statement, so that
+  downstream definitions do not depend on the quantitative argument.
+* `HenselNumerators.IsHenselNumeratorSequence.unique` — uniqueness of the lift, which A.4 asserts
+  and [BCIKS20] §5 invokes in Claim 5.9. It makes `betaSeq` canonical rather than an arbitrary
+  choice.
+* `HenselNumerators.exists_hensel_numerators_with_weight_bounds` — Claim A.2 as the paper states
+  it: existence together with both weight bounds.
+
+Everything in this package is proved: no `sorry`, and no axioms beyond `propext`,
+`Classical.choice` and `Quot.sound`.
+
+## Deviations from the paper
+
+1. The weight bounds assume `2 ≤ deg_Y R`, which is A.4's own standing assumption — it writes
+   `ξ = W^{d-2}·ζ ∈ 𝒪`, meaningless for `d < 2`. The hypothesis is load-bearing rather than
+   cosmetic: at `deg_Y R = 1` the conclusion of `xi_weight_le` is false, witnessed by
+   `R = (1+Z)Y + 1 + ZX`, `x₀ = 0`, `H = (1+Z)Y + 1`, where `D = 2` and `ξ = ζ = 1+Z` has
+   `Λ(ξ) = 1` against a claimed bound of `0`. Consumers must case-split on `deg_Y R`.
+2. `numeratorShapeSharp` carries a correction term relative to the inequality A.4 states, because
+   a factor of `W` that the recursion *saves* is worth only `deg W` while one it *charges* costs
+   the bound `D - dH`. The loose bound `(2t+1)·d·D` is unaffected, so consumers of that bound see
+   no difference. See `numeratorShapeSharp`'s docstring for the full accounting.
 
 ## References
 
@@ -22,245 +84,6 @@ We define the notions of Appendix A of [BCIKS20].
   Proximity gaps for Reed-Solomon codes. In 2020 IEEE 61st Annual Symposium on Foundations of
   Computer Science (FOCS), 2020. Full paper: https://eprint.iacr.org/2020/654,
   version 20210703:203025.
-
-## Main Definitions
-
 -/
 
-open Polynomial Polynomial.Bivariate ToRatFunc Ideal
-
-namespace BCIKS20AppendixA
-
-section
-
-variable {F : Type} [CommRing F] [IsDomain F]
-
-/-- Construction of the monisized polynomial `H_tilde` in Appendix A.1 of [BCIKS20].
-Note: Here `H ∈ F[X][Y]` translates to `H ∈ F[Z][Y]` in [BCIKS20] and H_tilde in
-`Polynomial (RatFunc F)` translates to `H_tilde ∈ F(Z)[T]` in [BCIKS20]. -/
-noncomputable def H_tilde (H : F[X][Y]) : Polynomial (RatFunc F) :=
-  let hᵢ (i : ℕ) := H.coeff i
-  let d := H.natDegree
-  let W := (RingHom.comp Polynomial.C univPolyHom) (hᵢ d)
-  let S : Polynomial (RatFunc F) := Polynomial.X / W
-  let H' := Polynomial.eval₂ (RingHom.comp Polynomial.C univPolyHom) S H
-  W ^ (d - 1) * H'
-
-/-- The monisized version H_tilde is irreducible if the originial polynomial H is irreducible. -/
-lemma irreducibleHTildeOfIrreducible {H : Polynomial (Polynomial F)} :
-    (Irreducible H → Irreducible (H_tilde H)) := by
-  sorry
-
-/-- The function field `𝕃 ` from Appendix A.1 of [BCIKS20]. -/
-abbrev 𝕃 (H : F[X][Y]) : Type :=
-  (Polynomial (RatFunc F)) ⧸ (Ideal.span {H_tilde H})
-
-/-- The function field `𝕃 ` is indeed a field if and only if the generator of the ideal we quotient
-by is an irreducible polynomial. -/
-lemma isField_of_irreducible {H : F[X][Y]} : Irreducible H → IsField (𝕃 H) := by
-  intros h
-  unfold 𝕃
-  erw
-    [
-      ←Ideal.Quotient.maximal_ideal_iff_isField_quotient,
-      principal_is_maximal_iff_irred
-    ]
-  exact irreducibleHTildeOfIrreducible h
-
-/-- The function field `𝕃` as defined above is a field. -/
-noncomputable instance {H : F[X][Y]} [inst : Fact (Irreducible H)] : Field (𝕃 H) :=
-  IsField.toField (isField_of_irreducible inst.out)
-
-/-- The monisized polynomial `H_tilde` is in fact an element of `F[X][Y]`. -/
-noncomputable def H_tilde' (H : F[X][Y]) : F[X][Y] :=
-  let hᵢ (i : ℕ) := H.coeff i
-  let d := H.natDegree
-  let W := hᵢ d
-  Polynomial.X ^ d +
-    ∑ i ∈ (List.range d).toFinset,
-      Polynomial.X^(d - 1 - i) *
-      Polynomial.C (hᵢ (i + 1) * W ^ i)
-
-lemma H_tilde_equiv_H_tilde' (H : F[X][Y]) : (H_tilde' H).map univPolyHom = H_tilde H := by
-  sorry
-
-
-/-- The ring of regular elements `𝒪` from Appendix A.1 of [BCIKS20]. -/
-abbrev 𝒪 (H : F[X][Y]) : Type :=
-  (Polynomial (Polynomial F)) ⧸ (Ideal.span {H_tilde' H})
-
-/-- The ring of regular elements field `𝒪` is a indeed a ring. -/
-noncomputable instance {H : F[X][Y]} : Ring (𝒪 H) :=
-  Ideal.Quotient.ring (Ideal.span {H_tilde' H})
-
-/-- The ring homomorphism defining the embedding of `𝒪` into `𝕃`. -/
-noncomputable def embeddingOf𝒪Into𝕃 (H : F[X][Y]) : 𝒪 H →+* 𝕃 H :=
-  Ideal.quotientMap
-        (I := Ideal.span {H_tilde' H}) (Ideal.span {H_tilde H})
-        bivPolyHom (by
-          rw [Ideal.span_le]
-          intro x hx
-          rw [Set.mem_singleton_iff] at hx; subst hx
-          change bivPolyHom (H_tilde' H) ∈ span {H_tilde H}
-          rw [show bivPolyHom (H_tilde' H) = (H_tilde' H).map univPolyHom from rfl,
-              H_tilde_equiv_H_tilde']
-          exact Ideal.subset_span rfl)
-
-/-- The set of regular elements inside `𝕃 H`, i.e. the set of elements of `𝕃 H`
-that in fact lie in `𝒪 H`. -/
-def regularElms_set (H : F[X][Y]) : Set (𝕃 H) :=
-  {a : 𝕃 H | ∃ b : 𝒪 H, a = embeddingOf𝒪Into𝕃 _ b}
-
-/-- The regular elements inside `𝕃 H`, i.e. the elements of `𝕃 H` that in fact lie in `𝒪 H`
-as Type. -/
-def regularElms (H : F[X][Y]) : Type :=
-  {a : 𝕃 H // ∃ b : 𝒪 H, a = embeddingOf𝒪Into𝕃 _ b}
-
-/-- Given an element `z ∈ F`, `t_z ∈ F` is a rational root of a bivariate polynomial if the pair
-`(z, t_z)` is a root of the bivariate polynomial. -/
-def rationalRoot (H : F[X][Y]) (z : F) : Type :=
-  {t_z : F // evalEval z t_z H = 0}
-
-/-- The rational substitution `π_z` from Appendix A.3 defined on the whole ring of
-bivariate polynomials. -/
-noncomputable def π_z_lift {H : F[X][Y]} (z : F) (root : rationalRoot (H_tilde' H) z) :
-  F[X][Y] →+* F := Polynomial.evalEvalRingHom z root.1
-
-/-- The rational substitution `π_z` from Appendix A.3 of [BCIKS20] is a well-defined map on the
-quotient ring `𝒪`. -/
-noncomputable def π_z {H : F[X][Y]} (z : F) (root : rationalRoot (H_tilde' H) z) : 𝒪 H →+* F :=
-  Ideal.Quotient.lift (Ideal.span {H_tilde' H}) (π_z_lift z root) (by
-    intro a ha
-    rw [Ideal.mem_span_singleton] at ha
-    obtain ⟨c, rfl⟩ := ha
-    simp only [π_z_lift, map_mul]
-    rw [show (Polynomial.evalEvalRingHom z root.1) (H_tilde' H) = 0 from root.2]
-    ring)
-
-/-- The canonical representative of an element of `F[X][Y]` inside the ring of regular
-elements `𝒪`. -/
-noncomputable def canonicalRepOf𝒪 {H : F[X][Y]} (β : 𝒪 H) : F[X][Y] :=
-  Polynomial.modByMonic β.out (H_tilde' H)
-
-/-- `Λ` is a weight function on the ring of bivariate polynomials `F[X][Y]`. The weight of
-a polynomial is the maximal weight of all monomials appearing in it with non-zero coefficients.
-The weight of the zero polynomial is `−∞`.
-Requires `D ≥ Bivariate.totalDegree H` to match definition in [BCIKS20]. -/
-noncomputable def weight_Λ (f H : F[X][Y]) (D : ℕ) : WithBot ℕ :=
-  Finset.sup
-    f.support
-    (fun deg =>
-      WithBot.some <| deg * (D + 1 - Bivariate.natDegreeY H) + (f.coeff deg).natDegree
-    )
-
-/-- The weight function `Λ` on the ring of regular elements `𝒪` is defined as the weight their
-canonical representatives in `F[X][Y]`. -/
-noncomputable def weight_Λ_over_𝒪 {H : F[X][Y]} (f : 𝒪 H) (D : ℕ) :
-    WithBot ℕ := weight_Λ (canonicalRepOf𝒪 f) H D
-
-/-- The set `S_β` from the statement of Lemma A.1 in Appendix A of [BCIKS20].
-Note: Here `F[X][Y]` is `F[Z][T]`. -/
-noncomputable def S_β {H : F[X][Y]} (β : 𝒪 H) : Set F :=
-  {z : F | ∃ root : rationalRoot (H_tilde' H) z, (π_z z root) β = 0}
-
-/-- The statement of Lemma A.1 in Appendix A.3 of [BCIKS20]. -/
-lemma Lemma_A_1 {H : F[X][Y]} (β : 𝒪 H) (D : ℕ) (hD : D ≥ Bivariate.totalDegree H)
-    (S_β_card : Set.ncard (S_β β) > (weight_Λ_over_𝒪 β D) * H.natDegree) :
-  embeddingOf𝒪Into𝕃 _ β = 0 := by sorry
-
-/-- The embeddining of the coefficients of a bivarite polynomial into the bivariate polynomial ring
-with rational coefficients. -/
-noncomputable def coeffAsRatFunc : F[X] →+* Polynomial (RatFunc F) :=
-  RingHom.comp bivPolyHom Polynomial.C
-
-/-- The embeddining of the coefficients of a bivarite polynomial into the function field `𝕃`. -/
-noncomputable def liftToFunctionField {H : F[X][Y]} : F[X] →+* 𝕃 H :=
-  RingHom.comp (Ideal.Quotient.mk (Ideal.span {H_tilde H})) coeffAsRatFunc
-
-noncomputable def liftBivariate {H : F[X][Y]} : F[X][Y] →+* 𝕃 H :=
-  RingHom.comp (Ideal.Quotient.mk (Ideal.span {H_tilde H})) bivPolyHom
-
-/-- The embeddining of the scalars into the function field `𝕃`. -/
-noncomputable def fieldTo𝕃 {H : F[X][Y]} : F →+* 𝕃 H :=
-  RingHom.comp liftToFunctionField Polynomial.C
-
-/-- Constructing power series over the function field `𝕃 H` out of a polynomial. -/
-noncomputable def polyToPowerSeries𝕃 (H : F[X][Y]) (P : F[X][Y]) : PowerSeries (𝕃 H) :=
-  PowerSeries.mk <| fun n => liftToFunctionField (P.coeff n)
-
-
-end
-
-noncomputable section
-
-namespace ClaimA2
-
-variable {F : Type} [CommRing F] [IsDomain F]
-         {R : F[X][X][X]}
-         {H : F[X][Y]} [H_irreducible : Fact (Irreducible H)]
-
-/-- The definition of `ζ` given in Appendix A.4 of [BCIKS20]. -/
-def ζ (R : F[X][X][Y]) (x₀ : F) (H : F[X][Y]) [H_irreducible : Fact (Irreducible H)] : 𝕃 H :=
-  let W  : 𝕃 H := liftToFunctionField (H.leadingCoeff);
-  let T : 𝕃 H := liftToFunctionField (Polynomial.X);
-    Polynomial.eval₂ liftToFunctionField (T / W)
-      (Bivariate.evalX (Polynomial.C x₀) R.derivative)
-
-/-- There exist regular elements `ξ = W(Z)^(d-2) * ζ` as defined in Claim A.2 of Appendix A.4
-of [BCIKS20]. -/
-lemma ξ_regular (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [H_irreducible : Fact (Irreducible H)] :
-    ∃ pre : 𝒪 H,
-    let d := R.natDegree
-    let W : 𝕃 H := liftToFunctionField (H.leadingCoeff);
-    embeddingOf𝒪Into𝕃 _ pre = W ^ (d - 2) * ζ R x₀ H := by
-  sorry
-
-/-- The elements `ξ = W(Z)^(d-2) * ζ` as defined in Claim A.2 of Appendix A.4 of [BCIKS20]. -/
-def ξ (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [φ : Fact (Irreducible H)] : 𝒪 H :=
-  (ξ_regular x₀ R H).choose
-
-/-- The bound of the weight `Λ` of the elements `ζ` as stated in Claim A.2 of Appendix A.4
-of [BCIKS20]. -/
-lemma weight_ξ_bound (x₀ : F) {D : ℕ} (hD : D ≥ Bivariate.totalDegree H) :
-    weight_Λ_over_𝒪 (ξ x₀ R H) D ≤
-    WithBot.some ((Bivariate.natDegreeY R - 1) * (D - Bivariate.natDegreeY H + 1)) := by
-  sorry
-
-/-- There exist regular elements `β` with a weight bound as given in Claim A.2
-of Appendix A.4 of [BCIKS20]. -/
-lemma β_regular (R : F[X][X][Y])
-                (H : F[X][Y]) [H_irreducible : Fact (Irreducible H)]
-                {D : ℕ} (hD : D ≥ Bivariate.totalDegree H) :
-    ∀ t : ℕ, ∃ β : 𝒪 H, weight_Λ_over_𝒪 β ≤ (2 * t + 1) * Bivariate.natDegreeY R * D :=
-  sorry
-
-/-- The definition of the regular elements `β` giving the numerators of the Hensel lift coefficients
-as defined in Claim A.2 of Appendix A.4 of [BCIKS20]. -/
-def β (R : F[X][X][Y]) (t : ℕ) : 𝒪 H :=
-  (β_regular R H (Nat.le_refl _) t).choose
-
-/-- The Hensel lift coefficients `α` are of the form as given in Claim A.2 of Appendix A.4
-of [BCIKS20]. -/
-def α (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [φ : Fact (Irreducible H)] (t : ℕ) : 𝕃 H :=
-  let W : 𝕃 H := liftToFunctionField (H.leadingCoeff)
-  embeddingOf𝒪Into𝕃 _ (β R t) / (W ^ (t + 1) * (embeddingOf𝒪Into𝕃 _ (ξ x₀ R H)) ^ (2*t - 1))
-
-def α' (x₀ : F) (R : F[X][X][Y]) (H_irreducible : Irreducible H) (t : ℕ) : 𝕃 H :=
-  α x₀ R _ (φ := ⟨H_irreducible⟩) t
-
-/-- The power series `γ = ∑ α^t (X - x₀)^t ∈ 𝕃 [[X - x₀]]` as defined in Appendix A.4
-of [BCIKS20]. -/
-def γ (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [φ : Fact (Irreducible H)] : PowerSeries (𝕃 H) :=
-  let subst (t : ℕ) : 𝕃 H :=
-    match t with
-    | 0 => fieldTo𝕃 (-x₀)
-    | 1 => 1
-    | _ => 0
-  PowerSeries.subst (PowerSeries.mk subst) (PowerSeries.mk (α x₀ R H))
-
-def γ' (x₀ : F) (R : F[X][X][Y]) (H_irreducible : Irreducible H) : PowerSeries (𝕃 H) :=
-  γ x₀ R H (φ := ⟨H_irreducible⟩)
-
-end ClaimA2
-end
-end BCIKS20AppendixA
+@[expose] public section
