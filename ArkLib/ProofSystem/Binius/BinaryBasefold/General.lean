@@ -318,4 +318,37 @@ theorem fullRbrKnowledgeError_sum_le_concrete :
     exact add_le_add h_core_le (le_refl _)
   exact h_mid
 
+/-- Ordinary knowledge soundness of full Binary Basefold, with the sum of its challenge errors. -/
+theorem fullOracleVerifier_knowledgeSoundness :
+    OracleProof.knowledgeSoundness init impl
+      (roundRelation (multpoly := multiplier) 𝔽q β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
+      (fullOracleVerifier 𝔽q β γ_repetitions (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
+      (∑ i, fullRbrKnowledgeError 𝔽q β γ_repetitions (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :=
+  Verifier.GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundness
+    (Verifier.GuardedForm.ofEmpty _ (fun _ => (false, fun i : Empty => nomatch i)))
+    (fullOracleVerifier_rbrKnowledgeSoundness 𝔽q β γ_repetitions)
+
+/-- Full Binary Basefold is perfectly complete on exact encodings and ordinarily
+knowledge sound for unique-radius compatibility, with the concrete core-and-query error. -/
+theorem fullOracleReduction_perfectCompleteness_and_knowledgeSoundness :
+    OracleProof.perfectCompleteness
+      (oracleProof := fullOracleReduction 𝔽q β γ_repetitions (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
+      (relation := strictRoundRelation (multpoly := multiplier) 𝔽q β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
+      (init := init) (impl := impl) ∧
+    OracleProof.knowledgeSoundness init impl
+      (roundRelation (multpoly := multiplier) 𝔽q β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
+      (fullOracleVerifier 𝔽q β γ_repetitions (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
+      (concreteBinaryBasefoldKnowledgeError L ℓ 𝓡 γ_repetitions) :=
+  ⟨fullOracleReduction_perfectCompleteness 𝔽q β γ_repetitions,
+    Verifier.knowledgeSoundness_error_mono init impl
+      (fullRbrKnowledgeError_sum_le_concrete 𝔽q β γ_repetitions)
+      (fullOracleVerifier_knowledgeSoundness 𝔽q β γ_repetitions)⟩
+
 end Binius.BinaryBasefold.FullBinaryBasefold

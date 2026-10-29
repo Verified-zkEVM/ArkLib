@@ -7,6 +7,7 @@ module
 
 public import ArkLib.ProofSystem.RingSwitching.Packing.ProductSumcheck.Knowledge
 public import ArkLib.ProofSystem.RingSwitching.Packing.Head
+public import ArkLib.OracleReduction.Security.GuardedBridges
 
 /-!
 # Scalar ring switching on the same commitment
@@ -236,6 +237,32 @@ theorem perfectCompleteness_and_rbrKnowledgeSoundness
   ⟨perfectCompleteness data m layout messageEquiv bat.toBatchingRule pc init impl,
     rbrKnowledgeSoundness data m layout messageEquiv bat pc hfunctional hinj init impl,
     rbrError_sum (M := M) data m bat⟩
+
+/-- The whole reduction is knowledge sound with error `bat.error + 2m/|C|`. -/
+theorem knowledgeSoundness [NoZeroDivisors C] [Fintype C] [SampleableType C]
+    (hfunctional : pc.Functional) (hinj : Function.Injective (algebraMap data.P C))
+    {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    (verifier data m layout messageEquiv bat.toBatchingRule pc).knowledgeSoundness init impl
+      (Head.relIn data m layout pc) (pc.evalRelWithContext (layout.Query × bat.Challenge))
+      (bat.error + (m : ℝ≥0) * (2 / Fintype.card C)) := by
+  simpa only [rbrError_sum] using
+    OracleVerifier.knowledgeSoundness_of_rbrKnowledgeSoundness_of_guarded
+      (guardedForm data m layout messageEquiv bat.toBatchingRule pc)
+      (rbrKnowledgeSoundness data m layout messageEquiv bat pc hfunctional hinj init impl)
+
+/-- The whole reduction is perfectly complete and knowledge sound with error
+`bat.error + 2m/|C|`. -/
+theorem perfectCompleteness_and_knowledgeSoundness
+    [NoZeroDivisors C] [Fintype C] [SampleableType C]
+    (hfunctional : pc.Functional) (hinj : Function.Injective (algebraMap data.P C))
+    {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    (reduction data m layout messageEquiv bat.toBatchingRule pc).perfectCompleteness init impl
+        (Head.relIn data m layout pc) (pc.evalRelWithContext (layout.Query × bat.Challenge)) ∧
+      (verifier data m layout messageEquiv bat.toBatchingRule pc).knowledgeSoundness init impl
+        (Head.relIn data m layout pc) (pc.evalRelWithContext (layout.Query × bat.Challenge))
+        (bat.error + (m : ℝ≥0) * (2 / Fintype.card C)) :=
+  ⟨perfectCompleteness data m layout messageEquiv bat.toBatchingRule pc init impl,
+    knowledgeSoundness data m layout messageEquiv bat pc hfunctional hinj init impl⟩
 
 end Security
 
