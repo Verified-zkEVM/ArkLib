@@ -73,6 +73,21 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
+- Plonk's finite mathematics is independent of both execution layers.
+  `ProofSystem/ConstraintSystem/Plonk.lean` owns gates, the prefix/private relation, and the
+  wiring permutation whose cycles are exactly the variable fibers. Its generic cycle construction
+  lives in `Data/Equiv/FiberCycle.lean`. `ProofSystem/Plonk/Basic.lean` connects variable and
+  occurrence assignments, with public-occurrence coverage for reconstruction.
+  `ProofSystem/Plonk/Prepared.lean` prepends public equality rows, decodes private witnesses, and
+  separates their baked-in constants into cleared selectors and an explicit public-input term.
+  `ProofSystem/Plonk/Domain.lean` supplies injective evaluation nodes and disjoint coset labels.
+  `ProofSystem/Plonk/Encoding.lean` identifies occurrence columns with degree-bounded polynomials,
+  proves the prepared gate and copy relation equivalence, and reconstructs private witnesses.
+  `ProofSystem/Plonk/Computable.lean` refines the encoding through CompPoly coefficient arrays.
+  Concrete cycle, satisfaction, and decoder checks live in `ArkLibTest/ProofSystem/Plonk.lean`;
+  `ArkLibTest/ProofSystem/PlonkEncoding.lean` checks order-four encoding over a prime field,
+  including rejected gates, inconsistent copies, and incorrect public inputs.
+
 - `ProofSystem/Fri/FoldingSoundness.lean` and `QuerySoundness.lean` contain the algebraic
   soundness arguments; `ErrorBounds.lean` instantiates existing numerical MCA bounds.
   `Fri/Spec/Soundness.lean` proves ordinary and round-by-round soundness of the executable
@@ -492,7 +507,9 @@ home_page/            site assets and assembled website root
   folded-Reed-Solomon and univariate-multiplicity capacity corollaries) and the [AGL23]
   large-alphabet barrier.
 - ABF26's citation-heavy §4–§5 catalogue is separated from the core error definitions:
-  `ProximityGap/CapacityBounds.lean` holds the numeric upper/lower bounds,
+  `ProximityGap/CapacityBounds.lean` holds the numeric upper/lower bounds.
+  `ProximityGap/CapacityBounds/SubspaceDesign.lean` shares the subspace-design pinning
+  and affine-line MCA conversion used by the generic and folded Reed--Solomon bounds.
   `ProximityGap/LineDecoding.lean` holds the GG25-corrected interfaces corresponding to ABF26
   Definition 4.20 and Theorem 4.21, and
   `Connections/ListDecodingAndCA.lean` holds the four list-decoding/CA connections. Extensions
