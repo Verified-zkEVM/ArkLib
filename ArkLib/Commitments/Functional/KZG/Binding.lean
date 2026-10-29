@@ -20,6 +20,10 @@ bounds each adversary's binding advantage by its reduction's success probability
 `binding` requires that reduction to belong to an explicit hardness adversary class; its strength
 depends on the class one can justify.
 
+Uniform queries represent private random sampling. Their implementation forwards each draw to
+`ProbComp` and preserves the cache state, so setup randomness remains private and every later
+phase starts in the state left by setup.
+
 ## Notation
 
 * `bindingGame` is the base evaluation-binding game.
@@ -101,7 +105,7 @@ def bindingGameExt {n : ℕ} {g₁ : G₁} {g₂ : G₂} (AuxState : Type)
     let τ ← Groups.sampleNonzeroZMod (p := p)
     let srs := Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ
     (simulateQ
-      (QueryImpl.addLift randomOracle (challengeQueryImpl (pSpec := pSpec')) :
+      (QueryImpl.addLift (unifFwdImpl unifSpec) (challengeQueryImpl (pSpec := pSpec')) :
         QueryImpl _ (StateT unifSpec.QueryCache ProbComp))
       <|
       (do
@@ -259,7 +263,7 @@ def bindingReduction (AuxState : Type)
     letI kzgScheme := kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
     letI so : QueryImpl _ (StateT unifSpec.QueryCache ProbComp) :=
       QueryImpl.addLift
-        (randomOracle : QueryImpl unifSpec (StateT unifSpec.QueryCache ProbComp))
+        (unifFwdImpl unifSpec : QueryImpl unifSpec (StateT unifSpec.QueryCache ProbComp))
         (challengeQueryImpl (pSpec := ⟨!v[.P_to_V], !v[G₁]⟩))
     (simulateQ so
       (do
@@ -318,7 +322,7 @@ omit [DecidableEq G₁] in
 lemma binding_game_ext_eq_binding_game {n : ℕ} {AuxState : Type} [SampleableType G₁]
     (adversary : KzgBindingAdversary p G₁ G₂ n unifSpec AuxState) :
     Pr{let result ← (Commitment.bindingGame (init := pure ∅)
-      (impl := randomOracle) (AuxState := AuxState)
+      (impl := unifFwdImpl unifSpec) (AuxState := AuxState)
         (scheme := kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing))
         (adversary := adversary))}[
           (Commitment.bindingCondition (Data := Fin (n + 1) → ZMod p)) result]
@@ -339,38 +343,22 @@ lemma binding_game_ext_eq_binding_game {n : ℕ} {AuxState : Type} [SampleableTy
     Pr{let y ← mx}[Commitment.bindingCondition y]) (OptionT.ext ?_)
   rw [OptionT.run_map]
   simp only [Commitment.bindingGame, bindingGameExt, kzg, OptionT.run, OptionT.mk, pure_bind]
-  have hsample :
-      (simulateQ randomOracle (Groups.sampleNonzeroZMod (p := p))).run' ∅ =
-        Groups.sampleNonzeroZMod (p := p) :=
-    Groups.simulateQ_randomOracle_sampleNonzeroZMod (p := p)
   have hkeygen :
-      (simulateQ randomOracle (do
+      (simulateQ (unifFwdImpl unifSpec) (do
         let a ← Groups.sampleNonzeroZMod (p := p)
         pure (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
-          Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))).run' ∅
+          Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))).run ∅
         =
-      (fun a => (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
-        Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))
+      (fun a => ((Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
+        Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a),
+          (∅ : unifSpec.QueryCache)))
           <$> Groups.sampleNonzeroZMod (p := p) := by
-    calc
-      (simulateQ randomOracle (do
-        let a ← Groups.sampleNonzeroZMod (p := p)
-        pure (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
-          Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))).run' ∅
-          = (fun a => (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
-              Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))
-              <$> (simulateQ randomOracle (Groups.sampleNonzeroZMod (p := p))).run' ∅ := by
-            rw [← StateT.run'_map', ← simulateQ_map]
-            simp only [map_eq_bind_pure_comp]
-            congr 1
-      _ = (fun a => (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
-              Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))
-              <$> Groups.sampleNonzeroZMod (p := p) := by
-            rw [hsample]
+    rw [unifFwdImpl.simulateQ_run]
+    simp only [map_eq_bind_pure_comp, bind_assoc, pure_bind, Function.comp_def]
   let pSpec' : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[G₁]⟩
   let impl : QueryImpl _ (StateT unifSpec.QueryCache ProbComp) :=
     QueryImpl.addLift
-      (randomOracle : QueryImpl unifSpec (StateT unifSpec.QueryCache ProbComp))
+      (unifFwdImpl unifSpec : QueryImpl unifSpec (StateT unifSpec.QueryCache ProbComp))
       (challengeQueryImpl (pSpec := pSpec'))
   let sample : ProbComp (ZMod p) := Groups.sampleNonzeroZMod (p := p)
   let bodyBase : ZMod p → OracleComp _ (Option (BindingOutput (p := p) n)) := fun τ => do
@@ -487,7 +475,7 @@ lemma binding_cond_le_t_sdh_cond {n : ℕ} {AuxState : Type} [SampleableType G�
   let pSpec' : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[G₁]⟩
   let impl : QueryImpl _ (StateT unifSpec.QueryCache ProbComp) :=
     QueryImpl.addLift
-      (randomOracle : QueryImpl unifSpec (StateT unifSpec.QueryCache ProbComp))
+      (unifFwdImpl unifSpec : QueryImpl unifSpec (StateT unifSpec.QueryCache ProbComp))
       (challengeQueryImpl (pSpec := pSpec'))
   let Claim : Type :=
     G₁ × (q : OracleInterface.Query (Fin (n + 1) → ZMod p)) ×
@@ -684,7 +672,7 @@ lemma t_sdh_game_eq {n : ℕ} {AuxState : Type} [SampleableType G₁]
   let pSpec' : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[G₁]⟩
   let impl : QueryImpl _ (StateT unifSpec.QueryCache ProbComp) :=
     QueryImpl.addLift
-      (randomOracle : QueryImpl unifSpec (StateT unifSpec.QueryCache ProbComp))
+      (unifFwdImpl unifSpec : QueryImpl unifSpec (StateT unifSpec.QueryCache ProbComp))
       (challengeQueryImpl (pSpec := pSpec'))
   dsimp only [bindingGameExt, bindingReduction, kzg, OptionT.mk, pSpec', impl, scheme,
     OptionT.run_map]
@@ -769,7 +757,7 @@ reduction's own success probability via the assumption. -/
 theorem binding_reduces_to_tSdh {g₁ : G₁} {g₂ : G₂} (hg₁ : g₁ ≠ 1)
     (hpair : pairing g₁ g₂ ≠ 0) [SampleableType G₁] (AuxState : Type)
     (adversary : KzgBindingAdversary p G₁ G₂ n unifSpec AuxState) :
-    Commitment.bindingExperiment (init := pure ∅) (impl := randomOracle)
+    Commitment.bindingExperiment (init := pure ∅) (impl := unifFwdImpl unifSpec)
       (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)) AuxState adversary
     ≤ Groups.tSdhExperiment (g₁ := g₁) (g₂ := g₂) n
       (bindingReduction (g₁ := g₁) (g₂ := g₂) (pairing := pairing) AuxState adversary) := by
@@ -804,7 +792,7 @@ theorem binding {g₁ : G₁} {g₂ : G₂} (hg₁ : g₁ ≠ 1)
     (AuxState : Type) (adversary : KzgBindingAdversary p G₁ G₂ n unifSpec AuxState)
     (hAdv : bindingReduction (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
       AuxState adversary ∈ Adv) :
-    Commitment.bindingExperiment (init := pure ∅) (impl := randomOracle)
+    Commitment.bindingExperiment (init := pure ∅) (impl := unifFwdImpl unifSpec)
       (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)) AuxState adversary
     ≤ tSdhError := by
   exact (binding_reduces_to_tSdh (pairing := pairing) hg₁ hpair AuxState adversary).trans

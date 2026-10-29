@@ -186,7 +186,7 @@ abbrev bindingGame (AuxState : Type)
     QueryImpl.addLift impl (challengeQueryImpl (pSpec := pSpec))
   OptionT.mk do
     let s ← init
-    let (ck, vk) ← (simulateQ impl scheme.keygen).run' s
+    let ((ck, vk), sAfterSetup) ← (simulateQ impl scheme.keygen).run s
     (simulateQ pImpl <| (show OracleComp _ _ from do
       let ⟨cm, query, resp₁, resp₂, st₁, st₂⟩ ← liftComp (adversary.claim ck) _
       let reduction := Reduction.mk (adversary.prover ck) (scheme.opening (ck, vk)).verifier
@@ -196,7 +196,7 @@ abbrev bindingGame (AuxState : Type)
         (cm, (⟨query, resp₂⟩ : (q : O.Query) × O.Response q)) st₂).run).getD false
       pure (some ((⟨query, resp₁, resp₂, accept₁, accept₂⟩ :
         (query : O.Query) × O.Response query × O.Response query × Bool × Bool)))
-    )).run' s
+    )).run' sAfterSetup
 
 /-- The probability of breaking evaluation binding for a specific adversary. -/
 def bindingExperiment (AuxState : Type)
@@ -304,7 +304,7 @@ abbrev functionBindingGame {L : ℕ} (hn : n = 1)
       QueryImpl.addLift impl (challengeQueryImpl (pSpec := hn ▸ pSpec))
     OptionT.mk do
       let s ← init
-      let (ck, vk) ← (simulateQ impl scheme.keygen).run' s
+      let ((ck, vk), sAfterSetup) ← (simulateQ impl scheme.keygen).run s
       (simulateQ pImpl <| (show OracleComp _ _ from do
         let ⟨cm, queryOf, responseOf, stateOf⟩ ← liftComp (adversary.claim ck) _
         let reduction := Reduction.mk (adversary.prover ck) (scheme.opening (ck, vk)).verifier
@@ -315,7 +315,7 @@ abbrev functionBindingGame {L : ℕ} (hn : n = 1)
         pure (accepts.map fun accepts ↦ (⟨queryOf, responseOf, accepts⟩ :
           (queryOf : Fin L → O.Query) ×
             ((i : Fin L) → O.Response (queryOf i)) × (Fin L → Bool)))
-      )).run' s
+      )).run' sAfterSetup
 
 /-- The probability of breaking function binding for a specific adversary. -/
 def functionBindingExperiment {L : ℕ} (hn : n = 1)
