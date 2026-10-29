@@ -48,8 +48,8 @@ with `|Λ(C, ℓ/(ℓ+1) · (1-ρ-η))| ≤ ℓ` satisfies
   `|F| ≥ 2^{α / η}` ,
 
 so approaching the generalized Singleton bound to within `η` costs alphabet size exponential in
-`1/η`. Per [AGL23, Theorem 1.1] the length threshold is `n ≥ Ω_{ℓ,ρ}(1/η)`, which is why `n₀` is
-bound *inside* the `∀ η`.
+`1/η`. Per [AGL23, Theorem 1.1] the length threshold is `n ≥ Ω_{ℓ,ρ}(1/η)`. Here `n₀` is uniform
+in `η`, and the length must satisfy `n ≥ max(n₀, 1/η)`.
 
 **The rate is pinned by equality, which is faithful but partly vacuous.** [AGL23] states the
 barrier for a code "of rate `R`" — Theorem 1.1 as *printed* omits the rate hypothesis altogether,

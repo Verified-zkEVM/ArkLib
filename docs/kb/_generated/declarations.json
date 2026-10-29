@@ -25251,13 +25251,13 @@
           "signature": "lemma even_add_odd_eq_of_2_ne_0"
         },
         {
-          "doc": "An explicit formula to compute `foldWordAux` when `k = 2` not involving Lagrange interpolation.",
+          "doc": "An explicit formula to compute `foldWordAux` when `k = 1` not involving Lagrange interpolation.",
           "kind": "lemma",
           "line": 80,
-          "name": "ProximityGap.foldWordAux_of_k_2",
+          "name": "ProximityGap.foldWordAux_of_k_1",
           "namespace": "ProximityGap",
-          "short_name": "foldWordAux_of_k_2",
-          "signature": "lemma foldWordAux_of_k_2 [NeZero n] {i : Fin (2 ^ (n - 1))} :"
+          "short_name": "foldWordAux_of_k_1",
+          "signature": "lemma foldWordAux_of_k_1 [NeZero n] {i : Fin (2 ^ (n - 1))} :"
         },
         {
           "doc": "The degree of the auxiliary polynomial `foldWordAux` is less than 2^k.",

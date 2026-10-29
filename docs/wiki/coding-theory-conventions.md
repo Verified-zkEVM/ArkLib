@@ -98,7 +98,7 @@ Most friction in this subtree comes from picking the wrong numeric type, so chec
 
 **The two rates are different, and the difference is load-bearing.** `LinearCode.rate` is the
 base-field-dimension rate `dim/n`. Over a module alphabet `F^s` the alphabet-normalized rate is
-`dim/(s·n)`, which is `LinearCode.alphabetRate`. They agree only at `s = 1`
+`dim/(s·n)`, which is `LinearCode.alphabetRate`. They agree when `s = 1`
 (`alphabetRate_one_eq_rate`). The subspace-design and MDS statements use the alphabet-normalized
 one; substituting `rate` there gives false statements. Both formulas are total and yield `0` in
 the zero-denominator cases.

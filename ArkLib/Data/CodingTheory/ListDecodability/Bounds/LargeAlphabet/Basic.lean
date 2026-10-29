@@ -121,9 +121,10 @@ def separated {ι F : Type} [Fintype ι] [DecidableEq F]
   ∀ ⦃u : ι → F⦄, u ∈ D → ∀ ⦃v : ι → F⦄, v ∈ D → u ≠ v → d ≤ hammingDist u v
 
 /-- **The pigeonhole bound**, by counting rather than by a probabilistic argument. Given a separated
-code whose list size at the radius is at most `ℓ`, plus a block structure and a large-union family
-disjoint from it, a code with `2 · |A|^aFamily ≤ |C|` cannot exist: some alternative on the family's
-sets must repeat, and a repeat contradicts separation. -/
+code whose list size at the radius is at most `ℓ` and whose size is at least `2 · |A|^aFamily`, plus
+a block structure and a large-union family disjoint from it, the family's size is at most
+`2 · W · ℓ · |A|^dZero`. Such a code and family cannot coexist when the family's size exceeds this
+bound. -/
 def DeterministicPigeonholeBound : Prop :=
   ∀ (ℓ n radius boosted : ℕ), 2 ≤ ℓ → 0 < n →
     ∀ {ι A : Type} [Fintype ι] [DecidableEq ι]

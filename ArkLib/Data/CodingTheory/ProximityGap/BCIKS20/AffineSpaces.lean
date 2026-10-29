@@ -1134,17 +1134,13 @@ theorem rs_listDecoding_card_lt_field {deg : ℕ} {domain : ι ↪ F} {δ : ℝ�
       _ ≤ (δ : ℝ) := by exact_mod_cast hv_dist
       _ < gs_johnson deg (Fintype.card ι) m := hm_johnson
 
-/-- Theorem 1.7 (Correlated agreement over affine spaces) in [BCIKS20].
+/-- Theorem 1.6 (Correlated agreement over affine spaces) in [BCIKS20].
 
 Take a Reed-Solomon code of length `ι` and degree `deg`, a proximity-error parameter
-pair `(δ, ε)` and an affine space with origin `u₀` and affine generating set `u₁, ..., uκ`
-such that the probability a random point in the affine space is `δ`-close to the Reed-Solomon
-code is greater than `ε`. Then the words `u₀, ..., uκ` have correlated agreement.
-
-Note that we have `k + 2` vectors to form the affine space. This an intricacy needed us to be
-able to isolate the affine origin from the affine span and to form a generating set of the
-correct size. The reason for taking an extra vector is that after isolating the affine origin,
-the affine span is formed as the span of the difference of the rest of the vector set. -/
+pair `(δ, ε)` and an affine space `u₀ + span{u₁, ..., uₖ}` with origin `u₀` and `k` linear
+directions `u₁, ..., uₖ`. If the probability a random point in the affine space is `δ`-close
+to the Reed-Solomon code is greater than `ε`, then the `k + 1` words `u₀, ..., uₖ` have
+correlated agreement. -/
 theorem correlatedAgreement_affine_spaces {k : ℕ} [NeZero k]
     {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
     (hdeg : 0 < deg)
