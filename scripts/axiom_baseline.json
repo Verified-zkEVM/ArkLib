@@ -1,6 +1,5 @@
 {
   "sorry": [
-    "AGM.Adversary.run",
     "ArkLib.Lattices.Ajtai.InnerOuter.deriveFamily",
     "ArkLib.Lattices.Ajtai.InnerOuter.eqWeight",
     "ArkLib.Lattices.Ajtai.InnerOuter.hachi",
@@ -26,15 +25,11 @@
     "ArkLib.Lattices.Ajtai.InnerOuter.traceCheck",
     "ArkLib.Lattices.Ajtai.InnerOuter.wTableMleEval_split",
     "ArkLib.Lattices.Ajtai.InnerOuter.zBatchPackage",
-    "CodingTheory.subspace_design_mcaError_le",
     "Plonk.ConstraintSystem.perm",
-    "STIR.proximity_gap",
     "Spartan.Spec.oracleReduction.firstChallenge",
     "Spartan.Spec.oracleReduction.linearCombination",
     "Spartan.Spec.oracleReduction.sendEvalClaim",
     "Spartan.Spec.secondSumCheckVirtualPolynomial",
-    "StirIOP.stir_main",
-    "StirIOP.stir_rbr_soundness",
     "Verifier.srKnowledgeSoundness_addSalt_implies_srKnowledgeSoundness_original",
     "Verifier.srKnowledgeSoundness_implies_knowledgeSoundness",
     "Verifier.srSoundness_addSalt_implies_srSoundness_original",
