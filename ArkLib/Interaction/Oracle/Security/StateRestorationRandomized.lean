@@ -64,7 +64,7 @@ theorem completionKeys_error_sum (rounds : List Round) (errors : RoundErrors rou
           (ih (fun j => errors j.succ) messages)
 
 /-- Deduplicating a finite nonnegative charge list cannot increase its sum. -/
-private theorem sum_toFinset_le_list_sum {A : Type} [DecidableEq A]
+theorem sum_toFinset_le_list_sum {A : Type} [DecidableEq A]
     (f : A → ENNReal) (items : List A) :
     (∑ a ∈ items.toFinset, f a) ≤ (items.map f).sum := by
   induction items with
