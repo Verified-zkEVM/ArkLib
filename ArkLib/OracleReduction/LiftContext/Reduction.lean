@@ -791,7 +791,7 @@ theorem liftContext_knowledgeSoundness [Inhabited InnerStmtOut] [Inhabited Inner
   · exact False.elim (hbad.1 _ rfl (hShortcut (z.2.getD default) True.intro))
 
 /-- Context lifting preserves averaged round-by-round soundness with the same error. -/
-theorem liftContext_rbr_soundness [Inhabited InnerStmtOut]
+theorem liftContext_rbrSoundnessAveraged [Inhabited InnerStmtOut]
     {outerLangIn : Set OuterStmtIn} {outerLangOut : Set OuterStmtOut}
     {innerLangIn : Set InnerStmtIn} {innerLangOut : Set InnerStmtOut}
     {rbrSoundnessError : pSpec.ChallengeIdx → ℝ≥0}
@@ -799,8 +799,8 @@ theorem liftContext_rbr_soundness [Inhabited InnerStmtOut]
     (V : Verifier oSpec InnerStmtIn InnerStmtOut pSpec)
     [lensSound : lens.IsSound outerLangIn outerLangOut innerLangIn innerLangOut
       (V.compatStatement lens)]
-    (h : V.rbrSoundness init impl innerLangIn innerLangOut rbrSoundnessError) :
-      (V.liftContext lens).rbrSoundness init impl outerLangIn outerLangOut rbrSoundnessError := by
+    (h : V.rbrSoundnessAveraged init impl innerLangIn innerLangOut rbrSoundnessError) :
+      (V.liftContext lens).rbrSoundnessAveraged init impl outerLangIn outerLangOut rbrSoundnessError := by
   obtain ⟨S, hbound⟩ := h
   refine ⟨S.liftContext lens V outerLangIn outerLangOut innerLangIn innerLangOut, ?_⟩
   intro x hx Aux OW a P i
@@ -812,7 +812,7 @@ theorem liftContext_rbr_soundness [Inhabited InnerStmtOut]
   simpa only [StateFunction.liftContext, hx, false_or] using hz
 
 /-- Context lifting preserves averaged round-by-round knowledge soundness with the same error. -/
-theorem liftContext_rbr_knowledgeSoundness [Inhabited InnerStmtOut] [Inhabited InnerWitIn]
+theorem liftContext_rbrKnowledgeSoundnessAveraged [Inhabited InnerStmtOut] [Inhabited InnerWitIn]
     {outerRelIn : Set (OuterStmtIn × OuterWitIn)} {outerRelOut : Set (OuterStmtOut × OuterWitOut)}
     {innerRelIn : Set (InnerStmtIn × InnerWitIn)} {innerRelOut : Set (InnerStmtOut × InnerWitOut)}
     {rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0}
@@ -821,8 +821,8 @@ theorem liftContext_rbr_knowledgeSoundness [Inhabited InnerStmtOut] [Inhabited I
     (V : Verifier oSpec InnerStmtIn InnerStmtOut pSpec)
     [lensKS : Extractor.Lens.IsKnowledgeSound outerRelIn innerRelIn outerRelOut innerRelOut
       (V.compatStatement stmtLens) (fun _ _ => True) ⟨stmtLens, witLens⟩]
-    (h : V.rbrKnowledgeSoundness init impl innerRelIn innerRelOut rbrKnowledgeError) :
-      (V.liftContext stmtLens).rbrKnowledgeSoundness init impl outerRelIn outerRelOut
+    (h : V.rbrKnowledgeSoundnessAveraged init impl innerRelIn innerRelOut rbrKnowledgeError) :
+      (V.liftContext stmtLens).rbrKnowledgeSoundnessAveraged init impl outerRelIn outerRelOut
         rbrKnowledgeError := by
   obtain ⟨WitMid, E, K, hbound⟩ := h
   let lens : Extractor.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
@@ -841,7 +841,7 @@ theorem liftContext_rbr_knowledgeSoundness [Inhabited InnerStmtOut] [Inhabited I
     hnext.resolve_right (fun hs => hprev (Or.inr hs))⟩
 
 /-- Context lifting preserves round-by-round soundness at every fixed prefix with the same error. -/
-theorem liftContext_rbrSoundnessWorstCase
+theorem liftContext_rbrSoundness
     {outerLangIn : Set OuterStmtIn} {outerLangOut : Set OuterStmtOut}
     {innerLangIn : Set InnerStmtIn} {innerLangOut : Set InnerStmtOut}
     {rbrSoundnessError : pSpec.ChallengeIdx → ℝ≥0}
@@ -849,8 +849,8 @@ theorem liftContext_rbrSoundnessWorstCase
     (V : Verifier oSpec InnerStmtIn InnerStmtOut pSpec)
     [lensSound : lens.IsSound outerLangIn outerLangOut innerLangIn innerLangOut
       (V.compatStatement lens)]
-    (h : V.rbrSoundnessWorstCase init impl innerLangIn innerLangOut rbrSoundnessError) :
-      (V.liftContext lens).rbrSoundnessWorstCase init impl outerLangIn outerLangOut
+    (h : V.rbrSoundness init impl innerLangIn innerLangOut rbrSoundnessError) :
+      (V.liftContext lens).rbrSoundness init impl outerLangIn outerLangOut
         rbrSoundnessError := by
   obtain ⟨S, hbound⟩ := h
   refine ⟨S.liftContext lens V outerLangIn outerLangOut innerLangIn innerLangOut, ?_⟩
@@ -862,7 +862,7 @@ theorem liftContext_rbrSoundnessWorstCase
 
 /-- Context lifting preserves the named extractor and knowledge state at every fixed prefix,
 with the same error. -/
-theorem liftContext_rbrKnowledgeSoundnessWorstCaseWith
+theorem liftContext_rbrKnowledgeSoundnessWith
     {outerRelIn : Set (OuterStmtIn × OuterWitIn)} {outerRelOut : Set (OuterStmtOut × OuterWitOut)}
     {innerRelIn : Set (InnerStmtIn × InnerWitIn)} {innerRelOut : Set (InnerStmtOut × InnerWitOut)}
     {rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0}
@@ -874,9 +874,9 @@ theorem liftContext_rbrKnowledgeSoundnessWorstCaseWith
     {WitMid : Fin (n + 1) → Type}
     (E : Extractor.RoundByRound oSpec InnerStmtIn InnerWitIn InnerWitOut pSpec WitMid)
     (K : V.KnowledgeStateFunction init impl innerRelIn innerRelOut E)
-    (h : V.rbrKnowledgeSoundnessWorstCaseWith init impl innerRelIn innerRelOut
+    (h : V.rbrKnowledgeSoundnessWith init impl innerRelIn innerRelOut
       WitMid E K rbrKnowledgeError) :
-      (V.liftContext stmtLens).rbrKnowledgeSoundnessWorstCaseWith init impl outerRelIn outerRelOut
+      (V.liftContext stmtLens).rbrKnowledgeSoundnessWith init impl outerRelIn outerRelOut
         (fun k => OuterWitOut × WitMid k) (E.liftContext ⟨stmtLens, witLens⟩)
         (K.liftContext ⟨stmtLens, witLens⟩ V outerRelIn innerRelIn outerRelOut innerRelOut E)
         rbrKnowledgeError := by
@@ -890,7 +890,7 @@ theorem liftContext_rbrKnowledgeSoundnessWorstCaseWith
 
 /-- Context lifting preserves round-by-round knowledge soundness at every fixed prefix
 with the same error. -/
-theorem liftContext_rbrKnowledgeSoundnessWorstCase
+theorem liftContext_rbrKnowledgeSoundness
     {outerRelIn : Set (OuterStmtIn × OuterWitIn)} {outerRelOut : Set (OuterStmtOut × OuterWitOut)}
     {innerRelIn : Set (InnerStmtIn × InnerWitIn)} {innerRelOut : Set (InnerStmtOut × InnerWitOut)}
     {rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0}
@@ -899,13 +899,13 @@ theorem liftContext_rbrKnowledgeSoundnessWorstCase
     (V : Verifier oSpec InnerStmtIn InnerStmtOut pSpec)
     [lensKS : Extractor.Lens.IsKnowledgeSound outerRelIn innerRelIn outerRelOut innerRelOut
       (V.compatStatement stmtLens) (fun _ _ => True) ⟨stmtLens, witLens⟩]
-    (h : V.rbrKnowledgeSoundnessWorstCase init impl innerRelIn innerRelOut rbrKnowledgeError) :
-      (V.liftContext stmtLens).rbrKnowledgeSoundnessWorstCase init impl outerRelIn outerRelOut
+    (h : V.rbrKnowledgeSoundness init impl innerRelIn innerRelOut rbrKnowledgeError) :
+      (V.liftContext stmtLens).rbrKnowledgeSoundness init impl outerRelIn outerRelOut
         rbrKnowledgeError := by
   obtain ⟨WitMid, E, K, hbound⟩ := h
   exact ⟨(fun k => OuterWitOut × WitMid k), E.liftContext ⟨stmtLens, witLens⟩,
     K.liftContext ⟨stmtLens, witLens⟩ V outerRelIn innerRelIn outerRelOut innerRelOut E,
-    V.liftContext_rbrKnowledgeSoundnessWorstCaseWith E K hbound⟩
+    V.liftContext_rbrKnowledgeSoundnessWith E K hbound⟩
 
 end Verifier
 

@@ -105,15 +105,15 @@ def rbrError [Fintype C] (_j : (pSpec C).ChallengeIdx) : ℝ≥0 :=
   2 / Fintype.card C
 
 /-- Worst-case knowledge soundness at every fixed transcript prefix, with the round extractor. -/
-theorem rbrKnowledgeSoundnessWorstCaseWith [NoZeroDivisors C] [Fintype C] [SampleableType C]
+theorem rbrKnowledgeSoundnessWith [NoZeroDivisors C] [Fintype C] [SampleableType C]
     (hfunctional : pc.Functional) {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    Verifier.rbrKnowledgeSoundnessWorstCaseWith init impl
+    Verifier.rbrKnowledgeSoundnessWith init impl
       (rel multiplier pc i.castSucc) (rel multiplier pc i.succ) (verifier pc i).toVerifier
       (WitMid (P := P) (m := m)) (extractor (C := C) (Context := Context) pc i)
       (knowledgeStateFunction multiplier pc i init impl) (rbrError (C := C)) := by
   classical
-  refine Verifier.rbrKnowledgeSoundnessWorstCaseWith_of_two_message rfl rfl _ _
+  refine Verifier.rbrKnowledgeSoundnessWith_of_two_message rfl rfl _ _
     fun stmt tr => ?_
   exact bad_event_le multiplier pc i hfunctional stmt.1 stmt.2
     (tr ⟨0, by change 0 < 1; decide⟩)

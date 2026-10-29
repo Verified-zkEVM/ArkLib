@@ -100,10 +100,10 @@ theorem rbr_soundness (hdom : 2 ^ (∑ j, (s j).val) * d.val ≤ 2 ^ n)
     (θ : ℝ) (δ : ℝ≥0) [∀ j, SampleableType ((pSpec k (ω := ω) s l).Challenge j)]
     {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl (emptySpec.{0, 0}) (StateT σ ProbComp)) :
-    (reduction k (ω := ω) s d hdom l).verifier.rbrSoundness init impl
+    (reduction k (ω := ω) s d hdom l).verifier.rbrSoundnessAveraged init impl
       (inputRelation k s d hdom δ).language (outputRelation k s d hdom δ).language
       (challengeError (ω := ω) s d l θ δ) := by
-  apply Verifier.rbrSoundnessWorstCase_implies_rbrSoundness
+  apply Verifier.rbrSoundness_implies_rbrSoundnessAveraged
   apply Verifier.rbrSoundness_of_badEvents
     (bad := fun j stmt tr ↦ badEvent s d l (round_bound hdom) θ j (initialOracle s stmt) tr)
   · intro stmt tr _ hsafe

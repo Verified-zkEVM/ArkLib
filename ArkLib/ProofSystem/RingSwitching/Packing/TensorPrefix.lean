@@ -233,11 +233,11 @@ abbrev rbrError := RingSwitch.rbrError (M := P.A) (PackingData.ofBasis P.basis) 
   (BatchingStrategy.eqFold L κ)
 
 /-- The verifier inherits the shared worst-case round-by-round security proof. -/
-theorem rbrKnowledgeSoundnessWorstCase (h : a.Functional) {σ : Type} (init : ProbComp σ)
+theorem rbrKnowledgeSoundness (h : a.Functional) {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (verifier P h_l a).toVerifier.rbrKnowledgeSoundnessWorstCase init impl (relIn P h_l a)
+    (verifier P h_l a).toVerifier.rbrKnowledgeSoundness init impl (relIn P h_l a)
       ((commitment a).evalRelWithContext ((Fin ℓ → L) × (Fin κ → L))) (rbrError P) :=
-  RingSwitch.rbrKnowledgeSoundnessWorstCase (PackingData.ofBasis P.basis) ℓ' (layout P h_l)
+  RingSwitch.rbrKnowledgeSoundness (PackingData.ofBasis P.basis) ℓ' (layout P h_l)
     (messageEquiv P) (BatchingStrategy.eqFold L κ) (commitment a) (commitment_functional a h)
     (fun _ _ h => h) init impl
 
@@ -249,16 +249,16 @@ theorem rbrError_sum : ∑ i, rbrError (ℓ' := ℓ') P i =
 
 /-- Prefix packing is complete and worst-case round-by-round knowledge sound, with total
 challenge error `κ / card L + 2ℓ' / card L`. -/
-theorem perfectCompleteness_and_rbrKnowledgeSoundnessWorstCase
+theorem perfectCompleteness_and_rbrKnowledgeSoundness
     (h : a.Functional) {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (reduction P h_l a).perfectCompleteness init impl (relIn P h_l a)
         ((commitment a).evalRelWithContext ((Fin ℓ → L) × (Fin κ → L))) ∧
-      (verifier P h_l a).toVerifier.rbrKnowledgeSoundnessWorstCase init impl (relIn P h_l a)
+      (verifier P h_l a).toVerifier.rbrKnowledgeSoundness init impl (relIn P h_l a)
         ((commitment a).evalRelWithContext ((Fin ℓ → L) × (Fin κ → L))) (rbrError P) ∧
       (∑ i, rbrError (ℓ' := ℓ') P i) =
         (κ : ℝ≥0) / Fintype.card L + (ℓ' : ℝ≥0) * (2 / Fintype.card L) := by
-  have hgeneric := RingSwitch.perfectCompleteness_and_rbrKnowledgeSoundnessWorstCase
+  have hgeneric := RingSwitch.perfectCompleteness_and_rbrKnowledgeSoundness
       (PackingData.ofBasis P.basis) ℓ' (layout P h_l) (messageEquiv P)
       (BatchingStrategy.eqFold L κ) (commitment a) (commitment_functional a h)
       (fun _ _ h => h) init impl

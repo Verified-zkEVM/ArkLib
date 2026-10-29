@@ -275,8 +275,8 @@ verifier give the following composition theorem.
     one up to the seam, and after it is the first check together with the second knowledge state at
     the first verdict. At the seam, the second knowledge state at round $0$ places the verdict in
     $R_2$, and a passing check makes that verdict a positive-probability output of $V_1$.
-    \lean{Verifier.append_rbrKnowledgeSoundnessWorstCaseWith_of_guarded_first,
-      Verifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first}
+    \lean{Verifier.append_rbrKnowledgeSoundnessWith_of_guarded_first,
+      Verifier.append_rbrKnowledgeSoundness_of_guarded_first}
     \uses{def:round_by_round_knowledge_soundness, def:verifier_append}
 \end{theorem}
 
@@ -320,7 +320,7 @@ round-by-round knowledge soundness.
     fixed transcript prefix between consecutive relations, so is the chain. Each combined
     challenge keeps the error of the component challenge it corresponds to. The proof iterates
     Theorem~\ref{thm:rbr_knowledge_soundness_append_guarded}.
-    \lean{Verifier.seqCompose_rbrKnowledgeSoundnessWorstCase_of_guarded}
+    \lean{Verifier.seqCompose_rbrKnowledgeSoundness_of_guarded}
     \uses{def:round_by_round_knowledge_soundness, def:verifier_compose,
       thm:rbr_knowledge_soundness_append_guarded}
 \end{theorem}
@@ -453,14 +453,14 @@ For lifting to preserve security properties, the context lens must satisfy certa
 \begin{theorem}[RBR Soundness Preservation under Context Lifting]
     \label{thm:lift_context_rbr_soundness}
     If a verifier satisfies round-by-round soundness and the statement lens is RBR soundness-preserving, then the lifted verifier also satisfies round-by-round soundness.
-    \lean{Verifier.liftContext_rbr_soundness}
+    \lean{Verifier.liftContext_rbrSoundnessAveraged}
     \uses{def:round_by_round_soundness, def:verifier_lift_context, def:statement_lens_is_rbr_sound}
 \end{theorem}
 
 \begin{theorem}[RBR Knowledge Soundness Preservation under Context Lifting]
     \label{thm:lift_context_rbr_knowledge_soundness}
     If a verifier satisfies round-by-round knowledge soundness and the context lens is knowledge soundness-preserving, then the lifted verifier also satisfies round-by-round knowledge soundness.
-    \lean{Verifier.liftContext_rbr_knowledgeSoundness}
+    \lean{Verifier.liftContext_rbrKnowledgeSoundnessAveraged}
     \uses{def:round_by_round_knowledge_soundness, def:verifier_lift_context, def:context_lens_is_knowledge_sound}
 \end{theorem}
 

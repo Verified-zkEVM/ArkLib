@@ -132,13 +132,6 @@ end
 end Sumcheck.LegacyVerifierTest
 
 /--
-info: 'Sumcheck.Spec.SingleRound.Simple.verifier_rbrKnowledgeSoundnessWorstCase' depends on axioms:
-[propext, Classical.choice, Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Sumcheck.Spec.SingleRound.Simple.verifier_rbrKnowledgeSoundnessWorstCase
-
-/--
 info: 'Sumcheck.Spec.SingleRound.Simple.verifier_rbrKnowledgeSoundness' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
@@ -146,16 +139,23 @@ info: 'Sumcheck.Spec.SingleRound.Simple.verifier_rbrKnowledgeSoundness' depends 
 #print axioms Sumcheck.Spec.SingleRound.Simple.verifier_rbrKnowledgeSoundness
 
 /--
-info: 'Sumcheck.Spec.SingleRound.Simple.oracleVerifier_rbrKnowledgeSoundnessWorstCase'
+info: 'Sumcheck.Spec.SingleRound.Simple.verifier_rbrKnowledgeSoundnessAveraged' depends on axioms:
+[propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Sumcheck.Spec.SingleRound.Simple.verifier_rbrKnowledgeSoundnessAveraged
+
+/--
+info: 'Sumcheck.Spec.SingleRound.Simple.oracleVerifier_rbrKnowledgeSoundness'
 depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Sumcheck.Spec.SingleRound.Simple.oracleVerifier_rbrKnowledgeSoundnessWorstCase
+#print axioms Sumcheck.Spec.SingleRound.Simple.oracleVerifier_rbrKnowledgeSoundness
 
 /--
-info: 'Sumcheck.Spec.SingleRound.Simple.oracleVerifier_rbrKnowledgeSoundness' depends on axioms:
+info: 'Sumcheck.Spec.SingleRound.Simple.oracleVerifier_rbrKnowledgeSoundnessAveraged' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Sumcheck.Spec.SingleRound.Simple.oracleVerifier_rbrKnowledgeSoundness
+#print axioms Sumcheck.Spec.SingleRound.Simple.oracleVerifier_rbrKnowledgeSoundnessAveraged

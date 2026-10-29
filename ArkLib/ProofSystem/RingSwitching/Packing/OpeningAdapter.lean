@@ -84,12 +84,12 @@ def projectionKnowledgeStateFunction {σ : Type} (init : ProbComp σ)
     exact hp
 
 /-- Projection introduces no challenges or knowledge error. -/
-theorem projectionVerifier_rbrKnowledgeSoundnessWorstCase {σ : Type} (init : ProbComp σ)
+theorem projectionVerifier_rbrKnowledgeSoundness {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (projectionVerifier M Context).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+    (projectionVerifier M Context).toVerifier.rbrKnowledgeSoundness init impl
       (M.toAbstractOStmtIn.toPackedCommitment.evalRelWithContext (C := L) Context) M.toRelInput
       (fun _ => 0) := by
-  apply (Verifier.rbrKnowledgeSoundnessWorstCase_iff_exists_with init impl _ _ _ _).mpr
+  apply (Verifier.rbrKnowledgeSoundness_iff_exists_with init impl _ _ _ _).mpr
   exact ⟨_, projectionExtractor M Context, projectionKnowledgeStateFunction M Context init impl,
     fun _ i => Fin.elim0 i.1⟩
 
@@ -144,16 +144,16 @@ theorem perfectCompleteness {σ : Type} (init : ProbComp σ)
     exact M.perfectCompleteness
 
 /-- Worst-case security of a general opening transports to its contextual adapter. -/
-theorem rbrKnowledgeSoundnessWorstCase (hM : M.RbrKnowledgeSoundWorstCase)
+theorem rbrKnowledgeSoundness (hM : M.RbrKnowledgeSound)
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    OracleProof.rbrKnowledgeSoundnessWorstCase init impl
+    OracleProof.rbrKnowledgeSoundness init impl
       (M.toAbstractOStmtIn.toPackedCommitment.evalRelWithContext (C := L) Context)
       (reduction M Context).toOracleVerifier
       (Sum.elim (fun _ => 0) M.rbrKnowledgeError ∘ ChallengeIdx.sumEquiv.symm) := by
-  exact OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first
+  exact OracleVerifier.append_rbrKnowledgeSoundness_of_guarded_first
     (Oₛ₃ := fun i : Empty => nomatch i) (projectionVerifier M Context)
     M.oracleReduction.toOracleVerifier
     (projectionGuard M Context)
-    (projectionVerifier_rbrKnowledgeSoundnessWorstCase M Context init impl) hM
+    (projectionVerifier_rbrKnowledgeSoundness M Context init impl) hM
 
 end RingSwitching.Packing.OpeningAdapter

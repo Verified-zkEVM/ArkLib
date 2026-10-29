@@ -659,7 +659,7 @@ home_page/            site assets and assembled website root
   `Security/Implications.lean`.
 - Round-by-round security lives in `Security/RoundByRound.lean` (state functions,
   `Extractor.RoundByRound`, the one-shot variants and their bridges, plus the **worst-case** layer
-  `rbrSoundnessWorstCase` / `rbrKnowledgeSoundnessWorstCase` and the implications back to the
+  `rbrSoundness` / `rbrKnowledgeSoundness` and the implications back to the
   averaged notions), on top of the probability glue in `Security/RbrGame.lean` (the challenge-first
   master bounds over `simulateQ`/`OptionT` that discharge those implications). This is a **separate
   axis** from the transcript-tree notions below: its extractor type is `Extractor.RoundByRound` on
@@ -671,7 +671,7 @@ home_page/            site assets and assembled website root
   verifier. `Security/GuardedRoundByRound.lean` adds what a round-by-round proof needs about a
   verifier that aborts on a failed check: the positive-probability lemma
   `Verifier.GuardedForm.check_and_of_prEvent_pos` and the message-then-challenge reducer
-  `Verifier.rbrKnowledgeSoundnessWorstCaseWith_of_two_message`, which bounds the extraction-failure
+  `Verifier.rbrKnowledgeSoundnessWith_of_two_message`, which bounds the extraction-failure
   event `rbrExtractionFailureEvent` (defined in `RoundByRound.lean`) per fixed prefix. The run
   equation of a query-guard-return oracle verifier (one message query, then a guard and a
   verdict that may read the answer and the challenges),
@@ -855,7 +855,7 @@ home_page/            site assets and assembled website root
   owns the scalar rounds, residual relation, matrix terminal check and guarded composition on the
   same packed witness. `RingSwitch` composes them directly, with exact challenge-error sum
   `bat.error + 2m/card C`; it also closes any opening already typed at the contextual evaluation
-  endpoint through `append_perfectCompleteness` and `append_rbrKnowledgeSoundnessWorstCase`.
+  endpoint through `append_perfectCompleteness` and `append_rbrKnowledgeSoundness`.
   Completeness uses a commutative challenge ring; full security uses finite sampling, no zero
   divisors, functional compatibility and injective packing-to-challenge coefficient transport.
   The head's point-local collision law needs only equal component evaluations among compatible

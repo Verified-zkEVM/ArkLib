@@ -64,13 +64,13 @@ polynomial before each challenge. The explicit finite sum in `RingSwitch.rbrErro
 `bat.error + m * (2 / card C)`.
 
 The head has one batching challenge, the loop `m` scalar challenges, and the terminal none.
-`perfectCompleteness_and_rbrKnowledgeSoundnessWorstCase` bundles completeness, security and this
+`perfectCompleteness_and_rbrKnowledgeSoundness` bundles completeness, security and this
 exact sum. It makes no ordinary knowledge-soundness claim.
 
 For the head alone, equal component evaluations at the fixed query suffice: the compatible
 polynomials need not be equal or form a finite set. `Head.pr_exists_derivedTarget_le_of_partials_eq`
 preserves this point-local collision law, and `bad_event_le_of_partials_eq` adds the guard.
-The standalone `Head.rbrKnowledgeSoundnessWorstCaseWith_of_partials_eq` uses the same weaker
+The standalone `Head.rbrKnowledgeSoundnessWith_of_partials_eq` uses the same weaker
 premise for every fixed query and oracle statement, with the extractor and knowledge states.
 `TensorPrefix.pr_exists_target_collision_le_of_embedded_eval_eq` states the carrier collision law.
 
@@ -79,7 +79,7 @@ the challenge, charging only incorrect candidates. This head bound does not impl
 tail security, adaptive-list extraction or preservation of inherited residual constraints.
 `Batching/CoordinateSample` also certifies nontrivial head separation over rings with zero divisors.
 
-`RingSwitch.append_rbrKnowledgeSoundnessWorstCase` closes any opening already typed at the
+`RingSwitch.append_rbrKnowledgeSoundness` closes any opening already typed at the
 contextual same-commitment endpoint. `append_perfectCompleteness` supplies the separate
 completeness composition. An opening complete only on exact encodings uses exact compatibility
 for the completeness relation; relaxed-radius compatibility remains the security relation.

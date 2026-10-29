@@ -227,9 +227,9 @@ def knowledgeStateFunction {σ : Type} (init : ProbComp σ)
     p h
 
 /-- Exact worst-case knowledge with no challenge error, including when m is zero. -/
-theorem rbrKnowledgeSoundnessWorstCaseWith {σ : Type} (init : ProbComp σ)
+theorem rbrKnowledgeSoundnessWith {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    Verifier.rbrKnowledgeSoundnessWorstCaseWith init impl
+    Verifier.rbrKnowledgeSoundnessWith init impl
       (rel multiplier pc (Fin.last m)) (pc.evalRelWithContext Context) (verifier multiplier
         pc).toVerifier
       (WitMid (P := P) (m := m)) (extractor (Context := Context) pc)

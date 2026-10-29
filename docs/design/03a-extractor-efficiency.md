@@ -91,7 +91,7 @@ notion needs its own statement of what its unbounded form means, with its actual
 | Special soundness and CWSS | `Extractor.TreeBased`, from the statement, a transcript tree and its leaf witnesses | Each structured accepting tree with valid leaf witnesses yields an input witness, or exhibits an escape event; with a classical selector, the input statement lies in the language of the input relation | Tree processing; a knowledge corollary also bounds obtaining the tree and producing any escape |
 | State-restoration knowledge soundness | `Extractor.StateRestoration` | Presumably relation soundness of the restoration game, by the same selector; not proved | Extraction together with replay and simulation of the restoration oracle |
 
-**Round-by-round knowledge soundness.** The legacy existential `rbrKnowledgeSoundness` admits an
+**Round-by-round knowledge soundness.** The legacy existential `rbrKnowledgeSoundnessAveraged` admits an
 extractor built by classical choice (`RoundByRoundOneShot.toRoundByRoundOfRel`), so it carries no
 efficiency content. The native knowledge certificates state that they assert no extraction
 efficiency. For inhabited input-witness types, the legacy averaged and worst-case forms each

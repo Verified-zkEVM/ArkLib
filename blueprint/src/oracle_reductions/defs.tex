@@ -602,7 +602,7 @@ To define round-by-round (knowledge) soundness, we need to define the notion of 
         \item the state function is true for the partial transcript appended by next challenge (chosen randomly)
     \end{itemize}
     is at most $\epsilon(i)$.
-    \lean{Verifier.rbrSoundness}
+    \lean{Verifier.rbrSoundnessAveraged}
     \uses{def:verifier, def:state_function, def:prover_run_to_round}
 \end{definition}
 
@@ -625,7 +625,7 @@ To define round-by-round (knowledge) soundness, we need to define the notion of 
         \item the state function is true for the partial transcript appended by next challenge (chosen randomly)
     \end{itemize}
     is at most $\epsilon(i)$.
-    \lean{Verifier.rbrKnowledgeSoundness}
+    \lean{Verifier.rbrKnowledgeSoundnessAveraged}
     \uses{def:verifier, def:knowledge_state_function, def:rbr_extractor, def:prover_run_to_round}
 \end{definition}
 
@@ -673,7 +673,7 @@ fixes the output witness before a randomized verifier runs, so the usual argumen
     For a guarded verifier, fixed-prefix round-by-round soundness with error function $\epsilon$
     implies soundness with error $\sum_i \epsilon(i)$, where the sum is over all challenge rounds
     $i$.
-    \lean{Verifier.GuardedForm.soundness_of_rbrSoundnessWorstCase}
+    \lean{Verifier.GuardedForm.soundness_of_rbrSoundness}
     \uses{def:round_by_round_soundness, def:soundness}
 \end{theorem}
 
@@ -681,7 +681,7 @@ fixes the output witness before a randomized verifier runs, so the usual argumen
     \label{thm:rbr_knowledge_soundness_implies_rbr_soundness}
     Round-by-round knowledge soundness with error function $\epsilon$ implies round-by-round
     soundness with the same error function $\epsilon$.
-    \lean{Verifier.rbrKnowledgeSoundness_implies_rbrSoundness}
+    \lean{Verifier.rbrKnowledgeSoundnessAveraged_implies_rbrSoundnessAveraged}
     \uses{def:round_by_round_knowledge_soundness, def:round_by_round_soundness}
 \end{theorem}
 
@@ -691,7 +691,7 @@ fixes the output witness before a randomized verifier runs, so the usual argumen
     $\epsilon$ implies knowledge soundness with error $\sum_i \epsilon(i)$, where the sum is over
     all challenge rounds $i$. The extractor folds the round-by-round extractor backward along the
     transcript.
-    \lean{Verifier.GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundnessWorstCase}
+    \lean{Verifier.GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundness}
     \uses{def:round_by_round_knowledge_soundness, def:knowledge_soundness}
 \end{theorem}
 
@@ -748,7 +748,7 @@ For oracle reductions, the security definitions are analogous to those for stand
     \label{def:oracle_verifier_rbr_soundness}
     Round-by-round soundness of an oracle verifier is defined by converting it to a standard verifier
     and applying the standard round-by-round soundness definition.
-    \lean{OracleVerifier.rbrSoundness}
+    \lean{OracleVerifier.rbrSoundnessAveraged}
     \uses{def:oracle_verifier, def:round_by_round_soundness, def:oracle_verifier_to_verifier}
 \end{definition}
 
@@ -756,7 +756,7 @@ For oracle reductions, the security definitions are analogous to those for stand
     \label{def:oracle_verifier_rbr_knowledge_soundness}
     Round-by-round knowledge soundness of an oracle verifier is defined by converting it to a standard
     verifier and applying the standard round-by-round knowledge soundness definition.
-    \lean{OracleVerifier.rbrKnowledgeSoundness}
+    \lean{OracleVerifier.rbrKnowledgeSoundnessAveraged}
     \uses{def:oracle_verifier, def:round_by_round_knowledge_soundness, def:oracle_verifier_to_verifier}
 \end{definition}
 
@@ -856,13 +856,13 @@ By default, the properties we consider are perfect completeness and (straightlin
 
 % \begin{definition}[Round-by-Round Soundness]
 %     \label{def:round_by_round_soundness}
-%     \lean{Verifier.rbrSoundness}
+%     \lean{Verifier.rbrSoundnessAveraged}
 %     \uses{def:oracle_reduction}
 % \end{definition}
 
 % \begin{definition}[Round-by-Round Knowledge Soundness]
 %     \label{def:round_by_round_knowledge_soundness}
-%     \lean{Verifier.rbrKnowledgeSoundness}
+%     \lean{Verifier.rbrKnowledgeSoundnessAveraged}
 %     \uses{def:oracle_reduction}
 % \end{definition}
 

@@ -178,8 +178,8 @@ decoding radius.
 \end{theorem}
 
 \begin{theorem}[Round-by-round knowledge soundness of the prefix protocol]
-  \lean{RingSwitching.Packing.ProductSumcheck.rbrKnowledgeSoundnessWorstCase,
-    RingSwitching.Packing.TensorPrefix.rbrKnowledgeSoundnessWorstCase,
+  \lean{RingSwitching.Packing.ProductSumcheck.rbrKnowledgeSoundness,
+    RingSwitching.Packing.TensorPrefix.rbrKnowledgeSoundness,
     RingSwitching.Packing.TensorPrefix.rbrError_sum}
   \uses{def:ring_switching_profile, def:pack_mle, thm:rbr_knowledge_soundness_append_guarded,
     thm:rbr_knowledge_soundness_compose_guarded}
@@ -197,7 +197,7 @@ decoding radius.
 \end{theorem}
 
 \begin{theorem}[Closing a contextual opening]
-  \lean{RingSwitching.Packing.RingSwitch.append_rbrKnowledgeSoundnessWorstCase,
+  \lean{RingSwitching.Packing.RingSwitch.append_rbrKnowledgeSoundness,
     RingSwitching.Packing.RingSwitch.append_rbrError_sum}
   \uses{thm:ring_switching_core_soundness, thm:rbr_knowledge_soundness_append_guarded}
   \label{thm:ring_switching_soundness}
@@ -222,9 +222,9 @@ decoding radius.
 \end{theorem}
 
 \begin{theorem}[Binius with Binary Basefold]
-  \lean{Binius.FRIBinius.RingSwitch.fullReduction_perfectCompleteness_and_rbrKnowledgeSoundnessWorstCase,
+  \lean{Binius.FRIBinius.RingSwitch.fullReduction_perfectCompleteness_and_rbrKnowledgeSoundness,
     Binius.FRIBinius.RingSwitch.fullError_sum_le,
-    Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness}
+    Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged}
   \uses{def:full_ring_switching, thm:ring_switching_soundness}
   \label{thm:binius_ring_switching_soundness}
   In the concrete setup above, the full Binius verifier is worst-case round-by-round

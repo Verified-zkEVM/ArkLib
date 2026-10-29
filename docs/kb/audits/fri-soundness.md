@@ -31,7 +31,7 @@ author credit are recorded on the paper page.
 | Literal measured extractor | `Fri.Spec.Extractor.extractHistory_eq_profile` | Public result is the first projection of the measured program |
 | End-to-end knowledge soundness with named extractor | `Fri.Spec.knowledge_soundness_with` | Every input statement; actual logged knowledge game; extraction failure includes `none` |
 | End-to-end existential knowledge soundness | `Fri.Spec.knowledge_soundness` | The same specific straightline extractor witnesses existence |
-| End-to-end round-by-round soundness | `Fri.Spec.rbr_soundness` | Existing `OracleVerifier.rbrSoundness` and original input/output relations |
+| End-to-end round-by-round soundness | `Fri.Spec.rbr_soundness` | Existing `OracleVerifier.rbrSoundnessAveraged` and original input/output relations |
 
 ## Parameters and conclusions
 

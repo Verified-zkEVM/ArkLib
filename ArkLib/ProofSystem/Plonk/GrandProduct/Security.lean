@@ -66,8 +66,8 @@ variable [Fintype F]
 
 /-- A single joint uniform challenge hides a false copy claim with probability at most
 `(3n - 1) / |F|`, for every fixed input and prefix. -/
-theorem oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith :
-    (oracleVerifier ω hω hn cs L pi oSpec).toVerifier.rbrKnowledgeSoundnessWorstCaseWith
+theorem oracleVerifier_rbrKnowledgeSoundnessWith :
+    (oracleVerifier ω hω hn cs L pi oSpec).toVerifier.rbrKnowledgeSoundnessWith
       init impl (relIn ω hω cs pi) (relOut ω hω) (fun _ => Unit)
       (rbrExtractor (F := F) (n := n) oSpec)
       (knowledgeStateFunction ω hω hn cs L pi oSpec init impl)
@@ -97,11 +97,11 @@ theorem oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith :
   · nomatch hi
 
 /-- Existential packaging of the named fixed-prefix certificate. -/
-theorem oracleVerifier_rbrKnowledgeSoundnessWorstCase :
-    (oracleVerifier ω hω hn cs L pi oSpec).toVerifier.rbrKnowledgeSoundnessWorstCase
+theorem oracleVerifier_rbrKnowledgeSoundness :
+    (oracleVerifier ω hω hn cs L pi oSpec).toVerifier.rbrKnowledgeSoundness
       init impl (relIn ω hω cs pi) (relOut ω hω)
       (fun _ => ((3 * n - 1 : ℕ) : ℝ≥0) / Fintype.card F) :=
   ⟨_, rbrExtractor oSpec, knowledgeStateFunction ω hω hn cs L pi oSpec init impl,
-    oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith ω hω hn cs L pi oSpec init impl⟩
+    oracleVerifier_rbrKnowledgeSoundnessWith ω hω hn cs L pi oSpec init impl⟩
 
 end Plonk.GrandProduct

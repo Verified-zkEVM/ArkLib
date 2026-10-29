@@ -284,13 +284,13 @@ variable [Fintype F]
 
 /-- Every fixed false residual family survives the uniform batch challenge with probability
 at most `2 / |F|`. -/
-theorem oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith :
-    (oracleVerifier (n := n) oSpec).toVerifier.rbrKnowledgeSoundnessWorstCaseWith init impl
+theorem oracleVerifier_rbrKnowledgeSoundnessWith :
+    (oracleVerifier (n := n) oSpec).toVerifier.rbrKnowledgeSoundnessWith init impl
       (relIn ω hω) (relOut ω hω) (fun _ => Unit) (rbrExtractor oSpec)
       (knowledgeStateFunction ω hω oSpec init impl)
       (fun _ => (2 : ℝ≥0) / Fintype.card F) := by
   intro stmt i tr
-  apply GeneratorBatch.oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_of_prob_le F F
+  apply GeneratorBatch.oracleVerifier_rbrKnowledgeSoundnessWith_of_prob_le F F
     (QuotientZeroTest.finiteDomain F (points ω hω))
     (GrandProduct.residualDegree n + 1) 3 (powerBatchGenerator F 3)
     (Nat.succ_pos _) oSpec init impl ((2 : ℝ≥0) / Fintype.card F) ?_
@@ -303,10 +303,10 @@ theorem oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith :
   exact min_le_right _ _
 
 /-- Existential packaging of the named fixed-prefix certificate. -/
-theorem oracleVerifier_rbrKnowledgeSoundnessWorstCase :
-    (oracleVerifier (n := n) oSpec).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+theorem oracleVerifier_rbrKnowledgeSoundness :
+    (oracleVerifier (n := n) oSpec).toVerifier.rbrKnowledgeSoundness init impl
       (relIn ω hω) (relOut ω hω) (fun _ => (2 : ℝ≥0) / Fintype.card F) :=
   ⟨_, rbrExtractor oSpec, knowledgeStateFunction ω hω oSpec init impl,
-    oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith ω hω oSpec init impl⟩
+    oracleVerifier_rbrKnowledgeSoundnessWith ω hω oSpec init impl⟩
 
 end Plonk.Batch

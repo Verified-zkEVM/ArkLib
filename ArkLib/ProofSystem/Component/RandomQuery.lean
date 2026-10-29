@@ -258,13 +258,13 @@ open NNReal
   In other words, the oracle instance has distance at most `d`.
 -/
 @[simp]
-theorem oracleVerifier_rbrKnowledgeSoundness [Nonempty (Query OStatement)]
+theorem oracleVerifier_rbrKnowledgeSoundnessAveraged [Nonempty (Query OStatement)]
     {d : ℕ} (hDist : distanceLE O d) :
-    (oracleVerifier oSpec OStatement).rbrKnowledgeSoundness init impl
+    (oracleVerifier oSpec OStatement).rbrKnowledgeSoundnessAveraged init impl
       (relIn OStatement)
       (relOut OStatement)
       (fun _ => (d : ℝ≥0) / (Fintype.card (Query OStatement) : ℝ≥0)) := by
-  apply Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness
+  apply Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged
   refine ⟨fun _ => Unit, rbrExtractor oSpec OStatement,
     knowledgeStateFunction oSpec OStatement, ?_⟩
   rintro ⟨stmt, oracles⟩ i transcript

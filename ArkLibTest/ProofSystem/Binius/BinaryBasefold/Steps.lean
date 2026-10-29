@@ -23,10 +23,10 @@ open Lean Elab Command
 run_cmd do
   let allowed := #[``propext, ``Classical.choice, ``Quot.sound]
   for n in #[
-      ``foldOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith,
-      ``commitOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith,
-      ``relayOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith,
-      ``finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith,
+      ``foldOracleVerifier_rbrKnowledgeSoundnessWith,
+      ``commitOracleVerifier_rbrKnowledgeSoundnessWith,
+      ``relayOracleVerifier_rbrKnowledgeSoundnessWith,
+      ``finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWith,
       ``foldOracleReduction_perfectCompleteness,
       ``commitOracleReduction_perfectCompleteness,
       ``relayOracleReduction_perfectCompleteness,

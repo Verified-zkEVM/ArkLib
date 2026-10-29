@@ -18,7 +18,7 @@ public import Mathlib.Data.Matrix.Basic
 `AbstractOStmtIn` equips a commitment oracle family with a relation for knowledge soundness
 and an honest subrelation for completeness. `MLIOPCS` bundles an opening protocol, perfect
 completeness and averaged round-by-round knowledge soundness; its worst-case strengthening
-is `MLIOPCS.RbrKnowledgeSoundWorstCase`.
+is `MLIOPCS.RbrKnowledgeSound`.
 
 ## References
 
@@ -119,9 +119,9 @@ structure MLIOPCS extends (AbstractOStmtIn L ℓ') where
   -- RBR knowledge error function for the MLIOPCS
   rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0
   -- RBR knowledge soundness property
-  rbrKnowledgeSoundness : ∀ {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)
+  rbrKnowledgeSoundnessAveraged : ∀ {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)
   },
-    OracleProof.rbrKnowledgeSoundness
+    OracleProof.rbrKnowledgeSoundnessAveraged
       (verifier := oracleReduction.toOracleVerifier)
       (init := init)
       (impl := impl)
@@ -145,9 +145,9 @@ attribute [local instance] MLIOPCS.Oₘ MLIOPCS.O_challenges
 variable {L ℓ'} in
 /-- For every shared-oracle initialization, the opening is round-by-round knowledge sound at
 every fixed transcript prefix, with its declared input relation and challenge-error function. -/
-def MLIOPCS.RbrKnowledgeSoundWorstCase (M : MLIOPCS L ℓ') : Prop :=
+def MLIOPCS.RbrKnowledgeSound (M : MLIOPCS L ℓ') : Prop :=
   ∀ {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)},
-    OracleProof.rbrKnowledgeSoundnessWorstCase init impl M.toRelInput
+    OracleProof.rbrKnowledgeSoundness init impl M.toRelInput
       M.oracleReduction.toOracleVerifier M.rbrKnowledgeError
 
 end WorstCase

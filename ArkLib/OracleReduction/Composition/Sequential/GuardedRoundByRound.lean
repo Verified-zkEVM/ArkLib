@@ -11,11 +11,11 @@ public import ArkLib.OracleReduction.Composition.Sequential.Append.GuardedRoundB
 /-!
 # Worst-case round-by-round knowledge soundness of a finite guarded sequential composition
 
-`Verifier.seqCompose_rbrKnowledgeSoundnessWorstCaseWith_of_guarded`: if every component verifier is
+`Verifier.seqCompose_rbrKnowledgeSoundnessWith_of_guarded`: if every component verifier is
 guarded and worst-case round-by-round knowledge sound between consecutive relations, so is their
 sequential composition. Each combined challenge's error is its component's, through
 `seqComposeChallengeIdxToSigma`. The proof iterates the binary
-`Verifier.append_rbrKnowledgeSoundnessWorstCaseWith_of_guarded_first`. The error bookkeeping of each
+`Verifier.append_rbrKnowledgeSoundnessWith_of_guarded_first`. The error bookkeeping of each
 step is `ProtocolSpec.apply_seqComposeChallengeIdxToSigma_eq_sumElim`.
 
 The existential and averaged corollaries and `OracleVerifier` wrappers are included.
@@ -35,7 +35,7 @@ variable {ι : Type} {oSpec : OracleSpec ι}
 The extractor and knowledge state iterate guarded append with a terminal identity; the error
 of each combined challenge is its component error under `seqComposeChallengeIdxToSigma`.
 Every guard is used, including the last component's guard before the terminal identity. -/
-theorem seqCompose_rbrKnowledgeSoundnessWorstCaseWith_of_guarded {m : ℕ}
+theorem seqCompose_rbrKnowledgeSoundnessWith_of_guarded {m : ℕ}
     (Stmt : Fin (m + 1) → Type) (Wit : Fin (m + 1) → Type)
     {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
     [∀ i j, SampleableType ((pSpec i).Challenge j)]
@@ -47,9 +47,9 @@ theorem seqCompose_rbrKnowledgeSoundnessWorstCaseWith_of_guarded {m : ℕ}
       (Wit i.succ) (pSpec i) (WitMid i))
     (K : ∀ i, (V i).KnowledgeStateFunction init impl (rel i.castSucc) (rel i.succ) (E i))
     (ε : ∀ i, (pSpec i).ChallengeIdx → ℝ≥0)
-    (h : ∀ i, (V i).rbrKnowledgeSoundnessWorstCaseWith init impl (rel i.castSucc) (rel i.succ)
+    (h : ∀ i, (V i).rbrKnowledgeSoundnessWith init impl (rel i.castSucc) (rel i.succ)
       (WitMid i) (E i) (K i) (ε i)) :
-    (Verifier.seqCompose Stmt V).rbrKnowledgeSoundnessWorstCaseWith init impl (rel 0)
+    (Verifier.seqCompose Stmt V).rbrKnowledgeSoundnessWith init impl (rel 0)
       (rel (Fin.last m)) _ (Extractor.RoundByRound.seqCompose Stmt Wit V G E)
       (KnowledgeStateFunction.seqComposeGuarded Stmt Wit rel V G E K)
       (fun combinedIdx =>
@@ -61,13 +61,13 @@ theorem seqCompose_rbrKnowledgeSoundnessWorstCaseWith_of_guarded {m : ℕ}
     have htail := ih (Stmt ∘ Fin.succ) (Wit ∘ Fin.succ) (fun i => rel i.succ)
       (fun i => V i.succ) (fun i => G i.succ) (fun i => E i.succ) (fun i => K i.succ)
       (fun i => ε i.succ) (fun i => h i.succ)
-    have happend := append_rbrKnowledgeSoundnessWorstCaseWith_of_guarded_first
+    have happend := append_rbrKnowledgeSoundnessWith_of_guarded_first
       (V 0) _ (G 0) (h 0) htail
     rw [apply_seqComposeChallengeIdxToSigma_eq_sumElim, instSampleableTypeChallengeSeqCompose_succ]
     exact happend
 
-/-- Existential form of `seqCompose_rbrKnowledgeSoundnessWorstCaseWith_of_guarded`. -/
-theorem seqCompose_rbrKnowledgeSoundnessWorstCase_of_guarded {m : ℕ}
+/-- Existential form of `seqCompose_rbrKnowledgeSoundnessWith_of_guarded`. -/
+theorem seqCompose_rbrKnowledgeSoundness_of_guarded {m : ℕ}
     (Stmt : Fin (m + 1) → Type) (Wit : Fin (m + 1) → Type)
     {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
     [∀ i j, SampleableType ((pSpec i).Challenge j)]
@@ -75,19 +75,19 @@ theorem seqCompose_rbrKnowledgeSoundnessWorstCase_of_guarded {m : ℕ}
     (V : ∀ i, Verifier oSpec (Stmt i.castSucc) (Stmt i.succ) (pSpec i))
     (G : ∀ i, (V i).GuardedForm)
     (ε : ∀ i, (pSpec i).ChallengeIdx → ℝ≥0)
-    (h : ∀ i, (V i).rbrKnowledgeSoundnessWorstCase init impl (rel i.castSucc) (rel i.succ) (ε i)) :
-    (Verifier.seqCompose Stmt V).rbrKnowledgeSoundnessWorstCase init impl (rel 0)
+    (h : ∀ i, (V i).rbrKnowledgeSoundness init impl (rel i.castSucc) (rel i.succ) (ε i)) :
+    (Verifier.seqCompose Stmt V).rbrKnowledgeSoundness init impl (rel 0)
       (rel (Fin.last m))
       (fun combinedIdx =>
         letI ij := seqComposeChallengeIdxToSigma combinedIdx
         ε ij.1 ij.2) := by
   choose WitMid E K h using h
-  exact ⟨_, _, _, seqCompose_rbrKnowledgeSoundnessWorstCaseWith_of_guarded
+  exact ⟨_, _, _, seqCompose_rbrKnowledgeSoundnessWith_of_guarded
     Stmt Wit rel V G E K ε h⟩
 
 /-- The finite guarded composition theorem also supplies the prover-averaged round-by-round
 knowledge soundness contract, with the same per-round errors. -/
-theorem seqCompose_rbrKnowledgeSoundness_of_worst_case_of_guarded {m : ℕ}
+theorem seqCompose_rbrKnowledgeSoundnessAveraged_of_guarded {m : ℕ}
     (Stmt : Fin (m + 1) → Type) (Wit : Fin (m + 1) → Type)
     {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
     [∀ i j, SampleableType ((pSpec i).Challenge j)]
@@ -95,13 +95,13 @@ theorem seqCompose_rbrKnowledgeSoundness_of_worst_case_of_guarded {m : ℕ}
     (V : ∀ i, Verifier oSpec (Stmt i.castSucc) (Stmt i.succ) (pSpec i))
     (G : ∀ i, (V i).GuardedForm)
     (ε : ∀ i, (pSpec i).ChallengeIdx → ℝ≥0)
-    (h : ∀ i, (V i).rbrKnowledgeSoundnessWorstCase init impl (rel i.castSucc) (rel i.succ) (ε i)) :
-    (Verifier.seqCompose Stmt V).rbrKnowledgeSoundness init impl (rel 0) (rel (Fin.last m))
+    (h : ∀ i, (V i).rbrKnowledgeSoundness init impl (rel i.castSucc) (rel i.succ) (ε i)) :
+    (Verifier.seqCompose Stmt V).rbrKnowledgeSoundnessAveraged init impl (rel 0) (rel (Fin.last m))
       (fun combinedIdx =>
         letI ij := seqComposeChallengeIdxToSigma combinedIdx
         ε ij.1 ij.2) :=
-  rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness init impl
-    (seqCompose_rbrKnowledgeSoundnessWorstCase_of_guarded Stmt Wit rel V G ε h)
+  rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
+    (seqCompose_rbrKnowledgeSoundness_of_guarded Stmt Wit rel V G ε h)
 
 end Verifier
 
@@ -112,7 +112,7 @@ variable {ι : Type} {oSpec : OracleSpec ι}
 
 /-- Oracle chains inherit named guarded certificates through `seqCompose_toVerifier`, with
 the same folded extractor, transported knowledge state, and per-component challenge errors. -/
-theorem seqCompose_rbrKnowledgeSoundnessWorstCaseWith_of_guarded {m : ℕ}
+theorem seqCompose_rbrKnowledgeSoundnessWith_of_guarded {m : ℕ}
     (Stmt : Fin (m + 1) → Type) {ιₛ : Fin (m + 1) → Type}
     (OStmt : (i : Fin (m + 1)) → ιₛ i → Type) [∀ i j, OracleInterface (OStmt i j)]
     (Wit : Fin (m + 1) → Type) {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
@@ -128,9 +128,9 @@ theorem seqCompose_rbrKnowledgeSoundnessWorstCaseWith_of_guarded {m : ℕ}
     (K : ∀ i, (V i).toVerifier.KnowledgeStateFunction init impl
       (rel i.castSucc) (rel i.succ) (E i))
     (ε : ∀ i, (pSpec i).ChallengeIdx → ℝ≥0)
-    (h : ∀ i, (V i).toVerifier.rbrKnowledgeSoundnessWorstCaseWith init impl (rel i.castSucc)
+    (h : ∀ i, (V i).toVerifier.rbrKnowledgeSoundnessWith init impl (rel i.castSucc)
       (rel i.succ) (WitMid i) (E i) (K i) (ε i)) :
-    (OracleVerifier.seqCompose Stmt OStmt V).toVerifier.rbrKnowledgeSoundnessWorstCaseWith init impl
+    (OracleVerifier.seqCompose Stmt OStmt V).toVerifier.rbrKnowledgeSoundnessWith init impl
       (rel 0) (rel (Fin.last m)) _
       (Extractor.RoundByRound.seqCompose (fun i => Stmt i × ∀ j, OStmt i j) Wit
         (fun i => (V i).toVerifier) G E)
@@ -138,11 +138,11 @@ theorem seqCompose_rbrKnowledgeSoundnessWorstCaseWith_of_guarded {m : ℕ}
       (fun combinedIdx =>
         letI ij := seqComposeChallengeIdxToSigma combinedIdx
         ε ij.1 ij.2) :=
-  Verifier.seqCompose_rbrKnowledgeSoundnessWorstCaseWith_of_guarded
+  Verifier.seqCompose_rbrKnowledgeSoundnessWith_of_guarded
     (fun i => Stmt i × ∀ j, OStmt i j) Wit rel (fun i => (V i).toVerifier) G E K ε h
 
-/-- Existential form of `seqCompose_rbrKnowledgeSoundnessWorstCaseWith_of_guarded`. -/
-theorem seqCompose_rbrKnowledgeSoundnessWorstCase_of_guarded {m : ℕ}
+/-- Existential form of `seqCompose_rbrKnowledgeSoundnessWith_of_guarded`. -/
+theorem seqCompose_rbrKnowledgeSoundness_of_guarded {m : ℕ}
     (Stmt : Fin (m + 1) → Type) {ιₛ : Fin (m + 1) → Type}
     (OStmt : (i : Fin (m + 1)) → ιₛ i → Type) [∀ i j, OracleInterface (OStmt i j)]
     (Wit : Fin (m + 1) → Type) {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
@@ -153,15 +153,15 @@ theorem seqCompose_rbrKnowledgeSoundnessWorstCase_of_guarded {m : ℕ}
       (OStmt i.succ) (pSpec i))
     (G : ∀ i, (V i).toVerifier.GuardedForm)
     (ε : ∀ i, (pSpec i).ChallengeIdx → ℝ≥0)
-    (h : ∀ i, (V i).toVerifier.rbrKnowledgeSoundnessWorstCase init impl (rel i.castSucc)
+    (h : ∀ i, (V i).toVerifier.rbrKnowledgeSoundness init impl (rel i.castSucc)
       (rel i.succ) (ε i)) :
-    (OracleVerifier.seqCompose Stmt OStmt V).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+    (OracleVerifier.seqCompose Stmt OStmt V).toVerifier.rbrKnowledgeSoundness init impl
       (rel 0) (rel (Fin.last m))
       (fun combinedIdx =>
         letI ij := seqComposeChallengeIdxToSigma combinedIdx
         ε ij.1 ij.2) := by
   choose WitMid E K h using h
-  exact ⟨_, _, _, seqCompose_rbrKnowledgeSoundnessWorstCaseWith_of_guarded
+  exact ⟨_, _, _, seqCompose_rbrKnowledgeSoundnessWith_of_guarded
     Stmt OStmt Wit rel V G E K ε h⟩
 
 end OracleVerifier

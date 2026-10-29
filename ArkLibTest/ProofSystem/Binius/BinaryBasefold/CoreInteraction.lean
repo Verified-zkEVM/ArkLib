@@ -26,13 +26,6 @@ open Lean Elab Command
 run_cmd do
   let allowed := #[``propext, ``Classical.choice, ``Quot.sound]
   for n in #[
-      ``foldRelayOracleVerifier_rbrKnowledgeSoundnessWorstCase,
-      ``foldCommitOracleVerifier_rbrKnowledgeSoundnessWorstCase,
-      ``nonLastSingleBlockOracleVerifier_rbrKnowledgeSoundnessWorstCase,
-      ``nonLastBlocksOracleVerifier_rbrKnowledgeSoundnessWorstCase,
-      ``lastBlockOracleVerifier_rbrKnowledgeSoundnessWorstCase,
-      ``sumcheckFoldOracleVerifier_rbrKnowledgeSoundnessWorstCase,
-      ``coreInteractionOracleVerifier_rbrKnowledgeSoundnessWorstCase,
       ``foldRelayOracleVerifier_rbrKnowledgeSoundness,
       ``foldCommitOracleVerifier_rbrKnowledgeSoundness,
       ``nonLastSingleBlockOracleVerifier_rbrKnowledgeSoundness,
@@ -40,6 +33,13 @@ run_cmd do
       ``lastBlockOracleVerifier_rbrKnowledgeSoundness,
       ``sumcheckFoldOracleVerifier_rbrKnowledgeSoundness,
       ``coreInteractionOracleVerifier_rbrKnowledgeSoundness,
+      ``foldRelayOracleVerifier_rbrKnowledgeSoundnessAveraged,
+      ``foldCommitOracleVerifier_rbrKnowledgeSoundnessAveraged,
+      ``nonLastSingleBlockOracleVerifier_rbrKnowledgeSoundnessAveraged,
+      ``nonLastBlocksOracleVerifier_rbrKnowledgeSoundnessAveraged,
+      ``lastBlockOracleVerifier_rbrKnowledgeSoundnessAveraged,
+      ``sumcheckFoldOracleVerifier_rbrKnowledgeSoundnessAveraged,
+      ``coreInteractionOracleVerifier_rbrKnowledgeSoundnessAveraged,
       ``foldRelayOracleReduction_perfectCompleteness,
       ``foldCommitOracleReduction_perfectCompleteness,
       ``nonLastSingleBlockOracleReduction_perfectCompleteness,

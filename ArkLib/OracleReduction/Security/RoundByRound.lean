@@ -20,7 +20,7 @@ public import ArkLib.OracleReduction.Security.RbrGame
   witnesses by classical choice. The existential knowledge notions therefore carry no efficiency
   content. Round-by-round knowledge soundness in the cryptographic sense needs, in addition, a cost
   bound for each stage of a named extractor, such as the one named in
-  `Verifier.rbrKnowledgeSoundnessWith`. No predicate here states such a bound.
+  `Verifier.rbrKnowledgeSoundnessAveragedWith`. No predicate here states such a bound.
 
   For inhabited input-witness types, `Security.Implications` identifies the averaged and worst-case
   existential forms with round-by-round soundness of the induced languages, separately for each
@@ -155,7 +155,7 @@ end Extractor
 omit [∀ i, SampleableType (pSpec.Challenge i)] in
 /-- The round-by-round extraction-failure event at challenge `i`: some intermediate witness
 satisfies the knowledge state after the challenge, while its extraction fails it before. This is
-the event `Verifier.rbrKnowledgeSoundnessWorstCase` bounds, named so that per-protocol bounds can
+the event `Verifier.rbrKnowledgeSoundness` bounds, named so that per-protocol bounds can
 state it. -/
 @[reducible]
 def rbrExtractionFailureEvent {WitMid : Fin (n + 1) → Type}
@@ -515,7 +515,7 @@ theorem StateFunction.toKnowledgeStateFunction_toStateFunction_apply
 
   is at most `rbrSoundnessError i`.
 -/
-def rbrSoundness (langIn : Set StmtIn) (langOut : Set StmtOut)
+def rbrSoundnessAveraged (langIn : Set StmtIn) (langOut : Set StmtOut)
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (rbrSoundnessError : pSpec.ChallengeIdx → ℝ≥0) : Prop :=
   ∃ stateFunction : verifier.StateFunction init impl langIn langOut,
@@ -541,7 +541,7 @@ Note that we put the error as a field in the type class to make it easier for sy
 class IsRBRSound (langIn : Set StmtIn) (langOut : Set StmtOut)
     (verifier : Verifier oSpec StmtIn StmtOut pSpec) where
   rbrSoundnessError : pSpec.ChallengeIdx → ℝ≥0
-  is_rbr_sound : rbrSoundness init impl langIn langOut verifier rbrSoundnessError
+  is_rbr_sound : rbrSoundnessAveraged init impl langIn langOut verifier rbrSoundnessError
 
 /-- A protocol with `verifier` satisfies round-by-round knowledge soundness with respect to input
   relation `relIn`, output relation `relOut`, and error `rbrKnowledgeError` if:
@@ -595,7 +595,7 @@ The extractor is unconstrained, so this contract carries no efficiency content; 
 documentation. For inhabited input-witness types, `Security.Implications` identifies it with
 round-by-round soundness of the induced languages. This is distinct from the terminal equivalence
 with `Verifier.relationSoundness`; the one-shot and native notions are not characterized here. -/
-def rbrKnowledgeSoundness (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+def rbrKnowledgeSoundnessAveraged (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0) : Prop :=
   ∃ WitMid : Fin (n + 1) → Type,
@@ -619,12 +619,12 @@ def rbrKnowledgeSoundness (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut
 
 /-- Round-by-round knowledge soundness for one exact intermediate-witness
 family, extractor, and knowledge-state function.  Unlike
-`rbrKnowledgeSoundness`, these proof objects remain visible in the proposition
+`rbrKnowledgeSoundnessAveraged`, these proof objects remain visible in the proposition
 type and can therefore be inspected by downstream clients.
 
 The predicate bounds only the error. Round-by-round knowledge soundness in the cryptographic sense
 also needs a cost bound for each stage of this extractor, which is not part of this predicate. -/
-def rbrKnowledgeSoundnessWith
+def rbrKnowledgeSoundnessAveragedWith
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (WitMid : Fin (n + 1) → Type)
@@ -650,15 +650,15 @@ def rbrKnowledgeSoundnessWith
 
 /-- The existential RBR contract is exactly existence of the corresponding
 extractor-specific contract. -/
-theorem rbrKnowledgeSoundness_iff_exists_with
+theorem rbrKnowledgeSoundnessAveraged_iff_exists_with
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0) :
-    rbrKnowledgeSoundness init impl relIn relOut verifier rbrKnowledgeError ↔
+    rbrKnowledgeSoundnessAveraged init impl relIn relOut verifier rbrKnowledgeError ↔
       ∃ WitMid : Fin (n + 1) → Type,
       ∃ extractor : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid,
       ∃ kSF : verifier.KnowledgeStateFunction init impl relIn relOut extractor,
-        rbrKnowledgeSoundnessWith init impl relIn relOut verifier
+        rbrKnowledgeSoundnessAveragedWith init impl relIn relOut verifier
           WitMid extractor kSF rbrKnowledgeError := by
   rfl
 
@@ -667,18 +667,18 @@ theorem rbrKnowledgeSoundness_iff_exists_with
 Note that we put the error as a field in the type class to make it easier for synthesization
 (often the rbr error will need additional simplification / proof)
 
-Like `rbrKnowledgeSoundness`, the instance carries no efficiency content.
+Like `rbrKnowledgeSoundnessAveraged`, the instance carries no efficiency content.
 -/
 class IsRBRKnowledgeSound (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec) where
   rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0
-  is_rbr_knowledge_sound : rbrKnowledgeSoundness init impl relIn relOut verifier rbrKnowledgeError
+  is_rbr_knowledge_sound : rbrKnowledgeSoundnessAveraged init impl relIn relOut verifier rbrKnowledgeError
 
 /-! ### Worst-case-per-prefix variants
 
 The standard literature definition of round-by-round (knowledge) soundness bounds the bad
 transition probability for **every fixed transcript prefix**, quantified *before* the
-challenge draw. ArkLib's `rbrSoundness` / `rbrKnowledgeSoundness` above instead sample the
+challenge draw. ArkLib's `rbrSoundnessAveraged` / `rbrKnowledgeSoundnessAveraged` above instead sample the
 prefix inside the game (via the prover run under the simulated oracles) and bound the
 resulting **mixture** over prefixes — a formally weaker property with the same error
 constants (safe direction: averaged ≤ worst-case). The definitions below are the faithful
@@ -697,9 +697,9 @@ yield the worst-case one; the implication runs in one direction. -/
 *every fixed* transcript prefix — not a prover-sampled one — the probability over only the
 fresh challenge of a bad transition (state function false at the prefix, true after appending
 the challenge) is at most the round error.
-Implies `rbrSoundness` with the same error
-(`rbrSoundnessWorstCase_implies_rbrSoundness`). -/
-def rbrSoundnessWorstCase (langIn : Set StmtIn) (langOut : Set StmtOut)
+Implies `rbrSoundnessAveraged` with the same error
+(`rbrSoundness_implies_rbrSoundnessAveraged`). -/
+def rbrSoundness (langIn : Set StmtIn) (langOut : Set StmtOut)
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (rbrSoundnessError : pSpec.ChallengeIdx → ℝ≥0) : Prop :=
   ∃ stateFunction : verifier.StateFunction init impl langIn langOut,
@@ -711,12 +711,12 @@ def rbrSoundnessWorstCase (langIn : Set StmtIn) (langOut : Set StmtOut)
         stateFunction i.1.succ stmtIn (transcript.concat challenge)] ≤ rbrSoundnessError i
 
 /-- **Worst-case-per-prefix round-by-round knowledge soundness**, the standard literature shape:
-the knowledge analogue of `rbrSoundnessWorstCase`, with the bad-transition event of
-`rbrKnowledgeSoundness` evaluated at every fixed transcript prefix over only the fresh
-challenge. Implies `rbrKnowledgeSoundness` with the same error
-(`rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness`). Like that notion, it quantifies
+the knowledge analogue of `rbrSoundness`, with the bad-transition event of
+`rbrKnowledgeSoundnessAveraged` evaluated at every fixed transcript prefix over only the fresh
+challenge. Implies `rbrKnowledgeSoundnessAveraged` with the same error
+(`rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged`). Like that notion, it quantifies
 over unconstrained extractors and carries no efficiency content. -/
-def rbrKnowledgeSoundnessWorstCase (relIn : Set (StmtIn × WitIn))
+def rbrKnowledgeSoundness (relIn : Set (StmtIn × WitIn))
     (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0) : Prop :=
@@ -735,7 +735,7 @@ def rbrKnowledgeSoundnessWorstCase (relIn : Set (StmtIn × WitIn))
 /-- Worst-case-per-prefix RBR knowledge soundness for one exact
 intermediate-witness family, extractor, and knowledge-state function. The predicate bounds only the
 error; it includes no cost bound for the stages of this extractor. -/
-def rbrKnowledgeSoundnessWorstCaseWith
+def rbrKnowledgeSoundnessWith
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (WitMid : Fin (n + 1) → Type)
@@ -753,29 +753,29 @@ def rbrKnowledgeSoundnessWorstCaseWith
 
 /-- The existential worst-case RBR contract is exactly existence of the
 corresponding extractor-specific contract. -/
-theorem rbrKnowledgeSoundnessWorstCase_iff_exists_with
+theorem rbrKnowledgeSoundness_iff_exists_with
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0) :
-    rbrKnowledgeSoundnessWorstCase init impl relIn relOut verifier rbrKnowledgeError ↔
+    rbrKnowledgeSoundness init impl relIn relOut verifier rbrKnowledgeError ↔
       ∃ WitMid : Fin (n + 1) → Type,
       ∃ extractor : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid,
       ∃ kSF : verifier.KnowledgeStateFunction init impl relIn relOut extractor,
-        rbrKnowledgeSoundnessWorstCaseWith init impl relIn relOut verifier
+        rbrKnowledgeSoundnessWith init impl relIn relOut verifier
           WitMid extractor kSF rbrKnowledgeError := by
   rfl
 
-/-- Worst-case-per-prefix rbr soundness implies the (averaged) `rbrSoundness`, with the
+/-- Worst-case-per-prefix rbr soundness implies the (averaged) `rbrSoundnessAveraged`, with the
 same error: the averaged game's prefix distribution is a mixture, and the challenge is
 drawn independently of the prefix, so the mixture probability is dominated by the
 per-prefix supremum (master bound
 `ProtocolSpec.prEvent_simulateQ_addLift_getChallenge_bind_le`). -/
-theorem rbrSoundnessWorstCase_implies_rbrSoundness
+theorem rbrSoundness_implies_rbrSoundnessAveraged
     {langIn : Set StmtIn} {langOut : Set StmtOut}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
     {rbrSoundnessError : pSpec.ChallengeIdx → ℝ≥0}
-    (h : rbrSoundnessWorstCase init impl langIn langOut verifier rbrSoundnessError) :
-    rbrSoundness init impl langIn langOut verifier rbrSoundnessError := by
+    (h : rbrSoundness init impl langIn langOut verifier rbrSoundnessError) :
+    rbrSoundnessAveraged init impl langIn langOut verifier rbrSoundnessError := by
   obtain ⟨sF, hsF⟩ := h
   refine ⟨sF, fun stmtIn hstmt WitIn WitOut witIn prover i => ?_⟩
   exact ProtocolSpec.prEvent_simulateQ_addLift_getChallenge_bind_le
@@ -785,14 +785,14 @@ theorem rbrSoundnessWorstCase_implies_rbrSoundness
     (fun tr => hsF stmtIn hstmt i tr.1)
 
 /-- Worst-case-per-prefix rbr knowledge soundness implies the (averaged)
-`rbrKnowledgeSoundness`, with the same error (same mixture argument as
-`rbrSoundnessWorstCase_implies_rbrSoundness`). -/
-theorem rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness
+`rbrKnowledgeSoundnessAveraged`, with the same error (same mixture argument as
+`rbrSoundness_implies_rbrSoundnessAveraged`). -/
+theorem rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
     {rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0}
-    (h : rbrKnowledgeSoundnessWorstCase init impl relIn relOut verifier rbrKnowledgeError) :
-    rbrKnowledgeSoundness init impl relIn relOut verifier rbrKnowledgeError := by
+    (h : rbrKnowledgeSoundness init impl relIn relOut verifier rbrKnowledgeError) :
+    rbrKnowledgeSoundnessAveraged init impl relIn relOut verifier rbrKnowledgeError := by
   obtain ⟨WitMid, extractor, kSF, hkSF⟩ := h
   refine ⟨WitMid, extractor, kSF, fun stmtIn witIn prover i => ?_⟩
   exact ProtocolSpec.prEvent_simulateQ_addLift_getChallenge_bind_le
@@ -806,16 +806,16 @@ theorem rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness
 
 /-- The exact-object worst-case RBR contract implies the exact-object averaged
 contract without hiding the extractor or knowledge-state function. -/
-theorem rbrKnowledgeSoundnessWorstCaseWith_implies_rbrKnowledgeSoundnessWith
+theorem rbrKnowledgeSoundnessWith_implies_rbrKnowledgeSoundnessAveragedWith
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
     {WitMid : Fin (n + 1) → Type}
     {extractor : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid}
     {kSF : verifier.KnowledgeStateFunction init impl relIn relOut extractor}
     {rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0}
-    (h : rbrKnowledgeSoundnessWorstCaseWith init impl relIn relOut verifier
+    (h : rbrKnowledgeSoundnessWith init impl relIn relOut verifier
       WitMid extractor kSF rbrKnowledgeError) :
-    rbrKnowledgeSoundnessWith init impl relIn relOut verifier
+    rbrKnowledgeSoundnessAveragedWith init impl relIn relOut verifier
       WitMid extractor kSF rbrKnowledgeError := by
   intro stmtIn witIn prover i
   exact ProtocolSpec.prEvent_simulateQ_addLift_getChallenge_bind_le
@@ -838,13 +838,13 @@ theorem rbrKnowledgeSoundnessWorstCaseWith_implies_rbrKnowledgeSoundnessWith
   `Extractor.RoundByRoundOneShot.toRoundByRoundOfRel` would otherwise have selected a valid witness,
   and at later rounds because the induced state function carries `∃ v, (stmtIn, v) ∈ relIn` as a
   disjunct. With no witness in existence the extra conjunct holds for free, whatever the log. -/
-theorem rbrKnowledgeSoundnessOneShot_implies_rbrKnowledgeSoundness
+theorem rbrKnowledgeSoundnessOneShot_implies_rbrKnowledgeSoundnessAveraged
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
     {rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0}
     (h : verifier.rbrKnowledgeSoundnessOneShot init impl relIn relOut rbrKnowledgeError) :
-    verifier.rbrKnowledgeSoundness init impl relIn relOut rbrKnowledgeError := by
-  unfold rbrKnowledgeSoundness
+    verifier.rbrKnowledgeSoundnessAveraged init impl relIn relOut rbrKnowledgeError := by
+  unfold rbrKnowledgeSoundnessAveraged
   obtain ⟨stF, oneShotE, h⟩ := h
   refine ⟨_, oneShotE.toRoundByRoundOfRel relIn,
     stF.toKnowledgeStateFunction init impl oneShotE, ?_⟩
@@ -910,26 +910,26 @@ def KnowledgeStateFunction
   verifier.toVerifier.KnowledgeStateFunction init impl relIn relOut extractor
 
 /-- Round-by-round soundness of an oracle reduction is the same as for non-oracle reductions. -/
-def rbrSoundness
+def rbrSoundnessAveraged
     (langIn : Set (StmtIn × ∀ i, OStmtIn i))
     (langOut : Set (StmtOut × ∀ i, OStmtOut i))
     (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec)
     (rbrSoundnessError : pSpec.ChallengeIdx → ℝ≥0) : Prop :=
-  verifier.toVerifier.rbrSoundness init impl langIn langOut rbrSoundnessError
+  verifier.toVerifier.rbrSoundnessAveraged init impl langIn langOut rbrSoundnessError
 
 /-- Round-by-round knowledge soundness of an oracle reduction is the same as for non-oracle
 reductions. -/
-def rbrKnowledgeSoundness
+def rbrKnowledgeSoundnessAveraged
     (relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn))
     (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
     (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec)
     (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0) : Prop :=
-  verifier.toVerifier.rbrKnowledgeSoundness init impl relIn relOut rbrKnowledgeError
+  verifier.toVerifier.rbrKnowledgeSoundnessAveraged init impl relIn relOut rbrKnowledgeError
 
 /-- Extractor-specific round-by-round knowledge soundness of an oracle
 reduction, retaining the exact intermediate-witness family, extractor, and
 knowledge-state function in the proposition type. -/
-def rbrKnowledgeSoundnessWith
+def rbrKnowledgeSoundnessAveragedWith
     (relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn))
     (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
     (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec)
@@ -938,7 +938,7 @@ def rbrKnowledgeSoundnessWith
       (StmtIn × (∀ i, OStmtIn i)) WitIn WitOut pSpec WitMid)
     (kSF : verifier.KnowledgeStateFunction init impl relIn relOut extractor)
     (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0) : Prop :=
-  verifier.toVerifier.rbrKnowledgeSoundnessWith init impl relIn relOut
+  verifier.toVerifier.rbrKnowledgeSoundnessAveragedWith init impl relIn relOut
     WitMid extractor kSF rbrKnowledgeError
 
 end OracleVerifier
@@ -954,18 +954,18 @@ namespace Proof
 /-- Round-by-round soundness of a proof: that of its verifier, with output language `{true}`, the
 accepting verdict. -/
 @[reducible, simp]
-def rbrSoundness (langIn : Set Statement)
+def rbrSoundnessAveraged (langIn : Set Statement)
     (verifier : Verifier oSpec Statement Bool pSpec)
     (rbrSoundnessError : pSpec.ChallengeIdx → ℝ≥0) : Prop :=
-  verifier.rbrSoundness init impl langIn acceptRejectRel.language rbrSoundnessError
+  verifier.rbrSoundnessAveraged init impl langIn acceptRejectRel.language rbrSoundnessError
 
 /-- Round-by-round knowledge soundness of a proof: that of its verifier, with output relation
-`acceptRejectRel`. Like `Verifier.rbrKnowledgeSoundness`, it carries no efficiency content. -/
+`acceptRejectRel`. Like `Verifier.rbrKnowledgeSoundnessAveraged`, it carries no efficiency content. -/
 @[reducible, simp]
-def rbrKnowledgeSoundness (relation : Set (Statement × Witness))
+def rbrKnowledgeSoundnessAveraged (relation : Set (Statement × Witness))
     (verifier : Verifier oSpec Statement Bool pSpec)
     (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0) : Prop :=
-  verifier.rbrKnowledgeSoundness init impl relation acceptRejectRel rbrKnowledgeError
+  verifier.rbrKnowledgeSoundnessAveraged init impl relation acceptRejectRel rbrKnowledgeError
 
 end Proof
 
@@ -985,44 +985,44 @@ def KnowledgeStateFunction
 
 /-- Round-by-round soundness of an oracle reduction is the same as for non-oracle reductions. -/
 @[reducible, simp]
-def rbrSoundness
+def rbrSoundnessAveraged
     (langIn : Set (Statement × ∀ i, OStatement i))
     (verifier : OracleProofVerifier oSpec Statement OStatement pSpec)
     (rbrSoundnessError : pSpec.ChallengeIdx → ℝ≥0) : Prop := by
-  exact OracleVerifier.rbrSoundness (Oₛₒ := fun i => nomatch i) init impl
+  exact OracleVerifier.rbrSoundnessAveraged (Oₛₒ := fun i => nomatch i) init impl
     langIn acceptRejectOracleRel.language verifier rbrSoundnessError
 
 /-- Round-by-round knowledge soundness of an oracle reduction is the same as for non-oracle
 reductions. -/
-def rbrKnowledgeSoundness
+def rbrKnowledgeSoundnessAveraged
     (relIn : Set ((Statement × ∀ i, OStatement i) × Witness))
     (verifier : OracleProofVerifier oSpec Statement OStatement pSpec)
     (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0) : Prop := by
-  exact OracleVerifier.rbrKnowledgeSoundness (Oₛₒ := fun i => nomatch i) init impl
+  exact OracleVerifier.rbrKnowledgeSoundnessAveraged (Oₛₒ := fun i => nomatch i) init impl
     relIn acceptRejectOracleRel verifier rbrKnowledgeError
 
 /-- Worst-case-per-prefix round-by-round knowledge soundness of an oracle proof: that of its
-verifier (`Verifier.rbrKnowledgeSoundnessWorstCase`), with the empty output-oracle family
-discharged explicitly. It implies `OracleProof.rbrKnowledgeSoundness` with the same error
-(`OracleProof.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness`). The implication runs
+verifier (`Verifier.rbrKnowledgeSoundness`), with the empty output-oracle family
+discharged explicitly. It implies `OracleProof.rbrKnowledgeSoundnessAveraged` with the same error
+(`OracleProof.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged`). The implication runs
 in one direction only; see the note on the worst-case-per-prefix variants above. -/
-def rbrKnowledgeSoundnessWorstCase
+def rbrKnowledgeSoundness
     (relIn : Set ((Statement × ∀ i, OStatement i) × Witness))
     (verifier : OracleProofVerifier oSpec Statement OStatement pSpec)
     (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0) : Prop :=
-  (OracleVerifier.toVerifier (Oₛₒ := fun i => nomatch i) verifier).rbrKnowledgeSoundnessWorstCase
+  (OracleVerifier.toVerifier (Oₛₒ := fun i => nomatch i) verifier).rbrKnowledgeSoundness
     init impl relIn acceptRejectOracleRel rbrKnowledgeError
 
 variable {init impl} in
 /-- Worst-case-per-prefix round-by-round knowledge soundness of an oracle proof implies the
-prover-averaged `OracleProof.rbrKnowledgeSoundness`, with the same error. -/
-theorem rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness
+prover-averaged `OracleProof.rbrKnowledgeSoundnessAveraged`, with the same error. -/
+theorem rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged
     {relIn : Set ((Statement × ∀ i, OStatement i) × Witness)}
     {verifier : OracleProofVerifier oSpec Statement OStatement pSpec}
     {rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0}
-    (h : rbrKnowledgeSoundnessWorstCase init impl relIn verifier rbrKnowledgeError) :
-    rbrKnowledgeSoundness init impl relIn verifier rbrKnowledgeError :=
-  Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness init impl h
+    (h : rbrKnowledgeSoundness init impl relIn verifier rbrKnowledgeError) :
+    rbrKnowledgeSoundnessAveraged init impl relIn verifier rbrKnowledgeError :=
+  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl h
 
 end OracleProof
 
@@ -1053,8 +1053,8 @@ def Verifier.StateFunction.id {lang : Set Statement} :
 
 /-- The identity / trivial verifier is perfectly round-by-round sound. -/
 @[simp]
-lemma Verifier.id_rbrSoundness {lang : Set Statement} :
-    (Verifier.id : Verifier oSpec Statement _ _).rbrSoundness init impl lang lang 0 := by
+lemma Verifier.id_rbrSoundnessAveraged {lang : Set Statement} :
+    (Verifier.id : Verifier oSpec Statement _ _).rbrSoundnessAveraged init impl lang lang 0 := by
   refine ⟨Verifier.StateFunction.id init impl, ?_⟩
   intro _ _ _ _ _ _ i
   exact Fin.elim0 i.1
@@ -1094,8 +1094,8 @@ def Verifier.KnowledgeStateFunction.id {rel : Set (Statement × Witness)} :
 
 /-- The identity / trivial verifier is perfectly round-by-round knowledge sound. -/
 @[simp]
-lemma Verifier.id_rbrKnowledgeSoundness {rel : Set (Statement × Witness)} :
-    (Verifier.id : Verifier oSpec Statement _ _).rbrKnowledgeSoundness
+lemma Verifier.id_rbrKnowledgeSoundnessAveraged {rel : Set (Statement × Witness)} :
+    (Verifier.id : Verifier oSpec Statement _ _).rbrKnowledgeSoundnessAveraged
       init impl rel rel 0 := by
   refine ⟨_, _, Verifier.KnowledgeStateFunction.id init impl, ?_⟩
   intro stmtIn witIn prover i
@@ -1103,10 +1103,10 @@ lemma Verifier.id_rbrKnowledgeSoundness {rel : Set (Statement × Witness)} :
 
 /-- The identity / trivial oracle verifier is perfectly round-by-round knowledge sound. -/
 @[simp]
-lemma OracleVerifier.id_rbrKnowledgeSoundness
+lemma OracleVerifier.id_rbrKnowledgeSoundnessAveraged
     {rel : Set ((Statement × ∀ i, OStatement i) × Witness)} :
-    (OracleVerifier.id : OracleVerifier oSpec Statement OStatement _ _ _).rbrKnowledgeSoundness
+    (OracleVerifier.id : OracleVerifier oSpec Statement OStatement _ _ _).rbrKnowledgeSoundnessAveraged
       init impl rel rel 0 := by
-  exact Verifier.id_rbrKnowledgeSoundness init impl (rel := rel)
+  exact Verifier.id_rbrKnowledgeSoundnessAveraged init impl (rel := rel)
 
 end Trivial

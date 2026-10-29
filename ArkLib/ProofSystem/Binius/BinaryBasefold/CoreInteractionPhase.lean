@@ -25,11 +25,11 @@ sends the constant `c := f⁽ˡ⁾(0, …, 0)` and the verifier checks `s_ℓ = 
   multiplier `multiplier`.
 * `coreInteractionOracleReduction_perfectCompleteness`: perfect completeness from the strict round
   relation at round `0` to the strict final sum-check output relation.
-* `coreInteractionOracleVerifier_rbrKnowledgeSoundnessWorstCase`: worst-case round-by-round
+* `coreInteractionOracleVerifier_rbrKnowledgeSoundness`: worst-case round-by-round
   knowledge soundness from the round relation at round `0` to the final sum-check output
   relation, with error `coreInteractionOracleRbrKnowledgeError`; guarded by the checks of the
   sum-check-and-fold rounds (`sumcheckFoldOracleVerifierGuardedForm`). Its averaged form is
-  `coreInteractionOracleVerifier_rbrKnowledgeSoundness`.
+  `coreInteractionOracleVerifier_rbrKnowledgeSoundnessAveraged`.
 * `sumcheckFoldKnowledgeError_le`: the per-challenge errors of the sum-check-and-fold rounds sum
   to at most `2ℓ / |L| + 2^(ℓ + 𝓡) / |L|`. Each challenge carries the Schwartz–Zippel term
   `2 / |L|` and the fold bad-event term `|S⁽ᵏ⁾| / |L|` of its round, `k` the end of its block; the
@@ -135,34 +135,34 @@ omit [DecidableEq 𝔽q] in
 /-- Worst-case round-by-round knowledge soundness of the core interaction, from the round relation
 at round `0` to the final sum-check output relation, with error
 `coreInteractionOracleRbrKnowledgeError`. -/
-theorem coreInteractionOracleVerifier_rbrKnowledgeSoundnessWorstCase :
+theorem coreInteractionOracleVerifier_rbrKnowledgeSoundness :
     (coreInteractionOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (𝓑 := 𝓑)).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+      (𝓑 := 𝓑)).toVerifier.rbrKnowledgeSoundness init impl
       (roundRelation (multpoly := multiplier) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
       (finalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
       (coreInteractionOracleRbrKnowledgeError 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
-  OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first _ _
+  OracleVerifier.append_rbrKnowledgeSoundness_of_guarded_first _ _
     (sumcheckFoldOracleVerifierGuardedForm 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑 := 𝓑) (multpoly := multiplier))
-    (sumcheckFoldOracleVerifier_rbrKnowledgeSoundnessWorstCase 𝔽q β)
-    (finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCase 𝔽q β init impl)
+    (sumcheckFoldOracleVerifier_rbrKnowledgeSoundness 𝔽q β)
+    (finalSumcheckOracleVerifier_rbrKnowledgeSoundness 𝔽q β init impl)
 
 omit [DecidableEq 𝔽q] in
 /-- Round-by-round knowledge soundness of the core interaction: the averaged form of
-`coreInteractionOracleVerifier_rbrKnowledgeSoundnessWorstCase`. -/
-theorem coreInteractionOracleVerifier_rbrKnowledgeSoundness :
+`coreInteractionOracleVerifier_rbrKnowledgeSoundness`. -/
+theorem coreInteractionOracleVerifier_rbrKnowledgeSoundnessAveraged :
     (coreInteractionOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (𝓑 := 𝓑)).rbrKnowledgeSoundness init impl
+      (𝓑 := 𝓑)).rbrKnowledgeSoundnessAveraged init impl
       (pSpec := pSpecCoreInteraction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
       (relIn := roundRelation (multpoly := multiplier) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
       (relOut := finalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
       (rbrKnowledgeError := coreInteractionOracleRbrKnowledgeError 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
-  Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness init impl
-    (coreInteractionOracleVerifier_rbrKnowledgeSoundnessWorstCase 𝔽q β)
+  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
+    (coreInteractionOracleVerifier_rbrKnowledgeSoundness 𝔽q β)
 
 /-! ### The total round-by-round knowledge error of the sum-check-and-fold rounds -/
 

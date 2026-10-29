@@ -34,13 +34,13 @@ variable {ι : Type} {oSpec : OracleSpec ι}
 /-- Worst-case round-by-round soundness composes when the first verifier is pure. The
 challenge error at each round is inherited from the corresponding component. No assumptions
 on an honest prover or on the shared oracle's state transitions are needed. -/
-theorem append_rbrSoundnessWorstCase_of_pure_first
+theorem append_rbrSoundness_of_pure_first
     (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
     (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂) (V : V₁.PureForm)
     {ε₁ : pSpec₁.ChallengeIdx → ℝ≥0} {ε₂ : pSpec₂.ChallengeIdx → ℝ≥0}
-    (h₁ : V₁.rbrSoundnessWorstCase init impl lang₁ lang₂ ε₁)
-    (h₂ : V₂.rbrSoundnessWorstCase init impl lang₂ lang₃ ε₂) :
-    (V₁.append V₂).rbrSoundnessWorstCase init impl lang₁ lang₃
+    (h₁ : V₁.rbrSoundness init impl lang₁ lang₂ ε₁)
+    (h₂ : V₂.rbrSoundness init impl lang₂ lang₃ ε₂) :
+    (V₁.append V₂).rbrSoundness init impl lang₁ lang₃
       (Sum.elim ε₁ ε₂ ∘ ChallengeIdx.sumEquiv.symm) := by
   classical
   obtain ⟨S₁, h₁⟩ := h₁
@@ -94,16 +94,16 @@ theorem append_rbrSoundnessWorstCase_of_pure_first
 
 /-- The fixed-prefix composition theorem also supplies the prover-averaged round-by-round
 soundness contract, with the same per-round errors. -/
-theorem append_rbrSoundness_of_worst_case_of_pure_first
+theorem append_rbrSoundnessAveraged_of_pure_first
     (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
     (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂) (V : V₁.PureForm)
     {ε₁ : pSpec₁.ChallengeIdx → ℝ≥0} {ε₂ : pSpec₂.ChallengeIdx → ℝ≥0}
-    (h₁ : V₁.rbrSoundnessWorstCase init impl lang₁ lang₂ ε₁)
-    (h₂ : V₂.rbrSoundnessWorstCase init impl lang₂ lang₃ ε₂) :
-    (V₁.append V₂).rbrSoundness init impl lang₁ lang₃
+    (h₁ : V₁.rbrSoundness init impl lang₁ lang₂ ε₁)
+    (h₂ : V₂.rbrSoundness init impl lang₂ lang₃ ε₂) :
+    (V₁.append V₂).rbrSoundnessAveraged init impl lang₁ lang₃
       (Sum.elim ε₁ ε₂ ∘ ChallengeIdx.sumEquiv.symm) :=
-  rbrSoundnessWorstCase_implies_rbrSoundness init impl
-    (append_rbrSoundnessWorstCase_of_pure_first V₁ V₂ V h₁ h₂)
+  rbrSoundness_implies_rbrSoundnessAveraged init impl
+    (append_rbrSoundness_of_pure_first V₁ V₂ V h₁ h₂)
 
 end Verifier
 
@@ -125,18 +125,18 @@ variable {ι : Type} {oSpec : OracleSpec ι}
 
 /-- Oracle verifiers inherit the round-by-round composition theorem through their ordinary
 verifier semantics. The fixed-prefix hypotheses and purity concern those converted verifiers. -/
-theorem append_rbrSoundness_of_worst_case_of_pure_first
+theorem append_rbrSoundnessAveraged_of_pure_first
     (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
     (V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂)
     (V : V₁.toVerifier.PureForm)
     {ε₁ : pSpec₁.ChallengeIdx → ℝ≥0} {ε₂ : pSpec₂.ChallengeIdx → ℝ≥0}
-    (h₁ : V₁.toVerifier.rbrSoundnessWorstCase init impl lang₁ lang₂ ε₁)
-    (h₂ : V₂.toVerifier.rbrSoundnessWorstCase init impl lang₂ lang₃ ε₂) :
-    (V₁.append V₂).rbrSoundness init impl lang₁ lang₃
+    (h₁ : V₁.toVerifier.rbrSoundness init impl lang₁ lang₂ ε₁)
+    (h₂ : V₂.toVerifier.rbrSoundness init impl lang₂ lang₃ ε₂) :
+    (V₁.append V₂).rbrSoundnessAveraged init impl lang₁ lang₃
       (Sum.elim ε₁ ε₂ ∘ ChallengeIdx.sumEquiv.symm) := by
-  unfold rbrSoundness
+  unfold rbrSoundnessAveraged
   rw [append_toVerifier]
-  exact Verifier.append_rbrSoundness_of_worst_case_of_pure_first
+  exact Verifier.append_rbrSoundnessAveraged_of_pure_first
     V₁.toVerifier V₂.toVerifier V h₁ h₂
 
 end OracleVerifier

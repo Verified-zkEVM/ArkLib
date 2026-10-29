@@ -228,36 +228,36 @@ def oracleVerifierGuardedForm : (oracleVerifier R deg D n oSpec).toVerifier.Guar
         (SingleRound.verifierGuardedForm R n deg D oSpec i))
 
 /-- Fixed-prefix knowledge soundness with error `deg / |R|` at every challenge. -/
-theorem oracleVerifier_rbrKnowledgeSoundnessWorstCase [Fintype R] [IsDomain R] :
-    (oracleVerifier R deg D n oSpec).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
+    (oracleVerifier R deg D n oSpec).toVerifier.rbrKnowledgeSoundness init impl
       (relationRound R n deg D 0) (relationRound R n deg D (.last n))
       (fun _ => (deg : ℝ≥0) / Fintype.card R) :=
-  OracleVerifier.seqCompose_rbrKnowledgeSoundnessWorstCase_of_guarded
+  OracleVerifier.seqCompose_rbrKnowledgeSoundness_of_guarded
     (StatementRound R n) (fun _ => OracleStatement R n deg) (fun _ => Unit)
     (relationRound R n deg D) (SingleRound.oracleVerifier R n deg D oSpec)
     (fun i => Verifier.GuardedForm.ofEq
       (SingleRound.oracleVerifier_eq_verifier R n deg D oSpec i).symm
       (SingleRound.verifierGuardedForm R n deg D oSpec i))
     (fun _ _ => (deg : ℝ≥0) / Fintype.card R)
-    (fun i => SingleRound.oracleVerifier_rbrKnowledgeSoundnessWorstCase i)
+    (fun i => SingleRound.oracleVerifier_rbrKnowledgeSoundness i)
 
 /-- Round-by-round knowledge soundness with error `deg / |R|` per challenge for the full
 sum-check protocol. -/
-theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
-    (oracleVerifier R deg D n oSpec).rbrKnowledgeSoundness init impl
+theorem oracleVerifier_rbrKnowledgeSoundnessAveraged [Fintype R] [IsDomain R] :
+    (oracleVerifier R deg D n oSpec).rbrKnowledgeSoundnessAveraged init impl
       (relationRound R n deg D 0) (relationRound R n deg D (.last n))
       (fun _ => (deg : ℝ≥0) / (Fintype.card R)) :=
-  Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness init impl
-    (oracleVerifier_rbrKnowledgeSoundnessWorstCase R deg D n oSpec)
+  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
+    (oracleVerifier_rbrKnowledgeSoundness R deg D n oSpec)
 
 /-- Ordinary knowledge soundness with the sum of the per-challenge errors. -/
 theorem oracleVerifier_knowledgeSoundness [Fintype R] [IsDomain R] :
     (oracleVerifier R deg D n oSpec).knowledgeSoundness init impl
       (relationRound R n deg D 0) (relationRound R n deg D (.last n))
       (∑ _ : (pSpec R deg n).ChallengeIdx, (deg : ℝ≥0) / Fintype.card R) :=
-  OracleVerifier.knowledgeSoundness_of_rbrKnowledgeSoundnessWorstCase_of_guarded
+  OracleVerifier.knowledgeSoundness_of_rbrKnowledgeSoundness_of_guarded
     (oracleVerifierGuardedForm R deg D n oSpec)
-    (oracleVerifier_rbrKnowledgeSoundnessWorstCase R deg D n oSpec)
+    (oracleVerifier_rbrKnowledgeSoundness R deg D n oSpec)
 
 end Spec
 

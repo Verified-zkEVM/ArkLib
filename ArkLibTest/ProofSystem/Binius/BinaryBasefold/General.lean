@@ -191,14 +191,6 @@ depends on axioms: [propext,
 #guard_msgs (whitespace := lax) in
 #print axioms fullOracleReduction_perfectCompleteness
 /--
-info: 'Binius.BinaryBasefold.FullBinaryBasefold.fullOracleVerifier_rbrKnowledgeSoundnessWorstCase'
-depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms fullOracleVerifier_rbrKnowledgeSoundnessWorstCase
-/--
 info: 'Binius.BinaryBasefold.FullBinaryBasefold.fullOracleVerifier_rbrKnowledgeSoundness'
 depends on axioms: [propext,
  Classical.choice,
@@ -206,6 +198,14 @@ depends on axioms: [propext,
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms fullOracleVerifier_rbrKnowledgeSoundness
+/--
+info: 'Binius.BinaryBasefold.FullBinaryBasefold.fullOracleVerifier_rbrKnowledgeSoundnessAveraged'
+depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms fullOracleVerifier_rbrKnowledgeSoundnessAveraged
 /--
 info: 'Binius.BinaryBasefold.FullBinaryBasefold.fullRbrKnowledgeError_sum_le_concrete'
 depends on axioms: [propext,
