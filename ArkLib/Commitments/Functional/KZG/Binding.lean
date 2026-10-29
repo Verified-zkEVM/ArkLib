@@ -15,7 +15,10 @@ public import VCVio.EvalDist.Monad.Basic
 
 This file proves evaluation binding for the KZG commitment scheme by reducing a successful
 two-opening adversary to the `t`-SDH experiment. The proof separates the algebraic extraction
-from the probabilistic game transformations.
+from the probabilistic game transformations. The headline result `binding_reduces_to_tSdh`
+bounds each adversary's binding advantage by its reduction's success probability. The corollary
+`binding` requires that reduction to belong to an explicit hardness adversary class; its strength
+depends on the class one can justify.
 
 ## Notation
 
@@ -734,17 +737,20 @@ lemma t_sdh_game_eq {n : ℕ} {AuxState : Type} [SampleableType G₁]
         congr 1) using 1 <;> rfl
 
 omit [DecidableEq G₁] in
-/-- The t-SDH experiment is bounded by the t-SDH error. -/
+/-- The `t`-SDH experiment is bounded by the error for reductions in the assumed class. -/
 lemma t_sdh_error_bound {n : ℕ} {AuxState : Type} [SampleableType G₁]
+    {Adv : Set (Groups.tSdhAdversary n (G₁ := G₁) (G₂ := G₂) (p := p))}
     (tSdhError : ℝ≥0)
     (htSdh : Groups.tSdhAssumption (p := p) (G₁ := G₁) (G₂ := G₂)
-      (g₁ := g₁) (g₂ := g₂) n tSdhError)
-    (adversary : KzgBindingAdversary p G₁ G₂ n unifSpec AuxState) :
+      (g₁ := g₁) (g₂ := g₂) n Adv tSdhError)
+    (adversary : KzgBindingAdversary p G₁ G₂ n unifSpec AuxState)
+    (hAdv : bindingReduction (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
+      AuxState adversary ∈ Adv) :
     Groups.tSdhExperiment (g₁ := g₁) (g₂ := g₂) n
       (bindingReduction (g₁ := g₁) (g₂ := g₂) (pairing := pairing) AuxState adversary)
     ≤ tSdhError := by
   exact htSdh (bindingReduction (g₁ := g₁) (g₂ := g₂) (pairing := pairing) AuxState
-    adversary)
+    adversary) hAdv
 
 omit [DecidableEq G₁] in
 /-- **Extraction-shaped evaluation binding for KZG.** Every evaluation-binding adversary
@@ -784,24 +790,26 @@ theorem binding_reduces_to_tSdh {g₁ : G₁} {g₂ : G₂} (hg₁ : g₁ ≠ 1)
       t_sdh_game_eq (g₁ := g₁) (g₂ := g₂) (pairing := pairing) adversary
 
 omit [DecidableEq G₁] in
-/-- The KZG scheme satisfies evaluation binding provided `t`-SDH holds.
+/-- Each evaluation-binding adversary whose reduction belongs to `Adv` has advantage at most
+`tSdhError`, provided `t`-SDH holds over `Adv`.
 
-This is an immediate corollary of `binding_reduces_to_tSdh`: for each adversary, compose
-the (unconditional) reduction bound with the assumption's bound on the reduction's own
-success probability. For the current, unrestricted `Groups.tSdhAssumption` type this corollary is
-vacuous below error `1`. A future restricted assumption would require a correspondingly changed
-corollary that proves `bindingReduction … adversary` belongs to the restricted class. The
-assumption-free reduction statement lives in `binding_reduces_to_tSdh`. -/
+This is an immediate corollary of `binding_reduces_to_tSdh`: compose the unconditional
+reduction bound with the assumption's bound on the reduction's own success probability. -/
 theorem binding {g₁ : G₁} {g₂ : G₂} (hg₁ : g₁ ≠ 1)
-    (hpair : pairing g₁ g₂ ≠ 0) [SampleableType G₁] (tSdhError : ℝ≥0)
+    (hpair : pairing g₁ g₂ ≠ 0) [SampleableType G₁]
+    {Adv : Set (Groups.tSdhAdversary n (G₁ := G₁) (G₂ := G₂) (p := p))}
+    (tSdhError : ℝ≥0)
     (htSdh : Groups.tSdhAssumption (p := p) (G₁ := G₁) (G₂ := G₂) (g₁ := g₁)
-      (g₂ := g₂) n tSdhError) :
-    Commitment.binding (init := pure ∅) (impl := randomOracle)
-      (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)) tSdhError := by
-  simp only [Commitment.binding]
-  intro AuxState adversary
+      (g₂ := g₂) n Adv tSdhError)
+    (AuxState : Type) (adversary : KzgBindingAdversary p G₁ G₂ n unifSpec AuxState)
+    (hAdv : bindingReduction (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
+      AuxState adversary ∈ Adv) :
+    Commitment.bindingExperiment (init := pure ∅) (impl := randomOracle)
+      (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)) AuxState adversary
+    ≤ tSdhError := by
   exact (binding_reduces_to_tSdh (pairing := pairing) hg₁ hpair AuxState adversary).trans
-    (t_sdh_error_bound (g₁ := g₁) (g₂ := g₂) (pairing := pairing) tSdhError htSdh adversary)
+    (t_sdh_error_bound (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
+      tSdhError htSdh adversary hAdv)
 
 end Binding
 
