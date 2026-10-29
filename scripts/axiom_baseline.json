@@ -2,8 +2,7 @@
   "sorry": [
     "Spartan.Spec.oracleReduction.firstChallenge",
     "Spartan.Spec.oracleReduction.linearCombination",
-    "Spartan.Spec.oracleReduction.sendEvalClaim",
-    "Spartan.Spec.secondSumCheckVirtualPolynomial"
+    "Spartan.Spec.oracleReduction.sendEvalClaim"
   ],
   "solicited": [
     {
