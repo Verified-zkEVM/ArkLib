@@ -167,19 +167,19 @@ Theorems 6.1-6.2 give additive loss `25 t^2 / |Sigma|^c + t max(epsilon_i) + sum
 under their parameter hypotheses, plus failure/time substitution for knowledge extraction.
 Section 2.6 explains the `DSFS[iBCS[IOP]]` branch. [Chiesa-Orrù][co25].
 
-The exact paper comparison exposes statement repairs before security proof work:
+ArkLib's earlier duplex-sponge skeleton was retired in
+[#1368](https://github.com/Verified-zkEVM/ArkLib/pull/1368). Comparing it against the paper
+found these statement mismatches, which a new implementation should avoid:
 
-| Current code | Measured issue against the inspected paper |
+| Retired declaration | Measured issue against the inspected paper |
 |---|---|
-| [KeyLemma](../../../ArkLib/OracleReduction/FiatShamir/DuplexSponge/Security/KeyLemma.lean), lines 116-122 | `duplexSpongeToFSGameStatDist` concludes `True` and is admitted; it is not yet a distance theorem |
-| Same file, line 102; [sponge size](../../../ArkLib/Data/Hash/DuplexSponge.lean), lines 214-215 | Error denominator uses `2 * card(U)^(C+1)` despite `C = N-R`; paper Eq. (5) uses capacity exponent `c` |
-| [TraceTransform](../../../ArkLib/OracleReduction/FiatShamir/DuplexSponge/Security/TraceTransform.lean), lines 31-42 | Declared basic-to-duplex direction is opposite the paper's duplex-to-basic trace translation |
-| [Defs](../../../ArkLib/OracleReduction/FiatShamir/DuplexSponge/Defs.lean), lines 152-157 and 203-214 | Current transforms have initialization but no explicit sampled/absorbed salt from Construction 4.3 |
-| [BadEvents](../../../ArkLib/OracleReduction/FiatShamir/DuplexSponge/Security/BadEvents.lean), lines 301-338 | Several events are placeholder empty-trace/zero-state predicates; there is also genuine proved collision analysis elsewhere in the file |
-| [Backtrack](../../../ArkLib/OracleReduction/FiatShamir/DuplexSponge/Security/Backtrack.lean), lines 92-93 | The maximality condition includes the self-pair; substituting the same sequence makes every disjunct false, forcing an empty family. This is a source-level deduction, not a new Lean counterexample |
+| `duplexSpongeToFSGameStatDist` | Concluded `True` and was admitted; it was not a distance theorem |
+| The key-lemma error term and sponge size | Error denominator used `2 * card(U)^(C+1)` despite `C = N-R`; paper Eq. (5) uses capacity exponent `c` |
+| The trace transform | Declared basic-to-duplex direction is opposite the paper's duplex-to-basic trace translation |
+| The prover and verifier transforms | Had initialization but no explicit sampled/absorbed salt from Construction 4.3 |
+| The bad-event predicates | Several events were placeholder empty-trace/zero-state predicates, beside genuine proved collision analysis |
+| The backtracking family | The maximality condition included the self-pair; substituting the same sequence makes every disjunct false, forcing an empty family. This is a source-level deduction, not a Lean counterexample |
 
-These findings are recorded here without editing the Lean declarations. A later repair needs
-explicit scope and fresh statement review, not an instruction to fill the existing holes.
 Additional obligations include a coupled forward/inverse permutation semantics, preservation
 of verifier/rejection traces, and normalization of the codec API's L1 bias against total variation.
 Uniformly sampling a complete finite permutation exists in VCVio; that is distinct from a
@@ -224,8 +224,8 @@ change the architecture questions, not to close the literature search.
    claim separately.
 3. Keep CY whole-message extraction, BGTZ escape-trigger extraction, and FICS/FACS tree
    extraction as named comparison targets. No universal implication diagram is adopted yet.
-4. Keep the Funky and duplex paths in the compiler scope. Duplex statement repair is a distinct
-   prerequisite package; it should not be smuggled into an already busy ordinary-security night.
+4. Keep the Funky and duplex paths in the compiler scope. A duplex-sponge implementation is a
+   distinct package that starts from fresh statements, not from the retired skeleton.
 5. Before accepting an interface, test whether it can express the CFW output-observing privacy
    experiment and the CDHZ reduction endpoint. This is a design test, not an overnight demand
    to formalize zero knowledge or quantum cryptography.
