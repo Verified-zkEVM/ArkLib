@@ -48,7 +48,7 @@ structure CenteredCoeffView (R : Type*) where
   repr : R → ℤ
 
 /-- The balanced representative for `ZMod q`, sending each residue to its unique
-representative in `[-(q-1)/2, (q-1)/2]` via `ZMod.valMinAbs`. -/
+representative `r` satisfying `-q < 2 * r ≤ q` via `ZMod.valMinAbs`. -/
 def zmodCenteredView (q : ℕ) [NeZero q] : CenteredCoeffView (ZMod q) where
   repr := ZMod.valMinAbs
 
