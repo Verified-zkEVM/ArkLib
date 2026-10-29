@@ -105,7 +105,7 @@ theorem exists_frobeniusGraphLine_of_symbolic_sample
     obtain ⟨hpoly, hjet⟩ := hrecognize w jet hS hsparse
       (fun i hi ↦ by simpa [frobeniusPowerCoordinate_two] using hcuts i hi)
     refine ⟨?_, ?_⟩
-    · simpa [powerBatchedPolynomial, Fin.sum_univ_two, Polynomial.smul_eq_C_mul]
+    · simpa [Polynomial.powerBatch, Fin.sum_univ_two, Polynomial.smul_eq_C_mul]
         using hpoly
     · calc
         jet 0 = (frobeniusPowerInitialGraph center (p ^ e)

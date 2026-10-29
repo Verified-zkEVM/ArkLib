@@ -67,7 +67,7 @@ theorem exists_exceptional_powerBatched_extension [Fintype α] (domain : α ↪ 
       ∀ z ∉ exceptional,
         polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
           (powerBatchedWord (fun t i ↦ iota (w t i)) z)
-          (powerBatchedPolynomial (fun t ↦ (P t).map iota) z) =
+          (Polynomial.powerBatch (fun t ↦ (P t).map iota) z) =
         commonCurveAgreementSet domain w P := by
   have hmap := commonCurveAgreementSet_map domain w P iota
   obtain ⟨exceptional, hcard, hgood⟩ := exists_exceptional_powerBatched_agreement
@@ -85,7 +85,7 @@ theorem exists_exceptional_exactPowerAgreement [Fintype α] (domain : α ↪ F)
     (hcommon : L ≤ (commonCurveAgreementSet domain w P).card) :
     ∃ exceptional : Finset E, exceptional.card ≤ ℓ * (Fintype.card α - L) ∧
       ∀ z ∉ exceptional, HasExactPowerAgreement domain w iota k z
-        (powerBatchedPolynomial (fun t ↦ (P t).map iota) z) := by
+        (Polynomial.powerBatch (fun t ↦ (P t).map iota) z) := by
   obtain ⟨ex, hcard, hgood⟩ :=
     exists_exceptional_powerBatched_extension domain w P iota L hcommon
   exact ⟨ex, hcard, fun z hz ↦ ⟨P, hdegree, rfl, hgood z hz⟩⟩
@@ -102,7 +102,7 @@ theorem exists_exceptional_exactPowerAgreement_family [Fintype α] (domain : α 
       exceptional.card ≤ family.card * (ℓ * (Fintype.card α - L)) ∧
       ∀ P ∈ family, ∀ z ∉ exceptional,
         HasExactPowerAgreement domain w iota k z
-          (powerBatchedPolynomial (fun t ↦ (P t).map iota) z) := by
+          (Polynomial.powerBatch (fun t ↦ (P t).map iota) z) := by
   classical
   let domainE := domain.trans ⟨iota, iota.injective⟩
   let wordsE := fun t i ↦ iota (w t i)
@@ -139,9 +139,9 @@ theorem exists_frobeniusPowerGraph_polynomials_of_sample
         (∀ i ∈ sample,
           Q.eval (roots i) = ∑ t, z ^ (p ^ e * t.val) * ι (w t i)) →
         Q = expand E (p ^ e)
-            (powerBatchedPolynomial (fun t ↦ (P t).map ι) (z ^ (p ^ e))) ∧
+            (Polynomial.powerBatch (fun t ↦ (P t).map ι) (z ^ (p ^ e))) ∧
           Q.eval center =
-            (powerBatchedPolynomial (fun t ↦ (P t).map ι)
+            (Polynomial.powerBatch (fun t ↦ (P t).map ι)
               (z ^ (p ^ e))).eval (center ^ (p ^ e)) := by
   obtain ⟨P, hPdegree, hPsample, hrecognize⟩ :=
     exists_polynomialGraph_of_sample domain w sample hsample
@@ -169,11 +169,11 @@ def powerBatchedJetGraph (center : E) (P : Fin (ℓ + 1) → E[X]) :
 
 /-- Initial Hasse jets commute with the entire power combination. -/
 theorem polynomialJet_powerBatched (center z : E) (P : Fin (ℓ + 1) → E[X]) :
-    polynomialJet (d := r) center (powerBatchedPolynomial P z) =
+    polynomialJet (d := r) center (Polynomial.powerBatch P z) =
       fun j ↦ (powerBatchedJetGraph (r := r) center P j).eval z := by
   funext j
   rw [powerBatchedJetGraph, powerBatchedCoordinate_eval]
-  simp only [polynomialJet, powerBatchedPolynomial, map_sum, map_smul,
+  simp only [polynomialJet, Polynomial.powerBatch, map_sum, map_smul,
     Finset.sum_apply, Pi.smul_apply, smul_eq_mul]
 
 /-- A common sample recognizes every regular specialized Taylor-chart point as belonging to one
@@ -198,7 +198,7 @@ theorem exists_polynomialGraph_of_symbolic_sample_of_exponent
             (Polynomial.eval z (powerBatchedCoordinate (fun t ↦ ι (w t i))))) = 0) →
         rationalTaylorPolynomial center
             (MvPolynomial.map (Polynomial.evalRingHom z) Q) K jet =
-            powerBatchedPolynomial (fun t ↦ (P t).map ι) z ∧
+            Polynomial.powerBatch (fun t ↦ (P t).map ι) z ∧
         jet = (fun j ↦
           Polynomial.eval z
             (powerBatchedJetGraph (r := r) center (fun t ↦ (P t).map ι) j)) ∧
@@ -208,7 +208,7 @@ theorem exists_polynomialGraph_of_symbolic_sample_of_exponent
           MvPolynomial.aeval jet (initialJetSeparant center
             (MvPolynomial.map (Polynomial.evalRingHom z) Q)) ^ τ *
             (Polynomial.taylor center
-              (powerBatchedPolynomial (fun t ↦ (P t).map ι) z)).coeff l.val := by
+              (Polynomial.powerBatch (fun t ↦ (P t).map ι) z)).coeff l.val := by
   obtain ⟨P, hP, hs, hrecognize⟩ :=
     exists_polynomialGraph_of_sample domain w sample hsample
   refine ⟨P, hP, hs, ?_⟩
