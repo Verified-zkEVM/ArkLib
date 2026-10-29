@@ -35,7 +35,7 @@ rounds defined in `CoreInteractionPhase/Protocol.lean`, and of their sequence.
   checks of its own steps. Each challenge's error is that of the fold step it belongs to; the
   errors are `lastBlockRbrKnowledgeError`, `nonLastSingleBlockRbrKnowledgeError`,
   `nonLastBlocksRbrKnowledgeError` and `sumcheckFoldKnowledgeError`, in the shape the composition
-  theorems produce. Each has its averaged form `…_rbrKnowledgeSoundnessAveraged`.
+  theorems produce.
 -/
 
 @[expose] public section
@@ -231,23 +231,6 @@ theorem lastBlockOracleVerifier_rbrKnowledgeSoundness :
         ⟨(ℓ / ϑ - 1) * ϑ + i, lastBlockIdx_mul_ϑ_add_fin_lt_ℓ i⟩
         (not_isCommitmentRound_lastBlock i)))
 
-omit [DecidableEq 𝔽q] in
-/-- Round-by-round knowledge soundness of the last block: the averaged form of
-`lastBlockOracleVerifier_rbrKnowledgeSoundness`. -/
-theorem lastBlockOracleVerifier_rbrKnowledgeSoundnessAveraged :
-    OracleVerifier.rbrKnowledgeSoundnessAveraged init impl
-      (roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        (𝓑 := 𝓑)
-        ⟨(ℓ / ϑ - 1) * ϑ, lastBlockIdx_mul_ϑ_add_x_lt_ℓ_succ 0 (hx := Nat.zero_le _)⟩)
-      (roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        (𝓑 := 𝓑) (Fin.last ℓ))
-      (lastBlockOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-        (multpoly := multpoly))
-      (rbrKnowledgeError := lastBlockRbrKnowledgeError (L := L) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
-  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
-    (lastBlockOracleVerifier_rbrKnowledgeSoundness 𝔽q β)
-
 /-- The round-by-round knowledge error of the fold-relay rounds of the `bIdx`-th non-last block:
 each challenge carries the error of the fold-relay round it belongs to. -/
 def nonLastSingleBlockFoldRelayRbrKnowledgeError (bIdx : Fin (ℓ / ϑ - 1))
@@ -305,23 +288,6 @@ theorem nonLastSingleBlockOracleVerifier_rbrKnowledgeSoundness
         (nonLastSingleBlockCommitIdx bIdx)
         (isCommitmentRound_nonlastBlock (r := r) (𝓡 := 𝓡) bIdx)))
 
-omit [DecidableEq 𝔽q] in
-/-- Round-by-round knowledge soundness of the `bIdx`-th non-last block: the averaged form of
-`nonLastSingleBlockOracleVerifier_rbrKnowledgeSoundness`. -/
-theorem nonLastSingleBlockOracleVerifier_rbrKnowledgeSoundnessAveraged (bIdx : Fin (ℓ / ϑ - 1)) :
-    (nonLastSingleBlockOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-      (multpoly := multpoly) bIdx).rbrKnowledgeSoundnessAveraged init impl
-      (relIn := roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-        ⟨↑bIdx.castSucc * ϑ, blockIdx_mul_ϑ_lt_ℓ_succ bIdx.castSucc⟩)
-      (relOut := roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-        ⟨↑bIdx.succ * ϑ, blockIdx_mul_ϑ_lt_ℓ_succ bIdx.succ⟩)
-      (rbrKnowledgeError := nonLastSingleBlockRbrKnowledgeError (L := L) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) bIdx) :=
-  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
-    (nonLastSingleBlockOracleVerifier_rbrKnowledgeSoundness 𝔽q β bIdx)
-
 /-- The round-by-round knowledge error of the non-last blocks: each challenge carries the error of
 the block it belongs to. -/
 def nonLastBlocksRbrKnowledgeError
@@ -351,22 +317,6 @@ theorem nonLastBlocksOracleVerifier_rbrKnowledgeSoundness :
     (fun bIdx => nonLastSingleBlockOracleVerifierGuardedForm 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (multpoly := multpoly) bIdx) _
     (fun bIdx => nonLastSingleBlockOracleVerifier_rbrKnowledgeSoundness 𝔽q β bIdx)
-
-omit [DecidableEq 𝔽q] in
-/-- Round-by-round knowledge soundness of the non-last blocks: the averaged form of
-`nonLastBlocksOracleVerifier_rbrKnowledgeSoundness`. -/
-theorem nonLastBlocksOracleVerifier_rbrKnowledgeSoundnessAveraged :
-    (nonLastBlocksOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-      (multpoly := multpoly)).rbrKnowledgeSoundnessAveraged init impl
-      (relIn := roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) ⟨0 * ϑ, blockIdx_mul_ϑ_lt_ℓ_succ (ϑ := ϑ) 0⟩)
-      (relOut := roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-        ⟨(ℓ / ϑ - 1) * ϑ, lastBlockIdx_mul_ϑ_add_x_lt_ℓ_succ 0 (hx := Nat.zero_le _)⟩)
-      (rbrKnowledgeError := nonLastBlocksRbrKnowledgeError (L := L) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
-  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
-    (nonLastBlocksOracleVerifier_rbrKnowledgeSoundness 𝔽q β)
 
 /-- The round-by-round knowledge error of the sum-check-and-fold rounds: that of the non-last
 blocks, then that of the last block. -/
@@ -400,22 +350,6 @@ theorem sumcheckFoldOracleVerifier_rbrKnowledgeSoundness :
         (𝓑 := 𝓑) (multpoly := multpoly))
       (nonLastBlocksOracleVerifier_rbrKnowledgeSoundness 𝔽q β)
       (lastBlockOracleVerifier_rbrKnowledgeSoundness 𝔽q β))
-
-omit [DecidableEq 𝔽q] in
-/-- Round-by-round knowledge soundness of the sum-check-and-fold rounds: the averaged form of
-`sumcheckFoldOracleVerifier_rbrKnowledgeSoundness`. -/
-theorem sumcheckFoldOracleVerifier_rbrKnowledgeSoundnessAveraged :
-    (sumcheckFoldOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-      (multpoly := multpoly)).rbrKnowledgeSoundnessAveraged init impl
-      (pSpec := pSpecSumcheckFold 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-      (relIn := roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
-      (relOut := roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (Fin.last ℓ))
-      (rbrKnowledgeError := sumcheckFoldKnowledgeError (L := L) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
-  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
-    (sumcheckFoldOracleVerifier_rbrKnowledgeSoundness 𝔽q β)
 
 end IteratedSumcheckFoldComposition
 

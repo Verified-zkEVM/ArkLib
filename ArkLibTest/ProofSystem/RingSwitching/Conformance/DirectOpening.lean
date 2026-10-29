@@ -22,10 +22,8 @@ oracle and accepts exactly when the claimed evaluation is its value at the claim
   statement.
 * `oracleProof_perfectCompleteness`: the honest prover, which sends nothing, is accepted on every
   input with an honest oracle statement.
-* `mliopcs`: the opening as an `MLIOPCS`. Its prover-averaged knowledge-soundness field is filled
-  from the fixed-prefix proof by
-  `OracleProof.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged`, and
-  `mliopcs_rbrKnowledgeSound` is its fixed-prefix hypothesis.
+* `mliopcs`: the opening as an `MLIOPCS`, with its knowledge-soundness field filled by
+  `verifier_rbrKnowledgeSoundness`.
 -/
 
 open OracleSpec OracleComp ProtocolSpec RingSwitching
@@ -134,8 +132,7 @@ theorem oracleProof_perfectCompleteness {σ : Type} {init : ProbComp σ}
   rw [hout]
   rfl
 
-/-- The direct opening as an `MLIOPCS`, at error `0`. Its prover-averaged round-by-round
-knowledge soundness field is filled from the fixed-prefix proof. -/
+/-- The direct opening as an `MLIOPCS`, at error `0`. -/
 noncomputable def mliopcs : MLIOPCS L ℓ' where
   toAbstractOStmtIn := oStmtIn
   numRounds := 0
@@ -145,15 +142,7 @@ noncomputable def mliopcs : MLIOPCS L ℓ' where
   oracleReduction := oracleProof
   perfectCompleteness := oracleProof_perfectCompleteness
   rbrKnowledgeError := fun _ => 0
-  rbrKnowledgeSoundnessAveraged :=
-    OracleProof.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged
-      (verifier_rbrKnowledgeSoundness _ _ _)
-
-/-- The direct opening satisfies the fixed-prefix hypothesis of the full ring-switching
-composite. -/
-theorem mliopcs_rbrKnowledgeSound :
-    (mliopcs (L := L) (ℓ' := ℓ')).RbrKnowledgeSound :=
-  verifier_rbrKnowledgeSoundness _ _ _
+  rbrKnowledgeSoundness := verifier_rbrKnowledgeSoundness _ _ _
 
 /-- A general opening obtains contextual completeness without another security premise. -/
 example (Context : Type) {σ : Type} (init : ProbComp σ)
@@ -165,7 +154,7 @@ example (Context : Type) {σ : Type} (init : ProbComp σ)
       (init := init) (impl := impl) :=
   Packing.OpeningAdapter.perfectCompleteness _ Context init impl
 
-/-- The same adapter transports the general opening's fixed-prefix certificate. -/
+/-- The same adapter transports the general opening's certificate. -/
 example (Context : Type) {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     OracleProof.rbrKnowledgeSoundness init impl
@@ -174,7 +163,6 @@ example (Context : Type) {σ : Type} (init : ProbComp σ)
       (Packing.OpeningAdapter.reduction (mliopcs (L := L) (ℓ' := ℓ')) Context).toOracleVerifier
       (Sum.elim (fun _ => 0) (mliopcs (L := L) (ℓ' := ℓ')).rbrKnowledgeError ∘
         ProtocolSpec.ChallengeIdx.sumEquiv.symm) :=
-  Packing.OpeningAdapter.rbrKnowledgeSoundness _ Context
-    mliopcs_rbrKnowledgeSound init impl
+  Packing.OpeningAdapter.rbrKnowledgeSoundness _ Context init impl
 
 end ArkLibTest.RingSwitchingConformance.DirectOpening

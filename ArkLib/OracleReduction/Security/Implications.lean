@@ -15,7 +15,7 @@ public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness
 This file identifies round-by-round knowledge soundness with soundness of the induced
 languages, and proves the equivalence between special soundness and its canonical coordinate-wise
 form. State-restoration security is developed natively in
-`Interaction.Oracle.Security.StateRestoration`. The guarded bridges from fixed-prefix
+`Interaction.Oracle.Security.StateRestoration`. The guarded bridges from
 round-by-round security to ordinary security live in `Security.GuardedSoundness` and
 `Security.GuardedBridges`.
 -/
@@ -33,167 +33,6 @@ variable {ι : Type} {oSpec : OracleSpec ι}
 namespace Verifier
 
 section Implications
-
-/-- Prover-averaged round-by-round knowledge soundness with error `rbrKnowledgeError` implies
-prover-averaged round-by-round soundness with the same error `rbrKnowledgeError`. -/
-theorem rbrKnowledgeSoundnessAveraged_implies_rbrSoundnessAveraged
-    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
-    {verifier : Verifier oSpec StmtIn StmtOut pSpec}
-    {rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0}
-    (h : verifier.rbrKnowledgeSoundnessAveraged init impl relIn relOut rbrKnowledgeError) :
-    verifier.rbrSoundnessAveraged init impl relIn.language relOut.language rbrKnowledgeError := by
-  classical
-  unfold rbrKnowledgeSoundnessAveraged at h
-  obtain ⟨WitMid, extractor, kSF, hkSF⟩ := h
-  by_cases hWout : Nonempty WitOut
-  · unfold rbrSoundnessAveraged
-    refine ⟨kSF.toStateFunction init impl, ?_⟩
-    intro stmtIn hStmtIn WitIn' WitOut' witIn' prover i
-    by_cases hWin : Nonempty WitIn
-    · let prover' : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec :=
-        { PrvState := prover.PrvState
-          input := fun _ => prover.input (stmtIn, witIn')
-          sendMessage := prover.sendMessage
-          receiveChallenge := prover.receiveChallenge
-          output := fun st => do
-            let out ← prover.output st
-            return (out.1, Classical.choice hWout) }
-      have hrun : prover'.runToRound i.1.castSucc stmtIn (Classical.choice hWin) =
-          prover.runToRound i.1.castSucc stmtIn witIn' := by rfl
-      have hrunlog : prover'.runWithLogToRound i.1.castSucc stmtIn (Classical.choice hWin) =
-          prover.runWithLogToRound i.1.castSucc stmtIn witIn' := by
-        unfold Prover.runWithLogToRound
-        rw [hrun]
-      let logGame := do
-        let s ← init
-        (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-          (do
-            let ⟨⟨transcript, _⟩, proveQueryLog⟩ ←
-              prover'.runWithLogToRound i.1.castSucc stmtIn (Classical.choice hWin)
-            let challenge ← liftComp (pSpec.getChallenge i) _
-            return (transcript, challenge, proveQueryLog))).run' s
-      let plainGame := do
-        let s ← init
-        (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-          (do
-            let ⟨transcript, _⟩ ← prover.runToRound i.1.castSucc stmtIn witIn'
-            let challenge ← liftComp (pSpec.getChallenge i) _
-            return (transcript, challenge))).run' s
-      have hmap : (fun x => (x.1, x.2.1)) <$> logGame = plainGame := by
-        simp [logGame, plainGame, ← Prover.runWithLogToRound_discard_log_eq_runToRound, hrunlog]
-        rfl
-      have hk := hkSF stmtIn (Classical.choice hWin) prover' i
-      change Pr{let x ← plainGame}[
-        ¬ (∃ w, kSF i.1.castSucc stmtIn x.1 w) ∧
-          ∃ w, kSF i.1.succ stmtIn (x.1.concat x.2) w] ≤ _
-      change Pr{let x ← logGame}[∃ w,
-        ¬ kSF i.1.castSucc stmtIn x.1
-            (extractor.extractMid i.1 stmtIn (x.1.concat x.2.1) w) ∧
-          kSF i.1.succ stmtIn (x.1.concat x.2.1) w] ≤ _ at hk
-      calc
-        _ = Pr{let x ← logGame}[
-            ¬ (∃ w, kSF i.1.castSucc stmtIn x.1 w) ∧
-              ∃ w, kSF i.1.succ stmtIn (x.1.concat x.2.1) w] := by
-              rw [← hmap, prEvent_map]
-        _ ≤ Pr{let x ← logGame}[∃ w,
-            ¬ kSF i.1.castSucc stmtIn x.1
-                (extractor.extractMid i.1 stmtIn (x.1.concat x.2.1) w) ∧
-              kSF i.1.succ stmtIn (x.1.concat x.2.1) w] := by
-              apply prEvent_mono
-              intro x hbad
-              obtain ⟨hprev, w, hnext⟩ := hbad
-              exact ⟨w, fun hw => hprev ⟨_, hw⟩, hnext⟩
-        _ ≤ _ := hk
-    · let extractToInput : (m : Fin (n + 1)) → Transcript m pSpec → WitMid m → WitIn :=
-        Fin.induction
-          (fun tr w => extractor.extractIn stmtIn w)
-          (fun m ih tr w =>
-            ih (Fin.init tr) (extractor.extractMid m stmtIn tr w))
-      refine (prEvent_eq_zero_of_forall_not _ _ fun x hbad ↦ ?_).trans_le zero_le
-      obtain ⟨-, w, hnext⟩ := hbad
-      exact hWin ⟨extractToInput i.1.succ (x.1.concat x.2) w⟩
-  · have hLangOut : relOut.language = ∅ := by
-      ext stmtOut
-      simp only [Set.language, Set.mem_image, Prod.exists, exists_and_right,
-        exists_eq_right, Set.mem_empty_iff_false, iff_false]
-      intro hex
-      exact hWout ⟨hex.choose⟩
-    let sF : verifier.StateFunction init impl relIn.language relOut.language :=
-      { toFun := fun m stmtIn _ => m = 0 ∧ stmtIn ∈ relIn.language
-        toFun_empty := by
-          intro stmtIn
-          exact fun h => h.2
-        toFun_next := by
-          intro m hdir stmtIn tr hfalse msg htrue
-          exact Fin.succ_ne_zero m htrue.1
-        toFun_full := by
-          intro stmtIn tr hfalse
-          rw [hLangOut]
-          exact prEvent_eq_zero_of_forall_not _ _ fun _ ↦ by simp }
-    unfold rbrSoundnessAveraged
-    refine ⟨sF, ?_⟩
-    intro stmtIn hStmtIn WitIn' WitOut' witIn' prover i
-    exact (prEvent_eq_zero_of_forall_not _ _ fun _ hbad ↦
-      Fin.succ_ne_zero i.1 hbad.2.1).trans_le zero_le
-
-/-- Prover-averaged round-by-round soundness implies prover-averaged round-by-round knowledge
-soundness with an unbounded extractor. Nonempty input witnesses are necessary in general: already
-for a zero-round protocol, empty input witnesses and nonempty output witnesses preclude extraction
-from a nonempty statement type. -/
-theorem rbrSoundnessAveraged_implies_rbrKnowledgeSoundnessAveraged [Nonempty WitIn]
-    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
-    {verifier : Verifier oSpec StmtIn StmtOut pSpec}
-    {ε : pSpec.ChallengeIdx → ℝ≥0}
-    (h : verifier.rbrSoundnessAveraged init impl relIn.language relOut.language ε) :
-    verifier.rbrKnowledgeSoundnessAveraged init impl relIn relOut ε := by
-  classical
-  obtain ⟨S, hS⟩ := h
-  refine ⟨_, _, S.toKnowledgeStateFunctionOfRel init impl, ?_⟩
-  intro stmt wit prover i
-  let logGame := do
-    let s ← init
-    (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-      (do
-        let ⟨⟨tr, _⟩, log⟩ ← prover.runWithLogToRound i.1.castSucc stmt wit
-        let challenge ← liftComp (pSpec.getChallenge i) _
-        return (tr, challenge, log))).run' s
-  let plainGame := do
-    let s ← init
-    (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-      (do
-        let ⟨tr, _⟩ ← prover.runToRound i.1.castSucc stmt wit
-        let challenge ← liftComp (pSpec.getChallenge i) _
-        return (tr, challenge))).run' s
-  have hmap : (fun x => (x.1, x.2.1)) <$> logGame = plainGame := by
-    simp [logGame, plainGame, ← Prover.runWithLogToRound_discard_log_eq_runToRound]
-  change Pr{let x ← logGame}[rbrExtractionFailureEvent
-    (S.toKnowledgeStateFunctionOfRel init impl).toFun
-    ((Extractor.RoundByRoundOneShot.ofRelation relIn).toRoundByRoundOfRel relIn)
-    i stmt x.1 x.2.1] ≤ _
-  by_cases hstmt : stmt ∈ relIn.language
-  · refine (prEvent_eq_zero_of_forall_not _ _ fun x hbad => ?_).trans_le zero_le
-    exact (S.toKnowledgeStateFunctionOfRel_failure init impl i stmt x.1 x.2.1 hbad).1 hstmt
-  · calc
-      _ ≤ Pr{let x ← logGame}[¬ S i.1.castSucc stmt x.1 ∧
-          S i.1.succ stmt (x.1.concat x.2.1)] := by
-        exact prEvent_mono _ _ _ fun x hbad =>
-          (S.toKnowledgeStateFunctionOfRel_failure init impl i stmt x.1 x.2.1 hbad).2
-      _ = Pr{let x ← plainGame}[¬ S i.1.castSucc stmt x.1 ∧
-          S i.1.succ stmt (x.1.concat x.2)] := by
-        rw [← hmap, prEvent_map]
-      _ ≤ _ := hS stmt hstmt WitIn WitOut wit prover i
-
-/-- Prover-averaged round-by-round knowledge soundness places no efficiency or access restriction
-on the extractor, so it coincides with prover-averaged round-by-round soundness of the induced
-languages when input witnesses are nonempty. -/
-theorem rbrSoundnessAveraged_iff_rbrKnowledgeSoundnessAveraged [Nonempty WitIn]
-    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
-    {verifier : Verifier oSpec StmtIn StmtOut pSpec}
-    {ε : pSpec.ChallengeIdx → ℝ≥0} :
-    verifier.rbrSoundnessAveraged init impl relIn.language relOut.language ε ↔
-      verifier.rbrKnowledgeSoundnessAveraged init impl relIn relOut ε :=
-  ⟨rbrSoundnessAveraged_implies_rbrKnowledgeSoundnessAveraged init impl,
-    rbrKnowledgeSoundnessAveraged_implies_rbrSoundnessAveraged init impl⟩
 
 /-- Round-by-round knowledge soundness implies soundness of the induced languages,
 with the same error at every fixed transcript prefix. -/
@@ -239,20 +78,6 @@ theorem rbrSoundness_iff_rbrKnowledgeSoundness [Nonempty WitIn]
       verifier.rbrKnowledgeSoundness init impl relIn relOut ε :=
   ⟨rbrSoundness_implies_rbrKnowledgeSoundness init impl,
     rbrKnowledgeSoundness_implies_rbrSoundness init impl⟩
-
-/-- Prover-averaged round-by-round soundness is the specialization of prover-averaged knowledge
-soundness to `Unit` witnesses. -/
-theorem rbrSoundnessAveraged_iff_rbrKnowledgeSoundnessAveraged_unit
-    {langIn : Set StmtIn} {langOut : Set StmtOut}
-    {verifier : Verifier oSpec StmtIn StmtOut pSpec}
-    {ε : pSpec.ChallengeIdx → ℝ≥0} :
-    verifier.rbrSoundnessAveraged init impl langIn langOut ε ↔
-      verifier.rbrKnowledgeSoundnessAveraged init impl (langIn ×ˢ (Set.univ : Set Unit))
-        (langOut ×ˢ (Set.univ : Set Unit)) ε := by
-  simpa only [Set.language, Set.fst_image_prod _ Set.univ_nonempty] using
-    (rbrSoundnessAveraged_iff_rbrKnowledgeSoundnessAveraged init impl
-      (verifier := verifier) (ε := ε)
-      (relIn := langIn ×ˢ (Set.univ : Set Unit)) (relOut := langOut ×ˢ (Set.univ : Set Unit)))
 
 /-- Round-by-round soundness is knowledge soundness specialized to `Unit` witnesses. -/
 theorem rbrSoundness_iff_rbrKnowledgeSoundness_unit

@@ -18,7 +18,7 @@ sequential composition. Each combined challenge's error is its component's, thro
 `Verifier.append_rbrKnowledgeSoundnessWith_of_guarded_first`. The error bookkeeping of each
 step is `ProtocolSpec.apply_seqComposeChallengeIdxToSigma_eq_sumElim`.
 
-The existential and prover-averaged corollaries and `OracleVerifier` wrappers are included.
+The existential corollary and `OracleVerifier` wrappers are included.
 -/
 
 @[expose] public section
@@ -84,24 +84,6 @@ theorem seqCompose_rbrKnowledgeSoundness_of_guarded {m : ℕ}
   choose WitMid E K h using h
   exact ⟨_, _, _, seqCompose_rbrKnowledgeSoundnessWith_of_guarded
     Stmt Wit rel V G E K ε h⟩
-
-/-- The finite guarded composition theorem also supplies the prover-averaged round-by-round
-knowledge soundness contract, with the same per-round errors. -/
-theorem seqCompose_rbrKnowledgeSoundnessAveraged_of_guarded {m : ℕ}
-    (Stmt : Fin (m + 1) → Type) (Wit : Fin (m + 1) → Type)
-    {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
-    [∀ i j, SampleableType ((pSpec i).Challenge j)]
-    (rel : ∀ i, Set (Stmt i × Wit i))
-    (V : ∀ i, Verifier oSpec (Stmt i.castSucc) (Stmt i.succ) (pSpec i))
-    (G : ∀ i, (V i).GuardedForm)
-    (ε : ∀ i, (pSpec i).ChallengeIdx → ℝ≥0)
-    (h : ∀ i, (V i).rbrKnowledgeSoundness init impl (rel i.castSucc) (rel i.succ) (ε i)) :
-    (Verifier.seqCompose Stmt V).rbrKnowledgeSoundnessAveraged init impl (rel 0) (rel (Fin.last m))
-      (fun combinedIdx =>
-        letI ij := seqComposeChallengeIdxToSigma combinedIdx
-        ε ij.1 ij.2) :=
-  rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
-    (seqCompose_rbrKnowledgeSoundness_of_guarded Stmt Wit rel V G ε h)
 
 end Verifier
 

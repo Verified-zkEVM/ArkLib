@@ -27,8 +27,8 @@ oracle to the oracle statements. The step sends no challenge.
   (`hasIncrementalBadEvent_commit_step_backward`,
   `oracleFoldingConsistent_commit_step_backward`).
 * `commitOracleVerifier_rbrKnowledgeSoundnessWith`: round-by-round knowledge
-  soundness at `commitRbrExtractor` and `commitKnowledgeStateFunction`, with existential and
-  averaged forms.
+  soundness at `commitRbrExtractor` and `commitKnowledgeStateFunction`, with an existential
+  form.
 
 ## References
 
@@ -373,22 +373,6 @@ theorem commitOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
   (Verifier.rbrKnowledgeSoundness_iff_exists_with init impl _ _ _ _).mpr
     ⟨_, _, _, commitOracleVerifier_rbrKnowledgeSoundnessWith (multpoly := multpoly)
       (𝓑 := 𝓑) 𝔽q β i hCR⟩
-
-omit [SampleableType L] [DecidableEq 𝔽q] in
-/-- Round-by-round knowledge soundness of the commit step: the averaged form of
-`commitOracleVerifier_rbrKnowledgeSoundness`. -/
-theorem commitOracleVerifier_rbrKnowledgeSoundnessAveraged (i : Fin ℓ)
-    (hCR : IsCommitmentRound ℓ ϑ i) :
-    (commitOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      i hCR).rbrKnowledgeSoundnessAveraged init impl
-      (relIn := foldStepRelOut (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i)
-      (relOut := roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i.succ)
-      (commitKnowledgeError 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
-  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
-    (commitOracleVerifier_rbrKnowledgeSoundness (multpoly := multpoly) (𝓑 := 𝓑)
-      𝔽q β i hCR)
 
 end CommitStep
 end SingleIteratedSteps

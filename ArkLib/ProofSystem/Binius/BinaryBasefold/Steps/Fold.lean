@@ -27,8 +27,7 @@ unique witness consistent with the first oracle, but agrees with it at the chall
   `prob_incrementalFoldingBadEvent_fresh_le` on the fresh incremental folding bad event.
 * `foldOracleVerifier_rbrKnowledgeSoundnessWith`: round-by-round knowledge
   soundness at `foldRbrExtractor`, `foldKnowledgeStateFunction` and `foldKnowledgeError`;
-  `foldOracleVerifier_rbrKnowledgeSoundness` and
-  `foldOracleVerifier_rbrKnowledgeSoundnessAveraged` are its existential and averaged forms.
+  the existential form is `foldOracleVerifier_rbrKnowledgeSoundness`.
 
 ## References
 
@@ -934,20 +933,6 @@ theorem foldOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ) :
       (foldKnowledgeError 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :=
   (Verifier.rbrKnowledgeSoundness_iff_exists_with init impl _ _ _ _).mpr
     ⟨_, _, _, foldOracleVerifier_rbrKnowledgeSoundnessWith 𝔽q β i⟩
-
-omit [DecidableEq 𝔽q] in
-/-- Round-by-round knowledge soundness of the fold step, with error `foldKnowledgeError`: the
-averaged form of `foldOracleVerifier_rbrKnowledgeSoundness`. -/
-theorem foldOracleVerifier_rbrKnowledgeSoundnessAveraged (i : Fin ℓ) :
-    (foldOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-      (multpoly := multpoly) i).rbrKnowledgeSoundnessAveraged init impl
-      (relIn := roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i.castSucc)
-      (relOut := foldStepRelOut (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i)
-      (foldKnowledgeError 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :=
-  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
-    (foldOracleVerifier_rbrKnowledgeSoundness 𝔽q β i)
 
 end FoldStep
 end SingleIteratedSteps

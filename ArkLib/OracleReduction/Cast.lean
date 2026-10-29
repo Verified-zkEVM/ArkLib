@@ -25,8 +25,8 @@ public import VCVio.OracleComp.Constructions.SampleableType.Measure
   properties.
 
   **Verified vs. admitted.** The *execution* lemmas (including the oracle-side
-  `OracleVerifier.cast_toVerifier`) and the prover-averaged round-by-round knowledge-soundness
-  transfer (`Verifier.cast_rbrKnowledgeSoundnessAveraged` and its oracle-side corollary) are
+  `OracleVerifier.cast_toVerifier`) and the round-by-round knowledge-soundness
+  transfer (`Verifier.cast_rbrKnowledgeSoundness` and its oracle-side corollary) are
   proven. The completeness transfer lemmas are commented out entirely and remain future work.
 -/
 
@@ -367,70 +367,28 @@ namespace Verifier
 
 variable (V : Verifier oSpec StmtIn StmtOut pSpec₁)
 
-/-- Prover-averaged round-by-round knowledge soundness transfers across a `ProtocolSpec` cast.
-This is the base case that `OracleVerifier.cast_rbrKnowledgeSoundnessAveraged` reduces to. -/
+/-- Round-by-round knowledge soundness transfers across a `ProtocolSpec` cast.
+This is the base case that `OracleVerifier.cast_rbrKnowledgeSoundness` reduces to. -/
 @[simp]
-theorem cast_rbrKnowledgeSoundnessAveraged (ε : pSpec₁.ChallengeIdx → ℝ≥0)
-    (hRbrKs : V.rbrKnowledgeSoundnessAveraged init impl relIn relOut ε) :
-    (V.cast hn hSpec).rbrKnowledgeSoundnessAveraged init impl relIn relOut
+theorem cast_rbrKnowledgeSoundness (ε : pSpec₁.ChallengeIdx → ℝ≥0)
+    (hRbrKs : V.rbrKnowledgeSoundness init impl relIn relOut ε) :
+    (V.cast hn hSpec).rbrKnowledgeSoundness init impl relIn relOut
       (ε ∘ (ChallengeIdx.cast hn.symm (cast_symm hSpec))) := by
   -- Sampler implementations may differ after the cast, but their native measures agree.
   subst hn
   simp only [ProtocolSpec.cast_id, id_eq] at hSpec
   subst hSpec
-  change @rbrKnowledgeSoundnessAveraged ι oSpec StmtIn WitIn StmtOut WitOut n₁ pSpec₁ inst₂ σ
+  change @rbrKnowledgeSoundness ι oSpec StmtIn WitIn StmtOut WitOut n₁ pSpec₁ inst₂ σ
     init impl relIn relOut V ε
-  have hhandler : ∀ (t : (oSpec + [pSpec₁.Challenge]ₒ).Domain) (s : σ),
-      ((impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₁) :
-          QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) t).run s =ᵈ
-      ((impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₂) :
-          QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) t).run s := by
-    intro t s
-    cases t with
-    | inl t => exact .rfl
-    | inr t =>
-      rcases t with ⟨i, q⟩
-      cases q
-      let : MeasurableSpace (pSpec₁.Challenge i) := ⊤
-      let : MeasurableSpace (pSpec₁.Challenge i × σ) := ⊤
-      have huni := SampleableType.evalDist_uniformSample_inst_irrel (inst₁ i) (inst₂ i)
-      change
-        (liftM (@uniformSample (pSpec₁.Challenge i) (inst₁ i)) :
-            StateT σ ProbComp (pSpec₁.Challenge i)).run s =ᵈ
-        (liftM (@uniformSample (pSpec₁.Challenge i) (inst₂ i)) :
-            StateT σ ProbComp (pSpec₁.Challenge i)).run s
-      refine EvalDistEq.of_evalDist_eq ?_
-      rw [OracleComp.liftM_run_StateT, OracleComp.liftM_run_StateT,
-        evalDist_bind_of_discrete, evalDist_bind_of_discrete]
-      exact congrArg
-        (fun d : MeasureTheory.Measure (pSpec₁.Challenge i) =>
-          d.bind fun x => 𝒟[(pure (x, s) : ProbComp (pSpec₁.Challenge i × σ))]) huni
-  have heval {α : Type} (oa : OracleComp (oSpec + [pSpec₁.Challenge]ₒ) α) :
-      (do
-        let s ← init
-        (simulateQ (impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₂) :
-          QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) oa).run' s) =ᵈ
-      (do
-        let s ← init
-        (simulateQ (impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₁) :
-          QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) oa).run' s) :=
-    EvalDistEq.bind_right init fun s =>
-      ((evalDistEq_simulateQ_run _ _ hhandler oa s).map Prod.fst).symm
-  unfold rbrKnowledgeSoundnessAveraged at hRbrKs ⊢
   obtain ⟨WitMid, extractor, kSF, hbound⟩ := hRbrKs
   refine ⟨WitMid, extractor, kSF, ?_⟩
-  intro stmtIn witIn prover i
-  let game := do
-    let ⟨⟨transcript, _⟩, proveQueryLog⟩ ← prover.runWithLogToRound i.1.castSucc stmtIn witIn
-    let challenge ← (pSpec₁.getChallenge i).liftComp (oSpec + [pSpec₁.Challenge]ₒ)
-    return (transcript, challenge, proveQueryLog)
-  have heq := (heval game).prEvent_eq
-    (fun ⟨transcript, challenge, _⟩ => ∃ witMid,
+  intro stmtIn i transcript
+  have heq := SampleableType.prEvent_uniformSample_inst_irrel (inst₂ i) (inst₁ i)
+    (fun challenge => ∃ witMid,
       ¬ kSF.toFun i.1.castSucc stmtIn transcript
         (extractor.extractMid i.1 stmtIn (transcript.concat challenge) witMid) ∧
       kSF.toFun i.1.succ stmtIn (transcript.concat challenge) witMid)
-  apply le_trans (le_of_eq (by simpa only [game, bind_assoc, prEvent_norm] using heq))
-  simpa only [game, bind_assoc, prEvent_norm] using hbound stmtIn witIn prover i
+  exact heq.le.trans (hbound stmtIn i transcript)
 
 end Verifier
 
@@ -466,16 +424,16 @@ namespace OracleVerifier
 
 variable (V : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec₁)
 
-/-- Prover-averaged round-by-round knowledge soundness transfers across a `ProtocolSpec` cast, on
-the oracle side; reduces to `Verifier.cast_rbrKnowledgeSoundnessAveraged`. -/
+/-- Round-by-round knowledge soundness transfers across a `ProtocolSpec` cast, on
+the oracle side; reduces to `Verifier.cast_rbrKnowledgeSoundness`. -/
 @[simp]
-theorem cast_rbrKnowledgeSoundnessAveraged (ε : pSpec₁.ChallengeIdx → ℝ≥0)
-    (hRbrKs : V.rbrKnowledgeSoundnessAveraged init impl relIn relOut ε) :
-    (V.cast hn hSpec hOₘ).rbrKnowledgeSoundnessAveraged init impl relIn relOut
+theorem cast_rbrKnowledgeSoundness (ε : pSpec₁.ChallengeIdx → ℝ≥0)
+    (hRbrKs : V.rbrKnowledgeSoundness init impl relIn relOut ε) :
+    (V.cast hn hSpec hOₘ).rbrKnowledgeSoundness init impl relIn relOut
       (ε ∘ (ChallengeIdx.cast hn.symm (cast_symm hSpec))) := by
-  unfold rbrKnowledgeSoundnessAveraged
+  unfold rbrKnowledgeSoundness
   rw [cast_toVerifier]
-  exact Verifier.cast_rbrKnowledgeSoundnessAveraged hn hSpec V.toVerifier ε hRbrKs
+  exact Verifier.cast_rbrKnowledgeSoundness hn hSpec V.toVerifier ε hRbrKs
 
 end OracleVerifier
 

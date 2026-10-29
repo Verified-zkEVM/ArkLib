@@ -25,8 +25,8 @@ a commit step does. It is a formalization device and has no counterpart in [DP24
 * `relayKnowledgeStateFunction`: the round relation at `i + 1` on the reindexed oracle statements;
   that it is the fold-step output relation is the content of the step's knowledge soundness.
 * `relayOracleVerifier_rbrKnowledgeSoundnessWith`: round-by-round knowledge
-  soundness at `relayRbrExtractor` and `relayKnowledgeStateFunction`, with existential and averaged
-  forms.
+  soundness at `relayRbrExtractor` and `relayKnowledgeStateFunction`, with an existential
+  form.
 
 ## References
 
@@ -366,22 +366,6 @@ theorem relayOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
   (Verifier.rbrKnowledgeSoundness_iff_exists_with init impl _ _ _ _).mpr
     ⟨_, _, _, relayOracleVerifier_rbrKnowledgeSoundnessWith (multpoly := multpoly)
       (𝓑 := 𝓑) 𝔽q β i hNCR⟩
-
-omit [SampleableType L] [DecidableEq 𝔽q] in
-/-- Round-by-round knowledge soundness of the relay step: the averaged form of
-`relayOracleVerifier_rbrKnowledgeSoundness`. -/
-theorem relayOracleVerifier_rbrKnowledgeSoundnessAveraged (i : Fin ℓ)
-    (hNCR : ¬ IsCommitmentRound ℓ ϑ i) :
-    (relayOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        i hNCR).rbrKnowledgeSoundnessAveraged init impl
-      (relIn := foldStepRelOut (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i)
-      (relOut := roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i.succ)
-      relayKnowledgeError :=
-  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
-    (relayOracleVerifier_rbrKnowledgeSoundness (multpoly := multpoly) (𝓑 := 𝓑)
-      𝔽q β i hNCR)
 
 end RelayStep
 end SingleIteratedSteps

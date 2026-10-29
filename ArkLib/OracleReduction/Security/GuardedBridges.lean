@@ -9,7 +9,7 @@ public import ArkLib.OracleReduction.Security.Acceptance
 public import ArkLib.OracleReduction.Security.GuardedSoundness
 
 /-!
-# Guarded bridges from fixed-prefix knowledge security
+# Guarded bridges from round-by-round knowledge security
 
 The straightline extractor folds the round-by-round extractor backward over the actual
 transcript, starting with the actual output witness. A failed fold from a valid guarded
@@ -106,7 +106,7 @@ theorem KnowledgeStateFunction.foldPrefix_mem_of_no_badEvent
 
 variable [∀ i, SampleableType (pSpec.Challenge i)]
 
-/-- Fixed-prefix knowledge errors sum to ordinary knowledge error for a guarded verifier,
+/-- Round-by-round knowledge errors sum to ordinary knowledge error for a guarded verifier,
 using the pure backward fold of the specified extractor. -/
 theorem GuardedForm.knowledgeSoundnessWith_of_rbrKnowledgeSoundnessWith
     (G : V.GuardedForm) (K : V.KnowledgeStateFunction init impl relIn relOut E)
@@ -134,7 +134,7 @@ theorem GuardedForm.knowledgeSoundnessWith_of_rbrKnowledgeSoundnessWith
         (α := fun k : Fin (i.1.val + 1) ↦ pSpec.«Type» ⟨k.val, by omega⟩) c tr j
     simpa only [KnowledgeStateFunction.extractionBadEvent, hinit] using h stmt i tr
 
-/-- Existential ordinary knowledge soundness from an exact fixed-prefix certificate. -/
+/-- Existential ordinary knowledge soundness from an exact round-by-round certificate. -/
 theorem GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundnessWith
     (G : V.GuardedForm) (K : V.KnowledgeStateFunction init impl relIn relOut E)
     {ε : pSpec.ChallengeIdx → ℝ≥0}
@@ -143,7 +143,7 @@ theorem GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundnessWith
   Verifier.knowledgeSoundness_of_with init impl
     (G.knowledgeSoundnessWith_of_rbrKnowledgeSoundnessWith K h)
 
-/-- A guarded verifier's existential fixed-prefix certificate yields ordinary
+/-- A guarded verifier's existential round-by-round certificate yields ordinary
 knowledge soundness. -/
 theorem GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundness
     (G : V.GuardedForm) {ε : pSpec.ChallengeIdx → ℝ≥0}
@@ -183,7 +183,7 @@ theorem knowledgeSoundness_of_rbrKnowledgeSoundnessWith_of_guarded
     V.knowledgeSoundness init impl relIn relOut (∑ i, ε i) :=
   G.knowledgeSoundness_of_rbrKnowledgeSoundnessWith K h
 
-/-- Existential fixed-prefix knowledge security gives ordinary oracle knowledge security. -/
+/-- Existential round-by-round knowledge security gives ordinary oracle knowledge security. -/
 theorem knowledgeSoundness_of_rbrKnowledgeSoundness_of_guarded
     (G : V.toVerifier.GuardedForm) {ε : pSpec.ChallengeIdx → ℝ≥0}
     (h : V.toVerifier.rbrKnowledgeSoundness init impl relIn relOut ε) :

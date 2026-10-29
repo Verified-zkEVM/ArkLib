@@ -32,17 +32,12 @@ Reduction.perfectCompleteness
 Extractor.Straightline
 Extractor.RoundByRound
 Extractor.Rewinding
-Prover.StateRestoration.KnowledgeSoundness
 Verifier.soundness
 Verifier.knowledgeSoundness
 Verifier.StateFunction
 Verifier.KnowledgeStateFunction
 Verifier.rbrSoundness
 Verifier.rbrKnowledgeSoundness
-Verifier.rbrSoundnessAveraged
-Verifier.rbrKnowledgeSoundnessAveraged
-Verifier.rbrSoundness_implies_rbrSoundnessAveraged
-Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged
 Verifier.GuardedForm.soundness_of_rbrSoundness
 Verifier.rbrKnowledgeSoundness_implies_rbrSoundness
 Verifier.GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundness
@@ -52,7 +47,6 @@ OracleVerifier.soundness
 OracleVerifier.knowledgeSoundness
 OracleVerifier.rbrSoundness
 OracleVerifier.rbrKnowledgeSoundness
-Verifier.StateRestoration.knowledgeSoundness
 ProtocolSpec.append
 ProtocolSpec.FullTranscript.append
 Prover.append
@@ -111,7 +105,7 @@ SendSingleWitness.oracleReduction
 SendSingleWitness.oracleReduction_completeness
 RandomQuery.oracleReduction
 RandomQuery.oracleReduction_completeness
-RandomQuery.oracleVerifier_rbrKnowledgeSoundnessAveraged
+RandomQuery.oracleVerifier_rbrKnowledgeSoundness_of_distanceLE
 SendClaim.oracleReduction
 ReduceClaim.reduction
 ReduceClaim.reduction_completeness

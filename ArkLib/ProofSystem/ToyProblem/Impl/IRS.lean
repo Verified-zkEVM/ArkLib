@@ -811,31 +811,6 @@ theorem simplifiedOracleVerifier_rbrKnowledgeSoundnessWith_rbrExtractor
       k s hdvd domain hfull δ hδ stmtIn
   · exact absurd hi (by omega)
 
-/-- Averaged C6.9 round-by-round knowledge soundness for the same exact
-executable extractor, derived from the fixed-prefix theorem. -/
-theorem simplifiedOracleVerifier_rbrKnowledgeSoundnessAveragedWith_rbrExtractor
-    [SampleableType F] [Nonempty ι]
-    (k s : ℕ) (hdvd : s ∣ k) [NeZero (k / s)] (domain : ι ↪ F)
-    (hfull : k / s ≤ Fintype.card ι) (δ : ℝ≥0)
-    (hδ : δ < (minRelHammingDistCode
-      (ReedSolomon.code domain (k / s) : Set (ι → F)) : ℝ≥0))
-    {σ : Type} (init : ProbComp σ)
-    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (SimplifiedIOR.oracleVerifier
-      (ι := ι) (F := F) (A := Fin s → F) (k := k)).rbrKnowledgeSoundnessAveragedWith
-        (WitOut := SimplifiedIOR.OutputWitness (F := F) k)
-        init impl (Spec.outputRelationFor k (encoder k s hdvd domain) δ)
-        (SimplifiedIOR.outputRelationFor k (encoder k s hdvd domain) δ)
-        (simplifiedRbrWitMid (F := F) k)
-        (simplifiedRbrExtractor k s hdvd domain)
-        (simplifiedRbrKnowledgeStateFunction k s hdvd domain δ init impl)
-        (fun _ ↦ certifiedGammaError k s domain δ) := by
-  unfold OracleVerifier.rbrKnowledgeSoundnessAveragedWith
-  exact Verifier.rbrKnowledgeSoundnessWith_implies_rbrKnowledgeSoundnessAveragedWith
-    init impl
-    (simplifiedOracleVerifier_rbrKnowledgeSoundnessWith_rbrExtractor
-      k s hdvd domain hfull δ hδ init impl)
-
 omit [DecidableEq ι] in
 /-- Existential C6.9 RBR knowledge soundness, retained only as a
 corollary of the exact-object theorem. -/
@@ -860,32 +835,6 @@ theorem simplifiedOracleVerifier_rbrKnowledgeSoundness
     simplifiedRbrExtractor k s hdvd domain,
     simplifiedRbrKnowledgeStateFunction k s hdvd domain δ init impl,
     simplifiedOracleVerifier_rbrKnowledgeSoundnessWith_rbrExtractor
-      k s hdvd domain hfull δ hδ init impl⟩
-
-omit [DecidableEq ι] in
-/-- Existential averaged C6.9 RBR knowledge soundness, retained only as a
-corollary of the exact-object theorem. -/
-theorem simplifiedOracleVerifier_rbrKnowledgeSoundnessAveraged
-    [SampleableType F] [Nonempty ι]
-    (k s : ℕ) (hdvd : s ∣ k) [NeZero (k / s)] (domain : ι ↪ F)
-    (hfull : k / s ≤ Fintype.card ι) (δ : ℝ≥0)
-    (hδ : δ < (minRelHammingDistCode
-      (ReedSolomon.code domain (k / s) : Set (ι → F)) : ℝ≥0))
-    {σ : Type} (init : ProbComp σ)
-    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (SimplifiedIOR.oracleVerifier
-      (ι := ι) (F := F) (A := Fin s → F) (k := k)).rbrKnowledgeSoundnessAveraged
-        (WitOut := SimplifiedIOR.OutputWitness (F := F) k)
-        init impl (Spec.outputRelationFor k (encoder k s hdvd domain) δ)
-        (SimplifiedIOR.outputRelationFor k (encoder k s hdvd domain) δ)
-        (fun _ ↦ certifiedGammaError k s domain δ) := by
-  classical
-  unfold OracleVerifier.rbrKnowledgeSoundnessAveraged
-  rw [Verifier.rbrKnowledgeSoundnessAveraged_iff_exists_with]
-  exact ⟨simplifiedRbrWitMid (F := F) k,
-    simplifiedRbrExtractor k s hdvd domain,
-    simplifiedRbrKnowledgeStateFunction k s hdvd domain δ init impl,
-    simplifiedOracleVerifier_rbrKnowledgeSoundnessAveragedWith_rbrExtractor
       k s hdvd domain hfull δ hδ init impl⟩
 
 /-- Knowledge-state function paired with the executable interleaved-RS
@@ -1002,61 +951,6 @@ theorem oracleVerifier_rbrKnowledgeSoundness
   exact ⟨rbrWitMid (F := F) k, rbrExtractor k s t hdvd domain,
     rbrKnowledgeStateFunction k s t hdvd domain δ init impl,
     oracleVerifier_rbrKnowledgeSoundnessWith_rbrExtractor
-      k s t hdvd domain hfull δ hδ init impl⟩
-
-/-- Averaged round-by-round knowledge soundness for the exact named executable
-extractor and knowledge-state function, derived from the stronger
-fixed-prefix theorem without hiding either object. -/
-theorem oracleVerifier_rbrKnowledgeSoundnessAveragedWith_rbrExtractor
-    [SampleableType F] [SampleableType ι] [Nonempty ι]
-    (k s t : ℕ) (hdvd : s ∣ k) [NeZero (k / s)] (domain : ι ↪ F)
-    (hfull : k / s ≤ Fintype.card ι) (δ : ℝ≥0)
-    (hδ : δ < (minRelHammingDistCode
-      (ReedSolomon.code domain (k / s) : Set (ι → F)) : ℝ≥0))
-    {σ : Type} (init : ProbComp σ)
-    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (Spec.oracleVerifier (k := k) (t := t)
-      (encoder k s hdvd domain)).rbrKnowledgeSoundnessAveragedWith
-      (WitOut := Spec.OutputWitness) init impl
-      (Spec.outputRelationFor k (encoder k s hdvd domain) δ)
-      (Set.univ : Set ((Spec.OutputStatement ×
-        ∀ i, Spec.OutputOracleStatement i) × Spec.OutputWitness))
-      (rbrWitMid (F := F) k)
-      (rbrExtractor k s t hdvd domain)
-      (rbrKnowledgeStateFunction k s t hdvd domain δ init impl)
-      (fun i ↦ if i.1 = 0 then certifiedGammaError k s domain δ
-        else (1 - δ) ^ t) := by
-  unfold OracleVerifier.rbrKnowledgeSoundnessAveragedWith
-  exact Verifier.rbrKnowledgeSoundnessWith_implies_rbrKnowledgeSoundnessAveragedWith
-    init impl
-    (oracleVerifier_rbrKnowledgeSoundnessWith_rbrExtractor
-      k s t hdvd domain hfull δ hδ init impl)
-
-omit [DecidableEq ι] in
-/-- Existential averaged RBR knowledge soundness, retained as a compatibility
-corollary of the exact-object theorem. -/
-theorem oracleVerifier_rbrKnowledgeSoundnessAveraged
-    [SampleableType F] [SampleableType ι] [Nonempty ι]
-    (k s t : ℕ) (hdvd : s ∣ k) [NeZero (k / s)] (domain : ι ↪ F)
-    (hfull : k / s ≤ Fintype.card ι) (δ : ℝ≥0)
-    (hδ : δ < (minRelHammingDistCode
-      (ReedSolomon.code domain (k / s) : Set (ι → F)) : ℝ≥0))
-    {σ : Type} (init : ProbComp σ)
-    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (Spec.oracleVerifier (k := k) (t := t)
-      (encoder k s hdvd domain)).rbrKnowledgeSoundnessAveraged
-      (WitOut := Spec.OutputWitness) init impl
-      (Spec.outputRelationFor k (encoder k s hdvd domain) δ)
-      (Set.univ : Set ((Spec.OutputStatement ×
-        ∀ i, Spec.OutputOracleStatement i) × Spec.OutputWitness))
-      (fun i ↦ if i.1 = 0 then certifiedGammaError k s domain δ
-        else (1 - δ) ^ t) := by
-  classical
-  unfold OracleVerifier.rbrKnowledgeSoundnessAveraged
-  rw [Verifier.rbrKnowledgeSoundnessAveraged_iff_exists_with]
-  exact ⟨rbrWitMid (F := F) k, rbrExtractor k s t hdvd domain,
-    rbrKnowledgeStateFunction k s t hdvd domain δ init impl,
-    oracleVerifier_rbrKnowledgeSoundnessAveragedWith_rbrExtractor
       k s t hdvd domain hfull δ hδ init impl⟩
 
 /-- Public exact-extractor theorem for the executable interleaved-RS toy

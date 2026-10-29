@@ -128,7 +128,6 @@ both use the proof-only count.
 
 | File / declaration | Before #903 | #903 | Now | Accounting |
 |---|---:|---:|---:|---|
-| `OracleReduction/Security/RoundByRound.rbrKnowledgeSoundnessOneShot_implies_rbrKnowledgeSoundnessAveraged` | 31 | 67 | 31 | Resolved: bind reassociation once, then goal-inferred `prEvent_mono`. |
 | `OracleReduction/Composition/Sequential/Append/Completeness.completeness_iff_of_pure_verifier` | 14 | 32 | 14 | Resolved: `OptionT.lift` normal form, then `OptionT.prEvent_lift`/`prEvent_map` in one `simp only`. |
 | `OracleReduction/Composition/Sequential/Append/Completeness.append_completeness_of_prover_factorization` | 32 | 46 | 28 | Resolved: goal-inferred `mul_le_prEvent_bind_of_forall`; the `q₁.2 → stage 2 → q₂.2` state handoff is unchanged. |
 | `OracleReduction/Composition/Sequential/GuardedCompleteness.append_completeness_of_guarded_prover_factorization` | 27 | 41 | 23 | Resolved: same call-site refactor. |
@@ -141,10 +140,8 @@ both use the proof-only count.
 | `Commitments/Functional/KZG/Binding.binding_game_ext_eq_binding_game` | 146 | 153 | 146 | Resolved: reverse `prEvent_map` on the projected condition, then `OptionT.ext` on the game; no separate program-equality statement. |
 | `OracleReduction/Composition/Sequential/Append/Completeness.completeness_of_pure_states` | 9 | 15 | 6 | Resolved: goal-inferred bind lower bound. |
 | `OracleReduction/Composition/Sequential/GuardedCompleteness.completeness_of_guarded_states` | 9 | 15 | 6 | Resolved: same. |
-| `OracleReduction/Security/RbrGame.prEvent_simulateQ_addLift_getChallenge_bind_le` | 18 | 24 | 9 | Resolved: inferred arguments to bind-event monotonicity. |
 | `OracleReduction/Security/RbrGame.prEvent_optionT_simulateQ_addLift_prefix_getChallenge_bind_le` | 46 | 49 | 13 | Resolved. |
 | `OracleReduction/Security/RbrGame.prEvent_optionT_simulateQ_addLift_getChallenge_bind_some_le` | 26 | 28 | 13 | Resolved. |
-| `OracleReduction/Security/Implications.rbrKnowledgeSoundnessAveraged_implies_rbrSoundnessAveraged` | 128 | 133 | 98 | Resolved: reassociation and state unfolding performed once. |
 
 Counts are proof-body lines from the final `:= by` line, as defined above. The Lean 4.34
 repairs that #903 made outside probability proofs are also back at or below their pre-#903 size:
@@ -260,7 +257,7 @@ multi-let files, and every one fails with a 20000-heartbeat typeclass timeout. T
   `ToyProblem/SoundnessBounds.exists_winningSetFor_ncard_ge_of_lambda_lt_card` grow only because of
   line wrapping around longer native lemma names or a new sampler binder.
 
-**D3: retirement-gate explicit terms (5 rows, +1 each).** `Verifier.id_rbrSoundnessAveraged` keeps
+**D3: retirement-gate explicit terms (5 rows, +1 each).** `Verifier.id_rbrSoundness` keeps
 `intro …; exact Fin.elim0 i.1` rather than `simp [Verifier.id]`, and the four
 `OracleComp.support_nonempty` applications (`TranscriptTree/Basic.not_isAccepting_of_no_outputs`,
 `support_init_nonempty_of_prob_one`, `not_accepting_of_failure`, and

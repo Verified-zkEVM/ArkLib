@@ -204,7 +204,7 @@ Ordinary soundness and knowledge soundness use the guarded interface in
 \texttt{Append/Security.lean}, with suffix bounds valid from every deterministic shared state
 and pure extractors for knowledge soundness. Round-by-round knowledge soundness uses
 \texttt{Append/GuardedRoundByRound.lean} for binary composition and
-\texttt{Sequential/GuardedRoundByRound.lean} for finite chains. Both require fixed-prefix
+\texttt{Sequential/GuardedRoundByRound.lean} for finite chains. Both require round-by-round
 component bounds; binary composition requires a guarded first verifier, and finite-chain
 composition requires every component verifier to be guarded.
 
@@ -260,9 +260,7 @@ composition requires every component verifier to be guarded.
     \uses{def:knowledge_soundness, def:verifier_append}
 \end{theorem}
 
-Prover-averaged component guarantees alone do not compose: queries to the shared oracle can
-correlate a later round with the earlier transcript. Fixed-prefix guarantees and a guarded first
-verifier give the following composition theorem.
+Round-by-round guarantees and a guarded first verifier give the following composition theorem.
 
 \begin{theorem}[Round-by-Round Knowledge Soundness under a Guarded First Verifier]
     \label{thm:rbr_knowledge_soundness_append_guarded}

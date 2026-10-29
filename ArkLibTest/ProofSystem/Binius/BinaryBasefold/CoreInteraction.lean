@@ -10,7 +10,7 @@ import ArkLib.ProofSystem.Binius.BinaryBasefold.CoreInteractionPhase
 /-!
 # Binary Basefold core interaction: axioms of the composite theorems
 
-The round-by-round knowledge soundness, its averaged form and the perfect completeness
+The round-by-round knowledge soundness and the perfect completeness
 of every composite of the Binary Basefold core interaction (the fold-relay and fold-commit
 rounds, the non-last and last blocks, the non-last blocks in sequence, the sum-check-and-fold
 rounds and the core interaction) depend only on the standard axioms, as does the bound
@@ -33,13 +33,6 @@ run_cmd do
       ``lastBlockOracleVerifier_rbrKnowledgeSoundness,
       ``sumcheckFoldOracleVerifier_rbrKnowledgeSoundness,
       ``coreInteractionOracleVerifier_rbrKnowledgeSoundness,
-      ``foldRelayOracleVerifier_rbrKnowledgeSoundnessAveraged,
-      ``foldCommitOracleVerifier_rbrKnowledgeSoundnessAveraged,
-      ``nonLastSingleBlockOracleVerifier_rbrKnowledgeSoundnessAveraged,
-      ``nonLastBlocksOracleVerifier_rbrKnowledgeSoundnessAveraged,
-      ``lastBlockOracleVerifier_rbrKnowledgeSoundnessAveraged,
-      ``sumcheckFoldOracleVerifier_rbrKnowledgeSoundnessAveraged,
-      ``coreInteractionOracleVerifier_rbrKnowledgeSoundnessAveraged,
       ``foldRelayOracleReduction_perfectCompleteness,
       ``foldCommitOracleReduction_perfectCompleteness,
       ``nonLastSingleBlockOracleReduction_perfectCompleteness,

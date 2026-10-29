@@ -38,8 +38,7 @@ ArkLib's `OracleReduction` framework, following the conventions used by
 The `prover` / `verifier` / `oracleReduction` triple is complete.
 Completeness (C6.2, `oracleReduction_perfectCompleteness`) and
 round-by-round knowledge soundness (L6.8,
-`oracleVerifier_rbrKnowledgeSoundness`, with
-`oracleVerifier_rbrKnowledgeSoundnessAveraged` as its prover-averaged corollary) are
+`oracleVerifier_rbrKnowledgeSoundness`) are
 **fully proven** here. Plain
 knowledge soundness (L6.6, `oracleVerifier_knowledgeSoundness_winningSetUpperBound`) is **fully
 proven** in the sibling file `Spec/KnowledgeSoundness.lean`. The generic theorem
@@ -435,8 +434,8 @@ The honest-completeness, knowledge-soundness, and round-by-round
 knowledge-soundness lemmas below are all stated against these
 oracle-flavour objects: completeness via
 `OracleReduction.perfectCompleteness`, L6.6 via
-`OracleVerifier.knowledgeSoundness`, and L6.8 via the fixed-prefix
-`OracleVerifier.rbrKnowledgeSoundness`, with a prover-averaged corollary. The latter two are
+`OracleVerifier.knowledgeSoundness`, and L6.8 via
+`OracleVerifier.rbrKnowledgeSoundness`. The latter two are
 definitionally `toVerifier.knowledgeSoundness` /
 `toVerifier.rbrKnowledgeSoundness`, so the oracle-flavour statements
 carry no extra proof burden over the bundled-input forms.
@@ -446,11 +445,10 @@ failure (`extractedWitIn? = none`) is scored against the prover; an
 always-failing `OptionT` extractor therefore certifies nothing, and none of the
 knowledge-soundness statements below can be discharged vacuously through it.
 The generic existence theorems (`oracleVerifier_knowledgeSoundness_winningSetUpperBound`,
-`oracleVerifier_rbrKnowledgeSoundness` with its averaged corollary
-`oracleVerifier_rbrKnowledgeSoundnessAveraged`, and the alphabet-generic
+`oracleVerifier_rbrKnowledgeSoundness`, and the alphabet-generic
 `verifier_knowledgeSoundness` in `Spec/SimplifiedIOR.lean`) use the classical
 `chooseRelaxedWitness` selector; `Impl/IRS.lean` supplies the principal
-executable path — exact named straightline and fixed-prefix and prover-averaged RBR
+executable path — exact named straightline and RBR
 extractors for both the three-round protocol and the virtual-oracle reduction.
 -/
 
@@ -1396,33 +1394,6 @@ theorem oracleVerifier_rbrKnowledgeSoundness
       (transcript ⟨0, Nat.zero_lt_succ _⟩)
       (transcript ⟨1, Nat.succ_lt_succ (Nat.zero_lt_succ _)⟩)
   · exact absurd hi (by omega)
-
-omit [DecidableEq ι] [Fintype A] in
-/-- Prover-averaged round-by-round knowledge soundness, a corollary of the stronger fixed-prefix
-theorem. -/
-theorem oracleVerifier_rbrKnowledgeSoundnessAveraged
-    [SampleableType F] [SampleableType ι] [Nonempty ι] [Finite A]
-    {σ : Type} (init : ProbComp σ)
-    (impl : QueryImpl []ₒ (StateT σ ProbComp))
-    (C : ModuleCode ι F A) (δ : ℝ≥0)
-    (encode : (Fin k → F) →ₗ[F] (ι → A))
-    (hinj : Function.Injective encode)
-    (hC : Set.range encode = (C : Set (ι → A)))
-    (hδ_pos : 0 < δ)
-    (hδ_lt_min : δ <
-      (minRelHammingDistCode (C : Set (ι → A)) : ℝ≥0)) :
-    (oracleVerifier (k := k) (t := t)
-      (encode : (Fin k → F) → (ι → A))).rbrKnowledgeSoundnessAveraged
-      (WitOut := OutputWitness) init impl
-      (outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ)
-      (Set.univ : Set ((OutputStatement × ∀ i, OutputOracleStatement i) ×
-        OutputWitness))
-      (fun i ↦ if i.1 = 0 then certifiedGammaError C δ else (1 - δ) ^ t) := by
-  let _ := Fintype.ofFinite A
-  unfold OracleVerifier.rbrKnowledgeSoundnessAveraged
-  exact Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged
-    init impl (oracleVerifier_rbrKnowledgeSoundness k t init impl C δ encode
-      hinj hC hδ_pos hδ_lt_min)
 
 end Protocol
 

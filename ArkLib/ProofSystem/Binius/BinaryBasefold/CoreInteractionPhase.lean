@@ -28,8 +28,7 @@ sends the constant `c := f⁽ˡ⁾(0, …, 0)` and the verifier checks `s_ℓ = 
 * `coreInteractionOracleVerifier_rbrKnowledgeSoundness`: round-by-round
   knowledge soundness from the round relation at round `0` to the final sum-check output
   relation, with error `coreInteractionOracleRbrKnowledgeError`; guarded by the checks of the
-  sum-check-and-fold rounds (`sumcheckFoldOracleVerifierGuardedForm`). Its averaged form is
-  `coreInteractionOracleVerifier_rbrKnowledgeSoundnessAveraged`.
+  sum-check-and-fold rounds (`sumcheckFoldOracleVerifierGuardedForm`).
 * `sumcheckFoldKnowledgeError_le`: the per-challenge errors of the sum-check-and-fold rounds sum
   to at most `2ℓ / |L| + 2^(ℓ + 𝓡) / |L|`. Each challenge carries the Schwartz–Zippel term
   `2 / |L|` and the fold bad-event term `|S⁽ᵏ⁾| / |L|` of its round, `k` the end of its block; the
@@ -148,21 +147,6 @@ theorem coreInteractionOracleVerifier_rbrKnowledgeSoundness :
       (𝓑 := 𝓑) (multpoly := multiplier))
     (sumcheckFoldOracleVerifier_rbrKnowledgeSoundness 𝔽q β)
     (finalSumcheckOracleVerifier_rbrKnowledgeSoundness 𝔽q β init impl)
-
-omit [DecidableEq 𝔽q] in
-/-- Round-by-round knowledge soundness of the core interaction: the averaged form of
-`coreInteractionOracleVerifier_rbrKnowledgeSoundness`. -/
-theorem coreInteractionOracleVerifier_rbrKnowledgeSoundnessAveraged :
-    (coreInteractionOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (𝓑 := 𝓑)).rbrKnowledgeSoundnessAveraged init impl
-      (pSpec := pSpecCoreInteraction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-      (relIn := roundRelation (multpoly := multiplier) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
-      (relOut := finalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-      (rbrKnowledgeError := coreInteractionOracleRbrKnowledgeError 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
-  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
-    (coreInteractionOracleVerifier_rbrKnowledgeSoundness 𝔽q β)
 
 /-! ### The total round-by-round knowledge error of the sum-check-and-fold rounds -/
 

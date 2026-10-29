@@ -123,8 +123,8 @@ The agreement bound only needs to hold for the pairs $f(x, \mathsf{o}), g(x, \ma
 \end{definition}
 
 \begin{theorem}[RandomQuery Knowledge Soundness from Distance]
-    If the oracle interface on $M$ has distance bound $d$, then the RandomQuery oracle reduction satisfies prover-averaged round-by-round knowledge soundness with error $\frac{d}{|\mathsf{Query}|}$.
-    \lean{RandomQuery.oracleVerifier_rbrKnowledgeSoundnessAveraged}
+    If the oracle interface on $M$ has distance bound $d$, then the RandomQuery oracle reduction satisfies round-by-round knowledge soundness with error $\frac{d}{|\mathsf{Query}|}$.
+    \lean{RandomQuery.oracleVerifier_rbrKnowledgeSoundness_of_distanceLE}
     \uses{def:randomquery_oracle_reduction, def:oracle_distance}
 \end{theorem}
 

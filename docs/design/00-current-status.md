@@ -330,7 +330,7 @@ The `OracleReduction` layer uses `ProtocolSpec n`. Its `Append/Security.lean` in
 ordinary soundness and knowledge soundness under a guarded first verifier and suffix bounds valid
 from every deterministic shared oracle state, with pure extractors for knowledge soundness.
 Round-by-round knowledge soundness uses `Append/GuardedRoundByRound.lean` for binary composition
-and `Sequential/GuardedRoundByRound.lean` for finite chains. Both require fixed-prefix component
+and `Sequential/GuardedRoundByRound.lean` for finite chains. Both require round-by-round component
 bounds; the binary theorem requires a guarded first verifier, and the finite-chain theorem requires
 every component to be guarded. The full sum-check protocol satisfies these guarded composition
 requirements.

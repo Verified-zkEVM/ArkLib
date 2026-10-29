@@ -517,7 +517,7 @@ noncomputable def oracleVerifierGuardedForm :
       Verifier.GuardedForm.ofEq (SingleRound.oracleVerifier_eq_verifier R n deg D oSpec i).symm
         (SingleRound.verifierGuardedForm R n deg D oSpec i))
 
-/-- Fixed-prefix knowledge soundness with error `deg / |R|` at every challenge. -/
+/-- Knowledge soundness with error `deg / |R|` at every challenge. -/
 theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
     (oracleVerifier R deg D n oSpec).toVerifier.rbrKnowledgeSoundness init impl
       (relationRound R n deg D 0) (relationRound R n deg D (.last n))
@@ -531,15 +531,6 @@ theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
       (SingleRound.verifierGuardedForm R n deg D oSpec i))
     (fun _ _ => (deg : ℝ≥0) / Fintype.card R)
     (fun i => SingleRound.oracleVerifier_rbrKnowledgeSoundness i)
-
-/-- Prover-averaged round-by-round knowledge soundness with error `deg / |R|` per challenge for
-the full sum-check protocol, a corollary of the fixed-prefix theorem. -/
-theorem oracleVerifier_rbrKnowledgeSoundnessAveraged [Fintype R] [IsDomain R] :
-    (oracleVerifier R deg D n oSpec).rbrKnowledgeSoundnessAveraged init impl
-      (relationRound R n deg D 0) (relationRound R n deg D (.last n))
-      (fun _ => (deg : ℝ≥0) / (Fintype.card R)) :=
-  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
-    (oracleVerifier_rbrKnowledgeSoundness R deg D n oSpec)
 
 /-- Ordinary knowledge soundness with the sum of the per-challenge errors. -/
 theorem oracleVerifier_knowledgeSoundness [Fintype R] [IsDomain R] :
