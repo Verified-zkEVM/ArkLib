@@ -18,7 +18,6 @@ public import ArkLib.Commitments.Functional.Hachi.QuadEval.Basic
 public import ArkLib.Commitments.Functional.Hachi.RingSwitch.Basic
 public import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Basic
 public import ArkLib.Commitments.Functional.Hachi.Sumcheck.Basic
-public import ArkLib.Commitments.Functional.Hachi.Recursion.Basic
 
 /-!
 # Hachi: a Lattice-Based Multilinear Polynomial Commitment
@@ -36,11 +35,11 @@ and perfect completeness. `Composition.lean` chains the soundness certificates,
 `HonestChain.lean` the honest provers, and `Correctness.lean` packages the result as a
 `Commitment.Scheme` with perfect correctness.
 
-Two scope facts a reader should have up front. The recursive opening of [NOZ26] §4.5 —
-`Recursion/` and the `opening` field of `Commitment.lean`'s `hachi` — is outside this
-development; the complete scheme is the nonrecursive `hachiNonrecursive`. Its composed
-completeness and correctness use proved state-aware composition: pure verifier forms for the
-prefix and guarded forms for sumcheck, with suffix completeness from every shared oracle state.
+The scheme is the nonrecursive `hachiNonrecursive`: one iteration closed by revealing the
+reduced witness. The recursive opening of [NOZ26] §4.5 is not formalized; the reason is recorded
+in `docs/kb/audits/noz26-recursion-z-packing.md`. The composed completeness and correctness use
+proved state-aware composition: pure verifier forms for the prefix and guarded forms for
+sumcheck, with suffix completeness from every shared oracle state.
 
 ## Folder structure
 
@@ -69,8 +68,6 @@ re-export, and this file is the umbrella for the whole development.
   sumcheck loop, each with its own `Completeness.lean`.
 * `EndPiece/` (§4.3, closing) — the terminal link: the prover reveals the reduced witness and the
   guarded verifier checks the evaluation claim against it directly.
-* `Recursion/` (§4.5) — the partial-evaluation, packing, and trace-handoff adapters of the
-  recursive opening. Outside the completed development; see `Recursion/Basic.lean`.
 * `Composition.lean` — the composed soundness certificate: the `iteration` (the nine chained
   subprotocols) and `evaluation` = iteration ⧺ end-piece.
 * `Commitment.lean` — the `Commitment.Scheme` interface: the multilinear eval oracle, honest
