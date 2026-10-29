@@ -41,8 +41,13 @@ knowledge-soundness, which matches ArkLib's long-term protocol ambitions.
 ## Known Divergences From ArkLib
 
 - ArkLib has not yet formalized a full `LPS24`-style knowledge-soundness development.
-- The current AGM file focuses on oracle interfaces, group tables, and adversary execution
-  structure rather than on the paper's end results.
+- `ArkLib/AGM/Basic.lean` contains only `AGM.GroupRepresentation`, with one `ZMod p` exponent
+  per basis index in a prime-order group and the product equation, and the fully proved lemmas
+  `GroupRepresentation.pow_val_add` and `GroupRepresentation.modulus_pos`.
+- ArkLib has no group-oracle model, oracle interface, group table, or adversary execution for the
+  AGM. Generic and algebraic group models are developed in VCVio
+  (`VCVio/CryptoFoundations/GroupModel/`); relating `GroupRepresentation` to VCVio's typed
+  algebraic points is planned.
 
 ## Open Formalization Gaps
 
