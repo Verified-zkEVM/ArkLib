@@ -153,14 +153,14 @@ theorem finite_frobeniusPowerRegularBadChallenges_card_le [IsAlgClosed E]
     have hrec' : rationalTaylorPolynomial center (challengeSpecialization Q z) K
         (fun j ↦ (frobeniusPowerGraphMap center (p ^ e)
           (fun t ↦ (P t).map ι) (some j)).eval z) =
-        expand E (p ^ e) (powerBatchedPolynomial (fun t ↦ (P t).map ι) (z ^ (p ^ e))) := by
+        expand E (p ^ e) (Polynomial.powerBatch (fun t ↦ (P t).map ι) (z ^ (p ^ e))) := by
       have hchallenge : challengeSpecialization Q z =
           MvPolynomial.map (Polynomial.evalRingHom z) Q := by
         unfold challengeSpecialization
         congr 1
       rw [hchallenge]
       exact hrec
-    have hwitness : witness z = powerBatchedPolynomial
+    have hwitness : witness z = Polynomial.powerBatch
         (fun t ↦ (P t).map ι) (z ^ (p ^ e)) := by
       apply Polynomial.expand_injective (pow_pos (expChar_pos E p) e)
       rw [← hrecWitness, hrec']
