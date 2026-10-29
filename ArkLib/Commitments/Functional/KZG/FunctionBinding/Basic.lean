@@ -12,9 +12,11 @@ public import ArkLib.Commitments.Functional.KZG.FunctionBinding.DegreeConflict
 /-!
 # Function Binding for the KZG Polynomial Commitment Scheme
 
-This file proves function binding for the KZG commitment scheme under the ARSDH assumption. The
-proof follows the reduction strategy from [CGKY25], splitting the extraction into the evaluation
-binding and interpolation branches used in the paper proof.
+This file proves `function_binding_reduces_to_arsdh`, bounding each function-binding adversary's
+advantage by its reduction's ARSDH success probability. The proof follows the reduction strategy
+from [CGKY25], splitting the extraction into evaluation binding and interpolation branches.
+The corollary `function_binding` requires the reduction to belong to an explicit hardness
+adversary class; its strength depends on the class one can justify.
 
 ## Notation
 
@@ -619,32 +621,33 @@ lemma arsdh_game_eq {n L : ℕ} {AuxState : Type} [SampleableType G₁]
         funext resultPairs
         cases resultPairs <;> rfl)
 
-/-- The ARSDH experiment is bounded by the ARSDH error -/
+/-- The ARSDH experiment is bounded by the error for reductions in the assumed class. -/
 lemma arsdh_error_bound {n L : ℕ} {AuxState : Type} [SampleableType G₁]
-    (hn : 1 ≤ n) (arsdhError : ℝ≥0)
+    (hn : 1 ≤ n)
+    {Adv : Set (Groups.arsdhAdversary n (G₁ := G₁) (G₂ := G₂) (p := p))}
+    (arsdhError : ℝ≥0)
     (hArsdh : Groups.arsdhAssumption (G₁ := G₁) (G₂ := G₂)
-      (g₁ := g₁) (g₂ := g₂) n arsdhError)
-    (adversary : KzgFunctionBindingAdversary p G₁ G₂ n unifSpec L AuxState) :
+      (g₁ := g₁) (g₂ := g₂) n Adv arsdhError)
+    (adversary : KzgFunctionBindingAdversary p G₁ G₂ n unifSpec L AuxState)
+    (hAdv : reduction (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
+      L hn AuxState adversary ∈ Adv) :
     Groups.arsdhExperiment (g₁ := g₁) (g₂ := g₂) n (reduction (g₁ := g₁) (g₂ := g₂)
       (pairing := pairing) L hn AuxState adversary)
     ≤ arsdhError := by
-  simp_all [Groups.arsdhAssumption]
+  exact hArsdh _ hAdv
 
-omit [DecidableEq G₁] in
-/-- The KZG scheme satisfies function binding provided ARSDH holds. -/
-theorem function_binding {g₁ : G₁} {g₂ : G₂}
+/-- Each function-binding adversary yields an explicit ARSDH adversary, `reduction … adversary`,
+whose success probability upper-bounds its function-binding advantage. This reduction inequality
+holds without a hardness assumption. -/
+theorem function_binding_reduces_to_arsdh {g₁ : G₁} {g₂ : G₂}
     (L : ℕ) (hn : 1 ≤ n) (hp : p ≥ n + 2) (hg₁ : g₁ ≠ 1)
-    (hpair : pairing g₁ g₂ ≠ 0)
-    [SampleableType G₁] (arsdhError : ℝ≥0)
-    (hArsdh : Groups.arsdhAssumption (G₁ := G₁) (G₂ := G₂) (g₁ := g₁) (g₂ := g₂)
-     n arsdhError) :
-    Commitment.functionBinding (L := L) (init := pure ∅) (impl := randomOracle)
-      (hn := rfl)
-      (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)) arsdhError := by
-  let := Classical.decEq G₁
+    (hpair : pairing g₁ g₂ ≠ 0) [SampleableType G₁] (AuxState : Type)
+    (adversary : KzgFunctionBindingAdversary p G₁ G₂ n unifSpec L AuxState) :
+    Commitment.functionBindingExperiment (L := L) (init := pure ∅) (impl := randomOracle)
+      rfl AuxState (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)) adversary
+    ≤ Groups.arsdhExperiment (g₁ := g₁) (g₂ := g₂) n
+      (reduction (g₁ := g₁) (g₂ := g₂) (pairing := pairing) L hn AuxState adversary) := by
   let scheme := kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
-  simp only [Commitment.functionBinding]
-  intro AuxState adversary
   let game_ext := functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary scheme
   calc _
     _ = Pr{let result ← (game_ext)}[(functionBindingCondExt n L) result] :=
@@ -658,8 +661,30 @@ theorem function_binding {g₁ : G₁} {g₂ : G₂}
     _ = Groups.arsdhExperiment (g₁ := g₁) (g₂ := g₂) n
       (reduction (g₁ := g₁) (g₂ := g₂) (pairing := pairing) L hn AuxState adversary) :=
       arsdh_game_eq (g₁ := g₁) (g₂ := g₂) (pairing := pairing) hn adversary
-    _ ≤ arsdhError := arsdh_error_bound (g₁ := g₁) (g₂ := g₂) (pairing := pairing) hn
-      arsdhError hArsdh adversary
+
+/-- Each function-binding adversary whose reduction belongs to `Adv` has advantage at most
+`arsdhError`, provided ARSDH holds over `Adv`.
+
+This follows by composing `function_binding_reduces_to_arsdh` with the assumption's bound
+on the reduction's success probability. -/
+theorem function_binding {g₁ : G₁} {g₂ : G₂}
+    (L : ℕ) (hn : 1 ≤ n) (hp : p ≥ n + 2) (hg₁ : g₁ ≠ 1)
+    (hpair : pairing g₁ g₂ ≠ 0) [SampleableType G₁]
+    {Adv : Set (Groups.arsdhAdversary n (G₁ := G₁) (G₂ := G₂) (p := p))}
+    (arsdhError : ℝ≥0)
+    (hArsdh : Groups.arsdhAssumption (G₁ := G₁) (G₂ := G₂) (g₁ := g₁) (g₂ := g₂)
+      n Adv arsdhError)
+    (AuxState : Type)
+    (adversary : KzgFunctionBindingAdversary p G₁ G₂ n unifSpec L AuxState)
+    (hAdv : reduction (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
+      L hn AuxState adversary ∈ Adv) :
+    Commitment.functionBindingExperiment (L := L) (init := pure ∅) (impl := randomOracle)
+      rfl AuxState (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)) adversary
+    ≤ arsdhError := by
+  exact (function_binding_reduces_to_arsdh (pairing := pairing)
+    L hn hp hg₁ hpair AuxState adversary).trans
+    (arsdh_error_bound (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
+      hn arsdhError hArsdh adversary hAdv)
 
 
 end FunctionBinding
