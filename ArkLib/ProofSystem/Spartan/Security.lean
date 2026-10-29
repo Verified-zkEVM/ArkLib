@@ -12,8 +12,10 @@ public import ArkLib.ProofSystem.Spartan.Error
 # Knowledge soundness of Spartan
 
 The fixed-prefix certificate composes the named stage extractors. Its input relation is the
-original R1CS relation. The guarded bridge folds this extractor along the actual transcript;
-the only nontrivial input witness is recovered from the attached witness table.
+original R1CS relation. The guarded bridge folds this extractor along the actual transcript.
+`straightlineExtractor` is the executable endpoint: it recovers the input witness from the
+attached witness table and equals the certified fold on every transcript. The semantic
+sumcheck certificates and knowledge predicates remain noncomputable.
 -/
 
 @[expose] public section
@@ -110,6 +112,52 @@ noncomputable def rbrExtractor :=
     (fun i => (Assembly.stage (R := R) sz oSpec i).verifier.toVerifier)
     (Assembly.stageGuardedForm (R := R) sz oSpec) (Assembly.extractor (R := R) sz oSpec init impl)
 
+omit [DecidableEq R] [Fintype R] [SampleableType R] in
+/-- The first message of the assembled transcript is the attached padded witness table. -/
+theorem firstMessage_type (h : 0 < Fin.vsum (Assembly.length sz)) :
+    (pSpec (R := R) sz).Type ⟨0, h⟩ =
+      R1CS.Witness R (PublicParams.forSize sz).toSizeR1CS :=
+  Fin.vflatten_embedSum (fun i => (Assembly.stageSpec (R := R) sz i).Type)
+    0 ⟨0, by change 0 < 1; decide⟩
+
+/-- Recover the original R1CS witness by restricting the first transcript message, the
+attached padded witness table. This executable extractor makes no oracle queries. -/
+def straightlineExtractor : Extractor.Straightline oSpec
+    (R1CS.Statement R sz × (∀ i, R1CS.OracleStatement R sz i))
+    (R1CS.Witness R sz) Unit (pSpec (R := R) sz) :=
+  fun _ _ tr _ _ => pure (pullbackWitness sz
+    (cast (firstMessage_type (R := R) sz _) (tr ⟨0, by change 0 < 1 + _; omega⟩)))
+
+private theorem foldPrefix_eq_pullbackWitness
+    (s : R1CS.Statement R sz × (∀ i, R1CS.OracleStatement R sz i))
+    (k : Fin (Fin.vsum (Assembly.length sz) + 1)) (hk : 0 < k.val)
+    (tr : (pSpec (R := R) sz).Transcript k)
+    (w : Extractor.RoundByRound.seqComposeWitMid (Assembly.Witness (R := R) sz)
+      (Assembly.intermediateWitness (R := R) sz oSpec init impl) k) :
+    (rbrExtractor (R := R) sz oSpec init impl).foldPrefix s k tr w =
+      pullbackWitness sz
+        (cast (firstMessage_type (R := R) sz (lt_of_lt_of_le hk k.is_le)) (tr ⟨0, hk⟩)) := by
+  induction k using Fin.induction with
+  | zero => simp at hk
+  | succ k ih =>
+    erw [Extractor.RoundByRound.foldPrefix_succ]
+    by_cases hzero : k.val = 0
+    · rcases k with ⟨k, hk'⟩
+      change k = 0 at hzero
+      subst k
+      rfl
+    · exact ih (by change 0 < k.val; omega) _ _
+
+/-- For every transcript, the certified backward fold equals the executable extractor. -/
+theorem foldExtractor_eq_straightlineExtractor :
+    (rbrExtractor (R := R) sz oSpec init impl).foldExtractor =
+      straightlineExtractor (R := R) sz oSpec := by
+  funext s w tr proverLog verifierLog
+  unfold Extractor.RoundByRound.foldExtractor straightlineExtractor
+  congr 1
+  exact foldPrefix_eq_pullbackWitness sz oSpec init impl s (Fin.last _)
+    (by change 0 < 1 + _; omega) tr _
+
 /-- The composed knowledge invariant, retaining every earlier rejecting guard.
 The constituent guards and sumcheck certificate choices are noncomputable. -/
 noncomputable def knowledgeStateFunction :=
@@ -188,6 +236,29 @@ theorem knowledgeSoundnessWith :
   exact OracleVerifier.knowledgeSoundnessWith_of_rbrKnowledgeSoundnessWorstCaseWith_of_guarded
     (guardedForm (R := R) sz oSpec) (knowledgeStateFunction (R := R) sz oSpec init impl)
     (rbrKnowledgeSoundnessWorstCaseWith (R := R) sz oSpec init impl)
+
+/-- The executable first-message extractor is knowledge sound for the original R1CS relation
+with the exact additive error `(4s + 2t + 1) / |R|`. -/
+theorem knowledgeSoundnessWith_straightlineExtractor :
+    (oracleReduction (R := R) sz oSpec).verifier.knowledgeSoundnessWith init impl
+      (WitnessAttachment.relIn sz) (Terminal.relOut params)
+      (straightlineExtractor (R := R) sz oSpec)
+      (totalError (params).ℓ_m (params).ℓ_n (Fintype.card R)) := by
+  rw [← foldExtractor_eq_straightlineExtractor sz oSpec init impl]
+  exact knowledgeSoundnessWith (R := R) sz oSpec init impl
+
+/-- The executable first-message extractor also satisfies the knowledge-error bound clipped
+at one. -/
+theorem knowledgeSoundnessWith_straightlineExtractor_clipped :
+    (oracleReduction (R := R) sz oSpec).verifier.knowledgeSoundnessWith init impl
+      (WitnessAttachment.relIn sz) (Terminal.relOut params)
+      (straightlineExtractor (R := R) sz oSpec)
+      (min 1 (totalError (params).ℓ_m (params).ℓ_n (Fintype.card R))) := by
+  intro Aux stmt aux prover
+  have h := knowledgeSoundnessWith_straightlineExtractor (R := R) sz oSpec init impl
+    Aux stmt aux prover
+  rw [ENNReal.coe_min, ENNReal.coe_one]
+  exact le_min (prEvent_le_one _) h
 
 /-- Spartan is knowledge sound for the original R1CS relation with additive error
 `(4s + 2t + 1) / |R|`. -/

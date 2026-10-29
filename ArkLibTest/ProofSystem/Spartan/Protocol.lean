@@ -55,12 +55,13 @@ def accepts : Bool :=
   ((Spartan.oracleReduction size emptySpec).verifier.toVerifier.run
     (publicInput, matrices) honestRun.1).run.runEmpty.isSome
 
-/-- Recover the original witness from the actual first message. -/
-def recoveredWitness : R1CS.Witness F size :=
-  pullbackWitness size (honestRun.1 ⟨0, by decide⟩)
+/-- Run the certified executable extractor on the actual honest transcript. -/
+def recoveredWitness : Option (R1CS.Witness F size) :=
+  ((Spartan.straightlineExtractor size emptySpec)
+    (publicInput, matrices) () honestRun.1 [] []).run.runEmpty
 
-/-- info: (true, 2) -/
+/-- info: (true, some 2) -/
 #guard_msgs in
-#eval (accepts, (recoveredWitness 0).val)
+#eval (accepts, recoveredWitness.map fun w => (w 0).val)
 
 end SpartanTest.Protocol
