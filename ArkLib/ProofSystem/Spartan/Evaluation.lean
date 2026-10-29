@@ -22,13 +22,6 @@ open MvPolynomial Realization
 
 variable {R : Type} [CommRing R] (pp : PublicParams)
 
-/-- The first sumcheck's terminal claim and retained public input. -/
-structure Statement where
-  x : R1CS.Statement R pp.toSizeR1CS
-  τ : Fin pp.ℓ_m → R
-  r_x : Fin pp.ℓ_m → R
-  e : R
-
 /-- The three honest row-product evaluations, computed from the retained tables. -/
 def values (stmt : Statement (R := R) pp)
     (oracles : ∀ i, OracleStatement (R := R) pp i) : R1CS.MatrixIdx → R :=

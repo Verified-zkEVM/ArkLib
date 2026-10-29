@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.ProofSystem.Spartan.Algebra
+public import ArkLib.ProofSystem.Spartan.Context
 
 /-!
 # Executable Spartan polynomial evaluations
@@ -104,14 +105,6 @@ def terminalValue (x : R1CS.Statement R pp.toSizeR1CS) (r_y : Fin pp.ℓ_n → R
     (ρ values : R1CS.MatrixIdx → R) (wValue : R) : R :=
   (ρ .A * values .A + ρ .B * values .B + ρ .C * values .C) *
     assignmentEval pp x r_y wValue
-
-/-- Public data of the terminal check. -/
-structure FinalStatement where
-  x : R1CS.Statement R pp.toSizeR1CS
-  r_x : Fin pp.ℓ_m → R
-  r_y : Fin pp.ℓ_n → R
-  ρ : R1CS.MatrixIdx → R
-  e : R
 
 /-- The retained matrix and witness table family. -/
 def OracleStatement : R1CS.MatrixIdx ⊕ Fin 1 → Type :=

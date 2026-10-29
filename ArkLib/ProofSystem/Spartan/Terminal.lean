@@ -48,8 +48,7 @@ variable {ι : Type} (oSpec : OracleSpec ι) [DecidableEq R]
 
 /-- Compute the second virtual evaluation with three matrix queries and one witness query. -/
 def queryValue (stmt : FinalStatement (R := R) pp) :
-    OracleComp
-      (oSpec + ([OracleStatement (R := R) pp]ₒ + [(!p[] : ProtocolSpec 0).Message]ₒ)) R := do
+    OracleComp [OracleStatement (R := R) pp]ₒ R := do
   let a ← query (spec := [OracleStatement (R := R) pp]ₒ) ⟨.inl .A, (stmt.r_x, stmt.r_y)⟩
   let b ← query (spec := [OracleStatement (R := R) pp]ₒ) ⟨.inl .B, (stmt.r_x, stmt.r_y)⟩
   let c ← query (spec := [OracleStatement (R := R) pp]ₒ) ⟨.inl .C, (stmt.r_x, stmt.r_y)⟩
@@ -61,7 +60,8 @@ def queryValue (stmt : FinalStatement (R := R) pp) :
 def finalVerifier : OracleVerifier oSpec (FinalStatement (R := R) pp)
     (OracleStatement (R := R) pp) Unit (OracleStatement (R := R) pp) !p[] where
   verify stmt _ := do
-    let value ← queryValue pp oSpec stmt
+    let value ← (liftM (queryValue pp stmt) : OracleComp
+      (oSpec + ([OracleStatement (R := R) pp]ₒ + [(!p[] : ProtocolSpec 0).Message]ₒ)) R)
     guard (value = stmt.e)
     return ()
   outputOracle := .inl (CheckClaim.outputEmbedding (OracleStatement (R := R) pp))
@@ -98,9 +98,8 @@ theorem materializeOutput (o : ∀ i, OracleStatement (R := R) pp i)
 omit [DecidableEq R] in
 /-- The query program evaluates the semantic second virtual polynomial. -/
 theorem queryValue_realizes (stmt : FinalStatement (R := R) pp)
-    (o : ∀ i, OracleStatement (R := R) pp i)
-    (messages : (!p[] : ProtocolSpec 0).Messages) :
-    simulateQ (simOracle2 oSpec o messages) (queryValue pp oSpec stmt) =
+    (o : ∀ i, OracleStatement (R := R) pp i) :
+    simulateQ (simOracle0 (OracleStatement (R := R) pp) o) (queryValue pp stmt) =
       pure (MvPolynomial.eval stmt.r_y (Algebra.secondVirtual (fun i => o (.inl i))
         (R1CS.𝕫 stmt.x (o (.inr 0))) stmt.r_x stmt.ρ)) := by
   change pure (terminalValue pp stmt.x stmt.r_y stmt.ρ
@@ -110,13 +109,26 @@ theorem queryValue_realizes (stmt : FinalStatement (R := R) pp)
       | .C => matrixEval (o (.inl .C)) stmt.r_x stmt.r_y)
     (tableEval (o (.inr 0)) (witnessPoint pp stmt.r_y))) =
     (pure (MvPolynomial.eval stmt.r_y (Algebra.secondVirtual (fun i => o (.inl i))
-      (R1CS.𝕫 stmt.x (o (.inr 0))) stmt.r_x stmt.ρ)) : OracleComp oSpec R)
+      (R1CS.𝕫 stmt.x (o (.inr 0))) stmt.r_x stmt.ρ)) : Id R)
   congr 1
   convert secondVirtual_realizes pp stmt.x (fun i => o (.inl i)) (o (.inr 0))
     stmt.r_x stmt.ρ stmt.r_y using 1
   congr 1
   funext i
   cases i <;> rfl
+
+omit [DecidableEq R] in
+/-- Lifting the terminal query program into the verifier preserves its evaluation. -/
+theorem queryValue_lift_realizes (stmt : FinalStatement (R := R) pp)
+    (o : ∀ i, OracleStatement (R := R) pp i)
+    (messages : (!p[] : ProtocolSpec 0).Messages) :
+    simulateQ (simOracle2 oSpec o messages)
+        (liftM (queryValue pp stmt) : OracleComp
+          (oSpec + ([OracleStatement (R := R) pp]ₒ + [(!p[] : ProtocolSpec 0).Message]ₒ)) R) =
+      pure (MvPolynomial.eval stmt.r_y (Algebra.secondVirtual (fun i => o (.inl i))
+        (R1CS.𝕫 stmt.x (o (.inr 0))) stmt.r_x stmt.ρ)) := by
+  exact congrArg (fun v : R => (pure v : OracleComp oSpec R))
+    (queryValue_realizes pp stmt o)
 
 open Classical in
 /-- The verifier accepts exactly the semantic terminal equation. -/
@@ -129,7 +141,7 @@ theorem finalVerifier_run_iff (stmt : FinalStatement (R := R) pp)
   erw [OptionT.run_bind, OptionT.run_monadLift]
   simp only [Option.elimM, bind_map_left]
   erw [simulateQ_bind]
-  erw [queryValue_realizes]
+  erw [queryValue_lift_realizes]
   simp only [pure_bind, Option.elim_some]
   unfold terminalRelation
   split_ifs <;> simp_all [guard] <;> rfl
