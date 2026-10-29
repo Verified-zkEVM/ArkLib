@@ -73,6 +73,15 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
+- Plonk's finite mathematics is independent of both execution layers.
+  `ProofSystem/ConstraintSystem/Plonk.lean` owns gates, the prefix/private relation, and the
+  wiring permutation whose cycles are exactly the variable fibers. Its generic cycle construction
+  lives in `Data/Equiv/FiberCycle.lean`. `ProofSystem/Plonk/Basic.lean` connects variable and
+  occurrence assignments, with public-occurrence coverage for reconstruction.
+  `ProofSystem/Plonk/Prepared.lean` prepends public equality rows, decodes private witnesses, and
+  separates their baked-in constants into cleared selectors and an explicit public-input term.
+  Concrete cycle, satisfaction, and decoder checks live in `ArkLibTest/ProofSystem/Plonk.lean`.
+
 - `ProofSystem/Fri/FoldingSoundness.lean` and `QuerySoundness.lean` contain the algebraic
   soundness arguments; `ErrorBounds.lean` instantiates existing numerical MCA bounds.
   `Fri/Spec/Soundness.lean` proves ordinary and round-by-round soundness of the executable
