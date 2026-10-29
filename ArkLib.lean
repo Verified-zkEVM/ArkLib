@@ -341,8 +341,10 @@ public import ArkLib.Data.CodingTheory.ProximityGenerator.Interleaving
 public import ArkLib.Data.CodingTheory.ProximityGenerator.MCAGenerator
 public import ArkLib.Data.CodingTheory.ProximityGenerator.MDSGenerator
 public import ArkLib.Data.CodingTheory.ProximityGenerator.Multilinear
+public import ArkLib.Data.CodingTheory.ProximityGenerator.MultilinearBasic
 public import ArkLib.Data.CodingTheory.ProximityGenerator.PolynomialGenerator
 public import ArkLib.Data.CodingTheory.ProximityGenerator.TensorGenerator
+public import ArkLib.Data.CodingTheory.ProximityGenerator.ZeroEvading
 public import ArkLib.Data.CodingTheory.ReedSolomon
 public import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.AgreementList
@@ -672,13 +674,13 @@ public import ArkLib.Data.Polynomial.FractionFieldFactorization
 public import ArkLib.Data.Polynomial.FractionFieldResultant
 public import ArkLib.Data.Polynomial.FractionFieldRoots
 public import ArkLib.Data.Polynomial.FrobeniusContraction
+public import ArkLib.Data.Polynomial.GeneratorBatch
 public import ArkLib.Data.Polynomial.Indicator
 public import ArkLib.Data.Polynomial.Interface
 public import ArkLib.Data.Polynomial.PermutationFingerprint
 public import ArkLib.Data.Polynomial.PermutationFingerprintDegree
 public import ArkLib.Data.Polynomial.PointCollision
 public import ArkLib.Data.Polynomial.PointCollisionProbability
-public import ArkLib.Data.Polynomial.PowerBatch
 public import ArkLib.Data.Polynomial.Prelims
 public import ArkLib.Data.Polynomial.RationalFunctions
 public import ArkLib.Data.Polynomial.RationalFunctions.FunctionField
@@ -863,8 +865,8 @@ public import ArkLib.ProofSystem.Binius.FRIBinius.Prelude
 public import ArkLib.ProofSystem.Binius.FRIBinius.RingSwitch
 public import ArkLib.ProofSystem.Component.CheckClaim
 public import ArkLib.ProofSystem.Component.DoNothing
+public import ArkLib.ProofSystem.Component.GeneratorBatch
 public import ArkLib.ProofSystem.Component.NoInteraction
-public import ArkLib.ProofSystem.Component.PowerBatch
 public import ArkLib.ProofSystem.Component.QuotientZeroTest
 public import ArkLib.ProofSystem.Component.RandomQuery
 public import ArkLib.ProofSystem.Component.ReduceClaim
@@ -873,6 +875,8 @@ public import ArkLib.ProofSystem.Component.SendClaim
 public import ArkLib.ProofSystem.Component.SendWitness
 public import ArkLib.ProofSystem.Component.ZeroCheck
 public import ArkLib.ProofSystem.Component.ZeroCheck.Algebra
+public import ArkLib.ProofSystem.ConstraintSystem.Basic
+public import ArkLib.ProofSystem.ConstraintSystem.Examples
 public import ArkLib.ProofSystem.ConstraintSystem.Lookup
 public import ArkLib.ProofSystem.ConstraintSystem.MemoryChecking
 public import ArkLib.ProofSystem.ConstraintSystem.Plonk

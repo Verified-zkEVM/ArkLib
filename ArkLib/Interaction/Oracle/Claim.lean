@@ -200,4 +200,11 @@ theorem Problem.language_admissible {PublicCtx : Type u} {S : ClaimFamily.{u, v}
 abbrev Relation {PublicCtx : Type u} (S : ClaimFamily.{u, v} PublicCtx) :=
   { P : Problem.{u, v, w} S // P.admissible = fun _ _ => True }
 
+/-- Build a promise-free problem from a claim-dependent witness family and predicate. -/
+def Relation.ofPredicate {PublicCtx : Type u} {S : ClaimFamily.{u, v} PublicCtx}
+    (Witness : ∀ ctx, S.Claim ctx → Type w)
+    (rel : ∀ ctx claim, Witness ctx claim → Prop) : Relation S :=
+  ⟨{ Witness := Witness, admissible := fun _ _ => True, rel := rel,
+      rel_admissible := fun _ _ _ _ => trivial }, rfl⟩
+
 end Interaction.Oracle
