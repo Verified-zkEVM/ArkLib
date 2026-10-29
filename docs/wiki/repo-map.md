@@ -88,6 +88,17 @@ home_page/            site assets and assembled website root
   `ArkLibTest/ProofSystem/PlonkEncoding.lean` checks order-four encoding over a prime field,
   including rejected gates, inconsistent copies, and incorrect public inputs.
 
+- `ProofSystem/Plonk/GrandProduct*.lean` formalizes the Plonk permutation grand product:
+  a univariate accumulator `Z` over the multiplicative evaluation domain with `Z(1) = 1` and
+  `Z(ωx) * Q(x) = Z(x) * N(x)`. `GrandProductData.lean` defines its executable polynomials and
+  residuals; `GrandProduct.lean` defines the oracle reduction; the `Completeness` and `Security`
+  modules prove its completeness and fixed-prefix knowledge bounds.
+  `ProofSystem/Plonk/Batch*.lean` batches the three residuals through `GeneratorBatch` with
+  `powerBatchGenerator F 3`, one uniform field challenge, and knowledge error `2 / |F|`.
+  `ProofSystem/Plonk/Quotient*.lean` checks the resulting residual through the quotient zero test.
+  The multilinear (GKR-style) grand-product argument is a different protocol and is not
+  formalized here.
+
 - `ProofSystem/Component/GeneratorBatch.lean` batches polynomial zero tests with a single
   seed from a zero-evading generator. It provides the virtual evaluation oracle, extractor,
   guarded form, perfect completeness, and fixed-prefix knowledge certificates. Its output
