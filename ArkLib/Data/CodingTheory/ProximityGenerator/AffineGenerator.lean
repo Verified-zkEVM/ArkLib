@@ -442,4 +442,54 @@ theorem mcaError_top_eq_zero {ι F ℓ S A : Type} [Fintype ι] [Field F] [Finty
     not_isMCA_of_forall_mem G ⊤ x (fun j ↦ Submodule.mem_top) δ]
   simp
 
+/-- The zero code has at most one bad affine-line seed per coordinate, at every radius. -/
+theorem mcaError_affineLine_bot_le {ι F A : Type} [Fintype ι]
+    [Field F] [Fintype F] [SampleableType F] [AddCommGroup A] [Module F A]
+    (δ : ℝ) :
+    mcaError (AffineLineGenerator F) (⊥ : ModuleCode ι F A) δ ≤
+      ENNReal.ofReal ((Fintype.card ι : ℝ) / Fintype.card F) := by
+  classical
+  apply mcaError_le_ofReal_of_forall_card_le
+  intro U
+  let E (i : ι) : Finset F := Finset.univ.filter fun x =>
+    (U 0 i ≠ 0 ∨ U 1 i ≠ 0) ∧ U 0 i + x • U 1 i = 0
+  have hE (i : ι) : (E i).card ≤ 1 := by
+    apply Finset.card_le_one.mpr
+    intro x hx y hy
+    have hx' := (Finset.mem_filter.mp hx).2
+    have hy' := (Finset.mem_filter.mp hy).2
+    have hu : U 1 i ≠ 0 := by
+      intro hu
+      have h0 : U 0 i = 0 := by simpa [hu] using hx'.2
+      exact hx'.1.elim (fun h => h h0) (fun h => h hu)
+    have hxy : x • U 1 i = y • U 1 i :=
+      add_left_cancel (hx'.2.trans hy'.2.symm)
+    have hz : (x - y) • U 1 i = 0 := by
+      rw [sub_smul, hxy, sub_self]
+    exact sub_eq_zero.mp ((smul_eq_zero.mp hz).resolve_right hu)
+  have hcover : (Finset.univ.filter fun x =>
+      IsMCA (AffineLineGenerator F) (⊥ : ModuleCode ι F A) x U δ) ⊆
+      Finset.univ.biUnion E := by
+    intro x hx
+    obtain ⟨T, -, hv, j, hj⟩ := (Finset.mem_filter.mp hx).2
+    have hv' : LinearCode.projectedWord
+        (fun i => ∑ j, AffineLineGenerator F x j • U j i) T = 0 := by
+      simpa [LinearCode.projectedCodeSubmod] using hv
+    have hj' : LinearCode.projectedWord (U j) T ≠ 0 := by
+      simpa [LinearCode.projectedCodeSubmod] using hj
+    obtain ⟨i, hi⟩ := Function.ne_iff.mp hj'
+    have hnonzero : U j i ≠ 0 := by simpa [LinearCode.projectedWord] using hi
+    have hzero : U 0 i + x • U 1 i = 0 := by
+      simpa [LinearCode.projectedWord, AffineLineGenerator, Fin.sum_univ_two]
+        using congrFun hv' i
+    apply Finset.mem_biUnion.mpr
+    refine ⟨i, Finset.mem_univ _, Finset.mem_filter.mpr ⟨Finset.mem_univ _, ?_⟩⟩
+    refine ⟨?_, hzero⟩
+    fin_cases j
+    · exact Or.inl hnonzero
+    · exact Or.inr hnonzero
+  exact_mod_cast (Finset.card_le_card hcover).trans
+    ((Finset.card_biUnion_le_card_mul Finset.univ E 1 fun i _ => hE i).trans_eq
+      (by simp))
+
 end CoreDefinitions
