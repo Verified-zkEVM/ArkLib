@@ -50,7 +50,8 @@ empty. -/
 def count (D : ℕ) (L : ℝ) : ℕ :=
   ∑ u ∈ Finset.range ⌈L⌉₊, ⌈(D : ℝ) * (L - u)⌉₊
 
-/-- A slot is an unweighted exponent `u < ⌈L⌉₊` and a weighted exponent `x < ⌈D * (L - u)⌉₊`. -/
+/-- A slot is a weight-`D` exponent `u < ⌈L⌉₊` and a weight-one exponent
+`x < ⌈D * (L - u)⌉₊`. -/
 def Slot (D : ℕ) (L : ℝ) :=
   Σ s : Fin ⌈L⌉₊, Fin ⌈(D : ℝ) * (L - s.val)⌉₊
 
@@ -65,7 +66,7 @@ theorem card_slot (D : ℕ) (L : ℝ) : Fintype.card (Slot D L) = count D L := b
   simp only [Fintype.card_fin]
   exact Fin.sum_univ_eq_sum_range (fun s ↦ ⌈(D : ℝ) * (L - s)⌉₊) ⌈L⌉₊
 
-/-- The exponent pair `(x, u)` of a slot, weighted exponent first. -/
+/-- The exponent pair `(x, u)` of a slot, weight-one exponent first. -/
 def Slot.exponents {D : ℕ} {L : ℝ} (a : Slot D L) : ℕ × ℕ :=
   (a.2.val, a.1.val)
 

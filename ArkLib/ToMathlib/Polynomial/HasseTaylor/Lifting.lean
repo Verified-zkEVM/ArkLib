@@ -11,9 +11,10 @@ public import Mathlib.Data.Nat.Choose.Dvd
 /-!
 # Hasse--Taylor coefficient perturbations
 
-Adding `γ * (X - a) ^ i` to a polynomial changes exactly its Hasse coefficient of order `i` at
-`a`. After taking the Hasse derivative of order `s ≤ i`, the first changed coefficient has order
-`i - s` and changes by `(i choose s) * γ`. So when `(i choose s)` is a unit, there is exactly one
+Adding `γ * (X - a) ^ i` to a polynomial adds `γ` to its Hasse coefficient of order `i` at
+`a` and leaves all other Hasse coefficients unchanged. After taking the Hasse derivative of order
+`s ≤ i`, the coefficient of order `i - s` changes by `(i choose s) * γ`, and all lower
+coefficients are unchanged. So when `(i choose s)` is a unit, there is exactly one
 `γ` that gives that coefficient a prescribed value.
 
 These are the univariate facts behind the regular power-series lift of [Kop15, Theorem 4.4]; the
@@ -25,8 +26,8 @@ characteristic.
 ## Main statements
 
 * `Polynomial.hassePerturbation`: the polynomial `C γ * (X - C a) ^ i`.
-* `Polynomial.hasseCoeffAt_hassePerturbation`: it has exactly one nonzero Hasse coefficient at
-  `a`.
+* `Polynomial.hasseCoeffAt_hassePerturbation`: it has at most one nonzero Hasse coefficient at
+  `a`, equal to `γ` at order `i`.
 * `Polynomial.hasseDeriv_hassePerturbation`: its Hasse derivative of order `s` is the
   perturbation of order `i - s` with coefficient `(i choose s) * γ`.
 * `Polynomial.hasseCoeffAt_hasseDeriv_add_hassePerturbation`: the first exposed coefficient after
@@ -71,7 +72,8 @@ theorem taylor_hassePerturbation (a γ : R) (i : ℕ) :
     taylor a (hassePerturbation a γ i) = C γ * X ^ i := by
   simp [hassePerturbation, taylor_apply]
 
-/-- A centered perturbation has exactly one nonzero Hasse coefficient at its center. -/
+/-- A centered perturbation has at most one nonzero Hasse coefficient at its center, equal to
+`γ` at order `i`. -/
 @[simp]
 theorem hasseCoeffAt_hassePerturbation (a γ : R) (i j : ℕ) :
     hasseCoeffAt a j (hassePerturbation a γ i) = if j = i then γ else 0 := by
