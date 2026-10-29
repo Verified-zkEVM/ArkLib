@@ -32,8 +32,6 @@
     "Spartan.Spec.oracleReduction.firstChallenge",
     "Spartan.Spec.oracleReduction.linearCombination",
     "Spartan.Spec.oracleReduction.sendEvalClaim",
-    "Sumcheck.Spec.SingleRound.Simple.oracleVerifier_rbrKnowledgeSoundness",
-    "Sumcheck.Spec.SingleRound.Simple.verifier_rbrKnowledgeSoundness",
     "Sumcheck.Spec.SingleRound.oracleVerifier_rbrKnowledgeSoundness",
     "Sumcheck.Spec.SingleRound.verifier_rbrKnowledgeSoundness",
     "Sumcheck.Spec.oracleVerifier_rbrKnowledgeSoundness",
