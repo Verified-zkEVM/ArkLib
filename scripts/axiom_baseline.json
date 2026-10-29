@@ -1,8 +1,6 @@
 {
   "sorry": [
-    "Spartan.Spec.oracleReduction.firstChallenge",
-    "Spartan.Spec.oracleReduction.linearCombination",
-    "Spartan.Spec.oracleReduction.sendEvalClaim"
+    "Spartan.Spec.oracleReduction.linearCombination"
   ],
   "solicited": [
     {

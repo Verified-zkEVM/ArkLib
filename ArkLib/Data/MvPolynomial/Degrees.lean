@@ -204,6 +204,13 @@ theorem totalDegree_le_card_mul_of_mem_restrictDegree [Fintype σ] (p : MvPolyno
     _ ≤ ∑ _i : σ, n := Finset.sum_le_sum (fun i _ => hp s hs i)
     _ = Fintype.card σ * n := by simp [Finset.sum_const, mul_comm]
 
+/-- A polynomial in finitely many variables of degree at most one in each variable has total
+degree at most the number of variables. -/
+theorem totalDegree_le_card_of_degreeOf_le_one [Fintype σ] (p : MvPolynomial σ R)
+    (hp : ∀ i, p.degreeOf i ≤ 1) : p.totalDegree ≤ Fintype.card σ := by
+  simpa using totalDegree_le_card_mul_of_mem_restrictDegree p 1
+    ((mem_restrictDegree_iff_degreeOf_le p 1).mpr hp)
+
 /-- If every variable's degree in `P` is strictly less than `d`, the total degree is at most
 `m * (d - 1)` for `m` variables. Strict-inequality corollary of
 `totalDegree_le_card_mul_of_mem_restrictDegree`. -/

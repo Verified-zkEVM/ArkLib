@@ -7,11 +7,10 @@ module
 
 public import ArkLib.ProofSystem.Spartan.Layout
 public import ArkLib.ProofSystem.Spartan.Algebra
-public import ArkLib.ProofSystem.Sumcheck.Spec.General
+public import ArkLib.ProofSystem.Spartan.VirtualOracle
+public import ArkLib.ProofSystem.Spartan.SendEvaluations
 public import ArkLib.ProofSystem.Component.SendWitness
-public import ArkLib.ProofSystem.Component.RandomQuery
-public import ArkLib.ProofSystem.Component.SendClaim
-public import ArkLib.ProofSystem.Component.CheckClaim
+public import ArkLib.ProofSystem.Spartan.ZeroCheck
 
 /-!
   # The Spartan PIOP (Polynomial Interactive Oracle Proof)
@@ -99,11 +98,9 @@ open MvPolynomial Matrix OracleComp ProtocolSpec
 
 namespace Spartan
 
-noncomputable section
-
 namespace Spec
 
-variable (R : Type) [CommRing R] [IsDomain R] [Fintype R] (pp : PublicParams)
+variable (R : Type) [CommRing R] [IsDomain R] [Fintype R] [DecidableEq R] (pp : PublicParams)
 
 variable {ι : Type} (oSpec : OracleSpec ι)
 
@@ -127,27 +124,12 @@ abbrev Witness := R1CS.Witness R pp.toSizeR1CS
 @[simp]
 abbrev relation := R1CS.relation R pp.toSizeR1CS
 
-/-- The oracle interface for the input statement is the polynomial evaluation oracle of its
-  multilinear extension. -/
--- For the input oracle statement, we define its oracle interface to be the polynomial evaluation
--- oracle of its multilinear extension.
+/-- Matrix oracles evaluate their original finite tables. -/
 instance : ∀ i, OracleInterface (OracleStatement R pp i) :=
-  fun i => {
-    Query := (Fin pp.ℓ_m → R) × (Fin pp.ℓ_n → R)
-    toOC.spec := fun _ => R
-    toOC.impl := fun ⟨x, y⟩ => do return (← read).toMLE ⸨C ∘ x⸩ ⸨y⸩
-  }
+  Terminal.matrixInterface pp
 
--- For the input witness, we define its oracle interface to be the polynomial evaluation oracle of
--- its multilinear extension.
-
--- TODO: define an `OracleInterface.ofEquiv` definition that transfers the oracle interface across
--- an equivalence of types.
-instance : OracleInterface (Witness R pp) where
-  Query := Fin pp.ℓ_w → R
-  toOC.spec := fun _ => R
-  toOC.impl := fun evalPoint => do
-    return (MLE' (← read)) ⸨evalPoint⸩
+/-- The witness oracle evaluates the multilinear extension of its finite table. -/
+instance : OracleInterface (Witness R pp) := Terminal.witnessInterface pp
 
 /-!
   ## First message
@@ -161,7 +143,7 @@ abbrev Statement.AfterFirstMessage : Type := Statement R pp
 /-- Unfolds to `A, B, C : Matrix (Fin 2 ^ ℓ_m) (Fin 2 ^ ℓ_n) R` and `𝕨 : Fin 2 ^ ℓ_w → R` -/
 @[simp]
 abbrev OracleStatement.AfterFirstMessage : R1CS.MatrixIdx ⊕ Fin 1 → Type :=
-  Sum.rec (OracleStatement R pp) (fun _ => Witness R pp)
+  Realization.OracleStatement (R := R) pp
 
 /-- Unfolds to `() : Unit` -/
 @[simp]
@@ -177,21 +159,21 @@ def oracleReduction.firstMessage :
 
 /-!
   ## First challenge
-  We invoke the protocol `RandomQuery` on the "virtual" polynomial:
+  The zero-check challenge uses the abstract residual polynomial:
     `𝒢(Z) = ∑_{x} eq ⸨Z, x⸩ * (A𝕫 ⸨x⸩ * B𝕫 ⸨x⸩ - C𝕫 ⸨x⸩)`, which is supposed to be `0`.
 -/
 
-def zeroCheckVirtualPolynomial (𝕩 : Statement.AfterFirstMessage R pp)
-    -- Recall: `oStmt = (A, B, C, 𝕨)`
+/-- The residual MLE view uses the noncomputable semantic polynomial representation. -/
+noncomputable def zeroCheckVirtualPolynomial (𝕩 : Statement.AfterFirstMessage R pp)
     (oStmt : ∀ i, OracleStatement.AfterFirstMessage R pp i) :
       MvPolynomial (Fin pp.ℓ_m) R :=
-  Algebra.residualMLE (fun i => oStmt (.inl i)) (R1CS.𝕫 𝕩 (oStmt (.inr 0)))
+  ZeroCheck.polynomial pp 𝕩 oStmt
 
 /-- Unfolds to `τ : Fin ℓ_m → R` -/
 @[simp]
 abbrev FirstChallenge : Type := Fin pp.ℓ_m → R
 
-/-- Unfolds to `(τ, x) : (Fin (2 ^ ℓ_n - 2 ^ ℓ_w) → R) × (Fin (2 ^ ℓ_m) → R)` -/
+/-- The sampled row point and unchanged public input. -/
 @[simp]
 abbrev Statement.AfterFirstChallenge : Type :=
   FirstChallenge R pp × Statement.AfterFirstMessage R pp
@@ -205,15 +187,12 @@ abbrev OracleStatement.AfterFirstChallenge : R1CS.MatrixIdx ⊕ Fin 1 → Type :
 @[simp]
 abbrev Witness.AfterFirstChallenge : Type := Unit
 
-#check RandomQuery.oracleReduction
-
 def oracleReduction.firstChallenge :
     OracleReduction oSpec
-      (Statement.AfterFirstMessage R pp) (OracleStatement.AfterFirstMessage R pp) (Witness R pp)
+      (Statement.AfterFirstMessage R pp) (OracleStatement.AfterFirstMessage R pp) Unit
       (Statement.AfterFirstChallenge R pp) (OracleStatement.AfterFirstChallenge R pp) Unit
       ⟨!v[.V_to_P], !v[FirstChallenge R pp]⟩ :=
-  sorry
-  -- (RandomQuery.oracleReduction oSpec (Statement.AfterFirstMessage R pp)).liftContext sorry
+  ZeroCheck.oracleReduction pp oSpec
 
 /-!
   ## First sum-check
@@ -221,21 +200,14 @@ def oracleReduction.firstChallenge :
     `ℱ(X) = eq ⸨τ, X⸩ * (A ⸨X⸩ * B ⸨X⸩ - C ⸨X⸩)`
 -/
 
--- def firstSumCheckVirtualPolynomial (𝕩 : FirstMessageStatement R pp)
---     (oStmt : ∀ i, FirstMessageOracleStatement R pp i) : MvPolynomial (Fin pp.ℓ_n) R :=
---   letI 𝕫 := R1CS.𝕫 𝕩 (oStmt (.inr 0))
---   ∑ x : Fin (2 ^ pp.ℓ_n),
---     (eqPolynomial (finFunctionFinEquiv.symm x : Fin pp.ℓ_n → R)) *
---       C ((oStmt (.inl .A) *ᵥ 𝕫) x * (oStmt (.inl .B) *ᵥ 𝕫) x - (oStmt (.inl .C) *ᵥ 𝕫) x)
-
 /-- Unfolds to `r_x : Fin ℓ_m → R` -/
 @[simp]
 abbrev FirstSumcheckChallenge : Type := Fin pp.ℓ_m → R
 
-/-- Unfolds to `(r_x, τ, 𝕩) : (Fin ℓ_m → R) × (Fin (2 ^ ℓ_n - 2 ^ ℓ_w) → R) × (Fin ℓ_m → R)` -/
+/-- The first sumcheck terminal claim, with its row point and retained input. -/
 @[simp]
 abbrev Statement.AfterFirstSumcheck : Type :=
-  FirstSumcheckChallenge R pp × Statement.AfterFirstChallenge R pp
+  Evaluation.Statement (R := R) pp
 
 /-- Is equivalent to `((A, B, C), 𝕨) :`
   `(fun _ => (Matrix (Fin 2 ^ ℓ_m) (Fin 2 ^ ℓ_n) R)) × (Fin 2 ^ ℓ_w → R)` -/
@@ -246,63 +218,34 @@ abbrev OracleStatement.AfterFirstSumcheck : R1CS.MatrixIdx ⊕ Fin 1 → Type :=
 @[simp]
 abbrev Witness.AfterFirstSumcheck : Type := Unit
 
--- def oracleReduction.firstSumcheck :
---     OracleReduction (Sumcheck.Spec.pSpec R pp.ℓ_m) oSpec
---       (Statement.AfterFirstChallenge R pp) Witness.AfterFirstChallenge
---       (Statement.AfterFirstSumcheck R pp) Witness.AfterFirstSumcheck
---       (OracleStatement.AfterFirstChallenge R pp) (OracleStatement.AfterFirstSumcheck R pp) :=
-  -- Sumcheck.Spec.oracleReduction oSpec
-  --   (Statement.AfterFirstChallenge R pp) (Witness.AfterFirstChallenge R pp)
-  --   (Statement.AfterFirstSumcheck R pp) (Witness.AfterFirstSumcheck R pp)
-  --   (OracleStatement.AfterFirstChallenge R pp) (OracleStatement.AfterFirstSumcheck R pp)
-
 /-!
   ## Send evaluation claims
 
   We send the evaluation claims `v_A, v_B, v_C` to the verifier.
 
-  (i.e. invoking `SendClaim` on these "virtual" values)
+  The verifier checks the equality-weighted scalar residual.
 -/
 
+/-- The scalar claims are public values alongside the first terminal statement. -/
 @[simp]
-abbrev EvalClaim : R1CS.MatrixIdx → Type := fun _ => R
+abbrev Statement.AfterSendEvalClaim : Type :=
+  (R1CS.MatrixIdx → R) × Statement.AfterFirstSumcheck R pp
 
-/-- We equip each evaluation claim with the default oracle interface, which returns the claim upon a
-  trivial query `() : Unit`. -/
-instance : ∀ i, OracleInterface (EvalClaim R i) :=
-  fun _ => default
-
+/-- Sending scalar evaluations retains the original matrix and witness oracles. -/
 @[simp]
-abbrev Statement.AfterSendEvalClaim : Type := Statement.AfterFirstSumcheck R pp
-
-@[simp]
-abbrev OracleStatement.AfterSendEvalClaim : R1CS.MatrixIdx ⊕ R1CS.MatrixIdx ⊕ Fin 1 → Type :=
-  Sum.elim (EvalClaim R) (OracleStatement.AfterFirstSumcheck R pp)
-
-/-- Canonical interfaces for the newly sent evaluation claims and the carried oracle statements. -/
-instance : ∀ i, OracleInterface (OracleStatement.AfterSendEvalClaim R pp i) :=
-  fun i => match i with
-  | .inl _ => by
-      change OracleInterface R
-      exact default
-  | .inr i => by
-      rcases i with i | i
-      · change OracleInterface (OracleStatement R pp i)
-        infer_instance
-      · change OracleInterface (Witness R pp)
-        infer_instance
+abbrev OracleStatement.AfterSendEvalClaim : R1CS.MatrixIdx ⊕ Fin 1 → Type :=
+  OracleStatement.AfterFirstSumcheck R pp
 
 @[simp]
 abbrev Witness.AfterSendEvalClaim : Type := Unit
 
+/-- Send the three row values and check their equality-weighted residual. -/
 def oracleReduction.sendEvalClaim :
     OracleReduction oSpec
-      (Statement.AfterFirstSumcheck R pp) (OracleStatement.AfterFirstSumcheck R pp) (Witness R pp)
+      (Statement.AfterFirstSumcheck R pp) (OracleStatement.AfterFirstSumcheck R pp) Unit
       (Statement.AfterSendEvalClaim R pp) (OracleStatement.AfterSendEvalClaim R pp) Unit
-      ⟨!v[.P_to_V], !v[∀ i, EvalClaim R i]⟩ :=
-  sorry
-  -- SendClaim.oracleReduction oSpec
-  --   (Statement.AfterFirstSumcheck R pp)
+      (SendEvaluations.pSpec R) :=
+  SendEvaluations.oracleReduction pp oSpec
 
 /-!
   ## Random linear combination challenges
@@ -313,15 +256,14 @@ def oracleReduction.sendEvalClaim :
 @[simp]
 abbrev LinearCombinationChallenge : Type := R1CS.MatrixIdx → R
 
-/-- Unfolds to `((r_A, r_B, r_C), r_x, τ, 𝕩) :`
-  `(R1CS.MatrixIdx → R) × (Fin (2 ^ ℓ_m) → R) × (Fin ℓ_m → R) × (Fin (2 ^ ℓ_n - 2 ^ ℓ_w) → R)` -/
+/-- The independent batching coefficients and retained row claims. -/
 @[simp]
 abbrev Statement.AfterLinearCombination : Type :=
   LinearCombinationChallenge R × Statement.AfterSendEvalClaim R pp
 
 @[simp]
-abbrev OracleStatement.AfterLinearCombination : R1CS.MatrixIdx ⊕ R1CS.MatrixIdx ⊕ Fin 1 → Type :=
-  Sum.elim (EvalClaim R) (OracleStatement.AfterFirstSumcheck R pp)
+abbrev OracleStatement.AfterLinearCombination : R1CS.MatrixIdx ⊕ Fin 1 → Type :=
+  OracleStatement.AfterSendEvalClaim R pp
 
 @[simp]
 abbrev Witness.AfterLinearCombination : Type := Unit
@@ -340,63 +282,47 @@ def oracleReduction.linearCombination :
       `+ r_C * (MLE C) ⸨r_x, Y⸩ * (MLE 𝕫) ⸨Y⸩`
 -/
 
-def secondSumCheckVirtualPolynomial
+/-- The second virtual polynomial, as a noncomputable semantic polynomial view. -/
+noncomputable def secondSumCheckVirtualPolynomial
     (stmt : Statement.AfterLinearCombination R pp)
     (oStmt : ∀ i, OracleStatement.AfterLinearCombination R pp i) :
       MvPolynomial (Fin pp.ℓ_n) R :=
-  Algebra.secondVirtual (fun i => oStmt (.inr (.inl i)))
-    (R1CS.𝕫 stmt.2.2.2 (oStmt (.inr (.inr 0)))) stmt.2.1 stmt.1
+  Algebra.secondVirtual (fun i => oStmt (.inl i))
+    (R1CS.𝕫 stmt.2.2.x (oStmt (.inr 0))) stmt.2.2.r_x stmt.1
 
 @[simp]
 abbrev SecondSumcheckChallenge : Type := Fin pp.ℓ_n → R
 
-/-- Unfolds to `(r_y, (r_A, r_B, r_C), r_x, τ, 𝕩) :`
-  `(Fin ℓ_n → R) × (R1CS.MatrixIdx → R) × (Fin (2 ^ ℓ_m) → R) × (Fin ℓ_m → R) ×`
-  `(Fin (2 ^ ℓ_n - 2 ^ ℓ_w) → R)` -/
+/-- The second sumcheck terminal claim and its two evaluation points. -/
 @[simp]
 abbrev Statement.AfterSecondSumcheck : Type :=
-  SecondSumcheckChallenge R pp × Statement.AfterLinearCombination R pp
+  Realization.FinalStatement (R := R) pp
 
 @[simp]
-abbrev OracleStatement.AfterSecondSumcheck : R1CS.MatrixIdx ⊕ R1CS.MatrixIdx ⊕ Fin 1 → Type :=
-  Sum.elim (EvalClaim R) (OracleStatement.AfterFirstSumcheck R pp)
+abbrev OracleStatement.AfterSecondSumcheck : R1CS.MatrixIdx ⊕ Fin 1 → Type :=
+  OracleStatement.AfterLinearCombination R pp
 
 @[simp]
 abbrev Witness.AfterSecondSumcheck : Type := Unit
 
--- def oracleReduction.secondSumcheck :
---     OracleReduction (Sumcheck.Spec.pSpec R pp.ℓ_n) oSpec
---       (Statement.AfterLinearCombination R pp) Witness.AfterLinearCombination
---       (Statement.AfterSecondSumcheck R pp) Witness.AfterSecondSumcheck
---       (OracleStatement.AfterLinearCombination R pp) (OracleStatement.AfterSecondSumcheck R pp) :=
---   sorry
-
 /-!
   ## Final check
 
-  We invoke the `CheckClaim` protocol to check the two evaluation claims.
+  The terminal verifier evaluates the second virtual polynomial through four oracle queries.
 -/
 
--- Definition of the final relation to be checked
--- def finalCheck := sorry
+/-- The semantic terminal equation. -/
+def finalCheck := Realization.terminalRelation (R := R) pp
 
--- def oracleReduction.finalCheck :
---     OracleReduction ![] oSpec
---       (Statement.AfterSecondSumcheck R pp) Witness.AfterSecondSumcheck
---       Unit Unit
---       (OracleStatement.AfterSecondSumcheck R pp) (fun _ => Unit) :=
---   CheckClaim.oracleReduction oSpec (Statement.AfterSecondSumcheck R pp)
---     (OracleStatement.AfterSecondSumcheck R pp) (sorry)
+/-- Check the second sumcheck terminal claim against the retained original oracles. -/
+def oracleReduction.finalCheck :
+    OracleReduction oSpec
+      (Statement.AfterSecondSumcheck R pp) (OracleStatement.AfterSecondSumcheck R pp) Unit
+      Unit (OracleStatement.AfterSecondSumcheck R pp) Unit !p[] :=
+  Terminal.finalReduction pp oSpec
 
 end Construction
 
-section Security
-
-
-end Security
-
 end Spec
-
-end
 
 end Spartan

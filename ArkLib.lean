@@ -864,6 +864,7 @@ public import ArkLib.ProofSystem.Component.DoNothing
 public import ArkLib.ProofSystem.Component.GeneratorBatch
 public import ArkLib.ProofSystem.Component.NoInteraction
 public import ArkLib.ProofSystem.Component.QuotientZeroTest
+public import ArkLib.ProofSystem.Component.RandomEvaluation
 public import ArkLib.ProofSystem.Component.RandomQuery
 public import ArkLib.ProofSystem.Component.ReduceClaim
 public import ArkLib.ProofSystem.Component.SendChallenge
@@ -989,7 +990,14 @@ public import ArkLib.ProofSystem.RingSwitching.Transport.Coeffs
 public import ArkLib.ProofSystem.RingSwitching.Transport.Eval
 public import ArkLib.ProofSystem.Spartan.Algebra
 public import ArkLib.ProofSystem.Spartan.Basic
+public import ArkLib.ProofSystem.Spartan.Evaluation
 public import ArkLib.ProofSystem.Spartan.Layout
+public import ArkLib.ProofSystem.Spartan.Realization
+public import ArkLib.ProofSystem.Spartan.SendEvaluations
+public import ArkLib.ProofSystem.Spartan.Terminal
+public import ArkLib.ProofSystem.Spartan.VirtualOracle
+public import ArkLib.ProofSystem.Spartan.ZeroCheck
+public import ArkLib.ProofSystem.Spartan.ZeroCheckRelation
 public import ArkLib.ProofSystem.Stir.Combine
 public import ArkLib.ProofSystem.Stir.MainThm
 public import ArkLib.ProofSystem.Stir.OutOfDomSmpl
