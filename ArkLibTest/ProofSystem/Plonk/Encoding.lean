@@ -3,7 +3,7 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.ProofSystem.Plonk.Computable
+import ArkLib.ProofSystem.Plonk.Encoding.Computable
 import Mathlib.Algebra.Field.ZMod
 
 /-! # Executable Plonk encoding over a four-point subgroup -/

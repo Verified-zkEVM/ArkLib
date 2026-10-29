@@ -12,6 +12,20 @@ public import ArkLib.OracleReduction.Security.RbrGame
   # Round-by-Round Security Definitions
 
   This file defines round-by-round security notions for (oracle) reductions.
+
+  ## Extraction cost
+
+  A round-by-round extractor is a family of Lean functions, and nothing here bounds their cost or
+  requires them to be computable: `Extractor.RoundByRoundOneShot.toRoundByRoundOfRel` selects
+  witnesses by classical choice. The existential knowledge notions therefore carry no efficiency
+  content. Round-by-round knowledge soundness in the cryptographic sense needs, in addition, a cost
+  bound for each stage of a named extractor, such as the one named in
+  `Verifier.rbrKnowledgeSoundnessWith`. No predicate here states such a bound.
+
+  For inhabited input-witness types, `Security.Implications` identifies the averaged and worst-case
+  existential forms with round-by-round soundness of the induced languages, separately for each
+  form. These are language-soundness equivalences, distinct from the terminal relation-soundness
+  equivalence. They do not characterize `rbrKnowledgeSoundnessOneShot` or native certificates.
 -/
 
 @[expose] public section
@@ -73,6 +87,8 @@ class RoundByRoundOneShot.IsMonotone (E : RoundByRoundOneShot oSpec StmtIn WitIn
 
   The extractor processes rounds in decreasing order: `n → n-1 → ... → 1 → 0`, using
   intermediate witness types `WitMid m` for each round `m`.
+
+  The maps are Lean functions with no cost bound, and need not be computable.
 -/
 structure RoundByRound
     (oSpec : OracleSpec ι) (StmtIn WitIn WitOut : Type) {n : ℕ} (pSpec : ProtocolSpec n)
@@ -543,6 +559,8 @@ class IsRBRSound (langIn : Set StmtIn) (langOut : Set StmtOut)
     randomly)
 
   is at most `rbrKnowledgeError i`.
+
+  The extractor is unconstrained, so this contract carries no efficiency content.
 -/
 def rbrKnowledgeSoundnessOneShot (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
@@ -565,7 +583,18 @@ def rbrKnowledgeSoundnessOneShot (relIn : Set (StmtIn × WitIn)) (relOut : Set (
           stateFunction i.1.succ stmtIn (transcript.concat challenge)] ≤
       rbrKnowledgeError i
 
--- New definition of rbr knowledge soundness, using the knowledge state function
+/-- A protocol with `verifier` satisfies round-by-round knowledge soundness with respect to input
+relation `relIn`, output relation `relOut`, and error `rbrKnowledgeError` if there exist
+intermediate witness types, a round-by-round extractor and a knowledge state function for it such
+that, for every input statement and witness, every prover and every challenge round, the
+probability of a bad transition is at most `rbrKnowledgeError i`. A bad transition is the
+existence of a later intermediate witness that satisfies the knowledge state function after the
+challenge, while the witness extracted from it fails the knowledge state function before it.
+
+The extractor is unconstrained, so this contract carries no efficiency content; see the module
+documentation. For inhabited input-witness types, `Security.Implications` identifies it with
+round-by-round soundness of the induced languages. This is distinct from the terminal equivalence
+with `Verifier.relationSoundness`; the one-shot and native notions are not characterized here. -/
 def rbrKnowledgeSoundness (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0) : Prop :=
@@ -591,7 +620,10 @@ def rbrKnowledgeSoundness (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut
 /-- Round-by-round knowledge soundness for one exact intermediate-witness
 family, extractor, and knowledge-state function.  Unlike
 `rbrKnowledgeSoundness`, these proof objects remain visible in the proposition
-type and can therefore be inspected by downstream clients. -/
+type and can therefore be inspected by downstream clients.
+
+The predicate bounds only the error. Round-by-round knowledge soundness in the cryptographic sense
+also needs a cost bound for each stage of this extractor, which is not part of this predicate. -/
 def rbrKnowledgeSoundnessWith
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
@@ -634,6 +666,8 @@ theorem rbrKnowledgeSoundness_iff_exists_with
 
 Note that we put the error as a field in the type class to make it easier for synthesization
 (often the rbr error will need additional simplification / proof)
+
+Like `rbrKnowledgeSoundness`, the instance carries no efficiency content.
 -/
 class IsRBRKnowledgeSound (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec) where
@@ -680,7 +714,8 @@ def rbrSoundnessWorstCase (langIn : Set StmtIn) (langOut : Set StmtOut)
 the knowledge analogue of `rbrSoundnessWorstCase`, with the bad-transition event of
 `rbrKnowledgeSoundness` evaluated at every fixed transcript prefix over only the fresh
 challenge. Implies `rbrKnowledgeSoundness` with the same error
-(`rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness`). -/
+(`rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness`). Like that notion, it quantifies
+over unconstrained extractors and carries no efficiency content. -/
 def rbrKnowledgeSoundnessWorstCase (relIn : Set (StmtIn × WitIn))
     (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
@@ -698,7 +733,8 @@ def rbrKnowledgeSoundnessWorstCase (relIn : Set (StmtIn × WitIn))
           kSF i.1.succ stmtIn (transcript.concat challenge) witMid] ≤ rbrKnowledgeError i
 
 /-- Worst-case-per-prefix RBR knowledge soundness for one exact
-intermediate-witness family, extractor, and knowledge-state function. -/
+intermediate-witness family, extractor, and knowledge-state function. The predicate bounds only the
+error; it includes no cost bound for the stages of this extractor. -/
 def rbrKnowledgeSoundnessWorstCaseWith
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
@@ -915,12 +951,16 @@ variable {Statement : Type} {ιₛ : Type} {OStatement : ιₛ → Type} {Witnes
 
 namespace Proof
 
+/-- Round-by-round soundness of a proof: that of its verifier, with output language `{true}`, the
+accepting verdict. -/
 @[reducible, simp]
 def rbrSoundness (langIn : Set Statement)
     (verifier : Verifier oSpec Statement Bool pSpec)
     (rbrSoundnessError : pSpec.ChallengeIdx → ℝ≥0) : Prop :=
   verifier.rbrSoundness init impl langIn acceptRejectRel.language rbrSoundnessError
 
+/-- Round-by-round knowledge soundness of a proof: that of its verifier, with output relation
+`acceptRejectRel`. Like `Verifier.rbrKnowledgeSoundness`, it carries no efficiency content. -/
 @[reducible, simp]
 def rbrKnowledgeSoundness (relation : Set (Statement × Witness))
     (verifier : Verifier oSpec Statement Bool pSpec)
