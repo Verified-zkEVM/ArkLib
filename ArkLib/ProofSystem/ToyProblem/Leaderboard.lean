@@ -18,13 +18,15 @@ winning-set/spot-check upper bound and the executable extractor's MCA-plus-list
 certificate.  It intentionally contains no score format, ranking direction,
 submission metadata, or chosen operating radius.
 
-**Verified vs. admitted.**  Both projections below are `sorry`-free and are *symbolic*:
+**Verified reduction and numeric bounds.** Both projections below are proved and *symbolic*:
 `certifiedExtractorError` unfolds to `ε_mca(C,δ) + |Λ(C^{≡2},δ)|/|F| `-shaped data, not to a
-numeral.  Instantiating a `FixedRadiusParameters` therefore asserts nothing numeric about a
+numeral. Instantiating a `FixedRadiusParameters` therefore asserts nothing numeric about a
 parameter point; obtaining a numeral additionally requires the MCA/CA capacity bounds under
-`Data/CodingTheory/ProximityGap/CapacityBounds` (several proven, the rest external admits),
-which are deliberately outside this file's import cone (see the "Verified vs. admitted"
-section of `Spec/General.lean` and the numeric-route notes in `Impl/IRS.lean`).
+`Data/CodingTheory/ProximityGap/CapacityBounds`. These include the Johnson-range bound proved
+via [DKT26], with the printed constant from [BCHKS25] Theorem 4.6, alongside other proved bounds
+and external assumptions. They are deliberately outside this file's import cone (see the
+"Verified reduction and numeric bounds" section of `Spec/General.lean` and the numeric-route
+notes in `Impl/IRS.lean`).
 -/
 
 @[expose] public section

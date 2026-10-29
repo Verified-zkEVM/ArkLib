@@ -275,7 +275,7 @@ theorem executeStrategies_appendExported_soundness_weighted_ae
       (not_not.mp (fun ha => hg (Or.inr ha)))
   have bound := prEvent_bind_le_prEvent_add_lintegral_ae prefixProgram next
     (fun b => trueMid b ∨ ¬ admissible b) (fun truth => truth) error
-    (by simpa only [bind_pure] using hnext)
+    (by simpa only [id_map'] using hnext)
   have hevent : Pr{let b ← prefixProgram}[trueMid b ∨ ¬ admissible b] ≤
       εtruth + εinvalid := by
     have heq : (fun b => trueMid b ∨ ¬ admissible b) =

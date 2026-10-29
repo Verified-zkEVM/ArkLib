@@ -11,9 +11,9 @@ library documentation describes only the present API (see
 [`docs/wiki/porting-conventions.md`](../wiki/porting-conventions.md)). "The source" is ArkLib
 revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d` unless a note names another revision.
 
-The key `DKTZ26` in these notes refers to the manuscript revision the source cited. The library
-now cites its published version, [DKT26] (Cryptology ePrint Archive, Paper 2026/2056), with
-ePrint numbering. The old locators map as follows: "Appendix A.3, Lemma A.5" (Regular Taylor
+The source cited a manuscript revision of [DKT26]; the library cites the published version
+(Cryptology ePrint Archive, Paper 2026/2056), and the notes below use its numbering. The
+manuscript locators map as follows: "Appendix A.3, Lemma A.5" (Regular Taylor
 chart) is DKT26 Appendix A.6, Lemma A.4; "Section 3 (local interpolation)" is DKT26 Section 3.5;
 equations (39)–(40) of the source revision (`eq:band-lattice-ratio`, `eq:band-geometric-rank`)
 correspond to the local-rank bound (72) of DKT26 Section 6.1 and the rank estimate (131) in its
@@ -573,8 +573,8 @@ instances of `finrank_range_exactLocalConstraintAt_le_sub`.
 
 Ported from
 `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/RankBudget.lean` at
-ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, which follows equations (39)–(40) of
-[DKTZ26].
+ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, which follows the local-rank bound (72) of
+[DKT26], Section 6.1, and the rank estimate (131) in its Appendix D.2.
 
 * `localRank_ceilDiv_le` is unchanged and is derived from the generic
   `Nat.cast_ceilDiv_le_div_add_one`.
@@ -2192,7 +2192,7 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Firs
 
 `finiteLengthDerivativeRatio_le_half_of_rateSwitch_le` and `firstOrderBranchFiniteLengthDerivativeCap` keep their names. `firstOrderBranchFiniteLengthMCAConstant` → `firstOrderBranchFiniteLengthMcaConstant` and `one_le_firstOrderBranchFiniteLengthMCAConstant` → `one_le_firstOrderBranchFiniteLengthMcaConstant` use ArkLib capitalization.
 
-`firstOrderBranch_finiteLength_finiteSlack_bounds` and `firstOrderBranch_finiteLength_rate_bounds` keep their names and conclusions. `firstOrderBranch_finiteLength_mcaError_le` keeps its name and adds `[SampleableType F]` for the current MCA probability API. The facade selects low-rate or automatic bounds at the rate switch and retains the source citation `[DKTZ26]`.
+`firstOrderBranch_finiteLength_finiteSlack_bounds` and `firstOrderBranch_finiteLength_rate_bounds` keep their names and conclusions. `firstOrderBranch_finiteLength_mcaError_le` keeps its name and adds `[SampleableType F]` for the current MCA probability API. The facade selects low-rate or automatic bounds at the rate switch and cites [DKT26].
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/CurveAgreement.lean`
 
@@ -3198,7 +3198,7 @@ Renamed `ordinary_jetWeight_eq_degreeOf` to `jetTotalDegree_eq_jetDegree_zero`. 
 
 ## `ArkLib/Data/Polynomial/Differential/RationalTaylor.lean`
 
-[DKTZ26], Appendix A.3, Lemma A.5. The declarations are ported from
+[DKT26], Appendix A.6, Lemma A.4. The declarations are ported from
 `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Taylor/Numerator.lean` at ArkLib
 revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
@@ -3601,7 +3601,7 @@ ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, namespace
 
 ## `ArkLib/Data/Polynomial/Differential/TaylorResidual.lean`
 
-The support bounds are [DKTZ26], Appendix A.3, Lemma A.5. The declarations are ported from ArkLib
+The support bounds are [DKT26], Appendix A.6, Lemma A.4. The declarations are ported from ArkLib
 revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 * `universalTaylorJet`, `optionEquivLeft_universalTaylorJet`,

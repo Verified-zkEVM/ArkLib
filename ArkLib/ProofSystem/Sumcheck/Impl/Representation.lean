@@ -6,7 +6,7 @@ Authors: Quang Dao
 module
 
 public import CompPoly.Univariate.ToPoly.Impl
-public import ArkLib.ProofSystem.Sumcheck.Interaction.SingleRound
+public import CompPoly.Data.MvPolynomial.Notation
 
 /-!
 # Computable Sumcheck round messages
@@ -30,7 +30,7 @@ def evaluate (q : Message R deg) (x : R) : R := q.val.evalHorner x
 variable [BEq R] [LawfulBEq R]
 
 /-- Proof-only interpretation as the existing degree-bounded mathematical message. -/
-noncomputable def toMessage (q : Message R deg) : Interaction.SingleRound.Message R deg :=
+noncomputable def toMessage (q : Message R deg) : Polynomial.degreeLE R deg :=
   ⟨q.val.toPoly, by
     apply Polynomial.mem_degreeLE.mpr
     rw [← CompPoly.CPolynomial.degree_toPoly]

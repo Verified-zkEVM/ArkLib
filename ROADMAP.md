@@ -1,78 +1,111 @@
 # Roadmap
 
-We provide here a list of projects and extensions to ArkLib. Please note that this list is extensive and covers more than our immediate priorities. This list will be updated as items are taken off into immediate issues to be worked on.
+ArkLib develops executable proof-system specifications and Lean proofs of completeness and
+security. Shared ring-switching phases and their DP24/Binary Basefold composite are proved.
+The next deliveries are native Flock protocols, the fused FRI-Binius opening route, and native
+knowledge extraction and cryptographic compilation for concrete consumers.
 
-For the interaction framework, use the [maintained design roadmap](docs/design/05-roadmap.md)
-and [framework tracker #1](https://github.com/Verified-zkEVM/ArkLib/issues/1). They record the
-composition and Sumcheck milestones that precede the broader directions below.
+The [ring-switching tracker](https://github.com/Verified-zkEVM/ArkLib/issues/1286) owns
+implementation progress and dependencies. The [interaction roadmap](docs/design/05-roadmap.md)
+owns framework contracts. Use [open issues](https://github.com/Verified-zkEVM/ArkLib/issues) for
+assignments and [CONTRIBUTING.md](CONTRIBUTING.md) for the development and review process.
 
-## General Theory
+## Flock in ArkLib
 
-### 1. The BCS & Fiat-Shamir Transform
+Upstream Flock's reusable mathematics and circuit library, define its native prover and verifier,
+and prove the security and correspondence needed by leanerVM. Keep field choices, circuit sizes,
+bases and domains explicit, so other applications can instantiate the same results.
 
-### 2. Zero-Knowledge
+The implementation plan covers both the reference-paper construction and leanVM's Frobenius-map
+variant. leanerVM supplies its concrete fields, BLAKE2s circuit and VM linkage. The
+[Flock consumer tracker](https://github.com/Verified-zkEVM/leanerVM/issues/3) records the profile
+contracts, source correspondence and acceptance checks. Native execution/security correspondence
+and full committed extraction remain proof obligations.
 
-### 3. Rewinding Knowledge Soundness
+## Reusable ring switching
 
-### 4. The Algebraic Group Model
+Deliver algebra and claim-conversion results with proved Binius, Hachi and reference-Flock
+instances. Each instance identifies the source it preserves, the claims it produces and the
+assumptions required for its security bound. This makes reuse testable at the protocol boundary.
 
-### 5. Mechanized Adversary Runtime
+The common mathematics supports independent packing/opening algebras and ranks, representations
+and commitment models. The shared head, product-sumcheck continuation and terminal phases provide
+perfect completeness and worst-case round-by-round knowledge soundness under their declared
+premises. DP24 instantiates these phases and composes with Binary Basefold. Hachi has its own
+trace-head conformance result; native reference-Flock conformance remains work.
 
+Reuse the shared protocol for consumers with matching messages, guards, samplers and endpoints.
+The [consumer guide](docs/wiki/ring-switching-consumers.md) records the concrete interfaces and
+remaining native-Flock obligations; the [concept page](docs/kb/concepts/ring-switching.md)
+explains the construction. Pure conformance alone does not establish commitment binding or a
+downstream opening theorem. Each concrete security instance must discharge its sampler, binding
+and honest-coverage premises. The conversion to ordinary knowledge soundness remains admitted.
 
-## Proof Systems
+## Binius opening arguments
 
-### 1. FRI, STIR, WHIR
+The ring-switching route followed by a black-box Binary Basefold opening is on main. Binary
+Basefold's core interaction, query verifier and full protocol have perfect completeness and
+worst-case round-by-round knowledge soundness, proved without local admissions. The concrete
+ring-switching composite uses this backend and preserves its input relation and challenge ledger.
 
-Note that this item is under active development.
+The fused FRI-Binius core and full protocol remain to be formalized. Preserve the production
+schedule and prove rejecting behavior, completeness and the intended knowledge guarantees.
+Keep these round-by-round results distinct from ordinary knowledge soundness through the
+admitted generic bridge. The
+[Binius tracker](https://github.com/Verified-zkEVM/ArkLib/issues/893) owns follow-up progress;
+Flock's Frobenius variant can develop independently.
 
-### 2. Binary Tower Fields and Binius.
+## Native security and cryptographic compilation
 
-Note that this item is under active development.
+Use the proved CompPoly-backed honest Sumcheck prover and its specification correspondence
+for native clients. Measure and optimize its actual workloads, and supply the remaining
+client-specific certificates. Exercise the native typed-interaction execution and security
+interfaces in small FRI and Spartan clients before migrating their larger protocol assemblies.
 
-### 3. Twist & Shout
+Instantiate the native extraction and composition contracts for actual protocol clients, then
+connect them to concrete opening arguments, Merkle commitments and Fiat–Shamir transcripts.
+For Flock's leanVM instance, this includes one shared WHIR opening and the deployed chain with
+proof of work.
 
-### 4. Pairing DLog based commitment schemes
+The [framework design](docs/design/03-adversarial-oracle-execution.md) specifies execution,
+security games and resources. The [compiler design](docs/design/04-oracle-elimination-compiler.md)
+specifies how oracle guarantees become commitment and opening obligations. Their
+[protocol dependencies](https://github.com/Verified-zkEVM/ArkLib/issues/1286)
+are tracked together with the consumers.
 
-### 5. Plonk and its variants
+## Other protocol and commitment directions
 
-### 6. Folding Schemes
+- [FRI](ArkLib/ProofSystem/Fri/) has an executable specification with perfect and noisy-input
+  completeness, soundness, and a certified straightline knowledge extractor with explicit
+  resource bounds. Its native typed-interaction migration is a separate direction.
+  [Batched FRI](ArkLib/ProofSystem/BatchedFri/) and [STIR](ArkLib/ProofSystem/Stir/) retain
+  incomplete component or assembly obligations.
+- Complete [Spartan](ArkLib/ProofSystem/Spartan/) and prove correspondence for its native
+  migration.
+- Extend [KZG](ArkLib/Commitments/Functional/KZG/) and
+  [Hachi](ArkLib/Commitments/Functional/Hachi/) under their declared assumptions, including
+  recursive opening and trace handoffs.
+- Develop zero knowledge, the algebraic group model, pairing-based systems, Plonk,
+  Twist/Shout, IVC folding and a mechanized PCP theorem as concrete clients require them.
 
-## Miscellaneous
+## Supporting mathematics and implementation
 
-### 1. The PCP Theorem
+[Coding theory](ArkLib/Data/CodingTheory/) and [polynomial theory](ArkLib/Data/MvPolynomial/)
+supply the algebraic bounds consumed by protocol proofs. Computable polynomial representations,
+field implementations and NTT kernels belong in
+[CompPoly](https://github.com/Verified-zkEVM/CompPoly); local bridges live in
+[ToCompPoly](ArkLib/ToCompPoly/). Generic probability, oracle games and resource accounting
+belong in [VCVio](https://github.com/Verified-zkEVM/VCVio), and interaction structure in
+[PolyFun](https://github.com/Verified-zkEVM/PolyFun).
 
-It would be nice to use the theories in ArkLib to prove foundational results such as the PCP theorem. We imagine that it is within reach to formalize the original proofs (using sum-check, multivariate low-degree tests, and proof composition), and also the quasilinear-length PCP by Ben-Sasson & Sudan.
+Prove optimized algorithms agree with their specifications, exercise honest and rejecting runs,
+and measure the actual workloads. Use each checkout's [manifest](lake-manifest.json) and the
+[validation workflow](docs/wiki/quickstart.md).
 
-## Supporting Operations
+## Completion evidence
 
-The below are lower-priority supporting items. Some of these are being actively worked on (especially computable polynomials).
-
-  - [ ] Computable Univariate Polynomials — now developed upstream in the `CompPoly` project; local
-    additions live in [`ArkLib/ToCompPoly/Univariate/`](ArkLib/ToCompPoly/Univariate)
-    - [x] Define `UniPoly` as the type of univariate polynomials with computable representations (interally as an `Array` of coefficients). Define operations on `UniPoly` as operations on the underlying `Array` of coefficients.
-    - [x] Define an equivalence relation on `UniPoly` that says two `UniPoly`s are equivalent iff they are equal up to zero-padding. Show that this is an equivalence relation.
-    - [ ] Show that operations on `UniPoly` descends to the quotient (i.e. are the same up to zero-padding). Show that the quotient is isomorphic as semirings to `Polynomial` in `Mathlib`. Show that the same functions (e.g. `eval`) on `UniPoly` are the same as those of `Polynomial`.
-    - [ ] For more efficient evaluation, and use in univariate-based SNARKs, define the coefficient representation of `UniPoly` (on `2`-adic roots of unity), and show conversions between the coefficient and evaluation representations.
-  - [ ] Computable Multilinear Polynomials — now developed upstream in the `CompPoly` project
-    - [ ] Define `MlPoly` as the type of multilinear polynomials with computable representations (internally as an `Array` of coefficients). Define operations on `MlPoly` as operations on the underlying `Array` of coefficients.
-    - [ ] Define alternative definition of `MlPoly` where the evaluations on the hypercube are stored instead of the coefficients. Define conversions between the two definitions, and show that they commute with basic operations.
-      - [ ] Will need to expand `Mathlib`'s support for indexing by bits (i.e. further develop `BitVec`).
-    - [ ] Define an equivalence relation on `MlPoly` that says two `MlPoly`s are equivalent iff they are equal up to zero-padding. Show that this is an equivalence relation. Show that operations on `MlPoly` descends to the quotient.
-    - [ ] Define & prove a module isomorphism between the quotient of `MlPoly` by the equivalence relation and `MvPolynomial` whose individual degrees are restricted to be at most 1.
-  - [ ] [Extensions to Multivariate Polynomials in `Mathlib`](ArkLib/Data/MvPolynomial)
-    - [ ] [`Interpolation.lean`](ArkLib/Data/MvPolynomial/Interpolation.lean)
-      - [ ] Develop the theory of interpolating multivariate polynomials given their values on a `n`-dimensional grid of points.
-      - [ ] Specialize this theory to the case of multilinear polynomials (then merge with [`Multilinear.lean`](ArkLib/Data/MvPolynomial/Multilinear.lean)).
-        - There is some subtlety here in the sense that general interpolation requires a field (for inverses of Lagrange coefficients), but multilinear interpolation/extension only requires a ring (since the coefficients are just `1`). We may need to develop multilinear theory for non-fields (for Binius).
-  - [ ] [Coding Theory](ArkLib/Data/CodingTheory)
-    - [ ] Define and develop basic results on linear codes.
-    - [ ] Define basic codes such as Reed-Solomon.
-    - [ ] Prove proximity gap and interleaved distance results (up to one-third of the unique decoding distance).
-  - [ ] Binary Tower Fields — now developed upstream in the `CompPoly` project
-    (`CompPoly/Fields/Binary/Tower/`)
-    - [ ] Define iterated quadratic extensions of the binary field (Wiedermann construction), and prove that the resulting ring is a field.
-    - [ ] Define efficient representation of elements in a binary tower field (using `BitVec`), efficient operations on them (see Binius paper), and prove that the resulting structure is a field isomorphic to the definition above.
-  - [ ] Large Scalar Fields used in Curves — prime fields now developed upstream in the `CompPoly`
-    project (`CompPoly/Fields/`)
-    - [ ] Low-priority for now.
-    - [ ] Development on this should be done over at [`FFaCiL`](https://github.com/argumentcomputer/FFaCiL.lean/tree/main).
+Each delivery names its theorem, hypotheses, concrete consumer and transitive axiom report.
+Keep mathematical security, native correspondence, execution tests and compiled implementation
+claims distinct. The [axiom regression gate](docs/wiki/quickstart.md#filling-a-sorry-or-work-that-must-stay-axiom-clean)
+tracks remaining admissions; a successful build or a deleted declaration alone does not close
+a proof obligation.

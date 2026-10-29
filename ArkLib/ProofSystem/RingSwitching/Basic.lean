@@ -17,25 +17,37 @@ Umbrella for `ProofSystem/RingSwitching/`. "Ring switching" names several reduct
 move an evaluation or linear claim between a small ring and a large ring — so that each part
 of a proof system can run where it is cheap or sound: commit over the small ring, evaluate
 and open over a large extension; or state a relation over a structured quotient ring, check
-it inside a field. The constructions share *algebra*, not *protocol*; no single *protocol* in
-this library unifies Lift and Packing. Generic work on the Packing side is in progress and is
-intended to subsume the shared packing abstraction, but it does not subsume `Lift`, which is the
-[HMZ25] quotient-evaluation lift rather than a packing. The two construction families, one folder
-each:
+it inside a field. `Packing/RingSwitch` certifies a reusable scalar-to-product-sumcheck
+protocol over independent commutative algebras. `Lift` retains its own quotient-evaluation
+protocol and security interpretation. The two construction families have separate folders:
 
-1. **Packing** (`Packing/`) — small ring `B` → large ring `L`, `L` free of rank
-   `2^κ` over `B`. A basis identifies each `2^κ`-block of a `B`-multilinear's coefficients
-   with one `L`-element, so the polynomial *packs* into an `L`-multilinear in fewer
-   variables, and the claim about the original must be relocated onto the packed one. The
-   packing data is one shared abstraction (`RingSwitchingProfile`,
-   `Packing/Profile.lean`); the relocation is per-instance:
-   * **interactive relocation** (the protocol files of `Packing/`) — for an arbitrary
-     large-ring evaluation point: carrier message, batching challenge, dedicated packing
-     sumcheck; RBR knowledge soundness (`[IsDomain L]`). Consumed by
-     `ProofSystem/Binius/FRIBinius/` (this is [DP24]'s construction).
-   * **deterministic relocation** (planned) — for a subring-valued evaluation point the
-     interaction collapses to one message and one identity check, with zero soundness error;
-     a second `Profile` instance ([NOZ26] §3).
+1. **Packing** (`Packing/`) — `PackingData` gives independent finite bases of a packing
+   algebra and an opening algebra over a common commutative ring. A `ClaimLayout` identifies the
+   original scalar claim and its component decomposition. `Head` sends the encoded component
+   values, checks reconstruction and derives a product-sumcheck claim using a `BatchingRule`.
+   `RingSwitch` directly appends `ProductSumcheck`, retaining the original query, batching
+   challenge, commitment oracle and packed witness through the terminal evaluation claim.
+   Completeness requires a commutative challenge ring. Worst-case round-by-round knowledge
+   soundness additionally uses a certified `BatchingStrategy`, functional compatibility,
+   injective coefficient transport and a finite challenge ring with no zero divisors. The
+   challenge-error sum is `bat.error + 2m/|C|`. The head separately supports a fixed list
+   covering all compatible packed candidates, without asserting list security for the tail.
+   Honest commitment coverage is a separate constructor contract, unused by security.
+   * **tensor-prefix relocation** — equal packing/opening algebras, power-of-two ranks, prefix
+     layout and equality-fold batching. `Packing/TensorPrefix` defines the protocol through
+     `RingSwitch` with the original tensor carrier `P.A`, decoded by its column equivalence.
+     Its operational equation is the original scalar check and row-coordinate batching target.
+     `Binius/FRIBinius/RingSwitch` appends the Binary Basefold opening. Exact first-codeword
+     encodings give completeness; unique-radius compatibility gives round-by-round security.
+   * **deterministic relocation** — for a subring-valued evaluation point the interaction
+     collapses to one message and one identity check, with zero soundness error ([NOZ26] §3.1).
+     Its carrier is `L` itself, so it is not a `Profile` instance: the Hachi trace head
+     (`Commitments/Functional/Hachi/TraceHead/`) uses the coordinate layer of `Packing/`
+     directly, with one opening coordinate: its `ψ` packing is `packedMLE` of a
+     monomial-coefficient `ClaimLayout`, its conformance theorem states its accepting condition
+     through the shared `sliceRel`, and its read-back is a `CheckedObservation`. It exercises
+     only the packing, evaluation and opening part of that layer (no batching, multiplier or
+     sumcheck), as in [NOZ26] §3.1.
 
 2. **Lift** (`Lift/`) — the *opposite* direction, a quotient ring
    `S ≅ R[X]/(φ)` → a field `F ⊇ R`. Each row of a linear claim `M z = y` over `S` lifts to
@@ -48,12 +60,13 @@ each:
    via the committed-scalar seam. The cyclotomic instance
    (`Commitments/Functional/Hachi/RingSwitch/`) realizes [HMZ25]'s lift as used by Hachi.
 
-## What is genuinely shared between the two families
+## Shared support for the two families
 
-* The **round-shape verifiers** (this folder's top level): every verifier round of the family
-  is "one prover message, a deterministic local check, an accept/reject statement update" —
-  message-only (`pSpecMessage` + `messageRoundOracleVerifier`: DP24's final step today,
-  Hachi §3's trace-check head tomorrow) or with a trailing scalar challenge
+* The **round-shape verifiers** (this folder's top level) implement a prover message,
+  a deterministic local check and an accepted update or an abort —
+  message-only (`pSpecMessage` + `messageRoundOracleVerifier`: DP24's final step; Hachi's
+  §3.1 trace head has the same one-message shape as a plain aborting `Verifier`) or with a
+  trailing scalar challenge
   (`pSpecScalar` + `scalarRoundOracleVerifier`: DP24's batching round; the check-free limit
   of this shape is the committed-scalar verifier `Lift` builds on). See
   `RoundVerifiers.lean`.
@@ -76,9 +89,9 @@ each:
 
 Anything else — the tensor-algebra batching check, the relocation sumcheck, the
 quotient-witness correspondence, the trace identity — belongs to exactly one construction and
-lives with it. In particular the two *data layers* do not unify: above a spanning-and-faithful
-core their law sets are incomparable (coordinate additivity is not derivable from
-`decomposeRows_spec` alone, and `rep` is not multiplicative on the nose), so no common parent
+lives with it. In particular the two *data layers* do not unify: their laws govern different
+maps (a profile's coordinate bijections onto `2^κ` coordinates over `L`, a presentation's
+representative map `rep`, which is not multiplicative on the nose), so no common parent
 structure would carry a lemma either side's proofs consume.
 
 ## Folder structure
@@ -90,7 +103,8 @@ structure would carry a lemma either side's proofs consume.
 * `Transport/` — the shared claim-transport algebra (see `Transport.lean`): evaluation
   through a ring embedding with the interpolation kernel (`Eval.lean`, univariate) and
   degree-bounded coefficient transport (`Coeffs.lean`, multivariate).
-* `Packing/` — packing data layer + the DP24 construction (see `Packing.lean`).
+* `Packing/` — independent coordinate algebra, the generic scalar head and the DP24 construction
+  (see `Packing.lean`).
 * `Lift/` — the generic quotient-ring lift to field evaluations (see `Lift.lean`).
 
 ## References

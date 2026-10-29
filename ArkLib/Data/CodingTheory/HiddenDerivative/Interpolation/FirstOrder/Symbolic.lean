@@ -32,7 +32,7 @@ within the finite first-order support.
 
 ## References
 
-* [DKT26], Section 6.1.3, Proposition 6.3.
+* [DKT26], Section 5.6, the derivative-weighted support and Proposition 5.10.
 -/
 
 @[expose] public section

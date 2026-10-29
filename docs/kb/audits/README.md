@@ -21,6 +21,9 @@ Current audit pages:
 - [`chiesa-yogev-interaction.md`](chiesa-yogev-interaction.md) - the
   [`ChiesaYogev2024`](../papers/ChiesaYogev2024.md) pipeline against native interactions and
   legacy oracle reductions, including source-faithful security and extraction obligations.
+- [`fri-soundness.md`](fri-soundness.md) - the revised FRI analysis, executable specification
+  review, and end-to-end ordinary and round-by-round protocol soundness.
+
 - [`open-problems-list-decoding-and-correlated-agreement.md`](open-problems-list-decoding-and-correlated-agreement.md)
   - per-statement status matrix for [`ABF26`](../papers/ABF26.md), covering the coding-theory
     code families, Johnson bounds, subspace designs, and extension codes.
@@ -32,6 +35,9 @@ Current audit pages:
 - [`noz26-zero-check-lemma10.md`](noz26-zero-check-lemma10.md)
   - [`NOZ26`](../papers/NOZ26.md) Figure 5 / Lemma 10: correspondence, the nested-tree repair, and
     the weak-binding seam in the escape-threaded opening chain.
+- [`noz26-trace-head-section-3-1.md`](noz26-trace-head-section-3-1.md)
+  - [`NOZ26`](../papers/NOZ26.md) §3.1 trace head: correspondence, departures (no field
+    hypothesis), and its completeness, soundness and escape shape.
 - [`bcgm25-mca-generators.md`](bcgm25-mca-generators.md)
   - [`BCGM25`](../papers/BCGM25.md) generator layer: definition and result correspondence, the two
     forms Lemma 4.4 is proved in and why, and a gap in the paper's Theorem 9.2 citation.

@@ -854,11 +854,7 @@ theorem rightPrefix_concat (tr₁ : FullTranscript pSpec₁) {i : Fin n}
       | (exfalso; omega)
       | rfl
       | (apply cast_eq_cast_of_heq
-         try simp only [cast_heq_iff_heq]
-         first
-           | rfl
-           | exact HEq.rfl
-           | (exact (heq_cast_iff_heq _ _ _).mpr (cast_heq _ x)))
+         exact (heq_cast_iff_heq _ _ _).mpr (cast_heq _ x))
 
 /-- A right-suffix transcript, prefixed by a full left transcript, is a transcript of the embedded
 appended tree. Induction is on the `pSpec₂`-tree itself — the right-hand side of the split carries
