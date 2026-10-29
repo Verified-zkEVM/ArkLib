@@ -314,7 +314,6 @@ public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Sampling
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Subfield
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Subfield.Algebra
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Subfield.Moments
-public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.SubspaceDesign
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.UniqueDecoding
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.UniqueDecoding.Internal
 public import ArkLib.Data.CodingTheory.ProximityGap.DG25.Basic
@@ -532,7 +531,6 @@ public import ArkLib.Data.Domain.FftDomain.Ops
 public import ArkLib.Data.Domain.FftDomain.Subdomain
 public import ArkLib.Data.Domain.FftDomain.ToSubgroup
 public import ArkLib.Data.EllipticCurve.BN254
-public import ArkLib.Data.Equiv.FiberCycle
 public import ArkLib.Data.FieldTheory.BinaryTrace
 public import ArkLib.Data.Fin.Basic
 public import ArkLib.Data.Fin.BigOperators
@@ -662,6 +660,7 @@ public import ArkLib.Data.Polynomial.Differential.TotalJetDegreeCount
 public import ArkLib.Data.Polynomial.Differential.Types
 public import ArkLib.Data.Polynomial.Differential.WitnessCount
 public import ArkLib.Data.Polynomial.DivisorReconstruction
+public import ArkLib.Data.Polynomial.FiniteDomainQuotient
 public import ArkLib.Data.Polynomial.FoldedWronskian
 public import ArkLib.Data.Polynomial.FoldingPolynomial
 public import ArkLib.Data.Polynomial.FractionFieldExpand
@@ -673,6 +672,7 @@ public import ArkLib.Data.Polynomial.Indicator
 public import ArkLib.Data.Polynomial.Interface
 public import ArkLib.Data.Polynomial.PointCollision
 public import ArkLib.Data.Polynomial.PointCollisionProbability
+public import ArkLib.Data.Polynomial.PowerBatch
 public import ArkLib.Data.Polynomial.Prelims
 public import ArkLib.Data.Polynomial.RationalFunctions
 public import ArkLib.Data.Polynomial.RationalFunctions.FunctionField
@@ -858,6 +858,8 @@ public import ArkLib.ProofSystem.Binius.FRIBinius.RingSwitch
 public import ArkLib.ProofSystem.Component.CheckClaim
 public import ArkLib.ProofSystem.Component.DoNothing
 public import ArkLib.ProofSystem.Component.NoInteraction
+public import ArkLib.ProofSystem.Component.PowerBatch
+public import ArkLib.ProofSystem.Component.QuotientZeroTest
 public import ArkLib.ProofSystem.Component.RandomQuery
 public import ArkLib.ProofSystem.Component.ReduceClaim
 public import ArkLib.ProofSystem.Component.SendChallenge
@@ -919,7 +921,6 @@ public import ArkLib.ProofSystem.Fri.Spec.Soundness
 public import ArkLib.ProofSystem.Fri.Spec.Transcript
 public import ArkLib.ProofSystem.Fri.Spec.VerifierExecution
 public import ArkLib.ProofSystem.Plonk.Basic
-public import ArkLib.ProofSystem.Plonk.Prepared
 public import ArkLib.ProofSystem.RingSwitching.Basic
 public import ArkLib.ProofSystem.RingSwitching.Lift
 public import ArkLib.ProofSystem.RingSwitching.Lift.Presentation

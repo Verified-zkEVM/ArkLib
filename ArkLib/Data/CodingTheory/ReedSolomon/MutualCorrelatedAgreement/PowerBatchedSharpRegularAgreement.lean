@@ -633,7 +633,7 @@ theorem finite_powerBatchedBadChallenges_card_le_of_tuple_bound_of_exponent
       rw [aeval_jointInitialJetSeparant_specialize]
       simpa [hjetEq] using hs
     have hrec := (hP.specialize hτ hkK z hregular).2.2.2
-    have hw : witness z = powerBatchedPolynomial (fun t ↦ (P t).map iota) z := by
+    have hw : witness z = Polynomial.powerBatch (fun t ↦ (P t).map iota) z := by
       rw [← (hchart z hzc).2.2.2.2, hjetEq]
       exact hrec
     have hPmem : P ∈ tuples := by
