@@ -71,7 +71,7 @@ theorem exists_polynomialGraph_of_primeTaylorComponent [IsAlgClosed E]
           (fun t ↦ (P t).map φ) i).eval (x none)) ∧
       (∀ x ∈ {x | x ∈ zeroLocus E I ∧ aeval x (jointInitialJetSeparant center Q) ≠ 0},
         rationalTaylorPolynomial center (MvPolynomial.map (Polynomial.evalRingHom (x none)) Q)
-          K (fun j ↦ x (some j)) = powerBatchedPolynomial (fun t ↦ (P t).map φ) (x none)) ∧
+          K (fun j ↦ x (some j)) = Polynomial.powerBatch (fun t ↦ (P t).map φ) (x none)) ∧
       (∀ p ∈ I, aeval (powerBatchedJetGraphMap (r := r) center
         (fun t ↦ (P t).map φ)) p = 0) ∧
       aeval (powerBatchedJetGraphMap (r := r) center (fun t ↦ (P t).map φ))
@@ -84,7 +84,7 @@ theorem exists_polynomialGraph_of_primeTaylorComponent [IsAlgClosed E]
       (hx : x ∈ zeroLocus E I ∧ aeval x (jointInitialJetSeparant center Q) ≠ 0) :
       rationalTaylorPolynomial center (MvPolynomial.map (Polynomial.evalRingHom (x none)) Q)
           K (fun j ↦ x (some j)) =
-          powerBatchedPolynomial (fun t ↦ (P t).map φ) (x none) ∧
+          Polynomial.powerBatch (fun t ↦ (P t).map φ) (x none) ∧
         (fun j ↦ x (some j)) =
           (fun j ↦ (powerBatchedJetGraph (r := r) center
             (fun t ↦ (P t).map φ) j).eval (x none)) ∧
@@ -94,7 +94,7 @@ theorem exists_polynomialGraph_of_primeTaylorComponent [IsAlgClosed E]
           aeval (fun j ↦ x (some j)) (initialJetSeparant center
             (MvPolynomial.map (Polynomial.evalRingHom (x none)) Q)) ^ τ *
             (Polynomial.taylor center
-              (powerBatchedPolynomial (fun t ↦ (P t).map φ) (x none))).coeff l.val := by
+              (Polynomial.powerBatch (fun t ↦ (P t).map φ) (x none))).coeff l.val := by
     have hφ : (Polynomial.aeval (x none)).toRingHom =
         Polynomial.evalRingHom (x none) := by
       ext a <;> simp [Polynomial.evalRingHom]
@@ -173,7 +173,7 @@ theorem exists_frobeniusPowerGraph_of_symbolic_sample
               (τ := τ))) = 0) →
         rationalTaylorPolynomial center (MvPolynomial.map (Polynomial.evalRingHom z) Q) K jet =
             Polynomial.expand E (p ^ e)
-              (powerBatchedPolynomial (fun t ↦ (P t).map ι) (z ^ (p ^ e))) ∧
+              (Polynomial.powerBatch (fun t ↦ (P t).map ι) (z ^ (p ^ e))) ∧
           jet 0 = (frobeniusPowerInitialGraph center (p ^ e)
             (fun t ↦ (P t).map ι) 0).eval z := by
   obtain ⟨P, hPdegree, hPsample, hrecognize⟩ :=
@@ -219,12 +219,12 @@ theorem exists_frobeniusPowerGraph_of_symbolic_sample
     jet 0 =
         (rationalTaylorPolynomial center (MvPolynomial.map (Polynomial.evalRingHom z) Q)
           K jet).eval center := hzero.symm
-    _ = (powerBatchedPolynomial (fun t ↦ (P t).map ι) (z ^ (p ^ e))).eval
+    _ = (Polynomial.powerBatch (fun t ↦ (P t).map ι) (z ^ (p ^ e))).eval
         (center ^ (p ^ e)) := heval
     _ = (frobeniusPowerInitialGraph center (p ^ e)
         (fun t ↦ (P t).map ι) 0).eval z := by
       simp only [frobeniusPowerInitialGraph, frobeniusPowerCoordinate_eval,
-        powerBatchedPolynomial_eval, pow_mul]
+        Polynomial.powerBatch_eval, pow_mul]
 
 /-- A positive-dimensional prime component with sparse Taylor and sample agreement cuts is
 parametrized by a Frobenius power graph. Every component equation vanishes after restriction to

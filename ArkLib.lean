@@ -532,6 +532,7 @@ public import ArkLib.Data.Domain.FftDomain.Ops
 public import ArkLib.Data.Domain.FftDomain.Subdomain
 public import ArkLib.Data.Domain.FftDomain.ToSubgroup
 public import ArkLib.Data.EllipticCurve.BN254
+public import ArkLib.Data.Equiv.FiberCycle
 public import ArkLib.Data.FieldTheory.BinaryTrace
 public import ArkLib.Data.Fin.Basic
 public import ArkLib.Data.Fin.BigOperators
@@ -542,6 +543,7 @@ public import ArkLib.Data.Fin.Tuple.Defs
 public import ArkLib.Data.Fin.Tuple.Lemmas
 public import ArkLib.Data.Fin.Tuple.Notation
 public import ArkLib.Data.Fin.Tuple.TakeDrop
+public import ArkLib.Data.Finset.CyclicProduct
 public import ArkLib.Data.Finset.Enumeration
 public import ArkLib.Data.Finset.PairwiseIntersection
 public import ArkLib.Data.Finset.PickSubset
@@ -617,6 +619,7 @@ public import ArkLib.Data.MvPolynomial.WeightedHomogeneous
 public import ArkLib.Data.MvPolynomial.WeightedOrder
 public import ArkLib.Data.Nat.BitSum
 public import ArkLib.Data.OracleComp.QueryBounds
+public import ArkLib.Data.Polynomial.AffineFactorBadChallenge
 public import ArkLib.Data.Polynomial.BinaryTrace
 public import ArkLib.Data.Polynomial.BinaryTraceQuotient
 public import ArkLib.Data.Polynomial.Bivariate
@@ -661,6 +664,7 @@ public import ArkLib.Data.Polynomial.Differential.TotalJetDegreeCount
 public import ArkLib.Data.Polynomial.Differential.Types
 public import ArkLib.Data.Polynomial.Differential.WitnessCount
 public import ArkLib.Data.Polynomial.DivisorReconstruction
+public import ArkLib.Data.Polynomial.FiniteDomainQuotient
 public import ArkLib.Data.Polynomial.FoldedWronskian
 public import ArkLib.Data.Polynomial.FoldingPolynomial
 public import ArkLib.Data.Polynomial.FractionFieldExpand
@@ -670,8 +674,11 @@ public import ArkLib.Data.Polynomial.FractionFieldRoots
 public import ArkLib.Data.Polynomial.FrobeniusContraction
 public import ArkLib.Data.Polynomial.Indicator
 public import ArkLib.Data.Polynomial.Interface
+public import ArkLib.Data.Polynomial.PermutationFingerprint
+public import ArkLib.Data.Polynomial.PermutationFingerprintDegree
 public import ArkLib.Data.Polynomial.PointCollision
 public import ArkLib.Data.Polynomial.PointCollisionProbability
+public import ArkLib.Data.Polynomial.PowerBatch
 public import ArkLib.Data.Polynomial.Prelims
 public import ArkLib.Data.Polynomial.RationalFunctions
 public import ArkLib.Data.Polynomial.RationalFunctions.FunctionField
@@ -867,6 +874,8 @@ public import ArkLib.ProofSystem.Binius.FRIBinius.RingSwitch
 public import ArkLib.ProofSystem.Component.CheckClaim
 public import ArkLib.ProofSystem.Component.DoNothing
 public import ArkLib.ProofSystem.Component.NoInteraction
+public import ArkLib.ProofSystem.Component.PowerBatch
+public import ArkLib.ProofSystem.Component.QuotientZeroTest
 public import ArkLib.ProofSystem.Component.RandomQuery
 public import ArkLib.ProofSystem.Component.ReduceClaim
 public import ArkLib.ProofSystem.Component.SendChallenge
@@ -925,7 +934,15 @@ public import ArkLib.ProofSystem.Fri.Spec.SingleRound
 public import ArkLib.ProofSystem.Fri.Spec.Soundness
 public import ArkLib.ProofSystem.Fri.Spec.Transcript
 public import ArkLib.ProofSystem.Fri.Spec.VerifierExecution
+public import ArkLib.ProofSystem.Plonk.Accumulator
+public import ArkLib.ProofSystem.Plonk.AccumulatorComputable
+public import ArkLib.ProofSystem.Plonk.AccumulatorResidual
 public import ArkLib.ProofSystem.Plonk.Basic
+public import ArkLib.ProofSystem.Plonk.Computable
+public import ArkLib.ProofSystem.Plonk.Domain
+public import ArkLib.ProofSystem.Plonk.Encoding
+public import ArkLib.ProofSystem.Plonk.PermutationFingerprint
+public import ArkLib.ProofSystem.Plonk.Prepared
 public import ArkLib.ProofSystem.RingSwitching.Basic
 public import ArkLib.ProofSystem.RingSwitching.Lift
 public import ArkLib.ProofSystem.RingSwitching.Lift.Presentation
