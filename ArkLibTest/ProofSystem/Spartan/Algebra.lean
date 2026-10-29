@@ -3,8 +3,8 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.ProofSystem.Spartan.Algebra
-import ArkLib.ProofSystem.Spartan.Layout
+import ArkLib.ProofSystem.Spartan.Algebra.Identities
+import ArkLib.ProofSystem.Spartan.Algebra.Layout
 import Mathlib.Data.ZMod.Basic
 
 /-! Small-field checks of rectangular R1CS embedding and Spartan's polynomial boundary. -/

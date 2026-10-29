@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Spartan.Evaluation
+public import ArkLib.ProofSystem.Spartan.Evaluation.Relation
 public import ArkLib.OracleReduction.Security.GuardedRoundByRound
 
 /-!

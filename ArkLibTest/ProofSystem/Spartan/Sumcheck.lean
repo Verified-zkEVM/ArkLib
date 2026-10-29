@@ -3,8 +3,8 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.ProofSystem.Spartan.FirstSumcheck
-import ArkLib.ProofSystem.Spartan.SecondSumcheck
+import ArkLib.ProofSystem.Spartan.Sumcheck.First
+import ArkLib.ProofSystem.Spartan.Sumcheck.Second
 import ArkLib.OracleReduction.Security.ChallengePresampling
 import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
 import Mathlib.Algebra.Field.ZMod

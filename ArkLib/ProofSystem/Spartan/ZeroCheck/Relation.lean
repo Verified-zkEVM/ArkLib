@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Spartan.Realization
+public import ArkLib.ProofSystem.Spartan.Algebra.Realization
 
 /-!
 # Spartan's initial zero-check relation

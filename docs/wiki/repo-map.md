@@ -74,12 +74,13 @@ home_page/            site assets and assembled website root
 ## Navigation Notes
 
 - `ProofSystem/Spartan/` keeps its polynomial mathematics independent of both interaction layers.
-  `Layout.lean` embeds arbitrary R1CS sizes and recovers witnesses by restriction;
-  `Context.lean` owns the retained public records. `Algebra.lean` defines the virtual polynomials,
-  `Computable.lean` constructs them with CompPoly, and `Realization.lean` connects finite-table
-  evaluation to their semantics. The relation modules own the zero-check, row-claim and batching
-  equations. `FirstSumcheck.lean` and `SecondSumcheck.lean` lift the general Sumcheck protocol
-  through executable virtual-polynomial lenses, preserving the original oracle tables and
+  `Algebra/Layout.lean` embeds arbitrary R1CS sizes and recovers witnesses by restriction;
+  `Context.lean` owns the retained public records. `Algebra/Identities.lean` defines the virtual
+  polynomials, `Algebra/Computable.lean` constructs them with CompPoly, and
+  `Algebra/Realization.lean` connects finite-table evaluation to their semantics. The
+  `ZeroCheck/`, `Evaluation/` and `Batching/` folders pair each stage's `Relation.lean` with its
+  `Reduction.lean`. `Sumcheck/First.lean` and `Sumcheck/Second.lean` lift the general Sumcheck
+  protocol through executable virtual-polynomial lenses, preserving the original oracle tables and
   proving stage completeness and fixed-prefix errors `3 / |R|` and `2 / |R|`.
   The first verifier's query-bound theorem excludes evaluation of its virtual input polynomial.
   `WitnessAttachment.lean` sends the padded original witness, forwards scalar matrix queries,

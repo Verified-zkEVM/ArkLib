@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Spartan.Algebra
+public import ArkLib.ProofSystem.Spartan.Algebra.Identities
 public import ArkLib.ProofSystem.Spartan.Context
 
 /-!

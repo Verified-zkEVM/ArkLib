@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.ProofSystem.Spartan.ZeroCheck
+import ArkLib.ProofSystem.Spartan.ZeroCheck.Reduction
 import Mathlib.Algebra.Field.ZMod
 
 /-! # Random-evaluation and zero-check examples over a small prime field -/
