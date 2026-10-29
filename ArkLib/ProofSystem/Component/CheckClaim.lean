@@ -113,7 +113,7 @@ def knowledgeStateFunction :
       init impl (relIn Statement pred) (relOut Statement)
       (Extractor.RoundByRound.id (Witness := Unit)) where
   toFun | ⟨0, _⟩ => fun stmtIn _ witIn => (stmtIn, witIn) ∈ relIn Statement pred
-  toFun_empty := fun _ _ => by simp
+  toFun_empty := fun _ _ h => h
   toFun_next := fun i => Fin.elim0 i
   toFun_full := fun stmtIn tr _ h => by
     -- Reduce the dependent-pattern goal to `pred stmtIn`.

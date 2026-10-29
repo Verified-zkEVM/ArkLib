@@ -14,9 +14,9 @@ error. No declaration under `ArkLib/Interaction/` or
 
 | Repository | Revision | Role |
 |---|---|---|
-| VCVio | `d7089e46d69e07640fa23b5ae6b1b966f1d4b949` | direct ArkLib dependency |
-| PolyFun | `3710d71b28404a151b8d1f0ce080ea448778dec0` | revision selected and tested by VCVio |
-| Lean | `v4.34.0` | common toolchain |
+| VCVio | `88efe9715a9fa9e7d89635c38cf70259836766c2` (`v4.35.0`) | direct ArkLib dependency |
+| PolyFun | `ef4c157b3c6775fb55864303d96f9b400428d5f0` | revision selected and tested by VCVio |
+| Lean | `v4.35.0` | common toolchain |
 
 ArkLib does not override PolyFun independently. VCVio owns the tested PolyFun revision. A later
 PolyFun update reaches ArkLib only after VCVio advances and validates its pin.
@@ -118,7 +118,7 @@ Sumcheck on the typed layer:
 | Result | Evidence | Landed in |
 |---|---|---|
 | One-round honest completeness through closing | `SingleRound`, `Closing` | #872 |
-| Legacy correspondence | `legacy_input_iff`, `legacy_output_iff`, `legacy_honest_verifier_correspondence` | #874 |
+| Legacy correspondence | `legacy_input_iff`, `legacy_output_iff`, `legacy_verifier_correspondence` | #874, #1244 |
 | Round relations via multivariate projection | `Projection`, `ProjectionTransport` | #879 |
 | One-round reduction soundness, error `deg` over the field size | `executeCommitted_soundness`, `executeRandomCommitment_soundness` and measure forms | #881 |
 | Two sequential rounds through the actual closed claim | `MultivariateRound`, `Sequential` | #883 |
@@ -322,9 +322,9 @@ dummy query and three for revelation. The informed prover costs seven and succee
 These are guarantees for those fixed native provers, not a theorem that access or cost bounds alone
 imply soundness for arbitrary adversaries.
 
-The legacy verifier correspondence is honest-execution only: the legacy verifier reads the input
-polynomial for its next target, while the typed verifier reads the sent polynomial. Both relation
-directions are proved for arbitrary claims.
+The single-round legacy verifier correspondence identifies scalar outputs for arbitrary sent
+polynomials and fixed challenges, including rejection. Both relation directions are proved for
+arbitrary claims. This does not relate the legacy and native security games.
 
 The legacy `OracleReduction` layer remains in use. Its carrier is `ProtocolSpec n`; several
 unrestricted stateful composition theorems remain admitted. Existing legacy repairs are tracked

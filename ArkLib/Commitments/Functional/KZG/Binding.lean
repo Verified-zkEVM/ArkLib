@@ -661,7 +661,7 @@ lemma map_binding_instance_drag {n : ℕ} {AuxState : Type} [SampleableType G₁
         (n := n)) result]
     = Pr{let result ← (mapBindingToTsdh (p := p) (n := n) <$> bindingGameExt (g₁ := g₁) (g₂ := g₂)
         AuxState adversary scheme)}[(Groups.tSdhCondition (p := p) (g₁ := g₁)) result] := by
-  simp only [prEvent_map, Function.comp_apply]
+  simp only [prEvent_map, Function.comp_def]
 
 omit [DecidableEq G₁] in
 include g₁ g₂ pairing in

@@ -852,7 +852,7 @@ private theorem eps_ca_lower_of_finset_witness
       ProximityGap.epsCa (F := F) (A := A) C δ_fld δ_int := by
   classical
   let _ := Fintype.ofFinite A
-  unfold ProximityGap.epsCa
+  simp only [ProximityGap.epsCa_eq]
   refine le_trans ?_ (le_iSup _ u)
   rw [ite_eq_right hnot]
   rw [SampleableType.prEvent_uniformSample]

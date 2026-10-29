@@ -47,5 +47,5 @@ theorem prEvent_bind_le_prEvent_add_lintegral_ae
       by_cases he : Exceptional b
       · simp [he]
       · simpa [he] using hb he)
-  simpa only [Fintype.sum_unique, bind_assoc, pure_bind,
+  simpa only [Fintype.sum_unique, bind_assoc, pure_bind, bind_pure_comp,
     lintegral_indicator MeasurableSet.of_discrete] using h

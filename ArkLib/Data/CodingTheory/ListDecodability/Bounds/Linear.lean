@@ -923,7 +923,10 @@ high-probability content; that weaker form is *derived* below as
 
 **Dimension pin.** The source's code has rate exactly `ρ`, with dimension `ρ·n` treated as an
 integer for exposition. Exact real equality is unsatisfiable at irrational `ρ`, so the dimension is
-pinned two-sidedly into `ρ ≤ k/n ≤ ρ + 1/n`, admitting `k = ⌈ρ·n⌉` up to the boundary case. -/
+pinned two-sidedly into `ρ ≤ k/n ≤ ρ + 1/n`, admitting `k = ⌈ρ·n⌉` up to the boundary case.
+
+Solicited proof: see
+<https://github.com/Verified-zkEVM/ArkLib/issues/1352>. -/
 theorem random_linear_lambda_lower
     (q : ℕ) (_hq_pp : IsPrimePow q)
     (δ : ℝ) (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1 - 1 / q)
@@ -957,7 +960,10 @@ The bad-event count is below the whole family's, the family `{C | finrank C = �
 The hypothesis `hρ0 : 0 ≤ ρ` is trivially true in the source's regime, where rates approach
 capacity `1 − H_q(δ)` from below with small `γ`. It is needed here only because
 `Basic/Entropy.lean` does not yet prove `H_q(δ) < 1` for `δ < 1 − 1/q`, which would let `γ` be
-shrunk below `1 − H_q(δ)`. -/
+shrunk below `1 − H_q(δ)`.
+
+Solicited proof: see
+<https://github.com/Verified-zkEVM/ArkLib/issues/1352>. -/
 theorem random_linear_lambda_lower_exists
     (q : ℕ) (hq_pp : IsPrimePow q)
     (δ : ℝ) (hδ_pos : 0 < δ) (hδ_lt : δ < 1 - 1 / q)

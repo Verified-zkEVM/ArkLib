@@ -27,7 +27,7 @@ into an explicit scalar bound for each stage, then for any finite family of stag
 
 ## References
 
-* [DKTZ26]
+* [DKT26]
 -/
 
 @[expose] public section
