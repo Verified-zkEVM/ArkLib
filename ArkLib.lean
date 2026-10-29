@@ -965,6 +965,7 @@ public import ArkLib.ProofSystem.Stir.OutOfDomSmpl
 public import ArkLib.ProofSystem.Stir.ProximityBound
 public import ArkLib.ProofSystem.Stir.ProximityGap
 public import ArkLib.ProofSystem.Stir.Quotienting
+public import ArkLib.ProofSystem.Sumcheck.Counting
 public import ArkLib.ProofSystem.Sumcheck.Domain
 public import ArkLib.ProofSystem.Sumcheck.Impl.Basic
 public import ArkLib.ProofSystem.Sumcheck.Impl.Projection
