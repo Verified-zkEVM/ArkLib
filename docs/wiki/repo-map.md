@@ -105,6 +105,17 @@ home_page/            site assets and assembled website root
   `ArkLibTest/ProofSystem/PlonkEncoding.lean` checks order-four encoding over a prime field,
   including rejected gates, inconsistent copies, and incorrect public inputs.
 
+- `ProofSystem/Plonk/GrandProduct*.lean` formalizes the Plonk permutation grand product:
+  a univariate accumulator `Z` over the multiplicative evaluation domain with `Z(1) = 1` and
+  `Z(ωx) * Q(x) = Z(x) * N(x)`. `GrandProductData.lean` defines its executable polynomials and
+  residuals; `GrandProduct.lean` defines the oracle reduction; the `Completeness` and `Security`
+  modules prove its completeness and fixed-prefix knowledge bounds.
+  `ProofSystem/Plonk/Batch*.lean` batches the three residuals through `GeneratorBatch` with
+  `powerBatchGenerator F 3`, one uniform field challenge, and knowledge error `2 / |F|`.
+  `ProofSystem/Plonk/Quotient*.lean` checks the resulting residual through the quotient zero test.
+  The multilinear (GKR-style) grand-product argument is a different protocol and is not
+  formalized here.
+
 - `ProofSystem/Component/GeneratorBatch.lean` batches polynomial zero tests with a single
   seed from a zero-evading generator. It provides the virtual evaluation oracle, extractor,
   guarded form, perfect completeness, and fixed-prefix knowledge certificates. Its output
@@ -375,14 +386,8 @@ home_page/            site assets and assembled website root
     `endPieceCheck_eq_true_iff` is shared with the nonrecursive scheme's terminal verdict
     (`Correctness.lean`), so the closing link has one decision procedure.
     `EndPiece/Basic.lean` re-exports `EndPiece/Reduction.lean`.
-  - `Recursion/` (§4.5) — the recursion adapters, **outside the completed development and not
-    composed into `Composition.lean`'s chain**: `PartialEval` (Eq. (24) peeling, pure
-    derive-`y₀`), `ZBatchBridge` (Eqs. (25)–(26) `Z`-packing — ⚠ carries the open
-    partial-evaluation soundness gap, analyzed in its module docstring), `TraceHandoff`
-    (Eqs. (27)–(28)
-    — guarded trace check, lands on the next iteration's `QuadEval` seam over `Φ'`).
-    `Recursion/Basic.lean` re-exports the folder, and the top-level `Hachi.lean` umbrella imports
-    it so the umbrella reaches every folder it documents.
+  - The recursive opening (§4.5) is not formalized; `docs/kb/audits/noz26-recursion-z-packing.md`
+    records why.
   - `Composition.lean` — the **CWSS composition home**: `iteration` chains all nine subprotocol
     links (rows 1–9 of the header's seam table) into one evaluation iteration, and
     `hachi_iteration_coordinateWiseSpecialSoundWithEscape` states its composed named-extractor CWSS
@@ -396,10 +401,8 @@ home_page/            site assets and assembled website root
     seams have to match.
   - `Commitment.lean` — **Hachi as a `Commitment.Scheme`**: the eval `OracleInterface`, honest
     `keygen`/`commit` (the paper's **balanced** base-`b` gadget decomposition at width
-    `δ = ⌈log_b q⌉`, digits in Eq. (20)'s box `S_b` — `[-8, 7]` at `b = 16`), and the `hachi`
-    scheme value, whose `opening` field is the §4.5 *recursive* opening and is `sorry` (the
-    recursion boundary; the declared `pSpec` covers only the bridge ▷ QuadEval prefix). `hachi` and
-    `hachiNonrecursive` share this committer; the unsigned `zmodDigitDecomposition` survives only
+    `δ = ⌈log_b q⌉`, digits in Eq. (20)'s box `S_b` — `[-8, 7]` at `b = 16`), used by
+    `hachiNonrecursive`; the unsigned `zmodDigitDecomposition` survives only
     as the building block the balanced digits are shifted from (`Gadget/Core`), and
     `InnerOuter.perfectlyCorrect` is likewise stated at the balanced digits. The file also carries
     the **honest-committer facts** the honest chain needs: `verifiedOpening_honestOpening` (the
