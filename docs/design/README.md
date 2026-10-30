@@ -28,7 +28,7 @@ implementation schedule.
 
 | Page | Owns |
 |---|---|
-| [Current status](00-current-status.md) | Supported dependency pins, available APIs, proved results, and remaining proof gaps |
+| [Current status](00-current-status.md) | Supported dependency baseline, available APIs, proved results, and remaining proof gaps |
 | [End state](00-end-state.md) | Intended coverage and what counts as completing the framework |
 | [Foundations](01-foundations.md) | Division of responsibility between PolyFun, VCVio, and ArkLib |
 | [Foundation implementation record](01a-foundation-pr-plan.md) | Historical AR slice identifiers and the PRs that delivered them |
@@ -36,7 +36,7 @@ implementation schedule.
 | [Access and execution contract](01c-access-execution-contract.md) | What the verifier can observe and query at each protocol position |
 | [Claims, closing, and composition](02-oracle-reduction-core.md) | Output interfaces, their interpretation, and execution conditions for composition |
 | [Execution and security](03-adversarial-oracle-execution.md) | Persistent worlds, security events, probability premises, extraction, and costs |
-| [Extractor efficiency](03a-extractor-efficiency.md) | Implemented measured contracts (E1, E2) for named extractors, the obligations of each extractor-bearing notion, and FRI and Toy requirements |
+| [Extractor efficiency](03a-extractor-efficiency.md) | The implemented unbounded-game and measured-operation contracts for named extractors, the obligations of each extractor-bearing notion, and FRI and Toy requirements |
 | [Extractor execution backends](03b-extractor-execution.md) | Proposed complete execution bounds, backend requirements, and uniform families for extractors |
 | [Oracle-elimination compiler](04-oracle-elimination-compiler.md) | Backend obligations and how compilation preserves oracle guarantees |
 | [Roadmap](05-roadmap.md) | Remaining native-layer work, dependencies, acceptance checks, and issue links |
@@ -64,7 +64,7 @@ progress log across chapters.
 
 The pages distinguish three kinds of statement:
 
-- **Implemented or proved:** supported by the source at the pins recorded in current status.
+- **Implemented or proved:** supported by the source at the dependency pins in `lake-manifest.json`.
 - **Planned:** an intended theorem or API, with its implementation work in the roadmap.
 - **Conditional or deferred:** work needing a concrete client or a later milestone.
 

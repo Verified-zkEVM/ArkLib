@@ -9,34 +9,10 @@ public [roadmap](../../ROADMAP.md). The design documents define the model: see t
 [oracle execution and security games](03-adversarial-oracle-execution.md), and
 [oracle-elimination compiler](04-oracle-elimination-compiler.md).
 
-**Status terms:** *Landed* means on `main`; *proposed* means designed but not started;
-*conditional* means do the work only when a real client demonstrates the need. Every item after
-the landed list is open.
-
-## Landed
-
-Each item lists the modules that implement it; [current status](00-current-status.md) states
-the theorems and their hypotheses.
-
-- **Oracle composition C1–C8** (#1231–#1238): `Interaction/CompositionSoundness`,
-  `Oracle/Sequential`, `Oracle/SourceRouting`, `Oracle/CompositionSoundness`, `Oracle/LoggedRun`,
-  `Oracle/PhasedRun`, `Oracle/Runtime`, `Oracle/RuntimeSoundness`, `Oracle/Prefix`,
-  `Data/OracleComp/QueryBounds`, and `Sumcheck/Interaction/Composition`.
-- **Computable native Sumcheck** (#1242, #1243): `Sumcheck/Impl/Representation`,
-  `Sumcheck/Impl/Projection`, `Sumcheck/Interaction/Computable`, `ComputableSoundness` and
-  `ComputableCompleteness`.
-- **Native round-by-round soundness** (#1261): `Oracle/Security/RoundByRound`,
-  `Oracle/Security/Soundness`, and its Sumcheck instance `Sumcheck/Interaction/RoundByRound`.
-- **Native knowledge certificates and their composition** (#1259, #1260):
-  `Oracle/Security/Knowledge`, `KnowledgeAppend` and `KnowledgeComposition`.
-- **Native state-restoration knowledge soundness** (#1263, #1264):
-  `Oracle/Security/StateRestoration`, `StateRestorationReplay`, `StateRestorationGame`,
-  `StateRestorationOracle`, `StateRestorationCoins` and `StateRestorationBudget`.
-- **Extractor efficiency E1 and E2** (#1364, #1370, #1397): unbounded games in
-  `OracleReduction/Security/UnboundedExtraction`; the game-independent measured program in
-  `Data/OracleComp/MeasuredProgram`; the legacy conjunction in `OracleReduction/Security/Resources`
-  with the FRI instance in `Fri/Spec/MeasuredKnowledgeSoundness`; and measured native stages in
-  `Oracle/Security/KnowledgeResources` and `StateRestorationResources`.
+**Status terms:** *proposed* means designed but not started; *conditional* means do the work only
+when a real client demonstrates the need. Every item on this page is open. The
+[current-status inventory](00-current-status.md) lists the landed modules and theorems with their
+hypotheses.
 
 ## Scope and contracts
 
@@ -58,16 +34,15 @@ in the output oracle relation; it is not an extra final verifier query.
 
 ## Native protocol clients
 
-Native Sumcheck is the only protocol on the native layer. It has ordinary soundness, completeness
-and round-by-round soundness, and its witness is `Unit` because the polynomial is an input oracle.
-No protocol under `ArkLib/ProofSystem/` instantiates the native knowledge or state-restoration
-certificates yet. Spartan and Plonk are end-to-end on the legacy layer; that does not port them.
+[Current status](00-current-status.md#native-security) records which protocols use the native
+layer and which native certificates still lack a protocol client. A legacy-layer assembly does not
+port a protocol.
 
 1. **Efficient Sumcheck and legacy correspondence.** Optimize the Boolean multilinear case using
    CompPoly evaluation tables, with proved message/update algorithms and separately stated costs.
-   The computable general prover alone makes no efficiency claim. Relate the legacy Sumcheck
-   claims to the native ones with a proved correspondence; do not treat the native result as
-   silently proving the legacy declarations.
+   The computable general prover alone makes no efficiency claim. Extend the single-round
+   legacy correspondence to relate the complete legacy and native security games; do not treat
+   the native result as silently proving the legacy declarations.
 2. **A native knowledge client.** Instantiate `KnowledgeCertificate` for a protocol with a
    nontrivial witness, for example a committed or hidden polynomial. State the witness relation
    explicitly and connect the certificate to the actual native verifier through
@@ -103,7 +78,8 @@ state-restoration proof; add them upstream only when one of these bridges requir
 
 ## Extractor efficiency repair
 
-E1 and E2 have landed (see above). The remaining steps are proposed. The near-term contracts
+The unbounded-game and measured-operation contracts have landed. The remaining steps are
+proposed. The near-term contracts
 belong to [the efficiency chapter](03a-extractor-efficiency.md); complete execution and
 computational-model decisions belong to [the execution-backend chapter](03b-extractor-execution.md).
 Each implementation PR starts from current `main` or its explicit prerequisite branch; keep
@@ -111,28 +87,30 @@ dependency upgrades separate.
 
 | Step | Deliverable | Acceptance evidence |
 |---|---|---|
-| E3a | Proposed route, replaceable: build a generic algebraic execution backend for the PolyFun/VCVio quantitative layer | Executable code type with semantics for field operations, indices, control and storage; gate on realizing one real FRI fold-consistency check with proved output agreement and execution bound |
-| E3 | Required later for efficient-extraction claims: add `knowledgeSoundnessWithin` using the E3a backend or another adequately reviewed execution model | Quantitative realization, explicit representations, charged pure computation, termination/access proof, and a documented review of primitive adequacy; no claimed standard-machine correspondence |
-| E4 | Certify all local work of FRI's same named extractor | Bound view preparation, scan/control/storage and interpolation, retain early rejection, combine with `knowledge_soundness_with`, and derive a polynomial envelope under the protocol constraints |
-| E5 | Add the measured eager Toy decoder and terminal certificate | Equality with the existing extractor on all inputs, measured agreement/interpolation/re-encoding/materialization, and the unchanged `certifiedExtractorError` |
-| E6 | Certify Toy round-by-round execution | Per-stage budgets for the actual available prefixes, exact extractor identities and the existing per-round error guarantees |
-| E7 | Deferred: add uniform family corollaries when a consumer fixes the policy | One packed family realization and polynomial for fixed backend/boundary/contracts, with explicit parameter growth and representation policy |
+| Algebraic execution backend (E3a) | Proposed route, replaceable: build a generic algebraic execution backend for the PolyFun/VCVio quantitative layer | Executable code type with semantics for field operations, indices, control and storage; gate on realizing one real FRI fold-consistency check with proved output agreement and execution bound |
+| Complete execution bounds (E3) | Required later for efficient-extraction claims: add `knowledgeSoundnessWithin` using the algebraic backend or another adequately reviewed execution model | Quantitative realization, explicit representations, charged pure computation, termination/access proof, and a documented review of primitive adequacy; no claimed standard-machine correspondence |
+| Complete FRI extractor certificate | Certify all local work of FRI's same named extractor | Bound view preparation, scan/control/storage and interpolation, retain early rejection, combine with `knowledge_soundness_with`, and derive a polynomial envelope under the protocol constraints |
+| Toy decoding certificate | Add the measured eager Toy decoder and terminal certificate | Equality with the existing extractor on all inputs, measured agreement/interpolation/re-encoding/materialization, and the unchanged `certifiedExtractorError` |
+| Toy round-by-round certificate | Certify Toy round-by-round execution | Per-stage budgets for the actual available prefixes, exact extractor identities and the existing per-round error guarantees |
+| Uniform families (E7) | Deferred: add uniform family corollaries when a consumer fixes the policy | One packed family realization and polynomial for fixed backend/boundary/contracts, with explicit parameter growth and representation policy |
 
-E3 is required before ArkLib claims efficient extraction without qualification. It was scheduled
-after the native soundness contracts, their composition, and a native measured-stage conjunction
-with an acceptance example; all three have landed. No probability theorem waits for E3. E3a is
-the proposed backend route; another execution model with a reviewed adequacy argument can replace
-it. E3 consumes the chosen backend and E2's same-program bridge. E4 and E5 consume E3 and can be
-developed independently; E6 follows E5. E3a's real FRI check is the gate before scaling the
-backend to the complete extractor. E3's formal gain over E2 is that every piece of pure
+Complete execution bounds are required before ArkLib claims efficient extraction without
+qualification. Their prerequisites (the native soundness contracts, their composition, and a
+native measured-stage conjunction with an acceptance example) have landed. No probability theorem
+waits for them. The algebraic backend is the proposed route; another execution model with a
+reviewed adequacy argument can replace it. Complete execution bounds consume the chosen backend
+and the measured contract's same-program bridge. The complete FRI certificate and the Toy decoding
+certificate consume them and can be developed independently; the Toy round-by-round certificate
+follows the Toy decoding certificate. The backend's real FRI check is the gate before scaling it
+to the complete extractor. The formal gain over the measured contract is that every piece of pure
 computation is charged through the backend; the primitive model's adequacy is reviewed, not proved
 against a standard machine.
 
-E7 waits for a consumer and an explicit parameter-growth policy. It uses the corresponding
-concrete certificates and must not infer uniformity merely from parametric Lean definitions.
-Update public summaries and protocol audits with each concrete result in E4–E6, marking whether
-it supplies operation counts, algebraic execution bounds or bit-time bounds; those documentation
-updates do not wait for E7.
+Uniform families wait for a consumer and an explicit parameter-growth policy. They use the
+corresponding concrete certificates and must not infer uniformity merely from parametric Lean
+definitions. Update public summaries and protocol audits with each concrete FRI or Toy
+certificate, marking whether it supplies operation counts, algebraic execution bounds or bit-time
+bounds; those documentation updates do not wait for uniform families.
 
 Protocol code stays in ArkLib; generic cost/realization combinators belong upstream. Use the
 existing arithmetic layer rather than importing FRI-specific access instructions into Toy.
@@ -142,7 +120,7 @@ Retain compatibility names with precise docstrings while adding the resource-cer
 theorems. A Caliper field/kernel pilot and bit-machine refinements are later clients, not
 prerequisites for a complete claim relative to the explicit algebraic model.
 
-For E3a–E7, run the normal repository validation, the axiom regression gate for axiom-clean
+For each of these steps, run the normal repository validation, the axiom regression gate for axiom-clean
 theorems, and the relevant existing compiled extractor clients. Extend acceptance tests with the
 failure modes in the efficiency chapter. Runtime fixtures check implementation behavior; the
 kernel-checked bounds and realization establish the resource claim. Update current status only
@@ -159,12 +137,12 @@ guarantees, assign backends, plan reads, lower and transport claims, then prove 
 homomorphic adapters. Carry soundness, extraction, privacy, query costs, and running time through
 each pass. Do not fill unsupported backend capabilities with placeholder guarantees.
 
-### AR-11 — Merkle adapter
+### Merkle adapter
 
 The first Merkle backend adapter adapts VCVio's existing shared-ROM execution and extractability
 theorem to ArkLib's declared oracle interface. Its prerequisites have landed: the named-context
 and source-routing API (#864), the persistent runtime (#884), terminal outcomes (#886), and the
-access/resource evidence from C8 (#1238). The adapter itself has not started. Do not restate the
+access and query-budget evidence (#1238). The adapter itself has not started. Do not restate the
 VCVio security game in ArkLib. This adapter supplies one backend capability; it does not by
 itself prove the full Fiat–Shamir, BCS, or compiler theorem.
 

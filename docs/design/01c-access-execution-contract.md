@@ -1,15 +1,14 @@
-# AR-3A / AR-3B semantic acceptance contract
+# Access and execution contract
 
 This specifies the access and execution contract established by the
 [foundation slices](01a-foundation-pr-plan.md). Remaining implementation work is tracked in the
 [roadmap](05-roadmap.md).
 The [naming contract](01b-type-tree-rename-cutover.md) and
-[core claim design](02-oracle-reduction-core.md) remain in force. AR-3A landed in
-[#861](https://github.com/Verified-zkEVM/ArkLib/pull/861) and AR-3B in
-[#862](https://github.com/Verified-zkEVM/ArkLib/pull/862); this page is kept as the contract those
-PRs satisfy.
+[core claim design](02-oracle-reduction-core.md) remain in force. The accumulated-access layer
+(`Oracle/Access`) and the single-run execution layer (`Oracle/Execution`, `Oracle/Protocol`)
+satisfy this contract.
 
-## AR-3A: signatures are not executions
+## Access: signatures are not executions
 
 Use the existing `PFunctor` carrier through `OracleSpec.toPFunctor` and
 `OracleSpec.ofPFunctor`; do not introduce another packed-signature record solely to change
@@ -26,7 +25,7 @@ connect that presentation to `accessAt`; generic restriction laws for arbitrary 
 are not sufficient.
 
 A cursor proves a syntactic occurrence, not reachability under a strategy. Run-derived resource
-availability belongs to execution and the later full-prefix/artifact work. AR-3A must not infer
+availability belongs to execution and the full-prefix/artifact layer. The access layer must not infer
 that every cursor is realizable, that every oracle payload type is inhabited, or that a
 structural prefix supplies concrete messages.
 
@@ -36,10 +35,10 @@ results. A query can distinguish payloads when the declared interface permits it
 a non-faithful interface must not silently become a projection to its underlying representation.
 
 Signature extension uses disjoint query slots. Equal query/response types do not make two
-resources identical. Stable identity, sharing, aliasing, and ideal guarantees remain AR-4B;
-AR-3A's sum tags route queries; AR-4B's `NamedContext` and `OracleModel` track names and promises.
+resources identical. The access layer's sum tags only route queries; stable identity, sharing,
+aliasing, and ideal guarantees belong to `NamedContext` and `OracleModel` in `Oracle/Resource`.
 
-### Required AR-3A tests
+### Required access tests
 
 - A public branch selects distinct oracle message types and their matching interfaces.
 - A test actually attempts an unavailable query and fails; the same query is accepted after
@@ -51,7 +50,7 @@ AR-3A's sum tags route queries; AR-4B's `NamedContext` and `OracleModel` track n
 - Cursor composition and restriction/rebuilding use PolyFun's actual cursor operations.
 - Non-default, independently chosen query and response universes elaborate.
 
-## AR-3B: authoring visibility and runtime visibility differ
+## Execution: authoring visibility and runtime visibility differ
 
 The prover may choose and remember concrete message values. The verifier authoring API must
 not receive those values at oracle nodes. Merely erasing payloads from the output path does
@@ -69,8 +68,8 @@ slot refinements. Neither quantifier should be silently changed to simplify an i
 
 ### Receive phases, terminal effects, and the schedule
 
-AR-3A records access before a move. AR-3B distinguishes that boundary from the verifier's
-post-receive computation. At an oracle send, the adapter first receives the concrete message,
+The access layer records access before a move. Execution distinguishes that boundary from the
+verifier's post-receive computation. At an oracle send, the adapter first receives the concrete message,
 then extends the handler, then runs the verifier's query computation. The verifier computation
 has the extended query signature but no concrete-message argument. This allows immediate
 oracle checks without either leaking the payload or postponing all checks to a later round.
@@ -107,8 +106,9 @@ and statement, not the raw prefix handler.
 A single-run erasure law must hold at the `OracleComp` level before an ambient handler is
 chosen. Test a stateful ambient handler so that reordered or duplicated queries are observable.
 Do not invoke `LawfulCommMonad` to hide a schedule mismatch. General sequential security,
-state restoration, world traces, terminal faults, and run-derived claim closing remain in
-their named later slices.
+state restoration, world traces, terminal faults, and run-derived claim closing are separate
+contracts, specified in the [core](02-oracle-reduction-core.md) and
+[security](03-adversarial-oracle-execution.md) chapters.
 
 A projected public path and verifier result is not the full verifier observation history.
 In particular, it omits the order and answers of local oracle queries. Name that projection
@@ -116,7 +116,7 @@ In particular, it omits the order and answers of local oracle queries. Name that
 that equal interface answers give equal verifier continuations; it does not mean that all
 messages with the same structural branch must produce the same answers.
 
-### Required AR-3B tests
+### Required execution tests
 
 - Run a mixed public/oracle tree with a query-dependent public challenge.
 - Preserve a nontrivial private prover output without giving it to verifier construction.
@@ -127,21 +127,18 @@ messages with the same structural branch must produce the same answers.
 - Check the exact ambient-query order and multiplicity using a stateful interpreter.
 - Exhibit the erasure equation for the actual exported executor, not a separate toy runner.
 
-## PR and validation boundary
+## Validation
 
-This section records the delivery rules the two PRs followed.
+Put acceptance examples in `ArkLibTest`, not in the production umbrella, and regenerate the
+umbrella mechanically.
 
-AR-3A was additive to `main`. AR-3B was a separate dependent PR; neither changed legacy
-`OracleReduction`, dependency pins, source-policy exceptions, or the axiom baseline. Examples
-belong in `ArkLibTest`, not the production umbrella. Regenerate the umbrella mechanically.
+The `Interaction acceptance` workflow (`.github/workflows/interaction.yml`) compiles the native
+production and test modules on pull requests that touch them, with zero-warning budgets. It
+restores but does not publish the shared build cache. It supplements the full validation and
+axiom gate; it does not replace it. An open draft or a started CI job is not evidence that a
+formalization is complete.
 
-The focused Interaction acceptance workflow compiles production and test modules on stacked
-feature-base PRs with the existing source-policy plugin and zero-warning budgets. It restores
-but does not publish the shared build cache and uses a read-only token. It supplements the
-full main-target validation/axiom gate; it does not replace it.
-
-Each PR reported its validated head and distinguished static inspection, successful Lean
-compilation, acceptance tests, and the full validation/axiom gate. An open draft or a started CI
-job is not evidence that a formalization is complete. The native Sumcheck port has since exercised
-this contract; the legacy-correspondence checkpoint has not (see the
-[roadmap](05-roadmap.md)).
+The native Sumcheck port and the single-round legacy-correspondence checkpoint have exercised
+this contract. The correspondence identifies verifier outputs and relations; it does not relate
+the complete legacy and native security games (see
+[current status](00-current-status.md#legacy-oracle-reduction-layer)).

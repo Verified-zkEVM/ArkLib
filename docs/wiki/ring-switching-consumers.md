@@ -114,10 +114,12 @@ The maintained [composite fixture][composite] uses a nonconstant `GF(16)/GF(2)` 
 honest codeword encoding. It checks sampled acceptance and a full challenge-error
 sum bounded below one. A direct-polynomial opening example alone would not certify this backend.
 The same file also exports ordinary knowledge soundness, derived from the round-by-round result
-through the guarded bridge `Verifier.GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundness`.
+through the proved guarded bridge `Verifier.GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundness`
+in `ArkLib/OracleReduction/Security/GuardedBridges.lean`.
 `Binius.FRIBinius.RingSwitch.fullReduction_perfectCompleteness_and_knowledgeSoundness` pairs
-perfect completeness with `Binius.FRIBinius.RingSwitch.fullVerifier_knowledgeSoundness`, whose
-error is `κ/|L| + ℓ' * (2/|L|)` plus the concrete Binary Basefold knowledge error
+perfect completeness on exact encodings (the strict view of the input interface) with
+`Binius.FRIBinius.RingSwitch.fullVerifier_knowledgeSoundness` on the relaxed compatibility
+relation. The knowledge error is `κ/|L| + ℓ' * (2/|L|)` plus the concrete Binary Basefold knowledge error
 `BinaryBasefold.FullBinaryBasefold.concreteBinaryBasefoldKnowledgeError L ℓ' R γ`.
 For the generic packing ring switch,
 `RingSwitching.Packing.RingSwitch.perfectCompleteness_and_knowledgeSoundness` gives ordinary
@@ -133,7 +135,7 @@ this randomized product-sumcheck route.
 The [ring-switching tracker](https://github.com/Verified-zkEVM/ArkLib/issues/1286) records delivery
 status. The early residual-conformance milestone is separate from full native security.
 
-### Early residual conformance (F0/F1)
+### Early residual conformance
 
 - Prove the source-pinned correspondence between the native polynomial, variable order, bases and
   shared layout, and reconstruction through the native head.

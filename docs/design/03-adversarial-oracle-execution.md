@@ -280,7 +280,8 @@ complete path to bound. The separate access predicate still checks that query, s
 unavailable resource even when a complete-path cost bound is vacuous. The pinned cost API uses
 small query and response types; the structural naming laws retain the prefix API's universes.
 
-`RuntimeQueryBounds` reuses C7's exact guessing prover and experiment. Its conjunction proves
+`RuntimeQueryBounds` reuses the persistent-runtime composition client's exact guessing prover and
+experiment. Its conjunction proves
 actual export provenance, source and routed-suffix certificates, the complete runtime's imported
 query budget, the actual ambient history charge, and the same half-bound theorem. The imported
 query count and the weighted ambient/source charges use separate cost models. The informed prover
@@ -341,9 +342,10 @@ upstream conditioning interfaces; a salted Fiat–Shamir bridge may.
 
 Knowledge soundness with an efficient extractor also needs a certificate for the computation
 named in its game. The [extractor efficiency contracts](03a-extractor-efficiency.md)
-separate measured operations, realized execution, and uniform polynomial-time families; the
-measured contracts E1 and E2 are implemented, with FRI and the Toy IOP as the first clients, and
-E3 onward are proposed. The legacy existential game alone imposes no time bound, and neither do
+separate measured operations, realized execution, and uniform polynomial-time families. The
+unbounded-game contract and measured-operation contract are implemented. FRI has a measured
+extraction certificate, and native knowledge certificates have measured stages. The Toy decoding
+certificate and complete execution bounds remain proposed. The legacy existential game alone imposes no time bound, and neither do
 the existential round-by-round, special-soundness and state-restoration notions; that chapter lists
 each notion's additional obligations. The native exception is `MeasuredKnowledgeCertificate`, which
 adds per-stage operation budgets to a native knowledge certificate.

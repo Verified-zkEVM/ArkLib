@@ -6,8 +6,9 @@ results that bear on it. This page is a dated record. Protocol-level status for 
 the framework is on the public [roadmap](../../ROADMAP.md); remaining native design work is in
 the [design roadmap](05-roadmap.md).
 
-The typed core, the world-backed execution artifacts, and the composition milestones C1–C8 have
-landed (AR-1 through AR-10B and #1231–#1238). On top of them the native layer now has:
+The typed core, world-backed execution, and native oracle composition have landed; the
+[ArkLib tables](#arklib) list them. On top of them the native layer now has these generic
+results:
 
 - ordinary round-by-round soundness on native execution prefixes, with a local-to-global theorem
   for the actual interpreted executor;
@@ -19,6 +20,12 @@ landed (AR-1 through AR-10B and #1231–#1238). On top of them the native layer 
 - native Sumcheck with soundness, completeness, round-by-round soundness, and a computable verifier
   and honest prover.
 
+The knowledge, state-restoration and measured-extraction results are generic certificates and
+theorems. What remains open is their use: no protocol under `ArkLib/ProofSystem/` instantiates
+them yet, there is no native rewinding extractor, and state restoration does not yet cover an
+adversary whose private randomness interleaves with its oracle queries (see
+[below](#native-security)).
+
 No declaration under `ArkLib/` uses `sorry` outside the five solicited proofs recorded in
 `scripts/axiom_baseline.json` (coding-theory lower bounds, issue
 [#1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352)); none of those is under
@@ -26,21 +33,18 @@ No declaration under `ArkLib/` uses `sorry` outside the five solicited proofs re
 
 ## Supported baseline
 
-| Repository | Revision | Role |
-|---|---|---|
-| VCVio | `6214f907760776ceab8b1f828c9015f549e66e31` | direct ArkLib dependency |
-| CompPoly | `06686e4c70939af82203af21516f8ab8a21a8051` | direct ArkLib dependency (computable polynomials) |
-| PolyFun | `4181c82238142d9b73403fbf4c4b13e1a801e400` | revision selected and tested by VCVio |
-| Lean | `v4.35.0` | common toolchain |
+The exact dependency revisions are in [`lake-manifest.json`](../../lake-manifest.json) and the
+toolchain in [`lean-toolchain`](../../lean-toolchain); the supported Lean version is `v4.35.0`.
 
-These revisions are read from `lake-manifest.json` and `lean-toolchain`. ArkLib does not override
-PolyFun independently. VCVio owns the tested PolyFun revision. A later PolyFun update reaches
-ArkLib only after VCVio advances and validates its pin.
+| Repository | Role |
+|---|---|
+| VCVio | direct ArkLib dependency |
+| CompPoly | direct ArkLib dependency (computable polynomials) |
+| PolyFun | transitive dependency; revision selected and tested by VCVio |
 
-The train moved from the alignment baseline (Lean 4.33.1, VCVio `f9dc47d9`, PolyFun `c0c92369`)
-through the VCVio `Runtime`/`WithFailure` additions used by #884 and the Lean 4.34 native-measure
-upgrade (#903, #913). ArkLib's PMF probability surface is retired; new observation boundaries use
-VCVio measure semantics.
+ArkLib does not override PolyFun independently. A later PolyFun update reaches ArkLib only after
+VCVio advances and validates its pin. ArkLib's PMF probability surface is retired; new observation
+boundaries use VCVio measure semantics.
 
 ## Capability status
 
@@ -338,7 +342,8 @@ is preserved by that run's context inclusion, and the fresh resource fails acces
 The phased/logged comparison ties the repeated source calls to the same execution; ambient phase
 logs remain distinct from source-query logs.
 
-The resource-certified runtime client imports C7's same hidden-bit fixture and half-bound theorem.
+The resource-certified runtime client imports the same hidden-bit fixture and half-bound theorem
+as the persistent-runtime composition client.
 It proves that the verifier returns the certified export, that the actual routed suffix uses allowed
 queries with cost at most five, and that the complete native runtime makes exactly one charged
 imported-randomness query. Its actual ambient history costs four under separate weights one for the
@@ -415,13 +420,14 @@ these stages to a `KnowledgeCertificate` for the same extractor.
 state-restoration bound with a uniform stage budget for that extractor. Budgets count declared
 instructions only. Views, handlers, witness-carrier identifications, stage composition and
 knowledge predicates are uncharged, and every function has a zero-budget program, so only a named
-program with a stated instruction set is evidence. This is the native form of contract E2 in the
-[extractor-efficiency chapter](03a-extractor-efficiency.md).
+program with a stated instruction set is evidence. This is the native form of the
+measured-operation contract in the [extractor-efficiency chapter](03a-extractor-efficiency.md).
 
-There is no native rewinding extractor and no Fiat–Shamir or BCS bridge from state restoration.
-No protocol under `ArkLib/ProofSystem/` instantiates the native knowledge or state-restoration
-certificates yet; their clients are the acceptance examples. The
-[design roadmap](05-roadmap.md) lists this work.
+**Open.** There is no native rewinding extractor and no Fiat–Shamir or BCS bridge from state
+restoration. The `privateCoins` forms are the only randomized-adversary state-restoration results;
+coin sampling interleaved with oracle queries is not covered. No protocol under
+`ArkLib/ProofSystem/` instantiates the native knowledge or state-restoration certificates yet;
+their clients are the acceptance examples. The [design roadmap](05-roadmap.md) lists this work.
 
 ## Legacy oracle-reduction layer
 
@@ -436,7 +442,7 @@ ring switching, Spartan, Plonk, Hachi and others) use this layer; their status i
   shows that round-by-round soundness of the induced languages coincides with round-by-round
   knowledge soundness, for all relations and errors, exactly when
   `Nonempty WitIn ∨ IsEmpty (StmtIn × FullTranscript pSpec × WitOut)` (#1396).
-- **Unbounded and measured extraction (E1, E2).** `Security/UnboundedExtraction.lean` proves
+- **Unbounded and measured extraction.** `Security/UnboundedExtraction.lean` proves
   `Verifier.knowledgeSoundness_iff_relationSoundness` through the classical selector
   `Extractor.Straightline.choose` (#1364). `Security/Resources.lean` adds
   `Verifier.knowledgeSoundnessWithResources`, and FRI's
@@ -449,16 +455,10 @@ ring switching, Spartan, Plonk, Hachi and others) use this layer; their status i
   round-by-round knowledge soundness for binary and finite chains. `Security/GuardedBridges.lean`
   and `Security/GuardedSoundness.lean` derive ordinary knowledge soundness and soundness from
   round-by-round guarantees of a guarded verifier, with the sum of the per-challenge errors.
-- **End-to-end protocols.** Through these interfaces, `Spartan.knowledgeSoundness` gives error
-  `(4s + 2t + 1) / |R|` for the original R1CS relation, where `s` and `t` are the numbers of row
-  and column variables (`ℓ_m`, `ℓ_n`) (#1407). For Plonk over an evaluation domain of size `n`,
-  `Plonk.Assembly.oracleReduction_completeness` has completeness error `3n / |F|` and
-  `Plonk.Assembly.oracleVerifier_knowledgeSoundnessWith` has knowledge error `(7n − 3) / |F|`;
-  `Plonk.Assembly.Circuit.oracleVerifier_knowledgeSoundnessWith` extracts the original circuit
-  witness with error `(7(ℓ + n) − 3) / |F|` for a circuit with `n` gates and `ℓ` public inputs,
-  whose prepared domain has `ℓ + n` rows (#1403). Binary Basefold and
-  FRI-Binius have ordinary knowledge soundness (#1418). The full Sumcheck reduction has knowledge
-  soundness through guarded composition (#1391).
+- **End-to-end protocols.** Spartan, Plonk, Binary Basefold, FRI-Binius and the full Sumcheck
+  reduction obtain ordinary knowledge soundness through these guarded interfaces; their theorems
+  and error bounds are on the public [roadmap](../../ROADMAP.md). For native design, they fix the
+  statements and errors that a native port must reproduce or relate to.
 - **Retired.** The legacy state-restoration definitions (#1409) and the duplex-sponge
   Fiat–Shamir skeleton (#1368) were removed; state restoration is now native only.
 
