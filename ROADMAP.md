@@ -10,7 +10,9 @@ layer; this page does not repeat it.
 
 ArkLib has two layers: the legacy layer (`ArkLib/OracleReduction/`) and the interaction layer
 (`ArkLib/Interaction/`), which is meant to replace it.
-[README.md](README.md#two-layers) explains the difference and the legacy layer's limitations.
+[README.md](README.md#two-layers) gives an overview, and
+[Limitations of the legacy layer](docs/design/legacy-layer-limitations.md) explains why the
+replacement is needed.
 
 The legacy layer is sorry-free and reasonably stable. Every protocol and commitment scheme under
 [Complete](#complete) is formalized in it, with sequential composition, context lifting
