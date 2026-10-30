@@ -89,7 +89,7 @@ Most friction in this subtree comes from picking the wrong numeric type, so chec
 | Real-valued bounds | `ℝ`, then wrapped | right-hand sides of capacity bounds, `JohnsonBound.Jqℓ`, `Jcap` |
 | ε-errors (`ε_pg`, `ε_ca`, `ε_mca`) — value | `ENNReal` | it is a supremum of probabilities |
 | ε-errors — *bound*, compared with `↑` not `ENNReal.ofReal` | `I → ℝ≥0` | `IsMCAGenerator`'s `ε_mca` |
-| Probabilities | `ENNReal` | the `Pr_{...}[...]` notation |
+| Probabilities | `ENNReal` | the `Pr{let x ← mx}[p x]` notation ([probability conventions](probability-conventions.md)) |
 | List sizes | `ℕ∞`, cast to `ENNReal` for real-valued bounds | `Lambda`, built from `closeCodewordsRel`'s `.encard` |
 | List-size *bounds* in a predicate | `ℝ≥0` | `Code.IsListDecodable`'s `ℓ` — see below for why, and why it is not `ℕ∞` |
 | Polynomial degree bound | `Polynomial.degreeLT F k : Submodule F F[X]` | `ReedSolomon.code`, `Folded.frsCode` |
@@ -297,5 +297,11 @@ Each such `sorry` should correspond to a row in
 [`../kb/audits/open-problems-list-decoding-and-correlated-agreement.md`](../kb/audits/open-problems-list-decoding-and-correlated-agreement.md);
 if an admit decomposes into sub-goals, record the decomposition there.
 
-`ArkLib/Data/CodingTheory/` contains a baselined set of admitted external results. New or changed
-admissions must use this comment form and pass the exhaustive axiom sweep.
+The axiom baseline's `sorry` list is empty. The remaining admitted external results in
+`ArkLib/Data/CodingTheory/` are *solicited proofs*: true, faithfully stated results listed in the
+`solicited` array of `scripts/axiom_baseline.json`, currently all tied to
+[issue #1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352). A solicited declaration's
+docstring must contain its issue URL, it must still depend on `sorryAx`, and no declaration outside
+the solicited list may depend on it; [`scripts/README.md`](../../scripts/README.md) states the full
+rules. New or changed admissions must use this comment form, be reviewed into that list, and pass
+the exhaustive axiom sweep.

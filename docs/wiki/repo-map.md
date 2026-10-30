@@ -11,42 +11,57 @@ ArkLib/
   Interaction/        typed prover, verifier, and reduction foundations
   OracleReduction/    core IOR abstractions and security theory
   Commitments/        commitments and opening arguments
+  AGM/                algebraic group model representations
   ProofSystem/        protocol families and higher-level proofs
   ToMathlib/          local additions not upstreamed to Mathlib
   ToCompPoly/         local additions not upstreamed to CompPoly
+ArkLibTest/           compile-time tests, acceptance cases, and runtime checks
 blueprint/src/        blueprint sources and references.bib
 docs/kb/             persistent paper, concept, audit, and query knowledge base
+docs/wiki/            reference pages and conventions
+docs/design/          interaction-layer design chapters and status
 scripts/              repo utilities
 home_page/            site assets and assembled website root
 ```
 
 ## Conceptual Layering
 
-- `ArkLib/Interaction/` is the new typed-interaction foundation. Its `Reduction.lean` module
+- `ArkLib/Interaction/` is the interaction layer, which is meant to replace the legacy layer
+  ([README](../../README.md#two-layers)). Its `Reduction.lean` module
   is independent of oracle, probability, and legacy protocol semantics.
-  `CompositionSoundness.lean` adds an exact native append execution law and quantitative
+  `CompositionSoundness.lean` adds an exact append execution law and quantitative
   soundness under lawful distribution semantics, with an explicit admissibility-error variant.
   It quantifies over ordinary whole-tree prover strategies and uses the existing paired runner.
 - `ArkLib/Interaction/Oracle/` refines generic type trees with public/oracle positions, keeps
   structural `BranchPath` separate from concrete `ExecutionPath` messages, and adds position-typed
   role/interface decorations plus the minimal decorated `Oracle.Protocol` bundle.
-- `ProofSystem/Sumcheck/Interaction/Protocol.lean` defines the full native sum-check tree,
+- `ProofSystem/Sumcheck/Interaction/Protocol.lean` defines the full interaction-layer sum-check tree,
   restricted verifier, and direct execution through `executeStrategiesCore`. Prover memory lives
   in ordinary strategy continuations. `ProtocolSoundness.lean` proves the final output oracle relation bound;
   `MultivariateSoundness.lean` supplies the one-round polynomial projection bound.
-  `ProtocolCompleteness.lean` defines the honest native strategy and proves support-level and
+  `ProtocolCompleteness.lean` defines the honest strategy and proves support-level and
   probability-one completeness.
-- `Interaction/Oracle/CoreRun.lean` offers `executeStrategiesCore` for ready native strategies.
+- `Interaction/Oracle/CoreRun.lean` offers `executeStrategiesCore` for ready prover strategies.
   `executeCore` runs reduction setup and delegates to that entry point. Both retain the actual
   input behavior, path and outputs for closing; `executeCore_eq_execute` preserves the existing
   execution law for reduction clients. `Access.lean` supplies the common virtual-view preservation
   law when a new message extends the available oracle signature.
 - `Interaction/Oracle/Composition.lean` supplies a separate sequential execution combinator.
-  Its explicit interface handoffs are not a substitute for a native strategy execution theorem.
+  Its explicit interface handoffs are not a substitute for a direct strategy execution theorem.
+- `Interaction/Oracle/Security/` holds interaction-layer security. `RoundByRound.lean` defines
+  ordinary round-by-round soundness on execution prefixes; `Soundness.lean` bounds the actual executor by the
+  sum of the local challenge errors (`count * error` in the uniform case). `Knowledge.lean` defines
+  witness-indexed knowledge certificates (`RoundExtractor`, `KnowledgeCertificate`);
+  `KnowledgeAppend.lean` and `KnowledgeComposition.lean` compose them along dependent append.
+  The `StateRestoration*.lean` modules prove state-restoration knowledge soundness for fixed-round
+  public-coin protocols with bound `(Q + rounds.length) * error`, with variants for oracle outputs
+  (`StateRestorationOracle`), pre-sampled private coins (`StateRestorationCoins`) and per-round
+  errors (`StateRestorationBudget`). The measured forms are described under measured extraction
+  below. `ProofSystem/Sumcheck/Interaction/RoundByRound.lean` is the interaction-layer Sumcheck client.
 - `ArkLib/OracleReduction/` remains the conceptual center of the legacy reduction and security
   layer while protocol clients migrate. `FiatShamir/Basic.lean` owns the transform;
   `FiatShamir/Completeness.lean` adds fixed-table perfect completeness and shared lazy
-  random-oracle completeness. Duplex-sponge definitions import only the former.
+  random-oracle completeness.
   Generic transcript projection and reconstruction equations live in `ProtocolSpec/Basic.lean`;
   round and optional-run factorization lemmas live in `Execution.lean`.
 - `ArkLib/Data/`, `ArkLib/ToMathlib/`, and `ArkLib/ToCompPoly/` support the
@@ -85,8 +100,14 @@ home_page/            site assets and assembled website root
   The first verifier's query-bound theorem excludes evaluation of its virtual input polynomial.
   `WitnessAttachment.lean` sends the padded original witness, forwards scalar matrix queries,
   and extracts by restricting the actual sent table; its input relation is the original R1CS
-  relation. `Basic.lean` imports these stage modules. The stage certificates are separate;
-  a single assembled reduction and its end-to-end certificate remain to be constructed.
+  relation. It instantiates the shared `SendSingleWitness.Adapter` of
+  `ProofSystem/Component/SendWitness.lean`. `Sumcheck/VirtualOracle.lean` evaluates the virtual
+  polynomials by queries to the retained matrix and witness oracles, and `Terminal.lean` is the
+  final oracle verifier. `Protocol.lean` composes the seven stages into `Spartan.oracleReduction`
+  and proves `Spartan.perfectCompleteness` for the original R1CS relation. `Security.lean` proves
+  `Spartan.knowledgeSoundness` with error `Spartan.totalError ℓ_m ℓ_n |R|`, which is
+  `(4 * ℓ_m + 2 * ℓ_n + 1) / |R|` (`Error.lean`), through the executable
+  `Spartan.straightlineExtractor`. `Basic.lean` imports `Security.lean`.
 - `ProofSystem/Sumcheck/Impl/OracleProver.lean` provides the executable legacy honest prover,
   with exact refinement to `Spec.oracleReduction.prover` and preservation of the input polynomial
   oracle. `Impl/Representation.lean` and `Impl/Projection.lean` connect finite coefficient
@@ -96,7 +117,9 @@ home_page/            site assets and assembled website root
   wiring permutation whose cycles are exactly the variable fibers. Its generic cycle construction
   lives in `Data/Equiv/FiberCycle.lean`. `ProofSystem/Plonk/` groups each protocol stage into a
   subfolder (`Relation`, `Encoding`, `Accumulator`, `GrandProduct`, `Batch`, `Quotient`,
-  `Assembly`), with `SendWitness.lean` at the top. `Plonk/Relation/Basic.lean` connects variable and
+  `Assembly`), with `SendWitness.lean` at the top; it instantiates the shared
+  `SendSingleWitness.Adapter` of `ProofSystem/Component/SendWitness.lean`.
+  `Plonk/Relation/Basic.lean` connects variable and
   occurrence assignments, with public-occurrence coverage for reconstruction.
   `Plonk/Relation/Prepared.lean` prepends public equality rows, decodes private witnesses, and
   separates their baked-in constants into cleared selectors and an explicit public-input term.
@@ -104,6 +127,13 @@ home_page/            site assets and assembled website root
   `Plonk/Encoding/Basic.lean` identifies occurrence columns with degree-bounded polynomials,
   proves the prepared gate and copy relation equivalence, and reconstructs private witnesses.
   `Plonk/Encoding/Computable.lean` refines the encoding through CompPoly coefficient arrays.
+  `Plonk/Relation/PermutationFingerprint.lean` characterizes copy constraints by labeled product
+  fingerprints, and `Plonk/Accumulator/` defines the cyclic numerator and denominator accumulators.
+  `Plonk/Assembly/Reduction.lean` composes the wire reveal, grand product, batch and quotient zero
+  test into one oracle reduction: `Plonk.Assembly.oracleReduction_completeness` has completeness
+  error `3n / |F|` and `Plonk.Assembly.oracleVerifier_knowledgeSoundnessWith` has knowledge error
+  `(7n - 3) / |F|`. `Plonk/Assembly/CircuitExtraction.lean` extracts the original circuit witness
+  with error `(7(ℓ + n) - 3) / |F|` (`Plonk.Assembly.Circuit.oracleVerifier_knowledgeSoundnessWith`).
   Concrete cycle, satisfaction, and decoder checks live in
   `ArkLibTest/ProofSystem/Plonk/Relation.lean`;
   `ArkLibTest/ProofSystem/Plonk/Encoding.lean` checks order-four encoding over a prime field,
@@ -161,9 +191,13 @@ home_page/            site assets and assembled website root
   `ArkLibTest/ProofSystem/Fri/Extraction.lean`.
   `RoundConsistency.lean` connects local checks to word folding. Generic persistent-event
   state functions, adaptive accumulation, and the acceptance-to-soundness bridge live in
-  `OracleReduction/Security/{BadEvents,Accumulation,Acceptance}.lean`. These proofs avoid
-  the unfinished general soundness-implication/composition theorems; see the
-  [FRI audit](../kb/audits/fri-soundness.md).
+  `OracleReduction/Security/{BadEvents,Accumulation,Acceptance}.lean`. These proofs use that
+  direct acceptance-to-soundness bridge rather than the general implication and composition
+  theorems; see the [FRI audit](../kb/audits/fri-soundness.md).
+- `ProofSystem/Stir/` holds the STIR [ACFY24stir] building blocks: `Combine`, `Quotienting`,
+  `OutOfDomSmpl`, `ProximityBound` and `ProximityGap`. `MainThm.lean` records the Section 5
+  parameters and relations; its module docstring states the construction and soundness targets
+  that are not yet formalized.
 
 - `ArkLib.lean` is a generated umbrella import file, not a hand-maintained module index.
 - Across the PolyFun/VCVio boundary, import generic polynomial-functor and handler structure from
@@ -178,13 +212,21 @@ home_page/            site assets and assembled website root
   - `Functional/` — *functional* commitments that **commit and then prove oracle evaluations**
     of the committed data (an opening proves `oracle data query = response`, not the data
     itself). These have their own, unrelated definition in
-    `ArkLib/Commitments/Functional/Basic.lean` (`Commitment.Scheme`, plus correctness,
-    evaluation/function binding, and extractability games). KZG and Hachi are the concrete
-    functional schemes.
+    `ArkLib/Commitments/Functional/Basic.lean` (`Commitment.Scheme`, plus correctness and the
+    experiments `Commitment.bindingExperiment`, `Commitment.functionBindingExperiment`,
+    `Commitment.extractabilityExperiment` and `Commitment.extractability`). KZG and Hachi are the
+    concrete functional schemes.
 - KZG commitment-scheme modules live under `ArkLib/Commitments/Functional/KZG/`: `Basic` for the
-  construction and scheme instance, `Correctness` for correctness proofs, `FunctionBinding` for
-  the function-binding reduction, and `Binding` for evaluation binding. Shared
-  CPolynomial/Polynomial division bridge lemmas live under `ArkLib/ToCompPoly/`.
+  construction and scheme instance, `Algebra` for the powers-of-τ SRS and prime-order group
+  lemmas, `Sampling` for setup sampling helpers, `HardnessAssumptions` for t-SDH and ARSDH games
+  over explicit adversary classes, `Correctness` for correctness proofs, `Binding` for evaluation
+  binding, and `FunctionBinding/` for function binding. Binding is stated as reductions:
+  `KZG.CommitmentScheme.binding_reduces_to_tSdh` bounds an adversary's binding advantage by the
+  t-SDH success of its reduction, and `KZG.CommitmentScheme.function_binding_reduces_to_arsdh`
+  does the same for function binding and ARSDH. Shared CPolynomial/Polynomial division bridge
+  lemmas live under `ArkLib/ToCompPoly/`.
+- `ArkLib/AGM/Basic.lean` defines algebraic group representations (`GroupRepresentation`): the
+  scalars an algebraic adversary reports for each group element it outputs.
 - `ArkLib/Commitments/Functional/BitZ/` holds the supporting algebra and probability bounds of
   BitZ: `ExponentLift` for the bit inner product in an exponent, `Round1` for the honest-message
   coefficient bound and fixed-witness fingerprinting error, `Round2` for the deterministic
@@ -298,7 +340,7 @@ home_page/            site assets and assembled website root
     escape *event*) for the links whose extraction can break an assumption. The nine-link
     iteration's soundness side is **complete and axiom-clean**, with a **computable**
     composed extractor — as is the closing `EndPiece/`. The honest nonrecursive chain is in
-    `Correctness.lean`; its composed completeness still depends on generic append completeness.
+    `Correctness.lean`; its composed completeness uses the proved guarded append completeness.
   - `RingSwitch/` (§4.3 entry, Figure 4 / Lemma 9) — the HMZ25 **ring-switching lift** reducing
     `R^lin` to a claim about the committed lifted witness evaluated at a random `α`.
     `RingSwitch/Rlin` is the zero-round Eq. (20) → `R^lin` adapter (a plain `CWSSPackage`, pure
@@ -451,10 +493,10 @@ home_page/            site assets and assembled website root
     `hachiNonrecursive_perfectCorrectness` proves `Commitment.perfectCorrectness` via the generic
     bridge `Commitment.perfectCorrectness_of_opening_perfectCompleteness`
     (`Commitments/Functional/Basic.lean`, axiom-clean, using
-    `OptionT.probEvent_eq_one_bind`). The composed opening/correctness theorems use proved
+    `OptionT.prEvent_mk_bind_eq_one_of_support`). The composed opening/correctness theorems use proved
     guarded composition and have standard-only axiom dependencies, as do their individual links,
-    adapter, terminal step, and correctness bridge. Recursion
-    (`PartialEval`/`ZBatchBridge`/`TraceHandoff`) is deliberately not involved.
+    adapter, terminal step, and correctness bridge. The unfinished recursive opening was retired
+    ([#1411](https://github.com/Verified-zkEVM/ArkLib/pull/1411)).
     **`τ` is an independent parameter here.** `hachiNonrecursiveOpening` / `hachiNonrecursive` /
     their correctness theorems take the folded-witness digit count `τ` and its bound `zBound` as
     section variables, constrained only by `hcap : zBound ≤ balancedDigitCapacity P.b τ`,
@@ -500,9 +542,13 @@ home_page/            site assets and assembled website root
     `sumcheckWidthAtProfile` at `M = 25`), and the composed scheme's type carries
     `Nat.clog params.b 4294967197` inside `Fin (2¹⁰)`-indexed matrices and a 26-deep
     `ProtocolSpec` append tower, which exhausts the elaborator's `isDefEq` budget.
-- Merkle trees live upstream in VCV-io under `VCVio/CryptoFoundations/MerkleTree/`: the vector
-  commitment in `Vector/` (namespace `MerkleTree`) and the inductive tree in `Inductive/`
-  (namespace `InductiveMerkleTree`).
+- Merkle trees live upstream in VCV-io under `VCVio/CryptoFoundations/MerkleTree/`: addressed
+  perfect trees in `Addressed/` (namespaces `AddressedMerkleTree` and `PerfectMerkleTree`), the
+  inductive tree in `Inductive/` (namespace `InductiveMerkleTree`), salted trees in `Salted/`
+  (`SaltedMerkle`), hash forests in `HashForest/` (`MerkleHashForest`), leaf and node hashing in
+  `Hashing/` (`MerkleTreeHashing`), and extraction in `Extractor.lean`, `Extractability.lean`,
+  `BatchExtractability.lean` and `MultiExtractability/` (`MerkleTreeExtractor`,
+  `MerkleTreeExtractability`, `MerkleTreeMultiExtractability`).
 - Reed-Solomon code definitions live under the `ReedSolomon` namespace: the base RS code in
   `ArkLib/Data/CodingTheory/ReedSolomon.lean`, and the folded/interleaved/multiplicity/multilinear
   variants under `ArkLib/Data/CodingTheory/ReedSolomon/` (see
@@ -540,9 +586,10 @@ home_page/            site assets and assembled website root
   file/directory pair
   `ListDecodability.lean` + `ListDecodability/` follows the same shape as `ReedSolomon.lean` +
   `ReedSolomon/`: the file holds the definitions (`Lambda`, `listDecodable`), the directory holds
-  results about them. Some deep bounds are externally sourced and carry tagged `sorry`
-  annotations; use the paper KB pages and the axiom baseline to inspect their source and trusted
-  impact. In-tree results include [CZ25]'s subspace-design theorem (and therefore the
+  results about them. A few deep bounds are externally sourced solicited proofs: they carry tagged
+  `sorry` annotations and are listed in the `solicited` array of `scripts/axiom_baseline.json`
+  ([#1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352)); use the paper KB pages to inspect
+  their sources. In-tree results include [CZ25]'s subspace-design theorem (and therefore the
   folded-Reed-Solomon and univariate-multiplicity capacity corollaries) and the [AGL23]
   large-alphabet barrier.
 - ABF26's citation-heavy §4–§5 catalogue is separated from the core error definitions:
@@ -598,13 +645,13 @@ home_page/            site assets and assembled website root
   *unsimulated* `(Reduction.run …).run`: show every element of that support is a success whose
   output pair is in the output relation and whose two output statements agree, and the probability
   obligation is discharged (through VCVio's
-  `OptionT.probEvent_eq_one_of_simulateQ_support_bind`, which handles the sampled initial state and
+  `OptionT.prEvent_mk_simulateQ_run'_eq_one_of_support`, which handles the sampled initial state and
   the oracle implementation uniformly). It applies to any reduction, of any length, over any
   `oSpec` — no determinism or single-round hypotheses. The worked example is Hachi's zero-check
   (`Commitments/Functional/Hachi/ZeroCheck/Completeness.lean`), where the per-link work reduces to
   a prover-state induction, an output lemma, a run-support lemma, and the relation lemma. Before
   hand-peeling `OptionT`/`liftM`/`simulateQ` layers for a new protocol, check whether this covers
-  it. (`Commitments/Functional/KZG/Correctness.lean` predates the lemma and still peels by hand.)
+  it. (`Commitments/Functional/KZG/Correctness.lean` applies the VCVio lemma directly.)
   The second worked example is `QuadEval` (`.../Hachi/QuadEval/Completeness.lean`), which adds the
   message-round case: there the run-support half is a closed-form computation of `Prover.run`
   (`prover_runToRound_last` / `prover_run_eq`) rather than an induction.
@@ -703,6 +750,14 @@ home_page/            site assets and assembled website root
   equation of a query-guard-return oracle verifier (one message query, then a guard and a
   verdict that may read the answer and the challenges),
   `OracleVerifier.toVerifier_verify_of_query_guard`, is in `OracleReduction/Basic.lean`.
+  `Security/GuardedBridges.lean` derives ordinary knowledge soundness from round-by-round
+  knowledge soundness of a guarded verifier, with the sum of the per-challenge errors
+  (`Verifier.GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundness`,
+  `OracleVerifier.knowledgeSoundness_of_rbrKnowledgeSoundness_of_guarded`); its straightline
+  extractor folds the round-by-round extractor backward over the actual transcript.
+  `Security/GuardedSoundness.lean` gives the corresponding soundness bridges
+  (`Verifier.GuardedForm.soundness_of_rbrSoundness`,
+  `OracleVerifier.soundness_of_rbrSoundness_of_guarded`).
 - Measured extraction lives in `Security/Resources.lean`. Its game-independent core,
   `OracleComp.MeasuredProgram` in `Data/OracleComp/MeasuredProgram.lean`, is an uncharged view of
   a function's input, a charged instruction program on that view, and deterministic handlers, with
@@ -712,7 +767,7 @@ home_page/            site assets and assembled website root
   `Extractor.Straightline.MeasuredProgram` is its instance at the straightline extractor's inputs.
   Its `RealizesExtractor` relates the extractor's run to the program execution, and
   `Verifier.knowledgeSoundnessWithResources` adds to `knowledgeSoundnessWith` that the named
-  extractor executes the program within the budget. The native contract is
+  extractor executes the program within the budget. The interaction-layer contract is
   `Interaction/Oracle/Security/KnowledgeResources.lean`: `RoundExtractor.stageMap` is the backward
   witness map at a node, on its move and later witness; `RoundExtractor.MeasuredStages` names a
   budgeted program for the stage at every authored node; and `MeasuredKnowledgeCertificate`
@@ -796,7 +851,8 @@ home_page/            site assets and assembled website root
   `lake exe toyproblem-runtime`; the security theorems themselves are parametric in the code, the
   radius, and the repetition count, so they apply at production sizes without evaluation. Turning
   such a theorem into a *numeric* error value additionally requires the MCA/CA capacity bounds in
-  `Data/CodingTheory/ProximityGap/CapacityBounds`, several proven and the rest external admits,
+  `Data/CodingTheory/ProximityGap/CapacityBounds`, all proven except ABF26 Theorem 4.16 (a
+  solicited proof, [#1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352)),
   deliberately outside the toy-problem import cone; no numeric error value is proven in-tree at
   any production shape.
 - Batched FRI takes a proximity generator `G : S → Fin (m + 1) → F`. Its single
@@ -929,9 +985,10 @@ home_page/            site assets and assembled website root
   with effective ranks four/three over different fields and exact error sum below one. Their
   transparent polynomial oracles are specification fixtures, not commitment schemes.
   Hachi's §3.1 trace head uses `PackingData.ofBaseOpening`, `packedMLE`, its own `ClaimLayout`
-  and `CheckedObservation`, with native conformance in `TraceHead/Conformance`. It retains its
-  own deterministic wire. Native reference-Flock obligations are listed in the
-  [consumer guide](ring-switching-consumers.md#native-flock-and-acceptance).
+  and `CheckedObservation`, with its conformance to the shared layer in `TraceHead/Conformance`.
+  It retains its own deterministic wire. Obligations for the reference Flock in the interaction
+  layer are listed in the
+  [consumer guide](ring-switching-consumers.md#flock-in-the-interaction-layer-and-acceptance).
   `Lift/` is the **generic HMZ25 lift** (large quotient ring →
   field, CWSS at `k = 2d`): `Presentation.lean` is its data layer (proof-free
   `Presentation R S` + `IsPresentation` laws over any monic modulus — not cyclotomic-specific

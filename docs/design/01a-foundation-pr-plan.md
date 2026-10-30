@@ -27,6 +27,14 @@ AR-11. [Current status](00-current-status.md) records the supported APIs and lat
 | AR-10A structural full prefixes | landed | #880 |
 | AR-10B prefixes and execution artifacts | landed | #889 |
 
+AR-3A and AR-3B were additive: neither changed the legacy `OracleReduction` layer, dependency
+pins, source-policy exceptions, or the axiom baseline. Each reported its validated head and
+separated static inspection, Lean compilation, acceptance tests, and the full validation and axiom
+gate.
+
+The oracle-composition milestones C1–C8 that followed were delivered in #1231–#1238.
+[Current status](00-current-status.md#arklib) lists each resulting module with its PR.
+
 ## What this sequence established
 
 The structural slices introduced typed oracle interactions, public branch paths, concrete execution
@@ -41,12 +49,13 @@ and resources follows from the runner, not merely from constructing a `CoreRun` 
 
 The first Sumcheck slice proved one-round honest completeness. The legacy bridge proved both
 relation directions, but verifier correspondence is honest-execution only. Later multi-round and
-native security results are listed in [current status](00-current-status.md).
+interaction-layer security results are listed in [current status](00-current-status.md).
 
 The execution slices added concrete prefixes, logging, persistent world state, and distinct
-accept/reject/fault outcomes. Their existence does not establish general soundness composition in
-a persistent world. That theorem is part of the active roadmap; its intended assumptions belong
-to [execution and security](03-adversarial-oracle-execution.md).
+accept/reject/fault outcomes. Their existence did not by itself establish soundness composition
+in a persistent world; that theorem was proved later and is listed in
+[current status](00-current-status.md), with its assumptions in
+[execution and security](03-adversarial-oracle-execution.md).
 
 ## Dependency lineage
 
@@ -57,6 +66,11 @@ cursor restriction ([#58](https://github.com/Verified-zkEVM/PolyFun/pull/58)), a
 ([#66](https://github.com/Verified-zkEVM/PolyFun/pull/66)). VCVio's resumable runtime and
 failure-to-return observation supported AR-9A and AR-9B. These are completed dependencies,
 not proposed upstream PRs.
+
+The alignment baseline was Lean 4.33.1 with VCVio `f9dc47d9` and PolyFun `c0c92369`. The
+dependencies then advanced through the VCVio `Runtime` and `WithFailure` additions used by #884
+and the Lean 4.34 native-measure upgrade (#903, #913); the
+[native measure ledger](native-measure-ledger.md) records that conversion.
 
 The original slice-by-slice goals and acceptance plans remain in Git history. New implementation
 work should use the current contracts and roadmap rather than repeat that completed sequence.

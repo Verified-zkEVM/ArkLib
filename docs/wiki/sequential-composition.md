@@ -1,9 +1,10 @@
 # Legacy sequential composition
 
-This page covers `ArkLib/OracleReduction/`, the legacy framework. For native interaction
-composition, read the [current results](../design/00-current-status.md) and
+This page covers `ArkLib/OracleReduction/`, the legacy layer. For composition in the interaction
+layer, read the [current results](../design/00-current-status.md) and
 [composition design](../design/02-oracle-reduction-core.md#5-composition). The
-[roadmap](../design/05-roadmap.md) tracks the remaining native oracle and runtime theorems.
+[roadmap](../design/05-roadmap.md) tracks the remaining interaction-layer oracle and runtime
+theorems.
 
 Sequential composition uses `Prover.append`, `Verifier.append`, and `Reduction.append` in
 `ArkLib/OracleReduction/Composition/Sequential/Append/`. Oracle reductions have corresponding
@@ -117,8 +118,8 @@ Binary Basefold's core interaction composes all its rounds this way.
 
 `Security/GuardedBridges.lean` derives ordinary knowledge
 soundness from a guarded verifier's round-by-round knowledge guarantee, with the sum of the
-per-challenge errors. Sumcheck, Packing and Binary Basefold use the proved
-completeness interfaces above. Each client still owes its own component and honest-oracle premises.
+per-challenge errors. Sumcheck, Packing, Binary Basefold, Spartan and Plonk use the proved
+completeness interfaces above. Each client supplies its own component and honest-oracle premises.
 Binary Basefold's `General.lean` composes its actual core and query through the proved guarded
 completeness and RBR interfaces. Its completeness premise is strict honest encoding;
 its RBR guarantee uses the relaxed relation. `ArkLibTest/ProofSystem/Binius/BinaryBasefold/General.lean`
@@ -130,6 +131,24 @@ Hachi's nonrecursive chain uses pure verifier forms for its prefix and guarded f
 sumcheck. `Hachi/HonestChain.lean` contains the prefix certificates; `Hachi/Correctness.lean`
 composes the commitment-input adapter, chain, and terminal check. Its folded-witness width `τ`
 and bounded decomposition are parameters of these certificates.
+
+Spartan composes its seven stages with `OracleReduction.seqCompose` and
+`OracleVerifier.seqComposeGuardedForm` (`ProofSystem/Spartan/Protocol.lean`).
+`Spartan.perfectCompleteness` is perfect completeness for the original R1CS relation, and
+`Spartan.knowledgeSoundness` gives ordinary knowledge soundness with error
+`Spartan.totalError ℓ_m ℓ_n |R| = (4 * ℓ_m + 2 * ℓ_n + 1) / |R|`, where `ℓ_m` and `ℓ_n` count the
+row and column variables, through the guarded bridge.
+
+Plonk composes its four stages the same way (`ProofSystem/Plonk/Assembly/Reduction.lean`).
+`Plonk.Assembly.oracleReduction_completeness` has completeness error `3n / |F|`, and
+`Plonk.Assembly.oracleVerifier_knowledgeSoundnessWith` has knowledge error `(7n - 3) / |F|` with the
+designated table extractor. `Plonk.Assembly.Circuit.oracleVerifier_knowledgeSoundnessWith` extracts
+the original circuit witness with error `(7(ℓ + n) - 3) / |F|`.
+
+Binius derives ordinary knowledge soundness from its guarded round-by-round results:
+`Binius.BinaryBasefold.FullBinaryBasefold.fullOracleVerifier_knowledgeSoundness` for Binary
+Basefold, and `Binius.FRIBinius.RingSwitch.fullVerifier_knowledgeSoundness` for the ring switch
+followed by Binary Basefold (see [ring-switching consumers](ring-switching-consumers.md)).
 
 Run `./scripts/validate.sh --axioms` for the library, compile-time tests, runtime checks, and
 axiom regression gate. `ArkLibTest/OracleReduction/Composition/Sequential/` covers challenge

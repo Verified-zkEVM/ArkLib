@@ -1,5 +1,9 @@
 # Native-measure conversion ledger
 
+**Completed 2026-09-21** ([#904](https://github.com/Verified-zkEVM/ArkLib/issues/904) closed).
+This is a record of that campaign. Its pins, sizes, gates and "Now" columns describe that date,
+not current `main`; current pins are on the [status page](00-current-status.md).
+
 The merged Lean 4.34 upgrade ([#903](https://github.com/Verified-zkEVM/ArkLib/pull/903))
 converted consumers of VCVio's retiring scalar probability API
 (`Pr[… | …]`, `probEvent`, `probOutput`, `probFailure`, `evalSPMF`/`𝒮[…]`, `NeverFail`,
@@ -45,7 +49,7 @@ regression-test, or axiom checks for this upgrade.
 
 Developed on VCVio branch `codex/arklib-native-prereqs` and landed on VCVio `main` through the
 integration PR [#771](https://github.com/Verified-zkEVM/VCVio/pull/771) (which also carries the
-content of #758/#763/#764); ArkLib pins `210d73fd85d4f1ab99e5a707a78238e3a0dfb8d6`.
+content of #758/#763/#764); ArkLib pinned `210d73fd85d4f1ab99e5a707a78238e3a0dfb8d6` at the time.
 
 | Family | Upstream home | Contents | Retires in ArkLib |
 |---|---|---|---|
@@ -327,7 +331,7 @@ migration; the axiom regression baseline must remain unchanged.
 
 Issue #904 covers both phases: #903's VCVio scalar conversion and the follow-up retirement of
 ArkLib's independent PMF surface. The prerequisite stack landed on VCVio `main` in
-[#771](https://github.com/Verified-zkEVM/VCVio/pull/771), and ArkLib pins that main commit,
+[#771](https://github.com/Verified-zkEVM/VCVio/pull/771), and ArkLib pinned that main commit,
 `210d73fd85d4f1ab99e5a707a78238e3a0dfb8d6`. Closure is judged by these gates, all checked on the
 final head: current `main` is integrated; the probability API used by `ArkLib` is native; the
 strict `retiredsweep` inventory is empty; `./scripts/validate.sh --axioms` passes with no new
