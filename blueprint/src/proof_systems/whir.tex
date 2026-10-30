@@ -1,42 +1,51 @@
-% Copyright (c) 2025 ZKLib Contributors. All rights reserved.
+% Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 % Released under Apache 2.0 license as described in the file LICENSE.
 % Authors: Poulami Das (Least Authority)
 
-\section{Whir}
+\section{WHIR}
 
 \subsection{Tools for Reed Solomon codes}
 
 \subsubsection{Mutual Correlated Agreement as a Proximity Generator}
 
 \begin{definition}\label{def:proximity_generator}
-    % \lean{Generator.ProximityGenerator} % TODO: declaration is not currently formalized.
+\lean{ProximityGap.caError}
+\leanok
 \uses{def:linear_code,def:distance_from_code}
 Let $\code\subseteq \field^{\evaldomain}$ be a linear code. We say that $\mathsf{Gen}$ is a proximity generator for $\code$ with proximity bounds ${\bound}$ and $\err$ if the following implication holds for $f_0,\ldots,f_{\parl-1} : \evaldomain \rightarrow \field$ and $\delta\in(0,1-{\bound}(\rate,\parl))$. If
 \begin{align*}
     \Pr_{r_0,\ldots,r_{\parl-1}\leftarrow \gen}[\Delta(\sum_{i\in[0,(\parl-1)]} r_i \cdot f_i, \code) \le \delta] > err(\code,\parl,\delta),
 \end{align*}
-then there exists $S\subseteq \evaldomain$, $|S|>(1-\delta)\cdot|\evaldomain|$, and
-$\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=u(x)$. 
+then there exists $S\subseteq \evaldomain$, $|S|\ge(1-\delta)\cdot|\evaldomain|$, and
+$\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=u(x)$.
+
+The formalization records the least admissible error as a function: the correlated-agreement
+error $\mathsf{caError}(\gen,\code,\delta,\delta)$ is the supremum, over word stacks
+$(f_0,\ldots,f_{\parl-1})$ that are not jointly $\delta$-close to $\code$, of the probability
+above. Thus $\gen$ is a proximity generator with error $\err$ at $\delta$ exactly when
+$\mathsf{caError}(\gen,\code,\delta,\delta)\le\err(\code,\parl,\delta)$.
 \end{definition}
 
 \begin{theorem}\label{thm:proximity_gap_whir}
-    % \lean{RSGenerator.genRSC} % TODO: declaration is not currently formalized.
-\uses{def:proximity_generator,def:reed_solomon_code}
-    Let $\code = \rscode[\field,\evaldomain,m]$ be a Reed Solomon code with rate $\rate = 2^m/|\evaldomain|$. $\gen(\alpha,\parl)=\{1,\alpha,\ldots,\alpha^{\parl-1}\}$ is a proximity generator for $\code$ with proximity bounds ${\bound}(\rate,\parl)=\sqrt{\rate}$ and $\err(C,\parl,\delta)$ defined below.
+\uses{def:proximity_generator,def:reed_solomon_code,thm:proximity_gap}
+    Let $\code = \rscode[\field,\evaldomain,2^m]$ be a Reed Solomon code with rate $\rate = 2^m/|\evaldomain|$. $\gen(\alpha,\parl)=\{1,\alpha,\ldots,\alpha^{\parl-1}\}$ is a proximity generator for $\code$ with proximity bounds ${\bound}(\rate,\parl)=\sqrt{\rate}$ and $\err(C,\parl,\delta)$ defined below.
     \begin{itemize}
         \item if $\distance \in \left(0,\frac{1-\rate}{2}\right]$ then
             \[
-                \err(\code,\parl,\delta)=\frac{(m-1)\cdot \degree}{\rate\cdot|\field|}
+                \err(\code,\parl,\delta)=\frac{(\parl-1)\cdot 2^m}{\rate\cdot|\field|}
             \]
         \item if $\distance \in \Bigl(\frac{1-\rate}{2}, 1-\sqrt{\rate}\Bigr)$ then
         \[
-            \err(\code,\parl,\delta)=\frac{(m-1)\cdot {\degree}^2}{|\field|\cdot{\Bigl(2\cdot\min\{1-\sqrt{\rate}-\distance,\frac{\sqrt{\rate}}{20}\}\Bigr)}^7}
+            \err(\code,\parl,\delta)=\frac{(\parl-1)\cdot 2^{2m}}{|\field|\cdot{\Bigl(2\cdot\min\{1-\sqrt{\rate}-\distance,\frac{\sqrt{\rate}}{20}\}\Bigr)}^7}
         \]
     \end{itemize}
+    This is Theorem~\ref{thm:proximity_gap} with $\degree=2^m$ and $\parl$ functions; it is
+    formalized there.
 \end{theorem}
 
 \begin{definition}\label{def:gen_mutual_corr_agreement}
-    % \lean{MutualCorrAgreement.hasMutualCorrAgreement} % TODO: declaration is not currently formalized.
+\lean{CoreDefinitions.IsMCA, CoreDefinitions.mcaError, CoreDefinitions.IsMCAGenerator}
+\leanok
     \uses{def:proximity_generator}
     Let $\code$ be a linear code. We say that $\gen$ be a proximity generator with mutual correlated agreement with proximity bounds ${\bound}^\star$ and $\err^\star$, if for $f_0,\ldots,f_{\parl-1}:\evaldomain\rightarrow\field$ and $\delta\in(0,1-{\bound}^\star(\code,\parl))$ the following holds.
     \[
@@ -49,36 +58,136 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
         \end{array}\right]
     \leq \err^\star(\code, \parl, \delta).
     \]
+
+    In the formalization, $\mathsf{IsMCA}$ is the event in brackets for one seed,
+    $\mathsf{mcaError}(\gen,\code,\delta)$ is the supremum of its probability over all families
+    $(f_0,\ldots,f_{\parl-1})$, and $\mathsf{IsMCAGenerator}(\gen,\err^\star,\code)$ asserts
+    $\mathsf{mcaError}(\gen,\code,\delta)\le\err^\star(\delta)$ for every $\delta\in[0,1]$.
+    A proximity bound is expressed by letting $\err^\star$ be $1$ beyond it.
 \end{definition}
 
 \begin{lemma}\label{lemma:gen_mutual_corr_agreement}
-    % \lean{MutualCorrAgreement.mca_linearCode} % TODO: declaration is not currently formalized.
+    % TODO: not formalized for a general generator; the affine-line case is lemma:mca_affine_line_udr.
 \uses{def:proximity_generator, def:gen_mutual_corr_agreement}
-    Let $\code$ be a linear code with minimum distance $\delta_{\code}$ and let $\gen$ be a proximity generator for $\code$ with proximity bound ${\bound}$ and error $\err$. Then $\gen$ has mutual correlated agreement with proximity bound ${\bound}^\star(\code, \parl) = \min\{1 - \delta_{\code}/2, \bound(\code, \parl)\}$ and error $\err^\star(\code, \parl, \delta) := \err(\code, \parl, \delta)$.
+    Let $\code$ be a linear code with relative minimum distance $\delta_{\code}$ and let $\gen$ be a proximity generator for $\code$ with proximity bound ${\bound}$ and error $\err$. Then $\gen$ has mutual correlated agreement with proximity bound ${\bound}^\star(\code, \parl) = \max\{1 - \delta_{\code}/2, \bound(\code, \parl)\}$ and error $\err^\star(\code, \parl, \delta) := \err(\code, \parl, \delta)$. Equivalently, the permitted radii are $\delta < \min\{\delta_{\code}/2, 1-\bound(\code,\parl)\}$.
+    Only the affine-line case below is formalized; this general statement is not.
 \end{lemma}
 
-\begin{lemma}
-    % \lean{MutualCorrAgreement.mca_rsc} % TODO: declaration is not currently formalized.
-\uses{lemma:gen_mutual_corr_agreement, def:reed_solomon_code}
-    Let $\code := \rscode[\field, \evaldomain, m]$ be a Reed Solomon code with rate $\rate$. The function $\gen(\parl; \alpha) = (1, \alpha, \ldots, \alpha^{\parl - 1})$ is a proximity generator for $\code$ with mutual correlated agreement with proximity bound ${\bound}^\star(\code, \parl) := \frac{1 + \rate}{2}$ and error $\err^\star(\code, \parl, \delta) = \frac{(\parl - 1) \cdot 2^m}{\rate \cdot |\field|}$.
+\begin{lemma}[Affine-line case]\label{lemma:mca_affine_line_udr}
+\lean{ProximityGap.mcaError_le_epsCa_of_pos_of_two_mul_lt_dist}
+\leanok
+\uses{def:proximity_generator, def:gen_mutual_corr_agreement}
+    Let $\code\subseteq\field^{\evaldomain}$ be a linear code with minimum (absolute) distance
+    $d_{\code}$, and let $\gen(\alpha)=(1,\alpha)$ be the affine-line generator. For every
+    $\delta>0$ with $2\delta|\evaldomain|<d_{\code}$,
+    \[
+      \mathsf{mcaError}(\gen,\code,\delta)\le\mathsf{caError}(\gen,\code,\delta,\delta).
+    \]
 \end{lemma}
 
-\begin{theorem}\label{conjecture:whir}
-    % \lean{MutualCorrAgreement.mca_johnson_bound_CONJECTURE,MutualCorrAgreement.mca_capacity_bound_CONJECTURE} % TODO: declarations are not currently formalized.
-\uses{def:reed_solomon_code,lemma:gen_mutual_corr_agreement}
-    The function $\gen(\parl; \alpha) := (1, \alpha, \ldots, \alpha^{\parl - 1})$ is a proximity generator with mutual correlated agreement for every smooth Reed Solomon code $\code := \rscode[\field, \evaldomain, m]$ (with rate $\rate := 2^m / |\evaldomain|$). We give two conjectures, for the parameters of the proximity bound ${\bound}^\star$ and the error $\err^\star$:
+\begin{lemma}\label{lemma:mca_rs_udr}
+\lean{ProximityGap.rs_mcaError_le_of_le_relUDR}
+\leanok
+\uses{lemma:mca_affine_line_udr, def:reed_solomon_code}
+    Let $\code := \rscode[\field, \evaldomain, \degree]$ be a Reed Solomon code with minimum
+    distance $d_{\code}$, and let $\gen(\alpha)=(1,\alpha)$. For every $\delta$ with
+    $0<\delta\le\frac{(d_{\code}-1)/2}{|\evaldomain|}$ (the relative unique-decoding radius),
+    \[
+      \mathsf{mcaError}(\gen,\code,\delta)\le\frac{|\evaldomain|}{|\field|}.
+    \]
+\end{lemma}
+
+\begin{remark}
+\cite{ACFY24} states Lemma~\ref{lemma:mca_rs_udr} for every $\parl$: the generator
+$\gen(\parl; \alpha) = (1, \alpha, \ldots, \alpha^{\parl - 1})$ has mutual correlated agreement
+for $\rscode[\field, \evaldomain, 2^m]$ with proximity bound ${\bound}^\star(\code, \parl) :=
+\frac{1 + \rate}{2}$ and error $\err^\star(\code, \parl, \delta) = \frac{(\parl - 1) \cdot
+2^m}{\rate \cdot |\field|}$. Only the case $\parl=2$ is formalized; there the error is
+$2^m/(\rate|\field|)=|\evaldomain|/|\field|$.
+\end{remark}
+
+\begin{theorem}[Mutual correlated agreement up to the Johnson bound]\label{thm:mca_rs_johnson}
+\lean{RSCode.isMCAGenerator_univariatePowersGenerator, RSCode.reedSolomonMCAError}
+\leanok
+\uses{def:gen_mutual_corr_agreement, def:reed_solomon_code}
+    Let $\code := \rscode[\field, \evaldomain, \degree]$ with $\degree\ge1$, block length
+    $n=|\evaldomain|$ and rate $\rate$, and let
+    $\gen(\parl;\alpha)=(1,\alpha,\ldots,\alpha^{\parl-1})$ with $\parl\ge1$. For every integer
+    $s\ge3$, $\gen$ has mutual correlated agreement for $\code$ with error
+    \[
+      \err^\star(\delta)=
+      \begin{cases}
+        \dfrac{(\parl-1)\, n^2\,(s+\frac12)^7}{3\,\rate^{3/2}\,|\field|}
+          & \text{if } \delta\le 1-\left(1+\frac{1}{2s}\right)\sqrt{\rate},\\[8pt]
+        1 & \text{otherwise.}
+      \end{cases}
+    \]
+\end{theorem}
+
+\begin{theorem}[Mutual correlated agreement up to capacity, for lines and affine spaces]\label{thm:mca_rs_capacity}
+\lean{ReedSolomon.exists_capacity_mcaError}
+\leanok
+\uses{def:gen_mutual_corr_agreement, def:reed_solomon_code}
+    For every $\eta>0$ there are $N\ge4$, $d\in\mathbb{N}$ and $C>0$, depending only on $\eta$,
+    with the following property. Let $n\ge N$ and $0<k\le n$, let $\field$ be a finite field
+    whose characteristic is $0$ or larger than $k-1$, let $\evaldomain\subseteq\field$ have $n$
+    elements, and let $\delta:=1-k/n-\eta$. Then
+    \[
+      \mathsf{mcaError}((1,\alpha),\rscode[\field,\evaldomain,k],\delta)\le
+        \frac{C\,n^{d+1}}{|\field|},
+    \]
+    and for every $s\in\mathbb{N}$ the affine-space generator
+    $(\alpha_1,\ldots,\alpha_s)\mapsto(1,\alpha_1,\ldots,\alpha_s)$ satisfies
+    \[
+      \mathsf{mcaError}((1,\alpha_1,\ldots,\alpha_s),\rscode[\field,\evaldomain,k],\delta)\le
+        \frac{C\,n^{d+1}}{|\field|-1}.
+    \]
+    This is \cite{DKT26}, Theorem~6.9 and Corollary~7.2.
+\end{theorem}
+
+\begin{theorem}[Power-batching agreement up to capacity]\label{thm:power_batching_capacity}
+\lean{ReedSolomon.exists_capacity_powerBatchingAgreement}
+\leanok
+\uses{def:reed_solomon_code}
+    For every $\eta>0$ there are $N\ge4$, $d\in\mathbb{N}$, $\nu<N$ and $C>0$, depending only on
+    $\eta$, with the following property. These constants differ from those of
+    Theorem~\ref{thm:mca_rs_capacity}. Let $\parl\ge2$, $n\ge N$, $k>0$ and an integer $A$ with
+    $A\ge k+\eta n$. Let $\field$ be a field such that $k=1$, or $\field$ has characteristic $0$,
+    or its characteristic is larger than $\max(k-1,\nu)$. Let $\evaldomain\subseteq\field$ have
+    $n$ elements, and let $f_0,\ldots,f_{\parl-1}:\evaldomain\to\field$. Then there is a set of at
+    most $(\parl-1)\,C\,n^{d+1}$ exceptional challenges $z\in\field$. For every $z$ outside it and
+    every polynomial $Q$ of degree less than $k$ that agrees with $\sum_{t}z^t f_t$ on at least $A$
+    points, there are polynomials $P_0,\ldots,P_{\parl-1}$ of degree less than $k$ with
+    $Q=\sum_t z^t P_t$, and the agreement set of $Q$ is the set of points where every $P_t$ agrees
+    with $f_t$. The field may be infinite. This is \cite{DKT26}, Corollary~7.3. It is an exact
+    agreement statement, not a bound on $\mathsf{mcaError}$ of the powers generator.
+\end{theorem}
+
+\begin{remark}[Conjecture of \cite{ACFY24}, not formalized]\label{conjecture:whir}
+    The function $\gen(\parl; \alpha) := (1, \alpha, \ldots, \alpha^{\parl - 1})$ is conjectured
+    to be a proximity generator with mutual correlated agreement for every smooth Reed Solomon
+    code $\code := \rscode[\field, \evaldomain, 2^m]$ (with rate $\rate := 2^m /
+    |\evaldomain|$), with the following parameters:
     \begin{enumerate}
         \item \textit{Up to the Johnson bound:} ${\bound}^\star(\code, \parl) := \sqrt{\rate},$ \textit{and}
         \[
-        \err(\code, \parl, \delta) := \frac{(\parl - 1) \cdot 2^m}{|\field| \cdot \left( 2 \cdot \min\left\{1 - \sqrt{\rate} - \delta, \frac{\sqrt{\rate}}{20} \right\} \right)^7}.
+        \err^\star(\code, \parl, \delta) := \frac{(\parl - 1) \cdot 2^m}{|\field| \cdot \left( 2 \cdot \min\left\{1 - \sqrt{\rate} - \delta, \frac{\sqrt{\rate}}{20} \right\} \right)^7}.
         \]
-      
+
         \item \textit{Up to capacity:} ${\bound}^\star(\code, \parl) := \rate$, \textit{and there exist constants $c_1, c_2, c_3 \in \mathbb{N}$ such that for every $\eta > 0$ and $0 < \delta < 1 - \rate - \eta$:}
         \[
         \err^\star(\code, \parl, \delta) := \frac{(\parl - 1)^{c_2} \cdot \delta^{c_2}}{\eta^{c_1} \cdot \rate^{c_1 + c_2} \cdot |\field|}.
         \]
       \end{enumerate}
-\end{theorem}
+    Neither part is formalized in this form. Theorem~\ref{thm:mca_rs_johnson} proves a
+    Johnson-range bound whose error grows with $n^2$ and whose radius is
+    $1-(1+\frac{1}{2s})\sqrt{\rate}$. Theorem~\ref{thm:mca_rs_capacity} proves a capacity-range
+    bound for $\parl=2$ (lines) and for affine spaces; its error grows polynomially with $n$, and
+    it requires the characteristic condition above. For powers with $\parl>2$,
+    Theorem~\ref{thm:power_batching_capacity} proves exact power-batching agreement up to capacity,
+    under its own constants and a stronger characteristic condition. The library does not state
+    that result as a bound on the MCA error of the powers generator.
+\end{remark}
 
 \subsubsection{Mutual correlated agreement preserves list decoding}
 
@@ -88,7 +197,7 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
     Let $\code \subseteq \field^{\evaldomain}$ be a linear code with minimum distance $\delta_{\code}$, and let $\gen$ be a proximity generator for $\code$ with mutual correlated agreement with proximity bound ${\bound}^\star$ and error $\err^\star$. Then, for every $f_0, \ldots, f_{\parl-1} : \evaldomain \to \field$ and $\delta \in (0, \min\{\delta_{\code}, 1 - {\bound}^\star(\code, \parl)\})$:
     \[
     \Pr_{\substack{\alpha \leftarrow \{0,1\}^{w^\star} \\ \boldsymbol{r} := \gen(\parl; \alpha)}} \left[
-    \Lambda\left(\code, \sum_{j \in [0,(\parl-1)]} r_j \cdot f_j, \delta \right) \neq 
+    \Lambda\left(\code, \sum_{j \in [0,(\parl-1)]} r_j \cdot f_j, \delta \right) \neq
     \left\{ \sum_{j \in [0,(\parl-1)]} r_j \cdot u_j : \boldsymbol{u} \in \Lambda\left(\mathcal{C}^\ell, (f_0, \ldots, f_{\parl-1}), \delta \right) \right\}
     \right] \leq \err^\star(\code, \parl, \delta).
     \]
@@ -96,137 +205,181 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
 
 \subsubsection{Folding univariate functions}
 
+In this subsection $\evaldomain$ is a smooth coset FFT domain of size $2^n$. The formalization
+represents a function on $\evaldomain^{2^i}$ as a word indexed by $\{0,\ldots,2^{n-i}-1\}$ over
+the subdomain $\evaldomain^{2^i}$.
+
 \begin{definition}\label{def:extract}
-    % \lean{Fold.extract_x} % TODO: declaration is not currently formalized.
+\lean{Domain.CosetFftDomain.twoNthRoot}
+\leanok
     Let $\mathsf{extract}:\evaldomain^{2^{k+1}}\rightarrow \evaldomain^{2^k}$ be a function. There exists $x \in \evaldomain$, such that $y = x^{2^{k+1}}\in\evaldomain^{2^{k+1}}$. Then $\mathsf{extract}$ returns $z = \sqrt{y} = x^{2^k}\in\evaldomain^{2^k}$ such that $y = z^2$.
 \end{definition}
 
 \begin{definition}\label{def:foldf}
-    % \lean{Fold.foldf} % TODO: declaration is not currently formalized.
+\lean{ProximityGap.foldWord, ProximityGap.foldWord_k_1}
+\leanok
 \uses{def:extract}
-    Let $f : \evaldomain^{2^k} \to \field$ be a function, and $\alpha \in \field$. We define $\mathrm{Fold_f}(f, {\alpha}) : \evaldomain^{(2^{k+1})} \to \field$ as follows:
+    Let $f : \evaldomain^{2^k} \to \field$ be a function, and $\alpha \in \field$. We define $\mathrm{Fold_f}(f, {\alpha}) : \evaldomain^{2^{k+1}} \to \field$ as follows: for $y \in \evaldomain^{2^{k+1}}$ and $x := \mathsf{extract}(y)$,
     \[
-    \forall x \in \evaldomain^{2^k}, y \in \evaldomain^{2^{k+1}}, \quad \mathrm{Fold_f}(f, \alpha)(y) := \frac{f(x) + f(-x)}{2} + \alpha \cdot \frac{f(x) - f(-x)}{2 \cdot x}.
+    \mathrm{Fold_f}(f, \alpha)(y) := \frac{f(x) + f(-x)}{2} + \alpha \cdot \frac{f(x) - f(-x)}{2 \cdot x}.
     \]
 
     In order to compute $\mathrm{Fold_f}(f, \alpha)(y)$ it suffices to query $f$ at $x$ and $-x$, by retrieving $x=\mathsf{extract}(y)$.
+    The formalization defines folding by interpolation on each block of $2^k$-th roots and proves
+    that its $k=1$ case is the displayed formula.
 \end{definition}
 
 \begin{definition}\label{def:fold_k}
-    % \lean{Fold.fold_k_core,Fold.fold_k} % TODO: declarations are not currently formalized.
+\lean{ProximityGap.iteratedFoldWord}
+\leanok
 \uses{def:foldf}
-    For $k \leq m$ and $\vec{\alpha} = (\alpha_0, \ldots, \alpha_{k-1}) \in \field^k$ we define $\mathrm{Fold}(f, \vec{\alpha}) : \evaldomain^{2^k} \to \field$ to equal $\mathrm{Fold}(f, \vec{\alpha}) := f_k$ where $f_k$ is defined recursively as follows: $f_0 := f$, and $f_i := \mathrm{Fold_f}(f_{i-1}, \alpha_i)$. 
+    For $k \leq m$ and $\vec{\alpha} = (\alpha_0, \ldots, \alpha_{k-1}) \in \field^k$ we define $\mathrm{Fold}(f, \vec{\alpha}) : \evaldomain^{2^k} \to \field$ to equal $\mathrm{Fold}(f, \vec{\alpha}) := f_k$ where $f_k$ is defined recursively as follows: $f_0 := f$, and $f_{i+1} := \mathrm{Fold_f}(f_{i}, \alpha_i)$.
 \end{definition}
 
 \begin{definition}\label{def:fold_k_set}
-    % \lean{Fold.fold_k_set} % TODO: declaration is not currently formalized.
 \uses{def:fold_k}
-    For a set $S \subseteq \field^{\evaldomain}$ we denote $\mathrm{Fold_{S}}(S, \vec{\alpha}) := \{\mathrm{Fold_{S}}(f, \vec{\alpha}) \mid f \in S\}$.
+    For a set $S \subseteq \field^{\evaldomain}$ we denote $\mathrm{Fold_{S}}(S, \vec{\alpha}) := \{\mathrm{Fold}(f, \vec{\alpha}) \mid f \in S\}$.
+    The formalization writes this image directly, without a separate definition.
 \end{definition}
 
 \begin{lemma}\label{lemma:fold_fg}
-    % \lean{Fold.fold_f_g} % TODO: declaration is not currently formalized.
+\lean{ProximityGap.iteratedFoldWord_eq_evalOnPoints_powAlgHom}
+\leanok
 \uses{def:fold_k,def:smooth_rs_code}
-    Let $f : \evaldomain \to \field$ be a function, $\vec{\alpha} \in \field^k$ folding randomness and let $g := \mathrm{Fold}(f, \vec{\alpha})$. If $f \in \rscode[\field, \evaldomain, m]$ and $k \leq m$, then $g \in \rscode[\field, \evaldomain^{2^k}, m - k]$, and further the multilinear extension of $g$ is given by $\hat{g}(X_k, \ldots, X_{m-1}) := \hat{f}(\vec{\alpha}, X_k, \ldots, X_{m-1})$ where $\hat{f}$ is the multilinear extension of $f$.
+    Let $f : \evaldomain \to \field$ be a function, $\vec{\alpha} \in \field^k$ folding randomness and let $g := \mathrm{Fold}(f, \vec{\alpha})$, where $1\le k \leq m\le n$. If $f \in \rscode[\field, \evaldomain, 2^m]$, then $g \in \rscode[\field, \evaldomain^{2^k}, 2^{m - k}]$, and further the multilinear extension of $g$ is given by $\hat{g}(X_k, \ldots, X_{m-1}) := \hat{f}(\vec{\alpha}, X_k, \ldots, X_{m-1})$ where $\hat{f}$ is the multilinear extension of $f$.
 \end{lemma}
 
 \subsubsection{Block relative distance}
 
 \begin{definition}\label{def:block}
-    % \lean{BlockRelDistance.block} % TODO: declaration is not currently formalized.
-    Let $\evaldomain \subseteq \field$ be a smooth evaluation domain and $k \in \mathbb{N}$ be a folding parameter. For $z \in \evaldomain^{2^k}$, define $\mathrm{Block}(\evaldomain, i, k, z) := \{ x \in \evaldomain, y \in \evaldomain^{2^i} : y^{2^{k-i}} = z \}$.
+\lean{Domain.CosetFftDomainClass.block}
+\leanok
+    Let $\evaldomain \subseteq \field$ be a smooth evaluation domain and $k \in \mathbb{N}$ be a folding parameter. For $0\le i\le k$ and $z \in \evaldomain^{2^k}$, define $\mathrm{Block}(\evaldomain, i, k, z) := \{ y \in \evaldomain^{2^i} : y^{2^{k-i}} = z \}$.
+    The formalization takes the domain $\evaldomain^{2^i}$ and the exponent $k-i$ as its arguments.
 \end{definition}
+
+For $0\le i\le m$ write $\code^{(i)} := \rscode[\field, \evaldomain^{2^i}, 2^{m-i}]$ for the smooth
+Reed Solomon code on the folded domain $\evaldomain^{2^i}$. In the block definitions below, the
+words and the code always live on the same domain $\evaldomain^{2^i}$.
 
 \begin{definition}\label{def:block_rel_distance}
 \lean{BlockRelDistance.blockRelDistance}
+\leanok
 \uses{def:block}
-    Let $\code := \rscode[\field, \evaldomain, m]$ be a smooth Reed Solomon code and let $f, g : \evaldomain^{2^i} \to \field$. We define the $(i,k)$-wise block relative distance as
+    Let $\code^{(i)}$ be as above and let $f, g : \evaldomain^{2^i} \to \field$. We define the $(i,k)$-wise block relative distance as
     \[
-    \Delta_{r}(\code, i, k, f, g) = \frac{ \left| \left\{ z \in \evaldomain^{2^k} : \exists y \in \mathrm{Block}(\evaldomain, i, k, z), f(y) \neq g(y) \right\} \right| }{ |\evaldomain^{2^k}| }
+    \Delta_{r}(\code^{(i)}, i, k, f, g) = \frac{ \left| \left\{ z \in \evaldomain^{2^k} : \exists y \in \mathrm{Block}(\evaldomain, i, k, z), f(y) \neq g(y) \right\} \right| }{ |\evaldomain^{2^k}| }
     \]
 \end{definition}
 
 \begin{definition}\label{def:min_block_rel_distance}
-    % \lean{BlockRelDistance.minBlockRelDistance} % TODO: declaration is not currently formalized.
+\lean{BlockRelDistance.blockRelDistanceFromCode}
+\leanok
 \uses{def:block_rel_distance}
-    For $S \subseteq \field^{\evaldomain}$, we let $\Delta_{r}(\code, i, k, f, S) := \min_{g \in S} \Delta_{r}(\code, i, k, f, g)$.
+    For $f : \evaldomain^{2^i} \to \field$ and $S \subseteq \field^{\evaldomain^{2^i}}$, we let $\Delta_{r}(\code^{(i)}, i, k, f, S) := \inf_{g \in S} \Delta_{r}(\code^{(i)}, i, k, f, g)$, with value $\infty$ when $S$ is empty (the infimum is taken in the extended nonnegative reals).
 \end{definition}
 
-{Note that $\Delta_{r}(\code, 0, 0, f, g) = \Delta(f, g)$ for any $\code$. We define the block list decoding of a codeword.}
+{Note that $\Delta_{r}(\code^{(0)}, 0, 0, f, g) = \Delta(f, g)$. We define the block list decoding of a codeword.}
 
 \begin{definition}\label{def:list_close_codewords_block}
-    % \lean{BlockRelDistance.listBlockRelDistance} % TODO: declaration is not currently formalized.
+\lean{BlockRelDistance.blockRelDistanceBall}
+\leanok
 \uses{def:block_rel_distance}
-    For a smooth Reed Solomon code $\rscode := \rscode[\field, \evaldomain, m]$, proximity parameter $\delta \in [0,1]$, and $f : \evaldomain^{2^i} \to \field$, we let
+    For the smooth Reed Solomon code $\code^{(i)}$, proximity parameter $\delta \in [0,1]$, and $f : \evaldomain^{2^i} \to \field$, we let
     \[
-    \Lambda_{r}(\code, i, k, f, \delta) := \{ u \in \code \mid \Delta_{r}(\code, i, k, f, u) \leq \delta \},
+    \Lambda_{r}(\code^{(i)}, i, k, f, \delta) := \{ u \in \code^{(i)} \mid \Delta_{r}(\code^{(i)}, i, k, f, u) \leq \delta \},
     \]
-    denote the list of codewords in $\code$ within relative block distance at most $\delta$ from $f$.
+    denote the list of codewords in $\code^{(i)}$ within relative block distance at most $\delta$ from $f$.
 \end{definition}
 
 \begin{lemma}\label{lemma:block_rel_distance}
-\lean{BlockRelDistance.relHammingDist_le_blockRelDistance}
+\lean{BlockRelDistance.relHammingDist_le_blockRelDistance, BlockRelDistance.listBlock_subset_listHamming}
+\leanok
 \uses{def:block_rel_distance,def:distance_from_code,def:list_close_codewords_block,def:list_close_codewords}
-    For any $\code := \rscode[\field, \evaldomain, m]$, $k \in \mathbb{N}$, and $f, g : \evaldomain^{2^i} \to \field$, we have that $\Delta(f, g) \leq \Delta_{r}(\code, i, k, f, g)$. Consequently, $\Lambda_{r}(\code, i, k, f, \delta) \subseteq \Lambda(\code, f, \delta)$ for $\delta\in[0,1]$.
+    For $i\le k$ and $f, g : \evaldomain^{2^i} \to \field$, we have that $\Delta(f, g) \leq \Delta_{r}(\code^{(i)}, i, k, f, g)$. Consequently, $\Lambda_{r}(\code^{(i)}, i, k, f, \delta) \subseteq \Lambda(\code^{(i)}, f, \delta)$ for $\delta\in[0,1]$.
 \end{lemma}
 
 \subsubsection{Folding preserves list decoding}
 
+Throughout, $\code = \code^{(0)} = \rscode[\field, \evaldomain, 2^m]$ with $\evaldomain$ a smooth
+coset FFT domain of size $2^n$, $1 \le k \leq m\le n$, and $\code^{(i)}$ as defined above.
+The formalization bounds the failure probabilities with a mutual-correlated-agreement error that is
+total in $\delta$, so it needs only $\delta<1-\rate(\code^{(i)})$ where \cite{ACFY24} assumes
+$\delta<1-{\bound}^\star(\code^{(i)},2)$. Every regime of \cite{ACFY24} has
+${\bound}^\star\ge\rate$, so the paper's range implies this one.
+
 \begin{theorem}\label{thm:folding_preserves_listdecoding}
-    % \lean{Fold.folding_listdecoding_if_genMutualCorrAgreement} % TODO: theorem is not currently formalized.
+\lean{ProximityGap.iterated_folding_reflects_balls}
+\leanok
 \uses{lemma:folding_preserves_listdecoding_base, lemma:folding_preserves_listdecoding_bound, lemma:folding_preserves_listdecoding_base_ne_subset}
-    Let $\code = \rscode[\field, \evaldomain, m]$ be a smooth Reed Solomon code and $k \leq m$. For $0 \leq i \leq k$ let $\code^{(i)} := \rscode[\field, \evaldomain^{2^i}, m - i]$. Let $\gen(\parl; \alpha) = (1, \alpha, \ldots, \alpha^{\parl - 1})$ be a proximity generator with mutual correlated agreement for the codes $\code^{(0)}, \ldots, \mathcal{C}^{(k-1)}$ with proximity bound ${\bound}^\star$ and error $\err^\star$. Then for every $f : \evaldomain \to \field$ and $\delta \in \left(0, 1 - \max_{i \in [0,(k-1)]} \{ {\bound}^\star(\code^{(i)}, 2) \} \right)$,
+    Suppose that for each $i<k$ the generator $\gen(2; \alpha) = (1, \alpha)$ has mutual correlated
+    agreement for $\code^{(i+1)}$ with error $\err^\star_i$. Then for every $f : \evaldomain \to
+    \field$ and every $\delta \in (0,1]$ with $\delta<1-\rate(\code^{(i+1)})$ for each $i<k$,
     \[
-    \Pr_{\alpha \leftarrow \field^k} \left[
-    \mathrm{Fold_S}(\Lambda_{r}(\code, 0, k, f, \delta), \alpha)
-    \neq \Lambda(\code^{(k)}, \mathrm{Fold}(f, \alpha), \delta)
-    \right] < \err^{(k)}(\code, \delta).
+    \Pr_{\vec\alpha \leftarrow \field^k} \left[
+    \mathrm{Fold_S}(\Lambda_{r}(\code, 0, k, f, \delta), \vec\alpha)
+    \neq \Lambda(\code^{(k)}, \mathrm{Fold}(f, \vec\alpha), \delta)
+    \right] \le \sum_{i<k}\err^\star_i(\delta).
     \]
 \end{theorem}
+\begin{proof}
+\leanok
+Apply Lemma~\ref{lemma:folding_preserves_listdecoding_base} to each of the $k$ independent
+folding rounds and take a union bound.
+\end{proof}
 
 \begin{lemma}\label{lemma:folding_preserves_listdecoding_base}
-    % \lean{Fold.folding_preserves_listdecoding_base} % TODO: lemma is not currently formalized.
+\lean{ProximityGap.folding_reflects_balls}
+\leanok
 \uses{def:list_close_codewords_block,def:fold_k,def:fold_k_set}
-    Let $\code := \rscode[\field, \evaldomain, m]$ be a Reed Solomon code, and $k \leq m$ be a parameter. Denote $\code' := \rscode[\field, \evaldomain^{2}, m - 1]$. Then for every $f : \evaldomain \to \field$ and $\delta \in (0, 1 - {\bound}^\star(\code', 2))$,
+    Denote $\code' := \code^{(1)} = \rscode[\field, \evaldomain^{2}, 2^{m - 1}]$, and suppose that
+    $\gen(2;\alpha)=(1,\alpha)$ has mutual correlated agreement for $\code'$ with error
+    $\err^\star$. Then for every $f : \evaldomain \to \field$ and $\delta \in (0, 1 -
+    \rate(\code'))$,
     \[
     \Pr_{\alpha \leftarrow \field} \left[
     \mathrm{Fold_S}(\Lambda_{r}(\code, 0, k, f, \delta), \alpha)
     \neq \Lambda_{r}(\code', 1, k, \mathrm{Fold}(f, \alpha), \delta)
-    \right] < \err^\star(\code', 2, \delta).
+    \right] \le \err^\star(\delta).
     \]
 \end{lemma}
-    
+
 \begin{lemma}\label{lemma:folding_preserves_listdecoding_bound}
-    % \lean{Fold.folding_preserves_listdecoding_bound} % TODO: lemma is not currently formalized.
+\lean{ProximityGap.folding_preserves_block_balls}
+\leanok
 \uses{def:list_close_codewords_block,def:fold_k}
     For every $\alpha \in \field$, $\mathrm{Fold_S}(\Lambda_{r}(\code, 0, k, f, \delta), \alpha) \subseteq \Lambda_{r}(\code', 1, k, \mathrm{Fold}(f, \alpha), \delta)$.
 \end{lemma}
 
 \begin{lemma}\label{lemma:folding_preserves_listdecoding_base_ne_subset}
-    % \lean{Fold.folding_preserves_listdecoding_base_ne_subset} % TODO: lemma is not currently formalized.
 \uses{def:list_close_codewords_block,def:fold_k,def:fold_k_set}
+    Under the hypotheses of Lemma~\ref{lemma:folding_preserves_listdecoding_base},
     \[
     \Pr_{\alpha \leftarrow \field} \left[
     \Lambda_{r}(\code', 1, k, \mathrm{Fold}(f, \alpha), \delta)
     \not\subseteq \mathrm{Fold_S}(\Lambda_{r}(\code, 0, k, f, \delta), \alpha)
-    \right] < \err^\star(\code', 2, \delta).
+    \right] \le \err^\star(\delta).
     \]
+    The formalization proves this as a private step of
+    Lemma~\ref{lemma:folding_preserves_listdecoding_base}, so it has no public declaration.
 \end{lemma}
 
 \begin{lemma}\label{lemma:crs_equiv_rs_randpompt_agreement}
-\lean{OutOfDomSmpl.out_of_dom_smpl_1}
+% TODO: not formalized. The WHIR statement is for constrained multilinear Reed Solomon codes;
+% only STIR's univariate out-of-domain lemma (lemma:out_of_domain_smpl) is formalized.
 \uses{def:smooth_rs_code,def:constrained_code,def:list_close_codewords}
     Let $f : \evaldomain \rightarrow \field$ be a function, $m \in \mathbb{N}$ be a number of variables, $s \in \mathbb{N}$ be a repetition parameter, and let $\delta \in [0,1]$ be a distance parameter. For every $\vec{r_0}, \dots, \vec{r_{s-1}} \in \field^m$, the following are equivalent statements.
 \begin{itemize}
-    \item There exist distinct $u, u' \in \Lambda(\rscode[\field, \evaldomain, m], f, \delta)$ such that, for every $i \in [0,s-1]$, $\hat{u}(\vec{r_i}) = \hat{u}'(\vec{r_i})$.
+    \item There exist distinct $u, u' \in \Lambda(\rscode[\field, \evaldomain, 2^m], f, \delta)$ such that, for every $i \in [0,s-1]$, $\hat{u}(\vec{r_i}) = \hat{u}'(\vec{r_i})$.
     \item There exists $\sigma_0, \dots, \sigma_{s-1} \in \field$ such that $$\left| \Lambda(\crscode[\field, \evaldomain, m, ((Z \cdot \mathrm{eq}(\vec{r_0}, \cdot), \sigma_0), \dots, (Z \cdot \mathrm{eq}(\vec{r_{s-1}}, \cdot), \sigma_{s-1}))], f, \delta) \right| > 1.$$
 \end{itemize}
 \end{lemma}
 
 \begin{lemma}\label{lemma:out_of_domain_sampling_crs_eq_rs}
-\lean{OutOfDomSmpl.out_of_dom_smpl_2}
+% TODO: not formalized. The WHIR statement is for constrained multilinear Reed Solomon codes;
+% only STIR's univariate out-of-domain lemma (lemma:out_of_domain_smpl) is formalized.
 \uses{def:smooth_rs_code,def:constrained_code,def:list_close_codewords,def:list_decodable}
-    Let $f : \evaldomain \rightarrow \field$ be a function, $m \in \mathbb{N}$ be a number of variables, $s \in \mathbb{N}$ be a repetition parameter, and $\delta \in [0,1]$ be a distance parameter. If $\rscode[\field, \evaldomain, m]$ is $(\delta, \ell)$-list decodable then
+    Let $f : \evaldomain \rightarrow \field$ be a function, $m \in \mathbb{N}$ be a number of variables, $s \in \mathbb{N}$ be a repetition parameter, and $\delta \in [0,1]$ be a distance parameter. If $\rscode[\field, \evaldomain, 2^m]$ is $(\delta, \ell)$-list decodable then
     \[
     \Pr_{r_0, \dots, r_{s-1} \leftarrow \field} \left[
     \begin{array}{c}
@@ -239,7 +392,7 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
     \[
     = \Pr_{r_0, \dots, r_{s-1} \leftarrow \field} \left[
     \begin{array}{c}
-    \exists \text{ distinct } u, u' \in \Lambda(\rscode[\field, \evaldomain, m], f, \delta) \\
+    \exists \text{ distinct } u, u' \in \Lambda(\rscode[\field, \evaldomain, 2^m], f, \delta) \\
     \text{ s.t. } \forall i \in [s],\ \hat{u}(\mathrm{pow}(r_i, m)) = \hat{u}'(\mathrm{pow}(r_i, m))
     \end{array}
     \right]
@@ -266,9 +419,9 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
     For every $f \notin \crscode[\field, \evaldomain_0, m_0, \widehat{w}_0, \sigma_0]$ and every $\delta_0, \dots, \delta_{M}$ and $(\parl_{i,s})_{0 \leq i \leq M}^{0 \leq s \leq k_i}$ where
     \begin{itemize}
         \item $\delta_0 \in (0, \Delta(f, \crscode[\field, \evaldomain_0, m_0, \widehat{w}_0, \sigma_0]))$;
-        \item the function $\gen(\parl; \alpha) = (1, \alpha, \dots, \alpha^{\parl-1})$ is a proximity generator with mutual correlated agreement for the codes $(\mathcal{C}_{\mathrm{RS}}^{(i,s)})_{0 \leq i \leq M}^{0 \leq s \leq k_i}$ where $\mathcal{C}_{\mathrm{RS}}^{(i,s)} := \rscode[\field, \evaldomain_i^{(2^s)}, m_i - s]$ with bound ${\bound}^\star$ and error $\err^\star$;
+        \item the function $\gen(\parl; \alpha) = (1, \alpha, \dots, \alpha^{\parl-1})$ is a proximity generator with mutual correlated agreement for the codes $(\mathcal{C}_{\mathrm{RS}}^{(i,s)})_{0 \leq i \leq M}^{0 \leq s \leq k_i}$ where $\mathcal{C}_{\mathrm{RS}}^{(i,s)} := \rscode[\field, \evaldomain_i^{(2^s)}, 2^{m_i - s}]$ with bound ${\bound}^\star$ and error $\err^\star$;
         \item for every $0 \leq i \le M$, $\delta_i \in (0, 1 - {\bound}^\star(\mathcal{C}_{\mathrm{RS}}^{(i,s)}, 2))$;
-        \item for every $0 \leq i \le M$, $\mathcal{C}_{\mathrm{RS}}^{(i,s)}$ is $(\ell_{i,s}, \delta_i)$-list decodable.
+        \item for every $0 \leq i \le M$, $\mathcal{C}_{\mathrm{RS}}^{(i,s)}$ is $(\delta_i, \ell_{i,s})$-list decodable.
     \end{itemize}
    Then there exists an IOPP for $\crscode[\field, \evaldomain_0, m_0, \widehat{w}_0, \sigma_0]$ with above parameters, with round-by-round soundness error
 
