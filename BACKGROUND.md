@@ -975,7 +975,7 @@ Micali's construction and for the BCS construction without modification, in cont
 transformations that rely on computational assumptions and often lose succinctness. Badertscher et al. [BCCRS24] obtain
 logarithmic, witness-succinct UC NIZKs with a global non-programmable random oracle by defining
 their NIZK functionality in the shielded super-polynomial-oracle model of Broadnax et al.
-(EUROCRYPT 2017). They state that this functionality preserves the usual soundness and
+[BDHMN17]. They state that this functionality preserves the usual soundness and
 zero-knowledge properties and its compositional guarantees. They observe that among the
 formalizations of [CDGLN18] their choice of setup is necessary for this result. They also give a construction based on [CF24] and show that it achieves a
 slightly weaker version of their NIZK functionality.
@@ -1749,6 +1749,9 @@ paper's page in the repository's [knowledge base](docs/kb/README.md).
   [ePrint 2024/1549](https://eprint.iacr.org/2024/1549)
 - [BDF+11] Boneh, Dagdelen, Fischlin, Lehmann, Schaffner, Zhandry. *Random Oracles in a Quantum
   World*. ASIACRYPT 2011. [ePrint 2010/428](https://eprint.iacr.org/2010/428)
+- [BDHMN17] Broadnax, Döttling, Hartung, Müller-Quade, Nagel. *Concurrently Composable Security
+  with Shielded Super-Polynomial Simulators*. EUROCRYPT 2017.
+  [ePrint 2016/1043](https://eprint.iacr.org/2016/1043)
 - [Can01] Canetti. *Universally Composable Security: A New Paradigm for Cryptographic Protocols*.
   FOCS 2001. [ePrint 2000/067](https://eprint.iacr.org/2000/067)
 - [CC25] Canetti, Chen. *Universally Composable Succinct Vector Commitments and Applications*.
