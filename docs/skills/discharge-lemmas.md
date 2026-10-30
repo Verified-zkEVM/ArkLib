@@ -18,6 +18,44 @@ Turn a pile of `sorry`s and proof obligations into:
 
 Favor composable proofs that reuse existing Mathlib and ArkLib lemmas over new definitions.
 
+A deferred gap is a working-branch state, not a mergeable one: `main` carries no admitted proof
+debt, so a branch with a remaining `sorry` cannot merge (see
+[Review and Merge Readiness](../../CONTRIBUTING.md#review-and-merge-readiness)). The one exception
+is a *solicited proof*: a true, faithfully stated external result whose research-sized proof is
+left open for contributors. It enters the axiom baseline's `solicited` list only after maintainer
+review, with a tracking issue linked from its docstring, and nothing outside that list may depend
+on it ([issue #1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352),
+[`scripts/README.md`](../../scripts/README.md)). Propose that route to the user; do not take it
+yourself.
+
+## Paper-driven targets: fix the statement before proving it
+
+When the gaps belong to a theorem from a paper (a protocol's soundness, a coding-theory bound),
+proving the wrong statement is the costly failure. Work in four stages:
+
+1. **Audit the statement against the paper.** Reconstruct the paper's exact claim independently:
+   quantifier order, dimensions, challenge space and distribution, verifier checks, bounds, escape
+   cases and conclusion. Label every deliberate deviation as a strengthening, weakening, repair,
+   generalization or representation choice, and justify its direction. Check non-vacuity: try
+   small and boundary cases, confirm relations and challenge spaces are inhabited, and confirm the
+   verifier does not always reject. Check that the audited theorem is the one its consumers use.
+2. **Freeze the semantics.** Implement every data-bearing definition, including relations,
+   verifiers, protocol specifications, extractors, conversions and witness constructors. Only
+   proof bodies may contain remaining `sorry`s. Inventory those proof placeholders before
+   freezing; never prove claims about data fabricated with `sorry`. Once the sorried skeleton
+   states the right result and builds, record
+   every target declaration's full type (`#check @Full.name`) and every data-bearing definition
+   (`#print`), and keep a copy of the scoped files outside the repository, for example under
+   `/tmp`. From then on only proof bodies may change.
+3. **Discharge without changing frozen signatures.** Replace one proof body at a time, rebuild the
+   module, and require the target's `sorry` count to drop. Never make a theorem easier by
+   strengthening an input relation, weakening an output relation, shrinking a challenge space,
+   adding an unmotivated hypothesis or moving a verifier check into an assumption. If a statement
+   must change, return to stage 1 and say so.
+4. **Verify independently.** Compare the final `#check` and `#print` output with the frozen copy,
+   check `#print axioms` of each target against `{propext, Classical.choice, Quot.sound}`, and
+   have a reviewer who did not write the proof re-read the statement against the paper.
+
 ## TODO List
 
 Work through these in order. Do not skip the triage steps just because a `sorry` looks easy —
@@ -26,8 +64,9 @@ the rating and placement decisions are what keep the result maintainable.
 ### 1. Inventory and rate each gap
 
 - Collect every `sorry` and open obligation in scope. Search with
-  `grep -rn "sorry" path/to/scope` and cross-check against the build (`lake env lean File.lean`
-  surfaces `declaration uses 'sorry'` warnings and any unsolved goals).
+  `grep -rn "sorry" path/to/scope` and cross-check against the build
+  (`lake build ArkLib.Path.To.Module` surfaces `declaration uses 'sorry'` warnings and any unsolved
+  goals).
 - For each gap, read enough surrounding context to understand the actual goal state, not just the
   textual statement. Note the hypotheses in scope and the target type.
 - Rate each gap on a 1–10 effort scale:
@@ -47,8 +86,11 @@ the rating and placement decisions are what keep the result maintainable.
 - For each gap, ask: where in the repo does this lemma belong? Match the routing in
   [`../wiki/repo-map.md`](../wiki/repo-map.md):
   - reusable math / coding theory / polynomials → `ArkLib/Data/`
+  - oracle computations, probability and measured programs → `ArkLib/Data/OracleComp/` (or
+    upstream in VCVio when fully generic)
   - general-purpose extensions meant for upstreaming → `ArkLib/ToMathlib/`
-  - IOR core / security theory → `ArkLib/OracleReduction/`
+  - interaction layer (interaction-tree protocols) and its security theory → `ArkLib/Interaction/`
+  - legacy layer (oracle-reduction core) and its security theory → `ArkLib/OracleReduction/`
   - protocol-specific → `ArkLib/ProofSystem/`
   - commitment-specific → `ArkLib/Commitments/`
 - Prefer keeping a lemma next to the definitions it is about, not next to the theorem that happens
@@ -75,7 +117,8 @@ the rating and placement decisions are what keep the result maintainable.
 
 ### 4. Prove everything rated below 6
 
-- Prove every gap rated 1–5. Leave 6+ as documented `sorry`s (see step 6).
+- Prove every gap rated 1–5. Leave 6+ as documented `sorry`s for the summary in step 6; the
+  branch cannot merge until they are proved or accepted as solicited proofs.
 - Reuse first: search Mathlib and ArkLib for an existing lemma before writing anything. Use
   `exact?`, `apply?`, `rw?`, `simp?`, and `loogle`/`Loogle`-style name searches. A one-line
   `exact foo` beats a ten-line bespoke proof.
@@ -84,8 +127,8 @@ the rating and placement decisions are what keep the result maintainable.
   - Avoid introducing new `def`s. If you must, prefer reusing an existing definition or a plain
     `let`/term over a new top-level definition. Every new definition is new API to maintain.
   - Factor a shared sub-fact into its own small lemma rather than copy-pasting a proof block.
-- Build and re-check after each proof (`lake env lean File.lean`). Do not batch many unverified
-  proofs.
+- Build and re-check after each proof (`lake build ArkLib.Path.To.Module`). Do not batch many
+  unverified proofs.
 
 ### 5. Clean up the proofs and statements
 
@@ -107,7 +150,8 @@ the rating and placement decisions are what keep the result maintainable.
   - for each gap: its chosen home, whether it became a named lemma or stayed inline, and its status
     (proved / deferred),
   - for deferred gaps (rated 6+): why, and what the blocker is (missing API, deep math, design
-    decision) so the user can plan the follow-up,
+    decision) so the user can plan the follow-up, and whether any is a faithful external result
+    that could be proposed as a solicited proof,
   - any cleanups made in step 5.
 - Follow the Maintenance Rule in [`README.md`](README.md): tell the user how this skill could be
   improved — a recurring rating heuristic, a placement rule worth codifying, a proof tactic that
@@ -121,7 +165,8 @@ Only consider the task complete when:
 2. Every gap rated below 6 is proved, or you have explained precisely why a sub-6 rating turned out
    wrong (and re-rated it).
 3. Every remaining `sorry` is a deliberately deferred, documented gap rated 6+.
-4. `./scripts/validate.sh` passes and `ReadLints` is clean for every changed file.
+4. `./scripts/validate.sh` passes, so every changed module builds with no warnings other than the
+   deferred `sorry`s.
 5. You have delivered the summary and any suggested skill improvements.
 
 ## Known Pitfalls
@@ -134,6 +179,7 @@ Only consider the task complete when:
   size, not reflexively.
 - Re-rate honestly: if a "sub-6" proof balloons, stop, mark it deferred with the new rating, and
   say so in the summary rather than forcing a brittle proof.
-- A sorried definition is also `noncomputable` (because `sorryAx` is). That marker is a symptom of
-  the gap you are filling here, not separate work — see [`make-computable.md`](make-computable.md)
-  if the task is actually about executability.
+- A sorried definition still compiles: `sorryAx` compiles to a runtime panic, so the definition
+  needs no `noncomputable` marker but fails when evaluated. If a `noncomputable` marker sits next to
+  the gap, it has another cause; see [`make-computable.md`](make-computable.md) if the task is
+  actually about executability.

@@ -8,9 +8,9 @@ import ArkLib.Data.OracleComp.QueryBounds
 import ArkLibTest.Interaction.Oracle.RuntimeSoundness
 
 /-!
-# Query certificates for the native hidden-bit experiment
+# Query certificates for the hidden-bit experiment
 
-These certificates describe the same exported resource and native experiment as the runtime
+These certificates describe the same exported resource and experiment as the runtime
 soundness test. Access, initialization, source charges, and chronological ambient costs are
 separate from its honest closed-claim relation and averaged security premise.
 -/
@@ -24,7 +24,7 @@ open RuntimeSoundnessTest
 
 noncomputable section
 
-/-- Canonical available resources come from the actual native prefix path. -/
+/-- Canonical available resources come from the actual prefix path. -/
 abbrev resourcePrefix (boundary : Boundary) :=
   ExecutionPrefix.ofExecutionPath (ExecutionPath.ofTypeTreePath boundary.1)
 
@@ -204,7 +204,7 @@ lemma setup_budget : WorstCaseCostBound runtime.setup importCost 1 := by
       subst result
       exact le_rfl)
 
-/-- Pure observation of the existing native split retains state and chronological ambient cost. -/
+/-- Pure observation of the existing split retains state and chronological ambient cost. -/
 lemma native_split_history
     (native : Prover.Strategy ambient combined.tree combined.roles (fun _ => Nat)) :
     (fun result => (result.state, result.trace, ambientCharge result.trace)) <$>
@@ -224,7 +224,7 @@ lemma native_split_history
   delta nextProgram
   simpa only [verifier, prefixProgram, map_eq_pure_bind] using observed
 
-/-- The direct native logged runtime retains exactly this charged ambient history. -/
+/-- The direct logged runtime retains exactly this charged ambient history. -/
 lemma native_actual_history (guess : Bool) (secret : Nat) :
     (fun result => (result.state, result.trace, ambientCharge result.trace)) <$>
       executeStrategiesWithRuntime runtime inputImpl (prover guess secret) verifier =
@@ -252,7 +252,7 @@ lemma native_import_budget (guess : Bool) (secret : Nat) :
   apply (worstCaseCostBound_map_iff _ _ importCost 1).mpr
   exact worstCaseCostBound_query () importCost
 
-/-- Resource and cost certificates accompany the same fixed native guessing prover's half bound.
+/-- Resource and cost certificates accompany the same fixed guessing prover's half bound.
 They are properties of this exact experiment; they do not establish security for arbitrary provers.
 The verifier returns the certified export, and hidden state is used only analytically by the runtime
 history observation. `TruthFinal` and the actual integrated success premise remain unchanged. -/
@@ -285,7 +285,7 @@ theorem fixed_native_resource_bounds (guess : Bool) (secret : Nat) :
     (exported_certificate boundary).2, routed_suffix_access boundary guess,
     routed_suffix_budget guess⟩
 
-/-- A permitted query-informed native prover has real ambient cost seven and success one.
+/-- A permitted query-informed prover has real ambient cost seven and success one.
 These access/cost observations do not repair its failed averaged half-error premise. -/
 theorem informed_cost_does_not_give_half (secret : Nat) :
     ((fun result => (result.state, result.trace, ambientCharge result.trace)) <$>

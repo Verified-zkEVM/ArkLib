@@ -11,7 +11,7 @@ import ArkLib.Interaction.Oracle.PhasedRun
 /-!
 # Actual exported source access and weighted query cost
 
-The native prefix receives an oracle and exports a view that reads it twice. The suffix receives
+The prefix receives an oracle and exports a view that reads it twice. The suffix receives
 another oracle and queries the exported view and its own fresh slot. The actual logged execution
 preserves multiplicity, slot identity, answers, the closed claim, and private prover memory.
 The same symbolic route has a weighted budget of five; a future slot fails syntactic availability
@@ -131,7 +131,7 @@ example : WorstCaseCostBound (simulateQ route suffixProgram) rawCost 5 :=
     program_cost route_cost
 
 open Interaction.Oracle.TypeTree PFunctor.FreeM in
-/-- Concrete realizations of the two messages from the same native execution. -/
+/-- Concrete realizations of the two messages from the same execution. -/
 def afterBoth (first second : Nat) : ExecutionPrefix combined.tree :=
   ⟨Cursor.down (P := basePFunctor) (a := Position.oracle Nat)
     (next := fun _ => secondProtocol.tree) PUnit.unit
@@ -162,7 +162,7 @@ theorem routed_available (first second : Nat) :
       rw [allQueriesSatisfy_query_bind_iff]
       exact ⟨(afterBoth first second).queryName_available combined.oracles initial raw, ih⟩
 
-/-- The direct native logged executor observes repeated old answers and the fresh answer. -/
+/-- The direct logged executor observes repeated old answers and the fresh answer. -/
 example :
     let result := simulateQ (fun tag => (tag : Id Nat))
       (executeStrategiesLogged ambient combined.tree combined.roles combined.oracles
@@ -238,7 +238,7 @@ namespace Interaction.Oracle.QueryBoundsTest
 
 open OracleComp OracleSpec
 
-/-- The same native strategies are executed once by the phased adapter. -/
+/-- The same strategies are executed once by the phased adapter. -/
 def phased := simulateQ (fun tag => (tag : Id Nat))
   (executePhases ambient combined.tree combined.roles combined.oracles initial Empty.elim
     (pure prover) verifier)

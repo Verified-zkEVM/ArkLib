@@ -13,8 +13,8 @@ public import ArkLib.ProofSystem.Sumcheck.Interaction.Closing
 The input and output relation theorems are bidirectional for arbitrary concrete claims. The
 verifier-execution theorem compares scalar outputs for arbitrary sent polynomials and fixed
 challenges, including rejection: both verifiers take the sent polynomial at the challenge as the
-next target and keep the input polynomial as the output oracle. It does not relate the legacy and
-native security games.
+next target and keep the input polynomial as the output oracle. It does not relate the
+legacy-layer and interaction-layer security games.
 -/
 
 @[expose] public section

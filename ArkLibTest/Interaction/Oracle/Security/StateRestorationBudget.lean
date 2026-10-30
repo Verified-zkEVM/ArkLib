@@ -7,7 +7,7 @@ import ArkLib.Interaction.Oracle.Security.StateRestorationResources
 import ArkLibTest.Data.OracleComp.AddProgram
 
 /-!
-A two-round native closed-oracle client with distinct challenge alphabets and local errors 1/8
+A two-round closed-oracle client with distinct challenge alphabets and local errors 1/8
 and 1/16. Input statements range over Nat. The actual terminal output reads the second oracle
 message; named backward extraction adds both actual payloads to the supplied witness.
 

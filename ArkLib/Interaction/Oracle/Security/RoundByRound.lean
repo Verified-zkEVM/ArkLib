@@ -11,17 +11,17 @@ public import VCVio.CryptoFoundations.RoundByRound
 public import VCVio.EvalDist.ProbabilityBounds
 
 /-!
-# Ordinary round-by-round soundness on native prefixes
+# Ordinary round-by-round soundness on prefixes
 
 An ordinary state is false initially on a false input, cannot become true at a prover move,
 and is true at every successful terminal path. Local soundness bounds false-to-true transitions
 at every authored verifier prefix, including prefixes having zero execution probability.
 
 The challenge model uses VCVio's game family. Its challenge types are small even though the
-native prefix carrier stores a dependent residual tree. `FreshVerifier` connects that model to
-actual native verifier actions after closing declared access and interpreting ambient effects.
+prefix carrier stores a dependent residual tree. `FreshVerifier` connects that model to
+actual verifier actions after closing declared access and interpreting ambient effects.
 It preserves receive effects and supported private continuations. The ambient interpreter may
-lose probability mass, including when the native prover fails to return.
+lose probability mass, including when the prover fails to return.
 -/
 
 @[expose] public section
@@ -136,7 +136,7 @@ def IsVerifierPrefix {tree : TypeTree} (roles : tree.RoleDecoration)
     (pfx : ExecutionPrefix tree) : Prop :=
   IsVerifierRoot pfx.cursor.residual (pfx.roles roles)
 
-/-- Fresh local challenge programs and their concrete native prefix extensions. -/
+/-- Fresh local challenge programs and their concrete prefix extensions. -/
 structure ChallengeModel (protocol : Protocol.{0}) where
   Result : ExecutionPrefix protocol.tree → Type
   sample : (pfx : ExecutionPrefix protocol.tree) → ProbComp (Result pfx)
@@ -158,7 +158,7 @@ def LocalSoundness {protocol : Protocol} (model : ChallengeModel protocol)
     (error : ℕ → ℝ≥0∞) : Prop :=
   (localGames model state).IsBounded (fun pfx => error (rank pfx.val))
 
-/-- Actual native verifier actions follow the local challenge model.
+/-- Actual verifier actions follow the local challenge model.
 
 At verifier moves, the closed and interpreted action has the specified fresh challenge
 event marginals,
@@ -205,10 +205,10 @@ def FreshVerifier {protocol : Protocol} (model : ChallengeModel protocol)
           (fun path => OutV ⟨PUnit.unit, path⟩) next
           (fun pfx => embed (ExecutionPrefix.prependOracle message pfx))
 
-/-- Transport the same actual native verifier through an all-authored prefix map.
+/-- Transport the same actual verifier through an all-authored prefix map.
 
 The map preserves verifier roles, fresh event marginals, and concrete challenge extensions.
-The native actions and supported private continuations remain unchanged. -/
+The actions and supported private continuations remain unchanged. -/
 theorem FreshVerifier.mapPrefixes {source target : Protocol}
     (sourceModel : ChallengeModel source) (targetModel : ChallengeModel target)
     (map : ExecutionPrefix source.tree → ExecutionPrefix target.tree)

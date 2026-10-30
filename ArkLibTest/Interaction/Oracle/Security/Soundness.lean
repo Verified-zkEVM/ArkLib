@@ -9,9 +9,9 @@ import VCVio.EvalDist.Defs.Measure.OptionT
 import VCVio.EvalDist.Monad.Failure
 
 /-!
-This ordinary-import consumer checks the failure scope of the native soundness API.
-A native prover performs an empty-response query. The existing interpreter handles that query
-by OptionT failure, and the actual native executor has zero successful mass.
+This ordinary-import consumer checks the failure scope of the soundness API.
+A prover performs an empty-response query. The existing interpreter handles that query
+by OptionT failure, and the actual executor has zero successful mass.
 -/
 
 open Interaction.Oracle OracleComp OracleSpec Interaction.TwoParty

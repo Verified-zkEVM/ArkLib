@@ -9,16 +9,16 @@ public import ArkLib.Interaction.Oracle.Security.Soundness
 public import ArkLib.ProofSystem.Sumcheck.Interaction.ProtocolSoundness
 
 /-!
-# Native Sumcheck round-by-round soundness
+# Round-by-round soundness of interaction-layer Sumcheck
 
-The scalar state reconstructs the current claim from every concrete native prefix and retains
+The scalar state reconstructs the current claim from every concrete prefix and retains
 one fixed realized original polynomial. At a verifier prefix, the sent polynomial is already
 fixed; a failed sum check produces public abort, and a successful check uses a fresh challenge.
 
 The actual verifier satisfies this authored-prefix model after closing its declared source
-queries. Native execution preserves the effectful prover response on both branches. Its valid
+queries. Execution preserves the effectful prover response on both branches. Its valid
 returned claim implies the scalar terminal state through the same path-derived closing handler.
-The generic native local-to-global theorem then bounds ordinary soundness, including missing
+The generic local-to-global theorem then bounds ordinary soundness, including missing
 mass from an interpreted failing prover and the zero-round false-input case.
 -/
 
@@ -648,11 +648,11 @@ private theorem execute_eq_closeExecution {ι : Type} (ambient : OracleSpec ι)
     bind_assoc]
   rfl
 
-/-- The actual optional native Sumcheck output is valid with probability at most
+/-- The actual optional interaction-layer Sumcheck output is valid with probability at most
 `count * deg / Fintype.card F` for a false input, by generic round-by-round soundness.
 
 The ambient interpreter may lose probability mass. The original polynomial remains fixed,
-and each interpreted challenge has uniform event marginals. The arbitrary native prover's
+and each interpreted challenge has uniform event marginals. The arbitrary prover's
 private effects and its responses to both continuing and aborting public moves are preserved.
 The proof uses the ordinary scalar state, whose initial law only needs the false input claim;
 this covers the zero-round case as well. -/

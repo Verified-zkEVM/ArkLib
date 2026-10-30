@@ -10,9 +10,9 @@ public import ArkLib.Data.Probability.Sequential
 public import VCVio.EvalDist.Monad.Measure
 
 /-!
-# Soundness of native sequential interaction
+# Soundness of sequential interaction
 
-An arbitrary strategy on an appended interaction decomposes into its native prefix and the
+An arbitrary strategy on an appended interaction decomposes into its prefix and the
 actual suffix strategy returned by that prefix. Both execute with PolyFun's ordinary paired
 runner. The exact equation requires only a lawful monad: choosing the already returned suffix is
 pure, while its internal effects and its responses to challenges remain unrestricted.
@@ -22,8 +22,8 @@ prefix truth-transition bound with soundness of the actual suffix counterpart. A
 variant also charges for prefix outputs outside the suffix theorem's domain. The weighted bound
 can include a final action after the whole interaction, such as the verifier's last oracle queries
 and decision to return a claim. Its pure observation case gives the original output-event bound.
-These theorems concern native interactions; persistent oracle-state interpretations need their
-own execution and soundness results.
+These theorems concern direct execution with the paired runner; persistent oracle-state
+interpretations need their own execution and soundness results.
 -/
 
 @[expose] public section
@@ -221,7 +221,7 @@ theorem run_appendFlat_soundness_fixed
   exact Filter.Eventually.of_forall hsuffix
 
 /-- Prefix truth transitions and suffix soundness bound success of the actual composed
-counterpart against every whole native adversary. Prefix outputs retain arbitrary suffix
+counterpart against every whole adversary. Prefix outputs retain arbitrary suffix
 strategies; suffix soundness therefore covers every private continuation the prefix can return.
 The suffix hypothesis applies to all false prefix paths and outputs, not only reachable ones. -/
 theorem run_appendFlat_soundness
@@ -256,7 +256,7 @@ theorem run_appendFlat_soundness
 
 /-- If suffix soundness applies only to admissible false prefix outputs, additionally charge
 the probability of leaving that domain. The suffix hypothesis applies to all admissible false
-prefix paths and outputs, not only reachable ones. All bounds concern actual native executions. -/
+prefix paths and outputs, not only reachable ones. All bounds concern actual executions. -/
 theorem run_appendFlat_soundness_of_admissible
     (prover : StrategyOver (SyntaxOver.TwoParty.pairedTypeTree m) Participant.focal
       (s₁.append s₂) (r₁.append r₂) OutputP)

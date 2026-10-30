@@ -69,7 +69,7 @@ def reduction (accept : Bool) : Reduction ambient protocol input.toPFunctor Unit
   prover := fun _ witness => pure (prover witness.1 witness.2)
   verifier := fun _ => verifier accept
 
-/-- An effectful setup variant checks the boundary before native strategy execution. -/
+/-- An effectful setup variant checks the boundary before strategy execution. -/
 def reductionWithSetup (accept : Bool) :
     Reduction ambient protocol input.toPFunctor Unit (Nat × Nat) (fun _ => Nat)
       (TerminalClaim protocol input.toPFunctor (fun _ => Nat) (fun _ => output)) :=

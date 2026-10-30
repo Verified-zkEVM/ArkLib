@@ -12,17 +12,14 @@ Review intervening API additions before writing replacement infrastructure. If t
 checkout contains unrelated work, use a separate worktree for the forward-port and
 leave that work intact.
 
-The Lean 4.35 upgrade uses Lean, Mathlib, and doc-gen4 `v4.35.0`.
-`lakefile.toml` pins CompPoly and VCVio to their `v4.35.0` releases; `lake-manifest.json`
-records the exact resolved revisions, including the PolyFun revision selected by VCVio.
-Keep that PolyFun pin when updating this stack: a newer PolyFun revision must also be
-validated against VCVio before ArkLib can adopt it.
-The VCVio pin includes the native probability prerequisites and
-[the supporting bound lemmas](https://github.com/Verified-zkEVM/VCVio/pull/769); it is an exact
-reviewable revision rather than a moving branch. ArkLib uses native measures throughout its
-probability statements; the [migration ledger](../design/native-measure-ledger.md) records the
-conversion and upstream API map.
-Validate the combined dependency set with `./scripts/validate.sh --axioms` before merging.
+`lean-toolchain` names the Lean release. `lakefile.toml` pins doc-gen4 and CompPoly to the
+matching release tag and VCVio to an exact commit; Mathlib and PolyFun arrive through those
+packages. `lake-manifest.json` records the exact resolved revision of every package, so read it,
+not this page, for the current versions. A newer PolyFun revision must be validated against VCVio
+before ArkLib can adopt it, so a VCVio bump and its PolyFun revision move together.
+ArkLib uses native measures throughout its probability statements; the
+[migration ledger](../design/native-measure-ledger.md) records the conversion and upstream API map.
+Validate a changed dependency set with `./scripts/validate.sh --axioms` before merging.
 
 Keep each check on a coherent source and artifact graph with the same toolchain and dependency
 manifest. With parallel worktrees or artifact overlays, verify that every imported module resolves
@@ -35,9 +32,6 @@ For focused checks, prefer `lake build ArkLib.Path.To.Module`. A direct `lake en
 does not inherit the package's Lean options or build-time source-policy plugin. In particular,
 a probe using default `autoImplicit` can accept an undeclared parameter that the project rejects.
 Treat such a probe as provisional until the source passes the project build.
-
-The September 4 baseline in `docs/design/00-current-status.md` records the original typed
-interaction implementation train, not the current package versions.
 
 ## Recommended Validation
 
@@ -85,7 +79,8 @@ test warnings, including admissions. Stage new tests so source linting and the t
 include them. Production modules must not import tests.
 
 Typed Interaction PRs also have a focused hosted check, including when stacked on a feature
-branch. It compiles all tracked `ArkLib/Interaction/` and `ArkLibTest/Interaction/` modules with
+branch. It compiles all tracked modules under `ArkLib/Interaction/`, `ArkLibTest/Interaction/`,
+`ArkLib/ProofSystem/Sumcheck/Interaction/` and `ArkLibTest/ProofSystem/Sumcheck/Interaction/` with
 the existing build-time source-policy plugin and rejects every warning in those modules,
 including admissions. This is early feedback, not a replacement for `lake test` or the full
 validation/axiom gate before merging to `main`. The semantic acceptance requirements live in
@@ -135,7 +130,16 @@ existing debt, and commit that reviewed bookkeeping in the same PR:
 lake exe axiomsweep --update-baseline
 ```
 
-The baseline records existing `sorryAx` debt only. Native-compiler trust
+The baseline's `sorry` and `nonstandard` lists are empty. Its `solicited` list holds the only
+admitted statements: true external results, each with a tracking issue linked from its docstring,
+whose proofs are left open for contributors
+([issue #1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352)). The sweep rejects a
+solicited entry that no longer depends on `sorryAx`, depends on another nonstandard axiom, lacks
+its issue link, or has a dependent outside the solicited list, and `--update-baseline` preserves
+the list. Adding an entry needs maintainer review; see
+[`scripts/README.md`](../../scripts/README.md) for the exact rules.
+
+Native-compiler trust
 (`Lean.ofReduceBool`, `Lean.trustCompiler`, and the per-declaration
 `…._native.<tactic>.ax_<n>_<n>` axioms that `native_decide`-style tactics mint) is held to
 a zero-debt rule: no baseline edit can green it, and `--update-baseline` refuses to write
@@ -182,13 +186,15 @@ python3 -m pip install leanblueprint
 ## Important Notes
 
 - `./scripts/validate.sh` is the recommended convenience wrapper for routine local validation.
-- By default it runs `lake build`, rejects non-`sorry` warnings anywhere under `ArkLib/`, runs the
-  Lean-native source-policy gate, runs the compiled `toyproblem-runtime`, `hachi-runtime`,
-  `sumcheck-runtime`, and `fri-extractor-runtime` checks, checks generated imports and documentation
-  integrity, and lints knowledge-base inputs.
+  `./scripts/validate.sh --help` lists its default and optional checks.
+- By default it runs `lake build` and `lake test`, rejects non-`sorry` warnings under `ArkLib/` and
+  every warning under `ArkLibTest/`, runs the Lean-native source-policy gate and its plugin tests,
+  runs the retired-API sweep, runs the compiled `toyproblem-runtime`, `hachi-runtime`,
+  `sumcheck-runtime`, and `fri-extractor-runtime` checks, checks generated imports, tests the
+  build-timing report, checks documentation integrity, and lints knowledge-base inputs.
 - The lower-level scripts remain valid when you only want one specific check.
-- `docs/kb/_generated/**` freshness is handled by generated-files PRs from the main-branch KB
-  workflow, not by ordinary PR validation.
+- `docs/kb/_generated/**` freshness is handled by the KB workflow's rolling generated-files PR,
+  not by ordinary PR validation (see [generated files](generated-files.md)).
 - `scripts/build-project.sh` is a compile-only helper, not the convenience wrapper.
 - `scripts/README.md` is the inventory of helper scripts.
 - Only run docs and site builds when those surfaces are relevant; they are slower and more
@@ -199,7 +205,7 @@ python3 -m pip install leanblueprint
 
 New declarations may depend only on a subset of `{propext, Classical.choice, Quot.sound}`.
 Custom axioms, new admissions, and native-compiler trust dependencies must not merge (see
-[`../skills/prove-milestone.md`](../skills/prove-milestone.md) invariant 6). Two traps make a
+[Review and Merge Readiness](../../CONTRIBUTING.md#review-and-merge-readiness)). Two traps make a
 naive check report success on something that should fail:
 
 - **`#print axioms` is only meaningful for declarations that elaborated cleanly.**
@@ -301,7 +307,17 @@ python3 -m pip install leanblueprint
 - [`../../.github/workflows/docs-integrity.yml`](../../.github/workflows/docs-integrity.yml)
   checks that `AGENTS.md` exists and local markdown links resolve.
 - [`../../.github/workflows/kb-generated.yml`](../../.github/workflows/kb-generated.yml)
-  opens generated-files PRs for KB indexes and missing cited-paper stubs after pushes to `main`.
+  regenerates KB indexes and missing cited-paper stubs nightly and after pushes to `main` that
+  change the bibliography, KB papers or sources, or the KB scripts. It updates one rolling PR from
+  the `automation/kb-generated` branch and enables auto-merge on it.
+- [`../../.github/workflows/summary.yml`](../../.github/workflows/summary.yml) posts an automated
+  summary on each opened or updated PR, and
+  [`../../.github/workflows/review.yml`](../../.github/workflows/review.yml) runs an automated
+  review when a maintainer comments `/review` on a PR.
+- [`../../.github/workflows/update.yml`](../../.github/workflows/update.yml) checks for new Lean
+  and Mathlib releases every seven days and opens an update PR or issue for each, and
+  [`../../.github/workflows/release-tag.yml`](../../.github/workflows/release-tag.yml) tags a
+  release when `lean-toolchain` changes on `main`.
 
 To validate a stacked PR while it targets a feature branch, dispatch the existing CI, import,
 and docs-integrity workflows on its published head branch:

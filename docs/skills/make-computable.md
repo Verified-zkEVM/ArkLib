@@ -26,12 +26,26 @@ Favor reusing verified executable algorithms already in Mathlib or the dependenc
 
 **Be honest about what this buys, up front.** Computability is not a stronger theorem. Unless the
 surrounding definitions bound complexity, making something executable buys `#eval`-ability and
-testability, not a better result — ArkLib's `Extractor.TreeBased` is a plain function type with no
+testability, not a better result. ArkLib's `Extractor.TreeBased` is a plain function type with no
 complexity bound, so a computable extractor is no stronger a security statement than a classical
 one. What it does buy is real but different: the *algorithm* becomes the subject of the theorem, so
 a chain of named certificates exposes a runnable end-to-end extractor instead of hiding each link's
 extraction inside an `Exists.choose`. State the claim that way, not as a security improvement.
 (Repeated under Known Pitfalls, where it is easy to miss.)
+
+**Measured extraction is where cost becomes part of the statement.** A `MeasuredProgram` runs over a
+declared instruction set with a charge per instruction, and a `BudgetedProgram f ω` packages a
+program that realizes `f` with a proved bound on every execution path
+([`ArkLib/Data/OracleComp/MeasuredProgram.lean`](../../ArkLib/Data/OracleComp/MeasuredProgram.lean)).
+Knowledge soundness with resources
+([`ArkLib/OracleReduction/Security/Resources.lean`](../../ArkLib/OracleReduction/Security/Resources.lean)
+in the legacy layer, and `Interaction/Oracle/Security/{KnowledgeResources,StateRestorationResources}.lean`
+in the interaction layer)
+takes such a program for the extractor. Only a **named** program with a meaningful instruction set
+says anything: `BudgetedProgram.ofFun f` realizes any `f` with budget zero because it requests no
+instruction, so a statement that merely asserts some budgeted program exists adds nothing. When you
+make an extractor computable for a measured theorem, pair it with a named program and state its
+budget, as `Fri.Spec.knowledgeSoundnessWithResources_extract` does.
 
 ## The Three Kinds
 
@@ -69,8 +83,7 @@ Work through these in order. Do not skip triage because a marker looks mechanica
   `Failed to find LCNF signature for X`. The authoritative test is to write `def probe := @X` in a
   scratch file **outside** any `noncomputable section` — it either compiles or names the first
   blocker — or to query `Lean.IR.findEnvDecl env name |>.isSome` in a `run_cmd`. Build the inventory
-  from IR presence, then classify. (Real case: `ChallengeTree.SplitData.sndAt` was invisible to both
-  greps and to the flag.)
+  from IR presence, then classify.
 - **Check for a file-wide `noncomputable section`.** In Lean 4 it needs no matching `end`, so it
   silently covers the rest of the file. Any `Decidable` instance you add inside one is born
   noncomputable and useless. Look at the section boundaries before you edit.
@@ -95,7 +108,9 @@ Record the rating and a one-line justification per gap. This table is the first 
 
 Before committing to a plan, write a throwaway file in the scratchpad that imports the real module
 and re-declares the definition the way you intend to fix it. Compile it with
-`lake env lean scratch.lean`.
+`lake env lean scratch.lean`. A scratch probe does not get the package's Lean options or the
+source-policy plugin, so treat its verdict as provisional and confirm repository files with
+`lake build ArkLib.Path.To.Module`.
 
 This is cheap and it repeatedly beats reasoning:
 
@@ -136,7 +151,7 @@ file should not carry. Give it the Apache header and module docstring per
 - Keep the `[Decidable…]` hypotheses out of `Prop`-valued statements. If the statement does not
   mention the instance, drop the binder and use `classical` in the proof — the
   `unusedDecidableInType` linter will otherwise flag it.
-- Build after each replacement (`lake env lean File.lean`). Do not batch.
+- Build after each replacement (`lake build ArkLib.Path.To.Module`). Do not batch.
 
 ### 6. Verify at runtime, not just at the type level
 
@@ -183,7 +198,8 @@ Report:
 When triage says **architectural** and you own the type, the fix is not a cleverer body — it is to
 put the missing information into the input. Three shapes recur, all of them from the refactor that
 made the coordinate-wise special soundness extractors computable
-(`ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/`):
+(`ArkLib/OracleReduction/Security/TranscriptTree/` and
+`ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/`):
 
 - **A missing argument.** `Extractor.TreeBased` inverted an output relation with `Exists.choose`
   because a challenge tree carries messages and challenges but never an output witness. No body
@@ -270,5 +286,6 @@ Only consider the task complete when:
 - **Computability is not a stronger theorem.** Unless the surrounding definitions bound complexity,
   making something executable buys `#eval`-ability and testability, not a better result. (Concrete
   case: ArkLib's `Extractor.TreeBased` is a plain function type with no complexity bound, so a
-  computable extractor is no stronger a security statement than a classical one.) Say so rather
+  computable extractor is no stronger a security statement than a classical one.) A measured
+  theorem with a named `BudgetedProgram` is the exception; see the top of this page. Say so rather
   than overselling.

@@ -16,7 +16,7 @@ public import ArkLib.Interaction.Oracle.Claim
 /-!
 # Sequential composition of local knowledge certificates
 
-Dependent native append preserves the first stage's backward witness maps and its local
+Dependent append preserves the first stage's backward witness maps and its local
 knowledge bounds, then continues with the certificate selected by the actual first-stage path.
 The suffix tree is selected by the public structural path; its knowledge certificate may also
 depend on the concrete messages and the closed middle claim of that execution.
@@ -31,7 +31,7 @@ namespace Interaction.Oracle.Security
 open Interaction.Oracle.TypeTree PFunctor.FreeM
 open Interaction.TwoParty OracleComp OracleSpec
 
-/-- Identify the composite terminal relation using the existing native path split. No witness
+/-- Identify the composite terminal relation using the existing path split. No witness
 is selected: the named equivalence composes the two endpoint carrier identifications. -/
 def TerminalRelation.append {tree : Oracle.TypeTree.{u}} {state : KnowledgeState.{w}}
     (first : RoundExtractor tree state) (suffix : tree.BranchPath → Oracle.TypeTree.{u})
@@ -66,7 +66,7 @@ def TerminalRelation.append {tree : Oracle.TypeTree.{u}} {state : KnowledgeState
     exact law _ _ (sameState full) witness
   simpa using transport.trans ((terminal parts.1).knowledge_iff parts.2 _)
 
-/-- Replace ordinary fragment leaves by a declared path-dependent value. All native node effects
+/-- Replace ordinary fragment leaves by a declared path-dependent value. All node effects
 and access restrictions are retained. -/
 def withLeaf {ι : Type u} (ambient : OracleSpec.{u, u} ι)
     {tree : Oracle.TypeTree.{u}} {roles : tree.RoleDecoration}
@@ -77,7 +77,7 @@ def withLeaf {ι : Type u} (ambient : OracleSpec.{u, u} ι)
     Verifier.Fragment ambient tree roles oracles initial B :=
   Verifier.Fragment.mapOutput ambient (fun path _ => leaf path) fragment
 
-/-- The native value interpreter observes the replacement leaf at its actual concrete path. -/
+/-- The value interpreter observes the replacement leaf at its actual concrete path. -/
 theorem toCounterpartValue_withLeaf {ι : Type u} (ambient : OracleSpec.{u, u} ι)
     (tree : Oracle.TypeTree.{u}) (roles : tree.RoleDecoration)
     (oracles : tree.OracleDecoration) (initial : PFunctor.{u, u})
@@ -97,7 +97,7 @@ theorem toCounterpartValue_withLeaf {ι : Type u} (ambient : OracleSpec.{u, u} �
     _ = _ := Verifier.toCounterpartWith_finish_eq_mapOutput ambient tree roles oracles initial
       impl A B (fun path _ _ => leaf path) fragment
 
-/-- The actual native runner returns exactly the declared leaf at its actual path. The prover's
+/-- The actual runner returns exactly the declared leaf at its actual path. The prover's
 private output, failed computations, and every node effect remain paired with that run. -/
 theorem run_withLeaf {ι : Type u} (ambient : OracleSpec.{u, u} ι)
     (tree : Oracle.TypeTree.{u}) (roles : tree.RoleDecoration)
@@ -126,7 +126,7 @@ def withOutput {ι : Type u} (ambient : OracleSpec.{u, u} ι)
     Verifier.Strategy ambient tree roles oracles initial B :=
   withLeaf ambient (fun path => pure (output path)) fragment
 
-/-- The completed native verifier returns exactly the pure terminal observation at the path
+/-- The completed verifier returns exactly the pure terminal observation at the path
 produced by the same paired execution. This equation covers a pure terminal observation. -/
 theorem executeStrategies_withOutput {ι : Type u} (ambient : OracleSpec.{u, u} ι)
     (tree : Oracle.TypeTree.{u}) (roles : tree.RoleDecoration)
@@ -159,7 +159,7 @@ theorem executeStrategies_withOutput {ι : Type u} (ambient : OracleSpec.{u, u} 
   intro result
   rfl
 
-/-- The native terminal interpreter closes a pure output with the same run's resources. -/
+/-- The terminal interpreter closes a pure output with the same run's resources. -/
 theorem toCounterpartWith_output {ι : Type u} (ambient : OracleSpec.{u, u} ι)
     (tree : Oracle.TypeTree.{u}) (roles : tree.RoleDecoration)
     (oracles : tree.OracleDecoration) (initial : PFunctor.{u, u})
@@ -187,7 +187,7 @@ theorem toCounterpartWith_output {ι : Type u} (ambient : OracleSpec.{u, u} ι)
     A (fun p => OracleComp ambient (Out p))
     (fun path actual _ => pure (finish path actual (output path))) fragment
 
-/-- Close the declared middle leaf using exactly the resources of its concrete native path. -/
+/-- Close the declared middle leaf using exactly the resources of its concrete path. -/
 def closedMiddle {I : Type u} (tree : Oracle.TypeTree.{u})
     (oracles : tree.OracleDecoration) (initial : PFunctor.{u, u})
     (impl : QueryImpl (ofPFunctor initial) Id)
@@ -211,7 +211,7 @@ theorem closedMiddle_oracles {I : Type u} (tree : Oracle.TypeTree.{u})
       (leaf path.toBranchPath).oracles.eval (path.closingImpl oracles initial impl) := rfl
 
 /-- The actual prefix runner returns the same closed middle claim used by the certificate seam.
-This equality retains the native private prover output and concrete path, and does not assume
+This equality retains the private prover output and concrete path, and does not assume
 that the middle claim is true or admissible. -/
 theorem run_withLeaf_closedMiddle {ι I : Type u} (ambient : OracleSpec.{u, u} ι)
     (tree : Oracle.TypeTree.{u}) (roles : tree.RoleDecoration)
@@ -244,7 +244,7 @@ theorem run_withLeaf_closedMiddle {ι I : Type u} (ambient : OracleSpec.{u, u} �
   rfl
 
 /-- The actual exported composite uses the declared first leaf at the actual prefix path,
-retains its native private continuation, invokes the suffix with the actual closed middle
+retains its private continuation, invokes the suffix with the actual closed middle
 behavior, and closes its actual terminal result. This equation introduces no relation premise. -/
 theorem executeStrategies_appendExported_withLeaf_close {ι I J : Type u}
     (ambient : OracleSpec.{u, u} ι)
@@ -338,7 +338,7 @@ theorem executeStrategies_appendExported_withLeaf_close {ι I J : Type u}
 
 namespace KnowledgeCertificate
 
-/-- Compose certificates along a native suffix whose root is the actual first terminal state. -/
+/-- Compose certificates along a suffix whose root is the actual first terminal state. -/
 def append {tree : Oracle.TypeTree.{0}} {state : KnowledgeState.{w}}
     {firstRoles : tree.RoleDecoration} (first : KnowledgeCertificate tree firstRoles state)
     (suffix : tree.BranchPath → Oracle.TypeTree.{0})
@@ -456,7 +456,7 @@ theorem terminalKnowledge_sequential_iff
       (middle.knowledge_iff path) rest witness).trans
       ((finalRelation path).knowledge_iff rest _))
 
-/-- The final relation on every actual composite path, split by the native dependent path API. -/
+/-- The final relation on every actual composite path, split by the dependent path API. -/
 def sequentialTerminalRelation
     {FinalContext : Type} {finalFamily : ClaimFamily.{0, 0} FinalContext}
     (finalProblem : Problem.{0, 0, w} finalFamily)
@@ -483,8 +483,8 @@ def sequentialTerminalRelation
 end Sequential
 
 /-- Compose knowledge certificates at the actual closed oracle claim returned by a deterministic
-native first leaf. The suffix may depend on its statement and its concrete closed behavior,
-while its native tree still depends only on the structural branch. The certificate is required
+first leaf. The suffix may depend on its statement and its concrete closed behavior,
+while its tree still depends only on the structural branch. The certificate is required
 at every authored first path, including false and inadmissible middle claims. -/
 def sequentialClosed {I : Type} {tree : Oracle.TypeTree.{0}} {state : KnowledgeState.{w}}
     {firstRoles : tree.RoleDecoration} (first : KnowledgeCertificate tree firstRoles state)
@@ -509,7 +509,7 @@ def sequentialClosed {I : Type} {tree : Oracle.TypeTree.{0}} {state : KnowledgeS
 
 end KnowledgeCertificate
 
-/-- Actual interpreted native actions have the declared fresh challenge marginals. Receive
+/-- Actual interpreted actions have the declared fresh challenge marginals. Receive
 computations and every supported remaining verifier strategy are retained in this linkage. -/
 def SamplesChallenges {ι : Type} (ambient : OracleSpec ι)
     {m : Type → Type v} [Monad m] [EvalDistSemantics m] [MonadAttach m]
@@ -543,7 +543,7 @@ def SamplesChallenges {ι : Type} (ambient : OracleSpec ι)
           (Access.extendImpl initial oracles.1 impl message)
           (fun path => Leaf ⟨PUnit.unit, path⟩) after (schedule message)
 
-/-- A certificate's local bound applies to the actual interpreted native receiver action.
+/-- A certificate's local bound applies to the actual interpreted receiver action.
 The eventual witness remains existentially quantified inside that fresh-challenge probability. -/
 theorem native_badChallenge_bound {ι : Type} (ambient : OracleSpec ι)
     {m : Type → Type v} [Monad m] [EvalDistSemantics m] [MonadAttach m]
@@ -740,7 +740,7 @@ theorem samplesChallenges_withLeaf {ι : Type} (ambient : OracleSpec ι)
   samplesChallenges_mapOutput ambient handler tree roles oracles initial impl A B
     (fun path _ => leaf path) verifier schedule fresh
 
-/-- Native dependent append preserves the components' actual fresh challenge laws. The suffix
+/-- Dependent append preserves the components' actual fresh challenge laws. The suffix
 law is required at every authored concrete middle path and its same-path closing handler. -/
 theorem samplesChallenges_append_withLeaf {ι : Type} (ambient : OracleSpec ι)
     {m : Type → Type v} [Monad m] [LawfulMonad m] [EvalDistSemantics m]
@@ -841,7 +841,7 @@ theorem samplesChallenges_append_withLeaf {ι : Type} (ambient : OracleSpec ι)
         (fun p => secondSchedule ⟨message, p⟩) (fresh message original horiginal)
         (fun p => freshSuffix ⟨message, p⟩)
 
-/-- Native exported append preserves the fresh challenge laws supplied by both components.
+/-- Exported append preserves the fresh challenge laws supplied by both components.
 The suffix is checked under the oracle behavior obtained by closing the actual middle leaf with
 that same concrete first path; neither middle membership nor a supplied witness is assumed. -/
 theorem samplesChallenges_appendExported_withLeaf {ι I J : Type} (ambient : OracleSpec ι)

@@ -93,9 +93,6 @@ lemma sumAlgEquiv_monomial_aux {R : Type*} [CommSemiring R]
   ext s
   simp [MvPolynomial.sumAlgEquiv, MvPolynomial.monomial, Finsupp.comapDomain]
 
-@[deprecated sumAlgEquiv_monomial_aux (since := "2026-08-15")]
-alias sumToIter_monomial_aux := sumAlgEquiv_monomial_aux
-
 /-- Renaming by an equivalence `e : σ ≃ τ` transports a per-variable degree bound `b` to the
 pulled-back bound `b ∘ e.symm` on the target. -/
 lemma rename_equiv_mem_restrictDegreeVar {R : Type*} [CommSemiring R]

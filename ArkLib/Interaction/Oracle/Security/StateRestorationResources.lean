@@ -9,7 +9,7 @@ public import ArkLib.Interaction.Oracle.Security.KnowledgeResources
 public import ArkLib.Interaction.Oracle.Security.StateRestorationBudget
 
 /-!
-# State restoration with measured native certificates
+# State restoration with measured knowledge certificates
 
 `MeasuredKnowledgeCertificate.stateRestoration_oracle_knowledge_soundness_nonuniform` packages the
 closed-oracle knowledge bound `Q * max_j error_j + sum_j error_j` with a uniform stage budget for

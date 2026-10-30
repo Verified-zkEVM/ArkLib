@@ -28,8 +28,9 @@ This directory contains various utility scripts for the ArkLib project.
 - **`FriExtractorRuntime.lean`** (`lake exe fri-extractor-runtime`) - Compiled checks of the
   measured FRI extractor, immutable-input guards, and exact arithmetic and word-read counts.
 - **`SumcheckRuntime.lean`** (`lake exe sumcheck-runtime`) - Compiled checks of CompPoly-backed
-  round messages and the honest multivariate prover in the shared native Sumcheck executor,
-  including continuation effects, abort, original-oracle evaluation and zero remaining rounds.
+  round messages and the honest multivariate prover in the shared interaction-layer Sumcheck
+  executor, including continuation effects, abort, original-oracle evaluation and zero remaining
+  rounds.
 - **`HachiRuntime.lean`** (`lake exe hachi-runtime`) - Compiled small-parameter checks that the
   nonrecursive Hachi honest-prover path executes: the balanced committer, the computable honest
   lift quotient, the concrete Ajtai lift commitment, and the terminal reveal-and-check. `--full`

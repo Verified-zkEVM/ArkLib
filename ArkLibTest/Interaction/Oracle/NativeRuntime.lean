@@ -7,9 +7,9 @@ import ArkLib.Interaction.Oracle.PhasedRun
 import ArkLib.Interaction.Oracle.SourceRouting
 
 /-!
-# Native strategies share one persistent runtime
+# Strategies share one persistent runtime
 
-An ambient counter is queried by reduction setup, the prefix, and the suffix. The native prover
+An ambient counter is queried by reduction setup, the prefix, and the suffix. The prover
 uses returned answers as its messages, and its private output depends on the first actual message.
 -/
 
@@ -23,7 +23,7 @@ abbrev ambient : OracleSpec Nat := Nat →ₒ Nat
 /-- No imported source is needed. -/
 abbrev initial : PFunctor := OracleSpec.toPFunctor (Empty →ₒ Unit)
 
-/-- Two sends provide a prefix and a suffix for one native strategy. -/
+/-- Two sends provide a prefix and a suffix for one strategy. -/
 abbrev protocol : Oracle.Protocol :=
   .oracleWith Nat OracleInterface.instDefault <|
     .oracleWith Nat OracleInterface.instDefault .done
@@ -39,7 +39,7 @@ abbrev privateOutput (path : protocol.tree.ExecutionPath) := Fin (Nat.succ (show
 /-- A terminal family with no output capabilities. -/
 abbrev output : OracleFamily Empty (fun _ => Unit) := ⟨Empty.elim⟩
 
-/-- A native prover asks the same counter in both fragments, without seeing its hidden state. -/
+/-- A prover asks the same counter in both fragments, without seeing its hidden state. -/
 def prover : Prover.Strategy ambient protocol.tree protocol.roles privateOutput := do
   let first : Nat ← liftM (ambient.query 1)
   return ⟨first, do
@@ -61,7 +61,7 @@ def verifier : Verifier.Strategy ambient protocol.tree protocol.roles protocol.o
       ((ambient + OracleSpec.ofPFunctor finalAccess).query (.inr (.inr ())))
     return some ⟨(first, second), ⟨fun query => Empty.elim query.1⟩⟩))
 
-/-- Setup makes one observable counter request before supplying the unchanged native strategy. -/
+/-- Setup makes one observable counter request before supplying the unchanged strategy. -/
 def reduction : Reduction ambient protocol initial Unit Unit privateOutput
     (TerminalClaim protocol initial (fun _ => Nat × Nat) (fun _ => output)) where
   prover := fun _ _ => do
@@ -102,7 +102,7 @@ example :
       simpa only [Functor.map_map] using projected
     _ = _ := by rfl
 
-/-- Direct native execution uses the same stateful runner and retains its actual final state. -/
+/-- Direct execution uses the same stateful runner and retains its actual final state. -/
 example :
     (fun result => (result.output.core.closed.map (·.stmt), result.state, result.trace)) <$>
       executeStrategiesWithRuntime runtime Empty.elim prover verifier =
@@ -210,7 +210,7 @@ def verifier : Verifier.Strategy NativeRuntimeTest.ambient combined.tree combine
     (fun _ => Unit) (fun _ _ => Nat) (fun _ => family)
     (fun _ => Nat) (fun _ _ => Nat) (fun _ => family) firstVerifier secondVerifier
 
-/-- The ordinary native continuation queries the same ambient counter in both fragments. -/
+/-- The ordinary continuation queries the same ambient counter in both fragments. -/
 def prover (secret : Nat) : Prover.Strategy NativeRuntimeTest.ambient combined.tree combined.roles
     (fun _ => Nat) := do
   let first : Nat ← liftM (NativeRuntimeTest.ambient.query 1)

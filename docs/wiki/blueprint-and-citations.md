@@ -9,7 +9,10 @@ formalization structure.
   and citation policy.
 - `blueprint/src/` contains blueprint sources; `leanblueprint web` refreshes `blueprint/lean_decls`.
 - `blueprint/web/` and `blueprint/print/` are outputs.
-- `BACKGROUND.md` is a lightweight reference list, not the detailed theory source.
+- [`../kb/README.md`](../kb/README.md) holds per-paper pages and formalization status.
+- [`../../BACKGROUND.md`](../../BACKGROUND.md) explains the underlying theory, compares ArkLib's
+  oracle reductions with the literature, and lists the standard references. Per-paper detail
+  belongs in the KB, not there.
 
 ## When To Reach For The Blueprint
 

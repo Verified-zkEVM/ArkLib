@@ -199,9 +199,6 @@ theorem eval_powAlgHom (P : MvPolynomial (Fin m) F) (ζ : F) :
     ← MvPolynomial.coe_aeval_eq_eval]
   simp
 
-@[deprecated (since := "2026-10-24")]
-alias eq_of_sum_pow_two_mul_eq := Nat.eq_of_sum_pow_two_mul_eq
-
 /-- The weighted exponent sum `∑ᵢ 2 ^ i * sᵢ`, the binary encoding when every `sᵢ ≤ 1`. -/
 def bitsValue (s : Fin m →₀ ℕ) : ℕ := ∑ i : Fin m, 2 ^ (i : ℕ) * s i
 
@@ -332,20 +329,5 @@ lemma powAlgHom_linearMvExtension
     (p : Polynomial.degreeLT F (2 ^ m)) :
     powAlgHom (linearMvExtension p) = p := by
   exact powContraction_linearMvExtensionLMap p
-
-@[deprecated (since := "2026-10-24")]
-alias linearMvExtension_add_comm := linearMvExtension_add
-
-@[deprecated (since := "2026-10-24")]
-alias linearMvExtension_smul_comm := linearMvExtension_smul
-
-@[deprecated (since := "2026-10-24")]
-alias linearMvExtension_degreeOf_lt := degreeOf_linearMvExtension_le
-
-@[deprecated (since := "2026-10-24")]
-alias powContraction_is_right_inverse_to_linearMvExtension := powContraction_linearMvExtensionLMap
-
-@[deprecated (since := "2026-10-24")]
-alias powAlgHom_is_right_inverse_to_linearMvExtension := powAlgHom_linearMvExtension
 
 end LinearMvExtension

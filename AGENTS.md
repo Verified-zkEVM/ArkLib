@@ -1,7 +1,7 @@
 # ArkLib Agent Guide
 
 Lean 4 formalization of SNARK-related theory, interactive oracle reductions, and proof systems.
-Start with [`README.md`](README.md) for project overview.
+Start with [`README.md`](README.md) for the project overview.
 
 `AGENTS.md` is the canonical root guide.
 
@@ -19,21 +19,28 @@ Start with [`README.md`](README.md) for project overview.
    `./scripts/validate.sh --axioms`; it first certifies the sweep tool against its
    fixture matrix (`./scripts/test-axiomsweep.sh`), then runs the regression gate.
    A PR may be opened with unfinished proofs, but no new `sorry`/`admit` or additional
-   `sorryAx` debt may merge into `main`. Refresh `scripts/axiom_baseline.json` with
-   `lake exe axiomsweep --update-baseline` only for verified closures or renames of existing
-   debt, never to authorize new debt. The baseline covers existing `sorryAx` debt only;
-   native-compiler trust is never allowlistable.
+   `sorryAx` debt may merge into `main`. `scripts/axiom_baseline.json` has an empty `sorry`
+   list; its only admitted entries are reviewed *solicited proofs* (issue #1352), which must
+   link their issue and on which nothing outside the solicited list may depend. Refresh the
+   baseline with `lake exe axiomsweep --update-baseline` only for verified closures or renames,
+   never to authorize new debt; native-compiler trust is never allowlistable. See
+   [`scripts/README.md`](scripts/README.md) for the rules.
 
 ## Where To Work
 
-- `ArkLib/Data/` - reusable math, coding theory, polynomials, and supporting definitions.
+- `ArkLib/Data/` - reusable math, coding theory, polynomials, probability, and measured programs.
 - `ArkLibTest/` - compile-time acceptance examples and regression tests; run `lake test`.
-- `ArkLib/Interaction/` - typed interactions and dependent reduction foundations.
-- `ArkLib/OracleReduction/` - legacy IOR abstractions and security theory.
+- `ArkLib/Interaction/` - the interaction layer: interaction-tree protocols and their security
+  theory. It is meant to replace the legacy layer ([`README.md`](README.md#two-layers)).
+- `ArkLib/OracleReduction/` - the legacy layer: IOR abstractions and security theory.
 - `ArkLib/ProofSystem/` - protocol formalizations built on the core.
 - `ArkLib/Commitments/` - commitments and opening arguments.
+- `ArkLib/AGM/` - algebraic group model representations.
+- `ArkLib/ToCompPoly/` - bridges to CompPoly's computable representations.
 - `ArkLib/ToMathlib/` - local extensions intended for upstreaming.
-- `blueprint/src/` - deep design docs and bibliography.
+- `docs/design/` - normative architecture of the interaction layer.
+- `docs/kb/` - paper knowledge base: paper pages, concepts, and audits.
+- `blueprint/src/` - blueprint TeX chapters and the bibliography (`references.bib`).
 - `scripts/` - repo utilities.
 
 ## Guardrails
@@ -49,10 +56,16 @@ Start with [`README.md`](README.md) for project overview.
   [`docs/wiki/module-system.md`](docs/wiki/module-system.md).
 - Edit source, not derived output such as `.lake/`, `blueprint/web/`, `blueprint/print/`,
   `dependency_graphs/`, or `home_page/docs/`.
-- Pre-existing `sorry` blocks exist in active formalizations; distinguish existing gaps from new
-  regressions.
+- `main` carries no admitted proof debt. The only admitted statements are the reviewed solicited
+  proofs listed in `scripts/axiom_baseline.json`; any other `sorry` in a diff is new.
 - New declarations may depend only on a subset of `propext`, `Classical.choice`, and `Quot.sound`;
   do not add custom axioms or native-compiler trust dependencies.
+- Do not raise elaboration budgets: `set_option maxHeartbeats`, `maxRecDepth` and
+  `synthInstance.*` are rejected by the source-policy gate, as are the `linter`, `pp`, `profiler`
+  and `trace` option families. Make a slow proof cheaper instead.
+- No backward-compatibility guarantees: rename or remove a declaration by updating every caller in
+  the same PR. `@[deprecated]` aliases are discouraged; add one only with a concrete reason. See
+  [`CONTRIBUTING.md`](CONTRIBUTING.md#compatibility-policy).
 - Make definitions computable wherever possible. Protocols and program/value-computing APIs must
   be executable, with code-generation and runtime evidence. Document concrete blockers for purely
   mathematical noncomputable views; see [`CONTRIBUTING.md`](CONTRIBUTING.md#computability) and
@@ -77,11 +90,15 @@ Start with [`README.md`](README.md) for project overview.
   derived outputs.
 - [`docs/wiki/blueprint-and-citations.md`](docs/wiki/blueprint-and-citations.md) - blueprint,
   references, and citations.
+- [`docs/design/README.md`](docs/design/README.md) - interaction-layer architecture and its
+  implementation plan.
+- [`docs/kb/README.md`](docs/kb/README.md) - paper knowledge base.
 
 ## Canonical Project Docs
 
 - [`README.md`](README.md) - project overview.
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) - style, naming, docstrings, citations, and large
   contributions.
-- [`ROADMAP.md`](ROADMAP.md) - planned directions.
-- [`BACKGROUND.md`](BACKGROUND.md) - background references.
+- [`ROADMAP.md`](ROADMAP.md) - status: what is complete, in progress, and planned.
+- [`BACKGROUND.md`](BACKGROUND.md) - background theory and references, and how ArkLib's
+  oracle reductions compare with the literature.

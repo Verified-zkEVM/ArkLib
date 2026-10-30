@@ -10,7 +10,7 @@ public import ArkLib.ProofSystem.Sumcheck.Interaction.Protocol
 public import ArkLib.Interaction.Oracle.CompositionSoundness
 
 /-!
-# Native Sumcheck as exported oracle composition
+# Interaction-layer Sumcheck as exported oracle composition
 
 The first round returns an ordinary claim over its retained original oracle. Successful public
 branches continue with the existing verifier authored against that exported interface. Public
@@ -175,7 +175,7 @@ private theorem splitPrefix_native (count : ℕ)
 
 
 set_option backward.isDefEq.respectTransparency false in
-/-- The native prefix run returns its actual first-round path, exported claim, and continuation. -/
+/-- The prefix run returns its actual first-round path, exported claim, and continuation. -/
 theorem exportedPrefixRun_firstRound (challenge : OracleComp ambient R) (domain : List R)
     (count start : ℕ) (finish : start + (count + 1) = n) (A : PFunctor)
     (originalOracle : VirtualOracle (ofPFunctor A) (polynomialFamily R n deg))
@@ -332,7 +332,7 @@ theorem execute_appendExported_succ (challenge : OracleComp ambient R) (domain :
     rfl
 
 set_option backward.isDefEq.respectTransparency false in
-/-- The composed verifier has the same actual closed result as the existing native verifier,
+/-- The composed verifier has the same actual closed result as the existing verifier,
 for every whole prover, including its effectful response to rejection. -/
 theorem execute_eq_appendExported (challenge : OracleComp ambient R) (domain : List R)
     (count start : ℕ) (finish : start + (count + 1) = n) (A : PFunctor)
@@ -365,7 +365,7 @@ theorem execute_eq_appendExported (challenge : OracleComp ambient R) (domain : L
     rw [VirtualOracle.eval_sumWeaken_extendImpl, VirtualOracle.eval_id]
   · simp only [hcheck, ↓reduceIte]
 
-/-- Project the actual accepted suffix run to its closed native result. -/
+/-- Project the actual accepted suffix run to its closed result. -/
 theorem exportedSuffixRun_some (challenge : OracleComp ambient R) (domain : List R)
     (count start : ℕ) (finish : start + (count + 1) = n) (A : PFunctor)
     (impl : QueryImpl (ofPFunctor A) Id) (q : Message R deg) (r : R)

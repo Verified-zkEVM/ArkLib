@@ -10,17 +10,17 @@ public import ArkLib.Interaction.Oracle.Security.KnowledgeComposition
 public import PolyFun.Interaction.TwoParty.Strategy
 
 /-!
-# Native verifier replay for state restoration
+# Verifier replay for state restoration
 
-A scripted native prover sends selected oracle messages and remembers every public challenge.
+A scripted prover sends selected oracle messages and remembers every public challenge.
 The restricted verifier runs declared challenge programs and a terminal program that can read
-only its accumulated input and message access. The existing native executor interprets that
+only its accumulated input and message access. The existing executor interprets that
 terminal program with the closing handler of the same concrete execution path.
 
-Path-based replay reads completed challenges from the native path itself. Completion's structural
+Path-based replay reads completed challenges from the path itself. Completion's structural
 support guarantees that this path has the selected messages, so replay makes no additional oracle
 queries and requires no global response table. The ordinary uniform-program verifier satisfies
-actual native challenge freshness for the uniform certificate schedule at every authored prefix.
+actual challenge freshness for the uniform certificate schedule at every authored prefix.
 This covers source-only terminal programs; arbitrary terminal ambient effects are outside this
 supported presentation.
 -/
@@ -33,23 +33,23 @@ open Interaction.Oracle.TypeTree
 namespace Interaction.Oracle.Security.StateRestoration
 
 /-- Actual ambient challenge programs, followed by their public-response-dependent continuation.
-This is verifier authoring data; execution uses the existing native interpreter. -/
+This is verifier authoring data; execution uses the existing interpreter. -/
 def ChallengePrograms {ι : Type} (ambient : OracleSpec ι) : List Round → Type
   | [] => PUnit
   | round :: rounds => OracleComp ambient round.Challenge ×
       (round.Challenge → ChallengePrograms ambient rounds)
 
-/-- Forward ambient challenge queries into the ambient side of the restricted native signature. -/
+/-- Forward ambient challenge queries into the ambient side of the restricted signature. -/
 def ambientQueries {ι : Type} (ambient : OracleSpec ι) (access : PFunctor) :
     QueryImpl ambient (OracleComp (ambient + ofPFunctor access)) :=
   fun q => liftM ((ambient + ofPFunctor access).query (Sum.inl q))
 
-/-- Forward source-only terminal queries into the accumulated native input/message access. -/
+/-- Forward source-only terminal queries into the accumulated input/message access. -/
 def sourceQueries {ι : Type} (ambient : OracleSpec ι) (access : PFunctor) :
     QueryImpl (ofPFunctor access) (OracleComp (ambient + ofPFunctor access)) :=
   fun q => liftM ((ambient + ofPFunctor access).query (Sum.inr q))
 
-/-- Native restricted verifier: oracle receives are pure; each public challenge is the supplied
+/-- Restricted verifier: oracle receives are pure; each public challenge is the supplied
 ambient program. No concrete oracle payload is available to authoring. -/
 def challengeFragment {ι : Type} (ambient : OracleSpec ι) : (rounds : List Round) →
     (initial : PFunctor) → ChallengePrograms ambient rounds →
@@ -62,7 +62,7 @@ def challengeFragment {ι : Type} (ambient : OracleSpec ι) : (rounds : List Rou
         let challenge ← simulateQ (ambientQueries ambient extended) programs.1
         pure ⟨challenge, challengeFragment ambient rounds extended (programs.2 challenge)⟩)
 
-/-- Complete the native fragment with a deterministic source-only terminal program. It can
+/-- Complete the fragment with a deterministic source-only terminal program. It can
 query accumulated inputs/messages; ambient randomness is confined to challenge programs. -/
 def challengeVerifier {ι : Type} (ambient : OracleSpec ι) (rounds : List Round)
     (initial : PFunctor) (programs : ChallengePrograms ambient rounds)
@@ -77,7 +77,7 @@ def challengeVerifier {ι : Type} (ambient : OracleSpec ι) (rounds : List Round
       (protocol rounds).oracles initial p)) (terminal p))
     (challengeFragment ambient rounds initial programs)
 
-/-- Fixed native message authoring, responding to each public challenge. -/
+/-- Fixed message authoring, responding to each public challenge. -/
 def messageProver {ι : Type} {Salt : Type} (ambient : OracleSpec ι) :
     (rounds : List Round) → Messages Salt rounds →
     Prover.Strategy ambient (protocol rounds).tree (protocol rounds).roles (fun _ => Unit)
@@ -85,8 +85,8 @@ def messageProver {ι : Type} {Salt : Type} (ambient : OracleSpec ι) :
   | _ :: rounds, (message, _, messages) =>
       pure ⟨message, fun _ => pure (messageProver ambient rounds messages)⟩
 
-/-- Scripted native prover retains every public response in its private output. Salts only select
-restoration keys and are never added to the native protocol. -/
+/-- Scripted prover retains every public response in its private output. Salts only select
+restoration keys and are never added to the protocol. -/
 def scriptedProver {ι : Type} {Salt : Type} (ambient : OracleSpec ι)
     (rounds : List Round) (messages : Messages Salt rounds) :
     Prover.Strategy ambient (protocol rounds).tree (protocol rounds).roles
@@ -95,13 +95,14 @@ def scriptedProver {ι : Type} {Salt : Type} (ambient : OracleSpec ι)
     (fun path _ => (ExecutionPath.ofTypeTreePath path).toBranchPath)
     (messageProver ambient rounds messages)
 
-/-- Replay data reads only challenges from the native path already obtained by completion. -/
+/-- Replay data reads only challenges from the path already obtained by completion. -/
 def pathPrograms {ι : Type} (ambient : OracleSpec ι) : (rounds : List Round) →
     (protocol rounds).tree.ExecutionPath → ChallengePrograms ambient rounds
   | [], _ => PUnit.unit
   | _ :: rounds, path => ⟨pure path.2.1, fun _ => pathPrograms ambient rounds path.2.2⟩
 
-/-- Concrete oracle messages match the selected restoration messages; salts have no native role. -/
+/-- Concrete oracle messages match the selected restoration messages; salts have no role in the
+protocol. -/
 def MatchesMessages {Salt : Type} : (rounds : List Round) → Messages Salt rounds →
     (protocol rounds).tree.ExecutionPath → Prop
   | [], _, _ => True
@@ -173,7 +174,7 @@ private theorem simulate_sourceQueries {ι : Type} (ambient : OracleSpec ι) (ac
   rw [h, simulateQ_liftTarget]
   rfl
 
-/-- The actual native terminal observation uses exactly the run's accumulated closing handler. -/
+/-- The actual terminal observation uses exactly the run's accumulated closing handler. -/
 private theorem execute_sourceTerminal {ι : Type} (ambient : OracleSpec ι)
     (rounds : List Round) (initial : PFunctor)
     (impl : QueryImpl (ofPFunctor initial) Id) (programs : ChallengePrograms ambient rounds)
@@ -219,7 +220,7 @@ private theorem execute_sourceTerminal {ι : Type} (ambient : OracleSpec ι)
   intro result
   rfl
 
-/-- The existing paired native runner replays the supplied path when concrete messages match. -/
+/-- The existing paired runner replays the supplied path when concrete messages match. -/
 private theorem pathReplay_run {ι Salt : Type} (ambient : OracleSpec ι)
     (rounds : List Round) (initial : PFunctor)
     (impl : QueryImpl (ofPFunctor initial) Id) (messages : Messages Salt rounds)
@@ -294,7 +295,7 @@ private theorem pathReplay_run {ι Salt : Type} (ambient : OracleSpec ι)
           (Access.extendImpl initial round.interface impl message) messages tail matched)).trans ?_
       rfl
 
-/-- Exact path-based replay in the actual native executor. The real game has only this completed
+/-- Exact path-based replay in the actual executor. The real game has only this completed
 path; its verifier never inspects a global response table or makes additional oracle queries. -/
 theorem execute_pathReplay {ι Salt : Type} (ambient : OracleSpec ι)
     (rounds : List Round) (initial : PFunctor)
@@ -325,7 +326,7 @@ theorem execute_pathReplay {ι Salt : Type} (ambient : OracleSpec ι)
   rw [ExecutionPath.ofTypeTreePath_toTypeTreePath]
 
 set_option backward.isDefEq.respectTransparency false in
-/-- The ordinary native verifier actually samples every receiver challenge according to the
+/-- The ordinary verifier actually samples every receiver challenge according to the
 uniform schedule, for all authored oracle messages and every supported continuation. -/
 theorem uniformFragment_fresh (error : ENNReal) (rounds : List Round) (initial : PFunctor)
     (impl : QueryImpl (ofPFunctor initial) Id) :
