@@ -87,13 +87,13 @@ notion needs its own statement of what its unbounded form means, with its actual
 | Notion | Extractor in ArkLib | Content without a cost bound | Additional obligation for efficient extraction |
 |---|---|---|---|
 | Terminal knowledge soundness | `Extractor.Straightline` | Relation soundness, by the collapse above | Complete execution of the named extractor in its declared access model |
-| Round-by-round knowledge soundness | Legacy `Extractor.RoundByRound`; native `RoundExtractor` backward witness maps | The legacy notion coincides with round-by-round soundness of the induced languages when input-witness types are inhabited; native certificates retain their local obligations | Execution of each stage on its available prefix, intermediate witness sizes, and their composition |
+| Round-by-round knowledge soundness | Legacy `Extractor.RoundByRound`; interaction-layer `RoundExtractor` backward witness maps | The legacy notion coincides with round-by-round soundness of the induced languages when input-witness types are inhabited; interaction-layer certificates retain their local obligations | Execution of each stage on its available prefix, intermediate witness sizes, and their composition |
 | Special soundness and CWSS | `Extractor.TreeBased`, from the statement, a transcript tree and its leaf witnesses | Each structured accepting tree with valid leaf witnesses yields an input witness, or exhibits an escape event; with a classical selector, the input statement lies in the language of the input relation | Tree processing; a knowledge corollary also bounds obtaining the tree and producing any escape |
-| State-restoration knowledge soundness | Native `RoundExtractor` of a `KnowledgeCertificate`, applied backward along the restored path | The bound of `Interaction.Oracle.Security.StateRestoration.stateRestoration_knowledge_soundness` for that named extractor; nothing about its cost | Extraction together with replay and simulation of the restoration oracle; `MeasuredKnowledgeCertificate.stateRestoration_oracle_knowledge_soundness_nonuniform` charges only the stages |
+| State-restoration knowledge soundness | Interaction-layer `RoundExtractor` of a `KnowledgeCertificate`, applied backward along the restored path | The bound of `Interaction.Oracle.Security.StateRestoration.stateRestoration_knowledge_soundness` for that named extractor; nothing about its cost | Extraction together with replay and simulation of the restoration oracle; `MeasuredKnowledgeCertificate.stateRestoration_oracle_knowledge_soundness_nonuniform` charges only the stages |
 
 **Round-by-round knowledge soundness.** The legacy existential notion `rbrKnowledgeSoundness`
 admits a round-by-round extractor built directly by classical choice, so it carries no efficiency
-content. Bare native knowledge certificates assert no extraction efficiency;
+content. Bare interaction-layer knowledge certificates assert no extraction efficiency;
 `Interaction.Oracle.Security.MeasuredKnowledgeCertificate` adds an operation-count budget for each
 stage, under the scope limits stated in `KnowledgeResources.lean`. For
 inhabited input-witness types, the legacy notion coincides with round-by-round soundness of the
@@ -109,7 +109,7 @@ the equivalence holds uniformly over
 relations and errors exactly when the input-witness type is inhabited or
 `StmtIn × FullTranscript pSpec × WitOut` is empty. Otherwise total backward extraction is
 impossible, even for rejected transcripts and unrelated output witnesses. This is a constraint of
-the extractor type. It is not an additional soundness guarantee. The native certificates are not
+the extractor type. It is not an additional soundness guarantee. The interaction-layer certificates are not
 characterized by these results.
 
 Round-by-round knowledge soundness gains its efficiency content from per-round cost certificates
@@ -128,7 +128,7 @@ algorithm producing the escape; the event alone is existential. ArkLib has no th
 knowledge soundness from special soundness or CWSS by tree extraction. That theorem is where the
 cost of obtaining the tree must be bounded.
 
-Completing these structural contracts, especially for the native knowledge games, precedes the
+Completing these structural contracts, especially for the interaction-layer knowledge games, precedes the
 complete-execution work below; see the roadmap.
 
 ## The measured-operation contract
@@ -199,7 +199,7 @@ realization or family-level results.
 
 **Required later.** An unqualified efficient-extraction claim needs a bound on the extractor's
 complete execution in a declared model, including the computation between measured instructions.
-The measured contract does not supply it. This work (E3) follows the native soundness contracts
+The measured contract does not supply it. This work (E3) follows the interaction-layer soundness contracts
 and their composition, so that terminal, per-round, tree-based and composed extractors share one
 interface. No probability theorem waits for it; results proved meanwhile keep their
 operation-count label. E3a's algebraic backend in PolyFun is the proposed route. Another execution
@@ -213,12 +213,12 @@ from a proved correspondence to a standard machine, which neither route supplies
 State the measured program independently of any game: a view of an arbitrary extractor input, a
 charged instruction program with its result type, deterministic handlers, and charges. Each game
 then states its resource conjunction for its own extractor shape. Design those conjunctions against
-the native knowledge games first, where new security development takes place; the legacy
+the interaction-layer knowledge games first, where new security development takes place; the legacy
 straightline game, which FRI's result uses, is an adapter. The generic measured program lives in
 `ArkLib/Data/OracleComp/MeasuredProgram.lean`, which imports no game. The legacy game conjunctions
 and their erasure lemmas live in `ArkLib/OracleReduction/Security/Resources.lean`. The FRI
 certificate lives in `ArkLib/ProofSystem/Fri/Spec/MeasuredKnowledgeSoundness.lean`; the Toy decoding
-certificate remains proposed. Native interaction games consume the same measured programs through
+certificate remains proposed. Interaction-layer games consume the same measured programs through
 their own adapter: `ArkLib/Interaction/Oracle/Security/KnowledgeResources.lean` defines
 `RoundExtractor.MeasuredStages` and `MeasuredKnowledgeCertificate`, and
 `StateRestorationResources.lean` pairs the state-restoration bound with a stage budget, without the

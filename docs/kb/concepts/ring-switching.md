@@ -25,7 +25,7 @@ verifier executes this evaluator. The equality certificate links it to the sumch
 
 `ClaimLayout` includes prefix and suffix packing. `ClaimLayout/Quirky` gives the skipped/extra-bit
 Lagrange layout with an explicit injective node map. Hachi's monomial-coefficient layout lives
-with its native trace head. `Packing/Conformance` gives the tensor carrier's column/opening and
+with its own trace head. `Packing/Conformance` gives the tensor carrier's column/opening and
 row/slice identities and the final equality-value equation.
 
 ## One shared protocol
@@ -109,8 +109,8 @@ coordinates, honest and rejected executions, query retention and exact error sum
 Their clear polynomial oracle is a specification fixture, not a PCS. A separate zero-variable
 fixture exercises commutative-ring completeness over `ZMod 4`.
 
-Native reference-Flock obligations are maintained in the
-[consumer guide](../../wiki/ring-switching-consumers.md#native-flock-and-acceptance).
+Obligations for the reference Flock in the interaction layer are maintained in the
+[consumer guide](../../wiki/ring-switching-consumers.md#flock-in-the-interaction-layer-and-acceptance).
 
 For implementation steps and a worked example, see
 [Adding a ring-switching consumer](../../wiki/ring-switching-consumers.md).

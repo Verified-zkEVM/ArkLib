@@ -49,7 +49,7 @@ and resources follows from the runner, not merely from constructing a `CoreRun` 
 
 The first Sumcheck slice proved one-round honest completeness. The legacy bridge proved both
 relation directions, but verifier correspondence is honest-execution only. Later multi-round and
-native security results are listed in [current status](00-current-status.md).
+interaction-layer security results are listed in [current status](00-current-status.md).
 
 The execution slices added concrete prefixes, logging, persistent world state, and distinct
 accept/reject/fault outcomes. Their existence did not by itself establish soundness composition

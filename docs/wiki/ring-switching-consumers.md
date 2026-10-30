@@ -4,7 +4,7 @@ Use the shared packing kernel to define the consumer's coordinates, then instant
 checked protocol. This guide owns that workflow; the
 [ring-switching tracker](https://github.com/Verified-zkEVM/ArkLib/issues/1286) owns reviewed
 revisions, validation and landing status. The [concept page](../kb/concepts/ring-switching.md)
-owns the mathematical overview. The [native Flock section](#native-flock-and-acceptance) records
+owns the mathematical overview. The [Flock section](#flock-in-the-interaction-layer-and-acceptance) records
 the remaining stage, residual-relation and extraction obligations.
 
 ## Choose the algebra and wire
@@ -130,15 +130,15 @@ Hachi §3.1 remains a deterministic trace-head consumer of the coordinate and re
 with its [own conformance theorem][hachi]. Its CWSS and weak-opening contract are separate from
 this randomized product-sumcheck route.
 
-## Native Flock and acceptance
+## Flock in the interaction layer and acceptance
 
 The [ring-switching tracker](https://github.com/Verified-zkEVM/ArkLib/issues/1286) records delivery
-status. The early residual-conformance milestone is separate from full native security.
+status. The early residual-conformance milestone is separate from full Flock security.
 
 ### Early residual conformance
 
-- Prove the source-pinned correspondence between the native polynomial, variable order, bases and
-  shared layout, and reconstruction through the native head.
+- Prove the source-pinned correspondence between Flock's interaction-layer polynomial, variable
+  order and bases and the shared layout, and reconstruction through its interaction-layer head.
 - Prove honest completeness on the derived wire, with honest commitment coverage and explicit
   preservation of the inherited residual relation `R(ctx, p)`.
 - Apply shared fixed-list separation to that residual relation under an explicit prechallenge
@@ -146,16 +146,16 @@ status. The early residual-conformance milestone is separate from full native se
   the inherited relation. End at the same-source packed-opening relation `pc.evalRel`.
 
 This milestone is conditional on the stated inherited-relation and covering-list premises. For
-native Flock it establishes neither full round-by-round security nor ordinary knowledge soundness;
+Flock it establishes neither full round-by-round security nor ordinary knowledge soundness;
 the ordinary knowledge-soundness exports above concern the Binius and packing ring switches.
-The quirky fixture proves shared-layout properties; it does not establish native conformance.
+The quirky fixture proves shared-layout properties; it does not establish Flock conformance.
 
-### Later native security and PCS integration
+### Later Flock security and PCS integration
 
-Prove that the native zerocheck and lincheck stages produce the required residual relation,
+Prove that the interaction-layer zerocheck and lincheck stages produce the required residual relation,
 then establish adaptive list transport and joint-list security through subsequent stages.
 Joint extraction and a compatible opening protocol with its security theorem are further
-obligations. These proofs discharge the early result's premises and connect it to full native
+obligations. These proofs discharge the early result's premises and connect it to full Flock
 security and PCS integration. The staged Frobenius construction has its own maps, challenge
 schedule and endpoint.
 

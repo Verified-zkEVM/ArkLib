@@ -19,36 +19,37 @@ ArkLibTest/           compile-time tests, acceptance cases, and runtime checks
 blueprint/src/        blueprint sources and references.bib
 docs/kb/             persistent paper, concept, audit, and query knowledge base
 docs/wiki/            reference pages and conventions
-docs/design/          oracle-reduction design chapters and native-layer status
+docs/design/          interaction-layer design chapters and status
 scripts/              repo utilities
 home_page/            site assets and assembled website root
 ```
 
 ## Conceptual Layering
 
-- `ArkLib/Interaction/` is the new typed-interaction foundation. Its `Reduction.lean` module
+- `ArkLib/Interaction/` is the interaction layer, which is meant to replace the legacy layer
+  ([README](../../README.md#two-layers)). Its `Reduction.lean` module
   is independent of oracle, probability, and legacy protocol semantics.
-  `CompositionSoundness.lean` adds an exact native append execution law and quantitative
+  `CompositionSoundness.lean` adds an exact append execution law and quantitative
   soundness under lawful distribution semantics, with an explicit admissibility-error variant.
   It quantifies over ordinary whole-tree prover strategies and uses the existing paired runner.
 - `ArkLib/Interaction/Oracle/` refines generic type trees with public/oracle positions, keeps
   structural `BranchPath` separate from concrete `ExecutionPath` messages, and adds position-typed
   role/interface decorations plus the minimal decorated `Oracle.Protocol` bundle.
-- `ProofSystem/Sumcheck/Interaction/Protocol.lean` defines the full native sum-check tree,
+- `ProofSystem/Sumcheck/Interaction/Protocol.lean` defines the full interaction-layer sum-check tree,
   restricted verifier, and direct execution through `executeStrategiesCore`. Prover memory lives
   in ordinary strategy continuations. `ProtocolSoundness.lean` proves the final output oracle relation bound;
   `MultivariateSoundness.lean` supplies the one-round polynomial projection bound.
-  `ProtocolCompleteness.lean` defines the honest native strategy and proves support-level and
+  `ProtocolCompleteness.lean` defines the honest strategy and proves support-level and
   probability-one completeness.
-- `Interaction/Oracle/CoreRun.lean` offers `executeStrategiesCore` for ready native strategies.
+- `Interaction/Oracle/CoreRun.lean` offers `executeStrategiesCore` for ready prover strategies.
   `executeCore` runs reduction setup and delegates to that entry point. Both retain the actual
   input behavior, path and outputs for closing; `executeCore_eq_execute` preserves the existing
   execution law for reduction clients. `Access.lean` supplies the common virtual-view preservation
   law when a new message extends the available oracle signature.
 - `Interaction/Oracle/Composition.lean` supplies a separate sequential execution combinator.
-  Its explicit interface handoffs are not a substitute for a native strategy execution theorem.
-- `Interaction/Oracle/Security/` holds native security. `RoundByRound.lean` defines ordinary
-  round-by-round soundness on native prefixes; `Soundness.lean` bounds the actual executor by the
+  Its explicit interface handoffs are not a substitute for a direct strategy execution theorem.
+- `Interaction/Oracle/Security/` holds interaction-layer security. `RoundByRound.lean` defines
+  ordinary round-by-round soundness on execution prefixes; `Soundness.lean` bounds the actual executor by the
   sum of the local challenge errors (`count * error` in the uniform case). `Knowledge.lean` defines
   witness-indexed knowledge certificates (`RoundExtractor`, `KnowledgeCertificate`);
   `KnowledgeAppend.lean` and `KnowledgeComposition.lean` compose them along dependent append.
@@ -56,7 +57,7 @@ home_page/            site assets and assembled website root
   public-coin protocols with bound `(Q + rounds.length) * error`, with variants for oracle outputs
   (`StateRestorationOracle`), pre-sampled private coins (`StateRestorationCoins`) and per-round
   errors (`StateRestorationBudget`). The measured forms are described under measured extraction
-  below. `ProofSystem/Sumcheck/Interaction/RoundByRound.lean` is the native Sumcheck client.
+  below. `ProofSystem/Sumcheck/Interaction/RoundByRound.lean` is the interaction-layer Sumcheck client.
 - `ArkLib/OracleReduction/` remains the conceptual center of the legacy reduction and security
   layer while protocol clients migrate. `FiatShamir/Basic.lean` owns the transform;
   `FiatShamir/Completeness.lean` adds fixed-table perfect completeness and shared lazy
@@ -766,7 +767,7 @@ home_page/            site assets and assembled website root
   `Extractor.Straightline.MeasuredProgram` is its instance at the straightline extractor's inputs.
   Its `RealizesExtractor` relates the extractor's run to the program execution, and
   `Verifier.knowledgeSoundnessWithResources` adds to `knowledgeSoundnessWith` that the named
-  extractor executes the program within the budget. The native contract is
+  extractor executes the program within the budget. The interaction-layer contract is
   `Interaction/Oracle/Security/KnowledgeResources.lean`: `RoundExtractor.stageMap` is the backward
   witness map at a node, on its move and later witness; `RoundExtractor.MeasuredStages` names a
   budgeted program for the stage at every authored node; and `MeasuredKnowledgeCertificate`
@@ -984,9 +985,10 @@ home_page/            site assets and assembled website root
   with effective ranks four/three over different fields and exact error sum below one. Their
   transparent polynomial oracles are specification fixtures, not commitment schemes.
   Hachi's §3.1 trace head uses `PackingData.ofBaseOpening`, `packedMLE`, its own `ClaimLayout`
-  and `CheckedObservation`, with native conformance in `TraceHead/Conformance`. It retains its
-  own deterministic wire. Native reference-Flock obligations are listed in the
-  [consumer guide](ring-switching-consumers.md#native-flock-and-acceptance).
+  and `CheckedObservation`, with its conformance to the shared layer in `TraceHead/Conformance`.
+  It retains its own deterministic wire. Obligations for the reference Flock in the interaction
+  layer are listed in the
+  [consumer guide](ring-switching-consumers.md#flock-in-the-interaction-layer-and-acceptance).
   `Lift/` is the **generic HMZ25 lift** (large quotient ring →
   field, CWSS at `k = 2d`): `Presentation.lean` is its data layer (proof-free
   `Presentation R S` + `IsPresentation` laws over any monic modulus — not cyclotomic-specific

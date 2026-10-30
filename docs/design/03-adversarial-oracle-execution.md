@@ -3,7 +3,7 @@
 **Architecture and security requirements.** This chapter explains the persistent oracle-world
 layer, denoted Γ, and the experiments in which protocol security is stated. It complements the
 [claim-resource chapter](02-oracle-reduction-core.md), which describes deterministic read-only
-resources Δ, closing, and native effect order. The reader is assumed to know provers, verifiers,
+resources Δ, closing, and effect order. The reader is assumed to know provers, verifiers,
 transcripts, and soundness. The probability contracts below distinguish existing results from
 proposed world-backed theorems. [Current status](00-current-status.md) owns the theorem inventory;
 the [roadmap](05-roadmap.md) owns implementation stages and dependencies.
@@ -69,7 +69,7 @@ residual state.
 An exported oracle query may execute several lower-level source queries. The proved
 `withQueryLog_simulateQ` law records those actual handler programs and their query order. It does
 not compare the logs by mapping each exported entry to one source entry. The runtime acceptance
-client exercises this expansion alongside an ordinary native continuation and a shared counter.
+client exercises this expansion alongside an ordinary prover continuation and a shared counter.
 
 Keep four views distinct: the concrete `ExecutionPath`, the `VerifierLocalView`, the world-query
 log, and the proposed state-restoration move trace. A public path and verifier result omit local
@@ -122,11 +122,11 @@ establish a common experiment.
 ### 4.1 Plain and restricted-oracle composition
 
 For a false input, ordinary reduction soundness bounds the successful-output mass of a true output
-claim. The proved plain native append theorem combines a prefix truth-transition bound `ε₁` with
+claim. The proved plain append theorem combines a prefix truth-transition bound `ε₁` with
 a suffix bound `ε₂`, yielding `ε₁ + ε₂`. Its admissibility variant additionally charges `δ` for
 intermediate outputs outside the suffix theorem's domain, yielding `ε₁ + δ + ε₂`. The suffix
 premise covers every false, admissible prefix result, including unreachable ones, and every
-native suffix strategy. The execution equation needs only a lawful monad; its probability theorem
+suffix strategy. The execution equation needs only a lawful monad; its probability theorem
 needs lawful distribution semantics. It does not assume independent stages, uniform challenges,
 finite message sets, or lossless execution.
 
@@ -164,7 +164,7 @@ weighted bound is
 Pr[final success] ≤ μ(E) + ∫ over boundaries outside E, e(b) dμ(b).
 ```
 
-This bound is proved for plain native append. It also allows a final action after the whole
+This bound is proved for plain append. It also allows a final action after the whole
 interaction: the suffix premise includes that action, and the final event observes its result.
 For example, if the verifier makes one last random query and may reject, those effects and that
 rejection belong inside the probability being bounded. The action runs after the prover's last
@@ -196,7 +196,7 @@ Support reachability means structural possibility under the chosen program, incl
 strategy. It is not necessarily positive probability: a supported result may have measure zero.
 Almost-everywhere premises and integrals require the relevant measurability facts. Uniform bounds
 are corollaries of the broader target, and there is no requirement to prove security at unreachable
-boundaries for one fixed execution. The plain native layer provides these fixed-prover, support,
+boundaries for one fixed execution. Plain append provides these fixed-prover, support,
 almost-everywhere, and weighted forms. Restricted oracle composition provides the
 almost-everywhere weighted bound and its uniform corollary. `Oracle/RuntimeSoundness` extends
 the execution split to one persistent runtime, under the averaged suffix premise below.
@@ -204,7 +204,7 @@ the execution split to one persistent runtime, under the averaged suffix premise
 ### 4.3 Hidden state and adversary information
 
 `executeStrategiesWithRuntime_appendExported_soundness` bounds the probability that the actual
-native execution returns a closed claim satisfying the final relation. It fixes the whole prover
+execution returns a closed claim satisfying the final relation. It fixes the whole prover
 before runtime setup and splits execution at the prover's actual continuation. The split retains
 the runtime state and ordered ambient history from that run.
 
@@ -221,7 +221,7 @@ The client chooses `E` and proves this premise for its runtime. For example, `E`
 intermediate claim or a false claim outside the suffix theorem's assumptions. The integral uses the
 actual probability mass, without conditioning on acceptance or renormalizing missing mass.
 
-The suffix receives the prefix output, including its native prover continuation. Runtime resumption
+The suffix receives the prefix output, including its prover continuation. Runtime resumption
 supplies hidden state internally. The mathematical premise may inspect that state; it does not give
 the prover permission to read it. Replacing the actual suffix by one with a fresh hidden state would
 lose its correlation with prover memory and would not meet the theorem's premise.
@@ -312,7 +312,7 @@ extractors receive the state-restoration trace; rewinding extractors additionall
 black-box access. Bridges from round-by-round security, special soundness, and to Fiat–Shamir must
 state their entropy, salt, replay, budget, and loss assumptions.
 
-Implemented in `ArkLib/Interaction/Oracle/Security/`: the bridge from native round-by-round
+Implemented in `ArkLib/Interaction/Oracle/Security/`: the bridge from interaction-layer round-by-round
 knowledge to state-restoration knowledge soundness, for fixed-round public-coin protocols with
 uniform challenge samplers. Restoration keys contain the input, round, prover-message prefix and
 salt prefix, and the adversary makes at most `Q` cached oracle queries.
@@ -335,7 +335,7 @@ BCS, which are tracked in the [roadmap](05-roadmap.md#rewinding-and-compiled-pro
 
 Cost transport reuses VCVio's `ReductionWithCost`. Additive or substitution-style advantage error
 needs the supported error-bearing reduction extension described in the
-[foundation chapter](01-foundations.md). The native state-restoration proofs did not need the
+[foundation chapter](01-foundations.md). The interaction-layer state-restoration proofs did not need the
 upstream conditioning interfaces; a salted Fiat–Shamir bridge may.
 
 ## 6. Extractors and knowledge composition
@@ -344,11 +344,11 @@ Knowledge soundness with an efficient extractor also needs a certificate for the
 named in its game. The [extractor efficiency contracts](03a-extractor-efficiency.md)
 separate measured operations, realized execution, and uniform polynomial-time families. The
 unbounded-game contract and measured-operation contract are implemented. FRI has a measured
-extraction certificate, and native knowledge certificates have measured stages. The Toy decoding
+extraction certificate, and interaction-layer knowledge certificates have measured stages. The Toy decoding
 certificate and complete execution bounds remain proposed. The legacy existential game alone imposes no time bound, and neither do
 the existential round-by-round, special-soundness and state-restoration notions; that chapter lists
-each notion's additional obligations. The native exception is `MeasuredKnowledgeCertificate`, which
-adds per-stage operation budgets to a native knowledge certificate.
+each notion's additional obligations. The exception is the interaction layer's `MeasuredKnowledgeCertificate`,
+which adds per-stage operation budgets to a knowledge certificate.
 
 Knowledge soundness requires witness availability, not only a bound on true output claims.
 An offline extractor of a final execution path may learn a middle witness too late to supply it
@@ -394,7 +394,7 @@ Available sources grow under prefix extension, and no prefix receives future res
 Chiesa–Yogev-compatible whole-transcript notions and ArkLib's stronger edge-local witness notions
 are intended to coexist. The roadmap's implication proofs must state which notion they use and
 which replay, entropy, and budget hypotheses support the `(B+r)` losses. Legacy formulations or
-archived proofs do not establish the corresponding native world-backed theorems. A reversible
+archived proofs do not establish the corresponding interaction-layer world-backed theorems. A reversible
 strong claim-tree interface must remain distinguishable from the relaxed probabilistic endpoint.
 
 ## 8. Budgets, errors, and time

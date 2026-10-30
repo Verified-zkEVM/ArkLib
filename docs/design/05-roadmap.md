@@ -1,10 +1,12 @@
 # Interaction framework roadmap
 
 **Status date: 2026-10-29.** This page lists the remaining design and implementation work for
-ArkLib's native interaction framework (`ArkLib/Interaction/`). The
+ArkLib's interaction layer (`ArkLib/Interaction/`). The
 [current-status page](00-current-status.md) records what has landed and the supported dependency
 versions. Protocol-level status, including the legacy-layer protocol developments, is on the
-public [roadmap](../../ROADMAP.md). The design documents define the model: see the
+public [roadmap](../../ROADMAP.md), which also states the
+[migration plan](../../ROADMAP.md#priority-replace-the-legacy-layer): feature parity, ports with
+a proved equivalence, then deletion of the legacy layer. The design documents define the model: see the
 [oracle-reduction core](02-oracle-reduction-core.md),
 [oracle execution and security games](03-adversarial-oracle-execution.md), and
 [oracle-elimination compiler](04-oracle-elimination-compiler.md).
@@ -16,7 +18,7 @@ hypotheses.
 
 ## Scope and contracts
 
-Continue from the ordinary paired runner and the native results listed in
+Continue from the ordinary paired runner and the interaction-layer results listed in
 [current status](00-current-status.md). Preserve the prover's actual continuation, its private
 memory, declared oracle access, and the order of effects. Do not add a second executor or a separate
 prover-state machine.
@@ -32,20 +34,20 @@ an effect at that boundary, represent it as a protocol move or prove the local e
 For Sumcheck, the final equality between the original polynomial oracle and the claimed value stays
 in the output oracle relation; it is not an extra final verifier query.
 
-## Native protocol clients
+## Interaction-layer protocol clients
 
-[Current status](00-current-status.md#native-security) records which protocols use the native
-layer and which native certificates still lack a protocol client. A legacy-layer assembly does not
+[Current status](00-current-status.md#interaction-layer-security) records which protocols use the
+interaction layer and which of its certificates still lack a protocol client. A legacy-layer assembly does not
 port a protocol.
 
 1. **Efficient Sumcheck and legacy correspondence.** Optimize the Boolean multilinear case using
    CompPoly evaluation tables, with proved message/update algorithms and separately stated costs.
    The computable general prover alone makes no efficiency claim. Extend the single-round
-   legacy correspondence to relate the complete legacy and native security games; do not treat
-   the native result as silently proving the legacy declarations.
-2. **A native knowledge client.** Instantiate `KnowledgeCertificate` for a protocol with a
+   legacy correspondence to relate the complete legacy-layer and interaction-layer security games;
+   do not treat the interaction-layer result as silently proving the legacy declarations.
+2. **An interaction-layer knowledge client.** Instantiate `KnowledgeCertificate` for a protocol with a
    nontrivial witness, for example a committed or hidden polynomial. State the witness relation
-   explicitly and connect the certificate to the actual native verifier through
+   explicitly and connect the certificate to the actual verifier through
    `SamplesChallenges` or `FreshVerifier`.
 3. **FRI slice.** Use a derived virtual oracle view and prove a two-way bridge to the established
    legacy presentation.
@@ -62,15 +64,15 @@ automatically prove every legacy equivalence.
 
 **Rewinding knowledge soundness.** Tracked in
 [issue #1410](https://github.com/Verified-zkEVM/ArkLib/issues/1410). The protocol-free rerun
-engine and tree finder belong in VCVio. ArkLib supplies a legacy instance, a native instance in
+engine and tree finder belong in VCVio. ArkLib supplies a legacy-layer instance, an interaction-layer instance in
 which one run executes the strategies against a verifier replaying a challenge script, and the
 consumers (special soundness, coordinate-wise special soundness, Hachi). The issue records the
 decisions: a fixed private tape, expected and truncated run-count bounds, and public-coin
 verifiers only.
 
-**From state restoration to compiled protocols.** The native state-restoration theorem bounds the
-restoration game for the native verifier. Fiat–Shamir and BCS still need bridges that state their
-entropy, salt, replay, budget and loss assumptions, and a concrete native verifier realization
+**From state restoration to compiled protocols.** The interaction-layer state-restoration theorem
+bounds the restoration game for the interaction-layer verifier. Fiat–Shamir and BCS still need bridges that state their
+entropy, salt, replay, budget and loss assumptions, and a concrete interaction-layer verifier realization
 with its terminal witness relations for each protocol. The
 [security chapter](03-adversarial-oracle-execution.md#5-state-restoration) specifies the targets.
 A causal query-trace interface and a reusable conditioning facade were not needed for the
@@ -95,8 +97,8 @@ dependency upgrades separate.
 | Uniform families (E7) | Deferred: add uniform family corollaries when a consumer fixes the policy | One packed family realization and polynomial for fixed backend/boundary/contracts, with explicit parameter growth and representation policy |
 
 Complete execution bounds are required before ArkLib claims efficient extraction without
-qualification. Their prerequisites (the native soundness contracts, their composition, and a
-native measured-stage conjunction with an acceptance example) have landed. No probability theorem
+qualification. Their prerequisites (the interaction-layer soundness contracts, their composition, and
+a measured-stage conjunction with an acceptance example) have landed. No probability theorem
 waits for them. The algebraic backend is the proposed route; another execution model with a
 reviewed adequacy argument can replace it. Complete execution bounds consume the chosen backend
 and the measured contract's same-program bridge. The complete FRI certificate and the Toy decoding

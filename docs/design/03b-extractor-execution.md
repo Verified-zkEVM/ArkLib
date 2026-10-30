@@ -4,7 +4,7 @@
 a named extractor. They turn the operation counts of the
 [measured contract](03a-extractor-efficiency.md#the-measured-operation-contract) into a running
 time in a declared computational model. E3 is required for unqualified efficient-extraction claims
-and is scheduled after the native soundness contracts and their composition. E3a's algebraic
+and is scheduled after the interaction-layer soundness contracts and their composition. E3a's algebraic
 backend is the proposed route to it; another execution model with a reviewed adequacy argument can
 replace it. E7's uniform families wait for a consumer. The
 [efficiency chapter](03a-extractor-efficiency.md) owns the games, the measured contract and the

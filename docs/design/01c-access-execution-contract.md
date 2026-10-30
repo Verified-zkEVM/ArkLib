@@ -132,13 +132,13 @@ messages with the same structural branch must produce the same answers.
 Put acceptance examples in `ArkLibTest`, not in the production umbrella, and regenerate the
 umbrella mechanically.
 
-The `Interaction acceptance` workflow (`.github/workflows/interaction.yml`) compiles the native
+The `Interaction acceptance` workflow (`.github/workflows/interaction.yml`) compiles the interaction-layer
 production and test modules on pull requests that touch them, with zero-warning budgets. It
 restores but does not publish the shared build cache. It supplements the full validation and
 axiom gate; it does not replace it. An open draft or a started CI job is not evidence that a
 formalization is complete.
 
-The native Sumcheck port and the single-round legacy-correspondence checkpoint have exercised
+The interaction-layer Sumcheck port and the single-round legacy-correspondence checkpoint have exercised
 this contract. The correspondence identifies verifier outputs and relations; it does not relate
-the complete legacy and native security games (see
+the complete legacy-layer and interaction-layer security games (see
 [current status](00-current-status.md#legacy-oracle-reduction-layer)).

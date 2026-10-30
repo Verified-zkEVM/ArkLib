@@ -168,7 +168,7 @@ continue from that final state, and two sequential regions must agree with one s
 
 Implemented: VCVio's `OracleRuntime` and `RunResult` (`VCVio.OracleComp.Runtime`) pair the output,
 final state and ordered surface query log; `OracleRuntime.resume` continues from the final state and
-appends the log. ArkLib runs native reductions through them with
+appends the log. ArkLib runs interaction-layer reductions through them with
 `Interaction.Oracle.executeWithRuntime` and `Interaction.Oracle.executeStrategiesWithRuntime`
 (`ArkLib/Interaction/Oracle/Runtime.lean`), with phased forms in `PhasedRun.lean`.
 
@@ -192,7 +192,7 @@ transducer carrier.
 #### Conditioning and auditable dynamic programming
 
 VCVio contains concrete conditioned arguments and random-oracle programming tools, but the reusable
-finite-partition and query-before-program interfaces remain incomplete. The native
+finite-partition and query-before-program interfaces remain incomplete. The
 state-restoration theorems in `ArkLib/Interaction/Oracle/Security/` were proved without them, so
 add only the general lemmas that a later client, such as a salted Fiat–Shamir bridge, demands.
 
@@ -242,7 +242,7 @@ profile, or causal transducer.
 - Legacy ArkLib consumers remain until a concrete protocol has a proved two-way bridge.
 - Interface names freeze only after a real downstream client exercises all observable components.
 
-The core claim and execution interfaces now have Sumcheck clients. The next work connects native
+The core claim and execution interfaces now have Sumcheck clients. The next work connects
 composition to restricted oracle access and then to persistent-world security. The
 [roadmap](05-roadmap.md) gives the implementation sequence; current dependency gaps are inventoried
 in [current status](00-current-status.md).

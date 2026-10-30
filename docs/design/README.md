@@ -1,8 +1,13 @@
 # Interaction and oracle-reduction design
 
-This suite explains how ArkLib represents interactive protocols, states their security, and plans
-the remaining formalization. It is written for readers familiar with provers, verifiers, oracles,
-and soundness. **Status updated: 2026-10-29.**
+This suite explains how ArkLib's interaction layer (`ArkLib/Interaction/`) represents interactive
+protocols, states their security, and plans the remaining formalization. It is written for
+readers familiar with provers, verifiers, oracles, and soundness. **Status updated: 2026-10-29.**
+
+The interaction layer is meant to replace the legacy layer (`ArkLib/OracleReduction/`). The
+[README](../../README.md#two-layers) explains the two layers and the legacy layer's limitations,
+and the public [roadmap](../../ROADMAP.md#priority-replace-the-legacy-layer) holds the migration
+plan.
 
 A protocol is an interaction tree with prover and verifier strategies. The prover's continuation
 keeps its private memory. An oracle reduction returns a statement and an oracle interface: the
@@ -39,7 +44,7 @@ implementation schedule.
 | [Extractor efficiency](03a-extractor-efficiency.md) | The implemented unbounded-game and measured-operation contracts for named extractors, the obligations of each extractor-bearing notion, and FRI and Toy requirements |
 | [Extractor execution backends](03b-extractor-execution.md) | Proposed complete execution bounds, backend requirements, and uniform families for extractors |
 | [Oracle-elimination compiler](04-oracle-elimination-compiler.md) | Backend obligations and how compilation preserves oracle guarantees |
-| [Roadmap](05-roadmap.md) | Remaining native-layer work, dependencies, acceptance checks, and issue links |
+| [Roadmap](05-roadmap.md) | Remaining interaction-layer work, dependencies, acceptance checks, and issue links |
 
 Historical records keep the state of a finished campaign; their pins and status columns describe
 the date they record.
