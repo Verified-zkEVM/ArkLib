@@ -24,8 +24,7 @@ qualified names to repeated `_root_` qualifiers when possible.
 
 Review wording together with the theorem: identify the quantified prover, what is random, the
 winning event, which intermediate inputs need a bound, and whether effects may be reordered.
-Plain language must preserve these conditions. The [roadmap](../design/05-roadmap.md)
-uses this convention for the next PRs.
+Plain language must preserve these conditions.
 
 ## Sources and their morphisms
 

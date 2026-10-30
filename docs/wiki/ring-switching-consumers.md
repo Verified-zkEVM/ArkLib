@@ -113,8 +113,16 @@ completeness, round-by-round knowledge soundness and the total-error bound.
 The maintained [composite fixture][composite] uses a nonconstant `GF(16)/GF(2)` source and its
 honest codeword encoding. It checks sampled acceptance and a full challenge-error
 sum bounded below one. A direct-polynomial opening example alone would not certify this backend.
-These exports prove round-by-round guarantees, with no ordinary knowledge-soundness claim.
-The repository's conversion from RBR to ordinary knowledge soundness remains admitted.
+The same file also exports ordinary knowledge soundness, derived from the round-by-round result
+through the guarded bridge `Verifier.GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundness`.
+`Binius.FRIBinius.RingSwitch.fullReduction_perfectCompleteness_and_knowledgeSoundness` pairs
+perfect completeness with `Binius.FRIBinius.RingSwitch.fullVerifier_knowledgeSoundness`, whose
+error is `κ/|L| + ℓ' * (2/|L|)` plus the concrete Binary Basefold knowledge error
+`BinaryBasefold.FullBinaryBasefold.concreteBinaryBasefoldKnowledgeError L ℓ' R γ`.
+For the generic packing ring switch,
+`RingSwitching.Packing.RingSwitch.perfectCompleteness_and_knowledgeSoundness` gives ordinary
+knowledge error `bat.error + m * (2/|C|)` through
+`OracleVerifier.knowledgeSoundness_of_rbrKnowledgeSoundness_of_guarded`.
 
 Hachi §3.1 remains a deterministic trace-head consumer of the coordinate and relation layers,
 with its [own conformance theorem][hachi]. Its CWSS and weak-opening contract are separate from
@@ -135,8 +143,9 @@ status. The early residual-conformance milestone is separate from full native se
   covering-list hypothesis: the fixed list covers every compatible packed polynomial satisfying
   the inherited relation. End at the same-source packed-opening relation `pc.evalRel`.
 
-This milestone is conditional on the stated inherited-relation and covering-list premises. It
-establishes neither full native round-by-round security nor ordinary knowledge soundness.
+This milestone is conditional on the stated inherited-relation and covering-list premises. For
+native Flock it establishes neither full round-by-round security nor ordinary knowledge soundness;
+the ordinary knowledge-soundness exports above concern the Binius and packing ring switches.
 The quirky fixture proves shared-layout properties; it does not establish native conformance.
 
 ### Later native security and PCS integration
