@@ -45,7 +45,8 @@ interfaces and results differ.
    underlying modern SNARKs, and the current abstractions of the interactive BCS and Fiat-Shamir
    transforms. The scope also includes interactive arguments and commitment schemes whose security
    is computational: it rests on discrete-logarithm or pairing assumptions, on lattice assumptions
-   such as Module-SIS, or on hash functions modeled as random oracles.
+   such as Module-SIS, or on collision resistance of a hash function, or on an idealized model such
+   as a hash function modeled as a random oracle.
    [BACKGROUND.md](BACKGROUND.md) surveys both the information-theoretic proof models and these
    computational arguments and commitments, with their security notions, the compilers that combine
    them into SNARKs, and the planned post-quantum and universally composable security results. It
