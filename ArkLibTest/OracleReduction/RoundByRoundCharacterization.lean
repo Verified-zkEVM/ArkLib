@@ -10,8 +10,9 @@ import ArkLib.OracleReduction.Security.Implications
 
 A zero-round verifier that rejects every transcript, with an input statement and an output
 witness but no input witnesses, separates the two notions for every output relation.
-Round-by-round soundness holds, while no round-by-round extractor exists, because extraction must also map the rejected transcript.
-Knowledge soundness therefore fails for every pair of relations and every error.
+Round-by-round soundness holds, while no round-by-round extractor exists, because extraction must
+also map the rejected transcript. Knowledge soundness therefore fails for every pair of relations
+and every error.
 -/
 
 open OracleComp OracleSpec ProtocolSpec
