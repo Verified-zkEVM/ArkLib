@@ -11,11 +11,16 @@ Edit the source of truth, not the output.
 | `blueprint/src/print.pdf` | generated blueprint PDF inside source tree | No | `leanblueprint pdf` |
 | `home_page/docs/` | copied API docs for the site | No | `./scripts/build-web.sh` |
 | `dependency_graphs/` | generated dependency visualizations | No | rerun scripts under `scripts/dependency_analysis/` |
-| `scripts/axiom_baseline.json` | kernel-level accounting of existing `sorryAx` debt | No | `lake exe axiomsweep --update-baseline` after `lake build`, only for verified closures or renames of existing debt. Baseline edits cannot authorize new debt. Native-trust taint prevents the update |
+| `scripts/axiom_baseline.json`, `sorry` and `nonstandard` lists | kernel-level accounting of admitted debt; both lists are empty on `main` | No | `lake exe axiomsweep --update-baseline` after `lake build`, only for verified closures or renames of existing debt. Baseline edits cannot authorize new debt. Native-trust taint prevents the update |
+| `scripts/axiom_baseline.json`, `solicited` list | reviewed solicited proofs: true external results left open for contributors | Only with maintainer review | hand-maintained; `--update-baseline` preserves it. A PR that proves an entry removes it. Rules in [`scripts/README.md`](../../scripts/README.md), tracking [issue #1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352) |
 | `docs/kb/_generated/references.json` | normalized bibliography export | No | `python3 ./scripts/kb/sync_from_bib.py` |
 | `docs/kb/_generated/lean-citations.json` | generated map from Lean files to cited keys | No | `python3 ./scripts/kb/extract_lean_citations.py` |
 | `docs/kb/_generated/declarations.json` | declaration catalog across `ArkLib/` (file, line, kind, namespace, name, brief signature, docstring head) | No | `python3 ./scripts/kb/extract_declarations.py` |
 | `docs/kb/_generated/dedup-report.md` | duplicate-candidate review aid (same-short-name groups + cross-file near-duplicate docstrings) derived from the catalog | No | `python3 ./scripts/kb/find_dedup_candidates.py` |
+
+`python3 ./scripts/kb/regenerate.py` refreshes all four `docs/kb/_generated/` files in one run and
+scaffolds missing cited-paper stubs (`--no-paper-stubs` skips the stubs). The KB workflow runs it;
+ordinary feature PRs do not (see below).
 
 ## Important Notes
 

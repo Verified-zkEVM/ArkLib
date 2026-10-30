@@ -9,7 +9,8 @@ formalization structure.
   and citation policy.
 - `blueprint/src/` contains blueprint sources; `leanblueprint web` refreshes `blueprint/lean_decls`.
 - `blueprint/web/` and `blueprint/print/` are outputs.
-- `BACKGROUND.md` is a lightweight reference list, not the detailed theory source.
+- [`../kb/README.md`](../kb/README.md) holds per-paper pages and formalization status; the
+  [README](../../README.md#where-to-go-next) lists introductory background reading.
 
 ## When To Reach For The Blueprint
 

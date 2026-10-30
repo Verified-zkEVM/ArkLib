@@ -4,10 +4,10 @@ We enthusiastically welcome contributions to ArkLib!
 
 Whether you are fixing bugs, improving documentation, or adding new formalizations, your input is valuable. We particularly encourage contributions that address:
 
-* **Active formalizations:** Please see the list of active formalization efforts and their blueprints.
-* **Open Issues:** Please see the list of open issues for bugs, requested features, and specific formalization tasks. Issues tagged as `good first issue` or `help wanted` are great places to start.
-* **Roadmap Goals:** We maintain a [ROADMAP](ROADMAP.md) outlining the planned direction and major goals for the library.
-* **Documentation:** Documentation is actively being worked and will be available as soon as possible.
+* **Active formalizations:** The [ROADMAP](ROADMAP.md) lists what is complete, what is in progress, and the planned directions, with links to the tracking issues.
+* **Open Issues:** Please see the [list of open issues](https://github.com/Verified-zkEVM/ArkLib/issues) for bugs, requested features, and specific formalization tasks. Issues tagged as `good first issue` or `help wanted` are great places to start.
+* **Solicited proofs:** Some true external results are stated in the library with their proofs deliberately left open for contributors; see [issue #1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352).
+* **Documentation:** Start with [AGENTS.md](AGENTS.md) for the one-screen guide, then the [wiki](docs/wiki/README.md) for commands, conventions and workflows.
 
 If you are interested in contributing but unsure where to begin, please get in touch.
 
@@ -64,10 +64,17 @@ or additional `sorryAx` debt relative to the canonical base. Closing one gap doe
 new admission elsewhere. Updating `scripts/axiom_baseline.json` cannot authorize new debt;
 baseline changes record verified closures or renames of existing debt.
 
+The baseline's `sorry` list is empty. Its only admitted entries are *solicited proofs*: true,
+faithfully stated external results whose research-sized proofs are left open for contributors.
+A solicited entry is added only after review, names a tracking issue that its docstring links,
+and must stay a leaf: no declaration outside the solicited list may depend on it. A PR that proves
+one removes its entry. [`scripts/README.md`](scripts/README.md) states the exact rules that
+`lake exe axiomsweep --check` enforces.
+
 New declarations may depend only on a subset of Lean's three standard axioms:
 `propext`, `Classical.choice`, and `Quot.sound`. Do not introduce custom axioms, `sorryAx`,
-or native-compiler trust dependencies. The legacy admission baseline is not an exception for
-new declarations.
+or native-compiler trust dependencies. Solicited proofs are not an exception for new
+declarations.
 
 Merge readiness also requires `./scripts/validate.sh` to pass: resolve all linter/style issues,
 all production non-`sorry` warnings, and all test warnings. Fix the source rather than suppressing
@@ -80,11 +87,13 @@ We aim to adhere to the [Lean community's contribution guidelines](https://githu
 The default validation command runs ArkLib's Lean-native source-policy gate. You can run its
 text-and-import checks directly with `lake exe lint-style`. The normal `lake build` also loads a
 Lean syntax-tree plugin that rejects linter suppressions; neither gate supports exceptions. The
-text gate is an independent, fail-closed backstop: forbidden `set_option` spellings are reserved
-across the entire production source, while `nolint` attribute heads are also reserved in active code
-and literal bodies. Put policy examples in `scripts/LintStyleFixtures`, which is outside the
-library-source closure; policy-like quoted identifiers and syntax quotations are reserved for the
-same reason.
+text gate is an independent, fail-closed backstop. It rejects `set_option` for the `linter`, `pp`,
+`profiler` and `trace` option families and for the elaboration budgets `maxHeartbeats`,
+`maxRecDepth` and `synthInstance.*`, anywhere in the source, including comments. If a proof needs a
+larger budget, make it cheaper instead (see [Tactic Mode & Performance](#tactic-mode--performance)).
+`nolint` attribute heads are also reserved in active code and literal bodies. Put policy examples
+in `scripts/LintStyleFixtures`, which is outside the library-source closure; policy-like quoted
+identifiers and syntax quotations are reserved for the same reason.
 
 ### Acceptance Tests
 
@@ -219,25 +228,36 @@ When translating theorem statements into names, we use standard mappings for sym
 
 * **Line Length**: Keep lines under 100 characters.
 * **Indentation**: Use 2 spaces for indentation.
-* **Headers**: Use standard file headers including copyright, license (Apache 2.0), and authors.
+* **Headers**: Start every file with the copyright block, crediting ArkLib Contributors and naming
+  the authors. A file under `ArkLib/` then follows the module-system shape:
   ```lean
   /-
-  Copyright (c) 2024 Author Name. All rights reserved.
+  Copyright (c) 2026 ArkLib Contributors. All rights reserved.
   Released under Apache 2.0 license as described in the file LICENSE.
   Authors: Author Name
   -/
+  module
+
+  public import ArkLib.Data.Foo
+  public import Mathlib.Bar
+
+  /-!
+  # Module docstring
+  -/
+
+  @[expose] public section
   ```
 * **Imports**: Group imports at the top of the file.
 * **Module system**: every file under `ArkLib/` uses Lean's module system (issue #795), so a new
   one must too. The shape is `module` after the copyright block, `public import` for every import,
-  then the module docstring, then `@[expose] public section`. Mark metaprograms — delaborators,
-  unexpanders, elaborator helpers — `meta`, and use `public meta import` for their `Lean.*` and
-  `Qq` dependencies. When a proof needs to unfold a definition a dependency did not expose, add
-  `import all M` naming the module that *declares* it. Do not write a per-declaration `@[expose]`
-  while the blanket section is present, and do not reach for `backward.privateInPublic`. Files
-  under `ArkLibTest/` stay classic on purpose. The error-to-fix table in
-  [`docs/wiki/module-system.md`](docs/wiki/module-system.md) covers every failure the port
-  produced.
+  then the module docstring, then `@[expose] public section`, as in the header above. Mark
+  metaprograms (delaborators, unexpanders, elaborator helpers) `meta`, and use
+  `public meta import` for their `Lean.*` and `Qq` dependencies. When a proof needs to unfold a
+  definition a dependency did not expose, add `import all M` naming the module that *declares* it.
+  Do not write a per-declaration `@[expose]` while the blanket section is present, and do not reach
+  for `backward.privateInPublic`. Files under `ArkLibTest/` stay classic on purpose. The
+  error-to-fix table in [`docs/wiki/module-system.md`](docs/wiki/module-system.md) covers the
+  common failures and their fixes.
 * **Operators**: Put spaces on both sides of `:`, `:=`, and infix operators. Place them before a line break rather than at the start of the next line.
 * **Hypotheses**: Prefer placing hypotheses to the left of the colon (e.g., `(h : P) : Q`) rather than using arrows (`: P → Q`) when the proof introduces them.
 * **Functions**: Prefer `fun x ↦ ...` over `λ x, ...`.
