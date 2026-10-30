@@ -38,8 +38,9 @@ declared instruction set with a charge per instruction, and a `BudgetedProgram f
 program that realizes `f` with a proved bound on every execution path
 ([`ArkLib/Data/OracleComp/MeasuredProgram.lean`](../../ArkLib/Data/OracleComp/MeasuredProgram.lean)).
 Knowledge soundness with resources
-([`ArkLib/OracleReduction/Security/Resources.lean`](../../ArkLib/OracleReduction/Security/Resources.lean),
-and the native `Interaction/Oracle/Security/{KnowledgeResources,StateRestorationResources}.lean`)
+([`ArkLib/OracleReduction/Security/Resources.lean`](../../ArkLib/OracleReduction/Security/Resources.lean)
+in the legacy layer, and `Interaction/Oracle/Security/{KnowledgeResources,StateRestorationResources}.lean`
+in the interaction layer)
 takes such a program for the extractor. Only a **named** program with a meaningful instruction set
 says anything: `BudgetedProgram.ofFun f` realizes any `f` with budget zero because it requests no
 instruction, so a statement that merely asserts some budgeted program exists adds nothing. When you

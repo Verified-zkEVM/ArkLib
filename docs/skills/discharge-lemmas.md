@@ -89,8 +89,8 @@ the rating and placement decisions are what keep the result maintainable.
   - oracle computations, probability and measured programs → `ArkLib/Data/OracleComp/` (or
     upstream in VCVio when fully generic)
   - general-purpose extensions meant for upstreaming → `ArkLib/ToMathlib/`
-  - native typed-interaction framework and its security theory → `ArkLib/Interaction/`
-  - legacy oracle-reduction core and security theory → `ArkLib/OracleReduction/`
+  - interaction layer (interaction-tree protocols) and its security theory → `ArkLib/Interaction/`
+  - legacy layer (oracle-reduction core) and its security theory → `ArkLib/OracleReduction/`
   - protocol-specific → `ArkLib/ProofSystem/`
   - commitment-specific → `ArkLib/Commitments/`
 - Prefer keeping a lemma next to the definitions it is about, not next to the theorem that happens

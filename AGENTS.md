@@ -30,14 +30,15 @@ Start with [`README.md`](README.md) for the project overview.
 
 - `ArkLib/Data/` - reusable math, coding theory, polynomials, probability, and measured programs.
 - `ArkLibTest/` - compile-time acceptance examples and regression tests; run `lake test`.
-- `ArkLib/Interaction/` - native typed interactions and their security theory.
-- `ArkLib/OracleReduction/` - legacy IOR abstractions and security theory.
+- `ArkLib/Interaction/` - the interaction layer: interaction-tree protocols and their security
+  theory. It is meant to replace the legacy layer ([`README.md`](README.md#two-layers)).
+- `ArkLib/OracleReduction/` - the legacy layer: IOR abstractions and security theory.
 - `ArkLib/ProofSystem/` - protocol formalizations built on the core.
 - `ArkLib/Commitments/` - commitments and opening arguments.
 - `ArkLib/AGM/` - algebraic group model representations.
 - `ArkLib/ToCompPoly/` - bridges to CompPoly's computable representations.
 - `ArkLib/ToMathlib/` - local extensions intended for upstreaming.
-- `docs/design/` - normative architecture of the native interaction layer.
+- `docs/design/` - normative architecture of the interaction layer.
 - `docs/kb/` - paper knowledge base: paper pages, concepts, and audits.
 - `blueprint/src/` - blueprint TeX chapters and the bibliography (`references.bib`).
 - `scripts/` - repo utilities.
@@ -62,6 +63,9 @@ Start with [`README.md`](README.md) for the project overview.
 - Do not raise elaboration budgets: `set_option maxHeartbeats`, `maxRecDepth` and
   `synthInstance.*` are rejected by the source-policy gate, as are the `linter`, `pp`, `profiler`
   and `trace` option families. Make a slow proof cheaper instead.
+- No backward compatibility: rename or remove a declaration by updating every caller in the same
+  PR, without a `@[deprecated]` alias. See
+  [`CONTRIBUTING.md`](CONTRIBUTING.md#compatibility-policy).
 - Make definitions computable wherever possible. Protocols and program/value-computing APIs must
   be executable, with code-generation and runtime evidence. Document concrete blockers for purely
   mathematical noncomputable views; see [`CONTRIBUTING.md`](CONTRIBUTING.md#computability) and
@@ -86,7 +90,7 @@ Start with [`README.md`](README.md) for the project overview.
   derived outputs.
 - [`docs/wiki/blueprint-and-citations.md`](docs/wiki/blueprint-and-citations.md) - blueprint,
   references, and citations.
-- [`docs/design/README.md`](docs/design/README.md) - native interaction architecture and its
+- [`docs/design/README.md`](docs/design/README.md) - interaction-layer architecture and its
   implementation plan.
 - [`docs/kb/README.md`](docs/kb/README.md) - paper knowledge base.
 

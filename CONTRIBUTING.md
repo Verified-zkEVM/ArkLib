@@ -172,7 +172,8 @@ namespace structure rather than introducing local synonyms.
 * **Match the mathematical contract**: distinguish preservation (`map_add`, `map_smul`) from
   commutativity, and a `≤` bound from a `<` bound. For inverse laws, check the composition order;
   a name describing the composed operations often makes a round-trip identity clearer than a
-  left/right-inverse label. Apply the deprecation policy when improving an existing public name.
+  left/right-inverse label. When improving an existing public name, update every caller (see the
+  [compatibility policy](#compatibility-policy)).
 
 ### Variable Conventions
 
@@ -310,17 +311,15 @@ We aim for consistent representations of equivalent statements:
 * **Abbreviations (`abbrev`)**: Creates `reducible` definitions that are always unfolded. Use this for type synonyms or lightweight aliases where the underlying term should be exposed.
 * **Irreducible**: Use `irreducible` (or `structure` wrappers) to seal API boundaries when the internal implementation details should not leak.
 
-### Deprecation Policy
+### Compatibility Policy
 
-* **Renaming**: If you rename a declaration, please ensure you fix any breakage this causes. If that is not possible, keep the old name as a deprecated alias to avoid breaking downstream code immediately.
-  ```lean
-  @[deprecated (since := "YYYY-MM-DD")] alias oldName := newName
-  ```
-* **Removal**: For removals, provide a message explaining the transition.
-  ```lean
-  @[deprecated "Use `better_theorem` instead" (since := "YYYY-MM-DD")]
-  theorem old_theorem ...
-  ```
+ArkLib makes no backward-compatibility guarantees and does not issue deprecation warnings. This
+holds in particular until the [migration](ROADMAP.md#priority-replace-the-legacy-layer) from the
+legacy layer (`ArkLib/OracleReduction/`) to the interaction layer (`ArkLib/Interaction/`) is
+complete; [README.md](README.md#two-layers) describes both layers.
+
+When you rename or remove a declaration, update every caller in the same PR. Do not keep the old
+name as a `@[deprecated]` alias.
 
 ### Documentation Standards
 

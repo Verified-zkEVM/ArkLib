@@ -3,16 +3,44 @@
 This page is ArkLib's public status and direction: what is complete, what is in progress, and where
 the library is going. Use [open issues](https://github.com/Verified-zkEVM/ArkLib/issues) for
 assignments and [CONTRIBUTING.md](CONTRIBUTING.md) for the development and review process. The
-[native-layer design roadmap](docs/design/05-roadmap.md) owns the implementation plan for the
-typed interaction framework; this page does not repeat it.
+[design roadmap](docs/design/05-roadmap.md) owns the implementation plan for the interaction
+layer; this page does not repeat it.
+
+## Priority: replace the legacy layer
+
+ArkLib has two layers: the legacy layer (`ArkLib/OracleReduction/`) and the interaction layer
+(`ArkLib/Interaction/`), which is meant to replace it.
+[README.md](README.md#two-layers) explains the difference and the legacy layer's limitations.
+Developing the interaction layer is the project's priority. The migration has three stages.
+
+1. **Feature parity.** Give the interaction layer every framework feature that the legacy
+   protocols use. For example, lifting a reduction into a larger context
+   (`OracleReduction/LiftContext/`) has no interaction-layer counterpart yet. The
+   [design roadmap](docs/design/05-roadmap.md) sequences this work.
+2. **Port protocols one at a time, each with a proved equivalence.** For each ported protocol,
+   prove a theorem that relates the legacy protocol, embedded into the interaction layer, to the
+   interaction-layer protocol, so that the port is checked to be faithful. The single-round
+   Sum-check correspondence
+   ([`Sumcheck/Interaction/Legacy.lean`](ArkLib/ProofSystem/Sumcheck/Interaction/Legacy.lean)) is
+   the first instance. `legacy_input_iff` and `legacy_output_iff` show that the two layers' input
+   and output relations agree in both directions, and `legacy_verifier_correspondence` shows that
+   the two single-round verifiers return the same output statement for every round message and
+   challenge, including rejection. It covers one round and compares the two directly: it does not
+   relate the full protocol, the provers or the security games, and no general embedding of the
+   legacy layer exists yet. Spartan and Plonk are complete in the legacy layer (below); their
+   interaction-layer versions are not yet written.
+3. **Delete the legacy layer.** Once the protocols are ported, delete the legacy layer as a whole.
+
+Until the port is complete, ArkLib makes no backward-compatibility guarantees and issues no
+deprecation warnings; see the [compatibility policy](CONTRIBUTING.md#compatibility-policy).
 
 ## Complete
 
 Every result below is on `main` and depends only on Lean's standard axioms (`propext`,
 `Classical.choice`, `Quot.sound`). Theorem names are full Lean names. Each theorem's docstring
-states its hypotheses; read them before relying on a result. The native-layer status page,
-[`docs/design/00-current-status.md`](docs/design/00-current-status.md), records the typed
-interaction framework's APIs and remaining proof gaps in detail.
+states its hypotheses; read them before relying on a result. The interaction-layer status page,
+[`docs/design/00-current-status.md`](docs/design/00-current-status.md), records that layer's APIs
+and remaining proof gaps in detail.
 
 ### Protocols and commitments
 
@@ -20,12 +48,12 @@ The following protocols have formal specifications and the security results list
 Executable implementations are available for selected protocols; each entry names them. Unless an
 entry says so, the specification is not claimed to be executable.
 
-- **Sum-check** ([`ProofSystem/Sumcheck/`](ArkLib/ProofSystem/Sumcheck/)). In the
-  oracle-reduction layer: `Sumcheck.Spec.oracleReduction_perfectCompleteness`;
+- **Sum-check** ([`ProofSystem/Sumcheck/`](ArkLib/ProofSystem/Sumcheck/)). In the legacy
+  layer: `Sumcheck.Spec.oracleReduction_perfectCompleteness`;
   `Sumcheck.Spec.oracleVerifier_rbrKnowledgeSoundness`, with error `deg / |R|` per challenge;
   `Sumcheck.Spec.oracleVerifier_knowledgeSoundness`, with the sum of those errors. The reduction
   `Sumcheck.Spec.oracleReduction` is noncomputable; `Sumcheck.Impl.Computable.generalOracleProver`
-  computes the same messages and outputs as its honest prover. In the native layer
+  computes the same messages and outputs as its honest prover. In the interaction layer
   ([`Sumcheck/Interaction/`](ArkLib/ProofSystem/Sumcheck/Interaction/)):
   `Sumcheck.Interaction.Native.execute_perfectCompleteness`,
   `Sumcheck.Interaction.Native.execute_soundness` and
@@ -90,7 +118,7 @@ entry says so, the specification is not claimed to be executable.
 
 ### Framework
 
-- **Oracle-reduction security theory**
+- **Legacy-layer security theory**
   ([`OracleReduction/Security/`](ArkLib/OracleReduction/Security/)): one round-by-round knowledge
   soundness notion under the default names `rbrKnowledgeSoundness` and
   `rbrKnowledgeSoundnessWith`, proved bridges from round-by-round to ordinary knowledge soundness
@@ -106,16 +134,16 @@ entry says so, the specification is not claimed to be executable.
   zero tests.
 - **Fiat-Shamir**: the basic transform and its completeness under fixed tables and a lazy random
   oracle ([`OracleReduction/FiatShamir/`](ArkLib/OracleReduction/FiatShamir/)).
-- **Native typed interactions** ([`ArkLib/Interaction/`](ArkLib/Interaction/)): execution,
+- **Interaction layer** ([`ArkLib/Interaction/`](ArkLib/Interaction/)): execution,
   soundness, round-by-round soundness, generic knowledge certificates and their composition, and
   state-restoration knowledge soundness for fixed-round public-coin protocols with error
   `(Q + k) * error`. No concrete protocol consumes the knowledge certificates yet, and randomized
   state restoration is in progress (below). The
-  [native-layer status page](docs/design/00-current-status.md) has the details.
+  [interaction-layer status page](docs/design/00-current-status.md) has the details.
 - **Measured extraction**: measured programs and operation-count budgets
   ([`Data/OracleComp/MeasuredProgram.lean`](ArkLib/Data/OracleComp/MeasuredProgram.lean)), their use
   in knowledge soundness ([`OracleReduction/Security/Resources.lean`](ArkLib/OracleReduction/Security/Resources.lean)),
-  and measured stages for native knowledge and state-restoration certificates
+  and measured stages for interaction-layer knowledge and state-restoration certificates
   (`Interaction/Oracle/Security/{KnowledgeResources,StateRestorationResources}.lean`). The
   [extractor-efficiency design](docs/design/03a-extractor-efficiency.md) states what these budgets
   do and do not certify.
@@ -130,13 +158,14 @@ entry says so, the specification is not claimed to be executable.
   random-domain list-size upper bound, are stated faithfully and left open for contributors. They are the only admitted statements in the library, and nothing
   else depends on them
   ([#1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352)).
-- **Rewinding knowledge soundness.** A shared rewinding engine with legacy and native instances
+- **Rewinding knowledge soundness.** A shared rewinding engine with legacy-layer and
+  interaction-layer instances
   ([#1410](https://github.com/Verified-zkEVM/ArkLib/issues/1410)).
 - **Randomized state restoration.** Restoration modelled with actual cached query budgets
   ([#1267](https://github.com/Verified-zkEVM/ArkLib/pull/1267)).
 - **Akita.** A recursive lattice polynomial commitment with checkpoint extraction
   ([#1378](https://github.com/Verified-zkEVM/ArkLib/issues/1378)).
-- **Reusable ring switching and Flock.** Native reference-Flock conformance and the Flock
+- **Reusable ring switching and Flock.** Interaction-layer reference-Flock conformance and the Flock
   instance used by leanerVM
   ([#1286](https://github.com/Verified-zkEVM/ArkLib/issues/1286),
   [leanerVM#3](https://github.com/Verified-zkEVM/leanerVM/issues/3)).
@@ -153,10 +182,6 @@ entry says so, the specification is not claimed to be executable.
 
 ## Directions
 
-- **Native migration.** Port protocol clients to the native layer, starting with small FRI and
-  Spartan slices, and prove correspondence with their oracle-reduction versions. Spartan and Plonk
-  are complete in the oracle-reduction layer (above); their native versions are not yet written. The
-  [design roadmap](docs/design/05-roadmap.md) sequences this work.
 - **Cryptographic compilation.** Turn oracle guarantees into commitment and opening obligations
   through the BCS transform, and connect protocols to concrete opening arguments, Merkle
   commitments and Fiat-Shamir transcripts. The
@@ -177,7 +202,8 @@ entry says so, the specification is not claimed to be executable.
 ## What counts as complete
 
 A delivery names its theorem, hypotheses, concrete consumer and transitive axiom report. Keep
-mathematical security, native correspondence, execution tests and compiled implementation claims
+mathematical security, legacy-to-interaction correspondence, execution tests and compiled
+implementation claims
 distinct. The [axiom regression gate](docs/wiki/quickstart.md#filling-a-sorry-or-work-that-must-stay-axiom-clean)
 rejects new admissions; a successful build or a deleted declaration alone does not close a proof
 obligation.

@@ -17,7 +17,7 @@ related_modules:
 
 ## At A Glance
 
-`BCS16` is the current repository key used in the oracle-reduction layer for the original
+`BCS16` is the current repository key used in the legacy layer for the original
 interactive oracle proof reference.
 It is foundational context for how ArkLib explains vector IOPs and related downstream
 specializations.

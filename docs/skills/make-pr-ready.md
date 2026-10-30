@@ -133,8 +133,8 @@ merge-ready.
     predictable and easy to search across libraries. Check the actual contract too: preservation
     is not commutativity, `≤` is not `<`, and inverse
     direction depends on composition order. Name declarations for their mathematics, without
-    paper numbers or internal planning codes; update callers and preserve compatibility as
-    required by the deprecation policy.
+    paper numbers or internal planning codes; update every caller in the same PR, without a
+    deprecated alias, as the compatibility policy requires.
   - **Symbol naming**: translate statements into names with the standard symbol dictionary;
     standardize on `≤`/`<`, avoid `≥`/`>` in statements.
   - **Variable conventions**: match the Mathlib-style variable roles (e.g. `R`/`M`/`G`/`F` for
@@ -149,8 +149,8 @@ merge-ready.
     and any shorthand concisely, without requiring a paper lookup. Keep external citations,
     URLs, and paper locators only in the top-level module docstring. Internal Lean API links
     are fine. Check that module summaries describe the actual scope and formalization gaps.
-  - **Normal forms, transparency, deprecation**: respect the standard-form, `def`/`abbrev`/
-    `irreducible`, and `@[deprecated ...]` policies when relevant to the diff.
+  - **Normal forms, transparency, compatibility**: respect the standard-form, `def`/`abbrev`/
+    `irreducible`, and compatibility policies when relevant to the diff.
 - **Audit proof structure and reuse.** Look for repeated arguments or existing library facts,
   and put reusable generic lemmas with their mathematical owner. Preserve theorem strength,
   assumptions, and axiom boundaries. Exercise the public interface with a realistic caller and
