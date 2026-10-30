@@ -28,16 +28,15 @@ There is no separate migration checker to run: `lake build` is the gate.
 
 ## What the module system buys
 
-Theorem proofs are private to their module, so an importer loads only the public `.olean` and never
-the `.olean.private` file that holds proofs and unexposed bodies. Because ArkLib is proof-heavy,
-the exported part is a small fraction of the build output, which keeps importers' memory low.
+Theorem proofs are private to their module. Ordinary module imports load the public artifact
+without private proof bodies. Imports using `import all`, and classic clients, can load private
+information. Because ArkLib is proof-heavy, the exported part is a small fraction of the build
+output, which keeps the memory of ordinary importers low.
 
-Editing a proof in place, without shifting the source positions of later declarations, rebuilds
-only the edited module: its importers see no change. Declaration ranges are exported metadata, so
-inserting or deleting a line invalidates every downstream module as it would without the module
-system. Editing a tactic in place, or editing the last declaration in a file, gets the full benefit.
-The module system is therefore a large win on some edits and neutral on others; it is never worse
-than classic Lean.
+A proof-only edit that leaves the public artifact unchanged need not rebuild dependents that
+consume only that artifact. Declaration ranges are exported metadata, so inserting or deleting a
+line invalidates every downstream module as it would without the module system. Editing a tactic
+in place, or editing the last declaration in a file, gets the full benefit.
 
 ## The canonical file shape
 
@@ -116,9 +115,9 @@ executors demonstrate this pattern while their classic acceptance clients still 
 
 `import all` is what makes a proof that unfolds an unexposed upstream definition keep working, and
 it is the reason the port needed no upstream changes. Most uses target `CompPoly.Univariate.*`;
-`git grep -n '^import all' -- ArkLib` lists them all. Each site carries a one-line comment saying
-which definition it is unfolding, because the line looks redundant next to the `public import` of
-the same tree and is easy to "clean up" by mistake.
+`git grep -n '^import all' -- ArkLib` lists them all. When adding `import all`, include a short
+comment naming the definition whose private body is needed, so the import is not mistaken for a
+redundant public import.
 
 ### When a build breaks
 

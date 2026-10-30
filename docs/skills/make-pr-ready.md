@@ -79,19 +79,23 @@ merge-ready.
   extended (differs from both `origin/main` and the sibling branch).
 - **Test for committed `_generated/` drift explicitly — a clean `git status` does not rule it out.**
   If the branch committed regenerated outputs, the working tree is clean and nothing in the default
-  `validate.sh` complains, yet CI's first job fails. One line settles it, and it belongs in step 0:
+  `validate.sh` complains, yet CI's first job fails. CI compares the branch tip with the merge
+  base, not with the current `main` tip, so use the three-dot form. One line settles it, and it
+  belongs in step 0:
 
   ```bash
-  git diff --stat origin/main HEAD -- docs/kb/_generated/   # any output = the guard will fail
+  git diff --stat origin/main...HEAD -- docs/kb/_generated/   # any output = the guard will fail
   ```
 
 - **If `_generated/` drift is already committed** (the branch committed regenerated outputs, not
-  just dirtied the working tree), `git checkout origin/main -- docs/kb/_generated/` stages a
-  *revert*, and you must **commit it** for the guard to pass — the guard compares the committed
-  branch tip to `main`, so an uncommitted revert leaves HEAD still drifted. After staging the
-  revert, `git diff --cached --stat` shows huge index-vs-HEAD numbers for `_generated/` — that is
-  the size of the revert, **not** new drift; do not panic. Confirm the post-commit guard view with
-  `git diff --cached --quiet origin/main -- docs/kb/_generated/` (must be clean).
+  just dirtied the working tree),
+  `git checkout "$(git merge-base HEAD origin/main)" -- docs/kb/_generated/` stages a *revert*, and
+  you must **commit it** for the guard to pass — the guard compares the committed branch tip to
+  the merge base, so an uncommitted revert leaves HEAD still drifted. After staging the revert,
+  `git diff --cached --stat` shows huge index-vs-HEAD numbers for `_generated/` — that is the size
+  of the revert, **not** new drift; do not panic. Confirm the post-commit guard view with
+  `git diff --cached --quiet "$(git merge-base HEAD origin/main)" -- docs/kb/_generated/` (must be
+  clean).
 - **Report stray planning/scratch `.md` files — do not stage them, and do not delete them.** A
   Markdown plan, design note, or working-notes file (`PLAN.md`, `NOTES.md`, `scratch/*.md`, an
   agent handoff/TODO dump) is a working artifact, not repo documentation, and should not land in
@@ -226,8 +230,8 @@ merge-ready.
   (true external results left open for contributors, each linking a tracking issue such as
   [#1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352)). If the branch proves one, remove
   its entry from the `solicited` list in the same PR; the sweep fails while a proved entry remains.
-  A branch must not add an entry, or make anything outside the list depend on one, without
-  maintainer review ([`scripts/README.md`](../../scripts/README.md)).
+  Adding an entry requires maintainer review. No declaration outside the solicited list may
+  depend on an entry, directly or transitively ([`scripts/README.md`](../../scripts/README.md)).
 
 ### 3. Generate citations correctly
 
@@ -259,7 +263,8 @@ merge-ready.
   python3 ./scripts/kb/sync_from_bib.py          # writes docs/kb/_generated/references.json
   python3 ./scripts/kb/extract_lean_citations.py # writes docs/kb/_generated/lean-citations.json
   # ... inspect for consistency, then:
-  git checkout "$(git merge-base HEAD origin/main)" -- docs/kb/_generated/ # restore; do NOT stage
+  git checkout "$(git merge-base HEAD origin/main)" -- docs/kb/_generated/
+  # restores index and worktree; inspect the staged diff
   ```
 
   If your branch has already diverged in `docs/kb/_generated/` (drift, an accidental delete, or a

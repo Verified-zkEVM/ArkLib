@@ -39,7 +39,11 @@ proving the wrong statement is the costly failure. Work in four stages:
    generalization or representation choice, and justify its direction. Check non-vacuity: try
    small and boundary cases, confirm relations and challenge spaces are inhabited, and confirm the
    verifier does not always reject. Check that the audited theorem is the one its consumers use.
-2. **Freeze the semantics.** Once the sorried skeleton states the right result and builds, record
+2. **Freeze the semantics.** Implement every data-bearing definition, including relations,
+   verifiers, protocol specifications, extractors, conversions and witness constructors. Only
+   proof bodies may contain remaining `sorry`s. Inventory those proof placeholders before
+   freezing; never prove claims about data fabricated with `sorry`. Once the sorried skeleton
+   states the right result and builds, record
    every target declaration's full type (`#check @Full.name`) and every data-bearing definition
    (`#print`), and keep a copy of the scoped files outside the repository, for example under
    `/tmp`. From then on only proof bodies may change.

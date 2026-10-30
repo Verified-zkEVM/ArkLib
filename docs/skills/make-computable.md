@@ -82,8 +82,7 @@ Work through these in order. Do not skip triage because a marker looks mechanica
   `Failed to find LCNF signature for X`. The authoritative test is to write `def probe := @X` in a
   scratch file **outside** any `noncomputable section` — it either compiles or names the first
   blocker — or to query `Lean.IR.findEnvDecl env name |>.isSome` in a `run_cmd`. Build the inventory
-  from IR presence, then classify. (`ChallengeTree.SplitData.sndAt` once escaped both greps and
-  the flag this way.)
+  from IR presence, then classify.
 - **Check for a file-wide `noncomputable section`.** In Lean 4 it needs no matching `end`, so it
   silently covers the rest of the file. Any `Decidable` instance you add inside one is born
   noncomputable and useless. Look at the section boundaries before you edit.

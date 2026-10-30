@@ -1,9 +1,8 @@
 # ArkLib: Formally Verified Arguments of Knowledge
 
 ArkLib is a Lean 4 library for formally verifying **succinct non-interactive arguments of
-knowledge** (SNARKs). It specifies proof systems as executable interactive (oracle) reductions and
-proves their completeness and knowledge soundness in Lean, from generic theorems about composition
-and lifting. ArkLib is part of the [verified-zkEVM effort](https://verified-zkevm.org/).
+knowledge** (SNARKs). It specifies interactive (oracle) reductions and proves their completeness
+and security properties in Lean, from generic theorems about composition and lifting. ArkLib is part of the [verified-zkEVM effort](https://verified-zkevm.org/).
 
 The API documentation and the blueprint are published at
 [verified-zkevm.github.io/ArkLib](https://verified-zkevm.github.io/ArkLib/).
@@ -19,8 +18,8 @@ not by itself prove a theorem about the other.
   messages only through oracle queries, for example evaluations of a sent polynomial. The layer
   provides sequential composition, lifting into a larger context (`liftContext`), and the security
   notions: completeness, soundness, knowledge soundness, round-by-round knowledge soundness and
-  coordinate-wise special soundness. Every protocol in the table below, except native Sum-check,
-  is stated in this layer. The project calls it the legacy layer because new framework work
+  coordinate-wise special soundness. Every protocol in the
+  [status catalog](ROADMAP.md#complete), except native Sum-check, is stated in this layer. The project calls it the legacy layer because new framework work
   happens in the native layer.
 - **Native typed interactions** ([`ArkLib/Interaction/`](ArkLib/Interaction/)). Protocols are
   trees of moves, built on the interaction structures of
@@ -50,34 +49,10 @@ records the exact revisions.
 
 ## What is formalized
 
-Each protocol below has an executable specification. Its security theorems are proved from
-Lean's standard axioms only; the few open statements in the library are listed in the axiom
-baseline (see [Contributing](#contributing)). The theorem names are the full Lean names.
-
-| Protocol | Location | Headline theorems |
-| --- | --- | --- |
-| Sum-check | [`ProofSystem/Sumcheck/`](ArkLib/ProofSystem/Sumcheck/) | `Sumcheck.Spec.oracleReduction_perfectCompleteness`; `Sumcheck.Spec.oracleVerifier_knowledgeSoundness` with error `deg / \|R\|` per challenge |
-| Sum-check, native | [`ProofSystem/Sumcheck/Interaction/`](ArkLib/ProofSystem/Sumcheck/Interaction/) | `Sumcheck.Interaction.Native.execute_perfectCompleteness`, `Sumcheck.Interaction.Native.execute_soundness`, `Sumcheck.Interaction.Native.roundByRound_soundness` |
-| FRI | [`ProofSystem/Fri/`](ArkLib/ProofSystem/Fri/) | `Fri.Spec.perfect_completeness`; `Fri.Spec.soundness`; `Fri.Spec.knowledge_soundness_with` for a named straightline extractor, with operation counts in `Fri.Spec.knowledgeSoundnessWithResources_extract` |
-| Batched FRI | [`ProofSystem/BatchedFri/`](ArkLib/ProofSystem/BatchedFri/) | `BatchedFri.Spec.batchedFRI_perfectCompleteness`; `BatchedFri.Spec.batchedFRI_soundness`, with error the batching error plus the FRI error |
-| Binary Basefold | [`ProofSystem/Binius/BinaryBasefold/`](ArkLib/ProofSystem/Binius/BinaryBasefold/) | `Binius.BinaryBasefold.FullBinaryBasefold.fullOracleReduction_perfectCompleteness_and_knowledgeSoundness` |
-| Ring switching | [`ProofSystem/RingSwitching/`](ArkLib/ProofSystem/RingSwitching/) | `RingSwitching.Packing.RingSwitch.perfectCompleteness_and_knowledgeSoundness`, with error `bat.error + 2m / \|C\|` |
-| FRI-Binius (ring switching, then Binary Basefold) | [`ProofSystem/Binius/FRIBinius/`](ArkLib/ProofSystem/Binius/FRIBinius/) | `Binius.FRIBinius.RingSwitch.fullReduction_perfectCompleteness_and_knowledgeSoundness` |
-| Spartan (R1CS) | [`ProofSystem/Spartan/`](ArkLib/ProofSystem/Spartan/) | `Spartan.perfectCompleteness`; `Spartan.knowledgeSoundness` with error `(4s + 2t + 1) / \|R\|`, where `s = ⌈log₂ m⌉` and `t = ⌈log₂ max(n_x, n_w)⌉ + 1` |
-| Plonk | [`ProofSystem/Plonk/`](ArkLib/ProofSystem/Plonk/) | `Plonk.Assembly.oracleReduction_completeness` with failure at most `3n / \|F\|`; `Plonk.Assembly.oracleVerifier_knowledgeSoundnessWith` with error `(7n - 3) / \|F\|` |
-| Toy problem | [`ProofSystem/ToyProblem/`](ArkLib/ProofSystem/ToyProblem/) | `ToyProblem.Spec.oracleReduction_perfectCompleteness`; `ToyProblem.Spec.oracleVerifier_knowledgeSoundness_winningSetUpperBound` |
-| KZG | [`Commitments/Functional/KZG/`](ArkLib/Commitments/Functional/KZG/) | `KZG.CommitmentScheme.binding_reduces_to_tSdh` (evaluation binding from t-SDH); `KZG.CommitmentScheme.function_binding_reduces_to_arsdh` (function binding from ARSDH) |
-| Hachi, nonrecursive opening | [`Commitments/Functional/Hachi/`](ArkLib/Commitments/Functional/Hachi/) | `ArkLib.Lattices.Ajtai.InnerOuter.hachi_iteration_coordinateWiseSpecialSoundWithEscape` |
-
-STIR ([`ProofSystem/Stir/`](ArkLib/ProofSystem/Stir/)) is formalized at the component level: its
-proximity gap (`STIR.proximity_gap`), out-of-domain sampling, quotienting and combination results.
-Its protocol and round-by-round soundness theorem are not yet formalized.
-
-Each theorem's docstring states its hypotheses. Read them before relying on a result. For example,
-Hachi's weak-binding reduction gives no concrete binding guarantee at the formalized parameter
-profile (see `Commitments/Functional/Hachi/Params.lean`).
-
-[ROADMAP.md](ROADMAP.md) lists the work in progress and the planned directions.
+[ROADMAP.md](ROADMAP.md) is the status catalog. It lists each formalized protocol and commitment
+scheme (Sum-check, FRI, batched FRI, Binary Basefold, ring switching, FRI-Binius, Spartan, Plonk,
+KZG, Hachi and STIR components) with its headline theorems, error bounds and known limitations,
+says which implementations are executable, and lists the work in progress and planned directions.
 
 ## Build and check
 

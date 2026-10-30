@@ -9,40 +9,84 @@ typed interaction framework; this page does not repeat it.
 ## Complete
 
 Every result below is on `main` and depends only on Lean's standard axioms (`propext`,
-`Classical.choice`, `Quot.sound`). [README.md](README.md#what-is-formalized) names the headline
-theorem of each protocol.
+`Classical.choice`, `Quot.sound`). Theorem names are full Lean names. Each theorem's docstring
+states its hypotheses; read them before relying on a result. The native-layer status page,
+[`docs/design/00-current-status.md`](docs/design/00-current-status.md), records the typed
+interaction framework's APIs and remaining proof gaps in detail.
 
 ### Protocols and commitments
 
-- **Sum-check**: completeness, round-by-round knowledge soundness and ordinary knowledge soundness
-  in the oracle-reduction layer; completeness, soundness and round-by-round soundness in the native
-  layer, with a CompPoly-backed computable honest prover.
-- **FRI**: perfect and noisy-input completeness, soundness, round-by-round soundness, and knowledge
-  soundness for a named straightline extractor whose operation counts are certified
-  ([`Fri/Spec/MeasuredKnowledgeSoundness.lean`](ArkLib/ProofSystem/Fri/Spec/MeasuredKnowledgeSoundness.lean)).
-- **Batched FRI**: perfect completeness and soundness of a batching round followed by FRI, with
-  instances for affine-space, power and multilinear generators.
-- **Binary Basefold**: perfect completeness, round-by-round knowledge soundness and ordinary
-  knowledge soundness of the full protocol.
-- **Ring switching**: shared head, product-sumcheck and terminal phases with perfect completeness
-  and knowledge soundness, instantiated at Binius's tensor profile and composed with Binary
-  Basefold as FRI-Binius ([`Binius/FRIBinius/`](ArkLib/ProofSystem/Binius/FRIBinius/)). The
+The following protocols have formal specifications and the security results listed below.
+Executable implementations are available for selected protocols; each entry names them. Unless an
+entry says so, the specification is not claimed to be executable.
+
+- **Sum-check** ([`ProofSystem/Sumcheck/`](ArkLib/ProofSystem/Sumcheck/)). In the
+  oracle-reduction layer: `Sumcheck.Spec.oracleReduction_perfectCompleteness`;
+  `Sumcheck.Spec.oracleVerifier_rbrKnowledgeSoundness`, with error `deg / |R|` per challenge;
+  `Sumcheck.Spec.oracleVerifier_knowledgeSoundness`, with the sum of those errors. The reduction
+  `Sumcheck.Spec.oracleReduction` is noncomputable; `Sumcheck.Impl.Computable.generalOracleProver`
+  computes the same messages and outputs as its honest prover. In the native layer
+  ([`Sumcheck/Interaction/`](ArkLib/ProofSystem/Sumcheck/Interaction/)):
+  `Sumcheck.Interaction.Native.execute_perfectCompleteness`,
+  `Sumcheck.Interaction.Native.execute_soundness` and
+  `Sumcheck.Interaction.Native.roundByRound_soundness`, with a CompPoly-backed computable honest
+  prover, `Sumcheck.Interaction.Computable.honestProver`.
+- **FRI** ([`ProofSystem/Fri/`](ArkLib/ProofSystem/Fri/)): perfect and noisy-input completeness,
+  soundness, round-by-round soundness, and knowledge soundness for a named straightline
+  extractor: `Fri.Spec.perfect_completeness`, `Fri.Spec.soundness` and
+  `Fri.Spec.knowledge_soundness_with`. `Fri.Spec.knowledgeSoundnessWithResources_extract`
+  ([`Fri/Spec/MeasuredKnowledgeSoundness.lean`](ArkLib/ProofSystem/Fri/Spec/MeasuredKnowledgeSoundness.lean))
+  bounds the extractor's operation counts; the
+  [extractor-efficiency design](docs/design/03a-extractor-efficiency.md) states what such budgets
+  do and do not certify.
+- **Batched FRI** ([`ProofSystem/BatchedFri/`](ArkLib/ProofSystem/BatchedFri/)): a batching round
+  followed by FRI. `BatchedFri.Spec.batchedFRI_perfectCompleteness`;
+  `BatchedFri.Spec.batchedFRI_soundness`, with error the batching error plus the FRI error.
+  Instances cover affine-space, power and multilinear generators.
+- **Binary Basefold** ([`ProofSystem/Binius/BinaryBasefold/`](ArkLib/ProofSystem/Binius/BinaryBasefold/)):
+  perfect completeness, round-by-round knowledge soundness and ordinary knowledge soundness of
+  the full protocol, with headline theorem
+  `Binius.BinaryBasefold.FullBinaryBasefold.fullOracleReduction_perfectCompleteness_and_knowledgeSoundness`.
+  The full oracle reduction is a noncomputable specification.
+- **Ring switching** ([`ProofSystem/RingSwitching/`](ArkLib/ProofSystem/RingSwitching/)): shared
+  head, product-sumcheck and terminal phases.
+  `RingSwitching.Packing.RingSwitch.perfectCompleteness_and_knowledgeSoundness` gives perfect
+  completeness and knowledge soundness with error `bat.error + 2m / |C|`. It is instantiated at
+  Binius's tensor profile and composed with Binary Basefold as FRI-Binius
+  ([`Binius/FRIBinius/`](ArkLib/ProofSystem/Binius/FRIBinius/)):
+  `Binius.FRIBinius.RingSwitch.fullReduction_perfectCompleteness_and_knowledgeSoundness` proves
+  perfect completeness on exact encodings and ordinary knowledge soundness, obtained from
+  round-by-round knowledge soundness through the proved guarded bridge
+  `Verifier.GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundness`. The fused FRI-Binius
+  protocol is not yet formalized. The
   [consumer guide](docs/wiki/ring-switching-consumers.md) records the interfaces.
-- **Spartan**: a seven-stage oracle reduction for R1CS with perfect completeness and knowledge
-  soundness with error `(4s + 2t + 1) / |R|` (`s` and `t` are the logarithms of the constraint
-  and variable counts), using an executable straightline extractor.
-- **Plonk**: an end-to-end oracle reduction with completeness and knowledge soundness, assembled
-  from grand-product, residual-batching and quotient stages.
-- **Toy problem**: completeness and knowledge soundness of the toy IOR, with executable IRS and FRS
-  implementations.
-- **KZG**: correctness, and evaluation and function binding stated as reductions to t-SDH and ARSDH.
-  The hardness-based corollaries quantify over explicit adversary classes.
-- **Hachi**: the nonrecursive opening argument, with coordinate-wise special soundness of each
-  iteration and a computable honest prover. At the formalized parameter profile the inner Module-SIS
-  target is trivially solvable, so the weak-binding reduction gives no concrete binding guarantee
-  there (`Commitments/Functional/Hachi/Params.lean`).
-- **STIR components**: the proximity gap (Theorem 4.1 of [ACFY24stir]), out-of-domain sampling,
-  quotienting and combination.
+- **Spartan** ([`ProofSystem/Spartan/`](ArkLib/ProofSystem/Spartan/)): a seven-stage oracle
+  reduction for R1CS. `Spartan.perfectCompleteness`; `Spartan.knowledgeSoundness`, with error
+  `(4s + 2t + 1) / |R|` where `s = Nat.clog 2 m` and `t = Nat.clog 2 (max n_x n_w) + 1`. The
+  reduction `Spartan.oracleReduction` and the straightline extractor
+  `Spartan.straightlineExtractor` are executable.
+- **Plonk** ([`ProofSystem/Plonk/`](ArkLib/ProofSystem/Plonk/)): an end-to-end oracle reduction
+  assembled from grand-product, residual-batching and quotient stages.
+  `Plonk.Assembly.oracleReduction_completeness`, with failure probability at most `3n / |F|`;
+  `Plonk.Assembly.oracleVerifier_knowledgeSoundnessWith`, with error `(7n - 3) / |F|`. The
+  reduction `Plonk.Assembly.oracleReduction` is executable.
+- **Toy problem** ([`ProofSystem/ToyProblem/`](ArkLib/ProofSystem/ToyProblem/)):
+  `ToyProblem.Spec.oracleReduction_perfectCompleteness`;
+  `ToyProblem.Spec.oracleVerifier_knowledgeSoundness_winningSetUpperBound`. Executable IRS and FRS
+  implementations are in [`ToyProblem/Impl/`](ArkLib/ProofSystem/ToyProblem/Impl/).
+- **KZG** ([`Commitments/Functional/KZG/`](ArkLib/Commitments/Functional/KZG/)): correctness, and
+  binding stated as reductions: `KZG.CommitmentScheme.binding_reduces_to_tSdh` (evaluation binding
+  from t-SDH) and `KZG.CommitmentScheme.function_binding_reduces_to_arsdh` (function binding from
+  ARSDH). The hardness-based corollaries quantify over explicit adversary classes.
+- **Hachi** ([`Commitments/Functional/Hachi/`](ArkLib/Commitments/Functional/Hachi/)): the
+  nonrecursive opening argument, with coordinate-wise special soundness of each iteration
+  (`ArkLib.Lattices.Ajtai.InnerOuter.hachi_iteration_coordinateWiseSpecialSoundWithEscape`) and a
+  computable honest run. At the formalized parameter profile the inner Module-SIS target is
+  trivially solvable, so the weak-binding reduction gives no concrete binding guarantee there
+  (`Commitments/Functional/Hachi/Params.lean`).
+- **STIR components** ([`ProofSystem/Stir/`](ArkLib/ProofSystem/Stir/)): the proximity gap
+  (`STIR.proximity_gap`, Theorem 4.1 of [ACFY24stir]), out-of-domain sampling, quotienting and
+  combination. The STIR protocol and its round-by-round soundness theorem are not yet formalized.
 
 ### Framework
 
@@ -63,9 +107,11 @@ theorem of each protocol.
 - **Fiat-Shamir**: the basic transform and its completeness under fixed tables and a lazy random
   oracle ([`OracleReduction/FiatShamir/`](ArkLib/OracleReduction/FiatShamir/)).
 - **Native typed interactions** ([`ArkLib/Interaction/`](ArkLib/Interaction/)): execution,
-  soundness, round-by-round soundness, knowledge certificates and their composition, and
+  soundness, round-by-round soundness, generic knowledge certificates and their composition, and
   state-restoration knowledge soundness for fixed-round public-coin protocols with error
-  `(Q + k) * error`.
+  `(Q + k) * error`. No concrete protocol consumes the knowledge certificates yet, and randomized
+  state restoration is in progress (below). The
+  [native-layer status page](docs/design/00-current-status.md) has the details.
 - **Measured extraction**: measured programs and operation-count budgets
   ([`Data/OracleComp/MeasuredProgram.lean`](ArkLib/Data/OracleComp/MeasuredProgram.lean)), their use
   in knowledge soundness ([`OracleReduction/Security/Resources.lean`](ArkLib/OracleReduction/Security/Resources.lean)),
@@ -80,8 +126,8 @@ theorem of each protocol.
 
 ## In progress
 
-- **Solicited proofs.** Five coding-theory lower bounds and separations are stated faithfully and
-  left open for contributors. They are the only admitted statements in the library, and nothing
+- **Solicited proofs.** Five coding-theory declarations, covering lower bounds, separations and a
+  random-domain list-size upper bound, are stated faithfully and left open for contributors. They are the only admitted statements in the library, and nothing
   else depends on them
   ([#1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352)).
 - **Rewinding knowledge soundness.** A shared rewinding engine with legacy and native instances
@@ -108,7 +154,8 @@ theorem of each protocol.
 ## Directions
 
 - **Native migration.** Port protocol clients to the native layer, starting with small FRI and
-  Spartan slices, and prove correspondence with their oracle-reduction versions. The
+  Spartan slices, and prove correspondence with their oracle-reduction versions. Spartan and Plonk
+  are complete in the oracle-reduction layer (above); their native versions are not yet written. The
   [design roadmap](docs/design/05-roadmap.md) sequences this work.
 - **Cryptographic compilation.** Turn oracle guarantees into commitment and opening obligations
   through the BCS transform, and connect protocols to concrete opening arguments, Merkle
@@ -116,7 +163,8 @@ theorem of each protocol.
   [compiler design](docs/design/04-oracle-elimination-compiler.md) and
   [issue #627](https://github.com/Verified-zkEVM/ArkLib/issues/627) describe the approach. The
   duplex-sponge variant of Fiat-Shamir is not yet formalized.
-- **Hachi recursion.** The recursive opening of [NOZ26] is not formalized; the
+- **Hachi recursion.** The recursive opening of [NOZ26] is not formalized, and an earlier
+  unfinished implementation was removed. Any recursive opening would be new work; the
   [audit](docs/kb/audits/noz26-recursion-z-packing.md) records the obstacle.
 - **Further protocols and properties.** WHIR, zero knowledge, pairing-based systems,
   Twist/Shout, IVC folding and a mechanized PCP theorem, as concrete clients require them.
