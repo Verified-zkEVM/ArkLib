@@ -81,9 +81,12 @@ verifier's randomness is the template for everything in Section 4.
 ### 2.3 Interactive oracle proofs
 
 Interactive PCPs [KR08] let the prover send a PCP and then run an interactive proof about it.
-Interactive oracle proofs (IOPs) generalize both IPs and PCPs: in every round the prover sends an
-oracle, the verifier sends a message, and at the end the verifier queries the oracles it has
-received. Ben-Sasson, Chiesa and Spooner introduced IOPs [BCS16]. Independently, Reingold,
+Interactive oracle proofs (IOPs) generalize both IPs and PCPs. An IOP is an interactive proof in
+which the verifier receives oracle access to each prover message and may query a received message
+in that round or any later one. In [BCS16] the verifier sends the first message and may use private
+coins. For public-coin protocols all queries can be deferred to a final phase without loss of
+generality. This page generally uses a prover-message-then-challenge convention and adjusts the
+first and last rounds as needed. Ben-Sasson, Chiesa and Spooner introduced IOPs [BCS16]. Independently, Reingold,
 Rothblum and Rothblum [RRR16] introduced probabilistically checkable interactive proofs (PCIPs),
 which [BCS16] notes are equivalent to IOPs.
 
@@ -111,18 +114,37 @@ holographic IOPs and compiles them into preprocessing SNARGs; it credits the ide
 The IOP model of [BCS16] lets the verifier query individual symbols of a string. Many practical
 protocols are more naturally stated with richer oracles, typically low-degree polynomials that the
 verifier can evaluate at points of its choice. Each such model is designed to match one family of
-commitment schemes in the compiler. The table lists the models that ArkLib's notion of an oracle
-interface (Section 5.2) is meant to subsume.
+commitment schemes in the compiler.
+
+Most of these models are refinements of linear queries. In a linear PCP [IKO07] the proof is a
+vector $\pi \in \mathbb{F}^m$, and each query $q \in \mathbb{F}^m$ returns the inner product
+$\langle \pi, q \rangle$. A linear IOP makes the same change to an IOP: each prover message is a
+vector, and the verifier makes linear queries to it [Ish20]. A point query is the linear query with
+$q$ a unit vector. Evaluating a polynomial at a point is a linear query to a suitable representation
+of the polynomial: to its coefficient vector, or, for a multilinear polynomial, to its values on the
+Boolean hypercube. Point-query IOPs and polynomial IOPs are therefore restricted linear IOPs, which
+is why [BFS20] describes polynomial IOPs as a class of algebraic linear IOPs. The weighted-sum
+queries of a general $\Sigma$-IOP are not of this form: the answer $\sum_b \hat{w}(f(b), b)$ is
+affine in $f$ only when $\hat{w}$ has degree less than 2 in its first argument, which is WHIR's
+*linear* $\Sigma$-IOP. Linear interactive proofs (LIPs) [BCIOP13] are a different restriction: they
+are interactive proofs in which the prover, honest or malicious, may only compute linear functions
+of the verifier's messages. Bitansky et al. compile linear PCPs into SNARKs through LIPs. The
+formalization of linear-PCP SNARKs [BM24] listed in Section 6 belongs to this line of work.
+
+The table lists the models that ArkLib's notion of an oracle interface (Section 5.2) is meant to
+subsume.
 
 | Model | Source | What a prover oracle is | What a verifier query returns |
 |---|---|---|---|
 | Point-query IOP | [BCS16] | a string over an alphabet $\Sigma$ | one symbol of the string |
+| Linear PCP | [IKO07] | a single vector $\pi \in \mathbb{F}^m$ | inner products $\langle \pi, q \rangle$ with verifier-chosen $q$ |
+| Linear IOP | [Ish20] | a vector over $\mathbb{F}$ in each round | inner products with verifier-chosen vectors |
 | Ideal linear commitment (ILC) | [BCGGHJ17] | a committed vector or matrix | linear combinations chosen by the verifier |
 | Algebraic holographic proof (AHP) | [CHMMVW20] | a low-degree univariate polynomial | evaluations at verifier-chosen points |
 | Polynomial IOP (PIOP) | [BFS20] | a bounded-degree polynomial | evaluations at verifier-chosen points |
 | Polynomial holographic IOP (PHP) | [CFFQR21] | polynomials, with holographic index polynomials | polynomial identity checks over committed polynomials |
 | Tensor IOP | [BCG20] | a vector over $\mathbb{F}$ | inner products with tensor-structured query vectors |
-| $\mathcal{F}$-IOP | [ACFY25, Def. 7.1] | an element of an oracle set $\mathcal{O}$ | $F(f, w)$ for a fixed answer function $F$ and query $w \in \mathcal{W}$ |
+| $\mathcal{F}$-IOP | [ACFY25, Def. 7.1] | for oracle $j$ of round $i$, an element $f$ of a prescribed oracle set $\mathcal{O}_{i,j}$ | $F_{i,j}(f, w) \in \Sigma$ for a query $w \in \mathcal{W}_{i,j}$ |
 | $\Sigma$-IOP | [ACFY25, Def. 7.2] | a multilinear polynomial | weighted sums $\sum_b \hat{w}(f(b), b)$ over the Boolean hypercube |
 
 A few remarks on priority and naming:
@@ -133,12 +155,13 @@ A few remarks on priority and naming:
   remarks that examples of them date back to the first PCP [BFLS91]. It compiles any PIOP with the
   DARK polynomial commitment, and uses PLONK's protocol [GWZC19] as an example.
 - Lunar [CFFQR21] introduces PHPs as "a new algebraically-flavored variant of IOPs".
-- WHIR [ACFY25] defines $\mathcal{F}$-IOPs (Definition 7.1) as a specialization of the IOPs with
-  special queries of [BCG20]. That definition fixes a public-coin protocol with a non-adaptive
-  verifier and no holography. WHIR then introduces $\Sigma$-IOPs, a variant of multilinear
-  polynomial IOPs whose queries are weighted sums. An earlier version of this page also noted that
-  the $\mathcal{F}$-IOP idea had appeared in talks and conversations with Dan Boneh before WHIR; we
-  have no written source for that remark.
+- WHIR [ACFY25] defines $\mathcal{F}$-IOPs (Definition 7.1) as IOPPs with a rich class of queries,
+  a specialization of the IOPs with special queries of [BCG20]. Each oracle of each round has its
+  own oracle set $\mathcal{O}_{i,j}$, query set $\mathcal{W}_{i,j}$ and answer function
+  $F_{i,j}$; what is shared is the answer alphabet $\Sigma$. The relation has entries $(x, y, w)$,
+  and the verifier has oracle access to the input string $y$ as well as to the proof oracles. The
+  definition fixes a public-coin protocol with a non-adaptive verifier and no holography. WHIR then introduces $\Sigma$-IOPs, a variant of
+  multilinear polynomial IOPs whose queries are weighted sums.
 - In a polynomial model the prover's messages are assumed to be polynomials of the declared degree,
   for honest and malicious provers alike; STIR's polynomial IOPPs state this restriction explicitly
   [ACFY24stir]. The compiler must then enforce the degree bound. Section 5.4 explains how ArkLib
@@ -177,20 +200,34 @@ Nova [KST22] and HyperNova [KS24] are reductions of this kind.
 
 **Interactive oracle reductions [BMNW25].** Arc introduces the notion again, as "a notion which
 extends interactive oracle proofs [BCS16; RRR16] to capture reductions" in the sense of [KP23]. In
-Arc's Section 5.1, relations are *indexed oracle relations*: the instance consists of a short
-instance $x$ and instance strings $\vec{y}$ that the verifier accesses as oracles. An IOR has an
-indexer (so it is holographic), a public-coin verifier with oracle access to the index string,
-instance strings and proof strings, and an output instance $(x', \vec{y}')$ whose oracles are
-selected from the old instance oracles and the received proof oracles (Remark 5.2). Messages that
-the verifier reads in full are allowed informally (Remark 5.1). Arc also defines round-by-round
-soundness and knowledge for IORs (Definitions 5.4 and 5.5) and compiles round-by-round sound IORs
-into non-interactive reductions. Arc does not cite [BCGGRS19], which used the same name five
-years earlier for a related but different definition.
+Arc's Section 5, relations are *indexed oracle promise relations*. The instance consists of a short
+instance $x$ and instance strings $\vec{y}$ that the verifier accesses as oracles. Each relation
+$\mathcal{R}$ comes with a relaxed relation $\tilde{\mathcal{R}}$ in which instance strings may also
+contain the symbol $\bot$. Completeness is stated for $\mathcal{R}$, while Arc's round-by-round
+definitions and its compiler work with $\tilde{\mathcal{R}}$. An IOR has an indexer (so it is holographic), a
+public-coin verifier with oracle access to the index string, instance strings and proof strings,
+and an output instance $(x', \vec{y}')$ whose oracles are selected from the old instance oracles
+and the received proof oracles (Remark 5.2). Messages that the verifier reads in full are allowed
+informally (Remark 5.1). Arc also defines round-by-round soundness and knowledge for IORs
+(Definitions 5.3 to 5.5) and compiles round-by-round sound IORs into non-interactive reductions
+(Theorem 5.9). The compilation requires the relations to be *monotone* (Definition 5.8): restricting
+the instance strings of an instance outside $L(\tilde{\mathcal{R}})$ to subsets of positions keeps
+it outside, so a cheating prover gains nothing by withholding Merkle authentication paths. Arc does
+not cite [BCGGRS19], which used the same name five years earlier for a related but different
+definition.
 
-Later accumulation and folding papers use the same vocabulary. WARP [BCFW25] constructs "an
-interactive oracle reduction of proximity that works with any linear code", and FICS and FACS
-[BMMS26] extend and formalize the IOR framework and develop a knowledge-soundness notion for IORs
-that composes. The general theory of accumulation schemes is due to [BCMS20, BCLMS21].
+Later accumulation and folding papers use the same vocabulary. An accumulation scheme [BCMS20,
+BCLMS21] splits the verification of many claims into cheap updates and one final check. The
+accumulation prover folds each new claim into a running accumulator, the accumulation verifier
+checks each update, and a decider checks the final accumulator once. In a split accumulation scheme
+the accumulator has a short instance part and a long witness part, and the accumulation verifier
+reads only instance parts. Knowledge soundness asks that, when the updates were accepted and the
+decider accepts the final accumulator, witnesses for the earlier claims can be extracted. A folding
+step is therefore a reduction of instance–witness pairs to a new pair, not an acceptance test: the
+claim it leaves is discharged only by the decider. This is why output witnesses matter in the
+definitions above. WARP [BCFW25] constructs "an interactive oracle reduction of proximity that
+works with any linear code" as the core of a linear-time accumulation scheme, and FICS and FACS
+[BMMS26] extend the IOR framework with a knowledge notion that composes (Section 3.4).
 
 The common core of these definitions, and the one ArkLib adopts, is this: an interactive oracle
 reduction maps a statement with oracle components and a witness to a new statement with oracle
@@ -216,12 +253,18 @@ the verifier outputs some $x' \in \mathcal{L}_{\mathsf{out}}$ with probability a
 $\varepsilon_{\mathsf{s}}$. For proximity notions, "not in the language" becomes "far from the
 language" [BCGRS17, BCGGRS19].
 
-*Knowledge soundness* asks for an extractor that, whenever the malicious prover produces an output
-in $\mathcal{R}_{\mathsf{out}}$, recovers a valid input witness except with probability
-$\varepsilon_{\mathsf{k}}$ [BG92]. Definitions differ in what the extractor may do and how much it
-may cost: rewinding black-box access to the prover, straightline extraction from the transcript
-and the prover's random-oracle queries, or expected polynomial time [KP23]. These choices matter
-for composition and for the Fiat–Shamir transformation.
+*Knowledge soundness* asks that a prover who makes the verifier succeed must know a witness. The
+definitions differ in what the extractor may access, when it is chosen, what experiment measures
+it, and how much it may cost. Bellare and Goldreich [BG92] give the extractor oracle access to the
+prover and bound its expected running time in terms of the prover's success probability. Kothapalli
+and Parno [KP23] choose an expected-polynomial-time extractor after the adversary and ask that its
+success probability be close to the probability that the malicious prover produces a witness for
+the output relation; their extractors rewind the prover. A straightline extractor instead reads
+only one execution: the transcript and the prover's random-oracle queries. One form for reductions,
+used by ArkLib's straightline definition (Section 5.4), bounds a joint event in a single execution:
+the malicious prover's output is in $\mathcal{R}_{\mathsf{out}}$ while the extractor fails to
+recover a valid input witness, with probability at most $\varepsilon_{\mathsf{k}}$. These choices
+matter for composition and for the Fiat–Shamir transformation.
 
 ### 3.2 Round-by-round soundness and knowledge
 
@@ -240,10 +283,24 @@ error is then at most $\sum_i \varepsilon_i$.
 RBR knowledge soundness adds an extractor. Chiesa, Manohar and Spooner [CMS19, Def. 8.5] define it
 with a polynomial-time extractor $E$: if a partial transcript is doomed but a random next challenge
 undooms it with probability above $\kappa$, then $E$ applied to the instance and that partial
-transcript outputs a valid witness. STIR [ACFY24stir] and the SNARGs book [CY24] use variants in
-which the extractor also sees the rest of the prover's messages. Arc [BMNW25, Def. 5.5] gives the
-IOR version, and its Remark 5.6 notes a limitation: the extractor cannot use the *output* witness
-to recover the input witness. Section 5.4 describes how ArkLib's definition addresses this.
+transcript outputs a valid witness. STIR [ACFY24stir] uses a prefix extractor
+$E(x, y, \mathsf{tr})$ with a bound on its running time, where $\mathsf{tr}$ ends at the prover
+message just before the fresh challenge. The SNARGs book [CY24, Def. 31.1.6] uses a
+variant whose extractor receives the full sequence of prover messages. Arc [BMNW25, Def. 5.5] gives
+the IOR version: its extractor also receives a transcript continuation and an output witness, but
+it must succeed for every continuation, and Remark 5.6 explains that this prevents useful
+dependence on the output witness.
+
+WARP [BCFW25, Defs. 4.1 and 4.2] indexes the state by a witness instead. Its knowledge state
+function $\mathsf{KState}_\delta(x, y, \mathsf{tr}, w)$ is parameterized by a proximity bound
+$\delta$, keeps the same witness $w$ across prover moves, and is tied to the input relation at the
+empty transcript and to the output relation at a full transcript. The RBR error of round $i$ bounds
+the probability, over the fresh challenge $\rho_i$, that some witness $w$ makes the new state true
+while the extractor's backward image $E(x, y, \mathsf{tr} \| \rho_i, w)$ makes the previous state
+false. Each round has an explicit extraction time. Because extraction starts from a witness for the later
+state, it can use the output witness. WARP shows that earlier definitions of RBR knowledge imply its
+variant (Appendix C) and that its variant implies straightline state-restoration knowledge soundness
+(Appendix B). Section 5.4 compares ArkLib's definition with Arc's and WARP's.
 
 ### 3.3 State-restoration soundness
 
@@ -253,95 +310,184 @@ transcript. State-restoration soundness bounds its success probability. [BCS16] 
 BCS transformation of a public-coin IOP is sound in the random oracle model with error governed by
 its state-restoration soundness, and that this characterization is tight.
 
-The two notions are closely linked. Holmgren [Hol19] shows that RBR soundness is equivalent to
-state-restoration soundness, and observes that neither is implied by the random-oracle security of
-the Fiat–Shamir transformation. The SNARGs book [CY24] shows that RBR knowledge soundness implies
-straightline state-restoration knowledge soundness. In practice, protocol papers prove RBR bounds
-and compilers consume state-restoration bounds.
+The two notions are closely linked, but not with the same error. For a public-coin IOP with $k$
+rounds and RBR soundness error $\varepsilon$, the SNARGs book bounds the state-restoration
+soundness error against a prover with move budget $t$ by $(t + k) \cdot \varepsilon$ [CY24,
+Thm. 31.2.1]. Its Theorem 31.3.1 gives the same bound from RBR knowledge soundness to straightline
+state-restoration knowledge soundness. Conversely, Holmgren [Hol19] shows that a public-coin
+protocol that is sound against every polynomially bounded state-restoration attack is RBR sound.
+The two notions are therefore equivalent as asymptotic soundness properties for polynomially
+bounded state-restoration attacks, with quantitative losses in both directions. Holmgren also
+observes that neither notion is implied by the random-oracle security of the Fiat–Shamir
+transformation. In practice, protocol papers prove RBR bounds and compilers consume
+state-restoration bounds.
 
 ### 3.4 Special soundness
 
 Special soundness asks for an extractor that computes a witness from a tree of accepting
-transcripts with enough distinct challenges at each verifier round. Attema, Cramer and Kohl
-[ACK21] give a tight analysis of knowledge extraction from multi-round special-sound protocols,
-including protocols with a non-constant number of rounds, and Attema, Fehr and Klooß [AFK22]
-analyze the Fiat–Shamir transformation of such protocols directly. Fenzi, Moghaddas and Nguyen [FMN24] name coordinate-wise special soundness (CWSS), in
-which the challenge set is a product and the required transcripts differ in one coordinate; they
-credit the underlying extraction strategy to earlier work.
+transcripts with enough distinct challenges at each verifier round. A
+$(k_1, \dots, k_\mu)$-special-sound protocol needs a tree with $K = \prod_i k_i$ leaves, so
+extraction is efficient only while this size is polynomially bounded. Attema, Cramer and Kohl
+[ACK21] give a tight analysis of knowledge extraction from multi-round special-sound protocols, and
+Attema, Fehr and Klooß [AFK22] analyze the Fiat–Shamir transformation of such protocols directly,
+with a loss linear in the number of random-oracle queries. Both results hold under the extraction
+size and efficiency conditions they state; a non-constant number of rounds is covered only when
+those conditions hold, not in general.
 
-Block, Garreta, Tiwari and Zając [BGTZ25] relate these notions in generality: generalized special
-soundness implies generalized RBR soundness, generalized RBR knowledge soundness implies
-generalized special soundness, and generalized special soundness does not imply generalized RBR
-knowledge soundness.
+Attema, Fehr and Resch [AFR23] replace each threshold $k_i$ by an access structure $\Gamma_i$, which
+specifies the sets of challenges for which correct answers (for a fixed first message) determine a
+witness. Threshold trees are the special case in which every set of $k_i$ distinct challenges
+qualifies. A $(\Gamma_1, \dots, \Gamma_\mu)$-special-sound protocol is knowledge sound when a
+parameter $t_\Gamma$ that governs the extraction cost is polynomially bounded; a general access
+structure does not by itself give efficient extraction. Attema, Fehr, Klooß and Resch [AFKR26]
+prove the corresponding Fiat–Shamir theorem: under the same condition the transformed protocol is
+knowledge sound, again with a loss linear in the number of random-oracle queries. ArkLib's
+shape-generic tree special soundness (Section 5.4) parameterizes trees by a shape in a similar
+spirit, but no formal equivalence with these definitions is claimed.
+
+Fenzi, Moghaddas and Nguyen [FMN24] name coordinate-wise special soundness (CWSS), in which the
+challenge set is a product and the required transcripts differ in one coordinate; they credit the
+underlying extraction strategy to earlier work.
+
+Block, Garreta, Tiwari and Zając [BGTZ25] relate these notions for IOPs, with $C_i$ the challenge
+set of round $i$:
+
+- $(k_1, \dots, k_\mu)$-special soundness implies generalized RBR soundness with errors
+  $(k_i - 1)/|C_i|$ (Theorem 1.1);
+- RBR knowledge soundness with errors $\varepsilon_i$ implies $(k_1, \dots, k_\mu)$-special
+  soundness for $k_i = \lceil |C_i| \varepsilon_i \rceil + 1$, provided that
+  $\sum_i \prod_{j \le i} k_j$ is polynomially bounded (Theorem 1.2);
+- assuming $\mathsf{NP} \ne \mathsf{P}$, special soundness need not imply nontrivial RBR knowledge
+  soundness: there is a $(1, \dots, 1)$-special-sound IOP whose RBR knowledge error is 1 in some
+  round (Theorem 1.3).
+
+**Trees for reductions.** For a reduction, the leaves of a transcript tree carry output instances
+and witnesses, not just accepting bits. FICS and FACS [BMMS26, Section 4] build on this with
+*round-by-round tree-extractability* (RBRTE) for IORs. A constrained transcript tree (their
+Definition 4.1) has $a_i$ children at each node of layer $i$, joined by distinct challenges. Every
+root-to-leaf path is an accepting view, and every leaf is labelled with an output instance and a
+witness in the relaxed output relation. Two predicates constrain the tree:
+
+- a *vertical predicate* on each path, which holds on the empty transcript, is unchanged by prover
+  messages, and becomes false at a challenge with only negligible probability (it records that the
+  prover did not get lucky);
+- a *challenge predicate* on all challenges of the tree, which fails with only negligible
+  probability when the challenges are sampled independently.
+
+An IOR is RBRTE if $\prod_i a_i$ is polynomial in the instance size and a deterministic
+polynomial-time extractor recovers an input witness from every such tree. The paper proves that
+every RBR knowledge sound IOR is RBRTE with all $a_i = 1$ (Lemma 4.8), that RBRTE IORs compose
+sequentially with tree sizes multiplying (Lemma 4.7), and that RBRTE implies rewinding
+state-restoration knowledge soundness, so that the BCS-style compiler yields a non-interactive
+reduction with rewinding knowledge soundness (Lemma 4.5). It takes this rewinding route because its
+codes are efficiently encodable but not known to be efficiently decodable, so a straightline RBR
+extractor that decodes is not available. WARP's notion (Section 3.2) is the straightline
+alternative.
 
 ### 3.5 Zero knowledge
 
-Honest-verifier zero knowledge (HVZK) asks for a simulator that, given the statement, outputs a
-transcript distributed like an honest run. For IOPs the simulator outputs the oracles and the
-answers to the verifier's queries. [BCS16] shows that the BCS transformation preserves zero
-knowledge; for this, each Merkle leaf is a hiding commitment to its value together with fresh
-randomness. In ArkLib, `ProtocolSpec.addSalt`
-([`OracleReduction/Salt.lean`](ArkLib/OracleReduction/Salt.lean)) adds a salt to every prover
-message for this purpose.
-Many zero-knowledge PIOPs instead rely on masking polynomials together with a hiding polynomial
-commitment.
+Honest-verifier zero knowledge (HVZK) asks for an efficient simulator that, given the statement,
+outputs something indistinguishable from the honest verifier's view. For an IOP this view consists
+of the verifier's randomness and the answers it obtains to its queries, not the entire prover
+oracles [BCS16, Section 4]. Indistinguishability may be perfect, statistical or computational, and
+a preservation theorem holds for the variant it states. [BCS16] shows that if the IOP is
+statistical HVZK, then its BCS transformation is statistical zero knowledge. For this, BCS hides
+each committed symbol by hashing it together with fresh randomness in its Merkle leaf.
+
+In ArkLib, `ProtocolSpec.addSalt`
+([`OracleReduction/Salt.lean`](ArkLib/OracleReduction/Salt.lean)) pairs each prover message with a
+value of an arbitrary salt type and keeps the message's answer interface, which ignores the salt.
+Using such salts for hiding requires a commitment construction, a distribution for the randomness,
+and a separate zero-knowledge proof. Many zero-knowledge PIOPs instead rely on masking polynomials
+together with a hiding polynomial commitment.
 
 ### 3.6 Summary of implications
+
+All rows are information-theoretic results or results for a classical random oracle. Results in the
+quantum random oracle model are discussed in Section 4.2.
 
 | From | To | Where |
 |---|---|---|
 | RBR soundness with errors $\varepsilon_i$ | soundness with error $\sum_i \varepsilon_i$ | [CCHLRRW19] |
-| RBR soundness | state-restoration soundness, and conversely | [Hol19] |
-| RBR knowledge soundness | straightline state-restoration knowledge soundness | [CY24] |
+| RBR soundness with error $\varepsilon$ ($k$ rounds) | state-restoration soundness with error $(t + k) \cdot \varepsilon$ for move budget $t$ | [CY24] |
+| soundness against all polynomially bounded state-restoration attacks | RBR soundness (asymptotic, with parameter losses) | [Hol19] |
+| RBR knowledge soundness with error $\kappa$ ($k$ rounds) | straightline state-restoration knowledge soundness with error $(t + k) \cdot \kappa$ | [CY24] |
+| RBR knowledge soundness of an IOR (WARP's variant) | straightline state-restoration knowledge soundness | [BCFW25] |
 | state-restoration (knowledge) soundness of an IOP | (knowledge) soundness of its BCS transformation in the ROM | [BCS16, CY24] |
-| multi-round special soundness | knowledge soundness | [ACK21] |
-| generalized special soundness | generalized RBR soundness | [BGTZ25] |
-| generalized RBR knowledge soundness | generalized special soundness | [BGTZ25] |
+| multi-round special soundness, with polynomial-size extraction trees | knowledge soundness | [ACK21] |
+| $(\Gamma_1, \dots, \Gamma_\mu)$-special soundness, with $t_\Gamma$ polynomially bounded | knowledge soundness, also after Fiat–Shamir | [AFR23, AFKR26] |
+| $(k_1, \dots, k_\mu)$-special soundness | generalized RBR soundness with errors $(k_i - 1)/\lvert C_i \rvert$ | [BGTZ25] |
+| RBR knowledge soundness with errors $\varepsilon_i$, if $\sum_i \prod_{j \le i} k_j$ is polynomially bounded | $(k_1, \dots, k_\mu)$-special soundness with $k_i = \lceil \lvert C_i \rvert \varepsilon_i \rceil + 1$ | [BGTZ25] |
+| RBR knowledge soundness of an IOR | round-by-round tree-extractability | [BMMS26] |
+| round-by-round tree-extractability | rewinding state-restoration knowledge soundness | [BMMS26] |
 
 ## 4. From oracle reductions to succinct arguments
 
 ### 4.1 Removing oracles with commitments
 
 The BCS transformation [BCS16] replaces each prover oracle by a Merkle commitment and each verifier
-query by an opening with an authentication path. Replacing Merkle trees by a polynomial commitment
-scheme, such as KZG [KZG10], gives the PIOP-to-SNARK compilers of Marlin [CHMMVW20], DARK [BFS20],
-Lunar [CFFQR21] and PLONK [GWZC19]. WHIR [ACFY25] attributes the general approach of building
-SNARGs from polynomial IOPs and polynomial commitments to [CHMMVW20, BFS20].
+query by an opening with an authentication path, and derives the verifier's challenges from a
+random oracle. Replacing Merkle trees by a polynomial commitment scheme, such as KZG [KZG10], gives
+the PIOP-to-SNARK compilers of Marlin [CHMMVW20], DARK [BFS20], Lunar [CFFQR21] and PLONK [GWZC19].
+WHIR [ACFY25] attributes the general approach of building SNARGs from polynomial IOPs and
+polynomial commitments to [CHMMVW20, BFS20].
 
-ArkLib treats these as one construction. Each oracle interface (Section 5.2) is paired with a
-*functional commitment* for that interface: a commitment to a message, together with an opening
-argument that proves the answer to one query. The generalized BCS transformation then:
+ArkLib's design treats these as one construction. Each oracle interface (Section 5.2) is paired with
+a *functional commitment* for that interface: a commitment to a message, together with an opening
+argument that proves the answer to one query. The commitment-based oracle-elimination stage then:
 
 1. replaces every oracle statement and every oracle message by a commitment;
 2. replaces each verifier query by a run of the opening argument for that query, possibly batching
    several openings into one;
 3. outputs an interactive reduction with no oracles.
 
-With Merkle trees as the commitment and point queries as the interface, this is the original BCS
-transformation; with a polynomial commitment and evaluation queries, it is the PIOP compiler. Chiesa,
-Guan, Knabenhans and Yu [CGKY25] study the Fiat–Shamir security of succinct arguments obtained
-from functional commitments.
+For point-query oracles and Merkle commitments, this is the interactive commitment stage of the
+BCS approach; deriving the verifier's challenges from the random oracle (Section 4.2) yields the
+non-interactive BCS transformation. With a polynomial commitment and evaluation queries, the same
+stage is the PIOP compiler.
 
-In the legacy layer this construction is
-[`OracleReduction/BCS/Basic.lean`](ArkLib/OracleReduction/BCS/Basic.lean), and commitment schemes
-are under [`ArkLib/Commitments/`](ArkLib/Commitments/). For the interaction layer, the
-[oracle-elimination compiler design](docs/design/04-oracle-elimination-compiler.md) splits the
-same construction into passes and adds an explicit obligation for type-level guarantees on
-messages (Section 5.4).
+This is a construction recipe, not a security theorem. Soundness, knowledge soundness, zero
+knowledge, enforcement of degree bounds, and Fiat–Shamir security of the result each need their own
+hypotheses on the commitment scheme, and ordinary binding is not enough in general. Marlin, for
+example, compiles AHPs with an extractable polynomial commitment scheme. Chiesa, Guan, Knabenhans
+and Yu [CGKY25] establish the Fiat–Shamir step under state-restoration security of the functional
+IOP and state-restoration function binding of the functional commitment; that result concerns
+soundness and does not by itself give knowledge extraction or hiding.
+
+The [oracle-elimination compiler design](docs/design/04-oracle-elimination-compiler.md) describes
+the general construction for the interaction layer. It splits the construction into passes and
+adds an explicit obligation for type-level guarantees on messages (Section 5.4). Commitment schemes
+are under [`ArkLib/Commitments/`](ArkLib/Commitments/). For what is implemented, read the status
+documents linked at the top of this page.
 
 ### 4.2 Removing interaction with Fiat–Shamir
 
 The Fiat–Shamir transformation [FS86] replaces each verifier challenge by a hash of the
 conversation so far. ArkLib's basic version derives the $i$-th challenge from a Fiat–Shamir oracle
 applied to the input statement and all prover messages up to round $i$, following [CY24]; see
-[`OracleReduction/FiatShamir/Basic.lean`](ArkLib/OracleReduction/FiatShamir/Basic.lean). Its
-security reduces to the state-restoration soundness of the interactive protocol (Section 3.3).
+[`OracleReduction/FiatShamir/Basic.lean`](ArkLib/OracleReduction/FiatShamir/Basic.lean). In the
+literature, the security of this transformation in the random oracle model follows from the
+state-restoration (knowledge) soundness of the interactive protocol (Section 3.3) [BCS16, CY24].
+Special-sound protocols have a separate route: [AFK22] and [AFKR26] bound the knowledge error of
+the Fiat–Shamir transformation directly, with a loss linear in the number of random-oracle queries
+(Section 3.4).
 
 Deployed systems instead absorb messages into a duplex sponge and squeeze challenges from it.
 Chiesa and Orrù [CO25] analyze such a transformation based on an ideal permutation, give concrete
 bounds, and show that indifferentiability of the sponge alone is not enough for knowledge soundness
-and zero knowledge of the resulting argument. ArkLib's Fiat–Shamir module records that it does not
-yet formalize the duplex-sponge variant.
+and zero knowledge of the resulting argument.
+
+The results so far assume a classical random oracle. Chiesa, Manohar and Spooner [CMS19,
+Thm. 8.6] analyze the BCS construction in the quantum random oracle model (QROM), in which the
+attacker may query the hash function in superposition. If the IOP is RBR sound with error
+$\varepsilon$, the argument has soundness error $O(t^2 \varepsilon + t^3 / 2^\lambda)$ against
+attackers making at most $t - O(q \log \ell)$ quantum queries, where $q$ is the query complexity and
+$\ell$ the proof length of the IOP. RBR knowledge (their Definition 8.5) gives an argument
+of knowledge with a similar loss, and HVZK gives statistical zero knowledge. Their construction
+includes the prover messages in the hash chain; for the original BCS hash chain they need a
+stronger form of RBR soundness (their Section 8.6). A classical-ROM theorem therefore does not
+transfer to the QROM automatically, and using a hash-based commitment does not by itself make a
+protocol post-quantum secure.
 
 Hashing too little is a known source of real attacks. The "weak Fiat–Shamir" pattern, in which the
 hash omits part of the statement or earlier messages, broke Helios [BPW12] and several deployed
@@ -428,11 +574,13 @@ The class of oracles is not fixed. Each message type carries an instance of
 `OracleInterface` ([`OracleReduction/OracleInterface.lean`](ArkLib/OracleReduction/OracleInterface.lean)),
 which declares a query type `Query` and, for each query $q$, a response type `Response q`, together
 with an answer function. In the notation of WHIR's Definition 7.1, the message type plays the role
-of the oracle set $\mathcal{O}$, `Query` the role of $\mathcal{W}$, and the answer function the
-role of $F$; ArkLib lets the response type depend on the query and chooses the interface separately
-for each message.
+of an oracle set $\mathcal{O}_{i,j}$, `Query` the role of $\mathcal{W}_{i,j}$, and the answer
+function the role of $F_{i,j}$. WHIR also specifies an interface per oracle. ArkLib packages
+interfaces by Lean types and supports response types that depend on the query, where WHIR's answers
+all lie in one alphabet $\Sigma$.
 
-The library provides the interfaces behind the models of Section 2.5.
+The library provides the following interfaces, among others. They are examples, not a realization
+of every model in Section 2.5.
 
 | Instance | Message | Query | Model it captures |
 |---|---|---|---|
@@ -442,8 +590,12 @@ The library provides the interfaces behind the models of Section 2.5.
 | `instPolynomialDegreeLE`, `instPolynomialDegreeLT` | $R[X]_{\le d}$, $R[X]_{< d}$ | a point of $R$ | polynomial IOP with a degree promise |
 | `instMvPolynomial`, `instMvPolynomialDegreeLE` | multivariate polynomials | a point of $R^n$ | multilinear and multivariate polynomial IOPs |
 | `instProd` | a pair | a query to either component | several oracles in one message |
-| `instTensorProd` | a pair | a pair of queries | product-structured queries |
+| `instTensorProd` | a pair | a pair of queries | two oracles queried together |
 | `instDefault` | any type | the unique query `()` | a message read in full |
+
+`instTensorProd` combines two answer interfaces and returns the pair of answers. It is not by
+itself the linear-query interface of tensor IOPs [BCG20]. ILC, tensor inner-product and
+$\Sigma$-IOP queries each require their own answer functions.
 
 `instDefault` returns the whole message, so a message read in full is the special case of an oracle
 message whose only query reveals everything. It is not a registered instance; a protocol opts in
@@ -455,16 +607,16 @@ an ordinary interactive reduction is an IOR in which every message uses this int
 | | IOP [BCS16] | Oracle reduction [BCGGRS19] | RoK [KP23] | IOR [BMNW25] | $\mathcal{F}$-IOP [ACFY25] | ArkLib legacy layer | ArkLib interaction layer |
 |---|---|---|---|---|---|---|---|
 | Verifier output | accept / reject | instances and virtual oracles | new statement | new instance with oracles | accept / reject | new statement and oracle statements, or failure | new statement and claim over the accumulated oracles |
-| Input oracles | no (IOPP: input oracle) | no | no | instance strings and index string | no | `OStmtIn`, any interfaces | input oracle resources, any interfaces |
-| Oracle class | symbols of a string | symbols of a string | none | symbols of a string | one answer function $F$ | per-message `OracleInterface` | per-node `OracleInterface` |
-| Verifier queries | point queries to received strings | none in the verifier; virtual oracles are non-adaptive | n/a | non-adaptive w.l.o.g. (query phase) | non-adaptive | adaptive `OracleComp`; `OracleVerifier.NonAdaptive` as a special form | adaptive, may run after each received message |
+| Input oracles | no (IOPP: input oracle) | no | no | instance strings and index string | yes: input string $y$ | `OStmtIn`, any interfaces | input oracle resources, any interfaces |
+| Oracle class | symbols of a string | symbols of a string | none | symbols of a string | per-oracle $F_{i,j}$, common answer alphabet $\Sigma$ | per-message `OracleInterface` | per-node `OracleInterface` |
+| Verifier queries | point queries to received strings | none in the verifier; virtual oracles are non-adaptive | n/a | queries may be adaptive; deferred to a final query phase | non-adaptive | adaptive `OracleComp`; `OracleVerifier.NonAdaptive` as a special form | adaptive, may run after each received message |
 | Output oracles | none | virtual oracles with bounded locality | n/a | selected from instance and proof oracles | none | embedding or simulated virtual oracle | open claims as query programs (`OpenClaim`) |
-| Messages read in full | no | no | yes (all messages) | informal remark | no | `instDefault` | public nodes |
+| Separate full-message access primitive | no; may query all symbols at their query cost | no | yes (all messages) | informal remark (Remark 5.1) | no | `instDefault` | public nodes |
 | Round structure | alternating | alternating | interactive | alternating | alternating | arbitrary direction list | a tree; later rounds may depend on earlier public values |
-| Verifier randomness | public coin (for BCS) | public coin | public coin optional | public coin | public coin | public coin | verifier moves are strategy outputs; security is stated for a challenge model |
-| Shared oracle (e.g. RO) | no | no | RO variant | relative to a random oracle | no | `oSpec` | ambient oracle spec |
+| Verifier randomness | public coin (for BCS) | public coin optional; the paper's constructions are public coin | public coin optional | public coin | public coin | public-coin challenges | verifier moves are strategy outputs; security is stated for a challenge model |
+| Shared oracle (e.g. RO) | no | no | RO variant | none in the information-theoretic IOR; RO in the compiled committed relation | no | `oSpec` | ambient oracle spec |
 | Holography | no | no | no (public parameters from a generator) | indexer | no | `Indexer` | not built in |
-| Soundness target | language | proximity to output relation | knowledge | language, RBR, RBR knowledge | language | language, relation, knowledge, RBR, RBR knowledge | RBR soundness, RBR knowledge certificates, state restoration |
+| Soundness target | language | proximity to output relation | knowledge | language, RBR, RBR knowledge, over exact and relaxed promise relations | language or proximity, as specified by the relation and error | language, relation, knowledge, RBR, RBR knowledge | RBR soundness, RBR knowledge certificates, state restoration |
 
 The table compresses definitions with different conventions; the notes below explain the entries
 that matter most when transferring a theorem.
@@ -472,17 +624,28 @@ that matter most when transferring a theorem.
 ### 5.4 Differences in detail
 
 **Queries and output oracles.** The oracle reductions of [BCGGRS19] separate an interaction phase
-from a set of virtual oracles with bounded locality, and Arc restricts output oracles to selection.
-ArkLib allows both: `OracleOutputEmbedding` is Arc's selection, and `OracleOutputSimulation` is a
-virtual oracle in the sense of [BCGGRS19], except that it may be adaptive and may depend on the
-challenges. Locality is not part of the type; it is a property one proves about the simulation.
+from a set of virtual oracles with bounded locality. The verifier outputs their descriptions after
+the interaction, so they may already depend on its randomness. Arc's verifier selects each output
+oracle from the old instance oracles and the received proof oracles by outputting a tuple of
+indices (Remark 5.2). ArkLib offers two forms:
+
+- `OracleOutputEmbedding` realizes fixed, injective, interface-preserving selection, given by an
+  injection `ιₛₒ ↪ ιₛᵢ ⊕ pSpec.MessageIdx`. This is a restricted case of Arc's verifier-selected
+  tuple. Selection that depends on the run is not supplied by the embedding and has to be
+  represented by a broader construction.
+- `OracleOutputSimulation` supports adaptive query programs over the input oracles and messages,
+  which may depend on the challenges but take no separate input-statement argument. It carries an
+  extensional obligation: a materialized output value whose interface answers agree with the query
+  programs. Locality is not part of the type; it is a property one proves about the simulation.
+
 `OracleVerifier.NonAdaptive` packages the non-adaptive form, in which the query lists are computed
 from the statement and challenges before any answer is seen, as in WHIR's $\mathcal{F}$-IOPs.
 
 **When the verifier queries.** The legacy verifier receives all challenges at once and then runs a
 single `OracleComp`. Since the verifier is public-coin, this matches Arc's remark that a verifier
-can be split into an interaction phase and a query phase without loss of generality. The
-interaction layer lifts this restriction: following its
+can be split into an interaction phase and a query phase without loss of generality. This
+normalization concerns when querying occurs, not whether query addresses depend on earlier answers.
+The interaction layer lifts this restriction: following its
 [access contract](docs/design/01c-access-execution-contract.md), the verifier may run effects,
 including oracle queries, immediately after each received message.
 
@@ -500,14 +663,17 @@ honest or malicious, sends a polynomial of degree at most $d$. This is exactly t
 polynomial models in Section 2.5. The promise is sound only if the compiler enforces it. The
 interaction layer's [oracle-reduction core design](docs/design/02-oracle-reduction-core.md) states
 that "guarantees travel with oracles", and the
-[compiler design](docs/design/04-oracle-elimination-compiler.md) makes a `GuaranteeTransport`
-obligation part of every pass that removes a refined oracle.
+[compiler design](docs/design/04-oracle-elimination-compiler.md) makes guarantee transport an
+obligation of every pass that removes a refined oracle.
 
-**Shared oracle.** The parameter `oSpec` lets the prover and verifier query a common oracle, and
-security games quantify over its stateful implementation. This is how ArkLib states reductions
-relative to a random oracle, which are the output of the Fiat–Shamir transformation, in the same
-framework as information-theoretic reductions. Arc's relations "relative to a random oracle" and
-the random-oracle variant of reductions of knowledge [KP23, Kot24] play the same role.
+**Shared oracle.** The parameter `oSpec` lets the prover and verifier query a common oracle.
+Security predicates are parameterized by an initialization distribution `init` and a stateful
+implementation `impl` of `oSpec`; a theorem chooses these parameters or explicitly quantifies over
+an allowed class. This is how ArkLib states reductions relative to a random oracle, which are the
+output of the Fiat–Shamir transformation, in the same framework as information-theoretic
+reductions. The random-oracle variant of reductions of knowledge [KP23, Kot24] plays the same role.
+Arc introduces random-oracle-relative committed relations at the compilation stage (its
+Definition 5.7); these are distinct from the indexed oracle relations used by its IOR.
 
 **Completeness.** `Reduction.completeness` asks that, for every $(x, w) \in \mathcal{R}_{\mathsf{in}}$,
 the output pair is in $\mathcal{R}_{\mathsf{out}}$ *and* the prover's output statement equals the
@@ -531,11 +697,12 @@ The definition places no bound on the extractor's cost. The existential form
 `Verifier.knowledgeSoundness` is therefore equivalent to *relation soundness*: the theorem
 `Verifier.knowledgeSoundness_iff_relationSoundness` in
 [`Security/UnboundedExtraction.lean`](ArkLib/OracleReduction/Security/UnboundedExtraction.lean)
-shows that an unbounded extractor can simply choose a witness when one exists. The cryptographic
-notion of [KP23] or [CMS19], with an efficient extractor, corresponds to
-`knowledgeSoundnessWith` for a named extractor together with a cost bound;
+shows that an unbounded extractor can simply choose a witness when one exists. A cost bound for the
+same named extractor makes `knowledgeSoundnessWith` an efficient straightline extraction statement;
 [`Security/Resources.lean`](ArkLib/OracleReduction/Security/Resources.lean) states such bounds
-through measured programs.
+through measured programs. [KP23] also permits adversary-dependent rewinding extraction, while the
+RBR notion of [CMS19] extracts from a qualifying prefix. Transferring either result requires
+matching its extractor access, quantifiers, success experiment, and efficiency assumptions.
 
 **Round-by-round soundness.** In
 [`Security/RoundByRound.lean`](ArkLib/OracleReduction/Security/RoundByRound.lean),
@@ -543,7 +710,23 @@ through measured programs.
 `rbrSoundness` asks for one error per challenge round, bounding the probability that a uniformly
 random challenge moves a false state to a true one for every statement outside the language and
 every *fixed* transcript prefix. This is the worst-case formulation of [CCHLRRW19] and Arc's
-Definition 5.4.
+Definition 5.4, with two differences from Arc. First, Arc's state function (its Definition 5.3) is
+false at the empty transcript for every instance, and its terminal law uses the relaxed output
+language; ArkLib's state function only forces falsehood outside the input language (`toFun_empty`),
+and its terminal law uses whatever output language `langOut` the caller supplies. Representing an
+Arc theorem in ArkLib therefore requires choosing `langIn` and `langOut` to match Arc's exact and
+relaxed relations; the names alone do not identify them. Second, the terminal law depends on how
+the shared oracle is run, as the next paragraph explains.
+
+**Terminal laws and the shared-oracle state.** The terminal laws of `StateFunction` and of
+`KnowledgeStateFunction` (below) evaluate the verifier in a fresh-`init` experiment, not from the
+shared-oracle state that the interaction has produced. To obtain a bound for execution with an
+already-used stateful shared oracle, one must supply the appropriate current-state or guarded
+terminal bridge; the bare state-function definition does not establish that bridge.
+[`Security/GuardedSoundness.lean`](ArkLib/OracleReduction/Security/GuardedSoundness.lean)
+(`GuardedForm.soundness_of_rbrSoundness`) and
+[`Security/GuardedBridges.lean`](ArkLib/OracleReduction/Security/GuardedBridges.lean) provide these
+bridges for guarded verifiers, whose verdict depends only on the statement and transcript.
 
 **Round-by-round knowledge soundness.** `rbrKnowledgeSoundness` indexes the state function by a
 witness. A family of intermediate witness types `WitMid`, one per round, comes with an
@@ -552,38 +735,56 @@ then `extractMid`, then `extractIn`). The `KnowledgeStateFunction` requires that
 
 - a true state at the empty transcript gives a valid input witness through `extractIn`;
 - prover moves preserve truth backward through `extractMid`;
-- a complete transcript whose output is in $\mathcal{R}_{\mathsf{out}}$ is true for the witness
-  computed by `extractOut`.
+- a complete transcript whose output is in $\mathcal{R}_{\mathsf{out}}$ with positive probability,
+  in the fresh-`init` experiment, is true for the witness computed by `extractOut`.
 
 The RBR error bounds the probability that a challenge makes the state true for *some*
 intermediate witness while it was false for that witness's backward image. Because extraction
 starts from the output witness, this formulation is designed to avoid the limitation in Arc's
-Remark 5.6. As with straightline extraction, no cost bound is built in, and
-`rbrSoundness_implies_rbrKnowledgeSoundness` in
-[`Security/Implications.lean`](ArkLib/OracleReduction/Security/Implications.lean) shows that, for
-unbounded extractors, the two RBR notions coincide up to the choice of languages.
+Remark 5.6. It is closest to WARP's witness-indexed formulation (Section 3.2). WARP's state is
+defined up to a proximity bound, carries explicit per-round extraction times, and keeps the same
+witness across prover moves. ArkLib allows a different witness type at each stage and backward maps
+across prover moves as well as challenges, and imposes no cost bound; efficiency is a separate
+obligation, as for straightline extraction. For nonempty input-witness types, the unbounded RBR
+notions coincide for the induced languages, by `rbrSoundness_iff_rbrKnowledgeSoundness` in
+[`Security/Implications.lean`](ArkLib/OracleReduction/Security/Implications.lean). Empty witness
+types require the separate degenerate-case conditions in that file.
 
 **Special soundness and CWSS.** `Verifier.specialSound`
 ([`Security/SpecialSoundness.lean`](ArkLib/OracleReduction/Security/SpecialSoundness.lean)) is
-the instance of a shape-generic tree special soundness, and `coordinateWiseSpecialSound`
+the instance of a shape-generic tree special soundness (`Verifier.treeSpecialSound`), and
+`coordinateWiseSpecialSound`
 ([`Security/CoordinateWiseSpecialSoundness/Basic.lean`](ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Basic.lean))
-follows [FMN24].
+follows [FMN24]. For reductions, the tree extractor consumes witness-labelled successful output
+leaves: it receives a valid output witness at every leaf, the output-witness input of a
+reduction-of-knowledge extractor. The accept/reject description of Section 3.4 is the
+proof-system specialization. The leaves match those of RBRTE in [BMMS26]. ArkLib's
+`ChallengeTreeShape` constrains the sibling challenges at each node, and
+`treeSpecialSoundWithEscape` adds an escape event on the whole tree; no formal correspondence with
+RBRTE's vertical and challenge predicates is claimed. Tree extraction is a rewinding route, unlike
+WARP's straightline RBR knowledge.
 
 **Composition and context lifting.** Sequential composition (`OracleReduction.append`,
-`seqCompose`) concatenates protocol specifications. Context lifting (`OracleReduction.liftContext`,
-with lenses in [`LiftContext/Lens.lean`](ArkLib/OracleReduction/LiftContext/Lens.lean)) runs a
-reduction for a sub-statement inside a larger statement, which is how a protocol such as sum-check
-is reused inside a larger system. Both play the role of the composition theorems of [KP23].
+`seqCompose`) concatenates protocol specifications. It corresponds to sequential composition of
+reductions of knowledge [KP23] only once matching security and extractor-resource theorems are
+proved for it. [KP23] itself allows only a constant number of sequential compositions without
+further assumptions, because each step blows up the extractor polynomially. Context lifting
+(`OracleReduction.liftContext`, with lenses in
+[`LiftContext/Lens.lean`](ArkLib/OracleReduction/LiftContext/Lens.lean)) runs a reduction for a
+sub-statement inside a larger statement, which is how a protocol such as sum-check is reused inside
+a larger system. It is an operation on a sub-statement, not the parallel composition of [KP23],
+which reduces several instance–witness pairs side by side.
 
-**Not modelled in this definition.** The verifier has no private coins, the number of rounds and
-the message types are fixed before the protocol starts, and the definitions above do not include
-zero knowledge. Holography is optional through `Indexer`. Whether any of these
+**Not modelled in this definition.** The protocol's verifier-to-prover moves are generated as public
+challenges; additional verifier effects are governed by the ambient oracle implementation. The
+number of rounds and the message types are fixed before the protocol starts, and the definitions
+above do not include zero knowledge. Holography is optional through `Indexer`. Whether any of these
 matter for a given paper's theorem must be checked case by case.
 
 ### 5.5 The interaction layer
 
-The interaction layer keeps the same mathematical object and changes how protocols are described
-and executed. Its design is in [docs/design/](docs/design/README.md); the points that matter for
+The interaction layer keeps the same mathematical object, up to how output claims are represented
+(see below), and changes how protocols are described and executed. Its design is in [docs/design/](docs/design/README.md); the points that matter for
 comparison with the literature are these.
 
 **Protocols are trees.** An `Oracle.TypeTree`
@@ -607,31 +808,56 @@ an accumulated signature that grows as messages arrive
 ([`Interaction/Oracle/Access.lean`](ArkLib/Interaction/Oracle/Access.lean)). This is the IOP
 access discipline enforced by typing rather than by convention.
 
-**Output claims are query programs.** Virtual oracles
+**Output claims have three representations.** Virtual oracles
 ([`Interaction/Oracle/Virtual.lean`](ArkLib/Interaction/Oracle/Virtual.lean)) are query programs
-interpreted against the available oracles, and a claim
-([`Interaction/Oracle/Claim.lean`](ArkLib/Interaction/Oracle/Claim.lean)) is either open (still
-referring to virtual oracles) or closed. This is the general form of both [BCGGRS19]'s virtual
-oracles and Arc's oracle selection.
+interpreted against the available oracles. A claim
+([`Interaction/Oracle/Claim.lean`](ArkLib/Interaction/Oracle/Claim.lean)) pairs a public statement
+with an oracle component in one of three forms:
+
+- an `OpenClaim` carries query programs over a source signature;
+- a `ClosedClaim` carries arbitrary deterministic oracle behavior, a `QueryImpl` into `Id` for each
+  output oracle;
+- a `ConcreteClaim` carries realizations, values of the declared realization types interpreted
+  through their interfaces.
+
+Open claims are the general form of both [BCGGRS19]'s virtual oracles and Arc's oracle selection.
+Relations are stated at the closed-claim boundary through a `Problem`, whose claim-dependent witness
+relation must imply an explicit `admissible` predicate (`rel_admissible`). A closed claim need not
+come from a concrete realization, and a query signature does not force a behavior to be, for
+example, the evaluation of a polynomial of bounded degree. At the closed-claim relation boundary,
+admissibility or a representation/guarantee theorem must express any restriction such as
+bounded-degree polynomial behavior; the query interface alone does not impose it. This is the
+interaction-layer counterpart of the guarantee-transport obligation in Section 5.4: in the legacy
+layer a refined message type imposes the promise on every prover, while here it must be stated.
 
 **Security notions.** RBR soundness
 ([`Security/RoundByRound.lean`](ArkLib/Interaction/Oracle/Security/RoundByRound.lean)) is stated
 over every prefix of the tree, including prefixes that an honest run reaches with probability
-zero, relative to a challenge model built on VCVio's round-by-round game families. The theorem
-`executeStrategies_soundness`
-([`Security/Soundness.lean`](ArkLib/Interaction/Oracle/Security/Soundness.lean)) bounds the
-soundness error of an arbitrary probabilistic prover strategy by the sum of the local errors.
-Knowledge uses witness-indexed certificates with named backward witness maps
+zero, relative to a `ChallengeModel` that describes each verifier challenge as a fresh sampling
+program. The local bounds are statements about that model, not about the verifier's code. The
+theorem `executeStrategies_soundness`
+([`Security/Soundness.lean`](ArkLib/Interaction/Oracle/Security/Soundness.lean)) connects the two:
+given an `OrdinaryState` certificate, local bounds, a `ChallengeSchedule` that ranks the challenge
+rounds, and a `FreshVerifier` proof relating the verifier's actual moves under the given handler to
+the challenge model, it bounds every probabilistic prover strategy by the sum of the local errors.
+Knowledge uses a `KnowledgeCertificate` with named backward witness maps
 ([`Security/Knowledge.lean`](ArkLib/Interaction/Oracle/Security/Knowledge.lean)), the analogue of
-the legacy `KnowledgeStateFunction`. State-restoration knowledge soundness for fixed-round
-public-coin protocols with salts is developed in
-[`Security/StateRestoration.lean`](ArkLib/Interaction/Oracle/Security/StateRestoration.lean) and
-the modules next to it, with an error of the form $(Q + k) \cdot \varepsilon$ for $Q$ oracle
-queries and $k$ rounds.
+the legacy `KnowledgeStateFunction` and of WARP's witness-indexed state (Section 3.2). Its fresh
+challenge programs likewise need a correspondence with the actual verifier where they are used.
+[`Security/StateRestoration.lean`](ArkLib/Interaction/Oracle/Security/StateRestoration.lean)
+states `restored_extraction_bound` for one specified game: fixed-round public-coin protocols with
+salts, run against a cached random oracle with restoration. Its premises are prover preservation and
+local bounds for the backward maps, an explicit map for the adversary's terminal witness, and a
+total query bound $Q$ on the adversary. Its conclusion bounds by $(Q + k) \cdot \varepsilon$, for
+$k$ rounds, the probability that the input lies in the target set and the terminal witness is valid
+while the extracted input witness is not. It is a theorem about that game, not about every
+interaction protocol or every restoration interface.
 
-**Extractor cost is explicit.** The extractor-efficiency design documents
+**Extractor efficiency is a separate obligation.** The core certificate names backward witness
+maps but imposes neither computability nor a cost bound. Cryptographic knowledge claims must attach
+execution and resource bounds for those same maps; the linked design documents
 ([03a](docs/design/03a-extractor-efficiency.md), [03b](docs/design/03b-extractor-execution.md))
-treat the cost of extraction as part of the statement rather than leaving it unbounded.
+describe that discipline.
 
 The legacy and interaction layers coexist. A theorem about one does not by itself prove a theorem
 about the other; correspondence results between them are tracked in the status documents linked at
@@ -656,7 +882,7 @@ work's own account.
 | FCF [PM15] | Coq | a probabilistic programming language and theory for concrete-security proofs |
 | CryptHOL [Loc16, BLS20] | Isabelle/HOL | game-based proofs with probabilistic functions and oracles |
 | Σ-protocols in CryptHOL [BLAG21] | Isabelle/HOL | Σ-protocols, commitment schemes, and commitments from Σ-protocols |
-| SSProve [AHRV+21] | Coq | state-separating proofs with a relational program logic |
+| SSProve [AHRV+21, HRVW+23] | Coq | state-separating proofs with a relational program logic |
 | Sum-check [BBS24] | Isabelle/HOL | public-coin interactive proofs and soundness and completeness of a generalized sum-check |
 | Linear-PCP SNARKs [BM24] | Lean | soundness of linear-PCP SNARKs such as Groth16, with a decision procedure |
 | Isabelle/STARK [Mar26] | Isabelle/HOL | query-bounded soundness of a STARK-style protocol, including FRI, Merkle authentication and the Fiat–Shamir transcript |
@@ -684,6 +910,12 @@ paper's page in the repository's [knowledge base](docs/kb/README.md).
   [ePrint 2021/307](https://eprint.iacr.org/2021/307).
 - [AFK22] Attema, Fehr, Klooß. *Fiat–Shamir Transformation of Multi-Round Interactive Proofs*.
   TCC 2022; J. Cryptology 36(4), 2023. [ePrint 2021/1377](https://eprint.iacr.org/2021/1377).
+- [AFKR26] Attema, Fehr, Klooß, Resch. *The Fiat–Shamir Transformation of
+  $(\Gamma_1, \dots, \Gamma_\mu)$-Special-Sound Interactive Proofs*. J. Cryptology 39:19, 2026.
+  [doi:10.1007/s00145-025-09569-y](https://doi.org/10.1007/s00145-025-09569-y);
+  [ePrint 2023/1945](https://eprint.iacr.org/2023/1945)
+- [AFR23] Attema, Fehr, Resch. *Generalized Special-Sound Interactive Proofs and their Knowledge
+  Soundness*. TCC 2023. [ePrint 2023/818](https://eprint.iacr.org/2023/818)
 - [ALMSS98] Arora, Lund, Motwani, Sudan, Szegedy. *Proof Verification and the Hardness of
   Approximation Problems*. J. ACM 45(3), 1998 (FOCS 1992).
   [doi:10.1145/278298.278306](https://doi.org/10.1145/278298.278306)
@@ -712,6 +944,8 @@ paper's page in the repository's [knowledge base](docs/kb/README.md).
 - [BCIKS20] Ben-Sasson, Carmon, Ishai, Kopparty, Saraf. *Proximity Gaps for Reed–Solomon Codes*.
   FOCS 2020; J. ACM 70(5), 2023. [ePrint 2020/654](https://eprint.iacr.org/2020/654).
   [KB](docs/kb/papers/BCIKS20.md)
+- [BCIOP13] Bitansky, Chiesa, Ishai, Ostrovsky, Paneth. *Succinct Non-Interactive Arguments via
+  Linear Interactive Proofs*. TCC 2013. [ePrint 2012/718](https://eprint.iacr.org/2012/718)
 - [BCLMS21] Bünz, Chiesa, Lin, Mishra, Spooner. *Proof-Carrying Data Without Succinct Arguments*.
   CRYPTO 2021. [ePrint 2020/1618](https://eprint.iacr.org/2020/1618)
 - [BCMS20] Bünz, Chiesa, Mishra, Spooner. *Recursive Proof Composition from Accumulation Schemes*.
@@ -769,12 +1003,18 @@ paper's page in the repository's [knowledge base](docs/kb/README.md).
   [KB](docs/kb/papers/GWZC19.md)
 - [Hol19] Holmgren. *On Round-By-Round Soundness and State Restoration Attacks*.
   [ePrint 2019/1261](https://eprint.iacr.org/2019/1261)
+- [IKO07] Ishai, Kushilevitz, Ostrovsky. *Efficient Arguments without Short PCPs*. CCC 2007,
+  pp. 278–291. [doi:10.1109/CCC.2007.10](https://doi.org/10.1109/CCC.2007.10);
+  [author copy](https://web.cs.ucla.edu/~rafail/PUBLIC/79.pdf)
 - [Ish20] Ishai. *Zero-Knowledge Proofs from Information-Theoretic Proof Systems*, Parts I and II.
-  ZKProof blog, 2020. [zkproof.org](https://zkproof.org/)
+  ZKProof blog, 2020.
+  [Part I](https://zkproof.org/2020/08/12/information-theoretic-proof-systems/),
+  [Part II](https://zkproof.org/2020/10/15/information-theoretic-proof-systems-part-ii/)
 - [Kil92] Kilian. *A Note on Efficient Zero-Knowledge Proofs and Arguments*. STOC 1992.
   [doi:10.1145/129712.129782](https://doi.org/10.1145/129712.129782)
 - [Kot24] Kothapalli. *A Theory of Composition for Proofs of Knowledge*. PhD thesis, Carnegie
   Mellon University, CMU-CS-24-126, 2024.
+  [PDF](https://csd.cmu.edu/sites/default/files/phd-thesis/CMU-CS-24-126.pdf)
 - [KP23] Kothapalli, Parno. *Algebraic Reductions of Knowledge*. CRYPTO 2023.
   [ePrint 2022/009](https://eprint.iacr.org/2022/009)
 - [KR08] Kalai, Raz. *Interactive PCP*. ICALP 2008.
@@ -799,8 +1039,8 @@ paper's page in the repository's [knowledge base](docs/kb/README.md).
 **Formalizations**
 
 - [AHRV+21] Abate, Haselwarter, Rivas, Van Muylder, Winterhalter, Hriţcu, Maillard, Spitters.
-  *SSProve: A Foundational Framework for Modular Cryptographic Proofs in Coq*. CSF 2021; journal
-  version in ACM TOPLAS 45(3), 2023. [ePrint 2021/397](https://eprint.iacr.org/2021/397)
+  *SSProve: A Foundational Framework for Modular Cryptographic Proofs in Coq*. CSF 2021.
+  [doi:10.1109/CSF51468.2021.00048](https://doi.org/10.1109/CSF51468.2021.00048)
 - [BBD+23] Barbosa, Barthe, Doczkal, Don, Fehr, Grégoire, Huang, Hülsing, Lee, Wu. *Fixing and
   Mechanizing the Security Proof of Fiat–Shamir with Aborts and Dilithium*. CRYPTO 2023.
   [doi:10.1007/978-3-031-38554-4_12](https://doi.org/10.1007/978-3-031-38554-4_12)
@@ -820,11 +1060,18 @@ paper's page in the repository's [knowledge base](docs/kb/README.md).
 - [BLS20] Basin, Lochbihler, Sefidgar. *CryptHOL: Game-Based Proofs in Higher-Order Logic*.
   J. Cryptology 33(2), 2020. [doi:10.1007/s00145-019-09341-z](https://doi.org/10.1007/s00145-019-09341-z)
 - [BM24] Bailey, Miller. *Formalizing Soundness Proofs of Linear PCP SNARKs*. USENIX Security 2024.
+  [USENIX](https://www.usenix.org/conference/usenixsecurity24/presentation/bailey). Earlier
+  preprint version: *Formalizing Soundness Proofs of SNARKs*,
   [ePrint 2023/656](https://eprint.iacr.org/2023/656)
 - [FJ26] Firsov, Janků. *Forking Lemma in EasyCrypt*. CSF 2026.
   [doi:10.1109/CSF68417.2026.00037](https://doi.org/10.1109/CSF68417.2026.00037)
 - [FU23] Firsov, Unruh. *Zero-Knowledge in EasyCrypt*. CSF 2023.
   [doi:10.1109/CSF57540.2023.00015](https://doi.org/10.1109/CSF57540.2023.00015)
+- [HRVW+23] Haselwarter, Rivas, Van Muylder, Winterhalter, Abate, Sidorenco, Hriţcu, Maillard,
+  Spitters. *SSProve: A Foundational Framework for Modular Cryptographic Proofs in Coq*. ACM
+  TOPLAS 45(3), 2023. Journal version of [AHRV+21], with an added author and a changed author
+  order. [doi:10.1145/3594735](https://doi.org/10.1145/3594735);
+  [ePrint 2021/397](https://eprint.iacr.org/2021/397)
 - [Loc16] Lochbihler. *Probabilistic Functions and Cryptographic Oracles in Higher Order Logic*.
   ESOP 2016. [doi:10.1007/978-3-662-49498-1_20](https://doi.org/10.1007/978-3-662-49498-1_20)
 - [Mar26] Marmsoler. *Isabelle/STARK: A Formalization of zk-STARK in Isabelle/HOL*.
