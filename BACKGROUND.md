@@ -947,7 +947,12 @@ commitment $H(m \Vert r)$ and Schnorr signatures, be proved GUC-secure. Lysyansk
 [LR22] determine the minimal properties needed for GUC non-interactive zero-knowledge proofs of
 knowledge in any global random-oracle model, and construct efficient ones in the restricted
 programmable and restricted observable models. Zhou et al. [ZZZR22] give impossibility and
-feasibility results for GUC commitments from global random oracles.
+feasibility results for GUC commitments from global random oracles. Chen et al. [CDGMSS25] give a
+compiler that makes a Σ-protocol for an algebraic relation straightline extractable using an
+additively homomorphic encryption scheme, without the repetitions that Fischlin's and Pass's
+transformations need; applying Fiat–Shamir then gives a UC-secure NIZK in a local random oracle
+model. Instantiated with class-group encryption whose public key is sampled obliviously by hashing,
+it needs no common reference string.
 
 **SNARKs in the random oracle model.** Chiesa and Fenzi [CF24] prove that zkSNARKs in the random
 oracle model can be UC-secure *unconditionally*, meaning against adversaries that make a bounded
@@ -957,10 +962,22 @@ on computational assumptions and often lose succinctness. Badertscher et al. [BC
 UC-secure NIZKs with logarithmic, witness-succinct proofs from a global non-programmable random
 oracle, and observe that among the formalizations of [CDGLN18] their choice of setup is necessary
 for this result. They also give a construction based on [CF24] and show that it achieves a
-slightly weaker version of their NIZK functionality. Canetti and Chen [CC25] develop a toolbox for
-UC-secure succinct commitments and vector commitments in the random oracle model, analyze a
-modular variant of the Kilian–Micali zkSNARK with it, and propose a new UC formulation of a global
-random oracle that, in their account, avoids a weakness in existing formulations.
+slightly weaker version of their NIZK functionality.
+
+Canetti and Chen [CC25] question the global random oracle used in [CF24].
+In the programmable global random oracle of [CDGLN18], which [LR22] and [CF24] use, a simulator may
+program the oracle at any point not yet queried. [CC25, Appendix A] build a protocol that calls an
+ideal functionality $\mathcal F$ and, with access to this oracle, detects whether $\mathcal F$ has
+been replaced by a protocol that UC-realizes it, and loses all security once it is; with this
+oracle, the UC composition theorem therefore no longer supports the usual modular analysis. Their
+new formulation lets only ideal functionalities observe or program the oracle, and only at inputs
+that begin with their own session identifier. In that model they give UC-secure non-interactive
+succinct commitments and vector commitments, realize vector commitments by Merkle trees with a
+separate commitment instance, and hence a separate domain, at each node, and prove that the
+resulting variant of the Kilian–Micali zkSNARK UC-realizes the NIZK functionality. Their security
+loss is linear in the PCP length and quadratic in the number of oracle queries, against quadratic
+and cubic in [CF24], partly because their Merkle nodes are domain separated. The dispute concerns
+the model of the global oracle, not the analysis that [CF24] carry out within their model.
 
 **Generic lifting through simulation extractability.** Another approach compiles a
 simulation-extractable SNARK into a UC-secure one. C∅C∅ [KZM+15] applies strengthening
@@ -1001,9 +1018,10 @@ statistically quantum UC-secure. Straightline extraction against quantum adversa
 
 **Open questions.** The literature does not yet agree on one global random oracle. [CJS14] uses a
 non-programmable oracle, [CDGLN18] and [LR22] use restricted programmable and restricted observable
-ones, [BCCRS24] find their setup choice necessary for their result, and [CC25] propose a new
-formulation. The NIZK functionality differs between works as well, as the weaker functionality
-achieved in [BCCRS24] shows. Each theorem holds for the functionality and setup its paper fixes,
+ones, [BCCRS24] find their setup choice necessary for their result, and [CC25] show that the
+programmable oracle of [CDGLN18], used in [LR22] and [CF24], undermines modular composition and
+propose a session-scoped formulation. The NIZK functionality differs between works as well, as
+the weaker functionality achieved in [BCCRS24] shows. Each theorem holds for the functionality and setup its paper fixes,
 so results stated for different global random oracles are not directly comparable.
 
 **Machine-checked UC.** EasyUC [CSV19] mechanizes UC proofs in EasyCrypt. Lochbihler et al.
@@ -1685,6 +1703,9 @@ paper's page in the repository's [knowledge base](docs/kb/README.md).
   Arguments*. TCC 2025. [ePrint 2025/947](https://eprint.iacr.org/2025/947)
 - [CDGLN18] Camenisch, Drijvers, Gagliardoni, Lehmann, Neven. *The Wonderful World of Global Random
   Oracles*. EUROCRYPT 2018. [ePrint 2018/165](https://eprint.iacr.org/2018/165)
+- [CDGMSS25] Chen, Dey, Ganesh, Mukherjee, Sarkar, Sasmal. *Universally Composable Non-Interactive
+  Zero-Knowledge from Sigma Protocols via a New Straight-line Compiler*. PKC 2025.
+  [ePrint 2024/1713](https://eprint.iacr.org/2024/1713)
 - [CDHZ26] Chiesa, Di, Hu, Zheng. *How to Prove Post-Quantum Security for Succinct Non-Interactive
   Reductions*. EUROCRYPT 2026. [ePrint 2025/2166](https://eprint.iacr.org/2025/2166)
 - [CDPW07] Canetti, Dodis, Pass, Walfish. *Universally Composable Security with Global Setup*.
