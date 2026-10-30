@@ -134,9 +134,9 @@ the interaction layer. The migration has three stages:
 
 [ROADMAP.md](ROADMAP.md#priority-replace-the-legacy-layer) tracks this plan.
 
-ArkLib makes no backward-compatibility guarantees and does not issue deprecation warnings,
+ArkLib makes no backward-compatibility guarantees and does not promise deprecation periods,
 in particular until the port is complete. Declarations in either layer can change or disappear
-without a deprecation period.
+without a deprecation warning.
 
 ## Repository layout
 

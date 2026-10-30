@@ -167,13 +167,6 @@ theorem encStack_mem_closeCodewordsRel_iff [Nonempty ι] {k : ℕ}
     exact_mod_cast hdist
 
 omit [Field F] [Fintype F] [Fintype A] [AddCommGroup A] in
-/-- Deprecated compatibility name for the general coding-theory bound. -/
-@[deprecated Code.minRelHammingDistCode_le_one +typeChanged (since := "2026-08-16")]
-theorem minRelHammingDistCode_le_one [Nonempty ι] (C : Set (ι → A)) :
-    minRelHammingDistCode C ≤ 1 :=
-  Code.minRelHammingDistCode_le_one (C := C)
-
-omit [Field F] [Fintype F] [Fintype A] [AddCommGroup A] in
 /-- Two codewords agreeing on more than the minimum-distance erasure threshold
 are equal. -/
 theorem codeword_eq_of_agree_on_large_set [Nonempty ι] {C : Set (ι → A)}

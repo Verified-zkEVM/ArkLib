@@ -133,8 +133,8 @@ merge-ready.
     predictable and easy to search across libraries. Check the actual contract too: preservation
     is not commutativity, `≤` is not `<`, and inverse
     direction depends on composition order. Name declarations for their mathematics, without
-    paper numbers or internal planning codes; update every caller in the same PR, without a
-    deprecated alias, as the compatibility policy requires.
+    paper numbers or internal planning codes; update every caller in the same PR; deprecated
+    aliases are discouraged under the compatibility policy.
   - **Symbol naming**: translate statements into names with the standard symbol dictionary;
     standardize on `≤`/`<`, avoid `≥`/`>` in statements.
   - **Variable conventions**: match the Mathlib-style variable roles (e.g. `R`/`M`/`G`/`F` for

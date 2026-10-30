@@ -313,13 +313,14 @@ We aim for consistent representations of equivalent statements:
 
 ### Compatibility Policy
 
-ArkLib makes no backward-compatibility guarantees and does not issue deprecation warnings. This
+ArkLib makes no backward-compatibility guarantees and does not promise deprecation periods. This
 holds in particular until the [migration](ROADMAP.md#priority-replace-the-legacy-layer) from the
 legacy layer (`ArkLib/OracleReduction/`) to the interaction layer (`ArkLib/Interaction/`) is
 complete; [README.md](README.md#two-layers) describes both layers.
 
-When you rename or remove a declaration, update every caller in the same PR. Do not keep the old
-name as a `@[deprecated]` alias.
+When you rename or remove a declaration, update every caller in the same PR. Keeping the old name
+as a `@[deprecated]` alias is discouraged: add one only with a concrete reason, such as a
+downstream project that needs time to migrate, and say so in the PR.
 
 ### Documentation Standards
 

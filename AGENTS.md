@@ -63,8 +63,8 @@ Start with [`README.md`](README.md) for the project overview.
 - Do not raise elaboration budgets: `set_option maxHeartbeats`, `maxRecDepth` and
   `synthInstance.*` are rejected by the source-policy gate, as are the `linter`, `pp`, `profiler`
   and `trace` option families. Make a slow proof cheaper instead.
-- No backward compatibility: rename or remove a declaration by updating every caller in the same
-  PR, without a `@[deprecated]` alias. See
+- No backward-compatibility guarantees: rename or remove a declaration by updating every caller in
+  the same PR. `@[deprecated]` aliases are discouraged; add one only with a concrete reason. See
   [`CONTRIBUTING.md`](CONTRIBUTING.md#compatibility-policy).
 - Make definitions computable wherever possible. Protocols and program/value-computing APIs must
   be executable, with code-generation and runtime evidence. Document concrete blockers for purely

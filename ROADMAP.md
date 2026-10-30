@@ -31,8 +31,8 @@ Developing the interaction layer is the project's priority. The migration has th
    interaction-layer versions are not yet written.
 3. **Delete the legacy layer.** Once the protocols are ported, delete the legacy layer as a whole.
 
-Until the port is complete, ArkLib makes no backward-compatibility guarantees and issues no
-deprecation warnings; see the [compatibility policy](CONTRIBUTING.md#compatibility-policy).
+Until the port is complete, ArkLib makes no backward-compatibility guarantees and does not
+promise deprecation periods; see the [compatibility policy](CONTRIBUTING.md#compatibility-policy).
 
 ## Complete
 
