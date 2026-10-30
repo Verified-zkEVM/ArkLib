@@ -153,21 +153,7 @@ end Reduction
 /-!
   Now, the oracle reduction version.
 
-  **Status: deferred.** This indexed-family variant is currently only a prover skeleton (the oracle
-  verifier and reduction below are left commented out). Finishing it *as sketched* is blocked by the
-  current `OracleVerifier` interface: the prover sends the whole family as a **single** product
-  message `∀ i, Witness i` (`oraclePSpec` has one round), yet the intended output oracle statements
-  `OStatement ⊕ᵥ Witness` and the commented `embed` (via `FinEnum.equiv`) expect
-  **per-index**
-  oracles. Under `embed`/`hEq` an output oracle can only *select* an existing source oracle, not
-  decompose a product; this is exactly the `simulateOutputQuery` refactor noted in
-  `OracleReduction/Basic`.
-  Two coherent designs resolve it — (a) keep the single product message and output it as one product
-  oracle (which is `SendSingleWitness` at `Witness := ∀ i, Witness i`), or (b) rewrite `oraclePSpec`
-  as a `FinEnum.card ιw`-round protocol so each witness is its own message (per-index oracles then
-  come from per-message sources). Both are out of scope for the CWSS work; the pure-verifier ⟹ CWSS
-  pattern is already validated end-to-end by the reduction version above and by `SendSingleWitness`
-  below (each with `IsPure` + `coordinateWiseSpecialSoundWith`, all `sorryAx`-free).
+  The oracle version of the indexed-family witness-sending component is not yet formalized.
 -/
 
 section OracleReduction
@@ -177,13 +163,6 @@ variable {ιₛ : Type} (OStatement : ιₛ → Type) [∀ i, OracleInterface (O
 
 @[reducible, simp]
 def oraclePSpec : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[∀ i, Witness i]⟩
-
--- instance : IsEmpty (oraclePSpec Witness).ChallengeIdx where
---   false := by aesop
--- instance : ∀ i, OracleInterface ((oraclePSpec Witness).Message i)
---   | ⟨0, _⟩ => OracleInterface.instForall _
--- instance : ∀ i, VCVCompatible ((oraclePSpec Witness).Challenge i)
---   | ⟨0, _⟩ => by aesop
 
 /-- The oracle prover for the `SendWitness` oracle reduction.
 
@@ -206,61 +185,6 @@ def oracleProver : OracleProver oSpec
 oracles, with no oracle query. -/
 instance instOutputIsPureOracle :
     (oracleProver oSpec Statement OStatement Witness).OutputIsPure := ⟨_, fun _ => rfl⟩
-
--- /-- The oracle verifier for the `SendWitness` oracle reduction.
-
--- It receives the input statement `stmt` and returns it, and also specifying the combination of
--- `OStatement` and `Witness` as the output oracle statements.
--- -/
--- @[inline, specialize]
--- def oracleVerifier : OracleVerifier (oraclePSpec Witness) oSpec
---     Statement Statement OStatement (OStatement ⊕ᵥ Witness) where
---   verify := fun stmt _ => pure stmt
---   -- ιₛ ⊕ ιw ↪ ιₛ ⊕ (oraclePSpec Witness).MessageIdx
---   embed := Embedding.sumMap (.refl _)
---     -- ιw ↪ (oraclePSpec Witness).MessageIdx
---     (Equiv.toEmbedding
---       -- ιw ≃ (oraclePSpec Witness).MessageIdx
---       -- after unfolding : ιw ≃ { i : Fin (FinEnum.card ιw) // True }
---       (.trans FinEnum.equiv -- ιw ≃ Fin (FinEnum.card ιw)
---         <| .symm -- { i : Fin (FinEnum.card ιw) // True } ≃ Fin (FinEnum.card ιw)
---         <| .subtypeUnivEquiv (by simp)))
---   hEq := by intro i; rcases i <;> simp
-
--- @[inline, specialize]
--- def oracleReduction : OracleReduction (oraclePSpec Witness) oSpec
---     Statement (∀ i, Witness i) Statement Unit
---     OStatement (OStatement ⊕ᵥ Witness) where
---   prover := oracleProver oSpec Statement OStatement Witness
---   verifier := oracleVerifier oSpec Statement OStatement Witness
-
--- variable {Statement} {OStatement} {Witness} [oSpec.Fintype]
---   (oRelIn : Statement × (∀ i, OStatement i) → (∀ i, Witness i) → Prop)
-
--- @[reducible, simp]
--- def toORelOut : Statement × (∀ i, (OStatement ⊕ᵥ Witness) i) → Unit → Prop :=
---   fun ⟨stmt, oStmtAndWit⟩ _ =>
---     oRelIn ⟨stmt, fun i => oStmtAndWit (Sum.inl i)⟩ (fun i => oStmtAndWit (Sum.inr i))
-
--- /-- Running the oracle prover returns the expected result: `(stmt, Sum.rec oStmt wit)`. -/
--- theorem oracleProver_run {stmt : Statement} {oStmt : ∀ i, OStatement i} {wit : ∀ i, Witness i} :
---     (oracleProver oSpec Statement OStatement Witness).run ⟨stmt, oStmt⟩ wit =
---       pure ((stmt, Sum.rec oStmt wit), (), fun i => wit (FinEnum.equiv.symm i)) := by
---   simp [Prover.run, Prover.runToRound, Prover.processRound, oracleProver]
---   sorry
-
--- /-- The `SendWitness` oracle reduction satisfies perfect completeness. -/
--- @[simp]
--- theorem oracleReduction_completeness :
---     (oracleReduction oSpec Statement OStatement Witness).perfectCompleteness oRelIn
---     (toORelOut oRelIn) := by
---   simp [OracleReduction.perfectCompleteness, OracleReduction.toReduction,
---     OracleVerifier.toVerifier]
---   intro stmt oStmt wit hRelIn
---   unfold Reduction.run
---   sorry
-
--- theorem oracleReduction_rbr_knowledge_soundness : True := sorry
 
 end OracleReduction
 

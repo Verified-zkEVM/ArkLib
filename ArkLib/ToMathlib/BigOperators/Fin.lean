@@ -22,19 +22,6 @@ open Finset
 
 variable {M : Type*} [CommMonoid M] {n : ℕ} {v : Fin (n + 1) → M}
 
--- @[to_additive]
--- theorem prod_Ioi_zero : ∏ i ∈ Ioi 0, v i = ∏ j : Fin n, v j.succ := by simp
---   -- rw [Ioi_zero_eq_map, Finset.prod_map, val_succEmb]
-
--- @[to_additive]
--- theorem prod_Ioi_succ (i : Fin n) : ∏ j ∈ Ioi i.succ, v j = ∏ j ∈ Ioi i, v j.succ := by
---   rw [Ioi_succ, Finset.prod_map, val_succEmb]
-
--- @[to_additive]
--- theorem prod_Ici_succ (i : Fin n) :
---     ∏ j ∈ Ici i.succ, v j = ∏ j ∈ Ici i, v j.succ := by
---   rw [Ici_succ, Finset.prod_map, val_succEmb]
-
 @[to_additive]
 theorem prod_Iio_succ (i : Fin n) :
     ∏ j ∈ Iio i.succ, v j = (∏ j ∈ Iio i.castSucc, v j) * v i.castSucc := by

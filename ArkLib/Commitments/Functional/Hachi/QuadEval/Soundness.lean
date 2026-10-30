@@ -660,10 +660,10 @@ theorem quadEvalPackage_verifier_eq_quadEvalReduction_verifier
           𝓜(q, α) pp ddCarrier ddZ).verifier :=
   rfl
 
--- An `OracleVerifier` wrapper is deliberately not included: it needs an `OracleInterface`
--- instance for `Simple.Commitment` (a query-model design decision that does not exist in the
--- repo yet) and the still-sorried oracle-level append theorem. The plain-`Verifier` statement
--- above is the right interface for Lemma 8; the oracle wrapper belongs to the composition step.
+-- An `OracleVerifier` wrapper is deliberately not included: `Simple.Commitment` needs an
+-- `OracleInterface` instance (a query-model design decision that does not exist in the repo yet)
+-- and the still-sorried oracle-level append theorem. The plain-`Verifier` statement above is the
+-- right interface for Lemma 8; the oracle wrapper belongs to the composition step.
 
 end Pinned
 

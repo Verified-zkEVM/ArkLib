@@ -647,17 +647,6 @@ theorem liftContext_perfectCompleteness
       (R.liftContext lens).perfectCompleteness init impl outerRelIn outerRelOut := by
   exact liftContext_completeness h
 
--- Can't turn the above into an instance because Lean needs to synthesize `innerRelIn` and
--- `innerRelOut` out of thin air.
-
--- instance [Reduction.IsComplete innerRelIn innerRelOut R completenessError] :
---     R.liftContext.IsComplete outerRelIn outerRelOut completenessError :=
---   ⟨R.liftContext.completeness⟩
-
--- instance [R.IsPerfectComplete relIn relOut] :
---     R.liftContext.IsPerfectComplete relIn relOut :=
---   ⟨fun _ => R.liftContext.perfectCompleteness _ _ _⟩
-
 end Reduction
 
 private theorem prEvent_simulate_map {α β : Type}

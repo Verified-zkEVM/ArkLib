@@ -192,7 +192,7 @@ theorem exists_asymptotic_params (ρ : ℝ) (hρ0 : 0 < ρ) (hρ1 : ρ < 1) (c :
   obtain ⟨b₀, hb₀⟩ := eventually_atTop.mp (ev1.and (ev2.and (ev3.and ev4)))
   refine ⟨b₀, fun b hbge => ?_⟩
   obtain ⟨P1, P2, P3, P4⟩ := hb₀ b hbge
-  -- opaque definitions (avoid `set`-let whnf blowups).
+  -- definitions that are opaque (avoid `set`-let whnf blowups).
   obtain ⟨Kf, hKfdef⟩ : ∃ Kf : ℕ, Kf = ⌊Kc * (2 : ℝ) ^ b⌋₊ := ⟨_, rfl⟩
   have hbKf : b ≤ Kf := by rw [hKfdef]; exact Nat.le_floor P1
   obtain ⟨a, hadef⟩ : ∃ a : ℕ, a = Kf - b := ⟨_, rfl⟩

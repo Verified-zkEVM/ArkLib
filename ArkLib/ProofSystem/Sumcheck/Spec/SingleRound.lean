@@ -386,16 +386,6 @@ theorem oracleVerifier_only_message_queries (target : StmtIn R)
 open Reduction
 open scoped NNReal ENNReal
 
--- instance : ∀ i, SampleableType (OracleInterface.Response (Challenge (pSpec R deg) i))
---   | ⟨1, _⟩ => by dsimp [pSpec, OracleInterface.Response]; infer_instance
-
--- instance : Nonempty []ₒ.QueryLog := by simp [QueryLog]; infer_instance
--- instance : Nonempty ((pSpec R deg).FullTranscript) := by
---   refine ⟨fun i => ?_⟩
---   rcases i with _ | _
---   · simp; exact default
---   · simp; exact default
-
 omit [SampleableType R] in
 theorem oracleVerifier_eq_verifier :
     (oracleVerifier R deg D oSpec).toVerifier = verifier R deg D oSpec := by
@@ -1265,34 +1255,6 @@ def verifier (i : Fin n) : Verifier oSpec
     let r_i : R := transcript 1
     guard (∑ x ∈ (univ.map D), p_i.eval x = target)
     pure ⟨⟨p_i.eval r_i, Fin.snoc challenges r_i⟩, oStmt⟩
-
--- /-- The oracle verifier for the `i`-th round, where `i < n + 1` -/
--- def oracleVerifier
---     --[Inhabited
---       ((i : (pSpec R deg).MessageIdx) × OracleInterface.Query ((pSpec R deg).Message i))]
---     (i : Fin n) : OracleVerifier oSpec
---     (StatementRound R n i.castSucc) (OracleStatement R n deg)
---     (StatementRound R n i.succ) (OracleStatement R n deg) (pSpec R deg) where
---   -- Queries for the evaluations of the polynomial at all points in `D`,
---   -- plus one query for the evaluation at the challenge `r_i`
---   -- Check that the evaluation sum equals the target, then update the statement accordingly.
---   -- (the new target is the evaluation of the polynomial at the challenge `r_i`)
---   verify := fun ⟨target, challenges⟩ chal => do
---     let evals : List R ← (List.finRange m).mapM
---       (fun i => do
---         return ← query
---           (spec := (oSpec + ([OracleStatement R n deg]ₒ + [(pSpec R deg).Message]ₒ)))
---             (Sum.inr <| Sum.inr (D i)))
---     guard (evals.sum = target)
---     let newTarget ← query
---       (spec := (oSpec + ([OracleStatement R n deg]ₒ + [(pSpec R deg).Message]ₒ)))
---         (Sum.inr <| Sum.inr (D i)) --(by simpa only using chal default)
---     letI newTarget : R := by simpa only
---     pure ⟨newTarget, Fin.snoc challenges (chal default)⟩
-
---   embed := Function.Embedding.inl
-
---   hEq := fun _ => rfl
 
 end Unfolded
 

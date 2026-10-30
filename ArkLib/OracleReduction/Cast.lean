@@ -27,7 +27,7 @@ public import VCVio.OracleComp.Constructions.SampleableType.Measure
   **Verified vs. admitted.** The *execution* lemmas (including the oracle-side
   `OracleVerifier.cast_toVerifier`) and the round-by-round knowledge-soundness
   transfer (`Verifier.cast_rbrKnowledgeSoundness` and its oracle-side corollary) are
-  proven. The completeness transfer lemmas are commented out entirely and remain future work.
+  proven. Completeness transfer is proven when the challenge samplers are cast compatibly.
 -/
 
 @[expose] public section
@@ -159,17 +159,12 @@ protected def cast
 
 variable (hOₘ : ∀ i, Oₘ₁ i = dcast (Message.cast_idx hSpec) (Oₘ₂ (i.cast hn hSpec)))
 
--- @[simp]
--- theorem cast_id :
---     OracleVerifier.cast rfl rfl (fun i => rfl) =
---       (id : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec₁ → _) := by
---   sorry
-
--- Need to cast oracle interface as well
--- instance instDCast₂OracleVerifier : DCast₃ Nat ProtocolSpec
---     (fun _ pSpec => OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) where
---   dcast₂ := OracleVerifier.cast
---   dcast₂_id := OracleVerifier.cast_id
+/-- Casting an oracle verifier along reflexive equalities leaves it unchanged. -/
+@[simp]
+theorem cast_id :
+    OracleVerifier.cast (pSpec₂ := pSpec₁) (Oₘ₂ := Oₘ₁) rfl rfl (fun _ => rfl) =
+      (id : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec₁ → _) := by
+  rfl
 
 @[simp]
 theorem cast_toVerifier (V : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec₁) :
@@ -230,19 +225,15 @@ protected def cast (R : OracleReduction oSpec StmtIn OStmtIn WitIn StmtOut OStmt
   prover := R.prover.cast hn hSpec
   verifier := R.verifier.cast hn hSpec hOₘ
 
--- @[simp]
--- theorem cast_id :
---     OracleReduction.cast rfl rfl (fun _ => rfl) =
---       (id : OracleReduction oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut pSpec₁ → _) := by
---   ext : 2 <;> simp [OracleReduction.cast]
-
--- Need to cast oracle interface as well
--- instance instDCast₂OracleReduction :
---     DCast₂ Nat ProtocolSpec
---     (fun _ pSpec => OracleReduction oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut pSpec)
--- where
---   dcast₂ := OracleReduction.cast
---   dcast₂_id := OracleReduction.cast_id
+/-- Casting an oracle reduction along reflexive equalities leaves it unchanged. -/
+@[simp]
+theorem cast_id :
+    OracleReduction.cast (pSpec₂ := pSpec₁) (Oₘ₂ := Oₘ₁) rfl rfl (fun _ => rfl) =
+      (id : OracleReduction oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut pSpec₁ → _) := by
+  funext R
+  simp only [OracleReduction.cast]
+  congr 1
+  exact congr_fun (OracleProver.cast_id (pSpec₁ := pSpec₁)) _
 
 @[simp]
 theorem cast_toReduction
@@ -260,7 +251,7 @@ variable {pSpec₁ : ProtocolSpec n₁} {pSpec₂ : ProtocolSpec n₂} (hSpec : 
 namespace Prover
 
 -- TODO: need to cast [pSpec₁.Challenge]ₒ to [pSpec₂.Challenge]ₒ, where they have the default
--- instance `challengeOracleInterface`
+-- `challengeOracleInterface`
 
 theorem cast_processRound (j : Fin n₁)
     (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec₁)
@@ -351,15 +342,31 @@ namespace Reduction
 
 variable (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec₁)
 
--- @[simp]
--- theorem cast_completeness (ε : ℝ≥0) (hComplete : R.completeness init impl relIn relOut ε) :
---     (R.cast hn hSpec).completeness init impl relIn relOut ε := by
---   sorry
+include hChallenge in
+/-- Completeness is preserved when the protocol and its challenge samplers are cast together. -/
+@[simp]
+theorem cast_completeness (ε : ℝ≥0) (hComplete : R.completeness init impl relIn relOut ε) :
+    (R.cast hn hSpec).completeness init impl relIn relOut ε := by
+  subst hn
+  simp only [ProtocolSpec.cast_id, id_eq] at hSpec
+  subst hSpec
+  have hInstances : inst₁ = inst₂ := by
+    funext i
+    simpa [ChallengeIdx.cast, Challenge.cast_idx, ProtocolSpec.cast_Type_idx,
+      dcast_eq_root_cast, ProtocolSpec.cast] using hChallenge i
+  subst hInstances
+  change (R.cast (pSpec₂ := pSpec₁) rfl rfl).completeness init impl relIn relOut ε
+  exact (congrArg
+    (fun R' : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec₁ =>
+      R'.completeness init impl relIn relOut ε)
+    (congr_fun (Reduction.cast_id (pSpec₁ := pSpec₁)) R)).mpr hComplete
 
--- @[simp]
--- theorem cast_perfectCompleteness (hComplete : R.perfectCompleteness init impl relIn relOut) :
---     (R.cast hn hSpec).perfectCompleteness init impl relIn relOut :=
---   cast_completeness hn hSpec R 0 hComplete
+include hChallenge in
+/-- Perfect completeness is preserved by a cast with compatible challenge samplers. -/
+@[simp]
+theorem cast_perfectCompleteness (hComplete : R.perfectCompleteness init impl relIn relOut) :
+    (R.cast hn hSpec).perfectCompleteness init impl relIn relOut :=
+  cast_completeness hn hSpec hChallenge R 0 hComplete
 
 end Reduction
 
@@ -406,17 +413,21 @@ namespace OracleReduction
 
 variable (R : OracleReduction oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut pSpec₁)
 
--- @[simp]
--- theorem cast_completeness (ε : ℝ≥0) (hComplete : R.completeness init impl relIn relOut ε) :
---     (R.cast hn hSpec hOₘ).completeness init impl relIn relOut ε := by
---   unfold completeness
---   rw [cast_toReduction]
---   exact Reduction.cast_completeness hn hSpec R.toReduction ε hComplete
+include hChallenge in
+/-- Oracle-reduction completeness is preserved by compatible protocol and sampler casts. -/
+@[simp]
+theorem cast_completeness (ε : ℝ≥0) (hComplete : R.completeness init impl relIn relOut ε) :
+    (R.cast hn hSpec hOₘ).completeness init impl relIn relOut ε := by
+  unfold completeness
+  rw [cast_toReduction]
+  exact Reduction.cast_completeness hn hSpec hChallenge R.toReduction ε hComplete
 
--- @[simp]
--- theorem cast_perfectCompleteness (hComplete : R.perfectCompleteness init impl relIn relOut) :
---     (R.cast hn hSpec hOₘ).perfectCompleteness init impl relIn relOut :=
---   cast_completeness hn hSpec hOₘ R 0 hComplete
+include hChallenge in
+/-- Oracle-reduction perfect completeness is preserved by compatible casts. -/
+@[simp]
+theorem cast_perfectCompleteness (hComplete : R.perfectCompleteness init impl relIn relOut) :
+    (R.cast hn hSpec hOₘ).perfectCompleteness init impl relIn relOut :=
+  cast_completeness hn hSpec hChallenge hOₘ R 0 hComplete
 
 end OracleReduction
 
