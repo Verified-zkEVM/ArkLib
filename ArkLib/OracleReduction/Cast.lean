@@ -27,7 +27,7 @@ public import VCVio.OracleComp.Constructions.SampleableType.Measure
   **Verified vs. admitted.** The *execution* lemmas (including the oracle-side
   `OracleVerifier.cast_toVerifier`) and the round-by-round knowledge-soundness
   transfer (`Verifier.cast_rbrKnowledgeSoundness` and its oracle-side corollary) are
-  proven. Completeness transfer is proven when the challenge samplers are cast compatibly.
+  proven. Completeness transfer is proven independently of the challenge sampler implementations.
 -/
 
 @[expose] public section
@@ -332,7 +332,6 @@ open NNReal
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
   [inst₁ : ∀ i, SampleableType (pSpec₁.Challenge i)]
   [inst₂ : ∀ i, SampleableType (pSpec₂.Challenge i)]
-  (hChallenge : ∀ i, inst₁ i = dcast (by simp) (inst₂ (i.cast hn hSpec)))
 
 section Protocol
 
@@ -342,29 +341,55 @@ namespace Reduction
 
 variable (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec₁)
 
-include hChallenge in
-/-- Completeness is preserved when the protocol and its challenge samplers are cast together. -/
+/-- Completeness is preserved by protocol casts, independently of the challenge sampler
+implementations. -/
 theorem cast_completeness (ε : ℝ≥0) (hComplete : R.completeness init impl relIn relOut ε) :
     (R.cast hn hSpec).completeness init impl relIn relOut ε := by
   subst hn
   simp only [ProtocolSpec.cast_id, id_eq] at hSpec
   subst hSpec
-  have hInstances : inst₁ = inst₂ := by
-    funext i
-    simpa [ChallengeIdx.cast, Challenge.cast_idx, ProtocolSpec.cast_Type_idx,
-      dcast_eq_root_cast, ProtocolSpec.cast] using hChallenge i
-  subst hInstances
   change (R.cast (pSpec₂ := pSpec₁) rfl rfl).completeness init impl relIn relOut ε
-  exact (congrArg
+  apply (congrArg
     (fun R' : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec₁ =>
       R'.completeness init impl relIn relOut ε)
-    (congr_fun (Reduction.cast_id (pSpec₁ := pSpec₁)) R)).mpr hComplete
+    (congr_fun (Reduction.cast_id (pSpec₁ := pSpec₁)) R)).mpr
+  have hstep : ∀ operation state,
+      ((QueryImpl.addLift impl (@challengeQueryImpl _ pSpec₁ inst₁) :
+        QueryImpl _ (StateT σ ProbComp)) operation).run state =ᵈ
+      ((QueryImpl.addLift impl (@challengeQueryImpl _ pSpec₁ inst₂) :
+        QueryImpl _ (StateT σ ProbComp)) operation).run state := by
+    intro operation state
+    cases operation with
+    | inl operation => exact EvalDistEq.rfl
+    | inr operation =>
+      let : MeasurableSpace (pSpec₁.Challenge operation.1) := ⊤
+      have hs := EvalDistEq.of_evalDist_eq
+        (SampleableType.evalDist_uniformSample_inst_irrel
+          (inst₁ operation.1) (inst₂ operation.1))
+      change (do let challenge ← @uniformSample _ (inst₁ operation.1)
+                 pure (challenge, state)) =ᵈ
+        (do let challenge ← @uniformSample _ (inst₂ operation.1)
+            pure (challenge, state))
+      simpa only [map_eq_bind_pure_comp, Function.comp_def] using
+        hs.map (fun challenge => (challenge, state))
+  intro stmt wit hmem
+  have hrun := EvalDistEq.bind_right init fun state =>
+    (evalDistEq_simulateQ_run _ _ hstep (R.run stmt wit).run state).map Prod.fst
+  have hevent := hrun.prEvent_eq
+    (fun result => result.elim False fun ⟨⟨_, (prvStmt, witOut)⟩, stmtOut⟩ =>
+      (stmtOut, witOut) ∈ relOut ∧ prvStmt = stmtOut)
+  unfold completeness at hComplete
+  specialize hComplete stmt wit hmem
+  change Pr{let result ← OptionT.mk _}[_] ≥ _
+  rw [OptionT.prEvent_eq_run]
+  dsimp only at hComplete
+  rw [OptionT.prEvent_eq_run] at hComplete
+  exact hevent ▸ hComplete
 
-include hChallenge in
-/-- Perfect completeness is preserved by a cast with compatible challenge samplers. -/
+/-- Perfect completeness is preserved by protocol casts. -/
 theorem cast_perfectCompleteness (hComplete : R.perfectCompleteness init impl relIn relOut) :
     (R.cast hn hSpec).perfectCompleteness init impl relIn relOut :=
-  cast_completeness hn hSpec hChallenge R 0 hComplete
+  cast_completeness hn hSpec R 0 hComplete
 
 end Reduction
 
@@ -411,19 +436,17 @@ namespace OracleReduction
 
 variable (R : OracleReduction oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut pSpec₁)
 
-include hChallenge in
-/-- Oracle-reduction completeness is preserved by compatible protocol and sampler casts. -/
+/-- Oracle-reduction completeness is preserved by compatible protocol casts. -/
 theorem cast_completeness (ε : ℝ≥0) (hComplete : R.completeness init impl relIn relOut ε) :
     (R.cast hn hSpec hOₘ).completeness init impl relIn relOut ε := by
   unfold completeness
   rw [cast_toReduction]
-  exact Reduction.cast_completeness hn hSpec hChallenge R.toReduction ε hComplete
+  exact Reduction.cast_completeness hn hSpec R.toReduction ε hComplete
 
-include hChallenge in
 /-- Oracle-reduction perfect completeness is preserved by compatible casts. -/
 theorem cast_perfectCompleteness (hComplete : R.perfectCompleteness init impl relIn relOut) :
     (R.cast hn hSpec hOₘ).perfectCompleteness init impl relIn relOut :=
-  cast_completeness hn hSpec hChallenge hOₘ R 0 hComplete
+  cast_completeness hn hSpec hOₘ R 0 hComplete
 
 end OracleReduction
 

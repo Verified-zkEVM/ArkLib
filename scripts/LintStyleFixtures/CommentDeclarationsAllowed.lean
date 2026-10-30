@@ -25,3 +25,8 @@ def multilineRawString := r#"
 -- instance : Inhabited Nat := ⟨0⟩
 "#
 def «-- lemma quotedIdentifier : True» := 1
+def interpolatedString := s!"{"-- theorem hidden : True"}"
+def nestedInterpolatedString := s!"{s!"{"-- lemma nested : True"}"}"
+def interpolatedRecord := s!"{({ val := "-- def nested := 1", property := trivial } :
+  {s : String // True}).val}"
+def interpolatedRawString := s!"{r#"-- theorem rawNested : True"#}"

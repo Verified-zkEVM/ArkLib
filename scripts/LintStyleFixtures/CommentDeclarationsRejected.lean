@@ -20,3 +20,5 @@ Authors: Quang Dao
 -- @[name [nested], label "]"] protected theorem nestedAttribute : True := trivial
 -- unsafe partial nonrec scoped local def modified := 0
 example : True := trivial -- lemma trailing : True := trivial
+-- @[simp] public meta def moduleModified := 1
+def interpolatedTrailing := s!"{"-- theorem literal : True"}" -- theorem trailing : True

@@ -90,7 +90,7 @@ private def runCommentDeclarationFixtureTests : IO Unit := do
     throw <| IO.userError
       s!"lint-style self-test failed: allowed comment fixtures: {reprStr allowedViolations}"
   let rejectedViolations := lintLines (sourceLines (← IO.FS.readFile rejected))
-  let expectedLines := (List.range 14).toArray.map (· + 9)
+  let expectedLines := (List.range 16).toArray.map (· + 9)
   unless rejectedViolations.map (·.line) == expectedLines &&
       rejectedViolations.all (·.code == "ERR_COMMENT_DECL") do
     throw <| IO.userError
