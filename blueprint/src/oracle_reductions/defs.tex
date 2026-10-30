@@ -555,7 +555,7 @@ For soundness, we need to consider different notions. These notions differ in tw
 
 State-restoration knowledge soundness is necessary for the security of the SNARK obtained from an
 oracle reduction after composing with a commitment scheme and applying the Fiat--Shamir transform.
-Native round-by-round knowledge certificates imply it
+Round-by-round knowledge certificates in the interaction layer imply it
 (\Cref{sec:state_restoration_security}). Special soundness is the other classical source of
 knowledge soundness, via a rewinding extractor; its tree-based definitions are given in
 \Cref{sec:tree_special_soundness}, but the rewinding argument from them to knowledge soundness is
@@ -906,8 +906,9 @@ For oracle reductions, the security definitions are analogous to those for stand
 
 \subsubsection{State-Restoration Security}\label{sec:state_restoration_security}
 
-State-restoration security is developed in the native interaction framework
-(\texttt{ArkLib/Interaction}), for a fixed-round public-coin oracle protocol: $k$ rounds, in each
+State-restoration security is developed in the interaction layer (\texttt{ArkLib/Interaction}),
+which is meant to replace the legacy oracle-reduction layer used in the rest of this chapter. It
+covers a fixed-round public-coin oracle protocol: $k$ rounds, in each
 of which the prover sends an oracle message from a finite type and the verifier replies with a
 uniform challenge from a finite nonempty type. In the state-restoration setting the adversary may
 query challenges for any transcript prefix it likes, in any order and repeatedly, before it
@@ -924,7 +925,7 @@ commits to one transcript.
     that makes at most $Q$ queries in total and returns an input $z$, a prover message and salt
     for every round, and an output witness $w$. The experiment then completes the selected
     transcript by querying the same oracle once per round (so at most $Q + k$ queries are made in
-    all), and runs the native verifier on the completed path. In the closed-oracle variant, the
+    all), and runs the verifier on the completed path. In the closed-oracle variant, the
     verifier returns either a rejection or an oracle claim, whose behavior is observed through the
     accumulated oracle handler of the same path.
     \lean{Interaction.Oracle.Security.StateRestoration.Key,
@@ -935,9 +936,9 @@ commits to one transcript.
     \leanok
 \end{definition}
 
-\begin{definition}[Native Round-by-Round Knowledge Certificate]
-    \label{def:native_knowledge_certificate}
-    For an input $z$, a \textbf{native round-by-round extractor} assigns to each node of the
+\begin{definition}[Round-by-Round Knowledge Certificate in the Interaction Layer]
+    \label{def:interaction_knowledge_certificate}
+    For an input $z$, an \textbf{interaction-layer round-by-round extractor} assigns to each node of the
     protocol tree a knowledge state (a witness type with a validity predicate) and a named map
     that transports a later witness one step backward. It is \emph{prover preserving} if prover
     messages cannot make an invalid witness valid under these maps. It is \emph{locally bounded}
@@ -959,7 +960,7 @@ commits to one transcript.
 \begin{theorem}[State-Restoration Knowledge Soundness]
     \label{thm:sr_knowledge_soundness}
     Fix a set $Z$ of permitted inputs and an error $\epsilon$. Suppose that, for every $z \in Z$,
-    the native round-by-round extractor for $z$ is prover preserving and locally bounded with error
+    the interaction-layer round-by-round extractor for $z$ is prover preserving and locally bounded with error
     $\epsilon$ at every round. Suppose also that its input knowledge state is the input relation
     $R_{\text{in}}(z, \cdot)$, and that its terminal knowledge state on every completed path is
     the output relation $R_{\text{out}}$ of the verifier's output on that path, after a named
@@ -980,7 +981,7 @@ commits to one transcript.
       Interaction.Oracle.Security.StateRestoration.stateRestoration_knowledge_soundness_privateCoins,
       Interaction.Oracle.Security.StateRestoration.stateRestoration_oracle_knowledge_soundness_privateCoins}
     \leanok
-    \uses{def:sr_experiment, def:native_knowledge_certificate}
+    \uses{def:sr_experiment, def:interaction_knowledge_certificate}
 \end{theorem}
 \begin{proof}
     \leanok
@@ -1014,6 +1015,6 @@ commits to one transcript.
 \end{proof}
 
 The library states state-restoration security only in this knowledge form. The bound concerns the
-native verifier; its transfer to the Fiat--Shamir transform is discussed in
+interaction-layer verifier; its transfer to the Fiat--Shamir transform is discussed in
 \Cref{sec:fiat_shamir_security}. \texttt{docs/design/00-current-status.md} records the status of
-the native layer.
+the interaction layer.

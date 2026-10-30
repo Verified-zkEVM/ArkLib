@@ -263,19 +263,20 @@ the check (so $s \neq p$), and $p(r) = s(r)$.
     \uses{def:round_by_round_knowledge_soundness, def:virtual_sumcheck_round_protocol, def:virtual_sumcheck_round_protocol_state_function}
 \end{theorem}
 
-\subsection{Native Sum-Check}\label{sec:sumcheck_native}
+\subsection{Sum-Check in the Interaction Layer}\label{sec:sumcheck_interaction}
 
-ArkLib also formalizes sum-check in its native interaction framework, as a protocol tree whose
+ArkLib also formalizes sum-check in its interaction layer (\texttt{ArkLib/Interaction}), which is
+meant to replace the legacy layer used above, as a protocol tree whose
 prover strategies may keep arbitrary memory and perform effects after each challenge. The
 execution outputs an evaluation claim about the original oracle.
 
-\begin{theorem}[Native sum-check security]
-    \label{thm:sumcheck_native}
+\begin{theorem}[Interaction-layer sum-check security]
+    \label{thm:sumcheck_interaction}
     \lean{Sumcheck.Interaction.Native.execute_perfectCompleteness,
       Sumcheck.Interaction.Native.execute_soundness}
     \leanok
     Over any commutative semiring and for any challenge distribution, from a true claim about a
-    polynomial of individual degree at most $d$, the honest native execution returns a true
+    polynomial of individual degree at most $d$, the honest execution returns a true
     evaluation claim with probability $1$. Over a finite field $\mathbb{F}$, from a false claim with
     $k$ rounds remaining and uniform challenges, every prover strategy makes the output claim true
     with probability at most $k \cdot d / |\mathbb{F}|$.
