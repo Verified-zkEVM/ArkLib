@@ -377,8 +377,6 @@ private lemma combine_eq_flat_final
       rw [h]
       rfl
 
--- def DegCor
-
 /-- Definition 4.12.1
     DegCor(d*, r, f, degree)(x) := f(x) * ( sum_{ l < d* - d + 1 } (r * φ(x))^l ) -/
 def degCor

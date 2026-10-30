@@ -422,7 +422,8 @@ theorem johnson_bound_lambda_le_ell
       simp only [Code.relHammingBall, Set.mem_ofPred_eq] at h2
       rw [show Jqℓ q ((1 : ℕ) : ℚ) δ_min = 0 by exact_mod_cast h0] at h2
       -- `closeCodewordsRel` bakes in a classical `DecidableEq α`, distinct from the section
-      -- instance; every step below is instance-agnostic (the instance flows out of `h2`).
+      -- one in this section; every step below works with either choice
+      -- (the instance flows out of `h2`).
       have h3 := le_antisymm h2 (by positivity)
       have h3' := NNRat.cast_eq_zero.mp h3
       unfold Code.relHammingDist at h3'

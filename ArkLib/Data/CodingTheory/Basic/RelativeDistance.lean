@@ -724,27 +724,11 @@ instance [Nonempty ι] [DecidableEq F] :
     Fintype (possibleDistsToCode w C relHammingDist) :=
   @Fintype.ofFinite _ finite_possibleRelHammingDistsToCode
 
--- NOTE: this does not look clean, also `possibleDistsToCode` has the condition `c ≠ w`
--- which seems not a standard since `w` can be a codeword, so commented out for now
--- open Classical in
--- /-- The relative Hamming distance from a vector to a code.
--- -/
--- def relDistFromCode [Nonempty ι] [DecidableEq F] (w : ι → F) (C : Set (ι → F)) : ℚ≥0 :=
---   if h : (possibleDistsToCode w C relHammingDist).Nonempty
---   then distToCode w C relHammingDist finite_possibleRelHammingDistsToCode |>.get (p h)
---   else 0
---   where p (h : (possibleDistsToCode w C relHammingDist).Nonempty) := by
---           by_contra c
---           simp [distToCode] at c ⊢
---           rw [WithTop.none_eq_top, Finset.min_eq_top, Set.toFinset_eq_empty] at c
---           simp_all
-
 /-- Computable version of the relative Hamming distance from a vector `w` to a finite
 non-empty code `C`. This one is intended to mimic the definition of `distFromCode'`.
 However, **we don't have `ENNRat (ℚ≥0∞)` (as counterpart of `ENat (ℕ∞)` in `distFromCode'`)**
 so we require `[Nonempty C]`.
-TODO: define `ENNRat (ℚ≥0∞)` so we can migrate both `relDistFromCode`
-  and `relDistFromCode'` to `ℚ≥0∞` -/
+TODO: define `ENNRat (ℚ≥0∞)` so we can migrate `relDistFromCode'` to `ℚ≥0∞` -/
 def relDistFromCode' {ι : Type*} [Fintype ι] [Nonempty ι] {F : Type*} [DecidableEq F]
     (w : ι → F) (C : Set (ι → F)) [Fintype C] [Nonempty C] : ℚ≥0 :=
   Finset.min'
@@ -819,27 +803,6 @@ lemma relDistFromCode'_eq_relDistFromCode {ι : Type*} [Fintype ι] [Nonempty ι
 
 @[simp]
 lemma zero_mem_relHammingDistRange : 0 ∈ relHammingDistRange ι := by use 0; simp
-
--- /-- The relative Hamming distances between a vector and a codeword is in the
---   range of the relative Hamming distance function.
--- -/
--- @[simp]
--- lemma relHammingDistToCode_mem_relHammingDistRange [Nonempty ι] [DecidableEq F] :
---   δᵣ'(c, C) ∈ relHammingDistRange ι := by
---   unfold relDistFromCode
---   split_ifs with h
---   · exact Set.mem_of_subset_of_mem
---             (s₁ := (possibleDistsToCode c C relHammingDist).toFinset)
---             (by simp)
---             (by simp_rw [distToCode_of_nonempty (h₁ := by simp) (h₂ := h)]
---                 simp [←WithTop.some_eq_coe]
---                 have := Finset.min'_mem
---                           (s := (possibleDistsToCode c C relHammingDist).toFinset)
---                           (H := by simpa)
---                 simpa)
---   · simp
--- end
-
 
 end
 

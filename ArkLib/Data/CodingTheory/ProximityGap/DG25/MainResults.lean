@@ -41,10 +41,6 @@ variable (MC : ModuleCode ι F A) [Nontrivial MC]
 
 instance : Nonempty MC := by exact instNonemptyOfInhabited
 
--- instance : ∀ (κ : Type*) [Fintype κ] [DecidableEq κ], Nonempty (C ^⋈ κ) := by
---   intro κ hκ hκ_dec
---   exact instNonemptyInterleavedCode A (κ := κ) (ι := ι) C
-
 /-!
 ## Section 3: Main Results
 -/
@@ -537,8 +533,6 @@ lemma card_agreeing_cells_notin_D {U₀ U₁ : InterleavedWord A (Fin m) ι} {V�
     simp only [card_product]
   -- 2. Now calculate the cardinality using the set equality
   grind only [usr le_card_sdiff, = card_sdiff_of_subset, = card_univ, = subset_iff, ← mem_univ]
-
-
 
 omit [Nonempty ι] [DecidableEq F] [Fintype A] [Nontrivial ↥MC] in
 omit [SampleableType F] in

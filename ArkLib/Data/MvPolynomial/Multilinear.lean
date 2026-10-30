@@ -72,13 +72,6 @@ theorem singleEqPolynomial_zeroOne_C (r : Fin 2) (x : Fin 2) :
     (singleEqPolynomial (r : R) (C x) : MvPolynomial σ R) = if x = r then 1 else 0 := by
   fin_cases r <;> fin_cases x <;> simp
 
--- @[simp]
--- theorem singleEqPolynomial_eval_zeroOne (x : Fin n → Fin 2) (r : Fin n → Fin 2) (i : Fin n) :
---     (eval fun i => ↑↑(x i))
---     (match r i with
---     | 0 => 1 - X i
---     | 1 => X i) = 1 := by
-
 variable [Fintype σ]
 
 abbrev eqPolynomial' : R[X (σ ⊕ σ)] :=

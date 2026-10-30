@@ -332,7 +332,6 @@ theorem zero_dappend {motive : Fin (0 + n) → Sort u} {u : (i : Fin 0) → moti
                     lt_self_iff_false, not_false_eq_true, snoc_last]
       grind only [cases Or]
 
-
 @[simp]
 theorem zero_vappend {u : Fin 0 → α} (v : Fin n → α) :
     vappend u v = v ∘ Fin.cast (Nat.zero_add n) :=
@@ -481,52 +480,21 @@ lemma vappend_right_of_not_lt {m n : ℕ} {α : Sort u}
       vappend u v i = v ⟨i - m, by omega⟩ :=
   dappend_right_of_not_lt (motive := fun _ => α) u v i h
 
--- @[simp]
--- theorem dappend_dcons {motive : Fin ((m + 1) + n) → Sort u} (a : motive 0)
---     (u : (i : Fin m) → motive (succ (castAdd n i)))
---     (v : (i : Fin n) → motive (natAdd (m + 1) i)) :
---     dappend (motive := motive) (a ::ᵈ⟨motive⟩ u) v =
---       fun i => cast (by simp) (dcons a
--- (dappend (motive := fun i => motive (cast (by omega) i)) u v)
---         (i.cast (Nat.succ_add m n))) := by
---   sorry
-
 @[simp]
 theorem vappend_vcons (a : α) (u : Fin m → α) (v : Fin n → α) :
     vappend (vcons a u) v = (vcons a (vappend u v)) ∘ Fin.cast (Nat.succ_add m n) := by
   simp only [vappend_eq_append, vcons_eq_cons]
   exact append_cons a u v
 
--- theorem dappend_dconcat {motive : Fin (m + (n + 1)) → Sort u}
---     (u : (i : Fin m) → motive (cast (by omega) (castAdd (n + 1) i)))
---     (v : (i : Fin n) → motive (cast (by omega) (natAdd m (castSucc i))))
---     (a : motive (cast (by omega) (natAdd m (last n)))) :
---     dappend (motive := fun i => motive (cast (by omega) i)) u (dconcat v a) =
---       dconcat (motive := fun i => motive (cast (by omega) i)) (dappend u v) a := by
---   sorry
-
 theorem vappend_vconcat (u : Fin m → α) (v : Fin n → α) (a : α) :
     vappend u (vconcat v a) = vconcat (vappend u v) a := by
   simp only [vappend_eq_append, vconcat_eq_snoc]
   exact append_snoc u v a
 
--- theorem dappend_left_eq_dcons {motive : Fin (1 + n) → Sort u}
---     (a : (i : Fin 1) → motive (cast (by omega) (castAdd n i)))
---     (v : (i : Fin n) → motive (cast (by omega) (natAdd 1 i))) :
---     dappend (motive := fun i => motive (cast (by omega) i)) a v =
---       fun i => cast (by simp) (dcons (a 0) v (i.cast (Nat.add_comm 1 n))) := by
---   sorry
-
 theorem vappend_left_eq_cons (a : Fin 1 → α) (v : Fin n → α) :
     vappend a v = (vcons (a 0) v) ∘ Fin.cast (Nat.add_comm 1 n) := by
   simp only [vappend_eq_append, vcons_eq_cons]
   exact append_left_eq_cons a v
-
--- theorem dappend_right_eq_dconcat
---     {motive : Fin (m + 1) → Sort u} (u : (i : Fin m) → motive (cast (by omega) (castAdd 1 i)))
---     (a : (i : Fin 1) → motive (cast (by omega) (natAdd m i))) :
---     dappend (motive := motive) u a = dconcat u (a 0) := by
---   sorry
 
 theorem vappend_right_eq_snoc (u : Fin m → α) (a : Fin 1 → α) :
     vappend u a = vconcat u (a 0) := by
@@ -1363,32 +1331,7 @@ instance {α : Fin 0 → Sort u} : Unique ((i : Fin 0) → α i) where
     ext i
     exact Fin.elim0 i
 
--- Cast lemma for type families
--- theorem cast_cons {β : Fin n → Sort u} (a : α) (v : FinTuple n β) :
---     FinTuple.cast rfl (fun _ => rfl) (cons a v) = cons a v := by
---   simp only [Fin.cast_eq_self, cons_eq_fin_cons, cons_zero, cons_succ]
---   ext _
---   simp [cast]
-
--- theorem cast_hconcat {α : Fin n → Sort u} {β : Sort u} (v : (i : Fin n) → α i) (b : β) :
---     cast rfl (fun _ => rfl) (hconcat v b) = hconcat v b := by
---   simp only [Fin.cast_eq_self, hconcat_eq_fin_snoc]
---   ext _
---   simp [cast]
-
--- theorem cast_happend {α : Fin m → Sort u} {β : Fin n → Sort u}
---     (u : (i : Fin m) → α i) (v : (i : Fin n) → β i) :
---     cast rfl (fun _ => rfl) (happend u v) = happend u v := by
---   simp only [Fin.cast_eq_self, happend_eq_addCases]
---   ext _
---   simp [cast]
-
 variable {m n : ℕ} {α : Sort u}
-
--- @[simp, grind =]
--- theorem concat_eq_append {α : Sort u} {n : ℕ} (v : FinVec α n) (a : α) :
---     concat v a = append v (FinVec.cons a FinVec.empty) := by
---   ext i; fin_cases i <;> rfl
 
 section padding
 

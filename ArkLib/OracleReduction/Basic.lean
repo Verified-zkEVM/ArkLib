@@ -343,12 +343,6 @@ structure OracleVerifier {ι : Type} (oSpec : OracleSpec ι)
     OracleOutputEmbedding OStmtIn pSpec.Message OStmtOut ⊕
       OracleOutputSimulation oSpec OStmtIn OStmtOut pSpec
 
--- Cannot find synthesization order...
--- instance {ιₛᵢ ιₘ ιₛₒ : Type} {OStmtIn : ιₛᵢ → Type} [Oₛᵢ : ∀ i, OracleInterface (OStmtIn i)]
---     {Message : ιₘ → Type} [Oₘ : ∀ i, OracleInterface (Message i)]
---     (OStmtOut : ιₛₒ → Type) (embed : ιₛₒ ↪ ιₛᵢ ⊕ ιₘ) :
---     ∀ i, OStmtOut i := fun i => by sorry
-
 namespace OracleVerifier
 
 variable {ι : Type} {oSpec : OracleSpec ι}
