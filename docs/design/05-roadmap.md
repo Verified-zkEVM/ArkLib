@@ -1,20 +1,42 @@
 # Interaction framework roadmap
 
-**Status date: 2026-09-26.** This is the single active roadmap for implementation of ArkLib's typed
-interaction framework. The [current-status page](00-current-status.md) records what has landed and
-the supported dependency versions. The design documents define the model: see the
+**Status date: 2026-10-29.** This page lists the remaining design and implementation work for
+ArkLib's native interaction framework (`ArkLib/Interaction/`). The
+[current-status page](00-current-status.md) records what has landed and the supported dependency
+versions. Protocol-level status, including the legacy-layer protocol developments, is on the
+public [roadmap](../../ROADMAP.md). The design documents define the model: see the
 [oracle-reduction core](02-oracle-reduction-core.md),
 [oracle execution and security games](03-adversarial-oracle-execution.md), and
 [oracle-elimination compiler](04-oracle-elimination-compiler.md).
 
-The composition milestones C1–C8 are merged. The immediate goal is to complete native Sumcheck:
-computable messages and honest execution, round-by-round security, and precisely stated extraction
-guarantees. Preserve the ordinary interaction runner, private prover memory and actual oracle
-resources throughout this work.
+**Status terms:** *Landed* means on `main`; *proposed* means designed but not started;
+*conditional* means do the work only when a real client demonstrates the need. Every item after
+the landed list is open.
 
-**Status terms:** *Landed* means on `main`; *active* means one of the next implementation steps below;
-*later* means a follow-up client or project that uses the composition work; *conditional* means do
-the work only when a real client demonstrates the need.
+## Landed
+
+Each item lists the modules that implement it; [current status](00-current-status.md) states
+the theorems and their hypotheses.
+
+- **Oracle composition C1–C8** (#1231–#1238): `Interaction/CompositionSoundness`,
+  `Oracle/Sequential`, `Oracle/SourceRouting`, `Oracle/CompositionSoundness`, `Oracle/LoggedRun`,
+  `Oracle/PhasedRun`, `Oracle/Runtime`, `Oracle/RuntimeSoundness`, `Oracle/Prefix`,
+  `Data/OracleComp/QueryBounds`, and `Sumcheck/Interaction/Composition`.
+- **Computable native Sumcheck** (#1242, #1243): `Sumcheck/Impl/Representation`,
+  `Sumcheck/Impl/Projection`, `Sumcheck/Interaction/Computable`, `ComputableSoundness` and
+  `ComputableCompleteness`.
+- **Native round-by-round soundness** (#1261): `Oracle/Security/RoundByRound`,
+  `Oracle/Security/Soundness`, and its Sumcheck instance `Sumcheck/Interaction/RoundByRound`.
+- **Native knowledge certificates and their composition** (#1259, #1260):
+  `Oracle/Security/Knowledge`, `KnowledgeAppend` and `KnowledgeComposition`.
+- **Native state-restoration knowledge soundness** (#1263, #1264):
+  `Oracle/Security/StateRestoration`, `StateRestorationReplay`, `StateRestorationGame`,
+  `StateRestorationOracle`, `StateRestorationCoins` and `StateRestorationBudget`.
+- **Extractor efficiency E1 and E2** (#1364, #1370, #1397): unbounded games in
+  `OracleReduction/Security/UnboundedExtraction`; the game-independent measured program in
+  `Data/OracleComp/MeasuredProgram`; the legacy conjunction in `OracleReduction/Security/Resources`
+  with the FRI instance in `Fri/Spec/MeasuredKnowledgeSoundness`; and measured native stages in
+  `Oracle/Security/KnowledgeResources` and `StateRestorationResources`.
 
 ## Scope and contracts
 
@@ -34,285 +56,61 @@ an effect at that boundary, represent it as a protocol move or prove the local e
 For Sumcheck, the final equality between the original polynomial oracle and the claimed value stays
 in the output oracle relation; it is not an extra final verifier query.
 
-## Oracle composition sequence (C1–C8)
+## Native protocol clients
 
-C1–C8 landed in #1231–#1238. The dependencies below record how the results fit together; the
-issues record their implementation PRs and merge status.
+Native Sumcheck is the only protocol on the native layer. It has ordinary soundness, completeness
+and round-by-round soundness, and its witness is `Unit` because the polynomial is an input oracle.
+No protocol under `ArkLib/ProofSystem/` instantiates the native knowledge or state-restoration
+certificates yet. Spartan and Plonk are end-to-end on the legacy layer; that does not port them.
 
-```mermaid
-flowchart TD
-    C1["C1 · Reachable and weighted error bounds"]
-    C2["C2 · Oracle path and access laws"]
-    C3["C3 · Restricted verifier composition"]
-    C4["C4 · Exported oracle interfaces"]
-    C5["C5 · Apply composition soundness to Sumcheck"]
-    C6["C6 · Direct execution in a persistent runtime"]
-    C7["C7 · Soundness over the actual runtime distribution"]
-    C8["C8 · Prove access and query costs are valid"]
-    C2 --> C3 --> C4
-    C1 --> C5
-    C4 --> C5
-    C4 --> C6
-    C1 --> C7
-    C5 --> C7
-    C6 --> C7 --> C8
-```
-
-### Milestone 1 — Oracle composition and complete Sumcheck (C1–C5)
-
-These five steps prove that restricted oracle protocols compose correctly. They then use the
-composition theorems to recover the existing Sumcheck soundness bound and completeness result.
-They are the entry point for later protocol clients.
-
-### C1 — Reachable and weighted soundness bounds
-
-**Landed in [PR #1231](https://github.com/Verified-zkEVM/ArkLib/pull/1231).**
-Tracked in [issue #1222](https://github.com/Verified-zkEVM/ArkLib/issues/1222).
-
-[`CompositionSoundness.lean`](../../ArkLib/Interaction/CompositionSoundness.lean) now provides
-fixed-prover, support, almost-everywhere, and weighted bounds using VCVio's existing measure
-semantics. It retains the uniform `ε₁ + ε₂` and `ε₁ + δ + ε₂` interfaces as corollaries.
-The exact assumptions belong to [the security chapter](03-adversarial-oracle-execution.md#42-probability-premises-at-the-actual-boundary).
-
-The acceptance client distinguishes two branch-dependent errors, an unreachable boundary, and a
-structurally supported response of probability zero. The latter demonstrates why a support premise
-is stronger than an almost-everywhere premise. See [current status](00-current-status.md) for the
-available declarations. C1 required no dependency changes.
-
-### C2 — Oracle path and access laws
-
-**Landed in [PR #1232](https://github.com/Verified-zkEVM/ArkLib/pull/1232).**
-Tracked in [issue #1223](https://github.com/Verified-zkEVM/ArkLib/issues/1223).
-
-The owning modules now connect oracle append to runtime trees and roles, concrete path append and
-split, accumulated access, and deterministic query answers. The laws reuse PolyFun's existing
-paths and decorations and the existing closing handler. They add no resource representation or
-executor. See [current status](00-current-status.md) for their scope.
-
-The acceptance client uses two genuinely different suffix shapes, mixed prover/verifier roles,
-and distinct initial, prefix, and suffix oracle answers. This establishes the path and handler
-facts used by C3. The C2 path laws alone make no claim about execution by a prover and verifier.
-
-### C3 — Restricted verifier composition
-
-**Landed in [PR #1233](https://github.com/Verified-zkEVM/ArkLib/pull/1233).**
-Tracked in [issue #1224](https://github.com/Verified-zkEVM/ArkLib/issues/1224).
-C3 uses C2's path and access laws.
-
-`Verifier.Fragment` returns an ordinary leaf value; `Verifier.Strategy` retains the completed
-form with a final oracle action. Both use the same recursive interpreter.
-[`Sequential.lean`](../../ArkLib/Interaction/Oracle/Sequential.lean) provides `Verifier.append`
-and `executeStrategies_append`. The theorem splits every whole native prover at the actual
-boundary, preserving its remaining strategy, private output, oracle resources, and effect order.
-Its exact constraints belong to [the composition contract](02-oracle-reduction-core.md#5-composition).
-
-The acceptance client checks private memory, challenge and abort responses, both possible owners
-of the first suffix move, and one final action. An effect-order counterexample shows why moving a
-pending prefix action across the next send is outside this theorem's scope.
-
-### C4 — Exported oracle interfaces and closing
-
-**Tracked in:** [issue #1225](https://github.com/Verified-zkEVM/ArkLib/issues/1225).
-
-**Merged:** [PR #1234](https://github.com/Verified-zkEVM/ArkLib/pull/1234).
-
-**Depends on:** C2 and C3.
-
-[`SourceRouting.lean`](../../ArkLib/Interaction/Oracle/SourceRouting.lean) connects verifier
-composition to virtual oracle substitution and claim closing. `Verifier.appendExported` takes a
-prefix returning a statement and an exported oracle interface. The suffix receives that statement
-and is written against only that interface; each new oracle message adds its own query slot.
-`executeStrategies_appendExported_close` proves agreement with sequential execution using the
-actual prefix resources and the actual remaining prover strategy. Closing the final claim uses
-those same resources. The [composition contract](02-oracle-reduction-core.md#54-virtual-substitution-and-routing)
-records the precise scope and restrictions.
-
-**Acceptance check:** Export an oracle that combines or transforms source answers and hides another
-source slot. Run the two Sumcheck rounds through the composed interface. Preserve the actual
-prover continuation and challenge/abort behavior. One exported query may expand to several source
-queries, so do not require the two query logs to be identical.
-
-### C5 — Apply soundness composition to Sumcheck
-
-**Implemented in [PR #1235](https://github.com/Verified-zkEVM/ArkLib/pull/1235).** Tracked in
-[issue #1226](https://github.com/Verified-zkEVM/ArkLib/issues/1226).
-C5 uses C1 and C4.
-
-[`Oracle/CompositionSoundness.lean`](../../ArkLib/Interaction/Oracle/CompositionSoundness.lean)
-proves uniform and weighted bounds for the actual composed oracle execution. It separately charges
-true intermediate claims, false claims outside the suffix assumptions, and success from false
-admissible claims. A true intermediate claim is not charged twice. The suffix event includes the
-final verifier action and closing under the actual resources.
-
-[`Sumcheck/Interaction/Composition.lean`](../../ArkLib/ProofSystem/Sumcheck/Interaction/Composition.lean)
-identifies the existing native execution with its first round followed by the remaining rounds.
-The soundness proof now applies the general oracle bound to recover `count * deg / |F|`, retaining
-the original theorem statement and its arbitrary whole native prover. Honest full-protocol
-completeness follows through the same composed execution. Support truth holds for any ambient
-challenge program; probability-one completeness uses normalized `ProbComp` execution. The final
-polynomial equality remains in the output oracle relation.
-
-The oracle probability client checks a derived exported oracle, a random final decision, separate
-truth and input-assumption errors, and a supported branch of probability zero. The native clients
-check adaptive two-round execution and the original challenge/abort effect order. Current
-constraints belong to [the security chapter](03-adversarial-oracle-execution.md#42-probability-premises-at-the-actual-boundary).
-
-### Milestone 2 — Persistent runtime composition (C6–C8)
-
-These steps connect the oracle-composition theorems to persistent runtime state, ordered logs, and
-resource accounting. They preserve correlations with the prover's actual view without revealing
-hidden runtime state to the prover. The native runner remains the execution engine.
-
-### C6 — Direct execution in a persistent runtime
-
-**Implemented in [PR #1236](https://github.com/Verified-zkEVM/ArkLib/pull/1236).** Tracked in
-[issue #1227](https://github.com/Verified-zkEVM/ArkLib/issues/1227).
-C6 uses C4 and reuses VCVio's existing runtime.
-
-The direct native-strategy entry points now cover logged, phased, and persistent-runtime
-execution. Reduction setup remains inside the same initialized runtime, including any ambient
-queries it makes. Erasure recovers ordinary core execution with the actual final state. The
-phased/logged comparison also preserves the paired source observations and chronological ambient
-history. No new interpreter or ArkLib-only state machine is introduced.
-
-The acceptance client checks counter answers `1, 2, 3` across prover setup and both protocol
-stages, with final state `3`. A separate actual exported-interface client checks one-to-many source
-query expansion, private prover output, and exact source and ambient logs. The generic
-`withQueryLog_simulateQ` law compares these logs through the handler's actual query programs.
-C7 below adds the probability bound; C8 supplies access and cost certificates.
-
-### C7 — Soundness over the actual runtime distribution
-
-**Tracked in:** [issue #1228](https://github.com/Verified-zkEVM/ArkLib/issues/1228).
-
-**Implemented in [PR #1237](https://github.com/Verified-zkEVM/ArkLib/pull/1237):**
-`Oracle/RuntimeSoundness`; acceptance examples in
-`ArkLibTest/Interaction/Oracle/RuntimeSoundness`.
-
-**Depends on:** C1, C5, and C6.
-
-`Oracle/RuntimeSoundness` now connects the actual native execution split to one persistent
-runtime. Its main theorem bounds final closed-claim success by an exceptional prefix event plus
-an average suffix error. The averaging uses the actual joint distribution of runtime state,
-prover continuation, intermediate claim, and ambient history.
-
-The client proves that average suffix bound for its runtime. The theorem does not require a bound
-at each fixed hidden state, and the whole prover is fixed before runtime initialization. A bound
-for almost every fixed full result after the prefix gives a stronger, convenient sufficient
-condition. Erasing logs alone does not transfer ordinary oracle soundness to an arbitrary runtime.
-
-The suffix program receives the actual prefix output, including the extracted native continuation.
-Runtime resumption supplies hidden state internally. A function called a prover view does not by
-itself restrict information: the experiment must show which answers the prover receives before it
-chooses a message. Retain the actual state and ordered ambient history in the execution equality.
-Keep rejection, explicit returned faults, and missing probability mass distinct. Charge an explicit
-fault term only when the theorem's event or model requires it.
-
-**Acceptance:** The native hidden-bit client initializes its secret once. A fixed guess made before
-any revealing answer succeeds with probability `1/2`, and the proof applies the main composition
-theorem. A matching fixed secret gives success one, ruling out a uniform fixed-secret half bound.
-A second fixed whole prover queries the secret before committing and succeeds with probability one;
-its averaged half premise is proved false. Both clients retain the actual query history and state.
-
-### C8 — Prove oracle access and query costs are valid
-
-**Tracked in:** [issue #1229](https://github.com/Verified-zkEVM/ArkLib/issues/1229).
-
-**Implementation:** `Oracle/Access`, `Oracle/Prefix`, and `Data/OracleComp/QueryBounds`;
-acceptance examples in `ArkLibTest/Interaction/Oracle/QueryBounds` and `RuntimeQueryBounds`.
-
-**Depends on:** C6 and C7.
-
-`Oracle/Prefix` derives available query names from the actual accumulated source signature.
-Continuation and append preserve earlier identities and concrete messages. `Data/OracleComp/QueryBounds`
-transports allowed-query conditions through the actual route, bounds its weighted query expansion,
-and adds sequential budgets. The same received oracle may be queried repeatedly; its name stays
-shared and each query still contributes to the cost.
-
-The generic access condition checks all authored queries. Cost bounds cover complete paths, so a
-numerical cost certificate alone does not establish availability. The pinned cost layer uses small
-query/response types and natural-number costs; the structural prefix laws retain their universes.
-No independent stages, normalized probability distribution or nonempty answer types are needed for
-these generic laws.
-
-**Acceptance:** The actual phased two-send run supplies the join and terminal prefixes used by
-its source-resource certificates. It retains a shared old oracle, expands one virtual query into
-two old calls, then reads a fresh oracle. Its weighted bound is five, and a completed execution
-rules out budget four. The fresh resource fails access at the actual join for every cost budget.
-Ambient phase logs and source-query logs remain distinct.
-
-The second client imports C7's same hidden-bit experiment and half-bound theorem. It proves actual
-export provenance, source access, a routed suffix budget of five, a whole-runtime imported-query
-budget of one, and actual ambient history charges four and seven for the guessing and informed
-provers. The latter still succeeds surely. Certificates accompany the fixed-prover security proof;
-they do not turn a numerical budget into a soundness theorem for arbitrary adversaries.
-Arbitrary world-query classifiers still require a separate proof connecting labels to resources.
-
-## Complete native Sumcheck first
-
-The full native ordinary-soundness and honest-completeness theorems are proved. They do not finish
-the computational implementation or the round-by-round and knowledge-security work. Complete the
-following Sumcheck work before starting the FRI and Spartan migrations.
-
-1. **Computable messages and verifier.** Use bounded CompPoly coefficient arrays and Horner
-   evaluation in the existing native protocol. Keep one verifier definition, prove whole-execution
-   correspondence for arbitrary native provers, and transfer the existing soundness bound. Compile
-   and run a client that checks private continuation effects, public abort and the output relation.
-   This source revision implements this step in `Impl/Representation`, `Interaction/Protocol`,
-   `Interaction/Computable` and `Interaction/ComputableSoundness`.
-2. **Computable honest prover.** Construct each round polynomial directly from CompPoly multivariate
-   data, for the existing general degree and summation-domain parameters. Prove projection and
-   whole-prover correspondence, transfer completeness, and execute the actual honest interaction.
-   Mathematical conversions belong in proofs, not in the running algorithm. This source revision
-   implements the general finite-enumeration construction in `Impl/Projection`, and proves actual
-   honest execution correspondence and completeness in `Interaction/ComputableCompleteness`.
-   The compiled runtime client uses the computational input oracle and honest strategy.
-3. **Native round-by-round security.** Define the security condition on actual execution prefixes,
-   instantiate it with Sumcheck's proved per-challenge bound, and prove the connection to the full
-   error bound. Distinguish a bound for every fixed prefix from an average over an actual run.
-4. **Knowledge and extraction.** Define native knowledge and round-by-round knowledge games with
-   explicit extractor access and timing. Current oracle Sumcheck has a `Unit` witness: its
-   polynomial is already an input oracle. A theorem recovering a hidden polynomial or committed
-   witness needs a different, explicit witness relation. Prove the required implication and
-   composition results without inheriting the legacy admissions.
-5. **Efficient implementations and legacy migration.** Optimize the Boolean multilinear case using
+1. **Efficient Sumcheck and legacy correspondence.** Optimize the Boolean multilinear case using
    CompPoly evaluation tables, with proved message/update algorithms and separately stated costs.
-   The computable general prover alone makes no efficiency claim. Repair or migrate legacy
-   Sumcheck claims with correspondence and axiom checks; do not treat the native result as silently
-   proving those old declarations.
-
-## Later protocol clients
-
-FRI and Spartan slices follow the Sumcheck work above. The composition infrastructure is ready;
-protocol migration is deferred while the computational and security contracts are completed.
-
-- **FRI slice:** use a derived virtual oracle view and prove a two-way bridge to the established
-  presentation.
-- **Spartan-like slice:** use a fresh prover message and prove the corresponding two-way bridge.
-- **Broader migration:** port further FRI, Spartan, BCS, and Nova protocols one at a time. Keep the
-  legacy security namespace until each migrated protocol has its own proved correspondence.
+   The computable general prover alone makes no efficiency claim. Relate the legacy Sumcheck
+   claims to the native ones with a proved correspondence; do not treat the native result as
+   silently proving the legacy declarations.
+2. **A native knowledge client.** Instantiate `KnowledgeCertificate` for a protocol with a
+   nontrivial witness, for example a committed or hidden polynomial. State the witness relation
+   explicitly and connect the certificate to the actual native verifier through
+   `SamplesChallenges` or `FreshVerifier`.
+3. **FRI slice.** Use a derived virtual oracle view and prove a two-way bridge to the established
+   legacy presentation.
+4. **Spartan-like slice.** Use a fresh prover message and prove the corresponding two-way bridge.
+5. **Broader migration.** Port further FRI, Spartan, Plonk, BCS and Nova protocols one at a time.
+   Keep the legacy security namespace until each migrated protocol has its own proved
+   correspondence.
 
 For each slice, record the exact statement, oracle interface, prover information, success event,
 and error bound. A protocol's use of the generic API is evidence for that client; it does not
 automatically prove every legacy equivalence.
 
-## Later extraction and compiler work
+## Rewinding and compiled-protocol security
 
-### Extractor efficiency repair
+**Rewinding knowledge soundness.** Tracked in
+[issue #1410](https://github.com/Verified-zkEVM/ArkLib/issues/1410). The protocol-free rerun
+engine and tree finder belong in VCVio. ArkLib supplies a legacy instance, a native instance in
+which one run executes the strategies against a verifier replaying a challenge script, and the
+consumers (special soundness, coordinate-wise special soundness, Hachi). The issue records the
+decisions: a fixed private tape, expected and truncated run-count bounds, and public-coin
+verifiers only.
 
-**Proposed.** This sequence repairs resource claims for the existing FRI and Toy extractors.
-The measured contract is designed for the native knowledge games first, with the legacy
-straightline game as an adapter, so FRI's result does not wait for a migration to the native
-interaction framework. The near-term contracts belong to [the efficiency
-chapter](03a-extractor-efficiency.md); complete execution and computational-model decisions
-belong to [the execution-backend chapter](03b-extractor-execution.md).
+**From state restoration to compiled protocols.** The native state-restoration theorem bounds the
+restoration game for the native verifier. Fiat–Shamir and BCS still need bridges that state their
+entropy, salt, replay, budget and loss assumptions, and a concrete native verifier realization
+with its terminal witness relations for each protocol. The
+[security chapter](03-adversarial-oracle-execution.md#5-state-restoration) specifies the targets.
+A causal query-trace interface and a reusable conditioning facade were not needed for the
+state-restoration proof; add them upstream only when one of these bridges requires them.
+
+## Extractor efficiency repair
+
+E1 and E2 have landed (see above). The remaining steps are proposed. The near-term contracts
+belong to [the efficiency chapter](03a-extractor-efficiency.md); complete execution and
+computational-model decisions belong to [the execution-backend chapter](03b-extractor-execution.md).
 Each implementation PR starts from current `main` or its explicit prerequisite branch; keep
 dependency upgrades separate.
 
 | Step | Deliverable | Acceptance evidence |
 |---|---|---|
-| E1 | Clarify unbounded/named game contracts and the actual straightline access type | Compile the classical-selector event identity and its relation-aware game consequence; state losslessness and witness-supply premises where needed; record the omitted extraction-time requirement in the ABF26 Definition A.3 audit row; preserve existing results |
-| E2 | Ship `knowledgeSoundnessWithResources` and FRI's operation-count result independently | Semantic identity with the named extractor, transported FRI profiles, explicit profile exclusions in the public claim/audit, and an acceptance example showing that query cost alone does not imply execution time; scope limited to deterministic handlers and one budget per parameter set, with equality transport deferred |
 | E3a | Proposed route, replaceable: build a generic algebraic execution backend for the PolyFun/VCVio quantitative layer | Executable code type with semantics for field operations, indices, control and storage; gate on realizing one real FRI fold-consistency check with proved output agreement and execution bound |
 | E3 | Required later for efficient-extraction claims: add `knowledgeSoundnessWithin` using the E3a backend or another adequately reviewed execution model | Quantitative realization, explicit representations, charged pure computation, termination/access proof, and a documented review of primitive adequacy; no claimed standard-machine correspondence |
 | E4 | Certify all local work of FRI's same named extractor | Bound view preparation, scan/control/storage and interpolation, retain early rejection, combine with `knowledge_soundness_with`, and derive a polynomial envelope under the protocol constraints |
@@ -320,24 +118,21 @@ dependency upgrades separate.
 | E6 | Certify Toy round-by-round execution | Per-stage budgets for the actual available prefixes, exact extractor identities and the existing per-round error guarantees |
 | E7 | Deferred: add uniform family corollaries when a consumer fixes the policy | One packed family realization and polynomial for fixed backend/boundary/contracts, with explicit parameter growth and representation policy |
 
-E2 follows E1 and ships without waiting for E3a or E3. E3 is required before ArkLib claims
-efficient extraction without qualification, but it is scheduled after higher-priority work: each
-extractor-bearing notion in the efficiency chapter's obligations table states its structural
-content and cost caveat; the native soundness contracts and their composition are complete; and a
-native resource conjunction measures named round extractors with E2's game-independent measured
-program, with an acceptance example on an existing native client.
-No probability theorem waits for E3. E3a is the proposed backend route; another execution model
-with a reviewed adequacy argument can replace it. E3 consumes the chosen backend and E2's
-same-program bridge. E4 and E5 consume E3 and can be developed independently; E6 follows E5.
-E3a's real FRI check is the gate before scaling the backend to the complete extractor. E3's
-formal gain over E2 is that every piece of pure computation is charged through the backend;
-the primitive model's adequacy is reviewed, not proved against a standard machine.
+E3 is required before ArkLib claims efficient extraction without qualification. It was scheduled
+after the native soundness contracts, their composition, and a native measured-stage conjunction
+with an acceptance example; all three have landed. No probability theorem waits for E3. E3a is
+the proposed backend route; another execution model with a reviewed adequacy argument can replace
+it. E3 consumes the chosen backend and E2's same-program bridge. E4 and E5 consume E3 and can be
+developed independently; E6 follows E5. E3a's real FRI check is the gate before scaling the
+backend to the complete extractor. E3's formal gain over E2 is that every piece of pure
+computation is charged through the backend; the primitive model's adequacy is reviewed, not proved
+against a standard machine.
 
 E7 waits for a consumer and an explicit parameter-growth policy. It uses the corresponding
 concrete certificates and must not infer uniformity merely from parametric Lean definitions.
-Update public summaries and protocol audits with each concrete result in E2 and E4–E6, marking
-whether it supplies operation counts, algebraic execution bounds or bit-time bounds; those
-documentation updates do not wait for E7.
+Update public summaries and protocol audits with each concrete result in E4–E6, marking whether
+it supplies operation counts, algebraic execution bounds or bit-time bounds; those documentation
+updates do not wait for E7.
 
 Protocol code stays in ArkLib; generic cost/realization combinators belong upstream. Use the
 existing arithmetic layer rather than importing FRI-specific access instructions into Toy.
@@ -347,24 +142,13 @@ Retain compatibility names with precise docstrings while adding the resource-cer
 theorems. A Caliper field/kernel pilot and bit-machine refinements are later clients, not
 prerequisites for a complete claim relative to the explicit algebraic model.
 
-For E1–E7, including E3a, run the normal repository validation, the axiom regression gate for axiom-clean
+For E3a–E7, run the normal repository validation, the axiom regression gate for axiom-clean
 theorems, and the relevant existing compiled extractor clients. Extend acceptance tests with the
 failure modes in the efficiency chapter. Runtime fixtures check implementation behavior; the
 kernel-checked bounds and realization establish the resource claim. Update current status only
 when results land, and make public summaries match the strongest completed layer.
 
-### State restoration and knowledge composition
-
-After runtime and log composition are available, prove the causal trace and witness facts needed by
-extractors and state-restoration games. The generic PolyFun causal finite-trace transducer and a
-VCVio query-log specialization are current upstream gaps. A reusable conditioning and dynamic-
-programming interface may also be needed; add it when the first formalization requires it.
-
-Knowledge soundness needs an additional causal argument. An extractor for the completed protocol
-does not automatically provide a witness at the point where the suffix needs it. A composition
-theorem must establish prefix-available witness extraction or a suitable guarantee against the
-information passed to the suffix. The design and exact games belong in
-[03-adversarial-oracle-execution.md](03-adversarial-oracle-execution.md).
+## Oracle elimination
 
 ### Oracle-elimination compiler
 
@@ -377,11 +161,12 @@ each pass. Do not fill unsupported backend capabilities with placeholder guarant
 
 ### AR-11 — Merkle adapter
 
-The first Merkle backend adapter depends on the named-context and source-routing API (#864), the
-persistent runtime (#884), terminal outcomes (#886), and the access/resource evidence from C8. It
-must adapt VCVio's existing shared-ROM execution and extractability theorem to ArkLib's declared
-oracle interface. Do not restate the VCVio security game in ArkLib. This adapter supplies one
-backend capability; it does not by itself prove the full Fiat–Shamir, BCS, or compiler theorem.
+The first Merkle backend adapter adapts VCVio's existing shared-ROM execution and extractability
+theorem to ArkLib's declared oracle interface. Its prerequisites have landed: the named-context
+and source-routing API (#864), the persistent runtime (#884), terminal outcomes (#886), and the
+access/resource evidence from C8 (#1238). The adapter itself has not started. Do not restate the
+VCVio security game in ArkLib. This adapter supplies one backend capability; it does not by
+itself prove the full Fiat–Shamir, BCS, or compiler theorem.
 
 ## Conditional upstream work
 

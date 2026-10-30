@@ -289,10 +289,10 @@ half-error premise.
 
 ## 5. State restoration
 
-State restoration is a separate proposed security layer for compiled protocols. It is not a
+State restoration is a separate security layer for compiled protocols. It is not a
 checkpoint/restore operation: the adversary may submit multiple purported prefixes, with consistent
-answers on repeated moves, and the final output re-derives every challenge. The intended salted move
-shape is schematic:
+answers on repeated moves, and the final output re-derives every challenge. The salted move shape
+of the original design is schematic:
 
 ```lean
 structure SRMove (Π : PublicCoinIOP) where
@@ -309,22 +309,44 @@ The target notions include ordinary, straightline knowledge, and rewinding knowl
 with explicit error and running-time dependence on the experiment and budget. Straightline
 extractors receive the state-restoration trace; rewinding extractors additionally receive the named
 black-box access. Bridges from round-by-round security, special soundness, and to Fiat–Shamir must
-state their entropy, salt, replay, budget, and loss assumptions. The planned round-by-round bridge
-includes the `(B+r)` loss; it is not supplied by native ordinary composition.
+state their entropy, salt, replay, budget, and loss assumptions.
+
+Implemented in `ArkLib/Interaction/Oracle/Security/`: the bridge from native round-by-round
+knowledge to state-restoration knowledge soundness, for fixed-round public-coin protocols with
+uniform challenge samplers. Restoration keys contain the input, round, prover-message prefix and
+salt prefix, and the adversary makes at most `Q` cached oracle queries.
+
+- `Interaction.Oracle.Security.StateRestoration.stateRestoration_knowledge_soundness`: if every
+  round extractor is prover-preserving and locally bounded by `error`, the named backward extractor
+  fails on a valid output with probability at most `(Q + rounds.length) * error`. This is the
+  `(B+r)` loss of the original design.
+- `stateRestoration_oracle_knowledge_soundness`: the same bound when the verifier returns an open
+  oracle claim and the output relation observes its closed behavior.
+- `stateRestoration_knowledge_soundness_privateCoins` and
+  `stateRestoration_oracle_knowledge_soundness_privateCoins`: the same bound when the adversary's
+  private coins are sampled before the cached game.
+- `stateRestoration_oracle_knowledge_soundness_nonuniform` (`StateRestorationBudget.lean`): with
+  per-round errors, the bound is `Q * Finset.univ.sup errors + ∑ j, errors j`.
+
+Still open: rewinding knowledge soundness
+([#1410](https://github.com/Verified-zkEVM/ArkLib/issues/1410)) and the bridges to Fiat–Shamir and
+BCS, which are tracked in the [roadmap](05-roadmap.md#rewinding-and-compiled-protocol-security).
 
 Cost transport reuses VCVio's `ReductionWithCost`. Additive or substitution-style advantage error
 needs the supported error-bearing reduction extension described in the
-[foundation chapter](01-foundations.md). The causal trace and conditioning interfaces needed by
-these proofs are separate upstream gaps.
+[foundation chapter](01-foundations.md). The native state-restoration proofs did not need the
+upstream conditioning interfaces; a salted Fiat–Shamir bridge may.
 
 ## 6. Extractors and knowledge composition
 
 Knowledge soundness with an efficient extractor also needs a certificate for the computation
-named in its game. The proposed [extractor efficiency contracts](03a-extractor-efficiency.md)
-separate measured operations, realized execution, and uniform polynomial-time families, with
-FRI and the Toy IOP as the first clients. The legacy existential game alone imposes no time bound,
-and neither do the existential round-by-round, special-soundness and state-restoration notions;
-that chapter lists each notion's additional obligations.
+named in its game. The [extractor efficiency contracts](03a-extractor-efficiency.md)
+separate measured operations, realized execution, and uniform polynomial-time families; the
+measured contracts E1 and E2 are implemented, with FRI and the Toy IOP as the first clients, and
+E3 onward are proposed. The legacy existential game alone imposes no time bound, and neither do
+the existential round-by-round, special-soundness and state-restoration notions; that chapter lists
+each notion's additional obligations. The native exception is `MeasuredKnowledgeCertificate`, which
+adds per-stage operation budgets to a native knowledge certificate.
 
 Knowledge soundness requires witness availability, not only a bound on true output claims.
 An offline extractor of a final execution path may learn a middle witness too late to supply it

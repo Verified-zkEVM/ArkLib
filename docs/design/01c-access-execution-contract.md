@@ -4,8 +4,10 @@ This specifies the access and execution contract established by the
 [foundation slices](01a-foundation-pr-plan.md). Remaining implementation work is tracked in the
 [roadmap](05-roadmap.md).
 The [naming contract](01b-type-tree-rename-cutover.md) and
-[core claim design](02-oracle-reduction-core.md) remain in force. These are acceptance
-requirements, not a statement that validation has already passed.
+[core claim design](02-oracle-reduction-core.md) remain in force. AR-3A landed in
+[#861](https://github.com/Verified-zkEVM/ArkLib/pull/861) and AR-3B in
+[#862](https://github.com/Verified-zkEVM/ArkLib/pull/862); this page is kept as the contract those
+PRs satisfy.
 
 ## AR-3A: signatures are not executions
 
@@ -127,7 +129,9 @@ messages with the same structural branch must produce the same answers.
 
 ## PR and validation boundary
 
-AR-3A is additive to current `main`. AR-3B is a separate dependent PR; neither changes legacy
+This section records the delivery rules the two PRs followed.
+
+AR-3A was additive to `main`. AR-3B was a separate dependent PR; neither changed legacy
 `OracleReduction`, dependency pins, source-policy exceptions, or the axiom baseline. Examples
 belong in `ArkLibTest`, not the production umbrella. Regenerate the umbrella mechanically.
 
@@ -136,7 +140,8 @@ feature-base PRs with the existing source-policy plugin and zero-warning budgets
 but does not publish the shared build cache and uses a read-only token. It supplements the
 full main-target validation/axiom gate; it does not replace it.
 
-Each PR must report the exact validated head and distinguish static inspection, successful
-Lean compilation, acceptance tests, and the full validation/axiom gate. An open draft or a
-started CI job is not evidence that a formalization is complete. The records remain provisional
-until the Sumcheck and legacy-correspondence checkpoints exercise them.
+Each PR reported its validated head and distinguished static inspection, successful Lean
+compilation, acceptance tests, and the full validation/axiom gate. An open draft or a started CI
+job is not evidence that a formalization is complete. The native Sumcheck port has since exercised
+this contract; the legacy-correspondence checkpoint has not (see the
+[roadmap](05-roadmap.md)).

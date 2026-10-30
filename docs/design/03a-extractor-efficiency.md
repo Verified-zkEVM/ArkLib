@@ -89,11 +89,13 @@ notion needs its own statement of what its unbounded form means, with its actual
 | Terminal knowledge soundness | `Extractor.Straightline` | Relation soundness, by the collapse above | Complete execution of the named extractor in its declared access model |
 | Round-by-round knowledge soundness | Legacy `Extractor.RoundByRound`; native `RoundExtractor` backward witness maps | The legacy notion coincides with round-by-round soundness of the induced languages when input-witness types are inhabited; native certificates retain their local obligations | Execution of each stage on its available prefix, intermediate witness sizes, and their composition |
 | Special soundness and CWSS | `Extractor.TreeBased`, from the statement, a transcript tree and its leaf witnesses | Each structured accepting tree with valid leaf witnesses yields an input witness, or exhibits an escape event; with a classical selector, the input statement lies in the language of the input relation | Tree processing; a knowledge corollary also bounds obtaining the tree and producing any escape |
-| State-restoration knowledge soundness | `Extractor.StateRestoration` | Presumably relation soundness of the restoration game, by the same selector; not proved | Extraction together with replay and simulation of the restoration oracle |
+| State-restoration knowledge soundness | Native `RoundExtractor` of a `KnowledgeCertificate`, applied backward along the restored path | The bound of `Interaction.Oracle.Security.StateRestoration.stateRestoration_knowledge_soundness` for that named extractor; nothing about its cost | Extraction together with replay and simulation of the restoration oracle; `MeasuredKnowledgeCertificate.stateRestoration_oracle_knowledge_soundness_nonuniform` charges only the stages |
 
 **Round-by-round knowledge soundness.** The legacy existential notion `rbrKnowledgeSoundness`
 admits a round-by-round extractor built directly by classical choice, so it carries no efficiency
-content. The native knowledge certificates state that they assert no extraction efficiency. For
+content. Bare native knowledge certificates assert no extraction efficiency;
+`Interaction.Oracle.Security.MeasuredKnowledgeCertificate` adds an operation-count budget for each
+stage, under the scope limits stated in `KnowledgeResources.lean`. For
 inhabited input-witness types, the legacy notion coincides with round-by-round soundness of the
 languages of the input and output relations, as proved in
 [#1376](https://github.com/Verified-zkEVM/ArkLib/pull/1376). The reverse implication from knowledge
@@ -216,8 +218,11 @@ straightline game, which FRI's result uses, is an adapter. The generic measured 
 `ArkLib/Data/OracleComp/MeasuredProgram.lean`, which imports no game. The legacy game conjunctions
 and their erasure lemmas live in `ArkLib/OracleReduction/Security/Resources.lean`. The FRI
 certificate lives in `ArkLib/ProofSystem/Fri/Spec/MeasuredKnowledgeSoundness.lean`; the Toy decoding
-certificate remains proposed. Native interaction games should consume the same upstream resource
-evidence through their own game adapter, rather than inheriting the legacy execution machinery.
+certificate remains proposed. Native interaction games consume the same measured programs through
+their own adapter: `ArkLib/Interaction/Oracle/Security/KnowledgeResources.lean` defines
+`RoundExtractor.MeasuredStages` and `MeasuredKnowledgeCertificate`, and
+`StateRestorationResources.lean` pairs the state-restoration bound with a stage budget, without the
+legacy execution machinery.
 Reusable arithmetic remains under `ArkLib/ToCompPoly/Univariate/`; generic instrumentation and
 realization laws belong in VCVio/PolyFun.
 
