@@ -59,9 +59,9 @@ compose with the sum of their soundness errors. The first bound uses the given i
 the second verifier need not be guarded.
 
 The second-stage bound is required from every fixed oracle state because the intermediate
-statement is chosen adaptively after oracle answers. This excludes oracle states that hide a
-secret from the prover (a trapdoor or an eagerly sampled random function); lazily sampled
-oracles satisfy this requirement. -/
+statement is chosen adaptively after oracle answers. It therefore cannot justify a
+second-stage bound that relies on the prover not knowing the sampled oracle state (a hidden
+trapdoor or an eagerly sampled random function); lazily sampled oracles meet the requirement. -/
 theorem append_soundness {lang₁ : Set Stmt₁} {lang₂ : Set Stmt₂} {lang₃ : Set Stmt₃}
     (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁) (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
     [V₁.IsGuarded]
@@ -97,9 +97,9 @@ theorem append_soundness {lang₁ : Set Stmt₁} {lang₂ : Set Stmt₂} {lang�
 component's bound must hold from every deterministic shared oracle state, at the same extractor.
 
 The second-stage bound is required from every fixed oracle state because the intermediate
-statement is chosen adaptively after oracle answers. This excludes oracle states that hide a
-secret from the prover (a trapdoor or an eagerly sampled random function); lazily sampled
-oracles satisfy this requirement. -/
+statement is chosen adaptively after oracle answers. It therefore cannot justify a
+second-stage bound that relies on the prover not knowing the sampled oracle state (a hidden
+trapdoor or an eagerly sampled random function); lazily sampled oracles meet the requirement. -/
 theorem append_knowledgeSoundnessWith
     {V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁}
     {V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂}
@@ -199,9 +199,9 @@ theorem append_knowledgeSoundnessWith
 The suffix extractor is fixed uniformly over its initial oracle state.
 
 The second-stage bound is required from every fixed oracle state because the intermediate
-statement is chosen adaptively after oracle answers. This excludes oracle states that hide a
-secret from the prover (a trapdoor or an eagerly sampled random function); lazily sampled
-oracles satisfy this requirement. -/
+statement is chosen adaptively after oracle answers. It therefore cannot justify a
+second-stage bound that relies on the prover not knowing the sampled oracle state (a hidden
+trapdoor or an eagerly sampled random function); lazily sampled oracles meet the requirement. -/
 theorem append_knowledgeSoundness
     (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
     (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂) (G₁ : V₁.GuardedForm)
@@ -246,9 +246,9 @@ variable {lang₁ : Set (Stmt₁ × (∀ i, OStmt₁ i))} {lang₂ : Set (Stmt�
 verifier is guarded and the second bound holds from every deterministic oracle state.
 
 The second-stage bound is required from every fixed oracle state because the intermediate
-statement is chosen adaptively after oracle answers. This excludes oracle states that hide a
-secret from the prover (a trapdoor or an eagerly sampled random function); lazily sampled
-oracles satisfy this requirement. -/
+statement is chosen adaptively after oracle answers. It therefore cannot justify a
+second-stage bound that relies on the prover not knowing the sampled oracle state (a hidden
+trapdoor or an eagerly sampled random function); lazily sampled oracles meet the requirement. -/
 theorem append_soundness
     (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
     (V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂)
@@ -264,9 +264,9 @@ theorem append_soundness
 /-- The named pure transcript-and-output extractor composition theorem for oracle verifiers.
 
 The second-stage bound is required from every fixed oracle state because the intermediate
-statement is chosen adaptively after oracle answers. This excludes oracle states that hide a
-secret from the prover (a trapdoor or an eagerly sampled random function); lazily sampled
-oracles satisfy this requirement. -/
+statement is chosen adaptively after oracle answers. It therefore cannot justify a
+second-stage bound that relies on the prover not knowing the sampled oracle state (a hidden
+trapdoor or an eagerly sampled random function); lazily sampled oracles meet the requirement. -/
 theorem append_knowledgeSoundnessWith
     {V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁}
     {V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂}
@@ -288,9 +288,9 @@ theorem append_knowledgeSoundnessWith
 verifier and a uniform suffix bound over deterministic shared oracle states.
 
 The second-stage bound is required from every fixed oracle state because the intermediate
-statement is chosen adaptively after oracle answers. This excludes oracle states that hide a
-secret from the prover (a trapdoor or an eagerly sampled random function); lazily sampled
-oracles satisfy this requirement. -/
+statement is chosen adaptively after oracle answers. It therefore cannot justify a
+second-stage bound that relies on the prover not knowing the sampled oracle state (a hidden
+trapdoor or an eagerly sampled random function); lazily sampled oracles meet the requirement. -/
 theorem append_knowledgeSoundness
     (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
     (V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂)

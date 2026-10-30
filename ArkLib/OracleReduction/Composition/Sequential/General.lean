@@ -618,9 +618,9 @@ omit Oₘ in
 sum of their errors, for an arbitrary initialization of the shared oracle state.
 
 The second-stage bound is required from every fixed oracle state because the intermediate
-statement is chosen adaptively after oracle answers. This excludes oracle states that hide a
-secret from the prover (a trapdoor or an eagerly sampled random function); lazily sampled
-oracles satisfy this requirement. -/
+statement is chosen adaptively after oracle answers. It therefore cannot justify a
+second-stage bound that relies on the prover not knowing the sampled oracle state (a hidden
+trapdoor or an eagerly sampled random function); lazily sampled oracles meet the requirement. -/
 theorem seqCompose_soundness
     (lang : (i : Fin (m + 1)) → Set (Stmt i))
     (V : (i : Fin m) → Verifier oSpec (Stmt i.castSucc) (Stmt i.succ) (pSpec i))
@@ -650,9 +650,9 @@ omit Oₘ in
 knowledge errors. Each component bound is uniform over deterministic initial oracle states.
 
 The second-stage bound is required from every fixed oracle state because the intermediate
-statement is chosen adaptively after oracle answers. This excludes oracle states that hide a
-secret from the prover (a trapdoor or an eagerly sampled random function); lazily sampled
-oracles satisfy this requirement. -/
+statement is chosen adaptively after oracle answers. It therefore cannot justify a
+second-stage bound that relies on the prover not knowing the sampled oracle state (a hidden
+trapdoor or an eagerly sampled random function); lazily sampled oracles meet the requirement. -/
 theorem seqCompose_knowledgeSoundnessWith
     (rel : (i : Fin (m + 1)) → Set (Stmt i × Wit i))
     (V : (i : Fin m) → Verifier oSpec (Stmt i.castSucc) (Stmt i.succ) (pSpec i))
@@ -689,9 +689,9 @@ omit Oₘ in
 Each extractor is fixed before the initial oracle state is chosen.
 
 The second-stage bound is required from every fixed oracle state because the intermediate
-statement is chosen adaptively after oracle answers. This excludes oracle states that hide a
-secret from the prover (a trapdoor or an eagerly sampled random function); lazily sampled
-oracles satisfy this requirement. -/
+statement is chosen adaptively after oracle answers. It therefore cannot justify a
+second-stage bound that relies on the prover not knowing the sampled oracle state (a hidden
+trapdoor or an eagerly sampled random function); lazily sampled oracles meet the requirement. -/
 theorem seqCompose_knowledgeSoundness
     (rel : (i : Fin (m + 1)) → Set (Stmt i × Wit i))
     (V : (i : Fin m) → Verifier oSpec (Stmt i.castSucc) (Stmt i.succ) (pSpec i))
@@ -713,9 +713,9 @@ namespace OracleVerifier
 oracle state compose with the sum of their errors, for arbitrary initialization.
 
 The second-stage bound is required from every fixed oracle state because the intermediate
-statement is chosen adaptively after oracle answers. This excludes oracle states that hide a
-secret from the prover (a trapdoor or an eagerly sampled random function); lazily sampled
-oracles satisfy this requirement. -/
+statement is chosen adaptively after oracle answers. It therefore cannot justify a
+second-stage bound that relies on the prover not knowing the sampled oracle state (a hidden
+trapdoor or an eagerly sampled random function); lazily sampled oracles meet the requirement. -/
 theorem seqCompose_soundness
     (lang : (i : Fin (m + 1)) → Set (Stmt i × ∀ j, OStmt i j))
     (V : (i : Fin m) →
@@ -735,9 +735,9 @@ theorem seqCompose_soundness
 verifiers and component bounds uniform over deterministic shared oracle states.
 
 The second-stage bound is required from every fixed oracle state because the intermediate
-statement is chosen adaptively after oracle answers. This excludes oracle states that hide a
-secret from the prover (a trapdoor or an eagerly sampled random function); lazily sampled
-oracles satisfy this requirement. -/
+statement is chosen adaptively after oracle answers. It therefore cannot justify a
+second-stage bound that relies on the prover not knowing the sampled oracle state (a hidden
+trapdoor or an eagerly sampled random function); lazily sampled oracles meet the requirement. -/
 theorem seqCompose_knowledgeSoundnessWith
     (rel : (i : Fin (m + 1)) → Set ((Stmt i × ∀ j, OStmt i j) × Wit i))
     (V : (i : Fin m) →
@@ -763,9 +763,9 @@ theorem seqCompose_knowledgeSoundnessWith
 chain, with the sum of the component errors.
 
 The second-stage bound is required from every fixed oracle state because the intermediate
-statement is chosen adaptively after oracle answers. This excludes oracle states that hide a
-secret from the prover (a trapdoor or an eagerly sampled random function); lazily sampled
-oracles satisfy this requirement. -/
+statement is chosen adaptively after oracle answers. It therefore cannot justify a
+second-stage bound that relies on the prover not knowing the sampled oracle state (a hidden
+trapdoor or an eagerly sampled random function); lazily sampled oracles meet the requirement. -/
 theorem seqCompose_knowledgeSoundness
     (rel : (i : Fin (m + 1)) → Set ((Stmt i × ∀ j, OStmt i j) × Wit i))
     (V : (i : Fin m) →
