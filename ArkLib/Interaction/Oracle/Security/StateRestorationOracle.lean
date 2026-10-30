@@ -10,8 +10,8 @@ public import ArkLib.Interaction.Oracle.Security.StateRestorationGame
 /-!
 # State-restoration knowledge soundness for oracle outputs
 
-The native verifier returns an optional open oracle claim. After actual execution, the relation
-observes its closed behavior under that same path's accumulated input/message handler. The native
+The verifier returns an optional open oracle claim. After actual execution, the relation
+observes its closed behavior under that same path's accumulated input/message handler. The
 verifier never receives concrete oracle realizations or that closing handler as authoring data.
 Rejection remains unsuccessful. The resulting extraction bound applies to arbitrary output
 relations on closed behavior, including virtual outputs with arbitrarily many possible queries.
@@ -28,7 +28,7 @@ universe w
 
 variable {Input Salt W : Type} {rounds : List Round}
 
-/-- The native terminal program may reject or return an open claim over declared source access. -/
+/-- The terminal program may reject or return an open claim over declared source access. -/
 abbrev OracleOutput (initial : PFunctor)
     (Stmt : Input → (protocol rounds).tree.BranchPath → Type)
     {Idx : Input → (protocol rounds).tree.BranchPath → Type}
@@ -40,7 +40,7 @@ abbrev OracleOutput (initial : PFunctor)
     (ofPFunctor (accessAfter (protocol rounds).tree (protocol rounds).oracles initial p))
     (Stmt z p) (family z p))
 
-/-- Close the actual native verifier's returned virtual output under that same run's handler.
+/-- Close the actual verifier's returned virtual output under that same run's handler.
 Closing interprets the relation and grants no concrete payload access to verifier authoring. -/
 def closedVerificationGame (initial : PFunctor)
     (impl : Input → QueryImpl (ofPFunctor initial) Id)

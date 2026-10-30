@@ -11,13 +11,13 @@ import VCVio.EvalDist.ProbabilityBounds
 import Mathlib.Data.ZMod.Basic
 
 /-!
-# Two fresh guesses with arbitrary native prover continuations
+# Two fresh guesses with arbitrary prover continuations
 
 Each phase receives a guess before sampling its own uniform challenge in `ZMod 17`.
 The verifier remembers whether either guess matched. The quantitative composition theorem
 bounds this event by `2/17` for every ordinary strategy on the full appended protocol.
 The single-phase lemma permits dependent private outputs, so the prefix can return an arbitrary
-native suffix strategy with all its private memory and effects.
+suffix strategy with all its private memory and effects.
 -/
 
 open Interaction Interaction.TwoParty OracleComp OracleSpec
@@ -50,7 +50,7 @@ def guessVerifier {m : Type → Type} [Monad m] (challenge : m F) (prior : Prop)
     return ⟨sample, prior ∨ guess = sample⟩)
 
 set_option backward.isDefEq.respectTransparency false in
-/-- Every native strategy is bounded by the fresh challenge's per-value collision bound.
+/-- Every strategy is bounded by the fresh challenge's per-value collision bound.
 Its dependent private output and post-challenge response effects are unrestricted. -/
 theorem guess_soundness {m : Type → Type} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m]
@@ -104,7 +104,7 @@ theorem uniform_guess (guess : F) :
   rw [hset]
   simp
 
-/-- Every full native prover, including arbitrary private memory and post-challenge effects,
+/-- Every full prover, including arbitrary private memory and post-challenge effects,
 has probability at most `2/17` of matching either fresh challenge. -/
 theorem two_guesses
     (prover : Focal (OracleComp unifSpec)

@@ -19,7 +19,7 @@ A degree-one case uses `q = X + 1` with the same domain and claimed sum. Its nex
 be `r + 1` at each challenge `r`, so evaluation at a different point is observable.
 
 These tests reduce the actual legacy verifier programs, including oracle simulation. They do not
-assert a full correspondence with native Sumcheck.
+assert a full correspondence with interaction-layer Sumcheck.
 -/
 
 namespace Sumcheck.LegacyVerifierTest

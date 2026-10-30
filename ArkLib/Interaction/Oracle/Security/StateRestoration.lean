@@ -12,7 +12,7 @@ public import VCVio.OracleComp.QueryTracking.RandomOracle.FreshQuery
 /-!
 # Backward extraction in the state-restoration experiment
 
-A fixed-round public-coin oracle protocol is presented using the existing native protocol tree.
+A fixed-round public-coin oracle protocol is presented using the existing protocol tree.
 Each restoration key contains its input, round, prover-message prefix, and salt prefix. Previous
 verifier challenges are deliberately absent from the key. A key's knowledge state reconstructs
 its strict ancestors from the same table, and changing its own response cannot change that state.
@@ -21,7 +21,7 @@ For an arbitrary adaptive adversary, completion reads the selected transcript's 
 the same cached oracle. A valid terminal knowledge witness whose backward extraction fails has
 probability at most `(Q + k) * error`. Inputs and salts may have infinite types; challenges have
 finite nonempty uniform samplers. The probability proof allows out-of-order and repeated queries.
-This module proves the native-path knowledge bound. The concrete native verifier realization and
+This module proves the knowledge bound on execution paths. The concrete verifier realization and
 its terminal witness relations are separate endpoint obligations, not assumed execution equations.
 -/
 
@@ -46,7 +46,7 @@ structure Round where
 attribute [instance] Round.decEqMessage Round.finiteMessage Round.finiteChallenge
   Round.nonemptyChallenge Round.sampleChallenge
 
-/-- The fixed presentation uses native oracle-message and public-receiver nodes. -/
+/-- The fixed presentation uses oracle-message and public-receiver nodes. -/
 def protocol : List Round → Protocol
   | [] => .done
   | round :: rounds => .oracleWith round.Message round.interface
@@ -131,7 +131,7 @@ abbrev Table (Input Salt : Type) (rounds : List Round) :=
 
 universe w
 
-/-- Reconstruct the native pre-challenge extractor using this key's strict ancestor responses. -/
+/-- Reconstruct the pre-challenge extractor using this key's strict ancestor responses. -/
 def keyExtractor {Input Salt : Type} : {rounds : List Round} → {state : KnowledgeState.{w}} →
     RoundExtractor (protocol rounds).tree state → (key : Key Input Salt rounds) →
     Table Input Salt rounds →
@@ -260,7 +260,7 @@ theorem complete_queryBound {Input Salt : Type} (rounds : List Round) (z : Input
         using hb
 
 
-/-- The existing native execution path reconstructed from a deterministic challenge table. -/
+/-- The existing execution path reconstructed from a deterministic challenge table. -/
 def completedPath {Input Salt : Type} : (rounds : List Round) → Input →
     Messages Salt rounds → Table Input Salt rounds → (protocol rounds).tree.ExecutionPath
   | [], _, _, _ => PUnit.unit
@@ -276,7 +276,7 @@ def completionKeys {Input Salt : Type} : (rounds : List Round) → Input →
       Key.here z message salt ::
         (completionKeys rounds z messages).map (Key.later message salt)
 
-/-- Deterministic execution of completion returns exactly the reconstructed native path. -/
+/-- Deterministic execution of completion returns exactly the reconstructed path. -/
 theorem complete_eval {Input Salt : Type} (rounds : List Round) (z : Input)
     (messages : Messages Salt rounds) (table : Table Input Salt rounds) :
     evalWithAnswerFn (QueryImpl.ofFn table) (complete rounds z messages) =
@@ -292,7 +292,7 @@ theorem complete_eval {Input Salt : Type} (rounds : List Round) (z : Input)
           (protocol (round :: rounds)).tree.ExecutionPath))
         (ih messages (fun q => table (Key.later message salt q)))
 
-/-- The completion-key list is the projection of the actual native oracle query log. -/
+/-- The completion-key list is the projection of the actual oracle query log. -/
 theorem complete_log_keys {Input Salt : Type} (rounds : List Round) (z : Input)
     (messages : Messages Salt rounds) (table : Table Input Salt rounds) :
     (tableQueryLog (complete rounds z messages) table).map Sigma.fst =
@@ -324,7 +324,7 @@ theorem completionKeys_input {Input Salt : Type} (rounds : List Round) (z : Inpu
       · obtain ⟨q, hq, rfl⟩ := List.mem_map.mp h
         exact ih messages q hq
 
-/-- A bad challenge on the completed native path is a bad key in its actual completion log. -/
+/-- A bad challenge on the completed path is a bad key in its actual completion log. -/
 theorem badChallengeOnPath_completion {Input Salt : Type} {rounds : List Round}
     {state : KnowledgeState.{w}} (extractor : RoundExtractor (protocol rounds).tree state)
     (z : Input) (messages : Messages Salt rounds) (table : Table Input Salt rounds)

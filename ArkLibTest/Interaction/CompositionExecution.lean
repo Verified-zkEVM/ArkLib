@@ -6,7 +6,7 @@ Authors: Quang Dao
 import ArkLib.Interaction.CompositionSoundness
 
 /-!
-# Native dependent composition with noncommutative effects
+# Dependent composition with noncommutative effects
 
 A public challenge selects the suffix tree. Only the true branch has a verifier preamble.
 The whole prover retains private memory and performs effects after both public challenges.

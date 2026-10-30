@@ -10,8 +10,8 @@ The API documentation and the blueprint are published at
 ## Library structure
 
 The core of our library is a mechanized theory of **interactive oracle reductions**. The concepts
-below apply to both of ArkLib's [layers](#two-layers). The layers are two representations of the
-same objects, and the interaction layer is the better one.
+below describe the IOR theory shared by ArkLib's [two layers](#two-layers); their implemented
+interfaces and results differ.
 
 1. An **IOR** (interactive oracle reduction) is an interactive protocol between a prover and a
    verifier that reduces a relation $R_1$ on a public statement and a private witness to another
@@ -21,11 +21,10 @@ same objects, and the interaction layer is the better one.
    - For example, one can view a message as a vector and query entries of that vector.
      Alternatively, one can view the message as a polynomial and query its evaluation at given
      points.
-3. We can **sequentially compose** IORs with compatible relations (for example $R_1 \implies R_2$
-   and $R_2 \implies R_3$), preserving their security properties under the conditions that each
-   composition theorem states. We can also **lift** an IOR from a simple context (the input and
-   output statement and witness) into a larger, more complex context, creating a **virtual**
-   oracle reduction.
+3. **Sequential composition** combines IORs with compatible relations (for example
+   $R_1 \implies R_2$ and $R_2 \implies R_3$), preserving their security properties under the
+   hypotheses of the relevant composition theorem. **Lifting** places an IOR's input and output
+   statements and witnesses in a larger context, creating a **virtual** oracle reduction.
    - Sequential composition and lifting let us build existing protocols (for example Plonk) from
      common sub-protocols (for example zero check, permutation check and quotienting), and derive
      the security of the constructed protocol from that of its components.
@@ -40,7 +39,8 @@ same objects, and the interaction layer is the better one.
    - We then apply the **Fiat-Shamir transform**, which removes interaction: the prover derives
      the verifier's random challenges by querying a hash function, modeled as a random oracle.
 
-   [ROADMAP.md](ROADMAP.md) records which parts of these transforms are formalized.
+   [ROADMAP.md](ROADMAP.md) records which composition, lifting and transform interfaces are
+   formalized in each layer.
 5. Our formalization follows the view of IORs as the central information-theoretic object
    underlying modern SNARKs, and the current abstractions of the interactive BCS and Fiat-Shamir
    transforms. [BACKGROUND.md](BACKGROUND.md) surveys the information-theoretic proof models, their
@@ -56,33 +56,33 @@ ArkLib has two layers that formalize the objects above. They coexist, and a theo
 does not by itself prove a theorem about the other.
 
 - The **legacy layer**, [`ArkLib/OracleReduction/`](ArkLib/OracleReduction/), is the original
-  formalization. An IOR is an `OracleReduction`. The layer is sorry-free. It contains sequential
-  composition, lifting into a larger context (`liftContext`), and the security notions:
-  completeness, soundness, knowledge soundness, round-by-round knowledge soundness and
-  coordinate-wise special soundness. Every protocol and commitment scheme in the
-  [status catalog](ROADMAP.md#complete) is built on this layer.
+  formalization, in which an IOR is an `OracleReduction`.
 - The **interaction layer**, [`ArkLib/Interaction/`](ArkLib/Interaction/), represents a protocol
   as an interaction tree, built on the polynomial functors and interaction trees of
   [PolyFun](https://github.com/Verified-zkEVM/PolyFun). It avoids the limitations listed below
   and can express more protocols, in particular protocols whose shape depends on earlier
-  messages. It is meant to replace the legacy layer, but it is not ready to do so: it has generic
-  execution, composition and security theory, and one protocol, Sum-check
-  ([`ArkLib/ProofSystem/Sumcheck/Interaction/`](ArkLib/ProofSystem/Sumcheck/Interaction/)).
-  [Current status](docs/design/00-current-status.md) records what the layer has and lacks, and
-  the [design documents](docs/design/README.md) specify it.
+  messages. It is meant to replace the legacy layer.
+
+[ROADMAP.md](ROADMAP.md#priority-replace-the-legacy-layer) records what each layer formalizes and
+how far the migration has progressed. [Current status](docs/design/00-current-status.md) records the
+interaction layer's implemented interfaces and remaining gaps, and the
+[design documents](docs/design/README.md) specify it.
 
 ### Limitations of the legacy layer
 
 The legacy layer works and carries many protocols, but its representation has limits that the
 interaction layer removes.
 
-- **The protocol shape is fixed in advance.** A protocol is a `ProtocolSpec n`: `n` rounds, with
-  the direction and the type of each round given as functions of the round index only. The number
-  of rounds, who speaks, and the message and challenge types cannot depend on earlier messages or
-  challenges, so dependent protocols cannot be expressed directly. In the interaction layer a protocol is a
-  PolyFun `Interaction.TypeTree`, and the rest of the tree, including its roles, may depend on the
-  path so far. `Reduction.then` (`Interaction/Reduction.lean`) appends a second reduction whose
-  tree depends on the complete first path.
+- **The protocol shape is fixed in advance.** A protocol is a `ProtocolSpec n`: `n`
+  message/challenge steps, with the direction and the type of each step given as functions of the
+  step index only. The number of steps, who speaks, and the message and challenge types cannot
+  depend on earlier messages or challenges, so dependent protocols cannot be expressed directly.
+  In the interaction layer a protocol is a PolyFun `Interaction.TypeTree`, and the rest of the
+  tree, including its roles, may depend on the path so far. `Reduction.then`
+  (`Interaction/Reduction.lean`) appends a second reduction whose tree depends on the complete
+  first path. For oracle protocols, `Interaction.Oracle.TypeTree` permits structural dependence
+  on the public `BranchPath`; concrete oracle messages remain in the `ExecutionPath` but do not
+  directly select the next branch. Oracle composition uses this public-path restriction.
 - **Provers are round-indexed state machines.** A legacy prover has one state type per round
   (`PrvState : Fin (n + 1) → Type`) and round-indexed `sendMessage` and `receiveChallenge`
   functions. Composing two provers concatenates their state families with `Fin.append` and moves
@@ -90,8 +90,11 @@ interaction layer removes.
   reductions over protocol specs that are equal but not definitionally equal are related by the
   cast lemmas in `OracleReduction/Cast.lean` and `ProtocolSpec/Cast.lean`. In the interaction layer
   a prover is a strategy on the tree (`Interaction.Oracle.Prover.Strategy`) whose continuation
-  keeps its private memory, and composition acts on trees and strategies without round-index
-  arithmetic or casts.
+  keeps its private memory, and composition avoids concatenating round-indexed prover-state
+  families; dependent transports still occur in oracle composition. The legacy receiver's
+  effectful computation returns a pure challenge-to-state function, so challenge-dependent
+  effects must be deferred to a later action. Interaction-layer receiver continuations can
+  perform effects depending on the received move immediately.
 - **The verifier acts only after the interaction.** A legacy verifier is one function of the full
   transcript (`Verifier.verify`), and each challenge is sampled uniformly from its type by the
   execution (`ProtocolSpec.challengeQueryImpl`). The verifier cannot stop the protocol early. In
@@ -106,24 +109,31 @@ interaction layer removes.
   (`Interaction/Oracle/Claim.lean`, `Interaction/Oracle/Virtual.lean`), relations consume the
   behavior of the closed claim, and the next stage queries only an exported interface
   (`Verifier.appendExported`, in `Interaction/Oracle/SourceRouting.lean`).
-- **There is one failure outcome.** A verifier returns `OptionT`, so `none` must stand for every
-  kind of failure. The interaction layer returns accept, reject or fault
-  (`Interaction/Oracle/Terminal.lean`) and accounts separately for probability mass lost when a
-  computation does not return (`Interaction/Oracle/TerminalMeasure.lean`).
+- **The default verifier result has one explicit failure case.** A legacy verifier returns
+  `OptionT`, whose `none` does not distinguish rejection from different reported faults. Missing
+  probability mass in the underlying computation is a separate phenomenon. The interaction layer
+  provides an explicit `Terminal` result with accept, reject and named fault cases
+  (`Interaction/Oracle/Terminal.lean`) through `executeTerminal`
+  (`Interaction/Oracle/TerminalRun.lean`); its core optional-claim API remains available.
+  `Terminal.observe` (`Interaction/Oracle/TerminalMeasure.lean`) assigns missing runtime mass to
+  a caller-named fault while preserving acceptance and rejection probabilities.
 - **Composition needs a bound from every oracle state.** A legacy security game draws the shared
   oracle state from an initialization and discards the final state. In a composed protocol the
   second reduction starts from whatever state the first leaves, which its own game does not cover.
   Sequential composition of soundness (`Verifier.append_soundness`) therefore needs a guarded
-  first verifier and a second-stage bound that holds from every fixed oracle state. This excludes
-  oracles whose state hides a secret from the prover, such as a trapdoor or an eagerly sampled
-  random function. The interaction layer runs setup and every stage inside one persistent runtime
-  and proves composition from a bound over the actual distribution of the prefix
-  (`Interaction/Oracle/Runtime.lean`, `Interaction/Oracle/RuntimeSoundness.lean`).
+  first verifier and a second-stage bound that holds from every fixed oracle state. This premise
+  cannot justify a second-stage bound that relies on the prover not knowing the sampled oracle
+  state, for example a hidden trapdoor or an eagerly sampled random function. The interaction
+  layer runs setup and every stage inside one persistent runtime
+  (`Interaction/Oracle/Runtime.lean`) and proves composition from a suffix bound averaged over
+  the actual distribution of the prefix, for the fixed prover
+  (`executeStrategiesWithRuntime_appendExported_soundness`, in
+  `Interaction/Oracle/RuntimeSoundness.lean`). The client of that theorem must prove the averaged
+  suffix bound.
 
 ### Migration plan
 
-Now that the legacy layer is sorry-free and reasonably stable, the project prioritizes developing
-the interaction layer. The migration has three stages:
+The project prioritizes developing the interaction layer. The migration has three stages:
 
 1. **Feature parity.** The interaction layer gains every framework feature that the legacy
    protocols use.

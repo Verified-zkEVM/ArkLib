@@ -6,7 +6,7 @@ Authors: Quang Dao
 import ArkLib.Interaction.Oracle.Security.StateRestorationCoins
 
 /-!
-An ordinary-import native state-restoration client. Verification queries the actual sent payload,
+An ordinary-import state-restoration client. Verification queries the actual sent payload,
 its output type depends on the public challenge, and backward extraction uses both that payload
 and the supplied witness. The input domain is Nat, so this does not assume a finite statement set.
 -/

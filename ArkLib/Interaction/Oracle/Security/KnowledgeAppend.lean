@@ -8,10 +8,10 @@ module
 public import ArkLib.Interaction.Oracle.Security.Knowledge
 
 /-!
-# Backward extraction through dependent native append
+# Backward extraction through dependent append
 
-The suffix tree is selected by the native structural branch. Its witness maps and challenge
-schedule may also depend on the actual concrete first path. Native prefix and complete-path
+The suffix tree is selected by the structural branch. Its witness maps and challenge
+schedule may also depend on the actual concrete first path. Prefix and complete-path
 correspondences identify the exact knowledge states; named backward extraction composes in
 reverse execution order. Every component prover law and fixed-prefix bad-challenge bound is
 preserved with the same sampler and error. Actual verifier freshness and closed-claim relation
@@ -29,7 +29,7 @@ open Interaction.Oracle.TypeTree PFunctor.FreeM
 namespace RoundExtractor
 
 /-- Join two extractors along the actual first path, keeping its terminal knowledge state as
-the suffix input state. Suffix tree choice uses exactly the native structural path. -/
+the suffix input state. Suffix tree choice uses exactly the structural path. -/
 def append : {tree : Oracle.TypeTree.{u}} → {state : KnowledgeState.{w}} →
     (first : RoundExtractor tree state) → (suffix : tree.BranchPath → Oracle.TypeTree.{u}) →
     ((path : tree.ExecutionPath) → RoundExtractor (suffix path.toBranchPath)
@@ -44,7 +44,7 @@ def append : {tree : Oracle.TypeTree.{u}} → {state : KnowledgeState.{w}} →
         append (first message).2.2 (fun path => suffix ⟨PUnit.unit, path⟩)
           (fun path => second ⟨message, path⟩)⟩
 
-/-- The terminal state of native append is exactly the selected suffix terminal state. -/
+/-- The terminal state of append is exactly the selected suffix terminal state. -/
 theorem terminalState_append : {tree : Oracle.TypeTree.{u}} →
     {state : KnowledgeState.{w}} → (first : RoundExtractor tree state) →
     (suffix : tree.BranchPath → Oracle.TypeTree.{u}) →
@@ -84,7 +84,7 @@ theorem extractWitness_append : {tree : Oracle.TypeTree.{u}} →
         (extractWitness_append (first path.1).2.2 (fun p => suffix ⟨PUnit.unit, p⟩)
           (fun p => second ⟨path.1, p⟩) path.2 rest witness)
 
-/-- Prover-message preservation holds through the dependent native composition. -/
+/-- Prover-message preservation holds through the dependent composition. -/
 theorem isProverPreserving_append : {tree : Oracle.TypeTree.{u}} →
     {state : KnowledgeState.{w}} → (first : RoundExtractor tree state) →
     (suffix : tree.BranchPath → Oracle.TypeTree.{u}) →
@@ -164,7 +164,7 @@ theorem isLocallyBounded_append : {tree : Oracle.TypeTree.{0}} →
         (firstSchedule message) (fun p => secondSchedule ⟨message, p⟩) (before message)
         (fun p => after ⟨message, p⟩)
 
-/-- Transport exactly the concrete messages retained by a native left-prefix embedding. -/
+/-- Transport exactly the concrete messages retained by a left-prefix embedding. -/
 def liftPrefixMessages : {tree residual : Oracle.TypeTree.{u}} →
     (spine : Cursor.Spine tree residual) → (suffix : tree.BranchPath → Oracle.TypeTree.{u}) →
     PrefixMessages.Along spine → PrefixMessages.Along (spine.liftAppend suffix)
@@ -174,7 +174,7 @@ def liftPrefixMessages : {tree residual : Oracle.TypeTree.{u}} →
   | .oracle _ _, _, .down answer tail, suffix, messages =>
       ⟨messages.1, liftPrefixMessages tail (fun p => suffix ⟨answer, p⟩) messages.2⟩
 
-/-- Embed a concrete first-stage prefix through native dependent append. -/
+/-- Embed a concrete first-stage prefix through dependent append. -/
 def appendPrefix {tree : Oracle.TypeTree.{u}} (pfx : ExecutionPrefix tree)
     (suffix : tree.BranchPath → Oracle.TypeTree.{u}) :
     ExecutionPrefix (PFunctor.FreeM.append tree suffix) :=
@@ -214,7 +214,7 @@ def appendSuffixPrefix : (tree : Oracle.TypeTree.{u}) →
       let tail := appendSuffixPrefix _ (fun p => suffix ⟨PUnit.unit, p⟩) path.2 pfx
       ⟨Cursor.down PUnit.unit tail.cursor, ⟨path.1, tail.messages⟩⟩
 
-/-- The concrete suffix embedding has the canonical native joined cursor. -/
+/-- The concrete suffix embedding has the canonical joined cursor. -/
 theorem cursor_appendSuffixPrefix : (tree : Oracle.TypeTree.{u}) →
     (suffix : tree.BranchPath → Oracle.TypeTree.{u}) → (path : tree.ExecutionPath) →
     (pfx : ExecutionPrefix (suffix path.toBranchPath)) →
@@ -245,7 +245,7 @@ theorem cursor_appendSuffixPrefix : (tree : Oracle.TypeTree.{u}) →
         PUnit.unit)
         (cursor_appendSuffixPrefix _ (fun p => suffix ⟨PUnit.unit, p⟩) path.2 pfx)
 
-/-- A native suffix prefix has exactly the selected suffix knowledge state. -/
+/-- A suffix prefix has exactly the selected suffix knowledge state. -/
 theorem knowledgeState_appendSuffixPrefix : {tree : Oracle.TypeTree.{u}} →
     {state : KnowledgeState.{w}} → (first : RoundExtractor tree state) →
     (suffix : tree.BranchPath → Oracle.TypeTree.{u}) →
@@ -262,7 +262,7 @@ theorem knowledgeState_appendSuffixPrefix : {tree : Oracle.TypeTree.{u}} →
       knowledgeState_appendSuffixPrefix (first path.1).2.2 (fun p => suffix ⟨PUnit.unit, p⟩)
         (fun p => second ⟨path.1, p⟩) path.2 pfx
 
-/-- The remaining maps at a native suffix prefix are exactly the selected suffix extractor. -/
+/-- The remaining maps at a suffix prefix are exactly the selected suffix extractor. -/
 theorem remainingExtractor_appendSuffixPrefix : {tree : Oracle.TypeTree.{u}} →
     {state : KnowledgeState.{w}} → (first : RoundExtractor tree state) →
     (suffix : tree.BranchPath → Oracle.TypeTree.{u}) →

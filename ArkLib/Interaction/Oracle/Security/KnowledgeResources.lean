@@ -9,9 +9,9 @@ public import ArkLib.Interaction.Oracle.Security.Knowledge
 public import ArkLib.Data.OracleComp.MeasuredProgram
 
 /-!
-# Native knowledge certificates with measured stages
+# Knowledge certificates with measured stages
 
-At each authored node of a native tree, a `RoundExtractor` names one backward witness map for each
+At each authored node of a tree, a `RoundExtractor` names one backward witness map for each
 actual move or oracle message. `RoundExtractor.stageMap` combines them into the stage at that node:
 a map from a move or message and a witness of the knowledge state after it to a witness of the
 knowledge state before it. Complete extraction, `RoundExtractor.extractWitness`, applies the stage
@@ -21,7 +21,7 @@ maps along a path (`RoundExtractor.extractWitness_public`, `RoundExtractor.extra
 that realizes the stage map and a budget for its declared instruction charges
 (`OracleComp.BudgetedProgram`). `MeasuredStages.BudgetAtMost` bounds all of these budgets by one
 value. `MeasuredKnowledgeCertificate` adds the stages to a `KnowledgeCertificate` for the same
-extractor; forgetting them recovers the certificate, whose fields the native round-by-round and
+extractor; forgetting them recovers the certificate, whose fields the round-by-round and
 state-restoration theorems take. The theorem
 `MeasuredKnowledgeCertificate.stateRestoration_oracle_knowledge_soundness_nonuniform` in
 `StateRestorationResources` packages the closed-oracle security bound with a stage budget for that
@@ -56,7 +56,7 @@ open OracleComp
 
 namespace RoundExtractor
 
-/-- The input of the stage at the root of a native tree: an actual move or oracle message and a
+/-- The input of the stage at the root of a tree: an actual move or oracle message and a
 witness of the knowledge state after it. A completed tree has no stage and no stage input. -/
 def StageInput : {tree : Oracle.TypeTree.{0}} → {state : KnowledgeState.{0}} →
     RoundExtractor tree state → Type
@@ -64,7 +64,7 @@ def StageInput : {tree : Oracle.TypeTree.{0}} → {state : KnowledgeState.{0}} �
   | .public Moves _, _, extractor => (move : Moves) × (extractor move).1.Witness
   | .oracle Messages _, _, extractor => (message : Messages) × (extractor message).1.Witness
 
-/-- The backward witness map at the root of a native tree. -/
+/-- The backward witness map at the root of a tree. -/
 def stageMap : {tree : Oracle.TypeTree.{0}} → {state : KnowledgeState.{0}} →
     (extractor : RoundExtractor tree state) → extractor.StageInput → state.Witness
   | .done, _, _, input => input.elim
@@ -116,7 +116,7 @@ def MeasuredStages.BudgetAtMost {ω : Type} [AddCommMonoid ω] [Preorder ω] (bo
 
 end RoundExtractor
 
-/-- A native knowledge certificate whose named extractor has a budgeted program for the stage at
+/-- A knowledge certificate whose named extractor has a budgeted program for the stage at
 every authored node. -/
 structure MeasuredKnowledgeCertificate (ω : Type) [AddCommMonoid ω] [Preorder ω]
     (tree : Oracle.TypeTree.{0}) (roles : tree.RoleDecoration) (state : KnowledgeState.{0})

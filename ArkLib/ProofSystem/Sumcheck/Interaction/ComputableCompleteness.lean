@@ -10,11 +10,11 @@ public import ArkLib.ProofSystem.Sumcheck.Interaction.ProtocolCompleteness
 public import ArkLib.ProofSystem.Sumcheck.Impl.Projection
 
 /-!
-# Completeness of computable native Sumcheck
+# Completeness of computable interaction-layer Sumcheck
 
 The ordinary honest prover computes its messages directly from a CompPoly multivariate polynomial.
 Its continuation stores the actual public challenge prefix. Mathematical polynomial interpretation
-is used only to prove that its complete execution equals the existing native honest execution,
+is used only to prove that its complete execution equals the existing honest execution,
 including termination and the public abort branch.
 -/
 
@@ -33,7 +33,7 @@ variable (R : Type) [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
 variable {ι : Type} (ambient : OracleSpec ι)
 
 /-- Compute each honest round message from the original computational polynomial. Prior challenges
-are retained in the ordinary native continuation; a public abort terminates that continuation. -/
+are retained in the ordinary continuation; a public abort terminates that continuation. -/
 def honestProver : (count start : ℕ) → (finish : start + count = n) →
     Spec.StatementRound R n ⟨start, by omega⟩ →
     (poly : CMvPolynomial n R) → (∀ j, poly.degreeOf j ≤ deg) →
@@ -47,7 +47,7 @@ def honestProver : (count start : ℕ) → (finish : start + count = n) →
         | some r => pure (honestProver count (start + 1) (by omega)
             ⟨evaluate R deg q r, Fin.snoc stmt.challenges r⟩ poly hpoly)⟩
 
-/-- The whole computational honest strategy interprets to the existing native honest strategy. -/
+/-- The whole computational honest strategy interprets to the existing honest strategy. -/
 theorem interpretProver_honestProver (count start : ℕ) (finish : start + count = n)
     (stmt : Spec.StatementRound R n ⟨start, by omega⟩)
     (poly : CMvPolynomial n R) (hpoly : ∀ j, poly.degreeOf j ≤ deg) :
@@ -76,7 +76,7 @@ theorem interpretProver_honestProver (count start : ℕ) (finish : start + count
 
 variable [DecidableEq R]
 
-/-- The actual computational honest execution equals the mathematical native honest execution.
+/-- The actual computational honest execution equals the mathematical honest execution.
 The retained original oracle and its deterministic source handler are unchanged by this bridge. -/
 theorem execute_honestProver_eq_native (challenge : OracleComp ambient R) (domain : List R)
     (count start : ℕ) (finish : start + count = n) (A : PFunctor)

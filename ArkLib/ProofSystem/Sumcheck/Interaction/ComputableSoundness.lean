@@ -9,9 +9,9 @@ public import ArkLib.ProofSystem.Sumcheck.Interaction.Computable
 public import ArkLib.ProofSystem.Sumcheck.Interaction.ProtocolSoundness
 
 /-!
-# Soundness of native Sumcheck with computable messages
+# Soundness of interaction-layer Sumcheck with computable messages
 
-The exact whole-execution interpretation transfers the mathematical native soundness bound
+The exact whole-execution interpretation transfers the mathematical soundness bound
 against every ordinary computable-message prover, including arbitrary private continuations.
 -/
 
@@ -27,7 +27,7 @@ variable (n deg : ℕ) (F : Type) [Field F] [Fintype F] [DecidableEq F] [Samplea
 
 /-- From a false initial claim over a polynomial-realized original oracle, the probability
 that the actual computable-message execution outputs a true original evaluation claim is at
-most `count * deg / |F|`. The prover is an arbitrary ordinary native strategy. -/
+most `count * deg / |F|`. The prover is an arbitrary ordinary strategy. -/
 theorem execute_soundness {m : ℕ} (D : Fin m ↪ F)
     (count start : ℕ) (finish : start + count = n) (A : PFunctor)
     (originalOracle : VirtualOracle (OracleSpec.ofPFunctor A) (polynomialFamily F n deg))

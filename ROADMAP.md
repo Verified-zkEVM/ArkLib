@@ -11,7 +11,15 @@ layer; this page does not repeat it.
 ArkLib has two layers: the legacy layer (`ArkLib/OracleReduction/`) and the interaction layer
 (`ArkLib/Interaction/`), which is meant to replace it.
 [README.md](README.md#two-layers) explains the difference and the legacy layer's limitations.
-Developing the interaction layer is the project's priority. The migration has three stages.
+
+The legacy layer is sorry-free and reasonably stable. Every protocol and commitment scheme under
+[Complete](#complete) is formalized in it, with sequential composition, context lifting
+(`liftContext`, in [`OracleReduction/LiftContext/`](ArkLib/OracleReduction/LiftContext/)) and
+the [legacy security notions](#framework). The interaction layer is not yet ready to replace it:
+it has generic execution, composition and security theory, and one protocol, Sum-check
+([`ProofSystem/Sumcheck/Interaction/`](ArkLib/ProofSystem/Sumcheck/Interaction/)).
+
+Developing the interaction layer is now the project's priority. The migration has three stages.
 
 1. **Feature parity.** Give the interaction layer every framework feature that the legacy
    protocols use. For example, lifting a reduction into a larger context
@@ -119,7 +127,8 @@ entry says so, the specification is not claimed to be executable.
 ### Framework
 
 - **Legacy-layer security theory**
-  ([`OracleReduction/Security/`](ArkLib/OracleReduction/Security/)): one round-by-round knowledge
+  ([`OracleReduction/Security/`](ArkLib/OracleReduction/Security/)): completeness, soundness,
+  knowledge soundness and round-by-round soundness notions; one round-by-round knowledge
   soundness notion under the default names `rbrKnowledgeSoundness` and
   `rbrKnowledgeSoundnessWith`, proved bridges from round-by-round to ordinary knowledge soundness
   for guarded verifiers (`GuardedBridges.lean`), characterizations of unbounded extraction

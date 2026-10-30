@@ -8,10 +8,10 @@ module
 public import ArkLib.ProofSystem.Sumcheck.Interaction.MultivariateRound
 
 /-!
-# Native Sumcheck with a public abort branch
+# Sumcheck in the interaction layer with a public abort branch
 
 The full protocol alternates a degree-bounded oracle message with the verifier's optional field
-challenge. `none` publicly aborts the interaction; `some r` continues the native tree. Ordinary
+challenge. `none` publicly aborts the interaction; `some r` continues the tree. Ordinary
 prover continuations retain their own memory and effects. The restricted verifier queries only
 the latest sent polynomial, retaining all earlier access slots and exporting the original oracle
 through a virtual view. At the final leaf it returns an evaluation claim without querying the
@@ -57,7 +57,7 @@ def remainingProtocol (count : ℕ)
   | none => .done
   | some _ => protocol R M evaluate count
 omit [CommSemiring R] in
-/-- The existing native protocol is the first round followed by the remaining public branch. -/
+/-- The existing protocol is the first round followed by the remaining public branch. -/
 theorem protocol_succ_eq_append (count : ℕ) : protocol R M evaluate (count + 1) =
     ⟨PFunctor.FreeM.append (firstRoundProtocol R M evaluate).tree
         (fun path => (remainingProtocol R M evaluate count path).tree),
@@ -119,7 +119,7 @@ def verifier (challenge : OracleComp ambient R) (domain : List R) :
             ⟨value, Fin.snoc stmt.challenges r⟩⟩
         else return ⟨none, pure none⟩
 
-/-- Execute and close the full native interaction, retaining its actual paired source handler. -/
+/-- Execute and close the full interaction, retaining its actual paired source handler. -/
 def execute (challenge : OracleComp ambient R) (domain : List R)
     (count start : ℕ) (finish : start + count = n) (A : PFunctor)
     (originalOracle : VirtualOracle (OracleSpec.ofPFunctor A) (polynomialFamily R n deg))
@@ -176,7 +176,7 @@ theorem execute_zero (challenge : OracleComp ambient R) (domain : List R)
   rfl
 
 set_option backward.isDefEq.respectTransparency false in
-/-- Decompose actual native execution for every ordinary prover strategy. The response to a
+/-- Decompose actual execution for every ordinary prover strategy. The response to a
 successful challenge remains effectful; so does the prover's response to public abort. -/
 theorem execute_succ (challenge : OracleComp ambient R) (domain : List R)
     (count start : ℕ) (finish : start + (count + 1) = n) (A : PFunctor)
@@ -226,9 +226,9 @@ theorem execute_succ (challenge : OracleComp ambient R) (domain : List R)
     rfl
   · rfl
 
-/-- Equal original-oracle behavior gives the same native execution and optional closed claim.
+/-- Equal original-oracle behavior gives the same execution and optional closed claim.
 
-Both sides use the same statement, challenge program, and arbitrary whole native prover.
+Both sides use the same statement, challenge program, and arbitrary whole prover.
 Their source interfaces and total deterministic handlers may differ. The equality preserves
 ambient effects, including responses to public abort; it does not compare raw source query logs.
 This abbrev observes the optional closed claim, as does `execute`. -/
@@ -266,7 +266,7 @@ theorem execute_eq_of_originalOracle_eq (challenge : OracleComp ambient R) (doma
 
 variable (N : Type) (evaluateN : N → R → R) (interpret : M → N)
 
-/-- Interpret every sent message of an ordinary native prover. All ambient computations and
+/-- Interpret every sent message of an ordinary prover. All ambient computations and
 all public-branch responses are retained, including the response to public abort. -/
 def transportProver : (count : ℕ) →
     Prover.Strategy ambient (protocol R M evaluate count).tree
@@ -285,7 +285,7 @@ def transportProver : (count : ℕ) →
             return transportProver count next⟩
 
 set_option backward.isDefEq.respectTransparency false in
-/-- Actual whole native execution commutes with message interpretation. The arbitrary prover's
+/-- Actual whole execution commutes with message interpretation. The arbitrary prover's
 private continuations and abort effects survive, and the closed original behavior is identical. -/
 theorem execute_transport (challenge : OracleComp ambient R) (domain : List R)
     (count start : ℕ) (finish : start + count = n) (A B : PFunctor)
@@ -329,13 +329,13 @@ open OracleSpec SingleRound MultivariateRound
 
 variable (R : Type) [CommSemiring R] (n deg : ℕ)
 
-/-- The mathematical message specialization of the shared native protocol. -/
+/-- The mathematical message specialization of the shared protocol. -/
 def protocol := Core.protocol R (Message R deg) (fun q x => q.val.eval x)
-/-- The first mathematical round of the shared native protocol. -/
+/-- The first mathematical round of the shared protocol. -/
 def firstRoundProtocol := Core.firstRoundProtocol R (Message R deg) (fun q x => q.val.eval x)
 /-- Remaining rounds after the public choice. -/
 def remainingProtocol := Core.remainingProtocol R (Message R deg) (fun q x => q.val.eval x)
-/-- Final native Sumcheck statement. -/
+/-- Final interaction-layer Sumcheck statement. -/
 abbrev FinalStatement := Core.FinalStatement R n
 
 variable {ι : Type} (ambient : OracleSpec ι)
@@ -344,7 +344,7 @@ variable {ι : Type} (ambient : OracleSpec ι)
 def latest := Core.latest R (Message R deg) (fun q x => q.val.eval x) ambient
 /-- Domain sum in the shared verifier. -/
 def latestSum := Core.latestSum R (Message R deg) (fun q x => q.val.eval x) ambient
-/-- The mathematical specialization of the shared native verifier. -/
+/-- The mathematical specialization of the shared verifier. -/
 def verifier [DecidableEq R] := Core.verifier R n deg (Message R deg)
   (fun q x => q.val.eval x) ambient
 /-- Close execution of the mathematical specialization. -/
@@ -354,7 +354,7 @@ def execute [DecidableEq R] := Core.execute R n deg (Message R deg)
 def outputRelation := Core.outputRelation R n deg
 
 
-/-- Mathematical specialization of the shared native execution law. -/
+/-- Mathematical specialization of the shared execution law. -/
 theorem protocol_succ_eq_append (count : ℕ) : protocol R deg (count + 1) =
     ⟨PFunctor.FreeM.append (firstRoundProtocol R deg).tree
         (fun path => (remainingProtocol R deg count path).tree),
@@ -365,7 +365,7 @@ theorem protocol_succ_eq_append (count : ℕ) : protocol R deg (count + 1) =
   exact Core.protocol_succ_eq_append R (Message R deg) (fun q x => q.val.eval x)
     count
 
-/-- Mathematical specialization of the shared native execution law. -/
+/-- Mathematical specialization of the shared execution law. -/
 theorem simulate_latest (A : PFunctor) (impl : QueryImpl (OracleSpec.ofPFunctor A) Id)
     (q : Message R deg) (x : R) :
     simulateQ (Verifier.liftAccessImpl ambient (Access.extend A (polynomialInterface R deg))
@@ -374,7 +374,7 @@ theorem simulate_latest (A : PFunctor) (impl : QueryImpl (OracleSpec.ofPFunctor 
   exact Core.simulate_latest R (Message R deg) (fun q x => q.val.eval x) ambient
     A impl q x
 
-/-- Mathematical specialization of the shared native execution law. -/
+/-- Mathematical specialization of the shared execution law. -/
 theorem simulate_latestSum (A : PFunctor) (impl : QueryImpl (OracleSpec.ofPFunctor A) Id)
     (q : Message R deg) (domain : List R) :
     simulateQ (Verifier.liftAccessImpl ambient (Access.extend A (polynomialInterface R deg))
@@ -383,7 +383,7 @@ theorem simulate_latestSum (A : PFunctor) (impl : QueryImpl (OracleSpec.ofPFunct
   exact Core.simulate_latestSum R (Message R deg) (fun q x => q.val.eval x) ambient
     A impl q domain
 
-/-- Mathematical specialization of the shared native execution law. -/
+/-- Mathematical specialization of the shared execution law. -/
 theorem execute_zero [DecidableEq R] (challenge : OracleComp ambient R) (domain : List R)
     (start : ℕ) (finish : start + 0 = n) (A : PFunctor)
     (originalOracle : VirtualOracle (OracleSpec.ofPFunctor A) (polynomialFamily R n deg))
@@ -397,7 +397,7 @@ theorem execute_zero [DecidableEq R] (challenge : OracleComp ambient R) (domain 
   exact Core.execute_zero R n deg (Message R deg) (fun q x => q.val.eval x) ambient
     challenge domain start finish A originalOracle stmt impl prover
 
-/-- Mathematical specialization of the shared native execution law. -/
+/-- Mathematical specialization of the shared execution law. -/
 theorem execute_succ [DecidableEq R] (challenge : OracleComp ambient R) (domain : List R)
     (count start : ℕ) (finish : start + (count + 1) = n) (A : PFunctor)
     (originalOracle : VirtualOracle (OracleSpec.ofPFunctor A) (polynomialFamily R n deg))
@@ -423,7 +423,7 @@ theorem execute_succ [DecidableEq R] (challenge : OracleComp ambient R) (domain 
   exact Core.execute_succ R n deg (Message R deg) (fun q x => q.val.eval x) ambient
     challenge domain count start finish A originalOracle stmt impl prover
 
-/-- Mathematical specialization of the shared native execution law. -/
+/-- Mathematical specialization of the shared execution law. -/
 theorem execute_eq_of_originalOracle_eq [DecidableEq R]
     (challenge : OracleComp ambient R) (domain : List R)
     (count start : ℕ) (finish : start + count = n) (A B : PFunctor)

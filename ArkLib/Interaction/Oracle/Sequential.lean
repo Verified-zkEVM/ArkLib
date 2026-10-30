@@ -16,7 +16,7 @@ public import ArkLib.Interaction.Oracle.RunSources
 # Sequential restricted verifier fragments
 
 Fragment boundaries return ordinary values. Suffix shapes depend on public prefix branches;
-resource handlers come from the same concrete prefix execution. Native prover strategies retain
+resource handlers come from the same concrete prefix execution. Prover strategies retain
 all their private continuation data.
 -/
 
@@ -137,7 +137,7 @@ private theorem run_cast_roles {m : Type u → Type u} [Monad m]
   cases h
   rfl
 
-/-- Transport a paired run to the native appended runtime, retaining the actual path and outputs. -/
+/-- Transport a paired run to the appended runtime, retaining the actual path and outputs. -/
 theorem run_onAppendedRuntime {ι : Type u} (ambient : OracleSpec.{u, u} ι)
     (tree : Oracle.TypeTree.{u}) (suffix : tree.BranchPath → Oracle.TypeTree.{u})
     (first : tree.RoleDecoration)
@@ -232,7 +232,7 @@ def Verifier.appendFragment {ι : Type u} (ambient : OracleSpec.{u, u} ι) :
         · (fun p => second ⟨PUnit.unit, p⟩)) <$> first
 
 /-- Assemble ordinary runtime counterparts from value fragments. The suffix receives the
-handler determined by the prefix's concrete path; native append retains the node schedules. -/
+handler determined by the prefix's concrete path; append retains the node schedules. -/
 def Verifier.appendValueCounterpart {ι : Type u} (ambient : OracleSpec.{u, u} ι)
     (tree : Oracle.TypeTree.{u}) (suffix : tree.BranchPath → Oracle.TypeTree.{u})
     (firstRoles : tree.RoleDecoration)
@@ -572,7 +572,7 @@ private theorem normalized_actual_heq {ι : Type u} (ambient : OracleSpec.{u, u}
   intro rest out
   exact (cast_heq _ out).trans (cast_heq _ out).symm
 
-/-- Interpreting appended value fragments agrees with native counterpart append. The suffix
+/-- Interpreting appended value fragments agrees with counterpart append. The suffix
 uses the actual prefix's concrete resource handler, while the boundary remains an ordinary value. -/
 theorem Verifier.toCounterpartValue_appendFragment {ι : Type u} (ambient : OracleSpec.{u, u} ι)
     (tree : Oracle.TypeTree.{u}) (suffix : tree.BranchPath → Oracle.TypeTree.{u})
@@ -763,7 +763,7 @@ private theorem toCounterpart_eq_mapOutput_value {ι : Type u} (ambient : Oracle
     _ _ _ verifier
 
 set_option backward.isDefEq.respectTransparency false in
-/-- Executing appended restricted fragments factors through the native prefix and its actual
+/-- Executing appended restricted fragments factors through the prefix and its actual
 returned prover continuation. The suffix uses the handler derived from the same concrete prefix
 path. The final verifier action runs once, after both fragments; this equality holds before any
 ambient interpretation and needs no commutativity or losslessness assumption. -/

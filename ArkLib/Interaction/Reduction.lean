@@ -59,7 +59,7 @@ variable {m : Type u → Type u} [Monad m] [LawfulMonad m]
   {MidC : TypeTree.Path s₁ → Type u}
   {OutputP OutputC : TypeTree.Path (s₁.append s₂) → Type u}
 
-/-- Split an arbitrary native adversary at the append boundary without changing execution order.
+/-- Split an arbitrary adversary at the append boundary without changing execution order.
 The prefix returns the adversary's actual suffix strategy, including all its private memory and
 effectful continuations. No commutativity of the ambient effects is assumed. -/
 theorem run_appendFlat_splitPrefix

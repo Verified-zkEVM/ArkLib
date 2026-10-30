@@ -14,9 +14,9 @@ An extractor that searches all `2 ^ m` candidate witnesses in pure Lean code req
 instruction. Its measured program therefore meets the zero budget, so the resource contract alone
 gives no running-time bound.
 
-A native round-by-round extractor is measured stage by stage with the same program type: one
-program with a charged addition realizes the stage map of a one-round extractor for every message,
-although the later witness type depends on the message.
+An interaction-layer round-by-round extractor is measured stage by stage with the same program
+type: one program with a charged addition realizes the stage map of a one-round extractor for every
+message, although the later witness type depends on the message.
 -/
 
 open OracleComp OracleSpec ProtocolSpec AddProgramTest
@@ -64,7 +64,7 @@ namespace MeasuredExtractionTest
 
 open Interaction.Oracle Interaction.Oracle.Security
 
-/-- A one-round native tree: the prover sends a public message in `Fin 8`. -/
+/-- A one-round interaction-layer tree: the prover sends a public message in `Fin 8`. -/
 abbrev oneRound : TypeTree := .public (Fin 8) fun _ ↦ .done
 
 /-- Input witnesses are natural numbers. -/
@@ -77,7 +77,7 @@ def afterState (message : Fin 8) : KnowledgeState := ⟨Fin (message.val + 1), f
 def addExtractor : RoundExtractor oneRound inputState :=
   fun message ↦ ⟨afterState message, fun w ↦ w.val + message.val, PUnit.unit⟩
 
-/-- The single stage of the native extractor, with budget one. -/
+/-- The single stage of the interaction-layer extractor, with budget one. -/
 def addStages : addExtractor.MeasuredStages ℕ :=
   ⟨⟨addProgram (fun x => (x.2.val, x.1.val)), 1, addProgram_realizes _,
     addProgram_costAtMost_one _⟩, fun _ ↦ PUnit.unit⟩

@@ -145,7 +145,7 @@ theorem queryBound_round_cost {Input Salt A : Type} {rounds : List Round}
           conv_rhs => rw [hQ]
           rw [Nat.cast_add, Nat.cast_one, add_mul, one_mul, add_comm]
 
-/-- The native suffix-key injection preserves a complete-path error budget. -/
+/-- The suffix-key injection preserves a complete-path error budget. -/
 theorem roundCost_prependQuery {Input Salt A : Type} {round : Round} {rounds : List Round}
     (errors : RoundErrors (round :: rounds)) (message : round.Message) (salt : Salt)
     (program : OracleComp (oracleSpec Input Salt rounds) A) (budget : ENNReal)
@@ -197,7 +197,7 @@ theorem restoredExecution_round_cost {Input Salt W : Type} (rounds : List Round)
 
 /-- Per-round knowledge errors imply the `Q * max + sum` extraction bound in the actual cached
 restoration experiment. Inputs may be adaptive and keys may be queried out of order or repeatedly.
-The terminal witness is supplied by the adversary; extraction remains the named native backward map.
+The terminal witness is supplied by the adversary; extraction remains the named backward map.
 The sum budget is proved for completion, rather than assumed independent of earlier accesses. -/
 theorem restored_extraction_round_bound {Input Salt W : Type} {rounds : List Round}
     [DecidableEq Input] [DecidableEq Salt]
