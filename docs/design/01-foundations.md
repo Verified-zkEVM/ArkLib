@@ -242,7 +242,5 @@ profile, or causal transducer.
 - Legacy ArkLib consumers remain until a concrete protocol has a proved two-way bridge.
 - Interface names freeze only after a real downstream client exercises all observable components.
 
-The core claim and execution interfaces now have Sumcheck clients. The next work connects
-composition to restricted oracle access and then to persistent-world security. The
-[roadmap](05-roadmap.md) gives the implementation sequence; current dependency gaps are inventoried
-in [current status](00-current-status.md).
+The [roadmap](05-roadmap.md) gives the implementation sequence;
+[current status](00-current-status.md) records implemented interfaces and remaining gaps.

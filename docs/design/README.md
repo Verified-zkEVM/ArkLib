@@ -2,7 +2,7 @@
 
 This suite explains how ArkLib's interaction layer (`ArkLib/Interaction/`) represents interactive
 protocols, states their security, and plans the remaining formalization. It is written for
-readers familiar with provers, verifiers, oracles, and soundness. **Status updated: 2026-10-29.**
+readers familiar with provers, verifiers, oracles, and soundness.
 
 The interaction layer is meant to replace the legacy layer (`ArkLib/OracleReduction/`). The
 [README](../../README.md#two-layers) explains the two layers and the legacy layer's limitations,

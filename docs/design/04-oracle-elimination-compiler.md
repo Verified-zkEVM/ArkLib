@@ -88,11 +88,11 @@ Consumes: public-coin replayable structure, exact serialization/absorption order
 
 ## 6. Nova (the algebraic conformance case)
 
-Kept as in the round-3 document (archive §6.10.6), now with D1 phrasing: the ideal relaxed-R1CS fold is an L3 reduction whose output slots are `linComb` plans; W/E slots carry no guarantee beyond shape (relaxed R1CS has no proximity promise — GuaranteeTransport is trivial there, which is *why* no consistency sampling appears); Pedersen's `commitWithOpening` linearity is the `CommitAction`; security = three-branch language-special-soundness tree + binding across forks → relational extraction for `Com[R_rel]`; the FRI contrast (Merkle roots admit no fold action → fresh word + sampled consistency + proximity guarantee restoration) is the two modes side by side.
+The ideal relaxed-R1CS fold is an L3 reduction whose output slots are `linComb` plans; W/E slots carry no guarantee beyond shape (relaxed R1CS has no proximity promise — GuaranteeTransport is trivial there, which is *why* no consistency sampling appears); Pedersen's `commitWithOpening` linearity is the `CommitAction`; security = three-branch language-special-soundness tree + binding across forks → relational extraction for `Com[R_rel]`; the FRI contrast (Merkle roots admit no fold action → fresh word + sampled consistency + proximity guarantee restoration) is the two modes side by side.
 
 ## 7. Theorem matrix and schedule
 
-The pass × property matrix (normative; reproduced from round 3 so this document has no hidden archive dependency):
+The normative pass-by-property matrix is:
 
 | Pass | Functional correctness | Ordinary soundness | Knowledge/extraction | Zero knowledge |
 |---|---|---|---|---|
