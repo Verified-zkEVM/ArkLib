@@ -344,7 +344,6 @@ variable (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec₁)
 
 include hChallenge in
 /-- Completeness is preserved when the protocol and its challenge samplers are cast together. -/
-@[simp]
 theorem cast_completeness (ε : ℝ≥0) (hComplete : R.completeness init impl relIn relOut ε) :
     (R.cast hn hSpec).completeness init impl relIn relOut ε := by
   subst hn
@@ -363,7 +362,6 @@ theorem cast_completeness (ε : ℝ≥0) (hComplete : R.completeness init impl r
 
 include hChallenge in
 /-- Perfect completeness is preserved by a cast with compatible challenge samplers. -/
-@[simp]
 theorem cast_perfectCompleteness (hComplete : R.perfectCompleteness init impl relIn relOut) :
     (R.cast hn hSpec).perfectCompleteness init impl relIn relOut :=
   cast_completeness hn hSpec hChallenge R 0 hComplete
@@ -415,7 +413,6 @@ variable (R : OracleReduction oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut
 
 include hChallenge in
 /-- Oracle-reduction completeness is preserved by compatible protocol and sampler casts. -/
-@[simp]
 theorem cast_completeness (ε : ℝ≥0) (hComplete : R.completeness init impl relIn relOut ε) :
     (R.cast hn hSpec hOₘ).completeness init impl relIn relOut ε := by
   unfold completeness
@@ -424,7 +421,6 @@ theorem cast_completeness (ε : ℝ≥0) (hComplete : R.completeness init impl r
 
 include hChallenge in
 /-- Oracle-reduction perfect completeness is preserved by compatible casts. -/
-@[simp]
 theorem cast_perfectCompleteness (hComplete : R.perfectCompleteness init impl relIn relOut) :
     (R.cast hn hSpec hOₘ).perfectCompleteness init impl relIn relOut :=
   cast_completeness hn hSpec hChallenge hOₘ R 0 hComplete
