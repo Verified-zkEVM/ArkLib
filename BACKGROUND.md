@@ -1,8 +1,17 @@
 # Background
 
-This page explains the theory that ArkLib formalizes: information-theoretic proof systems, their
-security notions, and the compilers that turn them into succinct arguments. It then compares
-ArkLib's own definition of an interactive oracle reduction with the definitions in the literature.
+This page explains the theory that ArkLib formalizes. ArkLib's scope covers two kinds of objects,
+and most succinct arguments combine them:
+
+- information-theoretic proof systems, such as interactive oracle proofs and reductions, and the
+  compilers that turn them into arguments;
+- arguments and commitment schemes whose security rests on computational assumptions, such as
+  discrete-logarithm and pairing assumptions, lattice assumptions such as Module-SIS, or hash
+  functions modelled as random oracles.
+
+The page surveys both, with their security notions, including post-quantum and universally
+composable security, which ArkLib plans to cover. It then compares ArkLib's own definition of an
+interactive oracle reduction with the definitions in the literature.
 
 It is written for cryptographers and contributors who know what an interactive proof and a SNARK
 are, and who want to know which formal objects ArkLib's definitions correspond to. It is not a
@@ -17,7 +26,7 @@ ArkLib has two layers for protocols, and this page uses fixed names for them:
   protocol as an interaction tree over PolyFun's polynomial functors and is meant to replace the
   legacy layer.
 
-Citation keys such as [BCS16] refer to [Section 7](#7-references). Where the repository has a
+Citation keys such as [BCS16] refer to [Section 8](#8-references). Where the repository has a
 knowledge-base page for a paper, the reference links to it.
 
 ## Contents
@@ -26,9 +35,10 @@ knowledge-base page for a paper, the reference links to it.
 2. [Information-theoretic proof systems](#2-information-theoretic-proof-systems)
 3. [Security notions](#3-security-notions)
 4. [From oracle reductions to succinct arguments](#4-from-oracle-reductions-to-succinct-arguments)
-5. [ArkLib's oracle reductions compared with the literature](#5-arklibs-oracle-reductions-compared-with-the-literature)
-6. [Related formalization efforts](#6-related-formalization-efforts)
-7. [References](#7-references)
+5. [Computational arguments and commitment schemes](#5-computational-arguments-and-commitment-schemes)
+6. [ArkLib's oracle reductions compared with the literature](#6-arklibs-oracle-reductions-compared-with-the-literature)
+7. [Related formalization efforts](#7-related-formalization-efforts)
+8. [References](#8-references)
 
 ## 1. How to use this page
 
@@ -37,23 +47,28 @@ knowledge-base page for a paper, the reference links to it.
 | which paper introduced a model (IOP, IOPP, polynomial IOP, IOR, ...) | [Section 2](#2-information-theoretic-proof-systems) |
 | how round-by-round, state-restoration and special soundness relate | [Section 3](#3-security-notions) |
 | how an IOR becomes a SNARK, and where each step lives in ArkLib | [Section 4](#4-from-oracle-reductions-to-succinct-arguments) |
-| whether an ArkLib theorem about an `OracleReduction` says what a paper's theorem says | [Section 5](#5-arklibs-oracle-reductions-compared-with-the-literature) |
-| how ArkLib relates to other machine-checked cryptography | [Section 6](#6-related-formalization-efforts) |
+| what separates an argument from a proof, which security notions commitment schemes have, and what a proof in the random oracle, generic group or algebraic group model shows | [Section 5](#5-computational-arguments-and-commitment-schemes) |
+| what post-quantum security in the quantum random oracle model and universal composability require, and what ArkLib plans for them | [Section 5.7](#57-post-quantum-security-in-the-quantum-random-oracle-model) and [Section 5.8](#58-universal-composability) |
+| whether an ArkLib theorem about an `OracleReduction` says what a paper's theorem says | [Section 6](#6-arklibs-oracle-reductions-compared-with-the-literature) |
+| how ArkLib relates to other machine-checked cryptography | [Section 7](#7-related-formalization-efforts) |
 
-Two textbooks cover most of Sections 2 to 4 in depth. Chiesa and Yogev's *Building Cryptographic
+Two textbooks cover most of Sections 2 to 5 in depth. Chiesa and Yogev's *Building Cryptographic
 Proofs from Hash Functions* [CY24] is the standard reference for IOPs, state-restoration soundness,
-the BCS transformation and Fiat–Shamir, and ArkLib's Fiat–Shamir module follows its treatment.
-Thaler's *Proofs, Arguments, and Zero-Knowledge* [Tha22] covers interactive proofs, the sum-check
-protocol, and polynomial-commitment-based SNARKs. Ishai's two-part survey [Ish20] gives a short
+the BCS transformation, Merkle commitments in the random oracle model and Fiat–Shamir, and ArkLib's
+Fiat–Shamir module follows its treatment. Thaler's *Proofs, Arguments, and Zero-Knowledge* [Tha22]
+covers interactive proofs, the sum-check protocol, polynomial commitments from discrete logarithms
+and pairings, and the SNARKs built from them. Ishai's two-part survey [Ish20] gives a short
 account of the "information-theoretic proof system plus cryptographic compiler" methodology.
 
 ## 2. Information-theoretic proof systems
 
-Modern succinct arguments are built in two steps. First, one designs a protocol in an idealized
-model in which the verifier has some restricted access to the prover's messages, and proves it
-sound without any computational assumption. Second, a cryptographic compiler removes the
+Many modern succinct arguments are built in two steps. First, one designs a protocol in an
+idealized model in which the verifier has some restricted access to the prover's messages, and
+proves it sound without any computational assumption. Second, a cryptographic compiler removes the
 idealization. The models below differ in what the verifier may ask about a prover message, and in
-what the protocol is supposed to establish.
+what the protocol is supposed to establish. Not every argument is built this way: Section 5 covers
+arguments whose soundness is computational from the start, and the commitment schemes that
+compilers use.
 
 ### 2.1 Interactive proofs and probabilistically checkable proofs
 
@@ -129,9 +144,9 @@ affine in $f$ only when $\hat{w}$ has degree less than 2 in its first argument, 
 *linear* $\Sigma$-IOP. Linear interactive proofs (LIPs) [BCIOP13] are a different restriction: they
 are interactive proofs in which the prover, honest or malicious, may only compute linear functions
 of the verifier's messages. Bitansky et al. compile linear PCPs into SNARKs through LIPs. The
-formalization of linear-PCP SNARKs [BM24] listed in Section 6 belongs to this line of work.
+formalization of linear-PCP SNARKs [BM24] listed in Section 7 belongs to this line of work.
 
-The table lists the models that ArkLib's notion of an oracle interface (Section 5.2) is meant to
+The table lists the models that ArkLib's notion of an oracle interface (Section 6.2) is meant to
 subsume.
 
 | Model | Source | What a prover oracle is | What a verifier query returns |
@@ -164,7 +179,7 @@ A few remarks on priority and naming:
   multilinear polynomial IOPs whose queries are weighted sums.
 - In a polynomial model the prover's messages are assumed to be polynomials of the declared degree,
   for honest and malicious provers alike; STIR's polynomial IOPPs state this restriction explicitly
-  [ACFY24stir]. The compiler must then enforce the degree bound. Section 5.4 explains how ArkLib
+  [ACFY24stir]. The compiler must then enforce the degree bound. Section 6.4 explains how ArkLib
   records this assumption.
 
 ### 2.6 From proofs to reductions
@@ -261,7 +276,7 @@ and Parno [KP23] choose an expected-polynomial-time extractor after the adversar
 success probability be close to the probability that the malicious prover produces a witness for
 the output relation; their extractors rewind the prover. A straightline extractor instead reads
 only one execution: the transcript and the prover's random-oracle queries. One form for reductions,
-used by ArkLib's straightline definition (Section 5.4), bounds a joint event in a single execution:
+used by ArkLib's straightline definition (Section 6.4), bounds a joint event in a single execution:
 the malicious prover's output is in $\mathcal{R}_{\mathsf{out}}$ while the extractor fails to
 recover a valid input witness, with probability at most $\varepsilon_{\mathsf{k}}$. These choices
 matter for composition and for the Fiat–Shamir transformation.
@@ -300,7 +315,7 @@ while the extractor's backward image $E(x, y, \mathsf{tr} \| \rho_i, w)$ makes t
 false. Each round has an explicit extraction time. Because extraction starts from a witness for the later
 state, it can use the output witness. WARP shows that earlier definitions of RBR knowledge imply its
 variant (Appendix C) and that its variant implies straightline state-restoration knowledge soundness
-(Appendix B). Section 5.4 compares ArkLib's definition with Arc's and WARP's.
+(Appendix B). Section 6.4 compares ArkLib's definition with Arc's and WARP's.
 
 ### 3.3 State-restoration soundness
 
@@ -342,7 +357,7 @@ parameter $t_\Gamma$ that governs the extraction cost is polynomially bounded; a
 structure does not by itself give efficient extraction. Attema, Fehr, Klooß and Resch [AFKR26]
 prove the corresponding Fiat–Shamir theorem: under the same condition the transformed protocol is
 knowledge sound, again with a loss linear in the number of random-oracle queries. ArkLib's
-shape-generic tree special soundness (Section 5.4) parameterizes trees by a shape in a similar
+shape-generic tree special soundness (Section 6.4) parameterizes trees by a shape in a similar
 spirit, but no formal equivalence with these definitions is claimed.
 
 Fenzi, Moghaddas and Nguyen [FMN24] name coordinate-wise special soundness (CWSS), in which the
@@ -432,7 +447,7 @@ the PIOP-to-SNARK compilers of Marlin [CHMMVW20], DARK [BFS20], Lunar [CFFQR21] 
 WHIR [ACFY25] attributes the general approach of building SNARGs from polynomial IOPs and
 polynomial commitments to [CHMMVW20, BFS20].
 
-ArkLib's design treats these as one construction. Each oracle interface (Section 5.2) is paired with
+ArkLib's design treats these as one construction. Each oracle interface (Section 6.2) is paired with
 a *functional commitment* for that interface: a commitment to a message, together with an opening
 argument that proves the answer to one query. The commitment-based oracle-elimination stage then:
 
@@ -450,13 +465,18 @@ This is a construction recipe, not a security theorem. Soundness, knowledge soun
 knowledge, enforcement of degree bounds, and Fiat–Shamir security of the result each need their own
 hypotheses on the commitment scheme, and ordinary binding is not enough in general. Marlin, for
 example, compiles AHPs with an extractable polynomial commitment scheme. Chiesa, Guan, Knabenhans
-and Yu [CGKY25] establish the Fiat–Shamir step under state-restoration security of the functional
-IOP and state-restoration function binding of the functional commitment; that result concerns
-soundness and does not by itself give knowledge extraction or hiding.
+and Yu [CGKY25, Theorem 7.1] prove that the compiled interactive argument is state-restoration
+sound and state-restoration knowledge sound, given the same property of the functional IOP and
+state-restoration function binding of the functional commitment; Fiat–Shamir then gives a
+non-interactive argument (of knowledge) in the random oracle model. State-restoration function
+binding follows from state-restoration knowledge soundness and binding of the commitment
+[CGKY25, Lemma 3.31]. As a corollary, Plonk is a SNARK of knowledge in the random oracle model
+under the ARSDH and SplitRSDH assumptions [CGKY25, Corollary 1]. Zero knowledge and hiding are
+not treated.
 
 The [oracle-elimination compiler design](docs/design/04-oracle-elimination-compiler.md) describes
 the general construction for the interaction layer. It splits the construction into passes and
-adds an explicit obligation for type-level guarantees on messages (Section 5.4). Commitment schemes
+adds an explicit obligation for type-level guarantees on messages (Section 6.4). Commitment schemes
 are under [`ArkLib/Commitments/`](ArkLib/Commitments/). For what is implemented, read the status
 documents linked at the top of this page.
 
@@ -506,10 +526,551 @@ interactive reduction (legacy: Reduction)
 non-interactive reduction / argument, relative to a random oracle
 ```
 
-The legacy layer's `oSpec` parameter (Section 5.4) is what lets the last two stages be stated with
+The legacy layer's `oSpec` parameter (Section 6.4) is what lets the last two stages be stated with
 the same `Reduction` type: the random oracle is a shared oracle available to prover and verifier.
 
-## 5. ArkLib's oracle reductions compared with the literature
+## 5. Computational arguments and commitment schemes
+
+Sections 2 to 4 treat the information-theoretic part of a succinct argument and the compilers that
+remove its idealization. The argument that comes out is computational: it is sound only against
+efficient provers, and only under an assumption about a cryptographic object. This section covers
+the computational objects directly. Some protocols are designed in this setting from the start,
+with commitments and algebraic structure inside the interaction rather than added by a compiler:
+inner-product arguments, lattice-based arguments and folding schemes. Commitment schemes are the
+component through which an assumption enters a compiled argument. Both are in ArkLib's scope.
+Sections 5.7 and 5.8 cover two stronger security goals that ArkLib plans to address: security
+against quantum adversaries, and security under universal composition.
+
+### 5.1 Proofs and arguments
+
+In an interactive proof, soundness holds against every prover, including computationally unbounded
+ones. An *argument*, introduced by Brassard, Chaum and Crépeau [BCC88], asks for soundness only
+against provers that run in polynomial time. Kilian's and Micali's succinct constructions [Kil92,
+Mic94] (Section 2.2) are arguments in this sense.
+
+Soundness of an argument is proved relative to an assumption. The proof turns every malicious
+prover $\tilde{P}$ into an adversary $\mathcal{B}$ against the assumption, by an explicit
+reduction, such that for every $x \notin \mathcal{L}$
+
+$$\Pr[\langle \tilde{P}, V \rangle(x) = 1] \le \varepsilon_{\mathsf{s}} + \mathsf{Adv}(\mathcal{B}).$$
+
+Here $\varepsilon_{\mathsf{s}}$ is a statistical error, typically from the size of the challenge
+sets, and $\mathsf{Adv}(\mathcal{B})$ is the success probability of $\mathcal{B}$ against the
+assumption. An asymptotic statement asks that $\mathcal{B}$ run in polynomial time whenever
+$\tilde{P}$ does and that the right-hand side be negligible. A concrete statement records both
+terms and the running time of $\mathcal{B}$. Knowledge soundness relative to an assumption
+(Section 3.1) has the same shape: the probability that the prover succeeds while the extractor
+fails to output a witness is at most the knowledge error plus the advantage of a reduction.
+
+Two features recur in the knowledge soundness of computational arguments.
+
+- **Computational special soundness.** From a tree of accepting transcripts (Section 3.4), the
+  extractor computes either a witness or a solution to a hard problem. For the discrete-logarithm
+  arguments of Bootle, Cerulli, Chaidos, Groth and Petit [BCCGP16], the hard problem is a
+  nontrivial discrete-logarithm relation among the generators of the commitment key. For lattice
+  arguments such as Greyhound [NS24], it is a short nonzero vector in the kernel of a public
+  matrix, that is, a Module-SIS solution, computed from two different openings of one commitment
+  [NS24, Lemma 2.11]. The tree-extraction results of Section 3.4 then give knowledge soundness,
+  and the hard-problem branch is charged to the assumption.
+- **Relaxed relations.** Lattice-based arguments usually cannot extract a witness as short as the
+  one the honest prover uses. The extractor recovers a witness for a larger relation
+  $\mathcal{R}' \supseteq \mathcal{R}$. LaBRADOR [BS23, Remark 3.4] states completeness for
+  $\mathcal{R}$ and knowledge soundness for $\mathcal{R}'$. Greyhound [NS24, Section 2.5] calls
+  the extracted commitment openings *weak openings*: each block $i$ carries an invertible challenge
+  $c_i$ of small $\ell_1$ norm, and only $c_i \cdot s_i$, not the message block $s_i$ itself, is
+  guaranteed to be short. The
+  commitment must then be binding with respect to weak openings [NS24, Definition 2.9 and
+  Lemma 2.11].
+
+### 5.2 Arguments from computational assumptions
+
+**Discrete logarithms.** Bootle et al. [BCCGP16] give an argument for arithmetic circuit
+satisfiability with logarithmic communication and no trusted setup. It is built around an
+inner-product argument for Pedersen vector commitments [Ped91], and its soundness rests on the
+discrete-logarithm assumption. Bulletproofs [BBBPWM18] shorten the inner-product argument and apply
+it to range proofs. In both, the verifier runs in time linear in the size of the commitment key.
+Both are public-coin, so Fiat–Shamir (Section 4.2) makes them non-interactive.
+
+**Pairings.** KZG-based SNARKs such as PLONK [GWZC19] and Marlin [CHMMVW20] are compiled from
+polynomial IOPs (Section 4.1). Their original security proofs work in the algebraic group model
+(Section 5.4). Later analyses prove PLONK knowledge sound in the random oracle model under the
+falsifiable assumptions ARSDH and SplitRSDH [LPS25, CGKY25].
+
+**Lattices.** LaBRADOR [BS23] is a recursively amortized proof system for R1CS whose knowledge
+soundness rests on Module-SIS. Greyhound [NS24] is a polynomial commitment scheme from standard
+lattice assumptions: a three-round evaluation protocol with verifier time $O(\sqrt{N})$ for
+polynomials of degree $N$, composed with LaBRADOR to make the evaluation proof polylogarithmic in
+$N$. Its knowledge soundness is proved through coordinate-wise special soundness [FMN24]
+(Section 3.4). Hachi [NOZ26] builds on Greyhound's inner-outer Ajtai commitment to commit to
+multilinear polynomials over extension fields, with a square-root verifier and security from
+Module-SIS. Akita [DBK+26] builds on Hachi. It reduces verification time further by committing to
+the public setup matrices ahead of time and proving the verifier's deferred work on them against
+those commitments, again with security from Module-SIS.
+
+**Folding.** A folding scheme reduces two instances of a relation to one (Section 2.6). Nova
+[KST22] folds instances of relaxed R1CS that carry homomorphic commitments, instantiated with
+Pedersen commitments under the discrete-logarithm assumption. LatticeFold [BC24] and LatticeFold+
+[BC25] fold with lattice commitments under Module-SIS. Their main difficulty is to keep the norm of
+extracted witnesses bounded across many folding steps, which the relaxed relations of Section 5.1
+would otherwise let grow. In the vocabulary of Section 2.6, a folding scheme is a reduction from a
+relation to itself whose knowledge soundness is computational.
+
+### 5.3 Commitment schemes and their security notions
+
+An ordinary commitment scheme has three algorithms: setup samples public parameters, commit maps a
+message and randomness to a commitment and an opening, and verify checks an opening against a
+commitment. It has two standard security properties.
+
+- **Binding:** no efficient adversary can output one commitment with valid openings to two
+  different messages.
+- **Hiding:** the commitment reveals nothing about the message: commitments to two messages chosen
+  by the adversary are indistinguishable.
+
+Each property can hold perfectly, statistically or computationally, but no scheme is both
+perfectly binding and perfectly hiding.
+
+A *polynomial commitment* [KZG10] commits to a polynomial and later proves evaluation claims
+$f(z) = y$. A *functional commitment* [LRY16] does the same for a class of functions of the
+committed message. Bünz, Fisch and Szepieniec [BFS20] treat the evaluation proof as an interactive
+argument for the relation of commitments $C$, points $z$ and values $y$ for which the prover knows
+$f$ and randomness $r$ with $C = \mathsf{Commit}(f; r)$ and $f(z) = y$. The security notions for
+these schemes refine binding.
+
+- **Evaluation binding** [KZG10]: no efficient adversary can produce accepting evaluation proofs
+  for one commitment, one point and two different values.
+- **Function binding** [CGKY25]: no efficient adversary can produce accepting evaluation proofs
+  for a list of query-answer pairs that no single function in the class satisfies. Two different
+  answers to one query form such a list, so function binding implies evaluation binding.
+- **Weak binding** [NS24]: binding with respect to the relaxed openings that lattice extractors
+  produce (Section 5.1).
+- **Extractability**, or knowledge soundness of openings: from an adversary that produces an
+  accepting evaluation proof, an extractor recovers a function in the class that is consistent
+  with the proved evaluation. Marlin's compiler requires an extractable polynomial commitment
+  [CHMMVW20], and [BFS20] asks the evaluation argument to be an argument of knowledge. A
+  *straightline* extractor reads only the adversary's commitment and its oracle queries, without
+  rewinding.
+- **Hiding:** the commitment and the evaluation proofs reveal nothing beyond the proved
+  evaluations. Zero-knowledge compilers need this [CHMMVW20].
+
+The standard instantiations rest on different assumptions and models.
+
+| Scheme | Binding rests on | Other properties and models |
+|---|---|---|
+| Pedersen and vector Pedersen [Ped91] | discrete logarithm | perfectly hiding; additively homomorphic; used by [BCCGP16, BBBPWM18, KST22] |
+| KZG [KZG10] | evaluation binding from $t$-SDH [BB04, KZG10]; function binding from ARSDH [LPS24, CGKY25] | needs a structured reference string with a secret trapdoor; extractability is proved in the algebraic group model [CHMMVW20]; [KZG10] gives a hiding variant |
+| Ajtai [Ajt96] | SIS, or Module-SIS over a polynomial ring [LS15], for short messages | the basic scheme is not hiding; hiding variants add short randomness and rely on Module-LWE [BDLOP18] |
+| Inner-outer Ajtai [NS24, NOZ26] | weak binding from Module-SIS | commits to polynomials through a gadget decomposition; openings are proved by the arguments of Section 5.2 |
+| Merkle tree [Mer87] | collision resistance of the hash function | in the random oracle model, binding and straightline extractability with bounds in the number of queries [BCS16, CY24]; hiding needs salted leaves |
+
+The pairing and lattice assumptions in the table are search problems.
+
+- **$t$-SDH** ($t$-strong Diffie–Hellman). Given $g, g^{\tau}, \dots, g^{\tau^t}$ in a group of
+  prime order $p$ (and, with a pairing, $g_2$ and $g_2^{\tau}$ in a second group), output
+  $c \in \mathbb{Z}_p$ and $g^{1/(\tau + c)}$.
+- **ARSDH** (adaptive rational strong Diffie–Hellman). Given the same structured reference string
+  for degree $D$, output a set $S$ of $D + 1$ field elements and group elements $h_1 \ne 1$ and
+  $h_2 = h_1^{1/Z_S(\tau)}$, where $Z_S(X) = \prod_{s \in S}(X - s)$ [LPS24].
+- **Module-SIS.** Given a uniformly random matrix $A$ over $R_q = \mathbb{Z}_q[X]/(\varphi)$,
+  output a nonzero short vector $z$ with $Az = 0$ [LS15].
+
+### 5.4 Idealized models
+
+Many of these proofs hold in an idealized model of a hash function or a group. A proof in such a
+model shows security against every adversary that uses the hash function or the group only through
+the model's interface. It says nothing directly about an adversary that exploits the concrete
+hash function or the concrete representation of group elements.
+
+**Random oracle model.** In the random oracle model [BR93], every party, including the adversary,
+has oracle access to a uniformly random function, and security bounds are stated in the number of
+oracle queries. A reduction may observe the adversary's queries, which is how straightline
+extractors for Merkle commitments and for Fiat–Shamir arguments work, and some proofs also
+program the oracle's answers. Canetti, Goldreich and Halevi [CGH04] show that the model does not
+transfer to every concrete hash function: some schemes that are secure in the model are insecure
+under every instantiation. Sections 4.2 and 5.7 discuss the quantum random oracle model.
+
+**Generic group model.** In the generic group model, the adversary manipulates group elements only
+through the group operation and equality tests. Shoup's model [Sho97] gives the adversary random
+encodings of group elements, and Maurer's model [Mau05] gives it handles. Security bounds are then
+information-theoretic in the number of group operations. For example, a generic algorithm needs
+on the order of $\sqrt{p}$ group operations to compute discrete logarithms in a group of prime
+order $p$ [Sho97].
+
+**Algebraic group model.** The algebraic group model of Fuchsbauer, Kiltz and Loss [FKL18] lets the
+adversary see real group elements, but requires it to output, with every group element it produces,
+a representation of that element as a product of powers of the group elements it has received. A
+reduction can read these representations. Proofs in this model therefore reduce to an assumption
+such as the discrete logarithm or $q$-DLOG, rather than bounding the adversary outright. The model
+sits between the generic group model and the standard model, and Jaeger and Mohan [JM24] study
+when a proof in it transfers to the generic group model. Extractability of KZG is the typical
+argument in this model: the representation of a commitment over the structured reference string
+gives the coefficients of the committed polynomial [CHMMVW20].
+
+**In ArkLib.** ArkLib's games are VCVio oracle computations (Section 7). An experiment is an
+`OracleComp` over an oracle specification `oSpec`, and a query implementation decides how each
+oracle answers. A random oracle is one such oracle, implemented by sampling on first query and
+caching the answer (VCVio's `OracleSpec.randomOracle`). A statement in the random oracle model is
+an experiment whose oracle specification contains the random oracle and whose implementation
+samples it. Generic and algebraic group models are being consolidated in VCVio
+([#1310](https://github.com/Verified-zkEVM/ArkLib/issues/1310)), and ArkLib's own group-model
+module defines algebraic representations (Section 5.9).
+
+### 5.5 Stating computational security in Lean
+
+A Lean function has no resource bound. A statement "every adversary has advantage at most
+$\varepsilon$" therefore quantifies over computationally unbounded adversaries, and for a
+computational assumption such a statement is false. ArkLib proves this for its pairing
+assumptions: `Groups.not_tSdhAssumption_univ` shows that $t$-SDH over all Lean adversaries cannot
+have error below 1 when the verifier's generator is nontrivial, because a classical inverse of the
+exponent map recovers the trapdoor from the structured reference string.
+`Groups.not_arsdhAssumption_univ` is the corresponding result for ARSDH, under its stated
+hypotheses.
+
+ArkLib therefore states computational security as an explicit reduction. For each adversary
+against the scheme, the theorem constructs an adversary against the assumption, and bounds the
+first adversary's advantage by the second adversary's success probability. The bound relates two
+concrete probabilities at every parameter and does not quantify over adversaries.
+
+- `KZG.CommitmentScheme.binding_reduces_to_tSdh` bounds the evaluation-binding advantage of any
+  adversary against KZG by the $t$-SDH success probability of `KZG.CommitmentScheme.bindingReduction`
+  applied to it.
+- `KZG.CommitmentScheme.function_binding_reduces_to_arsdh` does the same for function binding and
+  ARSDH, following [CGKY25].
+- `ArkLib.Lattices.Ajtai.Simple.bindingAdvantage_le_moduleSIS` bounds the binding advantage of the
+  simple Ajtai commitment by a Module-SIS advantage.
+
+A corollary such as `KZG.CommitmentScheme.binding` then assumes the hardness bound over an explicit
+class of adversaries (`Groups.tSdhAssumption` takes the class as an argument) and requires the
+reduction to belong to that class. The corollary is as strong as the class one can justify, for
+example generic, algebraic or resource-bounded adversaries. VCVio also provides asymptotic
+vocabulary in `VCVio/CryptoFoundations/Asymptotics/`: security games indexed by a security
+parameter, reductions with polynomial loss, and a backend-relative notion of polynomial time.
+
+### 5.6 Commitments and oracle reductions
+
+Section 4.1 describes how ArkLib combines the two halves: each oracle interface is paired with a
+functional commitment for that interface, every oracle message is replaced by a commitment, and
+every verifier query is replaced by a run of the commitment's opening argument. The resulting
+interactive reduction is an argument, and it inherits its assumptions and its model from the
+commitment, not from the oracle reduction. Compiling with Merkle trees gives an argument in the
+random oracle model; compiling with KZG gives one under pairing assumptions, in the algebraic group
+model or under ARSDH; compiling with Greyhound, Hachi or Akita gives one under Module-SIS.
+
+Each security goal of the compiled argument draws on a different commitment property.
+
+- **Soundness** needs a binding-type property that fixes the oracle the verifier queries. For
+  the Fiat–Shamir step, Chiesa, Guan, Knabenhans and Yu [CGKY25] use state-restoration function
+  binding (Section 4.1).
+- **Knowledge soundness** classically uses extractability, so that the extractor of the oracle
+  reduction can be run on extracted messages [CHMMVW20, BFS20]. For Merkle trees in the random
+  oracle model, the extractor reads the committed messages from the prover's queries [BCS16, CY24].
+  For the Fiat–Shamir step, [CGKY25, Theorem 7.1] needs no separate extractability property:
+  state-restoration function binding of the commitment, together with state-restoration knowledge
+  soundness of the functional IOP, gives state-restoration knowledge soundness of the compiled
+  argument.
+- **Zero knowledge** needs hiding commitments and zero-knowledge openings, in addition to a
+  zero-knowledge oracle reduction (Section 3.5).
+
+A lattice commitment whose opening argument extracts only weak openings (Section 5.1) adds a
+further obligation. The extracted message is determined only by weak binding, so knowledge
+soundness of the compiled argument is naturally stated for a relaxed relation. Section 4.1 explains
+why the construction alone is not a security theorem, and the
+[oracle-elimination compiler design](docs/design/04-oracle-elimination-compiler.md) records the
+obligations ArkLib's compiler places on the commitment.
+
+### 5.7 Post-quantum security in the quantum random oracle model
+
+A post-quantum argument must stay sound against provers that run on a quantum computer. Hash
+functions are public code, so such a prover can evaluate the hash function on a superposition of
+inputs. Boneh et al. [BDF+11] argue that post-quantum security in the random oracle model must
+therefore be proved in the *quantum random oracle model* (QROM), where the adversary queries the
+oracle in superposition. They separate the two models with a scheme that is secure against
+classical oracle access but insecure against quantum access, and they identify *history-free*
+reductions as a class of classical proofs that carry over.
+
+Most classical random-oracle proofs use one of four techniques, and each breaks in the QROM.
+
+- **Lazy sampling.** A classical simulator samples the oracle's answer when a point is first
+  queried. A superposition query touches every point at once.
+- **Recording queries.** A classical reduction reads the adversary's queries, for example to
+  extract the committed messages of a Merkle tree. Copying a quantum query would measure it and
+  disturb the adversary's state.
+- **Programming the oracle.** Fiat–Shamir proofs set the oracle's answer at a point the adversary
+  is about to use. With quantum queries, the adversary may already have queried that point in
+  superposition.
+- **Rewinding.** Special-soundness extractors run the prover again from an earlier state with new
+  challenges. A quantum prover's state cannot be copied, and recording its answer disturbs it.
+  This last problem does not involve a random oracle and affects interactive arguments in the
+  standard model too.
+
+**Compressed oracles.** Zhandry [Zha19] overcomes the recording barrier. Viewed in the Fourier
+basis, a query writes to the oracle's register rather than to the adversary's, so a purified
+oracle can be simulated by a database that records the adversary's queries; this compressed
+oracle has the same behavior as the random oracle for every adversary. Chung, Fehr, Huang and Liao
+[CFHL21] give an abstract exposition of the technique, extend it to parallel queries, and give a
+framework in which quantum query lower bounds follow from classical reasoning. Don, Fehr, Majenz
+and Schaffner [DFMS22a] use a commutator bound between the compressed oracle's evolution and an
+extraction measurement to extract hash preimages *online*, without rewinding and without
+disturbing the run, and they apply it to commit-and-open Σ-protocols [DFMS22a, DFMS22b], including
+Merkle-tree commitments [DFMS22b]. Grilo, Hövelmanns, Hülsing and Majenz [GHHM21] bound the
+advantage of distinguishing an adaptively reprogrammed quantum random oracle from an untouched one,
+and show the bound is tight.
+
+**Fiat–Shamir in the QROM.** Unruh [Unr15] gives a transformation from Σ-protocols to
+non-interactive zero-knowledge proofs of knowledge that is secure against quantum adversaries; the
+Fiat–Shamir and Fischlin constructions were then known to be secure only against classical
+adversaries. Don, Fehr, Majenz and Schaffner [DFMS19] then
+reduce any quantum prover against the Fiat–Shamir transformation of a Σ-protocol in the QROM to a
+quantum prover against the Σ-protocol itself, with a loss quadratic in the number of queries, so
+soundness and proofs of knowledge against quantum provers are preserved. Liu and Zhandry [LZ19]
+give mild conditions under which Fiat–Shamir is secure in the quantum setting, and
+show that existing lattice signatures based on Fiat–Shamir are secure without modification. Don,
+Fehr and Majenz [DFM20] extend the measure-and-reprogram technique to multi-round protocols, and
+show that the quadratic loss is optimal up to a factor depending only on the number of rounds.
+Unruh [Unr17] shows that Fiat–Shamir is a zero-knowledge, simulation-sound proof system against
+quantum adversaries when the Σ-protocol has computational zero knowledge and statistical soundness,
+without showing that it is a proof of knowledge.
+
+**Succinct arguments from IOPs.** Chiesa, Manohar and Spooner [CMS19] give the first evidence that
+hash-based succinct arguments are post-quantum secure. They prove that Micali's construction is
+unconditionally secure in the QROM and inherits the zero knowledge and proof of knowledge of the
+PCP, and that the BCS construction is secure in the QROM when the IOP is round-by-round sound
+(Section 4.2 gives their bounds). Their main tool is a lifting lemma that derives security against
+quantum attackers from a classical property of the oracle game. Fractal [COS20] builds post-quantum,
+transparent recursive proofs from a preprocessing zkSNARK obtained from holographic proofs. Chiesa, Di, Hu and Zheng
+[CDHZ26] extend the analysis from IOPs to interactive oracle reductions. They prove that hash-based
+succinct non-interactive reductions built from IORs are secure in the QROM when the IOR satisfies a
+post-quantum analogue of state-restoration security, which round-by-round security implies. They
+also obtain adaptively secure straightline quantum extraction, and they structure the proof around
+a quantum extraction property of vector commitments that Merkle commitments satisfy, as in the
+classical analysis. For a particular IOP, such as FRI, STIR or WHIR, these theorems reduce the
+post-quantum security of the compiled SNARG to classical round-by-round (knowledge) soundness of
+the IOP.
+
+**Quantum rewinding.** Without a random oracle, the obstacle is rewinding. Ambainis, Rosmanis and
+Unruh [ARU14] show, relative to an oracle, that classically secure proofs of knowledge, including
+Σ-protocols and the Fiat–Shamir construction, can be insecure against quantum adversaries, and
+that ordinary computational binding gives almost no guarantee in the quantum setting. Unruh
+[Unr12] gives a quantum rewinding technique and criteria under which a classical proof of
+knowledge is a quantum proof of knowledge. He later defines *collapse-binding* commitments
+[Unr16], a binding notion that works with rewinding. Chiesa, Ma, Spooner and Zhandry [CMSZ21]
+prove that Kilian's succinct argument is post-quantum secure in the standard model when
+instantiated with any PCP and any collapsing hash function, using a rewinding procedure that
+obtains as many accepting transcripts as needed. Lombardi, Ma and Spooner [LMS22b] extract
+information from several runs of a quantum adversary without disturbing its state, and use this
+for post-quantum zero knowledge. Lai, Malavolta and Spooner [LMS22a] rewind across many rounds and
+prove post-quantum knowledge soundness for multi-round protocols that satisfy multi-round special
+soundness and collapsing, including lattice-based protocols in the style of Bulletproofs. Chiesa,
+Dall'Agnol, Di, Guan and Spooner [CDDGS25] prove an interactive variant of the BCS transformation
+secure against quantum adversaries in the standard model when the vector commitment is collapse
+binding. Their reduction extracts a quantum algorithm that implements an IOP adversary rather than
+a classical proof string.
+
+**Lattice-based arguments.** Module-SIS is believed to be hard for quantum algorithms, but a
+lattice argument is post-quantum knowledge sound only if its extractor works against quantum
+provers. The multi-round rewinding of [LMS22a] gives this for Bulletproofs-like lattice protocols.
+For Fiat–Shamir versions, the QROM results above apply to protocols that satisfy their hypotheses.
+Classical knowledge-soundness analyses, such as the analysis of non-interactive LaBRADOR by Aardal
+et al. [AABKT24], do not by themselves give post-quantum security. Whether a given lattice argument,
+such as Greyhound or Hachi, meets the hypotheses of a quantum extraction theorem has to be checked
+protocol by protocol.
+
+**In VCVio.** VCVio has a quantum layer, built since October 2026, whose design and open
+obligations are recorded in its
+[quantum-layer design note](https://github.com/Verified-zkEVM/VCVio/blob/main/docs/design/quantum-layer.md).
+Its Mathlib-only base (completely positive maps, subinstruments, Choi–Kraus and Stinespring forms,
+pure states and oracle unitaries) is the separate
+[QuantumFoundations](https://github.com/lean-crypto-foundations/QuantumFoundations) library, which
+VCVio has imported since 28 October 2026. On VCVio's main branch:
+
+- quantum programs, runtimes and the QROM, with the classical random oracle recovered for
+  classical algorithms (merged 20 October 2026);
+- the compressed random oracle as a quantum runtime (20 October 2026), and commutator bounds for
+  it with the optimal constant 24 (21 October 2026);
+- query mass and the hybrid argument for general quantum programs (22 October 2026), and emulated
+  quantum oracles with classical reads and call budgets (23 October 2026);
+- vector commitments, multi-extractors and salted Merkle trees (26 October 2026), and
+  multi-extractability of salted Merkle trees against quantum adversaries, including offline
+  extractability with checked reads (26 and 27 October 2026).
+
+Open work is tracked in three VCVio issues.
+[#964](https://github.com/Verified-zkEVM/VCVio/issues/964) covers the execution model: loops,
+coherent choice of oracle, inverse and controlled access to implementations, parallel queries,
+Kraus expansions of whole programs, and several parties.
+[#965](https://github.com/Verified-zkEVM/VCVio/issues/965) covers reductions and cost: signature
+morphisms (the quantum analogue of `simulateQ`), gate-level cost, and realizable programs.
+[#966](https://github.com/Verified-zkEVM/VCVio/issues/966) covers the remaining QROM results:
+classical algorithms with private coins, games shared by classical and quantum adversaries,
+oracle-model sanity checks, the general final-measurement lemma of the compressed oracle, and
+zero-preimage and collision bounds on the adversary's output. ArkLib has no quantum definitions.
+
+**Planned for ArkLib.** ArkLib plans to prove post-quantum soundness and knowledge soundness of
+hash-based SNARGs in the QROM: the BCS transformation with Merkle commitments, from round-by-round
+soundness and round-by-round knowledge soundness of the oracle reduction, following [CMS19] and its
+extension to reductions [CDHZ26], and building on VCVio's QROM results for vector commitments.
+It also plans the Fiat–Shamir transformation of oracle reductions in the QROM, and post-quantum
+security of the lattice-based commitments of Section 5.3. None of this is formalized yet.
+
+### 5.8 Universal composability
+
+Knowledge soundness and zero knowledge are *standalone* notions: they describe one execution of a
+protocol in isolation. Canetti's universal composability (UC) framework [Can01] instead compares a
+protocol $\pi$ with an *ideal functionality* $\mathcal{F}$, a trusted party that performs the task
+by definition. The protocol *UC-realizes* $\mathcal{F}$ if for every adversary attacking $\pi$
+there is a simulator attacking $\mathcal{F}$ such that no environment, which chooses the inputs and
+sees the outputs and interacts with the adversary throughout, can tell the two worlds apart. The
+composition theorem then lets any larger protocol that uses $\mathcal{F}$ use $\pi$ instead.
+Canetti, Dodis, Pass and Walfish [CDPW07] extend the framework to setups shared by all protocols,
+such as one hash function used everywhere (generalized UC, or GUC).
+
+Standalone knowledge soundness does not compose in this sense, for two reasons.
+
+- **Rewinding.** A UC simulator cannot rewind the environment, so it must extract witnesses from
+  proofs it sees *straightline*, without rewinding. Most knowledge-soundness proofs rewind
+  (Section 3.4).
+- **Malleability.** An adversary that sees honest proofs may transform them into proofs of related
+  statements without knowing a witness. Knowledge soundness says nothing about an adversary that
+  sees other proofs. *Simulation extractability* requires extraction to succeed even after the
+  adversary has seen simulated proofs of statements of its choice.
+
+A UC proof for a SNARK in the random oracle model must also say what the oracle is. A random oracle
+local to one protocol, which the simulator can program and observe freely, does not model one hash
+function shared by many protocols; a global random oracle restricts what the simulator may do.
+
+**Global random oracles and straightline extraction.** Pass [Pas03] studies zero knowledge in the
+random oracle model when the simulator may not program the oracle, motivated by deniability.
+Fischlin [Fis05] gives non-interactive proofs of knowledge with online, that is straightline,
+extractors in the random oracle model. Canetti, Jain and Scafuro [CJS14] obtain UC commitments,
+zero knowledge and general secure computation from a single global, non-programmable random
+oracle. Camenisch et al. [CDGLN18] study alternative global random oracles, which allow restricted
+programming or observation of queries, and show that these let practical protocols, such as the
+commitment $H(m \Vert r)$ and Schnorr signatures, be proved GUC-secure. Lysyanskaya and Rosenbloom
+[LR22] determine the minimal properties needed for GUC non-interactive zero-knowledge proofs of
+knowledge in any global random-oracle model, and construct efficient ones in the restricted
+programmable and restricted observable models. Zhou et al. [ZZZR22] give impossibility and
+feasibility results for GUC commitments from global random oracles.
+
+**SNARKs in the random oracle model.** Chiesa and Fenzi [CF24] prove that zkSNARKs in the random
+oracle model can be UC-secure *unconditionally*, meaning against adversaries that make a bounded
+number of oracle queries and are otherwise unbounded. They prove this for Micali's construction
+and for the BCS construction without modification, in contrast to prior transformations that rely
+on computational assumptions and often lose succinctness. Badertscher et al. [BCCRS24] build
+UC-secure NIZKs with logarithmic, witness-succinct proofs from a global non-programmable random
+oracle, and observe that among the formalizations of [CDGLN18] their choice of setup is necessary
+for this result. They also give a construction based on [CF24] and show that it achieves a
+slightly weaker version of their NIZK functionality. Canetti and Chen [CC25] develop a toolbox for
+UC-secure succinct commitments and vector commitments in the random oracle model, analyze a
+modular variant of the Kilian–Micali zkSNARK with it, and propose a new UC formulation of a global
+random oracle that, in their account, avoids a weakness in existing formulations.
+
+**Generic lifting through simulation extractability.** Another approach compiles a
+simulation-extractable SNARK into a UC-secure one. C∅C∅ [KZM+15] applies strengthening
+transformations to SNARKs to obtain UC-composable zero-knowledge proofs. Groth and Maller [GM17]
+construct a pairing-based simulation-extractable SNARK and relate such SNARKs to signatures of
+knowledge. Lift-and-Shift [ARS20] obtains simulation extractability generically for SNARKs with
+subversion-resistant or updatable setup, and Abdolmaleki et al. [AGRS24] obtain UC-secure NIZKs
+with updatable setup whose proofs grow with the witness. Ganesh et al. [GKOPTT23] give a compiler
+that lifts any simulation-extractable NIZK argument of knowledge to a UC-secure one in the global
+random oracle model while preserving witness succinctness, which with existing zkSNARKs gives the
+first UC-secure zkSNARKs with constant-size proofs. Roustaeifar et al. [RZM+26] compose a
+simulation-extractable zkSNARK with a key-updatable polynomial commitment to obtain UC security
+with updatable setup.
+
+**Simulation extractability of deployed SNARKs.** A line of work proves simulation extractability
+of SNARKs as they are deployed, which is the input to the compilers above. Ganesh et al. [GOPTT22]
+prove Fiat–Shamir Bulletproofs non-malleable in the algebraic group model. Ganesh et al.
+[GKKNZ22] prove that Plonk, Sonic and Marlin are simulation extractable with an updatable
+structured reference string, by generalizing results on the Fiat–Shamir transformation.
+Kohlweiss, Pancholi and Takahashi [KPT23] show that compiling a polynomial IOP with a polynomial
+commitment gives knowledge soundness, weak unique responses and trapdoor-less zero knowledge, which
+together imply simulation extractability. Faonio et al. [FFKRZ23] define simulation extractability
+for the opening and evaluation proofs of polynomial commitments and use it to compile
+simulation-extractable zkSNARKs from polynomial IOPs such as Plonk and Marlin. Faonio, Fiore and
+Russo [FFR24] extend this to the optimized variants of Plonk and Marlin that are implemented in
+practice, and Faonio and Russo [FR26] treat sumcheck-based zkSNARKs such as HyperPlonk, Spartan and
+Libra, for which the PST commitment satisfies a controlled form of malleability instead.
+
+**The algebraic group model.** Anthoine, Fiore and Pancholi [AFP26] identify mostly standard
+properties of a zkSNARK proved secure in the algebraic group model (optionally with a random
+oracle) that imply UC security, check them using the formulation of the model by Jaeger and Mohan
+[JM24], and conclude that Plonk and Marlin are UC-secure without overhead.
+
+**Quantum adversaries.** Unruh [Unr10] gives a quantum version of the UC model with the same
+composition guarantees, and shows that every statistically UC-secure classical protocol is also
+statistically quantum UC-secure. Straightline extraction against quantum adversaries is available in the QROM
+[DFMS22a, CDHZ26] (Section 5.7), which is the extraction a UC simulator needs.
+
+**Open questions.** The literature does not yet agree on one global random oracle. [CJS14] uses a
+non-programmable oracle, [CDGLN18] and [LR22] use restricted programmable and restricted observable
+ones, [BCCRS24] find their setup choice necessary for their result, and [CC25] propose a new
+formulation. The NIZK functionality differs between works as well, as the weaker functionality
+achieved in [BCCRS24] shows. Each theorem holds for the functionality and setup its paper fixes,
+so results stated for different global random oracles are not directly comparable.
+
+**Machine-checked UC.** EasyUC [CSV19] mechanizes UC proofs in EasyCrypt. Lochbihler et al.
+[LSBM19] formalize constructive cryptography, a composable framework, in CryptHOL. IPDL [GSFSM23]
+is a core calculus for equational proofs of cryptographic protocols. SSProve (Section 7)
+gives modular proofs through state-separating packages.
+
+**In VCVio and ArkLib.** VCVio has a UC layer under
+[`VCVio/Interaction/UC/`](https://github.com/Verified-zkEVM/VCVio/tree/main/VCVio/Interaction/UC),
+built on PolyFun's theory of open systems. It states Canetti-style protocols, functionalities,
+adversaries, environments, simulators and the execution experiment (`UCSecure`, `EXEC`), a
+computational emulation relation with composition theorems (`ObservedCompEmulates`,
+`AsympObservedCompEmulates`), and a one-time-pad example. Its
+[design note](https://github.com/Verified-zkEVM/VCVio/blob/main/docs/design/uc-campaign.md)
+records computational UC from routed execution as work in progress. VCVio has no functionality for
+non-interactive arguments yet, and ArkLib has no UC definitions.
+
+**Planned for ArkLib.** ArkLib plans to prove UC security of SNARKs built from interactive oracle
+reductions, starting with compilations in the random oracle model whose extractors are
+straightline, following Chiesa and Fenzi [CF24]. None of this is formalized yet.
+
+### 5.9 Where these objects sit in ArkLib
+
+- **Functional commitments.**
+  [`Commitments/Functional/Basic.lean`](ArkLib/Commitments/Functional/Basic.lean) defines
+  `Commitment.Scheme`: key generation, commitment, and an opening argument that is a legacy-layer
+  `Proof` relative to `oSpec`, for the data's oracle interface. Its games are
+  `Commitment.correctness`, `Commitment.binding` (evaluation binding),
+  `Commitment.functionBinding` (adapted from [CGKY25]) and `Commitment.extractability`, whose
+  straightline extractor sees the commitment and the log of the committer's oracle queries. The
+  setup and commitment phases run in the oracle state that later phases continue from.
+  `Commitment.binding` bounds the experiment for every adversary; computational schemes such as
+  KZG instead bound `Commitment.bindingExperiment` adversary by adversary (Section 5.5).
+- **KZG.** [`Commitments/Functional/KZG/`](ArkLib/Commitments/Functional/KZG/) defines the scheme
+  (`KZG.CommitmentScheme.kzg`), the $t$-SDH and ARSDH games (`Groups.tSdhExperiment`,
+  `Groups.arsdhExperiment`) and the reductions of Section 5.5.
+- **Lattice commitments.** [`Commitments/Ordinary/Ajtai/`](ArkLib/Commitments/Ordinary/Ajtai/) has
+  the simple Ajtai commitment, and [`Data/Lattices/ModuleSIS.lean`](ArkLib/Data/Lattices/ModuleSIS.lean)
+  the Module-SIS game. [`Commitments/Functional/Hachi/`](ArkLib/Commitments/Functional/Hachi/)
+  formalizes the nonrecursive Hachi opening argument [NOZ26]. Its weak-binding reduction to Module-SIS is
+  `ArkLib.Lattices.Ajtai.InnerOuter.WeakBinding.advantage_le_moduleSIS`. Its soundness is
+  coordinate-wise special soundness with *escape events*
+  (`Verifier.coordinateWiseSpecialSoundWithEscape`, `ProtocolSpec.ChallengeTree.EscapeEvent`): on
+  every structured accepting tree, either the extractor produces a witness or the tree exhibits the
+  escape event. The documented contract of `EscapeEvent` requires every such event to yield a
+  break of the ambient assumption, so this is the computational special soundness of
+  Section 5.1.
+- **BitZ.** [`Commitments/Functional/BitZ/`](ArkLib/Commitments/Functional/BitZ/) holds algebraic
+  and probabilistic lemmas for the BitZ commitment [BGKLSW26].
+- **Ordinary commitments.**
+  [`Commitments/Ordinary/Basic.lean`](ArkLib/Commitments/Ordinary/Basic.lean) re-exports VCVio's
+  `CommitmentScheme` with its hiding, binding and trapdoor-extraction games
+  (`CommitmentScheme.hidingGame`, `CommitmentScheme.bindingExperiment`, `TrapdoorExtractor`).
+  [`Commitments/Ordinary/SimpleRO.lean`](ArkLib/Commitments/Ordinary/SimpleRO.lean) is a hash
+  commitment with the random oracle sampled as a function.
+- **Group models.** [`ArkLib/AGM/`](ArkLib/AGM/) defines `AGM.GroupRepresentation`, the
+  representation an algebraic adversary reports with each group element.
+- **Hash-based building blocks.** VCVio has collision resistance
+  (`VCVio/CryptoFoundations/HardnessAssumptions/CollisionResistance.lean`) and Merkle-tree
+  extractability in the random oracle model (`VCVio/CryptoFoundations/MerkleTree/`).
+
+For which of these results are proved, and under which hypotheses, read
+[ROADMAP.md](ROADMAP.md#protocols-and-commitments) and
+[docs/design/00-current-status.md](docs/design/00-current-status.md). The Akita formalization is
+tracked in [#1378](https://github.com/Verified-zkEVM/ArkLib/issues/1378).
+
+## 6. ArkLib's oracle reductions compared with the literature
 
 The module documentation of
 [`OracleReduction/Basic.lean`](ArkLib/OracleReduction/Basic.lean) says that ArkLib's formulation of
@@ -520,7 +1081,7 @@ class $\mathcal{F}$. This section makes that precise for the legacy layer, compa
 definitions, and then explains what changes in the interaction layer. It describes definitions,
 not results.
 
-### 5.1 The legacy definition
+### 6.1 The legacy definition
 
 A **protocol specification** `ProtocolSpec n`
 ([`ProtocolSpec/Basic.lean`](ArkLib/OracleReduction/ProtocolSpec/Basic.lean)) is a list of $n$
@@ -566,9 +1127,9 @@ own names: `Reduction` (no oracles), `Proof` and `OracleProof` (Boolean output, 
 witness and, for `OracleProof`, no output oracles), and `NonInteractiveReduction`. An `Indexer`
 encodes an index into oracle form for holographic protocols. `OracleVerifier.toVerifier` turns an
 oracle verifier into an ordinary one by answering every query from the full data; security notions
-for oracle reductions are defined through this map (Section 5.4).
+for oracle reductions are defined through this map (Section 6.4).
 
-### 5.2 What 𝓕 means: oracle interfaces
+### 6.2 What 𝓕 means: oracle interfaces
 
 The class of oracles is not fixed. Each message type carries an instance of
 `OracleInterface` ([`OracleReduction/OracleInterface.lean`](ArkLib/OracleReduction/OracleInterface.lean)),
@@ -602,7 +1163,7 @@ message whose only query reveals everything. It is not a registered instance; a 
 explicitly. This is how ArkLib covers Arc's informal Remark 5.1 about non-oracle messages, and how
 an ordinary interactive reduction is an IOR in which every message uses this interface.
 
-### 5.3 Comparison table
+### 6.3 Comparison table
 
 | | IOP [BCS16] | Oracle reduction [BCGGRS19] | RoK [KP23] | IOR [BMNW25] | $\mathcal{F}$-IOP [ACFY25] | ArkLib legacy layer | ArkLib interaction layer |
 |---|---|---|---|---|---|---|---|
@@ -621,7 +1182,7 @@ an ordinary interactive reduction is an IOR in which every message uses this int
 The table compresses definitions with different conventions; the notes below explain the entries
 that matter most when transferring a theorem.
 
-### 5.4 Differences in detail
+### 6.4 Differences in detail
 
 **Queries and output oracles.** The oracle reductions of [BCGGRS19] separate an interaction phase
 from a set of virtual oracles with bounded locality. The verifier outputs their descriptions after
@@ -781,7 +1342,7 @@ number of rounds and the message types are fixed before the protocol starts, and
 above do not include zero knowledge. Holography is optional through `Indexer`. Whether any of these
 matter for a given paper's theorem must be checked case by case.
 
-### 5.5 The interaction layer
+### 6.5 The interaction layer
 
 The interaction layer keeps the same mathematical object, up to how output claims are represented
 (see below), and changes how protocols are described and executed. Its design is in [docs/design/](docs/design/README.md); the points that matter for
@@ -827,7 +1388,7 @@ come from a concrete realization, and a query signature does not force a behavio
 example, the evaluation of a polynomial of bounded degree. At the closed-claim relation boundary,
 admissibility or a representation/guarantee theorem must express any restriction such as
 bounded-degree polynomial behavior; the query interface alone does not impose it. This is the
-interaction-layer counterpart of the guarantee-transport obligation in Section 5.4: in the legacy
+interaction-layer counterpart of the guarantee-transport obligation in Section 6.4: in the legacy
 layer a refined message type imposes the promise on every prover, while here it must be stated.
 
 **Security notions.** RBR soundness
@@ -863,7 +1424,7 @@ The legacy and interaction layers coexist. A theorem about one does not by itsel
 about the other; correspondence results between them are tracked in the status documents linked at
 the top of this page.
 
-## 6. Related formalization efforts
+## 7. Related formalization efforts
 
 ArkLib builds on VCVio, a Lean 4 framework for oracle computations [TH24, TDWHH26], which in turn
 uses PolyFun for polynomial functors and interaction trees. The table lists other machine-checked
@@ -890,10 +1451,11 @@ work's own account.
 
 Most of this work targets Σ-protocols, signatures and encryption. The sum-check, linear-PCP and
 STARK formalizations are the closest to ArkLib. ArkLib differs in taking interactive oracle
-reductions as the primary object and in aiming to cover the full pipeline from information-theoretic
-reductions through commitments and Fiat–Shamir.
+reductions as the primary object, in aiming to cover the full pipeline from information-theoretic
+reductions through commitments and Fiat–Shamir, and in also covering arguments and commitments
+whose security is computational (Section 5).
 
-## 7. References
+## 8. References
 
 Links point to the ePrint or ECCC page, the DOI, or the publisher's page. "KB" links to the
 paper's page in the repository's [knowledge base](docs/kb/README.md).
@@ -1036,6 +1598,167 @@ paper's page in the repository's [knowledge base](docs/kb/README.md).
 - [Tha22] Thaler. *Proofs, Arguments, and Zero-Knowledge*. Foundations and Trends in Privacy and
   Security 4(2–4), 2022. [doi:10.1561/3300000030](https://doi.org/10.1561/3300000030)
 
+**Computational arguments, commitments and idealized models**
+
+- [Ajt96] Ajtai. *Generating Hard Instances of Lattice Problems*. STOC 1996.
+  [doi:10.1145/237814.237838](https://doi.org/10.1145/237814.237838). [KB](docs/kb/papers/Ajt96.md)
+- [BB04] Boneh, Boyen. *Short Signatures Without Random Oracles*. EUROCRYPT 2004.
+  [doi:10.1007/978-3-540-24676-3_4](https://doi.org/10.1007/978-3-540-24676-3_4)
+- [BBBPWM18] Bünz, Bootle, Boneh, Poelstra, Wuille, Maxwell. *Bulletproofs: Short Proofs for
+  Confidential Transactions and More*. IEEE S&P 2018.
+  [ePrint 2017/1066](https://eprint.iacr.org/2017/1066)
+- [BC24] Boneh, Chen. *LatticeFold: A Lattice-based Folding Scheme and its Applications to
+  Succinct Proof Systems*. [ePrint 2024/257](https://eprint.iacr.org/2024/257)
+- [BC25] Boneh, Chen. *LatticeFold+: Faster, Simpler, Shorter Lattice-Based Folding for Succinct
+  Proof Systems*. CRYPTO 2025. [ePrint 2025/247](https://eprint.iacr.org/2025/247)
+- [BCC88] Brassard, Chaum, Crépeau. *Minimum Disclosure Proofs of Knowledge*. J. Comput. Syst.
+  Sci. 37(2), 1988. [doi:10.1016/0022-0000(88)90005-0](https://doi.org/10.1016/0022-0000(88)90005-0)
+- [BCCGP16] Bootle, Cerulli, Chaidos, Groth, Petit. *Efficient Zero-Knowledge Arguments for
+  Arithmetic Circuits in the Discrete Log Setting*. EUROCRYPT 2016.
+  [ePrint 2016/263](https://eprint.iacr.org/2016/263)
+- [BDLOP18] Baum, Damgård, Lyubashevsky, Oechsner, Peikert. *More Efficient Commitments from
+  Structured Lattice Assumptions*. SCN 2018. [ePrint 2016/997](https://eprint.iacr.org/2016/997)
+- [BGKLSW26] Bloemen, Garreta, Kostrzewa, Londhe, Soukhanov, Wu. *BitZ: Proofs and Commitments in
+  Arbitrary Rings through Binary Fields*. [ePrint 2026/2141](https://eprint.iacr.org/2026/2141).
+  [KB](docs/kb/papers/BGKLSW26.md)
+- [BR93] Bellare, Rogaway. *Random Oracles are Practical: A Paradigm for Designing Efficient
+  Protocols*. CCS 1993. [doi:10.1145/168588.168596](https://doi.org/10.1145/168588.168596)
+- [BS23] Beullens, Seiler. *LaBRADOR: Compact Proofs for R1CS from Module-SIS*. CRYPTO 2023.
+  [ePrint 2022/1341](https://eprint.iacr.org/2022/1341)
+- [CGH04] Canetti, Goldreich, Halevi. *The Random Oracle Methodology, Revisited*. J. ACM 51(4),
+  2004 (STOC 1998). [doi:10.1145/1008731.1008734](https://doi.org/10.1145/1008731.1008734)
+- [DBK+26] Dao, Bodaghi, Khajehpour, Vitto, Badakhshan, Georghiades, Liu, Zhang, Thaler. *Akita: A
+  High-Performance Lattice-Based Polynomial Commitment Scheme*.
+  [ePrint 2026/1983](https://eprint.iacr.org/2026/1983)
+- [FKL18] Fuchsbauer, Kiltz, Loss. *The Algebraic Group Model and its Applications*. CRYPTO 2018.
+  [ePrint 2017/620](https://eprint.iacr.org/2017/620)
+- [JM24] Jaeger, Mohan. *Generic and Algebraic Computation Models: When AGM Proofs Transfer to the
+  GGM*. CRYPTO 2024. [doi:10.1007/978-3-031-68388-6_2](https://doi.org/10.1007/978-3-031-68388-6_2).
+  [KB](docs/kb/papers/JM24.md)
+- [LPS24] Lipmaa, Parisella, Siim. *Constant-Size zk-SNARKs in ROM from Falsifiable Assumptions*.
+  EUROCRYPT 2024. [ePrint 2024/173](https://eprint.iacr.org/2024/173)
+- [LPS25] Lipmaa, Parisella, Siim. *On Knowledge-Soundness of Plonk in ROM from Falsifiable
+  Assumptions*. CRYPTO 2025. [ePrint 2024/994](https://eprint.iacr.org/2024/994).
+  [KB](docs/kb/papers/LPS24.md)
+- [LRY16] Libert, Ramanna, Yung. *Functional Commitment Schemes: From Polynomial Commitments to
+  Pairing-Based Accumulators from Simple Assumptions*. ICALP 2016.
+  [doi:10.4230/LIPIcs.ICALP.2016.30](https://doi.org/10.4230/LIPIcs.ICALP.2016.30)
+- [LS15] Langlois, Stehlé. *Worst-Case to Average-Case Reductions for Module Lattices*. Des. Codes
+  Cryptogr. 75(3), 2015. [ePrint 2012/090](https://eprint.iacr.org/2012/090)
+- [Mau05] Maurer. *Abstract Models of Computation in Cryptography*. IMA Cryptography and Coding
+  2005. [doi:10.1007/11586821_1](https://doi.org/10.1007/11586821_1)
+- [Mer87] Merkle. *A Digital Signature Based on a Conventional Encryption Function*. CRYPTO 1987.
+  [doi:10.1007/3-540-48184-2_32](https://doi.org/10.1007/3-540-48184-2_32)
+- [NOZ26] Nguyen, O'Rourke, Zhang. *Hachi: Efficient Lattice-Based Multilinear Polynomial
+  Commitments over Extension Fields*. [ePrint 2026/156](https://eprint.iacr.org/2026/156).
+  [KB](docs/kb/papers/NOZ26.md)
+- [NS24] Nguyen, Seiler. *Greyhound: Fast Polynomial Commitments from Lattices*. CRYPTO 2024.
+  [ePrint 2024/1293](https://eprint.iacr.org/2024/1293). [KB](docs/kb/papers/NS24.md)
+- [Ped91] Pedersen. *Non-Interactive and Information-Theoretic Secure Verifiable Secret Sharing*.
+  CRYPTO 1991. [doi:10.1007/3-540-46766-1_9](https://doi.org/10.1007/3-540-46766-1_9)
+- [Sho97] Shoup. *Lower Bounds for Discrete Logarithms and Related Problems*. EUROCRYPT 1997.
+  [doi:10.1007/3-540-69053-0_18](https://doi.org/10.1007/3-540-69053-0_18)
+
+**Post-quantum and composable security**
+
+- [AABKT24] Aardal, Aranha, Boudgoust, Kolby, Takahashi. *Aggregating Falcon Signatures with
+  LaBRADOR*. CRYPTO 2024. [ePrint 2024/311](https://eprint.iacr.org/2024/311)
+- [AFP26] Anthoine, Fiore, Pancholi. *What a Wonderful World: zkSNARKs in the Algebraic Group Model
+  are Universally Composable*. [ePrint 2026/399](https://eprint.iacr.org/2026/399)
+- [AGRS24] Abdolmaleki, Glaeser, Ramacher, Slamanig. *Circuit-Succinct Universally-Composable NIZKs
+  with Updatable CRS*. CSF 2024. [ePrint 2023/097](https://eprint.iacr.org/2023/097)
+- [ARS20] Abdolmaleki, Ramacher, Slamanig. *Lift-and-Shift: Obtaining Simulation Extractable
+  Subversion and Updatable SNARKs Generically*. CCS 2020.
+  [ePrint 2020/062](https://eprint.iacr.org/2020/062)
+- [ARU14] Ambainis, Rosmanis, Unruh. *Quantum Attacks on Classical Proof Systems: The Hardness of
+  Quantum Rewinding*. FOCS 2014. [ePrint 2014/296](https://eprint.iacr.org/2014/296)
+- [BCCRS24] Badertscher, Campanelli, Ciampi, Russo, Siniscalchi. *Universally Composable SNARKs
+  with Transparent Setup without Programmable Random Oracle*.
+  [ePrint 2024/1549](https://eprint.iacr.org/2024/1549)
+- [BDF+11] Boneh, Dagdelen, Fischlin, Lehmann, Schaffner, Zhandry. *Random Oracles in a Quantum
+  World*. ASIACRYPT 2011. [ePrint 2010/428](https://eprint.iacr.org/2010/428)
+- [Can01] Canetti. *Universally Composable Security: A New Paradigm for Cryptographic Protocols*.
+  FOCS 2001. [ePrint 2000/067](https://eprint.iacr.org/2000/067)
+- [CC25] Canetti, Chen. *Universally Composable Succinct Vector Commitments and Applications*.
+  TCC 2025. [ePrint 2025/1103](https://eprint.iacr.org/2025/1103)
+- [CDDGS25] Chiesa, Dall'Agnol, Di, Guan, Spooner. *Quantum Rewinding for IOP-Based Succinct
+  Arguments*. TCC 2025. [ePrint 2025/947](https://eprint.iacr.org/2025/947)
+- [CDGLN18] Camenisch, Drijvers, Gagliardoni, Lehmann, Neven. *The Wonderful World of Global Random
+  Oracles*. EUROCRYPT 2018. [ePrint 2018/165](https://eprint.iacr.org/2018/165)
+- [CDHZ26] Chiesa, Di, Hu, Zheng. *How to Prove Post-Quantum Security for Succinct Non-Interactive
+  Reductions*. EUROCRYPT 2026. [ePrint 2025/2166](https://eprint.iacr.org/2025/2166)
+- [CDPW07] Canetti, Dodis, Pass, Walfish. *Universally Composable Security with Global Setup*.
+  TCC 2007. [ePrint 2006/432](https://eprint.iacr.org/2006/432)
+- [CF24] Chiesa, Fenzi. *zkSNARKs in the ROM with Unconditional UC-Security*. TCC 2024.
+  [ePrint 2024/724](https://eprint.iacr.org/2024/724)
+- [CFHL21] Chung, Fehr, Huang, Liao. *On the Compressed-Oracle Technique, and Post-Quantum Security
+  of Proofs of Sequential Work*. EUROCRYPT 2021. [ePrint 2020/1305](https://eprint.iacr.org/2020/1305)
+- [CJS14] Canetti, Jain, Scafuro. *Practical UC Security with a Global Random Oracle*. CCS 2014.
+  [ePrint 2014/908](https://eprint.iacr.org/2014/908)
+- [CMSZ21] Chiesa, Ma, Spooner, Zhandry. *Post-Quantum Succinct Arguments: Breaking the Quantum
+  Rewinding Barrier*. FOCS 2021. [arXiv:2103.08140](https://arxiv.org/abs/2103.08140)
+- [DFM20] Don, Fehr, Majenz. *The Measure-and-Reprogram Technique 2.0: Multi-Round Fiat–Shamir and
+  More*. CRYPTO 2020. [ePrint 2020/282](https://eprint.iacr.org/2020/282)
+- [DFMS19] Don, Fehr, Majenz, Schaffner. *Security of the Fiat–Shamir Transformation in the
+  Quantum Random-Oracle Model*. CRYPTO 2019. [ePrint 2019/190](https://eprint.iacr.org/2019/190)
+- [DFMS22a] Don, Fehr, Majenz, Schaffner. *Online-Extractability in the Quantum Random-Oracle
+  Model*. EUROCRYPT 2022. [ePrint 2021/280](https://eprint.iacr.org/2021/280)
+- [DFMS22b] Don, Fehr, Majenz, Schaffner. *Efficient NIZKs and Signatures from Commit-and-Open
+  Protocols in the QROM*. CRYPTO 2022. [ePrint 2022/270](https://eprint.iacr.org/2022/270)
+- [FFKRZ23] Faonio, Fiore, Kohlweiss, Russo, Zając. *From Polynomial IOP and Commitments to
+  Non-malleable zkSNARKs*. TCC 2023. [ePrint 2023/569](https://eprint.iacr.org/2023/569)
+- [FFR24] Faonio, Fiore, Russo. *Real-World Universal zkSNARKs are Non-Malleable*. CCS 2024.
+  [ePrint 2024/721](https://eprint.iacr.org/2024/721)
+- [Fis05] Fischlin. *Communication-Efficient Non-interactive Proofs of Knowledge with Online
+  Extractors*. CRYPTO 2005. [doi:10.1007/11535218_10](https://doi.org/10.1007/11535218_10)
+- [FR26] Faonio, Russo. *Sumcheck-Based zkSNARKs are Non-malleable*. CRYPTO 2026.
+  [ePrint 2026/335](https://eprint.iacr.org/2026/335)
+- [GHHM21] Grilo, Hövelmanns, Hülsing, Majenz. *Tight Adaptive Reprogramming in the QROM*.
+  ASIACRYPT 2021. [ePrint 2020/1361](https://eprint.iacr.org/2020/1361)
+- [GKKNZ22] Ganesh, Khoshakhlagh, Kohlweiss, Nitulescu, Zając. *What Makes Fiat–Shamir zkSNARKs
+  (Updatable SRS) Simulation Extractable?* SCN 2022. [ePrint 2021/511](https://eprint.iacr.org/2021/511)
+- [GKOPTT23] Ganesh, Kondi, Orlandi, Pancholi, Takahashi, Tschudi. *Witness-Succinct
+  Universally-Composable SNARKs*. EUROCRYPT 2023. [ePrint 2022/1618](https://eprint.iacr.org/2022/1618)
+- [GM17] Groth, Maller. *Snarky Signatures: Minimal Signatures of Knowledge from
+  Simulation-Extractable SNARKs*. CRYPTO 2017. [ePrint 2017/540](https://eprint.iacr.org/2017/540)
+- [GOPTT22] Ganesh, Orlandi, Pancholi, Takahashi, Tschudi. *Fiat–Shamir Bulletproofs are
+  Non-Malleable (in the Algebraic Group Model)*. EUROCRYPT 2022.
+  [ePrint 2021/1393](https://eprint.iacr.org/2021/1393). Journal version: *Fiat–Shamir
+  Bulletproofs are Non-malleable (in the Random Oracle Model)*, J. Cryptology, 2024,
+  [doi:10.1007/s00145-024-09525-2](https://doi.org/10.1007/s00145-024-09525-2)
+- [KPT23] Kohlweiss, Pancholi, Takahashi. *How to Compile Polynomial IOP into
+  Simulation-Extractable SNARKs: A Modular Approach*. TCC 2023.
+  [ePrint 2023/1067](https://eprint.iacr.org/2023/1067)
+- [KZM+15] Kosba, Zhao, Miller, Qian, Chan, Papamanthou, Pass, shelat, Shi. *C∅C∅: A Framework for
+  Building Composable Zero-Knowledge Proofs*. [ePrint 2015/1093](https://eprint.iacr.org/2015/1093)
+- [LMS22a] Lai, Malavolta, Spooner. *Quantum Rewinding for Many-Round Protocols*. TCC 2022.
+  [ePrint 2022/889](https://eprint.iacr.org/2022/889)
+- [LMS22b] Lombardi, Ma, Spooner. *Post-Quantum Zero Knowledge, Revisited (or: How to Do Quantum
+  Rewinding Undetectably)*. FOCS 2022. [ePrint 2021/1543](https://eprint.iacr.org/2021/1543)
+- [LR22] Lysyanskaya, Rosenbloom. *Universally Composable Σ-protocols in the Global Random-Oracle
+  Model*. TCC 2022. [ePrint 2022/290](https://eprint.iacr.org/2022/290)
+- [LZ19] Liu, Zhandry. *Revisiting Post-Quantum Fiat–Shamir*. CRYPTO 2019.
+  [ePrint 2019/262](https://eprint.iacr.org/2019/262)
+- [Pas03] Pass. *On Deniability in the Common Reference String and Random Oracle Model*.
+  CRYPTO 2003. [doi:10.1007/978-3-540-45146-4_19](https://doi.org/10.1007/978-3-540-45146-4_19)
+- [RZM+26] Roustaeifar, Zarezadeh, Mehendale, Abdolmaleki, Delavar, Köpsell. *Witness-Succinct
+  UC-Secure SNARKs with Weaker Trust Assumptions*. IMA Cryptography and Coding 2026.
+  [ePrint 2026/2434](https://eprint.iacr.org/2026/2434)
+- [Unr10] Unruh. *Universally Composable Quantum Multi-Party Computation*. EUROCRYPT 2010.
+  [arXiv:0910.2912](https://arxiv.org/abs/0910.2912)
+- [Unr12] Unruh. *Quantum Proofs of Knowledge*. EUROCRYPT 2012.
+  [ePrint 2010/212](https://eprint.iacr.org/2010/212)
+- [Unr15] Unruh. *Non-Interactive Zero-Knowledge Proofs in the Quantum Random Oracle Model*.
+  EUROCRYPT 2015. [ePrint 2014/587](https://eprint.iacr.org/2014/587)
+- [Unr16] Unruh. *Computationally Binding Quantum Commitments*. EUROCRYPT 2016.
+  [ePrint 2015/361](https://eprint.iacr.org/2015/361)
+- [Unr17] Unruh. *Post-Quantum Security of Fiat–Shamir*. ASIACRYPT 2017.
+  [ePrint 2017/398](https://eprint.iacr.org/2017/398)
+- [Zha19] Zhandry. *How to Record Quantum Queries, and Applications to Quantum Indifferentiability*.
+  CRYPTO 2019. [ePrint 2018/276](https://eprint.iacr.org/2018/276)
+- [ZZZR22] Zhou, Zhang, Zhou, Ren. *GUC-Secure Commitments via Random Oracles: New Impossibility
+  and Feasibility*. ASIACRYPT 2022. [ePrint 2022/1127](https://eprint.iacr.org/2022/1127)
+
 **Formalizations**
 
 - [AHRV+21] Abate, Haselwarter, Rivas, Van Muylder, Winterhalter, Hriţcu, Maillard, Spitters.
@@ -1063,10 +1786,14 @@ paper's page in the repository's [knowledge base](docs/kb/README.md).
   [USENIX](https://www.usenix.org/conference/usenixsecurity24/presentation/bailey). Earlier
   preprint version: *Formalizing Soundness Proofs of SNARKs*,
   [ePrint 2023/656](https://eprint.iacr.org/2023/656)
+- [CSV19] Canetti, Stoughton, Varia. *EasyUC: Using EasyCrypt to Mechanize Proofs of Universally
+  Composable Security*. CSF 2019. [doi:10.1109/CSF.2019.00019](https://doi.org/10.1109/CSF.2019.00019)
 - [FJ26] Firsov, Janků. *Forking Lemma in EasyCrypt*. CSF 2026.
   [doi:10.1109/CSF68417.2026.00037](https://doi.org/10.1109/CSF68417.2026.00037)
 - [FU23] Firsov, Unruh. *Zero-Knowledge in EasyCrypt*. CSF 2023.
   [doi:10.1109/CSF57540.2023.00015](https://doi.org/10.1109/CSF57540.2023.00015)
+- [GSFSM23] Gancher, Sojakova, Fan, Shi, Morrisett. *A Core Calculus for Equational Proofs of
+  Cryptographic Protocols*. POPL 2023. [doi:10.1145/3571223](https://doi.org/10.1145/3571223)
 - [HRVW+23] Haselwarter, Rivas, Van Muylder, Winterhalter, Abate, Sidorenco, Hriţcu, Maillard,
   Spitters. *SSProve: A Foundational Framework for Modular Cryptographic Proofs in Coq*. ACM
   TOPLAS 45(3), 2023. Journal version of [AHRV+21], with an added author and a changed author
@@ -1074,6 +1801,8 @@ paper's page in the repository's [knowledge base](docs/kb/README.md).
   [ePrint 2021/397](https://eprint.iacr.org/2021/397)
 - [Loc16] Lochbihler. *Probabilistic Functions and Cryptographic Oracles in Higher Order Logic*.
   ESOP 2016. [doi:10.1007/978-3-662-49498-1_20](https://doi.org/10.1007/978-3-662-49498-1_20)
+- [LSBM19] Lochbihler, Sefidgar, Basin, Maurer. *Formalizing Constructive Cryptography using
+  CryptHOL*. CSF 2019. [doi:10.1109/CSF.2019.00018](https://doi.org/10.1109/CSF.2019.00018)
 - [Mar26] Marmsoler. *Isabelle/STARK: A Formalization of zk-STARK in Isabelle/HOL*.
   [arXiv:2608.01965](https://arxiv.org/abs/2608.01965)
 - [PM15] Petcher, Morrisett. *The Foundational Cryptography Framework*. POST 2015.

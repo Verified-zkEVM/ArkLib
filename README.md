@@ -43,9 +43,13 @@ interfaces and results differ.
    formalized in each layer.
 5. Our formalization follows the view of IORs as the central information-theoretic object
    underlying modern SNARKs, and the current abstractions of the interactive BCS and Fiat-Shamir
-   transforms. [BACKGROUND.md](BACKGROUND.md) surveys the information-theoretic proof models, their
-   security notions and the compilers to SNARKs, and compares ArkLib's interactive oracle
-   reductions with the definitions in the literature.
+   transforms. The scope also includes interactive arguments and commitment schemes whose security
+   is computational: it rests on discrete-logarithm or pairing assumptions, on lattice assumptions
+   such as Module-SIS, or on hash functions modeled as random oracles.
+   [BACKGROUND.md](BACKGROUND.md) surveys both the information-theoretic proof models and these
+   computational arguments and commitments, with their security notions, the compilers that combine
+   them into SNARKs, and the planned post-quantum and universally composable security results. It
+   also compares ArkLib's interactive oracle reductions with the definitions in the literature.
 
 Using this theory, we formalize proof systems in [`ArkLib/ProofSystem/`](ArkLib/ProofSystem/) and
 commitment schemes in [`ArkLib/Commitments/`](ArkLib/Commitments/).
