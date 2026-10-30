@@ -92,9 +92,10 @@ Our formalization includes several important implementation considerations:
 
 \paragraph{Polynomial Commitments.} When this protocol is compiled to an interactive proof (rather than an oracle reduction), the corresponding polynomial commitment schemes will enforce that the declared degree bounds hold, by letting the (non-oracle) verifier perform explicit degree checks.
 
-\subsubsection{Future Extensions}
+\subsubsection{Generalizations Not Covered}
 
-Several generalizations are considered for future work:
+The formalized sum-check does not cover the following generalizations; \texttt{ROADMAP.md} tracks
+planned protocol work.
 
 \begin{itemize}
     \item \textbf{Variable Degree Bounds:} Generalize to $d : \{0, 1, \ldots, n-1\} \to \mathbb{N}$ and $\mathcal{D} : \{0, 1, \ldots, n-1\} \to (\{0, 1, \ldots, m-1\} \hookrightarrow R)$, allowing different degree bounds and summation domains for each variable.

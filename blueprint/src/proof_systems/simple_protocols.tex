@@ -72,7 +72,7 @@ In the oracle setting, we consider two variants:
         \item \textbf{Protocol specification}: $\pSpec := [(\PtoVdir, \forall i, \WitIn(i))]$
         \item \textbf{Output oracle statements}: Combination of input oracle statements and the transmitted witness
     \end{itemize}
-    This variant is not formalized: only its prover is defined. Exposing each $\WitIn(i)$ as a separate output oracle requires decomposing the single product message, which the current oracle verifier interface cannot express.
+    This variant is not implemented: only its prover is defined. Exposing each $\WitIn(i)$ as a separate output oracle requires an output-oracle simulation that decomposes the single product message into its components.
     % \lean{SendWitness.oracleReduction} % TODO: not formalized (indexed-family variant)
     \uses{def:oracle_reduction}
 \end{definition}
@@ -231,13 +231,15 @@ Several vanishing claims can be batched into one before running the zero test. A
 
 \begin{definition}[Generator Batching]
     \label{def:generator_batch}
-    Fix $d > 0$ and a generator $G : S \to \mathbb{F}^k$. The input is a family of $k$ polynomial oracles $f_1, \ldots, f_k$ of degree at most $d$, with no witness.
+    Fix $d > 0$ and a generator $G : S \to \mathbb{F}^k$. The input is a family of $k$ polynomial oracles $f_1, \ldots, f_k$ of natural degree strictly less than $d$, with no witness.
     \begin{itemize}
         \item \textbf{Input relation}: every $f_i$ vanishes on $H$
         \item \textbf{Protocol specification}: The verifier sends a uniformly random seed $s \in S$; there are no prover messages
         \item \textbf{Output oracle statement}: The batched polynomial $\sum_{i} G(s)_i \cdot f_i$, whose evaluations are simulated by querying each $f_i$ at the same point
         \item \textbf{Output relation}: The input relation of the quotient zero test for the batched polynomial
     \end{itemize}
+    The batched output is supplied to the quotient zero test under that test's inclusive budget of
+    degree at most $d$.
     \lean{GeneratorBatch.oracleReduction}
     \leanok
     \uses{def:oracle_reduction, def:quotient_zero_test}

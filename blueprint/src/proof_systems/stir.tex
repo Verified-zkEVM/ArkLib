@@ -51,7 +51,7 @@ In the following, we start by defining the \emph{quotient} of a univariate funct
 \begin{definition}\label{def:quotient}
 \lean{Quotienting.funcQuotient}
 \leanok
-    Let $f:\evaldomain\to\field$ be a function, $S\subseteq\field$ be a set, and $\mathsf{Ans},\mathsf{Fill}: S\rightarrow\field$ be functions. Let $\hat{\mathsf{Ans}}\in\field^{<|S|}[X]$ be the (unique) polynomial with $\hat{\mathsf{Ans}}(x)=\mathsf{Ans}(x)$ for every $x\in S$, and let $\hat{V}_S\in\field^{<|S|+1}[X]$ be the unique non-zero polynomial with $\hat{V}_S(x)=0$ for every $x\in S$.
+    Let $f:\evaldomain\to\field$ be a function, $S\subseteq\field$ be a finite set, and $\mathsf{Ans},\mathsf{Fill}: S\rightarrow\field$ be functions. Let $\hat{\mathsf{Ans}}\in\field^{<|S|}[X]$ be the unique polynomial of degree less than $|S|$ with $\hat{\mathsf{Ans}}(x)=\mathsf{Ans}(x)$ for every $x\in S$ (the zero polynomial when $S$ is empty), and let $\hat{V}_S(X):=\prod_{s\in S}(X-s)$, the unique monic polynomial of degree $|S|$ vanishing on $S$.
     The \emph{quotient function} $\mathsf{Quotient}\bigl(f,S,\mathsf{Ans},\mathsf{Fill}\bigr): \evaldomain\to\field$
     is defined as follows:
 
@@ -76,11 +76,11 @@ Next we define the polynomial quotient operator, which quotients a polynomial re
 \begin{definition}\label{def:poly_quotient}
 \lean{Quotienting.polyQuotient}
 \leanok
-    Let $\hat{f}\in\field^{<\degree}[X]$ be a polynomial and $S\subseteq\field$ be a set, let $\hat{V}_S\in\field^{<|S|+1}[X]$ be the unique non-zero polynomial with $\hat{V}_S(x)=0$ for every $x\in S$. The \emph{polynomial quotient} $\mathsf{PolyQuotient}(\hat{f},S)\in\field^{<d-|S|}[X]$ is defined as follows:
+    Let $\hat{f}\in\field^{<\degree}[X]$ be a polynomial and $S\subseteq\field$ be a finite set with $|S|\le\degree$, and let $\hat{V}_S(X):=\prod_{s\in S}(X-s)$, the unique monic polynomial of degree $|S|$ vanishing on $S$. The \emph{polynomial quotient} $\mathsf{PolyQuotient}(\hat{f},S)\in\field^{<d-|S|}[X]$ is defined as follows:
     \[
             \mathsf{PolyQuotient}(\hat{f},S)(X):=\frac{\hat{f}(X)-\hat{\mathsf{Ans}}(X)}{\hat{V}_S(X)}
     \]
-where $\hat{Ans}\in\field^{<|S|}[X]$ is the unique non-zero polynomial with $\hat{Ans}(x)=\hat{f}(x)$ for every $x \in S$.
+where $\hat{\mathsf{Ans}}\in\field^{<|S|}[X]$ is the unique polynomial of degree less than $|S|$ interpolating $\hat{f}$ on $S$.
 \end{definition}
 
 The following lemma, implicit in prior works, shows that if the function is ``quotiented by the wrong value'', then its quotient is far from low-degree.
@@ -103,7 +103,7 @@ The following lemma, implicit in prior works, shows that if the function is ``qu
 \lean{OutOfDomSmpl.out_of_dom_smpl_1, OutOfDomSmpl.out_of_dom_smpl_2}
 \leanok
 \uses{def:reed_solomon_code,def:list_decodable,def:list_close_codewords}
-    Let $f:\evaldomain\rightarrow\field$ be a function, $\degree\in\N$ be a degree parameter, $s\in\N$ be a repetition parameter, and $\distance\in[0,1]$ be a distance parameter. If $\rscode[\field,\evaldomain,\degree]$ be $(\degree,l)$-list decodable then
+    Let $\field$ be a finite field and $\evaldomain\subseteq\field$ an evaluation domain with $|\evaldomain|<|\field|$, so that $\field\setminus\evaldomain$ is nonempty. Let $f:\evaldomain\rightarrow\field$ be a function, $\degree\in\N$ be a degree parameter, $s\in\N$ be a repetition parameter, $\distance\ge0$ be a distance parameter and $l\ge0$ a real list-size bound. If $\rscode[\field,\evaldomain,\degree]$ is $(\distance,l)$-list decodable, then
         \[
         \begin{array}{rcl}
         \Pr_{\substack{r_0, \ldots, r_{s-1} \gets \field \setminus \evaldomain}}
@@ -113,13 +113,12 @@ The following lemma, implicit in prior works, shows that if the function is ``qu
             \forall i \in [s],\ \hat{u}(r_i) = \hat{u}'(r_i)
         \end{array}
         \right]
-        & \leq & \binom{l}{2} \cdot \left( \frac{\degree - 1}{|\field| - |\evaldomain|} \right)^s \\
+        & \leq & \frac{l\,(l-1)}{2} \cdot \left( \frac{\degree - 1}{|\field| - |\evaldomain|} \right)^s \\
         & \leq & \left( \frac{l^2}{2} \right) \cdot \left( \frac{\degree}{|\field| - |\evaldomain|} \right)^s
         \end{array}
         \]
-
-
-
+    Here $l-1$ is truncated at $0$, and the $r_i$ are independent and uniform on
+    $\field\setminus\evaldomain$.
 \end{lemma}
 
 \subsubsection{Folding univariate functions}\label{sec:folding_uf}
@@ -141,7 +140,7 @@ Given a non-constant polynomial $\hat{q}\in\field[X]$:
           \polydeg_X(\hat{Q}) := \left\lfloor \frac{\polydeg(\hat{f})}{\polydeg(\hat{q})} \right\rfloor,\quad \polydeg_Y(\hat{Q}) < \polydeg(\hat{q})
         \]
         such that $\hat{f}(Z)=\hat{Q}(\hat{q}(Z),Z)$. Observe that if $\polydeg(\hat{f})<t\cdot\polydeg(\hat{q})$ then
-        $\polydeg(\hat{Q})<t$.
+        $\polydeg_X(\hat{Q})<t$.
 
         \item For every $\hat{Q}[X,Y]$ with $\polydeg_X(\hat{Q})<t$ and $\polydeg_Y(\hat{Q})<\polydeg(\hat{q})$, the polynomial $\hat{f}(Z)=\hat{Q}(\hat{q}(Z),Z)$ has degree $\polydeg(\hat{f})<t\cdot\polydeg(\hat{q})$.
 \end{itemize}
@@ -152,10 +151,11 @@ defines it by repeated division by $\hat{q}$.
 
 Below, we define folding of a polynomial followed by folding of a function.
 \begin{definition}\label{def:poly_folding}
-\lean{Polynomial.FoldingPolynomial.polyFold}
+\lean{Polynomial.FoldingPolynomial.polyFold,
+Polynomial.FoldingPolynomial.polyFold_natDegree_le}
 \leanok
 \uses{fact:poly_folding}
-    Given a polynomial $\hat{f}\in\field^{<\degree}[X]$, a folding parameter $k\in\N$ and $r\in\field$, we define a polynomial $\mathsf{PolyFold}(\hat{f},k,r)\in\field^{\degree/k}[X]$ as follows. Let $\hat{Q}[X,Y]$ be the bivariate polynomial derived from $\hat{f}$ using Fact~\ref{fact:poly_folding} with $\hat{q}(X):=X^k$. Then $\mathsf{PolyFold}(\hat{f},k,r)(X):=\hat{Q}(X,r)$.
+    Given a polynomial $\hat{f}\in\field[X]$, a folding parameter $k\in\N$ with $k\ge1$ and $r\in\field$, we define a polynomial $\mathsf{PolyFold}(\hat{f},k,r)\in\field[X]$ as follows. Let $\hat{Q}[X,Y]$ be the bivariate polynomial derived from $\hat{f}$ using Fact~\ref{fact:poly_folding} with the non-constant polynomial $\hat{q}(X):=X^k$. Then $\mathsf{PolyFold}(\hat{f},k,r)(X):=\hat{Q}(X,r)$. Its degree is at most $\lfloor\polydeg(\hat{f})/k\rfloor$.
 \end{definition}
 
 \begin{definition}\label{def:fn_folding}
@@ -240,9 +240,9 @@ Above, $r_i:=r^{i+\sum_{j<i}(\degree^*-\degree_j)}$.
     & := & \displaystyle f(x) \cdot \left( \sum_{l=0}^{\degree^* - \degree} (r \cdot x)^l \right) \\[10pt]
     & = & \left\{
     \begin{array}{ll}
-        \displaystyle f(x) \cdot \left( \dfrac{1 - (x r)^{\degree^* - \degree_i + 1}}{1 - x r} \right)
+        \displaystyle f(x) \cdot \left( \dfrac{1 - (x r)^{\degree^* - \degree + 1}}{1 - x r} \right)
         & \text{if } x \cdot r \neq 1 \\[8pt]
-        \displaystyle f(x) \cdot (\degree^* - \degree_i + 1)
+        \displaystyle f(x) \cdot (\degree^* - \degree + 1)
         & \text{if } x \cdot r = 1
     \end{array}
     \right.

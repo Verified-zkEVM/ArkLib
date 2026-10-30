@@ -98,7 +98,8 @@ finiteness. These are stated as ordinary instance hypotheses on the index type a
         \item Logging records all queries made during a computation
         \item Caching remembers query responses and reuses them for repeated queries
     \end{itemize}
-    These are query implementations that forward each query to the original oracle.
+    Logging forwards every query and records it. Caching forwards only cache misses and answers
+    repeated queries from the cache.
     \lean{OracleSpec.loggingOracle, OracleSpec.cachingOracle}
     \leanok
     \uses{def:oracle_computation, def:sim_oracle}

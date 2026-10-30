@@ -44,8 +44,12 @@ following setting:
     \begin{itemize}
         \item The verifier takes in the input statement and the challenges, performs an \emph{oracle} computation on the input oracle statements and the oracle messages, and outputs a new output statement.
 
-        The verifier also outputs the new oracle statement in an implicit manner, by specifying a
-        subset of the input oracle statements \& the oracle messages. Future extensions may allow for more flexibility in specifying output oracle statements (i.e. not just a subset, but a linear combination, or any other function).
+        The verifier also outputs the new oracle statements, in one of two representations. Either
+        each output oracle is an embedded copy of an input oracle statement or an oracle message,
+        or the output family is \emph{virtual}: each query to it is answered by queries to the
+        input oracle statements and oracle messages, and this answer is certified against an
+        explicit map that materializes the output data. The virtual form covers derived outputs
+        such as a linear combination of input polynomials.
         \item The prover takes in some final private state (maintained during protocol execution), and outputs a new output statement, new output oracle statement, and new output witness.
     \end{itemize}
 \end{enumerate}
@@ -70,10 +74,14 @@ We now go into more details on these objects, and how they are represented in Le
     An oracle interface for an underlying data type $\mathsf{D}$ consists of the following:
     \begin{itemize}
         \item A type $\mathsf{Q}$ for queries to the oracle,
-        \item A type $\mathsf{R}$ for responses from the oracle,
-        \item A function $\mathsf{oracle} : \mathsf{D} \to \mathsf{Q} \to \mathsf{R}$ that specifies
-        the oracle's behavior given the underlying data and a query.
+        \item A response family $\mathsf{R} : \mathsf{Q} \to \Type$, so that the type of the
+        response may depend on the query,
+        \item An answering function $\mathsf{answer} : \mathsf{D} \to (q : \mathsf{Q}) \to
+        \mathsf{R}(q)$ that specifies the oracle's behavior given the underlying data and a query.
     \end{itemize}
+    In Lean the response family and answering function are packaged as an oracle context whose
+    implementation reads the underlying data. A constant response family $\mathsf{R}(q) = \mathsf{R}$
+    is the common special case.
     \lean{OracleInterface}
     \leanok
 \end{definition}
@@ -172,12 +180,14 @@ We define some supporting definitions for a protocol specification.
         that generates the message and updates the prover's state.
 
         \item \textbf{Challenge Processing}: For each challenge index $i : \pSpec.\ChallengeIdx$, a function
-        \[ \mathsf{receiveChallenge}_i : \mathsf{PrvState}(i.\mathsf{val}.\mathsf{castSucc}) \to \pSpec.\Challenge(i) \to \mathsf{PrvState}(i.\mathsf{val}.\mathsf{succ}) \]
-        that updates the prover's state upon receiving a challenge.
+        \[ \mathsf{receiveChallenge}_i : \mathsf{PrvState}(i.\mathsf{val}.\mathsf{castSucc}) \to \OracleComp(\oSpec, \pSpec.\Challenge(i) \to \mathsf{PrvState}(i.\mathsf{val}.\mathsf{succ})) \]
+        Before seeing the challenge, the prover runs an oracle computation that returns a
+        state-update function; applying it to the challenge gives the next state.
 
         \item \textbf{Output Generation}: A function
-        \[ \mathsf{output} : \mathsf{PrvState}(\Fin.\mathsf{last}(n)) \to \StmtOut \times \WitOut \]
-        that produces the final output statement and witness from the prover's final state.
+        \[ \mathsf{output} : \mathsf{PrvState}(\Fin.\mathsf{last}(n)) \to \OracleComp(\oSpec, \StmtOut \times \WitOut) \]
+        that produces the final output statement and witness from the prover's final state. It
+        may query the shared oracle.
     \end{itemize}
     \lean{Prover, ProverState, ProverInput, ProverRound, ProverOutput}
     \leanok
@@ -210,9 +220,9 @@ of the context, and oracle access to either the shared oracle, or the oracle inp
 \begin{definition}[Type Signature of a Verifier]
     \label{def:verifier}
     A verifier $\mathcal{V}$ in a reduction is specified by a single function:
-    \[ \mathsf{verify} : \StmtIn \to \FullTranscript(\pSpec) \to \OracleComp(\oSpec, \StmtOut) \]
+    \[ \mathsf{verify} : \StmtIn \to \FullTranscript(\pSpec) \to \mathsf{OptionT}(\OracleComp(\oSpec), \StmtOut) \]
 
-    This function takes the input statement and the complete transcript of the protocol interaction, and performs an oracle computation (potentially querying the shared oracle $\oSpec$) to produce an output statement.
+    This function takes the input statement and the complete transcript of the protocol interaction, and performs an oracle computation (potentially querying the shared oracle $\oSpec$) that either produces an output statement or fails. Failure, the $\mathsf{none}$ result of the $\mathsf{OptionT}$ layer, is how the verifier rejects.
 
     The verifier is assumed to be \emph{public-coin}, meaning it only sends uniformly random challenges and uses no other randomness beyond what is provided by the shared oracle.
     \lean{Verifier}
@@ -225,23 +235,28 @@ of the context, and oracle access to either the shared oracle, or the oracle inp
 
     \begin{itemize}
         \item \textbf{Verification Logic}: A function
-        \[ \mathsf{verify} : \StmtIn \to \pSpec.\Challenges \to \OracleComp(\oSpec \mathrel{++_\mathsf{o}} ([\OStmtIn]_\mathsf{o} \mathrel{++_\mathsf{o}} [\pSpec.\Message]_\mathsf{o}), \StmtOut) \]
-        that takes the input statement and verifier challenges, and performs oracle queries to the shared oracle, input oracle statements, and prover messages to produce an output statement.
+        \[ \mathsf{verify} : \StmtIn \to \pSpec.\Challenges \to \mathsf{OptionT}(\OracleComp(\oSpec \mathrel{++_\mathsf{o}} ([\OStmtIn]_\mathsf{o} \mathrel{++_\mathsf{o}} [\pSpec.\Message]_\mathsf{o})), \StmtOut) \]
+        that takes the input statement and verifier challenges, and performs oracle queries to the shared oracle, input oracle statements, and prover messages to produce an output statement or reject. As for a verifier, rejection is the $\mathsf{none}$ result of the $\mathsf{OptionT}$ layer.
 
-        \item \textbf{Output Oracle Embedding}: An injective function
-        \[ \mathsf{embed} : \iota_{\mathsf{so}} \hookrightarrow \iota_{\mathsf{si}} \oplus \pSpec.\MessageIdx \]
-        that specifies how each output oracle statement is derived from either an input oracle statement or a prover message.
-
-        \item \textbf{Type Compatibility}: A proof term
-        \[ \mathsf{hEq} : \forall i : \iota_{\mathsf{so}}, \OStmtOut(i) = \begin{cases}
-            \OStmtIn(j) & \text{if } \mathsf{embed}(i) = \mathsf{inl}(j) \\
-            \pSpec.\Message(k) & \text{if } \mathsf{embed}(i) = \mathsf{inr}(k)
-        \end{cases} \]
-        ensuring that output oracle statement types match their sources.
+        \item \textbf{Output Oracle Representation}: one of the following two forms.
+        \begin{itemize}
+            \item \emph{Embedding.} An injective function
+            \[ \mathsf{embed} : \iota_{\mathsf{so}} \hookrightarrow \iota_{\mathsf{si}} \oplus \pSpec.\MessageIdx \]
+            that selects, for each output oracle statement, an input oracle statement or a prover
+            message, together with a proof
+            \[ \mathsf{hEq} : \forall i : \iota_{\mathsf{so}}, \OStmtOut(i) = \begin{cases}
+                \OStmtIn(j) & \text{if } \mathsf{embed}(i) = \mathsf{inl}(j) \\
+                \pSpec.\Message(k) & \text{if } \mathsf{embed}(i) = \mathsf{inr}(k)
+            \end{cases} \]
+            that the types match, and a proof that the oracle interfaces match.
+            \item \emph{Virtual simulation.} A map $\mathsf{materializeOutput}$ from the
+            challenges, the input oracle data and the messages to the output oracle data; a query
+            implementation $\mathsf{simulateOutputQuery}$ answering each output-oracle query by
+            queries to the input oracle statements and prover messages; and a proof that, on actual
+            data, the simulated answer equals the answer computed from the materialized output.
+        \end{itemize}
     \end{itemize}
-
-    This design ensures that output oracle statements are always a subset of the available input oracle statements and prover messages.
-    \lean{OracleVerifier}
+    \lean{OracleVerifier, OracleOutputEmbedding, OracleOutputSimulation}
     \leanok
 \end{definition}
 
@@ -255,7 +270,8 @@ of the context, and oracle access to either the shared oracle, or the oracle inp
     \begin{itemize}
         \item The converted verifier $\mathcal{V}_{\text{oracle}}.\mathsf{toVerifier}$ takes as input both the statement \emph{and} the actual underlying data for all oracle statements
         \item When $\mathcal{V}_{\text{oracle}}$ attempts to query an oracle statement or prover message, the converted verifier uses the corresponding \texttt{OracleInterface} instance to compute the response from the actual data
-        \item The output oracle statements are constructed according to the embedding specification, selecting the appropriate subset of input oracle statements and prover messages
+        \item The output oracle statements are the materialized output: in the embedding case, the selected input oracle statements and prover messages; in the virtual case, the value of $\mathsf{materializeOutput}$ on the challenges, input oracle data and messages
+        \item If the oracle verifier rejects, so does the converted verifier
     \end{itemize}
     \lean{OracleVerifier.toVerifier}
     \leanok
@@ -337,11 +353,12 @@ about the execution, such as the log of oracle queries for the shared oracles, f
 
     \[ \mathsf{Prover}.\mathsf{run}(\mathsf{stmt}, \mathsf{wit}) := \mathsf{do} \; \{ \]
     \[ \quad \langle \mathsf{transcript}, \mathsf{state} \rangle \leftarrow \mathsf{prover}.\mathsf{runToRound}(\Fin.\mathsf{last}(n), \mathsf{stmt}, \mathsf{wit}) \]
-    \[ \quad \langle \mathsf{stmtOut}, \mathsf{witOut} \rangle := \mathsf{prover}.\mathsf{output}(\mathsf{state}) \]
-    \[ \quad \mathsf{return} \; \langle \mathsf{stmtOut}, \mathsf{witOut}, \mathsf{transcript} \rangle \]
+    \[ \quad \langle \mathsf{stmtOut}, \mathsf{witOut} \rangle \leftarrow \mathsf{prover}.\mathsf{output}(\mathsf{state}) \]
+    \[ \quad \mathsf{return} \; \langle \mathsf{transcript}, \mathsf{stmtOut}, \mathsf{witOut} \rangle \]
     \[ \} \]
 
-    Returns the output statement, output witness, and complete transcript.
+    Returns the complete transcript, the output statement and the output witness, as an oracle
+    computation that may also query the challenge oracle.
     \lean{Prover.run}
     \leanok
     \uses{def:prover, def:prover_run_to_round}
@@ -353,7 +370,8 @@ about the execution, such as the log of oracle queries for the shared oracles, f
 
     \[ \mathsf{Verifier}.\mathsf{run}(\mathsf{stmt}, \mathsf{transcript}) := \mathsf{verifier}.\mathsf{verify}(\mathsf{stmt}, \mathsf{transcript}) \]
 
-    This takes the input statement and full transcript, and returns the output statement via an oracle computation.
+    This takes the input statement and full transcript, and returns the output statement, or
+    rejects, via an optional oracle computation.
     \lean{Verifier.run}
     \leanok
     \uses{def:verifier}
@@ -361,15 +379,14 @@ about the execution, such as the log of oracle queries for the shared oracles, f
 
 \begin{definition}[Oracle Verifier Execution]
     \label{def:oracle_verifier_run}
-    The execution of an oracle verifier is defined as:
+    The execution of an oracle verifier is the execution of its converted verifier:
 
-    \[ \mathsf{OracleVerifier}.\mathsf{run}(\mathsf{stmt}, \mathsf{oStmtIn}, \mathsf{transcript}) := \mathsf{do} \; \{ \]
-    \[ \quad \mathsf{f} := \mathsf{simOracle2}(\oSpec, \mathsf{oStmtIn}, \mathsf{transcript}.\mathsf{messages}) \]
-    \[ \quad \mathsf{stmtOut} \leftarrow \mathsf{simulateQ}(\mathsf{f}, \mathsf{verifier}.\mathsf{verify}(\mathsf{stmt}, \mathsf{transcript}.\mathsf{challenges})) \]
-    \[ \quad \mathsf{return} \; \mathsf{stmtOut} \]
-    \[ \} \]
+    \[ \mathsf{OracleVerifier}.\mathsf{run}(\mathsf{stmt}, \mathsf{oStmtIn}, \mathsf{transcript}) := \mathsf{verifier}.\mathsf{toVerifier}.\mathsf{run}(\langle \mathsf{stmt}, \mathsf{oStmtIn} \rangle, \mathsf{transcript}) \]
 
-    This simulates the oracle access to input oracle statements and prover messages, then executes the verification logic.
+    It answers queries to the input oracle statements and prover messages from the actual data,
+    runs the verification logic, and on acceptance returns the pair of the output statement and
+    the materialized output oracle data. Its type is
+    $\mathsf{OptionT}(\OracleComp(\oSpec), \StmtOut \times (\forall i, \OStmtOut(i)))$.
     \lean{OracleVerifier.run}
     \leanok
     \uses{def:oracle_verifier, def:oracle_interface}
@@ -380,12 +397,14 @@ about the execution, such as the log of oracle queries for the shared oracles, f
     The execution of an interactive reduction consists of running the prover followed by the verifier:
 
     \[ \mathsf{Reduction}.\mathsf{run}(\mathsf{stmt}, \mathsf{wit}) := \mathsf{do} \; \{ \]
-    \[ \quad \langle \mathsf{prvStmtOut}, \mathsf{witOut}, \mathsf{transcript} \rangle \leftarrow \mathsf{reduction}.\mathsf{prover}.\mathsf{run}(\mathsf{stmt}, \mathsf{wit}) \]
+    \[ \quad \langle \mathsf{transcript}, \mathsf{prvStmtOut}, \mathsf{witOut} \rangle \leftarrow \mathsf{reduction}.\mathsf{prover}.\mathsf{run}(\mathsf{stmt}, \mathsf{wit}) \]
     \[ \quad \mathsf{stmtOut} \leftarrow \mathsf{reduction}.\mathsf{verifier}.\mathsf{run}(\mathsf{stmt}, \mathsf{transcript}) \]
-    \[ \quad \mathsf{return} \; ((\mathsf{prvStmtOut}, \mathsf{witOut}), \mathsf{stmtOut}, \mathsf{transcript}) \]
+    \[ \quad \mathsf{return} \; (\langle \mathsf{transcript}, \mathsf{prvStmtOut}, \mathsf{witOut} \rangle, \mathsf{stmtOut}) \]
     \[ \} \]
 
-    Returns both the prover's output (statement and witness) and the verifier's output statement, along with the complete transcript.
+    Returns the prover's result (the complete transcript, output statement and output witness)
+    and the verifier's output statement. The execution is an optional oracle computation: it fails
+    when the verifier rejects.
     \lean{Reduction.run}
     \leanok
     \uses{def:reduction, def:prover_run, def:verifier_run}
@@ -393,18 +412,23 @@ about the execution, such as the log of oracle queries for the shared oracles, f
 
 \begin{definition}[Oracle Reduction Execution]
     \label{def:oracle_reduction_run}
-    The execution of an interactive oracle reduction is similar to a standard reduction but includes logging of oracle queries:
+    The execution of an interactive oracle reduction runs the oracle prover on the statement
+    together with the oracle statement data, and then the oracle verifier:
 
-    \[ \mathsf{OracleReduction}.\mathsf{run}(\mathsf{stmt}, \mathsf{wit}, \mathsf{oStmt}) := \mathsf{do} \; \{ \]
-    \[ \quad \langle \langle \mathsf{prvStmtOut}, \mathsf{witOut}, \mathsf{transcript} \rangle, \mathsf{proveQueryLog} \rangle \leftarrow \]
-    \[ \qquad (\mathsf{simulateQ}(\mathsf{loggingOracle}, \mathsf{reduction}.\mathsf{prover}.\mathsf{run}(\langle \mathsf{stmt}, \mathsf{oStmt} \rangle, \mathsf{wit}))).\mathsf{run} \]
-    \[ \quad \langle \mathsf{stmtOut}, \mathsf{verifyQueryLog} \rangle \leftarrow \]
-    \[ \qquad (\mathsf{simulateQ}(\mathsf{loggingOracle}, \mathsf{reduction}.\mathsf{verifier}.\mathsf{run}(\mathsf{stmt}, \mathsf{oStmt}, \mathsf{transcript}))).\mathsf{run} \]
-    \[ \quad \mathsf{return} \; ((\mathsf{prvStmtOut}, \mathsf{witOut}), \mathsf{stmtOut}, \mathsf{transcript}, \mathsf{proveQueryLog}, \mathsf{verifyQueryLog}) \]
+    \[ \mathsf{OracleReduction}.\mathsf{run}(\mathsf{stmt}, \mathsf{oStmt}, \mathsf{wit}) := \mathsf{do} \; \{ \]
+    \[ \quad \langle \mathsf{transcript}, \mathsf{prvStmtOut}, \mathsf{witOut} \rangle \leftarrow \mathsf{reduction}.\mathsf{prover}.\mathsf{run}(\langle \mathsf{stmt}, \mathsf{oStmt} \rangle, \mathsf{wit}) \]
+    \[ \quad \mathsf{stmtOut} \leftarrow \mathsf{reduction}.\mathsf{verifier}.\mathsf{run}(\mathsf{stmt}, \mathsf{oStmt}, \mathsf{transcript}) \]
+    \[ \quad \mathsf{return} \; (\langle \mathsf{transcript}, \mathsf{prvStmtOut}, \mathsf{witOut} \rangle, \mathsf{stmtOut}) \]
     \[ \} \]
 
-    Returns the same outputs as a standard reduction, plus logs of all oracle queries made by both the prover and verifier.
-    \lean{OracleReduction.run}
+    Here $\mathsf{prvStmtOut}$ and $\mathsf{stmtOut}$ each pair an output statement with output
+    oracle data. The execution fails when the verifier rejects, and it returns no query logs.
+
+    The logged variant $\mathsf{OracleReduction}.\mathsf{runWithLog}$ runs the prover and the
+    verifier under the logging oracle. On acceptance it returns the same two components, followed
+    by the log of the prover's queries (to the shared oracle and the challenge oracle) and the
+    log of the verifier's queries to the shared oracle. Extractors read these logs.
+    \lean{OracleReduction.run, OracleReduction.runWithLog}
     \leanok
     \uses{def:oracle_reduction, def:prover_run, def:oracle_verifier_run}
 \end{definition}
@@ -828,7 +852,7 @@ verifier runs, so the usual argument does not apply.
     \emph{Honest-verifier} zero-knowledge asks for a simulator whose transcripts, on every valid
     input, are (statistically) indistinguishable from those of the interaction between the honest
     prover and the honest verifier. Full zero-knowledge asks the same against every (malicious)
-    verifier. Neither definition is formalized yet.
+    verifier. Neither definition is formalized.
 \end{remark}
 
 \subsubsection{Oracle-Specific Security}
@@ -991,4 +1015,5 @@ commits to one transcript.
 
 The library states state-restoration security only in this knowledge form. The bound concerns the
 native verifier; its transfer to the Fiat--Shamir transform is discussed in
-\Cref{sec:fiat_shamir_security}.
+\Cref{sec:fiat_shamir_security}. \texttt{docs/design/00-current-status.md} records the status of
+the native layer.
