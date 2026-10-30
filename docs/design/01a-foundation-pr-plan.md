@@ -52,9 +52,10 @@ relation directions, but verifier correspondence is honest-execution only. Later
 native security results are listed in [current status](00-current-status.md).
 
 The execution slices added concrete prefixes, logging, persistent world state, and distinct
-accept/reject/fault outcomes. Their existence does not establish general soundness composition in
-a persistent world. That theorem is part of the active roadmap; its intended assumptions belong
-to [execution and security](03-adversarial-oracle-execution.md).
+accept/reject/fault outcomes. Their existence did not by itself establish soundness composition
+in a persistent world; that theorem was proved later and is listed in
+[current status](00-current-status.md), with its assumptions in
+[execution and security](03-adversarial-oracle-execution.md).
 
 ## Dependency lineage
 
