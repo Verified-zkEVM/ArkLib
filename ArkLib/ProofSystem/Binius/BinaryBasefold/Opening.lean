@@ -387,16 +387,9 @@ def mliopcs (γ : ℕ) : MLIOPCS L ℓ where
   oracleReduction := openingReduction K β id mlpWitnessEquiv γ (ϑ := ϑ) (h_rate := h_rate)
   perfectCompleteness := openingReduction_perfectCompleteness K β id mlpWitnessEquiv γ _ _
   rbrKnowledgeError := openingError K β γ (ϑ := ϑ) (h_rate := h_rate)
-  rbrKnowledgeSoundnessAveraged := by
+  rbrKnowledgeSoundness := by
     intro σ init impl
-    exact OracleProof.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged
-      (openingVerifier_rbrKnowledgeSoundness K β id mlpWitnessEquiv γ init impl)
-
-/-- The multilinear opening protocol satisfies round-by-round security. -/
-theorem mliopcs_rbrKnowledgeSound (γ : ℕ) :
-    (mliopcs K β γ (ϑ := ϑ) (h_rate := h_rate)).RbrKnowledgeSound := by
-  intro σ init impl
-  exact openingVerifier_rbrKnowledgeSoundness K β id mlpWitnessEquiv γ init impl
+    exact openingVerifier_rbrKnowledgeSoundness K β id mlpWitnessEquiv γ init impl
 
 /-- The evaluation claim after discarding the surrounding context. -/
 def contextualQuery (Context : Type) :

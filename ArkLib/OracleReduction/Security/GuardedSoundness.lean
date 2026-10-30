@@ -9,10 +9,10 @@ public import ArkLib.OracleReduction.Security.Acceptance
 public import ArkLib.OracleReduction.Security.GuardedRoundByRound
 
 /-!
-# Fixed-prefix round-by-round soundness bridges
+# Round-by-round soundness bridges
 
-This file projects fixed-prefix knowledge certificates to soundness certificates and accumulates
-fixed-prefix soundness errors through the actual stateful prover execution. The terminal step
+This file projects round-by-round knowledge certificates to soundness certificates and accumulates
+round-by-round soundness errors through the actual stateful prover execution. The terminal step
 requires a current-state certificate; guarded verifiers supply it from their fresh-`init` terminal
 field because their verdict depends only on the statement and transcript.
 -/
@@ -70,7 +70,7 @@ theorem GuardedForm.stateFunction_full {V : Verifier oSpec StmtIn StmtOut pSpec}
 
 variable [∀ i, SampleableType (pSpec.Challenge i)]
 
-/-- Fixed-prefix knowledge soundness gives fixed-prefix soundness at the same challenge errors,
+/-- Round-by-round knowledge soundness gives round-by-round soundness at the same challenge errors,
 by existentially projecting the knowledge-state witness. -/
 theorem rbrSoundness_of_rbrKnowledgeSoundnessWith
     {V : Verifier oSpec StmtIn StmtOut pSpec}
@@ -86,7 +86,8 @@ theorem rbrSoundness_of_rbrKnowledgeSoundnessWith
   rintro c ⟨hnot, w, hw⟩
   exact ⟨w, fun hx ↦ hnot ⟨_, hx⟩, hw⟩
 
-/-- The existential fixed-prefix knowledge certificate also projects to fixed-prefix soundness. -/
+/-- The existential round-by-round knowledge certificate also projects to
+round-by-round soundness. -/
 theorem rbrSoundness_of_rbrKnowledgeSoundness
     {V : Verifier oSpec StmtIn StmtOut pSpec}
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
@@ -186,7 +187,7 @@ theorem soundness_of_rbrSoundness_of_full
   intro y _
   simp [simulateQ_pure, StateT.run_pure, hx]
 
-/-- For a guarded verifier, fixed-prefix round-by-round soundness gives ordinary soundness with
+/-- For a guarded verifier, round-by-round soundness gives ordinary soundness with
 error the sum of the per-challenge errors, allowing arbitrary shared oracle state and provers. -/
 theorem GuardedForm.soundness_of_rbrSoundness
     {langIn : Set StmtIn} {langOut : Set StmtOut}
@@ -209,7 +210,7 @@ variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn StmtOut : Type}
   {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
 /-- The guarded soundness bridge for an oracle verifier, after materializing its input and output
-oracles. The error is the sum of the fixed-prefix challenge errors. -/
+oracles. The error is the sum of the per-challenge errors. -/
 theorem soundness_of_rbrSoundness_of_guarded
     {V : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec}
     (G : V.toVerifier.GuardedForm)

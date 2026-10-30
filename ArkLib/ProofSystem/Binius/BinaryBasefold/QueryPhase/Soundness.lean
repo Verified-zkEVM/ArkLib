@@ -611,18 +611,6 @@ theorem queryOracleVerifier_rbrKnowledgeSoundness {σ : Type} (init : ProbComp �
     (stmtIn_oStmtIn := stmt) (transcript := tr)
   exact (SampleableType.prEvent_uniformSample_inst_irrel _ _ _).le.trans h
 
-/-- The averaged guarantee follows from the fixed-input, fresh-challenge theorem. -/
-theorem queryOracleVerifier_rbrKnowledgeSoundnessAveraged {σ : Type} (init : ProbComp σ)
-    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (queryOracleVerifier 𝔽q β (ϑ := ϑ) γ_repetitions).rbrKnowledgeSoundnessAveraged init impl
-      (Oₛₒ := fun i : Empty => nomatch i)
-      (relIn := finalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-      (relOut := acceptRejectOracleRel)
-      (rbrKnowledgeError := queryRbrKnowledgeError 𝔽q β γ_repetitions
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
-  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
-    (queryOracleVerifier_rbrKnowledgeSoundness 𝔽q β γ_repetitions init impl)
-
 end FinalQueryRoundIOR
 end
 end Binius.BinaryBasefold.QueryPhase

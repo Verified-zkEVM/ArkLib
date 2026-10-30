@@ -32,9 +32,8 @@ function's `toFun_full` then applies.
 
 * `Verifier.append_rbrKnowledgeSoundnessWith_of_guarded_first`: the composition theorem
   with the extractor and knowledge state function named, so that it iterates.
-* `Verifier.append_rbrKnowledgeSoundness_of_guarded_first` and
-  `Verifier.append_rbrKnowledgeSoundnessAveraged_of_guarded_first`: the existential and
-  prover-averaged corollaries, with `OracleVerifier` wrappers.
+* `Verifier.append_rbrKnowledgeSoundness_of_guarded_first`: the existential corollary,
+  with `OracleVerifier` wrappers.
 
 ## Supporting API
 
@@ -607,19 +606,6 @@ theorem append_rbrKnowledgeSoundness_of_guarded_first
   exact (rbrKnowledgeSoundness_iff_exists_with init impl _ _ _ _).mpr
     ⟨_, _, _, append_rbrKnowledgeSoundnessWith_of_guarded_first V₁ V₂ G₁ h₁ h₂⟩
 
-/-- The guarded composition theorem also supplies the prover-averaged round-by-round knowledge
-soundness contract, with the same per-round errors. -/
-theorem append_rbrKnowledgeSoundnessAveraged_of_guarded_first
-    (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁) (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
-    (G₁ : V₁.GuardedForm)
-    {ε₁ : pSpec₁.ChallengeIdx → ℝ≥0} {ε₂ : pSpec₂.ChallengeIdx → ℝ≥0}
-    (h₁ : V₁.rbrKnowledgeSoundness init impl rel₁ rel₂ ε₁)
-    (h₂ : V₂.rbrKnowledgeSoundness init impl rel₂ rel₃ ε₂) :
-    (V₁.append V₂).rbrKnowledgeSoundnessAveraged init impl rel₁ rel₃
-      (Sum.elim ε₁ ε₂ ∘ ChallengeIdx.sumEquiv.symm) :=
-  rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
-    (append_rbrKnowledgeSoundness_of_guarded_first V₁ V₂ G₁ h₁ h₂)
-
 end Verifier
 
 namespace OracleVerifier
@@ -636,7 +622,7 @@ variable {ι : Type} {oSpec : OracleSpec ι}
   {rel₁ : Set ((Stmt₁ × ∀ i, OStmt₁ i) × Wit₁)} {rel₂ : Set ((Stmt₂ × ∀ i, OStmt₂ i) × Wit₂)}
   {rel₃ : Set ((Stmt₃ × ∀ i, OStmt₃ i) × Wit₃)}
 
-/-- Oracle verifiers inherit the guarded fixed-prefix composition theorem through their ordinary
+/-- Oracle verifiers inherit the guarded composition theorem through their ordinary
 verifier semantics. The guard and the component hypotheses concern the converted verifiers. -/
 theorem append_rbrKnowledgeSoundness_of_guarded_first
     (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
@@ -649,18 +635,5 @@ theorem append_rbrKnowledgeSoundness_of_guarded_first
       (Sum.elim ε₁ ε₂ ∘ ChallengeIdx.sumEquiv.symm) := by
   rw [append_toVerifier]
   exact Verifier.append_rbrKnowledgeSoundness_of_guarded_first _ _ G₁ h₁ h₂
-
-/-- Averaged form of `OracleVerifier.append_rbrKnowledgeSoundness_of_guarded_first`. -/
-theorem append_rbrKnowledgeSoundnessAveraged_of_guarded_first
-    (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
-    (V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂)
-    (G₁ : V₁.toVerifier.GuardedForm)
-    {ε₁ : pSpec₁.ChallengeIdx → ℝ≥0} {ε₂ : pSpec₂.ChallengeIdx → ℝ≥0}
-    (h₁ : V₁.toVerifier.rbrKnowledgeSoundness init impl rel₁ rel₂ ε₁)
-    (h₂ : V₂.toVerifier.rbrKnowledgeSoundness init impl rel₂ rel₃ ε₂) :
-    (V₁.append V₂).rbrKnowledgeSoundnessAveraged init impl rel₁ rel₃
-      (Sum.elim ε₁ ε₂ ∘ ChallengeIdx.sumEquiv.symm) :=
-  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
-    (append_rbrKnowledgeSoundness_of_guarded_first V₁ V₂ G₁ h₁ h₂)
 
 end OracleVerifier

@@ -27,8 +27,7 @@ Completeness is immediate. Round-by-round knowledge soundness has error `ε` whe
 of distinct values `f ≠ g` that can occur agrees at a uniform query with probability at most
 `ε`. Two special cases:
    - comparing two oracle statements of a type with oracle distance at most `d` (`distanceLE`),
-     with error `d / |Query|`, stated in the prover-averaged form
-     (`oracleVerifier_rbrKnowledgeSoundnessAveraged`);
+     with error `d / |Query|` (`oracleVerifier_rbrKnowledgeSoundness_of_distanceLE`);
    - polynomial identity testing, comparing a polynomial with `0` by evaluation at a random point
      (`RandomEvaluation`).
 -/
@@ -251,15 +250,14 @@ theorem prob_answer_eq_le_of_distanceLE {d : ℕ} (hDist : distanceLE O d) (a b 
 
 variable (M)
 
-/-- For a type with oracle distance at most `d`, the random-query reduction is prover-averaged
-round-by-round knowledge sound with error `d / |Query|`. -/
-theorem oracleVerifier_rbrKnowledgeSoundnessAveraged {d : ℕ} (hDist : distanceLE O d) :
-    (oracleVerifier oSpec Statement OStatement (Query M)).rbrKnowledgeSoundnessAveraged init impl
-      (relIn Statement OStatement M f g) (relOut Statement OStatement M f g)
-      (fun _ => (d : ℝ≥0) / (Fintype.card (Query M) : ℝ≥0)) := by
-  apply Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged
-  exact oracleVerifier_rbrKnowledgeSoundness oSpec Statement OStatement M f g _
-    fun stmt oracles hfg => prob_answer_eq_le_of_distanceLE hDist _ _ hfg
+/-- For a type with oracle distance at most `d`, the random-query reduction is round-by-round
+knowledge sound with error `d / |Query|`. -/
+theorem oracleVerifier_rbrKnowledgeSoundness_of_distanceLE {d : ℕ} (hDist : distanceLE O d) :
+    (oracleVerifier oSpec Statement OStatement (Query M)).toVerifier.rbrKnowledgeSoundness
+      init impl (relIn Statement OStatement M f g) (relOut Statement OStatement M f g)
+      (fun _ => (d : ℝ≥0) / (Fintype.card (Query M) : ℝ≥0)) :=
+  oracleVerifier_rbrKnowledgeSoundness oSpec Statement OStatement M f g _
+    fun _ _ hfg => prob_answer_eq_le_of_distanceLE hDist _ _ hfg
 
 end Distance
 

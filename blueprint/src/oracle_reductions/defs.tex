@@ -631,18 +631,6 @@ To define round-by-round (knowledge) soundness, we need to define the notion of 
     \uses{def:verifier, def:knowledge_state_function, def:rbr_extractor}
 \end{definition}
 
-\begin{remark}[Prover-Averaged Variants]
-    The library also defines prover-averaged variants of both notions, in which the prefix is
-    produced by running a prover up to round $i$ and the bound is on the resulting mixture. The
-    fixed-prefix notions imply their prover-averaged variants with the same error, since the next
-    challenge is drawn independently of the prefix; the converse fails.
-    \lean{Verifier.rbrSoundnessAveraged, Verifier.rbrKnowledgeSoundnessAveraged,
-      Verifier.rbrSoundness_implies_rbrSoundnessAveraged,
-      Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged}
-    \uses{def:round_by_round_soundness, def:round_by_round_knowledge_soundness,
-      def:prover_run_to_round}
-\end{remark}
-
 % \begin{remark}[Alternative Formulations of RBR Knowledge Soundness]
 %     There are different ways to formulate round-by-round knowledge soundness, differing in whether
 %     the extractor's failure to produce a valid witness is included as part of the security condition.
@@ -663,14 +651,6 @@ To define round-by-round (knowledge) soundness, we need to define the notion of 
 %     performance does not degrade when given more information.
 %     \lean{Verifier.Extractor.Straightline.IsMonotone}
 %     \uses{def:straightline_extractor}
-% \end{definition}
-
-% \begin{definition}[Monotone RBR Extractor]
-%     \label{def:monotone_rbr_extractor}
-%     A round-by-round extractor is \textbf{monotone} if its success probability on a given query log
-%     is the same as the success probability on any extension of that query log.
-%     \lean{Extractor.RoundByRoundOneShot.IsMonotone}
-%     \uses{def:rbr_extractor}
 % \end{definition}
 
 \subsubsection{Implications Between Security Notions}

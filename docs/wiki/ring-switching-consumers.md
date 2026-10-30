@@ -99,7 +99,7 @@ transport its own inherited relation on that context and witness.
 `RingSwitch.append_perfectCompleteness` and `append_rbrKnowledgeSoundness` consume an
 opening whose input already matches this contextual relation. `OpeningAdapter` converts a general
 `MLIOPCS` to this relation through a zero-round context projection and witness wrapper, transporting
-completeness and fixed-prefix round-by-round knowledge soundness.
+completeness and round-by-round knowledge soundness from its `rbrKnowledgeSoundness` field.
 Completeness must hold for every
 fixed initial state; RBR must cover all inputs in the stated contextual evaluation
 relation, not only a selected honest encoding or context. Match the commitment, oracle

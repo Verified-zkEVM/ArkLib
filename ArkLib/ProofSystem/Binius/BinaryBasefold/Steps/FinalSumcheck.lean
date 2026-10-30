@@ -29,7 +29,7 @@ statement extended by `c`. The step sends no challenge.
   polynomial from the first oracle (`Steps/FinalSumcheck/Extraction.lean`).
 * `finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWith`: round-by-round
   knowledge soundness at `finalSumcheckRbrExtractor` and `finalSumcheckKnowledgeStateFunction`, with
-  existential and averaged forms.
+  an existential form.
 
 ## References
 
@@ -449,20 +449,6 @@ theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundness {σ : Type}
   classical
   exact (Verifier.rbrKnowledgeSoundness_iff_exists_with init impl _ _ _ _).mpr
     ⟨_, _, _, finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWith 𝔽q β init impl⟩
-
-omit [DecidableEq 𝔽q] in
-/-- Round-by-round knowledge soundness of the final sum-check step: the averaged form of
-`finalSumcheckOracleVerifier_rbrKnowledgeSoundness`. -/
-theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundnessAveraged {σ : Type}
-    (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (finalSumcheckVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (𝓑 := 𝓑)).rbrKnowledgeSoundnessAveraged init impl
-      (relIn := roundRelation 𝔽q β (ϑ := ϑ) (𝓑 := 𝓑) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        (multpoly := multiplier) (Fin.last ℓ))
-      (relOut := finalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-      (rbrKnowledgeError := finalSumcheckKnowledgeError) :=
-  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
-    (finalSumcheckOracleVerifier_rbrKnowledgeSoundness 𝔽q β init impl)
 
 end FinalSumcheckStep
 end SingleIteratedSteps

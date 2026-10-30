@@ -396,14 +396,6 @@ theorem frozen_runToRound (P : Prover oSpec OS Aux OO OW pSpec) (x : OS) (a : Au
     rw [Prover.runToRound_succ, Prover.runToRound_succ, ih]
     exact frozen_processRound P x a dummy project i _
 
-theorem frozen_runWithLogToRound (P : Prover oSpec OS Aux OO OW pSpec) (x : OS) (a : Aux)
-    (dummy : IO) (project : OW → IW) (i : Fin (n + 1)) (y : IS) (b : IAux) :
-    (frozen P x a dummy project).runWithLogToRound i y b =
-      P.runWithLogToRound i x a := by
-  unfold Prover.runWithLogToRound
-  rw [frozen_runToRound]
-  rfl
-
 theorem frozen_run (P : Prover oSpec OS Aux OO OW pSpec) (x : OS) (a : Aux)
     (dummy : IO) (project : OW → IW) (y : IS) (b : IAux) :
     (frozen P x a dummy project).run y b =
@@ -789,58 +781,6 @@ theorem liftContext_knowledgeSoundness [Inhabited InnerStmtOut] [Inhabited Inner
     exact hbad.1 (witLens.lift (x, z.1.1.1.2.2) (z.2.getD default)) rfl (by
       simpa [hw'] using lensKS.lift_knowledgeSound x z.1.1.1.2.2 w True.intro hin)
   · exact False.elim (hbad.1 _ rfl (hShortcut (z.2.getD default) True.intro))
-
-/-- Context lifting preserves prover-averaged round-by-round soundness with the same error. -/
-theorem liftContext_rbrSoundnessAveraged [Inhabited InnerStmtOut]
-    {outerLangIn : Set OuterStmtIn} {outerLangOut : Set OuterStmtOut}
-    {innerLangIn : Set InnerStmtIn} {innerLangOut : Set InnerStmtOut}
-    {rbrSoundnessError : pSpec.ChallengeIdx → ℝ≥0}
-    {lens : Statement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut}
-    (V : Verifier oSpec InnerStmtIn InnerStmtOut pSpec)
-    [lensSound : lens.IsSound outerLangIn outerLangOut innerLangIn innerLangOut
-      (V.compatStatement lens)]
-    (h : V.rbrSoundnessAveraged init impl innerLangIn innerLangOut rbrSoundnessError) :
-      (V.liftContext lens).rbrSoundnessAveraged init impl outerLangIn outerLangOut
-        rbrSoundnessError := by
-  obtain ⟨S, hbound⟩ := h
-  refine ⟨S.liftContext lens V outerLangIn outerLangOut innerLangIn innerLangOut, ?_⟩
-  intro x hx Aux OW a P i
-  have hinner := hbound (lens.proj x) (lensSound.proj_sound x hx) Aux OW a
-    (P.frozen x a (default : InnerStmtOut) id) i
-  rw [Prover.frozen_runToRound] at hinner
-  refine le_trans (prEvent_mono _ _ _ ?_) hinner
-  intro z hz
-  simpa only [StateFunction.liftContext, hx, false_or] using hz
-
-/-- Context lifting preserves prover-averaged round-by-round knowledge soundness with the same
-error. -/
-theorem liftContext_rbrKnowledgeSoundnessAveraged [Inhabited InnerStmtOut] [Inhabited InnerWitIn]
-    {outerRelIn : Set (OuterStmtIn × OuterWitIn)} {outerRelOut : Set (OuterStmtOut × OuterWitOut)}
-    {innerRelIn : Set (InnerStmtIn × InnerWitIn)} {innerRelOut : Set (InnerStmtOut × InnerWitOut)}
-    {rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0}
-    {stmtLens : Statement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut}
-    {witLens : Witness.InvLens OuterStmtIn OuterWitIn OuterWitOut InnerWitIn InnerWitOut}
-    (V : Verifier oSpec InnerStmtIn InnerStmtOut pSpec)
-    [lensKS : Extractor.Lens.IsKnowledgeSound outerRelIn innerRelIn outerRelOut innerRelOut
-      (V.compatStatement stmtLens) (fun _ _ => True) ⟨stmtLens, witLens⟩]
-    (h : V.rbrKnowledgeSoundnessAveraged init impl innerRelIn innerRelOut rbrKnowledgeError) :
-      (V.liftContext stmtLens).rbrKnowledgeSoundnessAveraged init impl outerRelIn outerRelOut
-        rbrKnowledgeError := by
-  obtain ⟨WitMid, E, K, hbound⟩ := h
-  let lens : Extractor.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
-      OuterWitIn OuterWitOut InnerWitIn InnerWitOut := ⟨stmtLens, witLens⟩
-  refine ⟨(fun k => OuterWitOut × WitMid k), E.liftContext lens,
-    K.liftContext lens V outerRelIn innerRelIn outerRelOut innerRelOut E, ?_⟩
-  intro x a P i
-  have hinner := hbound (stmtLens.proj x) default
-    (P.frozen x a (default : InnerStmtOut) (fun w => witLens.proj (x, w))) i
-  rw [Prover.frozen_runWithLogToRound] at hinner
-  refine le_trans (prEvent_mono _ _ _ ?_) hinner
-  rintro z ⟨⟨w, v⟩, hprev, hnext⟩
-  change ¬ (K _ _ _ _ ∨ _) at hprev
-  change K _ _ _ v ∨ _ at hnext
-  exact ⟨v, (fun hv => hprev (Or.inl hv)),
-    hnext.resolve_right (fun hs => hprev (Or.inr hs))⟩
 
 /-- Context lifting preserves round-by-round soundness at every fixed prefix with the same error. -/
 theorem liftContext_rbrSoundness

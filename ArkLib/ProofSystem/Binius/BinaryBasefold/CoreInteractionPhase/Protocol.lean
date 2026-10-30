@@ -24,7 +24,7 @@ fold-commit round, and the last block is `ϑ` fold-relay rounds.
 * `foldRelayOracleVerifier`, `foldCommitOracleVerifier` and their reductions: one round. Their
   round-by-round knowledge soundness (`…_rbrKnowledgeSoundness`) comes from
   the steps' theorems by `OracleVerifier.append_rbrKnowledgeSoundness_of_guarded_first`,
-  guarded by the fold step's check; the averaged forms and perfect completeness are included. The
+  guarded by the fold step's check; perfect completeness is included. The
   error is the fold step's on its challenge, `foldRelayKnowledgeError` and
   `foldCommitKnowledgeError`.
 * `nonLastSingleBlockOracleVerifier`, `nonLastBlocksOracleVerifier`, `lastBlockOracleVerifier`,
@@ -165,22 +165,6 @@ theorem foldRelayOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
     (foldOracleVerifier_rbrKnowledgeSoundness 𝔽q β i)
     (relayOracleVerifier_rbrKnowledgeSoundness 𝔽q β i hNCR)
 
-omit [DecidableEq 𝔽q] in
-/-- Round-by-round knowledge soundness of the fold-relay round: the averaged form of
-`foldRelayOracleVerifier_rbrKnowledgeSoundness`. -/
-theorem foldRelayOracleVerifier_rbrKnowledgeSoundnessAveraged (i : Fin ℓ)
-    (hNCR : ¬ IsCommitmentRound ℓ ϑ i) :
-    (foldRelayOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-      (multpoly := multpoly) i hNCR).rbrKnowledgeSoundnessAveraged init impl
-      (relIn := roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i.castSucc)
-      (relOut := roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i.succ)
-      (rbrKnowledgeError := foldRelayKnowledgeError 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :=
-  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
-    (foldRelayOracleVerifier_rbrKnowledgeSoundness 𝔽q β i hNCR)
-
 end FoldRelayRound
 
 section FoldCommitRound
@@ -273,22 +257,6 @@ theorem foldCommitOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
       (multpoly := multpoly) i)
     (foldOracleVerifier_rbrKnowledgeSoundness 𝔽q β i)
     (commitOracleVerifier_rbrKnowledgeSoundness 𝔽q β i hCR)
-
-omit [DecidableEq 𝔽q] in
-/-- Round-by-round knowledge soundness of the fold-commit round: the averaged form of
-`foldCommitOracleVerifier_rbrKnowledgeSoundness`. -/
-theorem foldCommitOracleVerifier_rbrKnowledgeSoundnessAveraged (i : Fin ℓ)
-    (hCR : IsCommitmentRound ℓ ϑ i) :
-    (foldCommitOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-      (multpoly := multpoly) i hCR).rbrKnowledgeSoundnessAveraged init impl
-      (relIn := roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i.castSucc)
-      (relOut := roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i.succ)
-      (rbrKnowledgeError := foldCommitKnowledgeError 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :=
-  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
-    (foldCommitOracleVerifier_rbrKnowledgeSoundness 𝔽q β i hCR)
 
 end FoldCommitRound
 

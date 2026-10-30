@@ -21,8 +21,7 @@ facts a round-by-round proof needs about such a verifier.
   verifier-challenge protocol, round-by-round knowledge soundness
   (`Verifier.rbrKnowledgeSoundnessWith`) follows from a bound on the extraction-failure
   event `rbrExtractionFailureEvent` for every input statement and every length-one transcript
-  prefix, that is, every prover message. The prover-averaged notion follows through
-  `Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged`.
+  prefix, that is, every prover message.
 * `Verifier.rbrKnowledgeSoundnessWith_of_isEmpty_challengeIdx`: a protocol with no
   verifier challenge is round-by-round knowledge sound at any extractor, knowledge-state
   function and error, since there is no extraction-failure event to bound.

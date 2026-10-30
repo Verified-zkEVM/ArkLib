@@ -24,7 +24,7 @@ The core-and-query challenge sum is bounded by
 `2ℓ/|L| + 2^(ℓ+𝓡)/|L| + (1/2 + 1/(2·2^𝓡))^γ`; it excludes ring-switching batching.
 This is the corresponding part of DP24 §5.2, equation (43). The middle term bounds the folding
 loss and the final term bounds repeated query acceptance. The exports prove perfect completeness
-on exact encodings and fixed-prefix and prover-averaged round-by-round knowledge soundness for
+on exact encodings and round-by-round knowledge soundness for
 unique-decoding-radius compatibility.
 
 ## References
@@ -218,18 +218,6 @@ theorem fullOracleVerifier_rbrKnowledgeSoundness :
       (⟨⟨0, fun _ => 0, input.1.ctx⟩, 0⟩, fun _ _ => 0)))
     (CoreInteraction.coreInteractionOracleVerifier_rbrKnowledgeSoundness 𝔽q β)
     (QueryPhase.queryOracleVerifier_rbrKnowledgeSoundness 𝔽q β γ_repetitions init impl)
-
-/-- The averaged RBR guarantee follows from fixed-prefix knowledge soundness. -/
-theorem fullOracleVerifier_rbrKnowledgeSoundnessAveraged :
-    OracleProof.rbrKnowledgeSoundnessAveraged init impl
-      (verifier := fullOracleVerifier 𝔽q β γ_repetitions (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
-      (relIn := roundRelation (multpoly := multiplier) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
-      (rbrKnowledgeError := fullRbrKnowledgeError 𝔽q β γ_repetitions (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
-  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
-    (fullOracleVerifier_rbrKnowledgeSoundness 𝔽q β γ_repetitions)
 
 /-- Upper bound `2ℓ/|L| + 2^(ℓ+𝓡)/|L| + (1/2 + 1/(2·2^𝓡))^γ_rep` for the core-and-query
 RBR error sum, excluding batching. -/

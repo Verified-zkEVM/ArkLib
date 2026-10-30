@@ -87,28 +87,28 @@ notion needs its own statement of what its unbounded form means, with its actual
 | Notion | Extractor in ArkLib | Content without a cost bound | Additional obligation for efficient extraction |
 |---|---|---|---|
 | Terminal knowledge soundness | `Extractor.Straightline` | Relation soundness, by the collapse above | Complete execution of the named extractor in its declared access model |
-| Round-by-round knowledge soundness | Legacy `Extractor.RoundByRound`; native `RoundExtractor` backward witness maps | Legacy fixed-prefix and prover-averaged forms each coincide with round-by-round soundness of the induced languages when input-witness types are inhabited; native certificates retain their local obligations | Execution of each stage on its available prefix, intermediate witness sizes, and their composition |
+| Round-by-round knowledge soundness | Legacy `Extractor.RoundByRound`; native `RoundExtractor` backward witness maps | The legacy notion coincides with round-by-round soundness of the induced languages when input-witness types are inhabited; native certificates retain their local obligations | Execution of each stage on its available prefix, intermediate witness sizes, and their composition |
 | Special soundness and CWSS | `Extractor.TreeBased`, from the statement, a transcript tree and its leaf witnesses | Each structured accepting tree with valid leaf witnesses yields an input witness, or exhibits an escape event; with a classical selector, the input statement lies in the language of the input relation | Tree processing; a knowledge corollary also bounds obtaining the tree and producing any escape |
 | State-restoration knowledge soundness | `Extractor.StateRestoration` | Presumably relation soundness of the restoration game, by the same selector; not proved | Extraction together with replay and simulation of the restoration oracle |
 
-**Round-by-round knowledge soundness.** The legacy existential notions `rbrKnowledgeSoundness` and
-`rbrKnowledgeSoundnessAveraged` admit an extractor built by classical choice
-(`RoundByRoundOneShot.toRoundByRoundOfRel`), so they carry no efficiency content. The native
-knowledge certificates state that they assert no extraction efficiency. For inhabited input-witness
-types, the legacy fixed-prefix and prover-averaged forms each coincide with round-by-round
-soundness of the languages of the input and output relations, as proved in [#1376](https://github.com/Verified-zkEVM/ArkLib/pull/1376). The reverse implications from
-knowledge soundness to soundness need no inhabitation assumption. These results preserve each
-form's prefix quantifiers and terminal semantics; they are distinct from the terminal
+**Round-by-round knowledge soundness.** The legacy existential notion `rbrKnowledgeSoundness`
+admits a round-by-round extractor built directly by classical choice, so it carries no efficiency
+content. The native knowledge certificates state that they assert no extraction efficiency. For
+inhabited input-witness types, the legacy notion coincides with round-by-round soundness of the
+languages of the input and output relations, as proved in
+[#1376](https://github.com/Verified-zkEVM/ArkLib/pull/1376). The reverse implication from knowledge
+soundness to soundness needs no inhabitation assumption. These results preserve the
+prefix quantifiers and terminal semantics; they are distinct from the terminal
 relation-soundness equivalence.
 
 `Verifier.forall_rbrSoundness_iff_rbrKnowledgeSoundness_iff` in
-`ArkLib/OracleReduction/Security/Implications.lean` characterizes the remaining carrier cases,
-for both the fixed-prefix and prover-averaged forms: the equivalence holds uniformly over
+`ArkLib/OracleReduction/Security/Implications.lean` characterizes the remaining carrier cases:
+the equivalence holds uniformly over
 relations and errors exactly when the input-witness type is inhabited or
 `StmtIn × FullTranscript pSpec × WitOut` is empty. Otherwise total backward extraction is
 impossible, even for rejected transcripts and unrelated output witnesses. This is a constraint of
-the extractor type. It is not an additional soundness guarantee. The one-shot notion
-`rbrKnowledgeSoundnessOneShot` and the native certificates are not characterized by these results.
+the extractor type. It is not an additional soundness guarantee. The native certificates are not
+characterized by these results.
 
 Round-by-round knowledge soundness gains its efficiency content from per-round cost certificates
 for named stage extractors, such as those the Toy IOP requires below. ABF26 Definition A.5 bounds

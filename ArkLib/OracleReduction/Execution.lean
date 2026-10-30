@@ -145,13 +145,6 @@ def runWithLogToRound (i : Fin (n + 1))
         ((pSpec.Transcript i × prover.PrvState i) × QueryLog (oSpec + [pSpec.Challenge]ₒ)) :=
   WriterT.run (simulateQ loggingOracle (prover.runToRound i stmt wit))
 
-@[simp]
-lemma runWithLogToRound_discard_log_eq_runToRound (i : Fin (n + 1))
-    (stmt : StmtIn) (wit : WitIn) (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) :
-      Prod.fst <$> prover.runWithLogToRound i stmt wit =
-        prover.runToRound i stmt wit := by
-  simp [runWithLogToRound, runToRound]
-
 /-- Run the prover in an interactive reduction. Returns the output statement and witness, and the
   transcript. See `runWithLog` for a version that additionally returns the log of the
   prover's oracle queries.

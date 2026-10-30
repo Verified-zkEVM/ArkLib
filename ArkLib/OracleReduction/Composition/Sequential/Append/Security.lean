@@ -26,8 +26,8 @@ type is needed. The named-extractor and existential forms have the sum of the co
 
 For proved completeness interfaces, use `Append/Completeness.lean` and
 `Sequential/GuardedCompleteness.lean`. The proved soundness interface in `Append/RoundByRound.lean`
-requires fixed-prefix component bounds and a pure first verifier. The proved knowledge-soundness
-interface in `Append/GuardedRoundByRound.lean` requires fixed-prefix component bounds and a guarded
+requires component bounds and a pure first verifier. The proved knowledge-soundness
+interface in `Append/GuardedRoundByRound.lean` requires component bounds and a guarded
 first verifier.
 -/
 

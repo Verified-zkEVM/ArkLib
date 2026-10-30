@@ -16,8 +16,8 @@ public import ArkLib.OracleReduction.Composition.Sequential.Append
   Ordinary soundness and knowledge soundness are proved for guarded components with bounds
   uniform over deterministic shared oracle states. Knowledge soundness names a computable fold
   of pure transcript-and-output extractors. Per-step error reindexing is given by
-  `ProtocolSpec.apply_seqComposeChallengeIdxToSigma_eq_sumElim`. The fixed-prefix
-  round-by-round knowledge-soundness interface for guarded chains is
+  `ProtocolSpec.apply_seqComposeChallengeIdxToSigma_eq_sumElim`. The round-by-round
+  knowledge-soundness interface for guarded chains is
   `Sequential/GuardedRoundByRound.lean`.
   The false fixed-init completeness contracts have been removed. Proved completeness interfaces
   live in `Sequential/Completeness.lean`, `Sequential/GuardedNary.lean`, and

@@ -100,9 +100,8 @@ to the frontend loss plus the backend's closed-form upper bound. The concrete no
 `GF(16)/GF(2)` acceptance fixture instantiates both and bounds that sum strictly below one.
 
 `OpeningAdapter` converts a standard `MLIOPCS` to a contextual opening by a zero-round
-projection, with completeness and round-by-round security transport. Prover-averaged
-corollaries follow from the framework's fixed-prefix implication. Conversion to ordinary
-knowledge soundness remains admitted.
+projection, with completeness and round-by-round security transport from its
+`rbrKnowledgeSoundness` field. Conversion to ordinary knowledge soundness remains admitted.
 
 The full `RingSwitch/{UnequalRankSuffix,Quirky}` fixtures use packing rank four over `GF(16)`, opening rank three
 over `GF(8)`, and challenge algebra `GF(16)`. They exercise nonconstant sources, effective packed

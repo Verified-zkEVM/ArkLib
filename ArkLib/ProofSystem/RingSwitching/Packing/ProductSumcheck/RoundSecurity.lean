@@ -9,7 +9,7 @@ public import ArkLib.ProofSystem.RingSwitching.Packing.ProductSumcheck.RoundExec
 public import ArkLib.Data.Probability.Instances
 
 /-!
-# Fixed-prefix knowledge security of a product-sumcheck round
+# Knowledge security of a product-sumcheck round
 
 The pre-challenge state requires the sent polynomial to be the residual sum polynomial.
 The post-challenge state requires only the accepted guard and equality at the sampled point.

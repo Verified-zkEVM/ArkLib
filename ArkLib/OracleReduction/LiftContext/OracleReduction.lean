@@ -307,44 +307,8 @@ theorem liftContext_knowledgeSoundness [Inhabited InnerWitIn]
   exact V.toVerifier.liftContext_knowledgeSoundness h
     (stmtLens := stmtLens.toLens) (witLens := witLens)
 
-theorem liftContext_rbrSoundnessAveraged
-    {rbrSoundnessError : pSpec.ChallengeIdx → ℝ≥0}
-    {lens : OracleStatement.ExecutableLens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
-                                OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut}
-    (V : OracleVerifier oSpec InnerStmtIn InnerOStmtIn InnerStmtOut InnerOStmtOut pSpec)
-    (output : OracleVerifier.LiftContextOutput lens V)
-    [lensSound : lens.toLens.IsSound
-      outerLangIn outerLangOut innerLangIn innerLangOut
-      (V.toVerifier.compatStatement lens.toLens)]
-    (h : V.rbrSoundnessAveraged init impl innerLangIn innerLangOut rbrSoundnessError) :
-      (V.liftContext lens output).rbrSoundnessAveraged init impl outerLangIn outerLangOut
-        rbrSoundnessError := by
-  unfold OracleVerifier.rbrSoundnessAveraged at h ⊢
-  rw [liftContext_toVerifier_comm lens V output]
-  exact V.toVerifier.liftContext_rbrSoundnessAveraged h (lens := lens.toLens)
-
-theorem liftContext_rbrKnowledgeSoundnessAveraged [Inhabited InnerWitIn]
-    {rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0}
-    {stmtLens : OracleStatement.ExecutableLens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
-                                OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut}
-    {witLens : Witness.InvLens (OuterStmtIn × ∀ i, OuterOStmtIn i)
-                            OuterWitIn OuterWitOut InnerWitIn InnerWitOut}
-    (V : OracleVerifier oSpec InnerStmtIn InnerOStmtIn InnerStmtOut InnerOStmtOut pSpec)
-    (output : OracleVerifier.LiftContextOutput stmtLens V)
-    [lensKS : Extractor.Lens.IsKnowledgeSound
-      outerRelIn innerRelIn outerRelOut innerRelOut
-      (V.toVerifier.compatStatement stmtLens.toLens) (fun _ _ => True)
-      ⟨stmtLens.toLens, witLens⟩]
-    (h : V.rbrKnowledgeSoundnessAveraged init impl innerRelIn innerRelOut rbrKnowledgeError) :
-      (V.liftContext stmtLens output).rbrKnowledgeSoundnessAveraged init impl outerRelIn outerRelOut
-        rbrKnowledgeError := by
-  unfold OracleVerifier.rbrKnowledgeSoundnessAveraged at h ⊢
-  rw [liftContext_toVerifier_comm stmtLens V output]
-  exact V.toVerifier.liftContext_rbrKnowledgeSoundnessAveraged h
-    (stmtLens := stmtLens.toLens) (witLens := witLens)
-
 omit [Inhabited InnerStmtOut] [∀ i, Inhabited (InnerOStmtOut i)] in
-/-- Lifting preserves the fixed-prefix round-by-round soundness bound. -/
+/-- Lifting preserves the round-by-round soundness bound. -/
 theorem liftContext_rbrSoundness
     {rbrSoundnessError : pSpec.ChallengeIdx → ℝ≥0}
     {lens : OracleStatement.ExecutableLens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
@@ -392,7 +356,7 @@ def liftContextKnowledgeStateFunction
       outerRelIn innerRelIn outerRelOut innerRelOut E).toFun_full
 
 omit [Inhabited InnerStmtOut] [∀ i, Inhabited (InnerOStmtOut i)] in
-/-- Lifting preserves the named fixed-prefix certificate and its error function. -/
+/-- Lifting preserves the named certificate and its error function. -/
 theorem liftContext_rbrKnowledgeSoundnessWith
     {rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0}
     {stmtLens : OracleStatement.ExecutableLens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
@@ -422,7 +386,7 @@ theorem liftContext_rbrKnowledgeSoundnessWith
       (stmtLens := stmtLens.toLens) (witLens := witLens)
 
 omit [Inhabited InnerStmtOut] [∀ i, Inhabited (InnerOStmtOut i)] in
-/-- Lifting preserves the fixed-prefix round-by-round knowledge soundness bound. -/
+/-- Lifting preserves the round-by-round knowledge soundness bound. -/
 theorem liftContext_rbrKnowledgeSoundness
     {rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0}
     {stmtLens : OracleStatement.ExecutableLens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut

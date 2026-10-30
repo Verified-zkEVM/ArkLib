@@ -113,7 +113,7 @@ home_page/            site assets and assembled website root
   a univariate accumulator `Z` over the multiplicative evaluation domain with `Z(1) = 1` and
   `Z(ωx) * Q(x) = Z(x) * N(x)`. `Data.lean` defines its executable polynomials and
   residuals; `Reduction.lean` defines the oracle reduction; `Completeness.lean` and `Security.lean`
-  prove its completeness and fixed-prefix knowledge bounds.
+  prove its completeness and round-by-round knowledge bounds.
   `ProofSystem/Plonk/Batch/` batches the three residuals through `GeneratorBatch` with
   `powerBatchGenerator F 3`, one uniform field challenge, and knowledge error `2 / |F|`.
   `ProofSystem/Plonk/Quotient/` checks the resulting residual through the quotient zero test.
@@ -122,7 +122,7 @@ home_page/            site assets and assembled website root
 
 - `ProofSystem/Component/GeneratorBatch.lean` batches polynomial zero tests with a single
   seed from a zero-evading generator. It provides the virtual evaluation oracle, extractor,
-  guarded form, perfect completeness, and fixed-prefix knowledge certificates. Its output
+  guarded form, perfect completeness, and round-by-round knowledge certificates. Its output
   relation is the input relation of `Component/QuotientZeroTest.lean`; the quotient stage
   performs the acceptance check. Power, affine, and multilinear weights are instances of this
   same component, selected by the generator parameter.
@@ -678,21 +678,19 @@ home_page/            site assets and assembled website root
   `coordinateWiseSpecialSound (ofSpecialSound k) ↔ specialSound k` lives in
   `Security/Implications.lean`.
 - Round-by-round security lives in `Security/RoundByRound.lean` (state functions,
-  `Extractor.RoundByRound`, the one-shot variants and their bridges, plus the default
-  **fixed-prefix** notions `rbrSoundness` / `rbrKnowledgeSoundness` and their implications to the
-  prover-averaged `rbrSoundnessAveraged` / `rbrKnowledgeSoundnessAveraged`), on top of the
-  probability glue in `Security/RbrGame.lean` (the challenge-first master bounds over
-  `simulateQ`/`OptionT` that discharge those implications). This is a **separate axis** from the
+  `Extractor.RoundByRound`, and the notions `rbrSoundness` / `rbrKnowledgeSoundness`), on top of
+  the probability glue in `Security/RbrGame.lean` (the challenge-first bounds over
+  `simulateQ`/`OptionT` used by ToyProblem knowledge-soundness proofs). This is a **separate axis**
+  from the
   transcript-tree notions below: its extractor type is `Extractor.RoundByRound` on transcripts,
   not `Extractor.TreeBased`, and it carries no escape-event layer.
-  `Security/Implications.lean` identifies round-by-round knowledge soundness, fixed-prefix and
-  prover-averaged, with soundness of the induced languages under unbounded extraction. Without
+  `Security/Implications.lean` identifies round-by-round knowledge soundness with soundness of the
+  induced languages under unbounded extraction. Without
   input witnesses the identification holds for all relations and errors exactly when no input
   statement, full transcript and output witness exist together
-  (`Verifier.forall_rbrSoundness_iff_rbrKnowledgeSoundness_iff` and its `Averaged` form), because
+  (`Verifier.forall_rbrSoundness_iff_rbrKnowledgeSoundness_iff`), because
   only then does a round-by-round extractor exist (`Extractor.RoundByRound.exists_nonempty_iff`);
   `ArkLibTest/OracleReduction/RoundByRoundCharacterization.lean` checks the separating example.
-  The one-shot notion `rbrKnowledgeSoundnessOneShot` is outside this characterization.
   `Security/Guarded.lean` defines guarded verifiers, independent of any security notion:
   `Verifier.IsGuardedWith`/`IsGuarded`, their data form `Verifier.GuardedForm` (check and verdict
   map as fields), `GuardedForm.append`, the seam run lemma `Verifier.append_run_guardedLeft`, and
@@ -848,9 +846,9 @@ home_page/            site assets and assembled website root
   - `Append/Completeness.lean` — quantitative completeness from exact simulated factorization,
     with seam and purity corollaries and state-uniform suffix correctness.
   - `Append/OneMessage.lean` — the one-message specialization with effectful prover outputs.
-  - `Append/RoundByRound.lean` — composition from fixed-prefix bounds under a pure first verifier.
+  - `Append/RoundByRound.lean` — composition from round-by-round bounds under a pure first verifier.
   - `Append/GuardedRoundByRound.lean` — round-by-round knowledge soundness composes
-    from fixed-prefix component bounds under a guarded first verifier, with the composed extractor
+    from round-by-round component bounds under a guarded first verifier, with the composed extractor
     and knowledge state function (`KnowledgeStateFunction.appendGuarded`) named; the components
     share only the intermediate relation.
   - `Append/ProverSplit.lean` — arbitrary prover restrictions retaining shared state at the seam.
@@ -864,7 +862,7 @@ home_page/            site assets and assembled website root
   `Sequential/GuardedCompleteness.lean` handles deterministic rejecting verifiers.
   `Sequential/GuardedNary.lean` extends guarded completeness to finite chains;
   `Sequential/GuardedRoundByRound.lean` extends guarded round-by-round knowledge
-  soundness to finite chains, requiring fixed-prefix bounds and guardedness for every component,
+  soundness to finite chains, requiring round-by-round bounds and guardedness for every component,
   with the `seqCompose` error reindexing proved;
   `Sequential/OracleCompleteness.lean` supplies binary and finite-chain oracle-reduction wrappers.
   `Sequential/GuardedNary.lean` also gives the guarded form of an appended or sequentially
@@ -890,8 +888,8 @@ home_page/            site assets and assembled website root
   Ordinary soundness and knowledge soundness compose through `Append/Security.lean` under a
   guarded first verifier and state-uniform suffix bounds, with pure extractors for knowledge
   soundness. Round-by-round knowledge soundness composes through
-  `Append/GuardedRoundByRound.lean` from fixed-prefix component bounds and a guarded first
-  verifier. `Sequential/GuardedRoundByRound.lean` requires fixed-prefix bounds and guardedness
+  `Append/GuardedRoundByRound.lean` from round-by-round component bounds and a guarded first
+  verifier. `Sequential/GuardedRoundByRound.lean` requires round-by-round bounds and guardedness
   for every component of a finite chain. Completeness composition uses explicit shared-state
   hypotheses.
 - Ring switching has two construction families, routed by
