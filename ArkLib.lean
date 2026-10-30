@@ -725,6 +725,7 @@ public import ArkLib.Interaction.Oracle.RuntimeSoundness
 public import ArkLib.Interaction.Oracle.Security.Knowledge
 public import ArkLib.Interaction.Oracle.Security.KnowledgeAppend
 public import ArkLib.Interaction.Oracle.Security.KnowledgeComposition
+public import ArkLib.Interaction.Oracle.Security.KnowledgeResources
 public import ArkLib.Interaction.Oracle.Security.RoundByRound
 public import ArkLib.Interaction.Oracle.Security.Soundness
 public import ArkLib.Interaction.Oracle.Security.StateRestoration
@@ -733,6 +734,7 @@ public import ArkLib.Interaction.Oracle.Security.StateRestorationCoins
 public import ArkLib.Interaction.Oracle.Security.StateRestorationGame
 public import ArkLib.Interaction.Oracle.Security.StateRestorationOracle
 public import ArkLib.Interaction.Oracle.Security.StateRestorationReplay
+public import ArkLib.Interaction.Oracle.Security.StateRestorationResources
 public import ArkLib.Interaction.Oracle.Sequential
 public import ArkLib.Interaction.Oracle.Source
 public import ArkLib.Interaction.Oracle.SourceRouting

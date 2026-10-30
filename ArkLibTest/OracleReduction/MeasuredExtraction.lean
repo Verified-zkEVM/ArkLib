@@ -4,7 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
 import ArkLib.OracleReduction.Security.Resources
-import ArkLib.Interaction.Oracle.Security.Knowledge
+import ArkLib.Interaction.Oracle.Security.KnowledgeResources
+import ArkLibTest.Data.OracleComp.AddProgram
 
 /-!
 # Measured extraction charges only declared instructions
@@ -13,12 +14,12 @@ An extractor that searches all `2 ^ m` candidate witnesses in pure Lean code req
 instruction. Its measured program therefore meets the zero budget, so the resource contract alone
 gives no running-time bound.
 
-A native round-by-round extractor is measured by the same program type: one program with a
-charged addition realizes the backward witness maps of a one-round extractor for every message,
+A native round-by-round extractor is measured stage by stage with the same program type: one
+program with a charged addition realizes the stage map of a one-round extractor for every message,
 although the later witness type depends on the message.
 -/
 
-open OracleComp OracleSpec ProtocolSpec
+open OracleComp OracleSpec ProtocolSpec AddProgramTest
 
 section Search
 
@@ -31,14 +32,8 @@ def searchExtractor (m : ℕ) (rel : ℕ → Fin (2 ^ m) → Bool) :
 
 /-- The search as a program with no instructions. -/
 def searchProgram (m : ℕ) (rel : ℕ → Fin (2 ^ m) → Bool) :
-    Extractor.Straightline.MeasuredProgram []ₒ ℕ (Fin (2 ^ m)) WitOut pSpec ℕ where
-  View := ℕ
-  view input := input.1
-  Op := PEmpty
-  spec _ := []ₒ
-  program stmtIn := pure ((List.finRange (2 ^ m)).find? (rel stmtIn))
-  answer _ := fun t ↦ t.elim
-  cost := fun t ↦ t.elim
+    Extractor.Straightline.MeasuredProgram []ₒ ℕ (Fin (2 ^ m)) WitOut pSpec ℕ :=
+  MeasuredProgram.ofFun fun input ↦ (List.finRange (2 ^ m)).find? (rel input.1)
 
 /-- The search extractor is the execution of its program. -/
 theorem searchProgram_realizesExtractor (m : ℕ) (rel : ℕ → Fin (2 ^ m) → Bool) :
@@ -49,7 +44,7 @@ theorem searchProgram_realizesExtractor (m : ℕ) (rel : ℕ → Fin (2 ^ m) →
 /-- The search requests no instruction, so it costs zero. -/
 theorem searchProgram_costAtMost_zero (m : ℕ) (rel : ℕ → Fin (2 ^ m) → Bool) :
     (searchProgram m rel (WitOut := WitOut) (pSpec := pSpec)).CostAtMost 0 :=
-  fun _ ↦ (worstCaseCostBound_pure _ _ _).mpr le_rfl
+  MeasuredProgram.costAtMost_ofFun _
 
 -- Any game bound for exhaustive search is a resource-certified bound at budget zero.
 example (m : ℕ) [∀ i, SampleableType (pSpec.Challenge i)] {σ : Type} (init : ProbComp σ)
@@ -82,34 +77,9 @@ def afterState (message : Fin 8) : KnowledgeState := ⟨Fin (message.val + 1), f
 def addExtractor : RoundExtractor oneRound inputState :=
   fun message ↦ ⟨afterState message, fun w ↦ w.val + message.val, PUnit.unit⟩
 
-/-- The backward maps of all messages, as one function of the message and the later witness. -/
-def addMaps (x : Σ message : Fin 8, (afterState message).Witness) : ℕ :=
-  (addExtractor x.1).2.1 x.2
-
-/-- One addition instruction, whose response is certified to be the sum. -/
-def addSpec (v : ℕ × ℕ) : OracleSpec.{0, 0} Unit :=
-  fun _ ↦ {r : ℕ // r = v.1 + v.2}
-
-/-- The backward maps as one program with a single charged addition. Its view is the later witness
-and the message, so one budget covers every message. -/
-def addProgram : MeasuredProgram (Σ message : Fin 8, (afterState message).Witness) ℕ ℕ where
-  View := ℕ × ℕ
-  view x := (x.2.val, x.1.val)
-  Op := Unit
-  spec := addSpec
-  program v := do
-    let r ← liftM (OracleSpec.query (spec := addSpec v) ())
-    return r.1
-  answer v := fun _ ↦ ⟨v.1 + v.2, rfl⟩
-  cost := fun _ ↦ 1
-
-/-- Every backward witness map of the native extractor is the execution of the program. -/
-theorem addProgram_realizes : addProgram.Realizes addMaps :=
-  fun _ ↦ rfl
-
-/-- Every backward witness map costs one addition. -/
-theorem addProgram_costAtMost_one : addProgram.CostAtMost 1 :=
-  MeasuredProgram.costAtMost_of_forall_eq_answer _ 1 (fun _ _ u ↦ Subtype.ext u.2)
-    (fun _ ↦ le_rfl)
+/-- The single stage of the native extractor, with budget one. -/
+def addStages : addExtractor.MeasuredStages ℕ :=
+  ⟨⟨addProgram (fun x => (x.2.val, x.1.val)), 1, addProgram_realizes _,
+    addProgram_costAtMost_one _⟩, fun _ ↦ PUnit.unit⟩
 
 end MeasuredExtractionTest

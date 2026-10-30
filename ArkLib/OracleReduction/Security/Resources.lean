@@ -63,7 +63,10 @@ namespace Verifier
 
 /-- Knowledge soundness of a named extractor together with a cost bound for a measured program
 that it executes. The budget bounds the program's declared instruction charges only; see the
-module documentation for what is uncharged. -/
+module documentation for what is uncharged.
+Unlike `OracleComp.BudgetedProgram`, which bundles each native tree node's program, budget and
+proofs as data, this contract keeps the program and budget as parameters so `mono` can change the
+budget and `RealizesExtractor` identifies the extractor's monadic run. -/
 def knowledgeSoundnessWithResources {ω : Type} [AddCommMonoid ω] [Preorder ω]
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)

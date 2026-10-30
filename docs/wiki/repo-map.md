@@ -708,14 +708,27 @@ home_page/            site assets and assembled website root
 - Measured extraction lives in `Security/Resources.lean`. Its game-independent core,
   `OracleComp.MeasuredProgram` in `Data/OracleComp/MeasuredProgram.lean`, is an uncharged view of
   a function's input, a charged instruction program on that view, and deterministic handlers, with
-  `Realizes` and a budget `CostAtMost` on every program path (VCVio `WorstCaseCostBound`). A
-  native backward witness map can be measured by it (see
-  `ArkLibTest/OracleReduction/MeasuredExtraction.lean`); no native resource contract exists yet.
+  `Realizes` and a budget `CostAtMost` on every program path (VCVio `WorstCaseCostBound`);
+  `OracleComp.BudgetedProgram f` bundles a program realizing `f` with its budget, and
+  `BudgetedProgram.ofFun` shows every function has one with budget zero.
   `Extractor.Straightline.MeasuredProgram` is its instance at the straightline extractor's inputs.
   Its `RealizesExtractor` relates the extractor's run to the program execution, and
   `Verifier.knowledgeSoundnessWithResources` adds to `knowledgeSoundnessWith` that the named
-  extractor executes the program within the budget. This counts declared instructions only, not
-  running time.
+  extractor executes the program within the budget. The native contract is
+  `Interaction/Oracle/Security/KnowledgeResources.lean`: `RoundExtractor.stageMap` is the backward
+  witness map at a node, on its move and later witness; `RoundExtractor.MeasuredStages` names a
+  budgeted program for the stage at every authored node; and `MeasuredKnowledgeCertificate`
+  extends `KnowledgeCertificate` with them; `MeasuredStages.BudgetAtMost` bounds every stage's
+  budget uniformly. The packaged theorem in
+  `Interaction/Oracle/Security/StateRestorationResources.lean`,
+  `MeasuredKnowledgeCertificate.stateRestoration_oracle_knowledge_soundness_nonuniform`,
+  conjoins the security bound and the stage budget for the same named extractor.
+  It bounds each stage only: earlier moves, the carrier identifications such as
+  `terminalWitness`, the stages' composition and intermediate witness sizes are uncharged.
+  Clients: `ArkLibTest/OracleReduction/MeasuredExtraction.lean` and the state-restoration client
+  `ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean`. All of this counts
+  declared instructions only, not running time. Only a named program with a stated instruction
+  set is evidence.
   `Data/OracleComp/DeterminedCost.lean` turns a deterministic handler's recorded cost into that
   bound when responses are certified.
 - Coordinate-wise special soundness ([FMN24]/[NOZ26]) lives in

@@ -15,7 +15,8 @@ Deterministic handlers answer the instructions, and each instruction carries a c
 additive cost type, such as a vector of operation counts. `MeasuredProgram.Realizes` states that a
 function is the handlers' execution of the program, and `MeasuredProgram.CostAtMost` bounds the
 cost of every execution path, on every view, by a budget. The budget holds for every view, not
-only for views arising from the inputs of interest.
+only for views arising from the inputs of interest. `BudgetedProgram f` bundles a program that
+realizes `f` with a budget that bounds its cost.
 
 The program does not depend on any security game. A game whose extractor or witness map has a
 given input and result type states its resource contract by naming that map and a measured
@@ -25,10 +26,10 @@ Only the declared instructions are charged. Computing the view, the size or enco
 evaluating any handler, pure Lean code between instructions, and the bit complexity of values are
 not. The instance also chooses the instructions, their charges, and the cost order. A program that
 computes its result without instructions, for example by exhaustive search, costs zero. In
-particular, every function has a measured program with budget zero, so an existential statement
-over measured programs adds nothing; only a named program with a stated instruction set is
-evidence. The bound is an operation count relative to that instruction set, not a running-time
-bound, and each instance must state what its view and handlers leave uncharged.
+particular, every function has a budgeted program with budget zero (`BudgetedProgram.ofFun`), so
+an existential statement over measured programs adds nothing; only a named program with a stated
+instruction set is evidence. The bound is an operation count relative to that instruction set,
+not a running-time bound, and each instance must state what its view and handlers leave uncharged.
 
 ## Scope
 
@@ -106,6 +107,47 @@ theorem costAtMost_of_forall_eq_answer [AddCommMonoid ω] [Preorder ω] (budget 
   fun v ↦ (ArkLib.DeterminedCost.worstCaseCostBound_iff_of_forall_eq_answer
     (M.answer v) (hanswer v) (M.program v) ⟨M.cost⟩ budget).mpr (hcost v)
 
+/-- The program with no instructions that computes `f` on its whole input. -/
+def ofFun (f : Input → Result) : MeasuredProgram Input Result ω where
+  View := Input
+  view := id
+  Op := PEmpty
+  spec _ := []ₒ
+  program v := pure (f v)
+  answer _ := fun t ↦ t.elim
+  cost := fun t ↦ t.elim
+
+/-- The program with no instructions realizes the function it computes. -/
+theorem realizes_ofFun (f : Input → Result) : (ofFun f (ω := ω)).Realizes f :=
+  fun _ ↦ rfl
+
+/-- A program with no instructions costs zero. -/
+theorem costAtMost_ofFun [AddCommMonoid ω] [Preorder ω] (f : Input → Result) :
+    (ofFun f (ω := ω)).CostAtMost 0 :=
+  fun _ ↦ (worstCaseCostBound_pure _ _ _).mpr le_rfl
+
 end MeasuredProgram
+
+/-- A named measured program for `f` and a budget: the program realizes `f`, and every execution
+path of the program, on every view, costs at most the budget.
+Native stages form a tree-indexed family of data, so each node keeps its program, budget and proofs
+in one value; `Verifier.knowledgeSoundnessWithResources` instead keeps the program and budget as
+parameters for budget monotonicity and realizes the extractor's monadic run. -/
+structure BudgetedProgram {Input Result : Type} (f : Input → Result) (ω : Type) [AddCommMonoid ω]
+    [Preorder ω] where
+  /-- The measured program executed by `f`. -/
+  program : MeasuredProgram Input Result ω
+  /-- The bound on the program's declared instruction charges. -/
+  budget : ω
+  /-- The function is the handlers' execution of the program. -/
+  realizes : program.Realizes f
+  /-- Every execution path of the program costs at most the budget. -/
+  costAtMost : program.CostAtMost budget
+
+/-- Every function has a budgeted program with budget zero, which requests no instruction. -/
+def BudgetedProgram.ofFun {Input Result ω : Type} [AddCommMonoid ω] [Preorder ω]
+    (f : Input → Result) : BudgetedProgram f ω :=
+  ⟨MeasuredProgram.ofFun f, 0, MeasuredProgram.realizes_ofFun f,
+    MeasuredProgram.costAtMost_ofFun f⟩
 
 end OracleComp
