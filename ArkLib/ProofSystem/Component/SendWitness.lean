@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.OracleReduction.Security.RoundByRound
+public import ArkLib.OracleReduction.Security.GuardedRoundByRound
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
 public import Mathlib.Data.FinEnum
@@ -34,6 +34,12 @@ and has no challenge rounds, so it is **coordinate-wise special sound** for any 
 `Verifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx`. The named extractor reads the
 witness off the tree's unique transcript (`fun _ tree _ => some (tree.onlyPath.fullTranscript 0)`)
 — the canonical "open in the clear" base case.
+`SendSingleWitness.Adapter` supplies the shared one-message stage: it maps statements, encodes
+honest witnesses, decodes transcript messages, and materializes either embedded or simulated
+output oracles. Its constantly true guarded form, transcript-reading extractor, and knowledge state
+function prove zero-error round-by-round knowledge soundness from backward relation transfer.
+Forward transfer gives perfect completeness. Plonk and Spartan instantiate this adapter, as does the
+fixed-output sender via the identity adapter.
 These results are `sorryAx`-free. The indexed-family oracle variant (`section OracleReduction`) is
 deferred; see the note there.
 -/
@@ -283,25 +289,154 @@ This is what makes its coordinate-wise special soundness reduce to the no-challe
 instance instIsEmptyChallengeIdx : IsEmpty (oraclePSpec Witness).ChallengeIdx :=
   ⟨fun ⟨0, h⟩ => nomatch h⟩
 
-/-- The oracle prover for the `SendSingleWitness` oracle reduction.
+/-- Transcript extraction depends only on the decoder, without any oracle interface. -/
+def transcriptExtractor {Stmt Wit W : Type} (decode : W → Wit) :
+    Extractor.RoundByRound oSpec Stmt Wit Unit (oraclePSpec W) (fun _ => W) where
+  extractIn _ w := decode w
+  extractMid | ⟨0, _⟩ => fun _ tr _ => tr ⟨0, by simp⟩
+  extractOut _ tr _ := tr 0
 
-The prover sends the witness `wit` to the verifier as the only oracle message.
--/
-@[inline, specialize]
-def oracleProver : OracleProver oSpec
-    Statement OStatement Witness
-    Statement (OStatement ⊕ᵥ (fun _ : Fin 1 => Witness)) Unit
-    (oraclePSpec Witness) where
-  PrvState := fun _ => (Statement × (∀ i, OStatement i)) × Witness
+/-- Adapt a single sent message to a statement map and output oracle representation. -/
+structure Adapter {ιᵢ ιₒ : Type} (StmtIn : Type) (OStmtIn : ιᵢ → Type) (WitIn : Type)
+    (StmtOut : Type) (OStmtOut : ιₒ → Type) (W : Type)
+    [∀ i, OracleInterface (OStmtIn i)] [∀ i, OracleInterface (OStmtOut i)]
+    [OracleInterface W] where
+  /-- Map the public statement without inspecting the message. -/
+  stmtOut : StmtIn → StmtOut
+  /-- The message sent by the honest prover. -/
+  encode : WitIn → W
+  /-- Recover the input witness from the sent message. -/
+  decode : W → WitIn
+  /-- Expose input and message oracles by embedding or query simulation. -/
+  outputOracle : OracleOutputEmbedding OStmtIn (oraclePSpec W).Message OStmtOut ⊕
+    OracleOutputSimulation oSpec OStmtIn OStmtOut (oraclePSpec W)
+
+namespace Adapter
+
+variable {oSpec} {ιᵢ ιₒ : Type} {StmtIn WitIn StmtOut W : Type}
+  {OStmtIn : ιᵢ → Type} {OStmtOut : ιₒ → Type}
+  [∀ i, OracleInterface (OStmtIn i)] [∀ i, OracleInterface (OStmtOut i)]
+  [OracleInterface W]
+  (A : Adapter oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut W)
+
+/-- The full transcript consisting of one sent message. -/
+def transcript (w : W) : (oraclePSpec W).FullTranscript := fun | ⟨0, _⟩ => w
+
+/-- The statement and oracles exposed by a particular sent message. -/
+def output (s : StmtIn × (∀ i, OStmtIn i)) (w : W) : StmtOut × (∀ i, OStmtOut i) :=
+  (A.stmtOut s.1, OracleVerifier.materializeOutputOracle A.outputOracle
+    (transcript w).challenges s.2 (transcript w).messages)
+
+/-- Send the encoded witness and materialize the same output as the verifier. -/
+def oracleProver : OracleProver oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut Unit
+    (oraclePSpec W) where
+  PrvState _ := (StmtIn × (∀ i, OStmtIn i)) × WitIn
   input := id
-  sendMessage | ⟨0, _⟩ => fun ⟨stmt, wit⟩ => pure (wit, ⟨stmt, wit⟩)
+  sendMessage | ⟨0, _⟩ => fun ⟨s, w⟩ => pure (A.encode w, (s, w))
   receiveChallenge | ⟨0, h⟩ => nomatch h
-  output := fun ⟨⟨stmt, oStmt⟩, wit⟩ => pure (⟨stmt, Sum.rec oStmt (fun _ => wit)⟩, ())
+  output := fun ⟨s, w⟩ => pure (A.output s (A.encode w), ())
 
-/-- The `SendSingleWitness` oracle prover has pure output: it exposes the witness message
-alongside the input oracles, with no oracle query. -/
-instance instOutputIsPure :
-    (oracleProver oSpec Statement OStatement Witness).OutputIsPure := ⟨_, fun _ => rfl⟩
+/-- Materialization needs no oracle query. -/
+instance instOutputIsPure : A.oracleProver.OutputIsPure := ⟨_, fun _ => rfl⟩
+
+/-- The verifier never rejects and exposes the adapter's oracle representation. -/
+def oracleVerifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut (oraclePSpec W) where
+  verify s _ := pure (A.stmtOut s)
+  outputOracle := A.outputOracle
+
+/-- The one-message oracle reduction induced by an adapter. -/
+def oracleReduction : OracleReduction oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut Unit
+    (oraclePSpec W) := ⟨A.oracleProver, A.oracleVerifier⟩
+
+/-- The honest transcript contains the encoded input witness. -/
+theorem oracleProver_run (s : StmtIn × (∀ i, OStmtIn i)) (w : WitIn) :
+    A.oracleProver.run s w = pure (transcript (A.encode w), A.output s (A.encode w), ()) := by
+  change (pure _ : OracleComp _ _) = pure _
+  congr 1
+  apply Prod.ext
+  · funext i
+    fin_cases i
+    rfl
+  · rfl
+
+/-- The materialized verifier returns the output determined by the actual message. -/
+theorem verifier_run (s : StmtIn × (∀ i, OStmtIn i))
+    (tr : (oraclePSpec W).FullTranscript) :
+    A.oracleVerifier.toVerifier.run s tr = pure (A.output s (tr 0)) := by
+  have htr : tr = transcript (tr 0) := by
+    funext i
+    fin_cases i
+    rfl
+  conv_lhs => rw [htr]
+  rfl
+
+/-- Every adapter verifier is deterministic. -/
+instance instIsPure : A.oracleVerifier.toVerifier.IsPure :=
+  ⟨fun s tr => A.output s (tr 0), A.verifier_run⟩
+
+/-- The stage has a constantly true guard. -/
+def guardedForm : A.oracleVerifier.toVerifier.GuardedForm where
+  check _ _ := true
+  out s tr := A.output s (tr 0)
+  verify_eq := A.verifier_run
+
+/-- Read the message from the transcript and decode only at the input boundary. -/
+def rbrExtractor : Extractor.RoundByRound oSpec (StmtIn × (∀ i, OStmtIn i))
+    WitIn Unit (oraclePSpec W) (fun _ => W) :=
+  transcriptExtractor oSpec A.decode
+
+variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+  (relIn : Set ((StmtIn × (∀ i, OStmtIn i)) × WitIn))
+  (relOut : Set ((StmtOut × (∀ i, OStmtOut i)) × Unit))
+
+/-- Decoded relation membership is the knowledge predicate before and after the send. -/
+def knowledgeStateFunction
+    (hdecode : ∀ s w, (A.output s w, ()) ∈ relOut → (s, A.decode w) ∈ relIn) :
+    A.oracleVerifier.toVerifier.KnowledgeStateFunction init impl relIn relOut A.rbrExtractor where
+  toFun
+    | ⟨0, _⟩ => fun s _ w => (s, A.decode w) ∈ relIn
+    | ⟨1, _⟩ => fun s tr _ => (s, A.decode (tr ⟨0, by simp⟩)) ∈ relIn
+  toFun_empty _ _ h := h
+  toFun_next := by
+    intro m _ s tr msg w h
+    fin_cases m
+    exact h
+  toFun_full s tr u h := by
+    cases u
+    exact hdecode s (tr ⟨0, by simp⟩) ((A.guardedForm.check_and_of_prEvent_pos h).2)
+
+/-- With no verifier challenges, the fixed-prefix knowledge error is zero. -/
+theorem rbrKnowledgeSoundnessWith
+    (hdecode : ∀ s w, (A.output s w, ()) ∈ relOut → (s, A.decode w) ∈ relIn) :
+    A.oracleVerifier.toVerifier.rbrKnowledgeSoundnessWith init impl relIn relOut
+      (fun _ => W) A.rbrExtractor
+      (A.knowledgeStateFunction init impl relIn relOut hdecode) (fun _ => 0) := by
+  intro _ i
+  exact isEmptyElim i
+
+/-- Honest relation transfer gives perfect completeness of the actual one-message run. -/
+theorem perfectCompleteness
+    (hencode : ∀ s w, (s, w) ∈ relIn → (A.output s (A.encode w), ()) ∈ relOut) :
+    A.oracleReduction.perfectCompleteness init impl relIn relOut := by
+  apply Reduction.perfectCompleteness_of_run_support
+  intro s w hw result hresult
+  have hrun : (A.oracleReduction.toReduction.run s w).run =
+      pure (some ((transcript (A.encode w), A.output s (A.encode w), ()),
+        A.output s (A.encode w))) := by
+    rw [Reduction.run_run_eq_bind]
+    change (do
+      let p ← A.oracleProver.run s w
+      let t ← (A.oracleVerifier.toVerifier.run s p.1).run
+      pure (t.map (p, ·))) = _
+    rw [A.oracleProver_run]
+    simp only [pure_bind]
+    rw [A.verifier_run]
+    rfl
+  rw [hrun, support_pure, Set.mem_singleton_iff] at hresult
+  subst result
+  exact ⟨_, rfl, hencode s w hw, rfl⟩
+
+end Adapter
 
 /-- The index embedding that exposes every input oracle and the single witness
 message as output oracles. -/
@@ -325,6 +460,27 @@ def outputEmbedding : OracleOutputEmbedding OStatement (oraclePSpec Witness).Mes
     · fin_cases j
       rfl
 
+/-- The fixed-output witness sender is the identity adapter. -/
+def adapter : Adapter oSpec Statement OStatement Witness Statement
+    (OStatement ⊕ᵥ (fun _ : Fin 1 => Witness)) Witness where
+  stmtOut := id
+  encode := id
+  decode := id
+  outputOracle := .inl (outputEmbedding OStatement Witness)
+
+/-- Send the witness unchanged and expose it alongside the input oracles. -/
+@[inline, specialize]
+def oracleProver : OracleProver oSpec
+    Statement OStatement Witness
+    Statement (OStatement ⊕ᵥ (fun _ : Fin 1 => Witness)) Unit
+    (oraclePSpec Witness) :=
+  (adapter oSpec Statement OStatement Witness).oracleProver
+
+/-- The fixed-output sender has pure output. -/
+instance instOutputIsPure :
+    (oracleProver oSpec Statement OStatement Witness).OutputIsPure :=
+  Adapter.instOutputIsPure _
+
 /-- The oracle verifier for the `SendSingleWitness` oracle reduction.
 
 The verifier receives the input statement `stmt` and returns it, and also specifying the oracle
@@ -333,9 +489,8 @@ message as the output oracle statement.
 @[inline, specialize]
 def oracleVerifier : OracleVerifier oSpec
     Statement OStatement Statement (OStatement ⊕ᵥ (fun _ : Fin 1 => Witness))
-    (oraclePSpec Witness) where
-  verify := fun stmt _ => pure stmt
-  outputOracle := .inl (outputEmbedding OStatement Witness)
+    (oraclePSpec Witness) :=
+  (adapter oSpec Statement OStatement Witness).oracleVerifier
 
 @[simp]
 theorem oracleVerifier_materializeOutput
@@ -358,20 +513,33 @@ theorem oracleVerifier_materializeOutput
 def oracleReduction : OracleReduction oSpec
     Statement OStatement Witness
     Statement (OStatement ⊕ᵥ (fun _ : Fin 1 => Witness)) Unit
-    (oraclePSpec Witness) where
-  prover := oracleProver oSpec Statement OStatement Witness
-  verifier := oracleVerifier oSpec Statement OStatement Witness
+    (oraclePSpec Witness) :=
+  (adapter oSpec Statement OStatement Witness).oracleReduction
 
 variable {Statement} {OStatement} {Witness}
 
-omit [(i : ιₛ) → OracleInterface (OStatement i)] [OracleInterface Witness] in
 theorem oracleProver_run {stmt : Statement} {oStmt : ∀ i, OStatement i} {wit : Witness} :
     (oracleProver oSpec Statement OStatement Witness).run ⟨stmt, oStmt⟩ wit =
       pure (fun i => by aesop, ⟨stmt, Sum.rec oStmt (fun _ => wit)⟩, ()) := by
-  simp only [oraclePSpec, Fin.vcons_fin_zero, Nat.reduceAdd, ChallengeIdx, Challenge,
-    Fin.isValue, id_eq]
-  change (pure _ : OracleComp _ _) = pure _
-  congr 1; dsimp; congr 1; funext i; fin_cases i; rfl
+  rw [oracleProver, Adapter.oracleProver_run]
+  have hout : (adapter oSpec Statement OStatement Witness).output (stmt, oStmt) wit =
+      (stmt, Sum.rec oStmt (fun _ => wit)) := by
+    apply Prod.ext
+    · rfl
+    · funext i
+      rcases i with j | j
+      · rfl
+      · fin_cases j
+        rfl
+  change pure (Adapter.transcript wit,
+    (adapter oSpec Statement OStatement Witness).output (stmt, oStmt) wit, ()) = _
+  rw [hout]
+  congr 1
+  apply Prod.ext
+  · funext i
+    fin_cases i
+    rfl
+  · rfl
 
 theorem oracleVerifier_toVerifier_run {stmt : Statement} {oStmt : ∀ i, OStatement i}
     {tr : (oraclePSpec Witness).FullTranscript} :
@@ -386,8 +554,7 @@ deterministically returns the statement together with the output oracle statemen
 transcript. This discharges the deterministic-left hypothesis of the CWSS binary append. -/
 instance instIsPure :
     (oracleVerifier oSpec Statement OStatement Witness).toVerifier.IsPure :=
-  ⟨fun p tr => ⟨p.1, Sum.rec p.2 (fun i => match i with | 0 => tr 0)⟩,
-   fun ⟨_, _⟩ _ => oracleVerifier_toVerifier_run (oSpec := oSpec)⟩
+  Adapter.instIsPure (adapter oSpec Statement OStatement Witness)
 
 variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
   (oRelIn : Set ((Statement × (∀ i, OStatement i)) × Witness))
@@ -403,30 +570,9 @@ def toORelOut :
 theorem oracleReduction_completeness :
     (oracleReduction oSpec Statement OStatement Witness).perfectCompleteness init impl oRelIn
     (toORelOut oRelIn) := by
-  apply Reduction.perfectCompleteness_of_run_support
-  intro ⟨stmt, oStmt⟩ wit hIn x hx
-  let : ∀ i, OracleInterface ((oraclePSpec Witness).Challenge i) := challengeOracleInterface
-  simp only [OracleReduction.toReduction, Reduction.run] at hx
-  change x ∈ MonadAttach.support (do
-    let p ← liftM ((oracleProver oSpec Statement OStatement Witness).run (stmt, oStmt) wit)
-    let s ← liftM ((oracleVerifier oSpec Statement OStatement Witness).toVerifier.run
-      (stmt, oStmt) p.1)
-    pure (p, s) : OptionT (OracleComp (oSpec + [(oraclePSpec Witness).Challenge]ₒ)) _).run at hx
-  erw [oracleProver_run] at hx
-  simp only [liftM_pure, pure_bind] at hx
-  erw [oracleVerifier_toVerifier_run] at hx
-  simp only [oraclePSpec, Fin.vcons_fin_zero, Nat.reduceAdd, ChallengeIdx, Challenge,
-    Fin.isValue, Fin.vcons_of_one, id_eq, liftM_OptionT_eq, simulateQ_optionT_pure,
-    bind_pure_comp, map_pure, OptionT.run_pure, MonadAttach.support_pure] at hx
-  subst x
-  refine ⟨_, rfl, hIn, ?_⟩
-  dsimp only
-  congr 1
-  funext i
-  rcases i with j | j
-  · rfl
-  · fin_cases j
-    rfl
+  apply (adapter oSpec Statement OStatement Witness).perfectCompleteness init impl
+  intro s w h
+  exact h
 
 /-- **Coordinate-wise special soundness of `SendSingleWitness`, named form.** The oracle verifier
 has no challenge rounds, so CWSS collapses (via the oracle no-challenge bridge
