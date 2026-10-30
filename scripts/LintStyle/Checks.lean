@@ -32,8 +32,12 @@ deriving BEq, Repr
 private def violation (code : String) (line : Nat) (message : String) : Violation :=
   { code, line, message }
 
+/-- Literal/comment modes form a stack, so interpolation expressions may contain nested literals.
+
+`code 0` is top-level code; positive depths count braces in an interpolation expression. -/
 private inductive ScanMode where
-  | code
+  | code (braceDepth : Nat)
+  | interpolated (escaped : Bool)
   | blockComment (depth : Nat)
   | quoted (escaped : Bool)
   | raw (hashes : Nat)
@@ -65,96 +69,153 @@ private def escapedCharLiteralEnd? : List Char → Option (Nat × List Char)
 When `preserveModuleDocs` is true, a module-doc opener encountered in top-level code is retained so
 the header check can distinguish it from the same text nested inside an ordinary comment.
 -/
-private partial def sanitizeChars (chars : List Char) (mode : ScanMode)
-    (preserveModuleDocs : Bool) : List Char × ScanMode :=
-  match chars, mode with
-  | [], mode => ([], mode)
-  | '-' :: '-' :: rest, .code => (spaces rest.length, .code)
-  | '/' :: '-' :: '!' :: rest, .code =>
-      let (tail, mode) := sanitizeChars rest (.blockComment 1) preserveModuleDocs
-      ((if preserveModuleDocs then "/-!".toList else spaces 3) ++ tail, mode)
-  | '/' :: '-' :: rest, .code =>
-      let (tail, mode) := sanitizeChars rest (.blockComment 1) preserveModuleDocs
-      (' ' :: ' ' :: tail, mode)
-  | '\'' :: '\\' :: rest, .code =>
+private partial def sanitizeChars (chars : List Char) (modes : List ScanMode)
+    (preserveModuleDocs : Bool) (preserveLineComments : Bool := false) :
+    List Char × List ScanMode :=
+  match chars, modes with
+  | [], modes => ([], modes)
+  | _, [] => sanitizeChars chars [.code 0] preserveModuleDocs preserveLineComments
+  | '-' :: '-' :: rest, .code depth :: modes =>
+      (if preserveLineComments then '-' :: '-' :: rest else spaces (rest.length + 2),
+        .code depth :: modes)
+  | '/' :: '-' :: '!' :: rest, .code depth :: modes =>
+      let (tail, modes) := sanitizeChars rest (.blockComment 1 :: .code depth :: modes)
+        preserveModuleDocs preserveLineComments
+      ((if preserveModuleDocs && depth == 0 then "/-!".toList else spaces 3) ++ tail, modes)
+  | '/' :: '-' :: rest, .code depth :: modes =>
+      let (tail, modes) := sanitizeChars rest (.blockComment 1 :: .code depth :: modes)
+        preserveModuleDocs preserveLineComments
+      (' ' :: ' ' :: tail, modes)
+  | '\'' :: '\\' :: rest, .code depth :: modes =>
       match escapedCharLiteralEnd? rest with
       | some (width, tail) =>
-          let (out, mode) := sanitizeChars tail .code preserveModuleDocs
-          (spaces (width + 2) ++ out, mode)
+          let (out, modes) := sanitizeChars tail (.code depth :: modes)
+            preserveModuleDocs preserveLineComments
+          (spaces (width + 2) ++ out, modes)
       | none =>
-          let (out, mode) := sanitizeChars rest .code preserveModuleDocs
-          ('\'' :: '\\' :: out, mode)
-  | '\'' :: _ :: '\'' :: rest, .code =>
-      let (out, mode) := sanitizeChars rest .code preserveModuleDocs
-      (spaces 3 ++ out, mode)
-  | '«' :: rest, .code =>
-      let (out, mode) := sanitizeChars rest .quotedIdent preserveModuleDocs
-      ('x' :: out, mode)
-  | 'r' :: rest, .code =>
+          let (out, modes) := sanitizeChars rest (.code depth :: modes)
+            preserveModuleDocs preserveLineComments
+          ('\'' :: '\\' :: out, modes)
+  | '\'' :: _ :: '\'' :: rest, .code depth :: modes =>
+      let (out, modes) := sanitizeChars rest (.code depth :: modes)
+        preserveModuleDocs preserveLineComments
+      (spaces 3 ++ out, modes)
+  | '«' :: rest, .code depth :: modes =>
+      let (out, modes) := sanitizeChars rest (.quotedIdent :: .code depth :: modes)
+        preserveModuleDocs preserveLineComments
+      ('x' :: out, modes)
+  | 'r' :: rest, .code depth :: modes =>
       let (hashes, afterHashes) := countHashes rest
       match afterHashes with
       | '"' :: tail =>
-          let (out, mode) := sanitizeChars tail (.raw hashes) preserveModuleDocs
-          (spaces (hashes + 2) ++ out, mode)
+          let (out, modes) := sanitizeChars tail (.raw hashes :: .code depth :: modes)
+            preserveModuleDocs preserveLineComments
+          (spaces (hashes + 2) ++ out, modes)
       | _ =>
-          let (out, mode) := sanitizeChars rest .code preserveModuleDocs
-          ('r' :: out, mode)
-  | '"' :: rest, .code =>
-      let (out, mode) := sanitizeChars rest (.quoted false) preserveModuleDocs
-      (' ' :: out, mode)
-  | c :: rest, .code =>
-      let (out, mode) := sanitizeChars rest .code preserveModuleDocs
-      (c :: out, mode)
-  | '/' :: '-' :: rest, .blockComment depth =>
-      let (out, mode) := sanitizeChars rest (.blockComment (depth + 1)) preserveModuleDocs
-      (' ' :: ' ' :: out, mode)
-  | '-' :: '/' :: rest, .blockComment 1 =>
-      let (out, mode) := sanitizeChars rest .code preserveModuleDocs
-      (' ' :: ' ' :: out, mode)
-  | '-' :: '/' :: rest, .blockComment (depth + 2) =>
-      let (out, mode) := sanitizeChars rest (.blockComment (depth + 1)) preserveModuleDocs
-      (' ' :: ' ' :: out, mode)
-  | _ :: rest, .blockComment depth =>
-      let (out, mode) := sanitizeChars rest (.blockComment depth) preserveModuleDocs
-      (' ' :: out, mode)
-  | '\\' :: rest, .quoted false =>
-      let (out, mode) := sanitizeChars rest (.quoted true) preserveModuleDocs
-      (' ' :: out, mode)
-  | _ :: rest, .quoted true =>
-      let (out, mode) := sanitizeChars rest (.quoted false) preserveModuleDocs
-      (' ' :: out, mode)
-  | '"' :: rest, .quoted false =>
-      let (out, mode) := sanitizeChars rest .code preserveModuleDocs
-      (' ' :: out, mode)
-  | _ :: rest, .quoted false =>
-      let (out, mode) := sanitizeChars rest (.quoted false) preserveModuleDocs
-      (' ' :: out, mode)
-  | '"' :: rest, .raw hashes =>
+          let (out, modes) := sanitizeChars rest (.code depth :: modes)
+            preserveModuleDocs preserveLineComments
+          ('r' :: out, modes)
+  | '!' :: '"' :: rest, .code depth :: modes =>
+      let (out, modes) := sanitizeChars rest (.interpolated false :: .code depth :: modes)
+        preserveModuleDocs preserveLineComments
+      ('!' :: ' ' :: out, modes)
+  | '"' :: rest, .code depth :: modes =>
+      let (out, modes) := sanitizeChars rest (.quoted false :: .code depth :: modes)
+        preserveModuleDocs preserveLineComments
+      (' ' :: out, modes)
+  | '{' :: rest, .code (depth + 1) :: modes =>
+      let (out, modes) := sanitizeChars rest (.code (depth + 2) :: modes)
+        preserveModuleDocs preserveLineComments
+      (' ' :: out, modes)
+  | '}' :: rest, .code 1 :: modes =>
+      let (out, modes) := sanitizeChars rest modes preserveModuleDocs preserveLineComments
+      (' ' :: out, modes)
+  | '}' :: rest, .code (depth + 2) :: modes =>
+      let (out, modes) := sanitizeChars rest (.code (depth + 1) :: modes)
+        preserveModuleDocs preserveLineComments
+      (' ' :: out, modes)
+  | c :: rest, .code depth :: modes =>
+      let (out, modes) := sanitizeChars rest (.code depth :: modes)
+        preserveModuleDocs preserveLineComments
+      ((if depth == 0 then c else ' ') :: out, modes)
+  | '/' :: '-' :: rest, .blockComment depth :: modes =>
+      let (out, modes) := sanitizeChars rest (.blockComment (depth + 1) :: modes)
+        preserveModuleDocs preserveLineComments
+      (' ' :: ' ' :: out, modes)
+  | '-' :: '/' :: rest, .blockComment 1 :: modes =>
+      let (out, modes) := sanitizeChars rest modes preserveModuleDocs preserveLineComments
+      (' ' :: ' ' :: out, modes)
+  | '-' :: '/' :: rest, .blockComment (depth + 2) :: modes =>
+      let (out, modes) := sanitizeChars rest (.blockComment (depth + 1) :: modes)
+        preserveModuleDocs preserveLineComments
+      (' ' :: ' ' :: out, modes)
+  | _ :: rest, .blockComment depth :: modes =>
+      let (out, modes) := sanitizeChars rest (.blockComment depth :: modes)
+        preserveModuleDocs preserveLineComments
+      (' ' :: out, modes)
+  | '\\' :: rest, .quoted false :: modes =>
+      let (out, modes) := sanitizeChars rest (.quoted true :: modes)
+        preserveModuleDocs preserveLineComments
+      (' ' :: out, modes)
+  | _ :: rest, .quoted true :: modes =>
+      let (out, modes) := sanitizeChars rest (.quoted false :: modes)
+        preserveModuleDocs preserveLineComments
+      (' ' :: out, modes)
+  | '"' :: rest, .quoted false :: modes =>
+      let (out, modes) := sanitizeChars rest modes preserveModuleDocs preserveLineComments
+      (' ' :: out, modes)
+  | _ :: rest, .quoted false :: modes =>
+      let (out, modes) := sanitizeChars rest (.quoted false :: modes)
+        preserveModuleDocs preserveLineComments
+      (' ' :: out, modes)
+  | '\\' :: rest, .interpolated false :: modes =>
+      let (out, modes) := sanitizeChars rest (.interpolated true :: modes)
+        preserveModuleDocs preserveLineComments
+      (' ' :: out, modes)
+  | _ :: rest, .interpolated true :: modes =>
+      let (out, modes) := sanitizeChars rest (.interpolated false :: modes)
+        preserveModuleDocs preserveLineComments
+      (' ' :: out, modes)
+  | '"' :: rest, .interpolated false :: modes =>
+      let (out, modes) := sanitizeChars rest modes preserveModuleDocs preserveLineComments
+      (' ' :: out, modes)
+  | '{' :: rest, .interpolated false :: modes =>
+      let (out, modes) := sanitizeChars rest (.code 1 :: .interpolated false :: modes)
+        preserveModuleDocs preserveLineComments
+      (' ' :: out, modes)
+  | _ :: rest, .interpolated false :: modes =>
+      let (out, modes) := sanitizeChars rest (.interpolated false :: modes)
+        preserveModuleDocs preserveLineComments
+      (' ' :: out, modes)
+  | '"' :: rest, .raw hashes :: modes =>
       match dropHashes hashes rest with
       | some tail =>
-          let (out, mode) := sanitizeChars tail .code preserveModuleDocs
-          (spaces (hashes + 1) ++ out, mode)
+          let (out, modes) := sanitizeChars tail modes preserveModuleDocs preserveLineComments
+          (spaces (hashes + 1) ++ out, modes)
       | none =>
-          let (out, mode) := sanitizeChars rest (.raw hashes) preserveModuleDocs
-          (' ' :: out, mode)
-  | _ :: rest, .raw hashes =>
-      let (out, mode) := sanitizeChars rest (.raw hashes) preserveModuleDocs
-      (' ' :: out, mode)
-  | '»' :: rest, .quotedIdent =>
-      let (out, mode) := sanitizeChars rest .code preserveModuleDocs
-      (' ' :: out, mode)
-  | _ :: rest, .quotedIdent =>
-      let (out, mode) := sanitizeChars rest .quotedIdent preserveModuleDocs
-      (' ' :: out, mode)
+          let (out, modes) := sanitizeChars rest (.raw hashes :: modes)
+            preserveModuleDocs preserveLineComments
+          (' ' :: out, modes)
+  | _ :: rest, .raw hashes :: modes =>
+      let (out, modes) := sanitizeChars rest (.raw hashes :: modes)
+        preserveModuleDocs preserveLineComments
+      (' ' :: out, modes)
+  | '»' :: rest, .quotedIdent :: modes =>
+      let (out, modes) := sanitizeChars rest modes preserveModuleDocs preserveLineComments
+      (' ' :: out, modes)
+  | _ :: rest, .quotedIdent :: modes =>
+      let (out, modes) := sanitizeChars rest (.quotedIdent :: modes)
+        preserveModuleDocs preserveLineComments
+      (' ' :: out, modes)
 
-private def sanitizeLinesWith (lines : Array String) (preserveModuleDocs : Bool) :
-    Array String := Id.run do
-  let mut mode := ScanMode.code
+private def sanitizeLinesWith (lines : Array String) (preserveModuleDocs : Bool)
+    (preserveLineComments : Bool := false) : Array String := Id.run do
+  let mut modes := [ScanMode.code 0]
   let mut result := #[]
   for line in lines do
-    let (chars, next) := sanitizeChars line.toList mode preserveModuleDocs
+    let (chars, next) := sanitizeChars line.toList modes preserveModuleDocs preserveLineComments
     result := result.push (String.ofList chars)
-    mode := next
+    modes := next
   return result
 
 private def sanitizeLines (lines : Array String) : Array String :=
@@ -323,7 +384,8 @@ private def lineViolations (lines codeLines : Array String) : Array Violation :=
       let nextCode := codeLines[i + 1]!
       let nextTrimmed := nextCode.trimAsciiStart.toString
       if !nextTrimmed.isEmpty && !nextTrimmed.startsWith "#" then
-        let expected := if nextTrimmed.startsWith "| " || code.endsWith "where" then 2 else 4
+        let expected :=
+          if nextTrimmed.startsWith "| " || code.trimAsciiEnd.toString.endsWith "where" then 2 else 4
         if leadingSpaces next != expected then
           result := result.push <| violation "ERR_IND" (i + 2)
             s!"Continuation of a declaration must be indented {expected} spaces"
@@ -400,6 +462,73 @@ private def startsToken (token : String) (chars : List Char) : Bool :=
     match chars.drop tokenChars.length with
     | next :: _ => !isIdentContinue next
     | [] => true
+
+/-- Drop one balanced attribute list after its opening bracket. Literal bodies are already masked. -/
+private def dropAttribute? : List Char → Nat → Option (List Char)
+  | [], _ => none
+  | '[' :: rest, depth => dropAttribute? rest (depth + 1)
+  | ']' :: rest, 1 => some rest
+  | ']' :: rest, depth + 2 => dropAttribute? rest (depth + 1)
+  | _ :: rest, depth => dropAttribute? rest depth
+
+private def commentDeclarationModifiers : List String :=
+  ["public", "meta", "private", "protected", "noncomputable", "partial", "unsafe", "nonrec",
+    "scoped", "local"]
+
+private def commentDeclarationKeywords : List String :=
+  ["theorem", "lemma", "def", "abbrev", "instance", "example", "structure", "class",
+    "inductive", "axiom", "opaque"]
+
+private def dropCommentWhitespace (chars : List Char) : List Char :=
+  chars.dropWhile Char.isWhitespace
+
+/-- Strip attributes and modifiers, retaining exact keyword boundaries. -/
+private partial def stripCommentDeclarationPrefix (chars : List Char) : List Char :=
+  let chars := dropCommentWhitespace chars
+  match chars with
+  | '@' :: '[' :: rest =>
+      match dropAttribute? rest 1 with
+      | some rest => stripCommentDeclarationPrefix rest
+      | none => chars
+  | _ =>
+      match commentDeclarationModifiers.find? (fun modifier =>
+          modifier.toList.isPrefixOf chars &&
+            (chars.drop modifier.length).head?.any Char.isWhitespace) with
+      | some modifier => stripCommentDeclarationPrefix (chars.drop modifier.length)
+      | none => chars
+
+/-- Recognise a declaration header, while allowing keyword-led prose such as instance-search notes.
+
+An identifier may end the line (a continued header), or lead into binders, a type/value, or the
+`where`/`extends` forms. More prose words after the identifier do not form a declaration header.
+-/
+private def isCommentedDeclaration (text : String) : Bool :=
+  let (chars, _) := sanitizeChars text.toList [.code 0] false
+  let chars := stripCommentDeclarationPrefix chars
+  commentDeclarationKeywords.any fun keyword =>
+    keyword.toList.isPrefixOf chars &&
+      let afterKeyword := chars.drop keyword.length
+      afterKeyword.head?.any Char.isWhitespace &&
+        let header := dropCommentWhitespace afterKeyword
+        match header with
+        | c :: rest =>
+            [':', '{', '(', '['].contains c ||
+              (Lean.isIdFirst c &&
+                let afterName := dropCommentWhitespace <|
+                  rest.dropWhile (fun c => Lean.isIdRest c || c == '.')
+                afterName.isEmpty || afterName.head?.any ([':', '{', '(', '[', '|'].contains ·) ||
+                  startsToken "where" afterName || startsToken "extends" afterName)
+        | [] => false
+
+private def commentedDeclarationViolations (lines : Array String) : Array Violation := Id.run do
+  let commentLines := sanitizeLinesWith lines false true
+  let mut result := #[]
+  for h : i in [:commentLines.size] do
+    let pieces := commentLines[i].splitOn "--"
+    if pieces.length > 1 && isCommentedDeclaration ("--".intercalate pieces.tail) then
+      result := result.push <| violation "ERR_COMMENT_DECL" (i + 1)
+        "Commented-out declarations are not allowed: delete the code or restore it"
+  return result
 
 private partial def skipRawBlockComment (chars : List Char) (depth line : Nat) :
     List Char × Nat :=
@@ -544,6 +673,7 @@ registry or captures elaborator diagnostics.
 def lintLines (lines : Array String) : Array Violation :=
   let codeLines := sanitizeLines lines
   unicodeViolations lines ++ lineViolations lines codeLines ++
+    commentedDeclarationViolations lines ++
     suppressionViolations lines codeLines ++
     fileLengthViolations lines (isImportsOnly codeLines) ++
     headerViolations lines codeLines
@@ -581,6 +711,30 @@ def runSelfTests : IO Unit := do
     isHazardousUnicode (Char.ofNat 0x1bca0) && isHazardousUnicode (Char.ofNat 0x1d173) &&
     isHazardousUnicode (Char.ofNat 0xe007f))
     "invisible, annotation/tag, and bidirectional controls must be rejected"
+  for keyword in commentDeclarationKeywords do
+    assertSelfTest (hasCode "ERR_COMMENT_DECL" #[s!"-- {keyword} declaration : Nat"])
+      s!"commented {keyword} headers must be rejected"
+    assertSelfTest (!hasCode "ERR_COMMENT_DECL" #[s!"-- {keyword}ish declaration : Nat"])
+      s!"{keyword} prefixes must respect exact keyword boundaries"
+  for modifier in commentDeclarationModifiers do
+    assertSelfTest (hasCode "ERR_COMMENT_DECL" #[s!"-- {modifier} theorem named : True"])
+      s!"commented declaration modifiers must be recognised: {modifier}"
+  for header in [": True", "{n : Nat}", "(n : Nat)", "[Inhabited Nat]", "named",
+      "named : True", "α : True", "«quoted name» : True", "named where", "named extends Base"] do
+    assertSelfTest (hasCode "ERR_COMMENT_DECL" #[s!"-- example {header}"])
+      s!"commented declaration header must be recognised: {header}"
+  assertSelfTest (!hasCode "ERR_COMMENT_DECL" #["-- instance search is slow here",
+    "-- theorem names should describe the conclusion", "-- def", "-- theoremish t : True"])
+    "keyword-led prose and incomplete keyword-only comments must remain valid"
+  assertSelfTest (!hasCode "ERR_COMMENT_DECL" #["def text := \"escaped \\\" -- def hidden := 1\"",
+    "def character := '-'", "def text := r###\"-- def hidden := 1\"###",
+    "/- outer /- inner -/", "-- theorem hidden : True", "-/"])
+    "escaped strings, character literals, raw strings, and nested block comments must be ignored"
+  let positioned := commentedDeclarationViolations
+    #["/- -- theorem hidden : True -/", "def text := \"-- lemma hidden : True\"",
+      "-- theorem visible : True"]
+  assertSelfTest (positioned.map (·.line) == #[3])
+    "commented declaration diagnostics must retain source line numbers"
   let sample := #["def ok := \"@[nolint] set_option linter.foo true\"",
     "/- outer /- @[nolint] -/ set_option pp.foo true -/"]
   let masked := sanitizeLines sample
@@ -713,6 +867,9 @@ def runSelfTests : IO Unit := do
     "a `public` declaration opener must still be covered by the continuation-indent check"
   assertSelfTest (hasCode "ERR_IND" #["meta def f :", "  Nat := 1"])
     "a `meta` declaration opener must still be covered by the continuation-indent check"
+  assertSelfTest (!hasCode "ERR_IND" #["def value : Fin 1 where--",
+    "  val := 0", "  isLt := by decide"])
+    "an empty trailing comment after `where` must preserve two-space field indentation"
   assertSelfTest (violationExitCode 0 == 0 && violationExitCode 1 == 1 &&
     violationExitCode 125 == 125 && violationExitCode 126 == 125)
     "violations must map to a portable nonzero process exit code"

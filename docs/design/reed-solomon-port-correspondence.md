@@ -1541,7 +1541,7 @@ statements here, at the radius `1 - a / n` and for an arbitrary code, imply the 
 `Code.Lambda_mono`. The Reed–Solomon consumers are in
 `ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AnchoredAgreement`.
 
-## `ArkLib/Data/CodingTheory/ListDecodability/Capacity/WeightedSupport.lean`
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/WeightedSupport.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/WeightedSupport.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
@@ -2348,7 +2348,7 @@ The retained-tail API keeps the challenge as a polynomial coordinate and constru
 
 The root-first multiplication identity, repeated in the source retained-tail module, is shared from the retained-curve owner as `jetTotalDegree_fromFlattenedRootFirst_mul`. The generic coefficient-degree bound is owned by `OptionWeightedDegree` as `degreeOf_coeff_optionEquivLeft_add_le_weight`; it generalizes the coefficient-degree argument to `Option σ` weights with the distinguished and selected coordinates positively weighted. The coefficient-variable derivative transport is owned by `PolynomialCoefficients` as `optionEquivRight_symm_pderiv` and generalizes to arbitrary variable types and commutative semirings. The arbitrary-coordinate `flattenChallenge_pderiv` law is not exposed; the needed `Y₁` case lives in the retained-curve owner. `flattenedSingularPolynomial_map_eq_zero_of_content_or_commonRoot` is generalized from domain targets to commutative-ring targets. `flattenedPositiveRootProduct_eq_one_of_rootDegree_eq_zero` is covered by the existing `MvPolynomial.radicalPrimPart_eq_one_of_degreeOf_eq_zero`. `retainedRootJetWeight` remains private coordinate-view bookkeeping, `flattened_content_add_positive_challengeDegree_le` remains a private helper, and the private `flattenChallenge_specialization` helper is inlined into `retainedRootSpecializationHom_flattenedRootFirst`.
 
-## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/SharpCurveMCA.lean`
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/SharpCurve.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Sharp.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
@@ -4128,7 +4128,7 @@ replaces the span-induction argument inside
 `Matrix.exists_ne_zero_mulVec_eq_zero_natDegree_le_of_rank_eq` at the same revision, which was
 specialized to polynomial matrices, `Fin` indices, and the rational function field.
 
-## `ArkLib/ToMathlib/LinearAlgebra/Matrix/RowBlocks.lean`
+## `ArkLib/ToMathlib/LinearAlgebra/Matrix/Rank.lean`
 
 Ported from the matrix rank argument in `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/WeightedSupport.lean` at ArkLib revision
 `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -5438,6 +5438,9 @@ An acceptance case checks a concrete scale-300 curve certificate at `δ = 1/5`.
 
 ## `ArkLibTest/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/MomentSource.lean`
 
+This test file was later consolidated into
+`ArkLibTest/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport.lean`.
+
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/SourceEstimate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 The aggregate includes a concrete `d = 500`, `W = 1` instance of `partitionSupport_dimension_gt_moment`, using the lower-tail second-moment bound at logarithm `log 3000`. It checks the numeric rate and scale hypotheses and exercises the dimension conclusion without generic theorem restatements. The source-specific wrapper is not needed because the existing theorem covers it.
@@ -5600,6 +5603,9 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Tayl
 An acceptance example checks a concrete nonempty singleton challenge set, its regular chart, three agreements, the absence of an exact degree-bounded pair, and the resulting bound of 12.
 
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean`
+
+This test file was later consolidated into
+`ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart.lean`.
 
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 

@@ -230,11 +230,6 @@ theorem addCases_right' {motive : Fin (m + n) → Sort*}
   subst h
   simp only [addCases_right]
 
--- theorem append_left' {u : Fin m → α} {v : Fin n → α} {i : Fin m}
---     (j : Fin (m + n)) (h : j = castAdd n i) : append u v j = u i := by
---   subst h
-  -- simp only [append_left]
-
 theorem append_right' {u : Fin m → α} {v : Fin n → α} {i : Fin n}
     (j : Fin (m + n)) (h : j = natAdd m i) : append u v j = v i := by
   subst h
@@ -291,13 +286,6 @@ theorem addCases'_right {m n : ℕ} {α : Fin m → Sort u} {β : Fin n → Sort
     (left : (i : Fin m) → α i) (right : (j : Fin n) → β j) (i : Fin n) :
       addCases' left right (Fin.natAdd m i) = (Fin.append_right α β i) ▸ (right i) := by
   simp [addCases', cast_eq_iff_heq]
-
--- theorem addCases'_heq_addCases {m n : ℕ} {α : Fin m → Sort u} {β : Fin n → Sort u}
---     (left : (i : Fin m) → α i) (right : (j : Fin n) → β j) :
---       HEq (addCases' left right) = addCases (motive := append α β) left right := by
---   ext i
---   refine addCasesFn_iff.mpr (fun i => ?_)
---   simp [addCases']
 
 section Sum
 

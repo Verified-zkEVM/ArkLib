@@ -120,11 +120,6 @@ def lift : OuterStmtIn × (∀ i, OuterOStmtIn i) → InnerStmtOut × (∀ i, In
     OuterStmtOut × (∀ i, OuterOStmtOut i) :=
   lens.toFunB
 
--- def toVerifierLens : Statement.Lens
---     (OuterStmtIn × ∀ i, OuterOStmtIn i) (OuterStmtOut × ∀ i, OuterOStmtOut i)
---     (InnerStmtIn × ∀ i, InnerOStmtIn i) (InnerStmtOut × ∀ i, InnerOStmtOut i)
---   := oStmtLens
-
 end OracleStatement.Lens
 
 /-! ### Executable oracle-statement lenses
@@ -418,15 +413,6 @@ def proj (lens : Extractor.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOu
     OuterWitIn OuterWitOut InnerWitIn InnerWitOut) :
     OuterStmtIn × OuterWitOut → InnerStmtIn × InnerWitOut :=
   fun ⟨stmtIn, witOut⟩ => ⟨lens.stmt.proj stmtIn, lens.wit.proj (stmtIn, witOut)⟩
-
--- /-- Transport the inner input witness to the outer input witness, also relying on the tuple
--- (outer--   input statement, outer output witness) -/
--- @[inline, reducible]
--- def lift (lens : Extractor.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
---               OuterWitIn OuterWitOut InnerWitIn InnerWitOut) :
---     OuterStmtIn × OuterWitOut → InnerWitIn → OuterWitIn :=
---   fun ⟨stmtIn, witOut⟩ innerWitIn =>
---     lens.wit.lift (stmtIn, witOut) innerWitIn
 
 end Extractor.Lens
 

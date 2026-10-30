@@ -129,8 +129,6 @@ variable {ι : Type} (oSpec : OracleSpec ι)
 @[reducible]
 def pSpec : ProtocolSpec (Fin.vsum (fun _ : Fin n => 2)) :=
   ProtocolSpec.seqCompose (fun _ => SingleRound.pSpec R deg)
-  -- n * 2
-  -- fun i => if i % 2 = 0 then (.P_to_V, R⦃≤ d⦄[X]) else (.V_to_P, R)
 
 /-- Every sent sum-check polynomial uses the univariate evaluation interface. -/
 instance instOracleInterfaceMessagePSpec : ∀ i, OracleInterface ((pSpec R deg n).Message i) :=
@@ -149,12 +147,6 @@ instance instOracleInterfaceMessageStep (rounds : ℕ) :
 -/
 @[reducible, simp]
 def StmtIn := R
-
--- def relIn : (StmtIn R) × (∀ i, OStmtIn R d n i) → WitIn → Prop :=
---   fun ⟨target, polyOracle⟩ _ => ∑ x ∈ (univ.map D) ^ᶠ (n + 1), (polyOracle ()).val ⸨x⸩ = target
-
--- def relOut : (StmtOut R n) × (∀ i, OStmtOut R d n i) → WitOut → Prop :=
---   fun ⟨⟨target, challenges⟩, polyOracle⟩ _ => (polyOracle ()).1 ⸨challenges⸩ = target
 
 variable [DecidableEq R] [SampleableType R]
 

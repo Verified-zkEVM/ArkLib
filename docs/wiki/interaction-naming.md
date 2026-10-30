@@ -24,8 +24,7 @@ qualified names to repeated `_root_` qualifiers when possible.
 
 Review wording together with the theorem: identify the quantified prover, what is random, the
 winning event, which intermediate inputs need a bound, and whether effects may be reordered.
-Plain language must preserve these conditions. The [roadmap](../design/05-roadmap.md)
-uses this convention for the next PRs.
+Plain language must preserve these conditions.
 
 ## Sources and their morphisms
 
@@ -186,7 +185,7 @@ before that challenge. Neither theorem states multi-round or knowledge soundness
 arbitrary concrete claims. `legacy_verifier_correspondence` identifies single-round scalar outputs
 for arbitrary sent polynomials and fixed challenges, including rejection: both verifiers take the
 sent polynomial at the challenge as the next target and keep the input polynomial as the output
-oracle. It does not relate the legacy and native security games.
+oracle. It does not relate the legacy-layer and interaction-layer security games.
 
 The legacy round-by-round knowledge-soundness statements in `Sumcheck/Spec/` require
 `[IsDomain R]` on top of `[Fintype R]`; without it the error `deg / |R|` fails over rings with zero

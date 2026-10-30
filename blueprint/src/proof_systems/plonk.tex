@@ -1,0 +1,90 @@
+% Copyright (c) 2026 ArkLib Contributors. All rights reserved.
+% Released under Apache 2.0 license as described in the file LICENSE.
+
+\section{The Plonk Polynomial IOP}\label{sec:plonk}
+
+ArkLib formalizes the polynomial oracle reduction underlying Plonk~\cite{GWZC19}. It
+composes four stages, each a standalone oracle reduction. The result concerns the
+polynomial IOP; it does not include a polynomial commitment scheme or Fiat--Shamir.
+
+Fix a field $\field$ with decidable equality, a number of rows $n\geq 2$, and a primitive
+$n$-th root of unity $\omega$, so that $H=\{1,\omega,\ldots,\omega^{n-1}\}$ is the row
+domain. A constraint system has $m$ variables and $n$ gates; each gate constrains a left,
+right and output wire, and copy constraints identify wires that carry the same variable.
+Fix coset labels for the three wire columns and a public-input polynomial $\mathit{pi}$ of
+degree less than $n$. A wire table is three polynomials $a_0,a_1,a_2$ of degree less than
+$n$.
+
+\begin{definition}[Plonk oracle reduction]\label{def:plonk_assembly}
+\lean{Plonk.Assembly.oracleReduction, Plonk.Assembly.rel,
+Plonk.GrandProduct.InputRelation}
+\leanok
+\uses{def:sendsinglewitness_oracle_reduction,def:generator_batch,def:quotient_zero_test}
+The input relation holds for a wire table when the gate polynomial built from the table and
+$\mathit{pi}$ vanishes on $H$, and the wire values satisfy every copy constraint. The
+reduction is the sequential composition of four stages, with six rounds in total.
+\begin{enumerate}
+  \item \textbf{Wire reveal.} The prover sends the wire table as one polynomial oracle.
+  \item \textbf{Grand product.} The verifier sends the permutation challenges
+    $(\beta,\gamma)$ jointly. The prover replies with the accumulator polynomial $Z$.
+    The output claim is that three residual polynomials vanish on $H$.
+  \item \textbf{Power batch.} The verifier sends one challenge $\alpha$ and the three
+    residuals are combined with coefficients $1,\alpha,\alpha^2$
+    (Definition~\ref{def:generator_batch}).
+  \item \textbf{Quotient.} The prover sends the quotient polynomial and the verifier
+    checks the quotient identity at a random point
+    (Definition~\ref{def:quotient_zero_test}). The output relation accepts every output.
+\end{enumerate}
+Every earlier oracle is retained up to the terminal check.
+\end{definition}
+
+\begin{theorem}[Plonk completeness]\label{thm:plonk_completeness}
+\lean{Plonk.Assembly.oracleReduction_completeness}
+\leanok
+\uses{def:plonk_assembly}
+Let $\field$ be finite and sampleable. For every initial distribution of the shared oracle
+state and every implementation of that oracle, the honest prover is complete from the input
+relation to the output relation with error $3n/|\field|$. The failure occurs only at the
+grand-product challenge.
+\end{theorem}
+
+\begin{theorem}[Plonk knowledge soundness]\label{thm:plonk_knowledge_soundness}
+\lean{Plonk.Assembly.oracleVerifier_rbrKnowledgeSoundnessWith, Plonk.Assembly.error,
+Plonk.Assembly.sum_error, Plonk.Assembly.transcriptExtractor,
+Plonk.Assembly.oracleVerifier_knowledgeSoundnessWith}
+\leanok
+\uses{def:plonk_assembly}
+Under the hypotheses of Theorem~\ref{thm:plonk_completeness}, the verifier is
+round-by-round knowledge sound from the input relation to the output relation. The errors
+at the three challenges are
+\[
+  \frac{3n-1}{|\field|}\ \text{(grand product)},\qquad
+  \frac{2}{|\field|}\ \text{(power batch)},\qquad
+  \frac{4(n-1)}{|\field|}\ \text{(quotient)},
+\]
+and the reveal stage has no challenge. The errors sum to $(7n-3)/|\field|$. Consequently
+the verifier is knowledge sound with error $(7n-3)/|\field|$, and the extractor returns
+the wire table from the first prover message.
+\end{theorem}
+
+\paragraph{The circuit relation.}
+For a constraint system with $\ell\leq m$ public inputs, the Plonk relation holds for a
+public input $x\in\field^{\ell}$ and a private witness $w\in\field^{m-\ell}$ when the
+assignment $(x,w)$ satisfies every gate and copy constraint. To prove it, the constraint
+system is prepared: $\ell$ public-equality rows are prepended, so the domain has $\ell+n$
+rows and $\omega$ is a primitive $(\ell+n)$-th root of unity with $\ell+n\geq 2$. The
+public constants of the new rows are cleared and $x$ enters through the public-input
+polynomial.
+
+\begin{theorem}[Plonk knowledge soundness for the circuit relation]
+\label{thm:plonk_circuit_knowledge_soundness}
+\lean{Plonk.relation, Plonk.Assembly.Circuit.oracleReduction, Plonk.Assembly.Circuit.relIn,
+Plonk.Assembly.Circuit.oracleVerifier_rbrKnowledgeSoundnessWith,
+Plonk.Assembly.Circuit.oracleVerifier_knowledgeSoundnessWith}
+\leanok
+\uses{thm:plonk_knowledge_soundness}
+With the prepared system above, the verifier is knowledge sound from the Plonk relation at
+public input $x$ to the accepting output relation, with error
+$(7(\ell+n)-3)/|\field|$. The extractor decodes the first prover message into the private
+witness $w$.
+\end{theorem}

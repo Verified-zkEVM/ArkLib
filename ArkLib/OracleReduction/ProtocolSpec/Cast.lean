@@ -109,11 +109,6 @@ theorem cast_idx {i : MessageIdx pSpec₁} :
     pSpec₂.Message (i.cast hn hSpec) = pSpec₁.Message i :=
   cast_Type_idx hSpec
 
--- instance {Q : pSpec₁.MessageIdx → Type _}
---     [inst : ∀ i : pSpec₁.MessageIdx, OracleInterface (Q i) (pSpec₁.Message i)] :
---     ∀ i : (pSpec₁.cast hn).MessageIdx, OracleInterface (Q sorry) ((pSpec₁.cast hn).Message i) :=
---   fun i => inst (dcast₂ hn.symm (by rw [dcast_symm hn]; rfl) i)
-
 end Message
 
 namespace ChallengeIdx
@@ -178,9 +173,22 @@ instance instDCast₃ : DCast₃ Nat (fun n => Fin (n + 1)) (fun n _ => Protocol
     T
   dcast₃_id := cast_id
 
--- theorem cast_eq_dcast₃ (h : m = n) (hIdx : k.val = l.val) (hSpec : pSpec₁.cast h = pSpec₂)
---     (T : Transcript pSpec₁ k) :
---     T.cast h hIdx hSpec  = (dcast₃ h (by sorry) sorry T : pSpec₂.Transcript l) := rfl
+/-- The transcript-specific cast agrees with the generic dependent cast. -/
+theorem cast_eq_dcast₃ (T : pSpec₁.Transcript k) :
+    T.cast hn hIdx hSpec =
+      (dcast₃ (δ := fun (n : ℕ) (k : Fin (n + 1)) (pSpec : ProtocolSpec n) => pSpec.Transcript k) hn
+        (by subst hn; exact Fin.ext hIdx)
+        (by
+          subst hn
+          have hkl : k = l := Fin.ext hIdx
+          subst l
+          exact hSpec) T :
+          pSpec₂.Transcript l) := by
+  subst hn
+  have hkl : k = l := Fin.ext hIdx
+  subst l
+  cases hSpec
+  rfl
 
 end Transcript
 
