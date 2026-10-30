@@ -93,14 +93,9 @@ which change.
 - Look up a paper's formalization status in the [knowledge base](docs/kb/README.md).
 - Read the [agent and contributor wiki](docs/wiki/README.md) for conventions and workflows.
 
-Background reading on the theory:
-
-- Ben-Sasson, Chiesa and Spooner, *Interactive Oracle Proofs* [BCS16]
-  ([KB page](docs/kb/papers/BCS16.md)), which introduced IOPs and the BCS transform.
-- Ben-Sasson, Chiesa, Goldberg, Gur, Riabzev and Spooner,
-  [*Linear-Size Constant-Query IOPs for Delegating Computation*](https://eprint.iacr.org/2019/1230),
-  which introduced interactive oracle reductions.
-- Chiesa and Yogev, [*Building Cryptographic Proofs from Hash Functions*](https://snargsbook.org/).
+For background on the theory, read [BACKGROUND.md](BACKGROUND.md). It surveys the
+information-theoretic proof models, their security notions and the compilers to SNARKs, and
+compares ArkLib's interactive oracle reductions with the definitions in the literature.
 
 ## Contributing
 

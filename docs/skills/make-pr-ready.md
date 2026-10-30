@@ -111,7 +111,7 @@ merge-ready.
 
   Subtract the curated docs a PR may legitimately add (`docs/kb/papers/`, `docs/kb/sources/`,
   `docs/wiki/`, `docs/skills/`, `blueprint/`, and top-level pages like
-  `README`/`ROADMAP`/`CONTRIBUTING`) — a real `docs/kb/papers/<KEY>.md` or `docs/wiki/` page stays.
+  `README`/`ROADMAP`/`CONTRIBUTING`/`BACKGROUND`) — a real `docs/kb/papers/<KEY>.md` or `docs/wiki/` page stays.
   For anything left that reads as a working plan, **warn the user**, naming each file and whether
   it is untracked, staged, or already committed, and let them decide. Leave untracked plans
   untracked and staged ones staged; just do not carry them into a commit you make on the author's
@@ -348,7 +348,7 @@ the old path and fix them.
   `_generated/`). Note it resolves links inside backticks too, so do not write a literal
   link-shaped example in prose — it will be chased and reported broken. It does **not** see:
   bare or backticked paths anywhere, `.lean` docstrings, `blueprint/**`, `.github/**`, or the
-  top-level `README.md` / `CONTRIBUTING.md` / `ROADMAP.md`.
+  top-level `README.md` / `CONTRIBUTING.md` / `ROADMAP.md` / `BACKGROUND.md`.
 - `kb/lint.py` does **not** validate the `related_modules:` paths in `docs/kb/papers/*.md`
   frontmatter. A module listed there can be long gone and lint still passes.
 

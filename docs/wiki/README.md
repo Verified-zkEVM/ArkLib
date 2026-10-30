@@ -76,3 +76,5 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
 - [`../../CONTRIBUTING.md`](../../CONTRIBUTING.md) - style, naming, docstrings, citations, and
   large contributions.
 - [`../../ROADMAP.md`](../../ROADMAP.md) - status: what is complete, in progress, and planned.
+- [`../../BACKGROUND.md`](../../BACKGROUND.md) - background theory and references, and how
+  ArkLib's oracle reductions compare with the literature.
