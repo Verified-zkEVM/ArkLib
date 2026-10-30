@@ -5,8 +5,9 @@ protocols, states their security, and plans the remaining formalization. It is w
 readers familiar with provers, verifiers, oracles, and soundness.
 
 The interaction layer is meant to replace the legacy layer (`ArkLib/OracleReduction/`). The
-[README](../../README.md#two-layers) explains the two layers and the legacy layer's limitations,
-and the public [roadmap](../../ROADMAP.md#priority-replace-the-legacy-layer) holds the migration
+[README](../../README.md#two-layers) gives an overview of the two layers,
+[Limitations of the legacy layer](legacy-layer-limitations.md) explains why the replacement is
+needed, and the public [roadmap](../../ROADMAP.md#priority-replace-the-legacy-layer) holds the migration
 plan.
 
 A protocol is an interaction tree with prover and verifier strategies. The prover's continuation
@@ -35,6 +36,7 @@ implementation schedule.
 |---|---|
 | [Current status](00-current-status.md) | Supported dependency baseline, available APIs, proved results, and remaining proof gaps |
 | [End state](00-end-state.md) | Intended coverage and what counts as completing the framework |
+| [Limitations of the legacy layer](legacy-layer-limitations.md) | What the legacy layer cannot express or prove directly, and what the interaction layer does instead |
 | [Foundations](01-foundations.md) | Division of responsibility between PolyFun, VCVio, and ArkLib |
 | [Foundation implementation record](01a-foundation-pr-plan.md) | Historical AR slice identifiers and the PRs that delivered them |
 | [Type-tree naming](01b-type-tree-rename-cutover.md) | The completed rename and correspondence between generic and oracle trees |

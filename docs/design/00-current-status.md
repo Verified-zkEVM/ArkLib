@@ -2,8 +2,10 @@
 
 **Status date:** 2026-10-29. **Scope:** the supported dependency baseline, what the interaction
 layer (`ArkLib/Interaction/`) provides on `main` at this date, and the legacy-layer results that
-bear on it. This page is a dated record. The [README](../../README.md#two-layers) explains the two
-layers, the legacy layer's limitations and the migration plan. Protocol-level status for readers
+bear on it. This page is a dated record. The [README](../../README.md#two-layers) gives an overview of
+the two layers, [Limitations of the legacy layer](legacy-layer-limitations.md) explains why the
+interaction layer replaces it, and the [roadmap](../../ROADMAP.md#priority-replace-the-legacy-layer)
+holds the migration plan. Protocol-level status for readers
 outside the framework is on the public [roadmap](../../ROADMAP.md); remaining interaction-layer
 design work is in the [design roadmap](05-roadmap.md).
 
