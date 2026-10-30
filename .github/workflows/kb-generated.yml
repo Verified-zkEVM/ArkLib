@@ -123,4 +123,6 @@ jobs:
           gh workflow run check-imports.yml --ref "$BRANCH_NAME"
           gh workflow run docs-integrity.yml --ref "$BRANCH_NAME"
 
-          gh pr merge "$pr_url" --auto --squash --delete-branch
+          # The merge queue rejects --delete-branch; the repository deletes head
+          # branches on merge instead.
+          gh pr merge "$pr_url" --auto --squash
