@@ -571,8 +571,11 @@ declaration that the branch adds or changes:
 1. Do the checks in [Statement Correctness](../../CONTRIBUTING.md#statement-correctness). Record
    the result of each check for the description.
 2. In a probe file outside the repository, state each headline theorem as an `example`. Try
-   `trivial`, `simp`, `decide`, `aesop`, and `exact?` on it. If one of them proves the theorem, report the
-   statement as probably too weak.
+   `trivial`, `simp`, `decide`, `aesop`, and `exact?` on it, and read each proof that you get.
+   Ignore a proof by the audited theorem or by a lemma that the branch adds for it. `exact?` finds
+   these lemmas too. If a different proof does not use the main hypotheses or lemmas, report the
+   statement as probably too weak. If it uses an existing library theorem, report a possible
+   reuse.
 3. For each admission that the branch adds, check that its statement is true. Evaluate small
    instances with `decide` or `#eval` where the types permit it. Report each admission that you
    could not check.

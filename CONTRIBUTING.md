@@ -181,8 +181,11 @@ request a merge, do these checks on each headline definition and theorem:
 4. Make sure that a definition has no degenerate case that hides an error. Examples are an
    `else True` branch and an empty relation.
 5. Make sure that each hypothesis is necessary, or say in the docstring why it stays.
-6. Try `trivial`, `simp`, `decide`, `aesop`, and `exact?` on each headline theorem. If one of them
-   proves the theorem, the statement is probably too weak.
+6. Try `trivial`, `simp`, `decide`, `aesop`, and `exact?` on each headline theorem, and read each
+   proof that you get. A proof by the theorem itself, or by a lemma that the pull request adds for
+   it, gives no evidence. If a proof does not use the main hypotheses or lemmas, the statement is
+   probably too weak. A proof by an existing library theorem shows a possible reuse, not a weak
+   statement.
 
 An admitted statement must be true. A false admitted statement lets a proof derive any claim. Before
 you admit a statement, check small cases or try to find a counterexample.
