@@ -105,7 +105,7 @@ class ScopeTests(unittest.TestCase):
             commit()
             drift = ["docs/kb/_generated/extra.json", "docs/kb/_generated/refs.json"]
             self.assertEqual(SCOPE.generated_drift("origin/main"), (drift, drift))
-            subprocess.run(SCOPE.restore_command("origin/main"), shell=True, check=True)
+            SCOPE.restore_generated("origin/main")
             self.assertEqual(SCOPE.generated_drift("origin/main"), (drift, []))
             commit("restore the generated files")
             self.assertEqual(SCOPE.generated_drift("origin/main"), ([], []))
@@ -121,12 +121,33 @@ class ScopeTests(unittest.TestCase):
             run("checkout", "-q", "topic")
             self.assertEqual(SCOPE.generated_drift("origin/main"), ([], []))
             # The restoration must not copy the newer files of the base into the branch.
-            subprocess.run(SCOPE.restore_command("origin/main"), shell=True, check=True)
+            SCOPE.restore_generated("origin/main")
             ci_view = subprocess.run(
                 ["git", "diff", "--name-only", "origin/main...HEAD", "--", SCOPE.GENERATED],
                 check=True, capture_output=True, text=True).stdout
             self.assertEqual(ci_view, "")
             self.assertEqual(SCOPE.generated_drift("origin/main"), ([], []))
+
+    def test_restoration_during_a_merge_keeps_the_files_of_the_base(self) -> None:
+        with repository({"docs/kb/_generated/refs.json": "{}\n", "a.lean": "a\n"}):
+            write("a.lean", "topic\n")
+            commit()
+            run("checkout", "-q", "main")
+            write("docs/kb/_generated/refs.json", '{"new": 1}\n')
+            commit("refresh the generated files on main")
+            run("update-ref", "refs/remotes/origin/main", "main")
+            run("checkout", "-q", "topic")
+            run("merge", "--no-commit", "--no-ff", "-q", "main")
+            write("docs/kb/_generated/refs.json", '{"regenerated": 1}\n')
+            self.assertEqual(SCOPE.generated_drift("origin/main"),
+                             ([], ["docs/kb/_generated/refs.json"]))
+            SCOPE.restore_generated("origin/main")
+            self.assertEqual(SCOPE.generated_drift("origin/main"), ([], []))
+            run("commit", "-q", "--no-edit")
+            ci_view = subprocess.run(
+                ["git", "diff", "--name-only", "origin/main...HEAD", "--", SCOPE.GENERATED],
+                check=True, capture_output=True, text=True).stdout
+            self.assertEqual(ci_view, "")
 
     def test_edit_after_a_committed_rename_keeps_the_old_path(self) -> None:
         with repository({"old.lean": "line\n" * 20, "doc.md": "Refer to old.lean.\n"}):

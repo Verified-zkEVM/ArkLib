@@ -44,7 +44,7 @@ This directory contains various utility scripts for the ArkLib project.
 - **`test-pr-checks.py`** - Tests for the title check and the writing check
 - **`pr-scope.py`** - Report what a branch contributes against its pull request base, with
   uncommitted work, merges in progress, generated-file drift, and stale references to deleted
-  paths
+  paths. Its `restore-generated` command restores the generated KB files that CI expects
 - **`test-pr-scope.py`** - Tests for `pr-scope.py` on temporary Git repositories
 - **`LintStyle.lean`** and **`LintStyle/Checks.lean`** (`lake exe lint-style`) - Lean-native,
   exception-free source policy, including import discipline, whitespace, headers, line/file size,

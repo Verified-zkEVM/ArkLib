@@ -18,6 +18,8 @@ Commands:
   files        the changed paths, one on each line
   deleted      the deleted and renamed paths, one on each line
   stale-refs   the tracked lines that still refer to a deleted path
+  restore-generated
+               restore the generated KB files of the merge base, or of the base during a merge
 
 The default base is `origin/main`. Run `git fetch` first, so that the base is current.
 """
@@ -109,9 +111,9 @@ def generated_drift(base: str) -> tuple[list[str], list[str]]:
     return committed, work_tree
 
 
-def restore_command(base: str) -> str:
-    source = base if merge_in_progress() else f'"$(git merge-base {base} HEAD)"'
-    return f"git restore --source={source} --staged --worktree -- {GENERATED}"
+def restore_generated(base: str) -> None:
+    """Restore the generated KB files that the CI guard expects after the next commit."""
+    git("restore", f"--source={merge_base(base)}", "--staged", "--worktree", "--", GENERATED)
 
 
 def working_files(base: str) -> list[tuple[str, str]]:
@@ -194,7 +196,8 @@ def summary(base: str) -> None:
     for path in work_tree:
         print(f"work tree\t{path}\t(the CI guard fails after a commit of the work tree)")
     if committed or work_tree:
-        print(f"Restore the directory with `{restore_command(base)}`. Then commit the result.")
+        print(f"Restore the directory with `python3 scripts/pr-scope.py restore-generated "
+              f"--base {base}`. Then commit the result.")
     print("\n# Markdown files outside the curated documentation (report them, do not delete them)")
     for path, state in working_files(base):
         print(f"{state}\t{path}")
@@ -207,7 +210,8 @@ def summary(base: str) -> None:
 
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("command", choices=["summary", "files", "deleted", "stale-refs"],
+    parser.add_argument("command", choices=["summary", "files", "deleted", "stale-refs",
+                                            "restore-generated"],
                         nargs="?", default="summary")
     parser.add_argument("--base", default="origin/main", help="the pull request base")
     args = parser.parse_args(argv[1:])
@@ -221,6 +225,8 @@ def main(argv: list[str]) -> int:
     elif args.command == "deleted":
         for path in deleted_paths(args.base):
             print(path)
+    elif args.command == "restore-generated":
+        restore_generated(args.base)
     else:
         for path, kind, line in stale_references(args.base):
             print(f"{path}\t{kind}\t{line}")

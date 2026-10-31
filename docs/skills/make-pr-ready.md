@@ -55,7 +55,7 @@ Then do these steps:
    request owns the file. Do not audit or change that file in this pass.
 5. If the section for `docs/kb/_generated/` lists a change, the first CI job fails. Run the
    restore command that the script prints, and commit the result. The command restores the files
-   of the merge base, not the files of `origin/main`.
+   that CI expects. During a merge, CI expects the files of the base, not of the merge base.
 6. Report each file in the section for Markdown working files to the user. Say whether the file
    is untracked or added. Do not stage, stash, commit, or delete these files, because they are
    the working state of the author. Scratch manifests and experiments belong under `/tmp`,
@@ -183,12 +183,13 @@ declaration that the branch adds or changes:
    not try to clear the existing backlog of coverage warnings.
 6. Do not commit a change to `docs/kb/_generated/`. The first CI job compares the head with the
    merge base of the branch and `main`. It fails on any difference, and a deletion is a
-   difference. You can regenerate the files to check them. Then restore them from the merge base:
+   difference. You can regenerate the files to check them. Then restore the files that CI
+   expects:
 
    ```bash
    python3 ./scripts/kb/sync_from_bib.py
    python3 ./scripts/kb/extract_lean_citations.py
-   git restore --source="$(git merge-base origin/main HEAD)" --staged --worktree -- docs/kb/_generated/
+   python3 scripts/pr-scope.py restore-generated --base origin/main
    ```
 
    The regenerated files also contain changes from recent merges, because `main` updates them only
