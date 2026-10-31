@@ -1618,14 +1618,15 @@ ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
   `ArkLib.Data.CodingTheory.InterleavedCode.ExactAgreement`; the seedwise transfer here is derived
   from `Code.exists_forall_isProjectionBad_of_interleaved` through `isMCA_iff_isProjectionBad`.
 
-Not covered here: the field-size-weighted transfer bound of [Jo26] for seed spaces larger than the
-field.
+For seed spaces larger than the field, `mcaError_moduleInterleavedCode_le_fieldWeighted` proves
+the field-size-weighted bound of [Jo26] Theorem 4.2.
 
 `mcaError_moduleInterleavedCode_le_of_card_le`: This generalizes [Jo26] Corollary 4.5 (one direction) and `ProximityGap.mcaError_interleaved_le`,
 which is the affine-line case.
 
 `mcaError_moduleInterleavedCode_le_of_card_le`: For larger seed spaces [Jo26]
-proves a weaker, field-size-weighted bound, which is not formalized here.
+proves a weaker, field-size-weighted bound, which is
+`mcaError_moduleInterleavedCode_le_fieldWeighted`.
 
 `mcaError_moduleInterleavedCode_eq_of_card_le`: This is [Jo26] Corollary 4.5 for an arbitrary generator and module code. It combines
 
