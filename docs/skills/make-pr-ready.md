@@ -53,9 +53,9 @@ Then do these steps:
 4. If the branch merged a different feature branch, remove the files of that branch from the
    scope. If `git diff --quiet origin/<sibling-branch> HEAD -- <file>` succeeds, the sibling pull
    request owns the file. Do not audit or change that file in this pass.
-5. If the section for `docs/kb/_generated/` lists a committed change, the first CI job fails.
-   Restore the directory with `git checkout origin/main -- docs/kb/_generated/`, and commit the
-   result.
+5. If the section for `docs/kb/_generated/` lists a change, the first CI job fails. Run the
+   restore command that the script prints, and commit the result. The command restores the files
+   of the merge base, not the files of `origin/main`.
 6. Report each file in the section for Markdown working files to the user. Say whether the file
    is untracked or added. Do not stage, stash, commit, or delete these files, because they are
    the working state of the author. Scratch manifests and experiments belong under `/tmp`,
@@ -181,14 +181,14 @@ declaration that the branch adds or changes:
 5. For a paper that the contribution adds or extends, add a substantive page with
    `python3 scripts/kb/scaffold_paper.py <KEY>`. Replace each TODO before you stage the page. Do
    not try to clear the existing backlog of coverage warnings.
-6. Do not commit a change to `docs/kb/_generated/`. The first CI job fails on any difference from
-   `main`, and a deletion is a difference. You can regenerate the files to check them. Then
-   restore them:
+6. Do not commit a change to `docs/kb/_generated/`. The first CI job compares the head with the
+   merge base of the branch and `main`. It fails on any difference, and a deletion is a
+   difference. You can regenerate the files to check them. Then restore them from the merge base:
 
    ```bash
    python3 ./scripts/kb/sync_from_bib.py
    python3 ./scripts/kb/extract_lean_citations.py
-   git checkout origin/main -- docs/kb/_generated/
+   git restore --source="$(git merge-base origin/main HEAD)" --staged --worktree -- docs/kb/_generated/
    ```
 
    The regenerated files also contain changes from recent merges, because `main` updates them only
@@ -406,6 +406,9 @@ These failures happened on real runs of this skill. Most of them passed a green 
   depended on admitted framework definitions.
 - **Line length**: `lake exe lint-style` counts Unicode code points. `awk length` and `wc -c` count
   bytes and report false long lines.
+- **Restoration from `origin/main`**: a review found this failure, not a run. `main` refreshed the
+  generated files after the branch started. A restoration from `origin/main` copies the new files
+  into the branch, and the CI check then fails.
 - **Restored generated files**: after you stage the restoration of `docs/kb/_generated/`,
   `git diff --cached --stat` shows large numbers. They measure the restoration, not new drift.
 - **Unstaged deletion**: `check-imports.sh` builds `ArkLib.lean` from `git ls-files`. Stage each

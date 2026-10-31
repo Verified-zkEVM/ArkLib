@@ -83,7 +83,8 @@ PROGRESSIVE = re.compile(r"\b(?:is|are|was|were|be|been)\s+(\w+ing)\b", re.IGNOR
 BARE_THIS = re.compile(
     r"^(?:This|These)\s+(?:is|are|was|were|means|makes|ensures|lets|gives|shows|allows|"
     r"requires|keeps|fixes|adds|avoids|matches|also|will|can|way)\b")
-ING_START = re.compile(r"^[A-Z][a-z]+ing\b[^,.;:]{0,80},")
+# "During" is a preposition, not an "-ing" form of a verb.
+ING_START = re.compile(r"^(?!During\b)[A-Z][a-z]+ing\b[^,.;:]{0,80},")
 EM_DASH = re.compile(r"—|\s–\s|\s--\s")
 HISTORY_SCOPE = re.compile(r"^(?:docs/wiki/|ArkLib/|ArkLibTest/)|\.lean$")
 
@@ -231,6 +232,9 @@ def markdown_blocks(path: str, text: str, first_line: int = 1) -> list[Block]:
     return blocks
 
 
+CHAR_LITERAL = re.compile(r"'(?:\\(?:u\{[0-9A-Fa-f]+\}|x[0-9A-Fa-f]{2}|.)|[^\\'\n])'")
+
+
 def lean_blocks(path: str, text: str) -> list[Block]:
     """Return the prose blocks of the doc comments, block comments, and line comments."""
     blocks: list[Block] = []
@@ -251,6 +255,11 @@ def lean_blocks(path: str, text: str) -> list[Block]:
         if char == "\n":
             line += 1
             index += 1
+            continue
+        literal = CHAR_LITERAL.match(text, index) if char == "'" else None
+        if literal and not (index and (text[index - 1].isalnum() or text[index - 1] in "_'.")):
+            # A character literal such as '"' does not start a string.
+            index = literal.end()
             continue
         if char == '"':
             index += 1
@@ -312,8 +321,13 @@ def file_blocks(path: str, text: str) -> list[Block]:
 # Masking and sentences
 
 
-def mask(text: str, collapse_parentheses: bool) -> str:
-    """Replace each exempt or one-word element with a placeholder word."""
+def mask(text: str, collapse_parentheses: bool,
+         parentheticals: list[str] | None = None) -> str:
+    """Replace each exempt or one-word element with a placeholder word.
+
+    When `collapse_parentheses` is true, each parenthesis becomes one word, and its text goes to
+    `parentheticals`. An inner parenthesis is one word in the text of the outer one.
+    """
     text = re.sub(r"<!--.*?-->", " ", text)
     text = re.sub(r"&[A-Za-z]+;|&#\d+;", " ", text)
     text = re.sub(r"\$\$.*?\$\$|\$[^$]+\$", " Formula ", text)
@@ -329,6 +343,9 @@ def mask(text: str, collapse_parentheses: bool) -> str:
         previous = None
         while previous != text:
             previous = text
+            for inner in re.findall(r"\(([^()]*)\)", text):
+                if parentheticals is not None:
+                    parentheticals.append(re.sub(r"\s+", " ", inner).strip())
             text = re.sub(r"\([^()]*\)", " Paren ", text)
     return re.sub(r"\s+", " ", text).strip()
 
@@ -359,11 +376,14 @@ def check_block(block: Block, general: re.Pattern[str] | None,
     def add(rule: str, message: str, excerpt: str) -> None:
         found.append(Finding(block.path, block.line, rule, message, excerpt.strip()[:80]))
 
-    counted = mask(block.text, collapse_parentheses=True)
+    parentheticals: list[str] = []
+    counted = mask(block.text, collapse_parentheses=True, parentheticals=parentheticals)
     plain = mask(block.text, collapse_parentheses=False)
     limit = PROCEDURAL_LIMIT if block.procedural else DESCRIPTIVE_LIMIT
     counted_sentences = sentences(counted)
-    for sentence in counted_sentences:
+    # The text in parentheses counts as a separate sentence.
+    for sentence in counted_sentences + [part for inner in parentheticals
+                                         for part in sentences(inner)]:
         words = word_count(sentence)
         if words > limit:
             add("S1", f"The sentence has {words} words. The limit is {limit}.", sentence)

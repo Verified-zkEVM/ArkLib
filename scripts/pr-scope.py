@@ -2,12 +2,16 @@
 """Report the scope of a branch against its pull request base.
 
 The `make-pr-ready` skill uses this script to find what a branch contributes. A plain
-`git diff origin/main...HEAD` is wrong in three common cases, and this script handles each one:
+`git diff origin/main...HEAD` is wrong in two common cases:
 
-- Uncommitted work: the script adds the staged and unstaged changes to the committed changes.
+- Uncommitted work: the script compares the work tree, not `HEAD`, with the merge base of the
+  base and `HEAD`. Thus a later edit does not hide an earlier rename or addition, and a file that
+  a later change restores is not deleted.
 - A merge in progress: the work tree then contains the changes of the base. The script compares
-  the work tree with the base directly.
-- A deleted file that a later change restores: the script does not report it as deleted.
+  the work tree with the base directly, because the base is the merge base after the merge.
+
+The CI guard for generated files compares the merge base with the head of the pull request. This
+script uses the same comparison, so it does not report a change that only the base made.
 
 Commands:
   summary      the changed files, deleted paths, generated-file drift, and working files
@@ -64,25 +68,22 @@ def parse_name_status(output: str) -> list[Change]:
     return changes
 
 
+def merge_base(base: str) -> str:
+    """Return the commit that the branch starts from, as the CI guard computes it.
+
+    During a merge in progress, the base becomes the merge base when the merge is committed.
+    """
+    if merge_in_progress():
+        return base
+    return git("merge-base", base, "HEAD").stdout.strip()
+
+
 def changes(base: str) -> list[Change]:
     """Return the changes that the branch contributes, with uncommitted work included."""
-    if merge_in_progress():
-        return parse_name_status(git("diff", "--name-status", "-M", base).stdout)
-    by_path: dict[str, Change] = {}
-    committed = parse_name_status(git("diff", "--name-status", "-M", f"{base}...HEAD").stdout)
-    uncommitted = parse_name_status(git("diff", "--name-status", "-M", "HEAD").stdout)
-    for change in committed + uncommitted:
-        if change.old_path is not None:
-            by_path.pop(change.old_path, None)
-        by_path[change.path] = change
-    # A file that the branch adds and then deletes again is not a change against the base.
-    kept = [change for change in by_path.values()
-            if change.status != "D" or in_base(base, change.path)]
-    return sorted(kept, key=lambda change: (change.path, change.status))
-
-
-def in_base(base: str, path: str) -> bool:
-    return git("cat-file", "-e", f"{base}:{path}", check=False).returncode == 0
+    # One comparison of the work tree with the merge base gives the net change. A union of the
+    # committed and the uncommitted statuses loses a rename or an addition after a later edit.
+    output = git("diff", "--name-status", "-M", merge_base(base)).stdout
+    return sorted(parse_name_status(output), key=lambda change: (change.path, change.status))
 
 
 def deleted_paths(base: str) -> list[str]:
@@ -97,10 +98,20 @@ def deleted_paths(base: str) -> list[str]:
 
 
 def generated_drift(base: str) -> tuple[list[str], list[str]]:
-    """Return the committed and the uncommitted changes under the generated KB directory."""
-    committed = git("diff", "--name-only", base, "HEAD", "--", GENERATED).stdout.split()
-    uncommitted = git("diff", "--name-only", "HEAD", "--", GENERATED).stdout.split()
-    return committed, uncommitted
+    """Return the generated KB files that differ from the merge base, at `HEAD` and in the work
+    tree. The first list is the view of the CI guard on the current head. The second list is its
+    view after a commit of the work tree.
+    """
+    start = merge_base(base)
+    committed = [] if merge_in_progress() else git(
+        "diff", "--name-only", f"{start}...HEAD", "--", GENERATED).stdout.split()
+    work_tree = git("diff", "--name-only", start, "--", GENERATED).stdout.split()
+    return committed, work_tree
+
+
+def restore_command(base: str) -> str:
+    source = base if merge_in_progress() else f'"$(git merge-base {base} HEAD)"'
+    return f"git restore --source={source} --staged --worktree -- {GENERATED}"
 
 
 def working_files(base: str) -> list[tuple[str, str]]:
@@ -176,12 +187,14 @@ def summary(base: str) -> None:
     print("\n# Deleted or renamed paths")
     for path in deleted_paths(base):
         print(path)
-    committed, uncommitted = generated_drift(base)
-    print(f"\n# Changes under {GENERATED}")
+    committed, work_tree = generated_drift(base)
+    print(f"\n# Changes under {GENERATED} compared with the merge base")
     for path in committed:
-        print(f"committed\t{path}\t(the CI guard fails: restore it from the base and commit)")
-    for path in uncommitted:
-        print(f"uncommitted\t{path}\t(restore it from the base before you commit)")
+        print(f"HEAD\t{path}\t(the CI guard fails on the current head)")
+    for path in work_tree:
+        print(f"work tree\t{path}\t(the CI guard fails after a commit of the work tree)")
+    if committed or work_tree:
+        print(f"Restore the directory with `{restore_command(base)}`. Then commit the result.")
     print("\n# Markdown files outside the curated documentation (report them, do not delete them)")
     for path, state in working_files(base):
         print(f"{state}\t{path}")
