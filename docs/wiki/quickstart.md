@@ -332,7 +332,8 @@ python3 -m pip install leanblueprint
 - [`../../.github/workflows/docs-integrity.yml`](../../.github/workflows/docs-integrity.yml)
   checks that `AGENTS.md` exists and local markdown links resolve.
 - [`../../.github/workflows/pr-checks.yml`](../../.github/workflows/pr-checks.yml)
-  checks the pull request title with `scripts/check-pr-title.py`, and fails on an invalid title.
+  runs on each pull request, also on a stacked pull request. It checks the pull request title
+  with `scripts/check-pr-title.py`, and fails on an invalid title.
   It also runs `scripts/check-writing.py` on the changed prose and on the description. The
   writing job reports warnings only.
 - [`../../.github/workflows/kb-generated.yml`](../../.github/workflows/kb-generated.yml)

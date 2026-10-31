@@ -4,8 +4,8 @@ name: Pull Request Checks
 # environment variables. Never interpolate them into a shell command.
 
 on:
+  # Check every pull request, including a stacked one whose base is a different pull request.
   pull_request:
-    branches: ["main"]
     types: [opened, edited, reopened, synchronize, ready_for_review]
 
 concurrency:
