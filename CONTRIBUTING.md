@@ -11,6 +11,41 @@ Whether you are fixing bugs, improving documentation, or adding new formalizatio
 
 If you are interested in contributing but unsure where to begin, please get in touch.
 
+## Before You Start
+
+### Set Up and Validate
+
+On a new clone, download the build cache. Then run the full validation:
+
+```bash
+lake exe cache get
+./scripts/validate.sh
+```
+
+For a change to proofs or admissions, also run `./scripts/validate.sh --axioms`. The
+[quickstart](docs/wiki/quickstart.md) explains each check.
+
+### Check for Overlap
+
+Before you start a formalization, search the open pull requests and issues for the same target:
+
+```bash
+gh pr list -R Verified-zkEVM/ArkLib --state open --search "<paper key or topic>"
+gh issue list -R Verified-zkEVM/ArkLib --state open --search "<paper key or topic>"
+```
+
+If an open pull request covers the same declarations, contact its author in that pull request.
+Open a second pull request for the same target only if that author agrees.
+
+### Reuse Existing Definitions
+
+Search `ArkLib/` and Mathlib for a definition before you add one. If an existing definition is
+almost what you need, generalize it. Do not add a parallel definition. Do not add an `alias`
+that only restates a declaration in the form that a paper uses.
+
+A new abstraction needs a consumer, for example a theorem or a protocol that uses it. Put the
+consumer in the same pull request, or link the issue or the pull request that will add it.
+
 ### Large Contributions
 
 For substantial contributions, such as a new proof system, we strongly encourage the development of a [blueprint](https://github.com/PatrickMassot/leanblueprint) first.
@@ -47,14 +82,64 @@ The title should follow the format:
 
 **Subject:**
 * Use imperative, present tense ("change" not "changed" or "changes").
-* Do not capitalize the first letter.
+* Do not capitalize the first letter, unless the first word is a name such as `FRI`.
 * No dot (.) at the end.
 
+For a change that breaks downstream code, put `!` before the colon:
+`refactor(binius)!: remove the legacy folding API`. For documentation, use the type `doc`, not
+`docs`.
+
 ### Description
-The description should include:
-* Motivation for the change.
-* Contrast with previous behavior.
-* References to issues (e.g., `Closes #123`).
+
+Use the [pull request template](.github/pull_request_template.md). The description gives:
+
+1. What the pull request changes, and why.
+2. The headline declarations, and how each one relates to its source. A declaration can state the
+   same result, a weaker or a stronger result, a special case, or a generalization. Explain each
+   difference.
+3. The admissions (`sorry`) that the pull request adds or closes. For each headline theorem, the
+   axioms that it depends on.
+4. The validation commands that you ran, and the commit that you ran them on.
+5. Each breaking change: a renamed, removed, or changed declaration.
+6. The related issues and pull requests: `Closes #123`, the base of a stacked pull request, and
+   each overlapping pull request.
+7. The known gaps: the parts of the source that the pull request does not formalize, and the
+   open differences.
+
+Make sure that each claim in the title and the description agrees with the code. Reviewers
+compare the claims with the build and with the output of `#print axioms`.
+
+### Size and Stacking
+
+Give each pull request one topic. Put mechanical changes, for example renames and file moves, in
+a different pull request from mathematical changes.
+
+Divide a large contribution into a stack of pull requests. Make sure that each pull request in the
+stack builds and passes validation alone. The repository permits only squash merges and rebase
+merges. Thus a stack does not land as one merge commit. State the base of each stacked pull
+request in its description. The [quickstart](docs/wiki/quickstart.md#ci-mapping) explains how to
+run CI on a stacked pull request.
+
+### Writing
+
+Write all prose to the [writing standard](docs/wiki/writing.md). The standard applies to
+docstrings, comments, documentation, commit messages, and pull request and issue bodies. It adapts
+ASD-STE100 Simplified Technical English to mathematical text.
+
+### Tool-Assisted Contributions
+
+Many contributions use AI agents or other tools. The same rules apply to these contributions, and
+the author is responsible for all of the content:
+
+- State in the description which tools produced a large part of the code or the text.
+- Read each headline statement and the full description before you request a review.
+- Do not commit working files from a tool session, for example plans, handoff notes, or logs. Do
+  not refer to these files, or to their planning codes, in the code or in the documentation.
+- Describe the code as it is. Do not describe the session that produced it. Rules C3 and C4 of
+  the writing standard give the details.
+- Do not open more than one pull request for the same target from different tool runs.
+
+## Merge Requirements
 
 ### Review and Merge Readiness
 
@@ -82,18 +167,28 @@ linters. For proof changes, run `./scripts/validate.sh --axioms` and review the 
 and baseline diffs against `main`, including admissions in examples or default arguments that
 may not appear as exported declarations.
 
-## Style and Naming Guidelines
-We aim to adhere to the [Lean community's contribution guidelines](https://github.com/leanprover-community/leanprover-community.github.io/tree/lean4/templates/contribute).
-The default validation command runs ArkLib's Lean-native source-policy gate. You can run its
-text-and-import checks directly with `lake exe lint-style`. The normal `lake build` also loads a
-Lean syntax-tree plugin that rejects linter suppressions; neither gate supports exceptions. The
-text gate is an independent, fail-closed backstop. It rejects `set_option` for the `linter`, `pp`,
-`profiler` and `trace` option families and for the elaboration budgets `maxHeartbeats`,
-`maxRecDepth` and `synthInstance.*`, anywhere in the source, including comments. If a proof needs a
-larger budget, make it cheaper instead (see [Tactic Mode & Performance](#tactic-mode--performance)).
-`nolint` attribute heads are also reserved in active code and literal bodies. Put policy examples
-in `scripts/LintStyleFixtures`, which is outside the library-source closure; policy-like quoted
-identifiers and syntax quotations are reserved for the same reason.
+### Statement Correctness
+
+A build cannot find a wrong statement, and a proof of a wrong statement has no value. Before you
+request a merge, do these checks on each headline definition and theorem:
+
+1. Compare the statement with its source. Record each difference in the description and in the
+   paper page of the [knowledge base](docs/kb/README.md).
+2. Make sure that the hypotheses can all be true at the same time. An acceptance test in
+   `ArkLibTest/` gives the evidence.
+3. Make sure that the conclusion is not always true. For example, a probability bound must be less
+   than one for some parameters. A predicate must be false for some input.
+4. Make sure that a definition has no degenerate case that hides an error. Examples are an
+   `else True` branch and an empty relation.
+5. Make sure that each hypothesis is necessary, or say in the docstring why it stays.
+6. Try `trivial`, `simp`, `decide`, `aesop`, and `exact?` on each headline theorem, and read each
+   proof that you get. A proof by the theorem itself, or by a lemma that the pull request adds for
+   it, gives no evidence. If a proof does not use the main hypotheses or lemmas, the statement is
+   probably too weak. A proof by an existing library theorem shows a possible reuse, not a weak
+   statement.
+
+An admitted statement must be true. A false admitted statement lets a proof derive any claim. Before
+you admit a statement, check small cases or try to find a counterexample.
 
 ### Acceptance Tests
 
@@ -127,6 +222,13 @@ bodies can compile to a panic. Executable specifications allow testing and other
 that can expose mistaken or vacuous declarations; they complement satisfiable hypotheses and
 correctness proofs rather than establishing those properties by themselves. Follow
 [the computability workflow](docs/skills/make-computable.md) when an audit finds a blocker.
+
+## Style and Naming Guidelines
+
+We aim to adhere to the [Lean community's contribution guidelines](https://github.com/leanprover-community/leanprover-community.github.io/tree/lean4/templates/contribute).
+`./scripts/validate.sh` runs ArkLib's source-policy gate, and `lake build` rejects linter
+suppressions. Neither gate permits exceptions. The
+[quickstart](docs/wiki/quickstart.md#lean-source-policy-checks) describes both gates.
 
 ### Naming Conventions
 
@@ -228,6 +330,8 @@ When translating theorem statements into names, we use standard mappings for sym
 ### Syntax and Formatting
 
 * **Line Length**: Keep lines under 100 characters.
+* **File Length**: Keep each source file at or below 1500 lines. Divide a longer file into
+  modules.
 * **Indentation**: Use 2 spaces for indentation.
 * **Headers**: Start every file with the copyright block, crediting ArkLib Contributors and naming
   the authors. A file under `ArkLib/` then follows the module-system shape:

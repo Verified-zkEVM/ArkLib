@@ -28,6 +28,7 @@ After using a skill, review whether it should be updated:
   7, and verify at runtime with `#eval`.
 - [`fix-lean-warnings.md`](fix-lean-warnings.md) - workflow for cleaning Lean 4 linter and style
   warnings safely and incrementally.
-- [`make-pr-ready.md`](make-pr-ready.md) - prepare a branch for review: audit API names,
-  self-contained docstrings, computability, proof structure and measured performance; validate
-  warnings and axiom boundaries, citation ownership and KB coverage; sweep stale references.
+- [`make-pr-ready.md`](make-pr-ready.md) - prepare a branch for review. The skill audits API
+  names, docstrings, computability, proofs, statements, claims, overlap, and prose. It validates
+  warnings, axioms, citations, and KB coverage, and it finds stale references. It also drafts the
+  pull request description from the template.

@@ -99,6 +99,13 @@ controls, and nonstandard space characters that can conceal source changes. It a
 blanket package-root imports. The normal `lake build` loads ArkLib's Lean syntax-tree plugin, which
 rejects source-level linter suppressions in their actual parsed context.
 
+The text gate is a separate check that fails closed. It rejects `set_option` for `linter`,
+`pp`, `profiler`, `trace`, `maxHeartbeats`, `maxRecDepth`, and `synthInstance.*` everywhere in
+production source. It also rejects `nolint` attribute heads in active
+code and in literal bodies. A quoted identifier or a syntax quotation that looks like a forbidden
+spelling also fails the gate. Put policy examples in `scripts/LintStyleFixtures`, which is outside
+the library source.
+
 The header policy understands the Lean module system, so `module`, `public import`, `meta import`
 and `import all` all parse, and it pins the canonical header order every file under `ArkLib/`
 follows. See [`module-system.md`](module-system.md).
