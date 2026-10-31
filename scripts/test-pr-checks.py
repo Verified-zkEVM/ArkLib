@@ -96,6 +96,12 @@ class WritingRuleTests(unittest.TestCase):
         self.assertEqual(findings("1. " + " ".join(["word"] * 21) + "."), ["S1"])
         self.assertEqual(findings("- " + " ".join(["word"] * 21) + "."), [])
 
+    def test_text_in_parentheses_is_a_separate_sentence(self) -> None:
+        inner = " ".join(["word"] * 40)
+        self.assertEqual(findings(f"The bound holds ({inner})."), ["S1"])
+        self.assertEqual(findings(f"The bound holds (see ({inner}))."), ["S1"])
+        self.assertEqual(findings("The bound holds (for each code)."), [])
+
     def test_one_word_elements(self) -> None:
         sentence = ("The bound `Code.dist_le_of_mem (h : x ∈ C)` and $\\delta \\le 1 - \\sqrt{\\rho}$ "
                     "from [BCIKS20, Theorem 1.2] and [the page](https://example.org/a.b) hold "
@@ -129,6 +135,7 @@ class WritingRuleTests(unittest.TestCase):
         self.assertEqual(findings("The witness is missing."), [])
         self.assertEqual(findings("Using the lemma, we bound the error."), ["V2"])
         self.assertEqual(findings("Folding halves the length of the word."), [])
+        self.assertEqual(findings("During a merge, the base is the merge base."), [])
         self.assertEqual(findings("The request may have failed."), [])
 
     def test_bare_this(self) -> None:
@@ -165,6 +172,16 @@ class LeanExtractionTests(unittest.TestCase):
         self.assertNotIn(5, lines)
         rules = {(item.line, item.rule) for item in WRITING.check_blocks(blocks)}
         self.assertEqual(rules, {(3, "U1"), (4, "U1"), (6, "W1")})
+
+    def test_character_literals_do_not_start_strings(self) -> None:
+        source = ("def quote : Char := '\"'\n"
+                  "def escaped : Char := '\\''\n"
+                  "def x' : Nat := 1\n"
+                  "/-- The definition utilizes a quote. -/\n"
+                  "def y : Nat := 2\n")
+        blocks = WRITING.lean_blocks("A.lean", source)
+        rules = {(item.line, item.rule) for item in WRITING.check_blocks(blocks)}
+        self.assertEqual(rules, {(4, "W1")})
 
 
 class ChangedLineTests(unittest.TestCase):

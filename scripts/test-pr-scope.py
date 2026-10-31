@@ -98,13 +98,51 @@ class ScopeTests(unittest.TestCase):
             run("rm", "-q", "tmp.lean")
             self.assertEqual(SCOPE.deleted_paths("origin/main"), ["gone.lean", "old.lean"])
 
-    def test_generated_drift(self) -> None:
+    def test_generated_drift_and_its_restoration(self) -> None:
         with repository({"docs/kb/_generated/refs.json": "{}\n"}):
             write("docs/kb/_generated/refs.json", '{"a": 1}\n')
+            write("docs/kb/_generated/extra.json", "{}\n")
             commit()
-            committed, uncommitted = SCOPE.generated_drift("origin/main")
-            self.assertEqual(committed, ["docs/kb/_generated/refs.json"])
-            self.assertEqual(uncommitted, [])
+            drift = ["docs/kb/_generated/extra.json", "docs/kb/_generated/refs.json"]
+            self.assertEqual(SCOPE.generated_drift("origin/main"), (drift, drift))
+            subprocess.run(SCOPE.restore_command("origin/main"), shell=True, check=True)
+            self.assertEqual(SCOPE.generated_drift("origin/main"), (drift, []))
+            commit("restore the generated files")
+            self.assertEqual(SCOPE.generated_drift("origin/main"), ([], []))
+
+    def test_generated_change_of_the_base_is_not_drift(self) -> None:
+        with repository({"docs/kb/_generated/refs.json": "{}\n", "a.lean": "a\n"}):
+            write("a.lean", "topic\n")
+            commit()
+            run("checkout", "-q", "main")
+            write("docs/kb/_generated/refs.json", '{"new": 1}\n')
+            commit("refresh the generated files on main")
+            run("update-ref", "refs/remotes/origin/main", "main")
+            run("checkout", "-q", "topic")
+            self.assertEqual(SCOPE.generated_drift("origin/main"), ([], []))
+            # The restoration must not copy the newer files of the base into the branch.
+            subprocess.run(SCOPE.restore_command("origin/main"), shell=True, check=True)
+            ci_view = subprocess.run(
+                ["git", "diff", "--name-only", "origin/main...HEAD", "--", SCOPE.GENERATED],
+                check=True, capture_output=True, text=True).stdout
+            self.assertEqual(ci_view, "")
+            self.assertEqual(SCOPE.generated_drift("origin/main"), ([], []))
+
+    def test_edit_after_a_committed_rename_keeps_the_old_path(self) -> None:
+        with repository({"old.lean": "line\n" * 20, "doc.md": "Refer to old.lean.\n"}):
+            run("mv", "old.lean", "new.lean")
+            commit()
+            write("new.lean", "line\n" * 20 + "edit\n")
+            self.assertEqual(SCOPE.deleted_paths("origin/main"), ["old.lean"])
+            self.assertEqual([path for path, _, _ in SCOPE.stale_references("origin/main")],
+                             ["old.lean"])
+
+    def test_edit_after_a_committed_addition_keeps_the_working_file(self) -> None:
+        with repository({"README.md": "r\n"}):
+            write("NOTES.md", "notes\n")
+            commit()
+            write("NOTES.md", "more notes\n")
+            self.assertEqual(SCOPE.working_files("origin/main"), [("NOTES.md", "added")])
 
     def test_working_files(self) -> None:
         with repository({"README.md": "r\n"}):
