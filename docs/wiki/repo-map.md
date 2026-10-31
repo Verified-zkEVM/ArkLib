@@ -228,7 +228,8 @@ home_page/            site assets and assembled website root
 - `ArkLib/AGM/Basic.lean` defines algebraic group representations (`GroupRepresentation`): the
   scalars an algebraic adversary reports for each group element it outputs.
 - `ArkLib/Commitments/Functional/BitZ/` holds the supporting algebra and probability bounds of
-  BitZ: `ExponentLift` for the bit inner product in an exponent, `Round1` for the honest-message
+  BitZ: `ExponentLift` for the bit inner product in an exponent, `CrtVariant` for its relaxation
+  by a second grand product modulo `ℓ₁`, `Round1` for the honest-message
   coefficient bound and fixed-witness fingerprinting error, `Round2` for the deterministic
   tensor implication, and `OutOfDomain` for the multilinear-list collision bound. There is no
   `Commitment.Scheme` instance or composed protocol security theorem yet. The
