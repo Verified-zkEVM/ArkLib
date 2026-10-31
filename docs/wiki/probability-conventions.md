@@ -27,7 +27,9 @@ and then `α` uniformly from `Fin k → ZMod q` gives every prime equal weight. 
 the dependent type of all pairs instead weights `q` by `q^k`. The reusable bridge and bounds live
 in `ArkLib/Data/MvPolynomial/PrimeFingerprintProbability.lean`; its test distinguishes the laws
 using primes `{2, 3}` and one variable. Keep the counting input in `PrimeFingerprint` independent
-of sampler assumptions.
+of sampler assumptions. To compare two events of this sampler, use
+`MvPolynomial.prEvent_modPointSample_mono`: the two-stage notation unfolds to a bind of maps, so
+`prEvent_mono` does not apply to it directly.
 
 Use `ProtocolSpec.instSampleableTypeChallengeSeqCompose` and
 `ProtocolSpec.instSampleableTypeChallengeAppend` when exposing challenge samplers for composed

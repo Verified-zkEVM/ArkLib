@@ -26,6 +26,8 @@ fibres `𝔽_qᵐ` have different sizes (see the test).
 * `MvPolynomial.modPointSample` is the sampler of a point of `𝔽_qᵐ`, for a prime `q ∈ P`;
 * `MvPolynomial.prEvent_fingerprint_eq_average` identifies the probability that `h mod q` vanishes
   at the sampled point with the average of `MvPolynomial.zeroCountMod`;
+* `MvPolynomial.prEvent_modPointSample_mono` compares two events of the two-stage sampler: if one
+  implies the other at every prime and point, its probability is at most that of the other.
 * `MvPolynomial.prEvent_fingerprint_le` is the bound of `MvPolynomial.avg_zeroCountMod_div_le` as a
   probability.
 
@@ -90,6 +92,27 @@ theorem prEvent_fingerprint_eq_average {m : ℕ} (h : MvPolynomial (Fin m) ℤ) 
   rw [← Finset.mul_sum, mul_comm, ← div_eq_mul_inv]
   exact congrArg (fun x : ENNReal => x / #P)
     (Finset.sum_coe_sort P (fun q => ENNReal.ofReal ((zeroCountMod h q : ℝ) / (q : ℝ) ^ m)))
+
+/-- **Monotonicity for the two-stage sampler.** If the event `p q α` implies `r q α` at every prime
+`q ∈ P` and every point `α` of `𝔽_qᵐ`, then for `q` uniform in `P` and then `α` uniform in `𝔽_qᵐ`,
+`p q α` is no more likely than `r q α`. -/
+theorem prEvent_modPointSample_mono {m : ℕ} {P : Finset ℕ} [SampleableType ↥P]
+    (hP : ∀ q ∈ P, q.Prime) (p r : (q : ↥P) → (Fin m → ZMod q.val) → Prop)
+    (h : ∀ q α, p q α → r q α) :
+    Pr{let q ← $ᵗ ↥P; let α ← modPointSample hP q}[p q α] ≤
+      Pr{let q ← $ᵗ ↥P; let α ← modPointSample hP q}[r q α] := by
+  classical
+  change Pr{let b ← ($ᵗ ↥P >>= fun q => (fun α => p q α) <$> modPointSample hP q)}[b] ≤
+    Pr{let b ← ($ᵗ ↥P >>= fun q => (fun α => r q α) <$> modPointSample hP q)}[b]
+  have hp := prEvent_bind_eq_sum_fintype ($ᵗ ↥P)
+    (fun q => (fun α => p q α) <$> modPointSample hP q) id
+  have hr := prEvent_bind_eq_sum_fintype ($ᵗ ↥P)
+    (fun q => (fun α => r q α) <$> modPointSample hP q) id
+  simp only [id_map] at hp hr
+  rw [hp, hr]
+  refine Finset.sum_le_sum fun q _ => ?_
+  gcongr
+  exact prEvent_mono _ _ _ (h q)
 
 /-- **Fingerprinting for the two-stage sampler.** Let `h ∈ ℤ[X₁, …, Xₘ]` be nonzero with total
 degree `≤ d` and all coefficients of absolute value `≤ M`, and let `P` be a set of primes, all
