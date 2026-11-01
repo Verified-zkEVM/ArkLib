@@ -146,7 +146,7 @@ jobs:
           cat "$RUNNER_TEMP/source-trust.md" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Set up Lean environment
-        uses: leanprover/lean-action@v1.6.0
+        uses: leanprover/lean-action@v1.7.0
         with:
           auto-config: false
           build: false
