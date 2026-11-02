@@ -511,6 +511,7 @@ public import
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.RegularEquation
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TupleSpecialization
+public import ArkLib.Data.CodingTheory.ReedSolomon.PaperGuide
 public import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement.ConstantCode
 public import ArkLib.Data.CodingTheory.ReedSolomon.ReciprocalWord

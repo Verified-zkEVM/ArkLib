@@ -27425,7 +27425,7 @@
         {
           "doc": "The multiplicity at scale `300` for the uniform derivative order.",
           "kind": "def",
-          "line": 50,
+          "line": 51,
           "name": "ReedSolomon.HiddenDerivative.RatePartition.uniformMathematicalMultiplicity",
           "namespace": "ReedSolomon.HiddenDerivative.RatePartition",
           "short_name": "uniformMathematicalMultiplicity",
@@ -27434,7 +27434,7 @@
         {
           "doc": "The strict total-jet cap at the uniform mathematical multiplicity.",
           "kind": "def",
-          "line": 54,
+          "line": 55,
           "name": "ReedSolomon.HiddenDerivative.RatePartition.uniformMathematicalJetBound",
           "namespace": "ReedSolomon.HiddenDerivative.RatePartition",
           "short_name": "uniformMathematicalJetBound",
@@ -27443,7 +27443,7 @@
         {
           "doc": "The mathematical block-length threshold, one more than the strict jet cap.",
           "kind": "def",
-          "line": 58,
+          "line": 59,
           "name": "ReedSolomon.HiddenDerivative.RatePartition.uniformMathematicalLength",
           "namespace": "ReedSolomon.HiddenDerivative.RatePartition",
           "short_name": "uniformMathematicalLength",
@@ -27452,7 +27452,7 @@
         {
           "doc": "When the multiplicity is positive, the mathematical length is its rounded gap ratio.",
           "kind": "theorem",
-          "line": 62,
+          "line": 63,
           "name": "ReedSolomon.HiddenDerivative.RatePartition.uniformMathematicalLength_eq_ceil",
           "namespace": "ReedSolomon.HiddenDerivative.RatePartition",
           "short_name": "uniformMathematicalLength_eq_ceil",
@@ -27461,7 +27461,7 @@
         {
           "doc": "The scale-300 multiplicity bounds the uniform derivative order by the jet cap.",
           "kind": "theorem",
-          "line": 76,
+          "line": 77,
           "name": "ReedSolomon.HiddenDerivative.RatePartition.uniformDerivativeOrder_le_mathematicalJetBound",
           "namespace": "ReedSolomon.HiddenDerivative.RatePartition",
           "short_name": "uniformDerivativeOrder_le_mathematicalJetBound",
@@ -27470,7 +27470,7 @@
         {
           "doc": "Length at least the mathematical threshold gives a positive multiplicity, a jet cap below the length, and a multiplicity bounded by both the length and `\u03b4\u00b2 n`.",
           "kind": "theorem",
-          "line": 99,
+          "line": 100,
           "name": "ReedSolomon.HiddenDerivative.RatePartition.uniformMathematical_integer_guards",
           "namespace": "ReedSolomon.HiddenDerivative.RatePartition",
           "short_name": "uniformMathematical_integer_guards",
@@ -27479,7 +27479,7 @@
         {
           "doc": "Eligible partition exponents have total jet degree at most the uniform mathematical cap.",
           "kind": "theorem",
-          "line": 132,
+          "line": 133,
           "name": "ReedSolomon.HiddenDerivative.RatePartition.uniformMathematical_totalJetDegree_le",
           "namespace": "ReedSolomon.HiddenDerivative.RatePartition",
           "short_name": "uniformMathematical_totalJetDegree_le",
@@ -27488,7 +27488,7 @@
         {
           "doc": "",
           "kind": "theorem",
-          "line": 142,
+          "line": 143,
           "name": "ReedSolomon.HiddenDerivative.RatePartition.mathematical_uniform_margin_numeric",
           "namespace": "ReedSolomon.HiddenDerivative.RatePartition",
           "short_name": "mathematical_uniform_margin_numeric",
@@ -27497,7 +27497,7 @@
         {
           "doc": "",
           "kind": "theorem",
-          "line": 157,
+          "line": 158,
           "name": "ReedSolomon.HiddenDerivative.RatePartition.finiteRatio_gt_of_mathematicalBase",
           "namespace": "ReedSolomon.HiddenDerivative.RatePartition",
           "short_name": "finiteRatio_gt_of_mathematicalBase",
@@ -27506,7 +27506,7 @@
         {
           "doc": "The low-rate branch retains a strict finite-ratio margin at scale `300`.",
           "kind": "theorem",
-          "line": 193,
+          "line": 194,
           "name": "ReedSolomon.HiddenDerivative.RatePartition.uniformMathematical_low_ratio_gt",
           "namespace": "ReedSolomon.HiddenDerivative.RatePartition",
           "short_name": "uniformMathematical_low_ratio_gt",
@@ -27515,7 +27515,7 @@
         {
           "doc": "The high-rate branch retains a strict finite-ratio margin at scale `300`.",
           "kind": "theorem",
-          "line": 204,
+          "line": 205,
           "name": "ReedSolomon.HiddenDerivative.RatePartition.uniformMathematical_high_ratio_gt",
           "namespace": "ReedSolomon.HiddenDerivative.RatePartition",
           "short_name": "uniformMathematical_high_ratio_gt",
@@ -27524,7 +27524,7 @@
         {
           "doc": "Choose a scale-300 mathematical envelope uniformly in the actual code rate.",
           "kind": "theorem",
-          "line": 217,
+          "line": 218,
           "name": "ReedSolomon.HiddenDerivative.RatePartition.exists_mathematicalRatePartitionEnvelope",
           "namespace": "ReedSolomon.HiddenDerivative.RatePartition",
           "short_name": "exists_mathematicalRatePartitionEnvelope",
@@ -27533,16 +27533,25 @@
         {
           "doc": "The capacity length threshold: the mathematical length, and at least `4 \u03bd / \u03b4\u00b2` for the jet cap `\u03bd`, so that message dimensions up to the jet cap lie in the Johnson regime.",
           "kind": "def",
-          "line": 239,
+          "line": 240,
           "name": "ReedSolomon.HiddenDerivative.RatePartition.uniformMathematicalCapacityLength",
           "namespace": "ReedSolomon.HiddenDerivative.RatePartition",
           "short_name": "uniformMathematicalCapacityLength",
           "signature": "def uniformMathematicalCapacityLength (\u03b4 : \u211d) : \u2115 :="
         },
         {
-          "doc": "Guards of the scale-`300` certificate: for `0 < \u03b4 < 6/25` and length at least `uniformMathematicalLength \u03b4`, the uniform order `d` is at least `500`, `\u03b4 < 1`, `1 < 300 d\u00b3`, and the jet cap is positive and at least `d`.",
+          "doc": "For `0 < \u03b4 < 6/25` the capacity length threshold is `\u23084 \u03bd / \u03b4\u00b2\u2309\u208a` for the jet cap `\u03bd`: the interpolation length `\u03bd + 1` never exceeds it.",
           "kind": "theorem",
           "line": 245,
+          "name": "ReedSolomon.HiddenDerivative.RatePartition.uniformMathematicalCapacityLength_eq_ceil",
+          "namespace": "ReedSolomon.HiddenDerivative.RatePartition",
+          "short_name": "uniformMathematicalCapacityLength_eq_ceil",
+          "signature": "theorem uniformMathematicalCapacityLength_eq_ceil {\u03b4 : \u211d} (h\u03b4 : 0 < \u03b4) (h\u03b4small : \u03b4 < 6 / 25) :"
+        },
+        {
+          "doc": "Guards of the scale-`300` certificate: for `0 < \u03b4 < 6/25` and length at least `uniformMathematicalLength \u03b4`, the uniform order `d` is at least `500`, `\u03b4 < 1`, `1 < 300 d\u00b3`, and the jet cap is positive and at least `d`.",
+          "kind": "theorem",
+          "line": 265,
           "name": "ReedSolomon.HiddenDerivative.RatePartition.uniformMathematical_certificate_guards",
           "namespace": "ReedSolomon.HiddenDerivative.RatePartition",
           "short_name": "uniformMathematical_certificate_guards",
@@ -27551,7 +27560,7 @@
         {
           "doc": "A characteristic that is zero or exceeds `max (k - 1) \u03bd`, for the jet cap `\u03bd`, is zero or exceeds `max (K - 1) \u03bd` for the ambient dimension `K = max k (d + 1)` at the uniform order `d`.",
           "kind": "theorem",
-          "line": 263,
+          "line": 283,
           "name": "ReedSolomon.HiddenDerivative.RatePartition.uniformMathematical_ringChar_guard",
           "namespace": "ReedSolomon.HiddenDerivative.RatePartition",
           "short_name": "uniformMathematical_ringChar_guard",
@@ -27560,7 +27569,7 @@
         {
           "doc": "At length at least `uniformMathematicalCapacityLength \u03b4`, every message dimension `k` at most the jet cap satisfies `4 (k - 1) \u2264 \u03b4\u00b2 n`.",
           "kind": "theorem",
-          "line": 276,
+          "line": 296,
           "name": "ReedSolomon.HiddenDerivative.RatePartition.four_mul_pred_le_sq_mul_of_le_uniformMathematicalJetBound",
           "namespace": "ReedSolomon.HiddenDerivative.RatePartition",
           "short_name": "four_mul_pred_le_sq_mul_of_le_uniformMathematicalJetBound",
@@ -56030,6 +56039,28 @@
           "namespace": "ReedSolomon",
           "short_name": "exists_polynomialTuple_specialization_injective_avoiding_roots",
           "signature": "theorem exists_polynomialTuple_specialization_injective_avoiding_roots [Infinite E]"
+        }
+      ]
+    },
+    "ArkLib/Data/CodingTheory/ReedSolomon/PaperGuide.lean": {
+      "declarations": [
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 62,
+          "name": "chooses",
+          "namespace": "",
+          "short_name": "chooses",
+          "signature": "theorem chooses one exceptional challenge set after the received words and before both the"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 147,
+          "name": "into",
+          "namespace": "",
+          "short_name": "into",
+          "signature": "theorem into a width-independent exceptional set for a row-wise interleaving, over arbitrary"
         }
       ]
     },
@@ -149210,8 +149241,8 @@
   },
   "stats": {
     "ArkLib": {
-      "declarations": 16069,
-      "files": 1155
+      "declarations": 16072,
+      "files": 1156
     }
   }
 }

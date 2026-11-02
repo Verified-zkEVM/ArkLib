@@ -27,7 +27,8 @@ dimension and agreement.
   `uniformMathematical_high_ratio_gt`.
 * `exists_mathematicalRatePartitionEnvelope`, a specialization of `exists_ratePartitionEnvelope`.
 * `uniformMathematicalCapacityLength`, the length threshold combining the mathematical length with
-  the Johnson length `⌈4 ν / δ²⌉₊` at the jet cap `ν`.
+  the Johnson length `⌈4 ν / δ²⌉₊` at the jet cap `ν`, and
+  `uniformMathematicalCapacityLength_eq_ceil`: below gap `6/25` the threshold is that ceiling.
 * `uniformMathematical_certificate_guards` and `uniformMathematical_ringChar_guard`: the order,
   scale, jet-cap and characteristic guards of the scale-`300` certificate.
 * `four_mul_pred_le_sq_mul_of_le_uniformMathematicalJetBound`: message dimensions up to the jet cap
@@ -238,6 +239,25 @@ theorem exists_mathematicalRatePartitionEnvelope {δ : ℝ} {n k A : ℕ}
 cap `ν`, so that message dimensions up to the jet cap lie in the Johnson regime. -/
 def uniformMathematicalCapacityLength (δ : ℝ) : ℕ :=
   max (uniformMathematicalLength δ) ⌈(4 : ℝ) * uniformMathematicalJetBound δ / δ ^ 2⌉₊
+
+/-- For `0 < δ < 6/25` the capacity length threshold is `⌈4 ν / δ²⌉₊` for the jet cap `ν`: the
+interpolation length `ν + 1` never exceeds it. -/
+theorem uniformMathematicalCapacityLength_eq_ceil {δ : ℝ} (hδ : 0 < δ) (hδsmall : δ < 6 / 25) :
+    uniformMathematicalCapacityLength δ =
+      ⌈(4 : ℝ) * uniformMathematicalJetBound δ / δ ^ 2⌉₊ := by
+  have hd := uniformDerivativeOrder_ge_519 hδ hδsmall
+  have hdν := uniformDerivativeOrder_le_mathematicalJetBound hδ hδsmall
+  have hν : (1 : ℝ) ≤ uniformMathematicalJetBound δ := by exact_mod_cast (by omega : 1 ≤ _)
+  have hδsq : 0 < δ ^ 2 := by positivity
+  have hδsqOne : δ ^ 2 < 1 := by nlinarith
+  have hlen : ((uniformMathematicalJetBound δ : ℝ) + 1) ≤
+      (4 : ℝ) * uniformMathematicalJetBound δ / δ ^ 2 := by
+    rw [le_div_iff₀ hδsq]
+    nlinarith
+  refine max_eq_right ?_
+  have hceil := hlen.trans (Nat.le_ceil _)
+  rw [uniformMathematicalLength]
+  exact_mod_cast hceil
 
 /-- Guards of the scale-`300` certificate: for `0 < δ < 6/25` and length at least
 `uniformMathematicalLength δ`, the uniform order `d` is at least `500`, `δ < 1`,
