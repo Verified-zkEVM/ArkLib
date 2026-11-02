@@ -100,10 +100,13 @@ Corollary 8.8 keep their guard even at `k = 1`; for constant codes use
 * The uniform first-order theorems at gap `6/25` (Theorem 5.7) and the uniform capacity list and
   line theorems (Theorems 1.2 and 8.1, and Corollary 6.3) need only characteristic zero or larger
   than `k - 1`. Their proofs handle the remaining small characteristics separately.
-* Polynomial curves and powers batching (Theorem 8.5, Corollary 8.6, and the powers part of
-  Theorem 8.1) keep the jet-degree guard: characteristic zero or larger than `max (k - 1) ν`,
-  with `ν = capacityPowerJetBound δ`. The degree-only guard of the line theorem does not transfer
-  to curves.
+* Polynomial curves and powers batching keep a jet-degree guard; the degree-only guard of the
+  line theorem does not transfer to curves. The general interfaces (Theorem 8.5 and
+  Corollary 8.6) require characteristic zero or larger than `max (K - 1) ν`, where `ν` is the
+  certificate's jet cap and `K` the recurrence length (the paper takes `K = max k (d + 1)`, giving
+  `max (k - 1) d ν`); the sharp stagewise form states the `K` part as binomial nonvanishing. The
+  powers part of Theorem 8.1 specializes this to `max (k - 1) ν` with
+  `ν = capacityPowerJetBound δ`.
 * The fixed-order results (Corollary 8.8) require characteristic zero or larger than the maximum
   of `k - 1`, the derivative order, and the jet cap.
 
@@ -182,7 +185,7 @@ Corollary 8.8 keep their guard even at `k = 1`; for constant codes use
   `exists_exceptional_exactPowerAgreement_of_certificate_of_jetCharacteristic` bounds the
   exceptional set by `ℓ C n^(d+1)` when the certificate height is at most `ℓ h`, under the
   jet-degree guard; `exists_exceptional_exactPowerAgreement_of_certificate` replaces the guard by
-  characteristic zero or at least `n`.
+  characteristic zero or at least `n`, under the additional hypothesis `ν < n` on the jet cap.
 * Corollary 8.8, lists and line MCA from the derivative-order condition `Γ(ρ, a, d) > 1` with
   `d ≥ 500`: `exists_ratePartition_list_bound` and
   `exists_ratePartition_line_exactCorrelatedPair_parameters`, with the gate
