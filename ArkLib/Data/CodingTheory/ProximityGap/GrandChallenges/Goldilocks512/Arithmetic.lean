@@ -1,0 +1,995 @@
+/-
+Copyright (c) 2026 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Nam Ngo
+-/
+module
+
+public import Mathlib.Init
+
+/-!
+# Kernel-checked slot-count inequalities for `RS[512, 128]`
+
+This file checks, by kernel reduction, the two numerical inequalities
+`rowSlotBound < heightSlotCount` that the first-order hidden-derivative certificate theorem needs
+for the Reed--Solomon code of length `n = 512` and dimension `k = 128` (so `D = k - 1 = 127`) at
+agreement `A = 239`:
+
+* `(m, M, μ, h) = (609, 280, 1148, 271081)`, used for mutual correlated agreement;
+* `(m, M, μ, h) = (546, 260, 1020, 10 ^ 9)`, used for list decoding.
+
+The counting functions are restated over a structurally recursive `sumRange`, which the kernel
+reduces directly; `Goldilocks512.Lower` proves they agree with the library definitions
+`firstOrderCurveShiftedHeightSlotCount` and `firstOrderCurveShiftedRowSlotBound`.
+
+Each outer sum has more than a thousand terms, and reducing it in one step exhausts memory. The
+sums are therefore split into blocks of 30 terms. Every block value is checked by `decide +kernel`,
+and the blocks are reassembled with `sumRange_add`.
+-/
+
+@[expose] public section
+
+namespace ProximityGap.GrandChallenges.Goldilocks512.Arithmetic
+
+/-- `sumRange N f = f 0 + ⋯ + f (N - 1)`, by structural recursion so that the kernel can reduce
+it. -/
+def sumRange : Nat → (Nat → Nat) → Nat
+  | 0, _ => 0
+  | N + 1, f => sumRange N f + f N
+
+/-- Kernel-reducible restatement of `firstOrderCurveShiftedHeightSlotCount`. -/
+def heightSlotCount (D A m M μ ℓ h : Nat) : Nat :=
+  sumRange (μ + 1) fun t ↦
+    sumRange (min t M + 1) fun b ↦ (m * A + b - D * t) * (h + 1 - ℓ * t)
+
+/-- Kernel-reducible restatement of `firstOrderGradedSourceCount`. -/
+def gradedSourceCount (D A m M s t : Nat) : Nat :=
+  if s + (D - 1) * t < m * A then min t s + 1 - (t - M) else 0
+
+/-- Kernel-reducible restatement of `firstOrderGradedRankBound`. -/
+def gradedRankBound (D A m M t : Nat) : Nat :=
+  sumRange m fun s ↦ min (m - s) (gradedSourceCount D A m M s t)
+
+/-- Kernel-reducible restatement of `firstOrderCurveShiftedRowSlotBound`. -/
+def rowSlotBound (D A m M μ n ℓ h : Nat) : Nat :=
+  sumRange (μ + 1) fun t ↦ n * gradedRankBound D A m M t * (h + 1 - ℓ * t)
+
+/-- Splitting a range sum into an initial segment and a shifted tail. -/
+theorem sumRange_add (a b : Nat) (f : Nat → Nat) :
+    sumRange (a + b) f = sumRange a f + sumRange b (fun i ↦ f (a + i)) := by
+  induction b with
+  | zero => rfl
+  | succ b ih =>
+    change sumRange (a + b) f + f (a + b) =
+      sumRange a f + (sumRange b (fun i ↦ f (a + i)) + f (a + b))
+    rw [ih, Nat.add_assoc]
+
+/-! ### Parameters `(m, M, μ, h) = (609, 280, 1148, 271081)` (mutual correlated agreement) -/
+
+/-- Outer summand of `heightSlotCount 127 239 609 280 1148 1 271081`. -/
+def mcaHeightTerm (t : Nat) : Nat :=
+  sumRange (min t 280 + 1) fun b ↦ (609 * 239 + b - 127 * t) * (271081 + 1 - 1 * t)
+
+/-- Outer summand of `rowSlotBound 127 239 609 280 1148 512 1 271081`. -/
+def mcaRowTerm (t : Nat) : Nat :=
+  512 * gradedRankBound 127 239 609 280 t * (271081 + 1 - 1 * t)
+
+theorem mca_height_chunk_0 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (0 + i)) = 18037591702040 := by
+  decide +kernel
+theorem mca_height_prefix_0 : sumRange 30 mcaHeightTerm = 18037591702040 := by
+  have h := sumRange_add 0 30 mcaHeightTerm
+  rwa [mca_height_chunk_0] at h
+theorem mca_height_chunk_1 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (30 + i)) = 51688956524915 := by
+  decide +kernel
+theorem mca_height_prefix_1 : sumRange 60 mcaHeightTerm = 69726548226955 := by
+  have h := sumRange_add 30 30 mcaHeightTerm
+  rwa [mca_height_prefix_0, mca_height_chunk_1] at h
+theorem mca_height_chunk_2 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (60 + i)) = 83481619221290 := by
+  decide +kernel
+theorem mca_height_prefix_2 : sumRange 90 mcaHeightTerm = 153208167448245 := by
+  have h := sumRange_add 60 30 mcaHeightTerm
+  rwa [mca_height_prefix_1, mca_height_chunk_2] at h
+theorem mca_height_chunk_3 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (90 + i)) = 113416194581165 := by
+  decide +kernel
+theorem mca_height_prefix_3 : sumRange 120 mcaHeightTerm = 266624362029410 := by
+  have h := sumRange_add 90 30 mcaHeightTerm
+  rwa [mca_height_prefix_2, mca_height_chunk_3] at h
+theorem mca_height_chunk_4 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (120 + i)) = 141493297394540 := by
+  decide +kernel
+theorem mca_height_prefix_4 : sumRange 150 mcaHeightTerm = 408117659423950 := by
+  have h := sumRange_add 120 30 mcaHeightTerm
+  rwa [mca_height_prefix_3, mca_height_chunk_4] at h
+theorem mca_height_chunk_5 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (150 + i)) = 167713542451415 := by
+  decide +kernel
+theorem mca_height_prefix_5 : sumRange 180 mcaHeightTerm = 575831201875365 := by
+  have h := sumRange_add 150 30 mcaHeightTerm
+  rwa [mca_height_prefix_4, mca_height_chunk_5] at h
+theorem mca_height_chunk_6 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (180 + i)) = 192077544541790 := by
+  decide +kernel
+theorem mca_height_prefix_6 : sumRange 210 mcaHeightTerm = 767908746417155 := by
+  have h := sumRange_add 180 30 mcaHeightTerm
+  rwa [mca_height_prefix_5, mca_height_chunk_6] at h
+theorem mca_height_chunk_7 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (210 + i)) = 214585918455665 := by
+  decide +kernel
+theorem mca_height_prefix_7 : sumRange 240 mcaHeightTerm = 982494664872820 := by
+  have h := sumRange_add 210 30 mcaHeightTerm
+  rwa [mca_height_prefix_6, mca_height_chunk_7] at h
+theorem mca_height_chunk_8 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (240 + i)) = 235239278983040 := by
+  decide +kernel
+theorem mca_height_prefix_8 : sumRange 270 mcaHeightTerm = 1217733943855860 := by
+  have h := sumRange_add 240 30 mcaHeightTerm
+  rwa [mca_height_prefix_7, mca_height_chunk_8] at h
+theorem mca_height_chunk_9 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (270 + i)) = 248449391035610 := by
+  decide +kernel
+theorem mca_height_prefix_9 : sumRange 300 mcaHeightTerm = 1466183334891470 := by
+  have h := sumRange_add 270 30 mcaHeightTerm
+  rwa [mca_height_prefix_8, mca_height_chunk_9] at h
+theorem mca_height_chunk_10 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (300 + i)) = 241380719065270 := by
+  decide +kernel
+theorem mca_height_prefix_10 : sumRange 330 mcaHeightTerm = 1707564053956740 := by
+  have h := sumRange_add 300 30 mcaHeightTerm
+  rwa [mca_height_prefix_9, mca_height_chunk_10] at h
+theorem mca_height_chunk_11 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (330 + i)) = 232658346770470 := by
+  decide +kernel
+theorem mca_height_prefix_11 : sumRange 360 mcaHeightTerm = 1940222400727210 := by
+  have h := sumRange_add 330 30 mcaHeightTerm
+  rwa [mca_height_prefix_10, mca_height_chunk_11] at h
+theorem mca_height_chunk_12 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (360 + i)) = 223937901573670 := by
+  decide +kernel
+theorem mca_height_prefix_12 : sumRange 390 mcaHeightTerm = 2164160302300880 := by
+  have h := sumRange_add 360 30 mcaHeightTerm
+  rwa [mca_height_prefix_11, mca_height_chunk_12] at h
+theorem mca_height_chunk_13 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (390 + i)) = 215219383474870 := by
+  decide +kernel
+theorem mca_height_prefix_13 : sumRange 420 mcaHeightTerm = 2379379685775750 := by
+  have h := sumRange_add 390 30 mcaHeightTerm
+  rwa [mca_height_prefix_12, mca_height_chunk_13] at h
+theorem mca_height_chunk_14 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (420 + i)) = 206502792474070 := by
+  decide +kernel
+theorem mca_height_prefix_14 : sumRange 450 mcaHeightTerm = 2585882478249820 := by
+  have h := sumRange_add 420 30 mcaHeightTerm
+  rwa [mca_height_prefix_13, mca_height_chunk_14] at h
+theorem mca_height_chunk_15 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (450 + i)) = 197788128571270 := by
+  decide +kernel
+theorem mca_height_prefix_15 : sumRange 480 mcaHeightTerm = 2783670606821090 := by
+  have h := sumRange_add 450 30 mcaHeightTerm
+  rwa [mca_height_prefix_14, mca_height_chunk_15] at h
+theorem mca_height_chunk_16 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (480 + i)) = 189075391766470 := by
+  decide +kernel
+theorem mca_height_prefix_16 : sumRange 510 mcaHeightTerm = 2972745998587560 := by
+  have h := sumRange_add 480 30 mcaHeightTerm
+  rwa [mca_height_prefix_15, mca_height_chunk_16] at h
+theorem mca_height_chunk_17 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (510 + i)) = 180364582059670 := by
+  decide +kernel
+theorem mca_height_prefix_17 : sumRange 540 mcaHeightTerm = 3153110580647230 := by
+  have h := sumRange_add 510 30 mcaHeightTerm
+  rwa [mca_height_prefix_16, mca_height_chunk_17] at h
+theorem mca_height_chunk_18 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (540 + i)) = 171655699450870 := by
+  decide +kernel
+theorem mca_height_prefix_18 : sumRange 570 mcaHeightTerm = 3324766280098100 := by
+  have h := sumRange_add 540 30 mcaHeightTerm
+  rwa [mca_height_prefix_17, mca_height_chunk_18] at h
+theorem mca_height_chunk_19 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (570 + i)) = 162948743940070 := by
+  decide +kernel
+theorem mca_height_prefix_19 : sumRange 600 mcaHeightTerm = 3487715024038170 := by
+  have h := sumRange_add 570 30 mcaHeightTerm
+  rwa [mca_height_prefix_18, mca_height_chunk_19] at h
+theorem mca_height_chunk_20 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (600 + i)) = 154243715527270 := by
+  decide +kernel
+theorem mca_height_prefix_20 : sumRange 630 mcaHeightTerm = 3641958739565440 := by
+  have h := sumRange_add 600 30 mcaHeightTerm
+  rwa [mca_height_prefix_19, mca_height_chunk_20] at h
+theorem mca_height_chunk_21 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (630 + i)) = 145540614212470 := by
+  decide +kernel
+theorem mca_height_prefix_21 : sumRange 660 mcaHeightTerm = 3787499353777910 := by
+  have h := sumRange_add 630 30 mcaHeightTerm
+  rwa [mca_height_prefix_20, mca_height_chunk_21] at h
+theorem mca_height_chunk_22 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (660 + i)) = 136839439995670 := by
+  decide +kernel
+theorem mca_height_prefix_22 : sumRange 690 mcaHeightTerm = 3924338793773580 := by
+  have h := sumRange_add 660 30 mcaHeightTerm
+  rwa [mca_height_prefix_21, mca_height_chunk_22] at h
+theorem mca_height_chunk_23 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (690 + i)) = 128140192876870 := by
+  decide +kernel
+theorem mca_height_prefix_23 : sumRange 720 mcaHeightTerm = 4052478986650450 := by
+  have h := sumRange_add 690 30 mcaHeightTerm
+  rwa [mca_height_prefix_22, mca_height_chunk_23] at h
+theorem mca_height_chunk_24 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (720 + i)) = 119442872856070 := by
+  decide +kernel
+theorem mca_height_prefix_24 : sumRange 750 mcaHeightTerm = 4171921859506520 := by
+  have h := sumRange_add 720 30 mcaHeightTerm
+  rwa [mca_height_prefix_23, mca_height_chunk_24] at h
+theorem mca_height_chunk_25 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (750 + i)) = 110747479933270 := by
+  decide +kernel
+theorem mca_height_prefix_25 : sumRange 780 mcaHeightTerm = 4282669339439790 := by
+  have h := sumRange_add 750 30 mcaHeightTerm
+  rwa [mca_height_prefix_24, mca_height_chunk_25] at h
+theorem mca_height_chunk_26 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (780 + i)) = 102054014108470 := by
+  decide +kernel
+theorem mca_height_prefix_26 : sumRange 810 mcaHeightTerm = 4384723353548260 := by
+  have h := sumRange_add 780 30 mcaHeightTerm
+  rwa [mca_height_prefix_25, mca_height_chunk_26] at h
+theorem mca_height_chunk_27 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (810 + i)) = 93362475381670 := by
+  decide +kernel
+theorem mca_height_prefix_27 : sumRange 840 mcaHeightTerm = 4478085828929930 := by
+  have h := sumRange_add 810 30 mcaHeightTerm
+  rwa [mca_height_prefix_26, mca_height_chunk_27] at h
+theorem mca_height_chunk_28 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (840 + i)) = 84672863752870 := by
+  decide +kernel
+theorem mca_height_prefix_28 : sumRange 870 mcaHeightTerm = 4562758692682800 := by
+  have h := sumRange_add 840 30 mcaHeightTerm
+  rwa [mca_height_prefix_27, mca_height_chunk_28] at h
+theorem mca_height_chunk_29 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (870 + i)) = 75985179222070 := by
+  decide +kernel
+theorem mca_height_prefix_29 : sumRange 900 mcaHeightTerm = 4638743871904870 := by
+  have h := sumRange_add 870 30 mcaHeightTerm
+  rwa [mca_height_prefix_28, mca_height_chunk_29] at h
+theorem mca_height_chunk_30 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (900 + i)) = 67299421789270 := by
+  decide +kernel
+theorem mca_height_prefix_30 : sumRange 930 mcaHeightTerm = 4706043293694140 := by
+  have h := sumRange_add 900 30 mcaHeightTerm
+  rwa [mca_height_prefix_29, mca_height_chunk_30] at h
+theorem mca_height_chunk_31 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (930 + i)) = 58615591454470 := by
+  decide +kernel
+theorem mca_height_prefix_31 : sumRange 960 mcaHeightTerm = 4764658885148610 := by
+  have h := sumRange_add 930 30 mcaHeightTerm
+  rwa [mca_height_prefix_30, mca_height_chunk_31] at h
+theorem mca_height_chunk_32 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (960 + i)) = 49933688217670 := by
+  decide +kernel
+theorem mca_height_prefix_32 : sumRange 990 mcaHeightTerm = 4814592573366280 := by
+  have h := sumRange_add 960 30 mcaHeightTerm
+  rwa [mca_height_prefix_31, mca_height_chunk_32] at h
+theorem mca_height_chunk_33 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (990 + i)) = 41253712078870 := by
+  decide +kernel
+theorem mca_height_prefix_33 : sumRange 1020 mcaHeightTerm = 4855846285445150 := by
+  have h := sumRange_add 990 30 mcaHeightTerm
+  rwa [mca_height_prefix_32, mca_height_chunk_33] at h
+theorem mca_height_chunk_34 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (1020 + i)) = 32575663038070 := by
+  decide +kernel
+theorem mca_height_prefix_34 : sumRange 1050 mcaHeightTerm = 4888421948483220 := by
+  have h := sumRange_add 1020 30 mcaHeightTerm
+  rwa [mca_height_prefix_33, mca_height_chunk_34] at h
+theorem mca_height_chunk_35 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (1050 + i)) = 23899541095270 := by
+  decide +kernel
+theorem mca_height_prefix_35 : sumRange 1080 mcaHeightTerm = 4912321489578490 := by
+  have h := sumRange_add 1050 30 mcaHeightTerm
+  rwa [mca_height_prefix_34, mca_height_chunk_35] at h
+theorem mca_height_chunk_36 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (1080 + i)) = 15225346250470 := by
+  decide +kernel
+theorem mca_height_prefix_36 : sumRange 1110 mcaHeightTerm = 4927546835828960 := by
+  have h := sumRange_add 1080 30 mcaHeightTerm
+  rwa [mca_height_prefix_35, mca_height_chunk_36] at h
+theorem mca_height_chunk_37 :
+    sumRange 30 (fun i ↦ mcaHeightTerm (1110 + i)) = 6553078503670 := by
+  decide +kernel
+theorem mca_height_prefix_37 : sumRange 1140 mcaHeightTerm = 4934099914332630 := by
+  have h := sumRange_add 1110 30 mcaHeightTerm
+  rwa [mca_height_prefix_36, mca_height_chunk_37] at h
+theorem mca_height_chunk_38 :
+    sumRange 9 (fun i ↦ mcaHeightTerm (1140 + i)) = 285149116351 := by
+  decide +kernel
+theorem mca_height_prefix_38 : sumRange 1149 mcaHeightTerm = 4934385063448981 := by
+  have h := sumRange_add 1140 9 mcaHeightTerm
+  rwa [mca_height_prefix_37, mca_height_chunk_38] at h
+theorem mca_row_chunk_0 :
+    sumRange 30 (fun i ↦ mcaRowTerm (0 + i)) = 38053914552320 := by
+  decide +kernel
+theorem mca_row_prefix_0 : sumRange 30 mcaRowTerm = 38053914552320 := by
+  have h := sumRange_add 0 30 mcaRowTerm
+  rwa [mca_row_chunk_0] at h
+theorem mca_row_chunk_1 :
+    sumRange 30 (fun i ↦ mcaRowTerm (30 + i)) = 106616621880320 := by
+  decide +kernel
+theorem mca_row_prefix_1 : sumRange 60 mcaRowTerm = 144670536432640 := by
+  have h := sumRange_add 30 30 mcaRowTerm
+  rwa [mca_row_prefix_0, mca_row_chunk_1] at h
+theorem mca_row_chunk_2 :
+    sumRange 30 (fun i ↦ mcaRowTerm (60 + i)) = 167671335096320 := by
+  decide +kernel
+theorem mca_row_prefix_2 : sumRange 90 mcaRowTerm = 312341871528960 := by
+  have h := sumRange_add 60 30 mcaRowTerm
+  rwa [mca_row_prefix_1, mca_row_chunk_2] at h
+theorem mca_row_chunk_3 :
+    sumRange 30 (fun i ↦ mcaRowTerm (90 + i)) = 221220542520320 := by
+  decide +kernel
+theorem mca_row_prefix_3 : sumRange 120 mcaRowTerm = 533562414049280 := by
+  have h := sumRange_add 90 30 mcaRowTerm
+  rwa [mca_row_prefix_2, mca_row_chunk_3] at h
+theorem mca_row_chunk_4 :
+    sumRange 30 (fun i ↦ mcaRowTerm (120 + i)) = 267266732472320 := by
+  decide +kernel
+theorem mca_row_prefix_4 : sumRange 150 mcaRowTerm = 800829146521600 := by
+  have h := sumRange_add 120 30 mcaRowTerm
+  rwa [mca_row_prefix_3, mca_row_chunk_4] at h
+theorem mca_row_chunk_5 :
+    sumRange 30 (fun i ↦ mcaRowTerm (150 + i)) = 305812393272320 := by
+  decide +kernel
+theorem mca_row_prefix_5 : sumRange 180 mcaRowTerm = 1106641539793920 := by
+  have h := sumRange_add 150 30 mcaRowTerm
+  rwa [mca_row_prefix_4, mca_row_chunk_5] at h
+theorem mca_row_chunk_6 :
+    sumRange 30 (fun i ↦ mcaRowTerm (180 + i)) = 336860013240320 := by
+  decide +kernel
+theorem mca_row_prefix_6 : sumRange 210 mcaRowTerm = 1443501553034240 := by
+  have h := sumRange_add 180 30 mcaRowTerm
+  rwa [mca_row_prefix_5, mca_row_chunk_6] at h
+theorem mca_row_chunk_7 :
+    sumRange 30 (fun i ↦ mcaRowTerm (210 + i)) = 360412080696320 := by
+  decide +kernel
+theorem mca_row_prefix_7 : sumRange 240 mcaRowTerm = 1803913633730560 := by
+  have h := sumRange_add 210 30 mcaRowTerm
+  rwa [mca_row_prefix_6, mca_row_chunk_7] at h
+theorem mca_row_chunk_8 :
+    sumRange 30 (fun i ↦ mcaRowTerm (240 + i)) = 376471083960320 := by
+  decide +kernel
+theorem mca_row_prefix_8 : sumRange 270 mcaRowTerm = 2180384717690880 := by
+  have h := sumRange_add 240 30 mcaRowTerm
+  rwa [mca_row_prefix_7, mca_row_chunk_8] at h
+theorem mca_row_chunk_9 :
+    sumRange 30 (fun i ↦ mcaRowTerm (270 + i)) = 376715325470720 := by
+  decide +kernel
+theorem mca_row_prefix_9 : sumRange 300 mcaRowTerm = 2557100043161600 := by
+  have h := sumRange_add 270 30 mcaRowTerm
+  rwa [mca_row_prefix_8, mca_row_chunk_9] at h
+theorem mca_row_chunk_10 :
+    sumRange 30 (fun i ↦ mcaRowTerm (300 + i)) = 344175362001920 := by
+  decide +kernel
+theorem mca_row_prefix_10 : sumRange 330 mcaRowTerm = 2901275405163520 := by
+  have h := sumRange_add 300 30 mcaRowTerm
+  rwa [mca_row_prefix_9, mca_row_chunk_10] at h
+theorem mca_row_chunk_11 :
+    sumRange 30 (fun i ↦ mcaRowTerm (330 + i)) = 309441233955840 := by
+  decide +kernel
+theorem mca_row_prefix_11 : sumRange 360 mcaRowTerm = 3210716639119360 := by
+  have h := sumRange_add 330 30 mcaRowTerm
+  rwa [mca_row_prefix_10, mca_row_chunk_11] at h
+theorem mca_row_chunk_12 :
+    sumRange 30 (fun i ↦ mcaRowTerm (360 + i)) = 276319108285440 := by
+  decide +kernel
+theorem mca_row_prefix_12 : sumRange 390 mcaRowTerm = 3487035747404800 := by
+  have h := sumRange_add 360 30 mcaRowTerm
+  rwa [mca_row_prefix_11, mca_row_chunk_12] at h
+theorem mca_row_chunk_13 :
+    sumRange 30 (fun i ↦ mcaRowTerm (390 + i)) = 245075239127040 := by
+  decide +kernel
+theorem mca_row_prefix_13 : sumRange 420 mcaRowTerm = 3732110986531840 := by
+  have h := sumRange_add 390 30 mcaRowTerm
+  rwa [mca_row_prefix_12, mca_row_chunk_13] at h
+theorem mca_row_chunk_14 :
+    sumRange 30 (fun i ↦ mcaRowTerm (420 + i)) = 215709004400640 := by
+  decide +kernel
+theorem mca_row_prefix_14 : sumRange 450 mcaRowTerm = 3947819990932480 := by
+  have h := sumRange_add 420 30 mcaRowTerm
+  rwa [mca_row_prefix_13, mca_row_chunk_14] at h
+theorem mca_row_chunk_15 :
+    sumRange 30 (fun i ↦ mcaRowTerm (450 + i)) = 188219782026240 := by
+  decide +kernel
+theorem mca_row_prefix_15 : sumRange 480 mcaRowTerm = 4136039772958720 := by
+  have h := sumRange_add 450 30 mcaRowTerm
+  rwa [mca_row_prefix_14, mca_row_chunk_15] at h
+theorem mca_row_chunk_16 :
+    sumRange 30 (fun i ↦ mcaRowTerm (480 + i)) = 162606949923840 := by
+  decide +kernel
+theorem mca_row_prefix_16 : sumRange 510 mcaRowTerm = 4298646722882560 := by
+  have h := sumRange_add 480 30 mcaRowTerm
+  rwa [mca_row_prefix_15, mca_row_chunk_16] at h
+theorem mca_row_chunk_17 :
+    sumRange 30 (fun i ↦ mcaRowTerm (510 + i)) = 138869886013440 := by
+  decide +kernel
+theorem mca_row_prefix_17 : sumRange 540 mcaRowTerm = 4437516608896000 := by
+  have h := sumRange_add 510 30 mcaRowTerm
+  rwa [mca_row_prefix_16, mca_row_chunk_17] at h
+theorem mca_row_chunk_18 :
+    sumRange 30 (fun i ↦ mcaRowTerm (540 + i)) = 117007968215040 := by
+  decide +kernel
+theorem mca_row_prefix_18 : sumRange 570 mcaRowTerm = 4554524577111040 := by
+  have h := sumRange_add 540 30 mcaRowTerm
+  rwa [mca_row_prefix_17, mca_row_chunk_18] at h
+theorem mca_row_chunk_19 :
+    sumRange 30 (fun i ↦ mcaRowTerm (570 + i)) = 97020574448640 := by
+  decide +kernel
+theorem mca_row_prefix_19 : sumRange 600 mcaRowTerm = 4651545151559680 := by
+  have h := sumRange_add 570 30 mcaRowTerm
+  rwa [mca_row_prefix_18, mca_row_chunk_19] at h
+theorem mca_row_chunk_20 :
+    sumRange 30 (fun i ↦ mcaRowTerm (600 + i)) = 78907082634240 := by
+  decide +kernel
+theorem mca_row_prefix_20 : sumRange 630 mcaRowTerm = 4730452234193920 := by
+  have h := sumRange_add 600 30 mcaRowTerm
+  rwa [mca_row_prefix_19, mca_row_chunk_20] at h
+theorem mca_row_chunk_21 :
+    sumRange 30 (fun i ↦ mcaRowTerm (630 + i)) = 62666870691840 := by
+  decide +kernel
+theorem mca_row_prefix_21 : sumRange 660 mcaRowTerm = 4793119104885760 := by
+  have h := sumRange_add 630 30 mcaRowTerm
+  rwa [mca_row_prefix_20, mca_row_chunk_21] at h
+theorem mca_row_chunk_22 :
+    sumRange 30 (fun i ↦ mcaRowTerm (660 + i)) = 48299316541440 := by
+  decide +kernel
+theorem mca_row_prefix_22 : sumRange 690 mcaRowTerm = 4841418421427200 := by
+  have h := sumRange_add 660 30 mcaRowTerm
+  rwa [mca_row_prefix_21, mca_row_chunk_22] at h
+theorem mca_row_chunk_23 :
+    sumRange 30 (fun i ↦ mcaRowTerm (690 + i)) = 35803798103040 := by
+  decide +kernel
+theorem mca_row_prefix_23 : sumRange 720 mcaRowTerm = 4877222219530240 := by
+  have h := sumRange_add 690 30 mcaRowTerm
+  rwa [mca_row_prefix_22, mca_row_chunk_23] at h
+theorem mca_row_chunk_24 :
+    sumRange 30 (fun i ↦ mcaRowTerm (720 + i)) = 25179693296640 := by
+  decide +kernel
+theorem mca_row_prefix_24 : sumRange 750 mcaRowTerm = 4902401912826880 := by
+  have h := sumRange_add 720 30 mcaRowTerm
+  rwa [mca_row_prefix_23, mca_row_chunk_24] at h
+theorem mca_row_chunk_25 :
+    sumRange 30 (fun i ↦ mcaRowTerm (750 + i)) = 16426380042240 := by
+  decide +kernel
+theorem mca_row_prefix_25 : sumRange 780 mcaRowTerm = 4918828292869120 := by
+  have h := sumRange_add 750 30 mcaRowTerm
+  rwa [mca_row_prefix_24, mca_row_chunk_25] at h
+theorem mca_row_chunk_26 :
+    sumRange 30 (fun i ↦ mcaRowTerm (780 + i)) = 9543236259840 := by
+  decide +kernel
+theorem mca_row_prefix_26 : sumRange 810 mcaRowTerm = 4928371529128960 := by
+  have h := sumRange_add 780 30 mcaRowTerm
+  rwa [mca_row_prefix_25, mca_row_chunk_26] at h
+theorem mca_row_chunk_27 :
+    sumRange 30 (fun i ↦ mcaRowTerm (810 + i)) = 4529639869440 := by
+  decide +kernel
+theorem mca_row_prefix_27 : sumRange 840 mcaRowTerm = 4932901168998400 := by
+  have h := sumRange_add 810 30 mcaRowTerm
+  rwa [mca_row_prefix_26, mca_row_chunk_27] at h
+theorem mca_row_chunk_28 :
+    sumRange 30 (fun i ↦ mcaRowTerm (840 + i)) = 1384968791040 := by
+  decide +kernel
+theorem mca_row_prefix_28 : sumRange 870 mcaRowTerm = 4934286137789440 := by
+  have h := sumRange_add 840 30 mcaRowTerm
+  rwa [mca_row_prefix_27, mca_row_chunk_28] at h
+theorem mca_row_chunk_29 :
+    sumRange 30 (fun i ↦ mcaRowTerm (870 + i)) = 98917519360 := by
+  decide +kernel
+theorem mca_row_prefix_29 : sumRange 900 mcaRowTerm = 4934385055308800 := by
+  have h := sumRange_add 870 30 mcaRowTerm
+  rwa [mca_row_prefix_28, mca_row_chunk_29] at h
+theorem mca_row_chunk_30 :
+    sumRange 30 (fun i ↦ mcaRowTerm (900 + i)) = 0 := by
+  decide +kernel
+theorem mca_row_prefix_30 : sumRange 930 mcaRowTerm = 4934385055308800 := by
+  have h := sumRange_add 900 30 mcaRowTerm
+  rwa [mca_row_prefix_29, mca_row_chunk_30] at h
+theorem mca_row_chunk_31 :
+    sumRange 30 (fun i ↦ mcaRowTerm (930 + i)) = 0 := by
+  decide +kernel
+theorem mca_row_prefix_31 : sumRange 960 mcaRowTerm = 4934385055308800 := by
+  have h := sumRange_add 930 30 mcaRowTerm
+  rwa [mca_row_prefix_30, mca_row_chunk_31] at h
+theorem mca_row_chunk_32 :
+    sumRange 30 (fun i ↦ mcaRowTerm (960 + i)) = 0 := by
+  decide +kernel
+theorem mca_row_prefix_32 : sumRange 990 mcaRowTerm = 4934385055308800 := by
+  have h := sumRange_add 960 30 mcaRowTerm
+  rwa [mca_row_prefix_31, mca_row_chunk_32] at h
+theorem mca_row_chunk_33 :
+    sumRange 30 (fun i ↦ mcaRowTerm (990 + i)) = 0 := by
+  decide +kernel
+theorem mca_row_prefix_33 : sumRange 1020 mcaRowTerm = 4934385055308800 := by
+  have h := sumRange_add 990 30 mcaRowTerm
+  rwa [mca_row_prefix_32, mca_row_chunk_33] at h
+theorem mca_row_chunk_34 :
+    sumRange 30 (fun i ↦ mcaRowTerm (1020 + i)) = 0 := by
+  decide +kernel
+theorem mca_row_prefix_34 : sumRange 1050 mcaRowTerm = 4934385055308800 := by
+  have h := sumRange_add 1020 30 mcaRowTerm
+  rwa [mca_row_prefix_33, mca_row_chunk_34] at h
+theorem mca_row_chunk_35 :
+    sumRange 30 (fun i ↦ mcaRowTerm (1050 + i)) = 0 := by
+  decide +kernel
+theorem mca_row_prefix_35 : sumRange 1080 mcaRowTerm = 4934385055308800 := by
+  have h := sumRange_add 1050 30 mcaRowTerm
+  rwa [mca_row_prefix_34, mca_row_chunk_35] at h
+theorem mca_row_chunk_36 :
+    sumRange 30 (fun i ↦ mcaRowTerm (1080 + i)) = 0 := by
+  decide +kernel
+theorem mca_row_prefix_36 : sumRange 1110 mcaRowTerm = 4934385055308800 := by
+  have h := sumRange_add 1080 30 mcaRowTerm
+  rwa [mca_row_prefix_35, mca_row_chunk_36] at h
+theorem mca_row_chunk_37 :
+    sumRange 30 (fun i ↦ mcaRowTerm (1110 + i)) = 0 := by
+  decide +kernel
+theorem mca_row_prefix_37 : sumRange 1140 mcaRowTerm = 4934385055308800 := by
+  have h := sumRange_add 1110 30 mcaRowTerm
+  rwa [mca_row_prefix_36, mca_row_chunk_37] at h
+theorem mca_row_chunk_38 :
+    sumRange 9 (fun i ↦ mcaRowTerm (1140 + i)) = 0 := by
+  decide +kernel
+theorem mca_row_prefix_38 : sumRange 1149 mcaRowTerm = 4934385055308800 := by
+  have h := sumRange_add 1140 9 mcaRowTerm
+  rwa [mca_row_prefix_37, mca_row_chunk_38] at h
+
+/-- The slot inequality for `(m, M, μ, h) = (609, 280, 1148, 271081)` at `D = 127`, `A = 239`,
+`n = 512`, `ℓ = 1`. -/
+theorem mca_cert :
+    rowSlotBound 127 239 609 280 1148 512 1 271081 <
+      heightSlotCount 127 239 609 280 1148 1 271081 := by
+  change sumRange 1149 mcaRowTerm < sumRange 1149 mcaHeightTerm
+  rw [mca_row_prefix_38, mca_height_prefix_38]
+  decide
+
+/-! ### Parameters `(m, M, μ, h) = (546, 260, 1020, 1000000000)` (list decoding) -/
+
+/-- Outer summand of `heightSlotCount 127 239 546 260 1020 1 1000000000`. -/
+def lstHeightTerm (t : Nat) : Nat :=
+  sumRange (min t 260 + 1) fun b ↦ (546 * 239 + b - 127 * t) * (1000000000 + 1 - 1 * t)
+
+/-- Outer summand of `rowSlotBound 127 239 546 260 1020 512 1 1000000000`. -/
+def lstRowTerm (t : Nat) : Nat :=
+  512 * gradedRankBound 127 239 546 260 t * (1000000000 + 1 - 1 * t)
+
+theorem lst_height_chunk_0 :
+    sumRange 30 (fun i ↦ lstHeightTerm (0 + i)) = 59542473911420585 := by
+  decide +kernel
+theorem lst_height_prefix_0 : sumRange 30 lstHeightTerm = 59542473911420585 := by
+  have h := sumRange_add 0 30 lstHeightTerm
+  rwa [lst_height_chunk_0] at h
+theorem lst_height_chunk_1 :
+    sumRange 30 (fun i ↦ lstHeightTerm (30 + i)) = 170156067330513260 := by
+  decide +kernel
+theorem lst_height_prefix_1 : sumRange 60 lstHeightTerm = 229698541241933845 := by
+  have h := sumRange_add 30 30 lstHeightTerm
+  rwa [lst_height_prefix_0, lst_height_chunk_1] at h
+theorem lst_height_chunk_2 :
+    sumRange 30 (fun i ↦ lstHeightTerm (60 + i)) = 273938654614868435 := by
+  decide +kernel
+theorem lst_height_prefix_2 : sumRange 90 lstHeightTerm = 503637195856802280 := by
+  have h := sumRange_add 60 30 lstHeightTerm
+  rwa [lst_height_prefix_1, lst_height_chunk_2] at h
+theorem lst_height_chunk_3 :
+    sumRange 30 (fun i ↦ lstHeightTerm (90 + i)) = 370890236379276110 := by
+  decide +kernel
+theorem lst_height_prefix_3 : sumRange 120 lstHeightTerm = 874527432236078390 := by
+  have h := sumRange_add 90 30 lstHeightTerm
+  rwa [lst_height_prefix_2, lst_height_chunk_3] at h
+theorem lst_height_chunk_4 :
+    sumRange 30 (fun i ↦ lstHeightTerm (120 + i)) = 461010813238526285 := by
+  decide +kernel
+theorem lst_height_prefix_4 : sumRange 150 lstHeightTerm = 1335538245474604675 := by
+  have h := sumRange_add 120 30 lstHeightTerm
+  rwa [lst_height_prefix_3, lst_height_chunk_4] at h
+theorem lst_height_chunk_5 :
+    sumRange 30 (fun i ↦ lstHeightTerm (150 + i)) = 544300385807408960 := by
+  decide +kernel
+theorem lst_height_prefix_5 : sumRange 180 lstHeightTerm = 1879838631282013635 := by
+  have h := sumRange_add 150 30 lstHeightTerm
+  rwa [lst_height_prefix_4, lst_height_chunk_5] at h
+theorem lst_height_chunk_6 :
+    sumRange 30 (fun i ↦ lstHeightTerm (180 + i)) = 620758954700714135 := by
+  decide +kernel
+theorem lst_height_prefix_6 : sumRange 210 lstHeightTerm = 2500597585982727770 := by
+  have h := sumRange_add 180 30 lstHeightTerm
+  rwa [lst_height_prefix_5, lst_height_chunk_6] at h
+theorem lst_height_chunk_7 :
+    sumRange 30 (fun i ↦ lstHeightTerm (210 + i)) = 690386520533231810 := by
+  decide +kernel
+theorem lst_height_prefix_7 : sumRange 240 lstHeightTerm = 3190984106515959580 := by
+  have h := sumRange_add 210 30 lstHeightTerm
+  rwa [lst_height_prefix_6, lst_height_chunk_7] at h
+theorem lst_height_chunk_8 :
+    sumRange 30 (fun i ↦ lstHeightTerm (240 + i)) = 748821085077108155 := by
+  decide +kernel
+theorem lst_height_prefix_8 : sumRange 270 lstHeightTerm = 3939805191593067735 := by
+  have h := sumRange_add 240 30 lstHeightTerm
+  rwa [lst_height_prefix_7, lst_height_chunk_8] at h
+theorem lst_height_chunk_9 :
+    sumRange 30 (fun i ↦ lstHeightTerm (270 + i)) = 739876065319573920 := by
+  decide +kernel
+theorem lst_height_prefix_9 : sumRange 300 lstHeightTerm = 4679681256912641655 := by
+  have h := sumRange_add 270 30 lstHeightTerm
+  rwa [lst_height_prefix_8, lst_height_chunk_9] at h
+theorem lst_height_chunk_10 :
+    sumRange 30 (fun i ↦ lstHeightTerm (300 + i)) = 710043752475711720 := by
+  decide +kernel
+theorem lst_height_prefix_10 : sumRange 330 lstHeightTerm = 5389725009388353375 := by
+  have h := sumRange_add 300 30 lstHeightTerm
+  rwa [lst_height_prefix_9, lst_height_chunk_10] at h
+theorem lst_height_chunk_11 :
+    sumRange 30 (fun i ↦ lstHeightTerm (330 + i)) = 680211441421787520 := by
+  decide +kernel
+theorem lst_height_prefix_11 : sumRange 360 lstHeightTerm = 6069936450810140895 := by
+  have h := sumRange_add 330 30 lstHeightTerm
+  rwa [lst_height_prefix_10, lst_height_chunk_11] at h
+theorem lst_height_chunk_12 :
+    sumRange 30 (fun i ↦ lstHeightTerm (360 + i)) = 650379132157801320 := by
+  decide +kernel
+theorem lst_height_prefix_12 : sumRange 390 lstHeightTerm = 6720315582967942215 := by
+  have h := sumRange_add 360 30 lstHeightTerm
+  rwa [lst_height_prefix_11, lst_height_chunk_12] at h
+theorem lst_height_chunk_13 :
+    sumRange 30 (fun i ↦ lstHeightTerm (390 + i)) = 620546824683753120 := by
+  decide +kernel
+theorem lst_height_prefix_13 : sumRange 420 lstHeightTerm = 7340862407651695335 := by
+  have h := sumRange_add 390 30 lstHeightTerm
+  rwa [lst_height_prefix_12, lst_height_chunk_13] at h
+theorem lst_height_chunk_14 :
+    sumRange 30 (fun i ↦ lstHeightTerm (420 + i)) = 590714518999642920 := by
+  decide +kernel
+theorem lst_height_prefix_14 : sumRange 450 lstHeightTerm = 7931576926651338255 := by
+  have h := sumRange_add 420 30 lstHeightTerm
+  rwa [lst_height_prefix_13, lst_height_chunk_14] at h
+theorem lst_height_chunk_15 :
+    sumRange 30 (fun i ↦ lstHeightTerm (450 + i)) = 560882215105470720 := by
+  decide +kernel
+theorem lst_height_prefix_15 : sumRange 480 lstHeightTerm = 8492459141756808975 := by
+  have h := sumRange_add 450 30 lstHeightTerm
+  rwa [lst_height_prefix_14, lst_height_chunk_15] at h
+theorem lst_height_chunk_16 :
+    sumRange 30 (fun i ↦ lstHeightTerm (480 + i)) = 531049913001236520 := by
+  decide +kernel
+theorem lst_height_prefix_16 : sumRange 510 lstHeightTerm = 9023509054758045495 := by
+  have h := sumRange_add 480 30 lstHeightTerm
+  rwa [lst_height_prefix_15, lst_height_chunk_16] at h
+theorem lst_height_chunk_17 :
+    sumRange 30 (fun i ↦ lstHeightTerm (510 + i)) = 501217612686940320 := by
+  decide +kernel
+theorem lst_height_prefix_17 : sumRange 540 lstHeightTerm = 9524726667444985815 := by
+  have h := sumRange_add 510 30 lstHeightTerm
+  rwa [lst_height_prefix_16, lst_height_chunk_17] at h
+theorem lst_height_chunk_18 :
+    sumRange 30 (fun i ↦ lstHeightTerm (540 + i)) = 471385314162582120 := by
+  decide +kernel
+theorem lst_height_prefix_18 : sumRange 570 lstHeightTerm = 9996111981607567935 := by
+  have h := sumRange_add 540 30 lstHeightTerm
+  rwa [lst_height_prefix_17, lst_height_chunk_18] at h
+theorem lst_height_chunk_19 :
+    sumRange 30 (fun i ↦ lstHeightTerm (570 + i)) = 441553017428161920 := by
+  decide +kernel
+theorem lst_height_prefix_19 : sumRange 600 lstHeightTerm = 10437664999035729855 := by
+  have h := sumRange_add 570 30 lstHeightTerm
+  rwa [lst_height_prefix_18, lst_height_chunk_19] at h
+theorem lst_height_chunk_20 :
+    sumRange 30 (fun i ↦ lstHeightTerm (600 + i)) = 411720722483679720 := by
+  decide +kernel
+theorem lst_height_prefix_20 : sumRange 630 lstHeightTerm = 10849385721519409575 := by
+  have h := sumRange_add 600 30 lstHeightTerm
+  rwa [lst_height_prefix_19, lst_height_chunk_20] at h
+theorem lst_height_chunk_21 :
+    sumRange 30 (fun i ↦ lstHeightTerm (630 + i)) = 381888429329135520 := by
+  decide +kernel
+theorem lst_height_prefix_21 : sumRange 660 lstHeightTerm = 11231274150848545095 := by
+  have h := sumRange_add 630 30 lstHeightTerm
+  rwa [lst_height_prefix_20, lst_height_chunk_21] at h
+theorem lst_height_chunk_22 :
+    sumRange 30 (fun i ↦ lstHeightTerm (660 + i)) = 352056137964529320 := by
+  decide +kernel
+theorem lst_height_prefix_22 : sumRange 690 lstHeightTerm = 11583330288813074415 := by
+  have h := sumRange_add 660 30 lstHeightTerm
+  rwa [lst_height_prefix_21, lst_height_chunk_22] at h
+theorem lst_height_chunk_23 :
+    sumRange 30 (fun i ↦ lstHeightTerm (690 + i)) = 322223848389861120 := by
+  decide +kernel
+theorem lst_height_prefix_23 : sumRange 720 lstHeightTerm = 11905554137202935535 := by
+  have h := sumRange_add 690 30 lstHeightTerm
+  rwa [lst_height_prefix_22, lst_height_chunk_23] at h
+theorem lst_height_chunk_24 :
+    sumRange 30 (fun i ↦ lstHeightTerm (720 + i)) = 292391560605130920 := by
+  decide +kernel
+theorem lst_height_prefix_24 : sumRange 750 lstHeightTerm = 12197945697808066455 := by
+  have h := sumRange_add 720 30 lstHeightTerm
+  rwa [lst_height_prefix_23, lst_height_chunk_24] at h
+theorem lst_height_chunk_25 :
+    sumRange 30 (fun i ↦ lstHeightTerm (750 + i)) = 262559274610338720 := by
+  decide +kernel
+theorem lst_height_prefix_25 : sumRange 780 lstHeightTerm = 12460504972418405175 := by
+  have h := sumRange_add 750 30 lstHeightTerm
+  rwa [lst_height_prefix_24, lst_height_chunk_25] at h
+theorem lst_height_chunk_26 :
+    sumRange 30 (fun i ↦ lstHeightTerm (780 + i)) = 232726990405484520 := by
+  decide +kernel
+theorem lst_height_prefix_26 : sumRange 810 lstHeightTerm = 12693231962823889695 := by
+  have h := sumRange_add 780 30 lstHeightTerm
+  rwa [lst_height_prefix_25, lst_height_chunk_26] at h
+theorem lst_height_chunk_27 :
+    sumRange 30 (fun i ↦ lstHeightTerm (810 + i)) = 202894707990568320 := by
+  decide +kernel
+theorem lst_height_prefix_27 : sumRange 840 lstHeightTerm = 12896126670814458015 := by
+  have h := sumRange_add 810 30 lstHeightTerm
+  rwa [lst_height_prefix_26, lst_height_chunk_27] at h
+theorem lst_height_chunk_28 :
+    sumRange 30 (fun i ↦ lstHeightTerm (840 + i)) = 173062427365590120 := by
+  decide +kernel
+theorem lst_height_prefix_28 : sumRange 870 lstHeightTerm = 13069189098180048135 := by
+  have h := sumRange_add 840 30 lstHeightTerm
+  rwa [lst_height_prefix_27, lst_height_chunk_28] at h
+theorem lst_height_chunk_29 :
+    sumRange 30 (fun i ↦ lstHeightTerm (870 + i)) = 143230148530549920 := by
+  decide +kernel
+theorem lst_height_prefix_29 : sumRange 900 lstHeightTerm = 13212419246710598055 := by
+  have h := sumRange_add 870 30 lstHeightTerm
+  rwa [lst_height_prefix_28, lst_height_chunk_29] at h
+theorem lst_height_chunk_30 :
+    sumRange 30 (fun i ↦ lstHeightTerm (900 + i)) = 113397871485447720 := by
+  decide +kernel
+theorem lst_height_prefix_30 : sumRange 930 lstHeightTerm = 13325817118196045775 := by
+  have h := sumRange_add 900 30 lstHeightTerm
+  rwa [lst_height_prefix_29, lst_height_chunk_30] at h
+theorem lst_height_chunk_31 :
+    sumRange 30 (fun i ↦ lstHeightTerm (930 + i)) = 83565596230283520 := by
+  decide +kernel
+theorem lst_height_prefix_31 : sumRange 960 lstHeightTerm = 13409382714426329295 := by
+  have h := sumRange_add 930 30 lstHeightTerm
+  rwa [lst_height_prefix_30, lst_height_chunk_31] at h
+theorem lst_height_chunk_32 :
+    sumRange 30 (fun i ↦ lstHeightTerm (960 + i)) = 53733322765057320 := by
+  decide +kernel
+theorem lst_height_prefix_32 : sumRange 990 lstHeightTerm = 13463116037191386615 := by
+  have h := sumRange_add 960 30 lstHeightTerm
+  rwa [lst_height_prefix_31, lst_height_chunk_32] at h
+theorem lst_height_chunk_33 :
+    sumRange 30 (fun i ↦ lstHeightTerm (990 + i)) = 23901051089769120 := by
+  decide +kernel
+theorem lst_height_prefix_33 : sumRange 1020 lstHeightTerm = 13487017088281155735 := by
+  have h := sumRange_add 990 30 lstHeightTerm
+  rwa [lst_height_prefix_32, lst_height_chunk_33] at h
+theorem lst_height_chunk_34 :
+    sumRange 1 (fun i ↦ lstHeightTerm (1020 + i)) = 282923711700444 := by
+  decide +kernel
+theorem lst_height_prefix_34 : sumRange 1021 lstHeightTerm = 13487300011992856179 := by
+  have h := sumRange_add 1020 1 lstHeightTerm
+  rwa [lst_height_prefix_33, lst_height_chunk_34] at h
+theorem lst_row_chunk_0 :
+    sumRange 30 (fun i ↦ lstRowTerm (0 + i)) = 125388797713479680 := by
+  decide +kernel
+theorem lst_row_prefix_0 : sumRange 30 lstRowTerm = 125388797713479680 := by
+  have h := sumRange_add 0 30 lstRowTerm
+  rwa [lst_row_chunk_0] at h
+theorem lst_row_chunk_1 :
+    sumRange 30 (fun i ↦ lstRowTerm (30 + i)) = 349337584279086080 := by
+  decide +kernel
+theorem lst_row_prefix_1 : sumRange 60 lstRowTerm = 474726381992565760 := by
+  have h := sumRange_add 30 30 lstRowTerm
+  rwa [lst_row_prefix_0, lst_row_chunk_1] at h
+theorem lst_row_chunk_2 :
+    sumRange 30 (fun i ↦ lstRowTerm (60 + i)) = 545638359439892480 := by
+  decide +kernel
+theorem lst_row_prefix_2 : sumRange 90 lstRowTerm = 1020364741432458240 := by
+  have h := sumRange_add 60 30 lstRowTerm
+  rwa [lst_row_prefix_1, lst_row_chunk_2] at h
+theorem lst_row_chunk_3 :
+    sumRange 30 (fun i ↦ lstRowTerm (90 + i)) = 714291125684218880 := by
+  decide +kernel
+theorem lst_row_prefix_3 : sumRange 120 lstRowTerm = 1734655867116677120 := by
+  have h := sumRange_add 90 30 lstRowTerm
+  rwa [lst_row_prefix_2, lst_row_chunk_3] at h
+theorem lst_row_chunk_4 :
+    sumRange 30 (fun i ↦ lstRowTerm (120 + i)) = 855295885500385280 := by
+  decide +kernel
+theorem lst_row_prefix_4 : sumRange 150 lstRowTerm = 2589951752617062400 := by
+  have h := sumRange_add 120 30 lstRowTerm
+  rwa [lst_row_prefix_3, lst_row_chunk_4] at h
+theorem lst_row_chunk_5 :
+    sumRange 30 (fun i ↦ lstRowTerm (150 + i)) = 968652641376711680 := by
+  decide +kernel
+theorem lst_row_prefix_5 : sumRange 180 lstRowTerm = 3558604393993774080 := by
+  have h := sumRange_add 150 30 lstRowTerm
+  rwa [lst_row_prefix_4, lst_row_chunk_5] at h
+theorem lst_row_chunk_6 :
+    sumRange 30 (fun i ↦ lstRowTerm (180 + i)) = 1054361395801518080 := by
+  decide +kernel
+theorem lst_row_prefix_6 : sumRange 210 lstRowTerm = 4612965789795292160 := by
+  have h := sumRange_add 180 30 lstRowTerm
+  rwa [lst_row_prefix_5, lst_row_chunk_6] at h
+theorem lst_row_chunk_7 :
+    sumRange 30 (fun i ↦ lstRowTerm (210 + i)) = 1112422151263124480 := by
+  decide +kernel
+theorem lst_row_prefix_7 : sumRange 240 lstRowTerm = 5725387941058416640 := by
+  have h := sumRange_add 210 30 lstRowTerm
+  rwa [lst_row_prefix_6, lst_row_chunk_7] at h
+theorem lst_row_chunk_8 :
+    sumRange 30 (fun i ↦ lstRowTerm (240 + i)) = 1136391391959418880 := by
+  decide +kernel
+theorem lst_row_prefix_8 : sumRange 270 lstRowTerm = 6861779333017835520 := by
+  have h := sumRange_add 240 30 lstRowTerm
+  rwa [lst_row_prefix_7, lst_row_chunk_8] at h
+theorem lst_row_chunk_9 :
+    sumRange 30 (fun i ↦ lstRowTerm (270 + i)) = 1048471767057038336 := by
+  decide +kernel
+theorem lst_row_prefix_9 : sumRange 300 lstRowTerm = 7910251100074873856 := by
+  have h := sumRange_add 270 30 lstRowTerm
+  rwa [lst_row_prefix_8, lst_row_chunk_9] at h
+theorem lst_row_chunk_10 :
+    sumRange 30 (fun i ↦ lstRowTerm (300 + i)) = 931701468194862080 := by
+  decide +kernel
+theorem lst_row_prefix_10 : sumRange 330 lstRowTerm = 8841952568269735936 := by
+  have h := sumRange_add 300 30 lstRowTerm
+  rwa [lst_row_prefix_9, lst_row_chunk_10] at h
+theorem lst_row_chunk_11 :
+    sumRange 30 (fun i ↦ lstRowTerm (330 + i)) = 821685478017044480 := by
+  decide +kernel
+theorem lst_row_prefix_11 : sumRange 360 lstRowTerm = 9663638046286780416 := by
+  have h := sumRange_add 330 30 lstRowTerm
+  rwa [lst_row_prefix_10, lst_row_chunk_11] at h
+theorem lst_row_chunk_12 :
+    sumRange 30 (fun i ↦ lstRowTerm (360 + i)) = 718581491858554880 := by
+  decide +kernel
+theorem lst_row_prefix_12 : sumRange 390 lstRowTerm = 10382219538145335296 := by
+  have h := sumRange_add 360 30 lstRowTerm
+  rwa [lst_row_prefix_11, lst_row_chunk_12] at h
+theorem lst_row_chunk_13 :
+    sumRange 30 (fun i ↦ lstRowTerm (390 + i)) = 622389509097313280 := by
+  decide +kernel
+theorem lst_row_prefix_13 : sumRange 420 lstRowTerm = 11004609047242648576 := by
+  have h := sumRange_add 390 30 lstRowTerm
+  rwa [lst_row_prefix_12, lst_row_chunk_13] at h
+theorem lst_row_chunk_14 :
+    sumRange 30 (fun i ↦ lstRowTerm (420 + i)) = 533109529111239680 := by
+  decide +kernel
+theorem lst_row_prefix_14 : sumRange 450 lstRowTerm = 11537718576353888256 := by
+  have h := sumRange_add 420 30 lstRowTerm
+  rwa [lst_row_prefix_13, lst_row_chunk_14] at h
+theorem lst_row_chunk_15 :
+    sumRange 30 (fun i ↦ lstRowTerm (450 + i)) = 450741551278254080 := by
+  decide +kernel
+theorem lst_row_prefix_15 : sumRange 480 lstRowTerm = 11988460127632142336 := by
+  have h := sumRange_add 450 30 lstRowTerm
+  rwa [lst_row_prefix_14, lst_row_chunk_15] at h
+theorem lst_row_chunk_16 :
+    sumRange 30 (fun i ↦ lstRowTerm (480 + i)) = 375285574976276480 := by
+  decide +kernel
+theorem lst_row_prefix_16 : sumRange 510 lstRowTerm = 12363745702608418816 := by
+  have h := sumRange_add 480 30 lstRowTerm
+  rwa [lst_row_prefix_15, lst_row_chunk_16] at h
+theorem lst_row_chunk_17 :
+    sumRange 30 (fun i ↦ lstRowTerm (510 + i)) = 306741599583226880 := by
+  decide +kernel
+theorem lst_row_prefix_17 : sumRange 540 lstRowTerm = 12670487302191645696 := by
+  have h := sumRange_add 510 30 lstRowTerm
+  rwa [lst_row_prefix_16, lst_row_chunk_17] at h
+theorem lst_row_chunk_18 :
+    sumRange 30 (fun i ↦ lstRowTerm (540 + i)) = 245109624477025280 := by
+  decide +kernel
+theorem lst_row_prefix_18 : sumRange 570 lstRowTerm = 12915596926668670976 := by
+  have h := sumRange_add 540 30 lstRowTerm
+  rwa [lst_row_prefix_17, lst_row_chunk_18] at h
+theorem lst_row_chunk_19 :
+    sumRange 30 (fun i ↦ lstRowTerm (570 + i)) = 190389649035591680 := by
+  decide +kernel
+theorem lst_row_prefix_19 : sumRange 600 lstRowTerm = 13105986575704262656 := by
+  have h := sumRange_add 570 30 lstRowTerm
+  rwa [lst_row_prefix_18, lst_row_chunk_19] at h
+theorem lst_row_chunk_20 :
+    sumRange 30 (fun i ↦ lstRowTerm (600 + i)) = 142581672636846080 := by
+  decide +kernel
+theorem lst_row_prefix_20 : sumRange 630 lstRowTerm = 13248568248341108736 := by
+  have h := sumRange_add 600 30 lstRowTerm
+  rwa [lst_row_prefix_19, lst_row_chunk_20] at h
+theorem lst_row_chunk_21 :
+    sumRange 30 (fun i ↦ lstRowTerm (630 + i)) = 101685694658708480 := by
+  decide +kernel
+theorem lst_row_prefix_21 : sumRange 660 lstRowTerm = 13350253942999817216 := by
+  have h := sumRange_add 630 30 lstRowTerm
+  rwa [lst_row_prefix_20, lst_row_chunk_21] at h
+theorem lst_row_chunk_22 :
+    sumRange 30 (fun i ↦ lstRowTerm (660 + i)) = 67701714479098880 := by
+  decide +kernel
+theorem lst_row_prefix_22 : sumRange 690 lstRowTerm = 13417955657478916096 := by
+  have h := sumRange_add 660 30 lstRowTerm
+  rwa [lst_row_prefix_21, lst_row_chunk_22] at h
+theorem lst_row_chunk_23 :
+    sumRange 30 (fun i ↦ lstRowTerm (690 + i)) = 40629731475937280 := by
+  decide +kernel
+theorem lst_row_prefix_23 : sumRange 720 lstRowTerm = 13458585388954853376 := by
+  have h := sumRange_add 690 30 lstRowTerm
+  rwa [lst_row_prefix_22, lst_row_chunk_23] at h
+theorem lst_row_chunk_24 :
+    sumRange 30 (fun i ↦ lstRowTerm (720 + i)) = 20469745027143680 := by
+  decide +kernel
+theorem lst_row_prefix_24 : sumRange 750 lstRowTerm = 13479055133981997056 := by
+  have h := sumRange_add 720 30 lstRowTerm
+  rwa [lst_row_prefix_23, lst_row_chunk_24] at h
+theorem lst_row_chunk_25 :
+    sumRange 30 (fun i ↦ lstRowTerm (750 + i)) = 7221754510638080 := by
+  decide +kernel
+theorem lst_row_prefix_25 : sumRange 780 lstRowTerm = 13486276888492635136 := by
+  have h := sumRange_add 750 30 lstRowTerm
+  rwa [lst_row_prefix_24, lst_row_chunk_25] at h
+theorem lst_row_chunk_26 :
+    sumRange 30 (fun i ↦ lstRowTerm (780 + i)) = 885247304754176 := by
+  decide +kernel
+theorem lst_row_prefix_26 : sumRange 810 lstRowTerm = 13487162135797389312 := by
+  have h := sumRange_add 780 30 lstRowTerm
+  rwa [lst_row_prefix_25, lst_row_chunk_26] at h
+theorem lst_row_chunk_27 :
+    sumRange 30 (fun i ↦ lstRowTerm (810 + i)) = 0 := by
+  decide +kernel
+theorem lst_row_prefix_27 : sumRange 840 lstRowTerm = 13487162135797389312 := by
+  have h := sumRange_add 810 30 lstRowTerm
+  rwa [lst_row_prefix_26, lst_row_chunk_27] at h
+theorem lst_row_chunk_28 :
+    sumRange 30 (fun i ↦ lstRowTerm (840 + i)) = 0 := by
+  decide +kernel
+theorem lst_row_prefix_28 : sumRange 870 lstRowTerm = 13487162135797389312 := by
+  have h := sumRange_add 840 30 lstRowTerm
+  rwa [lst_row_prefix_27, lst_row_chunk_28] at h
+theorem lst_row_chunk_29 :
+    sumRange 30 (fun i ↦ lstRowTerm (870 + i)) = 0 := by
+  decide +kernel
+theorem lst_row_prefix_29 : sumRange 900 lstRowTerm = 13487162135797389312 := by
+  have h := sumRange_add 870 30 lstRowTerm
+  rwa [lst_row_prefix_28, lst_row_chunk_29] at h
+theorem lst_row_chunk_30 :
+    sumRange 30 (fun i ↦ lstRowTerm (900 + i)) = 0 := by
+  decide +kernel
+theorem lst_row_prefix_30 : sumRange 930 lstRowTerm = 13487162135797389312 := by
+  have h := sumRange_add 900 30 lstRowTerm
+  rwa [lst_row_prefix_29, lst_row_chunk_30] at h
+theorem lst_row_chunk_31 :
+    sumRange 30 (fun i ↦ lstRowTerm (930 + i)) = 0 := by
+  decide +kernel
+theorem lst_row_prefix_31 : sumRange 960 lstRowTerm = 13487162135797389312 := by
+  have h := sumRange_add 930 30 lstRowTerm
+  rwa [lst_row_prefix_30, lst_row_chunk_31] at h
+theorem lst_row_chunk_32 :
+    sumRange 30 (fun i ↦ lstRowTerm (960 + i)) = 0 := by
+  decide +kernel
+theorem lst_row_prefix_32 : sumRange 990 lstRowTerm = 13487162135797389312 := by
+  have h := sumRange_add 960 30 lstRowTerm
+  rwa [lst_row_prefix_31, lst_row_chunk_32] at h
+theorem lst_row_chunk_33 :
+    sumRange 30 (fun i ↦ lstRowTerm (990 + i)) = 0 := by
+  decide +kernel
+theorem lst_row_prefix_33 : sumRange 1020 lstRowTerm = 13487162135797389312 := by
+  have h := sumRange_add 990 30 lstRowTerm
+  rwa [lst_row_prefix_32, lst_row_chunk_33] at h
+theorem lst_row_chunk_34 :
+    sumRange 1 (fun i ↦ lstRowTerm (1020 + i)) = 0 := by
+  decide +kernel
+theorem lst_row_prefix_34 : sumRange 1021 lstRowTerm = 13487162135797389312 := by
+  have h := sumRange_add 1020 1 lstRowTerm
+  rwa [lst_row_prefix_33, lst_row_chunk_34] at h
+
+/-- The slot inequality for `(m, M, μ, h) = (546, 260, 1020, 1000000000)` at `D = 127`, `A = 239`,
+`n = 512`, `ℓ = 1`. -/
+theorem lst_cert :
+    rowSlotBound 127 239 546 260 1020 512 1 1000000000 <
+      heightSlotCount 127 239 546 260 1020 1 1000000000 := by
+  change sumRange 1021 lstRowTerm < sumRange 1021 lstHeightTerm
+  rw [lst_row_prefix_34, lst_height_prefix_34]
+  decide
+
+end ProximityGap.GrandChallenges.Goldilocks512.Arithmetic
