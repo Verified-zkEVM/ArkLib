@@ -33,8 +33,7 @@ TODO: list the main definitions, theorems, or protocol ideas ArkLib relies on.
 ## Version Notes
 
 The library's numbered [DKT26] citations use the November 2026 revision of
-[ePrint 2026/2056](https://eprint.iacr.org/2026/2056), whose numbering is recorded in the
-revision's `rs-beyond-johnson.aux`.
+[ePrint 2026/2056](https://eprint.iacr.org/2026/2056).
 
 The historical per-file [port correspondence notes](../../design/reed-solomon-port-correspondence.md)
 use the earlier published ePrint numbering, including Section 6.1, equations (70)–(72), and
