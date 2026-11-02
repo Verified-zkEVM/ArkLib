@@ -32,7 +32,7 @@ truncate before adding `b`.
 ## References
 
 * [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 6.1.
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Appendix C.2, (112)–(113).
 -/
 
 @[expose] public section

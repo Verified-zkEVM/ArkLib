@@ -15882,7 +15882,7 @@
         {
           "doc": "The local constraint map at `(center, received)` on the first-order space.",
           "kind": "def",
-          "line": 60,
+          "line": 61,
           "name": "ReedSolomon.HiddenDerivative.firstOrderLocalConstraintAt",
           "namespace": "ReedSolomon.HiddenDerivative",
           "short_name": "firstOrderLocalConstraintAt",
@@ -15891,7 +15891,7 @@
         {
           "doc": "The local constraint map on the first-order space has rank at most `certifiedEnlargedRankBound 1 m M 0`, at every center and received value and for every `D`. For `m = 0` the space is zero; otherwise it embeds in the exact interpolation space with `d = 1`, degree bound `D + 2`, and agreement threshold `A + 2 \u03bc`.",
           "kind": "theorem",
-          "line": 68,
+          "line": 69,
           "name": "ReedSolomon.HiddenDerivative.finrank_firstOrderLocalConstraintAt_le",
           "namespace": "ReedSolomon.HiddenDerivative",
           "short_name": "finrank_firstOrderLocalConstraintAt_le",
@@ -15900,7 +15900,7 @@
         {
           "doc": "The local constraints at every received point `(centers i, received i)` on the first-order space, as one linear map into the product.",
           "kind": "def",
-          "line": 96,
+          "line": 97,
           "name": "ReedSolomon.HiddenDerivative.firstOrderGlobalConstraintMap",
           "namespace": "ReedSolomon.HiddenDerivative",
           "short_name": "firstOrderGlobalConstraintMap",
@@ -15909,7 +15909,7 @@
         {
           "doc": "Coordinate `i` of `firstOrderGlobalConstraintMap` is the local constraint map at `(centers i, received i)`.",
           "kind": "theorem",
-          "line": 103,
+          "line": 104,
           "name": "ReedSolomon.HiddenDerivative.firstOrderGlobalConstraintMap_apply",
           "namespace": "ReedSolomon.HiddenDerivative",
           "short_name": "firstOrderGlobalConstraintMap_apply",
@@ -15918,7 +15918,7 @@
         {
           "doc": "The constraints at all points of a finite received word have rank at most `card \u03b9 * certifiedEnlargedRankBound 1 m M 0`.",
           "kind": "theorem",
-          "line": 111,
+          "line": 112,
           "name": "ReedSolomon.HiddenDerivative.finrank_firstOrderGlobalConstraintMap_le",
           "namespace": "ReedSolomon.HiddenDerivative",
           "short_name": "finrank_firstOrderGlobalConstraintMap_le",
@@ -15927,7 +15927,7 @@
         {
           "doc": "If `card \u03b9 * certifiedEnlargedRankBound 1 m M 0` is below the number of first-order eligible exponents, some nonzero polynomial in the first-order space satisfies the local constraints at every received point.",
           "kind": "theorem",
-          "line": 123,
+          "line": 124,
           "name": "ReedSolomon.HiddenDerivative.exists_nonzero_firstOrder_interpolant",
           "namespace": "ReedSolomon.HiddenDerivative",
           "short_name": "exists_nonzero_firstOrder_interpolant",
@@ -15936,7 +15936,7 @@
         {
           "doc": "For `0 < D`, if `card \u03b9 * certifiedEnlargedRankBound 1 m M 0` is below `firstOrderDimensionCount D A m M \u03bc`, some nonzero polynomial in the first-order space satisfies the local constraints at every received point.",
           "kind": "theorem",
-          "line": 139,
+          "line": 140,
           "name": "ReedSolomon.HiddenDerivative.exists_nonzero_firstOrder_interpolant_of_dimensionCount",
           "namespace": "ReedSolomon.HiddenDerivative",
           "short_name": "exists_nonzero_firstOrder_interpolant_of_dimensionCount",
@@ -15945,7 +15945,7 @@
         {
           "doc": "Under the hypothesis of `exists_nonzero_firstOrder_interpolant`, some nonzero polynomial `Q` in the first-order space has the following property: for every polynomial `P` with `P (centers i) = received i`, the specialization `Q(X, P, P')` is divisible by `(X - centers i)^m`. The interpolant is chosen before `P`.",
           "kind": "theorem",
-          "line": 152,
+          "line": 153,
           "name": "ReedSolomon.HiddenDerivative.exists_nonzero_firstOrder_interpolant_X_sub_C_pow_dvd",
           "namespace": "ReedSolomon.HiddenDerivative",
           "short_name": "exists_nonzero_firstOrder_interpolant_X_sub_C_pow_dvd",
@@ -50093,7 +50093,7 @@
           "signature": "def HasCapacityLineAgreement (\u03b4 : \u211d) (N : \u2115) (E : \u2115 \u2192 \u211d) : Prop :="
         },
         {
-          "doc": "**Line agreement up to capacity.** At every positive gap `\u03b4`, exact line agreement holds from length `capacityLineLength \u03b4` on with at most `capacityLineConstant \u03b4 * n ^ (capacityLineDerivativeOrder \u03b4 + 1)` exceptional challenges ([DKT26], Theorems 5.13 and 6.8).",
+          "doc": "**Line agreement up to capacity.** At every positive gap `\u03b4`, exact line agreement holds from length `capacityLineLength \u03b4` on with at most `capacityLineConstant \u03b4 * n ^ (capacityLineDerivativeOrder \u03b4 + 1)` exceptional challenges ([DKT26], Theorem 8.1).",
           "kind": "theorem",
           "line": 131,
           "name": "ReedSolomon.capacity_lineAgreement",
@@ -50102,7 +50102,7 @@
           "signature": "theorem capacity_lineAgreement {\u03b4 : \u211d} (h\u03b4 : 0 < \u03b4) :"
         },
         {
-          "doc": "**Line agreement up to capacity, with gap-only constants.** For every `\u03b4 > 0` there are `N \u2265 4`, `d` and `C > 0`, chosen before the code, the field and the received line, such that exact line agreement holds from length `N` on with at most `C n^(d+1)` exceptional challenges ([DKT26], Theorem 6.9).",
+          "doc": "**Line agreement up to capacity, with gap-only constants.** For every `\u03b4 > 0` there are `N \u2265 4`, `d` and `C > 0`, chosen before the code, the field and the received line, such that exact line agreement holds from length `N` on with at most `C n^(d+1)` exceptional challenges ([DKT26], Theorem 8.1).",
           "kind": "theorem",
           "line": 163,
           "name": "ReedSolomon.exists_capacity_lineAgreement",
@@ -50129,7 +50129,7 @@
           "signature": "theorem card_mul_one_sub_capacityRadius {\u03b4 : \u211d} {n k : \u2115} (hn : 0 < n) :"
         },
         {
-          "doc": "**Affine-family agreement from line agreement.** Exact line agreement at a nonnegative gap gives exact affine-family agreement with the same length threshold and exceptional-set bound ([DKT26], Corollary 7.2).",
+          "doc": "**Affine-family agreement from line agreement.** Exact line agreement at a nonnegative gap gives exact affine-family agreement with the same length threshold and exceptional-set bound ([DKT26], Corollary 6.3).",
           "kind": "theorem",
           "line": 205,
           "name": "ReedSolomon.HasCapacityLineAgreement.affineAgreement",
@@ -50138,7 +50138,7 @@
           "signature": "theorem HasCapacityLineAgreement.affineAgreement {\u03b4 : \u211d} {N : \u2115} {E : \u2115 \u2192 \u211d}"
         },
         {
-          "doc": "**Affine-family agreement up to capacity, with gap-only constants.** For every `\u03b4 > 0` there are `N \u2265 4`, `d` and `C > 0` such that exact affine-family agreement holds from length `N` on with exceptional density at most `C n^(d+1) / (|F| - 1)` in every number of directions ([DKT26], Theorem 6.9 and Corollary 7.2).",
+          "doc": "**Affine-family agreement up to capacity, with gap-only constants.** For every `\u03b4 > 0` there are `N \u2265 4`, `d` and `C > 0` such that exact affine-family agreement holds from length `N` on with exceptional density at most `C n^(d+1) / (|F| - 1)` in every number of directions ([DKT26], Theorem 8.1 and Corollary 6.3).",
           "kind": "theorem",
           "line": 224,
           "name": "ReedSolomon.exists_capacity_affineAgreement",
@@ -50156,7 +50156,7 @@
           "signature": "theorem HasCapacityLineAgreement.mcaError_le {\u03b4 : \u211d} {N : \u2115} {E : \u2115 \u2192 \u211d}"
         },
         {
-          "doc": "**MCA errors up to capacity, with gap-only constants.** For every `\u03b4 > 0` there are `N \u2265 4`, `d` and `C > 0` such that every Reed\u2013Solomon code of length `n \u2265 N` over a finite field of characteristic zero or larger than `k - 1` has MCA error at radius `capacityRadius \u03b4 n k = 1 - k / n - \u03b4` at most `C n^(d+1) / |F|` for lines and at most `C n^(d+1) / (|F| - 1)` for affine spaces of every dimension ([DKT26], Theorem 6.9 and Corollary 7.2).",
+          "doc": "**MCA errors up to capacity, with gap-only constants.** For every `\u03b4 > 0` there are `N \u2265 4`, `d` and `C > 0` such that every Reed\u2013Solomon code of length `n \u2265 N` over a finite field of characteristic zero or larger than `k - 1` has MCA error at radius `capacityRadius \u03b4 n k = 1 - k / n - \u03b4` at most `C n^(d+1) / |F|` for lines and at most `C n^(d+1) / (|F| - 1)` for affine spaces of every dimension ([DKT26], Theorem 8.1 and Corollary 6.3).",
           "kind": "theorem",
           "line": 256,
           "name": "ReedSolomon.exists_capacity_mcaError",
@@ -50237,7 +50237,7 @@
           "signature": "def HasCapacityPowerBatchingAgreement (\u03b4 : \u211d) (N \u03bd : \u2115) (E : \u2115 \u2192 \u2115 \u2192 \u211d) : Prop :="
         },
         {
-          "doc": "**Power-batching agreement up to capacity.** At every positive gap `\u03b4`, exact power-batching agreement holds from length `capacityPowerLength \u03b4` on, with characteristic bound `capacityPowerJetBound \u03b4` and at most `\u2113 * capacityPowerConstant \u03b4 * n ^ (capacityPowerDerivativeOrder \u03b4 + 1)` exceptional challenges ([DKT26], Corollary 7.3).",
+          "doc": "**Power-batching agreement up to capacity.** At every positive gap `\u03b4`, exact power-batching agreement holds from length `capacityPowerLength \u03b4` on, with characteristic bound `capacityPowerJetBound \u03b4` and at most `\u2113 * capacityPowerConstant \u03b4 * n ^ (capacityPowerDerivativeOrder \u03b4 + 1)` exceptional challenges ([DKT26], Corollary 8.6 and Theorem 8.1).",
           "kind": "theorem",
           "line": 326,
           "name": "ReedSolomon.capacity_powerBatchingAgreement",
@@ -50246,7 +50246,7 @@
           "signature": "theorem capacity_powerBatchingAgreement {\u03b4 : \u211d} (h\u03b4 : 0 < \u03b4) :"
         },
         {
-          "doc": "**Power-batching agreement up to capacity, with gap-only constants.** For every `\u03b4 > 0` there are `N \u2265 4`, `d`, a characteristic bound `\u03bd < N` and `C > 0`, chosen before the batching degree, the code, the field and the rows, such that exact power-batching agreement holds from length `N` on with at most `\u2113 C n^(d+1)` exceptional challenges ([DKT26], Corollary 7.3).",
+          "doc": "**Power-batching agreement up to capacity, with gap-only constants.** For every `\u03b4 > 0` there are `N \u2265 4`, `d`, a characteristic bound `\u03bd < N` and `C > 0`, chosen before the batching degree, the code, the field and the rows, such that exact power-batching agreement holds from length `N` on with at most `\u2113 C n^(d+1)` exceptional challenges ([DKT26], Corollary 8.6 and Theorem 8.1).",
           "kind": "theorem",
           "line": 375,
           "name": "ReedSolomon.exists_capacity_powerBatchingAgreement",
@@ -77232,7 +77232,7 @@
         {
           "doc": "**Chain witnesses at one point.** Over a finite domain with `q` elements, let `roots` be a finite set of polynomials of degree at most `D`, and assume the binomial hypothesis `((k + s).choose s : F) \u2260 0` for `0 < k`, `k + s \u2264 D`. Then at most `jetTotalDegree Q * q ^ d` elements of `roots` have `a` as a chain witness. If `initialJetEquation a Q = 0` there are none (`ChainWitness.initialJetEquation_ne_zero`). Otherwise their Hasse jets at `a` are distinct zeros of `initialJetEquation a Q`, a nonzero polynomial in `d + 1` variables of total degree at most `jetTotalDegree Q`.",
           "kind": "theorem",
-          "line": 75,
+          "line": 77,
           "name": "PolynomialDifferential.card_filter_chainWitness_le",
           "namespace": "PolynomialDifferential",
           "short_name": "card_filter_chainWitness_le",
@@ -77241,7 +77241,7 @@
         {
           "doc": "**Counting solutions by the total jet degree.** Let `F` be a finite domain with `q` elements, `Q \u2260 0` satisfying the cast hypotheses at every jet, and `roots` a finite set of solutions of `Q = 0` of degree at most `D`. If `((k + s).choose s : F) \u2260 0` for `0 < k`, `k + s \u2264 D`, and `differentialWeightedDegree D Q - (D - d) \u2264 H`, then `#roots * (q - H) \u2264 q * (jetTotalDegree Q * q ^ d)`. Every solution has at most `H` points that are not chain witnesses (`exists_chainWitness`), and every point is a chain witness for at most `jetTotalDegree Q * q ^ d` solutions (`card_filter_chainWitness_le`). Trun",
           "kind": "theorem",
-          "line": 120,
+          "line": 122,
           "name": "PolynomialDifferential.card_mul_sub_le_jetTotalDegree_mul",
           "namespace": "PolynomialDifferential",
           "short_name": "card_mul_sub_le_jetTotalDegree_mul",
@@ -77250,7 +77250,7 @@
         {
           "doc": "`card_mul_sub_le_jetTotalDegree_mul` for all solutions of degree at most `D`: `Nat.card (BoundedSolution Q D) * (q - H) \u2264 q * (jetTotalDegree Q * q ^ d)`.",
           "kind": "theorem",
-          "line": 148,
+          "line": 150,
           "name": "PolynomialDifferential.BoundedSolution.natCard_mul_sub_le_jetTotalDegree_mul",
           "namespace": "PolynomialDifferential",
           "short_name": "BoundedSolution.natCard_mul_sub_le_jetTotalDegree_mul",
@@ -77259,7 +77259,7 @@
         {
           "doc": "**At most `2 * jetTotalDegree Q * q ^ d` solutions.** Under the hypotheses of `BoundedSolution.natCard_mul_sub_le_jetTotalDegree_mul`, if `2 * H \u2264 q` then `Q = 0` has at most `2 * jetTotalDegree Q * q ^ d` solutions of degree at most `D`: at least half of the points are chain witnesses for each solution.",
           "kind": "theorem",
-          "line": 169,
+          "line": 171,
           "name": "PolynomialDifferential.BoundedSolution.natCard_le_two_mul_jetTotalDegree_mul",
           "namespace": "PolynomialDifferential",
           "short_name": "BoundedSolution.natCard_le_two_mul_jetTotalDegree_mul",
@@ -77268,7 +77268,7 @@
         {
           "doc": "**Witnesses in a larger domain.** Let `f : F \u2192+* E` be an injective ring homomorphism into a finite domain `E`. If `Q \u2260 0` satisfies the cast hypotheses, `((k + s).choose s : F) \u2260 0` for `0 < k`, `k + s \u2264 D`, `differentialWeightedDegree D Q - (D - d) \u2264 H` and `2 * H \u2264 Nat.card E`, then `Q = 0` has at most `2 * jetTotalDegree Q * Nat.card E ^ d` solutions over `F` of degree at most `D`. The solutions over `F` inject into those of `Q.map f` over `E` (`BoundedSolution.natCard_le_natCard_map`), and every hypothesis transfers along `f`. `F` itself need not be finite or a domain.",
           "kind": "theorem",
-          "line": 195,
+          "line": 197,
           "name": "PolynomialDifferential.BoundedSolution.natCard_le_two_mul_jetTotalDegree_mul_of_injective",
           "namespace": "PolynomialDifferential",
           "short_name": "BoundedSolution.natCard_le_two_mul_jetTotalDegree_mul_of_injective",
@@ -77277,7 +77277,7 @@
         {
           "doc": "**Witnesses in the extension of degree `e`.** Over a finite field `F` with `q` elements, under the hypotheses of `BoundedSolution.natCard_le_two_mul_jetTotalDegree_mul` with `2 * H \u2264 q ^ e` for some `0 < e`, `Q = 0` has at most `2 * jetTotalDegree Q * q ^ (e * d)` solutions of degree at most `D`. The witnesses are taken in `FiniteField.Extension F (ringChar F) e`, which has `q ^ e` elements; the hypotheses stay those over `F`.",
           "kind": "theorem",
-          "line": 222,
+          "line": 224,
           "name": "PolynomialDifferential.BoundedSolution.natCard_le_two_mul_jetTotalDegree_mul_extension",
           "namespace": "PolynomialDifferential",
           "short_name": "BoundedSolution.natCard_le_two_mul_jetTotalDegree_mul_extension",

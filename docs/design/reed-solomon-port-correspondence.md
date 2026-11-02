@@ -11,8 +11,9 @@ library documentation describes only the present API (see
 [`docs/wiki/porting-conventions.md`](../wiki/porting-conventions.md)). "The source" is ArkLib
 revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d` unless a note names another revision.
 
-The source cited a manuscript revision of [DKT26]; the library cites the published version
-(Cryptology ePrint Archive, Paper 2026/2056), and the notes below use its numbering. The
+The library now cites the November 2026 revision of [DKT26] (Cryptology ePrint Archive,
+Paper 2026/2056) and its numbering. The per-file notes below were written against the earlier
+published numbering. The following manuscript-to-published mapping is historical. The
 manuscript locators map as follows: "Appendix A.3, Lemma A.5" (Regular Taylor
 chart) is DKT26 Appendix A.6, Lemma A.4; "Section 3 (local interpolation)" is DKT26 Section 3.5;
 equations (39)–(40) of the source revision (`eq:band-lattice-ratio`, `eq:band-geometric-rank`)

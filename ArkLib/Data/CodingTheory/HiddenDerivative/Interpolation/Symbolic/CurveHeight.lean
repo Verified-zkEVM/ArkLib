@@ -29,7 +29,7 @@ this arithmetic transfer; it does not construct an interpolant.
 ## References
 
 * [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient Decoding
-  and Smaller Cryptographic Proofs*][DKT26], Section 5.6, Proposition 5.10, (64)
+  and Smaller Cryptographic Proofs*][DKT26], Appendix C.2, Proposition C.2, (116)
 -/
 
 @[expose] public section

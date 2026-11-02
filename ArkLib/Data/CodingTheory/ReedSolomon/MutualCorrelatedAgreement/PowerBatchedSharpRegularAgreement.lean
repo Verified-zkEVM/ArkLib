@@ -39,10 +39,10 @@ where `P_r(T) = prod_{j<r} (n-k+j+1)/(T-k+j+1)`. The incidence estimate applies 
 admissible tuple graphs. Sharp tuple counting bounds the retained graphs, and each graph
 contributes at most `ell * (n-L)` accidental roots. A common regular Taylor center lifts the
 fixed-center estimate to every finite family of bad challenges, yielding one finite exceptional
-set. The estimates have the shape of [DKT26], Section 6.3, Lemma 6.5 and Theorem 6.6, with the
-Taylor exponent `tau` in place of `2K`. At order one, with `tau = max 0 (2D - 3)` and the
-first-derivative degree cap equal to `v`, they are the regular-family terms of (55) in [DKT26],
-Section 5.4, Lemma 5.6.
+set. The estimates have the shape of [DKT26], Appendix D.4, Lemma D.2 and Section 8.3, Theorem 8.5,
+with the Taylor exponent `tau` in place of `2K`. At order one, with `tau = max 0 (2D - 3)` and the
+first-derivative degree cap equal to `v`, they are the regular-family terms of (44) in [DKT26],
+Section 5.3, Lemma 5.5.
 
 ## Main statements
 

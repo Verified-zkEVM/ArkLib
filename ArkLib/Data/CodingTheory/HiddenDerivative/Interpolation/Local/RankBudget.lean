@@ -45,8 +45,8 @@ sides are zero while the budget is positive.
 ## References
 
 * [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 6.1, the local-rank bound (72), and
-  Appendix D.2, the rank estimate (131) in the proof of Lemma 6.2.
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 8.2, the local-rank bound (58), and
+  Appendix D.2, the rank estimate (119) in the proof of Lemma 8.3.
 -/
 
 @[expose] public section
