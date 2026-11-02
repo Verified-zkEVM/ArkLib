@@ -21,6 +21,8 @@ TODO: list the main definitions, theorems, or protocol ideas ArkLib relies on.
 
 ## Main ArkLib Touchpoints
 
+- [`ArkLib/Data/CodingTheory/ReedSolomon/PaperGuide.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/PaperGuide.lean):
+  reader guide mapping each numbered list-decoding and MCA result to its owning declaration.
 - [`ArkLib/Data/CodingTheory/HiddenDerivative/`](../../../ArkLib/Data/CodingTheory/HiddenDerivative/):
   interpolation spaces, local constraints, symbolic certificates, and parameter choices.
 - [`ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/`](../../../ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/):
