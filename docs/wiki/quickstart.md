@@ -314,6 +314,8 @@ python3 -m pip install leanblueprint
   summary on each opened or updated PR, and
   [`../../.github/workflows/review.yml`](../../.github/workflows/review.yml) runs an automated
   review when a maintainer comments `/review` on a PR.
+  Both workflows use `lean4repo-utils@main`, so updates on that branch change their CI behavior.
+  This is a GitHub Actions dependency; it adds no Lean or Python package dependency.
 - [`../../.github/workflows/update.yml`](../../.github/workflows/update.yml) checks for new Lean
   and Mathlib releases every seven days and opens an update PR or issue for each, and
   [`../../.github/workflows/release-tag.yml`](../../.github/workflows/release-tag.yml) tags a
