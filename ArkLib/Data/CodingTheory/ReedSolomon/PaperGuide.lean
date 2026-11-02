@@ -8,6 +8,7 @@ module
 public import ArkLib.Data.CodingTheory.Basic.Distance
 public import ArkLib.Data.CodingTheory.ProximityGenerator.BinaryTensorFoldAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
+public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AgreementBounds
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.PowerAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.TensorFoldAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.ExactLists
@@ -15,9 +16,12 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.Fix
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.MathematicalUniformRate
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.RatePartition
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.DirectJetList
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Uniform
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.PairwiseJohnson
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.CertificateBound
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.FixedRateExplicitGate
 public import
@@ -35,6 +39,7 @@ public import
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Johnson.Agreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Johnson.Probability
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.LineToAffine
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedCertificate
 public import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement.ConstantCode
 
 /-!
@@ -50,7 +55,7 @@ Lean statement, the entry says which hypotheses are specialized. Declarations ar
 `ReedSolomon` unless written in full.
 
 The paper's efficient decoders (Theorem 1.3, Section 9, Appendix E) and its bounded-input list
-recovery (Theorem 8.10) are proved in the paper only. The concrete ProveKit, ZisK, and LambdaVM
+recovery (Remark 8.10) are proved in the paper only. The concrete ProveKit, ZisK, and LambdaVM
 parameter certificates live outside the library import graph, in
 `ArkLibExamples.ReedSolomon.PaperGuide`.
 
@@ -63,8 +68,8 @@ theorem chooses one exceptional challenge set after the received words and befor
 challenge `z` and the candidate polynomial. Outside that set, `HasExactCorrelatedPair` (lines) or
 `HasExactPowerAgreement` (polynomial curves) recovers the constituent messages together with
 equality of the complete agreement sets (`polynomialAgreementSet`,
-`commonPolynomialAgreementSet`, and `Code.agree` on codewords). Finite-field `mcaError` theorems
-divide the exceptional count by the number of challenges.
+`commonPolynomialAgreementSet`, and `Code.agree` on codewords). Finite-field
+`CoreDefinitions.mcaError` theorems divide the exceptional count by the number of challenges.
 
 A hypothesis `(k : ℝ) + δ * n ≤ A` imposes the paper's real agreement fraction on an integer
 threshold `A`; a hypothesis `k ≤ ρ * n` permits every rate at most `ρ` and does not identify `ρ`
@@ -73,7 +78,9 @@ with `k / n`.
 ## Field scope
 
 All list and MCA statements below hold over an arbitrary field, finite or infinite, with distinct
-evaluation points, except where an entry says otherwise. The one prime-field interface is the
+evaluation points, except where an entry says otherwise. Error densities (`mcaError` theorems),
+the affine-family and fold entries of Section 6, and the tensor-fold counts require a finite field
+(`[Fintype F]`); each such entry says so. The one prime-field interface is the
 packaged predicate `HasCapacityLists` and its instances `exists_rateCapacity_list`,
 `uniformFirstOrder_capacity_list`, and `exists_capacity_list`, which quantify over `ZMod q` for
 primes `q ≥ n`. For the arbitrary-field capacity list theorem, use
@@ -81,7 +88,10 @@ primes `q ≥ n`. For the arbitrary-field capacity list theorem, use
 
 ## Characteristic guards
 
-Every guard keeps the constant-code case `k = 1` free of characteristic restrictions.
+The capacity interfaces (Theorems 5.7 and 8.1 and their packaged predicates) exempt the
+constant-code case `k = 1` from every characteristic restriction. The fixed-order interfaces of
+Corollary 8.8 keep their guard even at `k = 1`; for constant codes use
+`uniformExactPowerAgreement_constantCode` (Lemma 3.3) directly.
 
 * Johnson (Theorem 4.4) has no characteristic restriction.
 * The first-order branchwise theorems (Theorems 1.1, 5.1, 5.2) require characteristic zero or
@@ -94,7 +104,7 @@ Every guard keeps the constant-code case `k = 1` free of characteristic restrict
   Theorem 8.1) keep the jet-degree guard: characteristic zero or larger than `max (k - 1) ν`,
   with `ν = capacityPowerJetBound δ`. The degree-only guard of the line theorem does not transfer
   to curves.
-* The fixed-order results (Theorem 8.8) require characteristic zero or larger than the maximum
+* The fixed-order results (Corollary 8.8) require characteristic zero or larger than the maximum
   of `k - 1`, the derivative order, and the jet cap.
 
 ## Zeroth order: the Johnson regime (Section 4)
@@ -138,22 +148,42 @@ Every guard keeps the constant-code case `k = 1` free of characteristic restrict
 
 ## Affine families, interleaving, and folds (Section 6)
 
-* Lemma 6.2 and Corollary 6.3: `exists_affine_exceptionalSet_full_agreement_of_exactLine` lifts a
-  line statement to affine families, with densities `mcaError_affineSpace_le_of_exactAgreement`.
-  At capacity, `HasCapacityLineAgreement.affineAgreement` and `exists_capacity_affineAgreement`
-  give the exceptional density `C n^(d+1) / (q - 1)`; the Lean statement also covers dimension
-  zero.
+* Lemma 6.2 and Corollary 6.3, over a finite field:
+  `exists_affine_exceptionalSet_full_agreement_of_exactLine` lifts a line statement to affine
+  families, with densities `mcaError_affineSpace_le_of_exactAgreement`. At capacity,
+  `HasCapacityLineAgreement.affineAgreement` and `exists_capacity_affineAgreement` give the
+  exceptional density `C n^(d+1) / (q - 1)`; the Lean statement also covers dimension zero.
+* Corollary 6.4, interleaved lists: `Lambda_interleaved_le_of_injective_pack` bounds the
+  interleaved list size by the scalar list size over an extension `K` that admits an injective
+  packing of the column tuples. `Lambda_interleaved_le_ratFunc` takes `K = F(Z)`, so a scalar
+  bound proved over every field transfers at every width.
 * Lemma 6.5 and Corollary 6.6: `uniformExactInterleavedPowerAgreement_of_scalar` turns one scalar
   theorem into a width-independent exceptional set for a row-wise interleaving, over arbitrary
   finite coordinate and row types.
-* Corollary 6.7: `TensorMCA.tensorFoldBad_card_le` proves the shared-level union bound, charging
-  each fold level once; `fullSetLevelWitness_interleaved_of_exactAgreement` supplies its
-  Reed--Solomon level witness, and `interleavedRS_tensorFoldBad_card_le_heightThree` is the
-  three-level `3 e q²` bound.
+* Corollary 6.7, over a finite field: `TensorMCA.tensorFoldBad_card_le` proves the shared-level
+  union bound, charging each fold level once; `fullSetLevelWitness_interleaved_of_exactAgreement`
+  supplies its Reed--Solomon level witness, and `interleavedRS_tensorFoldBad_card_le_heightThree` is
+  the three-level `3 e q²` bound.
 
 ## Fixed derivative order and capacity (Section 8)
 
-* Theorem 8.8, lists and line MCA from the derivative-order condition `Γ(ρ, a, d) > 1` with
+* Theorem 8.4, direct agreement bound for differential roots:
+  `HiddenDerivative.exists_directJetList_actualStages_and_bounds` proves finiteness and the
+  three displayed bounds (actual stages, common order, and the closed form
+  `B² (n (1 + 2K (B - 1)) / (A - k + 1))^d`) for any recurrence length `K` with `d < K` and
+  `k ≤ K`, under characteristic zero or larger than `max (K - 1) B`; the paper's choice is
+  `K = max k (d + 1)`.
+* Theorem 8.5, symbolic transfer for polynomial curves:
+  `Certificate.exists_exceptional_powerBatchedAgreement_sharp_of_exponent`, in namespace
+  `HiddenDerivative.SymbolicReceivedCurve`, turns a symbolic curve certificate of challenge height
+  `h` into one exceptional set of size at most `h` plus a sharp charge per regular separant stage,
+  outside which exact power agreement holds.
+* Corollary 8.6, powers batching from a certified support:
+  `exists_exceptional_exactPowerAgreement_of_certificate_of_jetCharacteristic` bounds the
+  exceptional set by `ℓ C n^(d+1)` when the certificate height is at most `ℓ h`, under the
+  jet-degree guard; `exists_exceptional_exactPowerAgreement_of_certificate` replaces the guard by
+  characteristic zero or at least `n`.
+* Corollary 8.8, lists and line MCA from the derivative-order condition `Γ(ρ, a, d) > 1` with
   `d ≥ 500`: `exists_ratePartition_list_bound` and
   `exists_ratePartition_line_exactCorrelatedPair_parameters`, with the gate
   `HiddenDerivative.RatePartition.rateGamma`. The explicit fixed-rate order is
@@ -174,9 +204,10 @@ Every guard keeps the constant-code case `k = 1` free of characteristic restrict
   and error forms `exists_capacity_affineAgreement` and `exists_capacity_mcaError`, and powers
   batching `capacity_powerBatchingAgreement` and `exists_capacity_powerBatchingAgreement`. The
   line statements dispatch to Theorem 5.7 from gap `6/25` on.
-* Theorem 8.5 and Corollary 8.6, polynomial curves and powers batching: the predicate
-  `HasCapacityPowerBatchingAgreement` and `capacity_powerBatchingAgreement`, under the jet-degree
-  guard above.
+* Powers batching at capacity, the specialization of Theorem 8.5 and Corollary 8.6 used in
+  Theorem 8.1: the predicate `HasCapacityPowerBatchingAgreement` and
+  `capacity_powerBatchingAgreement`, which fix gap-dependent parameters and a minimum length,
+  under the jet-degree guard above.
 
 ## Supporting formalization lemmas
 

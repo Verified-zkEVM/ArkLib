@@ -56047,7 +56047,7 @@
         {
           "doc": "",
           "kind": "theorem",
-          "line": 62,
+          "line": 67,
           "name": "chooses",
           "namespace": "",
           "short_name": "chooses",
@@ -56056,7 +56056,7 @@
         {
           "doc": "",
           "kind": "theorem",
-          "line": 147,
+          "line": 161,
           "name": "into",
           "namespace": "",
           "short_name": "into",
