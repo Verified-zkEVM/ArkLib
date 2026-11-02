@@ -31,7 +31,7 @@ namespace Polynomial.Bivariate
 
 noncomputable section
 
-variable {F : Type} [Semiring F]
+variable {F : Type*} [Semiring F]
 
 /-- The set of coefficients of a bivariate polynomial. -/
 def coeffs [DecidableEq F] (f : F[X][Y]) : Finset F[X] := f.support.image f.coeff
@@ -59,7 +59,7 @@ attribute [local grind _=_] Finsupp.mem_support_iff toFinsupp_apply smul_monomia
 attribute [local grind =] natDegree_mul natDegree_add_eq_right_of_degree_lt
                           natDegree_zero
 
-theorem natDegree_sum_lt_of_forall_lt {F : Type} [Semiring F]
+theorem natDegree_sum_lt_of_forall_lt {F : Type*} [Semiring F]
     {α : Type} {s : Finset α} {g : α → F[X]} {deg : ℕ} :
   0 < deg → (∀ x ∈ s, (g x).natDegree < deg) → (∑ x ∈ s, g x).natDegree < deg := by
   intro deg_pos h
@@ -463,14 +463,14 @@ def weightedDegreeMonomialXY {n m : ℕ} (a b t : ℕ) : ℕ :=
   a * (degreeX (monomialXY n m t)) + b * natDegreeY (monomialXY n m t)
 
 /-- `evalX` is multiplicative. -/
-lemma evalX_mul {F : Type} [CommSemiring F] (x : F) (f g : F[X][Y]) :
+lemma evalX_mul {F : Type*} [CommSemiring F] (x : F) (f g : F[X][Y]) :
     evalX x (f * g) = evalX x f * evalX x g := by
   simp [evalX_eq_map]
 
 end
 /-- Shifting by any point preserves nonzeroness: `shift` is composition with unit-leading
 affine substitutions in each variable, which are injective ring maps on polynomials. -/
-theorem shift_ne_zero {R : Type} [CommRing R]
+theorem shift_ne_zero {R : Type*} [CommRing R]
     (f : Polynomial (Polynomial R)) (x y : R) (hf : f ≠ 0) :
     Polynomial.Bivariate.shift f x y ≠ 0 := by
   intro hs
@@ -489,7 +489,7 @@ theorem shift_ne_zero {R : Type} [CommRing R]
 
 /-- A nonzero bivariate polynomial has a well-defined multiplicity at the origin: some
 coefficient in the truncation grid is nonzero, so the defining `min?` is over a nonempty list. -/
-theorem rootMultiplicity₀_ne_none {R : Type} [CommSemiring R] [DecidableEq R]
+theorem rootMultiplicity₀_ne_none {R : Type*} [CommSemiring R] [DecidableEq R]
     (g : Polynomial (Polynomial R)) (hg : g ≠ 0) :
     Polynomial.Bivariate.rootMultiplicity₀ g ≠ none := by
   obtain ⟨t, ht⟩ : ∃ t, g.coeff t ≠ 0 := by
@@ -527,7 +527,7 @@ theorem rootMultiplicity₀_ne_none {R : Type} [CommSemiring R] [DecidableEq R]
 
 /-- The `Y`-degree is controlled by the `(1, k)`-weighted degree: each unit of `Y`-degree costs
 `k` units of weight. Stated natively over `ℕ`, with no division. -/
-theorem mul_natDegreeY_le_natWeightedDegree {R : Type} [Semiring R]
+theorem mul_natDegreeY_le_natWeightedDegree {R : Type*} [Semiring R]
     (Q : Polynomial (Polynomial R)) (k : ℕ) :
     k * Polynomial.Bivariate.natDegreeY Q ≤ Polynomial.Bivariate.natWeightedDegree Q 1 k := by
   have hweight := Polynomial.Bivariate.weight_le_natWeightedDegree_of_lt_natDegree_succ
@@ -536,7 +536,7 @@ theorem mul_natDegreeY_le_natWeightedDegree {R : Type} [Semiring R]
 
 
 /-- The `X`-degree is a lower part of the `(1, k)`-weighted degree. -/
-theorem degreeX_le_natWeightedDegree {R : Type} [Semiring R]
+theorem degreeX_le_natWeightedDegree {R : Type*} [Semiring R]
     (Q : Polynomial (Polynomial R)) (k : ℕ) :
     Polynomial.Bivariate.degreeX Q ≤
       Polynomial.Bivariate.natWeightedDegree Q 1 k := by

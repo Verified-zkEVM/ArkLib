@@ -125,7 +125,7 @@ private noncomputable def bchks_good_polynomial {ι K : Type} [Fintype ι] [None
   if hz : z ∈ ProximityGap.RS_goodCoeffs (deg := k) (domain := domain) u δ then
     Classical.choose
       (ProximityGap.RS_exists_Pz_of_mem_goodCoeffs
-        (deg := k) (domain := domain) (δ := δ) u (z := z) hz)
+        (deg := k) (domain := domain) (δ := δ) u (z := z) (ProximityGap.mem_RS_goodCoeffs.1 hz))
   else 0
 private theorem bchks_good_polynomial_spec {ι K : Type} [Fintype ι] [Nonempty ι]
     [Field K] [Fintype K] [DecidableEq K] {k : ℕ} [NeZero k]
@@ -138,7 +138,7 @@ private theorem bchks_good_polynomial_spec {ι K : Type} [Fintype ι] [Nonempty 
   simpa only [bchks_good_polynomial, dite_eq_left hz] using
     Classical.choose_spec
       (ProximityGap.RS_exists_Pz_of_mem_goodCoeffs
-        (deg := k) (domain := domain) (δ := δ) u (z := z) hz)
+        (deg := k) (domain := domain) (δ := δ) u (z := z) (ProximityGap.mem_RS_goodCoeffs.1 hz))
 private theorem bchks_good_polynomial_mem_code {ι K : Type} [Fintype ι] [Nonempty ι]
     [Field K] [Fintype K] [DecidableEq K] {k : ℕ} [NeZero k]
     (domain : ι ↪ K) (u : Fin 2 → ι → K) (δ : NNReal) (z : K)

@@ -48,12 +48,12 @@ lemma ps_by_lt_ny {b_x b_y : ℕ} {n_x n_y : ℕ+}
     (h_le_1 : 1 > (b_x : ℚ) / (n_x : ℚ) + (b_y : ℚ) / (n_y : ℚ)) : b_y < (n_y : ℕ) :=
   ps_bx_lt_nx (b_y := b_x) (n_y := n_x) (by rwa [add_comm])
 
-lemma ps_card_eval_x_eq_zero_le_degree_x {F : Type} [Field F] [DecidableEq F]
+lemma ps_card_eval_x_eq_zero_le_degree_x {F : Type*} [Field F] [DecidableEq F]
     (A : F[X][Y]) (hA : A ≠ 0) (P : Finset F) :
     (P.filter (fun x ↦ evalX x A = 0)).card ≤ degreeX A :=
   card_evalX_eq_zero_le_degreeX A hA P
 
-lemma ps_card_eval_y_eq_zero_le_nat_degree_y {F : Type} [Field F] [DecidableEq F]
+lemma ps_card_eval_y_eq_zero_le_nat_degree_y {F : Type*} [Field F] [DecidableEq F]
     (A : F[X][Y]) (hA : A ≠ 0) (P : Finset F) :
     (P.filter (fun y ↦ evalY y A = 0)).card ≤ natDegreeY A := by
   calc (P.filter (fun y ↦ evalY y A = 0)).card
@@ -62,14 +62,14 @@ lemma ps_card_eval_y_eq_zero_le_nat_degree_y {F : Type} [Field F] [DecidableEq F
       card_evalX_eq_zero_le_degreeX (swap A) (EmbeddingLike.map_ne_zero_iff.mpr hA) P
     _ = natDegreeY A := degreeX_swap A
 
-lemma ps_coeff_mul_monomial_ite {R : Type} [Semiring R]
+lemma ps_coeff_mul_monomial_ite {R : Type*} [Semiring R]
     (A : R[X]) (j i : ℕ) (r : R) :
     (A * Polynomial.monomial j r).coeff i =
       if j ≤ i then A.coeff (i - j) * r else 0 := by
   classical
   simp [← C_mul_X_pow_eq_monomial, ← mul_assoc, coeff_mul_X_pow', coeff_mul_C]
 
-lemma ps_coeff_mul_sum_monomial {R : Type} [CommRing R]
+lemma ps_coeff_mul_sum_monomial {R : Type*} [CommRing R]
     (A : R[X]) (m n : ℕ) (hm : A.natDegree ≤ m)
     (c : Fin n → R) (i : ℕ) :
     (A * (∑ j : Fin n, Polynomial.monomial (j : ℕ) (c j))).coeff i =
@@ -87,18 +87,18 @@ lemma ps_coeff_mul_sum_monomial {R : Type} [CommRing R]
     · rw [ite_eq_left h1, ite_eq_right fun h ↦ h2 h.2, hdeg _ (by omega), zero_mul]
   · rw [ite_eq_right h1, ite_eq_right fun h ↦ h1 h.1]
 
-lemma ps_degree_x_swap {F : Type} [CommRing F] (f : F[X][Y]) :
+lemma ps_degree_x_swap {F : Type*} [CommRing F] (f : F[X][Y]) :
     degreeX (swap f) = natDegreeY f :=
   degreeX_swap f
 
-lemma ps_descend_eval_x {F : Type} [Field F]
+lemma ps_descend_eval_x {F : Type*} [Field F]
     {A B G A1 B1 : F[X][Y]} (hA : A = G * A1) (hB : B = G * B1)
     (x : F) (hx : evalX x G ≠ 0) (q : F[X]) (h : evalX x B = q * evalX x A) :
     evalX x B1 = q * evalX x A1 := by
   simp_all only [evalX_eq_map, ne_eq, Polynomial.map_mul]
   exact mul_left_cancel₀ hx <| by linear_combination h;
 
-lemma ps_descend_eval_y {F : Type} [Field F]
+lemma ps_descend_eval_y {F : Type*} [Field F]
     {A B G A1 B1 : F[X][Y]} (hA : A = G * A1) (hB : B = G * B1)
     (y : F) (hy : evalY y G ≠ 0) (q : F[X]) (h : evalY y B = q * evalY y A) :
     evalY y B1 = q * evalY y A1 := by
@@ -106,24 +106,24 @@ lemma ps_descend_eval_y {F : Type} [Field F]
   simp_all only [ne_eq, eval_mul]
   exact mul_left_cancel₀ hy <| by linear_combination h
 
-lemma ps_eval_x_eq_map {F : Type} [CommSemiring F]
+lemma ps_eval_x_eq_map {F : Type*} [CommSemiring F]
     (x : F) (f : F[X][Y]) :
     evalX x f = f.map (evalRingHom x) :=
   evalX_eq_map x f
 
-lemma ps_eval_y_eq_eval_x_swap {F : Type} [CommRing F]
+lemma ps_eval_y_eq_eval_x_swap {F : Type*} [CommRing F]
     (y : F) (f : F[X][Y]) :
     evalY y f = evalX y (swap f) :=
   evalY_eq_evalX_swap y f
 
-lemma ps_exists_x_preserve_nat_degree_y {F : Type} [Field F]
+lemma ps_exists_x_preserve_nat_degree_y {F : Type*} [Field F]
     (B : F[X][Y]) (hB : B ≠ 0) (P_x : Finset F)
     (hcard : P_x.card > degreeX B) :
     ∃ x ∈ P_x, (evalX x B).natDegree = natDegreeY B := by
   classical
   exact exists_x_preserve_natDegreeY B hB P_x hcard
 
-lemma ps_exists_y_preserve_degree_x {F : Type} [Field F]
+lemma ps_exists_y_preserve_degree_x {F : Type*} [Field F]
     (B : F[X][Y]) (hB : B ≠ 0) (P_y : Finset F) (hcard : P_y.card > natDegreeY B) :
     ∃ y ∈ P_y, (evalY y B).natDegree = degreeX B := by
   classical
@@ -131,7 +131,7 @@ lemma ps_exists_y_preserve_degree_x {F : Type} [Field F]
     (EmbeddingLike.map_ne_zero_iff.mpr hB) P_y (by rwa [degreeX_swap])
   exact ⟨y, hy, by rw [evalY_eq_evalX_swap, hdeg, natDegreeY_swap]⟩
 
-lemma ps_filter_nonzero_card_y {F : Type} [Field F] [DecidableEq F]
+lemma ps_filter_nonzero_card_y {F : Type*} [Field F] [DecidableEq F]
     (A : F[X][Y]) (hA : A ≠ 0) (P_y : Finset F) (bound : ℕ)
     (h_bound_ge : bound ≥ natDegreeY A)
     (h_card_gt : P_y.card > bound) :
@@ -140,7 +140,7 @@ lemma ps_filter_nonzero_card_y {F : Type} [Field F] [DecidableEq F]
   simp_all only [ne_eq, ge_iff_le, gt_iff_lt, Finset.filter_not, Finset.card_sdiff]
   rw [Finset.inter_eq_left.mpr (Finset.filter_subset _ _)]; omega
 
-lemma ps_filter_nonzero_card_x {F : Type} [Field F] [DecidableEq F]
+lemma ps_filter_nonzero_card_x {F : Type*} [Field F] [DecidableEq F]
     (A : F[X][Y]) (hA : A ≠ 0) (P_x : Finset F) (bound : ℕ)
     (h_bound_ge : bound ≥ degreeX A)
     (h_card_gt : P_x.card > bound) :
@@ -151,7 +151,7 @@ lemma ps_filter_nonzero_card_x {F : Type} [Field F] [DecidableEq F]
   linarith [ps_card_eval_x_eq_zero_le_degree_x A hA P_x,
     Nat.sub_add_cancel (show degreeX A ≤ bound from h_bound_ge)]
 
-lemma ps_degX_bound {F : Type} [Field F]
+lemma ps_degX_bound {F : Type*} [Field F]
     {A B P : F[X][Y]} (hA : A ≠ 0) (hP : P ≠ 0) (hBA : B = P * A)
     (b_x b_y a_x a_y : ℕ) (n_y : ℕ+) (h_by_ge_ay : b_y ≥ a_y)
     (h_f_degY : a_y ≥ natDegreeY A) (h_g_degY : b_y ≥ natDegreeY B)
@@ -172,7 +172,7 @@ lemma ps_degX_bound {F : Type} [Field F]
     mul_right_cancel₀ hyA (h_eval_Y_B.symm.trans (h_quot_x y hyP).2)
   exact hdeg ▸ h_eval_Y_P ▸ (h_quot_x y hyP).1
 
-lemma ps_degY_bound {F : Type} [Field F]
+lemma ps_degY_bound {F : Type*} [Field F]
     {A B P : F[X][Y]} (hA : A ≠ 0) (hP : P ≠ 0) (hBA : B = P * A)
     (b_x b_y a_x a_y : ℕ) (n_x : ℕ+) (h_bx_ge_ax : b_x ≥ a_x)
     (h_f_degX : a_x ≥ degreeX A) (_h_g_degY : b_y ≥ natDegreeY B)
@@ -192,7 +192,7 @@ lemma ps_degY_bound {F : Type} [Field F]
     exact mul_right_cancel₀ hxA (h_evalX_P.symm.trans (h_quot_y x hxP).2)
   exact hdeg ▸ h_evalX_P ▸ (h_quot_y x hxP).1
 
-lemma ps_degree_bounds_of_mul {F : Type} [Field F]
+lemma ps_degree_bounds_of_mul {F : Type*} [Field F]
     (a_x a_y b_x b_y : ℕ) (n_x n_y : ℕ+)
     (h_bx_ge_ax : b_x ≥ a_x) (h_by_ge_ay : b_y ≥ a_y)
     {A B P : F[X][Y]} (hA : A ≠ 0) (hBA : B = P * A)
@@ -219,7 +219,7 @@ lemma ps_degree_bounds_of_mul {F : Type} [Field F]
     exact ⟨hdegX, ps_degY_bound hA hP hBA b_x b_y a_x a_y n_x h_bx_ge_ax
       h_f_degX h_g_degY P_x h_card_Px quot_y h_quot_y (ps_bx_lt_nx h_le_1) hdegX⟩
 
-lemma ps_gcd_decompose {F : Type} [Field F]
+lemma ps_gcd_decompose {F : Type*} [Field F]
     {A B : F[X][Y]} (hA : A ≠ 0) (hB : B ≠ 0) :
     ∃ G A1 B1 : F[X][Y],
       A = G * A1 ∧ B = G * B1 ∧ IsRelPrime A1 B1 ∧ A1 ≠ 0 ∧ B1 ≠ 0 := by
@@ -239,7 +239,7 @@ lemma ps_gcd_decompose {F : Type} [Field F]
     exact ⟨k, mul_left_cancel₀ hA.1 <| by linear_combination hk⟩)
   all_goals push Not
 
-lemma ps_is_rel_prime_swap {F : Type} [CommRing F] {A B : F[X][Y]}
+lemma ps_is_rel_prime_swap {F : Type*} [CommRing F] {A B : F[X][Y]}
     (h : IsRelPrime A B) : IsRelPrime (swap A) (swap B) := by
   classical
   let f : F[X][Y] ≃+* F[X][Y] := swap.toRingEquiv
@@ -250,6 +250,6 @@ lemma ps_is_rel_prime_swap {F : Type} [CommRing F] {A B : F[X][Y]}
   have : IsUnit (f (f.symm d)) := f.toRingHom.isUnit_map hunit
   simpa [f] using this
 
-lemma ps_nat_degree_y_swap {F : Type} [CommRing F]
+lemma ps_nat_degree_y_swap {F : Type*} [CommRing F]
     (f : F[X][Y]) : natDegreeY (swap f) = degreeX f :=
   natDegreeY_swap f

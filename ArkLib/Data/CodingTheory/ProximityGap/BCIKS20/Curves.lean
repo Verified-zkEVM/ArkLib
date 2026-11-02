@@ -194,7 +194,8 @@ theorem large_agreement_set_on_line_implies_correlated_agreement {deg : ℕ}
   have hgood : (RS_goodCoeffs (deg := deg) (domain := domain) u δ).card > n := by
     simpa [hcoeffs_eq] using hS
   have hja := RS_jointAgreement_of_goodCoeffs_card_gt
-    (deg := deg) (domain := domain) (δ := δ) hδ u (by simpa using hgood)
+    (deg := deg) (domain := domain) (δ := δ) hδ u _
+    (fun _ hz => mem_RS_goodCoeffs.1 hz) (by simpa using hgood)
   rcases hja with ⟨S, hS_card, v, hv⟩
   have hcurve_close (z : F) :
       δᵣ(Curve.polynomialCurveEval u z, Curve.polynomialCurveEval v z) ≤ δ := by
