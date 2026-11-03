@@ -15882,7 +15882,7 @@
         {
           "doc": "The local constraint map at `(center, received)` on the first-order space.",
           "kind": "def",
-          "line": 61,
+          "line": 60,
           "name": "ReedSolomon.HiddenDerivative.firstOrderLocalConstraintAt",
           "namespace": "ReedSolomon.HiddenDerivative",
           "short_name": "firstOrderLocalConstraintAt",
@@ -15891,7 +15891,7 @@
         {
           "doc": "The local constraint map on the first-order space has rank at most `certifiedEnlargedRankBound 1 m M 0`, at every center and received value and for every `D`. For `m = 0` the space is zero; otherwise it embeds in the exact interpolation space with `d = 1`, degree bound `D + 2`, and agreement threshold `A + 2 \u03bc`.",
           "kind": "theorem",
-          "line": 69,
+          "line": 68,
           "name": "ReedSolomon.HiddenDerivative.finrank_firstOrderLocalConstraintAt_le",
           "namespace": "ReedSolomon.HiddenDerivative",
           "short_name": "finrank_firstOrderLocalConstraintAt_le",
@@ -15900,7 +15900,7 @@
         {
           "doc": "The local constraints at every received point `(centers i, received i)` on the first-order space, as one linear map into the product.",
           "kind": "def",
-          "line": 97,
+          "line": 96,
           "name": "ReedSolomon.HiddenDerivative.firstOrderGlobalConstraintMap",
           "namespace": "ReedSolomon.HiddenDerivative",
           "short_name": "firstOrderGlobalConstraintMap",
@@ -15909,7 +15909,7 @@
         {
           "doc": "Coordinate `i` of `firstOrderGlobalConstraintMap` is the local constraint map at `(centers i, received i)`.",
           "kind": "theorem",
-          "line": 104,
+          "line": 103,
           "name": "ReedSolomon.HiddenDerivative.firstOrderGlobalConstraintMap_apply",
           "namespace": "ReedSolomon.HiddenDerivative",
           "short_name": "firstOrderGlobalConstraintMap_apply",
@@ -15918,7 +15918,7 @@
         {
           "doc": "The constraints at all points of a finite received word have rank at most `card \u03b9 * certifiedEnlargedRankBound 1 m M 0`.",
           "kind": "theorem",
-          "line": 112,
+          "line": 111,
           "name": "ReedSolomon.HiddenDerivative.finrank_firstOrderGlobalConstraintMap_le",
           "namespace": "ReedSolomon.HiddenDerivative",
           "short_name": "finrank_firstOrderGlobalConstraintMap_le",
@@ -15927,7 +15927,7 @@
         {
           "doc": "If `card \u03b9 * certifiedEnlargedRankBound 1 m M 0` is below the number of first-order eligible exponents, some nonzero polynomial in the first-order space satisfies the local constraints at every received point.",
           "kind": "theorem",
-          "line": 124,
+          "line": 123,
           "name": "ReedSolomon.HiddenDerivative.exists_nonzero_firstOrder_interpolant",
           "namespace": "ReedSolomon.HiddenDerivative",
           "short_name": "exists_nonzero_firstOrder_interpolant",
@@ -15936,7 +15936,7 @@
         {
           "doc": "For `0 < D`, if `card \u03b9 * certifiedEnlargedRankBound 1 m M 0` is below `firstOrderDimensionCount D A m M \u03bc`, some nonzero polynomial in the first-order space satisfies the local constraints at every received point.",
           "kind": "theorem",
-          "line": 140,
+          "line": 139,
           "name": "ReedSolomon.HiddenDerivative.exists_nonzero_firstOrder_interpolant_of_dimensionCount",
           "namespace": "ReedSolomon.HiddenDerivative",
           "short_name": "exists_nonzero_firstOrder_interpolant_of_dimensionCount",
@@ -15945,7 +15945,7 @@
         {
           "doc": "Under the hypothesis of `exists_nonzero_firstOrder_interpolant`, some nonzero polynomial `Q` in the first-order space has the following property: for every polynomial `P` with `P (centers i) = received i`, the specialization `Q(X, P, P')` is divisible by `(X - centers i)^m`. The interpolant is chosen before `P`.",
           "kind": "theorem",
-          "line": 153,
+          "line": 152,
           "name": "ReedSolomon.HiddenDerivative.exists_nonzero_firstOrder_interpolant_X_sub_C_pow_dvd",
           "namespace": "ReedSolomon.HiddenDerivative",
           "short_name": "exists_nonzero_firstOrder_interpolant_X_sub_C_pow_dvd",
@@ -27425,7 +27425,7 @@
         {
           "doc": "The multiplicity at scale `300` for the uniform derivative order.",
           "kind": "def",
-          "line": 51,
+          "line": 50,
           "name": "ReedSolomon.HiddenDerivative.RatePartition.uniformMathematicalMultiplicity",
           "namespace": "ReedSolomon.HiddenDerivative.RatePartition",
           "short_name": "uniformMathematicalMultiplicity",
@@ -27434,7 +27434,7 @@
         {
           "doc": "The strict total-jet cap at the uniform mathematical multiplicity.",
           "kind": "def",
-          "line": 55,
+          "line": 54,
           "name": "ReedSolomon.HiddenDerivative.RatePartition.uniformMathematicalJetBound",
           "namespace": "ReedSolomon.HiddenDerivative.RatePartition",
           "short_name": "uniformMathematicalJetBound",
@@ -27443,7 +27443,7 @@
         {
           "doc": "The mathematical block-length threshold, one more than the strict jet cap.",
           "kind": "def",
-          "line": 59,
+          "line": 58,
           "name": "ReedSolomon.HiddenDerivative.RatePartition.uniformMathematicalLength",
           "namespace": "ReedSolomon.HiddenDerivative.RatePartition",
           "short_name": "uniformMathematicalLength",
@@ -27452,7 +27452,7 @@
         {
           "doc": "When the multiplicity is positive, the mathematical length is its rounded gap ratio.",
           "kind": "theorem",
-          "line": 63,
+          "line": 62,
           "name": "ReedSolomon.HiddenDerivative.RatePartition.uniformMathematicalLength_eq_ceil",
           "namespace": "ReedSolomon.HiddenDerivative.RatePartition",
           "short_name": "uniformMathematicalLength_eq_ceil",
@@ -27461,7 +27461,7 @@
         {
           "doc": "The scale-300 multiplicity bounds the uniform derivative order by the jet cap.",
           "kind": "theorem",
-          "line": 77,
+          "line": 76,
           "name": "ReedSolomon.HiddenDerivative.RatePartition.uniformDerivativeOrder_le_mathematicalJetBound",
           "namespace": "ReedSolomon.HiddenDerivative.RatePartition",
           "short_name": "uniformDerivativeOrder_le_mathematicalJetBound",
@@ -27470,7 +27470,7 @@
         {
           "doc": "Length at least the mathematical threshold gives a positive multiplicity, a jet cap below the length, and a multiplicity bounded by both the length and `\u03b4\u00b2 n`.",
           "kind": "theorem",
-          "line": 100,
+          "line": 99,
           "name": "ReedSolomon.HiddenDerivative.RatePartition.uniformMathematical_integer_guards",
           "namespace": "ReedSolomon.HiddenDerivative.RatePartition",
           "short_name": "uniformMathematical_integer_guards",
@@ -27479,7 +27479,7 @@
         {
           "doc": "Eligible partition exponents have total jet degree at most the uniform mathematical cap.",
           "kind": "theorem",
-          "line": 133,
+          "line": 132,
           "name": "ReedSolomon.HiddenDerivative.RatePartition.uniformMathematical_totalJetDegree_le",
           "namespace": "ReedSolomon.HiddenDerivative.RatePartition",
           "short_name": "uniformMathematical_totalJetDegree_le",
@@ -27488,7 +27488,7 @@
         {
           "doc": "",
           "kind": "theorem",
-          "line": 143,
+          "line": 142,
           "name": "ReedSolomon.HiddenDerivative.RatePartition.mathematical_uniform_margin_numeric",
           "namespace": "ReedSolomon.HiddenDerivative.RatePartition",
           "short_name": "mathematical_uniform_margin_numeric",
@@ -27497,7 +27497,7 @@
         {
           "doc": "",
           "kind": "theorem",
-          "line": 158,
+          "line": 157,
           "name": "ReedSolomon.HiddenDerivative.RatePartition.finiteRatio_gt_of_mathematicalBase",
           "namespace": "ReedSolomon.HiddenDerivative.RatePartition",
           "short_name": "finiteRatio_gt_of_mathematicalBase",
@@ -27506,7 +27506,7 @@
         {
           "doc": "The low-rate branch retains a strict finite-ratio margin at scale `300`.",
           "kind": "theorem",
-          "line": 194,
+          "line": 193,
           "name": "ReedSolomon.HiddenDerivative.RatePartition.uniformMathematical_low_ratio_gt",
           "namespace": "ReedSolomon.HiddenDerivative.RatePartition",
           "short_name": "uniformMathematical_low_ratio_gt",
@@ -27515,7 +27515,7 @@
         {
           "doc": "The high-rate branch retains a strict finite-ratio margin at scale `300`.",
           "kind": "theorem",
-          "line": 205,
+          "line": 204,
           "name": "ReedSolomon.HiddenDerivative.RatePartition.uniformMathematical_high_ratio_gt",
           "namespace": "ReedSolomon.HiddenDerivative.RatePartition",
           "short_name": "uniformMathematical_high_ratio_gt",
@@ -27524,7 +27524,7 @@
         {
           "doc": "Choose a scale-300 mathematical envelope uniformly in the actual code rate.",
           "kind": "theorem",
-          "line": 218,
+          "line": 217,
           "name": "ReedSolomon.HiddenDerivative.RatePartition.exists_mathematicalRatePartitionEnvelope",
           "namespace": "ReedSolomon.HiddenDerivative.RatePartition",
           "short_name": "exists_mathematicalRatePartitionEnvelope",
@@ -27533,25 +27533,16 @@
         {
           "doc": "The capacity length threshold: the mathematical length, and at least `4 \u03bd / \u03b4\u00b2` for the jet cap `\u03bd`, so that message dimensions up to the jet cap lie in the Johnson regime.",
           "kind": "def",
-          "line": 240,
+          "line": 239,
           "name": "ReedSolomon.HiddenDerivative.RatePartition.uniformMathematicalCapacityLength",
           "namespace": "ReedSolomon.HiddenDerivative.RatePartition",
           "short_name": "uniformMathematicalCapacityLength",
           "signature": "def uniformMathematicalCapacityLength (\u03b4 : \u211d) : \u2115 :="
         },
         {
-          "doc": "For `0 < \u03b4 < 6/25` the capacity length threshold is `\u23084 \u03bd / \u03b4\u00b2\u2309\u208a` for the jet cap `\u03bd`: the interpolation length `\u03bd + 1` never exceeds it.",
-          "kind": "theorem",
-          "line": 245,
-          "name": "ReedSolomon.HiddenDerivative.RatePartition.uniformMathematicalCapacityLength_eq_ceil",
-          "namespace": "ReedSolomon.HiddenDerivative.RatePartition",
-          "short_name": "uniformMathematicalCapacityLength_eq_ceil",
-          "signature": "theorem uniformMathematicalCapacityLength_eq_ceil {\u03b4 : \u211d} (h\u03b4 : 0 < \u03b4) (h\u03b4small : \u03b4 < 6 / 25) :"
-        },
-        {
           "doc": "Guards of the scale-`300` certificate: for `0 < \u03b4 < 6/25` and length at least `uniformMathematicalLength \u03b4`, the uniform order `d` is at least `500`, `\u03b4 < 1`, `1 < 300 d\u00b3`, and the jet cap is positive and at least `d`.",
           "kind": "theorem",
-          "line": 265,
+          "line": 245,
           "name": "ReedSolomon.HiddenDerivative.RatePartition.uniformMathematical_certificate_guards",
           "namespace": "ReedSolomon.HiddenDerivative.RatePartition",
           "short_name": "uniformMathematical_certificate_guards",
@@ -27560,7 +27551,7 @@
         {
           "doc": "A characteristic that is zero or exceeds `max (k - 1) \u03bd`, for the jet cap `\u03bd`, is zero or exceeds `max (K - 1) \u03bd` for the ambient dimension `K = max k (d + 1)` at the uniform order `d`.",
           "kind": "theorem",
-          "line": 283,
+          "line": 263,
           "name": "ReedSolomon.HiddenDerivative.RatePartition.uniformMathematical_ringChar_guard",
           "namespace": "ReedSolomon.HiddenDerivative.RatePartition",
           "short_name": "uniformMathematical_ringChar_guard",
@@ -27569,7 +27560,7 @@
         {
           "doc": "At length at least `uniformMathematicalCapacityLength \u03b4`, every message dimension `k` at most the jet cap satisfies `4 (k - 1) \u2264 \u03b4\u00b2 n`.",
           "kind": "theorem",
-          "line": 296,
+          "line": 276,
           "name": "ReedSolomon.HiddenDerivative.RatePartition.four_mul_pred_le_sq_mul_of_le_uniformMathematicalJetBound",
           "namespace": "ReedSolomon.HiddenDerivative.RatePartition",
           "short_name": "four_mul_pred_le_sq_mul_of_le_uniformMathematicalJetBound",
@@ -50102,7 +50093,7 @@
           "signature": "def HasCapacityLineAgreement (\u03b4 : \u211d) (N : \u2115) (E : \u2115 \u2192 \u211d) : Prop :="
         },
         {
-          "doc": "**Line agreement up to capacity.** At every positive gap `\u03b4`, exact line agreement holds from length `capacityLineLength \u03b4` on with at most `capacityLineConstant \u03b4 * n ^ (capacityLineDerivativeOrder \u03b4 + 1)` exceptional challenges ([DKT26], Theorem 8.1).",
+          "doc": "**Line agreement up to capacity.** At every positive gap `\u03b4`, exact line agreement holds from length `capacityLineLength \u03b4` on with at most `capacityLineConstant \u03b4 * n ^ (capacityLineDerivativeOrder \u03b4 + 1)` exceptional challenges ([DKT26], Theorems 5.13 and 6.8).",
           "kind": "theorem",
           "line": 131,
           "name": "ReedSolomon.capacity_lineAgreement",
@@ -50111,7 +50102,7 @@
           "signature": "theorem capacity_lineAgreement {\u03b4 : \u211d} (h\u03b4 : 0 < \u03b4) :"
         },
         {
-          "doc": "**Line agreement up to capacity, with gap-only constants.** For every `\u03b4 > 0` there are `N \u2265 4`, `d` and `C > 0`, chosen before the code, the field and the received line, such that exact line agreement holds from length `N` on with at most `C n^(d+1)` exceptional challenges ([DKT26], Theorem 8.1).",
+          "doc": "**Line agreement up to capacity, with gap-only constants.** For every `\u03b4 > 0` there are `N \u2265 4`, `d` and `C > 0`, chosen before the code, the field and the received line, such that exact line agreement holds from length `N` on with at most `C n^(d+1)` exceptional challenges ([DKT26], Theorem 6.9).",
           "kind": "theorem",
           "line": 163,
           "name": "ReedSolomon.exists_capacity_lineAgreement",
@@ -50138,7 +50129,7 @@
           "signature": "theorem card_mul_one_sub_capacityRadius {\u03b4 : \u211d} {n k : \u2115} (hn : 0 < n) :"
         },
         {
-          "doc": "**Affine-family agreement from line agreement.** Exact line agreement at a nonnegative gap gives exact affine-family agreement with the same length threshold and exceptional-set bound ([DKT26], Corollary 6.3).",
+          "doc": "**Affine-family agreement from line agreement.** Exact line agreement at a nonnegative gap gives exact affine-family agreement with the same length threshold and exceptional-set bound ([DKT26], Corollary 7.2).",
           "kind": "theorem",
           "line": 205,
           "name": "ReedSolomon.HasCapacityLineAgreement.affineAgreement",
@@ -50147,7 +50138,7 @@
           "signature": "theorem HasCapacityLineAgreement.affineAgreement {\u03b4 : \u211d} {N : \u2115} {E : \u2115 \u2192 \u211d}"
         },
         {
-          "doc": "**Affine-family agreement up to capacity, with gap-only constants.** For every `\u03b4 > 0` there are `N \u2265 4`, `d` and `C > 0` such that exact affine-family agreement holds from length `N` on with exceptional density at most `C n^(d+1) / (|F| - 1)` in every number of directions ([DKT26], Theorem 8.1 and Corollary 6.3).",
+          "doc": "**Affine-family agreement up to capacity, with gap-only constants.** For every `\u03b4 > 0` there are `N \u2265 4`, `d` and `C > 0` such that exact affine-family agreement holds from length `N` on with exceptional density at most `C n^(d+1) / (|F| - 1)` in every number of directions ([DKT26], Theorem 6.9 and Corollary 7.2).",
           "kind": "theorem",
           "line": 224,
           "name": "ReedSolomon.exists_capacity_affineAgreement",
@@ -50165,7 +50156,7 @@
           "signature": "theorem HasCapacityLineAgreement.mcaError_le {\u03b4 : \u211d} {N : \u2115} {E : \u2115 \u2192 \u211d}"
         },
         {
-          "doc": "**MCA errors up to capacity, with gap-only constants.** For every `\u03b4 > 0` there are `N \u2265 4`, `d` and `C > 0` such that every Reed\u2013Solomon code of length `n \u2265 N` over a finite field of characteristic zero or larger than `k - 1` has MCA error at radius `capacityRadius \u03b4 n k = 1 - k / n - \u03b4` at most `C n^(d+1) / |F|` for lines and at most `C n^(d+1) / (|F| - 1)` for affine spaces of every dimension ([DKT26], Theorem 8.1 and Corollary 6.3).",
+          "doc": "**MCA errors up to capacity, with gap-only constants.** For every `\u03b4 > 0` there are `N \u2265 4`, `d` and `C > 0` such that every Reed\u2013Solomon code of length `n \u2265 N` over a finite field of characteristic zero or larger than `k - 1` has MCA error at radius `capacityRadius \u03b4 n k = 1 - k / n - \u03b4` at most `C n^(d+1) / |F|` for lines and at most `C n^(d+1) / (|F| - 1)` for affine spaces of every dimension ([DKT26], Theorem 6.9 and Corollary 7.2).",
           "kind": "theorem",
           "line": 256,
           "name": "ReedSolomon.exists_capacity_mcaError",
@@ -50246,7 +50237,7 @@
           "signature": "def HasCapacityPowerBatchingAgreement (\u03b4 : \u211d) (N \u03bd : \u2115) (E : \u2115 \u2192 \u2115 \u2192 \u211d) : Prop :="
         },
         {
-          "doc": "**Power-batching agreement up to capacity.** At every positive gap `\u03b4`, exact power-batching agreement holds from length `capacityPowerLength \u03b4` on, with characteristic bound `capacityPowerJetBound \u03b4` and at most `\u2113 * capacityPowerConstant \u03b4 * n ^ (capacityPowerDerivativeOrder \u03b4 + 1)` exceptional challenges ([DKT26], Corollary 8.6 and Theorem 8.1).",
+          "doc": "**Power-batching agreement up to capacity.** At every positive gap `\u03b4`, exact power-batching agreement holds from length `capacityPowerLength \u03b4` on, with characteristic bound `capacityPowerJetBound \u03b4` and at most `\u2113 * capacityPowerConstant \u03b4 * n ^ (capacityPowerDerivativeOrder \u03b4 + 1)` exceptional challenges ([DKT26], Corollary 7.3).",
           "kind": "theorem",
           "line": 326,
           "name": "ReedSolomon.capacity_powerBatchingAgreement",
@@ -50255,7 +50246,7 @@
           "signature": "theorem capacity_powerBatchingAgreement {\u03b4 : \u211d} (h\u03b4 : 0 < \u03b4) :"
         },
         {
-          "doc": "**Power-batching agreement up to capacity, with gap-only constants.** For every `\u03b4 > 0` there are `N \u2265 4`, `d`, a characteristic bound `\u03bd < N` and `C > 0`, chosen before the batching degree, the code, the field and the rows, such that exact power-batching agreement holds from length `N` on with at most `\u2113 C n^(d+1)` exceptional challenges ([DKT26], Corollary 8.6 and Theorem 8.1).",
+          "doc": "**Power-batching agreement up to capacity, with gap-only constants.** For every `\u03b4 > 0` there are `N \u2265 4`, `d`, a characteristic bound `\u03bd < N` and `C > 0`, chosen before the batching degree, the code, the field and the rows, such that exact power-batching agreement holds from length `N` on with at most `\u2113 C n^(d+1)` exceptional challenges ([DKT26], Corollary 7.3).",
           "kind": "theorem",
           "line": 375,
           "name": "ReedSolomon.exists_capacity_powerBatchingAgreement",
@@ -56039,28 +56030,6 @@
           "namespace": "ReedSolomon",
           "short_name": "exists_polynomialTuple_specialization_injective_avoiding_roots",
           "signature": "theorem exists_polynomialTuple_specialization_injective_avoiding_roots [Infinite E]"
-        }
-      ]
-    },
-    "ArkLib/Data/CodingTheory/ReedSolomon/PaperGuide.lean": {
-      "declarations": [
-        {
-          "doc": "",
-          "kind": "theorem",
-          "line": 67,
-          "name": "chooses",
-          "namespace": "",
-          "short_name": "chooses",
-          "signature": "theorem chooses one exceptional challenge set after the received words and before both the"
-        },
-        {
-          "doc": "",
-          "kind": "theorem",
-          "line": 164,
-          "name": "into",
-          "namespace": "",
-          "short_name": "into",
-          "signature": "theorem into a width-independent exceptional set for a row-wise interleaving, over arbitrary"
         }
       ]
     },
@@ -77263,7 +77232,7 @@
         {
           "doc": "**Chain witnesses at one point.** Over a finite domain with `q` elements, let `roots` be a finite set of polynomials of degree at most `D`, and assume the binomial hypothesis `((k + s).choose s : F) \u2260 0` for `0 < k`, `k + s \u2264 D`. Then at most `jetTotalDegree Q * q ^ d` elements of `roots` have `a` as a chain witness. If `initialJetEquation a Q = 0` there are none (`ChainWitness.initialJetEquation_ne_zero`). Otherwise their Hasse jets at `a` are distinct zeros of `initialJetEquation a Q`, a nonzero polynomial in `d + 1` variables of total degree at most `jetTotalDegree Q`.",
           "kind": "theorem",
-          "line": 77,
+          "line": 75,
           "name": "PolynomialDifferential.card_filter_chainWitness_le",
           "namespace": "PolynomialDifferential",
           "short_name": "card_filter_chainWitness_le",
@@ -77272,7 +77241,7 @@
         {
           "doc": "**Counting solutions by the total jet degree.** Let `F` be a finite domain with `q` elements, `Q \u2260 0` satisfying the cast hypotheses at every jet, and `roots` a finite set of solutions of `Q = 0` of degree at most `D`. If `((k + s).choose s : F) \u2260 0` for `0 < k`, `k + s \u2264 D`, and `differentialWeightedDegree D Q - (D - d) \u2264 H`, then `#roots * (q - H) \u2264 q * (jetTotalDegree Q * q ^ d)`. Every solution has at most `H` points that are not chain witnesses (`exists_chainWitness`), and every point is a chain witness for at most `jetTotalDegree Q * q ^ d` solutions (`card_filter_chainWitness_le`). Trun",
           "kind": "theorem",
-          "line": 122,
+          "line": 120,
           "name": "PolynomialDifferential.card_mul_sub_le_jetTotalDegree_mul",
           "namespace": "PolynomialDifferential",
           "short_name": "card_mul_sub_le_jetTotalDegree_mul",
@@ -77281,7 +77250,7 @@
         {
           "doc": "`card_mul_sub_le_jetTotalDegree_mul` for all solutions of degree at most `D`: `Nat.card (BoundedSolution Q D) * (q - H) \u2264 q * (jetTotalDegree Q * q ^ d)`.",
           "kind": "theorem",
-          "line": 150,
+          "line": 148,
           "name": "PolynomialDifferential.BoundedSolution.natCard_mul_sub_le_jetTotalDegree_mul",
           "namespace": "PolynomialDifferential",
           "short_name": "BoundedSolution.natCard_mul_sub_le_jetTotalDegree_mul",
@@ -77290,7 +77259,7 @@
         {
           "doc": "**At most `2 * jetTotalDegree Q * q ^ d` solutions.** Under the hypotheses of `BoundedSolution.natCard_mul_sub_le_jetTotalDegree_mul`, if `2 * H \u2264 q` then `Q = 0` has at most `2 * jetTotalDegree Q * q ^ d` solutions of degree at most `D`: at least half of the points are chain witnesses for each solution.",
           "kind": "theorem",
-          "line": 171,
+          "line": 169,
           "name": "PolynomialDifferential.BoundedSolution.natCard_le_two_mul_jetTotalDegree_mul",
           "namespace": "PolynomialDifferential",
           "short_name": "BoundedSolution.natCard_le_two_mul_jetTotalDegree_mul",
@@ -77299,7 +77268,7 @@
         {
           "doc": "**Witnesses in a larger domain.** Let `f : F \u2192+* E` be an injective ring homomorphism into a finite domain `E`. If `Q \u2260 0` satisfies the cast hypotheses, `((k + s).choose s : F) \u2260 0` for `0 < k`, `k + s \u2264 D`, `differentialWeightedDegree D Q - (D - d) \u2264 H` and `2 * H \u2264 Nat.card E`, then `Q = 0` has at most `2 * jetTotalDegree Q * Nat.card E ^ d` solutions over `F` of degree at most `D`. The solutions over `F` inject into those of `Q.map f` over `E` (`BoundedSolution.natCard_le_natCard_map`), and every hypothesis transfers along `f`. `F` itself need not be finite or a domain.",
           "kind": "theorem",
-          "line": 197,
+          "line": 195,
           "name": "PolynomialDifferential.BoundedSolution.natCard_le_two_mul_jetTotalDegree_mul_of_injective",
           "namespace": "PolynomialDifferential",
           "short_name": "BoundedSolution.natCard_le_two_mul_jetTotalDegree_mul_of_injective",
@@ -77308,7 +77277,7 @@
         {
           "doc": "**Witnesses in the extension of degree `e`.** Over a finite field `F` with `q` elements, under the hypotheses of `BoundedSolution.natCard_le_two_mul_jetTotalDegree_mul` with `2 * H \u2264 q ^ e` for some `0 < e`, `Q = 0` has at most `2 * jetTotalDegree Q * q ^ (e * d)` solutions of degree at most `D`. The witnesses are taken in `FiniteField.Extension F (ringChar F) e`, which has `q ^ e` elements; the hypotheses stay those over `F`.",
           "kind": "theorem",
-          "line": 224,
+          "line": 222,
           "name": "PolynomialDifferential.BoundedSolution.natCard_le_two_mul_jetTotalDegree_mul_extension",
           "namespace": "PolynomialDifferential",
           "short_name": "BoundedSolution.natCard_le_two_mul_jetTotalDegree_mul_extension",
@@ -149241,8 +149210,8 @@
   },
   "stats": {
     "ArkLib": {
-      "declarations": 16072,
-      "files": 1156
+      "declarations": 16069,
+      "files": 1155
     }
   }
 }

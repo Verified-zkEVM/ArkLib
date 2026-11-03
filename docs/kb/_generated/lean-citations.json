@@ -1,8 +1,8 @@
 {
   "counts": {
-    "files_with_citations": 529,
+    "files_with_citations": 528,
     "keys_cited": 77,
-    "total_citation_edges": 714
+    "total_citation_edges": 713
   },
   "files": {
     "ArkLib/AGM/Basic.lean": [
@@ -1178,9 +1178,6 @@
     "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/RegularEquation.lean": [
       "DKT26"
     ],
-    "ArkLib/Data/CodingTheory/ReedSolomon/PaperGuide.lean": [
-      "DKT26"
-    ],
     "ArkLib/Data/CodingTheory/ReedSolomon/PowerAgreement.lean": [
       "DKT26"
     ],
@@ -2253,7 +2250,6 @@
       "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PairCounting.lean",
       "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean",
       "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/RegularEquation.lean",
-      "ArkLib/Data/CodingTheory/ReedSolomon/PaperGuide.lean",
       "ArkLib/Data/CodingTheory/ReedSolomon/PowerAgreement.lean",
       "ArkLib/Data/MvPolynomial/RadicalSplit/Separable.lean",
       "ArkLib/Data/Polynomial/Differential/BaseChange.lean",
