@@ -84,9 +84,12 @@ Use this format:
 
 **Subject:**
 
-Use an imperative verb: "add", not "added" or "adds". Keep ordinary words lowercase.
-Preserve the capitalization of names such as `FRI`. Do not end the subject with a period.
-Use the scope when it helps identify the affected component.
+Write a short subject that names the change. Use an imperative phrase, such as "add the FRI folding
+round". A noun phrase for the result, such as "soundness of the FRI folding round", is also correct.
+Do not use "added" or "adds".
+
+Keep ordinary words lowercase. Preserve the capitalization of names such as `FRI`. Do not end the
+subject with a period. Use the scope when it helps identify the affected component.
 
 For a breaking change, put `!` before the colon:
 `refactor(binius)!: remove the legacy folding API`.
@@ -112,8 +115,8 @@ A successful build does not establish source fidelity or axiom cleanliness.
 
 ### Size and Stacking
 
-Give each PR one topic. Separate mechanical changes from mathematical changes when each can be
-reviewed and validated independently.
+Give each PR one topic. Separate mechanical changes from mathematical changes when a reviewer can
+review and validate each one independently.
 
 Use a stack for contributions that need several dependent PRs. Each PR must build and pass its
 validation against its stated base. Name that base in the description.
@@ -152,16 +155,16 @@ Agents must keep the user's task scope and publication instructions.
 
 ### Review and Merge Readiness
 
-A PR may be opened for review with unfinished proofs, provided its remaining admissions and
-validation status are clear. Before merging into `main`, it must introduce no new `sorry`/`admit`
-or additional `sorryAx` debt relative to the canonical base. Closing one gap does not offset a
-new admission elsewhere. Updating `scripts/axiom_baseline.json` cannot authorize new debt.
-Baseline changes record verified closures or renames of existing debt.
+You can open a PR for review with unfinished proofs if its remaining admissions and validation
+status are clear. Before merging into `main`, it must introduce no new `sorry`/`admit` or additional
+`sorryAx` debt relative to the canonical base. Closing one gap does not offset a new admission
+elsewhere. Updating `scripts/axiom_baseline.json` cannot authorize new debt. Baseline changes record
+verified closures or renames of existing debt.
 
 The baseline's `sorry` list is empty. Its only admitted entries are *solicited proofs*: true,
-faithfully stated external results whose research-sized proofs are left open for contributors.
-A solicited entry requires review and a tracking issue linked from its docstring.
-The entry must stay a leaf. No declaration outside the solicited list may depend on it.
+faithfully stated external results whose research-sized proofs remain open for contributors. A
+solicited entry requires review and a tracking issue linked from its docstring. The entry must stay
+a leaf. No declaration outside the solicited list may depend on it.
 
 A PR that proves a solicited result removes its entry. [`scripts/README.md`](scripts/README.md)
 states the exact rules that
@@ -228,14 +231,14 @@ there is a concrete reason. Mark those declarations individually and explain the
 the module overview. Avoid blanket `noncomputable section` declarations that hide accidental
 code-generation failures. Where executable data has a mathematical view, prove their agreement.
 
-Check code generation from a caller outside any `noncomputable section`, then execute small
-concrete cases with independently known results, including relevant failure or boundary cases.
-Neither removing the keyword nor an axiom-clean theorem establishes executability: admitted
-bodies can compile to a panic. Executable specifications permit tests that can expose mistaken or
-vacuous declarations.
-Those tests complement satisfiable hypotheses and correctness proofs. Executability alone does
-not establish either property. Follow
-[the computability workflow](docs/skills/make-computable.md) when an audit finds a blocker.
+Check code generation from a caller outside any `noncomputable section`. Then execute small concrete
+cases with independently known results, including relevant failure or boundary cases.
+
+Neither removing the keyword nor an axiom-clean theorem establishes executability: admitted bodies
+can compile to a panic. Executable specifications permit tests that can expose mistaken or vacuous
+declarations. Those tests complement satisfiable hypotheses and correctness proofs. Executability
+alone does not establish either property. Follow [the computability
+workflow](docs/skills/make-computable.md) when an audit finds a blocker.
 
 ## Style and Naming Guidelines
 
@@ -283,7 +286,7 @@ namespace structure rather than introducing local synonyms.
 
 ### Theorem Naming Logic
 
-* **Hypotheses**: Use `_of_` to separate hypotheses, listed in the order they appear (for example,
+* **Hypotheses**: Use `_of_` to separate hypotheses. List them in the order they appear (for example,
   `lt_of_succ_le` means "less than *follows from* successor less equal").
 * **Variants**: Use `left` or `right` to describe which argument changes or is relevant (for
   example, `add_le_add_left`).
@@ -477,7 +480,7 @@ Every definition and major theorem should have a docstring.
   appear in the generated documentation.
 * **Declaration Docstrings**: Use `/-- ... -/` above definitions and major theorems. State the
   object's meaning or theorem's claim, with the relevant hypotheses and any shorthand needed to
-  understand it. Keep the explanation concise and self-contained: a reader should not need a
+  understand it. Keep the explanation concise and self-contained. A reader should not need a
   paper, a planning document, or proof-development history to understand the declaration.
   Internal Lean declarations may be cross-referenced by name.
 * **Syntax**:
@@ -493,9 +496,9 @@ and theorems appear in several sources. The wiki and KB provide the paper-specif
 The mathematical API should not depend on a particular paper's organization or labels.
 
 In Lean sources, external references belong only in the top-level module docstring (`/-! ... -/`).
-This includes bibliographic citations, URLs, and paper-specific theorem/lemma numbers, sections,
-or figures. Keep module provenance brief and link to the corresponding `docs/kb/papers/KEY.md`
-page or audit for detailed statement/version correspondence, generalizations, and remaining gaps.
+This includes bibliographic citations, URLs, and paper-specific theorem/lemma numbers, sections, or
+figures. Keep module provenance brief. Link to the corresponding `docs/kb/papers/KEY.md` page or
+audit for detailed statement/version correspondence, generalizations, and remaining gaps.
 Declaration and section docstrings focus on the mathematics.
 
 When referencing papers in the module docstring:
