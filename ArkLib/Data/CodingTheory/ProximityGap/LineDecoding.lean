@@ -25,6 +25,11 @@ counterexample are recorded in the
 
 - `CodingTheory.IsLineDecodable.mcaError_le` — `(δ, a, n+1)`-line-decodability gives
   `ε_mca(C, δ) ≤ a / |F|`.
+- `CodingTheory.IsLineDecodable.mcaError_le_of_floor_add_two` — the same bound from
+  `(δ, a, b)`-line-decodability for every `b ≥ max (⌊δ n⌋ + 2) 3`, when `n < |F|`.
+- `CodingTheory.card_le_floor_add_one_of_pencil_mismatch` — root-set counting for an affine
+  pencil: at most `e + 1` challenges whose `(n - e)`-point agreement sets each contain a
+  mismatch coordinate.
 
 ## References
 
@@ -174,21 +179,6 @@ private theorem affine_collision_injective
     have hu₁ : u₁ (pick γ) = c₁ (pick γ) :=
       sub_eq_zero.mp (by simpa only [x₁] using hx₁)
     exact (hmismatch γ).elim (fun h => h hu₀) (fun h => h hu₁)
-
-omit [Nonempty ι] [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A]
-    [DecidableEq A] in
-omit [SampleableType F] in
-private theorem affine_collision_card_le
-    (E : Finset F) (u₀ u₁ c₀ c₁ : ι → A)
-    (pick : {γ : F // γ ∈ E} → ι)
-    (hroot : ∀ γ, u₀ (pick γ) + γ.1 • u₁ (pick γ) =
-      c₀ (pick γ) + γ.1 • c₁ (pick γ))
-    (hmismatch : ∀ γ, u₀ (pick γ) ≠ c₀ (pick γ) ∨
-      u₁ (pick γ) ≠ c₁ (pick γ)) :
-    E.card ≤ Fintype.card ι := by
-  have hcard := Fintype.card_le_of_injective pick
-    (affine_collision_injective E u₀ u₁ c₀ c₁ pick hroot hmismatch)
-  simpa using hcard
 
 omit [Fintype F] [DecidableEq F] [Fintype A] in
 open scoped NNReal in
@@ -625,14 +615,106 @@ private theorem card_sub_floor_pos_of_lt_one
     (Nat.floor_lt (show (0 : ℝ≥0) ≤ δ * (n : ℝ≥0) by positivity)).2 hmul
   exact Nat.sub_pos_of_lt he
 
+/-! ### Line decodability with `⌊δ n⌋ + 2` aligned challenges
+
+`IsLineDecodable.mcaError_le` asks for `n + 1` aligned challenges, where `n = |ι|`. Each aligned
+challenge yields a mismatch coordinate in its own agreement set, and `n + 1` is what an injection
+of challenges into coordinates needs. Every close challenge misses at most `e = ⌊δ n⌋`
+coordinates, so a double count bounds the aligned challenges by `e + 1`
+(`card_le_floor_add_one_of_pencil_mismatch`). This gives the MCA bound from `(δ, a, b)`-line
+decodability for every `b ≥ max (e + 2) 3`, provided `n < |F|`
+(`IsLineDecodable.mcaError_le_of_floor_add_two`). -/
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] [SampleableType F] [DecidableEq F]
+  [Fintype A] [DecidableEq A] in
+/-- **Root-set counting for an affine pencil.** Fix words `u₀ u₁` and a pencil `c₀ + γ • c₁`.
+For `γ ∈ E` let `G γ` be a set of at least `|ι| - e` coordinates on which the line
+`u₀ + γ • u₁` equals the pencil, and suppose each `G γ` contains a coordinate where
+`(u₀, u₁) ≠ (c₀, c₁)`. Then `|E| ≤ e + 1`.
+
+A mismatch coordinate is a root of the line equation for at most one challenge, so the sets
+`G γ` meet the mismatch set in pairwise disjoint nonempty pieces, and each `G γ` misses at most
+`e` coordinates. Double counting the missed mismatch coordinates gives the bound. The bound is
+attained when `|ι| ≥ e + 1` and `|F| ≥ e + 1`. -/
+theorem card_le_floor_add_one_of_pencil_mismatch
+    (E : Finset F) (u₀ u₁ c₀ c₁ : ι → A) (e : ℕ) (G : F → Finset ι)
+    (hG : ∀ γ ∈ E, Fintype.card ι - e ≤ (G γ).card)
+    (hroot : ∀ γ ∈ E, ∀ i ∈ G γ, u₀ i + γ • u₁ i = c₀ i + γ • c₁ i)
+    (hmis : ∀ γ ∈ E, ∃ i ∈ G γ, u₀ i ≠ c₀ i ∨ u₁ i ≠ c₁ i) :
+    E.card ≤ e + 1 := by
+  classical
+  let M : Finset ι := Finset.univ.filter fun i => u₀ i ≠ c₀ i ∨ u₁ i ≠ c₁ i
+  have huniq : ∀ γ ∈ E, ∀ β ∈ E, ∀ i ∈ M, i ∈ G γ → i ∈ G β → γ = β := by
+    intro γ hγ β hβ i hiM hiγ hiβ
+    by_contra hne
+    have h₁ := hroot γ hγ i hiγ
+    have h₂ := hroot β hβ i hiβ
+    have hs : (γ - β) • (u₁ i - c₁ i) = 0 := by
+      have hid : (γ - β) • (u₁ i - c₁ i) =
+          (u₀ i + γ • u₁ i - (c₀ i + γ • c₁ i)) -
+            (u₀ i + β • u₁ i - (c₀ i + β • c₁ i)) := by
+        module
+      rw [hid, h₁, h₂, sub_self, sub_self, sub_self]
+    have hu₁ : u₁ i = c₁ i :=
+      sub_eq_zero.mp ((smul_eq_zero.mp hs).resolve_left (sub_ne_zero.mpr hne))
+    have hu₀ : u₀ i = c₀ i := by
+      rw [hu₁] at h₁
+      exact add_right_cancel h₁
+    exact (Finset.mem_filter.mp hiM).2.elim (fun h ↦ h hu₀) (fun h ↦ h hu₁)
+  have hdisj : (E : Set F).PairwiseDisjoint fun γ ↦ M ∩ G γ := by
+    intro γ hγ β hβ hne
+    change Disjoint (M ∩ G γ) (M ∩ G β)
+    rw [Finset.disjoint_left]
+    intro i hi hi'
+    exact hne (huniq γ (Finset.mem_coe.mp hγ) β (Finset.mem_coe.mp hβ) i
+      (Finset.mem_inter.mp hi).1 (Finset.mem_inter.mp hi).2 (Finset.mem_inter.mp hi').2)
+  have hsum : (∑ γ ∈ E, (M ∩ G γ).card) ≤ M.card := by
+    rw [← Finset.card_biUnion hdisj]
+    apply Finset.card_le_card
+    intro i hi
+    obtain ⟨γ, -, hiγ⟩ := Finset.mem_biUnion.mp hi
+    exact (Finset.mem_inter.mp hiγ).1
+  have hper : ∀ γ ∈ E, M.card ≤ (M ∩ G γ).card + e := by
+    intro γ hγ
+    have hsplit := Finset.card_sdiff_add_card_inter M (G γ)
+    have hout : (M \ G γ).card ≤ (G γ)ᶜ.card :=
+      Finset.card_le_card fun i hi ↦ Finset.mem_compl.mpr (Finset.mem_sdiff.mp hi).2
+    rw [Finset.card_compl] at hout
+    have hGγ := hG γ hγ
+    omega
+  have hone : ∀ γ ∈ E, 1 ≤ (M ∩ G γ).card := by
+    intro γ hγ
+    obtain ⟨i, hiG, hmi⟩ := hmis γ hγ
+    exact Finset.card_pos.mpr
+      ⟨i, Finset.mem_inter.mpr ⟨Finset.mem_filter.mpr ⟨Finset.mem_univ _, hmi⟩, hiG⟩⟩
+  have hE : E.card ≤ ∑ γ ∈ E, (M ∩ G γ).card := by
+    have h := Finset.card_nsmul_le_sum E (fun γ ↦ (M ∩ G γ).card) 1 hone
+    simpa only [smul_eq_mul, mul_one] using h
+  have hmul : E.card * M.card ≤ (∑ γ ∈ E, (M ∩ G γ).card) + E.card * e := by
+    have h := Finset.sum_le_sum hper
+    rw [Finset.sum_const, Finset.sum_add_distrib, Finset.sum_const, smul_eq_mul,
+      smul_eq_mul] at h
+    exact h
+  by_contra hlt
+  obtain ⟨j, hj⟩ : ∃ j, E.card = j + 1 := ⟨E.card - 1, by omega⟩
+  have hkm : j + 1 ≤ M.card := by
+    rw [← hj]
+    exact hE.trans hsum
+  rw [hj] at hmul hlt
+  have h₁ : j * M.card ≤ (j + 1) * e := by nlinarith [hmul, hsum]
+  have h₂ : j * (j + 1) ≤ j * M.card := Nat.mul_le_mul_left j hkm
+  have h₃ : (j + 1) * j ≤ (j + 1) * e := by
+    rw [Nat.mul_comm (j + 1) j]
+    exact h₂.trans h₁
+  have h₄ : j ≤ e := Nat.le_of_mul_le_mul_left h₃ (Nat.succ_pos j)
+  omega
+
 open scoped NNReal ProbabilityTheory in
 omit [DecidableEq F] in
 open Classical in
 private theorem active_outside_common_zero_card_lt
-    (C : ModuleCode ι F A) [Nontrivial C] (δ : ℝ≥0) (a : ℕ)
-    (hδlt : δ < 1)
-    (hld : IsLineDecodable (F := F) ((C : Set (ι → A))) δ a
-      (Fintype.card ι + 1))
+    (C : ModuleCode ι F A) [Nontrivial C] (δ : ℝ≥0) (a b : ℕ)
+    (hδlt : δ < 1) (hb : 3 ≤ b ∨ Fintype.card ι + 1 ≤ b)
+    (hld : IsLineDecodable (F := F) ((C : Set (ι → A))) δ a b)
     (u : Fin 2 → ι → A) (B : Finset F) (haB : a < B.card) :
     let J := Finset.univ.filter fun i : ι => ∃ c : C, c.1 i ≠ 0
     let Z := Finset.univ.filter fun i : ι =>
@@ -648,8 +730,6 @@ private theorem active_outside_common_zero_card_lt
   have hBq : B.card ≤ q := by
     simpa only [q] using Finset.card_le_univ B
   have haq : a ≤ q := haB.le.trans hBq
-  have hnq : n + 1 ≤ q := by
-    exact line_decodable_output_card_le_field_card C δ a (n + 1) hld haq
   have hnpos : 0 < n := by
     simpa only [n] using (Fintype.card_pos : 0 < Fintype.card ι)
   have hkpos : 0 < k := by
@@ -658,7 +738,7 @@ private theorem active_outside_common_zero_card_lt
   have hkZ : k ≤ Z.card := Nat.le_of_not_gt hZlt
   obtain ⟨d₀, hd₀⟩ := exists_ne (0 : C)
   obtain ⟨c₀, c₁, E, hEcard, hE⟩ :=
-    line_decodable_cardinality_form C δ a (n + 1) hld
+    line_decodable_cardinality_form C δ a b hld
       (u 0) (u 1) (fun γ : F => γ ^ 2 • d₀) Finset.univ
       (by
         intro γ _hγ
@@ -713,11 +793,14 @@ private theorem active_outside_common_zero_card_lt
 
 omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
 open scoped NNReal ProbabilityTheory in
+/-- At most `a` bad challenges for a nonzero code. The decoded aligned challenges are counted with
+`card_le_floor_add_one_of_pencil_mismatch`. -/
 private theorem nontrivial_bad_set_card_le_a
-    [Finite A] (C : ModuleCode ι F A) [Nontrivial C] (δ : ℝ≥0) (hδlt : δ < 1)
-    (a : ℕ)
-    (hld : IsLineDecodable (F := F) ((C : Set (ι → A))) δ a
-      (Fintype.card ι + 1))
+    [Finite A] (C : ModuleCode ι F A) [Nontrivial C] (δ : ℝ≥0) (a b : ℕ)
+    (hδlt : δ < 1) (hbe : Nat.floor (δ * Fintype.card ι) + 2 ≤ b)
+    (hb : 3 ≤ b ∨ Fintype.card ι + 1 ≤ b)
+    (hnq : Fintype.card ι < Fintype.card F ∨ Fintype.card ι + 1 ≤ b)
+    (hld : IsLineDecodable (F := F) ((C : Set (ι → A))) δ a b)
     (u : Fin 2 → ι → A) (B : Finset F)
     (w : ∀ γ : {γ : F // γ ∈ B}, AffineMCABadWitness C δ γ.1 u) :
     B.card ≤ a := by
@@ -725,17 +808,16 @@ private theorem nontrivial_bad_set_card_le_a
   let _ := Fintype.ofFinite A
   by_contra hle
   have haB : a < B.card := Nat.lt_of_not_ge hle
-  let n := Fintype.card ι
-  let q := Fintype.card F
   let J := Finset.univ.filter fun i : ι => ∃ c : C, c.1 i ≠ 0
-  have hBq : B.card ≤ q := by
-    simpa only [q] using Finset.card_le_univ B
-  have haq : a ≤ q := haB.le.trans hBq
-  have hnq : n + 1 ≤ q :=
-    line_decodable_output_card_le_field_card C δ a (n + 1) hld haq
-  have hJle : J.card ≤ n := by
-    simpa only [J, n] using Finset.card_le_univ J
-  have hJcard : J.card < q := by omega
+  have hJle : J.card ≤ Fintype.card ι := by
+    simpa only [J] using Finset.card_le_univ J
+  have haq : a ≤ Fintype.card F := haB.le.trans (Finset.card_le_univ B)
+  have hnq' : Fintype.card ι < Fintype.card F := by
+    rcases hnq with h | h
+    · exact h
+    · have := line_decodable_output_card_le_field_card C δ a b hld haq
+      omega
+  have hJcard : J.card < Fintype.card F := by omega
   have hactive : ∀ i ∈ J, ∃ c : C, c.1 i ≠ 0 := by
     intro i hi
     exact (Finset.mem_filter.mp hi).2
@@ -749,25 +831,37 @@ private theorem nontrivial_bad_set_card_le_a
       i ∉ J ∧ u 0 i = 0 ∧ u 1 i = 0).card <
         Fintype.card ι - Nat.floor (δ * Fintype.card ι) := by
     simpa only [J] using
-      (active_outside_common_zero_card_lt C δ a hδlt hld u B haB)
+      (active_outside_common_zero_card_lt C δ a b hδlt hb hld u B haB)
   obtain ⟨U, hUbad, hUclose, hUavoid⟩ :=
     exists_curated_affine_codeword_family C δ u B w J d hd hJcard
   obtain ⟨c₀, c₁, E, hEcard, hE⟩ :=
-    line_decodable_cardinality_form C δ a (Fintype.card ι + 1) hld
-      (u 0) (u 1) U B hUclose haB.le
-  have hex : ∀ γ : {γ : F // γ ∈ E}, ∃ i : ι,
-      u 0 i + γ.1 • u 1 i = c₀.1 i + γ.1 • c₁.1 i ∧
-      (u 0 i ≠ c₀.1 i ∨ u 1 i ≠ c₁.1 i) := by
-    intro γ
-    have hdata := hE γ.1 γ.2
-    have halign : U γ.1 = c₀ + γ.1 • c₁ := by
+    line_decodable_cardinality_form C δ a b hld (u 0) (u 1) U B hUclose haB.le
+  let G : F → Finset ι := fun γ ↦ Finset.univ.filter fun i : ι ↦
+    u 0 i + γ • u 1 i = c₀.1 i + γ • c₁.1 i
+  have hG : ∀ γ ∈ E, Fintype.card ι - Nat.floor (δ * Fintype.card ι) ≤ (G γ).card := by
+    intro γ hγ
+    have hdata := hE γ hγ
+    have hclose := hdata.1
+    rw [Code.relCloseToWord_iff_exists_agreementCols] at hclose
+    obtain ⟨S, hScard, hSagree⟩ := hclose
+    refine hScard.trans (Finset.card_le_card fun i hiS ↦ ?_)
+    refine Finset.mem_filter.mpr ⟨Finset.mem_univ _, ?_⟩
+    have hi := (hSagree i).1 hiS
+    rw [hdata.2] at hi
+    simpa only [Pi.add_apply, Pi.smul_apply] using hi
+  have hmis : ∀ γ ∈ E, ∃ i ∈ G γ, u 0 i ≠ c₀.1 i ∨ u 1 i ≠ c₁.1 i := by
+    intro γ hγ
+    have hdata := hE γ hγ
+    have halign : U γ = c₀ + γ • c₁ := by
       apply Subtype.ext
       exact hdata.2
-    exact decoded_challenge_exists_collision_mismatch C δ u B w J hvanish hZcard
-      U hUbad hUavoid c₀ c₁ γ.1 hdata.1 halign
-  choose pick hroot hmismatch using hex
-  have hcard : E.card ≤ Fintype.card ι :=
-    affine_collision_card_le E (u 0) (u 1) c₀.1 c₁.1 pick hroot hmismatch
+    obtain ⟨i, hroot, hm⟩ :=
+      decoded_challenge_exists_collision_mismatch C δ u B w J hvanish hZcard
+        U hUbad hUavoid c₀ c₁ γ hdata.1 halign
+    exact ⟨i, Finset.mem_filter.mpr ⟨Finset.mem_univ _, hroot⟩, hm⟩
+  have hcount := card_le_floor_add_one_of_pencil_mismatch E (u 0) (u 1) c₀.1 c₁.1
+    (Nat.floor (δ * Fintype.card ι)) G hG
+    (fun γ _ i hi ↦ (Finset.mem_filter.mp hi).2) hmis
   omega
 
 omit [Nonempty ι] [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A]
@@ -802,21 +896,6 @@ private theorem subsingleton_bad_set_pick
     simpa using hroot γ
   · intro γ
     simpa using hmismatch γ
-
-omit [Nonempty ι] [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A]
-    [DecidableEq A] in
-open scoped NNReal in
-omit [SampleableType F] in
-private theorem subsingleton_bad_set_card_le
-    (C : ModuleCode ι F A) [Subsingleton C] (δ : ℝ≥0)
-    (u : Fin 2 → ι → A) (B : Finset F)
-    (w : ∀ γ : {γ : F // γ ∈ B}, AffineMCABadWitness C δ γ.1 u) :
-    B.card ≤ Fintype.card ι := by
-  obtain ⟨pick, hinj, _hroot, _hmismatch⟩ :=
-    subsingleton_bad_set_pick C δ u B w
-  calc
-    B.card = Fintype.card {γ : F // γ ∈ B} := (Fintype.card_coe B).symm
-    _ ≤ Fintype.card ι := Fintype.card_le_of_injective pick hinj
 
 omit [DecidableEq ι] [DecidableEq F] [SampleableType F] [Fintype A] in
 open scoped NNReal in
@@ -988,11 +1067,11 @@ private theorem subsingleton_bad_set_exact_close
 
 omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
 open scoped NNReal ProbabilityTheory in
+/-- At most `a` bad challenges for the zero code: they number at most `⌊δ n⌋ + 1`. -/
 private theorem subsingleton_bad_set_card_le_a
     (C : ModuleCode ι F A) [Subsingleton C] (δ : ℝ≥0) (hδlt : δ < 1)
-    (a : ℕ)
-    (hld : IsLineDecodable (F := F) ((C : Set (ι → A))) δ a
-      (Fintype.card ι + 1))
+    (a b : ℕ) (hbe : Nat.floor (δ * Fintype.card ι) + 2 ≤ b)
+    (hld : IsLineDecodable (F := F) ((C : Set (ι → A))) δ a b)
     (u : Fin 2 → ι → A) (B : Finset F)
     (hBmem : ∀ β : F, β ∈ B ↔
       IsMCA (AffineLineGenerator F) C β u (δ : ℝ))
@@ -1004,11 +1083,28 @@ private theorem subsingleton_bad_set_card_le_a
   have hBne : B.Nonempty := Finset.card_pos.mp (lt_of_le_of_lt (Nat.zero_le a) haB)
   obtain ⟨v₀, v₁, hexact⟩ :=
     subsingleton_bad_set_exact_close C δ hδlt u B hBne hBmem w
-  have hBcard : B.card ≤ Fintype.card ι :=
-    subsingleton_bad_set_card_le C δ u B w
+  let G : F → Finset ι := fun γ ↦ if hγ : γ ∈ B then (w ⟨γ, hγ⟩).cols else ∅
+  have hBcard : B.card ≤ Nat.floor (δ * Fintype.card ι) + 1 := by
+    refine card_le_floor_add_one_of_pencil_mismatch B (u 0) (u 1) (0 : ι → A) (0 : ι → A)
+      _ G ?_ ?_ ?_
+    · intro γ hγ
+      simp only [G, hγ, ↓reduceDIte]
+      exact (w ⟨γ, hγ⟩).card_bound
+    · intro γ hγ i hi
+      simp only [G, hγ, ↓reduceDIte] at hi
+      have hfold := (w ⟨γ, hγ⟩).fold_agree i hi
+      have hzero : (w ⟨γ, hγ⟩).codeword = 0 := Subsingleton.elim _ _
+      rw [hzero] at hfold
+      simpa using hfold
+    · intro γ hγ
+      have halign : (w ⟨γ, hγ⟩).codeword = (0 : C) + γ • (0 : C) := Subsingleton.elim _ _
+      obtain ⟨i, hi, _hroot, hm⟩ :=
+        affine_bad_witness_exists_collision_mismatch C δ γ u (w ⟨γ, hγ⟩) 0 0 halign
+      refine ⟨i, ?_, by simpa using hm⟩
+      simpa only [G, hγ, ↓reduceDIte] using hi
   let z : C := 0
   obtain ⟨c₀, c₁, E, hEcard, hE⟩ :=
-    line_decodable_cardinality_form C δ a (Fintype.card ι + 1) hld
+    line_decodable_cardinality_form C δ a b hld
       v₀ v₁ (fun _ : F => z) B
       (by
         intro γ hγ
@@ -1027,9 +1123,10 @@ open scoped NNReal ProbabilityTheory in
 omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
 open Classical in
 private theorem fixed_stack_bad_set_card_le_a
-    [Finite A] (C : ModuleCode ι F A) (δ : ℝ≥0) (hδlt : δ < 1) (a : ℕ)
-    (hld : IsLineDecodable (F := F) ((C : Set (ι → A))) δ a
-      (Fintype.card ι + 1))
+    [Finite A] (C : ModuleCode ι F A) (δ : ℝ≥0) (hδlt : δ < 1) (a b : ℕ)
+    (hbe : Nat.floor (δ * Fintype.card ι) + 2 ≤ b) (hb : 3 ≤ b ∨ Fintype.card ι + 1 ≤ b)
+    (hnq : Fintype.card ι < Fintype.card F ∨ Fintype.card ι + 1 ≤ b)
+    (hld : IsLineDecodable (F := F) ((C : Set (ι → A))) δ a b)
     (u : Fin 2 → ι → A) :
     (Finset.univ.filter fun γ : F =>
       IsMCA (AffineLineGenerator F) C γ u (δ : ℝ)).card ≤ a := by
@@ -1048,10 +1145,10 @@ private theorem fixed_stack_bad_set_card_le_a
   cases subsingleton_or_nontrivial C with
   | inl hsub =>
       let : Subsingleton C := hsub
-      exact subsingleton_bad_set_card_le_a C δ hδlt a hld u B hBmem w
+      exact subsingleton_bad_set_card_le_a C δ hδlt a b hbe hld u B hBmem w
   | inr hnon =>
       let : Nontrivial C := hnon
-      exact nontrivial_bad_set_card_le_a C δ hδlt a hld u B w
+      exact nontrivial_bad_set_card_le_a C δ a b hδlt hbe hb hnq hld u B w
 
 open scoped NNReal ProbabilityTheory in
 omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
@@ -1068,7 +1165,9 @@ private theorem mcaError_le_proof
   refine iSup_le fun u => ?_
   rw [SampleableType.prEvent_uniformSample]
   apply ENNReal.div_le_div_right
-  exact_mod_cast (fixed_stack_bad_set_card_le_a C δ _hδ_lt a _h u)
+  have hpos := card_sub_floor_pos_of_lt_one (Fintype.card_pos (α := ι)) δ _hδ_lt
+  exact_mod_cast (fixed_stack_bad_set_card_le_a C δ _hδ_lt a (Fintype.card ι + 1)
+    (by omega) (Or.inr le_rfl) (Or.inr le_rfl) _h u)
 
 omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
 open scoped NNReal ProbabilityTheory in
@@ -1105,6 +1204,31 @@ theorem IsLineDecodable.mcaError_le_of_budget
   classical
   let : Fintype A := Fintype.ofFinite A
   exact le_trans (IsLineDecodable.mcaError_le C δ a hδ_pos hδ_lt h) hbudget
+
+open scoped NNReal ProbabilityTheory in
+omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
+open Classical in
+/-- **MCA from line decodability with `⌊δ n⌋ + 2` aligned challenges.** If `C` is
+`(δ, a, b)`-line-decodable with `b ≥ ⌊δ n⌋ + 2` and `b ≥ 3`, and `n < |F|`, then
+
+  `mcaError(AffineLineGenerator F, C, δ) ≤ a / |F|`,
+
+where `n = |ι|`. This weakens the `b = n + 1` of `IsLineDecodable.mcaError_le` to
+`b = max (⌊δ n⌋ + 2) 3`. The condition `n < |F|` replaces `n + 1 ≤ |F|`, which `b = n + 1`
+implies. -/
+theorem IsLineDecodable.mcaError_le_of_floor_add_two
+    [Finite A] (C : ModuleCode ι F A) (δ : ℝ≥0) (a b : ℕ) (hδ_lt : δ < 1)
+    (hbe : Nat.floor (δ * Fintype.card ι) + 2 ≤ b) (hb : 3 ≤ b)
+    (hnq : Fintype.card ι < Fintype.card F)
+    (h : IsLineDecodable (F := F) ((C : Set (ι → A))) δ a b) :
+    mcaError (AffineLineGenerator F) C (δ : ℝ)
+        ≤ (a : ENNReal) / (Fintype.card F : ENNReal) := by
+  let _ := Fintype.ofFinite A
+  unfold mcaError
+  refine iSup_le fun u => ?_
+  rw [SampleableType.prEvent_uniformSample]
+  apply ENNReal.div_le_div_right
+  exact_mod_cast (fixed_stack_bad_set_card_le_a C δ hδ_lt a b hbe (Or.inl hb) (Or.inl hnq) h u)
 
 end
 

@@ -198,4 +198,167 @@ theorem frs_mcaError_le_of_budget
   classical
   exact le_trans (frs_mcaError_le domain k s ω hω hω_gen hadm hcard t ht_pos hs_gt) hbudget
 
+open scoped NNReal in
+open Code in
+/-- **Folded Reed–Solomon MCA with `⌊δ n⌋ + 2` aligned challenges.** Under the hypotheses of
+`frs_mcaError_le`, with `δ = 1 - ρ - 2/t`,
+
+  `ε_mca(C, δ) ≤ ((δ n + 2) t + 3t³)/|F|`,
+
+replacing the term `n t` of `frs_mcaError_le` by `(δ n + 2) t`. The proof is that of
+`frs_mcaError_le` with `mcaError_le_of_strongLineDecodable_of_floor_add_two` in place of
+`mcaError_le_of_strongLineDecodable`. -/
+theorem frs_mcaError_le_floor_add_two
+    {ι : Type} [Fintype ι] [Nonempty ι]
+    {F : Type} [Field F] [Fintype F] [SampleableType F]
+    (domain : ι ↪ F) (k s : ℕ) (ω : F)
+    (_hω : ω ≠ 0)
+    (_hω_gen : orderOf ω = Fintype.card F - 1)
+    (_hadm : ReedSolomon.Folded.Admissible (Finset.univ.map domain) s ω)
+    (_hcard : s * Fintype.card ι < Fintype.card F)
+    (t : ℕ) (_ht_pos : 0 < t)
+    (_hs_gt : 4 * t ^ 2 < s) :
+    let n : ℝ := Fintype.card ι
+    let ρ : ℝ := k / (s * n)
+    mcaError (AffineLineGenerator F) (ReedSolomon.Folded.frsCode domain k s ω)
+        (1 - ρ - 2 / (t : ℝ)) ≤
+      ENNReal.ofReal ((((1 - ρ - 2 / (t : ℝ)) * n + 2) * t + 3 * (t : ℝ) ^ 3) /
+        Fintype.card F) := by
+  classical
+  dsimp
+  let R : ℝ := (k : ℝ) / ((s : ℝ) * Fintype.card ι)
+  let δr : ℝ := 1 - R - 2 / (t : ℝ)
+  change mcaError (AffineLineGenerator F) (ReedSolomon.Folded.frsCode domain k s ω) δr ≤
+    ENNReal.ofReal (((δr * Fintype.card ι + 2) * t + 3 * (t : ℝ) ^ 3) / Fintype.card F)
+  by_cases hδneg : δr < 0
+  · rw [mcaError_eq_zero_of_neg_radius _ _ hδneg]
+    exact bot_le
+  have hδ0 : 0 ≤ δr := le_of_not_gt hδneg
+  by_cases hδzero : δr = 0
+  · rw [hδzero]
+    calc
+      mcaError (AffineLineGenerator F) (ReedSolomon.Folded.frsCode domain k s ω) 0
+          ≤ ENNReal.ofReal (1 / (Fintype.card F : ℝ)) :=
+        mcaError_affineLine_zero_le_inv_card _
+      _ ≤ ENNReal.ofReal
+          (((0 * Fintype.card ι + 2) * t + 3 * (t : ℝ) ^ 3) / Fintype.card F) := by
+        apply ENNReal.ofReal_le_ofReal
+        apply div_le_div_of_nonneg_right _ (by positivity)
+        have ht1 : (1 : ℝ) ≤ t := by exact_mod_cast _ht_pos
+        nlinarith only [ht1, pow_nonneg (show (0 : ℝ) ≤ t by positivity) 3]
+  have hδpos : 0 < δr := lt_of_le_of_ne hδ0 (Ne.symm hδzero)
+  by_cases htsmall : t ≤ 2
+  · have htR0 : (0 : ℝ) < t := by exact_mod_cast _ht_pos
+    have hR0' : 0 ≤ R := by dsimp [R]; positivity
+    dsimp [δr] at hδpos
+    interval_cases t <;> norm_num at hδpos ⊢ <;> nlinarith only [hδpos, hR0']
+  have ht3 : 3 ≤ t := by omega
+  have htR : (0 : ℝ) < t := by exact_mod_cast (show 0 < t by omega)
+  have hs_pos : 0 < s := lt_of_le_of_lt (Nat.zero_le _) _hs_gt
+  have hFn : Fintype.card ι < Fintype.card F := by
+    exact lt_of_le_of_lt (Nat.le_mul_of_pos_left _ hs_pos) _hcard
+  have hR0 : 0 ≤ R := by dsimp [R]; positivity
+  have hR1 : R ≤ 1 := by
+    dsimp [δr] at hδ0
+    nlinarith only [hδ0, div_pos (show (0 : ℝ) < 2 by norm_num) htR]
+  have hRlt : R < 1 := by
+    dsimp [δr] at hδ0
+    nlinarith only [hδ0, div_pos (show (0 : ℝ) < 2 by norm_num) htR]
+  have hsn_pos : (0 : ℝ) < (s : ℝ) * Fintype.card ι := by positivity
+  have hkR : (k : ℝ) < (s : ℝ) * Fintype.card ι := by
+    rw [← div_lt_one hsn_pos]
+    exact hRlt
+  have hk : k ≤ s * Fintype.card ι := by exact_mod_cast hkR.le
+  let C := ReedSolomon.Folded.frsCode domain k s ω
+  have hdesign := isSubspaceDesign_frsCode_sharpProfile domain k s ω hFn _hadm _hω _hω_gen hk
+  have hprof : sharpSubspaceProfile (ι := ι) s R (2 * t) ≤ R + 1 / (2 * (t : ℝ)) :=
+    sharpSubspaceProfile_two_mul_le_rate_add s t R _ht_pos _hs_gt hR0 hR1
+  let δ : NNReal := ⟨δr, hδ0⟩
+  have hweak : StrongLineDecodable (C : Set (ι → Fin s → F)) δ
+      (3 * t ^ 3) (2 * t) := by
+    apply strongLineDecodable_two_mul_of_profile_le
+      (sharpSubspaceProfile (ι := ι) s R) R C hdesign ht3 δ hprof
+    change δr ≤ δr
+    exact le_rfl
+  have hrate : (LinearCode.alphabetRate C : ℝ) = R := by
+    simpa only [C, R, Nat.cast_mul] using
+      (ReedSolomon.Folded.alphabetRate_frsCode domain k s ω _hadm _hω hk)
+  have h2tle : 2 * t ≤ s := by
+    nlinarith only [_hs_gt, sq_nonneg ((t : ℝ) - 1)]
+  have ht_le_s : t ≤ s := le_trans (by omega : t ≤ 2 * t) h2tle
+  change IsSubspaceDesign s (sharpSubspaceProfile (ι := ι) s R) C at hdesign
+  have hdesignList := hdesign
+  rw [sharpSubspaceProfile_eq_fun s R] at hdesignList
+  have hlist0 := subspaceDesign_lambda_le s R C hrate hdesignList
+    t (by omega) ht_le_s
+  have hboostrad : (δ : ℝ) * (((2 * t : ℕ) : ℝ)) / (((2 * t - 1 : ℕ) : ℝ)) ≤
+      (t : ℝ) / (t + 1) * (1 - (s : ℝ) * R / ((s : ℝ) - t + 1)) := by
+    change δr * (((2 * t : ℕ) : ℝ)) / (((2 * t - 1 : ℕ) : ℝ)) ≤ _
+    exact boosted_frs_radius_le_list_radius s t R ht3 _hs_gt hR0
+  have hlist : Code.Lambda (C : Set (ι → Fin s → F))
+      ((δ : ℝ) * (((2 * t : ℕ) : ℝ)) / (((2 * t - 1 : ℕ) : ℝ))) ≤ (t : ℕ∞) := by
+    exact (Code.Lambda_mono hboostrad).trans hlist0
+  have hsub : 1 ≤ 2 * t := by omega
+  have hlist' : Code.Lambda (C : Set (ι → Fin s → F))
+      ((δ : ℝ) * (((2 * t : ℕ) : ℝ)) / ((((2 * t : ℕ) : ℝ)) - 1)) ≤ (t : ℕ∞) := by
+    simpa only [Nat.cast_sub hsub, Nat.cast_one] using hlist
+  have hδlt : δ < 1 := by
+    rw [← NNReal.coe_lt_coe]
+    change δr < (1 : ℝ)
+    dsimp [δr]
+    have htwo : (0 : ℝ) < 2 / t := div_pos (by norm_num) htR
+    nlinarith only [hR0, htwo]
+  have hm2 : 2 ≤ max (Nat.floor (δ * (Fintype.card ι : ℝ≥0)) + 1) 2 := le_max_right _ _
+  have hbudget : (t + 1) ^ 2 ≤
+      max (Nat.floor (δ * (Fintype.card ι : ℝ≥0)) + 1) 2 * t + 3 * t ^ 3 := by
+    have hmt := Nat.mul_le_mul_right t hm2
+    have hc : t ^ 2 ≤ t ^ 3 := Nat.pow_le_pow_right (by omega) (by norm_num)
+    have h1 : 1 ≤ t ^ 3 := Nat.one_le_pow _ _ (by omega)
+    nlinarith only [hmt, hc, h1]
+  have hmca := mcaError_le_of_strongLineDecodable_of_floor_add_two C δ _ht_pos hδlt hFn hweak
+    (by simpa only [Nat.cast_mul, Nat.cast_ofNat] using hlist') hbudget
+  change mcaError (AffineLineGenerator F) C δr ≤ _ at hmca
+  have hfl : ((Nat.floor (δ * (Fintype.card ι : ℝ≥0)) : ℕ) : ℝ) ≤ δr * Fintype.card ι := by
+    have h0 : (0 : ℝ≥0) ≤ δ * (Fintype.card ι : ℝ≥0) := zero_le
+    have h := NNReal.coe_le_coe.mpr (Nat.floor_le h0)
+    rw [NNReal.coe_natCast, NNReal.coe_mul, NNReal.coe_natCast] at h
+    exact h
+  have hmR : ((max (Nat.floor (δ * (Fintype.card ι : ℝ≥0)) + 1) 2 : ℕ) : ℝ) ≤
+      δr * Fintype.card ι + 2 := by
+    rw [Nat.cast_max]
+    apply max_le
+    · push_cast
+      linarith
+    · have hnn : 0 ≤ δr * (Fintype.card ι : ℝ) := mul_nonneg hδ0 (Nat.cast_nonneg _)
+      push_cast
+      linarith
+  refine hmca.trans (ENNReal.ofReal_le_ofReal ?_)
+  apply div_le_div_of_nonneg_right _ (by positivity)
+  have htR0 : (0 : ℝ) ≤ t := by positivity
+  have h3 : ((3 * t ^ 3 : ℕ) : ℝ) = 3 * (t : ℝ) ^ 3 := by push_cast; ring
+  rw [h3]
+  nlinarith only [mul_le_mul_of_nonneg_right hmR htR0]
+
+/-- The better of `frs_mcaError_le` and `frs_mcaError_le_floor_add_two`. The second is smaller
+exactly when `(1 - δ) n > 2`, with `δ = 1 - ρ - 2/t`. -/
+theorem frs_mcaError_le_min
+    {ι : Type} [Fintype ι] [Nonempty ι]
+    {F : Type} [Field F] [Fintype F] [SampleableType F]
+    (domain : ι ↪ F) (k s : ℕ) (ω : F)
+    (hω : ω ≠ 0)
+    (hω_gen : orderOf ω = Fintype.card F - 1)
+    (hadm : ReedSolomon.Folded.Admissible (Finset.univ.map domain) s ω)
+    (hcard : s * Fintype.card ι < Fintype.card F)
+    (t : ℕ) (ht_pos : 0 < t)
+    (hs_gt : 4 * t ^ 2 < s) :
+    let n : ℝ := Fintype.card ι
+    let ρ : ℝ := k / (s * n)
+    mcaError (AffineLineGenerator F) (ReedSolomon.Folded.frsCode domain k s ω)
+        (1 - ρ - 2 / (t : ℝ)) ≤
+      min (ENNReal.ofReal ((n * t + 3 * (t : ℝ) ^ 3) / Fintype.card F))
+        (ENNReal.ofReal ((((1 - ρ - 2 / (t : ℝ)) * n + 2) * t + 3 * (t : ℝ) ^ 3) /
+          Fintype.card F)) :=
+  le_min (frs_mcaError_le domain k s ω hω hω_gen hadm hcard t ht_pos hs_gt)
+    (frs_mcaError_le_floor_add_two domain k s ω hω hω_gen hadm hcard t ht_pos hs_gt)
+
 end CodingTheory
