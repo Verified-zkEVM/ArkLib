@@ -150,17 +150,23 @@ standard. This guide adopts the recommendations named below as repository requir
 
 ### Word count
 
-STE 8.4 to 8.7 defines word counting. A number with its unit, an abbreviation, a proper name,
-a quoted title, a formula, and a hyphenated group each count as one word. Do not add hyphens or
-quotation marks to hide a long sentence.
+STE 8.4 to 8.7 defines word counting. Each of these elements counts as one word:
+
+- A number, or a number with its unit.
+- An abbreviation or an alphanumeric identifier.
+- Quoted text, a title, or a label.
+- A proper name.
+- A hyphenated group.
+
+Do not add hyphens or quotation marks to hide a long sentence.
 
 Text in parentheses counts as one word in the enclosing sentence. Check the parenthetical text
 separately for sentence length. A list introduction ends at its colon for word counting. Each list
 item counts separately.
 
-ArkLib also counts an identifier, command, URL, or citation key as one word. Ordinary link text
-retains its words. This word-count convention is a technical-text adaptation. The checker approximates these conventions.
-Review the actual sentence when its count is doubtful.
+ArkLib also counts a formula, a Lean expression, a command, a URL, or a citation key as one word.
+Ordinary link text retains its words. This word-count convention is a technical-text adaptation. The
+checker approximates these conventions. Review the actual sentence when its count is doubtful.
 
 ### Claims and source evidence
 
