@@ -27,7 +27,8 @@ In `--base` mode, the checker reads the tracked files in the working tree. It ch
 paragraph, list item, or table cell that contains an added line. It ignores untracked files.
 
 Options: `--github` prints GitHub annotations. `--strict` exits with 1 if it finds a problem.
-Without `--strict`, the exit code is 0, and 2 for a usage error.
+Without `--strict`, findings exit with 0. Usage, Git and configuration errors exit with 2.
+Non-UTF-8 source input and dangling symlinks produce advisory Input diagnostics.
 """
 
 from __future__ import annotations
@@ -60,8 +61,9 @@ PHRASAL_PAIRS = {
     "check out": "check|checks|checked", "come up with": "come|comes|came",
 }
 PHRASAL = re.compile(
-    "|".join(rf"\b(?:{forms})\s+{re.escape(pair.split(' ', 1)[1])}\b"
-             for pair, forms in PHRASAL_PAIRS.items()), re.IGNORECASE)
+    "|".join(rf"\b(?:{forms})\s+" + r"\s+".join(
+        re.escape(word) for word in pair.split()[1:]) + r"\b"
+        for pair, forms in PHRASAL_PAIRS.items()), re.IGNORECASE)
 LATIN = re.compile(r"(?<![\w.])(?:e\.g\.|i\.e\.|etc\.|cf\.|resp\.|viz\.)", re.IGNORECASE)
 CONTRACTION = re.compile(
     r"\b\w+n['’]t\b|\b\w+['’](?:re|ll|ve|d)\b"
@@ -79,17 +81,27 @@ POSSESSED_ADJECTIVES = {"bounded", "unbounded", "fixed", "nested", "ordered", "d
                         "sorted", "indexed", "typed", "isolated", "repeated", "related", "named"}
 NOT_PROGRESSIVE = {"nothing", "something", "anything", "everything", "missing", "remaining",
                    "string", "strings", "ring", "rings", "thing", "things", "during", "padding",
-                   "binding", "encoding", "decoding", "folding", "batching", "hashing"}
+                   "binding", "encoding", "decoding", "folding", "batching", "hashing",
+                   "hiding", "increasing", "decreasing", "nondecreasing", "nonincreasing",
+                   "vanishing", "accepting", "winning"}
+NON_VERBAL_ING = NOT_PROGRESSIVE | {
+    "hamming", "interleaving", "coupling", "tracing", "embedding", "unfolding",
+    "rewriting", "normalizing", "lowering", "wrapping", "masking", "leading",
+}
+# These phrases are objects of possession, not perfect-tense actions.
+POSSESSED_PHRASES = re.compile(
+    r"(?:correlated\s+agreement|centered\s+norm|centred\s+norm|squared\s+norm|expected\s+value|"
+    r"left(?:\s+and\s+right)?\s+children|right\s+children|known\s+degree)\b", re.IGNORECASE)
 PROGRESSIVE = re.compile(r"\b(?:is|are|was|were|be|been)\s+(\w+ing)\b", re.IGNORECASE)
 BARE_THIS = re.compile(
     r"^(?:This|These)\s+(?:is|are|was|were|means|makes|ensures|lets|gives|shows|allows|"
-    r"requires|keeps|fixes|adds|avoids|matches|also|will|can|way)\b")
+    r"requires|keeps|fixes|adds|avoids|matches|also|will|can)\b")
 # "During" is a preposition, not an "-ing" form of a verb.
 ING_START = re.compile(r"^(?!During\b)[A-Z][a-z]+ing\b[^,.;:]{0,80},")
 EM_DASH = re.compile(r"—|\s–\s|\s--\s")
-FORMATTED_TERM = r"(?:``[^`]+``|`[^`]+`|\$[^$]+\$|\*\*[^*]+\*\*)"
+FORMATTED_TERM = r"(?:\[[^\]]+\]\((?:[^()]|\([^()]*\))*\)|``[^`]+``|`[^`]+`|\$[^$]+\$|\*\*[^*]+\*\*)"
 DEFINITION_SEPARATOR = re.compile(
-    rf"^\s*{FORMATTED_TERM}(?:\s*(?:,|and|or)\s*{FORMATTED_TERM})*"
+    rf"^\s*{FORMATTED_TERM}(?:\s*(?:,|and|or|/)\s*{FORMATTED_TERM})*"
     r"(?:\s*\((?:[^()]|\([^()]*\))*\))*\s*(?P<dash>—|–|--)\s+")
 HISTORY_SCOPE = re.compile(r"^(?:docs/wiki/|ArkLib/|ArkLibTest/)|\.lean$")
 
@@ -145,7 +157,10 @@ def word_pattern(words: list[str]) -> re.Pattern[str] | None:
     def alternative(word: str) -> str:
         # A single word also matches its inflected forms: "utilize" matches "utilizes".
         suffix = r"(?:s|es|d|ed|ing)?" if re.fullmatch(r"[a-z]+", word) else ""
-        return re.escape(word) + suffix
+        pattern = re.escape(word).replace(r"\ ", r"\s+") + suffix
+        if word.endswith("e") and not word.endswith("ee") and suffix:
+            pattern = rf"(?:{pattern}|{re.escape(word[:-1])}ing)"
+        return pattern
 
     alternatives = sorted((alternative(word) for word in words), key=len, reverse=True)
     return re.compile(r"(?<![\w.])(?:" + "|".join(alternatives) + r")(?![\w])", re.IGNORECASE)
@@ -154,7 +169,32 @@ def word_pattern(words: list[str]) -> re.Pattern[str] | None:
 # ---------------------------------------------------------------------------------------------
 # Extraction of prose blocks
 
+CODE_SPAN = re.compile(r"(?<!`)(`+)(?!`)(.*?)(?<!`)\1(?!`)", re.DOTALL)
+
 LIST_ITEM = re.compile(r"^(\s*)(?:[-*+]|(\d+)[.)])\s+(.*)$")
+
+
+def strip_html_comments(text: str, inside: bool, visible: str) -> tuple[str, bool]:
+    """Remove HTML comments on one line, retaining code spans and character positions."""
+    result = list(text)
+    index = 0
+    while index < len(text):
+        if inside:
+            end = text.find("-->", index)
+            stop = len(text) if end < 0 else end + 3
+            result[index:stop] = blank(text[index:stop])
+            inside = end < 0
+            index = stop
+        elif visible.startswith("<!--", index):
+            before = visible[:index]
+            escaped = (len(before) - len(before.rstrip("\\"))) % 2
+            if escaped:
+                index += 1
+            else:
+                inside = True
+        else:
+            index += 1
+    return "".join(result), inside
 
 
 def markdown_blocks(path: str, text: str, first_line: int = 1) -> list[Block]:
@@ -165,23 +205,28 @@ def markdown_blocks(path: str, text: str, first_line: int = 1) -> list[Block]:
     last = 0
     procedural = False
     paragraph = True
-    fence = False
-    comment = False
+    fence: tuple[str, int] | None = None
     header_row = True
     legal_section: int | None = None
+    comment = False
+    list_context = False
     lines = text.split("\n")
+    visible_lines = CODE_SPAN.sub(lambda m: blank(m.group(), True), text).split("\n")
 
     def flush() -> None:
         nonlocal current
         if current:
-            blocks.append(Block(path, start, " ".join(current), procedural, paragraph, last))
+            blocks.append(Block(path, start, "\n".join(current), procedural, paragraph, last))
         current = []
 
     index = 0
     if lines and lines[0].strip() == "---":
         for index in range(1, len(lines)):
             if lines[index].strip() == "---":
-                index += 1
+                if any(re.match(r"[A-Za-z_][\w-]*:", line) for line in lines[1:index]):
+                    index += 1
+                else:
+                    index = 0  # Two thematic breaks do not imply YAML front matter.
                 break
         else:
             index = 0
@@ -189,20 +234,20 @@ def markdown_blocks(path: str, text: str, first_line: int = 1) -> list[Block]:
         number = first_line + offset
         raw = lines[offset]
         stripped = raw.strip()
-        if comment:
-            if "-->" in stripped:
-                comment = False
+        if fence is not None:
+            character, width = fence
+            if re.fullmatch(re.escape(character) + "{" + str(width) + r",}\s*", stripped):
+                fence = None
             continue
-        if stripped.startswith("<!--"):
+        opening = re.match(r"(`{3,}|~{3,})", stripped) if not comment else None
+        if opening:
             flush()
-            comment = "-->" not in stripped
+            fence = (opening.group()[0], len(opening.group()))
             continue
-        if stripped.startswith(("```", "~~~")):
-            flush()
-            fence = not fence
+        if raw.startswith(("    ", "\t")) and not current and not comment and not list_context:
             continue
-        if fence:
-            continue
+        raw, comment = strip_html_comments(raw, comment, visible_lines[offset])
+        stripped = raw.strip()
         stripped = re.sub(r"^(?:>\s?)+", "", stripped)
         heading = re.fullmatch(r"(#{1,6})\s+(.+?)(?:\s+#+)?", stripped)
         if heading:
@@ -217,7 +262,7 @@ def markdown_blocks(path: str, text: str, first_line: int = 1) -> list[Block]:
             continue
         if legal_section is not None:
             continue
-        if not stripped or stripped.startswith("#") or re.fullmatch(r"[-*_=]{3,}", stripped):
+        if not stripped or re.fullmatch(r"[-*_=]{3,}", stripped):
             flush()
             header_row = True
             continue
@@ -235,12 +280,15 @@ def markdown_blocks(path: str, text: str, first_line: int = 1) -> list[Block]:
         item = LIST_ITEM.match(raw)
         if item:
             flush()
+            list_context = True
             start = number
             procedural = item.group(2) is not None
             paragraph = False
             current.append(item.group(3))
             last = number
             continue
+        if raw and not raw[0].isspace():
+            list_context = False
         if not current:
             start = number
             procedural = False
@@ -280,10 +328,20 @@ def lean_blocks(path: str, text: str) -> list[Block]:
             # A character literal such as '"' does not start a string.
             index = literal.end()
             continue
+        raw_string = re.match(r'r(#+)?"', text[index:]) if char == "r" else None
+        if raw_string and not (index and (text[index - 1].isalnum() or text[index - 1] in "_'.")):
+            terminator = '"' + (raw_string.group(1) or "")
+            end = text.find(terminator, index + raw_string.end())
+            end = length if end == -1 else end + len(terminator)
+            line += text.count("\n", index, end)
+            index = end
+            continue
         if char == '"':
             index += 1
             while index < length and text[index] != '"':
                 if text[index] == "\\":
+                    if index + 1 < length and text[index + 1] == "\n":
+                        line += 1
                     index += 1
                 elif text[index] == "\n":
                     line += 1
@@ -306,7 +364,7 @@ def lean_blocks(path: str, text: str) -> list[Block]:
                     cursor += 2
                 else:
                     cursor += 1
-            body = text[body_start:cursor - 2]
+            body = text[body_start:cursor - 2 if depth == 0 else cursor]
             blocks.extend(markdown_blocks(path, body, line))
             line += text.count("\n", index, cursor)
             index = cursor
@@ -342,44 +400,71 @@ def file_blocks(path: str, text: str) -> list[Block]:
 # Masking and sentences
 
 
-def mask(text: str, collapse_parentheses: bool,
-         parentheticals: list[str] | None = None) -> str:
-    """Replace each exempt or one-word element with a placeholder word.
+def blank(text: str, token: bool = False) -> str:
+    """Hide content without changing its length or newline positions."""
+    result = re.sub(r"[^\r\n]", " ", text)
+    if token:
+        positions = [i for i, char in enumerate(result) if char == " "]
+        if positions:
+            index = positions[min(1, len(positions) - 1)]
+            result = result[:index] + "X" + result[index + 1:]
+    return result
 
-    When `collapse_parentheses` is true, each parenthesis becomes one word, and its text goes to
-    `parentheticals`. An inner parenthesis is one word in the text of the outer one.
-    """
-    text = re.sub(r"<!--.*?-->", " ", text)
-    text = re.sub(r"&[A-Za-z]+;|&#\d+;", " ", text)
-    text = re.sub(r"\$\$.*?\$\$|\$[^$]+\$", " Formula ", text)
-    text = re.sub(r"``.*?``|`[^`]*`", " Code ", text)
-    text = re.sub(r"!?\[([^\]]*)\]\([^)]*\)", r"\1", text)
-    text = re.sub(r"\[([^\]]+)\]\[[^\]]*\]", r"\1", text)
-    text = re.sub(r"\[[A-Z][A-Za-z+-]*\d{2}[a-z]?(?:,[^\]]*)?\]", " Key ", text)
-    text = re.sub(r"<https?://[^>]+>|https?://\S+", " Link ", text)
-    text = re.sub(r"</?[A-Za-z][^>]*>", " ", text)
-    text = re.sub(r'"[^"]*"|“[^”]*”', " Quote ", text)
-    text = re.sub(r"\*\*|__|(?<!\w)[*_]|[*_](?!\w)", "", text)
+
+def mask(text: str, collapse_parentheses: bool,
+         parentheticals: list[str] | None = None,
+         parenthetical_offsets: list[int] | None = None) -> str:
+    """Mask exempt elements with one word, preserving source offsets and newlines."""
+    text = CODE_SPAN.sub(lambda m: blank(m.group(), True), text)
+    for pattern, token in (
+            (r"\$\$.*?\$\$|\$[^$]+\$", True),
+            (r"&[A-Za-z]+;|&#\d+;", False)):
+        text = re.sub(pattern, lambda m: blank(m.group(), token), text, flags=re.DOTALL)
+    def link(match: re.Match[str]) -> str:
+        start, end = match.span(1)
+        return (blank(match.group()[:start - match.start()]) + match.group(1)
+                + blank(match.group()[end - match.start():]))
+    text = re.sub(r"!?\[([^\]]*)\]\((?:[^()]|\([^()]*\))*\)", link, text)
+    text = re.sub(r"\[([^\]]+)\]\[[^\]]*\]", link, text)
+    for pattern, token in (
+            (r"\[[A-Z][A-Za-z+-]*\d{2}[a-z]?(?:,[^\]]*)?\]", True),
+            (r"<https?://[^>]+>|https?://\S+", True),
+            (r"</?[A-Za-z][^>]*>", False),
+            (r'"[^"]*"|“[^”]*”', True),
+            (r"\*\*|__|(?<!\w)[*_]|[*_](?!\w)", False)):
+        text = re.sub(pattern, lambda m: blank(m.group(), token), text)
     if collapse_parentheses:
-        previous = None
-        while previous != text:
-            previous = text
-            for inner in re.findall(r"\(([^()]*)\)", text):
+        while re.search(r"\([^()]*\)", text):
+            def parenthesis(match: re.Match[str]) -> str:
                 if parentheticals is not None:
-                    parentheticals.append(re.sub(r"\s+", " ", inner).strip())
-            text = re.sub(r"\([^()]*\)", " Paren ", text)
-    return re.sub(r"\s+", " ", text).strip()
+                    parentheticals.append(match.group()[1:-1])
+                if parenthetical_offsets is not None:
+                    parenthetical_offsets.append(match.start() + 1)
+                return blank(match.group(), True)
+            text = re.sub(r"\([^()]*\)", parenthesis, text)
+    return text
+
+
+def sentence_spans(text: str) -> list[tuple[int, int]]:
+    """Return sentence spans in the supplied text without losing source offsets."""
+    spans: list[tuple[int, int]] = []
+    start = 0
+    boundaries = list(re.finditer(
+        r"(?<=[.!?])\s+(?=[A-Z0-9(\[]|[a-z][\w-]*\.[\w-]+(?:\s|$))", text))
+    for boundary in boundaries:
+        part = text[start:boundary.start()]
+        if part.split() and part.split()[-1].lower() in ABBREVIATIONS:
+            continue
+        spans.append((start, boundary.start()))
+        start = boundary.end()
+    spans.append((start, len(text)))
+    return [(a + len(text[a:b]) - len(text[a:b].lstrip()),
+             b - len(text[a:b]) + len(text[a:b].rstrip()))
+            for a, b in spans if text[a:b].strip()]
 
 
 def sentences(text: str) -> list[str]:
-    parts = re.split(r"(?<=[.!?])\s+(?=[A-Z0-9(\[]|[a-z][\w-]*\.[\w-]+(?:\s|$))", text)
-    merged: list[str] = []
-    for part in parts:
-        if merged and merged[-1].split()[-1].lower() in ABBREVIATIONS:
-            merged[-1] = merged[-1] + " " + part
-        else:
-            merged.append(part)
-    return [part for part in merged if part.strip()]
+    return [text[a:b] for a, b in sentence_spans(text)]
 
 
 def word_count(sentence: str) -> int:
@@ -394,59 +479,73 @@ def check_block(block: Block, general: re.Pattern[str] | None,
                 history: re.Pattern[str] | None) -> list[Finding]:
     found: list[Finding] = []
 
-    def add(rule: str, message: str, excerpt: str) -> None:
-        found.append(Finding(block.path, block.line, rule, message, excerpt.strip()[:80]))
+    def add(rule: str, message: str, offset: int, end: int | None = None,
+            context: int = 0) -> None:
+        excerpt = re.sub(r"\s+", " ", block.text[max(0, offset - context):end]).strip()[:80]
+        line = block.line + block.text.count("\n", 0, offset)
+        found.append(Finding(block.path, line, rule, message, excerpt))
 
     parentheticals: list[str] = []
-    counted = mask(block.text, collapse_parentheses=True, parentheticals=parentheticals)
-    plain = mask(block.text, collapse_parentheses=False)
+    parenthetical_offsets: list[int] = []
+    counted = mask(block.text, True, parentheticals, parenthetical_offsets)
+    plain = mask(block.text, False)
     limit = PROCEDURAL_LIMIT if block.procedural else DESCRIPTIVE_LIMIT
-    counted_sentences = sentences(counted)
-    # The text in parentheses counts as a separate sentence.
-    for sentence in counted_sentences + [part for inner in parentheticals
-                                         for part in sentences(inner)]:
-        words = word_count(sentence)
-        if words > limit:
-            add("S1", f"The sentence has {words} words. The limit is {limit}.", sentence)
-    if block.paragraph and len(counted_sentences) > PARAGRAPH_LIMIT:
-        add("P2", f"The paragraph has {len(counted_sentences)} sentences. The limit is "
-            f"{PARAGRAPH_LIMIT}.", counted_sentences[0])
+    counted_spans = sentence_spans(counted)
+    sentence_parts = [(counted, 0, counted_spans)] + [
+        (inner, offset, sentence_spans(inner))
+        for inner, offset in zip(parentheticals, parenthetical_offsets)]
+    for text, offset, spans in sentence_parts:
+        for start, end in spans:
+            words = word_count(text[start:end])
+            if words > limit:
+                add("S1", f"The sentence has {words} words. The limit is {limit}.",
+                    offset + start, offset + end)
+    if block.paragraph and len(counted_spans) > PARAGRAPH_LIMIT:
+        add("P2", f"The paragraph has {len(counted_spans)} sentences. The limit is "
+            f"{PARAGRAPH_LIMIT}.", counted_spans[PARAGRAPH_LIMIT][0])
     if ";" in plain:
-        add("U1", "Do not use a semicolon. Write two sentences.", plain[max(0, plain.index(";") - 30):])
-    # A formatted term followed by a dash introduces a definition, not a clause join.
-    # Only that separator is exempt. Review the rest of the description as usual.
-    dash_text = block.text
-    definition = DEFINITION_SEPARATOR.match(dash_text)
+        add("U1", "Do not use a semicolon. Use a conjunction or write two sentences.",
+            plain.index(";"), context=30)
+    definition = DEFINITION_SEPARATOR.match(block.text)
+    dash_plain = plain
     if definition:
-        dash_text = dash_text[:definition.start("dash")] + " " + dash_text[definition.end("dash"):]
-    dash_plain = mask(dash_text, collapse_parentheses=False)
-    for match in EM_DASH.finditer(dash_plain):
-        add("U2", "Review this dash. If it joins clauses, write two sentences.",
-            dash_plain[max(0, match.start() - 30):match.end() + 30])
+        start, end = definition.span("dash")
+        dash_plain = plain[:start] + blank(plain[start:end]) + plain[end:]
+    if dash_plain.strip() not in {"—", "–", "--"}:
+        for match in EM_DASH.finditer(dash_plain):
+            offset = match.start() + len(match.group()) - len(match.group().lstrip())
+            add("U2", "Review this dash. If it joins clauses, write two sentences.",
+                offset, match.end() + 30, context=30)
     for pattern, rule, message in (
             (LATIN, "W7", "Write the English words for this Latin abbreviation."),
             (PHRASAL, "W6", "Consider a direct verb that preserves this meaning."),
             (CONTRACTION, "S5", "Write the full form of this contraction."),
-            (general, "W1", "Review this wording using writing-vocabulary.md; preserve its meaning.")):
+            (general, "W1", "Review this wording using writing-vocabulary.md. Preserve its meaning.")):
         if pattern is None:
             continue
         for match in pattern.finditer(plain):
-            add(rule, message, match.group(0))
+            if rule == "W1" and LATIN.fullmatch(match.group()):
+                continue
+            add(rule, message, match.start(), match.end())
     for match in PERFECT.finditer(plain):
         hedged = MODAL_BEFORE.search(plain[:match.start()])
-        if match.group(1).lower() not in POSSESSED_ADJECTIVES and not hedged:
-            add("V1", "Prefer a simple tense if it preserves time and uncertainty.", match.group(0))
+        possession = POSSESSED_PHRASES.match(plain, match.start(1))
+        if match.group(1).lower() not in POSSESSED_ADJECTIVES and not hedged and not possession:
+            add("V1", "Prefer a simple tense if it preserves time and uncertainty.",
+                match.start(), match.end())
     for match in PROGRESSIVE.finditer(plain):
         if match.group(1).lower() not in NOT_PROGRESSIVE:
-            add("V1", "Review this possible progressive form; prefer a simple construction.", match.group(0))
+            add("V1", "Review this possible progressive form. Prefer a simple construction.",
+                match.start(), match.end())
     if history is not None and HISTORY_SCOPE.search(block.path):
         for match in history.finditer(plain):
-            add("C3", "Describe the present state, not the history.", match.group(0))
-    for sentence in sentences(plain):
+            add("C3", "Describe the present state, not the history.", match.start(), match.end())
+    for start, end in sentence_spans(plain):
+        sentence = plain[start:end]
         if BARE_THIS.match(sentence):
-            add("S7", "Name the noun if this reference is ambiguous.", sentence)
-        if ING_START.match(sentence):
-            add("V2", "Review this possible verb clause; a finite clause can be clearer.", sentence)
+            add("S7", "Name the noun if this reference is ambiguous.", start, end)
+        if ING_START.match(sentence) and re.match(r"\w+", sentence).group().lower() not in NON_VERBAL_ING:
+            add("V2", "Review this possible verb clause. A finite clause can be clearer.", start, end)
     return found
 
 
@@ -466,7 +565,7 @@ def check_blocks(blocks: list[Block], vocabulary: Path = VOCABULARY) -> list[Fin
 
 def git(*args: str) -> str:
     return subprocess.run(["git", *args], check=True, capture_output=True, text=True,
-                          cwd=ROOT).stdout
+                          cwd=ROOT, encoding="utf-8", errors="surrogateescape").stdout
 
 
 def checked_path(path: str) -> bool:
@@ -477,28 +576,51 @@ def checked_path(path: str) -> bool:
 def added_lines(base: str) -> dict[str, set[int]]:
     """Map each changed tracked file to the line numbers that it adds since the merge base."""
     merge_base = git("merge-base", base, "HEAD").strip()
-    diff = git("diff", "--unified=0", "--no-color", "--no-ext-diff", merge_base)
+    # NUL-delimited names do not depend on quoting or patch-header prefixes.
+    # Keep both sides of a rename so unchanged prose is not treated as an addition.
+    options = ("--no-ext-diff", "--no-textconv", "--find-renames")
+    names = iter(git("diff", *options, "--name-status", "-z", "--diff-filter=ACMRT",
+                     merge_base, "--").split("\0"))
     result: dict[str, set[int]] = {}
-    path = None
-    for line in diff.splitlines():
-        if line.startswith("+++ "):
-            target = line[4:]
-            path = target[2:] if target.startswith("b/") else None
-            if path is not None and not checked_path(path):
-                path = None
+    for status in names:
+        if not status:
             continue
-        hunk = re.match(r"@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@", line)
-        if hunk and path is not None:
+        source = next(names)
+        path = next(names) if status[0] in "RC" else source
+        if not checked_path(path):
+            continue
+        paths = (source, path) if status[0] in "RC" else (path,)
+        diff = git("--literal-pathspecs", "diff", *options, "--text", "--unified=0", "--no-color",
+                   merge_base, "--", *paths)
+        lines = result.setdefault(path, set())
+        for hunk in re.finditer(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@", diff, re.MULTILINE):
             first = int(hunk.group(1))
             count = int(hunk.group(2)) if hunk.group(2) is not None else 1
-            result.setdefault(path, set()).update(range(first, first + count))
+            lines.update(range(first, first + count))
     return result
 
 
-def changed_blocks(base: str) -> list[Block]:
+def read_source(path: Path, label: str, diagnostics: list[Finding]) -> str | None:
+    """Report unsupported source input as advisory data, retaining other file checks."""
+    try:
+        return path.read_text(encoding="utf-8")
+    except UnicodeDecodeError as error:
+        line = error.object.count(b"\n", 0, error.start) + 1
+        diagnostics.append(Finding(label, line, "Input", "This file is not UTF-8. Prose was not checked.", ""))
+    except FileNotFoundError:
+        if not path.is_symlink():
+            raise
+        diagnostics.append(Finding(label, 1, "Input", "This symlink has no target. Prose was not checked.", ""))
+    return None
+
+
+def changed_blocks(base: str, diagnostics: list[Finding] | None = None) -> list[Block]:
     blocks: list[Block] = []
+    diagnostics = [] if diagnostics is None else diagnostics
     for path, lines in sorted(added_lines(base).items()):
-        text = (ROOT / path).read_text(encoding="utf-8")
+        text = read_source(ROOT / path, path, diagnostics)
+        if text is None:
+            continue
         for block in file_blocks(path, text):
             if any(block.line <= number <= block.last_line for number in lines):
                 blocks.append(block)
@@ -516,7 +638,8 @@ def escape(message: str) -> str:
 def report(found: list[Finding], github: bool, label_is_file: bool) -> None:
     for item in found:
         if github:
-            location = f"file={item.path},line={item.line}," if label_is_file else ""
+            location = (f"file={escape(item.path).replace(':', '%3A').replace(',', '%2C')},"
+                        f"line={item.line}," if label_is_file else "")
             print(f"::warning {location}title=Writing {item.rule}::"
                   f"{escape(item.message + ' ' + repr(item.excerpt))}")
         else:
@@ -539,18 +662,34 @@ def main(argv: list[str]) -> int:
                         help="the vocabulary page (default: docs/wiki/writing-vocabulary.md)")
     args = parser.parse_args(argv[1:])
     label_is_file = True
-    if args.base:
-        blocks = changed_blocks(args.base)
-    elif args.stdin:
-        blocks = markdown_blocks(args.stdin, sys.stdin.read())
-        label_is_file = False
-    elif args.files:
-        blocks = []
-        for name in args.files:
-            blocks.extend(file_blocks(name, Path(name).read_text(encoding="utf-8")))
-    else:
-        parser.error("give --base, --stdin, or at least one file")
-    found = check_blocks(blocks, args.vocabulary)
+    diagnostics: list[Finding] = []
+    try:
+        if args.base:
+            blocks = changed_blocks(args.base, diagnostics)
+        elif args.stdin is not None:
+            try:
+                text = sys.stdin.read()
+            except UnicodeDecodeError:
+                diagnostics.append(Finding(args.stdin, 1, "Input", "Input is not UTF-8. Prose was not checked.", ""))
+                text = ""
+            if any(0xDC80 <= ord(char) <= 0xDCFF for char in text):
+                diagnostics.append(Finding(args.stdin, 1, "Input", "Input is not UTF-8. Prose was not checked.", ""))
+                text = ""
+            blocks = markdown_blocks(args.stdin, text)
+            label_is_file = False
+        elif args.files:
+            blocks = []
+            for name in args.files:
+                text = read_source(Path(name), name, diagnostics)
+                if text is not None:
+                    blocks.extend(file_blocks(name, text))
+        else:
+            parser.error("give --base, --stdin, or at least one file")
+        found = diagnostics + check_blocks(blocks, args.vocabulary)
+    except subprocess.CalledProcessError as error:
+        parser.error(f"git failed: {error.stderr.strip()}")
+    except (OSError, ValueError) as error:
+        parser.error(str(error))
     report(found, args.github, label_is_file)
     return 1 if found and args.strict else 0
 

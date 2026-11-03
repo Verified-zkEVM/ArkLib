@@ -43,6 +43,8 @@ This directory contains various utility scripts for the ArkLib project.
 - **`check-writing.py`** - Report editing suggestions for changed prose, files, or a PR body.
   Counts and grammar patterns approximate the [writing standard](../docs/wiki/writing.md).
   Review each finding for context and preservation of meaning.
+  Non-UTF-8 source input and dangling symlinks give advisory input diagnostics.
+  Git and configuration errors fail the command.
 - **`test-pr-checks.py`** - Tests for the title check and the writing check
 - **`pr-scope.py`** - Report what a branch contributes against its pull request base, with
   uncommitted work, merges in progress, generated-file drift, and stale references to deleted

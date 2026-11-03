@@ -68,10 +68,14 @@ def warnings(title: str) -> list[str]:
     if match is None:
         return []
     first = match.group(2).split()[0]
+    advice = []
+    if first.casefold() in {"added", "adds", "fixed", "fixes", "removed", "removes"}:
+        advice.append(f"Review the subject starting with `{first}`. Use an imperative phrase "
+                      "or a noun phrase that names the result.")
     if first[0].isupper() and not is_name(first):
-        return [f"The subject starts with `{first}`. Do not capitalize the first word unless "
-                "it is a name."]
-    return []
+        advice.append(f"The subject starts with `{first}`. Do not capitalize the first word unless "
+                      "it is a name.")
+    return advice
 
 
 def escape(message: str) -> str:
@@ -87,7 +91,8 @@ def main(argv: list[str]) -> int:
     title = options.title
     found = problems(title, allowed_types())
     github = os.environ.get("GITHUB_ACTIONS") == "true"
-    for advice in warnings(title):
+    suggestions = warnings(title)
+    for advice in suggestions:
         print(f"::warning title=Pull request title::{escape(advice)}" if github
               else f"Warning: {advice}")
     for problem in found:
@@ -97,7 +102,10 @@ def main(argv: list[str]) -> int:
     if found:
         print("Refer to CONTRIBUTING.md, section \"Title Format\".")
         return 1 if options.strict else 0
-    print(f"The pull request title {title!r} has the correct format.")
+    if suggestions:
+        print("Title format checked. Review the suggestions above against CONTRIBUTING.md.")
+    else:
+        print(f"The pull request title {title!r} has the correct format.")
     return 0
 
 
