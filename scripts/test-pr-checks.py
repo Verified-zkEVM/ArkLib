@@ -100,9 +100,11 @@ def findings(text: str, path: str = "doc.md") -> list[str]:
 
 class WritingRuleTests(unittest.TestCase):
     def test_semicolon_excerpt_starts_before_the_semicolon(self) -> None:
-        blocks = WRITING.file_blocks("page.md", "This works; it is fine.\n")
-        excerpts = [item.excerpt for item in WRITING.check_blocks(blocks) if item.rule == "U1"]
-        self.assertEqual(excerpts, ["This works; it is fine."])
+        for text in ["This works; it is fine.", "; The lemma holds."]:
+            with self.subTest(text=text):
+                blocks = WRITING.file_blocks("page.md", text + "\n")
+                excerpts = [item.excerpt for item in WRITING.check_blocks(blocks) if item.rule == "U1"]
+                self.assertEqual(excerpts, [text])
 
     def test_vocabulary_is_parsed(self) -> None:
         general, history = WRITING.avoid_words()
@@ -248,15 +250,20 @@ class LeanExtractionTests(unittest.TestCase):
 
 class ChangedLineTests(unittest.TestCase):
     def test_only_changed_blocks_are_checked(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
+        environment = {key: value for key, value in os.environ.items() if not key.startswith("GIT_")}
+        environment.update(GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull)
+        with tempfile.TemporaryDirectory() as directory, \
+                mock.patch.dict(os.environ, environment, clear=True):
             root = Path(directory)
 
             def run(*args: str) -> None:
                 subprocess.run(["git", *args], cwd=root, check=True, capture_output=True)
 
-            run("init", "-q", "-b", "main")
+            run("init", "-q", "-b", "main", "--template=")
             run("config", "user.email", "test@example.org")
             run("config", "user.name", "Test")
+            run("config", "commit.gpgsign", "false")
+            run("config", "core.hooksPath", os.devnull)
             (root / "page.md").write_text("Old text; with a semicolon.\n\nA clean line.\n")
             run("add", "page.md")
             run("commit", "-q", "-m", "base")
@@ -273,7 +280,7 @@ class RepositoryTests(unittest.TestCase):
     def test_writing_pages_follow_the_standard(self) -> None:
         paths = ["docs/wiki/writing.md", "docs/wiki/writing-vocabulary.md",
                  ".github/pull_request_template.md", "CONTRIBUTING.md",
-                 "docs/skills/write-technical-prose.md"]
+                 "docs/skills/write-technical-prose.md", "AGENTS.md"]
         blocks = []
         for path in paths:
             blocks.extend(WRITING.file_blocks(path, (ROOT / path).read_text(encoding="utf-8")))

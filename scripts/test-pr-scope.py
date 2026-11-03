@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 SCRIPT = Path(__file__).resolve().with_name("pr-scope.py")
 SPEC = importlib.util.spec_from_file_location("pr_scope", SCRIPT)
@@ -33,12 +34,17 @@ def write(path: str, text: str) -> None:
 def repository(files: dict[str, str]):
     """Create a repository with `files` on `main`, a fork remote, and a `topic` branch."""
     previous = Path.cwd()
-    with tempfile.TemporaryDirectory() as directory:
+    environment = {key: value for key, value in os.environ.items() if not key.startswith("GIT_")}
+    environment.update(GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull)
+    with tempfile.TemporaryDirectory() as directory, \
+            mock.patch.dict(os.environ, environment, clear=True):
         os.chdir(directory)
         try:
-            run("init", "-q", "-b", "main")
+            run("init", "-q", "-b", "main", "--template=")
             run("config", "user.email", "test@example.org")
             run("config", "user.name", "Test")
+            run("config", "commit.gpgsign", "false")
+            run("config", "core.hooksPath", os.devnull)
             for path, text in files.items():
                 write(path, text)
             run("add", "-A")
