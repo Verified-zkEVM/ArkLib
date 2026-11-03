@@ -43,7 +43,8 @@ Hasse derivatives.
 ## References
 
 * [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 6.1.
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 3.2, Proposition 3.9, applied to the
+  support (112) of Appendix C.2.
 -/
 
 @[expose] public section

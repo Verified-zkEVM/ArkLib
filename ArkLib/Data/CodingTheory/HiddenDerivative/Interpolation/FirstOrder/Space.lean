@@ -44,7 +44,7 @@ the local constraint maps do not depend on these two parameters.
 ## References
 
 * [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 6.1.
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Appendix C.2, the support (112).
 -/
 
 @[expose] public section

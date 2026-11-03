@@ -49,7 +49,7 @@ without an additional moment hypothesis.
 ## References
 
 * [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient Decoding
-  and Smaller Cryptographic Proofs*][DKT26], Section 6.2, Lemma 6.2, and Appendix D.2, (131)
+  and Smaller Cryptographic Proofs*][DKT26], Section 8.2, Lemma 8.3, and Appendix D.2, (119)
 -/
 
 @[expose] public section

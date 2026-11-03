@@ -42,7 +42,7 @@ bounds of `ArkLib.ToMathlib.NumberTheory.Harmonic.Bounds` discharge the hypothes
 ## References
 
 * [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 6.1, the coefficient count (71).
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 8.2, the related count (57).
 -/
 
 @[expose] public section

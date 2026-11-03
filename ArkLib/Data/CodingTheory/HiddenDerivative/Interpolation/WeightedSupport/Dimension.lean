@@ -48,8 +48,8 @@ The integral and probability forms of the bound are in `WeightedSupport/Estimate
 ## References
 
 * [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 6.1, the support (70) and its
-  coefficient count (71).
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 8.2, the related support (56) and
+  coefficient count (57).
 -/
 
 @[expose] public section
