@@ -326,11 +326,15 @@ python3 -m pip install leanblueprint
   [`../../.github/workflows/release-tag.yml`](../../.github/workflows/release-tag.yml) tags a
   release when `lean-toolchain` changes on `main`.
 
-To validate a stacked PR while it targets a feature branch, dispatch the existing CI, import,
-and docs-integrity workflows on its published head branch:
+CI, import, and docs-integrity checks run automatically on pull requests, including those targeting
+a feature branch. A stacked PR does not require manual dispatch only because its base is not `main`.
+
+The KB bot creates its PR with `GITHUB_TOKEN`. GitHub does not start the ordinary PR workflows
+for that token-created event. If the bot PR has no checks, dispatch the existing workflows on its
+published head branch:
 
 ```bash
-review_branch=your-published-head-branch
+review_branch=automation/kb-generated
 gh workflow run ci.yml --ref "$review_branch"
 gh workflow run check-imports.yml --ref "$review_branch"
 gh workflow run docs-integrity.yml --ref "$review_branch"
@@ -338,10 +342,10 @@ gh run list --branch "$review_branch" --event workflow_dispatch \
   --json workflowName,headSha,status,conclusion,url
 ```
 
-Check that each run's `headSha` equals the reviewed commit, and retain the run URLs with the
-validation evidence. A later push needs checks for its new head. Dispatch uses the existing
-read-only CI build job; the Pages publisher runs only on push events. Local validation, required
-GitHub reviews, and the eventual main-target and merge-queue checks still apply.
+Confirm that each run's `headSha` matches the reviewed commit. Record the run URLs with the
+validation evidence. Dispatch can also recover checks missing from an ordinary PR.
+The Pages publisher runs only on push events. Manual dispatch does not replace local validation,
+required reviews, or eventual merge-queue checks.
 
 Pull requests enter GitHub's merge queue after their normal review and required checks pass. The
 queue creates a temporary integration ref containing the queued changes on current `main`; the CI,

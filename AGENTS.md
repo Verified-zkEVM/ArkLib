@@ -75,8 +75,9 @@ Start with [`README.md`](README.md) for the project overview.
   profile first, then narrow imports, local hypotheses, simp sets, or automation rules, or move a
   recurring argument into its owner layer. Do not mechanically expand a short, stable terminal
   `simp` into a brittle `simp only` list.
-- Write all prose to the [writing standard](docs/wiki/writing.md). This prose includes
-  docstrings, comments, documentation, commit messages, and pull request and issue bodies.
+- Before drafting or revising prose, use [write-technical-prose.md](docs/skills/write-technical-prose.md).
+  Apply it to documentation, comments, docstrings, commit messages, PR and issue text, and review
+  comments. Assess existing prose against the writing standard rather than preserving its defects.
 - Before you open a pull request, follow [`make-pr-ready.md`](docs/skills/make-pr-ready.md). Complete
   the [pull request template](.github/pull_request_template.md) and claim only what the code
   proves.

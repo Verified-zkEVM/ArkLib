@@ -1,211 +1,220 @@
 # Writing Standard
 
-This page sets the standard for English prose in ArkLib. The standard adapts the writing rules of
-ASD-STE100 Simplified Technical English (STE), Issue 9. STE makes technical text short, literal,
-and difficult to misread. The adaptation keeps those rules and adds rules for mathematical text.
+Use this guide to write clear technical English for ArkLib. It draws on
+ASD-STE100 Simplified Technical English (STE), Issue 9, January 2025. STE is the reference for
+improving the prose. An existing repository convention is not a reason to keep unclear writing.
 
-The terms that ArkLib prose uses, and the words to avoid, are in
-[`writing-vocabulary.md`](writing-vocabulary.md).
+The [vocabulary](writing-vocabulary.md) records technical meanings and wording to avoid.
+[CONTRIBUTING.md](../../CONTRIBUTING.md#writing) owns the contribution requirements.
+The [writing skill](../skills/write-technical-prose.md) describes the editing workflow.
 
 ## Scope
 
-The standard applies to prose that a person or an agent writes for the project:
+Apply this guide when you add or revise documentation, Lean comments and docstrings, commit
+messages, PR and issue descriptions, and review comments. Read the surrounding text for context.
+Correct related defects that affect the passage, but keep unrelated rewrites in a separate change.
 
-- Markdown files, which include root guides, `docs/`, skills, and READMEs
-- Lean module docstrings, declaration docstrings, and comments
-- Commit messages
-- Pull request bodies, issue bodies, and review comments.
+Keep formulas, identifiers, commands, source quotations, official titles, generated output, and
+license terms accurate. Do not rewrite them to satisfy a prose rule. These exclusions do not cover
+explanations that an author puts in quotation marks. Headings and table labels can be fragments,
+but they must use clear and consistent terms.
 
-The standard applies to all authors in the same way. Reviewers and tools cannot check a rule that
-depends on who wrote a text.
+## How to use STE
 
-Apply the standard to the text that you add or change. A pull request does not have to rewrite
-text that it does not touch.
+STE combines writing rules with a general dictionary. That dictionary limits both word meanings
+and parts of speech. Subject-specific technical nouns and technical verbs supplement it under
+STE rules 1.5 to 1.13. Mathematical terminology does not replace the general dictionary.
 
-The standard does not apply to:
+Use the STE dictionary when you need to confirm a general word's approved meaning or grammatical
+role. Use the project vocabulary for technical terms. A missing term is not automatically a defect,
+and a familiar English word is not automatically STE-approved. When a literal replacement changes
+the meaning, rewrite the sentence or retain the necessary term and explain its technical use.
 
-- Lean code, formulas, commands, and other code
-- Quoted text, for example a quotation from a paper or a verbatim error message
-- Titles of papers, documents, and other works
-- Generated files, the bibliography, and license text.
+This guide is a repository adaptation, not a complete copy of STE or a claim of full STE
+conformance. It does not distribute or automatically check the official dictionary. The
+[relation to STE](#relation-to-ste) distinguishes adaptations from the source rules.
 
 ## Text types
 
-STE gives different limits to two types of text. Identify the type of your text before you
-apply the rules.
+Choose a text type from its purpose, not from its Markdown marker:
 
-| Type | Function | Examples in ArkLib | Sentence limit |
+| Type | Purpose | Examples | Sentence limit |
 |---|---|---|---|
-| Procedural | Tells the reader what to do | Skills, `AGENTS.md`, checklists, and numbered steps | 20 words |
-| Descriptive | Gives information | Docstrings, comments, wiki and KB pages, commit, PR, and issue bodies | 25 words |
+| Procedural | Tell a reader how to do a task | Build instructions, skill steps, contributor tasks | 20 words |
+| Descriptive | Explain a result, concept, or observation | Mathematical exposition, docstrings, PR explanations | 25 words |
 
-Do not put procedural and descriptive items in the same list.
+A numbered list can describe results. A paragraph can contain an instruction. Apply the limit for
+the sentence's purpose. Keep commands distinct from explanations and warnings.
 
 ## Rules
 
-Each rule names the STE rule that it adapts. The label *ArkLib* marks a rule that has no STE
-source. Reviewers cite a rule by its identifier, for example "S1".
+The identifiers below are ArkLib labels. STE references identify the source principle, not a claim
+that this page reproduces each source rule. STE's general recommendations (GR) are advice in the
+standard. This guide adopts the recommendations named below as repository requirements.
 
 ### Words
 
-- **W1.** Use the most common word that gives the correct meaning. (STE 1.1)
-- **W2.** Use the terms in [`writing-vocabulary.md`](writing-vocabulary.md) only with their listed
-  meanings. (STE 1.3, 1.5, 1.8, 1.12)
-- **W3.** Use one term for one concept in a text. Do not change between synonyms to vary the
-  text. (STE 1.11, 9.4)
-- **W4.** Write a multi-word noun with no more than three words. Use "of", "for", or "on" to
-  divide a longer group. (STE 2.1)
-- **W5.** If an established term has more than three words, write it in full the first time. Then
-  use its abbreviation: "mutual correlated agreement (MCA)". (STE 2.2)
-- **W6.** Do not use phrasal verbs, for example "set up", "carry out", "figure out", or "point
-  out". Use a single verb. (STE 9.3)
-- **W7.** Do not use Latin abbreviations, for example "e.g.", "i.e.", "etc.", "cf.", or "resp.".
-  Write the English words. (STE GR-6)
-- **W8.** Use American English spelling. (STE 1.14)
-- **W9.** Use gender-neutral language. For a person whose pronouns you do not know, use "they".
-  (STE GR-7)
+- **W1.** Prefer an STE-approved general word with the intended meaning and part of speech.
+  Use an established technical term when the subject requires it. Rephrase before making a
+  replacement that changes the meaning. (STE 1.1 to 1.4, 9.1, 9.2)
+- **W2.** Use technical terms with their stated meanings and grammatical roles. Qualify a term
+  when the passage could support more than one meaning. (STE 1.5 to 1.13)
+- **W3.** Use one term for one concept within a passage. Do not rotate synonyms for variety.
+  Introduce a different technical meaning before you use it. (STE 1.11, 9.4)
+- **W4.** Keep a multi-word noun to three words when possible. Split a dense noun group with
+  words such as "of", "for", or "on". Preserve established terms under W5. (STE 2.1, 2.2)
+- **W5.** Introduce a longer technical noun in full. Then use a clear shorter name, a defined
+  abbreviation, or suitable hyphenation. Do not invent an abbreviation only to shorten the text.
+  (STE 2.2)
+- **W6.** Replace phrasal verbs with a direct verb when the replacement preserves the meaning.
+  For example, write "find" rather than "figure out". (STE 9.3)
+- **W7.** Write English words instead of Latin abbreviations in prose. For example, write
+  "for example" instead of "e.g.". Preserve official titles and source quotations. (STE GR-6)
+- **W8.** Use American English spelling in prose. Preserve official names, identifiers, and
+  quotations with a different spelling. (STE 1.14)
+- **W9.** Use gender-neutral language when gender is not relevant. Use "they" for a person whose
+  pronouns you do not know. (STE GR-7)
 
 ### Verbs
 
-- **V1.** Use the simple present, simple past, simple future, imperative, and infinitive forms.
-  Do not use the perfect or the progressive forms. (STE 3.2, 3.4)
-  Write "this pull request adds", not "this pull request has added". After a modal verb, keep the
-  perfect form when it carries a hedge: "the build may have failed".
-- **V2.** Use the "-ing" form only in a technical noun, for example "folding", "batching", or
-  "ring switching". Do not start a clause with an "-ing" form. (STE 3.5)
-- **V3.** Use the active voice. Make the agent the subject: a declaration, a tactic, a tool,
-  the prover, or "we". (STE 3.6)
-- **V4.** Use the passive voice only when the agent is unknown or not relevant. A past participle
-  that gives a state is not passive voice: "`C` is closed under addition". (STE 3.3, 3.6)
-- **V5.** Use a verb, not a noun, to describe an action. Write "the verifier queries the oracle",
-  not "the verifier performs a query to the oracle". (STE 3.7)
-- **V6.** After "prove", "show", "assume", and "make sure", write "that". (STE GR-1)
+- **V1.** Prefer simple tenses, the imperative, and the infinitive. Avoid complex verb forms
+  when a simpler construction gives the same information. Preserve time and uncertainty:
+  "the build may have failed" does not mean "the build failed". (STE 3.1 to 3.4, ArkLib adaptation)
+- **V2.** Avoid an "-ing" verb when a finite clause is clearer. Distinguish verbs from permitted
+  technical nouns and other grammatical roles. "Folding", "remaining", and "during" are not
+  errors merely because they end in "-ing". (STE 3.5)
+- **V3.** Prefer the active voice. Name the person, tool, protocol participant, or mathematical
+  object that performs the action. Do not invent an actor. (STE 3.6)
+- **V4.** Use the passive voice in descriptive text only when the actor is unknown. A participle
+  can describe a state without forming a passive construction: "the degree is bounded".
+  (STE 3.3, 3.6)
+- **V5.** Express an action with a verb rather than an abstract noun phrase. Write
+  "the verifier queries the oracle", not "the verifier performs a query to the oracle". (STE 3.7)
+- **V6.** Use "that" after "prove", "show", "assume", or "make sure" when it separates a claim
+  from the preceding verb. Do not add it before an object: "prove the theorem". (STE GR-1)
 
 ### Sentences
 
-- **S1.** Write procedural sentences of no more than 20 words. Write descriptive sentences of no
-  more than 25 words. Count words as [Word count](#word-count) specifies. (STE 5.1, 6.3)
-- **S2.** Give each sentence one topic. Give each procedural sentence one instruction, unless two
-  actions occur at the same time. (STE 4.1, 5.2, 6.1)
-- **S3.** If an instruction has a condition, write the condition first: "If the build fails, read
-  the log." (STE 5.4)
-- **S4.** Write instructions in the imperative. Do not write "you must" before an instruction
-  unless the instruction is important for correctness. (STE 5.3)
-- **S5.** Do not omit articles, subjects, or verbs to make a sentence shorter. Do not use
-  contractions. (STE 4.2, 4.5)
-- **S6.** Connect related sentences with words such as "and", "but", "then", "thus", and "as a
-  result". (STE 4.4)
-- **S7.** Make sure that each pronoun refers to one noun. After "this" or "these", write the
-  noun: "this lemma", not "this". (STE GR-3, GR-4)
-- **S8.** Use a note only to give information. Do not put an instruction in a note. (STE 5.5)
+- **S1.** Use the sentence limits for the text type. Split a long sentence at a logical boundary.
+  Keep its conditions and qualifications. Use the [word-count rules](#word-count). (STE 5.1, 6.3)
+- **S2.** Give a sentence one topic. Give a work step one instruction, except for actions that
+  must occur together. (STE 4.1, 5.2, 6.1)
+- **S3.** Put a condition before an instruction when the reader needs it before acting.
+  For example, "If the build fails, read the log." (STE 5.4)
+- **S4.** Use the imperative for work steps. Distinguish an instruction from a requirement or a
+  description. Preserve the force of "must", "may", and "can" when you revise a requirement.
+  (STE 5.3, ArkLib adaptation)
+- **S5.** Keep the articles, subjects, and verbs that a sentence needs. Do not use contractions
+  to shorten prose. (STE 4.2, 4.5)
+- **S6.** Connect related sentences so the reader can follow the argument. State the connection
+  rather than expecting punctuation alone to express it. (STE 4.4)
+- **S7.** Give each pronoun a clear antecedent. After "this" or "these", name the object when
+  the reference could be ambiguous. (STE GR-3, GR-4)
+- **S8.** Put instructions in the procedure, not inside a note. Readers can skip notes. Use them
+  for supporting information. (STE 5.5)
 
-### Paragraphs
+### Paragraphs and lists
 
-- **P1.** Give each paragraph one topic. Start the paragraph with a sentence that states that
-  topic. (STE 6.4, 6.5)
-- **P2.** Write no more than six sentences in a paragraph. (STE 6.6)
-- **P3.** Give information gradually. Define a term or a notation before you use it. (STE 6.1)
+- **P1.** Give each paragraph one topic. Introduce that topic before its details. (STE 6.4, 6.5)
+- **P2.** Keep a paragraph to six sentences or fewer. Split it where the subject or purpose
+  changes. (STE 6.6)
+- **P3.** Introduce information gradually. Define unfamiliar terms and notation before using
+  them in an explanation. (STE 6.1, 6.2)
+- **L1.** Use a vertical list when it makes steps, cases, or conditions easier to distinguish.
+  A short series does not always need a list. (STE 4.3)
+- **L2.** Introduce a list with a clear purpose and a colon. Each item must connect to that
+  introduction. Items can complete the introductory sentence or be complete sentences. (STE 4.3)
+- **L3.** Keep the grammatical form and punctuation consistent within a list. Start prose items
+  with a capital letter. Preserve the case of identifiers. (STE 4.3, ArkLib formatting convention)
+- **L4.** Number work steps when their order matters. Do not imply an order for independent
+  facts. (STE 5.2)
 
-### Lists
+### Punctuation and emphasis
 
-- **L1.** Use a vertical list for three or more items, steps, or conditions. (STE 4.3)
-- **L2.** Introduce a list with a sentence or a clause that ends with a colon. Make sure that
-  each item completes that sentence or clause. (STE 4.3)
-- **L3.** Start each item with an uppercase letter. Use the same punctuation at the end of all
-  items in a list. Do not end an item with a semicolon. (STE 4.3)
-- **L4.** Use a numbered list for steps that occur in a sequence. (STE 5.2)
-
-### Punctuation
-
-- **U1.** Do not use semicolons in prose. Write two sentences. (STE 8.1)
-- **U2.** Do not join two clauses with a dash. Write two sentences. (*ArkLib*)
-- **U3.** Use a hyphen to join words that modify a noun as one unit: "round-by-round soundness".
-  (STE 8.2)
-- **U4.** Use parentheses to give an abbreviation, an explanation, a reference, or an
-  alternative. (STE 8.3)
-- **U5.** Use bold text only for the term in a definition or the label of a list item.
-  (*ArkLib*)
+- **U1.** Replace a prose semicolon with an appropriate sentence boundary or conjunction.
+  Do not change code punctuation. (STE 8.1)
+- **U2.** Avoid a dash between clauses. State the relationship in words or use two sentences.
+  This convention does not restrict mathematical notation. (ArkLib)
+- **U3.** Use hyphens to group related words when that grouping makes the term clearer.
+  Preserve the conventional spelling of an established technical term. (STE 8.2)
+- **U4.** Use parentheses for references, identifiers, abbreviations, explanations, or alternatives.
+  Keep information needed for an instruction in the instruction itself. (STE 8.3)
+- **U5.** Use emphasis for a term, label, warning, or specific requirement. Avoid emphasis across
+  an entire paragraph. (ArkLib)
 
 ### Word count
 
-Count words as STE does, with extensions for technical text (STE 8.4 to 8.7). Each of these
-elements counts as one word:
+STE 8.4 to 8.7 defines word counting. A number with its unit, an abbreviation, a proper name,
+a quoted title, a formula, and a hyphenated group each count as one word. Do not add hyphens or
+quotation marks to hide a long sentence.
 
-- A number, or a number with its unit
-- An abbreviation, for example "MCA" or "RS"
-- A code span, for example a Lean name or a command
-- A formula in `$...$` or `$$...$$`
-- A citation key, for example `[BCIKS20]`
-- A hyphenated word
-- A quotation, a title, or a proper noun
-- Text in parentheses.
+Text in parentheses counts as one word in the enclosing sentence. Check the parenthetical text
+separately for sentence length. A list introduction ends at its colon for word counting. Each list
+item counts separately.
 
-The text in parentheses also counts as a separate sentence. In a vertical list, the colon ends
-the introductory sentence, and each item counts as a separate sentence.
+ArkLib also counts an identifier, command, URL, or citation key as one word. Ordinary link text
+retains its words. This word-count convention is a technical-text adaptation. The checker approximates these conventions.
+Review the actual sentence when its count is doubtful.
 
-### Claims
+### Claims and source evidence
 
-STE controls the form of a text. These rules control what a text claims. They come from the
-review of ArkLib pull requests and have no STE source.
+ArkLib adds these requirements to the STE principles:
 
-- **C1.** State only what the code establishes. If a result depends on an admission (`sorry`) or
-  on an extra hypothesis, say so. (*ArkLib*)
-- **C2.** Keep the strength of each claim. Do not remove a hypothesis or a qualifier, and do not
-  change "can" to "does". Do not add a fact that the source does not give. (*ArkLib*)
-- **C3.** Describe the present state of the library. Do not describe its history with words such
-  as "now", "no longer", "previously", or "new". (*ArkLib*)
-- **C4.** Do not refer to internal planning codes, plan files, or session notes. A reader of the
-  merged tree cannot find them. (*ArkLib*)
-- **C5.** Do not use words that claim quality without evidence, for example "robust",
-  "seamless", "comprehensive", or "powerful". Give the measurement or the reason. (*ArkLib*)
-- **C6.** Do not write "clearly", "obviously", or "trivially" in place of an argument. Give the
-  reason or the name of the lemma. (*ArkLib*)
-- **C7.** Make each point one time. Do not end a text with a summary of that text. (*ArkLib*)
-- **C8.** In Lean files, put paper references only in the module docstring, as
-  [`CONTRIBUTING.md`](../../CONTRIBUTING.md#citation-standards) specifies. (*ArkLib*)
-
-The history of a change belongs in the commit message and the pull request body. Rule C3 applies
-to the library, not to the description of a change.
+- **C1.** State only what the code or recorded evidence establishes. Identify admissions,
+  conditional results, and checks that you did not run.
+- **C2.** Preserve the strength of a claim. Keep hypotheses, quantifiers, negations, error bounds,
+  and qualifications. Do not turn a possible result into an established one.
+- **C3.** Describe the present library in its reference documentation. Change history belongs in
+  commit messages, PR descriptions, and documents whose purpose is to record history.
+- **C4.** Replace internal session notes and temporary planning codes with accessible explanations
+  or maintained references. A reader of the merged tree must be able to find the cited source.
+- **C5.** Replace unsupported quality claims with a fact or evidence. Words such as "robust" or
+  "comprehensive" do not supply that evidence.
+- **C6.** Give an argument or a precise reference instead of calling a result "obvious" or
+  "trivial". Established technical names such as "trivial group" remain permitted.
+- **C7.** Remove repetition that adds no useful context. Repeat a condition when the reader
+  needs it at the point of use.
+- **C8.** Make the source of each mathematical claim traceable. Use the
+  [citation conventions](../../CONTRIBUTING.md#citation-standards) rather than inventing a second
+  citation policy here.
 
 ### Mathematical conventions
 
-Mathematical text has conventions that STE does not cover. These conventions are permitted:
+"Let", "fix", and "suppose" can introduce mathematical notation. They do not issue a work step.
+"We" can refer to the author and reader in an argument. A state such as "`C` is closed under
+addition" is not an instruction or a passive action.
 
-- "Let", "fix", and "suppose" at the start of a statement introduce notation. They are not
-  instructions, so rule S4 does not apply to them.
-- "We" refers to the author and the reader together, for example in a proof sketch.
-- A word can be a technical noun and a technical verb when the field uses both forms, for
-  example "bound" and "query". STE permits a word that is in both categories.
-- In prose, write "if and only if". In a formula, use `↔`.
+A technical word can have noun and verb uses when both are established in the subject field.
+Record those uses separately. Qualify words such as "field", "instance", and "proof" when their
+meaning changes between mathematics, protocols, and Lean.
 
 ## Examples
 
-These examples show the rules on ArkLib text. The text in the first column is quoted, so it is
-exempt from the rules.
+These examples revise contributor instructions without adding mathematical claims:
 
-| Before | After | Rules |
+| Before | After | Reason |
 |---|---|---|
-| "This lemma, which is crucially used in the main theorem, shows that folding preserves proximity; i.e., close words fold to close words." | If $f$ is $\delta$-close to $C$, then the fold of $f$ is $\delta$-close to the folded code. The soundness theorem uses this lemma. | U1, W7, C5, S2 |
-| "This PR has refactored the proximity-error API and leverages a new abstraction to seamlessly unify the four definitions." | This pull request replaces the four proximity-error definitions with one definition that takes the error notion as a parameter. | V1, C5, W1 |
-| "Make sure the base is fetched and, if there's a merge in progress, use the two-dot diff instead since three-dot over-reports." | 1. Fetch the canonical base. 2. If a merge is in progress, use `git diff origin/main`. | S2, S3, S5, L4 |
-| "Now uses the shared lemma (previously inlined)." | Applies the triangle inequality for the Hamming distance. | C3 |
-| "Fixed lints; bumped baseline." | Update the axiom baseline for the renamed lemmas. | U1, S5 |
+| "We enthusiastically welcome contributions to ArkLib!" | Contribute a definition, proof, test, or documentation change. | State the useful action. |
+| "If there's a merge in progress, the base should be checked before proceeding." | If a merge is in progress, we recommend that you inspect its base before you continue. | Preserve the condition and recommendation, name the actor, and remove the contraction. |
+| "The build may have failed." | The build may have failed. | Retain uncertainty and past time when no shorter equivalent is available. |
+| "Complete the pull request template." | Complete the pull request template. | The ordinary verb does not claim protocol completeness. |
+| "The following are equivalent." | The following are equivalent. | Keep a conventional mathematical introduction when its reference is clear. |
 
-## Relation to ASD-STE100
+Use the [writing skill](../skills/write-technical-prose.md) to compare a mathematical rewrite with
+its source. A shorter sentence is not an improvement if it changes the statement.
 
-This standard keeps the STE rules in sections 2 to 6, 8, and 9, with these changes:
+## Relation to STE
 
-| STE part | Change in ArkLib |
+| Source | Use in ArkLib |
 |---|---|
-| Rules 1.1 to 1.4, the dictionary | Replaced. Rule W1 and the ArkLib vocabulary replace the STE dictionary, which does not cover mathematics. |
-| Rules 1.5 to 1.13, technical nouns and verbs | Kept. The ArkLib vocabulary lists them for this subject field. |
-| Rule 3.6, active voice | Adapted for the mathematical conventions above. |
-| Rule 4.3, punctuation of list items | Adapted. Rule L3 requires the same punctuation for all items. |
-| Rule 8.6, word count | Extended to code spans, formulas, and citation keys. STE counts a formula as one word. |
-| Section 7, safety instructions | Not used. ArkLib text has no safety instructions. |
+| STE 1.1 to 1.4, general vocabulary | Retained as the reference for general meanings and grammatical roles. This guide and its checker do not implement the full dictionary. |
+| STE 1.5 to 1.13, technical terms | Applied through the project vocabulary and established subject-field usage. |
+| STE 2 to 6, 8, and 9 | The source principles inform the rules above. Mathematical notation and the stated adaptations preserve technical meaning. |
+| STE 3.2 to 3.6 | Simple constructions remain preferred. ArkLib retains a modal or complex form when changing it would lose uncertainty or time. |
+| STE 7, safety instructions | Apply the relevant principle to risky operations: put the condition or instruction before an explanation of the consequence. |
+| STE general recommendations | The named recommendations are adopted here as local requirements, not represented as STE rules. |
+| ArkLib additions | Source evidence, history scope, citations, clause-joining dashes, and emphasis are local contribution policies. |
 
-ASD owns the copyright and the trademark of ASD-STE100. This page gives the ideas of the STE
-rules in its own words and with its own examples. It does not reproduce the text, the examples,
-or the dictionary of the standard. ArkLib text is not certified STE text, and this page does not
-claim compliance with STE. To read the full standard, request a free copy from
-[ASD](https://www.asd-europe.org/standards-specifications/simplified-technical-english/download-asd-ste-100).
+Refer to [ASD's official Issue 9](https://www.asd-ste100.org/assets/files/ASD-STE100_ISSUE9.pdf)
+for the full rules and dictionary. ASD owns the standard. This guide uses original repository
+examples and does not claim certification or reproduce the official dictionary.
