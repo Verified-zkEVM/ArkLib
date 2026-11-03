@@ -206,11 +206,11 @@ uv run --no-project --python 3.12 python ./scripts/check-writing.py --base origi
 ```
 
 For a stacked PR, use its actual base instead. The checker reads affected paragraphs, list items,
-and table cells. It reports editing suggestions, including approximate word counts and verb
-patterns. Read each finding before editing. A successful check does not establish clarity,
+and table cells. It reports editing suggestions, such as approximate word counts and verb
+patterns. Read each finding before you edit. A successful check does not establish clarity,
 STE dictionary compliance, or preservation of the source's meaning.
 
-To review a draft before publishing it, provide the text on standard input:
+To review a draft before you publish it, provide the text on standard input:
 
 ```bash
 uv run --no-project --python 3.12 python ./scripts/check-writing.py --stdin description < /tmp/pr-description.md
@@ -223,7 +223,7 @@ match. That option does not make the findings more accurate. CI's prose check re
 The title format comes from [CONTRIBUTING.md](../../CONTRIBUTING.md#title-format).
 The title check is also advisory. Pass `--strict` to request a failing exit code for an invalid format.
 
-When evaluating the standard or its workflows, check the complete guidance too:
+When you evaluate the standard or its workflows, check the complete guidance too:
 
 ```bash
 uv run --no-project --python 3.12 python scripts/check-writing.py \
@@ -232,7 +232,7 @@ uv run --no-project --python 3.12 python scripts/check-writing.py \
 ```
 
 Read the findings and review the rules that need judgment. This self-check remains advisory.
-CI tests the checker's behavior without requiring the guide text to produce zero findings.
+CI tests the checker's behavior. It does not require zero findings from the guide text.
 
 ## Important Notes
 
@@ -349,7 +349,7 @@ python3 -m pip install leanblueprint
   [`../../.github/workflows/build-timing-report.yml`](../../.github/workflows/build-timing-report.yml)
   workflow, which renders the report and posts it on the PR.
 
-  The build job installs uv before running `validate.sh`, which includes the PR checker tests.
+  The build job installs uv before it runs `validate.sh`, which includes the PR checker tests.
 - [`../../.github/workflows/interaction.yml`](../../.github/workflows/interaction.yml)
   provides focused compilation and zero-warning checks for typed Interaction production and
   acceptance modules. It also runs on feature-base stacked PRs. Its read-only job restores,

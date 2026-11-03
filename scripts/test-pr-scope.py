@@ -63,6 +63,25 @@ def commit(message: str = "change") -> None:
 
 
 class ScopeTests(unittest.TestCase):
+    def test_quoted_paths_are_literal_in_scope_reports(self) -> None:
+        old, new = 'old café.lean', 'new name.lean'
+        with repository({old: 'same content\n', 'gone é.md': 'gone\n'}):
+            run('mv', old, new)
+            run('rm', '-q', 'gone é.md')
+            commit()
+            self.assertEqual(SCOPE.deleted_paths('origin/main'), ['gone é.md', old])
+            self.assertIn(new, [c.path for c in SCOPE.changes('origin/main')])
+
+    def test_scope_uses_repository_paths_from_a_subdirectory(self) -> None:
+        with repository({'old.lean': 'same content\n'}):
+            run('mv', 'old.lean', 'new.lean')
+            commit()
+            write('old.lean', 'restored as untracked\n')
+            write('nested/NOTES.md', 'scratch\n')
+            os.chdir('nested')
+            self.assertEqual(SCOPE.deleted_paths('origin/main'), [])
+            self.assertEqual(SCOPE.working_files('origin/main'), [('nested/NOTES.md', 'untracked')])
+
     def test_committed_and_uncommitted_changes(self) -> None:
         with repository({"a.lean": "a\n", "b.lean": "b\n"}):
             write("a.lean", "changed\n")

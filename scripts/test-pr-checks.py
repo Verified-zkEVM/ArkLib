@@ -288,6 +288,55 @@ class ChangedLineTests(unittest.TestCase):
             self.assertEqual([block.line for block in blocks], [5])
 
 
+class StrictV2Tests(unittest.TestCase):
+    vocabulary = """## Technical -ing nouns
+
+| Term | Technical meaning |
+|---|---|
+| `encoding`, `folding`, `sampling` | Protocol constructions |
+| `gas metering`, `meaning` | Resource and semantic concepts |
+
+## Other terms
+
+| `making` | Outside the technical noun table |
+
+## Words to avoid
+
+| Avoid | Use |
+|---|---|
+| "utilize" | use |
+| "no longer" | present fact (rule C3) |
+"""
+
+    def test_technical_ing_nouns_are_vocabulary_defined(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'vocabulary.md'
+            path.write_text(self.vocabulary)
+            self.assertEqual(WRITING.technical_ing_nouns(path),
+                             {'encoding', 'folding', 'sampling', 'metering', 'meaning'})
+
+    def test_preposition_gerunds_and_listed_technical_nouns(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'vocabulary.md'
+            path.write_text(self.vocabulary)
+            cases = [('Before making a change, run the tests.', True),
+                     ('Instead of calling the function, use the cached value.', True),
+                     ('The bound follows by assuming P.', True),
+                     ('After encoding, the message has a fixed length.', False),
+                     ('The bound follows from sampling.', False),
+                     ('Nothing changes before folding.', False),
+                     ('The budget accounts for gas metering.', False),
+                     ('Refer to CONTRIBUTING for docstring rules.', False),
+                     ('Review the context and preservation of meaning.', False)]
+            for text, expected in cases:
+                with self.subTest(text=text):
+                    found = WRITING.check_blocks(WRITING.file_blocks('page.md', text), path)
+                    self.assertEqual(any(f.rule == 'V2' for f in found), expected)
+            text = 'Run the tests before\nmaking a change.'
+            found = WRITING.check_blocks(WRITING.file_blocks('page.md', text), path)
+            self.assertEqual([f.line for f in found if f.rule == 'V2'], [2])
+
+
 class WritingRegressionTests(unittest.TestCase):
     def test_findings_point_to_the_source_line(self) -> None:
         text = ('The [reference](https://example.org/a(b)) and `x` agree.\n'
@@ -321,7 +370,8 @@ class WritingRegressionTests(unittest.TestCase):
     def test_possession_is_not_a_perfect_tense(self) -> None:
         for text in ['The code has correlated agreement.', 'The vector has centered norm.',
                      'The vector has squared norm.', 'The variable has expected value zero.',
-                     'The tree has left and right children.', 'The polynomials have known degree.']:
+                     'The tree has left and right children.', 'The polynomials have known degree.',
+                     'The graph has labelled edges.']:
             with self.subTest(text=text):
                 self.assertNotIn('V1', findings(text))
         self.assertIn('V1', findings('The prover has squared the norm.'))
@@ -423,7 +473,7 @@ class WritingRegressionTests(unittest.TestCase):
         self.assertIn('C3', findings('The lemma is no\nlonger needed.', 'docs/wiki/page.md'))
 
     def test_wrapped_straight_quotes_are_one_exempt_element(self) -> None:
-        text = ('"essentially\nsurjective". Review their meaning rather than deleting them as '
+        text = ('"essentially\nsurjective". Review their meaning. Do not delete them as '
                 'isolated words. "Negligible" retains its technical meaning.')
         self.assertEqual(findings(text), [])
         text = 'The text "quoted\nwords; ignored" is literal.\nActual prose; checked.'

@@ -70,7 +70,7 @@ def warnings(title: str) -> list[str]:
     first = match.group(2).split()[0]
     advice = []
     if first.casefold() in {"added", "adds", "fixed", "fixes", "removed", "removes"}:
-        advice.append(f"Review the subject starting with `{first}`. Use an imperative phrase "
+        advice.append(f"The subject starts with `{first}`. Use an imperative phrase "
                       "or a noun phrase that names the result.")
     if first[0].isupper() and not is_name(first):
         advice.append(f"The subject starts with `{first}`. Do not capitalize the first word unless "

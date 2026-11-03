@@ -50,8 +50,16 @@ class Change:
     old_path: str | None = None
 
 
+def repository_root() -> Path:
+    """Return the repository root even when the caller is in a subdirectory."""
+    result = subprocess.run(["git", "rev-parse", "--show-toplevel"], check=True,
+                            capture_output=True, text=True)
+    return Path(result.stdout.strip())
+
+
 def git(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(["git", *args], check=check, capture_output=True, text=True)
+    return subprocess.run(["git", *args], check=check, capture_output=True, text=True,
+                          cwd=repository_root())
 
 
 def merge_in_progress() -> bool:
@@ -59,14 +67,18 @@ def merge_in_progress() -> bool:
 
 
 def parse_name_status(output: str) -> list[Change]:
+    """Read NUL-delimited status records as literal paths."""
     changes = []
-    for line in output.splitlines():
-        fields = line.split("\t")
-        status = fields[0][0]
+    fields = iter(output.split("\0"))
+    for entry in fields:
+        if not entry:
+            continue
+        status = entry[0]
+        source = next(fields)
         if status in "RC":
-            changes.append(Change(status, fields[2], fields[1]))
+            changes.append(Change(status, next(fields), source))
         else:
-            changes.append(Change(status, fields[1]))
+            changes.append(Change(status, source))
     return changes
 
 
@@ -84,7 +96,7 @@ def changes(base: str) -> list[Change]:
     """Return the changes that the branch contributes, with uncommitted work included."""
     # One comparison of the work tree with the merge base gives the net change. A union of the
     # committed and the uncommitted statuses loses a rename or an addition after a later edit.
-    output = git("diff", "--name-status", "-M", merge_base(base)).stdout
+    output = git("diff", "--no-relative", "--name-status", "-z", "-M", merge_base(base)).stdout
     return sorted(parse_name_status(output), key=lambda change: (change.path, change.status))
 
 
@@ -96,7 +108,8 @@ def deleted_paths(base: str) -> list[str]:
             paths.add(change.path)
         elif change.old_path is not None:
             paths.add(change.old_path)
-    return sorted(path for path in paths if not Path(path).exists())
+    root = repository_root()
+    return sorted(path for path in paths if not (root / path).exists())
 
 
 def generated_drift(base: str) -> tuple[list[str], list[str]]:
@@ -106,9 +119,9 @@ def generated_drift(base: str) -> tuple[list[str], list[str]]:
     """
     start = merge_base(base)
     committed = [] if merge_in_progress() else git(
-        "diff", "--name-only", f"{start}...HEAD", "--", GENERATED).stdout.split()
-    work_tree = git("diff", "--name-only", start, "--", GENERATED).stdout.split()
-    return committed, work_tree
+        "diff", "--name-only", "-z", f"{start}...HEAD", "--", GENERATED).stdout.split("\0")
+    work_tree = git("diff", "--name-only", "-z", start, "--", GENERATED).stdout.split("\0")
+    return [path for path in committed if path], [path for path in work_tree if path]
 
 
 def restore_generated(base: str) -> None:
@@ -122,8 +135,8 @@ def working_files(base: str) -> list[tuple[str, str]]:
     for change in changes(base):
         if change.status == "A" and change.path.endswith(".md"):
             found.append((change.path, "added"))
-    untracked = git("ls-files", "--others", "--exclude-standard", "--", "*.md").stdout.split()
-    found.extend((path, "untracked") for path in untracked)
+    untracked = git("ls-files", "-z", "--others", "--exclude-standard", "--", "*.md").stdout.split("\0")
+    found.extend((path, "untracked") for path in untracked if path)
     return [(path, state) for path, state in sorted(set(found))
             if not path.startswith(CURATED_PREFIXES) and path not in CURATED_FILES
             and Path(path).name != "README.md"]
@@ -137,7 +150,7 @@ def module_name(path: str) -> str | None:
 
 def stale_references(base: str) -> list[tuple[str, str, str]]:
     """Return (deleted path, pattern kind, matching line) for each reference to a deleted path."""
-    tracked = git("ls-files").stdout.splitlines()
+    tracked = git("ls-files", "-z").stdout.split("\0")
     found = []
     for path in deleted_paths(base):
         patterns = [("path", ["-F", "-e", path])]
@@ -201,10 +214,10 @@ def summary(base: str) -> None:
     print("\n# Markdown files outside the curated documentation (report them, do not delete them)")
     for path, state in working_files(base):
         print(f"{state}\t{path}")
-    untracked = git("ls-files", "--others", "--exclude-standard").stdout.split()
+    untracked = git("ls-files", "-z", "--others", "--exclude-standard").stdout.split("\0")
     print("\n# Other untracked files (a commit does not include them until you stage them)")
     for path in untracked:
-        if not path.endswith(".md"):
+        if path and not path.endswith(".md"):
             print(path)
 
 
