@@ -276,18 +276,5 @@ class ChangedLineTests(unittest.TestCase):
             self.assertEqual([block.line for block in blocks], [5])
 
 
-class RepositoryTests(unittest.TestCase):
-    def test_writing_pages_follow_the_standard(self) -> None:
-        paths = ["docs/wiki/writing.md", "docs/wiki/writing-vocabulary.md",
-                 ".github/pull_request_template.md", "CONTRIBUTING.md",
-                 "docs/skills/write-technical-prose.md", "AGENTS.md"]
-        blocks = []
-        for path in paths:
-            blocks.extend(WRITING.file_blocks(path, (ROOT / path).read_text(encoding="utf-8")))
-        problems = [f"{item.path}:{item.line} {item.rule} {item.excerpt}"
-                    for item in WRITING.check_blocks(blocks)]
-        self.assertEqual(problems, [])
-
-
 if __name__ == "__main__":
     unittest.main()

@@ -223,6 +223,17 @@ match. That option does not make the findings more accurate. CI's prose check re
 The title format comes from [CONTRIBUTING.md](../../CONTRIBUTING.md#title-format).
 The title check is also advisory. Pass `--strict` to request a failing exit code for an invalid format.
 
+When evaluating the standard or its workflows, check the complete guidance too:
+
+```bash
+uv run --no-project --python 3.12 python scripts/check-writing.py \
+  AGENTS.md CONTRIBUTING.md docs/wiki/writing.md docs/wiki/writing-vocabulary.md \
+  docs/skills/write-technical-prose.md docs/skills/make-pr-ready.md .github/pull_request_template.md
+```
+
+Read the findings and review the rules that need judgment. This self-check remains advisory.
+CI tests the checker's behavior without requiring the guide text to produce zero findings.
+
 ## Important Notes
 
 - `./scripts/validate.sh` is the recommended convenience wrapper for routine local validation.
