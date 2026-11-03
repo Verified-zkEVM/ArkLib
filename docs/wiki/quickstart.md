@@ -337,6 +337,8 @@ python3 -m pip install leanblueprint
   Pages/OIDC permission. It uploads timing artifacts consumed by the trusted
   [`../../.github/workflows/build-timing-report.yml`](../../.github/workflows/build-timing-report.yml)
   workflow, which renders the report and posts it on the PR.
+
+  The build job installs uv before running `validate.sh`, which includes the PR checker tests.
 - [`../../.github/workflows/interaction.yml`](../../.github/workflows/interaction.yml)
   provides focused compilation and zero-warning checks for typed Interaction production and
   acceptance modules. It also runs on feature-base stacked PRs. Its read-only job restores,
