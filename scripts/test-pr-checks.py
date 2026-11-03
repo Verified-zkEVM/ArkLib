@@ -99,6 +99,11 @@ def findings(text: str, path: str = "doc.md") -> list[str]:
 
 
 class WritingRuleTests(unittest.TestCase):
+    def test_semicolon_excerpt_starts_before_the_semicolon(self) -> None:
+        blocks = WRITING.file_blocks("page.md", "This works; it is fine.\n")
+        excerpts = [item.excerpt for item in WRITING.check_blocks(blocks) if item.rule == "U1"]
+        self.assertEqual(excerpts, ["This works; it is fine."])
+
     def test_vocabulary_is_parsed(self) -> None:
         general, history = WRITING.avoid_words()
         self.assertIn("utilize", general)

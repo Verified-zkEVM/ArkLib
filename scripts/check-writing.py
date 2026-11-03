@@ -412,7 +412,7 @@ def check_block(block: Block, general: re.Pattern[str] | None,
         add("P2", f"The paragraph has {len(counted_sentences)} sentences. The limit is "
             f"{PARAGRAPH_LIMIT}.", counted_sentences[0])
     if ";" in plain:
-        add("U1", "Do not use a semicolon. Write two sentences.", plain[plain.index(";") - 30:])
+        add("U1", "Do not use a semicolon. Write two sentences.", plain[max(0, plain.index(";") - 30):])
     # A formatted term followed by a dash introduces a definition, not a clause join.
     # Only that separator is exempt. Review the rest of the description as usual.
     dash_text = block.text
