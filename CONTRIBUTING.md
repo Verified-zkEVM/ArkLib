@@ -37,9 +37,8 @@ gh issue list -R Verified-zkEVM/ArkLib --state open --search "<paper key or topi
 ```
 
 If an open PR covers the same declarations, ask its author whether the work is active.
-Open a second PR for the same target only with the author's agreement.
-If the author does not respond for 14 days, ask a maintainer to authorize a replacement PR.
-Link the earlier PR and the maintainer's decision in the replacement description.
+Do not duplicate active work. If you open a PR for the same target, link the earlier PR and
+explain how your work relates to it.
 
 ### Reuse Existing Definitions
 
