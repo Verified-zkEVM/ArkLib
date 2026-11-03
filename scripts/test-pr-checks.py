@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --no-project --python 3.12 python
 """Tests for the pull request title check and the writing check."""
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ WRITING = load("check_writing", "check-writing.py")
 
 
 class TitleTests(unittest.TestCase):
-    types = ["feat", "fix", "doc", "chore", "refactor"]
+    types = ["feat", "fix", "doc", "docs", "chore", "refactor"]
 
     def assertValid(self, title: str) -> None:
         self.assertEqual(TITLE.problems(title, self.types), [], title)
@@ -43,17 +43,18 @@ class TitleTests(unittest.TestCase):
         types = TITLE.allowed_types()
         self.assertIn("feat", types)
         self.assertIn("doc", types)
-        self.assertNotIn("docs", types)
+        self.assertIn("docs", types)
 
     def test_valid_titles(self) -> None:
         self.assertValid("feat: add the Johnson bound")
         self.assertValid("fix(hash): Poseidon2 round constants in the right order")
         self.assertValid("refactor(binius)!: remove the legacy folding API")
         self.assertValid("doc(contributing): describe `#print axioms` evidence")
+        self.assertValid("docs: refresh the roadmap")
 
     def test_invalid_titles(self) -> None:
         self.assertInvalid("Prove the subspace-design MCA bound")
-        self.assertInvalid("docs: refresh the roadmap")
+        self.assertInvalid("unknown: refresh the roadmap")
         self.assertInvalid("feat(proximityGens) : lemmas 6.2 to 6.6")
         self.assertInvalid("feat: add the Johnson bound.")
         self.assertInvalid("feat:add the Johnson bound")
@@ -109,6 +110,28 @@ class WritingRuleTests(unittest.TestCase):
         self.assertEqual(findings(sentence), [])
         counted = WRITING.mask(sentence, collapse_parentheses=True)
         self.assertEqual(WRITING.word_count(counted), 13)
+
+    def test_sentence_can_start_with_a_lowercase_filename(self) -> None:
+        text = " ".join(["word"] * 20) + ". pr-scope.py " + " ".join(["word"] * 20) + "."
+        self.assertEqual(findings(text), [])
+        self.assertEqual(len(WRITING.sentences(text)), 2)
+
+    def test_license_text_is_exempt_but_later_prose_is_checked(self) -> None:
+        legal = "## Licensing\n\nEnsure these terms; do not change them.\n"
+        self.assertEqual(findings(legal, "CONTRIBUTING.md"), [])
+        nested = legal + "\n### Conditions\n\nWe utilize these terms.\n"
+        self.assertEqual(findings(nested, "CONTRIBUTING.md"), [])
+        resumed = nested + "\n## Next steps\n\nWe utilize the lemma.\n"
+        self.assertEqual(findings(resumed, "CONTRIBUTING.md"), ["W1"])
+        self.assertEqual(findings("Ensure these terms; do not change them.", "LICENSE.md"), [])
+        fenced = "```md\n## License\n```\n\nWe utilize the lemma.\n"
+        self.assertEqual(findings(fenced), ["W1"])
+
+    def test_mathematical_terms_are_not_blanket_vocabulary_bans(self) -> None:
+        for text in ["The following are equivalent.", "Every valid transcript has a witness.",
+                     "The space is simply connected.", "This functor is essentially surjective.",
+                     "Complete the pull request template."]:
+            self.assertNotIn("W1", findings(text), text)
 
     def test_paragraph_length(self) -> None:
         self.assertEqual(findings(" ".join(["One sentence."] * 7)), ["P2"])
@@ -210,7 +233,8 @@ class ChangedLineTests(unittest.TestCase):
 class RepositoryTests(unittest.TestCase):
     def test_writing_pages_follow_the_standard(self) -> None:
         paths = ["docs/wiki/writing.md", "docs/wiki/writing-vocabulary.md",
-                 ".github/pull_request_template.md"]
+                 ".github/pull_request_template.md", "CONTRIBUTING.md",
+                 "docs/skills/write-technical-prose.md"]
         blocks = []
         for path in paths:
             blocks.extend(WRITING.file_blocks(path, (ROOT / path).read_text(encoding="utf-8")))

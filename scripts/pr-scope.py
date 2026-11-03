@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --no-project --python 3.12 python
 """Report the scope of a branch against its pull request base.
 
 The `make-pr-ready` skill uses this script to find what a branch contributes. A plain
@@ -196,8 +196,8 @@ def summary(base: str) -> None:
     for path in work_tree:
         print(f"work tree\t{path}\t(the CI guard fails after a commit of the work tree)")
     if committed or work_tree:
-        print(f"Restore the directory with `python3 scripts/pr-scope.py restore-generated "
-              f"--base {base}`. Then commit the result.")
+        print("Restore the directory with `uv run --no-project --python 3.12 python "
+              f"scripts/pr-scope.py restore-generated --base {base}`. Then commit the result.")
     print("\n# Markdown files outside the curated documentation (report them, do not delete them)")
     for path, state in working_files(base):
         print(f"{state}\t{path}")

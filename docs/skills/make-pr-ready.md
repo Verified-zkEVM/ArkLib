@@ -24,6 +24,9 @@ permission to fill unrelated admissions.
 
 ## Steps
 
+Apply Lean-specific checks to affected declarations. For a prose-only contribution, audit its claims
+and commands. Do not invent a mathematical result to fill the template.
+
 Do the steps in order. Steps 0 to 2 can find problems that change the rest of the pass. Step 5
 comes near the end, because the refactors of the earlier steps can delete files and declarations.
 The [gotchas](#gotchas) at the end record the failures of earlier runs. Read them before your first
@@ -37,7 +40,7 @@ deleted file that a later change restores.
 
 ```bash
 git fetch origin main
-python3 scripts/pr-scope.py summary --base origin/main
+uv run --no-project --python 3.12 python scripts/pr-scope.py summary --base origin/main
 ```
 
 Then do these steps:
@@ -76,8 +79,8 @@ follows it. A green build does not check these rules, so check them yourself:
    when you rename a declaration, as the [compatibility policy](../../CONTRIBUTING.md#compatibility-policy)
    requires.
 2. **Syntax and headers**: check the line length, the indentation, the operator spaces, and
-   `fun x ↦`. Each new file needs the license header.
-3. **Docstrings**: each file has a module docstring. Each definition and main theorem has a
+   `fun x ↦`. Each new Lean file needs the license header.
+3. **Docstrings**: each Lean file has a module docstring. Each definition and main theorem has a
    declaration docstring. A declaration docstring states the claim, the important hypotheses,
    and each abbreviation. A reader must not need the paper to understand it. Put external
    citations, URLs, and paper locations only in the module docstring. The module docstring
@@ -149,7 +152,7 @@ declaration that the branch adds or changes:
    uncommitted changes:
 
    ```bash
-   python3 scripts/source-trust-audit.py --base-ref origin/main
+   uv run --no-project --python 3.12 python scripts/source-trust-audit.py --base-ref origin/main
    ./scripts/validate.sh --axioms
    ```
 
@@ -179,7 +182,7 @@ declaration that the branch adds or changes:
 4. Find each orphan: a BibTeX entry or a `docs/kb/papers/` page that no file cites. Ask the author
    to cite it or to remove it. If you remove a page, remove each link to it.
 5. For a paper that the contribution adds or extends, add a substantive page with
-   `python3 scripts/kb/scaffold_paper.py <KEY>`. Replace each TODO before you stage the page. Do
+   `uv run --no-project --python 3.12 python scripts/kb/scaffold_paper.py <KEY>`. Replace each TODO before you stage the page. Do
    not try to clear the existing backlog of coverage warnings.
 6. Do not commit a change to `docs/kb/_generated/`. The first CI job compares the head with the
    merge base of the branch and `main`. It fails on any difference, and a deletion is a
@@ -187,9 +190,9 @@ declaration that the branch adds or changes:
    expects:
 
    ```bash
-   python3 ./scripts/kb/sync_from_bib.py
-   python3 ./scripts/kb/extract_lean_citations.py
-   python3 scripts/pr-scope.py restore-generated --base origin/main
+   uv run --no-project --python 3.12 python ./scripts/kb/sync_from_bib.py
+   uv run --no-project --python 3.12 python ./scripts/kb/extract_lean_citations.py
+   uv run --no-project --python 3.12 python scripts/pr-scope.py restore-generated --base origin/main
    ```
 
    The regenerated files also contain changes from recent merges, because `main` updates them only
@@ -212,7 +215,7 @@ table row also leaves stale references. A green `./scripts/validate.sh` does not
 **Paths.** Find each reference to a deleted, moved, or renamed path:
 
 ```bash
-python3 scripts/pr-scope.py stale-refs --base origin/main
+uv run --no-project --python 3.12 python scripts/pr-scope.py stale-refs --base origin/main
 ```
 
 Each output line gives the deleted path, the kind of match, and the matching line. The script
@@ -328,29 +331,33 @@ not edit the description of an open pull request unless the user asks for it.
 - **Known gaps**: the differences from the source that step 2 found and that stay open.
 - **Related work**: the overlapping pull requests from step 2.
 
-### 7. Check the writing
+### 7. Review the writing
 
-Check the prose that the branch adds or changes against the [writing standard](../wiki/writing.md).
-This prose includes docstrings, comments, Markdown, commit messages, the title, and the
-description:
+Use [write-technical-prose.md](write-technical-prose.md) on the changed prose and the draft
+PR description. Include docstrings, comments, Markdown, commit messages, and any draft review
+comments. Read the passages in context and compare claims with their sources.
+
+Use the PR's actual base for the changed-prose check. For a PR targeting `main`, run:
 
 ```bash
-python3 scripts/check-writing.py --base origin/main
-python3 scripts/check-writing.py --stdin description < /tmp/pr-description.md
-git log --format=%B origin/main..HEAD | python3 scripts/check-writing.py --stdin commits
-python3 scripts/check-pr-title.py '<type>(<scope>): <subject>'
+uv run --no-project --python 3.12 python scripts/check-writing.py --base origin/main
+uv run --no-project --python 3.12 python scripts/check-writing.py --stdin description < /tmp/pr-description.md
+git log --format=%B origin/main..HEAD | uv run --no-project --python 3.12 python scripts/check-writing.py --stdin commits
+uv run --no-project --python 3.12 python scripts/check-pr-title.py '<type>(<scope>): <subject>'
 ```
 
-The first command reports only problems in the lines that the branch adds. Read each sentence
-before you change it, because a match is not always an error. The scripts find only the measurable
-rules. Then read the changed text one time for the other rules. These rules include one topic for
-each sentence, the active voice, and the claims rules C1 to C8.
+For a stacked PR, replace `origin/main` in the prose and commit checks with its published base.
+The prose checker reads affected paragraphs, list items, or table cells, not only the added words.
+Read each finding before editing. A match can be a false positive. The checker does not establish
+clarity, STE dictionary compliance, or fidelity to the source. Complete the reading pass in the
+writing workflow before handing over the draft.
 
-### 8. Suggest skill improvements
+### 8. Improve the skill when needed
 
-Tell the user whether this skill needs a change: a new recurring gap, a missing or stale step, a
-better order, or a new check. Follow the Maintenance Rule in [`README.md`](README.md), and update
-this file if the change can help the next agent.
+If the task exposes a recurring gap or a stale instruction, apply the
+[maintenance rule](README.md#maintenance-rule). Record the reusable rule rather than the session
+history. Report a material skill change. Do not add an empty improvement report when the workflow
+needed no change.
 
 ## Persistence Rule
 
@@ -367,50 +374,30 @@ Do not call the pull request ready to merge until each of these conditions is tr
 6. The citations are consistent, and `docs/kb/_generated/` is the same as on the base.
 7. The sweeps in step 5 find no stale reference.
 8. A draft description from the template exists, and the writing check of step 7 is complete.
-9. You reported your suggested improvements to this skill.
+9. Any recurring workflow gap found during the task was corrected or reported.
 
 ## Gotchas
 
-These failures happened on real runs of this skill. Most of them passed a green validation.
-
-- **Merge in progress**: the three-dot comparison gave the branch about 50 files from the base. The
-  files included a directory reorganization and renames that the branch never made.
-- **Empty three-dot diff**: a branch was at the base with all of its work staged. Then
-  `git rev-parse HEAD origin/main` prints the same commit two times.
-- **Fork as `origin`**: the `main` branch of a fork was many commits behind the canonical
-  repository after `git fetch origin main`. The scope then contained the changes of the base.
-- **No deleted files**: a branch deleted no file, but it removed six declarations and three table
-  rows. All 24 stale references came from the sweeps that do not need a deleted file.
-- **Common file names**: two deleted `README.md` files gave about 60 basename matches. None of them
-  were real.
-- **File to directory**: `Gadget.lean` became the directory `Gadget/`. A search for the module
-  name without an end anchor matched each import of `Gadget.Core`.
-- **Namesake files**: after the deletion of `Hachi/Escape.lean`, text about `Escape.lean` could
-  refer to `CoordinateWiseSpecialSoundness/Escape.lean`.
-- **Declaration names in prose**: these were the largest class of stale references on one run. The
-  class included a certificate under an old suffix and an event that was never defined. It also
-  included a field that the text called a lemma, a missing instance of the pinned dependency, and
-  a helper in a wrong namespace.
-- **Probe namespaces**: a probe in a wrong namespace made a live structure field look dead.
-- **Proved files**: a branch proved `Guarded.lean` and updated three files. A fourth file still
-  called it a skeleton.
-- **Deleted sections**: one deleted `TODO` section broke the pointers in two Lean files and in a
-  page under `docs/kb/audits/`.
-- **Row numbers**: a search for `row 1[0-2]` did not find the text `row-11`.
-- **Planning codes**: a search that required a parenthesis before the code did not find
-  `` (whence `harity₂`, D5) `` or `(§10 R3)`.
-- **Status pages**: one overview page reported 40% fewer open admissions than the build. It was
-  three files behind and used a status that its legend did not define.
-- **Subagent numbers**: two reviewers of the same page reported different totals. Calculate each
-  count again from the source.
-- **Inherited admissions**: a pull request advertised files without `sorry`. Their theorems
-  depended on admitted framework definitions.
-- **Line length**: `lake exe lint-style` counts Unicode code points. `awk length` and `wc -c` count
-  bytes and report false long lines.
-- **Restoration from `origin/main`**: a review found this failure, not a run. `main` refreshed the
-  generated files after the branch started. A restoration from `origin/main` copies the new files
-  into the branch, and the CI check then fails.
-- **Restored generated files**: after you stage the restoration of `docs/kb/_generated/`,
-  `git diff --cached --stat` shows large numbers. They measure the restoration, not new drift.
-- **Unstaged deletion**: `check-imports.sh` builds `ArkLib.lean` from `git ls-files`. Stage each
-  deletion, or the import stays and the build fails.
+- **Scope during a merge**: a three-dot diff can include changes from the base. Use the scope
+  script's comparison, including staged and unstaged work. Confirm that a fork's `origin/main`
+  is the intended canonical base.
+- **Sibling branches**: a merged feature branch can contribute files that this PR does not own.
+  Identify their owner before editing them. A similar file name does not establish ownership.
+- **Generated files**: restoring from the latest `origin/main` can create drift relative to the
+  merge base. Use `pr-scope.py restore-generated`. A large staged restoration does not itself mean
+  that the final comparison still has drift.
+- **Git index**: the import generator reads `git ls-files`. Stage additions and deletions before
+  generating umbrellas or running checks that inspect the index.
+- **Stale references**: declarations, section names, table rows, status labels, and raw paths can
+  survive a rename or deletion. The build does not check them all. Run the applicable sweeps in
+  step 5, including those that do not depend on a deleted file.
+- **Namespace probes**: an unknown name can come from the probe's namespace or imports. Confirm
+  the declaration's full name before reporting it as dead.
+- **Planning codes**: broad searches also match paper labels and mathematical expressions. Read
+  the context before editing. Keep legitimate source locations in module docstrings.
+- **Status counts**: recalculate manually maintained counts from the source. Check totals and
+  legends. Another agent's estimate is not validation evidence.
+- **Inherited admissions**: a file without `sorry` can depend on an admitted declaration.
+  Inspect the relevant axiom output before claiming that a result is admission-free.
+- **Line length**: the source-policy checker counts Unicode code points. Byte counts from
+  `awk length` or `wc -c` can report false long lines.

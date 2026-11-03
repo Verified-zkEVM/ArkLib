@@ -23,13 +23,14 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v7
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
-          python-version: "3.12"
+          version: "0.13.6"
+          enable-cache: false
       - name: Check the title format
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
-        run: python3 ./scripts/check-pr-title.py
+        run: uv run --no-project --python 3.12 python ./scripts/check-pr-title.py
 
   writing:
     name: Check Writing (warnings only)
@@ -39,14 +40,15 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-python@v7
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
-          python-version: "3.12"
+          version: "0.13.6"
+          enable-cache: false
       - name: Check the changed prose
         env:
           BASE_REF: ${{ github.base_ref }}
-        run: python3 ./scripts/check-writing.py --base "origin/${BASE_REF}" --github
+        run: uv run --no-project --python 3.12 python ./scripts/check-writing.py --base "origin/${BASE_REF}" --github
       - name: Check the pull request body
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
-        run: printf '%s\n' "$PR_BODY" | python3 ./scripts/check-writing.py --stdin body --github
+        run: printf '%s\n' "$PR_BODY" | uv run --no-project --python 3.12 python ./scripts/check-writing.py --stdin body --github

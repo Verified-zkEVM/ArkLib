@@ -29,8 +29,8 @@ Default checks:
   - ./scripts/check-imports.sh
   - ./scripts/test-build-timing-report.sh
   - python3 ./scripts/check-docs-integrity.py
-  - python3 ./scripts/test-pr-checks.py
-  - python3 ./scripts/test-pr-scope.py
+  - uv run --no-project --python 3.12 python ./scripts/test-pr-checks.py
+  - uv run --no-project --python 3.12 python ./scripts/test-pr-scope.py
   - python3 ./scripts/kb/lint.py
 
 Optional checks:
@@ -143,8 +143,8 @@ python3 ./scripts/check-docs-integrity.py
 
 echo ""
 echo "# Testing the pull request scripts"
-python3 ./scripts/test-pr-checks.py
-python3 ./scripts/test-pr-scope.py
+uv run --no-project --python 3.12 python ./scripts/test-pr-checks.py
+uv run --no-project --python 3.12 python ./scripts/test-pr-scope.py
 
 echo ""
 echo "# Checking knowledge base"

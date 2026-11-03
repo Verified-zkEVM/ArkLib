@@ -35,6 +35,9 @@ Treat such a probe as provisional until the source passes the project build.
 
 ## Recommended Validation
 
+The PR checks require [uv](https://docs.astral.sh/uv/getting-started/installation/).
+Install it before validation. The checker commands select Python 3.12 through uv.
+
 For a convenient routine check, run:
 
 ```bash
@@ -192,21 +195,31 @@ python3 -m pip install leanblueprint
 
 ### Prose, titles, and pull request descriptions
 
-The [writing standard](writing.md) applies to all prose. To check the prose that your branch
-changes, run:
+Use the [writing workflow](../skills/write-technical-prose.md) for documentation, comments,
+docstrings, commit messages, and PR or issue text. It applies outside PR preparation too.
+The [writing standard](writing.md) owns the rules and their STE adaptations.
+
+For a PR targeting `main`, check changed prose with:
 
 ```bash
-python3 ./scripts/check-writing.py --base origin/main
+uv run --no-project --python 3.12 python ./scripts/check-writing.py --base origin/main
 ```
 
-The script checks the measurable rules and reports each problem as a warning. Add `--strict` to
-get exit code 1 when it finds a problem. To check a description or another text before you post
-it, give the text on standard input:
+For a stacked PR, use its actual base instead. The checker reads affected paragraphs, list items,
+and table cells. It reports editing suggestions, including approximate word counts and verb
+patterns. Read each finding before editing. A successful check does not establish clarity,
+STE dictionary compliance, or preservation of the source's meaning.
+
+To review a draft before publishing it, provide the text on standard input:
 
 ```bash
-python3 ./scripts/check-writing.py --stdin description < description.md
-python3 ./scripts/check-pr-title.py "feat(fri): prove query soundness"
+uv run --no-project --python 3.12 python ./scripts/check-writing.py --stdin description < /tmp/pr-description.md
+uv run --no-project --python 3.12 python ./scripts/check-pr-title.py "feat(fri): prove query soundness"
 ```
+
+The writing checker exits successfully by default. `--strict` requests exit code 1 when it finds a
+match. That option does not make the findings more accurate. CI's prose check remains advisory.
+The title format comes from [CONTRIBUTING.md](../../CONTRIBUTING.md#title-format).
 
 ## Important Notes
 

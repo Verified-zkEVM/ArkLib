@@ -1,7 +1,7 @@
-#!/usr/bin/env python3
-"""Check prose against the measurable rules of the ArkLib writing standard.
+#!/usr/bin/env -S uv run --no-project --python 3.12 python
+"""Report editing suggestions for selected rules of the ArkLib writing standard.
 
-The standard is `docs/wiki/writing.md`. This script checks the rules that a search can find:
+The standard is `docs/wiki/writing.md`. This script reports patterns that a search can find:
 
 - S1: sentence length (20 words in a numbered list item, 25 words elsewhere)
 - P2: more than six sentences in a paragraph
@@ -12,10 +12,11 @@ The standard is `docs/wiki/writing.md`. This script checks the rules that a sear
 - S7: a sentence that starts with "This" or "These" and a verb, with no noun
 - Vocabulary: the words to avoid in `docs/wiki/writing-vocabulary.md`.
 
-Review checks the other rules. The checker counts words as the standard specifies: a code span,
-a formula, a citation key, a link, a quotation, and a parenthesis each count as one word. Quoted
-text, code, formulas, headings, and HTML comments are exempt from all rules. The words "now" and
-"new" are not flagged alone, because both words also have ordinary meanings.
+Review applies the standard to each finding and to rules that need judgment. Extraction, word
+counts, and verb patterns are approximations. Numbered lists are treated as procedural for the
+length check; their actual purpose still needs review. License text, quoted text, code, formulas,
+headings, and HTML comments are excluded. No dictionary or meaning-preservation check is made.
+The words "now" and "new" are not flagged alone, because both also have ordinary meanings.
 
 Usage:
   check-writing.py --base REF      the prose that changed since the merge base with REF
@@ -163,6 +164,7 @@ def markdown_blocks(path: str, text: str, first_line: int = 1) -> list[Block]:
     fence = False
     comment = False
     header_row = True
+    legal_section: int | None = None
     lines = text.split("\n")
 
     def flush() -> None:
@@ -198,6 +200,19 @@ def markdown_blocks(path: str, text: str, first_line: int = 1) -> list[Block]:
         if fence:
             continue
         stripped = re.sub(r"^(?:>\s?)+", "", stripped)
+        heading = re.fullmatch(r"(#{1,6})\s+(.+?)(?:\s+#+)?", stripped)
+        if heading:
+            flush()
+            level = len(heading.group(1))
+            if legal_section is not None and level <= legal_section:
+                legal_section = None
+            if legal_section is None and heading.group(2).casefold() in {
+                    "license", "licence", "licensing"}:
+                legal_section = level
+            header_row = True
+            continue
+        if legal_section is not None:
+            continue
         if not stripped or stripped.startswith("#") or re.fullmatch(r"[-*_=]{3,}", stripped):
             flush()
             header_row = True
@@ -314,6 +329,8 @@ def lean_blocks(path: str, text: str) -> list[Block]:
 
 
 def file_blocks(path: str, text: str) -> list[Block]:
+    if Path(path).name.casefold() in {"license.md", "licence.md", "copying.md"}:
+        return []
     return lean_blocks(path, text) if path.endswith(".lean") else markdown_blocks(path, text)
 
 
@@ -351,7 +368,7 @@ def mask(text: str, collapse_parentheses: bool,
 
 
 def sentences(text: str) -> list[str]:
-    parts = re.split(r"(?<=[.!?])\s+(?=[A-Z0-9(\[])", text)
+    parts = re.split(r"(?<=[.!?])\s+(?=[A-Z0-9(\[]|[a-z][\w-]*\.[\w-]+(?:\s|$))", text)
     merged: list[str] = []
     for part in parts:
         if merged and merged[-1].split()[-1].lower() in ABBREVIATIONS:
@@ -397,9 +414,9 @@ def check_block(block: Block, general: re.Pattern[str] | None,
             plain[max(0, match.start() - 30):match.end() + 30])
     for pattern, rule, message in (
             (LATIN, "W7", "Write the English words for this Latin abbreviation."),
-            (PHRASAL, "W6", "Use a single verb for this phrasal verb."),
+            (PHRASAL, "W6", "Consider a direct verb that preserves this meaning."),
             (CONTRACTION, "S5", "Write the full form of this contraction."),
-            (general, "W1", "Use the replacement in writing-vocabulary.md for this word.")):
+            (general, "W1", "Review this wording using writing-vocabulary.md; preserve its meaning.")):
         if pattern is None:
             continue
         for match in pattern.finditer(plain):
@@ -407,18 +424,18 @@ def check_block(block: Block, general: re.Pattern[str] | None,
     for match in PERFECT.finditer(plain):
         hedged = MODAL_BEFORE.search(plain[:match.start()])
         if match.group(1).lower() not in POSSESSED_ADJECTIVES and not hedged:
-            add("V1", "Use a simple tense, not the perfect form.", match.group(0))
+            add("V1", "Prefer a simple tense if it preserves time and uncertainty.", match.group(0))
     for match in PROGRESSIVE.finditer(plain):
         if match.group(1).lower() not in NOT_PROGRESSIVE:
-            add("V1", "Use a simple tense, not the progressive form.", match.group(0))
+            add("V1", "Review this possible progressive form; prefer a simple construction.", match.group(0))
     if history is not None and HISTORY_SCOPE.search(block.path):
         for match in history.finditer(plain):
             add("C3", "Describe the present state, not the history.", match.group(0))
     for sentence in sentences(plain):
         if BARE_THIS.match(sentence):
-            add("S7", "Write the noun after \"This\" or \"These\".", sentence)
+            add("S7", "Name the noun if this reference is ambiguous.", sentence)
         if ING_START.match(sentence):
-            add("V2", "Do not start a clause with an \"-ing\" form.", sentence)
+            add("V2", "Review this possible verb clause; a finite clause can be clearer.", sentence)
     return found
 
 

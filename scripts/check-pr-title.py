@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --no-project --python 3.12 python
 """Check a pull request title against the format in CONTRIBUTING.md.
 
 The format is `<type>(<optional-scope>)<optional !>: <subject>`. The allowed types are the
