@@ -30,6 +30,11 @@ role. Use the project vocabulary for technical terms. A missing term is not auto
 and a familiar English word is not automatically STE-approved. When a literal replacement changes
 the meaning, rewrite the sentence or retain the necessary term and explain its technical use.
 
+Technical accuracy takes priority over the rules in this guide. A rule can conflict with a term or
+language pattern that is standard in cryptography research and engineering, computer science, or
+mathematics. In that case, keep the standard form and apply the rules to the rest of the sentence. A
+wording that is only a habit in this repository is not a standard form.
+
 This guide is a repository adaptation, not a complete copy of STE or a claim of full STE
 conformance. It does not distribute or automatically check the official dictionary. The
 [relation to STE](#relation-to-ste) distinguishes adaptations from the source rules.
@@ -185,9 +190,11 @@ ArkLib adds these requirements to the STE principles:
 "We" can refer to the author and reader in an argument. A state such as "`C` is closed under
 addition" is not an instruction or a passive action.
 
-A technical word can have noun and verb uses when both are established in the subject field.
-Record those uses separately. Qualify words such as "field", "instance", and "proof" when their
-meaning changes between mathematics, protocols, and Lean.
+A technical word can have noun and verb uses when both are established in the subject field. For
+example, write "a query" and "query an oracle", or "a commitment" and "commit to data". Record those
+uses separately. The dual noun and verb use is an ArkLib adaptation of STE 1.7 and 1.13. Qualify
+words such as "field", "instance", and "proof" when their meaning changes between mathematics,
+protocols, and Lean.
 
 ## Examples
 
@@ -210,6 +217,8 @@ its source. A shorter sentence is not an improvement if it changes the statement
 |---|---|
 | STE 1.1 to 1.4, general vocabulary | Retained as the reference for general meanings and grammatical roles. This guide and its checker do not implement the full dictionary. |
 | STE 1.5 to 1.13, technical terms | Applied through the project vocabulary and established subject-field usage. |
+| STE 1.7 and 1.13, noun and verb roles | Adapted. A technical word keeps its noun and verb uses when both are standard in the subject field, as in "query" and "commit". |
+| All STE rules | Technical accuracy takes priority. Standard terminology and language patterns in cryptography, computer science, and mathematics remain when a rule conflicts with them. |
 | STE 2 to 6, 8, and 9 | The source principles inform the rules above. Mathematical notation and the stated adaptations preserve technical meaning. |
 | STE 3.2 to 3.6 | Simple constructions remain preferred. ArkLib retains a modal or complex form when changing it would lose uncertainty or time. |
 | STE 7, safety instructions | Apply the relevant principle to risky operations: put the condition or instruction before an explanation of the consequence. |

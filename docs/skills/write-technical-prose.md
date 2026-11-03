@@ -49,6 +49,11 @@ error terms, exceptional cases, and direction of implication. Preserve time and 
 strength: "may have failed" does not mean "failed", and "recommended" does not mean "required".
 A shorter expression is useful only when it keeps the intended meaning.
 
+Do not let a writing rule change standard terminology. A rule can conflict with a term or language
+pattern that is standard in cryptography research and engineering, computer science, or mathematics.
+In that case, keep the standard form and apply the rules to the rest of the passage. Repository
+habit alone does not make a wording standard.
+
 Use the vocabulary to resolve ambiguous terms, not to erase valid technical meanings.
 "Complete the template" does not claim protocol completeness. A protocol statement and a theorem
 statement need different qualifiers only when the context could confuse them.
