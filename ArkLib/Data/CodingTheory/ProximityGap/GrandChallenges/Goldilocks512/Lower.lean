@@ -13,7 +13,7 @@ public import
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.LineToAffine
 public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges
 public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.Goldilocks512.Arithmetic
-public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Interleaved
+public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AgreementBounds
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.CodewordBound
 public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 
@@ -37,8 +37,9 @@ Both witnesses apply the first-order hidden-derivative certificate theorem
 
 * List decoding, `(546, 260, 1020, 10 ^ 9)`: the squarefree agreement bound gives at most
   `399 224 017` degree-`< 128` polynomials agreeing with any word on `239` points. The interleaved
-  bound `Λ(C ^⋈ m, δ) ≤ C(b + r, r) Λ(C, δ) ^ r` with `b ≤ 3`, `r ≤ 2` gives
-  `Λ ≤ 10 · 399 224 017 ²`, below `p ³ / 2 ¹²⁸`.
+  bound packs each column into the rational function field `F(Z)`
+  (`ReedSolomon.Lambda_interleaved_le_ratFunc`), where the same scalar bound applies, so every
+  interleaving has `Λ ≤ 399 224 017`, below `p ³ / 2 ¹²⁸`.
 * Mutual correlated agreement, `(609, 280, 1148, 271 081)`: the retained squarefree line-agreement
   envelope gives at most `968 363 869 378 722 615` exceptional line parameters, below
   `p ³ / 2 ¹²⁸`.
@@ -49,7 +50,6 @@ the cited papers as already formalized in ArkLib.
 ## References
 
 * [DKT26] for first-order hidden-derivative certificates and the squarefree bounds;
-* [GGR11] for the interleaved list-size bound;
 * [ABF26] for the grand-challenge formulation.
 -/
 
@@ -153,7 +153,7 @@ theorem mca_239 {F : Type u} [Field F] [DecidableEq F] (hp : ringChar F = goldil
 theorem mca_eps_lt : 968363869378722615 * 2 ^ 128 < goldilocks ^ 3 := by
   decide +kernel
 
-theorem interleaved_numeric : 10 * 399224017 ^ 2 * 2 ^ 128 < goldilocks ^ 3 := by
+theorem interleaved_numeric : 399224017 * 2 ^ 128 < goldilocks ^ 3 := by
   decide +kernel
 
 /-- `mca_239` as a `LineExactAgreementBound`. -/
@@ -217,45 +217,20 @@ theorem lambda_rs_le {F : Type} [Field F] (hp : ringChar F = goldilocks)
     have h := hfin.mem_toFinset.mp hP
     exact ⟨h.1, by simpa [polynomialAgreementSet] using h.2⟩)
 
-/-- The arithmetic step of the interleaved bound for `b ≤ 3` and `r ≤ 2`. -/
-theorem choose_pow_le (Λ : ℕ∞) (L : ℕ) (hΛ : Λ ≤ L) (hL : 1 ≤ L) (b r : ℕ)
-    (hb : b ≤ 3) (hr : r ≤ 2) :
-    ((b + r).choose r : ℕ∞) * Λ ^ r ≤ ((10 * L ^ 2 : ℕ) : ℕ∞) := by
-  have hc : (b + r).choose r ≤ 10 := by interval_cases b <;> interval_cases r <;> decide
-  have hp1 : Λ ^ r ≤ (L : ℕ∞) ^ r := by gcongr
-  have hp2 : (L : ℕ∞) ^ r ≤ (L : ℕ∞) ^ 2 :=
-    pow_le_pow_right₀ (by exact_mod_cast hL) hr
-  calc ((b + r).choose r : ℕ∞) * Λ ^ r ≤ (10 : ℕ∞) * (L : ℕ∞) ^ 2 :=
-        mul_le_mul' (by exact_mod_cast hc) (hp1.trans hp2)
-    _ = ((10 * L ^ 2 : ℕ) : ℕ∞) := by push_cast; ring
-
 open Classical in
-/-- For every `m ≥ 1`, the `m`-fold interleaving of `RS[F, domain, 128]` has list size at most
-`10 · 399 224 017 ²` at `δ = 273/512`. -/
-theorem lambda_interleaved_le {F : Type} [Field F] [Finite F] (hp : ringChar F = goldilocks)
-    (domain : Fin 512 ↪ F) (m : ℕ) (hm : 1 ≤ m) :
+/-- For every `m`, the `m`-fold interleaving of `RS[F, domain, 128]` has list size at most
+`399 224 017` at `δ = 273/512`. Packing each column into `F(Z)` embeds the interleaved list into
+a list of the scalar code over `F(Z)` (`ReedSolomon.Lambda_interleaved_le_ratFunc`), and
+`lambda_rs_le` applies there because `F(Z)` has the same characteristic. -/
+theorem lambda_interleaved_le {F : Type} [Field F] (hp : ringChar F = goldilocks)
+    (domain : Fin 512 ↪ F) (m : ℕ) :
     Code.Lambda ((ReedSolomon.code domain 128 : Set (Fin 512 → F)) ^⋈ (Fin m)) (273 / 512) ≤
-      ((10 * 399224017 ^ 2 : ℕ) : ℕ∞) := by
-  have : Fintype F := Fintype.ofFinite F
-  have hmin : Code.minDist (ReedSolomon.code domain 128 : Set (Fin 512 → F)) = 385 := by
-    rw [ReedSolomon.minDist_of_le (by simp)]; simp
-  have hub : (273 / 512 : ℝ) <
-      (Code.minDist (ReedSolomon.code domain 128 : Set (Fin 512 → F)) : ℝ) /
-        Fintype.card (Fin 512) := by
-    rw [hmin]; simp; norm_num
-  refine (InterleavedCode.lambda_interleaved_le_choose_mul_pow _ (273 / 512) m hm
-    (by norm_num) hub).trans
-    (choose_pow_le _ 399224017 (lambda_rs_le hp domain) (by norm_num) _ _ ?_ ?_)
-  · rw [hmin, Fintype.card_fin]
-    exact Nat.ceil_le.mpr (by norm_num)
-  · rw [hmin, Fintype.card_fin]
-    apply Nat.ceil_le.mpr
-    have hl2 : 0 < Real.log 2 := Real.log_pos (by norm_num)
-    rw [div_le_iff₀ hl2]
-    calc Real.log (((385 : ℕ) : ℝ) / ((512 : ℕ) : ℝ) /
-            (((385 : ℕ) : ℝ) / ((512 : ℕ) : ℝ) - 273 / 512))
-        ≤ Real.log (2 ^ 2) := Real.log_le_log (by norm_num) (by norm_num)
-      _ = ((2 : ℕ) : ℝ) * Real.log 2 := by rw [Real.log_pow]
+      ((399224017 : ℕ) : ℕ∞) := by
+  have : CharP F goldilocks := by rw [← hp]; exact ringChar.charP F
+  have : CharP (RatFunc F) goldilocks :=
+    charP_of_injective_algebraMap (algebraMap F (RatFunc F)).injective goldilocks
+  exact (ReedSolomon.Lambda_interleaved_le_ratFunc domain 128 m (273 / 512)).trans
+    (lambda_rs_le (ringChar.eq (RatFunc F) goldilocks) _)
 
 /-- Safe-side witness for the list-decoding grand challenge: for every `m ≥ 1`, the `m`-fold
 interleaving of `RS[F, domain, 128]` has list size at most `2⁻¹²⁸ · |F|` at `δ = 273/512`
@@ -264,16 +239,16 @@ when `F` has Goldilocks characteristic and `p ^ 3` elements.
 It is `noncomputable` because the witness carries real-valued error bounds. -/
 noncomputable def listLowerWitness {F : Type} [Field F] [Fintype F] [SampleableType F]
     [DecidableEq F] (hp : ringChar F = goldilocks) (hcard : Fintype.card F = goldilocks ^ 3)
-    (domain : Fin 512 ↪ F) (m : ℕ) (hm : 1 ≤ m) :
+    (domain : Fin 512 ↪ F) (m : ℕ) (_hm : 1 ≤ m) :
     ListLowerWitness (ReedSolomon.code domain 128 : Set (Fin 512 → F)) m (1 / 2 ^ 128) :=
   ListLowerWitness.ofLe (δ := 273 / 512) (by rw [← NNReal.coe_le_coe]; push_cast; norm_num) (by
     have hδ : ((273 / 512 : ℝ≥0) : ℝ) = 273 / 512 := by push_cast; ring
     rw [hδ, hcard]
-    have hI := lambda_interleaved_le hp domain m hm
+    have hI := lambda_interleaved_le hp domain m
     calc ((Code.Lambda ((ReedSolomon.code domain 128 : Set (Fin 512 → F)) ^⋈ (Fin m))
             (273 / 512) : ℕ∞) : ENNReal)
-        ≤ (((10 * 399224017 ^ 2 : ℕ) : ℕ∞) : ENNReal) := by exact_mod_cast hI
-      _ = ((10 * 399224017 ^ 2 : ℕ) : ENNReal) := by simp
+        ≤ (((399224017 : ℕ) : ℕ∞) : ENNReal) := by exact_mod_cast hI
+      _ = ((399224017 : ℕ) : ENNReal) := by simp
       _ ≤ ((1 / 2 ^ 128 : ℝ≥0) : ENNReal) * ((goldilocks ^ 3 : ℕ) : ENNReal) := by
         rw [← ENNReal.coe_natCast, ← ENNReal.coe_natCast (goldilocks ^ 3), ← ENNReal.coe_mul,
           ENNReal.coe_le_coe, ← NNReal.coe_le_coe]
