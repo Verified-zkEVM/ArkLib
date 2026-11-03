@@ -4,12 +4,13 @@
 The format is `<type>(<optional-scope>)<optional !>: <subject>`. The allowed types are the
 backticked names in the `**Types:**` list of CONTRIBUTING.md, so that list is the only copy.
 
-Usage: check-pr-title.py [TITLE]. Without an argument, the script reads `PR_TITLE` from the
-environment. The exit code is 0 for a valid title and 1 for an invalid title.
+Usage: check-pr-title.py [--strict] [TITLE]. Without a title argument, read `PR_TITLE` from the
+environment. Findings are advisory by default. With `--strict`, an invalid format exits with 1.
 """
 
 from __future__ import annotations
 
+import argparse
 import os
 from pathlib import Path
 import re
@@ -79,7 +80,11 @@ def escape(message: str) -> str:
 
 
 def main(argv: list[str]) -> int:
-    title = argv[1] if len(argv) > 1 else os.environ.get("PR_TITLE", "")
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("title", nargs="?", default=os.environ.get("PR_TITLE", ""))
+    parser.add_argument("--strict", action="store_true", help="Exit with 1 for an invalid format.")
+    options = parser.parse_args(argv[1:])
+    title = options.title
     found = problems(title, allowed_types())
     github = os.environ.get("GITHUB_ACTIONS") == "true"
     for advice in warnings(title):
@@ -87,10 +92,11 @@ def main(argv: list[str]) -> int:
               else f"Warning: {advice}")
     for problem in found:
         message = f"Invalid pull request title {title!r}: {problem}"
-        print(f"::error title=Pull request title::{escape(message)}" if github else message)
+        level = "error" if options.strict else "warning"
+        print(f"::{level} title=Pull request title::{escape(message)}" if github else message)
     if found:
         print("Refer to CONTRIBUTING.md, section \"Title Format\".")
-        return 1
+        return 1 if options.strict else 0
     print(f"The pull request title {title!r} has the correct format.")
     return 0
 

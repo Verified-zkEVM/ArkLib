@@ -27,7 +27,7 @@ jobs:
         with:
           version: "0.13.6"
           enable-cache: false
-      - name: Check the title format
+      - name: Check the title format (warnings only)
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: uv run --no-project --python 3.12 python ./scripts/check-pr-title.py

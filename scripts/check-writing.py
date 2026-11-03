@@ -87,6 +87,10 @@ BARE_THIS = re.compile(
 # "During" is a preposition, not an "-ing" form of a verb.
 ING_START = re.compile(r"^(?!During\b)[A-Z][a-z]+ing\b[^,.;:]{0,80},")
 EM_DASH = re.compile(r"—|\s–\s|\s--\s")
+FORMATTED_TERM = r"(?:``[^`]+``|`[^`]+`|\$[^$]+\$|\*\*[^*]+\*\*)"
+DEFINITION_SEPARATOR = re.compile(
+    rf"^\s*{FORMATTED_TERM}(?:\s*(?:,|and|or)\s*{FORMATTED_TERM})*"
+    r"(?:\s*\((?:[^()]|\([^()]*\))*\))*\s*(?P<dash>—|–|--)\s+")
 HISTORY_SCOPE = re.compile(r"^(?:docs/wiki/|ArkLib/|ArkLibTest/)|\.lean$")
 
 
@@ -409,9 +413,16 @@ def check_block(block: Block, general: re.Pattern[str] | None,
             f"{PARAGRAPH_LIMIT}.", counted_sentences[0])
     if ";" in plain:
         add("U1", "Do not use a semicolon. Write two sentences.", plain[plain.index(";") - 30:])
-    for match in EM_DASH.finditer(plain):
-        add("U2", "Do not join two clauses with a dash. Write two sentences.",
-            plain[max(0, match.start() - 30):match.end() + 30])
+    # A formatted term followed by a dash introduces a definition, not a clause join.
+    # Only that separator is exempt. Review the rest of the description as usual.
+    dash_text = block.text
+    definition = DEFINITION_SEPARATOR.match(dash_text)
+    if definition:
+        dash_text = dash_text[:definition.start("dash")] + " " + dash_text[definition.end("dash"):]
+    dash_plain = mask(dash_text, collapse_parentheses=False)
+    for match in EM_DASH.finditer(dash_plain):
+        add("U2", "Review this dash. If it joins clauses, write two sentences.",
+            dash_plain[max(0, match.start() - 30):match.end() + 30])
     for pattern, rule, message in (
             (LATIN, "W7", "Write the English words for this Latin abbreviation."),
             (PHRASAL, "W6", "Consider a direct verb that preserves this meaning."),

@@ -71,9 +71,26 @@ class TitleTests(unittest.TestCase):
         output = io.StringIO()
         with mock.patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "PR_TITLE": "bad %0A"}):
             with mock.patch("sys.stdout", output):
-                self.assertEqual(TITLE.main(["check-pr-title.py"]), 1)
-        self.assertIn("::error title=Pull request title::", output.getvalue())
+                self.assertEqual(TITLE.main(["check-pr-title.py"]), 0)
+        self.assertIn("::warning title=Pull request title::", output.getvalue())
+        self.assertNotIn("::error", output.getvalue())
         self.assertIn("%250A", output.getvalue())
+
+    def test_invalid_title_is_advisory_by_default(self) -> None:
+        with mock.patch("sys.stdout", io.StringIO()) as output:
+            self.assertEqual(TITLE.main(["check-pr-title.py",
+                                         "Prove native state-restoration knowledge soundness"]), 0)
+        self.assertIn("Invalid pull request title", output.getvalue())
+
+    def test_strict_title_check_fails_on_invalid_format(self) -> None:
+        with mock.patch.dict(os.environ, {"GITHUB_ACTIONS": "true"}):
+            with mock.patch("sys.stdout", io.StringIO()) as output:
+                self.assertEqual(TITLE.main(["check-pr-title.py", "--strict", "bad title"]), 1)
+        self.assertIn("::error title=Pull request title::", output.getvalue())
+
+    def test_strict_title_check_accepts_valid_format(self) -> None:
+        with mock.patch("sys.stdout", io.StringIO()):
+            self.assertEqual(TITLE.main(["check-pr-title.py", "--strict", "docs: explain the bounds"]), 0)
 
 
 def findings(text: str, path: str = "doc.md") -> list[str]:
@@ -142,6 +159,23 @@ class WritingRuleTests(unittest.TestCase):
         self.assertEqual(findings("The code is linear — it is also cyclic."), ["U2"])
         self.assertEqual(findings("The Reed–Solomon code has rate 1–2 in this range."), [])
         self.assertEqual(findings("Write `a; b` in Lean."), [])
+
+    def test_definition_separator_is_not_a_clause_join(self) -> None:
+        for dash in ["—", "–", "--"]:
+            for term in ["`Δ₀(u, v)`", "``Δ₀(u, v)``", "$\\delta$", "**Relative distance**"]:
+                with self.subTest(dash=dash, term=term):
+                    self.assertEqual(findings(f"- {term} {dash} `hammingDist u v`."), [])
+        self.assertNotIn("U2", findings("- `Λ(C, δ, f)` and `Λ(C, δ)` — write `Code.Lambda C δ`."))
+        self.assertEqual(findings("- `Gadget/` (§2.1) — the gadget matrix."), [])
+        self.assertEqual(findings("- `EvalSplit.lean` (§4, Eq. (12)) — the matrix split."), [])
+
+    def test_definition_description_is_still_checked(self) -> None:
+        self.assertEqual(findings("- `δ` — We utilize the lemma."), ["W1"])
+        self.assertEqual(findings("- `δ` — relative distance — it is bounded."), ["U2"])
+        self.assertEqual(findings("- `δ` — relative distance.\n  The code is linear — it is cyclic."), ["U2"])
+        self.assertEqual(findings("- `C` is linear — it is cyclic."), ["U2"])
+        self.assertEqual(findings("- `C` (§2.1) is linear — it is cyclic."), ["U2"])
+        self.assertEqual(findings("| Term | Description |\n|---|---|\n| `C` is linear — it is cyclic. | Bound |"), ["U2"])
 
     def test_words(self) -> None:
         self.assertEqual(findings("Use a ring, e.g. the integers."), ["W1", "W7"])

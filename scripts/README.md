@@ -39,6 +39,7 @@ This directory contains various utility scripts for the ArkLib project.
   of the entire chain. `--timing` reports per-check costs
 - **`check-docs-integrity.py`** - Check the canonical agent guide and local documentation links
 - **`check-pr-title.py`** - Check a pull request title against the format in `CONTRIBUTING.md`
+  and report advice. Use `--strict` to request a failing exit code for an invalid format.
 - **`check-writing.py`** - Report editing suggestions for changed prose, files, or a PR body.
   Counts and grammar patterns approximate the [writing standard](../docs/wiki/writing.md).
   Review each finding for context and preservation of meaning.

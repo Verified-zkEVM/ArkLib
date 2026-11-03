@@ -219,7 +219,9 @@ uv run --no-project --python 3.12 python ./scripts/check-pr-title.py "feat(fri):
 
 The writing checker exits successfully by default. `--strict` requests exit code 1 when it finds a
 match. That option does not make the findings more accurate. CI's prose check remains advisory.
+
 The title format comes from [CONTRIBUTING.md](../../CONTRIBUTING.md#title-format).
+The title check is also advisory. Pass `--strict` to request a failing exit code for an invalid format.
 
 ## Important Notes
 
@@ -346,9 +348,8 @@ python3 -m pip install leanblueprint
   checks that `AGENTS.md` exists and local markdown links resolve.
 - [`../../.github/workflows/pr-checks.yml`](../../.github/workflows/pr-checks.yml)
   runs on each pull request, also on a stacked pull request. It checks the pull request title
-  with `scripts/check-pr-title.py`, and fails on an invalid title.
-  It also runs `scripts/check-writing.py` on the changed prose and on the description. The
-  writing job reports warnings only.
+  with `scripts/check-pr-title.py`. It also runs `scripts/check-writing.py` on the changed prose
+  and on the description. Both jobs report warnings only.
 - [`../../.github/workflows/kb-generated.yml`](../../.github/workflows/kb-generated.yml)
   regenerates KB indexes and missing cited-paper stubs nightly and after pushes to `main` that
   change the bibliography, KB papers or sources, or the KB scripts. It updates one rolling PR from
