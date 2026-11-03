@@ -13,7 +13,7 @@ Start with [`README.md`](README.md) for the project overview.
 2. On a cold clone, run `lake exe cache get` first.
 3. If you add, rename, or delete files under `ArkLib/`, `git add` new paths before validation.
 4. For docstring or docs work, `./scripts/validate.sh --docs` is a convenient add-on check.
-5. Only build site or blueprint output when touching `blueprint/` or `home_page/`:
+5. Only build site or blueprint output when you change `blueprint/` or `home_page/`:
    `./scripts/validate.sh --site`.
 6. When you change proofs or admissions, or anything that must stay axiom-clean, run
    `./scripts/validate.sh --axioms`. It first certifies the sweep tool against its fixture matrix
@@ -39,7 +39,7 @@ Start with [`README.md`](README.md) for the project overview.
 - `ArkLib/Commitments/` - commitments and opening arguments.
 - `ArkLib/AGM/` - algebraic group model representations.
 - `ArkLib/ToCompPoly/` - bridges to CompPoly's computable representations.
-- `ArkLib/ToMathlib/` - local extensions intended for upstreaming.
+- `ArkLib/ToMathlib/` - local extensions intended for Mathlib.
 - `docs/design/` - normative architecture of the interaction layer.
 - `docs/kb/` - paper knowledge base: paper pages, concepts, and audits.
 - `blueprint/src/` - blueprint TeX chapters and the bibliography (`references.bib`).
@@ -62,11 +62,11 @@ Start with [`README.md`](README.md) for the project overview.
   proofs listed in `scripts/axiom_baseline.json`. Any other `sorry` in a diff is new.
 - New declarations may depend only on a subset of `propext`, `Classical.choice`, and `Quot.sound`.
   Do not add custom axioms or native-compiler trust dependencies.
-- Do not raise elaboration budgets: `set_option maxHeartbeats`, `maxRecDepth` and
-  `synthInstance.*` are rejected by the source-policy gate, as are the `linter`, `pp`, `profiler`
-  and `trace` option families. Make a slow proof cheaper instead.
-- No backward-compatibility guarantees: rename or remove a declaration by updating every caller in
-  the same PR. Avoid `@[deprecated]` aliases. Add one only with a concrete reason. See
+- Do not raise elaboration budgets. The source-policy gate rejects `set_option` for
+  `maxHeartbeats`, `maxRecDepth`, `synthInstance.*`, `linter`, `pp`, `profiler`, and `trace`.
+  Make a slow proof cheaper instead.
+- No backward-compatibility guarantees: if you rename or remove a declaration, update every caller
+  in the same PR. Avoid `@[deprecated]` aliases. Add one only with a concrete reason. See
   [`CONTRIBUTING.md`](CONTRIBUTING.md#compatibility-policy).
 - Make definitions computable wherever possible. Protocols and program/value-computing APIs must
   be executable, with code-generation and runtime evidence. Document concrete blockers for purely
@@ -75,11 +75,11 @@ Start with [`README.md`](README.md) for the project overview.
 - Prefer proof scripts that expose the key mathematical steps and compose predictably. Broad
   automation is welcome when it closes a well-scoped goal quickly and the proof stays easy to read.
   For a slow proof, profile first. Then narrow imports, local hypotheses, simp sets, or automation
-  rules, or move a recurring argument into its owner layer. Do not mechanically expand a short, stable terminal
+  rules, or move a repeated argument into its owner layer. Do not mechanically expand a short, stable terminal
   `simp` into a brittle `simp only` list.
-- Before drafting or revising prose, use [write-technical-prose.md](docs/skills/write-technical-prose.md).
+- Before you draft or revise prose, use [`write-technical-prose.md`](docs/skills/write-technical-prose.md).
   Apply it to documentation, comments, docstrings, commit messages, PR and issue text, and review
-  comments. Assess existing prose against the writing standard rather than preserving its defects.
+  comments. Assess existing prose against the writing standard and correct its defects.
 - Before you open a pull request, follow [`make-pr-ready.md`](docs/skills/make-pr-ready.md). Complete
   the [pull request template](.github/pull_request_template.md) and claim only what the code
   proves.

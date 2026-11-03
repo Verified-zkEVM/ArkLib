@@ -100,8 +100,8 @@ blanket package-root imports. The normal `lake build` loads ArkLib's Lean syntax
 rejects source-level linter suppressions in their actual parsed context.
 
 The text gate is a separate check that fails closed. It rejects `set_option` for `linter`,
-`pp`, `profiler`, `trace`, `maxHeartbeats`, `maxRecDepth`, and `synthInstance.*` everywhere in
-production source. It also rejects `nolint` attribute heads in active
+`pp`, `profiler`, `trace`, `maxHeartbeats`, `maxRecDepth`, and `synthInstance.*` in `ArkLib/` and `ArkLibTest/`,
+in comments and literals as well as active code. It also rejects `nolint` attribute heads in active
 code and in literal bodies. A quoted identifier or a syntax quotation that looks like a forbidden
 spelling also fails the gate. Put policy examples in `scripts/LintStyleFixtures`, which is outside
 the library source.
@@ -326,7 +326,7 @@ python3 -m pip install leanblueprint
   [`../../.github/workflows/release-tag.yml`](../../.github/workflows/release-tag.yml) tags a
   release when `lean-toolchain` changes on `main`.
 
-CI, import, and docs-integrity checks run automatically on pull requests, including those targeting
+CI, import, and docs-integrity checks run automatically on pull requests, even if they target
 a feature branch. A stacked PR does not require manual dispatch only because its base is not `main`.
 
 The KB bot creates its PR with `GITHUB_TOKEN`. GitHub does not start the ordinary PR workflows
@@ -345,7 +345,7 @@ gh run list --branch "$review_branch" --event workflow_dispatch \
 Confirm that each run's `headSha` matches the reviewed commit. Record the run URLs with the
 validation evidence. Dispatch can also recover checks missing from an ordinary PR.
 The Pages publisher runs only on push events. Manual dispatch does not replace local validation,
-required reviews, or eventual merge-queue checks.
+required reviews, main-target checks, or eventual merge-queue checks.
 
 Pull requests enter GitHub's merge queue after their normal review and required checks pass. The
 queue creates a temporary integration ref containing the queued changes on current `main`; the CI,

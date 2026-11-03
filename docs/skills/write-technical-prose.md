@@ -1,7 +1,7 @@
 # /write-technical-prose
 
-Use this workflow when drafting or revising ArkLib documentation, comments, docstrings, commit
-messages, PR text, issue text, or review comments. Use it for short comments as well as long guides.
+Use this workflow for ArkLib documentation, comments, docstrings, commit messages, PR text, issue
+text, and review comments. Use it for short comments as well as long guides.
 Work on the text the user requested. Writing review does not authorize unrelated source changes
 or publication.
 
@@ -9,7 +9,7 @@ or publication.
 
 Read the [writing standard](../wiki/writing.md) and [vocabulary](../wiki/writing-vocabulary.md).
 Read the relevant section of [CONTRIBUTING.md](../../CONTRIBUTING.md) for the contribution or text
-being prepared. The guide owns the requirements. This skill explains how to apply them.
+that you prepare. CONTRIBUTING owns the contribution requirements. This skill explains how to apply them.
 
 Treat existing prose as material to assess, not a style to preserve automatically. Use STE's
 writing principles to correct defects. Keep established identifiers, quotations, and technical
@@ -21,7 +21,7 @@ Do not invent a dictionary approval or claim full STE conformance from a linter 
 Read the source needed for the claims in the passage. A theorem name or a successful build alone
 does not establish a mathematical claim. Inspect the statement, its hypotheses, and the relevant
 proof or axiom evidence. Use the [statement audit](../../CONTRIBUTING.md#statement-correctness)
-when preparing a mathematical contribution for review.
+for a mathematical contribution that you prepare for review.
 
 For a PR description, distinguish the change, the checks actually run, and the remaining gaps.
 Keep output instructions separate from repository facts. A request for a draft does not establish
@@ -41,7 +41,7 @@ problem, or action the reader needs. Develop one topic in each paragraph. Add he
 and examples when they make the text easier to use.
 
 Revise the text for direct verbs, clear actors and antecedents, consistent terms, and short
-sentences. Introduce unfamiliar concepts before using them. Remove empty praise and repetition.
+sentences. Introduce unfamiliar concepts before you use them. Remove empty praise and repetition.
 Keep instructions distinct from explanations and optional advice.
 
 Compare every mathematical rewrite with its source. Keep the hypotheses, quantifiers, negations,
@@ -51,8 +51,9 @@ A shorter expression is useful only when it keeps the intended meaning.
 
 Do not let a writing rule change standard terminology. A rule can conflict with a term or language
 pattern that is standard in cryptography research and engineering, computer science, or mathematics.
-In that case, keep the standard form and apply the rules to the rest of the passage. Repository
-habit alone does not make a wording standard.
+First try a rewrite that follows the rules and keeps the technical meaning. Retain the standard
+form only if that rewrite would change the meaning. Apply the rules to the rest of the passage.
+Repository habit alone does not make a form standard.
 
 Use the vocabulary to resolve ambiguous terms, not to erase valid technical meanings.
 "Complete the template" does not claim protocol completeness. A protocol statement and a theorem
@@ -70,7 +71,7 @@ uv run --no-project --python 3.12 python scripts/check-writing.py --stdin descri
 For changed prose, pass the actual review base to `--base`. A stacked PR can have a feature branch
 as its base. Do not assume that every PR targets `main`.
 
-Read each finding before editing. Counts and grammar patterns are approximations. Correct real
+Read each finding before you edit. Counts and grammar patterns are approximations. Correct real
 defects, retain accurate technical expressions, and report a recurring checker defect with an
 example. Do not rewrite a correct claim merely to make the checker quiet.
 
@@ -85,4 +86,4 @@ A good sentence can still be wrong in its paragraph.
 
 Return or save the requested text. Publish it only when the user's instructions authorize that
 action. If the task includes a commit or push, run the validation required by the contribution
-workflow first. Report material evidence gaps without adding a standard disclaimer to every text.
+workflow first. Report material evidence gaps without a standard disclaimer on every text.

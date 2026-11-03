@@ -1,8 +1,8 @@
 # Writing Standard
 
 Use this guide to write clear technical English for ArkLib. It draws on
-ASD-STE100 Simplified Technical English (STE), Issue 9, January 2025. STE is the reference for
-improving the prose. An existing repository convention is not a reason to keep unclear writing.
+ASD-STE100 Simplified Technical English (STE), Issue 9, January 2025. STE is the reference to
+improve the prose. An existing repository convention is not a reason to keep unclear writing.
 
 The [vocabulary](writing-vocabulary.md) records technical meanings and wording to avoid.
 [CONTRIBUTING.md](../../CONTRIBUTING.md#writing) owns the contribution requirements.
@@ -10,8 +10,8 @@ The [writing skill](../skills/write-technical-prose.md) describes the editing wo
 
 ## Scope
 
-Apply this guide when you add or revise documentation, Lean comments and docstrings, commit
-messages, PR and issue descriptions, and review comments. Read the surrounding text for context.
+Use this guide for documentation, Lean comments and docstrings, commit messages, PR and issue
+descriptions, and review comments. Read the surrounding text for context.
 Correct related defects that affect the passage, but keep unrelated rewrites in a separate change.
 
 Keep formulas, identifiers, commands, source quotations, official titles, generated output, and
@@ -32,8 +32,13 @@ the meaning, rewrite the sentence or retain the necessary term and explain its t
 
 Technical accuracy takes priority over the rules in this guide. A rule can conflict with a term or
 language pattern that is standard in cryptography research and engineering, computer science, or
-mathematics. In that case, keep the standard form and apply the rules to the rest of the sentence. A
-wording that is only a habit in this repository is not a standard form.
+mathematics. First try a rewrite that follows the rules and keeps the technical meaning.
+Keep the standard form only if that rewrite would change the meaning. Apply the rules to the rest
+of the sentence. A habit of this repository does not make a form standard.
+
+Conventional mathematical openings do not receive a general V2 exception. Replace "Assuming P, we
+have …" with "Assume P. Then …", and replace "Writing f = …" with "Let f = …".
+Use the technical-accuracy priority only if such a rewrite would change the meaning.
 
 This guide is a repository adaptation, not a complete copy of STE or a claim of full STE
 conformance. It does not distribute or automatically check the official dictionary. The
@@ -60,8 +65,8 @@ standard. This guide adopts the recommendations named below as repository requir
 ### Words
 
 - **W1.** Prefer an STE-approved general word with the intended meaning and part of speech.
-  Use an established technical term when the subject requires it. Rephrase before making a
-  replacement that changes the meaning. (STE 1.1 to 1.4, 9.1, 9.2)
+  Use an established technical term when the subject requires it. Rephrase if a replacement
+  would change the meaning. (STE 1.1 to 1.4, 9.1, 9.2)
 - **W2.** Use technical terms with their stated meanings and grammatical roles. Qualify a term
   when the passage could support more than one meaning. (STE 1.5 to 1.13)
 - **W3.** Use one term for one concept within a passage. Do not rotate synonyms for variety.
@@ -75,25 +80,24 @@ standard. This guide adopts the recommendations named below as repository requir
   For example, write "find" rather than "figure out". (STE 9.3)
 - **W7.** Write English words instead of Latin abbreviations in prose. For example, write
   "for example" instead of "e.g.". Preserve official titles and source quotations. (STE GR-6)
-- **W8.** Use Oxford spelling in prose: British spelling with "-ize" endings, such as "behaviour",
+- **W8.** Prefer Oxford spelling in prose: British spelling with "-ize" endings, such as "behaviour",
   "optimization", and "analyse". American spelling is also correct. Keep one spelling within a
   file. Preserve official names, identifiers, and quotations with a different spelling. Lean
   declaration names follow the American spelling of Mathlib. (STE 1.14, 9.4)
-- **W9.** Use gender-neutral language when gender is not relevant. Use "they" for a person whose
-  pronouns you do not know. (STE GR-7)
+- **W9.** Use gender-neutral language. Use "they" for a person. (STE GR-7)
 
 ### Verbs
 
 - **V1.** Prefer simple tenses, the imperative, and the infinitive. Avoid complex verb forms
   when a simpler construction gives the same information. Preserve time and uncertainty:
   "the build may have failed" does not mean "the build failed". (STE 3.1 to 3.4, ArkLib adaptation)
-- **V2.** A verb form ending in "-ing" must act as a technical noun or modify one.
+- **V2.** A verb form in "-ing" must act as a technical noun or modify one.
   Rewrite other verbal uses. "Folding" can name a construction. "During" is a preposition,
   so this rule does not apply to it. (STE 3.5)
 - **V3.** Use the active voice. Name the person, tool, protocol participant, or mathematical
   object that performs the action. Do not invent an actor. (STE 3.6)
 - **V4.** Use the passive voice in descriptive text only when the actor is unknown. A participle
-  can describe a state without forming a passive construction: "the degree is bounded".
+  can describe a state without a passive construction: "the degree is bounded".
   (STE 3.3, 3.6)
 - **V5.** Express an action with a verb rather than an abstract noun phrase. Write
   "the verifier queries the oracle", not "the verifier performs a query to the oracle". (STE 3.7)
@@ -106,27 +110,27 @@ standard. This guide adopts the recommendations named below as repository requir
   Keep its conditions and qualifications. Use the [word-count rules](#word-count). (STE 5.1, 6.3)
 - **S2.** Give a sentence one topic. Give a work step one instruction, except for actions that
   must occur together. (STE 4.1, 5.2)
-- **S3.** Put a condition before an instruction when the reader needs it before acting.
+- **S3.** Put a condition before an instruction when the reader needs it before the action.
   For example, "If the build fails, read the log." (STE 5.4)
 - **S4.** Use the imperative for work steps. Distinguish an instruction from a requirement or a
   description. Preserve the force of "must", "may", and "can" when you revise a requirement.
   (STE 5.3, ArkLib adaptation)
 - **S5.** Keep the articles, subjects, and verbs that a sentence needs. Do not use contractions
   to shorten prose. (STE 4.2, 4.5)
-- **S6.** Connect related sentences so the reader can follow the argument. State the connection
-  rather than expecting punctuation alone to express it. (STE 4.4)
+- **S6.** Connect related sentences so the reader can follow the argument. State the connection.
+  Do not expect punctuation alone to express it. (STE 4.4)
 - **S7.** Give each pronoun a clear antecedent. After "this" or "these", name the object when
   the reference could be ambiguous. (STE GR-3, GR-4)
 - **S8.** Put instructions in the procedure, not inside a note. Readers can skip notes. Use them
-  for supporting information. (STE 5.5)
+  for additional information. (STE 5.5)
 
 ### Paragraphs and lists
 
 - **P1.** Give each paragraph one topic. Introduce that topic before its details. (STE 6.4, 6.5)
 - **P2.** Keep a paragraph to six sentences or fewer. Split it where the subject or purpose
   changes. (STE 6.6)
-- **P3.** Introduce information gradually. Define unfamiliar terms and notation before using
-  them in an explanation. (STE 6.1, 6.2)
+- **P3.** Introduce information gradually. Define unfamiliar terms and notation before you use
+  them in an explanation. (STE 6.1)
 - **L1.** Use a vertical list when it makes steps, cases, or conditions easier to distinguish.
   A short series does not always need a list. (STE 4.3)
 - **L2.** Introduce a list with a clear purpose and a colon. Each item must connect to that
@@ -146,19 +150,19 @@ standard. This guide adopts the recommendations named below as repository requir
 - **U3.** Use hyphens to group related words when that grouping makes the term clearer.
   Preserve the conventional spelling of an established technical term. (STE 8.2)
 - **U4.** Use parentheses for references, identifiers, abbreviations, explanations, or alternatives.
-  Keep information needed for an instruction in the instruction itself. (STE 8.3)
+  Keep information needed for an instruction in the instruction itself. (STE 8.3, ArkLib instruction-placement rule)
 - **U5.** Use emphasis for a term, label, warning, or specific requirement. Avoid emphasis across
   an entire paragraph. (ArkLib)
 
 ### Word count
 
-STE 8.4 to 8.7 defines word counting. Each of these elements counts as one word:
+STE 8.4 to 8.7 define the word count. Each of these elements counts as one word:
 
 - A number, or a number with its unit.
 - An abbreviation or an alphanumeric identifier.
-- Quoted text, including formulas.
+- Quoted text, which includes formulas.
 - A title or a label.
-- A proper name.
+- A proper noun of a person, group, organization, or geopolitical entity.
 - A hyphenated group.
 
 Do not add hyphens or quotation marks to hide a long sentence.
@@ -168,8 +172,8 @@ separately for sentence length. A list introduction ends at its colon for word c
 item counts separately.
 
 ArkLib groups a complete Lean expression, command, URL, or citation key as one word.
-This grouping extends STE where its quoted-text or identifier rules do not already apply.
-Ordinary link text retains its words. The checker approximates these conventions.
+This convention extends STE where its quoted-text or identifier rules do not already apply.
+Ordinary link text retains its words. A checker, when available, approximates these conventions.
 Review the actual sentence when its count is doubtful.
 
 ### Claims and source evidence
@@ -186,13 +190,13 @@ ArkLib adds these requirements to the STE principles:
   or maintained references. A reader of the merged tree must be able to find the cited source.
 - **C5.** Replace unsupported quality claims with a fact or evidence. Words such as "robust" or
   "comprehensive" do not supply that evidence.
-- **C6.** Give an argument or a precise reference instead of calling a result "obvious" or
+- **C6.** Give an argument or a precise reference and do not call a result "obvious" or
   "trivial". Established technical names such as "trivial group" remain permitted.
 - **C7.** Remove repetition that adds no useful context. Repeat a condition when the reader
   needs it at the point of use.
 - **C8.** Make the source of each mathematical claim traceable. Use the
-  [citation conventions](../../CONTRIBUTING.md#citation-standards) rather than inventing a second
-  citation policy here.
+  [citation conventions](../../CONTRIBUTING.md#citation-standards) as the source of the
+  citation policy.
 
 ### Mathematical conventions
 
@@ -225,15 +229,17 @@ its source. A shorter sentence is not an improvement if it changes the statement
 
 | Source | Use in ArkLib |
 |---|---|
-| STE 1.1 to 1.4, general vocabulary | Retained as the reference for general meanings and grammatical roles. This guide and its checker do not implement the full dictionary. |
+| STE 1.1 to 1.4, general vocabulary | Retained as the reference for general meanings and grammatical roles. This guide does not implement the full dictionary. An editing aid does not establish dictionary approval. |
 | STE 1.5 to 1.13, technical terms | Applied through the project vocabulary and established subject-field usage. |
 | STE 1.14, spelling | STE 1.14 permits another official spelling directive. ArkLib uses Oxford spelling and also accepts American spelling. Lean declaration names follow Mathlib. |
 | STE 1.7 and 1.13, noun and verb roles | STE permits dual roles when each use meets its category rules. ArkLib additionally preserves established domain usage when those rules conflict with it. An example is "query". |
-| All STE rules | Technical accuracy takes priority. Standard terminology and language patterns in cryptography, computer science, and mathematics remain when a rule conflicts with them. |
+| Technical accuracy | ArkLib policy. Keep a standard form only if a rule-compliant rewrite would change its technical meaning. Ordinary mathematical openings follow V2. |
 | STE 2 to 6, 8, and 9 | The source principles inform the rules above. Mathematical notation and the stated adaptations preserve technical meaning. |
-| STE 3.2 to 3.6 | Simple constructions remain preferred. ArkLib retains a modal or complex form when changing it would lose uncertainty or time. |
+| STE 3.1 to 3.4, verb forms and tenses | ArkLib retains a modal or complex form if a simpler form would lose uncertainty or time. |
+| STE 3.5, forms in "-ing" | Technical nouns and their modifiers are permitted. Other verbal uses need a rewrite (V2). |
+| STE 8.3, parentheses | STE gives the permitted uses. U4 adds an ArkLib instruction-placement rule. |
 | STE 7, safety instructions | Apply the relevant principle to risky operations: put the condition or instruction before an explanation of the consequence. |
-| STE general recommendations | The named recommendations are adopted here as local requirements, not represented as STE rules. |
+| STE general recommendations | This guide adopts the named recommendations as local requirements. They are not STE rules. |
 | ArkLib additions | Source evidence, history scope, citations, clause-joining dashes, and emphasis are local contribution policies. |
 
 Refer to [ASD's official Issue 9](https://www.asd-ste100.org/assets/files/ASD-STE100_ISSUE9.pdf)

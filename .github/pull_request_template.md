@@ -26,11 +26,11 @@ If `scripts/axiom_baseline.json` changes, say why.
 
 ## Validation
 
-<!-- Give the commands that you ran and the commit that you ran them on. -->
+<!-- Give each command, its result, and the commit or exact diff that it ran on. -->
 
 ## Breaking changes
 
-<!-- List each renamed, removed, or changed declaration. Write "None" if there are none. -->
+<!-- List each renamed, removed, or changed declaration. Omit this section if it does not apply. -->
 
 ## Known gaps
 
@@ -38,11 +38,11 @@ If `scripts/axiom_baseline.json` changes, say why.
 
 ## Related work
 
-<!-- `Closes #...`, the base of a stacked pull request, and each overlapping pull request. -->
+<!-- `Closes #...`, the base of a stacked pull request, and each pull request on the same target. -->
 
 ## Checklist
 
-- [ ] I searched the open pull requests and issues for overlapping work.
+- [ ] I searched the open pull requests and issues for work on the same target.
 - [ ] I did the applicable statement checks in CONTRIBUTING.md, "Statement Correctness".
 - [ ] The title and the description agree with the source and reported evidence.
 - [ ] The prose follows the writing standard.

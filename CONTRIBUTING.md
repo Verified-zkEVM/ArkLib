@@ -6,14 +6,14 @@ issues](https://github.com/Verified-zkEVM/ArkLib/issues)
 include bugs, formalization tasks, and documentation requests. Issues labeled `good first issue`
 or `help wanted` are suitable starting points.
 
-Some external results have statements in the library and proofs left open for contributors.
+Some true external results have statements in the library and proofs left open for contributors.
 [Issue #1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352) explains these solicited proofs.
 The [wiki](docs/wiki/README.md) describes repository commands and conventions.
 [AGENTS.md](AGENTS.md) gives the entry points for agent workflows.
 
 ## Before You Start
 
-### Set Up and Validate
+### Install Tools and Validate
 
 On a new clone, download the build cache. Then run the full validation:
 
@@ -24,12 +24,13 @@ lake exe cache get
 
 For a change to proofs or admissions, also run `./scripts/validate.sh --axioms`.
 The [quickstart](docs/wiki/quickstart.md) explains the checks and optional build targets.
-Use [uv](https://docs.astral.sh/uv/getting-started/installation/) for the Python commands in the
-writing workflow. Those commands select Python 3.12 and do not install a project package.
+If you use a Python command in the [prose workflow](docs/skills/write-technical-prose.md), install
+[uv](https://docs.astral.sh/uv/getting-started/installation/) first. Those commands select Python
+3.12 and do not install a project package.
 
 ### Check for Overlap
 
-Before starting a formalization, search open pull requests and issues for the same target:
+Before you start a formalization, search open pull requests and issues for the same target:
 
 ```bash
 gh pr list -R Verified-zkEVM/ArkLib --state open --search "<paper key or topic>"
@@ -42,7 +43,7 @@ explain how your work relates to it.
 
 ### Reuse Existing Definitions
 
-Search ArkLib and its dependencies before adding a definition. Generalize an existing definition
+Search ArkLib and its dependencies before you add a definition. Generalize an existing definition
 when it almost meets the need. Explain why a separate definition is necessary if generalization
 would change the intended concept. Do not add an `alias` only to match a paper's presentation.
 
@@ -51,13 +52,12 @@ the issue or PR that will add it.
 
 ### Large Contributions
 
-For a large formalization, we recommend a
+For a large formalization, we strongly encourage a
 [blueprint](https://github.com/PatrickMassot/leanblueprint) before you write the Lean code.
 Describe the results, key definitions, assumptions, and intended proof structure. Include the
 sources, dependency graph, and unresolved design choices.
 
-Open an issue or discussion for the proposal. Agree on the scope and approach before starting a
-large implementation.
+Open an issue or discussion for the proposal. Discuss the blueprint before you start the implementation.
 
 ## Pull Request Guidelines
 
@@ -98,7 +98,7 @@ Both `doc: clarify the contribution process` and `docs: clarify the contribution
 ### Description
 
 Use the [PR template](.github/pull_request_template.md). Keep the description proportional to the
-change. Omit sections that do not apply rather than inventing formalization claims for a prose edit.
+change. Omit sections that do not apply. Do not invent formalization claims for a prose edit.
 Give the reader the information needed to assess the contribution:
 
 - State the problem, the change, and its purpose.
@@ -107,7 +107,7 @@ Give the reader the information needed to assess the contribution:
 - List admissions added or closed. Give the axiom output for each headline theorem.
 - State the validation commands, their results, and the commit or exact diff they cover.
 - Identify breaking changes, renamed declarations, and affected callers.
-- Link related issues, the base of a stack, and overlapping work.
+- Link related issues, the base of a stack, and work on the same target.
 - Describe known gaps and the parts of a source that remain outside the formalization.
 
 Keep claims in the title and description consistent with the code and evidence.
@@ -120,7 +120,7 @@ review and validate each one independently.
 
 Use a stack for contributions that need several dependent PRs. Each PR must build and pass its
 validation against its stated base. Name that base in the description.
-ArkLib permits squash and rebase merges. It does not permit merging a stack as one merge commit.
+ArkLib permits squash and rebase merges. It does not permit merge commits.
 The [CI mapping](docs/wiki/quickstart.md#ci-mapping) explains automatic checks on feature-base PRs
 and when manual dispatch is necessary.
 
@@ -130,8 +130,7 @@ Use the [writing standard](docs/wiki/writing.md) for documentation, docstrings, 
 messages, PR and issue text, and review comments. It applies to all authors.
 It uses STE to correct defects in the existing prose, with stated adaptations for mathematical text.
 
-Use the [writing workflow](docs/skills/write-technical-prose.md) when drafting or revising that
-text.
+Use the [prose workflow](docs/skills/write-technical-prose.md) when you draft or revise that text.
 Keep claims, hypotheses, uncertainty, and requirement strength unchanged during a style edit.
 The vocabulary records technical meanings. It does not prohibit other meanings when their context
 is clear.
@@ -140,7 +139,7 @@ is clear.
 
 Authors remain responsible for content produced with an AI agent or another tool:
 
-- Read the headline statements and the full description before requesting review.
+- Read the headline statements and the full description before you request review.
 - Keep temporary plans, handoff notes, and session logs out of the contribution.
 - Replace inaccessible planning codes with the maintained source or an explanation.
 - Describe the current library in reference documentation. Explain the change in the commit or
@@ -155,10 +154,10 @@ Agents must keep the user's task scope and publication instructions.
 ### Review and Merge Readiness
 
 You can open a PR for review with unfinished proofs if its remaining admissions and validation
-status are clear. Before merging into `main`, it must introduce no new `sorry`/`admit` or additional
-`sorryAx` debt relative to the canonical base. Closing one gap does not offset a new admission
-elsewhere. Updating `scripts/axiom_baseline.json` cannot authorize new debt. Baseline changes record
-verified closures or renames of existing debt.
+status are clear. Before a PR merges into `main`, it must introduce no new `sorry`/`admit` or additional
+`sorryAx` debt relative to the canonical base. Closure of one gap does not offset a new admission
+elsewhere. A change to `scripts/axiom_baseline.json` cannot authorize new debt. Baseline changes record
+verified closures or renames of debt at the base.
 
 The baseline's `sorry` list is empty. Its only admitted entries are *solicited proofs*: true,
 faithfully stated external results whose research-sized proofs remain open for contributors. A
@@ -175,10 +174,10 @@ or native-compiler trust dependencies. Solicited proofs are not an exception for
 declarations.
 
 Merge readiness also requires `./scripts/validate.sh` to pass: resolve all linter/style issues,
-all production non-`sorry` warnings, and all test warnings. Fix the source rather than suppressing
-linters. For proof changes, run `./scripts/validate.sh --axioms`.
-Review the source-admission and baseline diffs against `main`. Include admissions in examples or
-default arguments that may not appear as exported declarations.
+all production non-`sorry` warnings, and all test warnings. Fix the source. Do not suppress linters.
+For proof changes, run `./scripts/validate.sh --axioms` and review the source-admission and baseline
+diffs against `main`. That review must cover admissions in examples and default arguments, which
+may not appear as exported declarations.
 
 ### Statement Correctness
 
@@ -206,7 +205,7 @@ you admit a statement, check small cases or try to find a counterexample.
 
 ### Acceptance Tests
 
-Keep compile-time examples and regression tests in `ArkLibTest/`, mirroring production paths.
+Keep compile-time examples and regression tests in `ArkLibTest/` with the same path structure as production modules.
 `lake test` builds them, and `./scripts/validate.sh` runs the test target with a zero-warning
 budget.
 Stage new tests before validation. Production modules must not import tests. Both trees share the
@@ -222,7 +221,7 @@ Make definitions computable wherever possible. Protocols, provers, verifiers, en
 decoders, samplers, and anything whose purpose is to run a program or compute a value must
 be executable. Carry the necessary representations, decision procedures, and witnesses as data.
 Do not replace an algorithm with classical choice. If the current interface lacks that data,
-redesign it or provide a verified executable implementation before calling the contribution
+redesign it or provide a verified executable implementation before you call the contribution
 merge-ready.
 
 Purely mathematical objects used in statements and proofs may remain `noncomputable` when
@@ -231,9 +230,9 @@ the module overview. Avoid blanket `noncomputable section` declarations that hid
 code-generation failures. Where executable data has a mathematical view, prove their agreement.
 
 Check code generation from a caller outside any `noncomputable section`. Then execute small concrete
-cases with independently known results, including relevant failure or boundary cases.
+cases with independently known results. Include relevant failure or boundary cases.
 
-Neither removing the keyword nor an axiom-clean theorem establishes executability: admitted bodies
+Neither removal of the keyword nor an axiom-clean theorem establishes executability. Admitted bodies
 can compile to a panic. Executable specifications permit tests that can expose mistaken or vacuous
 declarations. Those tests complement satisfiable hypotheses and correctness proofs. Executability
 alone does not establish either property. Follow [the computability
@@ -241,7 +240,7 @@ workflow](docs/skills/make-computable.md) when an audit finds a blocker.
 
 ## Style and Naming Guidelines
 
-Use the [Lean community's contribution
+We aim to follow the [Lean community's contribution
 guidelines](https://github.com/leanprover-community/leanprover-community.github.io/tree/lean4/templates/contribute).
 `./scripts/validate.sh` runs ArkLib's source-policy gate, and `lake build` rejects linter
 suppressions. Neither gate permits exceptions. The
@@ -253,7 +252,7 @@ The [Mathlib-style naming
 conventions](https://leanprover-community.github.io/contribute/naming.html)
 below are the repository standard. Consistent names give readers and tools predictable search
 terms within ArkLib and across Lean libraries. Use established mathematical terminology and
-namespace structure rather than introducing local synonyms.
+namespace structure. Do not introduce local synonyms.
 
 * **Files**: `UpperCamelCase.lean` (for example, `BinarySearch.lean`).
 * **Types and Structures**: `UpperCamelCase` (for example, `MonoidHom`, `Visualizer`).
@@ -302,15 +301,14 @@ namespace structure rather than introducing local synonyms.
   Exceptions include property suffixes like `_inj`, `_mono`, `_injective`, `_surjective`.
 * **Match the mathematical contract**: distinguish preservation (`map_add`, `map_smul`) from
   commutativity, and a `≤` bound from a `<` bound. For inverse laws, check the composition order.
-  A name describing the composed operations can explain a round-trip identity better than a
-  left/right-inverse label. When improving an existing public name, update every caller (see the
+  A name for the composed operations can explain a round-trip identity better than a
+  left/right-inverse label. When you improve an existing public name, update every caller (see the
   [compatibility policy](#compatibility-policy)).
 
 ### Variable Conventions
 
-We follow Mathlib style, adapted for algebraic code. Use the conventions below consistently. Read
-adjacent declarations to identify the intended
-mathematical role, and correct unclear local naming rather than extending it.
+We follow Mathlib style, adapted for algebraic code. The conventions below reflect repository usage.
+Read adjacent declarations when the intended mathematical role is unclear.
 
 * `u`, `v`, `w`, ...           : Universes
 * `α`, `β`, `γ`, ...            : Generic types (in non-algebraic contexts)
@@ -330,7 +328,7 @@ mathematical role, and correct unclear local naming rather than extending it.
 
 ### Symbol Naming Dictionary
 
-When translating theorem statements into names, we use standard mappings for symbols:
+To translate a theorem statement into a name, use these standard symbol names:
 
 **Logic**
 | Symbol | Name | Symbol | Name | Symbol | Name |
@@ -363,8 +361,7 @@ the argument order makes them necessary.
 * **File Length**: Keep each source file at or below 1500 lines. Divide a longer file into
   modules.
 * **Indentation**: Use 2 spaces for indentation.
-* **Headers**: Start every file with the copyright block, crediting ArkLib Contributors and naming
-  the authors. Do not add a separate AI-attribution line. List only the credited authors on the
+* **Headers**: Start every file with the copyright block, with credit to ArkLib Contributors and the authors. Do not add a separate AI-attribution line. List only the credited authors on the
   `Authors:` line. A file under `ArkLib/` then follows the module-system shape:
   ```lean
   /-
@@ -389,24 +386,24 @@ the argument order makes them necessary.
   then the module docstring, then `@[expose] public section`, as in the header above. Mark
   metaprograms (delaborators, unexpanders, elaborator helpers) `meta`, and use
   `public meta import` for their `Lean.*` and `Qq` dependencies. When a proof needs to unfold a
-  definition a dependency did not expose, add `import all M` naming the module that *declares* it.
+  definition a dependency did not expose, add `import all M` for the module that *declares* it.
   Do not write a per-declaration `@[expose]` while the blanket section is present, and do not reach
   for `backward.privateInPublic`. Files under `ArkLibTest/` stay classic on purpose. The
   error-to-fix table in [`docs/wiki/module-system.md`](docs/wiki/module-system.md) covers the
   common failures and their fixes.
 * **Operators**: Put spaces on both sides of `:`, `:=`, and infix operators. Place them before a
   line break rather than at the start of the next line.
-* **Hypotheses**: Prefer placing hypotheses to the left of the colon (for example, `(h : P) : Q`)
-  rather than using arrows (`: P → Q`) when the proof introduces them.
+* **Hypotheses**: Prefer hypotheses to the left of the colon (for example, `(h : P) : Q`)
+  rather than arrows (`: P → Q`) when the proof introduces them.
 * **Functions**: Prefer `fun x ↦ ...` over `λ x, ...`.
-* **Instances**: Use the `where` syntax for defining instances and structures.
+* **Instances**: Use the `where` syntax to define instances and structures.
 * **Binders**: Use a space after binders (for example, `∀ x,` not `∀x,`).
 * **Tactic Mode**: Place `by` at the end of the line preceding the tactic block. Indent the tactic
   block.
 * **Calculations**: In `calc` blocks, align relations.
 * **Empty Lines**: Avoid empty lines *inside* definitions or proofs.
 * **Delimiters**: Avoid parentheses where possible. Use `<|` (pipe left) and `|>` (pipe right) to
-  reduce nesting. Avoid using `;` to separate tactics unless writing short, single-line tactic
+  reduce nesting. Avoid `;` between tactics except in short, single-line tactic
   sequences.
 * **Error Messages**: In custom error or trace messages, surround interpolated data with backticks
   (inline) or place it on a new indented line.
@@ -417,8 +414,8 @@ We aim for consistent representations of equivalent statements:
 * **Standard Forms**: Use established normal forms (for example, `s.Nonempty` instead of `s ≠ ∅`) to
   enable dot notation and consistency.
 * **Inequalities with Bottom/Top**:
-    * In assumptions, prefer `x ≠ ⊥`.
-    * In conclusions, prefer the strict bound `⊥ < x`.
+    * In assumptions, use `x ≠ ⊥`, which is easier to check.
+    * In conclusions, use the strict bound `⊥ < x`, which is easier to apply.
     * Similarly for top: `x ≠ ⊤` in assumptions, `x < ⊤` in conclusions.
 
 ### Tactic Mode & Performance
@@ -429,21 +426,19 @@ We aim for consistent representations of equivalent statements:
   definition.
 * **Use automation on well-scoped goals**: `simp`, `aesop`, `grind`, `omega`, `linarith`, and
   `nlinarith` are all acceptable. They are best used as terminal steps, or after an explicit
-  transformation that leaves a clear goal. Avoid using broad automation as an intermediate step
+  transformation that leaves a clear goal. Avoid broad automation as an intermediate step
   before a tactic that depends on a particular goal shape.
-* **Profile before rewriting for speed**: For a slow proof, use Lean's profiler to locate the
+* **Profile before a proof optimization**: For a slow proof, use Lean's profiler to locate the
   expensive declaration and tactic. Then consider narrower imports, fewer local hypotheses,
   `simp only`, `grind only`, `linarith only`, or `nlinarith only`, or replace repeated search with
   a reusable structural lemma. Do not perform repository-wide mechanical tactic substitutions
-  without measured evidence. Check before/after measurements before claiming a speedup, and
-  distinguish import/loading cost from proof elaboration. Keep a short, stable proof when the
+  without measured evidence. Compare measurements before you claim a speedup.
+  Distinguish import cost from proof elaboration. Keep a short, stable proof when the
   measurements do not reveal a performance problem.
 * **Stable terminal `simp` calls**: Keep a short, stable terminal `simp` unless a change improves
   stability or measured performance. A long `simp only [...]` list can hide key lemmas and
-  complicate
-  renames. Mathlib explains
-  [squeezing simp
-  calls](https://leanprover-community.github.io/contribute/style.html#squeezing-simp-calls),
+  complicate renames. Mathlib explains
+  [squeezing simp calls](https://leanprover-community.github.io/contribute/style.html#squeezing-simp-calls),
   [nonterminal
   simplification](https://leanprover-community.github.io/extras/simp.html#non-terminal-simps),
   and [profiling slow proofs](https://leanprover-community.github.io/extras/speedup.html).
@@ -467,14 +462,14 @@ legacy layer (`ArkLib/OracleReduction/`) to the interaction layer (`ArkLib/Inter
 complete. [README.md](README.md#two-layers) describes both layers.
 
 When you rename or remove a declaration, update every caller in the same PR.
-Avoid keeping the old name as a `@[deprecated]` alias without a concrete reason. For example, a downstream project can need
+Avoid a `@[deprecated]` alias for the old name without a concrete reason. A downstream project can need
 time to migrate. State that reason in the PR.
 
 ### Documentation Standards
 
 Every definition and major theorem should have a docstring.
 
-* **Module Docstrings**: Each file should start with a `/-! ... -/` block containing a title,
+* **Module Docstrings**: Each file should start with a `/-! ... -/` block with a title,
   summary, notation, and references.
 * **Sectioning Comments**: Use `/-! ### Title -/` to structure large files into sections. These
   appear in the generated documentation.
@@ -501,7 +496,7 @@ figures. Keep module provenance brief. Link to the corresponding `docs/kb/papers
 audit for detailed statement/version correspondence, generalizations, and remaining gaps.
 Declaration and section docstrings focus on the mathematics.
 
-When referencing papers in the module docstring:
+For a paper reference in the module docstring, use these rules:
 
 * **Use citation keys in text**: Reference papers with citation keys like `[ACFY24]` rather than
   full titles or URLs.
@@ -519,8 +514,8 @@ When referencing papers in the module docstring:
   Format: `* [Author Last Name, First Initial, *Title*][citation_key]`.
 
 * **Add BibTeX entries**: All academic papers must have entries in `blueprint/src/references.bib`.
-  When adding a new paper, add the BibTeX entry, use the citation key in your Lean file, and list it
-  in the References section.
+  For a new paper, add its BibTeX entry. Use the citation key in the Lean file
+  and list the paper in the References section.
 
 * **Non-academic references**: Implementation references (GitHub repos, specifications) may include
   URLs directly in the module docstring and typically do not need BibTeX entries.
@@ -530,7 +525,7 @@ When referencing papers in the module docstring:
 ArkLib follows the principles of the [Mathlib Code of Conduct](https://github.com/leanprover-community/mathlib4/blob/master/CODE_OF_CONDUCT.md).
 
 Project participation includes contributions, issues, and discussions. Participants agree to the
-code of conduct. Treat other contributors with respect. Report unacceptable behavior to the
+code of conduct. Treat other contributors with respect. You can report unacceptable behavior to the
 maintainers.
 
 ## Licensing
