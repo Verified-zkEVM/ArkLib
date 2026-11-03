@@ -31,11 +31,20 @@ counterexample are recorded in the
   pencil: at most `e + 1` challenges whose `(n - e)`-point agreement sets each contain a
   mismatch coordinate.
 
+The root-set count is the collinearity argument of [AHIV22] and [BKS18]; [Hab25], Lemma 1,
+states it for correlated agreement. Here it replaces the `n + 1` injection in the proof of
+[GG25] Theorem 3.5.
+
 ## References
 
 - [ABF26] Arnon, Boneh, Fenzi. *Open Problems in List Decoding and Correlated Agreement*.
   2026. §4.4.
 - [GG25] Goyal-Guruswami. Definition 3.1 / Theorem 3.5 (original source).
+- [AHIV22] Ames, Hazay, Ishai, Venkitasubramaniam. *Ligero: Lightweight sublinear arguments
+  without a trusted setup*. CCS 2017.
+- [BKS18] Ben-Sasson, Kopparty, Saraf. *Worst-case to average case reductions for the distance
+  to a code*. CCC 2018.
+- [Hab25] Haböck. *A note on mutual correlated agreement for Reed-Solomon codes*. 2025.
 -/
 
 @[expose] public section
