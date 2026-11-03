@@ -61,7 +61,7 @@ standard. This guide adopts the recommendations named below as repository requir
   when the passage could support more than one meaning. (STE 1.5 to 1.13)
 - **W3.** Use one term for one concept within a passage. Do not rotate synonyms for variety.
   Introduce a different technical meaning before you use it. (STE 1.11, 9.4)
-- **W4.** Keep a multi-word noun to three words when possible. Split a dense noun group with
+- **W4.** Limit a multi-word noun to three words. Split a dense noun group with
   words such as "of", "for", or "on". Preserve established terms under W5. (STE 2.1, 2.2)
 - **W5.** Introduce a longer technical noun in full. Then use a clear shorter name, a defined
   abbreviation, or suitable hyphenation. Do not invent an abbreviation only to shorten the text.
@@ -80,10 +80,10 @@ standard. This guide adopts the recommendations named below as repository requir
 - **V1.** Prefer simple tenses, the imperative, and the infinitive. Avoid complex verb forms
   when a simpler construction gives the same information. Preserve time and uncertainty:
   "the build may have failed" does not mean "the build failed". (STE 3.1 to 3.4, ArkLib adaptation)
-- **V2.** Avoid an "-ing" verb when a finite clause is clearer. Distinguish verbs from permitted
-  technical nouns and other grammatical roles. "Folding", "remaining", and "during" are not
-  errors merely because they end in "-ing". (STE 3.5)
-- **V3.** Prefer the active voice. Name the person, tool, protocol participant, or mathematical
+- **V2.** A verb form ending in "-ing" must act as a technical noun or modify one.
+  Rewrite other verbal uses. "Folding" can name a construction. "During" is a preposition,
+  so this rule does not apply to it. (STE 3.5)
+- **V3.** Use the active voice. Name the person, tool, protocol participant, or mathematical
   object that performs the action. Do not invent an actor. (STE 3.6)
 - **V4.** Use the passive voice in descriptive text only when the actor is unknown. A participle
   can describe a state without forming a passive construction: "the degree is bounded".
@@ -134,7 +134,8 @@ standard. This guide adopts the recommendations named below as repository requir
 - **U1.** Replace a prose semicolon with an appropriate sentence boundary or conjunction.
   Do not change code punctuation. (STE 8.1)
 - **U2.** Avoid a dash between clauses. State the relationship in words or use two sentences.
-  This convention does not restrict mathematical notation. (ArkLib)
+  A dash can separate a term from its description. This convention does not restrict mathematical
+  notation. (ArkLib)
 - **U3.** Use hyphens to group related words when that grouping makes the term clearer.
   Preserve the conventional spelling of an established technical term. (STE 8.2)
 - **U4.** Use parentheses for references, identifiers, abbreviations, explanations, or alternatives.
@@ -190,15 +191,15 @@ meaning changes between mathematics, protocols, and Lean.
 
 ## Examples
 
-These examples revise contributor instructions without adding mathematical claims:
+These examples show when to revise contributor instructions and when to keep accurate wording:
 
 | Before | After | Reason |
 |---|---|---|
 | "We enthusiastically welcome contributions to ArkLib!" | Contribute a definition, proof, test, or documentation change. | State the useful action. |
 | "If there's a merge in progress, the base should be checked before proceeding." | If a merge is in progress, we recommend that you inspect its base before you continue. | Preserve the condition and recommendation, name the actor, and remove the contraction. |
-| "The build may have failed." | The build may have failed. | Retain uncertainty and past time when no shorter equivalent is available. |
-| "Complete the pull request template." | Complete the pull request template. | The ordinary verb does not claim protocol completeness. |
-| "The following are equivalent." | The following are equivalent. | Keep a conventional mathematical introduction when its reference is clear. |
+| "The build may have failed." | Keep as written. | Retain uncertainty and past time when no shorter equivalent is available. |
+| "Complete the pull request template." | Keep as written. | The ordinary verb does not claim protocol completeness. |
+| "The following are equivalent." | Keep as written. | Keep a conventional mathematical introduction when its reference is clear. |
 
 Use the [writing skill](../skills/write-technical-prose.md) to compare a mathematical rewrite with
 its source. A shorter sentence is not an improvement if it changes the statement.
