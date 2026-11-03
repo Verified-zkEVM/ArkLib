@@ -47,4 +47,3 @@ If `scripts/axiom_baseline.json` changes, say why.
 - [ ] The title and the description agree with the source and reported evidence.
 - [ ] The prose follows the writing standard.
 - [ ] The pull request contains no working files from a tool session.
-- [ ] Tool use: <!-- the tools that produced a large part of the code or the text, or "none" -->

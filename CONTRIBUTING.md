@@ -140,7 +140,6 @@ is clear.
 
 Authors remain responsible for content produced with an AI agent or another tool:
 
-- Identify tools that produced a substantial part of the code or prose.
 - Read the headline statements and the full description before requesting review.
 - Keep temporary plans, handoff notes, and session logs out of the contribution.
 - Replace inaccessible planning codes with the maintained source or an explanation.
@@ -365,7 +364,8 @@ the argument order makes them necessary.
   modules.
 * **Indentation**: Use 2 spaces for indentation.
 * **Headers**: Start every file with the copyright block, crediting ArkLib Contributors and naming
-  the authors. A file under `ArkLib/` then follows the module-system shape:
+  the authors. Do not add a separate AI-attribution line. List only the credited authors on the
+  `Authors:` line. A file under `ArkLib/` then follows the module-system shape:
   ```lean
   /-
   Copyright (c) 2026 ArkLib Contributors. All rights reserved.
