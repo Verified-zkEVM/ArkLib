@@ -190,11 +190,11 @@ ArkLib adds these requirements to the STE principles:
 "We" can refer to the author and reader in an argument. A state such as "`C` is closed under
 addition" is not an instruction or a passive action.
 
-A technical word can have noun and verb uses when both are established in the subject field. For
-example, write "a query" and "query an oracle", or "a commitment" and "commit to data". Record those
-uses separately. The dual noun and verb use is an ArkLib adaptation of STE 1.7 and 1.13. Qualify
-words such as "field", "instance", and "proof" when their meaning changes between mathematics,
-protocols, and Lean.
+A technical word can have noun and verb uses, as in "a query" and "query an oracle". STE permits
+dual roles when each use meets its category rules. ArkLib additionally preserves established domain
+usage when those rules conflict with it. Record the noun and verb uses separately. Qualify words
+such as "field", "instance", and "proof" when their meaning changes between mathematics, protocols,
+and Lean.
 
 ## Examples
 
@@ -217,7 +217,7 @@ its source. A shorter sentence is not an improvement if it changes the statement
 |---|---|
 | STE 1.1 to 1.4, general vocabulary | Retained as the reference for general meanings and grammatical roles. This guide and its checker do not implement the full dictionary. |
 | STE 1.5 to 1.13, technical terms | Applied through the project vocabulary and established subject-field usage. |
-| STE 1.7 and 1.13, noun and verb roles | Adapted. A technical word keeps its noun and verb uses when both are standard in the subject field, as in "query" and "commit". |
+| STE 1.7 and 1.13, noun and verb roles | STE permits dual roles when each use meets its category rules. ArkLib additionally preserves established domain usage when those rules conflict with it. An example is "query". |
 | All STE rules | Technical accuracy takes priority. Standard terminology and language patterns in cryptography, computer science, and mathematics remain when a rule conflicts with them. |
 | STE 2 to 6, 8, and 9 | The source principles inform the rules above. Mathematical notation and the stated adaptations preserve technical meaning. |
 | STE 3.2 to 3.6 | Simple constructions remain preferred. ArkLib retains a modal or complex form when changing it would lose uncertainty or time. |
