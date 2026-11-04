@@ -68,6 +68,11 @@ for arg in "$@"; do
   esac
 done
 
+if ! command -v uv >/dev/null 2>&1; then
+  echo "ERROR: uv is required. See CONTRIBUTING.md for Python setup." >&2
+  exit 1
+fi
+
 build_log="$(mktemp "${TMPDIR:-/tmp}/arklib-validate-build.XXXXXX")"
 cleanup() {
   rm -f "$build_log"

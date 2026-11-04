@@ -7,8 +7,8 @@ The `make-pr-ready` skill uses this script to find what a branch contributes. A 
 - Uncommitted work: the script compares the work tree, not `HEAD`, with the merge base of the
   base and `HEAD`. Thus a later edit does not hide an earlier rename or addition, and a file that
   a later change restores is not deleted.
-- A merge in progress: the work tree then contains the changes of the base. The script compares
-  the work tree with the base directly, because the base is the merge base after the merge.
+- A merge in progress: the script compares the work tree with the merge base of the selected
+  base and both parents of the pending merge. The selected base need not be the branch being merged.
 
 The CI guard for generated files compares the merge base with the head of the pull request. This
 script uses the same comparison, so it does not report a change that only the base made.
@@ -85,10 +85,10 @@ def parse_name_status(output: str) -> list[Change]:
 def merge_base(base: str) -> str:
     """Return the commit that the branch starts from, as the CI guard computes it.
 
-    During a merge in progress, the base becomes the merge base when the merge is committed.
+    During a merge, include both parents of the hypothetical merge commit.
     """
     if merge_in_progress():
-        return base
+        return git("merge-base", base, "HEAD", "MERGE_HEAD").stdout.strip()
     return git("merge-base", base, "HEAD").stdout.strip()
 
 
@@ -187,14 +187,12 @@ def check_base(base: str) -> list[str]:
         warnings.append(f"The remote {remote!r} is {url}, not {CANONICAL_REMOTE}. A fork can "
                         "have an old main branch. Fetch the canonical base and use it.")
     if merge_in_progress():
-        warnings.append("A merge is in progress. The scope is the work tree compared with the "
-                        "base. Make sure that MERGE_HEAD is the base.")
+        warnings.append("A merge is in progress. The comparison uses the merge base of the "
+                        "selected base and both parents of the pending merge.")
     return warnings
 
 
 def summary(base: str) -> None:
-    for warning in check_base(base):
-        print(f"Warning: {warning}")
     print(f"# Changed files compared with {base}")
     for change in changes(base):
         source = f" (from {change.old_path})" if change.old_path else ""
@@ -228,10 +226,11 @@ def main(argv: list[str]) -> int:
                         nargs="?", default="summary")
     parser.add_argument("--base", default="origin/main", help="the pull request base")
     args = parser.parse_args(argv[1:])
+    for warning in check_base(args.base):
+        print(f"Warning: {warning}", file=sys.stderr)
     if args.command == "summary":
         summary(args.base)
         return 0
-    check_base(args.base)
     if args.command == "files":
         for change in changes(args.base):
             print(change.path)

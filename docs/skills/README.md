@@ -21,7 +21,7 @@ After using a skill, review whether it should be updated:
 ## Available Skills
 
 - [`write-technical-prose.md`](write-technical-prose.md) - draft or revise repository prose,
-  for documentation and PR comments, with local rules and source evidence.
+  including documentation and PR comments, with local guidance and source evidence.
 
 - [`discharge-lemmas.md`](discharge-lemmas.md) - workflow for triaging, placing, stating, and
   proving `sorry`s and open proof obligations, including freezing statements against a paper

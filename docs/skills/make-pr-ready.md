@@ -12,8 +12,9 @@ When you finish, the contribution is ready for review:
 - The statements agree with their sources, and the claims agree with the axiom output.
 - The proofs are clear and have no known performance problem.
 - The branch has no non-`sorry` warnings in `ArkLib/` and no warnings in the tests.
-- The citations are correct, and `docs/kb/_generated/` is the same as on the base.
-- The prose follows the [writing standard](../wiki/writing.md).
+- The citations are correct, and generated files have no drift under CI's comparison.
+- The prose satisfies C1–C8 of the [writing standard](../wiki/writing.md).
+  Consider the advisory style rules where they improve clarity.
 - A draft description exists.
 
 A pull request can be open for review with admissions if its description lists them. Before it
@@ -44,11 +45,12 @@ This example targets `main` in the canonical repository:
 ```bash
 git fetch origin
 pr_base=origin/main
-uv run --no-project --python 3.12 python scripts/pr-scope.py summary --base "$pr_base"
+uv run --no-project --python 3.12 python scripts/pr-scope.py summary --base "${pr_base:?set pr_base in this shell}"
 ```
 
 The scope script handles uncommitted work, a merge in progress, and a deleted file that a later
-change restores. Use the same `pr_base` in every later command.
+change restores. Use the same selected base in every later command. Set `pr_base` in each new
+shell; the commands below reject an unset or empty value.
 
 Then do these steps:
 
@@ -58,8 +60,8 @@ Then do these steps:
    Both of these checks must succeed: the first must exit with 0, and the second must print nothing.
 
    ```bash
-   git merge-base --is-ancestor MERGE_HEAD "$pr_base"
-   git log --oneline MERGE_HEAD.."$pr_base"
+   git merge-base --is-ancestor MERGE_HEAD "${pr_base:?set pr_base in this shell}"
+   git log --oneline MERGE_HEAD.."${pr_base:?set pr_base in this shell}"
    ```
 
    If either check fails, the merge can contain another feature branch. Resolve its ownership
@@ -71,7 +73,8 @@ Then do these steps:
    request owns the file. Do not audit or change that file in this pass.
 5. If the section for `docs/kb/_generated/` lists a change, the first CI job fails. Run the
    restore command that the script prints, and commit the result. The command restores the files
-   that CI expects. During a merge, CI expects the files of the base, not of the merge base.
+   that CI expects. During a merge, the script includes both parents when it computes the merge
+   base against the selected review base.
 6. Report each file in the section for Markdown working files to the user. Say whether the file
    is untracked or added. Do not stage, stash, commit, or delete these files, because they are
    the working state of the author. Scratch manifests and experiments belong under `/tmp`,
@@ -165,7 +168,7 @@ declaration that the branch adds or changes:
    uncommitted changes in that comparison:
 
    ```bash
-   uv run --no-project --python 3.12 python scripts/source-trust-audit.py --base-ref "$pr_base"
+   uv run --no-project --python 3.12 python scripts/source-trust-audit.py --base-ref "${pr_base:?set pr_base in this shell}"
    ./scripts/validate.sh --axioms
    ```
 
@@ -205,13 +208,14 @@ declaration that the branch adds or changes:
    ```bash
    uv run --no-project --python 3.12 python ./scripts/kb/sync_from_bib.py
    uv run --no-project --python 3.12 python ./scripts/kb/extract_lean_citations.py
-   uv run --no-project --python 3.12 python scripts/pr-scope.py restore-generated --base "$pr_base"
+   uv run --no-project --python 3.12 python scripts/pr-scope.py restore-generated --base "${pr_base:?set pr_base in this shell}"
    ```
 
    The regenerated files also contain changes from recent merges, because `main` updates them only
    after a merge. Make sure that your keys resolve, and then restore the whole directory.
 
-A failure in `kb/lint.py` can also occur on the review base. Find its source with `git show "$pr_base:<file>"`.
+A failure in `kb/lint.py` can also occur on the review base.
+Find its source with `git show "${pr_base:?set pr_base in this shell}:<file>"`.
 If the fix is small, include it, because the failure also stops your CI.
 
 ### 5. Remove references to what the branch removed
@@ -228,7 +232,7 @@ table row also leaves stale references. A green `./scripts/validate.sh` does not
 **Paths.** Find each reference to a deleted, moved, or renamed path:
 
 ```bash
-uv run --no-project --python 3.12 python scripts/pr-scope.py stale-refs --base "$pr_base"
+uv run --no-project --python 3.12 python scripts/pr-scope.py stale-refs --base "${pr_base:?set pr_base in this shell}"
 ```
 
 Each output line gives the deleted path, the kind of match, and the line that matches. The script
@@ -317,9 +321,9 @@ location such as `§4.5` or `[NOZ26] Lemma 8` is correct in a module docstring.
 
 **History text.** A declaration name or a docstring describes the present code, as rule C3 of the
 writing standard requires. Examples of history text are `old_of_new`, "used to", "no longer", "is
-now proved", and "as before the change". The writing check in step 7 reports selected history terms in supported paths. Read the text as well.
-Keep
-the fact, and remove the history.
+now proved", and "as before the change". The writing check in step 7 reports selected history
+terms in supported paths. Read the context before editing: keep the fact and remove only history
+that does not belong in that document.
 
 **Status pages.** A page under `ArkLib/` that a person maintains, such as
 `Hachi/hachi-overview.html`, contains counts that no script updates. Calculate each count again
@@ -354,16 +358,19 @@ comments. Read the passages in context and compare claims with their sources.
 Use the actual `pr_base` selected in step 0 for every comparison:
 
 ```bash
-uv run --no-project --python 3.12 python scripts/check-writing.py --base "$pr_base"
+set -euo pipefail
+uv run --no-project --python 3.12 python scripts/check-writing.py --base "${pr_base:?set pr_base in this shell}"
 uv run --no-project --python 3.12 python scripts/check-writing.py --stdin description < /tmp/pr-description.md
-git log --format=%B "$pr_base"..HEAD | uv run --no-project --python 3.12 python scripts/check-writing.py --stdin commits
+git log --format=%B "${pr_base:?set pr_base in this shell}"..HEAD |
+  uv run --no-project --python 3.12 python scripts/check-writing.py --stdin commits
 uv run --no-project --python 3.12 python scripts/check-pr-title.py '<type>(<scope>): <subject>'
 ```
 
 The prose checker reads affected paragraphs, list items, or table cells, not only the added words.
-Read each finding before you edit. A match can be a false positive. The checker does not establish
-clarity, STE dictionary compliance, or fidelity to the source. Complete the reading pass in the
-prose workflow before you return the draft.
+Its findings are advisory. Read the old and new paragraphs side by side and preserve their meaning,
+scope, and requirement strength. A warning does not justify a worse rewrite. The checker cannot
+establish clarity, subject attribution, dictionary approval, or fidelity to the source. Complete the
+manual claim checks and the paragraph review before returning the draft.
 
 ### 8. Improve the skill when needed
 
@@ -391,8 +398,8 @@ Do not call the pull request ready to merge until each of these conditions is tr
 ## Gotchas
 
 - **Scope during a merge**: a three-dot diff can include changes from the base. Use the scope
-  script's comparison for staged and unstaged work. Confirm that `pr_base` is the intended
-  canonical base.
+  script's comparison, which includes committed, staged, and unstaged work. Confirm that `pr_base`
+  is the intended review base.
 - **Sibling branches**: a merged feature branch can contribute files that this PR does not own.
   Identify their owner before you edit them. A similar file name does not establish ownership.
 - **Generated files**: a restore from the latest base can create drift relative to the merge base. Use `pr-scope.py restore-generated`. A large staged restoration does not itself mean

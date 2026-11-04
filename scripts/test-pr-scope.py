@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import contextlib
 import importlib.util
+import io
 import os
 from pathlib import Path
 import subprocess
@@ -63,6 +64,31 @@ def commit(message: str = "change") -> None:
 
 
 class ScopeTests(unittest.TestCase):
+    def test_parent_merge_uses_hypothetical_merge_base_for_generated_files(self) -> None:
+        generated = 'docs/kb/_generated/refs.json'
+        with repository({generated: '{}\n', 'a.lean': 'base\n'}):
+            run('checkout', '-q', '-b', 'parent', 'main')
+            write('parent.lean', 'parent\n')
+            commit('parent work')
+            run('checkout', '-q', 'topic')
+            write('a.lean', 'topic\n')
+            commit('topic work')
+            run('checkout', '-q', 'main')
+            write(generated, '{"main": 1}\n')
+            commit('refresh on main')
+            run('update-ref', 'refs/remotes/origin/main', 'main')
+            run('checkout', '-q', 'topic')
+            run('merge', '--no-commit', '--no-ff', '-q', 'parent')
+            SCOPE.restore_generated('origin/main')
+            self.assertEqual(Path(generated).read_text(), '{}\n')
+            with mock.patch('sys.stderr', io.StringIO()) as warnings:
+                SCOPE.main(['pr-scope.py', 'deleted', '--base', 'origin/main'])
+            self.assertIn('merge is in progress', warnings.getvalue())
+            run('commit', '-q', '--no-edit')
+            output = subprocess.check_output(
+                ['git', 'diff', '--name-only', 'origin/main...HEAD', '--', generated], text=True)
+            self.assertEqual(output, '')
+
     def test_quoted_paths_are_literal_in_scope_reports(self) -> None:
         old, new = 'old café.lean', 'new name.lean'
         with repository({old: 'same content\n', 'gone é.md': 'gone\n'}):

@@ -193,6 +193,21 @@ is not installed. If blueprint output matters, install it first:
 python3 -m pip install leanblueprint
 ```
 
+### Pull request scope and generated files
+
+The scope tool compares the tracked work tree, including committed and uncommitted changes, with
+the merge base for the selected review base. Use the PR's actual target branch in a stack.
+For a PR targeting `main`:
+
+```bash
+uv run --no-project --python 3.12 python scripts/pr-scope.py summary --base origin/main
+```
+
+During a pending merge, the comparison accounts for both parents and the selected review base.
+Every command prints the merge warning. If generated KB files drift, the summary gives a
+`restore-generated` command that restores from CI's comparison source, rather than the latest
+version of `main`. The [PR preparation workflow](../skills/make-pr-ready.md) explains the audit.
+
 ### Prose, titles, and pull request descriptions
 
 Use the [writing workflow](../skills/write-technical-prose.md) for documentation, comments,
@@ -363,6 +378,9 @@ python3 -m pip install leanblueprint
   runs on each pull request, also on a stacked pull request. It checks the pull request title
   with `scripts/check-pr-title.py`. It also runs `scripts/check-writing.py` on the changed prose
   and on the description. Both jobs report warnings only.
+  This workflow is advisory, not a required merge check. It has no merge-queue or manual-dispatch
+  trigger. Findings do not block a merge. Tool or configuration errors still fail the job.
+  Prose findings also appear in the job summary, including those beyond the annotation display limit.
 - [`../../.github/workflows/kb-generated.yml`](../../.github/workflows/kb-generated.yml)
   regenerates KB indexes and missing cited-paper stubs nightly and after pushes to `main` that
   change the bibliography, KB papers or sources, or the KB scripts. It updates one rolling PR from

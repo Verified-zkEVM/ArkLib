@@ -3,20 +3,21 @@
 
 The standard is `docs/wiki/writing.md`. This script reports patterns that a search can find:
 
-- S1: sentence length (20 words in a numbered list item, 25 words elsewhere)
+- S1: sentence length (20 words in agent/skill instructions and checklists, 25 elsewhere)
 - P2: more than six sentences in a paragraph
 - U1: semicolons, and U2: em dashes that join clauses
 - W6: phrasal verbs, and W7: Latin abbreviations
 - S5: contractions
 - V1: perfect and progressive verb forms
-- V2: introductory "-ing" clauses and "-ing" forms after a preposition
+- V2: selected introductory clauses for manual review of their understood subject
 - S7: a sentence that starts with "This" or "These" and a verb, with no noun
 - Vocabulary: the words to avoid in `docs/wiki/writing-vocabulary.md`.
 
 Review applies the standard to each finding and to rules that need judgment. Extraction, word
-counts, and verb patterns are approximations. The checker uses the procedural limit for numbered
-lists. Review their actual purpose. It exempts license text, quotations, code, formulas, headings,
-and HTML comments. It does not establish dictionary approval or preservation of meaning.
+counts, and verb patterns are approximations. Known workflow paths and checklist items use the
+procedural estimate. Other prose uses the descriptive estimate; numbering alone does not choose
+the text type. Review each sentence's actual purpose. The checker exempts license text, quotations,
+code, formulas, headings, and HTML comments. It does not establish dictionary approval or meaning.
 
 The checker does not flag "now" and "new" alone, because both have ordinary meanings.
 
@@ -36,6 +37,7 @@ Non-UTF-8 source input and dangling symlinks produce advisory Input diagnostics.
 from __future__ import annotations
 
 import argparse
+import html
 from dataclasses import dataclass
 import os
 from pathlib import Path
@@ -81,6 +83,7 @@ MODAL_BEFORE = re.compile(r"\b(?:may|might|could|would|should|must|can|will)(?:\
 POSSESSED_ADJECTIVES = {"bounded", "unbounded", "fixed", "nested", "ordered", "distributed",
                         "prescribed", "limited", "mixed", "balanced", "weighted", "labeled", "labelled",
                         "sorted", "indexed", "typed", "isolated", "repeated", "related", "named"}
+NOT_PARTICIPLES = {"seed", "indeed", "speed", "need"}
 NOT_PROGRESSIVE = {"nothing", "something", "anything", "everything", "missing", "remaining",
                    "string", "strings", "ring", "rings", "thing", "things", "during", "padding",
                    "binding", "encoding", "decoding", "folding", "batching", "hashing",
@@ -94,14 +97,13 @@ PROGRESSIVE = re.compile(r"\b(?:is|are|was|were|be|been)\s+(\w+ing)\b", re.IGNOR
 BARE_THIS = re.compile(
     r"^(?:This|These)\s+(?:is|are|was|were|means|makes|ensures|lets|gives|shows|allows|"
     r"requires|keeps|fixes|adds|avoids|matches|also|will|can)\b")
-# "During" is a preposition, not an "-ing" form of a verb.
+# An introductory form can merit a subject-attribution review; its spelling alone proves nothing.
 ING_START = re.compile(r"^(?!During\b)[A-Z][a-z]+ing\b[^,.;:]{0,80},")
-PREPOSITION_ING = re.compile(
-    r"\b(?:after|before|by|for|from|in|of|on|through|to|upon|with|without|when|while|than|as)"
-    r"\s+(?:not\s+)?(?P<form>[A-Za-z]+ing)\b", re.IGNORECASE)
 NON_VERBAL_WORDS = {"nothing", "something", "anything", "everything", "during", "missing",
                     "remaining", "string", "strings", "ring", "rings", "thing", "things",
-                    "hamming", "turing"}
+                    "hamming", "turing", "bring", "morning", "evening", "spring",
+                    "existing", "recurring", "resulting", "following", "preceding",
+                    "corresponding", "surrounding", "underlying"}
 EM_DASH = re.compile(r"—|\s–\s|\s--\s")
 FORMATTED_TERM = r"(?:\[[^\]]+\]\((?:[^()]|\([^()]*\))*\)|``[^`]+``|`[^`]+`|\$[^$]+\$|\*\*[^*]+\*\*)"
 DEFINITION_SEPARATOR = re.compile(
@@ -140,7 +142,7 @@ def avoid_words(vocabulary: Path = VOCABULARY) -> tuple[list[str], list[str]]:
     second column names rule C3 gives history words, which apply only to library text.
     """
     text = vocabulary.read_text(encoding="utf-8")
-    table = text[text.index("## Words to avoid"):]
+    table = vocabulary_section(text, "Words to avoid")
     general: list[str] = []
     history: list[str] = []
     for row in table.splitlines():
@@ -155,21 +157,42 @@ def avoid_words(vocabulary: Path = VOCABULARY) -> tuple[list[str], list[str]]:
     return general, history
 
 
+def vocabulary_section(text: str, title: str) -> str:
+    """Read a named Markdown section, including numbered or nested headings."""
+    headings = list(re.finditer(r"^(#{1,6})\s+(.*?)\s*#*\s*$", text, re.MULTILINE))
+    for index, heading in enumerate(headings):
+        name = re.sub(r"^\d+(?:\.\d+)*[.)]?\s+", "", heading.group(2))
+        if name.casefold() != title.casefold():
+            continue
+        end = next((other.start() for other in headings[index + 1:]
+                    if len(other.group(1)) <= len(heading.group(1))), len(text))
+        return text[heading.end():end]
+    raise ValueError(f"missing vocabulary section: {title}")
+
+
 def technical_ing_nouns(vocabulary: Path = VOCABULARY) -> set[str]:
-    """Read the technical -ing terms in the vocabulary's dedicated table."""
-    text = vocabulary.read_text(encoding="utf-8")
-    section = re.search(r"^## Technical -ing nouns\s*$", text, re.MULTILINE)
-    if section is None:
-        return set()
-    body = re.split(r"^## ", text[section.end():], maxsplit=1, flags=re.MULTILINE)[0]
+    """Read complete technical terms; a phrase does not exempt its words everywhere."""
+    body = vocabulary_section(vocabulary.read_text(encoding="utf-8"), "Technical -ing nouns")
     result: set[str] = set()
     for row in body.splitlines():
         if not row.lstrip().startswith("|"):
             continue
         first = row.strip().strip("|").split("|", 1)[0]
         for term in re.findall(r"`([^`]+)`", first):
-            result.update(word.lower() for word in re.findall(r"\b[A-Za-z]+ing\b", term))
+            if re.search(r"\b[A-Za-z]+ing\b", term):
+                result.add(" ".join(term.casefold().split()))
     return result
+
+
+def technical_opening(sentence: str, terms: set[str]) -> bool:
+    return any(re.match(r"(?<!\w)" + r"\s+".join(re.escape(word) for word in term.split())
+                        + r"(?!\w)", sentence, re.IGNORECASE) for term in terms)
+
+
+def conventional_opening(sentence: str) -> bool:
+    """Recognize permitted expository forms without claiming to parse their meaning."""
+    return (sentence.startswith("Assuming ") or bool(re.match(r"Writing\s+[^,]+?=", sentence))
+            or bool(re.search(r",\s+(?:we|I|you)\b", sentence, re.IGNORECASE)))
 
 
 def word_pattern(words: list[str]) -> re.Pattern[str] | None:
@@ -196,7 +219,7 @@ LIST_ITEM = re.compile(r"^(\s*)(?:[-*+]|(\d+)[.)])\s+(.*)$")
 
 
 def strip_html_comments(text: str, inside: bool, visible: str) -> tuple[str, bool]:
-    """Remove HTML comments on one line and retain code spans and character positions."""
+    """Remove HTML comments on one line, retaining code spans and character positions."""
     result = list(text)
     index = 0
     while index < len(text):
@@ -231,6 +254,7 @@ def markdown_blocks(path: str, text: str, first_line: int = 1) -> list[Block]:
     legal_section: int | None = None
     comment = False
     list_context = False
+    procedural_context = (Path(path).name == "AGENTS.md" or "/docs/skills/" in "/" + path)
     lines = text.split("\n")
     visible_lines = CODE_SPAN.sub(lambda m: blank(m.group(), True), text).split("\n")
 
@@ -265,7 +289,8 @@ def markdown_blocks(path: str, text: str, first_line: int = 1) -> list[Block]:
             flush()
             fence = (opening.group()[0], len(opening.group()))
             continue
-        if raw.startswith(("    ", "\t")) and not current and not comment and not list_context:
+        if (not path.endswith(".lean") and raw.startswith(("    ", "\t"))
+                and not current and not comment and not list_context):
             continue
         raw, comment = strip_html_comments(raw, comment, visible_lines[offset])
         stripped = raw.strip()
@@ -303,7 +328,7 @@ def markdown_blocks(path: str, text: str, first_line: int = 1) -> list[Block]:
             flush()
             list_context = True
             start = number
-            procedural = item.group(2) is not None
+            procedural = procedural_context or bool(re.match(r"\[[ xX]\]\s", item.group(3)))
             paragraph = False
             current.append(item.group(3))
             last = number
@@ -312,7 +337,7 @@ def markdown_blocks(path: str, text: str, first_line: int = 1) -> list[Block]:
             list_context = False
         if not current:
             start = number
-            procedural = False
+            procedural = procedural_context
             paragraph = True
         current.append(stripped)
         last = number
@@ -422,7 +447,7 @@ def file_blocks(path: str, text: str) -> list[Block]:
 
 
 def blank(text: str, token: bool = False) -> str:
-    """Hide content and preserve its length and newline positions."""
+    """Hide content without changing its length or newline positions."""
     result = re.sub(r"[^\r\n]", " ", text)
     if token:
         positions = [i for i, char in enumerate(result) if char == " "]
@@ -435,7 +460,7 @@ def blank(text: str, token: bool = False) -> str:
 def mask(text: str, collapse_parentheses: bool,
          parentheticals: list[str] | None = None,
          parenthetical_offsets: list[int] | None = None) -> str:
-    """Mask exempt elements with one word and preserve source offsets and newlines."""
+    """Mask exempt elements with one word, preserving source offsets and newlines."""
     text = CODE_SPAN.sub(lambda m: blank(m.group(), True), text)
     for pattern, token in (
             (r"\$\$.*?\$\$|\$[^$]+\$", True),
@@ -467,7 +492,7 @@ def mask(text: str, collapse_parentheses: bool,
 
 
 def sentence_spans(text: str) -> list[tuple[int, int]]:
-    """Return sentence spans in the supplied text with their source offsets."""
+    """Return sentence spans in the supplied text without losing source offsets."""
     spans: list[tuple[int, int]] = []
     start = 0
     boundaries = list(re.finditer(
@@ -552,7 +577,8 @@ def check_block(block: Block, general: re.Pattern[str] | None,
     for match in PERFECT.finditer(plain):
         hedged = MODAL_BEFORE.search(plain[:match.start()])
         possession = POSSESSED_PHRASES.match(plain, match.start(1))
-        if match.group(1).lower() not in POSSESSED_ADJECTIVES and not hedged and not possession:
+        if (match.group(1).lower() not in POSSESSED_ADJECTIVES | NOT_PARTICIPLES
+                and not hedged and not possession):
             add("V1", "Prefer a simple tense if it preserves time and uncertainty.",
                 match.start(), match.end())
     for match in PROGRESSIVE.finditer(plain):
@@ -562,20 +588,16 @@ def check_block(block: Block, general: re.Pattern[str] | None,
     if history is not None and HISTORY_SCOPE.search(block.path):
         for match in history.finditer(plain):
             add("C3", "Describe the present state, not the history.", match.start(), match.end())
-    allowed_ings = NON_VERBAL_WORDS | (technical_ings or set())
-    for match in PREPOSITION_ING.finditer(plain):
-        form = match.group("form")
-        if form.isupper() or form.lower().endswith("string"):
-            continue  # Acronyms, file labels, and string nouns are not verb inflections.
-        if form.lower() not in allowed_ings:
-            add("V2", "Use a finite clause unless this is a technical noun or part of one.",
-                match.start("form"), match.end("form"))
     for start, end in sentence_spans(plain):
         sentence = plain[start:end]
         if BARE_THIS.match(sentence):
             add("S7", "Name the noun if this reference is ambiguous.", start, end)
-        if ING_START.match(sentence) and re.match(r"\w+", sentence).group().lower() not in allowed_ings:
-            add("V2", "Review this possible verb clause. A finite clause can be clearer.", start, end)
+        if (ING_START.match(sentence)
+                and re.match(r"\w+", sentence).group().casefold() not in NON_VERBAL_WORDS
+                and not technical_opening(sentence, technical_ings or set())
+                and not conventional_opening(sentence)):
+            add("V2", "Review whether this opening attributes the action to the intended subject.",
+                start, end)
     return found
 
 
@@ -621,7 +643,8 @@ def added_lines(base: str) -> dict[str, set[int]]:
         if not checked_path(path):
             continue
         paths = (source, path) if status[0] in "RC" else (path,)
-        diff = git("--literal-pathspecs", "diff", *options, "--text", "--unified=0", "--no-color",
+        diff = git("--literal-pathspecs", "diff", *options, "--text", "--unified=0",
+                   "--inter-hunk-context=0", "--no-color",
                    merge_base, "--", *paths)
         lines = result.setdefault(path, set())
         for hunk in re.finditer(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@", diff, re.MULTILINE):
@@ -632,16 +655,16 @@ def added_lines(base: str) -> dict[str, set[int]]:
 
 
 def read_source(path: Path, label: str, diagnostics: list[Finding]) -> str | None:
-    """Report unsupported source input as advisory data. Continue the other file checks."""
+    """Report unsupported source input as advisory data, retaining other file checks."""
+    if path.is_symlink():
+        diagnostics.append(Finding(label, 1, "Input",
+                                   "This is a symlink. Check its target separately as a source file.", ""))
+        return None
     try:
         return path.read_text(encoding="utf-8")
     except UnicodeDecodeError as error:
         line = error.object.count(b"\n", 0, error.start) + 1
         diagnostics.append(Finding(label, line, "Input", "This file is not UTF-8. Prose was not checked.", ""))
-    except FileNotFoundError:
-        if not path.is_symlink():
-            raise
-        diagnostics.append(Finding(label, 1, "Input", "This symlink has no target. Prose was not checked.", ""))
     return None
 
 
@@ -679,6 +702,13 @@ def report(found: list[Finding], github: bool, label_is_file: bool) -> None:
     summary = (f"{len(found)} writing problem(s) for rules {', '.join(rules)}. Refer to "
                "docs/wiki/writing.md." if found else "No writing problems found.")
     print(summary)
+    summary_path = os.environ.get("GITHUB_STEP_SUMMARY") if github else None
+    if summary_path:
+        lines = [f"{item.path}:{item.line}: [{item.rule}] {item.message} {item.excerpt!r}"
+                 for item in found]
+        with open(summary_path, "a", encoding="utf-8", errors="backslashreplace") as output:
+            output.write("\n### Writing check\n\n" + html.escape(summary) + "\n\n<pre>" +
+                         html.escape("\n".join(lines)) + "</pre>\n")
 
 
 def main(argv: list[str]) -> int:

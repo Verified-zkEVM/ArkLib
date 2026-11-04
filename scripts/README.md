@@ -43,12 +43,13 @@ This directory contains various utility scripts for the ArkLib project.
 - **`check-writing.py`** - Report editing suggestions for changed prose, files, or a PR body.
   Counts and grammar patterns approximate the [writing standard](../docs/wiki/writing.md).
   Review each finding for context and preservation of meaning.
-  Non-UTF-8 source input and dangling symlinks give advisory input diagnostics.
+  Non-UTF-8 input and symlink sources give advisory input diagnostics; targets are not followed.
   Git and configuration errors fail the command.
 - **`test-pr-checks.py`** - Tests for the title check and the writing check
 - **`pr-scope.py`** - Report what a branch contributes against its pull request base, with
   uncommitted work, merges in progress, generated-file drift, and stale references to deleted
-  paths. Its `restore-generated` command restores the generated KB files that CI expects
+  paths. Its `restore-generated` command restores the generated KB files that CI expects.
+  During a merge, that comparison accounts for the selected base and both pending parents.
 - **`test-pr-scope.py`** - Tests for `pr-scope.py` on temporary Git repositories
 - **`LintStyle.lean`** and **`LintStyle/Checks.lean`** (`lake exe lint-style`) - Lean-native,
   exception-free source policy, including import discipline, whitespace, headers, line/file size,
