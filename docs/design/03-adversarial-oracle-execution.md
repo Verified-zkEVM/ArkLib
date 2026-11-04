@@ -260,7 +260,8 @@ suffix, including any access restrictions or runtime invariants they rely on.
 
 ### 4.5 Access and query budgets
 
-The route-access and cost theorems in `Data/OracleComp/QueryBounds` apply to the same `simulateQ`
+The route-access and cost theorems in VCVio’s `CostModel` and
+`AllQueriesSatisfy.simulateQ` APIs apply to the same `simulateQ`
 program. Access checks every query in the authored program and in each allowed query's route.
 Canonical prefix names connect source tags to the input queries and oracle sends already available.
 A resource name assigned by an arbitrary classifier is not evidence of access. The two-send client

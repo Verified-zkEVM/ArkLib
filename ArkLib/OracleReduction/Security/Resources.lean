@@ -6,7 +6,7 @@ Authors: Alexander Hicks
 module
 
 public import ArkLib.OracleReduction.Security.Basic
-public import ArkLib.Data.OracleComp.MeasuredProgram
+public import VCVio.OracleComp.QueryTracking.MeasuredProgram
 
 /-!
 # Knowledge soundness with measured extraction

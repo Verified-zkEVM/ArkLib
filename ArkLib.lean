@@ -616,9 +616,6 @@ public import ArkLib.Data.MvPolynomial.WeightedDegree.Products
 public import ArkLib.Data.MvPolynomial.WeightedHomogeneous
 public import ArkLib.Data.MvPolynomial.WeightedOrder
 public import ArkLib.Data.Nat.BitSum
-public import ArkLib.Data.OracleComp.DeterminedCost
-public import ArkLib.Data.OracleComp.MeasuredProgram
-public import ArkLib.Data.OracleComp.QueryBounds
 public import ArkLib.Data.Polynomial.AffineFactorBadChallenge
 public import ArkLib.Data.Polynomial.BinaryTrace
 public import ArkLib.Data.Polynomial.BinaryTraceQuotient

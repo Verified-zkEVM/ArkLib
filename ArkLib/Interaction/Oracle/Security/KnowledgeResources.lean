@@ -6,7 +6,7 @@ Authors: Alexander Hicks
 module
 
 public import ArkLib.Interaction.Oracle.Security.Knowledge
-public import ArkLib.Data.OracleComp.MeasuredProgram
+public import VCVio.OracleComp.QueryTracking.MeasuredProgram
 
 /-!
 # Knowledge certificates with measured stages

@@ -3,7 +3,7 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Quang Dao
 -/
-import ArkLib.Data.OracleComp.MeasuredProgram
+import VCVio.OracleComp.QueryTracking.MeasuredProgram
 
 /-! A shared measured program for one charged addition on a view of the input. -/
 
