@@ -20,7 +20,7 @@ world state and query history continue across the boundary.
 
 | Your question | Read |
 |---|---|
-| What is implemented and proved on main? | [Current status](00-current-status.md) |
+| What is implemented and proved on `main`? | [Current status](00-current-status.md) |
 | What should we implement next, and how will we check it? | [Roadmap](05-roadmap.md) |
 | What does the full framework aim to cover? | [End state](00-end-state.md) |
 | What does an oracle reduction return, and how do reductions compose? | [Claims, closing, and composition](02-oracle-reduction-core.md) |
@@ -44,7 +44,7 @@ implementation schedule.
 | [Claims, closing, and composition](02-oracle-reduction-core.md) | Output interfaces, their interpretation, and execution conditions for composition |
 | [Execution and security](03-adversarial-oracle-execution.md) | Persistent worlds, security events, probability premises, extraction, and costs |
 | [Extractor efficiency](03a-extractor-efficiency.md) | The implemented unbounded-game and measured-operation contracts for named extractors, the obligations of each extractor-bearing notion, and FRI and Toy requirements |
-| [Extractor execution backends](03b-extractor-execution.md) | Proposed complete execution bounds, backend requirements, and uniform families for extractors |
+| [Extractor execution backends](03b-extractor-execution.md) | Proposed complete execution bounds, backend requirements, and security-parameter families for extractors |
 | [Oracle-elimination compiler](04-oracle-elimination-compiler.md) | Backend obligations and how compilation preserves oracle guarantees |
 | [Roadmap](05-roadmap.md) | Remaining interaction-layer work, dependencies, acceptance checks, and issue links |
 

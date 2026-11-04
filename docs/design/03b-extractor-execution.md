@@ -1,168 +1,212 @@
 # Extractor execution backends
 
-**Required later; backend route proposed.** This chapter specifies complete execution bounds for
-a named extractor. They turn the operation counts of the
-[measured contract](03a-extractor-efficiency.md#the-measured-operation-contract) into a running
-time in a declared computational model. E3 is required for unqualified efficient-extraction claims
-and is scheduled after the interaction-layer soundness contracts and their composition. E3a's algebraic
-backend is the proposed route to it; another execution model with a reviewed adequacy argument can
-replace it. E7's uniform families wait for a consumer. The
-[efficiency chapter](03a-extractor-efficiency.md) owns the games, the measured contract and the
-FRI/Toy requirements; the [roadmap](05-roadmap.md#extractor-efficiency-repair) owns order and
-acceptance checks. All API names below are proposals.
+**Required later; backend route proposed.** E3 adds complete execution bounds to the
+[measured-operation contract](03a-extractor-efficiency.md#the-measured-operation-contract).
+Operation counts alone do not give running time. This chapter specifies the missing execution
+certificate; the [roadmap](05-roadmap.md#extractor-efficiency-repair) owns its order and milestone
+legend. New ArkLib execution-contract names below are proposals.
 
-Two kinds of evidence stay distinct throughout. A reviewed adequacy argument explains why a
-backend's primitives, representations and charges are appropriate. A proved correspondence to a
-standard machine is a theorem. The initial backend supplies the first, not the second.
+## Cost layers and evidence
 
-## Realized execution
+The resource layer is independent of two axes: **worst-case/all-path versus expected cost**, and
+**concrete parameter bounds versus asymptotic family bounds**. State the quantifier and growth
+policy for every claim; papers use different choices. The status column concerns current ArkLib
+extractor certificates, not the availability of models or libraries elsewhere. Existing E2
+certificates give concrete all-path counts; the [expected-time route](#expected-time-rewinding-and-tree-acquisition)
+needs separate probabilistic evidence.
 
-The proposed `knowledgeSoundnessWithin` additionally requires a quantitative realization of the
-same extractor program, a fixed representation boundary, and a concrete run bound. PolyFun/VCVio
-supplies the quantitative interface, but an algebraic execution backend still needs to be built.
-The concrete cslib backend uses a single-tape Turing machine over Boolean-string encodings;
-the generic word-class adapter does not supply field-operation code or semantics.
+| Layer | Units and scope | Evidence for a claim at this layer | ArkLib extractor status |
+|---|---|---|---|
+| Selected-operation profile (E2) | Ordinary natural counts per declared instruction kind; excludes uncharged host work | Named program, actual handlers, extractor output agreement and its all-path count bound | FRI extractor certificate implemented; native stage/path API validated by fixtures, no production client |
+| Complete algebraic execution (E3) | Declared field/control/storage steps plus separately bounded encoded code/data bits and setup | Named backend code, semantic agreement, complete execution/access/termination bounds and reviewed primitive adequacy | Pending |
+| Bit or fixed-word execution | Bit operations or machine-word instructions with fixed operand/encoding sizes | A direct bound for the named implementation, or proved primitive/representation/cost simulation including overhead | No extractor certificate or bridge here |
+| Physical execution | Platform cycles/time and memory on specified hardware/runtime | A direct bound under stated platform/runtime assumptions, or compiler/runtime/platform cost correspondence from a lower-level model | No extractor certificate or bridge here |
 
-E3a therefore builds a generic algebraic code type with execution and cost semantics, connected
-to the existing quantitative layer. A deep embedding is appropriate for that backend: it makes
-the operations between oracle queries visible to the cost semantics. Avoid a protocol-specific
-language or a duplicate realizability framework. Gate the backend on realizing one actual FRI
-fold-consistency check, proving its output agreement and its execution bound before generalizing.
-Put the backend in PolyFun, with the crypto-facing adapter in VCVio as needed. If upstream work
-cannot land promptly, a temporary `ArkLib/ToCompPoly` implementation must name its upstream owner
-and removal condition; keep FRI-specific operations outside the generic language.
+A protocol may prove a bound directly at its chosen layer. Moving between layers instead needs a
+proved cost/refinement bridge with explicit units and overhead; no operation-count-to-bit-time or
+bit-time-to-cycle conversion is automatic. Proving every layer is not a prerequisite for using an
+honestly labelled result at one layer. Benchmarks alone are not universal execution bounds.
+Peak memory remains distinct from additive work.
 
-The certificate must account for the realized initialization, control decisions, enabled state
-updates, input access and output construction. No unrestricted Lean function may act as a
-unit-time instruction. Primitive field operations and read-only oracle access may remain abstract
-capabilities, but their types, representations, charges, and implementation obligations are fixed
-by the stated model. Proofs and subtype certificates are erased; producing the underlying
-coefficient values and finite output tables is charged.
+Use **budget uniformity** for one bound over the views/prefixes allowed at fixed parameters (or
+separately at each input statement); **program-family uniformity** for one executable generator
+and implementation scheme across parameters/statements; and **challenge uniformity** for the
+probability law of a uniform sampler. The first is a quantifier on costs, the second a computation
+condition, and the third a sampling assumption. None implies the other two.
 
-Take the backend `Q`, boundary `bd`, response contract, input-size convention, and budget `T` as
-explicit arguments. Existentially choosing an implementing machine or a polynomial is legitimate
-after these are fixed. Existentially choosing an arbitrary size convention or a backend that makes
-every function primitive is not evidence for an unqualified efficiency claim. Require a separate
-statement of what the backend's adequacy review covers and keep its status visible in the
-exported theorem's documentation. A standard-machine claim additionally requires a proved
-correspondence to that machine; the initial algebraic result does not supply one.
+## The complete-execution contract
 
-For the initial algebraic model, the formal obligations are correctness of the code's semantics,
-its quantitative-layer connection, and the bounds for all modeled execution, including pure-code
-initialization, control, updates and storage. Its adequacy acceptance check is a review of the
-primitive basis, representations and charges, not a proved simulation of a standard machine.
-This review must explain why each primitive is an appropriate algebraic operation, what index
-and storage work it covers, and which costs remain abstract. E3's gain over E2 is formal coverage
-of pure computation through this declared backend; it is not a bit- or machine-runtime guarantee.
+The proposed `knowledgeSoundnessWithin` fixes a backend, input/access representations, permitted
+responses, and **named backend code**. It combines the knowledge game with these obligations:
 
-Every modeled operation must be covered, either directly or by a proved amortized charge.
-Requiring every coordinate or syntactic construct to have positive cost is unnecessary:
-a zero coordinate for an unused resource, or administrative syntax with proved
-zero overhead, can be legitimate. What matters is domination of computational work by the
-declared resource measure.
+- The code's execution agrees with the game's named extractor `E`: the same returned witness or
+  failure and, where applicable, the same resulting oracle state. For randomized execution, state
+  the corresponding joint-distribution agreement. Extensional equality is enough for this semantic
+  obligation; equality with an arbitrary host Lean source trace is not required.
+- A quantitative bound holds for that named code in the backend's execution semantics. Charge
+  initialization, control, indexing, storage, input preparation, witness construction and all work
+  between E2 instructions. A different implementation needs its own bound.
+- A strict bound covers all permitted inputs/responses, including rejected histories. Prove valid
+  access and termination separately where the quantitative interface requires them. A bound on
+  completed paths alone can be vacuous if no run completes. Timeout/fault after acceptance must
+  count as extraction failure, not remove the accepted experiment's mass.
 
-Use a fixed first-order primitive basis: field arithmetic/equality, bounded index and address
-operations, and explicit storage/control operations. An opcode accepting an arbitrary host
-function would reopen the gap. State index widths or charge their growing bit lengths, and
-separate read-only input storage from allocated working storage. The E3a code type and its
-quantitative adapter must enforce these restrictions; a cost annotation on an arbitrary host
-function is insufficient.
+`MeasuredProgram.Realizes` proves output agreement, not the second obligation. To derive backend
+costs from an E2 profile, additionally provide an operational translation from the actual measured
+instruction program to the named code and prove its cost simulation, including interpreter,
+handler, view-conversion and local-work overhead. Otherwise prove the backend bound directly.
+Semantic agreement between a power-sum evaluator and Horner evaluation does not transfer either
+algorithm's cost profile. Cost transfer is a separate obligation from output agreement.
 
-Use a worst-case bound on all permitted inputs and responses, including rejected histories.
-A bound over successful outputs alone is insufficient if execution can diverge or fault.
-Use the upstream finite-prefix/run-bound machinery and prove termination and valid access for
-this deterministic client. Never infer these from a complete-path support bound whose support
-could be empty. The probability game must count a timed-out or failed extraction as failure
-after acceptance; it must not delete the accepted run from the experiment.
+### Code size, setup and uniformity
 
-## Computational models and the role of Caliper
+Fix computable faithful codecs for backend code and constant data as bitstrings. Decoding after
+encoding recovers them up to erased proofs or metadata irrelevant to size and cost, preserving
+runtime instructions rather than merely equivalent outputs. Measure size by encoded bit length;
+state the generator's description size and the generated code/data bounds.
+Runtime and setup are separate bounds in the backend's declared step/resource units; bits are
+not added to field-operation counts without an explicit valuation. Precomputed tables, their
+construction and their storage cannot disappear into free advice or an unspecified constant.
+Declare one-time versus per-extraction setup and any amortization policy.
 
-| Layer | What the theorem certifies | Required additional evidence |
-|---|---|---|
-| Instruction profile | Counts of specified arithmetic and input operations | Identity with the game's extractor and actual instruction interpreter |
-| Algebraic execution | All local execution work in the declared algebraic backend | Quantitative realization, charged control/storage, fixed access and size conventions; reviewed primitive adequacy, without a standard-machine correspondence |
-| Bit or fixed-word execution | Cost of concrete encodings and arithmetic | Implementations and simulation/cost bounds for primitives and input handlers |
-| Physical execution | Bounds for an implementation on a specified platform | A compiler/runtime correspondence and platform cost justification |
+One fixed executable generator must serve every parameter set, statement and prefix in scope.
+Statements, prefixes and witnesses are input data, not permission to select unrelated cheap code.
+Specify uniform implementations of the encodings, field instances, enumeration and input access.
+This discipline belongs to concrete E3. E7 only defers the security-parameter growth policy; a
+parametric Lean definition or statement-indexed certificate family is not this generator proof.
 
-VCVio already exposes backend-relative `IsOraclePPTBy`, `StrictPPTWitness`, and certified pure
-computations. Its source explicitly requires a backend-specific adequacy theorem before claiming
-a standard machine interpretation. ArkLib should consume that interface, adding protocol views
-and game conjunctions. Generic realization combinators and adequacy machinery belong upstream;
-FRI and Toy correctness and resource envelopes belong in ArkLib.
+A reviewed adequacy argument justifies the primitive basis, representations and charges. A proved
+simulation of a standard machine is stronger, separate evidence. The initial algebraic result
+supplies the former. Existential packaging is harmless after fixing the named code/generator and
+resource interpretation; it cannot choose a backend, representation or embedded table to make
+arbitrary functions cheap.
 
-The algebraic backend is new work in E3a, not an existing instance of this facade. Its code type
-may be deeply embedded while still reusing the existing realizability and resource interfaces.
+### Input-size convention
 
-Caliper supplies a concrete word-and-buffer language whose control and memory operations appear
-in its execution semantics. It is a candidate backend or refinement target, not an automatic
-cost model for arbitrary Lean or `OracleComp` code. Its instruction admissibility conditions
-include per-word allocation charges and permit some zero charges, including release whose cost
-is assigned to acquisition. This is a useful example of justified accounting rather than a rule
-that every cost entry must be positive.
+State the encoded input length: parameters, statement, transcript/prefix, retained data and any
+actually supplied output-relation witness. Fix how the packed input represents the security
+parameter `λ` (for example binary or unary), rather than treating `λ` as a unit-size integer.
+Bound the returned input-relation witness separately and charge its materialization; its size is
+not part of the input length unless that value is actually supplied. Also specify the resource
+contract for external oracle tables. With a chosen
+fixed-width field encoding of `w` bits, `N` entries use `N * w` bits plus declared container
+overhead; `w` need not be assumed minimal. A succinct description or length index can use
+`log N` bits while requiring very different access computation. If tables stay external,
+name their available length, read-cost and response-size assumptions rather than treating an
+arbitrary function as unit-time access. A polynomial bound in full table size `N` is not a
+polynomial bound in a succinct input of length `log N`. Representation size, available table size
+and declared code/data size must not be silently substituted for one another.
 
-Caliper's memory bounds track both net change and peak growth; sequential peaks do not add like
-operation counts. Keep a future peak-memory theorem separate from an additive `ResourceProfile`.
-Its compilation contract also leaves code-generation work unpriced and does not prove the RISC-V
-correspondence. A parameter-dependent builder that emits a different program for every size
-therefore needs a uniform-generation argument before supporting an asymptotic claim.
+## Backend route and ownership
 
-The initial repair should use VCVio/PolyFun and an explicit algebraic execution model. Do not make
-it wait for a Caliper port from Lean 4.32.2 to ArkLib's Lean 4.35.0 stack. A later pilot can
-implement one field primitive or interpolation kernel in Caliper, prove semantic agreement, and
-substitute its operation costs. A 64-bit field modulus still needs a proved modular arithmetic
-implementation, including intermediate overflow handling; fitting field elements in one word is
-insufficient.
+VCVio/PolyFun already supplies backend-relative `IsOraclePPTBy`, `StrictPPTWitness` and quantitative
+realization interfaces. The concrete cslib backend is a single-tape Turing machine over Boolean
+strings; the word-class adapter does not supply an algebraic execution backend.
 
-Sources: VCVio's pinned
-[cost API](https://github.com/Verified-zkEVM/VCVio/blob/88efe9715a9fa9e7d89635c38cf70259836766c2/VCVio/OracleComp/QueryTracking/CostModel.lean),
-[resource profiles](https://github.com/Verified-zkEVM/VCVio/blob/88efe9715a9fa9e7d89635c38cf70259836766c2/VCVio/OracleComp/QueryTracking/ResourceProfile.lean),
-and [complexity facade](https://github.com/Verified-zkEVM/VCVio/blob/88efe9715a9fa9e7d89635c38cf70259836766c2/VCVio/CryptoFoundations/Asymptotics/ComputationalComplexity.lean);
-Caliper's [machine model](https://github.com/zksecurity/caliper/blob/b62f7c8be35df0aa728e5a6aac7bae85eef67449/docs/01-machine-model.md),
-[memory semantics](https://github.com/zksecurity/caliper/blob/b62f7c8be35df0aa728e5a6aac7bae85eef67449/docs/02-memory.md),
-and [limitations](https://github.com/zksecurity/caliper/blob/b62f7c8be35df0aa728e5a6aac7bae85eef67449/docs/05-limitations.md).
+E3a's proposed route is a generic algebraic code type in PolyFun, with a VCVio adapter as needed.
+A deep embedding is appropriate; a protocol-specific language or second realizability framework
+is not. A temporary ArkLib adapter must state its upstream destination and removal condition.
+Gate this work on one actual FRI fold-consistency check, preserving rejection branches and proving
+semantic agreement and a complete backend cost before scaling to the extractor.
 
-## FRI realization requirements
+Use a fixed first-order basis: field arithmetic/equality, bounded index/address operations, and
+explicit control/storage. No opcode may run an arbitrary host function for unit cost. Declare
+operand and result sizes for every primitive, or charge their growing bit lengths. Polynomial
+multiplication, arbitrary decoding and unbounded-integer arithmetic are not unit field operations.
+Separate retained read-only tables from working storage. Zero charges can be justified by erased
+proofs or amortization; positivity of every syntactic construct is neither necessary nor sufficient.
 
-The realization of FRI's named extractor must cover domain-index enumeration, loop guards and index
-arithmetic, selected node/value storage, list traversal and append, interpolation allocation and
-coefficient access, prefix/view preparation, and witness construction. Audit these costs as
-algorithms; a linter for field syntax cannot establish them. Preserve the early final-degree guard
-and bound the work before rejection of an oversized final polynomial. Acquisition or validation of
-an already canonical polynomial is a separately stated input cost, not hidden inside a constant-cost
-read.
+Caliper is a possible later word/buffer target, not a cost model for arbitrary Lean functions.
+Its admissibility rules permit justified zeros; net/peak memory is separate from additive counts.
+Its engineering compilation contract is not a proved RISC-V correspondence and leaves generation
+work unpriced. Caliper supplies a word-level model. Physical runtime needs separate platform
+evidence. A pilot needs semantic agreement and field arithmetic with overflow handling;
+fitting field values in one word is insufficient. This route need not block on porting its pinned
+Lean 4.32.2 stack to ArkLib's 4.35.0 stack.
 
-Declare the IOP access model explicitly: immutable tables have indexed field-element reads; the
-retained prefix and final polynomial have bounded, described representations. The extraction
-bound excludes production of the prover's oracle tables. It includes the extractor's own reads
-and local computation. A concrete implementation of a function-valued input must supply its own
-handler bound before obtaining a bit-runtime corollary.
+## FRI and family obligations
 
-Prove polynomial domination under the existing `D ≤ N` and positive folding schedule conditions.
-These imply `b_i ≤ N`, `d ≤ N`, and `r ≤ n`; all varying parameters must be covered. The
-appropriate claim is polynomial in the available oracle/table size, with field-element and
-address sizes explicit. It is not polynomial in `log N`. Keep the concrete budget as the main
-usable theorem and derive an algebraic polynomial bound after adding local overhead. Bit time
-additionally needs polynomial-cost field implementations and uniform input access.
+FRI's code must account for enumeration, guards/index arithmetic, selected-node storage,
+interpolation/coefficient access, prefix preparation and materialized witnesses. Preserve the
+early final-degree guard and bound work before rejecting an oversized polynomial. State acquisition
+or validation cost for the canonical final polynomial rather than hiding it in a unit read.
 
-## Uniform families and concrete bounds
+Use explicit indexed reads on immutable oracle tables, with bounded retained-prefix and polynomial
+representations. Producing the prover's tables is outside extraction; the extractor's own reads
+and local work are inside. Function-valued input handlers need implementation costs for a bit-time
+corollary. Under `D ≤ N` and the positive schedule, `b_i ≤ N`, `d ≤ N` and `r ≤ n`; prove polynomial
+domination in the available table size `N`, not merely in `log N`.
 
-E7 is deferred until a concrete consumer fixes the parameter-growth and representation policy.
-It is not a dependency of the concrete FRI/Toy results or their public documentation updates.
+At a chosen backend and resource layer, E7 relates the concrete bounds to security-parameter
+families through polynomial domination. The ordinary VCVio predicate below is strict/pathwise;
+an expected-time-only family needs the separate
+[expected-cost and termination contract](#expected-time-rewinding-and-tree-acquisition).
+E7's proposed `knowledgeSoundnessPPTBy` has the schematic shape
 
-Use `knowledgeSoundnessWithin` for a concrete budget in a named execution model. Use a separate
-proposed `knowledgeSoundnessPPTBy` for the family-level corollary: the game holds at every
-parameter, and the packed extractor family satisfies VCVio's
-`SecurityFamily.IsOraclePPTBy` for fixed backend, boundary and oracle contract.
+```text
+(∀ λ, knowledgeSoundnessWith(..., E λ, κ λ)) ∧
+  OracleComp.Complexity.SecurityFamily.IsOraclePPTBy Q bd contract programFamily
+```
 
-That predicate requires one realization and one polynomial for the whole family. A Lean
-definition parametric in `n`, `F`, and typeclass instances is not by itself such a certificate:
-the instances, field representation, enumeration, setup and any generated code must have the
-stated uniform implementations. Choose an explicit field family or state the algebraic primitive
-contract; do not existentially choose unrelated representations at each parameter.
+Here `programFamily : (λ : ℕ) → Input λ → OracleComp (spec λ) (Output λ)` is the typed named
+extractor family, with semantic agreement to `E`. The API packs it internally; `bd` represents
+the packed parameter/input and output encodings and oracle boundary, `Q` fixes the execution/size
+model, and `contract` fixes allowed responses/resources. The predicate requires one packed
+realization and one polynomial across parameters, rather than unrelated pointwise witnesses.
+That polynomial is in the packed encoded input size and permitted oracle length envelopes, not
+in `λ` alone for arbitrary auxiliary inputs. A consumer needs an input-size growth envelope for a
+`poly(λ)` claim, or may instead state a bound polynomial in `λ` and the actual input length.
+The code/generator
+obligations above remain E3 even while E7's security-parameter growth policy waits for a consumer.
 
-An asymptotic security claim further specifies how `N`, degrees, folding schedule, field size
-and query count depend on the security parameter. To obtain polynomial time in that parameter,
-their encoded sizes and the permitted oracle-access costs must meet the stated bounds. A concrete
-error expression does not automatically become negligible. Deterministic strict extraction is
-the first target; expected polynomial time and dependence on acceptance surplus are separate
-contracts, unnecessary for these deterministic extractors.
+Choose the parameter/input-size policy, substitute it into the **full concrete budget** and prove
+polynomial domination in the security parameter. `log N = poly(λ)` does not make `O(N)` extraction
+polynomial in `λ`. Bit time additionally needs polynomial-cost arithmetic in `log |F_λ|` and bounded
+addresses. A concrete error expression does not automatically become negligible: prove that for
+the chosen error family separately. Concrete protocol certificates do not wait for E7.
+
+## Expected time, rewinding and tree acquisition
+
+The strict FRI/Toy target is separate from the existing [rewinding
+plan](05-roadmap.md#rewinding-and-compiled-protocol-security), tracked in
+[#1410](https://github.com/Verified-zkEVM/ArkLib/issues/1410). Its failed-attempt/expected-time
+bridge is not implemented. Existing `expectedCost`, `ExpectedCostBound` and Markov APIs integrate
+unnormalized successful-output cost marginals; `AddWriterT.expectedCost` is the interpreted version.
+The generic weighted-writer cost-bound bind lemmas are pathwise; no generic expected-time
+execution/substitution theorem follows from them. Separately,
+`OracleComp.expectedSimulatedQueryCount_bind` in `VCVio.OracleComp.QueryTracking.ExpectedQueryCount`
+gives a specialized expected charged-query bind law for stateful handlers. Its recursive accounting
+includes the failing query and previously spent queries without a losslessness premise; reuse that
+route when its units and failure semantics match the client. For generic writer instrumentation,
+operational base failure discards accumulated writer output, giving missing mass cost zero;
+returning `Option.none` as a value in a lossless base retains its charge. The canonical `OracleComp`
+expectation facade is currently lossless, so the failed-base limitation concerns interpreted partial
+computations, not a failure of that facade. Rewinding needs semantics preserving spent cost through
+failure and timeout, or an appropriate totalization/prefix-cost proof, with the stated termination
+guarantee (normally almost-sure). Fixed sequential expectations can add with integrable scalar costs
+and bounds uniform over actual inputs/histories; arbitrary random-call/rewinding composition needs
+conditional/stopping-time proofs. A profile valuation must be additive, or have a separately proved
+upper-bound law: an arbitrary `val : ω → ℝ≥0∞` need not preserve sums. Keep success, acceptance
+surplus and truncation/error policy explicit. Processing a possibly exponential supplied tree,
+obtaining it, and producing an escape are distinct costs. These remain obligations of #1410's
+bridge, not a second plan or resource framework.
+
+## Source modules and evidence
+
+`VCVio.OracleComp.QueryTracking.CostModel`,
+`VCVio.OracleComp.QueryTracking.WriterCost`,
+and `VCVio.CryptoFoundations.Asymptotics.ComputationalComplexity`
+state the existing interfaces, not completed execution or expected-time extraction certificates.
+Caliper's pinned [machine](https://github.com/zksecurity/caliper/blob/b62f7c8be35df0aa728e5a6aac7bae85eef67449/docs/01-machine-model.md),
+[memory](https://github.com/zksecurity/caliper/blob/b62f7c8be35df0aa728e5a6aac7bae85eef67449/docs/02-memory.md)
+and [limitations](https://github.com/zksecurity/caliper/blob/b62f7c8be35df0aa728e5a6aac7bae85eef67449/docs/05-limitations.md)
+record its different execution boundary.
+
+Bellare--Kilian--Rogaway's [concrete-time convention](https://cseweb.ucsd.edu/~mihir/papers/cbc.pdf)
+includes description length; Bernstein--Lange's [precomputation analysis](https://eprint.iacr.org/2012/318)
+explains why uniformity alone does not resolve every concrete nonuniform model.
+Bellare--Goldreich's [knowledge definition](https://cseweb.ucsd.edu/~mihir/papers/pok.pdf) accounts
+for acceptance surplus, while Katz--Lindell's [expected-time analysis](https://eprint.iacr.org/2005/379)
+warns against unrestricted oracle composition. [FMN24](../kb/papers/FMN24.md) separates supplied-tree
+CWSS extraction from its expected-time knowledge bridge; [ABF26](../kb/papers/ABF26.md) includes
+terminal/per-round extraction time that ArkLib's bare games omit.

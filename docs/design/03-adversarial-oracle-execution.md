@@ -291,21 +291,14 @@ half-error premise.
 
 ## 5. State restoration
 
-State restoration is a separate security layer for compiled protocols. It is not a
-checkpoint/restore operation: the adversary may submit multiple purported prefixes, with consistent
-answers on repeated moves, and the final output re-derives every challenge. The salted move shape
-of the original design is schematic:
+State restoration is a separate security layer for compiled protocols. The adversary queries a
+cached challenge oracle on purported prefixes; repeated keys receive the same answer. Completion
+re-derives each challenge of the selected path from that same oracle.
 
-```lean
-structure SRMove (Π : PublicCoinIOP) where
-  round : Fin Π.rounds
-  inst  : Π.Instance
-  prfx  : Π.ProofPrefix round
-  salts : Π.SaltPrefix round
-
--- One random function per round, keyed on the entire move.
--- The prover has a move budget B; the trace records moves and responses.
-```
+The implementation in `Interaction.Oracle.Security.StateRestoration` uses `Key Input Salt rounds`.
+A key's depth identifies its round. It contains the input and the prover-message/salt prefix
+through that round, without earlier verifier responses. `oracleSpec Input Salt rounds` gives
+that key its response type `key.Challenge`, the addressed round's challenge alphabet.
 
 The target notions include ordinary, straightline knowledge, and rewinding knowledge soundness,
 with explicit error and running-time dependence on the experiment and budget. Straightline
@@ -320,8 +313,7 @@ salt prefix, and the adversary makes at most `Q` cached oracle queries.
 
 - `Interaction.Oracle.Security.StateRestoration.stateRestoration_knowledge_soundness`: if every
   round extractor is prover-preserving and locally bounded by `error`, the named backward extractor
-  fails on a valid output with probability at most `(Q + rounds.length) * error`. This is the
-  `(B+r)` loss of the original design.
+  fails on a valid output with probability at most `(Q + rounds.length) * error`.
 - `stateRestoration_oracle_knowledge_soundness`: the same bound when the verifier returns an open
   oracle claim and the output relation observes its closed behavior.
 - `stateRestoration_knowledge_soundness_privateCoins` and
@@ -346,10 +338,18 @@ named in its game. The [extractor efficiency contracts](03a-extractor-efficiency
 separate measured operations, realized execution, and uniform polynomial-time families. The
 unbounded-game contract and measured-operation contract are implemented. FRI has a measured
 extraction certificate, and interaction-layer knowledge certificates have measured stages. The Toy decoding
-certificate and complete execution bounds remain proposed. The legacy existential game alone imposes no time bound, and neither do
-the existential round-by-round, special-soundness and state-restoration notions; that chapter lists
-each notion's additional obligations. The exception is the interaction layer's `MeasuredKnowledgeCertificate`,
-which adds per-stage operation budgets to a knowledge certificate.
+certificate and complete execution bounds remain proposed. The legacy existential game alone imposes
+no time bound, and neither do the
+round-by-round, special-soundness and state-restoration notions. The measured contracts are not
+exceptions: legacy `knowledgeSoundnessWithResources` and interaction-layer
+`MeasuredKnowledgeCertificate` add declared instruction budgets, not running-time guarantees.
+Native `programAlong` composes those budgets on a supplied path. The state-restoration wrapper
+also identifies the measured return with the game's extractor; its complete statement and
+role-specific budget are recorded in the
+[resource contract](03a-extractor-efficiency.md#state-restoration-resource-contract).
+Native clients remain acceptance fixtures. The
+[common accounting boundary](03a-extractor-efficiency.md#proof-and-accounting-boundary) and
+[native composition priorities](05-roadmap.md#native-resource-composition) delimit what remains.
 
 Knowledge soundness requires witness availability, not only a bound on true output claims.
 An offline extractor of a final execution path may learn a middle witness too late to supply it

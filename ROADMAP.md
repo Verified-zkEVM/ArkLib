@@ -46,10 +46,10 @@ promise deprecation periods; see the [compatibility policy](CONTRIBUTING.md#comp
 
 ## Complete
 
-Every result below is on `main` and depends only on Lean's standard axioms (`propext`,
-`Classical.choice`, `Quot.sound`). Theorem names are full Lean names. Each theorem's docstring
-states its hypotheses; read them before relying on a result. The interaction-layer status page,
-[`docs/design/00-current-status.md`](docs/design/00-current-status.md), records that layer's APIs
+The results below are provided on `main` and depend only on Lean's standard axioms
+(`propext`, `Classical.choice`, `Quot.sound`). Theorem names are full Lean names. Each theorem's
+docstring states its hypotheses; read them before relying on a result. The interaction-layer status
+page, [`docs/design/00-current-status.md`](docs/design/00-current-status.md), records that layer's APIs
 and remaining proof gaps in detail.
 
 ### Protocols and commitments
@@ -151,14 +151,14 @@ entry says so, the specification is not claimed to be executable.
   `(Q + k) * error`. No concrete protocol consumes the knowledge certificates yet, and randomized
   state restoration is in progress (below). The
   [interaction-layer status page](docs/design/00-current-status.md) has the details.
-- **Measured extraction**: VCVio's
-  measured programs and operation-count budgets
-  (`VCVio.OracleComp.QueryTracking.MeasuredProgram`),
-  their use in knowledge soundness ([`OracleReduction/Security/Resources.lean`](ArkLib/OracleReduction/Security/Resources.lean)),
-  and measured stages for interaction-layer knowledge and state-restoration certificates
-  (`Interaction/Oracle/Security/{KnowledgeResources,StateRestorationResources}.lean`). The
-  [extractor-efficiency design](docs/design/03a-extractor-efficiency.md) states what these budgets
-  do and do not certify.
+- **Measured extraction**: VCVio's game-independent measured programs and declared instruction
+  budgets (`VCVio.OracleComp.QueryTracking.MeasuredProgram`), their
+  [knowledge-soundness adapter](ArkLib/OracleReduction/Security/Resources.lean), and native measured
+  stages for knowledge and state-restoration certificates
+  (`Interaction/Oracle/Security/{KnowledgeResources,StateRestorationResources}.lean`).
+  [Composition along typed paths](ArkLib/Interaction/Oracle/Security/KnowledgeResources/Composition.lean)
+  preserves the named extractor and sums its stage budgets. The
+  [extractor-efficiency design](docs/design/03a-extractor-efficiency.md) states their accounting scope.
 - **Commitment games**: binding and extractability experiments that keep the oracle state left by
   setup ([`Commitments/Functional/Basic.lean`](ArkLib/Commitments/Functional/Basic.lean)).
 - **Algebraic group model**: group representations for algebraic adversaries

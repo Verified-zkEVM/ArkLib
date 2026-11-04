@@ -36,7 +36,7 @@ extraction inside an `Exists.choose`. State the claim that way, not as a securit
 **Measured extraction is where cost becomes part of the statement.** A `MeasuredProgram` runs over a
 declared instruction set with a charge per instruction, and a `BudgetedProgram f ω` packages a
 program that realizes `f` with a proved bound on every execution path
-(module `VCVio.OracleComp.QueryTracking.MeasuredProgram`).
+(`VCVio.OracleComp.QueryTracking.MeasuredProgram`).
 Knowledge soundness with resources
 ([`ArkLib/OracleReduction/Security/Resources.lean`](../../ArkLib/OracleReduction/Security/Resources.lean)
 in the legacy layer, and `Interaction/Oracle/Security/{KnowledgeResources,StateRestorationResources}.lean`
@@ -45,7 +45,13 @@ takes such a program for the extractor. Only a **named** program with a meaningf
 says anything: `BudgetedProgram.ofFun f` realizes any `f` with budget zero because it requests no
 instruction, so a statement that merely asserts some budgeted program exists adds nothing. When you
 make an extractor computable for a measured theorem, pair it with a named program and state its
-budget, as `Fri.Spec.knowledgeSoundnessWithResources_extract` does.
+budget, as `Fri.Spec.knowledgeSoundnessWithResources_extract` does. Public count contracts use
+finite resource kinds and ordinary natural vectors. The
+[accounting-boundary table](../design/03a-extractor-efficiency.md#proof-and-accounting-boundary)
+states the work these contracts exclude. A compiler substitution can preserve returned values
+while changing the algorithm: trace the costed instruction program and the compiled entry point
+separately, and prove a cost bridge before transferring bounds. A compiled `#eval` demonstrates
+outputs and any recorded logical counters; it does not bound host runtime.
 
 ## The Three Kinds
 
@@ -126,9 +132,10 @@ Do this before step 4, not after.
 
 Follow [`../wiki/repo-map.md`](../wiki/repo-map.md) routing, with two computability-specific rules:
 
-- A new **executable algorithm** on an existing structure is reusable math: it belongs in
-  `ArkLib/Data/` (or `ArkLib/ToMathlib/`) next to the structure, never in the consumer file that
-  happens to need it first.
+- A new **executable algorithm** belongs beside its structure in the owning library: CompPoly for
+  polynomial algorithms, VCVio for oracle/resource combinators, and ArkLib for protocol-specific
+  adapters or ArkLib-owned structures. Use `ArkLib/ToMathlib/` for Mathlib extensions. Do not put a
+  shared algorithm in its first consumer merely because that consumer needs it.
 - A **`Decidable` instance belongs next to the predicate it decides**, not next to the search that
   consumes it. If a `noncomputable section` is in the way, move the section boundary rather than
   the instance — and leave a comment saying why the block must stay computable.
