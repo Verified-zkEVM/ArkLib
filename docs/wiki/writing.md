@@ -1,4 +1,4 @@
-# Writing Standard
+# Writing Guide
 
 This guide helps you write clear, precise, correct technical text. Its rules are advice. If a
 passage is clear and correct, leave it alone, even if it does not follow a rule or the checker
@@ -57,7 +57,7 @@ not require an edit.
 
 ### Words
 
-- **W1.** Prefer an STE-approved general word with the intended meaning and part of speech.
+- **W1.** Prefer a common, simple word with the intended meaning.
   Use an established technical term when the subject requires it. Rephrase if a replacement would
   change the meaning. (STE 1.1 to 1.4, 9.1, 9.2)
 - **W2.** Use technical terms with their stated meanings and grammatical roles. Qualify a term

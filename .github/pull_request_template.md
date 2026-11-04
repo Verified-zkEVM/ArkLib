@@ -41,4 +41,7 @@ If `scripts/axiom_baseline.json` changes, say why.
 
 ## Checklist
 
+- [ ] I searched the open pull requests and issues for overlapping work.
+- [ ] I did the applicable statement checks in CONTRIBUTING.md, "Statement Correctness".
 - [ ] The description matches the code and the evidence.
+- [ ] The pull request contains no working files from a tool session.
