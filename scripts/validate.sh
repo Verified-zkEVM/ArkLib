@@ -29,6 +29,8 @@ Default checks:
   - ./scripts/check-imports.sh
   - ./scripts/test-build-timing-report.sh
   - python3 ./scripts/check-docs-integrity.py
+  - uv run --no-project --python 3.12 python ./scripts/test-pr-checks.py
+  - uv run --no-project --python 3.12 python ./scripts/test-pr-scope.py
   - python3 ./scripts/kb/lint.py
 
 Optional checks:
@@ -65,6 +67,11 @@ for arg in "$@"; do
       ;;
   esac
 done
+
+if ! command -v uv >/dev/null 2>&1; then
+  echo "ERROR: uv is required. See CONTRIBUTING.md for Python setup." >&2
+  exit 1
+fi
 
 build_log="$(mktemp "${TMPDIR:-/tmp}/arklib-validate-build.XXXXXX")"
 cleanup() {
@@ -138,6 +145,11 @@ echo "# Testing build timing report fixtures"
 echo ""
 echo "# Checking docs integrity"
 python3 ./scripts/check-docs-integrity.py
+
+echo ""
+echo "# Testing the pull request scripts"
+uv run --no-project --python 3.12 python ./scripts/test-pr-checks.py
+uv run --no-project --python 3.12 python ./scripts/test-pr-scope.py
 
 echo ""
 echo "# Checking knowledge base"

@@ -15,6 +15,8 @@ The [wiki](docs/wiki/README.md) describes repository commands and conventions.
 
 ### Set Up and Validate
 
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/) before running validation.
+The wrapper uses it for the Python checker tests and stops before the Lean build if it is absent.
 On a new clone, download the build cache. Then run the full validation:
 
 ```bash
@@ -24,8 +26,8 @@ lake exe cache get
 
 For a change to proofs or admissions, also run `./scripts/validate.sh --axioms`.
 The [quickstart](docs/wiki/quickstart.md) explains the checks and optional build targets.
-Use [uv](https://docs.astral.sh/uv/getting-started/installation/) for the Python commands in the
-writing workflow. Those commands select Python 3.12 and do not install a project package.
+The Python commands in the writing workflow select Python 3.12 through uv and do not install a
+project package.
 
 ### Check for Overlap
 

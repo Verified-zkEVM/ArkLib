@@ -35,6 +35,9 @@ Treat such a probe as provisional until the source passes the project build.
 
 ## Recommended Validation
 
+The PR checks require [uv](https://docs.astral.sh/uv/getting-started/installation/).
+Install it before validation. The checker commands select Python 3.12 through uv.
+
 For a convenient routine check, run:
 
 ```bash
@@ -190,6 +193,63 @@ is not installed. If blueprint output matters, install it first:
 python3 -m pip install leanblueprint
 ```
 
+### Pull request scope and generated files
+
+The scope tool compares the tracked work tree, including committed and uncommitted changes, with
+the merge base for the selected review base. Use the PR's actual target branch in a stack.
+For a PR targeting `main`:
+
+```bash
+uv run --no-project --python 3.12 python scripts/pr-scope.py summary --base origin/main
+```
+
+During a pending merge, the comparison accounts for both parents and the selected review base.
+Every command prints the merge warning. If generated KB files drift, the summary gives a
+`restore-generated` command that restores from CI's comparison source, rather than the latest
+version of `main`. The [PR preparation workflow](../skills/make-pr-ready.md) explains the audit.
+
+### Prose, titles, and pull request descriptions
+
+Use the [writing workflow](../skills/write-technical-prose.md) for documentation, comments,
+docstrings, commit messages, and PR or issue text. It applies outside PR preparation too.
+The [writing standard](writing.md) owns the rules and their STE adaptations.
+
+For a PR targeting `main`, check changed prose with:
+
+```bash
+uv run --no-project --python 3.12 python ./scripts/check-writing.py --base origin/main
+```
+
+For a stacked PR, use its actual base instead. The checker reads affected paragraphs, list items,
+and table cells. It suggests a review of listed vocabulary, phrasal verbs, Latin abbreviations,
+contractions, history words in reference documents, and approximate sentence lengths. Read each
+suggestion before you edit. Leave clear, correct text alone. A successful check does not establish
+clarity, STE dictionary compliance, or preservation of the source's meaning.
+
+To review a draft before you publish it, provide the text on standard input:
+
+```bash
+uv run --no-project --python 3.12 python ./scripts/check-writing.py --stdin description < /tmp/pr-description.md
+uv run --no-project --python 3.12 python ./scripts/check-pr-title.py "feat(fri): prove query soundness"
+```
+
+The writing checker exits successfully by default. `--strict` requests exit code 1 when it finds a
+match. That option does not make the findings more accurate. CI's prose check remains advisory.
+
+The title format comes from [CONTRIBUTING.md](../../CONTRIBUTING.md#title-format).
+The title check is also advisory. Pass `--strict` to request a failing exit code for an invalid format.
+
+When you evaluate the standard or its workflows, check the complete guidance too:
+
+```bash
+uv run --no-project --python 3.12 python scripts/check-writing.py \
+  AGENTS.md CONTRIBUTING.md docs/wiki/writing.md docs/wiki/writing-vocabulary.md \
+  docs/skills/write-technical-prose.md docs/skills/make-pr-ready.md .github/pull_request_template.md
+```
+
+Read the findings and review the rules that need judgment. This self-check remains advisory.
+CI tests the checker's behavior. It does not require zero findings from the guide text.
+
 ## Important Notes
 
 - `./scripts/validate.sh` is the recommended convenience wrapper for routine local validation.
@@ -304,6 +364,8 @@ python3 -m pip install leanblueprint
   Pages/OIDC permission. It uploads timing artifacts consumed by the trusted
   [`../../.github/workflows/build-timing-report.yml`](../../.github/workflows/build-timing-report.yml)
   workflow, which renders the report and posts it on the PR.
+
+  The build job installs uv before it runs `validate.sh`, which includes the PR checker tests.
 - [`../../.github/workflows/interaction.yml`](../../.github/workflows/interaction.yml)
   provides focused compilation and zero-warning checks for typed Interaction production and
   acceptance modules. It also runs on feature-base stacked PRs. Its read-only job restores,
@@ -313,6 +375,13 @@ python3 -m pip install leanblueprint
   checks that `ArkLib.lean` matches the tracked source tree.
 - [`../../.github/workflows/docs-integrity.yml`](../../.github/workflows/docs-integrity.yml)
   checks that `AGENTS.md` exists and local markdown links resolve.
+- [`../../.github/workflows/pr-checks.yml`](../../.github/workflows/pr-checks.yml)
+  runs on each pull request, also on a stacked pull request. It checks the pull request title
+  with `scripts/check-pr-title.py`. It also runs `scripts/check-writing.py` on the changed prose
+  and on the description. Both jobs report warnings only.
+  This workflow is advisory, not a required merge check. It has no merge-queue or manual-dispatch
+  trigger. Findings do not block a merge. Tool or configuration errors still fail the job.
+  Prose findings also appear in the job summary, including those beyond the annotation display limit.
 - [`../../.github/workflows/kb-generated.yml`](../../.github/workflows/kb-generated.yml)
   regenerates KB indexes and missing cited-paper stubs nightly and after pushes to `main` that
   change the bibliography, KB papers or sources, or the KB scripts. It updates one rolling PR from
