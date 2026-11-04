@@ -261,13 +261,14 @@ suffix, including any access restrictions or runtime invariants they rely on.
 ### 4.5 Access and query budgets
 
 The cost theorem `WorstCaseCostBound.simulateQ` and the access theorem
-`OracleComp.AllQueriesSatisfy.simulateQ` apply to the same `simulateQ` program. Access checks every query in the authored program and in each allowed query's route.
-Canonical prefix names connect source tags to the input queries and oracle sends already available.
-A resource name assigned by an arbitrary classifier is not evidence of access. The two-send client
-uses the actual phased run's join and terminal prefixes for its source-resource certificates and
-connects its source log through the phased/logged equality. `WorldPhase.queries` remains the ambient
-query log; it is not identified with the source-capability log. A general arbitrary-classifier
-profile still needs an independent proof connecting those labels to actual resources.
+`OracleComp.AllQueriesSatisfy.simulateQ` apply to the same `simulateQ` program. Access checks every
+query in the authored program and in each allowed query's route. Canonical prefix names connect
+source tags to the input queries and oracle sends already available. A resource name assigned by an
+arbitrary classifier is not evidence of access. The two-send client uses the actual phased run's
+join and terminal prefixes for its source-resource certificates and connects its source log through
+the phased/logged equality. `WorldPhase.queries` remains the ambient query log; it is not identified
+with the source-capability log. A general arbitrary-classifier profile still needs an independent
+proof connecting those labels to actual resources.
 
 The weighted cost theorem bounds every complete execution allowed by the query types. If an
 exported query has charge `c`, its routing program must have source cost at most `c`. The routed

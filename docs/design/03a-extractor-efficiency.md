@@ -106,16 +106,16 @@ prefix quantifiers and terminal semantics; they are distinct from the terminal
 relation-soundness equivalence.
 
 `Verifier.forall_rbrSoundness_iff_rbrKnowledgeSoundness_iff` in
-`ArkLib/OracleReduction/Security/Implications.lean` characterizes the remaining carrier cases:
-the equivalence holds uniformly over
-relations and errors exactly when the input-witness type is inhabited or
-`StmtIn × FullTranscript pSpec × WitOut` is empty. Otherwise total backward extraction is
-impossible, even for rejected transcripts and unrelated output witnesses. This is a constraint of
-the total extractor type. Unlike the optional terminal extractor, it must return an earlier
-witness even on rejected or irrelevant data. The
-[open-problems audit](../kb/audits/open-problems-list-decoding-and-correlated-agreement.md)
-records how this compares with ABF26's single carrier. An option-valued legacy round extractor is a possible redesign, not
-an implemented fix. The interaction-layer certificates are not characterized by these results.
+`ArkLib/OracleReduction/Security/Implications.lean` characterizes the remaining carrier cases: the
+equivalence holds uniformly over relations and errors exactly when the input-witness type is
+inhabited or `StmtIn × FullTranscript pSpec × WitOut` is empty. Otherwise total backward extraction
+is impossible, even for rejected transcripts and unrelated output witnesses. This is a constraint of
+the total extractor type. Unlike the optional terminal extractor, it must return an earlier witness
+even on rejected or irrelevant data. The
+[open-problems audit](../kb/audits/open-problems-list-decoding-and-correlated-agreement.md) records
+how this compares with ABF26's single carrier. An option-valued legacy round extractor is a possible
+redesign, not an implemented fix. The interaction-layer certificates are not characterized by these
+results.
 
 Per-round measured programs supply declared operation counts for named stage extractors. They
 supply extraction-time evidence only after the E3 execution and uniformity obligations are proved.
@@ -123,16 +123,16 @@ ABF26 Definition A.5 bounds per-round extraction times, while its knowledge-stat
 inefficient. The terminal `Proof.knowledgeSoundness`/`Proof.soundness` specialization of the
 unbounded characterization is a separate follow-up; no equivalence for it is claimed here.
 
-**Special and coordinate-wise special soundness.** FMN24 requires polynomial-time extraction
-from a tree and derives a knowledge extractor with an expected number of prover executions;
+**Special and coordinate-wise special soundness.** FMN24 requires polynomial-time extraction from a
+tree and derives a knowledge extractor with an expected number of prover executions;
 [FMN24](../kb/papers/FMN24.md) records the source numbering and the
 [zero-check audit](../kb/audits/noz26-zero-check-lemma10.md) its consequences. Polynomial time in
-the size of a supplied tree need not be polynomial in the original instance: the tree's size is the product of its per-round
-arities, which is exponential in the number of challenge rounds once every arity is at least two. An
-escape disjunct supports a reduction to a computational assumption only together with an efficient
-algorithm producing the escape; the event alone is existential. ArkLib has no theorem deriving
-knowledge soundness from special soundness or CWSS by tree extraction. That theorem is where the
-cost of obtaining the tree must be bounded.
+the size of a supplied tree need not be polynomial in the original instance: the tree's size is the
+product of its per-round arities, which is exponential in the number of challenge rounds once every
+arity is at least two. An escape disjunct supports a reduction to a computational assumption only
+together with an efficient algorithm producing the escape; the event alone is existential. ArkLib
+has no theorem deriving knowledge soundness from special soundness or CWSS by tree extraction. That
+theorem is where the cost of obtaining the tree must be bounded.
 
 Completing these structural contracts, especially for the interaction-layer knowledge games, precedes the
 complete-execution work below; see the roadmap.
@@ -360,10 +360,10 @@ proved bound on host runtime.
 Likewise, `Raw.trim` in `CompPoly.Univariate.Raw.Core` uses `lastNonzero` (`findIdxRev?`) followed
 by a prefix `extract`. The measured
 [`Arithmetic.trimRaw`](../../ArkLib/ToCompPoly/Univariate/ArithmeticPolynomial.lean) recursively
-reads, tests and pops trailing coefficients; its [profile
-bounds](../../ArkLib/ToCompPoly/Univariate/ArithmeticPolynomialCost.lean) certify that program.
-Output equality leaves copying, allocation, indexing and control costs unpriced. These audits
-concern the named definitions, with no whole-library machine-time or performance claim.
+reads, tests and pops trailing coefficients; its
+[profile bounds](../../ArkLib/ToCompPoly/Univariate/ArithmeticPolynomialCost.lean) certify that
+program. Output equality leaves copying, allocation, indexing and control costs unpriced. These
+audits concern the named definitions, with no whole-library machine-time or performance claim.
 
 ## FRI integration
 

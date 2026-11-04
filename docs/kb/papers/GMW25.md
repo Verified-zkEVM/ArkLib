@@ -80,17 +80,19 @@ the generalized-Johnson specialization using ArkLib's existing powers-MCA theore
 
 ## Known Divergences From ArkLib
 
-ArkLib's existing domains support folding factors that are powers of two. The paper allows
-more general multiplicative subgroups. ArkLib certifies the extractor's retained-input access and algebraic instruction bounds without a machine-level polynomial-time adequacy theorem. Zero query
-repetitions are allowed, making the query-error term one and the total bound vacuous; the
-paper's probability-to-binding deduction assumes a positive repetition count.
+ArkLib's existing domains support folding factors that are powers of two. The paper allows more
+general multiplicative subgroups. ArkLib certifies the extractor's retained-input access and
+algebraic instruction bounds without a machine-level polynomial-time adequacy theorem. Zero query
+repetitions are allowed, making the query-error term one and the total bound vacuous; the paper's
+probability-to-binding deduction assumes a positive repetition count.
 
 ## Open Formalization Gaps
 
-Ordinary soundness, round-by-round soundness, and a named straightline knowledge game for the
-specified interactive oracle reduction are proved, together with deterministic extraction
-and explicit retained-input access and field-operation bounds. Fiat–Shamir compilation, concrete
-commitment security, and a machine/bit-runtime or total-workspace theorem remain separate obligations.
+Ordinary soundness, round-by-round soundness, and straightline knowledge soundness for a named
+extractor of the specified interactive oracle reduction are proved, together with deterministic
+extraction and explicit retained-input access and field-operation bounds. Fiat–Shamir compilation,
+concrete commitment security, and a machine/bit-runtime or total-workspace theorem remain separate
+obligations.
 
 ## Source Access
 
