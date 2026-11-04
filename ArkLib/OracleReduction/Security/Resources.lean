@@ -12,15 +12,24 @@ public import VCVio.OracleComp.QueryTracking.MeasuredProgram
 # Knowledge soundness with measured extraction
 
 `knowledgeSoundnessWith` bounds the error of one named extractor but says nothing about its cost.
-A measured program (`OracleComp.MeasuredProgram`) supplies that cost for a deterministic
-straightline extractor. The resource contract adds two claims to the game: the extractor's run is
-the handlers' execution of the program on its view, without querying `oSpec`, and every execution
-path of the program costs at most a budget.
+A measured program (`OracleComp.MeasuredProgram`) supplies a declared instruction count for a
+function with the same returned value as a deterministic straightline extractor. The contract adds
+two claims to the game: the extractor returns that value purely, without querying `oSpec`, and every
+execution path of the named program costs at most a budget. The agreement is extensional; it does
+not identify the extractor's implementation trace with the program's trace.
 
 The contract certifies the program's declared instructions only; `OracleComp.MeasuredProgram`
 lists what is uncharged. Every deterministic extractor that makes no `oSpec` query has a measured
 program with budget zero, so an existential statement over measured programs adds nothing to
 `knowledgeSoundnessWith`. Only a named program with a stated instruction set is evidence.
+
+These operation-count security contracts use finite pointwise natural-number profiles. Standard
+addition and order are fixed by the definitions. Generic measured programs also support signed,
+reversed or idempotent weights; such valuations are not operation counts. Fixed count arithmetic
+does not charge pure work or require every instruction to have a nonzero charge.
+
+An empty `Kind` records no resources: its count profile is uniquely zero, so every count budget
+is vacuous. A scalar count uses `Unit → Nat`.
 -/
 
 @[expose] public section
@@ -61,30 +70,29 @@ variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ Pro
 
 namespace Verifier
 
-/-- Knowledge soundness of a named extractor together with a cost bound for a measured program
-that it executes. The budget bounds the program's declared instruction charges only; see the
-module documentation for what is uncharged.
-Unlike `OracleComp.BudgetedProgram`, which bundles each native tree node's program, budget and
-proofs as data, this contract keeps the program and budget as parameters so `mono` can change the
-budget and `RealizesExtractor` identifies the extractor's monadic run. -/
-def knowledgeSoundnessWithResources {ω : Type} [AddCommMonoid ω] [Preorder ω]
+/-- Knowledge soundness of a named extractor together with an operation-count bound for a measured
+program returning the same result. The budget bounds the program's declared instruction charges
+only; see the module documentation for what is uncharged.
+The program uses deterministic handlers, agrees with the extractor's pure return, and has a fixed
+pointwise natural-number budget. -/
+def knowledgeSoundnessWithResources {Kind : Type} [Finite Kind]
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (extractor : Extractor.Straightline oSpec StmtIn WitIn WitOut pSpec)
     (knowledgeError : ℝ≥0)
-    (program : Extractor.Straightline.MeasuredProgram oSpec StmtIn WitIn WitOut pSpec ω)
-    (budget : ω) : Prop :=
+    (program : Extractor.Straightline.MeasuredProgram oSpec StmtIn WitIn WitOut pSpec (Kind → Nat))
+    (budget : Kind → Nat) : Prop :=
   verifier.knowledgeSoundnessWith init impl relIn relOut extractor knowledgeError ∧
     program.RealizesExtractor extractor ∧ program.CostAtMost budget
 
 namespace knowledgeSoundnessWithResources
 
-variable {ω : Type} [AddCommMonoid ω] [Preorder ω]
+variable {Kind : Type} [Finite Kind]
   {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
   {verifier : Verifier oSpec StmtIn StmtOut pSpec}
   {extractor : Extractor.Straightline oSpec StmtIn WitIn WitOut pSpec} {knowledgeError : ℝ≥0}
-  {program : Extractor.Straightline.MeasuredProgram oSpec StmtIn WitIn WitOut pSpec ω}
-  {budget : ω}
+  {program : Extractor.Straightline.MeasuredProgram oSpec StmtIn WitIn WitOut pSpec (Kind → Nat)}
+  {budget : Kind → Nat}
 
 /-- Forget the measured program, keeping the game for the same named extractor. -/
 theorem knowledgeSoundnessWith
@@ -103,7 +111,7 @@ theorem knowledgeSoundness
 /-- A resource certificate remains valid for any larger budget. -/
 theorem mono
     (h : verifier.knowledgeSoundnessWithResources init impl relIn relOut extractor
-      knowledgeError program budget) {budget' : ω} (hle : budget ≤ budget') :
+      knowledgeError program budget) {budget' : Kind → Nat} (hle : budget ≤ budget') :
     verifier.knowledgeSoundnessWithResources init impl relIn relOut extractor
       knowledgeError program budget' :=
   ⟨h.1, h.2.1, h.2.2.mono hle⟩
@@ -119,29 +127,29 @@ variable {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [∀ i, OracleInterface
   [∀ i, OracleInterface (pSpec.Message i)]
 
 /-- Measured knowledge soundness of an oracle verifier is that of its non-oracle verifier. -/
-def knowledgeSoundnessWithResources {ω : Type} [AddCommMonoid ω] [Preorder ω]
+def knowledgeSoundnessWithResources {Kind : Type} [Finite Kind]
     (relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn))
     (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
     (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec)
     (extractor : Extractor.Straightline oSpec (StmtIn × ∀ i, OStmtIn i) WitIn WitOut pSpec)
     (knowledgeError : ℝ≥0)
     (program : Extractor.Straightline.MeasuredProgram oSpec (StmtIn × ∀ i, OStmtIn i)
-      WitIn WitOut pSpec ω)
-    (budget : ω) : Prop :=
+      WitIn WitOut pSpec (Kind → Nat))
+    (budget : Kind → Nat) : Prop :=
   verifier.toVerifier.knowledgeSoundnessWithResources init impl relIn relOut extractor
     knowledgeError program budget
 
 namespace knowledgeSoundnessWithResources
 
-variable {ω : Type} [AddCommMonoid ω] [Preorder ω]
+variable {Kind : Type} [Finite Kind]
   {relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn)}
   {relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut)}
   {verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec}
   {extractor : Extractor.Straightline oSpec (StmtIn × ∀ i, OStmtIn i) WitIn WitOut pSpec}
   {knowledgeError : ℝ≥0}
   {program : Extractor.Straightline.MeasuredProgram oSpec (StmtIn × ∀ i, OStmtIn i)
-    WitIn WitOut pSpec ω}
-  {budget : ω}
+    WitIn WitOut pSpec (Kind → Nat)}
+  {budget : Kind → Nat}
 
 /-- Forget the measured program, keeping the game for the same named extractor. -/
 theorem knowledgeSoundnessWith
@@ -160,7 +168,7 @@ theorem knowledgeSoundness
 /-- A resource certificate remains valid for any larger budget. -/
 theorem mono
     (h : verifier.knowledgeSoundnessWithResources init impl relIn relOut extractor
-      knowledgeError program budget) {budget' : ω} (hle : budget ≤ budget') :
+      knowledgeError program budget) {budget' : Kind → Nat} (hle : budget ≤ budget') :
     verifier.knowledgeSoundnessWithResources init impl relIn relOut extractor
       knowledgeError program budget' :=
   Verifier.knowledgeSoundnessWithResources.mono init impl h hle

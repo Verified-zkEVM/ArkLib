@@ -24,8 +24,12 @@ value. `MeasuredKnowledgeCertificate` adds the stages to a `KnowledgeCertificate
 extractor; forgetting them recovers the certificate, whose fields the round-by-round and
 state-restoration theorems take. The theorem
 `MeasuredKnowledgeCertificate.stateRestoration_oracle_knowledge_soundness_nonuniform` in
-`StateRestorationResources` packages the closed-oracle security bound with a stage budget for that
-same named extractor.
+`StateRestorationResources` derives a composed-path instruction bound from the supplied local
+stage bounds and the fixed protocol depth, for that same named extractor. The local bound may
+depend on the input statement; it does not impose a uniform executable certificate family.
+
+`MeasuredStages.programAlong` in `KnowledgeResources.Composition` composes the stage instruction
+programs along an actual path and adds their declared budgets.
 
 ## Scope
 
@@ -42,8 +46,18 @@ accounting, the following are uncharged.
   `terminalWitness`, `RoundExtractor.changeInputState`) are not programs. An equivalence onto the
   graph of a function computes that function, so stage budgets bound extraction only together with
   a separately stated cost of these identifications.
-* The composition of stages, the size of intermediate witnesses, and the computation of the
-  knowledge predicates are not bounded.
+* Complete execution of the stage composition, the size of intermediate witnesses, and computation
+  of the knowledge predicates are not bounded. The composed program counts only the declared
+  instructions of the stage programs.
+
+`MeasuredKnowledgeCertificate` uses a finite resource-kind type and fixes standard addition and
+order on natural-number count profiles. The underlying `MeasuredStages` and `BudgetAtMost` remain
+generic weighted accounting, including idempotent or signed valuations that do not count
+instructions. Fixed count arithmetic does not eliminate zero-charge instructions or the uncharged
+work above.
+
+An empty `Kind` records no resources: its count profile is uniquely zero, so every count budget
+is vacuous. A scalar count uses `Unit → Nat`.
 
 Moves and witness carriers live in `Type`, the universe of a measured program's input and result.
 -/
@@ -118,10 +132,10 @@ end RoundExtractor
 
 /-- A knowledge certificate whose named extractor has a budgeted program for the stage at
 every authored node. -/
-structure MeasuredKnowledgeCertificate (ω : Type) [AddCommMonoid ω] [Preorder ω]
+structure MeasuredKnowledgeCertificate (Kind : Type) [Finite Kind]
     (tree : Oracle.TypeTree.{0}) (roles : tree.RoleDecoration) (state : KnowledgeState.{0})
     extends KnowledgeCertificate tree roles state where
   /-- A measured program and budget for each stage of the named extractor. -/
-  stages : extractor.MeasuredStages ω
+  stages : extractor.MeasuredStages (Kind → Nat)
 
 end Interaction.Oracle.Security

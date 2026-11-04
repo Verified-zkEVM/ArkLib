@@ -761,33 +761,28 @@ home_page/            site assets and assembled website root
   `Security/GuardedSoundness.lean` gives the corresponding soundness bridges
   (`Verifier.GuardedForm.soundness_of_rbrSoundness`,
   `OracleVerifier.soundness_of_rbrSoundness_of_guarded`).
-- Measured extraction lives in `Security/Resources.lean`. Its game-independent core,
-  `OracleComp.MeasuredProgram` in `VCVio.OracleComp.QueryTracking.MeasuredProgram` is an
-  uncharged view of a function's input, a charged instruction program on that view, and deterministic
-  handlers, with `Realizes` and a budget `CostAtMost` on every program path
-  (VCVio `WorstCaseCostBound`);
-  `OracleComp.BudgetedProgram f` bundles a program realizing `f` with its budget, and
-  `BudgetedProgram.ofFun` shows every function has one with budget zero.
-  `Extractor.Straightline.MeasuredProgram` is its instance at the straightline extractor's inputs.
-  Its `RealizesExtractor` relates the extractor's run to the program execution, and
-  `Verifier.knowledgeSoundnessWithResources` adds to `knowledgeSoundnessWith` that the named
-  extractor executes the program within the budget. The interaction-layer contract is
-  `Interaction/Oracle/Security/KnowledgeResources.lean`: `RoundExtractor.stageMap` is the backward
-  witness map at a node, on its move and later witness; `RoundExtractor.MeasuredStages` names a
-  budgeted program for the stage at every authored node; and `MeasuredKnowledgeCertificate`
-  extends `KnowledgeCertificate` with them; `MeasuredStages.BudgetAtMost` bounds every stage's
-  budget uniformly. The packaged theorem in
-  `Interaction/Oracle/Security/StateRestorationResources.lean`,
-  `MeasuredKnowledgeCertificate.stateRestoration_oracle_knowledge_soundness_nonuniform`,
-  conjoins the security bound and the stage budget for the same named extractor.
-  It bounds each stage only: earlier moves, the carrier identifications such as
-  `terminalWitness`, the stages' composition and intermediate witness sizes are uncharged.
-  Clients: `ArkLibTest/OracleReduction/MeasuredExtraction.lean` and the state-restoration client
-  `ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean`. All of this counts
-  declared instructions only, not running time. Only a named program with a stated instruction
-  set is evidence.
-  `VCVio.OracleComp.QueryTracking.DeterminedCost` turns a deterministic handler's recorded cost
-  into that bound when every permitted response equals the handler's answer.
+- Measured extraction uses the game-independent `OracleComp.MeasuredProgram` in
+  `VCVio.OracleComp.QueryTracking.MeasuredProgram`. `Realizes` identifies returned values;
+  `CostAtMost` bounds the program's declared instruction weights on every view and path.
+  `OracleComp.BudgetedProgram f` bundles the program, budget and proofs. Public
+  `knowledgeSoundnessWithResources` and `MeasuredKnowledgeCertificate` contracts use `Kind → Nat`
+  profiles with fixed standard arithmetic and order, and require `[Finite Kind]`. FRI's legacy
+  instance lives in `ProofSystem/Fri/Spec/MeasuredKnowledgeSoundness.lean`.
+  `Interaction/Oracle/Security/KnowledgeResources/Composition.lean` composes the stage programs
+  along a typed path, proves their return equals the named extractor's witness, and bounds their
+  sum by the path length times a common local budget. `StateRestorationResources.lean` separates
+  message and challenge budgets: for `r = rounds.length`, the bound is
+  `r • (messageBound z + challengeBound z)`. Its headline theorem includes the original game bound,
+  this actual-program count bound and the return's equality with the game's input witness after
+  the declared terminal-witness conversion. Native clients currently appear only in acceptance
+  fixtures, including
+  `ArkLibTest/Interaction/Oracle/Security/{StateRestorationBudget,MeasuredPathBudgets}.lean`;
+  no production native client is certified. These APIs certify selected instruction counts.
+  `BudgetedProgram.ofFun` gives every function a zero-budget program; pure work, views/handlers,
+  prefix or statement selection and witness-carrier conversions remain uncharged. The owning
+  [legacy](../../ArkLib/OracleReduction/Security/Resources.lean) and
+  [native](../../ArkLib/Interaction/Oracle/Security/KnowledgeResources.lean) Lean module docs state
+  the accounting boundary.
 - Coordinate-wise special soundness ([FMN24]/[NOZ26]) lives in
   `Security/CoordinateWiseSpecialSoundness/`: `Basic` defines the `SS(S, ℓ, k)` combinatorics
   (`CoordEq`, `IsSpecialSoundFamily`), `CWSSStructure`, `CWSSStructure.toShape`, and both forms

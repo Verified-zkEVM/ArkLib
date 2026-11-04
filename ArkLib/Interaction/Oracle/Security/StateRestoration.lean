@@ -52,6 +52,15 @@ def protocol : List Round → Protocol
   | round :: rounds => .oracleWith round.Message round.interface
       (.public .receiver round.Challenge (fun _ => protocol rounds))
 
+/-- Each fixed round visits one oracle-message node and one public-challenge node. -/
+@[simp] theorem length_executionPath_protocol : (rounds : List Round) →
+    (path : (protocol rounds).tree.ExecutionPath) → path.length = 2 * rounds.length
+  | [], _ => rfl
+  | _ :: rounds, path => by
+      change TypeTree.ExecutionPath.length path.2.2 + 1 + 1 = 2 * (rounds.length + 1)
+      rw [length_executionPath_protocol rounds path.2.2]
+      omega
+
 /-- Salted keys encode the round by their depth and retain each message and salt through that round.
 No earlier verifier response is part of a key. -/
 @[reducible] def Key (Input Salt : Type) : List Round → Type
