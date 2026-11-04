@@ -345,9 +345,10 @@ def knowledgeSoundnessWith
   The extractor is unconstrained, so this contract carries no efficiency content. The classical
   witness selector `Extractor.Straightline.choose` makes it equivalent to
   `Verifier.relationSoundness` (`Verifier.knowledgeSoundness_iff_relationSoundness`). Extraction in
-  the cryptographic sense needs a named extractor and a complete execution bound.
-  `knowledgeSoundnessWith` names it; `knowledgeSoundnessWithResources` in `Security/Resources.lean`
-  adds declared instruction counts, which alone do not bound its complete execution.
+  the cryptographic sense needs a named extractor and a bound on its complete execution.
+  `knowledgeSoundnessWith` fixes the extractor. `knowledgeSoundnessWithResources` in
+  `Security/Resources.lean` additionally bounds the declared instruction counts of a measured
+  program returning the same value, which does not bound the extractor's complete execution.
 -/
 def knowledgeSoundness (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec) (knowledgeError : ℝ≥0) : Prop :=

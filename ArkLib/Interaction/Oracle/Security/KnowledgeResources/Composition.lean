@@ -76,8 +76,8 @@ theorem MeasuredStages.programAlong_budget_oracle {Messages : Type}
     (stages.programAlong path).budget =
       ((stages.2 path.1).programAlong path.2).budget + stages.1.budget := rfl
 
-/-- A local stage bound gives a composed bound proportional to the actual path length.
-This remains valid for generic weights; no nonnegativity assumption on `bound` is used. -/
+/-- If every stage budget is at most `bound`, the composed budget along `path` is at most
+`path.length • bound`. -/
 theorem MeasuredStages.programAlong_budget_le (bound : ω) :
     {tree : Oracle.TypeTree.{0}} → {state : KnowledgeState.{0}} →
     {extractor : RoundExtractor tree state} → (stages : extractor.MeasuredStages ω) →
@@ -87,14 +87,10 @@ theorem MeasuredStages.programAlong_budget_le (bound : ω) :
       change (0 : ω) ≤ (0 : Nat) • bound
       simp
   | .public _ _, _, _, stages, h, path => by
-      change ((stages.2 path.1).programAlong path.2).budget + stages.1.budget ≤
-        (Oracle.TypeTree.ExecutionPath.length path.2 + 1) • bound
-      rw [succ_nsmul]
+      rw [programAlong_budget_public, Oracle.TypeTree.ExecutionPath.length_public, succ_nsmul]
       exact add_le_add (programAlong_budget_le bound (stages.2 path.1) (h.2 path.1) path.2) h.1
   | .oracle _ _, _, _, stages, h, path => by
-      change ((stages.2 path.1).programAlong path.2).budget + stages.1.budget ≤
-        (Oracle.TypeTree.ExecutionPath.length path.2 + 1) • bound
-      rw [succ_nsmul]
+      rw [programAlong_budget_oracle, Oracle.TypeTree.ExecutionPath.length_oracle, succ_nsmul]
       exact add_le_add (programAlong_budget_le bound (stages.2 path.1) (h.2 path.1) path.2) h.1
 
 /-- Every completed instruction path of the actual composed program satisfies the length bound. -/
@@ -104,13 +100,5 @@ theorem MeasuredStages.programAlong_costAtMost {tree : Oracle.TypeTree.{0}}
     (path : tree.ExecutionPath) :
     (stages.programAlong path).program.CostAtMost (path.length • bound) :=
   (stages.programAlong path).costAtMost.mono (stages.programAlong_budget_le bound h path)
-
-/-- A larger depth cap bounds the composed budget when the local bound is nonnegative. -/
-theorem MeasuredStages.programAlong_budget_le_of_length_le {tree : Oracle.TypeTree.{0}}
-    {state : KnowledgeState.{0}} {extractor : RoundExtractor tree state}
-    (stages : extractor.MeasuredStages ω) {bound : ω} (h : stages.BudgetAtMost bound)
-    (nonneg : 0 ≤ bound) (path : tree.ExecutionPath) {depth : Nat}
-    (length_le : path.length ≤ depth) : (stages.programAlong path).budget ≤ depth • bound :=
-  (stages.programAlong_budget_le bound h path).trans (nsmul_le_nsmul_left nonneg length_le)
 
 end Interaction.Oracle.Security.RoundExtractor

@@ -184,17 +184,19 @@ def toTypeTreePath {tree : TypeTree.{u}} (path : ExecutionPath tree) :
     _root_.Interaction.TypeTree.Path tree.toTypeTree :=
   PFunctor.FreeM.PathAlong.toMapLensPath runtimeLens tree path
 
-/-- Number of authored nodes visited by the concrete runtime path, using PolyFun's path length. -/
+/-- The number of authored nodes visited by an execution path. -/
 def length {tree : TypeTree.{u}} (path : ExecutionPath tree) : Nat :=
   PFunctor.FreeM.Path.length tree.toTypeTree path.toTypeTreePath
 
 @[simp] theorem length_done (path : ExecutionPath TypeTree.done) : path.length = 0 := rfl
 
-theorem length_public {Moves : Type u} {next : Moves → TypeTree.{u}}
+/-- A path through a public move visits that node and then its continuation's nodes. -/
+@[simp] theorem length_public {Moves : Type u} {next : Moves → TypeTree.{u}}
     (path : ExecutionPath (TypeTree.public Moves next)) :
     path.length = length path.2 + 1 := rfl
 
-theorem length_oracle {Messages : Type u} {next : PUnit → TypeTree.{u}}
+/-- A path through an oracle message visits that node and then its continuation's nodes. -/
+@[simp] theorem length_oracle {Messages : Type u} {next : PUnit → TypeTree.{u}}
     (path : ExecutionPath (TypeTree.oracle Messages next)) :
     path.length = length path.2 + 1 := rfl
 

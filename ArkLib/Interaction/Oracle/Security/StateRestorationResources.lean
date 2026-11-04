@@ -35,18 +35,8 @@ open Interaction.Oracle.Security.StateRestoration
 
 namespace Interaction.Oracle.Security
 
-/-- Fixed-round protocols have two authored nodes per round, so local weighted stage bounds
-bound every completed instruction path of the actual composed program. -/
-theorem RoundExtractor.MeasuredStages.programAlong_costAtMost_protocol
-    {ω : Type} [AddCommMonoid ω] [PartialOrder ω] [IsOrderedAddMonoid ω]
-    {rounds : List Round} {state : KnowledgeState.{0}}
-    {extractor : RoundExtractor (protocol rounds).tree state}
-    (stages : extractor.MeasuredStages ω) {bound : ω} (h : stages.BudgetAtMost bound)
-    (path : (protocol rounds).tree.ExecutionPath) :
-    (stages.programAlong path).program.CostAtMost ((2 * rounds.length) • bound) := by
-  simpa only [length_executionPath_protocol] using stages.programAlong_costAtMost h path
-
-/-- Local message and challenge budgets for the fixed protocol's paired stages. -/
+/-- Every oracle-message stage of the fixed-round protocol has budget at most `messageBound`, and
+every public-challenge stage has budget at most `challengeBound`. -/
 def RoundExtractor.MeasuredStages.ProtocolBudgetAtMost
     {ω : Type} [AddCommMonoid ω] [Preorder ω] (messageBound challengeBound : ω) :
     {rounds : List Round} → {state : KnowledgeState.{0}} →
@@ -58,7 +48,20 @@ def RoundExtractor.MeasuredStages.ProtocolBudgetAtMost
         (stages.2 message).1.budget ≤ challengeBound ∧ ∀ challenge,
           ProtocolBudgetAtMost messageBound challengeBound ((stages.2 message).2 challenge)
 
-/-- Each fixed round contributes one message budget and one challenge budget. -/
+/-- A common stage bound gives equal message and challenge bounds. -/
+theorem RoundExtractor.MeasuredStages.BudgetAtMost.protocolBudgetAtMost
+    {ω : Type} [AddCommMonoid ω] [Preorder ω] {bound : ω} :
+    {rounds : List Round} → {state : KnowledgeState.{0}} →
+    {extractor : RoundExtractor (protocol rounds).tree state} →
+    {stages : extractor.MeasuredStages ω} → stages.BudgetAtMost bound →
+    stages.ProtocolBudgetAtMost bound bound
+  | [], _, _, _, _ => trivial
+  | _ :: _, _, _, _, h =>
+      ⟨h.1, fun message => ⟨(h.2 message).1, fun challenge =>
+        protocolBudgetAtMost ((h.2 message).2 challenge)⟩⟩
+
+/-- Under `ProtocolBudgetAtMost messageBound challengeBound`, the composed budget along every
+path is at most `rounds.length • (messageBound + challengeBound)`. -/
 theorem RoundExtractor.MeasuredStages.programAlong_budget_le_protocol
     {ω : Type} [AddCommMonoid ω] [PartialOrder ω] [IsOrderedAddMonoid ω]
     (messageBound challengeBound : ω) :
@@ -84,7 +87,9 @@ theorem RoundExtractor.MeasuredStages.programAlong_budget_le_protocol
             (hbudget.2 path.1).1) hbudget.1
         _ = _ := by ac_rfl
 
-/-- Separate message and challenge bounds control every actual composed instruction path. -/
+/-- Under `ProtocolBudgetAtMost messageBound challengeBound`, every completed instruction path of
+the composed program along any path costs at most
+`rounds.length • (messageBound + challengeBound)`. -/
 theorem RoundExtractor.MeasuredStages.programAlong_costAtMost_protocol_paired
     {ω : Type} [AddCommMonoid ω] [PartialOrder ω] [IsOrderedAddMonoid ω]
     {rounds : List Round} {state : KnowledgeState.{0}}
@@ -97,8 +102,8 @@ theorem RoundExtractor.MeasuredStages.programAlong_costAtMost_protocol_paired
   (stages.programAlong path).costAtMost.mono
     (stages.programAlong_budget_le_protocol messageBound challengeBound hbudget path)
 
-/-- After the uncharged terminal-carrier conversion, the named composed run returns exactly the
-input witness used by the original state-restoration game. -/
+/-- The composed program, run on the converted terminal witness, returns the input witness that
+the state-restoration game extracts. -/
 theorem MeasuredKnowledgeCertificate.run_programAlong_terminalWitness
     {Kind Input W : Type} [Finite Kind] {rounds : List Round}
     (state : Input → KnowledgeState.{0})
@@ -112,9 +117,10 @@ theorem MeasuredKnowledgeCertificate.run_programAlong_terminalWitness
         z path witness :=
   (certificate z).stages.run_programAlong path (terminalWitness z path witness)
 
-/-- The original closed-oracle game has knowledge error at most `Q * max + sum`. Every actual
-composed extraction program has the derived statement-indexed instruction bound. The suffix
-`nonuniform` concerns round errors, not a uniform implementation or an extraction-time guarantee. -/
+/-- On inputs in `Z`, the closed-oracle game with the certificates' extractor has knowledge error
+at most `Q * max_j errors j + ∑ j, errors j`. For every `z ∈ Z` and path, the composed stage program
+returns the game's input witness, and each of its completed instruction paths costs at most
+`rounds.length • (messageBound z + challengeBound z)`. -/
 theorem MeasuredKnowledgeCertificate.stateRestoration_oracle_knowledge_soundness_nonuniform
     {Kind Input Salt : Type} [Finite Kind] {rounds : List Round} {W : Type}
     [DecidableEq Input] [DecidableEq Salt]

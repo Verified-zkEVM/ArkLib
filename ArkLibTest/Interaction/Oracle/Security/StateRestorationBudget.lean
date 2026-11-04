@@ -365,10 +365,12 @@ theorem stages_budgetAtMost_one (z : Nat) : (stages z).BudgetAtMost 1 :=
 theorem stages_protocolBudgetAtMost (z : Nat) : (stages z).ProtocolBudgetAtMost 1 0 :=
   ⟨le_rfl, fun _ => ⟨le_rfl, fun _ => ⟨le_rfl, fun _ => ⟨le_rfl, fun _ => trivial⟩⟩⟩⟩
 
-/-- The common stage bound still gives the coarser four-node bound. -/
+/-- The common stage bound gives the coarser bound with equal message and challenge budgets. -/
 example (z : Nat) (path : tree.ExecutionPath) :
-    ((stages z).programAlong path).program.CostAtMost ((2 * rounds.length) • (1 : Unit → Nat)) :=
-  (stages z).programAlong_costAtMost_protocol (stages_budgetAtMost_one z) path
+    ((stages z).programAlong path).program.CostAtMost
+      (rounds.length • ((1 : Unit → Nat) + 1)) :=
+  (stages z).programAlong_costAtMost_protocol_paired
+    (stages_budgetAtMost_one z).protocolBudgetAtMost path
 
 /-- The actual composition of the client's four named stage programs. -/
 def extractionProgram (z : Nat) (path : tree.ExecutionPath) :
