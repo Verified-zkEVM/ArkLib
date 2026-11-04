@@ -177,6 +177,14 @@ The legacy measured contract has the following API scope:
 - **Certificate operations.** `Verifier.knowledgeSoundnessWithResources.mono` raises the budget.
   The resource API has no dedicated certificate-transport theorem for proved program equalities.
 
+A budget allowed to depend freely on each input or view can be defined as the program's own
+worst-case cost there whenever that cost is finite. Such a bound can be vacuous as an independent
+complexity guarantee. The legacy budget is fixed at protocol parameters and must cover every
+view, avoiding this per-view restatement. Native statement-indexed budgets remain legitimate
+operation-count bounds. To derive a size-based efficiency claim, specify the input-size measure
+and budget envelope independently of the program's measured cost and prove the required growth
+bound; an input index alone supplies neither.
+
 Public operation-count security contracts require `[Finite Kind]` and fix `Kind → ℕ` with
 pointwise ordinary addition and order. They bound each coordinate; a scalar total or price is a
 separate derived step. Scalar counts can use `Unit → ℕ`. Empty `Kind` records no resources, and
