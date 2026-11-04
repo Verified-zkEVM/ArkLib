@@ -291,8 +291,10 @@ python3 -m pip install leanblueprint
   [Build Cache](#build-cache)), times the library build, the native build, and the
   `./scripts/validate.sh` path, runs the
   source trust inventory plus axiom-sweep fixture matrix and library regression baseline
-  (all axiom verdicts enforcing), and reuses that build for blueprint/declaration
-  validation and API-documentation generation. The PR-head job has read-only contents
+  (all axiom verdicts enforcing). A separate read-only job renders the blueprint without Lean
+  caches. The required build explicitly checks rendering success and validates the generated
+  declarations against its existing `ArkLibBlueprint` build, then reuses the Lean build for
+  API-documentation generation on main pushes. The PR-head jobs have read-only contents
   permission; on pushes, a separate job deploys its generated static-site artifact with
   Pages/OIDC permission. It uploads timing artifacts consumed by the trusted
   [`../../.github/workflows/build-timing-report.yml`](../../.github/workflows/build-timing-report.yml)
