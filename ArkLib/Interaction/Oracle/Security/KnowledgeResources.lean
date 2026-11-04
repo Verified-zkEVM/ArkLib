@@ -40,7 +40,8 @@ accounting, the following are uncharged.
 
 * Stages are indexed by the actual earlier moves and oracle messages, so each stage's program, view
   and handlers may compute anything from that earlier prefix without charge, and stages at
-  different prefixes may carry different budgets. `BudgetAtMost` bounds them uniformly.
+  different prefixes may carry different budgets. A common bound across prefixes is an assumed
+  hypothesis, such as `BudgetAtMost` or `ProtocolBudgetAtMost`.
 * The intermediate witness carriers are chosen with the extractor, and the identifications of
   carriers with a game's witnesses (`TerminalRelation.witnessEquiv`, a state-restoration
   `terminalWitness`, `RoundExtractor.changeInputState`) are not programs. An equivalence onto the

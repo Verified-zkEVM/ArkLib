@@ -117,8 +117,9 @@ theorem MeasuredKnowledgeCertificate.run_programAlong_terminalWitness
         z path witness :=
   (certificate z).stages.run_programAlong path (terminalWitness z path witness)
 
-/-- On inputs in `Z`, the closed-oracle game with the certificates' extractor has knowledge error
-at most `Q * max_j errors j + ∑ j, errors j`. For every `z ∈ Z` and path, the composed stage program
+/-- For an adversary making at most `Q` oracle queries, on inputs in `Z` the closed-oracle game
+with the certificates' extractor has knowledge error at most
+`Q * max_j errors j + ∑ j, errors j`. For every `z ∈ Z` and path, the composed stage program
 returns the game's input witness, and each of its completed instruction paths costs at most
 `rounds.length • (messageBound z + challengeBound z)`. -/
 theorem MeasuredKnowledgeCertificate.stateRestoration_oracle_knowledge_soundness_nonuniform

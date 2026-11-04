@@ -148,7 +148,7 @@ example :
 /-- No authored nodes means path length zero. -/
 example (path : TypeTree.done.ExecutionPath) : path.length = 0 := rfl
 
-/-- A larger depth cap is invalid for negative weights without the nonnegativity premise. -/
+/-- With a negative weight, `path.length • bound` cannot be relaxed to a larger depth cap. -/
 example :
     let extractor : RoundExtractor .done state := PUnit.unit
     let stages : extractor.MeasuredStages Int := PUnit.unit
