@@ -46,7 +46,7 @@ promise deprecation periods; see the [compatibility policy](CONTRIBUTING.md#comp
 
 ## Complete
 
-The results below are provided on `main` and depend only on Lean's standard axioms
+Every result below is on `main` and depends only on Lean's standard axioms
 (`propext`, `Classical.choice`, `Quot.sound`). Theorem names are full Lean names. Each theorem's
 docstring states its hypotheses; read them before relying on a result. The interaction-layer status
 page, [`docs/design/00-current-status.md`](docs/design/00-current-status.md), records that layer's APIs

@@ -136,7 +136,7 @@ Naming follows [`docs/wiki/interaction-naming.md`](../wiki/interaction-naming.md
 | Composition through exported oracle interfaces and actual claim closing | `Oracle/SourceRouting.executeStrategies_appendExported_close` | #1234 |
 | Weighted and uniform soundness for exported oracle composition | `Oracle/CompositionSoundness` | [#1235](https://github.com/Verified-zkEVM/ArkLib/pull/1235) |
 | Available query names preserved by continuation and append | `Oracle/Prefix`, `Oracle/Access` | [#1238](https://github.com/Verified-zkEVM/ArkLib/pull/1238) |
-| Actual-route access and weighted query budgets | VCVio’s `CostModel` and `AllQueriesSatisfy.simulateQ` APIs | [#1238](https://github.com/Verified-zkEVM/ArkLib/pull/1238) |
+| Actual-route access and weighted query budgets | `WorstCaseCostBound.simulateQ` (`VCVio.OracleComp.QueryTracking.CostModel.Simulation`) and `OracleComp.AllQueriesSatisfy.simulateQ` (`VCVio.OracleComp.QueryTracking.QueryBound.Simulation`) | [#1238](https://github.com/Verified-zkEVM/ArkLib/pull/1238), #1447 |
 | Oracle append paths, runtime roles, access, and query answers | `Oracle/TypeTree`, `Oracle/TypeTree/Decoration`, `Oracle/Access`, `Oracle/RunSources` | #1232 |
 | Fixed-prover, reachable, and averaged bounds | `run_appendFlat_soundness_fixed`, `_of_support`, `_ae`, and `_weighted_ae` | #1231 |
 
@@ -332,8 +332,8 @@ messages through its cursor map. Initial names identify raw input queries. Names
 oracles identify their send edges, preserving sharing across query arguments. A future send cannot
 be named by a currently available query.
 
-VCVio’s `CostModel` and `AllQueriesSatisfy.simulateQ` APIs prove access and cost bounds for the
-actual query substitution.
+`WorstCaseCostBound.simulateQ` and `OracleComp.AllQueriesSatisfy.simulateQ` prove cost and access
+bounds for the actual query substitution.
 If each allowed exported query routes only to allowed source queries, the whole routed program
 satisfies that access condition. If each route fits its exported query's charge, the routed program
 inherits the exported program's total budget. Charges may vary by query; repeated calls to one
@@ -428,7 +428,6 @@ combines its existing probability theorem with an all-witness return identity an
 instruction bound specified in the
 [resource contract](03a-extractor-efficiency.md#state-restoration-resource-contract).
 Public count contracts fix finite natural-number profiles; generic stages remain weighted.
-Current native clients are acceptance fixtures, with no production native knowledge client yet.
 The [accounting boundary](03a-extractor-efficiency.md#proof-and-accounting-boundary) applies to all
 these certificates. The [native composition priorities](05-roadmap.md#native-resource-composition)
 own the remaining client and resource-closure work.

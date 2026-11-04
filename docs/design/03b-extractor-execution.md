@@ -18,7 +18,7 @@ needs separate probabilistic evidence.
 | Layer | Units and scope | Evidence for a claim at this layer | ArkLib extractor status |
 |---|---|---|---|
 | Selected-operation profile (E2) | Ordinary natural counts per declared instruction kind; excludes uncharged host work | Named program, actual handlers, extractor output agreement and its all-path count bound | FRI extractor certificate implemented; native stage/path API validated by fixtures, no production client |
-| Complete algebraic execution (E3) | Declared field/control/storage steps plus separately bounded encoded code/data bits and setup | Named backend code, semantic agreement, complete execution/access/termination bounds and reviewed primitive adequacy | Pending |
+| Complete algebraic execution (E3) | Declared field/control/storage steps plus separately bounded encoded code/data bits and setup | Named backend code, semantic agreement, complete execution/access/termination bounds and reviewed primitive adequacy | Required later |
 | Bit or fixed-word execution | Bit operations or machine-word instructions with fixed operand/encoding sizes | A direct bound for the named implementation, or proved primitive/representation/cost simulation including overhead | No extractor certificate or bridge here |
 | Physical execution | Platform cycles/time and memory on specified hardware/runtime | A direct bound under stated platform/runtime assumptions, or compiler/runtime/platform cost correspondence from a lower-level model | No extractor certificate or bridge here |
 
@@ -122,7 +122,7 @@ Its engineering compilation contract is not a proved RISC-V correspondence and l
 work unpriced. Caliper supplies a word-level model. Physical runtime needs separate platform
 evidence. A pilot needs semantic agreement and field arithmetic with overflow handling;
 fitting field values in one word is insufficient. This route need not block on porting its pinned
-Lean 4.32.2 stack to ArkLib's 4.35.0 stack.
+Lean stack to ArkLib's toolchain.
 
 ## FRI and family obligations
 

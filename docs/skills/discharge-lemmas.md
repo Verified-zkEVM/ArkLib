@@ -85,7 +85,8 @@ the rating and placement decisions are what keep the result maintainable.
 
 - For each gap, ask: where in the repo does this lemma belong? Match the routing in
   [`../wiki/repo-map.md`](../wiki/repo-map.md):
-  - generic polynomial algorithms and their semantic/size facts → CompPoly
+  - generic polynomial algorithms and their semantic/size facts → CompPoly, staged in
+    `ArkLib/ToCompPoly/` until a pinned CompPoly revision provides them
   - generic oracle computations, probability, cost instrumentation and measured programs → VCVio
   - ArkLib-specific supporting math and coding theory → `ArkLib/Data/`
   - polynomial instrumentation adapters currently live in `ArkLib/ToCompPoly/`; review a shared

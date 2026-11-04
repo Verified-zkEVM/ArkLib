@@ -260,9 +260,8 @@ suffix, including any access restrictions or runtime invariants they rely on.
 
 ### 4.5 Access and query budgets
 
-The route-access and cost theorems in VCVio’s `CostModel` and
-`AllQueriesSatisfy.simulateQ` APIs apply to the same `simulateQ`
-program. Access checks every query in the authored program and in each allowed query's route.
+The cost theorem `WorstCaseCostBound.simulateQ` and the access theorem
+`OracleComp.AllQueriesSatisfy.simulateQ` apply to the same `simulateQ` program. Access checks every query in the authored program and in each allowed query's route.
 Canonical prefix names connect source tags to the input queries and oracle sends already available.
 A resource name assigned by an arbitrary classifier is not evidence of access. The two-send client
 uses the actual phased run's join and terminal prefixes for its source-resource certificates and
@@ -308,8 +307,8 @@ state their entropy, salt, replay, budget, and loss assumptions.
 
 Implemented in `ArkLib/Interaction/Oracle/Security/`: the bridge from interaction-layer round-by-round
 knowledge to state-restoration knowledge soundness, for fixed-round public-coin protocols with
-uniform challenge samplers. Restoration keys contain the input, round, prover-message prefix and
-salt prefix, and the adversary makes at most `Q` cached oracle queries.
+uniform challenge samplers. Restoration keys contain the input, prover-message prefix and salt
+prefix, and the adversary makes at most `Q` cached oracle queries.
 
 - `Interaction.Oracle.Security.StateRestoration.stateRestoration_knowledge_soundness`: if every
   round extractor is prover-preserving and locally bounded by `error`, the named backward extractor
@@ -335,7 +334,7 @@ upstream conditioning interfaces; a salted Fiat–Shamir bridge may.
 
 Knowledge soundness with an efficient extractor also needs a certificate for the computation
 named in its game. The [extractor efficiency contracts](03a-extractor-efficiency.md)
-separate measured operations, realized execution, and uniform polynomial-time families. The
+separate measured operations, complete execution, and security-parameter families. The
 unbounded-game contract and measured-operation contract are implemented. FRI has a measured
 extraction certificate, and interaction-layer knowledge certificates have measured stages. The Toy decoding
 certificate and complete execution bounds remain proposed. The legacy existential game alone imposes
@@ -347,8 +346,7 @@ Native `programAlong` composes those budgets on a supplied path. The state-resto
 also identifies the measured return with the game's extractor; its complete statement and
 role-specific budget are recorded in the
 [resource contract](03a-extractor-efficiency.md#state-restoration-resource-contract).
-Native clients remain acceptance fixtures. The
-[common accounting boundary](03a-extractor-efficiency.md#proof-and-accounting-boundary) and
+The [common accounting boundary](03a-extractor-efficiency.md#proof-and-accounting-boundary) and
 [native composition priorities](05-roadmap.md#native-resource-composition) delimit what remains.
 
 Knowledge soundness requires witness availability, not only a bound on true output claims.

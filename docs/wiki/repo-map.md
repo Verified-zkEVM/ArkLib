@@ -762,7 +762,6 @@ home_page/            site assets and assembled website root
   `Security/GuardedSoundness.lean` gives the corresponding soundness bridges
   (`Verifier.GuardedForm.soundness_of_rbrSoundness`,
   `OracleVerifier.soundness_of_rbrSoundness_of_guarded`).
-
 - Measured extraction lives in `Security/Resources.lean`. Its game-independent core is
   `OracleComp.MeasuredProgram` in
   `VCVio.OracleComp.QueryTracking.MeasuredProgram`:
@@ -783,9 +782,9 @@ home_page/            site assets and assembled website root
   [role-specific resource contract](../design/03a-extractor-efficiency.md#state-restoration-resource-contract),
   including the all-witness identity to the game's `extractInputWitness`. The
   [common accounting boundary](../design/03a-extractor-efficiency.md#proof-and-accounting-boundary)
-  applies to every count certificate. Current native clients are acceptance fixtures; the
+  applies to every count certificate, and the
   [native composition priorities](../design/05-roadmap.md#native-resource-composition) record
-  the missing production client and resource-closure proofs.
+  the remaining client and resource-closure proofs.
   Acceptance clients are `ArkLibTest/OracleReduction/MeasuredExtraction.lean` and
   `ArkLibTest/Interaction/Oracle/Security/{StateRestorationBudget,MeasuredPathBudgets}.lean`.
   `VCVio.OracleComp.QueryTracking.DeterminedCost`

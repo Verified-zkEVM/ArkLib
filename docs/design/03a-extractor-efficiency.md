@@ -32,8 +32,7 @@ The `Extractor.Straightline` type permits ambient oracle queries and `none` thro
 (OracleComp oSpec)`. It runs once after the execution without rewinding the prover; narrower oracle
 access is an additional contract. FRI and the executable Toy extractors use the empty ambient
 specification; their retained input words remain separate read-only resources. Straightline access
-to those words
-does not provide rewinding access to the prover.
+to those words does not provide rewinding access to the prover.
 
 The academic targets also separate error and time. GMW25 Corollary 5.6 gives deterministic
 polynomial-time recovery from a safe FRI prefix with sufficiently many accepting positions,
@@ -113,9 +112,9 @@ relations and errors exactly when the input-witness type is inhabited or
 `StmtIn × FullTranscript pSpec × WitOut` is empty. Otherwise total backward extraction is
 impossible, even for rejected transcripts and unrelated output witnesses. This is a constraint of
 the total extractor type. Unlike the optional terminal extractor, it must return an earlier
-witness even on rejected or irrelevant data. ABF26 uses a single inhabited witness carrier, so this
-empty-carrier obstruction is an artifact of ArkLib's more general carrier types, not a failure of
-the paper's soundness notion. An option-valued legacy round extractor is a possible redesign, not
+witness even on rejected or irrelevant data. The
+[open-problems audit](../kb/audits/open-problems-list-decoding-and-correlated-agreement.md)
+records how this compares with ABF26's single carrier. An option-valued legacy round extractor is a possible redesign, not
 an implemented fix. The interaction-layer certificates are not characterized by these results.
 
 Per-round measured programs supply declared operation counts for named stage extractors. They
@@ -124,14 +123,11 @@ ABF26 Definition A.5 bounds per-round extraction times, while its knowledge-stat
 inefficient. The terminal `Proof.knowledgeSoundness`/`Proof.soundness` specialization of the
 unbounded characterization is a separate follow-up; no equivalence for it is claimed here.
 
-**Special and coordinate-wise special soundness.** In the checked ePrint 2023/846 of FMN24,
-Definitions 2.29–2.30 require polynomial-time extraction from a tree, and Lemma 2.31 discusses the
-knowledge extractor and its expected number of prover executions. The combinatorial family occurs in
-§2.9 before Definition 2.29; the journal citation is publication metadata. For source context, see
-[FMN24](../kb/papers/FMN24.md) and the
-[zero-check audit](../kb/audits/noz26-zero-check-lemma10.md). Polynomial time in the
-size of a supplied tree
-need not be polynomial in the original instance: the tree's size is the product of its per-round
+**Special and coordinate-wise special soundness.** FMN24 requires polynomial-time extraction
+from a tree and derives a knowledge extractor with an expected number of prover executions;
+[FMN24](../kb/papers/FMN24.md) records the source numbering and the
+[zero-check audit](../kb/audits/noz26-zero-check-lemma10.md) its consequences. Polynomial time in
+the size of a supplied tree need not be polynomial in the original instance: the tree's size is the product of its per-round
 arities, which is exponential in the number of challenge rounds once every arity is at least two. An
 escape disjunct supports a reduction to a computational assumption only together with an efficient
 algorithm producing the escape; the event alone is existential. ArkLib has no theorem deriving
@@ -160,9 +156,8 @@ P.CostAtMost B                   (all views, all permitted response paths).
 one budget at fixed parameters, uniformly over its views; a representation-size-dependent budget
 is not part of that API. The native state-restoration wrapper instead allows a family
 `messageBound challengeBound : Input → Kind → ℕ`. Those state separate bounds for each
-statement and role, with no growth-rate
-or uniform implementation claim. A dependent specification can certify responses, as FRI's does.
-Representation choices, the view, handlers,
+statement and role, with no growth-rate or uniform implementation claim. A dependent
+specification can certify responses, as FRI's does. Representation choices, the view, handlers,
 charges and budget remain inspectable through the named program. Its output equality connects it
 to the same `E` as the game theorem; it is not a backend execution-cost bound or a uniform-code
 proof.
@@ -179,8 +174,10 @@ The legacy measured contract has the following API scope:
 
 A budget allowed to depend freely on each input or view can be defined as the program's own
 worst-case cost there whenever that cost is finite. Such a bound can be vacuous as an independent
-complexity guarantee. The legacy budget is fixed at protocol parameters and must cover every
-view, avoiding this per-view restatement. Native statement-indexed budgets remain legitimate
+complexity guarantee. The legacy budget is one value per parameter set covering every view; a
+parameter-indexed budget defined as the program's supremum cost there likewise proves only
+finiteness. FRI's bound has content because `extractorProfileBound` is an explicit closed form.
+Native statement-indexed budgets remain legitimate
 operation-count bounds. To derive a size-based efficiency claim, specify the input-size measure
 and budget envelope independently of the program's measured cost and prove the required growth
 bound; an input index alone supplies neither.
@@ -223,6 +220,9 @@ Only declared instruction charges are counted. The **common E2 exclusions** are:
   index/address arithmetic between charged instructions;
 - representation, input-decoding and field bit costs beyond the declared interface charges.
 
+Existence of some budgeted program is not evidence: `BudgetedProgram.ofFun f` realizes every `f`
+with budget zero. Only a named program with a reviewed instruction set and charges is evidence.
+
 Knowledge and relation predicates are logical security specifications. The count certificates
 also give no bound on constructing, evaluating or deciding them. A complete execution certificate
 must charge such work when its actual algorithm performs it; it need not decide a predicate
@@ -258,8 +258,9 @@ For each allowed statement `z` and every supplied completed path, it also proves
 
 `MeasuredStages.ProtocolBudgetAtMost` supplies separate message/challenge bounds uniformly over
 the prefixes at fixed `z`. `run_programAlong_terminalWitness` is the return-identity bridge.
-`length_executionPath_protocol` proves two nodes per round; the helper with one common stage
-bound remains available. The two-round acceptance fixture obtains its tight count two from one
+`length_executionPath_protocol` proves two nodes per round, and
+`MeasuredStages.BudgetAtMost.protocolBudgetAtMost` turns one common stage bound into equal message
+and challenge bounds. The two-round acceptance fixture obtains its tight count two from one
 charged message stage and one zero-charge challenge stage per round. `_nonuniform` refers to the
 round-error schedule. Statement-indexed bounds assert neither a growth rate nor one uniform
 executable implementation.
@@ -451,8 +452,9 @@ visible when describing the result.
 
 Review the implementation against counterexamples that expose weak contracts:
 
-- `pure (chooseWitness x)` has zero instruction cost; it gains no realization certificate merely
-  from that fact. A genuinely efficient selector can still be certified by actual code.
+- `pure (chooseWitness x)` has zero instruction cost and a zero-budget certificate through
+  `ofFun`; that certificate is not efficiency evidence. A genuinely efficient selector can still be
+  certified by actual code.
 - A charged query followed by expensive pure computation is not bounded by the query count alone.
 - A positive vector charge has zero entries in other coordinates; admissibility uses the intended
   scalar valuation or a full execution-domination theorem, not coordinatewise positivity.
