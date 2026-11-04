@@ -7,16 +7,14 @@ English word.
 
 ## How to add a term
 
-Use these rules for a new term:
+1. Find the concept in Mathlib, Lean documentation, or its mathematical source.
+2. Prefer the established term over a local synonym.
+3. Record the intended meaning and grammatical role when the word can cause ambiguity.
+4. Use a qualifier when two technical meanings occur in the same passage.
+5. Add a missing term or meaning when the contribution first needs it.
 
-- Find the concept in Mathlib, Lean documentation, or its mathematical source.
-- Prefer the established term over a local synonym.
-- Record the intended meaning and grammatical role when the word can cause ambiguity.
-- Use a qualifier when two technical meanings occur in the same passage.
-- Add a missing term or meaning when the contribution first needs it.
-
-A noun and a verb need separate technical uses, even when they have the same spelling. A noun entry for
-"query" does not approve every verb use of that word. A category example is not a reason
+A noun and a verb need separate technical uses, even when they have the same spelling. Listing
+"query" as a noun does not approve every verb use of that word. A category example is not a reason
 to reject another established term from that field.
 
 ## Terms and context
@@ -35,7 +33,7 @@ meaning of a word in a different context:
 | field | An algebraic field or a member of a structure | Write "structure field" when the distinction matters. |
 | instance | A typeclass instance or a mathematical problem instance | Qualify the problem or typeclass when both occur. |
 | module | A Lean module or an algebraic module | Write "Lean module" or "module over `R`" when the distinction matters. |
-| proof | A mathematical proof, Lean proof, or proof-system object | Name the kind of proof before you compare different kinds. |
+| proof | A mathematical proof, Lean proof, or proof-system object | Name the kind of proof before comparing different kinds. |
 | sound, soundness | A specified soundness property in security text | Name the property and its assumptions. Ordinary prose can use "correct" for an argument. |
 | statement | A theorem's proposition or a protocol's public input | Use "theorem statement" or "protocol statement" when both meanings occur. |
 | valid | Satisfaction of a specified predicate or well-formedness condition | Define or name the predicate. Do not replace "valid transcript" with "accepted transcript" unless they mean the same thing. |
@@ -44,7 +42,7 @@ meaning of a word in a different context:
 ## Technical nouns
 
 These examples identify relevant subject fields. Preserve established terms and their spellings.
-Introduce a longer or unfamiliar term before you use an abbreviation:
+Introduce a longer or unfamiliar term before using an abbreviation:
 
 | Field | Examples |
 |---|---|
@@ -60,24 +58,26 @@ Introduce a longer or unfamiliar term before you use an abbreviation:
 
 ## Technical -ing nouns
 
-These terms name subject-field concepts. A term must retain the technical meaning in its row:
+These examples help the advisory checker recognize technical terms. They are not an exhaustive
+list or a ban on other meanings. Read each term in its context; listing a noun does not identify
+the grammatical role of every occurrence of the same word.
 
-| Term | Technical meaning |
+| Term | Example technical context |
 |---|---|
-| `coding` | The theory or construction of error-correcting codes |
+| `coding` | Error-correcting codes |
 | `encoding` | A representation of data under a specified code or function |
-| `decoding` | Recovery of a message or word from its encoded representation |
-| `folding` | A code or protocol construction that combines coordinates or rounds |
+| `decoding` | Recovery of information from a received word, which can contain errors |
+| `folding` | The code or protocol construction defined in the passage |
 | `hashing` | Application of a specified hash function |
-| `sampling` | A specified procedure to draw from a probability distribution |
-| `binding` | A stated commitment security property for incompatible openings |
-| `hiding` | A stated commitment security property for information about the committed value |
-| `opening` | A commitment message or procedure that discloses and authenticates a value |
-| `batching` | A construction that combines several checks or instances |
-| `padding` | Extra symbols that give an object the required length or shape |
-| `embedding` | An injective map or a specified representation of one object in another |
+| `sampling` | Drawing from a specified probability distribution |
+| `binding` | A commitment property or a name-to-value association, as the context specifies |
+| `hiding` | A specified commitment security property |
+| `opening` | A commitment message or procedure |
+| `batching` | A construction that combines checks or instances |
+| `padding` | Symbols added to give an object the required shape |
+| `embedding` | An injective map or a representation of one object in another |
 | `coupling` | A joint distribution with specified marginals |
-| `interleaving` | A code construction with several words or component codes |
+| `interleaving` | A code construction involving component words |
 
 ## Technical verbs
 
@@ -116,5 +116,5 @@ direct replacement does not work:
 | "now", "no longer", "previously", "formerly", "currently", "new" | in library reference text, the fact about the present state (rule C3) |
 
 "The following are equivalent" is a permitted mathematical introduction. Words such as "simply"
-and "essentially" can occur in technical terms, such as "simply connected" and "essentially
-surjective". Review their meaning. Do not delete them as isolated words.
+and "essentially" can occur in technical terms, including "simply connected" and "essentially
+surjective". Review their meaning rather than deleting them as isolated words.

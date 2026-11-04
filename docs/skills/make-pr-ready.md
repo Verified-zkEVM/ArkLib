@@ -206,9 +206,9 @@ merge-ready.
   - The **ArkLib warning budget** fails on any non-`sorry` warning under `ArkLib/`. A
     toolchain/Mathlib bump commonly introduces **deprecation** warnings (e.g.
     `X has been deprecated: Use Y instead`) — fix these by switching to the suggested name.
-- Check the title and description against [CONTRIBUTING.md](../../CONTRIBUTING.md#pull-request-guidelines).
-  The subject can be an imperative phrase or a noun phrase. Give the motivation, change, and
-  related issues in proportion to the contribution.
+- Confirm the eventual PR title/description will follow the
+  `<type>(<scope>): <subject>` convention (imperative, lowercase, no trailing dot) and includes
+  motivation, contrast with previous behavior, and issue references.
 
 ### 2. Fix Lean warnings
 

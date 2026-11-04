@@ -38,12 +38,12 @@ If `scripts/axiom_baseline.json` changes, say why.
 
 ## Related work
 
-<!-- `Closes #...`, the base of a stacked pull request, and each pull request on the same target. -->
+<!-- `Closes #...`, the base of a stacked pull request, and each overlapping pull request. -->
 
 ## Checklist
 
-- [ ] I searched the open pull requests and issues for work on the same target.
+- [ ] I searched the open pull requests and issues for overlapping work.
 - [ ] I did the applicable statement checks in CONTRIBUTING.md, "Statement Correctness".
 - [ ] The title and the description agree with the source and reported evidence.
-- [ ] The prose follows the writing standard.
+- [ ] I checked the claim rules and considered the advisory writing guidance.
 - [ ] The pull request contains no working files from a tool session.

@@ -21,7 +21,7 @@ After using a skill, review whether it should be updated:
 ## Available Skills
 
 - [`write-technical-prose.md`](write-technical-prose.md) - draft or revise repository prose,
-  for documentation and PR comments, with local rules and source evidence.
+  including documentation and PR comments, using the local writing rules and source evidence.
 
 - [`discharge-lemmas.md`](discharge-lemmas.md) - workflow for triaging, placing, stating, and
   proving `sorry`s and open proof obligations, including freezing statements against a paper
@@ -31,6 +31,6 @@ After using a skill, review whether it should be updated:
   7, and verify at runtime with `#eval`.
 - [`fix-lean-warnings.md`](fix-lean-warnings.md) - workflow for cleaning Lean 4 linter and style
   warnings safely and incrementally.
-- [`make-pr-ready.md`](make-pr-ready.md) - prepare a branch for review. Audit API names,
-  self-contained docstrings, computability, proof structure, and measured performance. Validate
-  warnings, axiom boundaries, citation ownership, and KB coverage. Find stale references.
+- [`make-pr-ready.md`](make-pr-ready.md) - prepare a branch for review through scope discovery,
+  contribution checks, warning fixes, admissions, citations, KB coverage, and stale-reference cleanup.
+  The contribution guide defines the statement and claim checks.
