@@ -38,4 +38,20 @@ theorem addProgram_costAtMost_one {Input : Type} (view : Input → ℕ × ℕ) :
   MeasuredProgram.costAtMost_of_forall_eq_answer _ 1 (fun _ _ u => Subtype.ext u.2)
     (fun _ => le_rfl)
 
+/-- The same addition instruction program and handlers, charged in a single count coordinate. -/
+def addCountProgram {Input : Type} (view : Input → ℕ × ℕ) :
+    MeasuredProgram Input ℕ (Unit → Nat) :=
+  { addProgram view with cost := fun _ _ => 1 }
+
+/-- Changing the charge profile preserves the returned sum. -/
+theorem addCountProgram_realizes {Input : Type} (view : Input → ℕ × ℕ) :
+    (addCountProgram view).Realizes (fun x => (view x).1 + (view x).2) :=
+  fun _ => rfl
+
+/-- The unchanged instruction program records at most one addition in its count coordinate. -/
+theorem addCountProgram_costAtMost_one {Input : Type} (view : Input → ℕ × ℕ) :
+    (addCountProgram view).CostAtMost 1 :=
+  MeasuredProgram.costAtMost_of_forall_eq_answer _ 1 (fun _ _ u => Subtype.ext u.2)
+    (fun _ _ => le_rfl)
+
 end AddProgramTest

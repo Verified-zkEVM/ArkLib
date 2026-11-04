@@ -38,6 +38,10 @@ inductive AccessCostKind
   | wordRead | domainRead | challengeRead | finalPolynomialRead
   deriving DecidableEq, Repr
 
+instance : Fintype AccessCostKind where
+  elems := {.wordRead, .domainRead, .challengeRead, .finalPolynomialRead}
+  complete kind := by cases kind <;> simp
+
 /-- Arithmetic and immutable-input access coordinates. -/
 abbrev CostKind := ArithmeticCostKind ⊕ AccessCostKind
 
