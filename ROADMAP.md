@@ -151,9 +151,10 @@ entry says so, the specification is not claimed to be executable.
   `(Q + k) * error`. No concrete protocol consumes the knowledge certificates yet, and randomized
   state restoration is in progress (below). The
   [interaction-layer status page](docs/design/00-current-status.md) has the details.
-- **Measured extraction**: measured programs and operation-count budgets
-  ([`Data/OracleComp/MeasuredProgram.lean`](ArkLib/Data/OracleComp/MeasuredProgram.lean)), their use
-  in knowledge soundness ([`OracleReduction/Security/Resources.lean`](ArkLib/OracleReduction/Security/Resources.lean)),
+- **Measured extraction**: VCVio's
+  measured programs and operation-count budgets
+  (`VCVio.OracleComp.QueryTracking.MeasuredProgram`),
+  their use in knowledge soundness ([`OracleReduction/Security/Resources.lean`](ArkLib/OracleReduction/Security/Resources.lean)),
   and measured stages for interaction-layer knowledge and state-restoration certificates
   (`Interaction/Oracle/Security/{KnowledgeResources,StateRestorationResources}.lean`). The
   [extractor-efficiency design](docs/design/03a-extractor-efficiency.md) states what these budgets

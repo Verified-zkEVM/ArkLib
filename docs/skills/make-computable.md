@@ -36,7 +36,7 @@ extraction inside an `Exists.choose`. State the claim that way, not as a securit
 **Measured extraction is where cost becomes part of the statement.** A `MeasuredProgram` runs over a
 declared instruction set with a charge per instruction, and a `BudgetedProgram f ω` packages a
 program that realizes `f` with a proved bound on every execution path
-([`ArkLib/Data/OracleComp/MeasuredProgram.lean`](../../ArkLib/Data/OracleComp/MeasuredProgram.lean)).
+(module `VCVio.OracleComp.QueryTracking.MeasuredProgram`).
 Knowledge soundness with resources
 ([`ArkLib/OracleReduction/Security/Resources.lean`](../../ArkLib/OracleReduction/Security/Resources.lean)
 in the legacy layer, and `Interaction/Oracle/Security/{KnowledgeResources,StateRestorationResources}.lean`

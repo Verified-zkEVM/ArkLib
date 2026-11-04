@@ -762,9 +762,10 @@ home_page/            site assets and assembled website root
   (`Verifier.GuardedForm.soundness_of_rbrSoundness`,
   `OracleVerifier.soundness_of_rbrSoundness_of_guarded`).
 - Measured extraction lives in `Security/Resources.lean`. Its game-independent core,
-  `OracleComp.MeasuredProgram` in `Data/OracleComp/MeasuredProgram.lean`, is an uncharged view of
-  a function's input, a charged instruction program on that view, and deterministic handlers, with
-  `Realizes` and a budget `CostAtMost` on every program path (VCVio `WorstCaseCostBound`);
+  `OracleComp.MeasuredProgram` in `VCVio.OracleComp.QueryTracking.MeasuredProgram` is an
+  uncharged view of a function's input, a charged instruction program on that view, and deterministic
+  handlers, with `Realizes` and a budget `CostAtMost` on every program path
+  (VCVio `WorstCaseCostBound`);
   `OracleComp.BudgetedProgram f` bundles a program realizing `f` with its budget, and
   `BudgetedProgram.ofFun` shows every function has one with budget zero.
   `Extractor.Straightline.MeasuredProgram` is its instance at the straightline extractor's inputs.
@@ -785,8 +786,8 @@ home_page/            site assets and assembled website root
   `ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean`. All of this counts
   declared instructions only, not running time. Only a named program with a stated instruction
   set is evidence.
-  `Data/OracleComp/DeterminedCost.lean` turns a deterministic handler's recorded cost into that
-  bound when responses are certified.
+  `VCVio.OracleComp.QueryTracking.DeterminedCost` turns a deterministic handler's recorded cost
+  into that bound when every permitted response equals the handler's answer.
 - Coordinate-wise special soundness ([FMN24]/[NOZ26]) lives in
   `Security/CoordinateWiseSpecialSoundness/`: `Basic` defines the `SS(S, ℓ, k)` combinatorics
   (`CoordEq`, `IsSpecialSoundFamily`), `CWSSStructure`, `CWSSStructure.toShape`, and both forms

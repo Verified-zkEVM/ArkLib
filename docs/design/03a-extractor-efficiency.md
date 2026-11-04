@@ -215,7 +215,7 @@ charged instruction program with its result type, deterministic handlers, and ch
 then states its resource conjunction for its own extractor shape. Design those conjunctions against
 the interaction-layer knowledge games first, where new security development takes place; the legacy
 straightline game, which FRI's result uses, is an adapter. The generic measured program lives in
-`ArkLib/Data/OracleComp/MeasuredProgram.lean`, which imports no game. The legacy game conjunctions
+`VCVio.OracleComp.QueryTracking.MeasuredProgram`, which imports no game. The legacy game conjunctions
 and their erasure lemmas live in `ArkLib/OracleReduction/Security/Resources.lean`. The FRI
 certificate lives in `ArkLib/ProofSystem/Fri/Spec/MeasuredKnowledgeSoundness.lean`; the Toy decoding
 certificate remains proposed. Interaction-layer games consume the same measured programs through
