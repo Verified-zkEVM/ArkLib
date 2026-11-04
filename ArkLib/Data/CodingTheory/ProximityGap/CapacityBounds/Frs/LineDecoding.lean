@@ -914,10 +914,12 @@ theorem sharpSubspaceProfile_two_mul_le_rate_add
 open scoped NNReal in
 open scoped BigOperators in
 open Code in
-/-- **Boost to any target.** `strongLineDecodable_boost_of_lambda_le` for an arbitrary target
-`b'`: removing the at most `L` globally close pairs, each aligning fewer than `b'` seeds, costs
-at most `(b' - 1) · L` seeds. The original theorem is the case `b' = n + 1`. -/
-theorem strongLineDecodable_boost_of_lambda_le_target
+/-- **Boosting strong line decodability.** If `C` is `(δ, a, b)`-strongly-line-decodable with
+`b > 1`, has at most `L` codewords in every ball of radius `δ b/(b - 1)`, and `(L + 1)² < |F|`,
+then `C` is `(δ, (b' - 1) · L + a, b')`-strongly-line-decodable for every `b'`. Removing the at
+most `L` globally close pairs, each aligning fewer than `b'` seeds, costs at most `(b' - 1) · L`
+seeds. -/
+theorem strongLineDecodable_boost_of_lambda_le
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s a b L b' : ℕ} {δ : NNReal}
@@ -1014,25 +1016,6 @@ theorem strongLineDecodable_boost_of_lambda_le_target
       apply Finset.mem_filter.mpr
       exact ⟨(Finset.mem_sdiff.mp hαR).1, hαdata.2⟩
     exact ((Finset.mem_sdiff.mp hαR).2 hαB).elim
-
-open scoped NNReal in
-open Code in
-theorem strongLineDecodable_boost_of_lambda_le
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
-    {s a b L : ℕ} {δ : NNReal}
-    (C : Submodule F (ι → Fin s → F))
-    (hweak : StrongLineDecodable (C : Set (ι → Fin s → F)) δ a b)
-    (hb : 1 < b)
-    (hLambda : Code.Lambda (C : Set (ι → Fin s → F))
-      ((δ : ℝ) * (b : ℝ) / ((b : ℝ) - 1)) ≤ (L : ℕ∞))
-    (hfield : (L + 1) ^ 2 < Fintype.card F) :
-    StrongLineDecodable (C : Set (ι → Fin s → F)) δ
-      (Fintype.card ι * L + a) (Fintype.card ι + 1) := by
-  have h := strongLineDecodable_boost_of_lambda_le_target (b' := Fintype.card ι + 1) C hweak hb
-    hLambda hfield
-  simpa only [Nat.add_sub_cancel] using h
-
 
 open scoped NNReal in
 open scoped ProbabilityTheory in
