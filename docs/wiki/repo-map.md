@@ -186,7 +186,10 @@ home_page/            site assets and assembled website root
   the program's operation-count vector through `knowledgeSoundnessWithResources`.
   `Spec/Extraction/` owns the immutable access backend, generated domain points, driver, and
   resource proofs; reusable measured
-  polynomial operations live in `ToCompPoly/Univariate/Arithmetic*.lean`. Compiled small cases run
+  polynomial operations live in `ToCompPoly/Univariate/Arithmetic*.lean`. Raw coefficient-array
+  size facts come from `CompPoly.Univariate.Raw.Size`; canonical-polynomial bounds remain in
+  `ToCompPoly/Univariate/Size.lean`. These size facts count stored coefficients, not execution cost.
+  Compiled small cases run
   with `lake exe fri-extractor-runtime`; classic trust checks live in
   `ArkLibTest/ProofSystem/Fri/Extraction.lean`.
   `RoundConsistency.lean` connects local checks to word folding. Generic persistent-event
