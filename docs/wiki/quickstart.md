@@ -233,8 +233,7 @@ uv run --no-project --python 3.12 python ./scripts/check-writing.py --stdin desc
 uv run --no-project --python 3.12 python ./scripts/check-pr-title.py "feat(fri): prove query soundness"
 ```
 
-The writing checker exits successfully by default. `--strict` requests exit code 1 when it finds a
-match. That option does not make the findings more accurate. CI's prose check remains advisory.
+The writing checker exits successfully when it reports suggestions. CI's prose check is advisory.
 
 The title format comes from [CONTRIBUTING.md](../../CONTRIBUTING.md#title-format).
 The title check is also advisory. Pass `--strict` to request a failing exit code for an invalid format.

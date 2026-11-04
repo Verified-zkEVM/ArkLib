@@ -24,8 +24,8 @@ Usage:
 In `--base` mode, the checker reads the tracked files in the working tree. It checks each
 paragraph, list item, or table cell that contains an added line. It ignores untracked files.
 
-Options: `--github` prints GitHub annotations. `--strict` requests exit code 1 on suggestions.
-Without `--strict`, suggestions exit with 0. Usage, Git and configuration errors exit with 2.
+Options: `--github` prints GitHub annotations. Suggestions exit with 0. Usage, Git and
+configuration errors exit with 2.
 Non-UTF-8 source input and symlink sources produce advisory Input diagnostics.
 """
 
@@ -601,7 +601,6 @@ def main(argv: list[str]) -> int:
     mode.add_argument("--stdin", metavar="LABEL", help="check Markdown from standard input")
     mode.add_argument("files", nargs="*", default=[], help="check all prose in these files")
     parser.add_argument("--github", action="store_true", help="print GitHub annotations")
-    parser.add_argument("--strict", action="store_true", help="exit with 1 on suggestions")
     parser.add_argument("--vocabulary", type=Path, default=VOCABULARY,
                         help="the vocabulary page (default: docs/wiki/writing-vocabulary.md)")
     args = parser.parse_args(argv[1:])
@@ -635,7 +634,7 @@ def main(argv: list[str]) -> int:
     except (OSError, ValueError) as error:
         parser.error(str(error))
     report(found, args.github, label_is_file)
-    return 1 if found and args.strict else 0
+    return 0
 
 
 if __name__ == "__main__":
