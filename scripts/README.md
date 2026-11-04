@@ -41,8 +41,9 @@ This directory contains various utility scripts for the ArkLib project.
 - **`check-pr-title.py`** - Check a pull request title against the format in `CONTRIBUTING.md`
   and report advice. Use `--strict` to request a failing exit code for an invalid format.
 - **`check-writing.py`** - Report editing suggestions for changed prose, files, or a PR body.
-  Counts and grammar patterns approximate the [writing standard](../docs/wiki/writing.md).
-  Review each finding for context and preservation of meaning.
+  It reports listed vocabulary, phrasal verbs, Latin abbreviations, contractions, selected history
+  words in reference documents, and approximate sentence lengths. These are optional prompts to
+  review wording, not grammar or conformance checks. Leave clear, correct text alone.
   Non-UTF-8 input and symlink sources give advisory input diagnostics; targets are not followed.
   Git and configuration errors fail the command.
 - **`test-pr-checks.py`** - Tests for the title check and the writing check

@@ -1,20 +1,15 @@
 #!/usr/bin/env -S uv run --no-project --python 3.12 python
-"""Report editing suggestions for selected rules of the ArkLib writing standard.
+"""Report optional editing suggestions for ArkLib prose.
 
-The standard is `docs/wiki/writing.md`. This script reports patterns that a search can find:
+The guide is `docs/wiki/writing.md`. This script reports patterns that a search can find:
 
 - S1: sentence length (20 words in agent/skill instructions and checklists, 25 elsewhere)
-- P2: more than six sentences in a paragraph
-- U1: semicolons, and U2: em dashes that join clauses
 - W6: phrasal verbs, and W7: Latin abbreviations
 - S5: contractions
-- V1: perfect and progressive verb forms
-- V2: selected introductory clauses for manual review of their understood subject
-- S7: a sentence that starts with "This" or "These" and a verb, with no noun
 - Vocabulary: the words to avoid in `docs/wiki/writing-vocabulary.md`.
 
-Review applies the standard to each finding and to rules that need judgment. Extraction, word
-counts, and verb patterns are approximations. Known workflow paths and checklist items use the
+Read each suggestion in context. Leave clear, correct text alone. Extraction and word counts
+are approximations. Known workflow paths and checklist items use the
 procedural estimate. Other prose uses the descriptive estimate; numbering alone does not choose
 the text type. Review each sentence's actual purpose. The checker exempts license text, quotations,
 code, formulas, headings, and HTML comments. It does not establish dictionary approval or meaning.
@@ -29,9 +24,9 @@ Usage:
 In `--base` mode, the checker reads the tracked files in the working tree. It checks each
 paragraph, list item, or table cell that contains an added line. It ignores untracked files.
 
-Options: `--github` prints GitHub annotations. `--strict` exits with 1 if it finds a problem.
-Without `--strict`, findings exit with 0. Usage, Git and configuration errors exit with 2.
-Non-UTF-8 source input and dangling symlinks produce advisory Input diagnostics.
+Options: `--github` prints GitHub annotations. `--strict` requests exit code 1 on suggestions.
+Without `--strict`, suggestions exit with 0. Usage, Git and configuration errors exit with 2.
+Non-UTF-8 source input and symlink sources produce advisory Input diagnostics.
 """
 
 from __future__ import annotations
@@ -52,7 +47,6 @@ EXCLUDED_FILES = {"ArkLib.lean"}
 
 PROCEDURAL_LIMIT = 20
 DESCRIPTIVE_LIMIT = 25
-PARAGRAPH_LIMIT = 6
 
 ABBREVIATIONS = {"e.g.", "i.e.", "etc.", "cf.", "vs.", "al.", "fig.", "no.", "resp.", "viz.",
                  "thm.", "lem.", "sec.", "eq.", "approx.", "def.", "prop.", "cor."}
@@ -72,43 +66,6 @@ LATIN = re.compile(r"(?<![\w.])(?:e\.g\.|i\.e\.|etc\.|cf\.|resp\.|viz\.)", re.IG
 CONTRACTION = re.compile(
     r"\b\w+n['’]t\b|\b\w+['’](?:re|ll|ve|d)\b"
     r"|\b(?:it|that|there|here|what|let|who|where)['’]s\b", re.IGNORECASE)
-PARTICIPLES = ("been|done|made|given|shown|written|seen|found|built|taken|run|kept|left|set|put|"
-               "proven|proved|chosen|known|become|begun|gone|got|gotten|lost|met|said|sent|told|"
-               "thought|brought|understood|held")
-PERFECT = re.compile(rf"\b(?:has|have|had)\s+(?:not\s+)?(\w+ed|{PARTICIPLES})\b", re.IGNORECASE)
-# After a modal verb, "have" and a participle keep a hedge: "the build may have failed".
-MODAL_BEFORE = re.compile(r"\b(?:may|might|could|would|should|must|can|will)(?:\s+not)?\s+$",
-                          re.IGNORECASE)
-# Adjectives in "-ed" that follow "has" or "have" as possession: "polynomials have bounded degree".
-POSSESSED_ADJECTIVES = {"bounded", "unbounded", "fixed", "nested", "ordered", "distributed",
-                        "prescribed", "limited", "mixed", "balanced", "weighted", "labeled", "labelled",
-                        "sorted", "indexed", "typed", "isolated", "repeated", "related", "named"}
-NOT_PARTICIPLES = {"seed", "indeed", "speed", "need"}
-NOT_PROGRESSIVE = {"nothing", "something", "anything", "everything", "missing", "remaining",
-                   "string", "strings", "ring", "rings", "thing", "things", "during", "padding",
-                   "binding", "encoding", "decoding", "folding", "batching", "hashing",
-                   "hiding", "increasing", "decreasing", "nondecreasing", "nonincreasing",
-                   "vanishing", "accepting", "winning"}
-# These phrases are objects of possession, not perfect-tense actions.
-POSSESSED_PHRASES = re.compile(
-    r"(?:correlated\s+agreement|centered\s+norm|centred\s+norm|squared\s+norm|expected\s+value|"
-    r"left(?:\s+and\s+right)?\s+children|right\s+children|known\s+degree)\b", re.IGNORECASE)
-PROGRESSIVE = re.compile(r"\b(?:is|are|was|were|be|been)\s+(\w+ing)\b", re.IGNORECASE)
-BARE_THIS = re.compile(
-    r"^(?:This|These)\s+(?:is|are|was|were|means|makes|ensures|lets|gives|shows|allows|"
-    r"requires|keeps|fixes|adds|avoids|matches|also|will|can)\b")
-# An introductory form can merit a subject-attribution review; its spelling alone proves nothing.
-ING_START = re.compile(r"^(?!During\b)[A-Z][a-z]+ing\b[^,.;:]{0,80},")
-NON_VERBAL_WORDS = {"nothing", "something", "anything", "everything", "during", "missing",
-                    "remaining", "string", "strings", "ring", "rings", "thing", "things",
-                    "hamming", "turing", "bring", "morning", "evening", "spring",
-                    "existing", "recurring", "resulting", "following", "preceding",
-                    "corresponding", "surrounding", "underlying"}
-EM_DASH = re.compile(r"—|\s–\s|\s--\s")
-FORMATTED_TERM = r"(?:\[[^\]]+\]\((?:[^()]|\([^()]*\))*\)|``[^`]+``|`[^`]+`|\$[^$]+\$|\*\*[^*]+\*\*)"
-DEFINITION_SEPARATOR = re.compile(
-    rf"^\s*{FORMATTED_TERM}(?:\s*(?:,|and|or|/)\s*{FORMATTED_TERM})*"
-    r"(?:\s*\((?:[^()]|\([^()]*\))*\))*\s*(?P<dash>—|–|--)\s+")
 HISTORY_SCOPE = re.compile(r"^(?:docs/wiki/|ArkLib/|ArkLibTest/)|\.lean$")
 
 
@@ -118,7 +75,6 @@ class Block:
     line: int
     text: str
     procedural: bool
-    paragraph: bool
     last_line: int
 
 
@@ -168,31 +124,6 @@ def vocabulary_section(text: str, title: str) -> str:
                     if len(other.group(1)) <= len(heading.group(1))), len(text))
         return text[heading.end():end]
     raise ValueError(f"missing vocabulary section: {title}")
-
-
-def technical_ing_nouns(vocabulary: Path = VOCABULARY) -> set[str]:
-    """Read complete technical terms; a phrase does not exempt its words everywhere."""
-    body = vocabulary_section(vocabulary.read_text(encoding="utf-8"), "Technical -ing nouns")
-    result: set[str] = set()
-    for row in body.splitlines():
-        if not row.lstrip().startswith("|"):
-            continue
-        first = row.strip().strip("|").split("|", 1)[0]
-        for term in re.findall(r"`([^`]+)`", first):
-            if re.search(r"\b[A-Za-z]+ing\b", term):
-                result.add(" ".join(term.casefold().split()))
-    return result
-
-
-def technical_opening(sentence: str, terms: set[str]) -> bool:
-    return any(re.match(r"(?<!\w)" + r"\s+".join(re.escape(word) for word in term.split())
-                        + r"(?!\w)", sentence, re.IGNORECASE) for term in terms)
-
-
-def conventional_opening(sentence: str) -> bool:
-    """Recognize permitted expository forms without claiming to parse their meaning."""
-    return (sentence.startswith("Assuming ") or bool(re.match(r"Writing\s+[^,]+?=", sentence))
-            or bool(re.search(r",\s+(?:we|I|you)\b", sentence, re.IGNORECASE)))
 
 
 def word_pattern(words: list[str]) -> re.Pattern[str] | None:
@@ -248,7 +179,6 @@ def markdown_blocks(path: str, text: str, first_line: int = 1) -> list[Block]:
     start = 0
     last = 0
     procedural = False
-    paragraph = True
     fence: tuple[str, int] | None = None
     header_row = True
     legal_section: int | None = None
@@ -261,7 +191,7 @@ def markdown_blocks(path: str, text: str, first_line: int = 1) -> list[Block]:
     def flush() -> None:
         nonlocal current
         if current:
-            blocks.append(Block(path, start, "\n".join(current), procedural, paragraph, last))
+            blocks.append(Block(path, start, "\n".join(current), procedural, last))
         current = []
 
     index = 0
@@ -319,7 +249,7 @@ def markdown_blocks(path: str, text: str, first_line: int = 1) -> list[Block]:
             if not header_row:
                 for cell in stripped.strip("|").split("|"):
                     if cell.strip():
-                        blocks.append(Block(path, number, cell.strip(), False, False, number))
+                        blocks.append(Block(path, number, cell.strip(), False, number))
             header_row = False
             continue
         header_row = True
@@ -329,7 +259,6 @@ def markdown_blocks(path: str, text: str, first_line: int = 1) -> list[Block]:
             list_context = True
             start = number
             procedural = procedural_context or bool(re.match(r"\[[ xX]\]\s", item.group(3)))
-            paragraph = False
             current.append(item.group(3))
             last = number
             continue
@@ -338,7 +267,6 @@ def markdown_blocks(path: str, text: str, first_line: int = 1) -> list[Block]:
         if not current:
             start = number
             procedural = procedural_context
-            paragraph = True
         current.append(stripped)
         last = number
     flush()
@@ -522,13 +450,11 @@ def word_count(sentence: str) -> int:
 
 
 def check_block(block: Block, general: re.Pattern[str] | None,
-                history: re.Pattern[str] | None,
-                technical_ings: set[str] | None = None) -> list[Finding]:
+                history: re.Pattern[str] | None) -> list[Finding]:
     found: list[Finding] = []
 
-    def add(rule: str, message: str, offset: int, end: int | None = None,
-            context: int = 0) -> None:
-        excerpt = re.sub(r"\s+", " ", block.text[max(0, offset - context):end]).strip()[:80]
+    def add(rule: str, message: str, offset: int, end: int) -> None:
+        excerpt = re.sub(r"\s+", " ", block.text[offset:end]).strip()[:80]
         line = block.line + block.text.count("\n", 0, offset)
         found.append(Finding(block.path, line, rule, message, excerpt))
 
@@ -536,37 +462,18 @@ def check_block(block: Block, general: re.Pattern[str] | None,
     parenthetical_offsets: list[int] = []
     counted = mask(block.text, True, parentheticals, parenthetical_offsets)
     plain = mask(block.text, False)
-    limit = PROCEDURAL_LIMIT if block.procedural else DESCRIPTIVE_LIMIT
-    counted_spans = sentence_spans(counted)
-    sentence_parts = [(counted, 0, counted_spans)] + [
-        (inner, offset, sentence_spans(inner))
-        for inner, offset in zip(parentheticals, parenthetical_offsets)]
-    for text, offset, spans in sentence_parts:
-        for start, end in spans:
+    suggested_length = PROCEDURAL_LIMIT if block.procedural else DESCRIPTIVE_LIMIT
+    sentence_parts = [(counted, 0)] + list(zip(parentheticals, parenthetical_offsets))
+    for text, offset in sentence_parts:
+        for start, end in sentence_spans(text):
             words = word_count(text[start:end])
-            if words > limit:
-                add("S1", f"The sentence has {words} words. The limit is {limit}.",
-                    offset + start, offset + end)
-    if block.paragraph and len(counted_spans) > PARAGRAPH_LIMIT:
-        add("P2", f"The paragraph has {len(counted_spans)} sentences. The limit is "
-            f"{PARAGRAPH_LIMIT}.", counted_spans[PARAGRAPH_LIMIT][0])
-    if ";" in plain:
-        add("U1", "Do not use a semicolon. Use a conjunction or write two sentences.",
-            plain.index(";"), context=30)
-    definition = DEFINITION_SEPARATOR.match(block.text)
-    dash_plain = plain
-    if definition:
-        start, end = definition.span("dash")
-        dash_plain = plain[:start] + blank(plain[start:end]) + plain[end:]
-    if dash_plain.strip() not in {"—", "–", "--"}:
-        for match in EM_DASH.finditer(dash_plain):
-            offset = match.start() + len(match.group()) - len(match.group().lstrip())
-            add("U2", "Review this dash. If it joins clauses, write two sentences.",
-                offset, match.end() + 30, context=30)
+            if words > suggested_length:
+                add("S1", f"This sentence has about {words} words. Consider a split if it "
+                    "improves clarity.", offset + start, offset + end)
     for pattern, rule, message in (
-            (LATIN, "W7", "Write the English words for this Latin abbreviation."),
-            (PHRASAL, "W6", "Consider a direct verb that preserves this meaning."),
-            (CONTRACTION, "S5", "Write the full form of this contraction."),
+            (LATIN, "W7", "Consider spelling out this Latin abbreviation."),
+            (PHRASAL, "W6", "Consider a direct verb if it preserves this meaning."),
+            (CONTRACTION, "S5", "Consider the full form of this contraction."),
             (general, "W1", "Review this wording using writing-vocabulary.md. Preserve its meaning.")):
         if pattern is None:
             continue
@@ -574,30 +481,10 @@ def check_block(block: Block, general: re.Pattern[str] | None,
             if rule == "W1" and LATIN.fullmatch(match.group()):
                 continue
             add(rule, message, match.start(), match.end())
-    for match in PERFECT.finditer(plain):
-        hedged = MODAL_BEFORE.search(plain[:match.start()])
-        possession = POSSESSED_PHRASES.match(plain, match.start(1))
-        if (match.group(1).lower() not in POSSESSED_ADJECTIVES | NOT_PARTICIPLES
-                and not hedged and not possession):
-            add("V1", "Prefer a simple tense if it preserves time and uncertainty.",
-                match.start(), match.end())
-    for match in PROGRESSIVE.finditer(plain):
-        if match.group(1).lower() not in NOT_PROGRESSIVE:
-            add("V1", "Review this possible progressive form. Prefer a simple construction.",
-                match.start(), match.end())
     if history is not None and HISTORY_SCOPE.search(block.path):
         for match in history.finditer(plain):
-            add("C3", "Describe the present state, not the history.", match.start(), match.end())
-    for start, end in sentence_spans(plain):
-        sentence = plain[start:end]
-        if BARE_THIS.match(sentence):
-            add("S7", "Name the noun if this reference is ambiguous.", start, end)
-        if (ING_START.match(sentence)
-                and re.match(r"\w+", sentence).group().casefold() not in NON_VERBAL_WORDS
-                and not technical_opening(sentence, technical_ings or set())
-                and not conventional_opening(sentence)):
-            add("V2", "Review whether this opening attributes the action to the intended subject.",
-                start, end)
+            add("C3", "Review whether this history belongs in reference documentation.",
+                match.start(), match.end())
     return found
 
 
@@ -605,11 +492,7 @@ def check_blocks(blocks: list[Block], vocabulary: Path = VOCABULARY) -> list[Fin
     general_words, history_words = avoid_words(vocabulary)
     general = word_pattern(general_words)
     history = word_pattern(history_words)
-    technical_ings = technical_ing_nouns(vocabulary)
-    found: list[Finding] = []
-    for block in blocks:
-        found.extend(check_block(block, general, history, technical_ings=technical_ings))
-    return found
+    return [item for block in blocks for item in check_block(block, general, history)]
 
 
 # ---------------------------------------------------------------------------------------------
@@ -699,8 +582,8 @@ def report(found: list[Finding], github: bool, label_is_file: bool) -> None:
         else:
             print(f"{item.path}:{item.line}: [{item.rule}] {item.message} {item.excerpt!r}")
     rules = sorted({item.rule for item in found})
-    summary = (f"{len(found)} writing problem(s) for rules {', '.join(rules)}. Refer to "
-               "docs/wiki/writing.md." if found else "No writing problems found.")
+    summary = (f"{len(found)} writing suggestion(s) for {', '.join(rules)}. Review in context; "
+               "leave clear, correct text alone." if found else "No writing suggestions.")
     print(summary)
     summary_path = os.environ.get("GITHUB_STEP_SUMMARY") if github else None
     if summary_path:
@@ -718,7 +601,7 @@ def main(argv: list[str]) -> int:
     mode.add_argument("--stdin", metavar="LABEL", help="check Markdown from standard input")
     mode.add_argument("files", nargs="*", default=[], help="check all prose in these files")
     parser.add_argument("--github", action="store_true", help="print GitHub annotations")
-    parser.add_argument("--strict", action="store_true", help="exit with 1 on a problem")
+    parser.add_argument("--strict", action="store_true", help="exit with 1 on suggestions")
     parser.add_argument("--vocabulary", type=Path, default=VOCABULARY,
                         help="the vocabulary page (default: docs/wiki/writing-vocabulary.md)")
     args = parser.parse_args(argv[1:])

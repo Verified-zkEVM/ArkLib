@@ -221,9 +221,10 @@ uv run --no-project --python 3.12 python ./scripts/check-writing.py --base origi
 ```
 
 For a stacked PR, use its actual base instead. The checker reads affected paragraphs, list items,
-and table cells. It reports editing suggestions, such as approximate word counts and verb
-patterns. Read each finding before you edit. A successful check does not establish clarity,
-STE dictionary compliance, or preservation of the source's meaning.
+and table cells. It suggests a review of listed vocabulary, phrasal verbs, Latin abbreviations,
+contractions, history words in reference documents, and approximate sentence lengths. Read each
+suggestion before you edit. Leave clear, correct text alone. A successful check does not establish
+clarity, STE dictionary compliance, or preservation of the source's meaning.
 
 To review a draft before you publish it, provide the text on standard input:
 

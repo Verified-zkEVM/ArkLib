@@ -12,9 +12,9 @@ When you finish, the contribution is ready for review:
 - The statements agree with their sources, and the claims agree with the axiom output.
 - The proofs are clear and have no known performance problem.
 - The branch has no non-`sorry` warnings in `ArkLib/` and no warnings in the tests.
-- The citations are correct, and generated files have no drift under CI's comparison.
-- The prose satisfies C1–C8 of the [writing standard](../wiki/writing.md).
-  Consider the advisory style rules where they improve clarity.
+- The citations are correct, and `docs/kb/_generated/` has no drift under CI's comparison.
+- The prose is clear and its claims match the code and the evidence. Use the
+  [writing guide](../wiki/writing.md) where its advice helps.
 - A draft description exists.
 
 A pull request can be open for review with admissions if its description lists them. Before it
@@ -319,11 +319,11 @@ git grep -nE "milestone|design [DG][0-9]|Phase-[A-Z]|${C}" -- ArkLib/ blueprint/
 The pattern also finds paper lemma tags and mathematical expressions, so read each match. A paper
 location such as `§4.5` or `[NOZ26] Lemma 8` is correct in a module docstring.
 
-**History text.** A declaration name or a docstring describes the present code, as rule C3 of the
-writing standard requires. Examples of history text are `old_of_new`, "used to", "no longer", "is
-now proved", and "as before the change". The writing check in step 7 reports selected history
-terms in supported paths. Read the context before editing: keep the fact and remove only history
-that does not belong in that document.
+**History text.** A declaration name or docstring usually describes the present code. Examples of
+history text are `old_of_new`, "used to", "no longer", "is now proved", and "as before the change".
+The optional writing check in step 7 suggests selected history terms for review in supported paths.
+Read the context before editing: keep the fact and remove only history that does not belong in
+that document.
 
 **Status pages.** A page under `ArkLib/` that a person maintains, such as
 `Hachi/hachi-overview.html`, contains counts that no script updates. Calculate each count again
@@ -355,14 +355,14 @@ Use [write-technical-prose.md](write-technical-prose.md) on the changed prose an
 PR description. Include docstrings, comments, Markdown, commit messages, and any draft review
 comments. Read the passages in context and compare claims with their sources.
 
-Use the actual `pr_base` selected in step 0 for every comparison:
+You can use the checker for optional editing suggestions. Use the actual `pr_base` selected in
+step 0 for every comparison:
 
 ```bash
-set -euo pipefail
 uv run --no-project --python 3.12 python scripts/check-writing.py --base "${pr_base:?set pr_base in this shell}"
 uv run --no-project --python 3.12 python scripts/check-writing.py --stdin description < /tmp/pr-description.md
-git log --format=%B "${pr_base:?set pr_base in this shell}"..HEAD |
-  uv run --no-project --python 3.12 python scripts/check-writing.py --stdin commits
+git log --format=%B "${pr_base:?set pr_base in this shell}"..HEAD > /tmp/pr-commit-messages.txt &&
+  uv run --no-project --python 3.12 python scripts/check-writing.py --stdin commits < /tmp/pr-commit-messages.txt
 uv run --no-project --python 3.12 python scripts/check-pr-title.py '<type>(<scope>): <subject>'
 ```
 
@@ -392,7 +392,7 @@ Do not call the pull request ready to merge until each of these conditions is tr
    Each noncomputable mathematical definition has a documented reason.
 6. The citations are consistent, and `docs/kb/_generated/` is the same as on the base.
 7. The sweeps in step 5 find no stale reference.
-8. A draft description from the template exists, and the writing check of step 7 is complete.
+8. A draft description exists, and its claims agree with the code and the reported evidence.
 9. Any recurring workflow gap found during the task was corrected or reported.
 
 ## Gotchas
