@@ -1,9 +1,7 @@
 # Writing Vocabulary
 
-Use this page with the [writing standard](writing.md). STE's general dictionary remains the
-reference for general words, meanings, and grammatical roles. This page adds subject-field terms
-and advice for ArkLib prose. It is not a replacement for the dictionary or a list of every permitted
-English word.
+Use this page with the [writing guide](writing.md) to clarify technical meanings and review wording.
+Its entries are advice, not a list of every permitted English word or an STE dictionary check.
 
 ## How to add a term
 
@@ -55,29 +53,6 @@ Introduce a longer or unfamiliar term before using an abbreviation:
 | Commitments | commitment scheme, commitment, opening, binding |
 | Lean | declaration, theorem, lemma, hypothesis, docstring, namespace, typeclass, tactic, elaboration, axiom |
 | Repository tools | branch, commit, pull request, build, linter, axiom baseline, validation, CI |
-
-## Technical -ing nouns
-
-These examples help the advisory checker recognize technical terms. They are not an exhaustive
-list or a ban on other meanings. Read each term in its context; listing a noun does not identify
-the grammatical role of every occurrence of the same word.
-
-| Term | Example technical context |
-|---|---|
-| `coding` | Error-correcting codes |
-| `encoding` | A representation of data under a specified code or function |
-| `decoding` | Recovery of information from a received word, which can contain errors |
-| `folding` | The code or protocol construction defined in the passage |
-| `hashing` | Application of a specified hash function |
-| `sampling` | Drawing from a specified probability distribution |
-| `binding` | A commitment property or a name-to-value association, as the context specifies |
-| `hiding` | A specified commitment security property |
-| `opening` | A commitment message or procedure |
-| `batching` | A construction that combines checks or instances |
-| `padding` | Symbols added to give an object the required shape |
-| `embedding` | An injective map or a representation of one object in another |
-| `coupling` | A joint distribution with specified marginals |
-| `interleaving` | A code construction involving component words |
 
 ## Technical verbs
 

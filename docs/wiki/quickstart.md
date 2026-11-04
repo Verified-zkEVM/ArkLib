@@ -102,8 +102,8 @@ rejects source-level linter suppressions in their actual parsed context.
 The text gate is a separate check that fails closed. It rejects `set_option` for `linter`,
 `pp`, `profiler`, `trace`, `maxHeartbeats`, `maxRecDepth`, and `synthInstance.*` in `ArkLib/`,
 `ArkLibTest/`, and the generated root `ArkLib.lean`, including comments and literal bodies.
-It also rejects `nolint` attribute heads. A quoted identifier or a syntax quotation that looks
-like a forbidden spelling also fails the gate. Put policy examples in `scripts/LintStyleFixtures`,
+It also rejects `nolint` attribute heads in active code and in literal bodies. A quoted identifier
+or a syntax quotation that looks like a forbidden spelling also fails the gate. Put policy examples in `scripts/LintStyleFixtures`,
 which is outside those source trees.
 
 The header policy understands the Lean module system, so `module`, `public import`, `meta import`

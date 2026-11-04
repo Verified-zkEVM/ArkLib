@@ -130,10 +130,9 @@ and when manual dispatch is necessary.
 
 ### Writing
 
-Use the [writing standard](docs/wiki/writing.md) for documentation, docstrings, comments, commit
-messages, PR and issue text, and review comments. Its claim rules C1–C8 and the statement checks
-below are mandatory. Its other writing rules are advisory. They aim to improve clarity and
-precision; a style warning alone does not require a rewrite.
+The [writing guide](docs/wiki/writing.md) offers advice for documentation, docstrings, comments,
+commit messages, PR and issue text, and review comments. Use it to improve clarity and precision.
+Leave clear, correct text alone, even if it does not follow a rule or the checker reports it.
 
 Use the [writing workflow](docs/skills/write-technical-prose.md) when drafting or revising prose.
 Keep claims, hypotheses, uncertainty, requirement strength, and established technical terminology
@@ -162,7 +161,7 @@ You can open a PR for review with unfinished proofs if its remaining admissions 
 status are clear. Before merging into `main`, it must introduce no new `sorry`/`admit` or additional
 `sorryAx` debt relative to the canonical base. Closing one gap does not offset a new admission
 elsewhere. Updating `scripts/axiom_baseline.json` cannot authorize new debt. Baseline changes record
-verified closures or renames of existing debt.
+verified closures or renames of debt at the base.
 
 The baseline's `sorry` list is empty. Its only admitted entries are *solicited proofs*: true,
 faithfully stated external results whose research-sized proofs remain open for contributors. A
@@ -313,8 +312,8 @@ namespace structure rather than introducing local synonyms.
 
 ### Variable Conventions
 
-We follow Mathlib style, adapted for algebraic code. The conventions below describe the intended
-mathematical roles. Consult adjacent files when a role is unclear.
+We follow Mathlib style, adapted for algebraic code. The conventions below reflect repository usage.
+Read adjacent declarations when a role is unclear.
 
 * `u`, `v`, `w`, ...           : Universes
 * `α`, `β`, `γ`, ...            : Generic types (in non-algebraic contexts)
@@ -422,7 +421,7 @@ We aim for consistent representations of equivalent statements:
   enable dot notation and consistency.
 * **Inequalities with Bottom/Top**:
     * In assumptions, use `x ≠ ⊥`, which is easier to check.
-    * In conclusions, use `⊥ < x` to expose the strict-order relation directly.
+    * In conclusions, use the strict bound `⊥ < x`, which is easier to apply.
     * Similarly for top: `x ≠ ⊤` in assumptions, `x < ⊤` in conclusions.
 
 ### Tactic Mode & Performance

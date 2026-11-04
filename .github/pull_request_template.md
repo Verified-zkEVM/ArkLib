@@ -1,6 +1,5 @@
 <!--
 Use the title format in CONTRIBUTING.md, "Title Format".
-Write this description to the writing standard in docs/wiki/writing.md.
 Delete a section only if it does not apply, and keep the heading of each other section.
 -->
 
@@ -42,8 +41,4 @@ If `scripts/axiom_baseline.json` changes, say why.
 
 ## Checklist
 
-- [ ] I searched the open pull requests and issues for overlapping work.
-- [ ] I did the applicable statement checks in CONTRIBUTING.md, "Statement Correctness".
-- [ ] The title and the description agree with the source and reported evidence.
-- [ ] I checked the claim rules and considered the advisory writing guidance.
-- [ ] The pull request contains no working files from a tool session.
+- [ ] The description matches the code and the evidence.

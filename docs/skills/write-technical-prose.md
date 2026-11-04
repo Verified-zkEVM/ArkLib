@@ -1,93 +1,25 @@
 # /write-technical-prose
 
-Use this workflow when drafting or revising ArkLib documentation, comments, docstrings, commit
-messages, PR text, issue text, or review comments. Use it for short comments as well as long guides.
-Work on the text the user requested. Writing review does not authorize unrelated source changes
-or publication.
+Use this workflow for ArkLib documentation, comments, docstrings, commit messages, PR and issue
+text, and review comments. Work within the user's requested scope. A prose task does not authorize
+publication or unrelated source changes.
 
-## Read the local requirements
+1. **Read the source before stating a claim.** Use [CONTRIBUTING.md](../../CONTRIBUTING.md) for
+   contribution requirements, including the [statement audit](../../CONTRIBUTING.md#statement-correctness).
+   Inspect the relevant definitions, hypotheses, proofs, and test evidence. For a PR description,
+   distinguish what changed, which checks actually ran, and what remains uncertain.
+2. **Start with what the reader needs.** State the problem, result, or action first. Develop one
+   topic per paragraph. Use the [writing guide](../wiki/writing.md) and
+   [vocabulary](../wiki/writing-vocabulary.md) when they help; their advice is not a conformance test.
+3. **Revise real problems.** Identify a clarity or accuracy problem before changing a passage.
+   Keep established technical terms, hypotheses, uncertainty, and requirement strength. Repository
+   habit alone does not justify unclear wording.
+4. **Compare complete passages.** Read the old and new paragraphs side by side in context.
+   Check that the revision keeps the meaning, conditions, and scope, and explain why it is clearer.
+   Read the final passage and check any changed links or references.
+5. **Leave correct text alone.** If `scripts/check-writing.py` is available, you can use it for
+   optional editing suggestions. Read each suggestion in context; it does not establish clarity,
+   technical accuracy, or STE conformance. Do not change clear, correct text to silence it.
 
-Read the [writing standard](../wiki/writing.md) and [vocabulary](../wiki/writing-vocabulary.md).
-Read the relevant section of [CONTRIBUTING.md](../../CONTRIBUTING.md) for the contribution or text
-that you prepare. CONTRIBUTING owns the contribution requirements. This skill explains how to
-apply them.
-
-C1–C8 and the statement audit are mandatory. The other writing rules are advisory. Use them to
-improve clarity and precision; a warning alone is not a reason to change accurate, legible text.
-
-Treat existing prose as material to assess, not a style to preserve automatically. Use STE's
-writing principles to correct defects. Keep established identifiers, quotations, and technical
-meanings accurate. Consult the official standard when a rule's source or a word's approval matters.
-Do not invent a dictionary approval or claim full STE conformance from a linter result.
-
-## Establish the facts
-
-Read the source needed for the claims in the passage. A theorem name or a successful build alone
-does not establish a mathematical claim. Inspect the statement, its hypotheses, and the relevant
-proof or axiom evidence. Use the [statement audit](../../CONTRIBUTING.md#statement-correctness)
-when preparing a mathematical contribution for review.
-
-For a PR description, distinguish the change, the checks actually run, and the remaining gaps.
-Keep output instructions separate from repository facts. A request for a draft does not establish
-a PR's status, approval, or CI result. State those facts only when the source provides them.
-
-For a review comment, identify the affected code or statement and explain the consequence.
-For reference documentation, describe the interface or result that exists in the reviewed source.
-Do not substitute a session history for that explanation.
-
-If the source does not support a claim, narrow or remove the claim. Preserve uncertainty when the
-evidence is incomplete. A prose task does not by itself require a new proof, build, or experiment.
-
-## Draft and revise
-
-Choose procedural or descriptive writing from the passage's purpose. Start with the result,
-problem, or action the reader needs. Develop one topic in each paragraph. Add headings, lists,
-and examples when they make the text easier to use.
-
-Revise only passages with a concrete clarity or accuracy problem. Work on a complete paragraph,
-with its surrounding context, rather than replacing isolated words to satisfy a rule. Compare the
-old and new paragraphs side by side. Preserve their meaning, conditions, scope, and requirement
-strength, and explain why the new paragraph is clearer. Leave correct prose alone.
-
-Compare every mathematical rewrite with its source. Keep the hypotheses, quantifiers, negations,
-error terms, exceptional cases, and direction of implication. Preserve time and requirement
-strength: "may have failed" does not mean "failed", and "recommended" does not mean "required".
-A shorter expression is useful only when it keeps the intended meaning.
-
-Do not let a writing rule change standard terminology. A rule can conflict with a term or language
-pattern that is standard in cryptography research and engineering, computer science, or mathematics.
-In that case, keep the standard form and apply the rules to the rest of the passage. Repository
-habit alone does not make a wording standard.
-
-Use the vocabulary to resolve ambiguous terms, not to erase valid technical meanings.
-"Complete the template" does not claim protocol completeness. A protocol statement and a theorem
-statement need different qualifiers only when the context could confuse them.
-
-## Use the checker when available
-
-If `scripts/check-writing.py` exists in this checkout, use it as an editing aid:
-
-```bash
-uv run --no-project --python 3.12 python scripts/check-writing.py path/to/document.md
-uv run --no-project --python 3.12 python scripts/check-writing.py --stdin description < /tmp/pr-description.md
-```
-
-For changed prose, pass the actual review base to `--base`. A stacked PR can have a feature branch
-as its base. Do not assume that every PR targets `main`.
-
-Read each finding before editing. Counts and grammar patterns are approximations. Correct real
-defects, retain accurate technical expressions, and report a recurring checker defect with an
-example. Do not rewrite a correct claim merely to make the checker quiet.
-
-The checker does not establish clarity, source fidelity, dictionary compliance, or permission to
-publish. If it is absent, do the same reading pass manually. Keep the writing standard applicable.
-
-## Read the final text before handoff
-
-Read the complete affected passage after the last edit. Confirm that its structure is useful and
-its claims still agree with the source. Check any links or references that the edit changes.
-A good sentence can still be wrong in its paragraph.
-
-Return or save the requested text. Publish it only when the user's instructions authorize that
-action. If the task includes a commit or push, run the validation required by the contribution
-workflow first. Report material evidence gaps without adding a standard disclaimer to every text.
+The [quickstart](../wiki/quickstart.md) describes repository commands.
+If the task includes a commit or push, run the validation required by the contribution workflow.

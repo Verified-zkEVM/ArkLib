@@ -39,7 +39,7 @@ Start with [`README.md`](README.md) for the project overview.
 - `ArkLib/Commitments/` - commitments and opening arguments.
 - `ArkLib/AGM/` - algebraic group model representations.
 - `ArkLib/ToCompPoly/` - bridges to CompPoly's computable representations.
-- `ArkLib/ToMathlib/` - local extensions intended for upstreaming.
+- `ArkLib/ToMathlib/` - local extensions intended for Mathlib.
 - `docs/design/` - normative architecture of the interaction layer.
 - `docs/kb/` - paper knowledge base: paper pages, concepts, and audits.
 - `blueprint/src/` - blueprint TeX chapters and the bibliography (`references.bib`).
@@ -65,8 +65,8 @@ Start with [`README.md`](README.md) for the project overview.
 - Do not raise elaboration budgets: `set_option maxHeartbeats`, `maxRecDepth` and
   `synthInstance.*` are rejected by the source-policy gate, as are the `linter`, `pp`, `profiler`
   and `trace` option families. Make a slow proof cheaper instead.
-- No backward-compatibility guarantees: rename or remove a declaration by updating every caller in
-  the same PR. Avoid `@[deprecated]` aliases. Add one only with a concrete reason. See
+- No backward-compatibility guarantees: if you rename or remove a declaration, update every caller
+  in the same PR. Avoid `@[deprecated]` aliases. Add one only with a concrete reason. See
   [`CONTRIBUTING.md`](CONTRIBUTING.md#compatibility-policy).
 - Make definitions computable wherever possible. Protocols and program/value-computing APIs must
   be executable, with code-generation and runtime evidence. Document concrete blockers for purely
@@ -79,8 +79,8 @@ Start with [`README.md`](README.md) for the project overview.
   `simp` into a brittle `simp only` list.
 - Before drafting or revising prose, use [write-technical-prose.md](docs/skills/write-technical-prose.md).
   Apply it to documentation, comments, docstrings, commit messages, PR and issue text, and review
-  comments. C1–C8 and the statement checks are mandatory; the style rules are advisory.
-  Improve unclear prose within the requested scope. Do not rewrite correct text to clear a warning.
+  comments. Use the guide's advice to improve unclear prose within the requested scope.
+  Leave clear, correct text alone, even when the checker reports a suggestion.
 - Before you open a pull request, follow [`make-pr-ready.md`](docs/skills/make-pr-ready.md). Complete
   the [pull request template](.github/pull_request_template.md) and claim only what the code
   proves.
