@@ -10,6 +10,7 @@ public import ArkLib.Data.CodingTheory.Basic.Entropy
 public import Mathlib.Analysis.SpecialFunctions.Pow.Real
 public import Mathlib.Analysis.SpecialFunctions.Stirling
 public import Mathlib.FieldTheory.Finiteness
+public import Mathlib.FieldTheory.Finite.Basic
 
 /-!
 # Bounds that hold for every linear code
@@ -705,7 +706,7 @@ is what `_hℓ_lt : ℓ < |F|` buys and what [ABF26] prints. -/
 theorem linear_card_le_generalized_singleton
     (C : Submodule F (ι → F)) (ℓ : ℕ) (δ : ℝ)
     (_hℓ_pos : 0 < ℓ) (_hℓ_lt : ℓ < Fintype.card F)
-    (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1)
+    (_hδ_pos : 0 < δ)
     (_hδn_int : ∃ e : ℕ, (e : ℝ) = δ * Fintype.card ι)
     (_hexp_nonneg : Nat.floor (((ℓ : ℝ) + 1) / ℓ * δ * Fintype.card ι) ≤ Fintype.card ι)
     (_hΛ : Lambda ((C : Set (ι → F))) δ ≤ (ℓ : ℕ∞)) :
@@ -965,9 +966,9 @@ shrunk below `1 − H_q(δ)`.
 Solicited proof: see
 <https://github.com/Verified-zkEVM/ArkLib/issues/1352>. -/
 theorem random_linear_lambda_lower_exists
-    (q : ℕ) (hq_pp : IsPrimePow q)
+    (q : ℕ)
     (δ : ℝ) (hδ_pos : 0 < δ) (hδ_lt : δ < 1 - 1 / q)
-    (ε : ℝ) (hε_pos : 0 < ε) (hε_lt : ε < 1) :
+    (ε : ℝ) (hε_pos : 0 < ε) :
     ∃ γ : ℝ, 0 < γ ∧
       ∀ ρ : ℝ, 0 ≤ ρ → 1 - qEntropy q δ - γ < ρ → ρ < 1 - qEntropy q δ →
         ∃ n₀ : ℕ,
@@ -979,8 +980,16 @@ theorem random_linear_lambda_lower_exists
               (Module.finrank F C : ℝ) / Fintype.card ι ≤ ρ + 1 / Fintype.card ι ∧
               ((Nat.floor (qEntropy q δ / (1 - qEntropy q δ - ρ) - ε) : ℕ) : ℕ∞) ≤
                 Lambda ((C : Set (ι → F))) δ := by
+  by_cases hq_pp : IsPrimePow q
+  swap
+  · refine ⟨1, zero_lt_one, fun ρ _ _ _ ↦ ⟨0, ?_⟩⟩
+    intro ι _ _ _ F _ _ _ hcard _
+    exact (hq_pp (hcard ▸ FiniteField.isPrimePow_card F)).elim
+  let ε' := min ε (1 / 2)
+  have hε' : 0 < ε' := lt_min hε_pos (by norm_num)
+  have hε'1 : ε' < 1 := (min_le_right _ _).trans_lt (by norm_num)
   obtain ⟨γ, hγ_pos, hmain⟩ :=
-    random_linear_lambda_lower q hq_pp δ hδ_pos hδ_lt ε hε_pos hε_lt
+    random_linear_lambda_lower q hq_pp δ hδ_pos hδ_lt ε' hε' hε'1
   refine ⟨γ, hγ_pos, fun ρ hρ0 hργ hρH => ?_⟩
   obtain ⟨c, hc_pos, n₀, hbound⟩ := hmain ρ hργ hρH
   refine ⟨n₀, fun {ι} _ _ _ {F} _ _ _ hcard hn => ?_⟩
@@ -1026,7 +1035,7 @@ theorem random_linear_lambda_lower_exists
     omega
   -- Bad-event count is strictly below the family count, so a good code exists.
   set B : ℕ∞ :=
-    ((Nat.floor (qEntropy q δ / (1 - qEntropy q δ - ρ) - ε) : ℕ) : ℕ∞) with hB_def
+    ((Nat.floor (qEntropy q δ / (1 - qEntropy q δ - ρ) - ε') : ℕ) : ℕ∞) with hB_def
   set bad : Set (Submodule F (ι → F)) :=
     {C | Module.finrank F C = k ∧ Lambda ((C : Set (ι → F))) δ < B} with hbad_def
   set full : Set (Submodule F (ι → F)) := {C | Module.finrank F C = k} with hfull_def
@@ -1054,8 +1063,13 @@ theorem random_linear_lambda_lower_exists
   refine ⟨C, ?_, ?_, ?_⟩
   · rw [hCk]; exact hband1
   · rw [hCk]; exact hband2
-  · by_contra hle
-    exact hCbad ⟨hCk, lt_of_not_ge hle⟩
+  · have hgood : B ≤ Lambda ((C : Set (ι → F))) δ := by
+      by_contra hle
+      exact hCbad ⟨hCk, lt_of_not_ge hle⟩
+    apply le_trans (b := B) _ hgood
+    dsimp only [B, ε']
+    exact_mod_cast Nat.floor_le_floor
+      (sub_le_sub_left (min_le_left ε (1 / 2)) (qEntropy q δ / (1 - qEntropy q δ - ρ)))
 
 end RandomLinear
 

@@ -289,7 +289,7 @@ theorem lowRateFiniteLengthChallengeHeight_le_inv_slack_sq
 /-- One rate-only constant bounds all low-rate finite-length interpolation parameters. -/
 theorem lowRateFiniteLength_parameter_bounds
     {rho eta : ℝ} {n : ℕ}
-    (hrho : 0 < rho) (hlow : rho < firstOrderRateSwitch)
+    (hlow : rho < firstOrderRateSwitch)
     (heta : 0 < eta) (haOne : firstOrderLowRateThreshold rho + eta < 1)
     (hn : (2 : ℝ) ≤ rho * n) :
     let C := lowRateParameterBoundConstant rho
@@ -298,6 +298,10 @@ theorem lowRateFiniteLength_parameter_bounds
       (lowRateFiniteLengthDerivativeCap rho eta n : ℝ) ≤ C / s ∧
       (lowRateFiniteLengthJetDegree rho eta n : ℝ) ≤ C / s ∧
       (lowRateFiniteLengthChallengeHeight rho eta n : ℝ) ≤ C / s ^ 2 := by
+  have hrho : 0 < rho := by
+    by_contra h
+    have := mul_nonpos_of_nonpos_of_nonneg (le_of_not_gt h) (Nat.cast_nonneg n : (0 : ℝ) ≤ n)
+    linarith
   dsimp only
   have hs := finiteLengthSlack_pos (n := n) heta
   have hm := lowRateFiniteLengthMultiplicity_le_inv_slack hrho hlow heta haOne hn

@@ -432,7 +432,7 @@ theorem exists_chain_directJetAgreementSolutions_finite_and_ncard_le
   have hbin : ∀ r, r ≤ d → ∀ i, r < i → i < K → (i.choose r : F) ≠ 0 := by
     intro r _ i hir hiK
     have hchoose := natCast_choose_ne_zero_of_ringChar
-      (D := K - 1) (s := r) hcutChar' (i - r) (by omega) (by omega)
+      (D := K - 1) (s := r) hcutChar' (i - r) (by omega)
     simpa only [Nat.sub_add_cancel (Nat.le_of_lt hir)] using hchoose
   obtain ⟨stages, terminal, hchain⟩ := hchain
   obtain ⟨hfinite, hbound⟩ := directJetAgreementSolutions_finite_and_ncard_le_chain

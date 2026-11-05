@@ -202,7 +202,7 @@ theorem HiddenDerivativeInterpolationCertificate.agreeingPolynomials_encard_le_t
       exact construction.below_characteristic.1
     exact PolynomialDifferential.natCast_choose_ne_zero_of_ringChar
       (F := ZMod q) (D := construction.ambientDim - 1) (s := s)
-      (Or.inr hchar) a ha has
+      (Or.inr hchar) a has
   have hdegreeEq : construction.ambientDim - 1 = K - 1 := by omega
   have hweight : differentialWeightedDegree (construction.ambientDim - 1)
       construction.interpolant - (construction.ambientDim - 1 - d) ≤ m * A + d - K := by

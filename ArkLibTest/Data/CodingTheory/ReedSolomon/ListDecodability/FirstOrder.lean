@@ -229,7 +229,7 @@ example :
 example :
     (({0} : Finset ℚ[X]).card : ℚ) ≤ tightListEnvelope smallFirstOrderProfile := by
   apply finiteListBound_of_profile (p := smallFirstOrderProfile) (by decide) rfl
-    (by decide) (by decide) finiteEvaluationDomain (fun _ ↦ 0)
+    (by decide) finiteEvaluationDomain (fun _ ↦ 0)
     (Or.inl ringChar.eq_zero)
   intro P hP
   have hPzero : P = 0 := by simpa using hP
@@ -455,7 +455,7 @@ example :
   have hcap := lowRateFiniteLengthDerivativeCap_le_jetDegree
     (rho := rho) (eta := eta) (n := n) hrho heta haOne hn
   have hparameters := lowRateFiniteLength_parameter_bounds
-    (rho := rho) (eta := eta) (n := n) hrho hlow heta haOne hn
+    (rho := rho) (eta := eta) (n := n) hlow heta haOne hn
   refine ⟨lowRateFiniteLengthSlope_pos hrho hlow, ?_, ?_, ?_, ?_, hslack, hcap,
     ?_, ?_, ?_, ?_, ?_⟩
   · exact hslope

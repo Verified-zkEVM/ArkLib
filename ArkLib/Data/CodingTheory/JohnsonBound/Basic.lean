@@ -147,7 +147,7 @@ lemma johnson_condition_weak_implies_strong
       simp only [Nat.cast_le] at this
       exact this
     have hD : ((sInf { d | ∃ u ∈ B, ∃ v ∈ B, u ≠ v ∧ Δ₀(u, v) = d } : ℕ) : ℚ) ≤ d := by
-      refine le_trans ?_ (min_dist_le_d h_B2_not_one)
+      refine le_trans ?_ (min_dist_le_d)
       obtain ⟨u, hu, w, hw, huw⟩ := one_lt_card.mp h_B2_not_one
       refine Nat.cast_le.mpr (csInf_le_csInf (OrderBot.bddBelow _) ⟨_, u, hu, w, hw, huw, rfl⟩ ?_)
       rintro _ ⟨u, hu, w, hw, huw, rfl⟩
@@ -259,7 +259,7 @@ theorem johnson_bound_alphabet_free
         exact ⟨hammingDist u w, u, hu, w, hw, huw, rfl⟩
       calc (d : ℚ)
           ≤ ↑(sInf S') := by exact_mod_cast Nat.sInf_le (hsubset (Nat.sInf_mem hS'nonempty))
-        _ ≤ JohnsonBound.d B' := by exact_mod_cast min_dist_le_d (B := B') (by omega)
+        _ ≤ JohnsonBound.d B' := by exact_mod_cast min_dist_le_d (B := B')
     -- Positivity facts used in both subcases.
     have hn_pos_nat : 0 < n := Nat.succ_le_iff.1 n_not_small
     have hn_pos : (0 : ℚ) < n := by exact_mod_cast hn_pos_nat

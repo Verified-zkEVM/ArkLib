@@ -217,7 +217,7 @@ for every contact residual `r < m` the mean gap and the per-fiber error bound `�
 theorem finrank_weightedSupportLocalConstraint_lt_of_harmonic_error_and_rounding
     {F : Type*} [Field F] (d D m W : ℕ) (L g c a b e ρ K H : ℝ)
     (hd : 2 ≤ d) (hD : 0 < D) (hm : 0 < m) (hW : 0 < W)
-    (hg : 0 < g) (hc : 0 < c) (ha : 1 ≤ a) (hb : 0 ≤ b) (hH : 0 < H)
+    (hc : 0 < c) (ha : 1 ≤ a) (hb : 0 ≤ b) (hH : 0 < H)
     (hHlog : H ≤ Real.log d + b) (hK : Real.exp (b + e) < K)
     (hgap : ∀ r ∈ range m,
       (((W + r : ℕ) : ℝ) + (d.choose 2 : ℕ)) * harmonic (d - 1) / d < L / D + (d - 1 : ℕ))
@@ -238,6 +238,21 @@ theorem finrank_weightedSupportLocalConstraint_lt_of_harmonic_error_and_rounding
         m hD center received)) : ℝ) / (V * m ^ 3) <
       g * c * ρ * K * a ^ 2 / H ^ 2 * (d : ℝ) ^ (1 / a) / d := by
   intro V
+  have hg : 0 < g := by
+    have hmem : 0 ∈ range m := mem_range.mpr hm
+    have hgap0 := hgap 0 hmem
+    have herror0 := herror 0 hmem
+    have hterm : 0 ≤
+        ((((W + 0 : ℕ) : ℝ) + (d.choose 2 : ℕ)) ^ 2 *
+            (∑ i : Fin (d - 1), 1 / ((i : ℝ) + 1) ^ 2) / ((d : ℝ) * (d + 1))) /
+          (4 * (L / D + (d - 1 : ℕ) -
+            (((W + 0 : ℕ) : ℝ) + (d.choose 2 : ℕ)) * harmonic (d - 1) / d)) := by
+      apply div_nonneg
+      · positivity
+      · linarith
+    have hprod : 0 < g * m * c := by linarith
+    have hgm : 0 < g * m := (mul_pos_iff_of_pos_right hc).mp hprod
+    exact (mul_pos_iff_of_pos_right (Nat.cast_pos.mpr hm)).mp hgm
   have hκ : 0 < ((d - 1 : ℕ) : ℝ) * m / W :=
     div_pos (mul_pos (by exact_mod_cast (by omega : 0 < d - 1)) (by exact_mod_cast hm))
       (by exact_mod_cast hW)
@@ -255,7 +270,7 @@ inequalities at `T = L / D`, the harmonic bound `H ≤ log d + b` with `b ≥ 0`
 `rank / (V m ^ 3) < g c (101 / 100) K a ^ 2 / H ^ 2 · d ^ (1 / a) / d`. -/
 theorem finrank_weightedSupportLocalConstraint_lt_prescribed_rounding_of_harmonic_error
     {F : Type*} [Field F] (d D : ℕ) (L g c a b K H : ℝ)
-    (hd : 1000 ≤ d) (hD : 0 < D) (hg : 0 < g) (hc : 0 < c) (ha : 1 ≤ a) (hb : 0 ≤ b)
+    (hd : 1000 ≤ d) (hD : 0 < D) (hc : 0 < c) (ha : 1 ≤ a) (hb : 0 ≤ b)
     (hH : 0 < H) (hHlog : H ≤ Real.log d + b) (hK : Real.exp (b + 1 / 100) < K)
     (hgap : ∀ r ∈ range ⌈100 * (d : ℝ) ^ 2 * H⌉₊,
       (((⌊a * d * ⌈100 * (d : ℝ) ^ 2 * H⌉₊ / H⌋₊ + r : ℕ) : ℝ) + (d.choose 2 : ℕ)) *
@@ -282,7 +297,7 @@ theorem finrank_weightedSupportLocalConstraint_lt_prescribed_rounding_of_harmoni
   obtain ⟨hm, hW, _, _, _, hκexp, _, hκrec⟩ :=
     InterpolationRounding.prescribed_kappa_bounds a H d ha hH hd
   exact finrank_weightedSupportLocalConstraint_lt_of_harmonic_error_and_rounding
-    d D m W L g c a b (1 / 100) (101 / 100) K H (by omega) hD hm hW hg hc ha hb hH hHlog hK
+    d D m W L g c a b (1 / 100) (101 / 100) K H (by omega) hD hm hW hc ha hb hH hHlog hK
       hgap herror hκexp hκrec center received
 
 end ReedSolomon.HiddenDerivative

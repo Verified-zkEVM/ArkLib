@@ -574,11 +574,28 @@ open Classical in
 distance `d_C` satisfies `n - d_C ≤ n · ρ`. Then at most `1 / η` maximal CA domains between `U` and
 the code have at least `n · α` positions; stated division-free as `m · η ≤ 1`. -/
 lemma card_filter_isMaxCADomain_mul_le_one [Nonempty ι] (MC : ModuleCode ι F A)
-    (U : ℓ → (ι → A)) {α ρ η : ℝ} (hα0 : 0 ≤ α) (hα1 : α ≤ 1) (hη : 0 < η)
+    (U : ℓ → (ι → A)) {α ρ η : ℝ} (hα0 : 0 ≤ α)
     (hgap : ρ + η ≤ α * α)
     (hd : ((Fintype.card ι - Code.minDist MC.carrier) : ℝ) ≤ Fintype.card ι * ρ) :
     ((Finset.univ.filter fun A₀ : Finset ι =>
         IsMaxCADomain MC U A₀ ∧ (Fintype.card ι : ℝ) * α ≤ A₀.card).card : ℝ) * η ≤ 1 := by
+  by_cases hη : 0 < η
+  swap
+  · exact (mul_nonpos_of_nonneg_of_nonpos (Nat.cast_nonneg _) (le_of_not_gt hη)).trans
+      zero_le_one
+  by_cases hα1 : α ≤ 1
+  swap
+  · have hempty : (Finset.univ.filter fun A₀ : Finset ι =>
+        IsMaxCADomain MC U A₀ ∧ (Fintype.card ι : ℝ) * α ≤ A₀.card) = ∅ := by
+      apply Finset.eq_empty_iff_forall_notMem.mpr
+      intro A₀ hA₀
+      have hle : (A₀.card : ℝ) ≤ Fintype.card ι := by
+        exact_mod_cast Finset.card_le_univ A₀
+      have hpos : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos (α := ι)
+      have := (Finset.mem_filter.mp hA₀).2.2
+      nlinarith
+    rw [hempty]
+    norm_num
   set n := Fintype.card ι
   set D := n - Code.minDist MC.carrier
   set a := ⌈(n : ℝ) * α⌉₊
@@ -786,7 +803,7 @@ lemma card_filter_isMCA_le_of_isMDSGenerator_of_le_one_sub {S : Type} [Nonempty 
     exact_mod_cast (Finset.card_filter_add_card_filter_not (s := Bad) fun x =>
       ∃ A₀ ∈ Large, A₀ ⊆ Tx x).symm
   have hLarge : (Large.card : ℝ) * η ≤ 1 :=
-    card_filter_isMaxCADomain_mul_le_one MC U hα0 hα1 hη hgap (by linarith)
+    card_filter_isMaxCADomain_mul_le_one MC U hα0 hgap (by linarith)
   have hK : (0 : ℝ) ≤ n * (1 - α) * (L - 1) :=
     mul_nonneg (mul_nonneg hnR.le (by linarith)) (by linarith)
   have hper : ∀ A₀ ∈ Large,

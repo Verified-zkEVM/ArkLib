@@ -90,8 +90,8 @@ theorem large_alphabet_lambda_lower
     (ℓ : ℕ) (_hℓ_ge : 2 ≤ ℓ) (ρ : ℝ) (_hρ_pos : 0 < ρ) (_hρ_lt : ρ < 1) :
     ∃ α : ℝ, 0 < α ∧ ∃ n₀ : ℕ,
       ∀ (η : ℝ), 0 < η →
-          ∀ {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-            {F : Type} [Field F] [Fintype F] [DecidableEq F]
+          ∀ {ι : Type} [Fintype ι]
+            {F : Type} [Field F] [Fintype F]
             (C : Submodule F (ι → F)),
             n₀ ≤ Fintype.card ι →
             1 / η ≤ (Fintype.card ι : ℝ) →
@@ -116,7 +116,10 @@ theorem large_alphabet_lambda_lower
       ℓ _hℓ_ge ρ _hρ_pos _hρ_lt B₀ hB₀
   refine ⟨min αsep ((1 - ρ) / 2), ?_, max Nlocal nsep, ?_⟩
   · exact lt_min hαsep (by linarith)
-  · intro η hη ι _ _ _ F _ _ _ C hn hηn hrate hLambda
+  · intro η hη ι _ F _ _ C hn hηn hrate hLambda
+    have : Nonempty ι := Fintype.card_pos_iff.mp (by
+      have : (0 : ℝ) < Fintype.card ι := (one_div_pos.mpr hη).trans_le hηn
+      exact_mod_cast this)
     by_cases hlarge : (1 - ρ) / 2 ≤ η
     · exact alphabet_card_ge_rpow_of_alpha_le_eta _ _ hη
         ((min_le_right _ _).trans hlarge) Fintype.one_lt_card

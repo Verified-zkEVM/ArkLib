@@ -29,8 +29,8 @@ numbering from the published version matters, while `ACFY24` tracks the earlier 
 ## Main ArkLib Touchpoints
 
 - [`ProximityGap/Errors.lean`](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean) contains
-  `mcaError_le_epsCa_of_pos_of_two_mul_lt_dist` and the derived
-  `mcaError_eq_epsCa_of_pos_of_two_mul_lt_dist` equality.
+  `mcaError_le_epsCa_of_two_mul_lt_dist` and the derived
+  `mcaError_eq_epsCa_of_two_mul_lt_dist` equality.
 - The [ABF26 audit](../audits/open-problems-list-decoding-and-correlated-agreement.md) records the
   statement-level comparison and the explicit open-radius hypothesis.
 

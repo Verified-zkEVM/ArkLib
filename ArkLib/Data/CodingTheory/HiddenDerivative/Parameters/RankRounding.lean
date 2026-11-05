@@ -158,12 +158,17 @@ theorem kappa_exponent_le (C κ a H : ℝ) (d m : ℕ) (hC : 0 < C)
   have hexp : κ * (1 + (d.choose 2 : ℝ) / m) = κ + κ * ((d.choose 2 : ℝ) / m) := by ring
   linarith
 
-/-- If `κ ≤ H` and `m ≥ C d ^ 2 H` with `C, d, m > 0`, then `d κ / m ≤ 1 / (C d)`, because
+/-- If `κ ≤ H` and `m ≥ C d ^ 2 H` with `C > 0`, then `d κ / m ≤ 1 / (C d)`, because
 `d κ C d ≤ C d ^ 2 H ≤ m`. No sign condition on `H` or `κ` is needed. -/
-theorem kappa_multiplicity_error_le (C κ H : ℝ) (d m : ℕ) (hC : 0 < C) (hd : 0 < d) (hm : 0 < m)
+theorem kappa_multiplicity_error_le (C κ H : ℝ) (d m : ℕ) (hC : 0 < C)
     (hκH : κ ≤ H)
     (hsize : C * (d : ℝ) ^ 2 * H ≤ m) :
     (d : ℝ) * κ / m ≤ 1 / (C * d) := by
+  rcases Nat.eq_zero_or_pos d with rfl | hd
+  · simp
+  rcases Nat.eq_zero_or_pos m with rfl | hm
+  · simp only [Nat.cast_zero, div_zero]
+    positivity
   have hd' : (0 : ℝ) < d := by exact_mod_cast hd
   rw [div_le_div_iff₀ (by positivity : (0 : ℝ) < m) (by positivity)]
   have hmul := mul_le_mul_of_nonneg_left hκH (by positivity : (0 : ℝ) ≤ C * (d : ℝ) ^ 2)
@@ -222,7 +227,7 @@ theorem prescribed_kappa_bounds (a H : ℝ) (d : ℕ)
     exact this.trans hint.1
   have he := kappa_exponent_le 100 κ a H d m (by norm_num) ha hH hm hκ.le hint.2 hsize
   have hκH : κ ≤ H := hint.2.trans (div_le_self hH.le ha)
-  have herr := kappa_multiplicity_error_le 100 κ H d m (by norm_num) (by omega) hm hκH hsize
+  have herr := kappa_multiplicity_error_le 100 κ H d m (by norm_num) hκH hsize
   have herr' : (d : ℝ) * κ / m ≤ 1 / 1000 :=
     herr.trans (one_div_le_one_div_of_le (by norm_num) (by linarith))
   have hrec := kappa_reciprocal_factor_le κ (H / a) d m (999 / 1000) (1 / 1000) hκ hHa hmp

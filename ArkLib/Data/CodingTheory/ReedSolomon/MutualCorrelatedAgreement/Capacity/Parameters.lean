@@ -51,7 +51,7 @@ private theorem binomial_pivots_below_of_characteristic {F : Type*} [Field F]
   have hk : 0 < i - r := by omega
   have hs : i - r + r ≤ n - 1 := by omega
   have hchoose := PolynomialDifferential.natCast_choose_ne_zero_of_ringChar
-    (F := F) (D := n - 1) (s := r) hchar' (i - r) hk hs
+    (F := F) (D := n - 1) (s := r) hchar' (i - r) hs
   simpa [Nat.sub_add_cancel hri.le] using hchoose
 
 /-- Prescribed interpolation parameters give a certificate and the associated size bounds. -/

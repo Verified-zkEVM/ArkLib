@@ -63,13 +63,6 @@ private theorem jointNumerator_eval (center z : E) (Q : DifferentialPolynomial E
   simpa only [Option.elim_none, Option.elim_some, hφ] using
     aeval_jointCommonTaylorNumerator center Q (2 * K) l (fun i ↦ i.elim z jet)
 
-private theorem jointInitial_ne_zero_of_regular (center z : E)
-    (Q : DifferentialPolynomial E[X] r) (jet : Fin (r + 1) → E)
-    (hs : aeval jet (initialJetSeparant center
-      (MvPolynomial.map (Polynomial.evalRingHom z) Q)) ≠ 0) :
-    jointInitialJetEquation center Q ≠ 0 :=
-  jointInitialJetEquation_ne_zero_of_regular center z Q jet hs
-
 /-- Distinct challenges with regular symbolic Taylor charts and no exact admissible-pair
 agreement representation satisfy the combined incidence and exceptional-pair bound. -/
 theorem finite_symbolicTaylorChart_badChallenges_card_le [DecidableEq F] [DecidableEq E]
@@ -154,16 +147,10 @@ theorem finite_symbolicTaylorChart_badChallenges_card_le [DecidableEq F] [Decida
   have hoffbound : (remaining.card : ℚ) ≤ ((v + h : ℕ) : ℚ) *
       ((((n * (1 + 2 * K * (v - 1 + h)) : ℕ) : ℚ) /
         ((A - L + 1 : ℕ) : ℚ)) ^ (r + 1)) := by
-    by_cases hempty : remaining = ∅
-    · rw [hempty, Finset.card_empty, Nat.cast_zero]
-      positivity
-    obtain ⟨z₀, hz₀⟩ := Finset.nonempty_iff_ne_empty.mpr hempty
-    have hzc := (Finset.mem_sdiff.mp hz₀).1
-    have hi := jointInitial_ne_zero_of_regular center z₀ Q (jet z₀) (hchart z₀ hzc).2.2.1
     rw [← hcard]
     apply finite_regularJointTaylorChartPoints_off_admissiblePairGraphs_card_le_of_jetDegree
       (K := K) (k := k) (L := L) (A := A) (v := v) (h := h) domain f g iota center Q
-      hK hkL hLA (by omega) hi (by
+      hK hkL hLA (by omega) (by
         have hweight : (fun i : JetVariable r ↦ i.elim 0 (fun _ ↦ 1)) = jetDegreeWeight := by
           funext i
           cases i <;> rfl

@@ -344,7 +344,7 @@ theorem exists_rs_asymptotic_Lambda_lower_bound
   have hcardpos : (0 : ℝ) < (Fintype.card ιC : ℝ) := by rw [hcard_real]; positivity
   -- `cor:kikh-vanilla` at `d = 2^a`, `h = 2^b`.
   have hn : Fintype.card ιC = 2 ^ a * 2 ^ b := hcard.trans (pow_add 2 a b)
-  have hcor := choose_le_Lambda_rs_vanilla_of_smooth domain hn hq1 hkh hk1 hk2
+  have hcor := choose_le_Lambda_rs_vanilla_of_smooth domain hn hkh hk1 hk2
   refine ⟨ιC, inferInstance, inferInstance, inferInstance, FC, inferInstance, inferInstance,
     inferInstance, domain, inferInstance, k,
     ((khat * 2 ^ a - k + 1 : ℕ) : ℝ) / (Fintype.card ιC : ℝ), ?_, ?_, ?_, ?_, ?_, ?_⟩

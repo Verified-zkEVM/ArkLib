@@ -112,7 +112,7 @@ theorem exists_exceptional_exactPowerAgreement_with_prescribed_stageBounds
       hcharWeight (by
         intro r hr i hri hiK
         have hchoose := PolynomialDifferential.natCast_choose_ne_zero_of_ringChar
-          (F := F) (D := K - 1) (s := r) hcharCut (i - r) (by omega) (by omega)
+          (F := F) (D := K - 1) (s := r) hcharCut (i - r) (by omega)
         simpa only [Nat.sub_add_cancel hri.le] using hchoose)
   refine ⟨stages, exceptional, hcard, ?_, (fun stage _ ↦ Fin.is_le stage.2), ?_, hexact⟩
   · exact (List.toFinset_card_le stages).trans (hc.length_le.trans cert.jetTotalDegree_le)

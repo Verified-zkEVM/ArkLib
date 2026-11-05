@@ -135,10 +135,33 @@ vanishing polynomial decomposes as
 `V_S(Y) = ∑_{i=0}^{c} (-1)^i λ_i Y^{k̂-i} + p_S(Y)` with `deg p_S ≤ k̂ - c - 1`. -/
 theorem IsUsefulFamilyWith.vanishing_decomposition {H : Finset F} {khat c : ℕ}
     {𝒮 : Finset (Finset F)} {lam : ℕ → F} (hU : IsUsefulFamilyWith H khat c 𝒮 lam)
-    (hck : c < khat) {S : Finset F} (hS : S ∈ 𝒮) :
+    {S : Finset F} (hS : S ∈ 𝒮) :
     ∃ p : F[X], p.degree ≤ ((khat - c - 1 : ℕ) : WithBot ℕ) ∧
-      ∏ α ∈ S, (X - C α) = leadingPart khat c lam + p :=
-  prod_X_sub_C_eq_leadingPart_add_remainder (hU S hS).2.1 hck.le (hU S hS).2.2
+      ∏ α ∈ S, (X - C α) = leadingPart khat c lam + p := by
+  classical
+  by_cases hck : c ≤ khat
+  · exact prod_X_sub_C_eq_leadingPart_add_remainder (hU S hS).2.1 hck (hU S hS).2.2
+  have hcard := (hU S hS).2.1
+  have hesymm := (hU S hS).2.2
+  refine ⟨0, by simp, ?_⟩
+  rw [add_zero, Finset.prod_eq_multiset_prod, Multiset.prod_X_sub_X_eq_sum_esymm]
+  have hrange : Finset.range (S.card + 1) ⊆ Finset.range (c + 1) :=
+    Finset.range_mono (by omega)
+  unfold leadingPart
+  rw [← Finset.sum_subset hrange]
+  · apply Finset.sum_congr rfl
+    intro i hi
+    have hcard' : S.1.card = khat := hcard
+    rw [map_mul, map_pow, map_neg, map_one, mul_assoc, hcard',
+      hesymm i (by have := Finset.mem_range.mp hi; omega)]
+  · intro i hi hnot
+    have hci : i ≤ c := by have := Finset.mem_range.mp hi; omega
+    have hsi : S.1.card < i := by
+      have : ¬ i < S.card + 1 := by simpa only [Finset.mem_range] using hnot
+      change S.card < i
+      omega
+    rw [← hesymm i hci, Multiset.esymm_of_card_lt hsi]
+    simp
 
 end Defs
 
@@ -1325,12 +1348,17 @@ omit [DecidableEq ι] [Fintype F] in
 /-- `choose_le_Lambda_rs_vanilla` specialized to a smooth evaluation domain. -/
 theorem choose_le_Lambda_rs_vanilla_of_smooth (domain : ι ↪ F) [Finite F]
     [ReedSolomon.Smooth domain] {d h khat k : ℕ}
-    (hn : Fintype.card ι = d * h) (hkhat : 1 ≤ khat) (hkh : khat < h)
+    (hn : Fintype.card ι = d * h) (hkh : khat < h)
     (hk1 : (khat - 1) * d < k) (hk2 : k ≤ khat * d) :
     (h.choose khat : ℕ∞) ≤
       Lambda (↑(ReedSolomon.code domain k) : Set (ι → F))
         (((δᵣ (↑(ReedSolomon.code domain k) : Set (ι → F)) : ℚ≥0) : ℝ)
           - ((khat * d - k + 1 : ℕ) : ℝ) / (Fintype.card ι : ℝ)) := by
+  have hkhat : 1 ≤ khat := by
+    by_contra h
+    have : khat = 0 := by omega
+    simp [this] at hk1 hk2
+    omega
   obtain ⟨H, hHcard, -, hfib, -⟩ := Smooth.exists_pow_projection_structure domain hn
   exact choose_le_Lambda_rs_vanilla domain hn hHcard hfib hkhat hkh hk1 hk2
 
@@ -1354,12 +1382,13 @@ omit [DecidableEq ι] [Fintype F] in
 theorem choose_le_Lambda_rs_antipodal_odd_of_smooth (domain : ι ↪ F) [Finite F]
     [ReedSolomon.Smooth domain] {d h khat k : ℕ}
     (hn : Fintype.card ι = d * h) (hheven : Even h)
-    (hkhat : 1 ≤ khat) (hkh : khat < h) (hkodd : Odd khat)
+    (hkh : khat < h) (hkodd : Odd khat)
     (hk1 : (khat - 2) * d < k) (hk2 : k ≤ khat * d) :
     ((h / 2 - 1).choose ((khat - 1) / 2) : ℕ∞) ≤
       Lambda (↑(ReedSolomon.code domain k) : Set (ι → F))
         (((δᵣ (↑(ReedSolomon.code domain k) : Set (ι → F)) : ℚ≥0) : ℝ)
           - ((khat * d - k + 1 : ℕ) : ℝ) / (Fintype.card ι : ℝ)) := by
+  have hkhat : 1 ≤ khat := hkodd.pos
   obtain ⟨H, hHcard, -, hfib, hanti⟩ := Smooth.exists_pow_projection_structure domain hn
   exact choose_le_Lambda_rs_antipodal_odd domain hn hHcard hfib (hanti hheven).1
     (hanti hheven).2 hkhat hkh hkodd hk1 hk2

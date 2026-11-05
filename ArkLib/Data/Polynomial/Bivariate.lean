@@ -141,7 +141,8 @@ def quotient (f g : F[X][Y]) : Prop := ∃ q : F[X][Y], g = q * f
 
 /-- The quotient of two non-zero bivariate polynomials is non-zero. -/
 @[grind .]
-lemma quotient_nezero {f q : F[X][Y]} (hg : q * f ≠ 0) : q ≠ 0 := by by_contra h; apply hg; simp [h]
+lemma quotient_nezero {f q : F[X][Y]} (hg : q * f ≠ 0) : q ≠ 0 :=
+  left_ne_zero_of_mul hg
 
 /-- If `q * f` is non-zero, then the coefficient function of `q` is non-zero,
 equivalently some coefficient of `q` is non-zero. -/

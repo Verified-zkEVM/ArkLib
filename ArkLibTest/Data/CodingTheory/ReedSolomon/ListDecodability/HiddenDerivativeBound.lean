@@ -56,7 +56,7 @@ private theorem listBound_of_below_characteristic
     exact jetDegreeCastsNeZero_of_ringChar (Or.inr (hjetChar j))
   · intro k s hk hks
     exact PolynomialDifferential.natCast_choose_ne_zero_of_ringChar
-      (Or.inr hDchar) k hk hks
+      (Or.inr hDchar) k hks
   · exact hfield
 
 /-- The agreeing-polynomial embedding preserves the polynomial over `ZMod 5`. -/

@@ -398,33 +398,8 @@ divides the image of `p`, then `monicize H` already divides `p`.  This is what m
 lemma monicize_dvd_of_map_dvd_monicizeRatFunc {H p : F[X][Y]} (hHdeg : 0 < H.natDegree)
     (hp : monicizeRatFunc H ∣ p.map (univPolyHom (F := F))) :
     monicize H ∣ p := by
-  let q : F[X][Y] := monicize H
-  have hqmonic : q.Monic := monicize_monic H hHdeg
-  rw [← Polynomial.modByMonic_eq_zero_iff_dvd hqmonic]
-  rw [← Polynomial.map_eq_zero_iff (univPolyHom_injective (F := F))]
-  have hqmap_dvd_p : q.map (univPolyHom (F := F)) ∣ p.map (univPolyHom (F := F)) := by
-    simpa [q, map_monicize_eq_monicizeRatFunc] using hp
-  have hqmap_dvd_rem :
-      q.map (univPolyHom (F := F)) ∣
-        (p %ₘ q).map (univPolyHom (F := F)) := by
-    have hrem :
-        (p %ₘ q).map (univPolyHom (F := F)) =
-          p.map (univPolyHom (F := F)) -
-            q.map (univPolyHom (F := F)) * (p /ₘ q).map (univPolyHom (F := F)) := by
-      have h := congrArg (fun r : F[X][Y] => r.map (univPolyHom (F := F)))
-        (Polynomial.modByMonic_add_div p q)
-      simp only [Polynomial.map_add, Polynomial.map_mul] at h
-      rw [← h]
-      ring
-    rw [hrem]
-    exact dvd_sub hqmap_dvd_p (dvd_mul_right _ _)
-  have hdegree :
-      ((p %ₘ q).map (univPolyHom (F := F))).degree <
-        (q.map (univPolyHom (F := F))).degree := by
-    rw [Polynomial.degree_map_eq_of_injective (univPolyHom_injective (F := F))]
-    rw [Polynomial.degree_map_eq_of_injective (univPolyHom_injective (F := F))]
-    exact Polynomial.degree_modByMonic_lt p hqmonic
-  exact Polynomial.eq_zero_of_dvd_of_degree_lt hqmap_dvd_rem hdegree
+  exact (Polynomial.map_dvd_map _ (univPolyHom_injective (F := F))
+    (monicize_monic H hHdeg)).mp (by simpa [map_monicize_eq_monicizeRatFunc] using hp)
 
 private lemma mem_span_monicize_of_bivPolyHom_mem_span_monicizeRatFunc {H p : F[X][Y]}
     (hHdeg : 0 < H.natDegree)

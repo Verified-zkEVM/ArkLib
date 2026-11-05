@@ -244,8 +244,9 @@ theorem interpolationBoxWidth_le_multiplicity (hθ : θ ≤ 16) :
 
 /-- The three slack conditions consumed by the rectangular dimension bound
 `finrank_interpolationSpace_lowerBound`: `H ≤ m`, `C + 2H ≤ B`, and `(K - 1)(C + 3H) ≤ m A`.
-The hypotheses are `ε > 0`, `θ ≥ 0`, and `0 < d < K`; the latter gives `n > 0` and `θ < 1`. -/
-theorem freeGlobalDimensionSlacks (hε : 0 < ε) (hθ : 0 ≤ θ) (hd : 0 < d)
+The hypotheses are `ε > 0`, `θ ≥ 0`, and `d < K`; for `d > 0` the last gives `n > 0` and `θ < 1`,
+and `d = 0` is immediate. -/
+theorem freeGlobalDimensionSlacks (hε : 0 < ε) (hθ : 0 ≤ θ)
     (hdK : d < ambientDimension ε θ n) :
     interpolationBoxWidth θ d ≤ multiplicity d ∧
       higherJetDegreeBudget θ d + 2 * interpolationBoxWidth θ d ≤
@@ -253,6 +254,8 @@ theorem freeGlobalDimensionSlacks (hε : 0 < ε) (hθ : 0 ≤ θ) (hd : 0 < d)
       (ambientDimension ε θ n - 1) *
           (higherJetDegreeBudget θ d + 3 * interpolationBoxWidth θ d) ≤
         multiplicity d * agreementThreshold ε n := by
+  rcases Nat.eq_zero_or_pos d with rfl | hd
+  · simp [multiplicity, interpolationBoxWidth, higherJetDegreeBudget, interpolationDegreeBudget]
   have hn := blockLength_pos_of_order_lt_ambientDimension hdK
   have hθ1 := lt_one_of_ambientDimension_pos hε.le (by omega : 0 < ambientDimension ε θ n)
   have hweighted := boxFamily_weightedBudget_lt hε hθ hd hn

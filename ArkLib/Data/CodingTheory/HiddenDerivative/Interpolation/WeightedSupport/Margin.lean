@@ -116,7 +116,7 @@ theorem finrank_weightedSupportLocalConstraint_lt_prescribed
     push_cast at h ⊢
     exact h
   exact finrank_weightedSupportLocalConstraint_lt_prescribed_rounding_of_harmonic_error
-    d D ((m : ℝ) * D * (1 + g)) g (448 / 625) a (3 / 5) (37 / 20) H (by omega) hD hg
+    d D ((m : ℝ) * D * (1 + g)) g (448 / 625) a (3 / 5) (37 / 20) H (by omega) hD
     (by norm_num) ha (by norm_num) hH hHlog hK hgap herror center received
 
 /-- The strict surplus from a normalized rank bound. Let `g = rateGap δ (D / n)`, `a = 1 + θ g`,

@@ -175,10 +175,16 @@ lemma qEntropy_strictAntiOn (hq : 2 ≤ q) :
   gcongr
   exact Real.qaryEntropy_strictAntiOn hq ha hb hab
 
-/-- `H_q ≤ 1` on `[0, 1]`: the base-`q` entropy of a `q`-ary symbol never exceeds one
-`q`-ary symbol's worth of information. For `q ≥ 2` the bound is attained at `1 - 1/q`
-(`qEntropy_one_sub_inv`); for `q ≤ 1` the function is identically zero. -/
-lemma qEntropy_le_one (hx₀ : 0 ≤ x) (hx₁ : x ≤ 1) : qEntropy q x ≤ 1 := by
+/-- `H_q ≤ 1` for `x ≤ 1` (for `x < 0` it is nonpositive): the base-`q` entropy of a `q`-ary
+symbol never exceeds one `q`-ary symbol's worth of information. For `q ≥ 2` the bound is
+attained at `1 - 1/q` (`qEntropy_one_sub_inv`); for `q ≤ 1` the function is identically zero. -/
+lemma qEntropy_le_one (hx₁ : x ≤ 1) : qEntropy q x ≤ 1 := by
+  by_cases hx₀ : 0 ≤ x
+  swap
+  · rw [qEntropy_eq_qaryEntropy_div_log]
+    exact (div_nonpos_of_nonpos_of_nonneg
+      (Real.qaryEntropy_nonpos_of_nonpos (le_of_not_ge hx₀))
+      (Real.log_natCast_nonneg q)).trans zero_le_one
   by_cases hqle : q ≤ 1
   · rw [qEntropy_of_le_one hqle]
     norm_num

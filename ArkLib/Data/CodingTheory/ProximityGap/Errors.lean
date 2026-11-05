@@ -661,8 +661,8 @@ private lemma line_close_of_isMCA_affineLine
 
 open Classical in
 /-- Below half the relative minimum distance, affine-line MCA is at most correlated agreement. -/
-theorem mcaError_le_epsCa_of_pos_of_two_mul_lt_dist
-    (C : LinearCode ι F) (δ : ℝ≥0) (_hδ_pos : 0 < δ)
+theorem mcaError_le_epsCa_of_two_mul_lt_dist
+    (C : LinearCode ι F) (δ : ℝ≥0)
     (h_udr : 2 * (δ : ℝ) * Fintype.card ι < Code.dist (C : Set (ι → F))) :
     mcaError (AffineLineGenerator F) C (δ : ℝ) ≤
       epsCa (F := F) (A := F) (C : Set (ι → F)) δ δ := by
@@ -967,12 +967,12 @@ theorem mcaError_le_epsCa_of_pos_of_two_mul_lt_dist
 
 open Classical in
 /-- Below half the relative minimum distance, affine-line MCA equals correlated agreement. -/
-theorem mcaError_eq_epsCa_of_pos_of_two_mul_lt_dist
-    (C : LinearCode ι F) (δ : ℝ≥0) (hδ_pos : 0 < δ)
+theorem mcaError_eq_epsCa_of_two_mul_lt_dist
+    (C : LinearCode ι F) (δ : ℝ≥0)
     (h_udr : 2 * (δ : ℝ) * Fintype.card ι < Code.dist (C : Set (ι → F))) :
     mcaError (AffineLineGenerator F) C (δ : ℝ) =
       epsCa (F := F) (A := F) (C : Set (ι → F)) δ δ :=
-  le_antisymm (mcaError_le_epsCa_of_pos_of_two_mul_lt_dist C δ hδ_pos h_udr)
+  le_antisymm (mcaError_le_epsCa_of_two_mul_lt_dist C δ h_udr)
     (epsCa_le_mcaError_affineLine C δ)
 
 end UniqueDecoding

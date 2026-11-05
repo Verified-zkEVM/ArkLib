@@ -178,10 +178,8 @@ lemma one_add_sub_one' {k n : ℕ} [FoldingContextMiddle k n] :
   This is the index-arithmetic counterpart of folding one step at a time. -/
 @[grind =]
 lemma n_sub_1_sub_k_sub_1_eq_n_sub_k {k n : ℕ} [FoldingContextMiddle k n] :
-    n - 1 - (k - 1) = n - k := by
-  have := FoldingContextMiddle.k_ge_1
-  have := FoldingContextMiddle.k_le_n
-  omega
+    n - 1 - (k - 1) = n - k :=
+  Nat.sub_sub_sub_cancel_right FoldingContextMiddle.k_ge_1
 
 /-- Given a `[FoldingContextMiddle k n]` we have `k - 1 + (n - k) = n - 1`. -/
 @[grind _=_]

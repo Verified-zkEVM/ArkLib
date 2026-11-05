@@ -131,7 +131,7 @@ theorem exists_extensionExceptional_firstOrderCurve_of_certificate_of_exponent
   have hbin : ∀ r ≤ 1, ∀ i, r < i → i < K → (i.choose r : F) ≠ 0 := by
     intro r _ i hri hi
     have hchoose := natCast_choose_ne_zero_of_ringChar (D := K - 1) (s := r)
-      hcharChoose (i - r) (by omega) (by omega)
+      hcharChoose (i - r) (by omega)
     simpa only [Nat.sub_add_cancel (Nat.le_of_lt hri)] using hchoose
   have hregular : ∀ stage ∈ stages, ∃ exceptional : Finset E,
       (exceptional.card : ℚ) ≤

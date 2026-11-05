@@ -80,7 +80,7 @@ example :
           (higherJetDegreeBudget (1 / 2) 4 + 3 * interpolationBoxWidth (1 / 2) 4) ≤
         ReedSolomon.HiddenDerivative.multiplicity 4 * agreementThreshold (1 / 2) 64 := by
   exact freeGlobalDimensionSlacks (ε := 1 / 2) (θ := 1 / 2) (d := 4) (n := 64)
-    (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num)
     (by norm_num [ambientDimension])
 
 /-- Concrete large-order thresholds at fixed positive free-order parameters. -/
@@ -137,7 +137,7 @@ example :
   refine ⟨?_, ?_, ?_⟩
   · simpa using kappa_exponent_le 1 1 1 1 2 4 (by norm_num) (by norm_num) (by norm_num)
       (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-  · simpa using kappa_multiplicity_error_le 1 1 1 2 4 (by norm_num) (by norm_num) (by norm_num)
+  · simpa using kappa_multiplicity_error_le 1 1 1 2 4 (by norm_num)
       (by norm_num) (by norm_num)
   · simpa using kappa_reciprocal_factor_le 1 1 2 4 1 (1 / 2) (by norm_num) (by norm_num)
       (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)

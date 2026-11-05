@@ -80,7 +80,7 @@ theorem exists_exceptional_exactPowerAgreement_of_certificate_of_jetCharacterist
       (by
         intro r _ i hri hi
         have hchoose := PolynomialDifferential.natCast_choose_ne_zero_of_ringChar
-          (F := F) (D := K - 1) (s := r) hcharK (i - r) (by omega) (by omega)
+          (F := F) (D := K - 1) (s := r) hcharK (i - r) (by omega)
         simpa only [Nat.sub_add_cancel hri.le] using hchoose)
   refine ⟨exceptional, ?_, hexact⟩
   have hcardR : (exceptional.card : ℝ) ≤ (H : ℝ) +
