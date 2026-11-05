@@ -91,7 +91,7 @@ example :
     automaticFirstOrder_closePolynomialSet_finite_and_card_le
       (rho := 1 / 2) (a := 3 / 4) (n := 4) (D := 1) (A := 3) (k := 2)
       (by norm_num : (0 : ℝ) < 1 / 2) (by norm_num : (1 / 2 : ℝ) < 1)
-      half_rate_threshold_lt_three_quarters (by norm_num : (3 / 4 : ℝ) < 1)
+      half_rate_threshold_lt_three_quarters
       (by norm_num : 0 < 4) (by norm_num) (by norm_num : 2 ≤ 2)
       (by norm_num : (2 : ℝ) ≤ (1 / 2) * 4) (by norm_num : (3 / 4 : ℝ) * 4 ≤ 3)
       (by norm_num : 3 ≤ 4) rationalEvaluationDomain (fun _ ↦ 0)
@@ -116,7 +116,7 @@ example :
       ((classicalRationalClosePolynomialSet 3).ncard : ℝ) ≤ Λ := by
   exact automatic_first_order_list_bound (1 / 2) (3 / 4)
     (by norm_num : (0 : ℝ) < 1 / 2) (by norm_num : (1 / 2 : ℝ) < 1)
-    half_rate_threshold_lt_three_quarters (by norm_num : (3 / 4 : ℝ) < 1)
+    half_rate_threshold_lt_three_quarters
     4 2 3 (by norm_num : 0 < 4) (by norm_num : 2 ≤ 2)
     (by norm_num : (2 : ℝ) ≤ (1 / 2) * 4)
     (by norm_num : (3 / 4 : ℝ) * 4 ≤ 3) (by norm_num : 3 ≤ 4)
@@ -134,14 +134,12 @@ example :
     let Λ : ℝ := 2 * D * θ * T + (μ - M : ℕ)
     (classicalRationalClosePolynomialSet 4).Finite ∧
       ((classicalRationalClosePolynomialSet 4).ncard : ℝ) ≤ Λ := by
-  have haOne : firstOrderRateThreshold (1 / 2 : ℝ) + (1 / 8 : ℝ) < 1 := by
-    linarith [half_rate_threshold_lt_three_quarters]
   have hA : (firstOrderRateThreshold (1 / 2 : ℝ) + (1 / 8 : ℝ)) * 4 ≤
       (4 : ℝ) := by
     linarith [half_rate_threshold_lt_three_quarters]
   exact automatic_first_order_list_bound_of_slack (1 / 2) (1 / 8)
     (by norm_num : (0 : ℝ) < 1 / 2) (by norm_num : (1 / 2 : ℝ) < 1)
-    (by norm_num : (0 : ℝ) < 1 / 8) haOne 4 2 4
+    (by norm_num : (0 : ℝ) < 1 / 8) 4 2 4
     (by norm_num : 0 < 4) (by norm_num : 2 ≤ 2)
     (by norm_num : (2 : ℝ) ≤ (1 / 2) * 4) hA (by norm_num : 4 ≤ 4)
     rationalEvaluationDomain (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)) (fun _ ↦ 0)

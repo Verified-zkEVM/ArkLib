@@ -491,13 +491,13 @@ theorem uniformFirstOrderMca_exceptionCharge_le
     · subst D
       calc
         regularFiberStageSum 1 23 e ≤ regularFiberStageSum 1 23 4 := by
-          exact regularFiberStageSum_mono hD he (by norm_num)
+          exact regularFiberStageSum_mono he (by norm_num)
         _ = 86 := uniformFirstOrderMca_regularFiberStageSum_four_one
         _ ≤ 724 * 1 := by norm_num
     · have hDtwo : 2 ≤ D := by omega
       calc
         regularFiberStageSum D 23 e ≤ regularFiberStageSum D 23 4 := by
-          exact regularFiberStageSum_mono hD he (by norm_num)
+          exact regularFiberStageSum_mono he (by norm_num)
         _ = 724 * (D - 2) + 486 := uniformFirstOrderMca_regularFiberStageSum_four D hDtwo
         _ ≤ 724 * D := by omega
   have hB : (regularFiberStageSum D 23 e : ℝ) ≤ 724 * (D : ℝ) := by exact_mod_cast hBNat

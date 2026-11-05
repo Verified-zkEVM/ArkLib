@@ -94,7 +94,7 @@ theorem finiteLengthDerivativeRatio_le_half_of_rateSwitch_le
     nlinarith
   have hagreement : (1 + rho) / 3 ≤
       automaticAgreement rho (firstOrderRateThreshold rho + eta) := by
-    exact hthreshold.trans (automatic_threshold_lt_agreement hrho hrhoOne
+    exact hthreshold.trans (automatic_threshold_lt_agreement hrhoOne
       (lt_add_of_pos_right _ heta)).le
   unfold finiteLengthDerivativeRatio automaticDerivativeRatio firstOrderRateBeta
   rw [div_le_iff₀ (by nlinarith : 0 < 2 * (2 - rho))]

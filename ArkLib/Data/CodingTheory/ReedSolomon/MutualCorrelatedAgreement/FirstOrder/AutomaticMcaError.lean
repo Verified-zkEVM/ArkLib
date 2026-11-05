@@ -67,7 +67,7 @@ theorem automaticFirstOrder_hybrid_mcaError_le
   have hthreshold : ⌈a * n⌉₊ ≤ ⌈(Fintype.card (Fin n) : ℝ) * (1 - (1 - a))⌉₊ := by
     rw [Fintype.card_fin, sub_sub_cancel, mul_comm]
   have hbase (f g : Fin n → F) := exists_automaticFirstOrder_hybridEquation_base
-    hrho hrhoOne ha haOne hn rfl hk hkRate hA hAn hchar domain f g
+    hrho hrhoOne ha hn rfl hk hkRate hA hAn hchar domain f g
   refine ⟨mcaError_affineLine_le_min_one_of_exactAgreement domain _
       (lineExactAgreementBound_of_exactCorrelatedPair domain _ fun f g ↦ ?_) _ hthreshold,
     mcaError_affineLine_le_min_one_of_exactAgreement domain _
