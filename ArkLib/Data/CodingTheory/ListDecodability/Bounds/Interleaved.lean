@@ -311,7 +311,7 @@ private theorem card_le_treeBound {d : ℕ} {α : Type} [DecidableEq α]
   · intro V hVT W hWT k hk
     omega
 
-private def prefixErrors {ι A : Type} [Fintype ι] [DecidableEq ι] [DecidableEq A]
+private def prefixErrors {ι A : Type} [Fintype ι] [DecidableEq A]
     {d : ℕ} (R V : Fin d → ι → A) (j : ℕ) : Finset ι :=
   Finset.univ.filter fun i => ∃ k : Fin d, k.val < j ∧ R k i ≠ V k i
 
@@ -319,7 +319,7 @@ private def newErrors {ι A : Type} [Fintype ι] [DecidableEq ι] [DecidableEq A
     {d : ℕ} (R V : Fin d → ι → A) (j : ℕ) : Finset ι :=
   prefixErrors R V (j + 1) \ prefixErrors R V j
 
-private lemma prefixErrors_mono {ι A : Type} [Fintype ι] [DecidableEq ι] [DecidableEq A]
+private lemma prefixErrors_mono {ι A : Type} [Fintype ι] [DecidableEq A]
     {d : ℕ} (R V : Fin d → ι → A) {j k : ℕ} (hjk : j ≤ k) :
     prefixErrors R V j ⊆ prefixErrors R V k := by
   classical
@@ -352,7 +352,7 @@ private lemma card_prefixErrors_succ {ι A : Type} [Fintype ι] [DecidableEq ι]
   rw [prefixErrors_succ_eq_union, Finset.card_union_of_disjoint
     (disjoint_prefixErrors_newErrors R V j)]
 
-private lemma prefixErrors_eq_of_agreesBefore {ι A : Type} [Fintype ι] [DecidableEq ι]
+private lemma prefixErrors_eq_of_agreesBefore {ι A : Type} [Fintype ι]
     [DecidableEq A]
     {d : ℕ} (R : Fin d → ι → A) {V W : Fin d → ι → A} {j : ℕ}
     (h : agreesBeforeNat j V W) : prefixErrors R V j = prefixErrors R W j := by
@@ -548,7 +548,7 @@ private lemma red_count_le_ceil {n D e q : ℕ} {δ : ℝ}
   change q ≤ ⌈Real.log (δC / η) / Real.log 2⌉₊
   exact_mod_cast hqlog.trans (Nat.le_ceil (Real.log (δC / η) / Real.log 2))
 
-private lemma prefixErrors_transpose_all {ι A : Type} [Fintype ι] [DecidableEq ι]
+private lemma prefixErrors_transpose_all {ι A : Type} [Fintype ι]
     [DecidableEq A]
     {d : ℕ} (U V : ι → Fin d → A) :
     prefixErrors (Matrix.transpose U) (Matrix.transpose V) d = disagreementCols U V := by
@@ -600,7 +600,7 @@ private lemma row_disagreement_subset_prefix_union_new {ι A : Type} [Fintype ι
   exact (mem_disagreementCols.mp hi) (hRV.symm.trans hRW)
 
 private lemma row_disagreement_subset_all_errors {ι A : Type} [Fintype ι]
-    [DecidableEq ι] [DecidableEq A] {d : ℕ} (R V : Fin d → ι → A)
+    [DecidableEq A] {d : ℕ} (R V : Fin d → ι → A)
     {j : ℕ} (hj : j < d) :
     disagreementCols (R ⟨j, hj⟩) (V ⟨j, hj⟩) ⊆ prefixErrors R V d := by
   intro i hi

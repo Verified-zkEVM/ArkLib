@@ -33,7 +33,7 @@ theorem pinnedSubspace_empty
   exact Subsingleton.elim _ _
 
 theorem pinned_lineSeeds_lie_on_affine_codeword_line
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s : ℕ} (C : Submodule F (ι → Fin s → F))
     (f₀ f₁ : ι → Fin s → F) (U : F → ι → Fin s → F)
@@ -148,7 +148,7 @@ private theorem pinningActiveCoordinates_disjoint_inactive
 
 open scoped BigOperators in
 private theorem pinning_tau_nonneg
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s r : ℕ} (τ : ℕ → ℝ) (C : Submodule F (ι → Fin s → F))
     (hdesign : IsSubspaceDesign s τ C)
@@ -232,7 +232,7 @@ private theorem pinnedSubspace_insert_le
   exact inf_le_left
 
 private theorem pinningActiveCoordinates_nonempty
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι] [DecidableEq ι]
     {F : Type} [Field F] {s : ℕ}
     (H : Submodule F (ι → Fin s → F)) (S : Finset ι)
     (hK : pinnedSubspace H S ≠ ⊥) :

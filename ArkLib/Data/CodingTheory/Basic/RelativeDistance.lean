@@ -240,7 +240,7 @@ theorem relDistFromCode_eq_distFromCode_div (u : ι → F) (C : Set (ι → F)) 
       exact distFromCode_le_dist_to_mem u M' hM'_mem
 
 theorem pairDist_eq_distFromCode_iff_eq_relDistFromCode_div
-    (u v : ι → F) (C : Set (ι → F)) [Nonempty C] : Δ₀(u, v) = Δ₀(u, C) ↔ δᵣ(u, v) = δᵣ(u, C) := by
+    (u v : ι → F) (C : Set (ι → F)) : Δ₀(u, v) = Δ₀(u, C) ↔ δᵣ(u, v) = δᵣ(u, C) := by
   conv_rhs => rw [relDistFromCode_eq_distFromCode_div]
   constructor
   · intro h_dist_eq

@@ -36,12 +36,12 @@ section ListImpliesMCA
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
-private noncomputable def large_family_low {κ ι π : Type} [Fintype κ] [Fintype ι]
+private noncomputable def large_family_low {κ ι π : Type} [Fintype κ]
     [Fintype π] [DecidableEq ι] (A : κ → Finset ι) (D : π → Finset ι) : Finset κ := by
   classical
   exact Finset.univ.filter fun x => ∃ p, D p ⊆ A x
 
-private noncomputable def large_family_high {κ ι π : Type} [Fintype κ] [Fintype ι]
+private noncomputable def large_family_high {κ ι π : Type} [Fintype κ]
     [Fintype π] [DecidableEq ι] (A : κ → Finset ι) (D : π → Finset ι) : Finset κ := by
   classical
   exact Finset.univ \ large_family_low A D
@@ -307,7 +307,7 @@ private theorem large_family_high_card_le_of_domains
     simpa [H] using hsparse
   exact hcard.le
 
-private theorem linear_mca_low_family_card_le {α S : Type} [Fintype S] [Nonempty S]
+private theorem linear_mca_low_family_card_le {α S : Type} [Fintype S]
     [DecidableEq S]
     (B : Finset α) (A : α → Finset S) (D : Finset S) (p : ℝ)
     (hproper : ∀ a ∈ B, D ⊂ A a)
@@ -345,7 +345,7 @@ private theorem linear_mca_low_family_card_le {α S : Type} [Fintype S] [Nonempt
     nlinarith
   exact (by exact_mod_cast hcardNat : (B.card : ℝ) ≤ (Dᶜ.card : ℝ)).trans hcompR
 
-private theorem linear_mca_low_family_card_le_of_disjoint {α S : Type} [Fintype S] [Nonempty S]
+private theorem linear_mca_low_family_card_le_of_disjoint {α S : Type} [Fintype S]
     [DecidableEq S]
     (B : Finset α) (A : α → Finset S) (D : Finset S) (p : ℝ)
     (hproper : ∀ a ∈ B, D ⊂ A a)
@@ -538,7 +538,7 @@ private noncomputable def linear_mca_relevant_pairs (C : LinearCode ι F)
 
 private theorem linear_mca_relevant_pairs_card_le
     {ι' : Type} [Fintype ι']
-    {F' : Type} [Field F'] [Fintype F'] [SampleableType F'] [DecidableEq F']
+    {F' : Type} [Field F'] [Fintype F'] [DecidableEq F']
     (C : LinearCode ι' F') (L : ℕ) (p : ℝ)
     (hΛ : Lambda ((C : Set (ι' → F'))) p ≤ (L : ℕ∞))
     (u : Fin 2 → ι' → F') :

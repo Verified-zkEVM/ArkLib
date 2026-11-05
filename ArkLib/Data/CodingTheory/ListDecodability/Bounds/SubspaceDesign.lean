@@ -168,7 +168,7 @@ of [CZ25] which [CZ25] does not prove, and it is *not* refuted by either counter
 profile. -/
 theorem subspaceDesign_lambda_le
     {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [Finite F]
+    {F : Type} [Field F]
     (s : ℕ) (R : ℝ) (C : Submodule F (ι → Fin s → F))
     (_hR : (LinearCode.alphabetRate C : ℝ) = R)
     (_h : IsSubspaceDesign s
@@ -239,7 +239,7 @@ Note this is generic in the *dominating value* `t`, not in the profile: the prof
 for the reason spelled out on `subspaceDesign_lambda_le`. -/
 theorem subspaceDesign_lambda_le_of_profile_le
     {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [Finite F]
+    {F : Type} [Field F]
     (s : ℕ) (R : ℝ) (C : Submodule F (ι → Fin s → F))
     (hR : (LinearCode.alphabetRate C : ℝ) = R)
     (h : IsSubspaceDesign s
@@ -317,7 +317,7 @@ Non-negativity of `R` is *proved* rather than hypothesised (`LinearCode.alphabet
 the abstract statement omits and its only instantiation carries as `1/η < s`. -/
 theorem subspaceDesign_lambda_le_of_eta
     {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [Finite F]
+    {F : Type} [Field F]
     (s : ℕ) (R : ℝ) (C : Submodule F (ι → Fin s → F))
     (hR : (LinearCode.alphabetRate C : ℝ) = R)
     (h : IsSubspaceDesign s
@@ -468,7 +468,7 @@ must be a unit for `d < k`) and which the disjunction with `ringChar F = 0` keep
 hypothesis, multiplicity codes needing neither. -/
 theorem um_lambda_le_capacity
     {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [Finite F]
+    {F : Type} [Field F]
     (domain : ι ↪ F) (k s : ℕ)
     (_hs_pos : 0 < s)
     (_hchar : ringChar F = 0 ∨ k ≤ ringChar F)

@@ -69,7 +69,7 @@ private noncomputable def bchks_constraint {ι K : Type} [Field K]
           ab.1 ⟨(s : ℕ) - 1, by omega⟩ j * domain i ^ (j : ℕ)
       else 0)
 open scoped BigOperators in
-private noncomputable def bchks_constraint_map {ι K : Type} [Fintype ι] [Field K]
+private noncomputable def bchks_constraint_map {ι K : Type} [Field K]
     (domain : ι → K) (u : Fin 2 → ι → K) (ax bx dz : ℕ) :
     (Matrix (Fin dz) (Fin (ax + 1)) K × Matrix (Fin (dz + 1)) (Fin (bx + 1)) K) →ₗ[K]
       Matrix ι (Fin (dz + 1)) K where
@@ -90,7 +90,7 @@ private noncomputable def bchks_constraint_map {ι K : Type} [Fintype ι] [Field
     unfold bchks_constraint
     simp only [Prod.smul_fst, Prod.smul_snd, Matrix.smul_apply, smul_eq_mul]
     split_ifs <;> simp_rw [mul_assoc, ← Finset.mul_sum] <;> ring
-private theorem bchks_constraint_map_eq_zero_of_mem_ker {ι K : Type} [Fintype ι] [Field K]
+private theorem bchks_constraint_map_eq_zero_of_mem_ker {ι K : Type} [Field K]
     (domain : ι → K) (u : Fin 2 → ι → K) (ax bx dz : ℕ)
     (ab : Matrix (Fin dz) (Fin (ax + 1)) K × Matrix (Fin (dz + 1)) (Fin (bx + 1)) K)
     (hab : ab ∈ LinearMap.ker (bchks_constraint_map domain u ax bx dz))
@@ -491,7 +491,7 @@ private theorem bchks_constraint_eq_coeff {ι K : Type} [Field K] [DecidableEq K
       ring
     · simp only [hpos, ↓reduceDIte, mul_zero, add_zero, sub_zero]
 
-private theorem bchks_interpolant_pair_vertical_identity {ι K : Type} [Fintype ι]
+private theorem bchks_interpolant_pair_vertical_identity {ι K : Type}
     [Field K] [DecidableEq K] (domain : ι → K) (u : Fin 2 → ι → K)
     (ax bx dz : ℕ)
     (ab : Matrix (Fin dz) (Fin (ax + 1)) K × Matrix (Fin (dz + 1)) (Fin (bx + 1)) K)

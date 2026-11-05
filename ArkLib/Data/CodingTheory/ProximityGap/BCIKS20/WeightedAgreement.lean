@@ -83,7 +83,10 @@ The paper takes `ε` to be the error of Theorem 1.2 *at* `η = min (α - √ρ) 
 branch of `errorBound` is stated in terms of the distance parameter, as `min (1 - √ρ - δ) (√ρ/20)`;
 the two agree exactly at `δ = 1 - α`, which is why `ε` is `errorBound (1 - α)` here. Evaluating
 `errorBound` at a free, otherwise-unconstrained `δ` would let the caller push `δ ≥ 1 - √ρ`, where
-`errorBound` returns `0` and the proximity hypothesis degenerates. -/
+`errorBound` returns `0` and the proximity hypothesis degenerates.
+
+The paper additionally assumes an explicit lower bound on the same probability in terms of `M`,
+`|ι|` and `|F|`; the proof does not need it, so it is omitted. -/
 theorem weighted_correlated_agreement_for_parameterized_curves
     {l : ℕ} {u : Fin (l + 2) → ι → F}
     {deg : ℕ} {domain : ι ↪ F}
@@ -101,19 +104,12 @@ theorem weighted_correlated_agreement_for_parameterized_curves
         agree_set μ (Curve.polynomialCurveEval (F := F) (A := F) u z)
           (finCarrier domain deg) ≥ α]
     (hproximity : pr > (l + 1 : NNReal) * ε) →
-    (h_additionally : pr ≥
-      ENNReal.ofReal (
-        ((l + 1) * (M * Fintype.card ι + 1) : ℝ) / (Fintype.card F : ℝ)
-        *
-        (1 / min (α - sqrtRate) (sqrtRate / 20) + 3 / sqrtRate)
-      )
-    ) →
     ∃ ι' : Finset ι, ∃ v : Fin (l + 2) → ι → F,
       (∀ i, v i ∈ ReedSolomon.code domain deg) ∧
       mu_set μ ι' ≥ α ∧
       ∀ i, ∀ x ∈ ι', u i x = v i x := by
   classical
-  intro hα hα₁ hprob _hadd
+  intro hα hα₁ hprob
   let δ : ℝ≥0 := 1 - α
   have hδR : (δ : ℝ) = 1 - (α : ℝ) := by
     simp only [δ, NNReal.coe_sub hα₁.le, NNReal.coe_one]

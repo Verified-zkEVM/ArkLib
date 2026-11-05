@@ -476,7 +476,7 @@ most `l * e` and whose second block has degree at most `l * (e + 1)`.
 The proof eliminates the constant Vandermonde block `D` (the second block restricted to `e + deg`
 rows), which is invertible over `F[Y]` because its entries are constants and its determinant is a
 product of distinct differences. -/
-lemma exists_kernelVec_curveBWMatrix {l deg : ℕ} [NeZero deg] {domain : Fin n ↪ F}
+lemma exists_kernelVec_curveBWMatrix {l deg : ℕ} {domain : Fin n ↪ F}
     {u : Fin (l + 1) → Fin n → F} (e : ℕ)
     (hcardn : e + deg ≤ n) (hcardm : e + 1 ≤ n)
     (hdets : ∀ r : Fin ((e + 1) + (e + deg)) → Fin n,

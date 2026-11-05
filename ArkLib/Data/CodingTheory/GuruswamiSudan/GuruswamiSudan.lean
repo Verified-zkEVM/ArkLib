@@ -349,7 +349,7 @@ def rawToPolyBounded (raw : CompPoly.CPolynomial.Raw F) (bound : ℕ) : F[X] :=
 /-- Build an interpolation candidate from the first `min k n` evaluation points.
     Returns `none` when `k = 0` (no meaningful interpolation).
     The result, when `some`, has `degree < k` by construction of `rawToPolyBounded`. -/
-def compPolyCandidate [Fintype F] (k : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
+def compPolyCandidate (k : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
     Option F[X] :=
   if k = 0 then none
   else
@@ -363,7 +363,7 @@ def compPolyCandidate [Fintype F] (k : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F
 
 /-- The `Finset` of CompPoly interpolation candidates that pass the degree and distance check.
     Always a subset of `{p | p.degree < k ∧ Δ₀(f, p.eval ∘ ωs) ≤ e}`. -/
-def compPolyCandidateSet [Fintype F] (k e : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
+def compPolyCandidateSet (k e : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
     Finset F[X] :=
   match compPolyCandidate k ωs f with
   | Option.some p =>
@@ -371,7 +371,7 @@ def compPolyCandidateSet [Fintype F] (k e : ℕ) (ωs : Fin n ↪ F) (f : Fin n 
   | Option.none => ∅
 
 /-- Every element of `compPolyCandidateSet` satisfies the degree and distance bounds. -/
-private lemma mem_comp_poly_candidate_set_imp [Fintype F] {k e : ℕ} {ωs : Fin n ↪ F}
+private lemma mem_comp_poly_candidate_set_imp {k e : ℕ} {ωs : Fin n ↪ F}
     {f : Fin n → F} {p : F[X]} (hp : p ∈ compPolyCandidateSet k e ωs f) :
     p.degree < k ∧ Δ₀(f, p.eval ∘ ωs) ≤ e := by
   simp only [compPolyCandidateSet] at hp

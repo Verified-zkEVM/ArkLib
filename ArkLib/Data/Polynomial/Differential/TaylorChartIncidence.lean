@@ -371,7 +371,7 @@ theorem card_le_of_highTaylorCuts_of_agreement_sharp [IsAlgClosed F] (center : F
 bounded by the dimension-sensitive evaluation product. The component hypothesis bounds the
 dimension plus the number of agreement equations contained in each positive-dimensional prime
 that contains the high cuts and avoids the initial separant. -/
-theorem finite_regularHighCutJets_card_le_dimensionSensitive_of_exponent [IsAlgClosed F]
+theorem finite_regularHighCutJets_card_le_dimensionSensitive_of_exponent
     (center : F) (Q : DifferentialPolynomial F r) (K k τ : ℕ)
     (hτ : TaylorExponentSufficient r K τ)
     {n A : ℕ} (domain : Fin n ↪ F) (received : Fin n → F)

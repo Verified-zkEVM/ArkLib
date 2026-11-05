@@ -65,7 +65,7 @@ theorem gridPt_coe_mul_card {ι : Type} [Fintype ι] [Nonempty ι] (k : ℕ) :
 
 /-- Affine-line MCA is monotone along the integer-agreement grid. -/
 theorem mcaError_gridPt_mono {F ι : Type} [Field F] [Fintype F] [SampleableType F]
-    [Fintype ι] [Nonempty ι] (C : LinearCode ι F) {k k' : ℕ} (h : k ≤ k') :
+    [Fintype ι] (C : LinearCode ι F) {k k' : ℕ} (h : k ≤ k') :
     mcaError (AffineLineGenerator F) C (gridPt (ι := ι) k : ℝ) ≤
       mcaError (AffineLineGenerator F) C (gridPt (ι := ι) k' : ℝ) :=
   mcaError_mono (AffineLineGenerator F) C (by exact_mod_cast gridPt_mono h)
@@ -259,7 +259,7 @@ theorem sublevel_iff (R : GrandMcaResolution C ε_star) {δ : ℝ≥0} :
   push Not at hge
   exact absurd hle (not_le.mpr (R.gt_of_gridPt hge))
 
-omit [DecidableEq F] in
+omit [DecidableEq F] [Nonempty ι] in
 /-- The adjacent-grid MCA boundary index is unique. -/
 theorem kStar_unique (R R' : GrandMcaResolution C ε_star) : R.kStar = R'.kStar := by
   rcases lt_trichotomy R.kStar R'.kStar with h | h | h
