@@ -133,6 +133,50 @@ theorem strongLineDecodable_two_mul_of_profile_le
   apply strongLineDecodable_two_mul_of_subspaceDesign τ C hdesign htpos δ hrad
   simpa only [Nat.cast_mul, Nat.cast_ofNat] using hret
 
+/-- Shared conversion: boost strong line decodability to `m + 1` aligned challenges with a list
+bound, then turn line decodability with `m + 1` aligned challenges into an MCA bound with `conv`.
+Outside the field-size regime of the boost, the bound follows from `mcaError ≤ 1`. -/
+private theorem mcaError_le_of_strongLineDecodable_of_conv
+    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
+    {s t a : ℕ} (C : Submodule F (ι → Fin s → F)) (δ : NNReal) (m : ℕ)
+    (conv : ∀ a' : ℕ, IsLineDecodable (F := F) ((C : Set (ι → Fin s → F))) δ a' (m + 1) →
+      mcaError (AffineLineGenerator F) C (δ : ℝ) ≤
+        (a' : ENNReal) / (Fintype.card F : ENNReal))
+    (ht : 0 < t)
+    (hweak : StrongLineDecodable (C : Set (ι → Fin s → F)) δ a (2 * t))
+    (hlist : Code.Lambda (C : Set (ι → Fin s → F))
+      ((δ : ℝ) * (2 * (t : ℝ)) / (2 * (t : ℝ) - 1)) ≤ (t : ℕ∞))
+    (hbudget : (t + 1) ^ 2 ≤ m * t + a) :
+    mcaError (AffineLineGenerator F) C (δ : ℝ) ≤
+      ENNReal.ofReal (((m : ℝ) * t + a) / Fintype.card F) := by
+  by_cases hfield : (t + 1) ^ 2 < Fintype.card F
+  · have hstrong : StrongLineDecodable (C : Set (ι → Fin s → F)) δ
+        ((m + 1 - 1) * t + a) (m + 1) :=
+      strongLineDecodable_boost_of_lambda_le (b' := m + 1) C hweak (by omega)
+        (by simpa only [Nat.cast_mul, Nat.cast_ofNat] using hlist) hfield
+    rw [Nat.add_sub_cancel] at hstrong
+    have hline := strongLineDecodable_to_isLineDecodable
+      (F := F) (C : Set (ι → Fin s → F)) δ hstrong
+    have hmca := conv (m * t + a) hline
+    have hnorm : ENNReal.ofReal (((m : ℝ) * t + (a : ℝ)) / Fintype.card F) =
+        ((m * t + a : ℕ) : ENNReal) / (Fintype.card F : ENNReal) := by
+      rw [ENNReal.ofReal_div_of_pos (by positivity)]
+      have hnum : (m : ℝ) * t + (a : ℝ) = ((m * t + a : ℕ) : ℝ) := by
+        push_cast
+        ring
+      rw [hnum, ENNReal.ofReal_natCast, ENNReal.ofReal_natCast]
+    rw [hnorm]
+    exact hmca
+  · have hq : Fintype.card F ≤ (t + 1) ^ 2 := by omega
+    have hqP : Fintype.card F ≤ m * t + a := hq.trans hbudget
+    refine (mcaError_le_one (AffineLineGenerator F) C (δ : ℝ)).trans ?_
+    rw [← ENNReal.ofReal_one]
+    apply ENNReal.ofReal_le_ofReal
+    rw [le_div_iff₀ (by positivity)]
+    norm_num only [one_mul]
+    exact_mod_cast hqP
+
 /-- Boost strong line decodability using a list bound and convert it to an MCA bound. -/
 theorem mcaError_le_of_strongLineDecodable
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
@@ -144,38 +188,32 @@ theorem mcaError_le_of_strongLineDecodable
       ((δ : ℝ) * (2 * (t : ℝ)) / (2 * (t : ℝ) - 1)) ≤ (t : ℕ∞))
     (hbudget : (t + 1) ^ 2 ≤ Fintype.card ι * t + a) :
     mcaError (AffineLineGenerator F) C (δ : ℝ) ≤
-      ENNReal.ofReal (((Fintype.card ι : ℝ) * t + a) / Fintype.card F) := by
-  by_cases hfield : (t + 1) ^ 2 < Fintype.card F
-  · have hstrong : StrongLineDecodable (C : Set (ι → Fin s → F)) δ
-        (Fintype.card ι * t + a) (Fintype.card ι + 1) :=
-      strongLineDecodable_boost_of_lambda_le C hweak (by omega)
-        (by simpa only [Nat.cast_mul, Nat.cast_ofNat] using hlist) hfield
-    have hline := strongLineDecodable_to_isLineDecodable
-      (F := F) (C : Set (ι → Fin s → F)) δ hstrong
-    have hmca := IsLineDecodable.mcaError_le C δ
-      (Fintype.card ι * t + a)
-      (by exact_mod_cast hδpos) hδlt hline
-    change mcaError (AffineLineGenerator F) C (δ : ℝ) ≤ _ at hmca
-    have hnorm : ENNReal.ofReal
-        (((Fintype.card ι : ℝ) * t + (a : ℝ)) / Fintype.card F) =
-        ((Fintype.card ι * t + a : ℕ) : ENNReal) /
-          (Fintype.card F : ENNReal) := by
-      rw [ENNReal.ofReal_div_of_pos (by positivity)]
-      have hnum : (Fintype.card ι : ℝ) * t + (a : ℝ) =
-          ((Fintype.card ι * t + a : ℕ) : ℝ) := by
-        push_cast
-        ring
-      rw [hnum, ENNReal.ofReal_natCast, ENNReal.ofReal_natCast]
-    rw [hnorm]
-    exact hmca
-  · have hq : Fintype.card F ≤ (t + 1) ^ 2 := by omega
-    have hqP : Fintype.card F ≤ Fintype.card ι * t + a := hq.trans hbudget
-    refine (mcaError_le_one (AffineLineGenerator F) C (δ : ℝ)).trans ?_
-    rw [← ENNReal.ofReal_one]
-    apply ENNReal.ofReal_le_ofReal
-    rw [le_div_iff₀ (by positivity)]
-    norm_num only [one_mul]
-    exact_mod_cast hqP
+      ENNReal.ofReal (((Fintype.card ι : ℝ) * t + a) / Fintype.card F) :=
+  mcaError_le_of_strongLineDecodable_of_conv C δ (Fintype.card ι)
+    (fun a' h ↦ IsLineDecodable.mcaError_le C δ a' (by exact_mod_cast hδpos) hδlt h)
+    ht hweak hlist hbudget
+
+/-- `mcaError_le_of_strongLineDecodable` with the boost aimed at `⌊δ n⌋ + 2` aligned challenges
+instead of `n + 1` (`IsLineDecodable.mcaError_le_of_floor_add_two`). The term `n · t` becomes
+`(⌊δ n⌋ + 1) · t`. Since `⌊δ n⌋ + 1 ≤ n`, the bound is never weaker than that of
+`mcaError_le_of_strongLineDecodable`; the hypotheses differ (`n < |F|` here, `0 < δ` there), so
+neither theorem implies the other. -/
+theorem mcaError_le_of_strongLineDecodable_of_floor_add_two
+    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
+    {s t a : ℕ} (C : Submodule F (ι → Fin s → F)) (δ : NNReal)
+    (ht : 0 < t) (hδlt : δ < 1)
+    (hnq : Fintype.card ι < Fintype.card F)
+    (hweak : StrongLineDecodable (C : Set (ι → Fin s → F)) δ a (2 * t))
+    (hlist : Code.Lambda (C : Set (ι → Fin s → F))
+      ((δ : ℝ) * (2 * (t : ℝ)) / (2 * (t : ℝ) - 1)) ≤ (t : ℕ∞))
+    (hbudget : (t + 1) ^ 2 ≤ (Nat.floor (δ * Fintype.card ι) + 1) * t + a) :
+    mcaError (AffineLineGenerator F) C (δ : ℝ) ≤
+      ENNReal.ofReal
+        ((((Nat.floor (δ * Fintype.card ι) + 1 : ℕ) : ℝ) * t + a) / Fintype.card F) :=
+  mcaError_le_of_strongLineDecodable_of_conv C δ (Nat.floor (δ * Fintype.card ι) + 1)
+    (fun a' h ↦ IsLineDecodable.mcaError_le_of_floor_add_two C δ a' _ hδlt (by omega) hnq h)
+    ht hweak hlist hbudget
 
 /-- An affine-line MCA bound for a `τ`-subspace-design code:
 
