@@ -442,12 +442,12 @@ def knowledgeError (i : (pSpecFinalSumcheckStep (L := L)).ChallengeIdx) : ℝ≥
 
 variable [SampleableType L]
 
-/-- The fused terminal check is worst-case round-by-round knowledge sound with no additional
+/-- The fused terminal check is fixed-prefix round-by-round knowledge sound with no additional
 challenge error. Its substantive extraction obligations are certified above. -/
-theorem rbrKnowledgeSoundnessWorstCaseWith (𝓑 : Fin 2 ↪ L) {σ : Type}
+theorem rbrKnowledgeSoundnessWith (𝓑 : Fin 2 ↪ L) {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl ([]ₒ) (StateT σ ProbComp)) :
     (verifier K β multiplier.evaluate outputContext (ϑ := ϑ)
-      (h_rate := h_rate)).toVerifier.rbrKnowledgeSoundnessWorstCaseWith init impl
+      (h_rate := h_rate)).toVerifier.rbrKnowledgeSoundnessWith init impl
       (roundRelation K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)
         (𝓑 := 𝓑) (multpoly := multiplier.polynomial) (Fin.last ℓ))
       (finalSumcheckRelOut K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate))
@@ -455,21 +455,21 @@ theorem rbrKnowledgeSoundnessWorstCaseWith (𝓑 : Fin 2 ↪ L) {σ : Type}
       (rbrExtractor K β (ϑ := ϑ) (h_rate := h_rate))
       (knowledgeStateFunction K β multiplier outputContext 𝓑 init impl)
       knowledgeError :=
-  Verifier.rbrKnowledgeSoundnessWorstCaseWith_of_isEmpty_challengeIdx _ _
+  Verifier.rbrKnowledgeSoundnessWith_of_isEmpty_challengeIdx _ _
 
 omit [DecidableEq K] in
 /-- Existential form of the terminal guarantee, for guarded sequential composition. -/
-theorem rbrKnowledgeSoundnessWorstCase (𝓑 : Fin 2 ↪ L) {σ : Type}
+theorem rbrKnowledgeSoundness (𝓑 : Fin 2 ↪ L) {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl ([]ₒ) (StateT σ ProbComp)) :
     (verifier K β multiplier.evaluate outputContext (ϑ := ϑ)
-      (h_rate := h_rate)).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+      (h_rate := h_rate)).toVerifier.rbrKnowledgeSoundness init impl
       (roundRelation K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)
         (𝓑 := 𝓑) (multpoly := multiplier.polynomial) (Fin.last ℓ))
       (finalSumcheckRelOut K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate))
       knowledgeError := by
   classical
-  exact (Verifier.rbrKnowledgeSoundnessWorstCase_iff_exists_with init impl _ _ _ _).mpr
-    ⟨_, _, _, rbrKnowledgeSoundnessWorstCaseWith K β multiplier outputContext 𝓑 init impl⟩
+  exact (Verifier.rbrKnowledgeSoundness_iff_exists_with init impl _ _ _ _).mpr
+    ⟨_, _, _, rbrKnowledgeSoundnessWith K β multiplier outputContext 𝓑 init impl⟩
 
 end KnowledgeSoundness
 
