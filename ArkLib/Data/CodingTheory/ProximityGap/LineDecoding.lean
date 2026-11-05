@@ -644,9 +644,10 @@ A mismatch coordinate is a root of the line equation for at most one challenge, 
 `G γ` meet the mismatch set in pairwise disjoint nonempty pieces, and each `G γ` misses at most
 `e` coordinates. Double counting the missed mismatch coordinates gives the bound.
 
-The bound is sharp: when `e + 1 ≤ |ι|` and `e + 1 ≤ |F|`, there are words, a pencil and sets
-`G γ` satisfying the hypotheses with `|E| = e + 1` (for instance `A = F`, `c₀ = c₁ = 0`, and the
-`γ`-th mismatch coordinate solving `u₀ i + γ • u₁ i = 0` for that `γ` only). -/
+The bound is sharp: when `e + 1 ≤ |ι|`, `e + 1 ≤ |F|` and `A` is nontrivial, there are words,
+a pencil and sets `G γ` satisfying the hypotheses with `|E| = e + 1` (for instance `c₀ = c₁ = 0`,
+and on the `γ`-th mismatch coordinate `u₁ i = x ≠ 0` and `u₀ i = -γ • x`). For trivial `A` no
+coordinate is a mismatch, so `E` is empty. -/
 theorem card_le_add_one_of_pencil_mismatch
     (E : Finset F) (u₀ u₁ c₀ c₁ : ι → A) (e : ℕ) (G : F → Finset ι)
     (hG : ∀ γ ∈ E, Fintype.card ι - e ≤ (G γ).card)
@@ -725,7 +726,7 @@ omit [DecidableEq F] in
 open Classical in
 private theorem active_outside_common_zero_card_lt
     (C : ModuleCode ι F A) [Nontrivial C] (δ : ℝ≥0) (a b : ℕ)
-    (hδlt : δ < 1) (hbe : Nat.floor (δ * Fintype.card ι) + 2 ≤ b)
+    (hbe : Nat.floor (δ * Fintype.card ι) + 2 ≤ b)
     (hld : IsLineDecodable (F := F) ((C : Set (ι → A))) δ a b)
     (u : Fin 2 → ι → A) (B : Finset F) (haB : a < B.card) :
     let J := Finset.univ.filter fun i : ι => ∃ c : C, c.1 i ≠ 0
@@ -762,10 +763,6 @@ private theorem active_outside_common_zero_card_lt
   have hBq : B.card ≤ q := by
     simpa only [q] using Finset.card_le_univ B
   have haq : a ≤ q := haB.le.trans hBq
-  have hnpos : 0 < n := by
-    simpa only [n] using (Fintype.card_pos : 0 < Fintype.card ι)
-  have hkpos : 0 < k := by
-    simpa only [k, n] using card_sub_floor_pos_of_lt_one hnpos δ hδlt
   by_contra hZlt
   have hkZ : k ≤ Z.card := Nat.le_of_not_gt hZlt
   obtain ⟨d₀, hd₀⟩ := exists_ne (0 : C)
@@ -801,26 +798,6 @@ private theorem active_outside_common_zero_card_lt
     intro γ hγ
     apply Subtype.ext
     exact (hE γ hγ).2
-  have hd₀coe : d₀.1 ≠ (0 : ι → A) := by
-    intro hz
-    apply hd₀
-    apply Subtype.ext
-    exact hz
-  obtain ⟨iJ, hiJnz⟩ := Function.ne_iff.mp hd₀coe
-  have hiJ : iJ ∈ J := by
-    apply Finset.mem_filter.mpr
-    refine ⟨Finset.mem_univ _, d₀, ?_⟩
-    simpa only [Pi.zero_apply] using hiJnz
-  have hZpos : 0 < Z.card := hkpos.trans_le hkZ
-  obtain ⟨iZ, hiZ⟩ := Finset.card_pos.mp hZpos
-  have hiJZ : iJ ≠ iZ := by
-    intro hij
-    subst iZ
-    exact (Finset.mem_filter.mp hiZ).2.1 hiJ
-  have hone : 1 < n := by
-    apply Fintype.one_lt_card_iff.mpr
-    exact ⟨iJ, iZ, hiJZ⟩
-  have htwo : 2 ≤ n := by omega
   omega
 
 omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
@@ -833,7 +810,7 @@ The hypothesis `hnq` is a disjunction so that both public theorems can use this 
 `n < |F|`), while `IsLineDecodable.mcaError_le_of_floor_add_two` assumes `n < |F|` directly. -/
 private theorem nontrivial_bad_set_card_le_a
     [Finite A] (C : ModuleCode ι F A) [Nontrivial C] (δ : ℝ≥0) (a b : ℕ)
-    (hδlt : δ < 1) (hbe : Nat.floor (δ * Fintype.card ι) + 2 ≤ b)
+    (hbe : Nat.floor (δ * Fintype.card ι) + 2 ≤ b)
     (hnq : Fintype.card ι < Fintype.card F ∨ Fintype.card ι + 1 ≤ b)
     (hld : IsLineDecodable (F := F) ((C : Set (ι → A))) δ a b)
     (u : Fin 2 → ι → A) (B : Finset F)
@@ -866,7 +843,7 @@ private theorem nontrivial_bad_set_card_le_a
       i ∉ J ∧ u 0 i = 0 ∧ u 1 i = 0).card <
         Fintype.card ι - Nat.floor (δ * Fintype.card ι) := by
     simpa only [J] using
-      (active_outside_common_zero_card_lt C δ a b hδlt hbe hld u B haB)
+      (active_outside_common_zero_card_lt C δ a b hbe hld u B haB)
   obtain ⟨U, hUbad, hUclose, hUavoid⟩ :=
     exists_curated_affine_codeword_family C δ u B w J d hd hJcard
   obtain ⟨c₀, c₁, E, hEcard, hE⟩ :=
@@ -1183,7 +1160,7 @@ private theorem fixed_stack_bad_set_card_le_a
       exact subsingleton_bad_set_card_le_a C δ hδlt a b hbe hld u B hBmem w
   | inr hnon =>
       let : Nontrivial C := hnon
-      exact nontrivial_bad_set_card_le_a C δ a b hδlt hbe hnq hld u B w
+      exact nontrivial_bad_set_card_le_a C δ a b hbe hnq hld u B w
 
 open scoped NNReal ProbabilityTheory in
 omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
@@ -1249,9 +1226,9 @@ open Classical in
   `mcaError(AffineLineGenerator F, C, δ) ≤ a / |F|`,
 
 where `n = |ι|`. This weakens the `b = n + 1` of `IsLineDecodable.mcaError_le` to
-`b = ⌊δ n⌋ + 2`. `IsLineDecodable.mcaError_le` needs no field-size hypothesis because, with
-`b = n + 1`, line decodability itself forces `n < |F|`; for smaller `b` the condition is
-assumed. -/
+`b = ⌊δ n⌋ + 2`. `IsLineDecodable.mcaError_le` needs no field-size hypothesis: when `a ≤ |F|`,
+line decodability with `b = n + 1` forces `n < |F|`, and when `a > |F|` the bound `a / |F|` exceeds
+one. For smaller `b` the condition `n < |F|` is assumed. -/
 theorem IsLineDecodable.mcaError_le_of_floor_add_two
     [Finite A] (C : ModuleCode ι F A) (δ : ℝ≥0) (a b : ℕ) (hδ_lt : δ < 1)
     (hbe : Nat.floor (δ * Fintype.card ι) + 2 ≤ b)

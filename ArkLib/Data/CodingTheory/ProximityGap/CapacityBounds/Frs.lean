@@ -243,12 +243,12 @@ theorem frs_mcaError_le_floor_add_two
     {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Field F] [Fintype F] [SampleableType F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
-    (_hω : ω ≠ 0)
-    (_hω_gen : orderOf ω = Fintype.card F - 1)
-    (_hadm : ReedSolomon.Folded.Admissible (Finset.univ.map domain) s ω)
-    (_hcard : s * Fintype.card ι < Fintype.card F)
-    (t : ℕ) (_ht_pos : 0 < t)
-    (_hs_gt : 4 * t ^ 2 < s) :
+    (hω : ω ≠ 0)
+    (hω_gen : orderOf ω = Fintype.card F - 1)
+    (hadm : ReedSolomon.Folded.Admissible (Finset.univ.map domain) s ω)
+    (hcard : s * Fintype.card ι < Fintype.card F)
+    (t : ℕ) (ht_pos : 0 < t)
+    (hs_gt : 4 * t ^ 2 < s) :
     let n : ℝ := Fintype.card ι
     let ρ : ℝ := k / (s * n)
     mcaError (AffineLineGenerator F) (ReedSolomon.Folded.frsCode domain k s ω)
@@ -275,13 +275,13 @@ theorem frs_mcaError_le_floor_add_two
           (((0 * Fintype.card ι + 1) * t + 3 * (t : ℝ) ^ 3) / Fintype.card F) := by
         apply ENNReal.ofReal_le_ofReal
         apply div_le_div_of_nonneg_right _ (by positivity)
-        have ht1 : (1 : ℝ) ≤ t := by exact_mod_cast _ht_pos
+        have ht1 : (1 : ℝ) ≤ t := by exact_mod_cast ht_pos
         nlinarith only [ht1, pow_nonneg (show (0 : ℝ) ≤ t by positivity) 3]
   have hδpos : 0 < δr := lt_of_le_of_ne hδ0 (Ne.symm hδzero)
   let δ : NNReal := ⟨δr, hδ0⟩
   obtain ⟨ht3, hFn, hδlt, hweak, hlist⟩ :=
-    frs_strongLineDecodable_and_lambda_le domain k s ω _hω _hω_gen _hadm _hcard t _ht_pos
-      _hs_gt δ rfl hδpos
+    frs_strongLineDecodable_and_lambda_le domain k s ω hω hω_gen hadm hcard t ht_pos
+      hs_gt δ rfl hδpos
   let C := ReedSolomon.Folded.frsCode domain k s ω
   have hbudget : (t + 1) ^ 2 ≤
       (Nat.floor (δ * (Fintype.card ι : ℝ≥0)) + 1) * t + 3 * t ^ 3 := by
@@ -291,7 +291,7 @@ theorem frs_mcaError_le_floor_add_two
     have h1 : 1 ≤ t ^ 3 := Nat.one_le_pow _ _ (by omega)
     have ht2 : t ≤ t ^ 3 := Nat.le_self_pow (by norm_num) t
     nlinarith only [hmt, hc, h1, ht2]
-  have hmca := mcaError_le_of_strongLineDecodable_of_floor_add_two C δ _ht_pos hδlt hFn hweak
+  have hmca := mcaError_le_of_strongLineDecodable_of_floor_add_two C δ ht_pos hδlt hFn hweak
     hlist hbudget
   change mcaError (AffineLineGenerator F) C δr ≤ _ at hmca
   have hfl : ((Nat.floor (δ * (Fintype.card ι : ℝ≥0)) : ℕ) : ℝ) ≤ δr * Fintype.card ι := by
