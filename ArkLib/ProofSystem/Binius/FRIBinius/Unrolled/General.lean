@@ -29,8 +29,8 @@ computation, as proved by `Core.query_verify_output_context_irrelevant`; the ori
 and batching challenge remain available throughout the fused sumcheck itself. No original
 claim is reconstructed from the batching target.
 
-The exported security results include worst-case and averaged round-by-round knowledge
-soundness, ordinary knowledge soundness, and soundness of the input relation's language.
+The exported security results include fixed-prefix round-by-round knowledge soundness,
+ordinary knowledge soundness, and soundness of the input relation's language.
 The guarded bridges fold the round extractors backward along the actual transcript and
 accumulate the challenge errors without resetting shared oracle state. The ordinary results
 use `Spec`'s `concreteError`, with one sumcheck loss of `2ℓ'/|L|`. They retain the relaxed input
@@ -155,15 +155,15 @@ def strictInputRelation :=
 
 omit [DecidableEq K] [Fact (β 0 = 1)] [NeZero R] in
 /-- The tensor batching head contributes exactly `κ/|L|` per batching challenge. -/
-theorem head_rbrKnowledgeSoundnessWorstCase {σ : Type}
+theorem head_rbrKnowledgeSoundness {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl ([]ₒ) (StateT σ ProbComp)) :
-    (headVerifier κ K β (ϑ := ϑ) h_rate h_l).toVerifier.rbrKnowledgeSoundnessWorstCase
+    (headVerifier κ K β (ϑ := ϑ) h_rate h_l).toVerifier.rbrKnowledgeSoundness
       init impl (inputRelation κ K β (ϑ := ϑ) h_rate h_l)
       (ProductSumcheck.rel (fusedMultiplier κ K β h_l)
         (Frontier.commitment K β (ϑ := ϑ) (h_rate := h_rate)) 0)
       (fun _ => (κ : ℝ≥0) / Fintype.card L) := by
-  apply (Verifier.rbrKnowledgeSoundnessWorstCase_iff_exists_with init impl _ _ _ _).mpr
-  exact ⟨_, _, _, Head.rbrKnowledgeSoundnessWorstCaseWith
+  apply (Verifier.rbrKnowledgeSoundness_iff_exists_with init impl _ _ _ _).mpr
+  exact ⟨_, _, _, Head.rbrKnowledgeSoundnessWith
     (PackingData.ofBasis (biniusProfile κ L K β).basis) ℓ'
     (TensorPrefix.layout (biniusProfile κ L K β) h_l)
     (TensorPrefix.messageEquiv (biniusProfile κ L K β)) (BatchingStrategy.eqFold L κ)
@@ -171,31 +171,21 @@ theorem head_rbrKnowledgeSoundnessWorstCase {σ : Type}
     (Frontier.commitment_functional K β) (fun _ _ h => h) init impl⟩
 
 /-- Worst-case round-by-round knowledge soundness of the full fused verifier. -/
-theorem fullVerifier_rbrKnowledgeSoundnessWorstCase (γ : ℕ) {σ : Type}
-    (init : ProbComp σ) (impl : QueryImpl ([]ₒ) (StateT σ ProbComp)) :
-    ((fullVerifier κ K β (ϑ := ϑ) h_rate h_l outputContext γ).toVerifier
-      (Oₛₒ := fun i : Empty => nomatch i)).rbrKnowledgeSoundnessWorstCase init impl
-      (inputRelation κ K β (ϑ := ϑ) h_rate h_l) acceptRejectOracleRel
-      (fullError κ K β (ϑ := ϑ) h_rate γ) := by
-  exact OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first
-    (Oₛ₃ := fun i : Empty => nomatch i) _ _
-    (Head.guardedForm (PackingData.ofBasis (biniusProfile κ L K β).basis) ℓ'
-      (TensorPrefix.layout (biniusProfile κ L K β) h_l)
-      (TensorPrefix.messageEquiv (biniusProfile κ L K β)) (BatchingRule.eqFold L κ)
-      (Frontier.commitment K β (ϑ := ϑ) (h_rate := h_rate)))
-    (head_rbrKnowledgeSoundnessWorstCase κ K β h_rate h_l init impl)
-    (Core.tailVerifier_rbrKnowledgeSoundnessWorstCase K β
-      (fusedMultiplier κ K β h_l) outputContext γ init impl)
-
-/-- Averaging over prefixes preserves the same fused round-by-round error family. -/
 theorem fullVerifier_rbrKnowledgeSoundness (γ : ℕ) {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl ([]ₒ) (StateT σ ProbComp)) :
     ((fullVerifier κ K β (ϑ := ϑ) h_rate h_l outputContext γ).toVerifier
       (Oₛₒ := fun i : Empty => nomatch i)).rbrKnowledgeSoundness init impl
       (inputRelation κ K β (ϑ := ϑ) h_rate h_l) acceptRejectOracleRel
-      (fullError κ K β (ϑ := ϑ) h_rate γ) :=
-  Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness init impl
-    (fullVerifier_rbrKnowledgeSoundnessWorstCase κ K β h_rate h_l outputContext γ init impl)
+      (fullError κ K β (ϑ := ϑ) h_rate γ) := by
+  exact OracleVerifier.append_rbrKnowledgeSoundness_of_guarded_first
+    (Oₛ₃ := fun i : Empty => nomatch i) _ _
+    (Head.guardedForm (PackingData.ofBasis (biniusProfile κ L K β).basis) ℓ'
+      (TensorPrefix.layout (biniusProfile κ L K β) h_l)
+      (TensorPrefix.messageEquiv (biniusProfile κ L K β)) (BatchingRule.eqFold L κ)
+      (Frontier.commitment K β (ϑ := ϑ) (h_rate := h_rate)))
+    (head_rbrKnowledgeSoundness κ K β h_rate h_l init impl)
+    (Core.tailVerifier_rbrKnowledgeSoundness K β
+      (fusedMultiplier κ K β h_l) outputContext γ init impl)
 
 /-! ### Ordinary knowledge soundness and soundness -/
 
@@ -210,8 +200,8 @@ theorem fullVerifier_knowledgeSoundness (γ : ℕ) {σ : Type}
   let G := Verifier.GuardedForm.ofEmpty
     ((fullVerifier κ K β (ϑ := ϑ) h_rate h_l outputContext γ).toVerifier
       (Oₛₒ := fun i : Empty => nomatch i)) (fun _ => (false, fun i => nomatch i))
-  obtain ⟨E, hE⟩ := G.knowledgeSoundness_of_rbrKnowledgeSoundnessWorstCase
-    (fullVerifier_rbrKnowledgeSoundnessWorstCase κ K β h_rate h_l outputContext γ init impl)
+  obtain ⟨E, hE⟩ := G.knowledgeSoundness_of_rbrKnowledgeSoundness
+    (fullVerifier_rbrKnowledgeSoundness κ K β h_rate h_l outputContext γ init impl)
   refine ⟨E, ?_⟩
   intro Aux stmt aux P
   exact (hE Aux stmt aux P).trans (by
@@ -228,9 +218,9 @@ theorem fullVerifier_soundness (γ : ℕ) {σ : Type}
   let G := Verifier.GuardedForm.ofEmpty
     ((fullVerifier κ K β (ϑ := ϑ) h_rate h_l outputContext γ).toVerifier
       (Oₛₒ := fun i : Empty => nomatch i)) (fun _ => (false, fun i => nomatch i))
-  have hS := G.soundness_of_rbrSoundnessWorstCase
-    (Verifier.rbrSoundnessWorstCase_of_rbrKnowledgeSoundnessWorstCase
-      (fullVerifier_rbrKnowledgeSoundnessWorstCase κ K β h_rate h_l outputContext γ init impl))
+  have hS := G.soundness_of_rbrSoundness
+    (Verifier.rbrSoundness_of_rbrKnowledgeSoundness
+      (fullVerifier_rbrKnowledgeSoundness κ K β h_rate h_l outputContext γ init impl))
   intro Aux Out aux P stmt hstmt
   exact (hS Aux Out aux P stmt hstmt).trans (by
     exact_mod_cast fullError_sum_le_concrete κ K β (ϑ := ϑ) h_rate γ)

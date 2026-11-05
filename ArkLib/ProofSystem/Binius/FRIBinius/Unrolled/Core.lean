@@ -128,55 +128,55 @@ noncomputable def tailError (γ : ℕ) :=
 
 omit [DecidableEq K] in
 /-- The fused core has the same per-challenge error as one Binary Basefold loop. -/
-theorem rbrKnowledgeSoundnessWorstCase {σ : Type}
+theorem rbrKnowledgeSoundness {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl ([]ₒ) (StateT σ ProbComp)) :
     (verifier K β multiplier outputContext 𝓑 (ϑ := ϑ)
-      (h_rate := h_rate)).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+      (h_rate := h_rate)).toVerifier.rbrKnowledgeSoundness init impl
       (roundRelation K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)
         (𝓑 := 𝓑) (multpoly := multiplier.polynomial) 0)
       (finalSumcheckRelOut K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate))
       (coreInteractionOracleRbrKnowledgeError K β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_rate)) := by
-  exact OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first _ _
+  exact OracleVerifier.append_rbrKnowledgeSoundness_of_guarded_first _ _
     (sumcheckFoldOracleVerifierGuardedForm K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)
       (𝓑 := 𝓑) (multpoly := multiplier.polynomial))
-    (sumcheckFoldOracleVerifier_rbrKnowledgeSoundnessWorstCase K β)
-    (Terminal.rbrKnowledgeSoundnessWorstCase K β multiplier outputContext 𝓑 init impl)
+    (sumcheckFoldOracleVerifier_rbrKnowledgeSoundness K β)
+    (Terminal.rbrKnowledgeSoundness K β multiplier outputContext 𝓑 init impl)
 
 /-- The complete fold-and-query tail retains the ordinary Binary Basefold error family,
 but its input relation uses the ring-switching multiplier. -/
-theorem queryVerifier_rbrKnowledgeSoundnessWorstCase (γ : ℕ) {σ : Type}
+theorem queryVerifier_rbrKnowledgeSoundness (γ : ℕ) {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl ([]ₒ) (StateT σ ProbComp)) :
     ((queryVerifier K β multiplier outputContext 𝓑 γ (ϑ := ϑ)
       (h_rate := h_rate)).toVerifier (Oₛₒ := fun i : Empty => nomatch i))
-      |>.rbrKnowledgeSoundnessWorstCase init impl
+      |>.rbrKnowledgeSoundness init impl
       (roundRelation K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)
         (𝓑 := 𝓑) (multpoly := multiplier.polynomial) 0)
       acceptRejectOracleRel
       (FullBinaryBasefold.fullRbrKnowledgeError K β γ (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_rate)) := by
   unfold queryVerifier FullBinaryBasefold.fullRbrKnowledgeError
-  exact OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first
+  exact OracleVerifier.append_rbrKnowledgeSoundness_of_guarded_first
     (Oₛ₃ := fun i : Empty => nomatch i) _ _
     (Verifier.GuardedForm.ofEmpty _ (fun input =>
       (⟨⟨0, fun _ => 0, outputContext input.1.ctx⟩, 0⟩, fun _ _ => 0)))
-    (rbrKnowledgeSoundnessWorstCase K β multiplier outputContext 𝓑 init impl)
-    (QueryPhase.queryOracleVerifier_rbrKnowledgeSoundnessWorstCase K β γ init impl)
+    (rbrKnowledgeSoundness K β multiplier outputContext 𝓑 init impl)
+    (QueryPhase.queryOracleVerifier_rbrKnowledgeSoundness K β γ init impl)
 
 /-- Security of the fused tail from the shared batching relation. -/
-theorem tailVerifier_rbrKnowledgeSoundnessWorstCase (γ : ℕ) {σ : Type}
+theorem tailVerifier_rbrKnowledgeSoundness (γ : ℕ) {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl ([]ₒ) (StateT σ ProbComp)) :
     ((tailVerifier K β multiplier outputContext γ (ϑ := ϑ) (h_rate := h_rate)).toVerifier
-      (Oₛₒ := fun i : Empty => nomatch i)).rbrKnowledgeSoundnessWorstCase init impl
+      (Oₛₒ := fun i : Empty => nomatch i)).rbrKnowledgeSoundness init impl
       (RingSwitching.Packing.ProductSumcheck.rel multiplier
         (Frontier.commitment K β (ϑ := ϑ) (h_rate := h_rate)) 0)
       acceptRejectOracleRel (tailError K β γ (ϑ := ϑ) (h_rate := h_rate)) := by
   rw [← Frontier.inputRelation_eq_shared K β multiplier]
-  exact OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first
+  exact OracleVerifier.append_rbrKnowledgeSoundness_of_guarded_first
     (Oₛ₃ := fun i : Empty => nomatch i) _ _
     (Frontier.guardedForm K β)
-    (Frontier.rbrKnowledgeSoundnessWorstCase K β multiplier init impl)
-    (queryVerifier_rbrKnowledgeSoundnessWorstCase K β multiplier outputContext
+    (Frontier.rbrKnowledgeSoundness K β multiplier init impl)
+    (queryVerifier_rbrKnowledgeSoundness K β multiplier outputContext
       (boolEmbedding L) γ init impl)
 
 /-! ### Perfect completeness -/

@@ -123,15 +123,15 @@ noncomputable def knowledgeStateFunction {σ : Type} (init : ProbComp σ)
       ((guardedForm K β).check_and_of_prEvent_pos h).2
 
 /-- Reformatting adds no challenge and no knowledge error. -/
-theorem rbrKnowledgeSoundnessWorstCase {σ : Type} (init : ProbComp σ)
+theorem rbrKnowledgeSoundness {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl ([]ₒ) (StateT σ ProbComp)) :
     (verifier K β (Context := Context) (ϑ := ϑ) (h_rate := h_rate)).toVerifier
-      |>.rbrKnowledgeSoundnessWorstCase init impl
+      |>.rbrKnowledgeSoundness init impl
       (inputRelation K β multiplier (ϑ := ϑ) (h_rate := h_rate))
       (roundRelation K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)
         (𝓑 := boolEmbedding L) (multpoly := multiplier.polynomial) 0)
       (fun _ => 0) := by
-  apply (Verifier.rbrKnowledgeSoundnessWorstCase_iff_exists_with init impl _ _ _ _).mpr
+  apply (Verifier.rbrKnowledgeSoundness_iff_exists_with init impl _ _ _ _).mpr
   refine ⟨_, extractor K β, knowledgeStateFunction K β multiplier init impl, ?_⟩
   intro _ j
   exact Fin.elim0 j.1

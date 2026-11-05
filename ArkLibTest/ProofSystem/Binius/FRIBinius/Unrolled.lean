@@ -94,7 +94,7 @@ example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ Prob
     (by decide) rfl queryContext 8 init impl
 
 example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :=
-  fullVerifier_rbrKnowledgeSoundnessWorstCase 2 (ZMod 2) beta (ϑ := 1) (R := 1) (ℓ' := 1)
+  fullVerifier_rbrKnowledgeSoundness 2 (ZMod 2) beta (ϑ := 1) (R := 1) (ℓ' := 1)
     (by decide) rfl queryContext 8 init impl
 
 example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :=
@@ -119,11 +119,11 @@ end
 end Binius.FRIBinius.UnrolledGf16
 
 /--
-info: 'Binius.FRIBinius.Unrolled.fullVerifier_rbrKnowledgeSoundnessWorstCase'
+info: 'Binius.FRIBinius.Unrolled.fullVerifier_rbrKnowledgeSoundness'
 depends on axioms: [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms fullVerifier_rbrKnowledgeSoundnessWorstCase
+#print axioms fullVerifier_rbrKnowledgeSoundness
 
 /--
 info: 'Binius.FRIBinius.Unrolled.fullReduction_perfectCompleteness'
@@ -138,13 +138,6 @@ depends on axioms: [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms fullError_sum_le_concrete
-
-/--
-info: 'Binius.FRIBinius.Unrolled.fullVerifier_rbrKnowledgeSoundness'
-depends on axioms: [propext, Classical.choice, Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms fullVerifier_rbrKnowledgeSoundness
 
 /--
 info: 'Binius.FRIBinius.Unrolled.strictInputRelation_subset_inputRelation'

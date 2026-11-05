@@ -17,7 +17,7 @@ query check. Unlike the unfused ring-switching composition, no standalone ring-s
 sumcheck precedes the folding loop. The empty frontier only reformats the head's output.
 
 The error family records the batching error and the existing fold/query errors.
-`fullVerifier_rbrKnowledgeSoundnessWorstCase` in `General.lean` certifies this family for
+`fullVerifier_rbrKnowledgeSoundness` in `General.lean` certifies this family for
 the fused verifier. The scalar bound here aggregates those component budgets arithmetically.
 The wire types use the existing mathematical tensor profile; the real-valued budgets are
 noncomputable mathematical quantities, not verifier computations.
