@@ -44,7 +44,7 @@ section LowerBounds_General
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
-omit [DecidableEq ι] in
+omit [Nonempty ι] [DecidableEq ι] in
 open Classical in
 /-- **The volume lower bound on list size** ([ABF26] Lemma 3.7, after [Eli57]), at the source's
 generality: for any code `C ⊆ A^n` over a finite alphabet `A` with `|C| = q^k`,
@@ -65,7 +65,7 @@ interleaved codes can all instantiate this with their own cardinality argument;
 positivity of `q` that the averaging step rests on. -/
 theorem lambda_ge_elias_volume {A : Type} [Fintype A] [Nonempty A]
     (C : Set (ι → A)) (k : ℕ) (hcard : C.ncard = Fintype.card A ^ k)
-    (δ : ℝ) (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1) :
+    (δ : ℝ) (_hδ_pos : 0 < δ) :
     ENNReal.ofReal
         ((hammingBallVolume (Fintype.card A) δ (Fintype.card ι) : ℝ)
           / (Fintype.card A : ℝ) ^ ((Fintype.card ι : ℝ) - k))
@@ -80,6 +80,12 @@ theorem lambda_ge_elias_volume {A : Type} [Fintype A] [Nonempty A]
   set cnt : (ι → A) → ℕ := fun f => (closeCodewordsRel C f δ).ncard with hcnt
   -- Total count over all centres `= |C| · Vol = q^k · Vol`.
   have hsum : ∑ f : ι → A, cnt f = q ^ k * Vol := by
+    rcases isEmpty_or_nonempty ι with hι | hι
+    · have hclose : ∀ f : ι → A, closeCodewordsRel C f δ = C := by
+        intro f
+        ext c
+        simp [mem_closeCodewordsRel_iff, Code.relHammingDist, hδ_nonneg]
+      simp [hcnt, hclose, Vol, hammingBallVolume, n, q, hcard]
     rw [hcnt]
     rw [sum_ncard_closeCodewordsRel_eq_of_set C δ hδ_nonneg, hcard]
   -- Number of centres is `q ^ n`.
@@ -123,7 +129,7 @@ theorem lambda_ge_elias_volume {A : Type} [Fintype A] [Nonempty A]
     _ = ((cnt f₀ : ℕ∞) : ENNReal) := by rw [ENNReal.ofReal_natCast, ENat.toENNReal_coe]
     _ ≤ (Lambda C δ : ENNReal) := hLam
 
-omit [DecidableEq ι] [DecidableEq F] in
+omit [Nonempty ι] [DecidableEq ι] [DecidableEq F] in
 /-- **The volume lower bound on list size** for a field-linear code ([ABF26] Lemma 3.7):
 
   `|Λ(C, δ)| ≥ Vol_q(δ, n) / q^(n-k)`
@@ -134,14 +140,14 @@ This is the field-linear specialization of `lambda_ge_elias_volume`, which state
 arbitrary-alphabet form; linearity enters only through `submodule_ncard_eq_pow_finrank`, supplying
 the codeword count `|C| = q^k` that the generic core takes as a hypothesis. -/
 theorem linear_lambda_ge_elias_volume
-    (C : Submodule F (ι → F)) (δ : ℝ) (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1) :
+    (C : Submodule F (ι → F)) (δ : ℝ) (_hδ_pos : 0 < δ) :
     ENNReal.ofReal
         ((hammingBallVolume (Fintype.card F) δ (Fintype.card ι) : ℝ)
           / (Fintype.card F : ℝ) ^
               ((Fintype.card ι : ℝ) - Module.finrank F C))
       ≤ (Lambda ((C : Set (ι → F))) δ : ENNReal) :=
   lambda_ge_elias_volume (C : Set (ι → F)) (Module.finrank F C)
-    (submodule_ncard_eq_pow_finrank C) δ _hδ_pos _hδ_lt
+    (submodule_ncard_eq_pow_finrank C) δ _hδ_pos
 
 /-- `stirlingSeq 1 ^ 2 = 2 · stirlingSeq 2`, the base case of the two-term comparison
 `stirlingSeq_mul_le_two_mul_add`. -/
@@ -217,12 +223,16 @@ theorem entropy_radius_integer_bounds (n d : ℕ) (δ : ℝ) (hn : 0 < n)
 /-- `½ · √(2(d+m)) / (√(2d) · √(2m)) = 1 / √(8dm/(d+m))`. At `d = δn` and `m = n − δn` the right
 side is `1 / √(8nδ(1−δ))`. -/
 theorem entropy_sqrt_factor_identity
-    (d m : ℕ) (hd : 0 < d) (hm : 0 < m) :
+    (d m : ℕ) :
     (1 : ℝ) / 2 *
         (Real.sqrt (2 * ((d + m : ℕ) : ℝ)) /
           (Real.sqrt (2 * (d : ℝ)) * Real.sqrt (2 * (m : ℝ)))) =
       1 / Real.sqrt
         (8 * (d : ℝ) * (m : ℝ) / ((d + m : ℕ) : ℝ)) := by
+  rcases Nat.eq_zero_or_pos d with rfl | hd
+  · simp
+  rcases Nat.eq_zero_or_pos m with rfl | hm
+  · simp
   have hdR : (0 : ℝ) < d := by exact_mod_cast hd
   have hmR : (0 : ℝ) < m := by exact_mod_cast hm
   have hdmR : (0 : ℝ) < d + m := by positivity
@@ -276,9 +286,13 @@ theorem log_stirlingSeq_diff_antitone :
 
 /-- The ratio `stirlingSeq (n+1) / stirlingSeq n` is monotone in `n`. -/
 theorem stirlingSeq_succ_ratio_mono
-    (a b : ℕ) (ha : 0 < a) (hab : a ≤ b) :
+    (a b : ℕ) (hab : a ≤ b) :
     Stirling.stirlingSeq (a + 1) / Stirling.stirlingSeq a ≤
       Stirling.stirlingSeq (b + 1) / Stirling.stirlingSeq b := by
+  rcases Nat.eq_zero_or_pos a with rfl | ha
+  · rw [Stirling.stirlingSeq_zero, div_zero]
+    unfold Stirling.stirlingSeq
+    positivity
   have hb : 0 < b := lt_of_lt_of_le ha hab
   have hab' : a - 1 ≤ b - 1 := Nat.sub_le_sub_right hab 1
   have hdiff := log_stirlingSeq_diff_antitone hab'
@@ -304,14 +318,21 @@ theorem stirlingSeq_succ_ratio_mono
 /-- **Sub-multiplicativity up to a factor of two**:
 `stirlingSeq d · stirlingSeq m ≤ 2 · stirlingSeq (d+m)`. -/
 theorem stirlingSeq_mul_le_two_mul_add
-    (d m : ℕ) (hd : 0 < d) (hm : 0 < m) :
+    (d m : ℕ) :
     Stirling.stirlingSeq d * Stirling.stirlingSeq m ≤
       2 * Stirling.stirlingSeq (d + m) := by
+  rcases Nat.eq_zero_or_pos d with rfl | hd
+  · simp only [Stirling.stirlingSeq_zero, zero_mul, Nat.zero_add]
+    unfold Stirling.stirlingSeq
+    positivity
+  rcases Nat.eq_zero_or_pos m with rfl | hm
+  · simp only [Stirling.stirlingSeq_zero, mul_zero, Nat.add_zero]
+    unfold Stirling.stirlingSeq
+    positivity
   obtain ⟨r, rfl⟩ := Nat.exists_eq_succ_of_ne_zero (Nat.ne_of_gt hm)
   induction r with
   | zero =>
-      have hratio := stirlingSeq_succ_ratio_mono 1 d
-        Nat.zero_lt_one (by omega)
+      have hratio := stirlingSeq_succ_ratio_mono 1 d (by omega)
       have hS1 := stirlingSeq_pos_of_pos 1 Nat.zero_lt_one
       have hSd := stirlingSeq_pos_of_pos d hd
       have hbase :
@@ -336,7 +357,7 @@ theorem stirlingSeq_mul_le_two_mul_add
           Stirling.stirlingSeq d * Stirling.stirlingSeq t ≤
             2 * Stirling.stirlingSeq (d + t) := by
         simpa [t, Nat.succ_eq_add_one] using ih
-      have hratio := stirlingSeq_succ_ratio_mono t (d + t) ht (by omega)
+      have hratio := stirlingSeq_succ_ratio_mono t (d + t) (by omega)
       have hSt := stirlingSeq_pos_of_pos t ht
       have hSt1 := stirlingSeq_pos_of_pos (t + 1) (by omega)
       have hSdt := stirlingSeq_pos_of_pos (d + t) (by omega)
@@ -361,17 +382,25 @@ theorem stirlingSeq_mul_le_two_mul_add
 
 /-- **Lower bound on the binomial mass at the mean**: it is at least `1 / √(8dm/(d+m))`. -/
 theorem binomial_mean_mass_ge
-    (d m : ℕ) (hd : 0 < d) (hm : 0 < m) :
+    (d m : ℕ) :
     1 / Real.sqrt
         (8 * (d : ℝ) * (m : ℝ) / ((d + m : ℕ) : ℝ)) ≤
       (((d + m).choose d : ℕ) : ℝ) *
         ((d : ℝ) / ((d + m : ℕ) : ℝ)) ^ d *
         ((m : ℝ) / ((d + m : ℕ) : ℝ)) ^ m := by
+  rcases Nat.eq_zero_or_pos d with rfl | hd
+  · simp only [Nat.cast_zero, mul_zero, zero_mul, zero_div, Real.sqrt_zero, div_zero,
+      Nat.zero_add, Nat.choose_zero_right, Nat.cast_one, pow_zero, one_mul]
+    positivity
+  rcases Nat.eq_zero_or_pos m with rfl | hm
+  · simp only [Nat.cast_zero, mul_zero, zero_div, Real.sqrt_zero, div_zero,
+      Nat.add_zero, Nat.choose_self, Nat.cast_one, pow_zero, one_mul, mul_one]
+    positivity
   have hSd := stirlingSeq_pos_of_pos d hd
   have hSm := stirlingSeq_pos_of_pos m hm
   have hprod : 0 < Stirling.stirlingSeq d * Stirling.stirlingSeq m :=
     mul_pos hSd hSm
-  have hcross := stirlingSeq_mul_le_two_mul_add d m hd hm
+  have hcross := stirlingSeq_mul_le_two_mul_add d m
   have hratio :
       (1 : ℝ) / 2 ≤
         Stirling.stirlingSeq (d + m) /
@@ -383,18 +412,39 @@ theorem binomial_mean_mass_ge
         (Real.sqrt (2 * (d : ℝ)) * Real.sqrt (2 * (m : ℝ))) := by
     positivity
   have hmul := mul_le_mul_of_nonneg_right hratio hsqrt
-  rw [entropy_sqrt_factor_identity d m hd hm] at hmul
+  rw [entropy_sqrt_factor_identity d m] at hmul
   rw [← binomial_mean_mass_eq_stirlingSeq d m hd hm] at hmul
   exact hmul
 
 /-- The previous bound in radius coordinates: for integral `d = δ · n`,
 `1 / √(8nδ(1−δ)) ≤ C(n,d) · δ^d · (1−δ)^(n−d)`. -/
 theorem binomial_integral_mean_mass_ge
-    (n d : ℕ) (δ : ℝ) (hn : 0 < n)
-    (hδpos : 0 < δ) (hδlt : δ < 1)
+    (n d : ℕ) (δ : ℝ)
     (hd : (d : ℝ) = δ * n) :
     1 / Real.sqrt (8 * (n : ℝ) * δ * (1 - δ)) ≤
       (n.choose d : ℝ) * δ ^ d * (1 - δ) ^ (n - d) := by
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · have hd0 : d = 0 := by simpa using hd
+    subst d
+    simp
+  have hnR : (0 : ℝ) < n := by exact_mod_cast hn
+  by_cases hδpos : 0 < δ
+  swap
+  · have hδ0 : δ = 0 := by nlinarith [Nat.cast_nonneg (α := ℝ) d]
+    subst δ
+    have hd0 : d = 0 := by simpa using hd
+    subst d
+    simp
+  by_cases hδlt : δ < 1
+  swap
+  · rcases eq_or_lt_of_le (le_of_not_gt hδlt) with rfl | hδgt
+    · have hdn : d = n := by exact_mod_cast (by simpa using hd : (d : ℝ) = n)
+      subst d
+      simp
+    · have hnd : n < d := by exact_mod_cast (show (n : ℝ) < d by nlinarith)
+      rw [Nat.choose_eq_zero_of_lt hnd, Nat.cast_zero, zero_mul, zero_mul,
+        Real.sqrt_eq_zero_of_nonpos, div_zero]
+      exact mul_nonpos_of_nonneg_of_nonpos (by positivity) (by linarith)
   obtain ⟨hdpos, hdlt, _⟩ :=
     entropy_radius_integer_bounds n d δ hn hδpos hδlt hd
   let m : ℕ := n - d
@@ -404,7 +454,6 @@ theorem binomial_integral_mean_mass_ge
   have hsum : d + m = n := by
     dsimp [m]
     omega
-  have hnR : (0 : ℝ) < n := by exact_mod_cast hn
   have hδeq : δ = (d : ℝ) / (n : ℝ) := by
     apply (eq_div_iff hnR.ne').2
     exact hd.symm
@@ -413,7 +462,7 @@ theorem binomial_integral_mean_mass_ge
     dsimp [m]
     rw [Nat.cast_sub (Nat.le_of_lt hdlt)]
     field_simp [hnR.ne']
-  have hmean := binomial_mean_mass_ge d m hdpos hmpos
+  have hmean := binomial_mean_mass_ge d m
   calc
     1 / Real.sqrt (8 * (n : ℝ) * δ * (1 - δ)) =
         1 / Real.sqrt
@@ -429,12 +478,16 @@ theorem binomial_integral_mean_mass_ge
 /-- `q`-ary entropy against the binomial mass: `q^(n · H_q(δ)) · (δ^d · (1−δ)^(n−d)) = (q−1)^d`
 when `d = δ · n`. -/
 theorem qEntropy_power_mul_mass_eq
-    (q n d : ℕ) (δ : ℝ) (hq : 2 ≤ q) (hn : 0 < n)
+    (q n d : ℕ) (δ : ℝ) (hq : 2 ≤ q)
     (hδpos : 0 < δ) (hδlt : δ < 1)
     (hd : (d : ℝ) = δ * n) :
     (q : ℝ) ^ ((n : ℝ) * qEntropy q δ) *
         (δ ^ d * (1 - δ) ^ (n - d)) =
       (((q - 1 : ℕ) : ℝ) ^ d) := by
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · have hd0 : d = 0 := by simpa using hd
+    subst d
+    simp
   obtain ⟨_, hdlt, _⟩ :=
     entropy_radius_integer_bounds n d δ hn hδpos hδlt hd
   have hqR : (0 : ℝ) < q := by exact_mod_cast (lt_of_lt_of_le Nat.zero_lt_two hq)
@@ -474,14 +527,26 @@ theorem qEntropy_power_mul_mass_eq
 The right side is a single shell of the Hamming ball, so the volume — the sum over all shells at
 radius at most `δn` — is at least as large. -/
 theorem qary_shell_entropy_lower
-    (q n d : ℕ) (δ : ℝ) (hq : 2 ≤ q) (hn : 0 < n)
-    (hδpos : 0 < δ) (hδlt : δ < 1)
+    (q n d : ℕ) (δ : ℝ) (hq : 2 ≤ q)
     (hd : (d : ℝ) = δ * n) :
     (q : ℝ) ^ ((n : ℝ) * qEntropy q δ) /
         (8 * (n : ℝ) * δ * (1 - δ)) ^ ((1 : ℝ) / 2) ≤
       ((Nat.choose n d * (q - 1) ^ d : ℕ) : ℝ) := by
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · simpa using (Nat.cast_nonneg (α := ℝ) (Nat.choose 0 d * (q - 1) ^ d))
+  by_cases hδpos : 0 < δ
+  swap
+  · rw [← Real.sqrt_eq_rpow, Real.sqrt_eq_zero_of_nonpos, div_zero]
+    · positivity
+    exact mul_nonpos_of_nonpos_of_nonneg
+      (mul_nonpos_of_nonneg_of_nonpos (by positivity) (le_of_not_gt hδpos)) (by linarith)
+  by_cases hδlt : δ < 1
+  swap
+  · rw [← Real.sqrt_eq_rpow, Real.sqrt_eq_zero_of_nonpos, div_zero]
+    · positivity
+    exact mul_nonpos_of_nonneg_of_nonpos (by positivity) (by linarith)
   have hbin :=
-    binomial_integral_mean_mass_ge n d δ hn hδpos hδlt hd
+    binomial_integral_mean_mass_ge n d δ hd
   have hQ : 0 ≤ (q : ℝ) ^ ((n : ℝ) * qEntropy q δ) :=
     Real.rpow_nonneg (by positivity) _
   have hscaled := mul_le_mul_of_nonneg_left hbin hQ
@@ -497,11 +562,11 @@ theorem qary_shell_entropy_lower
         ((q : ℝ) ^ ((n : ℝ) * qEntropy q δ) *
           (δ ^ d * (1 - δ) ^ (n - d))) := by ring
     _ = (n.choose d : ℝ) * (((q - 1 : ℕ) : ℝ) ^ d) := by
-      rw [qEntropy_power_mul_mass_eq q n d δ hq hn hδpos hδlt hd]
+      rw [qEntropy_power_mul_mass_eq q n d δ hq hδpos hδlt hd]
     _ = ((Nat.choose n d * (q - 1) ^ d : ℕ) : ℝ) := by
       rw [Nat.cast_mul, Nat.cast_pow]
 
-omit [DecidableEq ι] in
+omit [Nonempty ι] [DecidableEq ι] in
 open Classical in
 open _root_.Code in
 /-- **The entropy form of the volume lower bound** ([ABF26] Corollary 3.8). Feeding the
@@ -535,6 +600,8 @@ theorem lambda_ge_entropy_volume {A : Type} [Fintype A] [Nontrivial A]
           / (8 * n * δ * (1 - δ)) ^ ((1 : ℝ) / 2))
       ≤ (Lambda C δ : ENNReal) := by
   classical
+  rcases isEmpty_or_nonempty ι with hι | hι
+  · simp
   dsimp
   let q : ℕ := Fintype.card A
   let n : ℕ := Fintype.card ι
@@ -565,10 +632,9 @@ theorem lambda_ge_entropy_volume {A : Type} [Fintype A] [Nontrivial A]
   have hvol : (q : ℝ) ^ ((n : ℝ) * qEntropy q δ) /
       (8 * n * δ * (1 - δ)) ^ ((1 : ℝ) / 2) ≤
       (hammingBallVolume q δ n : ℝ) :=
-    le_trans (qary_shell_entropy_lower q n d δ hq_two hn_pos
-      _hδ_pos _hδ_lt (by simpa only [n] using hd)) hshell_real
+    le_trans (qary_shell_entropy_lower q n d δ hq_two (by simpa only [n] using hd)) hshell_real
   have hq_posR : (0 : ℝ) < q := by positivity
-  have hElias := lambda_ge_elias_volume C k hcard δ _hδ_pos _hδ_lt
+  have hElias := lambda_ge_elias_volume C k hcard δ _hδ_pos
   apply le_trans ?_ hElias
   apply ENNReal.ofReal_le_ofReal
   change (q : ℝ) ^ ((n : ℝ) * ((k : ℝ) / n - 1 + qEntropy q δ)) /
@@ -591,11 +657,11 @@ theorem lambda_ge_entropy_volume {A : Type} [Fintype A] [Nontrivial A]
         (q : ℝ) ^ ((n : ℝ) - k) :=
       div_le_div_of_nonneg_right hvol (Real.rpow_nonneg hq_posR.le _)
 
-omit [DecidableEq ι] [DecidableEq F] in
+omit [Nonempty ι] [DecidableEq ι] [DecidableEq F] in
 /-- **The entropy form of the volume lower bound** for a field-linear code ([ABF26] Corollary
 3.8), specialized from `lambda_ge_entropy_volume`. -/
 theorem linear_lambda_ge_entropy_volume
-    (C : Submodule F (ι → F)) (δ : ℝ) (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1)
+    (C : Submodule F (ι → F)) (δ : ℝ)
     (_hδn_int : ∃ d : ℕ, (d : ℝ) = δ * Fintype.card ι) :
     let q : ℕ := Fintype.card F
     let n : ℕ := Fintype.card ι
@@ -604,11 +670,22 @@ theorem linear_lambda_ge_entropy_volume
     ENNReal.ofReal
         ((q : ℝ) ^ ((n : ℝ) * (ρ - 1 + qEntropy q δ))
           / (8 * n * δ * (1 - δ)) ^ ((1 : ℝ) / 2))
-      ≤ (Lambda ((C : Set (ι → F))) δ : ENNReal) :=
-  lambda_ge_entropy_volume (C : Set (ι → F)) (Module.finrank F C)
-    (submodule_ncard_eq_pow_finrank C) δ _hδ_pos _hδ_lt _hδn_int
+      ≤ (Lambda ((C : Set (ι → F))) δ : ENNReal) := by
+  by_cases hδ : 0 < δ ∧ δ < 1
+  · exact lambda_ge_entropy_volume (C : Set (ι → F)) (Module.finrank F C)
+      (submodule_ncard_eq_pow_finrank C) δ hδ.1 hδ.2 _hδn_int
+  have hden : 8 * (Fintype.card ι : ℝ) * δ * (1 - δ) ≤ 0 := by
+    by_cases hpos : 0 < δ
+    · exact mul_nonpos_of_nonneg_of_nonpos (by positivity) (by
+        have : ¬ δ < 1 := fun hlt => hδ ⟨hpos, hlt⟩
+        linarith)
+    · exact mul_nonpos_of_nonpos_of_nonneg
+        (mul_nonpos_of_nonneg_of_nonpos (by positivity) (le_of_not_gt hpos)) (by linarith)
+  dsimp
+  rw [← Real.sqrt_eq_rpow, Real.sqrt_eq_zero_of_nonpos hden, div_zero, ENNReal.ofReal_zero]
+  positivity
 
-omit [DecidableEq ι] [DecidableEq F] in
+omit [Nonempty ι] [DecidableEq ι] [DecidableEq F] in
 /-- **The cardinality bound from the rate–radius relation** — the arithmetic half of [ABF26]
 Theorem 3.9. Given `δ ≤ ℓ/(ℓ+1) · (1-ρ)` for a linear code `C ⊆ F^n` of rate `ρ`,
 
@@ -622,7 +699,6 @@ from `ℓ`-list-decodability to the cardinality bound, proved by
 it proves — the arithmetic step from the rate–radius relation, with no list-decoding premise. -/
 theorem linear_card_le_of_rate_radius
     (C : Submodule F (ι → F)) (ℓ : ℕ) (δ : ℝ)
-    (_hℓ_pos : 0 < ℓ)
     (hδ_bound : δ ≤ (ℓ : ℝ) / (ℓ + 1) *
       (1 - (Module.finrank F C : ℝ) / Fintype.card ι)) :
     (Set.ncard ((C : Set (ι → F))) : ℝ)
@@ -639,13 +715,20 @@ theorem linear_card_le_of_rate_radius
   have hq1 : (1 : ℝ) ≤ (q : ℝ) := by
     have : 1 < q := hq ▸ Fintype.one_lt_card
     exact_mod_cast this.le
-  have hnpos : (0 : ℝ) < n := by rw [hn]; exact_mod_cast Fintype.card_pos
-  have hℓpos : (0 : ℝ) < ℓ := by exact_mod_cast _hℓ_pos
   -- `k ≤ n` (rank of a subspace of `F^n` is at most `n`).
   have hkn : k ≤ n := by
     rw [hk, hn]
     have h := Submodule.finrank_le C
     rwa [Module.finrank_fintype_fun_eq_card] at h
+  rcases Nat.eq_zero_or_pos n with hn0 | hnpos
+  · have hk0 : k = 0 := by omega
+    simp [hn0, hcard_C, hk0]
+  rcases Nat.eq_zero_or_pos ℓ with rfl | hℓpos
+  · simp only [Nat.cast_zero, zero_add, div_zero, zero_mul, Nat.floor_zero, sub_zero]
+    rw [hcard_C, Nat.cast_pow, ← Real.rpow_natCast]
+    exact Real.rpow_le_rpow_of_exponent_le hq1 (by exact_mod_cast hkn)
+  have hnpos : (0 : ℝ) < n := by exact_mod_cast hnpos
+  have hℓpos : (0 : ℝ) < ℓ := by exact_mod_cast hℓpos
   -- From `hδ_bound`, `(ℓ+1)/ℓ · δ ≤ 1 - k/n`, hence `(ℓ+1)/ℓ · δ · n ≤ n - k`.
   have hmid : ((ℓ : ℝ) + 1) / ℓ * δ ≤ 1 - (k : ℝ) / n := by
     have hfac : (0 : ℝ) < ((ℓ : ℝ) + 1) / ℓ := by positivity
@@ -705,8 +788,7 @@ omission voids [ABF26]'s "Consequently `δ ≤ ℓ/(ℓ+1)·(1−ρ)`" for `C = 
 is what `_hℓ_lt : ℓ < |F|` buys and what [ABF26] prints. -/
 theorem linear_card_le_generalized_singleton
     (C : Submodule F (ι → F)) (ℓ : ℕ) (δ : ℝ)
-    (_hℓ_pos : 0 < ℓ) (_hℓ_lt : ℓ < Fintype.card F)
-    (_hδ_pos : 0 < δ)
+    (_hℓ_lt : ℓ < Fintype.card F)
     (_hδn_int : ∃ e : ℕ, (e : ℝ) = δ * Fintype.card ι)
     (_hexp_nonneg : Nat.floor (((ℓ : ℝ) + 1) / ℓ * δ * Fintype.card ι) ≤ Fintype.card ι)
     (_hΛ : Lambda ((C : Set (ι → F))) δ ≤ (ℓ : ℕ∞)) :
@@ -720,11 +802,20 @@ theorem linear_card_le_generalized_singleton
   set n : ℕ := Fintype.card ι with hn
   set k : ℕ := Module.finrank F C with hk
   set a : ℕ := Nat.floor (((ℓ : ℝ) + 1) / ℓ * δ * n) with ha
-  have hℓ0 : ℓ ≠ 0 := Nat.ne_of_gt _hℓ_pos
   have hnpos : 0 < n := hn ▸ Fintype.card_pos
-  have hepos : 0 < e := by
-    have : (0 : ℝ) < e := by rw [he]; positivity
-    exact_mod_cast this
+  have hδnonneg : 0 ≤ δ := by
+    have : (0 : ℝ) ≤ e := Nat.cast_nonneg e
+    have hnR : (0 : ℝ) < n := by exact_mod_cast hnpos
+    nlinarith
+  have hℓ0 : ℓ ≠ 0 := by
+    intro hzero
+    have hlist := Lambda_le_iff_forall_ncard_le.mp _hΛ (0 : ι → F)
+    have hmem : (0 : ι → F) ∈ closeCodewordsRel (C : Set (ι → F)) 0 δ := by
+      rw [mem_closeCodewordsRel_iff]
+      simp [Code.relHammingDist, hδnonneg]
+    have := (Set.ncard_pos (Set.toFinite _)).mpr ⟨_, hmem⟩
+    simp [hzero] at hlist
+    omega
   have harg : ((ℓ : ℝ) + 1) / ℓ * δ * n = (e : ℝ) + (e : ℝ) / ℓ := by
     calc
       ((ℓ : ℝ) + 1) / ℓ * δ * n = ((ℓ : ℝ) + 1) / ℓ * (δ * n) := by ring
@@ -852,7 +943,7 @@ theorem linear_card_le_generalized_singleton
       rw [← he, Nat.floor_natCast]
     have hclose : ∀ i, (c i : ι → F) ∈ closeCodewordsRel ((C : Set (ι → F))) y δ := by
       intro i
-      rw [closeCodewordsRel_eq_setOf C δ (le_of_lt _hδ_pos) y]
+      rw [closeCodewordsRel_eq_setOf C δ hδnonneg y]
       exact ⟨(c i).2, by rw [hfloor_e]; exact hdist_e i⟩
     have hlist := Lambda_le_iff_forall_ncard_le.mp _hΛ y
     have hlower : ℓ + 1 ≤ (closeCodewordsRel ((C : Set (ι → F))) y δ).ncard := by

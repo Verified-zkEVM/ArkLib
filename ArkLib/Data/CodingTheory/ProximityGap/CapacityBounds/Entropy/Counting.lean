@@ -244,7 +244,7 @@ theorem cs25_entropy_shell_le_choose_proof
   have hd : (f : ℝ) = ((f : ℝ) / n) * n := by
     field_simp [hnR.ne']
   have hshell := qary_shell_entropy_lower q n f ((f : ℝ) / n)
-    hq2 hn hxpos hxlt hd
+    hq2 hd
   let D : ℝ :=
     (8 * (n : ℝ) * ((f : ℝ) / n) * (1 - (f : ℝ) / n)) ^ ((1 : ℝ) / 2)
   have hDpos : 0 < D := by
