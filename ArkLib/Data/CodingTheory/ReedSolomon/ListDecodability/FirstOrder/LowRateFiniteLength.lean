@@ -119,11 +119,18 @@ theorem lowRateFiniteLengthSlope_pos {rho : ℝ}
 /-- The fixed-rate density margin is at least the agreement slope times `eta`. -/
 theorem lowRateAgreementSlackSlope_mul_slack_le_fixed_margin
     {rho eta : ℝ}
-    (hrho : 0 < rho) (hlow : rho < firstOrderRateSwitch)
+    (hlow : rho < firstOrderRateSwitch)
     (heta : 0 < eta) (haOne : firstOrderLowRateThreshold rho + eta < 1) :
     lowRateAgreementSlackSlope rho * eta ≤
       firstOrderSourceDensity rho (lowRateFiniteLengthCertifiedAgreement rho eta)
           (firstOrderLowRateBeta rho) - firstOrderRankDensity (firstOrderLowRateBeta rho) := by
+  by_cases hrho : 0 < rho
+  swap
+  · have hscale : firstOrderLowRateScale rho = 0 :=
+      Real.sqrt_eq_zero_of_nonpos (div_nonpos_of_nonpos_of_nonneg (le_of_not_gt hrho)
+        (by norm_num))
+    simp [lowRateAgreementSlackSlope, firstOrderLowRateBeta, hscale,
+      firstOrderSourceDensity, firstOrderRankDensity]
   let a := lowRateFiniteLengthCertifiedAgreement rho eta
   let T := firstOrderLowRateThreshold rho
   let beta := firstOrderLowRateBeta rho
@@ -248,7 +255,7 @@ theorem lowRateFiniteLengthSlope_mul_slack_le_margin
     lowRateFiniteLengthSlope rho * finiteLengthSlack eta n ≤
       lowRateFiniteLengthDensityMargin rho eta n := by
   have hetaPart := lowRateAgreementSlackSlope_mul_slack_le_fixed_margin
-    hrho hlow heta haOne
+    hlow heta haOne
   have hnPart := lowRateInverseLengthSlope_div_length_le_gain
     hrho heta haOne hn
   have hsEta : lowRateFiniteLengthSlope rho ≤ lowRateAgreementSlackSlope rho := min_le_left _ _
@@ -312,10 +319,14 @@ def lowRateFiniteLengthRankCount (rho eta : ℝ) (n : ℕ) : ℕ :=
 /-- The low-rate finite-length density margin is positive in the stated parameter range. -/
 theorem lowRateFiniteLengthDensityMargin_pos
     {rho eta : ℝ} {n : ℕ}
-    (hrho : 0 < rho) (hlow : rho < firstOrderRateSwitch)
+    (hlow : rho < firstOrderRateSwitch)
     (heta : 0 < eta) (haOne : firstOrderLowRateThreshold rho + eta < 1)
     (hn : (2 : ℝ) ≤ rho * n) :
     0 < lowRateFiniteLengthDensityMargin rho eta n := by
+  have hrho : 0 < rho := by
+    by_contra h
+    have := mul_nonpos_of_nonpos_of_nonneg (le_of_not_gt h) (Nat.cast_nonneg n : (0 : ℝ) ≤ n)
+    linarith
   have hc := lowRateFiniteLengthSlope_pos hrho hlow
   have hs := finiteLengthSlack_pos (n := n) heta
   exact (mul_pos hc hs).trans_le
@@ -331,7 +342,7 @@ theorem lowRateFiniteLengthMultiplicity_pos
   unfold lowRateFiniteLengthMultiplicity
   apply Nat.ceil_pos.mpr
   have hmargin := lowRateFiniteLengthDensityMargin_pos
-    hrho hlow heta haOne hn
+    hlow heta haOne hn
   have hbeta := firstOrderLowRateBeta_pos hrho
   unfold lowRateFiniteLengthRankRoundingConstant
   positivity
@@ -404,7 +415,7 @@ theorem lowRateFiniteLength_count_gap
   have hmNat : 0 < m := lowRateFiniteLengthMultiplicity_pos
     hrho hlow heta haOne hn
   have hdelta : 0 < delta := lowRateFiniteLengthDensityMargin_pos
-    hrho hlow heta haOne hn
+    hlow heta haOne hn
   have hceil : 4 * crank / delta ≤ (m : ℝ) := by
     dsimp only [m, crank, delta]
     unfold lowRateFiniteLengthMultiplicity

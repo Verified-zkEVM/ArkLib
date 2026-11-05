@@ -61,12 +61,15 @@ noncomputable def cubicAnchorReconstruct (s₁ s₂ z : F) (quotient interpolant
 /-- **Cubic reconstruction raises the strict degree bound by three.** A quotient of degree below
 `k` and an interpolant of degree below `3` give a message of degree below `k + 3`. For `k = 0` the
 quotient is `0` and the message is the interpolant. -/
-theorem cubicAnchorReconstruct_degree_lt [Nontrivial F] {k : ℕ} (s₁ s₂ z : F)
+theorem cubicAnchorReconstruct_degree_lt {k : ℕ} (s₁ s₂ z : F)
     {quotient interpolant : F[X]} (hq : quotient.degree < k) (hI : interpolant.degree < 3) :
     (cubicAnchorReconstruct s₁ s₂ z quotient interpolant).degree < (k + 3 : ℕ) := by
-  have h := degree_nodal_mul_add_lt Finset.univ ![s₁, s₂, z] hq
-    (I := interpolant) (by simpa using hI)
-  simpa [cubicAnchorReconstruct, cubicAnchorDivisor_eq_nodal] using h
+  rcases subsingleton_or_nontrivial F with _ | _
+  · rw [Subsingleton.elim (cubicAnchorReconstruct s₁ s₂ z quotient interpolant) 0, degree_zero]
+    exact WithBot.bot_lt_coe _
+  · have h := degree_nodal_mul_add_lt Finset.univ ![s₁, s₂, z] hq
+      (I := interpolant) (by simpa using hI)
+    simpa [cubicAnchorReconstruct, cubicAnchorDivisor_eq_nodal] using h
 
 /-- **The reconstruction keeps the interpolant's anchor values.** At each of `s₁`, `s₂` and `z`,
 the reconstructed message takes the value of the interpolant, whatever the quotient. -/

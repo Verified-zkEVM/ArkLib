@@ -182,7 +182,7 @@ theorem sparse_large_union_existence_of_numerics :
   have htypeCard :
       Fintype.card (Fin T → {S : Finset (Fin m) // S.card = a}) =
         Nat.choose m a ^ T := by
-    rw [Fintype.card_fun, exact_subset_type_card, Fintype.card_fin]
+    simp only [Fintype.card_fun, Fintype.card_finset_len, Fintype.card_fin]
   have hbadlt :
       (badIndexedFamilies m a T W b).card <
         (Finset.univ : Finset

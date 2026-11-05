@@ -373,7 +373,7 @@ theorem finite_firstOrder_agreement_solutions_card_le_tight_of_exponent
   have hbin : ∀ i, 1 < i → i < K → (i.choose 1 : F) ≠ 0 := by
     intro i hi hiK
     have hpivot := natCast_choose_ne_zero_of_ringChar (D := K - 1) (s := 1) hcutChar
-      (i - 1) (by omega) (by omega)
+      (i - 1) (by omega)
     simpa only [Nat.sub_add_cancel (by omega : 1 ≤ i)] using hpivot
   let accepts : F[X] → Prop := fun P ↦
     P.degree < k ∧

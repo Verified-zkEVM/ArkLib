@@ -102,7 +102,7 @@ theorem exists_lowRateFiniteLengthFirstOrder_symbolicCertificate
     simpa only [R, a, m, M, mu, Nzero, lowRateFiniteLengthSourceCount] using hlower
   have hsurplus : (rlocal : ℝ) < Nzero := by
     have hdelta := lowRateFiniteLengthDensityMargin_pos
-      hrho hlow heta haOne hn
+      hlow heta haOne hn
     have hgap := lowRateFiniteLength_count_gap hrho hlow heta haOne hn
     have hpositive : 0 < 3 * (m : ℝ) ^ 3 * lowRateFiniteLengthDensityMargin rho eta n / 4 := by
       positivity
@@ -211,7 +211,7 @@ theorem lowRate_closePolynomialSet_finite_and_card_le_finiteLength
   have hC : 1 ≤ C := one_le_lowRateFiniteLengthMcaParameterConstant rho
   have hs := finiteLengthSlack_pos (n := n) heta
   obtain ⟨_hm, _hM, hBsel, _hH⟩ :=
-    lowRateFiniteLength_parameter_bounds hrho hlow heta haOne hn
+    lowRateFiniteLength_parameter_bounds hlow heta haOne hn
   have hB : (B : ℝ) ≤ C / finiteLengthSlack eta n := by
     exact hBsel.trans (div_le_div_of_nonneg_right (le_max_left _ _) hs.le)
   have htheta := lowRate_agreementIncidenceRatio_le_parameterConstant hrho hlow heta
@@ -311,7 +311,7 @@ theorem exists_exceptional_lowRateFiniteLengthMca
   have hC : 1 ≤ C := one_le_lowRateFiniteLengthMcaParameterConstant rho
   have hs := finiteLengthSlack_pos (n := n) heta
   obtain ⟨_hm, hMsel, hBsel, hHsel⟩ :=
-    lowRateFiniteLength_parameter_bounds hrho hlow heta haOne hn
+    lowRateFiniteLength_parameter_bounds hlow heta haOne hn
   have hM : (M : ℝ) ≤ C / finiteLengthSlack eta n :=
     hMsel.trans (div_le_div_of_nonneg_right (le_max_left _ _) hs.le)
   have hB : (B : ℝ) ≤ C / finiteLengthSlack eta n :=

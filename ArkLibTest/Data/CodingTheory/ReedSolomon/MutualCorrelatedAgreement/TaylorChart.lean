@@ -575,16 +575,10 @@ private theorem incidenceHeight : CoeffNatDegreeLE incidenceEquation 1 := by
 /-- The total-degree incidence bound applies to a concrete nonempty set of chart points. -/
 example : incidencePoints.Nonempty ∧ (incidencePoints.card : ℚ) ≤ 6 := by
   refine ⟨by simp [incidencePoints], ?_⟩
-  have hinit : jointInitialJetEquation 0 incidenceEquation ≠ 0 := by
-    intro h
-    have heval := congrArg
-      (MvPolynomial.aeval (fun j : Option (Fin 1) ↦
-        if j = none then (1 : PairCountingField) else 0)) h
-    norm_num [jointInitialJetEquation, initialJetEquation, incidenceEquation] at heval
   have hbound := finite_regularJointTaylorChartPoints_off_admissiblePairGraphs_card_le
     (K := 1) (k := 0) (L := 0) (A := 0) (initialDegree := 2) (cutDegree := 3)
     pointDomain (fun _ ↦ 0) (fun _ ↦ 0) pairCountingIota 0 incidenceEquation
-    (by omega) (by omega) (by omega) (by omega) hinit
+    (by omega) (by omega) (by omega) (by omega)
     (by
       simpa [jointInitialJetEquation, jointTotalDegree] using
         jointTotalDegree_initialJetEquation_le_of_coeffNatDegreeLE
@@ -611,16 +605,10 @@ example : incidencePoints.Nonempty ∧ (incidencePoints.card : ℚ) ≤ 6 := by
 /-- The jet-degree incidence bound applies to the same concrete nonempty chart-point set. -/
 example : incidencePoints.Nonempty ∧ (incidencePoints.card : ℚ) ≤ 6 := by
   refine ⟨by simp [incidencePoints], ?_⟩
-  have hinit : jointInitialJetEquation 0 incidenceEquation ≠ 0 := by
-    intro h
-    have heval := congrArg
-      (MvPolynomial.aeval (fun j : Option (Fin 1) ↦
-        if j = none then (1 : PairCountingField) else 0)) h
-    norm_num [jointInitialJetEquation, initialJetEquation, incidenceEquation] at heval
   have hbound := finite_regularJointTaylorChartPoints_off_admissiblePairGraphs_card_le_of_jetDegree
     (K := 1) (k := 0) (L := 0) (A := 0) (v := 1) (h := 1)
     pointDomain (fun _ ↦ 0) (fun _ ↦ 0) pairCountingIota 0 incidenceEquation
-    (by omega) (by omega) (by omega) (by omega) hinit incidenceJetDegree incidenceHeight
+    (by omega) (by omega) (by omega) (by omega) incidenceJetDegree incidenceHeight
     incidencePoints incidencePoint_conditions (by
       intro x hx
       exact Nat.zero_le _)

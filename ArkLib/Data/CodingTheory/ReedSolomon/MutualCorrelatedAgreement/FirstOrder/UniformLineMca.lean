@@ -54,7 +54,7 @@ challenges. Outside it, every polynomial of degree below `k` agreeing with the l
 theorem exists_uniformFirstOrder_lineMca_of_two_le
     {F : Type*} [Field F] [DecidableEq F]
     (n k A : ℕ) (domain : Fin n ↪ F) (f g : Fin n → F)
-    (hn : 2 ≤ n) (hk : 2 ≤ k) (hAn : A ≤ n)
+    (hk : 2 ≤ k) (hAn : A ≤ n)
     (hgap : (k : ℝ) + (6 / 25 : ℝ) * n ≤ A)
     (hchar : ringChar F = 0 ∨ max (k - 1) 4 < ringChar F) :
     ∃ exceptional : Finset F,
@@ -71,7 +71,7 @@ theorem exists_uniformFirstOrder_lineMca_of_two_le
   obtain ⟨exceptional, hraw, -, -, hgood⟩ := cert.exists_exceptional_hybrid (D := k - 1)
     (by omega) (by omega) (by omega) hAn (by norm_num) hchar
   exact ⟨exceptional, hraw.trans (uniformFirstOrderMca_optimizedExceptionCharge_le_ceiling
-    hn (by omega) (by omega) hAn (by omega)), hgood⟩
+    (by omega) (by omega) (by omega) hAn (by omega)), hgood⟩
 
 /-- If `k - 1 < char F ≤ 4`, then the characteristic is two or three, so `k ≤ 3`. -/
 private theorem le_three_of_ringChar_le_four {F : Type*} [Field F] {k : ℕ}
@@ -116,7 +116,7 @@ theorem exists_uniformFirstOrder_lineMca
     linarith
   have hkTwo : 2 ≤ k := by omega
   by_cases hsupport : ringChar F = 0 ∨ max (k - 1) 4 < ringChar F
-  · exact exists_uniformFirstOrder_lineMca_of_two_le n k A domain f g hn hkTwo hAn hgap hsupport
+  · exact exists_uniformFirstOrder_lineMca_of_two_le n k A domain f g hkTwo hAn hgap hsupport
   have hdegreeChar := hchar.resolve_left fun hzero ↦ hsupport (Or.inl hzero)
   have hkThree : k ≤ 3 := le_three_of_ringChar_le_four hdegreeChar
     (not_lt.mp fun hfour ↦ hsupport (Or.inr (max_lt hdegreeChar hfour)))

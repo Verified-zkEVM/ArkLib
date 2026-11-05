@@ -101,11 +101,25 @@ theorem balancedDigit_reconstruct {b digits : ℕ} (hb : 1 < b) (hq : q ≤ b ^ 
 /-- **Core per-digit bound**, ball form: every balanced digit is `⌊b/2⌋`-bounded as a centered
 residue — for *every* input, with no shortness hypothesis on `c`. This is what makes the digit
 encoding unconditional where `rhoShort_half` was forced up to `q/2`. -/
-theorem balancedDigit_valMinAbs_natAbs_le {b digits : ℕ} (hb : 1 < b) (hq : q ≤ b ^ digits)
-    (hbq : b ≤ q / 2) (c : ZMod q) {e : ℕ} (he : e < digits) :
+theorem balancedDigit_valMinAbs_natAbs_le {b digits : ℕ} (hb : 1 < b)
+    (hbq : b ≤ q / 2) (c : ZMod q) {e : ℕ} :
     (balancedDigit b digits c e).valMinAbs.natAbs ≤ b / 2 := by
-  rw [show e = ((⟨e, he⟩ : Fin digits) : ℕ) from rfl, balancedDigit_eq_digit hb hq]
-  exact balancedZmodDigit_natAbs_le hb hq hbq c _
+  have hq0 : 0 < q := Nat.pos_of_ne_zero (NeZero.ne q)
+  unfold balancedDigit
+  set u := (Nat.digits b (c + balancedShift b digits).val).getD e 0 with hu
+  have hub : u < b := by
+    rcases lt_or_ge e (Nat.digits b (c + balancedShift b digits).val).length with hlt | hge
+    · rw [hu, List.getD_eq_getElem _ _ hlt]
+      exact Nat.digits_lt_base hb (List.getElem_mem _)
+    · rw [hu, List.getD_eq_default _ _ hge]; omega
+  have hval : ((u : ZMod q) - ((b / 2 : ℕ) : ZMod q)).valMinAbs
+      = (u : ℤ) - ((b / 2 : ℕ) : ℤ) := by
+    refine (ZMod.valMinAbs_spec _ _).mpr ⟨?_, ?_⟩
+    · simp only [Int.cast_sub, Int.cast_natCast]
+    · rw [Set.mem_Ioc]
+      omega
+  rw [hval]
+  omega
 
 end BalancedDigit
 
@@ -155,11 +169,11 @@ shortness hypothesis on the quotient, no assumption that the commitment key is s
 whole point of the encoding: the quotient block of the committed vector is short by construction,
 where the raw block was only `q/2`-bounded (`rhoShort_half`). -/
 theorem rhoDigits_valMinAbs_natAbs_le {b : ℕ} (hb : 1 < b) (hbq : b ≤ q / 2)
-    (ρ : CPolynomial (ZMod q)) {u : ℕ} (hu : u < rhoDigitCount q b) (k : ℕ) :
+    (ρ : CPolynomial (ZMod q)) (u k : ℕ) :
     ((rhoDigits Φ b ρ u).coeff k).valMinAbs.natAbs ≤ b / 2 := by
   rw [rhoDigits_coeff]
   split
-  · exact balancedDigit_valMinAbs_natAbs_le hb (Nat.le_pow_clog hb q) hbq _ hu
+  · exact balancedDigit_valMinAbs_natAbs_le hb hbq _
   · simp
 
 omit [NeZero q] in

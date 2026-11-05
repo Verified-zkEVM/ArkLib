@@ -581,11 +581,6 @@ theorem eta_times_length_one
   have h := (div_le_iff₀ hη).mp hlen
   simpa only [one_mul, mul_comm] using h
 
-theorem exact_subset_type_card (m a : ℕ) :
-    Fintype.card {S : Finset (Fin m) // S.card = a} = Nat.choose m a := by
-  simpa only [Fintype.card_fin] using
-    (Fintype.card_finset_len (α := Fin m) a)
-
 theorem fixed_factor_rpow_absorb
     (K : ℕ) (_hK : 0 < K) (γ : ℝ) (hγ : 0 < γ) :
     ∃ m₀ : ℕ, ∀ m : ℕ, m₀ ≤ m →
@@ -681,7 +676,7 @@ theorem constrained_indexed_families_card :
     by_cases hj : j ∈ J
     · simp only [allowed, hj, ite_eq_left, hinside]
     · simp only [allowed, hj]
-      exact exact_subset_type_card m a
+      simp
   rw [heq, Fintype.card_piFinset]
   calc
     (∏ j, (allowed j).card) =

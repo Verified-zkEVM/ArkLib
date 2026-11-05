@@ -91,8 +91,22 @@ lemma e_ball_le_radius [Fintype F] {B : Finset (Fin n → F)} (v : Fin n → F) 
     by exact_mod_cast h_B
   exact_mod_cast h3
 
-lemma min_dist_le_d {B : Finset (Fin n → F)} (h_B : B.card > 1) :
+lemma min_dist_le_d {B : Finset (Fin n → F)} :
     sInf { d | ∃ u ∈ B, ∃ v ∈ B, u ≠ v ∧ hammingDist u v = d } ≤ d B := by
+  by_cases h_B : B.card > 1
+  swap
+  · have hempty : { d | ∃ u ∈ B, ∃ v ∈ B, u ≠ v ∧ hammingDist u v = d } =
+        (∅ : Set ℕ) := by
+      apply Set.eq_empty_iff_forall_notMem.mpr
+      rintro e ⟨u, hu, v, hv, huv, _⟩
+      exact h_B (one_lt_card.mpr ⟨u, hu, v, hv, huv⟩)
+    have hpairs : {x ∈ B ×ˢ B | x.1 ≠ x.2} = ∅ := by
+      apply eq_empty_iff_forall_notMem.mpr
+      intro x hx
+      obtain ⟨hu, huv⟩ := mem_filter.mp hx
+      exact h_B (one_lt_card.mpr ⟨x.1, (mem_product.mp hu).1,
+        x.2, (mem_product.mp hu).2, huv⟩)
+    simp [hempty, d, hpairs]
   unfold d
   let d_weak := sInf { d | ∃ u ∈ B, ∃ v ∈ B, u ≠ v ∧ hammingDist u v = d }
   have h_d : ∀ x ∈ { x ∈ B ×ˢ B | x.1 ≠ x.2 }, d_weak ≤ Δ₀(x.1, x.2) := by

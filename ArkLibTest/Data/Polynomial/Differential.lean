@@ -979,7 +979,7 @@ example : Nat.card (BoundedSolution (constantDerivativeEquation (ZMod 3)) 2) = 3
         (jetTotalDegree (constantDerivativeEquation (ZMod 3)) * Nat.card (ZMod 3) ^ 1) :=
     BoundedSolution.natCard_mul_sub_le_jetTotalDegree_mul (MvPolynomial.X_ne_zero _)
       castsNeZero_constantDerivativeEquation (H := 0)
-      (fun k s ↦ natCast_choose_ne_zero_of_ringChar (F := ZMod 3) (D := 2) (s := s)
+      (fun k s _ ↦ natCast_choose_ne_zero_of_ringChar (F := ZMod 3) (D := 2) (s := s)
         (Or.inr (by rw [ZMod.ringChar_zmod_n]; decide)) k)
       (by rw [differentialWeightedDegree_constantDerivativeEquation])
   rw [Nat.card_zmod, Nat.sub_zero] at h

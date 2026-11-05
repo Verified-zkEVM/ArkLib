@@ -190,11 +190,25 @@ bound is tight: repetition codes and the `[4,2,3]` code over `𝔽₃` attain
 `|B| = δ/(δ - (1 - 1/q))`. -/
 lemma plotkin_card_le_ell {n : ℕ} {α : Type*} [Fintype α] [DecidableEq α]
     (B : Finset (Fin n → α)) (ℓ : ℕ) (mDist : ℕ)
-    (hℓ2 : 2 ≤ ℓ) (hn_pos : 0 < n) (hα2 : 2 ≤ Fintype.card α) (hB2 : 2 ≤ B.card)
     (d_fact : (mDist : ℚ) ≤ JohnsonBound.d B)
     (hguard : 1 < ((Fintype.card α : ℚ) / ((Fintype.card α : ℚ) - 1))
         * (((ℓ : ℚ) - 1) / (ℓ : ℚ)) * ((mDist : ℚ) / n)) :
     B.card ≤ ℓ := by
+  have hℓ2 : 2 ≤ ℓ := by
+    by_contra h
+    have : ℓ = 0 ∨ ℓ = 1 := by omega
+    rcases this with rfl | rfl <;> norm_num at hguard
+  have hn_pos : 0 < n := by
+    by_contra h
+    have : n = 0 := by omega
+    norm_num [this] at hguard
+  have hα2 : 2 ≤ Fintype.card α := by
+    by_contra h
+    have : Fintype.card α = 0 ∨ Fintype.card α = 1 := by omega
+    rcases this with h | h <;> norm_num [h] at hguard
+  by_cases hB2 : 2 ≤ B.card
+  swap
+  · omega
   obtain ⟨a⟩ : Nonempty α := Fintype.card_pos_iff.mp (by omega)
   have hjb := JohnsonBound.johnson_bound_lemma (B := B) (v := fun _ => a) hn_pos hB2 hα2
   have hq2 : (2 : ℚ) ≤ (Fintype.card α : ℚ) := by exact_mod_cast hα2
@@ -341,7 +355,7 @@ private lemma johnson_lambda_le_ell_of_radicand
     have d_fact : (Code.minDist C : ℚ) ≤ JohnsonBound.d B := by
       have hmin_le : sInf { d | ∃ u ∈ B, ∃ w ∈ B, u ≠ w ∧ hammingDist u w = d }
           ≤ JohnsonBound.d B :=
-        min_dist_le_d hB2
+        min_dist_le_d
       have hminDist_lb : Code.minDist C ≤
           sInf { d | ∃ u ∈ B, ∃ w ∈ B, u ≠ w ∧ hammingDist u w = d } := by
         apply le_csInf
@@ -458,7 +472,7 @@ theorem johnson_bound_lambda_le_ell
         exact Fintype.one_lt_card_iff.mpr ⟨u i, w i, hi⟩
       have d_fact : (Code.minDist C : ℚ) ≤ JohnsonBound.d B := by
         have hmin_le : sInf { d | ∃ u ∈ B, ∃ w ∈ B, u ≠ w ∧ hammingDist u w = d }
-            ≤ JohnsonBound.d B := min_dist_le_d hB2
+            ≤ JohnsonBound.d B := min_dist_le_d
         have hminDist_lb : Code.minDist C ≤
             sInf { d | ∃ u ∈ B, ∃ w ∈ B, u ≠ w ∧ hammingDist u w = d } := by
           apply le_csInf
@@ -478,7 +492,7 @@ theorem johnson_bound_lambda_le_ell
               exact_mod_cast hminDist_lb
           _ ≤ JohnsonBound.d B := hmin_le
       have hcard_le : B.card ≤ ℓ :=
-        plotkin_card_le_ell B ℓ (Code.minDist C) hℓ2 hn_pos hα2 hB2 d_fact (by
+        plotkin_card_le_ell B ℓ (Code.minDist C) d_fact (by
           simpa [q, δ_min, hn_def] using hguard)
       rw [← hBcard]; exact_mod_cast hcard_le
 
@@ -731,7 +745,7 @@ theorem mds_johnson_lambda_le_of_rate_distance
       -- The code's minimum distance lower-bounds the average pairwise distance of `B`.
       have d_fact : (Code.minDist C : ℚ) ≤ JohnsonBound.d B := by
         have hmin_le : sInf { d | ∃ u ∈ B, ∃ w ∈ B, u ≠ w ∧ hammingDist u w = d }
-            ≤ JohnsonBound.d B := min_dist_le_d hB2
+            ≤ JohnsonBound.d B := min_dist_le_d
         have hminDist_lb : Code.minDist C ≤
             sInf { d | ∃ u ∈ B, ∃ w ∈ B, u ≠ w ∧ hammingDist u w = d } := by
           apply le_csInf
@@ -753,7 +767,7 @@ theorem mds_johnson_lambda_le_of_rate_distance
       -- Plotkin bound: the whole code has at most `ℓ` words.
       have hcard_le : B.card ≤ ℓ := by
         refine plotkin_card_le_ell B ℓ (Code.minDist C)
-          hℓ2 hn_pos hq2 hB2 d_fact ?_
+          d_fact ?_
         rw [hq_def, hδ_def] at hguard
         exact hguard
       calc (Lambda C (1 - √ρ - η) : ENNReal)

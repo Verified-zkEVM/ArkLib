@@ -102,16 +102,11 @@ omit [Fact (Nat.Prime q)] in
 /-- The 2-adic valuation of `q^(2^k) - 1` is `k + 2`. -/
 theorem emultiplicity_two_q_pow_sub_one (hq5 : q % 8 = 5) (k : ℕ) :
     emultiplicity (2 : ℤ) ((q : ℤ) ^ (2 ^ k) - 1) = (k : ℕ∞) + 2 := by
-  have hxy : (4 : ℤ) ∣ ((q : ℤ) - 1) := four_dvd_q_sub_one hq5
-  have hx : ¬ (2 : ℤ) ∣ (q : ℤ) := not_two_dvd_q hq5
-  have key := Int.two_pow_sub_pow' (x := (q : ℤ)) (y := 1) (2 ^ k) (by simpa using hxy)
-    (by simpa using hx)
-  rw [one_pow] at key
-  rw [key, emultiplicity_two_q_sub_one hq5]
-  have h2 : emultiplicity (2 : ℤ) ((2 ^ k : ℕ) : ℤ) = (k : ℕ∞) := by
-    have hc : ((2 ^ k : ℕ) : ℤ) = (2 : ℤ) ^ k := by push_cast; ring
-    rw [hc, emultiplicity_pow_self_of_prime (Int.prime_two) k]
-  rw [h2, add_comm]
+  have key : emultiplicity (2 : ℤ) ((q : ℤ) ^ (2 ^ k) - 1) =
+      emultiplicity (2 : ℤ) ((q : ℤ) - 1) + k := by
+    simpa using Int.two_pow_two_pow_sub_pow_two_pow (x := (q : ℤ)) (y := 1) k
+      (by simpa using four_dvd_q_sub_one hq5) (not_two_dvd_q hq5)
+  rw [key, emultiplicity_two_q_sub_one hq5, add_comm]
 
 omit [Fact (Nat.Prime q)] in
 /-- `2^(k+2) ∣ q^(2^k) - 1`. -/

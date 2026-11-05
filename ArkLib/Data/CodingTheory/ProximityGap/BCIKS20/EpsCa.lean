@@ -152,7 +152,7 @@ positive fold radius at most the relative unique-decoding radius,
   `ε_mca(C, δ) ≤ n / |F|` .
 
 Below half the minimum distance, affine-line MCA and correlated agreement agree
-(`mcaError_eq_epsCa_of_pos_of_two_mul_lt_dist`), so `rs_epsCa_le_of_le_relUDR` transfers directly.
+(`mcaError_eq_epsCa_of_two_mul_lt_dist`), so `rs_epsCa_le_of_le_relUDR` transfers directly.
 
 This is the MCA-side companion of `rs_epsCa_le_of_le_relUDR`, and it is what
 `ProximityGap.GrandChallenges` consumes: `McaLowerWitness` is stated on `mcaError`, not on
@@ -164,7 +164,7 @@ theorem rs_mcaError_le_of_le_relUDR {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥
     mcaError (AffineLineGenerator F) (ReedSolomon.code domain deg) (δ : ℝ)
       ≤ ((Fintype.card ι / Fintype.card F : ℝ≥0) : ENNReal) :=
   le_trans
-    (mcaError_le_epsCa_of_pos_of_two_mul_lt_dist (ReedSolomon.code domain deg) δ hδ_pos
+    (mcaError_le_epsCa_of_two_mul_lt_dist (ReedSolomon.code domain deg) δ
       (two_mul_lt_dist_of_le_relUDR hδ_pos hδ))
     (rs_epsCa_le_of_le_relUDR hδ le_rfl)
 

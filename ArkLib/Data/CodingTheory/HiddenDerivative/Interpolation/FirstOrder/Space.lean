@@ -163,10 +163,10 @@ theorem jetTotalDegree_le_of_mem_firstOrderSpace [CommSemiring F]
 
 /-! ### Embeddings into exact interpolation spaces -/
 
-/-- Raising the degree bound from `D` to `D' ≥ D` raises the specialization weight of an exponent
+/-- Changing the degree bound from `D` to `D'` raises the specialization weight of an exponent
 by at most `(D' - D)` times its total jet degree, since each jet variable gains at most
 `D' - D` and `X` gains nothing. -/
-theorem weight_differentialWeight_le_add_mul_totalJetDegree {d D' : ℕ} (hDD' : D ≤ D')
+theorem weight_differentialWeight_le_add_mul_totalJetDegree {d D' : ℕ}
     (u : JetVariable d →₀ ℕ) :
     Finsupp.weight (differentialWeight D') u ≤
       Finsupp.weight (differentialWeight D) u + (D' - D) * totalJetDegree u := by
@@ -177,10 +177,10 @@ theorem weight_differentialWeight_le_add_mul_totalJetDegree {d D' : ℕ} (hDD' :
   exact Nat.mul_le_mul_right _ (by omega)
 
 /-- The first-order space lies in the exact interpolation space with `d = 1`, degree bound
-`D' ≥ D`, and agreement threshold `A'` whenever `m A + (D' - D) μ ≤ m A'`, for every higher-jet
+`D'`, and agreement threshold `A'` whenever `m A + (D' - D) μ ≤ m A'`, for every higher-jet
 budget `W`. With `d = 1` there are no higher jets, so `W` plays no role. -/
 theorem firstOrderSpace_le_exactInterpolationSpace_of_le [CommSemiring F] {D' A' W : ℕ}
-    (hD' : 1 < D') (hDD' : D ≤ D') (hA : m * A + (D' - D) * μ ≤ m * A') :
+    (hD' : 1 < D') (hA : m * A + (D' - D) * μ ≤ m * A') :
     firstOrderSpace F D A m M μ ≤ exactInterpolationSpace F D' A' 1 m M W hD' := by
   intro Q hQ
   rw [mem_exactInterpolationSpace_iff]
@@ -188,7 +188,7 @@ theorem firstOrderSpace_le_exactInterpolationSpace_of_le [CommSemiring F] {D' A'
   obtain ⟨hM, hμ, hw⟩ := mem_firstOrderSpace_iff.mp hQ u hu
   refine ⟨hM, ?_, ?_⟩
   · simp [fullHigherJetWeight, jetHigherWeight, Finsupp.weight_apply, Finsupp.sum_fintype]
-  · have hle := weight_differentialWeight_le_add_mul_totalJetDegree hDD' u
+  · have hle := weight_differentialWeight_le_add_mul_totalJetDegree (D := D) (D' := D') u
     have := Nat.mul_le_mul_left (D' - D) hμ
     omega
 
@@ -196,7 +196,7 @@ theorem firstOrderSpace_le_exactInterpolationSpace_of_le [CommSemiring F] {D' A'
 parameters and `d = 1`, for every higher-jet budget `W`. -/
 theorem firstOrderSpace_le_exactInterpolationSpace [CommSemiring F] {W : ℕ} (hD : 1 < D) :
     firstOrderSpace F D A m M μ ≤ exactInterpolationSpace F D A 1 m M W hD :=
-  firstOrderSpace_le_exactInterpolationSpace_of_le hD le_rfl (by simp)
+  firstOrderSpace_le_exactInterpolationSpace_of_le hD (by simp)
 
 end
 

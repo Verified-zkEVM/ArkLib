@@ -515,11 +515,17 @@ theorem incidence_double_count :
 /-- The numeric slack the moment bound needs: `(3p^ℓ/4) · M^ℓ ≤ (p·M − (ℓ−1))^ℓ` once
 `M ≥ ⌈4ℓ²/p⌉`. -/
 theorem incidence_power_gap :
-    ∀ (ℓ M : ℕ) (p : ℝ), 2 ≤ ℓ → 0 < p →
+    ∀ (ℓ M : ℕ) (p : ℝ), 0 < p →
       Nat.ceil (4 * (ℓ : ℝ) ^ 2 / p) ≤ M →
       (3 * p ^ ℓ / 4) * (M : ℝ) ^ ℓ ≤
         (p * M - (ℓ - 1)) ^ ℓ := by
-  intro ℓ M p hℓ hp hM
+  intro ℓ M p hp hM
+  by_cases hℓ : 2 ≤ ℓ
+  swap
+  · interval_cases ℓ
+    · norm_num
+    · simp only [pow_one, Nat.cast_one, sub_self, sub_zero]
+      nlinarith [mul_nonneg hp.le (Nat.cast_nonneg M : (0 : ℝ) ≤ M)]
   have hℓR : (0 : ℝ) < ℓ := by
     exact_mod_cast (show 0 < ℓ by omega)
   have hℓtwo : (2 : ℝ) ≤ ℓ := by
@@ -1199,7 +1205,7 @@ theorem incidence_moment_lower :
       (M : ℝ) ^ ℓ / Nat.factorial ℓ := by
     exact Nat.choose_le_pow_div ℓ M
   have hcoeff : 0 ≤ 3 * p ^ ℓ / 4 := by positivity
-  have hgap := incidence_power_gap ℓ M p hℓ hp hM
+  have hgap := incidence_power_gap ℓ M p hp hM
   have hfirst :
       (3 * p ^ ℓ / 4) * (Nat.choose M ℓ : ℝ) ≤
         (p * M - ((ℓ : ℝ) - 1)) ^ ℓ / Nat.factorial ℓ := by

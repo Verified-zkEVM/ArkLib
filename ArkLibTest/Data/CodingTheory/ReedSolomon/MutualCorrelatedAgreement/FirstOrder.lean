@@ -503,7 +503,7 @@ private def uniformLineDomain : Fin 3 ↪ ℚ := ⟨![0, 1, 2], by decide⟩
 
 /-- The uniform line-agreement bound applies at `n = 3`, `k = 2` and `A = 3` over `ℚ`. -/
 example := exists_uniformFirstOrder_lineMca_of_two_le 3 2 3 uniformLineDomain (fun _ ↦ 0)
-  (fun _ ↦ 1) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  (fun _ ↦ 1) (by norm_num) (by norm_num) (by norm_num)
   (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
 
 /-- Optimized curve recovery over `ℂ` applies to the equation `Y₁`. -/
