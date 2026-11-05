@@ -9,6 +9,10 @@ autoImplicit = false
 weak.linter.mathlibStandardSet = true
 weak.linter.style.longFile = 1500
 weak.linter.style.header = false
+# Core's `constructorNameAsVariable` linter puts the type of every named binder, hypotheses
+# included, in weak head normal form at default transparency. On hypotheses about whole protocol
+# executions that unfolds the execution, about a tenth of the slowest modules' elaboration time.
+weak.linter.constructorNameAsVariable = false
 
 [moreServerOptions]
 linter.mathlibStandardSet = true
