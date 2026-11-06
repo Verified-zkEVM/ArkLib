@@ -152,7 +152,7 @@ private theorem exists_uniformFirstOrder_list_of_dimension_le_three
         nlinarith [sq_nonneg (6 * (n : ℝ) - 25 / 12), sq_nonneg (6 * (n : ℝ) - 175 / 6)]
     exact_mod_cast hposR
   obtain ⟨hfinite, hcard⟩ :=
-    closePolynomialSet_finite_and_ncard_le_pairwiseJohnson domain received hDA hpositive
+    closePolynomialSet_finite_and_ncard_le_pairwiseJohnson domain received hpositive
   rw [hDk] at hfinite hcard
   refine ⟨hfinite.toFinset, fun P ↦ hfinite.mem_toFinset, ?_⟩
   rw [← Set.ncard_eq_toFinset_card _ hfinite]
@@ -204,21 +204,33 @@ private theorem exists_uniformFirstOrder_list_of_two_le
   refine ⟨hfin.toFinset, fun P ↦ hfin.mem_toFinset, ?_⟩
   exact_mod_cast hcard.trans (uniformFirstOrder_listRatio_le n k A hn hk hAn hgap)
 
-/-- **Uniform first-order lists at gap `6/25`.** For `n ≥ 2`, `0 < k` and
-`k + (6/25) n ≤ A ≤ n`, the complete list of degree-`< k` polynomials agreeing with the received
+/-- **Uniform first-order lists at gap `6/25`.** For `0 < k` and
+`k + (6/25) n ≤ A`, the complete list of degree-`< k` polynomials agreeing with the received
 word on at least `A` points is an exact finite list with at most `307 n` members. For `k ≥ 2` the
 field characteristic must be zero or exceed `k - 1`; the field may be infinite. -/
 theorem exists_uniformFirstOrder_list
     {F : Type u} [Field F] [DecidableEq F]
     (n k A : ℕ) (domain : Fin n ↪ F) (received : Fin n → F)
-    (hn : 2 ≤ n) (hk : 0 < k) (hAn : A ≤ n)
+    (hk : 0 < k)
     (hgap : (k : ℝ) + (6 / 25 : ℝ) * n ≤ A)
     (hchar : 2 ≤ k → ringChar F = 0 ∨ k - 1 < ringChar F) :
     ∃ list : Finset F[X],
       (∀ P, P ∈ list ↔ P ∈ closePolynomialSet domain received k A) ∧
       list.card ≤ 307 * n := by
+  by_cases hAn : A ≤ n
+  swap
+  · refine ⟨∅, ?_, by simp⟩
+    intro P
+    simp only [Finset.notMem_empty, false_iff]
+    intro hP
+    have hcard : (polynomialAgreementSet domain received P).card ≤ n := by
+      simpa using Finset.card_le_univ (polynomialAgreementSet domain received P)
+    exact hAn ((hP.2).trans hcard)
   by_cases hkTwo : 2 ≤ k
-  · by_cases hsupport : ringChar F = 0 ∨ max (k - 1) 4 < ringChar F
+  · have hkA : k ≤ A := by
+      exact_mod_cast hgap.trans' (le_add_of_nonneg_right (by positivity))
+    have hn : 2 ≤ n := hkTwo.trans (hkA.trans hAn)
+    by_cases hsupport : ringChar F = 0 ∨ max (k - 1) 4 < ringChar F
     · exact exists_uniformFirstOrder_list_of_two_le n k A domain received
         hn hkTwo hAn hgap hsupport
     · have hdegreeChar := (hchar hkTwo).resolve_left fun hzero ↦ hsupport (Or.inl hzero)

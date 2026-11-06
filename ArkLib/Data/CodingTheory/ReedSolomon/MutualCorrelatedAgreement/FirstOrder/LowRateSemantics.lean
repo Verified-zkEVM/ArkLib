@@ -81,7 +81,7 @@ theorem exists_lowRateFiniteLengthFirstOrder_symbolicCertificate
   let r := n * rlocal
   have hnPos : 0 < n := length_pos_of_two_le_rate_mul_length hn
   have hmPos : 0 < m := lowRateFiniteLengthMultiplicity_pos
-    hrho hlow heta haOne hn
+    hlow heta haOne hn
   have hDPos : 0 < D := by dsimp only [D]; omega
   have hN : N = firstOrderDimensionCount D A m M mu :=
     card_firstOrderExponents hDPos
@@ -106,7 +106,7 @@ theorem exists_lowRateFiniteLengthFirstOrder_symbolicCertificate
   have hsurplus : (rlocal : ℝ) < Nzero := by
     have hdelta := lowRateFiniteLengthDensityMargin_pos
       hlow heta haOne hn
-    have hgap := lowRateFiniteLength_count_gap hrho hlow heta haOne hn
+    have hgap := lowRateFiniteLength_count_gap hlow heta haOne hn
     have hpositive : 0 < 3 * (m : ℝ) ^ 3 * lowRateFiniteLengthDensityMargin rho eta n / 4 := by
       positivity
     dsimp only [m, rlocal, Nzero]
@@ -213,8 +213,8 @@ theorem lowRate_closePolynomialSet_finite_and_card_le_finiteLength
     heta haOne hlow hk hkRate hA domain received (fun _ ↦ 0)
   have hMB : M ≤ B := by
     dsimp only [M, B]
-    exact lowRateFiniteLengthDerivativeCap_le_jetDegree hrho heta haOne hn
-  have hsOne := (lowRateFiniteLengthSlack_lt_one hrho hlow haOne hn).le
+    exact lowRateFiniteLengthDerivativeCap_le_jetDegree heta haOne hn
+  have hsOne := (lowRateFiniteLengthSlack_lt_one hlow haOne hn).le
   have hC : 1 ≤ C := one_le_lowRateFiniteLengthMcaParameterConstant rho
   have hs := finiteLengthSlack_pos (n := n) heta
   obtain ⟨_hm, _hM, hBsel, _hH⟩ :=
@@ -262,7 +262,7 @@ theorem lowRate_closePolynomialSet_finite_and_card_le_inv_eta
         domain received (length_pos_of_two_le_rate_mul_length hn) (by omega) hkA
         (one_le_lowRateFiniteLengthMcaParameterConstant rho) heta
         (lowRateFiniteLengthSlack_lt_one_of_one_le_rate_mul_length
-          hrho hlow haOne (by linarith)).le
+          hlow haOne (by linarith)).le
   obtain ⟨hfinite, hcard⟩ := hlist
   refine ⟨hfinite, hcard.trans ?_⟩
   exact div_finiteLengthSlack_sq_le_div_eta_sq
@@ -281,7 +281,7 @@ theorem lowRateFiniteLengthJetDegree_pos
     0 < lowRateFiniteLengthJetDegree rho eta n := by
   unfold lowRateFiniteLengthJetDegree
   apply Nat.ceil_pos.mpr
-  have hm := lowRateFiniteLengthMultiplicity_pos hrho hlow heta haOne hn
+  have hm := lowRateFiniteLengthMultiplicity_pos hlow heta haOne hn
   have ha := lowRateFiniteLengthCertifiedAgreement_pos hrho heta.le
   have hrate := finiteLengthRate_pos hn
   positivity
@@ -330,11 +330,11 @@ theorem exists_exceptional_lowRateFiniteLengthMca
     heta haOne hlow hk hkRate hA domain f g
   have hMB : M ≤ B := by
     dsimp only [M, B]
-    exact lowRateFiniteLengthDerivativeCap_le_jetDegree hrho heta haOne hn
+    exact lowRateFiniteLengthDerivativeCap_le_jetDegree heta haOne hn
   have hBpos : 1 ≤ B := by
     dsimp only [B]
     exact lowRateFiniteLengthJetDegree_pos hrho hlow heta haOne hn
-  have hsOne := (lowRateFiniteLengthSlack_lt_one hrho hlow haOne hn).le
+  have hsOne := (lowRateFiniteLengthSlack_lt_one hlow haOne hn).le
   have hC : 1 ≤ C := one_le_lowRateFiniteLengthMcaParameterConstant rho
   have hs := finiteLengthSlack_pos (n := n) heta
   obtain ⟨_hm, hMsel, hBsel, hHsel⟩ :=
@@ -492,7 +492,7 @@ theorem lowRate_finiteLength_rate_bounds
     have hkRateOne : (1 : ℝ) ≤ rho * (n : ℝ) := by simpa using hkRate
     have hsOne : finiteLengthSlack eta n ≤ 1 :=
       (lowRateFiniteLengthSlack_lt_one_of_one_le_rate_mul_length
-        (rho := rho) (eta := eta) (n := n) hrho hlow haOne hkRateOne).le
+        (rho := rho) (eta := eta) (n := n) hlow haOne hkRateOne).le
     have hC : 1 ≤ lowRateFiniteLengthMcaParameterConstant rho :=
       one_le_lowRateFiniteLengthMcaParameterConstant rho
     have hregime := (firstOrderLowRateRegime_iff_lt_rateSwitch rho).2 hlow

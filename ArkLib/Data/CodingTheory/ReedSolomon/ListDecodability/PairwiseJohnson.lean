@@ -75,7 +75,7 @@ agreement list is empty. Thus no finiteness assumption on the field is required.
 theorem closePolynomialSet_finite_and_ncard_le_pairwiseJohnson
     {F : Type*} [Field F] {n D A : ℕ}
     (domain : Fin n ↪ F) (received : Fin n → F)
-    (hDA : D + 1 ≤ A) (hpositive : n * D < A * A) :
+    (hpositive : n * D < A * A) :
     (closePolynomialSet domain received (D + 1) A).Finite ∧
       (closePolynomialSet domain received (D + 1) A).ncard ≤
         Code.pairwiseJohnsonListBound n D A := by
@@ -91,7 +91,10 @@ theorem closePolynomialSet_finite_and_ncard_le_pairwiseJohnson
       T.card ≤ Code.pairwiseJohnsonListBound n D A := by
     intro T hT
     by_cases hAn : A ≤ n
-    · let eval : F[X] → (Fin n → F) := evalOnPoints domain
+    · have hDA : D + 1 ≤ A := by
+        by_contra h
+        exact (not_le_of_gt hpositive) (Nat.mul_le_mul hAn (by omega))
+      let eval : F[X] → (Fin n → F) := evalOnPoints domain
       let U := T.image eval
       have hinj : Set.InjOn eval T := by
         intro P hP Q hQ heval
@@ -158,7 +161,7 @@ theorem closePolynomialSet_finite_and_ncard_le_pairwiseJohnson_of_gap
     nlinarith [mul_nonneg hnR (sub_nonneg.mpr hD4), mul_nonneg hδn hδn]
   have hpositive : n * D < A * A := by exact_mod_cast hpositiveR
   obtain ⟨hfinite, hcard⟩ :=
-    closePolynomialSet_finite_and_ncard_le_pairwiseJohnson domain received hDA hpositive
+    closePolynomialSet_finite_and_ncard_le_pairwiseJohnson domain received hpositive
   rw [hDk] at hfinite hcard
   refine ⟨hfinite, ?_⟩
   have hcardR : ((closePolynomialSet domain received k A).ncard : ℝ) ≤

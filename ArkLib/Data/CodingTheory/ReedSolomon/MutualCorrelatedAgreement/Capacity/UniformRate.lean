@@ -77,15 +77,15 @@ theorem exists_uniformRatePartition_curve_exactPowerAgreement {F E : Type u} [Fi
   let ν := uniformJetCap δ
   obtain ⟨e⟩ := HiddenDerivative.RatePartition.exists_uniformRatePartitionEnvelope
     hδ hδsmall hn hgap hAn
-  obtain ⟨hd500, hδone, hν, _hνn, hscale, hkA, hchar'⟩ :=
+  obtain ⟨hd500, -, hν, _hνn, hscale, -, hchar'⟩ :=
     HiddenDerivative.RatePartition.uniformEnvelope_exactAgreementGuards e hδ hδsmall hn hchar
   obtain ⟨cert⟩ := e.exists_curve_certificate (scale := 1000) hd500 hscale hAn
     domain (fun i ↦ powerBatchedCoordinate fun t ↦ values t i)
     (fun _ ↦ powerBatchedCoordinate_natDegree_le _)
   have hh : 0 < 150 * ν := by positivity
   exact exists_exceptional_exactPowerAgreement_of_certificate_of_jetCharacteristic
-    domain values iota cert hk e.message_le (by omega) (by have := e.order_le; omega)
-    e.ambient_le hkA hAn hν hh hℓ le_rfl hδ hδone.le hgap hchar'
+    domain values iota cert hk e.message_le (by have := e.order_le; omega)
+    e.ambient_le hAn hh hℓ le_rfl hδ hgap hchar'
 
 open Classical in
 /-- The extension-field curve bound descends to challenges and candidates over the base field. -/

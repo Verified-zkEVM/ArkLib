@@ -53,7 +53,7 @@ theorem exists_exceptional_exactPowerAgreement_with_prescribed_stageBounds
     [IsAlgClosed E]
     (δ : ℝ) (n k ℓ : ℕ) (domain : Fin n ↪ F)
     (values : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
-    (hδ : 0 < δ) (hδ' : δ < 1 / 4) (hk : 0 < k) (hℓ : 0 < ℓ)
+    (hδ : 0 < δ) (hδ' : δ < 1 / 4) (hℓ : 0 < ℓ)
     (hblock : 8 * Nat.ceil
       (100 * (Nat.ceil (Real.exp (xi / δ)) : ℝ) ^ 2 *
         harmonic (Nat.ceil (Real.exp (xi / δ)) - 1)) ≤ n)
@@ -129,7 +129,7 @@ theorem exists_exceptional_exactPowerAgreement_of_prescribedCurve {F E : Type u}
     [IsAlgClosed E]
     (δ : ℝ) (n k ℓ : ℕ) (domain : Fin n ↪ F)
     (values : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
-    (hδ : 0 < δ) (hδ' : δ < 1 / 4) (hk : 0 < k) (hℓ : 0 < ℓ)
+    (hδ : 0 < δ) (hδ' : δ < 1 / 4) (hk : 0 < k)
     (hblock : 8 * Nat.ceil
       (100 * (Nat.ceil (Real.exp (xi / δ)) : ℝ) ^ 2 *
         harmonic (Nat.ceil (Real.exp (xi / δ)) - 1)) ≤ n)
@@ -149,6 +149,11 @@ theorem exists_exceptional_exactPowerAgreement_of_prescribedCurve {F E : Type u}
             (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
         HasExactPowerAgreement domain values iota k z P := by
   classical
+  rcases Nat.eq_zero_or_pos ℓ with rfl | hℓ
+  · refine ⟨∅, by simp, ?_⟩
+    intro z _ P hdegree hagree
+    exact hasExactPowerAgreement_singleton domain values iota k z P hdegree
+      ((Nat.le_add_right k _).trans hagree)
   let A := capacityAgreementThreshold δ n k
   let d := Nat.ceil (Real.exp (xi / δ))
   let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
@@ -160,7 +165,7 @@ theorem exists_exceptional_exactPowerAgreement_of_prescribedCurve {F E : Type u}
     prescribed_geometric_parameters δ n k hδ hδ' hblock hA
   obtain ⟨stages, exceptional, hcard, hstages, horders, hweights, hexact⟩ :=
     exists_exceptional_exactPowerAgreement_with_prescribed_stageBounds δ n k ℓ domain values
-      iota hδ hδ' hk hℓ
+      iota hδ hδ' hℓ
       hblock hA hchar
   refine ⟨exceptional, ?_, hexact⟩
   have hcardR : (exceptional.card : ℝ) ≤ (H : ℝ) +
@@ -194,7 +199,7 @@ theorem exists_exceptional_exactPowerAgreement_of_prescribedCurve {F E : Type u}
         (regularPowerBatchedAgreementSharp_product_finiteStage_le stages.toFinset
           (fun stage ↦ stage.2.val) (fun stage ↦ jetTotalDegree stage.1) (fun _ ↦ H)
           δ n K k A ℓ ν (12 * ν) d (2 * K - 3) hδ hδone
-          (Nat.ceil_pos.mpr (Real.exp_pos _)) hn hk hν hh hKn hgap hA
+          hn hk hh hKn hgap hA
           (Nat.sub_le _ _) hstages
           (fun stage hs ↦ horders stage (List.mem_toFinset.mp hs))
           (fun stage hs ↦ (hweights stage (List.mem_toFinset.mp hs)).1)

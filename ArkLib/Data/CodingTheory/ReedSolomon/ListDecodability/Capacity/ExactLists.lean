@@ -144,7 +144,7 @@ theorem uniformFirstOrder_capacity_list (δ : ℝ) (hδ : (6 / 25 : ℝ) ≤ δ)
       rw [ringChar.eq (ZMod q) q]
       omega
     obtain ⟨list, hlist, hcard⟩ :=
-      exists_uniformFirstOrder_list n k A domain received (by omega) hk hAn hgapUniform hchar
+      exists_uniformFirstOrder_list n k A domain received hk hgapUniform hchar
     refine ⟨list, hlist, ?_, hcard⟩
     exact fun hover ↦ absurd hAn (by omega)
   · exact ⟨∅, capacity_list_empty_of_lt hAn domain received, fun _ ↦ rfl, by simp⟩

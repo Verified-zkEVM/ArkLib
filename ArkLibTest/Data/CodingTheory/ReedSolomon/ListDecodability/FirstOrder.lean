@@ -434,9 +434,9 @@ example :
   have heta : 0 < eta := by norm_num [eta]
   have hn : (2 : ℝ) ≤ rho * n := by norm_num [rho, n]
   have hslope := lowRateFiniteLengthSlope_mul_slack_le_margin
-    (rho := rho) (eta := eta) (n := n) hrho hlow heta haOne hn
+    (rho := rho) (eta := eta) (n := n) hlow heta haOne hn
   have hsource := lowRateFiniteLengthSourceDensity_mul_cube_le_sourceCount
-    (rho := rho) (eta := eta) (n := n) hrho hlow heta haOne hn
+    (rho := rho) (eta := eta) (n := n) hlow heta haOne hn
   have hrank0 := firstOrderRankCount_floor_le_density_add_rounding
     (firstOrderLowRateBeta_pos hrho).le (lowRateFiniteLengthMultiplicity rho eta n)
   have hrank : (lowRateFiniteLengthRankCount rho eta n : ℝ) ≤
@@ -447,24 +447,24 @@ example :
     simpa only [lowRateFiniteLengthRankCount, lowRateFiniteLengthDerivativeCap,
       lowRateFiniteLengthRankRoundingConstant] using hrank0
   have hgap := lowRateFiniteLength_count_gap
-    (rho := rho) (eta := eta) (n := n) hrho hlow heta haOne hn
+    (rho := rho) (eta := eta) (n := n) hlow heta haOne hn
   have hslack := lowRateFiniteLengthSlack_lt_one
-    (rho := rho) (eta := eta) (n := n) hrho hlow haOne hn
+    (rho := rho) (eta := eta) (n := n) hlow haOne hn
   have hcap := lowRateFiniteLengthDerivativeCap_le_jetDegree
-    (rho := rho) (eta := eta) (n := n) hrho heta haOne hn
+    (rho := rho) (eta := eta) (n := n) heta haOne hn
   have hparameters := lowRateFiniteLength_parameter_bounds
     (rho := rho) (eta := eta) (n := n) hlow heta haOne hn
-  refine ⟨lowRateFiniteLengthSlope_pos hrho hlow, ?_, ?_, ?_, ?_, hslack, hcap,
+  refine ⟨lowRateFiniteLengthSlope_pos hrho, ?_, ?_, ?_, ?_, hslack, hcap,
     ?_, ?_, ?_, ?_, ?_⟩
   · exact hslope
   · exact hsource
   · exact hrank
   · exact hgap
   · exact lowRateFiniteLengthMultiplicity_le_inv_slack hrho hlow heta haOne hn
-  · exact lowRateFiniteLengthDerivativeCap_le_inv_slack hrho hlow heta haOne hn
+  · exact lowRateFiniteLengthDerivativeCap_le_inv_slack hlow heta haOne hn
   · exact lowRateFiniteLengthJetDegree_le_inv_slack hrho hlow heta haOne hn
   · exact lowRateFiniteLengthChallengeHeight_le_inv_slack_sq
-      hrho hlow heta haOne hn
+      hlow heta haOne hn
   · exact hparameters.1
 
 /-- At length `4`, dimension `2` and agreement `4 ≥ 2 + (6/25) 4`, the complete list has at most
@@ -474,4 +474,4 @@ example (received : Fin 4 → ℚ) :
       (∀ P, P ∈ list ↔ P ∈ closePolynomialSet rationalEvaluationDomain received 2 4) ∧
       list.card ≤ 307 * 4 :=
   exists_uniformFirstOrder_list 4 2 4 rationalEvaluationDomain received (by norm_num)
-    (by norm_num) le_rfl (by norm_num) fun _ ↦ Or.inl ringChar.eq_zero
+    (by norm_num) fun _ ↦ Or.inl ringChar.eq_zero
