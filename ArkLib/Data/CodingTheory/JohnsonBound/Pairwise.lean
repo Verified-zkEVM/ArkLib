@@ -20,7 +20,7 @@ with a received word in at least `A` coordinates, then the family has cardinalit
 
 `⌊n(A - D) / (A² - nD)⌋`,
 
-provided `D ≤ A` and `nD < A²`. The relative-radius statements use radius `1 - A / n` and handle
+provided `nD < A²`. The relative-radius statements use radius `1 - A / n` and handle
 the formally possible case `A > n` by observing that the corresponding Hamming ball is empty.
 -/
 
@@ -43,12 +43,18 @@ coordinates. -/
 theorem finset_card_le_pairwiseJohnson
     {ι alphabet : Type*} [Fintype ι] [DecidableEq alphabet]
     (C : Set (ι → alphabet)) (received : ι → alphabet) (D A : ℕ)
-    (hDA : D ≤ A) (hpositive : Fintype.card ι * D < A * A)
+    (hpositive : Fintype.card ι * D < A * A)
     (hpair : ∀ c ∈ C, ∀ c' ∈ C, c ≠ c' → agree c c' ≤ D)
     (T : Finset (ι → alphabet))
     (hT : ∀ c ∈ T, c ∈ C ∧ A ≤ agree c received) :
     T.card ≤ pairwiseJohnsonListBound (Fintype.card ι) D A := by
   classical
+  rcases T.eq_empty_or_nonempty with rfl | ⟨c, hc⟩
+  · simp
+  have hAn : A ≤ Fintype.card ι :=
+    (hT c hc).2.trans (by simpa [agree] using
+      Finset.card_filter_le (Finset.univ : Finset ι) (fun i => c i = received i))
+  have hDA : D ≤ A := by nlinarith
   let S : (ι → alphabet) → Finset ι := fun c => Finset.univ.filter fun i => c i = received i
   have hclose : ∀ c ∈ T, A ≤ (S c).card := by
     intro c hc
@@ -74,17 +80,17 @@ This formulation does not require a finite alphabet or a finite ambient code. -/
 theorem agreementSet_finite_and_ncard_le_pairwiseJohnson
     {ι alphabet : Type*} [Fintype ι] [DecidableEq alphabet]
     (C : Set (ι → alphabet)) (received : ι → alphabet) (D A : ℕ)
-    (hDA : D ≤ A) (hpositive : Fintype.card ι * D < A * A)
+    (hpositive : Fintype.card ι * D < A * A)
     (hpair : ∀ c ∈ C, ∀ c' ∈ C, c ≠ c' → agree c c' ≤ D) :
     {c | c ∈ C ∧ A ≤ agree c received}.Finite ∧
       {c | c ∈ C ∧ A ≤ agree c received}.ncard ≤
         pairwiseJohnsonListBound (Fintype.card ι) D A := by
   let L : Set (ι → alphabet) := {c | c ∈ C ∧ A ≤ agree c received}
   have hfinite : L.Finite := Set.finite_of_forall_finset_card_le (R := ℕ) fun T hsub =>
-    finset_card_le_pairwiseJohnson C received D A hDA hpositive hpair T fun c hc => hsub hc
+    finset_card_le_pairwiseJohnson C received D A hpositive hpair T fun c hc => hsub hc
   refine ⟨hfinite, ?_⟩
   rw [Set.ncard_eq_toFinset_card _ hfinite]
-  exact finset_card_le_pairwiseJohnson C received D A hDA hpositive hpair hfinite.toFinset
+  exact finset_card_le_pairwiseJohnson C received D A hpositive hpair hfinite.toFinset
     fun c hc => hfinite.mem_toFinset.mp hc
 
 /-- The exact integral pairwise Johnson bound controls `Code.Lambda` at relative radius
@@ -92,13 +98,13 @@ theorem agreementSet_finite_and_ncard_le_pairwiseJohnson
 theorem Lambda_le_pairwiseJohnson
     {ι alphabet : Type*} [Fintype ι] [Nonempty ι] [DecidableEq alphabet]
     (C : Set (ι → alphabet)) (D A : ℕ)
-    (hDA : D ≤ A) (hpositive : Fintype.card ι * D < A * A)
+    (hpositive : Fintype.card ι * D < A * A)
     (hpair : ∀ c ∈ C, ∀ c' ∈ C, c ≠ c' → agree c c' ≤ D) :
     Lambda C (1 - (A : ℝ) / Fintype.card ι) ≤
       (pairwiseJohnsonListBound (Fintype.card ι) D A : ℕ∞) := by
   apply Lambda_le_of_forall_finset_card_le
   intro received T hT
-  apply finset_card_le_pairwiseJohnson C received D A hDA hpositive hpair T
+  apply finset_card_le_pairwiseJohnson C received D A hpositive hpair T
   intro c hc
   have hmem := (mem_closeCodewordsRel_iff.mp (hT c hc))
   refine ⟨hmem.1, ?_⟩
@@ -121,11 +127,11 @@ integral pairwise Johnson bound. -/
 theorem isListDecodable_pairwiseJohnson
     {ι alphabet : Type*} [Fintype ι] [Nonempty ι] [DecidableEq alphabet]
     (C : Set (ι → alphabet)) (D A : ℕ)
-    (hDA : D ≤ A) (hpositive : Fintype.card ι * D < A * A)
+    (hpositive : Fintype.card ι * D < A * A)
     (hpair : ∀ c ∈ C, ∀ c' ∈ C, c ≠ c' → agree c c' ≤ D) :
     IsListDecodable C (1 - (A : ℝ) / Fintype.card ι)
       ((pairwiseJohnsonListBound (Fintype.card ι) D A : ℕ) : NNReal) := by
   rw [isListDecodable_natCast_iff]
-  exact Lambda_le_pairwiseJohnson C D A hDA hpositive hpair
+  exact Lambda_le_pairwiseJohnson C D A hpositive hpair
 
 end Code

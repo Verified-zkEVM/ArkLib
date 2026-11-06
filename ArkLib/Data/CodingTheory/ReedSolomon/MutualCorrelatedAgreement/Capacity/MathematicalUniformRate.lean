@@ -73,7 +73,7 @@ theorem exists_mathematicalUniformRatePartition_curve_exactPowerAgreement
           (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
         HasExactPowerAgreement domain values iota k z P := by
   classical
-  obtain ⟨e⟩ := exists_mathematicalRatePartitionEnvelope hδ hδsmall hn hk hgap hAn
+  obtain ⟨e⟩ := exists_mathematicalRatePartitionEnvelope hδ hδsmall hn hgap hAn
   obtain ⟨hd, hδone, hscale, hν, -⟩ := uniformMathematical_certificate_guards hδ hδsmall
   obtain ⟨cert⟩ := e.exists_curve_certificate (scale := 300) hd hscale hAn
     domain (fun i ↦ powerBatchedCoordinate fun t ↦ values t i)

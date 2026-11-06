@@ -689,16 +689,6 @@ theorem mds_johnson_lambda_le_of_rate_distance
         -- `Jqℓ q ℓ δ = J q (lFac·δ)` by definition (`Jqℓ_eq_J`).
         rw [Jqℓ_eq_J]
         set δJ : ℚ := (((ℓ:ℚ)-1)/ℓ) * δ_minQ with hδJ_def
-        have hδJ_nonneg : (0:ℚ) ≤ δJ := by
-          exact mul_nonneg (div_nonneg (by linarith only [hℓQ2]) (by linarith only [hℓQ2]))
-            (div_nonneg (Nat.cast_nonneg _) (Nat.cast_nonneg _))
-        have hδJ_le1 : δJ ≤ 1 := by
-          -- δJ = lFac·δ_minQ ≤ radicand (since frac ≥ 1) ≤ 1
-          have hfrac_ge1 : (1:ℚ) ≤ q/(q-1) :=
-            (one_le_div (by linarith only [hqR2])).2 (by linarith only)
-          calc δJ ≤ (q/(q-1)) * δJ := le_mul_of_one_le_left hδJ_nonneg hfrac_ge1
-            _ = (q / (q - 1)) * (((ℓ:ℚ) - 1) / ℓ) * δ_minQ := by rw [hδJ_def]; ring
-            _ ≤ 1 := hradicand
         have hguardJ : q/(q-1) * δJ ≤ 1 := by
           rw [hδJ_def]
           calc q/(q-1) * ((((ℓ:ℚ)-1)/ℓ) * δ_minQ)
@@ -707,7 +697,7 @@ theorem mds_johnson_lambda_le_of_rate_distance
         -- `sqrt_le_J : Jcap δ ≤ J q δ`, i.e. `1 - √(1 - δ) ≤ J q δ` (`Jcap` is that expression).
         have hsj : 1 - √(1 - (δJ : ℝ)) ≤ JohnsonBound.J q δJ :=
           JohnsonBound.sqrt_le_J (q := q) (δ := δJ)
-            (by exact_mod_cast (by linarith only [hqR2] : (1:ℚ) < q)) hδJ_nonneg hδJ_le1 hguardJ
+            (by exact_mod_cast (by linarith only [hqR2] : (1:ℚ) < q)) hguardJ
         -- suffices 1-√ρ-η ≤ 1-√(1-δJ)
         refine le_trans ?_ hsj
         -- √(1-δJ) ≤ √ρ + η

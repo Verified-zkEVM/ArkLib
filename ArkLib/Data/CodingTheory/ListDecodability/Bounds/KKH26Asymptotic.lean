@@ -58,9 +58,9 @@ namespace CodingTheory.AdditiveSetListDecoding
 
 /-! ## Counting helpers (not in mathlib) -/
 
-/-- The classical binomial lower bound `(s/t)^t ≤ C(s,t)` for `1 ≤ t ≤ s`, proved by
+/-- The classical binomial lower bound `(s/t)^t ≤ C(s,t)` for `t ≤ s`, proved by
 comparing the factors in `C(s,t) = ∏_{i<t} (s-i)/(t-i)`. -/
-theorem choose_ge_div_pow (s t : ℕ) (ht : 1 ≤ t) (hts : t ≤ s) :
+theorem choose_ge_div_pow (s t : ℕ) (hts : t ≤ s) :
     ((s : ℝ) / t) ^ t ≤ (s.choose t : ℝ) := by
   have hnat : ∏ i ∈ range t, (t - i) = t.factorial := by
     rw [Nat.factorial_eq_prod_range_add_one, ← Finset.prod_range_reflect (fun i => i + 1) t]
@@ -85,20 +85,19 @@ theorem choose_ge_div_pow (s t : ℕ) (ht : 1 ≤ t) (hts : t ≤ s) :
     rw [Nat.cast_sub hi.le, Nat.cast_sub his.le]
     have hti : (i : ℝ) < t := by exact_mod_cast hi
     have hts' : (t : ℝ) ≤ s := by exact_mod_cast hts
-    have ht0 : (0 : ℝ) < t := by exact_mod_cast ht
+    have ht0 : (0 : ℝ) < t := lt_of_le_of_lt (Nat.cast_nonneg i) hti
     rw [div_le_div_iff₀ ht0 (by linarith)]
     nlinarith [Nat.cast_nonneg (α := ℝ) i, hts']
 
 /-- Analytic core: `(2^K)^{cp} ≤ (2^b / khat)^{khat}` when `khat ≈ ρ·2^b` and
 `cp·K·log 2 ≤ ρ·log(1/ρ)·2^b - 2`. -/
-theorem core_ineq (ρ : ℝ) (hρ0 : 0 < ρ) (_hρ1 : ρ < 1) (cp : ℕ) (_hcp : 1 ≤ cp)
-    (b K khat : ℕ) (hkhat1 : 1 ≤ khat)
+theorem core_ineq (ρ : ℝ) (hρ0 : 0 < ρ) (cp : ℕ) (b K khat : ℕ)
     (hkhat_lo : ρ * 2 ^ b < (khat : ℝ)) (hkhat_hi : (khat : ℝ) ≤ ρ * 2 ^ b + 2)
     (hkhat_lt : (khat : ℝ) < 2 ^ b) (hbig : (2 : ℝ) ≤ (1 - ρ) * 2 ^ b)
     (hK : (cp : ℝ) * K * Real.log 2 ≤ ρ * Real.log (1 / ρ) * 2 ^ b - 2) :
     (((2 : ℝ) ^ K) ^ cp) ≤ ((2 ^ b : ℝ) / khat) ^ khat := by
   have h2b : (0 : ℝ) < 2 ^ b := by positivity
-  have hkhatR : (0 : ℝ) < khat := by exact_mod_cast hkhat1
+  have hkhatR : (0 : ℝ) < khat := lt_trans (mul_pos hρ0 h2b) hkhat_lo
   have hbase : (1 : ℝ) < (2 ^ b : ℝ) / khat := by rw [lt_div_iff₀ hkhatR]; linarith
   have hrhs_pos : (0 : ℝ) < ((2 ^ b : ℝ) / khat) ^ khat := by positivity
   have hlhs_pos : (0 : ℝ) < (((2 : ℝ) ^ K) ^ cp) := by positivity
@@ -273,9 +272,9 @@ theorem exists_asymptotic_params (ρ : ℝ) (hρ0 : 0 < ρ) (hρ1 : ρ < 1) (c :
     have hP3 : (4 : ℝ) ≤ A₀ * 2 ^ b := P3
     have hAe : A₀ = ρ * Real.log (1 / ρ) := hA0def
     rw [hAe] at h1 hP3; linarith [h1, hP3]
-  have hcore := core_ineq ρ hρ0 hρ1 cp hcp1 b (a + b) khat hq1 hRlo (le_of_lt hRhi) hF2 hbig hK
+  have hcore := core_ineq ρ hρ0 cp b (a + b) khat hRlo (le_of_lt hRhi) hF2 hbig hK
   have hchoose : (((2 : ℝ) ^ b) / khat) ^ khat ≤ (Nat.choose (2 ^ b) khat : ℝ) := by
-    have h := choose_ge_div_pow (2 ^ b) khat hq1 hF2n.le
+    have h := choose_ge_div_pow (2 ^ b) khat hF2n.le
     rwa [Nat.cast_pow, Nat.cast_ofNat] at h
   have hlist_cp : ((2 : ℝ) ^ (a + b)) ^ cp ≤ (Nat.choose (2 ^ b) khat : ℝ) :=
     le_trans hcore hchoose

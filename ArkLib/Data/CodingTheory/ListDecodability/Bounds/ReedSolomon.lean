@@ -407,7 +407,11 @@ theorem rs_lambda_large_prime
   let cnt : (ι → F) → ℕ := fun w => (closeCodewordsRel ((C : Set (ι → F))) w δ).ncard
   have hsum : ∑ w : ι → F, cnt w = p ^ k * hammingBallVolume p δ p := by
     dsimp [cnt]
-    rw [sum_ncard_closeCodewordsRel_eq C δ hδ, hcardC, hFp, hιp]
+    convert sum_ncard_closeCodewordsRel_eq C δ hδ using 1
+    · congr 1
+      ext w
+      simp
+    · rw [hcardC, hFp, hιp]
   have hcardwords : Fintype.card (ι → F) = p ^ p := by
     rw [Fintype.card_fun, hFp, hιp]
   have hw : ∃ w : ι → F,

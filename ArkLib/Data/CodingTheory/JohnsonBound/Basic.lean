@@ -74,35 +74,40 @@ lemma division_by_conjugate {a b : ℝ} (hpos : 0 ≤ b) (hnonzero : a + √b �
   simp_all
 
 /-- The asymptotic Johnson bound is at most the `q`-ary one: `Jcap δ ≤ J q δ`. -/
-lemma sqrt_le_J {q δ : ℚ} (hq : q > 1) (hx0 : 0 ≤ δ) (hx1 : δ ≤ 1)
+lemma sqrt_le_J {q δ : ℚ} (hq : q > 1)
     (hqx : q / (q - 1) * δ ≤ 1) :
     Jcap δ ≤ J q δ := by
   unfold Jcap J
   set frac := q / (q - 1) with hfrac
   have hfrac_ge : frac ≥ 1 := by
     rw [hfrac, ge_iff_le, one_le_div] <;> grind
-  have hx' : 1 - δ ≥ 0 := by grind only
   have hfracx' : 1 - frac * δ ≥ 0 := by grind only
+  have hx' : 1 - δ ≥ 0 := by
+    by_cases hδ : 0 ≤ δ
+    · nlinarith
+    · linarith
   suffices 1 - √(1 - δ) ≤ (1 / frac) * (1 - √(1 - frac * δ)) by grind only
   field_simp
   norm_cast
-  by_cases hδ : δ = 0
-  · simp [hδ]
-  · have hδ_pos : (0 : ℚ) < δ := lt_of_le_of_ne hx0 (Ne.symm hδ)
-    have hfracx'2 : 1 - δ * frac ≥ 0 := by linarith [mul_comm frac δ]
-    rw [division_by_conjugate (b := ↑(1 - δ)) (by exact_mod_cast hx') (by positivity)]
-    rw [division_by_conjugate (b := ↑(1 - δ * frac))
-        (by exact_mod_cast hfracx'2) (by positivity)]
-    simp only [one_pow]
-    push_cast
-    rw [show (1 : ℝ) - (1 - (δ : ℝ)) = δ from by ring,
-        show (1 : ℝ) - (1 - (δ : ℝ) * (frac : ℝ)) = δ * frac from by ring,
-        div_mul_eq_mul_div]
-    have hsqrt_le : √(1 - ↑δ * ↑frac) ≤ √(1 - ↑δ) := by
-      apply sqrt_le_sqrt
-      nlinarith [show (1 : ℝ) ≤ ↑frac from by exact_mod_cast hfrac_ge,
-                 show (0 : ℝ) ≤ ↑δ from by exact_mod_cast hx0]
+  have hfracx'2 : 1 - δ * frac ≥ 0 := by linarith [mul_comm frac δ]
+  rw [division_by_conjugate (b := ↑(1 - δ)) (by exact_mod_cast hx') (by positivity)]
+  rw [division_by_conjugate (b := ↑(1 - δ * frac))
+      (by exact_mod_cast hfracx'2) (by positivity)]
+  simp only [one_pow]
+  push_cast
+  rw [show (1 : ℝ) - (1 - (δ : ℝ)) = δ from by ring,
+      show (1 : ℝ) - (1 - (δ : ℝ) * (frac : ℝ)) = δ * frac from by ring,
+      div_mul_eq_mul_div]
+  have hfrac_geR : (1 : ℝ) ≤ frac := by exact_mod_cast hfrac_ge
+  by_cases hδ : 0 ≤ (δ : ℝ)
+  · have hsqrt_le : √(1 - ↑δ * ↑frac) ≤ √(1 - ↑δ) :=
+      sqrt_le_sqrt (by nlinarith)
     exact div_le_div_of_nonneg_left (by positivity) (by positivity) (by linarith)
+  · have hsqrt_le : √(1 - ↑δ) ≤ √(1 - ↑δ * ↑frac) :=
+      sqrt_le_sqrt (by nlinarith)
+    apply (div_le_div_iff₀ (by positivity) (by positivity)).2
+    exact mul_le_mul_of_nonpos_left (by linarith)
+      (mul_nonpos_of_nonpos_of_nonneg (by linarith) (by linarith))
 
 /-- The `q`-ary Johnson bound condition (weak form via `J`). -/
 def JohnsonConditionWeak (B : Finset (Fin n → F)) (e : ℕ) : Prop :=
@@ -133,14 +138,17 @@ private lemma weak_to_strong_aux {q e e1 D d : ℚ} (hf : 0 < q / (q - 1)) (he1 
 lemma johnson_condition_weak_implies_strong
     {B : Finset (Fin n → F)} {v : Fin n → F} {e : ℕ}
     (h_J_cond_weak : JohnsonConditionWeak B e)
-    (h_B2_not_one : 1 < (B ∩ ({ x | Δ₀(x, v) ≤ e } : Finset _)).card)
-    (h_F_nontriv : 2 ≤ card F) :
+    (h_B2_not_one : 1 < (B ∩ ({ x | Δ₀(x, v) ≤ e } : Finset _)).card) :
     JohnsonConditionStrong (B ∩ ({ x | Δ₀(x, v) ≤ e } : Finset _)) v := by
   unfold JohnsonConditionStrong
   intro e_1 d q frac
   simp only [mul_div_assoc]
   by_cases h_pos : (0 : ℚ) ≤ 1 - frac * (d / n)
-  · have hq2 : (2 : ℚ) ≤ q := show (2 : ℚ) ≤ (card F : ℚ) by exact_mod_cast h_F_nontriv
+  · have hF2 : 2 ≤ card F := by
+      obtain ⟨u, _, w, _, huw⟩ := one_lt_card.mp h_B2_not_one
+      obtain ⟨i, hi⟩ := Function.ne_iff.mp huw
+      exact Fintype.one_lt_card_iff.mpr ⟨u i, w i, hi⟩
+    have hq2 : (2 : ℚ) ≤ q := show (2 : ℚ) ≤ (card F : ℚ) by exact_mod_cast hF2
     have hn : (0 : ℚ) ≤ n := n.cast_nonneg
     have he : e_1 ≤ e := by
       have := e_ball_le_radius (B := B) v (e : ℚ) (by simp only [Nat.cast_le]; omega)
@@ -321,17 +329,12 @@ theorem johnson_bound_alphabet_free
                     _ = ((1 - (d : ℝ) / n) : ℝ).sqrt := by congr 1; field_simp [hn']
         have h_J_bound : 1 - ((1 - (d : ℚ) / n) : ℝ).sqrt ≤ J q (d / n) := by
           simpa [Jcap] using sqrt_le_J (one_lt_two.trans_le q_not_small)
-            (div_nonneg (by exact_mod_cast Nat.cast_nonneg d) (by exact_mod_cast Nat.cast_nonneg n))
-            (by rcases eq_or_ne n 0 with rfl | hn
-                · simp
-                · exact (div_le_one (by exact_mod_cast Nat.pos_of_ne_zero hn)).2
-                    (by exact_mod_cast d_le_n))
             (le_of_not_gt h_d_close_n)
         exact johnson_condition_weak_implies_strong
           (lt_of_le_of_ne (h_muln.trans h_J_bound) (johnson_e_div_ne_J hn_pos_nat
             (Nat.succ_le_iff.1 d_not_small) (one_lt_two.trans_le q_not_small) h_muln h_J_bound
             (le_of_not_gt h_d_close_n)))
-          (show 1 < B'.card by omega) hF2
+          (show 1 < B'.card by omega)
       -- Core inequality from the hypothesis.
       have h_div'_q : (1 - (d / n : ℚ)) ≤ (1 - (e / n : ℚ)) ^ 2 := by
         have : ((1 - (d / n : ℚ)) : ℝ) ≤ ((1 - (e / n : ℚ)) ^ 2 : ℝ) := by

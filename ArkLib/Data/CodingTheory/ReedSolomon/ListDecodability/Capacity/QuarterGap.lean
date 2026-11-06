@@ -173,7 +173,6 @@ theorem agreeingPolynomials_encard_lt_blockLength_of_quarter
   have hn : 0 < n := lt_of_lt_of_le hMessageDim hMessageDimLe
   have hNonempty : Nonempty ι := Fintype.card_pos_iff.mp hn
   have hA : messageDim ≤ A := by simp [A, capacityAgreementThreshold]
-  have hDA : D ≤ A := (Nat.sub_le _ _).trans hA
   have hThreshold := capacityAgreementThreshold_quarter_gap hdelta n messageDim
   have hArithmetic := pairwiseJohnsonListBound_quarter_gap_arithmetic
     hn hMessageDim hMessageDimLe hA hThreshold
@@ -183,7 +182,7 @@ theorem agreeingPolynomials_encard_lt_blockLength_of_quarter
   have hList := agreeingPolynomials_encard_le_Lambda (minAgreement := A)
     domain hMessageDimLe received
   have hJohnson := @Code.Lambda_le_pairwiseJohnson ι F inferInstance hNonempty inferInstance
-    C D A hDA hArithmetic.1 hpair
+    C D A hArithmetic.1 hpair
   have hListJohnson := by simpa only [n, D, A, C] using hList.trans hJohnson
   have hJohnsonStrict :
       (Code.pairwiseJohnsonListBound (Fintype.card ι) (messageDim - 1)

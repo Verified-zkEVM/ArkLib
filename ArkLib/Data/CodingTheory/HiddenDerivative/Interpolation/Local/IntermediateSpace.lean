@@ -128,7 +128,7 @@ private theorem intermediate_set_eq (hd : 0 < d) (m M W : ℕ) :
     Equiv.sigmaEquivProd_symm_apply, mem_sigma, mem_range, mem_product,
     localExponentCoordinatesEquiv_apply,
     mem_natWeightedSimplex (fun i : Fin (d - 1) => Nat.add_one_ne_zero i.val)]
-  rw [LocalIntermediateExponent, weight_localFirstJetWeight hd, weight_localHigherJetWeight hd]
+  rw [LocalIntermediateExponent, weight_localFirstJetWeight hd, weight_localHigherJetWeight]
   omega
 
 /-- The exponent tuples of a bounded kernel slice, in the coordinates of
@@ -145,7 +145,7 @@ private theorem kernelSlice_set_eq (hd : 0 < d) (r M W h : ℕ) :
   simp only [Set.mem_ofPred_eq, Set.mem_preimage, mem_coe, kernelSliceTuples, mem_product,
     mem_singleton, mem_range, localExponentCoordinatesEquiv_apply,
     mem_natWeightedSimplex (fun i : Fin (d - 1) => Nat.add_one_ne_zero i.val)]
-  rw [KernelSliceSourceExponent, weight_localFirstJetWeight hd, weight_localHigherJetWeight hd]
+  rw [KernelSliceSourceExponent, weight_localFirstJetWeight hd, weight_localHigherJetWeight]
   omega
 
 /-- The intermediate space is finite-dimensional for every derivative order. -/

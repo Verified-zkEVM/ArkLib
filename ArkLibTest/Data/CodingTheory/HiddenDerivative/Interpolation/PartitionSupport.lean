@@ -426,7 +426,7 @@ example : Nonempty (SymbolicReceivedCurve.Certificate
   have he : Nonempty (RatePartitionEnvelope δ m n k A) := by
     simpa [m, uniformMathematicalMultiplicity] using
       (exists_mathematicalRatePartitionEnvelope (δ := δ) hδ hδsmall hlength
-        (by dsimp [k]; omega) (by dsimp [δ, k, n, A]; norm_num; nlinarith)
+        (by dsimp [δ, k, n, A]; norm_num; nlinarith)
         (by dsimp [A, n]; omega))
   obtain ⟨e⟩ := he
   have hd : 519 ≤ uniformDerivativeOrder δ := uniformDerivativeOrder_ge_519 hδ hδsmall

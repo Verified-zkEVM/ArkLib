@@ -50,7 +50,7 @@ The integral counting theorem used here has no corresponding nonemptiness requir
 theorem code_isListDecodable_pairwiseJohnson
     {F : Type*} [Field F] {n D A : ℕ}
     (domain : Fin n ↪ F) (hn : 0 < n)
-    (hDA : D + 1 ≤ A) (hpositive : n * D < A * A) :
+    (hpositive : n * D < A * A) :
     Code.IsListDecodable ((code domain (D + 1) : Submodule F (Fin n → F)) : Set (Fin n → F))
       (1 - (A : ℝ) / n) (Code.pairwiseJohnsonListBound n D A : NNReal) := by
   classical
@@ -62,7 +62,7 @@ theorem code_isListDecodable_pairwiseJohnson
       (show c ∈ code domain (D + 1) from hc)
       (show c' ∈ code domain (D + 1) from hc') hne
     omega
-  have hgeneric := Code.isListDecodable_pairwiseJohnson C D A (by omega)
+  have hgeneric := Code.isListDecodable_pairwiseJohnson C D A
     (by simpa using hpositive) hpair
   simpa only [C, Fintype.card_fin] using hgeneric
 
@@ -112,7 +112,7 @@ theorem closePolynomialSet_finite_and_ncard_le_pairwiseJohnson
         rcases Finset.mem_image.mp hc with ⟨P, hP, rfl⟩
         refine ⟨evalOnPoints_mem_code_of_degree_lt (hT P hP).1, ?_⟩
         simpa only [card_polynomialAgreementSet] using (hT P hP).2
-      have hgeneric := Code.finset_card_le_pairwiseJohnson C received D A (by omega)
+      have hgeneric := Code.finset_card_le_pairwiseJohnson C received D A
         (by simpa using hpositive) hpair U hU
       simpa only [Fintype.card_fin] using hgeneric
     · have hempty : T = ∅ := by

@@ -57,9 +57,9 @@ theorem uniformRatePartition_close_list_bound {F : Type*} [Field F]
         (uniformJetCap δ : ℝ) ^ 2 *
           (2 * uniformJetCap δ / δ) ^ uniformDerivativeOrder δ *
           n ^ uniformDerivativeOrder δ := by
-  obtain ⟨e⟩ := exists_uniformRatePartitionEnvelope hδ hδsmall hn hk hgap hAn
+  obtain ⟨e⟩ := exists_uniformRatePartitionEnvelope hδ hδsmall hn hgap hAn
   obtain ⟨hd, hδone, hν, _hνn, hscale, hkA, hchar'⟩ :=
-    uniformEnvelope_exactAgreementGuards e hδ hδsmall hn hgap hchar
+    uniformEnvelope_exactAgreementGuards e hδ hδsmall hn hchar
   obtain ⟨cert⟩ := e.exists_curve_certificate hd hscale hAn
     domain (fun i ↦ Polynomial.C (received i)) (fun _ ↦ by simp)
   exact close_list_bound_of_curve_certificate_of_jetCharacteristic

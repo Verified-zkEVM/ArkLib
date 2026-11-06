@@ -66,7 +66,7 @@ theorem mathematicalUniformRatePartition_close_list_bound {F : Type u} [Field F]
           (2 * uniformMathematicalJetBound δ / δ) ^ uniformDerivativeOrder δ *
           n ^ uniformDerivativeOrder δ := by
   classical
-  obtain ⟨e⟩ := exists_mathematicalRatePartitionEnvelope hδ hδsmall hn hk hgap hAn
+  obtain ⟨e⟩ := exists_mathematicalRatePartitionEnvelope hδ hδsmall hn hgap hAn
   obtain ⟨hd, hδone, hscale, hν, -⟩ := uniformMathematical_certificate_guards hδ hδsmall
   obtain ⟨cert⟩ := e.exists_curve_certificate (scale := 300) hd hscale hAn
     domain (fun i ↦ Polynomial.C (received i)) (fun _ ↦ by simp)

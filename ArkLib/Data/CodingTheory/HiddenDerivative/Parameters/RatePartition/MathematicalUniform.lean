@@ -216,7 +216,7 @@ theorem uniformMathematical_high_ratio_gt {R δ : ℝ}
 /-- Choose a scale-300 mathematical envelope uniformly in the actual code rate. -/
 theorem exists_mathematicalRatePartitionEnvelope {δ : ℝ} {n k A : ℕ}
     (hδ : 0 < δ) (hδsmall : δ < 6 / 25)
-    (hn : uniformMathematicalLength δ ≤ n) (hk : 0 < k)
+    (hn : uniformMathematicalLength δ ≤ n)
     (hgap : (k : ℝ) + δ * n ≤ A) (hAn : A ≤ n) :
     Nonempty (RatePartitionEnvelope δ (uniformMathematicalMultiplicity δ) n k A) := by
   have hδone : δ < 1 := by linarith
@@ -230,7 +230,7 @@ theorem exists_mathematicalRatePartitionEnvelope {δ : ℝ} {n k A : ℕ}
         (uniformDerivativeOrder δ) (uniformMathematicalMultiplicity δ) := by
     intro R hRlow hRtop
     exact uniformMathematical_high_ratio_gt hδ hδsmall hRlow hRtop
-  exact exists_ratePartitionEnvelope hδ hδsmall hk hgap hAn hmorder hsize
+  exact exists_ratePartitionEnvelope hδ hδsmall hgap hAn hmorder hsize
     (uniformMathematical_low_ratio_gt hδ hδsmall) hhigh
 
 /-- The capacity length threshold: the mathematical length, and at least `4 ν / δ²` for the jet
