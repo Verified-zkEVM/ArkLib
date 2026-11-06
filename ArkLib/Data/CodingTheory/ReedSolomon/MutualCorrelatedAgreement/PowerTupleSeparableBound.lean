@@ -45,7 +45,7 @@ variable {F E : Type*} [Field F] [Field E] {n k K ℓ : ℕ}
 open Classical in
 /-- Given roots with `roots i ^ (p ^ e) = ι (domain i)`, suppose `Q` has coefficient height at
 most `h`, jet degree at most `b`, root degree `b`, is irreducible, and has nonzero root
-derivative. If `K ≤ p ^ e * k`, `TaylorExponentSufficient 0 K τ`, `0 < τ, ℓ, b`, and
+derivative. If `K ≤ p ^ e * k`, `TaylorExponentSufficient 0 K τ`, `0 < τ`, and
 `k ≤ L ≤ A`, then outside one set of size at most
 `(h * (1 + τ * (b - 1)) + b * (p ^ e * ℓ + τ * h)) * ((n - L + 1) / (A - L + 1)) +
   ℓ * (n - L) * b + (2 * b - 1) * h`, every expanded degree-`< K` solution of the challenge
@@ -57,7 +57,7 @@ theorem exists_exceptional_frobeniusPowerSeparableSolutions_at [IsAlgClosed E]
     (p e τ h b A : ℕ) [ExpChar E p]
     (hroots : ∀ i, roots i ^ (p ^ e) = ι (domain i))
     (hK : 0 < K) (hKk : K ≤ p ^ e * k) (hτ : TaylorExponentSufficient 0 K τ)
-    (hτpos : 0 < τ) (hℓ : 0 < ℓ) (hb : 0 < b)
+    (hτpos : 0 < τ)
     (hkL : k ≤ L) (hLA : L ≤ A)
     (hheight : CoeffNatDegreeLE Q h) (hjet : jetTotalDegree Q ≤ b)
     (hirr : Irreducible Q) (hder : pderiv (some 0) Q ≠ 0)
@@ -76,11 +76,12 @@ theorem exists_exceptional_frobeniusPowerSeparableSolutions_at [IsAlgClosed E]
   classical
   obtain ⟨regularEx, hregularCard, hregular⟩ :=
     exists_exceptional_frobeniusPowerRegularSolutions_at
-      domain values ι roots Q p e τ h b A hroots hK hKk hτ hτpos hℓ hb
+      domain values ι roots Q p e τ h b A hroots hK hKk hτ hτpos
         hkL hLA hheight hjet
   obtain ⟨singularEx, hsingularCard, hsingular⟩ :=
     exists_exceptional_ordinary_separant hirr
-      (by simpa only [hdegree] using hb) hder hheight
+      (Nat.pos_of_ne_zero fun hzero ↦ hder
+        (MvPolynomial.pderiv_eq_zero_of_degreeOf_eq_zero hzero)) hder hheight
   refine ⟨regularEx ∪ singularEx, ?_, ?_⟩
   · have hcard : ((regularEx ∪ singularEx).card : ℚ) ≤
         regularEx.card + singularEx.card := by
@@ -96,7 +97,7 @@ theorem exists_exceptional_frobeniusPowerSeparableSolutions_at [IsAlgClosed E]
 
 open Classical in
 /-- Suppose `Q` has coefficient height at most `h`, jet degree at most `b` and root degree `b`, is
-irreducible, and has nonzero root derivative. For `0 < D, ell, b` and `D < L ≤ A`, every
+irreducible, and has nonzero root derivative. For `0 < D` and `D < L ≤ A`, every
 degree-`< D + 1` polynomial `P` whose Frobenius expansion solves the specialization of `Q` at `w`
 and which has at least `A` agreements with the power-batched word at `w ^ p ^ e` has exact power
 agreement, unless `w ^ p ^ e` lies in one set of size at most
@@ -104,7 +105,7 @@ agreement, unless `w ^ p ^ e` lies in one set of size at most
 theorem exists_exceptional_frobeniusPowerFactorSolutions_unifiedAt [IsAlgClosed E]
     (domain : Fin n ↪ F) (values : Fin (ℓ + 1) → Fin n → F) (ι : F →+* E)
     (Q : DifferentialPolynomial E[X] 0) (p e D h b L A : ℕ) [ExpChar E p]
-    (hD : 0 < D) (hℓ : 0 < ℓ) (hb : 0 < b) (hDL : D < L) (hLA : L ≤ A)
+    (hD : 0 < D) (hDL : D < L) (hLA : L ≤ A)
     (hheight : CoeffNatDegreeLE Q h) (hjet : jetTotalDegree Q ≤ b)
     (hirr : Irreducible Q) (hder : pderiv (some 0) Q ≠ 0)
     (hdegree : Q.degreeOf (some 0) = b) :
@@ -148,7 +149,7 @@ theorem exists_exceptional_frobeniusPowerFactorSolutions_unifiedAt [IsAlgClosed 
       (k := D + 1) (K := K) (L := L) domain values ι roots Q p e
       (2 * D * s - 1) h b A
       (by intro i; exact (iterateFrobeniusEquiv E p e).apply_symm_apply (ι (domain i)))
-      hK hKk hτ hτpos hℓ hb (by omega) hLA hheight hjet hirr hder hdegree
+      hK hKk hτ hτpos (by omega) hLA hheight hjet hirr hder hdegree
   have hcharge := ordinaryFrobeniusCurve_charge_le_unifiedAt theta n D ℓ h s b L htheta
     (by omega : 1 ≤ s)
   have hcard' : (ex.card : ℚ) ≤
@@ -186,13 +187,13 @@ theorem exists_exceptional_frobeniusPowerFactorSolutions_unifiedAt [IsAlgClosed 
 
 open Classical in
 /-- If `Q` has coefficient height at most `h`, jet degree and root degree `b`, is irreducible,
-and has nonzero root derivative. For `0 < D, ell, b` and `D + 1 ≤ A ≤ n`, every degree-`< D+1`
+and has nonzero root derivative. For `0 < D` and `D + 1 ≤ A`, every degree-`< D+1`
 solution with at least `A` agreements has exact power agreement outside a set of size at most
 `ordinaryCurveFactorRaw ((n - D) / (A - D)) n D ell (p ^ e * b) h`. -/
 theorem exists_exceptional_frobeniusPowerFactorSolutions [IsAlgClosed E]
     (domain : Fin n ↪ F) (values : Fin (ℓ + 1) → Fin n → F) (ι : F →+* E)
     (Q : DifferentialPolynomial E[X] 0) (p e D h b A : ℕ) [ExpChar E p]
-    (hD : 0 < D) (hℓ : 0 < ℓ) (hb : 0 < b) (hDA : D + 1 ≤ A) (hAn : A ≤ n)
+    (hD : 0 < D) (hDA : D + 1 ≤ A)
     (hheight : CoeffNatDegreeLE Q h) (hjet : jetTotalDegree Q ≤ b)
     (hirr : Irreducible Q) (hder : pderiv (some 0) Q ≠ 0)
     (hdegree : Q.degreeOf (some 0) = b) :
@@ -205,8 +206,21 @@ theorem exists_exceptional_frobeniusPowerFactorSolutions [IsAlgClosed E]
         A ≤ (polynomialAgreementSet (domain.trans ⟨ι, ι.injective⟩)
           (powerBatchedWord (fun t i ↦ ι (values t i)) (w ^ (p ^ e))) P).card →
         HasExactPowerAgreement domain values ι (D + 1) (w ^ (p ^ e)) P := by
+  by_cases hAn : A ≤ n
+  case neg =>
+    refine ⟨∅, ?_, ?_⟩
+    · simp only [Finset.card_empty, Nat.cast_zero]
+      unfold ordinaryCurveFactorRaw
+      positivity
+    · intro w hw P hdeg hsol hagree
+      have hcard : (polynomialAgreementSet (domain.trans ⟨ι, ι.injective⟩)
+          (powerBatchedWord (fun t i ↦ ι (values t i)) (w ^ (p ^ e))) P).card ≤ n := by
+        simpa using Finset.card_le_univ (polynomialAgreementSet
+          (domain.trans ⟨ι, ι.injective⟩)
+          (powerBatchedWord (fun t i ↦ ι (values t i)) (w ^ (p ^ e))) P)
+      omega
   obtain ⟨ex, hcard, hex⟩ := exists_exceptional_frobeniusPowerFactorSolutions_unifiedAt
-    domain values ι Q p e D h b (D + 1) A hD hℓ hb (by omega) hDA hheight hjet hirr hder hdegree
+    domain values ι Q p e D h b (D + 1) A hD (by omega) hDA hheight hjet hirr hder hdegree
   rw [ordinaryUnifiedPowerFactorAt_succ_eq n D ℓ _ h A hDA hAn] at hcard
   exact ⟨ex, hcard.trans (ordinaryUnifiedPowerFactorRaw_le_ordinaryCurveFactorRaw n ℓ _ h
     (by positivity) hD), hex⟩

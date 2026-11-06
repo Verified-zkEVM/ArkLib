@@ -37,9 +37,7 @@ when `ε = 1`, violating `Xor`.
 This proof depends on `correlatedAgreement_affine_spaces` (Theorem 1.6) in `AffineSpaces.lean`. -/
 theorem proximity_gap_RSCodes {k t : ℕ} [NeZero k] [NeZero t] {deg : ℕ} {domain : ι ↪ F}
     (hdeg : 0 < deg)
-    (hRS : deg + 1 ≤ Fintype.card ι)
     (C : Fin t → (Fin k → (ι → F))) {δ : ℝ≥0}
-    (_hδ_pos : 0 < δ)
     (hδ : δ < 1 - ReedSolomon.sqrtRate deg domain)
     (hε : errorBound δ deg domain < 1) :
     δ_ε_proximityGap
@@ -230,7 +228,7 @@ theorem proximity_gap_RSCodes {k t : ℕ} [NeZero k] [NeZero t] {deg : ℕ} {dom
       -- Apply Thm 1.7 at k := m + 1 to get jointAgreement (W := u').
       have hja_u' : jointAgreement (C := (ReedSolomon.code domain deg : Set (ι → F)))
           (δ := δ) (W := u') :=
-        correlatedAgreement_affine_spaces (k := m + 1) hdeg _hδ_pos hδ hRS hε u' hPr_aff
+        correlatedAgreement_affine_spaces (k := m + 1) hdeg hδ hε u' hPr_aff
       -- Convert jointAgreement (W := u') → jointAgreement (W := C i).
       -- Witnesses: v_0 for C i 0 stays, v_{j+1} + v_0 ∈ RS.code (submodule closure)
       -- agrees with C i (j+1) on S because v_{j+1} agrees with u'(j+1) = C i (j+1) - C i 0

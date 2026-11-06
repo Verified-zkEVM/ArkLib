@@ -197,7 +197,7 @@ lemma ps_degree_bounds_of_mul {F : Type} [Field F]
     (h_bx_ge_ax : b_x ≥ a_x) (h_by_ge_ay : b_y ≥ a_y)
     {A B P : F[X][Y]} (hA : A ≠ 0) (hBA : B = P * A)
     (h_f_degX : a_x ≥ degreeX A) (h_f_degY : a_y ≥ natDegreeY A)
-    (h_g_degY : b_y ≥ natDegreeY B) (P_x P_y : Finset F) [Nonempty P_x] [Nonempty P_y]
+    (h_g_degY : b_y ≥ natDegreeY B) (P_x P_y : Finset F)
     (quot_x : F → F[X]) (quot_y : F → F[X])
     (h_card_Px : n_x ≤ P_x.card) (h_card_Py : n_y ≤ P_y.card)
     (h_quot_x : ∀ y ∈ P_y, (quot_x y).natDegree ≤ b_x - a_x ∧ evalY y B = (quot_x y) * (evalY y A))

@@ -54,7 +54,7 @@ theorem johnsonT_le_bciks {n D : ℕ} {eta b : ℝ}
 The extra factor covers rounded curve heights or the affine sampling loss. The hypotheses
 express positive slack below both the Johnson gap and one twentieth of the full-rate square root. -/
 theorem two_mul_johnsonExceptionCount_le_bciks {n D A : ℕ} {eta b : ℝ}
-    (hD : 1 ≤ D) (hDn : D ≤ n - 2) (heta : 0 < eta)
+    (hD : 1 ≤ D) (hDn : D ≤ n - 2)
     (hthreshold : johnsonAgreement n D eta * n ≤ A)
     (hb : 0 < b) (hbeta : b ≤ eta)
     (hbRate : b ≤ Real.sqrt (((D : ℝ) + 1) / n) / 20) :
@@ -85,7 +85,7 @@ theorem two_mul_johnsonExceptionCount_le_bciks {n D A : ℕ} {eta b : ℝ}
   have ht0 : 0 ≤ johnsonT n D eta := by
     have := johnsonT_ge_seven_halves n D eta
     linarith
-  have hclosed := (johnsonExceptionCount_lt_closed hD hDn heta hthreshold).le
+  have hclosed := (johnsonExceptionCount_lt_closed hD hDn (hb.trans_le hbeta) hthreshold).le
   refine (mul_le_mul_of_nonneg_left hclosed (by norm_num : (0 : ℝ) ≤ 2)).trans ?_
   calc
     2 * ((8 / 3 : ℝ) * n * johnsonT n D eta ^ 3 / johnsonRhoMinus n D) ≤
@@ -107,21 +107,24 @@ theorem two_mul_johnsonExceptionCount_le_bciks {n D A : ℕ} {eta b : ℝ}
 The hypotheses express positive slack below both the Johnson gap and one twentieth of the
 full-rate square root. -/
 theorem johnsonExceptionCount_le_bciks {n D A : ℕ} {eta b : ℝ}
-    (hD : 1 ≤ D) (hDn : D ≤ n - 2) (heta : 0 < eta)
+    (hD : 1 ≤ D) (hDn : D ≤ n - 2)
     (hthreshold : johnsonAgreement n D eta * n ≤ A)
     (hb : 0 < b) (hbeta : b ≤ eta)
     (hbRate : b ≤ Real.sqrt (((D : ℝ) + 1) / n) / 20) :
     johnsonExceptionCount n D A eta ≤ ((D : ℝ) + 1) ^ 2 / (2 * b) ^ 7 := by
-  have h := two_mul_johnsonExceptionCount_le_bciks hD hDn heta hthreshold hb hbeta hbRate
+  have h := two_mul_johnsonExceptionCount_le_bciks hD hDn hthreshold hb hbeta hbRate
   have hnonneg : 0 ≤ johnsonExceptionCount n D A eta := by
     unfold johnsonExceptionCount johnsonTheta
     positivity
   linarith
 
 /-- Twice the constant-code pair-collision bound fits the same seventh-power numerator. -/
-theorem two_mul_choose_two_le_bciks {n : ℕ} {b : ℝ} (hn : 0 < n)
+theorem two_mul_choose_two_le_bciks {n : ℕ} {b : ℝ}
     (hb : 0 < b) (hbRate : b ≤ Real.sqrt (1 / (n : ℝ)) / 20) :
     2 * (n.choose 2 : ℝ) ≤ 1 / (2 * b) ^ 7 := by
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · simp only [Nat.cast_zero, div_zero, Real.sqrt_zero, zero_div] at hbRate
+    exact (hb.not_ge hbRate).elim
   have hn' : (0 : ℝ) < n := by exact_mod_cast hn
   have hn1 : (1 : ℝ) ≤ n := by exact_mod_cast hn
   let s := Real.sqrt (1 / (n : ℝ))
@@ -150,10 +153,10 @@ theorem two_mul_choose_two_le_bciks {n : ℕ} {b : ℝ} (hn : 0 < n)
     ((le_div_iff₀ (by positivity)).2 hprod)
 
 /-- The pair-collision bound for constant codes is below the same seventh-power numerator. -/
-theorem choose_two_le_bciks {n : ℕ} {b : ℝ} (hn : 0 < n)
+theorem choose_two_le_bciks {n : ℕ} {b : ℝ}
     (hb : 0 < b) (hbRate : b ≤ Real.sqrt (1 / (n : ℝ)) / 20) :
     (n.choose 2 : ℝ) ≤ 1 / (2 * b) ^ 7 := by
-  have h := two_mul_choose_two_le_bciks hn hb hbRate
+  have h := two_mul_choose_two_le_bciks hb hbRate
   have hnonneg : (0 : ℝ) ≤ n.choose 2 := Nat.cast_nonneg _
   linarith
 

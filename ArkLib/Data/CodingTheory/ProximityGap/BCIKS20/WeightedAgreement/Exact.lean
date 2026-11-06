@@ -47,10 +47,12 @@ theorem exists_agree_eq_agree_set (μ : ι → Set.Icc (0 : ℚ) 1)
   exact Finset.mem_image.mp (Finset.max'_mem _ _)
 
 /-- Coordinate weights at most one cannot increase the number of agreements. -/
-theorem agree_mul_card_le_card [Nonempty ι] (μ : ι → Set.Icc (0 : ℚ) 1) (u v : ι → F) :
+theorem agree_mul_card_le_card (μ : ι → Set.Icc (0 : ℚ) 1) (u v : ι → F) :
     agree μ u v * Fintype.card ι ≤ ({i | u i = v i} : Finset ι).card := by
   classical
-  have hn : (Fintype.card ι : ℝ) ≠ 0 := by positivity
+  by_cases hzero : Fintype.card ι = 0
+  · simp [hzero]
+  have hn : (Fintype.card ι : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hzero
   have hs : (∑ i ∈ ({i | u i = v i} : Finset ι), ((μ i).1 : ℝ)) ≤
       ({i | u i = v i} : Finset ι).card := by
     calc
@@ -64,16 +66,19 @@ theorem agree_mul_card_le_card [Nonempty ι] (μ : ι → Set.Icc (0 : ℚ) 1) (
   exact_mod_cast hs
 
 /-- Weighted agreement is at most one, since every coordinate weight is at most one. -/
-theorem agree_le_one [Nonempty ι] (μ : ι → Set.Icc (0 : ℚ) 1) (u v : ι → F) :
+theorem agree_le_one (μ : ι → Set.Icc (0 : ℚ) 1) (u v : ι → F) :
     agree μ u v ≤ 1 := by
   classical
-  have h := (agree_mul_card_le_card μ u v).trans
-    (Nat.cast_le.mpr (Finset.card_le_univ _))
-  have hn : (0 : ℝ) < Fintype.card ι := by positivity
-  nlinarith
+  cases isEmpty_or_nonempty ι with
+  | inl h => simp [agree]
+  | inr h =>
+    have h := (agree_mul_card_le_card μ u v).trans
+      (Nat.cast_le.mpr (Finset.card_le_univ _))
+    have hn : (0 : ℝ) < Fintype.card ι := by positivity
+    nlinarith
 
 /-- The maximum weighted agreement with a finite code is at most one. -/
-theorem agree_set_le_one [Nonempty ι] (μ : ι → Set.Icc (0 : ℚ) 1)
+theorem agree_set_le_one (μ : ι → Set.Icc (0 : ℚ) 1)
     (u : ι → F) (C : Finset (ι → F)) [Nonempty C] : agree_set μ u C ≤ 1 := by
   obtain ⟨v, _, hv⟩ := exists_agree_eq_agree_set μ u C
   rw [← hv]
@@ -111,7 +116,7 @@ open Classical in
 /-- A weighted decoder outside the MCA event extends every constituent on that decoder's
 entire agreement set. Weights bounded by one supply the ordinary cardinality threshold. -/
 theorem exists_weighted_agreement_of_not_isMCA
-    [Nonempty ι] [Field F] [Fintype κ] {S : Type} [Nonempty S] [Fintype S]
+    [Field F] [Fintype κ] {S : Type} [Nonempty S] [Fintype S]
     (μ : ι → Set.Icc (0 : ℚ) 1) {G : Generator S κ F} {C : ModuleCode ι F F}
     {x : S} {U : κ → ι → F} {c : ι → F} {α : ℝ}
     (hc : c ∈ C) (hα : α ≤ agree μ (fun i ↦ ∑ j, G x j • U j i) c)
@@ -140,7 +145,7 @@ open Classical in
 /-- A weighted proximity event with probability above the MCA error forces weighted
 correlated agreement for any generator and any finite code carrier. -/
 theorem exists_weighted_agreement_of_prob_gt_mcaError
-    [Nonempty ι] [Field F] [Fintype κ] {S : Type} [Nonempty S] [Fintype S]
+    [Field F] [Fintype κ] {S : Type} [Nonempty S] [Fintype S]
     [SampleableType S] (μ : ι → Set.Icc (0 : ℚ) 1)
     (G : Generator S κ F) (C : ModuleCode ι F F) (carrier : Finset (ι → F))
     [Nonempty carrier] (hcarrier : ∀ c ∈ carrier, c ∈ C)

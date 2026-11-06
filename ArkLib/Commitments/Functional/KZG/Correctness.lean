@@ -166,8 +166,7 @@ section Correctness
 
 omit [Fact (0 < p)] [DecidableEq G₁] in
 /-- The KZG scheme satisfies perfect correctness as defined in `CommitmentScheme`. -/
-theorem correctness (hpG1 : Nat.card G₁ = p) {g₁ : G₁} {g₂ : G₂}
-    [SampleableType G₁] :
+theorem correctness (hpG1 : Nat.card G₁ = p) {g₁ : G₁} {g₂ : G₂} :
     Commitment.perfectCorrectness (pure ∅) (randomOracle)
     (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)) := by
   intro data query

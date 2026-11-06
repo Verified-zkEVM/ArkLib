@@ -151,7 +151,7 @@ theorem profileArithmetic_subPolynomial_le (p q : CPolynomial F) (kind : Arithme
     simp [CPolynomial.Raw.neg]
   have hsize : (CPolynomial.Raw.addRaw p.val (CPolynomial.Raw.neg q.val)).size =
       max p.val.size q.val.size := by
-    rw [CPolynomial.Raw.add_size, hneg]
+    rw [CPolynomial.Raw.size_addRaw, hneg]
   have ht := profileArithmetic_trimRaw_le
     (CPolynomial.Raw.addRaw p.val (CPolynomial.Raw.neg q.val)) kind
   cases kind <;>

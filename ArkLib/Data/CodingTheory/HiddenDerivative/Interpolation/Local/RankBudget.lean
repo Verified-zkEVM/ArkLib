@@ -45,8 +45,8 @@ sides are zero while the budget is positive.
 ## References
 
 * [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 6.1, the local-rank bound (72), and
-  Appendix D.2, the rank estimate (131) in the proof of Lemma 6.2.
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 8.2, the local-rank bound (58), and
+  Appendix D.2, the rank estimate (119) in the proof of Lemma 8.3.
 -/
 
 @[expose] public section
@@ -220,14 +220,15 @@ theorem localDerivativeCoordinateBudget_le_geometric (d m W : ℕ) (hd : 0 < d) 
 
 /-- The geometric budget bound in the notation `κ = (d - 1) m / W`:
 `localCoordinateBudget d m W B ≤ B V exp(κ (1 + C(d, 2) / m)) (m^2 / (d κ^2) + m / κ)`. The
-hypothesis `0 < m` is needed to divide by `m`; the others are those of
-`localCoordinateBudget_le_geometric`. -/
-theorem localCoordinateBudget_le_kappa (d m W Be : ℕ) (hd : 2 ≤ d) (hm : 0 < m) (hW : 0 < W) :
+hypotheses are those of `localCoordinateBudget_le_geometric`. -/
+theorem localCoordinateBudget_le_kappa (d m W Be : ℕ) (hd : 2 ≤ d) (hW : 0 < W) :
     let κ : ℝ := ((d - 1 : ℕ) : ℝ) * m / W
     (localCoordinateBudget d m W Be : ℝ) ≤
       Be * ((W : ℝ) ^ (d - 1) / ((d - 1).factorial : ℝ) ^ 2) *
         Real.exp (κ * (1 + (d.choose 2 : ℝ) / m)) *
           ((m : ℝ) ^ 2 / ((d : ℝ) * κ ^ 2) + m / κ) := by
+  rcases Nat.eq_zero_or_pos m with rfl | hm
+  · simp [localCoordinateBudget]
   intro κ
   have h := localCoordinateBudget_le_geometric d m W Be hd hW
   have hm' : (m : ℝ) ≠ 0 := by exact_mod_cast hm.ne'
@@ -247,12 +248,16 @@ theorem localCoordinateBudget_le_kappa (d m W Be : ℕ) (hd : 2 ≤ d) (hm : 0 <
 `localCoordinateBudget d m W B / (V m^3) ≤ (B / m) exp(κ (1 + C(d, 2) / m))
 (1 / (d κ^2) + 1 / (m κ))`. The ceiling error remains in the term `1 / (m κ)`. -/
 theorem localCoordinateBudget_div_volume_mul_cube_le (d m W Be : ℕ)
-    (hd : 2 ≤ d) (hm : 0 < m) (hW : 0 < W) :
+    (hd : 2 ≤ d) :
     let V : ℝ := (W : ℝ) ^ (d - 1) / ((d - 1).factorial : ℝ) ^ 2
     let κ : ℝ := ((d - 1 : ℕ) : ℝ) * m / W
     (localCoordinateBudget d m W Be : ℝ) / (V * m ^ 3) ≤
       ((Be : ℝ) / m) * Real.exp (κ * (1 + (d.choose 2 : ℝ) / m)) *
         (1 / ((d : ℝ) * κ ^ 2) + 1 / ((m : ℝ) * κ)) := by
+  rcases Nat.eq_zero_or_pos m with rfl | hm
+  · simp
+  rcases Nat.eq_zero_or_pos W with rfl | hW
+  · simp [show d - 1 ≠ 0 by omega]
   intro V κ
   have hm' : (0 : ℝ) < m := by exact_mod_cast hm
   have hd' : (0 : ℝ) < d := by exact_mod_cast (by omega : 0 < d)
@@ -264,7 +269,7 @@ theorem localCoordinateBudget_div_volume_mul_cube_le (d m W Be : ℕ)
   have h : (localCoordinateBudget d m W Be : ℝ) ≤ Be * V *
       Real.exp (κ * (1 + (d.choose 2 : ℝ) / m)) *
         ((m : ℝ) ^ 2 / ((d : ℝ) * κ ^ 2) + m / κ) :=
-    localCoordinateBudget_le_kappa d m W Be hd hm hW
+    localCoordinateBudget_le_kappa d m W Be hd hW
   rw [div_le_iff₀ (by positivity : 0 < V * (m : ℝ) ^ 3)]
   refine h.trans_eq ?_
   field_simp

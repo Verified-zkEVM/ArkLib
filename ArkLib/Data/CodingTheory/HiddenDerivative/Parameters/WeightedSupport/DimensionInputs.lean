@@ -53,7 +53,6 @@ theorem prescribed_dimension_inputs (δ ρ H : ℝ) (d : ℕ)
   have hg : 0 < g := rateGap_pos hδ hρ
   have hH : 0 < H := (div_pos xi_pos hδ).trans_le hHlo
   have ha : 1 ≤ a := le_add_of_nonneg_right (mul_nonneg theta_pos.le hg.le)
-  have hd0 : 0 < d := by omega
   have hsize : 100 * (d : ℝ) ^ 2 * H ≤ m := Nat.le_ceil _
   have hmp : (0 : ℝ) < m := lt_of_lt_of_le (by positivity) hsize
   have hm : 0 < m := Nat.cast_pos.mp hmp
@@ -69,10 +68,10 @@ theorem prescribed_dimension_inputs (δ ρ H : ℝ) (d : ℕ)
     have e : a = 1 + 3 * g / 8 := by simp only [a, theta]; ring
     rwa [← e]
   · rw [hden]
-    exact normalizedRadius_le_ten_twentySeven hδ hδmax hρ hρmax hHlo
+    exact normalizedRadius_le_ten_twentySeven hδ hδmax hρmax hHlo
       (floorRadius_normalized_le a g H d m (by linarith) hg hH)
   · rw [hden]
-    have h := floorRadius_sq_ge 2000 a g H d m (by norm_num) hg hH hd0 hm hR
+    have h := floorRadius_sq_ge 2000 a g H d m (by norm_num) hR
     have hc : (999 / 1000 : ℝ) ≤ (1 - 1 / 2000) ^ 2 := by norm_num
     exact (mul_le_mul_of_nonneg_right hc (sq_nonneg _)).trans h
 

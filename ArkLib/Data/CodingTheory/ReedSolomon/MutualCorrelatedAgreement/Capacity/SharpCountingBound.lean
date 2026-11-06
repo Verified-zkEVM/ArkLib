@@ -44,7 +44,7 @@ noncomputable def polynomialCurveSharpAgreementConstant (δ : ℝ) (v h d : ℕ)
 
 /-- Both midpoint ratios are at most `2/δ`. -/
 theorem correlatedMidpoint_ratios_le_two_div (δ : ℝ) (n k A : ℕ)
-    (hδ : 0 < δ) (hn : 0 < n) (hk : 0 < k)
+    (hδ : 0 < δ) (hk : 0 < k)
     (hgap : (k : ℝ) + δ * n ≤ A) (hAn : A ≤ n) :
     let L := correlatedMidpoint δ n k
     (((n - L + 1 : ℕ) : ℝ) / ((A - L + 1 : ℕ) : ℝ) ≤ 2 / δ) ∧
@@ -53,6 +53,7 @@ theorem correlatedMidpoint_ratios_le_two_div (δ : ℝ) (n k A : ℕ)
   let L := correlatedMidpoint δ n k
   have hL := correlatedMidpoint_bounds δ n k A hδ.le hgap hAn
   have hLpos : 0 < L := hk.trans_le hL.1
+  have hn : 0 < n := hLpos.trans_le (hL.2.1.trans hAn)
   have hnL : n - L + 1 ≤ n := by omega
   have hnk : n - k + 1 ≤ n := by
     have hkn : k ≤ n := hL.1.trans (hL.2.1.trans hAn)
@@ -74,7 +75,7 @@ single-stage scalar. The stage may use any positive jet degree `j ≤ v` and cha
 `H ≤ ℓ*h`. -/
 theorem regularPowerBatchedAgreementSharpBound_midpoint_le_stageBound (δ : ℝ)
     (r n K k A ℓ j H v h : ℕ)
-    (hδ : 0 < δ) (hn : 0 < n) (hk : 0 < k) (hj : 0 < j) (hh : 0 < h)
+    (hδ : 0 < δ) (hk : 0 < k) (hj : 0 < j) (hh : 0 < h)
     (hKn : K ≤ n) (hjv : j ≤ v) (hH : H ≤ ℓ * h)
     (hgap : (k : ℝ) + δ * n ≤ A) (hAn : A ≤ n) :
     let L := correlatedMidpoint δ n k
@@ -82,8 +83,9 @@ theorem regularPowerBatchedAgreementSharpBound_midpoint_le_stageBound (δ : ℝ)
       polynomialCurveSharpStageBound δ n ℓ v h r := by
   dsimp only
   let L := correlatedMidpoint δ n k
-  have hratios := correlatedMidpoint_ratios_le_two_div δ n k A hδ hn hk hgap hAn
+  have hratios := correlatedMidpoint_ratios_le_two_div δ n k A hδ hk hgap hAn
   have hL := correlatedMidpoint_bounds δ n k A hδ.le hgap hAn
+  have hn : 0 < n := hk.trans_le (hL.1.trans (hL.2.1.trans hAn))
   have hkA := hL.1.trans hL.2.1
   have hJ : (regularPowerBatchedInitialMixedDegree r ℓ K j H : ℝ) ≤
       (ℓ : ℝ) * h * (3 * r + 5) * 2 ^ r * v ^ (r + 1) * n ^ (r + 1) := by
@@ -134,9 +136,13 @@ theorem regularPowerBatchedAgreementSharpBound_midpoint_le_stageBound (δ : ℝ)
 
 /-- A stage of order at most `d` is bounded by the uniform midpoint scalar. -/
 theorem polynomialCurveSharpStageBound_le_uniform (δ : ℝ) (n ℓ v h r d : ℕ)
-    (hδ : 0 < δ) (hδone : δ ≤ 1) (hn : 0 < n) (hv : 0 < v) (hr : r ≤ d) :
+    (hδ : 0 < δ) (hδone : δ ≤ 1) (hr : r ≤ d) :
     polynomialCurveSharpStageBound δ n ℓ v h r ≤
       polynomialCurveSharpStageBound δ n ℓ v h d := by
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · simp [polynomialCurveSharpStageBound]
+  rcases Nat.eq_zero_or_pos v with rfl | hv
+  · simp [polynomialCurveSharpStageBound]
   let c := 2 / δ
   have hc : (1 : ℝ) ≤ c := by
     dsimp only [c]
@@ -180,7 +186,7 @@ midpoint coefficient. The terminal height and every stage height are bounded by 
 theorem regularPowerBatchedAgreementSharp_finiteStage_uniform_le
     {ι : Type*} (S : Finset ι) (order jetDegree height : ι → ℕ)
     (δ : ℝ) (n K k A ℓ v h d : ℕ)
-    (hδ : 0 < δ) (hδone : δ ≤ 1) (hn : 0 < n) (hk : 0 < k) (hv : 0 < v)
+    (hδ : 0 < δ) (hn : 0 < n) (hk : 0 < k)
     (hh : 0 < h) (hKn : K ≤ n) (hgap : (k : ℝ) + δ * n ≤ A) (hAn : A ≤ n)
     (hcard : S.card ≤ v) (horder : ∀ i ∈ S, order i ≤ d)
     (hjetPos : ∀ i ∈ S, 0 < jetDegree i) (hjet : ∀ i ∈ S, jetDegree i ≤ v)
@@ -200,10 +206,13 @@ theorem regularPowerBatchedAgreementSharp_finiteStage_uniform_le
       (regularPowerBatchedAgreementSharpBound (order i) n ℓ K k L A
         (jetDegree i) (height i) : ℝ) ≤ B := by
     exact (regularPowerBatchedAgreementSharpBound_midpoint_le_stageBound δ
-      (order i) n K k A ℓ (jetDegree i) (height i) v h hδ hn hk
+      (order i) n K k A ℓ (jetDegree i) (height i) v h hδ hk
         (hjetPos i hi) hh hKn (hjet i hi) (hheight i hi) hgap hAn).trans
       (polynomialCurveSharpStageBound_le_uniform δ n ℓ v h (order i) d
-        hδ hδone hn hv (horder i hi))
+        hδ (by
+          have hAnR : (A : ℝ) ≤ n := by exact_mod_cast hAn
+          have hnR : (0 : ℝ) < n := by exact_mod_cast hn
+          nlinarith [Nat.cast_nonneg (α := ℝ) k]) (horder i hi))
   have hsum : ∑ i ∈ S,
       (regularPowerBatchedAgreementSharpBound (order i) n ℓ K k L A
         (jetDegree i) (height i) : ℝ) ≤ (v : ℝ) * B := by

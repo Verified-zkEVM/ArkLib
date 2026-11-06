@@ -56,13 +56,23 @@ theorem firstOrder_finite_agreement_solutions_card_le_tight_of_exponent
       (fun _ ↦ 0) columns)
     (hτ : ∀ r ≤ 1, TaylorExponentSufficient r K τ)
     (hK : 1 < K) (hkK : k ≤ K)
-    (hk : 0 < k) (hkA : k ≤ A) (hAn : A ≤ n)
+    (hk : 0 < k) (hkA : k ≤ A)
     (hchar : ringChar F = 0 ∨ max (K - 1) μ < ringChar F)
     (S : Finset F[X])
     (hS : ∀ P ∈ S, P.degree < k ∧
       A ≤ ({i : Fin n | P.eval (domain i) = received i} : Set (Fin n)).ncard) :
     (S.card : ℚ) ≤ firstOrderTightListWeight n A k K τ μ M := by
   classical
+  by_cases hAn : A ≤ n
+  swap
+  · have hSempty : S = ∅ := by
+      apply Finset.eq_empty_iff_forall_notMem.mpr
+      intro P hP
+      have hbound := Set.ncard_le_card
+        ({i : Fin n | P.eval (domain i) = received i} : Set (Fin n))
+      simp only [Nat.card_fin] at hbound
+      exact hAn ((hS P hP).2.trans hbound)
+    simpa [hSempty] using firstOrderTightListWeight_nonneg n A k K τ μ M
   obtain ⟨Q, hQ, hdegreeQ, hfirstQ, hsound⟩ :=
     firstOrderSymbolicCertificate_specialization_at_zero domain received columns cert
   have hsol : ∀ P ∈ S, differentialSpecialization Q P = 0 := by
@@ -84,7 +94,7 @@ theorem firstOrder_finite_agreement_solutions_card_le_tight
     (cert : FirstOrderSymbolicCertificate.{u, u} (F := F) D A m M μ k h domain received
       (fun _ ↦ 0) columns)
     (hK : 1 < K) (hkK : k ≤ K)
-    (hk : 0 < k) (hkA : k ≤ A) (hAn : A ≤ n)
+    (hk : 0 < k) (hkA : k ≤ A)
     (hchar : ringChar F = 0 ∨ max (K - 1) μ < ringChar F)
     (S : Finset F[X])
     (hS : ∀ P ∈ S, P.degree < k ∧
@@ -93,7 +103,7 @@ theorem firstOrder_finite_agreement_solutions_card_le_tight
   exact firstOrder_finite_agreement_solutions_card_le_tight_of_exponent
     domain received columns cert
     (fun r _ ↦ taylorExponentSufficient_two_mul_sub_three r K)
-    hK hkK hk hkA hAn hchar S hS
+    hK hkK hk hkA hchar S hS
 
 open Classical in
 /-- A symbolic first-order certificate gives the uniform cap-sensitive bound for every finite
@@ -105,18 +115,26 @@ theorem firstOrder_finite_agreement_solutions_card_le_sharp
     (cert : FirstOrderSymbolicCertificate.{u, u} (F := F) D A m M μ k h domain received
       (fun _ ↦ 0) columns)
     (hK : 1 < K) (hkK : k ≤ K)
-    (hk : 0 < k) (hkA : k ≤ A) (hAn : A ≤ n)
+    (hk : 0 < k) (hkA : k ≤ A)
     (hchar : ringChar F = 0 ∨ max (K - 1) μ < ringChar F)
     (S : Finset F[X])
     (hS : ∀ P ∈ S, P.degree < k ∧
       A ≤ ({i : Fin n | P.eval (domain i) = received i} : Set (Fin n)).ncard) :
     (S.card : ℚ) ≤
       ((n * firstOrderListWeight K μ M : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ) := by
+  by_cases hSempty : S = ∅
+  · simp only [hSempty, Finset.card_empty, Nat.cast_zero]
+    positivity
+  have hAn : A ≤ n := by
+    obtain ⟨P, hP⟩ := Finset.nonempty_iff_ne_empty.mpr hSempty
+    have hbound := Set.ncard_le_card
+      ({i : Fin n | P.eval (domain i) = received i} : Set (Fin n))
+    simpa only [Nat.card_fin] using (hS P hP).2.trans hbound
   have hτ : ∀ r ≤ 1, TaylorExponentSufficient r K (2 * K) := by
     intro r hr
     exact taylorExponentSufficient_two_mul r K
   have hcount := firstOrder_finite_agreement_solutions_card_le_tight_of_exponent
-    domain received columns cert hτ hK hkK hk hkA hAn hchar S hS
+    domain received columns cert hτ hK hkK hk hkA hchar S hS
   exact hcount.trans (firstOrderTightListWeight_two_mul_le n A k K μ M hk hkA hAn)
 
 open Classical in
@@ -124,12 +142,12 @@ open Classical in
 cap-sensitive finite-list bound. -/
 theorem finite_firstOrder_list_bound_of_heightSlotCount_sharp
     {D A m M μ k h n K : ℕ}
-    (hD : 0 < D) (hbudget : 0 < m * A) (hkD : k ≤ D + 1)
+    (hD : 0 < D) (hkD : k ≤ D + 1)
     (domain : Fin n ↪ F) (received : Fin n → F)
     (hheight : firstOrderCurveShiftedRowSlotBound D A m M μ n 1 h <
       firstOrderCurveShiftedHeightSlotCount D A m M μ 1 h)
     (hK : 1 < K) (hkK : k ≤ K)
-    (hk : 0 < k) (hkA : k ≤ A) (hAn : A ≤ n)
+    (hk : 0 < k) (hkA : k ≤ A)
     (hchar : ringChar F = 0 ∨ max (K - 1) μ < ringChar F)
     (S : Finset F[X])
     (hS : ∀ P ∈ S, P.degree < k ∧
@@ -140,23 +158,23 @@ theorem finite_firstOrder_list_bound_of_heightSlotCount_sharp
       D A m M μ k h domain received (fun _ ↦ 0)
         (firstOrderColumns (D := D) (A := A) (m := m) (M := M) (μ := μ))) :=
     exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount
-      hD hbudget hkD domain received (fun _ ↦ 0) hheight
+      hD hkD domain received (fun _ ↦ 0) hheight
   obtain ⟨cert⟩ := hcert
   exact firstOrder_finite_agreement_solutions_card_le_sharp domain received
     (firstOrderColumns (D := D) (A := A) (m := m) (M := M) (μ := μ)) cert
-      hK hkK hk hkA hAn hchar S hS
+      hK hkK hk hkA hchar S hS
 
 open Classical in
 /-- A shifted-slot surplus constructs a first-order certificate and gives the
 dimension-sensitive finite-list bound at exponent `2 * K - 3`. -/
 theorem finite_firstOrder_list_bound_of_shiftedHeightSlotCount_tight
     {D A m M μ k h n K : ℕ}
-    (hD : 0 < D) (hbudget : 0 < m * A) (hkD : k ≤ D + 1)
+    (hD : 0 < D) (hkD : k ≤ D + 1)
     (domain : Fin n ↪ F) (received : Fin n → F)
     (hheight : firstOrderCurveShiftedRowSlotBound D A m M μ n 1 h <
       firstOrderCurveShiftedHeightSlotCount D A m M μ 1 h)
     (hK : 1 < K) (hkK : k ≤ K)
-    (hk : 0 < k) (hkA : k ≤ A) (hAn : A ≤ n)
+    (hk : 0 < k) (hkA : k ≤ A)
     (hchar : ringChar F = 0 ∨ max (K - 1) μ < ringChar F)
     (S : Finset F[X])
     (hS : ∀ P ∈ S, P.degree < k ∧
@@ -166,10 +184,10 @@ theorem finite_firstOrder_list_bound_of_shiftedHeightSlotCount_tight
       D A m M μ k h domain received (fun _ ↦ 0)
         (firstOrderColumns (D := D) (A := A) (m := m) (M := M) (μ := μ))) :=
     exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount
-      hD hbudget hkD domain received (fun _ ↦ 0) hheight
+      hD hkD domain received (fun _ ↦ 0) hheight
   obtain ⟨cert⟩ := hcert
   exact firstOrder_finite_agreement_solutions_card_le_tight domain received
     (firstOrderColumns (D := D) (A := A) (m := m) (M := M) (μ := μ)) cert
-    hK hkK hk hkA hAn hchar S hS
+    hK hkK hk hkA hchar S hS
 
 end ReedSolomon.HiddenDerivative

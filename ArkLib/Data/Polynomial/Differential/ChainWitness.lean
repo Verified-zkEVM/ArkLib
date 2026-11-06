@@ -41,8 +41,8 @@ The initial equation `initialJetEquation a Q` is `Q` with `X = a`. A chain witne
 ## References
 
 * [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26], Appendix A.3, (122), and
-  Appendix A.2, Lemma A.1
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Appendix A.1, (91), and
+  Appendix A.1, Lemma A.2
 -/
 
 @[expose] public section

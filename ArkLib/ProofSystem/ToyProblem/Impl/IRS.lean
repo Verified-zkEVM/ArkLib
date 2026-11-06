@@ -389,7 +389,7 @@ def straightlineExtractor (k s t : ℕ) (hdvd : s ∣ k) (domain : ι ↪ F) :
 element whose affine constraint holds at the sampled challenge.  This is the
 deterministic kernel of the extractor-certified probability bound. -/
 theorem transitionExtractor_pointList_and_affine [Nonempty ι]
-    (k s : ℕ) (hdvd : s ∣ k) [NeZero (k / s)] (domain : ι ↪ F)
+    (k s : ℕ) (hdvd : s ∣ k) (domain : ι ↪ F)
     (hfull : k / s ≤ Fintype.card ι) {δ : ℝ≥0}
     (hδ : δ < (minRelHammingDistCode
       (ReedSolomon.code domain (k / s) : Set (ι → F)) : ℝ≥0))
@@ -532,7 +532,7 @@ combination-round error.  Unlike `gamma_transition_prob_le`, this statement does
 not assume that the input has no valid witness: it bounds failure of the specific
 witness computed from each transcript. -/
 theorem exactGammaFailure_prob_le [SampleableType F] [Nonempty ι]
-    (k s : ℕ) (hdvd : s ∣ k) [NeZero (k / s)] (domain : ι ↪ F)
+    (k s : ℕ) (hdvd : s ∣ k) (domain : ι ↪ F)
     (hfull : k / s ≤ Fintype.card ι) (δ : ℝ≥0)
     (hδ : δ < (minRelHammingDistCode
       (ReedSolomon.code domain (k / s) : Set (ι → F)) : ℝ≥0))
@@ -688,7 +688,7 @@ noncomputable def certifiedExtractorError [SampleableType F] (k s t : ℕ)
 /-- The uniform challenge bound in the exact shape consumed by the generic
 knowledge-soundness assembly theorem. -/
 theorem exactGammaFailure_sample_le [SampleableType F] [Nonempty ι]
-    (k s : ℕ) (hdvd : s ∣ k) [NeZero (k / s)] (domain : ι ↪ F)
+    (k s : ℕ) (hdvd : s ∣ k) (domain : ι ↪ F)
     (hfull : k / s ≤ Fintype.card ι) (δ : ℝ≥0)
     (hδ : δ < (minRelHammingDistCode
       (ReedSolomon.code domain (k / s) : Set (ι → F)) : ℝ≥0))

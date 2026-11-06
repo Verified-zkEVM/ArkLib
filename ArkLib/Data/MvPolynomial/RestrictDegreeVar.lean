@@ -58,10 +58,8 @@ theorem mem_restrictDegreeVar_iff_degreeOf_le {b : σ → ℕ} (p : MvPolynomial
 
 /-- `restrictDegreeVar` is monotone in the per-variable bound. -/
 theorem restrictDegreeVar_mono {b₁ b₂ : σ → ℕ} (h : ∀ i, b₁ i ≤ b₂ i) :
-    restrictDegreeVar σ R b₁ ≤ restrictDegreeVar σ R b₂ := by
-  intro p hp
-  rw [mem_restrictDegreeVar_iff_degreeOf_le] at hp ⊢
-  exact fun i => (hp i).trans (h i)
+    restrictDegreeVar σ R b₁ ≤ restrictDegreeVar σ R b₂ :=
+  restrictSupport_mono R (fun _ hn i => (hn i).trans (h i))
 
 /-- A prismalinear polynomial whose per-variable bound is everywhere `≤ m` lies in the uniform
 `restrictDegree σ R m` (i.e. `R⦃≤ m⦄[X σ]`). -/

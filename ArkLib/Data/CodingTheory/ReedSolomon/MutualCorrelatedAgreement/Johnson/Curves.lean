@@ -39,13 +39,24 @@ theorem exists_johnson_curve_exactPowerAgreement
     {F : Type*} [Field F] {n D A ℓ : ℕ} {eta : ℝ}
     (domain : Fin n ↪ F) (values : Fin (ℓ + 1) → Fin n → F)
     (hD : 1 ≤ D) (hDn : D ≤ n - 2) (heta : 0 < eta)
-    (hthreshold : johnsonAgreement n D eta * n ≤ A) (hAn : A ≤ n) :
+    (hthreshold : johnsonAgreement n D eta * n ≤ A) :
     ∃ exceptional : Finset F,
       (exceptional.card : ℝ) ≤ 2 * ℓ * johnsonExceptionCount n D A eta ∧
       ∀ z ∉ exceptional, ∀ P : F[X], P.degree < D + 1 →
         A ≤ (polynomialAgreementSet domain (powerBatchedWord values z) P).card →
         HasExactPowerAgreement domain values (RingHom.id F) (D + 1) z P := by
   classical
+  by_cases hAn : A ≤ n
+  swap
+  · refine ⟨∅, ?_, ?_⟩
+    · simp only [Finset.card_empty, Nat.cast_zero]
+      unfold johnsonExceptionCount johnsonTheta
+      positivity
+    · intro z hz P hP hagree
+      have hcard := Finset.card_le_univ
+        (polynomialAgreementSet domain (powerBatchedWord values z) P)
+      simp only [Fintype.card_fin] at hcard
+      omega
   rcases Nat.eq_zero_or_pos ℓ with rfl | hℓ
   · obtain ⟨ex, hcard, hgood⟩ := uniformExactPowerAgreement_singleton domain values (D + 1) A
     exact ⟨ex, by simpa using (show (ex.card : ℝ) ≤ 0 by exact_mod_cast hcard), hgood⟩
@@ -53,20 +64,20 @@ theorem exists_johnson_curve_exactPowerAgreement
   let B := johnsonMu n D eta
   let theta : ℚ := ((n - D : ℕ) : ℚ) / ((A - D : ℕ) : ℚ)
   have hDlt : D < n := by omega
-  have hDA := johnson_degree_succ_le_agreement hD hDlt heta hthreshold
+  have hDA := johnson_degree_succ_le_agreement hDlt heta hthreshold
   have hB : 0 < B := johnsonMu_pos hD hDlt
   obtain ⟨cert⟩ := exists_johnson_curve_symbolic_certificate hD hDn heta hthreshold
     (k := D + 1) le_rfl hℓ domain
     (fun i ↦ powerBatchedCoordinate fun t ↦ values t i)
     (fun i ↦ powerBatchedCoordinate_natDegree_le _)
   obtain ⟨ex, hcard, hgood⟩ := exists_baseExceptional_ordinaryPowerEquation domain values
-    cert.Q D H B (D + 1) A cert.nonzero (by omega) hℓ (by omega) hDA
+    cert.Q D H B (D + 1) A cert.nonzero (by omega) (by omega) hDA
     cert.challengeDegree_le ((jetDegree_le_total cert.Q 0).trans cert.jetTotalDegree_le)
   rw [ordinaryUnifiedPowerFactorAtOrHeight_of_pos n D ℓ B H A (D + 1) hB,
     ordinaryUnifiedPowerFactorAt_succ_eq n D ℓ B H A hDA hAn] at hcard
   have hh : H ≤ ℓ * (2 * johnsonH n D eta) := by
     have hhpos : 0 < johnsonH n D eta :=
-      hB.trans_le (johnsonMu_le_H hD hDlt)
+      hB.trans_le (johnsonMu_le_H hDlt)
     exact (Nat.sub_le _ _).trans (Nat.mul_le_mul_left ℓ (by omega))
   have hbound : (ex.card : ℚ) ≤
       (2 * ℓ : ℕ) * ordinaryFactorRaw theta n D B (johnsonH n D eta) := by

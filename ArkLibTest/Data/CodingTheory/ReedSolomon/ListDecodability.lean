@@ -48,7 +48,7 @@ example :
       apply Fin.ext
       omega)
     1 1 (by decide) (by decide)
-    exampleDomain exampleReceived (by decide) (by decide)
+    exampleDomain exampleReceived (by decide)
     (by
       intro r hr i hir hiK
       omega)

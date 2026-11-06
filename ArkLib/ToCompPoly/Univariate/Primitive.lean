@@ -27,6 +27,10 @@ inductive ArithmeticCostKind
   | add | sub | mul | inv | eq | coefficientRead | nodeRead | valueRead | metadata
   deriving DecidableEq, Repr
 
+instance : Fintype ArithmeticCostKind where
+  elems := {.add, .sub, .mul, .inv, .eq, .coefficientRead, .nodeRead, .valueRead, .metadata}
+  complete kind := by cases kind <;> simp
+
 /-- A vector of arithmetic instruction counts. -/
 abbrev ArithmeticCost := ArithmeticCostKind → ℕ
 

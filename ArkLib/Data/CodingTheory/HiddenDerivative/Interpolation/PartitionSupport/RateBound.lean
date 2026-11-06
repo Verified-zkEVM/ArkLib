@@ -52,11 +52,21 @@ private theorem partitionSupport_ratio_le_of_ambient_lower_bound
 /-- An ambient degree at least `δ² n` and `A ≤ n` bound each eligible exponent's total jet degree
 by `⌈m / δ²⌉₊ - 1`, for any multiplicity `m`. -/
 theorem partitionSupport_totalJetDegree_le_of_ambient_lower_bound
-    {D d W m n A : ℕ} {δ : ℝ} (hD : 0 < D) (hδ : 0 < δ)
+    {D d W m n A : ℕ} {δ : ℝ} (hδ : 0 < δ)
     (hDlower : δ ^ 2 * n ≤ D) (hAn : A ≤ n) {u : JetVariable d →₀ ℕ}
     (hu : PartitionSupportEligible D d W (m * A : ℕ) u) :
     totalJetDegree u ≤ ⌈(m : ℝ) / δ ^ 2⌉₊ - 1 := by
   have hδ2 : 0 < δ ^ 2 := sq_pos_of_pos hδ
+  have hD : 0 < D := by
+    by_contra hD
+    have hn : n = 0 := by
+      have hD0 : D = 0 := by omega
+      rw [hD0, Nat.cast_zero] at hDlower
+      have hnreal : (n : ℝ) ≤ 0 := by nlinarith [hDlower]
+      exact Nat.eq_zero_of_le_zero (by exact_mod_cast hnreal)
+    have hA : A = 0 := Nat.eq_zero_of_le_zero (hn ▸ hAn)
+    exact (Nat.cast_nonneg (u none + D * totalJetDegree u)).not_gt
+      (by simpa [hA] using hu.2)
   have ht := totalJetDegree_lt_of_partitionSupportEligible hD hu
   have hb := partitionSupport_ratio_le_of_ambient_lower_bound (m := m)
     hD hδ2 hDlower hAn
@@ -69,9 +79,19 @@ theorem partitionSupport_totalJetDegree_le_of_ambient_lower_bound
 /-- The ambient rate lower bound and `A ≤ n` bound the total jet degree in the partition support
 by the rate-dependent cap. -/
 theorem partitionSupport_totalJetDegree_le_rateJetCap {D d W m n A : ℕ} {rate : ℝ}
-    (hD : 0 < D) (hrate : 0 < rate) (hDlower : rate * n / 2 ≤ D) (hAn : A ≤ n)
+    (hrate : 0 < rate) (hDlower : rate * n / 2 ≤ D) (hAn : A ≤ n)
     {u : JetVariable d →₀ ℕ} (hu : PartitionSupportEligible D d W (m * A : ℕ) u) :
     totalJetDegree u ≤ rateJetCap rate m := by
+  have hD : 0 < D := by
+    by_contra hD
+    have hn : n = 0 := by
+      have hD0 : D = 0 := by omega
+      rw [hD0, Nat.cast_zero] at hDlower
+      have hnreal : (n : ℝ) ≤ 0 := by nlinarith [hDlower]
+      exact Nat.eq_zero_of_le_zero (by exact_mod_cast hnreal)
+    have hA : A = 0 := Nat.eq_zero_of_le_zero (hn ▸ hAn)
+    exact (Nat.cast_nonneg (u none + D * totalJetDegree u)).not_gt
+      (by simpa [hA] using hu.2)
   have ht := totalJetDegree_lt_of_partitionSupportEligible hD hu
   have hdenominator : 0 < rate / 2 := by positivity
   have hDlower' : rate / 2 * n ≤ D := by nlinarith [hDlower]

@@ -1,6 +1,6 @@
 # Interaction framework roadmap
 
-**Status date: 2026-10-29.** This page lists the remaining design and implementation work for
+**Last reviewed:** 2026-11-04. This page lists the remaining design and implementation work for
 ArkLib's interaction layer (`ArkLib/Interaction/`). The
 [current-status page](00-current-status.md) records what has landed and the supported dependency
 versions. Protocol-level status, including the legacy-layer protocol developments, is on the
@@ -80,8 +80,38 @@ state-restoration proof; add them upstream only when one of these bridges requir
 
 ## Extractor efficiency repair
 
-The unbounded-game and measured-operation contracts have landed. The remaining steps are
-proposed. The near-term contracts
+The unbounded-game and measured-operation contracts are implemented. Native stage programs
+compose along a typed path with the exact extractor identity and summed instruction budget.
+The [state-restoration resource contract](03a-extractor-efficiency.md#state-restoration-resource-contract)
+states the role-specific bound and game-return identity. These are declared instruction bounds;
+the [accounting boundary](03a-extractor-efficiency.md#proof-and-accounting-boundary) separates them
+from complete execution and uniform implementation.
+The milestone legend is fixed across the efficiency chapters:
+
+| Label | Scope |
+|---|---|
+| E1 | Unbounded-game characterizations |
+| E2 | Selected-operation count contracts and composition |
+| E3 / E3a | Complete execution contract / proposed algebraic backend route |
+| E4 | Complete FRI execution certificate |
+| E5-count / E5-execution | Toy terminal operation profile / complete execution |
+| E6-count / E6-execution | Toy round-by-round operation profile / complete execution |
+| E7 | Security-parameter family policy and corollaries |
+
+### Native resource composition
+
+Before scaling E3, instantiate a production native measured certificate and prove resource closure
+under protocol append and `changeInputState`. Retain the named composed extractor and instruction
+budget under the [knowledge-composition interface](03-adversarial-oracle-execution.md#6-extractors-and-knowledge-composition).
+The existing per-path fold and role/depth theorems do not establish that closure. Complete
+execution additionally needs intermediate-size and conversion-cost bounds.
+Current native clients are acceptance fixtures. Legacy tree/escape resource scoping is another
+priority; obtaining a tree and producing an escape remain separate from processing it.
+
+### Operation and execution follow-ups
+
+The following operation-layer and execution-layer follow-ups remain proposed and separately scoped.
+The near-term contracts
 belong to [the efficiency chapter](03a-extractor-efficiency.md); complete execution and
 computational-model decisions belong to [the execution-backend chapter](03b-extractor-execution.md).
 Each implementation PR starts from current `main` or its explicit prerequisite branch; keep
@@ -89,43 +119,62 @@ dependency upgrades separate.
 
 | Step | Deliverable | Acceptance evidence |
 |---|---|---|
+| Additional changed-cost/profile transport, when a client needs more than existing APIs | Reuse existing stateless `WorstCaseCostBound.simulateQ` and composition first; add only the missing transport for the actual named program | Preserve the semantics and prove the changed instruction charges/budget; symbolic price substitution alone does not certify a handler implementation |
+| Profile valuation/pricing, when a concrete consumer needs it | Preserve raw finite `Kind → ℕ` counts while deriving a chosen scalar/weighted statistic through existing APIs where sufficient | Finite kinds/support or summability for sums; monotone additive valuation or a separately proved bound; maximum/saturation labelled as derived statistics, not raw counts |
+| Actual Horner operation profile | Instrument CompPoly's actual Horner fold through existing `Array.foldrM`, following the current adapter placement or a demonstrated shared API need | Output equality on all inputs and a profile for that fold; do not relabel the measured power-sum program's counts |
+| E5-count: Toy terminal decoding certificate | Measure an eager Toy decoder and terminal certificate; may ship before E3 | Finite witness tables with projection equality to the named extractor on all inputs, measured agreement, interpolation on the full retained set, re-encoding and materialization, with unchanged `certifiedExtractorError` |
+| E6-count: Toy round-by-round certificate | First add a legacy stage-resource contract or port Toy to the native games with a proved correspondence; then measure and compose its actual backward maps | Explicit legacy/native prerequisite, per-stage and depth-bounded composed budgets, exact extractor identities and existing errors, with E2 exclusions stated |
+| Legacy tree/CWSS and escape-resource contracts | Fix structured-input/leaf-witness representations and tree-size bounds | Name tree-processing and escape-producing algorithms, separate obtaining the tree, and state costs without a terminal-collapse or efficient-knowledge implication |
 | Algebraic execution backend (E3a) | Proposed route, replaceable: build a generic algebraic execution backend for the PolyFun/VCVio quantitative layer | Executable code type with semantics for field operations, indices, control and storage; gate on realizing one real FRI fold-consistency check with proved output agreement and execution bound |
-| Complete execution bounds (E3) | Required later for efficient-extraction claims: add `knowledgeSoundnessWithin` using the algebraic backend or another adequately reviewed execution model | Quantitative realization, explicit representations, charged pure computation, termination/access proof, and a documented review of primitive adequacy; no claimed standard-machine correspondence |
-| Complete FRI extractor certificate | Certify all local work of FRI's same named extractor | Bound view preparation, scan/control/storage and interpolation, retain early rejection, combine with `knowledge_soundness_with`, and derive a polynomial envelope under the protocol constraints |
-| Toy decoding certificate | Add the measured eager Toy decoder and terminal certificate | Equality with the existing extractor on all inputs, measured agreement/interpolation/re-encoding/materialization, and the unchanged `certifiedExtractorError` |
-| Toy round-by-round certificate | Certify Toy round-by-round execution | Per-stage budgets for the actual available prefixes, exact extractor identities and the existing per-round error guarantees |
-| Uniform families (E7) | Deferred: add uniform family corollaries when a consumer fixes the policy | One packed family realization and polynomial for fixed backend/boundary/contracts, with explicit parameter growth and representation policy |
+| Complete execution bounds (E3) | Required later: add `knowledgeSoundnessWithin` in a declared execution model | Named backend code with semantic agreement and its execution bound, fixed executable generator, bounded encoded code/constants/setup, statement/prefix uniformity, bounded primitive operands/results, charged pure work, termination/access, and reviewed adequacy; no standard-machine claim |
+| Complete FRI extractor certificate (E4) | Certify all local work of FRI's same named extractor | Bound view preparation, scan/control/storage and interpolation, retain early rejection, combine with `knowledge_soundness_with`, and derive a polynomial envelope under the protocol constraints |
+| Complete Toy execution certificates (E5-execution/E6-execution) | Realize the named eager decoder and backward extraction in the chosen execution backend | Account for the pure/prefix/carrier work excluded from operation profiles, intermediate witness sizes and the same extractor/error guarantees |
+| Security-parameter families (E7) | Deferred: add family corollaries when a consumer fixes parameter growth and negligibility policy; E3 already requires uniform code generation | One packed family realization and polynomial for fixed backend/boundary/contracts, with explicit parameter growth and representation policy |
+| Expected-time/rewinding bridge | Follow [#1410 and its existing owner plan](#rewinding-and-compiled-protocol-security) | Failed-attempt cost semantics and contextual expected-cost composition proofs remain missing; generic weighted-writer cost-bound bind laws are pathwise; specialized expected charged-query bind already exists, while total execution/rewinding substitution needs its own proof |
 
-Complete execution bounds are required before ArkLib claims efficient extraction without
-qualification. Their prerequisites (the interaction-layer soundness contracts, their composition, and
-a measured-stage conjunction with an acceptance example) have landed. No probability theorem
-waits for them. The algebraic backend is the proposed route; another execution model with a
-reviewed adequacy argument can replace it. Complete execution bounds consume the chosen backend
-and the measured contract's same-program bridge. The complete FRI certificate and the Toy decoding
-certificate consume them and can be developed independently; the Toy round-by-round certificate
-follows the Toy decoding certificate. The backend's real FRI check is the gate before scaling it
-to the complete extractor. The formal gain over the measured contract is that every piece of pure
-computation is charged through the backend; the primitive model's adequacy is reviewed, not proved
-against a standard machine.
+E3a can start as a bounded kernel pilot. Expected-time acquisition is a separate route for
+extractors that need rewinding, not a prerequisite for the strict deterministic FRI/Toy target.
 
-Uniform families wait for a consumer and an explicit parameter-growth policy. They use the
-corresponding concrete certificates and must not infer uniformity merely from parametric Lean
-definitions. Update public summaries and protocol audits with each concrete FRI or Toy
+Complete execution bounds are required later before ArkLib claims efficient extraction without
+qualification. No probability theorem waits for them. The operation-count Toy certificate can
+ship independently before E3, with the same qualified instruction-count description as FRI; its
+round-by-round operation certificate additionally needs the legacy resource contract or native
+port described above.
+The algebraic backend is the proposed route for complete execution; another execution model with
+a reviewed adequacy argument can replace it. Complete FRI and complete Toy execution certificates
+consume E3 and can be developed independently. The backend's real FRI check gates scaling to the
+complete extractor. The formal gain over the measured contract is that pure computation is
+charged through the backend; primitive adequacy is reviewed, not proved against a standard machine.
+
+Special soundness and CWSS retain their own structured-tree and cost obligations from the
+[efficiency chapter](03a-extractor-efficiency.md#extraction-obligations-across-soundness-notions).
+Their tree-extractor resource contracts remain proposed work in the legacy layer; native
+round-by-round/state-restoration stage accounting does not supply them. Processing a supplied tree,
+obtaining that tree, and producing an escape are distinct tasks. A stage or tree-processing profile
+alone supplies no efficient knowledge corollary or terminal-collapse characterization.
+
+E7's security-parameter policy waits for a consumer. E3's implementing code, executable
+generator, code/data/setup bounds and statement/prefix uniformity do not wait. Family corollaries
+use the corresponding concrete certificates and must not infer uniformity merely from parametric
+Lean definitions. Update public summaries and protocol audits with each concrete FRI or Toy
 certificate, marking whether it supplies operation counts, algebraic execution bounds or bit-time
-bounds; those documentation updates do not wait for uniform families.
+bounds; those documentation updates do not wait for E7's family policy.
 
 Protocol code stays in ArkLib; generic cost/realization combinators belong upstream. Use the
 existing arithmetic layer rather than importing FRI-specific access instructions into Toy.
 The generic algebraic code type belongs in PolyFun; a temporary `ArkLib/ToCompPoly` backend
 must name its upstream destination and removal condition if upstream landing would delay the work.
-Retain compatibility names with precise docstrings while adding the resource-certified public
-theorems. A Caliper field/kernel pilot and bit-machine refinements are later clients, not
+Preserve named protocol extractor contracts while adding resource-certified public theorems; update
+callers when generic APIs move owners rather than adding compatibility aliases by default. A Caliper
+field/kernel pilot and bit-machine refinements are later clients, not
 prerequisites for a complete claim relative to the explicit algebraic model.
 
 For each of these steps, run the normal repository validation, the axiom regression gate for axiom-clean
 theorems, and the relevant existing compiled extractor clients. Extend acceptance tests with the
-failure modes in the efficiency chapter. Runtime fixtures check implementation behavior; the
-kernel-checked bounds and realization establish the resource claim. Update current status only
+failure modes in the efficiency chapter. Runtime fixtures check implementation behavior;
+kernel-checked bounds establish the declared
+resource claim. Semantic equality alone does not certify the implementation's execution costs.
+Update current status only
 when results land, and make public summaries match the strongest completed layer.
 
 ## Oracle elimination

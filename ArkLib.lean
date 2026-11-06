@@ -622,9 +622,6 @@ public import ArkLib.Data.MvPolynomial.WeightedDegree.Products
 public import ArkLib.Data.MvPolynomial.WeightedHomogeneous
 public import ArkLib.Data.MvPolynomial.WeightedOrder
 public import ArkLib.Data.Nat.BitSum
-public import ArkLib.Data.OracleComp.DeterminedCost
-public import ArkLib.Data.OracleComp.MeasuredProgram
-public import ArkLib.Data.OracleComp.QueryBounds
 public import ArkLib.Data.Polynomial.AffineFactorBadChallenge
 public import ArkLib.Data.Polynomial.BinaryTrace
 public import ArkLib.Data.Polynomial.BinaryTraceQuotient
@@ -732,6 +729,7 @@ public import ArkLib.Interaction.Oracle.Security.Knowledge
 public import ArkLib.Interaction.Oracle.Security.KnowledgeAppend
 public import ArkLib.Interaction.Oracle.Security.KnowledgeComposition
 public import ArkLib.Interaction.Oracle.Security.KnowledgeResources
+public import ArkLib.Interaction.Oracle.Security.KnowledgeResources.Composition
 public import ArkLib.Interaction.Oracle.Security.RoundByRound
 public import ArkLib.Interaction.Oracle.Security.Soundness
 public import ArkLib.Interaction.Oracle.Security.StateRestoration
@@ -1090,7 +1088,6 @@ public import ArkLib.ToCompPoly.Univariate.ArithmeticPower
 public import ArkLib.ToCompPoly.Univariate.Basic
 public import ArkLib.ToCompPoly.Univariate.Lagrange
 public import ArkLib.ToCompPoly.Univariate.Primitive
-public import ArkLib.ToCompPoly.Univariate.Raw.Size
 public import ArkLib.ToCompPoly.Univariate.Size
 public import ArkLib.ToMathlib.Algebra.Order.Floor.Ratio
 public import ArkLib.ToMathlib.Algebra.Order.Floor.RelativeError

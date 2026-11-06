@@ -392,15 +392,15 @@ lemma vecMul_tensorGenerator_explicit {ℓ' : Type} [Fintype ℓ'] {S S' : Type}
 /-- The canonical linear isomorphism between the tensor product of function spaces
 and the function space on the product type. -/
 noncomputable def tensorProductPiFunEquiv (F : Type) [Field F] (ℓ ℓ' : Type)
-    [Fintype ℓ] [DecidableEq ℓ] [Fintype ℓ'] [DecidableEq ℓ'] :
+    [Fintype ℓ] [Fintype ℓ'] :
     TensorProduct F (ℓ → F) (ℓ' → F) ≃ₗ[F] (ℓ × ℓ' → F) :=
   ((Pi.basisFun F ℓ).tensorProduct (Pi.basisFun F ℓ')).equivFun
 
 /-- The tensor product generator `TensorGenerator` and the explicit componentwise generator
 `TensorGenerator_Explicit` agree under the canonical isomorphism between `F^ℓ ⊗ F^ℓ′` and
 `(ℓ × ℓ') → F`. -/
-theorem TensorGenerator_eq_TensorGenerator_Explicit {ℓ' : Type} [Fintype ℓ'] [DecidableEq ℓ]
-    [DecidableEq ℓ'] {S S' : Type} (G : Generator S ℓ F) (G' : Generator S' ℓ' F) (p : S × S') :
+theorem TensorGenerator_eq_TensorGenerator_Explicit {ℓ' : Type} [Fintype ℓ']
+    {S S' : Type} (G : Generator S ℓ F) (G' : Generator S' ℓ' F) (p : S × S') :
     tensorProductPiFunEquiv F ℓ ℓ' (TensorGenerator G G' p) = TensorGenerator_Explicit G G' p := by
   unfold tensorProductPiFunEquiv TensorGenerator TensorGenerator_Explicit
   convert (Pi.basisFun F ℓ).tensorProduct (Pi.basisFun F ℓ') |> fun b =>
@@ -451,12 +451,10 @@ open NNReal ENNReal unitInterval MvPolynomial LinearCombination CoreDefinitions
 open scoped ProbabilityTheory ENNReal NNReal BigOperators
 
 /-- Auxiliary lemma to prove that an error is in the unit interval. -/
-lemma error_in_unit_interval (d : ℕ) (m : ℕ) (hm_pos : 0 < m) (hdm : d ≤ m) : (d / m : ℝ) ∈ I := by
+lemma error_in_unit_interval (d : ℕ) (m : ℕ) (hdm : d ≤ m) : (d / m : ℝ) ∈ I := by
   constructor
-  · exact div_nonneg (Nat.cast_nonneg d) (le_of_lt (Nat.cast_pos.mpr hm_pos))
-  · have hdm' : (d : ℝ) ≤ m := by exact_mod_cast hdm
-    have hm_pos' : (0 : ℝ) < m := by exact_mod_cast hm_pos
-    exact (div_le_one hm_pos').mpr hdm'
+  · exact div_nonneg (Nat.cast_nonneg d) (Nat.cast_nonneg m)
+  · exact div_le_one_of_le₀ (by exact_mod_cast hdm) (Nat.cast_nonneg m)
 
 /-- The minimum of the cardinality of a family of nonempty sets, indexed by a possibly empty set.
 Returns `1` if the indexing set is empty. -/
@@ -483,16 +481,16 @@ lemma minSeedCard_pos {F : Type} {s : ℕ} (S : Fin s → Set F)
 /-- The minimum of the cardinality of a family of nonempty sets is smaller than the cardinality of
 each set in the family. -/
 lemma minSeedCard_le {F : Type} {s : ℕ} (S : Fin s → Set F)
-    [∀ i, Fintype ↥(S i)] (hs : 0 < s) (i : Fin s) :
+    [∀ i, Fintype ↥(S i)] (i : Fin s) :
     minSeedCard S ≤ (S i).toFinset.card := by
   unfold minSeedCard
-  split_ifs
-  aesop
+  rw [dite_eq_left (Fin.pos i), Set.toFinset_card]
+  exact Finset.inf'_le (f := fun j => Fintype.card ↥(S j)) (Finset.mem_univ i)
 
-noncomputable local instance {F : Type} [Fintype F] [SampleableType F] {S : Set F} :
+noncomputable local instance {F : Type} [Fintype F] {S : Set F} :
     Fintype S := Fintype.ofFinite ↑S
 
-noncomputable local instance {F : Type} {s : ℕ} [Fintype F] [SampleableType F]
+noncomputable local instance {F : Type} {s : ℕ} [Fintype F]
     {S : Fin s → Set F} [∀ i, Nonempty ↥(S i)] : SampleableType (∀ i, ↥(S i)) :=
   SampleableType.piOfFintype _
 
@@ -503,7 +501,7 @@ This is the total-degree reading. An individual-degree reading of the same fact 
 the reasoning is the same and only the version of Schwartz–Zippel used for the upper bound
 differs. -/
 theorem poly_gen_is_zero_evading
-    {F : Type} [Field F] [Fintype F] [SampleableType F]
+    {F : Type} [Field F] [Fintype F]
   {ℓ : Type} [Fintype ℓ]
   {s : ℕ}
   {S : Fin s → Set F} [∀ i, Nonempty ↥(S i)]
@@ -511,7 +509,7 @@ theorem poly_gen_is_zero_evading
   {G : Generator (∀ i, ↥(S i)) ℓ F} (hG : IsPolynomialGeneratorOf S G P)
   (hdm : MvPolynomial.maxTotalDegree P ≤ minSeedCard S) :
     IsZeroEvadingGenerator G ⟨(maxTotalDegree P : ℝ) / minSeedCard S,
-    error_in_unit_interval (maxTotalDegree P) (minSeedCard S) (minSeedCard_pos S) hdm⟩ := by
+    error_in_unit_interval (maxTotalDegree P) (minSeedCard S) hdm⟩ := by
   classical
   unfold IsZeroEvadingGenerator
   simp only [ne_eq, sSup_le_iff, Set.mem_ofPred_eq, forall_exists_index, and_imp]
@@ -527,7 +525,7 @@ theorem poly_gen_is_zero_evading
     (MvPolynomial.totalDegree_linearCombination_le _ _ _ fun j =>
       Finset.le_sup (f := fun j => (P j |> MvPolynomial.totalDegree)) (Finset.mem_univ j))
     (minSeedCard_pos S)
-    (fun i => minSeedCard_le S (Fin.pos_iff_nonempty.mpr ⟨i⟩) i)).trans_eq ?_
+    (fun i => minSeedCard_le S i)).trans_eq ?_
   rw [ENNReal.ofReal_div_of_pos] <;> norm_cast
   exact minSeedCard_pos S
 

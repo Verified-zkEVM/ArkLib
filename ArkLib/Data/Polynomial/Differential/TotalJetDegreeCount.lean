@@ -50,7 +50,9 @@ turns this into a bound with `Nat.card E` in place of `q`, for `F` any commutati
 ## References
 
 * [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26], Appendix A.3
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Appendix A.1.
+  This is a supporting formalization lemma for its unique-lifting/separant-chain argument,
+  with no numbered counterpart in the paper.
 -/
 
 @[expose] public section

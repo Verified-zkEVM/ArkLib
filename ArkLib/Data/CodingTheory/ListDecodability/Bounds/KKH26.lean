@@ -93,16 +93,37 @@ a member of a useful family. -/
 noncomputable def leadingPart (khat c : ℕ) (lam : ℕ → F) : F[X] :=
   ∑ i ∈ Finset.range (c + 1), C ((-1) ^ i * lam i) * X ^ (khat - i)
 
-/-- If `|S| = k̂` and the elementary symmetric sums `e_i(S)` for `i ≤ c ≤ k̂` are given by
+/-- If `|S| = k̂` and the elementary symmetric sums `e_i(S)` for `i ≤ c` are given by
 `lam`, then the
 vanishing polynomial `V_S(Y) = ∏_{α ∈ S} (Y - α)` decomposes as
 `V_S = ∑_{i=0}^{c} (-1)^i λ_i Y^{k̂-i} + p_S` with `deg p_S ≤ k̂ - c - 1`.
 Mathlib's `Multiset.prod_X_sub_X_eq_sum_esymm` (Vieta) provides the full expansion. -/
 theorem prod_X_sub_C_eq_leadingPart_add_remainder {S : Finset F} {khat c : ℕ} {lam : ℕ → F}
-    (hcard : S.card = khat) (hck : c ≤ khat) (hesymm : ∀ i ≤ c, S.1.esymm i = lam i) :
+    (hcard : S.card = khat) (hesymm : ∀ i ≤ c, S.1.esymm i = lam i) :
     ∃ p : F[X], p.degree ≤ ((khat - c - 1 : ℕ) : WithBot ℕ) ∧
       ∏ α ∈ S, (X - C α) = leadingPart khat c lam + p := by
   classical
+  by_cases hck : c ≤ khat
+  swap
+  · refine ⟨0, by simp, ?_⟩
+    rw [add_zero, Finset.prod_eq_multiset_prod, Multiset.prod_X_sub_X_eq_sum_esymm]
+    have hrange : Finset.range (S.card + 1) ⊆ Finset.range (c + 1) :=
+      Finset.range_mono (by omega)
+    unfold leadingPart
+    rw [← Finset.sum_subset hrange]
+    · apply Finset.sum_congr rfl
+      intro i hi
+      have hcard' : S.1.card = khat := hcard
+      rw [map_mul, map_pow, map_neg, map_one, mul_assoc, hcard',
+        hesymm i (by have := Finset.mem_range.mp hi; omega)]
+    · intro i hi hnot
+      have hci : i ≤ c := by have := Finset.mem_range.mp hi; omega
+      have hsi : S.1.card < i := by
+        have : ¬ i < S.card + 1 := by simpa only [Finset.mem_range] using hnot
+        change S.card < i
+        omega
+      rw [← hesymm i hci, Multiset.esymm_of_card_lt hsi]
+      simp
   subst hcard
   -- Full Vieta expansion of the vanishing polynomial, with each summand in
   -- `C _ * X ^ _` normal form.
@@ -130,15 +151,15 @@ theorem prod_X_sub_C_eq_leadingPart_add_remainder {S : Finset F} {khat c : ℕ} 
     exact Finset.sum_congr rfl fun i hi => by
       rw [hesymm i (by simpa using Nat.lt_succ_iff.mp (Finset.mem_range.mp hi))]
 
-/-- For a `(H, k̂, c)`-useful family with values `lam`, `c < k̂`, and `S ∈ 𝒮`, the
+/-- For a `(H, k̂, c)`-useful family with values `lam` and `S ∈ 𝒮`, the
 vanishing polynomial decomposes as
 `V_S(Y) = ∑_{i=0}^{c} (-1)^i λ_i Y^{k̂-i} + p_S(Y)` with `deg p_S ≤ k̂ - c - 1`. -/
 theorem IsUsefulFamilyWith.vanishing_decomposition {H : Finset F} {khat c : ℕ}
     {𝒮 : Finset (Finset F)} {lam : ℕ → F} (hU : IsUsefulFamilyWith H khat c 𝒮 lam)
-    (hck : c < khat) {S : Finset F} (hS : S ∈ 𝒮) :
+    {S : Finset F} (hS : S ∈ 𝒮) :
     ∃ p : F[X], p.degree ≤ ((khat - c - 1 : ℕ) : WithBot ℕ) ∧
       ∏ α ∈ S, (X - C α) = leadingPart khat c lam + p :=
-  prod_X_sub_C_eq_leadingPart_add_remainder (hU S hS).2.1 hck.le (hU S hS).2.2
+  prod_X_sub_C_eq_leadingPart_add_remainder (hU S hS).2.1 (hU S hS).2.2
 
 end Defs
 
@@ -197,7 +218,7 @@ omit [DecidableEq ι] [Fintype F] in
 the vanishing polynomial `V_S(x^d)` of a `k̂`-subset `S ⊆ H` (with `d`-regular fibers),
 then `δᵣ(u, w) ≤ 1 - k̂/h` (as a real number; `n = d·h`). -/
 lemma relHammingDist_le_of_sub_eq_vanishing (domain : ι ↪ F) {d h : ℕ}
-    (hn : Fintype.card ι = d * h) (hh : 0 < h)
+    (hn : Fintype.card ι = d * h)
     {H S : Finset F} (hSH : S ⊆ H) {khat : ℕ} (hScard : S.card = khat)
     (hfib : ∀ y ∈ H, (Finset.univ.filter fun i => domain i ^ d = y).card = d)
     {u w : ι → F} (huw : ∀ i, u i - w i = (∏ α ∈ S, (X - C α)).eval (domain i ^ d)) :
@@ -246,13 +267,19 @@ lemma relHammingDist_le_of_sub_eq_vanishing (domain : ι ↪ F) {d h : ℕ}
     _ = 1 - (khat : ℝ) / (h : ℝ) := by
         rw [hn]
         have hd' : (d : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hd0.ne'
-        have hh' : (h : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hh.ne'
+        have hh' : (h : ℝ) ≠ 0 := by
+          have : h ≠ 0 := by
+            intro hh
+            have hprod : 0 < d * h := hn ▸ hnpos
+            rw [hh, Nat.mul_zero] at hprod
+            omega
+          exact_mod_cast this
         push_cast
         field_simp
 
 omit [DecidableEq ι] [Fintype F] in
 /-- Let the evaluation domain have size `n = d·h`, let `H : Finset F` with `|H| = h` be
-`d`-regularly covered by `x ↦ x^d`, let `𝒮` be a `(H, k̂, c)`-useful family with `c < k̂`, and let
+`d`-regularly covered by `x ↦ x^d`, let `𝒮` be a `(H, k̂, c)`-useful family, and let
 `(k̂ - c - 1)·d < k`. Then there is a word `f` with
 `|List(RS[F, L, k], 1 - k̂/h, f)| ≥ |𝒮|`.
 
@@ -263,7 +290,7 @@ theorem usefulFamily_list_lower_bound (domain : ι ↪ F) [Finite F] {d h khat c
     (hn : Fintype.card ι = d * h)
     {H : Finset F} (hHcard : H.card = h)
     (hfib : ∀ y ∈ H, (Finset.univ.filter fun i => domain i ^ d = y).card = d)
-    {𝒮 : Finset (Finset F)} (hU : IsUsefulFamily H khat c 𝒮) (hck : c < khat)
+    {𝒮 : Finset (Finset F)} (hU : IsUsefulFamily H khat c 𝒮)
     (hk1 : (khat - c - 1) * d < k) :
     ∃ f : ι → F, 𝒮.card ≤
       (closeCodewordsRel (↑(ReedSolomon.code domain k) : Set (ι → F)) f
@@ -277,10 +304,6 @@ theorem usefulFamily_list_lower_bound (domain : ι ↪ F) [Finite F] {d h khat c
     rcases Nat.eq_zero_or_pos d with hd | hd
     · rw [hd, Nat.zero_mul] at hn; omega
     · exact hd
-  have hh0 : 0 < h := by
-    rcases Nat.eq_zero_or_pos h with hh | hh
-    · rw [hh, Nat.mul_zero] at hn; omega
-    · exact hh
   -- The word `f(x) = ∑_{i=0}^{c} (-1)^i λ_i x^{(k̂-i)d}` and the per-`S` codewords
   -- `w_S = f - V_S(x^d)`.
   set f : ι → F := ReedSolomon.evalOnPoints domain ((leadingPart khat c lam).comp (X ^ d))
@@ -295,7 +318,7 @@ theorem usefulFamily_list_lower_bound (domain : ι ↪ F) [Finite F] {d h khat c
     intro S hS
     obtain ⟨hSH, hScard, hesymm⟩ := hUW S hS
     obtain ⟨p, hpdeg, hpeq⟩ :=
-      prod_X_sub_C_eq_leadingPart_add_remainder hScard hck.le hesymm
+      prod_X_sub_C_eq_leadingPart_add_remainder hScard hesymm
     have hlp : leadingPart khat c lam - ∏ α ∈ S, (X - C α) = -p := by rw [hpeq]; ring
     rw [Code.mem_closeCodewordsRel_iff]
     refine ⟨?_, ?_⟩
@@ -320,7 +343,7 @@ theorem usefulFamily_list_lower_bound (domain : ι ↪ F) [Finite F] {d h khat c
         simp only [hf, hΦ, evalOnPoints_apply, Polynomial.eval_comp, Polynomial.eval_pow,
           Polynomial.eval_X, Polynomial.eval_sub]
         ring
-      have hball := relHammingDist_le_of_sub_eq_vanishing domain hn hh0 hSH hScard hfib hsub_eq
+      have hball := relHammingDist_le_of_sub_eq_vanishing domain hn hSH hScard hfib hsub_eq
       simpa using hball
   -- Distinct `S` give distinct codewords `w_S`.
   have hinj : Set.InjOn Φ ↑𝒮 := by
@@ -408,7 +431,7 @@ private lemma esymm_one_eq_sum (S : Finset F) : S.1.esymm 1 = ∑ α ∈ S, α :
 
 omit [DecidableEq ι] in
 /-- Let the evaluation domain have
-size `n = d·h`, let `H : Finset F` with `|H| = h` be `d`-regularly covered by `x ↦ x^d`,
+size `n = d·h`, let `H : Finset F` be `d`-regularly covered by `x ↦ x^d`,
 let `𝒮` be a family of `k̂`-subsets of `H`, and let `(k̂-2)·d < k ≤ (k̂-1)·d`. Then for
 `C := RS[F, L, k]`, the correlated agreement error at radius `1 - k̂/h` is at least
 `|Λ_𝒮| / |F|`.
@@ -418,7 +441,7 @@ from `C`, while for every `γ = ∑_{α ∈ S} α ∈ Λ_𝒮` the fold `f₀ - 
 codeword `-p_S(x^d)` on the `k̂·d` points `{x : x^d ∈ S}`. -/
 theorem sumSet_card_div_le_epsCa [SampleableType F] (domain : ι ↪ F) {d h khat k : ℕ}
     (hn : Fintype.card ι = d * h)
-    {H : Finset F} (hHcard : H.card = h)
+    {H : Finset F}
     (hfib : ∀ y ∈ H, (Finset.univ.filter fun i => domain i ^ d = y).card = d)
     {𝒮 : Finset (Finset F)} (h𝒮 : ∀ S ∈ 𝒮, S ⊆ H ∧ S.card = khat)
     (hk1 : (khat - 2) * d < k) (hk2 : k ≤ (khat - 1) * d) :
@@ -443,7 +466,13 @@ theorem sumSet_card_div_le_epsCa [SampleableType F] (domain : ι ↪ F) {d h kha
     rcases Nat.eq_zero_or_pos h with hh | hh
     · rw [hh, Nat.mul_zero] at hn; omega
     · exact hh
-  have hkh : khat ≤ h := by rw [← hS₀card, ← hHcard]; exact Finset.card_le_card hS₀H
+  have hkh : khat ≤ h := by
+    have hcount := card_filter_pow_mem domain hS₀H hfib
+    rw [hS₀card] at hcount
+    have hle := Finset.card_filter_le (Finset.univ : Finset ι)
+      (fun i => domain i ^ d ∈ S₀)
+    rw [hcount, Finset.card_univ, hn, Nat.mul_comm d h] at hle
+    exact le_of_mul_le_mul_right hle hd0
   have hkhat2 : 2 ≤ khat := by
     -- `(khat - 2) * d < k ≤ (khat - 1) * d`, and `d > 0`, forces `khat ≥ 2`.
     by_contra hlt
@@ -558,7 +587,7 @@ theorem sumSet_card_div_le_epsCa [SampleableType F] (domain : ι ↪ F) {d h kha
       · simp [Multiset.esymm, hlam]
       · rw [esymm_one_eq_sum]; simp [hlam]
     obtain ⟨p, hpdeg, hpeq⟩ :=
-      prod_X_sub_C_eq_leadingPart_add_remainder hScard (by omega : (1 : ℕ) ≤ khat) hesymm
+      prod_X_sub_C_eq_leadingPart_add_remainder hScard hesymm
     -- The codeword `w := -p_S(x^d) = (leadingPart - V_S)(x^d)`.
     set w : ι → F := ReedSolomon.evalOnPoints domain
       ((leadingPart khat 1 lam - ∏ α ∈ S, (X - C α)).comp (X ^ d)) with hw
@@ -604,7 +633,7 @@ theorem sumSet_card_div_le_epsCa [SampleableType F] (domain : ι ↪ F) {d h kha
         Polynomial.eval_sub]
       ring
     -- Distance bound: `δᵣ(u 0 + γ•u 1, C) ≤ δᵣ(·, w) ≤ 1 - k̂/h = δ`.
-    have hball := relHammingDist_le_of_sub_eq_vanishing domain hn hh0 hSH hScard hfib hsub_eq
+    have hball := relHammingDist_le_of_sub_eq_vanishing domain hn hSH hScard hfib hsub_eq
     have hle : δᵣ(u 0 + (∑ α ∈ S, α) • u 1, Cset)
         ≤ (Code.relHammingDist (u 0 + (∑ α ∈ S, α) • u 1) w : ENNReal) :=
       Code.relDistFromCode_le_relDist_to_mem _ w hwmem
@@ -688,7 +717,7 @@ lemma minRelDist_sub_eq (domain : ι ↪ F) {d h khat k : ℕ}
 
 omit [DecidableEq ι] [Fintype F] in
 /-- For a Reed--Solomon code over a domain of size
-`n = d·h` projecting `d`-regularly onto `H` (`|H| = h`), with `1 ≤ k̂ < h` and
+`n = d·h` projecting `d`-regularly onto `H` (`|H| = h`), with
 `(k̂-1)·d < k ≤ k̂·d`:
 `|List(C, δ_min(C) - (k̂d - k + 1)/n)| ≥ C(h, k̂)`.
 
@@ -698,15 +727,17 @@ theorem choose_le_Lambda_rs_vanilla (domain : ι ↪ F) [Finite F] {d h khat k :
     (hn : Fintype.card ι = d * h)
     {H : Finset F} (hHcard : H.card = h)
     (hfib : ∀ y ∈ H, (Finset.univ.filter fun i => domain i ^ d = y).card = d)
-    (hkhat : 1 ≤ khat) (hkh : khat < h)
     (hk1 : (khat - 1) * d < k) (hk2 : k ≤ khat * d) :
     (h.choose khat : ℕ∞) ≤
       Lambda (↑(ReedSolomon.code domain k) : Set (ι → F))
         (((δᵣ (↑(ReedSolomon.code domain k) : Set (ι → F)) : ℚ≥0) : ℝ)
           - ((khat * d - k + 1 : ℕ) : ℝ) / (Fintype.card ι : ℝ)) := by
   classical
+  by_cases hkh : khat ≤ h
+  swap
+  · simp [Nat.choose_eq_zero_of_lt (Nat.lt_of_not_ge hkh)]
   have hk0 : 0 < k := Nat.pos_of_ne_zero fun hk => by omega
-  rw [minRelDist_sub_eq domain hn hk0 hkh.le hk2]
+  rw [minRelDist_sub_eq domain hn hk0 hkh hk2]
   -- The `(H, k̂, 0)`-useful family of all `k̂`-subsets of `H`.
   have hU : IsUsefulFamily H khat 0 (H.powersetCard khat) := by
     refine ⟨fun _ => 1, fun S hS => ?_⟩
@@ -714,7 +745,7 @@ theorem choose_le_Lambda_rs_vanilla (domain : ι ↪ F) [Finite F] {d h khat k :
     refine ⟨hsub, hcard, fun i hi => ?_⟩
     obtain rfl : i = 0 := Nat.le_zero.mp hi
     simp [Multiset.esymm]
-  obtain ⟨f, hf⟩ := usefulFamily_list_lower_bound domain hn hHcard hfib hU hkhat
+  obtain ⟨f, hf⟩ := usefulFamily_list_lower_bound domain hn hHcard hfib hU
     (by simpa using hk1)
   refine le_iSup_of_le f ?_
   have hcard𝒮 : (H.powersetCard khat).card = h.choose khat := by
@@ -827,7 +858,7 @@ theorem choose_le_Lambda_rs_antipodal_even (domain : ι ↪ F) [Finite F] {d h k
     {H : Finset F} (hHcard : H.card = h)
     (hfib : ∀ y ∈ H, (Finset.univ.filter fun i => domain i ^ d = y).card = d)
     (hneg : ∀ y ∈ H, -y ∈ H) (hnf : ∀ y ∈ H, -y ≠ y)
-    (hkhat : 1 ≤ khat) (hkh : khat < h) (hkeven : Even khat)
+    (hkh : khat < h) (hkeven : Even khat)
     (hk1 : (khat - 2) * d < k) (hk2 : k ≤ khat * d) :
     ((h / 2).choose (khat / 2) : ℕ∞) ≤
       Lambda (↑(ReedSolomon.code domain k) : Set (ι → F))
@@ -839,7 +870,11 @@ theorem choose_le_Lambda_rs_antipodal_even (domain : ι ↪ F) [Finite F] {d h k
   rw [minRelDist_sub_eq domain hn hk0 hkh.le hk2]
   -- `k̂ = t + t` from evenness; `1 < k̂`.
   obtain ⟨t, ht⟩ := hkeven
-  have h1lt : 1 < khat := by omega
+  have h1lt : 1 < khat := by
+    by_contra hc
+    have hz : khat = 0 := by omega
+    simp [hz] at hk2
+    omega
   -- Antipodal transversal `P` with `|P| = h/2`.
   obtain ⟨P, hPsub, hPcard, hPiff⟩ := exists_neg_transversal hneg hnf
   have hPcard2 : P.card = h / 2 := by rw [← hHcard]; omega
@@ -919,7 +954,7 @@ theorem choose_le_Lambda_rs_antipodal_even (domain : ι ↪ F) [Finite F] {d h k
     · simp only [Nat.one_ne_zero, ite_false]
       rw [esymm_one_eq_sum, hΨsum T hT]
   -- Apply the general template.
-  obtain ⟨f, hf⟩ := usefulFamily_list_lower_bound domain hn hHcard hfib hU h1lt
+  obtain ⟨f, hf⟩ := usefulFamily_list_lower_bound domain hn hHcard hfib hU
     (show (khat - 1 - 1) * d < k by rw [Nat.sub_sub]; exact hk1)
   refine le_iSup_of_le f ?_
   -- Count: `|𝒮| = C(h/2, k̂/2)`.
@@ -942,7 +977,7 @@ theorem choose_le_Lambda_rs_antipodal_odd (domain : ι ↪ F) [Finite F] {d h kh
     {H : Finset F} (hHcard : H.card = h)
     (hfib : ∀ y ∈ H, (Finset.univ.filter fun i => domain i ^ d = y).card = d)
     (hneg : ∀ y ∈ H, -y ∈ H) (hnf : ∀ y ∈ H, -y ≠ y)
-    (hkhat : 1 ≤ khat) (hkh : khat < h) (hkodd : Odd khat)
+    (hkh : khat < h) (hkodd : Odd khat)
     (hk1 : (khat - 2) * d < k) (hk2 : k ≤ khat * d) :
     ((h / 2 - 1).choose ((khat - 1) / 2) : ℕ∞) ≤
       Lambda (↑(ReedSolomon.code domain k) : Set (ι → F))
@@ -955,7 +990,7 @@ theorem choose_le_Lambda_rs_antipodal_odd (domain : ι ↪ F) [Finite F] {d h kh
   -- `H` is nonempty; pick `a₀ ∈ H`.
   have hHpos : 0 < H.card := by rw [hHcard]; omega
   obtain ⟨a₀, ha₀⟩ := Finset.card_pos.mp hHpos
-  rcases eq_or_lt_of_le hkhat with hk1eq | h1lt
+  rcases eq_or_lt_of_le (Nat.succ_le_of_lt hkodd.pos) with hk1eq | h1lt
   · -- Special case `k̂ = 1` (so `t = 0`): the singleton family `{{a₀}}`.
     subst hk1eq
     set 𝒮 : Finset (Finset F) := {({a₀} : Finset F)} with h𝒮def
@@ -967,7 +1002,7 @@ theorem choose_le_Lambda_rs_antipodal_odd (domain : ι ↪ F) [Finite F] {d h kh
       obtain rfl : i = 0 := Nat.le_zero.mp hi
       exact esymm_zero_eq_one _
     obtain ⟨f, hf⟩ := usefulFamily_list_lower_bound domain hn hHcard hfib hU
-      (by norm_num) (by simpa using hk0)
+      (by simpa using hk0)
     refine le_iSup_of_le f ?_
     have hcard𝒮 : 𝒮.card = (h / 2 - 1).choose ((1 - 1) / 2) := by
       rw [h𝒮def, Finset.card_singleton]; simp
@@ -1104,7 +1139,7 @@ theorem choose_le_Lambda_rs_antipodal_odd (domain : ι ↪ F) [Finite F] {d h kh
       · simp
       · simp only [Nat.one_ne_zero, ite_false]
         rw [esymm_one_eq_sum, hΨsum T hT]
-    obtain ⟨f, hf⟩ := usefulFamily_list_lower_bound domain hn hHcard hfib hU h1lt
+    obtain ⟨f, hf⟩ := usefulFamily_list_lower_bound domain hn hHcard hfib hU
       (show (khat - 1 - 1) * d < k by rw [Nat.sub_sub]; exact hk1)
     refine le_iSup_of_le f ?_
     have hcard𝒮 : 𝒮.card = (h / 2 - 1).choose ((khat - 1) / 2) := by
@@ -1160,7 +1195,7 @@ private lemma smooth_pow_card_eq_one (domain : ι ↪ F) (H0 : Subgroup (Units F
     _ = ((1 : Units F) : F) := by rw [h3]
     _ = 1 := Units.val_one
 
-omit [DecidableEq ι] [Fintype F] in
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] in
 /-- **Smooth-domain projection structure.** A smooth evaluation domain (a coset `a·H₀` of
 a 2-group `H₀ ≤ Fˣ`) of size `n = d·h` projects under `x ↦ x^d` onto a set `H` of exactly
 `h` values, `d`-to-`1`; when `h` is even, `H` is moreover closed under negation with no
@@ -1179,7 +1214,12 @@ theorem Smooth.exists_pow_projection_structure (domain : ι ↪ F)
       (Even h → (∀ y ∈ H, -y ∈ H) ∧ ∀ y ∈ H, -y ≠ y) := by
   classical
   set n := Fintype.card ι with hn_def
-  have hnpos : 0 < n := Fintype.card_pos
+  have hnpos : 0 < n := by
+    obtain ⟨r, hr⟩ := ReedSolomon.Smooth.h_card_pow2 (domain := domain)
+    change 0 < Fintype.card ι
+    rw [hr]
+    positivity
+  have : Nonempty ι := Fintype.card_pos_iff.mp hnpos
   have hd0 : 0 < d := by
     rcases Nat.eq_zero_or_pos d with hd | hd
     · rw [hd, Nat.zero_mul] at hn; omega
@@ -1325,21 +1365,21 @@ omit [DecidableEq ι] [Fintype F] in
 /-- `choose_le_Lambda_rs_vanilla` specialized to a smooth evaluation domain. -/
 theorem choose_le_Lambda_rs_vanilla_of_smooth (domain : ι ↪ F) [Finite F]
     [ReedSolomon.Smooth domain] {d h khat k : ℕ}
-    (hn : Fintype.card ι = d * h) (hkhat : 1 ≤ khat) (hkh : khat < h)
+    (hn : Fintype.card ι = d * h)
     (hk1 : (khat - 1) * d < k) (hk2 : k ≤ khat * d) :
     (h.choose khat : ℕ∞) ≤
       Lambda (↑(ReedSolomon.code domain k) : Set (ι → F))
         (((δᵣ (↑(ReedSolomon.code domain k) : Set (ι → F)) : ℚ≥0) : ℝ)
           - ((khat * d - k + 1 : ℕ) : ℝ) / (Fintype.card ι : ℝ)) := by
   obtain ⟨H, hHcard, -, hfib, -⟩ := Smooth.exists_pow_projection_structure domain hn
-  exact choose_le_Lambda_rs_vanilla domain hn hHcard hfib hkhat hkh hk1 hk2
+  exact choose_le_Lambda_rs_vanilla domain hn hHcard hfib hk1 hk2
 
 omit [DecidableEq ι] [Fintype F] in
 /-- `choose_le_Lambda_rs_antipodal_even` specialized to a smooth domain with even `h`. -/
 theorem choose_le_Lambda_rs_antipodal_even_of_smooth (domain : ι ↪ F) [Finite F]
     [ReedSolomon.Smooth domain] {d h khat k : ℕ}
     (hn : Fintype.card ι = d * h) (hheven : Even h)
-    (hkhat : 1 ≤ khat) (hkh : khat < h) (hkeven : Even khat)
+    (hkh : khat < h) (hkeven : Even khat)
     (hk1 : (khat - 2) * d < k) (hk2 : k ≤ khat * d) :
     ((h / 2).choose (khat / 2) : ℕ∞) ≤
       Lambda (↑(ReedSolomon.code domain k) : Set (ι → F))
@@ -1347,14 +1387,14 @@ theorem choose_le_Lambda_rs_antipodal_even_of_smooth (domain : ι ↪ F) [Finite
           - ((khat * d - k + 1 : ℕ) : ℝ) / (Fintype.card ι : ℝ)) := by
   obtain ⟨H, hHcard, -, hfib, hanti⟩ := Smooth.exists_pow_projection_structure domain hn
   exact choose_le_Lambda_rs_antipodal_even domain hn hHcard hfib (hanti hheven).1
-    (hanti hheven).2 hkhat hkh hkeven hk1 hk2
+    (hanti hheven).2 hkh hkeven hk1 hk2
 
 omit [DecidableEq ι] [Fintype F] in
 /-- `choose_le_Lambda_rs_antipodal_odd` specialized to a smooth domain with even `h`. -/
 theorem choose_le_Lambda_rs_antipodal_odd_of_smooth (domain : ι ↪ F) [Finite F]
     [ReedSolomon.Smooth domain] {d h khat k : ℕ}
     (hn : Fintype.card ι = d * h) (hheven : Even h)
-    (hkhat : 1 ≤ khat) (hkh : khat < h) (hkodd : Odd khat)
+    (hkh : khat < h) (hkodd : Odd khat)
     (hk1 : (khat - 2) * d < k) (hk2 : k ≤ khat * d) :
     ((h / 2 - 1).choose ((khat - 1) / 2) : ℕ∞) ≤
       Lambda (↑(ReedSolomon.code domain k) : Set (ι → F))
@@ -1362,7 +1402,7 @@ theorem choose_le_Lambda_rs_antipodal_odd_of_smooth (domain : ι ↪ F) [Finite 
           - ((khat * d - k + 1 : ℕ) : ℝ) / (Fintype.card ι : ℝ)) := by
   obtain ⟨H, hHcard, -, hfib, hanti⟩ := Smooth.exists_pow_projection_structure domain hn
   exact choose_le_Lambda_rs_antipodal_odd domain hn hHcard hfib (hanti hheven).1
-    (hanti hheven).2 hkhat hkh hkodd hk1 hk2
+    (hanti hheven).2 hkh hkodd hk1 hk2
 
 end SmoothBridge
 
