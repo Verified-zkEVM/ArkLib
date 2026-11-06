@@ -186,7 +186,7 @@ lemma johnson_condition_strong_implies_2_le_B_card
     have : (card F : ℚ) - 1 ≠ 0 := by simp [sub_eq_zero]; omega
     field_simp
     ring
-  have h' := JohnsonBound.abs_one_sub_div_le_one (v := v) (a := a) (by omega)
+  have h' := JohnsonBound.abs_one_sub_div_le_one (v := v) (a := a)
   exact absurd (lt_of_lt_of_le (h ▸ h_johnson) h') (lt_irrefl _)
 
 /-- `JohnsonConditionStrong` is equivalent to `JohnsonDenominator` being positive. -/
@@ -207,9 +207,7 @@ theorem johnson_bound
     exact (le_div_iff₀ h_condition).mpr (by linarith)
   rw [johnson_denominator_def]
   exact JohnsonBound.johnson_bound_lemma
-    (johnson_condition_strong_implies_n_pos h_condition)
     (johnson_condition_strong_implies_2_le_B_card h_condition)
-    (johnson_condition_strong_implies_2_le_F_card h_condition)
 
 /-- Cancellation used in the `frac · d / n > 1` case of `johnson_bound_alphabet_free`. -/
 private lemma frac_mul_div_div_one_div {q D N : ℚ} (hN : N ≠ 0) (hq : q - 1 ≠ 0) :
@@ -276,7 +274,7 @@ theorem johnson_bound_alphabet_free
         show 1 - frac * JohnsonBound.d B' / n < (1 - frac * JohnsonBound.e B' v / n) ^ 2 from
           (sub_neg.mpr hdn).trans_le (sq_nonneg _)
       have hgap : frac * JohnsonBound.d B' / (n : ℚ) - 1 ≥ 1 / (n * (q - 1)) :=
-        johnson_gap_frac_d_gt_one q_not_small n_not_small h_d_close_n hd_le_dB'
+        johnson_gap_frac_d_gt_one h_d_close_n hd_le_dB'
       have hden_lb : (1 : ℚ) / (n * (q - 1)) ≤ JohnsonDenominator B' v := by
         change _ ≤ (1 - frac * JohnsonBound.e B' v / n) ^ 2 - (1 - frac * JohnsonBound.d B' / n)
         linarith [sq_nonneg (1 - frac * JohnsonBound.e B' v / n)]
@@ -289,7 +287,7 @@ theorem johnson_bound_alphabet_free
               (one_div_pos.mpr (mul_pos hn_pos hq1_pos)) hden_lb
         _ = q * JohnsonBound.d B' := frac_mul_div_div_one_div hn_pos.ne' hq1_pos.ne'
         _ ≤ q * n :=
-            mul_le_mul_of_nonneg_left (johnson_d_le_n (B := B') (le_of_not_gt h_size)) hq_nn
+            mul_le_mul_of_nonneg_left (johnson_d_le_n (B := B')) hq_nn
         _ ≤ q * n * d := le_mul_of_one_le_right (mul_nonneg hq_nn hn_pos.le)
             (by exact_mod_cast d_not_small)
         _ = q * d * n := by ring
@@ -337,7 +335,7 @@ theorem johnson_bound_alphabet_free
       -- Core inequality from the hypothesis.
       have h_div'_q : (1 - (d / n : ℚ)) ≤ (1 - (e / n : ℚ)) ^ 2 := by
         have : ((1 - (d / n : ℚ)) : ℝ) ≤ ((1 - (e / n : ℚ)) ^ 2 : ℝ) := by
-          simpa using JohnsonBound.johnson_hyp_implies_div_ineq hn_pos_nat d_le_n h
+          simpa using JohnsonBound.johnson_hyp_implies_div_ineq h
         exact_mod_cast this
       calc (B'.card : ℚ)
           ≤ (frac * JohnsonBound.d B' / n) / JohnsonDenominator B' v :=
@@ -383,17 +381,17 @@ theorem johnson_bound_alphabet_free
                 (JohnsonBound.d B' / n - 2 * JohnsonBound.e B' v / n +
                   frac * (JohnsonBound.e B' v / n) ^ 2) ≤
                 (d / n) / (d / n - 2 * e / n + frac * (e / n) ^ 2) :=
-              johnson_worst_case_bound hn_pos (Nat.succ_le_iff.1 d_not_small) d_le_n h
+              johnson_worst_case_bound (Nat.succ_le_iff.1 d_not_small) d_le_n h
                 (le_of_not_gt h_d_close_n) hfrac_gt1 e_ineq hd_le_dB' quad_nonneg hden1_pos
             -- Final algebraic bound.
             have hden_lb : (1 : ℚ) / (q * (n : ℚ) ^ 2) ≤ Den := by
               by_cases he0 : e = 0
               · have hE0 : E0 = 0 := by simp only [E0, he0, Nat.cast_zero, zero_div]
                 calc (1 : ℚ) / (q * (n : ℚ) ^ 2)
-                    ≤ D0 := johnson_den_lb_e_zero hn_pos_nat (one_le_two.trans q_not_small)
+                    ≤ D0 := johnson_den_lb_e_zero (one_le_two.trans q_not_small)
                       (by exact_mod_cast d_not_small)
                   _ = Den := by simp only [Den, hE0]; ring
-              · exact johnson_den_lb_e_pos hn_pos he0 one_div_q_le
+              · exact johnson_den_lb_e_pos he0 one_div_q_le
                   (sub_pos.mpr hfrac_gt1) quad_nonneg
             rw [term_simplification]
             calc (JohnsonBound.d B' / n) /

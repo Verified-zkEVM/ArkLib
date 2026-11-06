@@ -201,7 +201,7 @@ theorem sourceDensity_gain_at_finiteLengthRate
 
 /-- On the clean branch, the exact fixed-rate margin is the automatic surplus. -/
 theorem finiteLength_fixedRateMargin_eq_surplus
-    {rho eta : ℝ} (hrho : 0 < rho) (hrhoOne : rho < 1)
+    {rho eta : ℝ}
     (hbeta : finiteLengthDerivativeRatio rho eta ≤ 1 / 2) :
     firstOrderSourceDensity rho (finiteLengthCertifiedAgreement rho eta)
         (finiteLengthDerivativeRatio rho eta) -
@@ -213,7 +213,6 @@ theorem finiteLength_fixedRateMargin_eq_surplus
   rw [hrank]
   have hidentity := automatic_sourceDensity_sub_rankDensityEnvelope
     (rho := rho) (a := firstOrderRateThreshold rho + eta)
-    hrho hrhoOne
   unfold finiteLengthCertifiedAgreement finiteLengthDerivativeRatio
   unfold automaticSourceDensity automaticRankDensityEnvelope at hidentity
   exact hidentity
@@ -230,12 +229,12 @@ theorem automaticSurplusSlope_mul_finiteLengthSlack_le_margin
   let a := finiteLengthCertifiedAgreement rho eta
   let beta := finiteLengthDerivativeRatio rho eta
   have ha : 0 < a := by
-    have := rho_lt_automaticAgreement hrho hrhoOne
+    have := rho_lt_automaticAgreement hrhoOne
       (show firstOrderRateThreshold rho < firstOrderRateThreshold rho + eta by
         linarith)
     exact hrho.trans this
   have hb0 : 0 < beta := by
-    exact automaticDerivativeRatio_pos hrhoOne haOne
+    exact automaticDerivativeRatio_pos hrhoOne
   have hbcut : beta < a / rho := by
     exact automaticDerivativeRatio_lt_agreement_div_rate hrho hrhoOne (by linarith)
   have hgain := sourceDensity_gain_at_finiteLengthRate hrho hn ha hb0.le hbcut
@@ -254,7 +253,7 @@ theorem automaticSurplusSlope_mul_finiteLengthSlack_le_margin
     rw [le_div_iff₀ hden]
     nlinarith
   have harho : rho ≤ a := by
-    exact (rho_lt_automaticAgreement hrho hrhoOne (by linarith)).le
+    exact (rho_lt_automaticAgreement hrhoOne (by linarith)).le
   have haSq : rho ^ 2 ≤ a ^ 2 := by nlinarith [sq_nonneg (a - rho)]
   have hgainSlope : automaticSurplusSlope rho / n ≤
       beta * a ^ 2 / (3 * rho ^ 2 * n) := by
@@ -264,7 +263,7 @@ theorem automaticSurplusSlope_mul_finiteLengthSlack_le_margin
       rw [this, mul_zero] at hn
       norm_num at hn
     have hgap0 : 0 ≤ automaticRateGap rho :=
-      (automaticRateGap_pos hrho hrhoOne).le
+      (automaticRateGap_pos hrhoOne).le
     unfold automaticSurplusSlope
     have hprod := mul_le_mul hbetaLower haSq (sq_nonneg rho) hb0.le
     have hrhoSq : 0 < rho ^ 2 := sq_pos_of_pos hrho
@@ -277,7 +276,7 @@ theorem automaticSurplusSlope_mul_finiteLengthSlack_le_margin
           (beta * a ^ 2 / (3 * rho ^ 2)) / (n : ℝ) :=
         (div_le_div_iff_of_pos_right hn0).2 hbaseSlope
       _ = beta * a ^ 2 / (3 * rho ^ 2 * n) := by ring
-  have hfixed := finiteLength_fixedRateMargin_eq_surplus hrho hrhoOne hbetaHalf
+  have hfixed := finiteLength_fixedRateMargin_eq_surplus hbetaHalf
   unfold finiteLengthDensityMargin
   dsimp only [a, beta] at hgain hbase hgainSlope hfixed ⊢
   calc
@@ -343,7 +342,7 @@ theorem finiteLengthDensityMargin_pos
     (hn : (2 : ℝ) ≤ rho * n)
     (hbetaHalf : finiteLengthDerivativeRatio rho eta ≤ 1 / 2) :
     0 < finiteLengthDensityMargin rho eta n := by
-  have hc := automaticSurplusSlope_pos hrho hrhoOne
+  have hc := automaticSurplusSlope_pos hrhoOne
   have hs : 0 < finiteLengthSlack eta n := finiteLengthSlack_pos heta
   exact (mul_pos hc hs).trans_le
     (automaticSurplusSlope_mul_finiteLengthSlack_le_margin
@@ -362,7 +361,7 @@ theorem finiteLengthMultiplicity_pos
   have hmargin := finiteLengthDensityMargin_pos
     hrho hrhoOne heta haOne hn hbetaHalf
   have hbeta0 : 0 < finiteLengthDerivativeRatio rho eta :=
-    automaticDerivativeRatio_pos hrhoOne haOne
+    automaticDerivativeRatio_pos hrhoOne
   unfold finiteLengthRankRoundingConstant
   positivity
 
@@ -380,7 +379,7 @@ theorem finiteLengthMultiplicity_le_inv_slack
   let delta := finiteLengthDensityMargin rho eta n
   let crank := finiteLengthRankRoundingConstant rho eta
   let m := finiteLengthMultiplicity rho eta n
-  have hc : 0 < c := automaticSurplusSlope_pos hrho hrhoOne
+  have hc : 0 < c := automaticSurplusSlope_pos hrhoOne
   have hs : 0 < s := by
     dsimp only [s]
     exact finiteLengthSlack_pos heta
@@ -395,7 +394,7 @@ theorem finiteLengthMultiplicity_le_inv_slack
     linarith
   have hcrank0 : 0 ≤ crank := by
     dsimp only [crank, finiteLengthRankRoundingConstant]
-    have : 0 < finiteLengthDerivativeRatio rho eta := automaticDerivativeRatio_pos hrhoOne haOne
+    have : 0 < finiteLengthDerivativeRatio rho eta := automaticDerivativeRatio_pos hrhoOne
     positivity
   have hx : 4 * crank / delta ≤ 16 / (c * s) := by
     calc
@@ -425,11 +424,10 @@ theorem finiteLengthMultiplicity_le_inv_slack
 theorem finiteLengthDerivativeCap_le_multiplicity
     {rho eta : ℝ} {n : ℕ}
     (hrhoOne : rho < 1)
-    (haOne : firstOrderRateThreshold rho + eta < 1)
     (hbetaHalf : finiteLengthDerivativeRatio rho eta ≤ 1 / 2) :
     finiteLengthDerivativeCap rho eta n ≤ finiteLengthMultiplicity rho eta n := by
   have hb0 : 0 ≤ finiteLengthDerivativeRatio rho eta :=
-    (automaticDerivativeRatio_pos hrhoOne haOne).le
+    (automaticDerivativeRatio_pos hrhoOne).le
   have hm0 : (0 : ℝ) ≤ finiteLengthMultiplicity rho eta n := Nat.cast_nonneg _
   have hfloor : (finiteLengthDerivativeCap rho eta n : ℝ) ≤
       finiteLengthDerivativeRatio rho eta * finiteLengthMultiplicity rho eta n := by
@@ -451,7 +449,7 @@ theorem finiteLengthDerivativeCap_le_inv_slack
     (finiteLengthDerivativeCap rho eta n : ℝ) ≤
       finiteLengthMultiplicityBoundConstant rho / finiteLengthSlack eta n := by
   exact (Nat.cast_le.mpr (finiteLengthDerivativeCap_le_multiplicity
-    hrhoOne haOne hbetaHalf)).trans
+    hrhoOne hbetaHalf)).trans
       (finiteLengthMultiplicity_le_inv_slack
         hrho hrhoOne heta haOne hn hbetaHalf)
 
@@ -475,7 +473,7 @@ theorem finiteLengthDerivativeCap_le_jetDegree
         norm_num at hn
       exact_mod_cast this)
   have ha0 : 0 < finiteLengthCertifiedAgreement rho eta := by
-    exact hrho.trans (rho_lt_automaticAgreement hrho hrhoOne (by linarith))
+    exact hrho.trans (rho_lt_automaticAgreement hrhoOne (by linarith))
   have hbcut : finiteLengthDerivativeRatio rho eta <
       finiteLengthCertifiedAgreement rho eta / finiteLengthRate rho n := by
     exact hbcutFixed.trans_le (div_le_div_of_nonneg_left ha0.le hrn hrnle.le)
@@ -507,7 +505,7 @@ theorem finiteLengthJetDegree_le_inv_slack
     (finiteLengthSlack_lt_one_of_rate hrho hrhoOne haOne hn).le
   have ha0 : 0 ≤ a := by
     dsimp only [a]
-    exact (hrho.trans (rho_lt_automaticAgreement hrho hrhoOne (by linarith))).le
+    exact (hrho.trans (rho_lt_automaticAgreement hrhoOne (by linarith))).le
   change (Nat.ceil ((m : ℝ) * a / rn) : ℝ) ≤
     (2 * cm / rho + 1) / s
   exact Nat.cast_ceil_mul_div_le_inv_slack
@@ -518,7 +516,7 @@ theorem finiteLengthJetDegree_le_inv_slack
 /-- The exact finite-length local rank loses at most `3 m²` against the cubic density. -/
 theorem finiteLengthRankCount_le_density_add_three_mul_sq
     {rho eta : ℝ} {n : ℕ}
-    (hrhoOne : rho < 1) (haOne : firstOrderRateThreshold rho + eta < 1)
+    (hrhoOne : rho < 1)
     (hbetaHalf : finiteLengthDerivativeRatio rho eta ≤ 1 / 2) :
     (finiteLengthRankCount rho eta n : ℝ) ≤
       (finiteLengthMultiplicity rho eta n : ℝ) ^ 3 *
@@ -526,7 +524,7 @@ theorem finiteLengthRankCount_le_density_add_three_mul_sq
         3 * (finiteLengthMultiplicity rho eta n : ℝ) ^ 2 := by
   have hbeta0 : 0 ≤ finiteLengthDerivativeRatio rho eta := by
     unfold finiteLengthDerivativeRatio
-    exact (automaticDerivativeRatio_pos hrhoOne haOne).le
+    exact (automaticDerivativeRatio_pos hrhoOne).le
   have hbeta34 : finiteLengthDerivativeRatio rho eta ≤ 3 / 4 :=
     hbetaHalf.trans (by norm_num : (1 / 2 : ℝ) ≤ 3 / 4)
   have hrankDensity : firstOrderRankDensity (finiteLengthDerivativeRatio rho eta) =
@@ -542,7 +540,6 @@ theorem finiteLengthRankCount_le_density_add_three_mul_sq
 theorem finiteLengthSourceDensity_mul_cube_le_sourceCount
     {rho eta : ℝ} {n : ℕ}
     (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
-    (haOne : firstOrderRateThreshold rho + eta < 1)
     (hn : (2 : ℝ) ≤ rho * n) :
     (finiteLengthMultiplicity rho eta n : ℝ) ^ 3 *
         firstOrderSourceDensity (finiteLengthRate rho n)
@@ -561,12 +558,12 @@ theorem finiteLengthSourceDensity_mul_cube_le_sourceCount
     exact finiteLengthRate_lt_rate (length_pos_of_two_le_rate_mul_length hn)
   have hrhoAgreement : rho < agreement := by
     dsimp only [agreement, finiteLengthCertifiedAgreement]
-    exact rho_lt_automaticAgreement hrho hrhoOne (by linarith)
+    exact rho_lt_automaticAgreement hrhoOne (by linarith)
   have hrateAgreement : rate ≤ agreement := hrateLt.le.trans hrhoAgreement.le
   have hagreement : 0 < agreement := hrho.trans hrhoAgreement
   have hbeta0 : 0 ≤ beta := by
     dsimp only [beta, finiteLengthDerivativeRatio]
-    exact (automaticDerivativeRatio_pos hrhoOne haOne).le
+    exact (automaticDerivativeRatio_pos hrhoOne).le
   have hbetaCutFixed : beta < agreement / rho := by
     dsimp only [beta, agreement, finiteLengthDerivativeRatio,
       finiteLengthCertifiedAgreement]
@@ -608,7 +605,7 @@ theorem finiteLength_count_gap
   have hcrank3 : 3 ≤ crank := by
     have hb : 0 ≤ finiteLengthDerivativeRatio rho eta := by
       unfold finiteLengthDerivativeRatio
-      exact (automaticDerivativeRatio_pos hrhoOne haOne).le
+      exact (automaticDerivativeRatio_pos hrhoOne).le
     change 3 ≤ 2 * finiteLengthDerivativeRatio rho eta + 3
     linarith
   have habsorb : 4 * crank ≤ (m : ℝ) * delta := by
@@ -618,9 +615,9 @@ theorem finiteLength_count_gap
     nlinarith [mul_nonneg (sq_nonneg (m : ℝ))
       (sub_nonneg.mpr habsorb)]
   have hsource := finiteLengthSourceDensity_mul_cube_le_sourceCount
-    hrho hrhoOne heta haOne hn
+    hrho hrhoOne heta hn
   have hrank := finiteLengthRankCount_le_density_add_three_mul_sq
-    (n := n) hrhoOne haOne hbetaHalf
+    (n := n) hrhoOne hbetaHalf
   have hrank' : (finiteLengthRankCount rho eta n : ℝ) ≤
       (m : ℝ) ^ 3 * firstOrderRankDensity beta + crank * (m : ℝ) ^ 2 := by
     dsimp only [m, beta] at hrank ⊢
@@ -650,7 +647,7 @@ theorem finiteLengthChallengeHeight_le_inv_slack_sq_of_count_gap
   have hmNat : 0 < m := finiteLengthMultiplicity_pos
     hrho hrhoOne heta haOne hn hbetaHalf
   have hm : (0 : ℝ) < m := Nat.cast_pos.mpr hmNat
-  have hc : 0 < c := automaticSurplusSlope_pos hrho hrhoOne
+  have hc : 0 < c := automaticSurplusSlope_pos hrhoOne
   have hs : 0 < s := finiteLengthSlack_pos heta
   have hsOne : s ≤ 1 :=
     (finiteLengthSlack_lt_one_of_rate hrho hrhoOne haOne hn).le
@@ -663,7 +660,7 @@ theorem finiteLengthChallengeHeight_le_inv_slack_sq_of_count_gap
       (mul_le_mul_of_nonneg_left hdelta (by positivity)) (by norm_num)).trans hgap
   have hM : finiteLengthDerivativeCap rho eta n ≤ m :=
     finiteLengthDerivativeCap_le_multiplicity
-      hrhoOne haOne hbetaHalf
+      hrhoOne hbetaHalf
   have hR : (R : ℝ) ≤ 2 * (m : ℝ) ^ 3 := by
     dsimp only [R, finiteLengthRankCount, m]
     exact_mod_cast firstOrderRankCount_le_two_mul_cube hmNat hM

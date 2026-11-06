@@ -122,7 +122,7 @@ theorem exists_exceptional_firstOrder_hybrid_optimized_of_tail
     {n D A mu M : ℕ} (domain : Fin n ↪ F) (f g : Fin n → F)
     (iota : F →+* E) (Q : DifferentialPolynomial E[X] 1)
     (descent : HiddenDerivative.FirstOrderHybridDescent Q mu M)
-    (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n) (hMmu : M ≤ mu)
+    (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n)
     (hchar : ringChar F = 0 ∨ D < ringChar F)
     (htail : HasOrdinaryTailTransfer (D := D) (A := A)
       (h := coeffNatDegree Q) (mu := mu) (e := descent.actualDegree)
@@ -173,7 +173,7 @@ theorem exists_exceptional_firstOrder_hybrid_optimized_of_tail
     unfold HiddenDerivative.firstOrderExceptionBound
     exact_mod_cast hcardRaw.trans (Nat.le_ceil _)
   have hclosed := HiddenDerivative.maxMinFirstOrderExceptionCharge_le_firstOrderExceptionConstant
-    (h := coeffNatDegree Q) hD hDA hAn hMmu
+    (n := n) (A := A) (h := coeffNatDegree Q) (μ := mu) (M := M) hD
   exact ⟨exceptional, hcardRaw, hcardCeil, hcardRaw.trans hclosed, hgood⟩
 
 end

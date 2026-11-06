@@ -301,7 +301,7 @@ example := exists_exceptional_firstOrder_hybrid_optimized_of_tail
   (n := 2) (D := 1) (A := 2) (mu := 1) (M := 1)
   exceptionDomain (exceptionValues 0) (exceptionValues 1) exceptionEmbedding
   exceptionEquation exceptionDescent
-  (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  (by norm_num) (by norm_num) (by norm_num)
   (Or.inl (ringChar.eq_zero : ringChar ℂ = 0)) exceptionOrdinaryTailTransfer
 
 example :
@@ -396,7 +396,7 @@ example := exists_exceptional_firstOrder_hybrid
   exceptionDomain (exceptionValues 0) (exceptionValues 1) exceptionEmbedding exceptionEquation
   (by simp [exceptionEquation]) exceptionEquation_totalDegree.le
   (by simp [jetDegree, exceptionEquation, MvPolynomial.degreeOf_X_self])
-  (MvPolynomial.coeffNatDegreeLE_X _) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  (MvPolynomial.coeffNatDegreeLE_X _) (by norm_num) (by norm_num) (by norm_num)
   (Or.inl (ringChar.eq_zero : ringChar ℂ = 0))
 
 /-- The base-field hybrid transfer applies to the same equation, with `ℂ` as the base field. -/
@@ -405,7 +405,7 @@ example := exists_exceptional_firstOrder_hybrid_base
   exceptionDomain (exceptionValues 0) (exceptionValues 1) exceptionEquation
   (by simp [exceptionEquation]) exceptionEquation_totalDegree.le
   (by simp [jetDegree, exceptionEquation, MvPolynomial.degreeOf_X_self])
-  (MvPolynomial.coeffNatDegreeLE_X _) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  (MvPolynomial.coeffNatDegreeLE_X _) (by norm_num) (by norm_num) (by norm_num)
   (Or.inl (ringChar.eq_zero : ringChar ℂ = 0))
 
 private theorem halfRate_threshold_lt_three_quarters :
@@ -423,20 +423,20 @@ private def rationalDomain : Fin 4 ↪ ℚ := ⟨![0, 1, 2, 3], by decide⟩
 /-- The automatic recipe at rate `1/2` and agreement `3/4` gives the extension-field transfer. -/
 example := exists_automaticFirstOrder_hybridEquation (rho := 1 / 2) (a := 3 / 4)
   (n := 4) (D := 1) (A := 3) (k := 2) (by norm_num) (by norm_num)
-  halfRate_threshold_lt_three_quarters (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  halfRate_threshold_lt_three_quarters (by norm_num) (by norm_num) (by norm_num)
   (by norm_num) (by norm_num) (by norm_num) (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
   rationalDomain (fun _ ↦ 0) (fun _ ↦ 1) (algebraMap ℚ ℂ)
 
 /-- The automatic recipe at rate `1/2` and agreement `3/4` gives the base-field transfer. -/
 example := exists_automaticFirstOrder_hybridEquation_base (rho := 1 / 2) (a := 3 / 4)
   (n := 4) (D := 1) (A := 3) (k := 2) (by norm_num) (by norm_num)
-  halfRate_threshold_lt_three_quarters (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  halfRate_threshold_lt_three_quarters (by norm_num) (by norm_num) (by norm_num)
   (by norm_num) (by norm_num) (by norm_num) (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
   rationalDomain (fun _ ↦ 0) (fun _ ↦ 1)
 
 /-- The closed exceptional-set bound along a rational received line. -/
 example := automatic_first_order_line_agreement (1 / 2) (3 / 4) (by norm_num) (by norm_num)
-  halfRate_threshold_lt_three_quarters (by norm_num) 4 2 3 (by norm_num) (by norm_num)
+  halfRate_threshold_lt_three_quarters 4 2 3 (by norm_num) (by norm_num)
   (by norm_num) (by norm_num) (by norm_num) rationalDomain
   (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)) (fun _ ↦ 0) (fun _ ↦ 1)
 

@@ -76,7 +76,7 @@ than from a finite-field assumption. -/
 theorem automaticFirstOrder_closePolynomialSet_finite_and_card_le
     {rho a : ℝ} {n D A k : ℕ}
     (hrho : 0 < rho) (hrhoOne : rho < 1)
-    (ha : firstOrderRateThreshold rho < a) (haOne : a < 1)
+    (ha : firstOrderRateThreshold rho < a)
     /-
 
     The dimension and integer agreement threshold enforce the fixed physical rate
@@ -107,11 +107,11 @@ theorem automaticFirstOrder_closePolynomialSet_finite_and_card_le
     refine Set.finite_of_forall_finset_card_le (R := ℕ) (ℓ := B) ?_
     intro S hST
     have hbound := finite_automaticFirstOrder_hybrid_agreement_solutions_card_le
-      hrho hrhoOne ha haOne hn hD hk hkRate hA hAn domain received hchar S
+      hrho hrhoOne ha hn hD hk hkRate hA hAn domain received hchar S
       (fun P hP ↦ (mem_closePolynomialSet_iff_agreement domain received P).mp (hST hP))
     exact hbound.2.1
   have hwhole := finite_automaticFirstOrder_hybrid_agreement_solutions_card_le
-    hrho hrhoOne ha haOne hn hD hk hkRate hA hAn domain received hchar hfinite.toFinset
+    hrho hrhoOne ha hn hD hk hkRate hA hAn domain received hchar hfinite.toFinset
     (fun P hP ↦ (mem_closePolynomialSet_iff_agreement domain received P).mp
       (hfinite.mem_toFinset.mp hP))
   have hncard : T.ncard = hfinite.toFinset.card := Set.ncard_eq_toFinset_card T hfinite
@@ -141,7 +141,6 @@ theorem automatic_first_order_list_bound
     (hρ : 0 < ρ)
     (hρone : ρ < 1)
     (ha : firstOrderRateThreshold ρ < a)
-    (haone : a < 1)
     /-
 
     Dimension k means degree strictly below k; A counts agreeing positions.
@@ -208,7 +207,7 @@ theorem automatic_first_order_list_bound
   dsimp only
   obtain ⟨hfinite, _hraw, _hceil, hclosed⟩ :=
     automaticFirstOrder_closePolynomialSet_finite_and_card_le
-      hρ hρone ha haone hn rfl hk hrate hagree hAn domain received hchar
+      hρ hρone ha hn rfl hk hrate hagree hAn domain received hchar
   exact ⟨hfinite, hclosed⟩
 
 open Classical in
@@ -221,7 +220,6 @@ theorem automatic_first_order_list_bound_of_slack
     (hρ : 0 < ρ)
     (hρone : ρ < 1)
     (hη₁ : 0 < η₁)
-    (haone : firstOrderRateThreshold ρ + η₁ < 1)
     /-
 
     Dimension k means degree < k; A is the integer agreement threshold.
@@ -261,7 +259,7 @@ theorem automatic_first_order_list_bound_of_slack
       ((closePolynomialSet domain received k A).ncard : ℝ) ≤ Λ := by
   dsimp only
   exact automatic_first_order_list_bound ρ (firstOrderRateThreshold ρ + η₁)
-    hρ hρone (lt_add_of_pos_right _ hη₁) haone n k A hn hk hrate hagree hAn
+    hρ hρone (lt_add_of_pos_right _ hη₁) n k A hn hk hrate hagree hAn
     domain hchar received
 
 open Classical in
@@ -303,7 +301,7 @@ theorem automaticFirstOrder_closePolynomialSet_at_ceil_finite_and_card_le
       a * (n : ℝ) ≤ 1 * n := mul_le_mul_of_nonneg_right haOne.le (Nat.cast_nonneg n)
       _ = n := one_mul _
   exact automaticFirstOrder_closePolynomialSet_finite_and_card_le
-    hrho hrhoOne ha haOne hn rfl hk hkRate hA hAn domain received hchar
+    hrho hrhoOne ha hn rfl hk hkRate hA hAn domain received hchar
 
 open Classical in
 /-- The squarefree product and resultant argument improves the slack dependence of the automatic
@@ -328,7 +326,7 @@ theorem automatic_first_order_squarefree_list_bound_of_slack
   let B := automaticJetDegree rho a
   have ha : firstOrderRateThreshold rho < a := by dsimp only [a]; linarith
   have hOld := automaticFirstOrder_closePolynomialSet_finite_and_card_le
-    hrho hrhoOne ha haOne hn (show D = k - 1 from rfl) hk hkRate hA hAn
+    hrho hrhoOne ha hn (show D = k - 1 from rfl) hk hkRate hA hAn
       domain received hchar
   refine ⟨hOld.1, ?_⟩
   have hkA : k ≤ A := by
@@ -337,7 +335,6 @@ theorem automatic_first_order_squarefree_list_bound_of_slack
     exact_mod_cast (hkRate.trans (mul_le_mul_of_nonneg_right hrhok.le hnR.le) |>.trans hA)
   have hD : 1 ≤ D := by dsimp only [D]; omega
   have hDn : D ≤ n := by dsimp only [D]; omega
-  have hDA : D < A := by dsimp only [D]; omega
   have hDrate : (D : ℝ) ≤ rho * n := by
     exact (show (D : ℝ) ≤ k by exact_mod_cast (show D ≤ k by dsimp [D]; omega)).trans hkRate
   by_cases hMzero : M = 0
@@ -375,23 +372,23 @@ theorem automatic_first_order_squarefree_list_bound_of_slack
       dsimp only [M, B]
       unfold automaticDerivativeCap
       exact min_le_right _ _
-    let p := automaticFiniteRateParameters hrho hrhoOne ha haOne
+    let p := automaticFiniteRateParameters hrho hrhoOne ha
     obtain ⟨cert⟩ := exists_automaticFirstOrder_symbolicCertificate
-      hrho hrhoOne ha haOne hn (show D = k - 1 from rfl) hk hkRate hA
+      hrho hrhoOne ha hn (show D = k - 1 from rfl) hk hkRate hA
       domain received (fun _ ↦ 0)
     have hMBcert : p.derivativeCap ≤ p.jetDegree := by
       calc
         p.derivativeCap = M := by
           simpa [p, M] using
-            automaticFiniteRateParameters_derivativeCap hrho hrhoOne ha haOne
+            automaticFiniteRateParameters_derivativeCap hrho hrhoOne ha
         _ ≤ B := hMB
         _ = p.jetDegree := by
           simpa [p, B] using
-            (automaticFiniteRateParameters_jetDegree hrho hrhoOne ha haOne).symm
+            (automaticFiniteRateParameters_jetDegree hrho hrhoOne ha).symm
     have hcharCert : ringChar F = 0 ∨
         max (k - 1) p.derivativeCap < ringChar F := by
       simpa only [p, M,
-        automaticFiniteRateParameters_derivativeCap hrho hrhoOne ha haOne] using hchar
+        automaticFiniteRateParameters_derivativeCap hrho hrhoOne ha] using hchar
     let list := hOld.1.toFinset
     have hsolutions : ∀ P ∈ list, P.degree < k ∧
         A ≤ (Finset.univ.filter fun i ↦ P.eval (domain i) = received i).card := by
@@ -404,13 +401,13 @@ theorem automatic_first_order_squarefree_list_bound_of_slack
           (M := p.derivativeCap) (μ := p.jetDegree)) cert hk hkA hAn
         hMBcert hcharCert list hsolutions
     have hbound := FirstOrder.Squarefree.automaticSquarefreeListExpression_le
-      hrho hrhoOne heta haOne (show 1 ≤ n by omega) hD hDn hDA hDrate hA hM
+      hrho hrhoOne heta haOne (show 1 ≤ n by omega) hD hDn hDrate hA hM
     have hncard := Set.ncard_eq_toFinset_card _ hOld.1
     rw [hncard]
     exact hcard.trans (by
       simpa only [D, M, B, a, p,
-        automaticFiniteRateParameters_derivativeCap hrho hrhoOne ha haOne,
-        automaticFiniteRateParameters_jetDegree hrho hrhoOne ha haOne,
+        automaticFiniteRateParameters_derivativeCap hrho hrhoOne ha,
+        automaticFiniteRateParameters_jetDegree hrho hrhoOne ha,
         agreementIncidenceRatio,
         mul_div_assoc,
         (show k - 1 + 1 = k by omega),
@@ -599,7 +596,7 @@ theorem closePolynomialSet_finite_and_card_le_finiteLength_of_bounded_certificat
         intro i hi
         simpa using (Finset.mem_filter.mp hi).2
       have hraw := HiddenDerivative.finite_firstOrder_field_hybrid_agreement_solutions_card_le
-        domain received Q hQ hweight hdegree (by omega) (by omega) hAn hMB hchar S hsol
+        domain received Q hQ hweight hdegree (by omega) (by omega) hAn hchar S hsol
           (fun P hP ↦ by
             have hkEq : ((k - 1 : ℕ) : WithBot ℕ) + 1 = (k : WithBot ℕ) := by
               exact_mod_cast (Nat.sub_add_cancel (by omega : 1 ≤ k))

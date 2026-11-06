@@ -89,10 +89,10 @@ theorem automaticFirstOrder_rate_bounds
     hrho hrhoOne heta haOne (by omega : 1 ≤ n) rfl hkRate hA
   refine ⟨fun received ↦ ?_, fun f g ↦ ?_⟩
   · obtain ⟨hfinite, -, -, hclosed⟩ := automaticFirstOrder_closePolynomialSet_finite_and_card_le
-      hrho hrhoOne ha haOne hn rfl hk hkRate hA hAn domain received hchar
+      hrho hrhoOne ha hn rfl hk hkRate hA hAn domain received hchar
     exact ⟨hfinite, hclosed.trans hlistBound⟩
   · obtain ⟨-, -, -, -, -, -, exceptional, -, -, hclosed, hgood⟩ :=
-      exists_automaticFirstOrder_hybridEquation_base hrho hrhoOne ha haOne hn rfl hk hkRate hA
+      exists_automaticFirstOrder_hybridEquation_base hrho hrhoOne ha hn rfl hk hkRate hA
         hAn hchar domain f g
     exact ⟨exceptional, hclosed.trans hexceptionBound, hgood⟩
 
