@@ -92,8 +92,8 @@ theorem automaticFirstOrder_rate_bounds
       hrho hrhoOne ha hn rfl hk hkRate hA hAn domain received hchar
     exact ⟨hfinite, hclosed.trans hlistBound⟩
   · obtain ⟨-, -, -, -, -, -, exceptional, -, -, hclosed, hgood⟩ :=
-      exists_automaticFirstOrder_hybridEquation_base hrho hrhoOne ha hn rfl hk hkRate hA
-        hAn hchar domain f g
+      exists_automaticFirstOrder_hybridEquation_base hrhoOne ha rfl hk hkRate hA
+        hchar domain f g
     exact ⟨exceptional, hclosed.trans hexceptionBound, hgood⟩
 
 /-- The quintic exception envelope controls a uniform finite-field affine-line challenge.

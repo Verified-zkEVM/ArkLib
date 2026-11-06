@@ -190,7 +190,7 @@ example :
       (((8 - 1 + 1 : ℕ) : ℝ) / ((L - 1 + 1 : ℕ) : ℝ) ≤ 2 / (1 / 2 : ℝ)) := by
   simpa [correlatedMidpoint] using
     correlatedMidpoint_ratios_le_two_div (δ := 1 / 2) (n := 8) (k := 1) (A := 6)
-      (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num)
 
 /-- The midpoint budget bounds a concrete order-one agreement stage. -/
 example :
@@ -201,7 +201,7 @@ example :
     regularPowerBatchedAgreementSharpBound_midpoint_le_stageBound
       (δ := 1 / 2) (r := 1) (n := 8) (K := 4) (k := 1) (A := 6)
       (ℓ := 1) (j := 1) (H := 1) (v := 1) (h := 1)
-      (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num)
       (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
 
 /-- Increasing an order-one stage to its cap preserves the concrete scalar bound. -/
@@ -209,7 +209,7 @@ example : polynomialCurveSharpStageBound (1 / 2) 8 1 1 1 1 ≤
     polynomialCurveSharpStageBound (1 / 2) 8 1 1 1 2 := by
   exact polynomialCurveSharpStageBound_le_uniform
     (δ := 1 / 2) (n := 8) (ℓ := 1) (v := 1) (h := 1) (r := 1) (d := 2)
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num)
 
 /-- The product cutoff bounds both contributions for a concrete stage. -/
 example :
@@ -262,7 +262,7 @@ example :
     (S := (Finset.univ : Finset (Fin 1))) (order := fun _ ↦ 1)
     (jetDegree := fun _ ↦ 1) (height := fun _ ↦ 1)
     (δ := 1 / 2) (n := 8) (K := 4) (k := 1) (A := 6) (ℓ := 1) (v := 1) (h := 1) (d := 1)
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
     (by norm_num) (by norm_num) (by norm_num) (by norm_num)
     (by intro i hi; norm_num) (by intro i hi; norm_num) (by intro i hi; norm_num)
     (by intro i hi; norm_num)
@@ -579,7 +579,7 @@ example :
     (F := ℚ) (E := AlgebraicClosure ℚ) (δ := uniformMcaGap) (n := uniformMcaLength)
     (k := 1) (A := uniformMcaLength) (ℓ := 1)
     (by norm_num [uniformMcaGap]) (by norm_num [uniformMcaGap]) uniformMcaBlockLength
-    (by norm_num) uniformMcaAgreementGap le_rfl (by norm_num)
+    (by norm_num) uniformMcaAgreementGap le_rfl
     (mcaDomain uniformMcaLength) (mcaValues uniformMcaLength)
     (algebraMap ℚ (AlgebraicClosure ℚ)) (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
   have hset (z : AlgebraicClosure ℚ) :
@@ -608,7 +608,7 @@ example :
     exists_uniformRatePartition_baseCurve_exactPowerAgreement
     (δ := uniformMcaGap) (n := uniformMcaLength) (k := 1) (A := uniformMcaLength)
     (ℓ := 1) (by norm_num [uniformMcaGap]) (by norm_num [uniformMcaGap])
-    uniformMcaBlockLength (by norm_num) uniformMcaAgreementGap le_rfl (by norm_num)
+    uniformMcaBlockLength (by norm_num) uniformMcaAgreementGap le_rfl
     (mcaDomain uniformMcaLength) (mcaValues uniformMcaLength)
     (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
   have hset (z : ℚ) : polynomialAgreementSet (mcaDomain uniformMcaLength)
@@ -632,7 +632,7 @@ example :
   obtain ⟨exceptional, hbound, hgood⟩ := exists_uniformRatePartition_line_exactCorrelatedPair
     (δ := uniformMcaGap) (n := uniformMcaLength) (k := 1) (A := uniformMcaLength)
     (by norm_num [uniformMcaGap]) (by norm_num [uniformMcaGap]) uniformMcaBlockLength
-    (by norm_num) uniformMcaAgreementGap le_rfl (mcaDomain uniformMcaLength)
+    (by norm_num) uniformMcaAgreementGap (mcaDomain uniformMcaLength)
     (fun _ => 0) (fun _ => 0) (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
   have hset (z : ℚ) : polynomialAgreementSet (mcaDomain uniformMcaLength)
       (fun i ↦ 0 + z * 0) (0 : ℚ[X]) = Finset.univ := by

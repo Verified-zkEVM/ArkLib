@@ -316,8 +316,8 @@ theorem exists_exceptional_lowRateFiniteLengthMca
   exact exists_exceptional_firstOrderMca_of_bounded_certificate
     domain f g iota
       (firstOrderColumns (D := k - 1) (A := A) (m := m) (M := M) (μ := B)) cert
-      (by omega) hk hkA hAn hBpos hMB hchar hC heta hsOne
-      (by omega) htheta hB hM hH
+      hk hkA hAn hBpos hMB hchar hC heta hsOne
+      htheta hB hM hH
 
 open Classical in
 /-- The inverse-`eta` low-rate MCA consequence. -/
@@ -467,7 +467,7 @@ theorem lowRate_finiteLength_rate_bounds
         domain received (by omega) (by omega) (by omega) hC heta hsOne
     · intro f g
       obtain ⟨exceptional, hcard, hgood⟩ :=
-        exists_exceptional_exactLineMca_one n A domain f g hAPos
+        exists_exceptional_exactLineMca_one n A domain f g
       refine ⟨exceptional, hcard.trans ?_, hgood⟩
       exact square_le_finiteLengthMcaExceptionBudget hC heta hsOne
 

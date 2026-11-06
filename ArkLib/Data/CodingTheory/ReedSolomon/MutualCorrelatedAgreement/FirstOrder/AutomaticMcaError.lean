@@ -39,9 +39,9 @@ most `min 1 (E / |F|)`, where `E` is the optimized exception charge, its ceiling
 exception constant of the automatic recipe at the threshold `A = ⌈a n⌉₊`. -/
 theorem automaticFirstOrder_hybrid_mcaError_le
     {rho a : ℝ} {n k : ℕ}
-    (hrho : 0 < rho) (hrhoOne : rho < 1)
-    (ha : firstOrderRateThreshold rho < a) (haOne : a < 1)
-    (hn : 0 < n) (hk : 2 ≤ k) (hkRate : (k : ℝ) ≤ rho * n)
+    (hrhoOne : rho < 1)
+    (ha : firstOrderRateThreshold rho < a)
+    (hk : 2 ≤ k) (hkRate : (k : ℝ) ≤ rho * n)
     {F : Type} [Field F] [Fintype F] [SampleableType F]
     (domain : Fin n ↪ F)
     (hchar : ringChar F = 0 ∨ max (k - 1) (automaticDerivativeCap rho a) < ringChar F) :
@@ -62,12 +62,10 @@ theorem automaticFirstOrder_hybrid_mcaError_le
   classical
   dsimp only
   have hA : a * n ≤ (⌈a * n⌉₊ : ℝ) := Nat.le_ceil _
-  have hAn : ⌈a * n⌉₊ ≤ n :=
-    Nat.ceil_le.mpr (mul_le_of_le_one_left (Nat.cast_nonneg n) haOne.le)
   have hthreshold : ⌈a * n⌉₊ ≤ ⌈(Fintype.card (Fin n) : ℝ) * (1 - (1 - a))⌉₊ := by
     rw [Fintype.card_fin, sub_sub_cancel, mul_comm]
   have hbase (f g : Fin n → F) := exists_automaticFirstOrder_hybridEquation_base
-    hrho hrhoOne ha hn rfl hk hkRate hA hAn hchar domain f g
+    hrhoOne ha rfl hk hkRate hA hchar domain f g
   refine ⟨mcaError_affineLine_le_min_one_of_exactAgreement domain _
       (lineExactAgreementBound_of_exactCorrelatedPair domain _ fun f g ↦ ?_) _ hthreshold,
     mcaError_affineLine_le_min_one_of_exactAgreement domain _

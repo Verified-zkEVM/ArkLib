@@ -45,9 +45,12 @@ set_option autoImplicit false
 
 /-- Above the rate switch, the finite-length derivative ratio is at most one half. -/
 theorem finiteLengthDerivativeRatio_le_half_of_rateSwitch_le
-    {rho eta : ℝ} (hrho : 0 < rho) (hrhoOne : rho < 1)
+    {rho eta : ℝ} (hrhoOne : rho < 1)
     (hswitch : firstOrderRateSwitch ≤ rho) (heta : 0 < eta) :
     finiteLengthDerivativeRatio rho eta ≤ 1 / 2 := by
+  have hrho : 0 < rho := by
+    unfold firstOrderRateSwitch at hswitch
+    nlinarith [Real.sq_sqrt (by norm_num : (0 : ℝ) ≤ 13), Real.sqrt_nonneg 13]
   let q := rho * (5 - rho) * (2 - rho)
   let s := Real.sqrt q
   have hq : 0 ≤ q := by
@@ -127,13 +130,13 @@ theorem firstOrderBranch_finiteLength_finiteSlack_bounds
     -- Fix the rate envelope, curve gap, block length, message dimension, and threshold.
     (rho eta : ℝ) (n k A : ℕ)
     -- The rate and gap are positive and the rate is strictly below one.
-    (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
+    (hrhoOne : rho < 1) (heta : 0 < eta)
     -- The actual agreement fraction `a = firstOrderBranchThreshold rho + eta` is feasible.
     (haOne : firstOrderBranchThreshold rho + eta < 1)
     -- Messages have positive dimension and realized rate at most `rho`.
     (hk : 0 < k) (hkRate : (k : ℝ) ≤ rho * n)
-    -- The integral threshold realizes agreement fraction `a` and cannot exceed the block length.
-    (hA : (firstOrderBranchThreshold rho + eta) * n ≤ A) (hAn : A ≤ n)
+    -- The integral threshold realizes agreement fraction `a`.
+    (hA : (firstOrderBranchThreshold rho + eta) * n ≤ A)
     -- The evaluation embedding supplies `n` distinct points over an arbitrary field `F`.
     {F : Type*} [Field F] (domain : Fin n ↪ F)
     -- Constant codes are unrestricted; otherwise reconstruction and separation clear their caps.
@@ -162,6 +165,31 @@ theorem firstOrderBranch_finiteLength_finiteSlack_bounds
             A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
             -- Witnesses reproduce `P` and exactly its entire agreement set.
             HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
+  by_cases hAn : A ≤ n
+  swap
+  · have hsmall (received : Fin n → F) (P : F[X]) :
+        ¬ A ≤ (polynomialAgreementSet domain received P).card := by
+      intro h
+      exact hAn (h.trans (by
+        simpa using (polynomialAgreementSet domain received P).card_le_univ))
+    have hC0 := zero_le_one.trans (one_le_firstOrderBranchFiniteLengthMcaConstant rho)
+    constructor
+    · intro received
+      have hempty : closePolynomialSet domain received k A = ∅ := by
+        apply Set.eq_empty_iff_forall_notMem.mpr
+        exact fun P hP ↦ hsmall received P hP.2
+      rw [hempty]
+      refine ⟨Set.finite_empty, ?_⟩
+      simp only [Set.ncard_empty, Nat.cast_zero]
+      positivity
+    · intro f g
+      refine ⟨∅, ?_, ?_⟩
+      · simp only [Finset.card_empty, Nat.cast_zero]
+        positivity
+      · intro z hz P hP hagree
+        exact (hsmall _ P hagree).elim
+  have hrho : 0 < rho :=
+    pos_of_mul_pos_left ((Nat.cast_pos.mpr hk).trans_le hkRate) (Nat.cast_nonneg n)
   by_cases hlow : rho < firstOrderRateSwitch
   · have haOneLow : firstOrderLowRateThreshold rho + eta < 1 := by
       simpa only [firstOrderBranchThreshold_eq_low hlow] using haOne
@@ -183,13 +211,13 @@ theorem firstOrderBranch_finiteLength_finiteSlack_bounds
       simpa only [firstOrderBranchThreshold_eq_clean hclean,
         firstOrderRateThreshold] using hA
     have hbetaHalf := finiteLengthDerivativeRatio_le_half_of_rateSwitch_le
-      hrho hrhoOne hclean heta
+      hrhoOne hclean heta
     have hcharClean : k = 1 ∨ ringChar F = 0 ∨
         max (k - 1) (finiteLengthDerivativeCap rho eta n) < ringChar F := by
       simpa [firstOrderBranchFiniteLengthDerivativeCap, hlow] using hchar
     simpa [firstOrderBranchFiniteLengthMcaConstant, hlow] using
       (automaticFirstOrder_finiteLength_finiteSlack_bounds
-        rho eta n k A hrho hrhoOne heta haOneClean hbetaHalf hk hkRate
+        rho eta n k A hrhoOne heta haOneClean hbetaHalf hk hkRate
           hAClean hAn domain hcharClean)
 
 open Classical in
@@ -200,13 +228,13 @@ theorem firstOrderBranch_finiteLength_rate_bounds
     -- Fix the rate envelope, curve gap, block length, message dimension, and threshold.
     (rho eta : ℝ) (n k A : ℕ)
     -- Work at positive rate and gap, with rate strictly below one.
-    (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
+    (hrhoOne : rho < 1) (heta : 0 < eta)
     -- Agreement is above the selected first-order threshold by `eta` and remains below one.
     (haOne : firstOrderBranchThreshold rho + eta < 1)
     -- Messages have positive dimension and rate at most `rho`.
     (hk : 0 < k) (hkRate : (k : ℝ) ≤ rho * n)
-    -- The integer agreement threshold realizes that fraction and lies within the block.
-    (hA : (firstOrderBranchThreshold rho + eta) * n ≤ A) (hAn : A ≤ n)
+    -- The integer agreement threshold realizes that fraction.
+    (hA : (firstOrderBranchThreshold rho + eta) * n ≤ A)
     -- The theorem is uniform over arbitrary fields and `n` distinct evaluation points.
     {F : Type*} [Field F] (domain : Fin n ↪ F)
     -- Constant codes need no restriction; other codes clear the reconstruction/derivative caps.
@@ -234,7 +262,7 @@ theorem firstOrderBranch_finiteLength_rate_bounds
             -- The witnesses reproduce the candidate and its complete agreement set.
             HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
   obtain ⟨hlist, hmca⟩ := firstOrderBranch_finiteLength_finiteSlack_bounds
-    rho eta n k A hrho hrhoOne heta haOne hk hkRate hA hAn domain hchar
+    rho eta n k A hrhoOne heta haOne hk hkRate hA domain hchar
   constructor
   · intro received
     obtain ⟨hfinite, hcard⟩ := hlist received
@@ -262,7 +290,7 @@ theorem firstOrderBranch_finiteLength_mcaError_le
     -- Fix rate, first-order gap, block length, and message dimension.
     (rho eta : ℝ) (n k : ℕ)
     -- The rate and gap are positive and the rate is strictly below one.
-    (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
+    (hrhoOne : rho < 1) (heta : 0 < eta)
     -- The induced agreement fraction `a` is feasible.
     (haOne : firstOrderBranchThreshold rho + eta < 1)
     -- The message space is nonempty and has rate at most `rho`.
@@ -282,18 +310,12 @@ theorem firstOrderBranch_finiteLength_mcaError_le
   let a := firstOrderBranchThreshold rho + eta
   let A := Nat.ceil (a * n)
   have hA : a * (n : ℝ) ≤ A := Nat.le_ceil _
-  have hAn : A ≤ n := by
-    apply Nat.ceil_le.mpr
-    calc
-      a * (n : ℝ) ≤ 1 * n :=
-        mul_le_mul_of_nonneg_right haOne.le (Nat.cast_nonneg n)
-      _ = n := one_mul _
   have hline : LineExactAgreementBound domain k A
       (140 * firstOrderBranchFiniteLengthMcaConstant rho ^ 6 * n ^ 2 / eta ^ 4) := by
     intro f g
     obtain ⟨exceptional, hcard, hgood⟩ :=
       (firstOrderBranch_finiteLength_rate_bounds
-        rho eta n k A hrho hrhoOne heta haOne hk hkRate hA hAn domain hchar).2 f g
+        rho eta n k A hrhoOne heta haOne hk hkRate hA domain hchar).2 f g
     refine ⟨exceptional, hcard, ?_⟩
     intro z hz P hP hagree
     obtain ⟨pair, hPzero, hPone, heq, hset⟩ := hgood z hz P hP hagree

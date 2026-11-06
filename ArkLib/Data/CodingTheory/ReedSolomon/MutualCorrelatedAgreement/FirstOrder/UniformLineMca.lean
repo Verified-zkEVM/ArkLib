@@ -69,7 +69,7 @@ theorem exists_uniformFirstOrder_lineMca_of_two_le
   obtain ⟨cert⟩ := exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount (F := F)
     (k := k) hDpos hkD domain f g hheight
   obtain ⟨exceptional, hraw, -, -, hgood⟩ := cert.exists_exceptional_hybrid (D := k - 1)
-    (by omega) (by omega) (by omega) hAn hchar
+    (by omega) (by omega) (by omega) hchar
   exact ⟨exceptional, hraw.trans (uniformFirstOrderMca_optimizedExceptionCharge_le_ceiling
     (by omega) (by omega) hAn (by omega)), hgood⟩
 

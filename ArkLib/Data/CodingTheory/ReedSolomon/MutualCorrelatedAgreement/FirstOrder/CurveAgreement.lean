@@ -92,7 +92,7 @@ theorem exists_extensionExceptional_firstOrderCurve_of_certificate_of_exponent
     (hK : 1 < K) (hkK : k ≤ K) (hkL : k ≤ L)
     (hLA : L ≤ A) (hAn : A ≤ n) (hcurve : 0 < ell + h)
     (τ : ℕ) (hτ0 : TaylorExponentSufficient 0 K τ)
-    (hτ1 : TaylorExponentSufficient 1 K τ) (hτpos : 0 < τ)
+    (hτpos : 0 < τ)
     (hchar : ringChar F = 0 ∨ max (K - 1) μ < ringChar F) :
     ∃ exceptional : Finset E,
       (exceptional.card : ℚ) ≤ firstOrderCurveBound n K k L A μ M ell h
@@ -259,7 +259,9 @@ theorem exists_extensionExceptional_firstOrderCurve_of_certificate_of_exponent
       obtain ⟨exceptional, hcard, hgoodStage⟩ :=
         exists_exceptional_regularPowerBatchedAgreement_derivativeCapped_of_exponent
           domain values iota (MvPolynomial.map (Polynomial.mapRingHom iota) pres.equation)
-          K k L A (jetTotalDegree stageQ) (jetDegree stageQ 1) h τ hτ1 hτpos hK hkK hkL
+          K k L A (jetTotalDegree stageQ) (jetDegree stageQ 1) h τ
+          (fun l ↦ (Nat.sub_le_sub_right (Nat.mul_le_mul_left 2 (Nat.sub_le _ _)) 1).trans
+            (hτ0 l)) hτpos hK hkK hkL
           hLA hAn hcurve hstageWeightPos hstageDerivativePos hstageDerivativeWeight
           hweightExtended hheight hderivExtended hbinExtended
       refine ⟨exceptional, ?_, ?_⟩
@@ -332,9 +334,9 @@ theorem exists_extensionExceptional_firstOrderCurve_of_heightSlotCount_of_expone
     (hheight : firstOrderCurveShiftedRowSlotBound D A m M μ n ell h <
       firstOrderCurveShiftedHeightSlotCount D A m M μ ell h)
     (hK : 1 < K) (hkK : k ≤ K) (hkL : k ≤ L)
-    (hLA : L ≤ A) (hAn : A ≤ n) (hcurve : 0 < ell + h)
+    (hLA : L ≤ A) (hcurve : 0 < ell + h)
     (τ : ℕ) (hτ0 : TaylorExponentSufficient 0 K τ)
-    (hτ1 : TaylorExponentSufficient 1 K τ) (hτpos : 0 < τ)
+    (hτpos : 0 < τ)
     (hchar : ringChar F = 0 ∨ max (K - 1) μ < ringChar F) :
     ∃ exceptional : Finset E,
       (exceptional.card : ℚ) ≤ firstOrderCurveBound n K k L A μ M ell h
@@ -344,11 +346,24 @@ theorem exists_extensionExceptional_firstOrderCurve_of_heightSlotCount_of_expone
           (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
         let decEqF : DecidableEq F := Classical.decEq F
         @HasExactPowerAgreement F E (Fin n) _ _ _ decEqF decEqE ell domain values iota k z P := by
-  obtain ⟨cert⟩ := exists_finite_firstOrder_curve_certificate_of_heightSlotCount
-    ell hD hkD domain (fun i ↦ powerBatchedCoordinate fun t ↦ values t i)
-    (fun i ↦ powerBatchedCoordinate_natDegree_le fun t ↦ values t i) hheight
-  exact exists_extensionExceptional_firstOrderCurve_of_certificate_of_exponent
-    domain values iota _ cert hK hkK hkL hLA hAn hcurve τ hτ0 hτ1 hτpos hchar
+  classical
+  by_cases hAn : A ≤ n
+  · obtain ⟨cert⟩ := exists_finite_firstOrder_curve_certificate_of_heightSlotCount
+      ell hD hkD domain (fun i ↦ powerBatchedCoordinate fun t ↦ values t i)
+      (fun i ↦ powerBatchedCoordinate_natDegree_le fun t ↦ values t i) hheight
+    exact exists_extensionExceptional_firstOrderCurve_of_certificate_of_exponent
+      domain values iota _ cert hK hkK hkL hLA hAn hcurve τ hτ0 hτpos hchar
+  · refine ⟨∅, ?_, ?_⟩
+    · simp only [Finset.card_empty, Nat.cast_zero]
+      unfold firstOrderCurveBound firstOrderCurveDirectRatio firstOrderCurveIncidenceRatio
+      positivity
+    · intro z hz P hP hagree
+      have hcard : (polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
+          (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card ≤ n := by
+        simpa using Finset.card_le_univ
+          (s := polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
+            (powerBatchedWord (fun t i ↦ iota (values t i)) z) P)
+      omega
 
 /-- The extension-field bound descends to the base field with the same exceptional-set envelope.
 -/
@@ -362,7 +377,6 @@ theorem exists_baseExceptional_firstOrderCurve_of_certificate_of_exponent
     (hK : 1 < K) (hkK : k ≤ K) (hkL : k ≤ L)
     (hLA : L ≤ A) (hAn : A ≤ n) (hcurve : 0 < ell + h)
     (τ : ℕ) (hτ0 : TaylorExponentSufficient 0 K τ)
-    (hτ1 : TaylorExponentSufficient 1 K τ) (hτpos : 0 < τ)
     (hchar : ringChar F = 0 ∨ max (K - 1) μ < ringChar F) :
     ∃ exceptional : Finset F,
       (exceptional.card : ℚ) ≤ firstOrderCurveBound n K k L A μ M ell h
@@ -374,7 +388,8 @@ theorem exists_baseExceptional_firstOrderCurve_of_certificate_of_exponent
   obtain ⟨extensionExceptional, hcard, hgood⟩ :=
     exists_extensionExceptional_firstOrderCurve_of_certificate_of_exponent
       domain values iota columns cert hK hkK hkL hLA hAn hcurve
-        τ hτ0 hτ1 hτpos hchar
+        τ hτ0 (by exact Nat.lt_of_lt_of_le Nat.zero_lt_one (by simpa using hτ0 ⟨1, hK⟩))
+        hchar
   have hdecEqF : decEqF = Classical.decEq F := Subsingleton.elim _ _
   rw [← hdecEqF] at hgood
   obtain ⟨exceptional, hcardBase, hgoodBase⟩ :=
@@ -394,7 +409,6 @@ theorem exists_baseExceptional_firstOrderCurve_of_heightSlotCount_of_exponent
     (hK : 1 < K) (hkK : k ≤ K) (hkL : k ≤ L)
     (hLA : L ≤ A) (hAn : A ≤ n) (hcurve : 0 < ell + h)
     (τ : ℕ) (hτ0 : TaylorExponentSufficient 0 K τ)
-    (hτ1 : TaylorExponentSufficient 1 K τ) (hτpos : 0 < τ)
     (hchar : ringChar F = 0 ∨ max (K - 1) μ < ringChar F) :
     ∃ exceptional : Finset F,
       (exceptional.card : ℚ) ≤ firstOrderCurveBound n K k L A μ M ell h
@@ -406,7 +420,7 @@ theorem exists_baseExceptional_firstOrderCurve_of_heightSlotCount_of_exponent
     ell hD hkD domain (fun i ↦ powerBatchedCoordinate fun t ↦ values t i)
     (fun i ↦ powerBatchedCoordinate_natDegree_le fun t ↦ values t i) hheight
   exact exists_baseExceptional_firstOrderCurve_of_certificate_of_exponent
-    domain values iota _ cert hK hkK hkL hLA hAn hcurve τ hτ0 hτ1 hτpos hchar
+    domain values iota _ cert hK hkK hkL hLA hAn hcurve τ hτ0 hchar
 
 end
 
