@@ -55,6 +55,16 @@ open Polynomial MvPolynomial PolynomialDifferential
 
 variable {F E : Type*} [Field F] [Field E] {n k K ℓ : ℕ}
 
+private theorem span_singleton_ne_top_of_aeval_eq_zero {σ : Type*}
+    (g : MvPolynomial σ E) (x : σ → E) (hx : aeval x g = 0) :
+    Ideal.span ({g} : Set (MvPolynomial σ E)) ≠ ⊤ := by
+  intro htop
+  have hgunit : IsUnit g := Ideal.span_singleton_eq_top.mp htop
+  have hevalunit : IsUnit (MvPolynomial.aeval x g) := hgunit.map (MvPolynomial.aeval x)
+  rw [hx] at hevalunit
+  exact not_isUnit_zero hevalunit
+
+
 open Classical in
 /-- A finite family of regular Frobenius witnesses with at least `A` agreements and no exact
 power agreement satisfies the off-graph incidence bound at threshold `L`, plus the retained-tuple
@@ -66,12 +76,10 @@ theorem finite_frobeniusPowerRegularBadChallenges_card_le [IsAlgClosed E]
     (p e τ h b A : ℕ) [ExpChar E p]
     (hroots : ∀ i, roots i ^ (p ^ e) = ι (domain i))
     (hK : 0 < K) (hKk : K ≤ p ^ e * k) (hτ : TaylorExponentSufficient 0 K τ)
-    (hτpos : 0 < τ) (hℓ : 0 < ℓ) (hb : 0 < b)
+    (hτpos : 0 < τ) (hℓ : 0 < ℓ)
     (hkL : k ≤ L) (hLA : L ≤ A)
     (hheight : CoeffNatDegreeLE Q h) (hjet : jetTotalDegree Q ≤ b)
     (hinit : jointInitialJetEquation center Q ≠ 0)
-    (hproper : Ideal.span ({jointInitialJetEquation center Q} :
-      Set (MvPolynomial (Option (Fin 1)) E)) ≠ ⊤)
     (challenges : Finset E) (witness : E → E[X])
     (hdegree : ∀ z ∈ challenges, (expand E (p ^ e) (witness z)).degree < K)
     (hsol : ∀ z ∈ challenges,
@@ -91,6 +99,8 @@ theorem finite_frobeniusPowerRegularBadChallenges_card_le [IsAlgClosed E]
         (((n - L + 1 : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) +
       (ℓ * (n - L) * b : ℕ) := by
   classical
+  rcases challenges.eq_empty_or_nonempty with rfl | ⟨z, hz⟩
+  · positivity
   let fullTuples := frobeniusRetainedPowerTupleFamily
     domain values ι roots center Q K k τ (p ^ e)
   let tuples := fullTuples.filter fun P ↦
@@ -119,6 +129,8 @@ theorem finite_frobeniusPowerRegularBadChallenges_card_le [IsAlgClosed E]
       (hdegree z hz) (hsol z hz) (by
         rw [aeval_initialJetSeparant]
         exact hsep z hz)
+  have hproper := span_singleton_ne_top_of_aeval_eq_zero
+    (jointInitialJetEquation center Q) (point z) (hchart z hz).1
   have hoff (z : E) (hz : z ∈ remaining) :
       point z ∉ admissibleFrobeniusPowerTupleGraphLocus
         domain values ι roots center Q K k L τ (p ^ e) := by
@@ -184,7 +196,7 @@ theorem finite_frobeniusPowerRegularBadChallenges_card_le [IsAlgClosed E]
         (((n - L + 1 : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) := by
     rw [← Finset.card_image_of_injective remaining hpointinj]
     apply finite_frobeniusPowerTupleIncidence_off_graphs_card_le
-      domain values ι p e roots hroots center Q hK hKk τ h b A hτ hτpos hℓ hb
+      domain values ι p e roots hroots center Q hK hKk τ h b A hτ hτpos hℓ
         hkL hLA hheight hjet hinit hproper (remaining.image point)
     · intro x hx
       obtain ⟨z, hz, rfl⟩ := Finset.mem_image.mp hx
@@ -227,7 +239,7 @@ theorem finite_frobeniusPowerRegularBadChallenges_card_le [IsAlgClosed E]
       tuples.card ≤ fullTuples.card := Finset.card_filter_le _ _
       _ ≤ (jointInitialJetEquation center Q).degreeOf (some 0) :=
         frobeniusRetainedPowerTupleFamily_card_le
-          domain values ι roots center Q p e τ hroots hK hKk hτ hinit
+          domain values ι roots center Q p e τ hroots hK hKk hτ
       _ ≤ b := by
         apply MvPolynomial.degreeOf_le_iff.mpr
         intro u hu
@@ -314,11 +326,8 @@ theorem finite_frobeniusRegularBadChallenges_card_le [IsAlgClosed E]
     (p e τ h b A : ℕ) [ExpChar E p]
     (hroots : ∀ i, roots i ^ (p ^ e) = ι (domain i))
     (hK : 0 < K) (hKk : K ≤ p ^ e * k) (hτ : TaylorExponentSufficient 0 K τ)
-    (hτpos : 0 < τ) (hb : 0 < b) (hkA : k ≤ A)
+    (hτpos : 0 < τ) (hkA : k ≤ A)
     (hheight : CoeffNatDegreeLE Q h) (hjet : jetTotalDegree Q ≤ b)
-    (hinit : jointInitialJetEquation center Q ≠ 0)
-    (hproper : Ideal.span ({jointInitialJetEquation center Q} :
-      Set (MvPolynomial (Option (Fin 1)) E)) ≠ ⊤)
     (challenges : Finset E) (witness : E → E[X])
     (hdegree : ∀ z, z ∈ challenges → (expand E (p ^ e) (witness z)).degree < K)
     (hsol : ∀ z, z ∈ challenges →
@@ -336,22 +345,21 @@ theorem finite_frobeniusRegularBadChallenges_card_le [IsAlgClosed E]
       (h * (1 + τ * (b - 1)) + b * (p ^ e + τ * h) : ℕ) *
         (((n - k + 1 : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ)) +
       ((n - k) * b : ℕ) := by
+  rcases challenges.eq_empty_or_nonempty with rfl | ⟨z, hz⟩
+  · positivity
+  have hinit : jointInitialJetEquation center Q ≠ 0 := by
+    apply jointInitialJetEquation_ne_zero_of_regular center z Q
+      (polynomialJet center (expand E (p ^ e) (witness z)))
+    rw [aeval_initialJetSeparant]
+    exact hsep z hz
   apply finite_frobeniusRegularBadChallenges_card_le_of_powerBound
     domain f g ι p e τ h b A challenges witness hagree hbad
   intro values hagreePower hbadPower
   simpa using finite_frobeniusPowerRegularBadChallenges_card_le
     (L := k) (ℓ := 1) domain values ι roots center Q p e τ h b A
-    hroots hK hKk hτ hτpos (by omega) hb le_rfl hkA hheight hjet hinit hproper
+    hroots hK hKk hτ hτpos (by omega) le_rfl hkA hheight hjet hinit
     challenges witness hdegree hsol hsep hagreePower hbadPower
 
-private theorem span_singleton_ne_top_of_aeval_eq_zero {σ : Type*}
-    (g : MvPolynomial σ E) (x : σ → E) (hx : aeval x g = 0) :
-    Ideal.span ({g} : Set (MvPolynomial σ E)) ≠ ⊤ := by
-  intro htop
-  have hgunit : IsUnit g := Ideal.span_singleton_eq_top.mp htop
-  have hevalunit : IsUnit (MvPolynomial.aeval x g) := hgunit.map (MvPolynomial.aeval x)
-  rw [hx] at hevalunit
-  exact not_isUnit_zero hevalunit
 
 open Classical in
 /-- A finite family of regular Frobenius witnesses satisfies the bound at every retained-
@@ -363,7 +371,7 @@ theorem finite_frobeniusPowerRegularBadChallenges_card_le_of_separant_at [IsAlgC
     (p e τ h b A : ℕ) [ExpChar E p]
     (hroots : ∀ i, roots i ^ (p ^ e) = ι (domain i))
     (hK : 0 < K) (hKk : K ≤ p ^ e * k) (hτ : TaylorExponentSufficient 0 K τ)
-    (hτpos : 0 < τ) (hℓ : 0 < ℓ) (hb : 0 < b)
+    (hτpos : 0 < τ)
     (hkL : k ≤ L) (hLA : L ≤ A)
     (hheight : CoeffNatDegreeLE Q h) (hjet : jetTotalDegree Q ≤ b)
     (challenges : Finset E) (witness : E → E[X])
@@ -386,6 +394,26 @@ theorem finite_frobeniusPowerRegularBadChallenges_card_le_of_separant_at [IsAlgC
         (((n - L + 1 : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) +
       (ℓ * (n - L) * b : ℕ) := by
   classical
+  by_cases hℓ : 0 < ℓ
+  case neg =>
+    have hℓ0 : ℓ = 0 := by omega
+    subst ℓ
+    have hempty : challenges = ∅ := by
+      apply Finset.eq_empty_iff_forall_notMem.mpr
+      intro z hz
+      apply hbad z hz
+      apply hasExactPowerAgreement_singleton domain values ι k (z ^ (p ^ e)) (witness z)
+      · by_cases hP : witness z = 0
+        · simp [hP]
+        have hp : 0 < p ^ e := pow_pos (expChar_pos E p) e
+        have hexp := (Polynomial.expand_ne_zero hp).mpr hP
+        apply (Polynomial.natDegree_lt_iff_degree_lt hP).mp
+        have hnat := (Polynomial.natDegree_lt_iff_degree_lt hexp).mpr (hdegree z hz)
+        rw [Polynomial.natDegree_expand] at hnat
+        nlinarith [hKk]
+      · exact hkL.trans (hLA.trans (hagree z hz))
+    rw [hempty]
+    positivity
   obtain hempty | ⟨z, hz⟩ := challenges.eq_empty_or_nonempty
   · subst challenges
     positivity
@@ -397,17 +425,9 @@ theorem finite_frobeniusPowerRegularBadChallenges_card_le_of_separant_at [IsAlgC
       (polynomialJet center (expand E (p ^ e) (witness z)))
     rw [aeval_initialJetSeparant]
     exact hc z hz
-  have hchart := frobeniusExpansion_satisfies_jointTaylorCuts Q center z (witness z)
-    p e K τ hτ (hdegree z hz) (hsol z hz) (by
-      rw [aeval_initialJetSeparant]
-      exact hc z hz)
-  have hproper := span_singleton_ne_top_of_aeval_eq_zero
-    (jointInitialJetEquation center Q)
-    (fun i : Option (Fin 1) ↦ i.elim z fun j ↦
-      polynomialJet center (expand E (p ^ e) (witness z)) j) hchart.1
   exact finite_frobeniusPowerRegularBadChallenges_card_le
-    domain values ι roots center Q p e τ h b A hroots hK hKk hτ hτpos hℓ hb hkL hLA
-      hheight hjet hinit hproper challenges witness hdegree hsol hc hagree hbad
+    domain values ι roots center Q p e τ h b A hroots hK hKk hτ hτpos hℓ hkL hLA
+      hheight hjet hinit challenges witness hdegree hsol hc hagree hbad
 
 open Classical in
 /-- A bounded finite set contains every regular Frobenius witness with many agreements but no
@@ -419,7 +439,7 @@ theorem exists_exceptional_frobeniusPowerRegularSolutions_at [IsAlgClosed E]
     (p e τ h b A : ℕ) [ExpChar E p]
     (hroots : ∀ i, roots i ^ (p ^ e) = ι (domain i))
     (hK : 0 < K) (hKk : K ≤ p ^ e * k) (hτ : TaylorExponentSufficient 0 K τ)
-    (hτpos : 0 < τ) (hℓ : 0 < ℓ) (hb : 0 < b)
+    (hτpos : 0 < τ)
     (hkL : k ≤ L) (hLA : L ≤ A)
     (hheight : CoeffNatDegreeLE Q h) (hjet : jetTotalDegree Q ≤ b) :
     ∃ exceptional : Finset E,
@@ -452,7 +472,7 @@ theorem exists_exceptional_frobeniusPowerRegularSolutions_at [IsAlgClosed E]
     let witness (z : E) : E[X] := if hz : z ∈ S then Classical.choose (hS hz) else 0
     have hz (z : E) (hz : z ∈ S) := Classical.choose_spec (hS hz)
     apply finite_frobeniusPowerRegularBadChallenges_card_le_of_separant_at
-      domain values ι roots Q p e τ h b A hroots hK hKk hτ hτpos hℓ hb
+      domain values ι roots Q p e τ h b A hroots hK hKk hτ hτpos
         hkL hLA hheight hjet S witness
     · intro z hzs
       simpa [witness, hzs] using (hz z hzs).1
@@ -486,7 +506,7 @@ theorem exists_exceptional_frobeniusRegularSolutions [IsAlgClosed E]
     (p e τ h b A : ℕ) [ExpChar E p]
     (hroots : ∀ i, roots i ^ (p ^ e) = ι (domain i))
     (hK : 0 < K) (hKk : K ≤ p ^ e * k) (hτ : TaylorExponentSufficient 0 K τ)
-    (hτpos : 0 < τ) (hb : 0 < b) (hkA : k ≤ A)
+    (hτpos : 0 < τ) (hkA : k ≤ A)
     (hheight : CoeffNatDegreeLE Q h) (hjet : jetTotalDegree Q ≤ b) :
     ∃ exceptional : Finset E,
       (exceptional.card : ℚ) ≤
@@ -503,7 +523,7 @@ theorem exists_exceptional_frobeniusRegularSolutions [IsAlgClosed E]
   obtain ⟨exceptional, hcard, hgood⟩ :=
     exists_exceptional_frobeniusPowerRegularSolutions_at
       (ℓ := 1) (L := k) domain ![f, g] ι roots Q p e τ h b A
-      hroots hK hKk hτ hτpos (by omega) hb le_rfl hkA hheight hjet
+      hroots hK hKk hτ hτpos le_rfl hkA hheight hjet
   refine ⟨exceptional, ?_, ?_⟩
   · simpa using hcard
   · intro w hw P hdegree hsolution hregular hagreement
@@ -525,7 +545,7 @@ theorem finite_frobeniusRegularBadChallenges_card_le_of_separant [IsAlgClosed E]
     (p e τ h b A : ℕ) [ExpChar E p]
     (hroots : ∀ i, roots i ^ (p ^ e) = ι (domain i))
     (hK : 0 < K) (hKk : K ≤ p ^ e * k) (hτ : TaylorExponentSufficient 0 K τ)
-    (hτpos : 0 < τ) (hb : 0 < b) (hkA : k ≤ A)
+    (hτpos : 0 < τ) (hkA : k ≤ A)
     (hheight : CoeffNatDegreeLE Q h) (hjet : jetTotalDegree Q ≤ b)
     (challenges : Finset E) (witness : E → E[X])
     (hdegree : ∀ z ∈ challenges, (expand E (p ^ e) (witness z)).degree < K)
@@ -550,7 +570,7 @@ theorem finite_frobeniusRegularBadChallenges_card_le_of_separant [IsAlgClosed E]
   intro values hagreePower hbadPower
   simpa using finite_frobeniusPowerRegularBadChallenges_card_le_of_separant_at
     (L := k) (ℓ := 1) domain values ι roots Q p e τ h b A
-    hroots hK hKk hτ hτpos (by omega) hb le_rfl hkA hheight hjet
+    hroots hK hKk hτ hτpos le_rfl hkA hheight hjet
     challenges witness hdegree hsol hsep hagreePower hbadPower
 
 end ReedSolomon

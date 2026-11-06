@@ -412,7 +412,7 @@ theorem automatic_first_order_squarefree_list_bound_of_slack
           (M := p.derivativeCap) (μ := p.jetDegree)) cert hk hkA
         hMBcert hcharCert list hsolutions
     have hbound := FirstOrder.Squarefree.automaticSquarefreeListExpression_le
-      hrho hrhoOne heta haOne (show 1 ≤ n by omega) hD hDn hDrate hA hM
+      hrho hrhoOne heta haOne hD hDn hDrate hA
     have hncard := Set.ncard_eq_toFinset_card _ hOld.1
     rw [hncard]
     exact hcard.trans (by
@@ -503,7 +503,7 @@ theorem closePolynomialSet_finite_and_card_le_finiteLength_of_certificate
     (hk : 2 ≤ k) (hkA : k ≤ A) (hAn : A ≤ n)
     (hM : 1 ≤ M) (hMmu : M ≤ mu)
     (hchar : ringChar F = 0 ∨ max (k - 1) M < ringChar F)
-    (hC : 1 ≤ C) (heta : 0 < eta) (hsOne : finiteLengthSlack eta n ≤ 1)
+    (hC : 1 ≤ C)
     (hlambda : ((n - k + 1 : ℕ) : ℝ) / (A - k + 1 : ℕ) ≤ C)
     (hmu : (mu : ℝ) ≤ C / finiteLengthSlack eta n) :
     (closePolynomialSet domain received k A).Finite ∧
@@ -526,7 +526,7 @@ theorem closePolynomialSet_finite_and_card_le_finiteLength_of_certificate
       domain received columns cert hk hkA hMmu hchar S hS
     apply hraw.trans
     have hnumeric := squarefreeListExpression_le_finiteLength
-      hC heta hsOne hDPos hDn hM hMmu hlambda0
+      hC hDPos hDn hM hMmu hlambda0
       (by simpa only [lambda] using hlambda) hmu
     simpa only [lambda, bound, show k - 1 + 1 = k by omega, mul_div_assoc] using hnumeric
   have hfinite : T.Finite := closePolynomialSet_finite domain received hkA
@@ -549,7 +549,7 @@ theorem closePolynomialSet_finite_and_card_le_inv_eta_of_certificate
     (hk : 2 ≤ k) (hkA : k ≤ A) (hAn : A ≤ n)
     (hM : 1 ≤ M) (hMmu : M ≤ mu)
     (hchar : ringChar F = 0 ∨ max (k - 1) M < ringChar F)
-    (heta : 0 < eta) (hsOne : finiteLengthSlack eta n ≤ 1)
+    (heta : 0 < eta)
     (hlambda : ((n - k + 1 : ℕ) : ℝ) / (A - k + 1 : ℕ) ≤ C)
     (hmu : (mu : ℝ) ≤ C / finiteLengthSlack eta n) :
     (closePolynomialSet domain received k A).Finite ∧
@@ -559,7 +559,7 @@ theorem closePolynomialSet_finite_and_card_le_inv_eta_of_certificate
     (by exact_mod_cast (show A - k + 1 ≤ n - k + 1 by omega))) hlambda
   obtain ⟨hfinite, hcard⟩ :=
     closePolynomialSet_finite_and_card_le_finiteLength_of_certificate
-      domain received columns cert hk hkA hAn hM hMmu hchar hC heta hsOne
+      domain received columns cert hk hkA hAn hM hMmu hchar hC
         hlambda hmu
   refine ⟨hfinite, hcard.trans ?_⟩
   exact div_finiteLengthSlack_sq_le_div_eta_sq
@@ -643,7 +643,7 @@ theorem closePolynomialSet_finite_and_card_le_finiteLength_of_bounded_certificat
             nlinarith [mul_nonneg hC3 (zero_le_one.trans hnOne)]
   · exact closePolynomialSet_finite_and_card_le_finiteLength_of_certificate
       domain received columns cert hk hkA hAn
-        (Nat.one_le_iff_ne_zero.mpr hMzero) hMB hchar hC heta hsOne hlambda hB
+        (Nat.one_le_iff_ne_zero.mpr hMzero) hMB hchar hC hlambda hB
 
 end FirstOrder
 

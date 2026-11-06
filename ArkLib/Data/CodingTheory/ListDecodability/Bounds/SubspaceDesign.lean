@@ -401,7 +401,7 @@ theorem frs_lambda_le_capacity
     have hn1 : 1 ≤ Fintype.card ι := Fintype.card_pos
     omega
   -- FRS carries the rate-derived design profile.
-  have hdesign := isSubspaceDesign_frsCode_sub_one domain k s ω _hFn _hadm _hω_gen
+  have hdesign := isSubspaceDesign_frsCode_sub_one domain k s ω _hadm _hω_gen
   -- Below saturation, `alphabetRate = k/(s·n) = ρ`.
   have hrate : (LinearCode.alphabetRate
       (ReedSolomon.Folded.frsCode domain k s ω) : ℝ) = ρ := by

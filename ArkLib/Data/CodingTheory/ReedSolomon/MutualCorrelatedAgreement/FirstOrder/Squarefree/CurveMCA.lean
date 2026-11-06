@@ -198,7 +198,7 @@ theorem exists_exceptional_retainedSquarefreeCurveAgreement_of_singularTail
           domain values iota (positiveCurveEquation Q)
           (D + 1) (D + 1) L A B M H (regularTaylorExponent D)
           htaylor (by unfold regularTaylorExponent; omega) (by omega) le_rfl hDL
-          hLA hAn hellH (by omega) hM hMB hpositiveJet hpositiveHeight
+          hLA hellH (by omega) hM hMB hpositiveJet hpositiveHeight
           hpositiveDerivative hbin
       rw [← hdecF, ← hdecE] at hresult
       simpa only [Nat.cast_add, Nat.cast_one] using hresult
@@ -258,7 +258,7 @@ theorem exists_exceptional_retainedSquarefreeCurveAgreement_of_tail
     hD hDL hLA hellH hM hMB hjet hderiv hheight hchar _ htail
 
 open Classical in
-/-- For `1 ≤ D`, `0 < ell`, `D + 1 ≤ A` and `1 ≤ M ≤ B`, the singular tail of a first-order
+/-- For `1 ≤ D`, `D + 1 ≤ A` and `1 ≤ M ≤ B`, the singular tail of a first-order
 equation with jet degree at most `B`, `Y₁` degree at most `M` and coefficient height at most `H`
 satisfies the retained ordinary transfer, provided `M` is below a positive characteristic. -/
 theorem hasRetainedOrdinaryCurveAgreementTransfer_singularCurveEquation
@@ -266,7 +266,7 @@ theorem hasRetainedOrdinaryCurveAgreementTransfer_singularCurveEquation
     [IsAlgClosed E] {n D ell A B M H : ℕ}
     (domain : Fin n ↪ F) (values : Fin (ell + 1) → Fin n → F) (iota : F →+* E)
     (Q : DifferentialPolynomial E[X] 1)
-    (hD : 1 ≤ D) (hell : 0 < ell) (hDA : D + 1 ≤ A)
+    (hD : 1 ≤ D) (hDA : D + 1 ≤ A)
     (hM : 1 ≤ M) (hMB : M ≤ B)
     (hjet : jetTotalDegree Q ≤ B) (hderiv : Q.degreeOf (some 1) ≤ M)
     (hheight : CoeffNatDegreeLE Q H)
@@ -292,7 +292,6 @@ theorem hasRetainedOrdinaryCurveAgreementTransfer_singularCurveEquation
       let _ : CharP E (ringChar F) := charP_of_injective_ringHom iota.injective (ringChar F)
       exact ringChar.eq E (ringChar F)
     rwa [heq]
-  have hb : 1 ≤ b := Nat.mul_pos (hM.trans hMB) (by omega)
   have htailDegree : (singularCurveEquation Q).degreeOf (some 0) ≤ b :=
     (singularCurveEquation_degree_le Q hjet hderiv hMB).trans
       ((ordinaryDegreeEnvelope_le B M).trans (by dsimp only [b]; nlinarith))
@@ -301,7 +300,7 @@ theorem hasRetainedOrdinaryCurveAgreementTransfer_singularCurveEquation
       ((resultantChallengeEnvelope_le H M).trans (by dsimp only [h]; nlinarith))
   obtain ⟨exceptional, hcard, hgood⟩ := exists_exceptional_ordinaryPowerEquation
     domain values iota (singularCurveEquation Q) D h b A
-    (singularCurveEquation_ne_zero Q hderiv hcharE) hD hell hb hDA hAn htailHeight htailDegree
+    (singularCurveEquation_ne_zero Q hderiv hcharE) hD hDA htailHeight htailDegree
   refine ⟨exceptional, ?_, fun z hz P hdegree hagree hroot ↦ hgood z hz P hdegree hroot hagree⟩
   have hcardReal : (exceptional.card : ℝ) ≤ (ordinaryCurveFactorRaw
       (((n - D : ℕ) : ℚ) / ((A - D : ℕ) : ℚ)) n D ell b h : ℚ) := by
@@ -342,10 +341,9 @@ theorem exists_exceptional_retainedSquarefreeCurveAgreement
     · apply hasExactPowerAgreement_singleton domain values iota (D + 1) z P
       · simpa only [Nat.cast_add, Nat.cast_one] using hdegree
       · omega
-  have hellPos : 0 < ell := Nat.pos_of_ne_zero hell
   exact exists_exceptional_retainedSquarefreeCurveAgreement_of_tail domain values iota Q hQ
     hD hDL hLA (by omega) hM hMB hjet hderiv hheight hchar
-    (hasRetainedOrdinaryCurveAgreementTransfer_singularCurveEquation domain values iota Q hD hellPos
+    (hasRetainedOrdinaryCurveAgreementTransfer_singularCurveEquation domain values iota Q hD
       (by omega) hM hMB hjet hderiv hheight
       (hchar.imp_right fun hmax ↦ (Nat.le_max_right D M).trans_lt hmax))
 

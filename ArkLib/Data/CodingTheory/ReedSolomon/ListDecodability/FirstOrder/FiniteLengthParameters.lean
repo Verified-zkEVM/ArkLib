@@ -86,17 +86,15 @@ theorem div_finiteLengthSlack_four_le_div_eta_four
 `O(n / (eta + 1/n)^2)`. -/
 theorem squarefreeListExpression_le_finiteLength
     {C eta lambda : ℝ} {n D B M : ℕ}
-    (hC : 1 ≤ C) (heta : 0 < eta)
-    (hsOne : finiteLengthSlack eta n ≤ 1)
+    (hC : 1 ≤ C)
     (hD : 1 ≤ D) (hDn : D ≤ n) (hM : 1 ≤ M) (hMB : M ≤ B)
     (hlambda0 : 0 ≤ lambda) (hlambda : lambda ≤ C)
     (hB : (B : ℝ) ≤ C / finiteLengthSlack eta n) :
     (firstOrderCurveFiberStageOne (D + 1) B M (regularTaylorExponent D) : ℝ) * lambda +
         ordinaryDegreeEnvelope B M ≤
       7 * C ^ 3 * n / finiteLengthSlack eta n ^ 2 := by
-  have hs : 0 < finiteLengthSlack eta n := finiteLengthSlack_pos heta
   have hraw := FirstOrder.Squarefree.squarefreeListExpression_le_rate_envelope hC
-    ((one_le_div hs).2 hsOne) (hD.trans hDn) hD hDn hM hMB hlambda0 hlambda
+    hD hDn hM hMB hlambda0 hlambda
     (hB.trans_eq (div_eq_mul_one_div _ _))
   rwa [one_div_pow, ← div_eq_mul_one_div] at hraw
 

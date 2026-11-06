@@ -262,7 +262,7 @@ theorem exists_extensionExceptional_firstOrderCurve_of_certificate_of_exponent
           K k L A (jetTotalDegree stageQ) (jetDegree stageQ 1) h τ
           (fun l ↦ (Nat.sub_le_sub_right (Nat.mul_le_mul_left 2 (Nat.sub_le _ _)) 1).trans
             (hτ0 l)) hτpos hK hkK hkL
-          hLA hAn hcurve hstageWeightPos hstageDerivativePos hstageDerivativeWeight
+          hLA hcurve hstageWeightPos hstageDerivativePos hstageDerivativeWeight
           hweightExtended hheight hderivExtended hbinExtended
       refine ⟨exceptional, ?_, ?_⟩
       · apply hcard.trans_eq

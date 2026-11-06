@@ -213,8 +213,8 @@ example :
     finiteEvaluationDomain (fun _ ↦ 0)
     (firstOrderColumns (D := 1) (A := 2) (m := 1) (M := 1) (μ := 1)) cert
     (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)) (by norm_num) (by norm_num)
-    (by norm_num [finiteLengthSlack]) (by norm_num) (by norm_num [finiteLengthSlack])
+    (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)) (by norm_num)
+    (by norm_num) (by norm_num [finiteLengthSlack])
   have hzero :
       (0 : ℚ[X]) ∈ classicalRationalTwoPointClosePolynomialSet := by
     unfold classicalRationalTwoPointClosePolynomialSet closePolynomialSet

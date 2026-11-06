@@ -61,7 +61,7 @@ theorem exists_johnson_curve_exactPowerAgreement_of_fintype
     · exact (hAn (hA.trans (Finset.card_le_univ _))).elim
   let e := (Fintype.equivFin ι).symm
   obtain ⟨ex, hcard, hgood⟩ := exists_johnson_curve_exactPowerAgreement
-    (e.toEmbedding.trans domain) (fun t ↦ values t ∘ e) hD hDn heta hthreshold hAn
+    (e.toEmbedding.trans domain) (fun t ↦ values t ∘ e) hD hDn heta hthreshold
   refine ⟨ex, hcard, fun z hz P hP hA ↦ ?_⟩
   apply hasExactPowerAgreement_of_comp_equiv e domain values z P
   apply hgood z hz P hP
