@@ -133,11 +133,10 @@ noncomputable def cs25OverlapSum (q n k f : ℕ) : ℝ :=
     (Nat.choose f ℓ : ℝ) * (Nat.choose (n - f) ℓ : ℝ) / (q : ℝ) ^ ℓ
 
 theorem cs25OverlapSum_le_exp_two_sqrt
-    (q n k f : ℕ) (hq : 0 < q) :
+    (q n k f : ℕ) :
     cs25OverlapSum q n k f ≤
       Real.exp (2 * Real.sqrt ((f : ℝ) * (n - f : ℕ) / q)) := by
   let x : ℝ := Real.sqrt ((f : ℝ) * (n - f : ℕ) / q)
-  have hqR : (0 : ℝ) < q := by exact_mod_cast hq
   have hbase : 0 ≤ (f : ℝ) * (n - f : ℕ) / q := by positivity
   have hx : 0 ≤ x := by exact Real.sqrt_nonneg _
   have hterm : ∀ ℓ : ℕ,
@@ -202,7 +201,7 @@ def cs25SecondMomentANat (q n k f : ℕ) : ℕ :=
 
 open scoped BigOperators in
 private theorem cs25SecondMomentA_eq_weighted_sum_proof
-    (q n k f : ℕ) (hq : 0 < q) :
+    (q n k f : ℕ) :
     cs25SecondMomentA q n k f =
       ∑ ℓ ∈ Finset.range (n - f - k),
         (Nat.choose f ℓ : ℝ) * (Nat.choose (n - f) ℓ : ℝ) *
@@ -211,16 +210,22 @@ private theorem cs25SecondMomentA_eq_weighted_sum_proof
   rw [Finset.mul_sum]
   apply Finset.sum_congr rfl
   intro ℓ hℓ
-  have hle : ℓ ≤ n - f - k := Nat.le_of_lt (Finset.mem_range.mp hℓ)
-  have hqne : (q : ℝ) ≠ 0 := by exact_mod_cast (Nat.ne_of_gt hq)
-  rw [div_eq_mul_inv, pow_sub₀ (q : ℝ) hqne hle]
-  ring
+  have hlt := Finset.mem_range.mp hℓ
+  have hle : ℓ ≤ n - f - k := Nat.le_of_lt hlt
+  by_cases hq : q = 0
+  · subst q
+    have hm : n - f - k ≠ 0 := by omega
+    have he : n - f - k - ℓ ≠ 0 := by omega
+    simp [hm, he]
+  · have hqne : (q : ℝ) ≠ 0 := by exact_mod_cast hq
+    rw [div_eq_mul_inv, pow_sub₀ (q : ℝ) hqne hle]
+    ring
 
 open scoped BigOperators in
 theorem cs25SecondMomentANat_cast_proof
-    (q n k f : ℕ) (hq : 0 < q) :
+    (q n k f : ℕ) :
     (cs25SecondMomentANat q n k f : ℝ) = cs25SecondMomentA q n k f := by
-  rw [cs25SecondMomentA_eq_weighted_sum_proof q n k f hq]
+  rw [cs25SecondMomentA_eq_weighted_sum_proof q n k f]
   unfold cs25SecondMomentANat
   push_cast
   rfl
@@ -231,13 +236,13 @@ theorem cs25SecondMomentA_nonneg_proof (q n k f : ℕ) :
   exact mul_nonneg (by positivity) (cs25OverlapSum_nonneg q n k f)
 
 theorem cs25_entropy_shell_le_choose_proof
-    (q n f : ℕ) (hq : 10 ≤ q) (hn : 0 < n)
+    (q n f : ℕ) (hq : 10 ≤ q)
     (hfpos : 0 < f) (hflt : f < n) :
     (q : ℝ) ^ ((n : ℝ) * qEntropy q ((f : ℝ) / n)) ≤
       (Nat.choose n f : ℝ) * ((q : ℝ) - 1) ^ f *
         (8 * (n : ℝ) * ((f : ℝ) / n) * (1 - (f : ℝ) / n)) ^ ((1 : ℝ) / 2) := by
   have hq2 : 2 ≤ q := by omega
-  have hnR : (0 : ℝ) < n := by exact_mod_cast hn
+  have hnR : (0 : ℝ) < n := by exact_mod_cast (lt_trans hfpos hflt)
   have hxpos : (0 : ℝ) < (f : ℝ) / n := by positivity
   have hxlt : (f : ℝ) / n < 1 :=
     (div_lt_one hnR).2 (by exact_mod_cast hflt)
@@ -464,7 +469,7 @@ private theorem epsCa_le_one
 open scoped ProbabilityTheory in
 theorem epsCa_eq_one_of_all_folds_close_not_joint
     {ι : Type} [Fintype ι]
-    {F : Type} [Field F] [Finite F] [SampleableType F] [DecidableEq F]
+    {F : Type} [Field F] [SampleableType F] [DecidableEq F]
     (C : Set (ι → F)) (δ : NNReal) (u : Code.WordStack F (Fin 2) ι)
     (hjoint : ¬ Code.jointProximity C (u := u) δ)
     (hclose : ∀ γ : F, Code.relDistFromCode (u 0 + γ • u 1) C ≤ (δ : ENNReal)) :
@@ -498,7 +503,7 @@ theorem epsCa_eq_one_of_all_folds_close_not_joint
           Code.relDistFromCode (w 0 + γ • w 1) C ≤ (δ : ENNReal)]) u
 
 theorem exists_base_all_translates_close_of_bad_count
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     (C : Set (ι → F)) (v : ι → F) (f : ℕ)
     (hbad :
@@ -506,6 +511,20 @@ theorem exists_base_all_translates_close_of_bad_count
         (Fintype.card F) ^ (Fintype.card ι - 1)) :
     ∃ u : ι → F, ∀ γ : F, Code.distFromCode (u + γ • v) C ≤ f := by
   classical
+  by_cases hι : IsEmpty ι
+  · let := hι
+    refine ⟨0, fun γ => ?_⟩
+    have hzero :
+        (Finset.univ.filter fun w : ι → F => ¬ Code.distFromCode w C ≤ f) = ∅ := by
+      apply Finset.card_eq_zero.mp
+      simpa using hbad
+    by_contra hfar
+    have hmem : (0 : ι → F) + γ • v ∈
+        Finset.univ.filter (fun w : ι → F => ¬ Code.distFromCode w C ≤ f) := by
+      exact Finset.mem_filter.mpr ⟨Finset.mem_univ _, hfar⟩
+    rw [hzero] at hmem
+    simp only [Finset.notMem_empty] at hmem
+  have : Nonempty ι := not_isEmpty_iff.mp hι
   let B : Finset (ι → F) :=
     Finset.univ.filter fun w : ι → F => ¬ Code.distFromCode w C ≤ f
   let U : Finset (ι → F) :=
@@ -560,10 +579,19 @@ theorem exists_base_all_translates_close_of_bad_count
 
 theorem nat_card_lt_pow_pred_of_weighted_bound
     (q n N B : ℕ) (A : ℝ)
-    (hq : 1 < q) (hn : 0 < n) (hN : 0 < N) (hA : 0 ≤ A)
+    (hq : 1 < q) (hA : 0 ≤ A)
     (hsmall : ((q : ℝ) - 1) * A < (N : ℝ))
     (hbound : (B : ℝ) * ((N : ℝ) + A) ≤ (q : ℝ) ^ n * A) :
     B < q ^ (n - 1) := by
+  by_cases hn : n = 0
+  · subst n
+    simp only [Nat.zero_sub, pow_zero, one_mul] at hbound ⊢
+    by_contra hnot
+    have hB : (1 : ℝ) ≤ B := by exact_mod_cast (by omega : 1 ≤ B)
+    have hqR : (2 : ℝ) ≤ q := by exact_mod_cast (by omega : 2 ≤ q)
+    have hNA : (0 : ℝ) ≤ (N : ℝ) + A := by positivity
+    have hmul := mul_le_mul_of_nonneg_right hB hNA
+    nlinarith [mul_nonneg (by linarith : 0 ≤ (q : ℝ) - 2) hA]
   by_contra hnot
   have hB : q ^ (n - 1) ≤ B := Nat.le_of_not_gt hnot
   have hBreal : (q : ℝ) ^ (n - 1) ≤ (B : ℝ) := by exact_mod_cast hB
@@ -954,7 +982,7 @@ theorem rsExactErrorSets_card_proof
 
 open scoped BigOperators in
 theorem cs25CertificateCount_sum_nat_proof
-    {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι F : Type} [Fintype ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k f : ℕ)
     (hsmall : k + f ≤ Fintype.card ι) :
@@ -1081,13 +1109,15 @@ theorem rs_close_words_eq_certificate_support_proof
   simp [rsFarWords, cs25CertificateCount_pos_iff_close_proof domain k f w hf]
 
 theorem rs_entropy_rate_d_le_kf_proof
-    (q n k f : ℕ) (hq : 10 ≤ q) (hn : 0 < n)
+    (q n k f : ℕ) (hq : 10 ≤ q)
     (hlo :
       1 - qEntropy q ((f : ℝ) / n) + 2 / (n : ℝ) +
           ((qEntropy q ((f : ℝ) / n) - (f : ℝ) / n) / (n : ℝ)) ^ ((1 : ℝ) / 2)
         ≤ (k : ℝ) / n) :
     n - f - k ≤ k + f := by
-  have hnR : (0 : ℝ) < n := by exact_mod_cast hn
+  by_cases hn : n = 0
+  · simp [hn]
+  have hnR : (0 : ℝ) < n := by exact_mod_cast (Nat.pos_of_ne_zero hn)
   let s : ℝ :=
     ((qEntropy q ((f : ℝ) / n) - (f : ℝ) / n) / (n : ℝ)) ^ ((1 : ℝ) / 2)
   have hs : 0 ≤ s := by

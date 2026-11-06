@@ -36,7 +36,7 @@ variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 namespace SubfieldInternal
 
 omit [Nonempty ι] [Fintype F] [DecidableEq F] in
-private theorem subfield_ca_pair_witness_to_parameters_injective [Finite F]
+private theorem subfield_ca_pair_witness_to_parameters_injective
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F)
     (ha : a ∉ B) (S T : Finset ι) :
     Function.Injective
@@ -116,7 +116,7 @@ theorem subfield_ca_natural_power_eq_rpow
     have hf : f = 0 := by omega
     simp [hk, hf]
   rw [← Real.rpow_natCast]
-  rw [subfield_ca_exponent_cast_eq n k f δ hn hkf hint]
+  rw [subfield_ca_exponent_cast_eq n k f δ hkf hint]
 
 theorem subfield_ca_overlap_argument_eq
     (n f b : ℕ) (δ : NNReal)
@@ -787,7 +787,7 @@ private theorem subfield_ca_bessel_term_le_mode
   obtain ⟨hx0, _ht, _hrpos, hrle, htlt, _hsq⟩ :=
     subfield_ca_sqrt_floor_facts x hx
   exact subfield_ca_exp_term_le_floor_mode
-    (Real.sqrt x) ⌊Real.sqrt x⌋₊ s (Real.sqrt_nonneg x) hrle htlt
+    (Real.sqrt x) ⌊Real.sqrt x⌋₊ s hrle htlt
 
 open scoped BigOperators in
 private theorem subfield_ca_bessel_partial_le_factor_large
@@ -819,7 +819,7 @@ private theorem subfield_ca_bessel_partial_le_factor_large
           t ^ r / (r.factorial : ℝ) := by
       dsimp only [t, r]
       exact subfield_ca_exp_term_le_floor_mode
-        (Real.sqrt x) ⌊Real.sqrt x⌋₊ s (Real.sqrt_nonneg x) hrle htlt
+        (Real.sqrt x) ⌊Real.sqrt x⌋₊ s hrle htlt
     have hnon : 0 ≤ t ^ s / (s.factorial : ℝ) := by positivity
     rw [pow_two]
     exact mul_le_mul_of_nonneg_right hmode hnon

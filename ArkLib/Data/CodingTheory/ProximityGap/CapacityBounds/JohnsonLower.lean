@@ -1421,7 +1421,7 @@ open scoped BigOperators NNReal ENNReal ProbabilityTheory in
 /-- Over every sufficiently large characteristic-two field, constructs a Reed--Solomon code
 of relative minimum distance `15 / 16` with large CA error at field radius `3 / 4`. -/
 theorem exists_rs_epsCa_large_at_johnson_radius
-    (ε : ℝ≥0) (_hε : 0 < ε) (_hε_lt : (ε : ℝ) < 1) :
+    (ε : ℝ≥0) (_hε : 0 < ε) :
     ∃ q₀ : ℕ,
     ∀ {FC : Type} [Field FC] [Fintype FC] [SampleableType FC] [DecidableEq FC] [CharP FC 2],
       q₀ ≤ Fintype.card FC →

@@ -304,10 +304,6 @@ theorem bucket_exists_common_codeword
         (Finset.mem_filter.mp ((hv_x x hx 1).2 hc_Sx)).2
       simp only [finMapTwoWords] at h1
       rw [hcD', h1, Pi.sub_apply]; ring
-    have h_Bv0_sub_U : ↑B_v₀ ⊆ (Affine.affineSubspaceAtOrigin (F := F) u₀ dirs : Set (ι → F)) := by
-      intro x hx
-      exact (affine_mem_iff_finset_mem u₀ dirs x).mpr
-        (Finset.mem_filter.mp (Finset.mem_coe.mp hx)).1
     -- B_v₀ is affine: it's {x ∈ U | x|_{D'} ∈ V|_{D'}}, preimage of linear sub under affine map.
     have h_Bv0_affine : B_v₀ ≠ U_fin →
         ∃ (m : ℕ) (u₀' : ι → F) (dirs' : Fin m → ι → F),
@@ -413,7 +409,7 @@ theorem bucket_exists_common_codeword
     have h_Bv0_eq_U : B_v₀ = U_fin := by
       by_contra h_ne
       obtain ⟨m, u₀', dirs', h_eq, h_proper⟩ := h_Bv0_affine h_ne
-      have := proper_affine_sub_card_le u₀ dirs B_v₀ h_Bv0_sub_U ⟨m, u₀', dirs', h_eq, h_proper⟩
+      have := proper_affine_sub_card_le dirs B_v₀ ⟨m, u₀', dirs', h_eq, h_proper⟩
       omega
     intro x hx
     have : x ∈ B_v₀ := h_Bv0_eq_U ▸ hx
