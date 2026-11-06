@@ -191,7 +191,7 @@ theorem finite_frobeniusChartPoints_off_admissiblePairGraphs_card_le [IsAlgClose
       simp only [frobeniusSparseTaylorCuts, List.mem_map, Finset.mem_toList] at hq
       obtain ⟨l, _, rfl⟩ := hq
       exact jointCommonTaylorNumerator_mem_regularPowerBatchedCutBidegree_of_exponent
-        center Q (p ^ e) K h b τ hτ hb hheight hjet' l)
+        center Q (p ^ e) K h b τ hτ hheight hjet' l)
     (fun i ↦ jointTaylorAgreementEquation center Q K τ
       (Polynomial.C (roots i))
       (Polynomial.C (iota (f i)) + Polynomial.X ^ (p ^ e) * Polynomial.C (iota (g i))))
@@ -213,7 +213,7 @@ theorem finite_frobeniusChartPoints_off_admissiblePairGraphs_card_le [IsAlgClose
         regularPowerBatchedCutJetDegree] using
         jointTaylorAgreementEquation_mem_regularPowerBatchedCutBidegree_of_exponent
           center (roots i) (Polynomial.C (iota (f i)) + Polynomial.X ^ (p ^ e) *
-            Polynomial.C (iota (g i))) Q (p ^ e) K h b τ hτ hy hb hheight hjet')
+            Polynomial.C (iota (g i))) Q (p ^ e) K h b τ hτ hy hheight hjet')
     (admissibleFrobeniusPairGraphLocus domain f g iota roots center Q K k τ (p ^ e))
     (fun I hI hs hi hsp hd hc ↦ principalOpen_subset_admissibleFrobeniusPairGraphLocus
       domain f g iota p e roots hroots center Q hK hKk τ hτ I (hI := hI) hs hi hsp hd hc)

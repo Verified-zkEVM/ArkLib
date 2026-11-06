@@ -465,7 +465,7 @@ theorem finite_powerBatchedBadChallenges_card_le_identityPair
     [IsAlgClosed E]
     (domain : Fin n ↪ F) (w : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
     (center : E) (Q : DifferentialPolynomial E[X] 1) (L A v u h : ℕ)
-    (hL : 2 ≤ L) (hLA : L ≤ A) (hAn : A ≤ n) (hℓ : 0 < ℓ) (hv : 0 < v)
+    (hL : 2 ≤ L) (hLA : L ≤ A) (hℓ : 0 < ℓ)
     (hjet : jetTotalDegree Q ≤ v) (hheight : CoeffNatDegreeLE Q h)
     (challenges : Finset E) (witness : E → E[X]) (jet : E → Fin 2 → E)
     (hchart : ∀ z ∈ challenges,
@@ -489,6 +489,10 @@ theorem finite_powerBatchedBadChallenges_card_le_identityPair
     unfold regularPowerBatchedDerivativeCappedBoundTwo
     positivity
   obtain ⟨z₀, hz₀⟩ := Finset.nonempty_iff_ne_empty.mpr hempty
+  have hAn : A ≤ n := (hagree z₀ hz₀).trans (by
+    simpa using (Finset.card_le_univ
+      (polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
+        (powerBatchedWord (fun t i ↦ iota (w t i)) z₀) (witness z₀))))
   have hinit := jointInitialJetEquation_ne_zero_of_regular center z₀ Q (jet z₀)
     (hchart z₀ hz₀).2.2.1
   have hτ : TaylorExponentSufficient 1 2 0 := by
@@ -515,7 +519,7 @@ theorem finite_powerBatchedBadChallenges_card_le_identityPair
     have hpoint :=
       finite_powerBatched_regular_points_off_admissible_graphs_card_le_firstOrder_of_exponent
       domain w iota center Q 2 2 L A v h 0 hτ (by
-        simpa [regularPowerBatchedCutChallengeDegree] using hℓ) (by omega) le_rfl hL hLA hv
+        simpa [regularPowerBatchedCutChallengeDegree] using hℓ) (by omega) le_rfl hL hLA
         hinit hjet hheight S hS hA
     simpa only [hdegree] using hpoint
   have htupleBound (T : Finset (Fin (ℓ + 1) → F[X]))
@@ -542,7 +546,7 @@ theorem finite_regularPowerBatchedBadChallenges_card_le_identityPair
     [IsAlgClosed E]
     (domain : Fin n ↪ F) (w : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
     (Q : DifferentialPolynomial E[X] 1) (L A v u h : ℕ)
-    (hL : 2 ≤ L) (hLA : L ≤ A) (hAn : A ≤ n) (hℓ : 0 < ℓ) (hv : 0 < v)
+    (hL : 2 ≤ L) (hLA : L ≤ A) (hℓ : 0 < ℓ)
     (hjet : jetTotalDegree Q ≤ v) (hheight : CoeffNatDegreeLE Q h)
     (S : Finset E)
     (hS : ↑S ⊆ regularPowerBatchedBadChallenges domain w iota Q 2 A) :
@@ -556,7 +560,7 @@ theorem finite_regularPowerBatchedBadChallenges_card_le_identityPair
       (regularPowerBatchedDerivativeCappedBoundTwo n ℓ 2 2 L A v u h 0) ?_ S hS
   intro center challenges witness jet hchart hagree hbad
   exact finite_powerBatchedBadChallenges_card_le_identityPair
-    domain w iota center Q L A v u h hL hLA hAn hℓ hv hjet hheight
+    domain w iota center Q L A v u h hL hLA hℓ hjet hheight
       challenges witness jet hchart hagree hbad
 
 open Classical in
@@ -566,7 +570,7 @@ theorem exists_exceptional_regularPowerBatchedAgreement_identityPair
     [IsAlgClosed E]
     (domain : Fin n ↪ F) (w : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
     (Q : DifferentialPolynomial E[X] 1) (L A v u h : ℕ)
-    (hL : 2 ≤ L) (hLA : L ≤ A) (hAn : A ≤ n) (hv : 0 < v)
+    (hL : 2 ≤ L) (hLA : L ≤ A)
     (hjet : jetTotalDegree Q ≤ v) (hheight : CoeffNatDegreeLE Q h) :
     ∃ exceptional : Finset E,
       (exceptional.card : ℚ) ≤
@@ -593,10 +597,10 @@ theorem exists_exceptional_regularPowerBatchedAgreement_identityPair
       (regularPowerBatchedBadChallenges domain w iota Q 2 A).Finite := by
     apply Set.finite_of_forall_finset_card_le (R := ℚ) fun S hS ↦
       finite_regularPowerBatchedBadChallenges_card_le_identityPair
-        domain w iota Q L A v u h hL hLA hAn hℓ hv hjet hheight S hS
+        domain w iota Q L A v u h hL hLA hℓ hjet hheight S hS
   refine ⟨hfinite.toFinset, ?_, ?_⟩
   · apply finite_regularPowerBatchedBadChallenges_card_le_identityPair
-      domain w iota Q L A v u h hL hLA hAn hℓ hv hjet hheight
+      domain w iota Q L A v u h hL hLA hℓ hjet hheight
     exact fun z hz ↦ hfinite.mem_toFinset.mp hz
   · intro z hz P hdegree hagree hsol hsep
     by_contra hbad

@@ -188,8 +188,8 @@ theorem exists_exceptional_retainedSquarefreeCurveAgreement_of_singularTail
     · subst D
       have hresult :=
         exists_exceptional_regularPowerBatchedAgreement_identityPair
-          domain values iota (positiveCurveEquation Q) L A B M H hDL hLA hAn
-          (by omega) hpositiveJet hpositiveHeight
+          domain values iota (positiveCurveEquation Q) L A B M H hDL hLA
+          hpositiveJet hpositiveHeight
       rw [← hdecF, ← hdecE] at hresult
       convert hresult using 1
       norm_num [regularTaylorExponent]

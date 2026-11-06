@@ -49,7 +49,7 @@ theorem exists_closePolynomial_list_of_curve_certificate_actualStages
     (domain : Fin n ↪ F) (received : Fin n → F)
     (cert : SymbolicReceivedCurve.Certificate.{0, u} A k 0 ν d H domain
       (fun i ↦ Polynomial.C (received i)))
-    (hkA : k ≤ A) (hAn : A ≤ n)
+    (hkA : k ≤ A)
     (hchar : ringChar F = 0 ∨ max (k - 1) (max d ν) < ringChar F) :
     let Q : DifferentialPolynomial F d :=
       MvPolynomial.map (Polynomial.eval₂RingHom (RingHom.id F) 0) cert.Q
@@ -88,7 +88,7 @@ theorem exists_closePolynomial_list_of_curve_certificate_actualStages
     · exact hweight.trans_lt hνChar
   obtain ⟨stages, terminal, hchain, hfinite, hbound⟩ :=
     exists_chain_directJetAgreementSolutions_finite_and_ncard_le
-      Q hQ K k hK hkK domain received hkA hAn hchar'
+      Q hQ K k hK hkK domain received hkA hchar'
   have hsolution (P : F[X]) :
       P ∈ directJetAgreementSolutions Q domain received k A ↔
         P ∈ closePolynomialSet domain received k A := by
@@ -157,7 +157,7 @@ theorem close_list_bound_of_curve_certificate_directJetCoarse
   let K := max k (d + 1)
   obtain ⟨stages, terminal, list, hchain, hlist, _hmem, hactual⟩ :=
     exists_closePolynomial_list_of_curve_certificate_actualStages
-      domain received cert hkA hAn hchar
+      domain received cert hkA hchar
   have hweight : jetTotalDegree Q ≤ ν :=
     (cert.specialization_sound (RingHom.id F) (0 : F)).2.1
   have hcommon := directJetStageCharge_sum_le_commonOrderSum

@@ -107,7 +107,7 @@ theorem finite_actualStage_regularSolutions_card_le_dimensionSensitive
     (hhighest : highestActiveJet current = some s)
     (K k : ℕ) (hK : d < K) (hkK : k ≤ K)
     {n A : ℕ} (domain : Fin n ↪ F) (received : Fin n → F)
-    (hkA : k ≤ A) (hAn : A ≤ n)
+    (hkA : k ≤ A)
     (hbin : ∀ r, r ≤ d → ∀ i, r < i → i < K → (i.choose r : F) ≠ 0)
     (S : Finset F[X])
     (hsep : ∀ P ∈ S, differentialSpecialization (separant current s) P ≠ 0)
@@ -174,6 +174,14 @@ theorem finite_actualStage_regularSolutions_card_le_dimensionSensitive
     exact mul_nonneg
       (mul_nonneg (dimensionSensitiveIncidenceProduct_nonneg n A k 1 s.val)
         (Nat.cast_nonneg _)) (by positivity)
+  have hSnonempty : S.Nonempty := by
+    apply Finset.card_pos.mp
+    rw [← hcard]
+    exact Finset.card_pos.mpr (Finset.nonempty_iff_ne_empty.mpr hJempty)
+  obtain ⟨P, hP⟩ := hSnonempty
+  have hAn : A ≤ n := (hagreement P hP).trans (by
+    simpa using (Finset.card_le_univ
+      (Finset.univ.filter fun i ↦ P.eval (domain i) = received i)))
   let domainE : Fin n ↪ E := domain.trans ⟨f, f.injective⟩
   have hcount := regularHighTaylorJets_card_le_dimensionSensitive
     center QE K k (2 * K) (taylorExponentSufficient_two_mul s.val K) (by omega) hkK
@@ -218,7 +226,7 @@ theorem finset_card_le_directJetStageCharge_sum
     (hchain : SeparantChain Q stages terminal)
     (K k : ℕ) (hK : d < K) (hkK : k ≤ K)
     {n A : ℕ} (domain : Fin n ↪ F) (received : Fin n → F)
-    (hkA : k ≤ A) (hAn : A ≤ n)
+    (hkA : k ≤ A)
     (hbin : ∀ r, r ≤ d → ∀ i, r < i → i < K → (i.choose r : F) ≠ 0)
     (S : Finset F[X])
     (hS : ∀ P ∈ S, P ∈ directJetAgreementSolutions Q domain received k A) :
@@ -247,7 +255,7 @@ theorem finset_card_le_directJetStageCharge_sum
       let singular := S.filter fun P ↦
         ¬ differentialSpecialization (separant current s) P ≠ 0
       have hregular := finite_actualStage_regularSolutions_card_le_dimensionSensitive
-        current s hhighest K k hK hkK domain received hkA hAn hbin regular
+        current s hhighest K k hK hkK domain received hkA hbin regular
         (fun P hP ↦ (Finset.mem_filter.mp hP).2)
         (fun P hP ↦ hS P (Finset.mem_filter.mp hP).1)
       have hsingularAccept :
@@ -275,7 +283,7 @@ theorem directJetAgreementSolutions_finite_and_ncard_le_chain
     (hchain : SeparantChain Q stages terminal)
     (K k : ℕ) (hK : d < K) (hkK : k ≤ K)
     {n A : ℕ} (domain : Fin n ↪ F) (received : Fin n → F)
-    (hkA : k ≤ A) (hAn : A ≤ n)
+    (hkA : k ≤ A)
     (hbin : ∀ r, r ≤ d → ∀ i, r < i → i < K → (i.choose r : F) ≠ 0) :
     (directJetAgreementSolutions Q domain received k A).Finite ∧
       ((directJetAgreementSolutions Q domain received k A).ncard : ℚ) ≤
@@ -285,7 +293,7 @@ theorem directJetAgreementSolutions_finite_and_ncard_le_chain
   have hbound (S : Finset F[X]) (hST : (S : Set F[X]) ⊆ T) :
       (S.card : ℚ) ≤ (stages.map (directJetStageCharge n A k K)).sum :=
     finset_card_le_directJetStageCharge_sum hchain K k hK hkK domain received
-      hkA hAn hbin S (fun P hP ↦ hST hP)
+      hkA hbin S (fun P hP ↦ hST hP)
   have hfinite : T.Finite := Set.finite_of_forall_finset_card_le hbound
   refine ⟨hfinite, ?_⟩
   rw [Set.ncard_eq_toFinset_card T hfinite]
@@ -420,7 +428,7 @@ theorem exists_chain_directJetAgreementSolutions_finite_and_ncard_le
     (Q : DifferentialPolynomial F d) (hQ : Q ≠ 0)
     (K k : ℕ) (hK : d < K) (hkK : k ≤ K)
     {n A : ℕ} (domain : Fin n ↪ F) (received : Fin n → F)
-    (hkA : k ≤ A) (hAn : A ≤ n)
+    (hkA : k ≤ A)
     (hchar : ringChar F = 0 ∨ max (K - 1) (jetTotalDegree Q) < ringChar F) :
     ∃ stages terminal, SeparantChain Q stages terminal ∧
       (directJetAgreementSolutions Q domain received k A).Finite ∧
@@ -436,7 +444,7 @@ theorem exists_chain_directJetAgreementSolutions_finite_and_ncard_le
     simpa only [Nat.sub_add_cancel (Nat.le_of_lt hir)] using hchoose
   obtain ⟨stages, terminal, hchain⟩ := hchain
   obtain ⟨hfinite, hbound⟩ := directJetAgreementSolutions_finite_and_ncard_le_chain
-    hchain K k hK hkK domain received hkA hAn hbin
+    hchain K k hK hkK domain received hkA hbin
   exact ⟨stages, terminal, hchain, hfinite, hbound⟩
 
 /-- A chain witnesses the exact-stage, common-order, and coarse agreement-list bounds. -/
@@ -466,7 +474,7 @@ theorem exists_directJetList_actualStages_and_bounds
       (hweight.trans_lt ((Nat.le_max_right (K - 1) B).trans_lt hc))
   obtain ⟨stages, terminal, hchain, hfinite, hactual⟩ :=
     exists_chain_directJetAgreementSolutions_finite_and_ncard_le
-      Q hQ K k hK hkK domain received hkA hAn hchar'
+      Q hQ K k hK hkK domain received hkA hchar'
   have hcommon := directJetStageCharge_sum_le_commonOrderSum
     hchain n A k K B hAn hweight
   have hcoarse := directJetCommonOrderSum_le_coarse n A k K B d hk hkA hAn

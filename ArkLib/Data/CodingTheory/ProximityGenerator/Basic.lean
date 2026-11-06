@@ -451,12 +451,10 @@ open NNReal ENNReal unitInterval MvPolynomial LinearCombination CoreDefinitions
 open scoped ProbabilityTheory ENNReal NNReal BigOperators
 
 /-- Auxiliary lemma to prove that an error is in the unit interval. -/
-lemma error_in_unit_interval (d : ℕ) (m : ℕ) (hm_pos : 0 < m) (hdm : d ≤ m) : (d / m : ℝ) ∈ I := by
+lemma error_in_unit_interval (d : ℕ) (m : ℕ) (hdm : d ≤ m) : (d / m : ℝ) ∈ I := by
   constructor
-  · exact div_nonneg (Nat.cast_nonneg d) (le_of_lt (Nat.cast_pos.mpr hm_pos))
-  · have hdm' : (d : ℝ) ≤ m := by exact_mod_cast hdm
-    have hm_pos' : (0 : ℝ) < m := by exact_mod_cast hm_pos
-    exact (div_le_one hm_pos').mpr hdm'
+  · exact div_nonneg (Nat.cast_nonneg d) (Nat.cast_nonneg m)
+  · exact div_le_one_of_le₀ (by exact_mod_cast hdm) (Nat.cast_nonneg m)
 
 /-- The minimum of the cardinality of a family of nonempty sets, indexed by a possibly empty set.
 Returns `1` if the indexing set is empty. -/
@@ -483,11 +481,11 @@ lemma minSeedCard_pos {F : Type} {s : ℕ} (S : Fin s → Set F)
 /-- The minimum of the cardinality of a family of nonempty sets is smaller than the cardinality of
 each set in the family. -/
 lemma minSeedCard_le {F : Type} {s : ℕ} (S : Fin s → Set F)
-    [∀ i, Fintype ↥(S i)] (hs : 0 < s) (i : Fin s) :
+    [∀ i, Fintype ↥(S i)] (i : Fin s) :
     minSeedCard S ≤ (S i).toFinset.card := by
   unfold minSeedCard
-  split_ifs
-  aesop
+  rw [dite_eq_left (Fin.pos i), Set.toFinset_card]
+  exact Finset.inf'_le (f := fun j => Fintype.card ↥(S j)) (Finset.mem_univ i)
 
 noncomputable local instance {F : Type} [Fintype F] {S : Set F} :
     Fintype S := Fintype.ofFinite ↑S
@@ -511,7 +509,7 @@ theorem poly_gen_is_zero_evading
   {G : Generator (∀ i, ↥(S i)) ℓ F} (hG : IsPolynomialGeneratorOf S G P)
   (hdm : MvPolynomial.maxTotalDegree P ≤ minSeedCard S) :
     IsZeroEvadingGenerator G ⟨(maxTotalDegree P : ℝ) / minSeedCard S,
-    error_in_unit_interval (maxTotalDegree P) (minSeedCard S) (minSeedCard_pos S) hdm⟩ := by
+    error_in_unit_interval (maxTotalDegree P) (minSeedCard S) hdm⟩ := by
   classical
   unfold IsZeroEvadingGenerator
   simp only [ne_eq, sSup_le_iff, Set.mem_ofPred_eq, forall_exists_index, and_imp]
@@ -527,7 +525,7 @@ theorem poly_gen_is_zero_evading
     (MvPolynomial.totalDegree_linearCombination_le _ _ _ fun j =>
       Finset.le_sup (f := fun j => (P j |> MvPolynomial.totalDegree)) (Finset.mem_univ j))
     (minSeedCard_pos S)
-    (fun i => minSeedCard_le S (Fin.pos_iff_nonempty.mpr ⟨i⟩) i)).trans_eq ?_
+    (fun i => minSeedCard_le S i)).trans_eq ?_
   rw [ENNReal.ofReal_div_of_pos] <;> norm_cast
   exact minSeedCard_pos S
 

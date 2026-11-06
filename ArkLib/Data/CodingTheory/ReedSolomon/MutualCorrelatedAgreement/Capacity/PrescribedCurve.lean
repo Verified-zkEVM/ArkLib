@@ -53,7 +53,7 @@ theorem exists_exceptional_exactPowerAgreement_with_prescribed_stageBounds
     [IsAlgClosed E]
     (δ : ℝ) (n k ℓ : ℕ) (domain : Fin n ↪ F)
     (values : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
-    (hδ : 0 < δ) (hδ' : δ < 1 / 4) (hℓ : 0 < ℓ)
+    (hδ : 0 < δ) (hδ' : δ < 1 / 4)
     (hblock : 8 * Nat.ceil
       (100 * (Nat.ceil (Real.exp (xi / δ)) : ℝ) ^ 2 *
         harmonic (Nat.ceil (Real.exp (xi / δ)) - 1)) ≤ n)
@@ -108,7 +108,7 @@ theorem exists_exceptional_exactPowerAgreement_with_prescribed_stageBounds
         have hdpos : 0 < d := Nat.ceil_pos.mpr (Real.exp_pos _)
         omega) hdK hkK
       (correlatedProductCutoff_bounds d k A _hkA).1
-      (correlatedProductCutoff_bounds d k A _hkA).2 hA hℓ
+      (correlatedProductCutoff_bounds d k A _hkA).2
       hcharWeight (by
         intro r hr i hri hiK
         have hchoose := PolynomialDifferential.natCast_choose_ne_zero_of_ringChar
@@ -149,11 +149,6 @@ theorem exists_exceptional_exactPowerAgreement_of_prescribedCurve {F E : Type u}
             (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
         HasExactPowerAgreement domain values iota k z P := by
   classical
-  rcases Nat.eq_zero_or_pos ℓ with rfl | hℓ
-  · refine ⟨∅, by simp, ?_⟩
-    intro z _ P hdegree hagree
-    exact hasExactPowerAgreement_singleton domain values iota k z P hdegree
-      ((Nat.le_add_right k _).trans hagree)
   let A := capacityAgreementThreshold δ n k
   let d := Nat.ceil (Real.exp (xi / δ))
   let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
@@ -165,7 +160,7 @@ theorem exists_exceptional_exactPowerAgreement_of_prescribedCurve {F E : Type u}
     prescribed_geometric_parameters δ n k hδ hδ' hblock hA
   obtain ⟨stages, exceptional, hcard, hstages, horders, hweights, hexact⟩ :=
     exists_exceptional_exactPowerAgreement_with_prescribed_stageBounds δ n k ℓ domain values
-      iota hδ hδ' hℓ
+      iota hδ hδ'
       hblock hA hchar
   refine ⟨exceptional, ?_, hexact⟩
   have hcardR : (exceptional.card : ℝ) ≤ (H : ℝ) +

@@ -110,7 +110,7 @@ theorem Certificate.exists_exceptional_powerBatchedAgreement_sharp_of_exponent
     (iota : F →+* E) (K L τ : ℕ)
     (hτ : ∀ r ≤ d, TaylorExponentSufficient r K τ) (hτpos : 0 < τ)
     (hK : d < K) (hkK : k ≤ K) (hkL : k ≤ L)
-    (hLA : L ≤ A) (hAn : A ≤ n) (hℓ : 0 < ℓ)
+    (hLA : L ≤ A)
     (hchar : ringChar F = 0 ∨ ν < ringChar F)
     (hbin : ∀ r ≤ d, ∀ i, r < i → i < K → (i.choose r : F) ≠ 0) :
     ∃ stages terminal, SeparantChain cert.Q stages terminal ∧
@@ -155,10 +155,6 @@ theorem Certificate.exists_exceptional_powerBatchedAgreement_sharp_of_exponent
       have hjet : jetTotalDegree Qe ≤ jetTotalDegree stage.1 := by
         dsimp [Qe]
         rw [jetTotalDegree_map_eq hρinj, hpresweight]
-      have hactive :=
-        (isHighestActiveJet_of_highestActiveJet_eq_some (hc.highestActiveJet_eq_of_mem hs)).1
-      have hstageweight : 0 < jetTotalDegree stage.1 :=
-        hactive.trans_le (jetDegree_le_total stage.1 stage.2)
       have hrle : stage.2.val ≤ d := by omega
       have hKstage : stage.2.val < K := hrle.trans_lt hK
       have hbins : ∀ i, stage.2.val < i → i < K →
@@ -167,10 +163,9 @@ theorem Certificate.exists_exceptional_powerBatchedAgreement_sharp_of_exponent
         apply hbin stage.2.val hrle i hi hiK
         apply iota.injective
         simpa only [map_natCast, map_zero] using hzero
-      have hDstage : 0 < ℓ + h := by omega
       obtain ⟨ex, hb, he⟩ := exists_exceptional_regularPowerBatchedAgreement_sharp_of_exponent
         domain values iota Qe K k L A (jetTotalDegree stage.1) h τ
-        (hτ stage.2.val hrle) hτpos hKstage hkK hkL hLA hAn hDstage hstageweight hjet hheight
+        (hτ stage.2.val hrle) hτpos hKstage hkK hkL hLA hjet hheight
         hbins
       refine ⟨ex, fun _ ↦ ⟨hb, ?_⟩⟩
       intro z hz P hp ha hsol hsep
