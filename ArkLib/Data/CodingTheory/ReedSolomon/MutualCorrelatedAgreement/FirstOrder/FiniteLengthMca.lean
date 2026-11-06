@@ -190,14 +190,8 @@ theorem exists_finiteLengthFirstOrder_symbolicCertificate
     exact hkernel.trans (by
       simpa only [h, mu, rlocal, Nzero, finiteLengthChallengeHeight] using
         (Nat.le_max_right 1 ⌊(rlocal : ℝ) * mu / (Nzero - rlocal)⌋₊))
-  have hbudget : 0 < m * A :=
-    Nat.mul_pos hmPos (by
-      have haPos : 0 < firstOrderRateThreshold rho + eta :=
-        (hrho.trans (rate_lt_firstOrderRateThreshold hrho hrhoOne)).trans
-          (lt_add_of_pos_right _ heta)
-      exact_mod_cast (mul_pos haPos (by exact_mod_cast hnPos) |>.trans_le hA))
   exact exists_firstOrder_symbolicCertificate_of_rank_and_height
-    hbudget (by omega : k ≤ D + 1)
+    (by omega : k ≤ D + 1)
     (by simpa only [r, N, rlocal, finiteLengthRankCount, m, M, mu] using hrN)
     (by simpa only [r, N, rlocal, finiteLengthRankCount, m, M, mu] using hheight)
     centers f g

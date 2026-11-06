@@ -55,7 +55,6 @@ theorem linear_mcaError_ge_information_set
     have : (m : ℝ) < (d : ℝ) := lt_of_le_of_lt hm_le_real hδ
     exact_mod_cast this
   have hm_le_d1 : m ≤ d - 1 := by omega
-  have hd_pos : 1 ≤ d := by omega
   have hδ_lt_one : (δ : ℝ) < 1 := by
     have hn_pos_real : (0 : ℝ) < (n : ℝ) := by exact_mod_cast hn_pos
     have hdn : (δ : ℝ) * n < n := lt_of_lt_of_le hδ (by exact_mod_cast hd_le_n)
@@ -167,7 +166,7 @@ theorem linear_mcaError_ge_information_set
       rw [LinearCode.mem_projectedCodeSubmod_iff] at hf₂proj
       obtain ⟨v₁, hv₁, hproj⟩ := hf₂proj
       have hv₁_zero : v₁ = 0 := by
-        apply projection_injective (C : Set (ι → F)) hd_pos S₀ hS₀card' v₁ 0 hv₁ C.zero_mem
+        apply projection_injective (C : Set (ι → F)) S₀ hS₀card' v₁ 0 hv₁ C.zero_mem
         funext i
         have hiT : (i.val : ι) ∈ T :=
           Finset.mem_insert_of_mem (hS₀_sub_Dcompl i.property)

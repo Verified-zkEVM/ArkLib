@@ -99,7 +99,7 @@ theorem exists_exceptional_exactPowerAgreement_hybridOptimized
     exists_baseExceptional_firstOrderCurve_of_heightSlotCount_optimized
       (D := p.candidateDegree) (A := p.agreement) (m := p.multiplicity)
       (M := p.firstDerivativeCap) (mu := p.totalJetCap) (h := p.height)
-      (ell := p.batchingDegree) domain values hD hp.2.1 hheight hell hDA hAn
+      (ell := p.batchingDegree) domain values hD hheight hell hDA hAn
       (Or.inr hchar)
   refine ⟨exceptional, ?_, ?_⟩
   · simpa only [hybridOptimizedCurveEnvelope] using hcard

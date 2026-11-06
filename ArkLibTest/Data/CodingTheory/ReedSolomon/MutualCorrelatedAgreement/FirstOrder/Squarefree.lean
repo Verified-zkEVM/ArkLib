@@ -112,7 +112,7 @@ private theorem certificateWithPositiveDerivativeCap :
       firstOrderCurveShiftedHeightSlotCount 1 2 1 1 1 1 1 := by decide
   exact exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount
     (F := ℚ) (D := 1) (A := 2) (m := 1) (M := 1) (μ := 1) (k := 2) (h := 1)
-    (by norm_num) (by norm_num) (by norm_num) factorwiseDomain (fun _ ↦ 0) (fun _ ↦ 0)
+    (by norm_num) (by norm_num) factorwiseDomain (fun _ ↦ 0) (fun _ ↦ 0)
     hheight
 
 private noncomputable def certificateSolutions : Finset ℚ[X] := {0}
@@ -417,7 +417,7 @@ private noncomputable def certificateCurve :
       (firstOrderColumns (D := 1) (A := 2) (m := 1) (M := 1) (μ := 1)) :=
   Classical.choice <| exists_finite_firstOrder_curve_certificate_of_heightSlotCount
     (D := 1) (A := 2) (m := 1) (M := 1) (μ := 1) (k := 2) (h := 1) (n := 2)
-    1 (by norm_num) (by norm_num) (by norm_num) factorwiseDomain _
+    1 (by norm_num) (by norm_num) factorwiseDomain _
     (by intro i; norm_num [ReedSolomon.powerBatchedCoordinate, certificateValues])
     certificateHeightSurplus
 

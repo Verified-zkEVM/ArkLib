@@ -165,7 +165,7 @@ agreement. -/
 theorem exists_baseExceptional_firstOrderCurve_of_heightSlotCount_optimized
     {F : Type*} [Field F] [DecidableEq F] {n D A m M mu h ell : ℕ}
     (domain : Fin n ↪ F) (values : Fin (ell + 1) → Fin n → F)
-    (hD : 1 ≤ D) (hbudget : 0 < m * A)
+    (hD : 1 ≤ D)
     (hheight : firstOrderCurveShiftedRowSlotBound D A m M mu n ell h <
       firstOrderCurveShiftedHeightSlotCount D A m M mu ell h)
     (hell : 0 < ell) (hDA : D < A) (hAn : A ≤ n)
@@ -177,7 +177,7 @@ theorem exists_baseExceptional_firstOrderCurve_of_heightSlotCount_optimized
         A ≤ (polynomialAgreementSet domain (powerBatchedWord values z) P).card →
         HasExactPowerAgreement domain values (RingHom.id F) (D + 1) z P := by
   obtain ⟨cert⟩ := exists_finite_firstOrder_curve_certificate_of_heightSlotCount
-    (k := D + 1) ell hD hbudget le_rfl domain
+    (k := D + 1) ell hD le_rfl domain
       (fun i ↦ powerBatchedCoordinate fun t ↦ values t i)
       (fun i ↦ powerBatchedCoordinate_natDegree_le fun t ↦ values t i) hheight
   have hQ : cert.Q ≠ 0 := by

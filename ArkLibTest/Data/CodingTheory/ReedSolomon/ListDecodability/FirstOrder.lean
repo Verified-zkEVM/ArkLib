@@ -197,7 +197,7 @@ private theorem finiteLengthPositiveCapCertificate :
       firstOrderCurveShiftedHeightSlotCount 1 2 1 1 1 1 1 := by decide
   exact exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount
     (F := ℚ) (D := 1) (A := 2) (m := 1) (M := 1) (μ := 1) (k := 2) (h := 1)
-    (by norm_num) (by norm_num) (by norm_num) finiteEvaluationDomain (fun _ ↦ 0)
+    (by norm_num) (by norm_num) finiteEvaluationDomain (fun _ ↦ 0)
     (fun _ ↦ 0) hheight
 
 open Classical in

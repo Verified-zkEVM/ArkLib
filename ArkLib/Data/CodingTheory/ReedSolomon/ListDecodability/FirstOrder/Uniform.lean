@@ -186,7 +186,7 @@ private theorem exists_uniformFirstOrder_list_of_two_le
   let D := k - 1
   have hgapNat : 25 * k + 6 * n ≤ 25 * A := by
     exact_mod_cast (show (25 : ℝ) * k + 6 * n ≤ 25 * A by nlinarith)
-  obtain ⟨hD, hbudget, hkD, hheight⟩ := uniformFirstOrder_parameters n k A hk hgapNat
+  obtain ⟨hD, -, hkD, hheight⟩ := uniformFirstOrder_parameters n k A hk hgapNat
   have hkA : k ≤ A := by exact_mod_cast (show (k : ℝ) ≤ A by linarith)
   have hfin := closePolynomialSet_finite domain received hkA
   have hsolutions : ∀ P ∈ hfin.toFinset, P.degree < k ∧
@@ -197,7 +197,7 @@ private theorem exists_uniformFirstOrder_list_of_two_le
       D A 12 4 22 k 851 domain received (fun _ ↦ 0)
         (firstOrderColumns (D := D) (A := A) (m := 12) (M := 4) (μ := 22))) :=
     exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount
-      hD hbudget hkD domain received (fun _ ↦ 0) hheight
+      hD hkD domain received (fun _ ↦ 0) hheight
   have hcard := FirstOrder.Squarefree.firstOrder_finite_agreement_solutions_card_le_squarefree
     domain received (firstOrderColumns (D := D) (A := A) (m := 12) (M := 4) (μ := 22)) cert
       hk hkA hAn (by norm_num) hchar hfin.toFinset hsolutions

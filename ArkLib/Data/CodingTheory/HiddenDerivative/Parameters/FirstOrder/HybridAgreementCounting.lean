@@ -672,7 +672,7 @@ theorem exists_automaticFirstOrder_symbolicCertificate
     {F : Type*} [Field F] {rho a : ℝ} {n D A k : ℕ}
     (hrho : 0 < rho) (hrhoOne : rho < 1)
     (ha : firstOrderRateThreshold rho < a)
-    (hn : 0 < n) (hD : D = k - 1) (hk : 2 ≤ k)
+    (hD : D = k - 1) (hk : 2 ≤ k)
     (hkRate : (k : ℝ) ≤ rho * n) (hA : a * n ≤ A)
     (centers : Fin n ↪ F) (f g : Fin n → F) :
     let p := automaticFiniteRateParameters hrho hrhoOne ha
@@ -681,18 +681,10 @@ theorem exists_automaticFirstOrder_symbolicCertificate
       (firstOrderColumns (D := D) (A := A) (m := p.multiplicity)
         (M := p.derivativeCap) (μ := p.jetDegree))) := by
   let p := automaticFiniteRateParameters hrho hrhoOne ha
-  have hagreementPos : 0 < automaticAgreement rho a :=
-    hrho.trans (rho_lt_automaticAgreement hrhoOne ha)
   have hArate : automaticAgreement rho a * n ≤ A := automaticAgreement_mul_le hA
-  have hAposReal : (0 : ℝ) < A := by
-    have hpos : (0 : ℝ) < automaticAgreement rho a * n :=
-      mul_pos hagreementPos (Nat.cast_pos.mpr hn)
-    exact hpos.trans_le hArate
-  have hApos : 0 < A := by exact_mod_cast hAposReal
-  have hbudget : 0 < p.multiplicity * A := Nat.mul_pos p.multiplicity_pos hApos
   have hDpos : 0 < D := by omega
   have hkD : k ≤ D + 1 := by omega
-  exact exists_firstOrderRate_symbolicCertificate p hn hDpos hbudget hkD
+  exact exists_firstOrderRate_symbolicCertificate p hDpos hkD
     (automatic_degree_le_rate_mul hD hkRate) hArate centers f g
 
 open Classical in
@@ -719,7 +711,7 @@ theorem finite_automaticFirstOrder_hybrid_agreement_solutions_card_le
   let p := automaticFiniteRateParameters hrho hrhoOne ha
   have hArate : automaticAgreement rho a * n ≤ A := automaticAgreement_mul_le hA
   obtain ⟨cert⟩ := exists_automaticFirstOrder_symbolicCertificate
-    (F := F) hrho hrhoOne ha hn hD hk hkRate hA domain received received
+    (F := F) hrho hrhoOne ha hD hk hkRate hA domain received received
   let phi := Polynomial.eval₂RingHom (RingHom.id F) (0 : F)
   let Q : DifferentialPolynomial F 1 := MvPolynomial.map phi cert.Q
   obtain ⟨hQ, hsound⟩ := cert.specialization_sound (RingHom.id F) 0

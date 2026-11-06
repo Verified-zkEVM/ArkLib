@@ -1045,10 +1045,10 @@ theorem existence_of_numVars_gt_numConstraints (k n m D : ℕ) (ωs : Fin n ↪ 
 /-- GS existence with rate-corrected degree bound `ρ = k/n` and weighted degree
 at most `⌊D_X⌋₊`. Requires `k > 1` for the counting argument and `m ≥ 1`. -/
 theorem gs_existence (k n : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F)
-    (hk : 1 < k) (hn : n ≠ 0) (hm : 1 ≤ m) :
+    (hk : 1 < k) (hm : 1 ≤ m) :
     ∃ Q, Conditions k m (gs_degree_bound k n m) ωs f Q :=
   existence_of_numVars_gt_numConstraints k n m _ ωs f hm
-    (gs_numVars_gt_numConstraints_of_gt_one hn hk hm)
+    (gs_numVars_gt_numConstraints_of_gt_one hk)
 
 /-- GS interpolation with weighted degree strictly below the real bound
 `D_X = (m + 1/2) * √(k/n) * n`, including integral values of `D_X`. -/
@@ -1074,7 +1074,7 @@ theorem gs_existence_strict (k n : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F)
     push_cast
     field_simp
   have hcount : numVars k D > numConstraints n m := by
-    apply gs_numVars_gt_numConstraints_of_le_sq hn hk hm
+    apply gs_numVars_gt_numConstraints_of_le_sq hk
     rw [← hsq, hD]
     exact pow_le_pow_left₀ hB.le (Nat.le_ceil B) 2
   obtain ⟨Q, hQ⟩ := existence_of_numVars_gt_numConstraints k n m D ωs f hm hcount
@@ -1112,7 +1112,7 @@ theorem gs_divisibility_of_degree_lt (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code
     (h_dist : (hammingDist f (fun i ↦ (toPolynomial p).eval (ωs i)) : ℝ) / n ≤
       gs_johnson k n m) :
     X - C (toPolynomial p) ∣ Q := by
-  apply dvd_property_of_degree_lt hk p hQ_mult
+  apply dvd_property_of_degree_lt p hQ_mult
   have hn : (0 : ℝ) < n := by exact_mod_cast (by omega : 0 < n)
   have hm' : (0 : ℝ) < m := by exact_mod_cast (by omega : 0 < m)
   unfold gs_johnson at h_dist

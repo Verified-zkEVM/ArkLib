@@ -88,7 +88,7 @@ theorem FirstOrderFiniteRateParameters.kernelHeight_le_challengeDegree
 certificate. The block parameters may be selected by any finite rate rule. -/
 theorem exists_firstOrder_symbolicCertificate_of_rank_and_height
     {F : Type*} [Field F] {n D A m M μ k h : ℕ}
-    (hbudget : 0 < m * A) (hkD : k ≤ D + 1)
+    (hkD : k ≤ D + 1)
     (hrN : n * firstOrderRankCount m M < (firstOrderExponents D A m M μ).card)
     (hheight :
       (n * firstOrderRankCount m M) * μ /
@@ -150,13 +150,13 @@ theorem exists_firstOrder_symbolicCertificate_of_rank_and_height
     simp [w, receivedLine]
     ring
   exact differentialSpecialization_eq_zero_of_firstOrderSpace
-    hkD hbudget centers w Q hQsupport hconstraints ι z indices P hPdegree hcard hagreeCurve
+    hkD centers w Q hQsupport hconstraints ι z indices P hPdegree hcard hagreeCurve
 
 /-- A finite first-order rate choice constructs, over every field, a primitive symbolic
 interpolant with bounded support and coefficient degree at most its fixed challenge degree. -/
 theorem exists_firstOrderRate_symbolicCertificate
     {F : Type*} [Field F] {n D A k : ℕ}
-    (hn : 0 < n) (hD : 0 < D) (hbudget : 0 < p.multiplicity * A)
+    (hD : 0 < D)
     (hkD : k ≤ D + 1) (hDrate : (D : ℝ) ≤ rate * n)
     (hArate : agreement * n ≤ A)
     (centers : Fin n ↪ F) (f g : Fin n → F) :
@@ -164,6 +164,11 @@ theorem exists_firstOrderRate_symbolicCertificate
       D A p.multiplicity p.derivativeCap p.jetDegree k p.challengeDegree centers f g
       (firstOrderColumns (D := D) (A := A) (m := p.multiplicity)
         (M := p.derivativeCap) (μ := p.jetDegree))) := by
+  have hn : 0 < n := by
+    by_contra hn
+    have hnzero : n = 0 := by omega
+    have hDzero : D = 0 := by simpa [hnzero] using hDrate
+    omega
   let m := p.multiplicity
   let M := p.derivativeCap
   let μ := p.jetDegree
@@ -182,7 +187,7 @@ theorem exists_firstOrderRate_symbolicCertificate
     rw [hN]
     exact p.kernelHeight_le_challengeDegree hDrate hArate
   exact exists_firstOrder_symbolicCertificate_of_rank_and_height
-    hbudget hkD (by simpa only [r, N, m, M, μ,
+    hkD (by simpa only [r, N, m, M, μ,
       FirstOrderFiniteRateParameters.rankCount] using hrN)
     (by simpa only [r, N, m, M, μ,
       FirstOrderFiniteRateParameters.rankCount] using hheight)

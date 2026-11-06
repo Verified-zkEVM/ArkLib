@@ -212,7 +212,7 @@ private theorem exists_automaticFirstOrder_equation
     {K : Type u} [Field K] [DecidableEq K] {rho a : ℝ} {n D A k : ℕ}
     (hrho : 0 < rho) (hrhoOne : rho < 1)
     (ha : firstOrderRateThreshold rho < a)
-    (hn : 0 < n) (hD : D = k - 1) (hk : 2 ≤ k)
+    (hD : D = k - 1) (hk : 2 ≤ k)
     (hkRate : (k : ℝ) ≤ rho * n) (hA : a * n ≤ A) (domain : Fin n ↪ K) (f g : Fin n → K) :
     ∃ Q : DifferentialPolynomial K[X] 1,
       Q ≠ 0 ∧ jetTotalDegree Q ≤ automaticJetDegree rho a ∧
@@ -222,7 +222,7 @@ private theorem exists_automaticFirstOrder_equation
         A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
         differentialSpecialization (challengeSpecialization Q z) P = 0 := by
   obtain ⟨cert⟩ := exists_automaticFirstOrder_symbolicCertificate
-    hrho hrhoOne ha hn hD hk hkRate hA domain f g
+    hrho hrhoOne ha hD hk hkRate hA domain f g
   obtain ⟨hQ, hweight, hdegree, hheight, hroot⟩ := certificate_equation_facts cert
   exact ⟨cert.Q, hQ,
     hweight.trans_eq (automaticFiniteRateParameters_jetDegree hrho hrhoOne ha),
@@ -289,7 +289,7 @@ theorem exists_automaticFirstOrder_hybridEquation
   obtain ⟨hD₁, hDA, _⟩ :=
     automaticFirstOrder_degree_bounds hrhoOne ha hn hD hk hkRate hA
   obtain ⟨Q, hQ, hweight, hdegree, hheight, hroot⟩ := exists_automaticFirstOrder_equation
-    hrho hrhoOne ha hn hD hk hkRate hA (domain.trans ⟨iota, iota.injective⟩)
+    hrho hrhoOne ha hD hk hkRate hA (domain.trans ⟨iota, iota.injective⟩)
     (fun i ↦ iota (f i)) (fun i ↦ iota (g i))
   have hsound : ∀ z : E, ∀ P : E[X], P.degree < k →
       A ≤ (polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
@@ -346,7 +346,7 @@ theorem exists_automaticFirstOrder_hybridEquation_base
   obtain ⟨hD₁, hDA, _⟩ :=
     automaticFirstOrder_degree_bounds hrhoOne ha hn hD hk hkRate hA
   obtain ⟨Q, hQ, hweight, hdegree, hheight, hroot⟩ := exists_automaticFirstOrder_equation
-    hrho hrhoOne ha hn hD hk hkRate hA domain f g
+    hrho hrhoOne ha hD hk hkRate hA domain f g
   obtain rfl : k = D + 1 := by omega
   obtain ⟨exceptional, hraw, hceil, hclosed, hgood⟩ := exists_exceptional_firstOrder_hybrid_base
     domain f g Q hQ hweight hdegree hheight hD₁ hDA hAn hchar

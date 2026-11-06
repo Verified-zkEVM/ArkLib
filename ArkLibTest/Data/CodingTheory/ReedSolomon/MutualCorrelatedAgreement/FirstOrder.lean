@@ -82,7 +82,7 @@ private def curveCertificate :
       (firstOrderColumns (D := 1) (A := 1) (m := 2) (M := 1) (μ := 1)) := by
   exact Classical.choice <| exists_finite_firstOrder_curve_certificate_of_heightSlotCount
     (D := 1) (A := 1) (m := 2) (M := 1) (μ := 1) (k := 1) (h := 1) (n := 1)
-    0 (by norm_num) (by norm_num) (by norm_num) curveDomain
+    0 (by norm_num) (by norm_num) curveDomain
     (fun i ↦ powerBatchedCoordinate (fun t ↦ curveValues t i))
     (by intro i; norm_num [powerBatchedCoordinate, curveValues]) curveHeightSurplus
 
@@ -103,7 +103,7 @@ example : ∃ z : ℚ, ∃ P : ℚ[X], P.degree < 1 ∧
       (F := ℚ) (E := AlgebraicClosure ℚ) (D := 1) (A := 1) (m := 2) (M := 1)
       (μ := 1) (k := 1) (h := 1) (n := 1) (K := 2) (L := 1) (ell := 0)
       curveDomain curveValues (algebraMap ℚ (AlgebraicClosure ℚ))
-      (by norm_num) (by norm_num) (by norm_num) curveHeightSurplus
+      (by norm_num) (by norm_num) curveHeightSurplus
       (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
       (by norm_num) 1 (taylorExponentSufficient_two_mul_sub_three 0 2)
       (taylorExponentSufficient_two_mul_sub_three 1 2) (by norm_num) (by simp)
@@ -161,7 +161,7 @@ example : ∃ z : AlgebraicClosure ℚ, ∃ P : (AlgebraicClosure ℚ)[X], P.deg
       (F := ℚ) (E := AlgebraicClosure ℚ) (D := 1) (A := 1) (m := 2) (M := 1)
       (μ := 1) (k := 1) (h := 1) (n := 1) (K := 2) (L := 1) (ell := 0)
       curveDomain curveValues iota
-      (by norm_num) (by norm_num) (by norm_num) curveHeightSurplus
+      (by norm_num) (by norm_num) curveHeightSurplus
       (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
       (by norm_num) 1 (taylorExponentSufficient_two_mul_sub_three 0 2)
       (taylorExponentSufficient_two_mul_sub_three 1 2) (by norm_num) (by simp)
@@ -550,7 +550,7 @@ example : ∃ z : ℚ, ∃ P : ℚ[X], P.degree < 2 ∧
   obtain ⟨exceptional, _, hgood⟩ :=
     exists_baseExceptional_firstOrderCurve_of_heightSlotCount_optimized
       (D := 1) (A := 3) (m := 1) (M := 0) (mu := 1) (h := 1) recoveryDomain recoveryValues
-      le_rfl (by norm_num) recoveryHeightSurplus (by norm_num) (by norm_num) le_rfl
+      le_rfl recoveryHeightSurplus (by norm_num) (by norm_num) le_rfl
       (Or.inr (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)))
   obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
   have hagree : 3 ≤ (polynomialAgreementSet recoveryDomain

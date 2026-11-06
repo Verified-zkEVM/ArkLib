@@ -311,7 +311,7 @@ theorem exists_extensionExceptional_firstOrderCurve_of_certificate_of_exponent
       one_le_incidenceFactor (T := k) (b := 1) hAn one_pos
   obtain ⟨exceptional, hcard, hgood⟩ :=
     cert.exists_exceptional_of_regular_stage_bounds_of_factors
-      chain iota K L ell τ (firstOrderCurveDirectRatio n k A) hη (by omega) hLA hAn
+      chain iota K L ell τ (firstOrderCurveDirectRatio n k A) hη (by omega) hLA
       (fun z P ↦ HasExactPowerAgreement domain values iota k z P) hregular
   refine ⟨exceptional, hcard, ?_⟩
   intro z hz P hdegree hagree
@@ -328,7 +328,7 @@ theorem exists_extensionExceptional_firstOrderCurve_of_heightSlotCount_of_expone
     {F E : Type u} [Field F] [Field E] [decEqE : DecidableEq E] [IsAlgClosed E]
     {D A m M μ k h n K L ell : ℕ}
     (domain : Fin n ↪ F) (values : Fin (ell + 1) → Fin n → F) (iota : F →+* E)
-    (hD : 0 < D) (hbudget : 0 < m * A) (hkD : k ≤ D + 1)
+    (hD : 0 < D) (hkD : k ≤ D + 1)
     (hheight : firstOrderCurveShiftedRowSlotBound D A m M μ n ell h <
       firstOrderCurveShiftedHeightSlotCount D A m M μ ell h)
     (hK : 1 < K) (hkK : k ≤ K) (hkL : k ≤ L)
@@ -345,7 +345,7 @@ theorem exists_extensionExceptional_firstOrderCurve_of_heightSlotCount_of_expone
         let decEqF : DecidableEq F := Classical.decEq F
         @HasExactPowerAgreement F E (Fin n) _ _ _ decEqF decEqE ell domain values iota k z P := by
   obtain ⟨cert⟩ := exists_finite_firstOrder_curve_certificate_of_heightSlotCount
-    ell hD hbudget hkD domain (fun i ↦ powerBatchedCoordinate fun t ↦ values t i)
+    ell hD hkD domain (fun i ↦ powerBatchedCoordinate fun t ↦ values t i)
     (fun i ↦ powerBatchedCoordinate_natDegree_le fun t ↦ values t i) hheight
   exact exists_extensionExceptional_firstOrderCurve_of_certificate_of_exponent
     domain values iota _ cert hK hkK hkL hLA hAn hcurve τ hτ0 hτ1 hτpos hchar
@@ -388,7 +388,7 @@ theorem exists_baseExceptional_firstOrderCurve_of_heightSlotCount_of_exponent
     {F E : Type u} [Field F] [Field E] [DecidableEq F] [IsAlgClosed E]
     {D A m M μ k h n K L ell : ℕ}
     (domain : Fin n ↪ F) (values : Fin (ell + 1) → Fin n → F) (iota : F →+* E)
-    (hD : 0 < D) (hbudget : 0 < m * A) (hkD : k ≤ D + 1)
+    (hD : 0 < D) (hkD : k ≤ D + 1)
     (hheight : firstOrderCurveShiftedRowSlotBound D A m M μ n ell h <
       firstOrderCurveShiftedHeightSlotCount D A m M μ ell h)
     (hK : 1 < K) (hkK : k ≤ K) (hkL : k ≤ L)
@@ -403,7 +403,7 @@ theorem exists_baseExceptional_firstOrderCurve_of_heightSlotCount_of_exponent
         A ≤ (polynomialAgreementSet domain (powerBatchedWord values z) P).card →
         HasExactPowerAgreement domain values (RingHom.id F) k z P := by
   obtain ⟨cert⟩ := exists_finite_firstOrder_curve_certificate_of_heightSlotCount
-    ell hD hbudget hkD domain (fun i ↦ powerBatchedCoordinate fun t ↦ values t i)
+    ell hD hkD domain (fun i ↦ powerBatchedCoordinate fun t ↦ values t i)
     (fun i ↦ powerBatchedCoordinate_natDegree_le fun t ↦ values t i) hheight
   exact exists_baseExceptional_firstOrderCurve_of_certificate_of_exponent
     domain values iota _ cert hK hkK hkL hLA hAn hcurve τ hτ0 hτ1 hτpos hchar

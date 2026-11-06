@@ -185,12 +185,12 @@ private theorem symbolicModifiedGSCap_pos {n k m : ℕ}
     mul_le_mul_of_nonneg_left hy1' (by positivity)
   exact hfac.trans (by simpa only [mul_one] using hmul)
 
-private theorem symbolicModifiedGSCap_sq_gt {n k m : ℕ} (hn : 0 < n) :
+private theorem symbolicModifiedGSCap_sq_gt {n k m : ℕ} :
     ((symbolicModifiedGSCap n k m : ℝ) + 1) ^ 2 >
       (m + 1 / 2) ^ 2 * (k + 1) * n := by
   unfold symbolicModifiedGSCap
   exact GuruswamiSudan.proximity_gap_degree_bound_sq_gt
-    (k := k) (n := n) (m := m) (ne_of_gt hn)
+    (k := k) (n := n) (m := m)
 
 private theorem symbolicOuterAffine_map {F : Type} [Field F]
     (x y₀ y₁ : F) :
@@ -637,7 +637,7 @@ private theorem symbolicUpperTriangleCandidates_ySum_nat_bound {n k m : ℕ}
   rw [symbolicUpperTriangleCandidates_ySum_eq_base,
     symbolicUpperTriangleBase_ySum]
   have h := GuruswamiSudan.sum_snd_weightBoundIndices_le
-    (k := k + 2) (D := symbolicModifiedGSCap n k m - 1) (by omega : 1 < k + 2)
+    (k := k + 2) (D := symbolicModifiedGSCap n k m - 1)
   have hLpos := symbolicModifiedGSCap_pos hn hk hm
   simpa only [show k + 2 - 1 = k + 1 by omega,
     Nat.sub_add_cancel (by omega : 1 ≤ symbolicModifiedGSCap n k m)] using h
@@ -752,7 +752,7 @@ private theorem symbolicUpperTriangleBase_card_ge_k_one_n_one {m : ℕ} (hm : 1 
   rw [← hcard] at hbound
   have hTone : T - 1 + 1 = T := by omega
   rw [hTone] at hbound
-  have hsq := symbolicModifiedGSCap_sq_gt (n := 1) (k := 1) (m := m) (by omega)
+  have hsq := symbolicModifiedGSCap_sq_gt (n := 1) (k := 1) (m := m)
   have hident : ((m : ℝ) + 1 / 2) ^ 2 =
       (m : ℝ) * (m + 1) + 1 / 4 := by ring
   rw [hident] at hsq
@@ -786,7 +786,7 @@ private theorem symbolicUpperTriangleBase_card_gt_k_one_of_two_le_n {n m : ℕ}
   rw [← hcard] at hbound
   have hTone : T - 1 + 1 = T := by omega
   rw [hTone] at hbound
-  have hsq := symbolicModifiedGSCap_sq_gt (n := n) (k := 1) (m := m) hnpos
+  have hsq := symbolicModifiedGSCap_sq_gt (n := n) (k := 1) (m := m)
   have hident : ((m : ℝ) + 1 / 2) ^ 2 =
       (m : ℝ) * (m + 1) + 1 / 4 := by ring
   rw [hident] at hsq
@@ -817,7 +817,7 @@ private theorem symbolicUpperTriangleBase_card_gt_of_two_le_k {n k m : ℕ}
   rw [← hcard] at hbound
   have hTone : T - 1 + 1 = T := by omega
   rw [hTone] at hbound
-  have hsq := symbolicModifiedGSCap_sq_gt (n := n) (k := k) (m := m) hn
+  have hsq := symbolicModifiedGSCap_sq_gt (n := n) (k := k) (m := m)
   have hident : ((m : ℝ) + 1 / 2) ^ 2 =
       (m : ℝ) * (m + 1) + 1 / 4 := by ring
   rw [hident] at hsq

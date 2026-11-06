@@ -1068,7 +1068,6 @@ theorem rs_listDecoding_card_lt_field {deg : ℕ} {domain : ι ↪ F} {δ : ℝ�
     Fintype.card_le_of_injective domain domain.injective
   let ωs : Fin (Fintype.card ι) ↪ F := (Fintype.equivFin ι).symm.toEmbedding.trans domain
   let f : Fin (Fintype.card ι) → F := w ∘ (Fintype.equivFin ι).symm
-  have hn_ne : Fintype.card ι ≠ 0 := Fintype.card_ne_zero
   -- Choose multiplicity m satisfying both GS conditions:
   -- (A) gs_johnson(deg,n,m) > δ (hence > δᵣ for all close codewords)
   -- (B) gs_degree_bound(deg,n,m) / (deg-1) < |F| (degree bound for Q)
@@ -1077,7 +1076,7 @@ theorem rs_listDecoding_card_lt_field {deg : ℕ} {domain : ι ↪ F} {δ : ℝ�
   obtain ⟨m, hm, hm_johnson, hm_degree⟩ :=
     exists_gs_multiplicity hδ_pos hδ hRS hε hJ
   obtain ⟨Q, hQ⟩ := GuruswamiSudan.gs_existence
-    deg (Fintype.card ι) ωs f hdeg hn_ne hm
+    deg (Fintype.card ι) ωs f hdeg hm
   refine ⟨Q, hQ.Q_ne_0, ?_, ?_⟩
   · -- Q.natDegree < |F|
     have hb : 0 < deg - 1 := by omega

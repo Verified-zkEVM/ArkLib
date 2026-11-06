@@ -114,7 +114,7 @@ private lemma Lambda_eq_floor_div_card (C : Set (ι → F)) {δ : ℝ} (hδ : 0 
 
 omit [DecidableEq ι] in
 /-- A real-radius corollary of `rs_Lambda_extended_le_of_epsCa_int_radius`. For
-`δ ∈ (0, (n-k-1)/n)` and `η ∈ [0,1)`, if
+`δ ∈ (0, (n-k-1)/n)` and `η < 1`, if
 
   `ε_ca(C, δ) ≤ η · (1/k - n/(k·|F|))`
 
@@ -126,7 +126,7 @@ theorem rs_Lambda_extended_le_of_epsCa
     (hk_pos : 0 < k)
     (hδ_pos : 0 < δ)
     (hδ_radius : δ < ((Fintype.card ι : ℝ) - k - 1) / Fintype.card ι)
-    (_hη_lo : 0 ≤ η) (hη_lt : η < 1)
+    (hη_lt : η < 1)
     (hn_lt_F : Fintype.card ι < Fintype.card F)
     (hε_ca :
         (epsCa (F := F) (A := F)
@@ -200,7 +200,7 @@ theorem rs_Lambda_extended_le_of_epsCa
   have hmain :=
     rs_Lambda_extended_le_of_epsCa_int_radius
       (domain := domain) (k := k) (f := f) (ε := ε)
-      hk_pos hf_lt hε_lt h_eps_toReal
+      hf_lt hε_lt h_eps_toReal
   -- `Λ` at `δ` equals `Λ` at the grid point `f/n`.
   have hΛ :
       Lambda ((ReedSolomon.code domain (k + 1) : Set (ι → F))) δ

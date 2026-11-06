@@ -314,12 +314,10 @@ private noncomputable def hybridCurveCertificate :
         (m := concreteFiniteParameters.multiplicity)
         (M := concreteFiniteParameters.derivativeCap)
         (μ := concreteFiniteParameters.jetDegree)) := by
-  have hbudget : 0 < concreteFiniteParameters.multiplicity * 3 := by
-    exact Nat.mul_pos concreteFiniteParameters.multiplicity_pos (by norm_num)
   exact (Classical.choice (exists_firstOrderRate_symbolicCertificate
     (rate := (1 / 2 : ℝ)) (agreement := (3 / 4 : ℝ))
     (p := concreteFiniteParameters) (F := ZMod 5) (n := 4) (D := 2) (A := 3) (k := 3)
-    (by norm_num) (by norm_num) hbudget (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
     hybridFiniteFieldDomain (fun _ ↦ 0) (fun _ ↦ 0))).toCurve
 
 private theorem hybridCurveCertificate_jetDegree_le :
