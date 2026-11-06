@@ -193,7 +193,7 @@ lemma isMCAGenerator_tensorGeneratorPi_tight {δ₀ : ℚ≥0} :
     ∀ {s : ℕ} {α : Fin s → Type} {ℓ : Fin s → Type}
       [∀ i, Fintype (α i)] [∀ i, Nonempty (α i)] [∀ i, SampleableType (α i)]
       [SampleableType (∀ i, α i)]
-      [∀ i, Fintype (ℓ i)] [∀ i, Nonempty (ℓ i)]
+      [∀ i, Fintype (ℓ i)]
       (G : ∀ i, Generator (α i) (ℓ i) F) (ε : Fin s → I → ℝ≥0),
       (∀ i, ∀ {A : Type} [AddCommMonoid A] [Module F A] [DecidableEq A]
         (MC : ModuleCode ι F A), Code.minRelHammingDistCode MC.carrier = δ₀ →
@@ -204,7 +204,7 @@ lemma isMCAGenerator_tensorGeneratorPi_tight {δ₀ : ℚ≥0} :
   intro s
   induction s with
   | zero =>
-    intro α ℓ _ _ _ _ _ _ G ε _ A _ _ _ MC _ γ
+    intro α ℓ _ _ _ _ _ G ε _ A _ _ _ MC _ γ
     classical
     refine iSup_le fun U => ?_
     have hfalse : ∀ x : (∀ i : Fin 0, α i), ¬ IsMCA (tensorGeneratorPi G) MC x U (γ : ℝ) := by
@@ -217,12 +217,21 @@ lemma isMCAGenerator_tensorGeneratorPi_tight {δ₀ : ℚ≥0} :
       rwa [hvec] at hmem
     simpa using le_of_eq (prEvent_eq_zero_of_forall_not ($ᵗ _) _ hfalse)
   | succ s ih =>
-    intro α ℓ _ _ hα _ _ _ G ε hmca A _ _ _ MC hδ
+    intro α ℓ _ _ hα _ _ G ε hmca A _ _ _ MC hδ
+    classical
+    by_cases hℓ : Nonempty (ℓ 0)
+    case neg =>
+      intro γ
+      refine iSup_le fun U => ?_
+      have hfalse : ∀ x, ¬ IsMCA (tensorGeneratorPi G) MC x U (γ : ℝ) := by
+        rintro x ⟨T, hT, hmem, j, hj⟩
+        exact hℓ ⟨j 0⟩
+      exact (prEvent_eq_zero_of_forall_not ($ᵗ _) _ hfalse).le.trans (by positivity)
+    let := hℓ
     let : ∀ i : Fin s, Fintype (Fin.tail α i) := fun i => inferInstanceAs (Fintype (α i.succ))
     let : ∀ i : Fin s, SampleableType (Fin.tail α i) := fun i => hα i.succ
     let : SampleableType (∀ i : Fin s, Fin.tail α i) := SampleableType.piOfFintype _
     let : ∀ i : Fin s, Fintype (Fin.tail ℓ i) := fun i => inferInstanceAs (Fintype (ℓ i.succ))
-    let : ∀ i : Fin s, Nonempty (Fin.tail ℓ i) := fun i => inferInstanceAs (Nonempty (ℓ i.succ))
     set eS : (∀ i : Fin (s + 1), α i) ≃ (α 0 × (∀ i : Fin s, Fin.tail α i)) :=
       (Fin.consEquiv α).symm with heS
     set eL : (ℓ 0 × (∀ i : Fin s, Fin.tail ℓ i)) ≃ (∀ i : Fin (s + 1), ℓ i) :=
@@ -461,7 +470,7 @@ domain `D`, with error `∑ i, reedSolomonMCAError k D (maxDegreeOf P i) m`, for
 
 The proof factors the generator through `tensorGeneratorPiUnivariate` via `coeffMatrix`. Its
 only unproved input is `isMCAGenerator_univariatePowersGenerator` (Lemma 9.3) for each factor. -/
-lemma isMCAGenerator_of_isPolynomialGeneratorOfFull [Fintype F] [SampleableType F] [NeZero k]
+lemma isMCAGenerator_of_isPolynomialGeneratorOfFull [Fintype F] [NeZero k]
     (m : ℕ) (hm : 3 ≤ m)
     {ℓ : Type} [Fintype ℓ] {s : ℕ} [SampleableType (Fin s → F)]
     {P : ℓ → MvPolynomial (Fin s) F}
@@ -469,6 +478,7 @@ lemma isMCAGenerator_of_isPolynomialGeneratorOfFull [Fintype F] [SampleableType 
     letI ε := ∑ i : Fin s, reedSolomonMCAError k D (maxDegreeOf P i) m
     IsMCAGenerator G ε (ReedSolomon.code D k) := by
   classical
+  let : SampleableType F := SampleableType.ofFintype F
   have hdeg : ∀ (j : ℓ) (i : Fin s), (P j).degreeOf i ≤ maxDegreeOf P i := by
     intro j i
     simpa [maxDegreeOf] using

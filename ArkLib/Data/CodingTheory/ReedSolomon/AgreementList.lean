@@ -106,9 +106,11 @@ theorem exists_closePolynomial_finset_with_incidence_bound
 /-- The incidence inequality stated directly for the cardinality of the complete agreement set. -/
 theorem closePolynomialSet_ncard_mul_choose_le
     {F : Type*} [Field F] [DecidableEq F] {n k A : ℕ}
-    (domain : Fin n ↪ F) (received : Fin n → F) (hAk : k ≤ A) :
-    (closePolynomialSet domain received k A).ncard * A.choose k ≤ n.choose k :=
-  (closePolynomialSet_finite_and_ncard_mul_choose_le domain received hAk).2
+    (domain : Fin n ↪ F) (received : Fin n → F) :
+    (closePolynomialSet domain received k A).ncard * A.choose k ≤ n.choose k := by
+  rcases le_or_gt k A with hAk | hAk
+  · exact (closePolynomialSet_finite_and_ncard_mul_choose_le domain received hAk).2
+  · simp [Nat.choose_eq_zero_of_lt hAk]
 
 /-- The close degree-`< k` polynomial set is finite over an arbitrary field when the agreement
 threshold is at least `k`. -/
@@ -137,7 +139,7 @@ theorem closePolynomialSet_one_ncard_le_div
     (domain : Fin n ↪ F) (received : Fin n → F) (hA : 0 < A) :
     (closePolynomialSet domain received 1 A).ncard ≤ n / A :=
   (Nat.le_div_iff_mul_le hA).2 (by
-    simpa using closePolynomialSet_ncard_mul_choose_le domain received hA)
+    simpa using closePolynomialSet_ncard_mul_choose_le (k := 1) (A := A) domain received)
 
 end
 
@@ -174,13 +176,23 @@ theorem closePolynomialSet_card_le_of_differential_equation
     (K k ν : ℕ) (hK : d < K) (hkK : k ≤ K) (hQ : Q ≠ 0)
     (hcast : ∀ j, JetDegreeCastsNeZero Q j) (hdegree : jetTotalDegree Q ≤ ν)
     {n A : ℕ} (domain : Fin n ↪ F) (received : Fin n → F)
-    (hk : 0 < k) (hkA : k ≤ A) (hAn : A ≤ n)
+    (hk : 0 < k) (hkA : k ≤ A)
     (hbin : ∀ r, r ≤ d → ∀ i, r < i → i < K → (i.choose r : F) ≠ 0)
     (S : Finset F[X]) (hsol : ∀ P ∈ S, differentialSpecialization Q P = 0)
     (hS : ∀ P ∈ S, P ∈ closePolynomialSet domain received k A) :
     (S.card : ℚ) ≤ (ν : ℚ) ^ 2 *
       ((((n * (1 + 2 * K * (ν - 1)) : ℕ) : ℚ) /
         ((A - k + 1 : ℕ) : ℚ)) ^ d) := by
+  classical
+  by_cases hSempty : S = ∅
+  · subst S
+    simp only [Finset.card_empty, Nat.cast_zero]
+    positivity
+  obtain ⟨P, hP⟩ := Finset.nonempty_iff_ne_empty.mpr hSempty
+  have hAn : A ≤ n := (hS P hP).2.trans (by
+    simpa [polynomialAgreementSet] using
+      (Finset.card_filter_le (s := (Finset.univ : Finset (Fin n)))
+        (p := fun i ↦ P.eval (domain i) = received i)))
   let accepts : F[X] → Prop := fun P ↦ P ∈ closePolynomialSet domain received k A
   have hagreement : ∀ P, accepts P ↔
       P.degree < k ∧
@@ -198,7 +210,7 @@ theorem closePolynomialSet_finite_and_ncard_le_of_differential_equation_and_gap
     (Q : DifferentialPolynomial F d) (K k ν : ℕ) (hK : d < K) (hkK : k ≤ K)
     (hQ : Q ≠ 0) (hdegree : jetTotalDegree Q ≤ ν) {n A : ℕ}
     (domain : Fin n ↪ F) (received : Fin n → F) (hk : 0 < k) (hkA : k ≤ A)
-    (hAn : A ≤ n) (hKn : K ≤ n) (hν : 0 < ν) (hδ : 0 < δ)
+    (hAn : A ≤ n) (hKn : K ≤ n) (hδ : 0 < δ)
     (hgap : (k : ℝ) + δ * n ≤ A)
     (hchar : ringChar F = 0 ∨ max (K - 1) ν < ringChar F)
     (hsound : ∀ P, P ∈ closePolynomialSet domain received k A →
@@ -207,6 +219,15 @@ theorem closePolynomialSet_finite_and_ncard_le_of_differential_equation_and_gap
       ((closePolynomialSet domain received k A).ncard : ℝ) ≤
         (ν : ℝ) ^ 2 * (2 * ν / δ) ^ d * n ^ d := by
   have hfinite := closePolynomialSet_finite domain received hkA
+  rcases Nat.eq_zero_or_pos ν with rfl | hν
+  · have hterminal : highestActiveJet Q = none :=
+      (highestActiveJet_eq_none_iff Q).2 fun j hj ↦
+        (not_lt_of_ge ((jetDegree_le_total Q j).trans hdegree)) hj
+    have hempty : closePolynomialSet domain received k A = ∅ :=
+      Set.eq_empty_of_forall_notMem fun P hP ↦ hQ
+        (eq_zero_of_differentialSpecialization_eq_zero_of_highestActiveJet_eq_none
+          hterminal (hsound P hP))
+    simp [hempty]
   let accepts : F[X] → Prop := fun P ↦ P ∈ closePolynomialSet domain received k A
   have hagreement : ∀ P, accepts P ↔
       P.degree < k ∧ A ≤ (Finset.univ.filter fun i ↦

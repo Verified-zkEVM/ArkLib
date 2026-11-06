@@ -922,7 +922,6 @@ theorem irs_lambda_le_johnson_mds
     (Lambda ((ReedSolomon.Interleaved.irsCode dom k s : Submodule F (ι → Fin s → F)) :
         Set (ι → Fin s → F)) (1 - Real.sqrt ρ - η) : ENNReal)
       ≤ ENNReal.ofReal (1 / (2 * η * ρ)) := by
-  have : NeZero s := ⟨by rintro rfl; simp at hks⟩
   intro ρ
   classical
   have hn : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos
@@ -964,7 +963,7 @@ theorem frs_lambda_le_johnson_mds
   have hkpos : (0 : ℝ) < k := by exact_mod_cast Nat.pos_of_ne_zero (NeZero.ne k)
   have hρ_pos : 0 < ρ := by rw [hrate]; positivity
   exact mds_johnson_lambda_le_of_rate_distance _ ρ η hρ_pos hη_pos
-    (ReedSolomon.Folded.frs_rate_distance_of_dvd hs hdvd dom ω hadm hω hk)
+    (ReedSolomon.Folded.frs_rate_distance_of_dvd hdvd dom ω hadm hω hk)
 
 /-- The Johnson bound at an `m`-interleaved code, with its two code-dependent inputs stated on
 the base code: the alphabet size is `|F|^m`, and the minimum distance is unchanged

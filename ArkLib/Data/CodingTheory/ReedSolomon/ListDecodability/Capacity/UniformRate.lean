@@ -58,13 +58,13 @@ theorem uniformRatePartition_close_list_bound {F : Type*} [Field F]
           (2 * uniformJetCap δ / δ) ^ uniformDerivativeOrder δ *
           n ^ uniformDerivativeOrder δ := by
   obtain ⟨e⟩ := exists_uniformRatePartitionEnvelope hδ hδsmall hn hgap hAn
-  obtain ⟨hd, hδone, hν, _hνn, hscale, hkA, hchar'⟩ :=
+  obtain ⟨hd, -, -, _hνn, hscale, hkA, hchar'⟩ :=
     uniformEnvelope_exactAgreementGuards e hδ hδsmall hn hchar
   obtain ⟨cert⟩ := e.exists_curve_certificate hd hscale hAn
     domain (fun i ↦ Polynomial.C (received i)) (fun _ ↦ by simp)
   exact close_list_bound_of_curve_certificate_of_jetCharacteristic
     domain received cert hk e.message_le
-    (by have := e.order_le; omega) e.ambient_le hkA hAn hν hδ hgap hchar'
+    (by have := e.order_le; omega) e.ambient_le hkA hAn hδ hgap hchar'
 
 open Classical in
 /-- For every gap `δ` with `0 < δ < 6/25`, the complete list of degree-`< k` polynomials

@@ -491,7 +491,7 @@ example :
     (δ := 1 / 2) (K := 1) (d := 0) (ν := 1) (H := 0)
     curveCertificateCenters curveCertificateReceived curveCertificateDegreeOne
     (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
     (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
 
 end

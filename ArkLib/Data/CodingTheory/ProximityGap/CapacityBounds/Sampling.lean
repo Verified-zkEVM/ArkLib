@@ -41,7 +41,7 @@ word is within radius `δ`, provided `δ` is below the relative covering radius.
 theorem linear_close_probability_le_epsCa
     (C : LinearCode ι F) (δ δ' : ℝ≥0)
     (_h_δ' : (δ' : ENNReal) = ⨆ u : ι → F, δᵣ(u, (C : Set (ι → F))))
-    (_hδ_pos : 0 < δ) (_hδ_lt : δ < δ') :
+    (_hδ_lt : δ < δ') :
     ((Fintype.card F - 1 : ℝ≥0) / Fintype.card F : ENNReal)
         * Pr{let u ← $ᵗ (ι → F)}[δᵣ(u, (C : Set (ι → F))) ≤ δ] ≤
       epsCa (F := F) (A := F) ((C : Set (ι → F))) δ δ := by

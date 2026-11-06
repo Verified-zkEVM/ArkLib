@@ -212,7 +212,7 @@ example {σ : Type} (init : ProbComp σ)
     NNReal.coe_div, NNReal.coe_one, NNReal.coe_ofNat,
     show (2 : ℝ≥0) ^ 2 = 4 by norm_num] using
     batchedFRI_soundness_multilinear schedule 1 (by decide) 1 2 (1 / 2) (1 / 8)
-    (by norm_num) toyUniqueDecoding init impl
+    toyUniqueDecoding init impl
 
 end BatchedFriTest
 

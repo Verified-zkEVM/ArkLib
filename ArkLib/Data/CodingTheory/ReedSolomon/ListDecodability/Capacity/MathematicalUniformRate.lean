@@ -67,7 +67,7 @@ theorem mathematicalUniformRatePartition_close_list_bound {F : Type u} [Field F]
           n ^ uniformDerivativeOrder δ := by
   classical
   obtain ⟨e⟩ := exists_mathematicalRatePartitionEnvelope hδ hδsmall hn hgap hAn
-  obtain ⟨hd, hδone, hscale, hν, -⟩ := uniformMathematical_certificate_guards hδ hδsmall
+  obtain ⟨hd, -, hscale, -, -⟩ := uniformMathematical_certificate_guards hδ hδsmall
   obtain ⟨cert⟩ := e.exists_curve_certificate (scale := 300) hd hscale hAn
     domain (fun i ↦ Polynomial.C (received i)) (fun _ ↦ by simp)
   have hkA : k ≤ A := by
@@ -76,7 +76,7 @@ theorem mathematicalUniformRatePartition_close_list_bound {F : Type u} [Field F]
   exact close_list_bound_of_curve_certificate_of_jetCharacteristic domain received cert hk
     (Nat.le_max_left _ _) (Nat.lt_succ_self _ |>.trans_le (Nat.le_max_right _ _))
     (max_le (hkA.trans hAn) (by have := e.order_le; have := e.ambient_le; omega)) hkA hAn
-    hν hδ hgap (uniformMathematical_ringChar_guard hδ hδsmall hchar)
+    hδ hgap (uniformMathematical_ringChar_guard hδ hδsmall hchar)
 
 /-- The list coefficient `max (ν² (2ν/δ)^d) (4/(3δ))`, where `ν` is the mathematical jet cap and
 `d` the uniform derivative order at gap `δ`, and `4/(3δ)` is the pairwise Johnson bound. -/
