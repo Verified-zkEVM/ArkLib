@@ -156,7 +156,7 @@ theorem lowRateAgreementSlackSlope_mul_slack_le_fixed_margin
         (mul_pos hrho (firstOrderLowRateBeta_pos hrho))
     have : T / rho < 2 * T / rho := div_lt_div_of_pos_right (by linarith) hrho
     linarith
-  rw [firstOrderLowRate_margin_factor hrho hregime]
+  rw [firstOrderLowRate_margin_factor hregime]
   dsimp only [lowRateAgreementSlackSlope, beta, T, a]
   have hgap : eta / 2 ≤ lowRateFiniteLengthCertifiedAgreement rho eta -
       firstOrderLowRateThreshold rho := by
@@ -373,9 +373,6 @@ theorem lowRateFiniteLengthSourceDensity_mul_cube_le_sourceCount
     linarith
   have hRa : R ≤ a := (hRrho.trans
     ((rate_lt_firstOrderLowRateThreshold hrho hregime).trans_le hTa)).le
-  have hb0 : 0 ≤ beta := by
-    dsimp only [beta]
-    exact (firstOrderLowRateBeta_pos hrho).le
   have hbcut : beta < a / R := by
     have hfixed : beta < firstOrderLowRateThreshold rho / rho := by
       dsimp only [beta]
@@ -394,7 +391,7 @@ theorem lowRateFiniteLengthSourceDensity_mul_cube_le_sourceCount
     exact Nat.floor_le_ceil _
   have hsource := cube_mul_sourceDensity_le_firstOrderSourceCount
     (rate := R) (a := a) (beta := beta) (m := m)
-    (mu := lowRateFiniteLengthJetDegree rho eta n) hR hRa hb0 hbcut.le hmu
+    (mu := lowRateFiniteLengthJetDegree rho eta n) hR hRa hbcut.le hmu
   dsimp only [firstOrderSourceDensity, R, a, beta, m] at hsource ⊢
   simpa only [lowRateFiniteLengthSourceCount, lowRateFiniteLengthDerivativeCap,
     lowRateFiniteLengthJetDegree] using hsource

@@ -59,9 +59,9 @@ example :
   obtain ⟨hfinite, _hraw, _hceil, hclosed⟩ :=
     automaticFirstOrder_closePolynomialSet_at_ceil_finite_and_card_le
       (rho := 1 / 2) (a := 3 / 4) (n := 4) (k := 2)
-      (by norm_num : (0 : ℝ) < 1 / 2) (by norm_num : (1 / 2 : ℝ) < 1)
-      half_rate_threshold_lt_three_quarters (by norm_num : (3 / 4 : ℝ) < 1)
-      (by norm_num : 0 < 4) (by norm_num : 2 ≤ 2)
+      (by norm_num : (1 / 2 : ℝ) < 1)
+      half_rate_threshold_lt_three_quarters
+      (by norm_num : 2 ≤ 2)
       (by norm_num : (2 : ℝ) ≤ (1 / 2) * 4)
       rationalEvaluationDomain (fun _ ↦ 0)
       (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
@@ -90,11 +90,11 @@ example :
   obtain ⟨hfinite, hraw, _, _⟩ :=
     automaticFirstOrder_closePolynomialSet_finite_and_card_le
       (rho := 1 / 2) (a := 3 / 4) (n := 4) (D := 1) (A := 3) (k := 2)
-      (by norm_num : (0 : ℝ) < 1 / 2) (by norm_num : (1 / 2 : ℝ) < 1)
+      (by norm_num : (1 / 2 : ℝ) < 1)
       half_rate_threshold_lt_three_quarters
-      (by norm_num : 0 < 4) (by norm_num) (by norm_num : 2 ≤ 2)
+      (by norm_num) (by norm_num : 2 ≤ 2)
       (by norm_num : (2 : ℝ) ≤ (1 / 2) * 4) (by norm_num : (3 / 4 : ℝ) * 4 ≤ 3)
-      (by norm_num : 3 ≤ 4) rationalEvaluationDomain (fun _ ↦ 0)
+      rationalEvaluationDomain (fun _ ↦ 0)
       (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
   change (classicalRationalClosePolynomialSet 3).Finite at hfinite
   change ((classicalRationalClosePolynomialSet 3).ncard : ℝ) ≤
@@ -115,11 +115,11 @@ example :
     (classicalRationalClosePolynomialSet 3).Finite ∧
       ((classicalRationalClosePolynomialSet 3).ncard : ℝ) ≤ Λ := by
   exact automatic_first_order_list_bound (1 / 2) (3 / 4)
-    (by norm_num : (0 : ℝ) < 1 / 2) (by norm_num : (1 / 2 : ℝ) < 1)
+    (by norm_num : (1 / 2 : ℝ) < 1)
     half_rate_threshold_lt_three_quarters
-    4 2 3 (by norm_num : 0 < 4) (by norm_num : 2 ≤ 2)
+    4 2 3 (by norm_num : 2 ≤ 2)
     (by norm_num : (2 : ℝ) ≤ (1 / 2) * 4)
-    (by norm_num : (3 / 4 : ℝ) * 4 ≤ 3) (by norm_num : 3 ≤ 4)
+    (by norm_num : (3 / 4 : ℝ) * 4 ≤ 3)
     rationalEvaluationDomain (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)) (fun _ ↦ 0)
 
 open Classical in
@@ -138,10 +138,10 @@ example :
       (4 : ℝ) := by
     linarith [half_rate_threshold_lt_three_quarters]
   exact automatic_first_order_list_bound_of_slack (1 / 2) (1 / 8)
-    (by norm_num : (0 : ℝ) < 1 / 2) (by norm_num : (1 / 2 : ℝ) < 1)
+    (by norm_num : (1 / 2 : ℝ) < 1)
     (by norm_num : (0 : ℝ) < 1 / 8) 4 2 4
-    (by norm_num : 0 < 4) (by norm_num : 2 ≤ 2)
-    (by norm_num : (2 : ℝ) ≤ (1 / 2) * 4) hA (by norm_num : 4 ≤ 4)
+    (by norm_num : 2 ≤ 2)
+    (by norm_num : (2 : ℝ) ≤ (1 / 2) * 4) hA
     rationalEvaluationDomain (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)) (fun _ ↦ 0)
 
 open Classical in
@@ -406,7 +406,7 @@ example :
   have huPos : 0 < u := firstOrderLowRateStationaryU_pos hrho
   have huCubic : u ^ 2 * (u + 3) = t := by
     simpa only [firstOrderStationaryCubic, u, t] using
-      firstOrderLowRateStationaryU_cubic hrho
+      firstOrderLowRateStationaryU_cubic
   have huLt : u < 1 := by
     by_contra hu
     have huOne : 1 ≤ u := le_of_not_gt hu
@@ -419,7 +419,7 @@ example :
     nlinarith [htSq, htLt]
   have hlow := (firstOrderLowRateRegime_iff_lt_rateSwitch (1 / 16 : ℝ)).1 hregime
   have hthresholdEq : firstOrderLowRateThreshold rho = t * (1 + u) := by
-    simpa only [rho, t, u] using firstOrderLowRateThreshold_eq_scale_mul_one_add hrho
+    simpa only [rho, t, u] using firstOrderLowRateThreshold_eq_scale_mul_one_add
   have hthresholdLt : t * (1 + u) < 1 / 2 := by
     calc
       t * (1 + u) < 1 / 4 * (1 + u) :=

@@ -347,7 +347,7 @@ theorem exists_exceptional_of_regular_stage_bounds_of_factors
     {stages : List (SeparantStage F[X] 1)} {terminal : DifferentialPolynomial F[X] 1}
     (hc : SeparantChain cert.Q stages terminal) (ι : F →+* E)
     (K L ell τ : ℕ) (η : ℚ) (hη : 1 ≤ η)
-    (hK : 2 ≤ K) (hLA : L ≤ A)
+    (hK : 2 ≤ K)
     (conclusion : E → E[X] → Prop)
     (hregular : ∀ stage ∈ stages, ∃ exceptional : Finset E,
       (exceptional.card : ℚ) ≤
@@ -415,7 +415,7 @@ theorem exists_exceptional_of_regular_stage_bounds_of_factors
             (τ := τ) (η := η))).sum := by
         rw [List.sum_toFinset _ hnodup]
       _ ≤ _ := hc.sum_firstOrderCurveStageCharge_add_height_le_of_factors τ η hη hμ hM
-        hK hLA hAn
+        hK
   · intro z hz indices P hdegree hagree hvalues
     have hzbase : z ∉ base := fun hm ↦ hz (Finset.mem_union_left _ hm)
     have hroot := (cert.specialization_sound (E := E) ι z).2 indices P hdegree hagree hvalues

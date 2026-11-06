@@ -561,9 +561,6 @@ theorem finiteLengthSourceDensity_mul_cube_le_sourceCount
     exact rho_lt_automaticAgreement hrhoOne (by linarith)
   have hrateAgreement : rate ≤ agreement := hrateLt.le.trans hrhoAgreement.le
   have hagreement : 0 < agreement := hrho.trans hrhoAgreement
-  have hbeta0 : 0 ≤ beta := by
-    dsimp only [beta, finiteLengthDerivativeRatio]
-    exact (automaticDerivativeRatio_pos hrhoOne).le
   have hbetaCutFixed : beta < agreement / rho := by
     dsimp only [beta, agreement, finiteLengthDerivativeRatio,
       finiteLengthCertifiedAgreement]
@@ -575,7 +572,7 @@ theorem finiteLengthSourceDensity_mul_cube_le_sourceCount
     unfold finiteLengthJetDegree
     exact Nat.floor_le_ceil _
   have hsource := cube_mul_sourceDensity_le_firstOrderSourceCount
-    hrate hrateAgreement hbeta0 hbetaCut hmu
+    hrate hrateAgreement hbetaCut hmu
   simpa [firstOrderSourceDensity, finiteLengthSourceCount, finiteLengthDerivativeCap,
     rate, agreement, beta, m, mu] using hsource
 
@@ -663,7 +660,7 @@ theorem finiteLengthChallengeHeight_le_inv_slack_sq_of_count_gap
       hrhoOne hbetaHalf
   have hR : (R : ℝ) ≤ 2 * (m : ℝ) ^ 3 := by
     dsimp only [R, finiteLengthRankCount, m]
-    exact_mod_cast firstOrderRankCount_le_two_mul_cube hmNat hM
+    exact_mod_cast firstOrderRankCount_le_two_mul_cube hM
   have hB : (B : ℝ) ≤ cB / s := by
     exact finiteLengthJetDegree_le_inv_slack
       hrho hrhoOne heta haOne hn hbetaHalf

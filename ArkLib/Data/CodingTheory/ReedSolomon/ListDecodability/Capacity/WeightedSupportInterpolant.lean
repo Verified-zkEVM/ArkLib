@@ -103,7 +103,7 @@ private theorem exists_prescribed_weightedSupport_construction_core
     prescribed_dimension_inputs δ ((D : ℝ) / n) H d hδ hδmax.le hρ hρhi
       hdLower hHlo
   have hmargin := prescribed_weightedSupport_margin
-    (F := ZMod q) δ n D hδ hδmax.le hn hD hρlo hρhi
+    (F := ZMod q) δ n D hδ hδmax.le hD hρlo hρhi
   have hcut : (D : ℝ) * m * (1 + g) ≤ (m * A : ℕ) := by
     have h := mul_le_mul_of_nonneg_left hslack (Nat.cast_nonneg m : (0 : ℝ) ≤ m)
     push_cast

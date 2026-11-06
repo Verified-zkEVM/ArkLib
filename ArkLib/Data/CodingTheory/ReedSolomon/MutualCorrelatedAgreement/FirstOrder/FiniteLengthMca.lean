@@ -404,7 +404,7 @@ theorem finiteLengthSelectorMcaEnvelope_le
     dsimp only [theta]
     unfold agreementIncidenceRatio
     positivity
-  have hthetaRate := agreementIncidenceRatio_le_one_div_sub hDn hDA
+  have hthetaRate := agreementIncidenceRatio_le_one_div_sub
     hDrate
     hA (show rho < firstOrderRateThreshold rho + eta by
       exact (rate_lt_firstOrderRateThreshold hrho hrhoOne).trans
@@ -563,9 +563,7 @@ theorem closePolynomialSet_finite_and_card_le_finiteLength_of_selector_certifica
     have hMB : M ≤ B := finiteLengthDerivativeCap_le_jetDegree
       hrho hrhoOne heta hn
     have htheta : agreementIncidenceRatio n (k - 1) A ≤ C := by
-      have hDn : k - 1 ≤ n := by omega
-      have hDA : k - 1 < A := by omega
-      have hthetaRate := agreementIncidenceRatio_le_one_div_sub hDn hDA hDrate hA
+      have hthetaRate := agreementIncidenceRatio_le_one_div_sub hDrate hA
         (show rho < firstOrderRateThreshold rho + eta by
           exact (rate_lt_firstOrderRateThreshold hrho hrhoOne).trans
             (lt_add_of_pos_right _ heta))

@@ -75,15 +75,15 @@ characteristic guard covers Taylor recovery through degree `D` and differentiati
 than from a finite-field assumption. -/
 theorem automaticFirstOrder_closePolynomialSet_finite_and_card_le
     {rho a : ℝ} {n D A k : ℕ}
-    (hrho : 0 < rho) (hrhoOne : rho < 1)
+    (hrhoOne : rho < 1)
     (ha : firstOrderRateThreshold rho < a)
     /-
 
     The dimension and integer agreement threshold enforce the fixed physical rate
     and the requested agreement fraction.
     -/
-    (hn : 0 < n) (hD : D = k - 1) (hk : 2 ≤ k)
-    (hkRate : (k : ℝ) ≤ rho * n) (hA : a * n ≤ A) (hAn : A ≤ n)
+    (hD : D = k - 1) (hk : 2 ≤ k)
+    (hkRate : (k : ℝ) ≤ rho * n) (hA : a * n ≤ A)
     /-
 
     Distinct evaluation points turn agreement into a count of distinct polynomial roots.
@@ -107,11 +107,11 @@ theorem automaticFirstOrder_closePolynomialSet_finite_and_card_le
     refine Set.finite_of_forall_finset_card_le (R := ℕ) (ℓ := B) ?_
     intro S hST
     have hbound := finite_automaticFirstOrder_hybrid_agreement_solutions_card_le
-      hrho hrhoOne ha hn hD hk hkRate hA hAn domain received hchar S
+      hrhoOne ha hD hk hkRate hA domain received hchar S
       (fun P hP ↦ (mem_closePolynomialSet_iff_agreement domain received P).mp (hST hP))
     exact hbound.2.1
   have hwhole := finite_automaticFirstOrder_hybrid_agreement_solutions_card_le
-    hrho hrhoOne ha hn hD hk hkRate hA hAn domain received hchar hfinite.toFinset
+    hrhoOne ha hD hk hkRate hA domain received hchar hfinite.toFinset
     (fun P hP ↦ (mem_closePolynomialSet_iff_agreement domain received P).mp
       (hfinite.mem_toFinset.mp hP))
   have hncard : T.ncard = hfinite.toFinset.card := Set.ncard_eq_toFinset_card T hfinite
@@ -138,7 +138,6 @@ theorem automatic_first_order_list_bound
     Choose the physical rate and agreement fraction before the code data.
     -/
     (ρ a : ℝ)
-    (hρ : 0 < ρ)
     (hρone : ρ < 1)
     (ha : firstOrderRateThreshold ρ < a)
     /-
@@ -146,11 +145,9 @@ theorem automatic_first_order_list_bound
     Dimension k means degree strictly below k; A counts agreeing positions.
     -/
     (n k A : ℕ)
-    (hn : 0 < n)
     (hk : 2 ≤ k)
     (hrate : (k : ℝ) ≤ ρ * n)
     (hagree : a * n ≤ A)
-    (hAn : A ≤ n)
     /-
 
     Distinct evaluation points over an arbitrary field.
@@ -172,7 +169,7 @@ theorem automatic_first_order_list_bound
     /-
 
     θ = (n-D)/(A-D) is the incidence factor for fixed-word solution families.
-    The hypotheses give 1 ≤ θ ≤ 1/(a-ρ).
+    The rate and agreement hypotheses give θ ≤ 1/(a-ρ).
     -/
     let θ := agreementIncidenceRatio n D A
     /-
@@ -207,7 +204,7 @@ theorem automatic_first_order_list_bound
   dsimp only
   obtain ⟨hfinite, _hraw, _hceil, hclosed⟩ :=
     automaticFirstOrder_closePolynomialSet_finite_and_card_le
-      hρ hρone ha hn rfl hk hrate hagree hAn domain received hchar
+      hρone ha rfl hk hrate hagree domain received hchar
   exact ⟨hfinite, hclosed⟩
 
 open Classical in
@@ -217,7 +214,6 @@ Here `a = a₁(ρ) + η₁` and `η₁ > 0`, so agreement lies strictly above th
 curve. The companion rate theorem bounds the displayed `Λ` by `O_ρ(n / η₁³)`. -/
 theorem automatic_first_order_list_bound_of_slack
     (ρ η₁ : ℝ)
-    (hρ : 0 < ρ)
     (hρone : ρ < 1)
     (hη₁ : 0 < η₁)
     /-
@@ -225,11 +221,9 @@ theorem automatic_first_order_list_bound_of_slack
     Dimension k means degree < k; A is the integer agreement threshold.
     -/
     (n k A : ℕ)
-    (hn : 0 < n)
     (hk : 2 ≤ k)
     (hrate : (k : ℝ) ≤ ρ * n)
     (hagree : (firstOrderRateThreshold ρ + η₁) * n ≤ A)
-    (hAn : A ≤ n)
     /-
 
     Distinct evaluation points turn agreement into a count of distinct polynomial roots.
@@ -259,21 +253,21 @@ theorem automatic_first_order_list_bound_of_slack
       ((closePolynomialSet domain received k A).ncard : ℝ) ≤ Λ := by
   dsimp only
   exact automatic_first_order_list_bound ρ (firstOrderRateThreshold ρ + η₁)
-    hρ hρone (lt_add_of_pos_right _ hη₁) n k A hn hk hrate hagree hAn
+    hρone (lt_add_of_pos_right _ hη₁) n k A hk hrate hagree
     domain hchar received
 
 open Classical in
 /-- The exact integer threshold `A = ceil (a*n)` gives the automatic first-order list bounds. -/
 theorem automaticFirstOrder_closePolynomialSet_at_ceil_finite_and_card_le
     {rho a : ℝ} {n k : ℕ}
-    (hrho : 0 < rho) (hrhoOne : rho < 1)
-    (ha : firstOrderRateThreshold rho < a) (haOne : a < 1)
+    (hrhoOne : rho < 1)
+    (ha : firstOrderRateThreshold rho < a)
     /-
 
     The dimension and integer agreement threshold enforce the fixed physical rate
     and the requested agreement fraction.
     -/
-    (hn : 0 < n) (hk : 2 ≤ k) (hkRate : (k : ℝ) ≤ rho * n)
+    (hk : 2 ≤ k) (hkRate : (k : ℝ) ≤ rho * n)
     /-
 
     Distinct evaluation points turn agreement into a count of distinct polynomial roots.
@@ -295,13 +289,8 @@ theorem automaticFirstOrder_closePolynomialSet_at_ceil_finite_and_card_le
           (agreementIncidenceRatio n (k - 1) (Nat.ceil (a * n))) (k - 1)
           (automaticJetDegree rho a) (automaticDerivativeCap rho a) := by
   have hA : a * (n : ℝ) ≤ (Nat.ceil (a * n) : ℕ) := Nat.le_ceil _
-  have hAn : Nat.ceil (a * n) ≤ n := by
-    apply Nat.ceil_le.mpr
-    calc
-      a * (n : ℝ) ≤ 1 * n := mul_le_mul_of_nonneg_right haOne.le (Nat.cast_nonneg n)
-      _ = n := one_mul _
   exact automaticFirstOrder_closePolynomialSet_finite_and_card_le
-    hrho hrhoOne ha hn rfl hk hkRate hA hAn domain received hchar
+    hrhoOne ha rfl hk hkRate hA domain received hchar
 
 open Classical in
 /-- The squarefree product and resultant argument improves the slack dependence of the automatic
@@ -326,7 +315,7 @@ theorem automatic_first_order_squarefree_list_bound_of_slack
   let B := automaticJetDegree rho a
   have ha : firstOrderRateThreshold rho < a := by dsimp only [a]; linarith
   have hOld := automaticFirstOrder_closePolynomialSet_finite_and_card_le
-    hrho hrhoOne ha hn (show D = k - 1 from rfl) hk hkRate hA hAn
+    hrhoOne ha (show D = k - 1 from rfl) hk hkRate hA
       domain received hchar
   refine ⟨hOld.1, ?_⟩
   have hkA : k ≤ A := by
@@ -596,7 +585,8 @@ theorem closePolynomialSet_finite_and_card_le_finiteLength_of_bounded_certificat
         intro i hi
         simpa using (Finset.mem_filter.mp hi).2
       have hraw := HiddenDerivative.finite_firstOrder_field_hybrid_agreement_solutions_card_le
-        domain received Q hQ hweight hdegree (by omega) (by omega) hAn hchar S hsol
+        (D := k - 1) (A := A) domain received Q hQ hweight hdegree
+          (by omega) (by omega) hchar S hsol
           (fun P hP ↦ by
             have hkEq : ((k - 1 : ℕ) : WithBot ℕ) + 1 = (k : WithBot ℕ) := by
               exact_mod_cast (Nat.sub_add_cancel (by omega : 1 ≤ k))

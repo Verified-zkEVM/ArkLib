@@ -313,7 +313,7 @@ theorem exists_extensionExceptional_firstOrderCurve_of_certificate_of_exponent
       one_le_incidenceFactor (T := k) (b := 1) hAn one_pos
   obtain ⟨exceptional, hcard, hgood⟩ :=
     cert.exists_exceptional_of_regular_stage_bounds_of_factors
-      chain iota K L ell τ (firstOrderCurveDirectRatio n k A) hη (by omega) hLA
+      chain iota K L ell τ (firstOrderCurveDirectRatio n k A) hη (by omega)
       (fun z P ↦ HasExactPowerAgreement domain values iota k z P) hregular
   refine ⟨exceptional, hcard, ?_⟩
   intro z hz P hdegree hagree

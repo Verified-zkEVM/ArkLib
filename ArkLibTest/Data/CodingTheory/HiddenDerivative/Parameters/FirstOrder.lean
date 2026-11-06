@@ -100,7 +100,7 @@ example : 0 < firstOrderSourceDensity (1 / 8) 1 (firstOrderLowRateBeta (1 / 8)) 
   have hu : firstOrderLowRateStationaryU (1 / 8) < 1 := by
     by_contra h
     have hge : 1 ≤ firstOrderLowRateStationaryU (1 / 8) := le_of_not_gt h
-    have hc := firstOrderLowRateStationaryU_cubic (rho := (1 / 8 : ℝ)) (by norm_num)
+    have hc := firstOrderLowRateStationaryU_cubic (rho := (1 / 8 : ℝ))
     rw [ht] at hc
     unfold firstOrderStationaryCubic at hc
     have hbound : 4 ≤ firstOrderLowRateStationaryU (1 / 8) ^ 2 *
@@ -110,7 +110,7 @@ example : 0 < firstOrderSourceDensity (1 / 8) 1 (firstOrderLowRateBeta (1 / 8)) 
         _ ≤ firstOrderLowRateStationaryU (1 / 8) ^ 2 *
             (firstOrderLowRateStationaryU (1 / 8) + 3) := by gcongr
     linarith
-  rw [firstOrderLowRateThreshold_eq_scale_mul_one_add (by norm_num), ht]
+  rw [firstOrderLowRateThreshold_eq_scale_mul_one_add, ht]
   nlinarith [hu]
 
 /-- At rate `1/8`, the positive stationary root exists and is the unique nonnegative root. -/
@@ -120,8 +120,8 @@ example : ∃ u : ℝ, 0 < u ∧
       firstOrderLowRateScale (1 / 8) ∧
     u = firstOrderLowRateStationaryU (1 / 8) := by
   obtain ⟨u, hu, hcubic⟩ := exists_firstOrderStationaryRoot (rho := (1 / 8 : ℝ)) (by norm_num)
-  exact ⟨u, hu, hcubic, firstOrderLowRateStationaryU_cubic (by norm_num),
-    firstOrderLowRateStationaryU_unique (by norm_num) hu.le hcubic⟩
+  exact ⟨u, hu, hcubic, firstOrderLowRateStationaryU_cubic,
+    firstOrderLowRateStationaryU_unique hu.le hcubic⟩
 
 /-- The source-minus-envelope factorization at the chosen rate ratio. -/
 example :
@@ -129,8 +129,8 @@ example :
         firstOrderRankCubicEnvelope (firstOrderRateBeta (1 / 2) (3 / 4)) =
       firstOrderRateBeta (1 / 2) (3 / 4) / 2 *
         (firstOrderCleanExpression (1 / 2) (3 / 4) - 1) := by
-  rw [firstOrderSourceDensity_sub_cubicEnvelope _ _ _ (by norm_num),
-    firstOrderRateBeta_bracket _ _ (by norm_num) (by norm_num)]
+  rw [firstOrderSourceDensity_sub_cubicEnvelope _ _ _,
+    firstOrderRateBeta_bracket _ _]
 
 /-- The piecewise ratio at `R = 1/2` lies below `a/R` when `a = 3/4`. -/
 example : firstOrderBranchBeta (1 / 2) (3 / 4) < (3 / 4) / (1 / 2) := by
@@ -158,7 +158,7 @@ example : (firstOrderRankCount 2 1 : ℝ) ≤ firstOrderRankCubicUpperCount 2 1 
     firstOrderRankCount 2 1 ≤ 2 * 2 ^ 3 := by
   constructor
   · exact firstOrderRankCount_le_cubicUpperCount 2 1
-  · exact firstOrderRankCount_le_two_mul_cube (by norm_num) (by norm_num)
+  · exact firstOrderRankCount_le_two_mul_cube (by norm_num)
 
 /-- The rounded rank estimate at `m = 4`, `β = 1/2`. -/
 example : (firstOrderRankCount 4 ⌊(1 / 2 : ℝ) * 4⌋₊ : ℝ) ≤
@@ -195,7 +195,7 @@ example :
       firstOrderSourceCount (1 / 2) 1 64 ⌊(1 / 4 : ℝ) * 64⌋₊ 128 -
         firstOrderRankCount 64 ⌊(1 / 4 : ℝ) * 64⌋₊ := by
   exact ⟨cube_mul_sourceDensity_le_firstOrderSourceCount (by norm_num) (by norm_num)
-      (by norm_num) (by norm_num) (by norm_num),
+      (by norm_num) (by norm_num),
     cube_mul_densityGap_sub_le_sourceCount_sub_rankCount (by norm_num) (by norm_num)
       (by norm_num) (by norm_num) (by norm_num) (by norm_num)⟩
 
@@ -467,7 +467,7 @@ example : (hybridSolutions.card : ℚ) ≤
     (by rw [hybridVariable_totalDegree (R := ℚ)])
     (by rw [jetDegree, MvPolynomial.degreeOf_X_self])
     hybridDomain hybridReceived
-    (by norm_num) (by norm_num) hybridSolutions
+    (by norm_num) hybridSolutions
     (fun P hP ↦ (hybridSolutions_accepted P hP).1)
     (fun P hP ↦ hybridJetOneSolutions P hP)
     (fun P hP ↦ by
@@ -489,7 +489,7 @@ example : (hybridSolutions.card : ℚ) ≤
   exact finite_regular_agreement_solutions_card_le_identityPair
     (n := 4) (A := 3) (MvPolynomial.X (some (1 : Fin 2))) 1 1
     (by rw [hybridVariable_totalDegree (R := ℚ)]) hybridDomain hybridReceived
-    (by norm_num) (by norm_num) hybridSolutions
+    (by norm_num) hybridSolutions
     (fun P hP ↦ (hybridSolutions_accepted P hP).1)
     (fun P hP ↦ hybridJetOneSolutions P hP)
     (fun P hP ↦ by
@@ -529,7 +529,7 @@ example : (hybridSolutions.card : ℝ) ≤
   exact finite_firstOrder_hybrid_agreement_solutions_card_le_raw_of_tail
     (D := 1) (A := 3) (μ := 3) (M := 1)
     hybridDomain hybridReceived hybridSymbolicEquation hybridSymbolicDescent 0
-    (by norm_num) (by norm_num) (by norm_num) (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+    (by norm_num) (by norm_num) (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
     hybridSymbolicTailBound hybridSolutions hybridSymbolicSolutions
     (fun P hP ↦ by
       rcases Finset.mem_singleton.mp hP with rfl
@@ -559,7 +559,7 @@ example : (hybridSolutions.card : ℝ) ≤
   exact finite_firstOrder_field_hybrid_agreement_solutions_card_le_raw
     (D := 1) (A := 3) (μ := 3) (M := 1)
     hybridDomain hybridReceived hybridFieldEquation hybridFieldDescent
-    (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num)
     (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)) hybridSolutions hybridFieldSolutions
     (fun P hP ↦ by
       rcases Finset.mem_singleton.mp hP with rfl
@@ -594,7 +594,7 @@ example : (hybridSolutions.card : ℝ) ≤
     (by rw [hybridFieldEquation, hybridVariable_totalDegree (R := ℚ)]; norm_num)
     (by rw [jetDegree, hybridFieldEquation,
       MvPolynomial.degreeOf_X_of_ne (by decide)]; norm_num)
-    (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num)
     (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)) hybridSolutions
     hybridFieldSolutions (fun P hP ↦ by
       rcases Finset.mem_singleton.mp hP with rfl
@@ -611,8 +611,8 @@ example : (hybridSolutions.card : ℝ) ≤
         (automaticJetDegree (1 / 2) (3 / 4)) (automaticDerivativeCap (1 / 2) (3 / 4)) := by
   exact finite_automaticFirstOrder_hybrid_agreement_solutions_card_le
     (rho := 1 / 2) (a := 3 / 4) (n := 4) (D := 1) (A := 3) (k := 2)
-    (by norm_num) (by norm_num) half_rate_threshold_lt_three_four
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) half_rate_threshold_lt_three_four
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
     hybridDomain hybridReceived (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)) hybridSolutions
     (fun P hP ↦ by
       rcases Finset.mem_singleton.mp hP with rfl
@@ -668,14 +668,13 @@ example : firstOrderListCharge 1 1 2 1 ≤ firstOrderListConstant 1 1 2 1 ∧
 /-- For rate fraction `1/4` and agreement fraction `1/2`, the incidence ratio is at most `4`. -/
 example : agreementIncidenceRatio 4 1 2 ≤ 1 / ((1 / 2 : ℝ) - 1 / 4) := by
   exact agreementIncidenceRatio_le_one_div_sub (n := 4) (D := 1) (A := 2)
-    (ρ := 1 / 4) (a := 1 / 2) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num)
+    (ρ := 1 / 4) (a := 1 / 2) (by norm_num) (by norm_num) (by norm_num)
 
 /-- The cubic envelope at `C = θ = 1`, `q = n = μ = 2`, and `D = M = 1`. -/
 example : firstOrderListConstant 1 1 2 1 ≤ 48 := by
   have h := firstOrderListConstant_le_cubic (C := 1) (q := 2) (θ := 1) (n := 2) (D := 1)
     (μ := 2) (M := 1) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num [stageStaircase])
+    (by norm_num) (by norm_num) (by norm_num [stageStaircase])
   norm_num at h ⊢
   exact h
 
@@ -683,7 +682,7 @@ example : firstOrderListConstant 1 1 2 1 ≤ 48 := by
 example : firstOrderExceptionConstant 1 2 1 1 2 1 ≤ 5760 := by
   have h := firstOrderExceptionConstant_le_quintic (C := 1) (q := 2) (θ := 1) (n := 2) (D := 1)
     (h := 1) (μ := 2) (M := 1) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
     (by norm_num [stageStaircase])
   norm_num at h ⊢
   exact h
@@ -825,7 +824,7 @@ example :
   exact automaticCurveChain.sum_firstOrderCurveStageCharge_add_height_le_of_directRatio
     (n := 4) (K := 2) (k := 1) (L := 1) (A := 2) (μ := 1) (M := 1)
     (ell := 1) (h := 1) (τ := 0) hdegree hderivative
-    (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num)
 
 /-- The stage cap identity computes the concrete first-order curve bound. -/
 example :
@@ -994,7 +993,7 @@ example :
   have hSharp := finite_firstOrder_agreement_solutions_card_le_sharp
     Q 2 1 1 1 hQ hdegree hfirst firstOrderAgreementTestDomain
     firstOrderAgreementTestReceived (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num) (Or.inl (by simp)) S hsol haccept
+    (by norm_num) (Or.inl (by simp)) S hsol haccept
   have hCompare := firstOrderTightListWeight_two_mul_le 2 2 1 2 1 1
     (by norm_num) (by norm_num) (by norm_num)
   refine ⟨?_, ?_, ?_, firstOrderTightListWeight_nonneg 2 2 1 2 4 1 1⟩

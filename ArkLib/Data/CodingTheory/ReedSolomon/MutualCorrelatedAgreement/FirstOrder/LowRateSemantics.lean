@@ -157,7 +157,7 @@ theorem lowRate_agreementIncidenceRatio_le_parameterConstant
   · by_cases hDA : D < A
     · have hregime := (firstOrderLowRateRegime_iff_lt_rateSwitch rho).2 hlow
       have hthreshold := rate_lt_firstOrderLowRateThreshold hrho hregime
-      have hthetaRate := agreementIncidenceRatio_le_one_div_sub hDn hDA hDrate hA
+      have hthetaRate := agreementIncidenceRatio_le_one_div_sub hDrate hA
         (hthreshold.trans (lt_add_of_pos_right _ heta))
       calc
         agreementIncidenceRatio n D A ≤

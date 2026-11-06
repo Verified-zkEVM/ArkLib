@@ -460,7 +460,7 @@ private theorem halfRate_finiteLengthDerivativeRatio_le_half :
 /-- The rate-slack list and line-agreement envelopes over `ℚ` at slack `1/8`. -/
 example := automaticFirstOrder_rate_bounds (1 / 2) (1 / 8) 4 2 4 (by norm_num)
   (by norm_num) halfRate_slack_lt_one (by norm_num) (by norm_num)
-  (by linarith [halfRate_threshold_lt_three_quarters]) (by norm_num) rationalDomain
+  (by linarith [halfRate_threshold_lt_three_quarters]) rationalDomain
   (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
 
 local instance : Fact (Nat.Prime 2749) := ⟨by norm_num⟩
@@ -852,7 +852,7 @@ private theorem sixteenth_lowRate_conditions :
   have huPos : 0 < u := firstOrderLowRateStationaryU_pos (by norm_num)
   have huCubic : u ^ 2 * (u + 3) = t := by
     simpa only [firstOrderStationaryCubic, u, t] using
-      firstOrderLowRateStationaryU_cubic (by norm_num : (0 : ℝ) < 1 / 16)
+      firstOrderLowRateStationaryU_cubic
   have huLt : u < 1 := by
     by_contra hu
     have huOne : 1 ≤ u := le_of_not_gt hu
@@ -867,7 +867,6 @@ private theorem sixteenth_lowRate_conditions :
   have hthresholdEq : firstOrderLowRateThreshold (1 / 16 : ℝ) = t * (1 + u) := by
     simpa only [t, u] using
       firstOrderLowRateThreshold_eq_scale_mul_one_add
-        (by norm_num : (0 : ℝ) < 1 / 16)
   have hthresholdLt : t * (1 + u) < 1 / 2 := by
     calc
       t * (1 + u) < 1 / 4 * (1 + u) :=
