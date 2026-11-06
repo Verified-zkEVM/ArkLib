@@ -30,7 +30,7 @@ as `correlatedAgreement_affine_spaces`. No independence of the directions is req
 theorem correlatedAgreement_affine_coefficients
     {ι : Type} [Fintype ι] [Nonempty ι] [NeZero m]
     {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
-    (hdeg : 0 < deg) (hδ_pos : 0 < δ)
+    (hdeg : 0 < deg)
     (hδ : δ < 1 - ReedSolomon.sqrtRate deg domain)
     (hRS : deg + 1 ≤ Fintype.card ι) (hε : errorBound δ deg domain < 1)
     (u : Fin (m + 1) → ι → F)
@@ -39,7 +39,7 @@ theorem correlatedAgreement_affine_coefficients
         (ReedSolomon.code domain deg).carrier ≤ δ] > errorBound δ deg domain) :
     Code.jointAgreement (ReedSolomon.code domain deg).carrier δ u := by
   classical
-  apply correlatedAgreement_affine_spaces hdeg hδ_pos hδ hRS hε u
+  apply correlatedAgreement_affine_spaces hdeg hδ hRS hε u
   exact lt_of_lt_of_eq hprob (uniform_affine_combination m u (fun f ↦
     Code.relDistFromCode f (ReedSolomon.code domain deg).carrier ≤ δ))
 

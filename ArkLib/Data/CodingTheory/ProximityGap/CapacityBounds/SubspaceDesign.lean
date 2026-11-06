@@ -182,7 +182,7 @@ theorem mcaError_le_of_strongLineDecodable
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
     {s t a : ℕ} (C : Submodule F (ι → Fin s → F)) (δ : NNReal)
-    (ht : 0 < t) (hδpos : 0 < δ) (hδlt : δ < 1)
+    (ht : 0 < t) (hδlt : δ < 1)
     (hweak : StrongLineDecodable (C : Set (ι → Fin s → F)) δ a (2 * t))
     (hlist : Code.Lambda (C : Set (ι → Fin s → F))
       ((δ : ℝ) * (2 * (t : ℝ)) / (2 * (t : ℝ) - 1)) ≤ (t : ℕ∞))
@@ -190,14 +190,13 @@ theorem mcaError_le_of_strongLineDecodable
     mcaError (AffineLineGenerator F) C (δ : ℝ) ≤
       ENNReal.ofReal (((Fintype.card ι : ℝ) * t + a) / Fintype.card F) :=
   mcaError_le_of_strongLineDecodable_of_conv C δ (Fintype.card ι)
-    (fun a' h ↦ IsLineDecodable.mcaError_le C δ a' (by exact_mod_cast hδpos) hδlt h)
+    (fun a' h ↦ IsLineDecodable.mcaError_le C δ a' hδlt h)
     ht hweak hlist hbudget
 
 /-- `mcaError_le_of_strongLineDecodable` with the boost aimed at `⌊δ n⌋ + 2` aligned challenges
 instead of `n + 1` (`IsLineDecodable.mcaError_le_of_floor_add_two`). The term `n · t` becomes
 `(⌊δ n⌋ + 1) · t`. Since `⌊δ n⌋ + 1 ≤ n`, the bound is never weaker than that of
-`mcaError_le_of_strongLineDecodable`; the hypotheses differ (`n < |F|` here, `0 < δ` there), so
-neither theorem implies the other. -/
+`mcaError_le_of_strongLineDecodable`; this version additionally assumes `n < |F|`. -/
 theorem mcaError_le_of_strongLineDecodable_of_floor_add_two
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
@@ -294,7 +293,7 @@ theorem subspace_design_mcaError_le
     have heps : (0 : ℝ) < 3 / (2 * t) := by positivity
     linarith
   have hmca := mcaError_le_of_strongLineDecodable C δ _ht
-    (by exact_mod_cast hδpos) hδlt hweak hlist hbudget
+    hδlt hweak hlist hbudget
   change mcaError (AffineLineGenerator F) C δr ≤ _ at hmca
   convert hmca using 1
   push_cast

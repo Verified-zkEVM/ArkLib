@@ -314,7 +314,6 @@ omit [SampleableType S] in
 /-- affineSpace specialization of `batching_error`, with the BCIKS20 error. -/
 theorem batching_error_affineSpace [SampleableType F]
     (hdom : 2 ^ (∑ i, (s i).1) * d ≤ 2 ^ n) (δ : ℝ≥0)
-    (hδ_pos : 0 < δ)
     (hδ : δ < 1 - ReedSolomon.sqrtRate (2 ^ (∑ i, (s i).1) * d)
       (ω : Fin (2 ^ n) ↪ F))
     (stmt : Unit × ∀ j, OracleStatement m ω j)
@@ -325,12 +324,11 @@ theorem batching_error_affineSpace [SampleableType F]
       (ProximityGap.errorBound δ (2 ^ (∑ i, (s i).1) * d)
         (ω : Fin (2 ^ n) ↪ F) : ℝ≥0) := by
   exact batching_error s d m (CoreDefinitions.AffineSpaceGenerator F m) hdom δ _
-    (ProximityGap.caError_affineSpace_le m (by positivity) hδ_pos hδ) stmt hnot
+    (ProximityGap.caError_affineSpace_le m (by positivity) hδ) stmt hnot
 omit [SampleableType S] in
 /-- affineSpace specialization of `round_soundness`, with the BCIKS20 error. -/
 theorem round_soundness_affineSpace [SampleableType F]
     (hdom : 2 ^ (∑ i, (s i).1) * d ≤ 2 ^ n) (δ : ℝ≥0)
-    (hδ_pos : 0 < δ)
     (hδ : δ < 1 - ReedSolomon.sqrtRate (2 ^ (∑ i, (s i).1) * d)
       (ω : Fin (2 ^ n) ↪ F))
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
@@ -340,12 +338,11 @@ theorem round_soundness_affineSpace [SampleableType F]
       (inputRelation s d m δ).language (outputRelation s d hdom δ).language
       (fun _ ↦ ProximityGap.errorBound δ (2 ^ (∑ i, (s i).1) * d) (ω : Fin (2 ^ n) ↪ F)) := by
   exact round_soundness s d m (CoreDefinitions.AffineSpaceGenerator F m) hdom δ _
-    (ProximityGap.caError_affineSpace_le m (by positivity) hδ_pos hδ) init impl
+    (ProximityGap.caError_affineSpace_le m (by positivity) hδ) init impl
 omit [SampleableType S] in
 /-- affineSpace specialization of `soundness`, with the BCIKS20 error. -/
 theorem soundness_affineSpace [SampleableType F]
     (hdom : 2 ^ (∑ i, (s i).1) * d ≤ 2 ^ n) (δ : ℝ≥0)
-    (hδ_pos : 0 < δ)
     (hδ : δ < 1 - ReedSolomon.sqrtRate (2 ^ (∑ i, (s i).1) * d)
       (ω : Fin (2 ^ n) ↪ F))
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
@@ -353,12 +350,11 @@ theorem soundness_affineSpace [SampleableType F]
       (inputRelation s d m δ).language (outputRelation s d hdom δ).language
       (ProximityGap.errorBound δ (2 ^ (∑ i, (s i).1) * d) (ω : Fin (2 ^ n) ↪ F)) := by
   exact soundness s d m (CoreDefinitions.AffineSpaceGenerator F m) hdom δ _
-    (ProximityGap.caError_affineSpace_le m (by positivity) hδ_pos hδ) init impl
+    (ProximityGap.caError_affineSpace_le m (by positivity) hδ) init impl
 omit [SampleableType S] in
 /-- powers specialization of `batching_error`, with the BCIKS20 error. -/
 theorem batching_error_powers [SampleableType F]
     (hdom : 2 ^ (∑ i, (s i).1) * d ≤ 2 ^ n) (δ : ℝ≥0)
-    (hδ_pos : 0 < δ)
     (hδ : δ < 1 - ReedSolomon.sqrtRate (2 ^ (∑ i, (s i).1) * d)
       (ω : Fin (2 ^ n) ↪ F))
     (stmt : Unit × ∀ j, OracleStatement m ω j)
@@ -369,12 +365,11 @@ theorem batching_error_powers [SampleableType F]
       (m * ProximityGap.errorBound δ (2 ^ (∑ i, (s i).1) * d)
         (ω : Fin (2 ^ n) ↪ F) : ℝ≥0) := by
   exact batching_error s d m (CoreDefinitions.univariatePowersGenerator F m) hdom δ _
-    (ProximityGap.caError_powers_le m (by positivity) hδ_pos hδ) stmt hnot
+    (ProximityGap.caError_powers_le m (by positivity) hδ) stmt hnot
 omit [SampleableType S] in
 /-- powers specialization of `round_soundness`, with the BCIKS20 error. -/
 theorem round_soundness_powers [SampleableType F]
     (hdom : 2 ^ (∑ i, (s i).1) * d ≤ 2 ^ n) (δ : ℝ≥0)
-    (hδ_pos : 0 < δ)
     (hδ : δ < 1 - ReedSolomon.sqrtRate (2 ^ (∑ i, (s i).1) * d)
       (ω : Fin (2 ^ n) ↪ F))
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
@@ -384,12 +379,11 @@ theorem round_soundness_powers [SampleableType F]
       (inputRelation s d m δ).language (outputRelation s d hdom δ).language
       (fun _ ↦ m * ProximityGap.errorBound δ (2 ^ (∑ i, (s i).1) * d) (ω : Fin (2 ^ n) ↪ F)) := by
   exact round_soundness s d m (CoreDefinitions.univariatePowersGenerator F m) hdom δ _
-    (ProximityGap.caError_powers_le m (by positivity) hδ_pos hδ) init impl
+    (ProximityGap.caError_powers_le m (by positivity) hδ) init impl
 omit [SampleableType S] in
 /-- powers specialization of `soundness`, with the BCIKS20 error. -/
 theorem soundness_powers [SampleableType F]
     (hdom : 2 ^ (∑ i, (s i).1) * d ≤ 2 ^ n) (δ : ℝ≥0)
-    (hδ_pos : 0 < δ)
     (hδ : δ < 1 - ReedSolomon.sqrtRate (2 ^ (∑ i, (s i).1) * d)
       (ω : Fin (2 ^ n) ↪ F))
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
@@ -397,7 +391,7 @@ theorem soundness_powers [SampleableType F]
       (inputRelation s d m δ).language (outputRelation s d hdom δ).language
       (m * ProximityGap.errorBound δ (2 ^ (∑ i, (s i).1) * d) (ω : Fin (2 ^ n) ↪ F)) := by
   exact soundness s d m (CoreDefinitions.univariatePowersGenerator F m) hdom δ _
-    (ProximityGap.caError_powers_le m (by positivity) hδ_pos hδ) init impl
+    (ProximityGap.caError_powers_le m (by positivity) hδ) init impl
 
 
 
@@ -444,7 +438,7 @@ theorem soundness_multilinear_johnson [SampleableType F] (t : ℕ)
     (hdist : (δ_min : ℝ) = (Code.minDist
       (ReedSolomon.code (ω : Fin (2 ^ n) ↪ F)
         (2 ^ (∑ i, (s i).val) * d)).carrier : ℝ) / Fintype.card (Fin (2 ^ n)))
-    (hη : 0 < η) (hη_lt : η < δ_min) (hδ_pos : 0 < δ)
+    (hη : 0 < η) (hη_lt : η < δ_min)
     (hδ : (δ : ℝ) ≤ 1 - (1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / 3))
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (batchVerifier (ω := ω) s (2 ^ t - 1)
@@ -456,6 +450,6 @@ theorem soundness_multilinear_johnson [SampleableType F] (t : ℕ)
       simpa only [Fintype.card_fin, PNat.val] using
         ProximityGap.caError_multilinearBatch_le_johnson t
           (ReedSolomon.code (ω : Fin (2 ^ n) ↪ F) (2 ^ (∑ i, (s i).val) * d))
-          δ_min η δ hdist hη hη_lt hδ_pos hδ) init impl
+          δ_min η δ hdist hη hη_lt hδ) init impl
 
 end BatchedFri.Spec.BatchingRound

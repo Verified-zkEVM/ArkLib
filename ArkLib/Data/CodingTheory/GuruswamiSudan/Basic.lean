@@ -73,10 +73,16 @@ noncomputable def gs_johnson (k n m : ℕ) : ℝ :=
   1 - √ rho - √ rho / (2 * m)
 
 /-- The GS degree bound with m=1 divided by (k-1) is less than F
-    when |F| ≥ 5 and the RS code is non-degenerate (k+1 ≤ n ≤ F). -/
-lemma gs_degree_bound_div_lt {k n F : ℕ} (hk : 2 ≤ k) (hn : n ≤ F) (hF : 5 ≤ F)
-    (hkn : k + 1 ≤ n) :
+    when `5 ≤ F` and `n ≤ F`. -/
+lemma gs_degree_bound_div_lt {k n F : ℕ} (hn : n ≤ F) (hF : 5 ≤ F) :
     gs_degree_bound k n 1 / (k - 1) < F := by
+  by_cases hk : 2 ≤ k
+  swap
+  · have hk1 : k - 1 = 0 := by omega
+    simpa [hk1] using (show 0 < F by omega)
+  by_cases hn0 : n = 0
+  · subst n
+    simpa [gs_degree_bound] using (show 0 < F by omega)
   have hk1 : 0 < k - 1 := by omega
   rw [Nat.div_lt_iff_lt_mul hk1]
   unfold gs_degree_bound; dsimp only
@@ -277,8 +283,11 @@ denominator-free.
 This sum (called `D_C` in [BCIKS20]) controls the total `Y, Z`-degree of the interpolation
 polynomial in the curve regime. The bound is essentially tight: for `k = 2` and `D = 4` the two
 sides are `120` and `125`. -/
-lemma sum_snd_weightBoundIndices_le (D : ℕ) (hk : 1 < k) :
+lemma sum_snd_weightBoundIndices_le (D : ℕ) :
     6 * (k - 1) ^ 2 * (∑ p ∈ weightBoundIndices k D, p.2) ≤ (D + 1) ^ 3 := by
+  by_cases hk : 1 < k
+  swap
+  · simp [Nat.sub_eq_zero_of_le (by omega : k ≤ 1)]
   obtain ⟨κ, rfl⟩ : ∃ κ, k = κ + 1 := ⟨k - 1, by omega⟩
   have hκ0 : 0 < κ := by omega
   rw [sum_snd_weightBoundIndices_eq D hk]
@@ -376,9 +385,12 @@ private lemma floor_sqrt_bound_sq_gt (a : ℚ) (ha : 0 ≤ a) (hn : n ≠ 0) :
   exact pow_lt_pow_left₀ (Nat.lt_floor_add_one _) (by positivity) two_ne_zero
 
 /-- Lower bound for the square of (D+1). Specifically, (D+1)^2 > (m+1/2)^2 * (k+1) * n. -/
-lemma proximity_gap_degree_bound_sq_gt (hn : n ≠ 0) :
+lemma proximity_gap_degree_bound_sq_gt :
     ((proximity_gap_degree_bound k n m : ℝ) + 1) ^ 2 >
       (m + 1 / 2) ^ 2 * (k + 1) * n := by
+  by_cases hn : n = 0
+  · subst n
+    simp [proximity_gap_degree_bound]
   have := floor_sqrt_bound_sq_gt (m := m) ((k : ℚ) + 1) (by positivity) hn
   rw [Rat.cast_add, Rat.cast_natCast, Rat.cast_one] at this
   exact this
@@ -410,11 +422,19 @@ private lemma one_le_n_mul_m_mul_succ (hn : n ≠ 0) (hm : 1 ≤ m) :
       (Nat.one_le_cast.mpr hm))
     (by linarith [(Nat.cast_nonneg m : (0 : ℝ) ≤ m)])
 
-lemma numVars_gt_numConstraints_of_gt_one (hn : n ≠ 0) (hk : 1 < k) (hm : 1 ≤ m) :
+lemma numVars_gt_numConstraints_of_gt_one (hk : 1 < k) :
     numVars k (proximity_gap_degree_bound k n m) > numConstraints n m := by
-  have hD := proximity_gap_degree_bound_sq_gt (k := k) (m := m) hn
+  by_cases hn : n = 0
+  · subst n
+    simp only [numConstraints, zero_mul]
+    exact card_pos.mpr ⟨(0, 0), by simp [weightBoundIndices]⟩
+  by_cases hm : m = 0
+  · subst m
+    simp only [numConstraints, constraintIndices, range_zero]
+    exact card_pos.mpr ⟨(0, 0), by simp [weightBoundIndices]⟩
+  have hD := proximity_gap_degree_bound_sq_gt (k := k) (n := n) (m := m)
   refine numVars_gt_numConstraints_of_mul_lt hk ?_
-  have hnm := one_le_n_mul_m_mul_succ (m := m) hn hm
+  have hnm := one_le_n_mul_m_mul_succ (m := m) hn (Nat.pos_of_ne_zero hm)
   linarith [(by positivity : (0 : ℝ) ≤ k * n)]
 
 lemma numVars_gt_numConstraints (k n m : ℕ) :
@@ -423,7 +443,7 @@ lemma numVars_gt_numConstraints (k n m : ℕ) :
   · rw [numVars_eq_sq hk, numConstraints, card_constraintIndices]
     rcases Nat.eq_zero_or_pos n with rfl | hn
     · rw [zero_mul]; positivity
-    · have hsq := proximity_gap_degree_bound_sq_gt (k := k) (m := m) hn.ne'
+    · have hsq := proximity_gap_degree_bound_sq_gt (k := k) (n := n) (m := m)
       generalize proximity_gap_degree_bound k n m = D at hsq ⊢
       have h2 : n * (m * (m + 1) / 2) * 2 ≤ n * (m * (m + 1)) := by
         rw [mul_assoc]; exact Nat.mul_le_mul_left _ (Nat.div_mul_le_self _ _)
@@ -447,7 +467,7 @@ lemma numVars_gt_numConstraints (k n m : ℕ) :
         (Nat.pos_of_ne_zero (ne_of_gt (card_pos.mpr ⟨(0, 0),
           mem_filter.mpr ⟨mem_product.mpr ⟨mem_range.mpr (Nat.succ_pos _),
             mem_range.mpr (Nat.succ_pos _)⟩, by norm_num⟩⟩)))
-    · exact numVars_gt_numConstraints_of_gt_one hn hk (Nat.one_le_iff_ne_zero.mpr hm) |>
+    · exact numVars_gt_numConstraints_of_gt_one hk |>
         fun h ↦ by simpa [numConstraints] using h
 
 end numVars_gt_numConstraints
@@ -881,19 +901,12 @@ lemma interpolate_eq_of_degree_lt (q : F[X]) (hq : q.natDegree < n) :
       all_goals aesop
 
 /-- The polynomial corresponding to a codeword has degree at most k-1. -/
-lemma toPolynomial_degree_le (hk : k + 1 ≤ n) (p : code ωs k) :
+lemma toPolynomial_degree_le (p : code ωs k) :
     (toPolynomial p).natDegree ≤ k - 1 := by
-    rw [toPolynomial_def]
-    obtain ⟨q, hq, hp⟩ := p.2
-    have h_interpolate : (Lagrange.interpolate Finset.univ ωs.toFun) (evalOnPoints ωs q) = q := by
-      simpa [evalOnPoints, Function.Embedding.toFun_eq_coe] using
-        interpolate_eq_of_degree_lt q
-          (lt_of_le_of_lt (natDegree_le_of_degree_le <| mem_degreeLT.mp hq |> le_of_lt) hk)
-    rcases k <;> simp_all only [Function.Embedding.toFun_eq_coe, Lagrange.interpolate_apply,
-      zero_add, degreeLT, ge_iff_le, zero_le, iInf_pos, Submodule.coe_iInf, Set.mem_iInter,
-      SetLike.mem_coe, LinearMap.mem_ker, lcoeff_apply, zero_tsub, nonpos_iff_eq_zero]
-    · rw [show q = 0 from Polynomial.ext hq]; norm_num
-    · exact natDegree_le_iff_coeff_eq_zero.mpr hq
+  by_cases hp : toPolynomial p = 0
+  · simp [hp]
+  · have hdeg := (natDegree_lt_iff_degree_lt hp).mpr (ReedSolomon.toPolynomial_lt_deg p)
+    omega
 
 /-- The floor bound `⌊(m + 1/2) * √(a/n) * n⌋₊` behind both degree bounds is below
 `m * (n - dist)` whenever `dist / n` is below the matching Johnson radius. -/
@@ -919,7 +932,7 @@ lemma sufficient_multiplicity_bound {dist : ℕ}
   floor_sqrt_bound_lt_of_lt_johnson (by omega) hm h_dist
 
 private theorem dvd_property_of_sufficient_multiplicity_bound [DecidableEq F]
-    (hk : k + 1 ≤ n) (p : code ωs k) {D : ℕ} {radius : ℝ} {Q : F[X][Y]}
+    (p : code ωs k) {D : ℕ} {radius : ℝ} {Q : F[X][Y]}
     (hQ_deg : weightedDegree Q 1 (k - 1) ≤ D)
     (hQ_mult : ∀ i, m ≤ rootMultiplicity Q (ωs i) (f i))
     (h_dist : (hammingDist f (fun i ↦ (toPolynomial p).eval (ωs i)) : ℝ) / n < radius)
@@ -965,7 +978,7 @@ private theorem dvd_property_of_sufficient_multiplicity_bound [DecidableEq F]
   have hR_deg : (Q.eval (toPolynomial p)).natDegree ≤ D := by
     have hR_deg : (Q.eval (toPolynomial p)).natDegree ≤ natWeightedDegree Q 1 (k - 1) := by
       apply degree_eval_le_weightedDegree
-      exact toPolynomial_degree_le hk p
+      exact toPolynomial_degree_le p
     rw [weightedDegree_eq_natWeightedDegree] at hQ_deg
     exact hR_deg.trans (Option.some_le_some.mp hQ_deg)
   contrapose! hR_roots
@@ -977,7 +990,7 @@ private theorem dvd_property_of_sufficient_multiplicity_bound [DecidableEq F]
 
 /-- If the weighted degree of `Q` is less than the total root multiplicity supplied by the
 agreement points of a codeword `P`, then `Y - P(X)` divides `Q(X,Y)`. -/
-theorem dvd_property_of_degree_lt [DecidableEq F] (hk : k + 1 ≤ n) (p : code ωs k)
+theorem dvd_property_of_degree_lt [DecidableEq F] (p : code ωs k)
     {Q : F[X][Y]}
     (hQ_mult : ∀ i, m ≤ rootMultiplicity Q (ωs i) (f i))
     (hQ_deg : natWeightedDegree Q 1 (k - 1) <
@@ -999,7 +1012,7 @@ theorem dvd_property_of_degree_lt [DecidableEq F] (hk : k + 1 ≤ n) (p : code �
     exact (orderAt_eval_ge Q (toPolynomial p) (ωs i) m horder).resolve_left hR
   apply hR
   refine roots_le_degree_of_deg_lt_roots (Q.eval (toPolynomial p)) m A hroots ?_
-  have hdeg := degree_eval_le_weightedDegree Q (toPolynomial p) k (toPolynomial_degree_le hk p)
+  have hdeg := degree_eval_le_weightedDegree Q (toPolynomial p) k (toPolynomial_degree_le p)
   have hcard_eq : A.card = n - hammingDist f (fun i ↦ (toPolynomial p).eval (ωs i)) := by omega
   rw [hcard_eq]
   exact hdeg.trans_lt hQ_deg
@@ -1014,7 +1027,7 @@ theorem dvd_property [DecidableEq F] (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code
   (h_dist : (hammingDist f (fun i ↦ (toPolynomial p).eval (ωs i)) : ℝ) / n <
     proximity_gap_johnson k n m) :
   X - C (toPolynomial p) ∣ Q := by
-  exact dvd_property_of_sufficient_multiplicity_bound hk p hQ_deg hQ_mult h_dist
+  exact dvd_property_of_sufficient_multiplicity_bound p hQ_deg hQ_mult h_dist
     (sufficient_multiplicity_bound hk hm)
 
 end divisibility
@@ -1024,26 +1037,44 @@ section gs_rate
 open ReedSolomon
 
 /-- Lower bound: (gs_degree_bound + 1)^2 > (m+1/2)^2 * k * n. -/
-lemma gs_degree_bound_sq_gt (hn : n ≠ 0) (hk : 0 < k) :
+lemma gs_degree_bound_sq_gt :
     ((gs_degree_bound k n m : ℝ) + 1) ^ 2 > (m + 1 / 2) ^ 2 * k * n := by
-  have := floor_sqrt_bound_sq_gt (m := m) (k : ℚ) (Nat.cast_pos.mpr hk).le hn
+  by_cases hn : n = 0
+  · subst n
+    simp [gs_degree_bound]
+  have := floor_sqrt_bound_sq_gt (m := m) (k : ℚ) (Nat.cast_nonneg k) hn
   rw [Rat.cast_natCast] at this
   exact this
 
 /-- numVars with gs_degree_bound exceeds numConstraints (for k > 1). -/
-lemma gs_numVars_gt_numConstraints_of_gt_one (hn : n ≠ 0) (hk : 1 < k) (hm : 1 ≤ m) :
+lemma gs_numVars_gt_numConstraints_of_gt_one (hk : 1 < k) :
     numVars k (gs_degree_bound k n m) > numConstraints n m := by
-  have hD := gs_degree_bound_sq_gt (m := m) hn (by omega : 0 < k)
+  by_cases hn : n = 0
+  · subst n
+    simp only [numConstraints, zero_mul]
+    exact card_pos.mpr ⟨(0, 0), by simp [weightBoundIndices]⟩
+  by_cases hm : m = 0
+  · subst m
+    simp only [numConstraints, constraintIndices, range_zero]
+    exact card_pos.mpr ⟨(0, 0), by simp [weightBoundIndices]⟩
+  have hD := gs_degree_bound_sq_gt (k := k) (n := n) (m := m)
   refine numVars_gt_numConstraints_of_mul_lt hk ?_
-  have hnm := one_le_n_mul_m_mul_succ (m := m) hn hm
+  have hnm := one_le_n_mul_m_mul_succ (m := m) hn (Nat.pos_of_ne_zero hm)
   linarith [(by positivity : (0 : ℝ) ≤ k * n)]
 
 /-- The rate-corrected interpolation system is underdetermined whenever `(D + 1)²` is at least
 `(m + 1/2)² * k * n`. The non-strict square bound includes integral degree thresholds. -/
-lemma gs_numVars_gt_numConstraints_of_le_sq {D : ℕ} (hn : n ≠ 0) (hk : 0 < k)
-    (hm : 1 ≤ m)
+lemma gs_numVars_gt_numConstraints_of_le_sq {D : ℕ} (hk : 0 < k)
     (hD : (m + 1 / 2 : ℝ) ^ 2 * k * n ≤ ((D : ℝ) + 1) ^ 2) :
     numVars k D > numConstraints n m := by
+  by_cases hn : n = 0
+  · subst n
+    simp only [numConstraints, zero_mul]
+    exact card_pos.mpr ⟨(0, 0), by simp [weightBoundIndices]⟩
+  by_cases hm : m = 0
+  · subst m
+    simp only [numConstraints, constraintIndices, range_zero]
+    exact card_pos.mpr ⟨(0, 0), by simp [weightBoundIndices]⟩
   have hnpos : (0 : ℝ) < n := Nat.cast_pos.mpr (Nat.pos_of_ne_zero hn)
   by_cases hk1 : k ≤ 1
   · have hk_eq : k = 1 := by omega
@@ -1055,7 +1086,7 @@ lemma gs_numVars_gt_numConstraints_of_le_sq {D : ℕ} (hn : n ≠ 0) (hk : 0 < k
     exact lt_of_le_of_lt (Nat.mul_le_mul_left n (Nat.div_le_self _ _))
       (Nat.cast_lt.mp hreal)
   · refine numVars_gt_numConstraints_of_mul_lt (by omega) ?_
-    have hnm := one_le_n_mul_m_mul_succ (m := m) hn hm
+    have hnm := one_le_n_mul_m_mul_succ (m := m) hn (Nat.pos_of_ne_zero hm)
     have hkn : (0 : ℝ) < k * n := mul_pos (Nat.cast_pos.mpr hk) hnpos
     nlinarith only [hD, hnm, hkn]
 
@@ -1076,7 +1107,7 @@ theorem gs_dvd_property [DecidableEq F] (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : c
   (h_dist : (hammingDist f (fun i ↦ (toPolynomial p).eval (ωs i)) : ℝ) / n <
     gs_johnson k n m) :
   X - C (toPolynomial p) ∣ Q := by
-  exact dvd_property_of_sufficient_multiplicity_bound hk p hQ_deg hQ_mult h_dist
+  exact dvd_property_of_sufficient_multiplicity_bound p hQ_deg hQ_mult h_dist
     (gs_sufficient_multiplicity_bound hk hm)
 
 

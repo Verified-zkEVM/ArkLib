@@ -76,7 +76,7 @@ theorem exists_johnson_line_exactCorrelatedPair
     rw [hz, map_zero]
   obtain ⟨ex, hcard, hgood⟩ := exists_exceptional_ordinaryEquation_base domain f g cert.Q D
     (johnsonH n D eta) (johnsonMu n D eta) A hQ (by omega)
-    (johnsonMu_pos hD hDlt) (johnson_degree_succ_le_agreement hD hDlt heta hthreshold)
+    (johnsonMu_pos hD hDlt) (johnson_degree_succ_le_agreement hDlt heta hthreshold)
     hAn cert.challengeDegree_le cert.jetDegree_le
   have hcardReal : (ex.card : ℝ) ≤
       (ordinaryFactorRaw (((n - D : ℕ) : ℚ) / ((A - D : ℕ) : ℚ)) n D

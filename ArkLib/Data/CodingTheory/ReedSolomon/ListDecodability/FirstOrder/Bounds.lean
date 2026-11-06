@@ -374,7 +374,7 @@ theorem automatic_first_order_squarefree_list_bound_of_slack
       exact min_le_right _ _
     let p := automaticFiniteRateParameters hrho hrhoOne ha
     obtain ⟨cert⟩ := exists_automaticFirstOrder_symbolicCertificate
-      hrho hrhoOne ha hn (show D = k - 1 from rfl) hk hkRate hA
+      hrho hrhoOne ha (show D = k - 1 from rfl) hk hkRate hA
       domain received (fun _ ↦ 0)
     have hMBcert : p.derivativeCap ≤ p.jetDegree := by
       calc

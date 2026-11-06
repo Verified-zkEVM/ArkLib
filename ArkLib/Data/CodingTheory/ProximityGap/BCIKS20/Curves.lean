@@ -671,7 +671,7 @@ theorem large_agreement_set_on_curve_implies_correlated_agreement' {l deg : ℕ}
     apply hE.trans_lt
     convert hS using 1
     rw [Fintype.card_fin, hs,
-      ReedSolomon.HiddenDerivative.sqrt_cube_eq_rpow_three_halves (by positivity),
+      ReedSolomon.HiddenDerivative.sqrt_cube_eq_rpow_three_halves,
       ReedSolomon.HiddenDerivative.legacy_shift_pow_seven m (by omega)]
     norm_num
     ring
@@ -784,12 +784,11 @@ is greater than `k * ε`. Then, the words `u₀, ..., uκ` have correlated agree
 
 A positive message dimension is required: the zero code does not satisfy this bound.
 This statement is restricted to the proven open Johnson regime
-`0 < δ < 1 - √ρ`. It does not encode the separate capacity-regime extension proposed as
+`δ < 1 - √ρ`. It does not encode the separate capacity-regime extension proposed as
 Conjecture 8.4 of [BCIKS20]. -/
 theorem correlatedAgreement_affine_curves {k : ℕ}
     {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
     (hdeg_pos : 0 < deg)
-    (hδ_pos : 0 < δ)
     (hδ : δ < 1 - ReedSolomon.sqrtRate deg domain) :
     δ_ε_correlatedAgreementCurves (k := k) (A := F) (F := F) (ι := ι)
       (C := ReedSolomon.code domain deg) (δ := δ) (ε := errorBound δ deg domain) := by
@@ -805,7 +804,7 @@ theorem correlatedAgreement_affine_curves {k : ℕ}
     have hsone : ReedSolomon.sqrtRate deg domain = 1 := by
       simp [ReedSolomon.sqrtRate, hrate]
     rw [hsone, tsub_self] at hδ
-    exact (lt_irrefl 0) (hδ_pos.trans hδ)
+    exact (not_lt_zero hδ)
   have hδone : δ ≤ 1 := hδ.le.trans tsub_le_self
   by_cases hUD : δ ≤ Code.relativeUniqueDecodingRadius
       (C := (ReedSolomon.code domain deg : Set (ι → F)))

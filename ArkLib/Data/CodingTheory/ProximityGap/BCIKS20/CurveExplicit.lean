@@ -59,10 +59,11 @@ theorem exists_curve_exactPowerAgreement_explicit_budget
     obtain ⟨E, hE, hgood⟩ := ReedSolomon.uniformExactPowerAgreement_constantCode D U A
     refine ⟨E, ?_, hgood⟩
     have hcount : E.card ≤ d * (Fintype.card ι).choose 2 := hE.trans (Nat.div_le_self _ _)
-    have hbudget := ReedSolomon.HiddenDerivative.two_mul_choose_two_le_explicit_budget hn hm
+    have hbudget := ReedSolomon.HiddenDerivative.two_mul_choose_two_le_explicit_budget
+      (n := Fintype.card ι) hm
     have hb : ((Fintype.card ι).choose 2 : ℝ) ≤ B := by
       dsimp [B]
-      rw [hs, ReedSolomon.HiddenDerivative.sqrt_cube_eq_rpow_three_halves (by positivity)]
+      rw [hs, ReedSolomon.HiddenDerivative.sqrt_cube_eq_rpow_three_halves]
       simp only [Nat.cast_one] at *
       have hnonneg : (0 : ℝ) ≤ (Fintype.card ι).choose 2 := Nat.cast_nonneg _
       linarith
@@ -97,7 +98,7 @@ theorem exists_curve_exactPowerAgreement_explicit_budget
       D U hKpos hKn heta hthreshold hA
     refine ⟨E, ?_, hgood⟩
     have hb := ReedSolomon.HiddenDerivative.two_mul_johnsonExceptionCount_le_explicit_budget
-      hKpos hKn hm heta hthreshold (by
+      hKpos hKn hm hthreshold (by
         rw [ha]
         have hδ' : δ ≤ 1 - (1 + 1 / (2 * (m : ℝ))) * s := hδ
         rw [hs] at hδ'
@@ -106,7 +107,7 @@ theorem exists_curve_exactPowerAgreement_explicit_budget
     have hb' : 2 * ReedSolomon.HiddenDerivative.johnsonExceptionCount
         (Fintype.card ι) K A eta ≤ B := by
       dsimp only [B]
-      rw [hs, ReedSolomon.HiddenDerivative.sqrt_cube_eq_rpow_three_halves (by positivity)]
+      rw [hs, ReedSolomon.HiddenDerivative.sqrt_cube_eq_rpow_three_halves]
       simpa only [Nat.cast_succ] using hb
     calc
       (E.card : ℝ) ≤ 2 * d * ReedSolomon.HiddenDerivative.johnsonExceptionCount

@@ -54,7 +54,7 @@ power-batched received curve over an algebraically closed extension. -/
 theorem exists_uniformRatePartition_curve_exactPowerAgreement {F E : Type u} [Field F] [Field E]
     [IsAlgClosed E] {δ : ℝ} {n k A ℓ : ℕ} (hδ : 0 < δ) (hδsmall : δ < 6 / 25)
     (hn : uniformBlockThreshold δ ≤ n) (hk : 0 < k)
-    (hgap : (k : ℝ) + δ * n ≤ A) (hAn : A ≤ n) (hℓ : 0 < ℓ)
+    (hgap : (k : ℝ) + δ * n ≤ A) (hAn : A ≤ n)
     (domain : Fin n ↪ F) (values : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
     (hchar : ringChar F = 0 ∨ n ≤ ringChar F) :
     ∃ exceptional : Finset E,
@@ -66,6 +66,13 @@ theorem exists_uniformRatePartition_curve_exactPowerAgreement {F E : Type u} [Fi
           (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
         HasExactPowerAgreement domain values iota k z P := by
   classical
+  rcases Nat.eq_zero_or_pos ℓ with rfl | hℓ
+  · refine ⟨∅, by simp, fun z _ P hP hA ↦ ?_⟩
+    apply hasExactPowerAgreement_singleton domain values iota k z P hP
+    have hkA : k ≤ A := by
+      exact_mod_cast le_trans (le_add_of_nonneg_right (mul_nonneg hδ.le
+        (Nat.cast_nonneg n))) hgap
+    exact hkA.trans hA
   let d := uniformDerivativeOrder δ
   let ν := uniformJetCap δ
   obtain ⟨e⟩ := HiddenDerivative.RatePartition.exists_uniformRatePartitionEnvelope
@@ -85,7 +92,7 @@ open Classical in
 theorem exists_uniformRatePartition_baseCurve_exactPowerAgreement {F : Type u} [Field F]
     {δ : ℝ} {n k A ℓ : ℕ} (hδ : 0 < δ) (hδsmall : δ < 6 / 25)
     (hn : uniformBlockThreshold δ ≤ n) (hk : 0 < k)
-    (hgap : (k : ℝ) + δ * n ≤ A) (hAn : A ≤ n) (hℓ : 0 < ℓ)
+    (hgap : (k : ℝ) + δ * n ≤ A) (hAn : A ≤ n)
     (domain : Fin n ↪ F) (values : Fin (ℓ + 1) → Fin n → F)
     (hchar : ringChar F = 0 ∨ n ≤ ringChar F) :
     ∃ exceptional : Finset F,
@@ -99,7 +106,7 @@ theorem exists_uniformRatePartition_baseCurve_exactPowerAgreement {F : Type u} [
   let E := AlgebraicClosure F
   let iota : F →+* E := algebraMap F E
   obtain ⟨exceptional, hcard, hgood⟩ := exists_uniformRatePartition_curve_exactPowerAgreement
-    hδ hδsmall hn hk hgap hAn hℓ domain values iota hchar
+    hδ hδsmall hn hk hgap hAn domain values iota hchar
   have hdesc : UniformExactPowerAgreement domain values k A exceptional.card :=
     uniformExactPowerAgreement_of_extension domain values iota k A exceptional hgood
   change ∃ exceptional' : Finset F, exceptional'.card ≤ exceptional.card ∧
@@ -116,7 +123,7 @@ one exceptional set. -/
 theorem exists_uniformRatePartition_line_exactCorrelatedPair {F : Type u} [Field F] {δ : ℝ}
     {n k A : ℕ}
     (hδ : 0 < δ) (hδsmall : δ < 6 / 25) (hn : uniformBlockThreshold δ ≤ n)
-    (hk : 0 < k) (hgap : (k : ℝ) + δ * n ≤ A) (hAn : A ≤ n)
+    (hk : 0 < k) (hgap : (k : ℝ) + δ * n ≤ A)
     (domain : Fin n ↪ F) (f g : Fin n → F)
     (hchar : ringChar F = 0 ∨ n ≤ ringChar F) :
     ∃ exceptional : Finset F,
@@ -127,15 +134,24 @@ theorem exists_uniformRatePartition_line_exactCorrelatedPair {F : Type u} [Field
         A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
         HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
   classical
-  obtain ⟨exceptional, hcard, hgood⟩ :=
-    exists_uniformRatePartition_baseCurve_exactPowerAgreement
-    hδ hδsmall hn hk hgap hAn (by norm_num : 0 < 1) domain ![f, g] hchar
-  refine ⟨exceptional, by simpa using hcard, ?_⟩
-  intro z hz P hP hA
-  have hword : powerBatchedWord (ℓ := 1) ![f, g] z = (fun i ↦ f i + z * g i) := by
-    funext i
-    simp [powerBatchedWord, Fin.sum_univ_two]
-  have h := hgood z hz P hP (by rwa [hword])
-  exact exactCorrelatedPair_of_powerAgreement_one domain ![f, g] (RingHom.id F) z P h
+  by_cases hAn : A ≤ n
+  · obtain ⟨exceptional, hcard, hgood⟩ :=
+      exists_uniformRatePartition_baseCurve_exactPowerAgreement
+      hδ hδsmall hn hk hgap hAn domain ![f, g] hchar
+    refine ⟨exceptional, by simpa using hcard, ?_⟩
+    intro z hz P hP hA
+    have hword : powerBatchedWord (ℓ := 1) ![f, g] z = (fun i ↦ f i + z * g i) := by
+      funext i
+      simp [powerBatchedWord, Fin.sum_univ_two]
+    have h := hgood z hz P hP (by rwa [hword])
+    exact exactCorrelatedPair_of_powerAgreement_one domain ![f, g] (RingHom.id F) z P h
+  · refine ⟨∅, ?_, ?_⟩
+    · simp only [Finset.card_empty, Nat.cast_zero]
+      unfold polynomialCurveProductAgreementConstant
+      positivity
+    · intro z _ P _ hA
+      have hcard : (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card ≤ n := by
+        simpa using (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card_le_univ
+      exact (hAn (hA.trans hcard)).elim
 
 end ReedSolomon

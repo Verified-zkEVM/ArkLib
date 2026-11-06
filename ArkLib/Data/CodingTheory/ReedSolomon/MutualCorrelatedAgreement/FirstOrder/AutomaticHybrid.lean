@@ -119,7 +119,7 @@ theorem exists_exceptional_firstOrder_hybrid_base
     {F : Type*} [Field F] [DecidableEq F] {n D A h mu M : ℕ} (domain : Fin n ↪ F)
     (f g : Fin n → F) (Q : DifferentialPolynomial F[X] 1) (hQ : Q ≠ 0)
     (hweight : jetTotalDegree Q ≤ mu) (hdegree : jetDegree Q (1 : Fin 2) ≤ M)
-    (hheight : CoeffNatDegreeLE Q h) (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n)
+    (hheight : CoeffNatDegreeLE Q h) (hD : 1 ≤ D) (hDA : D < A)
     (hchar : ringChar F = 0 ∨ max D M < ringChar F) :
     ∃ exceptional : Finset F,
       (exceptional.card : ℝ) ≤
@@ -133,6 +133,30 @@ theorem exists_exceptional_firstOrder_hybrid_base
         differentialSpecialization (challengeSpecialization Q z) P = 0 →
         HasExactCorrelatedPair domain f g (RingHom.id F) (D + 1) z P := by
   classical
+  by_cases hAn : A ≤ n
+  swap
+  · have hθ : 0 ≤ agreementIncidenceRatio n D A := by
+      unfold agreementIncidenceRatio
+      positivity
+    have hraw : 0 ≤
+        maxMinFirstOrderExceptionCharge (agreementIncidenceRatio n D A) n D A h mu M := by
+      apply le_trans ?_ (minFirstOrderExceptionCharge_le_maxMin
+        (θ := agreementIncidenceRatio n D A) (n := n) (D := D) (A := A)
+        (h := h) (μ := mu) (Nat.zero_le M))
+      simp only [minFirstOrderExceptionCharge, hDA, ↓reduceDIte]
+      apply Finset.le_min'
+      intro x hx
+      obtain ⟨L, -, rfl⟩ := Finset.mem_image.mp hx
+      unfold firstOrderExceptionCharge ordinaryTailCharge retainedCoordinateRatio
+        fixedCoordinateRatio
+      split_ifs <;> positivity
+    refine ⟨∅, by simpa using hraw, by simp,
+      by simpa using hraw.trans (maxMinFirstOrderExceptionCharge_le_firstOrderExceptionConstant
+        (n := n) (A := A) (h := h) (μ := mu) (M := M) hD), ?_⟩
+    intro z hz P hP hagree hroot
+    exact False.elim (hAn (hagree.trans (by
+      simpa using Finset.card_le_univ
+        (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P))))
   let iota : F →+* AlgebraicClosure F := algebraMap F (AlgebraicClosure F)
   have hinj : Function.Injective (Polynomial.mapRingHom iota) :=
     Polynomial.map_injective iota iota.injective
@@ -185,7 +209,7 @@ theorem HiddenDerivative.FirstOrderSymbolicCertificate.exists_exceptional_hybrid
     {f g : Fin n → F} {columns : Fin N → SourceColumn 1}
     (cert : FirstOrderSymbolicCertificate.{u, u} Dc A m M mu k h domain f g columns)
     (hkD : k = D + 1)
-    (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n)
+    (hD : 1 ≤ D) (hDA : D < A)
     (hchar : ringChar F = 0 ∨ max D M < ringChar F) :
     ∃ exceptional : Finset F,
       (exceptional.card : ℝ) ≤
@@ -200,7 +224,7 @@ theorem HiddenDerivative.FirstOrderSymbolicCertificate.exists_exceptional_hybrid
   obtain ⟨hQ, hweight, hdegree, hheight, hroot⟩ := certificate_equation_facts cert
   subst hkD
   obtain ⟨exceptional, hraw, hceil, hclosed, hgood⟩ := exists_exceptional_firstOrder_hybrid_base
-    domain f g cert.Q hQ hweight hdegree hheight hD hDA hAn hchar
+    domain f g cert.Q hQ hweight hdegree hheight hD hDA hchar
   exact ⟨exceptional, hraw, hceil, hclosed, fun z hz P hP hagree ↦
     hgood z hz P (by exact_mod_cast hP) hagree (hroot z P hP hagree)⟩
 
@@ -212,7 +236,7 @@ private theorem exists_automaticFirstOrder_equation
     {K : Type u} [Field K] [DecidableEq K] {rho a : ℝ} {n D A k : ℕ}
     (hrho : 0 < rho) (hrhoOne : rho < 1)
     (ha : firstOrderRateThreshold rho < a)
-    (hn : 0 < n) (hD : D = k - 1) (hk : 2 ≤ k)
+    (hD : D = k - 1) (hk : 2 ≤ k)
     (hkRate : (k : ℝ) ≤ rho * n) (hA : a * n ≤ A) (domain : Fin n ↪ K) (f g : Fin n → K) :
     ∃ Q : DifferentialPolynomial K[X] 1,
       Q ≠ 0 ∧ jetTotalDegree Q ≤ automaticJetDegree rho a ∧
@@ -222,7 +246,7 @@ private theorem exists_automaticFirstOrder_equation
         A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
         differentialSpecialization (challengeSpecialization Q z) P = 0 := by
   obtain ⟨cert⟩ := exists_automaticFirstOrder_symbolicCertificate
-    hrho hrhoOne ha hn hD hk hkRate hA domain f g
+    hrho hrhoOne ha hD hk hkRate hA domain f g
   obtain ⟨hQ, hweight, hdegree, hheight, hroot⟩ := certificate_equation_facts cert
   exact ⟨cert.Q, hQ,
     hweight.trans_eq (automaticFiniteRateParameters_jetDegree hrho hrhoOne ha),
@@ -289,7 +313,7 @@ theorem exists_automaticFirstOrder_hybridEquation
   obtain ⟨hD₁, hDA, _⟩ :=
     automaticFirstOrder_degree_bounds hrhoOne ha hn hD hk hkRate hA
   obtain ⟨Q, hQ, hweight, hdegree, hheight, hroot⟩ := exists_automaticFirstOrder_equation
-    hrho hrhoOne ha hn hD hk hkRate hA (domain.trans ⟨iota, iota.injective⟩)
+    hrho hrhoOne ha hD hk hkRate hA (domain.trans ⟨iota, iota.injective⟩)
     (fun i ↦ iota (f i)) (fun i ↦ iota (g i))
   have hsound : ∀ z : E, ∀ P : E[X], P.degree < k →
       A ≤ (polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
@@ -313,10 +337,10 @@ exceptional challenges, bounded by the optimized exception charge, its ceiling, 
 exception constant, leaves every such polynomial with an exact correlated pair. -/
 theorem exists_automaticFirstOrder_hybridEquation_base
     {rho a : ℝ} {n D A k : ℕ}
-    (hrho : 0 < rho) (hrhoOne : rho < 1)
+    (hrhoOne : rho < 1)
     (ha : firstOrderRateThreshold rho < a)
-    (hn : 0 < n) (hD : D = k - 1) (hk : 2 ≤ k)
-    (hkRate : (k : ℝ) ≤ rho * n) (hA : a * n ≤ A) (hAn : A ≤ n)
+    (hD : D = k - 1) (hk : 2 ≤ k)
+    (hkRate : (k : ℝ) ≤ rho * n) (hA : a * n ≤ A)
     {F : Type*} [Field F] [DecidableEq F]
     (hchar : ringChar F = 0 ∨ max D (automaticDerivativeCap rho a) < ringChar F)
     (domain : Fin n ↪ F) (f g : Fin n → F) :
@@ -343,13 +367,17 @@ theorem exists_automaticFirstOrder_hybridEquation_base
         ∀ z ∉ exceptional, ∀ P : F[X], P.degree < k →
           A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
           HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
+  have hproduct : 0 < rho * (n : ℝ) :=
+    (Nat.cast_pos.mpr (by omega : 0 < k)).trans_le hkRate
+  have hrho : 0 < rho := pos_of_mul_pos_left hproduct (Nat.cast_nonneg n)
+  have hn : 0 < n := by exact_mod_cast pos_of_mul_pos_right hproduct hrho.le
   obtain ⟨hD₁, hDA, _⟩ :=
     automaticFirstOrder_degree_bounds hrhoOne ha hn hD hk hkRate hA
   obtain ⟨Q, hQ, hweight, hdegree, hheight, hroot⟩ := exists_automaticFirstOrder_equation
-    hrho hrhoOne ha hn hD hk hkRate hA domain f g
+    hrho hrhoOne ha hD hk hkRate hA domain f g
   obtain rfl : k = D + 1 := by omega
   obtain ⟨exceptional, hraw, hceil, hclosed, hgood⟩ := exists_exceptional_firstOrder_hybrid_base
-    domain f g Q hQ hweight hdegree hheight hD₁ hDA hAn hchar
+    domain f g Q hQ hweight hdegree hheight hD₁ hDA hchar
   exact ⟨Q, hQ, hweight, hdegree, hheight, hroot, exceptional, hraw, hceil, hclosed,
     fun z hz P hP hagree ↦
       hgood z hz P (by exact_mod_cast hP) hagree (hroot z P hP hagree)⟩
@@ -377,7 +405,6 @@ theorem automatic_first_order_line_agreement
     Choose the physical rate and agreement fraction before the code data.
     -/
     (ρ a : ℝ)
-    (hρ : 0 < ρ)
     (hρone : ρ < 1)
     (ha : firstOrderRateThreshold ρ < a)
     /-
@@ -385,11 +412,9 @@ theorem automatic_first_order_line_agreement
     Dimension k means degree strictly below k; A counts agreeing positions.
     -/
     (n k A : ℕ)
-    (hn : 0 < n)
     (hk : 2 ≤ k)
     (hrate : (k : ℝ) ≤ ρ * n)
     (hagree : a * n ≤ A)
-    (hAn : A ≤ n)
     /-
 
     Distinct evaluation points over an arbitrary field.
@@ -406,14 +431,14 @@ theorem automatic_first_order_line_agreement
     /-
 
     D = k - 1 is the largest allowed candidate degree.
-    The hypotheses give D < A ≤ n, so the differences below are positive.
+    The hypotheses give D < A.
     -/
     let D := k - 1
     /-
 
     θ = (n - D) / (A - D) is the direct agreement-incidence ratio.
     It converts the degree of a fixed-word solution family into a candidate count.
-    Here 1 ≤ θ ≤ 1 / (a - ρ); the ratio grows as agreement approaches the rate.
+    When A ≤ n, 1 ≤ θ ≤ 1 / (a - ρ); the ratio grows as agreement approaches the rate.
     -/
     let θ := agreementIncidenceRatio n D A
     /-
@@ -488,7 +513,7 @@ theorem automatic_first_order_line_agreement
           HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
   dsimp only
   obtain ⟨-, -, -, -, -, -, exceptional, -, -, hclosed, hgood⟩ :=
-    exists_automaticFirstOrder_hybridEquation_base hρ hρone ha hn rfl hk hrate hagree hAn
+    exists_automaticFirstOrder_hybridEquation_base hρone ha rfl hk hrate hagree
       hchar domain f g
   exact ⟨exceptional, hclosed, hgood⟩
 

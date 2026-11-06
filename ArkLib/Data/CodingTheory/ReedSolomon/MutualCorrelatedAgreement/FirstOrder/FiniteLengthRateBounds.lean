@@ -68,7 +68,7 @@ and candidate.
 The `k = 1` endpoint is dispatched before the nontrivial selector feasibility argument. -/
 theorem automaticFirstOrder_finiteLength_finiteSlack_bounds
     (rho eta : ℝ) (n k A : ℕ)
-    (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
+    (hrhoOne : rho < 1) (heta : 0 < eta)
     (haOne : firstOrderRateThreshold rho + eta < 1)
     (hbetaHalf : finiteLengthDerivativeRatio rho eta ≤ 1 / 2)
     (hk : 0 < k) (hkRate : (k : ℝ) ≤ rho * n)
@@ -87,6 +87,8 @@ theorem automaticFirstOrder_finiteLength_finiteSlack_bounds
         ∀ z ∉ exceptional, ∀ P : F[X], P.degree < k →
           A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
           HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
+  have hrho : 0 < rho :=
+    pos_of_mul_pos_left ((Nat.cast_pos.mpr hk).trans_le hkRate) (Nat.cast_nonneg n)
   have hnPos : 0 < n := by
     have hnReal : (0 : ℝ) < n := by
       by_contra hnNot
@@ -105,18 +107,17 @@ theorem automaticFirstOrder_finiteLength_finiteSlack_bounds
     constructor
     · intro received
       obtain ⟨listCert⟩ := exists_finiteLengthFirstOrder_symbolicCertificate
-        hrho hrhoOne heta haOne hnSelector hbetaHalf hkTwo hkRate hA
+        hrhoOne heta haOne hnSelector hbetaHalf hkTwo hkRate hA
           domain received (fun _ ↦ 0)
       exact closePolynomialSet_finite_and_card_le_finiteLength_of_selector_certificate
-        hrho hrhoOne heta haOne hnSelector hbetaHalf hDrate hA hAn
+        hrho hrhoOne heta haOne hnSelector hbetaHalf hDrate hA
           domain received _ listCert hchar
     · intro f g
       obtain ⟨lineCert⟩ := exists_finiteLengthFirstOrder_symbolicCertificate
-        hrho hrhoOne heta haOne hnSelector hbetaHalf hkTwo hkRate hA domain f g
-      let E := AlgebraicClosure F
+        hrhoOne heta haOne hnSelector hbetaHalf hkTwo hkRate hA domain f g
       exact exists_exceptional_finiteLengthMca_of_selector_certificate
         hrho hrhoOne heta haOne hnSelector hbetaHalf hk hDrate hA hAn
-          domain f g (algebraMap F E) _ lineCert hchar
+          domain f g _ lineCert hchar
   · have hkOne : k = 1 := by omega
     subst k
     have hkRateOne : (1 : ℝ) ≤ rho * (n : ℝ) := by simpa using hkRate
@@ -136,7 +137,7 @@ theorem automaticFirstOrder_finiteLength_finiteSlack_bounds
         domain received (by omega) (by omega) (by omega) hC heta hsOne
     · intro f g
       obtain ⟨exceptional, hcard, hgood⟩ :=
-        exists_exceptional_exactLineMca_one n A domain f g hAPos
+        exists_exceptional_exactLineMca_one n A domain f g
       refine ⟨exceptional, hcard.trans ?_, hgood⟩
       exact square_le_finiteLengthMcaExceptionBudget hC heta hsOne
 
@@ -149,12 +150,11 @@ exceptional set of size at most `140 C⁶ n² / eta⁴`, fixed before the challe
 The `k = 1` endpoint is dispatched before the nontrivial selector feasibility argument. -/
 theorem automaticFirstOrder_finiteLength_rate_bounds
     (rho eta : ℝ) (n k A : ℕ)
-    (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
+    (hrhoOne : rho < 1) (heta : 0 < eta)
     (haOne : firstOrderRateThreshold rho + eta < 1)
     (hbetaHalf : finiteLengthDerivativeRatio rho eta ≤ 1 / 2)
     (hk : 0 < k) (hkRate : (k : ℝ) ≤ rho * n)
     (hA : (firstOrderRateThreshold rho + eta) * n ≤ A)
-    (hAn : A ≤ n)
     {F : Type*} [Field F] (domain : Fin n ↪ F)
     (hchar : k = 1 ∨ ringChar F = 0 ∨
       max (k - 1) (finiteLengthDerivativeCap rho eta n) < ringChar F) :
@@ -168,6 +168,29 @@ theorem automaticFirstOrder_finiteLength_rate_bounds
         ∀ z ∉ exceptional, ∀ P : F[X], P.degree < k →
           A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
           HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
+  by_cases hAn : A ≤ n
+  swap
+  · have hsmall (received : Fin n → F) (P : F[X]) :
+        ¬ A ≤ (polynomialAgreementSet domain received P).card := by
+      intro h
+      exact hAn (h.trans (by
+        simpa using (polynomialAgreementSet domain received P).card_le_univ))
+    have hC0 := zero_le_one.trans (one_le_finiteLengthMcaParameterConstant rho)
+    constructor
+    · intro received
+      have hempty : closePolynomialSet domain received k A = ∅ := by
+        apply Set.eq_empty_iff_forall_notMem.mpr
+        exact fun P hP ↦ hsmall received P hP.2
+      rw [hempty]
+      refine ⟨Set.finite_empty, ?_⟩
+      simp only [Set.ncard_empty, Nat.cast_zero]
+      positivity
+    · intro f g
+      refine ⟨∅, ?_, ?_⟩
+      · simp only [Finset.card_empty, Nat.cast_zero]
+        positivity
+      · intro z hz P hP hagree
+        exact (hsmall _ P hagree).elim
   have hnPos : 0 < n := by
     by_contra h
     have hn : n = 0 := by omega
@@ -178,7 +201,7 @@ theorem automaticFirstOrder_finiteLength_rate_bounds
   have hC0 : 0 ≤ finiteLengthMcaParameterConstant rho :=
     zero_le_one.trans (one_le_finiteLengthMcaParameterConstant rho)
   obtain ⟨hlist, hmca⟩ := automaticFirstOrder_finiteLength_finiteSlack_bounds
-    rho eta n k A hrho hrhoOne heta haOne hbetaHalf hk hkRate hA hAn domain hchar
+    rho eta n k A hrhoOne heta haOne hbetaHalf hk hkRate hA hAn domain hchar
   constructor
   · intro received
     exact (hlist received).imp id fun hbound ↦
@@ -194,7 +217,7 @@ Finiteness appears only here: uniform affine-line sampling divides the exception
 `|F|` and caps the result by one. -/
 theorem automaticFirstOrder_finiteLength_mcaError_le
     (rho eta : ℝ) (n k : ℕ)
-    (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
+    (hrhoOne : rho < 1) (heta : 0 < eta)
     (haOne : firstOrderRateThreshold rho + eta < 1)
     (hbetaHalf : finiteLengthDerivativeRatio rho eta ≤ 1 / 2)
     (hk : 0 < k) (hkRate : (k : ℝ) ≤ rho * n)
@@ -209,18 +232,12 @@ theorem automaticFirstOrder_finiteLength_mcaError_le
   let a := firstOrderRateThreshold rho + eta
   let A := Nat.ceil (a * n)
   have hA : a * (n : ℝ) ≤ A := Nat.le_ceil _
-  have hAn : A ≤ n := by
-    apply Nat.ceil_le.mpr
-    calc
-      a * (n : ℝ) ≤ 1 * n :=
-        mul_le_mul_of_nonneg_right haOne.le (Nat.cast_nonneg n)
-      _ = n := one_mul _
   have hline : LineExactAgreementBound domain k A
       (140 * finiteLengthMcaParameterConstant rho ^ 6 * n ^ 2 / eta ^ 4) := by
     intro f g
     obtain ⟨exceptional, hcard, hgood⟩ :=
       (automaticFirstOrder_finiteLength_rate_bounds rho eta n k A
-        hrho hrhoOne heta haOne hbetaHalf hk hkRate hA hAn domain hchar).2 f g
+        hrhoOne heta haOne hbetaHalf hk hkRate hA domain hchar).2 f g
     refine ⟨exceptional, hcard, ?_⟩
     intro z hz P hP hagree
     obtain ⟨pair, hPzero, hPone, heq, hset⟩ := hgood z hz P hP hagree

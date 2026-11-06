@@ -123,15 +123,8 @@ theorem exists_lowRateFiniteLengthFirstOrder_symbolicCertificate
     exact hkernel.trans (by
       simpa only [h, mu, rlocal, Nzero, lowRateFiniteLengthChallengeHeight] using
         (Nat.le_max_right 1 ⌊(rlocal : ℝ) * mu / (Nzero - rlocal)⌋₊))
-  have hbudget : 0 < m * A :=
-    Nat.mul_pos hmPos (by
-      have haPos : 0 < firstOrderLowRateThreshold rho + eta :=
-        (hrho.trans (rate_lt_firstOrderLowRateThreshold hrho
-          ((firstOrderLowRateRegime_iff_lt_rateSwitch rho).2 hlow))).trans
-          (lt_add_of_pos_right _ heta)
-      exact_mod_cast (mul_pos haPos (by exact_mod_cast hnPos) |>.trans_le hA))
   exact exists_firstOrder_symbolicCertificate_of_rank_and_height
-    hbudget (by omega : k ≤ D + 1)
+    (by omega : k ≤ D + 1)
     (by simpa only [r, N, rlocal, lowRateFiniteLengthRankCount, m, M, mu] using hrN)
     (by simpa only [r, N, rlocal, lowRateFiniteLengthRankCount, m, M, mu] using hheight)
     centers f g
@@ -323,8 +316,8 @@ theorem exists_exceptional_lowRateFiniteLengthMca
   exact exists_exceptional_firstOrderMca_of_bounded_certificate
     domain f g iota
       (firstOrderColumns (D := k - 1) (A := A) (m := m) (M := M) (μ := B)) cert
-      (by omega) hk hkA hAn hBpos hMB hchar hC heta hsOne
-      (by omega) htheta hB hM hH
+      hk hkA hAn hBpos hMB hchar hC heta hsOne
+      htheta hB hM hH
 
 open Classical in
 /-- The inverse-`eta` low-rate MCA consequence. -/
@@ -474,7 +467,7 @@ theorem lowRate_finiteLength_rate_bounds
         domain received (by omega) (by omega) (by omega) hC heta hsOne
     · intro f g
       obtain ⟨exceptional, hcard, hgood⟩ :=
-        exists_exceptional_exactLineMca_one n A domain f g hAPos
+        exists_exceptional_exactLineMca_one n A domain f g
       refine ⟨exceptional, hcard.trans ?_, hgood⟩
       exact square_le_finiteLengthMcaExceptionBudget hC heta hsOne
 

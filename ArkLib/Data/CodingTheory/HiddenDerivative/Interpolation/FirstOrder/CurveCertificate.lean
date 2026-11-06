@@ -137,7 +137,7 @@ structure FirstOrderCurveCertificate {n N : ℕ} (D A m M μ k h : ℕ)
 /-- A supported first-order polynomial satisfying the local constraints vanishes after
 specialization at any sufficiently large set of points where the polynomial agrees. -/
 theorem differentialSpecialization_eq_zero_of_firstOrderSpace
-    {D A m M μ k n : ℕ} (hkD : k ≤ D + 1) (hbudget : 0 < m * A)
+    {D A m M μ k n : ℕ} (hkD : k ≤ D + 1)
     (centers : Fin n ↪ F) (w : Fin n → F[X]) (Q : DifferentialPolynomial F[X] 1)
     (hQsupport : Q ∈ firstOrderSpace F[X] D A m M μ)
     (hconstraints : ∀ i, SatisfiesLocalConstraints m (Polynomial.C (centers i)) (w i) Q)
@@ -145,6 +145,13 @@ theorem differentialSpecialization_eq_zero_of_firstOrderSpace
     (hPdegree : P.degree < k) (hcard : A ≤ indices.card)
     (hagreements : ∀ i ∈ indices, P.eval (ι (centers i)) = (w i).eval₂ ι z) :
     differentialSpecialization (MvPolynomial.map (Polynomial.eval₂RingHom ι z) Q) P = 0 := by
+  by_cases hQzero : Q = 0
+  · subst Q
+    change differentialSpecializationHom P (MvPolynomial.map _ 0) = 0
+    rw [map_zero, map_zero]
+  have hbudget : 0 < m * A := by
+    obtain ⟨u, hu⟩ := MvPolynomial.support_nonempty.mpr hQzero
+    exact Nat.zero_lt_of_lt (mem_firstOrderSpace_iff.mp hQsupport u hu).2.2
   let φ := Polynomial.eval₂RingHom ι z
   have hQmapped : MvPolynomial.map φ Q ∈ firstOrderSpace E D A m M μ := by
     rw [mem_firstOrderSpace_iff]
@@ -209,7 +216,7 @@ def FirstOrderSymbolicCertificate.toCurve
 coefficients have challenge degree at most `h`. -/
 theorem exists_finite_firstOrder_curve_certificate_of_heightSlotCount
     {D A m M μ k h n : ℕ} (ℓ : ℕ)
-    (hD : 0 < D) (hbudget : 0 < m * A) (hkD : k ≤ D + 1)
+    (hD : 0 < D) (hkD : k ≤ D + 1)
     (centers : Fin n ↪ F) (w : Fin n → F[X])
     (hw : ∀ i, (w i).natDegree ≤ ℓ)
     (hheight : firstOrderCurveShiftedRowSlotBound D A m M μ n ℓ h <
@@ -246,12 +253,12 @@ theorem exists_finite_firstOrder_curve_certificate_of_heightSlotCount
   refine ⟨hnonzero ι z, ?_⟩
   intro indices P hPdegree hcard hagreements
   exact differentialSpecialization_eq_zero_of_firstOrderSpace
-    hkD hbudget centers w Q hQsupport hconstraints ι z indices P hPdegree hcard hagreements
+    hkD centers w Q hQsupport hconstraints ι z indices P hPdegree hcard hagreements
 
 /-- A strict shifted-slot surplus for a received line gives a symbolic first-order certificate. -/
 theorem exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount
     {D A m M μ k h n : ℕ}
-    (hD : 0 < D) (hbudget : 0 < m * A) (hkD : k ≤ D + 1)
+    (hD : 0 < D) (hkD : k ≤ D + 1)
     (centers : Fin n ↪ F) (f g : Fin n → F)
     (hheight : firstOrderCurveShiftedRowSlotBound D A m M μ n 1 h <
       firstOrderCurveShiftedHeightSlotCount D A m M μ 1 h) :
@@ -259,7 +266,7 @@ theorem exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount
       (firstOrderColumns (D := D) (A := A) (m := m) (M := M) (μ := μ))) := by
   let w : Fin n → F[X] := fun i ↦ receivedLine (f i) (g i)
   obtain ⟨cert⟩ := exists_finite_firstOrder_curve_certificate_of_heightSlotCount
-    1 (Nat.zero_lt_of_lt hD) hbudget hkD centers w
+    1 (Nat.zero_lt_of_lt hD) hkD centers w
       (fun i ↦ natDegree_receivedLine_le (f i) (g i)) hheight
   refine ⟨{
     coefficients := cert.coefficients
@@ -340,7 +347,7 @@ theorem exists_exceptional_of_regular_stage_bounds_of_factors
     {stages : List (SeparantStage F[X] 1)} {terminal : DifferentialPolynomial F[X] 1}
     (hc : SeparantChain cert.Q stages terminal) (ι : F →+* E)
     (K L ell τ : ℕ) (η : ℚ) (hη : 1 ≤ η)
-    (hK : 2 ≤ K) (hLA : L ≤ A) (hAn : A ≤ n)
+    (hK : 2 ≤ K) (hLA : L ≤ A)
     (conclusion : E → E[X] → Prop)
     (hregular : ∀ stage ∈ stages, ∃ exceptional : Finset E,
       (exceptional.card : ℚ) ≤
@@ -360,6 +367,17 @@ theorem exists_exceptional_of_regular_stage_bounds_of_factors
           P.degree < k → A ≤ indices.card →
           (∀ i ∈ indices, P.eval (ι (domain i)) = (w i).eval₂ ι z) → conclusion z P := by
   classical
+  by_cases hAn : A ≤ n
+  swap
+  · refine ⟨∅, ?_, ?_⟩
+    · simp only [Finset.card_empty, Nat.cast_zero]
+      unfold firstOrderCurveBound
+      have hηnonneg : 0 ≤ η := le_trans (by norm_num) hη
+      positivity
+    · intro z hz indices P hdegree hcard hvalues
+      have hbound := Finset.card_le_univ indices
+      simp only [Fintype.card_fin] at hbound
+      omega
   obtain ⟨base, hbase, hcover⟩ :=
     hc.exists_finset_regular_stage cert.challengeDegree_le ι ι.injective
   let ex : SeparantStage F[X] 1 → Finset E := fun stage ↦

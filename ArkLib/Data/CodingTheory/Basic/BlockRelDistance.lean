@@ -292,27 +292,41 @@ lemma relHammingDist_le_sub_agreementBlockUnion :
   For a smooth Reed-Solomon code, the standard relative Hamming distance `δᵣ(f,g)`
   is a lower bound for the k-wise block relative distance `δᵣ(k, φ, f, g)`.
 -/
-lemma relHammingDist_le_blockRelDistance (hkn : k ≤ n) :
+lemma relHammingDist_le_blockRelDistance :
     δᵣ(f, g) ≤ δ𞁒(k, φ, f, g) := by
-  have h2 : (2 : ℚ) ^ n = 2 ^ k * 2 ^ (n - k) := by rw [← pow_add, Nat.add_sub_of_le hkn]
-  rw [← NNRat.coe_le_coe]
-  refine (relHammingDist_le_sub_agreementBlockUnion' (k := k) (φ := φ)).trans (le_of_eq ?_)
-  rw [blockRelDistance_eq_one_sub', card_agreementBlockUnion hkn]
-  simp only [card_toFinset, Fintype.card_fin, Nat.cast_mul, Nat.cast_pow, Nat.cast_ofNat]
-  rw [h2, mul_div_mul_left _ _ (pow_ne_zero _ two_ne_zero)]
+  by_cases hkn : k ≤ n
+  · have h2 : (2 : ℚ) ^ n = 2 ^ k * 2 ^ (n - k) := by rw [← pow_add, Nat.add_sub_of_le hkn]
+    rw [← NNRat.coe_le_coe]
+    refine (relHammingDist_le_sub_agreementBlockUnion' (k := k) (φ := φ)).trans (le_of_eq ?_)
+    rw [blockRelDistance_eq_one_sub', card_agreementBlockUnion hkn]
+    simp only [card_toFinset, Fintype.card_fin, Nat.cast_mul, Nat.cast_pow, Nat.cast_ofNat]
+    rw [h2, mul_div_mul_left _ _ (pow_ne_zero _ two_ne_zero)]
+  · by_cases hfg : f = g
+    · subst g
+      simp [Code.relHammingDist]
+    have hnk : n - k = 0 := Nat.sub_eq_zero_of_le (by omega)
+    have hcard : (disagreementSet k φ f g).card = 1 := by
+      apply le_antisymm (by simpa [hnk] using (card_disagreementSet_le (f := f) (g := g)
+        (φ := φ) (k := k)))
+      apply Finset.card_pos.mpr
+      obtain ⟨i, hi⟩ := Function.ne_iff.mp hfg
+      refine ⟨φ i ^ 2 ^ k, Finset.mem_filter.mpr ⟨?_, i, mem_blockIdx_self, hi⟩⟩
+      rw [← pow_eq_subdomain_sqFoldMapGen]
+      exact mem_toFinset_self
+    simp [blockRelDistance, blockDistance, hcard, hnk]
 
 /-- Claim 4.19 from [ACFY24], Part 2
   As a consequence of `relHammingDist_le_blockRelDistance`, the list of codewords
   within a certain block relative distance `δ` is a subset of the list of codewords
   within the same relative Hamming distance `δ`.
 -/
-lemma listBlock_subset_listHamming (hkn : k ≤ n) (δ : ℝ≥0) (C : Set (Fin (2 ^ n) → F)) :
+lemma listBlock_subset_listHamming (δ : ℝ≥0) (C : Set (Fin (2 ^ n) → F)) :
     Λ𞁒(C, k, φ, f, δ) ⊆ closeCodewordsRel C f δ := by
   intro u hu
   simp only [blockRelDistanceBall, Set.mem_sep_iff] at hu
   refine ⟨hu.1, ?_⟩
   have h1 := relHammingDist_le_blockRelDistance
-              (φ := φ) (k := k) (f := f) (g := u) hkn
+              (φ := φ) (k := k) (f := f) (g := u)
   simp only [Code.relHammingBall, Set.mem_ofPred_eq, ge_iff_le]
   apply le_trans (b := NNRat.cast δ𞁒(k, φ, f, u))
   · rewrite [NNRat.cast_le]

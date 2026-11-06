@@ -102,6 +102,7 @@ theorem caError_multilinear_le (t : ℕ) {deg : ℕ} {domain : ι ↪ F} {δ : �
   rw [ENNReal.coe_toNNReal (mcaError_ne_top _ _ _)]
   exact rs_mcaError_le_of_le_relUDR hδ_pos hδ
 
+omit [Nonempty ι] in
 /-- Any proved affine-line MCA bound transports to multilinear batching, with one
 copy of the error per tensor factor. -/
 theorem caError_multilinearBatch_le_of_mca (t : ℕ) (C : LinearCode ι F)
@@ -136,7 +137,7 @@ This uses the Gao–Kopparty–Lovett bound, not the separate Reed–Solomon Joh
 theorem caError_multilinearBatch_le_johnson (t : ℕ) (C : LinearCode ι F)
     (δ_min η δ : ℝ≥0)
     (hdist : (δ_min : ℝ) = (Code.minDist C.carrier : ℝ) / Fintype.card ι)
-    (hη : 0 < η) (hη_lt : η < δ_min) (hδ_pos : 0 < δ)
+    (hη : 0 < η) (hη_lt : η < δ_min)
     (hδ : (δ : ℝ) ≤ 1 - (1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / 3)) :
     caError (multilinearBatchGenerator F t) C.carrier δ δ ≤
       (t * affineLineMcaJohnsonError (Fintype.card ι) (Fintype.card F) δ_min η : ℝ≥0) := by
@@ -152,7 +153,7 @@ theorem caError_multilinearBatch_le_johnson (t : ℕ) (C : LinearCode ι F)
   apply caError_multilinearBatch_le_of_mca t C δ _ hδone
   simpa only [affineLineMcaJohnsonError, ENNReal.coe_toNNReal, ENNReal.ofReal] using
     CodingTheory.linear_mcaError_le_one_point_five_johnson C δ_min η δ
-      hdist hη hη_lt hδ_pos hδ
+      hdist hη hη_lt hδ
 
 /-- The unique-decoding bound in the `m + 1` indexing used by Batched FRI. -/
 theorem caError_multilinearBatch_le (t : ℕ) {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}

@@ -92,10 +92,10 @@ theorem finiteListBound_of_profile
   rw [hell] at hheight
   obtain ⟨cert⟩ :=
     exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount
-      hp.1 hp.2.1 hkD domain received (fun _ ↦ 0) hheight
+      hp.1 hkD domain received (fun _ ↦ 0) hheight
   simpa only [tightListEnvelope] using
     firstOrder_finite_agreement_solutions_card_le_tight domain received p.columns cert
-      hK le_rfl hk hkA hAn hchar S hS
+      hK le_rfl hk hkA hchar S hS
 
 open Classical in
 /-- A curve-verified profile bounds every finite family of polynomials meeting its degree and
@@ -123,7 +123,7 @@ theorem finiteSquarefreeListBound_of_profile
   rw [hell] at hheight
   obtain ⟨cert⟩ :=
     exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount
-      hp.1 hp.2.1 hkD domain received (fun _ ↦ 0) hheight
+      hp.1 hkD domain received (fun _ ↦ 0) hheight
   have hS' : ∀ P ∈ S, P.degree < p.k ∧
       p.agreement ≤ (Finset.univ.filter fun i ↦
         P.eval (domain i) = received i).card := by

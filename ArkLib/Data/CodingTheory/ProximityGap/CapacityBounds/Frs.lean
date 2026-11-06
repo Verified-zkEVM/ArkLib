@@ -44,7 +44,6 @@ private theorem frs_strongLineDecodable_and_lambda_le
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
-    (hω : ω ≠ 0)
     (hω_gen : orderOf ω = Fintype.card F - 1)
     (hadm : ReedSolomon.Folded.Admissible (Finset.univ.map domain) s ω)
     (hcard : s * Fintype.card ι < Fintype.card F)
@@ -58,6 +57,11 @@ private theorem frs_strongLineDecodable_and_lambda_le
         δ (3 * t ^ 3) (2 * t) ∧
       Code.Lambda ((ReedSolomon.Folded.frsCode domain k s ω : Set (ι → Fin s → F)))
         ((δ : ℝ) * (2 * (t : ℝ)) / (2 * (t : ℝ) - 1)) ≤ (t : ℕ∞) := by
+  have hω : ω ≠ 0 := by
+    rintro rfl
+    rw [orderOf_zero] at hω_gen
+    have hq := Fintype.one_lt_card (α := F)
+    omega
   let R : ℝ := (k : ℝ) / ((s : ℝ) * Fintype.card ι)
   have hδR : (δ : ℝ) = 1 - R - 2 / (t : ℝ) := hδ
   have hR0 : 0 ≤ R := by dsimp [R]; positivity
@@ -126,7 +130,6 @@ private theorem frs_mcaError_le_proof
     {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Field F] [Fintype F] [SampleableType F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
-    (_hω : ω ≠ 0)
     (_hω_gen : orderOf ω = Fintype.card F - 1)
     (_hadm : ReedSolomon.Folded.Admissible (Finset.univ.map domain) s ω)
     (_hcard : s * Fintype.card ι < Fintype.card F)
@@ -168,14 +171,13 @@ private theorem frs_mcaError_le_proof
   have hδpos : 0 < δr := lt_of_le_of_ne hδ0 (Ne.symm hδzero)
   let δ : NNReal := ⟨δr, hδ0⟩
   obtain ⟨ht3, -, hδlt, hweak, hlist⟩ :=
-    frs_strongLineDecodable_and_lambda_le domain k s ω _hω _hω_gen _hadm _hcard t _ht_pos
+    frs_strongLineDecodable_and_lambda_le domain k s ω _hω_gen _hadm _hcard t _ht_pos
       _hs_gt δ rfl hδpos
   let C := ReedSolomon.Folded.frsCode domain k s ω
   have hbudget : (t + 1) ^ 2 ≤ Fintype.card ι * t + 3 * t ^ 3 := by
     have hn : 1 ≤ Fintype.card ι := Fintype.card_pos
     nlinarith only [hn, ht3, sq_nonneg (t - 1)]
-  have hmca := mcaError_le_of_strongLineDecodable C δ _ht_pos
-    (by exact_mod_cast hδpos) hδlt hweak hlist hbudget
+  have hmca := mcaError_le_of_strongLineDecodable C δ _ht_pos hδlt hweak hlist hbudget
   change mcaError (AffineLineGenerator F) C δr ≤ _ at hmca
   simpa only [Nat.cast_add, Nat.cast_mul, Nat.cast_pow, Nat.cast_ofNat] using hmca
 
@@ -192,7 +194,6 @@ theorem frs_mcaError_le
     {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Field F] [Fintype F] [SampleableType F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
-    (_hω : ω ≠ 0)
     (_hω_gen : orderOf ω = Fintype.card F - 1)
     (_hadm : ReedSolomon.Folded.Admissible (Finset.univ.map domain) s ω)
     (_hcard : s * Fintype.card ι < Fintype.card F)
@@ -204,7 +205,7 @@ theorem frs_mcaError_le
         (1 - ρ - 2 / (t : ℝ)) ≤
       ENNReal.ofReal ((n * t + 3 * (t : ℝ) ^ 3) / Fintype.card F) := by
   classical
-  exact frs_mcaError_le_proof domain k s ω _hω _hω_gen _hadm _hcard t _ht_pos _hs_gt
+  exact frs_mcaError_le_proof domain k s ω _hω_gen _hadm _hcard t _ht_pos _hs_gt
 
 /-- Threshold form of `frs_mcaError_le`: any target `ε_star` that the explicit
 `(nt + 3t³)/|F|` budget clears at the instantiated parameters is a genuine affine-line MCA
@@ -214,7 +215,6 @@ theorem frs_mcaError_le_of_budget
     {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Field F] [Fintype F] [SampleableType F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
-    (hω : ω ≠ 0)
     (hω_gen : orderOf ω = Fintype.card F - 1)
     (hadm : ReedSolomon.Folded.Admissible (Finset.univ.map domain) s ω)
     (hcard : s * Fintype.card ι < Fintype.card F)
@@ -227,7 +227,7 @@ theorem frs_mcaError_le_of_budget
     mcaError (AffineLineGenerator F) (ReedSolomon.Folded.frsCode domain k s ω)
         (1 - (k : ℝ) / (s * (Fintype.card ι : ℝ)) - 2 / (t : ℝ)) ≤ (ε_star : ENNReal) := by
   classical
-  exact le_trans (frs_mcaError_le domain k s ω hω hω_gen hadm hcard t ht_pos hs_gt) hbudget
+  exact le_trans (frs_mcaError_le domain k s ω hω_gen hadm hcard t ht_pos hs_gt) hbudget
 
 open scoped NNReal in
 open Code in
@@ -243,7 +243,6 @@ theorem frs_mcaError_le_floor_add_two
     {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Field F] [Fintype F] [SampleableType F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
-    (hω : ω ≠ 0)
     (hω_gen : orderOf ω = Fintype.card F - 1)
     (hadm : ReedSolomon.Folded.Admissible (Finset.univ.map domain) s ω)
     (hcard : s * Fintype.card ι < Fintype.card F)
@@ -280,7 +279,7 @@ theorem frs_mcaError_le_floor_add_two
   have hδpos : 0 < δr := lt_of_le_of_ne hδ0 (Ne.symm hδzero)
   let δ : NNReal := ⟨δr, hδ0⟩
   obtain ⟨ht3, hFn, hδlt, hweak, hlist⟩ :=
-    frs_strongLineDecodable_and_lambda_le domain k s ω hω hω_gen hadm hcard t ht_pos
+    frs_strongLineDecodable_and_lambda_le domain k s ω hω_gen hadm hcard t ht_pos
       hs_gt δ rfl hδpos
   let C := ReedSolomon.Folded.frsCode domain k s ω
   have hbudget : (t + 1) ^ 2 ≤

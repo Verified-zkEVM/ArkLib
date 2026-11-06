@@ -708,11 +708,8 @@ private noncomputable def mathSampleLength : ℕ := uniformMathematicalCapacityL
 
 private theorem mathSampleGap :
     ((1 : ℕ) : ℝ) + mathSampleDelta * mathSampleLength ≤ mathSampleLength := by
-  have hm : 0 < uniformMathematicalMultiplicity mathSampleDelta :=
-    lt_of_lt_of_le (by omega) (add_two_le_closedMultiplicity (by norm_num)
-      (by have := uniformDerivativeOrder_pos mathSampleDelta; omega))
   obtain ⟨-, -, hν, hνn⟩ := uniformMathematical_integer_guards (n := mathSampleLength)
-    (by norm_num [mathSampleDelta]) (by norm_num [mathSampleDelta]) hm (le_max_left _ _)
+    (by norm_num [mathSampleDelta]) (by norm_num [mathSampleDelta]) (le_max_left _ _)
   have hn : (2 : ℝ) ≤ mathSampleLength := by exact_mod_cast (show 2 ≤ mathSampleLength by omega)
   norm_num [mathSampleDelta]
   linarith

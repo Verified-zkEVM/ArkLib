@@ -87,18 +87,21 @@ theorem partitionInverseRadius_nonneg (rate agreement : ℝ) (order multiplicity
   rw [partitionInverseRadius_eq]
   positivity
 
-/-- For positive `m` and `W`, the finite ratio is
+/-- The finite ratio is
 `(27/20) R (d + 1) exp(-(d/W) (m + (d + 1) d / 2)) / (1 + (d + 1) d / W)`. -/
-theorem partitionFiniteRatio_eq_weightBudget {rate agreement : ℝ} {order multiplicity : ℕ}
-    (hmultiplicity : 0 < multiplicity)
-    (hbudget : 0 < partitionWeightBudget rate agreement order multiplicity) :
+theorem partitionFiniteRatio_eq_weightBudget {rate agreement : ℝ} {order multiplicity : ℕ} :
     partitionFiniteRatio rate agreement order multiplicity =
       let budget : ℝ := partitionWeightBudget rate agreement order multiplicity
       (27 / 20) * rate * (order + 1) *
         Real.exp (-((order : ℝ) / budget * (multiplicity + (order + 1) * order / 2))) /
           (1 + (order + 1) * order / budget) := by
-  have hm : (multiplicity : ℝ) ≠ 0 := by positivity
-  have hW : (partitionWeightBudget rate agreement order multiplicity : ℝ) ≠ 0 := by positivity
+  by_cases hW : (partitionWeightBudget rate agreement order multiplicity : ℝ) = 0
+  · simp [partitionFiniteRatio, partitionInverseRadius_eq, hW]
+  have hm : (multiplicity : ℝ) ≠ 0 := by
+    intro hmzero
+    have : multiplicity = 0 := by exact_mod_cast hmzero
+    subst multiplicity
+    simp [partitionWeightBudget] at hW
   simp only [partitionFiniteRatio, partitionInverseRadius_eq]
   congr 2
   · congr 1
@@ -107,10 +110,12 @@ theorem partitionFiniteRatio_eq_weightBudget {rate agreement : ℝ} {order multi
 
 /-- The normalized weight budget `W/m` tends to `a d / (R log(6d))` as `m → ∞`. -/
 theorem tendsto_partitionWeightBudget_div {rate agreement : ℝ} {order : ℕ}
-    (hrate : 0 < rate) (hagreement : 0 < agreement) (horder : 0 < order) :
+    (hrate : 0 < rate) (hagreement : 0 < agreement) :
     Tendsto (fun multiplicity : ℕ ↦
       (partitionWeightBudget rate agreement order multiplicity : ℝ) / multiplicity)
       atTop (𝓝 (agreement * order / (rate * Real.log (6 * (order : ℝ))))) := by
+  rcases Nat.eq_zero_or_pos order with rfl | horder
+  · simp [partitionWeightBudget]
   have hlog : 0 < Real.log (6 * (order : ℝ)) := Real.log_pos (by
     have : (1 : ℝ) ≤ order := by exact_mod_cast horder
     linarith)
@@ -125,15 +130,18 @@ theorem tendsto_partitionWeightBudget_div {rate agreement : ℝ} {order : ℕ}
 
 /-- The inverse radius `λ` tends to `(R/a) log(6d)` as `m → ∞`. -/
 theorem tendsto_partitionInverseRadius {rate agreement : ℝ} {order : ℕ}
-    (hrate : 0 < rate) (hagreement : 0 < agreement) (horder : 0 < order) :
+    (hrate : 0 < rate) (hagreement : 0 < agreement) :
     Tendsto (partitionInverseRadius rate agreement order) atTop
       (𝓝 (rate / agreement * Real.log (6 * (order : ℝ)))) := by
+  rcases Nat.eq_zero_or_pos order with rfl | horder
+  · change Tendsto (fun m : ℕ ↦ partitionInverseRadius rate agreement 0 m) atTop _
+    simp [partitionInverseRadius]
   have horderReal : (0 : ℝ) < order := by exact_mod_cast horder
   have hlog : 0 < Real.log (6 * (order : ℝ)) := Real.log_pos (by
     have : (1 : ℝ) ≤ order := by exact_mod_cast horder
     linarith)
   have hlimit := (tendsto_const_nhds (x := (order : ℝ))).div
-    (tendsto_partitionWeightBudget_div hrate hagreement horder)
+    (tendsto_partitionWeightBudget_div (order := order) hrate hagreement)
     (show agreement * order / (rate * Real.log (6 * (order : ℝ))) ≠ 0 by positivity)
   have hequal : (order : ℝ) / (agreement * order / (rate * Real.log (6 * (order : ℝ)))) =
       rate / agreement * Real.log (6 * (order : ℝ)) := by
@@ -143,11 +151,11 @@ theorem tendsto_partitionInverseRadius {rate agreement : ℝ} {order : ℕ}
 
 /-- The finite ratio tends to `(27/20) R (d + 1) exp(-(R/a) log(6d))` as `m → ∞`. -/
 theorem tendsto_partitionFiniteRatio {rate agreement : ℝ} {order : ℕ}
-    (hrate : 0 < rate) (hagreement : 0 < agreement) (horder : 0 < order) :
+    (hrate : 0 < rate) (hagreement : 0 < agreement) :
     Tendsto (partitionFiniteRatio rate agreement order) atTop
       (𝓝 ((27 / 20 : ℝ) * rate * (order + 1) *
         Real.exp (-(rate / agreement * Real.log (6 * (order : ℝ)))))) := by
-  have hlambda := tendsto_partitionInverseRadius hrate hagreement horder
+  have hlambda := tendsto_partitionInverseRadius (order := order) hrate hagreement
   have htriangle : Tendsto (fun multiplicity : ℕ ↦
       (order : ℝ) * (order + 1) / (2 * multiplicity)) atTop (𝓝 0) := by
     have hdiv : Tendsto (fun multiplicity : ℕ ↦
@@ -175,10 +183,10 @@ theorem exists_partitionFiniteRatio_gt {rate agreement γ : ℝ} {order : ℕ}
   have hlog : 0 < Real.log (6 * (order : ℝ)) := Real.log_pos (by
     have : (1 : ℝ) ≤ order := by exact_mod_cast horder
     linarith)
-  have hbudget := (tendsto_partitionWeightBudget_div hrate hagreement horder).eventually
+  have hbudget := (tendsto_partitionWeightBudget_div (order := order) hrate hagreement).eventually
     (eventually_gt_nhds
       (show 0 < agreement * order / (rate * Real.log (6 * (order : ℝ))) by positivity))
-  have hratio := (tendsto_partitionFiniteRatio hrate hagreement horder).eventually
+  have hratio := (tendsto_partitionFiniteRatio (order := order) hrate hagreement).eventually
     (eventually_gt_nhds hγ)
   obtain ⟨multiplicity, hm, hW, hfinite⟩ :=
     ((eventually_gt_atTop 0).and (hbudget.and hratio)).exists
@@ -202,10 +210,15 @@ structure PartitionFiniteParameters (rate agreement : ℝ) (order : ℕ) where
 /-- Finite parameters exist whenever the limit `(27/20) R (d + 1) exp(-(R/a) log(6d))` of the
 finite ratio exceeds `1`. -/
 theorem PartitionFiniteParameters.nonempty {rate agreement : ℝ} {order : ℕ}
-    (hrate : 0 < rate) (hagreement : 0 < agreement) (horder : 0 < order)
+    (hagreement : 0 < agreement) (horder : 0 < order)
     (hlimit : 1 < (27 / 20 : ℝ) * rate * (order + 1) *
       Real.exp (-(rate / agreement * Real.log (6 * (order : ℝ))))) :
     Nonempty (PartitionFiniteParameters rate agreement order) := by
+  have hpositive : 0 < (27 / 20 : ℝ) * rate * (order + 1) :=
+    (mul_pos_iff_of_pos_right (Real.exp_pos _)).mp (lt_trans zero_lt_one hlimit)
+  have hrate : 0 < rate :=
+    (mul_pos_iff_of_pos_left (by norm_num : (0 : ℝ) < 27 / 20)).mp
+      ((mul_pos_iff_of_pos_right (by positivity : (0 : ℝ) < order + 1)).mp hpositive)
   obtain ⟨m, hm, hW, hratio⟩ := exists_partitionFiniteRatio_gt hrate hagreement horder hlimit
   exact ⟨⟨m, hm, hW, hratio⟩⟩
 

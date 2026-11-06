@@ -61,7 +61,7 @@ theorem exists_johnson_curve_symbolic_certificate
   let columns := johnsonColumns Xc D μ
   have hcut : Xc ≤ m * A := johnsonXCutoff_le_mul_agreement heta hthreshold
   have hbudget : 0 < m * A := by
-    have := johnson_degree_succ_le_agreement hD (show D < n by omega) heta hthreshold
+    have := johnson_degree_succ_le_agreement (show D < n by omega) heta hthreshold
     have := johnsonM_ge_three n D eta
     exact Nat.mul_pos (by omega) (by omega)
   have hslots :

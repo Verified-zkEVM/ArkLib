@@ -119,7 +119,7 @@ private theorem uniformFirstOrderMca_rowWeightSum_eq :
 /-- The support `(12, 4, 23)` has a strict shifted-slot surplus at height
 `276` throughout the gap-`6/25` regime. -/
 theorem uniformFirstOrderMca_heightSlotCount (n k A : ℕ)
-    (hk : 2 ≤ k) (hgap : 25 * k + 6 * n ≤ 25 * A) :
+    (hgap : 25 * k + 6 * n ≤ 25 * A) :
     let D := k - 1
     firstOrderCurveShiftedRowSlotBound D A 12 4 23 n 1 276 <
       firstOrderCurveShiftedHeightSlotCount D A 12 4 23 1 276 := by
@@ -223,7 +223,7 @@ theorem uniformFirstOrderMca_parameters (n k A : ℕ)
         firstOrderCurveShiftedHeightSlotCount D A 12 4 23 1 276 := by
   dsimp only
   refine ⟨by omega, by omega, by omega, ?_⟩
-  exact uniformFirstOrderMca_heightSlotCount n k A hk hgap
+  exact uniformFirstOrderMca_heightSlotCount n k A hgap
 
 /-! ## Exact regular-stage arithmetic -/
 
@@ -358,10 +358,13 @@ theorem uniformFirstOrderMcaSplit_retainedCoordinateRatio_le {n D A : ℕ}
 
 /-- At the one-forty-second split, the generic-fiber ratio costs at most
 `42` times the direct agreement ratio. -/
-theorem uniformFirstOrderMcaSplit_fixedCoordinateRatio_le {n D A : ℕ}
-    (hDA : D < A) :
+theorem uniformFirstOrderMcaSplit_fixedCoordinateRatio_le {n D A : ℕ} :
     fixedCoordinateRatio n D (uniformFirstOrderMcaSplit D A) ≤
       42 * agreementIncidenceRatio n D A := by
+  by_cases hDA : D < A
+  swap
+  · simp [fixedCoordinateRatio, agreementIncidenceRatio, uniformFirstOrderMcaSplit,
+      Nat.sub_eq_zero_of_le (Nat.le_of_not_gt hDA)]
   let d := A - D
   let N := n - D
   let r := (d + 41) / 42
@@ -385,9 +388,12 @@ theorem uniformFirstOrderMcaSplit_fixedCoordinateRatio_le {n D A : ℕ}
       Nat.mul_le_mul_left (n - D) hdr)
 
 /-- The direct agreement ratio is at most `25/6` in the gap-`6/25` regime. -/
-theorem uniformFirstOrderMca_agreementIncidenceRatio_le {n D A : ℕ} (hDA : D < A)
+theorem uniformFirstOrderMca_agreementIncidenceRatio_le {n D A : ℕ}
     (hgap : 25 * D + 6 * n ≤ 25 * A) :
     agreementIncidenceRatio n D A ≤ 25 / 6 := by
+  by_cases hDA : D < A
+  swap
+  · norm_num [agreementIncidenceRatio, Nat.sub_eq_zero_of_le (Nat.le_of_not_gt hDA)]
   have hden : (0 : ℝ) < (A - D : ℕ) := by exact_mod_cast (show 0 < A - D by omega)
   unfold agreementIncidenceRatio
   apply (div_le_iff₀ hden).2
@@ -398,10 +404,19 @@ theorem uniformFirstOrderMca_agreementIncidenceRatio_le {n D A : ℕ} (hDA : D <
   nlinarith
 
 /-- The degree-weighted agreement ratio is at most `25n/24`. -/
-theorem uniformFirstOrderMca_degree_mul_agreementIncidenceRatio_le {n D A : ℕ} (hDA : D < A)
-    (hAn : A ≤ n) (hgap : 25 * D + 6 * n ≤ 25 * A) :
+theorem uniformFirstOrderMca_degree_mul_agreementIncidenceRatio_le {n D A : ℕ}
+    (hgap : 25 * D + 6 * n ≤ 25 * A) :
     D * agreementIncidenceRatio n D A ≤ (25 / 24 : ℝ) * n := by
-  have hDn : D ≤ n := hDA.le.trans hAn
+  by_cases hDn : D ≤ n
+  swap
+  · simp only [agreementIncidenceRatio, Nat.sub_eq_zero_of_le (by omega : n ≤ D),
+      Nat.cast_zero, zero_div, mul_zero]
+    positivity
+  by_cases hDA : D < A
+  swap
+  · simp only [agreementIncidenceRatio, Nat.sub_eq_zero_of_le (Nat.le_of_not_gt hDA),
+      Nat.cast_zero, div_zero, mul_zero]
+    positivity
   have hden : (0 : ℝ) < (A - D : ℕ) := by exact_mod_cast (show 0 < A - D by omega)
   unfold agreementIncidenceRatio
   rw [← mul_div_assoc]
@@ -418,7 +433,7 @@ theorem uniformFirstOrderMca_degree_mul_agreementIncidenceRatio_le {n D A : ℕ}
 raw exceptional charge at most `1304562211/984 * n²`.  The rational coefficient is strictly
 below the public integral ceiling `1325775`. -/
 theorem uniformFirstOrderMca_exceptionCharge_le
-    {n D A e : ℕ} (hn : 2 ≤ n) (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n)
+    {n D A e : ℕ} (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n)
     (hgap : 25 * D + 6 * n ≤ 25 * A) (he : e ≤ 4) :
     firstOrderExceptionCharge (agreementIncidenceRatio n D A) n D A 276 23 e
         (uniformFirstOrderMcaSplit D A) ≤
@@ -429,15 +444,15 @@ theorem uniformFirstOrderMca_exceptionCharge_le
     simpa only [theta] using one_le_agreementIncidenceRatio hDA hAn
   have htheta : 0 ≤ theta := le_trans zero_le_one hthetaOne
   have hthetaTop : theta ≤ 25 / 6 := by
-    simpa only [theta] using uniformFirstOrderMca_agreementIncidenceRatio_le hDA hgap
+    simpa only [theta] using uniformFirstOrderMca_agreementIncidenceRatio_le hgap
   have hDtheta : (D : ℝ) * theta ≤ (25 / 24 : ℝ) * n := by
-    simpa only [theta] using uniformFirstOrderMca_degree_mul_agreementIncidenceRatio_le hDA hAn hgap
+    simpa only [theta] using uniformFirstOrderMca_degree_mul_agreementIncidenceRatio_le hgap
   have hlambdaOne : retainedCoordinateRatio n A L ≤ (42 / 41 : ℝ) * theta := by
     simpa only [L, theta] using uniformFirstOrderMcaSplit_retainedCoordinateRatio_le hDA hAn
   have hlambdaTwo : fixedCoordinateRatio n D L ≤ 42 * theta := by
-    simpa only [L, theta] using uniformFirstOrderMcaSplit_fixedCoordinateRatio_le hDA
+    simpa only [L, theta] using uniformFirstOrderMcaSplit_fixedCoordinateRatio_le
   have htail : n - L ≤ n := Nat.sub_le n L
-  have hnR : (2 : ℝ) ≤ n := by exact_mod_cast hn
+  have hnR : (2 : ℝ) ≤ n := by exact_mod_cast (show 2 ≤ n by omega)
   have hn0 : (0 : ℝ) ≤ n := by positivity
   have hnTwice : (2 : ℝ) * n ≤ (n : ℝ) ^ 2 := by
     rw [sq]
@@ -524,19 +539,19 @@ theorem uniformFirstOrderMca_exceptionCharge_le
 /-- Integral-ceiling form of `uniformFirstOrderMca_exceptionCharge_le`, used by the public
 line-MCA facade. -/
 theorem uniformFirstOrderMca_exceptionCharge_le_ceiling
-    {n D A e : ℕ} (hn : 2 ≤ n) (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n)
+    {n D A e : ℕ} (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n)
     (hgap : 25 * D + 6 * n ≤ 25 * A) (he : e ≤ 4) :
     firstOrderExceptionCharge (agreementIncidenceRatio n D A) n D A 276 23 e
         (uniformFirstOrderMcaSplit D A) ≤
       1325775 * (n : ℝ) ^ 2 := by
-  apply (uniformFirstOrderMca_exceptionCharge_le hn hD hDA hAn hgap he).trans
+  apply (uniformFirstOrderMca_exceptionCharge_le hD hDA hAn hgap he).trans
   gcongr
   norm_num
 
 /-- The optimized max/min exceptional charge inherits the same integral ceiling.  This is the
 numerical interface consumed by the squarefree semantic transfer. -/
 theorem uniformFirstOrderMca_optimizedExceptionCharge_le_ceiling
-    {n D A : ℕ} (hn : 2 ≤ n) (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n)
+    {n D A : ℕ} (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n)
     (hgap : 25 * D + 6 * n ≤ 25 * A) :
     maxMinFirstOrderExceptionCharge (agreementIncidenceRatio n D A) n D A 276 23 4 ≤
       1325775 * (n : ℝ) ^ 2 := by
@@ -548,7 +563,7 @@ theorem uniformFirstOrderMca_optimizedExceptionCharge_le_ceiling
   have heFour : e ≤ 4 := by
     simpa only [Finset.mem_range, Nat.lt_add_one_iff] using he
   apply le_trans ?_ (uniformFirstOrderMca_exceptionCharge_le_ceiling
-    hn hD hDA hAn hgap heFour)
+    hD hDA hAn hgap heFour)
   simp only [minFirstOrderExceptionCharge, hDA, ↓reduceDIte]
   apply Finset.min'_le
   apply Finset.mem_image.mpr

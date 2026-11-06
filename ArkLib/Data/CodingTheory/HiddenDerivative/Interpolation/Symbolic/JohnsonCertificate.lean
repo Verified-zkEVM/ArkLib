@@ -465,7 +465,7 @@ theorem exists_johnson_symbolic_certificate
     simpa only [Xc, m] using johnsonXCutoff_le_mul_agreement heta hthreshold
   have hbudget : 0 < m * A := by
     have hDlt : D < n := by omega
-    have hDA := johnson_degree_succ_le_agreement hD hDlt heta hthreshold
+    have hDA := johnson_degree_succ_le_agreement hDlt heta hthreshold
     have hm := johnsonM_ge_three n D eta
     exact Nat.mul_pos (by omega) (by omega)
   exact exists_johnson_symbolic_certificate_of_shifted_surplus hD hcut hbudget hkD

@@ -45,6 +45,7 @@ instance {domain : ι ↪ F} {deg : ℕ} : Nonempty (finCarrier domain deg) := b
   refine ⟨v, ?_⟩
   simpa [ReedSolomon.finCarrier, Set.mem_toFinset] using hv
 
+omit [Nonempty ι] in
 /-- Uniform affine-space sampling is compatible with the generic weighted MCA bridge,
 including linearly dependent direction vectors. -/
 theorem exists_weighted_affine_agreement_of_prob_gt_mcaError [DecidableEq ι]
@@ -313,7 +314,6 @@ theorem weighted_correlated_agreement_over_affine_spaces [DecidableEq ι]
     simp only [δ, NNReal.coe_sub hα₁.le, NNReal.coe_one]
   have hspos : 0 < (ReedSolomon.sqrtRate deg domain : ℝ) := sqrtRate_pos hdeg_pos
   have hαR : (ReedSolomon.sqrtRate deg domain : ℝ) < α := hα
-  have hαR1 : (α : ℝ) < 1 := hα₁
   have hs1 := ReedSolomon.sqrtRate_le_one' deg domain
   have hproper : deg < Fintype.card ι := by
     by_contra h
@@ -395,7 +395,7 @@ theorem weighted_correlated_agreement_over_affine_spaces [DecidableEq ι]
       refine ⟨?_, hδ⟩
       rw [hrate]
       rwa [relativeUniqueDecodingRadius_RS_eq hproper.le, not_le] at hUD
-    obtain ⟨E, hE0, hline, hE⟩ := exists_lineExactAgreementBound_seventh domain hdeg_pos hαR hαR1.le
+    obtain ⟨E, hE0, hline, hE⟩ := exists_lineExactAgreementBound_seventh domain hdeg_pos hαR
     have hmca := mcaError_affineSpace_le_of_exactAgreement (s := l + 1) domain E hline
       (1 - (α : ℝ)) (by simp)
     have herr : (errorBound δ deg domain : ℝ) = (deg : ℝ) ^ 2 /
@@ -445,17 +445,8 @@ theorem weighted_correlated_agreement_over_affine_spaces' [DecidableEq ι]
   intro hα hprob
   let B : ℝ := ((m : ℝ) + 1 / 2) ^ 7 * (Fintype.card ι : ℝ) ^ 2 /
     (3 * (ReedSolomon.sqrtRate deg domain : ℝ) ^ 3)
-  have hα1 : (α : ℝ) ≤ 1 := by
-    by_contra h
-    have hz : Pr{let y ← $ᵗ ↥(Affine.affineSubspaceAtOrigin (F := F)
-        (u 0) (Fin.tail u))}[agree_set μ y.1 (finCarrier domain deg) ≥ α] = 0 := by
-      apply prEvent_eq_zero_of_forall_not
-      intro y hy
-      exact h (hy.trans (agree_set_le_one μ y.1 _))
-    rw [hz] at hprob
-    exact (not_lt_of_ge bot_le) hprob
   obtain ⟨E, hE0, hline, hE⟩ := exists_lineExactAgreementBound_explicit domain
-    hdeg_pos hm hα hα1
+    hdeg_pos hm hα
   have hq : (2 : ℝ) ≤ Fintype.card F := by
     exact_mod_cast Fintype.one_lt_card (α := F)
   have hmca : mcaError (AffineSpaceGenerator F (l + 1)) (ReedSolomon.code domain deg)

@@ -53,7 +53,7 @@ theorem exists_johnson_curve_exactPowerAgreement
   let B := johnsonMu n D eta
   let theta : ℚ := ((n - D : ℕ) : ℚ) / ((A - D : ℕ) : ℚ)
   have hDlt : D < n := by omega
-  have hDA := johnson_degree_succ_le_agreement hD hDlt heta hthreshold
+  have hDA := johnson_degree_succ_le_agreement hDlt heta hthreshold
   have hB : 0 < B := johnsonMu_pos hD hDlt
   obtain ⟨cert⟩ := exists_johnson_curve_symbolic_certificate hD hDn heta hthreshold
     (k := D + 1) le_rfl hℓ domain
@@ -66,7 +66,7 @@ theorem exists_johnson_curve_exactPowerAgreement
     ordinaryUnifiedPowerFactorAt_succ_eq n D ℓ B H A hDA hAn] at hcard
   have hh : H ≤ ℓ * (2 * johnsonH n D eta) := by
     have hhpos : 0 < johnsonH n D eta :=
-      hB.trans_le (johnsonMu_le_H hD hDlt)
+      hB.trans_le (johnsonMu_le_H hDlt)
     exact (Nat.sub_le _ _).trans (Nat.mul_le_mul_left ℓ (by omega))
   have hbound : (ex.card : ℚ) ≤
       (2 * ℓ : ℕ) * ordinaryFactorRaw theta n D B (johnsonH n D eta) := by

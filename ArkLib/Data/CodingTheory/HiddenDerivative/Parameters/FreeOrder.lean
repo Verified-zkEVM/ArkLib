@@ -358,13 +358,25 @@ theorem half_rate_le_ambientDimension_sub_one_div (hK : 3 ≤ ambientDimension �
   nlinarith
 
 /-- The scalar rank comparison at the unrounded rate `(1 - θ) ε` implies it at the rounded rate
-`(K - 1) / n`, for `θ ≥ 0` and `K ≥ 3`. -/
-theorem freeOrder_rank_comparison (hθ : 0 ≤ θ) (hK : 3 ≤ ambientDimension ε θ n)
+`(K - 1) / n`, for `K ≥ 3`. -/
+theorem freeOrder_rank_comparison (hK : 3 ≤ ambientDimension ε θ n)
     (hlarge : 1 < (θ ^ 3 / 262144) * ((1 - θ) * ε / 2) * (d : ℝ) ^ rankSavingExponent θ) :
     1 < (θ ^ 3 / 262144) * (((ambientDimension ε θ n - 1 : ℕ) : ℝ) / (n : ℝ)) *
       (d : ℝ) ^ rankSavingExponent θ := by
   have hratio := half_rate_le_ambientDimension_sub_one_div hK
   have hpow : 0 ≤ (d : ℝ) ^ rankSavingExponent θ := Real.rpow_nonneg (Nat.cast_nonneg d) _
+  have hrate : 0 ≤ (1 - θ) * ε / 2 := by
+    have hsource := one_le_of_ambientDimension_pos (by omega : 0 < ambientDimension ε θ n)
+    have : 0 ≤ (1 - θ) * ε := by
+      by_contra h
+      have := mul_nonpos_of_nonpos_of_nonneg (le_of_not_ge h) (Nat.cast_nonneg n)
+      linarith
+    positivity
+  have hcoefficient : 0 ≤ θ ^ 3 / 262144 := by
+    by_contra h
+    have hnonpos := mul_nonpos_of_nonpos_of_nonneg
+      (mul_nonpos_of_nonpos_of_nonneg (le_of_not_ge h) hrate) hpow
+    linarith
   calc 1 < (θ ^ 3 / 262144) * ((1 - θ) * ε / 2) * (d : ℝ) ^ rankSavingExponent θ := hlarge
     _ ≤ (θ ^ 3 / 262144) * (((ambientDimension ε θ n - 1 : ℕ) : ℝ) / (n : ℝ)) *
         (d : ℝ) ^ rankSavingExponent θ := by gcongr
