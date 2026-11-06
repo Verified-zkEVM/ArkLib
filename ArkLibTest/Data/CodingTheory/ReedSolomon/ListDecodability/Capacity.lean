@@ -139,7 +139,6 @@ private theorem prescribedSampleSetup :
     @ReedSolomon.exists_prescribed_weightedSupport_construction
     sampleDelta sampleN sampleMessageDim q ⟨hqPrime⟩ domain (fun _ => 0)
     (by norm_num [sampleDelta]) (by norm_num [sampleDelta])
-    (by dsimp [sampleMessageDim]; omega)
     (by rfl) hnq hA
   exact ⟨q, hqPrime, hnq, hfield, hlarge, domain, construction, hK, htotal,
     hblock, hmessageDim_pos, hmessageDim_le_n, hA, hm⟩
@@ -426,7 +425,7 @@ private noncomputable def curveCertificate :
     simpa [curveCertificateWord] using
       exists_partitionSupport_curve_certificate
         (D := 1) (d := 0) (m := 1) (W := 0) (n := 2) (A := 2) (k := 2) (ℓ := 0)
-        (ν := 1) (L := 2) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+        (ν := 1) (L := 2) (by norm_num) (by norm_num) (by norm_num)
         curveCertificateCenters curveCertificateWord
         (by intro i; simp [curveCertificateWord])
         (by

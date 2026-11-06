@@ -148,9 +148,18 @@ private theorem kernelSlice_set_eq (hd : 0 < d) (r M W h : ℕ) :
   rw [KernelSliceSourceExponent, weight_localFirstJetWeight hd, weight_localHigherJetWeight hd]
   omega
 
-/-- For `d > 0` the intermediate space is finite-dimensional. -/
-theorem localIntermediateSpace_finite {F : Type*} [CommSemiring F] (hd : 0 < d) (m M W : ℕ) :
+/-- The intermediate space is finite-dimensional for every derivative order. -/
+theorem localIntermediateSpace_finite {F : Type*} [CommSemiring F] (m M W : ℕ) :
     Module.Finite F (localIntermediateSpace F d m M W) := by
+  rcases Nat.eq_zero_or_pos d with rfl | hd
+  · apply restrictSupport_finite
+    refine (Finsupp.finite_of_degree_le (2 * m)).subset ?_
+    intro e he
+    have ht := he.1
+    have hu := he.2.1
+    simp only [Finsupp.degree_eq_sum, Fintype.sum_option, Fin.sum_univ_zero, add_zero]
+    change e (localT 0) + e (localU 0) ≤ 2 * m
+    omega
   rw [localIntermediateSpace, intermediate_set_eq hd]
   exact restrictSupport_finite (Finset.finite_toSet _)
 
@@ -169,9 +178,18 @@ theorem finrank_localIntermediateSpace {F : Type*} [Field F] (hd : 0 < d) (m M W
     ambientContactCount]
   ring
 
-/-- For `d > 0` a bounded kernel slice is finite-dimensional. -/
-theorem kernelSliceSourceSpace_finite {F : Type*} [CommSemiring F] (hd : 0 < d) (r M W h : ℕ) :
+/-- A bounded kernel slice is finite-dimensional for every derivative order. -/
+theorem kernelSliceSourceSpace_finite {F : Type*} [CommSemiring F] (r M W h : ℕ) :
     Module.Finite F (kernelSliceSourceSpace F d r M W h) := by
+  rcases Nat.eq_zero_or_pos d with rfl | hd
+  · apply restrictSupport_finite
+    refine (Finsupp.finite_of_degree_le r).subset ?_
+    intro e he
+    have ht := he.1
+    have hu := he.2.1
+    simp only [Finsupp.degree_eq_sum, Fintype.sum_option, Fin.sum_univ_zero, add_zero]
+    change e (localT 0) + e (localU 0) ≤ r
+    omega
   rw [kernelSliceSourceSpace, kernelSlice_set_eq hd]
   exact restrictSupport_finite (Finset.finite_toSet _)
 

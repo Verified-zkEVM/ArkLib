@@ -54,7 +54,7 @@ theorem finrank_intermediateConstraintMap_le_certifiedEnlargedRankBound (hd : 0 
     finrank F (LinearMap.range (intermediateConstraintMap (R := F) (d := d) m M W)) ≤
       certifiedEnlargedRankBound d m M W := by
   have : Module.Finite F (localIntermediateSpace F d m M W) :=
-    localIntermediateSpace_finite hd m M W
+    localIntermediateSpace_finite m M W
   have h := LinearMap.finrank_range_le_sub_of_injective_ker _
     (exhibitedKernelFamilyKernelMap (R := F) hd m M W)
     (exhibitedKernelFamilyKernelMap_injective hd m M W)
@@ -71,7 +71,7 @@ theorem finrank_exactLocalConstraintAt_le_certifiedEnlargedRankBound {D A m M W 
         (exactLocalConstraintAt (A := A) (M := M) (W := W) hdD m center received)) ≤
       certifiedEnlargedRankBound d m M W := by
   have : Module.Finite F (localIntermediateSpace F d m M W) :=
-    localIntermediateSpace_finite hd m M W
+    localIntermediateSpace_finite m M W
   have h := finrank_range_exactLocalConstraintAt_le_sub (A := A) hdD m center received
     (localIntermediateSpace F d m M W)
     (fun _ hQ => translatedLocalTruncation_mem_localIntermediateSpace hdD center received hQ)

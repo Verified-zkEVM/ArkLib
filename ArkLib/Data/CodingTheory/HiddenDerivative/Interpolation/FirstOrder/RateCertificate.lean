@@ -138,7 +138,7 @@ theorem exists_firstOrder_symbolicCertificate_of_rank_and_height
     intro u hu
     exact (mem_firstOrderSpace_iff.mp hQsupport u hu).2.1
   refine ⟨⟨v, Q, rfl, hprimitive,
-    SourceColumn.coeff_interpolant_natDegree_le columns firstOrderColumns_injective v hvheight,
+    SourceColumn.coeff_interpolant_natDegree_le columns v hvheight,
     hQsupport, hfirstJet, htotalJet, hconstraints, ?_⟩⟩
   intro E _ ι z
   refine ⟨hnonzero (Polynomial.eval₂RingHom ι z), ?_⟩

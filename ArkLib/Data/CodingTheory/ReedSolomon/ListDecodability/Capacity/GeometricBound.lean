@@ -65,7 +65,7 @@ theorem prescribed_geometric_finite_list_bound
   obtain ⟨hn, _hm, hν, hνm, hνn, hdK, hkK, hKn, hkA, hgap⟩ :=
     prescribed_geometric_parameters δ n k hδ hδmax hblock hA
   obtain ⟨cert⟩ := exists_prescribed_symbolic_weightedSupport_certificate
-    δ n k domain received (fun _ ↦ 0) hδ hδmax hblock hA
+    δ n k domain received (fun _ ↦ 0) hδ hδmax hblock
   let Q : DifferentialPolynomial F d :=
     MvPolynomial.map (Polynomial.eval₂RingHom (RingHom.id F) 0) cert.Q
   obtain ⟨hQ, hdegreeQ, hsound⟩ := cert.specialization_sound (RingHom.id F) 0

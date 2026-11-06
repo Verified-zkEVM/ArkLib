@@ -247,7 +247,7 @@ theorem exists_finite_firstOrder_curve_certificate_of_heightSlotCount
     intro u hu
     exact (mem_firstOrderSpace_iff.mp hQsupport u hu).2.1
   refine ⟨⟨v, Q, rfl, hprimitive,
-    SourceColumn.coeff_interpolant_natDegree_le columns firstOrderColumns_injective v hvheight,
+    SourceColumn.coeff_interpolant_natDegree_le columns v hvheight,
     hQsupport, hfirstJet, htotalJet, hconstraints, ?_⟩⟩
   intro E _ ι z
   refine ⟨hnonzero ι z, ?_⟩

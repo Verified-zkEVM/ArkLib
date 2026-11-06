@@ -101,7 +101,7 @@ theorem exists_exceptional_exactPowerAgreement_with_prescribed_stageBounds
     HiddenDerivative.SymbolicReceivedCurve.exists_prescribed_certificate δ n k ℓ domain
       (fun i ↦ powerBatchedCoordinate fun t ↦ values t i)
       (fun i ↦ powerBatchedCoordinate_natDegree_le fun t ↦ values t i)
-      hℓ hδ hδ' hblock hA
+      hδ hδ' hblock hA
   obtain ⟨stages, terminal, hc, exceptional, hcard, hexact⟩ :=
     cert.exists_exceptional_powerBatchedAgreement_sharp_of_exponent iota K L (2 * K - 3)
       (fun r _ ↦ taylorExponentSufficient_two_mul_sub_three r K) (by

@@ -102,8 +102,8 @@ theorem exists_johnson_curve_symbolic_certificate
     exact Nat.le_of_lt_succ
       ((Fintype.equivFin (JohnsonColumnIndex Xc D μ)).symm j).1.isLt
   let Q := interpolant columns v
-  refine ⟨⟨Q, coeff_interpolant_natDegree_le columns (johnsonColumns_injective Xc D μ)
-    v hvheight, interpolant_totalJetDegree_le columns hcolumns v, ?_⟩⟩
+  refine ⟨⟨Q, coeff_interpolant_natDegree_le columns v hvheight,
+    interpolant_totalJetDegree_le columns hcolumns v, ?_⟩⟩
   intro E _ ρ z
   let ψ := Polynomial.eval₂RingHom ρ z
   refine ⟨hnonzero ρ z, map_interpolant_jetTotalDegree_le ψ columns hcolumns v, ?_⟩

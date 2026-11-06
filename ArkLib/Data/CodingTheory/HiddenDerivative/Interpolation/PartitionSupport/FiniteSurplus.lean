@@ -209,11 +209,9 @@ theorem partitionSupport_localConstraint_surplus (F : Type*) [Field F] {n L m : 
 /-- For the floor-defined weight budget and a second moment greater than `27 / 10`, the finite
 partition ratio times `n` times `localDerivativeCoordinateBudget` is strictly less than the
 dimension of the partition support space at cutoff `m * A`. The hypothesis `0 < n` follows from
-`0 < D ≤ rate * n` and `0 < rate`. -/
+`0 < D ≤ rate * n`. -/
 theorem partitionSupport_finiteRatio_surplus (F : Type*) [Field F] {n m A : ℕ}
-    {rate agreement : ℝ} (hD : 0 < D) (hd : 0 < d) (hm : 0 < m) (hrate : 0 < rate)
-    (hagreement : 0 < agreement)
-    (hW : 0 < partitionWeightBudget rate agreement d m)
+    {rate agreement : ℝ} (hD : 0 < D)
     (hupper : (D : ℝ) ≤ rate * n) (hlower : agreement * n ≤ A)
     (hmoment : (27 / 10 : ℝ) <
       ⨍ u in Set.weightedSimplex (fun i : Fin d ↦ (i : ℝ) + 1)
@@ -224,6 +222,30 @@ theorem partitionSupport_finiteRatio_surplus (F : Type*) [Field F] {n m A : ℕ}
         localDerivativeCoordinateBudget d m (partitionWeightBudget rate agreement d m) <
       (Module.finrank F (partitionSupportSpace F D d (partitionWeightBudget rate agreement d m)
         ((m * A : ℕ) : ℝ) hD) : ℝ) := by
+  have hd : 0 < d := Nat.pos_of_ne_zero (by
+    rintro rfl
+    norm_num at hmoment)
+  have hW : 0 < partitionWeightBudget rate agreement d m := by
+    by_contra hW
+    have hW0 : partitionWeightBudget rate agreement d m = 0 := by omega
+    simp only [hW0, Nat.cast_zero, setAverage_eq,
+      volume_real_weightedSimplex_succ d (le_refl 0), zero_pow hd.ne',
+      zero_div, inv_zero, zero_smul] at hmoment
+    norm_num at hmoment
+  have hm : 0 < m := Nat.pos_of_ne_zero (by
+    rintro rfl
+    simp [partitionWeightBudget] at hW)
+  have hrate : 0 < rate := pos_of_mul_pos_left
+    ((Nat.cast_pos.mpr hD).trans_le hupper) (Nat.cast_nonneg n)
+  have hlog : 0 < Real.log (6 * (d : ℝ)) := by
+    apply Real.log_pos
+    have hdreal : (1 : ℝ) ≤ d := by exact_mod_cast hd
+    linarith
+  have hnum : 0 < (m : ℝ) * agreement * d :=
+    (div_pos_iff_of_pos_right (mul_pos hrate hlog)).mp
+      (zero_lt_one.trans_le (Nat.floor_pos.mp hW))
+  have hagreement := pos_of_mul_pos_right
+    (pos_of_mul_pos_left hnum (Nat.cast_nonneg d)) (Nat.cast_nonneg m)
   let W := partitionWeightBudget rate agreement d m
   have hcutoff : (m : ℝ) * agreement * n ≤ ((m * A : ℕ) : ℝ) := by
     have h := mul_le_mul_of_nonneg_left hlower
@@ -248,13 +270,23 @@ number with `(m * agreement) * n ≤ L`; the weight budget is the finite floor a
 order `d` and multiplicity `m`. -/
 theorem partitionSupport_largeOrder_finiteRatio_surplus (F : Type*) [Field F]
     {D d m n L : ℕ} {rate agreement : ℝ} (hD : 0 < D) (hd : 500 ≤ d) (hm : 0 < m)
-    (hrate : 0 < rate) (hagreement : 0 < agreement)
     (hbudget : 0 < RatePartition.partitionWeightBudget rate agreement d m)
     (hupper : (D : ℝ) ≤ rate * n) (hlevel : (m : ℝ) * agreement * n ≤ L) :
     RatePartition.partitionFiniteRatio rate agreement d m * n *
       localDerivativeCoordinateBudget d m (RatePartition.partitionWeightBudget rate agreement d m) <
         (Module.finrank F (partitionSupportSpace F D d
           (RatePartition.partitionWeightBudget rate agreement d m) (L : ℝ) hD) : ℝ) := by
+  have hrate : 0 < rate := pos_of_mul_pos_left
+    ((Nat.cast_pos.mpr hD).trans_le hupper) (Nat.cast_nonneg n)
+  have hlog : 0 < Real.log (6 * (d : ℝ)) := by
+    apply Real.log_pos
+    have hdreal : (500 : ℝ) ≤ d := by exact_mod_cast hd
+    linarith
+  have hnum : 0 < (m : ℝ) * agreement * d :=
+    (div_pos_iff_of_pos_right (mul_pos hrate hlog)).mp
+      (zero_lt_one.trans_le (Nat.floor_pos.mp hbudget))
+  have hagreement := pos_of_mul_pos_right
+    (pos_of_mul_pos_left hnum (Nat.cast_nonneg d)) (Nat.cast_nonneg m)
   let W := RatePartition.partitionWeightBudget rate agreement d m
   have hW : 0 < W := hbudget
   have hWreal : (0 : ℝ) < W := by exact_mod_cast hW

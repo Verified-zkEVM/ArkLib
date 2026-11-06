@@ -60,7 +60,7 @@ theorem uniformRatePartition_close_list_bound {F : Type*} [Field F]
   obtain ⟨e⟩ := exists_uniformRatePartitionEnvelope hδ hδsmall hn hk hgap hAn
   obtain ⟨hd, hδone, hν, _hνn, hscale, hkA, hchar'⟩ :=
     uniformEnvelope_exactAgreementGuards e hδ hδsmall hn hgap hchar
-  obtain ⟨cert⟩ := e.exists_curve_certificate hδ hδone hd hscale hAn
+  obtain ⟨cert⟩ := e.exists_curve_certificate hd hscale hAn
     domain (fun i ↦ Polynomial.C (received i)) (fun _ ↦ by simp)
   exact close_list_bound_of_curve_certificate_of_jetCharacteristic
     domain received cert hk e.message_le

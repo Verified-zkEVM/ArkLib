@@ -79,7 +79,7 @@ theorem exists_prescribed_correlated_parameters {F : Type u} [Field F]
   obtain ⟨hn, _hm, hν, _hνm, hνn, hdK, hkK, hKn, hkA, hgap⟩ :=
     prescribed_geometric_parameters δ n k hδ hδ' hblock hA
   exact ⟨exists_prescribed_symbolic_weightedSupport_certificate δ n k centers f g
-      hδ hδ' hblock hA,
+      hδ hδ' hblock,
     hn, hν, hνn, hdK.trans_le hKn, hkK.trans hKn, hkA, hgap,
     binomial_pivots_below_of_characteristic hchar⟩
 

@@ -363,7 +363,7 @@ example :
     ∀ u, ((SourceColumn.interpolant constantSourceColumnsTwo
       (fun _ ↦ (1 : (ZMod 5)[X]))).coeff u).natDegree ≤ 0 := by
   exact SourceColumn.coeff_interpolant_natDegree_le constantSourceColumnsTwo
-    (by intro i j _; exact Subsingleton.elim _ _) (fun _ ↦ (1 : (ZMod 5)[X]))
+    (fun _ ↦ (1 : (ZMod 5)[X]))
     (by intro j; norm_num)
 
 /-- A constant source column assembles to a polynomial in the finite first-order support. -/

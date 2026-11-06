@@ -55,7 +55,7 @@ theorem ratePartition_close_list_bound
           (2 * RatePartition.rateJetCap R p.multiplicity / (a - R)) ^ d * n ^ d := by
   obtain ⟨cert⟩ := exists_partitionSupport_curve_certificate_of_rateBlockThreshold p hR
     (hRa.trans haone)
-    (hR.trans hRa) hd hn hkR haA hAn domain (fun i ↦ Polynomial.C (received i))
+    hd hn hkR haA hAn domain (fun i ↦ Polynomial.C (received i))
     (fun _ ↦ by simp)
   let K := max k (d + 1)
   obtain ⟨hkK, hdK, hKn, hkA, hν, _, hchar'⟩ :=

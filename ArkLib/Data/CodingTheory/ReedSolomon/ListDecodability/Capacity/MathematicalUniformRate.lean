@@ -68,7 +68,7 @@ theorem mathematicalUniformRatePartition_close_list_bound {F : Type u} [Field F]
   classical
   obtain ⟨e⟩ := exists_mathematicalRatePartitionEnvelope hδ hδsmall hn hk hgap hAn
   obtain ⟨hd, hδone, hscale, hν, -⟩ := uniformMathematical_certificate_guards hδ hδsmall
-  obtain ⟨cert⟩ := e.exists_curve_certificate (scale := 300) hδ hδone hd hscale hAn
+  obtain ⟨cert⟩ := e.exists_curve_certificate (scale := 300) hd hscale hAn
     domain (fun i ↦ Polynomial.C (received i)) (fun _ ↦ by simp)
   have hkA : k ≤ A := by
     have h : (k : ℝ) ≤ A := by nlinarith [mul_nonneg hδ.le (Nat.cast_nonneg n)]

@@ -136,16 +136,8 @@ theorem uniformMathematical_totalJetDegree_le {D d W n A : ℕ} {δ : ℝ}
     (hu : PartitionSupportEligible D d W
       (uniformMathematicalMultiplicity δ * A : ℕ) u) :
     totalJetDegree u ≤ uniformMathematicalJetBound δ := by
-  rcases Nat.eq_zero_or_pos D with rfl | hD
-  · have hn : n = 0 := by
-      have hproduct : δ ^ 2 * (n : ℝ) ≤ 0 := by simpa using hDlower
-      have : (n : ℝ) ≤ 0 := nonpos_of_mul_nonpos_right hproduct (sq_pos_of_pos hδ)
-      exact_mod_cast (le_antisymm this (Nat.cast_nonneg n))
-    have hA : A = 0 := by omega
-    have hnegative : ((u none : ℕ) : ℝ) < 0 := by simpa [hA] using hu.2
-    exact (not_lt_of_ge (Nat.cast_nonneg _)) hnegative |>.elim
   simpa only [uniformMathematicalJetBound] using
-    partitionSupport_totalJetDegree_le_of_ambient_lower_bound hD hδ hDlower hAn hu
+    partitionSupport_totalJetDegree_le_of_ambient_lower_bound hδ hDlower hAn hu
 
 private theorem mathematical_uniform_margin_numeric :
     (151 / 150 : ℝ) < Real.exp (3 / 2 - Real.log (40 / 9)) *
