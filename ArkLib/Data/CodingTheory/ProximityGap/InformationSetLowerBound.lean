@@ -30,7 +30,7 @@ open Probability
 /-- For a linear code `C` and a radius below its relative minimum distance, affine-line mutual
 correlated agreement is at least `min(⌊δ n⌋ / |F|, 1)`. -/
 theorem linear_mcaError_ge_information_set
-    {ι : Type} [Fintype ι] [Nonempty ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
     (C : LinearCode ι F) (δ : ℝ≥0)
     (hδ : (δ : ℝ) * Fintype.card ι < (Code.dist (C : Set (ι → F)) : ℝ)) :
@@ -43,7 +43,6 @@ theorem linear_mcaError_ge_information_set
   set d : ℕ := Code.dist (C : Set (ι → F)) with hd
   set m : ℕ := ⌊δ * (n : ℝ≥0)⌋₊ with hm
   set r : ℕ := min m (Fintype.card F) with hr
-  have hn_pos : 0 < n := Fintype.card_pos
   have hd_le_n : d ≤ n := Code.dist_le_card (C : Set (ι → F))
   have hm_le_real : (m : ℝ) ≤ (δ : ℝ) * n := by
     have h : (m : ℝ≥0) ≤ δ * (n : ℝ≥0) :=
@@ -54,6 +53,7 @@ theorem linear_mcaError_ge_information_set
   have hm_lt_d : m < d := by
     have : (m : ℝ) < (d : ℝ) := lt_of_le_of_lt hm_le_real hδ
     exact_mod_cast this
+  have hn_pos : 0 < n := by omega
   have hm_le_d1 : m ≤ d - 1 := by omega
   have hδ_lt_one : (δ : ℝ) < 1 := by
     have hn_pos_real : (0 : ℝ) < (n : ℝ) := by exact_mod_cast hn_pos

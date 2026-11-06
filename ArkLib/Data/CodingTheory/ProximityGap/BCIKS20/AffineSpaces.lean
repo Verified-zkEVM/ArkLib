@@ -1143,7 +1143,6 @@ correlated agreement. -/
 theorem correlatedAgreement_affine_spaces {k : ℕ} [NeZero k]
     {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
     (hdeg : 0 < deg)
-    (_hδ_pos : 0 < δ)
     (hδ : δ < 1 - ReedSolomon.sqrtRate deg domain)
     (hRS : deg + 1 ≤ Fintype.card ι)
     (_hε : errorBound δ deg domain < 1) :

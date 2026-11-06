@@ -58,7 +58,7 @@ Real-valued bounds are embedded into `ENNReal` with `ENNReal.ofReal`.
 - `rs_mcaError_le_johnsonExceptionCount` — the sharper [DKT26] exception-count bound on any
   finite coordinate type.
 - `rs_mcaError_le_in_johnson_range` — the printed line bound of [BCHKS25 Thm 4.6], proved
-  from [DKT26], for RS codes at every `0 < δ < 1 - √((k-1)/n)`.
+  from [DKT26], for RS codes at every `0 ≤ δ < 1 - √((k-1)/n)`.
 
 ### Lower bounds near capacity
 
@@ -218,7 +218,7 @@ theorem rs_mcaError_le_johnsonExceptionCount
 omit [DecidableEq ι] [DecidableEq F] [Nonempty ι] in
 open ReedSolomon.HiddenDerivative in
 /-- An affine-line MCA bound for a Reed--Solomon code in the Johnson range. Set the reduced rate
-to `ρ := (k-1)/n` and, for `0 < δ < 1-√ρ`, let
+to `ρ := (k-1)/n` and, for `0 ≤ δ < 1-√ρ`, let
 
   `m := max(⌈√ρ/(1-√ρ-δ)⌉, 3)`.
 
@@ -235,7 +235,7 @@ and its comparison estimate. This also proves the bound used by every Johnson-ra
 `McaLowerWitness.ofJohnsonRangeBound` constructor. -/
 theorem rs_mcaError_le_in_johnson_range
     (domain : ι ↪ F) (k : ℕ) (δ : ℝ≥0)
-    (_hk : 1 < k) (_hδ_pos : 0 < δ)
+    (_hk : 1 < k)
     (_hδ :
         (δ : ℝ) <
           1 - ((((k - 1 : ℕ) : ℝ) / Fintype.card ι) ^ ((1 : ℝ) / 2))) :

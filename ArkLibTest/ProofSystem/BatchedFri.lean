@@ -144,7 +144,7 @@ example {σ : Type}
       (BatchingRound.inputRelation schedule 1 1 (1 / 8)).language
       (BatchingRound.outputRelation schedule 1 (by decide) (1 / 8)).language
       (ProximityGap.errorBound (1 / 8) 2 (domain : Fin 4 ↪ ZMod 17)) := by
-  apply soundness_affineSpace schedule 1 1 (by decide) (1 / 8) (by norm_num)
+  apply soundness_affineSpace schedule 1 1 (by decide) (1 / 8)
   exact toyParameters.1
 
 -- The composite API accepts the same concrete domain, schedule, and radius.
@@ -157,7 +157,7 @@ example {σ : Type} (init : ProbComp σ)
       (ProximityGap.errorBound (1 / 8) 2 (domain : Fin 4 ↪ ZMod 17) +
         Fri.Spec.soundnessError (ω := domain) schedule 1 1 (1 / 2) (1 / 8)) := by
   exact batchedFRI_soundness_affineSpace schedule 1 (by decide) 1 1 (1 / 2) (1 / 8)
-    (by norm_num) toyParameters.1 init impl
+    toyParameters.1 init impl
 
 -- Powers and tensor monomials execute at the same virtual-oracle interface.
 private def fourWords : ∀ j, OracleStatement 3 domain j := fun i _ => (i.val + 1 : ℕ)
@@ -184,7 +184,7 @@ example {σ : Type} (init : ProbComp σ)
       (3 * ProximityGap.errorBound (1 / 8) 2 (domain : Fin 4 ↪ ZMod 17) +
         Fri.Spec.soundnessError (ω := domain) schedule 1 1 (1 / 2) (1 / 8)) := by
   exact batchedFRI_soundness_powers schedule 1 (by decide) 1 3 (1 / 2) (1 / 8)
-    (by norm_num) toyParameters.1 init impl
+    toyParameters.1 init impl
 
 private theorem toyUniqueDecoding : (1 / 8 : ℝ≥0) ≤
     Code.relativeUniqueDecodingRadius (ReedSolomon.code (domain : Fin 4 ↪ ZMod 17) 2).carrier := by

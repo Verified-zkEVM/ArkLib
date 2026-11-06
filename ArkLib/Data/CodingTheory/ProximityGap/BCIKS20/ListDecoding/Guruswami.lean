@@ -71,13 +71,36 @@ variable `Y` and `C` embeds the inner polynomial `P(X)`. -/
 lemma guruswami_sudan_for_proximity_gap_property {k m : ℕ} {ωs : Fin n ↪ F}
     {w : Fin n → F}
     {Q : F[X][Y]}
-    (hk : k + 2 ≤ n) (hm : 1 ≤ m)
+    (hm : 1 ≤ m)
     (cond : Conditions (k + 1) m (_root_.proximity_gap_degree_bound k n m) ωs w Q)
     (hdeg : (natWeightedDegree Q 1 k : ℝ) < D_X ((k + 1) / (n : ℚ)) n m)
     {p : ReedSolomon.code ωs (k + 1)}
     (h : (↑Δ₀(w, fun i ↦ Polynomial.eval (ωs i) (ReedSolomon.toPolynomial p)) : ℝ) / ↑n ≤
          _root_.proximity_gap_johnson k n m) :
     (Polynomial.X - Polynomial.C (ReedSolomon.toPolynomial p)) ∣ Q := by
+  have hn : 0 < n := by
+    by_contra hn
+    have hnzero : n = 0 := by omega
+    subst n
+    simp only [D_X, Nat.cast_zero, mul_zero] at hdeg
+    exact (not_lt_of_ge (Nat.cast_nonneg _)) hdeg
+  have hk : k + 2 ≤ n := by
+    by_contra hkn
+    have hnR : (0 : ℝ) < n := by exact_mod_cast hn
+    have hr : 1 ≤ (↑((k + 1 : ℚ) / n) : ℝ) := by
+      push_cast
+      apply (le_div_iff₀ hnR).mpr
+      simpa using (show (n : ℝ) ≤ k + 1 by exact_mod_cast (show n ≤ k + 1 by omega))
+    have hs : 1 ≤ Real.sqrt (↑((k + 1 : ℚ) / n)) := by
+      simpa using (Real.sqrt_le_sqrt hr)
+    have hmR : (0 : ℝ) < m := by exact_mod_cast (show 0 < m by omega)
+    have hquot : 0 < Real.sqrt (↑((k + 1 : ℚ) / n)) / (2 * m) := by positivity
+    have hdist : (0 : ℝ) ≤
+        (↑Δ₀(w, fun i ↦ Polynomial.eval (ωs i) (ReedSolomon.toPolynomial p)) : ℝ) / ↑n :=
+      by positivity
+    unfold _root_.proximity_gap_johnson at h
+    dsimp only at h
+    linarith
   apply GuruswamiSudan.gs_divisibility_of_degree_lt (by omega) hm p
     (by simpa only [Nat.add_sub_cancel, Nat.cast_add, Nat.cast_one, D_X] using hdeg)
     cond.Q_multiplicity

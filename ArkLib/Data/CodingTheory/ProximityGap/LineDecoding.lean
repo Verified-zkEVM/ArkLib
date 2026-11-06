@@ -1188,10 +1188,10 @@ open scoped NNReal ProbabilityTheory in
 
   `IsLineDecodable (F := F) C δ a (n+1) → mcaError(AffineLineGenerator F, C, δ) ≤ a / |F|`
 
-where `n = |ι|`. The hypotheses retain the source radius conditions `0 < δ < 1`. -/
+where `n = |ι|` and `δ < 1`. -/
 theorem IsLineDecodable.mcaError_le
     [Finite A] (C : ModuleCode ι F A) (δ : ℝ≥0) (a : ℕ)
-    (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1)
+    (_hδ_lt : δ < 1)
     (_h : IsLineDecodable (F := F) ((C : Set (ι → A))) δ a
             (Fintype.card ι + 1)) :
     mcaError (AffineLineGenerator F) C (δ : ℝ)
@@ -1207,7 +1207,7 @@ theorem IsLineDecodable.mcaError_le_of_budget
     {F : Type} [Field F] [Fintype F] [SampleableType F]
     {A : Type} [Finite A] [DecidableEq A] [AddCommGroup A] [Module F A]
     (C : ModuleCode ι F A) (δ : ℝ≥0) (a : ℕ)
-    (hδ_pos : 0 < δ) (hδ_lt : δ < 1)
+    (hδ_lt : δ < 1)
     (h : IsLineDecodable (F := F) ((C : Set (ι → A))) δ a
            (Fintype.card ι + 1))
     (ε_star : ℝ≥0)
@@ -1215,7 +1215,7 @@ theorem IsLineDecodable.mcaError_le_of_budget
     mcaError (AffineLineGenerator F) C (δ : ℝ) ≤ (ε_star : ENNReal) := by
   classical
   let : Fintype A := Fintype.ofFinite A
-  exact le_trans (IsLineDecodable.mcaError_le C δ a hδ_pos hδ_lt h) hbudget
+  exact le_trans (IsLineDecodable.mcaError_le C δ a hδ_lt h) hbudget
 
 open scoped NNReal ProbabilityTheory in
 omit [DecidableEq ι] [DecidableEq F] [Fintype A] in

@@ -36,7 +36,7 @@ variable {F ι : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 explicit numerical upper bound is at most the requested threshold. -/
 noncomputable def McaLowerWitness.ofJohnsonRangeBound
     (domain : ι ↪ F) (k : ℕ) (δ ε_star : ℝ≥0)
-    (hk : 1 < k) (hδ_pos : 0 < δ)
+    (hk : 1 < k)
     (hδ_johnson :
       (δ : ℝ) < 1 - ((((k - 1 : ℕ) : ℝ) / Fintype.card ι) ^ ((1 : ℝ) / 2)))
     (hδ_le_one : δ ≤ 1)
@@ -53,7 +53,7 @@ noncomputable def McaLowerWitness.ofJohnsonRangeBound
     McaLowerWitness (ReedSolomon.code domain k) ε_star :=
   McaLowerWitness.ofLe hδ_le_one
     (le_trans
-      (rs_mcaError_le_in_johnson_range domain k δ hk hδ_pos hδ_johnson)
+      (rs_mcaError_le_in_johnson_range domain k δ hk hδ_johnson)
       hle)
 
 end ProximityGap.GrandChallenges
