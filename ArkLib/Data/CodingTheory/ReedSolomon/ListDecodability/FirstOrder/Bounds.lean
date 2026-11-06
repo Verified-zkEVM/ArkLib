@@ -398,7 +398,7 @@ theorem automatic_first_order_squarefree_list_bound_of_slack
     have hcard := FirstOrder.Squarefree.firstOrder_finite_agreement_solutions_card_le_squarefree
       domain received
         (firstOrderColumns (D := D) (A := A) (m := p.multiplicity)
-          (M := p.derivativeCap) (μ := p.jetDegree)) cert hk hkA hAn
+          (M := p.derivativeCap) (μ := p.jetDegree)) cert hk hkA
         hMBcert hcharCert list hsolutions
     have hbound := FirstOrder.Squarefree.automaticSquarefreeListExpression_le
       hrho hrhoOne heta haOne (show 1 ≤ n by omega) hD hDn hDrate hA hM
@@ -514,7 +514,7 @@ theorem closePolynomialSet_finite_and_card_le_finiteLength_of_certificate
         A ≤ (Finset.univ.filter fun i ↦ P.eval (domain i) = received i).card) :
     (S.card : ℝ) ≤ bound := by
     have hraw := firstOrder_finite_agreement_solutions_card_le_squarefree
-      domain received columns cert hk hkA hAn hMmu hchar S hS
+      domain received columns cert hk hkA hMmu hchar S hS
     apply hraw.trans
     have hnumeric := squarefreeListExpression_le_finiteLength
       hC heta hnPos hsOne hDPos hDn hM hMmu hlambda0

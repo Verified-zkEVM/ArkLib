@@ -103,7 +103,7 @@ agreement constraints by the squarefree list envelope. -/
 theorem finiteSquarefreeListBound_of_profile
     {p : LineProfile} (hp : p.CurveVerification)
     (hell : p.batchingDegree = 1)
-    (hkA : p.k ≤ p.agreement) (hAn : p.agreement ≤ p.n)
+    (hkA : p.k ≤ p.agreement)
     (hMμ : p.firstDerivativeCap ≤ p.totalJetCap)
     {F : Type u} [Field F]
     (domain : Fin p.n ↪ F) (received : Fin p.n → F)
@@ -140,7 +140,7 @@ theorem finiteSquarefreeListBound_of_profile
     exact hcount
   simpa only [squarefreeListEnvelope] using
     FirstOrder.Squarefree.firstOrder_finite_agreement_solutions_card_le_squarefree
-      domain received p.columns cert hk hkA hAn hMμ hchar S hS'
+      domain received p.columns cert hk hkA hMμ hchar S hS'
 
 end
 

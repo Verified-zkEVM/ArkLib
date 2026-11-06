@@ -200,7 +200,7 @@ private theorem exists_uniformFirstOrder_list_of_two_le
       hD hkD domain received (fun _ ↦ 0) hheight
   have hcard := FirstOrder.Squarefree.firstOrder_finite_agreement_solutions_card_le_squarefree
     domain received (firstOrderColumns (D := D) (A := A) (m := 12) (M := 4) (μ := 22)) cert
-      hk hkA hAn (by norm_num) hchar hfin.toFinset hsolutions
+      hk hkA (by norm_num) hchar hfin.toFinset hsolutions
   refine ⟨hfin.toFinset, fun P ↦ hfin.mem_toFinset, ?_⟩
   exact_mod_cast hcard.trans (uniformFirstOrder_listRatio_le n k A hn hk hAn hgap)
 

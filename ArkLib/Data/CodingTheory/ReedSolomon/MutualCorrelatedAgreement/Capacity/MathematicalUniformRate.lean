@@ -182,7 +182,7 @@ theorem exists_mathematicalUniformRatePartition_line_exactCorrelatedPair
       exact hsupport (Or.inr (max_lt hdegreeChar (by omega)))
     obtain ⟨exceptional, hcard, hgood⟩ := exists_johnson_line_exactCorrelatedPair_of_gap
       domain f g hδ (by omega)
-      (four_mul_pred_le_sq_mul_of_le_uniformMathematicalJetBound hn hkJet) hgap hAn
+      (four_mul_pred_le_sq_mul_of_le_uniformMathematicalJetBound hn hkJet) hgap
     exact ⟨exceptional, hcard.le.trans hJohnson, hgood⟩
 
 end ReedSolomon

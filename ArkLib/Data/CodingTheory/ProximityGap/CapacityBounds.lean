@@ -191,8 +191,7 @@ exception count and the cap at one. The degree bound is `k`, so the reduced rate
 The full-rate case is covered separately by `ReedSolomon.mcaError_eq_zero_of_card_le`. -/
 theorem rs_mcaError_le_johnsonExceptionCount
     (domain : ι ↪ F) (k : ℕ) (η : ℝ)
-    (hk : 1 < k) (hkn : k < Fintype.card ι) (hη : 0 < η)
-    (ha : johnsonAgreement (Fintype.card ι) (k - 1) η ≤ 1) :
+    (hk : 1 < k) (hkn : k < Fintype.card ι) (hη : 0 < η) :
     mcaError (AffineLineGenerator F) (ReedSolomon.code domain k)
         (1 - (Real.sqrt (((k - 1 : ℕ) : ℝ) / Fintype.card ι) + η)) ≤
       min 1 (ENNReal.ofReal
@@ -213,7 +212,7 @@ theorem rs_mcaError_le_johnsonExceptionCount
   rw [← mcaError_comp_equiv (AffineLineGenerator F) (ReedSolomon.code domain k)
     (ReedSolomon.code domain' k) e hcode]
   simpa only [johnsonAgreement, johnsonRhoMinus, show k - 1 + 1 = k by omega] using
-    ReedSolomon.mcaError_affineLine_johnson_le domain' (by omega) (by omega) hη ha
+    ReedSolomon.mcaError_affineLine_johnson_le (D := k - 1) domain' (by omega) (by omega) hη
 
 omit [DecidableEq ι] [DecidableEq F] [Nonempty ι] in
 open ReedSolomon.HiddenDerivative in
@@ -272,7 +271,7 @@ theorem rs_mcaError_le_in_johnson_range
     rw [ha]
     exact sub_le_self _ δ.coe_nonneg
   have hradius : 1 - (Real.sqrt ρ + η) = (δ : ℝ) := by dsimp [η]; ring
-  have hbound := rs_mcaError_le_johnsonExceptionCount domain k η _hk hkn hη ha_le
+  have hbound := rs_mcaError_le_johnsonExceptionCount domain k η _hk hkn hη
   change mcaError _ _ (1 - (Real.sqrt ρ + η)) ≤ _ at hbound
   rw [hradius] at hbound
   refine (hbound.trans (min_le_right _ _)).trans ?_

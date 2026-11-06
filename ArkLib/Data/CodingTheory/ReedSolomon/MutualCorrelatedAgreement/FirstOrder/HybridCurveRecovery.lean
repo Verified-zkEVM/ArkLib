@@ -83,7 +83,7 @@ theorem exists_exceptional_firstOrder_hybridCurve_optimized
       exact hchar.imp_right fun hc ↦ (le_max_right D _).trans_lt hc
     obtain ⟨descent⟩ := exists_firstOrderHybridDescent Q hQ hweight hdegree hcharE
     exact exists_exceptional_firstOrder_hybridCurve_optimized_of_tail domain values iota Q
-      descent hheight hell hD hDA hAn (hchar.imp_right fun hc ↦ (le_max_left D _).trans_lt hc)
+      descent hheight hD hDA (hchar.imp_right fun hc ↦ (le_max_left D _).trans_lt hc)
       fun _ hDL hLA ↦
         descent.exists_exceptional_ordinaryCurveTail domain values iota hheight hell hD hDL hLA
   · have hmin (charge : ℕ → ℝ) (hc : ∀ L, 0 ≤ charge L) :

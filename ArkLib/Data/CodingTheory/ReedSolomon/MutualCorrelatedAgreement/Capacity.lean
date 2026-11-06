@@ -152,9 +152,8 @@ theorem capacity_lineAgreement {δ : ℝ} (hδ : 0 < δ) :
   · have hgapFirstOrder : (k : ℝ) + (6 / 25 : ℝ) * n ≤ A := by
       have := mul_le_mul_of_nonneg_right (le_of_not_gt hsmall) (Nat.cast_nonneg (α := ℝ) n)
       linarith
-    have hnTwo : 2 ≤ n := by have := (four_le_capacityLineLength δ).trans hn; omega
     simpa only [capacityLineConstant, capacityLineDerivativeOrder, hsmall, ↓reduceIte] using
-      exists_uniformFirstOrder_lineMca n k A domain f g hnTwo hk hAn hgapFirstOrder hchar
+      exists_uniformFirstOrder_lineMca n k A domain f g hk hAn hgapFirstOrder hchar
 
 /-- **Line agreement up to capacity, with gap-only constants.** For every `δ > 0` there are
 `N ≥ 4`, `d` and `C > 0`, chosen before the code, the field and the received line, such that

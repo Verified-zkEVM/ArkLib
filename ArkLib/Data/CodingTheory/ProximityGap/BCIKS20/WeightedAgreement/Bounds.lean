@@ -92,7 +92,7 @@ theorem exists_lineExactAgreementBound_explicit {deg m : ℕ} (domain : ι ↪ F
       ⌈(Fintype.card ι : ℝ) * α⌉₊ eta, ?_, ?_, ?_⟩
     · unfold johnsonExceptionCount johnsonTheta
       positivity
-    · have hline := lineExactAgreementBound_johnson domain hDpos hDn heta (by rwa [ha])
+    · have hline := lineExactAgreementBound_johnson domain hDpos hDn heta
       simpa only [ha, mul_comm α] using hline
     · have h := two_mul_johnsonExceptionCount_le_explicit_budget hDpos hDn hm
         (A := ⌈(Fintype.card ι : ℝ) * α⌉₊)
@@ -175,7 +175,7 @@ theorem exists_lineExactAgreementBound_seventh {deg : ℕ} (domain : ι ↪ F)
       ⌈(Fintype.card ι : ℝ) * α⌉₊ eta, ?_, ?_, ?_⟩
     · unfold johnsonExceptionCount johnsonTheta
       positivity
-    · have hline := lineExactAgreementBound_johnson domain hDpos hDn heta (by rwa [ha])
+    · have hline := lineExactAgreementBound_johnson domain hDpos hDn heta
       simpa only [ha, mul_comm α] using hline
     · exact two_mul_johnsonExceptionCount_le_bciks hDpos hDn heta
         (by rw [ha, mul_comm]; exact Nat.le_ceil _) hb hbeta hbrate

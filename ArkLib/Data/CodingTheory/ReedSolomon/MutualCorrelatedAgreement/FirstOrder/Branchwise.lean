@@ -198,11 +198,10 @@ theorem firstOrderBranch_finiteLength_finiteSlack_bounds
     have hcharLow : k = 1 ∨ ringChar F = 0 ∨
         max (k - 1) (lowRateFiniteLengthDerivativeCap rho eta n) < ringChar F := by
       simpa [firstOrderBranchFiniteLengthDerivativeCap, hlow] using hchar
-    let E := AlgebraicClosure F
     simpa [firstOrderBranchFiniteLengthMcaConstant, hlow] using
-      (lowRate_finiteLength_rate_bounds (F := F) (E := E)
+      (lowRate_finiteLength_rate_bounds (F := F)
         hrho hlow heta haOneLow hk hkRate hALow hAn
-          domain (algebraMap F E) hcharLow)
+          domain hcharLow)
   · have hclean : firstOrderRateSwitch ≤ rho := not_lt.mp hlow
     have haOneClean : firstOrderRateThreshold rho + eta < 1 := by
       simpa only [firstOrderBranchThreshold_eq_clean hclean,

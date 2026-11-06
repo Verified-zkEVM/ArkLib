@@ -240,7 +240,7 @@ example :
 example :
     (({0} : Finset ℚ[X]).card : ℝ) ≤ squarefreeListEnvelope smallFirstOrderProfile := by
   apply finiteSquarefreeListBound_of_profile (p := smallFirstOrderProfile) (by decide) rfl
-    (by decide) (by decide) (by decide) finiteEvaluationDomain (fun _ ↦ 0)
+    (by decide) (by decide) finiteEvaluationDomain (fun _ ↦ 0)
     (Or.inl ringChar.eq_zero) {0}
   intro P hP
   have hPzero : P = 0 := by simpa using hP
