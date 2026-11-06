@@ -122,10 +122,6 @@ theorem exists_weightedSupport_certificate_of_rate {F : Type*} [Field F]
   let m := Nat.ceil (100 * (d : ℝ) ^ 2 * H)
   let W := Nat.floor ((1 + theta * g₀) * d * m / H)
   have hρ : 0 < (D : ℝ) / n := lt_of_lt_of_le (by positivity) hρlo
-  have hn : 0 < n := by
-    by_contra hn
-    have hnzero : n = 0 := by omega
-    simp [hnzero] at hρ
   have hD : 0 < D := by
     by_contra hD
     have hDzero : D = 0 := by omega
@@ -136,7 +132,7 @@ theorem exists_weightedSupport_certificate_of_rate {F : Type*} [Field F]
     have hh := mul_le_mul_of_nonneg_left hslack (Nat.cast_nonneg m : (0 : ℝ) ≤ m)
     push_cast
     nlinarith
-  have hmargin := prescribed_weightedSupport_margin (F := F) δ n D hδ hδmax hn hD
+  have hmargin := prescribed_weightedSupport_margin (F := F) δ n D hδ hδmax hD
     hρlo hρhi
   change (543 / 500 : ℝ) * (n : ℝ) * Module.finrank F (LinearMap.range
     (weightedSupportLocalConstraint (R := F) (d := d) (W := W)

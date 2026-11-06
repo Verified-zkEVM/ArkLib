@@ -129,7 +129,7 @@ theorem close_list_bound_of_curve_certificate_directJetCoarse
     (domain : Fin n ↪ F) (received : Fin n → F)
     (cert : SymbolicReceivedCurve.Certificate.{0, u} A k 0 ν d H domain
       (fun i ↦ Polynomial.C (received i)))
-    (hk : 0 < k) (hkA : k ≤ A) (hAn : A ≤ n)
+    (hk : 0 < k) (hkA : k ≤ A)
     (hchar : ringChar F = 0 ∨ max (k - 1) (max d ν) < ringChar F) :
     let K := max k (d + 1)
     (closePolynomialSet domain received k A).Finite ∧
@@ -137,6 +137,19 @@ theorem close_list_bound_of_curve_certificate_directJetCoarse
         (ν : ℚ) ^ 2 *
           ((((n * (1 + 2 * K * (ν - 1)) : ℕ) : ℚ) /
             ((A - k + 1 : ℕ) : ℚ)) ^ d) := by
+  by_cases hAn : A ≤ n
+  swap
+  · have hempty : closePolynomialSet domain received k A = ∅ := by
+      apply Set.eq_empty_of_forall_notMem
+      intro P hP
+      have hcard : (polynomialAgreementSet domain received P).card ≤ n := by
+        simpa only [Fintype.card_fin] using
+          Finset.card_le_univ (polynomialAgreementSet domain received P)
+      exact hAn (hP.2.trans hcard)
+    rw [hempty]
+    refine ⟨Set.finite_empty, ?_⟩
+    simp only [Set.ncard_empty, Nat.cast_zero]
+    positivity
   classical
   dsimp only
   let Q : DifferentialPolynomial F d :=
@@ -165,16 +178,31 @@ theorem close_list_bound_of_curve_certificate_of_jetCharacteristic
     (cert : SymbolicReceivedCurve.Certificate.{0, u} A k 0 ν d H domain
       (fun i ↦ Polynomial.C (received i)))
     (hk : 0 < k) (hkK : k ≤ K) (hdK : d < K) (hKn : K ≤ n)
-    (hkA : k ≤ A) (hAn : A ≤ n) (hδ : 0 < δ)
+    (hδ : 0 < δ)
     (hgap : (k : ℝ) + δ * n ≤ A)
     (hchar : ringChar F = 0 ∨ max (K - 1) ν < ringChar F) :
     (closePolynomialSet domain received k A).Finite ∧
       ((closePolynomialSet domain received k A).ncard : ℝ) ≤
         (ν : ℝ) ^ 2 * (2 * ν / δ) ^ d * n ^ d := by
+  by_cases hAn : A ≤ n
+  swap
+  · have hempty : closePolynomialSet domain received k A = ∅ := by
+      apply Set.eq_empty_of_forall_notMem
+      intro P hP
+      have hcard : (polynomialAgreementSet domain received P).card ≤ n := by
+        simpa only [Fintype.card_fin] using
+          Finset.card_le_univ (polynomialAgreementSet domain received P)
+      exact hAn (hP.2.trans hcard)
+    rw [hempty]
+    refine ⟨Set.finite_empty, ?_⟩
+    simp only [Set.ncard_empty, Nat.cast_zero]
+    positivity
   obtain ⟨hQ, hdegree, hsound⟩ := cert.specialization_sound (RingHom.id F) (0 : F)
   apply closePolynomialSet_finite_and_ncard_le_of_differential_equation_and_gap
     (MvPolynomial.map (Polynomial.eval₂RingHom (RingHom.id F) 0) cert.Q)
-    K k ν hdK hkK hQ hdegree domain received hk hkA hAn hKn hδ hgap hchar
+    K k ν hdK hkK hQ hdegree domain received hk
+    (by exact_mod_cast hgap.trans' (le_add_of_nonneg_right
+      (mul_nonneg hδ.le (Nat.cast_nonneg n)))) hAn hKn hδ hgap hchar
   intro P hP
   let indices := Finset.univ.filter fun i ↦ P.eval (domain i) = received i
   apply hsound indices P hP.1 hP.2

@@ -276,7 +276,6 @@ theorem automaticSourceDensity_mul_cube_le_sourceCount {rho a : ℝ}
   rw [automaticSourceCount_eq_raw, automaticSourceDensity]
   apply cube_mul_sourceDensity_le_firstOrderSourceCount hrho
     (rho_lt_automaticAgreement hrhoOne ha).le
-    (automaticDerivativeRatio_pos hrhoOne).le
     (automaticDerivativeRatio_lt_agreement_div_rate hrho hrhoOne ha).le
   unfold automaticJetDegree
   exact Nat.floor_le_ceil _

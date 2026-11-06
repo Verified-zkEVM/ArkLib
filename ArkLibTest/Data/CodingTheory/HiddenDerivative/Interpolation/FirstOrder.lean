@@ -208,7 +208,7 @@ example :
       omega
   obtain ⟨exceptional, hbound, hgood⟩ :=
     cert.exists_exceptional_of_regular_stage_bounds_of_factors hchain ι
-      2 2 0 0 1 (by norm_num) (by norm_num) (by norm_num)
+      2 2 0 0 1 (by norm_num) (by norm_num)
       (fun _ P ↦ P = 0) hregular
   have hInfinite : Infinite (RatFunc (ZMod 5)) := by
     exact Infinite.of_injective (algebraMap (ZMod 5)[X] (RatFunc (ZMod 5)))

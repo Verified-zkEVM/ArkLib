@@ -156,7 +156,7 @@ theorem lowRateAgreementSlackSlope_mul_slack_le_fixed_margin
         (mul_pos hrho (firstOrderLowRateBeta_pos hrho))
     have : T / rho < 2 * T / rho := div_lt_div_of_pos_right (by linarith) hrho
     linarith
-  rw [firstOrderLowRate_margin_factor hrho hregime]
+  rw [firstOrderLowRate_margin_factor hregime]
   dsimp only [lowRateAgreementSlackSlope, beta, T, a]
   have hgap : eta / 2 ≤ lowRateFiniteLengthCertifiedAgreement rho eta -
       firstOrderLowRateThreshold rho := by
@@ -210,9 +210,6 @@ theorem lowRateInverseLengthSlope_div_length_le_gain
   let a := lowRateFiniteLengthCertifiedAgreement rho eta
   let T := firstOrderLowRateThreshold rho
   let beta := firstOrderLowRateBeta rho
-  have ha0 : 0 < a := by
-    dsimp only [a]
-    exact lowRateFiniteLengthCertifiedAgreement_pos hrho heta.le
   have hTa : T ≤ a := by
     have := lowRateFiniteLengthCertifiedAgreement_ge_half_slack
       (rho := rho) heta.le haOne.le
@@ -226,7 +223,7 @@ theorem lowRateInverseLengthSlope_div_length_le_gain
       dsimp only [beta, T]
       exact firstOrderLowRateBeta_lt_threshold_div_rate hrho
     exact hfixed.trans_le (div_le_div_of_nonneg_right hTa hrho.le)
-  have hgain := sourceDensity_gain_at_finiteLengthRate hrho hn ha0 hb0 hbcut
+  have hgain := sourceDensity_gain_at_finiteLengthRate hrho hn hb0 hbcut
   have hsq : T ^ 2 ≤ a ^ 2 := by
     have hTnonneg : 0 ≤ T := by
       dsimp only [T, firstOrderLowRateThreshold]
@@ -363,7 +360,7 @@ theorem lowRateFiniteLengthSourceDensity_mul_cube_le_sourceCount
   let m := lowRateFiniteLengthMultiplicity rho eta n
   have hregime : FirstOrderLowRateRegime rho :=
     (firstOrderLowRateRegime_iff_lt_rateSwitch rho).2 hlow
-  have hR : 0 < R := finiteLengthRate_pos hrho hn
+  have hR : 0 < R := finiteLengthRate_pos hn
   have hRrho : R < rho := finiteLengthRate_lt_rate
     (length_pos_of_two_le_rate_mul_length hn)
   have hTa : firstOrderLowRateThreshold rho ≤ a := by
@@ -373,9 +370,6 @@ theorem lowRateFiniteLengthSourceDensity_mul_cube_le_sourceCount
     linarith
   have hRa : R ≤ a := (hRrho.trans
     ((rate_lt_firstOrderLowRateThreshold hrho hregime).trans_le hTa)).le
-  have hb0 : 0 ≤ beta := by
-    dsimp only [beta]
-    exact (firstOrderLowRateBeta_pos hrho).le
   have hbcut : beta < a / R := by
     have hfixed : beta < firstOrderLowRateThreshold rho / rho := by
       dsimp only [beta]
@@ -394,7 +388,7 @@ theorem lowRateFiniteLengthSourceDensity_mul_cube_le_sourceCount
     exact Nat.floor_le_ceil _
   have hsource := cube_mul_sourceDensity_le_firstOrderSourceCount
     (rate := R) (a := a) (beta := beta) (m := m)
-    (mu := lowRateFiniteLengthJetDegree rho eta n) hR hRa hb0 hbcut.le hmu
+    (mu := lowRateFiniteLengthJetDegree rho eta n) hR hRa hbcut.le hmu
   dsimp only [firstOrderSourceDensity, R, a, beta, m] at hsource ⊢
   simpa only [lowRateFiniteLengthSourceCount, lowRateFiniteLengthDerivativeCap,
     lowRateFiniteLengthJetDegree] using hsource

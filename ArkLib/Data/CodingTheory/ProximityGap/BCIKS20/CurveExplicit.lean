@@ -27,7 +27,6 @@ theorem exists_curve_exactPowerAgreement_explicit_budget
     {ι F : Type} [Fintype ι] [Field F] [DecidableEq F]
     (k : ℕ) (D : ι ↪ F) (d m : ℕ) (δ : ℝ)
     (hkpos : 0 < k) (hproper : k < Fintype.card ι) (hm : 3 ≤ m)
-    (hδ_nonneg : 0 ≤ δ)
     (hδ : δ ≤ 1 - (1 + 1 / (2 * (m : ℝ))) * (ReedSolomon.sqrtRate k D : ℝ)) :
     ∀ U : Fin (d + 1) → ι → F, ∃ E : Finset F,
       (E.card : ℝ) ≤ d * ((m + 1 / 2 : ℝ) ^ 7 * (Fintype.card ι : ℝ) ^ 2 /
@@ -49,9 +48,6 @@ theorem exists_curve_exactPowerAgreement_explicit_budget
   have hs0 : 0 < s := ReedSolomon.sqrtRate_pos hkpos
   let A : ℕ := ⌈(Fintype.card ι : ℝ) * (1 - δ)⌉₊
   let B : ℝ := (m + 1 / 2 : ℝ) ^ 7 * (Fintype.card ι : ℝ) ^ 2 / (3 * s ^ 3)
-  have hA : A ≤ Fintype.card ι := by
-    apply Nat.ceil_le.mpr
-    exact mul_le_of_le_one_right (Nat.cast_nonneg _) (sub_le_self _ hδ_nonneg)
   intro U
   obtain ⟨K, rfl⟩ := Nat.exists_eq_succ_of_ne_zero hkpos.ne'
   by_cases hK : K = 0
@@ -95,7 +91,7 @@ theorem exists_curve_exactPowerAgreement_explicit_budget
       rw [ha, mul_comm]
       exact Nat.le_ceil _
     obtain ⟨E, hE, hgood⟩ := ProximityGap.exists_johnson_curve_exactPowerAgreement_of_fintype
-      D U hKpos hKn heta hthreshold hA
+      D U hKpos hKn heta hthreshold
     refine ⟨E, ?_, hgood⟩
     have hb := ReedSolomon.HiddenDerivative.two_mul_johnsonExceptionCount_le_explicit_budget
       hKpos hKn hm hthreshold (by

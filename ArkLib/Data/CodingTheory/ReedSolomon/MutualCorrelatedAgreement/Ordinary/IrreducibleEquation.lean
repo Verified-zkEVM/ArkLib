@@ -44,14 +44,14 @@ open Polynomial MvPolynomial PolynomialDifferential
 open Classical in
 /-- If `Q` is irreducible with positive root degree and coefficient height at most `h`, then there
 is an exceptional set with size at most
-`ordinaryUnifiedPowerFactorAt n D ℓ (Q.degreeOf (some 0)) h A L`. For `0 < D, ℓ` and
+`ordinaryUnifiedPowerFactorAt n D ℓ (Q.degreeOf (some 0)) h A L`. For `0 < D` and
 `D < L ≤ A`, every degree-`< D + 1` specialized solution with at least `A` agreements has exact
 power agreement outside this set. -/
 theorem exists_exceptional_irreducibleOrdinaryPowerEquation_unifiedAt
     {F E : Type*} [Field F] [Field E] [IsAlgClosed E] {n ℓ : ℕ}
     (domain : Fin n ↪ F) (values : Fin (ℓ + 1) → Fin n → F) (ι : F →+* E)
     (Q : DifferentialPolynomial E[X] 0) (D h L A : ℕ)
-    (hD : 0 < D) (hℓ : 0 < ℓ) (hDL : D < L) (hLA : L ≤ A)
+    (hD : 0 < D) (hDL : D < L) (hLA : L ≤ A)
     (hheight : CoeffNatDegreeLE Q h)
     (hirr : Irreducible Q) (hpos : 0 < Q.degreeOf (some 0)) :
     ∃ exceptional : Finset E,
@@ -65,15 +65,10 @@ theorem exists_exceptional_irreducibleOrdinaryPowerEquation_unifiedAt
   let p := ringExpChar E
   obtain ⟨e, H, hHirr, hHder, hHdegree, _, hHheight, htransport⟩ :=
     exists_frobeniusEquation p hpos hirr hheight
-  have hHpos : 0 < H.degreeOf (some 0) := by
-    by_contra! hz
-    have hz' := Nat.eq_zero_of_le_zero hz
-    rw [hz', zero_mul] at hHdegree
-    omega
   have hHjet : jetTotalDegree H ≤ H.degreeOf (some 0) := by
     rw [jetTotalDegree_eq_jetDegree_zero, jetDegree]
   obtain ⟨ex, hexCard, hex⟩ := exists_exceptional_frobeniusPowerFactorSolutions_unifiedAt
-    domain values ι H p e D h (H.degreeOf (some 0)) L A hD hℓ hHpos hDL hLA hHheight
+    domain values ι H p e D h (H.degreeOf (some 0)) L A hD hDL hLA hHheight
     hHjet hHirr hHder rfl
   have heq : p ^ e * H.degreeOf (some 0) = Q.degreeOf (some 0) := by
     simpa only [Nat.mul_comm] using hHdegree
@@ -101,13 +96,13 @@ open Classical in
 /-- If `Q` is irreducible with positive root degree and coefficient height at most `h`, then there
 is an exceptional set with size at most the value of `ordinaryCurveFactorRaw` at
 `((n - D : ℕ) : ℚ) / ((A - D : ℕ) : ℚ)`, `n`, `D`, `ℓ`, `Q.degreeOf (some 0)`, and `h`.
-For `0 < D, ℓ` and `D + 1 ≤ A ≤ n`, every degree-`< D + 1` specialized solution with at least
+For `0 < D` and `D + 1 ≤ A`, every degree-`< D + 1` specialized solution with at least
 `A` agreements has exact power agreement outside this set. -/
 theorem exists_exceptional_irreducibleOrdinaryPowerEquation
     {F E : Type*} [Field F] [Field E] [IsAlgClosed E] {n ℓ : ℕ}
     (domain : Fin n ↪ F) (values : Fin (ℓ + 1) → Fin n → F) (ι : F →+* E)
     (Q : DifferentialPolynomial E[X] 0) (D h A : ℕ)
-    (hD : 0 < D) (hℓ : 0 < ℓ) (hDA : D + 1 ≤ A) (hAn : A ≤ n)
+    (hD : 0 < D) (hDA : D + 1 ≤ A)
     (hheight : CoeffNatDegreeLE Q h)
     (hirr : Irreducible Q) (hpos : 0 < Q.degreeOf (some 0)) :
     ∃ exceptional : Finset E,
@@ -118,8 +113,21 @@ theorem exists_exceptional_irreducibleOrdinaryPowerEquation
         A ≤ (polynomialAgreementSet (domain.trans ⟨ι, ι.injective⟩)
           (powerBatchedWord (fun t i ↦ ι (values t i)) z) P).card →
         HasExactPowerAgreement domain values ι (D + 1) z P := by
+  classical
+  by_cases hAn : A ≤ n
+  swap
+  · refine ⟨∅, ?_, ?_⟩
+    · simp only [Finset.card_empty, Nat.cast_zero]
+      unfold ordinaryCurveFactorRaw
+      positivity
+    · intro z hz P hP hroot hagree
+      have hcard := Finset.card_le_univ
+        (polynomialAgreementSet (domain.trans ⟨ι, ι.injective⟩)
+          (powerBatchedWord (fun t i ↦ ι (values t i)) z) P)
+      simp only [Fintype.card_fin] at hcard
+      omega
   obtain ⟨ex, hcard, hex⟩ := exists_exceptional_irreducibleOrdinaryPowerEquation_unifiedAt
-    domain values ι Q D h (D + 1) A hD hℓ (by omega) hDA hheight hirr hpos
+    domain values ι Q D h (D + 1) A hD (by omega) hDA hheight hirr hpos
   rw [ordinaryUnifiedPowerFactorAt_succ_eq n D ℓ _ h A hDA hAn] at hcard
   exact ⟨ex, hcard.trans (ordinaryUnifiedPowerFactorRaw_le_ordinaryCurveFactorRaw n ℓ _ h
     (by positivity) hD), hex⟩
@@ -132,7 +140,7 @@ theorem exists_exceptional_irreducibleOrdinaryEquation
     {F E : Type*} [Field F] [Field E] [IsAlgClosed E] {n : ℕ}
     (domain : Fin n ↪ F) (f g : Fin n → F) (ι : F →+* E)
     (Q : DifferentialPolynomial E[X] 0) (D h A : ℕ)
-    (hD : 0 < D) (hDA : D + 1 ≤ A) (hAn : A ≤ n)
+    (hD : 0 < D) (hDA : D + 1 ≤ A)
     (hheight : CoeffNatDegreeLE Q h)
     (hirr : Irreducible Q) (hpos : 0 < Q.degreeOf (some 0)) :
     ∃ exceptional : Finset E,
@@ -146,7 +154,7 @@ theorem exists_exceptional_irreducibleOrdinaryEquation
   classical
   obtain ⟨exceptional, hcard, hgood⟩ :=
     exists_exceptional_irreducibleOrdinaryPowerEquation
-      (ℓ := 1) domain ![f, g] ι Q D h A hD (by omega) hDA hAn hheight hirr hpos
+      (ℓ := 1) domain ![f, g] ι Q D h A hD hDA hheight hirr hpos
   have hcharge : ordinaryCurveFactorRaw
       (((n - D : ℕ) : ℚ) / ((A - D : ℕ) : ℚ)) n D 1 (Q.degreeOf (some 0)) h =
         ordinaryFactorRaw (((n - D : ℕ) : ℚ) / ((A - D : ℕ) : ℚ)) n D

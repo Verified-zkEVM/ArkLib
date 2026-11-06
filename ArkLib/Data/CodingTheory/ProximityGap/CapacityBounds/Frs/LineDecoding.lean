@@ -853,7 +853,6 @@ theorem isSubspaceDesign_frsCode_sharpProfile
     {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Field F] [Fintype F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
-    (hFn : Fintype.card ι < Fintype.card F)
     (hadm : ReedSolomon.Folded.Admissible (Finset.univ.map domain) s ω)
     (hω : ω ≠ 0)
     (hωgen : orderOf ω = Fintype.card F - 1)
@@ -867,7 +866,7 @@ theorem isSubspaceDesign_frsCode_sharpProfile
       (ReedSolomon.Folded.frsCode domain k s ω) : ℝ) =
       (k : ℝ) / (s * Fintype.card ι) := by
     rw [ReedSolomon.Folded.alphabetRate_frsCode domain k s ω hadm hω hk]
-  have hdesign := isSubspaceDesign_frsCode_sub_one domain k s ω hFn hadm hωgen
+  have hdesign := isSubspaceDesign_frsCode_sub_one domain k s ω hadm hωgen
   rw [hrate] at hdesign
   refine hdesign.mono_tau fun r => ?_
   rw [sharpSubspaceProfile]

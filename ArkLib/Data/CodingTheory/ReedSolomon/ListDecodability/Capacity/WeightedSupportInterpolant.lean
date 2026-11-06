@@ -103,7 +103,7 @@ private theorem exists_prescribed_weightedSupport_construction_core
     prescribed_dimension_inputs δ ((D : ℝ) / n) H d hδ hδmax.le hρ hρhi
       hdLower hHlo
   have hmargin := prescribed_weightedSupport_margin
-    (F := ZMod q) δ n D hδ hδmax.le hn hD hρlo hρhi
+    (F := ZMod q) δ n D hδ hδmax.le hD hρlo hρhi
   have hcut : (D : ℝ) * m * (1 + g) ≤ (m * A : ℕ) := by
     have h := mul_le_mul_of_nonneg_left hslack (Nat.cast_nonneg m : (0 : ℝ) ≤ m)
     push_cast
@@ -159,7 +159,7 @@ theorem exists_prescribed_weightedSupport_construction
     (domain : Fin n ↪ ZMod q) (received : Fin n → ZMod q)
     (hδ : 0 < δ) (hδmax : δ < 1 / 4)
     (hblock : 8 * weightedSupportMultiplicity (capacityDerivativeOrder δ) ≤ n)
-    (hnq : n ≤ q) (hA : capacityAgreementThreshold δ n k ≤ n) :
+    (hA : capacityAgreementThreshold δ n k ≤ n) :
     let d := capacityDerivativeOrder δ
     let m := weightedSupportMultiplicity (capacityDerivativeOrder δ)
     let K := weightedSupportAmbientDimension δ n k
@@ -178,7 +178,7 @@ theorem exists_prescribed_weightedSupport_construction
   rw [hmEq, hdEq, hKEq]
   apply exists_prescribed_weightedSupport_construction_core domain received hδ hδmax
   · simpa only [m, d] using hblock
-  · exact hnq
+  · simpa only [Fintype.card_fin, ZMod.card] using Fintype.card_le_of_embedding domain
   · exact hA
 
 /-- A weighted-support construction with its total-jet bound gives the sharp extension-field

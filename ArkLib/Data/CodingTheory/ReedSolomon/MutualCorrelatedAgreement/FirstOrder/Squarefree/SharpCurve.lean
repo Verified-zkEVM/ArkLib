@@ -112,8 +112,8 @@ theorem exists_exceptional_retainedSquarefreeCurveAgreement_sharpAt
   obtain ⟨tailExceptional, htailCard, htailGood⟩ :=
     exists_exceptional_ordinaryPowerEquation_unifiedAt domain values iota
       (singularCurveEquation Q) D (resultantChallengeEnvelope H M) (ordinaryDegreeEnvelope B M)
-      L₀ A (singularCurveEquation_ne_zero Q hderiv hcharE) hD hell
-      ((hM.trans hMB).trans (le_max_left _ _)) hDL₀ hL₀A
+      L₀ A (singularCurveEquation_ne_zero Q hderiv hcharE) hD
+      hDL₀ hL₀A
       (singularCurveEquation_coeffNatDegreeLE Q hheight hM hderiv)
       (singularCurveEquation_degree_le Q hjet hderiv hMB)
   have htail : ∃ exceptional : Finset E, (exceptional.card : ℝ) ≤

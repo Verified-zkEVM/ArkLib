@@ -157,7 +157,7 @@ theorem lowRate_agreementIncidenceRatio_le_parameterConstant
   · by_cases hDA : D < A
     · have hregime := (firstOrderLowRateRegime_iff_lt_rateSwitch rho).2 hlow
       have hthreshold := rate_lt_firstOrderLowRateThreshold hrho hregime
-      have hthetaRate := agreementIncidenceRatio_le_one_div_sub hDn hDA hDrate hA
+      have hthetaRate := agreementIncidenceRatio_le_one_div_sub hDrate hA
         (hthreshold.trans (lt_add_of_pos_right _ heta))
       calc
         agreementIncidenceRatio n D A ≤
@@ -207,8 +207,6 @@ theorem lowRate_closePolynomialSet_finite_and_card_le_finiteLength
       exact_mod_cast (hkRate.trans_lt <| (mul_lt_mul_of_pos_right
         (hthreshold.trans (lt_add_of_pos_right _ heta)) hnReal).trans_le hA)
     exact hkAlt.le
-  have hkn : k ≤ n := hkA.trans hAn
-  have hnTwo : 2 ≤ n := hk.trans hkn
   have hDrate : ((k - 1 : ℕ) : ℝ) ≤ rho * n := by
     exact (show ((k - 1 : ℕ) : ℝ) ≤ k by exact_mod_cast (Nat.sub_le k 1)).trans hkRate
   obtain ⟨cert⟩ := exists_lowRateFiniteLengthFirstOrder_symbolicCertificate
@@ -231,7 +229,7 @@ theorem lowRate_closePolynomialSet_finite_and_card_le_finiteLength
   exact closePolynomialSet_finite_and_card_le_finiteLength_of_bounded_certificate
     domain received
       (firstOrderColumns (D := k - 1) (A := A) (m := m) (M := M) (μ := B))
-      cert hnTwo hk hkA hAn hMB hchar hC heta hsOne hlambda hB
+      cert hk hkA hAn hMB hchar hC heta hsOne hlambda hB
 
 open Classical in
 /-- The simpler inverse-`eta` complete-list consequence on the low-rate branch. -/
@@ -285,7 +283,7 @@ theorem lowRateFiniteLengthJetDegree_pos
   apply Nat.ceil_pos.mpr
   have hm := lowRateFiniteLengthMultiplicity_pos hrho hlow heta haOne hn
   have ha := lowRateFiniteLengthCertifiedAgreement_pos hrho heta.le
-  have hrate := finiteLengthRate_pos hrho hn
+  have hrate := finiteLengthRate_pos hn
   positivity
 
 open Classical in

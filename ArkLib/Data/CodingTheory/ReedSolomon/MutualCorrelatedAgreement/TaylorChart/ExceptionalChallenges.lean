@@ -69,7 +69,7 @@ theorem finite_symbolicTaylorChart_badChallenges_card_le [DecidableEq F] [Decida
     [IsAlgClosed E] (domain : Fin n ↪ F) (f g : Fin n → F) (iota : F →+* E)
     (center : E) (Q : DifferentialPolynomial E[X] r) (K k L A v h : ℕ)
     (hK : r < K) (hkK : k ≤ K) (hk : 0 < k) (hkL : k ≤ L)
-    (hLA : L ≤ A) (hAn : A ≤ n)
+    (hLA : L ≤ A)
     (hjet : Q.weightedTotalDegree (fun i ↦ i.elim 0 (fun _ ↦ 1)) ≤ v)
     (hheight : CoeffNatDegreeLE Q h)
     (challenges : Finset E) (witness : E → E[X]) (jet : E → Fin (r + 1) → E)
@@ -97,6 +97,14 @@ theorem finite_symbolicTaylorChart_badChallenges_card_le [DecidableEq F] [Decida
         ((((n * (1 + 2 * K * (v - 1)) : ℕ) : ℚ) /
           ((L - k + 1 : ℕ) : ℚ)) ^ r)) := by
   classical
+  by_cases hempty : challenges = ∅
+  · rw [hempty, Finset.card_empty, Nat.cast_zero]
+    positivity
+  obtain ⟨z, hz⟩ := Finset.nonempty_iff_ne_empty.mpr hempty
+  have hAn : A ≤ n := (hagree z hz).trans (by
+    simpa using Finset.card_le_univ (polynomialAgreementSet
+      (domain.trans ⟨iota, iota.injective⟩)
+      (fun i ↦ iota (f i) + z * iota (g i)) (witness z)))
   let pairs := admissibleChartPairFamily domain f g iota center Q K k L
   have hpair (p : F[X] × F[X]) (hp : p ∈ pairs) :=
     (mem_admissibleChartPairFamily_iff domain f g iota center Q K k L hkL p).mp hp
@@ -198,8 +206,7 @@ theorem finite_symbolicTaylorChart_badChallenges_card_le [DecidableEq F] [Decida
       ((((n * (1 + 2 * K * (v - 1)) : ℕ) : ℚ) /
         ((L - k + 1 : ℕ) : ℚ)) ^ r) := by
     simpa [pairs, Nat.ne_of_gt hk] using
-      admissibleChartPairFamily_card_le domain f g iota center Q K k L v hK hkK hkL
-        (hLA.trans hAn) hjet
+      admissibleChartPairFamily_card_le domain f g iota center Q K k L v hK hkK hkL hjet
   have hexcbound : (exceptional.card : ℚ) ≤ ((n - L : ℕ) : ℚ) *
       ((v : ℚ) * ((((n * (1 + 2 * K * (v - 1)) : ℕ) : ℚ) /
         ((L - k + 1 : ℕ) : ℚ)) ^ r)) := by

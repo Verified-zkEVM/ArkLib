@@ -255,7 +255,7 @@ theorem exists_exceptional_firstOrder_regularCurveStages
           (jetDerivative Q (1 : Fin 2) j) (D + 1) (D + 1) L A
           (mu - j) (e - j) h (HiddenDerivative.regularTaylorExponent D) hτ (by
             unfold HiddenDerivative.regularTaylorExponent
-            omega) (by omega) le_rfl (by omega) hLA hAn (by omega) hv hu huv
+            omega) (by omega) le_rfl (by omega) hLA (by omega) hv hu huv
           (descent.stage_jetTotalDegree_le j (Nat.le_of_lt hj))
           (hstageHeight j)
           ((descent.stage_degree j (Nat.le_of_lt hj)).le)

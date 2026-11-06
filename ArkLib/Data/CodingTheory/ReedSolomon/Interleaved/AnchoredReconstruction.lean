@@ -94,8 +94,10 @@ theorem cubicAnchorReconstruct_eval_of_quotient (s₁ s₂ z x received : F)
 /-- **The trace remainder has degree below `T`.** Reducing a message modulo the monic divisor
 `X ^ T - c` gives degree below `T`. The hypothesis `0 < T` is needed: for `T = 0` and `c = 1` the
 divisor is `0`, reduction does nothing, and a nonzero constant message has degree `0`. -/
-theorem traceRemainder_degree_lt [Nontrivial F] (T : ℕ) (hT : 0 < T) (c : F) (message : F[X]) :
+theorem traceRemainder_degree_lt (T : ℕ) (hT : 0 < T) (c : F) (message : F[X]) :
     (message %ₘ (X ^ T - C c)).degree < T := by
+  rcases subsingleton_or_nontrivial F with hF | hF
+  · simp [Subsingleton.elim (message %ₘ (X ^ T - C c)) 0]
   simpa only [degree_X_pow_sub_C hT] using
     degree_modByMonic_lt message (monic_X_pow_sub_C c hT.ne')
 

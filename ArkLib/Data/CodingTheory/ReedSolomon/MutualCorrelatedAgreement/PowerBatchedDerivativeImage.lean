@@ -343,7 +343,7 @@ theorem finite_powerBatchedBadChallenges_card_le_derivativeCapped_of_exponent
     (center : E) (Q : DifferentialPolynomial E[X] 1) (K k L A v u h τ : ℕ)
     (hτ : TaylorExponentSufficient 1 K τ) (hτpos : 0 < τ)
     (hK : 1 < K) (hkK : k ≤ K) (hkL : k ≤ L)
-    (hLA : L ≤ A) (hAn : A ≤ n) (hD : 0 < ℓ + h) (hv : 0 < v)
+    (hLA : L ≤ A) (hD : 0 < ℓ + h) (hv : 0 < v)
     (hu : 0 < u) (huv : u ≤ v)
     (hjet : jetTotalDegree Q ≤ v) (hheight : CoeffNatDegreeLE Q h)
     (hderiv : Q.degreeOf (some 1) ≤ u)
@@ -382,7 +382,7 @@ theorem finite_powerBatchedBadChallenges_card_le_derivativeCapped_of_exponent
     domain w iota center Q K k L A v u τ hτ hkK hkL
       (fun T hT ↦ admissibleChartTuples_card_le_derivativeCapped_of_exponent
         domain w iota center Q K k L v u τ hτ hτpos hK hkK hkL
-          (hLA.trans hAn) hu huv hweighted hderiv T hT)
+          hu huv hweighted hderiv T hT)
       ((firstOrderCurveJointStageOne K ℓ h v u τ : ℚ) *
         (((n - L + 1 : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) *
           (((n - k + 1 : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ)))
@@ -400,7 +400,7 @@ theorem finite_regularPowerBatchedBadChallenges_card_le_derivativeCapped_of_expo
     (Q : DifferentialPolynomial E[X] 1) (K k L A v u h τ : ℕ)
     (hτ : TaylorExponentSufficient 1 K τ) (hτpos : 0 < τ)
     (hK : 1 < K) (hkK : k ≤ K) (hkL : k ≤ L)
-    (hLA : L ≤ A) (hAn : A ≤ n) (hD : 0 < ℓ + h) (hv : 0 < v)
+    (hLA : L ≤ A) (hD : 0 < ℓ + h) (hv : 0 < v)
     (hu : 0 < u) (huv : u ≤ v)
     (hjet : jetTotalDegree Q ≤ v) (hheight : CoeffNatDegreeLE Q h)
     (hderiv : Q.degreeOf (some 1) ≤ u)
@@ -414,7 +414,7 @@ theorem finite_regularPowerBatchedBadChallenges_card_le_derivativeCapped_of_expo
       (regularPowerBatchedDerivativeCappedBoundTwo n ℓ K k L A v u h τ) ?_ S hS
   intro center challenges witness jet hchart hagree hbad
   exact finite_powerBatchedBadChallenges_card_le_derivativeCapped_of_exponent
-    domain w iota center Q K k L A v u h τ hτ hτpos hK hkK hkL hLA hAn hD hv
+    domain w iota center Q K k L A v u h τ hτ hτpos hK hkK hkL hLA hD hv
       hu huv hjet hheight hderiv challenges witness jet hchart hagree hbad
 
 open Classical in
@@ -426,7 +426,7 @@ theorem exists_exceptional_regularPowerBatchedAgreement_derivativeCapped_of_expo
     (Q : DifferentialPolynomial E[X] 1) (K k L A v u h τ : ℕ)
     (hτ : TaylorExponentSufficient 1 K τ) (hτpos : 0 < τ)
     (hK : 1 < K) (hkK : k ≤ K) (hkL : k ≤ L)
-    (hLA : L ≤ A) (hAn : A ≤ n) (hD : 0 < ℓ + h) (hv : 0 < v)
+    (hLA : L ≤ A) (hD : 0 < ℓ + h) (hv : 0 < v)
     (hu : 0 < u) (huv : u ≤ v)
     (hjet : jetTotalDegree Q ≤ v) (hheight : CoeffNatDegreeLE Q h)
     (hderiv : Q.degreeOf (some 1) ≤ u)
@@ -446,11 +446,11 @@ theorem exists_exceptional_regularPowerBatchedAgreement_derivativeCapped_of_expo
       (regularPowerBatchedBadChallenges domain w iota Q k A).Finite := by
     apply Set.finite_of_forall_finset_card_le (R := ℚ) fun S hS ↦
       finite_regularPowerBatchedBadChallenges_card_le_derivativeCapped_of_exponent
-        domain w iota Q K k L A v u h τ hτ hτpos hK hkK hkL hLA hAn hD hv
+        domain w iota Q K k L A v u h τ hτ hτpos hK hkK hkL hLA hD hv
         hu huv hjet hheight hderiv hbin S hS
   refine ⟨hfinite.toFinset, ?_, ?_⟩
   · apply finite_regularPowerBatchedBadChallenges_card_le_derivativeCapped_of_exponent
-      domain w iota Q K k L A v u h τ hτ hτpos hK hkK hkL hLA hAn hD hv
+      domain w iota Q K k L A v u h τ hτ hτpos hK hkK hkL hLA hD hv
       hu huv hjet hheight hderiv hbin
     exact fun z hz ↦ hfinite.mem_toFinset.mp hz
   · intro z hz P hdegree hagree hsol hsep

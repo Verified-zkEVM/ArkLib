@@ -155,7 +155,7 @@ theorem exists_capacity_list (δ : ℝ) (hδ : 0 < δ) :
     HasCapacityLists δ (capacityLengthThreshold δ) (CapacityListBounds δ) := by
   intro n k q A hn hk hkn hq hnq hA α y
   obtain ⟨list, hexact, hempty, hhalf, hquarter, hsmall⟩ :=
-    exists_field_bounded_capacity_list δ hδ n k q A hn hk hkn hq hnq hA α y
+    exists_field_bounded_capacity_list δ hδ n k q A hn hk hq hA α y
   refine ⟨list, hexact, hempty, ?_, hquarter, hhalf, fun hs ↦ (hsmall hs).1,
     fun hs ↦ (hsmall hs).2⟩
   by_cases hlarge : (1 / 4 : ℝ) ≤ δ
@@ -170,7 +170,7 @@ theorem exists_capacity_list (δ : ℝ) (hδ : 0 < δ) :
   have hthreshold := (capacityAgreementThreshold_le_iff_real hδ.le n k A).mpr hA
   have hblock : 8 * weightedSupportMultiplicity (capacityDerivativeOrder δ) ≤ n := by
     simpa only [capacityLengthThreshold, ite_eq_right hlarge] using hn
-  have hgeom := prescribed_geometric_finite_list_bound δ n k α y hδ hδsmall hk
+  have hgeom := prescribed_geometric_finite_list_bound δ n k α y hδ hδsmall
     (by simpa only [weightedSupportMultiplicity, capacityDerivativeOrder_eq_ceil hδsmall]
       using hblock)
     (hthreshold.trans (Nat.le_of_not_gt hover))
@@ -219,7 +219,7 @@ theorem exists_rateCapacity_list (δ : ℝ) (hδ : 0 < δ) :
       rw [ringChar.eq (ZMod q) q]
       omega
     obtain ⟨hf, hb⟩ := mathematicalUniform_capacity_list_bound δ hδ (lt_of_not_ge hlarge)
-      n k A hn' hk hgap hAn domain received hchar
+      n k A hn' hk hgap domain received hchar
     refine ⟨hf.toFinset, fun P ↦ hf.mem_toFinset.trans
       (mem_classical_closePolynomialSet_zmod_iff _ _ P),
       fun hover ↦ absurd hAn (by omega), ?_⟩

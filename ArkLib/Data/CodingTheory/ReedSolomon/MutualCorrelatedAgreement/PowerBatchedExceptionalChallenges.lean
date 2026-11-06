@@ -48,7 +48,7 @@ theorem finite_powerBatchedChart_badChallenges_card_le [IsAlgClosed E]
     (domain : Fin n ↪ F) (w : Fin (ℓ + 1) → Fin n → F)
     (iota : F →+* E) (center : E) (Q : DifferentialPolynomial E[X] r)
     (K k L A v h : ℕ) (hK : r < K) (hkK : k ≤ K) (hk : 0 < k) (hkL : k ≤ L)
-    (hLA : L ≤ A) (hAn : A ≤ n) (hD : 0 < ℓ + h) (hv : 0 < v)
+    (hLA : L ≤ A) (hAn : A ≤ n)
     (hjet : jetTotalDegree Q ≤ v) (hheight : CoeffNatDegreeLE Q h)
     (challenges : Finset E) (witness : E → E[X]) (jet : E → Fin (r + 1) → E)
     (hchart : ∀ z ∈ challenges,
@@ -69,6 +69,15 @@ theorem finite_powerBatchedChart_badChallenges_card_le [IsAlgClosed E]
       ((ℓ * (n - L) : ℕ) : ℚ) * ((v : ℚ) *
         ((((n * (1 + 2 * K * (v - 1)) : ℕ) : ℚ) /
           ((L - k + 1 : ℕ) : ℚ)) ^ r)) := by
+  by_cases hℓ : ℓ = 0
+  · subst ℓ
+    have hempty : challenges = ∅ := by
+      apply Finset.eq_empty_iff_forall_notMem.mpr
+      intro z hz
+      exact hbad z hz (hasExactPowerAgreement_singleton domain w iota k z (witness z)
+        (hchart z hz).1 (hkL.trans (hLA.trans (hagree z hz))))
+    rw [hempty, Finset.card_empty, Nat.cast_zero]
+    positivity
   let τ := 2 * K
   have hτ : TaylorExponentSufficient r K τ := taylorExponentSufficient_two_mul r K
   let tuples := admissibleChartTupleFamilyAtExponent domain w iota center Q K k L τ
@@ -140,9 +149,22 @@ theorem finite_powerBatchedChart_badChallenges_card_le [IsAlgClosed E]
       apply hsepPoint
       rw [hzero]
       simp
+    have hv : 0 < v := by
+      by_contra hv
+      have hdegree : (MvPolynomial.map (Polynomial.evalRingHom z₀) Q).degreeOf
+          (some (Fin.last r)) = 0 := by
+        have hle := (jetDegree_le_total
+          (MvPolynomial.map (Polynomial.evalRingHom z₀) Q) (Fin.last r)).trans
+          ((jetTotalDegree_map_le _ Q).trans hjet)
+        change (MvPolynomial.map (Polynomial.evalRingHom z₀) Q).degreeOf
+          (some (Fin.last r)) ≤ v at hle
+        omega
+      have hzero := MvPolynomial.pderiv_eq_zero_of_degreeOf_eq_zero hdegree
+      exact (hchart z₀ hzc).2.2.1 (by
+        simp [initialJetSeparant, separant, hzero])
     rw [← hcard]
     apply finite_admissibleChartTupleIncidence_off_graphs
-      domain w iota center Q hK hkL (hk.trans_le hkL) hLA hAn hD hinit hsep hv hjet
+      domain w iota center Q hK hkL (hk.trans_le hkL) hLA hAn (by omega) hinit hsep hv hjet
       hheight S
     · intro x hx
       obtain ⟨z, hz, rfl⟩ := Finset.mem_image.mp hx
@@ -213,7 +235,7 @@ theorem finite_powerBatchedChart_badChallenges_card_le [IsAlgClosed E]
           (Set.ncard_coe_finset _).symm
         _ ≤ _ := Set.ncard_le_ncard hsubset
   have htuplebound := admissibleChartTupleFamilyAtExponent_card_le_dimensionSensitive
-    domain w iota center Q K k L v τ hτ hK hkK hkL (hLA.trans hAn) hjet
+    domain w iota center Q K k L v τ hτ hK hkK hkL hjet
   have hproduct := dimensionSensitiveIncidenceProduct_le_first_pow n L k r hkL
     (hLA.trans hAn)
   have hratio :

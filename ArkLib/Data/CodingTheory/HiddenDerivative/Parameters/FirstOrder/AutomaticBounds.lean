@@ -553,17 +553,7 @@ theorem automaticRateIncidenceJetBounds {rho eta : ℝ} {n D A : ℕ}
     positivity
   have hthetaRate : agreementIncidenceRatio n D A ≤ 1 / (a - rho) := by
     have hrate : rho < a := (rate_lt_firstOrderRateThreshold hrho hrhoOne).trans ha
-    rcases Nat.eq_zero_or_pos n with rfl | hn
-    · have hDzero : D = 0 := by simpa using hD
-      subst D
-      simp only [agreementIncidenceRatio, Nat.sub_self, Nat.cast_zero, zero_div]
-      positivity
-    · have hdegree : D ≤ n := by
-        exact_mod_cast hD.trans (mul_le_of_le_one_left (Nat.cast_nonneg n) hrhoOne.le)
-      have hagreement : D < A := by
-        have hnreal : (0 : ℝ) < n := Nat.cast_pos.mpr hn
-        exact_mod_cast (hD.trans_lt (mul_lt_mul_of_pos_right hrate hnreal)).trans_le hA
-      exact agreementIncidenceRatio_le_one_div_sub hdegree hagreement hD hA hrate
+    exact agreementIncidenceRatio_le_one_div_sub hD hA hrate
   have htheta : agreementIncidenceRatio n D A ≤ C := by
     calc
       agreementIncidenceRatio n D A ≤ 1 / (a - rho) := hthetaRate
@@ -664,7 +654,7 @@ theorem automaticListConstant_le_cubic_slack_envelope {rho eta : ℝ} {n D A : �
       automaticListBoundConstant rho * n / eta ^ 3 := by
   have hdegree : D ≤ n := by
     exact_mod_cast hD.trans (mul_le_of_le_one_left (Nat.cast_nonneg n) hrhoOne.le)
-  obtain ⟨hC, hq, htheta0, htheta, _, hmu, _, hT⟩ :=
+  obtain ⟨hC, hq, _, htheta, _, hmu, _, hT⟩ :=
     automaticClosedEnvelopeInputs hrho hrhoOne heta haOne hD hA
   let a := firstOrderRateThreshold rho + eta
   let C := automaticRateEnvelopeConstant rho
@@ -675,7 +665,7 @@ theorem automaticListConstant_le_cubic_slack_envelope {rho eta : ℝ} {n D A : �
     simpa only [a, mu, C, q, div_eq_mul_inv, one_mul, inv_pow] using hmu
   have hT' : stageStaircase mu M ≤ C * q ^ 3 := by
     simpa only [a, mu, M, C, q, div_eq_mul_inv, one_mul, inv_pow] using hT
-  have hbound := firstOrderListConstant_le_cubic hC hq hn hdegree htheta0 htheta hmu' hT'
+  have hbound := firstOrderListConstant_le_cubic hC hq hn hdegree htheta hmu' hT'
   dsimp only [a, C, q, mu, M] at hbound ⊢
   unfold automaticListBoundConstant
   field_simp [ne_of_gt heta] at hbound ⊢
@@ -696,7 +686,7 @@ theorem automaticExceptionConstant_le_quintic_slack_envelope {rho eta : ℝ} {n 
       automaticExceptionBoundConstant rho * n ^ 2 / eta ^ 5 := by
   have hdegree : D ≤ n := by
     exact_mod_cast hD.trans (mul_le_of_le_one_left (Nat.cast_nonneg n) hrhoOne.le)
-  obtain ⟨hC, hq, htheta0, htheta, hmuPos, hmu, hh, hT⟩ :=
+  obtain ⟨hC, hq, htheta0, htheta, _, hmu, hh, hT⟩ :=
     automaticClosedEnvelopeInputs hrho hrhoOne heta haOne hD hA
   let a := firstOrderRateThreshold rho + eta
   let C := automaticRateEnvelopeConstant rho
@@ -711,7 +701,7 @@ theorem automaticExceptionConstant_le_quintic_slack_envelope {rho eta : ℝ} {n 
   have hT' : stageStaircase mu M ≤ C * q ^ 3 := by
     simpa only [a, mu, M, C, q, div_eq_mul_inv, one_mul, inv_pow] using hT
   have hbound := firstOrderExceptionConstant_le_quintic hC hq hn hdegree htheta0 htheta
-    hmuPos hmu' hh' hT'
+    hmu' hh' hT'
   dsimp only [a, C, q, mu, M, h] at hbound ⊢
   unfold automaticExceptionBoundConstant
   field_simp [ne_of_gt heta] at hbound ⊢

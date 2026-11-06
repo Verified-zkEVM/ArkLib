@@ -138,7 +138,7 @@ theorem weighted_correlated_agreement_for_parameterized_curves
       by_cases hUD : δ ≤ Code.relativeUniqueDecodingRadius
           (C := (ReedSolomon.code domain deg : Set (ι → F)))
       · obtain ⟨E, hE, hgood⟩ := exists_exactPowerAgreement_unique domain w
-          hdeg_pos hproper.le δ hUD
+          hproper.le δ hUD
         refine ⟨E, ?_, hgood⟩
         rw [errorBound_eq_n_div_q_of_le_relUDR hUD]
         simp only [NNReal.coe_div, NNReal.coe_natCast]
@@ -220,8 +220,7 @@ theorem weighted_correlated_agreement_for_parameterized_curves'
       exact div_self (by positivity)
     simp [ReedSolomon.sqrtRate, hrate] at hslt
   obtain ⟨E, hE, hgood⟩ := exists_curve_exactPowerAgreement_explicit_budget
-    deg domain (l + 1) m (1 - (α : ℝ)) hdeg_pos hproper hm
-    (sub_nonneg.mpr hα1) (by nlinarith) u
+    deg domain (l + 1) m (1 - (α : ℝ)) hdeg_pos hproper hm (by nlinarith) u
   have hES : E.card < S.card := by
     have hh := lt_of_le_of_lt (le_max_left _ _) hS
     rw [HiddenDerivative.legacy_shift_pow_seven m (by omega)] at hE
@@ -346,7 +345,7 @@ theorem weighted_correlated_agreement_over_affine_spaces [DecidableEq ι]
         linarith
       rw [hpzero] at hprob
       exact (not_lt_of_ge bot_le) hprob
-    have hline := lineExactAgreementBound_unique domain hdeg_pos hproper.le δ hUD
+    have hline := lineExactAgreementBound_unique domain hproper.le δ hUD
     have hmca := mcaError_affineSpace_le_of_exactAgreement
       (s := l + 1) domain (Fintype.card ι : ℝ) hline (δ : ℝ) le_rfl
     rw [hδR] at hmca

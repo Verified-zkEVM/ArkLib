@@ -90,17 +90,7 @@ theorem caError_affineSpace_le (m : ℕ) {deg : ℕ} {domain : ι ↪ F} {δ : �
   let : NeZero m := ⟨hm⟩
   by_cases hε : errorBound δ deg domain < 1
   · apply (δ_ε_correlatedAgreementAffineSpaces_iff_caError_le _ _ _).mp
-    apply correlatedAgreement_affine_spaces hdeg hδ _ hε
-    have hn : 0 < Fintype.card ι := Fintype.card_pos
-    by_contra h
-    have hfull : Fintype.card ι ≤ deg := by omega
-    have hrate : LinearCode.rate (ReedSolomon.code domain deg) = 1 := by
-      rw [ReedSolomon.rateOfLinearCode_eq_min_div, min_eq_right hfull]
-      exact div_self (by exact_mod_cast hn.ne')
-    have hsone : ReedSolomon.sqrtRate deg domain = 1 := by
-      simp [ReedSolomon.sqrtRate, hrate]
-    rw [hsone, tsub_self] at hδ
-    exact not_lt_zero hδ
+    exact correlatedAgreement_affine_spaces hdeg hδ hε
   · apply le_trans _ (show (1 : ENNReal) ≤ errorBound δ deg domain by
       exact_mod_cast le_of_not_gt hε)
     unfold caError

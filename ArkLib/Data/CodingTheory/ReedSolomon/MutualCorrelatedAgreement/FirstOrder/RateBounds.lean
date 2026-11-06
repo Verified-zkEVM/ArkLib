@@ -61,7 +61,7 @@ theorem automaticFirstOrder_rate_bounds
     and the requested agreement fraction.
     -/
     (hk : 2 ≤ k) (hkRate : (k : ℝ) ≤ rho * n)
-    (hA : (firstOrderRateThreshold rho + eta) * n ≤ A) (hAn : A ≤ n)
+    (hA : (firstOrderRateThreshold rho + eta) * n ≤ A)
     /-
 
     Distinct evaluation points turn agreement into a count of distinct polynomial roots.
@@ -94,7 +94,7 @@ theorem automaticFirstOrder_rate_bounds
     hrho hrhoOne heta haOne (by omega : 1 ≤ n) rfl hkRate hA
   refine ⟨fun received ↦ ?_, fun f g ↦ ?_⟩
   · obtain ⟨hfinite, -, -, hclosed⟩ := automaticFirstOrder_closePolynomialSet_finite_and_card_le
-      hrho hrhoOne ha hn rfl hk hkRate hA hAn domain received hchar
+      hrhoOne ha rfl hk hkRate hA domain received hchar
     exact ⟨hfinite, hclosed.trans hlistBound⟩
   · obtain ⟨-, -, -, -, -, -, exceptional, -, -, hclosed, hgood⟩ :=
       exists_automaticFirstOrder_hybridEquation_base hrhoOne ha rfl hk hkRate hA
@@ -130,14 +130,12 @@ theorem automaticFirstOrder_rate_mcaError_le
   classical
   have hA : (firstOrderRateThreshold rho + eta) * n ≤
       (⌈(firstOrderRateThreshold rho + eta) * n⌉₊ : ℝ) := Nat.le_ceil _
-  have hAn : ⌈(firstOrderRateThreshold rho + eta) * n⌉₊ ≤ n :=
-    Nat.ceil_le.mpr (mul_le_of_le_one_left (Nat.cast_nonneg n) haOne.le)
   have hthreshold : ⌈(firstOrderRateThreshold rho + eta) * n⌉₊ ≤
       ⌈(Fintype.card (Fin n) : ℝ) * (1 - (1 - (firstOrderRateThreshold rho + eta)))⌉₊ := by
     rw [Fintype.card_fin, sub_sub_cancel, mul_comm]
   exact mcaError_affineLine_le_min_one_of_exactAgreement domain _
     (lineExactAgreementBound_of_exactCorrelatedPair domain _
-      (automaticFirstOrder_rate_bounds rho eta n k _ hrhoOne heta haOne hk hkRate hA hAn
+      (automaticFirstOrder_rate_bounds rho eta n k _ hrhoOne heta haOne hk hkRate hA
         domain hchar).2) _ hthreshold
 
 end ReedSolomon

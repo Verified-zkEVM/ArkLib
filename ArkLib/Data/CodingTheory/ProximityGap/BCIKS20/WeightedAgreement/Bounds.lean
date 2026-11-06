@@ -150,7 +150,7 @@ theorem exists_lineExactAgreementBound_seventh {deg : ℕ} (domain : ι ↪ F)
   · subst D
     refine ⟨(Fintype.card ι).choose 2, by positivity,
       lineExactAgreementBound_constantCode domain _, ?_⟩
-    have h := two_mul_choose_two_le_bciks hn hb (by simpa using hbrate)
+    have h := two_mul_choose_two_le_bciks hb (by simpa using hbrate)
     simpa only [Nat.cast_zero, zero_add, one_pow] using h
   · have hDpos : 1 ≤ D := by omega
     have hDn : D ≤ Fintype.card ι - 2 := by omega
@@ -177,7 +177,7 @@ theorem exists_lineExactAgreementBound_seventh {deg : ℕ} (domain : ι ↪ F)
       positivity
     · have hline := lineExactAgreementBound_johnson domain hDpos hDn heta
       simpa only [ha, mul_comm α] using hline
-    · exact two_mul_johnsonExceptionCount_le_bciks hDpos hDn heta
+    · exact two_mul_johnsonExceptionCount_le_bciks hDpos hDn
         (by rw [ha, mul_comm]; exact Nat.le_ceil _) hb hbeta hbrate
 
 end ProximityGap.WeightedAgreement

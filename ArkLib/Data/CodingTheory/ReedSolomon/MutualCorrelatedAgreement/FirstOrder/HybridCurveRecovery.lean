@@ -85,7 +85,7 @@ theorem exists_exceptional_firstOrder_hybridCurve_optimized
     exact exists_exceptional_firstOrder_hybridCurve_optimized_of_tail domain values iota Q
       descent hheight hD hDA (hchar.imp_right fun hc ↦ (le_max_left D _).trans_lt hc)
       fun _ hDL hLA ↦
-        descent.exists_exceptional_ordinaryCurveTail domain values iota hheight hell hD hDL hLA
+        descent.exists_exceptional_ordinaryCurveTail domain values iota hheight hD hDL hLA
   · have hmin (charge : ℕ → ℝ) (hc : ∀ L, 0 ≤ charge L) :
         0 ≤ curveRetentionMinimum D A charge := by
       obtain ⟨L, _, _, hL⟩ := exists_curveRetentionMinimum charge hDA

@@ -88,7 +88,7 @@ private theorem frs_strongLineDecodable_and_lambda_le
     exact hRlt
   have hk : k ≤ s * Fintype.card ι := by exact_mod_cast hkR.le
   let C := ReedSolomon.Folded.frsCode domain k s ω
-  have hdesign := isSubspaceDesign_frsCode_sharpProfile domain k s ω hFn hadm hω hω_gen hk
+  have hdesign := isSubspaceDesign_frsCode_sharpProfile domain k s ω hadm hω hω_gen hk
   have hprof : sharpSubspaceProfile (ι := ι) s R (2 * t) ≤ R + 1 / (2 * (t : ℝ)) :=
     sharpSubspaceProfile_two_mul_le_rate_add s t R ht_pos hs_gt hR0 hR1
   have hweak : StrongLineDecodable (C : Set (ι → Fin s → F)) δ

@@ -71,9 +71,6 @@ theorem bucket_exists_common_codeword
     (h_elem_ja : ∀ x ∈ (Affine.affineSubspaceAtOrigin (F := F) u₀ dirs : Set (ι → F)),
         jointAgreement (C := (V : Set (ι → F))) (δ := δ)
           (W := finMapTwoWords u₀ (x - u₀)))
-    (h_pair_ja : ∀ j : Fin k,
-        jointAgreement (C := (V : Set (ι → F))) (δ := δ)
-          (W := finMapTwoWords u₀ (dirs j)))
     (h_list_bound : ∀ (w : ι → F) (close : Finset (ι → F)),
         (∀ v ∈ close, v ∈ (V : Set (ι → F)) ∧ δᵣ(w, v) ≤ δ) →
         close.card < Fintype.card F)
@@ -86,7 +83,12 @@ theorem bucket_exists_common_codeword
         D' ⊆ Finset.filter (fun c => w_j c = dirs j c) Finset.univ := by
   classical
   -- Step A: Per-direction JA witnesses.
-  choose S_j hS_j v_pair hv_pair using fun j => h_pair_ja j
+  choose S_j hS_j v_pair hv_pair using fun j => by
+    have hmem : u₀ + dirs j ∈
+        (Affine.affineSubspaceAtOrigin (F := F) u₀ dirs : Set (ι → F)) :=
+      (Affine.mem_affineSubspaceFrom_iff (F := F) u₀ dirs _).mpr
+        ⟨Pi.single j 1, by simp⟩
+    simpa only [add_sub_cancel_left] using h_elem_ja (u₀ + dirs j) hmem
   set U_fin := affineFinset u₀ dirs
   have h_elem_fin : ∀ x ∈ U_fin, jointAgreement (C := (V : Set (ι → F))) (δ := δ)
       (W := finMapTwoWords u₀ (x - u₀)) := by
@@ -556,11 +558,10 @@ private lemma div_two_mul_ceil_succ_lt {s η : ℝ} (hη : 0 < η) :
   rw [div_lt_iff₀ (mul_pos two_pos hm_pos)]
   exact ((div_lt_iff₀ (mul_pos two_pos hη)).mp hm_gt).trans_eq (by ring)
 
-omit [DecidableEq ι] [DecidableEq F] [SampleableType F] in
+omit [Nonempty ι] [DecidableEq ι] [DecidableEq F] [SampleableType F] in
 /-- Construct a GS multiplicity `m` satisfying both the Johnson radius bound and the degree
 bound. Witness: `m = ⌈√ρ/(2η)⌉ + 1` where `η = 1 - √ρ - δ`. -/
 lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
-    (hδ_pos : 0 < δ)
     (hδ : δ < 1 - ReedSolomon.sqrtRate deg domain)
     (hRS : deg + 1 ≤ Fintype.card ι)
     (hε : errorBound δ deg domain < 1)
@@ -568,6 +569,7 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
     ∃ m : ℕ, 1 ≤ m
       ∧ (δ : ℝ) < gs_johnson deg (Fintype.card ι) m
       ∧ gs_degree_bound deg (Fintype.card ι) m / (deg - 1) < Fintype.card F := by
+  have : Nonempty ι := Fintype.card_pos_iff.mp (by omega)
   have hn_le : Fintype.card ι ≤ Fintype.card F :=
     Fintype.card_le_of_injective domain domain.injective
   have hsqrt_le : ReedSolomon.sqrtRate deg domain ≤ 1 :=
@@ -609,7 +611,7 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
         exact_mod_cast (show 0 < Fintype.card ι from Fintype.card_pos)
       have hdeg_pos : (0 : ℝ) < deg := by exact_mod_cast (show 0 < deg by omega)
       have hs_lt_one : s < 1 := by
-        linarith only [NNReal.coe_pos.mpr hδ_pos, hδ_real]
+        linarith only [NNReal.coe_nonneg δ, hδ_real]
       have hs_eq : s = Real.sqrt ((deg : ℝ) / Fintype.card ι) := by
         simp only [s, hs_def, ReedSolomon.sqrtRate]
         rw [Real.coe_sqrt]; congr 1
@@ -766,14 +768,23 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
 
 omit [DecidableEq ι] [SampleableType F] in
 theorem rs_listDecoding_card_lt_field {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
-    (hδ_pos : 0 < δ) (hδ : δ < 1 - ReedSolomon.sqrtRate deg domain)
-    (hRS : deg + 1 ≤ Fintype.card ι)
+    (hδ : δ < 1 - ReedSolomon.sqrtRate deg domain)
     (hε : errorBound δ deg domain < 1)
     (w : ι → F)
     (closeWords : Finset (ι → F))
     (hclose : ∀ v ∈ closeWords, v ∈ ReedSolomon.code domain deg ∧ δᵣ(w, v) ≤ δ) :
     closeWords.card < Fintype.card F := by
   classical
+  have hRS : deg + 1 ≤ Fintype.card ι := by
+    by_contra h
+    have hfull : Fintype.card ι ≤ deg := by omega
+    have hrate : LinearCode.rate (ReedSolomon.code domain deg) = 1 := by
+      rw [ReedSolomon.rateOfLinearCode_eq_min_div, min_eq_right hfull]
+      exact div_self (by exact_mod_cast Fintype.card_ne_zero (α := ι))
+    have hsone : ReedSolomon.sqrtRate deg domain = 1 := by
+      simp [ReedSolomon.sqrtRate, hrate]
+    rw [hsone, tsub_self] at hδ
+    exact not_lt_zero hδ
   -- Each codeword v is in (degreeLT F deg).map (evalOnPoints domain),
   -- so ∃ P ∈ degreeLT, evalOnPoints domain P = v.
   -- Choose a polynomial witness for each codeword.
@@ -1074,7 +1085,7 @@ theorem rs_listDecoding_card_lt_field {deg : ℕ} {domain : ι ↪ F} {δ : ℝ�
   -- Requires strict gap δ < 1-sqrtRate (from rationality of δᵣ).
   -- gs_johnson(k,n,m) = 1-√(k/n)·(1+1/(2m)) → 1-√(k/n) as m→∞.
   obtain ⟨m, hm, hm_johnson, hm_degree⟩ :=
-    exists_gs_multiplicity hδ_pos hδ hRS hε hJ
+    exists_gs_multiplicity hδ hRS hε hJ
   obtain ⟨Q, hQ⟩ := GuruswamiSudan.gs_existence
     deg (Fintype.card ι) ωs f hdeg hm
   refine ⟨Q, hQ.Q_ne_0, ?_, ?_⟩
@@ -1144,7 +1155,6 @@ theorem correlatedAgreement_affine_spaces {k : ℕ} [NeZero k]
     {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
     (hdeg : 0 < deg)
     (hδ : δ < 1 - ReedSolomon.sqrtRate deg domain)
-    (hRS : deg + 1 ≤ Fintype.card ι)
     (_hε : errorBound δ deg domain < 1) :
     δ_ε_correlatedAgreementAffineSpaces (k := k) (A := F) (F := F) (ι := ι)
       (C := ReedSolomon.code domain deg) (δ := δ) (ε := errorBound δ deg domain) := by
@@ -1235,30 +1245,10 @@ theorem correlatedAgreement_affine_spaces {k : ℕ} [NeZero k]
     show (δᵣ'(u_star + z • dir, (V : Set (ι → F))) : ℝ≥0) ≤ δ_star
     simp only [hδ_star_def]
     exact_mod_cast hx_le_div
-  -- ═══════════════════════════════════════════════════════════
-  -- Step 3: Direction generators through u* stay in U.
-  -- ═══════════════════════════════════════════════════════════
-  have h_dir_in_U_star : ∀ j : Fin k, ∀ z : F,
-      u_star + z • Fin.tail u j ∈ U := by
-    intro j z
-    rw [← hU_star_eq]
-    exact (Affine.mem_affineSubspaceFrom_iff (F := F) u_star (Fin.tail u) _).mpr
-      ⟨Pi.single j z, by simp⟩
-  -- ═══════════════════════════════════════════════════════════
-  -- Step 4: Apply Thm 1.4 with u* and δ_star.
-  -- ═══════════════════════════════════════════════════════════
   have hε_star : errorBound δ_star deg domain < 1 :=
     lt_of_le_of_lt (DivergenceOfSets.errorBound_mono hdeg hδ_star_le hδ) _hε
   have hεδ_star_lt_one : (errorBound δ_star deg domain : ENNReal) < 1 := by
     exact_mod_cast hε_star
-  have h_pair_ja : ∀ j : Fin k,
-      jointAgreement (C := (V : Set (ι → F))) (δ := δ_star)
-        (W := finMapTwoWords u_star (Fin.tail u j)) := by
-    intro j
-    apply RS_correlatedAgreement_affineLines hdeg hδ_star_lt_sqrt
-    rw [h_line_pr1_star _ (h_dir_in_U_star j)]
-    exact hεδ_star_lt_one
-  choose S_j hS_j v_pair hv_pair using fun j => h_pair_ja j
   -- Step 5: BCIKS20 §6.3 bucketing with u* and δ_star.
   have h_elem_ja : ∀ x ∈ (Affine.affineSubspaceAtOrigin (F := F) u_star (Fin.tail u) :
       Set (ι → F)),
@@ -1271,37 +1261,9 @@ theorem correlatedAgreement_affine_spaces {k : ℕ} [NeZero k]
     exact hεδ_star_lt_one
   have hδ_star_strict : δ_star < 1 - ReedSolomon.sqrtRate deg domain :=
     lt_of_le_of_lt hδ_star_le hδ
-  have h_bucket := bucket_exists_common_codeword V u_star (Fin.tail u) h_elem_ja h_pair_ja
-    (fun w close hclose => by
-      by_cases hδs_pos : (0 : ℝ≥0) < δ_star
-      · exact rs_listDecoding_card_lt_field hδs_pos hδ_star_strict hRS hε_star w close
-          (fun v hv => ⟨(hclose v hv).1, (hclose v hv).2⟩)
-      · -- δ_star = 0: only w itself can be at distance 0, so |closeWords| ≤ 1 < |F|
-        push Not at hδs_pos
-        have hδs_eq : δ_star = 0 := le_antisymm hδs_pos (zero_le)
-        have hclose_eq : ∀ v ∈ close, v = w := by
-          intro v hv
-          have hd := (hclose v hv).2
-          have hd0 : hammingDist w v = 0 := by
-            rw [hammingDist_eq_zero]
-            by_contra hne
-            have hpos : 0 < hammingDist w v := Nat.pos_of_ne_zero (hammingDist_ne_zero.mpr hne)
-            have hrel_pos : (0 : ℚ≥0) < δᵣ(w, v) := by
-              simp only [relHammingDist]
-              exact div_pos (Nat.cast_pos.mpr hpos) (by positivity)
-            have hrel_le : (δᵣ(w, v) : ℝ≥0) ≤ 0 := by
-              calc (δᵣ(w, v) : ℝ≥0) ≤ δ_star := hd
-                _ = 0 := hδs_eq
-            exact absurd (show (0 : ℝ≥0) < δᵣ(w, v) from by exact_mod_cast hrel_pos)
-              (not_lt.mpr hrel_le)
-          exact (hammingDist_eq_zero.mp hd0).symm
-        have hcard1 : close.card ≤ 1 := by
-          apply Finset.card_le_one.mpr
-          intro a ha b hb
-          exact (hclose_eq a ha).trans (hclose_eq b hb).symm
-        have hF_card : 1 < Fintype.card F :=
-          Fintype.one_lt_card_iff_nontrivial.mpr (Field.toNontrivial)
-        omega)
+  have h_bucket := bucket_exists_common_codeword V u_star (Fin.tail u) h_elem_ja
+    (fun w close hclose => rs_listDecoding_card_lt_field hδ_star_strict hε_star w close
+      (fun v hv => ⟨(hclose v hv).1, (hclose v hv).2⟩))
     (fun v hv hv_close => by
       -- hδ_exact: δᵣ(u*, v) ≥ δ_star. Since δ_star = δᵣ'(u*, V) = min_{v∈V} δᵣ(u*, v).
       rw [← hu_star_eq]

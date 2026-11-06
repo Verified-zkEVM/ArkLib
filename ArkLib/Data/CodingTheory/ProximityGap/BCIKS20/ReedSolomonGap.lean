@@ -46,16 +46,6 @@ theorem proximity_gap_RSCodes {k t : ℕ} [NeZero k] [NeZero t] {deg : ℕ} {dom
       δ
       (errorBound δ deg domain) := by
   classical
-  have hRS : deg + 1 ≤ Fintype.card ι := by
-    by_contra h
-    have hfull : Fintype.card ι ≤ deg := by omega
-    have hrate : LinearCode.rate (ReedSolomon.code domain deg) = 1 := by
-      rw [ReedSolomon.rateOfLinearCode_eq_min_div, min_eq_right hfull]
-      exact div_self (by exact_mod_cast Fintype.card_ne_zero (α := ι))
-    have hsone : ReedSolomon.sqrtRate deg domain = 1 := by
-      simp [ReedSolomon.sqrtRate, hrate]
-    rw [hsone, tsub_self] at hδ
-    exact not_lt_zero hδ
   intro S hS _inst
   obtain ⟨i, rfl⟩ := hS
   -- Let `S` abbreviate the affine-span finset; use for cleaner case analysis.
@@ -238,7 +228,7 @@ theorem proximity_gap_RSCodes {k t : ℕ} [NeZero k] [NeZero t] {deg : ℕ} {dom
       -- Apply Thm 1.7 at k := m + 1 to get jointAgreement (W := u').
       have hja_u' : jointAgreement (C := (ReedSolomon.code domain deg : Set (ι → F)))
           (δ := δ) (W := u') :=
-        correlatedAgreement_affine_spaces (k := m + 1) hdeg hδ hRS hε u' hPr_aff
+        correlatedAgreement_affine_spaces (k := m + 1) hdeg hδ hε u' hPr_aff
       -- Convert jointAgreement (W := u') → jointAgreement (W := C i).
       -- Witnesses: v_0 for C i 0 stays, v_{j+1} + v_0 ∈ RS.code (submodule closure)
       -- agrees with C i (j+1) on S because v_{j+1} agrees with u'(j+1) = C i (j+1) - C i 0

@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.Polynomial.BinaryTraceQuotient
+public import Mathlib.Algebra.CharP.CharAndCard
 
 /-!
 # Agreement counts from binary trace quotients
@@ -27,14 +28,33 @@ open Polynomial FiniteField
 variable {F : Type*} [Field F] [Fintype F] [DecidableEq F] [CharP F 2]
 
 omit [DecidableEq F] in
-/-- For a nonzero evaluation point, the quotient agrees with the power-plus-reciprocal word
+/-- The quotient agrees with the power-plus-reciprocal word
 exactly on a trace-one fiber after the reciprocal coefficient is normalized as `s⁻¹`. -/
-lemma binaryTraceQuotient_agreement_iff {m : ℕ} (hm : 3 ≤ m)
-    (hcard : Fintype.card F = 2 ^ m) {s x : F} (hs : s ≠ 0) (hx : x ≠ 0) :
+lemma binaryTraceQuotient_agreement_iff {m : ℕ}
+    (hcard : Fintype.card F = 2 ^ m) {s x : F} (hs : s ≠ 0) :
     (binaryTraceQuotient m s).eval x =
         x ^ (binaryTraceTopDegree m - 1) + s⁻¹ * x⁻¹ ↔
       binaryTrace m (s ^ 2 * x) = 1 := by
-  have hnorm := eval_binaryNormalizedTracePoly (by omega) hcard hs x
+  have hm : 1 ≤ m := by
+    have hfield := Fintype.one_lt_card (α := F)
+    by_contra h
+    have : m = 0 := by omega
+    simp [this] at hcard
+    omega
+  by_cases hx : x = 0
+  · subst x
+    by_cases hmOne : m = 1
+    · subst m
+      simp [binaryTraceQuotient, binaryTraceTopDegree]
+    · have hpow : binaryTraceTopDegree m - 1 ≠ 0 := by
+        have hp := Nat.pow_le_pow_right (n := 2) (by omega : 1 ≤ 2)
+          (by omega : 1 ≤ m - 1)
+        simp only [binaryTraceTopDegree]
+        norm_num at hp
+        omega
+      rw [eval_binaryTraceQuotient_zero (by omega) s]
+      simp [hpow, hs]
+  have hnorm := eval_binaryNormalizedTracePoly hm hcard hs x
   rw [binaryNormalizedTracePoly, eval_add, eval_X_pow, eval_mul, eval_X] at hnorm
   constructor
   · intro hagree
@@ -75,6 +95,7 @@ lemma binaryTraceQuotient_agreement_iff {m : ℕ} (hm : 3 ≤ m)
             rw [add_assoc]
       _ = x ^ binaryTraceTopDegree m + s⁻¹ := by rw [hnorm]
 
+omit [CharP F 2] in
 /-- Exactly half the field agrees with the power-plus-reciprocal word; zero is not an agreement. -/
 lemma binaryTraceQuotient_agreement_card {m : ℕ} (hm : 3 ≤ m)
     (hcard : Fintype.card F = 2 ^ m) {s : F} (hs : s ≠ 0) :
@@ -83,19 +104,7 @@ lemma binaryTraceQuotient_agreement_card {m : ℕ} (hm : 3 ≤ m)
         x ^ (binaryTraceTopDegree m - 1) + s⁻¹ * x⁻¹).card =
       Fintype.card F / 2 := by
   classical
-  -- Totalized inversion is zero at the origin, while the quotient has constant term s.
-  have hzero_not_agree :
-      ¬(binaryTraceQuotient m s).eval 0 =
-        (0 : F) ^ (binaryTraceTopDegree m - 1) + s⁻¹ * (0 : F)⁻¹ := by
-    rw [eval_binaryTraceQuotient_zero (by omega) s]
-    simp only [inv_zero, mul_zero, add_zero]
-    rw [zero_pow (by
-      simp [binaryTraceTopDegree]
-      have : 2 ^ 1 ≤ 2 ^ (m - 1) := Nat.pow_le_pow_right (by omega) (by omega)
-      norm_num at this
-      omega)]
-    exact hs
-  --
+  have : CharP F 2 := charP_of_card_eq_prime_pow hcard
   -- Multiplication by s² permutes the field and preserves the trace-fiber count.
   have himage : Function.Bijective (fun x : F ↦ s ^ 2 * x) := by
     exact (Equiv.mulLeft₀ (s ^ 2) (pow_ne_zero 2 hs)).bijective
@@ -110,10 +119,7 @@ lemma binaryTraceQuotient_agreement_card {m : ℕ} (hm : 3 ≤ m)
           congr 1
           ext x
           simp only [Finset.mem_filter, Finset.mem_univ, true_and]
-          by_cases hx : x = 0
-          · subst x
-            exact iff_of_false hzero_not_agree (by simp)
-          · exact binaryTraceQuotient_agreement_iff hm hcard hs hx
+          exact binaryTraceQuotient_agreement_iff hcard hs
     _ = traceSet.card := by
       apply Finset.card_bij (fun x _ ↦ s ^ 2 * x)
       · intro x hx
@@ -126,6 +132,7 @@ lemma binaryTraceQuotient_agreement_card {m : ℕ} (hm : 3 ≤ m)
         simpa [traceSet] using hy
     _ = Fintype.card F / 2 := hcard_trace
 
+omit [CharP F 2] in
 /-- At `s = 1`, the quotient agrees with the pure power at the nonzero trace-zero points. -/
 lemma binaryTraceQuotient_one_nonzero_agreement_card {m : ℕ} (hm : 3 ≤ m)
     (hcard : Fintype.card F = 2 ^ m) :
@@ -134,6 +141,7 @@ lemma binaryTraceQuotient_one_nonzero_agreement_card {m : ℕ} (hm : 3 ≤ m)
         x ^ (binaryTraceTopDegree m - 1)).card =
       Fintype.card F / 2 - 1 := by
   classical
+  have : CharP F 2 := charP_of_card_eq_prime_pow hcard
   let traceSet := Finset.univ.filter fun x : F ↦ binaryTrace m x = 0
   have hcard_trace : traceSet.card = Fintype.card F / 2 := by
     simpa [traceSet, binaryTraceFiber] using binaryTraceFiber_zero_card (F := F) (by omega) hcard

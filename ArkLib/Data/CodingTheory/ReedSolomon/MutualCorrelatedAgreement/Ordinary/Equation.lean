@@ -49,15 +49,15 @@ namespace ReedSolomon
 open Polynomial MvPolynomial PolynomialDifferential
 
 open Classical in
-/-- Every nonzero ordinary equation with root degree at most `B ≥ 1` and coefficient height at
+/-- Every nonzero ordinary equation with root degree at most `B` and coefficient height at
 most `h` has one exceptional set of size at most `ordinaryUnifiedPowerFactorAt n D ℓ B h A L`.
-For `0 < D, ℓ` and `D < L ≤ A`, every degree-`< D + 1` root of the specialized equation with at
+For `0 < D` and `D < L ≤ A`, every degree-`< D + 1` root of the specialized equation with at
 least `A` agreements has exact power agreement outside this set, in every characteristic. -/
 theorem exists_exceptional_ordinaryPowerEquation_unifiedAt
     {F E : Type*} [Field F] [Field E] [IsAlgClosed E] {n ℓ : ℕ}
     (domain : Fin n ↪ F) (values : Fin (ℓ + 1) → Fin n → F) (ι : F →+* E)
     (Q : DifferentialPolynomial E[X] 0) (D h B L A : ℕ)
-    (hQ : Q ≠ 0) (hD : 0 < D) (hℓ : 0 < ℓ) (hB : 1 ≤ B) (hDL : D < L) (hLA : L ≤ A)
+    (hQ : Q ≠ 0) (hD : 0 < D) (hDL : D < L) (hLA : L ≤ A)
     (hheight : CoeffNatDegreeLE Q h) (hdegree : Q.degreeOf (some 0) ≤ B) :
     ∃ exceptional : Finset E,
       (exceptional.card : ℚ) ≤ ordinaryUnifiedPowerFactorAt n D ℓ B h A L ∧
@@ -67,6 +67,27 @@ theorem exists_exceptional_ordinaryPowerEquation_unifiedAt
           (powerBatchedWord (fun t i ↦ ι (values t i)) z) P).card →
         HasExactPowerAgreement domain values ι (D + 1) z P := by
   classical
+  by_cases hAn : A ≤ n
+  swap
+  · refine ⟨∅, ?_, ?_⟩
+    · simp only [Finset.card_empty, Nat.cast_zero]
+      unfold ordinaryUnifiedPowerFactorAt ordinaryUnifiedPowerFactorRawAt
+      positivity
+    · intro z hz P hP hroot hagree
+      have hcard := Finset.card_le_univ
+        (polynomialAgreementSet (domain.trans ⟨ι, ι.injective⟩)
+          (powerBatchedWord (fun t i ↦ ι (values t i)) z) P)
+      simp only [Fintype.card_fin] at hcard
+      omega
+  rcases Nat.eq_zero_or_pos B with rfl | hB
+  · obtain ⟨ex, hcard, hnonzero⟩ := exists_exceptional_jet_independent_content
+      Q hQ (Nat.eq_zero_of_le_zero hdegree) hheight
+    refine ⟨ex, ?_, fun z hz P _ hroot _ ↦ (hnonzero z hz P hroot).elim⟩
+    have hratio : (1 : ℚ) ≤ ((n - L + 1 : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ) :=
+      (one_le_div (by positivity)).mpr (by exact_mod_cast (show A - L + 1 ≤ n - L + 1 by omega))
+    simpa [ordinaryUnifiedPowerFactorAt, ordinaryUnifiedPowerFactorRawAt, ordinaryPsi] using
+      (show (ex.card : ℚ) ≤ h by exact_mod_cast hcard).trans
+        (le_mul_of_one_le_left (by positivity) hratio)
   let flat := ordinaryFlatten E Q
   let height (R : MvPolynomial (Option (Fin 2)) E) := R.degreeOf (some 1)
   let theta : ℚ := ((n - L + 1 : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)
@@ -102,7 +123,7 @@ theorem exists_exceptional_ordinaryPowerEquation_unifiedAt
       ∀ z ∉ ex, ∀ P, ev z P c.rep = 0 → Good z P := by
     intro c hc
     obtain ⟨ex, hcard, hgood⟩ := exists_exceptional_irreducibleOrdinaryPowerEquation_unifiedAt
-      domain values ι (ordinaryUnflatten E c.rep) D (height c.rep) L A hD hℓ hDL hLA
+      domain values ι (ordinaryUnflatten E c.rep) D (height c.rep) L A hD hDL hLA
       (coeffNatDegreeLE_ordinaryUnflatten_of_degreeOf_le _ le_rfl)
       (irreducible_rep_of_mem_positiveDegreeFactorClasses hc |>.map (ordinaryUnflatten E))
       (by simpa only [hdegUnflat] using (mem_positiveDegreeFactorClasses.mp hc).2)
@@ -133,8 +154,8 @@ theorem exists_exceptional_ordinaryPowerEquation
     {F E : Type*} [Field F] [Field E] [IsAlgClosed E] {n ℓ : ℕ}
     (domain : Fin n ↪ F) (values : Fin (ℓ + 1) → Fin n → F) (ι : F →+* E)
     (Q : DifferentialPolynomial E[X] 0) (D h mu A : ℕ)
-    (hQ : Q ≠ 0) (hD : 0 < D) (hℓ : 0 < ℓ) (hmu : 1 ≤ mu)
-    (hDA : D + 1 ≤ A) (hAn : A ≤ n)
+    (hQ : Q ≠ 0) (hD : 0 < D)
+    (hDA : D + 1 ≤ A)
     (hheight : CoeffNatDegreeLE Q h) (hdegree : Q.degreeOf (some 0) ≤ mu) :
     ∃ exceptional : Finset E,
       (exceptional.card : ℚ) ≤ ordinaryCurveFactorRaw
@@ -144,8 +165,21 @@ theorem exists_exceptional_ordinaryPowerEquation
         A ≤ (polynomialAgreementSet (domain.trans ⟨ι, ι.injective⟩)
           (powerBatchedWord (fun t i ↦ ι (values t i)) z) P).card →
         HasExactPowerAgreement domain values ι (D + 1) z P := by
+  classical
+  by_cases hAn : A ≤ n
+  swap
+  · refine ⟨∅, ?_, ?_⟩
+    · simp only [Finset.card_empty, Nat.cast_zero]
+      unfold ordinaryCurveFactorRaw
+      positivity
+    · intro z hz P hP hroot hagree
+      have hcard := Finset.card_le_univ
+        (polynomialAgreementSet (domain.trans ⟨ι, ι.injective⟩)
+          (powerBatchedWord (fun t i ↦ ι (values t i)) z) P)
+      simp only [Fintype.card_fin] at hcard
+      omega
   obtain ⟨ex, hcard, hex⟩ := exists_exceptional_ordinaryPowerEquation_unifiedAt
-    domain values ι Q D h mu (D + 1) A hQ hD hℓ hmu (by omega) hDA hheight hdegree
+    domain values ι Q D h mu (D + 1) A hQ hD (by omega) hDA hheight hdegree
   rw [ordinaryUnifiedPowerFactorAt_succ_eq n D ℓ mu h A hDA hAn] at hcard
   exact ⟨ex, hcard.trans (ordinaryUnifiedPowerFactorRaw_le_ordinaryCurveFactorRaw n ℓ mu h
     (by positivity) hD), hex⟩
@@ -157,7 +191,7 @@ theorem exists_exceptional_ordinaryEquation
     {F E : Type*} [Field F] [Field E] [IsAlgClosed E] {n : ℕ}
     (domain : Fin n ↪ F) (f g : Fin n → F) (ι : F →+* E)
     (Q : DifferentialPolynomial E[X] 0) (D h mu A : ℕ)
-    (hQ : Q ≠ 0) (hD : 0 < D) (hmu : 1 ≤ mu) (hDA : D + 1 ≤ A) (hAn : A ≤ n)
+    (hQ : Q ≠ 0) (hD : 0 < D) (hDA : D + 1 ≤ A)
     (hheight : CoeffNatDegreeLE Q h) (hdegree : Q.degreeOf (some 0) ≤ mu) :
     ∃ exceptional : Finset E,
       (exceptional.card : ℚ) ≤ ordinaryFactorRaw
@@ -169,7 +203,7 @@ theorem exists_exceptional_ordinaryEquation
         HasExactCorrelatedPair domain f g ι (D + 1) z P := by
   classical
   obtain ⟨exceptional, hcard, hgood⟩ := exists_exceptional_ordinaryPowerEquation
-    (ℓ := 1) domain ![f, g] ι Q D h mu A hQ hD (by omega) hmu hDA hAn hheight hdegree
+    (ℓ := 1) domain ![f, g] ι Q D h mu A hQ hD hDA hheight hdegree
   have hcharge : ordinaryCurveFactorRaw
       (((n - D : ℕ) : ℚ) / ((A - D : ℕ) : ℚ)) n D 1 mu h =
         ordinaryFactorRaw (((n - D : ℕ) : ℚ) / ((A - D : ℕ) : ℚ)) n D mu h := by
@@ -186,14 +220,14 @@ theorem exists_exceptional_ordinaryEquation
 
 /-- Over an arbitrary field, every nonzero ordinary equation with root degree at most `B` and
 coefficient height at most `h` has one exceptional set of size at most
-`ordinaryUnifiedPowerFactorAtOrHeight n D ℓ B h A L`. For `0 < D, ℓ` and `D < L ≤ A`, every
+`ordinaryUnifiedPowerFactorAtOrHeight n D ℓ B h A L`. For `0 < D` and `D < L ≤ A`, every
 degree-`< D + 1` root of the specialized equation with at least `A` agreements has exact power
 agreement over the base field outside this set. -/
 theorem exists_baseExceptional_ordinaryPowerEquation
     {F : Type*} [Field F] [instF : DecidableEq F] {n ℓ : ℕ}
     (domain : Fin n ↪ F) (values : Fin (ℓ + 1) → Fin n → F)
     (Q : DifferentialPolynomial F[X] 0) (D h B L A : ℕ)
-    (hQ : Q ≠ 0) (hD : 0 < D) (hℓ : 0 < ℓ) (hDL : D < L) (hLA : L ≤ A)
+    (hQ : Q ≠ 0) (hD : 0 < D) (hDL : D < L) (hLA : L ≤ A)
     (hheight : CoeffNatDegreeLE Q h) (hdegree : Q.degreeOf (some 0) ≤ B) :
     ∃ exceptional : Finset F,
       (exceptional.card : ℚ) ≤ ordinaryUnifiedPowerFactorAtOrHeight n D ℓ B h A L ∧
@@ -223,7 +257,7 @@ theorem exists_baseExceptional_ordinaryPowerEquation
     simpa only [map_zero] using hz
   have hQdegree : QE.degreeOf (some 0) ≤ B := (jetDegree_map_le _ Q 0).trans hdegree
   obtain ⟨ex, hexCard, hex⟩ := exists_exceptional_ordinaryPowerEquation_unifiedAt
-    domain values ι QE D h B L A hQE hD hℓ hB hDL hLA
+    domain values ι QE D h B L A hQE hD hDL hLA
     (CoeffNatDegreeLE.map_coefficients ι Q hheight) hQdegree
   obtain ⟨baseEx, hbaseCard, hbase⟩ := exists_exceptional_equation_powerAgreement_descend
     domain values ι Q (D + 1) A ex fun z hz P hP hagree hroot ↦ hex z hz P hP hroot hagree

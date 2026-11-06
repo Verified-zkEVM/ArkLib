@@ -70,7 +70,7 @@ theorem finite_regularSymbolicBadChallenges_card_le [DecidableEq F] [IsAlgClosed
     (domain : Fin n ↪ F) (f g : Fin n → F) (iota : F →+* E)
     (Q : DifferentialPolynomial E[X] r) (K k L A v h : ℕ)
     (hK : r < K) (hkK : k ≤ K) (hk : 0 < k) (hkL : k ≤ L)
-    (hLA : L ≤ A) (hAn : A ≤ n)
+    (hLA : L ≤ A)
     (hjet : Q.weightedTotalDegree (fun i ↦ i.elim 0 (fun _ ↦ 1)) ≤ v)
     (hheight : CoeffNatDegreeLE Q h)
     (hbin : ∀ i, r < i → i < K → (i.choose r : E) ≠ 0)
@@ -91,7 +91,7 @@ theorem finite_regularSymbolicBadChallenges_card_le [DecidableEq F] [IsAlgClosed
     (fun z ↦ separant (challengeSpecialization Q z) (Fin.last r)) witness hsep
   let jet (z : E) : Fin (r + 1) → E := polynomialJet center (witness z)
   apply finite_symbolicTaylorChart_badChallenges_card_le domain f g iota center Q K k L A v h
-    hK hkK hk hkL hLA hAn hjet hheight S witness jet
+    hK hkK hk hkL hLA hjet hheight S witness jet
   · intro z hz
     let Qz := MvPolynomial.map (Polynomial.evalRingHom z) Q
     have hQz : Qz = challengeSpecialization Q z := by
@@ -127,20 +127,18 @@ theorem finite_regularSymbolicBadChallenges_card_le [DecidableEq F] [IsAlgClosed
 /-- The full set of regular symbolic bad challenges is finite. -/
 theorem regularSymbolicBadChallenges_finite [DecidableEq F] [IsAlgClosed E]
     (domain : Fin n ↪ F) (f g : Fin n → F) (iota : F →+* E)
-    (Q : DifferentialPolynomial E[X] r) (K k L A v h : ℕ)
-    (hK : r < K) (hkK : k ≤ K) (hk : 0 < k) (hkL : k ≤ L)
-    (hLA : L ≤ A) (hAn : A ≤ n)
-    (hjet : Q.weightedTotalDegree (fun i ↦ i.elim 0 (fun _ ↦ 1)) ≤ v)
-    (hheight : CoeffNatDegreeLE Q h)
+    (Q : DifferentialPolynomial E[X] r) (K k L A : ℕ)
+    (hkK : k ≤ K) (hk : 0 < k) (hkL : k ≤ L)
+    (hLA : L ≤ A)
     (hbin : ∀ i, r < i → i < K → (i.choose r : E) ≠ 0) :
     (regularSymbolicBadChallenges domain f g iota Q k A).Finite := by
-  by_contra hinfinite
-  obtain ⟨N, hN⟩ := exists_nat_gt (regularSymbolicAgreementBound n r K k L A v h)
-  obtain ⟨S, hS, hcard⟩ := Set.Infinite.exists_subset_card_eq hinfinite N
-  have hb := finite_regularSymbolicBadChallenges_card_le domain f g iota Q K k L A v h
-    hK hkK hk hkL hLA hAn hjet hheight hbin S hS
-  rw [hcard] at hb
-  exact (not_lt_of_ge hb) hN
+  let v : ℕ := Q.weightedTotalDegree (fun i ↦ i.elim 0 (fun _ ↦ 1))
+  have hjet : Q.weightedTotalDegree (fun i ↦ i.elim 0 (fun _ ↦ 1)) ≤ v := le_rfl
+  exact Set.finite_of_forall_finset_card_le (R := ℚ) fun S hS ↦
+    finite_regularSymbolicBadChallenges_card_le domain f g iota Q (max K (r + 1)) k L A
+      v (coeffNatDegree Q)
+      (by omega) (hkK.trans (le_max_left _ _)) hk hkL hLA hjet
+      (coeffNatDegreeLE_coeffNatDegree Q) (fun i hi hiK ↦ hbin i hi (by omega)) S hS
 
 /-- One exceptional set works for every close regular solution of the symbolic equation, with
 exact equality of full agreement sets and base-field polynomial pairs. -/
@@ -148,7 +146,7 @@ theorem exists_exceptional_regularSymbolicCorrelatedAgreement [DecidableEq F] [I
     (domain : Fin n ↪ F) (f g : Fin n → F) (iota : F →+* E)
     (Q : DifferentialPolynomial E[X] r) (K k L A v h : ℕ)
     (hK : r < K) (hkK : k ≤ K) (hk : 0 < k) (hkL : k ≤ L)
-    (hLA : L ≤ A) (hAn : A ≤ n)
+    (hLA : L ≤ A)
     (hjet : Q.weightedTotalDegree (fun i ↦ i.elim 0 (fun _ ↦ 1)) ≤ v)
     (hheight : CoeffNatDegreeLE Q h)
     (hbin : ∀ i, r < i → i < K → (i.choose r : E) ≠ 0) :
@@ -162,11 +160,11 @@ theorem exists_exceptional_regularSymbolicCorrelatedAgreement [DecidableEq F] [I
           (separant (challengeSpecialization Q z) (Fin.last r)) P ≠ 0 →
         HasExactCorrelatedPair domain f g iota k z P := by
   classical
-  have hfinite := regularSymbolicBadChallenges_finite domain f g iota Q K k L A v h
-    hK hkK hk hkL hLA hAn hjet hheight hbin
+  have hfinite := regularSymbolicBadChallenges_finite domain f g iota Q K k L A
+    hkK hk hkL hLA hbin
   refine ⟨hfinite.toFinset, ?_, ?_⟩
   · apply finite_regularSymbolicBadChallenges_card_le domain f g iota Q K k L A v h
-      hK hkK hk hkL hLA hAn hjet hheight hbin
+      hK hkK hk hkL hLA hjet hheight hbin
     exact fun z hz ↦ hfinite.mem_toFinset.mp hz
   · intro z hz P hdegree hagree hsol hsep
     by_contra hbad

@@ -86,7 +86,7 @@ theorem exists_johnson_line_exactCorrelatedPair
     rw [hz, map_zero]
   obtain ⟨ex, hcard, hgood⟩ := exists_exceptional_ordinaryEquation_base domain f g cert.Q D
     (johnsonH n D eta) (johnsonMu n D eta) A hQ (by omega)
-    (johnsonMu_pos hD hDlt) (johnson_degree_succ_le_agreement hDlt heta hthreshold)
+    (johnson_degree_succ_le_agreement hDlt heta hthreshold)
     hAn cert.challengeDegree_le cert.jetDegree_le
   have hcardReal : (ex.card : ℝ) ≤
       (ordinaryFactorRaw (((n - D : ℕ) : ℚ) / ((A - D : ℕ) : ℚ)) n D
@@ -255,7 +255,7 @@ theorem exists_weightedJohnson_line_exactCorrelatedPair
     apply (cert.specialization_sound (RingHom.id F) 0).1
     rw [hz, map_zero]
   obtain ⟨ex, hcard, hgood⟩ := exists_baseExceptional_ordinaryPowerEquation (ℓ := 1)
-    domain ![f, g] cert.Q D H B (D + 1) A hQ (by omega) (by omega) (by omega) hDA
+    domain ![f, g] cert.Q D H B (D + 1) A hQ (by omega) (by omega) hDA
     cert.challengeDegree_le cert.jetDegree_le
   rw [ordinaryUnifiedPowerFactorAtOrHeight_of_pos n D 1 B H A (D + 1) hcert.2.1,
     ordinaryUnifiedPowerFactorAt_succ_eq n D 1 B H A hDA hAn,
