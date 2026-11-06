@@ -32,7 +32,8 @@ one-sided witnesses of `ProximityGap.GrandChallenges`, for any field and any `(n
 * `lambda_interleaved_le_of_heightSlotCount`: certificate parameters bound the list size of
   `RS[n, k]` for every interleaving width.
 * `ListUpperWitness.ofCosetList`: on the domain of powers of a primitive `n`-th root of unity, the
-  coset list of `ReedSolomon.CosetList.big_list` gives an unsafe list witness.
+  coset list of `ReedSolomon.CosetList.exists_le_encard_closeCodewordsRel` gives an unsafe list
+  witness.
 
 ## Instantiating over a field
 
@@ -42,16 +43,20 @@ To certify `RS[n, k]` over a field `F` at threshold `ε*`:
    parameters `(m, M, μ, h)`, and check the slot inequality
    `firstOrderCurveShiftedRowSlotBound (k - 1) A m M μ n 1 h <
      firstOrderCurveShiftedHeightSlotCount (k - 1) A m M μ 1 h`.
-   It is a closed computation on natural numbers; when it is large, split the sums into blocks
-   and check each block with `decide +kernel` (`scripts/grand_challenges/gen_slot_arithmetic.py`
-   generates such a module). Then `lineExactAgreementBound_of_heightSlotCount` gives a line bound
-   `B`, and `McaLowerWitness.ofLineExactAgreement` gives the witness once `B ≤ ε* · |F|`.
+   It is a closed computation on natural numbers. Small instances close it by `decide`. For
+   large ones, `scripts/grand_challenges/gen_slot_arithmetic.py` generates a module that proves
+   it, in exactly this form, by checking blocks of the sums with `decide +kernel` over the
+   restatements of `GrandChallenges.SlotArithmetic`. Then
+   `lineExactAgreementBound_of_heightSlotCount` gives a line bound `B`, and
+   `McaLowerWitness.ofLineExactAgreement` gives the witness once `B ≤ ε* · |F|`.
    `lambda_interleaved_le_of_heightSlotCount` does the same for list decoding, for every
    interleaving width.
 2. Unsafe side. On the domain of powers of a primitive `n`-th root of unity, the coset
    construction gives a list of size `⌊C(n/s - 1, r) / (n/s)⌋`, hence a `ListUpperWitness` once
-   `ε* · |F|` is smaller (`ListUpperWitness.ofCosetList`). The list-to-correlated-agreement
-   transfer `CodingTheory.rs_Lambda_extended_le_of_epsCa` then gives a `McaUpperWitness`.
+   `ε* · |F|` is smaller (`ListUpperWitness.ofCosetList`). For a `McaUpperWitness`, the
+   list-to-correlated-agreement transfer `CodingTheory.rs_Lambda_extended_le_of_epsCa` turns the
+   list into a lower bound on the correlated-agreement error. No generic theorem packages this
+   step yet; `Goldilocks512.epsCa_gt` carries it out for `n = 512`.
 3. Field facts. Only `ringChar F`, `|F|` and, for the unsafe side, a primitive `n`-th root of
    unity enter. For a concrete field, prove them once: for example `GaloisField p d` with a
    primality certificate for `p`.
@@ -162,22 +167,27 @@ theorem lambda_interleaved_le_of_heightSlotCount {F : Type} [Field F] {n k m M �
   exact_mod_cast Nat.lt_succ_iff.mp (by exact_mod_cast this)
 
 /-- On the domain of powers of a primitive `n`-th root of unity, the coset list of
-`ReedSolomon.CosetList.big_list` gives an unsafe list witness for every interleaving width
-`m ≥ 1`, at the radius `δ = (n - (s r + s - 1)) / n`, once `ε* · |F|` is below
+`ReedSolomon.CosetList.exists_le_encard_closeCodewordsRel` gives an unsafe list witness for every
+interleaving width `m ≥ 1`, at the radius `δ = (n - (s r + s - 1)) / n`, once `ε* · |F|` is below
 `⌊C(n/s - 1, r) / (n/s)⌋`.
 
 It is `noncomputable` because the received word is chosen by `Classical.choose`. -/
 noncomputable def ListUpperWitness.ofCosetList {F : Type} [Field F] [Fintype F]
     [SampleableType F] [DecidableEq F] {ω : F} {n s r k : ℕ} (hω : IsPrimitiveRoot ω n)
-    (hs : 0 < s) (hsn : s ∣ n) (hr : 1 ≤ r) (hdeg : s * (r - 1) ≤ k)
-    (hkA : k ≤ s * r + s - 1) {ε_star δ : ℝ≥0}
-    (hδ : (δ : ℝ) = ((n : ℝ) - (s * r + s - 1 : ℕ)) / n) (hδ1 : δ ≤ 1) (m : ℕ) (hm : 1 ≤ m)
+    (hsn : s ∣ n) (hr : 1 ≤ r) (hdeg : s * (r - 1) ≤ k) {ε_star δ : ℝ≥0}
+    (hδ : (δ : ℝ) = ((n : ℝ) - (s * r + s - 1 : ℕ)) / n) (m : ℕ) (hm : 1 ≤ m)
     (hnum : (ε_star : ENNReal) * (Fintype.card F : ENNReal) <
       ((Nat.choose (n / s - 1) r / (n / s) : ℕ) : ENNReal)) :
     ListUpperWitness (ReedSolomon.code (primitiveRootDomain hω) k : Set (Fin n → F)) m
       ε_star :=
-  ListUpperWitness.ofEncardGt hδ1
-    ((fun (a : F) (_ : Fin m) ↦ a) ∘ (CosetList.big_list hω hs hsn hr hdeg hkA).choose) (by
+  ListUpperWitness.ofEncardGt (δ := δ) (by
+      rw [← NNReal.coe_le_coe, hδ, NNReal.coe_one]
+      rcases Nat.eq_zero_or_pos n with rfl | hn
+      · simp
+      · rw [div_le_one (by exact_mod_cast hn)]
+        linarith [(Nat.cast_nonneg (s * r + s - 1) : (0 : ℝ) ≤ _)])
+    ((fun (a : F) (_ : Fin m) ↦ a) ∘
+      (CosetList.exists_le_encard_closeCodewordsRel hω hsn hr hdeg).choose) (by
       rw [hδ]
       have he : Function.Injective (fun (a : F) (_ : Fin m) ↦ a) :=
         fun a b h ↦ congrFun h ⟨0, by omega⟩
@@ -185,9 +195,9 @@ noncomputable def ListUpperWitness.ofCosetList {F : Type} [Field F] [Fintype F]
           (fun (a : F) (_ : Fin m) ↦ a) ∘ c ∈
             ((ReedSolomon.code (primitiveRootDomain hω) k : Set (Fin n → F)) ^⋈ (Fin m)) := by
         intro c hc j; exact hc
-      have hle := (CosetList.big_list hω hs hsn hr hdeg hkA).choose_spec.trans
+      have hle := (CosetList.exists_le_encard_closeCodewordsRel hω hsn hr hdeg).choose_spec.trans
         (Code.encard_closeCodewordsRel_le_of_injective_comp he hCD
-          (CosetList.big_list hω hs hsn hr hdeg hkA).choose _)
+          (CosetList.exists_le_encard_closeCodewordsRel hω hsn hr hdeg).choose _)
       calc (ε_star : ENNReal) * (Fintype.card F : ENNReal)
           < ((Nat.choose (n / s - 1) r / (n / s) : ℕ) : ENNReal) := hnum
         _ = (((Nat.choose (n / s - 1) r / (n / s) : ℕ) : ℕ∞) : ENNReal) :=

@@ -16,12 +16,14 @@ Let `ω` be a primitive `512`-th root of unity in a finite field `F`. For the Re
 `GrandChallenges.CertificateWitnesses` at `δ = 377/512`:
 
 * `listUpperWitness`: a `ListUpperWitness` for every interleaving `m ≥ 1`, when
-  `|F| < Nbig · 2 ¹²⁸`;
-* `mcaUpperWitness`: a `McaUpperWitness`, when `1024 ≤ |F|` and `2 |F| < (Nbig - 1) · 2 ¹²⁸`.
+  `|F| < cosetListSize · 2 ¹²⁸`;
+* `mcaUpperWitness`: a `McaUpperWitness`, when `1024 ≤ |F|` and
+  `2 |F| < (cosetListSize - 1) · 2 ¹²⁸`.
 
-Here `Nbig = ⌊C(127, 33) / 128⌋ ≈ 2 ^ 94.3` is the size of the coset list of
-`ReedSolomon.CosetList.big_list` at `s = 4`, `r = 33`: agreement `135 = 512 - 377`. Both
-hypotheses hold for a field with `p ^ 3` elements, `p = 2 ^ 64 - 2 ^ 32 + 1`.
+Here `cosetListSize = ⌊C(127, 33) / 128⌋ ≈ 2 ^ 94.3` is the size of the coset list of
+`ReedSolomon.CosetList.exists_le_encard_closeCodewordsRel` at `s = 4`, `r = 33`: agreement
+`135 = 512 - 377`. Both hypotheses hold for a field with `p ^ 3` elements,
+`p = 2 ^ 64 - 2 ^ 32 + 1`.
 
 On the domain of powers of `ω`, together with `Goldilocks512.Lower`, every boundary index `kStar`
 of a `GrandMcaResolution` satisfies `273 ≤ kStar < 377`.
@@ -42,62 +44,48 @@ namespace ProximityGap.GrandChallenges.Goldilocks512
 
 /-- The list-size lower bound `⌊C(127, 33) / 128⌋`, named so that `simp` does not evaluate the
 binomial coefficient. -/
-def Nbig : ℕ := Nat.choose 127 33 / 128
+def cosetListSize : ℕ := Nat.choose 127 33 / 128
 
 variable {F : Type} [Field F] {ω : F}
 
-/-- The coset list at `n = 512`, `s = 4`, `r = 33`, `k = 128`. -/
-private theorem big_list (hω : IsPrimitiveRoot ω 512) :
-    ∃ w : Fin 512 → F, ((Nbig : ℕ) : ℕ∞) ≤
-      (Code.closeCodewordsRel (ReedSolomon.code (primitiveRootDomain hω) 128 :
-        Set (Fin 512 → F)) w (377 / 512)).encard := by
-  obtain ⟨w, hw⟩ := CosetList.big_list hω (s := 4) (r := 33) (k := 128) (by norm_num)
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-  refine ⟨w, ?_⟩
-  have h : (((512 : ℕ) : ℝ) - ((4 * 33 + 4 - 1 : ℕ) : ℝ)) / ((512 : ℕ) : ℝ) = 377 / 512 := by
-    norm_num
-  have e1 : (512 : ℕ) / 4 - 1 = 127 := by norm_num
-  have e2 : (512 : ℕ) / 4 = 128 := by norm_num
-  rw [h, e1, e2] at hw
-  exact hw
-
 /-- Unsafe-side witness for the list-decoding grand challenge at `δ = 377/512`, for every
 interleaving `m ≥ 1`, on the domain of powers of a primitive `512`-th root of unity, when
-`|F| < Nbig · 2 ¹²⁸`.
+`|F| < cosetListSize · 2 ¹²⁸`.
 
 It is `noncomputable` because the received word is chosen by `Classical.choose`. -/
 noncomputable def listUpperWitness [Fintype F] [SampleableType F] [DecidableEq F]
-    (hω : IsPrimitiveRoot ω 512) (hcard : Fintype.card F < Nbig * 2 ^ 128) (m : ℕ)
+    (hω : IsPrimitiveRoot ω 512) (hcard : Fintype.card F < cosetListSize * 2 ^ 128) (m : ℕ)
     (hm : 1 ≤ m) :
     ListUpperWitness (ReedSolomon.code (primitiveRootDomain hω) 128 : Set (Fin 512 → F)) m
       (1 / 2 ^ 128) :=
   ListUpperWitness.ofCosetList hω (s := 4) (r := 33) (δ := 377 / 512) (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num) (by norm_num) (by push_cast; norm_num)
-    (by rw [← NNReal.coe_le_coe]; push_cast; norm_num) m hm (by
-      have e : Nat.choose (512 / 4 - 1) 33 / (512 / 4) = Nbig := by
+    (by norm_num) (by push_cast; norm_num) m hm (by
+      have e : Nat.choose (512 / 4 - 1) 33 / (512 / 4) = cosetListSize := by
         rw [show (512 : ℕ) / 4 - 1 = 127 by norm_num, show (512 : ℕ) / 4 = 128 by norm_num]
         rfl
-      rw [e, ← ENNReal.coe_natCast (Fintype.card F), ← ENNReal.coe_natCast Nbig,
+      rw [e, ← ENNReal.coe_natCast (Fintype.card F), ← ENNReal.coe_natCast cosetListSize,
         ← ENNReal.coe_mul, ENNReal.coe_lt_coe, ← NNReal.coe_lt_coe]
       have h := (Nat.cast_lt (α := ℝ)).mpr hcard
       push_cast at h ⊢
       linarith)
 
-/-- The coset list also lies in `RS[F, (ωⁱ)ᵢ, 129]`. -/
+/-- The coset list at `n = 512`, `s = 4`, `r = 33`, taken in `RS[F, (ωⁱ)ᵢ, 129]`. -/
 private theorem lambda129_ge (hω : IsPrimitiveRoot ω 512) :
-    ((Nbig : ℕ) : ℕ∞) ≤
+    ((cosetListSize : ℕ) : ℕ∞) ≤
       Code.Lambda (ReedSolomon.code (primitiveRootDomain hω) 129 : Set (Fin 512 → F))
         (377 / 512) := by
   classical
-  obtain ⟨w, hw⟩ := big_list hω
-  refine hw.trans ((Code.encard_closeCodewordsRel_le_Lambda _ _ w).trans ?_)
-  exact Code.Lambda_le_of_injective_comp (e := id) Function.injective_id
-    (fun c hc ↦ ReedSolomon.code_mono (by norm_num) (primitiveRootDomain hω) hc) _
+  obtain ⟨w, hw⟩ := CosetList.exists_le_encard_closeCodewordsRel hω (s := 4) (r := 33) (k := 129)
+    (by norm_num) (by norm_num) (by norm_num)
+  have h : (((512 : ℕ) : ℝ) - ((4 * 33 + 4 - 1 : ℕ) : ℝ)) / ((512 : ℕ) : ℝ) = 377 / 512 := by
+    norm_num
+  rw [h, show (512 : ℕ) / 4 - 1 = 127 by norm_num, show (512 : ℕ) / 4 = 128 by norm_num] at hw
+  exact hw.trans (Code.encard_closeCodewordsRel_le_Lambda _ _ w)
 
 /-- The CA error of `RS[F, (ωⁱ)ᵢ, 128]` at `δ = 377/512` exceeds `2⁻¹²⁸` when `1024 ≤ |F|` and
-`2 |F| < (Nbig - 1) · 2 ¹²⁸`. -/
+`2 |F| < (cosetListSize - 1) · 2 ¹²⁸`. -/
 theorem epsCa_gt [Fintype F] [SampleableType F] [DecidableEq F] (hω : IsPrimitiveRoot ω 512)
-    (hF : 1024 ≤ Fintype.card F) (hcard : 2 * Fintype.card F < (Nbig - 1) * 2 ^ 128) :
+    (hF : 1024 ≤ Fintype.card F) (hcard : 2 * Fintype.card F < (cosetListSize - 1) * 2 ^ 128) :
     ((1 / 2 ^ 128 : ℝ≥0) : ENNReal) <
       ProximityGap.epsCa (F := F) (A := F)
         (ReedSolomon.code (primitiveRootDomain hω) 128 : Set (Fin 512 → F))
@@ -105,10 +93,10 @@ theorem epsCa_gt [Fintype F] [SampleableType F] [DecidableEq F] (hω : IsPrimiti
   set ε := ProximityGap.epsCa (F := F) (A := F)
     (ReedSolomon.code (primitiveRootDomain hω) 128 : Set (Fin 512 → F))
     (377 / 512 : ℝ).toNNReal (377 / 512 : ℝ).toNNReal with hε
-  set N := Nbig with hNdef
+  set N := cosetListSize with hNdef
   have hF' : (1024 : ℝ) ≤ (Fintype.card F : ℝ) := by exact_mod_cast hF
   have hc1 : 1 ≤ N := by
-    rw [hNdef]; unfold Nbig; rw [Nat.choose_eq_descFactorial_div_factorial]; decide +kernel
+    rw [hNdef]; unfold cosetListSize; rw [Nat.choose_eq_descFactorial_div_factorial]; decide +kernel
   have hbig : 2 * (Fintype.card F : ℝ) < ((N : ℝ) - 1) * 2 ^ 128 := by
     have h := (Nat.cast_lt (α := ℝ)).mpr hcard
     push_cast [Nat.cast_sub hc1] at h
@@ -153,12 +141,12 @@ theorem epsCa_gt [Fintype F] [SampleableType F] [DecidableEq F] (hω : IsPrimiti
 
 /-- Unsafe-side witness for the mutual-correlated-agreement grand challenge at `δ = 377/512`, on
 the domain of powers of a primitive `512`-th root of unity, when `1024 ≤ |F|` and
-`2 |F| < (Nbig - 1) · 2 ¹²⁸`.
+`2 |F| < (cosetListSize - 1) · 2 ¹²⁸`.
 
 It is `noncomputable` because the witness carries real-valued error bounds. -/
 noncomputable def mcaUpperWitness [Fintype F] [SampleableType F] [DecidableEq F]
     (hω : IsPrimitiveRoot ω 512) (hF : 1024 ≤ Fintype.card F)
-    (hcard : 2 * Fintype.card F < (Nbig - 1) * 2 ^ 128) :
+    (hcard : 2 * Fintype.card F < (cosetListSize - 1) * 2 ^ 128) :
     McaUpperWitness (ReedSolomon.code (primitiveRootDomain hω) 128) (1 / 2 ^ 128) :=
   McaUpperWitness.ofEpsCaGt (δ := (377 / 512 : ℝ).toNNReal)
     (by rw [Real.toNNReal_le_one]; norm_num) (epsCa_gt hω hF hcard)

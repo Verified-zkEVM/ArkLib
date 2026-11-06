@@ -40,38 +40,6 @@ open scoped NNReal
 
 namespace ProximityGap.GrandChallenges.Goldilocks512
 
-private theorem sumRange_eq (N : ℕ) (f : ℕ → ℕ) :
-    Arithmetic.sumRange N f = ∑ i ∈ Finset.range N, f i := by
-  induction N with
-  | zero => rfl
-  | succ N ih => rw [Finset.sum_range_succ, ← ih]; rfl
-
-private theorem height_eq (D A m M μ ℓ h : ℕ) :
-    firstOrderCurveShiftedHeightSlotCount D A m M μ ℓ h =
-      Arithmetic.heightSlotCount D A m M μ ℓ h := by
-  simp only [firstOrderCurveShiftedHeightSlotCount, Arithmetic.heightSlotCount, sumRange_eq]
-
-private theorem row_eq (D A m M μ n ℓ h : ℕ) :
-    firstOrderCurveShiftedRowSlotBound D A m M μ n ℓ h =
-      Arithmetic.rowSlotBound D A m M μ n ℓ h := by
-  simp only [firstOrderCurveShiftedRowSlotBound, Arithmetic.rowSlotBound,
-    firstOrderGradedRankBound, Arithmetic.gradedRankBound, firstOrderGradedSourceCount,
-    Arithmetic.gradedSourceCount, sumRange_eq]
-
-/-- The slot inequality for the mutual-correlated-agreement parameters. -/
-theorem mca_hheight :
-    firstOrderCurveShiftedRowSlotBound 127 239 609 280 1148 512 1 271081 <
-      firstOrderCurveShiftedHeightSlotCount 127 239 609 280 1148 1 271081 := by
-  rw [row_eq, height_eq]
-  exact Arithmetic.mca_cert
-
-/-- The slot inequality for the list-decoding parameters. -/
-theorem lst_hheight :
-    firstOrderCurveShiftedRowSlotBound 127 239 546 260 1020 512 1 (10 ^ 9) <
-      firstOrderCurveShiftedHeightSlotCount 127 239 546 260 1020 1 (10 ^ 9) := by
-  rw [row_eq, height_eq]
-  exact Arithmetic.lst_cert
-
 /-- Safe-side witness for the mutual-correlated-agreement grand challenge: on any `512`-point
 domain, `RS[F, domain, 128]` has affine-line MCA error at most `2⁻¹²⁸` at `δ = 273/512`, when
 `ringChar F` is `0` or exceeds `280` and `968 363 869 378 722 615 · 2 ¹²⁸ ≤ |F|`.
@@ -83,7 +51,8 @@ noncomputable def mcaLowerWitness {F : Type} [Field F] [Fintype F] [SampleableTy
     McaLowerWitness (ReedSolomon.code domain 128) (1 / 2 ^ 128) := by
   refine McaLowerWitness.ofLineExactAgreement (δ := 273 / 512) domain
     (lineExactAgreementBound_of_heightSlotCount (m := 609) domain (by norm_num) (by norm_num)
-      (by norm_num) (by norm_num) (by norm_num) (by norm_num) mca_hheight (by simpa using hchar))
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+      Arithmetic.mca_rowSlotBound_lt_heightSlotCount (by simpa using hchar))
     (by rw [← NNReal.coe_le_coe]; push_cast; norm_num)
     (by simp only [Fintype.card_fin]; norm_num) ?_
   have hc : ((968363869378722615 * 2 ^ 128 : ℕ) : ℝ) ≤ (Fintype.card F : ℝ) := by
@@ -106,9 +75,9 @@ theorem lambda_interleaved_le {F : Type} [Field F] (hchar : ringChar F = 0 ∨ 2
     simp only [capacityRadius]; norm_num
   rw [← hrad]
   refine lambda_interleaved_le_of_heightSlotCount (m := 546) (M := 260) (μ := 1020)
-    (h := 10 ^ 9) (111 / 512) (by norm_num) (by norm_num) domain t 399224017 (by norm_num)
+    (h := 1000000000) (111 / 512) (by norm_num) (by norm_num) domain t 399224017 (by norm_num)
     (by rw [hthr]; norm_num) (by rw [hthr]; norm_num) (by norm_num) (by rw [hthr]; norm_num)
-    (by rw [hthr]; exact lst_hheight) (by simpa using hchar) ?_
+    (by rw [hthr]; exact Arithmetic.lst_rowSlotBound_lt_heightSlotCount) (by simpa using hchar) ?_
   rw [hthr]
   have h1 : firstOrderCurveFiberStageOne 128 1020 260 (regularTaylorExponent (128 - 1)) =
       116003560 := by decide

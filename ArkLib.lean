@@ -328,6 +328,7 @@ public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.Goldilocks51
 public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.Goldilocks512.Lower
 public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.Goldilocks512.Upper
 public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.ListDecoding
+public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.SlotArithmetic
 public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.UniqueDecoding
 public import ArkLib.Data.CodingTheory.ProximityGap.InformationSetLowerBound
 public import ArkLib.Data.CodingTheory.ProximityGap.LineDecoding

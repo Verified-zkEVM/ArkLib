@@ -23,11 +23,11 @@ with `|S| = r`, put
 When `R_S(0) = a`, the polynomial `g_S` has degree `< s (r - 1)` and agrees with `w` on the
 `s r + s - 1` points where `P_T(x) R_S(x ^ s) = 0`. The value `R_S(0)` depends only on
 `(∑ S) mod N`, so a pigeonhole choice of `a` gives `⌊C(N - 1, r) / N⌋` distinct codewords of
-`RS[F, (ωⁱ)ᵢ, k]` with agreement `s r + s - 1`, for every `k` with `s (r - 1) ≤ k ≤ s r + s - 1`.
+`RS[F, (ωⁱ)ᵢ, k]` with agreement `s r + s - 1`, for every `k ≥ s (r - 1)`.
 
 ## Main results
 
-* `ReedSolomon.CosetList.big_list`: the list-size lower bound above.
+* `ReedSolomon.CosetList.exists_le_encard_closeCodewordsRel`: the list-size lower bound above.
 
 ## References
 
@@ -180,7 +180,8 @@ private theorem R_eval_zero (hω : IsPrimitiveRoot ω n) {N s r : ℕ} (hsN : s 
   rw [prod_congr rfl hfac, prod_mul_distrib, prod_const, hS, prod_pow_eq_pow_sum,
     pow_eq_pow_mod _ hN]
 
-/-- `big_list` with `N = n / s` as a parameter. -/
+/-- `exists_le_encard_closeCodewordsRel` with `N = n / s` as a parameter, for
+`s (r - 1) ≤ k ≤ s r + s - 1`. -/
 private theorem big_list_of_mul_eq (hω : IsPrimitiveRoot ω n) {N s r k : ℕ} (hn : 0 < n)
     (hs : 0 < s) (hsN : s * N = n) (hr : 1 ≤ r) (hdeg : s * (r - 1) ≤ k)
     (hkA : k ≤ s * r + s - 1) :
@@ -348,11 +349,9 @@ private theorem big_list_of_mul_eq (hω : IsPrimitiveRoot ω n) {N s r k : ℕ} 
 
 /-- There is a received word with at least `⌊C(n / s - 1, r) / (n / s)⌋` codewords of
 `RS[F, (ωⁱ)ᵢ, k]` within relative distance `(n - (s r + s - 1)) / n`, whenever `s ∣ n`,
-`1 ≤ r` and `s (r - 1) ≤ k ≤ s r + s - 1`. -/
-theorem big_list (hω : IsPrimitiveRoot ω n) {s r k : ℕ}
-    (hs : 0 < s) (hsn : s ∣ n)
-    (hr : 1 ≤ r) (hdeg : s * (r - 1) ≤ k)
-    (hkA : k ≤ s * r + s - 1) :
+`1 ≤ r` and `s (r - 1) ≤ k`. -/
+theorem exists_le_encard_closeCodewordsRel (hω : IsPrimitiveRoot ω n) {s r k : ℕ}
+    (hsn : s ∣ n) (hr : 1 ≤ r) (hdeg : s * (r - 1) ≤ k) :
     ∃ w : Fin n → F,
       ((Nat.choose (n / s - 1) r / (n / s) : ℕ) : ℕ∞) ≤
         (Code.closeCodewordsRel
@@ -360,6 +359,11 @@ theorem big_list (hω : IsPrimitiveRoot ω n) {s r k : ℕ}
           (((n : ℝ) - (s * r + s - 1 : ℕ)) / n)).encard := by
   rcases Nat.eq_zero_or_pos n with rfl | hn
   · exact ⟨0, by simp⟩
-  exact big_list_of_mul_eq hω hn hs (Nat.mul_div_cancel' hsn) hr hdeg hkA
+  have hs : 0 < s := Nat.pos_of_dvd_of_pos hsn hn
+  have hkA : s * (r - 1) ≤ s * r + s - 1 :=
+    (Nat.mul_le_mul_left s (Nat.sub_le r 1)).trans (by omega)
+  obtain ⟨w, hw⟩ := big_list_of_mul_eq hω hn hs (Nat.mul_div_cancel' hsn) hr le_rfl hkA
+  exact ⟨w, hw.trans (Set.encard_mono fun c hc ↦
+    ⟨ReedSolomon.code_mono hdeg (primitiveRootDomain hω) hc.1, hc.2⟩)⟩
 
 end ReedSolomon.CosetList

@@ -62,11 +62,11 @@ theorem listLower_card : 399224017 * 2 ^ 128 ≤ Fintype.card K := by
 theorem card_ge : 1024 ≤ Fintype.card K := by
   rw [card_K]; decide +kernel
 
-theorem listUpper_card : Fintype.card K < Nbig * 2 ^ 128 := by
-  rw [card_K]; unfold Nbig; rw [Nat.choose_eq_descFactorial_div_factorial]; decide +kernel
+theorem listUpper_card : Fintype.card K < cosetListSize * 2 ^ 128 := by
+  rw [card_K]; unfold cosetListSize; rw [Nat.choose_eq_descFactorial_div_factorial]; decide +kernel
 
-theorem mcaUpper_card : 2 * Fintype.card K < (Nbig - 1) * 2 ^ 128 := by
-  rw [card_K]; unfold Nbig; rw [Nat.choose_eq_descFactorial_div_factorial]; decide +kernel
+theorem mcaUpper_card : 2 * Fintype.card K < (cosetListSize - 1) * 2 ^ 128 := by
+  rw [card_K]; unfold cosetListSize; rw [Nat.choose_eq_descFactorial_div_factorial]; decide +kernel
 
 noncomputable example (domain : Fin 512 ↪ K) :
     McaLowerWitness (ReedSolomon.code domain 128) (1 / 2 ^ 128) :=
