@@ -138,30 +138,7 @@ lemma Q'_div_E'_eq_p
   (h_diff : Function.Injective ωs)
   (h_cond : BerlekampWelchCondition e k ωs f E' Q') :
   E' ∣ Q' ∧ Q' / E' = p := by
-  by_cases hp : p = 0
-  · subst p
-    have hzero : Q' = 0 := by
-      apply poly_eq_zero_of_dist_lt (k := e + k)
-        (by have := h_cond.Q_natDegree; omega) (by omega) h_diff
-      have hsupport : Δ₀(Q'.eval ∘ ωs, 0) ≤ Δ₀(f, 0) := by
-        apply Finset.card_le_card
-        intro i hi
-        simp only [Finset.mem_filter, Finset.mem_univ, true_and, Function.comp_apply,
-          Pi.zero_apply, ne_eq] at hi ⊢
-        exact fun hf => hi (by simpa [hf] using h_cond.cond i)
-      have hf : Δ₀(f, 0) ≤ e := by
-        simpa [hammingDist, hammingNorm, Function.comp_def] using h_ham
-      omega
-    simp [hzero]
-  have h_dist : e < Δ₀(f, 0) := by
-    by_contra hle
-    apply hp
-    apply poly_eq_zero_of_dist_lt hp_deg hk_n h_diff
-    have htriangle := hammingDist_triangle (p.eval ∘ ωs) f 0
-    rw [hammingDist_comm (p.eval ∘ ωs) f] at htriangle
-    omega
-  have h_eq := E_and_Q_unique he hk_n (Q_ne_zero hp)
-    (BerlekampWelch_Q_ne_zero h_cond h_dist h_diff) h_diff
+  have h_eq := E_and_Q_unique he hk_n h_diff
     (E_and_Q_BerlekampWelch_condition hp_deg h_ham)
     h_cond
   have : Q' = E' * p := by
