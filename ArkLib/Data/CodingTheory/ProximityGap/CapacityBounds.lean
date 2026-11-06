@@ -215,7 +215,7 @@ theorem rs_mcaError_le_johnsonExceptionCount
   simpa only [johnsonAgreement, johnsonRhoMinus, show k - 1 + 1 = k by omega] using
     ReedSolomon.mcaError_affineLine_johnson_le domain' (by omega) (by omega) hη ha
 
-omit [DecidableEq ι] [DecidableEq F] in
+omit [DecidableEq ι] [DecidableEq F] [Nonempty ι] in
 open ReedSolomon.HiddenDerivative in
 /-- An affine-line MCA bound for a Reed--Solomon code in the Johnson range. Set the reduced rate
 to `ρ := (k-1)/n` and, for `0 < δ < 1-√ρ`, let
@@ -259,7 +259,6 @@ theorem rs_mcaError_le_in_johnson_range
   let D := k - 1
   let ρ : ℝ := (D : ℝ) / n
   let η : ℝ := 1 - Real.sqrt ρ - δ
-  have hρ : 0 ≤ ρ := by positivity
   have hsqrt : Real.sqrt ρ = ρ ^ ((1 : ℝ) / 2) := Real.sqrt_eq_rpow _
   have hη : 0 < η := by
     dsimp [η]
@@ -280,7 +279,7 @@ theorem rs_mcaError_le_in_johnson_range
   apply ENNReal.ofReal_le_ofReal
   -- Compare the raw exception count with the printed constant.
   have hcount := johnsonExceptionCount_le_comparisonEstimate
-    (n := n) (D := D) (by dsimp [D]; omega) (by dsimp [D, n]; omega)
+    (n := n) (D := D) (by dsimp [D, n]; omega)
     hη ha_le (Nat.le_ceil _)
   refine (div_le_div_of_nonneg_right hcount (by positivity)).trans_eq ?_
   -- Identify the natural ceiling and square-root notation with the statement.
@@ -299,7 +298,7 @@ theorem rs_mcaError_le_in_johnson_range
       3 * johnsonComparisonShift n D η *
         johnsonGamma n D η * ρ) / (3 * Real.sqrt ρ ^ 3) * n +
       johnsonComparisonShift n D η / Real.sqrt ρ) / _ = _
-  rw [hshift, sqrt_cube_eq_rpow_three_halves hρ]
+  rw [hshift, sqrt_cube_eq_rpow_three_halves]
   simp only [johnsonGamma, ha, sub_sub_cancel, hsqrt]
   rfl
 

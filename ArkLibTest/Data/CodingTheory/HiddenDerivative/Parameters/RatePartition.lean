@@ -79,7 +79,7 @@ example : (27 / 20 : ℝ) * 1 * (6 + 1) * Real.exp (-(1 / 1 * Real.log (6 * (6 :
 /-- At rate and agreement `1`, the finite ratio tends to `9/20`. -/
 example : Tendsto (partitionFiniteRatio 1 1 1) atTop (𝓝 (9 / 20 : ℝ)) := by
   convert tendsto_partitionFiniteRatio (rate := 1) (agreement := 1) (order := 1)
-    (by norm_num) (by norm_num) (by norm_num) using 1
+    (by norm_num) (by norm_num) using 1
   rw [show (1 : ℝ) / 1 * Real.log (6 * ((1 : ℕ) : ℝ)) = Real.log 6 by norm_num]
   rw [Real.exp_neg, Real.exp_log (by norm_num : (0 : ℝ) < 6)]
   norm_num
@@ -124,7 +124,7 @@ example : 1 < rateGamma (1 : ℝ) (1 + 1) 5 ∧
       1 < partitionFiniteRatio 1 2 5 multiplicity := by
   obtain ⟨hcoef, hmargin⟩ := fixedRateGateInputs
   have hlogMargin : 0 < (1 + 1) * Real.log (27 * 1 / 20) + 1 * Real.log 5 - 1 * Real.log 6 := by
-    rw [fixedRateCoefficient_eq (rate := 1) (by norm_num)] at hcoef
+    rw [fixedRateCoefficient_eq (rate := 1)] at hcoef
     nlinarith
   have hlogGate := rateGamma_gt_one_of_log_bound (rate := 1) (gap := 1) (order := 5)
     (by norm_num) (by norm_num) (by norm_num) hlogMargin
@@ -137,7 +137,7 @@ example : 1 < rateGamma (1 : ℝ) (1 + 1) 5 ∧
     simpa only [show (1 + 1 : ℝ) = 2 by norm_num] using hgate'
   exact ⟨by simpa only [show (1 + 1 : ℝ) = 2 by norm_num] using hlogGate,
     exists_partitionFiniteParameters_of_rateGamma_gt_one (rate := 1) (agreement := 2)
-      (order := 5) (by norm_num) (by norm_num) (by norm_num) hmarginGate⟩
+      (order := 5) (by norm_num) hmarginGate⟩
 
 /-- Every sufficiently small positive gap at rate `1/2` has a concrete exponential order gate. -/
 example : ∃ gapBound : ℝ, 0 < gapBound ∧ ∀ gap : ℝ, 0 < gap → gap < gapBound →
@@ -253,12 +253,12 @@ private theorem candidateFiniteRatio : 1 < partitionFiniteRatio 1 2 20 100000 :=
 
 /-- The selected recipe multiplicity passes its checks and is no larger than `100000`. -/
 example :
-    let multiplicity := rateMultiplicity (by norm_num) (by norm_num) (by norm_num) recipe_rate_gate
+    let multiplicity := rateMultiplicity (by norm_num) recipe_rate_gate
     0 < multiplicity ∧ 0 < partitionWeightBudget 1 2 20 multiplicity ∧
       1 < partitionFiniteRatio 1 2 20 multiplicity ∧ multiplicity ≤ 100000 := by
-  have hspec := rateMultiplicity_spec (by norm_num) (by norm_num) (by norm_num) recipe_rate_gate
+  have hspec := rateMultiplicity_spec (by norm_num) recipe_rate_gate
   refine ⟨hspec.1, hspec.2.1, hspec.2.2, ?_⟩
-  apply rateMultiplicity_minimal (by norm_num) (by norm_num) (by norm_num) recipe_rate_gate
+  apply rateMultiplicity_minimal (by norm_num) recipe_rate_gate
   exact ⟨by norm_num, lt_of_lt_of_le (by norm_num) candidateWeightBudget,
     candidateFiniteRatio⟩
 
@@ -354,7 +354,7 @@ example :
   have hm : 0 < uniformMathematicalMultiplicity δ := by omega
   have hlength := uniformMathematicalLength_eq_ceil hδ hm
   have hjet := uniformDerivativeOrder_le_mathematicalJetBound hδ hδsmall
-  have hguards := uniformMathematical_integer_guards hδ (by norm_num [δ]) hm
+  have hguards := uniformMathematical_integer_guards hδ (by norm_num [δ])
     (Nat.le_refl (uniformMathematicalLength δ))
   rcases hguards with ⟨hsize, hmn, hνpos, hνlength⟩
   exact ⟨hlength, hjet, hsize, hmn, hνpos, hνlength⟩
@@ -380,7 +380,7 @@ example (u : JetVariable 1 →₀ ℕ)
       (uniformMathematicalMultiplicity (1 / 5 : ℝ) * 1 : ℕ) u) :
     totalJetDegree u ≤ uniformMathematicalJetBound (1 / 5 : ℝ) := by
   exact uniformMathematical_totalJetDegree_le (δ := 1 / 5) (D := 1) (d := 1)
-    (W := 0) (n := 1) (A := 1) (by norm_num) (by norm_num) (by norm_num) (by norm_num) hu
+    (W := 0) (n := 1) (A := 1) (by norm_num) (by norm_num) (by norm_num) hu
 
 /-- The shared envelope exists with scale-300 multiplicity at `δ = 1/5`. -/
 example : Nonempty (RatePartitionEnvelope (1 / 5 : ℝ)

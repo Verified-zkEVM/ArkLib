@@ -210,7 +210,7 @@ theorem centeringErrorBounds (d m : ℕ) (g H : ℝ)
     hHupper.trans (mul_le_mul_of_nonneg_left hsqrtLeD (by norm_num))
   have hB : (d.choose 2 : ℝ) / m ≤ 1 / (200 * H) := by
     simpa only [show (2 : ℝ) * 100 = 200 by norm_num] using
-      InterpolationRounding.binomial_error_le 100 H d m (by norm_num) hH hm hsize
+      InterpolationRounding.binomial_error_le 100 H d m (by norm_num) hH hsize
   have hBterm : (d.choose 2 : ℝ) * H / (d * m) ≤ 1 / (200 * (d : ℝ)) := by
     calc
       _ = ((d.choose 2 : ℝ) / m) * H / d := by ring

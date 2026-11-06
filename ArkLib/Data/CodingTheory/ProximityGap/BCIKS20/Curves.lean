@@ -671,7 +671,7 @@ theorem large_agreement_set_on_curve_implies_correlated_agreement' {l deg : ℕ}
     apply hE.trans_lt
     convert hS using 1
     rw [Fintype.card_fin, hs,
-      ReedSolomon.HiddenDerivative.sqrt_cube_eq_rpow_three_halves (by positivity),
+      ReedSolomon.HiddenDerivative.sqrt_cube_eq_rpow_three_halves,
       ReedSolomon.HiddenDerivative.legacy_shift_pow_seven m (by omega)]
     norm_num
     ring

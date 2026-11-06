@@ -272,7 +272,7 @@ theorem exists_ratePartition_line_exactCorrelatedPair_parameters
     rw [← RatePartition.rateGamma_eq_exponential (rate := R) (agreement := a) hdpos]
     exact hgate
   obtain ⟨p⟩ :=
-    RatePartition.PartitionFiniteParameters.nonempty hR (hR.trans hRa) hdpos hlimit
+    RatePartition.PartitionFiniteParameters.nonempty (hR.trans hRa) hdpos hlimit
   exact ⟨p, fun _ _ _ _ _ hn hk hkR haA hAn domain f g hchar ↦
     exists_ratePartition_line_exactCorrelatedPair p hR hRa haone hd hn hk hkR haA hAn domain f g
       hchar⟩

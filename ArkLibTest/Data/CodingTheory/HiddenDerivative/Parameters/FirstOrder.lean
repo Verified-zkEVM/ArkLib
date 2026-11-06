@@ -860,7 +860,7 @@ example : firstOrderCurveShiftedRowSlotBound 1 5 12 4 23 10 1 276 <
 /-- The optimized height-276 exception charge has the integral ceiling at `n = 10`. -/
 example : maxMinFirstOrderExceptionCharge (agreementIncidenceRatio 10 1 5) 10 1 5 276 23 4 ≤
     1325775 * (10 : ℝ) ^ 2 :=
-  uniformFirstOrderMca_optimizedExceptionCharge_le_ceiling (by norm_num) (by norm_num)
+  uniformFirstOrderMca_optimizedExceptionCharge_le_ceiling (by norm_num)
     (by norm_num) (by norm_num) (by norm_num)
 
 /-- At `D = 1`, `A = 5`, the retained split is `2` and lies strictly between `D` and `A`. -/
@@ -876,7 +876,7 @@ example : retainedCoordinateRatio 10 5 (uniformFirstOrderMcaSplit 1 5) ≤
     fixedCoordinateRatio 10 1 (uniformFirstOrderMcaSplit 1 5) ≤
       42 * agreementIncidenceRatio 10 1 5 := by
   exact ⟨uniformFirstOrderMcaSplit_retainedCoordinateRatio_le (by norm_num) (by norm_num),
-    uniformFirstOrderMcaSplit_fixedCoordinateRatio_le (by norm_num)⟩
+    uniformFirstOrderMcaSplit_fixedCoordinateRatio_le⟩
 
 /-- The agreement incidence ratios obey the gap bounds at `n = 10`, `D = 1`, `A = 5`. -/
 example : agreementIncidenceRatio 10 1 5 ≤ 25 / 6 ∧
@@ -884,8 +884,8 @@ example : agreementIncidenceRatio 10 1 5 ≤ 25 / 6 ∧
   have hdegree : (1 : ℝ) * agreementIncidenceRatio 10 1 5 ≤ (25 / 24 : ℝ) * 10 := by
     simpa using
       (uniformFirstOrderMca_degree_mul_agreementIncidenceRatio_le
-        (n := 10) (D := 1) (A := 5) (by norm_num) (by norm_num) (by norm_num))
-  exact ⟨uniformFirstOrderMca_agreementIncidenceRatio_le (by norm_num) (by norm_num), hdegree⟩
+        (n := 10) (D := 1) (A := 5) (by norm_num))
+  exact ⟨uniformFirstOrderMca_agreementIncidenceRatio_le (by norm_num), hdegree⟩
 
 /-- The four regular stage sums have their exact values at `D = 1` and `D = 2`. -/
 example : regularFiberStageSum 1 23 4 = 86 ∧ regularFiberStageSum 2 23 4 = 486 ∧
@@ -900,14 +900,14 @@ example : firstOrderExceptionCharge (agreementIncidenceRatio 10 1 5) 10 1 5 276 
       (uniformFirstOrderMcaSplit 1 5) ≤
     (1304562211 / 984 : ℝ) * (10 : ℝ) ^ 2 :=
   uniformFirstOrderMca_exceptionCharge_le
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
 
 /-- The raw height-276 exception charge has its integral ceiling at `n = 10`. -/
 example : firstOrderExceptionCharge (agreementIncidenceRatio 10 1 5) 10 1 5 276 23 4
       (uniformFirstOrderMcaSplit 1 5) ≤
     1325775 * (10 : ℝ) ^ 2 :=
   uniformFirstOrderMca_exceptionCharge_le_ceiling
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
 
 /-- The fixed graded-rank profile through grade `22`. -/
 example : List.ofFn (fun t : Fin 23 ↦ uniformFirstOrderGradedRankProfile t) =

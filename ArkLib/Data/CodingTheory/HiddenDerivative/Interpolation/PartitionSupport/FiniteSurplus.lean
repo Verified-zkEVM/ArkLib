@@ -65,7 +65,7 @@ namespace RatePartition
 /-- Multiplying the finite ratio by the geometric envelope for the local rank budget cancels the
 exponential and rounding terms, leaving `(27 / 20) * rate * (W / d) ^ 2 * (W ^ d / (d!) ^ 2)`. -/
 private theorem partitionFiniteRatio_mul_geometricRankEnvelope_eq
-    {rate agreement : ℝ} {order multiplicity budget : ℕ} (hmultiplicity : 0 < multiplicity)
+    {rate agreement : ℝ} {order multiplicity budget : ℕ}
     (hbudget : partitionWeightBudget rate agreement order multiplicity = budget)
     (hbudget_pos : 0 < budget) :
     partitionFiniteRatio rate agreement order multiplicity *
@@ -76,7 +76,7 @@ private theorem partitionFiniteRatio_mul_geometricRankEnvelope_eq
       (27 / 20 : ℝ) * rate * ((budget : ℝ) / order) ^ 2 *
         ((budget : ℝ) ^ order / (order.factorial : ℝ) ^ 2) := by
   subst budget
-  rw [partitionFiniteRatio_eq_weightBudget hmultiplicity hbudget_pos]
+  rw [partitionFiniteRatio_eq_weightBudget]
   have hchoose : ((order + 1).choose 2 : ℝ) =
       ((order : ℝ) + 1) * order / 2 := by
     rw [Nat.cast_choose_two]
@@ -89,7 +89,7 @@ private theorem partitionFiniteRatio_mul_geometricRankEnvelope_eq
 
 /-- The finite-ratio envelope is bounded by the moment contribution at `27 / 10`. -/
 private theorem partitionFiniteRatio_mul_geometricRankEnvelope_le
-    {rate agreement : ℝ} {order multiplicity budget : ℕ} (hmultiplicity : 0 < multiplicity)
+    {rate agreement : ℝ} {order multiplicity budget : ℕ}
     (hbudget : partitionWeightBudget rate agreement order multiplicity = budget)
     (hbudget_pos : 0 < budget) :
     partitionFiniteRatio rate agreement order multiplicity *
@@ -99,7 +99,7 @@ private theorem partitionFiniteRatio_mul_geometricRankEnvelope_le
             1 / ((order : ℝ) / budget))) ≤
       (27 / 10 : ℝ) / 2 * rate * ((budget : ℝ) / order) ^ 2 *
         ((budget : ℝ) ^ order / (order.factorial : ℝ) ^ 2) := by
-  rw [partitionFiniteRatio_mul_geometricRankEnvelope_eq hmultiplicity hbudget hbudget_pos]
+  rw [partitionFiniteRatio_mul_geometricRankEnvelope_eq hbudget hbudget_pos]
   norm_num
 
 end RatePartition
@@ -232,12 +232,13 @@ theorem partitionSupport_finiteRatio_surplus (F : Type*) [Field F] {n m A : ℕ}
     nlinarith
   have hscale := partitionWeightBudget_logScale_le (d := d) (m := m) (rate := rate)
     (agreement := agreement) hd hm hrate hagreement
-  have hratio := partitionFiniteRatio_eq_weightBudget hm hW
+  have hratio := partitionFiniteRatio_eq_weightBudget
+    (rate := rate) (agreement := agreement) (order := d) (multiplicity := m)
   have hgamma : 0 < partitionFiniteRatio rate agreement d m := by
     rw [hratio]
     positivity
   have henvelope_le := RatePartition.partitionFiniteRatio_mul_geometricRankEnvelope_le
-    (order := d) (multiplicity := m) (budget := W) hm rfl hW
+    (order := d) (multiplicity := m) (budget := W) rfl hW
   exact partitionSupport_surplus F hD hd hW hupper hcutoff hscale hmoment hgamma.le
     henvelope_le
 
@@ -261,10 +262,10 @@ theorem partitionSupport_largeOrder_finiteRatio_surplus (F : Type*) [Field F]
     (agreement := agreement) (by omega) hm hrate hagreement
   have hmoment := RatePartition.setAverage_weightedSimplex_succ_lowerTail_sq_gt hd hWreal
   have hγ : 0 ≤ RatePartition.partitionFiniteRatio rate agreement d m := by
-    rw [RatePartition.partitionFiniteRatio_eq_weightBudget hm hbudget]
+    rw [RatePartition.partitionFiniteRatio_eq_weightBudget]
     positivity
   have henvelope := RatePartition.partitionFiniteRatio_mul_geometricRankEnvelope_le
-    (order := d) (multiplicity := m) (budget := W) hm rfl hW
+    (order := d) (multiplicity := m) (budget := W) rfl hW
   simpa only [W] using partitionSupport_surplus F hD (by omega) hW hupper hlevel hscale
     hmoment hγ henvelope
 

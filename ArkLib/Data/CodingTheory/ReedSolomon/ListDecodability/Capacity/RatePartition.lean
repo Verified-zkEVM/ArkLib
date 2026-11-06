@@ -88,7 +88,7 @@ theorem exists_ratePartition_list_bound
       Real.exp (-(R / a * Real.log (6 * (d : ℝ)))) := by
     rw [← RatePartition.rateGamma_eq_exponential (agreement := a) hdpos]
     exact hgate
-  obtain ⟨p⟩ := RatePartition.PartitionFiniteParameters.nonempty hR
+  obtain ⟨p⟩ := RatePartition.PartitionFiniteParameters.nonempty
     (hR.trans hRa) hdpos hlimit
   refine ⟨p, fun _ _ _ _ _ hn hk hkR haA hAn domain received hchar ↦ ?_⟩
   exact ratePartition_close_list_bound p hR hRa haone hd hn hk hkR haA hAn domain received hchar

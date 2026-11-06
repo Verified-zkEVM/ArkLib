@@ -666,11 +666,8 @@ private theorem mathMcaBaseLength : uniformMathematicalLength mathMcaGap ≤ mat
 
 private theorem mathMcaAgreementGap :
     ((1 : ℕ) : ℝ) + mathMcaGap * mathMcaLength ≤ mathMcaLength := by
-  have hm : 0 < uniformMathematicalMultiplicity mathMcaGap :=
-    lt_of_lt_of_le (by omega) (add_two_le_closedMultiplicity (by norm_num)
-      (by have := uniformDerivativeOrder_pos mathMcaGap; omega))
   obtain ⟨-, -, hν, hνn⟩ := uniformMathematical_integer_guards (n := mathMcaLength)
-    (by norm_num [mathMcaGap]) (by norm_num [mathMcaGap]) hm mathMcaBaseLength
+    (by norm_num [mathMcaGap]) (by norm_num [mathMcaGap]) mathMcaBaseLength
   have hn : (2 : ℝ) ≤ mathMcaLength := by exact_mod_cast (show 2 ≤ mathMcaLength by omega)
   norm_num [mathMcaGap]
   linarith

@@ -71,7 +71,7 @@ theorem exists_uniformFirstOrder_lineMca_of_two_le
   obtain ⟨exceptional, hraw, -, -, hgood⟩ := cert.exists_exceptional_hybrid (D := k - 1)
     (by omega) (by omega) (by omega) hAn hchar
   exact ⟨exceptional, hraw.trans (uniformFirstOrderMca_optimizedExceptionCharge_le_ceiling
-    (by omega) (by omega) (by omega) hAn (by omega)), hgood⟩
+    (by omega) (by omega) hAn (by omega)), hgood⟩
 
 /-- If `k - 1 < char F ≤ 4`, then the characteristic is two or three, so `k ≤ 3`. -/
 private theorem le_three_of_ringChar_le_four {F : Type*} [Field F] {k : ℕ}

@@ -67,7 +67,7 @@ theorem mathematicalUniformRatePartition_close_list_bound {F : Type u} [Field F]
           n ^ uniformDerivativeOrder δ := by
   classical
   obtain ⟨e⟩ := exists_mathematicalRatePartitionEnvelope hδ hδsmall hn hk hgap hAn
-  obtain ⟨hd, hδone, hscale, hν, -⟩ := uniformMathematical_certificate_guards hδ hδsmall hn
+  obtain ⟨hd, hδone, hscale, hν, -⟩ := uniformMathematical_certificate_guards hδ hδsmall
   obtain ⟨cert⟩ := e.exists_curve_certificate (scale := 300) hδ hδone hd hscale hAn
     domain (fun i ↦ Polynomial.C (received i)) (fun _ ↦ by simp)
   have hkA : k ≤ A := by
@@ -118,7 +118,7 @@ theorem mathematicalUniform_capacity_list_bound
       exact hsupport (Or.inr (max_lt hdegreeChar (by omega)))
     obtain ⟨hfinite, hcard⟩ := closePolynomialSet_finite_and_ncard_le_pairwiseJohnson_of_gap
       domain received hδ hk
-      (four_mul_pred_le_sq_mul_of_le_uniformMathematicalJetBound hδ hn hkJet) hgap
+      (four_mul_pred_le_sq_mul_of_le_uniformMathematicalJetBound hn hkJet) hgap
     refine ⟨hfinite, hcard.trans ?_⟩
     calc
       4 / (3 * δ) ≤ mathematicalUniformListConstant δ := le_max_right _ _

@@ -57,9 +57,9 @@ theorem exists_lineExactAgreementBound_explicit {deg m : ℕ} (domain : ι ↪ F
   · subst D
     refine ⟨(Fintype.card ι).choose 2, by positivity,
       lineExactAgreementBound_constantCode domain _, ?_⟩
-    have h := two_mul_choose_two_le_explicit_budget hn hm
+    have h := two_mul_choose_two_le_explicit_budget (n := Fintype.card ι) hm
     simpa only [hs, Nat.cast_add, Nat.cast_zero, Nat.cast_one, zero_add,
-      ← sqrt_cube_eq_rpow_three_halves (by positivity : 0 ≤ 1 / (Fintype.card ι : ℝ))] using h
+      ← sqrt_cube_eq_rpow_three_halves] using h
   · have hDpos : 1 ≤ D := by omega
     have hDn : D ≤ Fintype.card ι - 2 := by omega
     let eta : ℝ := α - Real.sqrt (johnsonRhoMinus (Fintype.card ι) D)
@@ -80,11 +80,11 @@ theorem exists_lineExactAgreementBound_explicit {deg m : ℕ} (domain : ι ↪ F
       positivity
     · have hline := lineExactAgreementBound_johnson domain hDpos hDn heta (by rwa [ha])
       simpa only [ha, mul_comm α] using hline
-    · have h := two_mul_johnsonExceptionCount_le_explicit_budget hDpos hDn hm heta
+    · have h := two_mul_johnsonExceptionCount_le_explicit_budget hDpos hDn hm
         (A := ⌈(Fintype.card ι : ℝ) * α⌉₊)
         (by rw [ha, mul_comm]; exact Nat.le_ceil _)
         (by rw [ha, ← hs]; simpa only [mul_comm] using hα)
-      rw [← sqrt_cube_eq_rpow_three_halves (by positivity)] at h
+      rw [← sqrt_cube_eq_rpow_three_halves] at h
       simpa only [hs] using h
 
 /-- The seventh-power budget also absorbs the affine sampling loss throughout the open
