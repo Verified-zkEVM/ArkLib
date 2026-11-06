@@ -107,14 +107,14 @@ theorem automaticFirstOrder_finiteLength_finiteSlack_bounds
     constructor
     · intro received
       obtain ⟨listCert⟩ := exists_finiteLengthFirstOrder_symbolicCertificate
-        hrhoOne heta haOne hnSelector hbetaHalf hkTwo hkRate hA
+        hrhoOne heta hnSelector hbetaHalf hkTwo hkRate hA
           domain received (fun _ ↦ 0)
       exact closePolynomialSet_finite_and_card_le_finiteLength_of_selector_certificate
         hrho hrhoOne heta haOne hnSelector hbetaHalf hDrate hA
           domain received _ listCert hchar
     · intro f g
       obtain ⟨lineCert⟩ := exists_finiteLengthFirstOrder_symbolicCertificate
-        hrhoOne heta haOne hnSelector hbetaHalf hkTwo hkRate hA domain f g
+        hrhoOne heta hnSelector hbetaHalf hkTwo hkRate hA domain f g
       exact exists_exceptional_finiteLengthMca_of_selector_certificate
         hrho hrhoOne heta haOne hnSelector hbetaHalf hk hDrate hA hAn
           domain f g _ lineCert hchar

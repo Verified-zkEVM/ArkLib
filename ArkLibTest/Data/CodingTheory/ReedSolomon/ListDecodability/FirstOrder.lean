@@ -159,8 +159,8 @@ example :
   exact automatic_first_order_squarefree_list_bound_of_slack (1 / 2) (1 / 8)
     (by norm_num : (0 : ℝ) < 1 / 2) (by norm_num : (1 / 2 : ℝ) < 1)
     (by norm_num : (0 : ℝ) < 1 / 8) haOne 4 2 4
-    (by norm_num : 0 < 4) (by norm_num : 2 ≤ 2)
-    (by norm_num : (2 : ℝ) ≤ (1 / 2) * 4) hA (by norm_num : 4 ≤ 4)
+    (by norm_num : 2 ≤ 2)
+    (by norm_num : (2 : ℝ) ≤ (1 / 2) * 4) hA
     rationalEvaluationDomain (fun _ ↦ 0)
     (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
 
@@ -303,15 +303,15 @@ example :
     norm_num
     linarith
   have hmargin := finiteLengthDensityMargin_pos (rho := 1 / 2) (eta := 1 / 8) (n := 4)
-    (by norm_num) (by norm_num) (by norm_num) haOne (by norm_num) hbetaHalf
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
   have hgap := finiteLength_count_gap (rho := 1 / 2) (eta := 1 / 8) (n := 4)
-    (by norm_num) (by norm_num) (by norm_num) haOne (by norm_num) hbetaHalf
+    (by norm_num) (by norm_num) (by norm_num) hbetaHalf
   have hparameters := finiteLength_multiplicity_derivativeCap_jetDegree_bounds
     (rho := 1 / 2) (eta := 1 / 8) (n := 4)
-    (by norm_num) (by norm_num) (by norm_num) haOne (by norm_num) hbetaHalf
+    (by norm_num) (by norm_num) haOne (by norm_num) hbetaHalf
   have hheight := finiteLengthChallengeHeight_le_common_inv_slack_sq
     (rho := 1 / 2) (eta := 1 / 8) (n := 4)
-    (by norm_num) (by norm_num) (by norm_num) haOne (by norm_num) hbetaHalf
+    (by norm_num) (by norm_num) haOne (by norm_num) hbetaHalf
   exact ⟨hmargin, hgap, hparameters, hheight⟩
 
 /-- The line-MCA envelope has a concrete inverse-`eta` bound. -/

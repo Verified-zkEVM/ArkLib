@@ -98,16 +98,14 @@ theorem firstOrderExceptionConstant_zero_eq_finiteLengthMcaEnvelope
 private theorem finiteLengthJetDegree_pos
     {rho eta : ℝ} {n : ℕ}
     (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
-    (haOne : firstOrderRateThreshold rho + eta < 1)
-    (hn : (2 : ℝ) ≤ rho * n)
-    (hbetaHalf : finiteLengthDerivativeRatio rho eta ≤ 1 / 2) :
+    (hn : (2 : ℝ) ≤ rho * n) :
     0 < finiteLengthJetDegree rho eta n := by
   unfold finiteLengthJetDegree
   apply Nat.ceil_pos.mpr
-  have hm := finiteLengthMultiplicity_pos hrho hrhoOne heta haOne hn hbetaHalf
+  have hm := finiteLengthMultiplicity_pos hrhoOne heta hn
   have ha : 0 < finiteLengthCertifiedAgreement rho eta :=
     hrho.trans (rho_lt_automaticAgreement hrhoOne (by linarith))
-  have hrate := finiteLengthRate_pos hrho hn
+  have hrate := finiteLengthRate_pos hn
   positivity
 
 open Classical in
@@ -116,7 +114,6 @@ open Classical in
 theorem exists_finiteLengthFirstOrder_symbolicCertificate
     {F : Type u} [Field F] {rho eta : ℝ} {n k A : ℕ}
     (hrhoOne : rho < 1) (heta : 0 < eta)
-    (haOne : firstOrderRateThreshold rho + eta < 1)
     (hn : (2 : ℝ) ≤ rho * n)
     (hbetaHalf : finiteLengthDerivativeRatio rho eta ≤ 1 / 2)
     (hk : 2 ≤ k) (hkRate : (k : ℝ) ≤ rho * n)
@@ -148,7 +145,7 @@ theorem exists_finiteLengthFirstOrder_symbolicCertificate
   let w : Fin n → F[X] := fun i ↦ receivedLine (f i) (g i)
   have hnPos : 0 < n := length_pos_of_two_le_rate_mul_length hn
   have hmPos : 0 < m := finiteLengthMultiplicity_pos
-    hrho hrhoOne heta haOne hn hbetaHalf
+    hrhoOne heta hn
   have hDPos : 0 < D := by dsimp only [D]; omega
   have hN : N = firstOrderDimensionCount D A m M mu :=
     card_firstOrderExponents hDPos
@@ -171,8 +168,8 @@ theorem exists_finiteLengthFirstOrder_symbolicCertificate
     simpa only [R, a, m, M, mu, Nzero, finiteLengthSourceCount] using hlower
   have hsurplus : (rlocal : ℝ) < Nzero := by
     have hdelta := finiteLengthDensityMargin_pos
-      hrho hrhoOne heta haOne hn hbetaHalf
-    have hgap := finiteLength_count_gap hrho hrhoOne heta haOne hn hbetaHalf
+      hrho hrhoOne heta hn
+    have hgap := finiteLength_count_gap hrhoOne heta hn hbetaHalf
     have hpositive : 0 < 3 * (m : ℝ) ^ 3 * finiteLengthDensityMargin rho eta n / 4 := by
       positivity
     dsimp only [m, rlocal, Nzero]
@@ -399,7 +396,7 @@ theorem finiteLengthSelectorMcaEnvelope_le
   have hDn : k - 1 ≤ n := hDA.le.trans hAn
   have hC : 1 ≤ C := one_le_finiteLengthMcaParameterConstant rho
   have hsOne : s ≤ 1 :=
-    (finiteLengthSlack_lt_one_of_rate hrho hrhoOne haOne hn).le
+    (finiteLengthSlack_lt_one_of_rate hrhoOne haOne hn).le
   have htheta0 : 0 ≤ theta := by
     dsimp only [theta]
     unfold agreementIncidenceRatio
@@ -420,7 +417,7 @@ theorem finiteLengthSelectorMcaEnvelope_le
   have htheta : theta ≤ C := hthetaHybrid.trans (le_max_right _ _)
   obtain ⟨_hm, hMsel, hBsel⟩ :=
     finiteLength_multiplicity_derivativeCap_jetDegree_bounds
-      hrho hrhoOne heta haOne hn hbetaHalf
+      hrhoOne heta haOne hn hbetaHalf
   have hCsel : Csel ≤ C := le_max_left _ _
   have hs : 0 < s := finiteLengthSlack_pos heta
   have hB : (B : ℝ) ≤ C / s := by
@@ -428,7 +425,7 @@ theorem finiteLengthSelectorMcaEnvelope_le
   have hM : (M : ℝ) ≤ C / s := by
     exact hMsel.trans (div_le_div_of_nonneg_right hCsel hs.le)
   have hHsel := finiteLengthChallengeHeight_le_common_inv_slack_sq
-    hrho hrhoOne heta haOne hn hbetaHalf
+    hrhoOne heta haOne hn hbetaHalf
   have hH : (H : ℝ) ≤ C / s ^ 2 := by
     exact hHsel.trans (div_le_div_of_nonneg_right hCsel (sq_nonneg s))
   exact finiteLengthMcaEnvelope_le hC heta hnOne hsOne hDn htheta0 htheta hB hM hH
@@ -468,8 +465,6 @@ theorem finiteLengthSelectorJetDegree_le_listEnvelope
     (finiteLengthJetDegree rho eta n : ℝ) ≤
       7 * finiteLengthMcaParameterConstant rho ^ 3 * n /
         finiteLengthSlack eta n ^ 2 := by
-  have hrho : 0 < rho :=
-    pos_of_mul_pos_left (lt_of_lt_of_le (by norm_num) hn) (Nat.cast_nonneg n)
   let C := finiteLengthMcaParameterConstant rho
   let Csel := finiteLengthParameterBoundConstant rho
   let s := finiteLengthSlack eta n
@@ -478,11 +473,11 @@ theorem finiteLengthSelectorJetDegree_le_listEnvelope
   have hnOne : (1 : ℝ) ≤ n := by exact_mod_cast hnPos
   have hs : 0 < s := finiteLengthSlack_pos heta
   have hsOne : s ≤ 1 :=
-    (finiteLengthSlack_lt_one_of_rate hrho hrhoOne haOne hn).le
+    (finiteLengthSlack_lt_one_of_rate hrhoOne haOne hn).le
   have hC : 1 ≤ C := one_le_finiteLengthMcaParameterConstant rho
   obtain ⟨_hm, _hM, hBsel⟩ :=
     finiteLength_multiplicity_derivativeCap_jetDegree_bounds
-      hrho hrhoOne heta haOne hn hbetaHalf
+      hrhoOne heta haOne hn hbetaHalf
   have hB : (B : ℝ) ≤ C / s := by
     exact hBsel.trans (div_le_div_of_nonneg_right (le_max_left _ _) hs.le)
   apply hB.trans
@@ -546,7 +541,7 @@ theorem closePolynomialSet_finite_and_card_le_finiteLength_of_selector_certifica
   have hnOne : 1 ≤ n := hnPos
   have hs : 0 < s := finiteLengthSlack_pos heta
   have hsOne : s ≤ 1 :=
-    (finiteLengthSlack_lt_one_of_rate hrho hrhoOne haOne hn).le
+    (finiteLengthSlack_lt_one_of_rate hrhoOne haOne hn).le
   have hC : 1 ≤ C := one_le_finiteLengthMcaParameterConstant rho
   have hkA : k ≤ A := by
     have hnCast : (0 : ℝ) < n := by exact_mod_cast hnPos
@@ -558,9 +553,7 @@ theorem closePolynomialSet_finite_and_card_le_finiteLength_of_selector_certifica
     have hDA : k - 1 < A := by exact_mod_cast hDrate.trans_lt hrhoNltA
     omega
   by_cases hkTwo : 2 ≤ k
-  · have hkn : k ≤ n := hkA.trans hAn
-    have hnTwo : 2 ≤ n := hkTwo.trans hkn
-    have hMB : M ≤ B := finiteLengthDerivativeCap_le_jetDegree
+  · have hMB : M ≤ B := finiteLengthDerivativeCap_le_jetDegree
       hrho hrhoOne heta hn
     have htheta : agreementIncidenceRatio n (k - 1) A ≤ C := by
       have hthetaRate := agreementIncidenceRatio_le_one_div_sub hDrate hA
@@ -581,11 +574,11 @@ theorem closePolynomialSet_finite_and_card_le_finiteLength_of_selector_certifica
         show A - k + 1 = A - (k - 1) by omega] using htheta
     obtain ⟨_hm, _hMsel, hBsel⟩ :=
       finiteLength_multiplicity_derivativeCap_jetDegree_bounds
-        hrho hrhoOne heta haOne hn hbetaHalf
+        hrhoOne heta haOne hn hbetaHalf
     have hB : (B : ℝ) ≤ C / s := by
       exact hBsel.trans (div_le_div_of_nonneg_right (le_max_left _ _) hs.le)
     exact closePolynomialSet_finite_and_card_le_finiteLength_of_bounded_certificate
-      domain received columns cert hnTwo hkTwo hkA hAn hMB hchar hC heta hsOne hlambda hB
+      domain received columns cert hkTwo hkA hAn hMB hchar hC heta hsOne hlambda hB
   · have hkOne : k ≤ 1 := by omega
     exact closePolynomialSet_finite_and_card_le_finiteLength_of_dimension_le_one
       domain received hnOne hkOne hkA hC heta hsOne
@@ -649,7 +642,7 @@ private theorem exists_exceptional_finiteLengthMca_of_selector_certificate_of_tw
     refine ⟨exceptional, hcard.trans ?_, hgood⟩
     rw [firstOrderExceptionConstant_zero_eq_finiteLengthMcaEnvelope]
     · simpa [hMzero] using hEnvelope
-    · exact finiteLengthJetDegree_pos hrho hrhoOne heta haOne hn hbetaHalf
+    · exact finiteLengthJetDegree_pos hrho hrhoOne heta hn
   · have hM : 1 ≤ finiteLengthDerivativeCap rho eta n :=
       Nat.one_le_iff_ne_zero.mpr hMzero
     obtain ⟨exceptional, hcard, hgood⟩ :=
@@ -699,7 +692,7 @@ theorem exists_exceptional_finiteLengthMca_of_selector_certificate
       exists_exceptional_exactLineMca_one n A domain f g
     refine ⟨exceptional, hcard.trans ?_, hgood⟩
     have hsOne : finiteLengthSlack eta n ≤ 1 :=
-      (finiteLengthSlack_lt_one_of_rate hrho hrhoOne haOne hn).le
+      (finiteLengthSlack_lt_one_of_rate hrhoOne haOne hn).le
     exact square_le_finiteLengthMcaExceptionBudget
       (one_le_finiteLengthMcaParameterConstant rho) heta hsOne
 
@@ -828,7 +821,7 @@ theorem finiteLength_completeList_and_exceptionalMca_of_selector_certificates_in
   rcases Nat.eq_zero_or_pos k with rfl | hk
   · have hnPos := length_pos_of_two_le_rate_mul_length hn
     have hC := one_le_finiteLengthMcaParameterConstant rho
-    have hsOne := (finiteLengthSlack_lt_one_of_rate hrho hrhoOne haOne hn).le
+    have hsOne := (finiteLengthSlack_lt_one_of_rate hrhoOne haOne hn).le
     refine ⟨closePolynomialSet_finite_and_card_le_inv_eta_of_dimension_le_one
       domain f hnPos (by omega) (Nat.zero_le A) hC heta hsOne, ?_⟩
     obtain ⟨exceptional, hcard, hgood⟩ :=

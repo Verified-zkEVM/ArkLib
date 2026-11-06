@@ -174,7 +174,7 @@ theorem lowRateFiniteLengthDerivativeCap_le_jetDegree
   let a := lowRateFiniteLengthCertifiedAgreement rho eta
   let beta := firstOrderLowRateBeta rho
   let m := lowRateFiniteLengthMultiplicity rho eta n
-  have hR : 0 < R := finiteLengthRate_pos hrho hn
+  have hR : 0 < R := finiteLengthRate_pos hn
   have hRrho : R < rho := finiteLengthRate_lt_rate
     (length_pos_of_two_le_rate_mul_length hn)
   have ha0 : 0 < a := lowRateFiniteLengthCertifiedAgreement_pos hrho heta.le
@@ -204,7 +204,7 @@ theorem lowRateFiniteLengthJetDegree_le_inv_slack
   let R := finiteLengthRate rho n
   have hs : 0 < s := finiteLengthSlack_pos heta
   have hsOne : s ≤ 1 := (lowRateFiniteLengthSlack_lt_one hrho hlow haOne hn).le
-  have hR : 0 < R := finiteLengthRate_pos hrho hn
+  have hR : 0 < R := finiteLengthRate_pos hn
   have hRhalf : rho / 2 ≤ R := half_rate_le_finiteLengthRate hn
   have ha0 : 0 ≤ a := (lowRateFiniteLengthCertifiedAgreement_pos hrho heta.le).le
   have haOne' : a < 1 := lowRateFiniteLengthCertifiedAgreement_lt_one haOne

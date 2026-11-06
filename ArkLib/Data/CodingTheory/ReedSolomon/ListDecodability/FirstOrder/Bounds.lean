@@ -100,6 +100,11 @@ theorem automaticFirstOrder_closePolynomialSet_finite_and_card_le
       ((closePolynomialSet domain received k A).ncard : ℝ) ≤
         firstOrderListConstant (agreementIncidenceRatio n D A) D
           (automaticJetDegree rho a) (automaticDerivativeCap rho a) := by
+  have hkPos : (0 : ℝ) < k := by exact_mod_cast (show 0 < k by omega)
+  have hratePos : 0 < rho * n := hkPos.trans_le hkRate
+  have hrho : 0 < rho := pos_of_mul_pos_left hratePos (Nat.cast_nonneg n)
+  have hn : 0 < n := by
+    exact_mod_cast pos_of_mul_pos_right hratePos hrho.le
   let T := closePolynomialSet domain received k A
   let B := firstOrderListBound (agreementIncidenceRatio n D A) D
     (automaticJetDegree rho a) (automaticDerivativeCap rho a)
@@ -300,15 +305,32 @@ theorem automatic_first_order_squarefree_list_bound_of_slack
     (rho eta : ℝ)
     (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
     (haOne : firstOrderRateThreshold rho + eta < 1)
-    (n k A : ℕ) (hn : 0 < n) (hk : 2 ≤ k)
+    (n k A : ℕ) (hk : 2 ≤ k)
     (hkRate : (k : ℝ) ≤ rho * n)
-    (hA : (firstOrderRateThreshold rho + eta) * n ≤ A) (hAn : A ≤ n)
+    (hA : (firstOrderRateThreshold rho + eta) * n ≤ A)
     {F : Type*} [Field F] (domain : Fin n ↪ F) (received : Fin n → F)
     (hchar : ringChar F = 0 ∨ max (k - 1)
       (automaticDerivativeCap rho (firstOrderRateThreshold rho + eta)) < ringChar F) :
     (closePolynomialSet domain received k A).Finite ∧
       ((closePolynomialSet domain received k A).ncard : ℝ) ≤
         FirstOrder.Squarefree.automaticSquarefreeListBoundConstant rho * n / eta ^ 2 := by
+  by_cases hAn : A ≤ n
+  swap
+  · have hempty : closePolynomialSet domain received k A = ∅ := by
+      apply Set.eq_empty_iff_forall_notMem.mpr
+      intro P hP
+      have hcard := (polynomialAgreementSet domain received P).card_le_univ
+      simp only [Fintype.card_fin] at hcard
+      exact hAn (hP.2.trans hcard)
+    rw [hempty, Set.ncard_empty]
+    refine ⟨Set.finite_empty, ?_⟩
+    norm_num only [Nat.cast_zero]
+    have hC := automaticRateEnvelopeConstant_one_le rho
+    unfold FirstOrder.Squarefree.automaticSquarefreeListBoundConstant
+    positivity
+  have hn : 0 < n := by
+    exact_mod_cast pos_of_mul_pos_right
+      ((show (0 : ℝ) < k by exact_mod_cast (show 0 < k by omega)).trans_le hkRate) hrho.le
   let a := firstOrderRateThreshold rho + eta
   let D := k - 1
   let M := automaticDerivativeCap rho a
@@ -491,8 +513,6 @@ theorem closePolynomialSet_finite_and_card_le_finiteLength_of_certificate
   let lambda : ℝ := ((n - k + 1 : ℕ) : ℝ) / (A - k + 1 : ℕ)
   let bound : ℝ := 7 * C ^ 3 * n / finiteLengthSlack eta n ^ 2
   have hkn : k ≤ n := hkA.trans hAn
-  have hn : 2 ≤ n := hk.trans hkn
-  have hnPos : 1 ≤ n := by omega
   have hDPos : 1 ≤ k - 1 := by omega
   have hDn : k - 1 ≤ n := (Nat.sub_le _ _).trans hkn
   have hlambda0 : 0 ≤ lambda := by
@@ -506,7 +526,7 @@ theorem closePolynomialSet_finite_and_card_le_finiteLength_of_certificate
       domain received columns cert hk hkA hMmu hchar S hS
     apply hraw.trans
     have hnumeric := squarefreeListExpression_le_finiteLength
-      hC heta hnPos hsOne hDPos hDn hM hMmu hlambda0
+      hC heta hsOne hDPos hDn hM hMmu hlambda0
       (by simpa only [lambda] using hlambda) hmu
     simpa only [lambda, bound, show k - 1 + 1 = k by omega, mul_div_assoc] using hnumeric
   have hfinite : T.Finite := closePolynomialSet_finite domain received hkA
@@ -529,12 +549,14 @@ theorem closePolynomialSet_finite_and_card_le_inv_eta_of_certificate
     (hk : 2 ≤ k) (hkA : k ≤ A) (hAn : A ≤ n)
     (hM : 1 ≤ M) (hMmu : M ≤ mu)
     (hchar : ringChar F = 0 ∨ max (k - 1) M < ringChar F)
-    (hC : 1 ≤ C) (heta : 0 < eta) (hsOne : finiteLengthSlack eta n ≤ 1)
+    (heta : 0 < eta) (hsOne : finiteLengthSlack eta n ≤ 1)
     (hlambda : ((n - k + 1 : ℕ) : ℝ) / (A - k + 1 : ℕ) ≤ C)
     (hmu : (mu : ℝ) ≤ C / finiteLengthSlack eta n) :
     (closePolynomialSet domain received k A).Finite ∧
       ((closePolynomialSet domain received k A).ncard : ℝ) ≤
         7 * C ^ 3 * n / eta ^ 2 := by
+  have hC : 1 ≤ C := le_trans ((one_le_div (by positivity)).mpr
+    (by exact_mod_cast (show A - k + 1 ≤ n - k + 1 by omega))) hlambda
   obtain ⟨hfinite, hcard⟩ :=
     closePolynomialSet_finite_and_card_le_finiteLength_of_certificate
       domain received columns cert hk hkA hAn hM hMmu hchar hC heta hsOne
@@ -553,7 +575,7 @@ theorem closePolynomialSet_finite_and_card_le_finiteLength_of_bounded_certificat
     (columns : Fin N → SourceColumn 1)
     (cert : FirstOrderSymbolicCertificate.{u, u} (F := F)
       Dcert A m M B k H domain received (fun _ ↦ 0) columns)
-    (hn : 2 ≤ n) (hk : 2 ≤ k) (hkA : k ≤ A) (hAn : A ≤ n)
+    (hk : 2 ≤ k) (hkA : k ≤ A) (hAn : A ≤ n)
     (hMB : M ≤ B)
     (hchar : ringChar F = 0 ∨ max (k - 1) M < ringChar F)
     (hC : 1 ≤ C) (heta : 0 < eta) (hsOne : finiteLengthSlack eta n ≤ 1)

@@ -669,7 +669,7 @@ private theorem rationalFiniteLengthZeroCertificate :
         (μ := finiteLengthJetDegree (1 / 2) (1 / 8) 4))) := by
   exact exists_finiteLengthFirstOrder_symbolicCertificate
     (rho := 1 / 2) (eta := 1 / 8) (n := 4) (k := 2) (A := 4)
-    (by norm_num) (by norm_num) halfRate_slack_lt_one (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num)
     halfRate_finiteLengthDerivativeRatio_le_half (by norm_num) (by norm_num)
     (by nlinarith [halfRate_slack_lt_one]) rationalDomain (fun _ ↦ 0) (fun _ ↦ 0)
 

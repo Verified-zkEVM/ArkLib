@@ -210,9 +210,6 @@ theorem lowRateInverseLengthSlope_div_length_le_gain
   let a := lowRateFiniteLengthCertifiedAgreement rho eta
   let T := firstOrderLowRateThreshold rho
   let beta := firstOrderLowRateBeta rho
-  have ha0 : 0 < a := by
-    dsimp only [a]
-    exact lowRateFiniteLengthCertifiedAgreement_pos hrho heta.le
   have hTa : T ≤ a := by
     have := lowRateFiniteLengthCertifiedAgreement_ge_half_slack
       (rho := rho) heta.le haOne.le
@@ -226,7 +223,7 @@ theorem lowRateInverseLengthSlope_div_length_le_gain
       dsimp only [beta, T]
       exact firstOrderLowRateBeta_lt_threshold_div_rate hrho
     exact hfixed.trans_le (div_le_div_of_nonneg_right hTa hrho.le)
-  have hgain := sourceDensity_gain_at_finiteLengthRate hrho hn ha0 hb0 hbcut
+  have hgain := sourceDensity_gain_at_finiteLengthRate hrho hn hb0 hbcut
   have hsq : T ^ 2 ≤ a ^ 2 := by
     have hTnonneg : 0 ≤ T := by
       dsimp only [T, firstOrderLowRateThreshold]
@@ -363,7 +360,7 @@ theorem lowRateFiniteLengthSourceDensity_mul_cube_le_sourceCount
   let m := lowRateFiniteLengthMultiplicity rho eta n
   have hregime : FirstOrderLowRateRegime rho :=
     (firstOrderLowRateRegime_iff_lt_rateSwitch rho).2 hlow
-  have hR : 0 < R := finiteLengthRate_pos hrho hn
+  have hR : 0 < R := finiteLengthRate_pos hn
   have hRrho : R < rho := finiteLengthRate_lt_rate
     (length_pos_of_two_le_rate_mul_length hn)
   have hTa : firstOrderLowRateThreshold rho ≤ a := by

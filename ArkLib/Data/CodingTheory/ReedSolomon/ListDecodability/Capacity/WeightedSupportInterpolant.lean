@@ -159,7 +159,7 @@ theorem exists_prescribed_weightedSupport_construction
     (domain : Fin n ↪ ZMod q) (received : Fin n → ZMod q)
     (hδ : 0 < δ) (hδmax : δ < 1 / 4)
     (hblock : 8 * weightedSupportMultiplicity (capacityDerivativeOrder δ) ≤ n)
-    (hnq : n ≤ q) (hA : capacityAgreementThreshold δ n k ≤ n) :
+    (hA : capacityAgreementThreshold δ n k ≤ n) :
     let d := capacityDerivativeOrder δ
     let m := weightedSupportMultiplicity (capacityDerivativeOrder δ)
     let K := weightedSupportAmbientDimension δ n k
@@ -178,7 +178,7 @@ theorem exists_prescribed_weightedSupport_construction
   rw [hmEq, hdEq, hKEq]
   apply exists_prescribed_weightedSupport_construction_core domain received hδ hδmax
   · simpa only [m, d] using hblock
-  · exact hnq
+  · simpa only [Fintype.card_fin, ZMod.card] using Fintype.card_le_of_embedding domain
   · exact hA
 
 /-- A weighted-support construction with its total-jet bound gives the sharp extension-field

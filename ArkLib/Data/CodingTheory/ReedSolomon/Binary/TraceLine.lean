@@ -68,6 +68,7 @@ private lemma traceLineWord_ne_zero (m : ℕ) (τ z : F) {x : F} (hx : x ≠ 0) 
       x ^ (binaryTraceTopDegree m - 1) + z * x⁻¹ := by
   simp [modifiedPowerWord, reciprocalWord, hx]
 
+omit [CharP F 2] in
 /-- Every word on the trace line has an explicit polynomial below the quarter-field degree
 threshold agreeing at exactly half the field. -/
 theorem exists_polynomial_agree_traceLine_eq_half {m : ℕ} (hm : 3 ≤ m)
@@ -77,6 +78,7 @@ theorem exists_polynomial_agree_traceLine_eq_half {m : ℕ} (hm : 3 ≤ m)
         (fun x ↦ p.eval x) =
         binaryTraceTopDegree m := by
   classical
+  have : CharP F 2 := charP_of_card_eq_prime_pow hcard
   by_cases hz : z = 0
   · -- The repaired origin completes the nonzero trace-zero fiber.
     subst z

@@ -86,7 +86,7 @@ theorem div_finiteLengthSlack_four_le_div_eta_four
 `O(n / (eta + 1/n)^2)`. -/
 theorem squarefreeListExpression_le_finiteLength
     {C eta lambda : ℝ} {n D B M : ℕ}
-    (hC : 1 ≤ C) (heta : 0 < eta) (hn : 1 ≤ n)
+    (hC : 1 ≤ C) (heta : 0 < eta)
     (hsOne : finiteLengthSlack eta n ≤ 1)
     (hD : 1 ≤ D) (hDn : D ≤ n) (hM : 1 ≤ M) (hMB : M ≤ B)
     (hlambda0 : 0 ≤ lambda) (hlambda : lambda ≤ C)
@@ -96,7 +96,7 @@ theorem squarefreeListExpression_le_finiteLength
       7 * C ^ 3 * n / finiteLengthSlack eta n ^ 2 := by
   have hs : 0 < finiteLengthSlack eta n := finiteLengthSlack_pos heta
   have hraw := FirstOrder.Squarefree.squarefreeListExpression_le_rate_envelope hC
-    ((one_le_div hs).2 hsOne) hn hD hDn hM hMB hlambda0 hlambda
+    ((one_le_div hs).2 hsOne) (hD.trans hDn) hD hDn hM hMB hlambda0 hlambda
     (hB.trans_eq (div_eq_mul_one_div _ _))
   rwa [one_div_pow, ← div_eq_mul_one_div] at hraw
 
@@ -182,7 +182,7 @@ private theorem mcaEnvelope_arith_le {C q n lambda D t B M H b h s : ℝ}
 /-- The line-MCA envelope is at most `140 C⁶ n² q⁴` under the displayed parameter bounds. -/
 theorem finiteLengthMcaEnvelope_le_rateEnvelope
     {C q lambda : ℝ} {n D B M H : ℕ}
-    (hC : 1 ≤ C) (hq : 1 ≤ q) (_hn : 1 ≤ n) (hqN : q ≤ n)
+    (hC : 1 ≤ C) (hq : 1 ≤ q) (hqN : q ≤ n)
     (hDn : D ≤ n) (hlambda0 : 0 ≤ lambda) (hlambda : lambda ≤ C)
     (hB : (B : ℝ) ≤ C * q) (hM : (M : ℝ) ≤ C * q)
     (hH : (H : ℝ) ≤ C * q ^ 2) :
@@ -227,7 +227,7 @@ theorem finiteLengthMcaEnvelope_le
   have hs : 0 < s := finiteLengthSlack_pos heta
   have hq : 1 ≤ q := (one_le_div hs).2 hsOne
   have hqN : q ≤ (n : ℝ) := finiteLengthSlack_inv_le_length heta.le (by omega)
-  have hraw := finiteLengthMcaEnvelope_le_rateEnvelope hC hq hn hqN hDn
+  have hraw := finiteLengthMcaEnvelope_le_rateEnvelope hC hq hqN hDn
     hlambda0 hlambda (hB.trans_eq (div_eq_mul_one_div _ _))
       (hM.trans_eq (div_eq_mul_one_div _ _))
       (hH.trans_eq (by rw [one_div_pow, div_eq_mul_one_div]))
