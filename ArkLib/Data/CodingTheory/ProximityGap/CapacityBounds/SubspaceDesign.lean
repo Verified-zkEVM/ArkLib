@@ -311,7 +311,7 @@ theorem subspace_design_mcaError_le
     field_simp
     nlinarith only [mul_nonneg htR.le hτ, htR]
   have hlist := subspaceDesign_lambda_le_of_radius_lt _h
-    (show 1 ≤ t by omega) (show t ≤ 2 * t by omega) hboost
+    (show t ≤ 2 * t by omega) hboost
   have hδlt : δ < 1 := by
     rw [← NNReal.coe_lt_coe]
     change δr < 1

@@ -22,7 +22,7 @@ in-tree real-radius corollary of the integer-radius CS25 statement.
 
 ## Main statements
 
-- `linear_mcaError_le_of_Lambda_le` turns a list-size bound below the relative minimum distance
+- `linear_mcaError_le_of_Lambda_le` turns a list-size bound
   into an affine-line MCA bound.
 - `rs_Lambda_le_card_of_epsCa_lt` bounds an RS list by the field size from a small CA error.
 - `rs_Lambda_extended_le_of_epsCa_int_radius` is the integer-radius CS25 bound for a related RS

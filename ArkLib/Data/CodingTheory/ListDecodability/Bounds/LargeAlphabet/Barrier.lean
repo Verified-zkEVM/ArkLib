@@ -624,7 +624,7 @@ theorem large_union_existence : LargeUnionExistence := by
       simpa only [one_mul] using h
     exact_mod_cast hfloor.trans hmul
   obtain ⟨target, hresize⟩ :=
-    large_union_family_resize W a₀ b₀ a₁ b₁ hW ha hab hb
+    large_union_family_resize W a₀ b₀ a₁ b₁ ha hab hb
       (ι := Fin m) (by simpa only [Fintype.card_fin] using ha₁m) source
   refine ⟨target, ?_⟩
   have hresizeR : (source.sets.card : ℝ) ≤
@@ -809,7 +809,7 @@ theorem barrier_package_existence : BarrierPackageExistence := by
     obtain ⟨resized, hresize⟩ := large_union_family_resize
       W (Nat.floor (barrierAlphaDensity R * m))
       (Nat.ceil (barrierBetaDensity ℓ R * m))
-      d.aFamily d.aUnion hW hLower hUpperFamily hUpperUnion
+      d.aFamily d.aUnion hLower hUpperFamily hUpperUnion
       (ι := Fin m) (by simpa only [Fintype.card_fin] using haUnused)
       source
     obtain ⟨params, hpW, hpWEq, hpa, hpu, hpz, hpo⟩ :=
@@ -959,7 +959,7 @@ theorem robust_minimum_distance_barrier :
     have hone : 1 ≤ η * n := eta_times_length_one η n hη hlen
     have hmany : 2 * q ^ params.aFamily ≤ C.ncard :=
       rate_loss_to_cardinality q B params.aFamily n C.ncard R
-        (by simpa only [q] using hA) hB hRpos.le hrate hsize
+        (by simpa only [q] using hA) hrate hsize
     have hp : 0 < relRadius ℓ R η := by
       apply relRadius_pos ℓ (by omega) R η
       linarith

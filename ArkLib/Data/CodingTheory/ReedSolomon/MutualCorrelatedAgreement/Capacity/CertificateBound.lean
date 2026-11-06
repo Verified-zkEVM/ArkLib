@@ -52,7 +52,7 @@ theorem exists_exceptional_exactPowerAgreement_of_certificate_of_jetCharacterist
       (fun i ↦ powerBatchedCoordinate fun t ↦ values t i))
     (hk : 0 < k) (hkK : k ≤ K) (hdK : d < K) (hKn : K ≤ n)
     (hAn : A ≤ n) (hh : 0 < h)
-    (hℓ : 0 < ℓ) (hH : H ≤ ℓ * h) (hδ : 0 < δ)
+    (hH : H ≤ ℓ * h) (hδ : 0 < δ)
     (hgap : (k : ℝ) + δ * n ≤ A)
     (hchar : ringChar F = 0 ∨ max (K - 1) ν < ringChar F) :
     ∃ exceptional : Finset E,
@@ -77,7 +77,7 @@ theorem exists_exceptional_exactPowerAgreement_of_certificate_of_jetCharacterist
   obtain ⟨stages, terminal, hc, exceptional, hcard, hexact⟩ :=
     cert.exists_exceptional_powerBatchedAgreement_sharp_of_exponent iota K L (2 * K)
       (fun r _ ↦ taylorExponentSufficient_two_mul r K) (by omega) hdK hkK
-      hcutoff.1 hcutoff.2 hAn hℓ hcharJet
+      hcutoff.1 hcutoff.2 hcharJet
       (by
         intro r _ i hri hi
         have hchoose := PolynomialDifferential.natCast_choose_ne_zero_of_ringChar
@@ -116,7 +116,7 @@ theorem exists_exceptional_exactPowerAgreement_of_certificate {F E : Type u} [Fi
     (certificate : SymbolicReceivedCurve.Certificate.{0, u} A k ℓ ν d height domain
       (fun index ↦ powerBatchedCoordinate fun term ↦ values term index))
     (hδ : 0 < δ) (hk : 0 < k)
-    (hh : 0 < h) (hℓ : 0 < ℓ)
+    (hh : 0 < h)
     (hdK : d < K) (hKn : K ≤ n) (hνn : ν < n)
     (hkA : k ≤ A) (hAn : A ≤ n) (hgap : (k : ℝ) + δ * n ≤ A)
     (hheight : height ≤ ℓ * h) (hchar : ringChar F = 0 ∨ n ≤ ringChar F) :
@@ -139,7 +139,7 @@ theorem exists_exceptional_exactPowerAgreement_of_certificate {F E : Type u} [Fi
   exact exists_exceptional_exactPowerAgreement_of_certificate_of_jetCharacteristic
     (domain := domain) (values := values) (iota := embedding) (cert := certificate)
     (H := height) (hk := hk) (hkK := hkA.trans hAn)
-    (hdK := hdK.trans_le hKn) (hKn := le_rfl) (hAn := hAn) (hh := hh) (hℓ := hℓ) (hH := hheight)
+    (hdK := hdK.trans_le hKn) (hKn := le_rfl) (hAn := hAn) (hh := hh) (hH := hheight)
     (hδ := hδ) (hgap := hgap) (hchar := hcharJet)
 
 end ReedSolomon

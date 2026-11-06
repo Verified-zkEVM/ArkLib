@@ -75,10 +75,6 @@ theorem exists_mathematicalUniformRatePartition_curve_exactPowerAgreement
   classical
   have hkA : k ≤ A := by
     exact_mod_cast hgap.trans' (le_add_of_nonneg_right (by positivity))
-  rcases Nat.eq_zero_or_pos ℓ with rfl | hℓ
-  · refine ⟨∅, by simp, ?_⟩
-    intro z _ P hdegree hagree
-    exact hasExactPowerAgreement_singleton domain values iota k z P hdegree (hkA.trans hagree)
   obtain ⟨e⟩ := exists_mathematicalRatePartitionEnvelope hδ hδsmall hn hgap hAn
   obtain ⟨hd, -, hscale, hν, -⟩ := uniformMathematical_certificate_guards hδ hδsmall
   obtain ⟨cert⟩ := e.exists_curve_certificate (scale := 300) hd hscale hAn
@@ -89,7 +85,7 @@ theorem exists_mathematicalUniformRatePartition_curve_exactPowerAgreement
   exact exists_exceptional_exactPowerAgreement_of_certificate_of_jetCharacteristic
     domain values iota cert hk (Nat.le_max_left _ _)
     (Nat.lt_succ_self _ |>.trans_le (Nat.le_max_right _ _)) hKn hAn
-    (by positivity) hℓ le_rfl hδ hgap
+    (by positivity) le_rfl hδ hgap
     (uniformMathematical_ringChar_guard hδ hδsmall hchar)
 
 open Classical in

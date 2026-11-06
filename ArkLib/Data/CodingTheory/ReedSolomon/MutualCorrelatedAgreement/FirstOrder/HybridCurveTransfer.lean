@@ -235,7 +235,7 @@ theorem exists_exceptional_firstOrder_regularCurveStages
       obtain ⟨exceptional, hcard, hgood⟩ :=
         exists_exceptional_regularPowerBatchedAgreement_identityPair
           domain values iota (jetDerivative Q (1 : Fin 2) j) L A
-            (mu - j) (e - j) h (by omega) hLA hAn hv
+            (mu - j) (e - j) h (by omega) hLA
             (descent.stage_jetTotalDegree_le j (Nat.le_of_lt hj))
             (hstageHeight j)
       refine ⟨exceptional, ?_, ?_⟩

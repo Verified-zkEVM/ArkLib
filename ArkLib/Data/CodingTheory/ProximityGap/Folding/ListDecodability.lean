@@ -194,15 +194,13 @@ lemma card_foldingBlockAgreement_ge [FoldingContextMiddle k n]
   norm_cast
 
 open FoldingContext in
-lemma foldingBlockAgreement_is_agreement [FoldingContextMiddle k n]
+lemma foldingBlockAgreement_is_agreement
     {α : F} {u0 u1 v : Word F (Fin (2 ^ (n - 1)))}
   {i : Fin (2 ^ (n - 1))} (hi : i ∈ foldingBlockAgreement k ω α u0 u1 v) :
   u0 i + α * u1 i = v i := by
-  aesop
-    (add safe (by grind [mem_pullback₁]))
-    (add simp [foldingBlockAgreement,
-               complDisagreementSet_def',
-               mem_blockIdx_iff_mem_block])
+  have hi' := mem_s_of_mem_pullback₁ hi
+  rw [complDisagreementSet_def', Finset.mem_filter] at hi'
+  simpa using hi'.2 i mem_blockIdx_self
 
 lemma agreement_on_z_of_u0_u1_polynomials [NeZero n]
     {u₀ u₁ : Polynomial F}
@@ -327,7 +325,7 @@ private lemma natDegree_lt_two_pow_of_degree_lt {u : Polynomial F} {m : ℕ}
 
 open FoldingContext in
 lemma mem_ball_of_u0_u1_polynomials [FoldingContext k d n]
-    {δ : ℝ≥0} (hδ1 : δ < 1)
+    {δ : ℝ≥0}
   {u₀ u₁ : Polynomial F}
   (hu₀_deg : u₀.degree < 2 ^ (d - 1))
   (hu₁_deg : u₁.degree < 2 ^ (d - 1))
@@ -365,17 +363,20 @@ lemma mem_ball_of_u0_u1_polynomials [FoldingContext k d n]
       rw [blockDistance_symm]
       convert distance_of_u0_u1_polynomials z hz
       simp
-    · have hδ : 2 ^ (n - k) - Finset.card z ≤ 2 ^ (n - k) * δ := by
-        norm_num
-        rw [←NNReal.coe_le_coe]
-        rw [←NNReal.coe_le_coe,
-            NNReal.coe_mul, NNReal.coe_sub (by grind),
-            mul_sub] at hz_card
-        norm_num at hz_card
-        push_cast
-        grind
-      field_simp
-      exact le_trans hδ (by simp)
+    · by_cases hδ1 : δ ≤ 1
+      · have hδ : 2 ^ (n - k) - Finset.card z ≤ 2 ^ (n - k) * δ := by
+          norm_num
+          rw [←NNReal.coe_le_coe]
+          rw [←NNReal.coe_le_coe,
+              NNReal.coe_mul, NNReal.coe_sub (by grind),
+              mul_sub] at hz_card
+          norm_num at hz_card
+          push_cast
+          grind
+        field_simp
+        exact le_trans hδ (by simp)
+      · exact le_trans ((div_le_one (by positivity)).2 (tsub_le_self))
+          (le_of_not_ge hδ1)
 
 omit [DecidableEq F] in
 /-- The rate of the Reed-Solomon code of degree `2 ^ d` on the halved domain, in closed form. -/
@@ -403,7 +404,7 @@ lemma exists_poly_of_projectedWord_mem {ι : Type}
 omit [DecidableEq F] in
 /-- The rate of the degree-`2 ^ d` code on the halved domain accounts for at least `2 ^ (d-1)`
   positions. -/
-lemma two_pow_d_sub_one_le_rate_mul (hkd : 1 ≤ d) (hdn : d ≤ n) :
+lemma two_pow_d_sub_one_le_rate_mul (hdn : d ≤ n) :
     ((2 : ℝ≥0) ^ (d - 1)) ≤
     2 ^ (n - 1) *
       (LinearCode.rate (code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1))) : ℝ≥0) := by
@@ -419,7 +420,6 @@ private lemma folding_reflects_balls_aux [Fintype F] [SampleableType F] [Folding
   (hmca : IsMCAGenerator (univariatePowersGenerator F 1) ε_mca
     (ReedSolomon.code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1))))
   {δ : ℝ≥0}
-  (_δ_gt_0 : 0 < δ)
   (δ_lt : δ <
     (1 - (LinearCode.rate
       (ReedSolomon.code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1)))))) :
@@ -436,7 +436,6 @@ private lemma folding_reflects_balls_aux [Fintype F] [SampleableType F] [Folding
   intro δ'
   have hδ1 : δ < 1 := lt_of_lt_of_le δ_lt (by simp)
   have hrate := two_pow_d_sub_one_le_rate_mul (ω := ω) (d := d) (by grind)
-    (by grind)
   have key : ∀ α : F,
       ¬ (blockRelDistanceBall (k - 1) (ω.subdomain 1) (foldWord ω f 1 α) δ
             (code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1)))) ⊆
@@ -490,7 +489,7 @@ private lemma folding_reflects_balls_aux [Fintype F] [SampleableType F] [Folding
           (fun i hi => by simpa [hu1def, foldWordOdd, log_right_inverse'] using hp₁ i hi) hj
         simpa using hagr
       have huball := mem_ball_of_u0_u1_polynomials (ω := ω) (f := f) (k := k) (d := d)
-        hδ1 hp₀deg hp₁deg (foldingBlockAgreementᵣ k ω α u0 u1 v) hzcard hz
+        hp₀deg hp₁deg (foldingBlockAgreementᵣ k ω α u0 u1 v) hzcard hz
       set w := evalOnPoints (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (p₀ + α • p₁) with hwdef
       have hwcode : w ∈ code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1)) :=
         ReedSolomon.evalOnPoints_mem_code_of_degree_lt
@@ -534,7 +533,6 @@ theorem folding_reflects_balls [Fintype F] [SampleableType F] [FoldingContext k 
   (hmca : IsMCAGenerator (univariatePowersGenerator F 1) ε_mca
     (ReedSolomon.code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1))))
   {δ : ℝ≥0}
-  (_δ_gt_0 : 0 < δ)
   (δ_lt : δ <
     (1 - (LinearCode.rate
       (ReedSolomon.code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1)))))) :
@@ -550,7 +548,7 @@ theorem folding_reflects_balls [Fintype F] [SampleableType F] [FoldingContext k 
           ENNReal.ofReal (ε_mca δ') := by
   extract_lets δ'
   refine le_trans'
-    (folding_reflects_balls_aux (f := f) hmca _δ_gt_0 δ_lt)
+    (folding_reflects_balls_aux (f := f) hmca δ_lt)
     (prEvent_mono _ _ _ ?_)
   intro α hne hsub
   exact hne (Set.Subset.antisymm hsub folding_preserves_block_balls)
@@ -567,7 +565,7 @@ open CoreDefinitions unitInterval in
 private theorem iterated_folding_reflects_balls_aux [Fintype F] [SampleableType F] (k : ℕ) :
     ∀ (n d b : ℕ) (ω : SmoothCosetFftDomain n F) (f : Word F (Fin (2 ^ n)))
       (ε : ℕ → I → ℝ≥0) (δ : ℝ≥0) (hδ1 : δ ≤ 1),
-      b + k ≤ d → d ≤ n → 0 < δ →
+      b + k ≤ d → d ≤ n →
       (∀ i, i < k → IsMCAGenerator (univariatePowersGenerator F 1) (ε i)
         (code (ω.subdomain (i + 1) : Fin (2 ^ (n - (i + 1))) ↪ F) (2 ^ (d - i - 1)))) →
       (∀ i, i < k → δ < 1 - (LinearCode.rate
@@ -580,11 +578,11 @@ private theorem iterated_folding_reflects_balls_aux [Fintype F] [SampleableType 
         ∑ i ∈ Finset.range k, ENNReal.ofReal (ε i ⟨δ, δ.coe_nonneg, by exact_mod_cast hδ1⟩) := by
   induction k with
   | zero =>
-      intro n d b ω f ε δ hδ1 hbd hdn hδ0 _ _
+      intro n d b ω f ε δ hδ1 hbd hdn _ _
       refine le_of_eq (prEvent_eq_zero_of_forall_not _ _ fun α ↦ ?_)
       aesop
   | succ k ih =>
-      intro n d b ω f ε δ hδ1 hbd hdn hδ0 hmca hrate
+      intro n d b ω f ε δ hδ1 hbd hdn hmca hrate
       classical
       set δ' : I := ⟨δ, δ.coe_nonneg, by exact_mod_cast hδ1⟩ with hδ'
       have hk1n : k + 1 ≤ n := by omega
@@ -606,7 +604,7 @@ private theorem iterated_folding_reflects_balls_aux [Fintype F] [SampleableType 
         have : FoldingContext (b + 1) (d - k) (n - k) := FoldingContext.mk'
           (by omega) (by omega) (by omega)
         exact folding_reflects_balls (ω := ω.subdomain k) (f := w) (k := b + 1)
-          (d := d - k) (n := n - k) hm hδ0 hr
+          (d := d - k) (n := n - k) hm hr
       refine le_trans (SampleableType.prEvent_uniformSample_finSnoc_le_add _
         (fun y =>
           Λ𞁒(code (ω.subdomain k : Fin (2 ^ (n - k)) ↪ F) (2 ^ (d - k)), b + 1,
@@ -639,7 +637,7 @@ private theorem iterated_folding_reflects_balls_aux [Fintype F] [SampleableType 
         rw [himg, ← hy, ← hcon, hfold f, hsub]
         rfl
       · -- the union bound over the rounds
-        have hih := ih n d (b + 1) ω f ε δ hδ1 (by omega) hdn hδ0
+        have hih := ih n d (b + 1) ω f ε δ hδ1 (by omega) hdn
           (fun i hi => hmca i (by omega)) (fun i hi => hrate i (by omega))
         rw [Finset.sum_range_succ]
         gcongr
@@ -660,7 +658,7 @@ open CoreDefinitions unitInterval in
 theorem iterated_folding_reflects_balls [Fintype F] [SampleableType F]
     [FoldingContext k d n]
     {ω : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))}
-    (ε : ℕ → I → ℝ≥0) {δ : ℝ≥0} (hδ1 : δ ≤ 1) (hδ0 : 0 < δ)
+    (ε : ℕ → I → ℝ≥0) {δ : ℝ≥0} (hδ1 : δ ≤ 1)
     (hmca : ∀ i, i < k → IsMCAGenerator (univariatePowersGenerator F 1) (ε i)
       (code (ω.subdomain (i + 1) : Fin (2 ^ (n - (i + 1))) ↪ F) (2 ^ (d - i - 1))))
     (hrate : ∀ i, i < k → δ < 1 - (LinearCode.rate
@@ -673,7 +671,7 @@ theorem iterated_folding_reflects_balls [Fintype F] [SampleableType F]
             ((δᵣ(iteratedFoldWord ω f k α, v) : ℚ≥0) : ℝ≥0) ≤ δ}] ≤
       ∑ i ∈ Finset.range k, ENNReal.ofReal (ε i ⟨δ, δ.coe_nonneg, by exact_mod_cast hδ1⟩) := by
   have h := iterated_folding_reflects_balls_aux (F := F) k n d 0 ω f ε δ hδ1
-    (by grind) (by grind) hδ0 hmca hrate
+    (by grind) (by grind) hmca hrate
   refine le_trans (prEvent_mono _ _ _ ?_) h
   aesop (add simp blockRelDistanceBall_zero)
 

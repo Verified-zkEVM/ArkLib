@@ -92,10 +92,8 @@ theorem weighted_correlated_agreement_for_parameterized_curves
     {l : ℕ} {u : Fin (l + 2) → ι → F}
     {deg : ℕ} {domain : ι ↪ F}
     {μ : ι → Set.Icc (0 : ℚ) 1}
-    {M : ℕ}
     {α : ℝ≥0}
-    (hdeg_pos : 0 < deg)
-    (_hμ : ∀ i, ∃ n : ℤ, (μ i).1 = (n : ℚ) / (M : ℚ)) :
+    (hdeg_pos : 0 < deg) :
     letI sqrtRate := ReedSolomon.sqrtRate deg domain
     (hα : sqrtRate < α) →
     (hα₁ : α < 1) →
@@ -177,7 +175,6 @@ theorem weighted_correlated_agreement_for_parameterized_curves'
     {M m : ℕ}
     (hm : 3 ≤ m)
     (hdeg_pos : 0 < deg)
-    (_hμ : ∀ i, ∃ n : ℤ, (μ i).1 = (n : ℚ) / (M : ℚ))
     {α : ℝ≥0} :
     letI sqrtRate := ReedSolomon.sqrtRate deg domain
     letI S : Finset F := {
@@ -425,8 +422,7 @@ theorem weighted_correlated_agreement_over_affine_spaces' [DecidableEq ι]
     {α : ℝ≥0}
     {M m : ℕ}
     (hm : 3 ≤ m)
-    (hdeg_pos : 0 < deg)
-    (_hμ : ∀ i, ∃ n : ℤ, (μ i).1 = (n : ℚ) / (M : ℚ)) :
+    (hdeg_pos : 0 < deg) :
     letI sqrtRate := ReedSolomon.sqrtRate deg domain
     letI pr :=
       Pr{let y ← $ᵗ ↥(Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u))}[
@@ -707,9 +703,7 @@ needed for this combinatorial strengthening.
 
 The domain `ι` is finite and is equipped with a weighted measure `μ`, where each
 weight `μ i` is a rational with common denominator `M`. Let `S' ⊆ F` be a set of
-field points with
-* `S'.card > l + 1`, and
-* `S'.card ≥ (M * Fintype.card ι + 1) * (l + 1)`.
+field points with `S'.card ≥ (M * Fintype.card ι + 1) * (l + 1)`.
 
 Assume that for every `z ∈ S'` the µ-weighted agreement between `w · z` and
 `wtilde · z` is at least `α`. Then the µ-measure of the set of points where all
@@ -724,7 +718,6 @@ lemma sufficiently_large_list_agreement_on_curve_implies_correlated_agreement
     (hμ : ∀ i, ∃ n : ℤ, (μ i).1 = (n : ℚ) / (M : ℚ))
     {v : Fin (l + 2) → ι → F}
     {S' : Finset F}
-    (hS'_card : S'.card > l + 1)
     (hS'_card₁ : S'.card ≥ (M * Fintype.card ι + 1) * (l + 1)) :
     letI w (x : ι) (z : F) : F := Curve.polynomialCurveEval (F := F) (A := F) u z x
     letI wtilde (x : ι) (z : F) : F := Curve.polynomialCurveEval (F := F) (A := F) v z x
@@ -733,6 +726,19 @@ lemma sufficiently_large_list_agreement_on_curve_implies_correlated_agreement
   dsimp only
   classical
   intro hS'_agree
+  by_cases hMzero : M = 0
+  · have hweights_zero (i : ι) : (μ i).1 = 0 := by
+      obtain ⟨n, hn⟩ := hμ i
+      simpa [hMzero] using hn
+    obtain ⟨z, hz⟩ := Finset.card_pos.mp (show 0 < S'.card by
+      have hcard := hS'_card₁
+      simp only [hMzero, zero_mul, zero_add, one_mul] at hcard
+      omega)
+    simpa [agree, mu_set, hweights_zero] using hS'_agree z hz
+  have hM_pos : 0 < M := Nat.pos_of_ne_zero hMzero
+  have hS'_card : S'.card > l + 1 := by
+    have := Nat.mul_pos hM_pos (Fintype.card_pos (α := ι))
+    nlinarith [hS'_card₁]
   let w (x : ι) (z : F) : F := Curve.polynomialCurveEval u z x
   let wtilde (x : ι) (z : F) : F := Curve.polynomialCurveEval v z x
   let values : Finset ℝ := S'.image fun z => agree μ (w · z) (wtilde · z)
@@ -780,17 +786,6 @@ lemma sufficiently_large_list_agreement_on_curve_implies_correlated_agreement
     simpa only [agree, mu_set] using measure_grid {i | a i = b i}
   rcases measure_grid {x : ι | ∀ i, u i x = v i x} with ⟨a, ha⟩
   rcases agree_grid (w · zβ) (wtilde · zβ) with ⟨b, hb⟩
-  have hM_pos : 0 < M := by
-    by_contra hM
-    have hMzero : M = 0 := Nat.eq_zero_of_not_pos hM
-    have hweights_zero (i : ι) : (μ i).1 = 0 := by
-      simpa [hMzero] using hnum i
-    have hagree_zero : agree μ (w · zβ) (wtilde · zβ) = 0 := by
-      simp [agree, hweights_zero]
-    rw [← hβeq, hagree_zero] at hmu_lt_beta
-    have hmu_nonneg : 0 ≤ mu_set μ {x : ι | ∀ i, u i x = v i x} := by
-      simp [mu_set, hweights_zero]
-    linarith
   have hd_pos : (0 : ℝ) < (M * Fintype.card ι : ℕ) := by positivity
   have hab_real : (a : ℝ) < b := by
     rw [ha, ← hβeq, hb] at hmu_lt_beta

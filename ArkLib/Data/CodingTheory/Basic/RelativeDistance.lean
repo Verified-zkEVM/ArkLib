@@ -183,6 +183,7 @@ lemma exists_relClosest_codeword_of_Nonempty_Code {ι : Type*} [Fintype ι] {F :
   -- This is exactly `h_sInf_mem`.
   exact h_sInf_mem
 
+omit [Nonempty ι] in
 theorem relDistFromCode_eq_distFromCode_div (u : ι → F) (C : Set (ι → F)) :
     δᵣ(u, C) = (Δ₀(u, C) : ENNReal) / (Fintype.card ι : ENNReal) := by
   -- 1. Unfold definitions
@@ -205,6 +206,17 @@ theorem relDistFromCode_eq_distFromCode_div (u : ι → F) (C : Set (ι → F)) 
       rw [←hM_is_min_abs]
       simp only [ENat.toENNReal_coe]
     rw [h_rhs]
+    rcases isEmpty_or_nonempty ι with hι | hι
+    · have hdist : Δ₀(u, M) = 0 := by
+        have := hammingDist_le_card_fintype (x := u) (y := M)
+        simpa using this
+      have hrel : δᵣ(u, C) = 0 := by
+        apply le_antisymm
+        · simpa only [relHammingDist, hdist, Nat.cast_zero, zero_div,
+            ENNReal.coe_NNRat_coe_NNReal, NNRat.cast_zero, ENNReal.coe_zero] using
+            relDistFromCode_le_relDist_to_mem u M hM_mem
+        · exact zero_le
+      simp [hrel, hdist]
     -- (LHS of our goal). We can show δᵣ(u, C) = (Δ₀(u, M) : ENNReal) / n
     -- by showing M is also the minimum for the relative distance.
     apply le_antisymm
@@ -291,7 +303,7 @@ omit [Nonempty ι] [DecidableEq F] in
     If the distance to a code is at most δ, then there exists a codeword within distance δ.
 NOTE: can we make this shorter using `relDistFromCode_eq_distFromCode_div`?
 -/
-lemma relCloseToCode_iff_relCloseToCodeword_of_minDist [Nonempty ι] [DecidableEq F]
+lemma relCloseToCode_iff_relCloseToCodeword_of_minDist [DecidableEq F]
     {C : Set (ι → F)} (u : ι → F) (δ : ℝ≥0) :
     δᵣ(u, C) ≤ δ ↔ ∃ v ∈ C, δᵣ(u, v) ≤ δ := by
   constructor
@@ -314,12 +326,10 @@ lemma relCloseToCode_iff_relCloseToCodeword_of_minDist [Nonempty ι] [DecidableE
     · -- Case 2: C is non-empty
       have hC_nonempty : Set.Nonempty C := Set.nonempty_iff_ne_empty.mpr hC_empty
       have hC_nonempty_instance : Nonempty C := Set.Nonempty.to_subtype hC_nonempty
-      let v := pickRelClosestCodeword_of_Nonempty_Code C u
-      use v; constructor
-      · simp only [Subtype.coe_prop]
-      · rw [relDistFromPickRelClosestCodeword_of_Nonempty_Code] at h_dist_le_e
-        rw [←ENNReal.coe_le_coe]
-        exact h_dist_le_e
+      obtain ⟨v, hv, hdist⟩ := exists_relClosest_codeword_of_Nonempty_Code C u
+      refine ⟨v, hv, ?_⟩
+      rw [← hdist] at h_dist_le_e
+      exact ENNReal.coe_le_coe.mp h_dist_le_e
   · -- Direction 2: (←)
     -- Assume: `∃ v ∈ C, δᵣ(u, v) ≤ e`
     -- Goal: `δᵣ(u, C) ≤ ↑e`
@@ -509,14 +519,12 @@ lemma relHammingDist_le_one : δᵣ(u, v) ≤ 1 := by
   rw [div_le_iff₀ (by simp)]
   simp [hammingDist_le_card_fintype]
 
+omit [Nonempty ι] in
 /-- The relative Hamming distance between two vectors is non-negative.
 -/
 @[simp]
 lemma zero_le_relHammingDist : 0 ≤ δᵣ(u, v) := by
-  unfold relHammingDist
-  qify
-  rw [le_div_iff₀ (by simp)]
-  simp
+  exact zero_le
 
 end
 
@@ -534,18 +542,11 @@ lemma relHammingDist_mem_relHammingDistRange [DecidableEq F] : δᵣ(u, v) ∈ r
 /-- The range of the relative Hamming distance function is finite.
 -/
 @[simp]
-lemma finite_relHammingDistRange [Nonempty ι] : (relHammingDistRange ι).Finite := by
-  simp only [relHammingDistRange, ← Set.finite_coe_iff, Set.coe_ofPred]
-  exact
-    finite_iff_exists_equiv_fin.2
-      ⟨Fintype.card ι + 1,
-        ⟨⟨
-        fun ⟨s, _⟩ ↦ ⟨(s * Fintype.card ι).num, by aesop (add safe (by omega))⟩,
-        fun n ↦ ⟨n / Fintype.card ι, by use n; simp [Nat.le_of_lt_add_one n.2]⟩,
-        fun ⟨_, _, _, h₂⟩ ↦ by simp only [h₂]; ring_nf; simp [NNRat.num_natCast]; ring,
-        fun _ ↦ by simp
-        ⟩⟩
-      ⟩
+lemma finite_relHammingDistRange : (relHammingDistRange ι).Finite := by
+  refine ((Set.finite_Iic (Fintype.card ι)).image
+    (fun d : ℕ => (d : ℚ≥0) / Fintype.card ι)).subset ?_
+  rintro d ⟨d', hd', rfl⟩
+  exact ⟨d', hd', rfl⟩
 
 omit [Fintype ι] in
 /-- The set of pairs of distinct elements from a finite set is finite.
@@ -574,6 +575,7 @@ lemma possibleRelHammingDists_subset_relHammingDistRange :
 
 variable [Nonempty ι]
 
+omit [Nonempty ι] in
 /-- The set of possible distances between distinct codewords in a code is a finite set.
 -/
 @[simp]
@@ -609,7 +611,7 @@ and that it is a lower bound (`_le`) — so downstream proofs need not mention t
 
 /-- A code with no two distinct codewords has `δᵣ C = 0`, by convention. -/
 lemma minRelHammingDistCode_of_empty
-    {ι : Type*} [Fintype ι] [Nonempty ι] {F : Type*} [DecidableEq F] {C : Set (ι → F)}
+    {ι : Type*} [Fintype ι] {F : Type*} [DecidableEq F] {C : Set (ι → F)}
     (h : ¬ (possibleRelHammingDists C).Nonempty) :
     minRelHammingDistCode C = 0 := by
   unfold minRelHammingDistCode
@@ -618,7 +620,7 @@ lemma minRelHammingDistCode_of_empty
 /-- The minimum is attained: `δᵣ C` is the relative distance between some pair of distinct
 codewords. -/
 lemma minRelHammingDistCode_mem
-    {ι : Type*} [Fintype ι] [Nonempty ι] {F : Type*} [DecidableEq F] {C : Set (ι → F)}
+    {ι : Type*} [Fintype ι] {F : Type*} [DecidableEq F] {C : Set (ι → F)}
     (h : (possibleRelHammingDists C).Nonempty) :
     minRelHammingDistCode C ∈ possibleRelHammingDists C := by
   unfold minRelHammingDistCode
@@ -630,7 +632,7 @@ lemma minRelHammingDistCode_mem
 /-- `δᵣ C` is a lower bound for the relative distance of every pair of distinct
 codewords. -/
 lemma minRelHammingDistCode_le
-    {ι : Type*} [Fintype ι] [Nonempty ι] {F : Type*} [DecidableEq F] {C : Set (ι → F)}
+    {ι : Type*} [Fintype ι] {F : Type*} [DecidableEq F] {C : Set (ι → F)}
     {q : ℚ≥0} (hq : q ∈ possibleRelHammingDists C) : minRelHammingDistCode C ≤ q := by
   have h_ne : (possibleRelHammingDists C).Nonempty := ⟨q, hq⟩
   unfold minRelHammingDistCode
@@ -716,11 +718,11 @@ lemma possibleRelHammingDistsToC_subset_relHammingDistRange [DecidableEq F] :
 /-- The set of possible relative Hamming distances from a vector to a code is a finite set.
 -/
 @[simp]
-lemma finite_possibleRelHammingDistsToCode [Nonempty ι] [DecidableEq F] :
+lemma finite_possibleRelHammingDistsToCode [DecidableEq F] :
     (possibleDistsToCode w C relHammingDist).Finite :=
   Set.Finite.subset finite_relHammingDistRange possibleRelHammingDistsToC_subset_relHammingDistRange
 
-instance [Nonempty ι] [DecidableEq F] :
+instance [DecidableEq F] :
     Fintype (possibleDistsToCode w C relHammingDist) :=
   @Fintype.ofFinite _ finite_possibleRelHammingDistsToCode
 

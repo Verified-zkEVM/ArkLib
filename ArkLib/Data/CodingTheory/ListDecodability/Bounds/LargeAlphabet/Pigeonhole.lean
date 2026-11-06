@@ -111,7 +111,7 @@ theorem common_disagreement_intersection :
   have hsumA : p * M * n ≤ ∑ k, (a k : ℝ) :=
     hsumInc.trans_eq hreindexReal
   have hmomentA :=
-    incidence_moment_lower ℓ M n p hℓ hn hp hp_lt hM a hsumA
+    incidence_moment_lower ℓ M n p hℓ hn hp hM a hsumA
   have hreindexChoose :
       (∑ i, (Nat.choose (incidence i) ℓ : ℝ)) =
         ∑ k, (Nat.choose (a k) ℓ : ℝ) := by
@@ -247,7 +247,7 @@ theorem balanced_center_from_far_family
     rw [← hcommonSet]
     exact hcommon
   obtain ⟨y, hyc, hyu⟩ :=
-    balanced_center_construction ℓ p hp hp_lt c u
+    balanced_center_construction ℓ p hp c u
       (by
         intro k
         simpa only [u] using hnear (sel k))
@@ -1112,7 +1112,7 @@ theorem rounded_barrier_other_codeword_bound
     ℓ hℓ R hRpos hRlt B η hηpos hηcut n hn hlen
   dsimp only at hbasic ⊢
   exact rounded_barrier_other_codeword_bound_core
-    ℓ hℓ R η B n hbasic.1 hbasic.2.1 hbasic.2.2.1
+    ℓ hℓ R η B n hbasic.1 hbasic.2.1
 
 theorem barrier_parameters_exist
     (ℓ : ℕ) (hℓ : 2 ≤ ℓ) (R : ℝ) (hRpos : 0 < R)
@@ -1143,7 +1143,7 @@ theorem barrier_parameters_exist
     ⟨hone, hrate, hdZero, hBoostPos, hBoostLe, hRadiusLe⟩
   have hℓpos : 0 < ℓ := by omega
   have hquot := nat_quotient_window
-    ℓ d.radius d.dZero n hℓpos hdZero hRadiusLe
+    ℓ d.radius d.dZero n hℓpos hdZero
   have hcenter : d.dZero + ℓ * d.dOne ≤ d.radius := by
     simpa only [d, roundedBarrierData] using hquot.1
   have hother : n - d.dZero - d.dOne - d.aFamily ≤ d.radius := by
@@ -1190,7 +1190,7 @@ theorem rounded_barrier_quotient_bounds
   have hℓR : (0 : ℝ) < ℓ := by exact_mod_cast hℓpos
   rcases nat_quotient_window ℓ
       (Nat.floor (relRadius ℓ R η * n))
-      (Nat.ceil (barrierK ℓ B * η * n)) n hℓpos hdZero hradius with
+      (Nat.ceil (barrierK ℓ B * η * n)) n hℓpos hdZero with
     ⟨hused, hrUsed, hmLower, hmUpper⟩
   rcases barrier_radius_window ℓ hℓ R hRpos η hηpos hηhalf with
     ⟨hpMin, hpMinLe, hp, hpCoef, hBoost, hBoostOne⟩

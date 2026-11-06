@@ -454,7 +454,7 @@ example :
   obtain ⟨stages, terminal, list, hchain, hlist, _, hbound⟩ :=
     exists_closePolynomial_list_of_curve_certificate_actualStages
       curveCertificateCenters curveCertificateReceived curveCertificate
-      (by norm_num) (by norm_num)
+      (by norm_num)
       (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
   exact ⟨stages, terminal, list, hchain, hlist, hbound⟩
 

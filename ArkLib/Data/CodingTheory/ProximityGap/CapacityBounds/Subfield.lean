@@ -386,7 +386,7 @@ private theorem subfield_ca_support_density_lower_nat
     dsimp only [A, N, C]
     exact subfield_ca_density_error_term_eq
       (Fintype.card ι) k f (Nat.card B) (Fintype.card F) C G
-      hkf_le hb hC
+      hkf_le hb
   calc
     1 - (Fintype.card F : ℝ) *
           (Nat.card B : ℝ) ^ (Fintype.card ι - k - f) * G / (C : ℝ) =
@@ -555,7 +555,7 @@ private theorem subfield_ca_exists_witness_data
   classical
   let := Fintype.ofFinite B
   let domainB : ι ↪ B := subfield_domain domain B hdom
-  obtain ⟨hδone, _hk, _hfpos, hkf, hchoose⟩ :=
+  obtain ⟨-, _hk, _hfpos, hkf, hchoose⟩ :=
     subfield_radius_parameter_facts (ι := ι) k δ hint hδpos hδlt
   obtain ⟨a, ha, hmin⟩ := subfield_ca_exists_primitive_center B hB
   obtain ⟨y, hy⟩ := subfield_ca_exists_good_center_nat
@@ -568,13 +568,13 @@ private theorem subfield_ca_exists_witness_data
         (ReedSolomon.code domain k : Set (ι → F)) ≤ δ) := by
     simpa only [u, G] using
       subfield_ca_good_scalars_subset_fold_close B domain domainB
-        k δ a y hint ha hdomB
+        k δ a y ha hdomB
   have hnot : ¬ Code.jointProximity
       (C := (ReedSolomon.code domain k : Set (ι → F)))
       (u := u) δ := by
     simpa only [u] using
       subfield_ca_reciprocal_stack_not_joint domain B k δ a y ha hdom
-        hint hδone hkf
+        hint hkf
   have hkf_le : k + ⌊(δ : ℝ) * Fintype.card ι⌋₊ ≤ Fintype.card ι :=
     Nat.le_of_lt hkf
   have hf_le : ⌊(δ : ℝ) * Fintype.card ι⌋₊ ≤ Fintype.card ι := by

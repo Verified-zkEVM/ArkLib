@@ -67,8 +67,8 @@ theorem exists_ratePartition_curve_exactPowerAgreement
     (hn : RatePartition.rateBlockThreshold R d p.multiplicity ≤ n)
     -- Messages have positive dimension and rate at most `R`; candidates agree at least `a`.
     (hk : 0 < k) (hkR : (k : ℝ) ≤ R * n) (haA : a * n ≤ A)
-    -- A positive-degree challenge curve is evaluated on `n` distinct base-field points.
-    (hℓ : 0 < ℓ) (domain : Fin n ↪ F) (values : Fin (ℓ + 1) → Fin n → F)
+    -- A challenge curve is evaluated on `n` distinct base-field points.
+    (domain : Fin n ↪ F) (values : Fin (ℓ + 1) → Fin n → F)
     -- The embedding supports geometric counting; the characteristic guard is on `F`.
     (iota : F →+* E) (hchar : ringChar F = 0 ∨
       max (max (k - 1) d) (RatePartition.rateJetCap R p.multiplicity) < ringChar F) :
@@ -108,7 +108,7 @@ theorem exists_ratePartition_curve_exactPowerAgreement
     RatePartition.rateBlockThreshold_exactAgreementGuards p hR hRa haone hn hkR haA hchar
   apply exists_exceptional_exactPowerAgreement_of_certificate_of_jetCharacteristic domain values
     iota cert hk
-    hkK hdK hKn hAn hh hℓ
+    hkK hdK hKn hAn hh
     le_rfl (sub_pos.mpr hRa) ?_ hchar'
   nlinarith
 open Classical in
@@ -133,8 +133,8 @@ theorem exists_ratePartition_baseCurve_exactPowerAgreement
     (hn : RatePartition.rateBlockThreshold R d p.multiplicity ≤ n)
     -- The code rate and integral agreement threshold realize the real parameters.
     (hk : 0 < k) (hkR : (k : ℝ) ≤ R * n) (haA : a * n ≤ A)
-    -- Supply a positive-degree received curve on `n` distinct evaluation points.
-    (hℓ : 0 < ℓ) (domain : Fin n ↪ F) (values : Fin (ℓ + 1) → Fin n → F)
+    -- Supply a received curve on `n` distinct evaluation points.
+    (domain : Fin n ↪ F) (values : Fin (ℓ + 1) → Fin n → F)
     -- Characteristic zero is unrestricted; positive characteristic clears all degree caps.
     (hchar : ringChar F = 0 ∨
       max (max (k - 1) d) (RatePartition.rateJetCap R p.multiplicity) < ringChar F) :
@@ -157,7 +157,7 @@ theorem exists_ratePartition_baseCurve_exactPowerAgreement
   let iota : F →+* E := algebraMap F E
   obtain ⟨ex, hc, hg⟩ := exists_ratePartition_curve_exactPowerAgreement p hR hRa haone hd hn hk
     hkR haA
-    hℓ domain values iota hchar
+    domain values iota hchar
   obtain ⟨ex', hc', hg'⟩ :=
     uniformExactPowerAgreement_of_extension domain values iota k A ex hg
   exact ⟨ex', (Nat.cast_le.mpr hc').trans hc, hg'⟩
@@ -215,7 +215,7 @@ theorem exists_ratePartition_line_exactCorrelatedPair
     exists_ratePartition_baseCurve_exactPowerAgreement p
       (pos_of_mul_pos_left ((Nat.cast_pos.mpr hk).trans_le hkR) (Nat.cast_nonneg n))
       hRa haone hd hn hk hkR haA
-    (by norm_num : 0 < 1) domain ![f, g] hchar
+    domain ![f, g] hchar
   refine ⟨ex, by simpa only [Nat.cast_one, one_mul] using hc, ?_⟩
   intro z hz P hP hA
   have hw : powerBatchedWord (ℓ := 1) ![f, g] z = (fun i ↦ f i + z * g i) := by

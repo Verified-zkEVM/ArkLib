@@ -114,7 +114,7 @@ example :
   have _hprescribedStages :=
     exists_exceptional_exactPowerAgreement_with_prescribed_stageBounds
     (F := ℚ) (E := AlgebraicClosure ℚ) δ n 1 1 centers values iota
-    hδ hδmax (by norm_num) hblock hA (Or.inl (by simp))
+    hδ hδmax hblock hA (Or.inl (by simp))
   exact hparams.1
 
 open Classical in
@@ -350,7 +350,7 @@ example :
     (ℓ := 1) (ν := 1) (d := 1) (height := 1) (h := 1) (δ := 1 / 3)
     tinyCertificateDomain tinyCertificateValues (algebraMap ℚ (AlgebraicClosure ℚ))
     tinyCurveCertificate
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
     (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
   exact ⟨bad, by simpa using hbound⟩
 
@@ -428,7 +428,7 @@ example :
     (F := ℚ) (E := AlgebraicClosure ℚ) (n := mcaLength) (k := 1) (A := mcaLength)
     (ℓ := 1) mcaParameters hR hRa haone hd hn (by norm_num)
     (fixedRateThresholdRate mcaParameters) mcaLengthAgreement
-    (by norm_num) (mcaDomain mcaLength) (mcaValues mcaLength)
+    (mcaDomain mcaLength) (mcaValues mcaLength)
     (algebraMap ℚ (AlgebraicClosure ℚ)) (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
   have hset (z : AlgebraicClosure ℚ) :
       polynomialAgreementSet
@@ -459,7 +459,7 @@ example :
   obtain ⟨exceptional, hbound, hgood⟩ := exists_ratePartition_baseCurve_exactPowerAgreement
     (F := ℚ) (n := mcaLength) (k := 1) (A := mcaLength) (ℓ := 1) mcaParameters
     hR hRa haone hd hn (by norm_num) (fixedRateThresholdRate mcaParameters)
-    mcaLengthAgreement (by norm_num)
+    mcaLengthAgreement
     (mcaDomain mcaLength) (mcaValues mcaLength)
     (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
   have hset (z : ℚ) :
@@ -650,7 +650,7 @@ example :
     tinyCertificateDomain tinyCertificateValues (algebraMap ℚ (AlgebraicClosure ℚ))
     tinyCurveCertificate
     (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num)
     (Or.inl (by norm_num))
   exact ⟨bad, by simpa using hbound⟩
 

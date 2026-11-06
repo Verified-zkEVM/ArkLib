@@ -330,11 +330,11 @@ theorem finite_frobeniusPowerTupleIncidence_off_graphs_card_le [IsAlgClosed E]
       Finset.mem_toList, Finset.mem_filter, Finset.mem_univ, true_and] at hq
     obtain ⟨l, _, rfl⟩ := hq
     exact jointCommonTaylorNumerator_mem_regularPowerBatchedCutBidegree_of_exponent
-      center Q (p ^ e * ℓ) K h b τ hτ hb hheight hjet l
+      center Q (p ^ e * ℓ) K h b τ hτ hheight hjet l
   · intro i
     apply jointTaylorAgreementEquation_mem_regularPowerBatchedCutBidegree_of_exponent
       center (roots i) (frobeniusPowerCoordinate (p ^ e) (fun t ↦ ι (values t i)))
-      Q (p ^ e * ℓ) K h b τ hτ ?_ hb hheight hjet
+      Q (p ^ e * ℓ) K h b τ hτ ?_ hheight hjet
     exact (frobeniusPowerCoordinate_natDegree_le (p ^ e) _)
 
 end ReedSolomon

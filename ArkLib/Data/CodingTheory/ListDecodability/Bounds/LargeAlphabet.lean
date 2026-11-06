@@ -185,7 +185,7 @@ theorem large_alphabet_lambda_lower
         greedy_separated_extraction
           (C : Set (ι → F))
           (Nat.floor (boostedRadius ℓ p * Fintype.card ι)) B₀
-          (Set.toFinite _) hcap
+          hcap
       have hDsep' : separated D
           (Nat.ceil (boostedRadius ℓ p * Fintype.card ι)) := by
         intro u hu v hv huv

@@ -150,10 +150,6 @@ theorem exists_extensionExceptional_firstOrderCurve_of_certificate_of_exponent
     fin_cases stageOrder
     · obtain ⟨pres, _, hpresWeight, _⟩ :=
         chain.exists_jetPrefixPresentation_of_mem (stage := (stageQ, 0)) hstage
-      have hstageWeightPos : 0 < jetTotalDegree stageQ := by
-        have hhighest := chain.highestActiveJet_eq_of_mem hstage
-        exact ((isHighestActiveJet_of_highestActiveJet_eq_some hhighest).1).trans_le
-          (jetDegree_le_total stageQ 0)
       let equation : DifferentialPolynomial E[X] 0 :=
         MvPolynomial.map (Polynomial.mapRingHom iota) pres.equation
       have hweightExtended : jetTotalDegree equation ≤ jetTotalDegree stageQ := by
@@ -173,7 +169,7 @@ theorem exists_extensionExceptional_firstOrderCurve_of_certificate_of_exponent
       obtain ⟨exceptional, hcard, hgoodStage⟩ :=
         exists_exceptional_regularPowerBatchedAgreement_sharp_of_exponent
           domain values iota equation K k L A (jetTotalDegree stageQ) h τ hτ0 hτpos
-          (by omega) hkK hkL hLA hAn hcurve hstageWeightPos hweightExtended hheight
+          (by omega) hkK hkL hLA hweightExtended hheight
           hbinExtended
       refine ⟨exceptional, ?_, ?_⟩
       · apply hcard.trans_eq

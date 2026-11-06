@@ -102,7 +102,7 @@ $e$-close to `f` (immediate from the distance filter).
 $< k$ that is $e$-close to `f` appears in the output, provided $e$ is
 within the Johnson bound.  This relies on `dvd_property`.
 
-NOTE: The hypothesis in both theorems uses
+NOTE: The completeness hypothesis uses
 $e < n - \sqrt{(k + 1) \cdot n}$ (matching the GS rate
 parameter $\rho = (k + 1) / n$ used in `proximity_gap_johnson`),
 rather than the original $e \leq n - \sqrt{k \cdot n}$.
@@ -121,7 +121,6 @@ noncomputable def decoder (k _r _D e : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F
 /-- Each decoded polynomial is $e$-close to the received word. -/
 theorem dist_le_of_mem_decoder
     {k r D e : ℕ}
-    (_he : (e : ℝ) < ↑n - Real.sqrt ((↑k + 1) * ↑n))
     {ωs : Fin n ↪ F}
     {f : Fin n → F}
     {p : F[X]}
@@ -1104,7 +1103,7 @@ theorem gs_divisibility (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code ωs k)
 /-- A GS polynomial of weighted degree strictly below real `D_X` is divisible by
 `Y - P(X)` for every codeword at relative distance at most `δ₀`. This retains the
 inclusive radius of BCIKS20 Lemma 5.3, including when `D_X` is integral. -/
-theorem gs_divisibility_of_degree_lt (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code ωs k)
+theorem gs_divisibility_of_degree_lt (hm : 1 ≤ m) (p : code ωs k)
     {Q : F[X][Y]}
     (hQ_deg : (natWeightedDegree Q 1 (k - 1) : ℝ) <
       (m + 1 / 2) * √(((k : ℚ) / n : ℚ) : ℝ) * n)
@@ -1113,7 +1112,12 @@ theorem gs_divisibility_of_degree_lt (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code
       gs_johnson k n m) :
     X - C (toPolynomial p) ∣ Q := by
   apply dvd_property_of_degree_lt p hQ_mult
-  have hn : (0 : ℝ) < n := by exact_mod_cast (by omega : 0 < n)
+  have hn : (0 : ℝ) < n := by
+    have hnzero : n ≠ 0 := by
+      rintro rfl
+      simp only [Nat.cast_zero, mul_zero] at hQ_deg
+      exact (not_lt_of_ge (Nat.cast_nonneg _)) hQ_deg
+    exact_mod_cast Nat.pos_of_ne_zero hnzero
   have hm' : (0 : ℝ) < m := by exact_mod_cast (by omega : 0 < m)
   unfold gs_johnson at h_dist
   dsimp only at h_dist

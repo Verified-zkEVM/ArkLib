@@ -40,11 +40,9 @@ noncomputable def gridPt {ι : Type} [Fintype ι] (k : ℕ) : ℝ≥0 :=
   (k : ℝ≥0) / (Fintype.card ι : ℝ≥0)
 
 /-- `k ≤ n` puts the grid point in the closed unit interval. -/
-theorem gridPt_le_one {ι : Type} [Fintype ι] [Nonempty ι] {k : ℕ}
+theorem gridPt_le_one {ι : Type} [Fintype ι] {k : ℕ}
     (hk : k ≤ Fintype.card ι) : gridPt (ι := ι) k ≤ 1 := by
-  have hn : (0 : ℝ≥0) < (Fintype.card ι : ℝ≥0) := by exact_mod_cast Fintype.card_pos
-  rw [gridPt, div_le_one hn]
-  exact_mod_cast hk
+  exact div_le_one_of_le₀ (by exact_mod_cast hk) zero_le
 
 /-- Monotonicity of the agreement grid. -/
 theorem gridPt_mono {ι : Type} [Fintype ι] {k k' : ℕ} (h : k ≤ k') :
@@ -227,11 +225,12 @@ theorem gt_of_gridPt (R : GrandMcaResolution C ε_star) {δ : ℝ≥0}
   lt_of_lt_of_le R.above
     (mcaError_mono (AffineLineGenerator F) C (by exact_mod_cast hδ))
 
-omit [DecidableEq F] in
+omit [DecidableEq F] [Nonempty ι] in
 /-- Exact safe half of the boundary cell. -/
 theorem le_of_lt_next (R : GrandMcaResolution C ε_star) {δ : ℝ≥0}
     (hδ : δ < gridPt (ι := ι) (R.kStar + 1)) :
     mcaError (AffineLineGenerator F) C (δ : ℝ) ≤ (ε_star : ENNReal) := by
+  let : Nonempty ι := Fintype.card_pos_iff.mp (Nat.zero_lt_of_lt R.lt_card)
   have hn : (0 : ℝ≥0) < (Fintype.card ι : ℝ≥0) := by exact_mod_cast Fintype.card_pos
   have hfloor : ⌊(δ : ℝ) * (Fintype.card ι : ℝ)⌋₊ ≤ R.kStar := by
     have hltNN : δ * (Fintype.card ι : ℝ≥0) < ((R.kStar + 1 : ℕ) : ℝ≥0) := by
@@ -249,7 +248,7 @@ theorem le_of_lt_next (R : GrandMcaResolution C ε_star) {δ : ℝ≥0}
   rw [mcaError_eq_of_floor_eq (AffineLineGenerator F) C (by positivity) (by positivity) hgrid.symm]
   exact le_trans (mcaError_gridPt_mono C hfloor) R.below
 
-omit [DecidableEq F] in
+omit [DecidableEq F] [Nonempty ι] in
 /-- The MCA sublevel set is exactly the right-open interval ending at the unsafe grid point. -/
 theorem sublevel_iff (R : GrandMcaResolution C ε_star) {δ : ℝ≥0} :
     mcaError (AffineLineGenerator F) C (δ : ℝ) ≤ (ε_star : ENNReal) ↔
@@ -400,6 +399,7 @@ theorem lambda_mono_nnreal {C : Set (ι → F)} {m : ℕ} {a b : ℝ≥0} (hab :
   have hr : (a : ℝ) ≤ (b : ℝ) := by exact_mod_cast hab
   exact_mod_cast Code.Lambda_mono (C := C ^⋈ (Fin m)) hr
 
+omit [Nonempty ι] in
 /-- `Lambda` is constant on equal integer-agreement floor cells of nonnegative radii. -/
 theorem lambda_eq_of_floor_eq {B : Type}
     {C : Set (ι → B)} {δ δ' : ℝ≥0}
@@ -415,19 +415,22 @@ theorem lambda_eq_of_floor_eq {B : Type}
   rw [Code.mem_closeCodewordsRel_iff, Code.mem_closeCodewordsRel_iff]
   apply and_congr_right
   intro _
-  constructor
-  · intro hd
-    have hdnn : δᵣ(y, c) ≤ δ := by exact_mod_cast hd
-    rw [Code.pairRelDist_le_iff_pairDist_le] at hdnn
-    rw [h] at hdnn
-    rw [← Code.pairRelDist_le_iff_pairDist_le] at hdnn
-    exact_mod_cast hdnn
-  · intro hd
-    have hdnn : δᵣ(y, c) ≤ δ' := by exact_mod_cast hd
-    rw [Code.pairRelDist_le_iff_pairDist_le] at hdnn
-    rw [← h] at hdnn
-    rw [← Code.pairRelDist_le_iff_pairDist_le] at hdnn
-    exact_mod_cast hdnn
+  cases isEmpty_or_nonempty ι with
+  | inl hι => simp [Code.relHammingDist_coe, Fintype.card_eq_zero]
+  | inr hι =>
+    constructor
+    · intro hd
+      have hdnn : δᵣ(y, c) ≤ δ := by exact_mod_cast hd
+      rw [Code.pairRelDist_le_iff_pairDist_le] at hdnn
+      rw [h] at hdnn
+      rw [← Code.pairRelDist_le_iff_pairDist_le] at hdnn
+      exact_mod_cast hdnn
+    · intro hd
+      have hdnn : δᵣ(y, c) ≤ δ' := by exact_mod_cast hd
+      rw [Code.pairRelDist_le_iff_pairDist_le] at hdnn
+      rw [← h] at hdnn
+      rw [← Code.pairRelDist_le_iff_pairDist_le] at hdnn
+      exact_mod_cast hdnn
 
 namespace GrandListResolution
 
@@ -449,12 +452,13 @@ theorem gt_of_gridPt (R : GrandListResolution C m ε_star) {δ : ℝ≥0}
       (ε_star : ENNReal) * (Fintype.card F : ENNReal) :=
   lt_of_lt_of_le R.above (lambda_mono_nnreal hδ)
 
-omit [Field F] [SampleableType F] [DecidableEq F] in
+omit [Field F] [SampleableType F] [DecidableEq F] [Nonempty ι] in
 /-- Exact safe half of the list-decoding boundary cell. -/
 theorem le_of_lt_next (R : GrandListResolution C m ε_star) {δ : ℝ≥0}
     (hδ : δ < gridPt (ι := ι) (R.kStar + 1)) :
     (Code.Lambda (C ^⋈ (Fin m)) (δ : ℝ) : ENNReal) ≤
       (ε_star : ENNReal) * (Fintype.card F : ENNReal) := by
+  let : Nonempty ι := Fintype.card_pos_iff.mp (Nat.zero_lt_of_lt R.lt_card)
   have hn : (0 : ℝ≥0) < (Fintype.card ι : ℝ≥0) := by exact_mod_cast Fintype.card_pos
   have hfloor : ⌊δ * (Fintype.card ι : ℝ≥0)⌋₊ ≤ R.kStar := by
     have hlt : δ * (Fintype.card ι : ℝ≥0) < ((R.kStar + 1 : ℕ) : ℝ≥0) := by
@@ -470,7 +474,7 @@ theorem le_of_lt_next (R : GrandListResolution C m ε_star) {δ : ℝ≥0}
   rw [lambda_eq_of_floor_eq (C := C ^⋈ (Fin m)) hgrid.symm]
   exact le_trans (lambda_mono_nnreal (gridPt_mono hfloor)) R.below
 
-omit [Field F] [SampleableType F] [DecidableEq F] in
+omit [Field F] [SampleableType F] [DecidableEq F] [Nonempty ι] in
 /-- The list-decoding sublevel set is exactly the right-open interval ending at the unsafe grid
 point. -/
 theorem sublevel_iff (R : GrandListResolution C m ε_star) {δ : ℝ≥0} :

@@ -505,8 +505,7 @@ theorem affine_prob_eq_finset_prob {k : ℕ}
 
 omit [Nonempty ι] [DecidableEq ι] [SampleableType F] in
 theorem proper_affine_sub_card_le {k : ℕ}
-    (u0 : ι → F) (dirs : Fin k → ι → F)
-    (S : Finset (ι → F)) (hS : ↑S ⊆ (Affine.affineSubspaceAtOrigin (F := F) u0 dirs : Set (ι → F)))
+    (dirs : Fin k → ι → F) (S : Finset (ι → F))
     (hS_aff : ∃ (m : ℕ) (u0' : ι → F) (dirs' : Fin m → ι → F),
       S = affineFinset u0' dirs' ∧
       (Submodule.span F (Finset.univ.image dirs' : Set (ι → F)) :

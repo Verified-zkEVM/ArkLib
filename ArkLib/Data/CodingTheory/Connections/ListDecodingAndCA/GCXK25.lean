@@ -592,12 +592,10 @@ private theorem linear_codeword_eq_of_large_agreement (C : LinearCode ι F) (p :
     exact_mod_cast lt_of_le_of_lt hcomp hpn
 
 open scoped BigOperators in
-omit [DecidableEq ι] in
+omit [DecidableEq ι] [DecidableEq F] in
 private theorem linear_mca_error_le_of_lambda_le_aux
     (C : LinearCode ι F) (L : ℕ) (δ η : ℝ)
     (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1)
-    (_hδ_lt_dist :
-        δ < (Code.minDist ((C : Set (ι → F))) : ℝ) / Fintype.card ι)
     (_hη_pos : 0 < η) (_hη_lt : η < 1)
     (_hΛ : Lambda ((C : Set (ι → F))) δ ≤ (L : ℕ∞)) :
     mcaError (AffineLineGenerator F) C
@@ -843,13 +841,11 @@ private theorem linear_mca_error_le_of_lambda_le_aux
   have hcard' : (B.card : ENNReal) ≤ ENNReal.ofReal R := by
     exact_mod_cast (ENNReal.ofReal_le_ofReal hcard)
   simpa [B, R, r] using hcard'
-omit [DecidableEq ι] in
-/-- Converts a list-size bound at `δ` below the relative minimum distance into an
+omit [DecidableEq ι] [DecidableEq F] in
+/-- Converts a list-size bound at `δ` into an
 affine-line MCA bound at radius `1 - √(1 - δ + η)`. -/
 theorem linear_mcaError_le_of_Lambda_le (C : LinearCode ι F) (L : ℕ) (δ η : ℝ)
     (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1)
-    (_hδ_lt_dist :
-        δ < (Code.minDist ((C : Set (ι → F))) : ℝ) / Fintype.card ι)
     (_hη_pos : 0 < η) (_hη_lt : η < 1)
     (_hΛ : Lambda ((C : Set (ι → F))) δ ≤ (L : ℕ∞)) :
     mcaError (AffineLineGenerator F) C
@@ -858,7 +854,7 @@ theorem linear_mcaError_le_of_Lambda_le (C : LinearCode ι F) (L : ℕ) (δ η :
         (((L : ℝ) ^ 2 * δ * Fintype.card ι + 1 / η) / Fintype.card F) := by
   classical
   exact linear_mca_error_le_of_lambda_le_aux C L δ η _hδ_pos _hδ_lt
-    _hδ_lt_dist _hη_pos _hη_lt _hΛ
+    _hη_pos _hη_lt _hΛ
 
 end ListImpliesMCA
 

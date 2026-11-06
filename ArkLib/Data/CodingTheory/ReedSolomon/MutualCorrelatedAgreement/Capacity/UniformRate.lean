@@ -66,13 +66,6 @@ theorem exists_uniformRatePartition_curve_exactPowerAgreement {F E : Type u} [Fi
           (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
         HasExactPowerAgreement domain values iota k z P := by
   classical
-  rcases Nat.eq_zero_or_pos ℓ with rfl | hℓ
-  · refine ⟨∅, by simp, fun z _ P hP hA ↦ ?_⟩
-    apply hasExactPowerAgreement_singleton domain values iota k z P hP
-    have hkA : k ≤ A := by
-      exact_mod_cast le_trans (le_add_of_nonneg_right (mul_nonneg hδ.le
-        (Nat.cast_nonneg n))) hgap
-    exact hkA.trans hA
   let d := uniformDerivativeOrder δ
   let ν := uniformJetCap δ
   obtain ⟨e⟩ := HiddenDerivative.RatePartition.exists_uniformRatePartitionEnvelope
@@ -85,7 +78,7 @@ theorem exists_uniformRatePartition_curve_exactPowerAgreement {F E : Type u} [Fi
   have hh : 0 < 150 * ν := by positivity
   exact exists_exceptional_exactPowerAgreement_of_certificate_of_jetCharacteristic
     domain values iota cert hk e.message_le (by have := e.order_le; omega)
-    e.ambient_le hAn hh hℓ le_rfl hδ hgap hchar'
+    e.ambient_le hAn hh le_rfl hδ hgap hchar'
 
 open Classical in
 /-- The extension-field curve bound descends to challenges and candidates over the base field. -/
