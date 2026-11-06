@@ -425,10 +425,10 @@ theorem BerlekampWelchCondition_iff_Solution {e k : ℕ}
   ⟨solution_to_BerlekampWelch_condition, BerlekampWelchCondition_to_Solution'⟩
 
 lemma linsolve_to_BerlekampWelch_condition {e k : ℕ}
-  {ωs f : Fin n → F}
-  {v : Fin (2 * e + k) → F}
-  (h_sol : linsolve (BerlekampWelchMatrix e k ωs f) (Rhs e ωs f) = some v) :
-  BerlekampWelchCondition e k ωs f (solutionToE e k v) (solutionToQ e k v) :=
+    {ωs f : Fin n → F}
+    {v : Fin (2 * e + k) → F}
+    (h_sol : linsolve (BerlekampWelchMatrix e k ωs f) (Rhs e ωs f) = some v) :
+    BerlekampWelchCondition e k ωs f (solutionToE e k v) (solutionToQ e k v) :=
   solution_to_BerlekampWelch_condition (linsolve_is_berlekamp_welch_solution h_sol)
 
 end
@@ -448,11 +448,11 @@ open Polynomial
 variable [DecidableEq F]
 
 lemma BerlekampWelch_Q_ne_zero {e k : ℕ}
-  {ωs f : Fin n → F}
-  {E Q : Polynomial F}
-  (h_bw : BerlekampWelchCondition e k ωs f E Q)
-  (h_dist : e < Δ₀(f, 0))
-  (h_inj : Function.Injective ωs) : Q ≠ 0 := fun contr ↦
+    {ωs f : Fin n → F}
+    {E Q : Polynomial F}
+    (h_bw : BerlekampWelchCondition e k ωs f E Q)
+    (h_dist : e < Δ₀(f, 0))
+    (h_inj : Function.Injective ωs) : Q ≠ 0 := fun contr ↦
   have h_cond := h_bw.cond
   let S : Finset (Fin n) := {i | ¬f i = 0}
   by replace h_dist : e < S.card := by simpa [hammingDist]
@@ -466,11 +466,11 @@ lemma BerlekampWelch_Q_ne_zero {e k : ℕ}
      omega
 
 lemma solutionToQ_ne_zero {e k : ℕ}
-  {ωs f : Fin n → F}
-  {v : Fin (2 * e + k) → F}
-  (h_dist : e < Δ₀(f, 0))
-  (h_sol : IsBerlekampWelchSolution e k ωs f v)
-  (h_inj : Function.Injective ωs) : solutionToQ e k v ≠ 0 :=
+    {ωs f : Fin n → F}
+    {v : Fin (2 * e + k) → F}
+    (h_dist : e < Δ₀(f, 0))
+    (h_sol : IsBerlekampWelchSolution e k ωs f v)
+    (h_inj : Function.Injective ωs) : solutionToQ e k v ≠ 0 :=
     BerlekampWelch_Q_ne_zero
       (solution_to_BerlekampWelch_condition h_sol)
       h_dist
