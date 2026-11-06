@@ -165,7 +165,7 @@ theorem close_list_bound_of_curve_certificate_of_jetCharacteristic
     (cert : SymbolicReceivedCurve.Certificate.{0, u} A k 0 ν d H domain
       (fun i ↦ Polynomial.C (received i)))
     (hk : 0 < k) (hkK : k ≤ K) (hdK : d < K) (hKn : K ≤ n)
-    (hkA : k ≤ A) (hAn : A ≤ n) (hν : 0 < ν) (hδ : 0 < δ)
+    (hkA : k ≤ A) (hAn : A ≤ n) (hδ : 0 < δ)
     (hgap : (k : ℝ) + δ * n ≤ A)
     (hchar : ringChar F = 0 ∨ max (K - 1) ν < ringChar F) :
     (closePolynomialSet domain received k A).Finite ∧
@@ -174,7 +174,7 @@ theorem close_list_bound_of_curve_certificate_of_jetCharacteristic
   obtain ⟨hQ, hdegree, hsound⟩ := cert.specialization_sound (RingHom.id F) (0 : F)
   apply closePolynomialSet_finite_and_ncard_le_of_differential_equation_and_gap
     (MvPolynomial.map (Polynomial.eval₂RingHom (RingHom.id F) 0) cert.Q)
-    K k ν hdK hkK hQ hdegree domain received hk hkA hAn hKn hν hδ hgap hchar
+    K k ν hdK hkK hQ hdegree domain received hk hkA hAn hKn hδ hgap hchar
   intro P hP
   let indices := Finset.univ.filter fun i ↦ P.eval (domain i) = received i
   apply hsound indices P hP.1 hP.2

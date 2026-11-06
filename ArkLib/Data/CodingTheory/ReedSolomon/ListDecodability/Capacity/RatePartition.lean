@@ -55,13 +55,13 @@ theorem ratePartition_close_list_bound
           (2 * RatePartition.rateJetCap R p.multiplicity / (a - R)) ^ d * n ^ d := by
   obtain ⟨cert⟩ := exists_partitionSupport_curve_certificate_of_rateBlockThreshold p hR
     (hRa.trans haone)
-    (hR.trans hRa) hd hn hkR haA hAn domain (fun i ↦ Polynomial.C (received i))
+    hd hn hkR haA hAn domain (fun i ↦ Polynomial.C (received i))
     (fun _ ↦ by simp)
   let K := max k (d + 1)
-  obtain ⟨hkK, hdK, hKn, hkA, hν, _, hchar'⟩ :=
+  obtain ⟨hkK, hdK, hKn, hkA, -, _, hchar'⟩ :=
     RatePartition.rateBlockThreshold_exactAgreementGuards p hR hRa haone hn hkR haA hchar
   apply close_list_bound_of_curve_certificate_of_jetCharacteristic domain received cert hk
-    hkK hdK hKn hkA hAn hν (sub_pos.mpr hRa) ?_ hchar'
+    hkK hdK hKn hkA hAn (sub_pos.mpr hRa) ?_ hchar'
   nlinarith
 
 open Classical in

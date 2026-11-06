@@ -375,12 +375,12 @@ theorem johnsonInterpolant_jetDegree_le {Xc D μ : ℕ}
       exact SourceColumn.interpolant_totalJetDegree_le (johnsonColumns Xc D μ)
         hcolumns v u hu
 
-/-- For `1 ≤ D`, `Xc ≤ m * A`, `0 < m * A`, and `k ≤ D + 1`, a finite matrix whose kernel
+/-- For `1 ≤ D`, `Xc ≤ m * A`, and `k ≤ D + 1`, a finite matrix whose kernel
 implies the Johnson local constraints and whose entries satisfy the shifted bounds yields a
 primitive symbolic certificate under a strict slot surplus. -/
 theorem exists_johnson_symbolic_certificate_of_shifted_surplus
     {n D A m μ k h Xc rows : ℕ}
-    (hD : 1 ≤ D) (hXc : Xc ≤ m * A) (hbudget : 0 < m * A) (hkD : k ≤ D + 1)
+    (hD : 1 ≤ D) (hXc : Xc ≤ m * A) (hkD : k ≤ D + 1)
     (centers : Fin n ↪ F) (f g : Fin n → F)
     (M : Matrix (Fin rows) (Fin (Fintype.card (JohnsonColumnIndex Xc D μ))) F[X])
     (rowWeight : Fin rows → ℕ)
@@ -432,7 +432,7 @@ theorem exists_johnson_symbolic_certificate_of_shifted_surplus
     eq_interpolant := rfl
     primitiveCoefficients := hprimitive
     challengeDegree_le := SourceColumn.coeff_interpolant_natDegree_le
-      (johnsonColumns Xc D μ) (johnsonColumns_injective Xc D μ) v hvheight
+      (johnsonColumns Xc D μ) v hvheight
     support := fun u hu ↦ mem_weightedSupportSpace_iff.mp hQsupport u hu
     jetDegree_le := johnsonInterpolant_jetDegree_le v
     localConstraints := hconstraints
@@ -441,7 +441,7 @@ theorem exists_johnson_symbolic_certificate_of_shifted_surplus
   refine ⟨hnonzero ι z, ?_⟩
   intro indices P hPdegree hcard hagreements
   apply differentialSpecialization_map_interpolant_eq_zero_of_degree_lt
-    hDpos (by exact_mod_cast hXc) hbudget hkD (fun i ↦ centers i) f g columns
+    (by exact_mod_cast hXc) hkD (fun i ↦ centers i) f g columns
     (fun j ↦ johnsonColumns_weightedSupportEligible j) v hconstraints ι z indices P
     hPdegree centers.injective.injOn hcard hagreements
 
@@ -463,12 +463,7 @@ theorem exists_johnson_symbolic_certificate
   let w : Fin n → F[X] := fun i ↦ receivedLine (f i) (g i)
   have hcut : Xc ≤ m * A := by
     simpa only [Xc, m] using johnsonXCutoff_le_mul_agreement heta hthreshold
-  have hbudget : 0 < m * A := by
-    have hDlt : D < n := by omega
-    have hDA := johnson_degree_succ_le_agreement hDlt heta hthreshold
-    have hm := johnsonM_ge_three n D eta
-    exact Nat.mul_pos (by omega) (by omega)
-  exact exists_johnson_symbolic_certificate_of_shifted_surplus hD hcut hbudget hkD
+  exact exists_johnson_symbolic_certificate_of_shifted_surplus hD hcut hkD
     centers f g (johnsonFinMatrix Xc D μ m (fun i ↦ centers i) w)
     (johnsonFinRowWeight m)
     (fun v hv ↦ (johnsonFinMatrix_kernel_iff Xc D μ m (fun i ↦ centers i) w v).mp hv)

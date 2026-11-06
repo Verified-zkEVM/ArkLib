@@ -107,10 +107,14 @@ private theorem subfield_ca_multiplicity_real_eq_indicator_sum
 
 theorem subfield_ca_natural_power_eq_rpow
     (n k f b : ℕ) (δ : NNReal)
-    (hn : 0 < n) (hkf : k + f ≤ n)
+    (hkf : k + f ≤ n)
     (hint : (f : ℝ) = (δ : ℝ) * n) :
     (b : ℝ) ^ (n - k - f) =
       (b : ℝ) ^ ((n : ℝ) * (1 - (k : ℝ) / n - (δ : ℝ)) : ℝ) := by
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · have hk : k = 0 := by omega
+    have hf : f = 0 := by omega
+    simp [hk, hf]
   rw [← Real.rpow_natCast]
   rw [subfield_ca_exponent_cast_eq n k f δ hn hkf hint]
 
@@ -886,9 +890,15 @@ private theorem subfield_ca_bessel_partial_le_factor
   · exact subfield_ca_bessel_partial_le_factor_large x m (lt_of_not_ge hxle)
 
 theorem subfield_ca_overlap_sum_le_factor
-    (n f b : ℕ) (hf : f ≤ n) (hb : 0 < b) :
+    (n f b : ℕ) :
     subfield_ca_overlap_sum n f b ≤
       subfieldCaFactor (((f : ℝ) * (n - f : ℕ)) / b) := by
+  rcases Nat.eq_zero_or_pos b with rfl | hb
+  · norm_num [subfield_ca_overlap_sum, Finset.sum_range_succ', subfieldCaFactor]
+  by_cases hf : f ≤ n
+  swap
+  · have hnf : n - f = 0 := Nat.sub_eq_zero_of_le (by omega)
+    norm_num [subfield_ca_overlap_sum, Finset.sum_range_succ', subfieldCaFactor, hnf]
   apply le_trans (subfield_ca_overlap_sum_le_bessel n f b hf hb)
   apply subfield_ca_bessel_partial_le_factor
   exact div_nonneg (mul_nonneg (Nat.cast_nonneg f) (Nat.cast_nonneg (n - f)))

@@ -36,7 +36,7 @@ variable {F : Type} [CommRing F] [Fintype F] [SampleableType F] [NoZeroDivisors 
   -- switch to Type for `Pr{...}[...]` usage
   {A : Type} [Fintype A] [DecidableEq A] [AddCommGroup A] [Module F A] [Module.Free F A]
   -- Semiring.toModule (R := A) => Module A A, plus Ring A for `RS code` theorems?
-variable (MC : ModuleCode ι F A) [Nontrivial MC]
+variable (MC : ModuleCode ι F A)
   (C : Set (Word A ι)) [Nonempty C] -- todo: change to Nontrivial if needed
 
 instance : Nonempty MC := by exact instNonemptyOfInhabited
@@ -79,39 +79,18 @@ lemma dist_row_le_dist_ToInterleavedWord (U : InterleavedWord A (κ := κ) (ι :
   exact fun a a_1 a_2 ↦ mt (congrArg fun a ↦ a rowIdx) a_2
 
 omit [AddCommGroup A] [Fintype F] [Nonempty ι] [DecidableEq ι] [Fintype A]
-  [NoZeroDivisors F] [DecidableEq F] [Module.Free F A] in
+  [NoZeroDivisors F] [DecidableEq F] [Module.Free F A] [Nonempty C] in
 /-- Helper Lemma relating row distance to interleaved distance (as derived from DG25):
   `d((Uᵣ)ᵢ, C) ≤ d^m(Uᵣ, C^m)` -/
 lemma dist_row_le_dist_ToInterleavedCode (U : InterleavedWord A (Fin m) ι) :
     ∀ (rowIdx : Fin m), Δ₀((getRow U rowIdx), C) ≤ Δ₀(U, C ^⋈ (Fin m)) := by
   intro i
-  let d_To_interleaved := Code.distFromCode (u := U) (C := C ^⋈ (Fin m))
-  -- There exists M achieving this distance e_int
-  have h_exists : ∃ M ∈ C ^⋈ (Fin m), Δ₀(U, M) = d_To_interleaved :=
-    @Code.exists_closest_codeword_of_Nonempty_Code _ _ _ _
-      (C ^⋈ (Fin m)) (instNonemptyInterleavedCode (κ := Fin m) (C := C)) U
-  rcases h_exists with ⟨M, hM_mem, hM_dist⟩
-  let Uᵢ := getRow U i
-  let iM : InterleavedCodeword (A := A) (κ := Fin m) (ι := ι) (C := C):= ⟨M, hM_mem⟩
-  let Mᵢ : C := getRow iM i
-  -- InterleavedCodeword.getRowCodeword (A := A) (κ := Fin m) (ι := ι) (C := C) (v := iM) i
-  -- We know d(Uᵢ, C) ≤ d(Uᵢ, Mᵢ) because Mᵢ ∈ C (from h_rows M hM_mem i)
-  have dist_le_dist : Δ₀(Uᵢ, C) ≤ Δ₀(Uᵢ, Mᵢ) := by
-    apply csInf_le' -- Using sInf property
-    --  ⊢ ↑Δ₀(Uᵢ, Mᵢ) ∈ {d | ∃ v ∈ ↑MC, ↑Δ₀(Uᵢ, v) ≤ d}
-    simp only [Set.mem_ofPred_eq, Nat.cast_le]
-    -- ⊢ ∃ v ∈ C, Δ₀(Uᵢ, v) ≤ Δ₀(Uᵢ, Mᵢ)
-    use Mᵢ
-    simp only [Subtype.coe_prop, le_refl, and_self]
-  apply le_trans dist_le_dist
-  -- ⊢ ↑Δ₀(Uᵢ, ↑Mᵢ) ≤ Δ₀(U, ↑C_m)
-  have h_dist_row_le_dist_interleaved : Δ₀(Uᵢ, Mᵢ) ≤ Δ₀(U, M) := by
-    change Δ₀(getRow U i, getRow M i) ≤ Δ₀(U, M)
-    exact dist_row_le_dist_ToInterleavedWord U M i
-  calc
-    (Δ₀(Uᵢ, Mᵢ): ℕ∞) ≤ (Δ₀(U, M): ℕ∞) :=
-      ENat.natCast_le_natCast.mpr h_dist_row_le_dist_interleaved
-    _ ≤ Δ₀(U, C ^⋈ (Fin m)) := le_of_eq hM_dist
+  apply sInf_le_sInf
+  rintro d ⟨M, hM, hdist⟩
+  refine ⟨getRow (show InterleavedWord A (Fin m) ι from M) i,
+    getRowOfInterleavedCodeword_mem_code (A := A) (κ := Fin m) (ι := ι) C ⟨M, hM⟩ i, ?_⟩
+  exact le_trans (ENat.natCast_le_natCast.mpr
+    (dist_row_le_dist_ToInterleavedWord U M i)) hdist
 
 /-- Extracts the constructed codewords V₀, V₁ and their agreement properties.
 Hypotheses: 1. more than ε affine combinations Uᵣ are close to C^m (`hR_star_card`),
@@ -309,22 +288,6 @@ lemma affineWord_close_to_affineInterleavedCodeword
       apply le_trans (dist_affineCombination_le_dist_interleaved₂ _ _ _ _ _)
       -- ⊢ Δ₀(getRow U₀ rowIdx ⋈₂ getRow U₁ rowIdx, getRow (↑V₀) rowIdx ⋈₂ getRow (↑V₁) rowIdx) ≤ e
       exact h_agree_i
-    -- 5. Use Unique Decoding to show (Vᵣ*)ᵢ = (Vᵣ)ᵢ
-    -- We need the minimum distance d of the base code C
-    let d: ℕ := ‖(MC : Set (ι → A))‖₀
-    have h_d_pos : 0 < d := by
-      -- Need to show d > 0. Usually codes have d ≥ 1 if not empty/trivial.
-      -- Assuming d > 0 for non-trivial codes.
-      rw [Code.uniqueDecodingRadius] at he
-      let res :=  Code.dist_pos_of_Nontrivial (ι := ι) (F := A) (C := MC) (hC := by
-        exact Set.nontrivial_coe_sort.mp inferInstance)
-      exact res
-    -- We need 2e < d
-    have h_2e_lt_d : 2 * e < d := by
-      rw [Code.uniqueDecodingRadius] at he
-      let : NeZero ‖(MC : Set (ι → A))‖₀ := NeZero.of_pos h_d_pos
-      have h_2e_lt_d := UDRClose_iff_two_mul_proximity_lt_d_UDR (C := MC) (e := e).mp (by exact he)
-      exact h_2e_lt_d
     -- Apply unique decoding:
     -- Vᵣ_star_i is a codeword because it's a row of Vᵣ_star ∈ C^m
     have hVᵣ_star_i_mem : Vᵣ_star_i ∈ MC := by
@@ -342,33 +305,55 @@ lemma affineWord_close_to_affineInterleavedCodeword
       · apply MC.smul_mem;
         exact getRowOfInterleavedCodeword_mem_code (A := A) (κ := Fin m) (ι := ι) (C := MC)
           (u := V₁) rowIdx
-    -- Apply the triangle inequality: d(Vᵣ_i, Vᵣ_star_i) ≤ d(Vᵣ_i, Uᵣ_i) + d(Uᵣ_i, Vᵣ_star_i)
-    have h_dist_v_vstar : Δ₀(Vᵣ_i, Vᵣ_star_i) ≤
-      Δ₀(Vᵣ_i, getRow (show (InterleavedWord A (Fin m) ι) from Uᵣ) rowIdx)
-      + Δ₀(getRow (show (InterleavedWord A (Fin m) ι) from Uᵣ) rowIdx, Vᵣ_star_i) := by
-        apply hammingDist_triangle
-    -- We need to convert from ℕ∞ (Δ₀) to ℕ (hammingDist) for Code.eq_of_lt_dist
-    have h_dist_v_vstar_nat : hammingDist Vᵣ_i Vᵣ_star_i < d := by
-      -- Convert ℕ∞ inequalities to ℕ inequalities
-      have h1_nat :
-          Δ₀((getRow (show (InterleavedWord A (Fin m) ι) from Uᵣ) rowIdx), Vᵣ_i) ≤ e :=
-        ENat.natCast_le_natCast.mp (ENat.natCast_le_natCast.mpr h_dist_Uᵣi_Vᵣi)
-      have h2_nat :
-          Δ₀((getRow (show (InterleavedWord A (Fin m) ι) from Uᵣ) rowIdx), Vᵣ_star_i) ≤ e :=
-        ENat.natCast_le_natCast.mp (ENat.natCast_le_natCast.mpr h_dist_Uᵣi_Vᵣstari)
-      -- Apply triangle inequality for hammingDist
-      calc
-        Δ₀(Vᵣ_i, Vᵣ_star_i) ≤ Δ₀(Vᵣ_i, getRow (show (InterleavedWord A (Fin m) ι) from Uᵣ) rowIdx)
-          + Δ₀(getRow (show (InterleavedWord A (Fin m) ι) from Uᵣ) rowIdx, Vᵣ_star_i) :=
-            hammingDist_triangle _ _ _
-        _ = Δ₀(getRow (show (InterleavedWord A (Fin m) ι) from Uᵣ) rowIdx, Vᵣ_i) +
-            Δ₀(getRow (show (InterleavedWord A (Fin m) ι) from Uᵣ) rowIdx, Vᵣ_star_i) := by
-              rw [hammingDist_comm]
-        _ ≤ e + e := Nat.add_le_add h1_nat h2_nat
-        _ = 2 * e := by rw [two_mul]
-        _ < d := h_2e_lt_d
-    -- Now apply unique decoding
-    exact Code.eq_of_lt_dist hVᵣ_i_mem hVᵣ_star_i_mem h_dist_v_vstar_nat
+    by_cases hMC : Nontrivial MC
+    · let : Nontrivial MC := hMC
+      -- 5. Use Unique Decoding to show (Vᵣ*)ᵢ = (Vᵣ)ᵢ
+      -- We need the minimum distance d of the base code C
+      let d: ℕ := ‖(MC : Set (ι → A))‖₀
+      have h_d_pos : 0 < d := by
+        -- Need to show d > 0. Usually codes have d ≥ 1 if not empty/trivial.
+        -- Assuming d > 0 for non-trivial codes.
+        rw [Code.uniqueDecodingRadius] at he
+        let res :=  Code.dist_pos_of_Nontrivial (ι := ι) (F := A) (C := MC) (hC := by
+          exact Set.nontrivial_coe_sort.mp inferInstance)
+        exact res
+      -- We need 2e < d
+      have h_2e_lt_d : 2 * e < d := by
+        rw [Code.uniqueDecodingRadius] at he
+        let : NeZero ‖(MC : Set (ι → A))‖₀ := NeZero.of_pos h_d_pos
+        have h_2e_lt_d :=
+          UDRClose_iff_two_mul_proximity_lt_d_UDR (C := MC) (e := e).mp (by exact he)
+        exact h_2e_lt_d
+      -- Apply the triangle inequality: d(Vᵣ_i, Vᵣ_star_i) ≤ d(Vᵣ_i, Uᵣ_i) + d(Uᵣ_i, Vᵣ_star_i)
+      have h_dist_v_vstar : Δ₀(Vᵣ_i, Vᵣ_star_i) ≤
+        Δ₀(Vᵣ_i, getRow (show (InterleavedWord A (Fin m) ι) from Uᵣ) rowIdx)
+        + Δ₀(getRow (show (InterleavedWord A (Fin m) ι) from Uᵣ) rowIdx, Vᵣ_star_i) := by
+          apply hammingDist_triangle
+      -- We need to convert from ℕ∞ (Δ₀) to ℕ (hammingDist) for Code.eq_of_lt_dist
+      have h_dist_v_vstar_nat : hammingDist Vᵣ_i Vᵣ_star_i < d := by
+        -- Convert ℕ∞ inequalities to ℕ inequalities
+        have h1_nat :
+            Δ₀((getRow (show (InterleavedWord A (Fin m) ι) from Uᵣ) rowIdx), Vᵣ_i) ≤ e :=
+          ENat.natCast_le_natCast.mp (ENat.natCast_le_natCast.mpr h_dist_Uᵣi_Vᵣi)
+        have h2_nat :
+            Δ₀((getRow (show (InterleavedWord A (Fin m) ι) from Uᵣ) rowIdx), Vᵣ_star_i) ≤ e :=
+          ENat.natCast_le_natCast.mp (ENat.natCast_le_natCast.mpr h_dist_Uᵣi_Vᵣstari)
+        -- Apply triangle inequality for hammingDist
+        calc
+          Δ₀(Vᵣ_i, Vᵣ_star_i) ≤ Δ₀(Vᵣ_i, getRow (show (InterleavedWord A (Fin m) ι) from Uᵣ) rowIdx)
+            + Δ₀(getRow (show (InterleavedWord A (Fin m) ι) from Uᵣ) rowIdx, Vᵣ_star_i) :=
+              hammingDist_triangle _ _ _
+          _ = Δ₀(getRow (show (InterleavedWord A (Fin m) ι) from Uᵣ) rowIdx, Vᵣ_i) +
+              Δ₀(getRow (show (InterleavedWord A (Fin m) ι) from Uᵣ) rowIdx, Vᵣ_star_i) := by
+                rw [hammingDist_comm]
+          _ ≤ e + e := Nat.add_le_add h1_nat h2_nat
+          _ = 2 * e := by rw [two_mul]
+          _ < d := h_2e_lt_d
+      -- Now apply unique decoding
+      exact Code.eq_of_lt_dist hVᵣ_i_mem hVᵣ_star_i_mem h_dist_v_vstar_nat
+    · let : Subsingleton MC := not_nontrivial_iff_subsingleton.mp hMC
+      exact congrArg Subtype.val (Subsingleton.elim
+        (⟨Vᵣ_i, hVᵣ_i_mem⟩ : MC) ⟨Vᵣ_star_i, hVᵣ_star_i_mem⟩)
   -- 8. Conclude Vᵣ = Vᵣ_star and return the distance
   rw [h_Vᵣ_eq_Vᵣ_star]
   exact h_dist_Uᵣ_Vᵣ_star_le_e
@@ -382,7 +367,7 @@ def R_star_star_filter_columns_not_in_D (U₀ U₁ : InterleavedWord A (Fin m) �
     (V₀ V₁ : MC ^⋈ (Fin m)) (e : ℕ) (D : Finset ι) : Finset (F × ι) :=
   (R_star_star (A := A) (F := F) (ι := ι) (C := MC) (m := m) (e := e) U₀ U₁ V₀.val V₁.val).filter
     (fun p => p.2 ∉ D) in
-omit [Nonempty ι] [NoZeroDivisors F] [Fintype A] [Module.Free F A] [Nontrivial ↥MC] in
+omit [Nonempty ι] [NoZeroDivisors F] [Fintype A] [Module.Free F A] in
 omit [SampleableType F] in
 lemma R_star_star_eq_union (U₀ U₁ : InterleavedWord A (Fin m) ι)
     (V₀ V₁ : MC ^⋈ (Fin m)) (e : ℕ) (D : Finset ι):
@@ -395,7 +380,7 @@ lemma R_star_star_eq_union (U₀ U₁ : InterleavedWord A (Fin m) ι)
   rw [Finset.filter_union_filter_not_eq]
 
 omit [Nonempty ι] [NoZeroDivisors F] [DecidableEq F] [Fintype A]
-  [Module.Free F A] [Nontrivial ↥MC] in
+  [Module.Free F A] in
 open Classical in
 omit [SampleableType F] in
 lemma disjoint_R_star_star_filter_columns_in_D_not_in_D (U₀ U₁ : InterleavedWord A (Fin m) ι)
@@ -410,7 +395,7 @@ lemma disjoint_R_star_star_filter_columns_in_D_not_in_D (U₀ U₁ : Interleaved
 -- Keep the code coercion explicit: asking elaboration to infer it here unfolds the large
 -- `e_ε_correlatedAgreementAffineLinesNat` proposition during definitional equality checking.
 omit [NoZeroDivisors F] [DecidableEq F] [Fintype A] [Module.Free F A] in
-lemma D_card_le_e_implies_interleaved_correlatedAgreement₂
+lemma D_card_le_e_implies_interleaved_correlatedAgreement₂ [Nontrivial MC]
     (U₀ U₁ : InterleavedWord A (Fin m) ι)
   (hC_gap : e_ε_correlatedAgreementAffineLinesNat (F := F) (C := (MC : Set (ι → A))) e ε)
   (hR_star_card : (R_star (A := A) (F := F) (ι := ι) (C := MC) (m := m) (e := e) U₀ U₁).card > ε) :
@@ -486,8 +471,7 @@ lemma D_card_le_e_implies_interleaved_correlatedAgreement₂
     | ⟨1, _⟩ => exact V₁.property
   · exact hD_card_le_e
 
-omit [Nonempty ι] [NoZeroDivisors F] [DecidableEq F] [Fintype A] [Module.Free F A]
-  [Nontrivial ↥MC] in
+omit [Nonempty ι] [NoZeroDivisors F] [DecidableEq F] [Fintype A] [Module.Free F A] in
 omit [SampleableType F] in
 /-- **Lemma 3.3 (Part 1): Bound on agreeing cells outside D**
     The set of agreeing cells `(r, j)` where `j ∉ D` is exactly the
@@ -534,8 +518,8 @@ lemma card_agreeing_cells_notin_D {U₀ U₁ : InterleavedWord A (Fin m) ι} {V�
   -- 2. Now calculate the cardinality using the set equality
   grind only [usr le_card_sdiff, = card_sdiff_of_subset, = card_univ, = subset_iff, ← mem_univ]
 
-omit [Nonempty ι] [DecidableEq F] [Fintype A] [Nontrivial ↥MC] in
-omit [SampleableType F] in
+omit [Nonempty ι] [DecidableEq F] [Fintype A] in
+omit [SampleableType F] [Module.Free F A] in
 /-- **Lemma 3.3 (Part 2): Bound on agreeing cells inside D**
 For any column `j` that *is* in the disagreement set `D`, there is at most one
 parameter `r` in `R*` such that the columns `Uᵣ j` and `Vᵣ j` agree.
@@ -647,10 +631,16 @@ lemma card_agreeing_cells_in_D_le
         have h_sub_smul_eq_zero : (r₁ - r₂) • (W₁ - W₀) = 0 := by
           rw [sub_smul, sub_eq_zero]
           exact h_smul_eq
-        rw [smul_eq_zero] at h_sub_smul_eq_zero
-        have h_r_sub_eq_zero : r₁ - r₂ = 0 := by
-          exact h_sub_smul_eq_zero.resolve_right h_diff_eq_zero
-        exact sub_eq_zero.mp h_r_sub_eq_zero
+        by_contra hne
+        have hmul : Function.Injective (fun b : F => (r₁ - r₂) * b) :=
+          mul_right_injective₀ (sub_ne_zero.mpr hne)
+        obtain ⟨b, hb⟩ := (Finite.surjective_of_injective hmul) 1
+        change (r₁ - r₂) * b = 1 at hb
+        apply h_diff_eq_zero
+        calc
+          W₁ - W₀ = (b * (r₁ - r₂)) • (W₁ - W₀) := by rw [mul_comm, hb, one_smul]
+          _ = b • ((r₁ - r₂) • (W₁ - W₀)) := mul_smul _ _ _
+          _ = 0 := by rw [h_sub_smul_eq_zero, smul_zero]
     · -- Goal 2: Prove j₁ = j₂: This follows directly from the fiber proofs
       have h1_j_eq : j₁ = j := (Finset.mem_filter.mp hp1).2
       have h2_j_eq : j₂ = j := (Finset.mem_filter.mp hp2).2
@@ -659,7 +649,7 @@ lemma card_agreeing_cells_in_D_le
   simp only [sum_const, smul_eq_mul, mul_one] at h_fibers_le_one_sum
   exact le_trans (Nat.le_of_eq h_card_eq_sum_fibers) h_fibers_le_one_sum
 
-omit [Fintype A] [DecidableEq F] in
+omit [Fintype A] [DecidableEq F] [Module.Free F A] in
 /-- **Lemma 3.3 (DG25): Upper Bound on R** Cardinality**
 Context:
 - `U₀, U₁` are columnWise words; `V₀, V₁` are columnWise codewords
@@ -815,7 +805,7 @@ lemma R_star_star_lower_bound
   exact h_card_ge_per_r (Subtype.mk r hr_mem)
 
 omit [NoZeroDivisors F] [Module.Free F A] [Nonempty ι] [Fintype A] [DecidableEq F]
-  [DecidableEq ι] [Nontrivial ↥MC] in
+  [DecidableEq ι] in
 lemma probShadedAffineCombInterleavedCodeword_gt_threshold_iff
     (U₀ U₁ : InterleavedWord A (Fin m) ι) :
   Pr{let r ←$ᵗ F }[
@@ -865,12 +855,12 @@ lemma e_mul_R_div_R_sub_1_lt_e_add_1_real {e R : ℕ} (hR_gt_e_add_1 : e + 1 < R
   linarith [h_R_gt_e_add_1_real]
 
 open Classical in
-omit [Fintype A] [DecidableEq F] in
+omit [Fintype A] [DecidableEq F] [Module.Free F A] in
 /- **Theorem 3.1**. If `C` features proximity gaps for affine lines with respect to the
 proximity parameter `e ∈ {0, ..., ⌊(d-1)/2⌋}` and the false witness bound
 `ε ≥ e+1`, then, for each `m > 1`, `C`'s interleaving `C^m` also does.
 -/
-theorem affine_gaps_lifted_to_interleaved_codes {m : ℕ} {ε : ℕ}
+theorem affine_gaps_lifted_to_interleaved_codes [Nontrivial MC] {m : ℕ} {ε : ℕ}
     {e : ℕ} (he : e ≤ (Code.uniqueDecodingRadius (F := A) (ι := ι) (C := MC))) (hε : ε ≥ e + 1)
     (hProximityGapAffineLines :
       e_ε_correlatedAgreementAffineLinesNat (F := F) (C := (MC : Set (ι → A))) (e := e) (ε := ε)) :
@@ -1003,7 +993,7 @@ def R_star_tensor (U₀ U₁ : (Fin (2 ^ m)) → Word A ι) : Finset F :=
     R_star_tensor_filter MC (m := m) (e := e) (ε := ε) U₀ U₁ r_affine_combine
   ) Finset.univ
 
-omit [NoZeroDivisors F] [DecidableEq F] [Fintype A] [Module.Free F A] [Nontrivial ↥MC] in
+omit [NoZeroDivisors F] [DecidableEq F] [Fintype A] [Module.Free F A] in
 open Classical in
 /-- inductively to each such matrix, we conclude that,
 for each `r_{ϑ-1} ∈ R*`, `d^{2^{ϑ-1}}((1-r_{ϑ-1}) · U₀ + r_{ϑ-1} · U₁, C^{2^{ϑ-1}}) ≤ e`
@@ -1041,7 +1031,7 @@ def multilinearCombine_affineComb_split_last_close {ϑ : ℕ}
     Δ₀(multilinearCombine (F := F) (A := A) (ι := ι)
       (affineLineEvaluation U₀ U₁ r_last) r_init, ↑MC) ≤ (e : ℕ∞)
 
-omit [Nonempty ι] [NoZeroDivisors F] [Fintype A] [Module.Free F A] [Nontrivial ↥MC]
+omit [Nonempty ι] [NoZeroDivisors F] [Fintype A] [Module.Free F A]
   [DecidableEq ι] [DecidableEq F] in
 open Classical in
 lemma prob_R_star_gt_threshold
@@ -1182,7 +1172,7 @@ lemma prob_R_star_gt_threshold
   rw [h_sub_eq_goal] at h_lt_sub
   exact h_lt_sub
 
-omit [DecidableEq F] [NoZeroDivisors F] [Fintype A] [Module.Free F A] [Nontrivial ↥MC] in
+omit [DecidableEq F] [NoZeroDivisors F] [Fintype A] [Module.Free F A] in
 /- **Theorem 3.6 (Angeris-Evans-Roh AER24): Interleaved Affine Gaps -> Tensor Gaps**
 If, for **every** interleaving factor `m ≥ 1`, the `m`-fold interleaved code `C^m`
 features proximity gaps for affine lines with respect to parameters `e` and `ε`,
@@ -1369,8 +1359,7 @@ theorem interleaved_affine_gaps_imply_tensor_gaps
         apply CA_split_rowwise_implies_CA (u := u) (e := e)
         exact h_final_gap
 
-omit [DecidableEq ι] [Fintype F] [NoZeroDivisors F] [DecidableEq F] [Fintype A] [Module.Free F A]
-  [Nontrivial ↥MC] in
+omit [DecidableEq ι] [Fintype F] [NoZeroDivisors F] [DecidableEq F] [Fintype A] [Module.Free F A] in
 omit [SampleableType F] in
 lemma jointProximity₂_affineShift_implies_jointProximity₂ (u₀ u₁ : Word A ι) (δ : ℝ≥0) :
     jointProximity₂ (C := MC) (u₀ := u₀) (u₁ := u₁ - u₀) (δ := δ) →

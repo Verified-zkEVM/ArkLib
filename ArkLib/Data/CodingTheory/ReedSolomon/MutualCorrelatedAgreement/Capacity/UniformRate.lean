@@ -76,10 +76,10 @@ theorem exists_uniformRatePartition_curve_exactPowerAgreement {F E : Type u} [Fi
   let d := uniformDerivativeOrder δ
   let ν := uniformJetCap δ
   obtain ⟨e⟩ := HiddenDerivative.RatePartition.exists_uniformRatePartitionEnvelope
-    hδ hδsmall hn hk hgap hAn
+    hδ hδsmall hn hgap hAn
   obtain ⟨hd500, hδone, hν, _hνn, hscale, hkA, hchar'⟩ :=
-    HiddenDerivative.RatePartition.uniformEnvelope_exactAgreementGuards e hδ hδsmall hn hgap hchar
-  obtain ⟨cert⟩ := e.exists_curve_certificate (scale := 1000) hδ hδone hd500 hscale hAn
+    HiddenDerivative.RatePartition.uniformEnvelope_exactAgreementGuards e hδ hδsmall hn hchar
+  obtain ⟨cert⟩ := e.exists_curve_certificate (scale := 1000) hd500 hscale hAn
     domain (fun i ↦ powerBatchedCoordinate fun t ↦ values t i)
     (fun _ ↦ powerBatchedCoordinate_natDegree_le _)
   have hh : 0 < 150 * ν := by positivity

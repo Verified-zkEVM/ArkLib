@@ -327,7 +327,6 @@ example : Nonempty (RatePartitionEnvelope (1 / 5 : ℝ)
     rw [div_le_iff₀ (by norm_num : (0 : ℝ) < 1 / 25)]
     norm_num
     nlinarith
-  · positivity
   · norm_num
     nlinarith
   · omega
@@ -408,7 +407,6 @@ example : Nonempty (RatePartitionEnvelope (1 / 5 : ℝ)
   · norm_num
   · norm_num
   · exact hlength
-  · positivity
   · norm_num
     nlinarith [Nat.cast_nonneg
       (uniformMathematicalMultiplicity (1 / 5 : ℝ)) (α := ℝ)]

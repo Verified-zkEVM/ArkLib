@@ -126,8 +126,6 @@ theorem finite_frobeniusChartPoints_off_admissiblePairGraphs_card_le [IsAlgClose
     (hheight : CoeffNatDegreeLE Q h)
     (hjet : Q.weightedTotalDegree (fun i ↦ i.elim 0 (fun _ ↦ 1)) ≤ b)
     (hinit : jointInitialJetEquation center Q ≠ 0)
-    (hproper : Ideal.span ({jointInitialJetEquation center Q} :
-      Set (MvPolynomial (Option (Fin 1)) E)) ≠ ⊤)
     (S : Finset (Option (Fin 1) → E))
     (hS : ∀ x ∈ S,
       aeval x (jointInitialJetEquation center Q) = 0 ∧
@@ -141,6 +139,15 @@ theorem finite_frobeniusChartPoints_off_admissiblePairGraphs_card_le [IsAlgClose
     (S.card : ℚ) ≤ (h * (1 + τ * (b - 1)) + b * (p ^ e + τ * h) : ℕ) *
       (((n - k + 1 : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ)) := by
   classical
+  by_cases hproper : Ideal.span ({jointInitialJetEquation center Q} :
+      Set (MvPolynomial (Option (Fin 1)) E)) = ⊤
+  · have hSempty : S = ∅ := by
+      apply Finset.eq_empty_iff_forall_notMem.mpr
+      intro x hx
+      exact ((Ideal.span_singleton_eq_top.mp hproper).map (MvPolynomial.aeval x)).ne_zero
+        (hS x hx).1
+    rw [hSempty, Finset.card_empty, Nat.cast_zero]
+    positivity
   have hp : 0 < p ^ e := pow_pos (expChar_pos E p) e
   have hjet' : jetTotalDegree Q ≤ b := by
     have hw : (jetDegreeWeight : JetVariable 0 → ℕ) =

@@ -62,7 +62,7 @@ theorem exists_exceptional_firstOrder_hybrid_raw_of_tail
     {n D A L mu M : ℕ} (domain : Fin n ↪ F) (f g : Fin n → F)
     (iota : F →+* E) (Q : DifferentialPolynomial E[X] 1)
     (descent : HiddenDerivative.FirstOrderHybridDescent Q mu M)
-    (hD : 1 ≤ D) (hDL : D < L) (hLA : L ≤ A) (hAn : A ≤ n)
+    (hD : 1 ≤ D) (hDL : D < L) (hLA : L ≤ A)
     (hchar : ringChar F = 0 ∨ D < ringChar F)
     (htail : HasOrdinaryTailTransfer (D := D) (A := A)
       (h := coeffNatDegree Q) (mu := mu) (e := descent.actualDegree)
@@ -78,6 +78,20 @@ theorem exists_exceptional_firstOrder_hybrid_raw_of_tail
         differentialSpecialization (challengeSpecialization Q z) P = 0 →
         HasExactPowerAgreement domain ![f, g] iota (D + 1) z P := by
   classical
+  by_cases hAn : A ≤ n
+  swap
+  · refine ⟨∅, ?_, ?_⟩
+    · simp only [Finset.card_empty, Nat.cast_zero]
+      unfold HiddenDerivative.firstOrderExceptionCharge HiddenDerivative.ordinaryTailCharge
+        HiddenDerivative.retainedCoordinateRatio HiddenDerivative.agreementIncidenceRatio
+        HiddenDerivative.fixedCoordinateRatio
+      split_ifs <;> positivity
+    · intro z hz P hdegree hagree hroot
+      have hcard := Finset.card_le_univ
+        (s := polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
+          (powerBatchedWord (fun t i ↦ iota (![f, g] t i)) z) P)
+      simp only [Fintype.card_fin] at hcard
+      omega
   obtain ⟨tailExceptional, htailCard, htailGood⟩ := htail
   have htailPower : ∃ exceptional : Finset E,
       (exceptional.card : ℝ) ≤
@@ -99,7 +113,7 @@ theorem exists_exceptional_firstOrder_hybrid_raw_of_tail
     · exact hroot
   obtain ⟨exceptional, hcard, hgood⟩ :=
     exists_exceptional_firstOrder_hybridCurve_of_tail domain ![f, g] iota Q descent
-      (coeffNatDegreeLE_coeffNatDegree Q) (by norm_num) hD hDL hLA hAn hchar _ htailPower
+      (coeffNatDegreeLE_coeffNatDegree Q) hD hDL hLA hAn hchar _ htailPower
   refine ⟨exceptional, ?_, hgood⟩
   calc
     (exceptional.card : ℝ) ≤
@@ -122,7 +136,7 @@ theorem exists_exceptional_firstOrder_hybrid_optimized_of_tail
     {n D A mu M : ℕ} (domain : Fin n ↪ F) (f g : Fin n → F)
     (iota : F →+* E) (Q : DifferentialPolynomial E[X] 1)
     (descent : HiddenDerivative.FirstOrderHybridDescent Q mu M)
-    (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n)
+    (hD : 1 ≤ D) (hDA : D < A)
     (hchar : ringChar F = 0 ∨ D < ringChar F)
     (htail : HasOrdinaryTailTransfer (D := D) (A := A)
       (h := coeffNatDegree Q) (mu := mu) (e := descent.actualDegree)
@@ -151,7 +165,7 @@ theorem exists_exceptional_firstOrder_hybrid_optimized_of_tail
       (coeffNatDegree Q) mu descent.actualDegree) hDA
   obtain ⟨exceptional, hcardL, hgood⟩ :=
     exists_exceptional_firstOrder_hybrid_raw_of_tail domain f g iota Q descent
-      hD hDL hLA hAn hchar htail
+      hD hDL hLA hchar htail
   have hmin : HiddenDerivative.firstOrderExceptionCharge
       (HiddenDerivative.agreementIncidenceRatio n D A) n D A
       (coeffNatDegree Q) mu descent.actualDegree L =

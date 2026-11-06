@@ -77,7 +77,6 @@ theorem finrank_weightedSupportLocalConstraint_lt_prescribed
   have hH : 0 < H := lt_of_lt_of_le (by norm_num) hHlower
   have ha : 1 ≤ a := le_add_of_nonneg_right (mul_nonneg theta_pos.le hg.le)
   have hsize : 100 * (d : ℝ) ^ 2 * H ≤ m := Nat.le_ceil _
-  have hm : 0 < m := Nat.cast_pos.mp (lt_of_lt_of_le (by positivity) hsize)
   have hHlog : H ≤ Real.log d + 3 / 5 := (Real.harmonic_pred_lt_log_add_three_fifths d).le
   have hHupper : H ≤ (19 / 365) * Real.sqrt d :=
     hHlog.trans (Real.log_add_three_fifths_le_nineteen_div_365_mul_sqrt (by exact_mod_cast hd))
@@ -86,7 +85,7 @@ theorem finrank_weightedSupportLocalConstraint_lt_prescribed
     rw [Fin.sum_univ_eq_sum_range (fun i : ℕ ↦ 1 / ((i : ℝ) + 1) ^ 2)]
     exact (Real.reciprocal_square_sum_lt _).le
   have hfiber (r : ℕ) (hr : r ∈ Finset.range m) :=
-    prescribedFiberMeanVariance_le d m r W g H _ hd hm (Finset.mem_range.mp hr) hg hH hHlower
+    prescribedFiberMeanVariance_le d m r W g H _ hd (Finset.mem_range.mp hr) hHlower
       hHupper hgH hnormalized hsize hgm rfl hH2 hH2max
   have hLD : (m : ℝ) * D * (1 + g) / D = m * (1 + g) := by
     have : (D : ℝ) ≠ 0 := by positivity
@@ -197,9 +196,9 @@ theorem prescribed_weightedSupport_margin {F : Type*} [Field F]
       norm_num [xi]
       linarith
     exact hx.trans hHlo
-  have hgH : xi ≤ g * H := xi_le_rateGap_mul hδ hδmax hρ hρhi hHlo
+  have hgH : xi ≤ g * H := xi_le_rateGap_mul hδ hρ hρhi hHlo
   have hnorm : (1 + theta * g) / (g * H) ≤ 1 / xi :=
-    le_inv_of_le_one_add_mul_rateGap_div xi_pos hδ hρ (max_add_theta_mul_le_one hδ hδmax hρhi)
+    le_inv_of_le_one_add_mul_rateGap_div xi_pos hδ (max_add_theta_mul_le_one hδ hδmax hρhi)
       hHlo le_rfl
   obtain ⟨hm, hW, hmean, hs, hf⟩ :=
     prescribed_dimension_inputs δ _ H d hδ hδmax hρ hρhi (by omega) hHlo

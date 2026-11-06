@@ -98,15 +98,23 @@ theorem highRate_baseline_lower {θ ξ δ ρ H logd : ℝ} (hθ : 0 ≤ θ) (hξ
     nlinarith [mul_le_mul_of_nonneg_left ht1 (mul_nonneg hθ hξ),
       mul_le_mul_of_nonneg_left hδL hθ]
 
-/-- High-rate lower bound on the variance term: for `θ, ξ ≥ 0`, `0 < δ ≤ ρ` and `ξ / δ ≤ logd`,
-`e θ ξ / (1 + θ) ≤ ρ exp (logd θ g / (1 + θ g))` with `g = δ / ρ`. The exponent is at least
-`θ ξ / (ρ + θ δ) ≥ c / ρ` for `c = θ ξ / (1 + θ)`, since `ρ + θ δ ≤ (1 + θ) ρ`, and
-`ρ exp (c / ρ) ≥ e c` by `Real.exp_one_mul_le_mul_exp_div`. -/
-theorem highRate_variance_lower {θ ξ δ ρ logd : ℝ} (hθ : 0 ≤ θ) (hξ : 0 ≤ ξ) (hδ : 0 < δ)
+/-- High-rate lower bound on the variance term: for `θ ≥ 0`, `0 < δ ≤ ρ` and `ξ / δ ≤ logd`,
+`e θ ξ / (1 + θ) ≤ ρ exp (logd θ g / (1 + θ g))` with `g = δ / ρ`. For `ξ ≥ 0`, the
+exponent is at least `θ ξ / (ρ + θ δ) ≥ c / ρ` for `c = θ ξ / (1 + θ)`, since
+`ρ + θ δ ≤ (1 + θ) ρ`, and `ρ exp (c / ρ) ≥ e c` by
+`Real.exp_one_mul_le_mul_exp_div`. For `ξ < 0`, the left side is nonpositive. -/
+theorem highRate_variance_lower {θ ξ δ ρ logd : ℝ} (hθ : 0 ≤ θ) (hδ : 0 < δ)
     (hρ : δ ≤ ρ) (hlog : ξ / δ ≤ logd) :
     Real.exp 1 * (θ * ξ / (1 + θ)) ≤
       ρ * Real.exp (logd * (θ * (δ / ρ) / (1 + θ * (δ / ρ)))) := by
   have hρ0 : 0 < ρ := hδ.trans_le hρ
+  by_cases hξ : ξ < 0
+  · exact le_trans
+      (mul_nonpos_of_nonneg_of_nonpos (Real.exp_pos 1).le
+        (div_nonpos_of_nonpos_of_nonneg (mul_nonpos_of_nonneg_of_nonpos hθ hξ.le)
+          (by positivity)))
+      (mul_nonneg hρ0.le (Real.exp_pos _).le)
+  have hξ0 : 0 ≤ ξ := le_of_not_gt hξ
   have ht : 0 < ρ + θ * δ := by positivity
   have e2 : θ * (δ / ρ) / (1 + θ * (δ / ρ)) = θ * δ / (ρ + θ * δ) := by field_simp
   have hδL : ξ ≤ δ * logd := by rwa [div_le_iff₀ hδ, mul_comm] at hlog
@@ -155,7 +163,7 @@ theorem normalizedDimensionRankSurplus_gt (δ ρ H logd : ℝ) (hδ : 0 < δ) (h
     positivity
   rw [normalizedDimensionRankSurplus, residualFraction_eq, lt_div_iff₀ (by norm_num)]
   rcases le_or_gt δ ρ with hhigh | hlow
-  · have hg : rateGap δ ρ = δ / ρ := by rw [rateGap_eq_div_max hδ hρ0, max_eq_right hhigh]
+  · have hg : rateGap δ ρ = δ / ρ := by rw [rateGap_eq_div_max hρ0, max_eq_right hhigh]
     have hF : (729 / 100 : ℝ) * (11 / 4) < dimensionBaselineFactor δ ρ H logd := by
       rw [dimensionBaselineFactor, hg]
       refine lt_of_lt_of_le ?_ (highRate_baseline_lower theta_pos.le xi_pos.le hδ hhigh
@@ -166,13 +174,13 @@ theorem normalizedDimensionRankSurplus_gt (δ ρ H logd : ℝ) (hδ : 0 < δ) (h
       linarith
     have hJ : (81 / 110 : ℝ) * (163 / 60) < dimensionVarianceFactor δ ρ logd := by
       rw [dimensionVarianceFactor, hg]
-      refine lt_of_lt_of_le ?_ (highRate_variance_lower theta_pos.le xi_pos.le hδ hhigh hlog)
+      refine lt_of_lt_of_le ?_ (highRate_variance_lower theta_pos.le hδ hhigh hlog)
       have he := Real.exp_one_gt_d9
       norm_num [theta, xi]
       linarith
     linarith
   · have hg : rateGap δ ρ = 1 := by
-      rw [rateGap_eq_div_max hδ hρ0, max_eq_left hlow.le, div_self hδ.ne']
+      rw [rateGap_eq_div_max hρ0, max_eq_left hlow.le, div_self hδ.ne']
     have hF : 1 / 3 * xi ^ 2 / (1 / 4) * (1 / (1 + theta)) ^ 2 *
         Real.exp (xi / (1 / 4) * (theta / (1 + theta))) ≤ dimensionBaselineFactor δ ρ H logd := by
       rw [dimensionBaselineFactor, hg]

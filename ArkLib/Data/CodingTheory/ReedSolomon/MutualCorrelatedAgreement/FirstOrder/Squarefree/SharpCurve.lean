@@ -82,7 +82,7 @@ theorem retainedSquarefreeCurveSharpOptimizedCharge_le_chargeAt {n D ell L₀ L 
 /-- A retained squarefree first-order equation with jet degree at most `B`, `Y₁` degree at most
 `1 ≤ M ≤ B` and coefficient height at most `H` has one exceptional set of size at most
 `retainedSquarefreeCurveSharpChargeAt n D ell L₀ L A B M H`, for ordinary threshold
-`D < L₀ ≤ A` and regular threshold `D < L ≤ A ≤ n`. Outside it, every root of degree `< D + 1`
+`D < L₀ ≤ A` and regular threshold `D < L ≤ A`. Outside it, every root of degree `< D + 1`
 with at least `A` agreements has exact power agreement, in every characteristic above
 `max D M`. -/
 theorem exists_exceptional_retainedSquarefreeCurveAgreement_sharpAt
@@ -91,7 +91,7 @@ theorem exists_exceptional_retainedSquarefreeCurveAgreement_sharpAt
     (domain : Fin n ↪ F) (values : Fin (ell + 1) → Fin n → F) (iota : F →+* E)
     (Q : DifferentialPolynomial E[X] 1) (hQ : Q ≠ 0)
     (hD : 1 ≤ D) (hDL₀ : D < L₀) (hL₀A : L₀ ≤ A)
-    (hDL : D + 1 ≤ L) (hLA : L ≤ A) (hAn : A ≤ n)
+    (hDL : D + 1 ≤ L) (hLA : L ≤ A)
     (hell : 0 < ell) (hM : 1 ≤ M) (hMB : M ≤ B)
     (hjet : jetTotalDegree Q ≤ B) (hderiv : Q.degreeOf (some 1) ≤ M)
     (hheight : CoeffNatDegreeLE Q H)
@@ -127,7 +127,7 @@ theorem exists_exceptional_retainedSquarefreeCurveAgreement_sharpAt
       fun z hz P hdegree hagree hroot ↦ by
         convert htailGood z hz P hdegree hroot (by convert hagree)⟩
   exact exists_exceptional_retainedSquarefreeCurveAgreement_of_singularTail domain values iota Q
-    hQ hD hDL hLA hAn (by omega) hM hMB hjet hderiv hheight hchar _ htail
+    hQ hD hDL hLA (by omega) hM hMB hjet hderiv hheight hchar _ htail
 
 /-- The bound of `exists_exceptional_retainedSquarefreeCurveAgreement_sharpAt` at the attained
 ordinary minimum: one exceptional set of size at most
@@ -137,7 +137,7 @@ theorem exists_exceptional_retainedSquarefreeCurveAgreement_sharpOptimized
     {n D ell L A B M H : ℕ}
     (domain : Fin n ↪ F) (values : Fin (ell + 1) → Fin n → F) (iota : F →+* E)
     (Q : DifferentialPolynomial E[X] 1) (hQ : Q ≠ 0)
-    (hD : 1 ≤ D) (hDL : D + 1 ≤ L) (hLA : L ≤ A) (hAn : A ≤ n)
+    (hD : 1 ≤ D) (hDL : D + 1 ≤ L) (hLA : L ≤ A)
     (hell : 0 < ell) (hM : 1 ≤ M) (hMB : M ≤ B)
     (hjet : jetTotalDegree Q ≤ B) (hderiv : Q.degreeOf (some 1) ≤ M)
     (hheight : CoeffNatDegreeLE Q H)
@@ -153,7 +153,7 @@ theorem exists_exceptional_retainedSquarefreeCurveAgreement_sharpOptimized
     (retainedSquarefreeOrdinaryCurveChargeAt n D ell · A B M H) (show D < A by omega)
   obtain ⟨exceptional, hcard, hgood⟩ :=
     exists_exceptional_retainedSquarefreeCurveAgreement_sharpAt domain values iota Q hQ hD
-      hDL₀ hL₀A hDL hLA hAn hell hM hMB hjet hderiv hheight hchar
+      hDL₀ hL₀A hDL hLA hell hM hMB hjet hderiv hheight hchar
   refine ⟨exceptional, ?_, hgood⟩
   rwa [retainedSquarefreeCurveSharpChargeAt, hL₀] at hcard
 
@@ -162,7 +162,7 @@ universe u
 /-- A finite first-order curve certificate with recovery degree `k - 1 ≥ 1`, jet-degree cap `B`,
 derivative cap `1 ≤ M ≤ B` and challenge height `H` gives an extension-field exceptional set of
 size at most `retainedSquarefreeCurveSharpOptimizedCharge n (k - 1) ell L A B M H` for
-`k ≤ L ≤ A ≤ n`. Outside it, every polynomial of degree `< k` with at least `A` agreements has
+`k ≤ L ≤ A`. Outside it, every polynomial of degree `< k` with at least `A` agreements has
 exact power agreement. -/
 theorem exists_extensionExceptional_retainedSquarefreeCurveAgreement_sharpOptimized_of_certificate
     {F E : Type u} [Field F] [Field E] [DecidableEq F] [DecidableEq E] [IsAlgClosed E]
@@ -171,7 +171,7 @@ theorem exists_extensionExceptional_retainedSquarefreeCurveAgreement_sharpOptimi
     (columns : Fin N → SourceColumn 1)
     (cert : FirstOrderCurveCertificate.{u, u} Dcert A m M B k H domain
       (fun i ↦ powerBatchedCoordinate fun t ↦ values t i) columns)
-    (hk : 2 ≤ k) (hkL : k ≤ L) (hLA : L ≤ A) (hAn : A ≤ n)
+    (hk : 2 ≤ k) (hkL : k ≤ L) (hLA : L ≤ A)
     (hell : 0 < ell) (hM : 1 ≤ M) (hMB : M ≤ B)
     (hchar : ringChar F = 0 ∨ max (k - 1) M < ringChar F) :
     ∃ exceptional : Finset E,
@@ -183,7 +183,7 @@ theorem exists_extensionExceptional_retainedSquarefreeCurveAgreement_sharpOptimi
         HasExactPowerAgreement domain values iota k z P := by
   obtain ⟨exceptional, hcard, hgood⟩ :=
     exists_exceptional_retainedSquarefreeCurveAgreement_sharpOptimized
-      domain values iota _ (cert.map_Q_ne_zero iota) (by omega) (by omega) hLA hAn hell hM
+      domain values iota _ (cert.map_Q_ne_zero iota) (by omega) (by omega) hLA hell hM
       hMB (cert.jetTotalDegree_map_Q_le iota) (cert.degreeOf_map_Q_le iota)
       (CoeffNatDegreeLE.map_coefficients iota cert.Q cert.challengeDegree_le) hchar
   exact ⟨exceptional, hcard, cert.exactPowerAgreement_of_map_Q iota (by omega) hgood⟩
@@ -193,13 +193,13 @@ theorem exists_extensionExceptional_retainedSquarefreeCurveAgreement_sharpOptimi
 over the base field: the exceptional set lies in the base field, and exact power agreement holds
 there. -/
 theorem exists_baseExceptional_retainedSquarefreeCurveAgreement_sharpOptimized_of_certificate
-    {F E : Type u} [Field F] [Field E] [DecidableEq F] [IsAlgClosed E]
+    {F : Type u} [Field F] [DecidableEq F]
     {n N Dcert A m M B k H ell L : ℕ}
-    (domain : Fin n ↪ F) (values : Fin (ell + 1) → Fin n → F) (iota : F →+* E)
+    (domain : Fin n ↪ F) (values : Fin (ell + 1) → Fin n → F)
     (columns : Fin N → SourceColumn 1)
     (cert : FirstOrderCurveCertificate.{u, u} Dcert A m M B k H domain
       (fun i ↦ powerBatchedCoordinate fun t ↦ values t i) columns)
-    (hk : 2 ≤ k) (hkL : k ≤ L) (hLA : L ≤ A) (hAn : A ≤ n)
+    (hk : 2 ≤ k) (hkL : k ≤ L) (hLA : L ≤ A)
     (hell : 0 < ell) (hM : 1 ≤ M) (hMB : M ≤ B)
     (hchar : ringChar F = 0 ∨ max (k - 1) M < ringChar F) :
     ∃ exceptional : Finset F,
@@ -209,9 +209,10 @@ theorem exists_baseExceptional_retainedSquarefreeCurveAgreement_sharpOptimized_o
         A ≤ (polynomialAgreementSet domain (powerBatchedWord values z) P).card →
         HasExactPowerAgreement domain values (RingHom.id F) k z P := by
   classical
+  let iota := algebraMap F (AlgebraicClosure F)
   obtain ⟨extensionExceptional, hcard, hgood⟩ :=
     exists_extensionExceptional_retainedSquarefreeCurveAgreement_sharpOptimized_of_certificate
-      domain values iota columns cert hk hkL hLA hAn hell hM hMB hchar
+      domain values iota columns cert hk hkL hLA hell hM hMB hchar
   obtain ⟨exceptional, hcardBase, hgoodBase⟩ :=
     uniformExactPowerAgreement_of_extension domain values iota k A extensionExceptional hgood
   exact ⟨exceptional, (show (exceptional.card : ℝ) ≤ extensionExceptional.card by

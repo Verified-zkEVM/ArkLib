@@ -400,7 +400,6 @@ omit [SampleableType S] in
 using the proved affine-line MCA bound and additive tensor composition. -/
 theorem round_soundness_multilinear [SampleableType F] (t : ℕ)
     (hdom : 2 ^ (∑ i, (s i).1) * d ≤ 2 ^ n) (δ : ℝ≥0)
-    (hδ_pos : 0 < δ)
     (hδ : δ ≤ Code.relativeUniqueDecodingRadius
       (ReedSolomon.code (ω : Fin (2 ^ n) ↪ F) (2 ^ (∑ i, (s i).1) * d)).carrier)
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
@@ -410,14 +409,13 @@ theorem round_soundness_multilinear [SampleableType F] (t : ℕ)
       (inputRelation s d (2 ^ t - 1) δ).language (outputRelation s d hdom δ).language
       (fun _ ↦ t * (2 ^ n / Fintype.card F)) := by
   exact round_soundness s d (2 ^ t - 1) (CoreDefinitions.multilinearBatchGenerator F t)
-    hdom δ _ (by simpa using ProximityGap.caError_multilinearBatch_le t hδ_pos hδ) init impl
+    hdom δ _ (by simpa using ProximityGap.caError_multilinearBatch_le t hδ) init impl
 
 omit [SampleableType S] in
 /-- Multilinear batching has error `t * n / |F|` in the unique-decoding regime,
 using the proved affine-line MCA bound and additive tensor composition. -/
 theorem soundness_multilinear [SampleableType F] (t : ℕ)
     (hdom : 2 ^ (∑ i, (s i).1) * d ≤ 2 ^ n) (δ : ℝ≥0)
-    (hδ_pos : 0 < δ)
     (hδ : δ ≤ Code.relativeUniqueDecodingRadius
       (ReedSolomon.code (ω : Fin (2 ^ n) ↪ F) (2 ^ (∑ i, (s i).1) * d)).carrier)
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
@@ -426,7 +424,7 @@ theorem soundness_multilinear [SampleableType F] (t : ℕ)
       (inputRelation s d (2 ^ t - 1) δ).language (outputRelation s d hdom δ).language
       (t * (2 ^ n / Fintype.card F)) := by
   exact soundness s d (2 ^ t - 1) (CoreDefinitions.multilinearBatchGenerator F t)
-    hdom δ _ (by simpa using ProximityGap.caError_multilinearBatch_le t hδ_pos hδ) init impl
+    hdom δ _ (by simpa using ProximityGap.caError_multilinearBatch_le t hδ) init impl
 
 
 

@@ -61,16 +61,7 @@ def bestOptimizedCurveEnvelope (p : LineProfile) (split : ℕ) : ℝ :=
 theorem bestOptimizedCurveEnvelope_le_best (p : LineProfile) (split : ℕ) :
     bestOptimizedCurveEnvelope p split ≤ bestCurveEnvelope p split := by
   apply min_le_min le_rfl
-  by_cases hDA : p.candidateDegree < p.agreement
-  · exact squarefreeSharpOptimizedCurveEnvelope_le_fixed p split hDA
-  · unfold squarefreeSharpOptimizedCurveEnvelope squarefreeSharpCurveEnvelope
-      FirstOrder.Squarefree.retainedSquarefreeCurveSharpOptimizedCharge
-      FirstOrder.Squarefree.retainedSquarefreeCurveSharpChargeAt curveRetentionMinimum
-    rw [dite_eq_right hDA]
-    refine add_le_add ?_ le_rfl
-    unfold FirstOrder.Squarefree.retainedSquarefreeOrdinaryCurveChargeAt
-      ordinaryUnifiedPowerFactorAt ordinaryUnifiedPowerFactorRawAt
-    positivity
+  exact squarefreeSharpOptimizedCurveEnvelope_le_fixed p split
 
 universe u
 
@@ -148,7 +139,7 @@ theorem exists_exceptional_exactPowerAgreement_bestOptimized
         hybridOptimizedCurveEnvelope p := le_of_not_ge hbest
     obtain ⟨exceptional, hcard, hgood⟩ :=
       exists_exceptional_exactPowerAgreement_squarefreeSharpOptimized hp split hsplit
-        hell hM hMB domain values (algebraMap F (AlgebraicClosure F)) hchar
+        hM hMB domain values hchar
     refine ⟨exceptional, ?_, hgood⟩
     simpa only [bestOptimizedCurveEnvelope, min_eq_right hsquarefree] using hcard
 

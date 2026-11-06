@@ -73,9 +73,9 @@ theorem exists_mathematicalUniformRatePartition_curve_exactPowerAgreement
           (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
         HasExactPowerAgreement domain values iota k z P := by
   classical
-  obtain ⟨e⟩ := exists_mathematicalRatePartitionEnvelope hδ hδsmall hn hk hgap hAn
+  obtain ⟨e⟩ := exists_mathematicalRatePartitionEnvelope hδ hδsmall hn hgap hAn
   obtain ⟨hd, hδone, hscale, hν, -⟩ := uniformMathematical_certificate_guards hδ hδsmall
-  obtain ⟨cert⟩ := e.exists_curve_certificate (scale := 300) hδ hδone hd hscale hAn
+  obtain ⟨cert⟩ := e.exists_curve_certificate (scale := 300) hd hscale hAn
     domain (fun i ↦ powerBatchedCoordinate fun t ↦ values t i)
     (fun _ ↦ powerBatchedCoordinate_natDegree_le _)
   have hkA : k ≤ A := by
@@ -182,7 +182,7 @@ theorem exists_mathematicalUniformRatePartition_line_exactCorrelatedPair
       exact hsupport (Or.inr (max_lt hdegreeChar (by omega)))
     obtain ⟨exceptional, hcard, hgood⟩ := exists_johnson_line_exactCorrelatedPair_of_gap
       domain f g hδ (by omega)
-      (four_mul_pred_le_sq_mul_of_le_uniformMathematicalJetBound hn hkJet) hgap hAn
+      (four_mul_pred_le_sq_mul_of_le_uniformMathematicalJetBound hn hkJet) hgap
     exact ⟨exceptional, hcard.le.trans hJohnson, hgood⟩
 
 end ReedSolomon

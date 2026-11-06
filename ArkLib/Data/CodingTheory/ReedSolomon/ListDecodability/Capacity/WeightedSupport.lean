@@ -42,7 +42,7 @@ theorem exists_weightedSupport_hiddenDerivativeConstruction :
   intro δ hδ hδmax n k q hblock hk _hkn hq hnq hA domain received
   let : Fact q.Prime := ⟨hq⟩
   obtain ⟨construction, hK, _htotal⟩ :=
-    exists_prescribed_weightedSupport_construction domain received hδ hδmax hk hblock hnq hA
+    exists_prescribed_weightedSupport_construction domain received hδ hδmax hblock hnq hA
   exact ⟨construction, hK⟩
 
 /-- Every prescribed small-gap instance has both finite-field bounds. The exponent-two bound
@@ -84,7 +84,7 @@ theorem weightedSupport_capacity_list_bound_four_mul
     intro received
     by_cases hA : A ≤ n
     · obtain ⟨construction, hK, htotal⟩ :=
-        exists_prescribed_weightedSupport_construction domain received hδ hδmax hk
+        exists_prescribed_weightedSupport_construction domain received hδ hδmax
           (by simpa only [m] using hblock) hnq (by simpa only [A] using hA)
       exact construction.agreeingPolynomials_encard_le_totalJetDegree hK he htotal hfield
     · rw [emptyList received (Nat.lt_of_not_ge hA)]
@@ -95,7 +95,7 @@ theorem weightedSupport_capacity_list_bound_four_mul
     intro received
     by_cases hA : A ≤ n
     · obtain ⟨construction, hK, htotal⟩ :=
-        exists_prescribed_weightedSupport_construction domain received hδ hδmax hk
+        exists_prescribed_weightedSupport_construction domain received hδ hδmax
           (by simpa only [m] using hblock) hnq (by simpa only [A] using hA)
       have hdK : d < K := by
         have hdegree := construction.order_lt_degree

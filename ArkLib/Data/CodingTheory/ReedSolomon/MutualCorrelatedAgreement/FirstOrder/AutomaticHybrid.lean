@@ -76,7 +76,7 @@ theorem exists_exceptional_firstOrder_hybrid
     {n D A h mu M : ℕ} (domain : Fin n ↪ F) (f g : Fin n → F) (iota : F →+* E)
     (Q : DifferentialPolynomial E[X] 1) (hQ : Q ≠ 0) (hweight : jetTotalDegree Q ≤ mu)
     (hdegree : jetDegree Q (1 : Fin 2) ≤ M) (hheight : CoeffNatDegreeLE Q h)
-    (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n)
+    (hD : 1 ≤ D) (hDA : D < A)
     (hchar : ringChar F = 0 ∨ max D M < ringChar F) :
     ∃ exceptional : Finset E,
       (exceptional.card : ℝ) ≤
@@ -97,9 +97,9 @@ theorem exists_exceptional_firstOrder_hybrid
     rw [hcharEq]
     exact hchar.imp_right ((hdegree.trans (Nat.le_max_right D M)).trans_lt ·))
   obtain ⟨exceptional, hraw, hceil, hclosed, hgood⟩ :=
-    exists_exceptional_firstOrder_hybrid_optimized_of_tail domain f g iota Q descent hD hDA hAn
+    exists_exceptional_firstOrder_hybrid_optimized_of_tail domain f g iota Q descent hD hDA
       (hchar.imp_right ((Nat.le_max_left D M).trans_lt ·))
-      (descent.hasOrdinaryTailTransfer domain f g iota hD hDA hAn)
+      (descent.hasOrdinaryTailTransfer domain f g iota hD hDA)
   have hθ : 0 ≤ agreementIncidenceRatio n D A := by
     unfold agreementIncidenceRatio
     positivity
@@ -167,7 +167,7 @@ theorem exists_exceptional_firstOrder_hybrid_base
     exists_exceptional_firstOrder_hybrid domain f g iota QE hQE
       ((jetTotalDegree_map_eq hinj Q).trans_le hweight)
       ((jetDegree_map_eq hinj Q 1).trans_le hdegree) (hheight.map_coefficients iota)
-      hD hDA hAn hchar
+      hD hDA hchar
   obtain ⟨exceptional, hcard, hbase⟩ := exists_exceptional_equation_correlatedAgreement_descend
     domain f g iota Q (D + 1) A extensionExceptional (by
       intro z hz P hP hagree hroot
@@ -281,7 +281,7 @@ theorem exists_automaticFirstOrder_hybridEquation
     (hrho : 0 < rho) (hrhoOne : rho < 1)
     (ha : firstOrderRateThreshold rho < a)
     (hn : 0 < n) (hD : D = k - 1) (hk : 2 ≤ k)
-    (hkRate : (k : ℝ) ≤ rho * n) (hA : a * n ≤ A) (hAn : A ≤ n)
+    (hkRate : (k : ℝ) ≤ rho * n) (hA : a * n ≤ A)
     {F E : Type*} [Field F] [Field E] [DecidableEq F] [DecidableEq E] [IsAlgClosed E]
     (hchar : ringChar F = 0 ∨ max D (automaticDerivativeCap rho a) < ringChar F)
     (domain : Fin n ↪ F) (f g : Fin n → F) (iota : F →+* E) :
@@ -324,7 +324,7 @@ theorem exists_automaticFirstOrder_hybridEquation
     exact hroot z P hP hagree
   obtain rfl : k = D + 1 := by omega
   obtain ⟨exceptional, hraw, hceil, hclosed, hgood⟩ := exists_exceptional_firstOrder_hybrid
-    domain f g iota Q hQ hweight hdegree hheight hD₁ hDA hAn hchar
+    domain f g iota Q hQ hweight hdegree hheight hD₁ hDA hchar
   exact ⟨Q, hQ, hweight, hdegree, hheight, hsound, exceptional, hraw, hceil, hclosed,
     fun z hz P hP hagree ↦
       hgood z hz P (by exact_mod_cast hP) hagree (hsound z P hP hagree)⟩

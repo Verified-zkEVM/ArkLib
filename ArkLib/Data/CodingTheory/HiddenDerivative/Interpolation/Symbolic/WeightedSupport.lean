@@ -250,13 +250,13 @@ theorem weightedSupportCutoff_le_two_mul (D m : ℕ) {g : ℝ} (hg : g ≤ 1) :
     _ = (D : ℝ) * ((2 * m : ℕ) : ℝ) := by push_cast; ring
 
 /-- Under the prescribed slack bound, the strict band cutoff gives `Y₀ ≤ 2m - 1`. -/
-theorem y₀_le_two_mul_sub_one_of_eligible {g : ℝ} (hD : 0 < D) (hg : g ≤ 1)
+theorem y₀_le_two_mul_sub_one_of_eligible {g : ℝ} (hg : g ≤ 1)
     {u : JetVariable d →₀ ℕ}
     (hu : WeightedSupportEligible D d W ((D : ℝ) * m * (1 + g)) u) :
     u (some 0) ≤ 2 * m - 1 := by
   have hcut := weightedSupportCutoff_le_two_mul D m hg
   have htotal := totalJetDegree_le_pred_of_weightedSupportEligible
-    (D := D) (d := d) (W := W) (L := (D : ℝ) * m * (1 + g)) (t := 2 * m) hD hcut hu
+    (D := D) (d := d) (W := W) (L := (D : ℝ) * m * (1 + g)) (t := 2 * m) hcut hu
   have hcoord : u (some 0) ≤ totalJetDegree u := by
     rw [totalJetDegree_eq_sum]
     exact Finset.single_le_sum (fun j _ => Nat.zero_le (u (some j))) (Finset.mem_univ 0)

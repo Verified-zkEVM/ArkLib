@@ -57,7 +57,7 @@ construction. The original message dimension remains the input parameter. -/
 private theorem exists_prescribed_weightedSupport_construction_core
     {δ : ℝ} {n k q : ℕ} [Fact q.Prime]
     (domain : Fin n ↪ ZMod q) (received : Fin n → ZMod q)
-    (hδ : 0 < δ) (hδmax : δ < 1 / 4) (hk : 0 < k)
+    (hδ : 0 < δ) (hδmax : δ < 1 / 4)
     (hblock :
       let d := Nat.ceil (Real.exp (xi / δ))
       let H : ℝ := harmonic (d - 1)
@@ -123,8 +123,7 @@ private theorem exists_prescribed_weightedSupport_construction_core
     rw [show (m : ℝ) * D * (1 + g) = D * m * (1 + g) by ring] at hmargin
     exact hmargin
   obtain ⟨Q, hQ0, _hQsupport, hQlocal, hQtotal, hQweight⟩ :=
-    exists_weightedSupport_interpolant_of_fixed_margin domain received hD hmpos
-      (show 0 < A from hk.trans_le (Nat.le_add_right _ _)) (rateGap_le_one _ _)
+    exists_weightedSupport_interpolant_of_fixed_margin domain received hD (rateGap_le_one _ _)
       hcut hmargin'
   have hkK : k ≤ K := by
     dsimp only [K]
@@ -158,7 +157,7 @@ private theorem exists_prescribed_weightedSupport_construction_core
 theorem exists_prescribed_weightedSupport_construction
     {δ : ℝ} {n k q : ℕ} [Fact q.Prime]
     (domain : Fin n ↪ ZMod q) (received : Fin n → ZMod q)
-    (hδ : 0 < δ) (hδmax : δ < 1 / 4) (hk : 0 < k)
+    (hδ : 0 < δ) (hδmax : δ < 1 / 4)
     (hblock : 8 * weightedSupportMultiplicity (capacityDerivativeOrder δ) ≤ n)
     (hnq : n ≤ q) (hA : capacityAgreementThreshold δ n k ≤ n) :
     let d := capacityDerivativeOrder δ
@@ -177,7 +176,7 @@ theorem exists_prescribed_weightedSupport_construction
       weightedSupportAmbientDimension δ n k = max k (Nat.floor (δ * n / 2)) := rfl
   rw [hmEq] at hblock
   rw [hmEq, hdEq, hKEq]
-  apply exists_prescribed_weightedSupport_construction_core domain received hδ hδmax hk
+  apply exists_prescribed_weightedSupport_construction_core domain received hδ hδmax
   · simpa only [m, d] using hblock
   · exact hnq
   · exact hA

@@ -90,7 +90,7 @@ theorem exists_ratePartition_curve_exactPowerAgreement
         HasExactPowerAgreement domain values iota k z P := by
   obtain ⟨cert⟩ :=
     exists_partitionSupport_curve_certificate_of_rateBlockThreshold p hR (hRa.trans haone)
-    (hR.trans hRa) hd hn hkR haA hAn domain
+    hd hn hkR haA hAn domain
     (fun i ↦ powerBatchedCoordinate fun t ↦ values t i)
     (fun _ ↦ powerBatchedCoordinate_natDegree_le _)
   let K := max k (d + 1)

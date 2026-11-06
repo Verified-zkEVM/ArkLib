@@ -60,13 +60,23 @@ theorem exists_johnson_line_exactCorrelatedPair
     {F : Type*} [Field F] {n D A : ℕ} {eta : ℝ}
     (domain : Fin n ↪ F) (f g : Fin n → F)
     (hD : 1 ≤ D) (hDn : D ≤ n - 2) (heta : 0 < eta)
-    (hthreshold : johnsonAgreement n D eta * n ≤ A) (hAn : A ≤ n) :
+    (hthreshold : johnsonAgreement n D eta * n ≤ A) :
     ∃ exceptional : Finset F,
       (exceptional.card : ℝ) ≤ johnsonExceptionCount n D A eta ∧
       ∀ z ∉ exceptional, ∀ P : F[X], P.degree < D + 1 →
         A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
         HasExactCorrelatedPair domain f g (RingHom.id F) (D + 1) z P := by
   classical
+  by_cases hAn : A ≤ n
+  swap
+  · refine ⟨∅, ?_, ?_⟩
+    · simp only [Finset.card_empty, Nat.cast_zero]
+      unfold johnsonExceptionCount johnsonTheta
+      positivity
+    · intro z hz P hdegree hagree
+      have hcard := Finset.card_le_univ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P)
+      simp only [Fintype.card_fin] at hcard
+      omega
   have hDlt : D < n := by omega
   obtain ⟨cert⟩ := exists_johnson_symbolic_certificate hD hDn heta hthreshold
     (k := D + 1) le_rfl domain f g
@@ -99,13 +109,12 @@ theorem exists_johnson_line_exactCorrelatedPair
 
 open Classical in
 /-- **Johnson exact correlated agreement at the rounded threshold.** With
-`a = √(D / n) + η ≤ 1`, the integer threshold `⌈a n⌉₊` admits one set of at most
+`a = √(D / n) + η`, the integer threshold `⌈a n⌉₊` admits one set of at most
 `johnsonExceptionCount n D ⌈a n⌉₊ η` exceptional challenges. -/
 theorem exists_johnson_line_exactCorrelatedPair_ceil
     {F : Type*} [Field F] {n D : ℕ} {eta : ℝ}
     (domain : Fin n ↪ F) (f g : Fin n → F)
-    (hD : 1 ≤ D) (hDn : D ≤ n - 2) (heta : 0 < eta)
-    (ha : johnsonAgreement n D eta ≤ 1) :
+    (hD : 1 ≤ D) (hDn : D ≤ n - 2) (heta : 0 < eta) :
     ∃ exceptional : Finset F,
       (exceptional.card : ℝ) ≤
         johnsonExceptionCount n D ⌈johnsonAgreement n D eta * n⌉₊ eta ∧
@@ -114,32 +123,43 @@ theorem exists_johnson_line_exactCorrelatedPair_ceil
           (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
         HasExactCorrelatedPair domain f g (RingHom.id F) (D + 1) z P :=
   exists_johnson_line_exactCorrelatedPair domain f g hD hDn heta (Nat.le_ceil _)
-    (Nat.ceil_le.mpr (by nlinarith [Nat.cast_nonneg n (α := ℝ)]))
 
 open Classical in
 /-- **Johnson exact correlated agreement from an agreement gap.** If `2 ≤ k`,
-`4 (k - 1) ≤ δ² n` and `k + δ n ≤ A ≤ n`, then the Johnson multiplicity is three at slack `δ / 2`,
+`4 (k - 1) ≤ δ² n` and `k + δ n ≤ A`, then the Johnson multiplicity is three at slack `δ / 2`,
 and one set of fewer than `(343 / 3) n²` challenges is exceptional for exact correlated agreement
 of degree-`< k` candidates. -/
 theorem exists_johnson_line_exactCorrelatedPair_of_gap
     {F : Type*} [Field F] {n k A : ℕ} {δ : ℝ}
     (domain : Fin n ↪ F) (f g : Fin n → F) (hδ : 0 < δ) (hk : 2 ≤ k)
-    (hscale : 4 * ((k : ℝ) - 1) ≤ δ ^ 2 * n) (hgap : (k : ℝ) + δ * n ≤ A) (hAn : A ≤ n) :
+    (hscale : 4 * ((k : ℝ) - 1) ≤ δ ^ 2 * n) (hgap : (k : ℝ) + δ * n ≤ A) :
     ∃ exceptional : Finset F,
       (exceptional.card : ℝ) < (343 / 3 : ℝ) * (n : ℝ) ^ 2 ∧
       ∀ z ∉ exceptional, ∀ P : F[X], P.degree < k →
         A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
         HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
   classical
+  have hnPos : (0 : ℝ) < n := by
+    have hn : n ≠ 0 := by
+      intro hn
+      simp only [hn, Nat.cast_zero, mul_zero] at hscale
+      have hkR : (2 : ℝ) ≤ k := by exact_mod_cast hk
+      linarith
+    exact_mod_cast Nat.pos_of_ne_zero hn
+  by_cases hAn : A ≤ n
+  swap
+  · refine ⟨∅, ?_, ?_⟩
+    · simp only [Finset.card_empty, Nat.cast_zero]
+      positivity
+    · intro z hz P hdegree hagree
+      have hcard := Finset.card_le_univ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P)
+      simp only [Fintype.card_fin] at hcard
+      omega
   let D := k - 1
   let eta := δ / 2
   have hD : 1 ≤ D := by omega
   have hDk : D + 1 = k := by omega
   have hAnR : (A : ℝ) ≤ n := by exact_mod_cast hAn
-  have hkPos : (0 : ℝ) < k := by exact_mod_cast (show 0 < k by omega)
-  have hnPos : (0 : ℝ) < n := by
-    have hkA : (k : ℝ) ≤ A := hgap.trans' (le_add_of_nonneg_right (by nlinarith))
-    linarith
   have hklt : k < n := by
     have : (k : ℝ) < n := by nlinarith [mul_pos hδ hnPos]
     exact_mod_cast this
@@ -183,7 +203,7 @@ theorem exists_johnson_line_exactCorrelatedPair_of_gap
         field_simp
       _ ≤ _ := hscale'
   obtain ⟨exceptional, hcard, hgood⟩ :=
-    exists_johnson_line_exactCorrelatedPair domain f g hD hDn heta hthreshold hAn
+    exists_johnson_line_exactCorrelatedPair domain f g hD hDn heta hthreshold
   refine ⟨exceptional, hcard.trans_lt hclosed', ?_⟩
   intro z hz P hdegree hagree
   have hdegree' : P.degree < (D : WithBot ℕ) + 1 := by
@@ -204,7 +224,7 @@ theorem ordinaryUnifiedPowerFactorRaw_one_eq_johnsonWeightedRefinedExceptionCoun
 
 open Classical in
 /-- **Weighted Johnson exact correlated agreement.** For a weighted Johnson certificate
-`IsJohnsonWeightedCertificate n D A m B H` with `1 ≤ D`, `D + 1 ≤ A ≤ n` and `B ≤ 2 D + 1`, one
+`IsJohnsonWeightedCertificate n D A m B H` with `1 ≤ D`, `D + 1 ≤ A` and `B ≤ 2 D + 1`, one
 set of at most `johnsonWeightedRefinedExceptionCount n D A B H` challenges is chosen before the
 challenge and candidate. Outside it, every polynomial of degree at most `D` agreeing with `f + z g`
 on at least `A` points has an exact correlated pair, over an arbitrary field. -/
@@ -212,13 +232,23 @@ theorem exists_weightedJohnson_line_exactCorrelatedPair
     {F : Type*} [Field F] {n D A m B H : ℕ}
     (domain : Fin n ↪ F) (f g : Fin n → F)
     (hcert : IsJohnsonWeightedCertificate n D A m B H)
-    (hD : 1 ≤ D) (hDA : D + 1 ≤ A) (hAn : A ≤ n) (hB : B ≤ 2 * D + 1) :
+    (hD : 1 ≤ D) (hDA : D + 1 ≤ A) (hB : B ≤ 2 * D + 1) :
     ∃ exceptional : Finset F,
       (exceptional.card : ℚ) ≤ johnsonWeightedRefinedExceptionCount n D A B H ∧
       ∀ z ∉ exceptional, ∀ P : F[X], P.degree < D + 1 →
         A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
         HasExactCorrelatedPair domain f g (RingHom.id F) (D + 1) z P := by
   classical
+  by_cases hAn : A ≤ n
+  swap
+  · refine ⟨∅, ?_, ?_⟩
+    · simp only [Finset.card_empty, Nat.cast_zero]
+      unfold johnsonWeightedRefinedExceptionCount
+      positivity
+    · intro z hz P hdegree hagree
+      have hcard := Finset.card_le_univ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P)
+      simp only [Fintype.card_fin] at hcard
+      omega
   obtain ⟨cert⟩ := hcert.exists_symbolic hD le_rfl domain f g
   have hQ : cert.Q ≠ 0 := by
     intro hz

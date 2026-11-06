@@ -46,11 +46,12 @@ theorem HiddenDerivative.FirstOrderHybridDescent.hasOrdinaryTailTransfer
     {F E : Type*} [Field F] [Field E] [instF : DecidableEq F] [instE : DecidableEq E]
     [IsAlgClosed E] {n D A mu M : ℕ} (domain : Fin n ↪ F) (f g : Fin n → F) (iota : F →+* E)
     {Q : DifferentialPolynomial E[X] 1} (descent : FirstOrderHybridDescent Q mu M)
-    (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n) :
+    (hD : 1 ≤ D) (hDA : D < A) :
     HasOrdinaryTailTransfer (D := D) (A := A) (h := coeffNatDegree Q) (mu := mu)
       (e := descent.actualDegree) domain f g iota descent.tail.equation := by
   obtain rfl : instF = fun a b ↦ Classical.propDecidable (a = b) := Subsingleton.elim _ _
   obtain rfl : instE = fun a b ↦ Classical.propDecidable (a = b) := Subsingleton.elim _ _
+  classical
   let h := coeffNatDegree Q
   let b := mu - descent.actualDegree
   have hheight : CoeffNatDegreeLE descent.tail.equation h :=
@@ -58,6 +59,18 @@ theorem HiddenDerivative.FirstOrderHybridDescent.hasOrdinaryTailTransfer
       ((coeffNatDegreeLE_coeffNatDegree Q).iterate_pderiv _ descent.actualDegree)
   have hdegree : descent.tail.equation.degreeOf (some 0) ≤ b := descent.tail_rootDegree_le
   unfold HasOrdinaryTailTransfer ordinaryTailCharge
+  by_cases hAn : A ≤ n
+  swap
+  · refine ⟨∅, ?_, ?_⟩
+    · simp only [Finset.card_empty, Nat.cast_zero]
+      unfold agreementIncidenceRatio
+      split_ifs <;> positivity
+    · intro z hz P hdegree hagree hroot
+      have hcard := Finset.card_le_univ
+        (s := polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
+          (fun i ↦ iota (f i) + z * iota (g i)) P)
+      simp only [Fintype.card_fin] at hcard
+      omega
   by_cases hb : b = 0
   · obtain ⟨exceptional, hcard, hgood⟩ := exists_exceptional_jet_independent_content
       descent.tail.equation descent.tail_nonzero (by omega) hheight

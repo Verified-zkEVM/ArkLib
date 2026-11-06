@@ -689,16 +689,6 @@ theorem mds_johnson_lambda_le_of_rate_distance
         -- `Jqℓ q ℓ δ = J q (lFac·δ)` by definition (`Jqℓ_eq_J`).
         rw [Jqℓ_eq_J]
         set δJ : ℚ := (((ℓ:ℚ)-1)/ℓ) * δ_minQ with hδJ_def
-        have hδJ_nonneg : (0:ℚ) ≤ δJ := by
-          exact mul_nonneg (div_nonneg (by linarith only [hℓQ2]) (by linarith only [hℓQ2]))
-            (div_nonneg (Nat.cast_nonneg _) (Nat.cast_nonneg _))
-        have hδJ_le1 : δJ ≤ 1 := by
-          -- δJ = lFac·δ_minQ ≤ radicand (since frac ≥ 1) ≤ 1
-          have hfrac_ge1 : (1:ℚ) ≤ q/(q-1) :=
-            (one_le_div (by linarith only [hqR2])).2 (by linarith only)
-          calc δJ ≤ (q/(q-1)) * δJ := le_mul_of_one_le_left hδJ_nonneg hfrac_ge1
-            _ = (q / (q - 1)) * (((ℓ:ℚ) - 1) / ℓ) * δ_minQ := by rw [hδJ_def]; ring
-            _ ≤ 1 := hradicand
         have hguardJ : q/(q-1) * δJ ≤ 1 := by
           rw [hδJ_def]
           calc q/(q-1) * ((((ℓ:ℚ)-1)/ℓ) * δ_minQ)
@@ -707,7 +697,7 @@ theorem mds_johnson_lambda_le_of_rate_distance
         -- `sqrt_le_J : Jcap δ ≤ J q δ`, i.e. `1 - √(1 - δ) ≤ J q δ` (`Jcap` is that expression).
         have hsj : 1 - √(1 - (δJ : ℝ)) ≤ JohnsonBound.J q δJ :=
           JohnsonBound.sqrt_le_J (q := q) (δ := δJ)
-            (by exact_mod_cast (by linarith only [hqR2] : (1:ℚ) < q)) hδJ_nonneg hδJ_le1 hguardJ
+            (by exact_mod_cast (by linarith only [hqR2] : (1:ℚ) < q)) hguardJ
         -- suffices 1-√ρ-η ≤ 1-√(1-δJ)
         refine le_trans ?_ hsj
         -- √(1-δJ) ≤ √ρ + η
@@ -932,7 +922,6 @@ theorem irs_lambda_le_johnson_mds
     (Lambda ((ReedSolomon.Interleaved.irsCode dom k s : Submodule F (ι → Fin s → F)) :
         Set (ι → Fin s → F)) (1 - Real.sqrt ρ - η) : ENNReal)
       ≤ ENNReal.ofReal (1 / (2 * η * ρ)) := by
-  have : NeZero s := ⟨by rintro rfl; simp at hks⟩
   intro ρ
   classical
   have hn : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos
@@ -974,7 +963,7 @@ theorem frs_lambda_le_johnson_mds
   have hkpos : (0 : ℝ) < k := by exact_mod_cast Nat.pos_of_ne_zero (NeZero.ne k)
   have hρ_pos : 0 < ρ := by rw [hrate]; positivity
   exact mds_johnson_lambda_le_of_rate_distance _ ρ η hρ_pos hη_pos
-    (ReedSolomon.Folded.frs_rate_distance_of_dvd hs hdvd dom ω hadm hω hk)
+    (ReedSolomon.Folded.frs_rate_distance_of_dvd hdvd dom ω hadm hω hk)
 
 /-- The Johnson bound at an `m`-interleaved code, with its two code-dependent inputs stated on
 the base code: the alphabet size is `|F|^m`, and the minimum distance is unchanged

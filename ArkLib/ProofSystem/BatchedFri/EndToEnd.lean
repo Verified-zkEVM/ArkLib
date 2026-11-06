@@ -124,7 +124,6 @@ batching error `t * n / |F|` adds to the FRI soundness error. -/
 theorem batchedFRI_soundness_multilinear
     (s : Fin (k + 1) → ℕ+) (d : ℕ+) (hdom : 2 ^ (∑ i, (s i).val) * d ≤ 2 ^ n)
     (l t : ℕ) (θ : ℝ) (δ : ℝ≥0)
-    (hδ_pos : 0 < δ)
     (hδ : δ ≤ Code.relativeUniqueDecodingRadius
       (ReedSolomon.code (ω : Fin (2 ^ n) ↪ F) (2 ^ (∑ i, (s i).val) * d)).carrier)
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
@@ -135,7 +134,7 @@ theorem batchedFRI_soundness_multilinear
       (t * (2 ^ n / Fintype.card F) + Fri.Spec.soundnessError (ω := ω) s d l θ δ) := by
   exact batchedFRI_soundness s d hdom l (2 ^ t - 1)
     (CoreDefinitions.multilinearBatchGenerator F t) θ δ _
-    (by simpa using ProximityGap.caError_multilinearBatch_le t hδ_pos hδ) init impl
+    (by simpa using ProximityGap.caError_multilinearBatch_le t hδ) init impl
 
 
 

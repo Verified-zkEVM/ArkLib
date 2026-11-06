@@ -114,7 +114,6 @@ theorem RS_correlatedAgreement_affineLines {deg : ℕ} {domain : ι ↪ F} {δ :
         unfold ReedSolomon.HiddenDerivative.johnsonAgreement eta
         ring
       have hl := lineExactAgreementBound_johnson domain hDpos hDn heta
-        (by rw [ha]; exact sub_le_self _ δ.coe_nonneg)
       rw [ha, mul_comm] at hl
       apply hl.mono
       have hc := ReedSolomon.HiddenDerivative.johnsonExceptionCount_le_bciks

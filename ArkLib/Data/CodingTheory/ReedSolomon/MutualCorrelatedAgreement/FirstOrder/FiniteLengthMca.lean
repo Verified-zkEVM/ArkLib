@@ -225,9 +225,9 @@ open Classical in
 /-- A generic certificate-to-MCA bridge with explicit finite-length arithmetic and support
 premises.  It preserves the ordinary `M = 0` endpoint and exact full agreement sets. -/
 theorem exists_exceptional_firstOrderMca_of_bounded_certificate
-    {F E : Type u} [Field F] [Field E] [IsAlgClosed E]
+    {F : Type u} [Field F]
     {C eta : ℝ} {n N Dcert k A m M B H : ℕ}
-    (domain : Fin n ↪ F) (f g : Fin n → F) (iota : F →+* E)
+    (domain : Fin n ↪ F) (f g : Fin n → F)
     (columns : Fin N → SourceColumn 1)
     (cert : FirstOrderSymbolicCertificate.{u, u} Dcert A m M B k H
       domain f g columns)
@@ -260,7 +260,7 @@ theorem exists_exceptional_firstOrderMca_of_bounded_certificate
     exact hEnvelope
   · obtain ⟨exceptional, hcard, hgood⟩ :=
       Squarefree.exists_baseExceptional_retainedSquarefreeLineAgreement_of_certificate
-        domain f g iota columns cert hk hkA hAn
+        domain f g columns cert hk hkA hAn
           (Nat.one_le_iff_ne_zero.mpr hMzero) hMB hchar
     refine ⟨exceptional, hcard.trans ?_, hgood⟩
     rw [Squarefree.retainedSquarefreeLineAgreementEnvelope_eq_finiteLengthMcaEnvelope]
@@ -597,7 +597,7 @@ open Classical in
 set is fixed before the challenge `z` and candidate `P`, and the recovered pair has equality of
 the full agreement sets. -/
 private theorem exists_exceptional_finiteLengthMca_of_selector_certificate_of_two_le
-    {F E : Type u} [Field F] [Field E] [IsAlgClosed E]
+    {F : Type u} [Field F]
     {rho eta : ℝ} {n N Dcert k A : ℕ}
     (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
     (haOne : firstOrderRateThreshold rho + eta < 1)
@@ -606,7 +606,7 @@ private theorem exists_exceptional_finiteLengthMca_of_selector_certificate_of_tw
     (hk : 2 ≤ k) (hDrate : (((k - 1 : ℕ) : ℝ)) ≤ rho * n)
     (hA : (firstOrderRateThreshold rho + eta) * n ≤ A)
     (hAn : A ≤ n)
-    (domain : Fin n ↪ F) (f g : Fin n → F) (iota : F →+* E)
+    (domain : Fin n ↪ F) (f g : Fin n → F)
     (columns : Fin N → SourceColumn 1)
     (cert : FirstOrderSymbolicCertificate.{u, u} Dcert A
       (finiteLengthMultiplicity rho eta n)
@@ -656,7 +656,7 @@ private theorem exists_exceptional_finiteLengthMca_of_selector_certificate_of_tw
       Nat.one_le_iff_ne_zero.mpr hMzero
     obtain ⟨exceptional, hcard, hgood⟩ :=
       Squarefree.exists_baseExceptional_retainedSquarefreeLineAgreement_of_certificate
-        domain f g iota columns cert hk hkA hAn hM hMB hchar
+        domain f g columns cert hk hkA hAn hM hMB hchar
     refine ⟨exceptional, hcard.trans ?_, hgood⟩
     rw [Squarefree.retainedSquarefreeLineAgreementEnvelope_eq_finiteLengthMcaEnvelope]
     exact hEnvelope
@@ -694,7 +694,7 @@ theorem exists_exceptional_finiteLengthMca_of_selector_certificate
   by_cases hkTwo : 2 ≤ k
   · exact exists_exceptional_finiteLengthMca_of_selector_certificate_of_two_le
       hrho hrhoOne heta haOne hn hbetaHalf hkTwo hDrate hA hAn
-      domain f g (algebraMap F (AlgebraicClosure F)) columns cert hchar
+      domain f g columns cert hchar
   · have hkOne : k = 1 := by omega
     subst k
     obtain ⟨exceptional, hcard, hgood⟩ :=
