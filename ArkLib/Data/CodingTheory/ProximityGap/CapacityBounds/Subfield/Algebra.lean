@@ -654,7 +654,7 @@ theorem subfield_ca_collision_divisor_nat_degree_card [Finite F]
     Polynomial.natDegree_finsetProd_X_sub_C_eq_card]
 
 omit [Fintype F] [DecidableEq F] in
-theorem subfield_ca_degree_lt_card [Finite F] (B : Subfield F) (k : ℕ) :
+theorem subfield_ca_degree_lt_card (B : Subfield F) (k : ℕ) :
     Nat.card (Polynomial.degreeLT B k) = Nat.card B ^ k := by
   classical
   calc

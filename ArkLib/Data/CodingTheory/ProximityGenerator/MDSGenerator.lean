@@ -95,7 +95,7 @@ code `MC`, at slack parameter `η`. As a function of the proximity parameter `γ
 function with three regimes: a unique-decoding bound `(⌊n·γ⌋ + 1)·(ℓ - 1) / s` below
 `δ_C / (ℓ + 1)`, a list-decoding bound up to `1 - (ρ_C + η) ^ (1 / (ℓ + 1))`, and the trivial
 bound `1` beyond. The unique-decoding regime replaces the paper's `max{n·γ, 1}` by `⌊n·γ⌋ + 1`. -/
-noncomputable def mdsMCAError [DecidableEq F] [DecidableEq A] [Nonempty ι] (MC : ModuleCode ι F A)
+noncomputable def mdsMCAError [DecidableEq A] [Nonempty ι] (MC : ModuleCode ι F A)
   (ℓ s : ℕ) (η : ℝ) : I → ℝ≥0 :=
   letI n : ℝ := Fintype.card ι
   letI δ_C : ℝ := (Code.minRelHammingDistCode (MC.carrier) : ℝ)
@@ -117,7 +117,7 @@ noncomputable def mdsMCAError [DecidableEq F] [DecidableEq A] [Nonempty ι] (MC 
 
 /-- `mdsMCAError` reads the code only through the block length `ι` and the relative distance
 `δᵣ`. -/
-lemma mdsMCAError_congr [DecidableEq F] [Nonempty ι] {A' : Type} [DecidableEq A]
+lemma mdsMCAError_congr [Nonempty ι] {A' : Type} [DecidableEq A]
     [AddCommMonoid A'] [Module F A'] [DecidableEq A']
     (MC : ModuleCode ι F A) (MC' : ModuleCode ι F A') (ℓ s : ℕ) (η : ℝ)
     (hδ : Code.minRelHammingDistCode MC'.carrier = Code.minRelHammingDistCode MC.carrier) :

@@ -150,7 +150,7 @@ lemma natDegree_lt_of_mem_degreeLT [NeZero deg] (h : p ∈ degreeLT F deg) : p.n
 def encode [DecidableEq F] (msg : Fin deg → F) (domain : Fin m ↪ F) : Fin m → F :=
   (polynomialOfCoeffs msg).eval ∘ ⇑domain
 
-lemma encode_mem_ReedSolomon_code [DecidableEq F] [NeZero deg]
+lemma encode_mem_ReedSolomon_code [DecidableEq F]
     {msg : Fin deg → F} {domain : Fin m ↪ F} :
   encode msg domain ∈ ReedSolomon.code domain deg :=
   ⟨polynomialOfCoeffs msg, ⟨by simp, by ext i; simp [encode, ReedSolomon.evalOnPoints]⟩⟩

@@ -682,7 +682,6 @@ is finite and has the hybrid joint incidence bound.  The first factor uses the g
 threshold `L`; when the component has dimension two, the second factor is the direct
 coefficient-space ratio at threshold `k`. -/
 theorem finite_symbolicSource_agreementLocus_off_excluded_and_ncard_le_hybrid_of_exponent
-    [IsAlgClosed E]
     (center : E) (Q : DifferentialPolynomial E[X] r) (K k n τ L A b : ℕ)
     (hτ : TaylorExponentSufficient r K τ) (hK : r < K) (hkK : k ≤ K)
     (hLA : L ≤ A) (hkA : k ≤ A)

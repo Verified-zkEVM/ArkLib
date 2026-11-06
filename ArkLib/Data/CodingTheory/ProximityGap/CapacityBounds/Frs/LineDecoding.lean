@@ -30,15 +30,15 @@ open CoreDefinitions ProximityGap
 
 private noncomputable def affineLineCollisionSeeds
     {ι : Type} [Fintype ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
-    {A : Type} [Fintype A] [DecidableEq A] [AddCommGroup A] [Module F A]
+    {F : Type} [Field F] [Fintype F]
+    {A : Type} [DecidableEq A] [AddCommGroup A] [Module F A]
     (u₀ u₁ v₀ v₁ : ι → A) : Finset F :=
   Finset.univ.filter (fun γ => u₀ + γ • u₁ = v₀ + γ • v₁)
 
 private theorem affineLineCollisionSeeds_card_le_one
     {ι : Type} [Fintype ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
-    {A : Type} [Fintype A] [DecidableEq A] [AddCommGroup A] [Module F A]
+    {F : Type} [Field F] [Fintype F]
+    {A : Type} [DecidableEq A] [AddCommGroup A] [Module F A]
     (u₀ u₁ v₀ v₁ : ι → A)
     (hne : u₀ ≠ v₀ ∨ u₁ ≠ v₁) :
     (affineLineCollisionSeeds (F := F) u₀ u₁ v₀ v₁).card ≤ 1 := by
@@ -213,7 +213,7 @@ private noncomputable def globallyCloseAffinePairs
 
 open scoped NNReal in
 private theorem globallyCloseAffinePairs_card_le
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s L : ℕ} (C : Set (ι → Fin s → F))
     (hclosed : ∀ u₀ ∈ C, ∀ u₁ ∈ C, ∀ γ : F, u₀ + γ • u₁ ∈ C)
@@ -252,7 +252,7 @@ private theorem globallyCloseAffinePairs_card_le
   omega
 
 noncomputable def lineAgreementSeeds
-    {ι : Type} [Fintype ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s : ℕ}
     (f₀ f₁ : ι → Fin s → F) (U : F → ι → Fin s → F)
@@ -260,7 +260,7 @@ noncomputable def lineAgreementSeeds
   T.filter (fun γ => U γ i = f₀ i + γ • f₁ i)
 
 private theorem lineAgreementSeeds_card_le_one_of_ne_at
-    {ι : Type} [Fintype ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s : ℕ} (f₀ f₁ u₀ u₁ : ι → Fin s → F)
     (T : Finset F) (i : ι) (γ : F)
@@ -305,7 +305,7 @@ private theorem lineAgreementSeeds_card_le_one_of_ne_at
     · exact (hs (sub_eq_zero.mp hv)).elim
 
 private theorem lineAgreement_span_finrank_le_two
-    {ι : Type} [Fintype ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s : ℕ}
     (f₀ f₁ : ι → Fin s → F) (U : F → ι → Fin s → F)
@@ -353,7 +353,7 @@ private theorem lineAgreement_span_finrank_le_two
     _ ≤ 2 := Finset.card_le_two
 
 private theorem lineAgreementSeeds_card_le_kernel_finrank_add_two
-    {ι : Type} [Fintype ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s : ℕ}
     (f₀ f₁ : ι → Fin s → F) (U : F → ι → Fin s → F)
@@ -439,7 +439,7 @@ private theorem lineAgreementSeeds_card_le_kernel_finrank_add_two
 
 open scoped NNReal in
 noncomputable def lineCloseSeeds
-    {ι : Type} [Fintype ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s : ℕ}
     (f₀ f₁ : ι → Fin s → F) (U : F → ι → Fin s → F) (δ : ℝ) : Finset F :=
@@ -524,7 +524,7 @@ theorem lineCloseSpan_le_code
 
 open scoped NNReal in
 theorem lineClose_sum_agreement_lower
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s : ℕ}
     (f₀ f₁ : ι → Fin s → F) (U : F → ι → Fin s → F)
@@ -724,7 +724,7 @@ theorem linePinnedSeedsOn_insert_card_le
 open _root_.CoreDefinitions in
 open _root_.ProximityGap in
 theorem mcaError_affineLine_zero_le_inv_card
-    {ι : Type} [Fintype ι] [Nonempty ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Fintype F] [SampleableType F]
     {A : Type} [Finite A] [AddCommGroup A] [Module F A]
     (C : ModuleCode ι F A) :
@@ -1020,7 +1020,7 @@ theorem strongLineDecodable_boost_of_lambda_le
 open scoped NNReal in
 open scoped ProbabilityTheory in
 theorem strongLineDecodable_to_isLineDecodable
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
     {s a b : ℕ} (C : Set (ι → Fin s → F)) (δ : NNReal)
     (hstrong : StrongLineDecodable C δ a b) :

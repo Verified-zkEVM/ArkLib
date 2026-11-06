@@ -295,7 +295,7 @@ lemma card_foldingBlockAgreement_foldingBlockAgreementᵣ_le
           aesop (add safe [(by field_simp), (by grind), (by rw [←pow_add])])]
   aesop (add safe [(by field_simp), (by norm_cast)])
 
-lemma distance_of_u0_u1_polynomials [NeZero n]
+lemma distance_of_u0_u1_polynomials
     {u₀ u₁ : Polynomial F}
   (z : Finset (Fin (2 ^ (n - k))))
   (hz : ∀ j, ω j ^ 2 ^ k ∈ ω.subdomain k '' z →

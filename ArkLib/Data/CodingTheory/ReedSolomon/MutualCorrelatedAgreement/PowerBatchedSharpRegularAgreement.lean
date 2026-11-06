@@ -204,7 +204,7 @@ arbitrary derivative order and every positive sufficient Taylor exponent, given 
 recognition of the retained components. -/
 theorem
     finite_powerBatched_regular_points_off_admissible_graphs_card_le_sharp_of_terminal_recognition
-    {r : ℕ} [DecidableEq F] [IsAlgClosed E]
+    {r : ℕ} [DecidableEq F]
     (domain : Fin n ↪ F) (w : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
     (center : E) (Q : DifferentialPolynomial E[X] r) (K k L A v h τ : ℕ)
     (hτ : TaylorExponentSufficient r K τ) (hτpos : 0 < τ)
@@ -570,7 +570,7 @@ theorem finite_powerBatched_regular_points_off_admissible_graphs_card_le_firstOr
 open Classical in
 /-- The finite bad-challenge count follows from supplied tuple and off-graph bounds. -/
 theorem finite_powerBatchedBadChallenges_card_le_of_tuple_bound_of_exponent
-    {r : ℕ} [IsAlgClosed E]
+    {r : ℕ}
     (domain : Fin n ↪ F) (w : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
     (center : E) (Q : DifferentialPolynomial E[X] r) (K k L A τ : ℕ)
     (hτ : TaylorExponentSufficient r K τ) (hkK : k ≤ K) (hkL : k ≤ L)

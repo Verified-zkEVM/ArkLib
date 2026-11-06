@@ -250,7 +250,7 @@ theorem polyFold_sum {𝔽 : Type} [Field 𝔽] {r : 𝔽}
 Lemma bridges the coefficient-level identity `eq_sum_splitNth` and
 evaluation-level reasoning about `splitNth` and `polyFold`.
 -/
-lemma splitNth_eval_comp_pow {n : ℕ} [NeZero n] (f : 𝔽[X]) (x : 𝔽) (i : Fin n) :
+lemma splitNth_eval_comp_pow {n : ℕ} (f : 𝔽[X]) (x : 𝔽) (i : Fin n) :
     (eval₂ C (X ^ n) (splitNth f n i)).eval x = (splitNth f n i).eval (x ^ n) := by
   rw [eval₂_eq_sum]
   unfold Polynomial.eval

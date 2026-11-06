@@ -55,11 +55,11 @@ def BerlekampWelchMatrix
     let αᵢ := ωs i
     if ↑j < e then -Rhs j.1 ωs f i else -αᵢ^(j - e)
 
-lemma bwm_of_pos [NeZero n] (h : j.1 < e) :
+lemma bwm_of_pos (h : j.1 < e) :
     BerlekampWelchMatrix e k ωs f i j = -Rhs j.1 ωs f i := by
   simp [BerlekampWelchMatrix, h]
 
-lemma bwm_of_neg [NeZero n] (h : e ≤ j.1) :
+lemma bwm_of_neg (h : e ≤ j.1) :
     BerlekampWelchMatrix e k ωs f i j = -(ωs i)^(j - e) := by
   simp [BerlekampWelchMatrix, h]
 
@@ -134,7 +134,7 @@ lemma mulVec_BerlekampWelchMatrix_eq :
 section
 
 open Polynomial Finset in
-private lemma BerlekampWelchCondition_to_Solution [NeZero n]
+private lemma BerlekampWelchCondition_to_Solution
   (hk_or_e : 1 ≤ k ∨ 1 ≤ e)
   (h : BerlekampWelchCondition e k ωs f E Q) :
   IsBerlekampWelchSolution e k ωs f (E_and_Q_to_a_solution e E Q) := by
@@ -329,7 +329,7 @@ lemma solutionToE_and_Q_E_and_Q_to_a_solution :
 lemma solutionToQ_zero {v : Fin (2 * 0 + 0) → F} :
     solutionToQ (F := F) 0 0 v = 0 := rfl
 
-private lemma BerlekampWelchCondition_to_Solution' [NeZero n]
+private lemma BerlekampWelchCondition_to_Solution'
   (h : BerlekampWelchCondition e k ωs f (solutionToE e k v) (solutionToQ e k v)) :
   IsBerlekampWelchSolution e k ωs f v := by
   by_cases hk : 1 ≤ k
@@ -348,12 +348,11 @@ private lemma BerlekampWelchCondition_to_Solution' [NeZero n]
 
 omit [DecidableEq F] in
 @[simp]
-lemma isBerlekampWelchSolution_zero_zero [NeZero n] {v : Fin (2 * 0 + 0) → F} :
+lemma isBerlekampWelchSolution_zero_zero {v : Fin (2 * 0 + 0) → F} :
     IsBerlekampWelchSolution 0 0 ωs f v ↔ f = 0 := by
   simp [IsBerlekampWelchSolution]
 
 private lemma solution_to_BerlekampWelch_condition {e k : ℕ}
-  [NeZero n]
   {ωs f : Fin n → F}
   {v : Fin (2 * e + k) → F}
   (h_sol : IsBerlekampWelchSolution e k ωs f v) :
@@ -418,7 +417,7 @@ private lemma solution_to_BerlekampWelch_condition {e k : ℕ}
   · simp only [coeff_solutionToE, ↓reduceIte]
   · simp only [natDegree_solutionToQ]
 
-theorem BerlekampWelchCondition_iff_Solution {e k : ℕ} [NeZero n]
+theorem BerlekampWelchCondition_iff_Solution {e k : ℕ}
     {ωs f : Fin n → F} {v : Fin (2 * e + k) → F} :
   IsBerlekampWelchSolution e k ωs f v
   ↔
@@ -426,11 +425,10 @@ theorem BerlekampWelchCondition_iff_Solution {e k : ℕ} [NeZero n]
   ⟨solution_to_BerlekampWelch_condition, BerlekampWelchCondition_to_Solution'⟩
 
 lemma linsolve_to_BerlekampWelch_condition {e k : ℕ}
-    [NeZero n]
-  {ωs f : Fin n → F}
-  {v : Fin (2 * e + k) → F}
-  (h_sol : linsolve (BerlekampWelchMatrix e k ωs f) (Rhs e ωs f) = some v) :
-  BerlekampWelchCondition e k ωs f (solutionToE e k v) (solutionToQ e k v) :=
+    {ωs f : Fin n → F}
+    {v : Fin (2 * e + k) → F}
+    (h_sol : linsolve (BerlekampWelchMatrix e k ωs f) (Rhs e ωs f) = some v) :
+    BerlekampWelchCondition e k ωs f (solutionToE e k v) (solutionToQ e k v) :=
   solution_to_BerlekampWelch_condition (linsolve_is_berlekamp_welch_solution h_sol)
 
 end
@@ -450,12 +448,11 @@ open Polynomial
 variable [DecidableEq F]
 
 lemma BerlekampWelch_Q_ne_zero {e k : ℕ}
-    [NeZero n]
-  {ωs f : Fin n → F}
-  {E Q : Polynomial F}
-  (h_bw : BerlekampWelchCondition e k ωs f E Q)
-  (h_dist : e < Δ₀(f, 0))
-  (h_inj : Function.Injective ωs) : Q ≠ 0 := fun contr ↦
+    {ωs f : Fin n → F}
+    {E Q : Polynomial F}
+    (h_bw : BerlekampWelchCondition e k ωs f E Q)
+    (h_dist : e < Δ₀(f, 0))
+    (h_inj : Function.Injective ωs) : Q ≠ 0 := fun contr ↦
   have h_cond := h_bw.cond
   let S : Finset (Fin n) := {i | ¬f i = 0}
   by replace h_dist : e < S.card := by simpa [hammingDist]
@@ -469,12 +466,11 @@ lemma BerlekampWelch_Q_ne_zero {e k : ℕ}
      omega
 
 lemma solutionToQ_ne_zero {e k : ℕ}
-    [NeZero n]
-  {ωs f : Fin n → F}
-  {v : Fin (2 * e + k) → F}
-  (h_dist : e < Δ₀(f, 0))
-  (h_sol : IsBerlekampWelchSolution e k ωs f v)
-  (h_inj : Function.Injective ωs) : solutionToQ e k v ≠ 0 :=
+    {ωs f : Fin n → F}
+    {v : Fin (2 * e + k) → F}
+    (h_dist : e < Δ₀(f, 0))
+    (h_sol : IsBerlekampWelchSolution e k ωs f v)
+    (h_inj : Function.Injective ωs) : solutionToQ e k v ≠ 0 :=
     BerlekampWelch_Q_ne_zero
       (solution_to_BerlekampWelch_condition h_sol)
       h_dist

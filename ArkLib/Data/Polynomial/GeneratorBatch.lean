@@ -76,7 +76,7 @@ open scoped ProbabilityTheory ENNReal
 /-- A pointwise zero-evasion bound bounds the probability that a false family vanishes
 when batched. The family is fixed before the uniform seed is drawn. -/
 theorem prob_zeroOn_generatorBatch_le_of_pointwise {F S : Type} [Field F]
-    [Nonempty S] [SampleableType S] {k : ℕ}
+    [SampleableType S] {k : ℕ}
     (G : CoreDefinitions.Generator S (Fin k) F) {ε : ℝ≥0∞}
     (hG : ∀ v : Fin k → F, v ≠ 0 →
       Pr{let s ← $ᵗ S}[dotProduct (G s) v = 0] ≤ ε)

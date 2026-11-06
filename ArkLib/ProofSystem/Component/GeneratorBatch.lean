@@ -199,7 +199,7 @@ theorem oracleReduction_perfectCompleteness :
 
 variable [Fintype S] [Nonempty S]
 
-omit [Fintype S] in
+omit [Fintype S] [Nonempty S] in
 /-- A pointwise zero-evasion bound gives a fixed-prefix knowledge certificate. -/
 theorem oracleVerifier_rbrKnowledgeSoundnessWith_of_prob_le (ε : ℝ≥0)
     (hG : ∀ v : Fin k → F, v ≠ 0 →

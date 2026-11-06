@@ -450,7 +450,7 @@ theorem cs25_shell_power_bound
       simp only [pow_succ]
 
 private theorem epsCa_le_one
-    {ι : Type} [Fintype ι] [Nonempty ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Field F] [SampleableType F] [DecidableEq F]
     (C : Set (ι → F)) (δ_fld δ_int : NNReal) :
     epsCa (F := F) (A := F) C δ_fld δ_int ≤ 1 := by
@@ -463,7 +463,7 @@ private theorem epsCa_le_one
 
 open scoped ProbabilityTheory in
 theorem epsCa_eq_one_of_all_folds_close_not_joint
-    {ι : Type} [Fintype ι] [Nonempty ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Finite F] [SampleableType F] [DecidableEq F]
     (C : Set (ι → F)) (δ : NNReal) (u : Code.WordStack F (Fin 2) ι)
     (hjoint : ¬ Code.jointProximity C (u := u) δ)
@@ -596,7 +596,7 @@ theorem nat_card_lt_pow_pred_of_weighted_bound
 
 theorem not_jointProximity_of_second_row_far
     {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [DecidableEq F]
+    {F : Type} [DecidableEq F]
     (C : Set (ι → F)) (u : Code.WordStack F (Fin 2) ι) (δ : NNReal)
     (hfar : ¬ Code.relDistFromCode (u 1) C ≤ (δ : ENNReal)) :
     ¬ Code.jointProximity C (u := u) δ := by
@@ -655,7 +655,7 @@ private theorem rsAgreementSpace_mem_iff
       simp [Pi.add_apply, Pi.sub_apply]
 
 private theorem rsAgreementSpace_eq_top_of_large
-    {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι F : Type} [Fintype ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k : ℕ) (E : Finset ι)
     (hlarge : Fintype.card ι ≤ k + E.card) :
@@ -687,7 +687,7 @@ def rsBoundaryWord {ι F : Type} [Monoid F] (domain : ι ↪ F) (k : ℕ) : ι �
   fun i => domain i ^ k
 
 theorem rsBoundaryWord_far
-    {ι : Type} [Fintype ι] [Nonempty ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Field F] [DecidableEq F]
     (domain : ι ↪ F) (k f : ℕ)
     (hslack : k + f + 2 ≤ Fintype.card ι) :
@@ -735,7 +735,7 @@ theorem rsBoundaryWord_far
   exact (not_le_of_gt hfar) (by exact_mod_cast hdist)
 
 private theorem rsCode_disjoint_supported_of_small
-    {ι F : Type} [Fintype ι] [Nonempty ι]
+    {ι F : Type} [Fintype ι]
     [Field F]
     (domain : ι ↪ F) (k : ℕ) (E : Finset ι)
     (hsmall : k + E.card ≤ Fintype.card ι) :
@@ -761,7 +761,7 @@ private theorem rsCode_disjoint_supported_of_small
   omega
 
 private theorem rsAgreementSpace_finrank_small
-    {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι F : Type} [Fintype ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k : ℕ) (E : Finset ι)
     (hsmall : k + E.card ≤ Fintype.card ι) :
@@ -781,7 +781,7 @@ private theorem rsAgreementSpace_finrank_small
   omega
 
 private theorem rsAgreementSpace_filter_card_small_proof
-    {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι F : Type} [Fintype ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k : ℕ) (E : Finset ι)
     (hsmall : k + E.card ≤ Fintype.card ι) :
@@ -806,7 +806,7 @@ private theorem rsAgreementSpace_filter_card_small_proof
       rw [rsAgreementSpace_finrank_small domain k E hsmall]
 
 theorem rsAgreementSpace_finrank
-    {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι F : Type} [Fintype ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k : ℕ) (E : Finset ι) :
     Module.finrank F (rsAgreementSpace domain k E) =
@@ -817,7 +817,7 @@ theorem rsAgreementSpace_finrank
     rw [rsAgreementSpace_eq_top_of_large domain k E hlarge, finrank_top,
       Module.finrank_pi, min_eq_left hlarge]
 
-def rsExactErrorSets {ι : Type} [Fintype ι] [DecidableEq ι]
+def rsExactErrorSets {ι : Type} [Fintype ι]
     (f : ℕ) : Finset (Finset ι) :=
   Finset.univ.powersetCard f
 
@@ -947,7 +947,7 @@ theorem cs25CertificateCount_sq_sum_eq_pair_sum_nat_proof
       exact Finset.sum_product _ _ _
 
 theorem rsExactErrorSets_card_proof
-    {ι : Type} [Fintype ι] [DecidableEq ι] (f : ℕ) :
+    {ι : Type} [Fintype ι] (f : ℕ) :
     (rsExactErrorSets (ι := ι) f).card = Nat.choose (Fintype.card ι) f := by
   unfold rsExactErrorSets
   rw [Finset.card_powersetCard, Finset.card_univ]

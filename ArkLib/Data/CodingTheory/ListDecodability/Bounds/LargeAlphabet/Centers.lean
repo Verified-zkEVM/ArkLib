@@ -636,7 +636,7 @@ open _root_.Code in
 theorem lambda_contradiction_of_injective_center
     (ℓ : ℕ)
     {ι A : Type} [Fintype ι] [Nonempty ι]
-      [Finite A] [DecidableEq A]
+      [DecidableEq A]
     (C : Set (ι → A)) (p : ℝ) (hp : 0 ≤ p)
     (c : ι → A) (hc : c ∈ C)
     (u : Fin ℓ → ι → A) (huinj : Function.Injective u)

@@ -200,7 +200,7 @@ lemma prob_polynomial_identity_le
 /-- A nonzero `F`-linear form vanishes with probability exactly `1 / |F|`. -/
 theorem prob_dotProduct_eq_zero_eq_inv_card
     {ι F : Type} [Fintype ι] [Field F] [Fintype F]
-    [SampleableType F] [SampleableType (ι → F)]
+    [SampleableType (ι → F)]
     (d : ι → F) (hd : d ≠ 0) :
     Pr{let v ← $ᵗ (ι → F)}[(∑ j, d j * v j) = 0] =
       (Fintype.card F : ℝ≥0∞)⁻¹ := by
@@ -257,7 +257,7 @@ theorem prob_dotProduct_eq_zero_eq_inv_card
 /-- `≤`-form of `prob_dotProduct_eq_zero_eq_inv_card`. -/
 theorem prob_dotProduct_eq_zero_le
     {ι F : Type} [Fintype ι] [Field F] [Fintype F]
-    [SampleableType F] [SampleableType (ι → F)]
+    [SampleableType (ι → F)]
     (d : ι → F) (hd : d ≠ 0) :
     Pr{let v ← $ᵗ (ι → F)}[(∑ j, d j * v j) = 0] ≤
       (Fintype.card F : ℝ≥0∞)⁻¹ :=

@@ -277,7 +277,7 @@ lemma exists_polynomial_relDistFromCode_eq [Fintype ι] [Nonempty ι] (domain : 
 omit [Field F] in
 /-- A codeword whose Hamming distance to `f` is at most `δ * |ι|` is in the relative Hamming ball
 of radius `δ` around `f`. -/
-lemma mem_closeCodewordsRel_of_hammingDist_div_le [Fintype ι] [Nonempty ι] {C : Set (ι → F)}
+lemma mem_closeCodewordsRel_of_hammingDist_div_le [Fintype ι] {C : Set (ι → F)}
     {f u : ι → F} {δ : ℝ≥0} (hu : u ∈ C)
     (h : (hammingDist f u : ℝ≥0) / (Fintype.card ι : ℝ≥0) ≤ δ) :
     u ∈ closeCodewordsRel C f δ := by

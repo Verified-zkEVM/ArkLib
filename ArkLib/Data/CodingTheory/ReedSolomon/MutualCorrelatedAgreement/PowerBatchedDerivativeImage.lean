@@ -278,7 +278,6 @@ open Classical in
 /-- Combine derivative-capped off-graph incidence with derivative-capped tuple counting and the
 exact accidental-root contribution of retained tuples. -/
 private theorem finite_powerBatchedBadChallenges_card_le_of_derivativeCapped_components
-    [IsAlgClosed E]
     (domain : Fin n ↪ F) (w : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
     (center : E) (Q : DifferentialPolynomial E[X] 1) (K k L A v u τ : ℕ)
     (hτ : TaylorExponentSufficient 1 K τ) (hkK : k ≤ K) (hkL : k ≤ L)

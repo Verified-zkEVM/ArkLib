@@ -109,7 +109,7 @@ theorem divergence_attains {ι : Type} [Fintype ι] [Nonempty ι]
   simpa [possibleDeltas] using hmem
 
 open scoped ProbabilityTheory in
-theorem proximity_gap_affineSubspace {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+theorem proximity_gap_affineSubspace {ι : Type} [Fintype ι] [DecidableEq ι]
     {F : Type} [Fintype F] [Field F] [DecidableEq F]
   {deg : ℕ} {domain : ι ↪ F}
   (U : AffineSubspace F (ι → F)) [Nonempty U] {δ : ℝ≥0}
@@ -253,14 +253,14 @@ theorem real_sqrt_div_10_pow_two {r : ℝ≥0} :
       -- rewrite sqrt and 10^2
       simp [Real.sq_sqrt hr, h10]
 
-theorem real_sqrt_rate_eq_coe_nnreal_sqrt {ι : Type} [Fintype ι] [Nonempty ι]
+theorem real_sqrt_rate_eq_coe_nnreal_sqrt {ι : Type} [Fintype ι]
     {F : Type} [Field F]
   {deg : ℕ} {domain : ι ↪ F} :
   Real.sqrt ((LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0) : ℝ)
     = (((LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0).sqrt : ℝ≥0) : ℝ) := by
   simp
 
-theorem reedSolomon_dim_le_deg {ι : Type} [Nonempty ι]
+theorem reedSolomon_dim_le_deg {ι : Type}
     {F : Type} [Field F]
   {deg : ℕ} {domain : ι ↪ F} :
   LinearCode.dim (ReedSolomon.code domain deg) ≤ deg := by
@@ -277,7 +277,7 @@ theorem reedSolomon_dim_le_deg {ι : Type} [Nonempty ι]
   rw [Polynomial.finrank_degreeLT_n] at hle
   exact hle
 
-theorem reedSolomon_rate_le_one {ι : Type} [Fintype ι] [Nonempty ι]
+theorem reedSolomon_rate_le_one {ι : Type} [Fintype ι]
     {F : Type} [Field F]
   {deg : ℕ} {domain : ι ↪ F} :
   LinearCode.rate (ReedSolomon.code domain deg) ≤ 1 := by
@@ -613,7 +613,7 @@ theorem errorBound_mono {ι : Type} [Fintype ι] [Nonempty ι]
 
 theorem relDistFromCode'_le_divergence {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [DecidableEq F]
-  {U V : Set (ι → F)} [Nonempty U] [Nonempty V] [Fintype V]
+  {U V : Set (ι → F)} [Nonempty V] [Fintype V]
   (u : ι → F) (hu : u ∈ U) :
   δᵣ'(u, V) ≤ divergence U V := by
   classical
@@ -630,7 +630,7 @@ theorem relDistFromCode'_le_divergence {ι : Type} [Fintype ι] [Nonempty ι]
 
 theorem divergence_pred_spec {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [DecidableEq F]
-  {U V : Set (ι → F)} [Nonempty U] [Nonempty V] [Fintype V]
+  {U V : Set (ι → F)} [Nonempty V] [Fintype V]
   (hdiv_pos : 0 < (divergence U V : ℝ≥0)) :
   ∃ δ : ℚ≥0, δ < divergence U V ∧
     (∀ u ∈ U, δᵣ'(u, V) ≠ divergence U V ↔ δᵣ'(u, V) ≤ δ) := by

@@ -52,7 +52,7 @@ open scoped BigOperators
 variable {F : Type*} [Field F] {d : ℕ}
 
 private theorem regularHighTaylorJets_card_le_dimensionSensitive
-    [IsAlgClosed F] {r : ℕ} (center : F) (Q : DifferentialPolynomial F r)
+    {r : ℕ} (center : F) (Q : DifferentialPolynomial F r)
     (K k τ : ℕ) (hτ : TaylorExponentSufficient r K τ) (hK : r < K) (hkK : k ≤ K)
     {n A : ℕ} (domain : Fin n ↪ F) (received : Fin n → F)
     (hkA : k ≤ A) (hAn : A ≤ n)

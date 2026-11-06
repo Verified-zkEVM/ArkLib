@@ -30,7 +30,7 @@ noncomputable section
 abbrev Enumeration (Input Output : Type*) := Input → Finset Output
 
 /-- An enumeration is exact when membership is equivalent to the target predicate. -/
-def IsExactEnumeration {Input Output : Type*} [DecidableEq Output]
+def IsExactEnumeration {Input Output : Type*}
     (accepts : Input → Output → Prop) (enumerate : Enumeration Input Output) : Prop :=
   ∀ input output, output ∈ enumerate input ↔ accepts input output
 
@@ -58,7 +58,6 @@ structure CandidateCertificate {Input Output Ambient : Type*}
 open Classical in
 /-- Pull ambient candidates back along an embedding and retain exactly the accepted outputs. -/
 def filterCandidates {Input Output Ambient : Type*}
-    [DecidableEq Output] [DecidableEq Ambient]
     (embed : Output ↪ Ambient) (accepts : Input → Output → Prop)
     (candidates : Input → Finset Ambient) : Enumeration Input Output := fun input =>
   ((candidates input).preimage embed embed.injective.injOn).filter (accepts input)
@@ -66,7 +65,6 @@ def filterCandidates {Input Output Ambient : Type*}
 /-- Membership in a filtered candidate enumeration separates into ambient membership and the
 target predicate. -/
 theorem mem_filterCandidates {Input Output Ambient : Type*}
-    [DecidableEq Output] [DecidableEq Ambient]
     (embed : Output ↪ Ambient) (accepts : Input → Output → Prop)
     (candidates : Input → Finset Ambient) (input : Input) (output : Output) :
     output ∈ filterCandidates embed accepts candidates input ↔
@@ -76,7 +74,6 @@ theorem mem_filterCandidates {Input Output Ambient : Type*}
 
 /-- Pullback and filtering cannot increase the ambient candidate-set cardinality. -/
 theorem card_filterCandidates_le {Input Output Ambient : Type*}
-    [DecidableEq Output] [DecidableEq Ambient]
     (embed : Output ↪ Ambient) (accepts : Input → Output → Prop)
     (candidates : Input → Finset Ambient) (input : Input) :
     (filterCandidates embed accepts candidates input).card ≤ (candidates input).card := by
@@ -136,7 +133,7 @@ theorem EnumerationCertificate.mem_of_accepts
 
 /-- If no output is accepted at an input, an exact enumeration is empty there. -/
 theorem IsExactEnumeration.eq_empty_of_forall_not
-    {Input Output : Type*} [DecidableEq Output]
+    {Input Output : Type*}
     {accepts : Input → Output → Prop} {enumerate : Enumeration Input Output}
     (hExact : IsExactEnumeration accepts enumerate) (input : Input)
     (hnone : ∀ output, ¬ accepts input output) : enumerate input = ∅ := by

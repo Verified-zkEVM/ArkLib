@@ -392,15 +392,15 @@ lemma vecMul_tensorGenerator_explicit {ℓ' : Type} [Fintype ℓ'] {S S' : Type}
 /-- The canonical linear isomorphism between the tensor product of function spaces
 and the function space on the product type. -/
 noncomputable def tensorProductPiFunEquiv (F : Type) [Field F] (ℓ ℓ' : Type)
-    [Fintype ℓ] [DecidableEq ℓ] [Fintype ℓ'] [DecidableEq ℓ'] :
+    [Fintype ℓ] [Fintype ℓ'] :
     TensorProduct F (ℓ → F) (ℓ' → F) ≃ₗ[F] (ℓ × ℓ' → F) :=
   ((Pi.basisFun F ℓ).tensorProduct (Pi.basisFun F ℓ')).equivFun
 
 /-- The tensor product generator `TensorGenerator` and the explicit componentwise generator
 `TensorGenerator_Explicit` agree under the canonical isomorphism between `F^ℓ ⊗ F^ℓ′` and
 `(ℓ × ℓ') → F`. -/
-theorem TensorGenerator_eq_TensorGenerator_Explicit {ℓ' : Type} [Fintype ℓ'] [DecidableEq ℓ]
-    [DecidableEq ℓ'] {S S' : Type} (G : Generator S ℓ F) (G' : Generator S' ℓ' F) (p : S × S') :
+theorem TensorGenerator_eq_TensorGenerator_Explicit {ℓ' : Type} [Fintype ℓ']
+    {S S' : Type} (G : Generator S ℓ F) (G' : Generator S' ℓ' F) (p : S × S') :
     tensorProductPiFunEquiv F ℓ ℓ' (TensorGenerator G G' p) = TensorGenerator_Explicit G G' p := by
   unfold tensorProductPiFunEquiv TensorGenerator TensorGenerator_Explicit
   convert (Pi.basisFun F ℓ).tensorProduct (Pi.basisFun F ℓ') |> fun b =>
@@ -489,10 +489,10 @@ lemma minSeedCard_le {F : Type} {s : ℕ} (S : Fin s → Set F)
   split_ifs
   aesop
 
-noncomputable local instance {F : Type} [Fintype F] [SampleableType F] {S : Set F} :
+noncomputable local instance {F : Type} [Fintype F] {S : Set F} :
     Fintype S := Fintype.ofFinite ↑S
 
-noncomputable local instance {F : Type} {s : ℕ} [Fintype F] [SampleableType F]
+noncomputable local instance {F : Type} {s : ℕ} [Fintype F]
     {S : Fin s → Set F} [∀ i, Nonempty ↥(S i)] : SampleableType (∀ i, ↥(S i)) :=
   SampleableType.piOfFintype _
 
@@ -503,7 +503,7 @@ This is the total-degree reading. An individual-degree reading of the same fact 
 the reasoning is the same and only the version of Schwartz–Zippel used for the upper bound
 differs. -/
 theorem poly_gen_is_zero_evading
-    {F : Type} [Field F] [Fintype F] [SampleableType F]
+    {F : Type} [Field F] [Fintype F]
   {ℓ : Type} [Fintype ℓ]
   {s : ℕ}
   {S : Fin s → Set F} [∀ i, Nonempty ↥(S i)]

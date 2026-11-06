@@ -35,7 +35,7 @@ open Polynomial.Bivariate Polynomial Matrix
 open scoped BigOperators
 
 /-- The degree of `Q * X ^ j` is at most `n - 1` when `deg Q ≤ n - m` and `j < m ≤ n`. -/
-lemma ps_nat_degree_mul_x_pow_le {F : Type} [Semiring F] [Nontrivial F]
+lemma ps_nat_degree_mul_x_pow_le {F : Type} [Semiring F]
     (Q : F[X]) {m n : ℕ} (j : Fin m)
     (hmn : m ≤ n) (hQdeg : Q.natDegree ≤ n - m) :
     (Q * X ^ (j : ℕ)).natDegree ≤ n - 1 := by
