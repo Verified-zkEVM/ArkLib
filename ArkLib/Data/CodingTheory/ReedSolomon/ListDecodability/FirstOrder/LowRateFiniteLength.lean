@@ -92,14 +92,14 @@ theorem lowRateFiniteLengthCertifiedAgreement_pos
   unfold lowRateFiniteLengthCertifiedAgreement
   exact lt_min (by linarith) (by linarith)
 
-/-- The low-rate finite-length slope is positive below the branch switch. -/
+/-- The low-rate finite-length slope is positive for every positive rate. -/
 theorem lowRateFiniteLengthSlope_pos {rho : ℝ}
-    (hrho : 0 < rho) (hlow : rho < firstOrderRateSwitch) :
+    (hrho : 0 < rho) :
     0 < lowRateFiniteLengthSlope rho := by
-  have hregime : FirstOrderLowRateRegime rho :=
-    (firstOrderLowRateRegime_iff_lt_rateSwitch rho).2 hlow
   have hbeta := firstOrderLowRateBeta_pos hrho
-  have hthreshold := rate_lt_firstOrderLowRateThreshold hrho hregime
+  have hthreshold : 0 < firstOrderLowRateThreshold rho := by
+    unfold firstOrderLowRateThreshold
+    exact add_pos (firstOrderLowRateScale_pos hrho) (mul_pos hrho hbeta)
   have hcut := firstOrderLowRateBeta_lt_threshold_div_rate hrho
   unfold lowRateFiniteLengthSlope lowRateAgreementSlackSlope lowRateInverseLengthSlope
   apply lt_min
@@ -113,7 +113,7 @@ theorem lowRateFiniteLengthSlope_pos {rho : ℝ}
             exact div_lt_div_of_pos_right (by linarith) hrho
       linarith
     positivity
-  · exact div_pos (mul_pos hbeta (sq_pos_of_pos (hrho.trans hthreshold)))
+  · exact div_pos (mul_pos hbeta (sq_pos_of_pos hthreshold))
       (mul_pos (by norm_num) (sq_pos_of_pos hrho))
 
 /-- The fixed-rate density margin is at least the agreement slope times `eta`. -/
@@ -199,7 +199,7 @@ theorem lowRateAgreementSlackSlope_mul_slack_le_fixed_margin
 /-- The rate decrease contributes the inverse-length slope to the source-density margin. -/
 theorem lowRateInverseLengthSlope_div_length_le_gain
     {rho eta : ℝ} {n : ℕ}
-    (hrho : 0 < rho) (heta : 0 < eta)
+    (heta : 0 < eta)
     (haOne : firstOrderLowRateThreshold rho + eta < 1)
     (hn : (2 : ℝ) ≤ rho * n) :
     lowRateInverseLengthSlope rho / n ≤
@@ -207,6 +207,8 @@ theorem lowRateInverseLengthSlope_div_length_le_gain
           (lowRateFiniteLengthCertifiedAgreement rho eta) (firstOrderLowRateBeta rho) -
         firstOrderSourceDensity rho (lowRateFiniteLengthCertifiedAgreement rho eta)
           (firstOrderLowRateBeta rho) := by
+  have hrho : 0 < rho :=
+    pos_of_mul_pos_left (lt_of_lt_of_le (by norm_num) hn) (Nat.cast_nonneg n)
   let a := lowRateFiniteLengthCertifiedAgreement rho eta
   let T := firstOrderLowRateThreshold rho
   let beta := firstOrderLowRateBeta rho
@@ -246,7 +248,7 @@ theorem lowRateInverseLengthSlope_div_length_le_gain
 /-- The finite-length density margin is bounded below by the slope times `eta + 1/n`. -/
 theorem lowRateFiniteLengthSlope_mul_slack_le_margin
     {rho eta : ℝ} {n : ℕ}
-    (hrho : 0 < rho) (hlow : rho < firstOrderRateSwitch)
+    (hlow : rho < firstOrderRateSwitch)
     (heta : 0 < eta) (haOne : firstOrderLowRateThreshold rho + eta < 1)
     (hn : (2 : ℝ) ≤ rho * n) :
     lowRateFiniteLengthSlope rho * finiteLengthSlack eta n ≤
@@ -254,7 +256,7 @@ theorem lowRateFiniteLengthSlope_mul_slack_le_margin
   have hetaPart := lowRateAgreementSlackSlope_mul_slack_le_fixed_margin
     hlow heta haOne
   have hnPart := lowRateInverseLengthSlope_div_length_le_gain
-    hrho heta haOne hn
+    heta haOne hn
   have hsEta : lowRateFiniteLengthSlope rho ≤ lowRateAgreementSlackSlope rho := min_le_left _ _
   have hsN : lowRateFiniteLengthSlope rho ≤ lowRateInverseLengthSlope rho := min_le_right _ _
   have hn0 : (0 : ℝ) < n := by
@@ -324,18 +326,20 @@ theorem lowRateFiniteLengthDensityMargin_pos
     by_contra h
     have := mul_nonpos_of_nonpos_of_nonneg (le_of_not_gt h) (Nat.cast_nonneg n : (0 : ℝ) ≤ n)
     linarith
-  have hc := lowRateFiniteLengthSlope_pos hrho hlow
+  have hc := lowRateFiniteLengthSlope_pos hrho
   have hs := finiteLengthSlack_pos (n := n) heta
   exact (mul_pos hc hs).trans_le
-    (lowRateFiniteLengthSlope_mul_slack_le_margin hrho hlow heta haOne hn)
+    (lowRateFiniteLengthSlope_mul_slack_le_margin hlow heta haOne hn)
 
 /-- The selected low-rate multiplicity is positive. -/
 theorem lowRateFiniteLengthMultiplicity_pos
     {rho eta : ℝ} {n : ℕ}
-    (hrho : 0 < rho) (hlow : rho < firstOrderRateSwitch)
+    (hlow : rho < firstOrderRateSwitch)
     (heta : 0 < eta) (haOne : firstOrderLowRateThreshold rho + eta < 1)
     (hn : (2 : ℝ) ≤ rho * n) :
     0 < lowRateFiniteLengthMultiplicity rho eta n := by
+  have hrho : 0 < rho :=
+    pos_of_mul_pos_left (lt_of_lt_of_le (by norm_num) hn) (Nat.cast_nonneg n)
   unfold lowRateFiniteLengthMultiplicity
   apply Nat.ceil_pos.mpr
   have hmargin := lowRateFiniteLengthDensityMargin_pos
@@ -347,13 +351,15 @@ theorem lowRateFiniteLengthMultiplicity_pos
 /-- The rounded source count covers the low-rate source-density cubic. -/
 theorem lowRateFiniteLengthSourceDensity_mul_cube_le_sourceCount
     {rho eta : ℝ} {n : ℕ}
-    (hrho : 0 < rho) (hlow : rho < firstOrderRateSwitch)
+    (hlow : rho < firstOrderRateSwitch)
     (heta : 0 < eta) (haOne : firstOrderLowRateThreshold rho + eta < 1)
     (hn : (2 : ℝ) ≤ rho * n) :
     (lowRateFiniteLengthMultiplicity rho eta n : ℝ) ^ 3 *
         firstOrderSourceDensity (finiteLengthRate rho n)
           (lowRateFiniteLengthCertifiedAgreement rho eta) (firstOrderLowRateBeta rho) ≤
       lowRateFiniteLengthSourceCount rho eta n := by
+  have hrho : 0 < rho :=
+    pos_of_mul_pos_left (lt_of_lt_of_le (by norm_num) hn) (Nat.cast_nonneg n)
   let R := finiteLengthRate rho n
   let a := lowRateFiniteLengthCertifiedAgreement rho eta
   let beta := firstOrderLowRateBeta rho
@@ -382,7 +388,7 @@ theorem lowRateFiniteLengthSourceDensity_mul_cube_le_sourceCount
     exact hfixed.trans_le (hfirst.trans hsecond)
   have hm : 0 < m := by
     dsimp only [m]
-    exact lowRateFiniteLengthMultiplicity_pos hrho hlow heta haOne hn
+    exact lowRateFiniteLengthMultiplicity_pos hlow heta haOne hn
   have hmu : ⌊(m : ℝ) * a / R⌋₊ ≤ lowRateFiniteLengthJetDegree rho eta n := by
     dsimp only [a, R, m, lowRateFiniteLengthJetDegree]
     exact Nat.floor_le_ceil _
@@ -396,18 +402,20 @@ theorem lowRateFiniteLengthSourceDensity_mul_cube_le_sourceCount
 /-- The multiplicity ceiling absorbs rank rounding and leaves the stated finite count gap. -/
 theorem lowRateFiniteLength_count_gap
     {rho eta : ℝ} {n : ℕ}
-    (hrho : 0 < rho) (hlow : rho < firstOrderRateSwitch)
+    (hlow : rho < firstOrderRateSwitch)
     (heta : 0 < eta) (haOne : firstOrderLowRateThreshold rho + eta < 1)
     (hn : (2 : ℝ) ≤ rho * n) :
     3 * (lowRateFiniteLengthMultiplicity rho eta n : ℝ) ^ 3 *
         lowRateFiniteLengthDensityMargin rho eta n / 4 ≤
       lowRateFiniteLengthSourceCount rho eta n - lowRateFiniteLengthRankCount rho eta n := by
+  have hrho : 0 < rho :=
+    pos_of_mul_pos_left (lt_of_lt_of_le (by norm_num) hn) (Nat.cast_nonneg n)
   let m := lowRateFiniteLengthMultiplicity rho eta n
   let delta := lowRateFiniteLengthDensityMargin rho eta n
   let crank := lowRateFiniteLengthRankRoundingConstant rho
   let beta := firstOrderLowRateBeta rho
   have hmNat : 0 < m := lowRateFiniteLengthMultiplicity_pos
-    hrho hlow heta haOne hn
+    hlow heta haOne hn
   have hdelta : 0 < delta := lowRateFiniteLengthDensityMargin_pos
     hlow heta haOne hn
   have hceil : 4 * crank / delta ≤ (m : ℝ) := by
@@ -423,7 +431,7 @@ theorem lowRateFiniteLength_count_gap
   have hround : crank * (m : ℝ) ^ 2 ≤ (m : ℝ) ^ 3 * delta / 4 := by
     nlinarith [mul_nonneg (sq_nonneg (m : ℝ)) (sub_nonneg.mpr habsorb)]
   have hsource := lowRateFiniteLengthSourceDensity_mul_cube_le_sourceCount
-    hrho hlow heta haOne hn
+    hlow heta haOne hn
   have hrank := firstOrderRankCount_floor_le_density_add_rounding
     (firstOrderLowRateBeta_pos hrho).le m
   have hrank' : (lowRateFiniteLengthRankCount rho eta n : ℝ) ≤

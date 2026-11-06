@@ -66,7 +66,7 @@ theorem exists_ratePartition_curve_exactPowerAgreement
     -- The block length clears every rounding, jet, and reconstruction guard selected by `p`.
     (hn : RatePartition.rateBlockThreshold R d p.multiplicity ≤ n)
     -- Messages have positive dimension and rate at most `R`; candidates agree at least `a`.
-    (hk : 0 < k) (hkR : (k : ℝ) ≤ R * n) (haA : a * n ≤ A) (hAn : A ≤ n)
+    (hk : 0 < k) (hkR : (k : ℝ) ≤ R * n) (haA : a * n ≤ A)
     -- A positive-degree challenge curve is evaluated on `n` distinct base-field points.
     (hℓ : 0 < ℓ) (domain : Fin n ↪ F) (values : Fin (ℓ + 1) → Fin n → F)
     -- The embedding supports geometric counting; the characteristic guard is on `F`.
@@ -88,18 +88,28 @@ theorem exists_ratePartition_curve_exactPowerAgreement
           (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
         -- It descends to base-field witnesses and has exactly their common agreement set.
         HasExactPowerAgreement domain values iota k z P := by
+  classical
+  by_cases hAn : A ≤ n
+  swap
+  · refine ⟨∅, ?_, ?_⟩
+    · simp only [Finset.card_empty, Nat.cast_zero]
+      have hgap : 0 < a - R := sub_pos.mpr hRa
+      unfold polynomialCurveProductAgreementConstant
+      positivity
+    · intro z _ P _ hagree
+      exact (hAn (hagree.trans ((Finset.card_le_univ _).trans_eq (Fintype.card_fin n)))).elim
   obtain ⟨cert⟩ :=
     exists_partitionSupport_curve_certificate_of_rateBlockThreshold p hR (hRa.trans haone)
     hd hn hkR haA hAn domain
     (fun i ↦ powerBatchedCoordinate fun t ↦ values t i)
     (fun _ ↦ powerBatchedCoordinate_natDegree_le _)
   let K := max k (d + 1)
-  obtain ⟨hkK, hdK, hKn, hkA, hν, hh, hchar'⟩ :=
+  obtain ⟨hkK, hdK, hKn, -, -, hh, hchar'⟩ :=
     RatePartition.rateBlockThreshold_exactAgreementGuards p hR hRa haone hn hkR haA hchar
   apply exists_exceptional_exactPowerAgreement_of_certificate_of_jetCharacteristic domain values
     iota cert hk
-    hkK (by omega) hdK hKn hkA hAn hν hh hℓ
-    le_rfl (sub_pos.mpr hRa) (by linarith) ?_ hchar'
+    hkK hdK hKn hAn hh hℓ
+    le_rfl (sub_pos.mpr hRa) ?_ hchar'
   nlinarith
 open Classical in
 /-- A finite rate-partition parameter record bounds exceptional challenges for exact power
@@ -122,7 +132,7 @@ theorem exists_ratePartition_baseCurve_exactPowerAgreement
     -- The block length exceeds the threshold determined by `p`.
     (hn : RatePartition.rateBlockThreshold R d p.multiplicity ≤ n)
     -- The code rate and integral agreement threshold realize the real parameters.
-    (hk : 0 < k) (hkR : (k : ℝ) ≤ R * n) (haA : a * n ≤ A) (hAn : A ≤ n)
+    (hk : 0 < k) (hkR : (k : ℝ) ≤ R * n) (haA : a * n ≤ A)
     -- Supply a positive-degree received curve on `n` distinct evaluation points.
     (hℓ : 0 < ℓ) (domain : Fin n ↪ F) (values : Fin (ℓ + 1) → Fin n → F)
     -- Characteristic zero is unrestricted; positive characteristic clears all degree caps.
@@ -146,7 +156,7 @@ theorem exists_ratePartition_baseCurve_exactPowerAgreement
   let E := AlgebraicClosure F
   let iota : F →+* E := algebraMap F E
   obtain ⟨ex, hc, hg⟩ := exists_ratePartition_curve_exactPowerAgreement p hR hRa haone hd hn hk
-    hkR haA hAn
+    hkR haA
     hℓ domain values iota hchar
   obtain ⟨ex', hc', hg'⟩ :=
     uniformExactPowerAgreement_of_extension domain values iota k A ex hg
@@ -175,12 +185,12 @@ theorem exists_ratePartition_line_exactCorrelatedPair
     {R a : ℝ} {d n k A : ℕ}
     -- The record fixes the finite multiplicity, jet cap, ratio, and symbolic height.
     (p : RatePartition.PartitionFiniteParameters R a d)
-    -- The fixed-order theorem assumes `0 < R < a < 1` and `d ≥ 500`.
-    (hR : 0 < R) (hRa : R < a) (haone : a < 1) (hd : 500 ≤ d)
+    -- Assume `R < a < 1` and `d ≥ 500`; positive message dimension forces `0 < R`.
+    (hRa : R < a) (haone : a < 1) (hd : 500 ≤ d)
     -- The block length is beyond the finite threshold attached to `p`.
     (hn : RatePartition.rateBlockThreshold R d p.multiplicity ≤ n)
     -- Messages have dimension at least one, rate at most `R`, and agreement at least `a`.
-    (hk : 0 < k) (hkR : (k : ℝ) ≤ R * n) (haA : a * n ≤ A) (hAn : A ≤ n)
+    (hk : 0 < k) (hkR : (k : ℝ) ≤ R * n) (haA : a * n ≤ A)
     -- `domain` gives distinct evaluation points; `f` and `g` span the received line.
     (domain : Fin n ↪ F) (f g : Fin n → F)
     -- The positive characteristic, when present, exceeds `k-1`, `d`, and the jet cap.
@@ -202,7 +212,9 @@ theorem exists_ratePartition_line_exactCorrelatedPair
         -- Recover two base-field witnesses and equality of the full agreement sets.
         HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
   obtain ⟨ex, hc, hg⟩ :=
-    exists_ratePartition_baseCurve_exactPowerAgreement p hR hRa haone hd hn hk hkR haA hAn
+    exists_ratePartition_baseCurve_exactPowerAgreement p
+      (pos_of_mul_pos_left ((Nat.cast_pos.mpr hk).trans_le hkR) (Nat.cast_nonneg n))
+      hRa haone hd hn hk hkR haA
     (by norm_num : 0 < 1) domain ![f, g] hchar
   refine ⟨ex, by simpa only [Nat.cast_one, one_mul] using hc, ?_⟩
   intro z hz P hP hA
@@ -234,8 +246,8 @@ evaluation domain and received line satisfying its hypotheses.
 theorem exists_ratePartition_line_exactCorrelatedPair_parameters
     -- The real rate data and derivative order are fixed before any finite parameter search.
     {R a : ℝ} {d : ℕ}
-    -- The fixed-order regime is `0 < R < a < 1` with `d ≥ 500`.
-    (hR : 0 < R) (hRa : R < a) (haone : a < 1) (hd : 500 ≤ d)
+    -- Assume `R < a < 1` and `d ≥ 500`; the strict limiting gate forces `0 < R`.
+    (hRa : R < a) (haone : a < 1) (hd : 500 ≤ d)
     -- Strict limiting surplus makes the finite parameter search terminate.
     (hgate : 1 < RatePartition.rateGamma R a d) :
     -- This witness fixes every rate-partition constant solely from `(R,a,d)`.
@@ -245,7 +257,7 @@ theorem exists_ratePartition_line_exactCorrelatedPair_parameters
       -- Require the selected length threshold and a positive message dimension.
       RatePartition.rateBlockThreshold R d p.multiplicity ≤ n → 0 < k →
       -- The realized rate is at most `R`, while the integral threshold realizes `a`.
-      (k : ℝ) ≤ R * n → a * n ≤ A → A ≤ n →
+      (k : ℝ) ≤ R * n → a * n ≤ A →
       -- The statement is uniform over every distinct evaluation set and received line.
       ∀ (domain : Fin n ↪ F) (f g : Fin n → F),
       -- The positive characteristic clears the message, derivative, and jet degrees.
@@ -272,9 +284,19 @@ theorem exists_ratePartition_line_exactCorrelatedPair_parameters
     rw [← RatePartition.rateGamma_eq_exponential (rate := R) (agreement := a) hdpos]
     exact hgate
   obtain ⟨p⟩ :=
-    RatePartition.PartitionFiniteParameters.nonempty (hR.trans hRa) hdpos hlimit
-  exact ⟨p, fun _ _ _ _ _ hn hk hkR haA hAn domain f g hchar ↦
-    exists_ratePartition_line_exactCorrelatedPair p hR hRa haone hd hn hk hkR haA hAn domain f g
+    RatePartition.PartitionFiniteParameters.nonempty (by
+      have hR : 0 < R := by
+        by_contra h
+        have hprod : (27 / 20 : ℝ) * R * (d + 1) *
+            Real.exp (-(R / a * Real.log (6 * (d : ℝ)))) ≤ 0 :=
+          mul_nonpos_of_nonpos_of_nonneg
+            (mul_nonpos_of_nonpos_of_nonneg
+              (mul_nonpos_of_nonneg_of_nonpos (by norm_num) (le_of_not_gt h))
+              (by positivity)) (Real.exp_nonneg _)
+        linarith
+      exact hR.trans hRa) hdpos hlimit
+  exact ⟨p, fun _ _ _ _ _ hn hk hkR haA domain f g hchar ↦
+    exists_ratePartition_line_exactCorrelatedPair p hRa haone hd hn hk hkR haA domain f g
       hchar⟩
 
 end ReedSolomon

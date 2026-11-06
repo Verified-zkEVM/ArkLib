@@ -837,13 +837,13 @@ example := (capacity_lineAgreement (δ := 1 / 2) (by norm_num)).affineAgreement 
 
 /-- The line and affine-space MCA errors at gap `1/2` over `ZMod 5`, with `n = 4` and `k = 1`. -/
 example := (capacity_lineAgreement (δ := 1 / 2) (by norm_num)).mcaError_le (k := 1)
-  capacityLineLength_half one_pos (by norm_num) (Or.inr (by rw [ZMod.ringChar_zmod_n]; norm_num))
+  capacityLineLength_half one_pos (Or.inr (by rw [ZMod.ringChar_zmod_n]; norm_num))
   capacityFiniteDomain
 
 /-- Power batching at gap `1/2` over `ℚ` at the length threshold, with `ℓ = 1`, `k = 1` and
 `A = n`. -/
 example := capacity_powerBatchingAgreement (δ := 1 / 2) (by norm_num) 1
-  (capacityPowerLength (1 / 2)) 1 (capacityPowerLength (1 / 2)) one_pos le_rfl one_pos
+  (capacityPowerLength (1 / 2)) 1 (capacityPowerLength (1 / 2)) le_rfl one_pos
   (by
     have : (4 : ℝ) ≤ capacityPowerLength (1 / 2) := by
       exact_mod_cast four_le_capacityPowerLength (1 / 2)

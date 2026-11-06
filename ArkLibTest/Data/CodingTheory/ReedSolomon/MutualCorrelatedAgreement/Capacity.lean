@@ -110,11 +110,11 @@ example :
     hδ hδmax hblock hA (Or.inl (by simp))
   have _hprescribed := exists_exceptional_exactPowerAgreement_of_prescribedCurve
     (F := ℚ) (E := AlgebraicClosure ℚ) δ n 1 1 centers values iota
-    hδ hδmax (by norm_num) (by norm_num) hblock hA (Or.inl (by simp))
+    hδ hδmax (by norm_num) hblock hA (Or.inl (by simp))
   have _hprescribedStages :=
     exists_exceptional_exactPowerAgreement_with_prescribed_stageBounds
     (F := ℚ) (E := AlgebraicClosure ℚ) δ n 1 1 centers values iota
-    hδ hδmax (by norm_num) (by norm_num) hblock hA (Or.inl (by simp))
+    hδ hδmax (by norm_num) hblock hA (Or.inl (by simp))
   exact hparams.1
 
 open Classical in
@@ -172,7 +172,7 @@ example :
   have hA : capacityAgreementThreshold δ n 1 ≤ n := capacityAgreementThreshold_one_fifth_le m hm
   obtain ⟨exceptional, hbound, hgood⟩ := exists_prescribedLine_exactCorrelatedPair
     (F := ℚ) (E := AlgebraicClosure ℚ) δ n 1 centers f g iota hδ hδmax (by norm_num)
-    (by simpa [xi] using hblock) hA
+    (by simpa [xi] using hblock)
     (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
   have hset (z : AlgebraicClosure ℚ) :
       polynomialAgreementSet (centers.trans ⟨iota, iota.injective⟩)
@@ -221,14 +221,14 @@ example :
       polynomialCurveProductStageBound (1 / 2) 8 1 1 1 2 1 := by
   simpa using product_stage_bound (1 / 2) 8 1 6 2 1 1 1 1 1 1 1
     (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num)
 
 /-- Increasing a product stage from order one to its cap preserves the scalar bound. -/
 example : polynomialCurveProductStageBound (1 / 2) 8 1 1 1 2 1 ≤
     polynomialCurveProductStageBound (1 / 2) 8 1 1 1 2 2 := by
   exact polynomialCurveProductStageBound_le_uniform
     (δ := 1 / 2) (n := 8) (ℓ := 1) (v := 1) (h := 1) (d := 2) (r := 1)
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num)
 
 /-- The scalar aggregate bounds one concrete family of product stages. -/
 example :
@@ -250,8 +250,7 @@ example :
     (δ := 1 / 2) (r := 1) (n := 8) (K := 4) (k := 1) (A := 6)
     (ℓ := 1) (j := 1) (H := 1) (v := 1) (h := 1) (d := 1) (τ := 0)
     (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
 
 example :
     let L := correlatedMidpoint (1 / 2) 8 1
@@ -279,13 +278,13 @@ example :
     (δ := 1 / 2) (n := 8) (K := 4) (k := 1) (A := 6) (ℓ := 1) (v := 1) (h := 1)
     (d := 1) (τ := 0)
     (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
     (by intro i hi; norm_num) (by intro i hi; norm_num) (by intro i hi; norm_num)
     (by intro i hi; norm_num)
 
 /-- The prescribed product-based coefficient is positive at a concrete small gap. -/
 example : 0 < prescribedProductAgreementConstant (1 / 5) :=
-  prescribedProductAgreementConstant_pos (by norm_num) (by norm_num)
+  prescribedProductAgreementConstant_pos (by norm_num)
 
 private def tinyCertificateDomain : Fin 3 ↪ ℚ :=
   ⟨fun i => (i : ℚ), fun i j h => by
@@ -351,10 +350,8 @@ example :
     (ℓ := 1) (ν := 1) (d := 1) (height := 1) (h := 1) (δ := 1 / 3)
     tinyCertificateDomain tinyCertificateValues (algebraMap ℚ (AlgebraicClosure ℚ))
     tinyCurveCertificate
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
   exact ⟨bad, by simpa using hbound⟩
 
 open ReedSolomon.HiddenDerivative.RatePartition
@@ -431,7 +428,7 @@ example :
     (F := ℚ) (E := AlgebraicClosure ℚ) (n := mcaLength) (k := 1) (A := mcaLength)
     (ℓ := 1) mcaParameters hR hRa haone hd hn (by norm_num)
     (fixedRateThresholdRate mcaParameters) mcaLengthAgreement
-    le_rfl (by norm_num) (mcaDomain mcaLength) (mcaValues mcaLength)
+    (by norm_num) (mcaDomain mcaLength) (mcaValues mcaLength)
     (algebraMap ℚ (AlgebraicClosure ℚ)) (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
   have hset (z : AlgebraicClosure ℚ) :
       polynomialAgreementSet
@@ -462,7 +459,7 @@ example :
   obtain ⟨exceptional, hbound, hgood⟩ := exists_ratePartition_baseCurve_exactPowerAgreement
     (F := ℚ) (n := mcaLength) (k := 1) (A := mcaLength) (ℓ := 1) mcaParameters
     hR hRa haone hd hn (by norm_num) (fixedRateThresholdRate mcaParameters)
-    mcaLengthAgreement le_rfl (by norm_num)
+    mcaLengthAgreement (by norm_num)
     (mcaDomain mcaLength) (mcaValues mcaLength)
     (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
   have hset (z : ℚ) :
@@ -493,7 +490,7 @@ example :
   obtain ⟨exceptional, hbound, hgood⟩ := fixedRatePartitionOrder_line_exactCorrelatedPair
     (R := mcaRate) (δ := mcaGap) hR hgap haone
     (F := ℚ) (n := mcaLength) (k := 1) (A := mcaLength) hn
-    (by norm_num) (fixedRateThresholdRate mcaParameters) mcaLengthAgreement le_rfl
+    (by norm_num) (fixedRateThresholdRate mcaParameters) mcaLengthAgreement
     (mcaDomain mcaLength)
     (fun _ => 0) (fun _ => 0) (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
   have hset (z : ℚ) :
@@ -519,8 +516,8 @@ example :
         ∃ z ∉ exceptional, HasExactCorrelatedPair
           (mcaDomain (rateBlockThreshold mcaRate mcaOrder p.multiplicity)) (fun _ ↦ 0)
           (fun _ ↦ 0) (RingHom.id ℚ) 1 z (0 : ℚ[X]) := by
-  obtain ⟨hR, hRa, haone, hd, hgate⟩ := mcaRateGate
-  obtain ⟨p, hline⟩ := exists_ratePartition_line_exactCorrelatedPair_parameters hR hRa haone hd
+  obtain ⟨-, hRa, haone, hd, hgate⟩ := mcaRateGate
+  obtain ⟨p, hline⟩ := exists_ratePartition_line_exactCorrelatedPair_parameters hRa haone hd
     hgate
   let n := rateBlockThreshold mcaRate mcaOrder p.multiplicity
   have hn : rateBlockThreshold mcaRate mcaOrder p.multiplicity ≤ n := Nat.le_refl _
@@ -529,7 +526,7 @@ example :
   have haA : mcaAgreement * n ≤ n := by
     have ha : mcaAgreement ≤ 1 := by norm_num [mcaRate, mcaAgreement, mcaGap]
     nlinarith [Nat.cast_nonneg n (α := ℝ)]
-  obtain ⟨exceptional, hbound, hgood⟩ := hline ℚ n 1 n hn (by norm_num) hkR haA le_rfl
+  obtain ⟨exceptional, hbound, hgood⟩ := hline ℚ n 1 n hn (by norm_num) hkR haA
     (mcaDomain n) (fun _ => 0) (fun _ => 0)
     (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
   have hset (z : ℚ) : polynomialAgreementSet (mcaDomain n) (fun i ↦ 0 + z * 0)
@@ -652,8 +649,7 @@ example :
     (d := 1) (ν := 1) (H := 1) (h := 1) (ℓ := 1) (δ := 1 / 3)
     tinyCertificateDomain tinyCertificateValues (algebraMap ℚ (AlgebraicClosure ℚ))
     tinyCurveCertificate
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
     (by norm_num) (by norm_num) (by norm_num) (by norm_num)
     (Or.inl (by norm_num))
   exact ⟨bad, by simpa using hbound⟩
@@ -688,7 +684,7 @@ example :
     (F := ℚ) (E := AlgebraicClosure ℚ) (δ := mathMcaGap) (n := mathMcaLength)
     (k := 1) (A := mathMcaLength) (ℓ := 1)
     (by norm_num [mathMcaGap]) (by norm_num [mathMcaGap]) mathMcaBaseLength
-    (by norm_num) mathMcaAgreementGap le_rfl (by norm_num)
+    (by norm_num) mathMcaAgreementGap le_rfl
     (mcaDomain mathMcaLength) (mcaValues mathMcaLength)
     (algebraMap ℚ (AlgebraicClosure ℚ)) (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
   have hset (z : AlgebraicClosure ℚ) :
@@ -717,7 +713,7 @@ example :
     exists_mathematicalUniformRatePartition_baseCurve_exactPowerAgreement
     (δ := mathMcaGap) (n := mathMcaLength) (k := 1) (A := mathMcaLength) (ℓ := 1)
     (by norm_num [mathMcaGap]) (by norm_num [mathMcaGap]) mathMcaBaseLength
-    (by norm_num) mathMcaAgreementGap le_rfl (by norm_num)
+    (by norm_num) mathMcaAgreementGap
     (mcaDomain mathMcaLength) (mcaValues mathMcaLength)
     (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
   have hset (z : ℚ) : polynomialAgreementSet (mcaDomain mathMcaLength)
@@ -740,7 +736,7 @@ example :
     exists_mathematicalUniformRatePartition_line_exactCorrelatedPair
     (δ := mathMcaGap) (n := mathMcaLength) (k := 1) (A := mathMcaLength)
     (by norm_num [mathMcaGap]) (by norm_num [mathMcaGap]) le_rfl (by norm_num)
-    mathMcaAgreementGap le_rfl (mcaDomain mathMcaLength) (fun _ => 0) (fun _ => 0)
+    mathMcaAgreementGap (mcaDomain mathMcaLength) (fun _ => 0) (fun _ => 0)
     (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
   have hset (z : ℚ) : polynomialAgreementSet (mcaDomain mathMcaLength)
       (fun i ↦ 0 + z * 0) (0 : ℚ[X]) = Finset.univ := by

@@ -50,9 +50,9 @@ theorem exists_exceptional_exactPowerAgreement_of_certificate_of_jetCharacterist
     (domain : Fin n ↪ F) (values : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
     (cert : SymbolicReceivedCurve.Certificate.{0, u} A k ℓ ν d H domain
       (fun i ↦ powerBatchedCoordinate fun t ↦ values t i))
-    (hk : 0 < k) (hkK : k ≤ K) (hd : 0 < d) (hdK : d < K) (hKn : K ≤ n)
-    (hkA : k ≤ A) (hAn : A ≤ n) (hν : 0 < ν) (hh : 0 < h)
-    (hℓ : 0 < ℓ) (hH : H ≤ ℓ * h) (hδ : 0 < δ) (hδone : δ ≤ 1)
+    (hk : 0 < k) (hkK : k ≤ K) (hdK : d < K) (hKn : K ≤ n)
+    (hAn : A ≤ n) (hh : 0 < h)
+    (hℓ : 0 < ℓ) (hH : H ≤ ℓ * h) (hδ : 0 < δ)
     (hgap : (k : ℝ) + δ * n ≤ A)
     (hchar : ringChar F = 0 ∨ max (K - 1) ν < ringChar F) :
     ∃ exceptional : Finset E,
@@ -71,12 +71,13 @@ theorem exists_exceptional_exactPowerAgreement_of_certificate_of_jetCharacterist
     apply hchar.imp_right
     intro hc
     exact (Nat.le_max_left (K - 1) ν).trans_lt hc
+  have hcutoff := correlatedProductCutoff_bounds d k A (by
+    exact_mod_cast hgap.trans' (le_add_of_nonneg_right (by positivity)))
   let L := correlatedProductCutoff d k A
   obtain ⟨stages, terminal, hc, exceptional, hcard, hexact⟩ :=
     cert.exists_exceptional_powerBatchedAgreement_sharp_of_exponent iota K L (2 * K)
       (fun r _ ↦ taylorExponentSufficient_two_mul r K) (by omega) hdK hkK
-      (correlatedProductCutoff_bounds d k A hkA).1
-      (correlatedProductCutoff_bounds d k A hkA).2 hAn hℓ hcharJet
+      hcutoff.1 hcutoff.2 hAn hℓ hcharJet
       (by
         intro r _ i hri hi
         have hchoose := PolynomialDifferential.natCast_choose_ne_zero_of_ringChar
@@ -91,7 +92,10 @@ theorem exists_exceptional_exactPowerAgreement_of_certificate_of_jetCharacterist
   apply le_trans (add_le_add (Nat.cast_le.mpr hH) le_rfl)
   apply regularPowerBatchedAgreementSharp_product_finiteStage_le stages.toFinset
     (fun stage ↦ stage.2.val) (fun stage ↦ jetTotalDegree stage.1) (fun _ ↦ H)
-    δ n K k A ℓ ν h d (2 * K) hδ hδone hd hn hk hν hh hKn hgap hAn le_rfl
+    δ n K k A ℓ ν h d (2 * K) hδ (by
+      have hAnR : (A : ℝ) ≤ n := by exact_mod_cast hAn
+      have hnR : (0 : ℝ) < n := by exact_mod_cast hn
+      nlinarith) hn hk hh hKn hgap hAn le_rfl
   · exact (List.toFinset_card_le stages).trans (hc.length_le.trans cert.jetTotalDegree_le)
   · intro stage _
     exact Fin.is_le stage.2
@@ -111,9 +115,9 @@ theorem exists_exceptional_exactPowerAgreement_of_certificate {F E : Type u} [Fi
     (domain : Fin n ↪ F) (values : Fin (ℓ + 1) → Fin n → F) (embedding : F →+* E)
     (certificate : SymbolicReceivedCurve.Certificate.{0, u} A k ℓ ν d height domain
       (fun index ↦ powerBatchedCoordinate fun term ↦ values term index))
-    (hδ : 0 < δ) (hδone : δ ≤ 1) (hk : 0 < k)
-    (hd : 0 < d) (hν : 0 < ν) (hh : 0 < h) (hℓ : 0 < ℓ)
-    (hdK : d < K) (hkK : k ≤ K) (hKn : K ≤ n) (hνn : ν < n)
+    (hδ : 0 < δ) (hk : 0 < k)
+    (hh : 0 < h) (hℓ : 0 < ℓ)
+    (hdK : d < K) (hKn : K ≤ n) (hνn : ν < n)
     (hkA : k ≤ A) (hAn : A ≤ n) (hgap : (k : ℝ) + δ * n ≤ A)
     (hheight : height ≤ ℓ * h) (hchar : ringChar F = 0 ∨ n ≤ ringChar F) :
     ∃ exceptional : Finset E,
@@ -124,7 +128,7 @@ theorem exists_exceptional_exactPowerAgreement_of_certificate {F E : Type u} [Fi
           (powerBatchedWord (fun term index ↦ embedding (values term index)) challenge)
             polynomial).card →
         HasExactPowerAgreement domain values embedding k challenge polynomial := by
-  have hcharJet : ringChar F = 0 ∨ max (K - 1) ν < ringChar F := by
+  have hcharJet : ringChar F = 0 ∨ max (n - 1) ν < ringChar F := by
     rcases hchar with hcharZero | hcharPositive
     · exact Or.inl hcharZero
     · apply Or.inr
@@ -134,8 +138,8 @@ theorem exists_exceptional_exactPowerAgreement_of_certificate {F E : Type u} [Fi
       · exact hνn.trans_le hcharPositive
   exact exists_exceptional_exactPowerAgreement_of_certificate_of_jetCharacteristic
     (domain := domain) (values := values) (iota := embedding) (cert := certificate)
-    (H := height) (hk := hk) (hkK := hkK) (hd := hd) (hdK := hdK) (hKn := hKn)
-    (hkA := hkA) (hAn := hAn) (hν := hν) (hh := hh) (hℓ := hℓ) (hH := hheight)
-    (hδ := hδ) (hδone := hδone) (hgap := hgap) (hchar := hcharJet)
+    (H := height) (hk := hk) (hkK := hkA.trans hAn)
+    (hdK := hdK.trans_le hKn) (hKn := le_rfl) (hAn := hAn) (hh := hh) (hℓ := hℓ) (hH := hheight)
+    (hδ := hδ) (hgap := hgap) (hchar := hcharJet)
 
 end ReedSolomon
