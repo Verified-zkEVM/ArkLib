@@ -108,7 +108,7 @@ theorem epsCa_gt [Fintype F] [SampleableType F] [DecidableEq F] (hω : IsPrimiti
       linarith
     have hL := CodingTheory.rs_Lambda_extended_le_of_epsCa (primitiveRootDomain hω) 128
       (377 / 512) (1 / 2) (by norm_num) (by norm_num) (by rw [Fintype.card_fin]; norm_num)
-      (by norm_num) (by norm_num) (by rw [Fintype.card_fin]; omega) (by
+      (by norm_num) (by rw [Fintype.card_fin]; omega) (by
         rw [Fintype.card_fin]
         refine hcon.trans ?_
         push_cast

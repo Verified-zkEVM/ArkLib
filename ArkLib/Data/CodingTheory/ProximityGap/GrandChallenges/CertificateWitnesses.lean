@@ -16,7 +16,6 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AgreementBounds
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.CodewordBound
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.CosetList
 public import ArkLib.Data.CodingTheory.ListDecodability.SymbolMap
-public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 
 /-!
 # Certificate witnesses for the grand challenges
@@ -85,7 +84,7 @@ exact-agreement bound on every line, over any field whose characteristic is `0` 
 `max (k - 1) M`. -/
 theorem lineExactAgreementBound_of_heightSlotCount {F : Type} [Field F] [DecidableEq F]
     {n k A m M μ h : ℕ} (domain : Fin n ↪ F)
-    (hk : 2 ≤ k) (hkA : k ≤ A) (hAn : A ≤ n) (hM : 1 ≤ M) (hMμ : M ≤ μ) (hbudget : 0 < m * A)
+    (hk : 2 ≤ k) (hkA : k ≤ A) (hAn : A ≤ n) (hM : 1 ≤ M) (hMμ : M ≤ μ)
     (hheight : firstOrderCurveShiftedRowSlotBound (k - 1) A m M μ n 1 h <
       firstOrderCurveShiftedHeightSlotCount (k - 1) A m M μ 1 h)
     (hchar : ringChar F = 0 ∨ max (k - 1) M < ringChar F) :
@@ -95,11 +94,10 @@ theorem lineExactAgreementBound_of_heightSlotCount {F : Type} [Field F] [Decidab
   intro f g
   obtain ⟨cert⟩ := exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount
     (F := F) (D := k - 1) (A := A) (m := m) (M := M) (μ := μ) (k := k) (h := h)
-    (by omega) hbudget (by omega) domain f g hheight
+    (by omega) (by omega) domain f g hheight
   obtain ⟨ex, hcard, hgood⟩ :=
     FirstOrder.Squarefree.exists_baseExceptional_retainedSquarefreeLineAgreement_of_certificate
-      (E := AlgebraicClosure F) domain f g (algebraMap F (AlgebraicClosure F)) _ cert
-      hk hkA hAn hM hMμ hchar
+      domain f g _ cert hk hkA hAn hM hMμ hchar
   refine ⟨ex, hcard, fun z hz P hP hA ↦ ?_⟩
   obtain ⟨pair, h0, h1, heq, hset⟩ := hgood z hz P hP hA
   exact ⟨pair.1, pair.2, h0, h1, by simpa [correlatedPairSpecialization] using heq,
@@ -125,8 +123,7 @@ characteristic, so the scalar certificate applies there. -/
 theorem lambda_interleaved_le_of_heightSlotCount {F : Type} [Field F] {n k m M μ h : ℕ}
     (η : ℝ) (hη : 0 ≤ η) (hn : 0 < n) (domain : Fin n ↪ F) (t L : ℕ)
     (hk : 2 ≤ k) (hkA : k ≤ capacityAgreementThreshold η n k)
-    (hAn : capacityAgreementThreshold η n k ≤ n) (hMμ : M ≤ μ)
-    (hbudget : 0 < m * capacityAgreementThreshold η n k)
+    (hMμ : M ≤ μ)
     (hheight : firstOrderCurveShiftedRowSlotBound (k - 1) (capacityAgreementThreshold η n k)
         m M μ n 1 h <
       firstOrderCurveShiftedHeightSlotCount (k - 1) (capacityAgreementThreshold η n k) m M μ 1 h)
@@ -158,9 +155,9 @@ theorem lambda_interleaved_le_of_heightSlotCount {F : Type} [Field F] {n k m M �
   rw [Set.ncard_eq_toFinset_card _ hfin]
   obtain ⟨cert⟩ := exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount
     (F := K) (D := k - 1) (A := A) (m := m) (M := M) (μ := μ) (k := k) (h := h)
-    (by omega) hbudget (by omega) dK received (fun _ ↦ 0) hheight
+    (by omega) (by omega) dK received (fun _ ↦ 0) hheight
   have hS := FirstOrder.Squarefree.firstOrder_finite_agreement_solutions_card_le_squarefree
-    dK received _ cert hk hkA hAn hMμ hcharK hfin.toFinset (fun P hP ↦ by
+    dK received _ cert hk hkA hMμ hcharK hfin.toFinset (fun P hP ↦ by
       have hP' := hfin.mem_toFinset.mp hP
       exact ⟨hP'.1, by simpa [polynomialAgreementSet] using hP'.2⟩)
   have : (hfin.toFinset.card : ℝ) < L + 1 := hS.trans_lt hL

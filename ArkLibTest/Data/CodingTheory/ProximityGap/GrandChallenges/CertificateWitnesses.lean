@@ -38,7 +38,7 @@ noncomputable example (domain : Fin 2 ↪ ZMod 5) :
     McaLowerWitness (ReedSolomon.code domain 2) (10 ^ 12) :=
   McaLowerWitness.ofLineExactAgreement (δ := 0) domain
     (lineExactAgreementBound_of_heightSlotCount (n := 2) (k := 2) (A := 2) (m := 1) (M := 1)
-      (μ := 1) (h := 1) domain le_rfl le_rfl le_rfl le_rfl le_rfl (by norm_num) (by decide)
+      (μ := 1) (h := 1) domain le_rfl le_rfl le_rfl le_rfl le_rfl (by decide)
       (Or.inr (by rw [ZMod.ringChar_zmod_n]; norm_num)))
     zero_le_one (by norm_num) (by
       simp only [FirstOrder.Squarefree.retainedSquarefreeLineAgreementEnvelope,

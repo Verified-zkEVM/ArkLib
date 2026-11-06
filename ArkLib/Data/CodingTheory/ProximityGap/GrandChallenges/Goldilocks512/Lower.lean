@@ -51,7 +51,7 @@ noncomputable def mcaLowerWitness {F : Type} [Field F] [Fintype F] [SampleableTy
     McaLowerWitness (ReedSolomon.code domain 128) (1 / 2 ^ 128) := by
   refine McaLowerWitness.ofLineExactAgreement (δ := 273 / 512) domain
     (lineExactAgreementBound_of_heightSlotCount (m := 609) domain (by norm_num) (by norm_num)
-      (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num) (by norm_num) (by norm_num)
       Arithmetic.mca_rowSlotBound_lt_heightSlotCount (by simpa using hchar))
     (by rw [← NNReal.coe_le_coe]; push_cast; norm_num)
     (by simp only [Fintype.card_fin]; norm_num) ?_
@@ -76,7 +76,7 @@ theorem lambda_interleaved_le {F : Type} [Field F] (hchar : ringChar F = 0 ∨ 2
   rw [← hrad]
   refine lambda_interleaved_le_of_heightSlotCount (m := 546) (M := 260) (μ := 1020)
     (h := 1000000000) (111 / 512) (by norm_num) (by norm_num) domain t 399224017 (by norm_num)
-    (by rw [hthr]; norm_num) (by rw [hthr]; norm_num) (by norm_num) (by rw [hthr]; norm_num)
+    (by rw [hthr]; norm_num) (by norm_num)
     (by rw [hthr]; exact Arithmetic.lst_rowSlotBound_lt_heightSlotCount) (by simpa using hchar) ?_
   rw [hthr]
   have h1 : firstOrderCurveFiberStageOne 128 1020 260 (regularTaylorExponent (128 - 1)) =
