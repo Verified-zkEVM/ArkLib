@@ -16,7 +16,7 @@ import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 # Automatic first-order hybrid transfer
 
 A nonzero first-order equation with bounded total jet degree `μ`, first-derivative degree
-`M ≤ μ` and coefficient degree `h` admits a first-order hybrid descent. Its ordinary tail and its
+`M` and coefficient degree `h` admits a first-order hybrid descent. Its ordinary tail and its
 regular stages together give one exceptional set of challenges, outside which every sufficiently
 agreeing root has exact degree-one power agreement. The exceptional set is bounded by the
 optimized exception charge, by its ceiling, and by the closed exception constant. Over an
@@ -66,7 +66,7 @@ noncomputable section
 universe u
 
 /-- A nonzero first-order equation over an algebraically closed extension, with total jet degree
-at most `mu`, `Y₁` degree at most `M ≤ mu` and coefficient degree at most `h`, has one set of
+at most `mu`, `Y₁` degree at most `M` and coefficient degree at most `h`, has one set of
 exceptional challenges bounded by the optimized exception charge, its ceiling, and the closed
 exception constant. Outside it, every root of degree at most `D` that agrees with the
 power-batched line in at least `A` places has exact degree-one power agreement. The
@@ -76,7 +76,7 @@ theorem exists_exceptional_firstOrder_hybrid
     {n D A h mu M : ℕ} (domain : Fin n ↪ F) (f g : Fin n → F) (iota : F →+* E)
     (Q : DifferentialPolynomial E[X] 1) (hQ : Q ≠ 0) (hweight : jetTotalDegree Q ≤ mu)
     (hdegree : jetDegree Q (1 : Fin 2) ≤ M) (hheight : CoeffNatDegreeLE Q h)
-    (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n) (hMmu : M ≤ mu)
+    (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n)
     (hchar : ringChar F = 0 ∨ max D M < ringChar F) :
     ∃ exceptional : Finset E,
       (exceptional.card : ℝ) ≤
@@ -98,7 +98,7 @@ theorem exists_exceptional_firstOrder_hybrid
     exact hchar.imp_right ((hdegree.trans (Nat.le_max_right D M)).trans_lt ·))
   obtain ⟨exceptional, hraw, hceil, hclosed, hgood⟩ :=
     exists_exceptional_firstOrder_hybrid_optimized_of_tail domain f g iota Q descent hD hDA hAn
-      hMmu (hchar.imp_right ((Nat.le_max_left D M).trans_lt ·))
+      (hchar.imp_right ((Nat.le_max_left D M).trans_lt ·))
       (descent.hasOrdinaryTailTransfer domain f g iota hD hDA hAn)
   have hθ : 0 ≤ agreementIncidenceRatio n D A := by
     unfold agreementIncidenceRatio
@@ -110,7 +110,7 @@ theorem exists_exceptional_firstOrder_hybrid
     hclosed.trans (firstOrderExceptionConstant_mono_height hθ hQh), hgood⟩
 
 /-- A nonzero first-order equation over an arbitrary field, with total jet degree at most `mu`,
-`Y₁` degree at most `M ≤ mu` and coefficient degree at most `h`, has one set of exceptional
+`Y₁` degree at most `M` and coefficient degree at most `h`, has one set of exceptional
 challenges bounded by the optimized exception charge, its ceiling, and the closed exception
 constant. Outside it, every root of degree at most `D` that agrees with the received line in at
 least `A` places has an exact correlated pair. The characteristic is zero or exceeds
@@ -119,7 +119,7 @@ theorem exists_exceptional_firstOrder_hybrid_base
     {F : Type*} [Field F] [DecidableEq F] {n D A h mu M : ℕ} (domain : Fin n ↪ F)
     (f g : Fin n → F) (Q : DifferentialPolynomial F[X] 1) (hQ : Q ≠ 0)
     (hweight : jetTotalDegree Q ≤ mu) (hdegree : jetDegree Q (1 : Fin 2) ≤ M)
-    (hheight : CoeffNatDegreeLE Q h) (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n) (hMmu : M ≤ mu)
+    (hheight : CoeffNatDegreeLE Q h) (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n)
     (hchar : ringChar F = 0 ∨ max D M < ringChar F) :
     ∃ exceptional : Finset F,
       (exceptional.card : ℝ) ≤
@@ -143,7 +143,7 @@ theorem exists_exceptional_firstOrder_hybrid_base
     exists_exceptional_firstOrder_hybrid domain f g iota QE hQE
       ((jetTotalDegree_map_eq hinj Q).trans_le hweight)
       ((jetDegree_map_eq hinj Q 1).trans_le hdegree) (hheight.map_coefficients iota)
-      hD hDA hAn hMmu hchar
+      hD hDA hAn hchar
   obtain ⟨exceptional, hcard, hbase⟩ := exists_exceptional_equation_correlatedAgreement_descend
     domain f g iota Q (D + 1) A extensionExceptional (by
       intro z hz P hP hagree hroot
@@ -176,7 +176,7 @@ private theorem certificate_equation_facts
   exact (cert.specialization_sound (RingHom.id K) z).2 _ P hP hagree fun i hi ↦ by simpa using hi
 
 /-- A first-order symbolic certificate for a received line over an arbitrary field, with
-multiplicity `m`, derivative cap `M ≤ mu`, jet degree `mu` and challenge height `h`, gives one
+multiplicity `m`, derivative cap `M`, jet degree `mu` and challenge height `h`, gives one
 set of exceptional challenges bounded by the optimized exception charge, its ceiling, and the
 closed exception constant. Outside it, every polynomial of degree below `k = D + 1` agreeing with
 the line in at least `A` places has an exact correlated pair. -/
@@ -185,7 +185,7 @@ theorem HiddenDerivative.FirstOrderSymbolicCertificate.exists_exceptional_hybrid
     {f g : Fin n → F} {columns : Fin N → SourceColumn 1}
     (cert : FirstOrderSymbolicCertificate.{u, u} Dc A m M mu k h domain f g columns)
     (hkD : k = D + 1)
-    (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n) (hMmu : M ≤ mu)
+    (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n)
     (hchar : ringChar F = 0 ∨ max D M < ringChar F) :
     ∃ exceptional : Finset F,
       (exceptional.card : ℝ) ≤
@@ -200,7 +200,7 @@ theorem HiddenDerivative.FirstOrderSymbolicCertificate.exists_exceptional_hybrid
   obtain ⟨hQ, hweight, hdegree, hheight, hroot⟩ := certificate_equation_facts cert
   subst hkD
   obtain ⟨exceptional, hraw, hceil, hclosed, hgood⟩ := exists_exceptional_firstOrder_hybrid_base
-    domain f g cert.Q hQ hweight hdegree hheight hD hDA hAn hMmu hchar
+    domain f g cert.Q hQ hweight hdegree hheight hD hDA hAn hchar
   exact ⟨exceptional, hraw, hceil, hclosed, fun z hz P hP hagree ↦
     hgood z hz P (by exact_mod_cast hP) hagree (hroot z P hP hagree)⟩
 
@@ -211,7 +211,7 @@ places. -/
 private theorem exists_automaticFirstOrder_equation
     {K : Type u} [Field K] [DecidableEq K] {rho a : ℝ} {n D A k : ℕ}
     (hrho : 0 < rho) (hrhoOne : rho < 1)
-    (ha : firstOrderRateThreshold rho < a) (haOne : a < 1)
+    (ha : firstOrderRateThreshold rho < a)
     (hn : 0 < n) (hD : D = k - 1) (hk : 2 ≤ k)
     (hkRate : (k : ℝ) ≤ rho * n) (hA : a * n ≤ A) (domain : Fin n ↪ K) (f g : Fin n → K) :
     ∃ Q : DifferentialPolynomial K[X] 1,
@@ -222,22 +222,22 @@ private theorem exists_automaticFirstOrder_equation
         A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
         differentialSpecialization (challengeSpecialization Q z) P = 0 := by
   obtain ⟨cert⟩ := exists_automaticFirstOrder_symbolicCertificate
-    hrho hrhoOne ha haOne hn hD hk hkRate hA domain f g
+    hrho hrhoOne ha hn hD hk hkRate hA domain f g
   obtain ⟨hQ, hweight, hdegree, hheight, hroot⟩ := certificate_equation_facts cert
   exact ⟨cert.Q, hQ,
-    hweight.trans_eq (automaticFiniteRateParameters_jetDegree hrho hrhoOne ha haOne),
-    hdegree.trans_eq (automaticFiniteRateParameters_derivativeCap hrho hrhoOne ha haOne),
-    hheight.mono (automaticFiniteRateParameters_challengeDegree hrho hrhoOne ha haOne).le, hroot⟩
+    hweight.trans_eq (automaticFiniteRateParameters_jetDegree hrho hrhoOne ha),
+    hdegree.trans_eq (automaticFiniteRateParameters_derivativeCap hrho hrhoOne ha),
+    hheight.mono (automaticFiniteRateParameters_challengeDegree hrho hrhoOne ha).le, hroot⟩
 
 /-- The automatic parameters give `1 ≤ D < A` and `M ≤ μ`. -/
 private theorem automaticFirstOrder_degree_bounds {rho a : ℝ} {n D A k : ℕ}
-    (hrho : 0 < rho) (hrhoOne : rho < 1) (ha : firstOrderRateThreshold rho < a)
+    (hrhoOne : rho < 1) (ha : firstOrderRateThreshold rho < a)
     (hn : 0 < n) (hD : D = k - 1) (hk : 2 ≤ k)
     (hkRate : (k : ℝ) ≤ rho * n) (hA : a * n ≤ A) :
     1 ≤ D ∧ D < A ∧ automaticDerivativeCap rho a ≤ automaticJetDegree rho a := by
   refine ⟨by omega, ?_, min_le_right _ _⟩
   have hrhoa : rho < a :=
-    (rho_lt_automaticAgreement hrho hrhoOne ha).trans_le (automaticAgreement_le rho a)
+    (rho_lt_automaticAgreement hrhoOne ha).trans_le (automaticAgreement_le rho a)
   have hreal : (D : ℝ) < A :=
     calc
       (D : ℝ) ≤ rho * n := automatic_degree_le_rate_mul hD hkRate
@@ -255,7 +255,7 @@ degree-one power agreement. -/
 theorem exists_automaticFirstOrder_hybridEquation
     {rho a : ℝ} {n D A k : ℕ}
     (hrho : 0 < rho) (hrhoOne : rho < 1)
-    (ha : firstOrderRateThreshold rho < a) (haOne : a < 1)
+    (ha : firstOrderRateThreshold rho < a)
     (hn : 0 < n) (hD : D = k - 1) (hk : 2 ≤ k)
     (hkRate : (k : ℝ) ≤ rho * n) (hA : a * n ≤ A) (hAn : A ≤ n)
     {F E : Type*} [Field F] [Field E] [DecidableEq F] [DecidableEq E] [IsAlgClosed E]
@@ -286,10 +286,10 @@ theorem exists_automaticFirstOrder_hybridEquation
           A ≤ (polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
             (powerBatchedWord (fun t i ↦ iota (![f, g] t i)) z) P).card →
           HasExactPowerAgreement domain ![f, g] iota k z P := by
-  obtain ⟨hD₁, hDA, hMmu⟩ :=
-    automaticFirstOrder_degree_bounds hrho hrhoOne ha hn hD hk hkRate hA
+  obtain ⟨hD₁, hDA, _⟩ :=
+    automaticFirstOrder_degree_bounds hrhoOne ha hn hD hk hkRate hA
   obtain ⟨Q, hQ, hweight, hdegree, hheight, hroot⟩ := exists_automaticFirstOrder_equation
-    hrho hrhoOne ha haOne hn hD hk hkRate hA (domain.trans ⟨iota, iota.injective⟩)
+    hrho hrhoOne ha hn hD hk hkRate hA (domain.trans ⟨iota, iota.injective⟩)
     (fun i ↦ iota (f i)) (fun i ↦ iota (g i))
   have hsound : ∀ z : E, ∀ P : E[X], P.degree < k →
       A ≤ (polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
@@ -300,7 +300,7 @@ theorem exists_automaticFirstOrder_hybridEquation
     exact hroot z P hP hagree
   obtain rfl : k = D + 1 := by omega
   obtain ⟨exceptional, hraw, hceil, hclosed, hgood⟩ := exists_exceptional_firstOrder_hybrid
-    domain f g iota Q hQ hweight hdegree hheight hD₁ hDA hAn hMmu hchar
+    domain f g iota Q hQ hweight hdegree hheight hD₁ hDA hAn hchar
   exact ⟨Q, hQ, hweight, hdegree, hheight, hsound, exceptional, hraw, hceil, hclosed,
     fun z hz P hP hagree ↦
       hgood z hz P (by exact_mod_cast hP) hagree (hsound z P hP hagree)⟩
@@ -314,7 +314,7 @@ exception constant, leaves every such polynomial with an exact correlated pair. 
 theorem exists_automaticFirstOrder_hybridEquation_base
     {rho a : ℝ} {n D A k : ℕ}
     (hrho : 0 < rho) (hrhoOne : rho < 1)
-    (ha : firstOrderRateThreshold rho < a) (haOne : a < 1)
+    (ha : firstOrderRateThreshold rho < a)
     (hn : 0 < n) (hD : D = k - 1) (hk : 2 ≤ k)
     (hkRate : (k : ℝ) ≤ rho * n) (hA : a * n ≤ A) (hAn : A ≤ n)
     {F : Type*} [Field F] [DecidableEq F]
@@ -343,13 +343,13 @@ theorem exists_automaticFirstOrder_hybridEquation_base
         ∀ z ∉ exceptional, ∀ P : F[X], P.degree < k →
           A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
           HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
-  obtain ⟨hD₁, hDA, hMmu⟩ :=
-    automaticFirstOrder_degree_bounds hrho hrhoOne ha hn hD hk hkRate hA
+  obtain ⟨hD₁, hDA, _⟩ :=
+    automaticFirstOrder_degree_bounds hrhoOne ha hn hD hk hkRate hA
   obtain ⟨Q, hQ, hweight, hdegree, hheight, hroot⟩ := exists_automaticFirstOrder_equation
-    hrho hrhoOne ha haOne hn hD hk hkRate hA domain f g
+    hrho hrhoOne ha hn hD hk hkRate hA domain f g
   obtain rfl : k = D + 1 := by omega
   obtain ⟨exceptional, hraw, hceil, hclosed, hgood⟩ := exists_exceptional_firstOrder_hybrid_base
-    domain f g Q hQ hweight hdegree hheight hD₁ hDA hAn hMmu hchar
+    domain f g Q hQ hweight hdegree hheight hD₁ hDA hAn hchar
   exact ⟨Q, hQ, hweight, hdegree, hheight, hroot, exceptional, hraw, hceil, hclosed,
     fun z hz P hP hagree ↦
       hgood z hz P (by exact_mod_cast hP) hagree (hroot z P hP hagree)⟩
@@ -380,7 +380,6 @@ theorem automatic_first_order_line_agreement
     (hρ : 0 < ρ)
     (hρone : ρ < 1)
     (ha : firstOrderRateThreshold ρ < a)
-    (haone : a < 1)
     /-
 
     Dimension k means degree strictly below k; A counts agreeing positions.
@@ -489,7 +488,7 @@ theorem automatic_first_order_line_agreement
           HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
   dsimp only
   obtain ⟨-, -, -, -, -, -, exceptional, -, -, hclosed, hgood⟩ :=
-    exists_automaticFirstOrder_hybridEquation_base hρ hρone ha haone hn rfl hk hrate hagree hAn
+    exists_automaticFirstOrder_hybridEquation_base hρ hρone ha hn rfl hk hrate hagree hAn
       hchar domain f g
   exact ⟨exceptional, hclosed, hgood⟩
 

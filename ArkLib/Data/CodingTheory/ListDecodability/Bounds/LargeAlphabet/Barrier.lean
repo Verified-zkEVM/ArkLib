@@ -721,7 +721,7 @@ theorem large_union_family_transport :
 theorem barrier_package_existence : BarrierPackageExistence := by
   unfold BarrierPackageExistence
   intro ℓ hℓ R hRpos hRlt B hB
-  rcases barrier_constant_bounds ℓ hℓ R hRpos hRlt B hB with
+  rcases barrier_constant_bounds ℓ hℓ R hRpos hRlt B with
     ⟨hK, hEta, hEtaHalf, hEtaSecond, hAlpha, hAlphaBeta,
       hBetaOne, hXi⟩
   obtain ⟨W, hW, γ₀, hγ₀, mSource, hSource⟩ :=
@@ -753,10 +753,10 @@ theorem barrier_package_existence : BarrierPackageExistence := by
       dsimp only [n₀] at hn
       omega
     rcases rounded_barrier_density_threshold_bounds
-        ℓ hℓ R hRpos hRlt B hB n hnDensity with
+        ℓ hℓ R hRpos hRlt B n hnDensity with
       ⟨hBasicThreshold, hRateBudget, hXiBudget⟩
     have hbasic := rounded_barrier_basic_bounds
-      ℓ hℓ R hRpos hRlt B hB η hη hηcut n hBasicThreshold hlen
+      ℓ hℓ R hRpos hRlt B η hη hηcut n hBasicThreshold hlen
     change 1 ≤ η * n ∧ B + 1 ≤ Nat.floor (R * n) ∧
         d.dZero ≤ d.radius ∧ 0 < d.boosted ∧
         d.boosted ≤ n ∧ d.radius ≤ n at hbasic
@@ -764,7 +764,7 @@ theorem barrier_package_existence : BarrierPackageExistence := by
       ⟨hone, hrate, hdZero, hBoostPos, hBoostLe, hRadiusLe⟩
     have hηhalf : η < (1 - R) / 2 := hηcut.trans_le hEtaHalf
     rcases rounded_barrier_quotient_bounds
-        ℓ hℓ R hRpos hRlt B n η hη hηhalf
+        ℓ hℓ R hRpos B n η hη hηhalf
         (by simpa only [d] using hdZero)
         (by simpa only [d] using hRadiusLe) with
       ⟨hUsed, hRadiusUsed, hmLower, hmUpper, hFloorM, haM, hnM⟩
@@ -777,7 +777,7 @@ theorem barrier_package_existence : BarrierPackageExistence := by
       omega
     obtain ⟨source, hsource⟩ := hSource m hmSource
     have hwindow := rounded_barrier_density_window
-      ℓ hℓ R hRpos hRlt B hB η hη hηcut n hnDensity hlen
+      ℓ hℓ R hRpos hRlt B η hη hηcut n hnDensity hlen
     change Nat.floor (barrierAlphaDensity R * m) ≤ d.aFamily ∧
       d.aFamily < Nat.ceil (barrierBetaDensity ℓ R * m) ∧
       d.aUnion ≤ Nat.ceil (barrierBetaDensity ℓ R * m) ∧
@@ -791,7 +791,7 @@ theorem barrier_package_existence : BarrierPackageExistence := by
       source
     obtain ⟨params, hpW, hpWEq, hpa, hpu, hpz, hpo⟩ :=
       barrier_parameters_exist
-        ℓ hℓ R hRpos hRlt B hB η hη hηcut n W hW
+        ℓ hℓ R hRpos B η hη hηcut n W hW
         hBasicThreshold hlen
     change params.aFamily = d.aFamily at hpa
     change params.aUnion = d.aUnion at hpu
@@ -971,7 +971,7 @@ theorem robust_minimum_distance_barrier :
           field_simp [ne_of_gt hKOne]
         _ ≤ γ / 4 := by linarith
     have hqPower := small_alphabet_power_bound
-      q params.dZero n α η K γ hα.le hη hK.le hqSmall
+      q params.dZero n α η K γ hα.le hK.le hqSmall
       hdZero hone hαK
     have hCoeffNat : 2 * params.W * ℓ ≤ Kfac := by
       dsimp only [Kfac]

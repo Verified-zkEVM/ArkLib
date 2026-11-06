@@ -34,7 +34,7 @@ namespace LargeAlphabetBarrier
 coordinates each of size `> p·n`, some `ℓ` of them meet in at least `⌈(3p^ℓ/4)·n⌉` coordinates.
 This is what lets a balanced centre be built from `ℓ` nearby codewords. -/
 theorem common_disagreement_intersection :
-    ∀ (ℓ : ℕ), 2 ≤ ℓ → ∀ (p : ℝ), 0 < p → p < 1 →
+    ∀ (ℓ : ℕ), 2 ≤ ℓ → ∀ (p : ℝ), 0 < p →
       ∀ {ι : Type} [Fintype ι]
         (M : ℕ), Nat.ceil (4 * (ℓ : ℝ) ^ 2 / p) ≤ M →
         ∀ S : Fin M → Finset ι,
@@ -43,7 +43,18 @@ theorem common_disagreement_intersection :
             Nat.ceil ((3 * p ^ ℓ / 4) * Fintype.card ι) ≤
               ({i : ι | ∀ j, j ∈ J → i ∈ S j} : Set ι).ncard := by
   classical
-  intro ℓ hℓ p hp hp_lt ι _ M hM S hS
+  intro ℓ hℓ p hp ι _ M hM S hS
+  by_cases hp_lt : p < 1
+  swap
+  · have hMpos : 0 < M := lt_of_lt_of_le
+      (Nat.ceil_pos.mpr (div_pos (by positivity) hp)) hM
+    have hfull : Fintype.card ι ≤ Nat.floor (p * Fintype.card ι) := by
+      apply Nat.le_floor_iff (by positivity) |>.mpr
+      nlinarith [Nat.cast_nonneg (α := ℝ) (Fintype.card ι)]
+    exact False.elim (by
+      have := hS ⟨0, hMpos⟩
+      have := Finset.card_le_univ (S ⟨0, hMpos⟩)
+      omega)
   let n := Fintype.card ι
   have hℓR : (0 : ℝ) < ℓ := by
     exact_mod_cast (show 0 < ℓ by omega)
@@ -172,7 +183,7 @@ theorem common_disagreement_intersection :
     exact (not_lt_of_ge hmomentCommon) hupper
 
 theorem balanced_center_from_far_family
-    (ℓ M : ℕ) (hℓ : 2 ≤ ℓ) (p : ℝ) (hp : 0 < p) (hp_lt : p < 1)
+    (ℓ M : ℕ) (hℓ : 2 ≤ ℓ) (p : ℝ) (hp : 0 < p)
     (hM : Nat.ceil (4 * (ℓ : ℝ) ^ 2 / p) ≤ M)
     {ι A : Type} [Fintype ι] [DecidableEq A]
     (c : ι → A) (v : Fin M → ι → A)
@@ -186,13 +197,25 @@ theorem balanced_center_from_far_family
         ∀ k, hammingDist (v (sel k)) y ≤
           Nat.floor (p * Fintype.card ι) := by
   classical
+  by_cases hp_lt : p < 1
+  swap
+  · have hMpos : 0 < M := lt_of_lt_of_le
+      (Nat.ceil_pos.mpr (div_pos (by positivity) hp)) hM
+    have hfull : Fintype.card ι ≤ Nat.floor (p * Fintype.card ι) := by
+      apply Nat.le_floor_iff (by positivity) |>.mpr
+      nlinarith [Nat.cast_nonneg (α := ℝ) (Fintype.card ι)]
+    exact False.elim (by
+      have := hfar ⟨0, hMpos⟩
+      have : hammingDist c (v ⟨0, hMpos⟩) ≤ Fintype.card ι :=
+        hammingDist_le_card_fintype
+      omega)
   let S : Fin M → Finset ι := fun j =>
     Finset.univ.filter fun i => c i ≠ v j i
   have hScard : ∀ j, Nat.floor (p * Fintype.card ι) < (S j).card := by
     intro j
     simpa only [S, hammingDist] using hfar j
   obtain ⟨J, hJcard, hcommon⟩ :=
-    common_disagreement_intersection ℓ hℓ p hp hp_lt M hM S hScard
+    common_disagreement_intersection ℓ hℓ p hp M hM S hScard
   let e : Fin ℓ ≃ J := (Finset.equivFinOfCardEq hJcard).symm
   let sel : Fin ℓ → Fin M := fun k => (e k).1
   have hselinj : Function.Injective sel := by
@@ -239,7 +262,7 @@ codewords sit within the *boosted* radius of any one codeword, at `ℓ + ⌈4ℓ
 the balanced-centre construction a hypothetical excess. -/
 theorem local_neighborhood_bound :
     ∀ (ℓ : ℕ), 2 ≤ ℓ → ∀ (p : ℝ), 0 < p → p < 1 →
-      ∀ {ι : Type} [Fintype ι] [Nonempty ι]
+      ∀ {ι : Type} [Fintype ι]
         {A : Type} [Finite A] [DecidableEq A]
         (C : Set (ι → A)), Lambda C p ≤ (ℓ : ℕ∞) →
         8 * (ℓ : ℝ) ≤ p ^ ℓ * Fintype.card ι →
@@ -249,7 +272,14 @@ theorem local_neighborhood_bound :
               Nat.floor (boostedRadius ℓ p * Fintype.card ι)} : Set (ι → A)).ncard
             ≤ ℓ + Nat.ceil (4 * ((ℓ : ℝ) ^ 2) / p) := by
   classical
-  intro ℓ hℓ p hp hp_lt ι _ _ A _ _ C hLambda hsize c hc
+  intro ℓ hℓ p hp hp_lt ι _ A _ _ C hLambda hsize c hc
+  have : Nonempty ι := Fintype.card_pos_iff.mp (by
+    by_contra hn
+    have hzero : Fintype.card ι = 0 := by omega
+    rw [hzero] at hsize
+    norm_num at hsize
+    have : (2 : ℝ) ≤ ℓ := by exact_mod_cast hℓ
+    linarith)
   let n := Fintype.card ι
   let r := Nat.floor (p * n)
   let r' := Nat.floor (boostedRadius ℓ p * n)
@@ -300,7 +330,7 @@ theorem local_neighborhood_bound :
       exact ⟨hvC j, hle⟩
     simpa only [r, n] using Nat.lt_of_not_ge hnotle
   obtain ⟨sel, hselinj, y, hyc, hyu⟩ :=
-    balanced_center_from_far_family ℓ M hℓ p hp hp_lt
+    balanced_center_from_far_family ℓ M hℓ p hp
       (by exact le_rfl) c v hvfar hvnear hsize
   let u : Fin ℓ → ι → A := fun k => v (sel k)
   have huinj : Function.Injective u := hvinj.comp hselinj
@@ -423,7 +453,7 @@ theorem many_restriction_alternatives
 theorem good_base_word
     (W aFamily aUnion : ℕ)
     {ι A : Type} [DecidableEq ι] [Fintype A]
-    (C : Set (ι → A)) (hC : C.Finite) (hA : 2 ≤ Fintype.card A)
+    (C : Set (ι → A)) (hA : 2 ≤ Fintype.card A)
     (family : LargeUnionFamily ι W aFamily aUnion)
     (hmany : 2 * Fintype.card A ^ aFamily ≤ C.ncard) :
     ∃ c₀ : ι → A, c₀ ∈ C ∧
@@ -433,14 +463,15 @@ theorem good_base_word
           ∀ S ∈ good, alt S ∈ C ∧ alt S ≠ c₀ ∧
             ∀ i ∈ S, alt S i = c₀ i := by
   classical
+  have hqpos : 0 < Fintype.card A := by omega
+  have hleftpos : 0 < 2 * Fintype.card A ^ aFamily :=
+    Nat.mul_pos (by omega) (pow_pos hqpos aFamily)
+  have hC := Set.finite_of_ncard_pos (hleftpos.trans_le hmany)
   let code : Finset (ι → A) := hC.toFinset
   let P : (ι → A) → Finset ι → Prop := fun c S =>
     ∃ z ∈ code, z ≠ c ∧ ∀ i ∈ S, z i = c i
   have hcodecard : code.card = C.ncard := by
     rw [← Set.ncard_coe_finset, hC.coe_toFinset]
-  have hqpos : 0 < Fintype.card A := by omega
-  have hleftpos : 0 < 2 * Fintype.card A ^ aFamily :=
-    Nat.mul_pos (by omega) (pow_pos hqpos aFamily)
   have hcodepos : 0 < code.card := by
     rw [hcodecard]
     exact hleftpos.trans_le hmany
@@ -489,7 +520,7 @@ theorem deterministic_pigeonhole_bound :
     params hW blocks family hfamilyDisjoint hsep hmany hLambda
   obtain ⟨c₀, hc₀, good, hgoodSub, hgoodCard, alt, halt⟩ :=
     good_base_word params.W params.aFamily params.aUnion
-      C hC hA family hmany
+      C hA family hmany
   let goodFamily : LargeUnionFamily ι params.W
       params.aFamily params.aUnion :=
     { sets := good
@@ -625,12 +656,16 @@ theorem deterministic_pigeonhole_bound :
 
 theorem small_alphabet_power_bound
     (q dZero n : ℕ) (α η K γ : ℝ)
-    (hα : 0 ≤ α) (hη : 0 < η) (hK : 0 ≤ K)
+    (hα : 0 ≤ α) (hK : 0 ≤ K)
     (hq : (q : ℝ) < (2 : ℝ) ^ (α / η))
     (hdZero : dZero ≤ Nat.ceil (K * η * n))
     (hone : 1 ≤ η * n)
     (hbudget : α * (K + 1) ≤ γ / 4) :
     ((q ^ dZero : ℕ) : ℝ) ≤ (2 : ℝ) ^ ((γ / 4) * n) := by
+  have hη : 0 < η := by
+    by_contra h
+    have := mul_nonpos_of_nonpos_of_nonneg (le_of_not_gt h) (Nat.cast_nonneg n)
+    linarith
   have hceil := ceil_linear_bound K η n hK hη.le hone
   have hdZeroR : (dZero : ℝ) < (K + 1) * η * n := by
     have hcast : (dZero : ℝ) ≤
@@ -672,7 +707,7 @@ noncomputable def barrierEtaCut (ℓ : ℕ) (R : ℝ) (B : ℕ) : ℝ :=
     (smallRadius ℓ R / (2 * (barrierK ℓ B + 1)))
 
 theorem barrier_radius_window
-    (ℓ : ℕ) (hℓ : 2 ≤ ℓ) (R : ℝ) (hRpos : 0 < R) (hRlt : R < 1)
+    (ℓ : ℕ) (hℓ : 2 ≤ ℓ) (R : ℝ) (hRpos : 0 < R)
     (η : ℝ) (hηpos : 0 < η) (hηcut : η < (1 - R) / 2) :
     0 < smallRadius ℓ R ∧
       smallRadius ℓ R ≤ relRadius ℓ R η ∧
@@ -686,7 +721,7 @@ theorem barrier_radius_window
   have hcoef1 : (ℓ : ℝ) / (ℓ + 1) < 1 := by
     rw [div_lt_one (by positivity)]
     linarith
-  have hgapSmall : 0 < (1 - R) / 2 := by positivity
+  have hgapSmall : 0 < (1 - R) / 2 := by linarith
   have hsmall : 0 < smallRadius ℓ R := by
     unfold smallRadius
     exact mul_pos hcoef hgapSmall
@@ -739,7 +774,7 @@ noncomputable def barrierBetaDensity (ℓ : ℕ) (R : ℝ) : ℝ :=
 
 theorem barrier_constant_bounds
     (ℓ : ℕ) (hℓ : 2 ≤ ℓ) (R : ℝ) (hRpos : 0 < R) (hRlt : R < 1)
-    (B : ℕ) (hB : 0 < B) :
+    (B : ℕ) :
     0 < barrierK ℓ B ∧
       0 < barrierEtaCut ℓ R B ∧
       barrierEtaCut ℓ R B ≤ (1 - R) / 2 ∧
@@ -805,7 +840,7 @@ theorem barrier_constant_bounds
 
 theorem barrier_density_real_gaps
     (ℓ : ℕ) (hℓ : 2 ≤ ℓ) (R : ℝ) (hRpos : 0 < R) (hRlt : R < 1)
-    (B : ℕ) (hB : 0 < B) (η : ℝ) (hηpos : 0 < η)
+    (B : ℕ) (η : ℝ) (hηpos : 0 < η)
     (hηcut : η < barrierEtaCut ℓ R B) :
     let p := relRadius ℓ R η
     let _p₀ := smallRadius ℓ R
@@ -822,11 +857,11 @@ theorem barrier_density_real_gaps
     1 - boostedRadius ℓ p + 3 * ξ ≤ β * (1 - p)
   have hℓpos : 0 < ℓ := by omega
   have hℓR : (0 : ℝ) < ℓ := by exact_mod_cast hℓpos
-  rcases barrier_constant_bounds ℓ hℓ R hRpos hRlt B hB with
+  rcases barrier_constant_bounds ℓ hℓ R hRpos hRlt B with
     ⟨hK, hEta, hEtaHalf, hEtaSecond, hAlpha, hAlphaBeta,
       hBeta, hXi⟩
   have hηhalf : η < (1 - R) / 2 := hηcut.trans_le hEtaHalf
-  rcases barrier_radius_window ℓ hℓ R hRpos hRlt η hηpos hηhalf with
+  rcases barrier_radius_window ℓ hℓ R hRpos η hηpos hηhalf with
     ⟨hp₀, hp₀le, hp, hpCoef, hBoost, hBoostOne⟩
   change 0 < p₀ at hp₀
   change p₀ ≤ p at hp₀le
@@ -895,7 +930,7 @@ noncomputable def neighborhoodCap (ℓ : ℕ) (ρ : ℝ) : ℕ :=
 
 theorem rounded_barrier_basic_bounds
     (ℓ : ℕ) (hℓ : 2 ≤ ℓ) (R : ℝ) (hRpos : 0 < R) (hRlt : R < 1)
-    (B : ℕ) (hB : 0 < B) (η : ℝ) (hηpos : 0 < η)
+    (B : ℕ) (η : ℝ) (hηpos : 0 < η)
     (hηcut : η < barrierEtaCut ℓ R B) (n : ℕ)
     (hn : roundedBarrierBasicThreshold R B ≤ n)
     (hlen : 1 / η ≤ (n : ℝ)) :
@@ -904,11 +939,11 @@ theorem rounded_barrier_basic_bounds
       d.dZero ≤ d.radius ∧ 0 < d.boosted ∧
       d.boosted ≤ n ∧ d.radius ≤ n := by
   dsimp only [roundedBarrierData]
-  rcases barrier_constant_bounds ℓ hℓ R hRpos hRlt B hB with
+  rcases barrier_constant_bounds ℓ hℓ R hRpos hRlt B with
     ⟨hK, hEta, hEtaHalf, hEtaSecond, hAlpha, hAlphaBeta,
       hBeta, hXi⟩
   have hηhalf : η < (1 - R) / 2 := hηcut.trans_le hEtaHalf
-  rcases barrier_radius_window ℓ hℓ R hRpos hRlt η hηpos hηhalf with
+  rcases barrier_radius_window ℓ hℓ R hRpos η hηpos hηhalf with
     ⟨hpMin, hpMinLe, hp, hpCoef, hBoost, hBoostOne⟩
   have hone : 1 ≤ η * (n : ℝ) :=
     eta_times_length_one η n hηpos hlen
@@ -982,7 +1017,7 @@ noncomputable def roundedBarrierDensityThreshold
 
 theorem rounded_barrier_density_threshold_bounds
     (ℓ : ℕ) (hℓ : 2 ≤ ℓ) (R : ℝ) (hRpos : 0 < R) (hRlt : R < 1)
-    (B : ℕ) (hB : 0 < B) (n : ℕ)
+    (B : ℕ) (n : ℕ)
     (hn : roundedBarrierDensityThreshold ℓ R B ≤ n) :
     roundedBarrierBasicThreshold R B ≤ n ∧
       ((2 * (B + 2) : ℕ) : ℝ) ≤ R * n ∧
@@ -999,7 +1034,7 @@ theorem rounded_barrier_density_threshold_bounds
   have hRate : ((2 * (B + 2) : ℕ) : ℝ) ≤ R * n := by
     have h := (div_le_iff₀ hRpos).mp hRateDiv
     simpa only [mul_comm] using h
-  rcases barrier_constant_bounds ℓ hℓ R hRpos hRlt B hB with
+  rcases barrier_constant_bounds ℓ hℓ R hRpos hRlt B with
     ⟨hK, hEta, hEtaHalf, hEtaSecond, hAlpha, hAlphaBeta,
       hBeta, hXi⟩
   have hXiCeil :
@@ -1016,11 +1051,9 @@ theorem rounded_barrier_density_threshold_bounds
   exact ⟨hBasic, hRate, hXiBound⟩
 
 theorem rounded_barrier_lower_family_density
-    (ℓ : ℕ) (_hℓ : 2 ≤ ℓ) (R : ℝ) (hRpos : 0 < R) (hRlt : R < 1)
-    (B : ℕ) (_hB : 0 < B) (η : ℝ) (_hηpos : 0 < η)
-    (_hηcut : η < barrierEtaCut ℓ R B) (n : ℕ)
-    (hn : roundedBarrierDensityThreshold ℓ R B ≤ n)
-    (_hlen : 1 / η ≤ (n : ℝ)) :
+    (ℓ : ℕ) (R : ℝ) (hRpos : 0 < R)
+    (B : ℕ) (η : ℝ) (n : ℕ)
+    (hn : roundedBarrierDensityThreshold ℓ R B ≤ n) :
     let d := roundedBarrierData ℓ R η (barrierK ℓ B) B n
     Nat.floor (barrierAlphaDensity R * d.unused) ≤ d.aFamily := by
   let d := roundedBarrierData ℓ R η (barrierK ℓ B) B n
@@ -1065,22 +1098,25 @@ theorem rounded_barrier_lower_family_density
   omega
 
 theorem rounded_barrier_other_codeword_bound
-    (ℓ : ℕ) (hℓ : 2 ≤ ℓ) (R : ℝ) (hRpos : 0 < R) (hRlt : R < 1)
-    (B : ℕ) (hB : 0 < B) (η : ℝ) (hηpos : 0 < η)
+    (ℓ : ℕ) (hℓ : 2 ≤ ℓ) (R : ℝ) (hRpos : 0 < R)
+    (B : ℕ) (η : ℝ) (hηpos : 0 < η)
     (hηcut : η < barrierEtaCut ℓ R B) (n : ℕ)
     (hn : roundedBarrierBasicThreshold R B ≤ n)
     (hlen : 1 / η ≤ (n : ℝ)) :
     let d := roundedBarrierData ℓ R η (barrierK ℓ B) B n
     n - d.dZero - d.dOne - d.aFamily ≤ d.radius := by
+  have hRlt : R < 1 := by
+    have := hηcut.trans_le (min_le_left _ _)
+    linarith
   have hbasic := rounded_barrier_basic_bounds
-    ℓ hℓ R hRpos hRlt B hB η hηpos hηcut n hn hlen
+    ℓ hℓ R hRpos hRlt B η hηpos hηcut n hn hlen
   dsimp only at hbasic ⊢
   exact rounded_barrier_other_codeword_bound_core
     ℓ hℓ R η B n hbasic.1 hbasic.2.1 hbasic.2.2.1
 
 theorem barrier_parameters_exist
-    (ℓ : ℕ) (hℓ : 2 ≤ ℓ) (R : ℝ) (hRpos : 0 < R) (hRlt : R < 1)
-    (B : ℕ) (hB : 0 < B) (η : ℝ) (hηpos : 0 < η)
+    (ℓ : ℕ) (hℓ : 2 ≤ ℓ) (R : ℝ) (hRpos : 0 < R)
+    (B : ℕ) (η : ℝ) (hηpos : 0 < η)
     (hηcut : η < barrierEtaCut ℓ R B) (n W : ℕ) (hW : 0 < W)
     (hn : roundedBarrierBasicThreshold R B ≤ n)
     (hlen : 1 / η ≤ (n : ℝ)) :
@@ -1089,6 +1125,9 @@ theorem barrier_parameters_exist
       0 < params.W ∧ params.W = W ∧
       params.aFamily = d.aFamily ∧ params.aUnion = d.aUnion ∧
       params.dZero = d.dZero ∧ params.dOne = d.dOne := by
+  have hRlt : R < 1 := by
+    have := hηcut.trans_le (min_le_left _ _)
+    linarith
   let d := roundedBarrierData ℓ R η (barrierK ℓ B) B n
   change ∃ params : BarrierParameters ℓ n d.radius d.boosted,
     0 < params.W ∧ params.W = W ∧
@@ -1099,7 +1138,7 @@ theorem barrier_parameters_exist
         d.dZero ≤ d.radius ∧ 0 < d.boosted ∧
         d.boosted ≤ n ∧ d.radius ≤ n := by
     simpa only [d] using rounded_barrier_basic_bounds
-      ℓ hℓ R hRpos hRlt B hB η hηpos hηcut n hn hlen
+      ℓ hℓ R hRpos hRlt B η hηpos hηcut n hn hlen
   rcases hbasic with
     ⟨hone, hrate, hdZero, hBoostPos, hBoostLe, hRadiusLe⟩
   have hℓpos : 0 < ℓ := by omega
@@ -1109,7 +1148,7 @@ theorem barrier_parameters_exist
     simpa only [d, roundedBarrierData] using hquot.1
   have hother : n - d.dZero - d.dOne - d.aFamily ≤ d.radius := by
     simpa only [d] using rounded_barrier_other_codeword_bound
-      ℓ hℓ R hRpos hRlt B hB η hηpos hηcut n hn hlen
+      ℓ hℓ R hRpos B η hηpos hηcut n hn hlen
   have hrepeated : n - d.aUnion < d.boosted := by
     dsimp only [d, roundedBarrierData] at hBoostPos hBoostLe ⊢
     omega
@@ -1127,7 +1166,7 @@ theorem barrier_parameters_exist
   all_goals rfl
 
 theorem rounded_barrier_quotient_bounds
-    (ℓ : ℕ) (hℓ : 2 ≤ ℓ) (R : ℝ) (hRpos : 0 < R) (hRlt : R < 1)
+    (ℓ : ℕ) (hℓ : 2 ≤ ℓ) (R : ℝ) (hRpos : 0 < R)
     (B n : ℕ) (η : ℝ) (hηpos : 0 < η)
     (hηhalf : η < (1 - R) / 2)
     (hdZero :
@@ -1153,7 +1192,7 @@ theorem rounded_barrier_quotient_bounds
       (Nat.floor (relRadius ℓ R η * n))
       (Nat.ceil (barrierK ℓ B * η * n)) n hℓpos hdZero hradius with
     ⟨hused, hrUsed, hmLower, hmUpper⟩
-  rcases barrier_radius_window ℓ hℓ R hRpos hRlt η hηpos hηhalf with
+  rcases barrier_radius_window ℓ hℓ R hRpos η hηpos hηhalf with
     ⟨hpMin, hpMinLe, hp, hpCoef, hBoost, hBoostOne⟩
   have hbalance := relRadius_balance ℓ hℓpos R η
   have hpDiv : 0 < relRadius ℓ R η / (ℓ : ℝ) :=
@@ -1233,7 +1272,7 @@ private theorem one_sub_mul_le_nat_sub
 
 theorem rounded_barrier_upper_family_density
     (ℓ : ℕ) (hℓ : 2 ≤ ℓ) (R : ℝ) (hRpos : 0 < R) (hRlt : R < 1)
-    (B : ℕ) (hB : 0 < B) (η : ℝ) (hηpos : 0 < η)
+    (B : ℕ) (η : ℝ) (hηpos : 0 < η)
     (hηcut : η < barrierEtaCut ℓ R B) (n : ℕ)
     (hn : roundedBarrierDensityThreshold ℓ R B ≤ n)
     (hlen : 1 / η ≤ (n : ℝ)) :
@@ -1244,16 +1283,16 @@ theorem rounded_barrier_upper_family_density
   let β := barrierBetaDensity ℓ R
   change d.aFamily < Nat.ceil (β * d.unused)
   rcases rounded_barrier_density_threshold_bounds
-      ℓ hℓ R hRpos hRlt B hB n hn with
+      ℓ hℓ R hRpos hRlt B n hn with
     ⟨hBasicThreshold, hRateBudget, hXiBudget⟩
   have hbasic := rounded_barrier_basic_bounds
-    ℓ hℓ R hRpos hRlt B hB η hηpos hηcut n hBasicThreshold hlen
+    ℓ hℓ R hRpos hRlt B η hηpos hηcut n hBasicThreshold hlen
   change 1 ≤ η * n ∧ B + 1 ≤ Nat.floor (R * n) ∧
       d.dZero ≤ d.radius ∧ 0 < d.boosted ∧
       d.boosted ≤ n ∧ d.radius ≤ n at hbasic
   rcases hbasic with
     ⟨hone, hrate, hdZero, hBoostPos, hBoostLe, hRadiusLe⟩
-  rcases barrier_constant_bounds ℓ hℓ R hRpos hRlt B hB with
+  rcases barrier_constant_bounds ℓ hℓ R hRpos hRlt B with
     ⟨hK, hEta, hEtaHalf, hEtaSecond, hAlpha, hAlphaBeta,
       hBetaOne, hXi⟩
   have hBetaPos : 0 < β := by
@@ -1261,16 +1300,16 @@ theorem rounded_barrier_upper_family_density
     exact hAlpha.trans hAlphaBeta
   have hηhalf : η < (1 - R) / 2 := hηcut.trans_le hEtaHalf
   rcases rounded_barrier_quotient_bounds
-      ℓ hℓ R hRpos hRlt B n η hηpos hηhalf
+      ℓ hℓ R hRpos B n η hηpos hηhalf
       (by simpa only [d] using hdZero)
       (by simpa only [d] using hRadiusLe) with
     ⟨hUsed, hRadiusUsed, hmLower, hmUpper, hFloorM, haM, hnM⟩
   rcases barrier_density_real_gaps
-      ℓ hℓ R hRpos hRlt B hB η hηpos hηcut with
+      ℓ hℓ R hRpos hRlt B η hηpos hηcut with
     ⟨hRateGap, hUnionGap⟩
   change R < β * (1 - p) at hRateGap
   rcases barrier_radius_window
-      ℓ hℓ R hRpos hRlt η hηpos hηhalf with
+      ℓ hℓ R hRpos η hηpos hηhalf with
     ⟨hpMin, hpMinLe, hp, hpCoef, hBoost, hBoostOne⟩
   change 0 < p at hp
   have hnR : (0 : ℝ) < n := by
@@ -1307,7 +1346,7 @@ theorem rounded_barrier_upper_family_density
 
 theorem rounded_barrier_upper_union_density
     (ℓ : ℕ) (hℓ : 2 ≤ ℓ) (R : ℝ) (hRpos : 0 < R) (hRlt : R < 1)
-    (B : ℕ) (hB : 0 < B) (η : ℝ) (hηpos : 0 < η)
+    (B : ℕ) (η : ℝ) (hηpos : 0 < η)
     (hηcut : η < barrierEtaCut ℓ R B) (n : ℕ)
     (hn : roundedBarrierDensityThreshold ℓ R B ≤ n)
     (hlen : 1 / η ≤ (n : ℝ)) :
@@ -1320,17 +1359,17 @@ theorem rounded_barrier_upper_union_density
   let β := barrierBetaDensity ℓ R
   change d.aUnion ≤ Nat.ceil (β * d.unused)
   rcases rounded_barrier_density_threshold_bounds
-      ℓ hℓ R hRpos hRlt B hB n hn with
+      ℓ hℓ R hRpos hRlt B n hn with
     ⟨hBasicThreshold, hRateBudget, hXiBudget⟩
   change 1 ≤ 3 * ξ * n at hXiBudget
   have hbasic := rounded_barrier_basic_bounds
-    ℓ hℓ R hRpos hRlt B hB η hηpos hηcut n hBasicThreshold hlen
+    ℓ hℓ R hRpos hRlt B η hηpos hηcut n hBasicThreshold hlen
   change 1 ≤ η * n ∧ B + 1 ≤ Nat.floor (R * n) ∧
       d.dZero ≤ d.radius ∧ 0 < d.boosted ∧
       d.boosted ≤ n ∧ d.radius ≤ n at hbasic
   rcases hbasic with
     ⟨hone, hrate, hdZero, hBoostPos, hBoostLe, hRadiusLe⟩
-  rcases barrier_constant_bounds ℓ hℓ R hRpos hRlt B hB with
+  rcases barrier_constant_bounds ℓ hℓ R hRpos hRlt B with
     ⟨hK, hEta, hEtaHalf, hEtaSecond, hAlpha, hAlphaBeta,
       hBetaOne, hXi⟩
   have hBetaPos : 0 < β := by
@@ -1338,16 +1377,16 @@ theorem rounded_barrier_upper_union_density
     exact hAlpha.trans hAlphaBeta
   have hηhalf : η < (1 - R) / 2 := hηcut.trans_le hEtaHalf
   rcases rounded_barrier_quotient_bounds
-      ℓ hℓ R hRpos hRlt B n η hηpos hηhalf
+      ℓ hℓ R hRpos B n η hηpos hηhalf
       (by simpa only [d] using hdZero)
       (by simpa only [d] using hRadiusLe) with
     ⟨hUsed, hRadiusUsed, hmLower, hmUpper, hFloorM, haM, hnM⟩
   rcases barrier_density_real_gaps
-      ℓ hℓ R hRpos hRlt B hB η hηpos hηcut with
+      ℓ hℓ R hRpos hRlt B η hηpos hηcut with
     ⟨hRateGap, hUnionGap⟩
   change 1 - p' + 3 * ξ ≤ β * (1 - p) at hUnionGap
   rcases barrier_radius_window
-      ℓ hℓ R hRpos hRlt η hηpos hηhalf with
+      ℓ hℓ R hRpos η hηpos hηhalf with
     ⟨hpMin, hpMinLe, hp, hpCoef, hBoost, hBoostOne⟩
   change 0 < p at hp
   have hnR : (0 : ℝ) < n := by
@@ -1405,7 +1444,7 @@ theorem rounded_barrier_upper_union_density
 
 theorem rounded_barrier_density_window
     (ℓ : ℕ) (hℓ : 2 ≤ ℓ) (R : ℝ) (hRpos : 0 < R) (hRlt : R < 1)
-    (B : ℕ) (hB : 0 < B) (η : ℝ) (hηpos : 0 < η)
+    (B : ℕ) (η : ℝ) (hηpos : 0 < η)
     (hηcut : η < barrierEtaCut ℓ R B) (n : ℕ)
     (hn : roundedBarrierDensityThreshold ℓ R B ≤ n)
     (hlen : 1 / η ≤ (n : ℝ)) :
@@ -1420,33 +1459,33 @@ theorem rounded_barrier_density_window
     d.aUnion ≤ Nat.ceil (barrierBetaDensity ℓ R * d.unused) ∧
     d.aFamily ≤ d.unused
   have hLower := rounded_barrier_lower_family_density
-    ℓ hℓ R hRpos hRlt B hB η hηpos hηcut n hn hlen
+    ℓ R hRpos B η n hn
   change Nat.floor (barrierAlphaDensity R * d.unused) ≤
     d.aFamily at hLower
   have hUpperFamily := rounded_barrier_upper_family_density
-    ℓ hℓ R hRpos hRlt B hB η hηpos hηcut n hn hlen
+    ℓ hℓ R hRpos hRlt B η hηpos hηcut n hn hlen
   change d.aFamily < Nat.ceil
     (barrierBetaDensity ℓ R * d.unused) at hUpperFamily
   have hUpperUnion := rounded_barrier_upper_union_density
-    ℓ hℓ R hRpos hRlt B hB η hηpos hηcut n hn hlen
+    ℓ hℓ R hRpos hRlt B η hηpos hηcut n hn hlen
   change d.aUnion ≤ Nat.ceil
     (barrierBetaDensity ℓ R * d.unused) at hUpperUnion
   rcases rounded_barrier_density_threshold_bounds
-      ℓ hℓ R hRpos hRlt B hB n hn with
+      ℓ hℓ R hRpos hRlt B n hn with
     ⟨hBasicThreshold, hRateBudget, hXiBudget⟩
   have hbasic := rounded_barrier_basic_bounds
-    ℓ hℓ R hRpos hRlt B hB η hηpos hηcut n hBasicThreshold hlen
+    ℓ hℓ R hRpos hRlt B η hηpos hηcut n hBasicThreshold hlen
   change 1 ≤ η * n ∧ B + 1 ≤ Nat.floor (R * n) ∧
       d.dZero ≤ d.radius ∧ 0 < d.boosted ∧
       d.boosted ≤ n ∧ d.radius ≤ n at hbasic
   rcases hbasic with
     ⟨hone, hrate, hdZero, hBoostPos, hBoostLe, hRadiusLe⟩
-  rcases barrier_constant_bounds ℓ hℓ R hRpos hRlt B hB with
+  rcases barrier_constant_bounds ℓ hℓ R hRpos hRlt B with
     ⟨hK, hEta, hEtaHalf, hEtaSecond, hAlpha, hAlphaBeta,
       hBetaOne, hXi⟩
   have hηhalf : η < (1 - R) / 2 := hηcut.trans_le hEtaHalf
   rcases rounded_barrier_quotient_bounds
-      ℓ hℓ R hRpos hRlt B n η hηpos hηhalf
+      ℓ hℓ R hRpos B n η hηpos hηhalf
       (by simpa only [d] using hdZero)
       (by simpa only [d] using hRadiusLe) with
     ⟨hUsed, hRadiusUsed, hmLower, hmUpper, hFloorM, haM, hnM⟩

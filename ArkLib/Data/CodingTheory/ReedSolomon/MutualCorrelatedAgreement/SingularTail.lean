@@ -189,7 +189,7 @@ theorem automaticSquarefreeListExpression_le
     {rho eta : ℝ} {n D A : ℕ}
     (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
     (haOne : firstOrderRateThreshold rho + eta < 1)
-    (hn : 1 ≤ n) (hD : 1 ≤ D) (hDn : D ≤ n) (hDA : D < A)
+    (hn : 1 ≤ n) (hD : 1 ≤ D) (hDn : D ≤ n)
     (hDrate : (D : ℝ) ≤ rho * n)
     (hA : (firstOrderRateThreshold rho + eta) * n ≤ A)
     (hM : 1 ≤ automaticDerivativeCap rho (firstOrderRateThreshold rho + eta)) :
@@ -201,7 +201,7 @@ theorem automaticSquarefreeListExpression_le
       automaticSquarefreeListBoundConstant rho * n / eta ^ 2 := by
   dsimp only
   obtain ⟨hC, hq, hIncidence0, hIncidence, _, hJetDegree⟩ :=
-    automaticRateIncidenceJetBounds hrho hrhoOne heta haOne hDn hDA hDrate hA
+    automaticRateIncidenceJetBounds hrho hrhoOne heta haOne hDrate hA
   have hbound := squarefreeListExpression_le_rate_envelope hC hq hn hD hDn hM
     (min_le_right _ _) hIncidence0 hIncidence (hJetDegree.trans_eq (div_eq_mul_one_div _ _))
   rwa [one_div_pow, ← div_eq_mul_one_div] at hbound

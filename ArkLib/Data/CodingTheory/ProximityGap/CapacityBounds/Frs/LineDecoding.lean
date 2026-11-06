@@ -914,10 +914,15 @@ theorem sharpSubspaceProfile_two_mul_le_rate_add
 open scoped NNReal in
 open scoped BigOperators in
 open Code in
+/-- **Boosting strong line decodability.** If `C` is `(δ, a, b)`-strongly-line-decodable with
+`b > 1`, has at most `L` codewords in every ball of radius `δ b/(b - 1)`, and `(L + 1)² < |F|`,
+then `C` is `(δ, (b' - 1) · L + a, b')`-strongly-line-decodable for every `b'`. Removing the at
+most `L` globally close pairs, each aligning fewer than `b'` seeds, costs at most `(b' - 1) · L`
+seeds. -/
 theorem strongLineDecodable_boost_of_lambda_le
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
-    {s a b L : ℕ} {δ : NNReal}
+    {s a b L b' : ℕ} {δ : NNReal}
     (C : Submodule F (ι → Fin s → F))
     (hweak : StrongLineDecodable (C : Set (ι → Fin s → F)) δ a b)
     (hb : 1 < b)
@@ -925,7 +930,7 @@ theorem strongLineDecodable_boost_of_lambda_le
       ((δ : ℝ) * (b : ℝ) / ((b : ℝ) - 1)) ≤ (L : ℕ∞))
     (hfield : (L + 1) ^ 2 < Fintype.card F) :
     StrongLineDecodable (C : Set (ι → Fin s → F)) δ
-      (Fintype.card ι * L + a) (Fintype.card ι + 1) := by
+      ((b' - 1) * L + a) b' := by
   classical
   intro f₀ f₁ U hU T hTclose hTcard
   let δ' : ℝ := (δ : ℝ) * (b : ℝ) / ((b : ℝ) - 1)
@@ -942,7 +947,7 @@ theorem strongLineDecodable_boost_of_lambda_le
     dsimp only [P, δ']
     exact globallyCloseAffinePairs_card_le C hclosed f₀ f₁
       ((δ : ℝ) * (b : ℝ) / ((b : ℝ) - 1)) hLambda hfield
-  by_cases hlarge : ∃ p ∈ P, Fintype.card ι + 1 ≤ (K p).card
+  by_cases hlarge : ∃ p ∈ P, b' ≤ (K p).card
   · obtain ⟨p, hpP, hpK⟩ := hlarge
     have hpdata : p.1 ∈ (C : Set (ι → Fin s → F)) ∧
         p.2 ∈ (C : Set (ι → Fin s → F)) ∧
@@ -953,7 +958,7 @@ theorem strongLineDecodable_boost_of_lambda_le
     refine ⟨p.1, hpdata.1, p.2, hpdata.2.1, ?_⟩
     simpa only [K] using hpK
   · push Not at hlarge
-    have hKcard : ∀ p ∈ P, (K p).card ≤ Fintype.card ι := by
+    have hKcard : ∀ p ∈ P, (K p).card ≤ b' - 1 := by
       intro p hpP
       have hnot := hlarge p hpP
       omega
@@ -961,7 +966,7 @@ theorem strongLineDecodable_boost_of_lambda_le
     let R : Finset F := T \ B
     have haR : a ≤ R.card := by
       dsimp only [R, B]
-      exact finset_card_sdiff_biUnion_ge P T K (Fintype.card ι) L a
+      exact finset_card_sdiff_biUnion_ge P T K (b' - 1) L a
         (by
           intro p hpP
           exact Finset.filter_subset _ _)

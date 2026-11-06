@@ -106,7 +106,7 @@ private theorem finiteLengthJetDegree_pos
   apply Nat.ceil_pos.mpr
   have hm := finiteLengthMultiplicity_pos hrho hrhoOne heta haOne hn hbetaHalf
   have ha : 0 < finiteLengthCertifiedAgreement rho eta :=
-    hrho.trans (rho_lt_automaticAgreement hrho hrhoOne (by linarith))
+    hrho.trans (rho_lt_automaticAgreement hrhoOne (by linarith))
   have hrate := finiteLengthRate_pos hrho hn
   positivity
 
@@ -222,7 +222,7 @@ theorem exists_exceptional_firstOrderMca_zero_derivative_of_certificate
         HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
   obtain ⟨exceptional, _, _, hcard, hgood⟩ :=
     cert.exists_exceptional_hybrid (D := k - 1) (by omega) (by omega)
-      (by omega) hAn (by simp) hchar
+      (by omega) hAn hchar
   exact ⟨exceptional, hcard, hgood⟩
 
 open Classical in

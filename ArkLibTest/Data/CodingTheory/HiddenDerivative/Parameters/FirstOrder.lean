@@ -547,7 +547,7 @@ example : (hybridSolutions.card : ℝ) ≤
   exact finite_firstOrder_hybrid_agreement_solutions_card_le_optimized_of_tail
     (D := 1) (A := 3) (μ := 3) (M := 1)
     hybridDomain hybridReceived hybridSymbolicEquation hybridSymbolicDescent 0
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num)
     (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)) hybridSymbolicTailBound hybridSolutions
     hybridSymbolicSolutions (fun P hP ↦ by
       rcases Finset.mem_singleton.mp hP with rfl
@@ -577,7 +577,7 @@ example : (hybridSolutions.card : ℝ) ≤
   exact finite_firstOrder_field_hybrid_agreement_solutions_card_le_optimized
     (D := 1) (A := 3) (μ := 3) (M := 1)
     hybridDomain hybridReceived hybridFieldEquation hybridFieldDescent
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num)
     (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)) hybridSolutions hybridFieldSolutions
     (fun P hP ↦ by
       rcases Finset.mem_singleton.mp hP with rfl
@@ -597,7 +597,7 @@ example : (hybridSolutions.card : ℝ) ≤
     (by rw [jetDegree, hybridFieldEquation,
       MvPolynomial.degreeOf_X_of_ne (by decide)]; norm_num)
     (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num) (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)) hybridSolutions
+    (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)) hybridSolutions
     hybridFieldSolutions (fun P hP ↦ by
       rcases Finset.mem_singleton.mp hP with rfl
       refine ⟨WithBot.bot_lt_coe _, ?_⟩
@@ -613,7 +613,7 @@ example : (hybridSolutions.card : ℝ) ≤
         (automaticJetDegree (1 / 2) (3 / 4)) (automaticDerivativeCap (1 / 2) (3 / 4)) := by
   exact finite_automaticFirstOrder_hybrid_agreement_solutions_card_le
     (rho := 1 / 2) (a := 3 / 4) (n := 4) (D := 1) (A := 3) (k := 2)
-    (by norm_num) (by norm_num) half_rate_threshold_lt_three_four (by norm_num)
+    (by norm_num) (by norm_num) half_rate_threshold_lt_three_four
     (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
     hybridDomain hybridReceived (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)) hybridSolutions
     (fun P hP ↦ by
@@ -625,19 +625,19 @@ example : (hybridSolutions.card : ℝ) ≤
 
 /-- The fiber stage sum at `D = 2`, `μ = 3`, `e = M = 2` is bounded by `2DT`. -/
 example : (regularFiberStageSum 2 3 2 : ℝ) ≤ 2 * 2 * stageStaircase 3 2 :=
-  regularFiberStageSum_cast_le (by norm_num) (by norm_num) (by norm_num)
+  regularFiberStageSum_cast_le (by norm_num) (by norm_num)
 
 /-- The joint stage sum at `D = 2`, `h = 1`, `μ = 3`, `e = M = 2` is bounded by its charge. -/
 example : (regularJointStageSum 2 1 3 2 : ℝ) ≤
     (12 * 2 ^ 2 * 1 + 4 * 2) * stageStaircase 3 2 := by
   have h := regularJointStageSum_cast_le (D := 2) (h := 1) (μ := 3) (M := 2) (e := 2)
-    (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num)
   norm_num at h ⊢
   all_goals exact h
 
 /-- The list charge increases from stage `0` to stage `1` at `θ = D = 1`, `μ = 2`. -/
 example : firstOrderListCharge 1 1 2 0 ≤ firstOrderListCharge 1 1 2 1 :=
-  firstOrderListCharge_mono (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  firstOrderListCharge_mono (by norm_num) (by norm_num) (by norm_num)
 
 /-- Both balanced-split coordinate ratios are at most `2θ` for `n = 10`, `D = 1`, `A = 4`. -/
 example : retainedCoordinateRatio 10 4 (balancedSplit 1 4) ≤
@@ -648,13 +648,12 @@ example : retainedCoordinateRatio 10 4 (balancedSplit 1 4) ≤
 
 /-- The optimized list charge is below its closed constant at `θ = D = 1`, `μ = 2`, `M = 1`. -/
 example : maxFirstOrderListCharge 1 1 2 1 ≤ firstOrderListConstant 1 1 2 1 :=
-  maxFirstOrderListCharge_le_firstOrderListConstant (by norm_num) (by norm_num) (by norm_num)
+  maxFirstOrderListCharge_le_firstOrderListConstant (by norm_num) (by norm_num)
 
 /-- The optimized exception charge is below its closed constant for `n = 4`, `D = 1`, `A = 3`. -/
 example : maxMinFirstOrderExceptionCharge (agreementIncidenceRatio 4 1 3) 4 1 3 1 2 0 ≤
     firstOrderExceptionConstant (agreementIncidenceRatio 4 1 3) 4 1 1 2 0 :=
-  maxMinFirstOrderExceptionCharge_le_firstOrderExceptionConstant (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num)
+  maxMinFirstOrderExceptionCharge_le_firstOrderExceptionConstant (by norm_num)
 
 /-- Concrete list and balanced-split exception charges satisfy their direct closed bounds. -/
 example : firstOrderListCharge 1 1 2 1 ≤ firstOrderListConstant 1 1 2 1 ∧
@@ -662,9 +661,9 @@ example : firstOrderListCharge 1 1 2 1 ≤ firstOrderListConstant 1 1 2 1 ∧
         (balancedSplit 1 3) ≤
       firstOrderExceptionConstant (agreementIncidenceRatio 4 1 3) 4 1 1 2 1 := by
   exact ⟨firstOrderListCharge_le_firstOrderListConstant (by norm_num) (by norm_num)
-      (by norm_num) (by norm_num),
-    firstOrderExceptionCharge_balancedSplit_le (by norm_num) (by norm_num) (by norm_num)
-      (by norm_num) (by norm_num)⟩
+      (by norm_num),
+    firstOrderExceptionCharge_balancedSplit_le (by norm_num)
+      (by norm_num)⟩
 
 /-! ### Rate and polynomial envelopes -/
 
@@ -845,7 +844,7 @@ example :
 /-- Both regular stage sums increase from derivative degree `1` to `2`. -/
 example : regularFiberStageSum 1 3 1 ≤ regularFiberStageSum 1 3 2 ∧
     regularJointStageSum 1 1 3 1 ≤ regularJointStageSum 1 1 3 2 := by
-  exact ⟨regularFiberStageSum_mono (by norm_num) (by norm_num) (by norm_num),
+  exact ⟨regularFiberStageSum_mono (by norm_num) (by norm_num),
     regularJointStageSum_mono (by norm_num) (by norm_num)⟩
 
 /-- At `n = A = 3` and `k = 2`, the fixed height-851 source has a strict slot surplus. -/
