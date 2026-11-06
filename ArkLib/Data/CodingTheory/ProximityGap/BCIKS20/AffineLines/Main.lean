@@ -92,7 +92,7 @@ theorem RS_correlatedAgreement_affineLines {deg : ℕ} {domain : ι ↪ F} {δ :
     · subst D
       simpa using (lineExactAgreementBound_constantCode domain
         ⌈(Fintype.card ι : ℝ) * (1 - δ)⌉₊).mono
-        (ReedSolomon.HiddenDerivative.choose_two_le_bciks hn hb (by simpa using hbRate))
+        (ReedSolomon.HiddenDerivative.choose_two_le_bciks hb (by simpa using hbRate))
     · let eta : ℝ := 1 - δ - Real.sqrt
         (ReedSolomon.HiddenDerivative.johnsonRhoMinus (Fintype.card ι) D)
       have hDpos : 1 ≤ D := by omega
@@ -117,7 +117,7 @@ theorem RS_correlatedAgreement_affineLines {deg : ℕ} {domain : ι ↪ F} {δ :
       rw [ha, mul_comm] at hl
       apply hl.mono
       have hc := ReedSolomon.HiddenDerivative.johnsonExceptionCount_le_bciks
-        hDpos hDn heta (A := ⌈(Fintype.card ι : ℝ) * (1 - δ)⌉₊)
+        hDpos hDn (A := ⌈(Fintype.card ι : ℝ) * (1 - δ)⌉₊)
         (by rw [ha, mul_comm]; exact Nat.le_ceil _) hb hbeta (by simpa using hbRate)
       simpa using hc
   apply (δ_ε_correlatedAgreementAffineLines_iff_epsCa_le _ _ _).mpr

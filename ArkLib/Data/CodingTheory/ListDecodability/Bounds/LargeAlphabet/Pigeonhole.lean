@@ -247,7 +247,7 @@ theorem balanced_center_from_far_family
     rw [← hcommonSet]
     exact hcommon
   obtain ⟨y, hyc, hyu⟩ :=
-    balanced_center_construction ℓ hℓ p hp hp_lt c u
+    balanced_center_construction ℓ p hp hp_lt c u
       (by
         intro k
         simpa only [u] using hnear (sel k))
@@ -294,7 +294,7 @@ theorem local_neighborhood_bound :
       closeCodewordsRel_eq_setOf C p hp.le c
   rw [hcloseI] at hpoint
   have hIcard : I.ncard ≤ ℓ := hpoint.2
-  have harith := balanced_center_arithmetic ℓ p n hℓ hp hp_lt (by
+  have harith := balanced_center_arithmetic ℓ p n hp hp_lt (by
     simpa only [n] using hsize)
   have hrle : r ≤ r' := by
     simpa only [r, r'] using harith.1
@@ -666,7 +666,7 @@ theorem small_alphabet_power_bound
     by_contra h
     have := mul_nonpos_of_nonpos_of_nonneg (le_of_not_gt h) (Nat.cast_nonneg n)
     linarith
-  have hceil := ceil_linear_bound K η n hK hη.le hone
+  have hceil := ceil_linear_bound K η n hK hone
   have hdZeroR : (dZero : ℝ) < (K + 1) * η * n := by
     have hcast : (dZero : ℝ) ≤
         (Nat.ceil (K * η * n) : ℝ) := by exact_mod_cast hdZero
@@ -979,7 +979,7 @@ theorem rounded_barrier_basic_bounds
       relRadius ℓ R η * n :=
     mul_lt_mul_of_pos_right hhalfP hnR
   have hceil := ceil_linear_bound
-    (barrierK ℓ B) η n hK.le hηpos.le hone
+    (barrierK ℓ B) η n hK.le hone
   have hdZero : Nat.ceil (barrierK ℓ B * η * n) ≤
       Nat.floor (relRadius ℓ R η * n) := by
     apply (Nat.le_floor_iff (mul_nonneg hp.le hnR.le)).2

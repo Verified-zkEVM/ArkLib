@@ -100,20 +100,12 @@ code … Letting `a = (1−γ)n^ε/ε` … the expected number of codewords in a
 The local copy of [GHSZ02] is a scanned two-column paper whose text layer drops relation symbols, so
 Corollary 20's own display could not be transcribed verbatim; the proof text above could.
 
-**`_hαβ_le_one` is a source hypothesis [ABF26] drops.** The averaging bound the proof rests on
-([GHSZ02] Lemma 19: for an MDS `[n,k]_q` code and `a ≥ k`,
-`(1/e)·C(n,a)·q^{k−a} ≤ E_x[|B(x, n−a) ∩ C|] ≤ C(n,a)·q^{k−a}`) requires `a ≥ k`, i.e.
-`(1−β)/α ≥ 1`, i.e. `α + β ≤ 1`. It is carried here rather than dropped. (Dropping it looks
-harmless — `α + β > 1` gives `a < k`, hence a *larger* ball and a longer list — but the cited
-inequality is then outside its stated range, so the admit would no longer follow from the source.)
-
 **Quantifier encoding.** `Ω(·)` is the explicit constant `c > 0` bound *outside* the `∀ p`, and "all
 sufficiently large primes" is the explicit threshold `p₀`; `Nat.Prime p` is a conjunct of the
 implication's premises, not an antecedent that a non-prime could satisfy vacuously. The list is the
 *point* list at the exhibited `w`, as in the source, rather than `Lambda`. -/
 theorem rs_lambda_large_prime
-    (α β : ℝ) (_hα_pos : 0 < α) (_hα_lt : α < 1) (_hβ_pos : 0 < β) (_hβ_lt : β < 1)
-    (_hαβ_le_one : α + β ≤ 1) :
+    (α β : ℝ) (_hα_pos : 0 < α) (_hα_lt : α < 1) (_hβ_pos : 0 < β) (_hβ_lt : β < 1) :
     ∃ (c : ℝ) (_ : 0 < c) (p₀ : ℕ),
       ∀ p : ℕ, Nat.Prime p → p₀ ≤ p →
         ∀ {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
@@ -604,7 +596,7 @@ Solicited proof: see
 theorem rs_random_domain_lambda_le
     {F : Type} [Field F] [Fintype F]
     (ℓ : ℕ) (_hℓ_ge : 2 ≤ ℓ) (η : ℝ) (_hη_pos : 0 < η) (_hη_lt : η < 1)
-    (k n : ℕ) (_hn_pos : 0 < n)
+    (k n : ℕ)
     (_hF : (n : ℝ) + (k : ℝ) * 2 ^ ((10 * ℓ : ℝ) / η) ≤ Fintype.card F)
     [Nonempty {S : Finset F // S.card = n}] :
     ENNReal.ofReal (1 - 2 ^ (-(ℓ * n : ℝ))) ≤
@@ -613,6 +605,9 @@ theorem rs_random_domain_lambda_le
               (Function.Embedding.subtype (fun x : F => x ∈ (S : Finset F))) k :
             Set (↥(S : Finset F) → F)))
             ((ℓ : ℝ) / (ℓ + 1) * (1 - (k : ℝ) / n - η)) ≤ (ℓ : ℕ∞)] := by
+  by_cases hn : n = 0
+  · subst n
+    simp
   sorry -- external admit: [AGL24, Theorem 1.1].
 
 end RandomReedSolomon

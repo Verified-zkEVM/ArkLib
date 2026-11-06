@@ -24,11 +24,13 @@ open scoped BigOperators
 
 /-- Two codewords within the relative unique-decoding radius of the same word coincide. -/
 theorem eq_of_relClose_unique
-    {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq F]
+    {ι F : Type} [Fintype ι] [DecidableEq F]
     (C : Set (ι → F)) (u v w : ι → F) (hv : v ∈ C) (hw : w ∈ C)
     (δ : ℝ≥0) (hδ : δ ≤ relativeUniqueDecodingRadius C)
     (huv : (relHammingDist u v : ℝ≥0) ≤ δ)
     (huw : (relHammingDist u w : ℝ≥0) ≤ δ) : v = w := by
+  rcases isEmpty_or_nonempty ι with hι | hι
+  · exact Subsingleton.elim _ _
   apply eq_of_le_uniqueDecodingRadius C u hv hw
   · apply (dist_le_UDR_iff_relDist_le_relUDR C _).mpr
     exact le_trans (by simpa [relHammingDist, NNRat.cast_div, NNRat.cast_natCast] using huv) hδ
@@ -37,9 +39,9 @@ theorem eq_of_relClose_unique
 
 /-- The sharp unique-decoding curve count controls exact agreement with every close candidate. -/
 theorem exists_exactPowerAgreement_unique_fin
-    {F : Type} [Field F] [Finite F] [DecidableEq F] {n deg ℓ : ℕ} [NeZero n]
+    {F : Type} [Field F] [Finite F] [DecidableEq F] {n deg ℓ : ℕ}
     (domain : Fin n ↪ F) (w : Fin (ℓ + 1) → Fin n → F)
-    (hdeg : 0 < deg) (hdeg_le : deg ≤ n) (δ : ℝ≥0)
+    (hdeg_le : deg ≤ n) (δ : ℝ≥0)
     (hδ : δ ≤ relativeUniqueDecodingRadius (code domain deg : Set (Fin n → F))) :
     ∃ E : Finset F, E.card ≤ ℓ * n ∧
       ∀ z ∉ E, ∀ Q : F[X], Q.degree < deg →
@@ -48,13 +50,16 @@ theorem exists_exactPowerAgreement_unique_fin
         HasExactPowerAgreement domain w (RingHom.id F) deg z Q := by
   classical
   let _ := Fintype.ofFinite F
+  rcases Nat.eq_zero_or_pos deg with rfl | hdeg
+  · obtain ⟨E, hE, hgood⟩ := exists_exceptional_exactPowerAgreement_of_polynomials
+      domain w (fun _ ↦ 0) (by simp)
+    refine ⟨E, by simpa using hE, fun z hz Q hQ _ ↦ ?_⟩
+    have hQzero : Q = 0 := by
+      apply Polynomial.ext
+      simpa using (Polynomial.degree_lt_iff_coeff_zero Q 0).mp hQ
+    simpa [hQzero, Polynomial.powerBatch, Polynomial.generatorBatch] using hgood z hz
+  let : NeZero n := ⟨by omega⟩
   let : NeZero deg := ⟨hdeg.ne'⟩
-  have hδ1 : δ ≤ 1 := by
-    have hh := hδ
-    rw [relativeUniqueDecodingRadius_RS_eq (by simpa using hdeg_le)] at hh
-    exact hh.trans (by
-      calc _ ≤ (1 : ℝ≥0) / 2 := div_le_div_of_nonneg_right tsub_le_self (by norm_num)
-           _ ≤ 1 := by norm_num)
   let S := coeffs_of_close_proximity_curve δ w (toFinset domain deg)
   have hword (z : F) : Curve.polynomialCurveEval w z = powerBatchedWord w z := by
     ext i
@@ -72,7 +77,7 @@ theorem exists_exactPowerAgreement_unique_fin
     obtain ⟨E, hE, hgood⟩ := exists_exceptional_exactPowerAgreement_of_polynomials domain w P hP
     refine ⟨E, by simpa using hE, fun z hz Q hQ hA ↦ ?_⟩
     have hcQ := (ceil_le_polynomialAgreementSet_card_iff domain (powerBatchedWord w z)
-      Q δ hδ1).mp (by simpa using hA)
+      Q δ).mp (by simpa using hA)
     have hcodeQ : evalOnPoints domain Q ∈ code domain deg :=
       mem_code_iff_eval.mpr ⟨Q, hQ, fun _ ↦ rfl⟩
     have hcodeP : evalOnPoints domain (Polynomial.powerBatch P z) ∈ code domain deg :=
@@ -96,7 +101,7 @@ theorem exists_exactPowerAgreement_unique_fin
     change z ∈ coeffs_of_close_proximity_curve δ w (toFinset domain deg)
     simp only [coeffs_of_close_proximity_curve, Set.mem_toFinset, Set.mem_ofPred_eq]
     have hclose := (ceil_le_polynomialAgreementSet_card_iff domain (powerBatchedWord w z)
-      Q δ hδ1).mp (by simpa using hA)
+      Q δ).mp (by simpa using hA)
     have hc : evalOnPoints domain Q ∈ code domain deg :=
       mem_code_iff_eval.mpr ⟨Q, hQ, fun _ ↦ rfl⟩
     have h := (Code.relCloseToCode_iff_relCloseToCodeword_of_minDist
@@ -108,7 +113,7 @@ theorem exists_exactPowerAgreement_unique_fin
 theorem exists_exactPowerAgreement_unique
     {ι F : Type} [Fintype ι] [Field F] [Finite F] [DecidableEq F]
     {deg ℓ : ℕ} (domain : ι ↪ F) (w : Fin (ℓ + 1) → ι → F)
-    (hdeg : 0 < deg) (hdeg_le : deg ≤ Fintype.card ι) (δ : ℝ≥0)
+    (hdeg_le : deg ≤ Fintype.card ι) (δ : ℝ≥0)
     (hδ : δ ≤ relativeUniqueDecodingRadius (code domain deg : Set (ι → F))) :
     ∃ E : Finset F, E.card ≤ ℓ * Fintype.card ι ∧
       ∀ z ∉ E, ∀ Q : F[X], Q.degree < deg →
@@ -117,16 +122,17 @@ theorem exists_exactPowerAgreement_unique
         HasExactPowerAgreement domain w (RingHom.id F) deg z Q := by
   classical
   let _ := Fintype.ofFinite F
-  let : NeZero deg := ⟨hdeg.ne'⟩
-  let : NeZero (Fintype.card ι) := ⟨by omega⟩
   let e := (Fintype.equivFin ι).symm
   have hδ' : δ ≤ relativeUniqueDecodingRadius
       (code (e.toEmbedding.trans domain) deg : Set (Fin (Fintype.card ι) → F)) := by
+    rcases Nat.eq_zero_or_pos deg with rfl | hdeg
+    · simpa [relativeUniqueDecodingRadius, code_zero, Code.dist_subsingleton] using hδ
+    let : NeZero deg := ⟨hdeg.ne'⟩
     rw [relativeUniqueDecodingRadius_RS_eq (by simpa using hdeg_le)]
     rw [relativeUniqueDecodingRadius_RS_eq hdeg_le] at hδ
     simpa using hδ
   obtain ⟨E, hE, hgood⟩ := exists_exactPowerAgreement_unique_fin
-    (e.toEmbedding.trans domain) (fun t ↦ w t ∘ e) hdeg hdeg_le δ hδ'
+    (e.toEmbedding.trans domain) (fun t ↦ w t ∘ e) hdeg_le δ hδ'
   refine ⟨E, hE, fun z hz Q hQ hA ↦ ?_⟩
   apply hasExactPowerAgreement_of_comp_equiv e domain w z Q
   apply hgood z hz Q hQ
@@ -137,14 +143,12 @@ theorem exists_exactPowerAgreement_unique
 /-- Unique decoding gives the sharp line count needed for the affine exact-agreement transfer. -/
 theorem lineExactAgreementBound_unique
     {ι F : Type} [Fintype ι] [Field F] [Finite F] [DecidableEq F]
-    {deg : ℕ} (domain : ι ↪ F) (hdeg : 0 < deg) (hdeg_le : deg ≤ Fintype.card ι)
+    {deg : ℕ} (domain : ι ↪ F) (hdeg_le : deg ≤ Fintype.card ι)
     (δ : ℝ≥0) (hδ : δ ≤ relativeUniqueDecodingRadius (code domain deg : Set (ι → F))) :
     LineExactAgreementBound domain deg
       ⌈(Fintype.card ι : ℝ) * (1 - (δ : ℝ))⌉₊ (Fintype.card ι : ℝ) := by
   classical
   let _ := Fintype.ofFinite F
-  let : NeZero deg := ⟨hdeg.ne'⟩
-  let : NeZero (Fintype.card ι) := ⟨by omega⟩
   let e := (Fintype.equivFin ι).symm
   apply lineExactAgreementBound_of_comp_equiv e domain
   apply lineExactAgreementBound_of_exactCorrelatedPair
@@ -152,11 +156,14 @@ theorem lineExactAgreementBound_unique
   apply exists_line_exactCorrelatedPair_of_powerAgreement
   have hδ' : δ ≤ relativeUniqueDecodingRadius
       (code (e.toEmbedding.trans domain) deg : Set (Fin (Fintype.card ι) → F)) := by
+    rcases Nat.eq_zero_or_pos deg with rfl | hdeg
+    · simpa [relativeUniqueDecodingRadius, code_zero, Code.dist_subsingleton] using hδ
+    let : NeZero deg := ⟨hdeg.ne'⟩
     rw [relativeUniqueDecodingRadius_RS_eq (by simpa using hdeg_le)]
     rw [relativeUniqueDecodingRadius_RS_eq hdeg_le] at hδ
     simpa using hδ
   obtain ⟨E, hE, hgood⟩ := exists_exactPowerAgreement_unique_fin
-    (e.toEmbedding.trans domain) ![f, g] hdeg hdeg_le δ hδ'
+    (e.toEmbedding.trans domain) ![f, g] hdeg_le δ hδ'
   exact ⟨E, by exact_mod_cast (show E.card ≤ Fintype.card ι by simpa using hE), hgood⟩
 
 end ProximityGap

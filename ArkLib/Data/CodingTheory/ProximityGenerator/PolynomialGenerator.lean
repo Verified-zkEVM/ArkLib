@@ -344,7 +344,7 @@ lemma isMCAGenerator_univariatePowersGenerator [Fintype F] [SampleableType F] [N
   let B : ℝ := (m + 1 / 2 : ℝ) ^ 7 * (Fintype.card ι : ℝ) ^ 2 /
     (3 * (ReedSolomon.sqrtRate k D : ℝ) ^ 3)
   have hexact := ProximityGap.exists_curve_exactPowerAgreement_explicit_budget
-    k D d m (γ : ℝ) hkpos hproper hm γ.2.1 hγ
+    k D d m (γ : ℝ) hkpos hproper hm hγ
   have hbound := ProximityGap.mcaError_powers_le_of_exactPowerAgreement k D d A
     (d * B) (γ : ℝ) le_rfl hexact
   apply hbound.trans

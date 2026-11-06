@@ -225,7 +225,7 @@ radius of `c` and all `v j` disagree with `c` on a large common set, then, under
 bound, some single word `y` is within relative radius `p` of `c` and every `v j`. A point-list lower
 bound of `ℓ + 1` additionally requires these words to be distinct members of the code. -/
 theorem balanced_center_construction :
-    ∀ (ℓ : ℕ), 2 ≤ ℓ → ∀ (p : ℝ), 0 < p → p < 1 →
+    ∀ (ℓ : ℕ), ∀ (p : ℝ), 0 < p → p < 1 →
       ∀ {ι A : Type} [Fintype ι] [DecidableEq A]
         (c : ι → A) (v : Fin ℓ → ι → A),
         (∀ j, hammingDist c (v j) ≤
@@ -237,12 +237,12 @@ theorem balanced_center_construction :
           hammingDist c y ≤ Nat.floor (p * Fintype.card ι) ∧
           ∀ j, hammingDist (v j) y ≤ Nat.floor (p * Fintype.card ι) := by
   classical
-  intro ℓ hℓ p hp hp_lt ι A _ _ c v hdist hsize hcommonCard
+  intro ℓ p hp hp_lt ι A _ _ c v hdist hsize hcommonCard
   let n := Fintype.card ι
   let r := Nat.floor (p * n)
   let r' := Nat.floor (boostedRadius ℓ p * n)
   let t := r' - r
-  have harith := balanced_center_arithmetic ℓ p n hℓ hp hp_lt (by
+  have harith := balanced_center_arithmetic ℓ p n hp hp_lt (by
     simpa only [n] using hsize)
   rcases harith with ⟨hrle, hcancel, ht_center, ht_common⟩
   let S : Finset ι := Finset.univ.filter fun i => ∀ j, c i ≠ v j i
