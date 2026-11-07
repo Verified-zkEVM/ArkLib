@@ -229,7 +229,6 @@ def iteration (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     ProtocolSpec.instSampleableTypeChallengeAppend (h₁ := i₀)
       (h₂ := roundsSpecSampleable F b m₀)
   have hb1 : 1 < b := hdig.one_lt
-  have hbpos : 0 < b := Nat.zero_lt_one.trans hb1
   let bridge := bridgePackage (oSpec := oSpec) 𝓜(q, α) init impl pp (b : ZMod q)
     (quadEvalBetaSq γ b zDigits ((𝓜(q, α)).φ.natDegree) m messageDigits) γ (2 * ω)
   let quadEval := quadEvalPackage init impl hq5 hκ pp
@@ -239,7 +238,7 @@ def iteration (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
   let zeroCheck := nestedZeroCheckPackage 𝓜(q, α) m₀ m₁ γ b init impl K φF b
   let sumcheckBridge :=
     nestedSumcheckBridgePackage 𝓜(q, α) m₀ m₁ γ b init impl K φF b hb1 hd hcov
-  let rounds := roundsChain 𝓜(q, α) m₀ m₁ γ b b init impl K φF hbpos m₀ le_rfl
+  let rounds := roundsChain 𝓜(q, α) m₀ m₁ γ b b init impl K φF m₀ le_rfl
   let finalEval := finalEvalPackage 𝓜(q, α) m₀ m₁ γ b b init impl K φF
   let core : EscapeCWSSPackage init impl
       (PolyEvalStatement 𝓜(q, α) innerRows messageDigits outerRows innerDigits dRows m r)

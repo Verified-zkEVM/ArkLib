@@ -357,6 +357,12 @@ theorem coeff_eq_zero_of_natDegree_le (a : Rq Φ) {k : ℕ} (hk : Φ.φ.natDegre
         exact Polynomial.degree_eq_natDegree (IsCyclotomic.monic (Φ := Φ)).ne_zero
     _ ≤ (k : WithBot ℕ) := by exact_mod_cast hk
 
+/-- Over a constant modulus every reduced representative is zero. -/
+theorem val_eq_zero_of_natDegree_eq_zero (hd : Φ.φ.natDegree = 0) (a : Rq Φ) : a.1 = 0 := by
+  rw [CompPoly.CPolynomial.eq_iff_coeff]
+  intro k
+  rw [coeff_eq_zero_of_natDegree_le Φ a (by omega), CompPoly.CPolynomial.coeff_zero]
+
 /-- Embed a base-ring scalar `c : R` as the constant element `C c ∈ Rq Φ`. -/
 def constRq (c : R) : Rq Φ := Rq.mk Φ (CompPoly.CPolynomial.C c)
 

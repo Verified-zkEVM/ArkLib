@@ -334,7 +334,7 @@ theorem slack_isUnit (hq5 : q % 8 = 5) {ω : ℕ} (hκ : (2 * ω) ^ 2 < q)
 omit [NeZero q] in
 /-- **Weak-opening validity of the extracted opening** (Hachi Lemma 8, case (C), part 1).
 At a star-shaped family of `2^r + 1` `relOut`-accepting branches sharing the carrier commitment
-`v` and (cases (A)/(B) excluded) sharing `t̂` and `ŵ`, the subtract-and-divide
+`v` and inner decomposition `t̂`, the subtract-and-divide
 `extractedOpening` is a `VerifiedOpening` at
 
 * `βSq := quadEvalBetaSq γ b zDigits (deg φ) m messageDigits = 4·B_z`, the `Gadget/Norms`-derived
@@ -355,8 +355,7 @@ theorem verifiedOpening_of_star (hq5 : q % 8 = 5) {b ω γ : ℕ} (hκ : (2 * ω
       QuadEvalResponse 𝓜(q, α) innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits zDigits)
     (hrel : ∀ j, ((stmt, v, fam j), resp j) ∈ relOut 𝓜(q, α) pp (b : ZMod q) ω γ)
     (hstar : ∃ e, StarAt fam e)
-    (ht : ∀ j, (resp j).innerDec = (resp (central fam)).innerDec)
-    (_hw : ∀ j, (resp j).carrierDec = (resp (central fam)).carrierDec) :
+    (ht : ∀ j, (resp j).innerDec = (resp (central fam)).innerDec) :
     VerifiedOpening 𝓜(q, α) (b : ZMod q)
       (quadEvalBetaSq γ b zDigits ((𝓜(q, α)).φ.natDegree) m messageDigits) γ (2 * ω)
       pp.toPublicParams stmt.u
@@ -521,7 +520,7 @@ theorem buildWitness_break_or_mem_relIn (hq5 : q % 8 = 5) {b ω γ : ℕ}
       · push Not at hB hD
         have ht : ∀ j, (resp j).innerDec = (resp (central fam)).innerDec :=
           fun j => funext fun i => PolyVec.block_eq_of_flattenBlocks_eq (hB j) i
-        exact ⟨verifiedOpening_of_star hq5 hκ pp stmt v fam resp hrel hstar ht hD,
+        exact ⟨verifiedOpening_of_star hq5 hκ pp stmt v fam resp hrel hstar ht,
           evalConsistency_of_relOut_star hq5 hκ pp stmt v fam resp hrel hstar hD⟩
 
 omit [NeZero q] in
