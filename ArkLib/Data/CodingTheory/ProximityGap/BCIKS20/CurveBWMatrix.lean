@@ -164,7 +164,7 @@ lemma exists_close_poly [NeZero n] [DecidableEq F] {deg : ℕ} [NeZero deg] {dom
 
 /-- The Berlekamp–Welch error locator at a good parameter: a nonzero solution of the curve BW
 system. -/
-lemma exists_local_kernel [NeZero n] [DecidableEq F] {l deg : ℕ} [NeZero deg] (hdeg : 0 < deg)
+lemma exists_local_kernel [NeZero n] [DecidableEq F] {l deg : ℕ} [NeZero deg]
     {domain : Fin n ↪ F}
     {δ : ℝ≥0} {u : Fin (l + 1) → Fin n → F} {z : F}
     (hz : δᵣ(Curve.polynomialCurveEval (F := F) (A := F) u z,
@@ -238,7 +238,7 @@ lemma exists_local_kernel [NeZero n] [DecidableEq F] {l deg : ℕ} [NeZero deg] 
 /-- At a good parameter the evaluated BW matrix has a nonzero kernel vector, hence every maximal
 minor of the symbolic matrix vanishes there. Root counting then makes every maximal minor vanish
 identically, since its degree `l * (e + 1)` is smaller than `|S|`. -/
-lemma curveBWMatrix_det_submatrix_eq_zero [NeZero n] [DecidableEq F] {l deg : ℕ} [NeZero deg]
+lemma curveBWMatrix_det_submatrix_eq_zero [DecidableEq F] {l deg : ℕ}
     (hdeg : 0 < deg)
     {domain : Fin n ↪ F} {δ : ℝ≥0} {u : Fin (l + 1) → Fin n → F} {S : Finset F}
     (he1 : Nat.floor (δ * n) + 1 ≤ n) (hScard : l * n < S.card)
@@ -247,6 +247,8 @@ lemma curveBWMatrix_det_submatrix_eq_zero [NeZero n] [DecidableEq F] {l deg : �
     ∀ r : Fin ((Nat.floor (δ * n) + 1) + (Nat.floor (δ * n) + deg)) → Fin n,
       Matrix.det ((curveBWMatrix (Nat.floor (δ * n)) deg domain u).submatrix r id) = 0 := by
   classical
+  have : NeZero n := ⟨by omega⟩
+  have : NeZero deg := ⟨hdeg.ne'⟩
   set e : ℕ := Nat.floor (δ * n) with he
   intro r
   have hdeg_le : (Matrix.det ((curveBWMatrix e deg domain u).submatrix r id)).natDegree ≤
@@ -261,7 +263,7 @@ lemma curveBWMatrix_det_submatrix_eq_zero [NeZero n] [DecidableEq F] {l deg : �
     rw [← Matrix.submatrix_map]
     by_cases hinj : Function.Injective r
     · obtain ⟨a, b, ha, hmul⟩ :=
-        exists_local_kernel (l := l) (deg := deg) hdeg (domain := domain) (u := u) (z := z)
+        exists_local_kernel (l := l) (deg := deg) (domain := domain) (u := u) (z := z)
           (by simpa [he] using hSgood z hz)
       have hmul' : Matrix.mulVec
           ((curveBWMatrix e deg domain u).map (Polynomial.evalRingHom z)) (Fin.append a b) = 0 := by
@@ -476,7 +478,7 @@ most `l * e` and whose second block has degree at most `l * (e + 1)`.
 The proof eliminates the constant Vandermonde block `D` (the second block restricted to `e + deg`
 rows), which is invertible over `F[Y]` because its entries are constants and its determinant is a
 product of distinct differences. -/
-lemma exists_kernelVec_curveBWMatrix {l deg : ℕ} [NeZero deg] {domain : Fin n ↪ F}
+lemma exists_kernelVec_curveBWMatrix {l deg : ℕ} {domain : Fin n ↪ F}
     {u : Fin (l + 1) → Fin n → F} (e : ℕ)
     (hcardn : e + deg ≤ n) (hcardm : e + 1 ≤ n)
     (hdets : ∀ r : Fin ((e + 1) + (e + deg)) → Fin n,

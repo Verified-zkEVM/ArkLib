@@ -160,7 +160,7 @@ lemma exists_avg_le [Fintype F] {s : ℕ} (hs : 1 ≤ s) (f : (Fin s → F) → 
 open Classical in
 /-- For a fixed direction `d`, some base point `v` makes the line `t ↦ v + t • d` hit the set `B'`
 with (normalized) frequency at least the density of `B'`. -/
-lemma exists_dir_line_ge [Fintype F] [Nonempty F] {s : ℕ}
+lemma exists_dir_line_ge [Fintype F] {s : ℕ}
     (d : Fin s → F) (B' : Finset (Fin s → F)) :
     ∃ v : Fin s → F,
       ((B'.card : ℝ) / (Fintype.card F) ^ s) ≤
@@ -199,7 +199,7 @@ lemma exists_dir_line_ge [Fintype F] [Nonempty F] {s : ℕ}
 open Classical in
 /-- There is a choice of two line-codewords `W` so that `(1 - 1/|F|)` times the density of
 affine-space bad seeds is at most the density of affine-line bad seeds for `W`. -/
-lemma exists_line_bound [Fintype F] [Fintype ι] {s : ℕ} (hs : 1 ≤ s)
+lemma exists_line_bound [Fintype F] [Fintype ι] {s : ℕ}
     (MC : ModuleCode ι F A) (U : Fin (s + 1) → (ι → A)) (γ : ℝ) :
     ∃ W : Fin 2 → (ι → A),
       (1 - 1 / (Fintype.card F : ℝ)) *
@@ -207,6 +207,15 @@ lemma exists_line_bound [Fintype F] [Fintype ι] {s : ℕ} (hs : 1 ≤ s)
             IsMCA (AffineSpaceGenerator F s) MC x U γ)).card : ℝ) / (Fintype.card F) ^ s)
       ≤ ((Finset.univ.filter (fun t : F =>
             IsMCA (AffineLineGenerator F) MC t W γ)).card : ℝ) / (Fintype.card F) := by
+  rcases Nat.eq_zero_or_pos s with rfl | hs
+  · refine ⟨0, ?_⟩
+    have hempty : (Finset.univ.filter fun x : Fin 0 → F ↦
+        IsMCA (AffineSpaceGenerator F 0) MC x U γ) = ∅ := by
+      refine Finset.filter_false_of_mem fun x _ ⟨T, _, hv, j, hj⟩ ↦ hj ?_
+      obtain rfl : j = 0 := Fin.fin_one_eq_zero j
+      simpa [AffineSpaceGenerator] using hv
+    rw [hempty, Finset.card_empty, Nat.cast_zero, zero_div, mul_zero]
+    positivity
   set isB := fun x => IsMCA (AffineSpaceGenerator F s) MC x U γ
   set Bset := Finset.univ.filter isB
   set m := Bset.card
@@ -293,11 +302,10 @@ variable {ι : Type} [Fintype ι]
 the affine space generator `Fˡ → Fˡ⁺¹`, `x ↦ (1, x)`, has MCA for `MC` with error
 `(1 - 1/|F|)⁻¹ • ε_mca`.
 
-Only `ℓ ≥ 1` is required: at `ℓ = 1` the affine space generator *is* the affine line generator, so
-the conclusion is immediate, and the proof below covers that case uniformly.
+This holds for every `ℓ`, including `ℓ = 0`, when no seed is MCA-bad.
 
 The error is valued in `ℝ≥0` rather than `I`, since `(1 - 1/|F|)⁻¹ • ε_mca` may exceed `1`. -/
-theorem isMCAGenerator_affineSpaceGenerator_of_affineLineGenerator {ℓ : ℕ} (hℓ : ℓ ≥ 1)
+theorem isMCAGenerator_affineSpaceGenerator_of_affineLineGenerator {ℓ : ℕ}
     (ε_mca : I → ℝ≥0) (MC : ModuleCode ι F A)
     (hGMCA : IsMCAGenerator (AffineLineGenerator F) ε_mca MC) :
     letI a := (1 - 1 / Fintype.card F : ℝ≥0)
@@ -322,7 +330,7 @@ theorem isMCAGenerator_affineSpaceGenerator_of_affineLineGenerator {ℓ : ℕ} (
     rw [Fintype.card_fun, Fintype.card_fin]
   rw [hcard]
   simp only [Pi.smul_apply, smul_eq_mul]
-  obtain ⟨W, hW⟩ := AffineMCALemmas.exists_line_bound hℓ MC U γ
+  obtain ⟨W, hW⟩ := AffineMCALemmas.exists_line_bound MC U γ
   have hline := hGMCA.prob_le W γ
   rw [SampleableType.prEvent_uniformSample_eq_ofReal] at hline
   set sp : ℝ :=
@@ -349,10 +357,8 @@ open Classical in
 `δ`. Then for every `s` and every family `U : Fin (s + 1) → ι → A`, the density of MCA-bad seeds of
 the affine space generator is at most `B / (|F| - 1)`, independently of `s`.
 
-For `s ≥ 1` this is `AffineMCALemmas.exists_line_bound`, which bounds `(1 - 1/|F|)` times the
-affine-space density by the line density `≤ B / |F|` of one pair `W`. For `s = 0` no seed is bad:
-the generated word is `U 0` itself, so a witness set cannot separate it from `U 0`; the bound then
-holds because `hline` forces `0 ≤ B`. -/
+`AffineMCALemmas.exists_line_bound` bounds `(1 - 1/|F|)` times the
+affine-space density by the line density `≤ B / |F|` of one pair `W`, including when `s = 0`. -/
 theorem card_filter_isMCA_affineSpaceGenerator_div_le {s : ℕ}
     (MC : ModuleCode ι F A) (δ : ℝ) {B : ℝ}
     (hline : ∀ W : Fin 2 → ι → A,
@@ -363,16 +369,7 @@ theorem card_filter_isMCA_affineSpaceGenerator_div_le {s : ℕ}
       B / ((Fintype.card F : ℝ) - 1) := by
   let := Module.addCommMonoidToAddCommGroup F (M := A)
   have hq : (1 : ℝ) < Fintype.card F := by exact_mod_cast Fintype.one_lt_card
-  have hB : 0 ≤ B := (Nat.cast_nonneg _).trans (hline 0)
-  rcases Nat.eq_zero_or_pos s with rfl | hs
-  · have hempty : (Finset.univ.filter fun x : Fin 0 → F ↦
-        IsMCA (AffineSpaceGenerator F 0) MC x U δ) = ∅ := by
-      refine Finset.filter_false_of_mem fun x _ ⟨T, _, hv, j, hj⟩ ↦ hj ?_
-      obtain rfl : j = 0 := Fin.fin_one_eq_zero j
-      simpa [AffineSpaceGenerator] using hv
-    rw [hempty, Finset.card_empty, Nat.cast_zero, zero_div]
-    exact div_nonneg hB (by linarith)
-  obtain ⟨W, hW⟩ := AffineMCALemmas.exists_line_bound hs MC U δ
+  obtain ⟨W, hW⟩ := AffineMCALemmas.exists_line_bound MC U δ
   have hfactor : 0 < 1 - 1 / (Fintype.card F : ℝ) := by
     rw [sub_pos, div_lt_one (by linarith)]
     exact hq
@@ -407,7 +404,7 @@ open Classical in
 space `S`, if every family `U` has at most `B` MCA-bad seeds at radius `δ`, then the MCA error at
 `δ` is at most `B / |S|`. -/
 theorem mcaError_le_ofReal_of_forall_card_le {ι F ℓ S A : Type} [Fintype ι] [Field F]
-    [Fintype ℓ] [Nonempty S] [Fintype S] [SampleableType S] [AddCommMonoid A] [Module F A]
+    [Fintype ℓ] [Fintype S] [SampleableType S] [AddCommMonoid A] [Module F A]
     (G : Generator S ℓ F) (MC : ModuleCode ι F A) (δ : ℝ) {B : ℝ}
     (hbad : ∀ U : ℓ → ι → A,
       ((Finset.univ.filter fun x : S ↦ IsMCA G MC x U δ).card : ℝ) ≤ B) :

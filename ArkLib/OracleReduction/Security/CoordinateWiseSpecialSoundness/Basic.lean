@@ -12,7 +12,8 @@ public import ArkLib.OracleReduction.Security.TranscriptTree
 
   This file defines **coordinate-wise special soundness** for (oracle) reductions, following
   [FMN24] (*Lattice-Based Polynomial Commitments*, who introduce the notion) and [NOZ26] (*Hachi*,
-  Definition 3, the multi-round form we target).
+  Definition 3, the multi-round form we target). FMN24 numbering refers to the checked ePrint
+  2023/846, Definitions 2.29–2.30.
 
   Coordinate-wise special soundness generalizes `k`-special soundness. In `k`-special soundness one
   extracts a witness from a tree of accepting transcripts in which, at each challenge round, there
@@ -48,6 +49,10 @@ public import ArkLib.OracleReduction.Security.TranscriptTree
 
   ## References
 
+  `IsSpecialSoundFamily` renders `SS(S, ℓ, k)` from [FMN24] §2.9, used in Definitions 2.29–2.30,
+  and [NOZ26] §2.3. `Verifier.coordinateWiseSpecialSound` is the multi-round form of [NOZ26]
+  Definition 3 / [FMN24] Definition 2.30, expressed through ArkLib's tree-special-soundness API.
+
   * [Fenzi, G., Moghaddas, H., and Nguyen, N. K., *Lattice-Based Polynomial Commitments: Towards
       Asymptotic and Concrete Efficiency*][FMN24]
   * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
@@ -64,7 +69,7 @@ namespace CoordinateWise
 /-! ## The combinatorial structure `SS(S, ℓ, k)`
 
 These definitions are pure combinatorics on vectors in `S^ℓ ≃ (Fin ℓ → S)`, independent of any
-protocol. They capture exactly the set `SS(S, ℓ, k)` from [FMN24] / [NOZ26].
+protocol.
 -/
 
 variable {S : Type*}
@@ -80,21 +85,13 @@ def CoordEq {ℓ : ℕ} (i : Fin ℓ) (x y : Fin ℓ → S) : Prop :=
 instance instDecidableCoordEq [DecidableEq S] {ℓ : ℕ} (i : Fin ℓ) (x y : Fin ℓ → S) :
     Decidable (CoordEq i x y) := by unfold CoordEq; infer_instance
 
-/-- A family of `ℓ·(k-1)+1` coordinate-vectors `c` is **coordinate-wise special sound**, i.e. lies
-  in `SS(S, ℓ, k)`, if
+/-- A family of `ℓ·(k-1)+1` coordinate-vectors `c` is coordinate-wise special sound if its
+vectors are pairwise distinct and it has a central index with `k-1` siblings for each coordinate.
+Those siblings agree with the center off that coordinate and differ from it there.
 
-  - the `ℓ·(k-1)+1` vectors are pairwise distinct (`Function.Injective c`), and
-  - there is a *central* index `e` such that for every coordinate `i ∈ Fin ℓ` there are `k-1` other
-    indices whose vectors agree with `c e` off coordinate `i` (and differ on it).
-
-  This is the precise rendering of the set `SS(S, ℓ, k)` from [FMN24] Def. 2.9 / [NOZ26] §2.3.
-  In the paper `SS(S, ℓ, k)` is a *set* `{x₁, …, x_K}` of `K := ℓ·(k-1)+1` **distinct** vectors; the
-  `Function.Injective c` clause is what encodes that distinctness. It is load-bearing: since the
-  `k-1` siblings of a coordinate `i` agree with `c e` off coordinate `i`, distinctness of the
-  vectors forces them to be pairwise distinct *in coordinate `i`*, giving the `k` distinct values
-  per coordinate that extraction relies on. (Without it, the siblings could collapse to a single
-  value, leaving only `2` distinct values in a coordinate.) The branching arity `ℓ·(k-1)+1` is
-  built into the index type. -/
+The index type fixes the branching arity. `Function.Injective c` excludes repeated vectors;
+since siblings agree off the selected coordinate, their values at that coordinate are pairwise
+distinct as well. -/
 def IsSpecialSoundFamily (ℓ k : ℕ) (c : Fin (ℓ * (k - 1) + 1) → (Fin ℓ → S)) : Prop :=
   Function.Injective c ∧
   ∃ e : Fin (ℓ * (k - 1) + 1),
@@ -257,20 +254,13 @@ def coordinateWiseSpecialSoundWith (D : CWSSStructure pSpec)
     (Ext : Extractor.TreeBased StmtIn WitIn WitOut pSpec (CWSSStructure.toShape D).arity) : Prop :=
   treeSpecialSoundWith init impl (CWSSStructure.toShape D) relIn relOut verifier Ext
 
-/-- A verifier is **coordinate-wise special sound** with respect to a coordinate-wise structure `D`,
-  an input relation `relIn` and an output relation `relOut` if it is tree-special-sound for the
-  generic shape induced by `D`.
+/-- Coordinate-wise special soundness for the tree shape induced by `D`, with input relation
+`relIn` and output relation `relOut`. Acceptance is represented by the output relation's language.
+Specializing `D` to `CWSSStructure.ofSpecialSound k` gives ordinary `k`-special soundness.
 
-  This is the multi-round coordinate-wise special soundness of [NOZ26] Def. 3 / [FMN24] Def. 2.10,
-  phrased over ArkLib's IOR machinery. The papers' accept/reject condition is represented by the
-  language of the output relation. Specializing `D` to `CWSSStructure.ofSpecialSound k` corresponds
-  to the standard notion of `k`-special soundness.
-
-  The extractor is existential (inherited from `Verifier.treeSpecialSound`), which loses the
-  extraction *algorithm*; prefer `coordinateWiseSpecialSoundWith` at a named extractor for
-  advertised protocol statements and keep this form for plumbing. Reductions whose extraction may
-  instead break a cryptographic assumption use `coordinateWiseSpecialSoundWithEscape` / `…Escape`
-  below. -/
+This form quantifies existentially over an extractor; `coordinateWiseSpecialSoundWith` retains
+its identity. Neither form bounds extraction time. Use the escape variants when the conclusion
+may instead establish a `ChallengeTree.EscapeEvent`. -/
 def coordinateWiseSpecialSound (D : CWSSStructure pSpec)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec) : Prop :=

@@ -195,13 +195,8 @@ theorem hZero_eq_zero_of_liftShort (φF : ZMod q →+* F) (b : ℕ) (hd : 0 < Φ
         (Nat.mod_lt _ hd)) hbound)
   · -- The quotient rows of `w̃` are the base-`b` digits, and those are `⌊b/2⌋`-bounded for *any*
     -- quotient, hence inside the range box `[−(b−1), b−1]`. No hypothesis on `w` is used.
-    have hδ : 0 < rhoDigitCount q b := by
-      rcases Nat.eq_zero_or_pos (rhoDigitCount q b) with h0 | h0
-      · rw [h0, Nat.mul_zero] at hr; omega
-      · exact h0
     exact rangeProduct_eq_zero_of_valMinAbs_natAbs_le φF
-      (le_trans (rhoDigits_valMinAbs_natAbs_le Φ hbase.one_lt hbase.le_half _
-        (Nat.mod_lt _ hδ) _) hbase.radius_le)
+      (le_trans (rhoDigits_valMinAbs_natAbs_le Φ hbase.one_lt hbase.le_half _ _ _) hbase.radius_le)
   · simp only [rangeProduct, zero_mul]
 
 omit [NeZero q] [BEq F] [LawfulBEq F] in

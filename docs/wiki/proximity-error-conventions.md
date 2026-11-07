@@ -121,8 +121,8 @@ This is `epsPg_le_epsCa_le_epsMca`; its two component inequalities are
 
 The unique-decoding comparison is:
 
-- `mcaError_le_epsCa_of_pos_of_two_mul_lt_dist` for the MCA-to-CA direction;
-- `mcaError_eq_epsCa_of_pos_of_two_mul_lt_dist` for the resulting equality.
+- `mcaError_le_epsCa_of_two_mul_lt_dist` for the MCA-to-CA direction;
+- `mcaError_eq_epsCa_of_two_mul_lt_dist` for the resulting equality.
 
 For any generator whose finite seed space has at most as many elements as the field,
 `CoreDefinitions.mcaError_moduleInterleavedCode_le_of_card_le` bounds the error of a finite

@@ -42,11 +42,14 @@ theorem sparse_ceil_rpow_budget
 /-- The binomial ratio estimate behind the sparse count:
 `C(b−1, a) / C(m, a) ≤ ((b−1)/(m+1−a))^a`. -/
 theorem sparse_choose_ratio_bound :
-    ∀ (m a b : ℕ), a ≤ b - 1 → b - 1 ≤ m →
+    ∀ (m a b : ℕ),
       ((Nat.choose (b - 1) a : ℝ) / Nat.choose m a) ≤
         ((((b - 1 : ℕ) : ℝ) / ((m + 1 - a : ℕ) : ℝ)) ^ a) := by
-  intro m a b hab hbm
-  have ham : a ≤ m := hab.trans hbm
+  intro m a b
+  by_cases ham : a ≤ m
+  swap
+  · rw [Nat.choose_eq_zero_of_lt (show m < a by omega), Nat.cast_zero, div_zero]
+    positivity
   have hchooseNat : 0 < Nat.choose m a := Nat.choose_pos ham
   have hchoose : (0 : ℝ) < Nat.choose m a := by
     exact_mod_cast hchooseNat
@@ -127,7 +130,7 @@ theorem sparse_constants
   exact ⟨s, W, hW, hθpos, hθlt, hs, hsW⟩
 
 theorem sparse_floor_exponent_budget
-    (α : ℝ) (hα : 0 < α) (s W : ℕ)
+    (α : ℝ) (s W : ℕ)
     (hgap : (s : ℝ) < α * W) :
     ∃ m₀ : ℕ, ∀ m : ℕ, m₀ ≤ m →
       s * m ≤ Nat.floor (α * m) * W := by
@@ -136,7 +139,7 @@ theorem sparse_floor_exponent_budget
   have hWreal : (0 : ℝ) < W := by
     rcases (mul_pos_iff.mp hprod) with h | h
     · exact h.2
-    · exact (not_lt_of_ge hα.le h.1).elim
+    · exact (not_lt_of_ge (Nat.cast_nonneg W) h.2).elim
   let δ : ℝ := α * W - s
   have hδ : 0 < δ := by
     dsimp only [δ]
@@ -176,13 +179,12 @@ theorem sparse_large_union_existence_of_numerics :
         Nat.choose m a ^ T ∧
       W * Nat.ceil ((2 : ℝ) ^ (γ * m)) ≤ T at hpack
   rcases hpack with ⟨hab, hbm, hWT, hbadCoeff, hgrowth⟩
-  have hb : 0 < b := by omega
   have hbadBound := bad_indexed_families_card_bound
-    m a T W b hW hWT hb hbm hab
+    m a T W b hbm
   have htypeCard :
       Fintype.card (Fin T → {S : Finset (Fin m) // S.card = a}) =
         Nat.choose m a ^ T := by
-    rw [Fintype.card_fun, exact_subset_type_card, Fintype.card_fin]
+    simp only [Fintype.card_fun, Fintype.card_finset_len, Fintype.card_fin]
   have hbadlt :
       (badIndexedFamilies m a T W b).card <
         (Finset.univ : Finset
@@ -193,7 +195,7 @@ theorem sparse_large_union_existence_of_numerics :
     Finset.exists_mem_notMem_of_card_lt_card hbadlt
   obtain ⟨family, hfamily⟩ :=
     good_indexed_family_to_large_union_family
-      m a T W b hW hab A hAgood
+      m a T W b hab A hAgood
   refine ⟨family, ?_⟩
   have hmul :
       W * Nat.ceil ((2 : ℝ) ^ (γ * m)) ≤
@@ -215,13 +217,16 @@ theorem sparse_power_budget (m W k : ℕ) :
   · exact Nat.choose_le_two_pow m k
 
 theorem sparse_bad_coefficient_lt_one
-    (m a b W : ℕ) (hm : 0 < m)
-    (hWT : W ≤ 2 ^ (m / W)) (hbm : b - 1 ≤ m)
+    (m a b W : ℕ)
     (hratio :
       (((Nat.choose (b - 1) a : ℝ) / Nat.choose m a) ^ W) <
         ((1 : ℝ) / 8) ^ m) :
     (Nat.choose (2 ^ (m / W)) W : ℝ) * Nat.choose m (b - 1) *
         (((Nat.choose (b - 1) a : ℝ) / Nat.choose m a) ^ W) < 1 := by
+  by_cases hchooseTZero : Nat.choose (2 ^ (m / W)) W = 0
+  · simp [hchooseTZero]
+  by_cases hchooseMZero : Nat.choose m (b - 1) = 0
+  · simp [hchooseMZero]
   obtain ⟨hchooseT, hchooseM⟩ := sparse_power_budget m W (b - 1)
   have hchooseTR : (Nat.choose (2 ^ (m / W)) W : ℝ) ≤
       (2 : ℝ) ^ m := by
@@ -230,9 +235,9 @@ theorem sparse_bad_coefficient_lt_one
       (2 : ℝ) ^ m := by
     exact_mod_cast hchooseM
   have hchooseTPos : (0 : ℝ) < Nat.choose (2 ^ (m / W)) W := by
-    exact_mod_cast Nat.choose_pos hWT
+    exact_mod_cast Nat.pos_of_ne_zero hchooseTZero
   have hchooseMPos : (0 : ℝ) < Nat.choose m (b - 1) := by
-    exact_mod_cast Nat.choose_pos hbm
+    exact_mod_cast Nat.pos_of_ne_zero hchooseMZero
   have hstrict :
       (Nat.choose (2 ^ (m / W)) W : ℝ) * Nat.choose m (b - 1) *
           (((Nat.choose (b - 1) a : ℝ) / Nat.choose m a) ^ W) <
@@ -253,9 +258,9 @@ theorem sparse_bad_coefficient_lt_one
         ((1 : ℝ) / 2) ^ m := by
     rw [← mul_pow, ← mul_pow]
     norm_num
-  have hhalf : ((1 : ℝ) / 2) ^ m < 1 :=
-    pow_lt_one₀ (by norm_num) (by norm_num) (Nat.ne_of_gt hm)
-  exact hstrict.trans_le hupper |>.trans_eq hnormalize |>.trans hhalf
+  have hhalf : ((1 : ℝ) / 2) ^ m ≤ 1 :=
+    pow_le_one₀ (by norm_num) (by norm_num)
+  exact hstrict.trans_le hupper |>.trans_eq hnormalize |>.trans_le hhalf
 
 theorem sparse_quotient_window
     (W m : ℕ) (hW : 0 < W) (hm : 2 * W * W ≤ m) :
@@ -271,9 +276,11 @@ theorem sparse_quotient_window
   refine ⟨hlow, hupp, ?_⟩
   omega
 
-theorem sparse_growth_budget (W : ℕ) (hW : 0 < W) :
+theorem sparse_growth_budget (W : ℕ) :
     ∃ γ : ℝ, 0 < γ ∧ ∃ m₀ : ℕ, ∀ m : ℕ, m₀ ≤ m →
       W * Nat.ceil ((2 : ℝ) ^ (γ * m)) ≤ 2 ^ (m / W) := by
+  rcases Nat.eq_zero_or_pos W with rfl | hW
+  · exact ⟨1, one_pos, 0, fun m _ => by simp⟩
   refine ⟨1 / (8 * (W : ℝ)), by positivity, 2 * W * W, ?_⟩
   intro m hm
   let k := m / W
@@ -316,11 +323,13 @@ theorem sparse_growth_budget (W : ℕ) (hW : 0 < W) :
 
 theorem sparse_ratio_base_bound
     (α β : ℝ) (hα : 0 < α) (hαβ : α < β) (hβ1 : β < 1)
-    (m : ℕ) (hm : 0 < m) :
+    (m : ℕ) :
     let a := Nat.floor (α * m)
     let b := Nat.ceil (β * m)
     (((b - 1 : ℕ) : ℝ) / ((m + 1 - a : ℕ) : ℝ)) <
       β / (1 - α) := by
+  rcases Nat.eq_zero_or_pos m with rfl | hm
+  · simpa using div_pos (hα.trans hαβ) (by linarith : 0 < 1 - α)
   let a := Nat.floor (α * m)
   let b := Nat.ceil (β * m)
   have hmR : (0 : ℝ) < m := by exact_mod_cast hm
@@ -364,7 +373,7 @@ theorem sparse_ratio_base_bound
 
 theorem sparse_ratio_decay
     (m a b s W : ℕ) (θ : ℝ)
-    (hm : 0 < m) (ha : 0 < a) (hW : 0 < W)
+    (ha : 0 < a)
     (hab : a ≤ b - 1) (hbm : b - 1 ≤ m)
     (hθ0 : 0 < θ) (hθ1 : θ < 1)
     (hbase : (((b - 1 : ℕ) : ℝ) / ((m + 1 - a : ℕ) : ℝ)) < θ)
@@ -374,7 +383,7 @@ theorem sparse_ratio_decay
   let q : ℝ := (Nat.choose (b - 1) a : ℝ) / Nat.choose m a
   let r : ℝ := ((b - 1 : ℕ) : ℝ) / ((m + 1 - a : ℕ) : ℝ)
   have hchoose : q ≤ r ^ a := by
-    simpa only [q, r] using sparse_choose_ratio_bound m a b hab hbm
+    simpa only [q, r] using sparse_choose_ratio_bound m a b
   have hqNonneg : 0 ≤ q := by
     dsimp only [q]
     positivity
@@ -385,15 +394,19 @@ theorem sparse_ratio_decay
     pow_le_pow_left₀ hqNonneg hchoose W
   have hpowBase : (r ^ a) ^ W = r ^ (a * W) := by
     exact (pow_mul r a W).symm
+  have hs : 0 < s := by
+    by_contra hs
+    have hsZero : s = 0 := by omega
+    norm_num [hsZero] at hθpow
   have hstrict : r ^ (a * W) < θ ^ (a * W) := by
-    exact pow_lt_pow_left₀ hbase hrNonneg
-      (Nat.mul_ne_zero (Nat.ne_of_gt ha) (Nat.ne_of_gt hW))
+    apply pow_lt_pow_left₀ hbase hrNonneg
+    exact Nat.ne_of_gt ((Nat.mul_pos hs (by omega)).trans_le hexp)
   have hθexp : θ ^ (a * W) ≤ θ ^ (s * m) :=
     (pow_le_pow_iff_right_of_lt_one₀ hθ0 hθ1).2 hexp
   have hθsplit : θ ^ (s * m) = (θ ^ s) ^ m := pow_mul θ s m
   have hlast : (θ ^ s) ^ m < ((1 : ℝ) / 8) ^ m := by
     exact pow_lt_pow_left₀ hθpow (pow_nonneg hθ0.le s)
-      (Nat.ne_of_gt hm)
+      (by omega : m ≠ 0)
   calc
     q ^ W ≤ (r ^ a) ^ W := hfirst
     _ = r ^ (a * W) := hpowBase
@@ -403,16 +416,26 @@ theorem sparse_ratio_decay
     _ < ((1 : ℝ) / 8) ^ m := hlast
 
 theorem sparse_rounded_setup
-    (α β : ℝ) (hα : 0 < α) (hαβ : α < β) (hβ1 : β < 1)
-    (s W : ℕ) (hW : 0 < W) (hgap : (s : ℝ) < α * W) :
+    (α β : ℝ) (hαβ : α < β) (hβ1 : β < 1)
+    (s W : ℕ) (hgap : (s : ℝ) < α * W) :
     ∃ m₀ : ℕ, ∀ m : ℕ, m₀ ≤ m →
       let a := Nat.floor (α * m)
       let b := Nat.ceil (β * m)
       let T := 2 ^ (m / W)
       0 < m ∧ 0 < a ∧ a < b ∧ b ≤ m ∧ a ≤ b - 1 ∧
         b - 1 ≤ m ∧ W ≤ T ∧ s * m ≤ a * W := by
+  have hprod : (0 : ℝ) < α * W := (Nat.cast_nonneg s).trans_lt hgap
+  have hα : 0 < α := (mul_pos_iff.mp hprod).resolve_right (by
+    rintro ⟨_, hWneg⟩
+    exact not_lt_of_ge (Nat.cast_nonneg W) hWneg) |>.1
+  have hW : 0 < W := by
+    by_contra hW
+    have hWZero : W = 0 := by omega
+    have hgapZero : (s : ℝ) < 0 := by
+      simpa only [hWZero, Nat.cast_zero, mul_zero] using hgap
+    exact not_lt_of_ge (Nat.cast_nonneg s) hgapZero
   obtain ⟨mExp, hExp⟩ :=
-    sparse_floor_exponent_budget α hα s W hgap
+    sparse_floor_exponent_budget α s W hgap
   obtain ⟨mFloor, hFloor⟩ := exists_nat_gt ((1 : ℝ) / α)
   let m₀ := max (max 1 (W * W)) (max mFloor mExp)
   refine ⟨m₀, ?_⟩
@@ -480,7 +503,7 @@ theorem sparse_counting_inequality
     sparse_constants α β hα hαβ hsum
   have hβ1 : β < 1 := by linarith
   obtain ⟨m₀, hsetup⟩ :=
-    sparse_rounded_setup α β hα hαβ hβ1 s W hW hgap
+    sparse_rounded_setup α β hαβ hβ1 s W hgap
   refine ⟨W, hW, m₀, ?_⟩
   intro m hm
   let a := Nat.floor (α * m)
@@ -490,16 +513,16 @@ theorem sparse_counting_inequality
   change 0 < m ∧ 0 < a ∧ a < b ∧ b ≤ m ∧ a ≤ b - 1 ∧
       b - 1 ≤ m ∧ W ≤ T ∧ s * m ≤ a * W at hpack
   rcases hpack with
-    ⟨hmpos, haPos, hab, hbm, habSub, hbSub, hWT, hsm⟩
+    ⟨_, haPos, hab, hbm, habSub, hbSub, hWT, hsm⟩
   have hbase :
       (((b - 1 : ℕ) : ℝ) / ((m + 1 - a : ℕ) : ℝ)) <
         β / (1 - α) := by
     simpa only [a, b] using
-      sparse_ratio_base_bound α β hα hαβ hβ1 m hmpos
+      sparse_ratio_base_bound α β hα hαβ hβ1 m
   have hratio := sparse_ratio_decay m a b s W (β / (1 - α))
-    hmpos haPos hW habSub hbSub hθ0 hθ1 hbase hsm hθpow
+    haPos habSub hbSub hθ0 hθ1 hbase hsm hθpow
   have hbad := sparse_bad_coefficient_lt_one
-    m a b W hmpos (by simpa only [T] using hWT) hbSub hratio
+    m a b W hratio
   have haM : a ≤ m := hab.le.trans hbm
   have hchoose : 0 < Nat.choose m a := Nat.choose_pos haM
   have hcoeff := sparse_clear_denominator
@@ -514,7 +537,7 @@ theorem sparse_large_union_numerics : SparseLargeUnionNumerics := by
   obtain ⟨W, hW, mCount, hCount⟩ :=
     sparse_counting_inequality α β hα hαβ hsum
   obtain ⟨γ, hγ, mGrowth, hGrowth⟩ :=
-    sparse_growth_budget W hW
+    sparse_growth_budget W
   refine ⟨W, hW, γ, hγ, max mCount mGrowth, ?_⟩
   intro m hm
   have hmCount : mCount ≤ m := by omega
@@ -557,7 +580,7 @@ theorem large_union_existence : LargeUnionExistence := by
   obtain ⟨W, hW, γ₀, hγ₀, mSparse, hSparse⟩ :=
     sparse_large_union_existence α₀ β₀ hα₀ hα₀β₀ hsum
   obtain ⟨mAbsorb, hAbsorb⟩ :=
-    fixed_factor_rpow_absorb W hW γ₀ hγ₀
+    fixed_factor_rpow_absorb W γ₀ hγ₀
   refine ⟨W, hW, γ₀ / 2, by positivity,
     max 1 (max mSparse mAbsorb), ?_⟩
   intro m hm
@@ -601,7 +624,7 @@ theorem large_union_existence : LargeUnionExistence := by
       simpa only [one_mul] using h
     exact_mod_cast hfloor.trans hmul
   obtain ⟨target, hresize⟩ :=
-    large_union_family_resize W a₀ b₀ a₁ b₁ hW ha hab hb
+    large_union_family_resize W a₀ b₀ a₁ b₁ ha hab hb
       (ι := Fin m) (by simpa only [Fintype.card_fin] using ha₁m) source
   refine ⟨target, ?_⟩
   have hresizeR : (source.sets.card : ℝ) ≤
@@ -721,7 +744,7 @@ theorem large_union_family_transport :
 theorem barrier_package_existence : BarrierPackageExistence := by
   unfold BarrierPackageExistence
   intro ℓ hℓ R hRpos hRlt B hB
-  rcases barrier_constant_bounds ℓ hℓ R hRpos hRlt B hB with
+  rcases barrier_constant_bounds ℓ hℓ R hRpos hRlt B with
     ⟨hK, hEta, hEtaHalf, hEtaSecond, hAlpha, hAlphaBeta,
       hBetaOne, hXi⟩
   obtain ⟨W, hW, γ₀, hγ₀, mSource, hSource⟩ :=
@@ -729,7 +752,7 @@ theorem barrier_package_existence : BarrierPackageExistence := by
       (barrierAlphaDensity R) (barrierBetaDensity ℓ R)
       hAlpha hAlphaBeta hBetaOne
   obtain ⟨mAbsorb, hAbsorb⟩ :=
-    fixed_factor_rpow_absorb W hW γ₀ hγ₀
+    fixed_factor_rpow_absorb W γ₀ hγ₀
   let γ : ℝ := γ₀ / (2 * (ℓ + 1))
   let n₀ : ℕ := max (roundedBarrierDensityThreshold ℓ R B)
     (max ((ℓ + 1) * mSource) ((ℓ + 1) * mAbsorb))
@@ -753,10 +776,10 @@ theorem barrier_package_existence : BarrierPackageExistence := by
       dsimp only [n₀] at hn
       omega
     rcases rounded_barrier_density_threshold_bounds
-        ℓ hℓ R hRpos hRlt B hB n hnDensity with
+        ℓ hℓ R hRpos hRlt B n hnDensity with
       ⟨hBasicThreshold, hRateBudget, hXiBudget⟩
     have hbasic := rounded_barrier_basic_bounds
-      ℓ hℓ R hRpos hRlt B hB η hη hηcut n hBasicThreshold hlen
+      ℓ hℓ R hRpos hRlt B η hη hηcut n hBasicThreshold hlen
     change 1 ≤ η * n ∧ B + 1 ≤ Nat.floor (R * n) ∧
         d.dZero ≤ d.radius ∧ 0 < d.boosted ∧
         d.boosted ≤ n ∧ d.radius ≤ n at hbasic
@@ -764,7 +787,7 @@ theorem barrier_package_existence : BarrierPackageExistence := by
       ⟨hone, hrate, hdZero, hBoostPos, hBoostLe, hRadiusLe⟩
     have hηhalf : η < (1 - R) / 2 := hηcut.trans_le hEtaHalf
     rcases rounded_barrier_quotient_bounds
-        ℓ hℓ R hRpos hRlt B n η hη hηhalf
+        ℓ hℓ R hRpos B n η hη hηhalf
         (by simpa only [d] using hdZero)
         (by simpa only [d] using hRadiusLe) with
       ⟨hUsed, hRadiusUsed, hmLower, hmUpper, hFloorM, haM, hnM⟩
@@ -777,7 +800,7 @@ theorem barrier_package_existence : BarrierPackageExistence := by
       omega
     obtain ⟨source, hsource⟩ := hSource m hmSource
     have hwindow := rounded_barrier_density_window
-      ℓ hℓ R hRpos hRlt B hB η hη hηcut n hnDensity hlen
+      ℓ hℓ R hRpos hRlt B η hη hηcut n hnDensity hlen
     change Nat.floor (barrierAlphaDensity R * m) ≤ d.aFamily ∧
       d.aFamily < Nat.ceil (barrierBetaDensity ℓ R * m) ∧
       d.aUnion ≤ Nat.ceil (barrierBetaDensity ℓ R * m) ∧
@@ -786,12 +809,12 @@ theorem barrier_package_existence : BarrierPackageExistence := by
     obtain ⟨resized, hresize⟩ := large_union_family_resize
       W (Nat.floor (barrierAlphaDensity R * m))
       (Nat.ceil (barrierBetaDensity ℓ R * m))
-      d.aFamily d.aUnion hW hLower hUpperFamily hUpperUnion
+      d.aFamily d.aUnion hLower hUpperFamily hUpperUnion
       (ι := Fin m) (by simpa only [Fintype.card_fin] using haUnused)
       source
     obtain ⟨params, hpW, hpWEq, hpa, hpu, hpz, hpo⟩ :=
       barrier_parameters_exist
-        ℓ hℓ R hRpos hRlt B hB η hη hηcut n W hW
+        ℓ hℓ R hRpos B η hη hηcut n W hW
         hBasicThreshold hlen
     change params.aFamily = d.aFamily at hpa
     change params.aUnion = d.aUnion at hpu
@@ -894,11 +917,8 @@ theorem robust_minimum_distance_barrier :
     dsimp only [ηUse]
     exact lt_min hηCut (by linarith)
   let Kfac : ℕ := 2 * Wmax * ℓ
-  have hKfac : 0 < Kfac := by
-    dsimp only [Kfac]
-    positivity
   obtain ⟨nAbsorb, hAbsorb⟩ :=
-    fixed_factor_rpow_absorb Kfac hKfac (γ / 2) (by positivity)
+    fixed_factor_rpow_absorb Kfac (γ / 2) (by positivity)
   let α : ℝ := min (ηUse / 2) (γ / (16 * (K + 1)))
   let n₀ : ℕ := max nPackage nAbsorb
   have hα : 0 < α := by
@@ -939,14 +959,14 @@ theorem robust_minimum_distance_barrier :
     have hone : 1 ≤ η * n := eta_times_length_one η n hη hlen
     have hmany : 2 * q ^ params.aFamily ≤ C.ncard :=
       rate_loss_to_cardinality q B params.aFamily n C.ncard R
-        (by simpa only [q] using hA) hB hRpos.le hrate hsize
+        (by simpa only [q] using hA) hrate hsize
     have hp : 0 < relRadius ℓ R η := by
       apply relRadius_pos ℓ (by omega) R η
       linarith
     have hratio :
         (Nat.floor (relRadius ℓ R η * n) : ℝ) / n ≤
           relRadius ℓ R η :=
-      floor_radius_ratio_le (relRadius ℓ R η) n hp.le hnNat
+      floor_radius_ratio_le (relRadius ℓ R η) n hp.le
     have hLambdaRounded :
         Lambda C ((Nat.floor (relRadius ℓ R η * n) : ℝ) / n) ≤
           (ℓ : ℕ∞) :=
@@ -971,7 +991,7 @@ theorem robust_minimum_distance_barrier :
           field_simp [ne_of_gt hKOne]
         _ ≤ γ / 4 := by linarith
     have hqPower := small_alphabet_power_bound
-      q params.dZero n α η K γ hα.le hη hK.le hqSmall
+      q params.dZero n α η K γ hα.le hK.le hqSmall
       hdZero hone hαK
     have hCoeffNat : 2 * params.W * ℓ ≤ Kfac := by
       dsimp only [Kfac]

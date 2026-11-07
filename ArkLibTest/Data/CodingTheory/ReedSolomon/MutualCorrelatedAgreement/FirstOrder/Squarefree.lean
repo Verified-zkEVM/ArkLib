@@ -93,7 +93,7 @@ example :
           (regularTaylorExponent 1) : ℝ) *
           ((2 - 1 : ℕ) : ℝ) / (2 - 1 : ℕ) + ordinaryDegreeEnvelope 1 1 := by
   exact finite_factorwise_agreement_solutions_card_le_actual
-    factorwiseDomain factorwiseReceived factorwiseEquation (by norm_num) (by norm_num)
+    factorwiseDomain factorwiseReceived factorwiseEquation  (by norm_num)
     (by norm_num) (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
     factorwiseTail factorwiseSolutions
     factorwise_solutions_are_roots (by
@@ -112,7 +112,7 @@ private theorem certificateWithPositiveDerivativeCap :
       firstOrderCurveShiftedHeightSlotCount 1 2 1 1 1 1 1 := by decide
   exact exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount
     (F := ℚ) (D := 1) (A := 2) (m := 1) (M := 1) (μ := 1) (k := 2) (h := 1)
-    (by norm_num) (by norm_num) (by norm_num) factorwiseDomain (fun _ ↦ 0) (fun _ ↦ 0)
+    (by norm_num) (by norm_num) factorwiseDomain (fun _ ↦ 0) (fun _ ↦ 0)
     hheight
 
 private noncomputable def certificateSolutions : Finset ℚ[X] := {0}
@@ -128,7 +128,7 @@ example :
     (D := 1) (A := 2) (m := 1) (M := 1) (μ := 1) (k := 2) (h := 1) (n := 2)
     factorwiseDomain (fun _ ↦ 0)
     (firstOrderColumns (D := 1) (A := 2) (m := 1) (M := 1) (μ := 1)) cert
-    (by norm_num) (by norm_num) (by norm_num)
+     (by norm_num) (by norm_num)
     (by norm_num)
     (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
     certificateSolutions (by
@@ -149,7 +149,7 @@ example :
   exact finite_factorwise_agreement_solutions_card_le_actual_of_regular_equation
     (n := 2) (D := 1) (A := 2) (B := 1) (M := 1)
     factorwiseDomain factorwiseReceived factorwiseEquation (1 : DifferentialPolynomial ℚ 1)
-    (by norm_num) (by norm_num) (by norm_num)
+     (by norm_num) (by norm_num)
     (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)) factorwiseChosenTail
     factorwiseSolutions factorwise_solutions_are_roots (by
       intro P hP
@@ -166,7 +166,7 @@ example :
   exact finite_factorwise_agreement_solutions_card_le_of_regular_equation
     (n := 2) (D := 1) (A := 2) (B := 1) (M := 1)
     factorwiseDomain factorwiseReceived factorwiseEquation (1 : DifferentialPolynomial ℚ 1)
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num) (by norm_num)
     (by
       change weightedTotalDegree jetDegreeWeight
         (1 : MvPolynomial (JetVariable 1) ℚ) ≤ 1
@@ -239,7 +239,7 @@ example :
   exact exists_exceptional_retainedSquarefreeCurveAgreement_of_tail
     (D := 1) (ell := 0) (L := 2) (A := 2) (B := 1) (M := 1) (H := 1)
     factorwiseDomain values iota Q hQ
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+     (by norm_num) (by norm_num) (by norm_num)
     (by norm_num) (by norm_num) (by norm_num)
     hjet hderiv hheight (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)) htail
 
@@ -335,18 +335,11 @@ example : (firstOrderCurveFiberStageOne 2 exampleJet exampleCap (regularTaylorEx
     rw [show (2 / 49 : ℝ) * (5 - 2 / 49) * (2 - 2 / 49) = (216 / 343 : ℝ) ^ 2 by norm_num,
       Real.sqrt_sq_eq_abs]
     norm_num
-  have hc : (2 : ℝ) < (⌈4 / ((1081506391 : ℝ) / 42598400000)⌉₊ : ℝ) := by
-    exact_mod_cast Nat.lt_ceil.mpr (by norm_num)
   apply automaticSquarefreeListExpression_le (rho := exampleRho) (eta := exampleEta)
   all_goals norm_num [ht,
     automaticDerivativeCap, automaticDerivativeCapRaw, automaticMultiplicity, automaticSurplus,
     automaticDerivativeRatio, automaticAgreement, automaticGapBracket, firstOrderCleanExpression,
     firstOrderRateBeta]
-  · constructor
-    · nlinarith [hc]
-    · norm_num [automaticJetDegree, automaticMultiplicity, automaticSurplus,
-        automaticDerivativeRatio, automaticAgreement, automaticGapBracket,
-        firstOrderCleanExpression, firstOrderRateBeta, ht]
 end ReedSolomon.FirstOrder.Squarefree
 
 example :
@@ -355,7 +348,7 @@ example :
           ((2 - 1 : ℕ) : ℝ) / (2 - 1 : ℕ) + ordinaryDegreeEnvelope 1 1 := by
   exact finite_squarefree_agreement_solutions_card_le
     factorwiseDomain factorwiseReceived factorwiseEquation (MvPolynomial.X_ne_zero _)
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+     (by norm_num) (by norm_num) (by norm_num)
     (by
       change weightedTotalDegree jetDegreeWeight
         (MvPolynomial.monomial (Finsupp.single (some (0 : Fin 2)) 1) (1 : ℚ)) ≤ 1
@@ -380,8 +373,8 @@ example :
       (firstOrderCurveFiberStageOne 2 1 1 (regularTaylorExponent 1) : ℝ) *
           ((2 - 1 : ℕ) : ℝ) / (2 - 1 : ℕ) + ordinaryDegreeEnvelope 1 1 := by
   exact finite_factorwise_agreement_solutions_card_le
-    factorwiseDomain factorwiseReceived factorwiseEquation (MvPolynomial.X_ne_zero _)
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    factorwiseDomain factorwiseReceived factorwiseEquation
+    (by norm_num) (by norm_num)
     (by
       change weightedTotalDegree jetDegreeWeight
         (MvPolynomial.monomial (Finsupp.single (some (0 : Fin 2)) 1) (1 : ℚ)) ≤ 1
@@ -417,7 +410,7 @@ private noncomputable def certificateCurve :
       (firstOrderColumns (D := 1) (A := 2) (m := 1) (M := 1) (μ := 1)) :=
   Classical.choice <| exists_finite_firstOrder_curve_certificate_of_heightSlotCount
     (D := 1) (A := 2) (m := 1) (M := 1) (μ := 1) (k := 2) (h := 1) (n := 2)
-    1 (by norm_num) (by norm_num) (by norm_num) factorwiseDomain _
+    1 (by norm_num) (by norm_num) factorwiseDomain _
     (by intro i; norm_num [ReedSolomon.powerBatchedCoordinate, certificateValues])
     certificateHeightSurplus
 
@@ -429,7 +422,7 @@ example : ∃ z : ℚ, ReedSolomon.HasExactPowerAgreement factorwiseDomain certi
     exists_baseExceptional_retainedSquarefreeCurveAgreement_of_certificate
       (E := AlgebraicClosure ℚ) (L := 2) factorwiseDomain certificateValues
       (algebraMap ℚ (AlgebraicClosure ℚ)) _ certificateCurve
-      (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+        (by norm_num) (by norm_num) (by norm_num) (by norm_num)
       (by norm_num) (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
   obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
   exact ⟨z, hgood z hz 0 (WithBot.bot_lt_coe 2) (by
@@ -452,8 +445,8 @@ example : ∃ z : ℚ, ReedSolomon.HasExactCorrelatedPair factorwiseDomain (fun 
   obtain ⟨cert⟩ := certificateWithPositiveDerivativeCap
   obtain ⟨exceptional, -, hgood⟩ :=
     exists_baseExceptional_retainedSquarefreeLineAgreement_of_certificate
-      (E := AlgebraicClosure ℚ) factorwiseDomain (fun _ ↦ 0) (fun _ ↦ 0)
-      (algebraMap ℚ (AlgebraicClosure ℚ)) _ cert
+      factorwiseDomain (fun _ ↦ 0) (fun _ ↦ 0)
+      _ cert
       (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
       (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
   obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
@@ -466,9 +459,9 @@ example : ∃ z : ℚ, ReedSolomon.HasExactPowerAgreement factorwiseDomain certi
     (RingHom.id ℚ) 2 z 0 := by
   obtain ⟨exceptional, -, hgood⟩ :=
     exists_baseExceptional_retainedSquarefreeCurveAgreement_sharpOptimized_of_certificate
-      (E := AlgebraicClosure ℚ) (L := 2) factorwiseDomain certificateValues
-      (algebraMap ℚ (AlgebraicClosure ℚ)) _ certificateCurve
-      (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+      (L := 2) factorwiseDomain certificateValues
+      _ certificateCurve
+       (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
       (by norm_num) (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
   obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
   exact ⟨z, hgood z hz 0 (WithBot.bot_lt_coe 2) (by

@@ -46,9 +46,9 @@ namespace ReedSolomon.HiddenDerivative.SymbolicReceivedCurve
 
 /-- A strict weighted-support margin constructs a certificate for a polynomial curve. -/
 theorem exists_certificate_of_fixed_margin {F : Type*} [Field F] {ι : Type*} [Fintype ι]
-    {d D m W A k ℓ : ℕ} {g₀ : ℝ} (hD : 0 < D) (hg₁ : g₀ ≤ 1) (hm : 0 < m)
-    (hℓ : 0 < ℓ) (hL : (D : ℝ) * m * (1 + g₀) ≤ (m * A : ℕ))
-    (hbudget : 0 < m * A) (hkD : k ≤ D + 1) (centers : ι ↪ F) (w : ι → F[X])
+    {d D m W A k ℓ : ℕ} {g₀ : ℝ} (hD : 0 < D) (hg₁ : g₀ ≤ 1)
+    (hL : (D : ℝ) * m * (1 + g₀) ≤ (m * A : ℕ))
+    (hkD : k ≤ D + 1) (centers : ι ↪ F) (w : ι → F[X])
     (hw : ∀ i, (w i).natDegree ≤ ℓ)
     (hmargin : (543 / 500 : ℝ) * Fintype.card ι * Module.finrank F (LinearMap.range
       (weightedSupportLocalConstraint (R := F) (d := d) (W := W)
@@ -61,7 +61,6 @@ theorem exists_certificate_of_fixed_margin {F : Type*} [Field F] {ι : Type*} [F
   let N := Fintype.card (weightedSupportExponents D d W L hD)
   let r := Fintype.card ι * Module.finrank F (LinearMap.range
     (weightedSupportLocalConstraint (R := F) (d := d) (W := W) (L := L) m hD 0 0))
-  have hν : 0 < ν := by dsimp only [ν]; omega
   have hcut : L ≤ (D : ℝ) * ((2 * m : ℕ) : ℝ) := by
     dsimp only [L]
     exact weightedSupportCutoff_le_two_mul D m hg₁
@@ -72,11 +71,11 @@ theorem exists_certificate_of_fixed_margin {F : Type*} [Field F] {ι : Type*} [F
   have hcolumns : Function.Injective columns := weightedSupportColumns_injective hD
   have hy₀ : ∀ j, (columns j).y₀ ≤ ν := by
     intro j
-    have hy := y₀_le_two_mul_sub_one_of_eligible hD hg₁ (hband j)
+    have hy := y₀_le_two_mul_sub_one_of_eligible hg₁ (hband j)
     simpa [ν, SourceColumn.exponent_zero] using hy
   have hdegree : ∀ j, totalJetDegree (columns j).exponent ≤ ν := by
     intro j
-    have h := totalJetDegree_le_pred_of_weightedSupportEligible hD hcut (hband j)
+    have h := totalJetDegree_le_pred_of_weightedSupportEligible hcut (hband j)
     simpa [ν] using h
   have hdim : Module.finrank F (weightedSupportSpace F D d W L hD) = N := by
     rw [finrank_weightedSupportSpace_eq_card hD, ← Fintype.card_coe]
@@ -93,22 +92,23 @@ theorem exists_certificate_of_fixed_margin {F : Type*} [Field F] {ι : Type*} [F
     rw [rank_map_supportedLocalConstraintMatrix]
     exact localConstraintMatrix_rank_le_weightedSupport hD (fun i => centers i) w columns hband
   obtain ⟨cert⟩ := exists_certificate_of_rank_bound (L := L) (r := r)
-    hL hbudget hkD centers w hw columns hcolumns hy₀ hdegree hband
+    hL hkD centers w hw columns hcolumns hy₀ hdegree hband
     (algebraMap F[X] (RatFunc F)) (IsFractionRing.injective F[X] (RatFunc F)) hrank
     (by simpa only [Fintype.card_fin] using hrN)
-  have hchallenge := kernel_height_lt_twelve_mul_of_margin N r (ℓ * ν)
-    (Nat.mul_pos hℓ hν) hmargin'
   have hchallenge' : r * (ℓ * ν) / (N - r) ≤ 12 * (ℓ * ν) - 1 := by
-    apply Nat.le_sub_one_of_lt
-    exact_mod_cast hchallenge
+    by_cases hheight : 0 < ℓ * ν
+    · apply Nat.le_sub_one_of_lt
+      exact_mod_cast kernel_height_lt_twelve_mul_of_margin N r (ℓ * ν) hheight hmargin'
+    · have hzero : ℓ * ν = 0 := by omega
+      simp [hzero]
   exact ⟨cert.weakenChallengeDegree (by
     simpa only [Fintype.card_fin] using hchallenge')⟩
 
 /-- The prescribed rate interval constructs a polynomial-curve certificate. -/
 theorem exists_weightedSupport_certificate_of_rate {F : Type*} [Field F]
     (δ : ℝ) (n D A k ℓ : ℕ) (centers : Fin n ↪ F) (w : Fin n → F[X])
-    (hw : ∀ i, (w i).natDegree ≤ ℓ) (hℓ : 0 < ℓ) (hδ : 0 < δ) (hδmax : δ ≤ 1 / 4)
-    (hn : 0 < n) (hD : 0 < D) (hρlo : δ / 3 ≤ (D : ℝ) / n)
+    (hw : ∀ i, (w i).natDegree ≤ ℓ) (hδ : 0 < δ) (hδmax : δ ≤ 1 / 4)
+    (hρlo : δ / 3 ≤ (D : ℝ) / n)
     (hρhi : (D : ℝ) / n ≤ 1 - δ) (hkD : k ≤ D + 1)
     (hslack : (D : ℝ) * (1 + rateGap δ ((D : ℝ) / n)) ≤ A) :
     let d := Nat.ceil (Real.exp (xi / δ))
@@ -121,23 +121,18 @@ theorem exists_weightedSupport_certificate_of_rate {F : Type*} [Field F]
   let g₀ := rateGap δ ((D : ℝ) / n)
   let m := Nat.ceil (100 * (d : ℝ) ^ 2 * H)
   let W := Nat.floor ((1 + theta * g₀) * d * m / H)
-  have hρ : 0 < (D : ℝ) / n :=
-    div_pos (Nat.cast_pos.mpr hD) (Nat.cast_pos.mpr hn)
-  have hg := rateGap_pos hδ hρ
-  have ho := prescribed_order_lower δ hδ hδmax
-  have hHlo : xi / δ ≤ H := by simpa [H] using ho.2.2
-  obtain ⟨hm, hW, _, _, _⟩ := prescribed_dimension_inputs δ _ H d hδ hδmax hρ hρhi
-    (by omega) hHlo
+  have hρ : 0 < (D : ℝ) / n := lt_of_lt_of_le (by positivity) hρlo
+  have hD : 0 < D := by
+    by_contra hD
+    have hDzero : D = 0 := by omega
+    simp [hDzero] at hρ
   have hg₁ : g₀ ≤ 1 := rateGap_le_one δ _
   change (D : ℝ) * (1 + g₀) ≤ A at hslack
-  have hA : 0 < A := by
-    have : (0 : ℝ) < A := lt_of_lt_of_le (by positivity) hslack
-    exact_mod_cast this
   have hL : (D : ℝ) * m * (1 + g₀) ≤ (m * A : ℕ) := by
     have hh := mul_le_mul_of_nonneg_left hslack (Nat.cast_nonneg m : (0 : ℝ) ≤ m)
     push_cast
     nlinarith
-  have hmargin := prescribed_weightedSupport_margin (F := F) δ n D hδ hδmax hn hD
+  have hmargin := prescribed_weightedSupport_margin (F := F) δ n D hδ hδmax hD
     hρlo hρhi
   change (543 / 500 : ℝ) * (n : ℝ) * Module.finrank F (LinearMap.range
     (weightedSupportLocalConstraint (R := F) (d := d) (W := W)
@@ -149,13 +144,13 @@ theorem exists_weightedSupport_certificate_of_rate {F : Type*} [Field F]
         (L := (D : ℝ) * m * (1 + g₀)) m hD 0 0)) <
       Module.finrank F (weightedSupportSpace F D d W ((D : ℝ) * m * (1 + g₀)) hD) := by
     simpa only [Fintype.card_fin] using hmargin
-  exact exists_certificate_of_fixed_margin (W := W) hD hg₁ hm hℓ hL
-    (Nat.mul_pos hm hA) hkD centers w hw hmargin'
+  exact exists_certificate_of_fixed_margin (W := W) hD hg₁ hL
+    hkD centers w hw hmargin'
 
 /-- The prescribed block threshold constructs a polynomial-curve certificate. -/
 theorem exists_prescribed_certificate {F : Type*} [Field F] (δ : ℝ) (n k ℓ : ℕ)
     (centers : Fin n ↪ F) (w : Fin n → F[X]) (hw : ∀ i, (w i).natDegree ≤ ℓ)
-    (hℓ : 0 < ℓ) (hδ : 0 < δ) (hδmax : δ < 1 / 4)
+    (hδ : 0 < δ) (hδmax : δ < 1 / 4)
     (hblock :
       let d := Nat.ceil (Real.exp (xi / δ))
       let H : ℝ := harmonic (d - 1)
@@ -171,14 +166,14 @@ theorem exists_prescribed_certificate {F : Type*} [Field F] (δ : ℝ) (n k ℓ 
   let D := K - 1
   have hA' : k + ⌈δ * n⌉₊ ≤ n := by
     simpa [ReedSolomon.capacityAgreementThreshold] using hA
-  obtain ⟨hn, hD, _, hρlo, hρhi, _, hslack⟩ :=
+  obtain ⟨_, _, _, hρlo, hρhi, _, hslack⟩ :=
     prescribedBlockBounds δ n k hδ hδmax.le hblock hA'
   have hkD : k ≤ D + 1 := by
     have hkK : k ≤ K := Nat.le_max_left _ _
     dsimp [D]
     omega
   have hcert := exists_weightedSupport_certificate_of_rate δ n D
-    (ReedSolomon.capacityAgreementThreshold δ n k) k ℓ centers w hw hℓ hδ hδmax.le hn hD
+    (ReedSolomon.capacityAgreementThreshold δ n k) k ℓ centers w hw hδ hδmax.le
     hρlo hρhi hkD hslack
   simpa only [xi] using hcert
 

@@ -130,18 +130,26 @@ def subLeftFull (U : Matrix (Fin m) (Fin n) F) (c_reindex : Fin m → Fin n) :
 variable [CommRing F] [Nontrivial F]
          {U : Matrix (Fin m) (Fin n) F}
 
+omit [Nontrivial F] in
 /-- An m×n matrix has full rank if the submatrix consisting of rows 1 through n has rank n. -/
 lemma rank_eq_if_subUpFull_eq (h : n ≤ m) :
     (subUpFull U (Fin.castLE h)).rank = n → U.rank = n  := by
+   rcases subsingleton_or_nontrivial F with hF | hF
+   · simp [Matrix.rank_subsingleton]
+   let := hF
    intro h_sub_mat_rank
    apply le_antisymm
    ·  exact Matrix.rank_le_width U
    ·  calc n = (subUpFull U (Fin.castLE h)).rank := by rw[h_sub_mat_rank]
            _ ≤ U.rank := by exact Matrix.rank_submatrix_le U (Fin.castLE h) (Equiv.refl (Fin n))
 
+omit [Nontrivial F] in
 /-- cRank and Rank agree for a finite matirx -/
 lemma cRank_rank_conversion :
     ↑(U.rank) = U.cRank := by
+  rcases subsingleton_or_nontrivial F with hF | hF
+  · simp [Matrix.rank_subsingleton, Matrix.cRank_subsingleton]
+  let := hF
   rw[
     Matrix.rank_eq_finrank_span_cols,
     ← Matrix.cRank_toNat_eq_finrank,
@@ -151,9 +159,13 @@ lemma cRank_rank_conversion :
          _ = ↑n := by rw[Fintype.card_fin]
   exact Cardinal.natCast_lt_aleph0
 
+omit [Nontrivial F] in
 /-- An m×n matrix has full rank if the submatrix consisting of columns 1 through m has rank m. -/
 lemma full_row_rank_via_rank_subLeftFull (h : m ≤ n) :
     (subLeftFull U (Fin.castLE h)).rank = m → U.rank = m := by
+   rcases subsingleton_or_nontrivial F with hF | hF
+   · simp [Matrix.rank_subsingleton]
+   let := hF
    intro h_sub_mat_rank
    rw[
     Matrix.rank_eq_finrank_span_cols,

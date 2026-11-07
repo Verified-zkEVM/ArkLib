@@ -148,22 +148,29 @@ theorem johnsonRhoMinus_pos {n D : ℕ} (hD : 1 ≤ D) (hDn : D < n) :
   have hn : 0 < n := by omega
   positivity
 
-/-- `ρ₋ = D / n` is strictly below `1` when `1 ≤ D < n`. The bound `D < n` is needed: `D = n`
+/-- `ρ₋ = D / n` is strictly below `1` when `D < n`. The bound `D < n` is needed: `D = n`
 gives `1`. -/
-theorem johnsonRhoMinus_lt_one {n D : ℕ} (hD : 1 ≤ D) (hDn : D < n) :
+theorem johnsonRhoMinus_lt_one {n D : ℕ} (hDn : D < n) :
     johnsonRhoMinus n D < 1 := by
   unfold johnsonRhoMinus
   have hDn' : D < n := by omega
   exact (div_lt_one (by exact_mod_cast (show 0 < n by omega))).2 (by exact_mod_cast hDn')
 
-/-- `√ρ ^ 3 = ρ ^ (3/2)` as a real power, for `ρ ≥ 0`; in particular for `ρ₋`. -/
-theorem sqrt_cube_eq_rpow_three_halves {rho : ℝ} (hrho : 0 ≤ rho) :
+/-- `√ρ ^ 3 = ρ ^ (3/2)` as a real power, for every real `ρ`. -/
+theorem sqrt_cube_eq_rpow_three_halves {rho : ℝ} :
     √rho ^ 3 = Real.rpow rho (3 / 2 : ℝ) := by
-  symm
-  calc
-    Real.rpow rho (3 / 2 : ℝ) = Real.rpow (√rho) (3 : ℝ) :=
-      Real.rpow_div_two_eq_sqrt 3 hrho
-    _ = √rho ^ 3 := Real.rpow_natCast _ 3
+  by_cases hrho : 0 ≤ rho
+  · symm
+    calc
+      Real.rpow rho (3 / 2 : ℝ) = Real.rpow (√rho) (3 : ℝ) :=
+        Real.rpow_div_two_eq_sqrt 3 hrho
+      _ = √rho ^ 3 := Real.rpow_natCast _ 3
+  · rw [Real.sqrt_eq_zero_of_nonpos (not_le.mp hrho).le]
+    change (0 : ℝ) ^ 3 = rho ^ (3 / 2 : ℝ)
+    rw [Real.rpow_def_of_neg (not_le.mp hrho)]
+    have hangle : (3 / 2 : ℝ) * Real.pi = Real.pi / 2 + Real.pi := by ring
+    rw [hangle, Real.cos_add_pi, Real.cos_pi_div_two]
+    norm_num
 
 /-- `0 < √ρ₋ < 1` when `1 ≤ D < n`. -/
 theorem johnsonSqrt_mem_Ioo {n D : ℕ} (hD : 1 ≤ D) (hDn : D < n) :
@@ -171,13 +178,15 @@ theorem johnsonSqrt_mem_Ioo {n D : ℕ} (hD : 1 ≤ D) (hDn : D < n) :
   have hrho := johnsonRhoMinus_pos hD hDn
   refine ⟨Real.sqrt_pos.2 hrho, ?_⟩
   simpa only [Real.sqrt_one] using
-    Real.sqrt_lt_sqrt hrho.le (johnsonRhoMinus_lt_one hD hDn)
+    Real.sqrt_lt_sqrt hrho.le (johnsonRhoMinus_lt_one hDn)
 
-/-- The agreement fraction `√ρ₋ + η` strictly exceeds `ρ₋` for `η > 0`, since `ρ₋ < √ρ₋` on
-`0 < ρ₋ < 1`. -/
+/-- The agreement fraction `√ρ₋ + η` strictly exceeds `ρ₋` for `η > 0`, since `ρ₋ ≤ √ρ₋` on
+`0 ≤ ρ₋ < 1`. -/
 theorem johnsonRhoMinus_lt_agreement {n D : ℕ} {eta : ℝ}
-    (hD : 1 ≤ D) (hDn : D < n) (heta : 0 < eta) :
+    (hDn : D < n) (heta : 0 < eta) :
     johnsonRhoMinus n D < johnsonAgreement n D eta := by
+  rcases Nat.eq_zero_or_pos D with rfl | hD
+  · simpa [johnsonAgreement, johnsonRhoMinus] using heta
   have hx := johnsonSqrt_mem_Ioo hD hDn
   have hsqrt := Real.sq_sqrt (johnsonRhoMinus_pos hD hDn).le
   unfold johnsonAgreement
@@ -222,14 +231,14 @@ theorem johnson_half_gap (n D : ℕ) {eta : ℝ} (heta : 0 < eta) :
   dsimp only [x] at hdiv ⊢
   nlinarith
 
-/-- If `A ≥ (√ρ₋ + η) n` with `η > 0` and `1 ≤ D < n`, then `D + 1 ≤ A`, because
+/-- If `A ≥ (√ρ₋ + η) n` with `η > 0` and `D < n`, then `D + 1 ≤ A`, because
 `D = ρ₋ n < (√ρ₋ + η) n` (`johnsonRhoMinus_lt_agreement`). -/
 theorem johnson_degree_succ_le_agreement {n D A : ℕ} {eta : ℝ}
-    (hD : 1 ≤ D) (hDn : D < n) (heta : 0 < eta)
+    (hDn : D < n) (heta : 0 < eta)
     (hthreshold : johnsonAgreement n D eta * n ≤ A) :
     D + 1 ≤ A := by
   have hn : (0 : ℝ) < n := by exact_mod_cast (show 0 < n by omega)
-  have hrho := johnsonRhoMinus_lt_agreement hD hDn heta
+  have hrho := johnsonRhoMinus_lt_agreement hDn heta
   have hDdiv : (D : ℝ) = johnsonRhoMinus n D * n := by
     unfold johnsonRhoMinus
     field_simp
@@ -240,10 +249,10 @@ theorem johnson_degree_succ_le_agreement {n D A : ℕ} {eta : ℝ}
 
 /-- Under the Johnson threshold the denominator `A - D` of `johnsonTheta` is positive. -/
 theorem johnsonTheta_denominator_pos {n D A : ℕ} {eta : ℝ}
-    (hD : 1 ≤ D) (hDn : D < n) (heta : 0 < eta)
+    (hDn : D < n) (heta : 0 < eta)
     (hthreshold : johnsonAgreement n D eta * n ≤ A) :
     0 < A - D := by
-  have := johnson_degree_succ_le_agreement hD hDn heta hthreshold
+  have := johnson_degree_succ_le_agreement hDn heta hthreshold
   omega
 
 /-- `μ < t / √ρ₋` when `1 ≤ D < n`. The hypotheses make `√ρ₋` positive; at `D = 0` both sides
@@ -291,7 +300,7 @@ theorem johnsonH_pos {n D : ℕ} {eta : ℝ}
   have ht : (3 : ℝ) < johnsonT n D eta ^ 2 := by
     exact lt_of_lt_of_le (by norm_num)
       (pow_le_pow_left₀ (by norm_num) (johnsonT_ge_seven_halves n D eta) 2)
-  have hrho := johnsonRhoMinus_lt_one hD hDn
+  have hrho := johnsonRhoMinus_lt_one hDn
   have hz : (1 : ℝ) < z := by
     dsimp only [z]
     apply (lt_div_iff₀ (mul_pos (by norm_num) (johnsonRhoMinus_pos hD hDn))).2
@@ -323,13 +332,19 @@ theorem johnson_inv_length_le_min {n D : ℕ} (hD : 1 ≤ D) (hDn : D ≤ n - 2)
       _ = (1 - (D : ℝ) / n) / 2 := by field_simp
 
 /-- Under the Johnson threshold `(√ρ₋ + η) n ≤ A`, the incidence ratio satisfies
-`θ ≤ (1 + x) / x` with `x = √ρ₋`: the numerator is `n (1 - x²)` and the denominator is at least
-`n (x - x²)`. -/
+`θ ≤ (1 + x) / x` with `x = √ρ₋`. For `D < n`, the numerator is `n (1 - x²)` and the
+denominator is at least `n (x - x²)`; for `n ≤ D`, the numerator is zero. -/
 theorem johnsonTheta_le_sqrt_envelope {n D A : ℕ} {eta : ℝ}
-    (hD : 1 ≤ D) (hDn : D < n) (heta : 0 < eta)
+    (hD : 1 ≤ D) (heta : 0 < eta)
     (hthreshold : johnsonAgreement n D eta * n ≤ A) :
     johnsonTheta n D A ≤
       (1 + √(johnsonRhoMinus n D)) / √(johnsonRhoMinus n D) := by
+  by_cases hDn : D < n
+  swap
+  · unfold johnsonTheta
+    rw [Nat.sub_eq_zero_of_le (not_lt.mp hDn)]
+    simp only [Nat.cast_zero, zero_div]
+    positivity
   let rho := johnsonRhoMinus n D
   let x := √rho
   have hn : (0 : ℝ) < n := by exact_mod_cast (show 0 < n by omega)
@@ -339,7 +354,7 @@ theorem johnsonTheta_le_sqrt_envelope {n D A : ℕ} {eta : ℝ}
     dsimp only [rho]
     unfold johnsonRhoMinus
     field_simp
-  have hDA := johnson_degree_succ_le_agreement hD hDn heta hthreshold
+  have hDA := johnson_degree_succ_le_agreement hDn heta hthreshold
   have hnum : ((n - D : ℕ) : ℝ) = n * (1 - x ^ 2) := by
     rw [Nat.cast_sub (show D ≤ n by omega), hx2, hrhoEq]
     ring
@@ -479,8 +494,8 @@ theorem johnsonExceptionCount_lt_preEnvelope_scale {n D A : ℕ} {eta : ℝ}
   have hμ0 : (0 : ℝ) < μ := by exact_mod_cast johnsonMu_pos (eta := eta) hD hDn
   have hh0 : (0 : ℝ) < h := by exact_mod_cast johnsonH_pos (eta := eta) hD hDn
   have htheta : theta ≤ (1 + x) / x :=
-    johnsonTheta_le_sqrt_envelope hD hDn heta hthreshold
-  have hdegreeAgreement := johnson_degree_succ_le_agreement hD hDn heta hthreshold
+    johnsonTheta_le_sqrt_envelope hD heta hthreshold
+  have hdegreeAgreement := johnson_degree_succ_le_agreement hDn heta hthreshold
   have htheta0 : 0 ≤ theta := div_nonneg (Nat.cast_nonneg _) (Nat.cast_nonneg _)
   have hDEq : (D : ℝ) = n * x ^ 2 := by
     rw [hx2]
@@ -681,10 +696,17 @@ theorem johnsonExceptionCount_lt_closed {n D A : ℕ} {eta : ℝ}
       exact mul_lt_mul_of_pos_left hnormalized hscale
     _ = (8 / 3 : ℝ) * n * t ^ 3 / rho := by ring
 
-/-- `johnsonM ≤ johnsonComparisonMultiplicity` for `η > 0`. For `η < 0` both ceilings are `0`
-and the statement still holds, but the proof uses `η > 0` to compare the quotients. -/
-theorem johnsonM_le_comparisonMultiplicity (n D : ℕ) {eta : ℝ} (heta : 0 < eta) :
+/-- `johnsonM ≤ johnsonComparisonMultiplicity` for every real `η`. -/
+theorem johnsonM_le_comparisonMultiplicity (n D : ℕ) {eta : ℝ} :
     johnsonM n D eta ≤ johnsonComparisonMultiplicity n D eta := by
+  by_cases heta : 0 < eta
+  swap
+  · have hleft : √(johnsonRhoMinus n D) / (2 * eta) ≤ 0 :=
+      div_nonpos_of_nonneg_of_nonpos (Real.sqrt_nonneg _) (by linarith)
+    have hright : √(johnsonRhoMinus n D) / eta ≤ 0 :=
+      div_nonpos_of_nonneg_of_nonpos (Real.sqrt_nonneg _) (not_lt.mp heta)
+    simp [johnsonM, johnsonComparisonMultiplicity, Nat.ceil_eq_zero.mpr hleft,
+      Nat.ceil_eq_zero.mpr hright]
   let x := √(johnsonRhoMinus n D)
   have hx : 0 ≤ x := Real.sqrt_nonneg _
   have hfrac : x / (2 * eta) ≤ x / eta := by
@@ -693,12 +715,12 @@ theorem johnsonM_le_comparisonMultiplicity (n D : ℕ) {eta : ℝ} (heta : 0 < e
   unfold johnsonM johnsonComparisonMultiplicity
   exact max_le_max hceil le_rfl
 
-/-- `johnsonT ≤ johnsonComparisonShift` for `η > 0`. -/
-theorem johnsonT_le_comparisonShift (n D : ℕ) {eta : ℝ} (heta : 0 < eta) :
+/-- `johnsonT ≤ johnsonComparisonShift` for every real `η`. -/
+theorem johnsonT_le_comparisonShift (n D : ℕ) {eta : ℝ} :
     johnsonT n D eta ≤ johnsonComparisonShift n D eta := by
   unfold johnsonT johnsonComparisonShift
   have hcast : (johnsonM n D eta : ℝ) ≤ johnsonComparisonMultiplicity n D eta := by
-    exact_mod_cast johnsonM_le_comparisonMultiplicity n D heta
+    exact_mod_cast johnsonM_le_comparisonMultiplicity n D
   linarith
 
 /-- `johnsonComparisonEstimate` strictly exceeds its leading term `(2 t_B⁵ / (3 √ρ₋³)) n` when
@@ -771,7 +793,7 @@ theorem johnsonExceptionCount_div_comparisonEstimate_lt {n D A : ℕ} {eta : ℝ
   have ht : 0 < t := lt_of_lt_of_le (by norm_num) (johnsonT_ge_seven_halves n D eta)
   have htBLower : 7 / 2 ≤ tB := johnsonComparisonShift_ge_seven_halves n D eta
   have htB : 0 < tB := lt_of_lt_of_le (by norm_num) htBLower
-  have httB : t ≤ tB := johnsonT_le_comparisonShift n D heta
+  have httB : t ≤ tB := johnsonT_le_comparisonShift n D
   have htCube : t ^ 3 ≤ tB ^ 3 := pow_le_pow_left₀ ht.le httB 3
   have hxtCube : x * t ^ 3 < tB ^ 3 := by
     calc
@@ -845,11 +867,14 @@ theorem johnsonExceptionCount_lt_comparisonEstimate {n D A : ℕ} {eta : ℝ}
 /-- `johnsonExceptionCount ≤ johnsonComparisonEstimate`, the non-strict form of
 `johnsonExceptionCount_lt_comparisonEstimate`. -/
 theorem johnsonExceptionCount_le_comparisonEstimate {n D A : ℕ} {eta : ℝ}
-    (hD : 1 ≤ D) (hDn : D ≤ n - 2) (heta : 0 < eta)
+    (hDn : D ≤ n - 2) (heta : 0 < eta)
     (ha : johnsonAgreement n D eta ≤ 1)
     (hthreshold : johnsonAgreement n D eta * n ≤ A) :
-    johnsonExceptionCount n D A eta ≤ johnsonComparisonEstimate n D eta :=
-  (johnsonExceptionCount_lt_comparisonEstimate hD hDn heta ha hthreshold).le
+    johnsonExceptionCount n D A eta ≤ johnsonComparisonEstimate n D eta := by
+  rcases Nat.eq_zero_or_pos D with rfl | hD
+  · simp [johnsonExceptionCount, johnsonComparisonEstimate, johnsonMu, johnsonH,
+      johnsonRhoMinus]
+  exact (johnsonExceptionCount_lt_comparisonEstimate hD hDn heta ha hthreshold).le
 
 end
 

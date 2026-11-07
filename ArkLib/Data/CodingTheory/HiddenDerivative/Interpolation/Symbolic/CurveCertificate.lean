@@ -130,7 +130,7 @@ certificate. The rank is measured after an injective map into any field. -/
 theorem exists_certificate_of_monomial_rank_bound {F : Type u} {ι : Type uι} {κ : Type uκ}
     {K : Type uK} [Field F] [Fintype ι]
     [Fintype κ] [Field K] {d D m A k ℓ ν r : ℕ}
-    (hbudget : 0 < m * A) (hkD : k ≤ D + 1) (centers : ι ↪ F) (w : ι → F[X])
+    (hkD : k ≤ D + 1) (centers : ι ↪ F) (w : ι → F[X])
     (hw : ∀ i, (w i).natDegree ≤ ℓ) (columns : κ → SourceColumn d)
     (hcolumns : Function.Injective columns) (hy₀ : ∀ j, (columns j).y₀ ≤ ν)
     (hdegree : ∀ j, totalJetDegree (columns j).exponent ≤ ν)
@@ -144,6 +144,8 @@ theorem exists_certificate_of_monomial_rank_bound {F : Type u} {ι : Type uι} {
       (Certificate.{uι, u} A k ℓ ν d
         (r * (ℓ * ν) / (Fintype.card κ - r)) centers w) := by
   classical
+  obtain ⟨j⟩ := Fintype.card_pos_iff.mp (lt_of_le_of_lt (Nat.zero_le r) hrκ)
+  have hbudget : 0 < m * A := lt_of_le_of_lt (Nat.zero_le _) (hweight j)
   have hrankLocal :
       ((localConstraintMatrix m (fun i ↦ Polynomial.C (centers i)) w columns).map φ).rank ≤
         r := by
@@ -155,7 +157,7 @@ theorem exists_certificate_of_monomial_rank_bound {F : Type u} {ι : Type uι} {
       (fun i ↦ centers i) w hw columns
       hcolumns hy₀ φ hφ hrankLocal hrκ
   let Q : DifferentialPolynomial F[X] d := SourceColumn.interpolant columns v
-  have hcoeffdegree := SourceColumn.coeff_interpolant_natDegree_le columns hcolumns v hvdegree
+  have hcoeffdegree := SourceColumn.coeff_interpolant_natDegree_le columns v hvdegree
   refine ⟨⟨Q, ?_, SourceColumn.interpolant_totalJetDegree_le columns hdegree v, ?_⟩⟩
   · intro u
     exact hcoeffdegree u
@@ -203,7 +205,7 @@ construction from a matrix-rank estimate. -/
 theorem exists_certificate_of_rank_bound {F : Type u} {ι : Type uι} {κ : Type uκ}
     {K : Type uK} [Field F] [Fintype ι]
     [Fintype κ] [Field K] {d D m W A k ℓ ν r : ℕ} {L : ℝ}
-    (hL : L ≤ (m * A : ℕ)) (hbudget : 0 < m * A) (hkD : k ≤ D + 1)
+    (hL : L ≤ (m * A : ℕ)) (hkD : k ≤ D + 1)
     (centers : ι ↪ F) (w : ι → F[X]) (hw : ∀ i, (w i).natDegree ≤ ℓ)
     (columns : κ → SourceColumn d) (hcolumns : Function.Injective columns)
     (hy₀ : ∀ j, (columns j).y₀ ≤ ν)
@@ -217,7 +219,7 @@ theorem exists_certificate_of_rank_bound {F : Type u} {ι : Type uι} {κ : Type
     Nonempty
       (Certificate.{uι, u} A k ℓ ν d
         (r * (ℓ * ν) / (Fintype.card κ - r)) centers w) := by
-  exact exists_certificate_of_monomial_rank_bound hbudget hkD centers w hw columns hcolumns
+  exact exists_certificate_of_monomial_rank_bound hkD centers w hw columns hcolumns
     hy₀ hdegree
     (fun j ↦ weight_differentialWeight_lt_of_weightedSupportEligible hL (hband j))
     φ hφ hrank hrκ

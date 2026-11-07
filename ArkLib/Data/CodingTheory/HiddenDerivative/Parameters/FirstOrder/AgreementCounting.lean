@@ -174,7 +174,7 @@ theorem finite_regular_agreement_solutions_card_le_derivativeCapped_of_exponent
     (hkK : k ≤ K) (hr : 0 < r) (hrj : r ≤ j)
     (hjet : jetTotalDegree Q ≤ j) (hderiv : jetDegree Q 1 ≤ r)
     {n A : ℕ} (domain : Fin n ↪ F) (received : Fin n → F)
-    (hkA : k ≤ A) (hAn : A ≤ n)
+    (hkA : k ≤ A)
     (regular : Finset (Polynomial F))
     (hdegree : ∀ P ∈ regular, P.degree < k)
     (hsol : ∀ P ∈ regular, differentialSpecialization Q P = 0)
@@ -198,6 +198,12 @@ theorem finite_regular_agreement_solutions_card_le_derivativeCapped_of_exponent
   · have hScard : regular.card = 0 := by simpa [hJempty] using hcard.symm
     rw [hScard, Nat.cast_zero]
     positivity
+  obtain ⟨P, hP⟩ := Finset.card_pos.mp (by
+    rw [← hcard]
+    exact Finset.card_pos.mpr (Finset.nonempty_iff_ne_empty.mpr hJempty))
+  have hAn : A ≤ n := (hagree P hP).trans (by
+    simpa using Finset.card_filter_le (s := (Finset.univ : Finset (Fin n)))
+      (p := fun i ↦ P.eval (domain i) = received i))
   let domainE : Fin n ↪ E := domain.trans ⟨f, f.injective⟩
   have hcount := finite_regularHighCutJets_card_le_derivativeCapped_of_exponent
       center QE K k j r τ hτ hτpos hK hr hrj
@@ -238,7 +244,7 @@ theorem finite_regular_agreement_solutions_card_le_identityPair
     (Q : DifferentialPolynomial F 1) (j r : ℕ)
     (hjet : jetTotalDegree Q ≤ j)
     {n A : ℕ} (domain : Fin n ↪ F) (received : Fin n → F)
-    (hA : 2 ≤ A) (hAn : A ≤ n)
+    (hA : 2 ≤ A)
     (S : Finset F[X])
     (hdegree : ∀ P ∈ S, P.degree < 2)
     (hsol : ∀ P ∈ S, differentialSpecialization Q P = 0)
@@ -259,6 +265,12 @@ theorem finite_regular_agreement_solutions_card_le_identityPair
   · have hScard : S.card = 0 := by simpa [hempty] using hcard.symm
     rw [hScard, Nat.cast_zero]
     positivity
+  obtain ⟨P, hP⟩ := Finset.card_pos.mp (by
+    rw [← hcard]
+    exact Finset.card_pos.mpr (Finset.nonempty_iff_ne_empty.mpr hempty))
+  have hAn : A ≤ n := (hagree P hP).trans (by
+    simpa using Finset.card_filter_le (s := (Finset.univ : Finset (Fin n)))
+      (p := fun i ↦ P.eval (domain i) = received i))
   have hsepE : initialJetSeparant center QE ≠ 0 := by
     obtain ⟨jet, hjetmem⟩ := Finset.nonempty_iff_ne_empty.mpr hempty
     intro hz
@@ -327,7 +339,7 @@ theorem finite_regular_agreement_solutions_card_le_regularTaylor
   · subst D
     simpa [regularTaylorExponent] using
       finite_regular_agreement_solutions_card_le_identityPair Q j r hjet domain received
-        (by omega) hAn S hdegree hsol hsep hagree
+        (by omega) S hdegree hsol hsep hagree
   · have hτ : TaylorExponentSufficient 1 (D + 1) (regularTaylorExponent D) := by
       simpa [regularTaylorExponent] using taylorExponentSufficient_firstOrder_tight D
     have hτpos : 0 < regularTaylorExponent D := by
@@ -335,7 +347,7 @@ theorem finite_regular_agreement_solutions_card_le_regularTaylor
       omega
     have hcount := finite_regular_agreement_solutions_card_le_derivativeCapped_of_exponent
       Q (D + 1) (D + 1) j r (regularTaylorExponent D)
-      hτ hτpos (by omega) le_rfl hr hrj hjet hderiv domain received (by omega) hAn S
+      hτ hτpos (by omega) le_rfl hr hrj hjet hderiv domain received (by omega) S
       hdegree hsol hsep hbin hagree
     have hn : n - (D + 1) + 1 = n - D := by omega
     have hA' : A - (D + 1) + 1 = A - D := by omega
@@ -373,7 +385,7 @@ theorem finite_firstOrder_agreement_solutions_card_le_tight_of_exponent
   have hbin : ∀ i, 1 < i → i < K → (i.choose 1 : F) ≠ 0 := by
     intro i hi hiK
     have hpivot := natCast_choose_ne_zero_of_ringChar (D := K - 1) (s := 1) hcutChar
-      (i - 1) (by omega) (by omega)
+      (i - 1) (by omega)
     simpa only [Nat.sub_add_cancel (by omega : 1 ≤ i)] using hpivot
   let accepts : F[X] → Prop := fun P ↦
     P.degree < k ∧
@@ -441,7 +453,7 @@ theorem finite_firstOrder_agreement_solutions_card_le_tight_of_exponent
         (hτ 1 (by omega)) hτpos hK hkK
         hactive
         (jetDegree_le_total stage.1 1) le_rfl le_rfl
-        domain received hkA hAn polynomials
+        domain received hkA polynomials
         (fun P hP ↦ by
           rcases Finset.mem_image.mp hP with ⟨solution, hsolution, rfl⟩
           exact (hregularAccepts solution hsolution).1)
@@ -580,7 +592,7 @@ theorem finite_firstOrder_agreement_solutions_card_le_sharp
     (hfirst : jetDegree Q (1 : Fin 2) ≤ M)
     {n A : ℕ} (domain : Fin n ↪ F) (received : Fin n → F)
     (hK : 1 < K) (hkK : k ≤ K)
-    (hk : 0 < k) (hkA : k ≤ A) (hAn : A ≤ n)
+    (hk : 0 < k) (hkA : k ≤ A)
     (hchar : ringChar F = 0 ∨ max (K - 1) μ < ringChar F)
     (S : Finset F[X])
     (hsol : ∀ P ∈ S, differentialSpecialization Q P = 0)
@@ -588,6 +600,12 @@ theorem finite_firstOrder_agreement_solutions_card_le_sharp
       P.degree < k ∧ A ≤ ({i : Fin n | P.eval (domain i) = received i}).ncard) :
     (S.card : ℚ) ≤
       ((n * firstOrderListWeight K μ M : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ) := by
+  classical
+  rcases S.eq_empty_or_nonempty with rfl | ⟨P, hP⟩
+  · simp only [Finset.card_empty, Nat.cast_zero]
+    positivity
+  have hAn : A ≤ n := (haccept P hP).2.trans (by
+    simpa using Set.ncard_le_card ({i : Fin n | P.eval (domain i) = received i}))
   exact (finite_firstOrder_agreement_solutions_card_le_tight_of_exponent
     Q K k μ M (2 * K) hQ hdegree hfirst
       (fun r _ ↦ taylorExponentSufficient_two_mul r K) domain received

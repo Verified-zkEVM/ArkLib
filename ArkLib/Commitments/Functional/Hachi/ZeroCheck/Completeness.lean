@@ -134,7 +134,7 @@ transcript, since `Transcript.concat` is by definition the `Fin.snoc` the prover
 This is the bookkeeping half of the `perfectCompleteness` proof: it is what forces the prover's
 output statement to coincide with the verifier's, both being `nestedZcMapStmt` applied to the same
 `Fin.castAdd`/`Fin.natAdd` split of the same transcript. -/
-lemma nestedZeroCheckProver_state_eq_of_mem_support {TCom Wit : Type} [SampleableType F]
+lemma nestedZeroCheckProver_state_eq_of_mem_support {TCom Wit : Type}
     (stmt : LiftStatement Φ TCom F n μ) (wit : Wit) (i : Fin (m₀ + m₁ + 1)) :
     ∀ x ∈ support ((nestedZeroCheckProver (oSpec := oSpec) (TCom := TCom) (Wit := Wit)
         Φ m₀ m₁).runToRound i stmt wit),
@@ -173,7 +173,7 @@ produced transcript that `nestedZeroCheckVerifier` performs.
 
 This is the state invariant `nestedZeroCheckProver_state_eq_of_mem_support` read at the last round
 and pushed through `Prover.output`. -/
-lemma nestedZeroCheckProver_output_of_mem_support {TCom Wit : Type} [SampleableType F]
+lemma nestedZeroCheckProver_output_of_mem_support {TCom Wit : Type}
     (stmt : LiftStatement Φ TCom F n μ) (wit : Wit) :
     ∀ x ∈ support ((nestedZeroCheckProver (oSpec := oSpec) (TCom := TCom) (Wit := Wit)
         Φ m₀ m₁).run stmt wit),
@@ -200,7 +200,7 @@ witness is transported unchanged, and prover and verifier both output
 This is the whole execution content of completeness. Failure is impossible because the only
 `OptionT` layer in `Reduction.run` comes from the verifier, and `nestedZeroCheckVerifier` is a
 `pure` map with no acceptance test to fail. -/
-lemma nestedZeroCheckReduction_run_support {TCom Wit : Type} [SampleableType F]
+lemma nestedZeroCheckReduction_run_support {TCom Wit : Type}
     (X : LiftStatement Φ TCom F n μ) (w : Wit) :
     ∀ x ∈ support ((nestedZeroCheckReduction (oSpec := oSpec) (TCom := TCom) (Wit := Wit)
         Φ m₀ m₁).run X w).run,

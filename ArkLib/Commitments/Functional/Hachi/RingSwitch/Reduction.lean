@@ -193,7 +193,7 @@ bounded by `⌊b/2⌋ = O(b)`. -/
 theorem rhoDigitsShort_of_half_le {bound bDig : ℕ} (hb : 1 < bDig) (hbq : bDig ≤ q / 2)
     (hbound : bDig / 2 ≤ bound) (ρ : Fin n → CPolynomial (ZMod q)) :
     RhoDigitsShort Φ bound bDig ρ :=
-  fun i u k => le_trans (rhoDigits_valMinAbs_natAbs_le Φ hb hbq (ρ i) u.isLt k) hbound
+  fun i u k => le_trans (rhoDigits_valMinAbs_natAbs_le Φ hb hbq (ρ i) u k) hbound
 
 omit [NeZero q] [IsCyclotomic Φ] in
 /-- `rhoDigitsShort_of_half_le` at a bundled admissible base — the form the links consume. -/

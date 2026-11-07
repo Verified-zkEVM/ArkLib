@@ -95,7 +95,7 @@ code `MC`, at slack parameter `η`. As a function of the proximity parameter `γ
 function with three regimes: a unique-decoding bound `(⌊n·γ⌋ + 1)·(ℓ - 1) / s` below
 `δ_C / (ℓ + 1)`, a list-decoding bound up to `1 - (ρ_C + η) ^ (1 / (ℓ + 1))`, and the trivial
 bound `1` beyond. The unique-decoding regime replaces the paper's `max{n·γ, 1}` by `⌊n·γ⌋ + 1`. -/
-noncomputable def mdsMCAError [DecidableEq F] [DecidableEq A] [Nonempty ι] (MC : ModuleCode ι F A)
+noncomputable def mdsMCAError [DecidableEq A] [Nonempty ι] (MC : ModuleCode ι F A)
   (ℓ s : ℕ) (η : ℝ) : I → ℝ≥0 :=
   letI n : ℝ := Fintype.card ι
   letI δ_C : ℝ := (Code.minRelHammingDistCode (MC.carrier) : ℝ)
@@ -117,7 +117,7 @@ noncomputable def mdsMCAError [DecidableEq F] [DecidableEq A] [Nonempty ι] (MC 
 
 /-- `mdsMCAError` reads the code only through the block length `ι` and the relative distance
 `δᵣ`. -/
-lemma mdsMCAError_congr [DecidableEq F] [Nonempty ι] {A' : Type} [DecidableEq A]
+lemma mdsMCAError_congr [Nonempty ι] {A' : Type} [DecidableEq A]
     [AddCommMonoid A'] [Module F A'] [DecidableEq A']
     (MC : ModuleCode ι F A) (MC' : ModuleCode ι F A') (ℓ s : ℕ) (η : ℝ)
     (hδ : Code.minRelHammingDistCode MC'.carrier = Code.minRelHammingDistCode MC.carrier) :
@@ -321,7 +321,7 @@ Lemma 6.2 [BCGM25], with the corrected bound. -/
 lemma card_filter_isMCA_le_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S] [DecidableEq F]
     [DecidableEq A] [Nonempty ι] (G : Generator S ℓ F) (hG : IsMDSGenerator G)
     (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
-    (hℓ : 2 ≤ Fintype.card ℓ) (MC : ModuleCode ι F A) (U : ℓ → (ι → A)) {γ : ℝ} (hγ0 : 0 ≤ γ)
+    (MC : ModuleCode ι F A) (U : ℓ → (ι → A)) {γ : ℝ} (hγ0 : 0 ≤ γ)
     (hγ : γ < (Code.minRelHammingDistCode MC.carrier : ℝ) / (Fintype.card ℓ + 1)) :
     (Finset.univ.filter fun x => IsMCA G MC x U γ).card
       ≤ (⌊γ * Fintype.card ι⌋₊ + 1) * (Fintype.card ℓ - 1) := by
@@ -392,7 +392,7 @@ lemma card_filter_isMCA_le_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S]
   linarith [Nat.mul_le_mul_right r (Nat.lt_succ_iff.mp hE_card)]
 
 /-- **Lemma 6.2 [BCGM25]** (with the corrected bound; see the module docstring). Every MDS
-generator whose code has full dimension `ℓ ≥ 2` has mutual correlated agreement for every module
+generator whose code has full dimension `ℓ` has mutual correlated agreement for every module
 code `MC` at every radius `γ < δ_C / (ℓ + 1)`, with the `mdsMCAError` bound
 `(⌊n·γ⌋ + 1)·(ℓ - 1) / |S|`. The slack `η` is a dummy: the unique-decoding branch of
 `mdsMCAError` does not read it.
@@ -405,16 +405,25 @@ radius; above `δ_C / (ℓ + 1)` that is the list-decoding regime of
 lemma mcaError_le_mdsMCAError_of_lt {S : Type} [Nonempty S] [Fintype S] [SampleableType S]
     [DecidableEq F] [DecidableEq A] [Nonempty ι] (G : Generator S ℓ F) (hG : IsMDSGenerator G)
     (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
-    (hℓ : 2 ≤ Fintype.card ℓ) (MC : ModuleCode ι F A) (η : ℝ) (γ : I)
+    (MC : ModuleCode ι F A) (η : ℝ) (γ : I)
     (hγ : (γ : ℝ) < (Code.minRelHammingDistCode MC.carrier : ℝ) / (Fintype.card ℓ + 1)) :
     mcaError G MC γ ≤ (mdsMCAError MC (Fintype.card ℓ) (Fintype.card S) η γ : ENNReal) := by
   classical
+  have hℓ : 1 ≤ Fintype.card ℓ := by
+    by_contra! hzero
+    have hcode : LinearCode.fromColGenMat (M_G G) = ⊥ :=
+      Submodule.finrank_eq_zero.mp (hdim.trans (by omega))
+    change Code.dist (LinearCode.fromColGenMat (M_G G)).carrier = _ at hG
+    rw [hcode] at hG
+    change Code.dist ({0} : Set (S → F)) = _ at hG
+    rw [Code.dist_subsingleton] at hG
+    omega
   refine (mcaError_le_of_exists_exceptional_set G MC γ
     ((⌊(Fintype.card ι : ℝ) * γ⌋₊ + 1) * (Fintype.card ℓ - 1)) fun U =>
       ⟨Finset.univ.filter fun x => IsMCA G MC x U γ, ?_,
         fun x hx h => hx (Finset.mem_filter.mpr ⟨Finset.mem_univ _, h⟩)⟩).trans_eq ?_
   · rw [mul_comm (Fintype.card ι : ℝ), ← Nat.cast_pred (by omega)]
-    exact_mod_cast card_filter_isMCA_le_of_isMDSGenerator G hG hdim hℓ MC U γ.2.1 hγ
+    exact_mod_cast card_filter_isMCA_le_of_isMDSGenerator G hG hdim MC U γ.2.1 hγ
   · simp only [mdsMCAError, ite_eq_left hγ, mul_div_assoc]
     rfl
 
@@ -574,11 +583,28 @@ open Classical in
 distance `d_C` satisfies `n - d_C ≤ n · ρ`. Then at most `1 / η` maximal CA domains between `U` and
 the code have at least `n · α` positions; stated division-free as `m · η ≤ 1`. -/
 lemma card_filter_isMaxCADomain_mul_le_one [Nonempty ι] (MC : ModuleCode ι F A)
-    (U : ℓ → (ι → A)) {α ρ η : ℝ} (hα0 : 0 ≤ α) (hα1 : α ≤ 1) (hη : 0 < η)
+    (U : ℓ → (ι → A)) {α ρ η : ℝ} (hα0 : 0 ≤ α)
     (hgap : ρ + η ≤ α * α)
     (hd : ((Fintype.card ι - Code.minDist MC.carrier) : ℝ) ≤ Fintype.card ι * ρ) :
     ((Finset.univ.filter fun A₀ : Finset ι =>
         IsMaxCADomain MC U A₀ ∧ (Fintype.card ι : ℝ) * α ≤ A₀.card).card : ℝ) * η ≤ 1 := by
+  by_cases hη : 0 < η
+  swap
+  · exact (mul_nonpos_of_nonneg_of_nonpos (Nat.cast_nonneg _) (le_of_not_gt hη)).trans
+      zero_le_one
+  by_cases hα1 : α ≤ 1
+  swap
+  · have hempty : (Finset.univ.filter fun A₀ : Finset ι =>
+        IsMaxCADomain MC U A₀ ∧ (Fintype.card ι : ℝ) * α ≤ A₀.card) = ∅ := by
+      apply Finset.eq_empty_iff_forall_notMem.mpr
+      intro A₀ hA₀
+      have hle : (A₀.card : ℝ) ≤ Fintype.card ι := by
+        exact_mod_cast Finset.card_le_univ A₀
+      have hpos : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos (α := ι)
+      have := (Finset.mem_filter.mp hA₀).2.2
+      nlinarith
+    rw [hempty]
+    norm_num
   set n := Fintype.card ι
   set D := n - Code.minDist MC.carrier
   set a := ⌈(n : ℝ) * α⌉₊
@@ -626,12 +652,21 @@ than `d_C` missing, and a set `Bad` of seeds whose maximal agreement domains `T 
 lemma card_le_of_ssubset_isMaxAgreementDomain_of_isMDSGenerator {S : Type} [Nonempty S]
     [Fintype S] [DecidableEq F] (G : Generator S ℓ F) (hG : IsMDSGenerator G)
     (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
-    (hℓ : 1 ≤ Fintype.card ℓ) (MC : ModuleCode ι F A) (U : ℓ → (ι → A)) {A₀ : Finset ι}
+    (MC : ModuleCode ι F A) (U : ℓ → (ι → A)) {A₀ : Finset ι}
     (hA₀ : IsMaxCADomain MC U A₀) (hcard : (A₀ᶜ).card < Code.minDist MC.carrier) {α : ℝ}
     (hα : (Fintype.card ι : ℝ) * α ≤ A₀.card) (Bad : Finset S) (T : S → Finset ι)
     (hT : ∀ x ∈ Bad, IsMaxAgreementDomain MC (fun i => ∑ j, G x j • U j i) (T x))
     (hsub : ∀ x ∈ Bad, A₀ ⊂ T x) :
     (Bad.card : ℝ) ≤ Fintype.card ι * (1 - α) * (Fintype.card ℓ - 1) := by
+  have hℓ : 1 ≤ Fintype.card ℓ := by
+    by_contra! hzero
+    have hcode : LinearCode.fromColGenMat (M_G G) = ⊥ :=
+      Submodule.finrank_eq_zero.mp (hdim.trans (by omega))
+    change Code.dist (LinearCode.fromColGenMat (M_G G)).carrier = _ at hG
+    rw [hcode] at hG
+    change Code.dist ({0} : Set (S → F)) = _ at hG
+    rw [Code.dist_subsingleton] at hG
+    omega
   have h := card_le_pred_mul_card_compl_of_isMDSGenerator G hG hdim MC U
     (τ := {x // x ∈ Bad}) (xs := Subtype.val) Subtype.val_injective hA₀ hcard
     (B := fun t => T t.1) (fun t => hT t.1 t.2) (fun t => hsub t.1 t.2)
@@ -654,7 +689,7 @@ lemma card_mul_le_of_forall_not_subset_of_isMDSGenerator {S : Type} [Nonempty S]
     [DecidableEq F] [Nonempty ι] (G : Generator S ℓ F) (hG : IsMDSGenerator G)
     (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
     (hℓ : 2 ≤ Fintype.card ℓ) (MC : ModuleCode ι F A) (U : ℓ → (ι → A))
-    {α β ρ η : ℝ} (hρ : 0 ≤ ρ) (hαβ : α < β) (hβ0 : 0 ≤ β)
+    {α β ρ η : ℝ} (hαβ : α < β) (hβ0 : 0 ≤ β)
     (hpow : ρ + η ≤ β ^ (Fintype.card ℓ + 1))
     (hd : (Fintype.card ι : ℝ) * (1 - ρ) ≤ Code.minDist MC.carrier)
     (Bad : Finset S) (T : S → Finset ι)
@@ -664,6 +699,11 @@ lemma card_mul_le_of_forall_not_subset_of_isMDSGenerator {S : Type} [Nonempty S]
       (Fintype.card ι : ℝ) * α ≤ A₀.card → ¬ A₀ ⊆ T x) :
     (Bad.card : ℝ) * η * (β - α) ≤ 2 * (Fintype.card ℓ - 1)
       ∨ (Bad.card : ℝ) * η ≤ Fintype.card ℓ * (Fintype.card ℓ + 1) := by
+  have hρ : 0 ≤ ρ := by
+    have hdist : (Code.minDist MC.carrier : ℝ) ≤ Fintype.card ι := by
+      exact_mod_cast (Code.dist_eq_minDist MC.carrier ▸ Code.dist_le_card MC.carrier)
+    have hn : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos
+    nlinarith
   by_contra! hcon
   obtain ⟨hN1, hN2⟩ := hcon
   set n := Fintype.card ι
@@ -751,8 +791,8 @@ lemma card_filter_isMCA_le_of_isMDSGenerator_of_le_one_sub {S : Type} [Nonempty 
     [DecidableEq F] [Nonempty ι] (G : Generator S ℓ F) (hG : IsMDSGenerator G)
     (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
     (hℓ : 2 ≤ Fintype.card ℓ) (MC : ModuleCode ι F A) (U : ℓ → (ι → A))
-    {α β ρ η γ : ℝ} (hρ : 0 ≤ ρ) (hη : 0 < η) (hα0 : 0 ≤ α) (hα1 : α ≤ 1) (hαβ : α < β)
-    (hβ0 : 0 ≤ β) (hgap : ρ + η ≤ α * α) (hpow : ρ + η ≤ β ^ (Fintype.card ℓ + 1))
+    {α β ρ η γ : ℝ} (hη : 0 < η) (hα0 : 0 ≤ α) (hα1 : α ≤ 1) (hαβ : α < β)
+    (hgap : ρ + η ≤ α * α) (hpow : ρ + η ≤ β ^ (Fintype.card ℓ + 1))
     (hd : (Fintype.card ι : ℝ) * (1 - ρ) ≤ Code.minDist MC.carrier) (hγ : γ ≤ 1 - β) :
     ((Finset.univ.filter fun x => IsMCA G MC x U γ).card : ℝ)
       ≤ Fintype.card ι * (1 - α) * (Fintype.card ℓ - 1) / η
@@ -786,7 +826,7 @@ lemma card_filter_isMCA_le_of_isMDSGenerator_of_le_one_sub {S : Type} [Nonempty 
     exact_mod_cast (Finset.card_filter_add_card_filter_not (s := Bad) fun x =>
       ∃ A₀ ∈ Large, A₀ ⊆ Tx x).symm
   have hLarge : (Large.card : ℝ) * η ≤ 1 :=
-    card_filter_isMaxCADomain_mul_le_one MC U hα0 hα1 hη hgap (by linarith)
+    card_filter_isMaxCADomain_mul_le_one MC U hα0 hgap (by linarith)
   have hK : (0 : ℝ) ≤ n * (1 - α) * (L - 1) :=
     mul_nonneg (mul_nonneg hnR.le (by linarith)) (by linarith)
   have hper : ∀ A₀ ∈ Large,
@@ -796,7 +836,7 @@ lemma card_filter_isMCA_le_of_isMDSGenerator_of_le_one_sub {S : Type} [Nonempty 
     have hAcompl : (A₀ᶜ).card < Code.minDist MC.carrier := by
       rw [← Nat.cast_lt (α := ℝ), Finset.card_compl, Nat.cast_sub (Finset.card_le_univ _)]
       nlinarith
-    refine card_le_of_ssubset_isMaxAgreementDomain_of_isMDSGenerator G hG hdim (by omega) MC U
+    refine card_le_of_ssubset_isMaxAgreementDomain_of_isMDSGenerator G hG hdim MC U
       hAmax hAcompl hAlarge _ Tx (fun x hx => hTmax x (Finset.mem_filter.mp hx).1) ?_
     intro x hx
     obtain ⟨hxBad, hsubx⟩ := Finset.mem_filter.mp hx
@@ -816,7 +856,8 @@ lemma card_filter_isMCA_le_of_isMDSGenerator_of_le_one_sub {S : Type} [Nonempty 
   have hB1R : (B1.card : ℝ) ≤ n * (1 - α) * (L - 1) / η := by
     rw [le_div_iff₀ hη]
     nlinarith [mul_le_mul_of_nonneg_right hB1 hη.le, mul_le_mul_of_nonneg_right hLarge hK]
-  have hB2 := card_mul_le_of_forall_not_subset_of_isMDSGenerator G hG hdim hℓ MC U hρ hαβ hβ0
+  have hB2 := card_mul_le_of_forall_not_subset_of_isMDSGenerator G hG hdim hℓ MC U hαβ
+    (hα0.trans hαβ.le)
     hpow hd B2 Tx (fun x hx => hTmax x (Finset.mem_filter.mp hx).1)
     (fun x hx => hTlarge x (Finset.mem_filter.mp hx).1)
     (fun x hx A₀ hAmax hAlarge hsubx => (Finset.mem_filter.mp hx).2
@@ -844,7 +885,7 @@ theorem isMCAGenerator_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S]
   IsMCAGenerator G (mdsMCAError MC (Fintype.card ℓ) (Fintype.card S) η) MC := by
   intro γ
   by_cases hγ : (γ : ℝ) < (Code.minRelHammingDistCode MC.carrier : ℝ) / (Fintype.card ℓ + 1)
-  · exact mcaError_le_mdsMCAError_of_lt G hG hdim hℓ MC η γ hγ
+  · exact mcaError_le_mdsMCAError_of_lt G hG hdim MC η γ hγ
   simp only [mdsMCAError]
   split_ifs with hup
   · have hδq := congrArg (Rat.cast (K := ℝ))
@@ -868,7 +909,6 @@ theorem isMCAGenerator_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S]
     have hLR : (0 : ℝ) < L := by exact_mod_cast (by omega : 0 < L)
     have hαβ : α < β := Real.rpow_lt_rpow_of_exponent_gt hb hlt1 <| by
       rw [div_lt_div_iff₀ (by positivity) hLR]; linarith
-    have hβ0 : 0 ≤ β := Real.rpow_nonneg hb.le _
     have hgap : ρ + η ≤ α * α := by
       have hαα : α * α = (ρ + η) ^ (2 / L : ℝ) := by
         rw [hα_def, ← Real.rpow_add hb]; congr 1; ring
@@ -883,8 +923,8 @@ theorem isMCAGenerator_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S]
       rw [hρ_def, sub_sub_cancel, ← hδq, mul_div_cancel₀ _ hnR.ne']
     refine (mcaError_le_of_exists_exceptional_set G MC γ
       (n * (1 - α) * (L - 1) / η + max (2 * (L - 1) / (η * (β - α))) (L * (L + 1) / η))
-      fun U => ⟨_, card_filter_isMCA_le_of_isMDSGenerator_of_le_one_sub G hG hdim hℓ MC U hρ
-        hη.1 hα0 hα1 hαβ hβ0 hgap hpow (by convert hd) hup,
+      fun U => ⟨_, card_filter_isMCA_le_of_isMDSGenerator_of_le_one_sub G hG hdim hℓ MC U
+        hη.1 hα0 hα1 hαβ hgap hpow (by convert hd) hup,
         fun x hx h => hx (by simpa using h)⟩).trans (le_of_eq ?_)
     unfold ENNReal.ofReal
     congr 2

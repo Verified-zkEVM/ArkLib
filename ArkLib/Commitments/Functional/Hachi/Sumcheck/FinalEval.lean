@@ -60,7 +60,7 @@ instance {F : Type} : IsEmpty (pSpecFinalEval F).ChallengeIdx :=
   ⟨fun ⟨0, h⟩ => nomatch h⟩
 
 /-- Each challenge of `pSpecFinalEval` is (vacuously) sampleable — there are none. -/
-instance {F : Type} [SampleableType F] :
+instance {F : Type} :
     ∀ i, SampleableType ((pSpecFinalEval F).Challenge i) :=
   fun i => isEmptyElim i
 
@@ -387,7 +387,7 @@ lemma finalEvalReduction_run_support
         WEvalStatement K.TCom F m₀), w) := Prod.ext rfl hout
   rw [hx, hpr]
 
-omit [NeZero q] [IsCyclotomic Φ] in
+omit [NeZero q] [IsCyclotomic Φ] [SampleableType F] in
 /-- **Perfect completeness of the final-evaluation step**, error exactly `0`.
 
 The honest prover's claim `y′ = mle[w̃](a)` passes `finalCheck` (`finalCheck_honestComputeY`) and

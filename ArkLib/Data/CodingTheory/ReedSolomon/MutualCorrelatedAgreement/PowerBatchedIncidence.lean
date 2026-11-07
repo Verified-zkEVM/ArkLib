@@ -272,7 +272,7 @@ theorem finite_admissibleChartTupleIncidence_off_graphs
 
 /-- A finite family of regular jets satisfying all high Taylor cuts and enough agreement cuts is
 bounded by the dimension-sensitive evaluation product. -/
-theorem finite_regularHighCutJets_card_le_dimensionSensitive_of_exponent [IsAlgClosed E]
+theorem finite_regularHighCutJets_card_le_dimensionSensitive_of_exponent
     (center : E) (Q : DifferentialPolynomial E r) (K k τ : ℕ)
     (hτ : TaylorExponentSufficient r K τ) (hK : r < K) (hkK : k ≤ K)
     {n A : ℕ} (domain : Fin n ↪ E) (received : Fin n → E)

@@ -103,7 +103,7 @@ def initialQuery (z : Fin (2 ^ n)) : (ω.subdomain 0).toFinset :=
 
 /-- A computational polynomial witness with the degree bound of stage `i`. -/
 @[reducible]
-def Witness (F : Type) [NonBinaryField F] [DecidableEq F] {k : ℕ}
+def Witness (F : Type) [NonBinaryField F] {k : ℕ}
     (s : Fin (k + 1) → ℕ+) (d : ℕ+) (i : Fin (k + 2)) :=
   CompPoly.CPolynomial.degreeLT (R := F)
       (2 ^ ((∑ j', (s j').1) - (∑ j' ∈ finRangeTo _ i.1, (s j').1)) * d)
@@ -438,7 +438,7 @@ def outputRelation (_cond : ∑ i, (s i).1 ≤ n) (δ : ℝ≥0) :
 
 /-- One field challenge followed by a polynomial message. -/
 @[reducible]
-def pSpec (F : Type) [Semiring F] [BEq F] [LawfulBEq F] : ProtocolSpec 2 :=
+def pSpec (F : Type) [Semiring F] : ProtocolSpec 2 :=
   ⟨!v[.V_to_P, .P_to_V], !v[F, CompPoly.CPolynomial F]⟩
 
 /- `OracleInterface` instance for the `pSpec` of the final folding round of the FRI protocol. -/
@@ -533,7 +533,7 @@ def finalFoldProver :
     ⟩
 
 /-- Read the final polynomial message. -/
-def getConst (F : Type) [NonBinaryField F] [DecidableEq F] :
+def getConst (F : Type) [NonBinaryField F] :
     OracleComp [(pSpec F).Message]ₒ (CompPoly.CPolynomial F) :=
   liftM <|
     OracleSpec.query

@@ -111,12 +111,8 @@ lemma weight_le_iff {f H : F[X][Y]} {D b : ℕ} :
     weight f H D ≤ (WithBot.some b : WithBot ℕ) ↔
       ∀ n ∈ f.support,
         n * (D + 1 - Bivariate.natDegreeY H) + (f.coeff n).natDegree ≤ b := by
-  classical
-  refine ⟨fun h n hn => ?_, fun h => ?_⟩
-  · have := (le_weight_of_mem_support hn).trans h
-    exact_mod_cast this
-  · refine Finset.sup_le (fun n hn => ?_)
-    exact_mod_cast (h n hn)
+  unfold weight
+  simp only [Finset.sup_le_iff, WithBot.coe_le_coe]
 
 omit [IsDomain F] in
 /-- `Λ(C c) ≤ c.natDegree`. -/

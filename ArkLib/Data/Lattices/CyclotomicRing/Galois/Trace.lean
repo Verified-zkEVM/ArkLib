@@ -105,10 +105,13 @@ theorem traceH_fixed_of_smul (α k g : ℕ) (hg : Odd g)
 The hypotheses match `Hexp_card` (`k` a power of two dividing `d/2`): they are needed for `Hexp`
 to genuinely enumerate the subgroup `H = ⟨σ_{-1}, σ_{4k+1}⟩`. Reduced to the permutation lemma
 `Hexp_generator_smul` (the open group-theoretic core); the rest is fully proven. -/
-theorem traceH_mem_fixed (α k : ℕ) (hk2pow : ∃ κ, k = 2 ^ κ) (hk : 2 * k ∣ 2 ^ α)
+theorem traceH_mem_fixed (α k : ℕ) (hk : 2 * k ∣ 2 ^ α)
     (a : Rq (powTwoCyclotomic (R := R) α)) :
-    conjAut α (traceH α k a) = traceH α k a ∧ genAut α k (traceH α k a) = traceH α k a :=
-  ⟨traceH_fixed_of_smul α k (conjExp α) (conjExp_odd α)
+    conjAut α (traceH α k a) = traceH α k a ∧ genAut α k (traceH α k a) = traceH α k a := by
+  obtain ⟨κ, _, hκ⟩ := (Nat.dvd_prime_pow Nat.prime_two).mp
+    (dvd_trans (dvd_mul_left k 2) hk)
+  have hk2pow : ∃ κ, k = 2 ^ κ := ⟨κ, hκ⟩
+  exact ⟨traceH_fixed_of_smul α k (conjExp α) (conjExp_odd α)
       (Hexp_generator_smul α k (conjExp α) hk2pow hk (Or.inl rfl)) a,
     traceH_fixed_of_smul α k (genExp k) (genExp_odd k)
       (Hexp_generator_smul α k (genExp k) hk2pow hk (Or.inr rfl)) a⟩

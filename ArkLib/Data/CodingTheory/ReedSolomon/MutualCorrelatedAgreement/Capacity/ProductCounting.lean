@@ -55,8 +55,8 @@ noncomputable def polynomialCurveProductStageBound
 
 /-- The joint and fiber product estimates bound one stage with explicit degree caps. -/
 theorem product_stage_bound (δ : ℝ) (n k A d r ℓ v h J b j : ℕ)
-    (hδ : 0 < δ) (hδone : δ ≤ 1) (hd : 0 < d) (hk : 0 < k)
-    (hkA : k ≤ A) (hAn : A ≤ n) (hgap : (k : ℝ) + δ * n ≤ A) (hr : r ≤ d)
+    (hδ : 0 < δ) (hδone : δ ≤ 1) (hk : 0 < k) (hAn : A ≤ n)
+    (hgap : (k : ℝ) + δ * n ≤ A) (hr : r ≤ d)
     (hJ : J ≤ ℓ * h * (3 * r + 5) * 2 ^ r * v ^ (r + 1) * n ^ (r + 1))
     (hb : b ≤ 2 * n * v) (hj : j ≤ v) :
     let L := correlatedProductCutoff d k A
@@ -66,10 +66,10 @@ theorem product_stage_bound (δ : ℝ) (n k A d r ℓ v h J b j : ℕ)
         (dimensionSensitiveIncidenceProduct n L k 1 r : ℝ) ≤
       polynomialCurveProductStageBound δ n ℓ v h d r := by
   let L := correlatedProductCutoff d k A
-  have hP := evaluation_incidence_product_le δ n k A r hδ hδone hkA hAn hgap
-  have hratio := correlatedProductCutoff_jointRatio_le δ n k A d hδ hk hkA hAn hgap
+  have hP := evaluation_incidence_product_le δ n k A r hδ hδone hgap
+  have hratio := correlatedProductCutoff_jointRatio_le δ n k A d hδ hk hAn hgap
   have hF := (correlatedProductCutoff_fiberProduct_lt_three δ n k A d r
-    hδ hδone hd hk hkA hAn hgap hr).le
+    hδ hk hAn hgap hr).le
   have hJR : (J : ℝ) ≤ ℓ * h * (3 * r + 5) * 2 ^ r * v ^ (r + 1) * n ^ (r + 1) := by
     exact_mod_cast hJ
   have hbR : (b : ℝ) ≤ 2 * n * v := by exact_mod_cast hb
@@ -95,12 +95,16 @@ theorem product_stage_bound (δ : ℝ) (n k A d r ℓ v h J b j : ℕ)
 
 /-- Uniformize the stage order after applying the product estimates. -/
 theorem polynomialCurveProductStageBound_le_uniform (δ : ℝ) (n ℓ v h d r : ℕ)
-    (hδ : 0 < δ) (hδone : δ ≤ 1) (hn : 0 < n) (hv : 0 < v) (hr : r ≤ d) :
+    (hδ : 0 < δ) (hδone : δ ≤ 1) (hr : r ≤ d) :
     polynomialCurveProductStageBound δ n ℓ v h d r ≤
       polynomialCurveProductStageBound δ n ℓ v h d d := by
+  by_cases hn : n = 0
+  · simp [hn, polynomialCurveProductStageBound]
+  by_cases hv : v = 0
+  · simp [hv, polynomialCurveProductStageBound]
   have hc : (1 : ℝ) ≤ 1 / δ := (le_div_iff₀ hδ).mpr (by simpa using hδone)
-  have hnR : (1 : ℝ) ≤ n := by exact_mod_cast hn
-  have hvR : (1 : ℝ) ≤ v := by exact_mod_cast hv
+  have hnR : (1 : ℝ) ≤ n := by exact_mod_cast (Nat.one_le_iff_ne_zero.mpr hn)
+  have hvR : (1 : ℝ) ≤ v := by exact_mod_cast (Nat.one_le_iff_ne_zero.mpr hv)
   unfold polynomialCurveProductStageBound
   gcongr
   norm_num
@@ -138,16 +142,17 @@ noncomputable def prescribedProductAgreementConstant (δ : ℝ) : ℝ :=
   polynomialCurveProductAgreementConstant δ v (12 * v) d
 
 /-- The prescribed product-based agreement coefficient is strictly positive. -/
-theorem prescribedProductAgreementConstant_pos {δ : ℝ} (hδ : 0 < δ)
-    (hδquarter : δ < 1 / 4) :
+theorem prescribedProductAgreementConstant_pos {δ : ℝ} (hδ : 0 < δ) :
     0 < prescribedProductAgreementConstant δ := by
   let d := Nat.ceil (Real.exp (xi / δ))
   let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
   let v := 2 * m - 1
-  have hlower := HiddenDerivative.WeightedSupportParameters.prescribed_order_lower
-    δ hδ hδquarter.le
   have hratio : (0 : ℝ) < xi / δ := div_pos xi_pos hδ
-  have hH : (0 : ℝ) < (harmonic (d - 1) : ℝ) := hratio.trans_le hlower.2.2
+  have hlog : xi / δ ≤ Real.log d := by
+    simpa only [Real.log_exp] using
+      Real.log_le_log (Real.exp_pos (xi / δ)) (Nat.le_ceil (Real.exp (xi / δ)))
+  have hH : (0 : ℝ) < (harmonic (d - 1) : ℝ) :=
+    hratio.trans_le (hlog.trans (Real.log_le_harmonic_pred d))
   have hmReal : (0 : ℝ) < m := lt_of_lt_of_le (by positivity) (Nat.le_ceil _)
   have hm : 0 < m := by exact_mod_cast hmReal
   have hv : 0 < v := by dsimp only [v]; omega
@@ -158,7 +163,7 @@ theorem prescribedProductAgreementConstant_pos {δ : ℝ} (hδ : 0 < δ)
 /-- The product scalar estimate bounds the actual regular-stage budget. -/
 theorem regularPowerBatchedAgreementSharpBound_product_le_stage (δ : ℝ)
     (r n K k A ℓ j H v h d τ : ℕ)
-    (hδ : 0 < δ) (hδone : δ ≤ 1) (hd : 0 < d) (hn : 0 < n)
+    (hδ : 0 < δ)
     (hk : 0 < k) (hj : 0 < j) (hh : 0 < h) (hKn : K ≤ n)
     (hjv : j ≤ v) (hH : H ≤ ℓ * h) (hgap : (k : ℝ) + δ * n ≤ A)
     (hAn : A ≤ n) (hr : r ≤ d) (hτ : τ ≤ 2 * K) :
@@ -168,6 +173,13 @@ theorem regularPowerBatchedAgreementSharpBound_product_le_stage (δ : ℝ)
   have hkA : k ≤ A := by
     exact_mod_cast
       (show (k : ℝ) ≤ A from le_trans (le_add_of_nonneg_right (by positivity)) hgap)
+  have hn : 0 < n := hk.trans_le (hkA.trans hAn)
+  have hδone : δ ≤ 1 := by
+    by_contra h
+    have hkR : (0 : ℝ) < k := Nat.cast_pos.mpr hk
+    have hAnR : (A : ℝ) ≤ n := by exact_mod_cast hAn
+    nlinarith [mul_nonneg (sub_nonneg.mpr (le_of_lt (lt_of_not_ge h)))
+      (Nat.cast_nonneg n : (0 : ℝ) ≤ n)]
   have hτn : τ ≤ 2 * n := hτ.trans (Nat.mul_le_mul_left 2 hKn)
   have hJ : regularPowerBatchedInitialMixedDegree r ℓ K j H (τ := τ) ≤
       ℓ * h * (3 * r + 5) * 2 ^ r * v ^ (r + 1) * n ^ (r + 1) := by
@@ -179,7 +191,7 @@ theorem regularPowerBatchedAgreementSharpBound_product_le_stage (δ : ℝ)
   have hbStage := product_stage_bound δ n k A d r ℓ v h
     (regularPowerBatchedInitialMixedDegree r ℓ K j H (τ := τ))
     (regularPowerBatchedCutJetDegree K j (τ := τ)) j
-    hδ hδone hd hk hkA hAn hgap hr hJ hb hjv
+    hδ hδone hk hAn hgap hr hJ hb hjv
   simpa only [regularPowerBatchedAgreementSharpBound, Rat.cast_add, Rat.cast_mul,
     Rat.cast_div, Rat.cast_natCast, Rat.cast_pow, Nat.cast_mul] using hbStage
 
@@ -187,8 +199,8 @@ theorem regularPowerBatchedAgreementSharpBound_product_le_stage (δ : ℝ)
 theorem regularPowerBatchedAgreementSharp_product_finiteStage_le
     {ι : Type*} (S : Finset ι) (order jetDegree height : ι → ℕ)
     (δ : ℝ) (n K k A ℓ v h d τ : ℕ)
-    (hδ : 0 < δ) (hδone : δ ≤ 1) (hd : 0 < d) (hn : 0 < n)
-    (hk : 0 < k) (hv : 0 < v) (hh : 0 < h) (hKn : K ≤ n)
+    (hδ : 0 < δ) (hδone : δ ≤ 1) (hn : 0 < n)
+    (hk : 0 < k) (hh : 0 < h) (hKn : K ≤ n)
     (hgap : (k : ℝ) + δ * n ≤ A) (hAn : A ≤ n) (hτ : τ ≤ 2 * K)
     (hcard : S.card ≤ v) (horder : ∀ i ∈ S, order i ≤ d)
     (hjetPos : ∀ i ∈ S, 0 < jetDegree i) (hjet : ∀ i ∈ S, jetDegree i ≤ v)
@@ -202,9 +214,9 @@ theorem regularPowerBatchedAgreementSharp_product_finiteStage_le
   intro i hi
   exact (regularPowerBatchedAgreementSharpBound_product_le_stage δ
     (order i) n K k A ℓ (jetDegree i) (height i) v h d τ
-      hδ hδone hd hn hk (hjetPos i hi) hh hKn (hjet i hi) (hheight i hi)
+      hδ hk (hjetPos i hi) hh hKn (hjet i hi) (hheight i hi)
       hgap hAn (horder i hi) hτ).trans
     (polynomialCurveProductStageBound_le_uniform δ n ℓ v h d (order i)
-      hδ hδone hn hv (horder i hi))
+      hδ hδone (horder i hi))
 
 end ReedSolomon

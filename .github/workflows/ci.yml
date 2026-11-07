@@ -25,13 +25,10 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
-  build:
+  blueprint:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
-    env:
-      CLEAN_BUILD: ${{ github.event_name == 'schedule' || inputs.clean_build == true }}
-
     steps:
       - name: Cleanup to free disk space
         uses: jlumbroso/free-disk-space@v2.0.0
@@ -46,7 +43,70 @@ jobs:
 
       - uses: actions/checkout@v7
         with:
+          persist-credentials: false
+
+      # Keep the existing renderer image and commands on a runner without Lean build caches.
+      - name: Render blueprint PDF and HTML
+        uses: xu-cheng/texlive-action@f886de8159e5952a131848a5fa9c3196a2132b5d # v2
+        with:
+          docker_image: ghcr.io/xu-cheng/texlive-full:20250401
+          run: |
+            apk update
+            apk add --update make py3-pip git pkgconfig graphviz graphviz-dev gcc musl-dev
+            git config --global --add safe.directory $GITHUB_WORKSPACE
+            git config --global --add safe.directory `pwd`
+            python3 -m venv env
+            source env/bin/activate
+            pip install --upgrade pip requests wheel
+            pip install pygraphviz --config-settings="--global-option=build_ext" --config-settings="--global-option=-L/usr/lib/graphviz/" --config-settings="--global-option=-R/usr/lib/graphviz/"
+            pip install leanblueprint
+            leanblueprint pdf
+            mkdir -p home_page
+            cp blueprint/print/print.pdf home_page/blueprint.pdf
+            leanblueprint web
+            cp -r blueprint/web home_page/blueprint
+
+      - name: Stage generated blueprint outputs
+        run: python3 scripts/blueprint-ci.py stage-artifact "$RUNNER_TEMP/arklib-blueprint"
+
+      - name: Upload generated blueprint outputs
+        uses: actions/upload-artifact@v7
+        with:
+          name: arklib-blueprint
+          path: ${{ runner.temp }}/arklib-blueprint
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  # Starts alongside `blueprint` instead of after it: the renderer needs no Lean build, and the
+  # build reads its outputs only at the blueprint declaration check, where it waits for that job.
+  build:
+    runs-on: ubuntu-24.04
+    permissions:
+      # `actions: read` lets the build read the renderer job's status in this run.
+      actions: read
+      contents: read
+    env:
+      CLEAN_BUILD: ${{ github.event_name == 'schedule' || inputs.clean_build == true }}
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
           fetch-depth: 0
+
+      - name: Test blueprint CI safeguards
+        run: python3 scripts/blueprint-ci.py self-test
+
+      - name: Cleanup to free disk space
+        uses: jlumbroso/free-disk-space@v2.0.0
+        with:
+          tool-cache: false
+          android: true
+          dotnet: false
+          haskell: false
+          large-packages: false
+          docker-images: false
+          swap-storage: false
 
       - name: Reject generated KB updates in PRs
         if: >-
@@ -146,7 +206,7 @@ jobs:
           cat "$RUNNER_TEMP/source-trust.md" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Set up Lean environment
-        uses: leanprover/lean-action@v1.6.0
+        uses: leanprover/lean-action@v1.7.0
         with:
           auto-config: false
           build: false
@@ -240,14 +300,29 @@ jobs:
       - name: Build blueprint declaration environment
         run: lake build ArkLibBlueprint
 
-      # Reuse the project build above for blueprint/checkdecls validation and, on trusted
-      # main pushes, API-doc generation. The action cannot publish from this read-only job.
-      - name: Build blueprint and documentation
+      # A failed, cancelled or skipped renderer fails the required build check here.
+      - name: Require successful blueprint rendering
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/blueprint-ci.py wait-for-success
+
+      - name: Download generated blueprint outputs
+        uses: actions/download-artifact@v8
+        with:
+          name: arklib-blueprint
+          path: .
+
+      - name: Check generated blueprint declarations
+        run: lake exe checkdecls blueprint/lean_decls
+
+      # Reuse the existing project build for API documentation on trusted main pushes.
+      # The blueprint was rendered separately; this action cannot publish from the read-only job.
+      - name: Build API documentation
         uses: leanprover-community/docgen-action@10db47458f91456d87804787d3dfcd914b9a19e3 # 2026-06-07
         env:
           DISABLE_EQUATIONS: 1
         with:
-          blueprint: true
+          blueprint: false
           homepage: home_page
           build-page: false
           deploy: false

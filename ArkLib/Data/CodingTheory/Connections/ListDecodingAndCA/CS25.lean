@@ -80,12 +80,11 @@ private theorem rs_fold_probability_le_eps_ca_of_not_joint
   rw [ite_eq_right hnot] at hle
   exact hle
 
-omit [DecidableEq ι] in
+omit [DecidableEq ι] [Nonempty ι] in
 /-- Bounds the list size of `RS(k + 1)` at radius `f / n` from the CA error of `RS(k)`
 at the same integral radius. -/
 theorem rs_Lambda_extended_le_of_epsCa_int_radius
     (domain : ι ↪ F) (k f : ℕ) (ε : ℝ)
-    (_hk_pos : 0 < k)
     (_hf_lt : f + k + 1 < Fintype.card ι)
     (_hε_lt : ε < ((Fintype.card F : ℝ) - Fintype.card ι) / (k * Fintype.card F))
     (_hε_ca :
@@ -97,6 +96,7 @@ theorem rs_Lambda_extended_le_of_epsCa_int_radius
         (ε * Fintype.card F * ((Fintype.card F : ℝ) - Fintype.card ι)
           / ((Fintype.card F : ℝ) - Fintype.card ι - k * ε * Fintype.card F)) : ℕ∞) := by
   classical
+  have : Nonempty ι := Fintype.card_pos_iff.mp (by omega)
   set n : ℕ := Fintype.card ι with hn
   set q : ℕ := Fintype.card F with hq
   set Ck : Set (ι → F) := (ReedSolomon.code domain k : Set (ι → F)) with hCk
@@ -105,6 +105,11 @@ theorem rs_Lambda_extended_le_of_epsCa_int_radius
   have hnpos : 0 < n := by simp [n]
   have hqpos : 0 < q := by simp [q]
   have hε0 : 0 ≤ ε := le_trans ENNReal.toReal_nonneg _hε_ca
+  have hkpos : 0 < k := by
+    by_contra hk
+    have hk0 : k = 0 := by omega
+    simp only [hk0, Nat.cast_zero, zero_mul, div_zero] at _hε_lt
+    exact (not_lt_of_ge hε0) _hε_lt
   have hnq : n ≤ q := by
     simpa [n, q] using Fintype.card_le_of_injective domain domain.injective
   have hnq_lt : n < q := by
@@ -123,7 +128,7 @@ theorem rs_Lambda_extended_le_of_epsCa_int_radius
   apply Lambda_le_of_forall_finset_card_le
   intro u T hT
   have hkpn : k + 1 < n := by omega
-  have : NeZero k := ⟨_hk_pos.ne'⟩
+  have : NeZero k := ⟨hkpos.ne'⟩
   have hTcode : ∀ c ∈ T, c ∈ Ckp := by
     intro c hc
     exact (mem_closeCodewordsRel_iff.mp (hT c hc)).1

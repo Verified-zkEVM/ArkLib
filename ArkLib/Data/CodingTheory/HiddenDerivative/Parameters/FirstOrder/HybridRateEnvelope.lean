@@ -32,11 +32,18 @@ Given a common bound `C ≥ 1` on the agreement-incidence ratio, and bounds `μ 
 
 namespace ReedSolomon.HiddenDerivative
 
-/-- For `D ≤ n`, `D < A`, `D ≤ ρ n`, `a n ≤ A` and `ρ < a`, the agreement-incidence ratio is at
+/-- For `D ≤ ρ n`, `a n ≤ A` and `ρ < a`, the agreement-incidence ratio is at
 most `1 / (a - ρ)`. -/
-theorem agreementIncidenceRatio_le_one_div_sub {n D A : ℕ} {ρ a : ℝ} (hDn : D ≤ n)
-    (hDA : D < A) (hD : (D : ℝ) ≤ ρ * n) (hA : a * n ≤ A) (hρa : ρ < a) :
+theorem agreementIncidenceRatio_le_one_div_sub {n D A : ℕ} {ρ a : ℝ}
+    (hD : (D : ℝ) ≤ ρ * n) (hA : a * n ≤ A) (hρa : ρ < a) :
     agreementIncidenceRatio n D A ≤ 1 / (a - ρ) := by
+  by_cases hDn : n ≤ D
+  · simp only [agreementIncidenceRatio, Nat.sub_eq_zero_of_le hDn, Nat.cast_zero, zero_div]
+    positivity
+  have hDn : D ≤ n := (Nat.lt_of_not_ge hDn).le
+  have hn : (0 : ℝ) < n := by exact_mod_cast (show 0 < n by omega)
+  have hDA : D < A := by
+    exact_mod_cast (hD.trans_lt (mul_lt_mul_of_pos_right hρa hn)).trans_le hA
   have hden : (0 : ℝ) < (A - D : ℕ) := by exact_mod_cast Nat.sub_pos_of_lt hDA
   unfold agreementIncidenceRatio
   rw [div_le_div_iff₀ hden (sub_pos.mpr hρa), Nat.cast_sub hDn, Nat.cast_sub hDA.le]
@@ -48,10 +55,10 @@ private theorem monomial_le_of_exponent_le {C N q : ℝ} (hC : 1 ≤ C) (hN : 1 
     C ^ r * N ^ s * q ^ t ≤ C ^ 4 * N ^ 2 * q ^ 5 := by
   gcongr
 
-/-- For `1 ≤ C`, `1 ≤ q`, `1 ≤ n`, `D ≤ n`, `0 ≤ θ ≤ C`, `μ ≤ C q` and `T ≤ C q³` for the
+/-- For `1 ≤ C`, `1 ≤ q`, `1 ≤ n`, `D ≤ n`, `θ ≤ C`, `μ ≤ C q` and `T ≤ C q³` for the
 staircase `T` at `M`, the closed list constant is at most `3 C² n q³`. -/
 theorem firstOrderListConstant_le_cubic {C q θ : ℝ} {n D μ M : ℕ} (hC : 1 ≤ C) (hq : 1 ≤ q)
-    (hn : 1 ≤ n) (hD : D ≤ n) (hθ0 : 0 ≤ θ) (hθ : θ ≤ C) (hμ : (μ : ℝ) ≤ C * q)
+    (hn : 1 ≤ n) (hD : D ≤ n) (hθ : θ ≤ C) (hμ : (μ : ℝ) ≤ C * q)
     (hT : stageStaircase μ M ≤ C * q ^ 3) :
     firstOrderListConstant θ D μ M ≤ 3 * C ^ 2 * n * q ^ 3 := by
   have hN : (1 : ℝ) ≤ n := by exact_mod_cast hn
@@ -63,8 +70,14 @@ theorem firstOrderListConstant_le_cubic {C q θ : ℝ} {n D μ M : ℕ} (hC : 1 
   calc
     firstOrderListConstant θ D μ M ≤ 2 * n * C * (C * q ^ 3) + C * q := by
       unfold firstOrderListConstant
-      gcongr
-      exact hsub.trans hμ
+      by_cases hθ0 : 0 ≤ θ
+      · gcongr
+        exact hsub.trans hμ
+      · have hterm : 2 * (D : ℝ) * θ * stageStaircase μ M ≤ 0 :=
+          mul_nonpos_of_nonpos_of_nonneg
+            (mul_nonpos_of_nonneg_of_nonpos (by positivity) (le_of_not_ge hθ0)) hT0
+        have hbound : 0 ≤ 2 * (n : ℝ) * C * (C * q ^ 3) := by positivity
+        linarith [hsub.trans hμ]
     _ ≤ 2 * n * C * (C * q ^ 3) + C ^ 2 * n * q ^ 3 := by
       refine add_le_add_right ?_ (2 * (n : ℝ) * C * (C * q ^ 3))
       calc
@@ -73,10 +86,10 @@ theorem firstOrderListConstant_le_cubic {C q θ : ℝ} {n D μ M : ℕ} (hC : 1 
         _ ≤ C ^ 2 * n * q ^ 3 := by gcongr
     _ = 3 * C ^ 2 * n * q ^ 3 := by ring
 
-/-- For `1 ≤ C`, `1 ≤ q`, `1 ≤ n`, `D ≤ n`, `0 ≤ θ ≤ C`, `1 ≤ μ ≤ C q`, `h ≤ C q²` and `T ≤ C q³`
+/-- For `1 ≤ C`, `1 ≤ q`, `1 ≤ n`, `D ≤ n`, `0 ≤ θ ≤ C`, `μ ≤ C q`, `h ≤ C q²` and `T ≤ C q³`
 for the staircase `T` at `M`, the closed exception constant is at most `45 C⁴ n² q⁵`. -/
 theorem firstOrderExceptionConstant_le_quintic {C q θ : ℝ} {n D h μ M : ℕ} (hC : 1 ≤ C)
-    (hq : 1 ≤ q) (hn : 1 ≤ n) (hD : D ≤ n) (hθ0 : 0 ≤ θ) (hθ : θ ≤ C) (hμ0 : 1 ≤ μ)
+    (hq : 1 ≤ q) (hn : 1 ≤ n) (hD : D ≤ n) (hθ0 : 0 ≤ θ) (hθ : θ ≤ C)
     (hμ : (μ : ℝ) ≤ C * q) (hh : (h : ℝ) ≤ C * q ^ 2) (hT : stageStaircase μ M ≤ C * q ^ 3) :
     firstOrderExceptionConstant θ n D h μ M ≤ 45 * C ^ 4 * n ^ 2 * q ^ 5 := by
   have hN : (1 : ℝ) ≤ n := by exact_mod_cast hn
@@ -95,8 +108,16 @@ theorem firstOrderExceptionConstant_le_quintic {C q θ : ℝ} {n D h μ M : ℕ}
         n * (C * q) + (24 * n ^ 2 * (C * q ^ 2) + 8 * n) * C ^ 2 * (C * q ^ 3) +
         4 * n * n * C * (C * q ^ 3) := by
       unfold firstOrderExceptionConstant ordinaryTailCharge
-      simp only [show μ ≠ 0 by omega, ↓reduceIte]
-      gcongr
+      split_ifs with hμ
+      · subst μ
+        gcongr
+        have hfactor : 1 ≤ 2 * (C * q) := by nlinarith
+        have hh0 := hh.trans (le_mul_of_one_le_left (by positivity) hfactor)
+        have hr1 : 0 ≤ C * (C * q ^ 2 + C * q + 4 * (n : ℝ) * (C * q) * (C * q ^ 2)) := by
+          positivity
+        have hr2 : 0 ≤ (n : ℝ) * (C * q) := by positivity
+        linarith only [hh0, hr1, hr2]
+      · gcongr
     _ = 2 * (C ^ 2 * (n : ℝ) ^ 0 * q ^ 3) + (C ^ 2 * (n : ℝ) ^ 0 * q ^ 2) +
         (C ^ 2 * (n : ℝ) ^ 0 * q ^ 1) + 4 * (C ^ 3 * (n : ℝ) ^ 1 * q ^ 3) +
         (C ^ 1 * (n : ℝ) ^ 1 * q ^ 1) + 24 * (C ^ 4 * (n : ℝ) ^ 2 * q ^ 5) +

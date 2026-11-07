@@ -28,12 +28,26 @@ variable {ι F : Type} [Fintype ι] [Nonempty ι] [Field F] [DecidableEq F]
 exception count below the paper's budget. -/
 theorem exists_lineExactAgreementBound_explicit {deg m : ℕ} (domain : ι ↪ F)
     (hdeg : 0 < deg) (hm : 3 ≤ m) {α : ℝ}
-    (hα : (sqrtRate deg domain : ℝ) * (1 + 1 / (2 * (m : ℝ))) ≤ α)
-    (hα1 : α ≤ 1) :
+    (hα : (sqrtRate deg domain : ℝ) * (1 + 1 / (2 * (m : ℝ))) ≤ α) :
     ∃ B : ℝ, 0 ≤ B ∧
       LineExactAgreementBound domain deg ⌈(Fintype.card ι : ℝ) * α⌉₊ B ∧
       2 * B ≤ ((m : ℝ) + 1 / 2) ^ 7 * (Fintype.card ι : ℝ) ^ 2 /
         (3 * (sqrtRate deg domain : ℝ) ^ 3) := by
+  classical
+  by_cases hα1 : 1 < α
+  · have hn : (0 : ℝ) < Fintype.card ι := by positivity
+    have hAreal : (Fintype.card ι : ℝ) < (⌈(Fintype.card ι : ℝ) * α⌉₊ : ℝ) :=
+      (by nlinarith : (Fintype.card ι : ℝ) < Fintype.card ι * α).trans_le
+        (Nat.le_ceil _)
+    have hA : Fintype.card ι < ⌈(Fintype.card ι : ℝ) * α⌉₊ := by exact_mod_cast hAreal
+    refine ⟨0, le_rfl, ?_, ?_⟩
+    · intro f g
+      refine ⟨∅, by simp, ?_⟩
+      intro z hz P hP hcard
+      exact False.elim (not_le_of_gt hA (hcard.trans (Finset.card_le_univ _)))
+    · simpa only [mul_zero] using (show 0 ≤ ((m : ℝ) + 1 / 2) ^ 7 * (Fintype.card ι : ℝ) ^ 2 /
+        (3 * (sqrtRate deg domain : ℝ) ^ 3) by positivity)
+  have hα1 : α ≤ 1 := le_of_not_gt hα1
   have hn : 0 < Fintype.card ι := Fintype.card_pos
   have hmpos : (0 : ℝ) < m := by exact_mod_cast (show 0 < m by omega)
   have hfactor : 1 < 1 + 1 / (2 * (m : ℝ)) := by
@@ -57,9 +71,9 @@ theorem exists_lineExactAgreementBound_explicit {deg m : ℕ} (domain : ι ↪ F
   · subst D
     refine ⟨(Fintype.card ι).choose 2, by positivity,
       lineExactAgreementBound_constantCode domain _, ?_⟩
-    have h := two_mul_choose_two_le_explicit_budget hn hm
+    have h := two_mul_choose_two_le_explicit_budget (n := Fintype.card ι) hm
     simpa only [hs, Nat.cast_add, Nat.cast_zero, Nat.cast_one, zero_add,
-      ← sqrt_cube_eq_rpow_three_halves (by positivity : 0 ≤ 1 / (Fintype.card ι : ℝ))] using h
+      ← sqrt_cube_eq_rpow_three_halves] using h
   · have hDpos : 1 ≤ D := by omega
     have hDn : D ≤ Fintype.card ι - 2 := by omega
     let eta : ℝ := α - Real.sqrt (johnsonRhoMinus (Fintype.card ι) D)
@@ -78,24 +92,40 @@ theorem exists_lineExactAgreementBound_explicit {deg m : ℕ} (domain : ι ↪ F
       ⌈(Fintype.card ι : ℝ) * α⌉₊ eta, ?_, ?_, ?_⟩
     · unfold johnsonExceptionCount johnsonTheta
       positivity
-    · have hline := lineExactAgreementBound_johnson domain hDpos hDn heta (by rwa [ha])
+    · have hline := lineExactAgreementBound_johnson domain hDpos hDn heta
       simpa only [ha, mul_comm α] using hline
-    · have h := two_mul_johnsonExceptionCount_le_explicit_budget hDpos hDn hm heta
+    · have h := two_mul_johnsonExceptionCount_le_explicit_budget hDpos hDn hm
         (A := ⌈(Fintype.card ι : ℝ) * α⌉₊)
         (by rw [ha, mul_comm]; exact Nat.le_ceil _)
         (by rw [ha, ← hs]; simpa only [mul_comm] using hα)
-      rw [← sqrt_cube_eq_rpow_three_halves (by positivity)] at h
+      rw [← sqrt_cube_eq_rpow_three_halves] at h
       simpa only [hs] using h
 
 /-- The seventh-power budget also absorbs the affine sampling loss throughout the open
 Johnson interval. -/
 theorem exists_lineExactAgreementBound_seventh {deg : ℕ} (domain : ι ↪ F)
     (hdeg : 0 < deg) {α : ℝ}
-    (hα : (sqrtRate deg domain : ℝ) < α) (hα1 : α ≤ 1) :
+    (hα : (sqrtRate deg domain : ℝ) < α) :
     ∃ B : ℝ, 0 ≤ B ∧
       LineExactAgreementBound domain deg ⌈(Fintype.card ι : ℝ) * α⌉₊ B ∧
       2 * B ≤ (deg : ℝ) ^ 2 /
         (2 * min (α - (sqrtRate deg domain : ℝ)) ((sqrtRate deg domain : ℝ) / 20)) ^ 7 := by
+  classical
+  by_cases hα1 : 1 < α
+  · have hn : (0 : ℝ) < Fintype.card ι := by positivity
+    have hAreal : (Fintype.card ι : ℝ) < (⌈(Fintype.card ι : ℝ) * α⌉₊ : ℝ) :=
+      (by nlinarith : (Fintype.card ι : ℝ) < Fintype.card ι * α).trans_le
+        (Nat.le_ceil _)
+    have hA : Fintype.card ι < ⌈(Fintype.card ι : ℝ) * α⌉₊ := by exact_mod_cast hAreal
+    refine ⟨0, le_rfl, ?_, ?_⟩
+    · intro f g
+      refine ⟨∅, by simp, ?_⟩
+      intro z hz P hP hcard
+      exact False.elim (not_le_of_gt hA (hcard.trans (Finset.card_le_univ _)))
+    · simpa only [mul_zero] using (show 0 ≤ (deg : ℝ) ^ 2 /
+        (2 * min (α - (sqrtRate deg domain : ℝ))
+          ((sqrtRate deg domain : ℝ) / 20)) ^ 7 by positivity)
+  have hα1 : α ≤ 1 := le_of_not_gt hα1
   have hn : 0 < Fintype.card ι := Fintype.card_pos
   have hspos : 0 < (sqrtRate deg domain : ℝ) := sqrtRate_pos hdeg
   have hslt : (sqrtRate deg domain : ℝ) < 1 := hα.trans_le hα1
@@ -120,7 +150,7 @@ theorem exists_lineExactAgreementBound_seventh {deg : ℕ} (domain : ι ↪ F)
   · subst D
     refine ⟨(Fintype.card ι).choose 2, by positivity,
       lineExactAgreementBound_constantCode domain _, ?_⟩
-    have h := two_mul_choose_two_le_bciks hn hb (by simpa using hbrate)
+    have h := two_mul_choose_two_le_bciks hb (by simpa using hbrate)
     simpa only [Nat.cast_zero, zero_add, one_pow] using h
   · have hDpos : 1 ≤ D := by omega
     have hDn : D ≤ Fintype.card ι - 2 := by omega
@@ -145,9 +175,9 @@ theorem exists_lineExactAgreementBound_seventh {deg : ℕ} (domain : ι ↪ F)
       ⌈(Fintype.card ι : ℝ) * α⌉₊ eta, ?_, ?_, ?_⟩
     · unfold johnsonExceptionCount johnsonTheta
       positivity
-    · have hline := lineExactAgreementBound_johnson domain hDpos hDn heta (by rwa [ha])
+    · have hline := lineExactAgreementBound_johnson domain hDpos hDn heta
       simpa only [ha, mul_comm α] using hline
-    · exact two_mul_johnsonExceptionCount_le_bciks hDpos hDn heta
+    · exact two_mul_johnsonExceptionCount_le_bciks hDpos hDn
         (by rw [ha, mul_comm]; exact Nat.le_ceil _) hb hbeta hbrate
 
 end ProximityGap.WeightedAgreement

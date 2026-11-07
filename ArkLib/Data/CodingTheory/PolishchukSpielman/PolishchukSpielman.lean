@@ -54,7 +54,7 @@ theorem polishchuk_spielman {F : Type} [Field F]
     (h_g_degX : b_x ≥ Polynomial.Bivariate.degreeX B)
     (h_f_degY : a_y ≥ Polynomial.Bivariate.natDegreeY A)
     (h_g_degY : b_y ≥ Polynomial.Bivariate.natDegreeY B)
-    (P_x P_y : Finset F) [Nonempty P_x] [Nonempty P_y]
+    (P_x P_y : Finset F)
     (quot_x : F → F[X]) (quot_y : F → F[X])
     (h_card_Px : n_x ≤ P_x.card) (h_card_Py : n_y ≤ P_y.card)
     (h_quot_x : ∀ y ∈ P_y,

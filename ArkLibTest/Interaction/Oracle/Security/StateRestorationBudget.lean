@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 import ArkLib.Interaction.Oracle.Security.StateRestorationResources
+import ArkLib.Interaction.Oracle.Security.KnowledgeResources.Composition
 import ArkLibTest.Data.OracleComp.AddProgram
 
 /-!
@@ -16,7 +17,11 @@ one. The two message stages each perform one charged addition. The two challenge
 later witness or its first component; copying and projection are uncharged under this accounting,
 so they request no instruction. The theorem
 `MeasuredKnowledgeCertificate.stateRestoration_oracle_knowledge_soundness_nonuniform` packages the
-client's security bound with its uniform stage budget.
+client's security bound with a derived full-path count bound from the stage budgets and depth.
+
+Composing those instruction programs along an actual path retains both additions and computes
+the same input witness used in the game. Path preparation and the terminal witness-carrier
+conversion remain uncharged.
 -/
 
 open Interaction.Oracle Interaction.TwoParty OracleComp OracleSpec AddProgramTest
@@ -307,24 +312,26 @@ example : ∃ claim, closedTerminalObservation initial inputImpl Out family orac
 section Measured
 
 /-- The first stage adds the actual first oracle message to the later witness. -/
-def firstMessageStage (z : Nat) : BudgetedProgram (extractor z).stageMap Nat :=
-  ⟨addProgram fun x => (x.2, x.1.val), 1, addProgram_realizes _, addProgram_costAtMost_one _⟩
+def firstMessageStage (z : Nat) : BudgetedProgram (extractor z).stageMap (Unit → Nat) :=
+  ⟨addCountProgram fun x => (x.2, x.1.val), 1, addCountProgram_realizes _,
+    addCountProgram_costAtMost_one _⟩
 
 /-- The first challenge stage returns the later witness itself; copying is uncharged. -/
 def firstChallengeStage (z : Nat) (firstMessage : Fin 8) :
-    BudgetedProgram ((extractor z) firstMessage).2.2.stageMap Nat :=
+    BudgetedProgram ((extractor z) firstMessage).2.2.stageMap (Unit → Nat) :=
   BudgetedProgram.ofFun _
 
 /-- The second stage adds the actual second oracle message to the later witness. -/
 def secondMessageStage (z : Nat) (firstMessage first : Fin 8) :
-    BudgetedProgram (((extractor z) firstMessage).2.2 first).2.2.stageMap Nat :=
-  ⟨addProgram fun x => (x.2, x.1.val), 1, addProgram_realizes _, addProgram_costAtMost_one _⟩
+    BudgetedProgram (((extractor z) firstMessage).2.2 first).2.2.stageMap (Unit → Nat) :=
+  ⟨addCountProgram fun x => (x.2, x.1.val), 1, addCountProgram_realizes _,
+    addCountProgram_costAtMost_one _⟩
 
 /-- The second challenge stage returns the first component of the later witness; projection is
 uncharged. -/
 def secondChallengeStage (z : Nat) (firstMessage first secondMessage : Fin 8) :
     BudgetedProgram ((((extractor z) firstMessage).2.2 first).2.2 secondMessage).2.2.stageMap
-      Nat :=
+      (Unit → Nat) :=
   BudgetedProgram.ofFun _
 
 /-- The challenge stages are the identity and the first projection. -/
@@ -336,7 +343,7 @@ example (z : Nat) (firstMessage first secondMessage : Fin 8) (w : Nat) (second :
   ⟨rfl, rfl⟩
 
 /-- The measured stages of the named extractor. -/
-def stages (z : Nat) : (extractor z).MeasuredStages Nat :=
+def stages (z : Nat) : (extractor z).MeasuredStages (Unit → Nat) :=
   ⟨firstMessageStage z, fun firstMessage =>
     ⟨firstChallengeStage z firstMessage, fun first =>
       ⟨secondMessageStage z firstMessage first, fun secondMessage =>
@@ -351,7 +358,98 @@ example (z : Nat) (firstMessage first secondMessage : Fin 8) :
 
 /-- Every stage costs at most one addition. -/
 theorem stages_budgetAtMost_one (z : Nat) : (stages z).BudgetAtMost 1 :=
-  ⟨le_rfl, fun _ => ⟨Nat.zero_le 1, fun _ => ⟨le_rfl, fun _ => ⟨Nat.zero_le 1, fun _ => trivial⟩⟩⟩⟩
+  ⟨le_rfl, fun _ => ⟨(fun _ => Nat.zero_le 1), fun _ =>
+    ⟨le_rfl, fun _ => ⟨(fun _ => Nat.zero_le 1), fun _ => trivial⟩⟩⟩⟩
+
+/-- Each round has one charged message stage and an uncharged challenge stage. -/
+theorem stages_protocolBudgetAtMost (z : Nat) : (stages z).ProtocolBudgetAtMost 1 0 :=
+  ⟨le_rfl, fun _ => ⟨le_rfl, fun _ => ⟨le_rfl, fun _ => ⟨le_rfl, fun _ => trivial⟩⟩⟩⟩
+
+/-- The common stage bound gives the coarser bound with equal message and challenge budgets. -/
+example (z : Nat) (path : tree.ExecutionPath) :
+    ((stages z).programAlong path).program.CostAtMost
+      (rounds.length • ((1 : Unit → Nat) + 1)) :=
+  (stages z).programAlong_costAtMost_protocol_paired
+    (stages_budgetAtMost_one z).protocolBudgetAtMost path
+
+/-- The actual composition of the client's four named stage programs. -/
+def extractionProgram (z : Nat) (path : tree.ExecutionPath) :
+    BudgetedProgram ((extractor z).extractWitness path) (Unit → Nat) :=
+  (stages z).programAlong path
+
+/-- The composed program has declared budget two along every path. -/
+theorem extractionProgram_budget (z : Nat) (path : tree.ExecutionPath) :
+    (extractionProgram z path).budget = 2 := rfl
+
+/-- Every permitted execution of the composed program has declared cost at most two. -/
+theorem extractionProgram_costAtMost (z : Nat) (path : tree.ExecutionPath) :
+    (extractionProgram z path).program.CostAtMost 2 := by
+  simpa only [extractionProgram_budget] using (extractionProgram z path).costAtMost
+
+/-- The composed instruction program returns exactly the game's named extracted witness. -/
+example (z : Nat) (path : tree.ExecutionPath)
+    (witness : ((extractor z).terminalState path).Witness) :
+    (extractionProgram z path).program.run witness = (extractor z).extractWitness path witness :=
+  (stages z).run_programAlong path witness
+
+/-- After the uncharged carrier conversion, the composed run is the game's input witness. -/
+theorem extractionProgram_run_inputWitness (z : Nat) (path : tree.ExecutionPath)
+    (witness : Nat) :
+    (extractionProgram z path).program.run (terminalWitness z path witness) =
+      extractInputWitness inputState extractor terminalWitness z path witness :=
+  (stages z).run_programAlong path (terminalWitness z path witness)
+
+/-- The deterministic run retains the instruction charges of both message stages. -/
+def extractionObservation (z : Nat) (path : tree.ExecutionPath)
+    (witness : ((extractor z).terminalState path).Witness) : Nat × Nat :=
+  let program := (extractionProgram z path).program
+  (simulateQ ((program.answer (program.view witness)).withAddCost program.cost)
+    (program.program (program.view witness))).runAdd.run.map id (fun count => count ())
+
+/-- Every typed path and terminal witness records the two actual addition instructions. -/
+theorem extractionObservation_cost (z : Nat) (path : tree.ExecutionPath)
+    (witness : ((extractor z).terminalState path).Witness) :
+    (extractionObservation z path witness).2 = 2 := by
+  rcases path with ⟨firstMessage, first, secondMessage, second, done⟩
+  rfl
+
+/-- Erasing the recorded cost returns the same extracted witness on every typed path. -/
+theorem extractionObservation_result (z : Nat) (path : tree.ExecutionPath)
+    (witness : ((extractor z).terminalState path).Witness) :
+    (extractionObservation z path witness).1 = (extractor z).extractWitness path witness := by
+  rcases path with ⟨firstMessage, first, secondMessage, second, done⟩
+  rfl
+
+/-- The actual full-path writer executes its suffix before the root's named stage program. -/
+theorem extractionProgram_writer (z : Nat) (path : tree.ExecutionPath) :
+    let suffix := ((stages z).2 path.1).programAlong path.2
+    let rootProgram := (stages z).1.program.contramap
+      (fun witness : ((extractor z) path.1).1.Witness => ⟨path.1, witness⟩)
+    ∀ view : suffix.program.View,
+      simulateQ (((extractionProgram z path).program.answer view).withAddCost
+        (extractionProgram z path).program.cost) ((extractionProgram z path).program.program view) =
+      (do
+        let witness ← simulateQ ((suffix.program.answer view).withAddCost suffix.program.cost)
+          (suffix.program.program view)
+        simulateQ ((rootProgram.answer (rootProgram.view witness)).withAddCost rootProgram.cost)
+          (rootProgram.program (rootProgram.view witness))) := by
+  dsimp only
+  intro view
+  exact MeasuredProgram.simulateQ_withAddCost_comp
+    ((stages z).1.program.contramap
+      (fun witness : ((extractor z) path.1).1.Witness => ⟨path.1, witness⟩))
+    (((stages z).2 path.1).programAlong path.2).program view
+
+/-- Check the generated extraction run and the charges of both message stages. -/
+private def checkExtractionObservation : IO Unit := do
+  let observed := extractionObservation 0 (path 0 1) ((6 : Nat), ())
+  unless observed == (18, 2) do
+    throw (IO.userError s!"Unexpected composed extraction result or instruction count: {observed}")
+  IO.println "Composed extraction returns witness 18 with two charged additions."
+
+/-- info: Composed extraction returns witness 18 with two charged additions. -/
+#guard_msgs in
+#eval checkExtractionObservation
 
 /-- Complete extraction on a path is the composition of the four stage maps. -/
 example (z : Nat) (path : tree.ExecutionPath) (w : ((extractor z).terminalState path).Witness) :
@@ -361,7 +459,7 @@ example (z : Nat) (path : tree.ExecutionPath) (w : ((extractor z).terminalState 
 
 /-- The knowledge certificate of the named extractor, with its measured stages. -/
 noncomputable def measuredCertificate (z : Nat) :
-    MeasuredKnowledgeCertificate Nat tree roles (inputState z) where
+    MeasuredKnowledgeCertificate Unit tree roles (inputState z) where
   extractor := extractor z
   challenges := roundErrorSchedule rounds errors
   prover_preserving := preserving z
@@ -371,7 +469,16 @@ noncomputable def measuredCertificate (z : Nat) :
 /-- The measured certificate's extractor is the client's named extractor. -/
 example (z : Nat) : (measuredCertificate z).toKnowledgeCertificate.extractor = extractor z := rfl
 
-/-- The packaged theorem gives security and a uniform stage budget for the client's certificate. -/
+/-- The library bridge identifies the composed program with the original game's input witness. -/
+example (z : Nat) (path : tree.ExecutionPath) (witness : Nat) :
+    ((measuredCertificate z).stages.programAlong path).program.run
+        (terminalWitness z path witness) =
+      extractInputWitness inputState (fun z => (measuredCertificate z).extractor)
+        terminalWitness z path witness :=
+  MeasuredKnowledgeCertificate.run_programAlong_terminalWitness inputState measuredCertificate
+    terminalWitness z path witness
+
+/-- The packaged theorem derives a complete-path instruction bound from local stage budgets. -/
 example : Pr{let result ← (simulateQ randomOracle
       (closedVerificationGame initial inputImpl Out family oracleTerminal adversary)).run' ∅}[
       result.1 ∈ Set.univ ∧
@@ -380,11 +487,29 @@ example : Pr{let result ← (simulateQ randomOracle
       ¬ Rin result.1 (extractInputWitness inputState (fun z => (measuredCertificate z).extractor)
         terminalWitness result.1 result.2.1 result.2.2.2)] ≤
       2 * Finset.univ.sup errors + ∑ j, errors j ∧
-      ∀ z ∈ Set.univ, (measuredCertificate z).stages.BudgetAtMost 1 :=
+      ∀ z ∈ Set.univ, ∀ path,
+        (∀ witness, ((measuredCertificate z).stages.programAlong path).program.run
+            (terminalWitness z path witness) =
+          extractInputWitness inputState (fun z => (measuredCertificate z).extractor)
+            terminalWitness z path witness) ∧
+        ((measuredCertificate z).stages.programAlong path).program.CostAtMost 2 :=
   MeasuredKnowledgeCertificate.stateRestoration_oracle_knowledge_soundness_nonuniform inputState
-    measuredCertificate Set.univ errors (fun _ _ => rfl) 1
-    (fun z _ => stages_budgetAtMost_one z) initial inputImpl Out family oracleTerminal
+    measuredCertificate Set.univ errors (fun _ _ => rfl) (fun _ => 1) (fun _ => 0)
+    (fun z _ => stages_protocolBudgetAtMost z) initial inputImpl Out family oracleTerminal
     Rin Rout terminalWitness inputLaw outputLaw adversary 2 queryBound
+
+/-- The same named extractor has the closed-game bound and the composed instruction budget. -/
+example : Pr{let result ← (simulateQ randomOracle
+      (closedVerificationGame initial inputImpl Out family oracleTerminal adversary)).run' ∅}[
+      result.1 ∈ Set.univ ∧
+      (∃ claim, result.2.2.1 = some claim ∧
+        Rout result.1 result.2.1.toBranchPath claim result.2.2.2) ∧
+      ¬ Rin result.1 ((extractionProgram result.1 result.2.1).program.run
+        (terminalWitness result.1 result.2.1 result.2.2.2))] ≤ 7 / 16 ∧
+      ∀ z path, (extractionProgram z path).program.CostAtMost 2 := by
+  constructor
+  · simpa only [extractionProgram_run_inputWitness] using actual_nonuniform_game_bound
+  · exact extractionProgram_costAtMost
 
 end Measured
 

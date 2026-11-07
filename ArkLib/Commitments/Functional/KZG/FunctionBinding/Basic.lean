@@ -199,7 +199,6 @@ def functionBindingGameExt {n L : ℕ} {g₁ : G₁} {g₂ : G₂} (AuxState : T
 omit [DecidableEq G₁] in
 /-- Transition 1: extending output for proofs and commitment preserves the condition -/
 lemma function_binding_game_ext_eq_function_binding_game {n L : ℕ} {AuxState : Type}
-    [SampleableType G₁]
     (adversary : KzgFunctionBindingAdversary p G₁ G₂ n unifSpec L AuxState) :
     Pr{let result ← (Commitment.functionBindingGame (init := pure ∅)
       (impl := unifFwdImpl unifSpec) (hn := rfl)
@@ -263,7 +262,7 @@ lemma function_binding_game_ext_eq_function_binding_game {n L : ℕ} {AuxState :
 omit [DecidableEq G₁] in
 include g₁ g₂ pairing in
 /-- Extract the sampled SRS equation from a supported extended function-binding game output. -/
-lemma function_binding_game_ext_support_srs {n L : ℕ} {AuxState : Type} [SampleableType G₁]
+lemma function_binding_game_ext_support_srs {n L : ℕ} {AuxState : Type}
     (adversary : KzgFunctionBindingAdversary p G₁ G₂ n unifSpec L AuxState)
     {τ : ZMod p} {srs : Vector G₁ (n + 1) × Vector G₂ 2} {cm : G₁}
     {queryOf responseOf : Fin L → ZMod p} {accepts : Fin L → Bool} {proofs : Fin L → G₁}
@@ -300,7 +299,6 @@ omit [DecidableEq G₁] in
 include g₁ g₂ pairing in
 /-- Accepted outputs in the extended function-binding game correspond to successful KZG checks. -/
 lemma function_binding_game_ext_support_verify_all {n L : ℕ} {AuxState : Type}
-    [SampleableType G₁]
     (adversary : KzgFunctionBindingAdversary p G₁ G₂ n unifSpec L AuxState)
     {τ : ZMod p} {srs : Vector G₁ (n + 1) × Vector G₂ 2} {cm : G₁}
     {queryOf responseOf : Fin L → ZMod p} {accepts : Fin L → Bool} {proofs : Fin L → G₁}
@@ -416,7 +414,6 @@ lemma function_binding_game_ext_support_verify_all {n L : ℕ} {AuxState : Type}
 include g₁ g₂ pairing in
 /-- A supported extended function-binding violation maps to an ARSDH-winning output. -/
 lemma function_binding_cond_ext_output_maps_to_arsdh {n L : ℕ} {AuxState : Type}
-    [SampleableType G₁]
     (hn : 1 ≤ n) (hp : p ≥ n + 2) (hg₁ : g₁ ≠ 1) (hpair : pairing g₁ g₂ ≠ 0)
     (adversary : KzgFunctionBindingAdversary p G₁ G₂ n unifSpec L AuxState)
     {τ : ZMod p} {srs : Vector G₁ (n + 1) × Vector G₂ 2} {cm : G₁}
@@ -507,7 +504,7 @@ lemma function_binding_cond_ext_output_maps_to_arsdh {n L : ℕ} {AuxState : Typ
 
 include g₁ g₂ pairing in
 /-- Transition 2: FB condition implies ARSDH condition after mapping -/
-lemma function_binding_cond_le_arsdh_cond {n L : ℕ} {AuxState : Type} [SampleableType G₁]
+lemma function_binding_cond_le_arsdh_cond {n L : ℕ} {AuxState : Type}
     (hn : 1 ≤ n) (hp : p ≥ n + 2) (hg₁ : g₁ ≠ 1) (hpair : pairing g₁ g₂ ≠ 0)
     (adversary : KzgFunctionBindingAdversary p G₁ G₂ n unifSpec L AuxState) :
     Pr{let result ← (functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary
@@ -523,7 +520,7 @@ lemma function_binding_cond_le_arsdh_cond {n L : ℕ} {AuxState : Type} [Samplea
 
 omit [Module (ZMod p) (Additive G₁)] [Module (ZMod p) (Additive G₂)] in
 /-- Transition 3: dragging the map into the probability event -/
-lemma map_instance_drag {n L : ℕ} {AuxState : Type} [SampleableType G₁]
+lemma map_instance_drag {n L : ℕ} {AuxState : Type}
     (hn : 1 ≤ n) (adversary : KzgFunctionBindingAdversary p G₁ G₂ n unifSpec L AuxState)
     (scheme : Commitment.Scheme unifSpec (Fin (n + 1) → ZMod p) G₁ Unit
       (Vector G₁ (n + 1) × Vector G₂ 2) (Vector G₁ (n + 1) × Vector G₂ 2)
@@ -536,7 +533,7 @@ lemma map_instance_drag {n L : ℕ} {AuxState : Type} [SampleableType G₁]
   simp only [prEvent_map, Function.comp_apply]
 
 /-- Transition 4: the mapped game equals the ARSDH experiment -/
-lemma arsdh_game_eq {n L : ℕ} {AuxState : Type} [SampleableType G₁]
+lemma arsdh_game_eq {n L : ℕ} {AuxState : Type}
     (hn : 1 ≤ n) (adversary : KzgFunctionBindingAdversary p G₁ G₂ n unifSpec L AuxState) :
   Pr{let result ← (mapFunctionBindingToArsdh hn <$> functionBindingGameExt (g₁ := g₁) (g₂ := g₂)
         AuxState adversary (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)))}[
@@ -610,7 +607,7 @@ lemma arsdh_game_eq {n L : ℕ} {AuxState : Type} [SampleableType G₁]
         cases resultPairs <;> rfl)
 
 /-- The ARSDH experiment is bounded by the error for reductions in the assumed class. -/
-lemma arsdh_error_bound {n L : ℕ} {AuxState : Type} [SampleableType G₁]
+lemma arsdh_error_bound {n L : ℕ} {AuxState : Type}
     (hn : 1 ≤ n)
     {Adv : Set (Groups.arsdhAdversary n (G₁ := G₁) (G₂ := G₂) (p := p))}
     (arsdhError : ℝ≥0)
@@ -629,7 +626,7 @@ whose success probability upper-bounds its function-binding advantage. This redu
 holds without a hardness assumption. -/
 theorem function_binding_reduces_to_arsdh {g₁ : G₁} {g₂ : G₂}
     (L : ℕ) (hn : 1 ≤ n) (hp : p ≥ n + 2) (hg₁ : g₁ ≠ 1)
-    (hpair : pairing g₁ g₂ ≠ 0) [SampleableType G₁] (AuxState : Type)
+    (hpair : pairing g₁ g₂ ≠ 0) (AuxState : Type)
     (adversary : KzgFunctionBindingAdversary p G₁ G₂ n unifSpec L AuxState) :
     Commitment.functionBindingExperiment (L := L) (init := pure ∅) (impl := unifFwdImpl unifSpec)
       rfl AuxState (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)) adversary
@@ -657,7 +654,7 @@ This follows by composing `function_binding_reduces_to_arsdh` with the assumptio
 on the reduction's success probability. -/
 theorem function_binding {g₁ : G₁} {g₂ : G₂}
     (L : ℕ) (hn : 1 ≤ n) (hp : p ≥ n + 2) (hg₁ : g₁ ≠ 1)
-    (hpair : pairing g₁ g₂ ≠ 0) [SampleableType G₁]
+    (hpair : pairing g₁ g₂ ≠ 0)
     {Adv : Set (Groups.arsdhAdversary n (G₁ := G₁) (G₂ := G₂) (p := p))}
     (arsdhError : ℝ≥0)
     (hArsdh : Groups.arsdhAssumption (G₁ := G₁) (G₂ := G₂) (g₁ := g₁) (g₂ := g₂)

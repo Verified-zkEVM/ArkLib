@@ -108,7 +108,7 @@ satisfies all local constraints and both decoder degree bounds. -/
 theorem exists_weightedSupport_interpolant_of_fixed_margin
     {n A : ℕ} {g : ℝ}
     (domain : Fin n ↪ F) (received : Fin n → F)
-    (hD : 0 < D) (hm : 0 < m) (hA : 0 < A) (hg : g ≤ 1)
+    (hD : 0 < D) (hg : g ≤ 1)
     (hcut : (D : ℝ) * m * (1 + g) ≤ (m * A : ℕ))
     (hmargin : (543 / 500 : ℝ) * n *
       Module.finrank F (LinearMap.range
@@ -122,12 +122,24 @@ theorem exists_weightedSupport_interpolant_of_fixed_margin
       (∀ i, SatisfiesLocalConstraints m (domain i) (received i) Q) ∧
       jetTotalDegree Q < 2 * m ∧
       differentialWeightedDegree D Q < m * A := by
+  have hdim : (0 : ℝ) < Module.finrank F
+      (weightedSupportSpace F D d W ((D : ℝ) * m * (1 + g)) hD) :=
+    lt_of_le_of_lt (by positivity) hmargin
+  rw [finrank_weightedSupportSpace_eq_card] at hdim
+  have hcard : 0 < (weightedSupportExponents D d W ((D : ℝ) * m * (1 + g)) hD).card := by
+    exact_mod_cast hdim
+  obtain ⟨u, hu⟩ := Finset.card_pos.mp hcard
+  have hbudget : 0 < m * A := by
+    have hcutoff := (mem_weightedSupportExponents.mp hu).2.trans_le hcut
+    exact_mod_cast (Nat.cast_nonneg _).trans_lt hcutoff
+  have hm := Nat.pos_of_mul_pos_right hbudget
+  have hA := Nat.pos_of_mul_pos_left hbudget
   let ν := 2 * m - 1
   have hν : 0 < ν := by dsimp only [ν]; omega
   have hy₀ : ∀ u, WeightedSupportEligible D d W
       ((D : ℝ) * m * (1 + g)) u → u (some 0) ≤ ν := by
     intro u hu
-    exact y₀_le_two_mul_sub_one_of_eligible hD hg hu
+    exact y₀_le_two_mul_sub_one_of_eligible hg hu
   obtain ⟨v, _hv, _hkernel, _hdegree, _hheight, _hprimitive, hnozero,
       hconstraints, hsupport⟩ :=
     exists_symbolic_weightedSupport_interpolant_of_fixed_margin

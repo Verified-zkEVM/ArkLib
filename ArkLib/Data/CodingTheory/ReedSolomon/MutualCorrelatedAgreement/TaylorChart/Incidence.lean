@@ -128,7 +128,6 @@ theorem finite_regularJointTaylorChartPoints_off_admissiblePairGraphs_card_le
     (domain : Fin n ↪ F) (f g : Fin n → F) (iota : F →+* E)
     (center : E) (Q : DifferentialPolynomial E[X] r)
     (hK : r < K) (hkL : k ≤ L) (hLA : L ≤ A) (hAn : A - L + 1 ≤ n)
-    (hinit : jointInitialJetEquation center Q ≠ 0)
     (hinitialDegree : (jointInitialJetEquation center Q).totalDegree ≤ initialDegree)
     (hhighDegree : ∀ l : Fin K, k ≤ l.val →
       (jointCommonTaylorNumerator center Q (2 * K) l).totalDegree ≤ cutDegree)
@@ -148,6 +147,17 @@ theorem finite_regularJointTaylorChartPoints_off_admissiblePairGraphs_card_le
         (Polynomial.C (iota (f i)) + Polynomial.X * Polynomial.C (iota (g i)))) = 0}.ncard) :
     (S.card : ℚ) ≤ (initialDegree : ℚ) *
       (((n * cutDegree : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) ^ (r + 1) := by
+  rcases S.eq_empty_or_nonempty with rfl | ⟨x, hx⟩
+  · simp only [Finset.card_empty, Nat.cast_zero]
+    positivity
+  have hsep : initialJetSeparant (Polynomial.C center) Q ≠ 0 := by
+    intro hzero
+    exact (hS x hx).2.1 (by simp [jointInitialJetSeparant, hzero])
+  have hinit : jointInitialJetEquation center Q ≠ 0 := by
+    intro hzero
+    apply initialJetEquation_ne_zero_of_initialJetSeparant_ne_zero (Polynomial.C center) Q hsep
+    apply (optionEquivRight E (Fin (r + 1))).symm.injective
+    simpa only [jointInitialJetEquation, map_zero] using hzero
   have hbound := MvPolynomial.card_le_of_agreement_off_excluded_of_hypersurface
     (g := jointInitialJetEquation center Q) hinit (jointInitialJetSeparant center Q)
     hinitialDegree (jointTaylorHighCutList center Q K k)
@@ -184,7 +194,6 @@ theorem finite_regularJointTaylorChartPoints_off_admissiblePairGraphs_card_le_of
     (domain : Fin n ↪ F) (f g : Fin n → F) (iota : F →+* E)
     (center : E) (Q : DifferentialPolynomial E[X] r)
     (hK : r < K) (hkL : k ≤ L) (hLA : L ≤ A) (hAn : A - L + 1 ≤ n)
-    (hinit : jointInitialJetEquation center Q ≠ 0)
     (hjet : jetTotalDegree Q ≤ v) (hheight : CoeffNatDegreeLE Q h)
     (S : Finset (Option (Fin (r + 1)) → E))
     (hS : ∀ x ∈ S, aeval x (jointInitialJetEquation center Q) = 0 ∧
@@ -201,7 +210,7 @@ theorem finite_regularJointTaylorChartPoints_off_admissiblePairGraphs_card_le_of
         ((A - L + 1 : ℕ) : ℚ)) ^ (r + 1) := by
   apply finite_regularJointTaylorChartPoints_off_admissiblePairGraphs_card_le
     (initialDegree := v + h) (cutDegree := 1 + 2 * K * (v - 1 + h))
-    domain f g iota center Q hK hkL hLA hAn hinit
+    domain f g iota center Q hK hkL hLA hAn
     (by
       simpa [jointInitialJetEquation, jointTotalDegree] using
         jointTotalDegree_initialJetEquation_le_of_coeffNatDegreeLE center Q v h hjet hheight)

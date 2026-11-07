@@ -59,9 +59,9 @@ example :
   obtain ⟨hfinite, _hraw, _hceil, hclosed⟩ :=
     automaticFirstOrder_closePolynomialSet_at_ceil_finite_and_card_le
       (rho := 1 / 2) (a := 3 / 4) (n := 4) (k := 2)
-      (by norm_num : (0 : ℝ) < 1 / 2) (by norm_num : (1 / 2 : ℝ) < 1)
-      half_rate_threshold_lt_three_quarters (by norm_num : (3 / 4 : ℝ) < 1)
-      (by norm_num : 0 < 4) (by norm_num : 2 ≤ 2)
+      (by norm_num : (1 / 2 : ℝ) < 1)
+      half_rate_threshold_lt_three_quarters
+      (by norm_num : 2 ≤ 2)
       (by norm_num : (2 : ℝ) ≤ (1 / 2) * 4)
       rationalEvaluationDomain (fun _ ↦ 0)
       (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
@@ -90,11 +90,11 @@ example :
   obtain ⟨hfinite, hraw, _, _⟩ :=
     automaticFirstOrder_closePolynomialSet_finite_and_card_le
       (rho := 1 / 2) (a := 3 / 4) (n := 4) (D := 1) (A := 3) (k := 2)
-      (by norm_num : (0 : ℝ) < 1 / 2) (by norm_num : (1 / 2 : ℝ) < 1)
-      half_rate_threshold_lt_three_quarters (by norm_num : (3 / 4 : ℝ) < 1)
-      (by norm_num : 0 < 4) (by norm_num) (by norm_num : 2 ≤ 2)
+      (by norm_num : (1 / 2 : ℝ) < 1)
+      half_rate_threshold_lt_three_quarters
+      (by norm_num) (by norm_num : 2 ≤ 2)
       (by norm_num : (2 : ℝ) ≤ (1 / 2) * 4) (by norm_num : (3 / 4 : ℝ) * 4 ≤ 3)
-      (by norm_num : 3 ≤ 4) rationalEvaluationDomain (fun _ ↦ 0)
+      rationalEvaluationDomain (fun _ ↦ 0)
       (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
   change (classicalRationalClosePolynomialSet 3).Finite at hfinite
   change ((classicalRationalClosePolynomialSet 3).ncard : ℝ) ≤
@@ -115,11 +115,11 @@ example :
     (classicalRationalClosePolynomialSet 3).Finite ∧
       ((classicalRationalClosePolynomialSet 3).ncard : ℝ) ≤ Λ := by
   exact automatic_first_order_list_bound (1 / 2) (3 / 4)
-    (by norm_num : (0 : ℝ) < 1 / 2) (by norm_num : (1 / 2 : ℝ) < 1)
-    half_rate_threshold_lt_three_quarters (by norm_num : (3 / 4 : ℝ) < 1)
-    4 2 3 (by norm_num : 0 < 4) (by norm_num : 2 ≤ 2)
+    (by norm_num : (1 / 2 : ℝ) < 1)
+    half_rate_threshold_lt_three_quarters
+    4 2 3 (by norm_num : 2 ≤ 2)
     (by norm_num : (2 : ℝ) ≤ (1 / 2) * 4)
-    (by norm_num : (3 / 4 : ℝ) * 4 ≤ 3) (by norm_num : 3 ≤ 4)
+    (by norm_num : (3 / 4 : ℝ) * 4 ≤ 3)
     rationalEvaluationDomain (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)) (fun _ ↦ 0)
 
 open Classical in
@@ -134,16 +134,14 @@ example :
     let Λ : ℝ := 2 * D * θ * T + (μ - M : ℕ)
     (classicalRationalClosePolynomialSet 4).Finite ∧
       ((classicalRationalClosePolynomialSet 4).ncard : ℝ) ≤ Λ := by
-  have haOne : firstOrderRateThreshold (1 / 2 : ℝ) + (1 / 8 : ℝ) < 1 := by
-    linarith [half_rate_threshold_lt_three_quarters]
   have hA : (firstOrderRateThreshold (1 / 2 : ℝ) + (1 / 8 : ℝ)) * 4 ≤
       (4 : ℝ) := by
     linarith [half_rate_threshold_lt_three_quarters]
   exact automatic_first_order_list_bound_of_slack (1 / 2) (1 / 8)
-    (by norm_num : (0 : ℝ) < 1 / 2) (by norm_num : (1 / 2 : ℝ) < 1)
-    (by norm_num : (0 : ℝ) < 1 / 8) haOne 4 2 4
-    (by norm_num : 0 < 4) (by norm_num : 2 ≤ 2)
-    (by norm_num : (2 : ℝ) ≤ (1 / 2) * 4) hA (by norm_num : 4 ≤ 4)
+    (by norm_num : (1 / 2 : ℝ) < 1)
+    (by norm_num : (0 : ℝ) < 1 / 8) 4 2 4
+    (by norm_num : 2 ≤ 2)
+    (by norm_num : (2 : ℝ) ≤ (1 / 2) * 4) hA
     rationalEvaluationDomain (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)) (fun _ ↦ 0)
 
 open Classical in
@@ -161,8 +159,8 @@ example :
   exact automatic_first_order_squarefree_list_bound_of_slack (1 / 2) (1 / 8)
     (by norm_num : (0 : ℝ) < 1 / 2) (by norm_num : (1 / 2 : ℝ) < 1)
     (by norm_num : (0 : ℝ) < 1 / 8) haOne 4 2 4
-    (by norm_num : 0 < 4) (by norm_num : 2 ≤ 2)
-    (by norm_num : (2 : ℝ) ≤ (1 / 2) * 4) hA (by norm_num : 4 ≤ 4)
+    (by norm_num : 2 ≤ 2)
+    (by norm_num : (2 : ℝ) ≤ (1 / 2) * 4) hA
     rationalEvaluationDomain (fun _ ↦ 0)
     (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
 
@@ -199,7 +197,7 @@ private theorem finiteLengthPositiveCapCertificate :
       firstOrderCurveShiftedHeightSlotCount 1 2 1 1 1 1 1 := by decide
   exact exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount
     (F := ℚ) (D := 1) (A := 2) (m := 1) (M := 1) (μ := 1) (k := 2) (h := 1)
-    (by norm_num) (by norm_num) (by norm_num) finiteEvaluationDomain (fun _ ↦ 0)
+    (by norm_num) (by norm_num) finiteEvaluationDomain (fun _ ↦ 0)
     (fun _ ↦ 0) hheight
 
 open Classical in
@@ -215,8 +213,8 @@ example :
     finiteEvaluationDomain (fun _ ↦ 0)
     (firstOrderColumns (D := 1) (A := 2) (m := 1) (M := 1) (μ := 1)) cert
     (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)) (by norm_num) (by norm_num)
-    (by norm_num [finiteLengthSlack]) (by norm_num) (by norm_num [finiteLengthSlack])
+    (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)) (by norm_num)
+    (by norm_num) (by norm_num [finiteLengthSlack])
   have hzero :
       (0 : ℚ[X]) ∈ classicalRationalTwoPointClosePolynomialSet := by
     unfold classicalRationalTwoPointClosePolynomialSet closePolynomialSet
@@ -229,7 +227,7 @@ example :
 example :
     (({0} : Finset ℚ[X]).card : ℚ) ≤ tightListEnvelope smallFirstOrderProfile := by
   apply finiteListBound_of_profile (p := smallFirstOrderProfile) (by decide) rfl
-    (by decide) (by decide) finiteEvaluationDomain (fun _ ↦ 0)
+    (by decide) finiteEvaluationDomain (fun _ ↦ 0)
     (Or.inl ringChar.eq_zero)
   intro P hP
   have hPzero : P = 0 := by simpa using hP
@@ -242,7 +240,7 @@ example :
 example :
     (({0} : Finset ℚ[X]).card : ℝ) ≤ squarefreeListEnvelope smallFirstOrderProfile := by
   apply finiteSquarefreeListBound_of_profile (p := smallFirstOrderProfile) (by decide) rfl
-    (by decide) (by decide) (by decide) finiteEvaluationDomain (fun _ ↦ 0)
+    (by decide) (by decide) finiteEvaluationDomain (fun _ ↦ 0)
     (Or.inl ringChar.eq_zero) {0}
   intro P hP
   have hPzero : P = 0 := by simpa using hP
@@ -305,15 +303,15 @@ example :
     norm_num
     linarith
   have hmargin := finiteLengthDensityMargin_pos (rho := 1 / 2) (eta := 1 / 8) (n := 4)
-    (by norm_num) (by norm_num) (by norm_num) haOne (by norm_num) hbetaHalf
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
   have hgap := finiteLength_count_gap (rho := 1 / 2) (eta := 1 / 8) (n := 4)
-    (by norm_num) (by norm_num) (by norm_num) haOne (by norm_num) hbetaHalf
+    (by norm_num) (by norm_num) (by norm_num) hbetaHalf
   have hparameters := finiteLength_multiplicity_derivativeCap_jetDegree_bounds
     (rho := 1 / 2) (eta := 1 / 8) (n := 4)
-    (by norm_num) (by norm_num) (by norm_num) haOne (by norm_num) hbetaHalf
+    (by norm_num) (by norm_num) haOne (by norm_num) hbetaHalf
   have hheight := finiteLengthChallengeHeight_le_common_inv_slack_sq
     (rho := 1 / 2) (eta := 1 / 8) (n := 4)
-    (by norm_num) (by norm_num) (by norm_num) haOne (by norm_num) hbetaHalf
+    (by norm_num) (by norm_num) haOne (by norm_num) hbetaHalf
   exact ⟨hmargin, hgap, hparameters, hheight⟩
 
 /-- The line-MCA envelope has a concrete inverse-`eta` bound. -/
@@ -408,7 +406,7 @@ example :
   have huPos : 0 < u := firstOrderLowRateStationaryU_pos hrho
   have huCubic : u ^ 2 * (u + 3) = t := by
     simpa only [firstOrderStationaryCubic, u, t] using
-      firstOrderLowRateStationaryU_cubic hrho
+      firstOrderLowRateStationaryU_cubic
   have huLt : u < 1 := by
     by_contra hu
     have huOne : 1 ≤ u := le_of_not_gt hu
@@ -421,7 +419,7 @@ example :
     nlinarith [htSq, htLt]
   have hlow := (firstOrderLowRateRegime_iff_lt_rateSwitch (1 / 16 : ℝ)).1 hregime
   have hthresholdEq : firstOrderLowRateThreshold rho = t * (1 + u) := by
-    simpa only [rho, t, u] using firstOrderLowRateThreshold_eq_scale_mul_one_add hrho
+    simpa only [rho, t, u] using firstOrderLowRateThreshold_eq_scale_mul_one_add
   have hthresholdLt : t * (1 + u) < 1 / 2 := by
     calc
       t * (1 + u) < 1 / 4 * (1 + u) :=
@@ -436,9 +434,9 @@ example :
   have heta : 0 < eta := by norm_num [eta]
   have hn : (2 : ℝ) ≤ rho * n := by norm_num [rho, n]
   have hslope := lowRateFiniteLengthSlope_mul_slack_le_margin
-    (rho := rho) (eta := eta) (n := n) hrho hlow heta haOne hn
+    (rho := rho) (eta := eta) (n := n) hlow heta haOne hn
   have hsource := lowRateFiniteLengthSourceDensity_mul_cube_le_sourceCount
-    (rho := rho) (eta := eta) (n := n) hrho hlow heta haOne hn
+    (rho := rho) (eta := eta) (n := n) hlow heta haOne hn
   have hrank0 := firstOrderRankCount_floor_le_density_add_rounding
     (firstOrderLowRateBeta_pos hrho).le (lowRateFiniteLengthMultiplicity rho eta n)
   have hrank : (lowRateFiniteLengthRankCount rho eta n : ℝ) ≤
@@ -449,24 +447,24 @@ example :
     simpa only [lowRateFiniteLengthRankCount, lowRateFiniteLengthDerivativeCap,
       lowRateFiniteLengthRankRoundingConstant] using hrank0
   have hgap := lowRateFiniteLength_count_gap
-    (rho := rho) (eta := eta) (n := n) hrho hlow heta haOne hn
+    (rho := rho) (eta := eta) (n := n) hlow heta haOne hn
   have hslack := lowRateFiniteLengthSlack_lt_one
-    (rho := rho) (eta := eta) (n := n) hrho hlow haOne hn
+    (rho := rho) (eta := eta) (n := n) hlow haOne hn
   have hcap := lowRateFiniteLengthDerivativeCap_le_jetDegree
-    (rho := rho) (eta := eta) (n := n) hrho heta haOne hn
+    (rho := rho) (eta := eta) (n := n) heta haOne hn
   have hparameters := lowRateFiniteLength_parameter_bounds
-    (rho := rho) (eta := eta) (n := n) hrho hlow heta haOne hn
-  refine ⟨lowRateFiniteLengthSlope_pos hrho hlow, ?_, ?_, ?_, ?_, hslack, hcap,
+    (rho := rho) (eta := eta) (n := n) hlow heta haOne hn
+  refine ⟨lowRateFiniteLengthSlope_pos hrho, ?_, ?_, ?_, ?_, hslack, hcap,
     ?_, ?_, ?_, ?_, ?_⟩
   · exact hslope
   · exact hsource
   · exact hrank
   · exact hgap
   · exact lowRateFiniteLengthMultiplicity_le_inv_slack hrho hlow heta haOne hn
-  · exact lowRateFiniteLengthDerivativeCap_le_inv_slack hrho hlow heta haOne hn
+  · exact lowRateFiniteLengthDerivativeCap_le_inv_slack hlow heta haOne hn
   · exact lowRateFiniteLengthJetDegree_le_inv_slack hrho hlow heta haOne hn
   · exact lowRateFiniteLengthChallengeHeight_le_inv_slack_sq
-      hrho hlow heta haOne hn
+      hlow heta haOne hn
   · exact hparameters.1
 
 /-- At length `4`, dimension `2` and agreement `4 ≥ 2 + (6/25) 4`, the complete list has at most
@@ -476,4 +474,4 @@ example (received : Fin 4 → ℚ) :
       (∀ P, P ∈ list ↔ P ∈ closePolynomialSet rationalEvaluationDomain received 2 4) ∧
       list.card ≤ 307 * 4 :=
   exists_uniformFirstOrder_list 4 2 4 rationalEvaluationDomain received (by norm_num)
-    (by norm_num) le_rfl (by norm_num) fun _ ↦ Or.inl ringChar.eq_zero
+    (by norm_num) fun _ ↦ Or.inl ringChar.eq_zero

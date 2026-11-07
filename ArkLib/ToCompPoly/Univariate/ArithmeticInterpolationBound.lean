@@ -86,7 +86,7 @@ private theorem interpolateListRaw_size_le {m : ℕ} (nodes values : Array F)
       simp only [CPolynomial.Raw.size_C] at ht
       omega
     simpa only [CPolynomial.CLagrange.interpolateListRaw, List.foldr_cons,
-      CPolynomial.Raw.add_size] using max_le hterm ih
+      CPolynomial.Raw.size_addRaw] using max_le hterm ih
 
 /-- A Lagrange divisor charges both constants, canonical subtraction, and canonical product. -/
 theorem profileArithmetic_basisDivisor (x y : F) :

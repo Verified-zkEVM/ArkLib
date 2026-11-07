@@ -102,7 +102,7 @@ $e$-close to `f` (immediate from the distance filter).
 $< k$ that is $e$-close to `f` appears in the output, provided $e$ is
 within the Johnson bound.  This relies on `dvd_property`.
 
-NOTE: The hypothesis in both theorems uses
+NOTE: The completeness hypothesis uses
 $e < n - \sqrt{(k + 1) \cdot n}$ (matching the GS rate
 parameter $\rho = (k + 1) / n$ used in `proximity_gap_johnson`),
 rather than the original $e \leq n - \sqrt{k \cdot n}$.
@@ -121,7 +121,6 @@ noncomputable def decoder (k _r _D e : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F
 /-- Each decoded polynomial is $e$-close to the received word. -/
 theorem dist_le_of_mem_decoder
     {k r D e : ℕ}
-    (_he : (e : ℝ) < ↑n - Real.sqrt ((↑k + 1) * ↑n))
     {ωs : Fin n ↪ F}
     {f : Fin n → F}
     {p : F[X]}
@@ -349,7 +348,7 @@ def rawToPolyBounded (raw : CompPoly.CPolynomial.Raw F) (bound : ℕ) : F[X] :=
 /-- Build an interpolation candidate from the first `min k n` evaluation points.
     Returns `none` when `k = 0` (no meaningful interpolation).
     The result, when `some`, has `degree < k` by construction of `rawToPolyBounded`. -/
-def compPolyCandidate [Fintype F] (k : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
+def compPolyCandidate (k : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
     Option F[X] :=
   if k = 0 then none
   else
@@ -363,7 +362,7 @@ def compPolyCandidate [Fintype F] (k : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F
 
 /-- The `Finset` of CompPoly interpolation candidates that pass the degree and distance check.
     Always a subset of `{p | p.degree < k ∧ Δ₀(f, p.eval ∘ ωs) ≤ e}`. -/
-def compPolyCandidateSet [Fintype F] (k e : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
+def compPolyCandidateSet (k e : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
     Finset F[X] :=
   match compPolyCandidate k ωs f with
   | Option.some p =>
@@ -371,7 +370,7 @@ def compPolyCandidateSet [Fintype F] (k e : ℕ) (ωs : Fin n ↪ F) (f : Fin n 
   | Option.none => ∅
 
 /-- Every element of `compPolyCandidateSet` satisfies the degree and distance bounds. -/
-private lemma mem_comp_poly_candidate_set_imp [Fintype F] {k e : ℕ} {ωs : Fin n ↪ F}
+private lemma mem_comp_poly_candidate_set_imp {k e : ℕ} {ωs : Fin n ↪ F}
     {f : Fin n → F} {p : F[X]} (hp : p ∈ compPolyCandidateSet k e ωs f) :
     p.degree < k ∧ Δ₀(f, p.eval ∘ ωs) ≤ e := by
   simp only [compPolyCandidateSet] at hp
@@ -1045,10 +1044,10 @@ theorem existence_of_numVars_gt_numConstraints (k n m D : ℕ) (ωs : Fin n ↪ 
 /-- GS existence with rate-corrected degree bound `ρ = k/n` and weighted degree
 at most `⌊D_X⌋₊`. Requires `k > 1` for the counting argument and `m ≥ 1`. -/
 theorem gs_existence (k n : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F)
-    (hk : 1 < k) (hn : n ≠ 0) (hm : 1 ≤ m) :
+    (hk : 1 < k) (hm : 1 ≤ m) :
     ∃ Q, Conditions k m (gs_degree_bound k n m) ωs f Q :=
   existence_of_numVars_gt_numConstraints k n m _ ωs f hm
-    (gs_numVars_gt_numConstraints_of_gt_one hn hk hm)
+    (gs_numVars_gt_numConstraints_of_gt_one hk)
 
 /-- GS interpolation with weighted degree strictly below the real bound
 `D_X = (m + 1/2) * √(k/n) * n`, including integral values of `D_X`. -/
@@ -1074,7 +1073,7 @@ theorem gs_existence_strict (k n : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F)
     push_cast
     field_simp
   have hcount : numVars k D > numConstraints n m := by
-    apply gs_numVars_gt_numConstraints_of_le_sq hn hk hm
+    apply gs_numVars_gt_numConstraints_of_le_sq hk
     rw [← hsq, hD]
     exact pow_le_pow_left₀ hB.le (Nat.le_ceil B) 2
   obtain ⟨Q, hQ⟩ := existence_of_numVars_gt_numConstraints k n m D ωs f hm hcount
@@ -1104,7 +1103,7 @@ theorem gs_divisibility (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code ωs k)
 /-- A GS polynomial of weighted degree strictly below real `D_X` is divisible by
 `Y - P(X)` for every codeword at relative distance at most `δ₀`. This retains the
 inclusive radius of BCIKS20 Lemma 5.3, including when `D_X` is integral. -/
-theorem gs_divisibility_of_degree_lt (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code ωs k)
+theorem gs_divisibility_of_degree_lt (hm : 1 ≤ m) (p : code ωs k)
     {Q : F[X][Y]}
     (hQ_deg : (natWeightedDegree Q 1 (k - 1) : ℝ) <
       (m + 1 / 2) * √(((k : ℚ) / n : ℚ) : ℝ) * n)
@@ -1112,8 +1111,13 @@ theorem gs_divisibility_of_degree_lt (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code
     (h_dist : (hammingDist f (fun i ↦ (toPolynomial p).eval (ωs i)) : ℝ) / n ≤
       gs_johnson k n m) :
     X - C (toPolynomial p) ∣ Q := by
-  apply dvd_property_of_degree_lt hk p hQ_mult
-  have hn : (0 : ℝ) < n := by exact_mod_cast (by omega : 0 < n)
+  apply dvd_property_of_degree_lt p hQ_mult
+  have hn : (0 : ℝ) < n := by
+    have hnzero : n ≠ 0 := by
+      rintro rfl
+      simp only [Nat.cast_zero, mul_zero] at hQ_deg
+      exact (not_lt_of_ge (Nat.cast_nonneg _)) hQ_deg
+    exact_mod_cast Nat.pos_of_ne_zero hnzero
   have hm' : (0 : ℝ) < m := by exact_mod_cast (by omega : 0 < m)
   unfold gs_johnson at h_dist
   dsimp only at h_dist

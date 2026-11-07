@@ -34,7 +34,7 @@ instead of by membership in the exact space.
 ## References
 
 * [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 3.3, and Section 3.6, Proposition 3.10
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 3.2, Lemma 3.7 and Proposition 3.9
 -/
 
 @[expose] public section

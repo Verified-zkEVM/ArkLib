@@ -101,7 +101,7 @@ private theorem kkh_pow_two_arithmetic {h khat : ℕ} (hpow2 : ∃ m : ℕ, h = 
         norm_num
 
 /-- Let `H` be a multiplicative subgroup of a prime field `𝔽_q` with `|H| = h` a power of two.
-If `q > h^{h/2}`, then for any `1 ≤ k̂ ≤ h/2`, the family of all `k̂`-subsets of `H` satisfies
+If `q > h^{h/2}`, then for any `k̂ ≤ h/2`, the family of all `k̂`-subsets of `H` satisfies
 `|Λ_𝒮| ≥ 2^k̂ · C(h/2, k̂)` [KKH26, Lemma 1].
 
 The proof embeds the `2^k̂ · C(h/2, k̂)` signed subset-sums of a generator's powers into `Λ_𝒮`;
@@ -110,13 +110,17 @@ associated `±1`-valued polynomials against the cyclotomic polynomial `Φ_h`. -/
 theorem two_pow_mul_choose_le_card_sumSet {q : ℕ} [Fact q.Prime] {h khat : ℕ}
     (H : Subgroup (ZMod q)ˣ) (hHcard : Nat.card H = h)
     (hpow2 : ∃ m : ℕ, h = 2 ^ m) (hq : h ^ (h / 2) < q)
-    (hk1 : 1 ≤ khat) (hk2 : khat ≤ h / 2) :
+    (hk2 : khat ≤ h / 2) :
     2 ^ khat * (h / 2).choose khat ≤
       (sumSet ((Set.toFinite
         ((fun u : (ZMod q)ˣ => (u : ZMod q)) '' (H : Set (ZMod q)ˣ))).toFinset.powersetCard
           khat)).card := by
   classical
-  obtain ⟨h2, heven, hdouble, htot⟩ := kkh_pow_two_arithmetic hpow2 hk1 hk2
+  by_cases hk : khat = 0
+  · subst khat
+    simp [sumSet]
+  obtain ⟨h2, heven, hdouble, htot⟩ :=
+    kkh_pow_two_arithmetic hpow2 (Nat.pos_of_ne_zero hk) hk2
   have hhpos : 0 < h / 2 := by omega
   have hhpos' : 0 < h := by omega
   obtain ⟨m, hm⟩ := hpow2

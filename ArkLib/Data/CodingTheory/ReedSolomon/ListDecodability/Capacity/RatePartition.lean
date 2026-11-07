@@ -45,7 +45,7 @@ theorem ratePartition_close_list_bound
     (p : RatePartition.PartitionFiniteParameters R a d)
     (hR : 0 < R) (hRa : R < a) (haone : a < 1) (hd : 500 ≤ d)
     (hn : RatePartition.rateBlockThreshold R d p.multiplicity ≤ n)
-    (hk : 0 < k) (hkR : (k : ℝ) ≤ R * n) (haA : a * n ≤ A) (hAn : A ≤ n)
+    (hkR : (k : ℝ) ≤ R * n) (haA : a * n ≤ A) (hAn : A ≤ n)
     (domain : Fin n ↪ F) (received : Fin n → F)
     (hchar : ringChar F = 0 ∨
       max (max (k - 1) d) (RatePartition.rateJetCap R p.multiplicity) < ringChar F) :
@@ -55,13 +55,32 @@ theorem ratePartition_close_list_bound
           (2 * RatePartition.rateJetCap R p.multiplicity / (a - R)) ^ d * n ^ d := by
   obtain ⟨cert⟩ := exists_partitionSupport_curve_certificate_of_rateBlockThreshold p hR
     (hRa.trans haone)
-    (hR.trans hRa) hd hn hkR haA hAn domain (fun i ↦ Polynomial.C (received i))
+    hd hn hkR haA hAn domain (fun i ↦ Polynomial.C (received i))
     (fun _ ↦ by simp)
   let K := max k (d + 1)
-  obtain ⟨hkK, hdK, hKn, hkA, hν, _, hchar'⟩ :=
+  obtain ⟨hkK, hdK, hKn, -, hν, _, hchar'⟩ :=
     RatePartition.rateBlockThreshold_exactAgreementGuards p hR hRa haone hn hkR haA hchar
+  rcases Nat.eq_zero_or_pos k with rfl | hk
+  · have hsub : closePolynomialSet domain received 0 A ⊆ ({0} : Set (Polynomial F)) := by
+      intro P hP
+      apply Set.mem_singleton_iff.mpr
+      simpa only [Polynomial.degreeLT_zero, Submodule.mem_bot] using
+        (Polynomial.mem_degreeLT.mpr hP.1)
+    have hfinite := (Set.finite_singleton 0).subset hsub
+    refine ⟨hfinite, ?_⟩
+    have hcard : ((closePolynomialSet domain received 0 A).ncard : ℝ) ≤ 1 := by
+      exact_mod_cast (Set.ncard_le_ncard hsub (Set.finite_singleton 0)).trans_eq
+        (Set.ncard_singleton 0)
+    have hνOne : (1 : ℝ) ≤ RatePartition.rateJetCap R p.multiplicity := by
+      exact_mod_cast Nat.succ_le_of_lt hν
+    have hnOne : (1 : ℝ) ≤ n := by exact_mod_cast (show 1 ≤ n by omega)
+    have hbase : (1 : ℝ) ≤ 2 * RatePartition.rateJetCap R p.multiplicity / (a - R) :=
+      (le_div_iff₀ (sub_pos.mpr hRa)).mpr (by linarith)
+    exact hcard.trans (one_le_mul_of_one_le_of_one_le
+      (one_le_mul_of_one_le_of_one_le (one_le_pow₀ hνOne) (one_le_pow₀ hbase))
+      (one_le_pow₀ hnOne))
   apply close_list_bound_of_curve_certificate_of_jetCharacteristic domain received cert hk
-    hkK hdK hKn hkA hAn hν (sub_pos.mpr hRa) ?_ hchar'
+    hkK hdK hKn (sub_pos.mpr hRa) ?_ hchar'
   nlinarith
 
 open Classical in
@@ -69,11 +88,11 @@ open Classical in
 every field and code beyond the selected threshold. -/
 theorem exists_ratePartition_list_bound
     {R a : ℝ} {d : ℕ}
-    (hR : 0 < R) (hRa : R < a) (haone : a < 1) (hd : 500 ≤ d)
+    (hRa : R < a) (haone : a < 1) (hd : 500 ≤ d)
     (hgate : 1 < RatePartition.rateGamma R a d) :
     ∃ p : RatePartition.PartitionFiniteParameters R a d,
       ∀ (F : Type u) [Field F] (n k A : ℕ),
-      RatePartition.rateBlockThreshold R d p.multiplicity ≤ n → 0 < k →
+      RatePartition.rateBlockThreshold R d p.multiplicity ≤ n →
       (k : ℝ) ≤ R * n →
       a * n ≤ A → A ≤ n →
       ∀ (domain : Fin n ↪ F) (received : Fin n → F),
@@ -88,9 +107,14 @@ theorem exists_ratePartition_list_bound
       Real.exp (-(R / a * Real.log (6 * (d : ℝ)))) := by
     rw [← RatePartition.rateGamma_eq_exponential (agreement := a) hdpos]
     exact hgate
-  obtain ⟨p⟩ := RatePartition.PartitionFiniteParameters.nonempty hR
+  have hR : 0 < R := by
+    have hproduct := (mul_pos_iff_of_pos_right (Real.exp_pos _)).mp
+      (lt_trans (by norm_num : (0 : ℝ) < 1) hlimit)
+    have hfactor : (0 : ℝ) < (27 / 20 : ℝ) * (d + 1) := by positivity
+    nlinarith
+  obtain ⟨p⟩ := RatePartition.PartitionFiniteParameters.nonempty
     (hR.trans hRa) hdpos hlimit
-  refine ⟨p, fun _ _ _ _ _ hn hk hkR haA hAn domain received hchar ↦ ?_⟩
-  exact ratePartition_close_list_bound p hR hRa haone hd hn hk hkR haA hAn domain received hchar
+  refine ⟨p, fun _ _ _ _ _ hn hkR haA hAn domain received hchar ↦ ?_⟩
+  exact ratePartition_close_list_bound p hR hRa haone hd hn hkR haA hAn domain received hchar
 
 end ReedSolomon

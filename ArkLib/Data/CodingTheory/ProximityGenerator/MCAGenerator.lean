@@ -188,7 +188,7 @@ equivalences (such as `Fin.consEquiv`) that arise when iterating tensor products
 Not an instance of `mcaError_le_of_forall_isMCA_imp`: that skeleton keeps the seed space fixed,
 whereas here the seed space is relabelled along `eS`, so the probabilities are compared by
 `Finset.card_equiv` rather than by monotonicity of `Pr`. -/
-lemma isMCAGenerator_reindex {S' : Type} [Fintype S'] [SampleableType S'] [Nonempty S]
+lemma isMCAGenerator_reindex {S' : Type} [Fintype S'] [SampleableType S']
     [SampleableType S]
     (MC : ModuleCode ι F A) (G : Generator S ℓ F) (ε_mca : I → ℝ≥0)
     (hGMCA : IsMCAGenerator G ε_mca MC) (eS : S' ≃ S) (eL : ℓ ≃ ℓ') :
