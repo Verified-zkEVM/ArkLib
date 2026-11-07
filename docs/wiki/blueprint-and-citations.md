@@ -69,7 +69,7 @@ lake exe checkdecls blueprint/lean_decls
 If blueprint output matters and `leanblueprint` is missing:
 
 ```bash
-python3 -m pip install leanblueprint
+uv tool install --python 3.12 leanblueprint
 ```
 
 ### Continuous integration
@@ -80,6 +80,8 @@ rendered PDF, web directory and generated `blueprint/lean_decls`; it contains no
 cache. The required `build` job checks rendering success explicitly, then runs the normal Lean
 validation and `lake exe checkdecls blueprint/lean_decls` against its existing `ArkLibBlueprint`
 build. Rendering or declaration failures block the build check on PRs and merge groups too.
+The renderer installs `leanblueprint` with pip inside the TeX Live container, where the
+runner's uv is not available. It is the only CI step that does not run Python through uv.
 
 On trusted main pushes, the pinned
 [`leanprover-community/docgen-action`](https://github.com/leanprover-community/docgen-action)

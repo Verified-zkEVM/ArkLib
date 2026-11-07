@@ -3,6 +3,15 @@
 This page is the recommended agent playbook for commands and validation.
 Use it as the main guide for routine local checks.
 
+## Python tooling
+
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/) for
+all repository Python entry points, including validation scripts and CI.
+CI uses uv 0.13.6. The uv commands below select Python
+3.12; uv downloads it if needed. Run them from the repository root.
+These checks use only the standard library. `--no-project` runs them without
+installing a Python package or creating a project environment.
+
 ## Dependency versions
 
 Before a large contribution or a forward-port, fetch the intended upstream remote and
@@ -184,7 +193,7 @@ That deterministic, comment/string-aware inventory reports source-only construct
 environment sweep cannot see reliably: admissions in examples or defaults/autoparams and
 constructs in files outside the imported roots. Compare this inventory with the PR base when
 checking for new admissions, for example with
-`python3 scripts/source-trust-audit.py --base-ref origin/main` after fetching the canonical base.
+`uv run --no-project --python 3.12 python scripts/source-trust-audit.py --base-ref origin/main` after fetching the canonical base.
 The inventory complements the kernel sweep; neither a net count nor a refreshed baseline
 substitutes for reviewing new source admissions. Working branches may still contain unfinished
 proofs while their PR is under review.
@@ -213,7 +222,7 @@ For website or blueprint output, run:
 is not installed. If blueprint output matters, install it first:
 
 ```bash
-python3 -m pip install leanblueprint
+uv tool install --python 3.12 leanblueprint
 ```
 
 ## Important Notes
@@ -298,8 +307,8 @@ lake exe hachi-runtime
 lake exe sumcheck-runtime
 lake exe fri-extractor-runtime
 ./scripts/check-imports.sh
-python3 ./scripts/check-docs-integrity.py
-python3 ./scripts/kb/lint.py
+uv run --no-project --python 3.12 python ./scripts/check-docs-integrity.py
+uv run --no-project --python 3.12 python ./scripts/kb/lint.py
 ./scripts/test-axiomsweep.sh
 lake exe axiomsweep --check
 ```
@@ -313,7 +322,7 @@ If you specifically need to regenerate `ArkLib.lean`, use:
 If blueprint output matters and `leanblueprint` is missing:
 
 ```bash
-python3 -m pip install leanblueprint
+uv tool install --python 3.12 leanblueprint
 ```
 
 ## CI Mapping

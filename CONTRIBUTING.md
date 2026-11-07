@@ -11,6 +11,9 @@ Whether you are fixing bugs, improving documentation, or adding new formalizatio
 
 If you are interested in contributing but unsure where to begin, please get in touch.
 
+For Python check prerequisites and commands, see
+[Python tooling](docs/wiki/quickstart.md#python-tooling).
+
 ### Large Contributions
 
 For substantial contributions, such as a new proof system, we strongly encourage the development of a [blueprint](https://github.com/PatrickMassot/leanblueprint) first.

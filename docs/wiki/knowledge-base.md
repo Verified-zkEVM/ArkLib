@@ -58,7 +58,7 @@ automatically — attach it under `Internal:`.
 To prepare a comment body locally, use:
 
 ```bash
-python3 ./scripts/kb/review_context.py \
+uv run --no-project --python 3.12 python ./scripts/kb/review_context.py \
   --files ArkLib/ProofSystem/Fri/Spec/SingleRound.lean \
   --format review
 ```

@@ -9,8 +9,8 @@ documentation coverage reports, and review context.
 
 Usage::
 
-    python3 ./scripts/kb/extract_declarations.py
-    python3 ./scripts/kb/extract_declarations.py \
+    uv run --no-project --python 3.12 python ./scripts/kb/extract_declarations.py
+    uv run --no-project --python 3.12 python ./scripts/kb/extract_declarations.py \
         --root ArkLib/Data/CodingTheory --out /tmp/ct-decls.json
 
 The output is a JSON document with two top-level keys:

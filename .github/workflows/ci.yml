@@ -46,6 +46,8 @@ jobs:
           persist-credentials: false
 
       # Keep the existing renderer image and commands on a runner without Lean build caches.
+      # The renderer installs leanblueprint with pip inside the TeX Live container, which cannot
+      # see the runner's uv. Host-side Python in this job runs through uv as elsewhere.
       - name: Render blueprint PDF and HTML
         uses: xu-cheng/texlive-action@f886de8159e5952a131848a5fa9c3196a2132b5d # v2
         with:
@@ -66,8 +68,14 @@ jobs:
             leanblueprint web
             cp -r blueprint/web home_page/blueprint
 
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.13.6"
+          enable-cache: false
+
       - name: Stage generated blueprint outputs
-        run: python3 scripts/blueprint-ci.py stage-artifact "$RUNNER_TEMP/arklib-blueprint"
+        run: uv run --no-project --python 3.12 python scripts/blueprint-ci.py stage-artifact "$RUNNER_TEMP/arklib-blueprint"
 
       - name: Upload generated blueprint outputs
         uses: actions/upload-artifact@v7
@@ -94,8 +102,14 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.13.6"
+          enable-cache: false
+
       - name: Test blueprint CI safeguards
-        run: python3 scripts/blueprint-ci.py self-test
+        run: uv run --no-project --python 3.12 python scripts/blueprint-ci.py self-test
 
       - name: Cleanup to free disk space
         uses: jlumbroso/free-disk-space@v2.0.0
@@ -184,10 +198,6 @@ jobs:
             ${{ runner.os }}-arklib-build-${{ hashFiles('lake-manifest.json', 'lean-toolchain') }}-
             ${{ runner.os }}-arklib-build-
 
-      - uses: actions/setup-python@v7
-        with:
-          python-version: "3.12"
-
       # Complements the kernel-level sweep with a lexical inventory of constructs that
       # attach to no environment declaration (for example `example`s and sorry-backed
       # defaults/autoparams), including tracked files outside the import roots. This inventory
@@ -196,13 +206,13 @@ jobs:
         env:
           SOURCE_TRUST_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before || '' }}
         run: |
-          python3 scripts/test-source-trust-audit.py
+          uv run --no-project --python 3.12 python scripts/test-source-trust-audit.py
           args=(--json "$SOURCE_TRUST_REPORT")
           if [ -n "$SOURCE_TRUST_BASE_REF" ] &&
              [ "$SOURCE_TRUST_BASE_REF" != "0000000000000000000000000000000000000000" ]; then
             args+=(--base-ref "$SOURCE_TRUST_BASE_REF")
           fi
-          python3 scripts/source-trust-audit.py "${args[@]}" | tee "$RUNNER_TEMP/source-trust.md"
+          uv run --no-project --python 3.12 python scripts/source-trust-audit.py "${args[@]}" | tee "$RUNNER_TEMP/source-trust.md"
           cat "$RUNNER_TEMP/source-trust.md" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Set up Lean environment
@@ -270,7 +280,7 @@ jobs:
 
       - name: Record module times
         run: |
-          python3 scripts/module_times.py update .lake/build/arklib-module-times.json \
+          uv run --no-project --python 3.12 python scripts/module_times.py update .lake/build/arklib-module-times.json \
             --commit "$GITHUB_SHA" \
             "$BUILD_TIMING_LOG_DIR/library_build.log" "$BUILD_TIMING_LOG_DIR/test_path.log"
 
@@ -304,7 +314,7 @@ jobs:
       - name: Require successful blueprint rendering
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: python3 scripts/blueprint-ci.py wait-for-success
+        run: uv run --no-project --python 3.12 python scripts/blueprint-ci.py wait-for-success
 
       - name: Download generated blueprint outputs
         uses: actions/download-artifact@v8
@@ -368,7 +378,7 @@ jobs:
         run: |
           rm -rf "$BUILD_TIMING_ARTIFACT_DIR"
           mkdir -p "$BUILD_TIMING_ARTIFACT_DIR"
-          python3 scripts/build_timing_metadata.py "$BUILD_TIMING_METADATA_PATH"
+          uv run --no-project --python 3.12 python scripts/build_timing_metadata.py "$BUILD_TIMING_METADATA_PATH"
           if [ -f "$BUILD_TIMING_RESULTS" ]; then
             cp "$BUILD_TIMING_RESULTS" "$BUILD_TIMING_ARTIFACT_DIR/results.jsonl"
           fi
