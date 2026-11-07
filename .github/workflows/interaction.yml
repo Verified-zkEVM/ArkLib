@@ -44,7 +44,6 @@ jobs:
           version: "0.13.6"
           enable-cache: false
 
-
       # Restore only: untrusted PR code must not publish a shared cache. Paths and keys must match
       # the saves in ci.yml exactly, or the restore misses.
       - uses: actions/cache/restore@v6

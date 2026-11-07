@@ -17,8 +17,8 @@ if [ -d "blueprint" ]; then
     echo "Building Blueprint..."
     cd blueprint
     if command -v leanblueprint &> /dev/null; then
-        uvx --python 3.12 leanblueprint pdf
-        uvx --python 3.12 leanblueprint web
+        leanblueprint pdf
+        leanblueprint web
     else
         echo "Warning: 'leanblueprint' command not found. Skipping blueprint generation."
         echo "To install: uv tool install --python 3.12 leanblueprint"

@@ -6,9 +6,9 @@ Edit the source of truth, not the output.
 | --- | --- | --- | --- |
 | `ArkLib.lean` | generated umbrella imports | No | `./scripts/update-lib.sh` or `./scripts/check-imports.sh` |
 | `.lake/` | build artifacts and cache | No | `lake build`, `lake exe cache get` |
-| `blueprint/lean_decls` | referenced Lean declarations | No | official Lean blueprint post-parse callback over `blueprint/src/`; `uvx --python 3.12 leanblueprint web` refreshes it in CI |
-| `blueprint/web/`, `blueprint/print/` | generated blueprint output | No | `uvx --python 3.12 leanblueprint web`, `uvx --python 3.12 leanblueprint pdf`, or `./scripts/build-web.sh` |
-| `blueprint/src/print.pdf` | generated blueprint PDF inside source tree | No | `uvx --python 3.12 leanblueprint pdf` |
+| `blueprint/lean_decls` | referenced Lean declarations | No | official Lean blueprint post-parse callback over `blueprint/src/`; `leanblueprint web` refreshes it in CI |
+| `blueprint/web/`, `blueprint/print/` | generated blueprint output | No | `leanblueprint web`, `leanblueprint pdf`, or `./scripts/build-web.sh` |
+| `blueprint/src/print.pdf` | generated blueprint PDF inside source tree | No | `leanblueprint pdf` |
 | `home_page/docs/` | copied API docs for the site | No | `./scripts/build-web.sh` |
 | `dependency_graphs/` | generated dependency visualizations | No | rerun scripts under `scripts/dependency_analysis/` |
 | `scripts/axiom_baseline.json`, `sorry` and `nonstandard` lists | kernel-level accounting of admitted debt; both lists are empty on `main` | No | `lake exe axiomsweep --update-baseline` after `lake build`, only for verified closures or renames of existing debt. Baseline edits cannot authorize new debt. Native-trust taint prevents the update |

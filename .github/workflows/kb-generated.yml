@@ -40,7 +40,6 @@ jobs:
           version: "0.13.6"
           enable-cache: false
 
-
       - name: Regenerate KB files
         run: uv run --no-project --python 3.12 python ./scripts/kb/regenerate.py
 

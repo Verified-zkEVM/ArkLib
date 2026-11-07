@@ -46,6 +46,8 @@ jobs:
           persist-credentials: false
 
       # Keep the existing renderer image and commands on a runner without Lean build caches.
+      # The renderer installs leanblueprint with pip inside the TeX Live container, which cannot
+      # see the runner's uv. Host-side Python in this job runs through uv as elsewhere.
       - name: Render blueprint PDF and HTML
         uses: xu-cheng/texlive-action@f886de8159e5952a131848a5fa9c3196a2132b5d # v2
         with:
@@ -66,8 +68,14 @@ jobs:
             leanblueprint web
             cp -r blueprint/web home_page/blueprint
 
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.13.6"
+          enable-cache: false
+
       - name: Stage generated blueprint outputs
-        run: python3 scripts/blueprint-ci.py stage-artifact "$RUNNER_TEMP/arklib-blueprint"
+        run: uv run --no-project --python 3.12 python scripts/blueprint-ci.py stage-artifact "$RUNNER_TEMP/arklib-blueprint"
 
       - name: Upload generated blueprint outputs
         uses: actions/upload-artifact@v7
@@ -190,7 +198,6 @@ jobs:
             ${{ runner.os }}-arklib-build-${{ hashFiles('lake-manifest.json', 'lean-toolchain') }}-
             ${{ runner.os }}-arklib-build-
 
-
       # Complements the kernel-level sweep with a lexical inventory of constructs that
       # attach to no environment declaration (for example `example`s and sorry-backed
       # defaults/autoparams), including tracked files outside the import roots. This inventory
@@ -307,7 +314,7 @@ jobs:
       - name: Require successful blueprint rendering
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: python3 scripts/blueprint-ci.py wait-for-success
+        run: uv run --no-project --python 3.12 python scripts/blueprint-ci.py wait-for-success
 
       - name: Download generated blueprint outputs
         uses: actions/download-artifact@v8
