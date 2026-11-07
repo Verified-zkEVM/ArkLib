@@ -298,7 +298,7 @@ open Classical in
 If every sample `x` with `bad x` satisfies `rel l x` for at least `k` elements `l ∈ t`, then
 `k · Pr[bad] ≤ ∑ l ∈ t, Pr[rel l]` for a uniformly random sample. -/
 theorem natCast_mul_prob_le_sum_prob_of_le_card_filter
-    {S L : Type} [Nonempty S] [Finite S] [SampleableType S]
+    {S L : Type} [SampleableType S]
     (t : Finset L) (bad : S → Prop) (rel : L → S → Prop) (k : ℕ)
     (h : ∀ x, bad x → k ≤ (t.filter fun l ↦ rel l x).card) :
     (k : ℝ≥0∞) * Pr{let x ← $ᵗ S}[bad x] ≤

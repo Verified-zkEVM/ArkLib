@@ -249,11 +249,11 @@ finite field with `q := |F|` elements, every module code `C`, every finite row i
 `s := |κ|` and every real radius `δ`,
 `mcaError G (C^⋈κ) δ ≤ (q ^ s - 1) / (q ^ (s - 1) * (q - 1)) * mcaError G C δ`.
 
-The size of the seed space `S` is not bounded relative to `|F|`; the seed space is still finite,
-nonempty and sampleable. Compare `mcaError_moduleInterleavedCode_le_of_card_le`, which removes the
-factor when `|S| ≤ |F|`. For `s ≥ 1` the factor equals `1 + 1/q + ⋯ + 1/q ^ (s - 1)`, which is
-less than `q / (q - 1)`. For `s = 0` the factor is `0`, and so is the left-hand side: with no
-rows, no family is bad.
+The size of the seed space `S` is not bounded relative to `|F|`; the seed space is sampleable,
+which provides finiteness and nonemptiness. Compare `mcaError_moduleInterleavedCode_le_of_card_le`,
+which removes the factor when `|S| ≤ |F|`. For `s ≥ 1` the factor equals
+`1 + 1/q + ⋯ + 1/q ^ (s - 1)`, which is less than `q / (q - 1)`. For `s = 0` the factor is `0`,
+and so is the left-hand side: with no rows, no family is bad.
 
 Average over the `q ^ s - 1` nonzero row functionals `l`: by
 `card_le_card_filter_isMCA_rowCombination` each bad seed for `U` stays bad for the row
@@ -264,7 +264,7 @@ combination of at least `q ^ (s - 1) * (q - 1)` of them, so double counting give
 theorem mcaError_moduleInterleavedCode_le_fieldWeighted
     {ι F A κ ℓ : Type} [Fintype ι] [Field F] [Fintype F] [AddCommMonoid A] [Module F A]
     [Fintype κ] [Fintype ℓ]
-    {S : Type} [Nonempty S] [Fintype S] [SampleableType S]
+    {S : Type} [Fintype S] [SampleableType S]
     (G : Generator S ℓ F) (C : ModuleCode ι F A) (δ : ℝ) :
     mcaError G (C^⋈κ) δ ≤
       (((Fintype.card F : ENNReal) ^ Fintype.card κ - 1) /
