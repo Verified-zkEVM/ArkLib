@@ -88,7 +88,7 @@ variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
 -- `[IsCyclotomic Φ]` is needed only to synthesize the `Rq`/`wTable` instances inside the `hZero`
 -- term carried by the relations, which the linter's usage analysis misses.
-omit [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
+omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
 /-- **The relation-preservation step of the zero-check.** An honest witness for the batched
 identities satisfies the point relation at *every* pair of evaluation points, so no property of
 the challenges is used.
@@ -234,7 +234,7 @@ lemma nestedZeroCheckReduction_run_support {TCom Wit : Type}
   have hout := nestedZeroCheckProver_output_of_mem_support Φ m₀ m₁ X w pr hpr
   exact ⟨pr.1, by rw [hx, ← hout]⟩
 
-omit [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
+omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
 /-- **Perfect completeness of the zero-check (Hachi Figure 5).** An honest prover holding a witness
 for the batched identities `H₀ ≡ 0 ∧ H_α ≡ 0` is accepted with probability one, and the pair it
 hands on lies in `relNestedZeroCheck`, with the prover's and the verifier's output statements
@@ -283,7 +283,7 @@ def batchReduction (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig
       (!p[] : ProtocolSpec 0) :=
   ReduceClaim.reduction oSpec id (fun _ w => w)
 
-omit [BEq F] [LawfulBEq F] in
+omit [NeZero q] [BEq F] [LawfulBEq F] in
 /-- The bridge's protocol object and its soundness certificate share a verifier. Holds by `rfl`. -/
 @[simp] theorem batchReduction_verifier
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))

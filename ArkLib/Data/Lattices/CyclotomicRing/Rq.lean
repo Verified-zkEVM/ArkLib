@@ -42,10 +42,12 @@ variable {R : Type*} [Field R] [BEq R] [LawfulBEq R]
 
 /-! ## `reduce` lemmas via the `toPoly` bridge -/
 
+omit [BEq R] [LawfulBEq R] in
 /-- `CPolynomial.toPoly` is injective (it is the forward map of a ring isomorphism). -/
 theorem toPoly_injective :
-    Function.Injective (CPolynomial.toPoly : CPolynomial R → Polynomial R) :=
-  CPolynomial.ringEquiv.injective
+    Function.Injective (CPolynomial.toPoly : CPolynomial R → Polynomial R) := by
+  classical
+  exact fun _ _ h => CPolynomial.toPoly_inj.mp h
 
 variable (Φ : CyclotomicModulus R) [IsCyclotomic Φ]
 

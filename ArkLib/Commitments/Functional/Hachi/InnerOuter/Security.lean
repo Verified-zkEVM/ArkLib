@@ -292,6 +292,7 @@ theorem inner_relation_of_verified {base : ZMod q} {βSq γ κ : Nat}
     rw [matVecMul_sub]; exact sub_eq_zero.mpr heq
   simp [ModuleSIS.relation, innerShort, hne, hshort, hker]
 
+omit [NeZero q] in
 /-- Verified weak openings with different flattened witnesses give a valid outer relation. -/
 theorem outer_relation_of_verified {base : ZMod q} {βSq γ κ : Nat}
     {pp : PublicParams Φ innerRows messageRows messageDigits outerRows blocks innerDigits}
@@ -320,6 +321,7 @@ theorem outer_relation_of_verified {base : ZMod q} {βSq γ κ : Nat}
     rw [matVecMul_sub]; exact sub_eq_zero.mpr heq
   simp [ModuleSIS.relation, outerShort, hne, hshort, hker]
 
+omit [NeZero q] in
 /-- **Extractor validity (the reusable core).** Two *verified* weak openings that differ yield
 a valid inner or outer Module-SIS witness (over `𝓜(q, α)`).
 
@@ -353,6 +355,7 @@ theorem outputToModuleSIS_valid_of_verified {base : ZMod q} {βSq γ κ : Nat}
   · simp only [hflat, ite_false]
     exact outer_relation_of_verified 𝓜(q, α) hv₁ hv₂ hflat
 
+omit [NeZero q] in
 /-- A successful pair of weak openings yields a valid inner or outer Module-SIS witness (over
 `𝓜(q, α)`). The boolean-verification wrapper around `outputToModuleSIS_valid_of_verified`:
 it extracts the `VerifiedOpening` facts from `verify_weak` and applies the core. -/

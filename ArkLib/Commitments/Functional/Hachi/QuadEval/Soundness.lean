@@ -134,6 +134,7 @@ theorem evalConsistency_of_star (base : ZMod q) (a : PolyVec (Rq Φ) (2 ^ m))
 
 /-! ## The two-transcript MSIS extraction step (Hachi Lemma 8, cases (A)/(B)) -/
 
+omit [NeZero q] in
 /-- **Hachi Lemma 8, cases (A)/(B), two-transcript step**: two `γ`-short openings of the same
 commitment under `M` differ by an `ℓ∞`-short kernel vector — a Module-SIS solution for `M` at
 the bound `subLInftyNormBound γ = 2·γ`. Instantiated at `M = B` with `outerShort` (case (A))
@@ -317,6 +318,7 @@ section Pinned
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)] {α : ℕ}
 variable {innerRows messageDigits outerRows innerDigits dRows zDigits m r : Nat}
 
+omit [NeZero q] in
 /-- The slack `c̄ᵢ := c_{sib i, i} − c_{central, i}` of a star-shaped short-challenge family is a
 unit: it is nonzero (the sibling differs at `i`), `ℓ₁`-bounded by `2ω` (two subtype challenges),
 and `(2ω)² < q` — Lyubashevsky–Seiler [LS18] invertibility. -/
@@ -329,6 +331,7 @@ theorem slack_isUnit (hq5 : q % 8 = 5) {ω : ℕ} (hκ : (2 * ω) ^ 2 < q)
       (sub_ne_zero_of_ne (ShortChallenge.val_ne_of_ne (sib_coordEq_ne fam hstar i))))
     (ShortChallenge.l1Norm_val_sub_le _ _) hκ
 
+omit [NeZero q] in
 /-- **Weak-opening validity of the extracted opening** (Hachi Lemma 8, case (C), part 1).
 At a star-shaped family of `2^r + 1` `relOut`-accepting branches sharing the carrier commitment
 `v` and (cases (A)/(B) excluded) sharing `t̂` and `ŵ`, the subtract-and-divide
@@ -404,6 +407,7 @@ theorem verifiedOpening_of_star (hq5 : q % 8 = 5) {b ω γ : ℕ} (hκ : (2 * ω
       ((resp (central fam)).innerDec i) _
       ((fam (sib fam i) i).val - (fam (central fam) i).val) hunit hchain
 
+omit [NeZero q] in
 /-- **Eval-consistency of the extracted opening** (Hachi Lemma 8, case (C), part 2 — Eq. (15)):
 the shared-`ŵ` c3 row plus the coordinate-isolated, unit-divided c4 rows discharge the
 `w`/`c3`/`c4` hypotheses of `evalConsistency_of_star` at the shared recomposed carrier
@@ -461,6 +465,7 @@ theorem evalConsistency_of_relOut_star (hq5 : q % 8 = 5) {b ω γ : ℕ} (hκ : 
     rw [matVecMul_scalarVecMul, dot_scalarVecMul, hchain, ← mul_assoc,
       Rq.inv_mul_cancel _ hunit, one_mul]
 
+omit [NeZero q] in
 /-- **The local extractor is correct** — the mathematical content of Hachi Lemma 8's three-case
 split. At every star-shaped family of `relOut`-accepting branches, `buildWitness` either returns a
 concrete break of the fixed key `pp` (an element of `quadEvalSISSet`) or an opening lying in
@@ -519,6 +524,7 @@ theorem buildWitness_break_or_mem_relIn (hq5 : q % 8 = 5) {b ω γ : ℕ}
         exact ⟨verifiedOpening_of_star hq5 hκ pp stmt v fam resp hrel hstar ht hD,
           evalConsistency_of_relOut_star hq5 hκ pp stmt v fam resp hrel hstar hD⟩
 
+omit [NeZero q] in
 /-- **Hachi Lemma 8 (CWSS of Hachi's polynomial-evaluation reduction, Figure 3; originally
 Greyhound's [NS24, §3.1] folding protocol), escape-threaded.** `relIn` contains only an
 eval-consistent weak opening, `relOut` Eq. (20) plus its range checks, and the extractor is a plain
@@ -570,6 +576,7 @@ theorem quadEval_coordinateWiseSpecialSoundWithEscape
     rw [quadEvalMkWitness_of_inl 𝓜(q, α) (b : ZMod q) stmtIn v fam resp hw]
     exact hmem
 
+omit [NeZero q] in
 /-- **Paper-parameter instantiation of Hachi Lemma 8** — the named bridge to the paper's
 weak-opening contract. This is `quadEval_coordinateWiseSpecialSoundWithEscape` specialized to the
 paper's range `γ := b`. Two of the paper's three Lemma 8 bounds match **exactly**: `γ̄ = b` and
@@ -633,6 +640,7 @@ def quadEvalPackage {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
   extractor := treeExtractor (quadEvalMkWitness (outerRows := outerRows) 𝓜(q, α) (b : ZMod q))
   isCWSS := quadEval_coordinateWiseSpecialSoundWithEscape init impl hq5 hκ pp
 
+omit [NeZero q] in
 /-- **Protocol/certificate coupling.** The Lemma-8 certificate `quadEvalPackage` and the honest
 protocol object `quadEvalReduction` (`QuadEval/Reduction.lean`) verify with *the same* verifier, by
 `rfl` — so soundness and the perfect-completeness theorem of `QuadEval/Completeness.lean` cannot

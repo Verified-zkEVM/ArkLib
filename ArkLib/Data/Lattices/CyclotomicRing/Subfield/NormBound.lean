@@ -64,13 +64,13 @@ theorem psi_summand_coeff_eq_zero_of_ne_mod (α κ : ℕ) (h2 : (2 : ZMod q) ≠
   rw [Xpow_mul_coeff α (packExp α (2 ^ κ) (j : ℕ)) (packExp_lt α κ hk j)
     (a j : Rq (powTwoCyclotomic (R := ZMod q) α)) hp]
   split_ifs with hle
-  · apply fixedSubring_coeff_eq_zero q α κ h2 hk (a j) (by omega)
+  · apply fixedSubring_coeff_eq_zero q α κ h2 hk (a j)
     intro hdvd
     apply hne
     have hmeq : packExp α (2 ^ κ) (j : ℕ) % 2 ^ (α - κ - 1) = p % 2 ^ (α - κ - 1) :=
       (Nat.modEq_iff_dvd' hle).mpr hdvd
     rw [packExp_mod_eq α κ hk j] at hmeq; omega
-  · rw [fixedSubring_coeff_eq_zero q α κ h2 hk (a j) (by omega) (by
+  · rw [fixedSubring_coeff_eq_zero q α κ h2 hk (a j) (by
       intro hdvd
       apply hne
       have hle2 : packExp α (2 ^ κ) (j : ℕ) ≤ p + 2 ^ α := by

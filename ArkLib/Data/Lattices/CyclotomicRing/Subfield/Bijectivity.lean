@@ -33,6 +33,7 @@ namespace ArkLib.Lattices.CyclotomicModulus
 
 variable (q : ℕ) [Fact (Nat.Prime q)] [NeZero q] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
 
+omit [NeZero q] in
 /-- **`ψ` is bijective** (Hachi [NOZ26, §3, Theorem 2]): injective (from the non-degenerate trace
 pairing, `psi_injective`) and a cardinality match `|(R_q^H)^{d/k}| = (q^k)^{d/k} = q^d = |R_q|`. -/
 theorem psi_bijective (α κ : ℕ) (h2 : (2 : ZMod q) ≠ 0) (hk : 2 * 2 ^ κ ∣ 2 ^ α) :
@@ -53,6 +54,7 @@ noncomputable def psiLinearEquiv (α κ : ℕ) (h2 : (2 : ZMod q) ≠ 0)
       Rq (powTwoCyclotomic (R := ZMod q) α) :=
   LinearEquiv.ofBijective (psiLinearMap α (2 ^ κ)) (psi_bijective q α κ h2 hk)
 
+omit [NeZero q] in
 /-- The linear equivalence computes `psi`. -/
 @[simp] theorem psiLinearEquiv_apply (α κ : ℕ) (h2 : (2 : ZMod q) ≠ 0)
     (hk : 2 * 2 ^ κ ∣ 2 ^ α)

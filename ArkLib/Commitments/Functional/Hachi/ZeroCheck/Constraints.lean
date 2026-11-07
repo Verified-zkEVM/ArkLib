@@ -354,7 +354,8 @@ The range polynomial is load-bearing: an identically-zero `H₀^{w̃}` forces ev
 coefficient into the symmetric range `[−(b−1), b−1]`, hence `w̃` is short. This is what lets the
 batching bridge *derive* `liftShort` rather than assume it (NOZ26 §4.3, Eqs. (20)–(23)). -/
 
-omit [IsCyclotomic Φ] [BEq (ZMod q)] [LawfulBEq (ZMod q)] [BEq F] [LawfulBEq F] in
+omit [NeZero q] [IsCyclotomic Φ] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
+  [BEq F] [LawfulBEq F] in
 /-- A residue whose `φF`-image is a root of the range factor `P_b` has a small centered
 representative: `P_b(φF c) = 0` gives `|c|₋ ≤ b − 1`. The field roots `{0, ±1, …, ±(b−1)}` pull
 back injectively (`φF` is a ring hom out of the field `ZMod q`) to residues `c = ±j` with
@@ -425,7 +426,7 @@ theorem wTable_rRow (φF : ZMod q →+* F) (b : ℕ) (w : LiftedWitness Φ μ n)
     dite_eq_left (by omega : μ + ((i : ℕ) * δ + u) - μ < n * δ)]
   simp only [Nat.add_sub_cancel_left, hdivδ, hmodδ, Fin.eta]
 
-omit [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
+omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
 /-- **Range-side soundness.** If the batched range polynomial `H₀^{w̃}` vanishes
 identically then `w̃` is short. Each committed coefficient is a table entry (`wTable`), hence a
 root of `P_b` (`hZero_eq_zero_iff`), hence a centered residue of absolute value `≤ b − 1`

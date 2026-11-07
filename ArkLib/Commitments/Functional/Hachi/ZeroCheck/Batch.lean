@@ -94,7 +94,7 @@ def relBatched (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
 -- `[IsCyclotomic Φ]` is needed to synthesize the `Rq`/`wTable` instances inside the `hZero` term
 -- carried by `relBatched` and by `hZero_eq_zero_imp_liftShort`, but the linter's usage analysis
 -- misses instance-synth-only section vars.
-omit [BEq F] [LawfulBEq F] in
+omit [NeZero q] [BEq F] [LawfulBEq F] in
 /-- The batched identities imply the lift's per-row **and shortness** claims.
 
 The per-row equation is recovered from `H_α ≡ 0`: by `hAlpha_eq_zero_iff` every

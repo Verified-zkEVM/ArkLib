@@ -141,6 +141,7 @@ Takes a sampler for the fold challenges (`ShortChallenge`) as a hypothesis. -/
           (h₁ := instSampleableTypeChallengePSpecNestedZeroCheck)
             (h₂ := ProtocolSpec.instSampleableTypeChallengeEmpty)))))
 
+omit [NeZero q] in
 /-- **Escape-threaded CWSS of the `Rq`-level polynomial-evaluation step** (Hachi
 [NOZ26, §4.2, Figure 3]): rows 1–2, the polynomial-level bridge followed by `QuadEval`, along a
 single relation seam. The bridge is escape-free and `QuadEval` escape-aware, so `▷` lifts the
@@ -249,6 +250,7 @@ def iteration (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (bridge ▷ quadEval) ▷ rlin ▷ lift ▷ batch ▷ zeroCheck ▷ sumcheckBridge
   (core ▷ rounds) ▷ finalEval
 
+omit [NeZero q] in
 /-- **Escape-threaded coordinate-wise special soundness of one Hachi evaluation iteration.** The
 composed verifier of rows 1–9 is CWSS over the endpoint relations `relPolyEval` and
 `relWEvalClaim`, at the composed extraction algorithm `(iteration …).extractor`, with
