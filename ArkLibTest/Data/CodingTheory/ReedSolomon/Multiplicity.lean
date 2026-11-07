@@ -29,7 +29,7 @@ private lemma char_ge : ringChar (ZMod 3) = 0 ∨ 3 ≤ ringChar (ZMod 3) :=
 
 /-- Below saturation and at the characteristic boundary, the distance is `3 - 2 / 2 = 2`. -/
 example : Code.dist (umCode domain 3 2 : Set (ZMod 3 → Fin 2 → ZMod 3)) = 2 := by
-  have h := dist_umCode_eq domain (k := 3) (s := 2) char_ge (by norm_num) (by norm_num)
+  have h := dist_umCode_eq domain (k := 3) (s := 2) char_ge (by norm_num)
     (by simp [ZMod.card])
   simpa [ZMod.card] using h
 
@@ -46,14 +46,14 @@ example : 2 ≤ hammingDist (umEvalOnPoints domain 2 Polynomial.X)
     intro h
     have := congrFun (congrFun h 1) 0
     simp [umEvalOnPoints, domain] at this
-  have hb := hammingDist_umCode_ge domain char_ge (by norm_num) hX h0 hne
+  have hb := hammingDist_umCode_ge domain char_ge hX h0 hne
   simpa [ZMod.card] using hb
 
 /-- At `s = 1` the formula is the Reed-Solomon distance. -/
 example {ι F : Type*} [Fintype ι] [Field F] [DecidableEq F] (dom : ι ↪ F) {k : ℕ}
     (hchar : ringChar F = 0 ∨ k ≤ ringChar F) (hk : 0 < k) (hkn : k ≤ Fintype.card ι) :
     Code.dist (umCode dom k 1 : Set (ι → Fin 1 → F)) = Fintype.card ι - (k - 1) := by
-  simpa using dist_umCode_eq dom hchar one_pos hk (by simpa using hkn)
+  simpa using dist_umCode_eq dom (s := 1) hchar hk (by simpa using hkn)
 
 /-- At `k = 0` the only codeword is zero, so the distance is `0`, not `3`. -/
 example : Code.dist (umCode domain 0 2 : Set (ZMod 3 → Fin 2 → ZMod 3)) = 0 := by

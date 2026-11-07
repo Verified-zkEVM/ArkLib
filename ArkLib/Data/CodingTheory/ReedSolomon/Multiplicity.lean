@@ -235,7 +235,7 @@ lemma dim_umCode_eq_min {ι : Type*} [Fintype ι]
 `n - (k - 1) / s` positions: each position where they agree is a root of multiplicity `s` of
 the difference of their messages, whose degree is below `k`. -/
 theorem hammingDist_umCode_ge {ι : Type*} [Fintype ι] [DecidableEq F]
-    (domain : ι ↪ F) {k s : ℕ} (hchar : ringChar F = 0 ∨ k ≤ ringChar F) (hs : 0 < s)
+    (domain : ι ↪ F) {k s : ℕ} (hchar : ringChar F = 0 ∨ k ≤ ringChar F)
     {c c' : ι → Fin s → F} (hc : c ∈ umCode domain k s) (hc' : c' ∈ umCode domain k s)
     (hne : c ≠ c') :
     Fintype.card ι - (k - 1) / s ≤ hammingDist c c' := by
@@ -261,7 +261,12 @@ theorem hammingDist_umCode_ge {ι : Type*} [Fintype ι] [DecidableEq F]
       _ ≤ ∑ i ∈ A, (p - q).rootMultiplicity (domain i) := Finset.sum_le_sum hmult
       _ = ∑ a ∈ A.map domain, (p - q).rootMultiplicity a := by rw [Finset.sum_map]
       _ ≤ (p - q).natDegree := Polynomial.sum_rootMultiplicity_le_natDegree _
-  have hA : A.card ≤ (k - 1) / s := (Nat.le_div_iff_mul_le hs).mpr (by omega)
+  have hA : A.card ≤ (k - 1) / s := by
+    have hs : 0 < s := by
+      by_contra h
+      obtain rfl := Nat.eq_zero_of_not_pos h
+      exact hne (Subsingleton.elim _ _)
+    exact (Nat.le_div_iff_mul_le hs).mpr (by omega)
   have hsplit : hammingDist (umEvalOnPoints domain s p) (umEvalOnPoints domain s q) + A.card =
       Fintype.card ι := by
     rw [hammingDist, add_comm]
@@ -272,7 +277,7 @@ theorem hammingDist_umCode_ge {ι : Type*} [Fintype ι] [DecidableEq F]
 over `(k - 1) / s` domain points, which vanishes to order `s` on exactly those points. This
 direction needs no assumption on the characteristic. -/
 lemma exists_mem_umCode_hammingDist_zero_eq {ι : Type*} [Fintype ι] [DecidableEq F]
-    (domain : ι ↪ F) {k s : ℕ} (hs : 0 < s) (hk : 0 < k) (hks : k ≤ s * Fintype.card ι) :
+    (domain : ι ↪ F) {k s : ℕ} (hk : 0 < k) (hks : k ≤ s * Fintype.card ι) :
     ∃ c ∈ umCode domain k s, c ≠ 0 ∧
       hammingDist c (0 : ι → Fin s → F) = Fintype.card ι - (k - 1) / s := by
   classical
@@ -299,6 +304,11 @@ lemma exists_mem_umCode_hammingDist_zero_eq {ι : Type*} [Fintype ι] [Decidable
     simp [Nat.sub_ne_zero_of_lt j.isLt]
   have hne : ∀ i ∉ T, umEvalOnPoints domain s P i ≠ 0 := by
     intro i hi h0
+    have hs : 0 < s := by
+      by_contra h
+      have hs0 : s = 0 := Nat.eq_zero_of_not_pos h
+      simp [hs0] at hks
+      omega
     have h := congrFun h0 ⟨0, hs⟩
     change P.eval (domain i) = 0 at h
     rw [Polynomial.eval_prod, Finset.prod_eq_zero_iff] at h
@@ -323,15 +333,15 @@ lemma exists_mem_umCode_hammingDist_zero_eq {ι : Type*} [Fintype ι] [Decidable
 /-- The minimum distance of a univariate multiplicity code in the unsaturated range. -/
 theorem dist_umCode_eq {ι : Type*} [Fintype ι] [DecidableEq F]
     (domain : ι ↪ F) {k s : ℕ} (hchar : ringChar F = 0 ∨ k ≤ ringChar F)
-    (hs : 0 < s) (hk : 0 < k) (hks : k ≤ s * Fintype.card ι) :
+    (hk : 0 < k) (hks : k ≤ s * Fintype.card ι) :
     Code.dist (umCode domain k s : Set (ι → Fin s → F)) = Fintype.card ι - (k - 1) / s := by
-  obtain ⟨c, hc, hc0, hcd⟩ := exists_mem_umCode_hammingDist_zero_eq domain hs hk hks
+  obtain ⟨c, hc, hc0, hcd⟩ := exists_mem_umCode_hammingDist_zero_eq domain hk hks
   have hmem : Fintype.card ι - (k - 1) / s ∈ {d | ∃ u ∈ (umCode domain k s : Set _), ∃ v ∈
       (umCode domain k s : Set (ι → Fin s → F)), u ≠ v ∧ hammingDist u v ≤ d} :=
     ⟨c, hc, 0, Submodule.zero_mem _, hc0, hcd.le⟩
   refine le_antisymm (Nat.sInf_le hmem) (le_csInf ⟨_, hmem⟩ ?_)
   rintro d ⟨u, hu, v, hv, huv, hd⟩
-  exact (hammingDist_umCode_ge domain hchar hs hu hv huv).trans hd
+  exact (hammingDist_umCode_ge domain hchar hu hv huv).trans hd
 
 end Field
 
