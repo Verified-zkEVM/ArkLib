@@ -91,17 +91,43 @@ theorem card_cleanFirstQueries_add (ω : SmoothCosetFftDomain n F) (r : ℕ) (hr
   simpa only [cleanFirstQueries, Fintype.card_fin] using
     card_compl_add_card ((firstErrorBlocks ω r f g).biUnion (blockIdx ω r))
 
-/-- The clean-query density counts complete uncorrupted first blocks exactly. -/
-theorem cleanFirstQueries_density (ω : SmoothCosetFftDomain n F) (r : ℕ) (hr : r ≤ n)
+/-- The clean-query density counts uncorrupted first blocks, with truncated subtraction
+when the folding exponent exceeds the domain exponent. -/
+theorem cleanFirstQueries_density (ω : SmoothCosetFftDomain n F) (r : ℕ)
     (f g : Fin (2 ^ n) → F) :
     ((cleanFirstQueries ω r f g).card : ℝ≥0) / 2 ^ n =
       1 - ((firstErrorBlocks ω r f g).card : ℝ≥0) * 2 ^ r / 2 ^ n := by
-  apply eq_tsub_of_add_eq
-  rw [← add_div]
-  have hc : ((cleanFirstQueries ω r f g).card : ℝ≥0) +
-      ((firstErrorBlocks ω r f g).card : ℝ≥0) * 2 ^ r = 2 ^ n := by
-    exact_mod_cast card_cleanFirstQueries_add ω r hr f g
-  rw [hc, div_self (by positivity)]
+  classical
+  by_cases hr : r ≤ n
+  · apply eq_tsub_of_add_eq
+    rw [← add_div]
+    have hc : ((cleanFirstQueries ω r f g).card : ℝ≥0) +
+        ((firstErrorBlocks ω r f g).card : ℝ≥0) * 2 ^ r = 2 ^ n := by
+      exact_mod_cast card_cleanFirstQueries_add ω r hr f g
+    rw [hc, div_self (by positivity)]
+  · by_cases hfg : f = g
+    · subst g
+      simp
+    have : Subsingleton (Fin (2 ^ (n - r))) := by
+      rw [Nat.sub_eq_zero_of_le (by omega : n ≤ r), pow_zero]
+      infer_instance
+    have hempty : cleanFirstQueries ω r f g = ∅ := by
+      apply Finset.eq_empty_iff_forall_notMem.mpr
+      intro z hz
+      apply hfg
+      funext y
+      apply (mem_cleanFirstQueries ω r f g z).mp hz y
+      rw [← pow_eq_subdomain_sqFoldMapGen, ← pow_eq_subdomain_sqFoldMapGen]
+      exact congrArg (ω.subdomain r) (Subsingleton.elim _ _)
+    have hcard : 1 ≤ (firstErrorBlocks ω r f g).card := by
+      obtain ⟨z, hz⟩ := Function.ne_iff.mp hfg
+      exact one_le_card.mpr ⟨ω z ^ 2 ^ r, mem_image.mpr
+        ⟨z, Code.mem_disagreementCols.mpr hz, rfl⟩⟩
+    rw [hempty, card_empty, Nat.cast_zero, zero_div, eq_comm, tsub_eq_zero_iff_le]
+    apply (le_div_iff₀ (by positivity)).mpr
+    simpa using (le_trans (show (2 ^ n : ℝ≥0) ≤ 2 ^ r from
+      pow_le_pow_right₀ (by norm_num) (by omega))
+      (le_mul_of_one_le_left (by positivity) (by exact_mod_cast hcard)))
 
 /-- The clipped completeness error for `l` queries with first-fold exponent `s 0`. -/
 def completenessError {k : ℕ} (s : Fin (k + 1) → ℕ+) (δ : ℝ≥0) (l : ℕ) : ℝ≥0 :=
@@ -144,27 +170,24 @@ theorem cleanFirstQueries_density_le_one (ω : SmoothCosetFftDomain n F) (r : �
 
 /-- Proximity of the initial words gives the clipped first-block density bound. -/
 theorem one_sub_min_le_cleanFirstQueries_density (ω : SmoothCosetFftDomain n F)
-    (r : ℕ) (hr : r ≤ n) (f g : Fin (2 ^ n) → F) (δ : ℝ≥0)
+    (r : ℕ) (f g : Fin (2 ^ n) → F) (δ : ℝ≥0)
     (hδ : (Code.relHammingDist f g : ℝ≥0) ≤ δ) :
     1 - min 1 ((2 ^ r : ℝ≥0) * δ) ≤
       ((cleanFirstQueries ω r f g).card : ℝ≥0) / 2 ^ n := by
-  rw [cleanFirstQueries_density ω r hr f g]
+  rw [cleanFirstQueries_density ω r f g]
+  rw [tsub_min]
   apply tsub_le_tsub_left
-  apply le_min
-  · rw [div_le_one (by positivity)]
-    have hcard := card_cleanFirstQueries_add ω r hr f g
-    exact_mod_cast (show (firstErrorBlocks ω r f g).card * 2 ^ r ≤ 2 ^ n by omega)
-  · calc
-      ((firstErrorBlocks ω r f g).card : ℝ≥0) * 2 ^ r / 2 ^ n ≤
-          (hammingDist f g : ℝ≥0) * 2 ^ r / 2 ^ n := by
-            gcongr
-            exact_mod_cast card_firstErrorBlocks_le ω r f g
-      _ = (2 ^ r : ℝ≥0) * (Code.relHammingDist f g : ℝ≥0) := by
-        simp only [Code.relHammingDist, NNRat.cast_div, NNRat.cast_natCast, Fintype.card_fin,
-          Nat.cast_pow, Nat.cast_ofNat]
-        push_cast
-        ring
-      _ ≤ (2 ^ r : ℝ≥0) * δ := mul_le_mul_of_nonneg_left hδ zero_le
+  calc
+    ((firstErrorBlocks ω r f g).card : ℝ≥0) * 2 ^ r / 2 ^ n ≤
+        (hammingDist f g : ℝ≥0) * 2 ^ r / 2 ^ n := by
+          gcongr
+          exact_mod_cast card_firstErrorBlocks_le ω r f g
+    _ = (2 ^ r : ℝ≥0) * (Code.relHammingDist f g : ℝ≥0) := by
+      simp only [Code.relHammingDist, NNRat.cast_div, NNRat.cast_natCast, Fintype.card_fin,
+        Nat.cast_pow, Nat.cast_ofNat]
+      push_cast
+      ring
+    _ ≤ (2 ^ r : ℝ≥0) * δ := mul_le_mul_of_nonneg_left hδ zero_le
 
 /-- A set containing every clean query has at least the clean-block success probability. -/
 theorem cleanFirstQueries_pow_le_prob_uniform_queries (ω : SmoothCosetFftDomain n F)
@@ -179,7 +202,7 @@ theorem cleanFirstQueries_pow_le_prob_uniform_queries (ω : SmoothCosetFftDomain
 
 /-- The clipped radius bound holds for independent queries in any set containing clean queries. -/
 theorem one_sub_completenessError_le_prob_uniform_queries {k : ℕ}
-    (ω : SmoothCosetFftDomain n F) (s : Fin (k + 1) → ℕ+) (hs : (s 0).val ≤ n)
+    (ω : SmoothCosetFftDomain n F) (s : Fin (k + 1) → ℕ+)
     (f g : Fin (2 ^ n) → F) (δ : ℝ≥0)
     (hδ : (Code.relHammingDist f g : ℝ≥0) ≤ δ) (A : Finset (Fin (2 ^ n)))
     (hA : cleanFirstQueries ω (s 0).val f g ⊆ A) (l : ℕ) :
@@ -192,7 +215,7 @@ theorem one_sub_completenessError_le_prob_uniform_queries {k : ℕ}
     _ ≤ (((cleanFirstQueries ω (s 0).val f g).card : ℝ≥0∞) / 2 ^ n) ^ l := by
       rw [ENNReal.coe_pow]
       apply pow_le_pow_left'
-      have h := one_sub_min_le_cleanFirstQueries_density ω (s 0).val hs f g δ hδ
+      have h := one_sub_min_le_cleanFirstQueries_density ω (s 0).val f g δ hδ
       simpa using (ENNReal.coe_le_coe.mpr h)
     _ ≤ _ := cleanFirstQueries_pow_le_prob_uniform_queries ω (s 0).val f g A hA l
 

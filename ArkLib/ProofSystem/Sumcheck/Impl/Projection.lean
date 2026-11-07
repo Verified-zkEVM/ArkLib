@@ -79,11 +79,12 @@ theorem projectedSummand_toPoly (i : Fin (n + 1)) (poly : CMvPolynomial (n + 1) 
   rw [CPolynomial.toPoly_mapRingHom, evalHom_transport, ← Polynomial.map_map]
   rw [CPoly.CMvPolynomial.finSuccEquivNth_apply, map_polyRingEquiv_toPoly_finSuccEquivNth]
 
+omit [Nontrivial R] in
 /-- Interpretation commutes with a finite sum of computational messages. -/
 theorem toPoly_sum {ι : Type*} (s : Finset ι) (f : ι → CPolynomial R) :
     (∑ x ∈ s, f x).toPoly = ∑ x ∈ s, (f x).toPoly := by
-  simpa only [CPolynomial.toPolyRingHom_apply] using
-    map_sum (CPolynomial.toPolyRingHom (R := R)) f s
+  classical
+  exact CPolynomial.toPoly_sum
 
 /-- The computational finite sum agrees with the mathematical finite-domain construction. -/
 theorem projectedRoundPolynomial_toPoly_sum (D : Fin m ↪ R) (i : Fin (n + 1))

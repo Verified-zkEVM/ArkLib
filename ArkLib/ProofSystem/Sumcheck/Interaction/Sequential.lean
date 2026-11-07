@@ -74,22 +74,23 @@ theorem executeTwo_rejected [DecidableEq R] (i : Fin (n + 1)) (domain : List R)
   rw [executeTwo, executeCore_eq, ite_eq_right h]
   rfl
 
-/-- A successful prefix cannot turn a rejecting suffix into an accepted final claim. -/
+/-- A rejecting suffix prevents acceptance, regardless of whether the prefix succeeds. -/
 theorem executeTwo_second_rejected [DecidableEq R] (i : Fin (n + 1)) (domain : List R)
     (stmt : Spec.StatementRound R (n + 2) i.castSucc.castSucc)
     (impl : (polynomialFamily R (n + 2) deg).Behavior) (first : Message R deg)
     (second : Spec.StatementRound R (n + 2) i.castSucc.succ → Message R deg)
     (r₁ r₂ : R)
-    (h₁ : (domain.map (fun x => first.val.eval x)).sum = stmt.target)
     (h₂ : (domain.map (fun x =>
       (second ⟨first.val.eval r₁, Fin.snoc stmt.challenges r₁⟩).val.eval x)).sum ≠
         first.val.eval r₁) :
     executeTwo R n deg ambient i domain stmt impl first second r₁ r₂ = pure none := by
-  rw [executeTwo, executeCore_accepted R (n + 2) deg ambient i.castSucc stmt impl first
-    domain r₁ h₁]
-  simp only [pure_bind, acceptedRun_closed]
-  rw [executeCore_eq, ite_eq_right h₂]
-  rfl
+  by_cases h₁ : (domain.map (fun x => first.val.eval x)).sum = stmt.target
+  · rw [executeTwo, executeCore_accepted R (n + 2) deg ambient i.castSucc stmt impl first
+      domain r₁ h₁]
+    simp only [pure_bind, acceptedRun_closed]
+    rw [executeCore_eq, ite_eq_right h₂]
+    rfl
+  · exact executeTwo_rejected R n deg ambient i domain stmt impl first second r₁ r₂ h₁
 
 /-- Two actual sampled stages; the suffix challenge runs only after successful prefix closing. -/
 def executeTwoSampled [DecidableEq R] (i : Fin (n + 1)) (domain : List R)

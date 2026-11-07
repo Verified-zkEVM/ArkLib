@@ -117,7 +117,7 @@ theorem derivedTarget_messageEquiv_eq_compute_s0 (z : P.A) (c : Fin κ → L) :
 
 open scoped Classical in
 /-- The shared head executes the original carrier check and row target. -/
-theorem head_verifier_eq [DecidableEq L] :
+theorem head_verifier_eq :
     Head.verifier (PackingData.ofBasis P.basis) ℓ' (layout P h_l)
         (messageEquiv P) (BatchingRule.eqFold L κ) (commitment a) =
       scalarRoundOracleVerifier (oSpec := []ₒ) (OStmt := (commitment a).OStmt)
