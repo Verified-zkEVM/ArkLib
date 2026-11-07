@@ -79,9 +79,7 @@ theorem exists_exceptional_frobeniusPowerSeparableSolutions_at [IsAlgClosed E]
       domain values ι roots Q p e τ h b A hroots hK hKk hτ hτpos
         hkL hLA hheight hjet
   obtain ⟨singularEx, hsingularCard, hsingular⟩ :=
-    exists_exceptional_ordinary_separant hirr
-      (Nat.pos_of_ne_zero fun hzero ↦ hder
-        (MvPolynomial.pderiv_eq_zero_of_degreeOf_eq_zero hzero)) hder hheight
+    exists_exceptional_ordinary_separant hirr hder hheight
   refine ⟨regularEx ∪ singularEx, ?_, ?_⟩
   · have hcard : ((regularEx ∪ singularEx).card : ℚ) ≤
         regularEx.card + singularEx.card := by

@@ -85,10 +85,12 @@ theorem eval_mul_add_of_eval_mul_eq_sub {D q I : R[X]} {x y : R}
 /-- **Degree of a nodal reconstruction.** For the nodal divisor of the anchors `v i`, `i ∈ s`,
 a quotient of degree below `k` and a correction of degree below `#s` give a reconstruction of
 degree below `k + #s`. The anchors need not be distinct. -/
-theorem degree_nodal_mul_add_lt {ι : Type*} [Nontrivial R] (s : Finset ι) (v : ι → R)
+theorem degree_nodal_mul_add_lt {ι : Type*} (s : Finset ι) (v : ι → R)
     {q I : R[X]} {k : ℕ} (hq : q.degree < k) (hI : I.degree < s.card) :
-    (Lagrange.nodal s v * q + I).degree < (k + s.card : ℕ) :=
-  degree_mul_add_lt Lagrange.natDegree_nodal.le hq hI
+    (Lagrange.nodal s v * q + I).degree < (k + s.card : ℕ) := by
+  cases subsingleton_or_nontrivial R
+  · simp [Subsingleton.elim (Lagrange.nodal s v * q + I) 0]
+  · exact degree_mul_add_lt Lagrange.natDegree_nodal.le hq hI
 
 /-- **Values of a nodal reconstruction at the anchors.** At every anchor `v i` with `i ∈ s`, the
 reconstruction `nodal s v * q + I` takes the value of `I`. -/

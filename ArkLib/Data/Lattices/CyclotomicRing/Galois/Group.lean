@@ -18,7 +18,7 @@ subgroup `H := ⟨σ_{-1}, σ_{4k+1}⟩`, whose fixed subring is the subfield `�
 This file pins the two generators (`σ_{-1}` with exponent `2^{α+1}-1 ≡ -1`, and `σ_{4k+1}`),
 records their oddness (so they are genuine automorphisms), and provides the explicit exponent
 set `Hexp` enumerating `H` for use by the trace map. The composition law `σ_i ∘ σ_j = σ_{ij}`
-(for odd `i, j`) and `σ_1 = id` are proven via the soundness bridge; the order computation
+(for odd `i`) and `σ_1 = id` are proven via the soundness bridge; the order computation
 `|⟨4k+1⟩| = d/(2k)` (Hachi [NOZ26, §3, Claim 1] / [LS18, Lem 2.4]) is proven in
 `CyclotomicRing/Galois/Order.lean` via 2-adic lifting-the-exponent.
 
@@ -78,17 +78,16 @@ theorem galoisAut_one_eq (α : ℕ) (a : Rq (powTwoCyclotomic (R := R) α)) :
   rw [galoisAut_toQuotient α 1 odd_one, galoisAutₛ_toQuotient α 1 odd_one, pow_one,
     Polynomial.aeval_X_left_apply, Rq.toQuotient, quotientHom_apply]
 
-/-- Composition law `σ_i ∘ σ_j = σ_{ij}` (for `i, j` odd, so the maps are genuine
-automorphisms). Proven on the semantic `aeval` side via the soundness bridge
-`galoisAut_toQuotient` and `aeval_X_pow_aeval_X_pow`. -/
-theorem galoisAut_comp (α i j : ℕ) (hi : Odd i) (hj : Odd j)
+/-- Composition law `σ_i ∘ σ_j = σ_{ij}` for odd `i` and arbitrary `j`. Proven on the semantic
+`aeval` side via the soundness bridge `galoisAut_toQuotient` and
+`aeval_X_pow_aeval_X_pow`. -/
+theorem galoisAut_comp (α i j : ℕ) (hi : Odd i)
     (a : Rq (powTwoCyclotomic (R := R) α)) :
     galoisAut (powTwoCyclotomic α) i (galoisAut (powTwoCyclotomic α) j a)
       = galoisAut (powTwoCyclotomic α) (i * j) a := by
   apply Rq.toQuotient_injective (powTwoCyclotomic α)
-  rw [galoisAut_toQuotient α i hi, galoisAut_toQuotient α j hj,
-    galoisAut_toQuotient α (i * j) (hi.mul hj), galoisAutₛ_toQuotient α j hj, galoisAutₛ_mk,
-    galoisAutₛ_toQuotient α (i * j) (hi.mul hj), aeval_X_pow_aeval_X_pow]
+  rw [galoisAut_toQuotient α i hi, galoisAut_aeval_toQuotient α j, galoisAutₛ_mk,
+    galoisAut_aeval_toQuotient α (i * j), aeval_X_pow_aeval_X_pow]
 
 /-! ## The subgroup `H` as an exponent set -/
 
@@ -102,8 +101,8 @@ def Hexp (α k : ℕ) : Finset ℕ :=
 
 /-- `|H| = d/k = 2^α / k` (Hachi [NOZ26, §3], from `|⟨4k+1⟩| = d/(2k)` and the `±` factor).
 
-The hypotheses match Hachi [NOZ26, §3, Claim 1] / [LS18, Lem 2.4]: `k` is a power of two
-(`hk2pow`) and divides `d/2`, i.e. `2k ∣ d = 2^α` (`hk`). Both are needed for `4k+1` to have
+The hypothesis matches Hachi [NOZ26, §3, Claim 1] / [LS18, Lem 2.4]: `2k ∣ d = 2^α`
+(`hk`), which also implies that `k` is a power of two. This ensures that `4k+1` has
 order exactly `d/(2k)` in `(Z/2^{α+1})ˣ`; the weaker `k ∣ 2^α` (= `k ∣ d`) does not suffice
 (e.g. `k = 2^α` gives `2k ∤ d`, so `2^α/(2k)` is not the true order).
 
@@ -112,9 +111,10 @@ Proof: the number-theoretic core `two_pow_dvd_four_pow_sub_one_iff` gives
 `range (2^{α-κ-1})` (`four_pow_injOn`). The Finset count then follows: the `±`-reflection is
 disjoint (mod-4 parity) and the two halves each have `2^{α-κ-1}` elements, giving
 `2·2^{α-κ-1} = 2^α/k`. -/
-theorem Hexp_card (α k : ℕ) (hk2pow : ∃ κ, k = 2 ^ κ) (hk : 2 * k ∣ 2 ^ α) :
+theorem Hexp_card (α k : ℕ) (hk : 2 * k ∣ 2 ^ α) :
     (Hexp α k).card = 2 ^ α / k := by
-  obtain ⟨κ, rfl⟩ := hk2pow
+  obtain ⟨κ, _, rfl⟩ := (Nat.dvd_prime_pow Nat.prime_two).mp
+    (dvd_trans (dvd_mul_left k 2) hk)
   have hκ : κ + 1 ≤ α :=
     (Nat.pow_dvd_pow_iff_le_right (by norm_num : (1 : ℕ) < 2)).mp
       (by rw [pow_succ, mul_comm]; exact hk)
@@ -130,7 +130,7 @@ theorem Hexp_card (α k : ℕ) (hk2pow : ∃ κ, k = 2 ^ κ) (hk : 2 * k ∣ 2 ^
     rw [show 2 * 2 ^ κ = 2 ^ (κ + 1) from by rw [pow_succ]; ring, Nat.pow_div hκ (by norm_num),
       Nat.sub_sub]
   have hpinj : Set.InjOn (fun a => (4 * 2 ^ κ + 1) ^ a % 2 ^ (α + 1))
-      ↑(Finset.range (2 ^ (α - κ - 1))) := four_pow_injOn κ α hκ
+      ↑(Finset.range (2 ^ (α - κ - 1))) := four_pow_injOn κ α
   have hqeq : ∀ a, (2 ^ (α + 1) - (4 * 2 ^ κ + 1) ^ a % 2 ^ (α + 1)) % 2 ^ (α + 1)
       = 2 ^ (α + 1) - (4 * 2 ^ κ + 1) ^ a % 2 ^ (α + 1) := fun a =>
     Nat.mod_eq_of_lt (by have := hplt a; have := hp4 a; omega)
@@ -182,10 +182,11 @@ Proof: the number-theoretic input (`two_pow_dvd_four_pow_sub_one_iff` ⟹
 permutation. For `g = 4k+1`, multiplication cyclically shifts the `(4k+1)^a` enumeration
 (`a ↦ a+1 mod 2^{α-κ-1}`) and the `±` part in tandem; for `g = conjExp` it swaps the two halves.
 Closed via injectivity + a subset/cardinality argument. -/
-theorem Hexp_generator_smul (α k g : ℕ) (hk2pow : ∃ κ, k = 2 ^ κ) (hk : 2 * k ∣ 2 ^ α)
+theorem Hexp_generator_smul (α k g : ℕ) (hk : 2 * k ∣ 2 ^ α)
     (hg : g = conjExp α ∨ g = genExp k) :
     (Hexp α k).image (fun i => (g * i) % 2 ^ (α + 1)) = Hexp α k := by
-  obtain ⟨κ, rfl⟩ := hk2pow
+  obtain ⟨κ, _, rfl⟩ := (Nat.dvd_prime_pow Nat.prime_two).mp
+    (dvd_trans (dvd_mul_left k 2) hk)
   have hκ : κ + 1 ≤ α := (Nat.pow_dvd_pow_iff_le_right (by norm_num : (1 : ℕ) < 2)).mp
     (by rw [pow_succ, mul_comm]; exact hk)
   have hmpos : 0 < 2 ^ (α + 1) := by positivity
@@ -231,7 +232,7 @@ theorem Hexp_generator_smul (α k g : ℕ) (hk2pow : ∃ κ, k = 2 ^ κ) (hk : 2
           Nat.ModEq.mul_left _ (Nat.mod_modEq _ _)
       _ = (4 * 2 ^ κ + 1) ^ (a + 1) := (pow_succ' _ _).symm
       _ ≡ (4 * 2 ^ κ + 1) ^ ((a + 1) % 2 ^ (α - κ - 1)) [MOD 2 ^ (α + 1)] :=
-          four_pow_mod_period κ α (a + 1) hκ
+          four_pow_mod_period κ α (a + 1)
   have hHlt : ∀ i ∈ Hexp α (2 ^ κ), i < 2 ^ (α + 1) := by
     intro i hi
     rw [Hexp, Finset.mem_biUnion] at hi

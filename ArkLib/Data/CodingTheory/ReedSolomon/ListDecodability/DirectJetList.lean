@@ -55,7 +55,7 @@ private theorem regularHighTaylorJets_card_le_dimensionSensitive
     {r : ℕ} (center : F) (Q : DifferentialPolynomial F r)
     (K k τ : ℕ) (hτ : TaylorExponentSufficient r K τ) (hK : r < K) (hkK : k ≤ K)
     {n A : ℕ} (domain : Fin n ↪ F) (received : Fin n → F)
-    (hkA : k ≤ A) (hAn : A ≤ n)
+    (hkA : k ≤ A)
     (S : Finset (Fin (r + 1) → F))
     (hS : ∀ jet ∈ S,
       aeval jet (initialJetEquation center Q) = 0 ∧
@@ -69,7 +69,7 @@ private theorem regularHighTaylorJets_card_le_dimensionSensitive
       (rationalTaylorCutDegreeBound Q τ : ℚ) ^ r *
         dimensionSensitiveIncidenceProduct n A k 1 r := by
   apply PolynomialDifferential.finite_regularHighCutJets_card_le_dimensionSensitive_of_exponent
-    center Q K k τ hτ domain received hkA hAn S
+    center Q K k τ hτ domain received hkA S
   · intro jet hjet
     exact ⟨(hS jet hjet).1, (hS jet hjet).2.1,
       fun l ↦ (hS jet hjet).2.2 l.val l.property l.val.isLt⟩
@@ -174,18 +174,10 @@ theorem finite_actualStage_regularSolutions_card_le_dimensionSensitive
     exact mul_nonneg
       (mul_nonneg (dimensionSensitiveIncidenceProduct_nonneg n A k 1 s.val)
         (Nat.cast_nonneg _)) (by positivity)
-  have hSnonempty : S.Nonempty := by
-    apply Finset.card_pos.mp
-    rw [← hcard]
-    exact Finset.card_pos.mpr (Finset.nonempty_iff_ne_empty.mpr hJempty)
-  obtain ⟨P, hP⟩ := hSnonempty
-  have hAn : A ≤ n := (hagreement P hP).trans (by
-    simpa using (Finset.card_le_univ
-      (Finset.univ.filter fun i ↦ P.eval (domain i) = received i)))
   let domainE : Fin n ↪ E := domain.trans ⟨f, f.injective⟩
   have hcount := regularHighTaylorJets_card_le_dimensionSensitive
     center QE K k (2 * K) (taylorExponentSufficient_two_mul s.val K) (by omega) hkK
-    domainE (fun i ↦ f (received i)) hkA hAn J
+    domainE (fun i ↦ f (received i)) hkA J
     (fun jet hjet ↦ ⟨(hJ jet hjet).1, (hJ jet hjet).2.1,
       fun l hkl hlK ↦ (hJ jet hjet).2.2.1 ⟨l, hlK⟩ hkl⟩)
     (fun jet hjet ↦ by

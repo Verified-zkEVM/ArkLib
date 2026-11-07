@@ -184,15 +184,6 @@ theorem closePolynomialSet_card_le_of_differential_equation
       ((((n * (1 + 2 * K * (ν - 1)) : ℕ) : ℚ) /
         ((A - k + 1 : ℕ) : ℚ)) ^ d) := by
   classical
-  by_cases hSempty : S = ∅
-  · subst S
-    simp only [Finset.card_empty, Nat.cast_zero]
-    positivity
-  obtain ⟨P, hP⟩ := Finset.nonempty_iff_ne_empty.mpr hSempty
-  have hAn : A ≤ n := (hS P hP).2.trans (by
-    simpa [polynomialAgreementSet] using
-      (Finset.card_filter_le (s := (Finset.univ : Finset (Fin n)))
-        (p := fun i ↦ P.eval (domain i) = received i)))
   let accepts : F[X] → Prop := fun P ↦ P ∈ closePolynomialSet domain received k A
   have hagreement : ∀ P, accepts P ↔
       P.degree < k ∧
@@ -200,7 +191,7 @@ theorem closePolynomialSet_card_le_of_differential_equation
     intro P
     simp [accepts, closePolynomialSet, polynomialAgreementSet]
   exact finite_solutions_card_le_sq_totalJetDegree_of_agreement Q K k ν hK hkK hQ hcast
-    hdegree domain received hk hkA hAn hbin accepts hagreement S hsol hS
+    hdegree domain received hk hkA hbin accepts hagreement S hsol hS
 
 open Classical in
 /-- A differential equation and positive agreement gap make the complete close-polynomial set
@@ -219,15 +210,6 @@ theorem closePolynomialSet_finite_and_ncard_le_of_differential_equation_and_gap
       ((closePolynomialSet domain received k A).ncard : ℝ) ≤
         (ν : ℝ) ^ 2 * (2 * ν / δ) ^ d * n ^ d := by
   have hfinite := closePolynomialSet_finite domain received hkA
-  rcases Nat.eq_zero_or_pos ν with rfl | hν
-  · have hterminal : highestActiveJet Q = none :=
-      (highestActiveJet_eq_none_iff Q).2 fun j hj ↦
-        (not_lt_of_ge ((jetDegree_le_total Q j).trans hdegree)) hj
-    have hempty : closePolynomialSet domain received k A = ∅ :=
-      Set.eq_empty_of_forall_notMem fun P hP ↦ hQ
-        (eq_zero_of_differentialSpecialization_eq_zero_of_highestActiveJet_eq_none
-          hterminal (hsound P hP))
-    simp [hempty]
   let accepts : F[X] → Prop := fun P ↦ P ∈ closePolynomialSet domain received k A
   have hagreement : ∀ P, accepts P ↔
       P.degree < k ∧ A ≤ (Finset.univ.filter fun i ↦
@@ -235,7 +217,7 @@ theorem closePolynomialSet_finite_and_ncard_le_of_differential_equation_and_gap
     intro P
     simp [accepts, closePolynomialSet, polynomialAgreementSet]
   have hbound := finite_solutions_card_le_sq_totalJetDegree_of_agreementGap
-    Q K k ν hK hkK hQ hdegree domain received hk hkA hAn hKn hν hgap hδ hchar
+    Q K k ν hK hkK hQ hdegree domain received hk hkA hAn hKn hgap hδ hchar
     accepts hagreement hfinite.toFinset
     (fun P hP ↦ hsound P (hfinite.mem_toFinset.mp hP))
     (fun P hP ↦ hfinite.mem_toFinset.mp hP)

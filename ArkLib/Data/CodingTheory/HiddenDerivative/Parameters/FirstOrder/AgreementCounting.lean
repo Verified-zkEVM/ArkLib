@@ -110,7 +110,7 @@ private theorem regularSolutions_card_le_of_agreement_orderZero
     (current : DifferentialPolynomial F 1) (hhighest : highestActiveJet current = some 0)
     (K k τ ν : ℕ) (hτ : TaylorExponentSufficient 0 K τ) (hk : 0 < k) (hkK : k ≤ K)
     {n A : ℕ} (domain : Fin n ↪ F) (received : Fin n → F)
-    (hkA : k ≤ A) (hAn : A ≤ n) (hdegree : jetTotalDegree current ≤ ν)
+    (hkA : k ≤ A) (hdegree : jetTotalDegree current ≤ ν)
     {D : ℕ} (regular : Finset (BoundedSolution current D))
     (haccept : ∀ solution ∈ regular,
       solution.polynomial.degree < k ∧
@@ -132,7 +132,7 @@ private theorem regularSolutions_card_le_of_agreement_orderZero
     rw [← jetTotalDegree_rename_jetPrefixEmbedding (0 : Fin 2) Q', hQ']
     exact hdegree
   have hstage := card_le_of_regular_solutions_agreement (E := AlgebraicClosure F)
-    Q' K k τ hτ (lt_of_lt_of_le hk hkK) hkK domain received hkA hAn polys
+    Q' K k τ hτ (lt_of_lt_of_le hk hkK) hkK domain received hkA polys
     (fun P hP ↦ by
       rcases Finset.mem_image.mp hP with ⟨solution, hsolution, rfl⟩
       exact (haccept solution hsolution).1)
@@ -280,7 +280,7 @@ theorem finite_regular_agreement_solutions_card_le_identityPair
     exact hjet
   have hcount := card_le_of_highTaylorCuts_of_agreement_sharp center QE htau (by omega)
     (fun i ↦ scalar (domain i)) (fun i ↦ scalar (received i))
-    (fun i j hij ↦ domain.injective (scalar.injective hij)) hA (by simpa using hAn) jets
+    (fun i j hij ↦ domain.injective (scalar.injective hij)) hA jets
     (fun jet hjetmem ↦ ⟨(hjets jet hjetmem).1, (hjets jet hjetmem).2.1,
       fun l hl hlK ↦ by omega⟩)
     (fun jet hjetmem ↦ by
@@ -432,7 +432,7 @@ theorem finite_firstOrder_agreement_solutions_card_le_tight_of_exponent
     rcases hs with hs | hs
     · have hcount := regularSolutions_card_le_of_agreement_orderZero stage.1
         (by simpa [hs] using hhighest) K k τ (jetTotalDegree stage.1) (hτ 0 (by omega))
-        hk hkK domain received hkA hAn le_rfl regular
+        hk hkK domain received hkA le_rfl regular
         (fun solution hsolution ↦ hregularAccepts solution hsolution)
         (fun solution hsolution ↦ by
           simpa [hs] using hregularSeparant solution hsolution)

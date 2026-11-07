@@ -757,12 +757,12 @@ def getConst (k : ℕ) (s : Fin (k + 1) → ℕ+) :
         ⟨(Fin.last (k + 1)), (by simpa using ())⟩)))
 
 /-- Project an initial-domain query to the input domain of folding round `i`. -/
-def queryPoint (k_le_n : (∑ j, (s j).1) ≤ n) (i : Fin (k + 1))
+def queryPoint (i : Fin (k + 1))
     (x : (ω.subdomain 0).toFinset) :
     (ω.subdomain (∑ j ∈ finRangeTo (k + 1) i.val, (s j).1)).toFinset :=
   ⟨x.val ^ (2 ^ (∑ j ∈ finRangeTo (k + 1) i.val, (s j).1)),
     CosetFftDomainClass.pow_mem_subdomain_of_mem_subdomain_0_toFinset
-      ((Finset.sum_le_sum_of_subset (t := Finset.univ) (by simp)).trans k_le_n) x.property⟩
+      x.property⟩
 
 open CosetFftDomain in
 open FftDomain in
@@ -773,7 +773,7 @@ def queryBlock (k_le_n : (∑ j, (s j).1) ≤ n) (i : Fin (k + 1))
     (x : (ω.subdomain 0).toFinset) :
     List (ω.subdomain (∑ j ∈ finRangeTo (k + 1) i.val, (s j).1)).toFinset :=
   (ω.toFftDomain.subdomain (n - (s i).1)).toList.map fun r ↦
-    ⟨r.val * (queryPoint s k_le_n i x).val, by
+    ⟨r.val * (queryPoint s i x).val, by
       rw [CosetFftDomainClass.mem_toFinset_iff_mem]
       apply mem_subdomain_of_mem_fft_subdomain_of_mem_subdomain (i := n - s i)
       · have hi : (s i).val ≤ n :=
@@ -786,22 +786,20 @@ def queryBlock (k_le_n : (∑ j, (s j).1) ≤ n) (i : Fin (k + 1))
           _ ≤ ∑ j, (s j).val := Finset.sum_le_sum_of_subset (by simp)
           _ ≤ n := k_le_n
       · exact FftDomain.mem_toFinset_iff_mem.mp r.property
-      · exact CosetFftDomain.mem_toFinset_iff_mem.mp (queryPoint s k_le_n i x).property⟩
+      · exact CosetFftDomain.mem_toFinset_iff_mem.mp (queryPoint s i x).property⟩
 
 /-- Read the purported folded value, using a point query except at the final polynomial. -/
-def queryNext (k_le_n : (∑ j, (s j).1) ≤ n) (p : CompPoly.CPolynomial F)
+def queryNext (p : CompPoly.CPolynomial F)
     (i : Fin (k + 1)) (x : (ω.subdomain 0).toFinset) :
     OracleComp [FinalOracleStatement s ω]ₒ F :=
   if h : i.val < k then
     queryCodeword k s (i := ⟨i.val + 1, by omega⟩)
-      ⟨(queryPoint s k_le_n i x).val ^ (2 ^ (s i).val), by
+      ⟨(queryPoint s i x).val ^ (2 ^ (s i).val), by
         rw [sum_finRangeTo_add_one, CosetFftDomainClass.mem_toFinset_iff_mem]
-        apply CosetFftDomainClass.pow_mem_of_mem
+        exact CosetFftDomainClass.pow_mem_of_mem
           (h := CosetFftDomainClass.mem_toFinset_iff_mem.mp
-            (queryPoint s k_le_n i x).property)
-        rw [← sum_finRangeTo_add_one]
-        exact (Finset.sum_le_sum_of_subset (t := Finset.univ) (by simp)).trans k_le_n⟩
-  else pure (p.eval ((queryPoint s k_le_n i x).val ^ (2 ^ (s (Fin.last k)).val)))
+            (queryPoint s i x).property)⟩
+  else pure (p.eval ((queryPoint s i x).val ^ (2 ^ (s (Fin.last k)).val)))
 
 /-- Check one folding transition by interpolating the queried block at challenge `α`. -/
 def checkRound (k_le_n : (∑ j, (s j).1) ≤ n) (p : CompPoly.CPolynomial F)
@@ -810,7 +808,7 @@ def checkRound (k_le_n : (∑ j, (s j).1) ≤ n) (p : CompPoly.CPolynomial F)
   let pts ← (queryBlock s k_le_n i x).mapM fun q ↦ do
     let v ← queryCodeword k s q
     pure (q.val, v)
-  let β ← queryNext s k_le_n p i x
+  let β ← queryNext s p i x
   pure (RoundConsistency.roundConsistencyCheck α pts.get β)
 
 /-- The query verifier's computational core only reads the committed oracle history.

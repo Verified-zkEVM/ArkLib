@@ -161,7 +161,7 @@ theorem exists_polynomial_agree_traceLine_eq_half {m : ℕ} (hm : 3 ≤ m)
     change (Finset.univ.filter fun x : F ↦
       modifiedPowerWord m x + z * reciprocalWord τ x =
         (binaryTraceQuotient m s).eval x).card = binaryTraceTopDegree m
-    rw [hsets, binaryTraceQuotient_agreement_card hm hcard hs]
+    rw [hsets, binaryTraceQuotient_agreement_card hcard hs]
     exact (binaryTraceTopDegree_eq_card_div_two (F := F) (by omega) hcard).symm
 
 end FiniteBinaryField

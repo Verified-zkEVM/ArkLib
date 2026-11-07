@@ -103,12 +103,12 @@ def carrierDecomp {base : R} (ddCarrier : DigitDecomposition base messageDigits)
   gadgetDecompose Φ ddCarrier (carrier Φ base a s)
 
 /-- Roundtrip `w = G_{blocks} *ᵥ ŵ` (Hachi Eq. (17)). -/
-theorem carrier_eq_gadget {base : R} (hd : 0 < messageDigits) (h1 : 1 ≤ Φ.φ.natDegree)
+theorem carrier_eq_gadget {base : R}
     (ddCarrier : DigitDecomposition base messageDigits) (a : PolyVec (Rq Φ) messageRows)
     (s : PolyVec (PolyVec (Rq Φ) (messageRows * messageDigits)) blocks) :
     carrier Φ base a s
       = gadgetMatrix Φ base blocks messageDigits *ᵥ carrierDecomp Φ ddCarrier a s := by
-  rw [carrierDecomp]; exact (gadgetDecompose_lawful Φ hd h1 ddCarrier (carrier Φ base a s)).symm
+  rw [carrierDecomp]; exact (gadgetDecompose_lawful Φ ddCarrier (carrier Φ base a s)).symm
 
 /-- The honest short carrier commitment `v := D ŵ` (Hachi Eq. (16), Figure 3 round 0). -/
 def carrierCommit {dRows : Nat} (D : Simple.PublicParams Φ dRows (blocks * messageDigits))
@@ -139,10 +139,10 @@ def zDecomp {n zDigits : Nat} {base : R} (ddZ : DigitDecomposition base zDigits)
   gadgetDecompose Φ ddZ z
 
 /-- Roundtrip `z = J *ᵥ ẑ` (the verifier's reconstruction of `z` from `ẑ`, Eq. (20)). -/
-theorem z_eq_jMatrix {n zDigits : Nat} {base : R} (hd : 0 < zDigits)
-    (h1 : 1 ≤ Φ.φ.natDegree) (ddZ : DigitDecomposition base zDigits) (z : PolyVec (Rq Φ) n) :
+theorem z_eq_jMatrix {n zDigits : Nat} {base : R}
+    (ddZ : DigitDecomposition base zDigits) (z : PolyVec (Rq Φ) n) :
     z = jMatrix Φ base n zDigits *ᵥ zDecomp Φ ddZ z := by
-  rw [zDecomp, jMatrix]; exact (gadgetDecompose_lawful Φ hd h1 ddZ z).symm
+  rw [zDecomp, jMatrix]; exact (gadgetDecompose_lawful Φ ddZ z).symm
 
 end JGadget
 

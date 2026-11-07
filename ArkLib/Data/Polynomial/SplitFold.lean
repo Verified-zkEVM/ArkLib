@@ -178,15 +178,12 @@ lemma folding_polynomial_eq_sum_splitNth {𝔽 : Type} [Field 𝔽] {f : Polynom
   FoldingPolynomial.foldingPolynomial (X ^ n) f =
     ∑ i, C (splitNth f n i) * (X ^ i.val) := by
   symm
-  apply FoldingPolynomial.folding_polynomial_is_unique'
+  apply FoldingPolynomial.folding_polynomial_is_unique
   · conv_rhs => rw [eq_sum_splitNth (f := f) (inst := inst)]
     rw [Polynomial.map_sum, Polynomial.eval_finsetSum]
     aesop
       (add simp [comp])
       (add safe (by ac_nf))
-  · aesop
-      (add simp [Bivariate.degreeX, splitNth_degree_le])
-      (add safe natDegree_sum_le_of_forall_le)
   · simp only [Bivariate.natDegreeY, natDegree_pow, natDegree_X, mul_one]
     exact Nat.lt_of_le_pred (by aesop (add unsafe Nat.zero_lt_of_ne_zero)) <| by
       exact Polynomial.natDegree_sum_le_of_forall_le _ _ <| fun i _ ↦

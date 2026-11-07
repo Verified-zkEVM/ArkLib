@@ -497,16 +497,13 @@ theorem transitionExtractor_pointList_and_affine [Nonempty ι]
       (encoder k s hdvd domain)
       (ReedSolomon.Interleaved.irsCode domain k s)
       (encoder_range k s hdvd domain)]
-    · refine ⟨nodes, hnodes, fun x hx ↦ ⟨?_, ?_⟩⟩
-      · rw [hmsgs 0]
-        have hp := congrFun (hproj 0) ⟨x, hx⟩
-        simpa [LinearCode.projectedWord] using hp
-      · rw [hmsgs 1]
-        have hp := congrFun (hproj 1) ⟨x, hx⟩
-        simpa [LinearCode.projectedWord] using hp
-    · exact lt_of_lt_of_le hδ (by
-        exact_mod_cast (Code.minRelHammingDistCode_le_one
-          (C := (ReedSolomon.code domain (k / s) : Set (ι → F)))))
+    refine ⟨nodes, hnodes, fun x hx ↦ ⟨?_, ?_⟩⟩
+    · rw [hmsgs 0]
+      have hp := congrFun (hproj 0) ⟨x, hx⟩
+      simpa [LinearCode.projectedWord] using hp
+    · rw [hmsgs 1]
+      have hp := congrFun (hproj 1) ⟨x, hx⟩
+      simpa [LinearCode.projectedWord] using hp
   · have hlinear := hstate.1
     rw [hcombMsg] at hlinear
     simpa only [Pi.add_apply, Pi.smul_apply, smul_eq_mul, add_mul,
@@ -583,9 +580,6 @@ theorem exactGammaFailure_prob_le [SampleableType F] [Nonempty ι]
     have hcast : (Smsg.card : ENat) ≤ Code.Lambda Cint (δ : ℝ) :=
       le_trans (by exact_mod_cast hncard) hencard
     rwa [← ENat.natCast_toNat hfinite, Nat.cast_le] at hcast
-  have hδ1 : δ < 1 := lt_of_lt_of_le hδ (by
-    exact_mod_cast (Code.minRelHammingDistCode_le_one
-      (C := (ReedSolomon.code domain (k / s) : Set (ι → F)))))
   have hcards : (Finset.univ.filter (fun γ : F ↦
       ExactGammaFailure k s hdvd domain δ stmtIn γ ∧
         ¬ IsMCA (AffineLineGenerator F) C γ
@@ -615,7 +609,7 @@ theorem exactGammaFailure_prob_le [SampleableType F] [Nonempty ι]
         obtain ⟨S, hScard, hagree⟩ :=
           (encStack_mem_closeCodewordsRel_iff
             (encoder k s hdvd domain) C
-            (encoder_range k s hdvd domain) hδ1 (M 0, M 1)).mp hlist
+            (encoder_range k s hdvd domain) (M 0, M 1)).mp hlist
         refine ⟨fun i ↦ ?_, S, hScard, fun i x hx ↦ ?_⟩
         · fin_cases i
           · exact hlin.1

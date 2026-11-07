@@ -34,6 +34,7 @@ specialized separant bounds the number of exceptional points. The resulting coun
 hypotheses.
 
 All counts use truncated subtraction, so no comparison between `H` and `q` is needed.
+The bounds also hold over infinite domains: `Nat.card F = 0` makes both sides zero.
 
 ## Main statements
 
@@ -59,8 +60,8 @@ open Finset Polynomial
 
 variable {F : Type*} {d : ℕ}
 
-/-- **Witness counting with arbitrary exceptional sets.** Let `F` be a finite domain with
-`q = Nat.card F` elements and `roots` a finite set of solutions of `Q = 0`. Suppose that for each
+/-- **Witness counting with arbitrary exceptional sets.** Let `F` be a domain, write
+`q = Nat.card F`, and let `roots` be a finite set of solutions of `Q = 0`. Suppose that for each
 solution `P` at most `H` points, collected in `bad P`, fail to be regular witnesses, where `a` is a
 regular witness when the specialized separant in `Y_s` does not vanish at `a`. Suppose also that at
 every point `a`, the Hasse jet at `a` is injective on the solutions having `a` as a regular witness.
@@ -70,7 +71,7 @@ Each point is a regular witness for at most `jetDegree Q s * q ^ d` solutions, b
 are distinct regular jets of `Q` at that point; each solution has at least `q - H` regular
 witnesses. The jet-injectivity hypothesis is what turns the count of regular jets into a count of
 solutions; without it, many solutions may share a jet. -/
-theorem card_mul_sub_le_of_card_bad_le [CommRing F] [IsDomain F] [Finite F]
+theorem card_mul_sub_le_of_card_bad_le [CommRing F] [IsDomain F]
     (Q : DifferentialPolynomial F d) (s : Fin (d + 1)) (roots : Finset F[X])
     (bad : F[X] → Finset F) (H : ℕ)
     (hsolution : ∀ P ∈ roots, differentialSpecialization Q P = 0)
@@ -81,6 +82,8 @@ theorem card_mul_sub_le_of_card_bad_le [CommRing F] [IsDomain F] [Finite F]
       {P | P ∈ roots ∧ (differentialSpecialization (separant Q s) P).eval a ≠ 0}) :
     roots.card * (Nat.card F - H) ≤ Nat.card F * (jetDegree Q s * Nat.card F ^ d) := by
   classical
+  cases finite_or_infinite F
+  case inr => simp [Nat.card_eq_zero_of_infinite]
   have := Fintype.ofFinite F
   rw [Nat.card_eq_fintype_card, ← card_univ]
   refine card_mul_sub_le_card_mul_of_card_bad_le
@@ -102,7 +105,7 @@ then `#roots * (q - H) ≤ q * (jetDegree Q s * q ^ d)` with `q = Nat.card F`.
 The nonvanishing hypothesis is needed: a solution whose specialized separant is zero has no
 regular witness at all, while Mathlib's root multiset of the zero polynomial is empty, so the
 empty exceptional set would not cover its points. -/
-theorem card_mul_sub_le_of_natDegree_separant_le [CommRing F] [IsDomain F] [Finite F]
+theorem card_mul_sub_le_of_natDegree_separant_le [CommRing F] [IsDomain F]
     (Q : DifferentialPolynomial F d) (s : Fin (d + 1)) (roots : Finset F[X]) (H : ℕ)
     (hsolution : ∀ P ∈ roots, differentialSpecialization Q P = 0)
     (hseparant : ∀ P ∈ roots, differentialSpecialization (separant Q s) P ≠ 0)
@@ -128,7 +131,7 @@ This is `card_mul_sub_le_of_natDegree_separant_le` with the separant degree boun
 `D` into `∂Q/∂Y_s` gives degree at most the weighted degree of `Q` minus the weight `D - s` of
 `Y_s`. The jet-injectivity hypothesis is left open; `card_mul_sub_le_of_isHighestActiveJet`
 discharges it for regular solutions. -/
-theorem card_mul_sub_le_of_degree_le [CommRing F] [IsDomain F] [Finite F]
+theorem card_mul_sub_le_of_degree_le [CommRing F] [IsDomain F]
     (Q : DifferentialPolynomial F d) (s : Fin (d + 1)) {D H : ℕ} (roots : Finset F[X])
     (hsolution : ∀ P ∈ roots, differentialSpecialization Q P = 0)
     (hdegree : ∀ P ∈ roots, P.degree ≤ D)
@@ -170,7 +173,7 @@ binomial hypothesis cannot be dropped: over `ZMod 2`, the equation `y' = 0` with
 three solutions `1`, `X ^ 2` and `1 + X ^ 2`, every other hypothesis holds with `H = 0`, and
 `3 * 2 > 2 * (1 * 2)`; here `(2 choose 1) = 0`. Solutions with zero specialized separant are
 handled by the singular recursion, not by this theorem. -/
-theorem card_mul_sub_le_of_isHighestActiveJet [CommRing F] [IsDomain F] [Finite F]
+theorem card_mul_sub_le_of_isHighestActiveJet [CommRing F] [IsDomain F]
     (Q : DifferentialPolynomial F d) {s : Fin (d + 1)} (hs : IsHighestActiveJet Q s)
     {D H : ℕ} (roots : Finset F[X])
     (hsolution : ∀ P ∈ roots, differentialSpecialization Q P = 0)
@@ -193,7 +196,7 @@ theorem card_mul_sub_le_of_isHighestActiveJet [CommRing F] [IsDomain F] [Finite 
 most `D`: with the same hypotheses on `Q`, the finite set `roots` of solutions with nonzero
 specialized separant in `Y_s` satisfies `#roots * (q - H) ≤ q * (jetDegree Q s * q ^ d)`. -/
 theorem BoundedSolution.card_mul_sub_le_of_isHighestActiveJet [CommRing F] [IsDomain F]
-    [Finite F] (Q : DifferentialPolynomial F d) {s : Fin (d + 1)} (hs : IsHighestActiveJet Q s)
+    (Q : DifferentialPolynomial F d) {s : Fin (d + 1)} (hs : IsHighestActiveJet Q s)
     {D H : ℕ} (roots : Finset (BoundedSolution Q D))
     (hbinom : ∀ k, 0 < k → k + s.val ≤ D → ((k + s.val).choose s.val : F) ≠ 0)
     (hweight : differentialWeightedDegree D Q - (D - s.val) ≤ H)

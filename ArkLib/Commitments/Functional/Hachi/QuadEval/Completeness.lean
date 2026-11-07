@@ -46,8 +46,8 @@ public import VCVio.OracleComp.QueryTracking.ProgrammingOracle
   `…_coeff_valMinAbs_mem_of_digit_mem` for the box), and the execution half
   `quadEvalReduction_run_support`, joined by `Reduction.perfectCompleteness_of_run_support`.
 
-  Hypotheses throughout are the two gadget round-trips (`0 < messageDigits`, `0 < zDigits`,
-  `1 ≤ deg φ`), the digit range bounds, and — on the `z` side — `hzb : 2ʳ·ω·msgBound ≤ zBound`
+  Hypotheses throughout are the digit range bounds and — on the `z` side —
+  `hzb : 2ʳ·ω·msgBound ≤ zBound`
   together with the modulus' product bound `Rq.HasMulLInftyBound`
   (`powTwoCyclotomic_hasMulLInftyBound` at the Hachi ring). `relIn`'s `βSq` and `κ` play no part in
   the honest direction. `SampleableType` is needed only so that execution can draw the challenge.
@@ -136,7 +136,6 @@ theorem honestRows_of_relIn
       dRows)
     {base : ZMod q} (ddCarrier : DigitDecomposition base messageDigits)
     (ddZ : BoundedDigitDecomposition base zDigits zBound)
-    (hmd : 0 < messageDigits) (_hτ : 0 < zDigits) (hdeg : 1 ≤ Φ.φ.natDegree)
     {βSq γ κ : ℕ}
     (stmt : QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows)
@@ -160,7 +159,7 @@ theorem honestRows_of_relIn
   have hcarrier : Hachi.carrier Φ base stmt.avec wit.message
       = gadgetMatrix Φ base (2 ^ r) messageDigits *ᵥ
         Hachi.carrierDecomp Φ ddCarrier stmt.avec wit.message :=
-    Hachi.carrier_eq_gadget Φ hmd hdeg ddCarrier stmt.avec wit.message
+    Hachi.carrier_eq_gadget Φ ddCarrier stmt.avec wit.message
   have hz : Hachi.jMatrix Φ base ((2 ^ m) * messageDigits) zDigits *ᵥ
       Hachi.zDecompBounded Φ ddZ (honestZ Φ wit c) = honestZ Φ wit c :=
     (Hachi.z_eq_jMatrix_bounded Φ ddZ (honestZ Φ wit c) hzshort).symm
@@ -206,7 +205,6 @@ theorem mem_relOut_of_relIn
       dRows)
     {base : ZMod q} (ddCarrier : DigitDecomposition base messageDigits)
     (ddZ : BoundedDigitDecomposition base zDigits zBound)
-    (hmd : 0 < messageDigits) (hτ : 0 < zDigits) (hdeg : 1 ≤ Φ.φ.natDegree)
     {βSq γ κ : ℕ}
     (hddCarrier : ∀ (x : ZMod q) (e : Fin messageDigits),
       (ddCarrier.digit x e).valMinAbs.natAbs ≤ γ)
@@ -221,7 +219,7 @@ theorem mem_relOut_of_relIn
         honestComputeResp Φ ddCarrier ddZ stmt wit c)
       ∈ relOut (zDigits := zDigits) Φ pp base ω γ := by
   obtain ⟨h1, h2, h3, h4, h5⟩ :=
-    honestRows_of_relIn Φ pp ddCarrier ddZ hmd hτ hdeg stmt wit h c hzshort
+    honestRows_of_relIn Φ pp ddCarrier ddZ stmt wit h c hzshort
   refine ⟨h1, h2, h3, h4, h5, ?_, h.1.outer_short, ?_⟩
   · -- c6, `ŵ`: an honest digit decomposition is `ℓ∞`-bounded by its digit bound.
     exact gadgetDecompose_vecLInftyNorm_le_of_digit_le Φ ddCarrier hddCarrier _
@@ -295,7 +293,6 @@ theorem mem_paperRelOut_of_relIn
       dRows)
     {base : ZMod q} (ddCarrier : DigitDecomposition base messageDigits)
     (ddZ : BoundedDigitDecomposition base zDigits zBound)
-    (hmd : 0 < messageDigits) (hτ : 0 < zDigits) (hdeg : 1 ≤ Φ.φ.natDegree)
     {βSq γ κ b : ℕ}
     (hddCarrier : ∀ (x : ZMod q) (e : Fin messageDigits),
       -((b / 2 : ℕ) : ℤ) ≤ (ddCarrier.digit x e).valMinAbs ∧
@@ -313,7 +310,7 @@ theorem mem_paperRelOut_of_relIn
         honestComputeResp Φ ddCarrier ddZ stmt wit c)
       ∈ paperRelOut (zDigits := zDigits) Φ pp base ω b := by
   obtain ⟨h1, h2, h3, h4, h5⟩ :=
-    honestRows_of_relIn Φ pp ddCarrier ddZ hmd hτ hdeg stmt wit h.1 c hzshort
+    honestRows_of_relIn Φ pp ddCarrier ddZ stmt wit h.1 c hzshort
   refine ⟨h1, h2, h3, h4, h5, ?_, h.2, ?_⟩
   · exact fun j k hk =>
       gadgetDecompose_coeff_valMinAbs_mem_of_digit_mem Φ ddCarrier hddCarrier _ j hk
@@ -419,7 +416,6 @@ lemma quadEvalReduction_run_support
       dRows)
     {base : ZMod q} (ddCarrier : DigitDecomposition base messageDigits)
     (ddZ : BoundedDigitDecomposition base zDigits zBound)
-    (hdir : (qePSpec Φ dRows ω r).dir 1 = .V_to_P)
     (X : QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows)
     (w : QuadEvalWitness Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits) :
     ∀ x ∈ support ((quadEvalReduction (oSpec := oSpec) (zDigits := zDigits) Φ pp
@@ -448,7 +444,7 @@ lemma quadEvalReduction_run_support
       = InnerOuter.prover Φ
           (QuadEvalWitness Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits)
           (honestComputeV Φ pp ddCarrier) (honestComputeResp Φ ddCarrier ddZ) from rfl,
-    prover_run_eq Φ _ _ X w hdir, mem_support_bind_iff] at hpr
+    prover_run_eq Φ _ _ X w rfl, mem_support_bind_iff] at hpr
   obtain ⟨ch, -, hpr⟩ := hpr
   rw [mem_support_pure_iff] at hpr
   subst hpr
@@ -492,7 +488,6 @@ theorem quadEvalReduction_perfectCompleteness
     {base : ZMod q} (ddCarrier : DigitDecomposition base messageDigits)
     (ddZ : BoundedDigitDecomposition base zDigits zBound)
     (hmul : Rq.HasMulLInftyBound Φ)
-    (hmd : 0 < messageDigits) (hτ : 0 < zDigits) (hdeg : 1 ≤ Φ.φ.natDegree)
     {βSq γ κ msgBound : ℕ} (hzb : 2 ^ r * ω * msgBound ≤ zBound)
     (hddCarrier : ∀ (x : ZMod q) (e : Fin messageDigits),
       (ddCarrier.digit x e).valMinAbs.natAbs ≤ γ)
@@ -502,9 +497,9 @@ theorem quadEvalReduction_perfectCompleteness
       (relInMsgShort Φ pp base βSq γ κ msgBound) (relOut (zDigits := zDigits) Φ pp base ω γ) := by
   apply Reduction.perfectCompleteness_of_run_support
   intro X w hIn x hx
-  obtain ⟨ch, rfl⟩ := quadEvalReduction_run_support Φ pp ddCarrier ddZ rfl X w x hx
+  obtain ⟨ch, rfl⟩ := quadEvalReduction_run_support Φ pp ddCarrier ddZ X w x hx
   exact ⟨_, rfl,
-    mem_relOut_of_relIn Φ pp ddCarrier ddZ hmd hτ hdeg hddCarrier hddZ X w hIn.1 ch
+    mem_relOut_of_relIn Φ pp ddCarrier ddZ hddCarrier hddZ X w hIn.1 ch
       (le_trans (vecLInftyNorm_honestZ_le Φ hmul w ch hIn.2) hzb), rfl⟩
 
 /-- **Ball-relaxed completeness at the τ = 5 parameterization**: balanced message digits (full
@@ -524,15 +519,15 @@ theorem quadEvalReduction_perfectCompleteness_boundedBalancedDigits
     {b : ℕ} (hb : 1 < b) (hqm : q ≤ b ^ messageDigits)
     (hcap : zBound ≤ balancedDigitCapacity b zDigits)
     (hbq : b ≤ q / 2) (hzb : 2 ^ r * ω * (b / 2) ≤ zBound)
-    (hmd : 0 < messageDigits) (hτ : 0 < zDigits) (hdeg : 1 ≤ Φ.φ.natDegree) {βSq κ : ℕ} :
+    {βSq κ : ℕ} :
     (quadEvalReduction (oSpec := oSpec) (zDigits := zDigits) (ω := ω) Φ pp
         (balancedZmodDigitDecomposition b messageDigits hb hqm)
-        (boundedBalancedZmodDigitDecomposition b zDigits zBound hb
+        (boundedBalancedZmodDigitDecomposition b zDigits zBound
           hcap)).perfectCompleteness init impl
       (relInMsgShort Φ pp (b : ZMod q) βSq b κ (b / 2))
       (relOut (zDigits := zDigits) Φ pp (b : ZMod q) ω b) :=
-  quadEvalReduction_perfectCompleteness Φ init impl pp _ _ hmul hmd hτ hdeg hzb
-    (fun x e => le_trans (balancedZmodDigit_natAbs_le hb hqm hbq x e) (Nat.div_le_self b 2))
+  quadEvalReduction_perfectCompleteness Φ init impl pp _ _ hmul hzb
+    (fun x e => le_trans (balancedZmodDigit_natAbs_le hb hqm x e) (Nat.div_le_self b 2))
     (fun x e => le_trans (boundedBalancedZmodDigit_natAbs_le hb hbq x e) (Nat.div_le_self b 2))
 
 omit [NeZero q] in
@@ -553,7 +548,6 @@ theorem quadEvalReduction_perfectCompleteness_paperRelOut
     {base : ZMod q} (ddCarrier : DigitDecomposition base messageDigits)
     (ddZ : BoundedDigitDecomposition base zDigits zBound)
     (hmul : Rq.HasMulLInftyBound Φ)
-    (hmd : 0 < messageDigits) (hτ : 0 < zDigits) (hdeg : 1 ≤ Φ.φ.natDegree)
     {βSq γ κ b msgBound : ℕ} (hzb : 2 ^ r * ω * msgBound ≤ zBound)
     (hddCarrier : ∀ (x : ZMod q) (e : Fin messageDigits),
       -((b / 2 : ℕ) : ℤ) ≤ (ddCarrier.digit x e).valMinAbs ∧
@@ -567,9 +561,9 @@ theorem quadEvalReduction_perfectCompleteness_paperRelOut
       (paperRelOut (zDigits := zDigits) Φ pp base ω b) := by
   apply Reduction.perfectCompleteness_of_run_support
   intro X w hIn x hx
-  obtain ⟨ch, rfl⟩ := quadEvalReduction_run_support Φ pp ddCarrier ddZ rfl X w x hx
+  obtain ⟨ch, rfl⟩ := quadEvalReduction_run_support Φ pp ddCarrier ddZ X w x hx
   exact ⟨_, rfl,
-    mem_paperRelOut_of_relIn Φ pp ddCarrier ddZ hmd hτ hdeg hddCarrier hddZ X w hIn.1 ch
+    mem_paperRelOut_of_relIn Φ pp ddCarrier ddZ hddCarrier hddZ X w hIn.1 ch
       (le_trans (vecLInftyNorm_honestZ_le Φ hmul w ch hIn.2) hzb), rfl⟩
 
 /-- **Paper-exact perfect completeness at the τ = 5 parameterization** — Figure 3's honest prover,
@@ -590,14 +584,14 @@ theorem quadEvalReduction_perfectCompleteness_boundedBalancedDigits_paperRelOut
     {b : ℕ} (hb : 1 < b) (hqm : q ≤ b ^ messageDigits)
     (hcap : zBound ≤ balancedDigitCapacity b zDigits)
     (hbq : b ≤ q / 2) (hzb : 2 ^ r * ω * (b / 2) ≤ zBound)
-    (hmd : 0 < messageDigits) (hτ : 0 < zDigits) (hdeg : 1 ≤ Φ.φ.natDegree) {βSq γ κ : ℕ} :
+    {βSq γ κ : ℕ} :
     (quadEvalReduction (oSpec := oSpec) (zDigits := zDigits) (ω := ω) Φ pp
         (balancedZmodDigitDecomposition b messageDigits hb hqm)
-        (boundedBalancedZmodDigitDecomposition b zDigits zBound hb
+        (boundedBalancedZmodDigitDecomposition b zDigits zBound
           hcap)).perfectCompleteness init impl
       (relInBoxMsgShort Φ pp (b : ZMod q) βSq γ κ b (b / 2))
       (paperRelOut (zDigits := zDigits) Φ pp (b : ZMod q) ω b) :=
-  quadEvalReduction_perfectCompleteness_paperRelOut Φ init impl pp _ _ hmul hmd hτ hdeg hzb
+  quadEvalReduction_perfectCompleteness_paperRelOut Φ init impl pp _ _ hmul hzb
     (fun x e => balancedZmodDigit_valMinAbs_mem hb hqm hbq x e)
     (fun x e => boundedBalancedZmodDigit_valMinAbs_mem hb hbq x e)
 
