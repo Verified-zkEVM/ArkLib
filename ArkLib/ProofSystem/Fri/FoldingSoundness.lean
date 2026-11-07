@@ -43,7 +43,7 @@ variable {F : Type} [Field F] [DecidableEq F] {n k d : ℕ}
 /-- Agreement of all coefficient words with smaller RS codewords lifts to agreement with a
 single original RS codeword on every block above the agreement set. -/
 theorem exists_codeword_agree_of_coefficients
-    (domain : SmoothCosetFftDomain n F) (f : Fin (2 ^ n) → F) (hd : 0 < d)
+    (domain : SmoothCosetFftDomain n F) (f : Fin (2 ^ n) → F)
     (T : Finset (Fin (2 ^ (n - k))))
     (h : ∀ j : Fin (2 ^ k),
       projectedWord (fun x ↦ foldWordAuxCoeff domain f k j (domain.subdomain k x)) T ∈
@@ -51,7 +51,22 @@ theorem exists_codeword_agree_of_coefficients
     ∃ u ∈ code domain (2 ^ k * d),
       ∀ i x, x ∈ T → domain i ^ (2 ^ k) = domain.subdomain k x → u i = f i := by
   classical
-  let : NeZero d := ⟨by omega⟩
+  by_cases hd : d = 0
+  · subst d
+    have hzero (j : Fin (2 ^ k)) (x) (hx : x ∈ T) :
+        foldWordAuxCoeff domain f k j (domain.subdomain k x) = 0 := by
+      obtain ⟨u, hu, heq⟩ := (mem_projectedCodeSubmod_iff _ _ _).mp (h j)
+      rw [code_zero] at hu
+      have hu0 : u = 0 := hu
+      rw [hu0] at heq
+      exact congrFun heq ⟨x, hx⟩
+    refine ⟨0, (code (domain : Fin (2 ^ n) ↪ F) (2 ^ k * 0)).zero_mem, ?_⟩
+    intro i x hx hix
+    change 0 = f i
+    rw [← foldValue_pow_x_k (domain := domain) (f := f) (k := k) (i := i),
+      foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha, hix]
+    simp [hzero _ _ hx]
+  let : NeZero d := ⟨hd⟩
   have hpoly : ∀ j : Fin (2 ^ k), ∃ p : F[X], p.natDegree < d ∧
       ∀ x ∈ T, p.eval (domain.subdomain k x) =
         foldWordAuxCoeff domain f k j (domain.subdomain k x) := by
@@ -97,7 +112,7 @@ def FoldingAgreementFailure (domain : SmoothCosetFftDomain n F)
 
 /-- The folding bad event is contained in the existing MCA event for the coefficient words. -/
 theorem isMCA_of_foldingAgreementFailure [Fintype F]
-    (domain : SmoothCosetFftDomain n F) (f : Fin (2 ^ n) → F) (hd : 0 < d)
+    (domain : SmoothCosetFftDomain n F) (f : Fin (2 ^ n) → F)
     (θ : ℝ) (α : F) (h : FoldingAgreementFailure domain f k d θ α) :
     IsMCA (fun α (j : Fin (2 ^ k)) ↦ α ^ (j : ℕ)) (code (domain.subdomain k) d) α
       (fun j x ↦ foldWordAuxCoeff domain f k j (domain.subdomain k x)) θ := by
@@ -110,17 +125,17 @@ theorem isMCA_of_foldingAgreementFailure [Fintype F]
       foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha]
     exact Finset.sum_congr rfl fun _ _ ↦ mul_comm _ _
   · by_contra! h
-    exact hbad (exists_codeword_agree_of_coefficients domain f hd T h)
+    exact hbad (exists_codeword_agree_of_coefficients domain f T h)
 
 /-- FRI's single-fold soundness error is bounded by ArkLib's MCA error value. The bound is
 uniform over all agreement sets and does not depend on the prover's next message. -/
 theorem foldingAgreementFailure_prob_le [Fintype F] [SampleableType F]
-    (domain : SmoothCosetFftDomain n F) (f : Fin (2 ^ n) → F) (hd : 0 < d) (θ : ℝ) :
+    (domain : SmoothCosetFftDomain n F) (f : Fin (2 ^ n) → F) (θ : ℝ) :
     Pr{let α ←$ᵗ F}[FoldingAgreementFailure domain f k d θ α] ≤
       mcaError (fun α (j : Fin (2 ^ k)) ↦ α ^ (j : ℕ))
         (code (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) d) θ := by
   apply le_trans (prEvent_mono _ _ _
-    (isMCA_of_foldingAgreementFailure domain f hd θ))
+    (isMCA_of_foldingAgreementFailure domain f θ))
   exact le_iSup (fun U ↦ Pr{let α ←$ᵗ F}[
     IsMCA (fun α (j : Fin (2 ^ k)) ↦ α ^ (j : ℕ))
       (code (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) d) α U θ]) _
@@ -128,11 +143,11 @@ theorem foldingAgreementFailure_prob_le [Fintype F] [SampleableType F]
 /-- The folding bound stated using the existing named powers generator, whose parameter is
 the largest exponent (one less than the number of coefficient words). -/
 theorem foldingAgreementFailure_prob_le_powers [Fintype F] [SampleableType F]
-    (domain : SmoothCosetFftDomain n F) (f : Fin (2 ^ n) → F) (hd : 0 < d) (θ : ℝ) :
+    (domain : SmoothCosetFftDomain n F) (f : Fin (2 ^ n) → F) (θ : ℝ) :
     Pr{let α ←$ᵗ F}[FoldingAgreementFailure domain f k d θ α] ≤
       mcaError (univariatePowersGenerator F (2 ^ k - 1))
         (code (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) d) θ := by
-  have h := foldingAgreementFailure_prob_le (k := k) domain f hd θ
+  have h := foldingAgreementFailure_prob_le (k := k) (d := d) domain f θ
   have heq : ∀ m : ℕ, 0 < m →
       mcaError (fun α (j : Fin m) ↦ α ^ (j : ℕ))
           (code (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) d) θ =
@@ -146,11 +161,11 @@ theorem foldingAgreementFailure_prob_le_powers [Fintype F] [SampleableType F]
 
 /-- Any existing certified MCA bound for powers instantiates the FRI folding error. -/
 theorem foldingAgreementFailure_prob_le_of_isMCAGenerator [Fintype F] [SampleableType F]
-    (domain : SmoothCosetFftDomain n F) (f : Fin (2 ^ n) → F) (hd : 0 < d)
+    (domain : SmoothCosetFftDomain n F) (f : Fin (2 ^ n) → F)
     (ε : unitInterval → ℝ≥0)
     (hMCA : IsMCAGenerator (univariatePowersGenerator F (2 ^ k - 1)) ε
       (code (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) d)) (θ : unitInterval) :
     Pr{let α ←$ᵗ F}[FoldingAgreementFailure domain f k d θ α] ≤ (ε θ : ENNReal) :=
-  (foldingAgreementFailure_prob_le_powers domain f hd θ).trans (hMCA θ)
+  (foldingAgreementFailure_prob_le_powers domain f θ).trans (hMCA θ)
 
 end Fri

@@ -113,8 +113,7 @@ disjoint (mod-4 parity) and the two halves each have `2^{α-κ-1}` elements, giv
 `2·2^{α-κ-1} = 2^α/k`. -/
 theorem Hexp_card (α k : ℕ) (hk : 2 * k ∣ 2 ^ α) :
     (Hexp α k).card = 2 ^ α / k := by
-  obtain ⟨κ, _, rfl⟩ := (Nat.dvd_prime_pow Nat.prime_two).mp
-    (dvd_trans (dvd_mul_left k 2) hk)
+  obtain ⟨κ, rfl⟩ := exists_eq_two_pow_of_two_mul_dvd hk
   have hκ : κ + 1 ≤ α :=
     (Nat.pow_dvd_pow_iff_le_right (by norm_num : (1 : ℕ) < 2)).mp
       (by rw [pow_succ, mul_comm]; exact hk)
@@ -185,8 +184,7 @@ Closed via injectivity + a subset/cardinality argument. -/
 theorem Hexp_generator_smul (α k g : ℕ) (hk : 2 * k ∣ 2 ^ α)
     (hg : g = conjExp α ∨ g = genExp k) :
     (Hexp α k).image (fun i => (g * i) % 2 ^ (α + 1)) = Hexp α k := by
-  obtain ⟨κ, _, rfl⟩ := (Nat.dvd_prime_pow Nat.prime_two).mp
-    (dvd_trans (dvd_mul_left k 2) hk)
+  obtain ⟨κ, rfl⟩ := exists_eq_two_pow_of_two_mul_dvd hk
   have hκ : κ + 1 ≤ α := (Nat.pow_dvd_pow_iff_le_right (by norm_num : (1 : ℕ) < 2)).mp
     (by rw [pow_succ, mul_comm]; exact hk)
   have hmpos : 0 < 2 ^ (α + 1) := by positivity

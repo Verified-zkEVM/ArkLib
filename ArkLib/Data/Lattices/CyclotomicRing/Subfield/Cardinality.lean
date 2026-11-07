@@ -43,7 +43,7 @@ theorem card_fixedSubring_le (α κ : ℕ) (h2 : (2 : R) ≠ 0)
     [Fintype R] : Fintype.card (fixedSubring (R := R) α (2 ^ κ)) ≤ Fintype.card R ^ 2 ^ κ := by
   by_cases hκ : κ + 1 ≤ α
   · have hκα : κ ≤ α := by omega
-    have hle := Fintype.card_le_of_injective _ (psi_injective α (2 ^ κ) h2 ⟨κ, rfl⟩
+    have hle := Fintype.card_le_of_injective _ (psi_injective α (2 ^ κ) h2
         (by rw [← pow_succ']; exact pow_dvd_pow 2 hκ))
     rw [Fintype.card_fun, Fintype.card_fin, Rq.card_powTwo, Nat.pow_div hκα (by norm_num),
       show (2 : ℕ) ^ α = 2 ^ κ * 2 ^ (α - κ) from by rw [← pow_add]; congr 1; omega, pow_mul] at hle

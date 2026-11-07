@@ -253,7 +253,6 @@ theorem verifyQueries_completeness (d : ℕ+) (hs : (∑ j, (s j).val) ≤ n)
     rw [← hdist_eq] at hdist
     simpa [Function.comp_def, he₀, initialQuery] using hdist
   exact one_sub_completenessError_le_prob_uniform_queries ω s
-    ((Finset.single_le_sum (f := fun j ↦ (s j).val) (by simp) (by simp)).trans hs)
     (fun z ↦ f (initialQuery z)) (fun z ↦ p₀.val.eval (ω z)) δ hdist'
     (acceptingQueries s hs (honestHistory s d f p₀ α) α)
     (cleanFirstQueries_subset_acceptingQueries s d hs f p₀ α) l

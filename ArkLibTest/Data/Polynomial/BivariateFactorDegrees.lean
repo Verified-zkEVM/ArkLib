@@ -15,11 +15,11 @@ positive-outer-degree selection, indexed products with repeated factors, and une
 
 open Polynomial Polynomial.Bivariate
 
-example (p : ℤ[X][Y]) (hp : p ≠ 0) :
+example (p : ℤ[X][Y]) :
     let s := (UniqueFactorizationMonoid.normalizedFactors p).toFinset.filter
       (fun q ↦ 0 < q.natDegree)
     (∑ q ∈ s, q.natDegree) ≤ p.natDegree ∧ (∑ q ∈ s, degreeX q) ≤ degreeX p := by
-  exact sum_natDegree_degreeX_le_of_subset_normalizedFactors hp _ (Finset.filter_subset _ _)
+  exact sum_natDegree_degreeX_le_of_subset_normalizedFactors _ (Finset.filter_subset _ _)
 
 example (p q : ℚ[X][Y]) (hq : q ≠ 0) (h : p ^ 2 ∣ q) :
     2 * p.natDegree ≤ q.natDegree ∧ 2 * degreeX p ≤ degreeX q := by

@@ -73,70 +73,32 @@ def Function.extendDomain {α β : Type*} [DecidableEq α] [Zero β] {s : Finset
   fun x ↦ if hx : x ∈ s then f x hx else 0
 
 open _root_.MvPolynomial.Function in
-lemma schwartz_zippel' [Finite σ] {p : MvPolynomial σ R} (hp : p ≠ 0) (S : σ → Finset R) :
+lemma schwartz_zippel' {p : MvPolynomial σ R} (hp : p ≠ 0) (S : σ → Finset R) :
     #{x ∈ Finset.pi p.vars S | eval (extendDomain x) p = 0} / ∏ i ∈ p.vars, (#(S i) : ℚ≥0)
       ≤ ∑ i ∈ p.vars, (p.degreeOf i / #(S i) : ℚ≥0) := by
-  let : Fintype σ := Fintype.ofFinite σ
-  let S' : σ → Finset R := fun i ↦ if i ∈ p.vars then S i else {0}
-  have hsz := schwartz_zippel_of_fintype (p := p) hp S'
+  obtain ⟨q, hq⟩ := exists_rename_coe_vars_eq p
+  have heval (a : (i : σ) → i ∈ p.vars → R) :
+      eval (extendDomain a) p = eval (fun i : p.vars => a i i.property) q := by
+    conv_lhs => arg 2; rw [← hq]
+    simp [eval_rename, extendDomain, Function.comp_def]
+  have hsz := schwartz_zippel_of_fintype (p := q)
+    (fun hz => hp (by simpa [hz] using hq.symm)) (fun i : p.vars => S i)
   convert hsz using 1
   · congr! 1
-    · refine congr_arg _ (Finset.card_bij ?_ ?_ ?_ ?_)
-      · intro a _ i
-        exact if hi : i ∈ p.vars then a i hi else 0
+    · refine congr_arg _ (Finset.card_bij (fun a _ (i : p.vars) => a i i.property) ?_ ?_ ?_)
       · intro a ha
-        rcases Finset.mem_filter.mp ha with ⟨ha_pi, ha_eval⟩
-        have ha_mem : ∀ i, ∀ hi : i ∈ p.vars, a i hi ∈ S i := by
-          rwa [Finset.mem_pi] at ha_pi
-        refine Finset.mem_filter.mpr ?_
-        constructor
-        · rw [Fintype.mem_piFinset]
-          intro i
-          by_cases hi : i ∈ p.vars
-          · simpa [S', hi] using ha_mem i hi
-          · simp [S', hi]
-        · change eval (extendDomain a) p = 0
-          exact ha_eval
-      · intro a₁ ha₁ a₂ ha₂ h
+        simpa [mem_filter, mem_pi, Fintype.mem_piFinset, ← heval] using ha
+      · intro a ha b hb hab
         funext i hi
-        have h' := congr_fun h i
-        simpa [extendDomain, hi] using h'
+        exact congr_fun hab ⟨i, hi⟩
       · intro b hb
-        rcases Finset.mem_filter.mp hb with ⟨hb_pi, hb_eval⟩
-        have hb_mem : ∀ i, b i ∈ S' i := by
-          rwa [Fintype.mem_piFinset] at hb_pi
-        have h_extend : extendDomain (s := p.vars) (fun i _hi ↦ b i) = b := by
-          funext i
-          by_cases hi : i ∈ p.vars
-          · simp [extendDomain, hi]
-          · have hzero : b i = 0 := by
-              have : b i ∈ ({0} : Finset R) := by simpa [S', hi] using hb_mem i
-              simpa using this
-            simp [extendDomain, hi, hzero]
-        refine ⟨fun i _hi ↦ b i, ?_, h_extend⟩
-        · refine Finset.mem_filter.mpr ?_
-          constructor
-          · rw [Finset.mem_pi]
-            intro i hi
-            simpa [S', hi] using hb_mem i
-          · simpa [h_extend] using hb_eval
-    · rw [← Finset.prod_subset (Finset.subset_univ p.vars)]
-      · refine Finset.prod_congr rfl ?_
-        intro i hi
-        simp [S', hi]
-      · intro i _ hi
-        simp [S', hi]
-  · rw [← Finset.sum_subset (Finset.subset_univ p.vars)]
-    · refine Finset.sum_congr rfl ?_
-      intro x hx
-      simp [S', hx]
-    · intro x _ hx
-      have hdeg : degreeOf x p = 0 := by
-        rw [degreeOf]
-        simp only [Multiset.count_eq_zero]
-        rw [vars_def] at hx
-        exact fun h => hx (Multiset.mem_toFinset.mpr h)
-      simp [S', hx, hdeg]
+        refine ⟨fun i hi => b ⟨i, hi⟩, ?_, rfl⟩
+        simpa [mem_filter, mem_pi, Fintype.mem_piFinset, heval] using hb
+    · exact (Finset.prod_coe_sort p.vars _).symm
+  · rw [← Finset.sum_coe_sort]
+    apply Finset.sum_congr rfl
+    intro i hi
+    rw [← degreeOf_rename_of_injective Subtype.val_injective i, hq]
 
 
 end SchwartzZippel
