@@ -117,18 +117,22 @@ lemma ps_eval_y_eq_eval_x_swap {F : Type*} [CommRing F]
   evalY_eq_evalX_swap y f
 
 lemma ps_exists_x_preserve_nat_degree_y {F : Type*} [Field F]
-    (B : F[X][Y]) (hB : B ≠ 0) (P_x : Finset F)
+    (B : F[X][Y]) (P_x : Finset F)
     (hcard : P_x.card > degreeX B) :
     ∃ x ∈ P_x, (evalX x B).natDegree = natDegreeY B := by
   classical
+  by_cases hB : B = 0
+  · subst B
+    obtain ⟨x, hx⟩ := Finset.card_pos.mp (by simpa [degreeX] using hcard)
+    exact ⟨x, hx, by simp [evalX_eq_map, natDegreeY]⟩
   exact exists_x_preserve_natDegreeY B hB P_x hcard
 
 lemma ps_exists_y_preserve_degree_x {F : Type*} [Field F]
-    (B : F[X][Y]) (hB : B ≠ 0) (P_y : Finset F) (hcard : P_y.card > natDegreeY B) :
+    (B : F[X][Y]) (P_y : Finset F) (hcard : P_y.card > natDegreeY B) :
     ∃ y ∈ P_y, (evalY y B).natDegree = degreeX B := by
   classical
-  obtain ⟨y, hy, hdeg⟩ := exists_x_preserve_natDegreeY (swap B)
-    (EmbeddingLike.map_ne_zero_iff.mpr hB) P_y (by rwa [degreeX_swap])
+  obtain ⟨y, hy, hdeg⟩ := ps_exists_x_preserve_nat_degree_y (swap B)
+    P_y (by rwa [degreeX_swap])
   exact ⟨y, hy, by rw [evalY_eq_evalX_swap, hdeg, natDegreeY_swap]⟩
 
 lemma ps_filter_nonzero_card_y {F : Type*} [Field F] [DecidableEq F]
@@ -153,8 +157,7 @@ lemma ps_filter_nonzero_card_x {F : Type*} [Field F] [DecidableEq F]
 
 lemma ps_degX_bound {F : Type*} [Field F]
     {A B P : F[X][Y]} (hA : A ≠ 0) (hP : P ≠ 0) (hBA : B = P * A)
-    (b_x b_y a_x a_y : ℕ) (n_y : ℕ+) (h_by_ge_ay : b_y ≥ a_y)
-    (h_f_degY : a_y ≥ natDegreeY A) (h_g_degY : b_y ≥ natDegreeY B)
+    (b_x b_y a_x : ℕ) (n_y : ℕ+) (h_g_degY : b_y ≥ natDegreeY B)
     (P_y : Finset F) (h_card_Py : n_y ≤ P_y.card) (quot_x : F → F[X])
     (h_quot_x : ∀ y ∈ P_y, (quot_x y).natDegree ≤ b_x - a_x ∧ evalY y B = (quot_x y) * (evalY y A))
     (h_by_lt_ny : b_y < n_y) :
@@ -162,9 +165,9 @@ lemma ps_degX_bound {F : Type*} [Field F]
   classical
   have hdegB : natDegreeY B = natDegreeY P + natDegreeY A := hBA ▸ natDegree_mul hP hA
   have h_card : natDegreeY P < (P_y.filter (fun y ↦ evalY y A ≠ 0)).card := by
-    have := ps_filter_nonzero_card_y A hA P_y b_y (h_f_degY.trans h_by_ge_ay) (by omega)
+    have := ps_filter_nonzero_card_y A hA P_y b_y (by omega) (by omega)
     omega
-  obtain ⟨y, hy, hdeg⟩ := ps_exists_y_preserve_degree_x P hP _ h_card
+  obtain ⟨y, hy, hdeg⟩ := ps_exists_y_preserve_degree_x P _ h_card
   obtain ⟨hyP, hyA⟩ := Finset.mem_filter.1 hy
   -- Since $B = P * A$, we have $evalY y B = evalY y P * evalY y A$.
   have h_eval_Y_B : evalY y B = evalY y P * evalY y A := by rw [hBA, evalY, eval_mul]; rfl
@@ -173,9 +176,9 @@ lemma ps_degX_bound {F : Type*} [Field F]
   exact hdeg ▸ h_eval_Y_P ▸ (h_quot_x y hyP).1
 
 lemma ps_degY_bound {F : Type*} [Field F]
-    {A B P : F[X][Y]} (hA : A ≠ 0) (hP : P ≠ 0) (hBA : B = P * A)
+    {A B P : F[X][Y]} (hA : A ≠ 0) (hBA : B = P * A)
     (b_x b_y a_x a_y : ℕ) (n_x : ℕ+) (h_bx_ge_ax : b_x ≥ a_x)
-    (h_f_degX : a_x ≥ degreeX A) (_h_g_degY : b_y ≥ natDegreeY B)
+    (h_f_degX : a_x ≥ degreeX A)
     (P_x : Finset F) (h_card_Px : n_x ≤ P_x.card) (quot_y : F → F[X])
     (h_quot_y : ∀ x ∈ P_x, (quot_y x).natDegree ≤ b_y - a_y ∧ evalX x B = (quot_y x) * (evalX x A))
     (h_bx_lt_nx : b_x < (n_x : ℕ)) (hdegX_P_le : degreeX P ≤ b_x - a_x) :
@@ -184,7 +187,7 @@ lemma ps_degY_bound {F : Type*} [Field F]
   have h_filter : degreeX P < (P_x.filter (fun x ↦ evalX x A ≠ 0)).card := by
     have := ps_filter_nonzero_card_x A hA P_x b_x (h_f_degX.trans h_bx_ge_ax) (by omega)
     omega
-  obtain ⟨x, hx, hdeg⟩ := ps_exists_x_preserve_nat_degree_y P hP _ h_filter
+  obtain ⟨x, hx, hdeg⟩ := ps_exists_x_preserve_nat_degree_y P _ h_filter
   obtain ⟨hxP, hxA⟩ := Finset.mem_filter.1 hx
   -- Since $evalX x B = quot_y x * evalX x A$, we have $evalX x P = quot_y x$.
   have h_evalX_P : evalX x P = quot_y x := by
@@ -194,9 +197,9 @@ lemma ps_degY_bound {F : Type*} [Field F]
 
 lemma ps_degree_bounds_of_mul {F : Type*} [Field F]
     (a_x a_y b_x b_y : ℕ) (n_x n_y : ℕ+)
-    (h_bx_ge_ax : b_x ≥ a_x) (h_by_ge_ay : b_y ≥ a_y)
+    (h_bx_ge_ax : b_x ≥ a_x)
     {A B P : F[X][Y]} (hA : A ≠ 0) (hBA : B = P * A)
-    (h_f_degX : a_x ≥ degreeX A) (h_f_degY : a_y ≥ natDegreeY A)
+    (h_f_degX : a_x ≥ degreeX A)
     (h_g_degY : b_y ≥ natDegreeY B) (P_x P_y : Finset F)
     (quot_x : F → F[X]) (quot_y : F → F[X])
     (h_card_Px : n_x ≤ P_x.card) (h_card_Py : n_y ≤ P_y.card)
@@ -214,10 +217,10 @@ lemma ps_degree_bounds_of_mul {F : Type*} [Field F]
     subst hP0
     constructor <;> simp [degreeX, natDegreeY]
   · have hP : P ≠ 0 := fun h ↦ hB0 (by simp [hBA, h])
-    have hdegX := ps_degX_bound hA hP hBA b_x b_y a_x a_y n_y h_by_ge_ay
-      h_f_degY h_g_degY P_y h_card_Py quot_x h_quot_x (ps_by_lt_ny h_le_1)
-    exact ⟨hdegX, ps_degY_bound hA hP hBA b_x b_y a_x a_y n_x h_bx_ge_ax
-      h_f_degX h_g_degY P_x h_card_Px quot_y h_quot_y (ps_bx_lt_nx h_le_1) hdegX⟩
+    have hdegX := ps_degX_bound hA hP hBA b_x b_y a_x n_y h_g_degY
+      P_y h_card_Py quot_x h_quot_x (ps_by_lt_ny h_le_1)
+    exact ⟨hdegX, ps_degY_bound hA hBA b_x b_y a_x a_y n_x h_bx_ge_ax
+      h_f_degX P_x h_card_Px quot_y h_quot_y (ps_bx_lt_nx h_le_1) hdegX⟩
 
 lemma ps_gcd_decompose {F : Type*} [Field F]
     {A B : F[X][Y]} (hA : A ≠ 0) (hB : B ≠ 0) :

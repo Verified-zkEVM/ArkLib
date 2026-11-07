@@ -163,11 +163,12 @@ theorem BW_homMatrix_det_submatrix_natDegree_le_e_add_one {F : Type u} [Field F]
 open scoped BigOperators in
 open Polynomial in
 open Matrix in
-theorem BW_homMatrix_det_updateCol_natDegree_le_of_ge {F : Type u} [Field F] {ι : Type*} [Fintype ι]
+theorem BW_homMatrix_det_updateCol_natDegree_le_e_add_one
+    {F : Type u} [Field F] {ι : Type*} [Fintype ι]
     (e k : ℕ) (ωs : ι → F) (f0 f1 : ι → F)
     (r : Fin ((e + 1) + (e + k)) → ι)
     (i0 : Fin ((e + 1) + (e + k)))
-    (j : Fin ((e + 1) + (e + k))) (hj : e + 1 ≤ j.1) :
+    (j : Fin ((e + 1) + (e + k))) :
     (Matrix.det
         (Matrix.updateCol
           (Matrix.submatrix
@@ -181,7 +182,7 @@ theorem BW_homMatrix_det_updateCol_natDegree_le_of_ge {F : Type u} [Field F] {ι
   · rw [Matrix.updateCol_apply]
     by_cases hx : x = j
     · subst hx
-      rw [ite_eq_left rfl, ite_eq_right (Nat.not_le_of_gt hj), Pi.single_apply]
+      rw [ite_eq_left rfl, Pi.single_apply]
       split_ifs <;> simp
     · rw [ite_eq_right hx]
       exact BW_homMatrix_entry_natDegree_le_ite e k ωs f0 f1 (r i) x
@@ -226,12 +227,13 @@ theorem BW_homMatrix_det_updateCol_natDegree_le_of_lt {F : Type u} [Field F] {ι
       simp only [hx, ne_eq, not_false_eq_true, and_true]
   · rw [sum_boole, Nat.cast_id, Fin_sum_ite_lt_and_ne_eq_e e k j (by omega)]
 
-omit [DecidableEq ι] in
+omit [Nonempty ι] [DecidableEq ι] in
 theorem RS_BW_bound_of_le_relUDR {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} [NeZero deg]
     (hdeg : deg ≤ Fintype.card ι)
     (hδ : δ ≤ relativeUniqueDecodingRadius (ι := ι) (F := F) (C := ReedSolomon.code domain deg)) :
     2 * Nat.floor (δ * Fintype.card ι) < Fintype.card ι - deg + 1 := by
   classical
+  have : Nonempty ι := Fintype.card_pos_iff.mp (lt_of_lt_of_le (NeZero.pos deg) hdeg)
   set n : ℕ := Fintype.card ι
   set e : ℕ := Nat.floor (δ * n)
   have hnpos : (0 : ℝ≥0) < (n : ℝ≥0) := by
@@ -287,23 +289,44 @@ theorem RS_det_submatrix_eq_zero_of_det_eq_zero (n : ℕ)
       J.equivOfFiniteSelfEmbedding from rfl, Matrix.det_permute', Matrix.det_permute, hdet,
     mul_zero, mul_zero]
 
-omit [DecidableEq ι] in
+omit [Nonempty ι] [DecidableEq ι] in
 theorem RS_floor_mul_card_ι_add_deg_le_card_ι_of_le_relUDR {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
-    [NeZero deg] (hdeg : deg ≤ Fintype.card ι)
+    (hdeg : deg ≤ Fintype.card ι)
     (hδ : δ ≤ relativeUniqueDecodingRadius (ι := ι) (F := F)
       (C := ReedSolomon.code domain deg)) :
     Nat.floor (δ * Fintype.card ι) + deg ≤ Fintype.card ι := by
-  have hBW := RS_BW_bound_of_le_relUDR (deg := deg) (domain := domain) (δ := δ) hdeg hδ
-  omega
+  by_cases hzero : deg = 0
+  · subst deg
+    have hdist : ‖(ReedSolomon.code domain 0 : Set (ι → F))‖₀ = 0 := by
+      rw [ReedSolomon.code_zero]
+      have hbot : (↑(⊥ : Submodule F (ι → F)) : Set (ι → F)) = {0} := by
+        ext w
+        simp
+      rw [hbot]
+      exact Code.dist_subsingleton
+    have hδzero : δ = 0 := by
+      simpa [relativeUniqueDecodingRadius, hdist] using hδ
+    simp [hδzero]
+  · have : NeZero deg := ⟨hzero⟩
+    have hBW := RS_BW_bound_of_le_relUDR (deg := deg) (domain := domain) (δ := δ) hdeg hδ
+    omega
 
 omit [DecidableEq ι] in
 theorem RS_floor_mul_card_ι_add_one_le_card_ι_of_le_relUDR {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
-    [NeZero deg] (hdeg : deg ≤ Fintype.card ι)
     (hδ : δ ≤ relativeUniqueDecodingRadius (ι := ι) (F := F)
       (C := ReedSolomon.code domain deg)) :
-    Nat.floor (δ * Fintype.card ι) + 1 ≤ Fintype.card ι :=
-  (Nat.add_le_add_left NeZero.one_le _).trans
-    (RS_floor_mul_card_ι_add_deg_le_card_ι_of_le_relUDR hdeg hδ)
+    Nat.floor (δ * Fintype.card ι) + 1 ≤ Fintype.card ι := by
+  have hnpos : (0 : ℝ≥0) < (Fintype.card ι : ℝ≥0) := by
+    exact_mod_cast (Fintype.card_pos (α := ι))
+  have he : (Nat.floor (δ * Fintype.card ι) : ℝ≥0) / Fintype.card ι ≤ δ :=
+    (div_le_iff₀ hnpos).2 (Nat.floor_le (by positivity))
+  have hUDR := (Code.dist_le_UDR_iff_relDist_le_relUDR
+    (C := (ReedSolomon.code domain deg : Set (ι → F)))
+    (Nat.floor (δ * Fintype.card ι))).2 (he.trans hδ)
+  have hdist := Code.dist_le_card (ReedSolomon.code domain deg : Set (ι → F))
+  have hn := Fintype.card_pos (α := ι)
+  unfold Code.uniqueDecodingRadius at hUDR
+  omega
 
 open Polynomial in
 open Matrix in
@@ -392,8 +415,7 @@ open scoped BigOperators in
 open Polynomial in
 open Matrix in
 omit [DecidableEq F] in
-theorem RS_natDegree_inv_neg_vandermonde_C_eq_zero (n : ℕ) (v : Fin n → F)
-    (hv : Function.Injective v) :
+theorem RS_natDegree_inv_neg_vandermonde_C_eq_zero (n : ℕ) (v : Fin n → F) :
     ∀ i j : Fin n,
       ((-Matrix.vandermonde (fun t : Fin n => (Polynomial.C (v t) : F[X])))⁻¹ i j).natDegree =
         0 := by
@@ -408,12 +430,12 @@ theorem RS_natDegree_inv_neg_vandermonde_C_eq_zero (n : ℕ) (v : Fin n → F)
     ext i j
     simp only [D, D0, f, Matrix.map_apply, Matrix.neg_apply, Matrix.vandermonde_apply, map_neg,
       map_pow]
-  have hdetV : (Matrix.det (Matrix.vandermonde v)) ≠ 0 :=
-    (Matrix.det_vandermonde_ne_zero_iff (v := v)).2 hv
-  have hdetD0 : (Matrix.det D0) ≠ 0 := by
-    have h : ((-1 : F) ^ (Fintype.card (Fin n)) * Matrix.det (Matrix.vandermonde v)) ≠ 0 := by
-      exact mul_ne_zero (pow_ne_zero _ (neg_ne_zero.mpr one_ne_zero)) hdetV
-    rwa [Matrix.det_neg]
+  by_cases hdetD0 : Matrix.det D0 = 0
+  · have hdetD : Matrix.det D = 0 := by
+      rw [hDmap]
+      exact (RingHom.map_det f D0).symm.trans (by rw [hdetD0, map_zero])
+    rw [Matrix.nonsing_inv_apply_not_isUnit D (by simp [hdetD])]
+    simp
   have hunit0 : IsUnit (Matrix.det D0) := (isUnit_iff_ne_zero).2 hdetD0
   have hmul0 : D0 * D0⁻¹ = 1 := Matrix.mul_nonsing_inv D0 hunit0
   have hmul : (D0.map f) * ((D0⁻¹).map f) = (1 : Matrix (Fin n) (Fin n) F[X]) := by

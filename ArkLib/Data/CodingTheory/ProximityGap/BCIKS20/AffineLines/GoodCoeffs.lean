@@ -73,7 +73,7 @@ theorem RS_exists_Pz_of_relDist_le {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0
 open scoped BigOperators in
 open Polynomial in
 theorem RS_exists_kernelVec_BW_homMatrix_eval_of_relDist_le
-    {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} [NeZero deg]
+    {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
     (u : WordStack F (Fin 2) ι) {z : F}
     (hz : δᵣ(u 0 + z • u 1, ReedSolomon.code domain deg) ≤ δ) :
     let e : ℕ := Nat.floor (δ * Fintype.card ι)
@@ -89,11 +89,15 @@ theorem RS_exists_kernelVec_BW_homMatrix_eval_of_relDist_le
   simp only
   -- Name the error bound (this rewrites occurrences of the floor expression)
   set e : ℕ := Nat.floor (δ * Fintype.card ι) with he
-  -- Get the close polynomial `Pz`
-  obtain ⟨Pz, hPzdeg, hdist⟩ :=
-    RS_exists_Pz_of_relDist_le (deg := deg) (domain := domain) (δ := δ) u (z := z) hz
-  have hdist' : Δ₀(u 0 + z • u 1, Pz.eval ∘ domain) ≤ e := by
-    simpa [he] using hdist
+  -- Get a close polynomial, allowing the zero polynomial when `deg = 0`.
+  obtain ⟨v, hvC, hdist⟩ :=
+    (Code.closeToCode_iff_closeToCodeword_of_minDist (u := u 0 + z • u 1)
+      (C := (ReedSolomon.code domain deg : Set (ι → F))) (e := e)).1
+      ((Code.relDistFromCode_le_iff_distFromCode_le (u := u 0 + z • u 1)
+        (C := (ReedSolomon.code domain deg : Set (ι → F))) (δ := δ)).1 hz)
+  obtain ⟨Pz, hPz, rfl⟩ := hvC
+  have hPzdeg : Pz.degree < deg := Polynomial.mem_degreeLT.mp hPz
+  have hdist' : Δ₀(u 0 + z • u 1, Pz.eval ∘ domain) ≤ e := hdist
   -- Extract a small set of disagreement coordinates
   obtain ⟨D, hDcard, hAgree⟩ :=
     (Code.closeToWord_iff_exists_possibleDisagreeCols
@@ -123,17 +127,21 @@ theorem RS_exists_kernelVec_BW_homMatrix_eval_of_relDist_le
   have hE_deg_lt : E.natDegree < e + 1 := by
     have : D.card < e + 1 := Nat.lt_succ_of_le hDcard
     simpa [hE_natDegree] using this
-  have hQ_deg_lt : Q.natDegree < e + deg := by
+  have hQ_deg_lt : Q = 0 ∨ Q.natDegree < e + deg := by
+    by_cases hPz0 : Pz = 0
+    · exact Or.inl (by simp [hQ, hPz0])
+    right
+    have hPz_nat : Pz.natDegree < deg := (natDegree_lt_iff_degree_lt hPz0).2 hPzdeg
     -- `natDegree (E*Pz) ≤ natDegree E + natDegree Pz`
     have hmul : Q.natDegree ≤ E.natDegree + Pz.natDegree := by
       simpa [hQ] using (Polynomial.natDegree_mul_le (p := E) (q := Pz))
-    have hPz_le : Pz.natDegree ≤ deg - 1 := Nat.le_pred_of_lt hPzdeg
+    have hPz_le : Pz.natDegree ≤ deg - 1 := Nat.le_pred_of_lt hPz_nat
     have hE_le : E.natDegree ≤ e := by
       simpa [hE_natDegree] using hDcard
     have hsum_le : E.natDegree + Pz.natDegree ≤ e + (deg - 1) := Nat.add_le_add hE_le hPz_le
     have hle : Q.natDegree ≤ e + (deg - 1) := le_trans hmul (by simpa [Nat.add_assoc] using hsum_le)
     -- turn into a strict inequality
-    have hdegpos : 0 < deg := Nat.pos_of_neZero deg
+    have hdegpos : 0 < deg := lt_of_le_of_lt (Nat.zero_le _) hPz_nat
     have : e + (deg - 1) < e + deg :=
       Nat.add_lt_add_left (Nat.pred_lt (Nat.ne_of_gt hdegpos)) e
     exact lt_of_le_of_lt hle this
@@ -173,8 +181,11 @@ theorem RS_exists_kernelVec_BW_homMatrix_eval_of_relDist_le
         = ∑ n ∈ Finset.range (e + deg), Q.coeff n * (domain i) ^ n := by
       simpa [b] using
         (Fin.sum_univ_eq_sum_range (f := fun n : ℕ => Q.coeff n * (domain i) ^ n) (n := e + deg))
-    have heval : Q.eval (domain i) = ∑ n ∈ Finset.range (e + deg), Q.coeff n * (domain i) ^ n :=
-      Polynomial.eval_eq_sum_range' (p := Q) (n := e + deg) hQ_deg_lt (domain i)
+    have heval : Q.eval (domain i) =
+        ∑ n ∈ Finset.range (e + deg), Q.coeff n * (domain i) ^ n := by
+      rcases hQ_deg_lt with hQzero | hQdegree
+      · simp [hQzero]
+      · exact Polynomial.eval_eq_sum_range' hQdegree (domain i)
     simpa [hfin] using heval.symm
   -- Reduce to showing `E.eval ω * f = Q.eval ω` and discharge by cases
   by_cases hiD : i ∈ D
@@ -213,11 +224,8 @@ open scoped BigOperators in
 open Polynomial in
 open Matrix in
 theorem RS_BW_homMatrix_det_submatrix_eq_zero_of_goodCoeffs_card_gt
-    {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} [NeZero deg]
+    {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
     (u : WordStack F (Fin 2) ι)
-    (hdeg : deg ≤ Fintype.card ι)
-    (hδ : δ ≤ relativeUniqueDecodingRadius (ι := ι) (F := F)
-      (C := ReedSolomon.code domain deg))
     (S : Finset F) (hgood : ∀ z ∈ S, δᵣ(u 0 + z • u 1, ReedSolomon.code domain deg) ≤ δ)
     (hS : S.card > Fintype.card ι) :
     let e : ℕ := Nat.floor (δ * Fintype.card ι)
@@ -250,9 +258,9 @@ theorem RS_BW_homMatrix_det_submatrix_eq_zero_of_goodCoeffs_card_gt
         (r := (r : Fin N → ι)))
   -- Bound e+1 ≤ card ι
   have he1_le : e + 1 ≤ Fintype.card ι := by
-    simpa [e] using
-      (RS_floor_mul_card_ι_add_one_le_card_ι_of_le_relUDR (deg := deg) (domain := domain)
-        (δ := δ) (hdeg := hdeg) (hδ := hδ))
+    have hcard := Fintype.card_le_of_embedding r
+    simp only [Fintype.card_fin] at hcard
+    omega
   -- card ι < card S
   have hS' : Fintype.card ι < S.card := by
     exact hS
@@ -322,11 +330,8 @@ open scoped BigOperators in
 open Polynomial in
 open Matrix in
 theorem RS_BW_homMatrix_det_submatrix_eq_zero_of_goodCoeffs_card_gt_fun
-    {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} [NeZero deg]
+    {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
     (u : WordStack F (Fin 2) ι)
-    (hdeg : deg ≤ Fintype.card ι)
-    (hδ : δ ≤ relativeUniqueDecodingRadius (ι := ι) (F := F)
-      (C := ReedSolomon.code domain deg))
     (S : Finset F) (hgood : ∀ z ∈ S, δᵣ(u 0 + z • u 1, ReedSolomon.code domain deg) ≤ δ)
     (hS : S.card > Fintype.card ι) :
     let e : ℕ := Nat.floor (δ * Fintype.card ι)
@@ -347,7 +352,7 @@ theorem RS_BW_homMatrix_det_submatrix_eq_zero_of_goodCoeffs_card_gt_fun
       ⟨r, hinj⟩
     have h :=
       RS_BW_homMatrix_det_submatrix_eq_zero_of_goodCoeffs_card_gt
-        (deg := deg) (domain := domain) (δ := δ) u hdeg hδ S hgood hS
+        (deg := deg) (domain := domain) (δ := δ) u S hgood hS
     dsimp at h
     exact h r'
   · have hinj' :
@@ -437,7 +442,7 @@ open Polynomial in
 open Matrix in
 open BerlekampWelch in
 theorem RS_exists_nonzero_kernelVec_BW_homMatrix_of_goodCoeffs_card_gt
-    {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} [NeZero deg]
+    {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
     (u : WordStack F (Fin 2) ι)
     (hdeg : deg ≤ Fintype.card ι)
     (hδ : δ ≤ relativeUniqueDecodingRadius (ι := ι) (F := F) (C := ReedSolomon.code domain deg))
@@ -468,7 +473,7 @@ theorem RS_exists_nonzero_kernelVec_BW_homMatrix_of_goodCoeffs_card_gt
     intro r
     simpa [M, N, m, n, he] using
       (RS_BW_homMatrix_det_submatrix_eq_zero_of_goodCoeffs_card_gt_fun (deg := deg)
-        (domain := domain) (δ := δ) (u := u) hdeg hδ S hgood hS r)
+        (domain := domain) (δ := δ) (u := u) S hgood hS r)
   have hcard_n : n ≤ Fintype.card ι := by
     simpa [n, e, he] using
       (RS_floor_mul_card_ι_add_deg_le_card_ι_of_le_relUDR (deg := deg) (domain := domain)
@@ -567,7 +572,7 @@ theorem RS_exists_nonzero_kernelVec_BW_homMatrix_of_goodCoeffs_card_gt
     intro i j
     simpa [hD] using
       (RS_natDegree_inv_neg_vandermonde_C_eq_zero
-        (F := F) n (fun t : Fin n => domain (rB t)) hvB i j)
+        (F := F) n (fun t : Fin n => domain (rB t)) i j)
   have hdegInvDA21 : ∀ i j, ((⅟D * A21) i j).natDegree ≤ 1 := by
     intro i j
     classical
@@ -618,7 +623,7 @@ theorem RS_exists_nonzero_kernelVec_BW_homMatrix_of_goodCoeffs_card_gt
   have hcard_m : m ≤ Fintype.card ι := by
     simpa [m, e, he] using
       (RS_floor_mul_card_ι_add_one_le_card_ι_of_le_relUDR (deg := deg) (domain := domain)
-        (δ := δ) hdeg hδ)
+        (δ := δ) hδ)
   obtain ⟨a, ha0, ha_deg, haKer⟩ :=
     RS_exists_nonzero_kernelVec_of_det_submatrix_eq_zero_natDegree_le_one (ι := ι) (F := F) e K0
       (by simpa [m] using hcard_m) hdegK0 (by
@@ -689,7 +694,7 @@ open scoped BigOperators in
 open Polynomial in
 open BerlekampWelch in
 theorem RS_exists_kernelVec_BW_homMatrix_of_goodCoeffs_card_gt
-    {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} [NeZero deg]
+    {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
     (u : WordStack F (Fin 2) ι)
     (hdeg : deg ≤ Fintype.card ι)
     (hδ : δ ≤ relativeUniqueDecodingRadius (ι := ι) (F := F) (C := ReedSolomon.code domain deg))

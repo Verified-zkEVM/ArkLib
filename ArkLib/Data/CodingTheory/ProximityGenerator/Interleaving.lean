@@ -14,11 +14,11 @@ public import ArkLib.Data.Probability.Instances
 
 This file compares the MCA error of a module code `C` with the MCA error of its row-wise
 interleaving `C ^⋈ κ`, for an arbitrary generator `G : Generator S ℓ F`. The row index `κ` is
-finite for the forward transfer and equality, and only nonempty for the reverse transfer.
+arbitrary for the forward transfer, and nonempty for the reverse transfer and equality.
 The radius `δ` is an arbitrary real number throughout.
 
 * Interleaving does not increase the error when the seed space is no larger than the field,
-  `|S| ≤ |F|`. This direction holds for every finite `κ`, including an empty one.
+  `|S| ≤ |F|`. This direction holds for every `κ`, including an empty one.
 * Interleaving does not decrease the error when `κ` is nonempty. This direction holds for every
   generator.
 * The two directions give equality when `κ` is nonempty and `|S| ≤ |F|`.
@@ -69,6 +69,9 @@ for `U` is bad for `V`. There are at most `|S|` bad seeds, so `|S| ≤ |F|` suff
 The reverse inequality embeds a family `U` over `C` as the interleaved family whose rows are all
 equal to `U`.
 
+For the forward transfer with arbitrary `κ`, first restrict to the finite image of one failing
+row per bad seed; the row-functional argument above then runs over that finite row type.
+
 Without a bound on `|S|`, a bad seed `x` still stays bad for the row combination of every
 nonzero row functional outside `goodRowFunctionals C U (T x)`, and a proper submodule leaves at
 least `q ^ (s - 1) * (q - 1)` of the `q ^ s - 1` nonzero functionals outside it
@@ -96,10 +99,9 @@ open scoped ProbabilityTheory
 
 section Transfer
 
-variable {ι F A κ ℓ : Type} [Fintype ι] [Field F] [AddCommMonoid A] [Module F A] [Finite κ]
+variable {ι F A κ ℓ : Type} [Fintype ι] [Field F] [AddCommMonoid A] [Module F A]
   [Fintype ℓ]
 
-omit [Finite κ] in
 /-- **The MCA event is an integer-threshold event.** The size condition `|T| ≥ |ι| · (1 - δ)` of
 `IsMCA` holds exactly when `⌈|ι| · (1 - δ)⌉₊ ≤ |T|`, so `IsMCA G C x U δ` is
 `Code.IsProjectionBad G C ⌈|ι| · (1 - δ)⌉₊ x U`. For `δ ≥ 1` the threshold is `0`. -/
@@ -113,9 +115,9 @@ of at most `|F|` seeds is bad for the family `U` over `C ^⋈ κ` at radius `δ`
 over `C` has every seed in `s` bad at the same radius `δ`.
 
 This is `Code.exists_forall_isProjectionBad_of_interleaved` at the threshold
-`⌈|ι| · (1 - δ)⌉₊`, through `isMCA_iff_isProjectionBad`. There `V j` is the row combination
-`i ↦ ∑ r, l r • U j i r` for the row functional `l` of `exists_rowFunctional_forall_notMem`,
-applied to the witness sets of the seeds in `s`. The bound `hs` is the hypothesis of that lemma;
+`⌈|ι| · (1 - δ)⌉₊`, through `isMCA_iff_isProjectionBad`. There `V j` is a row combination over
+the finite image of one failing row per seed, using `exists_rowFunctional_forall_notMem`.
+The bound `hs` is the hypothesis of that lemma;
 it is automatic for infinite `F`. The generator and the radius are arbitrary: a seed keeps its
 witness set `T`, so the size clause of `IsMCA` carries over unchanged at every real `δ`. For
 empty `s`, any `V` works. -/
@@ -128,7 +130,7 @@ theorem exists_forall_isMCA_of_forall_isMCA_interleaved {S : Type} [Nonempty S] 
 
 /-- **Interleaving does not increase MCA error when `|S| ≤ |F|`.** For every generator
 `G : Generator S ℓ F` whose seed space has at most as many elements as the field, every module
-code `C`, every finite row index `κ` and every real radius `δ`,
+code `C`, every row index `κ` and every real radius `δ`,
 `mcaError G (C^⋈κ) δ ≤ mcaError G C δ`.
 
 The affine-line case is `ProximityGap.mcaError_interleaved_le`.
@@ -161,7 +163,6 @@ theorem mcaError_moduleInterleavedCode_le_of_card_le {S : Type} [Nonempty S] [Fi
           hV x (Finset.mem_filter.mpr ⟨Finset.mem_univ x, hx⟩)
     _ ≤ mcaError G C δ := le_iSup (fun V ↦ Pr{let x ← $ᵗ S}[IsMCA G C x V δ]) V
 
-omit [Finite κ] in
 /-- **Interleaving does not decrease MCA error.** For every generator `G`, every module code `C`,
 every nonempty row index `κ` and every real radius `δ`, `mcaError G C δ ≤ mcaError G (C^⋈κ) δ`.
 
@@ -196,7 +197,7 @@ theorem mcaError_le_mcaError_moduleInterleavedCode [Nonempty κ] {S : Type} [Non
 
 /-- **Interleaving preserves MCA error when `|S| ≤ |F|`.** For every generator
 `G : Generator S ℓ F` whose seed space has at most as many elements as the field, every module
-code `C`, every nonempty finite row index `κ` and every real radius `δ`,
+code `C`, every nonempty row index `κ` and every real radius `δ`,
 `mcaError G (C^⋈κ) δ = mcaError G C δ`.
 
 The proof combines `mcaError_moduleInterleavedCode_le_of_card_le`, which needs `hS`, with

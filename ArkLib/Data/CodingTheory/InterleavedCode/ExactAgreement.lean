@@ -26,7 +26,7 @@ This file proves three things.
   Consequently a uniform exact-agreement guarantee with at most `e` exceptional seeds is
   equivalent to the projection-bad seeds numbering at most `e`.
 * If every scalar family over `C` has at most `e` projection-bad seeds, then every family over
-  the interleaved code `C ^⋈ κ` has at most `e` projection-bad seeds, for finite `κ`, provided
+  the interleaved code `C ^⋈ κ` has at most `e` projection-bad seeds, for any `κ`, provided
   the seed space has at most `|F|` elements or `e < |F|`. The count `e` is not multiplied by
   the number of rows.
 * Combining the two: a uniform exact-agreement guarantee for every scalar family over `C`
@@ -36,7 +36,7 @@ Nothing here depends on the shape of `G`. Univariate power batching `z ↦ (1, z
 is the instance used by Reed–Solomon proximity arguments, and its exceptional counts come from
 root counting in the scalar provider; the transfer itself does not use any degree bound. The
 scalar guarantee is a hypothesis, so no list-decoding or proximity-gap result is imported.
-One proof covers every field, every batching map, every module code, and every finite row type,
+One proof covers every field, every batching map, every module code, and every row type,
 including an empty one. The Reed–Solomon specialization
 `ReedSolomon.uniformExactInterleavedPowerAgreement_of_scalar` is in
 `ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.PowerAgreement`.
@@ -165,34 +165,27 @@ theorem not_isProjectionBad_of_forall_hasExactAgreement
 agreements and the seed `x` is not projection-bad. Then every codeword `c` agreeing with the
 combined word on some set of at least `a` coordinates has exact agreement.
 
-Let `T'` be the full set where `c` agrees with the combined word. Since `x` is not bad, every
-`U j` agrees on `T'` with a codeword `c' j`. The combination `∑ j, G x j • c' j` is a codeword
-that agrees with `c` on `T'`, so it equals `c` by `hC`. Both directions of the agreement-set
-equality then follow coordinatewise.
+Choose codewords `c' j` agreeing with `U j` on `T`. Their combination agrees with `c` on
+`T`, so it equals `c` by `hC`. At any further agreement coordinate `i`, use non-badness on
+`insert i T` and determination on `T` to show that every `c' j` also agrees at `i`.
 
 `hC` is needed: for the full code `C = ⊤`, no seed is projection-bad, but if `G x = 0` then a
-nonzero codeword is not a combination with coefficients `G x`. `ι` is finite so that the full
-agreement set is a `Finset`. -/
-theorem hasExactAgreement_of_not_isProjectionBad [Finite ι] (hC : DeterminedByAgreement C a)
+nonzero codeword is not a combination with coefficients `G x`. -/
+theorem hasExactAgreement_of_not_isProjectionBad (hC : DeterminedByAgreement C a)
     (hx : ¬ IsProjectionBad G C a x U) {c : ι → A} (hc : c ∈ C) {T : Finset ι}
     (hT : a ≤ T.card) (hcT : ∀ i ∈ T, c i = ∑ j, G x j • U j i) :
     HasExactAgreement G C x U c := by
   classical
-  set w : ι → A := fun i ↦ ∑ j, G x j • U j i with hw
-  have hfin : {i | c i = w i}.Finite := Set.toFinite _
-  set T' := hfin.toFinset with hT'
-  have hmemT' : ∀ i, i ∈ T' ↔ c i = w i := fun i ↦ by simp [T']
-  have hTT' : T ⊆ T' := fun i hi ↦ (hmemT' i).mpr (hcT i hi)
-  have hT'card : a ≤ T'.card := hT.trans (Finset.card_le_card hTT')
-  have hwT' : projectedWord w T' ∈ projectedCodeSubmod C T' :=
-    (mem_projectedCodeSubmod_iff C T' _).mpr
-      ⟨c, hc, funext fun i ↦ ((hmemT' i).mp i.2).symm⟩
-  have hU : ∀ j, projectedWord (U j) T' ∈ projectedCodeSubmod C T' := by
-    by_contra hnot
-    push Not at hnot
-    exact hx ⟨T', hT'card, hwT', hnot⟩
-  choose c' hc' hc'T using fun j ↦ (mem_projectedCodeSubmod_iff C T' _).mp (hU j)
-  have hc'U : ∀ j, ∀ i ∈ T', c' j i = U j i := fun j i hi ↦ (congrFun (hc'T j) ⟨i, hi⟩).symm
+  have hU (T' : Finset ι) (hT' : a ≤ T'.card)
+      (hcT' : ∀ i ∈ T', c i = ∑ j, G x j • U j i) :
+      ∀ j, projectedWord (U j) T' ∈ projectedCodeSubmod C T' := by
+    intro j
+    by_contra hj
+    exact hx ⟨T', hT', (mem_projectedCodeSubmod_iff C T' _).mpr
+      ⟨c, hc, funext fun i ↦ (hcT' i i.2).symm⟩, j, hj⟩
+  choose c' hc' hc'T using fun j ↦ (mem_projectedCodeSubmod_iff C T _).mp (hU T hT hcT j)
+  have hc'U : ∀ j, ∀ i ∈ T, c' j i = U j i := fun j i hi ↦
+    (congrFun (hc'T j) ⟨i, hi⟩).symm
   set d : ι → A := fun i ↦ ∑ j, G x j • c' j i with hd
   have hdC : d ∈ C := by
     have : d = ∑ j, G x j • c' j := by
@@ -200,18 +193,25 @@ theorem hasExactAgreement_of_not_isProjectionBad [Finite ι] (hC : DeterminedByA
       simp [d]
     rw [this]
     exact Submodule.sum_mem _ fun j _ ↦ Submodule.smul_mem _ _ (hc' j)
-  have hcd : c = d := hC c hc d hdC T' hT'card fun i hi ↦ by
-    rw [(hmemT' i).mp hi]
+  have hcd : c = d := hC c hc d hdC T hT fun i hi ↦ by
+    rw [hcT i hi]
     exact Finset.sum_congr rfl fun j _ ↦ by rw [hc'U j i hi]
-  refine ⟨c', hc', hcd, fun i ↦ ⟨fun hi j ↦ hc'U j i ((hmemT' i).mpr hi), fun hi ↦ ?_⟩⟩
-  rw [hcd]
-  exact Finset.sum_congr rfl fun j _ ↦ by rw [hi j]
+  refine ⟨c', hc', hcd, fun i ↦ ⟨fun hi j ↦ ?_, fun hi ↦ ?_⟩⟩
+  · obtain ⟨c'', hc'', hc''T⟩ := (mem_projectedCodeSubmod_iff C (insert i T) _).mp
+      (hU (insert i T) (hT.trans (Finset.card_le_card (Finset.subset_insert i T)))
+        (by simpa only [Finset.mem_insert, forall_eq_or_imp] using And.intro hi hcT) j)
+    have heq : c' j = c'' := hC _ (hc' j) _ hc'' T hT fun k hk ↦
+      (hc'U j k hk).trans (congrFun hc''T ⟨k, Finset.mem_insert_of_mem hk⟩)
+    exact (congrFun heq i).trans
+      (congrFun hc''T ⟨i, Finset.mem_insert_self i T⟩).symm
+  · rw [hcd]
+    exact Finset.sum_congr rfl fun j _ ↦ by rw [hi j]
 
 /-- **Exact agreement at a seed is the absence of projection-badness**, for codes determined by
 `a` agreements. The forward direction holds for every code
 (`not_isProjectionBad_of_forall_hasExactAgreement`); the reverse direction uses `hC`
 (`hasExactAgreement_of_not_isProjectionBad`). -/
-theorem forall_hasExactAgreement_iff_not_isProjectionBad [Finite ι]
+theorem forall_hasExactAgreement_iff_not_isProjectionBad
     (hC : DeterminedByAgreement C a) :
     (∀ c ∈ C, ∀ T : Finset ι, a ≤ T.card → (∀ i ∈ T, c i = ∑ j, G x j • U j i) →
       HasExactAgreement G C x U c) ↔ ¬ IsProjectionBad G C a x U :=
@@ -238,7 +238,7 @@ theorem encard_setOf_isProjectionBad_le_of_uniformExactAgreement
 /-- **Few projection-bad seeds give uniform exact agreement.** If codewords of `C` are determined
 by `a` agreements and at most `e` seeds are projection-bad, then the projection-bad seeds form
 an exceptional set for `UniformExactAgreement`. -/
-theorem uniformExactAgreement_of_encard_le [Finite ι] (hC : DeterminedByAgreement C a)
+theorem uniformExactAgreement_of_encard_le (hC : DeterminedByAgreement C a)
     (h : {x | IsProjectionBad G C a x U}.encard ≤ e) :
     UniformExactAgreement G C a e U := by
   have hfin := Set.finite_of_encard_le_coe h
@@ -250,7 +250,7 @@ theorem uniformExactAgreement_of_encard_le [Finite ι] (hC : DeterminedByAgreeme
 /-- **Uniform exact agreement is a count of projection-bad seeds.** For a code determined by `a`
 agreements, the uniform exact-agreement guarantee with count `e` holds exactly when at most `e`
 seeds are projection-bad. -/
-theorem uniformExactAgreement_iff_encard_le [Finite ι] (hC : DeterminedByAgreement C a) :
+theorem uniformExactAgreement_iff_encard_le (hC : DeterminedByAgreement C a) :
     UniformExactAgreement G C a e U ↔ {x | IsProjectionBad G C a x U}.encard ≤ e :=
   ⟨encard_setOf_isProjectionBad_le_of_uniformExactAgreement,
     uniformExactAgreement_of_encard_le hC⟩
@@ -259,30 +259,52 @@ end Exactness
 
 section Transfer
 
-variable {ι F A ℓ S κ : Type*} [Field F] [AddCommMonoid A] [Module F A] [Fintype ℓ] [Finite κ]
+variable {ι F A ℓ S κ : Type*} [Field F] [AddCommMonoid A] [Module F A] [Fintype ℓ]
   (G : S → ℓ → F) (C : ModuleCode ι F A) (a : ℕ)
 
 /-- **Seedwise transfer of projection-badness.** If every seed in a set `s` of at most `|F|`
 seeds is projection-bad for a family `U` over `C ^⋈ κ`, then one family `V` over `C` has every
 seed of `s` projection-bad, at the same threshold.
 
-`V j` is the row combination `i ↦ ∑ r, l r • U j i r` for the row functional `l` of
-`exists_rowFunctional_forall_notMem`, applied to the witness sets of the seeds in `s`. A seed
+Choose one failing row per seed and restrict `U` to their finite image `R`. Then `V j` is
+the row combination over `R` for the functional of `exists_rowFunctional_forall_notMem`. A seed
 keeps its witness set, so the threshold is unchanged. The bound `hs` is automatic for infinite
 `F`; for finite `F` it is sharp for the avoidance step (`|F| + 1` lines cover `F²`). -/
 theorem exists_forall_isProjectionBad_of_interleaved (U : ℓ → ι → κ → A) (s : Finset S)
     (hs : (s.card : ℕ∞) ≤ ENat.card F) (hbad : ∀ x ∈ s, IsProjectionBad G (C^⋈κ) a x U) :
     ∃ V : ℓ → ι → A, ∀ x ∈ s, IsProjectionBad G C a x V := by
-  let : Fintype κ := Fintype.ofFinite κ
+  classical
   choose! T hT using hbad
-  obtain ⟨l, hl⟩ := exists_rowFunctional_forall_notMem C U s T hs fun x hx ↦ (hT x hx).2.2
-  refine ⟨fun j i ↦ ∑ r, l r • U j i r, fun x hx ↦ ⟨T x, (hT x hx).1, ?_, hl x hx⟩⟩
-  have hcomb := projectedWord_rowCombination_mem C _ (T x) l (hT x hx).2.1
-  rw [rowCombination_sum_smul] at hcomb
-  exact hcomb
+  have hrow (x : s) : ∃ j r, projectedWord (fun i ↦ U j i r) (T x) ∉
+      projectedCodeSubmod C (T x) := by
+    obtain ⟨j, hj⟩ := (hT x x.2).2.2
+    exact ⟨j, not_forall.mp (fun h ↦ hj
+      ((projectedCodeSubmod_moduleInterleavedCode_iff F A κ ι C _ _).mpr h))⟩
+  choose j r hr using hrow
+  let R := s.attach.image r
+  let U' : ℓ → ι → R → A := fun j i r ↦ U j i r
+  have hbad' : ∀ x ∈ s, ∃ j, projectedWord (U' j) (T x) ∉
+      projectedCodeSubmod (C^⋈R) (T x) := by
+    intro x hx
+    refine ⟨j ⟨x, hx⟩, fun h ↦ hr ⟨x, hx⟩ ?_⟩
+    exact (projectedCodeSubmod_moduleInterleavedCode_iff F A R ι C _ _).mp h
+      ⟨r ⟨x, hx⟩, Finset.mem_image.mpr ⟨⟨x, hx⟩, Finset.mem_attach _ _, rfl⟩⟩
+  obtain ⟨l, hl⟩ := exists_rowFunctional_forall_notMem C U' s T hs hbad'
+  refine ⟨fun j i ↦ ∑ r, l r • U' j i r, fun x hx ↦ ⟨T x, (hT x hx).1, ?_, hl x hx⟩⟩
+  have hmem : projectedWord (fun i ↦ ∑ j, G x j • U' j i) (T x) ∈
+      projectedCodeSubmod (C^⋈R) (T x) := by
+    apply (projectedCodeSubmod_moduleInterleavedCode_iff F A R ι C _ _).mpr
+    intro r
+    have hr := (projectedCodeSubmod_moduleInterleavedCode_iff F A κ ι C _ _).mp
+      (hT x hx).2.1 r
+    change projectedWord (fun i ↦ (∑ j, G x j • U j i) r.val) _ ∈ _ at hr
+    change projectedWord (fun i ↦ (∑ j, G x j • U' j i) r) _ ∈ _
+    simpa only [Finset.sum_apply, Pi.smul_apply] using hr
+  have hcomb := projectedWord_rowCombination_mem C _ (T x) l hmem
+  rwa [rowCombination_sum_smul] at hcomb
 
 /-- **Interleaving does not increase the number of projection-bad seeds.** Suppose every family
-`V` over `C` has at most `e` projection-bad seeds. Then every family `U` over `C ^⋈ κ`, for finite
+`V` over `C` has at most `e` projection-bad seeds. Then every family `U` over `C ^⋈ κ`, for any
 `κ`, has at most `e` projection-bad seeds, provided either the seed space has at most `|F|`
 elements or `e < |F|`.
 
@@ -326,7 +348,7 @@ theorem encard_setOf_isProjectionBad_moduleInterleavedCode_le {e : ℕ}
 /-- **Exact agreement transfers to interleaved codes with the same exceptional count.** Let the
 codewords of `C` be determined by `a` agreements, and suppose every scalar family `V` over `C`
 has a uniform exact-agreement guarantee with at most `e` exceptional seeds. Then every family
-`U` over `C ^⋈ κ`, for finite `κ`, has the same guarantee with the same count `e`, provided the
+`U` over `C ^⋈ κ`, for any `κ`, has the same guarantee with the same count `e`, provided the
 seed space has at most `|F|` elements or `e < |F|`.
 
 The scalar guarantee bounds the projection-bad seeds of every scalar family
@@ -337,7 +359,7 @@ exact agreement (`uniformExactAgreement_of_encard_le`).
 
 The hypothesis `hC` is used only in the last step; the count transfer does not need it. No
 positive row count is needed. -/
-theorem uniformExactAgreement_moduleInterleavedCode [Finite ι] {e : ℕ}
+theorem uniformExactAgreement_moduleInterleavedCode {e : ℕ}
     (hS : ENat.card S ≤ ENat.card F ∨ (e : ℕ∞) < ENat.card F)
     (hC : DeterminedByAgreement C a)
     (hscalar : ∀ V : ℓ → ι → A, UniformExactAgreement G C a e V)

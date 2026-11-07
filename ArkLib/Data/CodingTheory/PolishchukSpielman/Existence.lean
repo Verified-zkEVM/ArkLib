@@ -85,7 +85,7 @@ lemma ps_exists_qy_of_cancel {F : Type*} [Field F]
 lemma ps_coprime_case_constant {F : Type*} [Field F]
     (a_x a_y b_x b_y : ℕ) (n_x n_y : ℕ+)
     (h_bx_ge_ax : b_x ≥ a_x) (h_by_ge_ay : b_y ≥ a_y)
-    (A B : F[X][Y]) (hA0 : A ≠ 0) (hB0 : B ≠ 0) (hrel : IsRelPrime A B)
+    (A B : F[X][Y]) (hA0 : A ≠ 0) (hrel : IsRelPrime A B)
     (h_f_degX : a_x ≥ degreeX A) (h_g_degX : b_x ≥ degreeX B)
     (h_f_degY : a_y ≥ natDegreeY A) (h_g_degY : b_y ≥ natDegreeY B)
     (P_x P_y : Finset F)
@@ -102,7 +102,6 @@ lemma ps_coprime_case_constant {F : Type*} [Field F]
   set RY := resultant B A b_y mY with hRY
   set RX := resultant (swap B) (swap A) b_x mX with hRX
   have hA0' : swap A ≠ 0 := fun h ↦ hA0 (swap.injective (by simpa using h))
-  have hB0' : swap B ≠ 0 := fun h ↦ hB0 (swap.injective (by simpa using h))
   have hRY0 : RY ≠ 0 := by
     simpa [RY, hRY, mY, hmY] using ps_resultant_ne_zero_of_is_rel_prime _ _ b_y
       (by simpa using h_g_degY) hA0 hrel
@@ -116,12 +115,12 @@ lemma ps_coprime_case_constant {F : Type*} [Field F]
     Finset.prod_dvd_of_coprime (fun _ _ _ _ hxy ↦ by simpa using (hcop hxy).pow) fun x hx ↦ by
       obtain ⟨hdegQ, hQ⟩ := h_quot_y x hx
       simpa [RY, hRY, mY, hmY] using ps_resultant_dvd_pow_eval_x _ _ _ _ b_y
-        (by omega) (by simpa using h_g_degY) (by omega) hQ
+        (by omega) (by omega) hQ
   have hprod_dvd_RX : (∏ y ∈ P_y, (X - C y) ^ mX) ∣ RX :=
     Finset.prod_dvd_of_coprime (fun _ _ _ _ hyy' ↦ by simpa using (hcop hyy').pow) fun y hy ↦ by
       obtain ⟨hdegQ, hQ⟩ := h_quot_x y hy
       simpa [RX, hRX, mX, hmX] using ps_resultant_dvd_pow_eval_y A B y (quot_x y) b_x
-        (by omega) (by simpa using h_g_degX) (by omega) hQ
+        (by omega) (by omega) hQ
   have hdeg_prod (S : Finset F) (m : ℕ) :
       (∏ x ∈ S, (X - C x) ^ m).natDegree = m * S.card := by
     rw [natDegree_prod _ _ (fun x _ ↦ pow_ne_zero _ (X_sub_C_ne_zero x))]
@@ -266,7 +265,7 @@ lemma ps_exists_p_nonzero {F : Type*} [Field F]
   have hconst := ps_coprime_case_constant ax' ay' bx' by' nx' ny'
     (by simpa [bx', ax'] using Nat.sub_le_sub_right h_bx_ge_ax g_x)
     (by simpa [by', ay'] using Nat.sub_le_sub_right h_by_ge_ay g_y)
-    A1 B1 hA1 hB1 hrel
+    A1 B1 hA1 hrel
     (by simpa [ax', ge_iff_le] using
       le_tsub_of_add_le_left (show g_x + degreeX A1 ≤ a_x by simpa [hdegX_A] using h_f_degX))
     (by simpa [bx', ge_iff_le] using
