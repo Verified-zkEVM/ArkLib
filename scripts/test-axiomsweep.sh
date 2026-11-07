@@ -58,7 +58,7 @@ lake exe axiomsweep --root AxiomSweepTestFixtures.Unimported --out "$UNIMPORTED_
 # The sweep must be deterministic: same build, byte-identical report.
 cmp "$TAINTED_REPORT" "$TAINTED_REPORT_2"
 
-python3 - "$CLEAN_REPORT" "$TAINTED_REPORT" "$UNIMPORTED_REPORT" "$COVERING_BASELINE" <<'PY'
+uv run --no-project --python 3.12 python - "$CLEAN_REPORT" "$TAINTED_REPORT" "$UNIMPORTED_REPORT" "$COVERING_BASELINE" <<'PY'
 import json
 import sys
 
@@ -186,7 +186,7 @@ cp "$COVERING_BASELINE" "$FIXTURE_TMP/shrink.json"
 expect_status 0 shrink-baseline \
   lake exe axiomsweep --root AxiomSweepTestFixtures.Clean \
     --update-baseline --baseline "$FIXTURE_TMP/shrink.json"
-python3 -c "
+uv run --no-project --python 3.12 python -c "
 import json,sys
 b=json.load(open(sys.argv[1]))
 assert b['sorry'] == [] and b['nonstandard'] == [], b
@@ -202,7 +202,7 @@ cmp "$FIXTURE_TMP/growth-before.json" "$FIXTURE_TMP/growth.json"
 
 # --- reviewed solicited proofs -----------------------------------------------------------
 
-python3 - "$FIXTURE_TMP" <<'PYBASE'
+uv run --no-project --python 3.12 python - "$FIXTURE_TMP" <<'PYBASE'
 import json
 import pathlib
 import sys
@@ -249,7 +249,7 @@ grep -q 'second: docstring missing issue URL' "$FIXTURE_TMP/solicited-missing-li
 grep -q 'proved: no sorryAx dependency' "$FIXTURE_TMP/solicited-proved.log"
 grep -q 'stale: stale entry' "$FIXTURE_TMP/solicited-stale.log"
 
-python3 - "$FIXTURE_TMP/solicited-nonstandard.json" <<'PYNONSTD'
+uv run --no-project --python 3.12 python - "$FIXTURE_TMP/solicited-nonstandard.json" <<'PYNONSTD'
 import json
 import sys
 name = "AxiomSweepTestFixtures.SolicitedNonstandard.bad"
@@ -277,7 +277,7 @@ cmp "$SOLICITED_BASELINE.before" "$SOLICITED_BASELINE"
 expect_status 0 solicited-update \
   lake exe axiomsweep --root AxiomSweepTestFixtures.Solicited \
     --update-baseline --baseline "$SOLICITED_BASELINE"
-python3 - "$SOLICITED_BASELINE" "$FIXTURE_TMP/solicited-report.json" <<'PYASSERT'
+uv run --no-project --python 3.12 python - "$SOLICITED_BASELINE" "$FIXTURE_TMP/solicited-report.json" <<'PYASSERT'
 import json
 import sys
 path, report_path = sys.argv[1:]

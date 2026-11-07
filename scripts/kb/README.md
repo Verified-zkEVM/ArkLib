@@ -28,14 +28,14 @@ They are intentionally lightweight and use only the Python standard library.
 Run from the repo root:
 
 ```bash
-python3 ./scripts/kb/sync_from_bib.py
-python3 ./scripts/kb/extract_lean_citations.py
-python3 ./scripts/kb/extract_declarations.py
-python3 ./scripts/kb/find_dedup_candidates.py
-python3 ./scripts/kb/regenerate.py
-python3 ./scripts/kb/check_generated.py
-python3 ./scripts/kb/lint.py
-python3 ./scripts/kb/review_context.py --files ArkLib/ProofSystem/Fri/Spec/SingleRound.lean --format review
+uv run --no-project --python 3.12 python ./scripts/kb/sync_from_bib.py
+uv run --no-project --python 3.12 python ./scripts/kb/extract_lean_citations.py
+uv run --no-project --python 3.12 python ./scripts/kb/extract_declarations.py
+uv run --no-project --python 3.12 python ./scripts/kb/find_dedup_candidates.py
+uv run --no-project --python 3.12 python ./scripts/kb/regenerate.py
+uv run --no-project --python 3.12 python ./scripts/kb/check_generated.py
+uv run --no-project --python 3.12 python ./scripts/kb/lint.py
+uv run --no-project --python 3.12 python ./scripts/kb/review_context.py --files ArkLib/ProofSystem/Fri/Spec/SingleRound.lean --format review
 ```
 
 ## Intended Workflow
@@ -46,7 +46,7 @@ python3 ./scripts/kb/review_context.py --files ArkLib/ProofSystem/Fri/Spec/Singl
 4. Let the main-branch KB workflow update one rolling follow-up PR for regenerated indexes and
    missing cited paper/source stubs
 
-Run `python3 ./scripts/kb/regenerate.py` locally when you need to inspect the generated state.
+Run `uv run --no-project --python 3.12 python ./scripts/kb/regenerate.py` locally when you need to inspect the generated state.
 Commit the generated results only from the main-branch automation, not from ordinary feature PRs.
 
 The workflow runs nightly and can be dispatched manually. Changes to bibliography or KB source

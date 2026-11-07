@@ -94,7 +94,7 @@ This directory contains various utility scripts for the ArkLib project.
 ### Generate Dependency Graphs
 ```bash
 cd scripts/dependency_analysis
-python generate_dependency_graph.py --root ../../ --output-dir ../../dependency_graphs
+uv run --no-project --python 3.12 python generate_dependency_graph.py --root ../../ --output-dir ../../dependency_graphs
 ```
 
 ### Compile Only
@@ -137,17 +137,17 @@ lake exe lint-style
 
 ### Check Docs Integrity
 ```bash
-python3 ./scripts/check-docs-integrity.py
+uv run --no-project --python 3.12 python ./scripts/check-docs-integrity.py
 ```
 
 ### Knowledge Base Indexes
 ```bash
-python3 ./scripts/kb/sync_from_bib.py
-python3 ./scripts/kb/extract_lean_citations.py
-python3 ./scripts/kb/regenerate.py
-python3 ./scripts/kb/check_generated.py
-python3 ./scripts/kb/lint.py
-python3 ./scripts/kb/review_context.py --files ArkLib/ProofSystem/Fri/Spec/SingleRound.lean
+uv run --no-project --python 3.12 python ./scripts/kb/sync_from_bib.py
+uv run --no-project --python 3.12 python ./scripts/kb/extract_lean_citations.py
+uv run --no-project --python 3.12 python ./scripts/kb/regenerate.py
+uv run --no-project --python 3.12 python ./scripts/kb/check_generated.py
+uv run --no-project --python 3.12 python ./scripts/kb/lint.py
+uv run --no-project --python 3.12 python ./scripts/kb/review_context.py --files ArkLib/ProofSystem/Fri/Spec/SingleRound.lean
 ```
 
 ### Axiom Sweep
@@ -236,8 +236,8 @@ syntax quotations can mention a tactic without executing it. The kernel-level sw
 enforcing taint verdict and zero-native-trust floor.
 
 ```bash
-python3 scripts/test-source-trust-audit.py
-python3 scripts/source-trust-audit.py --base-ref origin/main --json /tmp/source-trust.json
+uv run --no-project --python 3.12 python scripts/test-source-trust-audit.py
+uv run --no-project --python 3.12 python scripts/source-trust-audit.py --base-ref origin/main --json /tmp/source-trust.json
 ```
 
 ### `build_timing_report.sh`
@@ -273,13 +273,13 @@ table's sum estimates clean-build compile time. The table is saved with the buil
 `main`.
 
 ```bash
-python3 scripts/module_times.py update .lake/build/arklib-module-times.json \
+uv run --no-project --python 3.12 python scripts/module_times.py update .lake/build/arklib-module-times.json \
   --commit "$(git rev-parse HEAD)" /tmp/build-timing/library_build.log
 ```
 
 ## Requirements
 
-- Python 3.6+ (for Python scripts)
+- uv (selects Python 3.12 for Python scripts)
 - Lean 4 (for Lean scripts)
 - Graphviz (for dependency visualization)
 - Virtual environment (`.venv`) for Python dependencies

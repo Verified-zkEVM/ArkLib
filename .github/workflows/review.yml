@@ -35,6 +35,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 240
     steps:
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.13.6"
+          enable-cache: false
+
       # Parse the /review comment: `Internal:` lines → manual spec/KB refs, everything
       # under `External:`/`Comments:` → free-text instructions (the action auto-extracts
       # any URLs it mentions). Comment body is passed via env, never interpolated into
@@ -87,7 +94,7 @@ jobs:
             echo '{}' > /tmp/citations.json
           fi
           # Join is pure data: filenames + JSON read from files, never interpolated.
-          spec_refs="$(python3 - <<'PY'
+          spec_refs="$(uv run --no-project --python 3.12 python - <<'PY'
           import json, os
           try:
               cites = json.load(open('/tmp/citations.json')).get('files', {})

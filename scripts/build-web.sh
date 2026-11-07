@@ -17,11 +17,11 @@ if [ -d "blueprint" ]; then
     echo "Building Blueprint..."
     cd blueprint
     if command -v leanblueprint &> /dev/null; then
-        leanblueprint pdf
-        leanblueprint web
+        uvx --python 3.12 leanblueprint pdf
+        uvx --python 3.12 leanblueprint web
     else
         echo "Warning: 'leanblueprint' command not found. Skipping blueprint generation."
-        echo "To install: pip install leanblueprint"
+        echo "To install: uv tool install --python 3.12 leanblueprint"
     fi
     cd ..
     lake exe checkdecls blueprint/lean_decls
@@ -59,7 +59,7 @@ echo "Website build complete in $DEST/"
 # Inject Global Navigation
 echo "Injecting Global Navigation..."
 if [ -f "scripts/inject_nav.py" ]; then
-    python3 scripts/inject_nav.py "$DEST"
+    uv run --no-project --python 3.12 python scripts/inject_nav.py "$DEST"
 fi
 
 echo "Open $DEST/index.html to view."
