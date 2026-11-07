@@ -576,7 +576,8 @@ home_page/            site assets and assembled website root
   the quantification conventions and the shared reference list. The split is by scope, not by paper:
   `Bounds/Basic.lean` (the three counting identities everything rests on), `Bounds/Linear.lean`
   (bounds valid for every linear code — Elias volume and its entropy form, the rate–radius
-  arithmetic, the generalized Singleton bound, random linear codes),
+  arithmetic, the generalized Singleton bound, random linear codes, with the [GLMRSW22] proof in
+  `Bounds/RandomLinear/`),
   `Bounds/LargeAlphabet.lean` (the exponential-alphabet barrier, over the four-file development in
   `Bounds/LargeAlphabet/`: statements and family counting, centres and incidence counting, the local
   neighbourhood bound and pigeonhole barrier, then sparse large-union families and the assembly),

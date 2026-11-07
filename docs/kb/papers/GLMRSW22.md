@@ -8,6 +8,10 @@ source_metadata: ../sources/GLMRSW22/metadata.yml
 status: seeded
 related_modules:
   - ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean
+  - ArkLib/Data/CodingTheory/ListDecodability/Bounds/Linear.lean
+  - ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear/Main.lean
+  - ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear/NotRare.lean
+  - ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear/BerP.lean
 ---
 
 # GLMRSW22
@@ -26,8 +30,18 @@ that for `ε ∈ (0, ε_{p,q,δ})` and `n` large, a random linear code of rate `
 
 ## Main ArkLib Touchpoints
 
-`random_linear_lambda_lower` in [Bounds.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean) (admitted), with the derived existence form
-`random_linear_lambda_lower_exists`.
+`random_linear_lambda_lower` in
+[Bounds/Linear.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/Linear.lean), with the
+derived existence form `random_linear_lambda_lower_exists`. Both are proved. The proof is in
+[Bounds/RandomLinear/](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear):
+
+- the source's lemma that the bad distribution is not implicitly rare is
+  `RandomLinearInternal.entQ_badLaw_mulVec_lower` in
+  [NotRare.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear/NotRare.lean);
+- its lemma on `v + αw` for Bernoulli `v` is `RandomLinearInternal.entQ_add_mul_ber_lower` in
+  [BerP.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear/BerP.lean);
+- the counting bound is `RandomLinearInternal.random_linear_contains_list` in
+  [Main.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear/Main.lean).
 
 ## Known Divergences From ArkLib
 
@@ -46,9 +60,19 @@ that off-by-one strengthening.
 
 The dimension is pinned into the band `ρ ≤ k/n ≤ ρ + 1/n`, the source treating `ρ·n` as an integer.
 
+**Abundance is proved directly.** The source cites a threshold lemma of Mosheiff, Resch, Ron-Zewi,
+Silas and Wootters (LDPC codes achieve list-decoding capacity, 2019) for the step from "not
+implicitly rare" to "contains a bad matrix". ArkLib does not formalise that lemma. It proves the
+needed case by a second-moment count over parity-check matrices for the row orbit of one bad matrix
+(`RandomLinearInternal.card_pc_avoid_le`). Its rows are the bad distribution rounded to counts that sum to
+`n` (`RandomLinearInternal.exists_badMatrix`), which makes the source's remark on non-integral types
+precise. The source bounds a conditional entropy with Fano's and Hoeffding's inequalities. ArkLib
+bounds it by the entropy of the error of a plurality decoder, with a Chernoff bound
+(`RandomLinearInternal.law_plurality_err_le`).
+
 ## Open Formalization Gaps
 
-Theorem 4.1 itself, and the list-recovery half of the paper, which ArkLib does not touch.
+The list-recovery half of the paper, which ArkLib does not touch.
 
 ## Source Access
 

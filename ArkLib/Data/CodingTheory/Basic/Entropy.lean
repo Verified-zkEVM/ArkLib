@@ -33,7 +33,8 @@ monotonicity, concavity — transfers through a single division by the positive 
 * `CodingTheory.qEntropy_eq_logb_form`: the three-`logb`-term formula.
 * `CodingTheory.qEntropy_eq_qaryEntropy_div_log`: the bridge to Mathlib.
 * `CodingTheory.qEntropy_one_sub_inv`: `H_q(1 - 1/q) = 1`, the base-`q` normalisation;
-  it is also the maximum, whence `CodingTheory.qEntropy_le_one`.
+  it is also the maximum, whence `CodingTheory.qEntropy_le_one` and, below it,
+  `CodingTheory.qEntropy_lt_one`.
 * `CodingTheory.qEntropy_nonneg`, `CodingTheory.qEntropy_pos`: sign on `[0, 1]` / `(0, 1)`.
 * `CodingTheory.qEntropy_strictMonoOn`, `CodingTheory.qEntropy_strictAntiOn`: strict
   monotonicity either side of the maximum at `1 - 1/q`.
@@ -199,6 +200,13 @@ lemma qEntropy_le_one (hx₁ : x ≤ 1) : qEntropy q x ≤ 1 := by
   rcases le_total x (1 - 1 / (q : ℝ)) with h | h
   · exact (qEntropy_strictMonoOn hq).monotoneOn ⟨hx₀, h⟩ ⟨hmax₀, le_rfl⟩ h
   · exact (qEntropy_strictAntiOn hq).antitoneOn ⟨le_rfl, hmax₁⟩ ⟨h, hx₁⟩ h
+
+/-- `H_q(x) < 1` for `0 ≤ x < 1 - 1/q`: below the maximiser at `1 - 1/q` the bound is strict. -/
+lemma qEntropy_lt_one (hq : 2 ≤ q) (hx₀ : 0 ≤ x) (hx₁ : x < 1 - 1 / q) : qEntropy q x < 1 := by
+  have hm : (0 : ℝ) ≤ 1 - 1 / q := by
+    rw [sub_nonneg, div_le_one (by positivity)]; exact_mod_cast (by omega : 1 ≤ q)
+  rw [← qEntropy_one_sub_inv hq]
+  exact qEntropy_strictMonoOn hq ⟨hx₀, hx₁.le⟩ ⟨hm, le_rfl⟩ hx₁
 
 /-- `H_q` is concave on `[0, 1]`, inherited from `Real.strictConcaveOn_qaryEntropy` through
 nonnegative rescaling. This includes `q = 0` and `q = 1`, where the rescaling and hence

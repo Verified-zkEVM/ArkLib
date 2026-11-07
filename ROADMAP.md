@@ -166,7 +166,7 @@ entry says so, the specification is not claimed to be executable.
 
 ## In progress
 
-- **Solicited proofs.** Five coding-theory declarations, covering lower bounds, separations and a
+- **Solicited proofs.** Three coding-theory declarations, covering separations and a
   random-domain list-size upper bound, are stated faithfully and left open for contributors. They are the only admitted statements in the library, and nothing
   else depends on them
   ([#1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352)).

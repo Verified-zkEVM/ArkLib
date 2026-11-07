@@ -7,6 +7,7 @@ module
 
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
 public import ArkLib.Data.CodingTheory.Basic.Entropy
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.Main
 public import Mathlib.Analysis.SpecialFunctions.Pow.Real
 public import Mathlib.Analysis.SpecialFunctions.Stirling
 public import Mathlib.FieldTheory.Finiteness
@@ -1016,13 +1017,15 @@ high-probability content; that weaker form is *derived* below as
 **Dimension pin.** The source's code has rate exactly `ρ`, with dimension `ρ·n` treated as an
 integer for exposition. Exact real equality is unsatisfiable at irrational `ρ`, so the dimension is
 pinned two-sidedly into `ρ ≤ k/n ≤ ρ + 1/n`, admitting `k = ⌈ρ·n⌉` up to the boundary case.
+The proof uses only `ρ ≤ k/n`. The upper bound stays so that the family's rate is `ρ`.
 
-Solicited proof: see
-<https://github.com/Verified-zkEVM/ArkLib/issues/1352>. -/
+**Proof.** The bad distribution is not implicitly rare
+(`RandomLinearInternal.entQ_badLaw_mulVec_lower`). A second-moment count over parity-check matrices
+turns this into the counting bound (`RandomLinearInternal.random_linear_contains_list`). -/
 theorem random_linear_lambda_lower
-    (q : ℕ) (_hq_pp : IsPrimePow q)
-    (δ : ℝ) (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1 - 1 / q)
-    (ε : ℝ) (_hε_pos : 0 < ε) (_hε_lt : ε < 1) :
+    (q : ℕ) (hq_pp : IsPrimePow q)
+    (δ : ℝ) (hδ_pos : 0 < δ) (hδ_lt : δ < 1 - 1 / q)
+    (ε : ℝ) (hε_pos : 0 < ε) (hε_lt : ε < 1) :
     ∃ γ : ℝ, 0 < γ ∧
       ∀ ρ : ℝ, 1 - qEntropy q δ - γ < ρ → ρ < 1 - qEntropy q δ →
         ∃ c : ℝ, 0 < c ∧ ∃ n₀ : ℕ,
@@ -1038,7 +1041,21 @@ theorem random_linear_lambda_lower
                       ℕ∞)}.ncard : ℝ))
                 ≤ (q : ℝ) ^ (-(c * (Fintype.card ι : ℝ))) *
                     (({C : Submodule F (ι → F) | Module.finrank F C = k}.ncard : ℝ)) := by
-  sorry -- external admit: [GLMRSW22, Theorem 4.1].
+  have hq2 : 2 ≤ q := hq_pp.two_le
+  -- The bad distribution is not implicitly rare, with slack `ε/2`.
+  obtain ⟨L₀, hL₀⟩ :=
+    RandomLinearInternal.entQ_badLaw_mulVec_lower q hq2 δ hδ_pos hδ_lt (ε / 2) (by positivity)
+  -- `γ := min (h/(L₀+1)) ((1-h)/2)` with `h = H_q(δ)`.
+  obtain ⟨γ, hγ_pos, hγ⟩ :=
+    RandomLinearInternal.exists_rate_margin q hq2 δ hδ_pos hδ_lt ε hε_pos hε_lt L₀
+  refine ⟨γ, hγ_pos, fun ρ hργ hρH => ?_⟩
+  obtain ⟨hρ_pos, hL_ge, hβρ⟩ := hγ ρ hργ hρH
+  obtain ⟨c, hc, n₀, hmain⟩ := RandomLinearInternal.random_linear_contains_list q hq2 δ hδ_pos hδ_lt
+    (Nat.floor (qEntropy q δ / (1 - qEntropy q δ - ρ) - ε))
+    (qEntropy q δ + qEntropy q δ /
+      ((Nat.floor (qEntropy q δ / (1 - qEntropy q δ - ρ) - ε) : ℕ) + ε / 2))
+    (fun hF s hs A hA => hL₀ _ hL_ge hF s hs A hA) ρ hρ_pos hβρ
+  exact ⟨c, hc, n₀, fun {ι} _ _ _ {F} _ _ _ hF hn k hk₁ _hk₂ => hmain hF hn k hk₁⟩
 
 /-- **Existence form of the random-linear-code lower bound**, derived in-tree from the
 high-probability counting form `random_linear_lambda_lower`: some linear code `C ⊆ F^n` with
@@ -1049,13 +1066,10 @@ dimension in the band `ρ ≤ finrank/n ≤ ρ + 1/n` satisfies
 The bad-event count is below the whole family's, the family `{C | finrank C = ⌈ρ·n⌉}` is nonempty
 (a coordinate-kernel subspace realises any dimension `≤ n`), so a good code exists.
 
-The hypothesis `hρ0 : 0 ≤ ρ` is trivially true in the source's regime, where rates approach
-capacity `1 − H_q(δ)` from below with small `γ`. It is needed here only because
-`Basic/Entropy.lean` does not yet prove `H_q(δ) < 1` for `δ < 1 − 1/q`, which would let `γ` be
-shrunk below `1 − H_q(δ)`.
-
-Solicited proof: see
-<https://github.com/Verified-zkEVM/ArkLib/issues/1352>. -/
+The hypothesis `hρ0 : 0 ≤ ρ` is true in the source's regime, where rates approach capacity
+`1 − H_q(δ)` from below with small `γ`. `qEntropy_lt_one` gives `H_q(δ) < 1`, so
+`γ` could be shrunk below `1 − H_q(δ)` instead. The hypothesis stays so that this statement is
+unchanged. -/
 theorem random_linear_lambda_lower_exists
     (q : ℕ)
     (δ : ℝ) (hδ_pos : 0 < δ) (hδ_lt : δ < 1 - 1 / q)
