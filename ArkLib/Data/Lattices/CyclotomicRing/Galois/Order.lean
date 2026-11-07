@@ -47,25 +47,33 @@ theorem emultiplicity_four_pow_sub_one (κ n : ℕ) :
   exact h
 
 /-- **Divisibility characterization**: `2^{α+1} ∣ gⁿ − 1 ↔ 2^{α-κ-1} ∣ n` for `g = 4·2^κ+1`,
-when `κ + 1 ≤ α` (so `α - κ - 1` is the genuine order `d/(2k)`). -/
-theorem two_pow_dvd_four_pow_sub_one_iff (κ α n : ℕ) (hκ : κ + 1 ≤ α) :
+with natural subtraction handling the case `α ≤ κ`. -/
+theorem two_pow_dvd_four_pow_sub_one_iff (κ α n : ℕ) :
     (2 : ℤ) ^ (α + 1) ∣ (4 * 2 ^ κ + 1 : ℤ) ^ n - 1 ↔ 2 ^ (α - κ - 1) ∣ n := by
-  rw [pow_dvd_iff_le_emultiplicity, emultiplicity_four_pow_sub_one,
-    ← Int.natCast_dvd_natCast (m := 2 ^ (α - κ - 1)) (n := n), Int.natCast_pow,
-    Nat.cast_ofNat, pow_dvd_iff_le_emultiplicity,
-    show ((α + 1 : ℕ) : ℕ∞) = ((κ + 2 : ℕ) : ℕ∞) + ((α - κ - 1 : ℕ) : ℕ∞) by
-      rw [← Nat.cast_add]; congr 1; omega]
-  exact WithTop.add_le_add_iff_left (ENat.natCast_ne_top (κ + 2))
+  by_cases hκ : κ + 1 ≤ α
+  · rw [pow_dvd_iff_le_emultiplicity, emultiplicity_four_pow_sub_one,
+      ← Int.natCast_dvd_natCast (m := 2 ^ (α - κ - 1)) (n := n), Int.natCast_pow,
+      Nat.cast_ofNat, pow_dvd_iff_le_emultiplicity,
+      show ((α + 1 : ℕ) : ℕ∞) = ((κ + 2 : ℕ) : ℕ∞) + ((α - κ - 1 : ℕ) : ℕ∞) by
+        rw [← Nat.cast_add]; congr 1; omega]
+    exact WithTop.add_le_add_iff_left (ENat.natCast_ne_top (κ + 2))
+  · have hsub : α - κ - 1 = 0 := by omega
+    simp only [hsub, pow_zero, one_dvd, iff_true]
+    rw [pow_dvd_iff_le_emultiplicity, emultiplicity_four_pow_sub_one]
+    calc
+      ((α + 1 : ℕ) : ℕ∞) ≤ ((κ + 2 : ℕ) : ℕ∞) := by
+        exact_mod_cast (by omega : α + 1 ≤ κ + 2)
+      _ ≤ ((κ + 2 : ℕ) : ℕ∞) + emultiplicity 2 (n : ℤ) := le_self_add
 
 /-- The `ℕ`-level divisibility characterization: `2^{α+1} ∣ gⁿ − 1 ↔ 2^{α-κ-1} ∣ n`. -/
-theorem four_pow_dvd_iff_nat (κ α n : ℕ) (hκ : κ + 1 ≤ α) :
+theorem four_pow_dvd_iff_nat (κ α n : ℕ) :
     2 ^ (α + 1) ∣ (4 * 2 ^ κ + 1) ^ n - 1 ↔ 2 ^ (α - κ - 1) ∣ n := by
   have hge : (1 : ℕ) ≤ (4 * 2 ^ κ + 1) ^ n := Nat.one_le_pow _ _ (by positivity)
-  rw [← two_pow_dvd_four_pow_sub_one_iff κ α n hκ, ← Int.natCast_dvd_natCast, Nat.cast_sub hge]
+  rw [← two_pow_dvd_four_pow_sub_one_iff κ α n, ← Int.natCast_dvd_natCast, Nat.cast_sub hge]
   push_cast
   rfl
 
-private theorem four_pow_aux (κ α a b : ℕ) (hκ : κ + 1 ≤ α) (hb : b < 2 ^ (α - κ - 1))
+private theorem four_pow_aux (κ α a b : ℕ) (hb : b < 2 ^ (α - κ - 1))
     (hlt : a < b)
     (hab : (4 * 2 ^ κ + 1) ^ a % 2 ^ (α + 1) = (4 * 2 ^ κ + 1) ^ b % 2 ^ (α + 1)) : False := by
   have hmod : (4 * 2 ^ κ + 1) ^ a ≡ (4 * 2 ^ κ + 1) ^ b [MOD 2 ^ (α + 1)] := hab
@@ -80,36 +88,36 @@ private theorem four_pow_aux (κ α a b : ℕ) (hκ : κ + 1 ≤ α) (hb : b < 2
   have hc2 : IsCoprime (2 : ℤ) (4 * 2 ^ κ + 1) := ⟨-(2 * 2 ^ κ), 1, by ring⟩
   have hcop : IsCoprime ((2 : ℤ) ^ (α + 1)) ((4 * 2 ^ κ + 1 : ℤ) ^ a) := hc2.pow
   have ho : 2 ^ (α - κ - 1) ∣ (b - a) :=
-    (two_pow_dvd_four_pow_sub_one_iff κ α (b - a) hκ).mp (hcop.dvd_of_dvd_mul_left hdvdZ)
+    (two_pow_dvd_four_pow_sub_one_iff κ α (b - a)).mp (hcop.dvd_of_dvd_mul_left hdvdZ)
   have := Nat.le_of_dvd (by omega) ho
   omega
 
 /-- `a ↦ gᵃ mod 2^{α+1}` is injective on `range (2^{α-κ-1})` (the order of `g`). -/
-theorem four_pow_injOn (κ α : ℕ) (hκ : κ + 1 ≤ α) :
+theorem four_pow_injOn (κ α : ℕ) :
     Set.InjOn (fun a => (4 * 2 ^ κ + 1) ^ a % 2 ^ (α + 1))
       (Finset.range (2 ^ (α - κ - 1))) := by
   intro a ha b hb hab
   simp only [Finset.coe_range, Set.mem_Iio] at ha hb
   rcases lt_trichotomy a b with h | h | h
-  · exact (four_pow_aux κ α a b hκ hb h hab).elim
+  · exact (four_pow_aux κ α a b hb h hab).elim
   · exact h
-  · exact (four_pow_aux κ α b a hκ ha h hab.symm).elim
+  · exact (four_pow_aux κ α b a ha h hab.symm).elim
 
 /-- `g` raised to its order `2^{α-κ-1}` is `≡ 1` mod `2^{α+1}`. -/
-theorem four_pow_order_modEq_one (κ α : ℕ) (hκ : κ + 1 ≤ α) :
+theorem four_pow_order_modEq_one (κ α : ℕ) :
     (1 : ℕ) ≡ (4 * 2 ^ κ + 1) ^ (2 ^ (α - κ - 1)) [MOD 2 ^ (α + 1)] := by
   rw [Nat.modEq_iff_dvd' (Nat.one_le_pow _ _ (by positivity))]
-  exact (four_pow_dvd_iff_nat κ α _ hκ).mpr (dvd_refl _)
+  exact (four_pow_dvd_iff_nat κ α _).mpr (dvd_refl _)
 
 /-- The power `gⁿ mod 2^{α+1}` depends only on `n mod 2^{α-κ-1}` (period = order of `g`). -/
-theorem four_pow_mod_period (κ α n : ℕ) (hκ : κ + 1 ≤ α) :
+theorem four_pow_mod_period (κ α n : ℕ) :
     (4 * 2 ^ κ + 1) ^ n ≡ (4 * 2 ^ κ + 1) ^ (n % 2 ^ (α - κ - 1)) [MOD 2 ^ (α + 1)] := by
   conv_lhs => rw [← Nat.div_add_mod n (2 ^ (α - κ - 1)), pow_add, pow_mul]
   calc ((4 * 2 ^ κ + 1) ^ 2 ^ (α - κ - 1)) ^ (n / 2 ^ (α - κ - 1))
         * (4 * 2 ^ κ + 1) ^ (n % 2 ^ (α - κ - 1))
       ≡ 1 ^ (n / 2 ^ (α - κ - 1)) * (4 * 2 ^ κ + 1) ^ (n % 2 ^ (α - κ - 1))
         [MOD 2 ^ (α + 1)] :=
-        Nat.ModEq.mul_right _ (Nat.ModEq.pow _ (four_pow_order_modEq_one κ α hκ).symm)
+        Nat.ModEq.mul_right _ (Nat.ModEq.pow _ (four_pow_order_modEq_one κ α).symm)
     _ = (4 * 2 ^ κ + 1) ^ (n % 2 ^ (α - κ - 1)) := by rw [one_pow, one_mul]
 
 /-- If the conductor `2k = 2^{κ+1}` divides `d = 2^α` (i.e. `2·2^κ ∣ 2^α`), then `κ + 1 ≤ α`.

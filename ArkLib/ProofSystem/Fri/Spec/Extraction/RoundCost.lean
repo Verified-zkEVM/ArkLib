@@ -26,9 +26,9 @@ variable (s : Fin (k + 1) → ℕ+) (o : ∀ j, FinalOracleStatement s ω j)
 variable (α : FinalStatement F k)
 
 /-- A projected query uses one multiplication and tick per preceding fold bit. -/
-theorem profile_projectedPoint_apply (hs : (∑ j, (s j).val) ≤ n) (i : Fin (k + 1))
+theorem profile_projectedPoint_apply (i : Fin (k + 1))
     (x : (ω.subdomain 0).toFinset) (kind : CostKind) :
-    (profile s o α (projectedPoint s o α hs i x)).2 kind =
+    (profile s o α (projectedPoint s o α i x)).2 kind =
       if kind = .inl .mul ∨ kind = .inl .metadata then foldingPrefix s i.castSucc else 0 := by
   cases kind with
   | inl kind => cases kind <;>
@@ -39,7 +39,7 @@ theorem profile_projectedPoint_apply (hs : (∑ j, (s j).val) ≤ n) (i : Fin (k
 theorem profile_generateBlockNode_apply_le (hs : (∑ j, (s j).val) ≤ n)
     (gen : Generator ω) (i : Fin (k + 1)) (roundGen : RoundGenerator s gen i)
     (x : (ω.subdomain 0).toFinset)
-    (projected : {a : F // a = (QueryRound.queryPoint s hs i x).val})
+    (projected : {a : F // a = (QueryRound.queryPoint s i x).val})
     (j : Fin (2 ^ (s i).val)) (kind : CostKind) :
     (profile s o α (generateBlockNode s hs o α gen i roundGen x projected j)).2 kind ≤
       if kind = .inl .mul then 2 * (s i).val + 1
@@ -58,7 +58,7 @@ theorem profile_generateBlockNode_apply_le (hs : (∑ j, (s j).val) ≤ n)
 theorem profile_blockNodes_apply_le (hs : (∑ j, (s j).val) ≤ n) (gen : Generator ω)
     (i : Fin (k + 1)) (roundGen : RoundGenerator s gen i)
     (x : (ω.subdomain 0).toFinset)
-    (projected : {a : F // a = (QueryRound.queryPoint s hs i x).val}) (kind : CostKind) :
+    (projected : {a : F // a = (QueryRound.queryPoint s i x).val}) (kind : CostKind) :
     (profile s o α (blockNodes s o α hs gen i roundGen x projected)).2 kind ≤
       2 ^ (s i).val * (if kind = .inl .mul then 2 * (s i).val + 1
         else if kind = .inl .metadata then (s i).val else 0) +
@@ -92,11 +92,11 @@ def nextValueProfileBound (s : Fin (k + 1) → ℕ+) (d : ℕ) (i : Fin (k + 1))
     else embedArithmeticCost (Arithmetic.evaluationProfileBound d) kind
 
 /-- Folded-value evaluation uses at most the guarded final coefficient count. -/
-theorem profile_nextValue_apply_le (hs : (∑ j, (s j).val) ≤ n) {d : ℕ+}
+theorem profile_nextValue_apply_le {d : ℕ+}
     (input : PreparedInput s o α d) (i : Fin (k + 1))
     (x : (ω.subdomain 0).toFinset)
-    (projected : {a : F // a = (QueryRound.queryPoint s hs i x).val}) (kind : CostKind) :
-    (profile s o α (nextValue s o α hs input i x projected)).2 kind ≤
+    (projected : {a : F // a = (QueryRound.queryPoint s i x).val}) (kind : CostKind) :
+    (profile s o α (nextValue s o α input i x projected)).2 kind ≤
       nextValueProfileBound s d.val i kind := by
   have hsize : input.coefficients.size ≤ d.val := by
     rw [input.coefficients_eq]
@@ -183,7 +183,7 @@ theorem profile_checkRoundProgram_apply_le (hs : (∑ j, (s j).val) ≤ n) {d : 
   · exact (profile_readCachedChallenge_apply s o α input i kind).le
   intro challenge
   refine profile_bind_apply_le s o α _ _ kind _ _ ?_ ?_
-  · exact (profile_projectedPoint_apply s o α hs i x kind).le
+  · exact (profile_projectedPoint_apply s o α i x kind).le
   intro projected
   refine profile_bind_apply_le s o α _ _ kind _ _ ?_ ?_
   · exact profile_blockNodes_apply_le s o α hs input.generator i root x projected kind
@@ -204,7 +204,7 @@ theorem profile_checkRoundProgram_apply_le (hs : (∑ j, (s j).val) ≤ n) {d : 
         (2 ^ (s i).val) hsize) kind
   intro y
   refine profile_bind_apply_le s o α _ _ kind _ _ ?_ ?_
-  · exact profile_nextValue_apply_le s o α hs input i x projected kind
+  · exact profile_nextValue_apply_le s o α input i x projected kind
   intro beta
   refine profile_bind_apply_le s o α _ _ kind
     (if kind = .inl .eq then 1 else 0) 0 ?_ ?_

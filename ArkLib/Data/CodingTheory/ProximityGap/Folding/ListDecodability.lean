@@ -148,8 +148,8 @@ lemma card_foldingBlockAgreementAux_eq'
         complDisagreementSet_sub_subdomain.trans <| fun x hx ↦ by
           aesop (add safe (by grind))
   rw [foldingBlockAgreementAux,
-    card_pullback_eq_mul_card_pullback₂ FoldingContextMiddle.k_ge_1 FoldingContextMiddle.k_le_n,
-    card_pullback₂_eq FoldingContextMiddle.k_ge_1 FoldingContextMiddle.k_le_n this, mul_comm]
+    card_pullback_eq_mul_card_pullback₂ FoldingContextMiddle.k_le_n,
+    card_pullback₂_eq FoldingContextMiddle.k_ge_1 this, mul_comm]
 
 lemma card_foldingBlockAgreementAux_eq''
     [FoldingContextMiddle k n]
@@ -243,11 +243,11 @@ lemma mem_foldingBlockAgreementᵣ
   u ∈ foldingBlockAgreementᵣ k ω α u0 u1 v ↔
     ∀ j ∈ blockIdx (ω.subdomain 1) (k - 1) (ω.subdomain k u),
         u0 j + α * (u1 j) = v j := by
-  rw [foldingBlockAgreementᵣ, mem_pullback₂ (by grind) (by grind), complDisagreementSet_def']
+  rw [foldingBlockAgreementᵣ, mem_pullback₂ (by grind), complDisagreementSet_def']
   simp_all only [mem_blockIdx_iff_mem_block, mem_block, mem_self, true_and, Word, Pi.add_apply,
     Pi.smul_apply, smul_eq_mul, mem_filter, CosetFftDomainClass.mem_toFinset_iff_mem,
     and_iff_right_iff_imp]
-  rw [mem_subdomain_comp_iff_mem (by grind), show 1 + (k - 1) = k by grind]
+  rw [mem_subdomain_comp_iff_mem, show 1 + (k - 1) = k by grind]
   aesop (add safe (by grind))
 
 lemma mem_foldingBlockAgreementᵣ_of_mem_foldingBlockAgreement
@@ -257,14 +257,14 @@ lemma mem_foldingBlockAgreementᵣ_of_mem_foldingBlockAgreement
   ω j ^ 2 ∈ ω.subdomain 1 '' foldingBlockAgreement k ω α u0 u1 v ↔
     ω j ^ 2 ^ k ∈ ω.subdomain k '' foldingBlockAgreementᵣ k ω α u0 u1 v := by
   unfold foldingBlockAgreement foldingBlockAgreementᵣ
-  rw [mem_pullback₁_iff_mem_pullback₂_l_1] <;> grind
+  exact mem_pullback₁_iff_mem_pullback₂_l_1 (by grind)
 
 lemma card_foldingBlockAgreementᵣ'
     [FoldingContextMiddle k n]
   {α : F} {u0 u1 v : Word F (Fin (2 ^ (n - 1)))} :
   Finset.card (foldingBlockAgreementᵣ k ω α u0 u1 v) =
     Finset.card (complDisagreementSet (k - 1) (ω.subdomain 1) (u0 + α • u1) v) := by
-  rw [foldingBlockAgreementᵣ, card_pullback₂_eq (by grind) (by grind)]
+  rw [foldingBlockAgreementᵣ, card_pullback₂_eq (by grind)]
   intro x hx
   replace hx := complDisagreementSet_sub_subdomain hx
   aesop (add safe (by grind))
@@ -587,7 +587,7 @@ private theorem iterated_folding_reflects_balls_aux [Fintype F] [SampleableType 
       set δ' : I := ⟨δ, δ.coe_nonneg, by exact_mod_cast hδ1⟩ with hδ'
       have hk1n : k + 1 ≤ n := by omega
       have hsub : (ω.subdomain k).subdomain 1 = ω.subdomain (k + 1) :=
-        subdomain_subdomain_one (by omega)
+        subdomain_subdomain_one
       -- the per-round bound for the last round, on the `k`-th subdomain
       have hlast : ∀ w : Word F (Fin (2 ^ (n - k))),
           Pr{let x ←$ᵗ F }[

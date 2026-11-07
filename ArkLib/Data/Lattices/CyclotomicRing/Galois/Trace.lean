@@ -90,13 +90,12 @@ theorem traceH_fixed_of_smul (α k g : ℕ) (hg : Odd g)
     (himg : (Hexp α k).image (fun i => (g * i) % 2 ^ (α + 1)) = Hexp α k)
     (a : Rq (powTwoCyclotomic (R := R) α)) :
     galoisRingHom α g hg (traceH α k a) = traceH α k a := by
-  have hodd := Hexp_odd_mem α k
   have hinj : Set.InjOn (fun i => (g * i) % 2 ^ (α + 1)) (Hexp α k) :=
     Finset.injOn_of_card_image_eq (by rw [himg])
   unfold traceH traceOver
   rw [map_sum,
-    Finset.sum_congr rfl fun i hi => by
-      rw [galoisRingHom_apply, galoisAut_comp α g i hg (hodd i hi), galoisAut_periodic]]
+    Finset.sum_congr rfl fun i _ => by
+      rw [galoisRingHom_apply, galoisAut_comp α g i hg, galoisAut_periodic]]
   conv_rhs => rw [← himg]
   rw [Finset.sum_image fun x hx y hy h => hinj hx hy h]
 
@@ -108,12 +107,9 @@ to genuinely enumerate the subgroup `H = ⟨σ_{-1}, σ_{4k+1}⟩`. Reduced to t
 theorem traceH_mem_fixed (α k : ℕ) (hk : 2 * k ∣ 2 ^ α)
     (a : Rq (powTwoCyclotomic (R := R) α)) :
     conjAut α (traceH α k a) = traceH α k a ∧ genAut α k (traceH α k a) = traceH α k a := by
-  obtain ⟨κ, _, hκ⟩ := (Nat.dvd_prime_pow Nat.prime_two).mp
-    (dvd_trans (dvd_mul_left k 2) hk)
-  have hk2pow : ∃ κ, k = 2 ^ κ := ⟨κ, hκ⟩
   exact ⟨traceH_fixed_of_smul α k (conjExp α) (conjExp_odd α)
-      (Hexp_generator_smul α k (conjExp α) hk2pow hk (Or.inl rfl)) a,
+      (Hexp_generator_smul α k (conjExp α) hk (Or.inl rfl)) a,
     traceH_fixed_of_smul α k (genExp k) (genExp_odd k)
-      (Hexp_generator_smul α k (genExp k) hk2pow hk (Or.inr rfl)) a⟩
+      (Hexp_generator_smul α k (genExp k) hk (Or.inr rfl)) a⟩
 
 end ArkLib.Lattices.CyclotomicModulus

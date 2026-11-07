@@ -97,8 +97,8 @@ lemma binaryTraceQuotient_agreement_iff {m : ℕ}
 
 omit [CharP F 2] in
 /-- Exactly half the field agrees with the power-plus-reciprocal word; zero is not an agreement. -/
-lemma binaryTraceQuotient_agreement_card {m : ℕ} (hm : 3 ≤ m)
-    (hcard : Fintype.card F = 2 ^ m) {s : F} (hs : s ≠ 0) :
+lemma binaryTraceQuotient_agreement_card {m : ℕ} (hcard : Fintype.card F = 2 ^ m)
+    {s : F} (hs : s ≠ 0) :
     (Finset.univ.filter fun x : F ↦
       (binaryTraceQuotient m s).eval x =
         x ^ (binaryTraceTopDegree m - 1) + s⁻¹ * x⁻¹).card =
@@ -110,7 +110,7 @@ lemma binaryTraceQuotient_agreement_card {m : ℕ} (hm : 3 ≤ m)
     exact (Equiv.mulLeft₀ (s ^ 2) (pow_ne_zero 2 hs)).bijective
   let traceSet := Finset.univ.filter fun y : F ↦ binaryTrace m y = 1
   have hcard_trace : traceSet.card = Fintype.card F / 2 := by
-    simpa [traceSet, binaryTraceFiber] using binaryTraceFiber_one_card (F := F) (by omega) hcard
+    simpa [traceSet, binaryTraceFiber] using binaryTraceFiber_one_card (F := F) hcard
   calc
     (Finset.univ.filter fun x : F ↦
       (binaryTraceQuotient m s).eval x =
@@ -144,7 +144,7 @@ lemma binaryTraceQuotient_one_nonzero_agreement_card {m : ℕ} (hm : 3 ≤ m)
   have : CharP F 2 := charP_of_card_eq_prime_pow hcard
   let traceSet := Finset.univ.filter fun x : F ↦ binaryTrace m x = 0
   have hcard_trace : traceSet.card = Fintype.card F / 2 := by
-    simpa [traceSet, binaryTraceFiber] using binaryTraceFiber_zero_card (F := F) (by omega) hcard
+    simpa [traceSet, binaryTraceFiber] using binaryTraceFiber_zero_card (F := F) hcard
   have hzero_trace : (0 : F) ∈ traceSet := by simp [traceSet]
   calc
     (Finset.univ.filter fun x : F ↦ x ≠ 0 ∧

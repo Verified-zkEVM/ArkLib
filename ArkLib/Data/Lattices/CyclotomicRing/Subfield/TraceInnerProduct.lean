@@ -60,15 +60,12 @@ theorem galoisAut_fixed_of_mem (α k : ℕ) {c : Rq (powTwoCyclotomic (R := R) �
     induction a with
     | zero => rw [pow_zero, galoisAut_one_eq]
     | succ a ih =>
-      rw [pow_succ', ← galoisAut_comp α (4 * k + 1) ((4 * k + 1) ^ a) hodd1 hodd1.pow, ih, hgen']
+      rw [pow_succ', ← galoisAut_comp α (4 * k + 1) ((4 * k + 1) ^ a) hodd1, ih, hgen']
   have hmpos : 0 < 2 ^ (α + 1) := by positivity
-  have h2d : (2 : ℕ) ∣ 2 ^ (α + 1) := dvd_pow_self 2 (Nat.succ_ne_zero α)
   intro m hm
   rw [Hexp, Finset.mem_biUnion] at hm
   obtain ⟨a, _, hma⟩ := hm
   have hpa : (4 * k + 1) ^ a % 2 ^ (α + 1) < 2 ^ (α + 1) := Nat.mod_lt _ hmpos
-  have hpa_odd : Odd ((4 * k + 1) ^ a % 2 ^ (α + 1)) := by
-    rw [Nat.odd_iff, Nat.mod_mod_of_dvd _ h2d]; exact Nat.odd_iff.mp hodd1.pow
   rw [Finset.mem_insert, Finset.mem_singleton] at hma
   rcases hma with rfl | rfl
   · rw [← galoisAut_periodic, hgen_pow]
@@ -88,7 +85,7 @@ theorem galoisAut_fixed_of_mem (α k : ℕ) {c : Rq (powTwoCyclotomic (R := R) �
           (Nat.modEq_zero_iff_dvd.mpr ⟨1, (mul_one _).symm⟩).symm
       exact hmodeq.symm
     rw [hmodneg, ← galoisAut_periodic,
-      ← galoisAut_comp α (conjExp α) ((4 * k + 1) ^ a % 2 ^ (α + 1)) (conjExp_odd α) hpa_odd,
+      ← galoisAut_comp α (conjExp α) ((4 * k + 1) ^ a % 2 ^ (α + 1)) (conjExp_odd α),
       ← galoisAut_periodic, hgen_pow, hconj']
 
 /-- **`Tr_H` is `R_q^H`-linear**: `Tr_H(c·y) = c·Tr_H(y)` for `c ∈ R_q^H`, since each `σ_m`
@@ -160,7 +157,7 @@ theorem traceH_kernel (α κ : ℕ) (h2 : (2 : R) ≠ 0) (hκ : κ + 1 ≤ α)
       show ep + ep * conjExp α = 2 ^ (α + 1) * ep from by
         rw [conjExp, Nat.mul_sub, mul_one, Nat.add_sub_cancel'
           (Nat.le_mul_of_pos_right _ (by positivity)), mul_comm],
-      Xpow_mul, Xpow_conductor, one_pow, traceH_one α (2 ^ κ) ⟨κ, rfl⟩ hk]
+      Xpow_mul, Xpow_conductor, one_pow, traceH_one α (2 ^ κ) hk]
   · rw [ite_eq_right hpq]
     by_cases hmod : p.val % n = q.val % n
     · -- `±d/2` case: `X^{2J} = -1`, generalized Claim 3

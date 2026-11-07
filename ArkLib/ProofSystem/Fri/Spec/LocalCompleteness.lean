@@ -35,15 +35,15 @@ theorem eval_checkRound_eq_true_of_polynomial (hs : (∑ j, (s j).val) ≤ n)
     (α : F) (i : Fin (k + 1)) (x : (ω.subdomain 0).toFinset)
     (hword : ∀ y ∈ queryBlock s hs i x, committedWord s o i y = q.eval y.val)
     (hnext : simulateQ (OracleInterface.simOracle0 (FinalOracleStatement s ω) o)
-      (queryNext s hs p i x) =
+      (queryNext s p i x) =
         (CompPoly.CPolynomial.FoldingPolynomial.cpolyFold q (2 ^ (s i).val) α).eval
-          ((queryPoint s hs i x).val ^ (2 ^ (s i).val))) :
+          ((queryPoint s i x).val ^ (2 ^ (s i).val))) :
     simulateQ (OracleInterface.simOracle0 (FinalOracleStatement s ω) o)
       (checkRound s hs p α i x) = true := by
   rw [eval_checkRound, hnext]
   erw [RoundConsistency.roundConsistencyCheck_map_get]
   let qs := queryBlock s hs i x
-  let a := (queryPoint s hs i x).val
+  let a := (queryPoint s i x).val
   have hlen : qs.length = 2 ^ (s i).val := queryBlock_length s hs i x
   have : NeZero qs.length := ⟨by rw [hlen]; positivity⟩
   let points : Fin qs.length ↪ F :=
@@ -93,25 +93,25 @@ theorem committedFunction_honestHistory_succ (d : ℕ+)
     exact committedWord_honestHistory_of_ne_zero s d f p₀ α j.succ (Fin.succ_ne_zero j) x
 
 /-- The answer following an honest block equals evaluation of its folded polynomial. -/
-theorem eval_queryNext_honestHistory (d : ℕ+) (hs : (∑ j, (s j).val) ≤ n)
+theorem eval_queryNext_honestHistory (d : ℕ+)
     (f : (ω.subdomain 0).toFinset → F) (p₀ : Witness F s d 0)
     (α : Fin (k + 1) → F) (i : Fin (k + 1)) (x : (ω.subdomain 0).toFinset) :
     simulateQ (OracleInterface.simOracle0 (FinalOracleStatement s ω)
       (honestHistory s d f p₀ α))
-      (queryNext s hs (finalPolynomial s (honestHistory s d f p₀ α)) i x) =
+      (queryNext s (finalPolynomial s (honestHistory s d f p₀ α)) i x) =
         (CompPoly.CPolynomial.FoldingPolynomial.cpolyFold
           (honestPolynomial s d p₀ α i.castSucc).val (2 ^ (s i).val) (α i)).eval
-          ((queryPoint s hs i x).val ^ (2 ^ (s i).val)) := by
+          ((queryPoint s i x).val ^ (2 ^ (s i).val)) := by
   rw [eval_queryNext]
   have hx : x.val ^ (2 ^ foldingPrefix s i.succ) ∈
       (ω.subdomain (foldingPrefix s i.succ)).toFinset :=
     CosetFftDomainClass.pow_mem_subdomain_of_mem_subdomain_0_toFinset
-      ((foldingPrefix_le s i.succ).trans hs) x.property
+      x.property
   rw [committedFunction_honestHistory_succ s d f p₀ α i ⟨_, hx⟩,
     honestPolynomial_succ]
   congr 1
   change x.val ^ (2 ^ foldingPrefix s i.succ) =
-    (queryPoint s hs i x).val ^ (2 ^ (s i).val)
+    (queryPoint s i x).val ^ (2 ^ (s i).val)
   rw [foldingPrefix_succ, pow_add, pow_mul]
   rfl
 
@@ -128,7 +128,7 @@ theorem eval_checkRound_honestHistory_of_ne_zero (d : ℕ+)
     (honestPolynomial s d p₀ α i.castSucc).val
   · intro y _
     exact committedWord_honestHistory_of_ne_zero s d f p₀ α i hi y
-  · exact eval_queryNext_honestHistory s d hs f p₀ α i x
+  · exact eval_queryNext_honestHistory s d f p₀ α i x
 
 /-- Exact input evaluations pass every honest local check for arbitrary folding challenges. -/
 theorem eval_checkRound_honestHistory (d : ℕ+) (hs : (∑ j, (s j).val) ≤ n)
@@ -145,7 +145,7 @@ theorem eval_checkRound_honestHistory (d : ℕ+) (hs : (∑ j, (s j).val) ≤ n)
     · intro y _
       erw [committedWord_honestHistory, honestWords_zero]
     · simpa only [Fin.castSucc_zero, honestPolynomial_zero] using
-        eval_queryNext_honestHistory s d hs
+        eval_queryNext_honestHistory s d
           (fun y : (ω.subdomain 0).toFinset ↦ p₀.val.eval y.val) p₀ α 0 x
   · exact eval_checkRound_honestHistory_of_ne_zero s d hs _ p₀ α i hi x
 
@@ -188,7 +188,7 @@ theorem cleanFirstQueries_subset_acceptingQueries (d : ℕ+)
       have hclean := (mem_cleanFirstQueries ω (s 0).val _ _ z).mp hz j hpow'
       simpa only [hquery, hj] using hclean
     · simpa only [Fin.castSucc_zero, honestPolynomial_zero] using
-        eval_queryNext_honestHistory s d hs f p₀ α 0 (initialQuery z)
+        eval_queryNext_honestHistory s d f p₀ α 0 (initialQuery z)
   · exact eval_checkRound_honestHistory_of_ne_zero s d hs f p₀ α i hi (initialQuery z)
 
 private theorem prob_verifyQueries_eq (hs : (∑ j, (s j).val) ≤ n)

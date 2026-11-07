@@ -167,6 +167,6 @@ theorem iteratedFoldWord_eq_evalOnPoints_powAlgHom [FoldingContext k d n]
     funext i
     simp only [evalOnPoints, LinearMap.coe_mk, AddHom.coe_mk]
     congr 1
-    exact subdomain_comp (ω := domain) (k := k) (j := 1) (by grind) rfl
+    exact subdomain_comp (ω := domain) (k := k) (j := 1) rfl
 
 end ProximityGap

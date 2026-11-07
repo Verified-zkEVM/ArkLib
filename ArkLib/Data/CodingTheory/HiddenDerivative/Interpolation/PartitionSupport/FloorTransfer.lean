@@ -58,14 +58,12 @@ theorem partition_floor_square_integral (d W : ℕ) (level rate : ℝ) (hrate : 
     funext i
     push_cast
     rfl
-  have hpos : ∀ i : Fin d, 0 < ((i : ℝ) + 1) := fun i => by positivity
   have h := setIntegral_le_sum_natWeightedSimplex (w := fun i : Fin d ↦ i.val + 1)
     (fun i ↦ Nat.succ_ne_zero _) (W := (W : ℝ)) (Set.measurableSet_weightedSimplex _ _)
     (hweights ▸ subset_rfl : Set.weightedSimplex (fun i : Fin d ↦ (i : ℝ) + 1) W ⊆
       Set.weightedSimplex (fun i ↦ ((i.val + 1 : ℕ) : ℝ)) W)
     (f := fun u ↦ (max (level - rate * ∑ i, u i) 0) ^ 2)
     (g := fun c ↦ (max (level - rate * ((∑ i, c i : ℕ) : ℝ)) 0) ^ 2)
-    (ContinuousOn.integrableOn_weightedSimplex hpos (by fun_prop))
     (fun c _ ↦ by positivity) fun u hu ↦ ?_
   · simpa only [Nat.floor_natCast] using h
   have hu0 := (Set.mem_weightedSimplex.mp hu).1
