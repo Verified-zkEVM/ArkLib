@@ -272,7 +272,7 @@ theorem rationalTaylorPolynomial_polynomialJet (center : F) (Q : DifferentialPol
 /-- On `S ≠ 0`, if the common numerators of `c_l` vanish for `k ≤ l < K`, the reconstruction has
 degree below `k`. -/
 theorem degree_rationalTaylorPolynomial_lt (center : F) (Q : DifferentialPolynomial F r)
-    {K τ : ℕ} (hτ : TaylorExponentSufficient r K τ) (k : ℕ) (jet : Fin (r + 1) → F)
+    {K τ : ℕ} (k : ℕ) (jet : Fin (r + 1) → F)
     (hS : aeval jet (initialJetSeparant center Q) ≠ 0)
     (hhigh : ∀ l, k ≤ l → l < K → aeval jet (commonTaylorNumerator center Q τ l) = 0) :
     (rationalTaylorPolynomial center Q K jet).degree < k := by
@@ -280,8 +280,10 @@ theorem degree_rationalTaylorPolynomial_lt (center : F) (Q : DifferentialPolynom
   intro i hi
   rw [rationalTaylorPolynomial, Polynomial.coeff_taylor_centeredCoefficientPrefix]
   split_ifs with hiK
-  · exact (aeval_commonTaylorNumerator_eq_zero_iff center Q jet (hτ ⟨i, hiK⟩) hS).mp
-      (hhigh i (by exact_mod_cast hi) hiK)
+  · have hnum := hhigh i (by exact_mod_cast hi) hiK
+    simpa only [commonTaylorNumerator, map_mul, map_pow, mul_eq_zero,
+      pow_ne_zero _ hS, or_false, rationalTaylorCoefficient, div_eq_zero_iff,
+      or_false] using hnum
   · rfl
 
 /-! ### Agreement equations -/
@@ -360,9 +362,9 @@ theorem eq_of_highTaylorCuts_of_agreement (center : F) (Q : DifferentialPolynomi
     jet = jet' := by
   apply rationalTaylorPolynomial_injective center Q hK
   apply Polynomial.eq_of_degrees_lt_of_eval_index_eq T hinj
-  · exact (degree_rationalTaylorPolynomial_lt center Q hτ k jet hS hhigh).trans_le
+  · exact (degree_rationalTaylorPolynomial_lt center Q k jet hS hhigh).trans_le
       (by exact_mod_cast hk)
-  · exact (degree_rationalTaylorPolynomial_lt center Q hτ k jet' hS' hhigh').trans_le
+  · exact (degree_rationalTaylorPolynomial_lt center Q k jet' hS' hhigh').trans_le
       (by exact_mod_cast hk)
   · intro i hi
     exact ((taylorAgreementEquation_eq_zero_iff center Q hτ jet hS _ _).mp (hcut i hi)).trans

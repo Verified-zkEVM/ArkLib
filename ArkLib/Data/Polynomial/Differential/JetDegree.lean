@@ -275,9 +275,12 @@ theorem totalDegree_initialJetEquation_le (center : R) (Q : DifferentialPolynomi
 
 /-- Setting the independent variable to a constant does not increase the degree in the highest jet
 coordinate. -/
-theorem degreeOf_initialJetEquation_le [Nontrivial R] (center : R)
+theorem degreeOf_initialJetEquation_le (center : R)
     (Q : DifferentialPolynomial R r) :
     (initialJetEquation center Q).degreeOf (Fin.last r) ≤ Q.degreeOf (some (Fin.last r)) := by
+  cases subsingleton_or_nontrivial R
+  · rw [Subsingleton.elim (initialJetEquation center Q) 0, MvPolynomial.degreeOf_zero]
+    exact Nat.zero_le _
   rw [← weightedTotalDegree_piSingle, ← weightedTotalDegree_piSingle (some (Fin.last r))]
   apply weightedTotalDegree_aeval_le_of_le
   intro i

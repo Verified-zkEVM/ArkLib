@@ -537,7 +537,6 @@ lemma folding_polynomial_is_the_reminder {q f : F[X]} :
 /-- The uniqueness of the folding polynomial. -/
 theorem folding_polynomial_is_unique {q f : F[X]} {Q : F[X][Y]}
     (h : (Q.map (Polynomial.compRingHom q)).eval X = f)
-  (h_x : degreeX Q = f.natDegree / q.natDegree)
   (h_y : natDegreeY Q < q.natDegree) :
   Q = foldingPolynomial q f := by
     by_contra h_contra
@@ -610,21 +609,6 @@ lemma folded_poly_degree_bound {Q : F[X][Y]} {q : F[X]} {t : ℕ}
   calc _ ≤ degreeX Q * q.natDegree + (q.natDegree - 1) := h_sum
     _ < (degreeX Q + 1) * q.natDegree := by rw [Nat.add_mul, Nat.one_mul]; omega
     _ ≤ t * q.natDegree := Nat.mul_le_mul_right _ h_x
-
-/-- Alternative uniqueness theorem for the folding polynomial.
-    The only difference is the `h_x` condition which in this theorem
-    is only and inequality. Handy in practice since `degreeX` is defined
-    as a supremum so inequality is much easier to prove for it.
--/
-theorem folding_polynomial_is_unique' {q f : Polynomial F} {Q : Polynomial (Polynomial F)}
-    (h : (Q.map (Polynomial.compRingHom q)).eval Polynomial.X = f)
-  (h_x : degreeX Q ≤ f.natDegree / q.natDegree)
-  (h_y : natDegreeY Q < q.natDegree) :
-  Q = foldingPolynomial q f := by
-  refine folding_polynomial_is_unique h (le_antisymm h_x (Nat.le_of_lt_succ ?_)) h_y
-  have h_deg := folded_poly_degree_bound (Nat.lt_succ_self (degreeX Q)) h_y
-  rw [h, Nat.mul_comm] at h_deg
-  exact Nat.div_lt_of_lt_mul h_deg
 
 /-- Polynomial folding function that turns
     a polynomial of degree `≤n` into a polynomial

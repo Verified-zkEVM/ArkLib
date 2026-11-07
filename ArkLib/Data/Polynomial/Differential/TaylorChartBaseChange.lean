@@ -163,7 +163,7 @@ theorem card_le_of_regular_solutions_agreement
     (Q : DifferentialPolynomial F r) (K k τ : ℕ)
     (hτ : TaylorExponentSufficient r K τ) (hK : r < K) (hkK : k ≤ K)
     {n A : ℕ} (domain : Fin n ↪ F) (received : Fin n → F)
-    (hkA : k ≤ A) (hAn : A ≤ n)
+    (hkA : k ≤ A)
     (S : Finset (Polynomial F))
     (hdegree : ∀ P ∈ S, P.degree < k)
     (hsol : ∀ P ∈ S, differentialSpecialization Q P = 0)
@@ -185,7 +185,7 @@ theorem card_le_of_regular_solutions_agreement
     f Q K k τ hτ hkK S domain received hdegree hsol hsep hbinE hagree
   let domainE : Fin n ↪ E := domain.trans ⟨f, f.injective⟩
   have hcount := card_le_of_highTaylorCuts_of_agreement_sharp center QE hτ hK
-    domainE (fun i ↦ f (received i)) domainE.injective hkA (by simpa using hAn) J
+    domainE (fun i ↦ f (received i)) domainE.injective hkA J
     (fun jet hjet ↦ by
       obtain ⟨hinit, hsep, hcuts, -⟩ := hJ jet hjet
       refine ⟨hinit, hsep, ?_⟩
@@ -257,7 +257,7 @@ theorem regularBranchRatBudget_of_agreement
       (fun i ↦ Classical.decEq F (P.eval (domain i)) (received i))).symm
   have hstage := card_le_of_regular_solutions_agreement (E := AlgebraicClosure F)
     Q' K k (2 * K) (taylorExponentSufficient_two_mul s.val K) (by omega) hkK
-    domain received hkA hAn polynomials
+    domain received hkA polynomials
     (fun P hP ↦ by
       rcases Finset.mem_image.mp hP with ⟨solution, hsolution, rfl⟩
       exact ((hagreement solution.polynomial).mp (haccepted solution hsolution)).1)
@@ -323,7 +323,6 @@ theorem finite_solutions_card_le_sq_totalJetDegree_of_agreement
     (hQ : Q ≠ 0) (hcast : ∀ j, JetDegreeCastsNeZero Q j)
     (hdegree : jetTotalDegree Q ≤ ν) {n A : ℕ}
     (domain : Fin n ↪ F) (received : Fin n → F) (hk : 0 < k) (hkA : k ≤ A)
-    (hAn : A ≤ n)
     (hbin : ∀ r, r ≤ d → ∀ i, r < i → i < K → (i.choose r : F) ≠ 0)
     (accepts : F[X] → Prop)
     (hagreement : ∀ P, accepts P ↔
@@ -334,6 +333,12 @@ theorem finite_solutions_card_le_sq_totalJetDegree_of_agreement
       ((((n * (1 + 2 * K * (ν - 1)) : ℕ) : ℚ) /
         ((A - k + 1 : ℕ) : ℚ)) ^ d) := by
   classical
+  rcases S.eq_empty_or_nonempty with rfl | ⟨P, hP⟩
+  · simp only [Finset.card_empty, Nat.cast_zero]
+    positivity
+  have hAn : A ≤ n := by
+    simpa only [Finset.card_univ, Fintype.card_fin] using
+      (((hagreement P).mp (haccepts P hP)).2.trans (Finset.card_filter_le _ _))
   let toRoot : {P // P ∈ S} → BoundedSolution Q (k - 1) := fun P ↦
     ⟨⟨P.1, by
       rw [Polynomial.mem_degreeLT]
@@ -370,7 +375,7 @@ theorem finite_solutions_card_le_sq_totalJetDegree_of_agreementGap
     (Q : DifferentialPolynomial F d) (K k ν : ℕ) (hK : d < K) (hkK : k ≤ K)
     (hQ : Q ≠ 0) (hdegree : jetTotalDegree Q ≤ ν) {n A : ℕ} {δ : ℝ}
     (domain : Fin n ↪ F) (received : Fin n → F) (hk : 0 < k) (hkA : k ≤ A)
-    (hAn : A ≤ n) (hKn : K ≤ n) (hν : 0 < ν)
+    (hAn : A ≤ n) (hKn : K ≤ n)
     (hgap : (k : ℝ) + δ * n ≤ A) (hδ : 0 < δ)
     (hchar : ringChar F = 0 ∨ max (K - 1) ν < ringChar F)
     (accepts : F[X] → Prop)
@@ -391,11 +396,13 @@ theorem finite_solutions_card_le_sq_totalJetDegree_of_agreementGap
     simpa only [Nat.sub_add_cancel (Nat.le_of_lt hir)] using hchoose
   have hn : 0 < n := hk.trans_le (hkA.trans hAn)
   have hcount := finite_solutions_card_le_sq_totalJetDegree_of_agreement Q K k ν hK hkK
-    hQ hcast hdegree domain received hk hkA hAn hbin accepts hagreement S hsol haccepts
+    hQ hcast hdegree domain received hk hkA hbin accepts hagreement S hsol haccepts
   have hcountR : (S.card : ℝ) ≤ (ν : ℝ) ^ 2 *
       (((n * (1 + 2 * K * (ν - 1)) : ℕ) : ℝ) / (A - k + 1 : ℕ)) ^ d := by
     have hc := (Rat.cast_le (K := ℝ)).mpr hcount
     simpa only [Rat.cast_natCast, Rat.cast_mul, Rat.cast_pow, Rat.cast_div] using hc
+  rcases Nat.eq_zero_or_pos ν with rfl | hν
+  · simpa using hcountR
   have hratio := agreementGap_geometricRatio_le (F := ℝ) hn hν hδ hKn hkA hgap
   calc
     (S.card : ℝ) ≤ (ν : ℝ) ^ 2 *

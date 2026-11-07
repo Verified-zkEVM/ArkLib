@@ -213,7 +213,7 @@ theorem finite_admissibleChartTupleIncidence_off_graphs
   have hhighDegree : ∀ l, (high l).totalDegree + M + 1 ≤ B := by
     intro l
     have hrect := commonTaylorNumeratorOver_mem_restrictBidegree center Q h v K M hτ
-      hheight hv hjet l.val
+      hheight hjet l.val
     have hdegree : (high l).totalDegree ≤ 1 + M * (v - 1) := by
       simpa only [high] using totalDegree_of_restrictBidegree hrect
     exact bidegree_to_totalDegree_bound hdegree
@@ -223,7 +223,7 @@ theorem finite_admissibleChartTupleIncidence_off_graphs
       powerBatchedCoordinate_natDegree_le _
     have hrect := taylorAgreementEquationOver_mem_restrictBidegree
       (F := E) center (iota (domain i))
-      (powerBatchedCoordinate fun t ↦ iota (w t i)) Q ℓ h v K M hτ hy hheight hv hjet
+      (powerBatchedCoordinate fun t ↦ iota (w t i)) Q ℓ h v K M hτ hy hheight hjet
     have hdegree : (cuts i).totalDegree ≤ 1 + M * (v - 1) := by
       simpa only [cuts] using totalDegree_of_restrictBidegree hrect
     exact bidegree_to_totalDegree_bound hdegree
@@ -276,7 +276,7 @@ theorem finite_regularHighCutJets_card_le_dimensionSensitive_of_exponent
     (center : E) (Q : DifferentialPolynomial E r) (K k τ : ℕ)
     (hτ : TaylorExponentSufficient r K τ) (hK : r < K) (hkK : k ≤ K)
     {n A : ℕ} (domain : Fin n ↪ E) (received : Fin n → E)
-    (hkA : k ≤ A) (hAn : A ≤ n)
+    (hkA : k ≤ A)
     (S : Finset (Fin (r + 1) → E))
     (hS : ∀ jet ∈ S,
       aeval jet (initialJetEquation center Q) = 0 ∧
@@ -289,7 +289,7 @@ theorem finite_regularHighCutJets_card_le_dimensionSensitive_of_exponent
       (rationalTaylorCutDegreeBound Q τ : ℚ) ^ r *
         dimensionSensitiveIncidenceProduct n A k 1 r := by
   apply PolynomialDifferential.finite_regularHighCutJets_card_le_dimensionSensitive_of_exponent
-    center Q K k τ hτ domain received hkA hAn S hS hA
+    center Q K k τ hτ domain received hkA S hS hA
   intro J hJ hsep hhigh hd
   exact chart_dimensionSensitive_component_of_exponent center Q K k n τ hτ hK hkK
     J hJ hsep (by

@@ -253,7 +253,7 @@ theorem card_le_of_highTaylorCuts_of_agreement [IsAlgClosed F] (center : F)
 
 /-- **Sharp incidence of regular high-cut jets.** Over an algebraically closed field, let
 `r < K`, let `τ` be sufficient for `K`, and write `B = rationalTaylorCutDegreeBound Q τ`.
-Suppose the agreement points `domain i`, `i : ι`, are distinct, `k ≤ A ≤ #ι`, and each
+Suppose the agreement points `domain i`, `i : ι`, are distinct, `k ≤ A`, and each
 member of a finite set of regular high-cut jets satisfies at least `A` agreement equations.
 Then the set has at most
 `jetTotalDegree Q * (((#ι - k + 1) * B) / (A - k + 1)) ^ r` elements. -/
@@ -261,7 +261,7 @@ theorem card_le_of_highTaylorCuts_of_agreement_sharp [IsAlgClosed F] (center : F
     (Q : DifferentialPolynomial F r) {K k τ : ℕ} (hτ : TaylorExponentSufficient r K τ)
     (hK : r < K) {ι : Type*} [Fintype ι] (domain received : ι → F)
     (hinj : Function.Injective domain) {A : ℕ} (hkA : k ≤ A)
-    (hAn : A ≤ Fintype.card ι) (S : Finset (Fin (r + 1) → F))
+    (S : Finset (Fin (r + 1) → F))
     (hS : ∀ jet ∈ S, aeval jet (initialJetEquation center Q) = 0 ∧
       aeval jet (initialJetSeparant center Q) ≠ 0 ∧
       ∀ l, k ≤ l → l < K → aeval jet (commonTaylorNumerator center Q τ l) = 0)
@@ -271,6 +271,11 @@ theorem card_le_of_highTaylorCuts_of_agreement_sharp [IsAlgClosed F] (center : F
       (((((Fintype.card ι - k + 1) * rationalTaylorCutDegreeBound Q τ : ℕ) : ℚ) /
         ((A - k + 1 : ℕ) : ℚ))) ^ r := by
   classical
+  rcases S.eq_empty_or_nonempty with rfl | ⟨jet, hjet⟩
+  · simp only [Finset.card_empty, Nat.cast_zero]
+    positivity
+  have hAn : A ≤ Fintype.card ι := by
+    simpa only [Nat.card_eq_fintype_card] using (hA jet hjet).trans (Set.ncard_le_card _)
   let T := highTaylorPrimeFamily center Q K k τ
   let B := rationalTaylorCutDegreeBound Q τ
   let cuts : ι → MvPolynomial (Fin (r + 1)) F := fun i ↦
@@ -375,7 +380,7 @@ theorem finite_regularHighCutJets_card_le_dimensionSensitive_of_exponent
     (center : F) (Q : DifferentialPolynomial F r) (K k τ : ℕ)
     (hτ : TaylorExponentSufficient r K τ)
     {n A : ℕ} (domain : Fin n ↪ F) (received : Fin n → F)
-    (hkA : k ≤ A) (hAn : A ≤ n)
+    (hkA : k ≤ A)
     (S : Finset (Fin (r + 1) → F))
     (hS : ∀ jet ∈ S,
       aeval jet (initialJetEquation center Q) = 0 ∧
@@ -393,6 +398,13 @@ theorem finite_regularHighCutJets_card_le_dimensionSensitive_of_exponent
       (rationalTaylorCutDegreeBound Q τ : ℚ) ^ r *
         dimensionSensitiveIncidenceProduct n A k 1 r := by
   classical
+  rcases S.eq_empty_or_nonempty with rfl | ⟨jet, hjet⟩
+  · simp only [Finset.card_empty, Nat.cast_zero]
+    exact mul_nonneg (mul_nonneg (Nat.cast_nonneg _) (by positivity))
+      (dimensionSensitiveIncidenceProduct_nonneg _ _ _ _ _)
+  have hAn : A ≤ n := by
+    simpa only [Nat.card_eq_fintype_card, Fintype.card_fin] using
+      (hA jet hjet).trans (Set.ncard_le_card _)
   let B := rationalTaylorCutDegreeBound Q τ
   let T := highTaylorPrimeFamily center Q K k τ
   let cuts : Fin n → MvPolynomial (Fin (r + 1)) F := fun i ↦
@@ -476,7 +488,7 @@ volume for derivative cap `min b (τ * (r - 1) + (K - 1))` times `(n-k+1)/(A-k+1
 theorem card_le_of_firstOrderHighTaylorCuts_of_agreement_capped [IsAlgClosed F]
     (center : F) (Q : DifferentialPolynomial F 1) {K k τ j r b : ℕ}
     (hτ : TaylorExponentSufficient 1 K τ) (hK : 1 < K)
-    (hb : 0 < b) (hc : 0 < min b (τ * (r - 1) + (K - 1))) (hjb : j ≤ b)
+    (hjb : j ≤ b)
     (hrc : r ≤ min b (τ * (r - 1) + (K - 1)))
     (hchart : 1 + τ * (j - 1) ≤ b)
     (hr : 0 < r) (hjet : jetTotalDegree Q ≤ j)
@@ -534,7 +546,7 @@ theorem card_le_of_firstOrderHighTaylorCuts_of_agreement_capped [IsAlgClosed F]
       (totalDegree_commonTaylorNumerator_le center Q (hτ ⟨l, hlK⟩)).trans hB
     have hdegree :
         (commonTaylorNumerator center Q τ l).degreeOf 1 ≤ τ * (r - 1) + (K - 1) :=
-      (degreeOf_commonTaylorNumerator_firstOrder_le center Q r K τ hτ hr hderiv
+      (degreeOf_commonTaylorNumerator_firstOrder_le center Q r K τ hτ hderiv
         ⟨l, hlK⟩).trans (Nat.add_le_add_left (by omega) _)
     apply mem_restrictCappedDegree_of_bounds
     · exact htotal
@@ -545,7 +557,7 @@ theorem card_le_of_firstOrderHighTaylorCuts_of_agreement_capped [IsAlgClosed F]
       (totalDegree_taylorAgreementEquation_le center Q hτ (domain i) (received i)).trans hB
     have hdegree :
         (cuts i).degreeOf 1 ≤ τ * (r - 1) + (K - 1) :=
-      (degreeOf_taylorAgreementEquation_firstOrder_le center Q r K τ hτ hr hderiv
+      (degreeOf_taylorAgreementEquation_firstOrder_le center Q r K τ hτ hderiv
         (domain i) (received i))
     apply mem_restrictCappedDegree_of_bounds
     · exact htotal
@@ -575,7 +587,8 @@ theorem card_le_of_firstOrderHighTaylorCuts_of_agreement_capped [IsAlgClosed F]
     exact eq_of_mem_zeroLocus_of_highTaylorCutsIdeal_le center Q hτ hK hhighIdeal
       domain received U domain.injective.injOn (by rw [hU]) hxJ hyJ hxs hys
       (fun i hi ↦ (hzero i hi).1) (fun i hi ↦ (hzero i hi).2)
-  exact cappedDegreeHypersurface_incidence_sharp hb hc hkA hAn
+  exact cappedDegreeHypersurface_incidence_sharp
+    (hr.trans_le (hrc.trans (min_le_left _ _))) (hr.trans_le hrc) hkA hAn
     (initialJetEquation center Q) (initialJetSeparant center Q) hg0 hg hgbc hsbc
     highCuts hhigh cuts hcuts S hS' hA hUnique
 

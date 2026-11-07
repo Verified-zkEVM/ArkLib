@@ -666,9 +666,9 @@ example :
     norm_num [commonTaylorNumerator, rationalTaylorNumerator, initialJetSeparant, separant,
       constantDerivativeEquation, constantJet]
   simpa [constantDerivativeEquation] using
-    degree_rationalTaylorPolynomial_lt_of_symbolic_high_cuts_and_exponent (F := ℚ)
+    degree_rationalTaylorPolynomial_lt_of_symbolic_high_cuts (F := ℚ)
       (Polynomial.aeval (0 : ℚ)) 0 (constantDerivativeEquation (Polynomial ℚ)) 2 1 4
-      (taylorExponentSufficient_two_mul 1 2) (constantJet (F := ℚ)) hS hhigh
+      (constantJet (F := ℚ)) hS hhigh
 
 example : jointTotalDegree (initialJetEquation Polynomial.X independentVariableEquation) ≤ 1 := by
   simp [jointTotalDegree, initialJetEquation, independentVariableEquation]
@@ -723,13 +723,13 @@ example : ((optionEquivRight ℚ (Fin 2)).symm
     (taylorAgreementEquationOver (F := ℚ) (Polynomial.C 0) recursiveEq 1
       (Polynomial.C 1) (0 : Polynomial ℚ) (τ := 6)).degreeOf 1 ≤ 6 := by
   exact ⟨⟨taylorAgreementEquationOver_mem_restrictCappedBidegree 0 1 0 recursiveEq 0 1 2 2 1 6
-      (by intro l; omega) (by simp) recursiveHeight (by norm_num) (by norm_num) recursiveJet_le
+      (by intro l; omega) (by simp) recursiveHeight recursiveJet_le
       recursiveDerivativeDegree,
     commonTaylorNumeratorOver_mem_restrictCappedBidegree 0 recursiveEq 1 2 2 1 6
-      (by intro l; omega) recursiveHeight (by norm_num) recursiveJet_le (by norm_num)
+      (by intro l; omega) recursiveHeight recursiveJet_le
       recursiveDerivativeDegree 0⟩,
     (by simpa using (degreeOf_taylorAgreementEquationOver_firstOrder (F := ℚ) (Polynomial.C 0)
-      (Polynomial.C 1) (Polynomial.C 0) recursiveEq 2 1 6 (by intro l; omega) (by norm_num)
+      (Polynomial.C 1) (Polynomial.C 0) recursiveEq 2 1 6 (by intro l; omega)
       recursiveDerivativeDegree))⟩
 /-- For `Y₁` at the regular jet `(1, 0)`, the symbolic cuts force coefficient `1` to vanish. -/
 example :
@@ -765,7 +765,7 @@ example :
   have hSparse := sparse_rationalTaylorPolynomial_of_symbolic_cuts
     (φ := Polynomial.aeval (R := ℚ) (0 : ℚ)) (center := Polynomial.C (0 : ℚ))
     (Q := (constantDerivativeEquation (Polynomial ℚ))) (K := 2) (s := 2) (τ := 4)
-    (hτ := taylorExponentSufficient_two_mul 1 2) (jet := constantJet (F := ℚ)) hS hcuts
+    (jet := constantJet (F := ℚ)) hS hcuts
   constructor
   · rw [rationalTaylorPolynomial, Polynomial.coeff_taylor_centeredCoefficientPrefix]
     simpa [constantJet] using rationalTaylorCoefficient_initial (0 : ℚ)
@@ -790,15 +790,15 @@ example :
   refine ⟨?_, ?_, ?_, ?_, ?_⟩
   · exact degreeOf_initialJetSeparant_le (Polynomial.C 0) recursiveEq
   · simpa using degreeOf_rationalTaylorNumeratorOver_le (F := ℚ) (r := 1)
-      (Polynomial.C 0) recursiveEq 2 (by norm_num) (by norm_num) hQ 2
+      (Polynomial.C 0) recursiveEq 2 (by norm_num) hQ 2
   · simpa using degreeOf_commonTaylorNumeratorOver_le (F := ℚ) (r := 1)
       (Polynomial.C 0) recursiveEq 2 3 6 (taylorExponentSufficient_two_mul 1 3)
-      (by norm_num) (by norm_num) hQ ⟨2, by decide⟩
+      (by norm_num) hQ ⟨2, by decide⟩
   · simpa using jointTotalDegree_rationalTaylorNumeratorOver_le_of_coeffNatDegreeLE 0
       recursiveEq 2 1 recursiveJet_le recursiveHeight 2
   · exact commonTaylorNumeratorOver_mem_restrictBidegree 0 recursiveEq 1 2 3 6
       (taylorExponentSufficient_two_mul 1 3) recursiveHeight
-      (by norm_num) recursiveJet_le ⟨2, by decide⟩
+      recursiveJet_le ⟨2, by decide⟩
 
 /-! ### Shifted jets -/
 
@@ -1043,7 +1043,7 @@ example :
     intro P hP; simp only [boundedRoots, mem_singleton] at hP; subst P
     simp [BoundedSolution.polynomial, accepts, domain, zeroJetBoundedRoot]
   have hrecursive := boundedSolution_recursive_counting_totalJetDegree Q hQ hcast accepts 1
-    (by norm_num) boundedRoots hboundedAccepted hregular
+    boundedRoots hboundedAccepted hregular
   have hsquare := boundedSolution_card_le_sq_totalJetDegree Q hQ hcast accepts 1 1
     (by norm_num) boundedRoots hboundedAccepted hdegree (by simpa using hregular)
   have hagreementBound : (({(0 : Polynomial ℚ)} : Finset (Polynomial ℚ)).card : ℚ) ≤ 1 := by
@@ -1052,7 +1052,7 @@ example :
       (δ := 1 / 2) (n := 2) (A := 2) Q 2 1 1
       (by norm_num) (by norm_num) hQ hdegree domain2 (fun _ ↦ 0)
       (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-      (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num) (by norm_num)
       (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
       (fun P ↦ P.degree < 1 ∧
         2 ≤ (Finset.univ.filter fun i ↦ P.eval (domain2 i) = 0).card)
@@ -1060,7 +1060,7 @@ example :
     norm_num [roots] at hgap ⊢
   have hTaylorBound := card_le_of_regular_solutions_agreement (E := AlgebraicClosure ℚ)
     (n := 1) (A := 1) Q 1 1 2 (taylorExponentSufficient_two_mul 0 1)
-    (by norm_num) (by norm_num) domain (fun _ ↦ 0) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) domain (fun _ ↦ 0) (by norm_num)
     roots (by simp [roots]) hsolution
     (by simp [roots, Q, zeroJetEquation, separant, differentialSpecialization,
       differentialSpecializationHom]) (hbin 0 (by omega))
@@ -1220,8 +1220,8 @@ example :
     simp [hcut]
   have hCapped := card_le_of_firstOrderHighTaylorCuts_of_agreement_capped
     (center := (0 : F)) Q (K := 2) (k := 1) (τ := 4) (j := 1) (r := 1) (b := 4)
-    (hτ := taylorExponentSufficient_two_mul 1 2) (hK := by decide) (hb := by decide)
-    (hc := by decide) (hjb := by decide) (hrc := by decide) (hchart := by decide)
+    (hτ := taylorExponentSufficient_two_mul 1 2) (hK := by decide) (hjb := by decide)
+    (hrc := by decide) (hchart := by decide)
     (hr := by decide) (hjet := by simpa [Q] using jetTotalDegree_constantDerivativeEquation_le)
     (hderiv := by simp [Q, constantDerivativeEquation]) (domain := domain)
     (received := received) (hkA := by decide) (hAn := by decide) (S := S) (hS := hS)
@@ -1230,11 +1230,11 @@ example :
   · norm_num [S, jet, cappedDegreeMixedVolume] at hCapped ⊢
   · simpa using degreeOf_commonTaylorNumerator_firstOrder_le
       (center := (0 : ℚ)) (Q := constantDerivativeEquation ℚ) 1 2 4
-      (taylorExponentSufficient_two_mul 1 2) (by decide)
+      (taylorExponentSufficient_two_mul 1 2)
       (by simp [constantDerivativeEquation]) 0
   · simpa using degreeOf_taylorAgreementEquation_firstOrder_le
       (center := (0 : ℚ)) (Q := constantDerivativeEquation ℚ) 1 2 4
-      (taylorExponentSufficient_two_mul 1 2) (by decide)
+      (taylorExponentSufficient_two_mul 1 2)
       (by simp [constantDerivativeEquation]) 0 0
 /-! ### Frobenius flattening -/
 
@@ -1395,15 +1395,13 @@ example :
       apply isUnit_of_dvd_one
       have h := hc (Finsupp.single (some (0 : Fin 1)) 1)
       simpa [zeroJetEquation] using h
-  have hpos : 0 < (zeroJetEquation (Polynomial ℚ) 0).degreeOf (some 0) := by
-    simp [zeroJetEquation]
   have hder : MvPolynomial.pderiv (some 0) (zeroJetEquation (Polynomial ℚ) 0) ≠ 0 := by
     simp [zeroJetEquation]
   have hheight : MvPolynomial.CoeffNatDegreeLE (zeroJetEquation (Polynomial ℚ) 0) 0 := by
     simpa [zeroJetEquation] using
       MvPolynomial.coeffNatDegreeLE_X (R := ℚ) (σ := JetVariable 0) (some 0)
   simpa [zeroJetEquation] using
-    exists_exceptional_ordinary_separant hirr hpos hder hheight
+    exists_exceptional_ordinary_separant hirr hder hheight
 
 /-! ### Taylor chart coefficient extension -/
 
