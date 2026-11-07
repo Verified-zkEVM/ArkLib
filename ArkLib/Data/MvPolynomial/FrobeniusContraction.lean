@@ -126,11 +126,15 @@ section FractionRing
 variable [IsDomain R] [UniqueFactorizationMonoid R] {L : Type*} [Field L]
   [Algebra (MvPolynomial σ R) L] [IsFractionRing (MvPolynomial σ R) L]
 
-/-- Over a unique factorization domain `R`, an irreducible polynomial of positive degree in `none`
+omit [IsDomain R] in
+/-- Over a unique factorization ring `R`, an irreducible polynomial of positive degree in `none`
 stays irreducible as a univariate polynomial over the fraction field of `MvPolynomial σ R`. -/
 theorem irreducible_map_optionEquivLeft_fractionRing {G : MvPolynomial (Option σ) R}
     (hG : Irreducible G) (hpos : 0 < G.degreeOf none) :
     Irreducible ((optionEquivLeft R σ G).map (algebraMap (MvPolynomial σ R) L)) := by
+  have : Nontrivial (MvPolynomial σ R) := (algebraMap (MvPolynomial σ R) L).domain_nontrivial
+  have : Nontrivial R := (C : R →+* MvPolynomial σ R).domain_nontrivial
+  have : IsDomain R := {}
   have hGirr := hG.map (optionEquivLeft R σ)
   have hdeg : (optionEquivLeft R σ G).natDegree ≠ 0 := by
     rw [natDegree_optionEquivLeft]

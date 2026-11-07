@@ -126,4 +126,9 @@ theorem succ_le_of_two_mul_two_pow_dvd {α κ : ℕ} (hk : 2 * 2 ^ κ ∣ 2 ^ α
   have hd : 2 ^ (κ + 1) ∣ 2 ^ α := by rw [pow_succ, mul_comm]; exact hk
   exact (Nat.pow_dvd_pow_iff_le_right (by norm_num : (1 : ℕ) < 2)).mp hd
 
+/-- If `2k` divides `d = 2^α`, then `k` is itself a power of two. -/
+theorem exists_eq_two_pow_of_two_mul_dvd {α k : ℕ} (hk : 2 * k ∣ 2 ^ α) : ∃ κ, k = 2 ^ κ := by
+  obtain ⟨κ, -, hκ⟩ := (Nat.dvd_prime_pow Nat.prime_two).mp (dvd_trans (dvd_mul_left k 2) hk)
+  exact ⟨κ, hκ⟩
+
 end ArkLib.Lattices.CyclotomicModulus

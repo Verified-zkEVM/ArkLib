@@ -524,7 +524,6 @@ theorem poly_gen_is_zero_evading
     (maxTotalDegree P) (minSeedCard S)
     (MvPolynomial.totalDegree_linearCombination_le _ _ _ fun j =>
       Finset.le_sup (f := fun j => (P j |> MvPolynomial.totalDegree)) (Finset.mem_univ j))
-    (minSeedCard_pos S)
     (fun i => minSeedCard_le S i)).trans_eq ?_
   rw [ENNReal.ofReal_div_of_pos] <;> norm_cast
   exact minSeedCard_pos S
