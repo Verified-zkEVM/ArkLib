@@ -36,6 +36,9 @@ At `s = 1` it is the plain Reed-Solomon code (`mem_umCode_one_iff_mem_rsCode`).
   on `Polynomial.degreeLT F k`.
 * `ReedSolomon.Multiplicity.dim_umCode_eq_min`, `ReedSolomon.Multiplicity.dim_umCode` — the
   dimension is `min k (s * |ι|)`, hence `k` below saturation.
+* `ReedSolomon.Multiplicity.hammingDist_umCode_ge`, `ReedSolomon.Multiplicity.dist_umCode_eq` —
+  distinct codewords differ on at least `|ι| - (k - 1) / s` positions, with equality for the
+  minimum distance below saturation.
 
 ## The derivative is the ordinary one
 
@@ -227,6 +230,118 @@ lemma dim_umCode_eq_min {ι : Type*} [Fintype ι]
       · rw [← hdimsmall]
         exact hdimle
     rw [hdimhigh, min_eq_right hnsk]
+
+/-- Two distinct codewords of a univariate multiplicity code differ on at least
+`n - (k - 1) / s` positions: each position where they agree is a root of multiplicity `s` of
+the difference of their messages, whose degree is below `k`. -/
+theorem hammingDist_umCode_ge {ι : Type*} [Fintype ι] [DecidableEq F]
+    (domain : ι ↪ F) {k s : ℕ} (hchar : ringChar F = 0 ∨ k ≤ ringChar F)
+    {c c' : ι → Fin s → F} (hc : c ∈ umCode domain k s) (hc' : c' ∈ umCode domain k s)
+    (hne : c ≠ c') :
+    Fintype.card ι - (k - 1) / s ≤ hammingDist c c' := by
+  classical
+  obtain ⟨p, hp, rfl⟩ := Submodule.mem_map.mp hc
+  obtain ⟨q, hq, rfl⟩ := Submodule.mem_map.mp hc'
+  have hr : p - q ∈ Polynomial.degreeLT F k := sub_mem hp hq
+  have hr0 : p - q ≠ 0 := fun h ↦ hne (by rw [sub_eq_zero.mp h])
+  have hrdeg : (p - q).natDegree < k :=
+    (Polynomial.natDegree_lt_iff_degree_lt hr0).mpr (Polynomial.mem_degreeLT.mp hr)
+  let A : Finset ι := Finset.univ.filter
+    fun i ↦ umEvalOnPoints domain s p i = umEvalOnPoints domain s q i
+  have hmult : ∀ i ∈ A, s ≤ (p - q).rootMultiplicity (domain i) := by
+    intro i hi
+    refine (Polynomial.le_rootMultiplicity_iff hr0).mpr ?_
+    refine pow_dvd_of_eval_iterate_derivative_eq_zero hr hchar fun j ↦ ?_
+    have hagree := congrFun (Finset.mem_filter.mp hi).2 j
+    change (Polynomial.derivative^[j.val] p).eval (domain i) =
+      (Polynomial.derivative^[j.val] q).eval (domain i) at hagree
+    rw [Polynomial.iterate_derivative_sub, Polynomial.eval_sub, hagree, sub_self]
+  have hsum : A.card * s ≤ (p - q).natDegree := by
+    calc A.card * s = ∑ _i ∈ A, s := by simp
+      _ ≤ ∑ i ∈ A, (p - q).rootMultiplicity (domain i) := Finset.sum_le_sum hmult
+      _ = ∑ a ∈ A.map domain, (p - q).rootMultiplicity a := by rw [Finset.sum_map]
+      _ ≤ (p - q).natDegree := Polynomial.sum_rootMultiplicity_le_natDegree _
+  have hA : A.card ≤ (k - 1) / s := by
+    have hs : 0 < s := by
+      by_contra h
+      obtain rfl := Nat.eq_zero_of_not_pos h
+      exact hne (Subsingleton.elim _ _)
+    exact (Nat.le_div_iff_mul_le hs).mpr (by omega)
+  have hsplit : hammingDist (umEvalOnPoints domain s p) (umEvalOnPoints domain s q) + A.card =
+      Fintype.card ι := by
+    rw [hammingDist, add_comm]
+    exact Finset.card_filter_add_card_filter_not _
+  omega
+
+/-- A codeword attaining the distance bound: the evaluations of the product of `(X - a) ^ s`
+over `(k - 1) / s` domain points, which vanishes to order `s` on exactly those points. This
+direction needs no assumption on the characteristic. -/
+lemma exists_mem_umCode_hammingDist_zero_eq {ι : Type*} [Fintype ι] [DecidableEq F]
+    (domain : ι ↪ F) {k s : ℕ} (hk : 0 < k) (hks : k ≤ s * Fintype.card ι) :
+    ∃ c ∈ umCode domain k s, c ≠ 0 ∧
+      hammingDist c (0 : ι → Fin s → F) = Fintype.card ι - (k - 1) / s := by
+  classical
+  have hm : (k - 1) / s < Fintype.card ι := Nat.div_lt_of_lt_mul (by omega)
+  obtain ⟨T, -, hT⟩ := Finset.exists_subset_card_eq
+    (s := (Finset.univ : Finset ι)) (n := (k - 1) / s) (by simpa using hm.le)
+  let P : Polynomial F := ∏ i ∈ T, (Polynomial.X - Polynomial.C (domain i)) ^ s
+  have hPdeg : P.natDegree = (k - 1) / s * s := by
+    rw [Polynomial.natDegree_prod_of_monic _ _
+      fun i _ ↦ (Polynomial.monic_X_sub_C (domain i)).pow s]
+    simp [hT]
+  have hP : P ∈ Polynomial.degreeLT F k := by
+    refine Polynomial.mem_degreeLT.mpr
+      (lt_of_le_of_lt Polynomial.degree_le_natDegree (Nat.cast_lt.mpr ?_))
+    have := Nat.div_mul_le_self (k - 1) s
+    omega
+  have hzero : ∀ i ∈ T, umEvalOnPoints domain s P i = 0 := by
+    intro i hi
+    ext j
+    have hdvd : (Polynomial.X - Polynomial.C (domain i)) ^ s ∣ P := Finset.dvd_prod_of_mem _ hi
+    obtain ⟨g, hg⟩ := Polynomial.pow_sub_dvd_iterate_derivative_of_pow_dvd j.val hdvd
+    change (Polynomial.derivative^[j.val] P).eval (domain i) = 0
+    rw [hg, Polynomial.eval_mul, Polynomial.eval_pow]
+    simp [Nat.sub_ne_zero_of_lt j.isLt]
+  have hne : ∀ i ∉ T, umEvalOnPoints domain s P i ≠ 0 := by
+    intro i hi h0
+    have hs : 0 < s := by
+      by_contra h
+      have hs0 : s = 0 := Nat.eq_zero_of_not_pos h
+      simp [hs0] at hks
+      omega
+    have h := congrFun h0 ⟨0, hs⟩
+    change P.eval (domain i) = 0 at h
+    rw [Polynomial.eval_prod, Finset.prod_eq_zero_iff] at h
+    obtain ⟨t, ht, h⟩ := h
+    have hti : t ≠ i := fun e ↦ hi (e ▸ ht)
+    simp only [Polynomial.eval_pow, Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C,
+      pow_eq_zero_iff hs.ne'] at h
+    exact hti (domain.injective (sub_eq_zero.mp h)).symm
+  have hdist : hammingDist (umEvalOnPoints domain s P) (0 : ι → Fin s → F) =
+      Fintype.card ι - (k - 1) / s := by
+    have hfilter : (Finset.univ.filter
+        fun i ↦ umEvalOnPoints domain s P i ≠ (0 : ι → Fin s → F) i) = Tᶜ := by
+      ext i
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_compl, Pi.zero_apply]
+      exact ⟨fun h hi ↦ h (hzero i hi), hne i⟩
+    rw [hammingDist, hfilter, Finset.card_compl, hT]
+  refine ⟨_, Submodule.mem_map_of_mem hP, ?_, hdist⟩
+  intro h0
+  rw [h0, hammingDist_self] at hdist
+  omega
+
+/-- The minimum distance of a univariate multiplicity code in the unsaturated range. -/
+theorem dist_umCode_eq {ι : Type*} [Fintype ι] [DecidableEq F]
+    (domain : ι ↪ F) {k s : ℕ} (hchar : ringChar F = 0 ∨ k ≤ ringChar F)
+    (hk : 0 < k) (hks : k ≤ s * Fintype.card ι) :
+    Code.dist (umCode domain k s : Set (ι → Fin s → F)) = Fintype.card ι - (k - 1) / s := by
+  obtain ⟨c, hc, hc0, hcd⟩ := exists_mem_umCode_hammingDist_zero_eq domain hk hks
+  have hmem : Fintype.card ι - (k - 1) / s ∈ {d | ∃ u ∈ (umCode domain k s : Set _), ∃ v ∈
+      (umCode domain k s : Set (ι → Fin s → F)), u ≠ v ∧ hammingDist u v ≤ d} :=
+    ⟨c, hc, 0, Submodule.zero_mem _, hc0, hcd.le⟩
+  refine le_antisymm (Nat.sInf_le hmem) (le_csInf ⟨_, hmem⟩ ?_)
+  rintro d ⟨u, hu, v, hv, huv, hd⟩
+  exact (hammingDist_umCode_ge domain hchar hu hv huv).trans hd
 
 end Field
 
