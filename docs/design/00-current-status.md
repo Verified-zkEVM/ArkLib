@@ -30,8 +30,8 @@ them yet, there is no interaction-layer rewinding extractor, and state restorati
 cover an adversary whose private randomness interleaves with its oracle queries (see
 [below](#interaction-layer-security)).
 
-No declaration under `ArkLib/` uses `sorry` outside the five solicited proofs recorded in
-`scripts/axiom_baseline.json` (coding-theory lower bounds, issue
+No declaration under `ArkLib/` uses `sorry` outside the four solicited proofs recorded in
+`scripts/axiom_baseline.json` (coding-theory bounds, issue
 [#1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352)); none of those is under
 `ArkLib/Interaction/` or `ArkLib/ProofSystem/Sumcheck/`.
 

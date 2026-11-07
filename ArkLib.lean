@@ -256,6 +256,7 @@ public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.LargeAlphabet.Cen
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.LargeAlphabet.Pigeonhole
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Linear
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon.SubspaceWitness
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.SubspaceDesign
 public import ArkLib.Data.CodingTheory.ListDecodability.PairAgreementBound
 public import ArkLib.Data.CodingTheory.ListDecodability.SampleIncidence
@@ -691,6 +692,7 @@ public import ArkLib.Data.Polynomial.ResultantDegree
 public import ArkLib.Data.Polynomial.ResultantSpecialization
 public import ArkLib.Data.Polynomial.SpecializationAvoidance
 public import ArkLib.Data.Polynomial.SplitFold
+public import ArkLib.Data.Polynomial.SubspacePolynomial
 public import ArkLib.Data.Polynomial.SymbolicInterpolationParameters
 public import ArkLib.Data.Polynomial.SymbolicInterpolationSupport
 public import ArkLib.Data.Polynomial.SymbolicInterpolationSurplus

@@ -6,10 +6,13 @@ Authors: Alexander Hicks
 module
 
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon.SubspaceWitness
 public import ArkLib.Data.CodingTheory.ReedSolomon
 public import ArkLib.Data.Probability.Uniform
+import Mathlib.Algebra.CharP.CharAndCard
 public import Mathlib.Analysis.SpecialFunctions.Pow.Real
 public import Mathlib.Analysis.SpecialFunctions.Log.Base
+import Mathlib.Combinatorics.Pigeonhole
 public import Mathlib.FieldTheory.Finite.Basic
 public import Mathlib.FieldTheory.Finiteness
 
@@ -41,6 +44,107 @@ open Code
 
 section ReedSolomonBounds
 
+/-- Pigeonhole: some fiber of `f` on `T` has at least `|T| / |β|` elements. -/
+private theorem exists_div_le_card_filter_eq {α β : Type*} [Fintype β] [Nonempty β]
+    [DecidableEq β] (T : Finset α) (f : α → β) :
+    ∃ b, (T.card : ℝ) / Fintype.card β ≤ ((T.filter (fun x => f x = b)).card : ℝ) := by
+  have hN : (Fintype.card β : ℝ) ≠ 0 := by exact_mod_cast Fintype.card_ne_zero
+  obtain ⟨b, -, hb⟩ := Finset.exists_le_card_fiber_of_nsmul_le_card_of_maps_to
+    (s := T) (t := Finset.univ) (f := f) (b := (T.card : ℝ) / Fintype.card β)
+    (fun x _ => Finset.mem_univ (f x)) Finset.univ_nonempty
+    (by rw [Finset.card_univ, nsmul_eq_mul, mul_div_cancel₀ _ hN])
+  exact ⟨b, hb⟩
+
+/-- Common denominator for `0 < α < β < 1` rational. -/
+private theorem exists_common_denom_of_rat (α β : ℚ) (hα : 0 < α) (hαβ : α < β)
+    (hβ : β < 1) :
+    ∃ d a₀ v₀ : ℕ, 0 < a₀ ∧ a₀ < v₀ ∧ v₀ < d ∧
+      (α : ℝ) = (a₀ : ℝ) / d ∧ (β : ℝ) = (v₀ : ℝ) / d := by
+  have hαn : 0 < α.num := Rat.num_pos.mpr hα
+  have hβn : 0 < β.num := Rat.num_pos.mpr (hα.trans hαβ)
+  have hαd : (0 : ℝ) < α.den := by exact_mod_cast α.den_pos
+  have hβd : (0 : ℝ) < β.den := by exact_mod_cast β.den_pos
+  have hαr : (α : ℝ) = ((α.num.toNat * β.den : ℕ) : ℝ) / ((α.den * β.den : ℕ) : ℝ) := by
+    have h1 : ((α.num.toNat : ℕ) : ℝ) = (α.num : ℝ) := by
+      have := Int.toNat_of_nonneg hαn.le
+      exact_mod_cast this
+    rw [Rat.cast_def]
+    push_cast
+    rw [h1]
+    field_simp
+  have hβr : (β : ℝ) = ((β.num.toNat * α.den : ℕ) : ℝ) / ((α.den * β.den : ℕ) : ℝ) := by
+    have h1 : ((β.num.toNat : ℕ) : ℝ) = (β.num : ℝ) := by
+      have := Int.toNat_of_nonneg hβn.le
+      exact_mod_cast this
+    rw [Rat.cast_def]
+    push_cast
+    rw [h1]
+    field_simp
+  have hdpos : (0 : ℝ) < ((α.den * β.den : ℕ) : ℝ) := by
+    push_cast; positivity
+  have hαβr : (α : ℝ) < β := by exact_mod_cast hαβ
+  have hβ1 : (β : ℝ) < 1 := by exact_mod_cast hβ
+  have hα0 : (0 : ℝ) < α := by exact_mod_cast hα
+  refine ⟨α.den * β.den, α.num.toNat * β.den, β.num.toNat * α.den, ?_, ?_, ?_, hαr, hβr⟩
+  · rw [hαr] at hα0
+    have := (div_pos_iff_of_pos_right hdpos).mp hα0
+    exact_mod_cast this
+  · rw [hαr, hβr] at hαβr
+    have := (div_lt_div_iff_of_pos_right hdpos).mp hαβr
+    exact_mod_cast this
+  · rw [hβr] at hβ1
+    have := (div_lt_one hdpos).mp hβ1
+    exact_mod_cast this
+
+/-- `⌊(2^(dn))^(a₀/d)⌋ = 2^(a₀ n)`. -/
+private theorem floor_two_pow_rpow {α : ℚ} {d a₀ n : ℕ} (hd : 0 < d)
+    (hα : (α : ℝ) = (a₀ : ℝ) / d) :
+    Nat.floor ((((2 ^ (d * n) : ℕ)) : ℝ) ^ (α : ℝ)) = 2 ^ (a₀ * n) := by
+  have h : (((2 ^ (d * n) : ℕ)) : ℝ) ^ (α : ℝ) = (2 : ℝ) ^ (a₀ * n) := by
+    rw [hα, Nat.cast_pow, Nat.cast_ofNat, ← Real.rpow_natCast (2 : ℝ) (d * n),
+      ← Real.rpow_mul (by norm_num), ← Real.rpow_natCast (2 : ℝ) (a₀ * n)]
+    congr 1
+    have : (d : ℝ) ≠ 0 := by exact_mod_cast hd.ne'
+    push_cast
+    field_simp
+  rw [h]
+  exact_mod_cast Nat.floor_natCast (R := ℝ) (2 ^ (a₀ * n))
+
+/-- `(2^(dn))^(v₀/d - 1) = 2^(v₀ n) / 2^(dn)`. -/
+private theorem two_pow_rpow_sub_one {β : ℚ} {d v₀ n : ℕ} (hd : 0 < d)
+    (hβ : (β : ℝ) = (v₀ : ℝ) / d) :
+    (((2 ^ (d * n) : ℕ)) : ℝ) ^ ((β : ℝ) - 1) = (2 : ℝ) ^ (v₀ * n) / ((2 ^ (d * n) : ℕ) : ℝ) := by
+  have hq : (((2 ^ (d * n) : ℕ)) : ℝ) = (2 : ℝ) ^ ((d * n : ℕ) : ℝ) := by
+    rw [Real.rpow_natCast]; push_cast; rfl
+  rw [Real.rpow_sub (by positivity), Real.rpow_one, hβ, hq, ← Real.rpow_mul (by norm_num),
+    ← Real.rpow_natCast (2 : ℝ) (v₀ * n)]
+  congr 2
+  have : (d : ℝ) ≠ 0 := by exact_mod_cast hd.ne'
+  push_cast
+  field_simp
+
+/-- The target bound equals `2^(v(m-v)) / q^(v-a)` with `m = dn, a = a₀n, v = v₀n`. -/
+private theorem rpow_logb_eq_two_pow_div {α β : ℚ} {d a₀ v₀ n : ℕ} (hd : 0 < d) (ha : a₀ < v₀)
+    (hv : v₀ < d) (hα : (α : ℝ) = (a₀ : ℝ) / d) (hβ : (β : ℝ) = (v₀ : ℝ) / d) :
+    (((2 ^ (d * n) : ℕ)) : ℝ) ^ (((α : ℝ) - (β : ℝ) ^ 2) * Real.logb 2 ((2 ^ (d * n) : ℕ) : ℝ)) =
+      (2 : ℝ) ^ (v₀ * n * (d * n - v₀ * n)) /
+        (((2 ^ (d * n) : ℕ)) : ℝ) ^ (v₀ * n - a₀ * n) := by
+  have hdr : (d : ℝ) ≠ 0 := by exact_mod_cast hd.ne'
+  have hq : (((2 ^ (d * n) : ℕ)) : ℝ) = (2 : ℝ) ^ ((d * n : ℕ) : ℝ) := by
+    rw [Real.rpow_natCast]; push_cast; rfl
+  have hlog : Real.logb 2 ((2 ^ (d * n) : ℕ) : ℝ) = ((d * n : ℕ) : ℝ) := by
+    rw [hq, Real.logb_rpow (by norm_num) (by norm_num)]
+  rw [hlog, hq, ← Real.rpow_mul (by norm_num), ← Real.rpow_natCast ((2 : ℝ) ^ ((d * n : ℕ) : ℝ)),
+    ← Real.rpow_mul (by norm_num), ← Real.rpow_natCast (2 : ℝ) (v₀ * n * (d * n - v₀ * n)),
+    ← Real.rpow_sub (by norm_num)]
+  congr 1
+  rw [hα, hβ]
+  have h1 : v₀ * n ≤ d * n := Nat.mul_le_mul_right _ hv.le
+  have h2 : a₀ * n ≤ v₀ * n := Nat.mul_le_mul_right _ ha.le
+  push_cast [Nat.cast_sub h1, Nat.cast_sub h2]
+  field_simp
+  ring
+
 /-- **Reed-Solomon codes over extension fields have superpolynomial lists** ([ABF26] Theorem 3.12,
 after [BKR06, Corollary 2.2]). Fix `0 < α < β < 1`. For infinitely many prime powers `q` there is a
 Reed-Solomon code `C := RS[F_q, F_q, ⌊q^α⌋]` and a word `w : F_q → F_q` with
@@ -61,16 +165,13 @@ subsequence `q = 2^m`, integrality of `αm` also makes `q^α = 2^(αm)` a natura
 
 **Degree convention.** [BKR06] uses degree **≤ K**, whereas [ABF26] and
 `ReedSolomon.code domain k` use degree **< k**. BKR06's codewords are differences of
-monic subspace polynomials of degree `2^v`; their degree is at most `2^u`, with varying
+monic subspace polynomials of degree `2^v`. Their degree is at most `2^u`, with varying
 leading coefficients, so subtracting a fixed member need not lower the degree.
 Instead, with `a = αm ≥ 1` and `v = βm`, apply [BKR06, Theorem 2.1] with `u = a − 1`:
 its degree bound `2^(a−1) < 2^a = k` places the witnesses inside the degree-`< k` code.
-The rational restriction remains necessary to choose integral `αm` and `βm`.
-
-Solicited proof: see
-<https://github.com/Verified-zkEVM/ArkLib/issues/1352>. -/
+The rational restriction remains necessary to choose integral `αm` and `βm`. -/
 theorem rs_lambda_superpoly_extension
-    (α β : ℚ) (_hα_pos : 0 < α) (_hα_lt : α < β) (_hβ_lt : β < 1) :
+    (α β : ℚ) (hα_pos : 0 < α) (hα_lt : α < β) (hβ_lt : β < 1) :
     ∃ qs : ℕ → ℕ, StrictMono qs ∧ (∀ i, IsPrimePow (qs i)) ∧
       ∀ i : ℕ,
         ∀ {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
@@ -83,7 +184,48 @@ theorem rs_lambda_superpoly_extension
             let C := ReedSolomon.code domain k
             ((closeCodewordsRel ((C : Set (ι → F))) w δ).ncard : ℝ) ≥
               (q : ℝ) ^ (((α : ℝ) - (β : ℝ) ^ 2) * Real.logb 2 q) := by
-  sorry -- external admit: [BKR06, Corollary 2.2].
+  obtain ⟨d, a₀, v₀, ha₀, hav, hvd, hα, hβ⟩ := exists_common_denom_of_rat α β hα_pos hα_lt hβ_lt
+  have hd : 0 < d := by omega
+  refine ⟨fun i => 2 ^ (d * (i + 1)), ?_, ?_, ?_⟩
+  · intro i j hij
+    exact Nat.pow_lt_pow_right (by norm_num) (Nat.mul_lt_mul_of_pos_left (by omega) hd)
+  · intro i
+    exact Nat.prime_two.isPrimePow.pow (by positivity)
+  · intro i ι _ _ _ F _ _ _ hF hι
+    dsimp only at hF hι
+    have : CharP F 2 := charP_of_card_eq_prime_pow hF
+    have hvm : v₀ * (i + 1) ≤ d * (i + 1) := Nat.mul_le_mul_right _ hvd.le
+    have hav' : a₀ * (i + 1) ≤ v₀ * (i + 1) := Nat.mul_le_mul_right _ hav.le
+    obtain ⟨T, hTcard, hTV⟩ := Polynomial.exists_finset_addSubgroup_card hF hvm
+    obtain ⟨b, hb⟩ := exists_div_le_card_filter_eq T
+      (fun V => subspaceTopCoeffs (a₀ * (i + 1)) (v₀ * (i + 1)) (Polynomial.subspacePolynomial V))
+    let domain : ι ↪ F := (Fintype.equivOfCardEq (hι.trans hF.symm)).toEmbedding
+    refine ⟨domain, ReedSolomon.evalOnPoints domain
+      (subspaceTopPoly (a₀ * (i + 1)) (v₀ * (i + 1)) b), ?_⟩
+    have key := card_le_ncard_closeCodewordsRel_of_topCoeffs domain (hι.trans hF.symm) hav' b
+      (T.filter fun V => subspaceTopCoeffs (a₀ * (i + 1)) (v₀ * (i + 1))
+        (Polynomial.subspacePolynomial V) = b)
+      (fun V hV => ⟨hTV V (Finset.mem_filter.1 hV).1, (Finset.mem_filter.1 hV).2⟩)
+    dsimp only
+    rw [floor_two_pow_rpow hd hα, two_pow_rpow_sub_one hd hβ]
+    rw [hF] at key
+    have hcardfun : (Fintype.card (Fin (v₀ * (i + 1) - a₀ * (i + 1)) → F) : ℝ) =
+        ((2 ^ (d * (i + 1)) : ℕ) : ℝ) ^ (v₀ * (i + 1) - a₀ * (i + 1)) := by
+      simp [hF]
+    rw [hcardfun] at hb
+    have hpos : (0 : ℝ) < ((2 ^ (d * (i + 1)) : ℕ) : ℝ) ^ (v₀ * (i + 1) - a₀ * (i + 1)) := by
+      positivity
+    have hT : (2 : ℝ) ^ (v₀ * (i + 1) * (d * (i + 1) - v₀ * (i + 1))) ≤ (T.card : ℝ) := by
+      exact_mod_cast hTcard
+    calc ((2 ^ (d * (i + 1)) : ℕ) : ℝ) ^
+          (((α : ℝ) - (β : ℝ) ^ 2) * Real.logb 2 ((2 ^ (d * (i + 1)) : ℕ) : ℝ))
+        = (2 : ℝ) ^ (v₀ * (i + 1) * (d * (i + 1) - v₀ * (i + 1))) /
+            ((2 ^ (d * (i + 1)) : ℕ) : ℝ) ^ (v₀ * (i + 1) - a₀ * (i + 1)) :=
+          rpow_logb_eq_two_pow_div hd hav hvd hα hβ
+      _ ≤ (T.card : ℝ) / ((2 ^ (d * (i + 1)) : ℕ) : ℝ) ^ (v₀ * (i + 1) - a₀ * (i + 1)) :=
+          div_le_div_of_nonneg_right hT hpos.le
+      _ ≤ _ := hb
+      _ ≤ _ := key
 
 /-- **Reed-Solomon codes over prime fields have large lists** ([ABF26] Theorem 3.13, after
 [GHSZ02, Corollary 20]). Fix `0 < α, β < 1`. For all sufficiently large primes `p` there is a code
