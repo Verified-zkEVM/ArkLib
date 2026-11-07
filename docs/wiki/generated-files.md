@@ -17,6 +17,7 @@ Edit the source of truth, not the output.
 | `docs/kb/_generated/lean-citations.json` | generated map from Lean files to cited keys | No | `python3 ./scripts/kb/extract_lean_citations.py` |
 | `docs/kb/_generated/declarations.json` | declaration catalog across `ArkLib/` (file, line, kind, namespace, name, brief signature, docstring head) | No | `python3 ./scripts/kb/extract_declarations.py` |
 | `docs/kb/_generated/dedup-report.md` | duplicate-candidate review aid (same-short-name groups + cross-file near-duplicate docstrings) derived from the catalog | No | `python3 ./scripts/kb/find_dedup_candidates.py` |
+| `ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges/Goldilocks512/Arithmetic.lean` | generated kernel-checked slot inequalities for the `RS[512, 128]` certificate witnesses | No | rerun `scripts/grand_challenges/gen_slot_arithmetic.py` with the command in its docstring |
 
 `python3 ./scripts/kb/regenerate.py` refreshes all four `docs/kb/_generated/` files in one run and
 scaffolds missing cited-paper stubs (`--no-paper-stubs` skips the stubs). The KB workflow runs it;

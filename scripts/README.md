@@ -72,6 +72,12 @@ This directory contains various utility scripts for the ArkLib project.
   - Resolve review context from cited keys or changed Lean files
   - See `kb/README.md` for usage
 
+### Grand Challenges
+- **`grand_challenges/gen_slot_arithmetic.py`** - Generates a Lean module that proves first-order
+  slot inequalities by `decide +kernel` in blocks, for the safe-side certificate witnesses
+  - Writes `ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges/Goldilocks512/Arithmetic.lean`
+  - The command for each generated file is in the script's docstring
+
 ## Quick Start
 
 ### Recommended Routine Validation

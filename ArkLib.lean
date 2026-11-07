@@ -323,7 +323,12 @@ public import ArkLib.Data.CodingTheory.ProximityGap.Folding.ListDecodability
 public import ArkLib.Data.CodingTheory.ProximityGap.Folding.Multilinear
 public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges
 public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.CapacityBounds
+public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.CertificateWitnesses
+public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.Goldilocks512.Arithmetic
+public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.Goldilocks512.Lower
+public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.Goldilocks512.Upper
 public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.ListDecoding
+public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.SlotArithmetic
 public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.UniqueDecoding
 public import ArkLib.Data.CodingTheory.ProximityGap.InformationSetLowerBound
 public import ArkLib.Data.CodingTheory.ProximityGap.LineDecoding
@@ -370,6 +375,7 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.Uni
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.WeightedSupport
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.WeightedSupportInterpolant
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.CosetList
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.DirectJetList
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Bounds
 public import
@@ -513,6 +519,7 @@ public import
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TupleSpecialization
 public import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement.ConstantCode
+public import ArkLib.Data.CodingTheory.ReedSolomon.PrimitiveRootDomain
 public import ArkLib.Data.CodingTheory.ReedSolomon.ReciprocalWord
 public import ArkLib.Data.CodingTheory.SubspaceDesign
 public import ArkLib.Data.Domain.CosetFftDomain.Block
