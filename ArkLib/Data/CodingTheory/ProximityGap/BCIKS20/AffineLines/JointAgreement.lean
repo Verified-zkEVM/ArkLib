@@ -454,7 +454,7 @@ theorem RS_jointAgreement_of_goodCoeffs_card_gt {deg : ℕ} {domain : ι ↪ F} 
           (deg := deg) (domain := domain) (δ := δ) hdeg_le hδ u S hgood hS
       let quot_x : F → F[X] := fun z =>
         if hz : z ∈ good then
-          Classical.choose (RS_exists_Pz_of_mem_goodCoeffs
+          Classical.choose (RS_exists_Pz_of_relDist_le
             (deg := deg) (domain := domain) (δ := δ) u (z := z) (hgood z hz))
         else 0
       let quot_y : F → F[X] := fun x =>
@@ -471,13 +471,13 @@ theorem RS_jointAgreement_of_goodCoeffs_card_gt {deg : ℕ} {domain : ι ↪ F} 
         intro z hz
         have hz_good : z ∈ good := by simpa [P_y] using hz
         let Pz : F[X] := Classical.choose
-          (RS_exists_Pz_of_mem_goodCoeffs (deg := deg)
+          (RS_exists_Pz_of_relDist_le (deg := deg)
             (domain := domain) (δ := δ) u (z := z) (hgood z hz_good))
         have hPz :
             Pz.natDegree < deg ∧
               Δ₀(u 0 + z • u 1, Pz.eval ∘ domain) ≤ e :=
           Classical.choose_spec
-            (RS_exists_Pz_of_mem_goodCoeffs
+            (RS_exists_Pz_of_relDist_le
               (deg := deg) (domain := domain) (δ := δ) u (z := z) (hgood z hz_good))
         have hquot_def : quot_x z = Pz := by
           simp [quot_x, hz_good, Pz]

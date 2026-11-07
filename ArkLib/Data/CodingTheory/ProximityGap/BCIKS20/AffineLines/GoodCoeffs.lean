@@ -41,7 +41,7 @@ theorem mem_RS_goodCoeffs [Fintype F] {deg : ℕ} {domain : ι ↪ F} {u : WordS
   simp [RS_goodCoeffs]
 
 open Polynomial in
-theorem RS_exists_Pz_of_mem_goodCoeffs {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} [NeZero deg]
+theorem RS_exists_Pz_of_relDist_le {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} [NeZero deg]
     (u : WordStack F (Fin 2) ι) {z : F}
     (hz : δᵣ(u 0 + z • u 1, ReedSolomon.code domain deg) ≤ δ) :
     ∃ Pz : F[X], Pz.natDegree < deg ∧
@@ -72,7 +72,7 @@ theorem RS_exists_Pz_of_mem_goodCoeffs {deg : ℕ} {domain : ι ↪ F} {δ : ℝ
 
 open scoped BigOperators in
 open Polynomial in
-theorem RS_exists_kernelVec_BW_homMatrix_eval_of_mem_goodCoeffs
+theorem RS_exists_kernelVec_BW_homMatrix_eval_of_relDist_le
     {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} [NeZero deg]
     (u : WordStack F (Fin 2) ι) {z : F}
     (hz : δᵣ(u 0 + z • u 1, ReedSolomon.code domain deg) ≤ δ) :
@@ -91,7 +91,7 @@ theorem RS_exists_kernelVec_BW_homMatrix_eval_of_mem_goodCoeffs
   set e : ℕ := Nat.floor (δ * Fintype.card ι) with he
   -- Get the close polynomial `Pz`
   obtain ⟨Pz, hPzdeg, hdist⟩ :=
-    RS_exists_Pz_of_mem_goodCoeffs (deg := deg) (domain := domain) (δ := δ) u (z := z) hz
+    RS_exists_Pz_of_relDist_le (deg := deg) (domain := domain) (δ := δ) u (z := z) hz
   have hdist' : Δ₀(u 0 + z • u 1, Pz.eval ∘ domain) ≤ e := by
     simpa [he] using hdist
   -- Extract a small set of disagreement coordinates
@@ -264,7 +264,7 @@ theorem RS_BW_homMatrix_det_submatrix_eq_zero_of_goodCoeffs_card_gt
     have hz' : δᵣ(u 0 + z • u 1, ReedSolomon.code domain deg) ≤ δ := hgood z hz
     -- Extract a nonzero kernel vector for the evaluated BW matrix
     have hk :=
-      RS_exists_kernelVec_BW_homMatrix_eval_of_mem_goodCoeffs (deg := deg) (domain := domain)
+      RS_exists_kernelVec_BW_homMatrix_eval_of_relDist_le (deg := deg) (domain := domain)
         (δ := δ) (u := u) (z := z) hz'
     -- unfold the `let e := ...` in hk
     dsimp at hk
