@@ -27,7 +27,7 @@ variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 /-- The trace head, then the polynomial-to-quadratic bridge, then the Figure 3 evaluation step. -/
 noncomputable def composed (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp)) (hq5 : q % 8 = 5) {b ω γ : ℕ}
-    (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
+    (hκ : (2 * ω) ^ 2 < q)
     (hk : 2 * 2 ^ κ ∣ 2 ^ α) (h2 : (2 : ZMod q) ≠ 0)
     (pp : ArkLib.Lattices.Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) messageDigits
       outerRows (2 ^ r) innerDigits dRows) :=
@@ -36,21 +36,24 @@ noncomputable def composed (init : ProbComp σ)
       (quadEvalBetaSq γ b zDigits ((𝓜(q, α)).φ.natDegree) m messageDigits) γ (2 * ω) ▷
     (bridgePackage (oSpec := oSpec) 𝓜(q, α) init impl pp (b : ZMod q)
         (quadEvalBetaSq γ b zDigits ((𝓜(q, α)).φ.natDegree) m messageDigits) γ (2 * ω) ▷
-      quadEvalPackage init impl hq5 hκ hτ pp)
+      quadEvalPackage init impl hq5 hκ pp)
 
 /-- The composite starts at the trace head's scalar relation and ends at the evaluation step's
 output relation. -/
 theorem composed_endpoints (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp)) (hq5 : q % 8 = 5) {b ω γ : ℕ}
-    (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
+    (hκ : (2 * ω) ^ 2 < q)
     (hk : 2 * 2 ^ κ ∣ 2 ^ α) (h2 : (2 : ZMod q) ≠ 0)
     (pp : ArkLib.Lattices.Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) messageDigits
       outerRows (2 ^ r) innerDigits dRows) :
-    (composed (oSpec := oSpec) init impl hq5 (b := b) (ω := ω) (γ := γ) hκ hτ hk h2 pp).relIn =
+    (composed (oSpec := oSpec) (zDigits := zDigits) init impl hq5
+        (b := b) (ω := ω) (γ := γ) hκ hk h2 pp).relIn =
         ArkLib.Lattices.Hachi.TraceHead.relScalarEval α κ hk h2 pp (b : ZMod q)
           (quadEvalBetaSq γ b zDigits ((𝓜(q, α)).φ.natDegree) m messageDigits) γ (2 * ω) ∧
-      (composed (oSpec := oSpec) init impl hq5 (b := b) (ω := ω) (γ := γ) hκ hτ hk h2
-          pp).relOut = (quadEvalPackage init impl hq5 (b := b) (γ := γ) hκ hτ pp).relOut :=
+      (composed (oSpec := oSpec) (zDigits := zDigits) init impl hq5
+          (b := b) (ω := ω) (γ := γ) hκ hk h2
+          pp).relOut =
+        (quadEvalPackage (zDigits := zDigits) init impl hq5 (b := b) (γ := γ) hκ pp).relOut :=
   ⟨rfl, rfl⟩
 
 end HachiTraceHeadCompositionTest

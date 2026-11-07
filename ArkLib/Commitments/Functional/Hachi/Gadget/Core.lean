@@ -290,15 +290,24 @@ representative of `x` is within the balanced capacity `(b-1-⌊b/2⌋)·S`, the 
 of `x` reconstruct it: `∑ₑ bᵉ · digit x e = x`.
 
 **No `q ≤ b ^ digits` hypothesis appears**, and none could: the theorem is about the short
-residues only. The shift lands in `[0, b ^ digits)` — nonnegativity from
+residues only. For `1 < b`, the shift lands in `[0, b ^ digits)` — nonnegativity from
 `bound ≤ ⌊b/2⌋·S` (implied by the capacity bound) and the upper end from
 `(b-1-⌊b/2⌋)·S + ⌊b/2⌋·S = (b-1)·S = b ^ digits - 1` — so the ordinary base-`b` digits of the
 shift have length `≤ digits` and `Nat.ofDigits` recovers it; the digitwise `⌊b/2⌋` subtractions
-then sum to exactly the shift and cancel. -/
-theorem boundedBalancedZmodDigit_reconstruct {b digits bound : ℕ} (hb : 1 < b)
+then sum to exactly the shift and cancel. For `b ≤ 1`, the capacity and the short input are
+both zero, so all digits vanish. -/
+theorem boundedBalancedZmodDigit_reconstruct {b digits bound : ℕ}
     (hcap : bound ≤ balancedDigitCapacity b digits) (x : ZMod q)
     (hx : x.valMinAbs.natAbs ≤ bound) :
     ∑ e : Fin digits, (b : ZMod q) ^ (e : ℕ) * boundedBalancedZmodDigit b digits x e = x := by
+  by_cases hb : 1 < b
+  swap
+  · have hhalf : b / 2 = 0 := by omega
+    have hcap0 : balancedDigitCapacity b digits = 0 := by
+      simp [balancedDigitCapacity, show b - 1 = 0 from by omega]
+    have hx0 : x.valMinAbs = 0 := by rw [hcap0] at hcap; omega
+    have hxzero : x = 0 := by simpa [hx0] using (ZMod.coe_valMinAbs x).symm
+    simp [boundedBalancedZmodDigit, hhalf, hxzero]
   set S : ℕ := digitOnesValue b digits with hSdef
   -- The two capacity endpoints, as `ℤ`-atoms `p` (negative side) and `rc` (positive side).
   set p : ℤ := ((b / 2 : ℕ) : ℤ) * (S : ℤ) with hpdef
@@ -376,11 +385,11 @@ This is the `τ = 5` instance of `Params.lean` ([NOZ26] §4.4's own rule; Figure
 `4`): at `q = 4294967197`, `b = 16`, `digits = 5` the capacity is
 `(16-1-8)·(1+16+256+4096+65536) = 7 · 69905 = 489335`, comfortably above the honest bound
 `2¹⁰ · 16 · 8 = 131072` — and `q ≤ 16⁵` is nowhere assumed (it is false). -/
-def boundedBalancedZmodDigitDecomposition (b digits bound : ℕ) (hb : 1 < b)
+def boundedBalancedZmodDigitDecomposition (b digits bound : ℕ)
     (hcap : bound ≤ balancedDigitCapacity b digits) :
     BoundedDigitDecomposition (b : ZMod q) digits bound where
   digit := boundedBalancedZmodDigit b digits
-  reconstruct_of_bound x hx := boundedBalancedZmodDigit_reconstruct hb hcap x hx
+  reconstruct_of_bound x hx := boundedBalancedZmodDigit_reconstruct hcap x hx
 
 end BoundedDigit
 
@@ -415,14 +424,14 @@ def IsLawfulGadgetDecomposition (base : R) {rows digits : Nat}
 omit [DecidableEq R] in
 /-- The gadget entry at the flattened index `finProdFinEquiv (i', e)` is `constRq (base^e)`
 on the diagonal block and `0` elsewhere. -/
-theorem gadgetEntry_finProdFinEquiv (base : R) {rows digits : Nat} (hd : 0 < digits)
+theorem gadgetEntry_finProdFinEquiv (base : R) {rows digits : Nat}
     (i i' : Fin rows) (e : Fin digits) :
     gadgetEntry Φ base i (finProdFinEquiv (i', e))
       = if i' = i then Rq.constRq Φ (base ^ (e : ℕ)) else 0 := by
   unfold gadgetEntry
   have hval : (finProdFinEquiv (i', e)).val = e.val + digits * i'.val := rfl
   have hdiv : (finProdFinEquiv (i', e)).val / digits = i'.val := by
-    rw [hval, Nat.add_mul_div_left _ _ hd, Nat.div_eq_of_lt e.isLt, zero_add]
+    rw [hval, Nat.add_mul_div_left _ _ e.pos, Nat.div_eq_of_lt e.isLt, zero_add]
   have hmod : (finProdFinEquiv (i', e)).val % digits = e.val := by
     rw [hval, Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt e.isLt]
   rw [hdiv, hmod]
@@ -431,7 +440,7 @@ theorem gadgetEntry_finProdFinEquiv (base : R) {rows digits : Nat} (hd : 0 < dig
 omit [DecidableEq R] in
 /-- The gadget product, evaluated at row `i`, is the base-weighted sum of the `digits`
 slots of block `i`. -/
-theorem gadgetMul_apply (base : R) {rows digits : Nat} (hd : 0 < digits)
+theorem gadgetMul_apply (base : R) {rows digits : Nat}
     (v : PolyVec (Rq Φ) (rows * digits)) (i : Fin rows) :
     gadgetMul Φ base v i
       = ∑ e : Fin digits, Rq.constRq Φ (base ^ (e : ℕ)) * v (finProdFinEquiv (i, e)) := by
@@ -442,11 +451,11 @@ theorem gadgetMul_apply (base : R) {rows digits : Nat} (hd : 0 < digits)
   rw [Finset.sum_eq_single i]
   · apply Finset.sum_congr rfl
     intro e _
-    rw [gadgetEntry_finProdFinEquiv Φ base hd i i e, ite_eq_left rfl]
+    rw [gadgetEntry_finProdFinEquiv Φ base i i e, ite_eq_left rfl]
   · intro i' _ hne
     apply Finset.sum_eq_zero
     intro e _
-    rw [gadgetEntry_finProdFinEquiv Φ base hd i i' e, ite_eq_right hne, zero_mul]
+    rw [gadgetEntry_finProdFinEquiv Φ base i i' e, ite_eq_right hne, zero_mul]
   · intro h
     exact absurd (Finset.mem_univ i) h
 
@@ -486,17 +495,21 @@ reconstruction law holds *at the coefficients actually decomposed*. Both round-t
 reduction are instances: unconditional for a `DigitDecomposition` (`gadgetDecompose_lawful`) and
 conditional on shortness for a `BoundedDigitDecomposition`
 (`boundedGadgetDecompose_gadgetMul_eq`). -/
-theorem gadgetDecomposeFun_gadgetMul_eq {rows digits : Nat} (hd : 0 < digits)
-    (h1 : 1 ≤ Φ.φ.natDegree) (digit : R → Fin digits → R) (x : PolyVec (Rq Φ) rows)
+theorem gadgetDecomposeFun_gadgetMul_eq {rows digits : Nat}
+    (digit : R → Fin digits → R) (x : PolyVec (Rq Φ) rows)
     (hrec : ∀ (i : Fin rows) (k : ℕ), k < Φ.φ.natDegree →
       ∑ e : Fin digits, base ^ (e : ℕ) * digit ((x i).1.coeff k) e = (x i).1.coeff k) :
     gadgetMul Φ base (gadgetDecomposeFun Φ digit x) = x := by
   funext i
-  rw [gadgetMul_apply Φ base hd]
+  rw [gadgetMul_apply Φ base]
   simp_rw [gadgetDecomposeFun_apply Φ digit x i]
   apply Subtype.ext
   rw [CompPoly.CPolynomial.eq_iff_coeff]
   intro k
+  by_cases hk : k < Φ.φ.natDegree
+  swap
+  · rw [Rq.coeff_eq_zero_of_natDegree_le Φ _ (not_lt.mp hk),
+      Rq.coeff_eq_zero_of_natDegree_le Φ _ (not_lt.mp hk)]
   have hsum : (∑ e : Fin digits,
         Rq.constRq Φ (base ^ (e : ℕ)) * Rq.ofFinCoeff Φ Φ.φ.natDegree
           (fun k' => digit ((x i).1.coeff k') e)).1.coeff k
@@ -510,14 +523,12 @@ theorem gadgetDecomposeFun_gadgetMul_eq {rows digits : Nat} (hd : 0 < digits)
           (fun k' => digit ((x i).1.coeff k') e)).1.coeff k
         = base ^ (e : ℕ) * (if k < Φ.φ.natDegree then digit ((x i).1.coeff k) e else 0) := by
     intro e
-    rw [Rq.constRq_mul_coeff Φ h1, Rq.ofFinCoeff_coeff Φ _ (Rq.phi_natDegree_le_degree Φ)]
+    rw [Rq.constRq_mul_coeff Φ (Nat.one_le_of_lt hk),
+      Rq.ofFinCoeff_coeff Φ _ (Rq.phi_natDegree_le_degree Φ)]
   rw [hsum]
   simp_rw [hterm]
-  by_cases hk : k < Φ.φ.natDegree
-  · simp only [ite_eq_left hk]
-    exact hrec i k hk
-  · simp only [ite_eq_right hk, mul_zero, Finset.sum_const_zero]
-    exact (Rq.coeff_eq_zero_of_natDegree_le Φ (x i) (not_lt.mp hk)).symm
+  simp only [ite_eq_left hk]
+  exact hrec i k hk
 
 /-- The base-`b` gadget decomposition (Hachi `G⁻¹`) induced by a `DigitDecomposition`. -/
 def gadgetDecompose {rows digits : Nat} (dd : DigitDecomposition base digits)
@@ -525,10 +536,10 @@ def gadgetDecompose {rows digits : Nat} (dd : DigitDecomposition base digits)
   gadgetDecomposeFun Φ dd.digit x
 
 /-- The base-`b` gadget decomposition is a lawful gadget decomposition. -/
-theorem gadgetDecompose_lawful {rows digits : Nat} (hd : 0 < digits) (h1 : 1 ≤ Φ.φ.natDegree)
+theorem gadgetDecompose_lawful {rows digits : Nat}
     (dd : DigitDecomposition base digits) :
     IsLawfulGadgetDecomposition Φ base (gadgetDecompose Φ dd (rows := rows)) := fun x =>
-  gadgetDecomposeFun_gadgetMul_eq Φ hd h1 dd.digit x
+  gadgetDecomposeFun_gadgetMul_eq Φ dd.digit x
     (fun i k _ => dd.reconstruct ((x i).1.coeff k))
 
 /-! ## The bounded gadget decomposition `J⁻¹` on short inputs
@@ -561,32 +572,9 @@ theorem boundedGadgetDecompose_gadgetMul_eq
     (x : PolyVec (Rq Φ) rows)
     (hx : ∀ (i : Fin rows) (k : ℕ), k < Φ.φ.natDegree →
       ((x i).1.coeff k).valMinAbs.natAbs ≤ bound) :
-    gadgetMul Φ base (bdd.gadgetDecompose Φ x) = x := by
-  by_cases hd : 0 < digits
-  · by_cases h1 : 1 ≤ Φ.φ.natDegree
-    · exact gadgetDecomposeFun_gadgetMul_eq Φ hd h1 bdd.digit x
-        (fun i k hk => bdd.reconstruct_of_bound ((x i).1.coeff k) (hx i k hk))
-    · funext i
-      apply Subtype.ext
-      rw [CompPoly.CPolynomial.eq_iff_coeff]
-      intro k
-      rw [Rq.coeff_eq_zero_of_natDegree_le Φ _ (by omega),
-        Rq.coeff_eq_zero_of_natDegree_le Φ _ (by omega)]
-  · have hd0 : digits = 0 := by omega
-    subst digits
-    have hx0 : x = 0 := by
-      funext i
-      apply Subtype.ext
-      rw [CompPoly.CPolynomial.eq_iff_coeff]
-      intro k
-      simp only [Pi.zero_apply, Rq.zero_val, CompPoly.CPolynomial.coeff_zero]
-      by_cases hk : k < Φ.φ.natDegree
-      · have h := bdd.reconstruct_of_bound ((x i).1.coeff k) (hx i k hk)
-        simpa using h.symm
-      · exact Rq.coeff_eq_zero_of_natDegree_le Φ _ (not_lt.mp hk)
-    rw [hx0]
-    funext i
-    simp [gadgetMul, matVecMul, dot]
+    gadgetMul Φ base (bdd.gadgetDecompose Φ x) = x :=
+  gadgetDecomposeFun_gadgetMul_eq Φ bdd.digit x
+    (fun i k hk => bdd.reconstruct_of_bound ((x i).1.coeff k) (hx i k hk))
 
 end BoundedGadget
 

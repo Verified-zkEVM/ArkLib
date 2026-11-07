@@ -237,6 +237,7 @@ theorem scaledMessage_ne_of_message_ne {base : ZMod q} {βSq κ : Nat}
     scaledMessage Φ opening₁ opening₂ i ≠ scaledMessage Φ opening₂ opening₁ i :=
   scalarVecMul_mul_ne_of_ne hB₁.unit hB₂.unit hmsgNe
 
+omit [NeZero q] in
 /-- A verified block pair bounds a scaled message's squared `ℓ₂` norm (over `𝓜(q, α)`,
 where the Micciancio/Young product bound applies). -/
 theorem scaledMessage_l2NormSq_le {base : ZMod q} {βSq κ : Nat}
@@ -252,6 +253,7 @@ theorem scaledMessage_l2NormSq_le {base : ZMod q} {βSq κ : Nat}
   scalarVecMul_mul_l2NormSq_le α (opening₁.challenge i) (opening₂.challenge i)
     (opening₁.message i) hB₂.challenge_short hB₁.scaled_short
 
+omit [NeZero q] in
 /-- Verified weak blocks with equal flattened inner decomps give a valid inner relation. -/
 theorem inner_relation_of_verified {base : ZMod q} {βSq γ κ : Nat}
     {pp : PublicParams 𝓜(q, α)
@@ -453,6 +455,7 @@ def outerAdvToModuleSIS
     | Sum.inl _ => pure (dummySolution Φ (blocks * (innerRows * innerDigits)))
     | Sum.inr z => pure z
 
+omit [NeZero q] in
 /-- Pointwise weak-binding to Module-SIS bound for fixed samples (over `𝓜(q, α)`). -/
 theorem sample_advantage_le_moduleSIS (base : ZMod q)
     (hq5 : q % 8 = 5) (βSq γ κ : Nat) (hκ : κ ^ 2 < q)
@@ -491,6 +494,7 @@ variable
   [SampleableType (Simple.PublicParams 𝓜(q, α) innerRows (messageRows * messageDigits))]
   [SampleableType (Simple.PublicParams 𝓜(q, α) outerRows (blocks * (innerRows * innerDigits)))]
 
+omit [NeZero q] in
 /-- **Weak binding reduces to Module-SIS.** The Hachi/Greyhound weak-binding advantage (over
 `𝓜(q, α)`) is bounded by the sum of the inner and outer extracted Module-SIS advantages. -/
 theorem advantage_le_moduleSIS (base : ZMod q)

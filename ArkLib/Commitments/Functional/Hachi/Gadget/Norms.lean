@@ -145,12 +145,20 @@ omit [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)] in
 most `⌊b/2⌋` — the box `[−⌊b/2⌋, ⌈b/2⌉−1]` is contained in the symmetric ball of radius `⌊b/2⌋`
 (check both parities: `(b+1)/2 − 1 ≤ b/2` always). This is the form the `ℓ∞`/`ℓ₂²` gadget bounds
 consume, so the balanced decomposition is short in the ordinary sense too — at radius `⌊b/2⌋`,
-roughly half of the `b − 1` that unsigned digits would give. -/
+roughly half of the `b − 1` that unsigned digits would give. The ball bound holds even when
+the balanced digits wrap modulo `q`. -/
 theorem balancedZmodDigit_natAbs_le {b digits : ℕ} (hb : 1 < b) (hq : q ≤ b ^ digits)
-    (hbq : b ≤ q / 2) (c : ZMod q) (e : Fin digits) :
+    (c : ZMod q) (e : Fin digits) :
     ((balancedZmodDigitDecomposition b digits hb hq).digit c e).valMinAbs.natAbs ≤ b / 2 := by
-  obtain ⟨hlo, hhi⟩ := balancedZmodDigit_valMinAbs_mem hb hq hbq c e
-  omega
+  simp only [balancedZmodDigitDecomposition, zmodDigitDecomposition]
+  set u := (Nat.digits b (c + balancedShift b digits).val).getD (e : ℕ) 0 with hu
+  have hub : u < b := by
+    rw [hu, Nat.getD_digits _ _ hb]
+    exact Nat.mod_lt _ (by omega)
+  calc ((u : ZMod q) - ((b / 2 : ℕ) : ZMod q)).valMinAbs.natAbs
+      ≤ ((u : ℤ) - ((b / 2 : ℕ) : ℤ)).natAbs :=
+        valMinAbs_natAbs_le _ (by simp only [Int.cast_sub, Int.cast_natCast])
+    _ ≤ b / 2 := by omega
 
 /-! ### The bounded balanced digits: same range, no `q ≤ b ^ digits`
 
@@ -190,12 +198,13 @@ theorem boundedBalancedZmodDigit_valMinAbs_mem {b digits : ℕ} (hb : 1 < b) (hb
   rw [hval]
   omega
 
-omit [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)] in
+omit [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)] in
 /-- **Ball form of the bounded balanced-digit bound**: every digit has centered absolute value at
 most `⌊b/2⌋` — the form Eq. (20)'s relaxed `c6` ball check consumes. -/
 theorem boundedBalancedZmodDigit_natAbs_le {b digits : ℕ} (hb : 1 < b) (hbq : b ≤ q / 2)
     (x : ZMod q) (e : Fin digits) :
     (boundedBalancedZmodDigit b digits x e).valMinAbs.natAbs ≤ b / 2 := by
+  have : NeZero q := ⟨by omega⟩
   obtain ⟨hlo, hhi⟩ := boundedBalancedZmodDigit_valMinAbs_mem hb hbq x e
   omega
 
@@ -362,17 +371,17 @@ The wraparound of the `ZMod q` powers `bᵘ` is immaterial: the integer
 the centered representative is minimal among all representatives (`valMinAbs_natAbs_le`).
 Holds for **any** range-bounded `v` (in particular an adversarial `ẑ`), not just honest
 digit decompositions. -/
-theorem gadgetMul_zmod_coeff_natAbs_le {b rows digits : ℕ} (hd : 0 < digits)
-    (h1 : 1 ≤ Φ.φ.natDegree) {γ : ℕ} (v : PolyVec (Rq Φ) (rows * digits))
+theorem gadgetMul_zmod_coeff_natAbs_le {b rows digits : ℕ} {γ : ℕ}
+    (v : PolyVec (Rq Φ) (rows * digits))
     (hv : vecLInftyNorm Φ v ≤ γ) (i : Fin rows) {k : ℕ} (hk : k < Φ.φ.natDegree) :
     ((gadgetMul Φ (b : ZMod q) v i).1.coeff k).valMinAbs.natAbs
       ≤ (∑ u ∈ Finset.range digits, b ^ u) * γ := by
   -- the coefficient of the gadget product is the digit-weighted sum of block coefficients
   have hcoeff : (gadgetMul Φ (b : ZMod q) v i).1.coeff k
       = ∑ e : Fin digits, (b : ZMod q) ^ (e : ℕ) * (v (finProdFinEquiv (i, e))).1.coeff k := by
-    rw [gadgetMul_apply Φ (b : ZMod q) hd v i, ← Rq.coeffHom_apply Φ k, map_sum]
+    rw [gadgetMul_apply Φ (b : ZMod q) v i, ← Rq.coeffHom_apply Φ k, map_sum]
     simp only [Rq.coeffHom_apply]
-    exact Finset.sum_congr rfl fun e _ => Rq.constRq_mul_coeff Φ h1 _ _ k
+    exact Finset.sum_congr rfl fun e _ => Rq.constRq_mul_coeff Φ (Nat.one_le_of_lt hk) _ _ k
   -- the explicit integer representative of that coefficient
   have hrep : ((∑ e : Fin digits,
         (b : ℤ) ^ (e : ℕ) * ((v (finProdFinEquiv (i, e))).1.coeff k).valMinAbs : ℤ) : ZMod q)
@@ -408,32 +417,32 @@ theorem gadgetMul_zmod_coeff_natAbs_le {b rows digits : ℕ} (hd : 0 < digits)
         rw [← Finset.sum_mul, Fin.sum_univ_eq_sum_range (fun u => b ^ u) digits]
 
 /-- Entrywise `ℓ∞` growth of the gadget recomposition: `‖(G·ᵥv)ᵢ‖∞ ≤ (∑_{u<digits} bᵘ)·γ`. -/
-theorem gadgetMul_zmod_lInftyNorm_le {b rows digits : ℕ} (hd : 0 < digits)
-    (h1 : 1 ≤ Φ.φ.natDegree) {γ : ℕ} (v : PolyVec (Rq Φ) (rows * digits))
+theorem gadgetMul_zmod_lInftyNorm_le {b rows digits : ℕ} {γ : ℕ}
+    (v : PolyVec (Rq Φ) (rows * digits))
     (hv : vecLInftyNorm Φ v ≤ γ) (i : Fin rows) :
     Rq.lInftyNorm Φ (gadgetMul Φ (b : ZMod q) v i)
       ≤ (∑ u ∈ Finset.range digits, b ^ u) * γ := by
   unfold Rq.lInftyNorm
   exact Finset.sup_le fun k hkmem =>
-    gadgetMul_zmod_coeff_natAbs_le Φ hd h1 v hv i (Finset.mem_range.mp hkmem)
+    gadgetMul_zmod_coeff_natAbs_le Φ v hv i (Finset.mem_range.mp hkmem)
 
 /-- **`ℓ∞` growth of the gadget recomposition.**
 `‖G_{b,rows} ·ᵥ v‖∞ ≤ (∑_{u<digits} bᵘ) · γ` whenever `‖v‖∞ ≤ γ` — for **any**
 range-bounded `v` (adversarial `ẑ` included). -/
-theorem gadgetMul_zmod_vecLInftyNorm_le {b rows digits : ℕ} (hd : 0 < digits)
-    (h1 : 1 ≤ Φ.φ.natDegree) {γ : ℕ} (v : PolyVec (Rq Φ) (rows * digits))
+theorem gadgetMul_zmod_vecLInftyNorm_le {b rows digits : ℕ} {γ : ℕ}
+    (v : PolyVec (Rq Φ) (rows * digits))
     (hv : vecLInftyNorm Φ v ≤ γ) :
     vecLInftyNorm Φ (gadgetMul Φ (b : ZMod q) v)
       ≤ (∑ u ∈ Finset.range digits, b ^ u) * γ := by
   unfold vecLInftyNorm
-  exact Finset.sup_le fun i _ => gadgetMul_zmod_lInftyNorm_le Φ hd h1 v hv i
+  exact Finset.sup_le fun i _ => gadgetMul_zmod_lInftyNorm_le Φ v hv i
 
 /-- **The `J`-recomposition `ℓ₂²` chain.** From the range check `‖ẑ‖∞ ≤ γ`
 (Eq. (20)'s `ẑ ∈ S_b`, symmetric model), the recomposed `z = J·ẑ` satisfies
 `‖z‖₂² ≤ zRecomposeL2SqBound γ b τ (deg φ) rows` — no primitive `‖z‖₂²` verifier check
 is needed. -/
-theorem gadgetMul_zmod_vecL2NormSq_le {b rows digits : ℕ} (hd : 0 < digits)
-    (h1 : 1 ≤ Φ.φ.natDegree) {γ : ℕ} (v : PolyVec (Rq Φ) (rows * digits))
+theorem gadgetMul_zmod_vecL2NormSq_le {b rows digits : ℕ} {γ : ℕ}
+    (v : PolyVec (Rq Φ) (rows * digits))
     (hv : vecLInftyNorm Φ v ≤ γ) :
     ‖gadgetMul Φ (b : ZMod q) v‖₂²
       ≤ zRecomposeL2SqBound γ b digits Φ.φ.natDegree rows := by
@@ -442,19 +451,19 @@ theorem gadgetMul_zmod_vecL2NormSq_le {b rows digits : ℕ} (hd : 0 < digits)
         vecL2NormSq_le_card_mul_lInftyNorm_sq Φ _
     _ ≤ rows * (Φ.φ.natDegree * ((∑ u ∈ Finset.range digits, b ^ u) * γ) ^ 2) :=
         Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ (Nat.pow_le_pow_left
-          (gadgetMul_zmod_vecLInftyNorm_le Φ hd h1 v hv) 2))
+          (gadgetMul_zmod_vecLInftyNorm_le Φ v hv) 2))
     _ = zRecomposeL2SqBound γ b digits Φ.φ.natDegree rows := rfl
 
 /-- End-to-end subtraction chain: two range-checked decompositions recompose to vectors whose
 difference is `ℓ₂²`-bounded by `subL2NormSqBound (zRecomposeL2SqBound …) = 4·B_z` — exactly the
 `βSq` needed for `VerifiedBlock.scaled_short` (`‖c̄ⱼ •ᵥ sⱼ‖₂² = ‖z_sib − z_cent‖₂² ≤ 4·B_z`). -/
-theorem gadgetMul_zmod_sub_l2NormSq_le {b rows digits : ℕ} (hd : 0 < digits)
-    (h1 : 1 ≤ Φ.φ.natDegree) {γ : ℕ} (v w : PolyVec (Rq Φ) (rows * digits))
+theorem gadgetMul_zmod_sub_l2NormSq_le {b rows digits : ℕ} {γ : ℕ}
+    (v w : PolyVec (Rq Φ) (rows * digits))
     (hv : vecLInftyNorm Φ v ≤ γ) (hw : vecLInftyNorm Φ w ≤ γ) :
     ‖gadgetMul Φ (b : ZMod q) v - gadgetMul Φ (b : ZMod q) w‖₂²
       ≤ subL2NormSqBound (zRecomposeL2SqBound γ b digits Φ.φ.natDegree rows) :=
-  sub_l2NormSq_le Φ _ _ (gadgetMul_zmod_vecL2NormSq_le Φ hd h1 v hv)
-    (gadgetMul_zmod_vecL2NormSq_le Φ hd h1 w hw)
+  sub_l2NormSq_le Φ _ _ (gadgetMul_zmod_vecL2NormSq_le Φ v hv)
+    (gadgetMul_zmod_vecL2NormSq_le Φ w hw)
 
 end ZModGadgetRecomposeNorms
 
