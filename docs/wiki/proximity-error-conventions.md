@@ -138,8 +138,9 @@ hypotheses:
 - `mcaError_interleaved_le` gives the interleaved-to-base inequality;
 - `mcaError_interleaved_eq` gives equality.
 
-Jo26's field-size-weighted bound for seed spaces larger than the field remains unformalized in
-ArkLib.
+For seed spaces larger than the field, `mcaError_moduleInterleavedCode_le_fieldWeighted` gives
+Jo26's field-size-weighted bound: over a finite field with `q` elements and `s` rows, interleaving
+multiplies the error by at most `(q ^ s - 1) / (q ^ (s - 1) * (q - 1))`.
 
 The numeric correlated-agreement values are connected to the predicate API by:
 

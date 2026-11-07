@@ -278,13 +278,7 @@ theorem exists_forall_isProjectionBad_of_interleaved (U : ℓ → ι → κ → 
   obtain ⟨l, hl⟩ := exists_rowFunctional_forall_notMem C U s T hs fun x hx ↦ (hT x hx).2.2
   refine ⟨fun j i ↦ ∑ r, l r • U j i r, fun x hx ↦ ⟨T x, (hT x hx).1, ?_, hl x hx⟩⟩
   have hcomb := projectedWord_rowCombination_mem C _ (T x) l (hT x hx).2.1
-  have hfun : (fun i ↦ ∑ r, l r • (∑ j, G x j • U j i) r) =
-      fun i ↦ ∑ j, G x j • ∑ r, l r • U j i r := by
-    funext i
-    simp only [Finset.sum_apply, Pi.smul_apply, Finset.smul_sum]
-    rw [Finset.sum_comm]
-    exact Finset.sum_congr rfl fun j _ ↦ Finset.sum_congr rfl fun r _ ↦ smul_comm _ _ _
-  rw [hfun] at hcomb
+  rw [rowCombination_sum_smul] at hcomb
   exact hcomb
 
 /-- **Interleaving does not increase the number of projection-bad seeds.** Suppose every family
