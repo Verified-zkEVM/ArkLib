@@ -36,13 +36,15 @@ variable {B : Type} [CommRing B] (data : PackingData B)
 /-- Every component of a base-valued polynomial family has the claimed opening value. -/
 def openingClaimRel (m : ℕ) :
     Set (((data.ιP → data.E) × (Fin m → data.E)) × (data.ιP → B⦃≤ 1⦄[X Fin m])) :=
-  {x | ∀ i, x.1.1 i = MvPolynomial.aeval x.1.2 (x.2 i).val}
+  { ⟨⟨claimedValues, point⟩, components⟩ |
+    ∀ i, claimedValues i = MvPolynomial.aeval point (components i).val }
 
 /-- Each slice is the coordinate-weighted Boolean sum of the packed polynomial. -/
 def sliceRel (m : ℕ) (r : Fin m → data.E) :
     Set ((data.ιE → data.P) × data.P⦃≤ 1⦄[X Fin m]) :=
-  {x | ∀ u, x.1 u =
-    ∑ y : Fin m → Fin 2, data.eqCoord r y u • x.2.val.eval (y : Fin m → data.P)}
+  { ⟨slices, polynomial⟩ |
+    ∀ u, slices u =
+    ∑ y : Fin m → Fin 2, data.eqCoord r y u • polynomial.val.eval (y : Fin m → data.P) }
 
 /-- The consistency check reads packed slice coordinates back in the opening basis. -/
 def claimConsistent (α : data.ιP → data.E) (s : data.ιE → data.P) : Prop :=
@@ -149,9 +151,10 @@ variable {C : Type*} [CommRing C] [Algebra B C] [Algebra data.P C]
 This algebraic definition does not require the coefficient transport to be injective. -/
 def sumcheckClaimRel (m : ℕ) (r : Fin m → data.E) (weight : data.ιE → C) :
     Set (C × data.P⦃≤ 1⦄[X Fin m]) :=
-  {x | x.1 = ∑ y : Fin m → Fin 2,
+  { ⟨target, polynomial⟩ |
+    target = ∑ y : Fin m → Fin 2,
     (data.multiplier r weight).val.eval (y : Fin m → C) *
-      algebraMap data.P C (x.2.val.eval (y : Fin m → data.P))}
+      algebraMap data.P C (polynomial.val.eval (y : Fin m → data.P)) }
 
 /-- Batching honest slices gives the sumcheck target in any compatible challenge algebra. -/
 theorem sumcheckClaim_of_slices {m : ℕ} {r : Fin m → data.E}

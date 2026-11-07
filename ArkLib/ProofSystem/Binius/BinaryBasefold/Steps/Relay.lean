@@ -63,6 +63,8 @@ variable {Context : Type} {multpoly : Context → MultilinearPoly L ℓ}
 
 section RelayStep
 
+/-! ## Protocol definitions -/
+
 /-- The prover state of the relay step. -/
 def RelayProverState (i : Fin ℓ) : Fin (0 + 1) → Type := fun
   | ⟨0, _⟩ => Statement (L := L) Context i.succ ×
@@ -154,7 +156,8 @@ lemma mapOStmtOutRelayStep_eq_materializeOutput
     (i : Fin ℓ) (hNCR : ¬ IsCommitmentRound ℓ ϑ i)
     (oStmtIn : ∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j)
     (transcript : FullTranscript pSpecRelay) :
-    let v := relayOracleVerifier (Context := Context) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR
+    let v := relayOracleVerifier (Context := Context) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      i hNCR
     mapOStmtOutRelayStep 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR oStmtIn =
     OracleVerifier.materializeOutput v transcript.challenges oStmtIn transcript.messages := by
   intro v
@@ -202,6 +205,10 @@ theorem relayOracleVerifierGuardedForm_out (i : Fin ℓ) (hNCR : ¬ IsCommitment
     (mapOStmtOutRelayStep_eq_materializeOutput (Context := Context) 𝔽q β i hNCR s.2 tr).symm
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
+
+/-! ## Security
+
+### Perfect completeness -/
 
 omit [DecidableEq 𝔽q] h_β₀_eq_1 [SampleableType L] in
 /-- Outside a commitment round, reindexing the oracle statements takes the strict fold-step output
@@ -266,6 +273,8 @@ theorem relayOracleReduction_perfectCompleteness (i : Fin ℓ)
     exact mapOStmtOutRelayStep_mem_strictRoundRelation 𝔽q β i hNCR stmt oStmt wit hIn
   · exact (relayOracleVerifierGuardedForm_out (Context := Context) 𝔽q β i hNCR (stmt, oStmt)
       default).symm
+
+/-! ### Round-by-round knowledge soundness -/
 
 /-- The relay step has no rounds, so its round-by-round knowledge error is the empty family. -/
 def relayKnowledgeError (m : pSpecRelay.ChallengeIdx) : ℝ≥0 :=

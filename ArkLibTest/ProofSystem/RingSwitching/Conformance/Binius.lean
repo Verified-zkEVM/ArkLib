@@ -68,7 +68,7 @@ theorem accepted_iff (s : GF4) (z : P₄.A) (c : Fin 1 → GF4)
 
 theorem honest_input : ((claimAt 0, oStmt₀), tX₀) ∈ TensorPrefix.relIn P₄ rfl exactOStmtIn := by
   constructor
-  · simp [claimAt, TensorPrefix.layout, tX₀, r₀]
+  · simp [TensorPrefix.layout, tX₀, r₀]
   · rw [TensorPrefix.packedMLE_components_eq_packMLE]
     rfl
 
@@ -299,7 +299,7 @@ theorem false_zero_input (t : MultilinearPoly GF2 2) :
   rw [hu] at hc
   have he := hs.trans (layout.reconstruct r₀ t)
   rw [hc] at he
-  simp [claimAt] at he
+  simp at he
 
 /-- A false scalar claim aborts the materialized head independently of its oracle statement. -/
 theorem failed_check_aborts (ost : ∀ j, exactOStmtIn.OStmtIn j) (c : Fin 1 → GF4) :

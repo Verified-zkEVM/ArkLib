@@ -66,6 +66,8 @@ variable {Context : Type} {multpoly : Context → MultilinearPoly L ℓ}
 
 section FinalSumcheckStep
 
+/-! ## Protocol definitions -/
+
 open Classical in
 /-- The prover of the final sum-check step: it sends the constant of its fully folded word. -/
 noncomputable def finalSumcheckProver :
@@ -186,6 +188,10 @@ theorem finalSumcheckVerifierGuardedForm_out
       ({ ctx := s.1.ctx, sumcheck_target := s.1.sumcheck_target, challenges := s.1.challenges,
           finalConstant := show L from tr.messages ⟨0, rfl⟩ }, s.2) := rfl
 
+/-! ## Security
+
+### Perfect completeness -/
+
 omit [DecidableEq 𝔽q] in
 /-- Perfect completeness of the final sum-check step, from the strict round relation at `ℓ` to the
 strict final sum-check output relation. -/
@@ -224,6 +230,8 @@ theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type}
     exact decide_eq_decide.mpr Iff.rfl
   · intro stmt oracles tr
     rfl
+
+/-! ### Round-by-round knowledge soundness -/
 
 /-- The final sum-check step sends no challenge, so its round-by-round knowledge error is the empty
 family. -/
