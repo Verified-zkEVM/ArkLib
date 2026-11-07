@@ -30,19 +30,32 @@ variable {F : Type} [Field F] [DecidableEq F] {n a k d : ℕ}
 
 omit [DecidableEq F] in
 /-- Taking the image under a folding map cannot decrease the density of a set. -/
-theorem card_le_mul_card_sqFoldMapGen_image {n : ℕ} (domain : SmoothCosetFftDomain n F)
+theorem card_le_mul_card_sqFoldMapGen_image {n : ℕ}
     (k : ℕ) (S : Finset (Fin (2 ^ n))) :
     S.card ≤ 2 ^ k * (S.image (sqFoldMapGen (i := k))).card := by
   classical
   apply Finset.card_le_mul_card_image
   intro x _
-  apply le_trans (Finset.card_le_card (t :=
-    CosetFftDomainClass.blockIdx domain k (domain.subdomain k x)) ?_)
-    (by simp)
-  intro i hi
-  obtain ⟨_, hix⟩ := Finset.mem_filter.mp hi
-  rw [CosetFftDomainClass.mem_blockIdx,
-    ← CosetFftDomainClass.pow_eq_subdomain_sqFoldMapGen (ω := domain) (i := k) i, hix]
+  have hbound : 2 ^ n ≤ 2 ^ k * 2 ^ (n - k) := by
+    rw [← pow_add]
+    exact Nat.pow_le_pow_right (by omega) (by omega)
+  apply le_trans (Finset.card_le_card_of_injOn
+    (fun i : Fin (2 ^ n) ↦ i.val / 2 ^ (n - k)) (t := Finset.range (2 ^ k)) ?_ ?_)
+    (Finset.card_range _).le
+  · intro i _
+    exact Finset.mem_range.mpr (Nat.div_lt_of_lt_mul
+      (i.isLt.trans_le (by simpa [mul_comm] using hbound)))
+  · intro i hi j hj hij
+    have hi' := (Finset.mem_filter.mp hi).2
+    have hj' := (Finset.mem_filter.mp hj).2
+    have hmod : i.val % 2 ^ (n - k) = j.val % 2 ^ (n - k) :=
+      congrArg Fin.val (hi'.trans hj'.symm)
+    apply Fin.ext
+    have h₁ := Nat.mod_add_div i.val (2 ^ (n - k))
+    have h₂ := Nat.mod_add_div j.val (2 ^ (n - k))
+    change i.val / 2 ^ (n - k) = j.val / 2 ^ (n - k) at hij
+    rw [hmod, hij] at h₁
+    exact h₁.symm.trans h₂
 
 /-- Convert agreement on a large accepting set into a density bound. The lifting premise
 is independent of the representation of a commitment transcript. -/
@@ -73,7 +86,7 @@ theorem accepting_density_le_of_agreement {n d : ℕ} (domain : SmoothCosetFftDo
 /-- Lift a polynomial agreement certificate through a safe fold, on the projected positions
 of a large set of original queries. This reconciles absolute and nested domain indexing. -/
 theorem exists_polynomial_agree_on_projection
-    (domain : SmoothCosetFftDomain n F) (hak : a + k ≤ n) (hd : 0 < d)
+    (domain : SmoothCosetFftDomain n F) (hak : a + k ≤ n)
     (f : Fin (2 ^ (n - a)) → F) (α : F) (θ : ℝ)
     (hsafe : ¬ FoldingAgreementFailure (domain.subdomain a) f k d θ α)
     (S : Finset (Fin (2 ^ n))) (hlarge : (2 ^ n : ℝ) * (1 - θ) ≤ S.card)
@@ -88,10 +101,10 @@ theorem exists_polynomial_agree_on_projection
   have hTlarge : (2 ^ (n - a - k) : ℝ) * (1 - θ) ≤ T.card := by
     have h₁ : (S.card : ℝ) ≤
         2 ^ a * ((S.image (sqFoldMapGen (i := a))).card : ℝ) := by
-      exact_mod_cast card_le_mul_card_sqFoldMapGen_image domain a S
+      exact_mod_cast card_le_mul_card_sqFoldMapGen_image a S
     have h₂ : ((S.image (sqFoldMapGen (i := a))).card : ℝ) ≤
         2 ^ k * (T.card : ℝ) := by
-      exact_mod_cast card_le_mul_card_sqFoldMapGen_image (domain.subdomain a) k
+      exact_mod_cast card_le_mul_card_sqFoldMapGen_image k
         (S.image (sqFoldMapGen (i := a)))
     have hn : (2 : ℝ) ^ n = 2 ^ a * (2 ^ k * 2 ^ (n - a - k)) := by
       rw [← pow_add, ← pow_add]
@@ -124,7 +137,8 @@ theorem exists_polynomial_agree_on_projection
     by_contra h
     exact hsafe ⟨T, by simpa using hTlarge, hfold, h⟩
   obtain ⟨u, hu, hagree⟩ := hlift
-  let : NeZero (2 ^ k * d) := ⟨by positivity⟩
+  let : NeZero (2 ^ k * d) :=
+    ⟨Nat.ne_of_gt (Nat.mul_pos (by positivity) (Nat.zero_lt_of_lt hp))⟩
   obtain ⟨q, hq, rfl⟩ := mem_code_iff_exists_polynomial_of_ne_zero.mp hu
   refine ⟨q, hq, fun z hz ↦ ?_⟩
   have h := hagree (sqFoldMapGen (i := a) z)

@@ -228,6 +228,7 @@ section Distance
 variable {M} [Fintype (Query M)] [Nonempty (Query M)]
     [∀ q, DecidableEq (O.toOC.spec q)]
 
+omit [Nonempty (Query M)] in
 /-- Two distinct values of a type with oracle distance at most `d` agree at a uniform query with
 probability at most `d / |Query|`. -/
 theorem prob_answer_eq_le_of_distanceLE {d : ℕ} (hDist : distanceLE O d) (a b : M)
@@ -250,6 +251,7 @@ theorem prob_answer_eq_le_of_distanceLE {d : ℕ} (hDist : distanceLE O d) (a b 
 
 variable (M)
 
+omit [Nonempty (Query M)] in
 /-- For a type with oracle distance at most `d`, the random-query reduction is round-by-round
 knowledge sound with error `d / |Query|`. -/
 theorem oracleVerifier_rbrKnowledgeSoundness_of_distanceLE {d : ℕ} (hDist : distanceLE O d) :

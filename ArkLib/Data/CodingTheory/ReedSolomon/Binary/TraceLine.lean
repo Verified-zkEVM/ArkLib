@@ -82,12 +82,12 @@ theorem exists_polynomial_agree_traceLine_eq_half {m : ℕ} (hm : 3 ≤ m)
   by_cases hz : z = 0
   · -- The repaired origin completes the nonzero trace-zero fiber.
     subst z
-    refine ⟨binaryTraceQuotient m 1, natDegree_binaryTraceQuotient_lt hm 1, ?_⟩
+    refine ⟨binaryTraceQuotient m 1, natDegree_binaryTraceQuotient_lt 1, ?_⟩
     let nonzeroAgreements := Finset.univ.filter fun x : F ↦ x ≠ 0 ∧
       (binaryTraceQuotient m 1).eval x = x ^ (binaryTraceTopDegree m - 1)
     have hnonzero : nonzeroAgreements.card = Fintype.card F / 2 - 1 := by
       simpa [nonzeroAgreements] using
-        binaryTraceQuotient_one_nonzero_agreement_card (F := F) hm hcard
+        binaryTraceQuotient_one_nonzero_agreement_card (F := F) hcard
     have hsets :
         Finset.univ.filter (fun x : F ↦
           modifiedPowerWord m x + 0 * reciprocalWord τ x =
@@ -116,7 +116,7 @@ theorem exists_polynomial_agree_traceLine_eq_half {m : ℕ} (hm : 3 ≤ m)
   · -- Invert the line parameter to obtain the normalized trace-one witness.
     let s : F := z⁻¹
     have hs : s ≠ 0 := inv_ne_zero hz
-    refine ⟨binaryTraceQuotient m s, natDegree_binaryTraceQuotient_lt hm s, ?_⟩
+    refine ⟨binaryTraceQuotient m s, natDegree_binaryTraceQuotient_lt s, ?_⟩
     --
     -- Trace one rules out an accidental extra agreement at the pole.
     have horigin :

@@ -54,7 +54,7 @@ lemma binaryTraceQuotient_agreement_iff {m : ℕ}
         omega
       rw [eval_binaryTraceQuotient_zero (by omega) s]
       simp [hpow, hs]
-  have hnorm := eval_binaryNormalizedTracePoly hm hcard hs x
+  have hnorm := eval_binaryNormalizedTracePoly hcard hs x
   rw [binaryNormalizedTracePoly, eval_add, eval_X_pow, eval_mul, eval_X] at hnorm
   constructor
   · intro hagree
@@ -134,7 +134,7 @@ lemma binaryTraceQuotient_agreement_card {m : ℕ} (hcard : Fintype.card F = 2 ^
 
 omit [CharP F 2] in
 /-- At `s = 1`, the quotient agrees with the pure power at the nonzero trace-zero points. -/
-lemma binaryTraceQuotient_one_nonzero_agreement_card {m : ℕ} (hm : 3 ≤ m)
+lemma binaryTraceQuotient_one_nonzero_agreement_card {m : ℕ}
     (hcard : Fintype.card F = 2 ^ m) :
     (Finset.univ.filter fun x : F ↦ x ≠ 0 ∧
       (binaryTraceQuotient m 1).eval x =
@@ -158,7 +158,7 @@ lemma binaryTraceQuotient_one_nonzero_agreement_card {m : ℕ} (hm : 3 ≤ m)
           constructor
           · rintro ⟨hx, hagree⟩
             refine ⟨hx, ?_⟩
-            have hnorm := eval_binaryNormalizedTracePoly (by omega) hcard one_ne_zero x
+            have hnorm := eval_binaryNormalizedTracePoly hcard one_ne_zero x
             rw [binaryNormalizedTracePoly, eval_add, eval_X_pow, eval_mul, eval_X,
               hagree] at hnorm
             have hxpow : x * x ^ (binaryTraceTopDegree m - 1) =
@@ -176,7 +176,7 @@ lemma binaryTraceQuotient_one_nonzero_agreement_card {m : ℕ} (hm : 3 ≤ m)
             exact hz.symm
           · rintro ⟨hx, htrace⟩
             refine ⟨hx, ?_⟩
-            have hnorm := eval_binaryNormalizedTracePoly (by omega) hcard one_ne_zero x
+            have hnorm := eval_binaryNormalizedTracePoly hcard one_ne_zero x
             rw [binaryNormalizedTracePoly, eval_add, eval_X_pow, eval_mul, eval_X] at hnorm
             simp only [one_pow, one_mul, inv_one] at hnorm
             rw [htrace] at hnorm

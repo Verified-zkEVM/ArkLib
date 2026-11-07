@@ -37,18 +37,11 @@ variable {R : Type*} [Field R] [BEq R] [LawfulBEq R] [DecidableEq R]
 
 /-! ## Reducing the trace to a monomial sum -/
 
-/-- **`Tr_H(X^i) = Σ_{m∈H} X^{i·m}`** (for `i` below the modulus degree): the trace of a
-monomial is the sum of its images under all of `H`, each a single (reduced) monomial. -/
-theorem traceH_Xpow (α k : ℕ) {i : ℕ} (hi : i < 2 ^ α) :
-    traceH α k (Xpow (powTwoCyclotomic (R := R) α) i)
-      = ∑ m ∈ Hexp α k, Xpow (powTwoCyclotomic (R := R) α) (i * m) := by
-  unfold traceH traceOver
-  exact Finset.sum_congr rfl (fun m _ => galoisAut_Xpow α m hi)
-
-/-- **`Tr_H(X^j) = Σ_{m∈H} X^{j·m}` for any exponent `j`** (no `j < d` bound), via the general
-`galoisAut_Xpow'` and oddness of the `Hexp` exponents. Needed for the Theorem 2 kernel, where the
-exponents `e_p + e_q·σ_{-1}` are large. -/
-theorem traceH_Xpow' (α k j : ℕ) :
+/-- **`Tr_H(X^j) = Σ_{m∈H} X^{j·m}`**: the trace of a monomial is the sum of its images under
+all of `H`, each a single (reduced) monomial. This holds for every exponent `j`, via the general
+`galoisAut_Xpow'` and oddness of the `Hexp` exponents; the Theorem 2 kernel needs the large
+exponents `e_p + e_q·σ_{-1}`. -/
+theorem traceH_Xpow (α k j : ℕ) :
     traceH α k (Xpow (powTwoCyclotomic (R := R) α) j)
       = ∑ m ∈ Hexp α k, Xpow (powTwoCyclotomic (R := R) α) (j * m) := by
   unfold traceH traceOver
@@ -110,64 +103,67 @@ theorem four_pow_i_geom_zero (α κ i : ℕ) (h2 : (2 : R) ≠ 0)
 `⟨4k+1⟩ = {(4k+1)^a mod 2d}` equals the arithmetic progression `{4k·j+1 : j<n}` (both have `n`
 distinct elements, and `(4k+1)^a ≡ 1 mod 4k`), which linearizes the exponent and exposes the
 geometric series. -/
-theorem four_pow_i_reindex (α κ i : ℕ) (hκ : κ + 1 ≤ α) :
+theorem four_pow_i_reindex (α κ i : ℕ) :
     ∑ a ∈ Finset.range (2 ^ (α - κ - 1)),
         Xpow (powTwoCyclotomic (R := R) α) (i * ((4 * 2 ^ κ + 1) ^ a % 2 ^ (α + 1)))
       = Xpow (powTwoCyclotomic (R := R) α) i
         * ∑ j ∈ Finset.range (2 ^ (α - κ - 1)),
             (Xpow (powTwoCyclotomic (R := R) α) (4 * 2 ^ κ * i)) ^ j := by
-  have h2κ : 1 ≤ 2 ^ κ := Nat.one_le_two_pow
-  have hgM : (4 * 2 ^ κ : ℕ) ∣ 2 ^ (α + 1) := by
-    rw [show (4 * 2 ^ κ : ℕ) = 2 ^ (2 + κ) from by rw [show (4 : ℕ) = 2 ^ 2 from rfl, ← pow_add]]
-    exact pow_dvd_pow 2 (by omega)
-  have hMn : 4 * 2 ^ κ * 2 ^ (α - κ - 1) = 2 ^ (α + 1) := by
-    rw [show (4 : ℕ) = 2 ^ 2 from rfl, mul_assoc, ← pow_add, ← pow_add]; congr 1; omega
-  have hφinj : Set.InjOn (fun a => (4 * 2 ^ κ + 1) ^ a % 2 ^ (α + 1))
-      ↑(Finset.range (2 ^ (α - κ - 1))) := four_pow_injOn κ α
-  have hψinj : Set.InjOn (fun j => 4 * 2 ^ κ * j + 1)
-      ↑(Finset.range (2 ^ (α - κ - 1))) := by
-    intro a _ b _ h
-    exact Nat.eq_of_mul_eq_mul_left (by positivity) (Nat.add_right_cancel h)
-  have himg : (Finset.range (2 ^ (α - κ - 1))).image
-        (fun a => (4 * 2 ^ κ + 1) ^ a % 2 ^ (α + 1))
-      = (Finset.range (2 ^ (α - κ - 1))).image (fun j => 4 * 2 ^ κ * j + 1) := by
-    apply Finset.eq_of_subset_of_card_le
-    · intro x hx
-      rw [Finset.mem_image] at hx ⊢
-      obtain ⟨a, _, rfl⟩ := hx
-      have hlt : (4 * 2 ^ κ + 1) ^ a % 2 ^ (α + 1) < 2 ^ (α + 1) := Nat.mod_lt _ (by positivity)
-      have hmod1 : (4 * 2 ^ κ + 1) ^ a % 2 ^ (α + 1) % (4 * 2 ^ κ) = 1 := by
-        rw [Nat.mod_mod_of_dvd _ hgM, Nat.pow_mod,
-          show (4 * 2 ^ κ + 1) % (4 * 2 ^ κ) = 1 from by
-            rw [Nat.add_mod_left]; exact Nat.mod_eq_of_lt (by omega),
-          one_pow, Nat.mod_eq_of_lt (by omega)]
-      have hge1 : 1 ≤ (4 * 2 ^ κ + 1) ^ a % 2 ^ (α + 1) := by
-        rcases Nat.eq_zero_or_pos ((4 * 2 ^ κ + 1) ^ a % 2 ^ (α + 1)) with h | h
-        · rw [h, Nat.zero_mod] at hmod1; exact absurd hmod1 (by norm_num)
-        · exact h
-      have hdvd : (4 * 2 ^ κ) ∣ ((4 * 2 ^ κ + 1) ^ a % 2 ^ (α + 1) - 1) :=
-        (Nat.modEq_iff_dvd' hge1).mp (by rw [Nat.ModEq, hmod1, Nat.mod_eq_of_lt (by omega)])
-      refine ⟨((4 * 2 ^ κ + 1) ^ a % 2 ^ (α + 1) - 1) / (4 * 2 ^ κ), ?_, ?_⟩
-      · rw [Finset.mem_range]
-        have hbound : (4 * 2 ^ κ + 1) ^ a % 2 ^ (α + 1) - 1 < 4 * 2 ^ κ * 2 ^ (α - κ - 1) := by
-          rw [hMn]; omega
-        exact Nat.div_lt_of_lt_mul hbound
-      · rw [Nat.mul_div_cancel' hdvd]; omega
-    · rw [Finset.card_image_of_injOn hφinj, Finset.card_image_of_injOn hψinj]
-  have e1 : ∑ a ∈ Finset.range (2 ^ (α - κ - 1)),
-        Xpow (powTwoCyclotomic (R := R) α) (i * ((4 * 2 ^ κ + 1) ^ a % 2 ^ (α + 1)))
-      = ∑ x ∈ (Finset.range (2 ^ (α - κ - 1))).image
-          (fun a => (4 * 2 ^ κ + 1) ^ a % 2 ^ (α + 1)),
-          Xpow (powTwoCyclotomic (R := R) α) (i * x) :=
-    (Finset.sum_image (f := fun x => Xpow (powTwoCyclotomic (R := R) α) (i * x)) hφinj).symm
-  have e2 : ∑ x ∈ (Finset.range (2 ^ (α - κ - 1))).image (fun j => 4 * 2 ^ κ * j + 1),
-        Xpow (powTwoCyclotomic (R := R) α) (i * x)
-      = ∑ j ∈ Finset.range (2 ^ (α - κ - 1)),
-          Xpow (powTwoCyclotomic (R := R) α) (i * (4 * 2 ^ κ * j + 1)) :=
-    Finset.sum_image (f := fun x => Xpow (powTwoCyclotomic (R := R) α) (i * x)) hψinj
-  rw [e1, himg, e2, Finset.mul_sum]
-  refine Finset.sum_congr rfl (fun j _ => ?_)
-  rw [show i * (4 * 2 ^ κ * j + 1) = i + 4 * 2 ^ κ * i * j from by ring, Xpow_add, Xpow_mul]
+  by_cases hκ : κ + 1 ≤ α
+  · have h2κ : 1 ≤ 2 ^ κ := Nat.one_le_two_pow
+    have hgM : (4 * 2 ^ κ : ℕ) ∣ 2 ^ (α + 1) := by
+      rw [show (4 * 2 ^ κ : ℕ) = 2 ^ (2 + κ) from by rw [show (4 : ℕ) = 2 ^ 2 from rfl, ← pow_add]]
+      exact pow_dvd_pow 2 (by omega)
+    have hMn : 4 * 2 ^ κ * 2 ^ (α - κ - 1) = 2 ^ (α + 1) := by
+      rw [show (4 : ℕ) = 2 ^ 2 from rfl, mul_assoc, ← pow_add, ← pow_add]; congr 1; omega
+    have hφinj : Set.InjOn (fun a => (4 * 2 ^ κ + 1) ^ a % 2 ^ (α + 1))
+        ↑(Finset.range (2 ^ (α - κ - 1))) := four_pow_injOn κ α
+    have hψinj : Set.InjOn (fun j => 4 * 2 ^ κ * j + 1)
+        ↑(Finset.range (2 ^ (α - κ - 1))) := by
+      intro a _ b _ h
+      exact Nat.eq_of_mul_eq_mul_left (by positivity) (Nat.add_right_cancel h)
+    have himg : (Finset.range (2 ^ (α - κ - 1))).image
+          (fun a => (4 * 2 ^ κ + 1) ^ a % 2 ^ (α + 1))
+        = (Finset.range (2 ^ (α - κ - 1))).image (fun j => 4 * 2 ^ κ * j + 1) := by
+      apply Finset.eq_of_subset_of_card_le
+      · intro x hx
+        rw [Finset.mem_image] at hx ⊢
+        obtain ⟨a, _, rfl⟩ := hx
+        have hlt : (4 * 2 ^ κ + 1) ^ a % 2 ^ (α + 1) < 2 ^ (α + 1) := Nat.mod_lt _ (by positivity)
+        have hmod1 : (4 * 2 ^ κ + 1) ^ a % 2 ^ (α + 1) % (4 * 2 ^ κ) = 1 := by
+          rw [Nat.mod_mod_of_dvd _ hgM, Nat.pow_mod,
+            show (4 * 2 ^ κ + 1) % (4 * 2 ^ κ) = 1 from by
+              rw [Nat.add_mod_left]; exact Nat.mod_eq_of_lt (by omega),
+            one_pow, Nat.mod_eq_of_lt (by omega)]
+        have hge1 : 1 ≤ (4 * 2 ^ κ + 1) ^ a % 2 ^ (α + 1) := by
+          rcases Nat.eq_zero_or_pos ((4 * 2 ^ κ + 1) ^ a % 2 ^ (α + 1)) with h | h
+          · rw [h, Nat.zero_mod] at hmod1; exact absurd hmod1 (by norm_num)
+          · exact h
+        have hdvd : (4 * 2 ^ κ) ∣ ((4 * 2 ^ κ + 1) ^ a % 2 ^ (α + 1) - 1) :=
+          (Nat.modEq_iff_dvd' hge1).mp (by rw [Nat.ModEq, hmod1, Nat.mod_eq_of_lt (by omega)])
+        refine ⟨((4 * 2 ^ κ + 1) ^ a % 2 ^ (α + 1) - 1) / (4 * 2 ^ κ), ?_, ?_⟩
+        · rw [Finset.mem_range]
+          have hbound : (4 * 2 ^ κ + 1) ^ a % 2 ^ (α + 1) - 1 < 4 * 2 ^ κ * 2 ^ (α - κ - 1) := by
+            rw [hMn]; omega
+          exact Nat.div_lt_of_lt_mul hbound
+        · rw [Nat.mul_div_cancel' hdvd]; omega
+      · rw [Finset.card_image_of_injOn hφinj, Finset.card_image_of_injOn hψinj]
+    have e1 : ∑ a ∈ Finset.range (2 ^ (α - κ - 1)),
+          Xpow (powTwoCyclotomic (R := R) α) (i * ((4 * 2 ^ κ + 1) ^ a % 2 ^ (α + 1)))
+        = ∑ x ∈ (Finset.range (2 ^ (α - κ - 1))).image
+            (fun a => (4 * 2 ^ κ + 1) ^ a % 2 ^ (α + 1)),
+            Xpow (powTwoCyclotomic (R := R) α) (i * x) :=
+      (Finset.sum_image (f := fun x => Xpow (powTwoCyclotomic (R := R) α) (i * x)) hφinj).symm
+    have e2 : ∑ x ∈ (Finset.range (2 ^ (α - κ - 1))).image (fun j => 4 * 2 ^ κ * j + 1),
+          Xpow (powTwoCyclotomic (R := R) α) (i * x)
+        = ∑ j ∈ Finset.range (2 ^ (α - κ - 1)),
+            Xpow (powTwoCyclotomic (R := R) α) (i * (4 * 2 ^ κ * j + 1)) :=
+      Finset.sum_image (f := fun x => Xpow (powTwoCyclotomic (R := R) α) (i * x)) hψinj
+    rw [e1, himg, e2, Finset.mul_sum]
+    refine Finset.sum_congr rfl (fun j _ => ?_)
+    rw [show i * (4 * 2 ^ κ * j + 1) = i + 4 * 2 ^ κ * i * j from by ring, Xpow_add, Xpow_mul]
+  · simp [show α - κ - 1 = 0 from by omega,
+      Nat.mod_eq_of_lt (show 1 < 2 ^ (α + 1) from Nat.one_lt_two_pow (by omega))]
 
 /-! ## Trace of a monomial vanishes off the diagonal (Claims 2, 3) -/
 
@@ -200,7 +196,7 @@ theorem traceH_Xpow_eq_zero (α k : ℕ) (h2 : (2 : R) ≠ 0) (hk2pow : ∃ κ, 
   -- the orbit sum and conjugate sum both vanish
   have hTp : ∑ a ∈ Finset.range (2 ^ (α - κ - 1)),
       Xpow (powTwoCyclotomic (R := R) α) (i * ((4 * 2 ^ κ + 1) ^ a % 2 ^ (α + 1))) = 0 := by
-    rw [four_pow_i_reindex α κ i hκ, four_pow_i_geom_zero α κ i h2 hi0', mul_zero]
+    rw [four_pow_i_reindex α κ i, four_pow_i_geom_zero α κ i h2 hi0', mul_zero]
   have hTq : ∑ a ∈ Finset.range (2 ^ (α - κ - 1)),
       Xpow (powTwoCyclotomic (R := R) α)
         (i * ((2 ^ (α + 1) - (4 * 2 ^ κ + 1) ^ a % 2 ^ (α + 1)) % 2 ^ (α + 1))) = 0 := by
@@ -229,7 +225,7 @@ theorem traceH_Xpow_eq_zero (α k : ℕ) (h2 : (2 : R) ≠ 0) (hk2pow : ∃ κ, 
       exact (Nat.ModEq.mul_left i (Nat.mod_modEq _ _)).trans key
     rw [Finset.sum_congr rfl hconj, ← map_sum, hTp, map_zero]
   -- assemble
-  rw [traceH_Xpow' α (2 ^ κ)]
+  rw [traceH_Xpow α (2 ^ κ)]
   unfold Hexp
   rw [hrange, Finset.sum_biUnion (by
     intro a ha b hb hab
@@ -250,7 +246,7 @@ theorem traceH_Xpow_eq_zero (α k : ℕ) (h2 : (2 : R) ≠ 0) (hk2pow : ∃ κ, 
 `2j ≡ d mod 2d`, i.e. `j` an odd multiple of `d/2`). Proven by a fixed-point-free involution on
 `H`: conjugation `m ↦ -m` sends `X^{j·m}` to its negation, since `(X^{j·m})² = (X^{2j})^m =
 (-1)^m = -1` (`m` odd) and conjugation inverts a square-root of `-1`. -/
-theorem traceH_Xpow_neg_one_sq (α k j : ℕ) (hk2pow : ∃ κ, k = 2 ^ κ) (hk : 2 * k ∣ 2 ^ α)
+theorem traceH_Xpow_neg_one_sq (α k j : ℕ) (hk : 2 * k ∣ 2 ^ α)
     (hsq : Xpow (powTwoCyclotomic (R := R) α) (2 * j) = -1) :
     traceH α k (Xpow (powTwoCyclotomic (R := R) α) j) = 0 := by
   have hHlt : ∀ m, m ∈ Hexp α k → m < 2 ^ (α + 1) := by
@@ -263,7 +259,7 @@ theorem traceH_Xpow_neg_one_sq (α k j : ℕ) (hk2pow : ∃ κ, k = 2 ^ κ) (hk 
     intro m hm
     rw [← Hexp_generator_smul α k (conjExp α) hk (Or.inl rfl)]
     exact Finset.mem_image_of_mem _ hm
-  rw [traceH_Xpow' α k j]
+  rw [traceH_Xpow α k j]
   refine Finset.sum_involution (fun m _ => (conjExp α * m) % 2 ^ (α + 1)) ?_ ?_ hmem ?_
   · intro m hm
     have hmodd : Odd m := Hexp_odd_mem α k m hm
@@ -280,7 +276,7 @@ theorem traceH_Xpow_neg_one_sq (α k j : ℕ) (hk2pow : ∃ κ, k = 2 ^ κ) (hk 
     have hmodd : Odd m := Hexp_odd_mem α k m hm
     have hmlt : m < 2 ^ (α + 1) := hHlt m hm
     have hα : 1 ≤ α := by
-      obtain ⟨κ, rfl⟩ := hk2pow
+      obtain ⟨κ, rfl⟩ := exists_eq_two_pow_of_two_mul_dvd hk
       have := succ_le_of_two_mul_two_pow_dvd hk; omega
     have hcong : conjExp α * m ≡ m [MOD 2 ^ (α + 1)] := by
       rw [Nat.ModEq, hgm, Nat.mod_eq_of_lt hmlt]
@@ -328,12 +324,12 @@ theorem traceH_Xpow_neg_one_sq (α k j : ℕ) (hk2pow : ∃ κ, k = 2 ^ κ) (hk 
 
 /-- **(Claim 3)** `Tr_H(X^{d/2}) = 0` — the `j = d/2` instance of `traceH_Xpow_neg_one_sq`
 (`X^{2·d/2} = X^d = -1`). -/
-theorem traceH_Xpow_half (α k : ℕ) (hk2pow : ∃ κ, k = 2 ^ κ) (hk : 2 * k ∣ 2 ^ α) :
+theorem traceH_Xpow_half (α k : ℕ) (hk : 2 * k ∣ 2 ^ α) :
     traceH α k (Xpow (powTwoCyclotomic (R := R) α) (2 ^ (α - 1))) = 0 := by
   have hα : 1 ≤ α := by
-    obtain ⟨κ, rfl⟩ := hk2pow
+    obtain ⟨κ, rfl⟩ := exists_eq_two_pow_of_two_mul_dvd hk
     have := succ_le_of_two_mul_two_pow_dvd hk; omega
-  refine traceH_Xpow_neg_one_sq α k (2 ^ (α - 1)) hk2pow hk ?_
+  refine traceH_Xpow_neg_one_sq α k (2 ^ (α - 1)) hk ?_
   rw [show 2 * 2 ^ (α - 1) = 2 ^ α from by rw [← pow_succ']; congr 1; omega, Xpow_natDegree]
 
 end ArkLib.Lattices.CyclotomicModulus

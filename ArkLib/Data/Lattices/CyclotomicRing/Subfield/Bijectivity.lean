@@ -40,7 +40,7 @@ theorem psi_bijective (α κ : ℕ) (h2 : (2 : ZMod q) ≠ 0) (hk : 2 * 2 ^ κ �
     Function.Bijective (psi (R := ZMod q) α (2 ^ κ)) := by
   have hκ : κ + 1 ≤ α := succ_le_of_two_mul_two_pow_dvd hk
   rw [Fintype.bijective_iff_injective_and_card]
-  refine ⟨psi_injective α (2 ^ κ) h2 ⟨κ, rfl⟩ hk, ?_⟩
+  refine ⟨psi_injective α (2 ^ κ) h2 hk, ?_⟩
   rw [Fintype.card_fun, Fintype.card_fin, card_fixedSubring_eq q α κ h2 hk, Rq.card_powTwo,
     Nat.pow_div (by omega) (by norm_num), ← pow_mul]
   congr 1

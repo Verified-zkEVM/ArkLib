@@ -26,6 +26,9 @@ It is `1` on `D_i` and `0` on the other chunks.
 * A polynomial of degree below `c m` is `∑_i L_i q_i`, for `q_i` its interpolant on `D_i`.
 * Masks `Z_i t_i` leave the sum unchanged when the last mask cancels the others.
 
+The recombination identity also covers `c = 0` or `m = 0`, where its degree bound forces the
+polynomial to be zero. Mask cancellation also holds for these sizes and for `s = 0`.
+
 STARK provers commit to a quotient through such chunks.
 
 Verifiers recombine the openings with the factors `L_i(ζ)`.
@@ -115,14 +118,14 @@ theorem point_lt {i t : ℕ} (hi : i < c) (ht : t < m) : i + c * t < c * m := by
 variable (hw : IsPrimitiveRoot w (c * m)) (hs : s ≠ 0) (hc : 0 < c) (hm : 0 < m)
 include hw hs hc hm
 
-omit hm in
+omit hc hm in
 /-- The `m` points within a valid chunk are distinct. -/
 theorem point_injective {i : ℕ} (hi : i < c) :
     Function.Injective fun t : Fin m => point s w c i t := by
   intro a b h
   have := hw.pow_inj (point_lt hi a.2) (point_lt hi b.2)
     (mul_left_cancel₀ hs h)
-  exact Fin.ext (Nat.eq_of_mul_eq_mul_left hc (by omega))
+  exact Fin.ext (Nat.eq_of_mul_eq_mul_left (Nat.zero_lt_of_lt hi) (by omega))
 
 omit hs hc hm in
 /-- `Z_j` takes one value on each chunk: its value at the chunk's first point. -/
@@ -135,10 +138,11 @@ theorem eval_chunkZ_point (i j t : ℕ) :
         (s * w ^ j)⁻¹ * (s * w ^ i) * w ^ (c * t)
       by ring, mul_pow, h1, mul_one]
 
+omit hc in
 /-- `Z_j` vanishes at the first point of chunk `i` exactly when `i = j`. -/
 theorem eval_chunkZ_first {i j : ℕ} (hi : i < c) (hj : j < c) :
     (chunkZ s w m j).eval (s * w ^ i) = 0 ↔ i = j := by
-  have hw0 : w ≠ 0 := hw.ne_zero (Nat.mul_pos hc hm).ne'
+  have hw0 : w ≠ 0 := hw.ne_zero (Nat.mul_pos (Nat.zero_lt_of_lt hi) hm).ne'
   have e : (s * w ^ j)⁻¹ * (s * w ^ i) = w ^ i / w ^ j := by field_simp
   have hlt : ∀ a < c, a * m < c * m := fun a ha => Nat.mul_lt_mul_of_pos_right ha hm
   rw [eval_chunkZ, e, sub_eq_zero, div_pow, div_eq_one_iff_eq (pow_ne_zero _ (pow_ne_zero _ hw0)),
@@ -146,6 +150,7 @@ theorem eval_chunkZ_first {i j : ℕ} (hi : i < c) (hj : j < c) :
   exact ⟨fun h => Nat.eq_of_mul_eq_mul_right hm (hw.pow_inj (hlt i hi) (hlt j hj) h),
     fun h => h ▸ rfl⟩
 
+omit hc in
 /-- A chunk factor evaluates to the indicator of its own chunk. -/
 theorem eval_chunkL_point {i i' : ℕ} (hi : i < c) (hi' : i' < c) (t : ℕ) :
     (chunkL s w c m i').eval (point s w c i t) = if i' = i then 1 else 0 := by
@@ -154,26 +159,38 @@ theorem eval_chunkL_point {i i' : ℕ} (hi : i < c) (hi' : i' < c) (t : ℕ) :
   · subst h
     refine prod_eq_one fun j hj => inv_mul_cancel₀ ?_
     obtain ⟨hne, hj⟩ := mem_erase.mp hj
-    exact fun h0 => hne ((eval_chunkZ_first hw hs hc hm hi' (mem_range.mp hj)).mp h0).symm
+    exact fun h0 => hne ((eval_chunkZ_first hw hs hm hi' (mem_range.mp hj)).mp h0).symm
   · exact prod_eq_zero (mem_erase.mpr ⟨fun e => h e.symm, mem_range.mpr hi⟩)
-      (by rw [(eval_chunkZ_first hw hs hc hm hi hi).mpr rfl, mul_zero])
+      (by rw [(eval_chunkZ_first hw hs hm hi hi).mpr rfl, mul_zero])
 
+omit hc hm in
 /-- A chunk interpolant has natural degree at most `m - 1`. -/
 theorem natDegree_chunkInterp_le (Q : K[X]) {i : ℕ} (hi : i < c) :
     (chunkInterp s w c m Q i).natDegree ≤ m - 1 := by
   classical
   have hd := Lagrange.degree_interpolate_lt (s := (univ : Finset (Fin m)))
-    (r := fun t => Q.eval (point s w c i t)) (point_injective hw hs hc hi).injOn
+    (r := fun t => Q.eval (point s w c i t)) (point_injective hw hs hi).injOn
   rw [card_univ, Fintype.card_fin] at hd
   by_cases h0 : chunkInterp s w c m Q i = 0
   · simp [h0]
   · have := (natDegree_lt_iff_degree_lt h0).mpr hd
     omega
 
+omit hc hm in
 /-- A polynomial of degree below `c m` is recovered from its chunk interpolants. -/
 theorem sum_chunkL_mul_chunkInterp (Q : K[X]) (hQ : Q.degree < (c * m : ℕ)) :
     ∑ i ∈ range c, chunkL s w c m i * chunkInterp s w c m Q i = Q := by
   classical
+  by_cases hc : c = 0
+  · subst c
+    have hzero : Q = 0 := by simpa using hQ
+    simp [hzero]
+  have hcpos : 0 < c := Nat.pos_of_ne_zero hc
+  by_cases hm : m = 0
+  · subst m
+    have hzero : Q = 0 := by simpa using hQ
+    simp [chunkInterp, hzero]
+  have hmpos : 0 < m := Nat.pos_of_ne_zero hm
   have hinj : Set.InjOn (fun n => s * w ^ n) (range (c * m)) :=
     fun a ha b hb h => hw.pow_inj (mem_range.mp ha) (mem_range.mp hb) (mul_left_cancel₀ hs h)
   refine eq_of_degree_sub_lt_of_eval_finset_eq ((range (c * m)).image fun n => s * w ^ n) ?_ ?_
@@ -181,24 +198,24 @@ theorem sum_chunkL_mul_chunkInterp (Q : K[X]) (hQ : Q.degree < (c * m : ℕ)) :
     refine (degree_sub_le _ _).trans_lt (max_lt ?_ hQ)
     refine degree_le_natDegree.trans_lt (Nat.cast_lt.mpr ?_)
     refine lt_of_le_of_lt (natDegree_sum_le_of_forall_le _ _ (n := c * m - 1)
-      fun i hi => (natDegree_mul_le).trans ?_) (by have := Nat.mul_pos hc hm; omega)
+      fun i hi => (natDegree_mul_le).trans ?_) (by have := Nat.mul_pos hcpos hmpos; omega)
     have h1 := natDegree_chunkL_le (s := s) (w := w) (m := m) (mem_range.mp hi)
-    have h2 := natDegree_chunkInterp_le hw hs hc hm Q (mem_range.mp hi)
+    have h2 := natDegree_chunkInterp_le hw hs Q (mem_range.mp hi)
     have : (c - 1) * m + m = c * m := by
-      rw [← Nat.succ_mul, Nat.succ_eq_add_one, Nat.sub_add_cancel hc]
+      rw [← Nat.succ_mul, Nat.succ_eq_add_one, Nat.sub_add_cancel hcpos]
     omega
   · intro x hx
     obtain ⟨n, hn, rfl⟩ := mem_image.mp hx
     have hn' := mem_range.mp hn
-    have hi : n % c < c := Nat.mod_lt _ hc
-    have ht : n / c < m := by rw [Nat.div_lt_iff_lt_mul hc, mul_comm]; exact hn'
+    have hi : n % c < c := Nat.mod_lt _ hcpos
+    have ht : n / c < m := by rw [Nat.div_lt_iff_lt_mul hcpos, mul_comm]; exact hn'
     have hpt : s * w ^ n = point s w c (n % c) (n / c) := by rw [point, Nat.mod_add_div]
     rw [hpt, eval_finsetSum, sum_eq_single (n % c)]
-    · simp only [eval_mul, eval_chunkL_point hw hs hc hm hi hi, ↓reduceIte, one_mul, chunkInterp]
+    · simp only [eval_mul, eval_chunkL_point hw hs hmpos hi hi, ↓reduceIte, one_mul, chunkInterp]
       exact Lagrange.eval_interpolate_at_node (i := ⟨n / c, ht⟩) _
-        (point_injective hw hs hc hi).injOn (mem_univ _)
+        (point_injective hw hs hi).injOn (mem_univ _)
     · intro i' hi' hne
-      simp only [eval_mul, eval_chunkL_point hw hs hc hm hi (mem_range.mp hi'), hne, ↓reduceIte,
+      simp only [eval_mul, eval_chunkL_point hw hs hmpos hi (mem_range.mp hi'), hne, ↓reduceIte,
         zero_mul]
     · exact fun h => absurd (mem_range.mpr hi) h
 
@@ -212,18 +229,27 @@ theorem chunkL_mul_chunkZ {i : ℕ} (hi : i < c) :
   rw [chunkL, prod_mul_distrib, ← map_prod, chunkWeight_eq_prod_inv_eval, mul_assoc,
     prod_erase_mul _ _ (mem_range.mpr hi)]
 
-/-- A valid chunk has nonzero normalization weight. -/
+omit hc hs in
+/-- A valid chunk has nonzero normalization weight, including at `s = 0`. -/
 theorem chunkWeight_ne_zero {i : ℕ} (hi : i < c) : chunkWeight s w c m i ≠ 0 := by
+  by_cases hs : s = 0
+  · subst s
+    simp [chunkWeight, zero_pow hm.ne']
   rw [chunkWeight_eq_prod_inv_eval]
   exact prod_ne_zero_iff.mpr fun _ hj => inv_ne_zero fun h =>
     (mem_erase.mp hj).1
-      ((eval_chunkZ_first hw hs hc hm hi (mem_range.mp (mem_erase.mp hj).2)).mp h).symm
+      ((eval_chunkZ_first hw hs hm hi (mem_range.mp (mem_erase.mp hj).2)).mp h).symm
 
+omit hc hm hs in
 /-- Masking each interpolant by `Z_i` times its mask leaves the recombination unchanged. -/
 theorem sum_chunkL_mul_masked (q t : ℕ → K[X]) :
     ∑ i ∈ range c, chunkL s w c m i * (q i + chunkZ s w m i * mask s w c m t i) =
       ∑ i ∈ range c, chunkL s w c m i * q i := by
-  have hw' := chunkWeight_ne_zero hw hs hc hm (i := c - 1) (by omega)
+  by_cases hc : c = 0
+  · simp [hc]
+  by_cases hm : m = 0
+  · simp [hm, chunkZ]
+  have hw' := chunkWeight_ne_zero (s := s) hw (Nat.pos_of_ne_zero hm) (i := c - 1) (by omega)
   simp only [mul_add, sum_add_distrib, add_eq_left]
   have : ∀ i ∈ range c, chunkL s w c m i * (chunkZ s w m i * mask s w c m t i) =
       (∏ j ∈ range c, chunkZ s w m j) * (C (chunkWeight s w c m i) * mask s w c m t i) :=

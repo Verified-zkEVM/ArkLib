@@ -11,7 +11,7 @@ public import Mathlib.RingTheory.Polynomial.UniqueFactorization
 /-!
 # Degree sums for bivariate factors
 
-The sum of either axis degree over distinct normalized factors of a nonzero polynomial is
+The sum of either axis degree over distinct normalized factors of a polynomial is
 bounded by the corresponding degree of that polynomial. Here `R[X][Y]` has outer variable `Y`:
 `natDegree` measures `Y`, whereas `degreeX` measures the coefficient variable `X`.
 The bounds also hold after selecting any subset of the distinct factors.
@@ -83,29 +83,35 @@ theorem sum_natDegree_degreeX_le_of_prod_dvd {ι : Type*} (s : Finset ι)
 variable [DecidableEq R] [NormalizationMonoid R[X][Y]] [UniqueFactorizationMonoid R[X][Y]]
 
 omit [IsDomain R] in
-/-- The product of the distinct normalized factors divides the original nonzero polynomial. -/
-theorem normalizedFactors_toFinset_prod_dvd (p : R[X][Y]) (hp : p ≠ 0) :
+/-- The product of the distinct normalized factors divides the original polynomial. -/
+theorem normalizedFactors_toFinset_prod_dvd (p : R[X][Y]) :
     (UniqueFactorizationMonoid.normalizedFactors p).toFinset.prod id ∣ p := by
   classical
+  by_cases hp : p = 0
+  · subst p
+    exact dvd_zero _
   exact (Multiset.toFinset_prod_dvd_prod _).trans
     (UniqueFactorizationMonoid.prod_normalizedFactors hp).dvd
 
 /-- The distinct normalized factors separately satisfy both axis-degree budgets. -/
-theorem normalizedFactors_toFinset_sum_natDegree_degreeX_le (p : R[X][Y]) (hp : p ≠ 0) :
+theorem normalizedFactors_toFinset_sum_natDegree_degreeX_le (p : R[X][Y]) :
     (∑ q ∈ (UniqueFactorizationMonoid.normalizedFactors p).toFinset, q.natDegree) ≤
         p.natDegree ∧
       (∑ q ∈ (UniqueFactorizationMonoid.normalizedFactors p).toFinset, degreeX q) ≤
         degreeX p := by
   classical
+  by_cases hp : p = 0
+  · subst p
+    simp
   exact sum_natDegree_degreeX_le_of_prod_dvd _ id hp
-    (normalizedFactors_toFinset_prod_dvd p hp)
+    (normalizedFactors_toFinset_prod_dvd p)
 
 /-- Selecting any subset of the distinct normalized factors preserves both degree budgets.
 In particular, this applies to the subset of factors with positive outer degree. -/
-theorem sum_natDegree_degreeX_le_of_subset_normalizedFactors {p : R[X][Y]} (hp : p ≠ 0)
+theorem sum_natDegree_degreeX_le_of_subset_normalizedFactors {p : R[X][Y]}
     (s : Finset R[X][Y]) (hs : s ⊆ (UniqueFactorizationMonoid.normalizedFactors p).toFinset) :
     (∑ q ∈ s, q.natDegree) ≤ p.natDegree ∧ (∑ q ∈ s, degreeX q) ≤ degreeX p := by
-  have h := normalizedFactors_toFinset_sum_natDegree_degreeX_le p hp
+  have h := normalizedFactors_toFinset_sum_natDegree_degreeX_le p
   constructor
   · exact (Finset.sum_le_sum_of_subset_of_nonneg hs (by simp)).trans h.1
   · exact (Finset.sum_le_sum_of_subset_of_nonneg hs (by simp)).trans h.2
