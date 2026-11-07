@@ -26,28 +26,28 @@ open scoped BigOperators LinearCode
 universe u v w k l
 
 section CoreResults
-variable {ι : Type} [Fintype ι] [Nonempty ι]
-         {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {ι : Type*} [Fintype ι] [Nonempty ι]
+         {F : Type u} [Field F] [DecidableEq F]
 
-noncomputable def RS_goodCoeffs {deg : ℕ} {domain : ι ↪ F}
+noncomputable def RS_goodCoeffs [Fintype F] {deg : ℕ} {domain : ι ↪ F}
     (u : WordStack F (Fin 2) ι) (δ : ℝ≥0) : Finset F :=
   Finset.filter (fun z : F => δᵣ(u 0 + z • u 1, ReedSolomon.code domain deg) ≤ δ) Finset.univ
 
+omit [Nonempty ι] in
+theorem mem_RS_goodCoeffs [Fintype F] {deg : ℕ} {domain : ι ↪ F} {u : WordStack F (Fin 2) ι}
+    {δ : ℝ≥0} {z : F} :
+    z ∈ RS_goodCoeffs (deg := deg) (domain := domain) u δ ↔
+      δᵣ(u 0 + z • u 1, ReedSolomon.code domain deg) ≤ δ := by
+  simp [RS_goodCoeffs]
+
 open Polynomial in
-theorem RS_exists_Pz_of_mem_goodCoeffs {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} [NeZero deg]
+theorem RS_exists_Pz_of_relDist_le {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} [NeZero deg]
     (u : WordStack F (Fin 2) ι) {z : F}
-    (hz : z ∈ RS_goodCoeffs (deg := deg) (domain := domain) u δ) :
+    (hz : δᵣ(u 0 + z • u 1, ReedSolomon.code domain deg) ≤ δ) :
     ∃ Pz : F[X], Pz.natDegree < deg ∧
       Δ₀(u 0 + z • u 1, Pz.eval ∘ domain) ≤ Nat.floor (δ * Fintype.card ι) := by
   classical
-  have hz' :
-      z ∈
-        Finset.filter
-          (fun z : F => δᵣ(u 0 + z • u 1, ReedSolomon.code domain deg) ≤ δ)
-          Finset.univ := by
-    simpa [RS_goodCoeffs] using hz
-  have hrel : δᵣ(u 0 + z • u 1, ReedSolomon.code domain deg) ≤ δ :=
-    (Finset.mem_filter.mp hz').2
+  have hrel : δᵣ(u 0 + z • u 1, ReedSolomon.code domain deg) ≤ δ := hz
   let e : ℕ := Nat.floor (δ * Fintype.card ι)
   have hdist :
       Δ₀(u 0 + z • u 1, (ReedSolomon.code domain deg : Set (ι → F))) ≤ (e : ℕ∞) := by
@@ -72,10 +72,10 @@ theorem RS_exists_Pz_of_mem_goodCoeffs {deg : ℕ} {domain : ι ↪ F} {δ : ℝ
 
 open scoped BigOperators in
 open Polynomial in
-theorem RS_exists_kernelVec_BW_homMatrix_eval_of_mem_goodCoeffs
+theorem RS_exists_kernelVec_BW_homMatrix_eval_of_relDist_le
     {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} [NeZero deg]
     (u : WordStack F (Fin 2) ι) {z : F}
-    (hz : z ∈ RS_goodCoeffs (deg := deg) (domain := domain) u δ) :
+    (hz : δᵣ(u 0 + z • u 1, ReedSolomon.code domain deg) ≤ δ) :
     let e : ℕ := Nat.floor (δ * Fintype.card ι)
     ∃ a : Fin (e + 1) → F,
       ∃ b : Fin (e + deg) → F,
@@ -91,7 +91,7 @@ theorem RS_exists_kernelVec_BW_homMatrix_eval_of_mem_goodCoeffs
   set e : ℕ := Nat.floor (δ * Fintype.card ι) with he
   -- Get the close polynomial `Pz`
   obtain ⟨Pz, hPzdeg, hdist⟩ :=
-    RS_exists_Pz_of_mem_goodCoeffs (deg := deg) (domain := domain) (δ := δ) u (z := z) hz
+    RS_exists_Pz_of_relDist_le (deg := deg) (domain := domain) (δ := δ) u (z := z) hz
   have hdist' : Δ₀(u 0 + z • u 1, Pz.eval ∘ domain) ≤ e := by
     simpa [he] using hdist
   -- Extract a small set of disagreement coordinates
@@ -218,7 +218,8 @@ theorem RS_BW_homMatrix_det_submatrix_eq_zero_of_goodCoeffs_card_gt
     (hdeg : deg ≤ Fintype.card ι)
     (hδ : δ ≤ relativeUniqueDecodingRadius (ι := ι) (F := F)
       (C := ReedSolomon.code domain deg))
-    (hS : (RS_goodCoeffs (deg := deg) (domain := domain) u δ).card > Fintype.card ι) :
+    (S : Finset F) (hgood : ∀ z ∈ S, δᵣ(u 0 + z • u 1, ReedSolomon.code domain deg) ≤ δ)
+    (hS : S.card > Fintype.card ι) :
     let e : ℕ := Nat.floor (δ * Fintype.card ι)
     let N : ℕ := (e + 1) + (e + deg)
     ∀ r : Fin N ↪ ι,
@@ -234,8 +235,6 @@ theorem RS_BW_homMatrix_det_submatrix_eq_zero_of_goodCoeffs_card_gt
   -- Abbreviations for the parameters appearing throughout
   let e : ℕ := Nat.floor (δ * Fintype.card ι)
   let N : ℕ := (e + 1) + (e + deg)
-  -- The set of "good" coefficients
-  let S : Finset F := RS_goodCoeffs (deg := deg) (domain := domain) u δ
   -- Polynomial matrix and its square submatrix
   let M : Matrix ι (Fin N) F[X] :=
     BW_homMatrix (ι := ι) e deg
@@ -256,17 +255,16 @@ theorem RS_BW_homMatrix_det_submatrix_eq_zero_of_goodCoeffs_card_gt
         (δ := δ) (hdeg := hdeg) (hδ := hδ))
   -- card ι < card S
   have hS' : Fintype.card ι < S.card := by
-    simpa [S] using hS
+    exact hS
   have he1_lt : e + 1 < S.card := lt_of_le_of_lt he1_le hS'
   have hdeg_lt : (Matrix.det A).natDegree < S.card := lt_of_le_of_lt hdeg_det he1_lt
   -- det(A) vanishes on all points of S
   have heval : ∀ z ∈ S, (Matrix.det A).eval z = 0 := by
     intro z hz
-    have hz' : z ∈ RS_goodCoeffs (deg := deg) (domain := domain) u δ := by
-      simpa [S] using hz
+    have hz' : δᵣ(u 0 + z • u 1, ReedSolomon.code domain deg) ≤ δ := hgood z hz
     -- Extract a nonzero kernel vector for the evaluated BW matrix
     have hk :=
-      RS_exists_kernelVec_BW_homMatrix_eval_of_mem_goodCoeffs (deg := deg) (domain := domain)
+      RS_exists_kernelVec_BW_homMatrix_eval_of_relDist_le (deg := deg) (domain := domain)
         (δ := δ) (u := u) (z := z) hz'
     -- unfold the `let e := ...` in hk
     dsimp at hk
@@ -329,7 +327,8 @@ theorem RS_BW_homMatrix_det_submatrix_eq_zero_of_goodCoeffs_card_gt_fun
     (hdeg : deg ≤ Fintype.card ι)
     (hδ : δ ≤ relativeUniqueDecodingRadius (ι := ι) (F := F)
       (C := ReedSolomon.code domain deg))
-    (hS : (RS_goodCoeffs (deg := deg) (domain := domain) u δ).card > Fintype.card ι) :
+    (S : Finset F) (hgood : ∀ z ∈ S, δᵣ(u 0 + z • u 1, ReedSolomon.code domain deg) ≤ δ)
+    (hS : S.card > Fintype.card ι) :
     let e : ℕ := Nat.floor (δ * Fintype.card ι)
     let N : ℕ := (e + 1) + (e + deg)
     ∀ r : Fin N → ι,
@@ -348,7 +347,7 @@ theorem RS_BW_homMatrix_det_submatrix_eq_zero_of_goodCoeffs_card_gt_fun
       ⟨r, hinj⟩
     have h :=
       RS_BW_homMatrix_det_submatrix_eq_zero_of_goodCoeffs_card_gt
-        (deg := deg) (domain := domain) (δ := δ) u hdeg hδ hS
+        (deg := deg) (domain := domain) (δ := δ) u hdeg hδ S hgood hS
     dsimp at h
     exact h r'
   · have hinj' :
@@ -382,8 +381,8 @@ theorem RS_BW_homMatrix_det_submatrix_eq_zero_of_goodCoeffs_card_gt_fun
           r id) hne hrow
 
 omit [Nonempty ι] in
-theorem card_RS_goodCoeffs_gt_of_prob_gt_n_div_q
-    [SampleableType F] {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} (u : WordStack F (Fin 2) ι)
+theorem card_RS_goodCoeffs_gt_of_prob_gt_n_div_q {F : Type} [Field F] [DecidableEq F]
+    [Fintype F] [SampleableType F] {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} (u : WordStack F (Fin 2) ι)
     (hprob :
       Pr{let z ← $ᵗ F}[δᵣ(u 0 + z • u 1, ReedSolomon.code domain deg) ≤ δ]
         > (Fintype.card ι : ℝ≥0) / (Fintype.card F : ℝ≥0)) :
@@ -442,7 +441,8 @@ theorem RS_exists_nonzero_kernelVec_BW_homMatrix_of_goodCoeffs_card_gt
     (u : WordStack F (Fin 2) ι)
     (hdeg : deg ≤ Fintype.card ι)
     (hδ : δ ≤ relativeUniqueDecodingRadius (ι := ι) (F := F) (C := ReedSolomon.code domain deg))
-    (hS : (RS_goodCoeffs (deg := deg) (domain := domain) u δ).card > Fintype.card ι) :
+    (S : Finset F) (hgood : ∀ z ∈ S, δᵣ(u 0 + z • u 1, ReedSolomon.code domain deg) ≤ δ)
+    (hS : S.card > Fintype.card ι) :
     let e : ℕ := Nat.floor (δ * Fintype.card ι)
     ∃ a : Fin (e + 1) → F[X],
       ∃ b : Fin (e + deg) → F[X],
@@ -468,7 +468,7 @@ theorem RS_exists_nonzero_kernelVec_BW_homMatrix_of_goodCoeffs_card_gt
     intro r
     simpa [M, N, m, n, he] using
       (RS_BW_homMatrix_det_submatrix_eq_zero_of_goodCoeffs_card_gt_fun (deg := deg)
-        (domain := domain) (δ := δ) (u := u) hdeg hδ hS r)
+        (domain := domain) (δ := δ) (u := u) hdeg hδ S hgood hS r)
   have hcard_n : n ≤ Fintype.card ι := by
     simpa [n, e, he] using
       (RS_floor_mul_card_ι_add_deg_le_card_ι_of_le_relUDR (deg := deg) (domain := domain)
@@ -693,7 +693,8 @@ theorem RS_exists_kernelVec_BW_homMatrix_of_goodCoeffs_card_gt
     (u : WordStack F (Fin 2) ι)
     (hdeg : deg ≤ Fintype.card ι)
     (hδ : δ ≤ relativeUniqueDecodingRadius (ι := ι) (F := F) (C := ReedSolomon.code domain deg))
-    (hS : (RS_goodCoeffs (deg := deg) (domain := domain) u δ).card > Fintype.card ι) :
+    (S : Finset F) (hgood : ∀ z ∈ S, δᵣ(u 0 + z • u 1, ReedSolomon.code domain deg) ≤ δ)
+    (hS : S.card > Fintype.card ι) :
     let e : ℕ := Nat.floor (δ * Fintype.card ι)
     ∃ a : Fin (e + 1) → F[X],
       ∃ b : Fin (e + deg) → F[X],
@@ -711,7 +712,7 @@ theorem RS_exists_kernelVec_BW_homMatrix_of_goodCoeffs_card_gt
   -- obtain a nonzero kernel vector from the stronger existence lemma
   have h :=
     RS_exists_nonzero_kernelVec_BW_homMatrix_of_goodCoeffs_card_gt
-      (deg := deg) (domain := domain) (δ := δ) (u := u) hdeg hδ hS
+      (deg := deg) (domain := domain) (δ := δ) (u := u) hdeg hδ S hgood hS
   -- unfold the `let e := ...` in the hypothesis
   dsimp at h
   rcases h with ⟨a, b, happend, ha_deg, hb_deg, hMul⟩

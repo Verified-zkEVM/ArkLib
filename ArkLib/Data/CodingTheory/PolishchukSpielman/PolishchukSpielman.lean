@@ -45,7 +45,7 @@ the difference of the global degrees.
 open Polynomial.Bivariate Polynomial Matrix
 open scoped BigOperators
 
-theorem polishchuk_spielman {F : Type} [Field F]
+theorem polishchuk_spielman {F : Type*} [Field F]
     (a_x a_y b_x b_y : ℕ) (n_x n_y : ℕ+)
     (h_bx_ge_ax : b_x ≥ a_x) (h_by_ge_ay : b_y ≥ a_y)
     (A B : F[X][Y])

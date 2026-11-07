@@ -33,7 +33,7 @@ open scoped BigOperators
 
 
 /-- A bivariate polynomial of degree zero in both variables divides every polynomial. -/
-lemma ps_exists_p_of_degree_x_eq_zero_nat_degree_y_eq_zero {F : Type} [Field F]
+lemma ps_exists_p_of_degree_x_eq_zero_nat_degree_y_eq_zero {F : Type*} [Field F]
     {A B : F[X][Y]} (hA0 : A ≠ 0)
     (hdegX : degreeX A = 0) (hdegY : natDegreeY A = 0) :
     ∃ P : F[X][Y], B = P * A := by
@@ -45,7 +45,7 @@ lemma ps_exists_p_of_degree_x_eq_zero_nat_degree_y_eq_zero {F : Type} [Field F]
   exact ⟨B * C (C a⁻¹), by ext n m : 2; simp [coeff_mul_C, inv_mul_cancel_right₀ hA0]⟩
 
 /-- After cancellation in X, a large subset of evaluation points witnesses `P = quot_y`. -/
-lemma ps_exists_qx_of_cancel {F : Type} [Field F]
+lemma ps_exists_qx_of_cancel {F : Type*} [Field F]
     (a_x : ℕ) (n_x : ℕ+) {A B P : F[X][Y]} (hA : A ≠ 0) (hBA : B = P * A)
     (P_x : Finset F) (h_card_Px : n_x ≤ P_x.card) (quot_y : F → F[X])
     (h_quot_y : ∀ x ∈ P_x, evalX x B = (quot_y x) * (evalX x A))
@@ -63,7 +63,7 @@ lemma ps_exists_qx_of_cancel {F : Type} [Field F]
       (by rw [← evalX_mul, ← hBA]; exact h_quot_y x (Finset.mem_of_mem_filter x hx))
 
 /-- After cancellation in Y, a large subset of evaluation points witnesses `P = quot_x`. -/
-lemma ps_exists_qy_of_cancel {F : Type} [Field F]
+lemma ps_exists_qy_of_cancel {F : Type*} [Field F]
     (a_y : ℕ) (n_y : ℕ+) {A B P : F[X][Y]} (hA : A ≠ 0) (hBA : B = P * A)
     (P_y : Finset F) (h_card_Py : n_y ≤ P_y.card) (quot_x : F → F[X])
     (h_quot_x : ∀ y ∈ P_y, evalY y B = (quot_x y) * (evalY y A))
@@ -82,7 +82,7 @@ lemma ps_exists_qy_of_cancel {F : Type} [Field F]
       exact h_quot_x y (Finset.mem_filter.mp hy).1)
 
 /-- If `A` and `B` are coprime and agree on sufficiently many lines, then `A` is constant. -/
-lemma ps_coprime_case_constant {F : Type} [Field F]
+lemma ps_coprime_case_constant {F : Type*} [Field F]
     (a_x a_y b_x b_y : ℕ) (n_x n_y : ℕ+)
     (h_bx_ge_ax : b_x ≥ a_x) (h_by_ge_ay : b_y ≥ a_y)
     (A B : F[X][Y]) (hA0 : A ≠ 0) (hB0 : B ≠ 0) (hrel : IsRelPrime A B)
@@ -178,7 +178,7 @@ lemma ps_coprime_case_constant {F : Type} [Field F]
   exact lt_irrefl D (hDle.trans_lt ((mul_lt_mul_of_pos_left h_le_1 hDpos).trans_eq (mul_one D)))
 
 /-- Existence of `P` with `B = P * A` when both `A` and `B` are nonzero. -/
-lemma ps_exists_p_nonzero {F : Type} [Field F]
+lemma ps_exists_p_nonzero {F : Type*} [Field F]
     (a_x a_y b_x b_y : ℕ) (n_x n_y : ℕ+)
     (h_bx_ge_ax : b_x ≥ a_x) (h_by_ge_ay : b_y ≥ a_y)
     (A B : F[X][Y]) (hA0 : A ≠ 0) (hB0 : B ≠ 0)
@@ -283,7 +283,7 @@ lemma ps_exists_p_nonzero {F : Type} [Field F]
   exact ⟨P1, by rw [hB, hB1fac, hA]; ring⟩
 
 /-- Main existence: if `B/A` agrees with low-degree quotients on enough lines, then `A ∣ B`. -/
-lemma ps_exists_p {F : Type} [Field F]
+lemma ps_exists_p {F : Type*} [Field F]
     (a_x a_y b_x b_y : ℕ) (n_x n_y : ℕ+)
     (h_bx_ge_ax : b_x ≥ a_x) (h_by_ge_ay : b_y ≥ a_y)
     (A B : F[X][Y])
