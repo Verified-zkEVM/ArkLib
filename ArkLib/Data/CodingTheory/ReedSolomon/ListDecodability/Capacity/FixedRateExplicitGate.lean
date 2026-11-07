@@ -50,8 +50,7 @@ theorem fixedRatePartitionOrder_list_bound_selected {R δ : ℝ}
       -- The length threshold, rate, and agreement constraints are uniform in the code.
       RatePartition.rateBlockThreshold R (RatePartition.fixedRatePartitionOrder R δ)
         p.multiplicity ≤ n →
-      0 < k →
-      (k : ℝ) ≤ R * n → (R + δ) * n ≤ A → A ≤ n →
+      (k : ℝ) ≤ R * n → (R + δ) * n ≤ A →
       ∀ (domain : Fin n ↪ F) (received : Fin n → F),
       -- Characteristic zero or a characteristic above the message, order, and jet caps.
       (ringChar F = 0 ∨ max (max (k - 1) (RatePartition.fixedRatePartitionOrder R δ))
@@ -64,11 +63,24 @@ theorem fixedRatePartitionOrder_list_bound_selected {R δ : ℝ}
               RatePartition.fixedRatePartitionOrder R δ *
             n ^ RatePartition.fixedRatePartitionOrder R δ := by
   dsimp only
-  intro F _ n k A hn hk hkR haA hAn domain received hchar
+  intro F _ n k A hn hkR haA domain received hchar
+  by_cases hAn : A ≤ n
+  swap
+  · have hempty : closePolynomialSet domain received k A = ∅ := by
+      apply Set.eq_empty_of_forall_notMem
+      intro P hP
+      have hcard : (polynomialAgreementSet domain received P).card ≤ n := by
+        simpa only [Fintype.card_fin] using
+          Finset.card_le_univ (polynomialAgreementSet domain received P)
+      exact hAn (hP.2.trans hcard)
+    rw [hempty]
+    refine ⟨Set.finite_empty, ?_⟩
+    simp only [Set.ncard_empty, Nat.cast_zero]
+    positivity
   simpa only [add_sub_cancel_left] using
     ratePartition_close_list_bound (RatePartition.fixedRatePartitionFiniteParameters hR hδ)
       hR (by linarith : R < R + δ) haone
-      (RatePartition.fixedRatePartitionOrder_ge_500 R δ) hn hk hkR haA hAn domain received
+      (RatePartition.fixedRatePartitionOrder_ge_500 R δ) hn hkR haA hAn domain received
       hchar
 
 open Classical in
@@ -81,8 +93,7 @@ theorem fixedRatePartitionOrder_list_bound {R δ : ℝ}
       ∀ (F : Type u) [Field F] (n k A : ℕ),
       RatePartition.rateBlockThreshold R (RatePartition.fixedRatePartitionOrder R δ)
         p.multiplicity ≤ n →
-      0 < k →
-      (k : ℝ) ≤ R * n → (R + δ) * n ≤ A → A ≤ n →
+      (k : ℝ) ≤ R * n → (R + δ) * n ≤ A →
       ∀ (domain : Fin n ↪ F) (received : Fin n → F),
       (ringChar F = 0 ∨ max (max (k - 1) (RatePartition.fixedRatePartitionOrder R δ))
         (RatePartition.rateJetCap R p.multiplicity) < ringChar F) →
@@ -93,9 +104,9 @@ theorem fixedRatePartitionOrder_list_bound {R δ : ℝ}
               RatePartition.fixedRatePartitionOrder R δ *
             n ^ RatePartition.fixedRatePartitionOrder R δ := by
   refine ⟨RatePartition.fixedRatePartitionFiniteParameters hR hδ, ?_⟩
-  intro F _ n k A hn hk hkR haA hAn domain received hchar
+  intro F _ n k A hn hkR haA domain received hchar
   have hbound := fixedRatePartitionOrder_list_bound_selected hR hδ haone
   dsimp only at hbound
-  exact hbound F n k A hn hk hkR haA hAn domain received hchar
+  exact hbound F n k A hn hkR haA domain received hchar
 
 end ReedSolomon

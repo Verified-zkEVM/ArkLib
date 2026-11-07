@@ -61,7 +61,7 @@ theorem exists_mathematicalUniformRatePartition_curve_exactPowerAgreement
     {F E : Type u} [Field F] [Field E] [IsAlgClosed E]
     {δ : ℝ} {n k A ℓ : ℕ} (hδ : 0 < δ) (hδsmall : δ < 6 / 25)
     (hn : uniformMathematicalLength δ ≤ n) (hk : 0 < k)
-    (hgap : (k : ℝ) + δ * n ≤ A) (hAn : A ≤ n) (hℓ : 0 < ℓ)
+    (hgap : (k : ℝ) + δ * n ≤ A) (hAn : A ≤ n)
     (domain : Fin n ↪ F) (values : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
     (hchar : ringChar F = 0 ∨ max (k - 1) (uniformMathematicalJetBound δ) < ringChar F) :
     ∃ exceptional : Finset E,
@@ -73,20 +73,19 @@ theorem exists_mathematicalUniformRatePartition_curve_exactPowerAgreement
           (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
         HasExactPowerAgreement domain values iota k z P := by
   classical
-  obtain ⟨e⟩ := exists_mathematicalRatePartitionEnvelope hδ hδsmall hn hk hgap hAn
-  obtain ⟨hd, hδone, hscale, hν, -⟩ := uniformMathematical_certificate_guards hδ hδsmall hn
-  obtain ⟨cert⟩ := e.exists_curve_certificate (scale := 300) hδ hδone hd hscale hAn
+  have hkA : k ≤ A := by
+    exact_mod_cast hgap.trans' (le_add_of_nonneg_right (by positivity))
+  obtain ⟨e⟩ := exists_mathematicalRatePartitionEnvelope hδ hδsmall hn hgap hAn
+  obtain ⟨hd, -, hscale, hν, -⟩ := uniformMathematical_certificate_guards hδ hδsmall
+  obtain ⟨cert⟩ := e.exists_curve_certificate (scale := 300) hd hscale hAn
     domain (fun i ↦ powerBatchedCoordinate fun t ↦ values t i)
     (fun _ ↦ powerBatchedCoordinate_natDegree_le _)
-  have hkA : k ≤ A := by
-    have h : (k : ℝ) ≤ A := by nlinarith [mul_nonneg hδ.le (Nat.cast_nonneg n)]
-    exact_mod_cast h
   have hKn : max k (uniformDerivativeOrder δ + 1) ≤ n :=
     max_le (hkA.trans hAn) (by have := e.order_le; have := e.ambient_le; omega)
   exact exists_exceptional_exactPowerAgreement_of_certificate_of_jetCharacteristic
-    domain values iota cert hk (Nat.le_max_left _ _) (by omega)
-    (Nat.lt_succ_self _ |>.trans_le (Nat.le_max_right _ _)) hKn hkA hAn hν
-    (by positivity) hℓ le_rfl hδ hδone.le hgap
+    domain values iota cert hk (Nat.le_max_left _ _)
+    (Nat.lt_succ_self _ |>.trans_le (Nat.le_max_right _ _)) hKn hAn
+    (by positivity) le_rfl hδ hgap
     (uniformMathematical_ringChar_guard hδ hδsmall hchar)
 
 open Classical in
@@ -95,7 +94,7 @@ theorem exists_mathematicalUniformRatePartition_baseCurve_exactPowerAgreement
     {F : Type u} [Field F] {δ : ℝ} {n k A ℓ : ℕ}
     (hδ : 0 < δ) (hδsmall : δ < 6 / 25)
     (hn : uniformMathematicalLength δ ≤ n) (hk : 0 < k)
-    (hgap : (k : ℝ) + δ * n ≤ A) (hAn : A ≤ n) (hℓ : 0 < ℓ)
+    (hgap : (k : ℝ) + δ * n ≤ A)
     (domain : Fin n ↪ F) (values : Fin (ℓ + 1) → Fin n → F)
     (hchar : ringChar F = 0 ∨ max (k - 1) (uniformMathematicalJetBound δ) < ringChar F) :
     ∃ exceptional : Finset F,
@@ -106,11 +105,19 @@ theorem exists_mathematicalUniformRatePartition_baseCurve_exactPowerAgreement
         A ≤ (polynomialAgreementSet domain (powerBatchedWord values z) P).card →
         HasExactPowerAgreement domain values (RingHom.id F) k z P := by
   classical
+  by_cases hAn : A ≤ n
+  swap
+  · refine ⟨∅, ?_, ?_⟩
+    · simp only [Finset.card_empty, Nat.cast_zero]
+      unfold polynomialCurveProductAgreementConstant
+      positivity
+    · intro z _ P _ hagree
+      exact (hAn (hagree.trans ((Finset.card_le_univ _).trans_eq (Fintype.card_fin n)))).elim
   let E := AlgebraicClosure F
   let iota : F →+* E := algebraMap F E
   obtain ⟨exceptional, hcard, hgood⟩ :=
     exists_mathematicalUniformRatePartition_curve_exactPowerAgreement
-      hδ hδsmall hn hk hgap hAn hℓ domain values iota hchar
+      hδ hδsmall hn hk hgap hAn domain values iota hchar
   obtain ⟨exceptional', hcard', hgood'⟩ :=
     uniformExactPowerAgreement_of_extension domain values iota k A exceptional hgood
   exact ⟨exceptional', (Nat.cast_le.mpr hcard').trans hcard, hgood'⟩
@@ -134,7 +141,7 @@ theorem exists_mathematicalUniformRatePartition_line_exactCorrelatedPair
     {F : Type u} [Field F] {δ : ℝ} {n k A : ℕ}
     (hδ : 0 < δ) (hδsmall : δ < 6 / 25)
     (hn : uniformMathematicalCapacityLength δ ≤ n) (hk : 0 < k)
-    (hgap : (k : ℝ) + δ * n ≤ A) (hAn : A ≤ n)
+    (hgap : (k : ℝ) + δ * n ≤ A)
     (domain : Fin n ↪ F) (f g : Fin n → F)
     (hchar : ringChar F = 0 ∨ k - 1 < ringChar F) :
     ∃ exceptional : Finset F,
@@ -144,6 +151,14 @@ theorem exists_mathematicalUniformRatePartition_line_exactCorrelatedPair
         A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
         HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
   classical
+  by_cases hAn : A ≤ n
+  swap
+  · refine ⟨∅, ?_, ?_⟩
+    · simp only [Finset.card_empty, Nat.cast_zero]
+      exact mul_nonneg
+        ((by norm_num : (0 : ℝ) ≤ 343 / 3).trans (le_max_right _ _)) (by positivity)
+    · intro z _ P _ hagree
+      exact (hAn (hagree.trans ((Finset.card_le_univ _).trans_eq (Fintype.card_fin n)))).elim
   have hnBase : uniformMathematicalLength δ ≤ n := (le_max_left _ _).trans hn
   have hd := uniformDerivativeOrder_ge_519 hδ hδsmall
   have hnR : (0 : ℝ) ≤ n := Nat.cast_nonneg n
@@ -172,7 +187,7 @@ theorem exists_mathematicalUniformRatePartition_line_exactCorrelatedPair
       ringChar F = 0 ∨ max (k - 1) (uniformMathematicalJetBound δ) < ringChar F
   · obtain ⟨exceptional, hcard, hgood⟩ := exists_line_exactCorrelatedPair_of_powerAgreement
       domain f g (exists_mathematicalUniformRatePartition_baseCurve_exactPowerAgreement
-        hδ hδsmall hnBase hk hgap hAn (by norm_num : 0 < 1) domain ![f, g] hsupport)
+        hδ hδsmall hnBase hk hgap domain ![f, g] hsupport)
     refine ⟨exceptional, hcard.trans ?_, hgood⟩
     rw [Nat.cast_one, one_mul]
     exact mul_le_mul_of_nonneg_right (le_max_left _ _) (by positivity)
@@ -182,7 +197,7 @@ theorem exists_mathematicalUniformRatePartition_line_exactCorrelatedPair
       exact hsupport (Or.inr (max_lt hdegreeChar (by omega)))
     obtain ⟨exceptional, hcard, hgood⟩ := exists_johnson_line_exactCorrelatedPair_of_gap
       domain f g hδ (by omega)
-      (four_mul_pred_le_sq_mul_of_le_uniformMathematicalJetBound hδ hn hkJet) hgap hAn
+      (four_mul_pred_le_sq_mul_of_le_uniformMathematicalJetBound hn hkJet) hgap
     exact ⟨exceptional, hcard.le.trans hJohnson, hgood⟩
 
 end ReedSolomon

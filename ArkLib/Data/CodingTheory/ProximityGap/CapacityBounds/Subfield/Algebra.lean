@@ -292,8 +292,6 @@ omit [DecidableEq ι] in
 theorem subfield_ca_good_scalars_subset_fold_close
     (B : Subfield F) (domain : ι ↪ F) (domainB : ι ↪ B)
     (k : ℕ) (δ : NNReal) (a : F) (y : ι → B)
-    (_hint : ((⌊(δ : ℝ) * Fintype.card ι⌋₊ : ℝ)) =
-      (δ : ℝ) * Fintype.card ι)
     (ha : a ∉ B)
     (hdom : ∀ i, (domainB i : F) = domain i) :
     subfield_ca_good_scalars B domainB k δ a y ⊆
@@ -418,7 +416,6 @@ theorem subfield_ca_reciprocal_stack_not_joint
     (hdom : ∀ i, domain i ∈ B)
     (hint : ((⌊(δ : ℝ) * Fintype.card ι⌋₊ : ℝ)) =
       (δ : ℝ) * Fintype.card ι)
-    (hδ_one : (δ : ℝ) < 1)
     (hkf : k + ⌊(δ : ℝ) * Fintype.card ι⌋₊ < Fintype.card ι) :
     ¬ Code.jointProximity
       (C := (ReedSolomon.code domain k : Set (ι → F)))
@@ -428,7 +425,15 @@ theorem subfield_ca_reciprocal_stack_not_joint
   intro hjoint
   rw [← Code.jointAgreement_iff_jointProximity] at hjoint
   obtain ⟨T, hTcard, v, hv⟩ := hjoint
-  have hδle : δ ≤ 1 := le_of_lt (by exact_mod_cast hδ_one)
+  have hδle : δ ≤ 1 := by
+    have hfloor : ⌊(δ : ℝ) * Fintype.card ι⌋₊ < Fintype.card ι := by omega
+    have hn : (0 : ℝ) < Fintype.card ι := by
+      exact_mod_cast (show 0 < Fintype.card ι by omega)
+    have hprod : (δ : ℝ) * Fintype.card ι < Fintype.card ι := by
+      rw [← hint]
+      exact_mod_cast hfloor
+    have hδ : (δ : ℝ) < 1 := by nlinarith only [hprod, hn]
+    exact_mod_cast hδ.le
   have hTcardR0 : ((((1 - δ) * (Fintype.card ι : NNReal)) : NNReal) : ℝ) ≤
       (T.card : ℝ) := by
     exact_mod_cast hTcard
@@ -654,7 +659,7 @@ theorem subfield_ca_collision_divisor_nat_degree_card [Finite F]
     Polynomial.natDegree_finsetProd_X_sub_C_eq_card]
 
 omit [Fintype F] [DecidableEq F] in
-theorem subfield_ca_degree_lt_card [Finite F] (B : Subfield F) (k : ℕ) :
+theorem subfield_ca_degree_lt_card (B : Subfield F) (k : ℕ) :
     Nat.card (Polynomial.degreeLT B k) = Nat.card B ^ k := by
   classical
   calc
@@ -664,17 +669,16 @@ theorem subfield_ca_degree_lt_card [Finite F] (B : Subfield F) (k : ℕ) :
 
 theorem subfield_ca_density_error_term_eq
     (n k f b q C : ℕ) (G : ℝ)
-    (hkf : k + f ≤ n) (hb : 0 < b) (hC : 0 < C) :
+    (hkf : k + f ≤ n) (hb : 0 < b) :
     let A : ℝ := (C : ℝ) * (b : ℝ) ^ (k + f)
     let N : ℝ := (q : ℝ) * (b : ℝ) ^ n
     N * G / A =
       (q : ℝ) * (b : ℝ) ^ (n - k - f) * G / (C : ℝ) := by
   dsimp only
   have hbne : (b : ℝ) ≠ 0 := by exact_mod_cast hb.ne'
-  have hCne : (C : ℝ) ≠ 0 := by exact_mod_cast hC.ne'
   have hexp : n - k - f = n - (k + f) := by omega
   rw [hexp, pow_sub₀ _ hbne hkf]
-  field_simp [hbne, hCne]
+  field_simp [hbne]
 
 omit [Fintype F] [DecidableEq F] in
 private theorem subfield_ca_divisible_degree_lt_mul_mem
@@ -746,23 +750,21 @@ private theorem subfield_ca_divisible_degree_lt_quotient_injective
   rw [hqr, hqs, hdiv]
 
 omit [Fintype F] [DecidableEq F] in
-theorem subfield_ca_divisible_degree_lt_card_le [Finite F]
+theorem subfield_ca_divisible_degree_lt_card_le
     (B : Subfield F) (H : Polynomial B) (hH : H.Monic) (k : ℕ) :
     Nat.card (subfield_ca_divisible_degree_lt B k H) ≤
       Nat.card B ^ (k - H.natDegree) := by
   classical
-  let := Fintype.ofFinite B
-  let : Fintype (Polynomial.degreeLT B (k - H.natDegree)) :=
-    Fintype.ofEquiv (Fin (k - H.natDegree) → B)
-      (Polynomial.degreeLTEquiv B (k - H.natDegree)).toEquiv.symm
-  calc
-    Nat.card (subfield_ca_divisible_degree_lt B k H) ≤
-        Nat.card (Polynomial.degreeLT B (k - H.natDegree)) :=
-      Nat.card_le_card_of_injective
-        (subfield_ca_divisible_degree_lt_quotient B H hH k)
-        (subfield_ca_divisible_degree_lt_quotient_injective B H hH k)
-    _ = Nat.card B ^ (k - H.natDegree) :=
-      subfield_ca_degree_lt_card B (k - H.natDegree)
+  have hsurj : Function.Surjective
+      (subfield_ca_divisible_degree_lt_quotient B H hH k) := by
+    intro q
+    refine ⟨⟨⟨H * q.1, subfield_ca_divisible_degree_lt_mul_mem B H hH k q⟩,
+      dvd_mul_right H q.1⟩, ?_⟩
+    apply Subtype.ext
+    exact Polynomial.mul_divByMonic_cancel_left q.1 hH
+  rw [Nat.card_congr (Equiv.ofBijective _
+    ⟨subfield_ca_divisible_degree_lt_quotient_injective B H hH k, hsurj⟩)]
+  exact (subfield_ca_degree_lt_card B (k - H.natDegree)).le
 
 private theorem subfield_ca_exp_term_succ (t : ℝ) (s : ℕ) :
     t ^ (s + 1) / ((s + 1).factorial : ℝ) =
@@ -792,7 +794,7 @@ private theorem subfield_ca_exp_term_step_up
   exact mul_le_mul_of_nonneg_left hs hterm
 
 theorem subfield_ca_exp_term_le_floor_mode
-    (t : ℝ) (r s : ℕ) (ht0 : 0 ≤ t)
+    (t : ℝ) (r s : ℕ)
     (hrle : (r : ℝ) ≤ t) (htlt : t < (r : ℝ) + 1) :
     t ^ s / (s.factorial : ℝ) ≤
       t ^ r / (r.factorial : ℝ) := by
@@ -807,7 +809,7 @@ theorem subfield_ca_exp_term_le_floor_mode
     have hjt : (j + 1 : ℕ) ≤ t := by
       have hjrR : ((j + 1 : ℕ) : ℝ) ≤ r := by exact_mod_cast hjr
       exact hjrR.trans hrle
-    exact (subfield_ca_exp_term_step_up t j ht0 hjt).trans ih
+    exact (subfield_ca_exp_term_step_up t j ((Nat.cast_nonneg r).trans hrle) hjt).trans ih
   · have hrs : r ≤ s := Nat.le_of_lt (Nat.lt_of_not_ge hsr)
     refine Nat.le_induction
       (m := r)
@@ -818,17 +820,19 @@ theorem subfield_ca_exp_term_le_floor_mode
     have hrj' : r + 1 ≤ j + 1 := Nat.add_le_add_right hrj 1
     have hrjR : (r : ℝ) + 1 ≤ (j + 1 : ℕ) := by exact_mod_cast hrj'
     have htj : t ≤ (j + 1 : ℕ) := le_of_lt (htlt.trans_le hrjR)
-    exact (subfield_ca_exp_term_step_down t j ht0 htj).trans ih
+    exact (subfield_ca_exp_term_step_down t j ((Nat.cast_nonneg r).trans hrle) htj).trans ih
 
 theorem subfield_ca_exponent_cast_eq
     (n k f : ℕ) (δ : NNReal)
-    (hn : 0 < n) (hkf : k + f ≤ n)
+    (hkf : k + f ≤ n)
     (hint : (f : ℝ) = (δ : ℝ) * n) :
     ((n - k - f : ℕ) : ℝ) =
       (n : ℝ) * (1 - (k : ℝ) / n - (δ : ℝ)) := by
   have hk : k ≤ n := by omega
   have hf : f ≤ n - k := by omega
-  have hnR : (n : ℝ) ≠ 0 := by exact_mod_cast hn.ne'
+  by_cases hn : n = 0
+  · simp [hn]
+  have hnR : (n : ℝ) ≠ 0 := by exact_mod_cast hn
   rw [Nat.cast_sub hf, Nat.cast_sub hk, hint]
   field_simp [hnR]
 
@@ -876,11 +880,24 @@ theorem subfield_ca_generator_adjoin_eq_top
     exact hpow
 
 omit [Fintype F] [DecidableEq F] in
-theorem subfield_ca_generator_minpoly_nat_degree [Finite F]
+theorem subfield_ca_generator_minpoly_nat_degree
     (B : Subfield F) (g : Fˣ) (hg : ∀ y : Fˣ, y ∈ Submonoid.powers g) :
     (minpoly B (g : F)).natDegree = Module.finrank B F := by
-  exact (Field.primitive_element_iff_minpoly_natDegree_eq B (g : F)).mp
-    (subfield_ca_generator_adjoin_eq_top B g hg)
+  classical
+  by_cases hi : IsIntegral B (g : F)
+  · have hfin := IntermediateField.adjoin.finiteDimensional hi
+    rw [subfield_ca_generator_adjoin_eq_top B g hg] at hfin
+    let := hfin
+    let e := (IntermediateField.topEquiv : (⊤ : IntermediateField B F) ≃ₐ[B] F)
+    let := e.toLinearEquiv.finiteDimensional
+    exact (Field.primitive_element_iff_minpoly_natDegree_eq B (g : F)).mp
+      (subfield_ca_generator_adjoin_eq_top B g hg)
+  · rw [minpoly.eq_zero hi, Polynomial.natDegree_zero]
+    symm
+    apply Module.finrank_of_not_finite
+    intro hf
+    let := hf
+    exact hi (IsIntegral.of_finite B (g : F))
 
 omit [Nonempty ι] [DecidableEq ι] [Fintype F] [DecidableEq F] in
 private theorem subfield_ca_interpolant_unique
@@ -1023,13 +1040,13 @@ theorem subfield_ca_first_moment_real_eq
   exact_mod_cast subfield_ca_first_moment_eq B domainB k δ a hkf
 
 omit [Fintype ι] [Nonempty ι] [DecidableEq ι] [Fintype F] [DecidableEq F] in
-private theorem subfield_ca_minpoly_coprime_linear [Finite F]
+private theorem subfield_ca_minpoly_coprime_linear
     (B : Subfield F) (domainB : ι ↪ B) (a : F)
-    (ha : a ∉ B) (i : ι) :
+    (hi : IsIntegral B a) (ha : a ∉ B) (i : ι) :
     IsCoprime (minpoly B a)
       (Polynomial.X - Polynomial.C (domainB i)) := by
   have hirr : Irreducible (minpoly B a) :=
-    minpoly.irreducible (Algebra.IsIntegral.isIntegral a)
+    minpoly.irreducible hi
   rw [hirr.coprime_iff_not_dvd]
   intro hdvd
   have hz :
@@ -1046,18 +1063,17 @@ private theorem subfield_ca_minpoly_coprime_linear [Finite F]
 open scoped BigOperators in
 omit [Fintype ι] [Nonempty ι] [DecidableEq ι] [Fintype F] [DecidableEq F] in
 private theorem subfield_ca_minpoly_coprime_linear_prod
-    [Finite F]
     (B : Subfield F) (domainB : ι ↪ B) (a : F)
-    (ha : a ∉ B) (U : Finset ι) :
+    (hi : IsIntegral B a) (ha : a ∉ B) (U : Finset ι) :
     IsCoprime (minpoly B a)
       (∏ i ∈ U, (Polynomial.X - Polynomial.C (domainB i))) := by
   apply IsCoprime.prod_right
-  intro i hi
-  exact subfield_ca_minpoly_coprime_linear B domainB a ha i
+  intro i _
+  exact subfield_ca_minpoly_coprime_linear B domainB a hi ha i
 
 open scoped BigOperators in
 omit [Nonempty ι] [Fintype F] [DecidableEq F] in
-theorem subfield_ca_collision_divisor_dvd_sub [Finite F]
+theorem subfield_ca_collision_divisor_dvd_sub
     (B : Subfield F) (domainB : ι ↪ B) (a : F)
     (ha : a ∉ B) (S T : Finset ι) (y : ι → B) (α : F)
     (p q : Polynomial B)
@@ -1066,26 +1082,32 @@ theorem subfield_ca_collision_divisor_dvd_sub [Finite F]
     (hpa : Polynomial.aeval a p = α)
     (hqa : Polynomial.aeval a q = α) :
     subfield_ca_collision_divisor B domainB a S T ∣ p - q := by
-  unfold subfield_ca_collision_divisor
-  apply (subfield_ca_minpoly_coprime_linear_prod B domainB a ha
-    (Finset.univ \ (S ∪ T))).mul_dvd
-  · rw [minpoly.dvd_iff, Polynomial.aeval_sub, hpa, hqa, sub_self]
-  · apply Finset.prod_dvd_of_coprime
-    · intro i hi j hj hij
-      exact Polynomial.pairwise_coprime_X_sub_C domainB.injective hij
-    · intro i hi
-      have hiST : i ∉ S ∪ T := (Finset.mem_sdiff.mp hi).2
-      have hiS : i ∉ S := by
-        intro hiS
-        exact hiST (Finset.mem_union.mpr (Or.inl hiS))
-      have hiT : i ∉ T := by
-        intro hiT
-        exact hiST (Finset.mem_union.mpr (Or.inr hiT))
-      rw [Polynomial.dvd_iff_isRoot, Polynomial.IsRoot.def,
-        Polynomial.eval_sub, hp i hiS, hq i hiT, sub_self]
+  by_cases hi : IsIntegral B a
+  · unfold subfield_ca_collision_divisor
+    apply (subfield_ca_minpoly_coprime_linear_prod B domainB a hi ha
+      (Finset.univ \ (S ∪ T))).mul_dvd
+    · rw [minpoly.dvd_iff, Polynomial.aeval_sub, hpa, hqa, sub_self]
+    · apply Finset.prod_dvd_of_coprime
+      · intro i hi j hj hij
+        exact Polynomial.pairwise_coprime_X_sub_C domainB.injective hij
+      · intro i hi
+        have hiST : i ∉ S ∪ T := (Finset.mem_sdiff.mp hi).2
+        have hiS : i ∉ S := by
+          intro hiS
+          exact hiST (Finset.mem_union.mpr (Or.inl hiS))
+        have hiT : i ∉ T := by
+          intro hiT
+          exact hiST (Finset.mem_union.mpr (Or.inr hiT))
+        rw [Polynomial.dvd_iff_isRoot, Polynomial.IsRoot.def,
+          Polynomial.eval_sub, hp i hiS, hq i hiT, sub_self]
+  · have hd : minpoly B a ∣ p - q := by
+      rw [minpoly.dvd_iff, Polynomial.aeval_sub, hpa, hqa, sub_self]
+    rw [minpoly.eq_zero hi, zero_dvd_iff] at hd
+    rw [hd]
+    exact dvd_zero _
 
 omit [Fintype F] [DecidableEq F] in
-noncomputable def subfield_ca_pair_witness_to_parameters [Finite F]
+noncomputable def subfield_ca_pair_witness_to_parameters
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F)
     (ha : a ∉ B) (S T : Finset ι) :
     SubfieldCaPairWitness B domainB k a S T →

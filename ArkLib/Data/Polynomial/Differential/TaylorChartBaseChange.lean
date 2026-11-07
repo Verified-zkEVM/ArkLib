@@ -387,7 +387,7 @@ theorem finite_solutions_card_le_sq_totalJetDegree_of_agreementGap
   have hbin : ∀ r, r ≤ d → ∀ i, r < i → i < K → (i.choose r : F) ≠ 0 := by
     intro r _ i hir hiK
     have hchoose := natCast_choose_ne_zero_of_ringChar (D := K - 1) (s := r)
-      hcutChar (i - r) (by omega) (by omega)
+      hcutChar (i - r) (by omega)
     simpa only [Nat.sub_add_cancel (Nat.le_of_lt hir)] using hchoose
   have hn : 0 < n := hk.trans_le (hkA.trans hAn)
   have hcount := finite_solutions_card_le_sq_totalJetDegree_of_agreement Q K k ν hK hkK

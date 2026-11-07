@@ -45,7 +45,7 @@ open Classical in
 field-independent geometric bound. -/
 theorem prescribed_geometric_finite_list_bound
     (δ : ℝ) (n k : ℕ) (domain : Fin n ↪ F) (received : Fin n → F)
-    (hδ : 0 < δ) (hδmax : δ < 1 / 4) (hk : 0 < k)
+    (hδ : 0 < δ) (hδmax : δ < 1 / 4)
     (hblock :
       let d := Nat.ceil (Real.exp (xi / δ))
       let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
@@ -62,10 +62,23 @@ theorem prescribed_geometric_finite_list_bound
   let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
   let ν := 2 * m - 1
   let K := max k (Nat.floor (δ * n / 2))
-  obtain ⟨hn, _hm, hν, hνm, hνn, hdK, hkK, hKn, hkA, hgap⟩ :=
+  obtain ⟨hn, hm, hν, hνm, hνn, hdK, hkK, hKn, hkA, hgap⟩ :=
     prescribed_geometric_parameters δ n k hδ hδmax hblock hA
+  rcases Nat.eq_zero_or_pos k with rfl | hk
+  · have hzero (P : F[X]) (hP : P ∈ S) : P = 0 := by
+      simpa only [Polynomial.degreeLT_zero, Submodule.mem_bot] using
+        (Polynomial.mem_degreeLT.mpr (hS P hP).1)
+    have hcard : (S.card : ℝ) ≤ 1 := by
+      exact_mod_cast Finset.card_le_one.mpr
+        (fun P hP Q hQ ↦ (hzero P hP).trans (hzero Q hQ).symm)
+    have hmOne : (1 : ℝ) ≤ m := by exact_mod_cast (show 1 ≤ m from hm)
+    have hnOne : (1 : ℝ) ≤ n := by exact_mod_cast (show 1 ≤ n from hn)
+    have hbase : (1 : ℝ) ≤ 4 * m / δ := (le_div_iff₀ hδ).mpr (by linarith)
+    exact hcard.trans (one_le_mul_of_one_le_of_one_le
+      (one_le_mul_of_one_le_of_one_le (by nlinarith : (1 : ℝ) ≤ 4 * m ^ 2)
+        (one_le_pow₀ hbase)) (one_le_pow₀ hnOne))
   obtain ⟨cert⟩ := exists_prescribed_symbolic_weightedSupport_certificate
-    δ n k domain received (fun _ ↦ 0) hδ hδmax hblock hA
+    δ n k domain received (fun _ ↦ 0) hδ hδmax hblock
   let Q : DifferentialPolynomial F d :=
     MvPolynomial.map (Polynomial.eval₂RingHom (RingHom.id F) 0) cert.Q
   obtain ⟨hQ, hdegreeQ, hsound⟩ := cert.specialization_sound (RingHom.id F) 0
@@ -108,23 +121,37 @@ open Classical in
 field-independent geometric bound. -/
 theorem prescribed_geometric_close_list_bound
     (δ : ℝ) (n k : ℕ) (domain : Fin n ↪ F) (received : Fin n → F)
-    (hδ : 0 < δ) (hδmax : δ < 1 / 4) (hk : 0 < k)
+    (hδ : 0 < δ) (hδmax : δ < 1 / 4)
     (hblock :
       let d := Nat.ceil (Real.exp (xi / δ))
       let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
       8 * m ≤ n)
-    (hA : capacityAgreementThreshold δ n k ≤ n) (hchar : ringChar F = 0 ∨ n ≤ ringChar F) :
+    (hchar : ringChar F = 0 ∨ n ≤ ringChar F) :
     let d := Nat.ceil (Real.exp (xi / δ))
     let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
     (closePolynomialSet domain received k (capacityAgreementThreshold δ n k)).Finite ∧
       ((closePolynomialSet domain received k (capacityAgreementThreshold δ n k)).ncard : ℝ) ≤
         4 * (m : ℝ) ^ 2 * (4 * m / δ) ^ d * n ^ d := by
+  by_cases hA : capacityAgreementThreshold δ n k ≤ n
+  swap
+  · have hempty : closePolynomialSet domain received k
+        (capacityAgreementThreshold δ n k) = ∅ := by
+      apply Set.eq_empty_of_forall_notMem
+      intro P hP
+      have hcard : (polynomialAgreementSet domain received P).card ≤ n := by
+        simpa only [Fintype.card_fin] using
+          Finset.card_le_univ (polynomialAgreementSet domain received P)
+      exact hA (hP.2.trans hcard)
+    rw [hempty]
+    refine ⟨Set.finite_empty, ?_⟩
+    simp only [Set.ncard_empty, Nat.cast_zero]
+    positivity
   classical
   have hfinite := closePolynomialSet_finite domain received
     (show k ≤ capacityAgreementThreshold δ n k from Nat.le_add_right _ _)
   refine ⟨hfinite, ?_⟩
   rw [Set.ncard_eq_toFinset_card _ hfinite]
-  exact prescribed_geometric_finite_list_bound δ n k domain received hδ hδmax hk hblock hA
+  exact prescribed_geometric_finite_list_bound δ n k domain received hδ hδmax hblock hA
     hchar hfinite.toFinset (fun P hP ↦ hfinite.mem_toFinset.mp hP)
 
 end ReedSolomon

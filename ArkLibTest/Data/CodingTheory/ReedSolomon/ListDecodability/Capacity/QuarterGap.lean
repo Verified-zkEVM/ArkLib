@@ -47,8 +47,7 @@ example :
     (agreeingPolynomials boolDomain 1 (capacityAgreementThreshold (1 / 2) 2 1)
       (fun _ : Bool => 0)).encard ≤ 1 := by
   exact agreeingPolynomials_encard_le_one_of_half
-    (ι := Bool) (F := ZMod 3) (delta := 1 / 2) (by norm_num) boolDomain
-    (by decide) (by decide) (fun _ => 0)
+    (ι := Bool) (F := ZMod 3) (delta := 1 / 2) (by norm_num) boolDomain (fun _ => 0)
 
 /-- The arbitrary finite-coordinate quarter-gap theorem specializes to the `Fin n` statement. -/
 example {F : Type*} [Field F] [DecidableEq F] {delta : ℝ} {n k : ℕ}

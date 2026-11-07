@@ -244,8 +244,9 @@ theorem interpolationBoxWidth_le_multiplicity (hθ : θ ≤ 16) :
 
 /-- The three slack conditions consumed by the rectangular dimension bound
 `finrank_interpolationSpace_lowerBound`: `H ≤ m`, `C + 2H ≤ B`, and `(K - 1)(C + 3H) ≤ m A`.
-The hypotheses are `ε > 0`, `θ ≥ 0`, and `0 < d < K`; the latter gives `n > 0` and `θ < 1`. -/
-theorem freeGlobalDimensionSlacks (hε : 0 < ε) (hθ : 0 ≤ θ) (hd : 0 < d)
+The hypotheses are `ε > 0`, `θ ≥ 0`, and `d < K`; for `d > 0` the last gives `n > 0` and `θ < 1`,
+and `d = 0` is immediate. -/
+theorem freeGlobalDimensionSlacks (hε : 0 < ε) (hθ : 0 ≤ θ)
     (hdK : d < ambientDimension ε θ n) :
     interpolationBoxWidth θ d ≤ multiplicity d ∧
       higherJetDegreeBudget θ d + 2 * interpolationBoxWidth θ d ≤
@@ -253,6 +254,8 @@ theorem freeGlobalDimensionSlacks (hε : 0 < ε) (hθ : 0 ≤ θ) (hd : 0 < d)
       (ambientDimension ε θ n - 1) *
           (higherJetDegreeBudget θ d + 3 * interpolationBoxWidth θ d) ≤
         multiplicity d * agreementThreshold ε n := by
+  rcases Nat.eq_zero_or_pos d with rfl | hd
+  · simp [multiplicity, interpolationBoxWidth, higherJetDegreeBudget, interpolationDegreeBudget]
   have hn := blockLength_pos_of_order_lt_ambientDimension hdK
   have hθ1 := lt_one_of_ambientDimension_pos hε.le (by omega : 0 < ambientDimension ε θ n)
   have hweighted := boxFamily_weightedBudget_lt hε hθ hd hn
@@ -355,13 +358,25 @@ theorem half_rate_le_ambientDimension_sub_one_div (hK : 3 ≤ ambientDimension �
   nlinarith
 
 /-- The scalar rank comparison at the unrounded rate `(1 - θ) ε` implies it at the rounded rate
-`(K - 1) / n`, for `θ ≥ 0` and `K ≥ 3`. -/
-theorem freeOrder_rank_comparison (hθ : 0 ≤ θ) (hK : 3 ≤ ambientDimension ε θ n)
+`(K - 1) / n`, for `K ≥ 3`. -/
+theorem freeOrder_rank_comparison (hK : 3 ≤ ambientDimension ε θ n)
     (hlarge : 1 < (θ ^ 3 / 262144) * ((1 - θ) * ε / 2) * (d : ℝ) ^ rankSavingExponent θ) :
     1 < (θ ^ 3 / 262144) * (((ambientDimension ε θ n - 1 : ℕ) : ℝ) / (n : ℝ)) *
       (d : ℝ) ^ rankSavingExponent θ := by
   have hratio := half_rate_le_ambientDimension_sub_one_div hK
   have hpow : 0 ≤ (d : ℝ) ^ rankSavingExponent θ := Real.rpow_nonneg (Nat.cast_nonneg d) _
+  have hrate : 0 ≤ (1 - θ) * ε / 2 := by
+    have hsource := one_le_of_ambientDimension_pos (by omega : 0 < ambientDimension ε θ n)
+    have : 0 ≤ (1 - θ) * ε := by
+      by_contra h
+      have := mul_nonpos_of_nonpos_of_nonneg (le_of_not_ge h) (Nat.cast_nonneg n)
+      linarith
+    positivity
+  have hcoefficient : 0 ≤ θ ^ 3 / 262144 := by
+    by_contra h
+    have hnonpos := mul_nonpos_of_nonpos_of_nonneg
+      (mul_nonpos_of_nonpos_of_nonneg (le_of_not_ge h) hrate) hpow
+    linarith
   calc 1 < (θ ^ 3 / 262144) * ((1 - θ) * ε / 2) * (d : ℝ) ^ rankSavingExponent θ := hlarge
     _ ≤ (θ ^ 3 / 262144) * (((ambientDimension ε θ n - 1 : ℕ) : ℝ) / (n : ℝ)) *
         (d : ℝ) ^ rankSavingExponent θ := by gcongr

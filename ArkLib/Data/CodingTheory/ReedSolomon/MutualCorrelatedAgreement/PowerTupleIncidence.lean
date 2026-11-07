@@ -251,7 +251,7 @@ theorem finite_frobeniusPowerTupleIncidence_off_graphs_card_le [IsAlgClosed E]
     (center : E) (Q : DifferentialPolynomial E[X] 0)
     (hK : 0 < K) (hKk : K ≤ p ^ e * k) (τ h b A : ℕ)
     (hτ : TaylorExponentSufficient 0 K τ) (hτpos : 0 < τ) (hℓ : 0 < ℓ)
-    (hb : 0 < b) (hkL : k ≤ L) (hLA : L ≤ A)
+    (hkL : k ≤ L) (hLA : L ≤ A)
     (hheight : CoeffNatDegreeLE Q h) (hjet : jetTotalDegree Q ≤ b)
     (hinit : jointInitialJetEquation center Q ≠ 0)
     (hproper : Ideal.span ({jointInitialJetEquation center Q} :
@@ -270,6 +270,18 @@ theorem finite_frobeniusPowerTupleIncidence_off_graphs_card_le [IsAlgClosed E]
       (h * (1 + τ * (b - 1)) + b * (p ^ e * ℓ + τ * h) : ℕ) *
         (((n - L + 1 : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) := by
   classical
+  by_cases hb : 0 < b
+  case neg =>
+    have hsep : separant Q (Fin.last 0) = 0 := by
+      apply MvPolynomial.pderiv_eq_zero_of_degreeOf_eq_zero
+      exact Nat.eq_zero_of_le_zero ((jetDegree_le_total Q _).trans (by omega))
+    change separant Q 0 = 0 at hsep
+    have hS0 : S = ∅ := by
+      apply Finset.eq_empty_iff_forall_notMem.mpr
+      intro x hx
+      exact (hS x hx).2.1 (by simp [jointInitialJetSeparant, initialJetSeparant, hsep])
+    rw [hS0]
+    positivity
   have hp : 0 < p ^ e := pow_pos (expChar_pos E p) e
   have hτone : 1 ≤ τ := Nat.succ_le_of_lt hτpos
   have hchallengeLe : h ≤ p ^ e * ℓ + τ * h := by
@@ -318,11 +330,11 @@ theorem finite_frobeniusPowerTupleIncidence_off_graphs_card_le [IsAlgClosed E]
       Finset.mem_toList, Finset.mem_filter, Finset.mem_univ, true_and] at hq
     obtain ⟨l, _, rfl⟩ := hq
     exact jointCommonTaylorNumerator_mem_regularPowerBatchedCutBidegree_of_exponent
-      center Q (p ^ e * ℓ) K h b τ hτ hb hheight hjet l
+      center Q (p ^ e * ℓ) K h b τ hτ hheight hjet l
   · intro i
     apply jointTaylorAgreementEquation_mem_regularPowerBatchedCutBidegree_of_exponent
       center (roots i) (frobeniusPowerCoordinate (p ^ e) (fun t ↦ ι (values t i)))
-      Q (p ^ e * ℓ) K h b τ hτ ?_ hb hheight hjet
+      Q (p ^ e * ℓ) K h b τ hτ ?_ hheight hjet
     exact (frobeniusPowerCoordinate_natDegree_le (p ^ e) _)
 
 end ReedSolomon

@@ -205,11 +205,11 @@ is inverted by `G` on every input within the decomposition's bound. This is the 
 `z = J · ẑ` reconstruction (Hachi Eq. (20) rows c4/c5) at a digit count `τ` set by the honest
 shortness bound on `z` rather than by `q` — the whole point of the bounded abstraction. -/
 theorem boundedGadgetDecompose_gadgetMul_eq_of_vecLInftyNorm_le {base : ZMod q}
-    {digits bound rows : ℕ} (hd : 0 < digits) (h1 : 1 ≤ Φ.φ.natDegree)
+    {digits bound rows : ℕ}
     (bdd : BoundedDigitDecomposition base digits bound) (x : PolyVec (Rq Φ) rows)
     (hx : vecLInftyNorm Φ x ≤ bound) :
     gadgetMul Φ base (bdd.gadgetDecompose Φ x) = x :=
-  boundedGadgetDecompose_gadgetMul_eq Φ hd h1 bdd x
+  boundedGadgetDecompose_gadgetMul_eq Φ bdd x
     (fun i _k hk => Rq.valMinAbs_natAbs_coeff_le_of_vecLInftyNorm_le Φ hx i hk)
 
 /-! ## `ℓ∞` bound -/

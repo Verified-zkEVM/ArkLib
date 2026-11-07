@@ -89,7 +89,7 @@ open Classical in
 codeword-list function. -/
 theorem prescribed_geometric_lambda_bound
     (δ : ℝ) (n k : ℕ) (domain : Fin n ↪ F)
-    (hδ : 0 < δ) (hδ' : δ < 1 / 4) (hk : 0 < k)
+    (hδ : 0 < δ) (hδ' : δ < 1 / 4)
     (hblock :
       let d := Nat.ceil (Real.exp (xi / δ))
       let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
@@ -103,6 +103,6 @@ theorem prescribed_geometric_lambda_bound
   have hn := (prescribed_geometric_parameters δ n k hδ hδ' hblock hA).1
   apply lambda_le_ceil_of_closePolynomialSet_bound hδ.le hn domain
   intro received
-  exact prescribed_geometric_close_list_bound δ n k domain received hδ hδ' hk hblock hA hchar
+  exact prescribed_geometric_close_list_bound δ n k domain received hδ hδ' hblock hchar
 
 end ReedSolomon

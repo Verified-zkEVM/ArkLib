@@ -150,7 +150,7 @@ lemma natDegree_lt_of_mem_degreeLT [NeZero deg] (h : p ∈ degreeLT F deg) : p.n
 def encode [DecidableEq F] (msg : Fin deg → F) (domain : Fin m ↪ F) : Fin m → F :=
   (polynomialOfCoeffs msg).eval ∘ ⇑domain
 
-lemma encode_mem_ReedSolomon_code [DecidableEq F] [NeZero deg]
+lemma encode_mem_ReedSolomon_code [DecidableEq F]
     {msg : Fin deg → F} {domain : Fin m ↪ F} :
   encode msg domain ∈ ReedSolomon.code domain deg :=
   ⟨polynomialOfCoeffs msg, ⟨by simp, by ext i; simp [encode, ReedSolomon.evalOnPoints]⟩⟩
@@ -167,9 +167,15 @@ open LinearCode
 
 /-- The Vandermonde matrix is the generator matrix for an RS code of length `ι` and dimension `deg`.
 -/
-lemma genMatIsVandermonde [Fintype ι] [Field F] [inst : NeZero m] {α : ι ↪ F} :
+lemma genMatIsVandermonde [Fintype ι] [Field F] {α : ι ↪ F} :
     fromColGenMat (Vandermonde.nonsquare (ι' := m) α) = ReedSolomon.code α m := by
   classical
+  by_cases hm : m = 0
+  · subst m
+    rw [fromColGenMat, ReedSolomon.code, Polynomial.degreeLT_zero, Submodule.map_bot]
+    apply LinearMap.range_eq_bot.mpr
+    exact Subsingleton.elim _ _
+  let : NeZero m := ⟨hm⟩
   unfold fromColGenMat ReedSolomon.code
   ext x; rw [LinearMap.mem_range, Submodule.mem_map]
   refine ⟨
@@ -490,17 +496,16 @@ lemma agree_lt_of_mem_code {F : Type*} [Fintype ι] [Field F] [DecidableEq F]
 
 /-- Two Reed-Solomon codewords of degree `< m` that agree on at least `m` positions
   are equal. -/
-lemma eq_of_agree_of_card_le {ι : Type} [Finite ι] [Field F]
+lemma eq_of_agree_of_card_le {ι : Type} [Field F]
     {α : ι ↪ F} {n : ℕ} {c c' : ι → F}
   (hc : c ∈ code α n) (hc' : c' ∈ code α n)
   {T : Finset ι} (hT : n ≤ T.card) (hagree : ∀ t ∈ T, c t = c' t) : c = c' := by
   classical
-  have := Fintype.ofFinite
-  by_contra hne
-  have hlt := ReedSolomon.agree_lt_of_mem_code hc hc' hne
-  have hsub : T ⊆ ({i | c i = c' i} : Finset _) := fun t ht ↦
-    Finset.mem_filter.2 ⟨Finset.mem_univ t, hagree t ht⟩
-  exact absurd (hT.trans (Finset.card_le_card hsub)) (not_le.2 hlt)
+  obtain ⟨p, hp, rfl⟩ := mem_code_iff_exists_polynomial.mp hc
+  obtain ⟨q, hq, rfl⟩ := mem_code_iff_exists_polynomial.mp hc'
+  congr 1
+  exact Polynomial.eq_of_degrees_lt_of_eval_index_eq T α.injective.injOn
+    (hp.trans_le (by exact_mod_cast hT)) (hq.trans_le (by exact_mod_cast hT)) hagree
 
 /-- Reed-Solomon codes are maximum distance separable (MDS). -/
 lemma isMDS_code {ι : Type*} [Fintype ι] [Inhabited ι] [Field F] [DecidableEq F]
@@ -522,11 +527,16 @@ theorem dist_eq [Fintype ι] [Inhabited ι] {α : ι ↪ F}
 
 /-- Unique decoding radius for RS code with arbitrary finite index type `ι`. -/
 theorem uniqueDecodingRadius_RS_eq [Fintype ι]
-    {α : ι ↪ F} [Field F] [DecidableEq F] [NeZero n]
-  (h : n ≤ Fintype.card ι) :
+    {α : ι ↪ F} [Field F] [DecidableEq F] [NeZero n] :
   Code.uniqueDecodingRadius (ι := ι) (F := F) (C := ReedSolomon.code α n) =
     (Fintype.card ι - n) / 2 := by
-  simp_all only [uniqueDecodingRadius, dist_eq_minDist, minDist_of_le, add_tsub_cancel_right]
+  classical
+  cases isEmpty_or_nonempty ι with
+  | inl hι => simp [uniqueDecodingRadius, Code.dist_subsingleton, Fintype.card_eq_zero]
+  | inr hι =>
+    let : Inhabited ι := Classical.inhabited_of_nonempty hι
+    rw [uniqueDecodingRadius, dist_eq_minDist, minDist_eq_card_sub_min_add_1]
+    omega
 
 open NNReal in
 /-- Relative unique decoding radius for RS code with arbitrary finite index type `ι`. -/

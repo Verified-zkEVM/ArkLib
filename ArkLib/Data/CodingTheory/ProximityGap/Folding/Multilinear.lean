@@ -105,7 +105,7 @@ private lemma aeval_split_mem {n : ℕ} [NeZero n] {R : Type} [Field R]
     (by rw [MvPolynomial.C_mul']; exact Submodule.smul_mem _ _ (odd_pred p).2)
 
 omit [DecidableEq F] in
-private lemma aeval_substFun_mem [NeZero n] {gg : F⦃≤ 1⦄[X (Fin n)]}
+private lemma aeval_substFun_mem {gg : F⦃≤ 1⦄[X (Fin n)]}
   (hchar : ¬CharP F 2) :
   ∀ (m : ℕ), m ≤ n → ∀ (β : Fin m → F),
     MvPolynomial.aeval (substFun m β) gg.1 ∈ MvPolynomial.restrictDegree (Fin (n - m)) F 1 := by

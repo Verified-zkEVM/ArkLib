@@ -453,7 +453,7 @@ lemma pow_eq_subdomain_sqFoldMapGen {i : ℕ} (u : Fin (2 ^ n)) :
 
 /-- `ReedSolomon.evalOnPoints` related on the domain and a subdomain. -/
 lemma evalOnPoints_pow_of_two_eq_evalOnPoints_subdomain
-    [NeZero n] {p : Polynomial F} {i : ℕ} :
+    {p : Polynomial F} {i : ℕ} :
   ReedSolomon.evalOnPoints (ω : Fin (2 ^ n) ↪ F) (p.comp (Polynomial.X ^ (2 ^ i))) =
     (ReedSolomon.evalOnPoints (subdomain ω i : Fin (2 ^ (n - i)) ↪ F) p) ∘
       sqFoldMapGen := by
@@ -464,7 +464,7 @@ lemma evalOnPoints_pow_of_two_eq_evalOnPoints_subdomain
 
 /-- A particularly useful special case of `evalOnPoints_pow_of_two_eq_evalOnPoints_subdomain`
   when `i = 1`. -/
-lemma evalOnPoints_sq_eq_evalOnPoints_subdomain [NeZero n] {p : Polynomial F} :
+lemma evalOnPoints_sq_eq_evalOnPoints_subdomain {p : Polynomial F} :
     ReedSolomon.evalOnPoints (ω : Fin (2 ^ n) ↪ F) (p.comp (Polynomial.X ^ 2)) =
     (ReedSolomon.evalOnPoints (subdomain ω 1 : Fin (2 ^ (n - 1)) ↪ F) p) ∘
       sqFoldMapGen := by
@@ -472,15 +472,14 @@ lemma evalOnPoints_sq_eq_evalOnPoints_subdomain [NeZero n] {p : Polynomial F} :
       evalOnPoints_pow_of_two_eq_evalOnPoints_subdomain]
 
 /-- Powers of domain values in terms of subdomain values. -/
-lemma subdomain_sqFoldMapGen_eq_pow_domain [NeZero n] {i : ℕ} {j : Fin (2 ^ n)} :
+lemma subdomain_sqFoldMapGen_eq_pow_domain {i : ℕ} {j : Fin (2 ^ n)} :
     subdomain ω i (sqFoldMapGen j) = ω j ^ 2 ^ i := by
-  have := @evalOnPoints_pow_of_two_eq_evalOnPoints_subdomain
-  specialize @this F _ n D _ _ ω _ (Polynomial.X) i
+  have := evalOnPoints_pow_of_two_eq_evalOnPoints_subdomain (ω := ω) (p := Polynomial.X) (i := i)
   simp_all [funext_iff, ReedSolomon.evalOnPoints]
 
 /-- `sqFoldMapGen j` equals `sqFoldMapGen j'`
   if `ω j ^ 2 ^ i` equals `ω j' ^ 2 ^ i`. -/
-lemma sqFoldMapGen_eq_sqFoldMapGen_of_pow_apply_eq_pow_apply [NeZero n] {i : ℕ} {j j' : Fin (2 ^ n)}
+lemma sqFoldMapGen_eq_sqFoldMapGen_of_pow_apply_eq_pow_apply {i : ℕ} {j j' : Fin (2 ^ n)}
     (h : ω j ^ 2 ^ i = ω j' ^ 2 ^ i) :
   sqFoldMapGen (i := i) j = sqFoldMapGen j' :=
   CosetFftDomainClass.injective (subdomain ω i) <| by simp_all

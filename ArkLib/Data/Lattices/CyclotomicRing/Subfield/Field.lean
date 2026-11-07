@@ -582,6 +582,7 @@ theorem fixedSubring_isField (hq5 : q % 8 = 5) {α κ : ℕ} (hα : 1 ≤ α) :
   have : IsDomain (fixedSubring (R := ZMod q) α (2 ^ κ)) := NoZeroDivisors.to_isDomain _
   exact Finite.isField_of_domain _
 
+omit [NeZero q] in
 /-- **Hachi [NOZ26, §3, Lemma 5]: `R_q^H ≅ F_{q^k}`.** For `q ≡ 5 (mod 8)` and `2·2^κ ∣ 2^α`,
 the fixed subring is ring-isomorphic to `GaloisField q (2^κ)` (`= F_{q^{2^κ}}`). Combines
 `fixedSubring_isField` with `card_fixedSubring_eq` (`|R_q^H| = q^{2^κ}`) and the classification of

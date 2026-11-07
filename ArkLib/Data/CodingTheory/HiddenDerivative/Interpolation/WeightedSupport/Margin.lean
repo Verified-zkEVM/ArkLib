@@ -49,8 +49,8 @@ open WeightedSupportParameters
 
 /-- The strict normalized rank bound at the prescribed parameters. Let `H = harmonic (d - 1)`,
 `a = 1 + θ g`, `m = ⌈100 d ^ 2 H⌉₊`, `W = ⌊a d m / H⌋₊` and
-`V = W ^ (d - 1) / ((d - 1)!) ^ 2`. For `d ≥ 48000`, `g > 0`, `54 / 5 ≤ H`, `ξ ≤ g H`,
-`a / (g H) ≤ 1 / ξ` and `270 d H ≤ g m`, the local constraint map at the cutoff `m D (1 + g)`
+`V = W ^ (d - 1) / ((d - 1)!) ^ 2`. For `d ≥ 48000`, `54 / 5 ≤ H`, `ξ ≤ g H` and
+`a / (g H) ≤ 1 / ξ`, the local constraint map at the cutoff `m D (1 + g)`
 satisfies `rank / (V m ^ 3) < g (448 / 625) (101 / 100) (37 / 20) a ^ 2 / H ^ 2 · d ^ (1 / a) / d`.
 The hypotheses are those of `centeringErrorBounds`, through which `prescribedFiberMeanVariance_le`
 supplies the per-fiber mean gap and error bound for every contact residual `r < m`; the harmonic
@@ -58,11 +58,10 @@ bounds `H ≤ log d + 3 / 5`, `H ≤ (19 / 365) √d` and `∑ 1 / (i + 1) ^ 2 <
 `d ≥ 48000`. -/
 theorem finrank_weightedSupportLocalConstraint_lt_prescribed
     {F : Type*} [Field F] (g : ℝ) (d D : ℕ)
-    (hg : 0 < g) (hd : 48000 ≤ d) (hD : 0 < D)
+    (hd : 48000 ≤ d) (hD : 0 < D)
     (hHlower : 54 / 5 ≤ (harmonic (d - 1) : ℝ))
     (hgH : xi ≤ g * harmonic (d - 1))
     (hnormalized : (1 + theta * g) / (g * harmonic (d - 1)) ≤ 1 / xi)
-    (hgm : 270 * d * (harmonic (d - 1) : ℝ) ≤ g * ⌈100 * (d : ℝ) ^ 2 * harmonic (d - 1)⌉₊)
     (center received : F) :
     let H : ℝ := harmonic (d - 1)
     let a := 1 + theta * g
@@ -75,18 +74,30 @@ theorem finrank_weightedSupportLocalConstraint_lt_prescribed
       g * (448 / 625) * (101 / 100) * (37 / 20) * a ^ 2 / H ^ 2 * (d : ℝ) ^ (1 / a) / d := by
   intro H a m W V
   have hH : 0 < H := lt_of_lt_of_le (by norm_num) hHlower
+  have hg : 0 < g := (mul_pos_iff_of_pos_right hH).mp (xi_pos.trans_le hgH)
   have ha : 1 ≤ a := le_add_of_nonneg_right (mul_nonneg theta_pos.le hg.le)
   have hsize : 100 * (d : ℝ) ^ 2 * H ≤ m := Nat.le_ceil _
-  have hm : 0 < m := Nat.cast_pos.mp (lt_of_lt_of_le (by positivity) hsize)
   have hHlog : H ≤ Real.log d + 3 / 5 := (Real.harmonic_pred_lt_log_add_three_fifths d).le
   have hHupper : H ≤ (19 / 365) * Real.sqrt d :=
     hHlog.trans (Real.log_add_three_fifths_le_nineteen_div_365_mul_sqrt (by exact_mod_cast hd))
+  have hHd : H ≤ d := by
+    have hsqrt : Real.sqrt (d : ℝ) ≤ d :=
+      Real.sqrt_le_self_iff.mpr (Or.inr (by exact_mod_cast (show 1 ≤ d by omega)))
+    nlinarith [Real.sqrt_nonneg (d : ℝ)]
+  have hgm : 270 * d * H ≤ g * m := by
+    have hsize' := mul_le_mul_of_nonneg_left hsize hg.le
+    have hcoef : (270 : ℝ) ≤ 100 * (g * H) := by
+      norm_num [xi] at hgH
+      linarith
+    have hdegree := mul_le_mul_of_nonneg_left hHd (show 0 ≤ (d : ℝ) by positivity)
+    have hscaled := mul_le_mul_of_nonneg_right hcoef (sq_nonneg (d : ℝ))
+    nlinarith only [hsize', hdegree, hscaled]
   have hH2 : 0 ≤ ∑ i : Fin (d - 1), 1 / ((i : ℝ) + 1) ^ 2 := by positivity
   have hH2max : ∑ i : Fin (d - 1), 1 / ((i : ℝ) + 1) ^ 2 ≤ 329 / 200 := by
     rw [Fin.sum_univ_eq_sum_range (fun i : ℕ ↦ 1 / ((i : ℝ) + 1) ^ 2)]
     exact (Real.reciprocal_square_sum_lt _).le
   have hfiber (r : ℕ) (hr : r ∈ Finset.range m) :=
-    prescribedFiberMeanVariance_le d m r W g H _ hd hm (Finset.mem_range.mp hr) hg hH hHlower
+    prescribedFiberMeanVariance_le d m r W g H _ hd (Finset.mem_range.mp hr) hHlower
       hHupper hgH hnormalized hsize hgm rfl hH2 hH2max
   have hLD : (m : ℝ) * D * (1 + g) / D = m * (1 + g) := by
     have : (D : ℝ) ≠ 0 := by positivity
@@ -116,21 +127,21 @@ theorem finrank_weightedSupportLocalConstraint_lt_prescribed
     push_cast at h ⊢
     exact h
   exact finrank_weightedSupportLocalConstraint_lt_prescribed_rounding_of_harmonic_error
-    d D ((m : ℝ) * D * (1 + g)) g (448 / 625) a (3 / 5) (37 / 20) H (by omega) hD hg
-    (by norm_num) ha (by norm_num) hH hHlog hK hgap herror center received
+    d D ((m : ℝ) * D * (1 + g)) g (448 / 625) a (3 / 5) (37 / 20) H (by omega) hD
+    ha (by norm_num) hH hHlog hK hgap herror center received
 
 /-- The strict surplus from a normalized rank bound. Let `g = rateGap δ (D / n)`, `a = 1 + θ g`,
 `H = harmonic (d - 1)`, `V = W ^ (d - 1) / ((d - 1)!) ^ 2` and `L = m D (1 + g)`. Suppose
-`0 < δ ≤ 1 / 4`, `δ / 3 ≤ D / n ≤ 1 - δ`, `ξ / δ ≤ H`, `ξ / δ ≤ log d`, `d ≥ 10000`, `m, W > 0`,
+`0 < δ ≤ 1 / 4`, `δ / 3 ≤ D / n ≤ 1 - δ`, `ξ / δ ≤ H`, `ξ / δ ≤ log d`, `d ≥ 10000`,
 the dimension inputs `W H / d ≤ (1 + 3 g / 8) m`, `W / (d (g m)) ≤ 10 / 27` and
 `(999 / 1000) (a / (g H)) ^ 2 ≤ (W / (d (g m))) ^ 2`, and the normalized rank bound
 `rank / (V m ^ 3) ≤ g (448 / 625) (101 / 100) (37 / 20) a ^ 2 / H ^ 2 · d ^ (1 / a) / d`. Then
 `(543 / 500) n rank < dim`, where `dim` is the dimension of the weighted support space at `L`.
 The dimension inputs feed `weighted_dimension_lower`, which needs `d ≥ 10000`; `m, W > 0` make
-`V m ^ 3` positive. -/
+`V m ^ 3` positive, as follows from the floor bound. -/
 theorem weightedSupport_margin_of_normalized_rank {F : Type*} [Field F]
     (δ : ℝ) (n D d m W : ℕ) (hδ : 0 < δ) (hδmax : δ ≤ 1 / 4)
-    (hn : 0 < n) (hD : 0 < D) (hd : 10000 ≤ d) (hm : 0 < m) (hW : 0 < W)
+    (hD : 0 < D) (hd : 10000 ≤ d)
     (hρlo : δ / 3 ≤ (D : ℝ) / n) (hρhi : (D : ℝ) / n ≤ 1 - δ)
     (hHlo : xi / δ ≤ harmonic (d - 1))
     (hlog : xi / δ ≤ Real.log d)
@@ -156,7 +167,27 @@ theorem weightedSupport_margin_of_normalized_rank {F : Type*} [Field F]
         (L := (m : ℝ) * D * (1 + g)) m hD 0 0)) <
       Module.finrank F (weightedSupportSpace F D d W ((m : ℝ) * D * (1 + g)) hD) := by
   intro g
-  have hnR : (0 : ℝ) < n := Nat.cast_pos.mpr hn
+  have hnR : (0 : ℝ) < n := by
+    by_contra h
+    have hn : n = 0 := by exact_mod_cast (le_antisymm (le_of_not_gt h) (Nat.cast_nonneg n))
+    simp only [hn, Nat.cast_zero, div_zero] at hρlo
+    linarith
+  have hg : 0 < g := rateGap_pos hδ ((by positivity : (0 : ℝ) < δ / 3).trans_le hρlo)
+  have hH : (0 : ℝ) < harmonic (d - 1) := (div_pos xi_pos hδ).trans_le hHlo
+  have hpositive : 0 < (999 / 1000 : ℝ) *
+      ((1 + theta * g) / (g * harmonic (d - 1))) ^ 2 := by
+    have : 0 < theta := theta_pos
+    positivity
+  have hm : 0 < m := by
+    by_contra h
+    have hmzero : m = 0 := by omega
+    simp only [hmzero, Nat.cast_zero, mul_zero, div_zero, zero_pow (by decide : 2 ≠ 0)] at hfloor
+    linarith
+  have hW : 0 < W := by
+    by_contra h
+    have hWzero : W = 0 := by omega
+    simp only [hWzero, Nat.cast_zero, zero_div, zero_pow (by decide : 2 ≠ 0)] at hfloor
+    linarith
   have hdim := weighted_dimension_lower F (W := W) hd hD g m hmean hs
   exact multiplicative_margin_from_bounds δ ((D : ℝ) / n) (harmonic (d - 1)) d g
     (1 + theta * g) (W / ((d : ℝ) * (g * m)))
@@ -164,17 +195,16 @@ theorem weightedSupport_margin_of_normalized_rank {F : Type*} [Field F]
     hδ hδmax hρlo hρhi hHlo hlog (by positivity) rfl rfl (by positivity)
     (Nat.cast_pos.mpr hm) hnR (by field_simp) hfloor hdim hrank
 
-/-- The strict surplus at the prescribed parameters. Let `0 < δ ≤ 1 / 4`, `0 < n`, `0 < D` and
+/-- The strict surplus at the prescribed parameters. Let `0 < δ ≤ 1 / 4`, `0 < D` and
 `δ / 3 ≤ D / n ≤ 1 - δ`, and put `d = ⌈exp (ξ / δ)⌉₊`, `H = harmonic (d - 1)`,
 `g = rateGap δ (D / n)`, `m = ⌈100 d ^ 2 H⌉₊` and `W = ⌊(1 + θ g) d m / H⌋₊`. Then the weighted
 support space at the cutoff `m D (1 + g)` has dimension greater than `(543 / 500) n` times the rank
 of the local constraint map. `prescribed_order_lower` gives `d ≥ 48000` and `ξ / δ ≤ log d ≤ H`,
 `prescribed_dimension_inputs` the dimension inputs, and
-`finrank_weightedSupportLocalConstraint_lt_prescribed` the normalized rank bound; its hypothesis
-`270 d H ≤ g m` follows from `m ≥ 100 d ^ 2 H`, `g H ≥ ξ` and `H ≤ d`. -/
+`finrank_weightedSupportLocalConstraint_lt_prescribed` the normalized rank bound. -/
 theorem prescribed_weightedSupport_margin {F : Type*} [Field F]
     (δ : ℝ) (n D : ℕ) (hδ : 0 < δ) (hδmax : δ ≤ 1 / 4)
-    (hn : 0 < n) (hD : 0 < D)
+    (hD : 0 < D)
     (hρlo : δ / 3 ≤ (D : ℝ) / n) (hρhi : (D : ℝ) / n ≤ 1 - δ) :
     let d := ⌈Real.exp (xi / δ)⌉₊
     let H : ℝ := harmonic (d - 1)
@@ -187,60 +217,22 @@ theorem prescribed_weightedSupport_margin {F : Type*} [Field F]
       Module.finrank F (weightedSupportSpace F D d W ((m : ℝ) * D * (1 + g)) hD) := by
   intro d H g m W
   obtain ⟨hd, hlog, hHlo⟩ := prescribed_order_lower δ hδ hδmax
-  have hdR : (48000 : ℝ) ≤ d := by exact_mod_cast hd
-  have hρ : 0 < (D : ℝ) / n := div_pos (Nat.cast_pos.mpr hD) (Nat.cast_pos.mpr hn)
-  have hg : 0 < g := rateGap_pos hδ hρ
-  have hH : 0 < H := (div_pos xi_pos hδ).trans_le hHlo
+  have hρ : 0 < (D : ℝ) / n := (by positivity : (0 : ℝ) < δ / 3).trans_le hρlo
   have hHlower : 54 / 5 ≤ H := by
     have hx : 54 / 5 ≤ xi / δ := by
       rw [le_div_iff₀ hδ]
       norm_num [xi]
       linarith
     exact hx.trans hHlo
-  have hgH : xi ≤ g * H := xi_le_rateGap_mul hδ hδmax hρ hρhi hHlo
+  have hgH : xi ≤ g * H := xi_le_rateGap_mul hδ hρ hρhi hHlo
   have hnorm : (1 + theta * g) / (g * H) ≤ 1 / xi :=
-    le_inv_of_le_one_add_mul_rateGap_div xi_pos hδ hρ (max_add_theta_mul_le_one hδ hδmax hρhi)
+    le_inv_of_le_one_add_mul_rateGap_div xi_pos hδ (max_add_theta_mul_le_one hδ hδmax hρhi)
       hHlo le_rfl
-  obtain ⟨hm, hW, hmean, hs, hf⟩ :=
+  obtain ⟨_, _, hmean, hs, hf⟩ :=
     prescribed_dimension_inputs δ _ H d hδ hδmax hρ hρhi (by omega) hHlo
-  have hHlog : H ≤ Real.log d + 3 / 5 := (Real.harmonic_pred_lt_log_add_three_fifths d).le
-  have hHupper : H ≤ (19 / 365) * Real.sqrt d :=
-    hHlog.trans (Real.log_add_three_fifths_le_nineteen_div_365_mul_sqrt (by exact_mod_cast hd))
-  have hdsqrt : Real.sqrt (d : ℝ) ≤ d :=
-    Real.sqrt_le_self_iff.mpr (Or.inr (by exact_mod_cast (show 1 ≤ d by omega)))
-  have hcoeffsqrt : (19 / 365 : ℝ) * Real.sqrt d ≤ Real.sqrt d := by
-    simpa only [one_mul] using
-      (mul_le_mul_of_nonneg_right (by norm_num : (19 / 365 : ℝ) ≤ 1) (Real.sqrt_nonneg _))
-  have hHd : H ≤ d := hHupper.trans (hcoeffsqrt.trans hdsqrt)
-  have hsize : 100 * (d : ℝ) ^ 2 * H ≤ m := Nat.le_ceil _
-  have hgm : 270 * d * H ≤ g * m := by
-    have hsize' : 100 * (d : ℝ) ^ 2 * (g * H) ≤ g * m := by
-      calc
-        100 * (d : ℝ) ^ 2 * (g * H) = g * (100 * (d : ℝ) ^ 2 * H) := by ring
-        _ ≤ g * m := mul_le_mul_of_nonneg_left hsize hg.le
-    have hcoef : (270 : ℝ) ≤ 100 * (g * H) := by
-      have : (27 / 10 : ℝ) ≤ g * H := by simpa [xi] using hgH
-      calc
-        270 = 100 * (27 / 10 : ℝ) := by norm_num
-        _ ≤ 100 * (g * H) := mul_le_mul_of_nonneg_left this (by norm_num)
-    have hdegree : 270 * (d : ℝ) * H ≤ 270 * (d : ℝ) ^ 2 := by
-      have hmul := mul_le_mul_of_nonneg_left hHd (show 0 ≤ (d : ℝ) by positivity)
-      calc
-        270 * (d : ℝ) * H = 270 * ((d : ℝ) * H) := by ring
-        _ ≤ 270 * ((d : ℝ) * (d : ℝ)) := mul_le_mul_of_nonneg_left hmul (by norm_num)
-        _ = 270 * (d : ℝ) ^ 2 := by ring
-    calc
-      270 * (d : ℝ) * H ≤ 270 * (d : ℝ) ^ 2 := hdegree
-      _ ≤ 100 * (d : ℝ) ^ 2 * (g * H) := by
-        calc
-          270 * (d : ℝ) ^ 2 = 270 * (d : ℝ) ^ 2 := rfl
-          _ ≤ 100 * (g * H) * (d : ℝ) ^ 2 :=
-            mul_le_mul_of_nonneg_right hcoef (sq_nonneg _)
-          _ = 100 * (d : ℝ) ^ 2 * (g * H) := by ring
-      _ ≤ g * m := hsize'
-  have hrank := finrank_weightedSupportLocalConstraint_lt_prescribed g d D hg hd hD hHlower hgH
-    hnorm hgm (0 : F) 0
-  exact weightedSupport_margin_of_normalized_rank δ n D d m W hδ hδmax hn hD (by omega) hm hW
+  have hrank := finrank_weightedSupportLocalConstraint_lt_prescribed g d D hd hD hHlower hgH
+    hnorm (0 : F) 0
+  exact weightedSupport_margin_of_normalized_rank δ n D d m W hδ hδmax hD (by omega)
     hρlo hρhi hHlo hlog hmean hs hf hrank.le
 
 end ReedSolomon.HiddenDerivative

@@ -88,7 +88,7 @@ lemma ps_coprime_case_constant {F : Type*} [Field F]
     (A B : F[X][Y]) (hA0 : A ≠ 0) (hB0 : B ≠ 0) (hrel : IsRelPrime A B)
     (h_f_degX : a_x ≥ degreeX A) (h_g_degX : b_x ≥ degreeX B)
     (h_f_degY : a_y ≥ natDegreeY A) (h_g_degY : b_y ≥ natDegreeY B)
-    (P_x P_y : Finset F) [Nonempty P_x] [Nonempty P_y]
+    (P_x P_y : Finset F)
     (quot_x quot_y : F → F[X])
     (h_card_Px : n_x ≤ P_x.card) (h_card_Py : n_y ≤ P_y.card)
     (h_quot_x : ∀ y ∈ P_y, (quot_x y).natDegree ≤ (b_x - a_x) ∧
@@ -184,7 +184,7 @@ lemma ps_exists_p_nonzero {F : Type*} [Field F]
     (A B : F[X][Y]) (hA0 : A ≠ 0) (hB0 : B ≠ 0)
     (h_f_degX : a_x ≥ degreeX A) (h_g_degX : b_x ≥ degreeX B)
     (h_f_degY : a_y ≥ natDegreeY A) (h_g_degY : b_y ≥ natDegreeY B)
-    (P_x P_y : Finset F) [Nonempty P_x] [Nonempty P_y]
+    (P_x P_y : Finset F)
     (quot_x quot_y : F → F[X])
     (h_card_Px : n_x ≤ P_x.card) (h_card_Py : n_y ≤ P_y.card)
     (h_quot_x : ∀ y ∈ P_y, (quot_x y).natDegree ≤ (b_x - a_x) ∧
@@ -289,7 +289,7 @@ lemma ps_exists_p {F : Type*} [Field F]
     (A B : F[X][Y])
     (h_f_degX : a_x ≥ degreeX A) (h_g_degX : b_x ≥ degreeX B)
     (h_f_degY : a_y ≥ natDegreeY A) (h_g_degY : b_y ≥ natDegreeY B)
-    (P_x P_y : Finset F) [Nonempty P_x] [Nonempty P_y]
+    (P_x P_y : Finset F)
     (quot_x : F → F[X]) (quot_y : F → F[X])
     (h_card_Px : n_x ≤ P_x.card) (h_card_Py : n_y ≤ P_y.card)
     (h_quot_x : ∀ y ∈ P_y, (quot_x y).natDegree ≤ (b_x - a_x) ∧

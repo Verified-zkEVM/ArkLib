@@ -134,9 +134,9 @@ theorem firstOrderRankDensity_le_cubicEnvelope (beta : ℝ) :
     nlinarith [firstOrderRankCubicEnvelope_sub_rankDensity hh]
 
 /-- The factorization
-`S(β) - E(β) = (β/2)(a²/R - 1 + (1 - a)β - (2 - R)β²/3)` for `R ≠ 0`. The bracket is a concave
+`S(β) - E(β) = (β/2)(a²/R - 1 + (1 - a)β - (2 - R)β²/3)` for all `R`. The bracket is a concave
 quadratic in `β` for `R < 2`, maximized at `firstOrderRateBeta R a`. -/
-theorem firstOrderSourceDensity_sub_cubicEnvelope (R a beta : ℝ) (hR : R ≠ 0) :
+theorem firstOrderSourceDensity_sub_cubicEnvelope (R a beta : ℝ) :
     firstOrderSourceDensity R a beta - firstOrderRankCubicEnvelope beta =
       beta / 2 * (a ^ 2 / R - 1 + (1 - a) * beta - (2 - R) * beta ^ 2 / 3) := by
   rw [firstOrderSourceDensity, firstOrderRankCubicEnvelope]
@@ -144,12 +144,14 @@ theorem firstOrderSourceDensity_sub_cubicEnvelope (R a beta : ℝ) (hR : R ≠ 0
   ring
 
 /-- At `β = firstOrderRateBeta R a` the bracket of `firstOrderSourceDensity_sub_cubicEnvelope`
-equals `Q(R, a) - 1`. The hypotheses `R ≠ 0` and `R ≠ 2` keep both denominators nonzero. -/
-theorem firstOrderRateBeta_bracket (R a : ℝ) (hR : R ≠ 0) (hRtwo : R ≠ 2) :
+equals `Q(R, a) - 1`. The identity also holds at the zero denominators `R = 0` and `R = 2`. -/
+theorem firstOrderRateBeta_bracket (R a : ℝ) :
     a ^ 2 / R - 1 + (1 - a) * firstOrderRateBeta R a -
         (2 - R) * firstOrderRateBeta R a ^ 2 / 3 =
       firstOrderCleanExpression R a - 1 := by
-  have h2R : (2 : ℝ) - R ≠ 0 := sub_ne_zero.mpr (Ne.symm hRtwo)
+  by_cases hRtwo : R = 2
+  · subst R
+    simp [firstOrderRateBeta, firstOrderCleanExpression]
   rw [firstOrderRateBeta, firstOrderCleanExpression]
   field_simp
   ring
@@ -311,9 +313,9 @@ theorem firstOrderRate_surplus_pos {R a : ℝ} (hR : 0 < R) (hRa : R < a)
   have hbeta : 0 < firstOrderRateBeta R a := firstOrderRateBeta_pos haone (by linarith)
   have henv := firstOrderRankDensity_le_cubicEnvelope (firstOrderRateBeta R a)
   have hclean := firstOrderCleanExpression_gt_one hR hRone hthreshold
-  have hbracket := firstOrderRateBeta_bracket R a (ne_of_gt hR) (by linarith)
+  have hbracket := firstOrderRateBeta_bracket R a
   have hfactor := firstOrderSourceDensity_sub_cubicEnvelope
-    R a (firstOrderRateBeta R a) (ne_of_gt hR)
+    R a (firstOrderRateBeta R a)
   nlinarith
 
 end

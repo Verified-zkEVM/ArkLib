@@ -47,7 +47,7 @@ same space as the natural cutoff `⌈L'⌉₊`, since `n < L' ↔ n < ⌈L'⌉�
 ## References
 
 * [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient Decoding
-  and Smaller Cryptographic Proofs*][DKT26], Section 6.1, (70)–(71)
+  and Smaller Cryptographic Proofs*][DKT26], Section 8.2, (56)–(57)
 -/
 
 @[expose] public section

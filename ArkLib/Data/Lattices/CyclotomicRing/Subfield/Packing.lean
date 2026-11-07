@@ -108,22 +108,28 @@ theorem packExp_mod_eq (α κ : ℕ) (hk : 2 * 2 ^ κ ∣ 2 ^ α) (j : Fin (2 ^ 
 witness (value `r`) or the second-half witness (value `d/2k + r`). Combined with
 `packExp_mod_eq`, this pins down exactly which (at most two) packed summands can contribute to a
 given output coefficient position. -/
-theorem eq_or_eq_of_mod_eq (α κ : ℕ) (hk : 2 * 2 ^ κ ∣ 2 ^ α) {r : ℕ}
+theorem eq_or_eq_of_mod_eq (α κ : ℕ) {r : ℕ}
     (j : Fin (2 ^ α / 2 ^ κ)) (heq : (j : ℕ) % 2 ^ (α - κ - 1) = r) :
     (j : ℕ) = r ∨ (j : ℕ) = 2 ^ (α - κ - 1) + r := by
-  have hκ : κ + 1 ≤ α := succ_le_of_two_mul_two_pow_dvd hk
-  have hN : 2 ^ α / 2 ^ κ = 2 * 2 ^ (α - κ - 1) := by
-    have hfac : (2 : ℕ) ^ κ * (2 * 2 ^ (α - κ - 1)) = 2 ^ α := by
-      rw [← Nat.mul_assoc, show (2 : ℕ) ^ κ * 2 = 2 ^ (κ + 1) from by rw [pow_succ], ← pow_add]
-      congr 1; omega
-    rw [← hfac, Nat.mul_div_cancel_left _ (by positivity : 0 < 2 ^ κ)]
-  have hjlt : (j : ℕ) < 2 * 2 ^ (α - κ - 1) := hN ▸ j.isLt
-  rcases lt_or_ge (j : ℕ) (2 ^ (α - κ - 1)) with hjl | hjg
-  · left; rw [Nat.mod_eq_of_lt hjl] at heq; omega
-  · right
-    have hjm : (j : ℕ) % 2 ^ (α - κ - 1) = (j : ℕ) - 2 ^ (α - κ - 1) := by
-      rw [Nat.mod_eq_sub_mod hjg, Nat.mod_eq_of_lt (by omega)]
-    rw [hjm] at heq; omega
+  by_cases hκ : κ + 1 ≤ α
+  · have hN : 2 ^ α / 2 ^ κ = 2 * 2 ^ (α - κ - 1) := by
+      have hfac : (2 : ℕ) ^ κ * (2 * 2 ^ (α - κ - 1)) = 2 ^ α := by
+        rw [← Nat.mul_assoc, show (2 : ℕ) ^ κ * 2 = 2 ^ (κ + 1) from by rw [pow_succ], ← pow_add]
+        congr 1; omega
+      rw [← hfac, Nat.mul_div_cancel_left _ (by positivity : 0 < 2 ^ κ)]
+    have hjlt : (j : ℕ) < 2 * 2 ^ (α - κ - 1) := hN ▸ j.isLt
+    rcases lt_or_ge (j : ℕ) (2 ^ (α - κ - 1)) with hjl | hjg
+    · left; rw [Nat.mod_eq_of_lt hjl] at heq; omega
+    · right
+      have hjm : (j : ℕ) % 2 ^ (α - κ - 1) = (j : ℕ) - 2 ^ (α - κ - 1) := by
+        rw [Nat.mod_eq_sub_mod hjg, Nat.mod_eq_of_lt (by omega)]
+      rw [hjm] at heq; omega
+  · have hακ : α ≤ κ := by omega
+    have hdiv : 2 ^ α / 2 ^ κ ≤ 1 := Nat.div_le_of_le_mul (by
+      simpa using Nat.pow_le_pow_right (by omega : 1 ≤ 2) hακ)
+    have hj : (j : ℕ) = 0 := by have := j.isLt; omega
+    left
+    simpa [hj] using heq
 
 /-- The **packing map** `ψ : (R_q^H)^{d/k} → R_q` of Hachi [NOZ26, §3, Eq. 8], as the single sum
 `Σ_{j} a_j · X^{packExp j}` over the index set `Fin (d/k)`. -/

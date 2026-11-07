@@ -1287,7 +1287,7 @@ private theorem linear_eps_ca_le_one_point_five_johnson_aux
     (C : LinearCode ι F) (δ_min η δ_fld δ_src : ℝ≥0)
     (hmin : (δ_min : ℝ) = (Code.minDist (C : Set (ι → F)) : ℝ) / Fintype.card ι)
     (hη : 0 < η) (hη3 : (η : ℝ) < 1 / 3) (hηd : η < δ_min)
-    (_hδ_fld_pos : 0 < δ_fld) (hδlt : δ_fld < δ_src)
+    (hδlt : δ_fld < δ_src)
     (hsrc : (δ_src : ℝ) <
       1 - ((1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / 3))) :
     epsCa (F := F) (A := F) ((C : Set (ι → F))) δ_fld (δ_src + η) ≤
@@ -1320,7 +1320,7 @@ theorem linear_epsCa_le_one_point_five_johnson
     (C : LinearCode ι F) (δ_min η δ_fld δ_src : ℝ≥0)
     (_h_δ_min : (δ_min : ℝ) = (Code.minDist (C : Set (ι → F)) : ℝ) / Fintype.card ι)
     (_hη : 0 < η) (_hη_lt_third : (η : ℝ) < 1 / 3) (_hη_lt_δ_min : η < δ_min)
-    (_hδ_fld_pos : 0 < δ_fld) (_hδ_fld_lt : δ_fld < δ_src)
+    (_hδ_fld_lt : δ_fld < δ_src)
     (_hδ_src : (δ_src : ℝ) <
       1 - ((1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / 3))) :
     epsCa (F := F) (A := F) ((C : Set (ι → F))) δ_fld (δ_src + η) ≤
@@ -1328,7 +1328,7 @@ theorem linear_epsCa_le_one_point_five_johnson
   classical
   exact linear_eps_ca_le_one_point_five_johnson_aux
     C δ_min η δ_fld δ_src _h_δ_min _hη _hη_lt_third _hη_lt_δ_min
-      _hδ_fld_pos _hδ_fld_lt _hδ_src
+      _hδ_fld_lt _hδ_src
 
 end General
 

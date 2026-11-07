@@ -45,6 +45,7 @@ instance {domain : ι ↪ F} {deg : ℕ} : Nonempty (finCarrier domain deg) := b
   refine ⟨v, ?_⟩
   simpa [ReedSolomon.finCarrier, Set.mem_toFinset] using hv
 
+omit [Nonempty ι] in
 /-- Uniform affine-space sampling is compatible with the generic weighted MCA bridge,
 including linearly dependent direction vectors. -/
 theorem exists_weighted_affine_agreement_of_prob_gt_mcaError [DecidableEq ι]
@@ -83,15 +84,16 @@ The paper takes `ε` to be the error of Theorem 1.2 *at* `η = min (α - √ρ) 
 branch of `errorBound` is stated in terms of the distance parameter, as `min (1 - √ρ - δ) (√ρ/20)`;
 the two agree exactly at `δ = 1 - α`, which is why `ε` is `errorBound (1 - α)` here. Evaluating
 `errorBound` at a free, otherwise-unconstrained `δ` would let the caller push `δ ≥ 1 - √ρ`, where
-`errorBound` returns `0` and the proximity hypothesis degenerates. -/
+`errorBound` returns `0` and the proximity hypothesis degenerates.
+
+The paper additionally assumes an explicit lower bound on the same probability in terms of `M`,
+`|ι|` and `|F|`; the proof does not need it, so it is omitted. -/
 theorem weighted_correlated_agreement_for_parameterized_curves
     {l : ℕ} {u : Fin (l + 2) → ι → F}
     {deg : ℕ} {domain : ι ↪ F}
     {μ : ι → Set.Icc (0 : ℚ) 1}
-    {M : ℕ}
     {α : ℝ≥0}
-    (hdeg_pos : 0 < deg)
-    (_hμ : ∀ i, ∃ n : ℤ, (μ i).1 = (n : ℚ) / (M : ℚ)) :
+    (hdeg_pos : 0 < deg) :
     letI sqrtRate := ReedSolomon.sqrtRate deg domain
     (hα : sqrtRate < α) →
     (hα₁ : α < 1) →
@@ -101,19 +103,12 @@ theorem weighted_correlated_agreement_for_parameterized_curves
         agree_set μ (Curve.polynomialCurveEval (F := F) (A := F) u z)
           (finCarrier domain deg) ≥ α]
     (hproximity : pr > (l + 1 : NNReal) * ε) →
-    (h_additionally : pr ≥
-      ENNReal.ofReal (
-        ((l + 1) * (M * Fintype.card ι + 1) : ℝ) / (Fintype.card F : ℝ)
-        *
-        (1 / min (α - sqrtRate) (sqrtRate / 20) + 3 / sqrtRate)
-      )
-    ) →
     ∃ ι' : Finset ι, ∃ v : Fin (l + 2) → ι → F,
       (∀ i, v i ∈ ReedSolomon.code domain deg) ∧
       mu_set μ ι' ≥ α ∧
       ∀ i, ∀ x ∈ ι', u i x = v i x := by
   classical
-  intro hα hα₁ hprob _hadd
+  intro hα hα₁ hprob
   let δ : ℝ≥0 := 1 - α
   have hδR : (δ : ℝ) = 1 - (α : ℝ) := by
     simp only [δ, NNReal.coe_sub hα₁.le, NNReal.coe_one]
@@ -141,7 +136,7 @@ theorem weighted_correlated_agreement_for_parameterized_curves
       by_cases hUD : δ ≤ Code.relativeUniqueDecodingRadius
           (C := (ReedSolomon.code domain deg : Set (ι → F)))
       · obtain ⟨E, hE, hgood⟩ := exists_exactPowerAgreement_unique domain w
-          hdeg_pos hproper.le δ hUD
+          hproper.le δ hUD
         refine ⟨E, ?_, hgood⟩
         rw [errorBound_eq_n_div_q_of_le_relUDR hUD]
         simp only [NNReal.coe_div, NNReal.coe_natCast]
@@ -180,7 +175,6 @@ theorem weighted_correlated_agreement_for_parameterized_curves'
     {M m : ℕ}
     (hm : 3 ≤ m)
     (hdeg_pos : 0 < deg)
-    (_hμ : ∀ i, ∃ n : ℤ, (μ i).1 = (n : ℚ) / (M : ℚ))
     {α : ℝ≥0} :
     letI sqrtRate := ReedSolomon.sqrtRate deg domain
     letI S : Finset F := {
@@ -223,8 +217,7 @@ theorem weighted_correlated_agreement_for_parameterized_curves'
       exact div_self (by positivity)
     simp [ReedSolomon.sqrtRate, hrate] at hslt
   obtain ⟨E, hE, hgood⟩ := exists_curve_exactPowerAgreement_explicit_budget
-    deg domain (l + 1) m (1 - (α : ℝ)) hdeg_pos hproper hm
-    (sub_nonneg.mpr hα1) (by nlinarith) u
+    deg domain (l + 1) m (1 - (α : ℝ)) hdeg_pos hproper hm (by nlinarith) u
   have hES : E.card < S.card := by
     have hh := lt_of_le_of_lt (le_max_left _ _) hS
     rw [HiddenDerivative.legacy_shift_pow_seven m (by omega)] at hE
@@ -317,7 +310,6 @@ theorem weighted_correlated_agreement_over_affine_spaces [DecidableEq ι]
     simp only [δ, NNReal.coe_sub hα₁.le, NNReal.coe_one]
   have hspos : 0 < (ReedSolomon.sqrtRate deg domain : ℝ) := sqrtRate_pos hdeg_pos
   have hαR : (ReedSolomon.sqrtRate deg domain : ℝ) < α := hα
-  have hαR1 : (α : ℝ) < 1 := hα₁
   have hs1 := ReedSolomon.sqrtRate_le_one' deg domain
   have hproper : deg < Fintype.card ι := by
     by_contra h
@@ -350,7 +342,7 @@ theorem weighted_correlated_agreement_over_affine_spaces [DecidableEq ι]
         linarith
       rw [hpzero] at hprob
       exact (not_lt_of_ge bot_le) hprob
-    have hline := lineExactAgreementBound_unique domain hdeg_pos hproper.le δ hUD
+    have hline := lineExactAgreementBound_unique domain hproper.le δ hUD
     have hmca := mcaError_affineSpace_le_of_exactAgreement
       (s := l + 1) domain (Fintype.card ι : ℝ) hline (δ : ℝ) le_rfl
     rw [hδR] at hmca
@@ -399,7 +391,7 @@ theorem weighted_correlated_agreement_over_affine_spaces [DecidableEq ι]
       refine ⟨?_, hδ⟩
       rw [hrate]
       rwa [relativeUniqueDecodingRadius_RS_eq hproper.le, not_le] at hUD
-    obtain ⟨E, hE0, hline, hE⟩ := exists_lineExactAgreementBound_seventh domain hdeg_pos hαR hαR1.le
+    obtain ⟨E, hE0, hline, hE⟩ := exists_lineExactAgreementBound_seventh domain hdeg_pos hαR
     have hmca := mcaError_affineSpace_le_of_exactAgreement (s := l + 1) domain E hline
       (1 - (α : ℝ)) (by simp)
     have herr : (errorBound δ deg domain : ℝ) = (deg : ℝ) ^ 2 /
@@ -430,8 +422,7 @@ theorem weighted_correlated_agreement_over_affine_spaces' [DecidableEq ι]
     {α : ℝ≥0}
     {M m : ℕ}
     (hm : 3 ≤ m)
-    (hdeg_pos : 0 < deg)
-    (_hμ : ∀ i, ∃ n : ℤ, (μ i).1 = (n : ℚ) / (M : ℚ)) :
+    (hdeg_pos : 0 < deg) :
     letI sqrtRate := ReedSolomon.sqrtRate deg domain
     letI pr :=
       Pr{let y ← $ᵗ ↥(Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u))}[
@@ -449,17 +440,8 @@ theorem weighted_correlated_agreement_over_affine_spaces' [DecidableEq ι]
   intro hα hprob
   let B : ℝ := ((m : ℝ) + 1 / 2) ^ 7 * (Fintype.card ι : ℝ) ^ 2 /
     (3 * (ReedSolomon.sqrtRate deg domain : ℝ) ^ 3)
-  have hα1 : (α : ℝ) ≤ 1 := by
-    by_contra h
-    have hz : Pr{let y ← $ᵗ ↥(Affine.affineSubspaceAtOrigin (F := F)
-        (u 0) (Fin.tail u))}[agree_set μ y.1 (finCarrier domain deg) ≥ α] = 0 := by
-      apply prEvent_eq_zero_of_forall_not
-      intro y hy
-      exact h (hy.trans (agree_set_le_one μ y.1 _))
-    rw [hz] at hprob
-    exact (not_lt_of_ge bot_le) hprob
   obtain ⟨E, hE0, hline, hE⟩ := exists_lineExactAgreementBound_explicit domain
-    hdeg_pos hm hα hα1
+    hdeg_pos hm hα
   have hq : (2 : ℝ) ≤ Fintype.card F := by
     exact_mod_cast Fintype.one_lt_card (α := F)
   have hmca : mcaError (AffineSpaceGenerator F (l + 1)) (ReedSolomon.code domain deg)
@@ -721,9 +703,7 @@ needed for this combinatorial strengthening.
 
 The domain `ι` is finite and is equipped with a weighted measure `μ`, where each
 weight `μ i` is a rational with common denominator `M`. Let `S' ⊆ F` be a set of
-field points with
-* `S'.card > l + 1`, and
-* `S'.card ≥ (M * Fintype.card ι + 1) * (l + 1)`.
+field points with `S'.card ≥ (M * Fintype.card ι + 1) * (l + 1)`.
 
 Assume that for every `z ∈ S'` the µ-weighted agreement between `w · z` and
 `wtilde · z` is at least `α`. Then the µ-measure of the set of points where all
@@ -738,7 +718,6 @@ lemma sufficiently_large_list_agreement_on_curve_implies_correlated_agreement
     (hμ : ∀ i, ∃ n : ℤ, (μ i).1 = (n : ℚ) / (M : ℚ))
     {v : Fin (l + 2) → ι → F}
     {S' : Finset F}
-    (hS'_card : S'.card > l + 1)
     (hS'_card₁ : S'.card ≥ (M * Fintype.card ι + 1) * (l + 1)) :
     letI w (x : ι) (z : F) : F := Curve.polynomialCurveEval (F := F) (A := F) u z x
     letI wtilde (x : ι) (z : F) : F := Curve.polynomialCurveEval (F := F) (A := F) v z x
@@ -747,6 +726,19 @@ lemma sufficiently_large_list_agreement_on_curve_implies_correlated_agreement
   dsimp only
   classical
   intro hS'_agree
+  by_cases hMzero : M = 0
+  · have hweights_zero (i : ι) : (μ i).1 = 0 := by
+      obtain ⟨n, hn⟩ := hμ i
+      simpa [hMzero] using hn
+    obtain ⟨z, hz⟩ := Finset.card_pos.mp (show 0 < S'.card by
+      have hcard := hS'_card₁
+      simp only [hMzero, zero_mul, zero_add, one_mul] at hcard
+      omega)
+    simpa [agree, mu_set, hweights_zero] using hS'_agree z hz
+  have hM_pos : 0 < M := Nat.pos_of_ne_zero hMzero
+  have hS'_card : S'.card > l + 1 := by
+    have := Nat.mul_pos hM_pos (Fintype.card_pos (α := ι))
+    nlinarith [hS'_card₁]
   let w (x : ι) (z : F) : F := Curve.polynomialCurveEval u z x
   let wtilde (x : ι) (z : F) : F := Curve.polynomialCurveEval v z x
   let values : Finset ℝ := S'.image fun z => agree μ (w · z) (wtilde · z)
@@ -794,17 +786,6 @@ lemma sufficiently_large_list_agreement_on_curve_implies_correlated_agreement
     simpa only [agree, mu_set] using measure_grid {i | a i = b i}
   rcases measure_grid {x : ι | ∀ i, u i x = v i x} with ⟨a, ha⟩
   rcases agree_grid (w · zβ) (wtilde · zβ) with ⟨b, hb⟩
-  have hM_pos : 0 < M := by
-    by_contra hM
-    have hMzero : M = 0 := Nat.eq_zero_of_not_pos hM
-    have hweights_zero (i : ι) : (μ i).1 = 0 := by
-      simpa [hMzero] using hnum i
-    have hagree_zero : agree μ (w · zβ) (wtilde · zβ) = 0 := by
-      simp [agree, hweights_zero]
-    rw [← hβeq, hagree_zero] at hmu_lt_beta
-    have hmu_nonneg : 0 ≤ mu_set μ {x : ι | ∀ i, u i x = v i x} := by
-      simp [mu_set, hweights_zero]
-    linarith
   have hd_pos : (0 : ℝ) < (M * Fintype.card ι : ℕ) := by positivity
   have hab_real : (a : ℝ) < b := by
     rw [ha, ← hβeq, hb] at hmu_lt_beta

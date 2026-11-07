@@ -556,14 +556,37 @@ omit [NeZero q] in
 coefficientwise shortness of `x`. Every coefficient of the output *is* a digit of a coefficient of
 the input (`gadgetDecomposeFun`), so `bdd.reconstruct_of_bound` at each short input coefficient is
 all that is needed. -/
-theorem boundedGadgetDecompose_gadgetMul_eq (hd : 0 < digits) (h1 : 1 ≤ Φ.φ.natDegree)
+theorem boundedGadgetDecompose_gadgetMul_eq
     (bdd : BoundedDigitDecomposition base digits bound) {rows : Nat}
     (x : PolyVec (Rq Φ) rows)
     (hx : ∀ (i : Fin rows) (k : ℕ), k < Φ.φ.natDegree →
       ((x i).1.coeff k).valMinAbs.natAbs ≤ bound) :
-    gadgetMul Φ base (bdd.gadgetDecompose Φ x) = x :=
-  gadgetDecomposeFun_gadgetMul_eq Φ hd h1 bdd.digit x
-    (fun i k hk => bdd.reconstruct_of_bound ((x i).1.coeff k) (hx i k hk))
+    gadgetMul Φ base (bdd.gadgetDecompose Φ x) = x := by
+  by_cases hd : 0 < digits
+  · by_cases h1 : 1 ≤ Φ.φ.natDegree
+    · exact gadgetDecomposeFun_gadgetMul_eq Φ hd h1 bdd.digit x
+        (fun i k hk => bdd.reconstruct_of_bound ((x i).1.coeff k) (hx i k hk))
+    · funext i
+      apply Subtype.ext
+      rw [CompPoly.CPolynomial.eq_iff_coeff]
+      intro k
+      rw [Rq.coeff_eq_zero_of_natDegree_le Φ _ (by omega),
+        Rq.coeff_eq_zero_of_natDegree_le Φ _ (by omega)]
+  · have hd0 : digits = 0 := by omega
+    subst digits
+    have hx0 : x = 0 := by
+      funext i
+      apply Subtype.ext
+      rw [CompPoly.CPolynomial.eq_iff_coeff]
+      intro k
+      simp only [Pi.zero_apply, Rq.zero_val, CompPoly.CPolynomial.coeff_zero]
+      by_cases hk : k < Φ.φ.natDegree
+      · have h := bdd.reconstruct_of_bound ((x i).1.coeff k) (hx i k hk)
+        simpa using h.symm
+      · exact Rq.coeff_eq_zero_of_natDegree_le Φ _ (not_lt.mp hk)
+    rw [hx0]
+    funext i
+    simp [gadgetMul, matVecMul, dot]
 
 end BoundedGadget
 

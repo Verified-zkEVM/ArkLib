@@ -4,7 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 import ArkLib.Interaction.Oracle.Prefix
-import ArkLib.Data.OracleComp.QueryBounds
+import VCVio.OracleComp.QueryTracking.CostModel.Simulation
+import VCVio.OracleComp.QueryTracking.QueryBound.Simulation
 import ArkLibTest.Interaction.Oracle.RuntimeSoundness
 
 /-!
@@ -100,9 +101,9 @@ lemma suffix_access (boundary : Boundary) (guess : Bool) :
 /-- The actual suffix asks one exported query costing two, then one ambient query costing three. -/
 lemma suffix_budget (guess : Bool) : WorstCaseCostBound (suffixAction guess) suffixCost 5 := by
   rw [suffixAction_eq]
-  exact worstCaseCostBound_bind _ _ suffixCost 2 3
+  exact WorstCaseCostBound.bind (A := 2) (B := 3)
     (worstCaseCostBound_query (.inr ⟨(), ()⟩) suffixCost)
-    (fun _ => worstCaseCostBound_bind _ _ suffixCost 3 0
+    (fun _ => WorstCaseCostBound.bind (A := 3) (B := 0)
       (worstCaseCostBound_query (.inl true) suffixCost)
       (fun _ => by
         intro result member
@@ -122,8 +123,7 @@ abbrev routedSuffix (guess : Bool) := Verifier.routeProgram ambient family.spec.
 
 lemma routed_suffix_budget (guess : Bool) :
     WorstCaseCostBound (routedSuffix guess) rawCost 5 := by
-  apply worstCaseCostBound_simulateQ _ (suffixAction guess) suffixCost rawCost 5
-    (suffix_budget guess)
+  apply (suffix_budget guess).simulateQ
   intro query
   cases query with
   | inl request =>
@@ -144,8 +144,7 @@ abbrev rawAllowed (boundary : Boundary) : (ambient + inputSpec).Domain → Prop
 
 lemma routed_suffix_access (boundary : Boundary) (guess : Bool) :
     AllQueriesSatisfy (routedSuffix guess) (rawAllowed boundary) := by
-  apply allQueriesSatisfy_simulateQ _ (suffixAction guess) (suffixAllowed boundary)
-    (rawAllowed boundary) (suffix_access boundary guess)
+  apply (suffix_access boundary guess).simulateQ
   intro query permission
   cases query with
   | inl request =>
@@ -196,7 +195,7 @@ lemma informed_actual_history (secret : Nat) :
 
 /-- Initialization samples the retained bit once through the declared import. -/
 lemma setup_budget : WorstCaseCostBound runtime.setup importCost 1 := by
-  exact worstCaseCostBound_bind _ _ importCost 1 0
+  exact WorstCaseCostBound.bind (A := 1) (B := 0)
     (worstCaseCostBound_query () importCost)
     (fun _ => by
       intro result member

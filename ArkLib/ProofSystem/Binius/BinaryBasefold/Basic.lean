@@ -232,7 +232,7 @@ private lemma monomialToINovelCoeffs_zero_eq_monomialToNovelCoeffs
 omit [DecidableEq 𝔽q] [NeZero ℓ] [NeZero 𝓡] in
 /-- Reconstructing from the novel coefficients of a bounded polynomial recovers it. -/
 private lemma polynomialFromNovelCoeffs_eq_self_of_monomialToNovelCoeffs
-    [NeZero 𝓡] (P : L[X]) (hP : P.degree < 2 ^ ℓ) :
+    (P : L[X]) (hP : P.degree < 2 ^ ℓ) :
     polynomialFromNovelCoeffs 𝔽q β ℓ (by omega)
       (AdditiveNTT.monomialToNovelCoeffs 𝔽q β ℓ (by omega) (fun k => P.coeff k.val)) = P := by
   have hget :
@@ -278,7 +278,7 @@ private lemma binaryFinMapToNat_invFun_eq (ω : Fin (2 ^ ℓ)) :
 
 omit [DecidableEq 𝔽q] h_β₀_eq_1 [NeZero ℓ] [NeZero 𝓡] in
 /-- The multilinear extension of novel coefficients evaluates to each indexed coefficient. -/
-private lemma extracted_mle_eval_bits [NeZero 𝓡] (P : L[X]) (ω : Fin (2 ^ ℓ)) :
+private lemma extracted_mle_eval_bits (P : L[X]) (ω : Fin (2 ^ ℓ)) :
     let monomial_coeffs : Fin (2 ^ ℓ) → L := fun k => P.coeff k.val
     let t_coeffs := AdditiveNTT.monomialToNovelCoeffs 𝔽q β ℓ (by omega) monomial_coeffs
     let hypercube_evals : (Fin ℓ → Fin 2) → L := fun w =>
@@ -300,7 +300,7 @@ private lemma extracted_mle_eval_bits [NeZero 𝓡] (P : L[X]) (ω : Fin (2 ^ �
 omit [DecidableEq 𝔽q] [NeZero ℓ] [NeZero 𝓡] in
 /-- Encoding the reconstructed multilinear extension recovers the bounded polynomial. -/
 private lemma extracted_mle_polynomial_eq
-    [NeZero 𝓡] (P : L[X]) (hP : P.degree < 2 ^ ℓ) :
+    (P : L[X]) (hP : P.degree < 2 ^ ℓ) :
     polynomialFromNovelCoeffs 𝔽q β ℓ (by omega)
       (fun ω =>
         let monomial_coeffs : Fin (2 ^ ℓ) → L := fun k => P.coeff k.val

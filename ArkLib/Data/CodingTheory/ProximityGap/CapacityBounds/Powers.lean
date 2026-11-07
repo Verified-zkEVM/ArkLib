@@ -909,7 +909,7 @@ private theorem powers_bad_seed_finset_card_le
         ((Fintype.card ι - Code.minDist (C : Set (ι → A)) : ℕ) : ℝ) +
           (Fintype.card ι : ℝ) * (η : ℝ) := by
     simpa only [α, r] using
-      powers_alpha_pow_relation C k δmin η hδmin hη hηlt
+      powers_alpha_pow_relation C k δmin η hδmin
   let S := {x : F // x ∈ B}
   let e : S ↪ F := powers_bad_seed_embedding B
   have hBα : ∀ x : F, x ∈ B ↔
@@ -1104,7 +1104,7 @@ private theorem univariate_powers_is_mds_generator
 /-- Bounds the MCA error of the univariate-powers generator below its generalized Johnson
 radius. The maximum on the right combines the two nontrivial branches of the source bound. -/
 theorem linear_mcaError_powers_le
-    {ι : Type} [Fintype ι] [Nonempty ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Fintype F] [SampleableType F]
     {A : Type} [Finite A] [DecidableEq A] [AddCommGroup A] [Module F A]
     (C : ModuleCode ι F A) (k : ℕ) (δ_min η δ : ℝ≥0)
@@ -1126,6 +1126,11 @@ theorem linear_mcaError_powers_le
                   * Fintype.card F))
               (((k : ℝ) + 1) * ((k : ℝ) + 2) / ((η : ℝ) * Fintype.card F))) := by
   classical
+  have : Nonempty ι := by
+    by_contra hι
+    have : IsEmpty ι := not_nonempty_iff.mp hι
+    have hδzero : δ_min = 0 := by simpa using _h_δ_min
+    simp [hδzero] at _hη_lt_δ_min
   let := Fintype.ofFinite A
   refine le_trans
     (CoreDefinitions.mcaError_mono (univariatePowersGenerator F k) C _hδ) ?_

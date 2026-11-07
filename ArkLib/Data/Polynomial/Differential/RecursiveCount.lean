@@ -338,7 +338,7 @@ theorem boundedSolution_recursive_counting_totalJetDegree [NoZeroDivisors F]
 
 /-- If every regular branch has cost `ν * R ^ d`, an equation of total jet degree at most `ν`
 has at most `ν ^ 2 * R ^ d` solutions in any finite family. -/
-theorem boundedSolution_card_le_sq_totalJetDegree [NoZeroDivisors F] [Nontrivial F]
+theorem boundedSolution_card_le_sq_totalJetDegree [NoZeroDivisors F]
     (Q : DifferentialPolynomial F d) (hQ : Q ≠ 0) (hcast : ∀ j, JetDegreeCastsNeZero Q j)
     (accepts : F[X] → Prop) (ν : ℕ) (R : ℚ) (hR : 0 ≤ R)
     (roots : Finset (BoundedSolution Q D))

@@ -43,7 +43,8 @@ Hasse derivatives.
 ## References
 
 * [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 6.1.
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 3.2, Proposition 3.9, applied to the
+  support (112) of Appendix C.2.
 -/
 
 @[expose] public section
@@ -79,7 +80,7 @@ theorem finrank_firstOrderLocalConstraintAt_le (center received : F) :
       rw [Nat.add_sub_cancel_left, Nat.mul_add]
       exact Nat.add_le_add_left (Nat.le_mul_of_pos_left _ hm) _
     have hle := firstOrderSpace_le_exactInterpolationSpace_of_le (F := F) (D := D) (A := A)
-      (M := M) (μ := μ) (W := 0) (by omega : 1 < D + 2) (by omega) hA
+      (M := M) (μ := μ) (W := 0) (by omega : 1 < D + 2) hA
     have hrange : LinearMap.range
         (firstOrderLocalConstraintAt (D := D) (A := A) (m := m) (M := M) (μ := μ)
           center received) ≤

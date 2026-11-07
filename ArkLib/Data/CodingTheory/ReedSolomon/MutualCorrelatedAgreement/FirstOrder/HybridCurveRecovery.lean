@@ -54,7 +54,7 @@ noncomputable section
 
 /-- Let `Q` be a nonzero first-order equation over `E[X]`, with `E` algebraically closed, of
 total jet degree at most `mu`, `Y₁` degree at most `M` and coefficient height at most `h`. For
-`0 < D, ell`, `D < A ≤ n` and characteristic `0` or above `max D (jetDegree Q 1)`, one
+`0 < D, ell`, `D < A` and characteristic `0` or above `max D (jetDegree Q 1)`, one
 exceptional set of size at most `hybridCurveOptimized n D ell A h mu M` is fixed before every
 challenge and candidate. Outside it, every degree-`< D + 1` root of the specialized equation
 with at least `A` agreements with the power-batched word has exact power agreement. -/
@@ -64,7 +64,7 @@ theorem exists_exceptional_firstOrder_hybridCurve_optimized
     (values : Fin (ell + 1) → Fin n → F) (iota : F →+* E)
     (Q : DifferentialPolynomial E[X] 1) (hQ : Q ≠ 0) (hweight : jetTotalDegree Q ≤ mu)
     (hdegree : jetDegree Q (1 : Fin 2) ≤ M) (hheight : CoeffNatDegreeLE Q h)
-    (hell : 0 < ell) (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n)
+    (hell : 0 < ell) (hD : 1 ≤ D) (hDA : D < A)
     (hchar : ringChar F = 0 ∨ max D (jetDegree Q (1 : Fin 2)) < ringChar F) :
     ∃ exceptional : Finset E,
       (exceptional.card : ℝ) ≤ hybridCurveOptimized n D ell A h mu M ∧
@@ -73,21 +73,45 @@ theorem exists_exceptional_firstOrder_hybridCurve_optimized
           (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
         differentialSpecialization (challengeSpecialization Q z) P = 0 →
         HasExactPowerAgreement domain values iota (D + 1) z P := by
-  have hcharE : ringChar E = 0 ∨ jetDegree Q (1 : Fin 2) < ringChar E := by
-    have heq : ringChar E = ringChar F := by
-      let _ : CharP E (ringChar F) := charP_of_injective_ringHom iota.injective (ringChar F)
-      exact ringChar.eq E (ringChar F)
-    rw [heq]
-    exact hchar.imp_right fun hc ↦ (le_max_right D _).trans_lt hc
-  obtain ⟨descent⟩ := exists_firstOrderHybridDescent Q hQ hweight hdegree hcharE
-  exact exists_exceptional_firstOrder_hybridCurve_optimized_of_tail domain values iota Q
-    descent hheight hell hD hDA hAn (hchar.imp_right fun hc ↦ (le_max_left D _).trans_lt hc)
-    fun _ hDL hLA ↦
-      descent.exists_exceptional_ordinaryCurveTail domain values iota hheight hell hD hDL hLA
+  classical
+  by_cases hAn : A ≤ n
+  · have hcharE : ringChar E = 0 ∨ jetDegree Q (1 : Fin 2) < ringChar E := by
+      have heq : ringChar E = ringChar F := by
+        let _ : CharP E (ringChar F) := charP_of_injective_ringHom iota.injective (ringChar F)
+        exact ringChar.eq E (ringChar F)
+      rw [heq]
+      exact hchar.imp_right fun hc ↦ (le_max_right D _).trans_lt hc
+    obtain ⟨descent⟩ := exists_firstOrderHybridDescent Q hQ hweight hdegree hcharE
+    exact exists_exceptional_firstOrder_hybridCurve_optimized_of_tail domain values iota Q
+      descent hheight hD hDA (hchar.imp_right fun hc ↦ (le_max_left D _).trans_lt hc)
+      fun _ hDL hLA ↦
+        descent.exists_exceptional_ordinaryCurveTail domain values iota hheight hD hDL hLA
+  · have hmin (charge : ℕ → ℝ) (hc : ∀ L, 0 ≤ charge L) :
+        0 ≤ curveRetentionMinimum D A charge := by
+      obtain ⟨L, _, _, hL⟩ := exists_curveRetentionMinimum charge hDA
+      exact hL ▸ hc L
+    refine ⟨∅, ?_, fun z hz P hP hagree hroot ↦ ?_⟩
+    · simp only [Finset.card_empty, Nat.cast_zero]
+      refine (show 0 ≤ hybridCurveAtDegree n D ell A h mu 0 from ?_).trans
+        (hybridCurveAtDegree_le_optimized (Nat.zero_le M))
+      unfold hybridCurveAtDegree
+      apply hmin
+      intro L
+      refine add_nonneg (hmin _ fun L₀ ↦ ?_) ?_
+      · unfold hybridCurveTail ordinaryUnifiedPowerFactorAtOrHeight
+          ordinaryUnifiedPowerFactorAt ordinaryUnifiedPowerFactorRawAt
+        split_ifs <;> positivity
+      · unfold hybridCurveRegular retainedCoordinateRatio agreementIncidenceRatio
+          fixedCoordinateRatio
+        positivity
+    · exact False.elim (hAn (hagree.trans (by
+        simpa using Finset.card_le_univ
+          (s := polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
+            (powerBatchedWord (fun t i ↦ iota (values t i)) z) P))))
 
 /-- Over an arbitrary field `F`, let `Q` be a nonzero first-order equation over `F[X]` of total
 jet degree at most `mu`, `Y₁` degree at most `M` and coefficient height at most `h`. For
-`0 < D, ell`, `D < A ≤ n` and characteristic `0` or above `max D (jetDegree Q 1)`, one
+`0 < D, ell`, `D < A` and characteristic `0` or above `max D (jetDegree Q 1)`, one
 exceptional set of challenges in `F` of size at most `hybridCurveOptimized n D ell A h mu M`
 is fixed before every candidate. Outside it, every degree-`< D + 1` root over `F` of the
 specialized equation with at least `A` agreements has exact power agreement over `F`. -/
@@ -96,7 +120,7 @@ theorem exists_baseExceptional_firstOrder_hybridCurve_optimized
     (domain : Fin n ↪ F) (values : Fin (ell + 1) → Fin n → F)
     (Q : DifferentialPolynomial F[X] 1) (hQ : Q ≠ 0) (hweight : jetTotalDegree Q ≤ mu)
     (hdegree : jetDegree Q (1 : Fin 2) ≤ M) (hheight : CoeffNatDegreeLE Q h)
-    (hell : 0 < ell) (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n)
+    (hell : 0 < ell) (hD : 1 ≤ D) (hDA : D < A)
     (hchar : ringChar F = 0 ∨ max D (jetDegree Q (1 : Fin 2)) < ringChar F) :
     ∃ exceptional : Finset F,
       (exceptional.card : ℝ) ≤ hybridCurveOptimized n D ell A h mu M ∧
@@ -117,7 +141,7 @@ theorem exists_baseExceptional_firstOrder_hybridCurve_optimized
   obtain ⟨exceptional, hcard, hgood⟩ :=
     exists_exceptional_firstOrder_hybridCurve_optimized domain values iota QE hQE
       ((jetTotalDegree_map_le _ Q).trans hweight) (hdegreeE.trans hdegree)
-      (hheight.map_coefficients iota Q) hell hD hDA hAn
+      (hheight.map_coefficients iota Q) hell hD hDA
       (hchar.imp_right fun hc ↦ (max_le_max_left D hdegreeE).trans_lt hc)
   obtain ⟨baseExceptional, hbaseCard, hbase⟩ :=
     exists_exceptional_equation_powerAgreement_descend domain values iota Q (D + 1) A
@@ -134,7 +158,7 @@ theorem exists_baseExceptional_firstOrder_hybridCurve_including_fullDimension
     (domain : Fin n ↪ F) (values : Fin (ell + 1) → Fin n → F)
     (Q : DifferentialPolynomial F[X] 1) (hQ : Q ≠ 0) (hweight : jetTotalDegree Q ≤ mu)
     (hdegree : jetDegree Q (1 : Fin 2) ≤ M) (hheight : CoeffNatDegreeLE Q h)
-    (hell : 0 < ell) (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n)
+    (hell : 0 < ell) (hD : 1 ≤ D) (hDA : D < A)
     (hchar : D + 1 = n ∨ ringChar F = 0 ∨
       max D (jetDegree Q (1 : Fin 2)) < ringChar F) :
     ∃ exceptional : Finset F,
@@ -152,12 +176,12 @@ theorem exists_baseExceptional_firstOrder_hybridCurve_including_fullDimension
     exact hgood z P (by rw [← hfull]; exact_mod_cast hP) (by omega)
   · simpa only [hfull, ↓reduceIte] using
       exists_baseExceptional_firstOrder_hybridCurve_optimized domain values Q
-        hQ hweight hdegree hheight hell hD hDA hAn (hchar.resolve_left hfull)
+        hQ hweight hdegree hheight hell hD hDA (hchar.resolve_left hfull)
 
 /-- Over an arbitrary field `F`, a strict surplus of shifted height slots over the row bound,
 `firstOrderCurveShiftedRowSlotBound D A m M mu n ell h <
 firstOrderCurveShiftedHeightSlotCount D A m M mu ell h`, gives optimized curve recovery. For
-`0 < D, ell`, `0 < m * A` and `D < A ≤ n`, with full message dimension or characteristic `0` or
+`0 < D, ell` and `D < A`, with full message dimension or characteristic `0` or
 above `max D M`, one exceptional set of size at most `hybridCurveOptimized n D ell A h mu M`
 (zero at full dimension) is fixed before every candidate. Outside it, every polynomial of
 degree `< D + 1` with at least `A` agreements with the power-batched word has exact power
@@ -165,10 +189,10 @@ agreement. -/
 theorem exists_baseExceptional_firstOrderCurve_of_heightSlotCount_optimized
     {F : Type*} [Field F] [DecidableEq F] {n D A m M mu h ell : ℕ}
     (domain : Fin n ↪ F) (values : Fin (ell + 1) → Fin n → F)
-    (hD : 1 ≤ D) (hbudget : 0 < m * A)
+    (hD : 1 ≤ D)
     (hheight : firstOrderCurveShiftedRowSlotBound D A m M mu n ell h <
       firstOrderCurveShiftedHeightSlotCount D A m M mu ell h)
-    (hell : 0 < ell) (hDA : D < A) (hAn : A ≤ n)
+    (hell : 0 < ell) (hDA : D < A)
     (hchar : D + 1 = n ∨ ringChar F = 0 ∨ max D M < ringChar F) :
     ∃ exceptional : Finset F,
       (exceptional.card : ℝ) ≤
@@ -177,7 +201,7 @@ theorem exists_baseExceptional_firstOrderCurve_of_heightSlotCount_optimized
         A ≤ (polynomialAgreementSet domain (powerBatchedWord values z) P).card →
         HasExactPowerAgreement domain values (RingHom.id F) (D + 1) z P := by
   obtain ⟨cert⟩ := exists_finite_firstOrder_curve_certificate_of_heightSlotCount
-    (k := D + 1) ell hD hbudget le_rfl domain
+    (k := D + 1) ell hD le_rfl domain
       (fun i ↦ powerBatchedCoordinate fun t ↦ values t i)
       (fun i ↦ powerBatchedCoordinate_natDegree_le fun t ↦ values t i) hheight
   have hQ : cert.Q ≠ 0 := by
@@ -189,7 +213,7 @@ theorem exists_baseExceptional_firstOrderCurve_of_heightSlotCount_optimized
     exact cert.totalJetDegree_le
   obtain ⟨exceptional, hcard, hgood⟩ :=
     exists_baseExceptional_firstOrder_hybridCurve_including_fullDimension domain values
-      cert.Q hQ hweight cert.jetDegree_one_le cert.challengeDegree_le hell hD hDA hAn
+      cert.Q hQ hweight cert.jetDegree_one_le cert.challengeDegree_le hell hD hDA
       (hchar.imp_right fun hc ↦ hc.imp_right fun hc ↦
         (max_le_max_left D cert.jetDegree_one_le).trans_lt hc)
   refine ⟨exceptional, hcard, fun z hz P hP hagree ↦ hgood z hz P hP hagree ?_⟩

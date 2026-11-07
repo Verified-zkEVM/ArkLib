@@ -12,21 +12,54 @@ Review intervening API additions before writing replacement infrastructure. If t
 checkout contains unrelated work, use a separate worktree for the forward-port and
 leave that work intact.
 
-`lean-toolchain` names the Lean release. `lakefile.toml` pins doc-gen4 and CompPoly to the
-matching release tag and VCVio to an exact commit; Mathlib and PolyFun arrive through those
-packages. `lake-manifest.json` records the exact resolved revision of every package, so read it,
-not this page, for the current versions. A newer PolyFun revision must be validated against VCVio
+`lean-toolchain` names the Lean release. `lakefile.toml` declares the direct dependency
+revisions; Mathlib and PolyFun arrive through those packages. `lake-manifest.json` records the
+exact resolved revision of every package, so read it, not this page, for the current versions.
+Dependency updates normally use CompPoly and doc-gen4 release/patch tags matching ArkLib's Lean
+toolchain, and an exact VCVio commit reachable from upstream `main`. An unreleased CompPoly fix may
+use a documented exception in the dependency PR body: state why the matching release is
+insufficient, link the upstream change, and identify the actual merged commit used. Preserve this
+rationale when rebasing or rewriting that PR; the manifest alone does not explain it. Do not invent
+a release tag or assume a PR head will be its eventual merge revision.
+
+A side-branch dependency pin is for a **draft integration PR only**, with the upstream PR and a
+repin-before-merge obligation recorded. After upstream merge, use the actual post-squash/rebase
+commit or published tag, update the manifest normally, rebuild and run full validation, and rebase
+and revalidate dependent PRs. A draft's successful check against a side-branch SHA does not waive
+this merge condition.
+
+## Dependency validation
+
+The dependency-upgrade PR author records the upstream change, resolved revision and any release
+exception in the PR body. A maintainer verifies the actual pins, rebased dependents and fresh
+validation before merging. After upstream merge, edit `lakefile.toml` to the verified merged
+revisions or matching tags, then resolve and validate normally:
+
+```bash
+lake update VCVio CompPoly
+lake exe cache get
+./scripts/validate.sh --axioms
+```
+
+`lake update` intentionally resolves dependency refs again. To reproduce an existing lock, run
+`lake build` to materialize its recorded commits; do not update just to load that graph.
+Review current-API references when changing dependencies. Prefer owning module names for library
+routing; preserve immutable paper/source snapshots only as explicitly labelled provenance.
+
+A newer PolyFun revision must be validated against VCVio
 before ArkLib can adopt it, so a VCVio bump and its PolyFun revision move together.
 ArkLib uses native measures throughout its probability statements; the
 [migration ledger](../design/native-measure-ledger.md) records the conversion and upstream API map.
 Validate a changed dependency set with `./scripts/validate.sh --axioms` before merging.
 
-Keep each check on a coherent source and artifact graph with the same toolchain and dependency
-manifest. With parallel worktrees or artifact overlays, verify that every imported module resolves
-to its intended source revision, including transitive dependencies. Freeze those artifacts while a
-check runs; replacing imported output during elaboration invalidates its evidence. After changing
-a dependency revision, rebuild its dependents before checking clients. Use the normal isolated
-`lake build` and full validation as the final authority for scratch or overlay checks.
+## Build artifacts and focused checks
+
+Run each check on a coherent source and dependency graph with the intended toolchain and
+`lake-manifest.json`. Verify that every imported module, including transitive dependencies,
+resolves to its intended source revision. Let Lake rebuild dependencies in order for that graph;
+do not switch revisions or replace imported outputs through unrelated concurrent work while checks
+run. After changing source or dependency revisions, run `lake build` and the required validation
+on that graph; cached artifacts from another revision do not validate it.
 
 For focused checks, prefer `lake build ArkLib.Path.To.Module`. A direct `lake env lean` invocation
 does not inherit the package's Lean options or build-time source-policy plugin. In particular,
@@ -291,8 +324,10 @@ python3 -m pip install leanblueprint
   [Build Cache](#build-cache)), times the library build, the native build, and the
   `./scripts/validate.sh` path, runs the
   source trust inventory plus axiom-sweep fixture matrix and library regression baseline
-  (all axiom verdicts enforcing), and reuses that build for blueprint/declaration
-  validation and API-documentation generation. The PR-head job has read-only contents
+  (all axiom verdicts enforcing). A separate read-only job renders the blueprint without Lean
+  caches. The required build explicitly checks rendering success and validates the generated
+  declarations against its existing `ArkLibBlueprint` build, then reuses the Lean build for
+  API-documentation generation on main pushes. The PR-head jobs have read-only contents
   permission; on pushes, a separate job deploys its generated static-site artifact with
   Pages/OIDC permission. It uploads timing artifacts consumed by the trusted
   [`../../.github/workflows/build-timing-report.yml`](../../.github/workflows/build-timing-report.yml)

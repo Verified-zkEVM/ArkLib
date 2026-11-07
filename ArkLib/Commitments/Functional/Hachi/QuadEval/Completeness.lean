@@ -136,7 +136,7 @@ theorem honestRows_of_relIn
       dRows)
     {base : ZMod q} (ddCarrier : DigitDecomposition base messageDigits)
     (ddZ : BoundedDigitDecomposition base zDigits zBound)
-    (hmd : 0 < messageDigits) (hτ : 0 < zDigits) (hdeg : 1 ≤ Φ.φ.natDegree)
+    (hmd : 0 < messageDigits) (_hτ : 0 < zDigits) (hdeg : 1 ≤ Φ.φ.natDegree)
     {βSq γ κ : ℕ}
     (stmt : QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows)
@@ -163,7 +163,7 @@ theorem honestRows_of_relIn
     Hachi.carrier_eq_gadget Φ hmd hdeg ddCarrier stmt.avec wit.message
   have hz : Hachi.jMatrix Φ base ((2 ^ m) * messageDigits) zDigits *ᵥ
       Hachi.zDecompBounded Φ ddZ (honestZ Φ wit c) = honestZ Φ wit c :=
-    (Hachi.z_eq_jMatrix_bounded Φ hτ hdeg ddZ (honestZ Φ wit c) hzshort).symm
+    (Hachi.z_eq_jMatrix_bounded Φ ddZ (honestZ Φ wit c) hzshort).symm
   -- Eq. (15)'s matrix `M` applied to the inner basis IS the carrier: row `i` of `M` is `G sᵢ`.
   have hMa : derivedMsgMatrix Φ base wit *ᵥ stmt.avec
       = Hachi.carrier Φ base stmt.avec wit.message := by

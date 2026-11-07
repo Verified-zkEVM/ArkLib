@@ -526,7 +526,7 @@ theorem combine_theorem
     [SampleableType F] {φ : ι ↪ F} {dstar m : ℕ}
   (fs : Fin m → ι → F) (degs : Fin m → ℕ) (hdegs : ∀ i, degs i ≤ dstar)
   (hdeg_pos : 0 < dstar)
-  (δ : ℝ≥0) (hδPos : δ > 0)
+  (δ : ℝ≥0)
   (hδLt : δ < (min (1 - (ReedSolomon.sqrtRate dstar φ))
                    (1 - (rate (code φ dstar)) - 1 / Fintype.card ι)))
   (hProb : Pr{let r ← $ᵗ F}[δᵣ((combine φ dstar r fs degs), (code φ dstar)) ≤ δ] >
@@ -557,7 +557,7 @@ theorem combine_theorem
       · simp [total_terms, block_size] at htotal
     · have proximity_gap :=
         @ProximityGap.correlatedAgreement_affine_curves ι _ _ F _ _ _ _
-          (total_terms dstar degs - 1) dstar φ δ hdeg_pos hδPos (lt_min_iff.mp hδLt).1
+          (total_terms dstar degs - 1) dstar φ δ hdeg_pos (lt_min_iff.mp hδLt).1
       simp only [ProximityGap.δ_ε_correlatedAgreementCurves] at proximity_gap
       specialize proximity_gap
           (fun l (x : ι) ↦ (

@@ -48,7 +48,7 @@ gives finite coefficient coordinates, the columns of the local constraint system
 * [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List
   Decoding of Reed–Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26].
 * [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 6.1, the support (70).
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 8.2, the related support (56).
 -/
 
 @[expose] public section
@@ -96,9 +96,9 @@ theorem weight_differentialWeight_eq (D : ℕ) (u : JetVariable d →₀ ℕ) :
   simp [Finsupp.weight_apply, Finsupp.sum_fintype, Fintype.sum_option, differentialWeight,
     mul_comm]
 
-/-- If `d < D`, the total jet degree times the gap `D - d` is at most the specialization weight,
-since every jet variable has weight at least `D - d`. -/
-theorem sub_mul_totalJetDegree_le_weight (hdD : d < D) (u : JetVariable d →₀ ℕ) :
+/-- The total jet degree times the gap `D - d` is at most the specialization weight, since every
+jet variable has weight at least `D - d` (for `D ≤ d` the left side is `0`). -/
+theorem sub_mul_totalJetDegree_le_weight (u : JetVariable d →₀ ℕ) :
     (D - d) * totalJetDegree u ≤ Finsupp.weight (differentialWeight D) u := by
   rw [weight_differentialWeight_eq, totalJetDegree_eq_sum, Finset.mul_sum]
   refine le_trans (Finset.sum_le_sum fun j _ => ?_) (Nat.le_add_left _ _)
@@ -137,7 +137,7 @@ theorem totalJetDegree_le_floor_of_weight_lt (hdD : d < D) {u : JetVariable d �
     (hu : Finsupp.weight (differentialWeight D) u < m * A) :
     totalJetDegree u ≤ exactInterpolationJetDegreeFloor D A d m := by
   rw [exactInterpolationJetDegreeFloor, Nat.le_div_iff_mul_le (by omega), mul_comm]
-  have := sub_mul_totalJetDegree_le_weight hdD u
+  have := sub_mul_totalJetDegree_le_weight (D := D) u
   omega
 
 /-- The `X` exponent of an eligible exponent is at most `mA - 1`, whatever `D` and `d` are. -/

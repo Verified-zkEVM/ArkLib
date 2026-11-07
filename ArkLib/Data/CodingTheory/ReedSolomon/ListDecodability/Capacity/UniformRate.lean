@@ -48,7 +48,6 @@ theorem uniformRatePartition_close_list_bound {F : Type*} [Field F]
     (hn : uniformBlockThreshold δ ≤ n)
     (hk : 0 < k)
     (hgap : (k : ℝ) + δ * n ≤ A)
-    (hAn : A ≤ n)
     (domain : Fin n ↪ F)
     (received : Fin n → F)
     (hchar : ringChar F = 0 ∨ n ≤ ringChar F) :
@@ -57,14 +56,27 @@ theorem uniformRatePartition_close_list_bound {F : Type*} [Field F]
         (uniformJetCap δ : ℝ) ^ 2 *
           (2 * uniformJetCap δ / δ) ^ uniformDerivativeOrder δ *
           n ^ uniformDerivativeOrder δ := by
-  obtain ⟨e⟩ := exists_uniformRatePartitionEnvelope hδ hδsmall hn hk hgap hAn
-  obtain ⟨hd, hδone, hν, _hνn, hscale, hkA, hchar'⟩ :=
-    uniformEnvelope_exactAgreementGuards e hδ hδsmall hn hgap hchar
-  obtain ⟨cert⟩ := e.exists_curve_certificate hδ hδone hd hscale hAn
+  by_cases hAn : A ≤ n
+  swap
+  · have hempty : closePolynomialSet domain received k A = ∅ := by
+      apply Set.eq_empty_of_forall_notMem
+      intro P hP
+      have hcard : (polynomialAgreementSet domain received P).card ≤ n := by
+        simpa only [Fintype.card_fin] using
+          Finset.card_le_univ (polynomialAgreementSet domain received P)
+      exact hAn (hP.2.trans hcard)
+    rw [hempty]
+    refine ⟨Set.finite_empty, ?_⟩
+    simp only [Set.ncard_empty, Nat.cast_zero]
+    positivity
+  obtain ⟨e⟩ := exists_uniformRatePartitionEnvelope hδ hδsmall hn hgap hAn
+  obtain ⟨hd, -, -, _hνn, hscale, -, hchar'⟩ :=
+    uniformEnvelope_exactAgreementGuards e hδ hδsmall hn hchar
+  obtain ⟨cert⟩ := e.exists_curve_certificate hd hscale hAn
     domain (fun i ↦ Polynomial.C (received i)) (fun _ ↦ by simp)
   exact close_list_bound_of_curve_certificate_of_jetCharacteristic
     domain received cert hk e.message_le
-    (by have := e.order_le; omega) e.ambient_le hkA hAn hν hδ hgap hchar'
+    (by have := e.order_le; omega) e.ambient_le hδ hgap hchar'
 
 open Classical in
 /-- For every gap `δ` with `0 < δ < 6/25`, the complete list of degree-`< k` polynomials
@@ -79,7 +91,6 @@ theorem uniform_capacity_list_bound
     (hn : uniformBlockThreshold δ ≤ n)
     (hk : 0 < k)
     (hgap : (k : ℝ) + δ * n ≤ A)
-    (hAn : A ≤ n)
     {F : Type*} [Field F]
     (domain : Fin n ↪ F)
     (received : Fin n → F)
@@ -89,7 +100,7 @@ theorem uniform_capacity_list_bound
     let C : ℝ := (ν : ℝ) ^ 2 * (2 * ν / δ) ^ d
     (closePolynomialSet domain received k A).Finite ∧
       ((closePolynomialSet domain received k A).ncard : ℝ) ≤ C * n ^ d := by
-  exact uniformRatePartition_close_list_bound hδ hδsmall hn hk hgap hAn
+  exact uniformRatePartition_close_list_bound hδ hδsmall hn hk hgap
     domain received hchar
 
 end ReedSolomon

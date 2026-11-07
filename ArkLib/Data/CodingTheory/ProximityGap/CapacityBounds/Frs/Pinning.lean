@@ -33,7 +33,7 @@ theorem pinnedSubspace_empty
   exact Subsingleton.elim _ _
 
 theorem pinned_lineSeeds_lie_on_affine_codeword_line
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s : ℕ} (C : Submodule F (ι → Fin s → F))
     (f₀ f₁ : ι → Fin s → F) (U : F → ι → Fin s → F)
@@ -148,7 +148,7 @@ private theorem pinningActiveCoordinates_disjoint_inactive
 
 open scoped BigOperators in
 private theorem pinning_tau_nonneg
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s r : ℕ} (τ : ℕ → ℝ) (C : Submodule F (ι → Fin s → F))
     (hdesign : IsSubspaceDesign s τ C)
@@ -232,7 +232,7 @@ private theorem pinnedSubspace_insert_le
   exact inf_le_left
 
 private theorem pinningActiveCoordinates_nonempty
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι] [DecidableEq ι]
     {F : Type} [Field F] {s : ℕ}
     (H : Submodule F (ι → Fin s → F)) (S : Finset ι)
     (hK : pinnedSubspace H S ≠ ⊥) :
@@ -556,7 +556,7 @@ private theorem shared_pinning_step
 
 open scoped BigOperators in
 theorem exists_terminal_line_pinning
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s r : ℕ} (τ : ℕ → ℝ) (C : Submodule F (ι → Fin s → F))
     (hdesign : IsSubspaceDesign s τ C)
@@ -573,47 +573,54 @@ theorem exists_terminal_line_pinning
           ((Module.finrank F
             (pinnedSubspace (lineCloseSpan f₀ f₁ U δ) S) : ℝ) + ε) := by
   classical
-  let H := lineCloseSpan f₀ f₁ U δ
-  have hrec : ∀ d : ℕ, ∀ S : Finset ι,
-      Module.finrank F (pinnedSubspace H S) = d →
-      ∃ S' : Finset ι,
-        pinnedSubspace H S' = ⊥ ∧
-        ((linePinnedSeedsOn T f₀ f₁ U S).card : ℝ) * ε ≤
-          ((linePinnedSeedsOn T f₀ f₁ U S').card : ℝ) *
-            ((d : ℝ) + ε) := by
-    intro d
-    induction d using Nat.strong_induction_on with
-    | h d ih =>
-        intro S hd
-        by_cases hbot : pinnedSubspace H S = ⊥
-        · refine ⟨S, hbot, ?_⟩
-          have hd0 : d = 0 := by
-            rw [← hd, hbot]
-            exact finrank_bot F _
-          rw [hd0]
-          norm_num
-        · obtain ⟨i, hiE, hlt, hstep⟩ := shared_pinning_step τ C hdesign
-            f₀ f₁ U δ ε hU hspan hε T hTclose hδ S (by
-              simpa only [H] using hbot)
-          have hlt' : Module.finrank F (pinnedSubspace H (insert i S)) < d := by
-            simpa only [H, hd] using hlt
-          obtain ⟨S', hterm, hind⟩ :=
-            ih (Module.finrank F (pinnedSubspace H (insert i S))) hlt'
-              (insert i S) rfl
-          refine ⟨S', hterm, ?_⟩
-          apply pinning_potential_compose
-            ((linePinnedSeedsOn T f₀ f₁ U S).card : ℝ)
-            ((linePinnedSeedsOn T f₀ f₁ U (insert i S)).card : ℝ)
-            ((linePinnedSeedsOn T f₀ f₁ U S').card : ℝ)
-            (d : ℝ)
-            (Module.finrank F (pinnedSubspace H (insert i S)) : ℝ)
-            ε (Nat.cast_nonneg _) (Nat.cast_nonneg _) hε
-          · simpa only [H, hd] using hstep
-          · exact hind
-  obtain ⟨S', hterm, hpot⟩ :=
-    hrec (Module.finrank F (pinnedSubspace H S)) S rfl
-  refine ⟨S', ?_, ?_⟩
-  · simpa only [H] using hterm
-  · simpa only [H] using hpot
+  cases isEmpty_or_nonempty ι with
+  | inl hι =>
+    let := hι
+    refine ⟨S, Subsingleton.elim _ _, ?_⟩
+    simp only [Module.finrank_zero_of_subsingleton, Nat.cast_zero, zero_add, le_refl]
+  | inr hι =>
+    let := hι
+    let H := lineCloseSpan f₀ f₁ U δ
+    have hrec : ∀ d : ℕ, ∀ S : Finset ι,
+        Module.finrank F (pinnedSubspace H S) = d →
+        ∃ S' : Finset ι,
+          pinnedSubspace H S' = ⊥ ∧
+          ((linePinnedSeedsOn T f₀ f₁ U S).card : ℝ) * ε ≤
+            ((linePinnedSeedsOn T f₀ f₁ U S').card : ℝ) *
+              ((d : ℝ) + ε) := by
+      intro d
+      induction d using Nat.strong_induction_on with
+      | h d ih =>
+          intro S hd
+          by_cases hbot : pinnedSubspace H S = ⊥
+          · refine ⟨S, hbot, ?_⟩
+            have hd0 : d = 0 := by
+              rw [← hd, hbot]
+              exact finrank_bot F _
+            rw [hd0]
+            norm_num
+          · obtain ⟨i, hiE, hlt, hstep⟩ := shared_pinning_step τ C hdesign
+              f₀ f₁ U δ ε hU hspan hε T hTclose hδ S (by
+                simpa only [H] using hbot)
+            have hlt' : Module.finrank F (pinnedSubspace H (insert i S)) < d := by
+              simpa only [H, hd] using hlt
+            obtain ⟨S', hterm, hind⟩ :=
+              ih (Module.finrank F (pinnedSubspace H (insert i S))) hlt'
+                (insert i S) rfl
+            refine ⟨S', hterm, ?_⟩
+            apply pinning_potential_compose
+              ((linePinnedSeedsOn T f₀ f₁ U S).card : ℝ)
+              ((linePinnedSeedsOn T f₀ f₁ U (insert i S)).card : ℝ)
+              ((linePinnedSeedsOn T f₀ f₁ U S').card : ℝ)
+              (d : ℝ)
+              (Module.finrank F (pinnedSubspace H (insert i S)) : ℝ)
+              ε (Nat.cast_nonneg _) (Nat.cast_nonneg _) hε
+            · simpa only [H, hd] using hstep
+            · exact hind
+    obtain ⟨S', hterm, hpot⟩ :=
+      hrec (Module.finrank F (pinnedSubspace H S)) S rfl
+    refine ⟨S', ?_, ?_⟩
+    · simpa only [H] using hterm
+    · simpa only [H] using hpot
 
 end CodingTheory.FrsInternal

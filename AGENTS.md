@@ -28,7 +28,7 @@ Start with [`README.md`](README.md) for the project overview.
 
 ## Where To Work
 
-- `ArkLib/Data/` - reusable math, coding theory, polynomials, probability, and measured programs.
+- `ArkLib/Data/` - reusable math, coding theory, polynomials, and probability.
 - `ArkLibTest/` - compile-time acceptance examples and regression tests; run `lake test`.
 - `ArkLib/Interaction/` - the interaction layer: interaction-tree protocols and their security
   theory. It is meant to replace the legacy layer ([`README.md`](README.md#two-layers)).

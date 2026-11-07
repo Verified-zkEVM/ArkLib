@@ -155,7 +155,7 @@ theorem Verification.exists_symbolicCertificate {F : Type u} [Field F] {p : Line
     change p.k ≤ p.k - 1 + 1
     omega
   exact exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount
-    hp.candidateDegree_pos hp.budget_pos hkD centers f g hp.heightSurplus
+    hp.candidateDegree_pos hkD centers f g hp.heightSurplus
 
 /-- Conditions for a curve certificate, including checks that recorded counts match the support.
 -/
@@ -181,7 +181,7 @@ theorem CurveVerification.exists_certificate {F : Type*} [Field F] {p : LineProf
     change p.k ≤ p.k - 1 + 1
     omega
   exact exists_finite_firstOrder_curve_certificate_of_heightSlotCount
-    p.batchingDegree hp.1 hp.2.1 hkD domain w hw hp.2.2.1
+    p.batchingDegree hp.1 hkD domain w hw hp.2.2.1
 
 end LineProfile
 
