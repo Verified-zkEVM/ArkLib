@@ -172,12 +172,12 @@ omit [NeZero q] in
 reconstruction of `z` from `ẑ`, valid exactly when `z` is within the decomposition's bound. At the
 `ℓ = 30` parameters, where `τ = 5` (`Params.lean`), this is what makes that
 digit count correct while `q ≤ 16⁵` is false. -/
-theorem z_eq_jMatrix_bounded {n zDigits zBound : Nat} {base : ZMod q} (hd : 0 < zDigits)
-    (h1 : 1 ≤ Φ.φ.natDegree) (bddZ : BoundedDigitDecomposition base zDigits zBound)
+theorem z_eq_jMatrix_bounded {n zDigits zBound : Nat} {base : ZMod q}
+    (bddZ : BoundedDigitDecomposition base zDigits zBound)
     (z : PolyVec (Rq Φ) n) (hz : vecLInftyNorm Φ z ≤ zBound) :
     z = jMatrix Φ base n zDigits *ᵥ zDecompBounded Φ bddZ z := by
   rw [zDecompBounded, jMatrix]
-  exact (boundedGadgetDecompose_gadgetMul_eq_of_vecLInftyNorm_le Φ hd h1 bddZ z hz).symm
+  exact (boundedGadgetDecompose_gadgetMul_eq_of_vecLInftyNorm_le Φ bddZ z hz).symm
 
 end BoundedJGadget
 

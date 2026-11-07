@@ -224,7 +224,7 @@ omit [NeZero q] in
 two honest range hypotheses are exactly the bundled ones, and `relLift γ bZero` is *literally* the
 bridge's input relation, so the two links meet on the nose. No arity conditions are needed on this
 side (they belong to the pull-back). -/
-theorem batchReduction_perfectCompleteness_params {F : Type} [Field F] [BEq F] [LawfulBEq F]
+theorem batchReduction_perfectCompleteness_params {F : Type} [Field F]
     {n μ m₀ m₁ : ℕ} (P : HonestRangeParams q)
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ P.γ P.bZero))
@@ -338,7 +338,7 @@ theorem completePrefixReduction_outputIsPure (P : HonestRangeParams q)
   repeat' apply Prover.OutputIsPure.append
   all_goals exact ⟨_, fun _ => rfl⟩
 
-omit [DecidableEq F] in
+omit [DecidableEq F] [BEq F] [LawfulBEq F] in
 /-- The honest Hachi prefix is perfectly complete from the short-message evaluation relation
 to the nested zero-check relation. -/
 theorem completePrefixReduction_perfectCompleteness

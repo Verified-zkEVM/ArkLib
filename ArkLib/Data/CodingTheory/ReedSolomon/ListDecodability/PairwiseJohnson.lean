@@ -50,7 +50,7 @@ The integral counting theorem used here has no corresponding nonemptiness requir
 theorem code_isListDecodable_pairwiseJohnson
     {F : Type*} [Field F] {n D A : ℕ}
     (domain : Fin n ↪ F) (hn : 0 < n)
-    (hDA : D + 1 ≤ A) (hpositive : n * D < A * A) :
+    (hpositive : n * D < A * A) :
     Code.IsListDecodable ((code domain (D + 1) : Submodule F (Fin n → F)) : Set (Fin n → F))
       (1 - (A : ℝ) / n) (Code.pairwiseJohnsonListBound n D A : NNReal) := by
   classical
@@ -62,7 +62,7 @@ theorem code_isListDecodable_pairwiseJohnson
       (show c ∈ code domain (D + 1) from hc)
       (show c' ∈ code domain (D + 1) from hc') hne
     omega
-  have hgeneric := Code.isListDecodable_pairwiseJohnson C D A (by omega)
+  have hgeneric := Code.isListDecodable_pairwiseJohnson C D A
     (by simpa using hpositive) hpair
   simpa only [C, Fintype.card_fin] using hgeneric
 
@@ -75,7 +75,7 @@ agreement list is empty. Thus no finiteness assumption on the field is required.
 theorem closePolynomialSet_finite_and_ncard_le_pairwiseJohnson
     {F : Type*} [Field F] {n D A : ℕ}
     (domain : Fin n ↪ F) (received : Fin n → F)
-    (hDA : D + 1 ≤ A) (hpositive : n * D < A * A) :
+    (hpositive : n * D < A * A) :
     (closePolynomialSet domain received (D + 1) A).Finite ∧
       (closePolynomialSet domain received (D + 1) A).ncard ≤
         Code.pairwiseJohnsonListBound n D A := by
@@ -91,7 +91,10 @@ theorem closePolynomialSet_finite_and_ncard_le_pairwiseJohnson
       T.card ≤ Code.pairwiseJohnsonListBound n D A := by
     intro T hT
     by_cases hAn : A ≤ n
-    · let eval : F[X] → (Fin n → F) := evalOnPoints domain
+    · have hDA : D + 1 ≤ A := by
+        by_contra h
+        exact (not_le_of_gt hpositive) (Nat.mul_le_mul hAn (by omega))
+      let eval : F[X] → (Fin n → F) := evalOnPoints domain
       let U := T.image eval
       have hinj : Set.InjOn eval T := by
         intro P hP Q hQ heval
@@ -112,7 +115,7 @@ theorem closePolynomialSet_finite_and_ncard_le_pairwiseJohnson
         rcases Finset.mem_image.mp hc with ⟨P, hP, rfl⟩
         refine ⟨evalOnPoints_mem_code_of_degree_lt (hT P hP).1, ?_⟩
         simpa only [card_polynomialAgreementSet] using (hT P hP).2
-      have hgeneric := Code.finset_card_le_pairwiseJohnson C received D A (by omega)
+      have hgeneric := Code.finset_card_le_pairwiseJohnson C received D A
         (by simpa using hpositive) hpair U hU
       simpa only [Fintype.card_fin] using hgeneric
     · have hempty : T = ∅ := by
@@ -158,7 +161,7 @@ theorem closePolynomialSet_finite_and_ncard_le_pairwiseJohnson_of_gap
     nlinarith [mul_nonneg hnR (sub_nonneg.mpr hD4), mul_nonneg hδn hδn]
   have hpositive : n * D < A * A := by exact_mod_cast hpositiveR
   obtain ⟨hfinite, hcard⟩ :=
-    closePolynomialSet_finite_and_ncard_le_pairwiseJohnson domain received hDA hpositive
+    closePolynomialSet_finite_and_ncard_le_pairwiseJohnson domain received hpositive
   rw [hDk] at hfinite hcard
   refine ⟨hfinite, ?_⟩
   have hcardR : ((closePolynomialSet domain received k A).ncard : ℝ) ≤

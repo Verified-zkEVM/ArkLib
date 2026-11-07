@@ -75,21 +75,19 @@ theorem mem_frobeniusRetainedPowerTupleFamily_iff
     exact Finset.mem_filter.mpr
       ⟨(mem_polynomialTupleFamily_iff domain values P k).mpr ⟨hP.degree, hcommon⟩, hP⟩
 
-/-- If the initial equation is nonzero and the root, degree, and Taylor-exponent hypotheses hold,
-the retained family with `s = p ^ e` has cardinality at most the initial equation's degree in the
-graph coordinate. -/
+/-- Under the root, degree, and Taylor-exponent hypotheses, the retained family with
+`s = p ^ e` has cardinality at most the initial equation's degree in the graph coordinate. -/
 theorem frobeniusRetainedPowerTupleFamily_card_le [Infinite E]
     (domain : α ↪ F) (values : Fin (ℓ + 1) → α → F) (ι : F →+* E)
     (roots : α → E) (center : E) (Q : DifferentialPolynomial E[X] 0)
     (p e τ : ℕ) [ExpChar E p]
     (hroots : ∀ i, roots i ^ (p ^ e) = ι (domain i))
-    (hK : 0 < K) (hKk : K ≤ p ^ e * k) (hτ : TaylorExponentSufficient 0 K τ)
-    (hinit : jointInitialJetEquation center Q ≠ 0) :
+    (hK : 0 < K) (hKk : K ≤ p ^ e * k) (hτ : TaylorExponentSufficient 0 K τ) :
     (frobeniusRetainedPowerTupleFamily
       domain values ι roots center Q K k τ (p ^ e)).card ≤
       (jointInitialJetEquation center Q).degreeOf (some 0) := by
   apply admissibleFrobeniusPowerTuples_card_le_degreeOf
-    domain values ι roots center Q p e τ hroots hK hKk hτ hinit
+    domain values ι roots center Q p e τ hroots hK hKk hτ
   intro P hP
   exact (mem_frobeniusRetainedPowerTupleFamily_iff
     domain values ι roots center Q K k τ (p ^ e) P).mp hP

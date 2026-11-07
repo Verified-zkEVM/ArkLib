@@ -98,7 +98,7 @@ theorem exists_curve_exactPowerAgreement_johnson_budget
     · subst D
       obtain ⟨E, hE, hgood⟩ := ReedSolomon.uniformExactPowerAgreement_constantCode domain u A
       refine ⟨E, ?_, hgood⟩
-      have hc := ReedSolomon.HiddenDerivative.choose_two_le_bciks hn hb
+      have hc := ReedSolomon.HiddenDerivative.choose_two_le_bciks hb
         (by simpa using hbRate)
       have hE' : (E.card : ℝ) ≤ k * (Fintype.card ι).choose 2 := by
         exact_mod_cast hE.trans (Nat.div_le_self _ _)
@@ -127,14 +127,11 @@ theorem exists_curve_exactPowerAgreement_johnson_budget
           (Fintype.card ι) D eta * Fintype.card ι ≤ A := by
         rw [ha, mul_comm]
         exact Nat.le_ceil _
-      have hAn : A ≤ Fintype.card ι := by
-        apply Nat.ceil_le.mpr
-        exact mul_le_of_le_one_right (Nat.cast_nonneg _) (sub_le_self _ δ.coe_nonneg)
       obtain ⟨E, hE, hgood⟩ := exists_johnson_curve_exactPowerAgreement_of_fintype
-        domain u hDpos hDn heta hthreshold hAn
+        domain u hDpos hDn heta hthreshold
       refine ⟨E, ?_, hgood⟩
       have hc := ReedSolomon.HiddenDerivative.two_mul_johnsonExceptionCount_le_bciks
-        hDpos hDn heta hthreshold hb hbeta (by simpa using hbRate)
+        hDpos hDn hthreshold hb hbeta (by simpa using hbRate)
       have hh := mul_le_mul_of_nonneg_left hc (Nat.cast_nonneg k)
       dsimp [B]
       push_cast
@@ -664,14 +661,14 @@ theorem large_agreement_set_on_curve_implies_correlated_agreement' {l deg : ℕ}
     have hfrac : 0 < 1 / (2 * (m : ℝ)) := by positivity
     linarith
   obtain ⟨E, hE, hgood⟩ := exists_curve_exactPowerAgreement_explicit_budget
-    deg domain l m (δ : ℝ) hdeg_pos (by simpa using hproper) hm δ.coe_nonneg hδ' u
+    deg domain l m (δ : ℝ) hdeg_pos (by simpa using hproper) hm hδ' u
   have hsmall : (E.card : ℝ) <
       (coeffs_of_close_proximity_curve (F := F) δ u
         (ReedSolomon.toFinset domain deg)).card := by
     apply hE.trans_lt
     convert hS using 1
     rw [Fintype.card_fin, hs,
-      ReedSolomon.HiddenDerivative.sqrt_cube_eq_rpow_three_halves (by positivity),
+      ReedSolomon.HiddenDerivative.sqrt_cube_eq_rpow_three_halves,
       ReedSolomon.HiddenDerivative.legacy_shift_pow_seven m (by omega)]
     norm_num
     ring
@@ -784,12 +781,11 @@ is greater than `k * ε`. Then, the words `u₀, ..., uκ` have correlated agree
 
 A positive message dimension is required: the zero code does not satisfy this bound.
 This statement is restricted to the proven open Johnson regime
-`0 < δ < 1 - √ρ`. It does not encode the separate capacity-regime extension proposed as
+`δ < 1 - √ρ`. It does not encode the separate capacity-regime extension proposed as
 Conjecture 8.4 of [BCIKS20]. -/
 theorem correlatedAgreement_affine_curves {k : ℕ}
     {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
     (hdeg_pos : 0 < deg)
-    (hδ_pos : 0 < δ)
     (hδ : δ < 1 - ReedSolomon.sqrtRate deg domain) :
     δ_ε_correlatedAgreementCurves (k := k) (A := F) (F := F) (ι := ι)
       (C := ReedSolomon.code domain deg) (δ := δ) (ε := errorBound δ deg domain) := by
@@ -805,7 +801,7 @@ theorem correlatedAgreement_affine_curves {k : ℕ}
     have hsone : ReedSolomon.sqrtRate deg domain = 1 := by
       simp [ReedSolomon.sqrtRate, hrate]
     rw [hsone, tsub_self] at hδ
-    exact (lt_irrefl 0) (hδ_pos.trans hδ)
+    exact (not_lt_zero hδ)
   have hδone : δ ≤ 1 := hδ.le.trans tsub_le_self
   by_cases hUD : δ ≤ Code.relativeUniqueDecodingRadius
       (C := (ReedSolomon.code domain deg : Set (ι → F)))

@@ -1,9 +1,10 @@
 # Current status
 
-**Status date:** 2026-10-29. **Scope:** the supported dependency baseline, what the interaction
-layer (`ArkLib/Interaction/`) provides on `main` at this date, and the legacy-layer results that
-bear on it. This page is a dated record. The [README](../../README.md#two-layers) gives an overview of
-the two layers, [Limitations of the legacy layer](legacy-layer-limitations.md) explains why the
+**Last reviewed:** 2026-11-04. **Scope:** the supported dependency baseline, what the interaction
+layer (`ArkLib/Interaction/`) provides on `main`, and the legacy-layer results that
+bear on it. The
+[README](../../README.md#two-layers) gives an overview of the two layers,
+[Limitations of the legacy layer](legacy-layer-limitations.md) explains why the
 interaction layer replaces it, and the [roadmap](../../ROADMAP.md#priority-replace-the-legacy-layer)
 holds the migration plan. Protocol-level status for readers
 outside the framework is on the public [roadmap](../../ROADMAP.md); remaining interaction-layer
@@ -86,6 +87,8 @@ commutativity assumption). It must not restore the legacy unrestricted compositi
 | Handler construction and composition | available | build source interpreters and substitution from `QueryImpl` and handler laws |
 | Tracing, logging, caching, and cost instrumentation | available | reuse `withTrace*`, `withLogging`, and existing erasure/failure bridges |
 | Query and resource accounting | available | reuse query bounds, `ResourceProfile`, `QueryCost`, and `CostModel` |
+| Stateless weighted handler substitution | available | `WorstCaseCostBound.simulateQ` in `VCVio.OracleComp.QueryTracking.CostModel.Simulation`; transfers bounds through stateless handlers with per-query completed-run budgets; availability and termination are separate |
+| Named measured programs and composition | available | `MeasuredProgram`, `BudgetedProgram`, and `MeasuredProgram.comp` in `VCVio.OracleComp.QueryTracking.MeasuredProgram` and its `Composition` module; both instruction traces run and weighted budgets add; views, handlers and pure work remain uncharged |
 | Cost-aware reductions | available, cost-only | reuse `SecurityGame.ReductionWithCost`; add no parallel cost hierarchy |
 | Closed probability semantics | available | VCVio's native `Measure`/kernel semantics; ArkLib's PMF surface is retired (#913) |
 | Probabilistic responders and wired machines | available | reuse `ProbResponder`, oracle strategies, and machine runs |
@@ -133,7 +136,7 @@ Naming follows [`docs/wiki/interaction-naming.md`](../wiki/interaction-naming.md
 | Composition through exported oracle interfaces and actual claim closing | `Oracle/SourceRouting.executeStrategies_appendExported_close` | #1234 |
 | Weighted and uniform soundness for exported oracle composition | `Oracle/CompositionSoundness` | [#1235](https://github.com/Verified-zkEVM/ArkLib/pull/1235) |
 | Available query names preserved by continuation and append | `Oracle/Prefix`, `Oracle/Access` | [#1238](https://github.com/Verified-zkEVM/ArkLib/pull/1238) |
-| Actual-route access and weighted query budgets | `Data/OracleComp/QueryBounds` | [#1238](https://github.com/Verified-zkEVM/ArkLib/pull/1238) |
+| Actual-route access and weighted query budgets | `WorstCaseCostBound.simulateQ` (`VCVio.OracleComp.QueryTracking.CostModel.Simulation`) and `OracleComp.AllQueriesSatisfy.simulateQ` (`VCVio.OracleComp.QueryTracking.QueryBound.Simulation`) | [#1238](https://github.com/Verified-zkEVM/ArkLib/pull/1238), #1447 |
 | Oracle append paths, runtime roles, access, and query answers | `Oracle/TypeTree`, `Oracle/TypeTree/Decoration`, `Oracle/Access`, `Oracle/RunSources` | #1232 |
 | Fixed-prover, reachable, and averaged bounds | `run_appendFlat_soundness_fixed`, `_of_support`, `_ae`, and `_weighted_ae` | #1231 |
 
@@ -329,7 +332,8 @@ messages through its cursor map. Initial names identify raw input queries. Names
 oracles identify their send edges, preserving sharing across query arguments. A future send cannot
 be named by a currently available query.
 
-`Data/OracleComp/QueryBounds` proves access and cost bounds for the actual query substitution.
+`WorstCaseCostBound.simulateQ` and `OracleComp.AllQueriesSatisfy.simulateQ` prove cost and access
+bounds for the actual query substitution.
 If each allowed exported query routes only to allowed source queries, the whole routed program
 satisfies that access condition. If each route fits its exported query's charge, the routed program
 inherits the exported program's total budget. Charges may vary by query; repeated calls to one
@@ -373,6 +377,7 @@ under `ArkLibTest/Interaction/Oracle/Security/`.
 | Pre-sampled private coins | `StateRestorationCoins` (`stateRestoration_knowledge_soundness_privateCoins` and its oracle-output form) | #1263 |
 | Per-round errors | `StateRestorationBudget` (`stateRestoration_oracle_knowledge_soundness_nonuniform`) | #1264 |
 | Measured extraction stages | `KnowledgeResources` (`RoundExtractor.MeasuredStages`, `MeasuredKnowledgeCertificate`); `StateRestorationResources` | #1397 |
+| Declared-cost composition on an execution path | `KnowledgeResources/Composition` (`MeasuredStages.programAlong`, `run_programAlong`); state-restoration acceptance fixture | #1448 |
 
 **Round-by-round soundness.** An `OrdinaryState` is false on a false input, cannot become true at
 a prover move, and is true at every successful terminal path. `LocalSoundness` bounds the
@@ -416,16 +421,16 @@ the adversary's possibly failing private coins are sampled before the fresh cach
 not cover arbitrary interleaving of coin and oracle effects. Inputs and salts may have infinite
 types; each round's challenges use a finite nonempty uniform sampler.
 
-**Measured extraction.** `RoundExtractor.stageMap` combines the backward maps at a node into one
-stage. `RoundExtractor.MeasuredStages` names, for the stage at every authored node, a budgeted
-program (`OracleComp.BudgetedProgram`) that realizes it, and `MeasuredKnowledgeCertificate` adds
-these stages to a `KnowledgeCertificate` for the same extractor.
-`MeasuredKnowledgeCertificate.stateRestoration_oracle_knowledge_soundness_nonuniform` conjoins the
-state-restoration bound with a uniform stage budget for that extractor. Budgets count declared
-instructions only. Views, handlers, witness-carrier identifications, stage composition and
-knowledge predicates are uncharged, and every function has a zero-budget program, so only a named
-program with a stated instruction set is evidence. This is the interaction-layer form of the
-measured-operation contract in the [extractor-efficiency chapter](03a-extractor-efficiency.md).
+**Measured extraction.** `KnowledgeResources` attaches named budgeted programs to the backward
+maps of a `KnowledgeCertificate`. `MeasuredStages.programAlong` composes those programs on a
+supplied typed path and returns the original extractor's witness. The state-restoration wrapper
+combines its existing probability theorem with an all-witness return identity and the role-specific
+instruction bound specified in the
+[resource contract](03a-extractor-efficiency.md#state-restoration-resource-contract).
+Public count contracts fix finite natural-number profiles; generic stages remain weighted.
+The [accounting boundary](03a-extractor-efficiency.md#proof-and-accounting-boundary) applies to all
+these certificates. The [native composition priorities](05-roadmap.md#native-resource-composition)
+own the remaining client and resource-closure work.
 
 **Open.** There is no interaction-layer rewinding extractor and no Fiat–Shamir or BCS bridge from state
 restoration. The `privateCoins` forms are the only randomized-adversary state-restoration results;

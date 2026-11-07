@@ -78,12 +78,13 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
+  # Starts alongside `blueprint` instead of after it: the renderer needs no Lean build, and the
+  # build reads its outputs only at the blueprint declaration check, where it waits for that job.
   build:
-    # A failed/skipped prerequisite must fail the required build check, not merely skip it.
-    needs: blueprint
-    if: always()
     runs-on: ubuntu-24.04
     permissions:
+      # `actions: read` lets the build read the renderer job's status in this run.
+      actions: read
       contents: read
     env:
       CLEAN_BUILD: ${{ github.event_name == 'schedule' || inputs.clean_build == true }}
@@ -92,11 +93,6 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-
-      - name: Require successful blueprint rendering
-        env:
-          BLUEPRINT_JOB_RESULT: ${{ needs.blueprint.result }}
-        run: python3 scripts/blueprint-ci.py require-success
 
       - name: Test blueprint CI safeguards
         run: python3 scripts/blueprint-ci.py self-test
@@ -303,6 +299,12 @@ jobs:
 
       - name: Build blueprint declaration environment
         run: lake build ArkLibBlueprint
+
+      # A failed, cancelled or skipped renderer fails the required build check here.
+      - name: Require successful blueprint rendering
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/blueprint-ci.py wait-for-success
 
       - name: Download generated blueprint outputs
         uses: actions/download-artifact@v8

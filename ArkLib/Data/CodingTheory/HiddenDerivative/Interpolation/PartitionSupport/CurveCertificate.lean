@@ -70,7 +70,7 @@ uniformly nonvanishing symbolic curve certificate. Its challenge height is
 `r = n * localDerivativeCoordinateBudget d m W`. -/
 theorem exists_partitionSupport_curve_certificate {F : Type*} [Field F]
     {D d m W n A k ℓ ν : ℕ} {L : ℝ}
-    (hD : 0 < D) (hL : L ≤ (m * A : ℕ)) (hbudget : 0 < m * A)
+    (hD : 0 < D) (hL : L ≤ (m * A : ℕ))
     (hkD : k ≤ D + 1) (centers : Fin n ↪ F) (received : Fin n → F[X])
     (hreceived : ∀ i, (received i).natDegree ≤ ℓ)
     (hdegree : ∀ u, PartitionSupportEligible D d W L u → totalJetDegree u ≤ ν)
@@ -113,7 +113,7 @@ theorem exists_partitionSupport_curve_certificate {F : Type*} [Field F]
     rw [hN]
     exact hsurplus
   have hcert := SymbolicReceivedCurve.exists_certificate_of_rank_bound
-    (F := F) (ι := Fin n) (κ := Fin N) (K := RatFunc F) hL hbudget hkD centers received
+    (F := F) (ι := Fin n) (κ := Fin N) (K := RatFunc F) hL hkD centers received
     hreceived columns (partitionSupportColumns_injective (d := d) (W := W) (L := L) hD)
     hy₀ htotal (fun j ↦ (hband j).toWeightedSupportEligible)
     (algebraMap F[X] (RatFunc F)) (RatFunc.algebraMap_injective F) hrank

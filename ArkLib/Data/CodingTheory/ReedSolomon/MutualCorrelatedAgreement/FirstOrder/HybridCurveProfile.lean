@@ -58,10 +58,10 @@ def bestOptimizedCurveEnvelope (p : LineProfile) (split : ℕ) : ℝ :=
   min (hybridOptimizedCurveEnvelope p) (squarefreeSharpOptimizedCurveEnvelope p split)
 
 /-- Optimizing the squarefree ordinary threshold can only lower the best curve bound. -/
-theorem bestOptimizedCurveEnvelope_le_best (p : LineProfile) (split : ℕ)
-    (hDA : p.candidateDegree < p.agreement) :
+theorem bestOptimizedCurveEnvelope_le_best (p : LineProfile) (split : ℕ) :
     bestOptimizedCurveEnvelope p split ≤ bestCurveEnvelope p split := by
-  exact min_le_min le_rfl (squarefreeSharpOptimizedCurveEnvelope_le_fixed p split hDA)
+  apply min_le_min le_rfl
+  exact squarefreeSharpOptimizedCurveEnvelope_le_fixed p split
 
 universe u
 
@@ -71,7 +71,7 @@ every sufficiently agreeing candidate of degree below `k` has exact power agreem
 theorem exists_exceptional_exactPowerAgreement_hybridOptimized
     {F : Type u} [Field F]
     {p : LineProfile} (hp : p.CurveVerification)
-    (hkA : p.k ≤ p.agreement) (hAn : p.agreement ≤ p.n)
+    (hkA : p.k ≤ p.agreement)
     (hell : 0 < p.batchingDegree)
     (domain : Fin p.n ↪ F)
     (values : Fin (p.batchingDegree + 1) → Fin p.n → F)
@@ -99,7 +99,7 @@ theorem exists_exceptional_exactPowerAgreement_hybridOptimized
     exists_baseExceptional_firstOrderCurve_of_heightSlotCount_optimized
       (D := p.candidateDegree) (A := p.agreement) (m := p.multiplicity)
       (M := p.firstDerivativeCap) (mu := p.totalJetCap) (h := p.height)
-      (ell := p.batchingDegree) domain values hD hp.2.1 hheight hell hDA hAn
+      (ell := p.batchingDegree) domain values hD hheight hell hDA
       (Or.inr hchar)
   refine ⟨exceptional, ?_, ?_⟩
   · simpa only [hybridOptimizedCurveEnvelope] using hcard
@@ -112,7 +112,7 @@ open Classical in
 /-- A verified profile gives one exceptional set at the independently optimized best bound.
 Every sufficiently agreeing low-degree candidate outside the set has exact power agreement. -/
 theorem exists_exceptional_exactPowerAgreement_bestOptimized
-    {F E : Type u} [Field F] [Field E] [IsAlgClosed E]
+    {F : Type u} [Field F]
     {p : LineProfile} (hp : p.CurveVerification) (split : ℕ)
     (hsplit : p.k ≤ split ∧ split ≤ p.agreement ∧ p.agreement ≤ p.n)
     (hell : 0 < p.batchingDegree)
@@ -120,7 +120,6 @@ theorem exists_exceptional_exactPowerAgreement_bestOptimized
     (hMB : p.firstDerivativeCap ≤ p.totalJetCap)
     (domain : Fin p.n ↪ F)
     (values : Fin (p.batchingDegree + 1) → Fin p.n → F)
-    (iota : F →+* E)
     (hchar : ringChar F = 0 ∨
       max p.candidateDegree p.firstDerivativeCap < ringChar F) :
     ∃ exceptional : Finset F,
@@ -133,14 +132,14 @@ theorem exists_exceptional_exactPowerAgreement_bestOptimized
       squarefreeSharpOptimizedCurveEnvelope p split
   · obtain ⟨exceptional, hcard, hgood⟩ :=
       exists_exceptional_exactPowerAgreement_hybridOptimized hp
-        (hsplit.1.trans hsplit.2.1) hsplit.2.2 hell domain values hchar
+        (hsplit.1.trans hsplit.2.1) hell domain values hchar
     refine ⟨exceptional, ?_, hgood⟩
     simpa only [bestOptimizedCurveEnvelope, min_eq_left hbest] using hcard
   · have hsquarefree : squarefreeSharpOptimizedCurveEnvelope p split ≤
         hybridOptimizedCurveEnvelope p := le_of_not_ge hbest
     obtain ⟨exceptional, hcard, hgood⟩ :=
       exists_exceptional_exactPowerAgreement_squarefreeSharpOptimized hp split hsplit
-        hell hM hMB domain values iota hchar
+        hM hMB domain values hchar
     refine ⟨exceptional, ?_, hgood⟩
     simpa only [bestOptimizedCurveEnvelope, min_eq_right hsquarefree] using hcard
 
@@ -148,7 +147,7 @@ open Classical in
 /-- A verified profile gives semantic recovery at the best bound with fixed squarefree
 ordinary threshold. -/
 theorem exists_exceptional_exactPowerAgreement_best
-    {F E : Type u} [Field F] [Field E] [IsAlgClosed E]
+    {F : Type u} [Field F]
     {p : LineProfile} (hp : p.CurveVerification) (split : ℕ)
     (hsplit : p.k ≤ split ∧ split ≤ p.agreement ∧ p.agreement ≤ p.n)
     (hell : 0 < p.batchingDegree)
@@ -156,7 +155,6 @@ theorem exists_exceptional_exactPowerAgreement_best
     (hMB : p.firstDerivativeCap ≤ p.totalJetCap)
     (domain : Fin p.n ↪ F)
     (values : Fin (p.batchingDegree + 1) → Fin p.n → F)
-    (iota : F →+* E)
     (hchar : ringChar F = 0 ∨
       max p.candidateDegree p.firstDerivativeCap < ringChar F) :
     ∃ exceptional : Finset F,
@@ -167,12 +165,8 @@ theorem exists_exceptional_exactPowerAgreement_best
         HasExactPowerAgreement domain values (RingHom.id F) p.k z P := by
   obtain ⟨exceptional, hcard, hgood⟩ :=
     exists_exceptional_exactPowerAgreement_bestOptimized hp split hsplit hell hM hMB
-      domain values iota hchar
-  have hDA : p.candidateDegree < p.agreement := by
-    have hD : 0 < p.candidateDegree := hp.1
-    simp only [LineProfile.candidateDegree] at hD ⊢
-    omega
-  exact ⟨exceptional, hcard.trans (bestOptimizedCurveEnvelope_le_best p split hDA), hgood⟩
+      domain values hchar
+  exact ⟨exceptional, hcard.trans (bestOptimizedCurveEnvelope_le_best p split), hgood⟩
 
 end
 

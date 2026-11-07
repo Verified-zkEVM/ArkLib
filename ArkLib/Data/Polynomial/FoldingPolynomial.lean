@@ -752,25 +752,34 @@ lemma polyFold_base {f : F[X]} {k : ℕ} {r : F} (h : k = 0 ∨ f.natDegree < k)
   rw [folding_polynomial_def_base_case h_deg]
   exact eval_C_map_C f r
 
-/-- Recursive case of `polyFold`: when `0 < k ≤ f.natDegree`,
+/-- Recurrence for `polyFold`: when `0 < k`,
     `polyFold f k r = C ((f %ₘ X^k).eval r) + X * polyFold (f /ₘ X^k) k r`. -/
-lemma polyFold_step {f : F[X]} {k : ℕ} {r : F} (hk : 0 < k) (hf : k ≤ f.natDegree) :
+lemma polyFold_step {f : F[X]} {k : ℕ} {r : F} (hk : 0 < k) :
     polyFold f k r =
       Polynomial.C ((f %ₘ X^k).eval r) + X * polyFold (f /ₘ X^k) k r := by
-  unfold polyFold
-  have h_deg_q : 0 < (X^k : F[X]).degree := by
-    rw [Polynomial.degree_X_pow]; exact_mod_cast hk
-  have h_deg_f : (X^k : F[X]).degree ≤ f.degree := by
-    rw [Polynomial.degree_X_pow]
-    have hf0 : f ≠ 0 := by
-      rintro rfl; simp at hf; omega
-    rw [Polynomial.degree_eq_natDegree hf0]; exact_mod_cast hf
-  rw [folding_polynomial_def_ind_case h_deg_f h_deg_q]
-  rw [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_C, eval_C_map_C]
-  rw [show f / X^k = f /ₘ X^k from
-        (divByMonic_eq_div f (Polynomial.monic_X_pow k)).symm,
-      show f % X^k = f %ₘ X^k from
-        (modByMonic_eq_mod f (Polynomial.monic_X_pow k)).symm]
+  by_cases hf : k ≤ f.natDegree
+  · unfold polyFold
+    have h_deg_q : 0 < (X^k : F[X]).degree := by
+      rw [Polynomial.degree_X_pow]; exact_mod_cast hk
+    have h_deg_f : (X^k : F[X]).degree ≤ f.degree := by
+      rw [Polynomial.degree_X_pow]
+      have hf0 : f ≠ 0 := by
+        rintro rfl; simp at hf; omega
+      rw [Polynomial.degree_eq_natDegree hf0]; exact_mod_cast hf
+    rw [folding_polynomial_def_ind_case h_deg_f h_deg_q]
+    rw [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_C, eval_C_map_C]
+    rw [show f / X^k = f /ₘ X^k from
+          (divByMonic_eq_div f (Polynomial.monic_X_pow k)).symm,
+        show f % X^k = f %ₘ X^k from
+          (modByMonic_eq_mod f (Polynomial.monic_X_pow k)).symm]
+  · have hdeg : f.degree < (X ^ k : F[X]).degree := by
+      rw [Polynomial.degree_X_pow]
+      exact lt_of_le_of_lt Polynomial.degree_le_natDegree (by
+        exact_mod_cast (by omega : f.natDegree < k))
+    rw [polyFold_base (by omega),
+      (Polynomial.modByMonic_eq_self_iff (Polynomial.monic_X_pow k)).mpr hdeg,
+      (Polynomial.divByMonic_eq_zero_iff (Polynomial.monic_X_pow k)).mpr hdeg]
+    simp
 
 end PolyFoldRecurrence
 
@@ -863,7 +872,7 @@ private lemma cpolyFoldAux_toPoly (p : CompPoly.CPolynomial F) (k : ℕ) (r : F)
         have h_step : (CompPoly.CPolynomial.divX^[k] p).natDegree ≤ fuel := by
           refine le_trans (natDegree_iterate_divX_le p k) ?_
           omega
-        rw [Polynomial.FoldingPolynomial.polyFold_step hk_pos hsmall']
+        rw [Polynomial.FoldingPolynomial.polyFold_step hk_pos]
         rw [CompPoly.CPolynomial.toPoly_add, CompPoly.CPolynomial.C_toPoly,
             CompPoly.CPolynomial.toPoly_mul, CompPoly.CPolynomial.X_toPoly]
         congr 1

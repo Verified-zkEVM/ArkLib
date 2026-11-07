@@ -178,10 +178,8 @@ lemma one_add_sub_one' {k n : ℕ} [FoldingContextMiddle k n] :
   This is the index-arithmetic counterpart of folding one step at a time. -/
 @[grind =]
 lemma n_sub_1_sub_k_sub_1_eq_n_sub_k {k n : ℕ} [FoldingContextMiddle k n] :
-    n - 1 - (k - 1) = n - k := by
-  have := FoldingContextMiddle.k_ge_1
-  have := FoldingContextMiddle.k_le_n
-  omega
+    n - 1 - (k - 1) = n - k :=
+  Nat.sub_sub_sub_cancel_right FoldingContextMiddle.k_ge_1
 
 /-- Given a `[FoldingContextMiddle k n]` we have `k - 1 + (n - k) = n - 1`. -/
 @[grind _=_]
@@ -275,7 +273,7 @@ lemma pow_2_k_mul_le_pow_2_d_of {A : Type*} [Monoid A] [LinearOrder A] [MulLeftM
 /-- `2 ^ k * x ≤ 2 ^ d` exactly when `x ≤ 2 ^ (d - k)`. Used to transfer degree bounds
   between a polynomial and its `2 ^ k`-fold. -/
 @[grind .]
-lemma pow_2_k_mul_le_pow_2_d_iff {A : Type*} [Monoid A] [LinearOrder A] [MulLeftMono A]
+lemma pow_2_k_mul_le_pow_2_d_iff {A : Type*} [Monoid A] [LinearOrder A]
     [MulLeftStrictMono A]
   [OfNat A 2] {k d : ℕ} [FoldingContextLeft k d] {x : A} :
   (2 : A) ^ k * x ≤ (2 : A) ^ d ↔
@@ -285,7 +283,12 @@ lemma pow_2_k_mul_le_pow_2_d_iff {A : Type*} [Monoid A] [LinearOrder A] [MulLeft
     have : 2 ^ d < 2 ^ k * x := by
       grind [mul_lt_mul_right]
     grind
-  mpr h := by grind
+  mpr h := by
+    rcases h.lt_or_eq with h | rfl
+    · calc
+        (2 : A) ^ k * x ≤ (2 : A) ^ k * 2 ^ (d - k) := (mul_lt_mul_right h _).le
+        _ = 2 ^ d := pow_2_k_mul_pow_2_d_sub_k
+    · exact pow_2_k_mul_pow_2_d_sub_k.le
 
 end FoldingContext
 

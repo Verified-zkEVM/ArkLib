@@ -152,7 +152,7 @@ private theorem exists_uniformFirstOrder_list_of_dimension_le_three
         nlinarith [sq_nonneg (6 * (n : ℝ) - 25 / 12), sq_nonneg (6 * (n : ℝ) - 175 / 6)]
     exact_mod_cast hposR
   obtain ⟨hfinite, hcard⟩ :=
-    closePolynomialSet_finite_and_ncard_le_pairwiseJohnson domain received hDA hpositive
+    closePolynomialSet_finite_and_ncard_le_pairwiseJohnson domain received hpositive
   rw [hDk] at hfinite hcard
   refine ⟨hfinite.toFinset, fun P ↦ hfinite.mem_toFinset, ?_⟩
   rw [← Set.ncard_eq_toFinset_card _ hfinite]
@@ -186,7 +186,7 @@ private theorem exists_uniformFirstOrder_list_of_two_le
   let D := k - 1
   have hgapNat : 25 * k + 6 * n ≤ 25 * A := by
     exact_mod_cast (show (25 : ℝ) * k + 6 * n ≤ 25 * A by nlinarith)
-  obtain ⟨hD, hbudget, hkD, hheight⟩ := uniformFirstOrder_parameters n k A hk hgapNat
+  obtain ⟨hD, -, hkD, hheight⟩ := uniformFirstOrder_parameters n k A hk hgapNat
   have hkA : k ≤ A := by exact_mod_cast (show (k : ℝ) ≤ A by linarith)
   have hfin := closePolynomialSet_finite domain received hkA
   have hsolutions : ∀ P ∈ hfin.toFinset, P.degree < k ∧
@@ -197,28 +197,40 @@ private theorem exists_uniformFirstOrder_list_of_two_le
       D A 12 4 22 k 851 domain received (fun _ ↦ 0)
         (firstOrderColumns (D := D) (A := A) (m := 12) (M := 4) (μ := 22))) :=
     exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount
-      hD hbudget hkD domain received (fun _ ↦ 0) hheight
+      hD hkD domain received (fun _ ↦ 0) hheight
   have hcard := FirstOrder.Squarefree.firstOrder_finite_agreement_solutions_card_le_squarefree
     domain received (firstOrderColumns (D := D) (A := A) (m := 12) (M := 4) (μ := 22)) cert
-      hk hkA hAn (by norm_num) hchar hfin.toFinset hsolutions
+      hk hkA (by norm_num) hchar hfin.toFinset hsolutions
   refine ⟨hfin.toFinset, fun P ↦ hfin.mem_toFinset, ?_⟩
   exact_mod_cast hcard.trans (uniformFirstOrder_listRatio_le n k A hn hk hAn hgap)
 
-/-- **Uniform first-order lists at gap `6/25`.** For `n ≥ 2`, `0 < k` and
-`k + (6/25) n ≤ A ≤ n`, the complete list of degree-`< k` polynomials agreeing with the received
+/-- **Uniform first-order lists at gap `6/25`.** For `0 < k` and
+`k + (6/25) n ≤ A`, the complete list of degree-`< k` polynomials agreeing with the received
 word on at least `A` points is an exact finite list with at most `307 n` members. For `k ≥ 2` the
 field characteristic must be zero or exceed `k - 1`; the field may be infinite. -/
 theorem exists_uniformFirstOrder_list
     {F : Type u} [Field F] [DecidableEq F]
     (n k A : ℕ) (domain : Fin n ↪ F) (received : Fin n → F)
-    (hn : 2 ≤ n) (hk : 0 < k) (hAn : A ≤ n)
+    (hk : 0 < k)
     (hgap : (k : ℝ) + (6 / 25 : ℝ) * n ≤ A)
     (hchar : 2 ≤ k → ringChar F = 0 ∨ k - 1 < ringChar F) :
     ∃ list : Finset F[X],
       (∀ P, P ∈ list ↔ P ∈ closePolynomialSet domain received k A) ∧
       list.card ≤ 307 * n := by
+  by_cases hAn : A ≤ n
+  swap
+  · refine ⟨∅, ?_, by simp⟩
+    intro P
+    simp only [Finset.notMem_empty, false_iff]
+    intro hP
+    have hcard : (polynomialAgreementSet domain received P).card ≤ n := by
+      simpa using Finset.card_le_univ (polynomialAgreementSet domain received P)
+    exact hAn ((hP.2).trans hcard)
   by_cases hkTwo : 2 ≤ k
-  · by_cases hsupport : ringChar F = 0 ∨ max (k - 1) 4 < ringChar F
+  · have hkA : k ≤ A := by
+      exact_mod_cast hgap.trans' (le_add_of_nonneg_right (by positivity))
+    have hn : 2 ≤ n := hkTwo.trans (hkA.trans hAn)
+    by_cases hsupport : ringChar F = 0 ∨ max (k - 1) 4 < ringChar F
     · exact exists_uniformFirstOrder_list_of_two_le n k A domain received
         hn hkTwo hAn hgap hsupport
     · have hdegreeChar := (hchar hkTwo).resolve_left fun hzero ↦ hsupport (Or.inl hzero)

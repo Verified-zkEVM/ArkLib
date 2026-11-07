@@ -2,18 +2,56 @@
 """Check renderer completion and stage outputs in a fresh directory outside the project."""
 
 import argparse
+import json
 import os
 from pathlib import Path
 import shutil
-import subprocess
 import sys
 import tempfile
+import time
 import unittest
+import urllib.request
 
 
 def require_success(result):
     if result != "success":
         raise ValueError(f"Blueprint rendering did not succeed: {result or 'missing result'}")
+
+
+def fetch_run_jobs():
+    """The jobs of this workflow run attempt, from the GitHub REST API."""
+    api = os.environ.get("GITHUB_API_URL", "https://api.github.com")
+    url = (f"{api}/repos/{os.environ['GITHUB_REPOSITORY']}/actions/runs/"
+           f"{os.environ['GITHUB_RUN_ID']}/attempts/{os.environ.get('GITHUB_RUN_ATTEMPT', '1')}"
+           "/jobs?per_page=100")
+    request = urllib.request.Request(url, headers={
+        "Accept": "application/vnd.github+json",
+        "Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}",
+    })
+    with urllib.request.urlopen(request, timeout=30) as response:
+        return json.load(response)["jobs"]
+
+
+def wait_for_job(name, fetch=fetch_run_jobs, timeout=2700, interval=15, sleep=time.sleep):
+    """Wait until the job `name` of this run completes, and return its conclusion.
+
+    The build job starts alongside the renderer instead of after it and waits here only when it
+    reaches the steps that read the rendered outputs. A job that never appears or never finishes
+    within `timeout` seconds yields no conclusion, which `require_success` rejects."""
+    waited = 0
+    while True:
+        try:
+            jobs = fetch()
+        except OSError as error:  # a transient API failure; the timeout still bounds the wait
+            print(f"Could not read the run's jobs yet: {error}", file=sys.stderr)
+            jobs = []
+        for job in jobs:
+            if job.get("name") == name and job.get("status") == "completed":
+                return job.get("conclusion") or ""
+        if waited >= timeout:
+            return ""
+        sleep(interval)
+        waited += interval
 
 
 def stage_artifact(project, output):
@@ -42,20 +80,34 @@ def stage_artifact(project, output):
 
 
 class BlueprintCITests(unittest.TestCase):
-    def test_actual_result_command_rejects_all_non_success_outcomes(self):
-        for result in ("success", "failure", "cancelled", "skipped", "", "unexpected"):
+    def test_only_success_is_accepted(self):
+        for result in ("failure", "cancelled", "skipped", "", None, "unexpected"):
             with self.subTest(result=result):
-                environment = os.environ.copy()
-                environment.pop("BLUEPRINT_JOB_RESULT", None)
-                if result:
-                    environment["BLUEPRINT_JOB_RESULT"] = result
-                completed = subprocess.run(
-                    [sys.executable, str(Path(__file__).resolve()), "require-success"],
-                    env=environment, capture_output=True, text=True, check=False,
-                )
-                self.assertEqual(completed.returncode, 0 if result == "success" else 1)
-                if result != "success":
-                    self.assertIn("Blueprint rendering did not succeed", completed.stderr)
+                with self.assertRaisesRegex(ValueError, "Blueprint rendering did not succeed"):
+                    require_success(result)
+        require_success("success")
+
+    def test_waiting_returns_the_named_job_conclusion_once_completed(self):
+        polls = iter([
+            [],
+            [{"name": "blueprint", "status": "in_progress", "conclusion": None}],
+            [{"name": "build", "status": "completed", "conclusion": "success"},
+             {"name": "blueprint", "status": "completed", "conclusion": "failure"}],
+        ])
+        sleeps = []
+        self.assertEqual(
+            wait_for_job("blueprint", fetch=lambda: next(polls), sleep=sleeps.append), "failure")
+        self.assertEqual(len(sleeps), 2)
+
+    def test_waiting_times_out_without_a_conclusion(self):
+        sleeps = []
+        result = wait_for_job(
+            "blueprint", fetch=lambda: [{"name": "blueprint", "status": "queued"}],
+            timeout=30, interval=15, sleep=sleeps.append)
+        self.assertEqual(result, "")
+        self.assertEqual(len(sleeps), 2)
+        with self.assertRaises(ValueError):
+            require_success(result)
 
     def fixture(self, directory):
         project = Path(directory) / "project"
@@ -128,15 +180,16 @@ class BlueprintCITests(unittest.TestCase):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("require-success", "stage-artifact", "self-test"))
+    parser.add_argument(
+        "command", choices=("wait-for-success", "stage-artifact", "self-test"))
     parser.add_argument("output", nargs="?", type=Path)
     arguments = parser.parse_args()
     if arguments.command == "self-test":
         suite = unittest.defaultTestLoader.loadTestsFromTestCase(BlueprintCITests)
         return 0 if unittest.TextTestRunner(verbosity=2).run(suite).wasSuccessful() else 1
     try:
-        if arguments.command == "require-success":
-            require_success(os.environ.get("BLUEPRINT_JOB_RESULT"))
+        if arguments.command == "wait-for-success":
+            require_success(wait_for_job("blueprint"))
         else:
             if arguments.output is None:
                 parser.error("stage-artifact requires an output directory")

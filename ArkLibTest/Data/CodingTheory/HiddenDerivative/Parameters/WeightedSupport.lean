@@ -194,9 +194,9 @@ example :
   exact ⟨highRate_denominator_sq_le_rate (θ := theta) (δ := 1 / 4) (ρ := 1 / 2)
       (by norm_num) (by norm_num [theta]) (by norm_num [theta]) (by norm_num) (by norm_num),
     xi_le_rateGap_mul (δ := 1 / 4) (ρ := 1 / 2) (H := 54 / 5)
-      (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num [xi]),
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num [xi]),
     normalizedRadius_le_ten_twentySeven (δ := 1 / 4) (ρ := 1 / 2) (H := 54 / 5) (s := 1 / 5)
-      (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num [xi])
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num [xi])
       (by norm_num [rateGap, theta])⟩
 
 /-! ### Endpoint comparison -/
@@ -223,7 +223,7 @@ example :
     (H := 54 / 5) (logd := 54 / 5) (by norm_num [theta]) (by norm_num [xi]) (by norm_num)
     (by norm_num) (by norm_num [theta]) (by norm_num [xi]) (by norm_num [xi])
   have hv := highRate_variance_lower (θ := theta) (ξ := xi) (δ := 1 / 4) (ρ := 1 / 2)
-    (logd := 54 / 5) (by norm_num [theta]) (by norm_num [xi]) (by norm_num) (by norm_num)
+    (logd := 54 / 5) (by norm_num [theta]) (by norm_num) (by norm_num)
     (by norm_num [xi])
   exact ⟨hb, hv⟩
 
@@ -267,7 +267,6 @@ example :
     exact Nat.le_ceil _
   have hm2 : 2 ≤ m := by
     norm_num [m, d, H]
-  have hm : 0 < m := by omega
   have hd : 48000 ≤ d := by norm_num [d]
   have hr : r < m := by have := hm2; omega
   have hHlower : 54 / 5 ≤ H := by norm_num [H]
@@ -280,11 +279,10 @@ example :
   have hgm : 270 * d * H ≤ g * m := by
     norm_num [d, H, g] at hsize ⊢
     nlinarith
-  have hcenter := centeringErrorBounds d m g H hd hm (by norm_num [g]) (by norm_num [H])
+  have hcenter := centeringErrorBounds d m g H hd
     hHlower hHupper hgH hsize hgm
-  have hfiber := prescribedFiberMeanVariance_le d m r W g H 1 hd hm hr (by norm_num [g])
-    (by norm_num [H]) hHlower hHupper hgH (by norm_num [theta, xi, g, H]) hsize hgm rfl
-    (by norm_num) (by norm_num)
+  have hfiber := prescribedFiberMeanVariance_le d m r W g H 1 hd hr hHlower hHupper hgH
+    (by norm_num [theta, xi, g, H]) hsize hgm rfl (by norm_num) (by norm_num)
   refine ⟨hcenter, ?_⟩
   dsimp only [g, W] at hfiber
   simpa only [one_mul, mul_one] using hfiber
@@ -294,7 +292,7 @@ example :
 /-- At `δ = 1 / 4`, `ρ = 1 / 2`, `θ = 3 / 8` the closed form gives
 `(1 + θ g) / g = (1 / 2 + 3 / 32) / (1 / 4) = 19 / 8 ≤ 4 = 1 / δ`. -/
 example : (1 + theta * rateGap (1 / 4) (1 / 2)) / rateGap (1 / 4) (1 / 2) = 19 / 8 := by
-  rw [one_add_mul_rateGap_div theta (by norm_num) (by norm_num)]
+  rw [one_add_mul_rateGap_div theta (by norm_num)]
   norm_num [theta]
 
 example : (1 : ℝ) ≤ rateGap (1 / 2) (1 / 2) * 2 :=

@@ -186,7 +186,10 @@ home_page/            site assets and assembled website root
   the program's operation-count vector through `knowledgeSoundnessWithResources`.
   `Spec/Extraction/` owns the immutable access backend, generated domain points, driver, and
   resource proofs; reusable measured
-  polynomial operations live in `ToCompPoly/Univariate/Arithmetic*.lean`. Compiled small cases run
+  polynomial operations live in `ToCompPoly/Univariate/Arithmetic*.lean`. Raw coefficient-array
+  size facts come from `CompPoly.Univariate.Raw.Size`; canonical-polynomial bounds remain in
+  `ToCompPoly/Univariate/Size.lean`. These size facts count stored coefficients, not execution cost.
+  Compiled small cases run
   with `lake exe fri-extractor-runtime`; classic trust checks live in
   `ArkLibTest/ProofSystem/Fri/Extraction.lean`.
   `RoundConsistency.lean` connects local checks to word folding. Generic persistent-event
@@ -716,8 +719,9 @@ home_page/            site assets and assembled website root
 - `Security/UnboundedExtraction.lean` records what `Verifier.knowledgeSoundness` means without
   an extractor cost bound: the classical selector `Extractor.Straightline.choose` makes it
   equivalent to `Verifier.relationSoundness` (`Verifier.knowledgeSoundness_iff_relationSoundness`).
-  When extraction itself matters, state `knowledgeSoundnessWith` for a named extractor and bound
-  that extractor's cost separately.
+  `knowledgeSoundnessWith` names an extractor without cost.
+  `knowledgeSoundnessWithResources` adds declared instruction counts; complete execution bounds
+  remain proposed in the [execution design](../design/03b-extractor-execution.md).
 - Plain `(k)`-special soundness lives in `Security/SpecialSoundness.lean`. It is the instance of
   `Verifier.treeSpecialSound` for the pairwise-distinct shape `distinctShape k` (arity `kᵢ`, node
   predicate `Function.Injective`), with input/output relations like CWSS; it is the `ℓᵢ = 1`
@@ -758,32 +762,34 @@ home_page/            site assets and assembled website root
   `Security/GuardedSoundness.lean` gives the corresponding soundness bridges
   (`Verifier.GuardedForm.soundness_of_rbrSoundness`,
   `OracleVerifier.soundness_of_rbrSoundness_of_guarded`).
-- Measured extraction lives in `Security/Resources.lean`. Its game-independent core,
-  `OracleComp.MeasuredProgram` in `Data/OracleComp/MeasuredProgram.lean`, is an uncharged view of
-  a function's input, a charged instruction program on that view, and deterministic handlers, with
-  `Realizes` and a budget `CostAtMost` on every program path (VCVio `WorstCaseCostBound`);
-  `OracleComp.BudgetedProgram f` bundles a program realizing `f` with its budget, and
-  `BudgetedProgram.ofFun` shows every function has one with budget zero.
-  `Extractor.Straightline.MeasuredProgram` is its instance at the straightline extractor's inputs.
-  Its `RealizesExtractor` relates the extractor's run to the program execution, and
-  `Verifier.knowledgeSoundnessWithResources` adds to `knowledgeSoundnessWith` that the named
-  extractor executes the program within the budget. The interaction-layer contract is
-  `Interaction/Oracle/Security/KnowledgeResources.lean`: `RoundExtractor.stageMap` is the backward
-  witness map at a node, on its move and later witness; `RoundExtractor.MeasuredStages` names a
-  budgeted program for the stage at every authored node; and `MeasuredKnowledgeCertificate`
-  extends `KnowledgeCertificate` with them; `MeasuredStages.BudgetAtMost` bounds every stage's
-  budget uniformly. The packaged theorem in
-  `Interaction/Oracle/Security/StateRestorationResources.lean`,
-  `MeasuredKnowledgeCertificate.stateRestoration_oracle_knowledge_soundness_nonuniform`,
-  conjoins the security bound and the stage budget for the same named extractor.
-  It bounds each stage only: earlier moves, the carrier identifications such as
-  `terminalWitness`, the stages' composition and intermediate witness sizes are uncharged.
-  Clients: `ArkLibTest/OracleReduction/MeasuredExtraction.lean` and the state-restoration client
-  `ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean`. All of this counts
-  declared instructions only, not running time. Only a named program with a stated instruction
-  set is evidence.
-  `Data/OracleComp/DeterminedCost.lean` turns a deterministic handler's recorded cost into that
-  bound when responses are certified.
+- Measured extraction lives in `Security/Resources.lean`. Its game-independent core is
+  `OracleComp.MeasuredProgram` in
+  `VCVio.OracleComp.QueryTracking.MeasuredProgram`:
+  an uncharged input view, an instruction program, deterministic handlers and declared charges.
+  `Realizes` is output equality; `CostAtMost` bounds every permitted completed instruction path.
+  `BudgetedProgram f` bundles both proofs, and `ofFun` realizes every function with zero budget.
+  These facts do not certify host computation time or operational identity with arbitrary code.
+  The legacy `RealizesExtractor` identifies the same extractor's monadic result with that run;
+  `knowledgeSoundnessWithResources` adds its game and raw count profile `Kind → ℕ`.
+  Native `Interaction/Oracle/Security/KnowledgeResources.lean` defines `RoundExtractor.stageMap`,
+  per-node `MeasuredStages` and `BudgetAtMost`. Generic stages remain weighted; public
+  `MeasuredKnowledgeCertificate Kind` and legacy count contracts require `[Finite Kind]` and
+  standard profiles `Kind → ℕ`. Pricing coordinates is a separate justified valuation step.
+  `KnowledgeResources/Composition.lean` composes named programs on a supplied typed path:
+  `programAlong` returns the same `extractWitness`, and `programAlong_budget_le` bounds its
+  budget by `path.length • bound` under a common local bound.
+  `StateRestorationResources.lean` supplies the
+  [role-specific resource contract](../design/03a-extractor-efficiency.md#state-restoration-resource-contract),
+  including the all-witness identity to the game's `extractInputWitness`. The
+  [common accounting boundary](../design/03a-extractor-efficiency.md#proof-and-accounting-boundary)
+  applies to every count certificate, and the
+  [native composition priorities](../design/05-roadmap.md#native-resource-composition) record
+  the remaining client and resource-closure proofs.
+  Acceptance clients are `ArkLibTest/OracleReduction/MeasuredExtraction.lean` and
+  `ArkLibTest/Interaction/Oracle/Security/{StateRestorationBudget,MeasuredPathBudgets}.lean`.
+  `VCVio.OracleComp.QueryTracking.DeterminedCost`
+  turns the handler's recorded-cost bound into an all-path bound when every permitted response
+  equals the handler's answer.
 - Coordinate-wise special soundness ([FMN24]/[NOZ26]) lives in
   `Security/CoordinateWiseSpecialSoundness/`: `Basic` defines the `SS(S, ℓ, k)` combinatorics
   (`CoordEq`, `IsSpecialSoundFamily`), `CWSSStructure`, `CWSSStructure.toShape`, and both forms

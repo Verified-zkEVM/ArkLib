@@ -193,13 +193,13 @@ noncomputable def badIndexedFamilies
 /-- Every bad family admits a witness: `W` indices and a set of size `b−1` containing all of their
 sets. -/
 theorem bad_indexed_families_witness_cover :
-    ∀ (m a T W b : ℕ), 0 < b → b ≤ m →
+    ∀ (m a T W b : ℕ), b ≤ m →
       ∀ A ∈ badIndexedFamilies m a T W b,
         ∃ J : Finset (Fin T), ∃ U : Finset (Fin m),
           J.card = W ∧ U.card = b - 1 ∧
             ∀ j ∈ J, (A j).val ⊆ U := by
   classical
-  intro m a T W b hb hbm A hA
+  intro m a T W b hbm A hA
   have hbad := (Finset.mem_filter.mp hA).2
   obtain ⟨J, hJcard, hUnion⟩ := hbad
   have hUnionCard :
@@ -254,7 +254,7 @@ noncomputable def boostedRadius (ℓ : ℕ) (p : ℝ) : ℝ :=
   p + p ^ ℓ / (2 * ℓ)
 
 theorem balanced_center_arithmetic
-    (ℓ : ℕ) (p : ℝ) (n : ℕ) (hℓ : 2 ≤ ℓ) (hp : 0 < p) (hp_lt : p < 1)
+    (ℓ : ℕ) (p : ℝ) (n : ℕ) (hp : 0 < p) (hp_lt : p < 1)
     (hsize : 8 * (ℓ : ℝ) ≤ p ^ ℓ * n) :
     Nat.floor (p * n) ≤ Nat.floor (boostedRadius ℓ p * n) ∧
       Nat.floor (boostedRadius ℓ p * n) -
@@ -264,7 +264,8 @@ theorem balanced_center_arithmetic
         Nat.floor (p * n) ∧
       ℓ * (Nat.floor (boostedRadius ℓ p * n) - Nat.floor (p * n)) ≤
         Nat.ceil ((3 * p ^ ℓ / 4) * n) := by
-  have hℓpos : 0 < ℓ := by omega
+  rcases Nat.eq_zero_or_pos ℓ with rfl | hℓpos
+  · simp [boostedRadius]
   have hℓR : (0 : ℝ) < ℓ := by exact_mod_cast hℓpos
   have hnR : (0 : ℝ) < n := by
     by_contra hn
@@ -308,14 +309,14 @@ theorem balanced_center_arithmetic
   · omega
   · have hfive : (ℓ : ℝ) * t ≤ 5 * (p ^ ℓ * n) / 8 := by
       nlinarith only [hmul_t, hsize]
-    have hpPowLt : p ^ ℓ < p :=
-      pow_lt_self_of_lt_one₀ hp hp_lt (by omega)
-    have hP_lt : p ^ ℓ * n < p * n :=
-      mul_lt_mul_of_pos_right hpPowLt hnR
+    have hpPowLe : p ^ ℓ ≤ p :=
+      pow_le_of_le_one hp.le hp_lt.le (by omega)
+    have hP_le : p ^ ℓ * n ≤ p * n :=
+      mul_le_mul_of_nonneg_right hpPowLe hnR.le
     have hlt : (ℓ : ℝ) * t < (r : ℝ) + 1 := by
       have hfive_lt : 5 * (p ^ ℓ * n) / 8 < p * n := by
-        have hPnonneg : 0 ≤ p ^ ℓ * n := by positivity
-        exact lt_of_le_of_lt (by nlinarith only [hPnonneg]) hP_lt
+        have hPpos : 0 < p ^ ℓ * n := mul_pos (pow_pos hp ℓ) hnR
+        exact lt_of_lt_of_le (by nlinarith only [hPpos]) hP_le
       exact hfive.trans_lt (hfive_lt.trans hrlt)
     have hnat : ℓ * t < r + 1 := by exact_mod_cast hlt
     simpa only [r, r', t] using (Nat.lt_succ_iff.mp hnat)
@@ -342,10 +343,12 @@ theorem boostedRadius_gt (ℓ : ℕ) (hℓ_pos : 0 < ℓ)
   linarith
 
 theorem ceil_linear_bound
-    (K η : ℝ) (n : ℕ) (hK : 0 ≤ K) (hη : 0 ≤ η)
+    (K η : ℝ) (n : ℕ) (hK : 0 ≤ K)
     (hone : 1 ≤ η * n) :
     (Nat.ceil (K * η * n) : ℝ) < (K + 1) * η * n := by
-  have hnonneg : 0 ≤ K * η * (n : ℝ) := by positivity
+  have hnonneg : 0 ≤ K * η * (n : ℝ) := by
+    rw [mul_assoc]
+    exact mul_nonneg hK (by linarith)
   have hceil := Nat.ceil_lt_add_one hnonneg
   have hunit : K * η * (n : ℝ) + 1 ≤ (K + 1) * η * n := by
     nlinarith
@@ -392,15 +395,15 @@ noncomputable def constrainedIndexedFamilies
 
 /-- Every bad family lies in one of the constrained classes, indexed by its witness `(J, U)`. -/
 theorem bad_indexed_families_subset_cover :
-    ∀ (m a T W b : ℕ), 0 < b → b ≤ m →
+    ∀ (m a T W b : ℕ), b ≤ m →
       badIndexedFamilies m a T W b ⊆
         (Finset.univ.powersetCard W).biUnion fun J =>
           (Finset.univ.powersetCard (b - 1)).biUnion fun U =>
             constrainedIndexedFamilies m a T J U := by
   classical
-  intro m a T W b hb hbm A hA
+  intro m a T W b hbm A hA
   obtain ⟨J, U, hJcard, hUcard, hconstrained⟩ :=
-    bad_indexed_families_witness_cover m a T W b hb hbm A hA
+    bad_indexed_families_witness_cover m a T W b hbm A hA
   apply Finset.mem_biUnion.mpr
   refine ⟨J, ?_, ?_⟩
   · exact Finset.mem_powersetCard.mpr
@@ -581,13 +584,8 @@ theorem eta_times_length_one
   have h := (div_le_iff₀ hη).mp hlen
   simpa only [one_mul, mul_comm] using h
 
-theorem exact_subset_type_card (m a : ℕ) :
-    Fintype.card {S : Finset (Fin m) // S.card = a} = Nat.choose m a := by
-  simpa only [Fintype.card_fin] using
-    (Fintype.card_finset_len (α := Fin m) a)
-
 theorem fixed_factor_rpow_absorb
-    (K : ℕ) (_hK : 0 < K) (γ : ℝ) (hγ : 0 < γ) :
+    (K : ℕ) (γ : ℝ) (hγ : 0 < γ) :
     ∃ m₀ : ℕ, ∀ m : ℕ, m₀ ≤ m →
       (K : ℝ) * (2 : ℝ) ^ ((γ / 2) * m) ≤
         (2 : ℝ) ^ (γ * m) := by
@@ -681,7 +679,7 @@ theorem constrained_indexed_families_card :
     by_cases hj : j ∈ J
     · simp only [allowed, hj, ite_eq_left, hinside]
     · simp only [allowed, hj]
-      exact exact_subset_type_card m a
+      simp
   rw [heq, Fintype.card_piFinset]
   calc
     (∏ j, (allowed j).card) =
@@ -709,12 +707,12 @@ theorem constrained_indexed_families_card :
 /-- Counting the bad families: at most `C(T,W) · C(m,b−1) · C(b−1,a)^W · C(m,a)^(T−W)`, obtained by
 choosing the witnessing `W` indices and the `(b−1)`-set covering them. -/
 theorem bad_indexed_families_card_bound :
-    ∀ (m a T W b : ℕ), 0 < W → W ≤ T → 0 < b → b ≤ m → a < b →
+    ∀ (m a T W b : ℕ), b ≤ m →
       (badIndexedFamilies m a T W b).card ≤
         Nat.choose T W * Nat.choose m (b - 1) *
           Nat.choose (b - 1) a ^ W * Nat.choose m a ^ (T - W) := by
   classical
-  intro m a T W b hW hWT hb hbm hab
+  intro m a T W b hbm
   let Js : Finset (Finset (Fin T)) := Finset.univ.powersetCard W
   let Us : Finset (Finset (Fin m)) := Finset.univ.powersetCard (b - 1)
   let cover : Finset (Fin T → {S : Finset (Fin m) // S.card = a}) :=
@@ -722,7 +720,7 @@ theorem bad_indexed_families_card_bound :
       Us.biUnion fun U => constrainedIndexedFamilies m a T J U
   have hsub : badIndexedFamilies m a T W b ⊆ cover := by
     simpa only [Js, Us, cover] using
-      (bad_indexed_families_subset_cover m a T W b hb hbm)
+      (bad_indexed_families_subset_cover m a T W b hbm)
   let K : ℕ :=
     Nat.choose (b - 1) a ^ W * Nat.choose m a ^ (T - W)
   have hsum :
@@ -780,8 +778,10 @@ theorem floor_div_mul_self (radius n : ℕ) (hn : 0 < n) :
   rw [div_mul_cancel₀ _ hn0, Nat.floor_natCast]
 
 theorem floor_radius_ratio_le
-    (p : ℝ) (n : ℕ) (hp : 0 ≤ p) (hn : 0 < n) :
+    (p : ℝ) (n : ℕ) (hp : 0 ≤ p) :
     (Nat.floor (p * n) : ℝ) / n ≤ p := by
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · simpa using hp
   have hnR : (0 : ℝ) < n := by exact_mod_cast hn
   rw [div_le_iff₀ hnR]
   exact Nat.floor_le (mul_nonneg hp (Nat.cast_nonneg n))
@@ -842,13 +842,13 @@ theorem good_base_by_double_count
 
 /-- A family that is *not* bad yields a large-union family, with `T ≤ W · |family.sets|`. -/
 theorem good_indexed_family_to_large_union_family :
-    ∀ (m a T W b : ℕ), 0 < W → a < b →
+    ∀ (m a T W b : ℕ), a < b →
       ∀ A : Fin T → {S : Finset (Fin m) // S.card = a},
         A ∉ badIndexedFamilies m a T W b →
         ∃ family : LargeUnionFamily (Fin m) W a b,
           T ≤ W * family.sets.card := by
   classical
-  intro m a T W b hW hab A hgood
+  intro m a T W b hab A hgood
   let f : Fin T → Finset (Fin m) := fun j => (A j).1
   have hlarge : ∀ Q : Finset (Finset (Fin m)),
       Q ⊆ Finset.univ.image f → Q.card = W →

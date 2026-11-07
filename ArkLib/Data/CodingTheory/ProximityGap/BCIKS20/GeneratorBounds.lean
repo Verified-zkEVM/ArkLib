@@ -28,21 +28,36 @@ variable [Fintype ι] [Nonempty ι]
 
 /-- The BCIKS20 curve bound for powers, with precisely its open Johnson hypotheses. -/
 theorem caError_powers_le (m : ℕ) {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
-    (hdeg : 0 < deg) (hδ_pos : 0 < δ)
+    (hdeg : 0 < deg)
     (hδ : δ < 1 - ReedSolomon.sqrtRate deg domain) :
     caError (univariatePowersGenerator F m) (ReedSolomon.code domain deg).carrier δ δ ≤
       ((m * errorBound δ deg domain : ℝ≥0) : ENNReal) :=
   (δ_ε_correlatedAgreementCurves_iff_caError_le _ _ _).mp
-    (correlatedAgreement_affine_curves hdeg hδ_pos hδ)
+    (correlatedAgreement_affine_curves hdeg hδ)
 
+omit [Nonempty ι] in
 /-- Independent affine coefficients have the BCIKS20 affine-space error, including
 zero directions. No linear independence assumption is needed. -/
 theorem caError_affineSpace_le (m : ℕ) {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
-    (hdeg : 0 < deg) (hδ_pos : 0 < δ)
+    (hdeg : 0 < deg)
     (hδ : δ < 1 - ReedSolomon.sqrtRate deg domain) :
     caError (AffineSpaceGenerator F m) (ReedSolomon.code domain deg).carrier δ δ ≤
       (errorBound δ deg domain : ENNReal) := by
   classical
+  rcases isEmpty_or_nonempty ι with h | h
+  · unfold caError
+    apply iSup_le
+    intro u
+    have hjoint : jointProximity (ReedSolomon.code domain deg).carrier u δ := by
+      have hzero : (0 : Matrix ι (Fin (m + 1)) F) ∈
+          interleavedCodeSet (ReedSolomon.code domain deg).carrier := by
+        intro j
+        exact (ReedSolomon.code domain deg).zero_mem
+      exact (relDistFromCode_le_relDist_to_mem _ 0 hzero).trans
+        (by norm_num [relHammingDist, ENNReal.coe_NNRat_coe_NNReal])
+    split
+    · exact zero_le
+    next hnot => exact (hnot hjoint).elim
   by_cases hm : m = 0
   · subst m
     unfold caError
@@ -75,17 +90,7 @@ theorem caError_affineSpace_le (m : ℕ) {deg : ℕ} {domain : ι ↪ F} {δ : �
   let : NeZero m := ⟨hm⟩
   by_cases hε : errorBound δ deg domain < 1
   · apply (δ_ε_correlatedAgreementAffineSpaces_iff_caError_le _ _ _).mp
-    apply correlatedAgreement_affine_spaces hdeg hδ_pos hδ _ hε
-    have hn : 0 < Fintype.card ι := Fintype.card_pos
-    by_contra h
-    have hfull : Fintype.card ι ≤ deg := by omega
-    have hrate : LinearCode.rate (ReedSolomon.code domain deg) = 1 := by
-      rw [ReedSolomon.rateOfLinearCode_eq_min_div, min_eq_right hfull]
-      exact div_self (by exact_mod_cast hn.ne')
-    have hsone : ReedSolomon.sqrtRate deg domain = 1 := by
-      simp [ReedSolomon.sqrtRate, hrate]
-    rw [hsone, tsub_self] at hδ
-    exact (lt_irrefl 0) (hδ_pos.trans hδ)
+    exact correlatedAgreement_affine_spaces hdeg hδ hε
   · apply le_trans _ (show (1 : ENNReal) ≤ errorBound δ deg domain by
       exact_mod_cast le_of_not_gt hε)
     unfold caError

@@ -276,21 +276,12 @@ theorem foldWord_k_1_of_sq_roots {i : Fin (2 ^ (n - 1))} {α : F}
     field_simp
     ring
 
-lemma foldWord_k_1_eval_domain [NeZero n] {i : Fin (2 ^ (n - 1))}
+lemma foldWord_k_1_eval_domain {i : Fin (2 ^ (n - 1))}
     {j : Fin (2 ^ n)} (hj : domain j ^ 2 = domain.subdomain 1 i) :
   foldWord domain f 1 (domain j) i = f j := by
-  let j' := domain.log ⟨-domain j, by simp⟩
-  have hjj' : j ≠ j' := fun contra ↦ by
-    have := domain_implies_x_ne_neg_x (ω := domain) (x := domain j)
-    have := congrArg (f := domain) contra
-    simp only [log_right_inverse', j'] at this
-    exact domain_implies_x_ne_neg_x (ω := domain) (by simp) this
-  have := CosetFftDomainClass.domain_implies_2_ne_0 domain
-  have hx0 : domain j ≠ 0 := CosetFftDomainClass.ne_zero domain j
-  have hj'v : domain j' = -domain j := log_right_inverse'
-  rw [foldWord_k_1_of_sq_roots hjj' hj (by rw [hj'v, neg_sq, hj])]
-  field_simp
-  ring
+  change foldValue domain f 1 (domain j) (domain.subdomain 1 i) = f j
+  rw [← hj]
+  exact foldValue_pow_x_k
 
 /-- The "even" part of the folding function. -/
 def foldWordEven [NeZero n] (domain : SmoothCosetFftDomain n F)
@@ -440,16 +431,33 @@ theorem foldWord_codeword {d : ℕ} [FoldingContext k d n]
   rfl
 
 theorem foldWord_evalOnPoints [FoldingContextMiddle k n]
-    {α : F} {p : Polynomial F}
-  (hp_deg : p.degree < 2 ^ n) :
+    {α : F} {p : Polynomial F} :
   foldWord domain (evalOnPoints domain p) k α =
     evalOnPoints (domain.subdomain k)
         (FoldingPolynomial.polyFold p (2 ^ k) α) := by
-  have : FoldingContext k n n := FoldingContext.ofMiddle
-  let f := evalOnPoints (domain : Fin (2 ^ n) ↪ F) p
-  have hcode : f ∈ code domain (2 ^ n) := by simp_all [evalOnPoints_mem_code_of_degree_lt, f]
-  rw [show evalOnPoints _ _ = (⟨f, hcode⟩ : code _ _) by rfl, foldWord_codeword]
-  simp_all [toPolynomial_evalWord_of_degree_lt, f]
+  by_cases hp : p = 0
+  · simp [hp]
+  ext i
+  simp only [foldWord, foldValue, foldWordAux, evalOnPoints,
+    LinearMap.coe_mk, AddHom.coe_mk, FoldingPolynomial.polyFold]
+  rw [eval_comm]
+  apply congrArg (fun q : Polynomial F ↦ q.eval α)
+  symm
+  apply Lagrange.eq_interpolate_of_eval_eq _ (by simp)
+  · rw [card_blockIdx,
+      card_block_of_mem_subdomain' FoldingContextMiddle.k_le_n (by simp)]
+    have h := FoldingPolynomial.folding_polynomial_deg_y_bound_x_k
+      (f := p) (k := 2 ^ k)
+    simp only [Bivariate.natDegreeY] at h
+    exact lt_of_le_of_lt Polynomial.degree_map_le
+      ((Polynomial.natDegree_lt_iff_degree_lt
+        (FoldingPolynomial.folding_polynomial_ne_zero_of_ne_zero hp)).mp h)
+  · intro j hj
+    change ((FoldingPolynomial.foldingPolynomial (Y ^ 2 ^ k) p).map
+      (evalRingHom (domain.subdomain k i))).eval (domain j) = p.eval (domain j)
+    simpa only [mem_blockIdx.mp hj] using
+      (FoldingPolynomial.eval_property_of_folding_polynomial_x_k
+        (f := p) (k := 2 ^ k) (x := domain j))
 
 /-- Perfect completeness of folding: if a word belongs to an RS-code
   then its `foldWord` belongs to a folded RS-code.
@@ -881,7 +889,7 @@ Folding preserves distance from Reed–Solomon codes.
 
 For any word `f` over the smooth coset FFT domain, log degree parameter `d`,
 folding parameter `k`, and distance threshold `δ` satisfying
-`0 < δ < min (δᵣ(f, RS[2 ^ d])) (1 - sqrtRate(2 ^ d))`, the probability over a
+`δ < min (δᵣ(f, RS[2 ^ d])) (1 - sqrtRate(2 ^ d))`, the probability over a
 uniformly random folding challenge `r : F` that the folded word is within
 relative distance `δ` of the Reed–Solomon code of reduced degree
 `2 ^ d / 2^k` on the folded subdomain is bounded by the proximity-gap error
@@ -894,8 +902,6 @@ theorem folding_preserves_distance
   {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {d k : ℕ}
   [FoldingContext k d n]
   {δ : ℝ≥0}
-  -- Retained to match the mathematical statement; the imported gap bound omits it.
-  (_δ_gt_0 : 0 < δ)
   (δ_lt : δ < min (δᵣ(f, ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) (2 ^ d)))
     (1 - (ReedSolomon.sqrtRate (2 ^ d) (domain : Fin (2 ^ n) ↪ F)))) :
     Pr{ let r ←$ᵗ F}[δᵣ(foldWord domain f k r,
@@ -912,7 +918,7 @@ theorem folding_preserves_distance
       correlatedAgreement_affine_curves (F := F) (ι := Fin (2 ^ (n - k)))
         (k := 2 ^ k - 1) (deg := 2 ^ (d - k))
         (domain := domain.subdomain k) (δ := δ)
-        (hdeg_pos := by positivity) (hδ_pos := _δ_gt_0) (hδ := bound_tighter)
+        (hdeg_pos := by positivity) (hδ := bound_tighter)
     unfold foldWord δ_ε_correlatedAgreementCurves at *
     by_contra contra
     simp only [not_le, foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha,

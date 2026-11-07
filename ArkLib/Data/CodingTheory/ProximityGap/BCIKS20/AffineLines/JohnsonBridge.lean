@@ -81,8 +81,7 @@ theorem lineExactAgreementBound_of_comp_equiv (e : κ ≃ ι) (domain : ι ↪ F
 
 /-- Johnson's exact agreement bound on an arbitrary finite evaluation domain. -/
 theorem lineExactAgreementBound_johnson (domain : ι ↪ F) {D : ℕ} {eta : ℝ}
-    (hD : 1 ≤ D) (hDn : D ≤ Fintype.card ι - 2) (heta : 0 < eta)
-    (ha : johnsonAgreement (Fintype.card ι) D eta ≤ 1) :
+    (hD : 1 ≤ D) (hDn : D ≤ Fintype.card ι - 2) (heta : 0 < eta) :
     LineExactAgreementBound domain (D + 1)
       ⌈johnsonAgreement (Fintype.card ι) D eta * Fintype.card ι⌉₊
       (johnsonExceptionCount (Fintype.card ι) D
@@ -93,7 +92,7 @@ theorem lineExactAgreementBound_johnson (domain : ι ↪ F) {D : ℕ} {eta : ℝ
   apply lineExactAgreementBound_of_comp_equiv (Fintype.equivFin ι).symm domain
   apply lineExactAgreementBound_of_exactCorrelatedPair
   intro f g
-  exact exists_johnson_line_exactCorrelatedPair_ceil _ f g hD hDn heta ha
+  exact exists_johnson_line_exactCorrelatedPair_ceil _ f g hD hDn heta
 
 /-- Constant messages have at most one exceptional challenge per coordinate pair. -/
 theorem lineExactAgreementBound_constantCode (domain : ι ↪ F) (A : ℕ) :

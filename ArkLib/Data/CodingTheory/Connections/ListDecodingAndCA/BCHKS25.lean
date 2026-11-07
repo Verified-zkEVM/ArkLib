@@ -41,8 +41,6 @@ omit [DecidableEq ι] in
 the list size at radius `δ` by the field cardinality. -/
 theorem rs_Lambda_le_card_of_epsCa_lt
     (domain : ι ↪ F) (k : ℕ) (δ : ℝ) (δ_int : ℝ≥0)
-    (_hδ_pos : 0 < δ)
-    (_hδ_lt : (δ : ℝ) < 1 - (k : ℝ) / Fintype.card ι)
     (_hδ_int : (δ_int : ℝ) <
       1 - (k : ℝ) / Fintype.card ι - 1 / Fintype.card ι)
     (_hε_ca :
@@ -53,6 +51,16 @@ theorem rs_Lambda_le_card_of_epsCa_lt
           ENNReal.ofReal (1 / (2 * Fintype.card ι))) :
     Lambda ((ReedSolomon.code domain k : Set (ι → F))) δ ≤ (Fintype.card F : ℕ∞) := by
   classical
+  by_cases hδ : 0 ≤ δ
+  swap
+  · apply Lambda_le_of_forall_finset_card_le
+    intro u T hT
+    have hTempty : T = ∅ := by
+      apply Finset.eq_empty_iff_forall_notMem.mpr
+      intro c hc
+      have hdist := (mem_closeCodewordsRel_iff.mp (hT c hc)).2
+      exact (not_le_of_gt (lt_of_lt_of_le (lt_of_not_ge hδ) (by positivity))) hdist
+    simp [hTempty]
   by_contra hΛ
   have hΛlt : (Fintype.card F : ℕ∞) <
       Lambda ((ReedSolomon.code domain k : Set (ι → F))) δ := lt_of_not_ge hΛ
@@ -98,7 +106,10 @@ theorem rs_Lambda_le_card_of_epsCa_lt
       rw [le_div_iff₀ hnR]
       norm_num only [one_mul]
       exact_mod_cast (show n ≤ k by omega)
-    linarith only [_hδ_pos, _hδ_lt, hdiv]
+    have hδint0 : (0 : ℝ) ≤ δ_int := δ_int.coe_nonneg
+    have hninv : (0 : ℝ) ≤ 1 / n := by positivity
+    change (δ_int : ℝ) < 1 - (k : ℝ) / n - 1 / n at _hδ_int
+    linarith only [hδint0, _hδ_int, hdiv, hninv]
   let w : ReedSolomon.code domain k → F → F := fun H a =>
     (ReedSolomon.toPolynomial H).eval a
   have hwmem : ∀ H, w H ∈ ReedSolomon.code (Function.Embedding.refl F) k := by

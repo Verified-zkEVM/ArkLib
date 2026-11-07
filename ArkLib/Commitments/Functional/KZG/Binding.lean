@@ -319,7 +319,7 @@ lemma exists_of_option_map_get_d_true {α : Type} (f : α → Bool) (x : Option 
 
 omit [DecidableEq G₁] in
 /-- Transition 1: extending the binding game output preserves the event. -/
-lemma binding_game_ext_eq_binding_game {n : ℕ} {AuxState : Type} [SampleableType G₁]
+lemma binding_game_ext_eq_binding_game {n : ℕ} {AuxState : Type}
     (adversary : KzgBindingAdversary p G₁ G₂ n unifSpec AuxState) :
     Pr{let result ← (Commitment.bindingGame (init := pure ∅)
       (impl := unifFwdImpl unifSpec) (AuxState := AuxState)
@@ -462,7 +462,7 @@ lemma binding_game_ext_eq_binding_game {n : ℕ} {AuxState : Type} [SampleableTy
 omit [DecidableEq G₁] in
 include g₁ g₂ pairing in
 /-- Transition 2: a successful extended binding run maps to a successful t-SDH instance. -/
-lemma binding_cond_le_t_sdh_cond {n : ℕ} {AuxState : Type} [SampleableType G₁]
+lemma binding_cond_le_t_sdh_cond {n : ℕ} {AuxState : Type}
     (hg₁ : g₁ ≠ 1) (hpair : pairing g₁ g₂ ≠ 0)
     (adversary : KzgBindingAdversary p G₁ G₂ n unifSpec AuxState) :
     Pr{let result ← (bindingGameExt (g₁ := g₁) (g₂ := g₂)
@@ -642,7 +642,7 @@ lemma binding_cond_le_t_sdh_cond {n : ℕ} {AuxState : Type} [SampleableType G�
 omit [DecidableEq G₁] [Module (ZMod p) (Additive G₁)]
   [Module (ZMod p) (Additive G₂)] in
 /-- Transition 3: dragging the map into the probability event. -/
-lemma map_binding_instance_drag {n : ℕ} {AuxState : Type} [SampleableType G₁]
+lemma map_binding_instance_drag {n : ℕ} {AuxState : Type}
     (adversary : KzgBindingAdversary p G₁ G₂ n unifSpec AuxState)
     (scheme : Commitment.Scheme unifSpec (Fin (n + 1) → ZMod p) G₁ Unit
       (Vector G₁ (n + 1) × Vector G₂ 2) (Vector G₁ (n + 1) × Vector G₂ 2)
@@ -657,7 +657,7 @@ lemma map_binding_instance_drag {n : ℕ} {AuxState : Type} [SampleableType G₁
 omit [DecidableEq G₁] in
 include g₁ g₂ pairing in
 /-- Transition 4: the mapped extended binding game is the t-SDH experiment. -/
-lemma t_sdh_game_eq {n : ℕ} {AuxState : Type} [SampleableType G₁]
+lemma t_sdh_game_eq {n : ℕ} {AuxState : Type}
     (adversary : KzgBindingAdversary p G₁ G₂ n unifSpec AuxState) :
     Pr{let result ← (mapBindingToTsdh (p := p) (n := n) <$> bindingGameExt (g₁ := g₁) (g₂ := g₂)
         AuxState adversary
@@ -726,7 +726,7 @@ lemma t_sdh_game_eq {n : ℕ} {AuxState : Type} [SampleableType G₁]
 
 omit [DecidableEq G₁] in
 /-- The `t`-SDH experiment is bounded by the error for reductions in the assumed class. -/
-lemma t_sdh_error_bound {n : ℕ} {AuxState : Type} [SampleableType G₁]
+lemma t_sdh_error_bound {n : ℕ} {AuxState : Type}
     {Adv : Set (Groups.tSdhAdversary n (G₁ := G₁) (G₂ := G₂) (p := p))}
     (tSdhError : ℝ≥0)
     (htSdh : Groups.tSdhAssumption (p := p) (G₁ := G₁) (G₂ := G₂)
@@ -755,7 +755,7 @@ statement at every parameter, although the right-hand probability may of course 
 particular adversary. `binding` below is the immediate corollary obtained by bounding the
 reduction's own success probability via the assumption. -/
 theorem binding_reduces_to_tSdh {g₁ : G₁} {g₂ : G₂} (hg₁ : g₁ ≠ 1)
-    (hpair : pairing g₁ g₂ ≠ 0) [SampleableType G₁] (AuxState : Type)
+    (hpair : pairing g₁ g₂ ≠ 0) (AuxState : Type)
     (adversary : KzgBindingAdversary p G₁ G₂ n unifSpec AuxState) :
     Commitment.bindingExperiment (init := pure ∅) (impl := unifFwdImpl unifSpec)
       (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)) AuxState adversary
@@ -784,7 +784,7 @@ omit [DecidableEq G₁] in
 This is an immediate corollary of `binding_reduces_to_tSdh`: compose the unconditional
 reduction bound with the assumption's bound on the reduction's own success probability. -/
 theorem binding {g₁ : G₁} {g₂ : G₂} (hg₁ : g₁ ≠ 1)
-    (hpair : pairing g₁ g₂ ≠ 0) [SampleableType G₁]
+    (hpair : pairing g₁ g₂ ≠ 0)
     {Adv : Set (Groups.tSdhAdversary n (G₁ := G₁) (G₂ := G₂) (p := p))}
     (tSdhError : ℝ≥0)
     (htSdh : Groups.tSdhAssumption (p := p) (G₁ := G₁) (G₂ := G₂) (g₁ := g₁)

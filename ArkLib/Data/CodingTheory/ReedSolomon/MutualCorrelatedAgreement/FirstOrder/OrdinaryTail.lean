@@ -46,11 +46,12 @@ theorem HiddenDerivative.FirstOrderHybridDescent.hasOrdinaryTailTransfer
     {F E : Type*} [Field F] [Field E] [instF : DecidableEq F] [instE : DecidableEq E]
     [IsAlgClosed E] {n D A mu M : ℕ} (domain : Fin n ↪ F) (f g : Fin n → F) (iota : F →+* E)
     {Q : DifferentialPolynomial E[X] 1} (descent : FirstOrderHybridDescent Q mu M)
-    (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n) :
+    (hD : 1 ≤ D) (hDA : D < A) :
     HasOrdinaryTailTransfer (D := D) (A := A) (h := coeffNatDegree Q) (mu := mu)
       (e := descent.actualDegree) domain f g iota descent.tail.equation := by
   obtain rfl : instF = fun a b ↦ Classical.propDecidable (a = b) := Subsingleton.elim _ _
   obtain rfl : instE = fun a b ↦ Classical.propDecidable (a = b) := Subsingleton.elim _ _
+  classical
   let h := coeffNatDegree Q
   let b := mu - descent.actualDegree
   have hheight : CoeffNatDegreeLE descent.tail.equation h :=
@@ -58,6 +59,18 @@ theorem HiddenDerivative.FirstOrderHybridDescent.hasOrdinaryTailTransfer
       ((coeffNatDegreeLE_coeffNatDegree Q).iterate_pderiv _ descent.actualDegree)
   have hdegree : descent.tail.equation.degreeOf (some 0) ≤ b := descent.tail_rootDegree_le
   unfold HasOrdinaryTailTransfer ordinaryTailCharge
+  by_cases hAn : A ≤ n
+  swap
+  · refine ⟨∅, ?_, ?_⟩
+    · simp only [Finset.card_empty, Nat.cast_zero]
+      unfold agreementIncidenceRatio
+      split_ifs <;> positivity
+    · intro z hz P hdegree hagree hroot
+      have hcard := Finset.card_le_univ
+        (s := polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
+          (fun i ↦ iota (f i) + z * iota (g i)) P)
+      simp only [Fintype.card_fin] at hcard
+      omega
   by_cases hb : b = 0
   · obtain ⟨exceptional, hcard, hgood⟩ := exists_exceptional_jet_independent_content
       descent.tail.equation descent.tail_nonzero (by omega) hheight
@@ -65,7 +78,7 @@ theorem HiddenDerivative.FirstOrderHybridDescent.hasOrdinaryTailTransfer
     simpa only [b, hb, ↓reduceIte] using (show (exceptional.card : ℝ) ≤ h by exact_mod_cast hcard)
   · obtain ⟨exceptional, hcard, hgood⟩ := exists_exceptional_ordinaryEquation
       domain f g iota descent.tail.equation D h b A descent.tail_nonzero
-      (by omega) (by omega) (by omega) hAn hheight hdegree
+      (by omega) (by omega) hheight hdegree
     refine ⟨exceptional, ?_, fun z hz P hP hagree hroot ↦ hgood z hz P hP hroot hagree⟩
     have hcardReal : (exceptional.card : ℝ) ≤
         ((ordinaryFactorRaw (((n - D : ℕ) : ℚ) / ((A - D : ℕ) : ℚ)) n D b h : ℚ) : ℝ) := by
@@ -75,7 +88,7 @@ theorem HiddenDerivative.FirstOrderHybridDescent.hasOrdinaryTailTransfer
     simp [ordinaryFactorRaw, agreementIncidenceRatio, h, b]
 
 /-- Let `Q` have coefficient height at most `h`, and let `e` be the actual degree of a
-first-order hybrid descent of `Q`. For `0 < D, ell` and every retention threshold `D < L ≤ A`,
+first-order hybrid descent of `Q`. For `0 < D` and every retention threshold `D < L ≤ A`,
 the order-zero tail has one exceptional set of size at most
 `hybridCurveTail n D ell (mu - e) h A L`. Outside it, every degree-`< D + 1` root of the
 specialized tail with at least `A` agreements with the power-batched word has exact power
@@ -85,7 +98,7 @@ theorem HiddenDerivative.FirstOrderHybridDescent.exists_exceptional_ordinaryCurv
     [IsAlgClosed E] {n D A L h mu M ell : ℕ} (domain : Fin n ↪ F)
     (values : Fin (ell + 1) → Fin n → F) (iota : F →+* E)
     {Q : DifferentialPolynomial E[X] 1} (descent : FirstOrderHybridDescent Q mu M)
-    (hheight : CoeffNatDegreeLE Q h) (hell : 0 < ell) (hD : 1 ≤ D) (hDL : D < L)
+    (hheight : CoeffNatDegreeLE Q h) (hD : 1 ≤ D) (hDL : D < L)
     (hLA : L ≤ A) :
     ∃ exceptional : Finset E,
       (exceptional.card : ℝ) ≤ hybridCurveTail n D ell (mu - descent.actualDegree) h A L ∧
@@ -108,8 +121,8 @@ theorem HiddenDerivative.FirstOrderHybridDescent.exists_exceptional_ordinaryCurv
       ordinaryUnifiedPowerFactorAtOrHeight_zero]
     exact_mod_cast hcard
   · obtain ⟨exceptional, hcard, hgood⟩ := exists_exceptional_ordinaryPowerEquation_unifiedAt
-      domain values iota descent.tail.equation D h b L A descent.tail_nonzero (by omega) hell
-      hb hDL hLA htailHeight hdegree
+      domain values iota descent.tail.equation D h b L A descent.tail_nonzero (by omega)
+      hDL hLA htailHeight hdegree
     refine ⟨exceptional, ?_, fun z hz P hP hagree hroot ↦ hgood z hz P hP hroot hagree⟩
     rw [hybridCurveTail, ordinaryUnifiedPowerFactorAtOrHeight_of_pos _ _ _ _ _ _ _ hb]
     exact_mod_cast hcard

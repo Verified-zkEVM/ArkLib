@@ -42,8 +42,7 @@ theorem exists_johnson_curve_exactPowerAgreement_of_fintype
     {D A ℓ : ℕ} {eta : ℝ}
     (domain : ι ↪ F) (values : Fin (ℓ + 1) → ι → F)
     (hD : 1 ≤ D) (hDn : D ≤ Fintype.card ι - 2) (heta : 0 < eta)
-    (hthreshold : johnsonAgreement (Fintype.card ι) D eta * Fintype.card ι ≤ A)
-    (hAn : A ≤ Fintype.card ι) :
+    (hthreshold : johnsonAgreement (Fintype.card ι) D eta * Fintype.card ι ≤ A) :
     ∃ exceptional : Finset F,
       (exceptional.card : ℝ) ≤ 2 * ℓ *
         johnsonExceptionCount (Fintype.card ι) D A eta ∧
@@ -53,9 +52,16 @@ theorem exists_johnson_curve_exactPowerAgreement_of_fintype
   have hdec : (fun a b : F ↦ Classical.propDecidable (a = b)) = decF := Subsingleton.elim _ _
   cases hdec
   classical
+  by_cases hAn : A ≤ Fintype.card ι
+  swap
+  · refine ⟨∅, ?_, fun z hz P hP hA ↦ ?_⟩
+    · simp only [Finset.card_empty, Nat.cast_zero]
+      unfold johnsonExceptionCount johnsonTheta
+      positivity
+    · exact (hAn (hA.trans (Finset.card_le_univ _))).elim
   let e := (Fintype.equivFin ι).symm
   obtain ⟨ex, hcard, hgood⟩ := exists_johnson_curve_exactPowerAgreement
-    (e.toEmbedding.trans domain) (fun t ↦ values t ∘ e) hD hDn heta hthreshold hAn
+    (e.toEmbedding.trans domain) (fun t ↦ values t ∘ e) hD hDn heta hthreshold
   refine ⟨ex, hcard, fun z hz P hP hA ↦ ?_⟩
   apply hasExactPowerAgreement_of_comp_equiv e domain values z P
   apply hgood z hz P hP
@@ -192,11 +198,25 @@ theorem exists_exceptional_exactPowerAgreement_of_polynomials
 
 /-- The rounded integer agreement threshold is exactly the relative-distance condition. -/
 theorem ceil_le_polynomialAgreementSet_card_iff
-    {ι F : Type} [Fintype ι] [Nonempty ι] [Field F] [DecidableEq F]
-    (domain : ι ↪ F) (w : ι → F) (P : F[X]) (δ : ℝ≥0) (hδ : δ ≤ 1) :
+    {ι F : Type} [Fintype ι] [Field F] [DecidableEq F]
+    (domain : ι ↪ F) (w : ι → F) (P : F[X]) (δ : ℝ≥0) :
     ⌈(Fintype.card ι : ℝ) * (1 - (δ : ℝ))⌉₊ ≤ (polynomialAgreementSet domain w P).card ↔
       (Code.relHammingDist w (evalOnPoints domain P) : ℝ≥0) ≤ δ := by
   classical
+  rcases isEmpty_or_nonempty ι with hι | hι
+  · simp [Fintype.card_eq_zero, Code.relHammingDist]
+  by_cases hδ : δ ≤ 1
+  swap
+  · have hδR : (1 : ℝ) ≤ δ := by exact_mod_cast (le_of_not_ge hδ)
+    constructor
+    · intro _
+      have hdist : (Code.relHammingDist w (evalOnPoints domain P) : ℝ≥0) ≤ 1 := by
+        exact_mod_cast (Code.relHammingDist_le_one (u := w) (v := evalOnPoints domain P))
+      exact hdist.trans (le_of_not_ge hδ)
+    · intro _
+      rw [Nat.ceil_eq_zero.mpr (mul_nonpos_of_nonneg_of_nonpos
+        (Nat.cast_nonneg _) (sub_nonpos.mpr hδR))]
+      exact Nat.zero_le _
   rw [Nat.ceil_le, Code.relCloseToWord_iff_exists_agreementCols]
   have hcast (S : Finset ι) :
       (Fintype.card ι : ℝ) * (1 - (δ : ℝ)) ≤ S.card ↔

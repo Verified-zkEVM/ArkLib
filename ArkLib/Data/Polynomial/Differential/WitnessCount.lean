@@ -142,14 +142,14 @@ theorem card_mul_sub_le_of_degree_le [CommRing F] [IsDomain F] [Finite F]
       (natDegree_le_of_degree_le (hdegree P hP))).trans hweight) hinj
 
 /-- **Binomial coefficients below the characteristic.** Over a domain with
-`ringChar F = 0 ∨ D < ringChar F`, the coefficients `(k + s choose s)` with `0 < k` and
+`ringChar F = 0 ∨ D < ringChar F`, the coefficients `(k + s choose s)` with
 `k + s ≤ D` are nonzero in `F`. This is the binomial hypothesis of
 `card_mul_sub_le_of_isHighestActiveJet`. The disjunct `ringChar F = 0` covers characteristic zero.
 The strict bound is needed: in characteristic `p`, `(p choose 1) = p` vanishes. -/
 theorem natCast_choose_ne_zero_of_ringChar [CommRing F] [IsDomain F] {D s : ℕ}
     (hchar : ringChar F = 0 ∨ D < ringChar F) :
-    ∀ k, 0 < k → k + s ≤ D → ((k + s).choose s : F) ≠ 0 := by
-  intro k _ hk
+    ∀ k, k + s ≤ D → ((k + s).choose s : F) ≠ 0 := by
+  intro k hk
   rcases hchar with hzero | hlt
   · exact natCast_ne_zero_of_ringChar_eq_zero_or_lt (Or.inl hzero)
       (Nat.choose_pos (Nat.le_add_left s k)) le_rfl

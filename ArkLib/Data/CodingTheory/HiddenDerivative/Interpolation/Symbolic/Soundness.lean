@@ -66,7 +66,7 @@ theorem map_interpolant_mem_weightedSupportSpace (hD : 0 < D)
 /-- Every specialization of a weighted-support interpolant satisfying polynomial local
 constraints vanishes at sufficiently many agreements with a bounded-degree polynomial. -/
 theorem differentialSpecialization_curve_interpolant_eq_zero_of_agreements
-    (hD : 0 < D) (hL : L ≤ (m * A : ℕ)) (hbudget : 0 < m * A)
+    (hL : L ≤ (m * A : ℕ))
     {ι κ : Type*} [Fintype κ]
     (centers : ι → F) (received : ι → F[X]) (columns : κ → SourceColumn d)
     (hband : ∀ j, WeightedSupportEligible D d W L (columns j).exponent)
@@ -82,10 +82,24 @@ theorem differentialSpecialization_curve_interpolant_eq_zero_of_agreements
     differentialSpecialization
       (MvPolynomial.map (Polynomial.eval₂RingHom ι' z)
         (SourceColumn.interpolant columns v)) P = 0 := by
+  classical
+  by_cases hbudget : 0 < m * A
+  swap
+  · have : IsEmpty κ := ⟨fun j ↦ by
+      have hj := weight_differentialWeight_lt_of_weightedSupportEligible hL (hband j)
+      omega⟩
+    simp only [SourceColumn.interpolant, Finset.univ_eq_empty, Finset.sum_empty, map_zero]
+    exact map_zero (differentialSpecializationHom P)
   let φ := Polynomial.eval₂RingHom ι' z
-  have hQband : MvPolynomial.map φ (SourceColumn.interpolant columns v) ∈
-      weightedSupportSpace E D d W L hD :=
-    map_interpolant_mem_weightedSupportSpace hD columns hband v ι' z
+  have hQweight : differentialWeightedDegree D
+      (MvPolynomial.map φ (SourceColumn.interpolant columns v)) < m * A := by
+    rw [differentialWeightedDegree, MvPolynomial.weightedTotalDegree, Finset.sup_lt_iff hbudget]
+    intro u hu
+    have hsource := MvPolynomial.support_map_subset φ (SourceColumn.interpolant columns v) hu
+    obtain ⟨j, _, hj⟩ := Finset.mem_biUnion.mp (MvPolynomial.support_sum hsource)
+    have heq : u = (columns j).exponent := by
+      simpa [SourceColumn.interpolant] using MvPolynomial.support_monomial_subset hj
+    exact heq ▸ weight_differentialWeight_lt_of_weightedSupportEligible hL (hband j)
   have hconstraintsE : ∀ i, SatisfiesLocalConstraints m (ι' (centers i))
       ((received i).eval₂ ι' z) (MvPolynomial.map φ (SourceColumn.interpolant columns v)) := by
     intro i
@@ -101,12 +115,12 @@ theorem differentialSpecialization_curve_interpolant_eq_zero_of_agreements
     exact hcenters hi hj (ι'.injective hij)
   exact differentialSpecialization_eq_zero_of_differentialWeightedDegree_lt
     (fun i ↦ ι' (centers i)) (fun i ↦ (received i).eval₂ ι' z) indices
-    (differentialWeightedDegree_lt_of_mem_weightedSupportSpace hbudget hL hQband)
+    hQweight
     (fun i _ ↦ hconstraintsE i) P hPdegree hcentersE hcard hagreements
 
 /-- The received-line case of weighted-support interpolation soundness. -/
 theorem differentialSpecialization_map_interpolant_eq_zero_of_agreements
-    (hD : 0 < D) (hL : L ≤ (m * A : ℕ)) (hbudget : 0 < m * A)
+    (hL : L ≤ (m * A : ℕ))
     {n N : ℕ} (centers f g : Fin n → F) (columns : Fin N → SourceColumn d)
     (hband : ∀ j, WeightedSupportEligible D d W L (columns j).exponent)
     (v : Fin N → F[X])
@@ -122,7 +136,7 @@ theorem differentialSpecialization_map_interpolant_eq_zero_of_agreements
       (MvPolynomial.map (Polynomial.eval₂RingHom ι' z)
         (SourceColumn.interpolant columns v)) P = 0 := by
   apply differentialSpecialization_curve_interpolant_eq_zero_of_agreements
-    hD hL hbudget centers (fun i ↦ receivedLine (f i) (g i)) columns hband v
+    hL centers (fun i ↦ receivedLine (f i) (g i)) columns hband v
     hconstraints ι' z indices P hPdegree hcenters hcard
   simpa only [receivedLine, Polynomial.eval₂_add, Polynomial.eval₂_mul,
     Polynomial.eval₂_C, Polynomial.eval₂_X] using hagreements
@@ -130,7 +144,7 @@ theorem differentialSpecialization_map_interpolant_eq_zero_of_agreements
 /-- A degree-`< k` polynomial satisfies the degree premise of received-line soundness when
 `k ≤ D + 1`. -/
 theorem differentialSpecialization_map_interpolant_eq_zero_of_degree_lt
-    (hD : 0 < D) (hL : L ≤ (m * A : ℕ)) (hbudget : 0 < m * A)
+    (hL : L ≤ (m * A : ℕ))
     {n N k : ℕ} (hkD : k ≤ D + 1)
     (centers f g : Fin n → F) (columns : Fin N → SourceColumn d)
     (hband : ∀ j, WeightedSupportEligible D d W L (columns j).exponent)
@@ -153,7 +167,7 @@ theorem differentialSpecialization_map_interpolant_eq_zero_of_degree_lt
         (Polynomial.natDegree_lt_iff_degree_lt hPzero).mpr hPdegree
       omega
   exact differentialSpecialization_map_interpolant_eq_zero_of_agreements
-    hD hL hbudget centers f g columns hband v hconstraints ι' z indices P hPnat
+    hL centers f g columns hband v hconstraints ι' z indices P hPnat
       hcenters hcard hagreements
 
 end ReedSolomon.HiddenDerivative.SymbolicReceivedInterpolation

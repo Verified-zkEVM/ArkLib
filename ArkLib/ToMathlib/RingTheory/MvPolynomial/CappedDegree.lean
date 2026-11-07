@@ -165,8 +165,7 @@ instance restrictCappedDegree.moduleFinite [Finite σ] :
   restrictSupport_finite (Set.toFinite _)
 
 /-- The capped polynomials form a free module whose rank is the number of capped exponents. -/
-theorem finrank_restrictCappedDegree {R : Type*} [CommRing R] [StrongRankCondition R]
-    [Finite σ] :
+theorem finrank_restrictCappedDegree {R : Type*} [CommRing R] [StrongRankCondition R] :
     Module.finrank R (restrictCappedDegree σ R i b c) = (cappedDegreeExponents σ i b c).ncard := by
   rw [restrictCappedDegree, Module.finrank_eq_nat_card_basis (basisRestrictSupport R _),
     Nat.card_coe_set_eq]
