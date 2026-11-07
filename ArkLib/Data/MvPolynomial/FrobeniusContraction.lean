@@ -137,9 +137,9 @@ theorem irreducible_map_optionEquivLeft_fractionRing {G : MvPolynomial (Option �
     exact hpos.ne'
   exact ((hGirr.isPrimitive hdeg).irreducible_iff_irreducible_map_fraction_map).mp hGirr
 
-/-- Over a unique factorization domain `R`, an irreducible polynomial with nonzero partial
-derivative in `none` is separable as a univariate polynomial over the fraction field of
-`MvPolynomial σ R`. -/
+omit [IsDomain R] in
+/-- An irreducible polynomial with nonzero partial derivative in `none` is separable as a
+univariate polynomial over the fraction field of `MvPolynomial σ R`. -/
 theorem separable_map_optionEquivLeft_fractionRing {G : MvPolynomial (Option σ) R}
     (hG : Irreducible G) (hder : pderiv none G ≠ 0) :
     ((optionEquivLeft R σ G).map (algebraMap (MvPolynomial σ R) L)).Separable := by

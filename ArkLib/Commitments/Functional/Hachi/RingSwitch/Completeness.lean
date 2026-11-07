@@ -227,7 +227,7 @@ from the row sum
 witness transfer with **no growth from the division itself**. No wraparound hypothesis is needed
 (centered representatives are minimal among integer representatives). The digit conjunct of
 `liftShort` instead follows from `rhoDigitsShort_of_digitBaseOk`. -/
-theorem rhoShort_honestLiftWitness {d : ℕ} (hφ : Φ.φ.toPoly = Polynomial.X ^ d + 1) (hdpos : 0 < d)
+theorem rhoShort_honestLiftWitness {d : ℕ} (hφ : Φ.φ.toPoly = Polynomial.X ^ d + 1)
     (hd : 0 < Φ.φ.natDegree) {βM βz : ℕ} (s : RlinStatement Φ n μ)
     (z : ArkLib.Lattices.PolyVec (Rq Φ) μ)
     (hM : ∀ i j, Rq.lInftyNorm Φ (s.M i j) ≤ βM) (hz : ∀ j, Rq.lInftyNorm Φ (z j) ≤ βz) :
@@ -237,15 +237,15 @@ theorem rhoShort_honestLiftWitness {d : ℕ} (hφ : Φ.φ.toPoly = Polynomial.X 
       show ((honestLiftWitness Φ hd s z).ρ i).toPoly
           = (cyclotomicPresentation Φ).quotient s.M z s.yvec i
         from CPolynomial.toPoly_mk_toImpl _]
-    exact valMinAbs_natAbs_coeff_quotient_le Φ hφ hdpos s.M z s.yvec hM hz i k
+    exact valMinAbs_natAbs_coeff_quotient_le Φ hφ s.M z s.yvec hM hz i k
 
 omit [NeZero q] in
 /-- **Perfect completeness of Hachi's lift from an honest seam, at the digit base `bDig`** —
 error `0`,
 and with **no admissibility hypothesis on the witness**: the quotient half of `liftShort` is
 discharged for an *arbitrary* quotient (`rhoDigitsShort_of_half_le`), so beyond the
-parameter-level digit-base facts `hb`/`hbq`/`hdig` (the `DigitBaseOk` triple, unbundled) the
-only premises are the three facts the seam relation supplies about its own members.
+parameter-level digit-radius bound `hdig`, the only premises are the three facts the seam relation
+supplies about its own members.
 
 * `hrow` — the linear system `M z = y`;
 * `hside` — the statement-level side condition `bound ≤ s.bound`;
@@ -256,7 +256,7 @@ All three hold on the honest seam `relRlinImage` (see
 assumed). Error `0` because the honest quotients satisfy each lifted row identity as polynomials
 (`RingSwitching.Lift.checkAt_honestWitness`), so no property of `α` is used. -/
 theorem liftReduction_perfectCompleteness_of_zShort [SampleableType F]
-    (hb : 1 < bDig) (hbq : bDig ≤ q / 2) (hdig : bDig / 2 ≤ bound)
+    (hdig : bDig / 2 ≤ bound)
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig)) (φF : ZMod q →+* F)
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) (hd : 0 < Φ.φ.natDegree)
     (relIn : Set (RlinStatement Φ n μ × ArkLib.Lattices.PolyVec (Rq Φ) μ))
@@ -266,12 +266,20 @@ theorem liftReduction_perfectCompleteness_of_zShort [SampleableType F]
     (liftReduction (oSpec := oSpec) (F := F) Φ bound bDig K hd).perfectCompleteness init impl
       relIn (relLift Φ bound bDig K φF) := by
   have := isPresentation_cyclotomic Φ hd
+  have hDigits : ∀ ρ : Fin n → CPolynomial (ZMod q), RhoDigitsShort Φ bound bDig ρ := by
+    intro ρ
+    by_cases hb : 1 < bDig
+    · exact rhoDigitsShort_of_half_le Φ hb hdig ρ
+    · intro i u
+      have hu := u.isLt
+      simp only [rhoDigitCount, Nat.clog_of_left_le_one (by omega : bDig ≤ 1)] at hu
+      omega
   have h := Lift.reduction_perfectCompleteness_of_relIn (cyclotomicPresentation Φ) φF
     (fun s : RlinStatement Φ n μ => s.M) (fun s : RlinStatement Φ n μ => s.yvec)
     (fun s : RlinStatement Φ n μ => bound ≤ s.bound) K
     (cyclotomicPresentation_modulus_natDegree Φ) relIn hrow hside
     (fun s z hIn => ⟨hzShort s z hIn,
-      rhoDigitsShort_of_half_le Φ hb hbq hdig _⟩) init impl
+      hDigits _⟩) init impl
   rw [liftReduction_eq]
   exact h
 
@@ -303,7 +311,7 @@ Two parameter choices are *forced* by the chain and worth naming:
   A raw quotient block would instead force the bound `q/2` (`rhoShort_half`), and with it the
   degeneracy `γ = q/2 = bZero − 1`. -/
 theorem liftReduction_perfectCompleteness_image [SampleableType F] {γ bDig : ℕ}
-    (hb : 1 < bDig) (hbq : bDig ≤ q / 2) (hdig : bDig / 2 ≤ γ)
+    (hdig : bDig / 2 ≤ γ)
     (K : LiftCom
       (LiftedWitness Φ (rlinCols innerRows messageDigits innerDigits zDigits m r)
         (rlinRows innerRows outerRows dRows))
@@ -325,7 +333,7 @@ theorem liftReduction_perfectCompleteness_image [SampleableType F] {γ bDig : �
   have h3 : ∀ s z, (s, z) ∈ relRlinImage (zDigits := zDigits) Φ pp base ω γ →
       vecLInftyNorm Φ z ≤ γ :=
     fun s z h => vecLInftyNorm_le_of_mem_relRlinImage (zDigits := zDigits) Φ pp base ω γ s z h
-  exact liftReduction_perfectCompleteness_of_zShort Φ γ bDig hb hbq hdig K φF init impl hd
+  exact liftReduction_perfectCompleteness_of_zShort Φ γ bDig hdig K φF init impl hd
     _ h1 h2 h3
 
 end HonestChain

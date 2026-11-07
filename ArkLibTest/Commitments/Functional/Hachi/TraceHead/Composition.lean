@@ -38,6 +38,7 @@ noncomputable def composed (init : ProbComp σ)
         (quadEvalBetaSq γ b zDigits ((𝓜(q, α)).φ.natDegree) m messageDigits) γ (2 * ω) ▷
       quadEvalPackage init impl hq5 hκ pp)
 
+omit [NeZero q] in
 /-- The composite starts at the trace head's scalar relation and ends at the evaluation step's
 output relation. -/
 theorem composed_endpoints (init : ProbComp σ)

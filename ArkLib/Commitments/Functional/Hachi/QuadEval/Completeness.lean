@@ -85,6 +85,7 @@ inner decomposition — a legal `relIn` member can have a long message block. So
 strengthened correctness-side relation `relInMsgShort` below, exactly as `relInBox` carries the
 input opening's box shortness; the soundness-side `relIn` is left untouched. -/
 
+omit [NeZero q] in
 /-- **The honest folded witness `z = Σᵢ cᵢ sᵢ` is `ℓ∞`-short**, at `2ʳ·ω·msgBound`, for *every*
 challenge vector in `ShortChallenge Φ ω` and every message decomposition within `msgBound`
 ([NOZ26] §4.4). Deterministic — no probability, no concentration.

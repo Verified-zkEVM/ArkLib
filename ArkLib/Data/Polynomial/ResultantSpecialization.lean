@@ -101,9 +101,9 @@ If the degree of `f.map φ` were below `m`, its coefficient at `m` would vanish,
 coefficient of its derivative at `m - 1` would vanish too, and a resultant whose inputs both have
 degree below the declared degrees is zero. Hence the padded derivative resultant vanishes at
 every specialization that lowers the degree of `f`; only the degree of the derivative may drop.
-`hm` excludes `m = 0`, where the resultant is `1` for every constant `f`. -/
+For `m = 0`, the degree bound `hf` already forces the conclusion. -/
 theorem natDegree_map_eq_of_resultant_derivative_padded_ne_zero (φ : R →+* S) (f : R[X])
-    (hf : f.natDegree ≤ m) (hm : 0 < m)
+    (hf : f.natDegree ≤ m)
     (hres : φ (resultant f f.derivative m (m - 1)) ≠ 0) : (f.map φ).natDegree = m := by
   rw [← resultant_map_map, ← derivative_map] at hres
   have hle : (f.map φ).natDegree ≤ m := natDegree_map_le.trans hf

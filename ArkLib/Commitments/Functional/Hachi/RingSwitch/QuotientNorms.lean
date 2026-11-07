@@ -66,7 +66,7 @@ variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZM
 
 /-! ## The universal bound: every ring element is `q/2`-short -/
 
-omit [IsCyclotomic Φ] in
+omit [NeZero q] [IsCyclotomic Φ] in
 /-- Every element of `Rq Φ` has centered `ℓ∞` norm at most `q/2`: each coefficient's centered
 representative lies in `(−q/2, q/2]` (`ZMod.natAbs_valMinAbs_le`). Trivial, but it is the honest
 `βM` for a matrix built from a uniformly random Ajtai key. -/
@@ -78,8 +78,8 @@ theorem Rq.lInftyNorm_le_half (a : Rq Φ) : Rq.lInftyNorm Φ a ≤ q / 2 :=
 omit [NeZero q] in
 /-- An `ℓ∞` bound on a ring element bounds **every** coefficient of its presentation representative:
 below `deg φ` by the definition of `Rq.lInftyNorm`, at or above it because representatives are
-degree-reduced (`Rq.natDegree_val_toPoly_lt'`). -/
-theorem valMinAbs_natAbs_coeff_rep_le (hd : 0 < Φ.φ.natDegree) {β : ℕ} {a : Rq Φ}
+degree-reduced (`Rq.coeff_eq_zero_of_natDegree_le`). -/
+theorem valMinAbs_natAbs_coeff_rep_le {β : ℕ} {a : Rq Φ}
     (h : Rq.lInftyNorm Φ a ≤ β) (k : ℕ) :
     ((((cyclotomicPresentation Φ).rep a).toPoly).coeff k).valMinAbs.natAbs ≤ β := by
   by_cases hk : k < Φ.φ.natDegree
@@ -87,18 +87,19 @@ theorem valMinAbs_natAbs_coeff_rep_le (hd : 0 < Φ.φ.natDegree) {β : ℕ} {a :
       (CPolynomial.coeff_toPoly a.1 k).symm
     rw [hcoeff]
     exact Rq.valMinAbs_natAbs_coeff_le_of_lInftyNorm_le Φ h hk
-  · have hzero : ((cyclotomicPresentation Φ).rep a).toPoly.coeff k = 0 :=
-      Polynomial.coeff_eq_zero_of_natDegree_lt
-        (lt_of_lt_of_le (Rq.natDegree_val_toPoly_lt' Φ hd a) (by omega))
+  · have hzero : ((cyclotomicPresentation Φ).rep a).toPoly.coeff k = 0 := by
+      rw [← CPolynomial.coeff_toPoly]
+      exact Rq.coeff_eq_zero_of_natDegree_le Φ a (by omega)
     rw [hzero, ZMod.valMinAbs_zero, Int.natAbs_zero]
     exact Nat.zero_le _
 
+omit [NeZero q] in
 /-- **Coefficient bound for the lifted row sum.** At index `m`, the centered representative of
 `(∑ⱼ rep(Mᵢⱼ)·rep(zⱼ)).coeff m` is bounded by `μ · (m+1) · (βM · βz)`: the sum over `μ` columns of a
 convolution of `m+1` products, each product bounded by `βM · βz`
 (`valMinAbs_natAbs_mul_le`), each sum bounded by its cardinality times the term bound
 (`valMinAbs_natAbs_sum_le_card_mul`). No wraparound hypothesis. -/
-theorem valMinAbs_natAbs_coeff_rowSum_le (hd : 0 < Φ.φ.natDegree) {n μ βM βz : ℕ}
+theorem valMinAbs_natAbs_coeff_rowSum_le {n μ βM βz : ℕ}
     (M : PolyMatrix (Rq Φ) n μ) (z : PolyVec (Rq Φ) μ)
     (hM : ∀ i j, Rq.lInftyNorm Φ (M i j) ≤ βM) (hz : ∀ j, Rq.lInftyNorm Φ (z j) ≤ βz)
     (i : Fin n) (m : ℕ) :
@@ -112,8 +113,8 @@ theorem valMinAbs_natAbs_coeff_rowSum_le (hd : 0 < Φ.φ.natDegree) {n μ βM β
     rw [Polynomial.coeff_mul]
     refine le_trans (valMinAbs_natAbs_sum_le_card_mul _ _ (β := βM * βz) (fun x _ => ?_)) ?_
     · exact le_trans (valMinAbs_natAbs_mul_le _ _)
-        (Nat.mul_le_mul (valMinAbs_natAbs_coeff_rep_le Φ hd (hM i j) x.1)
-          (valMinAbs_natAbs_coeff_rep_le Φ hd (hz j) x.2))
+        (Nat.mul_le_mul (valMinAbs_natAbs_coeff_rep_le Φ (hM i j) x.1)
+          (valMinAbs_natAbs_coeff_rep_le Φ (hz j) x.2))
     · rw [Finset.Nat.card_antidiagonal]
   calc (((cyclotomicPresentation Φ).rowSum M z i).coeff m).valMinAbs.natAbs
       = ((∑ j : Fin μ, (((cyclotomicPresentation Φ).rep (M i j)).toPoly *
@@ -125,6 +126,7 @@ theorem valMinAbs_natAbs_coeff_rowSum_le (hd : 0 < Φ.φ.natDegree) {n μ βM β
 
 /-! ## The quotient bound -/
 
+omit [NeZero q] in
 /-- **Centered coefficient bound for the honest lift quotient**, at the concrete power-of-two
 modulus `φ = X ^ d + 1`.
 
@@ -133,15 +135,23 @@ Every quotient coefficient *is* a row-sum coefficient of index `≥ d`
 `rep yᵢ` does not reach those indices. So the bound is the row-sum bound at index `< 2d`, i.e.
 `μ · 2d · βM · βz` — division contributes **no growth at all**.
 
-Hypotheses: the modulus shape `hφ`, positivity `hd`, and the two explicit coefficient bounds `hM`
+Hypotheses: the modulus shape `hφ` and the two explicit coefficient bounds `hM`
 (the `R^lin` matrix) and `hz` (the witness). No anti-wraparound condition. -/
 theorem valMinAbs_natAbs_coeff_quotient_le {d : ℕ} (hφ : Φ.φ.toPoly = Polynomial.X ^ d + 1)
-    (hd : 0 < d) {n μ βM βz : ℕ}
+    {n μ βM βz : ℕ}
     (M : PolyMatrix (Rq Φ) n μ) (z : PolyVec (Rq Φ) μ) (y : PolyVec (Rq Φ) n)
     (hM : ∀ i j, Rq.lInftyNorm Φ (M i j) ≤ βM) (hz : ∀ j, Rq.lInftyNorm Φ (z j) ≤ βz)
     (i : Fin n) (k : ℕ) :
     (((cyclotomicPresentation Φ).quotient M z y i).coeff k).valMinAbs.natAbs
       ≤ μ * (2 * d * (βM * βz)) := by
+  have hd : 0 < d := by
+    by_contra h
+    have hd0 : d = 0 := by omega
+    have hm := IsCyclotomic.monic (Φ := Φ)
+    rw [hφ, hd0, pow_zero, ← Polynomial.C_1, ← map_add] at hm
+    have hone : (1 : ZMod q) + 1 = 1 := by
+      simpa only [Polynomial.Monic, Polynomial.leadingCoeff_C] using hm
+    exact one_ne_zero (add_left_cancel (hone.trans (add_zero (1 : ZMod q)).symm))
   have hdegΦ : Φ.φ.natDegree = d := by
     rw [CPolynomial.natDegree_toPoly, hφ, ← Polynomial.C_1, Polynomial.natDegree_X_pow_add_C]
   have : Lift.IsPresentation (cyclotomicPresentation Φ) :=
@@ -173,7 +183,7 @@ theorem valMinAbs_natAbs_coeff_quotient_le {d : ℕ} (hφ : Φ.φ.toPoly = Polyn
     have hpk : p.coeff (d + k) = ((cyclotomicPresentation Φ).rowSum M z i).coeff (d + k) := by
       rw [hp, Polynomial.coeff_sub, hy, sub_zero]
     rw [hpk]
-    refine le_trans (valMinAbs_natAbs_coeff_rowSum_le Φ (by omega) M z hM hz i (d + k)) ?_
+    refine le_trans (valMinAbs_natAbs_coeff_rowSum_le Φ M z hM hz i (d + k)) ?_
     exact Nat.mul_le_mul_left _ (Nat.mul_le_mul_right _ (by omega))
   · -- Past it: the coefficient vanishes.
     rw [Polynomial.coeff_eq_zero_of_natDegree_lt (by omega), ZMod.valMinAbs_zero, Int.natAbs_zero]

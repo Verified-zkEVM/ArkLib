@@ -94,7 +94,7 @@ theorem mk_reverse_eq_galoisAutₛ_mul (α : ℕ) (p : (ZMod q)[X]) :
 
 /-! ## Phase 4b: factorization into two coprime irreducibles -/
 
-omit [BEq (ZMod q)] [LawfulBEq (ZMod q)] in
+omit [NeZero q] [BEq (ZMod q)] [LawfulBEq (ZMod q)] in
 /-- **Factor existence.** For `q ≡ 5 (mod 8)`, `X^{2^α}+1` factors over `Z_q` as a product of two
 coprime irreducible polynomials. Extracted from `cyclotomic_card_normalizedFactors` (the
 two normalized factors), with coprimality from `Irreducible.coprime_iff_not_dvd`. -/
@@ -151,14 +151,15 @@ theorem exists_irreducible_factorization (hq5 : q % 8 = 5) {α : ℕ} (hα : 1 �
 open Polynomial in
 /-- `X^n + 1` is **self-reciprocal**: reversing its coefficient list gives it back. This is the
 polynomial-level input to "reversal permutes the irreducible factors of `X^{2^α}+1`". -/
-theorem reverse_X_pow_add_one {R : Type*} [Semiring R] [Nontrivial R] {n : ℕ} :
+theorem reverse_X_pow_add_one {R : Type*} [Semiring R] {n : ℕ} :
     (X ^ n + 1 : R[X]).reverse = X ^ n + 1 := by
+  nontriviality R
   have h : (X ^ n : R[X]).reverse = 1 := by
     have := reverse_X_pow_mul (C 1 : R[X]) n
     rwa [reverse_C, C_1, mul_one] at this
   rw [← C_1, reverse_add_C, h, natDegree_X_pow, C_1, one_mul, add_comm]
 
-omit [BEq (ZMod q)] [LawfulBEq (ZMod q)] in
+omit [NeZero q] [BEq (ZMod q)] [LawfulBEq (ZMod q)] in
 open Polynomial in
 /-- **The root-orbit core of Lemma 4.5.** An irreducible factor `p₁` of `X^{2^α}+1` over `Z_q`
 (with `q ≡ 5 (mod 8)`, `α ≥ 1`) cannot be *self*-reciprocal.
@@ -248,7 +249,7 @@ theorem not_associated_reverse_self (hq5 : q % 8 = 5) {α : ℕ} (hα : 1 ≤ α
       simpa [Nat.cast_sub hqd1] using this
     simpa using h1
   have hmdvd : 2 ^ (α - 1) ∣ d := by
-    rw [← orderOf_q_eq q hq5 hα]
+    rw [← orderOf_q_eq q hq5]
     exact orderOf_dvd_of_pow_eq_one hqcast
   have hdlt : d < 2 ^ α := by omega
   have hdval : d = 2 ^ (α - 1) := by
@@ -312,7 +313,7 @@ theorem not_associated_reverse_self (hq5 : q % 8 = 5) {α : ℕ} (hα : 1 ≤ α
       push_cast at h
       exact h
     have hordq : orderOf ((q : ZMod (2 ^ (α + 1)))) = m := by
-      rw [hmdef]; exact orderOf_q_eq q hq5 hα
+      rw [hmdef]; exact orderOf_q_eq q hq5
     exact pow_injOn_Iio_orderOf (by rw [Set.mem_Iio, hordq]; exact hi)
       (by rw [Set.mem_Iio, hordq]; exact hj) hcast
   have hScard : S.card ≤ d := by
@@ -347,7 +348,7 @@ theorem not_associated_reverse_self (hq5 : q % 8 = 5) {α : ℕ} (hα : 1 ≤ α
     linear_combination h0
   exact neg_one_notMem_powers_q q hq5 hα i hneg
 
-omit [BEq (ZMod q)] [LawfulBEq (ZMod q)] in
+omit [NeZero q] [BEq (ZMod q)] [LawfulBEq (ZMod q)] in
 /-- **(Phase 4, blueprint Lemma 4.5, `lem:no_selfReciprocal` in
 `blueprint/src/lattices/hachi_subfield.tex`)** For `q ≡ 5 (mod 8)`, reversal *swaps* the two
 irreducible factors of `X^{2^α}+1`: if `X^{2^α}+1 = p₁ · p₂` with `p₁, p₂` irreducible, then
@@ -376,54 +377,62 @@ The constant coefficient of `p₁` is nonzero (`0` is not a root of `X^{2^α}+1`
 `p₂.reverse`. In the first case the degree equality makes `p₁ ~ p₁.reverse`, which
 `not_associated_reverse_self` (the root-orbit argument) rules out. In the second case cancelling
 `p₁` gives `p₁.reverse * c = p₂`, and irreducibility of `p₂` makes `c` a unit. -/
-theorem no_selfReciprocal_factor (hq5 : q % 8 = 5) {α : ℕ} (hα : 1 ≤ α)
+theorem no_selfReciprocal_factor (hq5 : q % 8 = 5) {α : ℕ}
     {p₁ p₂ : (ZMod q)[X]} (hp₁ : Irreducible p₁) (hp₂ : Irreducible p₂)
     (hf : (X ^ (2 ^ α) + 1 : (ZMod q)[X]) = p₁ * p₂) :
     Associated p₁.reverse p₂ := by
   classical
-  -- the constant coefficients are nonzero, since `0` is not a root of `X^{2^α}+1`
-  have hev : (p₁.eval 0) * (p₂.eval 0) = 1 := by
-    have h := congrArg (Polynomial.eval 0) hf
-    simp only [eval_mul, eval_add, eval_pow, eval_X, eval_one] at h
-    rw [zero_pow (by positivity), zero_add] at h
-    exact h.symm
-  have hc1 : p₁.coeff 0 ≠ 0 := by
-    rw [coeff_zero_eq_eval_zero]
-    intro h; rw [h, zero_mul] at hev; exact zero_ne_one hev
-  have hdeg1 : p₁.reverse.natDegree = p₁.natDegree := by
-    rw [reverse_natDegree, natTrailingDegree_eq_zero.mpr (Or.inr hc1), Nat.sub_zero]
-  -- reversal is multiplicative and fixes `X^{2^α}+1`, so it permutes `{p₁, p₂}`
-  have hprod : p₁.reverse * p₂.reverse = p₁ * p₂ := by
-    rw [← reverse_mul_of_domain, ← hf, reverse_X_pow_add_one, hf]
-  have hpos1 : 0 < p₁.natDegree := hp₁.natDegree_pos
-  have hnotunit : ¬ IsUnit p₁.reverse := by
-    intro h
-    rw [Polynomial.isUnit_iff_degree_eq_zero, degree_eq_natDegree, hdeg1] at h
-    · simp at h; omega
-    · intro h0; rw [h0] at hdeg1; simp at hdeg1; omega
-  rcases (hp₁.prime.dvd_mul.mp ⟨p₂, hprod⟩) with hdvd | hdvd
-  · -- `p₁.reverse ~ p₁` is impossible
-    exfalso
-    obtain ⟨c, hc⟩ := hdvd
-    have hcne : c ≠ 0 := by
+  rcases Nat.eq_zero_or_pos α with rfl | hα
+  · have hdeg := congrArg Polynomial.natDegree hf
+    rw [natDegree_mul hp₁.ne_zero hp₂.ne_zero] at hdeg
+    norm_num [show (1 : (ZMod q)[X]) = C 1 from rfl, natDegree_X_pow_add_C] at hdeg
+    have hp₁pos := hp₁.natDegree_pos
+    have hp₂pos := hp₂.natDegree_pos
+    omega
+  · -- the constant coefficients are nonzero, since `0` is not a root of `X^{2^α}+1`
+    have hev : (p₁.eval 0) * (p₂.eval 0) = 1 := by
+      have h := congrArg (Polynomial.eval 0) hf
+      simp only [eval_mul, eval_add, eval_pow, eval_X, eval_one] at h
+      rw [zero_pow (by positivity), zero_add] at h
+      exact h.symm
+    have hc1 : p₁.coeff 0 ≠ 0 := by
+      rw [coeff_zero_eq_eval_zero]
+      intro h; rw [h, zero_mul] at hev; exact zero_ne_one hev
+    have hdeg1 : p₁.reverse.natDegree = p₁.natDegree := by
+      rw [reverse_natDegree, natTrailingDegree_eq_zero.mpr (Or.inr hc1), Nat.sub_zero]
+    -- reversal is multiplicative and fixes `X^{2^α}+1`, so it permutes `{p₁, p₂}`
+    have hprod : p₁.reverse * p₂.reverse = p₁ * p₂ := by
+      rw [← reverse_mul_of_domain, ← hf, reverse_X_pow_add_one, hf]
+    have hpos1 : 0 < p₁.natDegree := hp₁.natDegree_pos
+    have hnotunit : ¬ IsUnit p₁.reverse := by
       intro h
-      rw [h, mul_zero, Polynomial.reverse_eq_zero] at hc
-      exact hp₁.ne_zero hc
-    have hcdeg : c.natDegree = 0 := by
-      have h := congrArg natDegree hc
-      rw [natDegree_mul hp₁.ne_zero hcne, hdeg1] at h
-      omega
-    have hcu : IsUnit c := by
-      rw [Polynomial.isUnit_iff_degree_eq_zero, degree_eq_natDegree hcne, hcdeg]; rfl
-    exact not_associated_reverse_self q hq5 hα hp₁ hp₂ hf ⟨hcu.unit, by simpa using hc.symm⟩
-  · -- the remaining case is the conclusion
-    obtain ⟨c, hc⟩ := hdvd
-    have hcancel : p₁ * (p₁.reverse * c) = p₁ * p₂ := by rw [← hprod, hc]; ring
-    have hkey : p₁.reverse * c = p₂ := mul_left_cancel₀ hp₁.ne_zero hcancel
-    rcases hp₂.isUnit_or_isUnit hkey.symm with h | h
-    · exact absurd h hnotunit
-    · exact ⟨h.unit, by simpa using hkey⟩
+      rw [Polynomial.isUnit_iff_degree_eq_zero, degree_eq_natDegree, hdeg1] at h
+      · simp at h; omega
+      · intro h0; rw [h0] at hdeg1; simp at hdeg1; omega
+    rcases (hp₁.prime.dvd_mul.mp ⟨p₂, hprod⟩) with hdvd | hdvd
+    · -- `p₁.reverse ~ p₁` is impossible
+      exfalso
+      obtain ⟨c, hc⟩ := hdvd
+      have hcne : c ≠ 0 := by
+        intro h
+        rw [h, mul_zero, Polynomial.reverse_eq_zero] at hc
+        exact hp₁.ne_zero hc
+      have hcdeg : c.natDegree = 0 := by
+        have h := congrArg natDegree hc
+        rw [natDegree_mul hp₁.ne_zero hcne, hdeg1] at h
+        omega
+      have hcu : IsUnit c := by
+        rw [Polynomial.isUnit_iff_degree_eq_zero, degree_eq_natDegree hcne, hcdeg]; rfl
+      exact not_associated_reverse_self q hq5 hα hp₁ hp₂ hf ⟨hcu.unit, by simpa using hc.symm⟩
+    · -- the remaining case is the conclusion
+      obtain ⟨c, hc⟩ := hdvd
+      have hcancel : p₁ * (p₁.reverse * c) = p₁ * p₂ := by rw [← hprod, hc]; ring
+      have hkey : p₁.reverse * c = p₂ := mul_left_cancel₀ hp₁.ne_zero hcancel
+      rcases hp₂.isUnit_or_isUnit hkey.symm with h | h
+      · exact absurd h hnotunit
+      · exact ⟨h.unit, by simpa using hkey⟩
 
+omit [NeZero q] in
 open Polynomial in
 /-- **Core unit lemma.** In `S = Z_q[X]/(X^{2^α}+1)`, every nonzero `σ_{-1}`-fixed element is a
 unit. If `b = mk g` is not a unit then `g` shares a factor `p_i` with `X^{2^α}+1 = p₁p₂`; the
@@ -435,9 +444,9 @@ theorem galoisAutₛ_fixed_isUnit (hq5 : q % 8 = 5) {α : ℕ} (hα : 1 ≤ α)
     IsUnit b := by
   classical
   obtain ⟨p₁, p₂, hp₁, hp₂, hcop, hf⟩ := exists_irreducible_factorization q hq5 hα
-  have hswap12 : Associated p₁.reverse p₂ := no_selfReciprocal_factor q hq5 hα hp₁ hp₂ hf
+  have hswap12 : Associated p₁.reverse p₂ := no_selfReciprocal_factor q hq5 hp₁ hp₂ hf
   have hswap21 : Associated p₂.reverse p₁ :=
-    no_selfReciprocal_factor q hq5 hα hp₂ hp₁ (by rw [hf]; ring)
+    no_selfReciprocal_factor q hq5 hp₂ hp₁ (by rw [hf]; ring)
   set mk := Ideal.Quotient.mk (powTwoCyclotomic (R := ZMod q) α).modIdeal with hmkdef
   have hmk_zero : ∀ z : (ZMod q)[X], mk z = 0 ↔ (X ^ (2 ^ α) + 1 : (ZMod q)[X]) ∣ z := fun z => by
     rw [hmkdef, Ideal.Quotient.eq_zero_iff_mem, modIdeal, powTwoCyclotomic_toPoly,
@@ -489,6 +498,7 @@ theorem galoisAutₛ_fixed_isUnit (hq5 : q % 8 = 5) {α : ℕ} (hα : 1 ≤ α)
 
 /-! ## Phase 5: assembling the field structure and the isomorphism -/
 
+omit [NeZero q] in
 /-- **`R_q^{σ_{-1}}` is a field** (blueprint Theorem, Phase 5). For `q ≡ 5 (mod 8)`, every nonzero
 `σ_{-1}`-fixed element is a unit: if `p₁ ∣ g` then the reverse identity plus the swap
 `p₁.reverse ~ p₂` force `p₂ ∣ g` too, so `X^{2^α}+1 ∣ g` and the element vanishes.
@@ -551,6 +561,7 @@ theorem conjFixedSubring_isField (hq5 : q % 8 = 5) {α : ℕ} (hα : 1 ≤ α) :
   exact ⟨⟨c, (mem_conjFixedSubring_iff α _).mpr hcfix⟩, Subtype.ext (by
     rw [MulMemClass.coe_mul, OneMemClass.coe_one]; exact hac)⟩
 
+omit [NeZero q] in
 /-- **`R_q^H` is a field** (Hachi [NOZ26, §3, Lemma 5], field part). Since
 `R_q^H ⊆ R_q^{σ_{-1}}` (`fixedSubring_le_conjFixedSubring`) and the latter is a field
 (`conjFixedSubring_isField`), `R_q^H` is a finite integral domain, hence a field.
@@ -592,14 +603,15 @@ Proof idea (via `fixedSubring_isField`): equip `R_q^H` with the
 field structure from `fixedSubring_isField`, compute both cardinalities as `q^{2^κ}`
 (`card_fixedSubring_eq` and `GaloisField.card`), and invoke the uniqueness of finite fields
 (`FiniteField.ringEquivOfCardEq`). -/
-theorem fixedSubringEquivGaloisField (hq5 : q % 8 = 5) {α κ : ℕ} (hα : 1 ≤ α)
+theorem fixedSubringEquivGaloisField (hq5 : q % 8 = 5) {α κ : ℕ}
     (hk : 2 * 2 ^ κ ∣ 2 ^ α) :
     Nonempty (fixedSubring (R := ZMod q) α (2 ^ κ) ≃+* GaloisField q (2 ^ κ)) := by
   have hq2 : ¬ (q ∣ 2) := fun h => by have := Nat.le_of_dvd (by norm_num) h; omega
   have h2 : (2 : ZMod q) ≠ 0 := by
     have h2' : ((2 : ℕ) : ZMod q) ≠ 0 := by rw [Ne, ZMod.natCast_eq_zero_iff]; exact hq2
     simpa using h2'
-  let : Field (fixedSubring (R := ZMod q) α (2 ^ κ)) := (fixedSubring_isField q hq5 hα).toField
+  let : Field (fixedSubring (R := ZMod q) α (2 ^ κ)) := (fixedSubring_isField q hq5
+    (by have hκ := succ_le_of_two_mul_two_pow_dvd hk; omega)).toField
   have : Fintype (GaloisField q (2 ^ κ)) := Fintype.ofFinite _
   have hcardK : Fintype.card (fixedSubring (R := ZMod q) α (2 ^ κ)) = q ^ 2 ^ κ := by
     rw [card_fixedSubring_eq q α κ h2 hk, ZMod.card q]

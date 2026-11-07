@@ -216,7 +216,7 @@ theorem liftReduction_perfectCompleteness_params {F : Type} [Field F] [Sampleabl
       dRows) (base : ZMod q) :
     (liftReduction (oSpec := oSpec) (F := F) Φ P.γ P.bZero K hd).perfectCompleteness init impl
       (relRlinImage (zDigits := zDigits) Φ pp base ω P.γ) (relLift Φ P.γ P.bZero K φF) :=
-  liftReduction_perfectCompleteness_image Φ P.hbZero P.hbZeroq P.hbZeroγ K φF init impl hd
+  liftReduction_perfectCompleteness_image Φ P.hbZeroγ K φF init impl hd
     pp base ω
 
 omit [NeZero q] in
@@ -233,7 +233,7 @@ theorem batchReduction_perfectCompleteness_params {F : Type} [Field F]
       (relLift Φ P.γ P.bZero K φF)
       (relBatched Φ m₀ m₁ P.γ P.bZero K φF P.bZero) :=
   batchReduction_perfectCompleteness Φ m₀ m₁ P.γ P.bZero init impl K φF P.bZero
-    P.one_lt_bZero hd P.hγZero P.digitBaseOk_range
+    hd P.hγZero P.digitBaseOk_range
 
 end Seams
 
@@ -381,7 +381,7 @@ theorem completePrefixReduction_perfectCompleteness
     batchReduction_perfectCompleteness_params (m₀ := m₀) (m₁ := m₁)
     Φ P start impl K φF hd
   have hZero (start : ProbComp σ) := nestedZeroCheckReduction_perfectCompleteness
-    Φ m₀ m₁ P.γ P.bZero start impl K φF P.bZero hd hμn hZeroγ P.digitBaseOk
+    Φ m₀ m₁ P.γ P.bZero start impl K φF P.bZero hμn hZeroγ P.digitBaseOk
   let sampleEmptyNested : ∀ i, SampleableType
       (((!p[] : ProtocolSpec 0) ++ₚ pSpecNestedZeroCheck F m₀ m₁).Challenge i) :=
     ProtocolSpec.instSampleableTypeChallengeAppend

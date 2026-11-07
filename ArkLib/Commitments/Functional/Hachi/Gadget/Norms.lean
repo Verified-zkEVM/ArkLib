@@ -363,6 +363,7 @@ section ZModGadgetRecomposeNorms
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
 
+omit [NeZero q] in
 /-- **Core recomposition coefficient bound.** Each centered coefficient of an entry of the
 gadget product `G_{b,rows} ·ᵥ v` is at most `(∑_{u<digits} bᵘ) · γ` whenever `‖v‖∞ ≤ γ`.
 
@@ -416,6 +417,7 @@ theorem gadgetMul_zmod_coeff_natAbs_le {b rows digits : ℕ} {γ : ℕ}
     _ = (∑ u ∈ Finset.range digits, b ^ u) * γ := by
         rw [← Finset.sum_mul, Fin.sum_univ_eq_sum_range (fun u => b ^ u) digits]
 
+omit [NeZero q] in
 /-- Entrywise `ℓ∞` growth of the gadget recomposition: `‖(G·ᵥv)ᵢ‖∞ ≤ (∑_{u<digits} bᵘ)·γ`. -/
 theorem gadgetMul_zmod_lInftyNorm_le {b rows digits : ℕ} {γ : ℕ}
     (v : PolyVec (Rq Φ) (rows * digits))
@@ -426,6 +428,7 @@ theorem gadgetMul_zmod_lInftyNorm_le {b rows digits : ℕ} {γ : ℕ}
   exact Finset.sup_le fun k hkmem =>
     gadgetMul_zmod_coeff_natAbs_le Φ v hv i (Finset.mem_range.mp hkmem)
 
+omit [NeZero q] in
 /-- **`ℓ∞` growth of the gadget recomposition.**
 `‖G_{b,rows} ·ᵥ v‖∞ ≤ (∑_{u<digits} bᵘ) · γ` whenever `‖v‖∞ ≤ γ` — for **any**
 range-bounded `v` (adversarial `ẑ` included). -/
@@ -437,6 +440,7 @@ theorem gadgetMul_zmod_vecLInftyNorm_le {b rows digits : ℕ} {γ : ℕ}
   unfold vecLInftyNorm
   exact Finset.sup_le fun i _ => gadgetMul_zmod_lInftyNorm_le Φ v hv i
 
+omit [NeZero q] in
 /-- **The `J`-recomposition `ℓ₂²` chain.** From the range check `‖ẑ‖∞ ≤ γ`
 (Eq. (20)'s `ẑ ∈ S_b`, symmetric model), the recomposed `z = J·ẑ` satisfies
 `‖z‖₂² ≤ zRecomposeL2SqBound γ b τ (deg φ) rows` — no primitive `‖z‖₂²` verifier check
@@ -454,6 +458,7 @@ theorem gadgetMul_zmod_vecL2NormSq_le {b rows digits : ℕ} {γ : ℕ}
           (gadgetMul_zmod_vecLInftyNorm_le Φ v hv) 2))
     _ = zRecomposeL2SqBound γ b digits Φ.φ.natDegree rows := rfl
 
+omit [NeZero q] in
 /-- End-to-end subtraction chain: two range-checked decompositions recompose to vectors whose
 difference is `ℓ₂²`-bounded by `subL2NormSqBound (zRecomposeL2SqBound …) = 4·B_z` — exactly the
 `βSq` needed for `VerifiedBlock.scaled_short` (`‖c̄ⱼ •ᵥ sⱼ‖₂² = ‖z_sib − z_cent‖₂² ≤ 4·B_z`). -/
