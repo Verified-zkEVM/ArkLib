@@ -101,7 +101,7 @@ lemma ps_sylvester_mul_vec_eq_coeff_add {R : Type*} [CommRing R]
 /-- If `B(x, Y) = Q · A(x, Y)`, then `(X - x)^(natDegreeY A)` divides `resultant(B, A)`. -/
 lemma ps_resultant_dvd_pow_eval_x {F : Type*} [Field F]
     (A B : F[X][Y]) (x : F) (Q : F[X]) (n : ℕ)
-    (hmn : natDegreeY A ≤ n) (hn : natDegreeY B ≤ n)
+    (hmn : natDegreeY A ≤ n)
     (hQdeg : Q.natDegree ≤ n - natDegreeY A)
     (hQ : evalX x B = Q * evalX x A) :
     (X - C x) ^ (natDegreeY A) ∣ resultant B A n (natDegreeY A) := by
@@ -140,13 +140,14 @@ lemma ps_resultant_dvd_pow_eval_x {F : Type*} [Field F]
       simpa [M0] using ps_sylvester_map ev A B m n
     have hmA : (A.map ev).natDegree ≤ m :=
       le_trans natDegree_map_le (by simp [hm, natDegreeY])
-    have hnB : (B.map ev).natDegree ≤ n :=
-      le_trans natDegree_map_le (by simpa [natDegreeY] using hn)
+    have hBmap : B.map ev = Q * A.map ev := by simpa [ps_eval_x_eq_map, ev] using hQ
+    have hnB : (B.map ev).natDegree ≤ n := by
+      rw [hBmap]
+      exact (natDegree_mul_le_of_le hQdeg hmA).trans (Nat.sub_add_cancel hmn).le
     set q : F[X] := Q * X ^ (j' : ℕ) with hq_def
     have hqdeg_lt : q.natDegree < n :=
       lt_of_le_of_lt (ps_nat_degree_mul_x_pow_le Q j' hmn hQdeg)
         (Nat.sub_lt (lt_of_lt_of_le (Fin.size_positive j') hmn) Nat.one_pos)
-    have hBmap : B.map ev = Q * A.map ev := by simpa [ps_eval_x_eq_map, ev] using hQ
     have hsum_left : (∑ j : Fin n, monomial (j : ℕ) (v_col (.castAdd m j))) = -q := by
       have hv : (fun j : Fin n ↦ v_col (.castAdd m j)) = fun j : Fin n ↦ -(toFn n q j) := by
         funext j; simp [v_col, col, U, ev, q, toFn]
@@ -193,7 +194,7 @@ lemma ps_resultant_dvd_pow_eval_x {F : Type*} [Field F]
 /-- If `B(X, y) = Q · A(X, y)`, then `(X - y)^(degreeX A)` divides the swapped resultant. -/
 lemma ps_resultant_dvd_pow_eval_y {F : Type*} [Field F]
     (A B : F[X][Y]) (y : F) (Q : F[X]) (n : ℕ)
-    (hmn : degreeX A ≤ n) (hn : degreeX B ≤ n)
+    (hmn : degreeX A ≤ n)
     (hQdeg : Q.natDegree ≤ n - degreeX A)
     (hQ : evalY y B = Q * evalY y A) :
     (X - C y) ^ (degreeX A) ∣
@@ -202,7 +203,6 @@ lemma ps_resultant_dvd_pow_eval_y {F : Type*} [Field F]
   simpa [ps_nat_degree_y_swap] using
     ps_resultant_dvd_pow_eval_x (swap A) (swap B) y Q n
       (by simpa [ps_nat_degree_y_swap] using hmn)
-      (by simpa [ps_nat_degree_y_swap] using hn)
       (by simpa [ps_nat_degree_y_swap] using hQdeg)
       (by simpa [ps_eval_y_eq_eval_x_swap] using hQ)
 
