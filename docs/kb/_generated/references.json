@@ -1,5 +1,5 @@
 {
-  "count": 98,
+  "count": 100,
   "entries": {
     "ABF26": {
       "authors": [
@@ -563,6 +563,31 @@
       "url": "",
       "venue": "Proceedings of the 47th Annual {IEEE} Symposium on Foundations of Computer Science",
       "year": "2006"
+    },
+    "BKS18": {
+      "authors": [
+        "Ben-Sasson, Eli",
+        "Kopparty, Swastik",
+        "Saraf, Shubhangi"
+      ],
+      "authors_text": "Ben-Sasson, Eli and Kopparty, Swastik and Saraf, Shubhangi",
+      "doi": "10.4230/LIPIcs.CCC.2018.24",
+      "entry_type": "inproceedings",
+      "fields": {
+        "author": "Ben-Sasson, Eli and Kopparty, Swastik and Saraf, Shubhangi",
+        "booktitle": "33rd Computational Complexity Conference (CCC 2018)",
+        "doi": "10.4230/LIPIcs.CCC.2018.24",
+        "pages": "24:1--24:23",
+        "series": "LIPIcs",
+        "title": "Worst-case to average case reductions for the distance to a code",
+        "volume": "102",
+        "year": "2018"
+      },
+      "key": "BKS18",
+      "title": "Worst-case to average case reductions for the distance to a code",
+      "url": "",
+      "venue": "33rd Computational Complexity Conference (CCC 2018)",
+      "year": "2018"
     },
     "BRW26": {
       "authors": [
@@ -1167,11 +1192,11 @@
         "Raghavendra, Prasad"
       ],
       "authors_text": "Gopalan, Parikshit and Guruswami, Venkatesan and Raghavendra, Prasad",
-      "doi": "10.1137/090778280",
+      "doi": "10.1137/090778274",
       "entry_type": "article",
       "fields": {
         "author": "Gopalan, Parikshit and Guruswami, Venkatesan and Raghavendra, Prasad",
-        "doi": "10.1137/090778280",
+        "doi": "10.1137/090778274",
         "journal": "SIAM Journal on Computing",
         "number": "5",
         "pages": "1432--1462",
@@ -1465,6 +1490,26 @@
       "key": "HMZ25",
       "title": "Sublinear Proofs over Polynomial Rings",
       "url": "https://eprint.iacr.org/2025/199",
+      "venue": "",
+      "year": "2025"
+    },
+    "Hab25": {
+      "authors": [
+        "Ulrich Hab\u00f6ck"
+      ],
+      "authors_text": "Ulrich Hab\u00f6ck",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Ulrich Hab\u00f6ck",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2025/2110",
+        "title": "A note on mutual correlated agreement for {Reed-Solomon} codes",
+        "url": "https://eprint.iacr.org/2025/2110",
+        "year": "2025"
+      },
+      "key": "Hab25",
+      "title": "A note on mutual correlated agreement for {Reed-Solomon} codes",
+      "url": "https://eprint.iacr.org/2025/2110",
       "venue": "",
       "year": "2025"
     },
