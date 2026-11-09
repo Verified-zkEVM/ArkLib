@@ -7,6 +7,7 @@ module
 
 public import ArkLib.ProofSystem.Sumcheck.Core.Protocol
 public import ArkLib.ProofSystem.Sumcheck.Spec.General
+public import ArkLib.Interaction.Core.LegacyAppend
 
 /-!
 # Sumcheck verification and execution in the interaction layer
@@ -36,67 +37,6 @@ The main results are:
 namespace Sumcheck.Core
 open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
   OracleComp OracleSpec ProtocolSpec
-
-/-! ## Routing an appended message spec -/
-
-section Append
-
-variable {m₁ m₂ : ℕ} {p₁ : ProtocolSpec m₁} {p₂ : ProtocolSpec m₂}
-  [O₁ : ∀ i, OracleInterface (p₁.Message i)] [O₂ : ∀ i, OracleInterface (p₂.Message i)]
-  {ι : Type} {spec : OracleSpec ι}
-
-/-- Route a query of an appended spec, given by its half, to the handler of that half. -/
-def routePart (f : QueryImpl [p₁.Message]ₒ (OracleComp spec))
-    (g : QueryImpl [p₂.Message]ₒ (OracleComp spec)) :
-    (s : p₁.MessageIdx ⊕ p₂.MessageIdx) →
-    (q : OracleInterface.Query ((p₁ ++ₚ p₂).Message (MessageIdx.sumEquiv s))) →
-      OracleComp spec (OracleInterface.Response q)
-  | .inl i, q => OracleVerifier.queryAlongHEq inferInstance (O₁ i)
-      (by simp [MessageIdx.inl, ProtocolSpec.append, Fin.vappend_eq_append, Fin.append_left])
-      (message_interface_inl i).symm (fun q' => f ⟨i, q'⟩) q
-  | .inr i, q => OracleVerifier.queryAlongHEq inferInstance (O₂ i)
-      (by simp [MessageIdx.inr, ProtocolSpec.append, Fin.vappend_eq_append, Fin.append_right])
-      (message_interface_inr i).symm (fun q' => g ⟨i, q'⟩) q
-
-/-- Route a query along an equation naming its half. -/
-def routeAlong (f : QueryImpl [p₁.Message]ₒ (OracleComp spec))
-    (g : QueryImpl [p₂.Message]ₒ (OracleComp spec)) {s : p₁.MessageIdx ⊕ p₂.MessageIdx}
-    {j : (p₁ ++ₚ p₂).MessageIdx} (e : MessageIdx.sumEquiv s = j)
-    (q : OracleInterface.Query ((p₁ ++ₚ p₂).Message j)) :
-    OracleComp spec (OracleInterface.Response q) := by
-  subst e
-  exact routePart f g s q
-
-/-- Route the message queries of an appended spec to the handlers of its two halves. -/
-def appendRoute (f : QueryImpl [p₁.Message]ₒ (OracleComp spec))
-    (g : QueryImpl [p₂.Message]ₒ (OracleComp spec)) :
-    QueryImpl [(p₁ ++ₚ p₂).Message]ₒ (OracleComp spec) :=
-  fun q => routeAlong f g (MessageIdx.sumEquiv.apply_symm_apply q.1) q.2
-
-/-- A query named by its half is routed to the handler of that half. -/
-theorem appendRoute_sumEquiv (f : QueryImpl [p₁.Message]ₒ (OracleComp spec))
-    (g : QueryImpl [p₂.Message]ₒ (OracleComp spec)) (s : p₁.MessageIdx ⊕ p₂.MessageIdx)
-    (q : OracleInterface.Query ((p₁ ++ₚ p₂).Message (MessageIdx.sumEquiv s))) :
-    appendRoute f g ⟨MessageIdx.sumEquiv s, q⟩ = routePart f g s q := by
-  have key : ∀ s' (e : MessageIdx.sumEquiv s' = MessageIdx.sumEquiv s),
-      routeAlong f g e q = routePart f g s q := by
-    intro s' e
-    obtain rfl := MessageIdx.sumEquiv.injective e
-    rfl
-  exact key _ _
-
-/-- Answering a transported query agrees with answering the original data. -/
-theorem simulateQ_queryAlongHEq {A B : Type} (OA : OracleInterface A) (OB : OracleInterface B)
-    (hType : A = B) (h : HEq OA OB) (impl : QueryImpl spec Id)
-    (k : (q : OB.Query) → OracleComp spec (OB.Response q)) (x : A) (y : B) (hxy : HEq x y)
-    (hk : ∀ q, simulateQ impl (k q) = OB.answer y q) (q : OA.Query) :
-    simulateQ impl (OracleVerifier.queryAlongHEq OA OB hType h k q) = OA.answer x q := by
-  subst hType
-  cases eq_of_heq h
-  cases eq_of_heq hxy
-  exact hk q
-
-end Append
 
 /-! ## Decoding -/
 
@@ -165,7 +105,7 @@ def tailLift (k : ℕ) (p : Path (protocol R deg k)) :
 def route : (k : ℕ) → (p : Path (protocol R deg k)) →
     QueryImpl [(Spec.pSpec R deg k).Message]ₒ (OracleComp (oracles (protocol R deg k) p))
   | 0, _ => fun q => q.1.1.elim0
-  | k + 1, ⟨⟨⟩, ⟨⟨⟩, p⟩⟩ => appendRoute (roundRoute R deg k p)
+  | k + 1, ⟨⟨⟩, ⟨⟨⟩, p⟩⟩ => Legacy.appendRoute (roundRoute R deg k p)
       (fun q => simulateQ (tailLift R deg k p) (route k p q))
 
 end Route
@@ -183,9 +123,10 @@ theorem route_succ_sumEquiv (k : ℕ) (p : Path (protocol R deg k))
     (q : OracleInterface.Query
       ((Spec.SingleRound.pSpec R deg ++ₚ Spec.pSpec R deg k).Message (MessageIdx.sumEquiv s))) :
     route R deg (k + 1) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩ ⟨MessageIdx.sumEquiv s, q⟩ =
-      routePart (roundRoute R deg k p) (fun q => simulateQ (tailLift R deg k p) (route R deg k p q))
+      Legacy.routePart (roundRoute R deg k p)
+        (fun q => simulateQ (tailLift R deg k p) (route R deg k p q))
         s q :=
-  appendRoute_sumEquiv _ _ s q
+  Legacy.appendRoute_sumEquiv _ _ s q
 
 /-- Answering routed queries from the run's payloads answers the legacy message queries from the
 decoded transcript. -/
@@ -201,13 +142,14 @@ theorem simulateQ_route : (k : ℕ) → (tr : PathAlong oracleSig (protocol R de
     refine (congrArg (simulateQ _)
       (route_succ_sumEquiv k (projectPathAlong oracleSig _ tail) s q)).trans ?_
     rcases s with i | i
-    · refine simulateQ_queryAlongHEq _ _ _ _ _ _ _ (roundFullTranscript msg chal i.1) ?_ ?_ q
+    · refine Legacy.simulateQ_queryAlongHEq _ _ _ _ _ _ _ (roundFullTranscript msg chal i.1)
+        ?_ ?_ q
       · exact (FullTranscript.fst_apply_heq _ _).symm.trans
           (heq_of_eq (congrFun (FullTranscript.append_fst _ _) _))
       · intro q'
         obtain rfl := Unique.eq_default i
         exact simulateQ_spec_query _ _
-    · refine simulateQ_queryAlongHEq _ _ _ _ _ _ _
+    · refine Legacy.simulateQ_queryAlongHEq _ _ _ _ _ _ _
         ((decodeTranscript k tail).messages i) ?_ ?_ q
       · exact (FullTranscript.snd_apply_heq _ _).symm.trans
           (heq_of_eq (congrFun (FullTranscript.append_snd _ _) _))
@@ -243,24 +185,20 @@ theorem viewChallengeList_toView : (k : ℕ) → (tr : PathAlong oracleSig (prot
       Fin.cons chal (transcriptChallenges k tail)
     rw [viewChallengeList_toView k tail]
 
-/-- Challenge entries of a legacy spec: a value at each verifier-to-prover position. -/
-abbrev ChallengeFn {k : ℕ} (pSpec : ProtocolSpec k) :=
-  (i : Fin k) → pSpec.dir i = .V_to_P → pSpec.Type i
-
 /-- The challenge entries of one round. -/
-def roundChallengeFn (chal : R) : ChallengeFn (Spec.SingleRound.pSpec R deg)
+def roundChallengeFn (chal : R) : Legacy.ChallengeFn (Spec.SingleRound.pSpec R deg)
   | 0 => fun h => nomatch h
   | 1 => fun _ => chal
 
 /-- The challenge entries of the legacy transcript with the given challenges. -/
-def legacyChallengeFn : (k : ℕ) → (Fin k → R) → ChallengeFn (Spec.pSpec R deg k)
+def legacyChallengeFn : (k : ℕ) → (Fin k → R) → Legacy.ChallengeFn (Spec.pSpec R deg k)
   | 0, _ => fun i => i.elim0
   | k + 1, chals => Fin.fappend₂ (A := Direction) (B := Type)
         (F := fun dir type => dir = Direction.V_to_P → type)
       (roundChallengeFn (deg := deg) (chals 0)) (legacyChallengeFn k (Fin.tail chals))
 
 /-- A transported challenge entry is the original entry at the transported position. -/
-theorem cast_challengeFn_heq {a a' : Direction} {T T' : Type} (ea : a = a') (eT : T = T')
+private theorem cast_challengeFn_heq {a a' : Direction} {T T' : Type} (ea : a = a') (eT : T = T')
     (e : (a = .V_to_P → T) = (a' = .V_to_P → T')) (f : a = .V_to_P → T) (h : a' = .V_to_P) :
     HEq (cast e f h) (f (ea.trans h)) := by
   subst ea
@@ -510,7 +448,7 @@ theorem simulateQ_leftMessageQuery (k : ℕ) (A : FullTranscript (Spec.SingleRou
       simulateQ (OracleInterface.simOracle0 _ A.messages) oa :=
   QueryImpl.simulateQ_simulateQ_eq_of_apply (fun ⟨i, q⟩ => by
     dsimp only [Spec.leftMessageQuery]
-    exact simulateQ_queryAlongHEq _ _ _ _ (OracleInterface.simOracle0
+    exact Legacy.simulateQ_queryAlongHEq _ _ _ _ (OracleInterface.simOracle0
       (Spec.SingleRound.pSpec R deg ++ₚ Spec.pSpec R deg k).Message (A ++ₜ B).messages) _
       (A i.1) _
       ((heq_of_eq (congrFun (FullTranscript.append_fst A B) i.1)).symm.trans
@@ -527,30 +465,12 @@ theorem simulateQ_rightMessageQuery (k : ℕ) (A : FullTranscript (Spec.SingleRo
       simulateQ (OracleInterface.simOracle0 _ B.messages) oa :=
   QueryImpl.simulateQ_simulateQ_eq_of_apply (fun ⟨i, q⟩ => by
     dsimp only [Spec.rightMessageQuery]
-    exact simulateQ_queryAlongHEq _ _ _ _ (OracleInterface.simOracle0
+    exact Legacy.simulateQ_queryAlongHEq _ _ _ _ (OracleInterface.simOracle0
       (Spec.SingleRound.pSpec R deg ++ₚ Spec.pSpec R deg k).Message (A ++ₜ B).messages) _
       (B i.1) _
       ((heq_of_eq (congrFun (FullTranscript.append_snd A B) i.1)).symm.trans
         (FullTranscript.snd_apply_heq _ _))
       (fun _ => simulateQ_spec_query _ _) q) oa
-
-/-- The first-part challenges of an appended transcript are those of its first part. -/
-theorem challenges_append_fst {m k : ℕ} {p₁ : ProtocolSpec m} {p₂ : ProtocolSpec k}
-    (A : FullTranscript p₁) (B : FullTranscript p₂) :
-    Challenges.fst (A ++ₜ B).challenges = A.challenges := by
-  funext i
-  refine eq_of_heq ((cast_heq _ _).trans ?_)
-  exact (FullTranscript.fst_apply_heq _ _).symm.trans
-    (heq_of_eq (congrFun (FullTranscript.append_fst A B) i.1))
-
-/-- The second-part challenges of an appended transcript are those of its second part. -/
-theorem challenges_append_snd {m k : ℕ} {p₁ : ProtocolSpec m} {p₂ : ProtocolSpec k}
-    (A : FullTranscript p₁) (B : FullTranscript p₂) :
-    Challenges.snd (A ++ₜ B).challenges = B.challenges := by
-  funext i
-  refine eq_of_heq ((cast_heq _ _).trans ?_)
-  exact (FullTranscript.snd_apply_heq _ _).symm.trans
-    (heq_of_eq (congrFun (FullTranscript.append_snd A B) i.1))
 
 /-- The legacy decision fold on an appended transcript runs the first round's check on the first
 part, and continues on the second part only if that check passes. -/
@@ -574,12 +494,12 @@ theorem simulateQ_oracleVerifierProgram_succ (k : ℕ) (S : Fin (k + 2) → Type
             (Spec.oracleVerifierProgram R deg (S ∘ Fin.succ) (fun i => V i.succ) next
               (Challenges.snd (A ++ₜ B).challenges))
         | none => pure none) = _
-  rw [simulateQ_bind, simulateQ_leftMessageQuery, challenges_append_fst]
+  rw [simulateQ_bind, simulateQ_leftMessageQuery, Legacy.challenges_append_fst]
   cases simulateQ (OracleInterface.simOracle0 _ A.messages) (V 0 stmt A.challenges).run with
   | none => rfl
   | some s =>
     change simulateQ _ (simulateQ (Spec.rightMessageQuery R deg k) _) = _
-    rw [simulateQ_rightMessageQuery, challenges_append_snd]
+    rw [simulateQ_rightMessageQuery, Legacy.challenges_append_snd]
     rfl
 
 end Split
