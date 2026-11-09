@@ -31,9 +31,10 @@ whose evaluation queries are answered by Horner evaluation, and at CompPoly mult
   `toMessage`; it is used only in proofs.
 * `Computable.interpretProver_honestProver` identifies the interpreted computable honest prover
   with `Sumcheck.Core.honestProver` on the interpreted input.
-* `Computable.perfectCompleteness` and `Computable.soundness` follow from
-  `Sumcheck.Core.perfectCompleteness` and `Sumcheck.Core.verifier_soundness`. Challenge
-  implementations move between carriers by `transportDraw`, which keeps uniform sampling.
+* `Computable.support_completeness` transports the mathematical honest verdict on every
+  supported run; `Computable.perfectCompleteness` follows for every challenge implementation.
+  `Computable.soundness` transports `Sumcheck.Core.verifier_soundness`. Challenge implementations
+  move between carriers by `transportDraw`, which keeps uniform sampling.
 -/
 
 @[expose] public section
@@ -269,6 +270,38 @@ def renameQueries {ι : Type} (ambient : OracleSpec ι) (k : ℕ) :
     (fun q => liftM ((ambient + challengeSpec oracleSig (protocolOn R M' eval' k)).query (.inl q)))
     (transportDraw k fun c =>
       liftM ((ambient + challengeSpec oracleSig (protocolOn R M' eval' k)).query (.inr c)))
+
+/-- Renaming challenge nodes preserves every supported result. -/
+private theorem support_renameQueries {ι α : Type} (ambient : OracleSpec ι) (k : ℕ)
+    (program : OracleComp (ambient + challengeSpec oracleSig (protocolOn R M eval k)) α) :
+    support (simulateQ (renameQueries (M' := M') (eval' := eval') ambient k) program) =
+      support program := by
+  have full : ∀ j (draw : (c : ChallengeNode oracleSig (protocolOn R M' eval' j)) →
+      OracleComp (ambient + challengeSpec oracleSig (protocolOn R M' eval' k))
+        (challengeSpec oracleSig _ c)),
+      (∀ c, support (draw c) = Set.univ) →
+      ∀ c : ChallengeNode oracleSig (protocolOn R M eval j),
+        support (transportDraw j draw c) = Set.univ := by
+    intro j
+    induction j with
+    | zero => intro draw h ⟨c, _⟩; exact nomatch c
+    | succ k ih =>
+      intro draw h ⟨c, hc⟩
+      rcases c with c | ⟨_, c | ⟨_, c⟩⟩
+      · exact nomatch hc
+      · exact h (headNodeOn k)
+      · exact ih (tailDrawOn draw) (fun c => h _) ⟨c, hc⟩
+  have hquery : ∀ q : (ambient + challengeSpec oracleSig (protocolOn R M eval k)).Domain,
+      support (renameQueries (M' := M') (eval' := eval') ambient k q) =
+      Set.univ := by
+    intro q
+    rcases q with q | c
+    · exact support_query _
+    · exact full k _ (fun c => support_query _) c
+  induction program using OracleComp.inductionOn with
+  | pure x => simp
+  | query_bind q next ih =>
+    simp [hquery, ih]
 
 /-- Map an observation of `protocolOn` to another carrier: the transcript by `f`, the prover
 output by `g`, and the oracle part of the verdict by `dmap`. -/
@@ -615,6 +648,7 @@ variable (R : Type) [CommSemiring R] (deg n : ℕ)
 degree at most `deg`, and its evaluation queries are answered by Horner evaluation. -/
 abbrev protocol : OracleProtocol.{0} := protocolOn R (Message R deg) (evaluate R deg) n
 
+/-- Every challenge of the computable protocol is a ring element, sampled uniformly. -/
 instance [SampleableType R] :
     ∀ c, SampleableType (challengeSpec oracleSig (protocol R deg n) c) :=
   challengeSampleableOn R _ _ n
@@ -634,17 +668,13 @@ def interpretInput [BEq R] [LawfulBEq R] (data : ∀ _ : Unit, Input R deg n) :
     ∀ i, Spec.OracleStatement R n deg i :=
   fun _ => toOracleStatement (data ()).val (data ()).property
 
+/-- Reading a computable input as a mathematical polynomial is injective. -/
 theorem interpretInput_injective [BEq R] [LawfulBEq R] :
     Function.Injective (interpretInput R deg n) := fun a b h => by
   funext u
   cases u
   exact Subtype.ext (CPoly.fromCMvPolynomial_injective
     (congrArg Subtype.val (congrFun h ())))
-
-/-- Horner evaluation answers as evaluation of the mathematical message. -/
-theorem evaluate_eq_toMessage [BEq R] [LawfulBEq R] (x : Message R deg) (r : R) :
-    evaluate R deg x r = (toMessage R deg x).val.eval r :=
-  evaluate_eq R deg x r
 
 end Protocol
 
@@ -826,13 +856,58 @@ def judgement :
 
 variable {R deg n} [SampleableType R] [Nontrivial R] {ι : Type} (ambient : OracleSpec ι)
 
+/-- Every supported honest run on a true input accepts the prover's output in the final
+relation. This statement needs no probability distribution or normalization assumption. -/
+theorem support_completeness (stmt : Spec.StatementRound R n 0)
+    (data : ∀ _ : Unit, Input R deg n)
+    (hx : (relationProblem R deg n D 0).rel () (stmt, data) ()) :
+    ∀ obs ∈ support ((verifier R deg n D ambient).run stmt data (honestProver D stmt data)),
+      (judgement R deg n D).honest obs := by
+  intro obs hobs
+  have hrun := run_eq_interpret D (ambient := ambient) (inputFamily R deg n)
+    (evaluate_eq R deg) (polyFamily R deg n) (interpretInput R deg n) stmt data
+    (Out' := fun _ => Core.HonestOutput R deg n) (fun _ => honestOutputMap)
+    (honestProver D stmt data)
+  have hp := interpretProver_honestProver (m := OracleComp ambient) D stmt data
+  change interpretFocal (toMessage R deg) n (Out' := fun _ => Core.HonestOutput R deg n)
+    (fun _ => honestOutputMap)
+    (honestProver D stmt data) = _ at hp
+  rw [hp] at hrun
+  change _ = (Core.verifier R deg n D ambient).run stmt (interpretInput R deg n data)
+    (Core.honestProver D stmt (interpretInput R deg n data)) at hrun
+  have hm : mapObservation (toMessage R deg) n (fun _ => honestOutputMap)
+      (interpretInput R deg n) obs ∈ support
+        ((Core.verifier R deg n D ambient).run stmt (interpretInput R deg n data)
+          (Core.honestProver D stmt (interpretInput R deg n data))) := by
+    rw [← hrun, support_renameQueries, _root_.support_map]
+    exact ⟨obs, hobs, rfl⟩
+  rw [Core.run_verifier_honestProver, _root_.support_map] at hm
+  obtain ⟨chals, -, heq⟩ := hm
+  have hgood : (Core.judgement R deg n D).honest
+      (mapObservation (toMessage R deg) n (fun _ => honestOutputMap)
+        (interpretInput R deg n) obs) := by
+    rw [← heq]
+    obtain ⟨hv, hout, hrel⟩ := Core.legacyVerdict_honestTranscript D ambient stmt
+      (interpretInput R deg n data) hx chals
+    refine ⟨(Core.honestOutput D stmt (interpretInput R deg n data) chals).1, ?_, rfl, hrel⟩
+    change Option.map _ (legacyVerdict R deg n D ambient stmt _) = _
+    rw [hv, Option.map_some]
+    exact congrArg some (Prod.ext rfl hout.symm)
+  obtain ⟨t, ht, hprov, hrel⟩ := hgood
+  change Option.map _ obs.2.2 = some t at ht
+  obtain ⟨v, hv, rfl⟩ := Option.map_eq_some_iff.mp ht
+  have hvo : v = obs.2.1.1 := by
+    obtain ⟨h1, h2⟩ := Prod.ext_iff.mp hprov
+    exact Prod.ext h1.symm (interpretInput_injective R deg n h2.symm)
+  exact ⟨v, hv, hvo.symm, hrel⟩
+
 /-- Perfect completeness of the computable Sumcheck.
 
 For every ambient state, ambient oracle implementation and challenge implementation, the
 computable honest prover on an input whose interpretation is in the round-`0` relation is
 accepted with probability one; the accepted statement is the prover's output statement and lies
-in the final relation. The proof transports `Sumcheck.Core.perfectCompleteness` through
-`run_eq_interpret` and `interpretProver_honestProver`. -/
+in the final relation. This follows from `support_completeness`, since every result supported by
+the interpreted experiment is supported by the original run. -/
 theorem perfectCompleteness {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (challenges : QueryImpl (challengeSpec oracleSig (protocol R deg n)) ProbComp) :
@@ -841,37 +916,18 @@ theorem perfectCompleteness {σ : Type} (init : ProbComp σ)
       (relationProblem R deg n D 0) (relationProblem R deg n D (Fin.last n))
       (judgement R deg n D) (fun x _ => honestProver D x.1 x.2) 0 := by
   let : MeasurableSpace (HonestObservation R deg n) := ⊤
-  let : MeasurableSpace (Core.HonestObservation R deg n) := ⊤
-  let : MeasurableSpace (Observation oracleSig
-    (protocolOn R (R⦃≤ deg⦄[X]) (fun p x => p.val.eval x) n) (fun _ => Core.HonestOutput R deg n)
-    (Spec.StatementRound R n (Fin.last n) × ∀ j, Spec.OracleStatement R n deg j)) := ⊤
   refine ⟨MeasurableSpace.measurableSet_top, fun x _ hx => ?_⟩
-  rcases x with ⟨stmt, data⟩
-  have hC := (Core.perfectCompleteness D ambient init impl
-    (transportDraw (M' := Message R deg) (eval' := evaluate R deg) n challenges)).2
-    (stmt, interpretInput R deg n data) () hx
-  change 1 - 0 ≤ 𝒟[experiment init impl _ ((Core.verifier R deg n D ambient).run stmt
-    (interpretInput R deg n data) (Core.honestProver D stmt (interpretInput R deg n data)))] _
-    at hC
-  have hrun := run_eq_interpret D (ambient := ambient) (inputFamily R deg n)
-    (evaluate_eq_toMessage R deg) (polyFamily R deg n) (interpretInput R deg n) stmt data
-    (Out' := fun _ => Core.HonestOutput R deg n) (fun _ => honestOutputMap)
-    (honestProver D stmt data)
-  rw [← interpretProver_honestProver (m := OracleComp ambient)] at hC
-  change 1 - 0 ≤ 𝒟[experiment init impl _ ((verifierOn R deg n D ambient _ _
-    (polyFamily R deg n)).run stmt (interpretInput R deg n data)
-      (interpretFocal (toMessage R deg) n _ (honestProver D stmt data)))] _ at hC
-  rw [← hrun, experiment_renameQueries, transportDraw_transportDraw, experiment_map,
-    evalDist_map _ measurable_from_top,
-    Measure.map_apply measurable_from_top MeasurableSpace.measurableSet_top] at hC
-  refine hC.trans (measure_mono fun obs hobs => ?_)
-  obtain ⟨t, ht, hprov, hrel⟩ := hobs
-  change Option.map _ obs.2.2 = some t at ht
-  obtain ⟨v, hv, rfl⟩ := Option.map_eq_some_iff.mp ht
-  have hvo : v = obs.2.1.1 := by
-    obtain ⟨h1, h2⟩ := Prod.ext_iff.mp hprov
-    exact Prod.ext h1.symm (interpretInput_injective R deg n h2.symm)
-  exact ⟨v, hv, hvo.symm, hrel⟩
+  change 1 - 0 ≤ 𝒟[experiment init impl challenges
+    ((verifier R deg n D ambient).run x.1 x.2 (honestProver D x.1 x.2))] _
+  rw [tsub_zero]
+  apply le_of_eq
+  symm
+  apply (OracleComp.evalDist_apply_setOf_eq_one_iff_forall_mem_support _ _).mpr
+  intro obs hobs
+  simp only [experiment, mem_support_bind_iff] at hobs
+  obtain ⟨st, -, hs⟩ := hobs
+  exact support_completeness D ambient x.1 x.2 hx obs
+    (support_simulateQ_run'_subset _ _ st hs)
 
 end Completeness
 
@@ -917,7 +973,7 @@ theorem soundness [Fintype R] [IsDomain R] :
     (stmt, interpretInput R deg n data) trivial (fun h => hnot ⟨⟨⟩, ((Legacy.langProblem_language
       _ _).mp h)⟩) (interpretFocal (toMessage R deg) n (Out' := Out') (fun tr o => ⟨tr, o⟩) P)
   have hrun := run_eq_interpret D (ambient := ambient) (inputFamily R deg n)
-    (evaluate_eq_toMessage R deg) (polyFamily R deg n) (interpretInput R deg n) stmt data
+    (evaluate_eq R deg) (polyFamily R deg n) (interpretInput R deg n) stmt data
     (Out' := Out') (fun tr o => ⟨tr, o⟩) P
   change 𝒟[experiment init impl _ ((verifierOn R deg n D ambient _ _
     (polyFamily R deg n)).run stmt (interpretInput R deg n data)
