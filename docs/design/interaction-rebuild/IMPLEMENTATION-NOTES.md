@@ -3,8 +3,8 @@
 These notes record where `ArkLib/Interaction/Core/` departs from the design records in this
 directory. The records themselves are unchanged. Each entry states what the record said, what the
 code does and why. Entries 1–8 were identified by the review of the first implementation; entries
-9–12 were introduced while addressing that review, and entry 13 by core additions that the oracle
-migration needs.
+9–12 were introduced while addressing that review, entry 13 by core additions that the oracle
+migration needs, and entry 14 by the state-restoration port.
 
 ## 1. Oracle interfaces in positions; challenges indexed by node occurrences
 
@@ -142,3 +142,14 @@ migration can read the resource queries without a second logged runner. Extracto
 only the ambient part, as record D7 requires: `OracleVerifier.runWithLog_fst` proves that the
 `QueryLog.fst` of the decision log is the log of a run that records ambient queries alone, and the
 oracle extraction game passes that projection.
+
+## 14. State restoration fixes the output type and the decision ambient
+
+The legacy layer's state-restoration games let the output statement type depend on the transcript
+branch, so a claim on a rejecting branch was impossible by typing. In the interaction layer the
+verifier has one statement type `T` (records D4 and D6), so `terminalObservation` and
+`closedTerminalObservation` in `Core/Security/StateRestoration.lean` return `Option T` and
+`Option (T × ∀ j, B j)`: a rejecting branch is the value `none`, and its tests check that value
+instead of relying on the type. The ported games also fix the decision's ambient oracle to
+`[]ₒ`; a state-restoration game whose decision shares an oracle with the adversary is a later
+milestone (record D9 §6).
