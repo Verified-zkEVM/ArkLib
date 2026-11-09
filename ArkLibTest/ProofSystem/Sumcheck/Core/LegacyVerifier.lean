@@ -10,8 +10,8 @@ import ArkLib.ProofSystem.Sumcheck.Core.LegacyEquivalence
 # Legacy verifier regressions through the interaction-core bridge
 
 The wrong-target, zero-message, rejected-sum and nonconstant-message cases are checked on both
-C's verifier and B's embedded legacy verifier, using the same completed interaction. These are
-the bridge versions of LegacyVerifier rows 3–11; the kept legacy test remains separate.
+the Sumcheck core verifier `verifier` and the embedded legacy verifier `legacyVerifier`, using
+the same completed interaction. The legacy-layer test of the same cases remains separate.
 All challenges are arbitrary elements of `ZMod 5`, so evaluating a nonconstant message at the
 wrong point is observable. The final relation reads the retained input, rather than the message.
 -/
