@@ -92,8 +92,7 @@ example (stmt : Spec.StatementRound F 2 0) (oStmt : ∀ i, Spec.OracleStatement 
         drawChallenges 2 (drawOf ambient 2) := by
   refine run_badFirstProver ambient _ _ stmt oStmt ?_
   rw [htarget, Finset.sum_map]
-  simp [one]
-  decide
+  simpa [one] using (by decide : (2 : F) ≠ 0)
 
 /-! ## Zero rounds -/
 

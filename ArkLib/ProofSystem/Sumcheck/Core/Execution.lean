@@ -238,7 +238,7 @@ theorem viewChallengeList_toView : (k : ℕ) → (tr : PathAlong oracleSig (prot
     viewChallengeList k (toView (protocol R deg k) tr).1 = transcriptChallenges k tr
   | 0, _ => rfl
   | k + 1, ⟨_, ⟨chal, tail⟩⟩ => by
-    show (Fin.cons chal (viewChallengeList k (toView (protocol R deg k) tail).1) :
+    change (Fin.cons chal (viewChallengeList k (toView (protocol R deg k) tail).1) :
         Fin (k + 1) → R) =
       Fin.cons chal (transcriptChallenges k tail)
     rw [viewChallengeList_toView k tail]
@@ -636,7 +636,11 @@ theorem roundCheck_eq_none (i : Fin n) (stmt : Spec.StatementRound R n i.castSuc
       T.challenges)] at e
   rcases hT : T 0 with ⟨p, hp⟩
   rw [hT, Finset.sum_map] at h
-  simp [Spec.SingleRound.Unfolded.verifier, hT, h, OracleComp.guard_eq] at e
+  simp only [MessageIdx, Nat.reduceAdd, Nat.add_zero, Fin.vcons_fin_zero, Fin.vappend_zero,
+    Message, LawfulApplicative.map_pure, Spec.SingleRound.Unfolded.verifier, Fin.isValue,
+    Finset.sum_map, OracleComp.guard_eq, Fin.val_succ, LawfulMonad.bind_pure_comp, hT, h,
+    ↓reduceIte, OptionT.map_failure, OptionT.run_failure, FreeM.pure_inj,
+    Option.map_eq_none_iff] at e
   exact e
 
 /-- A round whose message sums to the target over `D` passes its check, and the next statement
@@ -657,7 +661,11 @@ theorem roundCheck_eq_some (i : Fin n) (stmt : Spec.StatementRound R n i.castSuc
       T.challenges)] at e
   rcases hT : T 0 with ⟨p, hp⟩
   rw [hT, Finset.sum_map] at h
-  simp [Spec.SingleRound.Unfolded.verifier, hT, h, OracleComp.guard_eq] at e
+  simp only [MessageIdx, Nat.reduceAdd, Nat.add_zero, Fin.vcons_fin_zero, Fin.vappend_zero,
+    Message, LawfulApplicative.map_pure, Spec.SingleRound.Unfolded.verifier, Fin.isValue,
+    Finset.sum_map, OracleComp.guard_eq, Fin.val_succ, LawfulMonad.bind_pure_comp, hT, h,
+    ↓reduceIte, OptionT.run_pure, FreeM.pure_inj, Option.map_eq_some_iff, Prod.mk.injEq,
+    ↓existsAndEq, true_and] at e
   exact e.1
 
 /-- If the first round fails its check, the legacy verdict rejects, whatever the later rounds. -/
