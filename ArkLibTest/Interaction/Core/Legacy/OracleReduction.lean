@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 import ArkLib.Interaction.Core.Legacy.OracleReduction
+import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
 
 /-! Acceptance examples for the embedded legacy oracle verifier: both legacy output-oracle
 representations, an embedding and a simulation, become one interaction-layer oracle map whose
@@ -98,5 +99,32 @@ example : viewChallenges (pSpec := msgChal) ⟨⟨⟩, ⟨(9 : Nat), ⟨⟩⟩�
 example (stmt : Unit) (view : View (oracleProtocol msgChal) msgChalPath) :
     (embedOracleVerifier sumVerifier).outputMap stmt msgChalPath view =
       legacyOutputMap sumVerifier (viewChallenges view.val) msgChalPath := rfl
+
+/-! ### A legacy output simulation as an oracle map -/
+
+/-- The output map of ToyProblem's virtual output oracle answers each query as legacy
+`simulateOutputQuery` does under `simOracle2`. -/
+example {ι F A : Type} [Fintype ι] [Field F] [AddCommGroup A] [Module F A]
+    (challenges : (ToyProblem.SimplifiedIOR.pSpec (F := F)).Challenges)
+    (p : Path (oracleProtocol (ToyProblem.SimplifiedIOR.pSpec (F := F))))
+    (r : ∀ o, Sum.elim (ToyProblem.Spec.OracleStatement ι A)
+      (OracleData (oracleProtocol (ToyProblem.SimplifiedIOR.pSpec (F := F))) p) o)
+    (q : [ToyProblem.SimplifiedIOR.OutputOracleStatement ι A]ₒ.Domain) :
+    (pure (simulateQ ((sumFamily (family (ToyProblem.Spec.OracleStatement ι A))
+        (pathFamily _ p)).behaviorOfRealizations r)
+        ((OracleMap.ofLegacySimulation ToyProblem.SimplifiedIOR.outputSimulation challenges p).impl
+          q)) : OracleComp []ₒ _) =
+      simulateQ (OracleInterface.simOracle2 (T₁ := ToyProblem.Spec.OracleStatement ι A)
+        (T₂ := (ToyProblem.SimplifiedIOR.pSpec (F := F)).Message) []ₒ (fun i => r (.inl i))
+        (pathMessages p (fun o => r (.inr o))))
+        (ToyProblem.SimplifiedIOR.outputSimulation.simulateOutputQuery challenges q) :=
+  simulateQ_ofLegacySimulation_impl _ challenges p r q
+
+/-- The embedded verifier's output map is the one built from its output semantics. -/
+example (challenges : msgChal.Challenges) :
+    legacyOutputMap sumVerifier challenges msgChalPath =
+      OracleMap.ofLegacySimulation ⟨sumVerifier.materializeOutput,
+        sumVerifier.simulateOutputQuery, sumVerifier.simulateOutputQuery_eq⟩ challenges
+        msgChalPath := rfl
 
 end Interaction.Core.Legacy.Tests

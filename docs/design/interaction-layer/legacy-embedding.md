@@ -12,9 +12,11 @@ forms between the layers. Nothing here changes the legacy layer. The embedding r
 | `Protocol` | `protocol pSpec`, the plain tree of a legacy specification, and `oracleProtocol pSpec`, its oracle tree. Also `transcriptEquiv`, which identifies runtime paths with legacy full transcripts. |
 | `Prover` | `embedProver`, which turns a legacy prover into a focal strategy slot for slot. Also `legacySampler`, the public-coin sampler indexed by legacy challenge rounds. |
 | `Verifier` | `embedVerifier` and `embedReduction`. The verifier decides on the decoded transcript. |
-| `OracleReduction` | `embedOracleProver` and `embedOracleVerifier` on the oracle tree, for both legacy oracle-output representations. |
+| `OracleReduction` | `embedOracleProver` and `embedOracleVerifier` on the oracle tree, for both legacy oracle-output representations. `OracleMap.ofLegacySimulation` turns a legacy output-oracle simulation into an oracle map. |
 | `Execution` | The common observation, the execution correspondence and its logged form. |
+| `OracleExecution` | The execution correspondence on the oracle tree: transport of oracle-tree strategies to the plain tree, the transcript read off a run, and `oracleFinalize`. |
 | `Security` | The completeness, soundness and knowledge-soundness transfers, the legacy transcript prefix of a full prefix, and the round-by-round transfers. |
+| `OracleSecurity` | The completeness, soundness and round-by-round transfers for the embedded oracle verifier on the oracle tree. |
 
 ## The common observation
 
@@ -165,6 +167,89 @@ relation `fun t w => (t, w) ∈ relOut`.
 - With `[Nonempty WitIn]`, the converse holds for every `init`. It does not transport extractors
   (departure 16).
 
+## Oracle reductions
+
+The oracle tree `oracleProtocol pSpec` records each prover message as an oracle: the verifier's
+view holds the challenges only, and the decision reads messages and input oracle statements
+through the oracle families. The results below are stated on that tree, for
+`embedOracleVerifier V` and `embedOracleProver P`. They are not consequences of the plain
+transfers applied to `V.toVerifier`; the plain transfers are an ingredient of their proofs.
+
+### Execution correspondence
+
+The oracle tree and the plain tree have the same rounds, owners and runtime moves.
+`toPlainFrom` sends an oracle-tree strategy of either participant to the plain tree, and
+`toOraclePath` sends a plain runtime path back. The runner commutes with the transport
+(`runWith_toPlainFrom`), as do `Prover.simulate` and the sampler. The transport of the embedded
+oracle prover is the embedded plain prover (`toPlainFrom_embedOracleProver`).
+
+On the runtime path `tr` of an actual run:
+
+- `viewChallenges_toView`: the challenges in the verifier's view are
+  `(oracleDecode pSpec tr).challenges`.
+- `pathMessages_payloads`: the data of the message oracles are
+  `(oracleDecode pSpec tr).messages`.
+- `simulateQ_embedOracleVerifier_decide`: the routed decision, answered from the input data and
+  the path's payloads, is legacy `verify` on the decoded challenges under
+  `simOracle2 oSpec oStmt (oracleDecode pSpec tr).messages`.
+- `embedOracleVerifier_outputMap_f`: the output data are
+  `V.materializeOutput (oracleDecode pSpec tr).challenges oStmt (oracleDecode pSpec tr).messages`.
+
+The common result is
+
+```lean
+oracleFinalize : Observation oracleSig (oracleProtocol pSpec)
+    (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) (StmtOut × (∀ i, OStmtOut i)) →
+  LegacyResult pSpec (StmtOut × (∀ i, OStmtOut i)) WitOut
+```
+
+It keeps the prover's output statement, output oracle data and witness, and the verifier's output
+statement and output oracle data, as legacy `OracleReduction.run` does. The verifier's output
+data come from its output map, so both legacy output-oracle representations are covered.
+
+- `oracleFinalize_observeWith_counterpartFirst` is the program equality for every legacy oracle
+  reduction `R`: the finalized counterpart-first oracle observation of
+  `embedOracleVerifier R.verifier` against `embedOracleProver R.prover stmt oStmt wit` is
+  `(R.run stmt oStmt wit).run`.
+- `simulateQ_oracleFinalize_run` gives the same equality for the default run
+  `(embedOracleVerifier R.verifier).run`, after `oracleChallengeReindex`, under
+  `PureChallengeSlots R.prover`.
+- `experiment_oracleFinalize_run_evalDistEq` and `evalDist_experiment_oracleFinalize_run` state
+  the equality in distribution and as measures, under `oracleChallengeImpl chImpl`, for every
+  reduction.
+- `oracleObserveWith_embed`, `simulateQ_embedOracleVerifier_run` and
+  `experiment_embedOracleVerifier_run` compare an oracle run against any oracle-tree prover with
+  the plain run of `embedVerifier V.toVerifier` against the transported prover. The oracle
+  observation is the plain observation with its path read back by `toOracleObservation`.
+
+### Security transfers
+
+The oracle notions use `OracleVerifier.classicalModel` with
+`oracleChallengeImpl challengeQueryImpl`. Statements are pairs `(stmt, oStmt)`; legacy oracle
+notions are defined through `V.toVerifier`.
+
+- `oracleCompleteness_iff`: completeness of the embedded oracle reduction for the honest-output
+  judgement is legacy `R.completeness`.
+- `oracleSoundness_iff`: soundness of `embedOracleVerifier V` against every oracle-tree prover is
+  legacy `V.soundness`. An oracle-tree prover is transported to the plain tree; a legacy prover
+  embeds as `embedOracleProver`.
+- `oracleAcceptanceAgrees`: the oracle verifier's `validAcceptance` agrees with legacy `verify`
+  on the decoded transcript. The generic round-by-round transfers of `Layout` then give
+  `embedOracleVerifier_rbrSoundness`, `rbrSoundness_of_embedOracleVerifier`,
+  `embedOracleVerifier_rbrKnowledgeSoundness` and
+  `rbrKnowledgeSoundness_of_embedOracleVerifier`, with the terminal hypotheses of the plain
+  transfers.
+
+The straight-line knowledge transfer is stated for the plain tree only; see departure 17.
+
+### Output-oracle simulations
+
+`OracleMap.ofLegacySimulation S challenges p` is the oracle map of a legacy
+`OracleOutputSimulation`. Its data map is the legacy materialization and its queries follow
+`S.simulateOutputQuery`. `simulateQ_ofLegacySimulation_impl` states that answering a query from
+realized data is answering `simulateOutputQuery` under `simOracle2`. `legacyOutputMap V` is the
+oracle map of `V`'s output semantics read as a simulation.
+
 ## Departures
 
 These entries continue the numbered departures of
@@ -223,6 +308,13 @@ Neither layer constrains its round-by-round extractor beyond the state-function 
 the existential notions are still equivalent. A statement that names a particular
 interaction-layer extractor is not transported back.
 
-## Not covered
+### 17. Straight-line knowledge soundness is transferred on the plain tree only
 
-The oracle-tree analogue of the execution correspondence is not stated.
+The oracle-tree transfers cover completeness, soundness, round-by-round soundness and
+round-by-round knowledge soundness. The straight-line knowledge transfer
+(`knowledgeSoundnessWith_iff`) is stated for `embedVerifier V.toVerifier` on the plain tree, not
+for `embedOracleVerifier V`. Its proof rests on the logged form of the execution correspondence
+(`runEq_ambientLogged_prover`, `extractionGame_embed`), and the oracle tree's logged run,
+`OracleVerifier.runWithLog`, also logs the decision's queries to the input and message oracles.
+The logged correspondence on the oracle tree, and the comparison of those decision logs with
+the legacy verifier log, are not stated.

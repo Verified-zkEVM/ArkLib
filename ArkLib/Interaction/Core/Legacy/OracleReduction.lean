@@ -88,28 +88,38 @@ theorem oracle_dir_eq_of_owner {j : Fin n} : {d : Direction} → {hd : pSpec.dir
   | .P_to_V, _, h => nomatch h
   | .V_to_P, _, _ => rfl
 
+/-- A challenge round's node in the oracle tree belongs to the receiver. -/
+theorem oracle_owner_of_dir {j : Fin n} : {d : Direction} → {hd : pSpec.dir j = d} →
+    d = .V_to_P → owner oracleSig (oraclePos pSpec j d hd) = .receiver
+  | .V_to_P, _, _ => rfl
+
+/-- The oracle tree as a layout. -/
+abbrev oracleLayout (pSpec : ProtocolSpec n) [∀ i, OracleInterface.{0, 0} (pSpec.Message i)] :
+    Layout pSpec where
+  P := OraclePoly
+  l := oracleSig
+  pos := oracleRound pSpec
+  move j := oracleMoveEquiv pSpec j _ rfl
+  owner_iff _ := ⟨oracle_dir_eq_of_owner, oracle_owner_of_dir⟩
+
 /-- The legacy challenge index of a challenge node in the oracle tree from round `k`. -/
-def oracleChallengeRound : (k m : ℕ) → (h : k + m = n) →
-    ChallengeNode oracleSig (oracleSuffix pSpec k m h) → pSpec.ChallengeIdx
-  | _, 0, _, c => c.val.elim
-  | k, _ + 1, _, ⟨.inl _, hc⟩ => ⟨⟨k, by omega⟩, oracle_dir_eq_of_owner hc⟩
-  | k, m + 1, _, ⟨.inr ⟨_, c⟩, hc⟩ => oracleChallengeRound (k + 1) m _ ⟨c, hc⟩
+abbrev oracleChallengeRound : (k m : ℕ) → (h : k + m = n) →
+    ChallengeNode oracleSig (oracleSuffix pSpec k m h) → pSpec.ChallengeIdx :=
+  (oracleLayout pSpec).challengeRound
 
 /-- The move at a challenge node of the oracle tree is the legacy challenge of its round. -/
-def oracleChallengeMove : (k m : ℕ) → (h : k + m = n) →
+abbrev oracleChallengeMove : (k m : ℕ) → (h : k + m = n) →
     (c : ChallengeNode oracleSig (oracleSuffix pSpec k m h)) →
     challengeSpec oracleSig (oracleSuffix pSpec k m h) c ≃
-      pSpec.Challenge (oracleChallengeRound k m h c)
-  | _, 0, _, c => c.val.elim
-  | _, _ + 1, _, ⟨.inl _, _⟩ => oracleMoveEquiv pSpec _ _ rfl
-  | k, m + 1, _, ⟨.inr ⟨_, c⟩, hc⟩ => oracleChallengeMove (k + 1) m _ ⟨c, hc⟩
+      pSpec.Challenge (oracleChallengeRound k m h c) :=
+  (oracleLayout pSpec).challengeMove
 
 /-- Draw at a challenge node of the oracle tree from a source of legacy challenges. -/
-def oracleLegacyDraw {M : Type → Type} [Functor M]
+abbrev oracleLegacyDraw {M : Type → Type} [Functor M]
     (src : (i : pSpec.ChallengeIdx) → M (pSpec.Challenge i)) (k m : ℕ) (h : k + m = n)
     (c : ChallengeNode oracleSig (oracleSuffix pSpec k m h)) :
     M (challengeSpec oracleSig (oracleSuffix pSpec k m h) c) :=
-  (oracleChallengeMove k m h c).symm <$> src (oracleChallengeRound k m h c)
+  (oracleLayout pSpec).draw src k m h c
 
 /-- The public-coin sampler of the oracle tree, drawing each challenge from `src`. -/
 abbrev oracleLegacySampler {M : Type → Type} [Monad M] (pSpec : ProtocolSpec n)
@@ -309,19 +319,46 @@ def decisionImpl (p : Path (oracleProtocol pSpec)) :
     (fun q => simulateQ (fun t => liftM ((oSpec + (sumFamily (family OStmtIn)
       (pathFamily (oracleProtocol pSpec) p)).spec).query (.inr t))) (resourceImpl p q))
 
-/-- The output map of a legacy oracle verifier, for the challenges of a run. Its data map is
-the legacy materialization, and its queries follow legacy `simulateOutputQuery`. -/
+/-- The output map of a legacy output-oracle simulation, for the challenges of a run. Its data
+map is the legacy materialization on the input data and the path's messages, and its queries
+follow legacy `simulateOutputQuery`, routed to the input and path oracles. -/
+def _root_.Interaction.Core.OracleMap.ofLegacySimulation [∀ t, Inhabited (oSpec.Range t)]
+    (S : OracleOutputSimulation oSpec OStmtIn OStmtOut pSpec)
+    (challenges : pSpec.Challenges) (p : Path (oracleProtocol pSpec)) :
+    OracleMap (sumFamily (family OStmtIn) (pathFamily (oracleProtocol pSpec) p))
+      (family OStmtOut) where
+  f r := S.materializeOutput challenges (fun i => r (.inl i)) (pathMessages p (fun o => r (.inr o)))
+  impl q := simulateQ (resourceImpl p) (simulateQ dropAmbient (S.simulateOutputQuery challenges q))
+  law r q := by
+    rw [QueryImpl.simulateQ_simulateQ_eq_of_apply (resourceImpl_law p r)]
+    exact simulateQ_dropAmbient_of_eq_pure _ _ _
+      (S.simulateOutputQuery_eq challenges _ _ q)
+
+/-- **Agreement with the legacy simulation.** The answer to a query of the output map from
+realized input and path data is the answer of legacy `simulateOutputQuery` under `simOracle2` on
+the input data and the path's messages. -/
+theorem simulateQ_ofLegacySimulation_impl [∀ t, Inhabited (oSpec.Range t)]
+    (S : OracleOutputSimulation oSpec OStmtIn OStmtOut pSpec)
+    (challenges : pSpec.Challenges) (p : Path (oracleProtocol pSpec))
+    (r : ∀ o, Sum.elim OStmtIn (OracleData (oracleProtocol pSpec) p) o) (q : [OStmtOut]ₒ.Domain) :
+    (pure (simulateQ ((sumFamily (family OStmtIn) (pathFamily _ p)).behaviorOfRealizations r)
+        ((OracleMap.ofLegacySimulation S challenges p).impl q)) : OracleComp oSpec _) =
+      simulateQ (OracleInterface.simOracle2 (T₁ := OStmtIn) (T₂ := pSpec.Message) oSpec
+        (fun i => r (.inl i)) (pathMessages p (fun o => r (.inr o))))
+        (S.simulateOutputQuery challenges q) := by
+  rw [(OracleMap.ofLegacySimulation S challenges p).law]
+  exact (S.simulateOutputQuery_eq challenges (fun i => r (.inl i))
+    (pathMessages p (fun o => r (.inr o))) q).symm
+
+/-- The output map of a legacy oracle verifier, for the challenges of a run: the output map of
+its output-oracle semantics read as a simulation. -/
 def legacyOutputMap [∀ t, Inhabited (oSpec.Range t)]
     (V : _root_.OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec)
     (challenges : pSpec.Challenges) (p : Path (oracleProtocol pSpec)) :
     OracleMap (sumFamily (family OStmtIn) (pathFamily (oracleProtocol pSpec) p))
-      (family OStmtOut) where
-  f r := V.materializeOutput challenges (fun i => r (.inl i)) (pathMessages p (fun o => r (.inr o)))
-  impl q := simulateQ (resourceImpl p) (simulateQ dropAmbient (V.simulateOutputQuery challenges q))
-  law r q := by
-    rw [QueryImpl.simulateQ_simulateQ_eq_of_apply (resourceImpl_law p r)]
-    exact simulateQ_dropAmbient_of_eq_pure _ _ _
-      (V.simulateOutputQuery_eq challenges _ _ q)
+      (family OStmtOut) :=
+  OracleMap.ofLegacySimulation ⟨V.materializeOutput, V.simulateOutputQuery,
+    V.simulateOutputQuery_eq⟩ challenges p
 
 /-- The embedded oracle verifier. It decides by running legacy `verify` on the challenges of its
 view, and outputs the legacy output oracles. -/

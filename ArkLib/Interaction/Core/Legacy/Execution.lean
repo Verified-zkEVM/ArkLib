@@ -135,18 +135,19 @@ theorem samplerFrom_zero {M : Type → Type} [Monad M]
     (src : (i : pSpec.ChallengeIdx) → M (pSpec.Challenge i)) (k : ℕ) (h : k + 0 = n) :
     samplerFrom src k 0 h = (pure ⟨⟩ : M PUnit) := rfl
 
-/-- The node equation of `runWith` on the plain tree, as one local exchange. -/
-theorem runWith_liftBind {M : Type → Type} [Monad M] [LawfulMonad M] (order : Schedule)
-    (a : PlainPos) (rest : PlainPoly.B a → Protocol.{0})
-    {OutP OutC : PathAlong plainSig (.liftBind a rest) → Type}
-    (p : Focal plainSig M (.liftBind a rest) OutP)
-    (c : Counterpart plainSig M (.liftBind a rest) OutC) :
-    runWith (l := plainSig) (m := M) order (.liftBind a rest) p c =
-      step (owner plainSig a) order p c (fun x pn cn =>
-        runWith (l := plainSig) (m := M) order (rest (plainSig.toFunB a x)) pn cn >>= fun r =>
+/-- The node equation of `runWith`, as one local exchange. -/
+theorem runWith_liftBind {P : PFunctor.{1, 0}} {l : PFunctor.Lens P rolePoly.{0}}
+    {M : Type → Type} [Monad M] [LawfulMonad M] (order : Schedule)
+    (a : P.A) (rest : P.B a → FreeM P PUnit.{1})
+    {OutP OutC : PathAlong l (.liftBind a rest) → Type}
+    (p : Focal l M (.liftBind a rest) OutP)
+    (c : Counterpart l M (.liftBind a rest) OutC) :
+    runWith (l := l) (m := M) order (.liftBind a rest) p c =
+      step (owner l a) order p c (fun x pn cn =>
+        runWith (l := l) (m := M) order (rest (l.toFunB a x)) pn cn >>= fun r =>
           pure (⟨⟨x, r.1⟩, r.2.1, r.2.2⟩ :
-            (t : PathAlong plainSig (.liftBind a rest)) × OutP t × OutC t)) :=
-  runWith_node (l := plainSig) (m := M) order a rest p c
+            (t : PathAlong l (.liftBind a rest)) × OutP t × OutC t)) :=
+  runWith_node (l := l) (m := M) order a rest p c
 
 /-- A counterpart-first run whose first node is round `j`, with the embedded slot and a sampler
 whose draw at this node is the legacy challenge, is `processRound j` followed by the rest. -/
@@ -488,12 +489,17 @@ section Bridge
 
 variable {StmtIn WitIn StmtOut WitOut : Type}
 
+/-- Answer the challenge queries of a layout's tree with the legacy challenge oracle. -/
+def Layout.challengeReindex (L : Layout pSpec) (oSpec : OracleSpec ι) :
+    QueryImpl (oSpec + challengeSpec L.l L.protocol) (OracleComp (oSpec + [pSpec.Challenge]ₒ)) :=
+  QueryImpl.add (liftShared oSpec pSpec)
+    (L.draw (challengeOracle oSpec pSpec) 0 n (Nat.zero_add n))
+
 /-- Answer the challenge queries of the plain tree with the legacy challenge oracle. -/
-def challengeReindex (oSpec : OracleSpec ι) (pSpec : ProtocolSpec n) :
+abbrev challengeReindex (oSpec : OracleSpec ι) (pSpec : ProtocolSpec n) :
     QueryImpl (oSpec + challengeSpec plainSig (protocol pSpec))
       (OracleComp (oSpec + [pSpec.Challenge]ₒ)) :=
-  QueryImpl.add (liftShared oSpec pSpec)
-    (legacyDraw (challengeOracle oSpec pSpec) 0 n (Nat.zero_add n))
+  (plainLayout pSpec).challengeReindex oSpec
 
 /-- The prover-sampler run of the interaction layer, with its queries reindexed, is the
 focal-first run against the legacy sampler. -/
@@ -536,17 +542,60 @@ theorem simulateQ_verifier_run (V : Core.Verifier oSpec (protocol pSpec) StmtIn 
   rw [liftShared, OracleComp.liftM_eq_liftM_liftM (spec := oSpec)]
   rfl
 
-/-- The challenge implementation of the plain tree induced by a legacy challenge
+/-- The challenge implementation of a layout's tree induced by a legacy challenge
 implementation: each challenge node draws its round's legacy challenge. -/
-def plainChallengeImpl (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp) :
+def Layout.challengeImpl (L : Layout pSpec) (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp) :
+    QueryImpl (challengeSpec L.l L.protocol) ProbComp :=
+  fun c => (L.challengeMove 0 n (Nat.zero_add n) c).symm <$>
+    chImpl ⟨L.challengeRound 0 n (Nat.zero_add n) c, ()⟩
+
+/-- The challenge implementation of the plain tree induced by a legacy challenge
+implementation. -/
+abbrev plainChallengeImpl (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp) :
     QueryImpl (challengeSpec plainSig (protocol pSpec)) ProbComp :=
-  fun c => (challengeMove 0 n (Nat.zero_add n) c).symm <$>
-    chImpl ⟨challengeRound 0 n (Nat.zero_add n) c, ()⟩
+  (plainLayout pSpec).challengeImpl chImpl
 
 theorem stateless_challengeOracle {σ : Type} (impl : QueryImpl oSpec (StateT σ ProbComp))
     (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp) (i : pSpec.ChallengeIdx) :
     Stateless impl chImpl (challengeOracle oSpec pSpec i) :=
   stateless_query_inr impl chImpl ⟨i, ()⟩
+
+/-- Reindexing the challenges moves the handler from a layout's challenge oracle to the legacy
+challenge oracle, for any shared-state implementation. -/
+theorem Layout.simulateQ_expHandler_challengeReindex (L : Layout pSpec) {σ : Type}
+    (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp) {α : Type}
+    (x : OracleComp (oSpec + challengeSpec L.l L.protocol) α) :
+    simulateQ (expHandler impl (L.challengeImpl chImpl)) x =
+      simulateQ (expHandler impl chImpl) (simulateQ (L.challengeReindex oSpec) x) := by
+  rw [QueryImpl.simulateQ_simulateQ_eq_of_apply (fun t => ?_) x]
+  rcases t with q | c
+  · exact QueryImpl.simulateQ_add_liftM_query_left _ _ q
+  · change simulateQ _ ((L.challengeMove 0 n (Nat.zero_add n) c).symm <$>
+      challengeOracle oSpec pSpec (L.challengeRound 0 n (Nat.zero_add n) c)) = _
+    simp only [expHandler]
+    rw [simulateQ_map, QueryImpl.addLift_def]
+    erw [QueryImpl.simulateQ_add_liftM_query_right]
+    refine StateT.ext fun s => ?_
+    simp only [QueryImpl.addLift_def, QueryImpl.add_apply_inr, QueryImpl.liftTarget_apply,
+      Layout.challengeImpl, StateT.run_liftM]
+    erw [StateT.run_map, StateT.run_liftM]
+    simp only [map_eq_bind_pure_comp]
+    erw [bind_assoc, bind_map_left]
+    refine bind_congr fun _ => ?_
+    erw [LawfulMonad.pure_bind]
+    rfl
+
+/-- Reindexing the challenges moves the experiment from a layout's challenge oracle to the legacy
+challenge oracle. -/
+theorem Layout.experiment_challengeReindex (L : Layout pSpec) {σ α : Type} (init : ProbComp σ)
+    (impl : QueryImpl oSpec (StateT σ ProbComp)) (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp)
+    (x : OracleComp (oSpec + challengeSpec L.l L.protocol) α) :
+    experiment init impl (L.challengeImpl chImpl) x =
+      experiment init impl chImpl (simulateQ (L.challengeReindex oSpec) x) := by
+  unfold experiment
+  exact bind_congr fun st =>
+    congrArg (fun y => StateT.run' y st) (L.simulateQ_expHandler_challengeReindex impl chImpl x)
 
 /-- Reindexing the challenges moves the handler from the plain tree's challenge oracle to the
 legacy challenge oracle, for any shared-state implementation. -/
@@ -555,24 +604,8 @@ theorem simulateQ_expHandler_challengeReindex {σ : Type}
     (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp) {α : Type}
     (x : OracleComp (oSpec + challengeSpec plainSig (protocol pSpec)) α) :
     simulateQ (expHandler impl (plainChallengeImpl chImpl)) x =
-      simulateQ (expHandler impl chImpl) (simulateQ (challengeReindex oSpec pSpec) x) := by
-  rw [QueryImpl.simulateQ_simulateQ_eq_of_apply (fun t => ?_) x]
-  rcases t with q | c
-  · exact QueryImpl.simulateQ_add_liftM_query_left _ _ q
-  · change simulateQ _ ((challengeMove 0 n (Nat.zero_add n) c).symm <$>
-      challengeOracle oSpec pSpec (challengeRound 0 n (Nat.zero_add n) c)) = _
-    simp only [expHandler]
-    rw [simulateQ_map, QueryImpl.addLift_def]
-    erw [QueryImpl.simulateQ_add_liftM_query_right]
-    refine StateT.ext fun s => ?_
-    simp only [QueryImpl.addLift_def, QueryImpl.add_apply_inr, QueryImpl.liftTarget_apply,
-      plainChallengeImpl, StateT.run_liftM]
-    erw [StateT.run_map, StateT.run_liftM]
-    simp only [map_eq_bind_pure_comp]
-    erw [bind_assoc, bind_map_left]
-    refine bind_congr fun _ => ?_
-    erw [LawfulMonad.pure_bind]
-    rfl
+      simulateQ (expHandler impl chImpl) (simulateQ (challengeReindex oSpec pSpec) x) :=
+  (plainLayout pSpec).simulateQ_expHandler_challengeReindex impl chImpl x
 
 /-- Reindexing the challenges moves the experiment from the plain tree's challenge oracle to
 the legacy challenge oracle. -/
@@ -580,10 +613,8 @@ theorem experiment_challengeReindex {σ α : Type} (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp)) (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp)
     (x : OracleComp (oSpec + challengeSpec plainSig (protocol pSpec)) α) :
     experiment init impl (plainChallengeImpl chImpl) x =
-      experiment init impl chImpl (simulateQ (challengeReindex oSpec pSpec) x) := by
-  unfold experiment
-  exact bind_congr fun st =>
-    congrArg (fun y => StateT.run' y st) (simulateQ_expHandler_challengeReindex impl chImpl x)
+      experiment init impl chImpl (simulateQ (challengeReindex oSpec pSpec) x) :=
+  (plainLayout pSpec).experiment_challengeReindex init impl chImpl x
 
 end Bridge
 

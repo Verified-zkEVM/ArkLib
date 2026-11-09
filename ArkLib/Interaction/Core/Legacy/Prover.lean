@@ -44,30 +44,101 @@ theorem dir_eq_of_owner_sender : {d : Direction} → {T : Type} →
   | .P_to_V, _, _ => rfl
   | .V_to_P, _, h => nomatch h
 
-/-! ### Challenge nodes and legacy challenge indices -/
+/-! ### Layouts and legacy challenge indices -/
+
+/-- A legacy protocol laid out as a chain of interaction-layer nodes, one per round: round `j`
+is the node `pos j`, its runtime moves are the legacy payloads of the round, and it belongs to
+the receiver exactly when the round is a challenge round. The plain and oracle trees are the two
+layouts used here. -/
+structure Layout (pSpec : ProtocolSpec n) where
+  /-- The node polynomial. -/
+  P : PFunctor.{1, 0}
+  /-- The ownership lens. -/
+  l : PFunctor.Lens P rolePoly.{0}
+  /-- The node of each round. -/
+  pos : Fin n → P.A
+  /-- A round's runtime moves are its legacy payloads. -/
+  move : (j : Fin n) → Move l (pos j) ≃ pSpec.«Type» j
+  /-- A round's node belongs to the receiver exactly at challenge rounds. -/
+  owner_iff : ∀ j, owner l (pos j) = .receiver ↔ pSpec.dir j = .V_to_P
+
+namespace Layout
+
+variable (L : Layout pSpec)
+
+/-- The tree of rounds `k, …, n - 1`. -/
+abbrev tree (k m : ℕ) (h : k + m = n) : FreeM L.P PUnit.{1} := chain L.pos k m h
+
+/-- The tree of the whole protocol. -/
+abbrev protocol : FreeM L.P PUnit.{1} := L.tree 0 n (Nat.zero_add n)
+
+/-- Read the legacy full transcript off a completed run. -/
+abbrev decode (tr : PathAlong L.l L.protocol) : FullTranscript pSpec :=
+  chainEquiv L.l L.pos L.move tr
+
+/-- A sender node is a message round. -/
+theorem dir_eq_of_sender {j : Fin n} (h : owner L.l (L.pos j) = .sender) :
+    pSpec.dir j = .P_to_V := by
+  cases hd : pSpec.dir j
+  · rfl
+  · exact absurd ((L.owner_iff j).mpr hd) (by rw [h]; exact nofun)
+
+/-- A message round's node belongs to the sender. -/
+theorem owner_eq_sender {j : Fin n} (h : pSpec.dir j = .P_to_V) :
+    owner L.l (L.pos j) = .sender := by
+  cases ho : owner L.l (L.pos j)
+  · rfl
+  · rw [(L.owner_iff j).mp ho] at h
+    cases h
 
 /-- The legacy challenge index of a challenge node in the tree from round `k`. -/
 def challengeRound : (k m : ℕ) → (h : k + m = n) →
-    ChallengeNode plainSig (suffix pSpec k m h) → pSpec.ChallengeIdx
+    ChallengeNode L.l (L.tree k m h) → pSpec.ChallengeIdx
   | _, 0, _, c => c.val.elim
-  | k, _ + 1, _, ⟨.inl _, hc⟩ => ⟨⟨k, by omega⟩, dir_eq_of_owner hc⟩
+  | k, _ + 1, _, ⟨.inl _, hc⟩ => ⟨⟨k, by omega⟩, (L.owner_iff _).mp hc⟩
   | k, m + 1, _, ⟨.inr ⟨_, c⟩, hc⟩ => challengeRound (k + 1) m _ ⟨c, hc⟩
 
 /-- The move at a challenge node is the legacy challenge of its round. -/
-def challengeMove : (k m : ℕ) → (h : k + m = n) →
-    (c : ChallengeNode plainSig (suffix pSpec k m h)) →
-    challengeSpec plainSig (suffix pSpec k m h) c ≃
-      pSpec.Challenge (challengeRound k m h c)
+def challengeMove : (k m : ℕ) → (h : k + m = n) → (c : ChallengeNode L.l (L.tree k m h)) →
+    challengeSpec L.l (L.tree k m h) c ≃ pSpec.Challenge (L.challengeRound k m h c)
   | _, 0, _, c => c.val.elim
-  | _, _ + 1, _, ⟨.inl _, _⟩ => plainMoveEquiv _ _
+  | _, _ + 1, _, ⟨.inl _, _⟩ => L.move _
   | k, m + 1, _, ⟨.inr ⟨_, c⟩, hc⟩ => challengeMove (k + 1) m _ ⟨c, hc⟩
 
 /-- Draw at a challenge node from a source of legacy challenges, indexed by legacy round. -/
-def legacyDraw {M : Type → Type} [Functor M]
+def draw {M : Type → Type} [Functor M]
+    (src : (i : pSpec.ChallengeIdx) → M (pSpec.Challenge i)) (k m : ℕ) (h : k + m = n)
+    (c : ChallengeNode L.l (L.tree k m h)) : M (challengeSpec L.l (L.tree k m h) c) :=
+  (L.challengeMove k m h c).symm <$> src (L.challengeRound k m h c)
+
+end Layout
+
+/-- The plain tree as a layout. -/
+abbrev plainLayout (pSpec : ProtocolSpec n) : Layout pSpec where
+  P := PlainPoly
+  l := plainSig
+  pos := plainRound pSpec
+  move _ := plainMoveEquiv _ _
+  owner_iff j := ⟨dir_eq_of_owner, fun h => by simp [plainRound, h]⟩
+
+/-- The legacy challenge index of a challenge node in the tree from round `k`. -/
+abbrev challengeRound : (k m : ℕ) → (h : k + m = n) →
+    ChallengeNode plainSig (suffix pSpec k m h) → pSpec.ChallengeIdx :=
+  (plainLayout pSpec).challengeRound
+
+/-- The move at a challenge node is the legacy challenge of its round. -/
+abbrev challengeMove : (k m : ℕ) → (h : k + m = n) →
+    (c : ChallengeNode plainSig (suffix pSpec k m h)) →
+    challengeSpec plainSig (suffix pSpec k m h) c ≃
+      pSpec.Challenge (challengeRound k m h c) :=
+  (plainLayout pSpec).challengeMove
+
+/-- Draw at a challenge node from a source of legacy challenges, indexed by legacy round. -/
+abbrev legacyDraw {M : Type → Type} [Functor M]
     (src : (i : pSpec.ChallengeIdx) → M (pSpec.Challenge i)) (k m : ℕ) (h : k + m = n)
     (c : ChallengeNode plainSig (suffix pSpec k m h)) :
     M (challengeSpec plainSig (suffix pSpec k m h) c) :=
-  (challengeMove k m h c).symm <$> src (challengeRound k m h c)
+  (plainLayout pSpec).draw src k m h c
 
 /-- The public-coin sampler of the plain tree from round `k`. -/
 def samplerFrom {M : Type → Type} [Monad M]
