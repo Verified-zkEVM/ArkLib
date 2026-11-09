@@ -22,6 +22,11 @@ the prefix can return an arbitrary suffix strategy with all its private memory a
 Reachable boundaries and branch-dependent errors: an oracle with three structural answers puts mass
 `1/2` each on `0` and `1` and none on `2`. The prefix counterpart publishes the answer and stores it
 in `Fin 4`; the suffix accepts exactly when that stored value is nonzero.
+
+An exported derived oracle and a fresh final decision: the prefix challenge has the same
+distribution, and the prefix exports its input `7` plus the challenge. The suffix reads only the
+export, makes a fresh ambient query, and may reject. The bound charges a true midpoint separately
+from the remaining branch's `1/2` error, giving `3/4`.
 -/
 
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.TwoParty.Lens OracleComp OracleSpec
@@ -348,3 +353,303 @@ theorem weighted_success_after_final_query :
 end
 
 end Interaction.Core.CompositionSoundnessTests.Weighted
+
+namespace Interaction.Core.CompositionSoundnessTests.OracleExample
+
+open MeasureTheory Interaction.Oracle
+open Weighted (branchSpec branchMeasure)
+
+noncomputable section
+
+/-- The ambient oracle: a three-valued coin with mass `1/2` on each of `0` and `1`. -/
+abbrev ambient := branchSpec
+
+/-- One natural-number input slot, used for the exports as well. -/
+@[instance_reducible] def nats : OracleFamily Unit (fun _ => Nat) :=
+  ⟨fun _ => OracleInterface.instDefault⟩
+
+/-- The input slot holds `7`. -/
+def input : ∀ _ : Unit, Nat := fun _ => 7
+
+/-- The verifier sends a `Fin 3` challenge. -/
+@[instance_reducible] def first : OracleProtocol :=
+  .liftBind (.challenge (Fin 3)) (fun _ => .pure ⟨⟩)
+
+/-- The empty suffix. -/
+@[instance_reducible] def second : OracleProtocol := .pure ⟨⟩
+
+/-- The challenge, then nothing. -/
+abbrev combined : OracleProtocol := first.append (fun _ => second)
+
+/-- The full run interface: ambient coins and the challenge. -/
+abbrev full := ambient + challengeSpec oracleSig combined
+
+/-- `branchMeasure` is a probability measure. -/
+theorem branchMeasure_isProbability : IsProbabilityMeasure branchMeasure :=
+  inferInstanceAs
+    (IsProbabilityMeasure (OracleSpec.AnswerMeasure.toMeasure (spec := branchSpec) ()))
+
+/-- Ambient coins and the challenge both have the distribution `branchMeasure`. -/
+def fullMeasure : (c : full.Domain) → @Measure (full.Range c) ⊤
+  | .inl _ => branchMeasure
+  | .inr ⟨.inl _, _⟩ => branchMeasure
+  | .inr ⟨.inr ⟨_, n⟩, _⟩ => n.elim
+
+instance : OracleSpec.AnswerMeasure full :=
+  @PFunctor.AnswerMeasure.mk full.toPFunctor (fun _ => ⊤) fullMeasure fun c => by
+    rcases c with _ | ⟨_ | ⟨_, n⟩, _⟩
+    · exact branchMeasure_isProbability
+    · exact branchMeasure_isProbability
+    · exact n.elim
+
+/-- The sample published by the prefix, read from the verifier view. -/
+def sampleOf {p : Path first} (v : View first p) : Fin 3 := v.1.1
+
+/-- The prefix exports its input value plus the sample, querying only the input. -/
+def exportMap (sample : Fin 3) (p : Path first) :
+    OracleMap (sumFamily nats (pathFamily first p)) nats where
+  f x _ := (show Nat from x (.inl ())) + sample.val
+  impl _ := do
+    let value : Nat ← liftM ((sumFamily nats (pathFamily first p)).spec.query ⟨.inl (), ()⟩)
+    pure (value + sample.val)
+  law _ _ := by
+    simp only [simulateQ_bind]
+    rfl
+
+/-- The prefix decision returns the sample; its output is the derived export. -/
+def firstVerifier : OracleVerifier ambient first Unit (Fin 3) nats nats where
+  decide _ _ v := pure (sampleOf v)
+  outputMap _ p v := exportMap (sampleOf v) p
+
+/-- The suffix decision reads the export, makes a fresh ambient query, and accepts iff the export
+is `7` or the coin is `1`. It returns the export value and keeps the exported oracle. -/
+def secondVerifier (_ : Path first) : OracleVerifier ambient second (Fin 3) Nat nats nats where
+  decide _ p _ := OptionT.mk do
+    let value : Nat ← liftM ((ambient + (sumFamily nats (pathFamily second p)).spec).query
+      (.inr ⟨.inl (), ()⟩))
+    let coin : Fin 3 ← liftM ((ambient + (sumFamily nats (pathFamily second p)).spec).query
+      (.inl ()))
+    pure (if value = 7 ∨ coin = 1 then some value else none)
+  outputMap _ p _ := OracleMap.embedding (sumFamily nats (pathFamily second p)) .inl
+
+/-- The composite output map is the suffix output map after `suffixRoute`. -/
+def compatible : OracleVerifier.OutputCompatibility firstVerifier secondVerifier where
+  outputMap stmt p v :=
+    ((secondVerifier (Path.split first (fun _ => second) p).1).outputMap 0
+      (Path.split first (fun _ => second) p).2
+      (View.split first (fun _ => second) p v).2).comp
+        (OracleVerifier.suffixRoute firstVerifier stmt p v)
+  agrees _ _ _ _ _ _ := rfl
+
+/-- The composed verifier. -/
+def verifier := firstVerifier.append secondVerifier compatible
+
+/-- The prover sends nothing and keeps no output. -/
+def prover : Prover oracleSig ambient combined (fun _ => Unit) := pure fun _ => pure ()
+
+/-- The append boundary of a run. -/
+abbrev Boundary := RunBoundary oracleSig ambient first (fun _ => second) (fun _ => Unit)
+
+instance : MeasurableSpace Boundary := ⊤
+
+instance : DiscreteMeasurableSpace Boundary := ⟨fun _ => trivial⟩
+
+/-- The boundary after the challenge `sample`. -/
+@[reducible] def boundary (sample : Fin 3) : Boundary :=
+  ⟨⟨sample, ⟨⟩⟩, (pure () : OracleComp full Unit), ⟨⟩⟩
+
+/-- The challenge query of the combined run. -/
+def challengeQuery : full.Domain := .inr ⟨.inl ⟨⟩, rfl⟩
+
+/-- The challenge draw of the combined run. -/
+def challengeDraw : OracleComp full (Fin 3) := query (spec := full) challengeQuery
+
+/-- The ambient coin of the combined run. -/
+def coinDraw : OracleComp full (Fin 3) := query (spec := full) (.inl ())
+
+/-- The challenge has distribution `branchMeasure`. -/
+theorem challengeDraw_measure : 𝒟[challengeDraw] = branchMeasure := by
+  let : MeasurableSpace (full.Range challengeQuery) := ⊤
+  exact (OracleComp.evalDist_query (spec := full) challengeQuery).trans MeasureTheory.trim_eq_self
+
+/-- The ambient coin has distribution `branchMeasure`. -/
+theorem coinDraw_measure : 𝒟[coinDraw] = branchMeasure := by
+  let : MeasurableSpace (full.Range (.inl ())) := ⊤
+  exact (OracleComp.evalDist_query (spec := full) (.inl ())).trans MeasureTheory.trim_eq_self
+
+-- Oracle example row 1 (`prefix_execution`), restated: the sample is the run's challenge and the
+-- boundary is the prefix interaction result.
+/-- The prefix interaction draws the challenge and stops at its boundary. -/
+theorem prefix_execution : appendPrefixRun (s₂ := fun _ => second) prover =
+    (challengeDraw >>= fun sample => pure (boundary sample)) := by
+  rfl
+
+-- Oracle example row 2 (`prefix_measure`), restated.
+/-- The boundary has mass `1/2` on each of the samples `0` and `1`. -/
+theorem prefix_measure : 𝒟[appendPrefixRun (s₂ := fun _ => second) prover] =
+    (1 / 2 : ℝ≥0∞) • Measure.dirac (boundary 0) +
+      (1 / 2 : ℝ≥0∞) • Measure.dirac (boundary 1) := by
+  rw [prefix_execution, evalDist_bind_of_discrete, challengeDraw_measure]
+  simp only [evalDist_pure]
+  rw [Measure.bind_dirac_eq_map _ Measurable.of_discrete]
+  rw [branchMeasure, Measure.map_add _ _ Measurable.of_discrete]
+  rw [Measure.map_smul _ Measurable.of_discrete.aemeasurable,
+    Measure.map_smul _ Measurable.of_discrete.aemeasurable,
+    Measure.map_dirac' Measurable.of_discrete, Measure.map_dirac' Measurable.of_discrete]
+
+/-- The challenge at a boundary. -/
+def sampleAt (b : Boundary) : Fin 3 := b.1.1
+
+/-- The materialized export at a boundary: the prefix output map on the input and the prefix
+payloads, at the prefix view. -/
+def exported (b : Boundary) : Nat :=
+  (firstVerifier.outputMap () (projectPathAlong oracleSig first b.1) (toView first b.1)).f
+    (sumData input (payloads first b.1)) ()
+
+/-- The midpoint is true when the export is `7`. -/
+def trueMid (b : Boundary) : Prop := exported b = 7
+
+/-- The midpoint is admissible when the export is not `7`. -/
+def allowed (b : Boundary) : Prop := exported b ≠ 7
+
+/-- The suffix error is `1/2` at sample `1` and zero elsewhere. -/
+def error (b : Boundary) : ℝ≥0∞ := if sampleAt b = 1 then 1 / 2 else 0
+
+-- Oracle example row 3 (`trueMid_boundary`), restated: truth on the materialized export.
+/-- The midpoint is true exactly at sample `0`. -/
+theorem trueMid_boundary (sample : Fin 3) : trueMid (boundary sample) ↔ sample = 0 := by
+  change 7 + sample.val = 7 ↔ sample = 0
+  omega
+
+-- Oracle example row 4 (`allowed_boundary`), restated.
+/-- The midpoint is admissible exactly away from sample `0`. -/
+theorem allowed_boundary (sample : Fin 3) : allowed (boundary sample) ↔ sample ≠ 0 := by
+  change 7 + sample.val ≠ 7 ↔ sample ≠ 0
+  omega
+
+-- Oracle example row 5 (`prefix_truth`), restated.
+/-- The midpoint is true with probability `1/2`. -/
+theorem prefix_truth :
+    Pr{let b ← appendPrefixRun (s₂ := fun _ => second) prover}[trueMid b] = 1 / 2 := by
+  classical
+  rw [prEvent_eq_evalDist_of_discrete, prefix_measure]
+  simp [Measure.add_apply, Measure.smul_apply, Measure.dirac_apply', trueMid_boundary]
+
+-- Oracle example row 6 (`prefix_false_invalid`), restated.
+/-- False inadmissible midpoints have probability zero. -/
+theorem prefix_false_invalid :
+    Pr{let b ← appendPrefixRun (s₂ := fun _ => second) prover}[¬ trueMid b ∧ ¬ allowed b] =
+      0 := by
+  classical
+  rw [prEvent_eq_evalDist_of_discrete, prefix_measure]
+  simp [Measure.add_apply, Measure.smul_apply, Measure.dirac_apply', trueMid_boundary,
+    allowed_boundary]
+
+-- Oracle example row 7 (`prefix_inadmissible`), restated.
+/-- Inadmissible midpoints have probability `1/2`; they are the true ones, charged once. -/
+theorem prefix_inadmissible :
+    Pr{let b ← appendPrefixRun (s₂ := fun _ => second) prover}[¬ allowed b] = 1 / 2 := by
+  rw [prEvent_congr _ (fun b => ¬ allowed b) trueMid (fun _ => not_not), prefix_truth]
+
+-- Oracle example row 8 (`exported_behavior`), restated: the materialized export is
+-- `7 + sample`, and the export's query implementation answers the same on the run's data.
+/-- The export at a boundary is `7 + sample`, both as data and as simulated queries. -/
+theorem exported_behavior (sample : Fin 3) :
+    (firstVerifier.outputMap () (projectPathAlong oracleSig first (boundary sample).1)
+        (toView first (boundary sample).1)).f
+          (sumData input (payloads first (boundary sample).1)) = (fun _ => 7 + sample.val) ∧
+    ∀ q, simulateQ ((sumFamily nats (pathFamily first ⟨⟨⟩, ⟨⟩⟩)).behaviorOfRealizations
+        (sumData input (payloads first (boundary sample).1)))
+      ((firstVerifier.outputMap () ⟨⟨⟩, ⟨⟩⟩ (toView first (boundary sample).1)).impl q) =
+        (7 + sample.val : Nat) :=
+  ⟨rfl, fun q => (OracleMap.law _ _ q).trans rfl⟩
+
+/-- A claim: the returned statement and the output data. -/
+abbrev Claim := Nat × (∀ _ : Unit, Nat)
+
+/-- A final claim is true when its output oracle answers its statement. -/
+def finalTrue (claim : Claim) : Prop := claim.2 () = claim.1
+
+/-- The run returns a true final claim. -/
+def suffixTrue (obs : Observation oracleSig combined (fun _ => Unit) Claim) : Prop :=
+  obs.2.2.map finalTrue = some True
+
+-- Oracle example row 9 (`suffix_execution`), restated: the rest of the run after the boundary,
+-- with both decisions and the routed export query.
+/-- After a boundary, the run makes one fresh ambient query and accepts iff the export is `7` or
+the coin is `1`. -/
+theorem suffix_execution (sample : Fin 3) : verifier.suffixRun () input (boundary sample) =
+    (do
+      let coin ← coinDraw
+      pure ⟨⟨sample, ⟨⟩⟩, (), (if 7 + sample.val = 7 ∨ coin = 1 then some (7 + sample.val)
+        else none).map fun t => (t, fun _ => 7 + sample.val)⟩) := by
+  rfl
+
+-- Oracle example row 10 (`suffix_mass`), restated.
+/-- The rest of the run returns a true claim with probability `1` at sample `0`, else `1/2`. -/
+theorem suffix_mass (sample : Fin 3) :
+    Pr{let obs ← verifier.suffixRun () input (boundary sample)}[suffixTrue obs] =
+      if sample = 0 then 1 else 1 / 2 := by
+  classical
+  rw [suffix_execution, prEvent_bind_eq_lintegral_of_discrete, coinDraw_measure]
+  fin_cases sample <;>
+    simp [branchMeasure, lintegral_add_measure, lintegral_smul_measure, suffixTrue, finalTrue,
+      ENNReal.inv_two_add_inv_two]
+
+-- Oracle example row 11 (`null_boundary_supported`), restated: support of the prefix
+-- interaction program.
+/-- The sample `2` has zero mass but lies in the structural support. -/
+theorem null_boundary_supported :
+    boundary 2 ∈ support (appendPrefixRun (s₂ := fun _ => second) prover) := by
+  rw [prefix_execution, mem_support_bind_iff]
+  exact ⟨(2 : Fin 3), OracleComp.mem_support_query (spec := full) challengeQuery (2 : Fin 3),
+    by simp⟩
+
+-- Oracle example row 12 (`null_boundary_suffix_bound_fails`), restated.
+/-- At the null boundary the error bound fails, so a pointwise premise would be stronger. -/
+theorem null_boundary_suffix_bound_fails :
+    ¬ Pr{let obs ← verifier.suffixRun () input (boundary 2)}[suffixTrue obs] ≤
+      error (boundary 2) := by
+  rw [suffix_mass]
+  simp [error, sampleAt]
+
+-- Oracle example row 13 (`suffix_bound_ae`), restated.
+/-- Almost every false admissible boundary meets its error bound. -/
+theorem suffix_bound_ae : ∀ᵐ b ∂𝒟[appendPrefixRun (s₂ := fun _ => second) prover],
+    ¬ trueMid b → allowed b →
+      Pr{let obs ← verifier.suffixRun () input b}[suffixTrue obs] ≤ error b := by
+  rw [prefix_measure, ae_add_measure_iff]
+  constructor <;> apply Measure.ae_smul_measure <;>
+    rw [ae_dirac_iff MeasurableSet.of_discrete] <;> intro hfalse _
+  · exact absurd ((trueMid_boundary 0).2 rfl) hfalse
+  · rw [suffix_mass]
+    simp [error, sampleAt]
+
+-- Oracle example row 14 (`average_error`), restated.
+/-- The error averaged over false admissible boundaries is `1/4`. -/
+theorem average_error :
+    (∫⁻ b in {b | ¬ trueMid b ∧ allowed b}, error b
+      ∂𝒟[appendPrefixRun (s₂ := fun _ => second) prover]) = 1 / 4 := by
+  classical
+  rw [← lintegral_indicator MeasurableSet.of_discrete, prefix_measure, lintegral_add_measure,
+    lintegral_smul_measure, lintegral_smul_measure, lintegral_dirac, lintegral_dirac]
+  simp [Set.indicator, trueMid_boundary, allowed_boundary, error, sampleAt, ← ENNReal.mul_inv]
+  norm_num
+
+-- Oracle example row 15 (`weighted_success`), restated: `OracleVerifier.append` with
+-- `OutputCompatibility`, bounded by `OracleVerifier.run_append_soundness_weighted_ae`.
+/-- The composed run returns a true final claim with probability at most `3/4`. -/
+theorem weighted_success :
+    Pr{let obs ← verifier.run () input prover}[suffixTrue obs] ≤ 3 / 4 := by
+  have h := OracleVerifier.run_append_soundness_weighted_ae verifier () input prover
+    trueMid allowed suffixTrue error (1 / 2) 0 prefix_truth.le prefix_false_invalid.le
+    suffix_bound_ae
+  rw [average_error] at h
+  refine h.trans ?_
+  rw [add_zero]
+  apply (ENNReal.toReal_eq_toReal_iff' (by finiteness) (by finiteness)).mp ?_ |>.le
+  norm_num [ENNReal.toReal_add]
+
+end
+
+end Interaction.Core.CompositionSoundnessTests.OracleExample
