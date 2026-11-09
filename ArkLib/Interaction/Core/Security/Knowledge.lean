@@ -1,0 +1,272 @@
+/-
+Copyright (c) 2026 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Quang Dao
+-/
+module
+
+public import ArkLib.Interaction.Core.Security.Soundness
+public import VCVio.OracleComp.QueryTracking.LoggingOracle.Core
+
+/-!
+# Extraction interfaces and knowledge soundness
+
+An extraction interface specifies programs, their joint observation/witness experiment and their
+adversary-access cost. Knowledge soundness requires that the experiment preserve the model's
+observation marginal. The classical straight-line interface runs after acceptance, with the
+full transcript and separate ambient query logs. Its transcript-only subinterface ignores logs.
+An explicit failed extraction remains in the bad event; rejection and missing mass remain distinct.
+For general measurable spaces, the error is an upper bound on the outer measure of the bad event.
+-/
+
+@[expose] public section
+
+namespace Interaction.Core
+open PFunctor FreeM TwoParty.Lens OracleComp Oracle OracleSpec MeasureTheory
+open scoped ENNReal
+
+/-- The programs and experiment allowed to an extractor over a specified adversary model. -/
+structure ExtractionInterface {S Obs : Type*} [MeasurableSpace Obs]
+    (M : AdversaryModel S Obs) (Witness : S → Type*)
+    [∀ stmt, MeasurableSpace (Witness stmt)] where
+  Ext : Type*
+  experiment : Ext → (stmt : S) → M.Adv stmt → Measure (Obs × Option (Witness stmt))
+  /-- Expected adversary re-entry operations; straight-line extraction makes zero such calls. -/
+  cost : Ext → (stmt : S) → M.Adv stmt → ℝ≥0∞
+
+/-- A named extractor preserves the run, meets its access budget and rarely misses a witness. -/
+def knowledgeSoundnessWith {S Obs T : Type*} [MeasurableSpace Obs]
+    (M : AdversaryModel S Obs) (input : StatementProblem S) (output : StatementProblem T)
+    [∀ stmt, MeasurableSpace (input.Witness () stmt)]
+    (J : OutputJudgement Obs T output)
+    (I : ExtractionInterface M (input.Witness ())) (E : I.Ext) (ε : ℝ≥0∞)
+    (budget : ℝ≥0∞ := 0) : Prop :=
+  ∀ stmt, input.admissible () stmt → ∀ adv : M.Adv stmt,
+    (I.experiment E stmt adv).map Prod.fst = M.outcome stmt adv ∧
+    I.cost E stmt adv ≤ budget ∧
+    I.experiment E stmt adv {z | J.valid z.1 ∧
+      ∀ wit ∈ z.2, ¬ input.rel () stmt wit} ≤ ε
+
+/-- One extractor must work for every adversary and admissible input. -/
+def knowledgeSoundness {S Obs T : Type*} [MeasurableSpace Obs]
+    (M : AdversaryModel S Obs) (input : StatementProblem S) (output : StatementProblem T)
+    [∀ stmt, MeasurableSpace (input.Witness () stmt)]
+    (J : OutputJudgement Obs T output)
+    (I : ExtractionInterface M (input.Witness ())) (ε : ℝ≥0∞)
+    (budget : ℝ≥0∞ := 0) : Prop :=
+  ∃ E : I.Ext, knowledgeSoundnessWith M input output J I E ε budget
+
+/-- The full interaction log and the separate decision log, with challenge entries filtered out. -/
+def Verifier.runWithLog {ι S T : Type} {ambient : OracleSpec ι} {s : Protocol}
+    {Out : PathAlong plainSig s → Type}
+    (V : Verifier ambient s S T) (stmt : S) (prover : Prover plainSig ambient s Out) :
+    OracleComp (ambient + challengeSpec plainSig s)
+      (Observation plainSig s Out T × QueryLog ambient × QueryLog ambient) := do
+  let full := ambient + challengeSpec plainSig s
+  let ⟨⟨tr, out, _⟩, proveLog⟩ ← (simulateQ (QueryImpl.id' full).withLogging
+    (TwoParty.Lens.run s
+      (prover.simulate (fun q => liftM (full.query (.inl q))))
+      (sampler plainSig s (fun c => liftM (full.query (.inr c)))))).run
+  let ⟨verdict, verifyLog⟩ ← (simulateQ
+    (QueryImpl.withLogging
+      ((fun q => liftM (full.query (.inl q))) : QueryImpl ambient (OracleComp full)))
+    (V.decide stmt (projectPathAlong plainSig s tr) (toPlainView s tr)).run).run
+  pure (⟨tr, out, verdict⟩, proveLog.fst, verifyLog)
+
+private theorem bind_logged {ι α β : Type} {spec : OracleSpec ι}
+    {m : Type → Type} [Monad m] [LawfulMonad m] (impl : QueryImpl spec m)
+    (program : OracleComp spec α) (next : α → m β) :
+    ((simulateQ impl.withLogging program).run >>= fun z => next z.1) =
+      simulateQ impl program >>= next := by
+  rw [← bind_map_left Prod.fst, QueryImpl.fst_map_run_withLogging]
+
+/-- Forgetting the logs preserves the entire run as an oracle program. -/
+theorem Verifier.runWithLog_fst {ι S T : Type} {ambient : OracleSpec ι} {s : Protocol}
+    {Out : PathAlong plainSig s → Type}
+    (V : Verifier ambient s S T) (stmt : S) (prover : Prover plainSig ambient s Out) :
+    Prod.fst <$> V.runWithLog stmt prover = V.run stmt prover := by
+  simp only [runWithLog, _root_.map_bind, LawfulApplicative.map_pure]
+  conv_lhs =>
+    arg 2
+    intro a
+    rw [bind_logged _ _ (fun verdict =>
+      pure (⟨a.1.1, a.1.2.1, verdict⟩ : Observation plainSig s Out T))]
+  rw [bind_logged (QueryImpl.id' (ambient + challengeSpec plainSig s)) _
+    (fun result : (tr : PathAlong plainSig s) × Out tr × PUnit => do
+    let verdict ← simulateQ
+      ((fun q => liftM ((ambient + challengeSpec plainSig s).query (.inl q))) :
+        QueryImpl ambient (OracleComp (ambient + challengeSpec plainSig s)))
+      (V.decide stmt (projectPathAlong plainSig s result.1) (toPlainView s result.1)).run
+    pure (⟨result.1, result.2.1, verdict⟩ : Observation plainSig s Out T))]
+  rw [simulateQ_id']
+  rfl
+
+namespace Extractor
+
+/-- Classical straight-line extraction has no strategy or continuation argument to re-enter. -/
+abbrev Straightline {ι S : Type} (ambient : OracleSpec ι) (s : Protocol)
+    (Witness : S → Type) (Wout : Type) :=
+  (stmt : S) → Wout → PathAlong plainSig s → QueryLog ambient → QueryLog ambient →
+    OptionT (OracleComp ambient) (Witness stmt)
+
+/-- A transcript-only extractor cannot inspect either participant's query log. -/
+abbrev TranscriptOnly {ι S : Type} (ambient : OracleSpec ι) (s : Protocol)
+    (Witness : S → Type) (Wout : Type) :=
+  (stmt : S) → Wout → PathAlong plainSig s → OptionT (OracleComp ambient) (Witness stmt)
+
+/-- Forgetting the logs embeds transcript-only extraction into the straight-line interface. -/
+def TranscriptOnly.withLogs {ι S : Type} {ambient : OracleSpec ι} {s : Protocol}
+    {Witness : S → Type} {Wout : Type} (E : TranscriptOnly ambient s Witness Wout) :
+    Straightline ambient s Witness Wout := fun stmt out tr _ _ => E stmt out tr
+
+end Extractor
+
+/-- The classical logged game keeps explicit extractor failure as a returned `none` witness. -/
+def extractionGame {ι S T Wout : Type} {ambient : OracleSpec ι} {s : Protocol}
+    {Out : PathAlong plainSig s → Type} {Witness : S → Type}
+    (V : Verifier ambient s S T) (readOut : ∀ tr, Out tr → Wout)
+    (E : Extractor.Straightline ambient s Witness Wout)
+    (stmt : S) (prover : Prover plainSig ambient s Out) :
+    OracleComp (ambient + challengeSpec plainSig s)
+      (Observation plainSig s Out T × Option (Witness stmt)) := do
+  let (obs, proveLog, verifyLog) ← V.runWithLog stmt prover
+  match obs.2.2 with
+  | none => pure (obs, none)
+  | some _ => do
+    let extracted ← OracleComp.liftComp
+      (E stmt (readOut obs.1 obs.2.1) obs.1 proveLog verifyLog).run
+      (ambient + challengeSpec plainSig s)
+    pure (obs, extracted)
+
+/-- The default straight-line interface uses the same shared state as the classical run.
+
+The knowledge predicate separately checks observation preservation, so an extractor that loses
+probability mass cannot obtain security by deleting inconvenient accepted observations.
+-/
+noncomputable def classicalStraightline {ι σ S T Wout : Type} {ambient : OracleSpec ι}
+    {s : Protocol} {Out : PathAlong plainSig s → Type} (Witness : S → Type)
+    [MeasurableSpace (Observation plainSig s Out T)] [∀ stmt, MeasurableSpace (Witness stmt)]
+    (V : Verifier ambient s S T) (init : ProbComp σ)
+    (impl : QueryImpl ambient (StateT σ ProbComp))
+    (challenges : QueryImpl (challengeSpec plainSig s) ProbComp)
+    (readOut : ∀ tr, Out tr → Wout) :
+    ExtractionInterface (V.classicalModel (Out := Out) init impl challenges) Witness where
+  Ext := Extractor.Straightline ambient s Witness Wout
+  experiment E stmt adv := 𝒟[Core.experiment init impl challenges
+    (extractionGame V readOut E stmt adv)]
+  cost _ _ _ := 0
+
+/-- Transcript-only extraction is the same classical experiment with the two logs inaccessible. -/
+noncomputable def classicalTranscriptOnly {ι σ S T Wout : Type} {ambient : OracleSpec ι}
+    {s : Protocol} {Out : PathAlong plainSig s → Type} (Witness : S → Type)
+    [MeasurableSpace (Observation plainSig s Out T)] [∀ stmt, MeasurableSpace (Witness stmt)]
+    (V : Verifier ambient s S T) (init : ProbComp σ)
+    (impl : QueryImpl ambient (StateT σ ProbComp))
+    (challenges : QueryImpl (challengeSpec plainSig s) ProbComp)
+    (readOut : ∀ tr, Out tr → Wout) :
+    ExtractionInterface (V.classicalModel (Out := Out) init impl challenges) Witness where
+  Ext := Extractor.TranscriptOnly ambient s Witness Wout
+  experiment E :=
+    (classicalStraightline Witness V init impl challenges readOut).experiment E.withLogs
+  cost _ _ _ := 0
+
+namespace OracleVerifier
+
+/-- Execute an oracle verifier while retaining separate ambient logs for both participants. -/
+def runWithLog {ι I J S T : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
+    {A : I → Type} {B : J → Type} {inputs : OracleFamily I A} {outputs : OracleFamily J B}
+    {Out : PathAlong oracleSig s → Type}
+    (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : ∀ i, A i)
+    (prover : Prover oracleSig ambient s Out) :
+    OracleComp (ambient + challengeSpec oracleSig s)
+      (Observation oracleSig s Out (T × (∀ j, B j)) × QueryLog ambient × QueryLog ambient) := do
+  let full := ambient + challengeSpec oracleSig s
+  let ⟨⟨tr, out, _⟩, proveLog⟩ ← (simulateQ (QueryImpl.id' full).withLogging
+    (TwoParty.Lens.run s
+      (prover.simulate (fun q => liftM (full.query (.inl q))))
+      (sampler oracleSig s (fun c => liftM (full.query (.inr c)))))).run
+  let p := projectPathAlong oracleSig s tr
+  let view := toView s tr
+  let resources := sumData data (payloads s tr)
+  let decision := simulateQ (QueryImpl.addLift
+    ((fun q => liftM (full.query (.inl q))) : QueryImpl ambient (OracleComp full))
+    ((sumFamily inputs (pathFamily s p)).behaviorOfRealizations resources))
+    (V.decide stmt p view).run
+  let ⟨verdict, verifyLog⟩ ← (simulateQ (QueryImpl.id' full).withLogging decision).run
+  pure (⟨tr, out, verdict.map fun t => (t, (V.outputMap stmt p view).f resources)⟩,
+    proveLog.fst, verifyLog.fst)
+
+end OracleVerifier
+
+namespace Extractor
+
+/-- Straight-line extraction from an oracle protocol sees the full payload-bearing transcript. -/
+abbrev OracleStraightline {ι S : Type} (ambient : OracleSpec ι) (s : OracleProtocol)
+    (Witness : S → Type) (Wout : Type) :=
+  (stmt : S) → Wout → PathAlong oracleSig s → QueryLog ambient → QueryLog ambient →
+    OptionT (OracleComp ambient) (Witness stmt)
+
+/-- The oracle transcript-only interface omits both ambient logs. -/
+abbrev OracleTranscriptOnly {ι S : Type} (ambient : OracleSpec ι) (s : OracleProtocol)
+    (Witness : S → Type) (Wout : Type) :=
+  (stmt : S) → Wout → PathAlong oracleSig s → OptionT (OracleComp ambient) (Witness stmt)
+
+/-- Embed the oracle transcript-only interface by ignoring the two logs. -/
+def OracleTranscriptOnly.withLogs {ι S : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
+    {Witness : S → Type} {Wout : Type} (E : OracleTranscriptOnly ambient s Witness Wout) :
+    OracleStraightline ambient s Witness Wout := fun stmt out tr _ _ => E stmt out tr
+
+end Extractor
+
+namespace OracleVerifier
+variable {ι I J σ S T Wout : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
+  {A : I → Type} {B : J → Type} {inputs : OracleFamily I A} {outputs : OracleFamily J B}
+  {Out : PathAlong oracleSig s → Type}
+
+/-- Oracle extraction uses actual inputs, full transcripts, and the ambient logs of the run. -/
+def extractionGame (V : OracleVerifier ambient s S T inputs outputs)
+    {Witness : (S × (∀ i, A i)) → Type} (readOut : ∀ tr, Out tr → Wout)
+    (E : Extractor.OracleStraightline ambient s Witness Wout)
+    (stmt : S × (∀ i, A i)) (prover : Prover oracleSig ambient s Out) :
+    OracleComp (ambient + challengeSpec oracleSig s)
+      (Observation oracleSig s Out (T × (∀ j, B j)) × Option (Witness stmt)) := do
+  let (obs, proveLog, verifyLog) ← V.runWithLog stmt.1 stmt.2 prover
+  match obs.2.2 with
+  | none => pure (obs, none)
+  | some _ => do
+    let extracted ← OracleComp.liftComp
+      (E stmt (readOut obs.1 obs.2.1) obs.1 proveLog verifyLog).run
+      (ambient + challengeSpec oracleSig s)
+    pure (obs, extracted)
+
+/-- The classical logged extraction interface for passive oracle verifiers. -/
+noncomputable def classicalStraightline (Witness : (S × (∀ i, A i)) → Type)
+    [MeasurableSpace (Observation oracleSig s Out (T × (∀ j, B j)))]
+    [∀ stmt, MeasurableSpace (Witness stmt)]
+    (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
+    (impl : QueryImpl ambient (StateT σ ProbComp))
+    (challenges : QueryImpl (challengeSpec oracleSig s) ProbComp)
+    (readOut : ∀ tr, Out tr → Wout) :
+    ExtractionInterface (V.classicalModel (Out := Out) init impl challenges) Witness where
+  Ext := Extractor.OracleStraightline ambient s Witness Wout
+  experiment E stmt adv := 𝒟[Core.experiment init impl challenges
+    (V.extractionGame readOut E stmt adv)]
+  cost _ _ _ := 0
+
+/-- Oracle transcript-only extraction uses the same game without access to the query logs. -/
+noncomputable def classicalTranscriptOnly (Witness : (S × (∀ i, A i)) → Type)
+    [MeasurableSpace (Observation oracleSig s Out (T × (∀ j, B j)))]
+    [∀ stmt, MeasurableSpace (Witness stmt)]
+    (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
+    (impl : QueryImpl ambient (StateT σ ProbComp))
+    (challenges : QueryImpl (challengeSpec oracleSig s) ProbComp)
+    (readOut : ∀ tr, Out tr → Wout) :
+    ExtractionInterface (V.classicalModel (Out := Out) init impl challenges) Witness where
+  Ext := Extractor.OracleTranscriptOnly ambient s Witness Wout
+  experiment E :=
+    (V.classicalStraightline Witness init impl challenges readOut).experiment E.withLogs
+  cost _ _ _ := 0
+
+end OracleVerifier
+
+end Interaction.Core

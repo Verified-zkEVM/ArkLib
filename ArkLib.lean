@@ -708,6 +708,10 @@ public import ArkLib.Interaction.Core.Execution
 public import ArkLib.Interaction.Core.OracleVerifier
 public import ArkLib.Interaction.Core.Protocol
 public import ArkLib.Interaction.Core.Reduction
+public import ArkLib.Interaction.Core.Security.Completeness
+public import ArkLib.Interaction.Core.Security.Knowledge
+public import ArkLib.Interaction.Core.Security.RoundByRound
+public import ArkLib.Interaction.Core.Security.Soundness
 public import ArkLib.Interaction.Core.Signature
 public import ArkLib.Interaction.Oracle.Access
 public import ArkLib.Interaction.Oracle.Claim
