@@ -88,13 +88,6 @@ section Events
 
 variable {StmtOut WitOut σ : Type}
 
-theorem experiment_map {κ α β : Type} {ambient : OracleSpec ι} {chal : OracleSpec κ}
-    (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
-    (chImpl : QueryImpl chal ProbComp) (f : α → β) (x : OracleComp (ambient + chal) α) :
-    experiment init impl chImpl (f <$> x) = f <$> experiment init impl chImpl x := by
-  simp only [experiment, simulateQ_map, StateT.run'_eq, StateT.run_map, Functor.map_map,
-    _root_.map_bind]
-
 /-- An event of the legacy result, read through `OptionT`, has the probability of the event
 "accepted, and the legacy event holds" on the finalized observation. -/
 theorem prEvent_mk_finalize
