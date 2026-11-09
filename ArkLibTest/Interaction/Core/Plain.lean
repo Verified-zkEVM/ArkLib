@@ -15,9 +15,6 @@ example : projectPathAlong plainSig coin ⟨true, ⟨⟩⟩ =
 def branching : Protocol :=
   .liftBind (.message Bool) (fun (b : Bool) => if b = true then coin else done)
 
-example : branching =
-    .liftBind (.message Bool) (fun (b : Bool) => if b = true then coin else done) := rfl
-
 example : projectPathAlong plainSig branching ⟨false, ⟨⟩⟩ ≠
     projectPathAlong plainSig branching ⟨true, ⟨true, ⟨⟩⟩⟩ := by
   intro h
