@@ -266,16 +266,41 @@ theorem classicalTranscriptOnly_marginal {ι σ S T Wout : Type} {ambient : Orac
       Prod.fst = (V.classicalModel init impl challenges).outcome stmt adv :=
   classicalStraightline_marginal Witness V init impl challenges readOut E.withLogs stmt adv
 
+/-- Logging every query of a routed program, then keeping the ambient entries, is the same as
+logging only its ambient queries. Answers to the routed queries come from pure behaviors. -/
+theorem map_run_withLogging_addLift_fst {ι κ ι' α : Type} {ambient : OracleSpec ι}
+    {R : OracleSpec κ} {full : OracleSpec ι'} (lift : QueryImpl ambient (OracleComp full))
+    (beh : QueryImpl R Id) (oa : OracleComp (ambient + R) α) :
+    (fun z => (z.1, z.2.fst)) <$> (simulateQ (QueryImpl.addLift lift beh).withLogging oa).run =
+      (simulateQ (QueryImpl.addLift lift.withLogging beh :
+        QueryImpl (ambient + R) (WriterT (QueryLog ambient) (OracleComp full))) oa).run := by
+  induction oa using OracleComp.inductionOn with
+  | pure x => simp [QueryLog.fst]
+  | query_bind t k ih =>
+    simp only [QueryImpl.addLift_def, QueryImpl.liftTarget_self] at ih
+    rcases t with q | r
+    · simp [QueryImpl.addLift_def, WriterT.run_liftM, WriterT.run_tell, ← ih, Functor.map_map,
+        QueryLog.fst]
+    · refine Eq.trans ?_ ((ih (beh r)).trans ?_)
+      · have hl : (liftM (beh r) : OracleComp full _) = pure (beh r) := rfl
+        simp [QueryImpl.addLift_def, WriterT.run_liftM, WriterT.run_tell, hl, QueryLog.fst]
+      · have hl : ((liftM (beh r) : WriterT (QueryLog ambient) (OracleComp full) _).run) =
+            pure (beh r, ∅) := rfl
+        simp [QueryImpl.addLift_def, hl]
+
 namespace OracleVerifier
 
-/-- Execute an oracle verifier while retaining separate ambient logs for both participants. -/
+/-- Execute an oracle verifier, logging the prover's ambient queries and every query of the
+decision before routing: ambient queries and queries to the input and message oracles. -/
 def runWithLog {ι I J S T : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
     {A : I → Type} {B : J → Type} {inputs : OracleFamily I A} {outputs : OracleFamily J B}
     {Out : PathAlong oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : ∀ i, A i)
     (prover : Prover oracleSig ambient s Out) :
     OracleComp (ambient + challengeSpec oracleSig s)
-      (Observation oracleSig s Out (T × (∀ j, B j)) × QueryLog ambient × QueryLog ambient) := do
+      ((obs : Observation oracleSig s Out (T × (∀ j, B j))) × QueryLog ambient ×
+        QueryLog (ambient +
+          (sumFamily inputs (pathFamily s (projectPathAlong oracleSig s obs.1))).spec)) := do
   let full := ambient + challengeSpec oracleSig s
   let ⟨⟨tr, out, _⟩, proveLog⟩ ← (simulateQ (QueryImpl.id' full).withLogging
     (TwoParty.Lens.run s
@@ -284,13 +309,39 @@ def runWithLog {ι I J S T : Type} {ambient : OracleSpec ι} {s : OracleProtocol
   let p := projectPathAlong oracleSig s tr
   let view := toView s tr
   let resources := sumData data (payloads s tr)
-  let decision := simulateQ (QueryImpl.addLift
+  let handler : QueryImpl (ambient + (sumFamily inputs (pathFamily s p)).spec)
+      (OracleComp full) := QueryImpl.addLift
     ((fun q => liftM (full.query (.inl q))) : QueryImpl ambient (OracleComp full))
-    ((sumFamily inputs (pathFamily s p)).behaviorOfRealizations resources))
-    (V.decide stmt p view).run
-  let ⟨verdict, verifyLog⟩ ← (simulateQ (QueryImpl.id' full).withLogging decision).run
-  pure (⟨tr, out, verdict.map fun t => (t, (V.outputMap stmt p view).f resources)⟩,
-    proveLog.fst, verifyLog.fst)
+    ((sumFamily inputs (pathFamily s p)).behaviorOfRealizations resources)
+  let ⟨verdict, verifyLog⟩ ← (simulateQ handler.withLogging (V.decide stmt p view).run).run
+  pure ⟨⟨tr, out, verdict.map fun t => (t, (V.outputMap stmt p view).f resources)⟩,
+    proveLog.fst, verifyLog⟩
+
+/-- The ambient part of the decision log is the log of an ambient-only logger, which the oracle
+extraction interfaces receive. -/
+theorem runWithLog_fst {ι I J S T : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
+    {A : I → Type} {B : J → Type} {inputs : OracleFamily I A} {outputs : OracleFamily J B}
+    {Out : PathAlong oracleSig s → Type}
+    (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : ∀ i, A i)
+    (prover : Prover oracleSig ambient s Out) :
+    let full := ambient + challengeSpec oracleSig s
+    let toFull : QueryImpl ambient (OracleComp full) := fun q => liftM (full.query (.inl q))
+    (fun z => (z.1, z.2.1, z.2.2.fst)) <$> V.runWithLog stmt data prover =
+      (simulateQ (QueryImpl.id' full).withLogging (TwoParty.Lens.run s (prover.simulate toFull)
+        (sampler oracleSig s (fun c => liftM (full.query (.inr c)))))).run >>= fun x =>
+      let tr := x.1.1
+      let p := projectPathAlong oracleSig s tr
+      let resources := sumData data (payloads s tr)
+      (simulateQ (QueryImpl.addLift toFull.withLogging
+          ((sumFamily inputs (pathFamily s p)).behaviorOfRealizations resources) :
+            QueryImpl _ (WriterT (QueryLog ambient) (OracleComp full)))
+        (V.decide stmt p (toView s tr)).run).run >>= fun y =>
+      pure (⟨tr, x.1.2.1, y.1.map fun t => (t, (V.outputMap stmt p (toView s tr)).f resources)⟩,
+        x.2.fst, y.2) := by
+  simp only [runWithLog, _root_.map_bind]
+  refine bind_congr fun x => ?_
+  rw [← map_run_withLogging_addLift_fst, bind_map_left]
+  simp
 
 end OracleVerifier
 
@@ -326,12 +377,12 @@ def extractionGame (V : OracleVerifier ambient s S T inputs outputs)
     (stmt : S × (∀ i, A i)) (prover : Prover oracleSig ambient s Out) :
     OracleComp (ambient + challengeSpec oracleSig s)
       (Observation oracleSig s Out (T × (∀ j, B j)) × Option (Witness stmt)) := do
-  let (obs, proveLog, verifyLog) ← V.runWithLog stmt.1 stmt.2 prover
+  let ⟨obs, proveLog, verifyLog⟩ ← V.runWithLog stmt.1 stmt.2 prover
   match obs.2.2 with
   | none => pure (obs, none)
   | some _ => do
     let extracted ← OracleComp.liftComp
-      (E stmt (readOut obs.1 obs.2.1) obs.1 proveLog verifyLog).run
+      (E stmt (readOut obs.1 obs.2.1) obs.1 proveLog verifyLog.fst).run
       (ambient + challengeSpec oracleSig s)
     pure (obs, extracted)
 

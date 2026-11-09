@@ -145,6 +145,13 @@ run_cmd do
     unless n == 8 && data ⟨⟩ 3 == 8 do
       throwError "logged oracle decision disagrees with the materialized input"
 
+-- The decision log records the message query before routing; its ambient part stays empty.
+run_cmd do
+  let z := simulateQ oracleHandler
+    (queryDecision.runWithLog () (fun i => i.elim) oracleProver)
+  unless z.2.2.length == 1 && z.2.2.fst.isEmpty do
+    throwError "the decision log lost the message query or mixed it into the ambient log"
+
 abbrev coin : Protocol := .liftBind (.challenge Bool) (fun _ => .pure ⟨⟩)
 
 def draw : QueryImpl (challengeSpec plainSig coin) ProbComp
@@ -549,6 +556,8 @@ run_cmd do
       ``Interaction.Core.OracleVerifier.classicalStraightline, ``Interaction.Core.rbrSoundness,
       ``Interaction.Core.rbrKnowledgeSoundness, ``Interaction.Core.Verifier.verdict_mem_support_run,
       ``Interaction.Core.mem_support_extractionGame,
+      ``Interaction.Core.map_run_withLogging_addLift_fst,
+      ``Interaction.Core.OracleVerifier.runWithLog_fst,
       ``Interaction.Core.classicalStraightline_marginal,
       ``Interaction.Core.classicalTranscriptOnly_marginal,
       ``Interaction.Core.SecurityTests.coin_rbrSoundness,
