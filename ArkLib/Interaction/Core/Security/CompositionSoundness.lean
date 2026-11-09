@@ -29,11 +29,13 @@ interaction result together with the ambient state, and the suffix premise conce
 remainder resumed from it. Under a persistent `OracleRuntime` the same decomposition gives the
 runtime form through VCVio's `OracleRuntime.run_bind_success_le`.
 
-A corollary starts from the suffix verifier's standalone soundness. Because the prefix decision
-runs after the suffix interaction, it takes one explicit hypothesis: taking the prefix decision at
-the boundary leaves the law of the run unchanged. The hypothesis holds for a prefix decision
-without ambient queries and for a stateless ambient implementation. Inadmissible intermediate
-statements are charged `δ`, giving `ε₁ + δ + ε₂`.
+A corollary starts from the suffix verifier's standalone soundness
+(`Verifier.append_soundness_of_standalone`). Because the prefix decision runs after the suffix
+interaction, it takes one explicit hypothesis: taking the prefix decision at the boundary leaves
+the law of the run unchanged. The hypothesis holds for a prefix decision without ambient queries
+(`Verifier.boundaryDecidedRun_eq_of_pure`) and for a stateless ambient implementation
+(`Verifier.boundaryDecidedRun_evalDistEq_of_stateless`). Inadmissible intermediate statements are
+charged `δ`, giving `ε₁ + δ + ε₂`.
 -/
 
 @[expose] public section
@@ -671,5 +673,496 @@ theorem Verifier.append_soundness_runtime {s₁ : Protocol} {s₂ : Path s₁ �
   exact runtime.run_bind_success_le _ _ Exceptional Success error hsuffix
 
 end soundness
+
+/-! ## Standalone suffix soundness
+
+The corollary below starts from the suffix verifier's standalone soundness. Its one hypothesis
+compares the end-decided run with `Verifier.boundaryDecidedRun`, which takes the prefix decision
+at the boundary. The hypothesis holds when the prefix decision makes no ambient query and when
+the ambient implementation is stateless.
+-/
+
+section draws
+variable {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u}) {m m' : Type u → Type u}
+
+/-- Restricting draws to the prefix commutes with transforming every draw. -/
+theorem prefixDraw_comp (f : ∀ {α : Type u}, m α → m' α) :
+    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
+    (draw : (c : ChallengeNode l (s₁.append s₂)) → m (challengeSpec l (s₁.append s₂) c)) →
+    (c : ChallengeNode l s₁) →
+    prefixDraw l s₁ s₂ (fun c => f (draw c)) c = f (prefixDraw l s₁ s₂ draw c)
+  | .pure _, _, _, c => c.val.elim
+  | .liftBind _ _, _, _, ⟨.inl _, _⟩ => rfl
+  | .liftBind _ next, s₂, draw, ⟨.inr ⟨b, c⟩, h⟩ =>
+    prefixDraw_comp f (next b) (fun p => s₂ ⟨b, p⟩)
+      (fun c => draw ⟨.inr ⟨b, c.val⟩, c.property⟩) ⟨c, h⟩
+
+/-- Restricting draws to a suffix commutes with transforming every draw. -/
+theorem suffixDraw_comp (f : ∀ {α : Type u}, m α → m' α) :
+    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
+    (draw : (c : ChallengeNode l (s₁.append s₂)) → m (challengeSpec l (s₁.append s₂) c)) →
+    (p : Path s₁) → (c : ChallengeNode l (s₂ p)) →
+    suffixDraw l s₁ s₂ (fun c => f (draw c)) p c = f (suffixDraw l s₁ s₂ draw p c)
+  | .pure _, _, _, ⟨⟩, _ => rfl
+  | .liftBind _ next, s₂, draw, ⟨b, p⟩, c =>
+    suffixDraw_comp f (next b) (fun p => s₂ ⟨b, p⟩)
+      (fun c => draw ⟨.inr ⟨b, c.val⟩, c.property⟩) p c
+end draws
+
+/-- Splitting the transcript of an appended run, with its view, returns the prefix and suffix
+transcripts and their own views. -/
+theorem splitFiber_append {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
+    (s₁ : FreeM P PUnit.{u + 1}) (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) {X : Sort*}
+    (G : (p : Path s₁) → (q : Path (s₂ p)) → Fiber l s₁ p → Fiber l (s₂ p) q → X)
+    (tr₁ : PathAlong l s₁) (tr₂ : PathAlong l (s₂ (projectPathAlong l s₁ tr₁))) :
+    G (Path.split s₁ s₂ (projectPathAlong l _ (PathAlong.append l s₁ s₂ tr₁ tr₂))).1
+      (Path.split s₁ s₂ (projectPathAlong l _ (PathAlong.append l s₁ s₂ tr₁ tr₂))).2
+      (splitFiber l s₁ s₂ _ ⟨PathAlong.append l s₁ s₂ tr₁ tr₂, rfl⟩).1
+      (splitFiber l s₁ s₂ _ ⟨PathAlong.append l s₁ s₂ tr₁ tr₂, rfl⟩).2 =
+    G (projectPathAlong l s₁ tr₁) (projectPathAlong l _ tr₂) ⟨tr₁, rfl⟩ ⟨tr₂, rfl⟩ := by
+  have key : ∀ (tr : PathAlong l (s₁.append s₂)),
+      G (Path.split s₁ s₂ (projectPathAlong l _ tr)).1
+        (Path.split s₁ s₂ (projectPathAlong l _ tr)).2
+        (splitFiber l s₁ s₂ _ ⟨tr, rfl⟩).1 (splitFiber l s₁ s₂ _ ⟨tr, rfl⟩).2 =
+      G (projectPathAlong l s₁ (PathAlong.split l s₁ s₂ tr).1)
+        (projectPathAlong l _ (PathAlong.split l s₁ s₂ tr).2)
+        ⟨(PathAlong.split l s₁ s₂ tr).1, rfl⟩ ⟨(PathAlong.split l s₁ s₂ tr).2, rfl⟩ := by
+    intro tr
+    simp only [splitFiber]
+    generalize project_split l s₁ s₂ tr = h
+    generalize Path.split s₁ s₂ (projectPathAlong l (s₁.append s₂) tr) = w at h ⊢
+    subst h
+    rfl
+  rw [key, PathAlong.split_append]
+
+section simulate
+
+variable {ι κ : Type} {ambient : OracleSpec ι} {spec : OracleSpec κ} {n : Type → Type}
+  [Monad n] [LawfulMonad n]
+
+/-- Interpreting a plain run against a sampler interprets every prover slot and every draw. -/
+theorem simulateQ_run_simulate_sampler (h : QueryImpl spec n)
+    (ιm : QueryImpl ambient (OracleComp spec)) :
+    (s : Protocol.{0}) → {Out : PathAlong plainSig s → Type} →
+    (k : Prover plainSig ambient s Out) →
+    (draw : (c : ChallengeNode plainSig s) → OracleComp spec (challengeSpec plainSig s c)) →
+    simulateQ h (TwoParty.Lens.run s (k.simulate ιm) (sampler plainSig s draw)) =
+      TwoParty.Lens.run s (k.simulate fun q => simulateQ h (ιm q))
+        (sampler plainSig s fun c => simulateQ h (draw c))
+  | .pure ⟨⟩, _, k, draw => by
+    simp only [sampler, samplerEnd, PureEnd.toStrategy, PureEnd.mapOutput, FreeM.pure_eq_pure,
+      Prover.simulate_done, run_done, simulateQ_bind, simulateQ_pure]
+    rw [QueryImpl.simulateQ_simulateQ_eq_of_apply (fun _ => rfl)]
+  | .liftBind (.message X) rest, _, k, draw => by
+    rw [run_node, run_node, Prover.simulate_node, Prover.simulate_node]
+    have hs : ∀ {m : Type → Type} [Monad m] [LawfulMonad m]
+        (d : (c : ChallengeNode plainSig (.liftBind (.message X) rest)) →
+          m (challengeSpec plainSig (.liftBind (.message X) rest) c)),
+        sampler plainSig (.liftBind (.message X) rest) d =
+          pure (fun x => sampler plainSig (rest x)
+            (fun c => d ⟨.inr ⟨x, c.val⟩, c.property⟩)) := fun _ => by
+      change Choice.map .counterpart .sender _ <$> pure _ = _
+      erw [LawfulApplicative.map_pure]
+      rfl
+    rw [hs, hs]
+    simp only [step, Schedule.seq, owner_plain_message]
+    simp only [simulateQ_bind, simulateQ_pure, bind_map_left]
+    erw [QueryImpl.simulateQ_simulateQ_eq_of_apply (fun _ => rfl) k]
+    refine bind_congr fun v => ?_
+    erw [LawfulMonad.pure_bind, LawfulMonad.pure_bind]
+    erw [simulateQ_run_simulate_sampler h ιm (rest v.1) v.2]
+    rfl
+  | .liftBind (.challenge C) rest, _, k, draw => by
+    have hs : ∀ {m : Type → Type} [Monad m] [LawfulMonad m]
+        (d : (c : ChallengeNode plainSig (.liftBind (.challenge C) rest)) →
+          m (challengeSpec plainSig (.liftBind (.challenge C) rest) c)),
+        sampler plainSig (.liftBind (.challenge C) rest) d =
+          (fun x => ⟨x, sampler plainSig (rest ⟨⟩)
+            (fun c => d ⟨.inr ⟨⟨⟩, c.val⟩, c.property⟩)⟩) <$> d ⟨.inl ⟨⟩, rfl⟩ := fun _ => by
+      change Choice.map .counterpart .receiver _ <$> (_ <$> _) = _
+      erw [Functor.map_map]
+      rfl
+    rw [run_node, run_node, Prover.simulate_node, Prover.simulate_node, hs, hs]
+    simp only [step, Schedule.seq, owner_plain_challenge, bind_map_left]
+    erw [simulateQ_bind, QueryImpl.simulateQ_simulateQ_eq_of_apply (fun _ => rfl) k]
+    refine bind_congr fun f => ?_
+    erw [simulateQ_bind]
+    refine bind_congr fun x => ?_
+    erw [simulateQ_bind, simulateQ_run_simulate_sampler h ιm (rest ⟨⟩) (f x)]
+    refine bind_congr fun r => ?_
+    erw [simulateQ_pure]
+
+/-- Splitting the first slot of a simulated prover simulates the split slot and then the
+returned strategy. -/
+theorem splitSlot_simulate (ιm : QueryImpl ambient n) :
+    (s : Protocol.{0}) → {Out : PathAlong plainSig s → Type} →
+    (P : Prover plainSig ambient s Out) →
+    Strategy.splitSlot (P.simulate ιm) =
+      (fun k => Prover.simulate ιm k) <$> simulateQ ιm (Strategy.splitSlot P)
+  | .pure _, _, P => by
+    simp only [Strategy.splitSlot, Prover.simulate_done, simulateQ_map, Functor.map_map]
+    rfl
+  | .liftBind a rest, _, P => by
+    simp only [Strategy.splitSlot, Prover.simulate_node, simulateQ_map, Functor.map_map,
+      simulateQ_pure]
+    exact congrArg (· <$> _) (funext fun v => (LawfulApplicative.map_pure _ _).symm)
+
+/-- Splitting a simulated prover at the seam simulates the split prover and then each
+returned continuation. -/
+theorem splitPrefix_simulate (ιm : QueryImpl ambient n) :
+    (s₁ : Protocol.{0}) → (s₂ : Path s₁ → Protocol.{0}) →
+    {Out : PathAlong plainSig (s₁.append s₂) → Type} →
+    (P : Prover plainSig ambient (s₁.append s₂) Out) →
+    Focal.splitPrefix (P.simulate ιm) =
+      Strategy.mapOutput (fun _ k => Prover.simulate ιm k)
+        (Prover.simulate ιm (Focal.splitPrefix P))
+  | .pure ⟨⟩, s₂, _, P => splitSlot_simulate ιm (s₂ ⟨⟩) P
+  | .liftBind a next, s₂, _, P => by
+    simp only [Focal.splitPrefix, Strategy.mapOutput, PureEnd.mapOutput, Prover.simulate_node,
+      simulateQ_map, Functor.map_map]
+    refine congrArg (· <$> _) (funext fun v => ?_)
+    refine (congrFun (Choice.map_comp _ _ _ _) v).trans ?_
+    refine Eq.trans ?_ (congrFun (Choice.map_comp _ _ _ _) _).symm
+    refine Eq.trans ?_ (congrFun (Choice.map_comp _ _ _ _) v).symm
+    exact congrArg (fun f => Choice.map .focal (owner plainSig a) f v)
+      (funext fun x => funext fun r => splitPrefix_simulate ιm (next (plainSig.toFunB a x))
+        (fun p => s₂ ⟨plainSig.toFunB a x, p⟩) r)
+
+end simulate
+
+section standalone
+
+variable {ι σ : Type} {ambient : OracleSpec ι}
+
+/-- Run a verifier only on an accepted statement; a rejected statement stays rejected. -/
+def Verifier.onAccept {s : Protocol} {T U : Type} (V : Verifier ambient s T U) :
+    Verifier ambient s (Option T) U where
+  decide mid p v := OptionT.mk (pure mid) >>= fun t => V.decide t p v
+
+/-- Answer the queries of a standalone prefix run from the run interface of the appended
+protocol. -/
+def prefixQueries (s₁ : Protocol.{0}) (s₂ : Path s₁ → Protocol) :
+    QueryImpl (ambient + challengeSpec plainSig s₁)
+      (OracleComp (ambient + challengeSpec plainSig (s₁.append s₂))) :=
+  ((fun q => liftM ((ambient + challengeSpec plainSig (s₁.append s₂)).query (.inl q))) :
+    QueryImpl ambient (OracleComp (ambient + challengeSpec plainSig (s₁.append s₂)))) +
+  prefixDraw (m := OracleComp (ambient + challengeSpec plainSig (s₁.append s₂))) plainSig s₁ s₂
+    (fun c => liftM ((ambient + challengeSpec plainSig (s₁.append s₂)).query (.inr c)))
+
+/-- Answer the queries of a standalone suffix run from the run interface of the appended
+protocol. -/
+def suffixQueries (s₁ : Protocol.{0}) (s₂ : Path s₁ → Protocol) (p : Path s₁) :
+    QueryImpl (ambient + challengeSpec plainSig (s₂ p))
+      (OracleComp (ambient + challengeSpec plainSig (s₁.append s₂))) :=
+  ((fun q => liftM ((ambient + challengeSpec plainSig (s₁.append s₂)).query (.inl q))) :
+    QueryImpl ambient (OracleComp (ambient + challengeSpec plainSig (s₁.append s₂)))) +
+  suffixDraw (m := OracleComp (ambient + challengeSpec plainSig (s₁.append s₂))) plainSig s₁ s₂
+    (fun c => liftM ((ambient + challengeSpec plainSig (s₁.append s₂)).query (.inr c))) p
+
+/-- The run of `V₁.append V₂` with the prefix decision taken at the boundary: the standalone
+run of `V₁` against the split prover, then the standalone run of `V₂` against the returned
+continuation, on the accepted intermediate statement. Queries go to the run interface of the
+appended protocol. -/
+def Verifier.boundaryDecidedRun {s₁ : Protocol} {s₂ : Path s₁ → Protocol} {S T U : Type}
+    {Out : PathAlong plainSig (s₁.append s₂) → Type}
+    (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) T U)
+    (stmt : S) (prover : Prover plainSig ambient (s₁.append s₂) Out) :
+    OracleComp (ambient + challengeSpec plainSig (s₁.append s₂))
+      (Observation plainSig (s₁.append s₂) Out U) := do
+  let o ← simulateQ (prefixQueries s₁ s₂) (V₁.run stmt (Focal.splitPrefix prover))
+  let r ← simulateQ (suffixQueries s₁ s₂ (projectPathAlong plainSig s₁ o.1))
+    ((V₂ _).onAccept.run o.2.2 o.2.1)
+  pure ⟨PathAlong.append plainSig s₁ s₂ o.1 r.1, r.2.1, r.2.2⟩
+
+section transfer
+variable {κ κ₁ : Type} {chal : OracleSpec κ} {chal₁ : OracleSpec κ₁} {α : Type}
+
+/-- An experiment over a program whose queries are rewritten keeps its law when the rewritten
+queries mean the same in both experiments. -/
+theorem experimentWithState_simulateQ (init : ProbComp σ)
+    (impl : QueryImpl ambient (StateT σ ProbComp)) (ch : QueryImpl chal ProbComp)
+    (ch₁ : QueryImpl chal₁ ProbComp) (G : QueryImpl (ambient + chal₁) (OracleComp (ambient + chal)))
+    (hG : ∀ t, simulateQ (QueryImpl.addLift impl ch : QueryImpl _ (StateT σ ProbComp)) (G t) =
+      (QueryImpl.addLift impl ch₁ : QueryImpl _ (StateT σ ProbComp)) t)
+    (x : OracleComp (ambient + chal₁) α) :
+    experimentWithState init impl ch (simulateQ G x) = experimentWithState init impl ch₁ x := by
+  simp only [experimentWithState, QueryImpl.simulateQ_simulateQ_eq_of_apply hG]
+
+/-- Resuming a program whose queries are rewritten from a state is the experiment started in
+that state, when the rewritten queries mean the same in both experiments. -/
+theorem experimentResume_simulateQ
+    (impl : QueryImpl ambient (StateT σ ProbComp)) (ch : QueryImpl chal ProbComp)
+    (ch₁ : QueryImpl chal₁ ProbComp) (G : QueryImpl (ambient + chal₁) (OracleComp (ambient + chal)))
+    (hG : ∀ t, simulateQ (QueryImpl.addLift impl ch : QueryImpl _ (StateT σ ProbComp)) (G t) =
+      (QueryImpl.addLift impl ch₁ : QueryImpl _ (StateT σ ProbComp)) t)
+    (state : σ) (x : OracleComp (ambient + chal₁) α) :
+    experimentResume impl ch state (simulateQ G x) = experiment (pure state) impl ch₁ x := by
+  simp only [experimentResume, experiment, QueryImpl.simulateQ_simulateQ_eq_of_apply hG]
+  exact (LawfulMonad.pure_bind _ _).symm
+
+end transfer
+
+/-- The prefix queries of the appended interface mean the restricted challenge draws. -/
+theorem simulateQ_prefixQueries {s₁ : Protocol} {s₂ : Path s₁ → Protocol}
+    (impl : QueryImpl ambient (StateT σ ProbComp))
+    (ch : QueryImpl (challengeSpec plainSig (s₁.append s₂)) ProbComp)
+    (t : (ambient + challengeSpec plainSig s₁).Domain) :
+    simulateQ (QueryImpl.addLift impl ch : QueryImpl _ (StateT σ ProbComp))
+      (prefixQueries s₁ s₂ t) =
+      (QueryImpl.addLift impl (prefixDraw plainSig s₁ s₂ ch) :
+        QueryImpl _ (StateT σ ProbComp)) t := by
+  rcases t with q | c
+  · simp only [prefixQueries, QueryImpl.add_apply_inl, simulateQ_spec_query]
+    rfl
+  · simp only [prefixQueries, QueryImpl.add_apply_inr]
+    rw [← prefixDraw_comp plainSig (m' := StateT σ ProbComp)
+      (fun x => simulateQ (QueryImpl.addLift impl ch : QueryImpl _ (StateT σ ProbComp)) x)]
+    simp only [simulateQ_spec_query, QueryImpl.addLift_def, QueryImpl.add_apply_inr,
+      QueryImpl.liftTarget_apply]
+    exact prefixDraw_comp plainSig (fun x => liftM x) s₁ s₂ ch c
+
+/-- The suffix queries of the appended interface mean the restricted challenge draws. -/
+theorem simulateQ_suffixQueries {s₁ : Protocol} {s₂ : Path s₁ → Protocol}
+    (impl : QueryImpl ambient (StateT σ ProbComp))
+    (ch : QueryImpl (challengeSpec plainSig (s₁.append s₂)) ProbComp) (p : Path s₁)
+    (t : (ambient + challengeSpec plainSig (s₂ p)).Domain) :
+    simulateQ (QueryImpl.addLift impl ch : QueryImpl _ (StateT σ ProbComp))
+      (suffixQueries s₁ s₂ p t) =
+      (QueryImpl.addLift impl (suffixDraw plainSig s₁ s₂ ch p) :
+        QueryImpl _ (StateT σ ProbComp)) t := by
+  rcases t with q | c
+  · simp only [suffixQueries, QueryImpl.add_apply_inl, simulateQ_spec_query]
+    rfl
+  · simp only [suffixQueries, QueryImpl.add_apply_inr]
+    rw [← suffixDraw_comp plainSig (m' := StateT σ ProbComp)
+      (fun x => simulateQ (QueryImpl.addLift impl ch : QueryImpl _ (StateT σ ProbComp)) x)]
+    simp only [simulateQ_spec_query, QueryImpl.addLift_def, QueryImpl.add_apply_inr,
+      QueryImpl.liftTarget_apply]
+    exact suffixDraw_comp plainSig (fun x => liftM x) s₁ s₂ ch p c
+
+/-- On an accepted statement, the guarded run is the run. -/
+theorem Verifier.onAccept_run_some {s : Protocol} {T U : Type} {Out : PathAlong plainSig s → Type}
+    (V : Verifier ambient s T U) (t : T) (prover : Prover plainSig ambient s Out) :
+    V.onAccept.run (some t) prover = V.run t prover := by
+  simp only [Verifier.run, Verifier.onAccept, OptionT.run_bind, OptionT.run_mk,
+    Option.elimM]
+  rfl
+
+/-- On a rejected statement, the guarded run interacts and rejects. -/
+theorem Verifier.onAccept_run_none {s : Protocol} {T U : Type} {Out : PathAlong plainSig s → Type}
+    (V : Verifier ambient s T U) (prover : Prover plainSig ambient s Out) :
+    V.onAccept.run none prover =
+      (fun r => ⟨r.1, r.2.1, none⟩) <$> TwoParty.Lens.run s
+        (prover.simulate (fun q => liftM ((ambient + challengeSpec plainSig s).query (.inl q))))
+        (sampler plainSig s (fun c =>
+          liftM ((ambient + challengeSpec plainSig s).query (.inr c)))) := by
+  simp only [Verifier.run, Verifier.onAccept, OptionT.run_bind, OptionT.run_mk,
+    Option.elimM, map_eq_bind_pure_comp]
+  refine bind_congr fun r => ?_
+  simp
+
+/-- A run of `V₁.append V₂` is the prefix interaction, the suffix interaction against the
+returned continuation, the prefix decision, and the suffix decision on its result. -/
+theorem Verifier.append_run_eq {s₁ : Protocol} {s₂ : Path s₁ → Protocol} {S T U : Type}
+    {Out : PathAlong plainSig (s₁.append s₂) → Type}
+    (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) T U)
+    (stmt : S) (prover : Prover plainSig ambient (s₁.append s₂) Out) :
+    let full := ambient + challengeSpec plainSig (s₁.append s₂)
+    let toFull : QueryImpl ambient (OracleComp full) := fun q => liftM (full.query (.inl q))
+    let draw : (c : ChallengeNode plainSig (s₁.append s₂)) →
+        OracleComp full (challengeSpec plainSig (s₁.append s₂) c) :=
+      fun c => liftM (full.query (.inr c))
+    (V₁.append V₂).run stmt prover = (do
+      let o ← TwoParty.Lens.run s₁ (Prover.simulate toFull (Focal.splitPrefix prover))
+        (sampler plainSig s₁ (prefixDraw plainSig s₁ s₂ draw))
+      let r ← TwoParty.Lens.run _ (Prover.simulate toFull o.2.1)
+        (sampler plainSig _ (suffixDraw plainSig s₁ s₂ draw (projectPathAlong plainSig s₁ o.1)))
+      let mid ← liftComp (V₁.decide stmt (projectPathAlong plainSig s₁ o.1)
+        (toPlainView s₁ o.1)).run full
+      let v ← liftComp ((V₂ _).onAccept.decide mid (projectPathAlong plainSig _ r.1)
+        (toPlainView _ r.1)).run full
+      pure ⟨PathAlong.append plainSig s₁ s₂ o.1 r.1, r.2.1, v⟩) := by
+  intro full toFull draw
+  rw [Verifier.run_eq_bind, appendPrefixRun, splitPrefix_simulate]
+  conv_lhs => rw [← Strategy.mapOutput_id (sampler plainSig s₁ _), run_mapOutput_mapOutput]
+  rw [bind_assoc]
+  refine bind_congr fun o => ?_
+  rcases o with ⟨tr₁, k, ⟨⟩⟩
+  erw [LawfulMonad.pure_bind]
+  simp only [Verifier.suffixRun]
+  refine bind_congr fun r => ?_
+  rcases r with ⟨tail, out, ⟨⟩⟩
+  have hd : ((V₁.append V₂).decide stmt
+      (projectPathAlong plainSig _ (PathAlong.append plainSig s₁ s₂ tr₁ tail))
+      (toPlainView _ (PathAlong.append plainSig s₁ s₂ tr₁ tail))).run =
+      (V₁.decide stmt (projectPathAlong plainSig s₁ tr₁) (toPlainView s₁ tr₁) >>= fun mid =>
+        (V₂ _).decide mid (projectPathAlong plainSig _ tail) (toPlainView _ tail)).run := by
+    rw [Verifier.append_decide]
+    exact splitFiber_append plainSig s₁ s₂
+      (fun p q v₁ v₂ => (V₁.decide stmt p v₁ >>= fun mid => (V₂ p).decide mid q v₂).run) tr₁ tail
+  dsimp only
+  rw [hd]
+  simp only [OptionT.run_bind, Verifier.onAccept, OptionT.run_mk, Option.elimM,
+    liftComp_bind, bind_assoc]
+  refine bind_congr fun mid => ?_
+  erw [LawfulMonad.pure_bind]
+
+/-- A lifted ambient program keeps its ambient queries when the challenge queries are
+rerouted. -/
+theorem simulateQ_liftComp_inl {κ κ' : Type} {chal : OracleSpec κ} {chal' : OracleSpec κ'}
+    (G : QueryImpl chal (OracleComp (ambient + chal'))) {α : Type} (x : OracleComp ambient α) :
+    simulateQ (((fun q => liftM ((ambient + chal').query (.inl q))) :
+        QueryImpl ambient (OracleComp (ambient + chal'))) + G) (liftComp x (ambient + chal)) =
+      liftComp x (ambient + chal') := by
+  rw [QueryImpl.simulateQ_add_liftComp_left]
+  rfl
+
+/-- The boundary-decided run is the prefix interaction, the prefix decision, the suffix
+interaction against the returned continuation, and the suffix decision on its result. -/
+theorem Verifier.boundaryDecidedRun_eq {s₁ : Protocol} {s₂ : Path s₁ → Protocol} {S T U : Type}
+    {Out : PathAlong plainSig (s₁.append s₂) → Type}
+    (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) T U)
+    (stmt : S) (prover : Prover plainSig ambient (s₁.append s₂) Out) :
+    let full := ambient + challengeSpec plainSig (s₁.append s₂)
+    let toFull : QueryImpl ambient (OracleComp full) := fun q => liftM (full.query (.inl q))
+    let draw : (c : ChallengeNode plainSig (s₁.append s₂)) →
+        OracleComp full (challengeSpec plainSig (s₁.append s₂) c) :=
+      fun c => liftM (full.query (.inr c))
+    Verifier.boundaryDecidedRun V₁ V₂ stmt prover = (do
+      let o ← TwoParty.Lens.run s₁ (Prover.simulate toFull (Focal.splitPrefix prover))
+        (sampler plainSig s₁ (prefixDraw plainSig s₁ s₂ draw))
+      let mid ← liftComp (V₁.decide stmt (projectPathAlong plainSig s₁ o.1)
+        (toPlainView s₁ o.1)).run full
+      let r ← TwoParty.Lens.run _ (Prover.simulate toFull o.2.1)
+        (sampler plainSig _ (suffixDraw plainSig s₁ s₂ draw (projectPathAlong plainSig s₁ o.1)))
+      let v ← liftComp ((V₂ _).onAccept.decide mid (projectPathAlong plainSig _ r.1)
+        (toPlainView _ r.1)).run full
+      pure ⟨PathAlong.append plainSig s₁ s₂ o.1 r.1, r.2.1, v⟩) := by
+  intro full toFull draw
+  simp only [Verifier.boundaryDecidedRun, Verifier.run, simulateQ_bind, simulateQ_pure, bind_assoc]
+  rw [simulateQ_run_simulate_sampler]
+  simp only [simulateQ_spec_query, prefixQueries, suffixQueries, QueryImpl.add_apply_inl,
+    QueryImpl.add_apply_inr, simulateQ_liftComp_inl]
+  refine bind_congr fun o => ?_
+  refine bind_congr fun mid => ?_
+  erw [LawfulMonad.pure_bind]
+  rw [simulateQ_run_simulate_sampler]
+  simp only [simulateQ_spec_query, QueryImpl.add_apply_inl, QueryImpl.add_apply_inr]
+  refine bind_congr fun r => ?_
+  refine bind_congr fun v => ?_
+  erw [LawfulMonad.pure_bind]
+
+/-- A prefix decision without ambient queries may be taken at the boundary: the two runs are
+equal. -/
+theorem Verifier.boundaryDecidedRun_eq_of_pure {s₁ : Protocol} {s₂ : Path s₁ → Protocol}
+    {S T U : Type} {Out : PathAlong plainSig (s₁.append s₂) → Type}
+    (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) T U)
+    (stmt : S) (prover : Prover plainSig ambient (s₁.append s₂) Out)
+    (hpure : ∀ p v, ∃ r, (V₁.decide stmt p v).run = pure r) :
+    (V₁.append V₂).run stmt prover = Verifier.boundaryDecidedRun V₁ V₂ stmt prover := by
+  rw [Verifier.append_run_eq, Verifier.boundaryDecidedRun_eq]
+  refine bind_congr fun o => ?_
+  obtain ⟨r, hr⟩ := hpure (projectPathAlong plainSig s₁ o.1) (toPlainView s₁ o.1)
+  rw [hr, liftComp_pure]
+  erw [LawfulMonad.pure_bind]
+  refine bind_congr fun x => ?_
+  erw [LawfulMonad.pure_bind]
+
+/-- With a stateless ambient implementation the prefix decision may be taken at the boundary:
+the two experiments are equal in distribution. -/
+theorem Verifier.boundaryDecidedRun_evalDistEq_of_stateless
+    {s₁ : Protocol} {s₂ : Path s₁ → Protocol}
+    {S T U : Type} {Out : PathAlong plainSig (s₁.append s₂) → Type}
+    (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) T U)
+    (stmt : S) (prover : Prover plainSig ambient (s₁.append s₂) Out)
+    (init : ProbComp σ) (g : QueryImpl ambient ProbComp)
+    (challenges : QueryImpl (challengeSpec plainSig (s₁.append s₂)) ProbComp) :
+    experiment init (g.liftTarget (StateT σ ProbComp)) challenges
+        ((V₁.append V₂).run stmt prover) =ᵈ
+      experiment init (g.liftTarget (StateT σ ProbComp)) challenges
+        (Verifier.boundaryDecidedRun V₁ V₂ stmt prover) := by
+  rw [Verifier.append_run_eq, Verifier.boundaryDecidedRun_eq, experiment_bind, experiment_bind]
+  refine EvalDistEq.bind (EvalDistEq.refl _) fun b => ?_
+  simp only [experimentResume, simulateQ_bind, QueryImpl.addLift_def,
+    QueryImpl.simulateQ_add_liftComp_left, QueryImpl.liftTarget_self, simulateQ_liftTarget]
+  have hswap : ∀ {α β γ : Type} (Y : StateT σ ProbComp β) (A : ProbComp α)
+      (Z : β → α → StateT σ ProbComp γ) (state : σ),
+      (Y >>= fun r => (liftM A : StateT σ ProbComp α) >>= fun a => Z r a).run' state =ᵈ
+        ((liftM A : StateT σ ProbComp α) >>= fun a => Y >>= fun r => Z r a).run' state := by
+    intro α β γ Y A Z state
+    simp only [StateT.run'_eq, StateT.run_bind, liftM, monadLift, MonadLift.monadLift,
+      StateT.run_lift, bind_assoc]
+    exact (EvalDistEq.bind_bind_swap (Y.run state) A
+      (fun p a => (Z p.1 a).run p.2)).map Prod.fst
+  exact hswap _ _ _ _
+
+/-- Composition soundness from the suffix verifier's standalone soundness. The one hypothesis
+`hreorder` states that taking the prefix decision at the boundary leaves the law of the run
+unchanged; `Verifier.boundaryDecidedRun_eq_of_pure` and
+`Verifier.boundaryDecidedRun_evalDistEq_of_stateless` discharge it. `ε₁` bounds the standalone
+prefix run accepting a true intermediate statement, `δ` bounds it accepting an inadmissible one,
+and every suffix verifier is sound with error `ε₂` from every ambient state. -/
+theorem Verifier.append_soundness_of_standalone {s₁ : Protocol} {s₂ : Path s₁ → Protocol}
+    {S T U : Type} {Out : PathAlong plainSig (s₁.append s₂) → Type}
+    (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) T U)
+    (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
+    (challenges : QueryImpl (challengeSpec plainSig (s₁.append s₂)) ProbComp)
+    (middle : StatementProblem T) (output : StatementProblem U) (stmt : S)
+    (prover : Prover plainSig ambient (s₁.append s₂) Out) (ε₁ δ ε₂ : ℝ≥0∞)
+    (hreorder : experiment init impl challenges ((V₁.append V₂).run stmt prover) =ᵈ
+      experiment init impl challenges (Verifier.boundaryDecidedRun V₁ V₂ stmt prover))
+    (hprefix : Pr{let o ← (experiment init impl (prefixDraw plainSig s₁ s₂ challenges)
+      (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t, o.2.2 = some t ∧ middle.language () t] ≤ ε₁)
+    (hadmissible : Pr{let o ← (experiment init impl (prefixDraw plainSig s₁ s₂ challenges)
+      (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t, o.2.2 = some t ∧
+        ¬ middle.admissible () t] ≤ δ)
+    (hsuffix : ∀ p state, (V₂ p).soundness (pure state) impl
+      (suffixDraw plainSig s₁ s₂ challenges p) middle output ε₂) :
+    Pr{let obs ← (experiment init impl challenges ((V₁.append V₂).run stmt prover))}[
+      ∃ u, obs.2.2 = some u ∧ output.language () u] ≤ ε₁ + δ + ε₂ := by
+  have hfst : ∀ {α κ : Type} {chal : OracleSpec κ} (ch : QueryImpl chal ProbComp)
+      (x : OracleComp (ambient + chal) α),
+      experiment init impl ch x = Prod.fst <$> experimentWithState init impl ch x := by
+    intro α κ chal ch x
+    simp only [experiment, experimentWithState, StateT.run'_eq, _root_.map_bind]
+  rw [hreorder.prEvent_eq (fun obs => ∃ u, obs.2.2 = some u ∧ output.language () u),
+    Verifier.boundaryDecidedRun, experiment_bind,
+    experimentWithState_simulateQ init impl challenges _ _
+      (simulateQ_prefixQueries impl challenges)]
+  refine prEvent_bind_le_truth_invalid_uniform_ae _ _
+    (fun b => ∃ t, b.1.2.2 = some t ∧ middle.language () t)
+    (fun b => ∀ t, b.1.2.2 = some t → middle.admissible () t) _ ε₁ δ ε₂ ?_ ?_ ?_
+  · rw [hfst, prEvent_map] at hprefix
+    exact hprefix
+  · rw [hfst, prEvent_map] at hadmissible
+    refine (prEvent_mono _ _ _ fun b h => ?_).trans hadmissible
+    simpa only [not_forall, exists_prop] using h.2
+  · refine ae_of_all _ fun b hnot hadm => ?_
+    rcases b with ⟨⟨tr₁, next, mid⟩, state⟩
+    have hres : ∀ {α β : Type} (f : α → β) (x : OracleComp _ α),
+        experimentResume impl challenges state (x >>= fun a => pure (f a)) =
+          f <$> experimentResume impl challenges state x := by
+      intro α β f x
+      rw [show (x >>= fun a => pure (f a)) = f <$> x from (map_eq_bind_pure_comp _ f x).symm]
+      simp only [experimentResume, simulateQ_map, StateT.run'_eq, StateT.run_map,
+        Functor.map_map]
+    dsimp only at hnot hadm ⊢
+    rw [hres, prEvent_map, experimentResume_simulateQ impl challenges _ _
+      (simulateQ_suffixQueries impl challenges _)]
+    cases mid with
+    | none =>
+      rw [Verifier.onAccept_run_none, experiment_map, prEvent_map]
+      simp
+    | some t =>
+      rw [Verifier.onAccept_run_some]
+      have h := hsuffix (projectPathAlong plainSig s₁ tr₁) state
+        (fun tail => Out (PathAlong.append plainSig s₁ s₂ tr₁ tail)) t (hadm t rfl)
+        (fun hl => hnot ⟨t, rfl, hl⟩) next
+      let : MeasurableSpace (Observation plainSig (s₂ (projectPathAlong plainSig s₁ tr₁))
+        (fun tail => Out (PathAlong.append plainSig s₁ s₂ tr₁ tail)) U) := ⊤
+      rw [prEvent_eq_evalDist _ _ (measurable_from_top)]
+      exact h
+
+end standalone
 
 end Interaction.Core

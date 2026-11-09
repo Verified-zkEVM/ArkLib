@@ -74,8 +74,8 @@ theorem run_guess {m : Type → Type} [Monad m] [LawfulMonad m]
   rfl
 
 -- Row 1 (`guess_soundness`), restated over `TwoParty.Lens.run` on plainSig
--- `.message F; .challenge F` with a `Prop`-output counterpart; the frozen
--- `respectTransparency false` override is dropped.
+-- `.message F; .challenge F` with a `Prop`-output counterpart; the frozen transparency
+-- override is dropped.
 /-- Every strategy is bounded by the fresh challenge's per-value collision bound. Its dependent
 private output and post-challenge response effects are unrestricted. -/
 theorem guess_soundness {m : Type → Type} [Monad m] [LawfulMonad m]
@@ -653,3 +653,60 @@ theorem weighted_success :
 end
 
 end Interaction.Core.CompositionSoundnessTests.OracleExample
+
+namespace Interaction.Core.CompositionSoundnessTests.Standalone
+
+/-!
+The standalone corollary with each named discharge of its reordering hypothesis, for arbitrary
+verifiers, provers, implementations and challenge samplers.
+-/
+
+variable {ι σ : Type} {ambient : OracleSpec ι} {s₁ : Protocol} {s₂ : Path s₁ → Protocol}
+  {S T U : Type} {Out : PathAlong plainSig (s₁.append s₂) → Type}
+
+/-- A prefix decision without ambient queries composes with a standalone-sound suffix at
+`ε₁ + δ + ε₂`. -/
+theorem append_soundness_of_pure_decide
+    (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) T U)
+    (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
+    (challenges : QueryImpl (challengeSpec plainSig (s₁.append s₂)) ProbComp)
+    (middle : StatementProblem T) (output : StatementProblem U) (stmt : S)
+    (prover : Prover plainSig ambient (s₁.append s₂) Out) (ε₁ δ ε₂ : ℝ≥0∞)
+    (hpure : ∀ p v, ∃ r, (V₁.decide stmt p v).run = pure r)
+    (hprefix : Pr{let o ← (experiment init impl (prefixDraw plainSig s₁ s₂ challenges)
+      (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t, o.2.2 = some t ∧ middle.language () t] ≤ ε₁)
+    (hadmissible : Pr{let o ← (experiment init impl (prefixDraw plainSig s₁ s₂ challenges)
+      (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t, o.2.2 = some t ∧
+        ¬ middle.admissible () t] ≤ δ)
+    (hsuffix : ∀ p state, (V₂ p).soundness (pure state) impl
+      (suffixDraw plainSig s₁ s₂ challenges p) middle output ε₂) :
+    Pr{let obs ← (experiment init impl challenges ((V₁.append V₂).run stmt prover))}[
+      ∃ u, obs.2.2 = some u ∧ output.language () u] ≤ ε₁ + δ + ε₂ :=
+  Verifier.append_soundness_of_standalone V₁ V₂ init impl challenges middle output stmt prover
+    ε₁ δ ε₂ (Verifier.boundaryDecidedRun_eq_of_pure V₁ V₂ stmt prover hpure ▸ .refl _) hprefix
+    hadmissible hsuffix
+
+/-- Under a stateless ambient implementation any prefix verifier composes with a standalone-sound
+suffix at `ε₁ + δ + ε₂`. -/
+theorem append_soundness_of_stateless
+    (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) T U)
+    (init : ProbComp σ) (g : QueryImpl ambient ProbComp)
+    (challenges : QueryImpl (challengeSpec plainSig (s₁.append s₂)) ProbComp)
+    (middle : StatementProblem T) (output : StatementProblem U) (stmt : S)
+    (prover : Prover plainSig ambient (s₁.append s₂) Out) (ε₁ δ ε₂ : ℝ≥0∞)
+    (hprefix : Pr{let o ← (experiment init (g.liftTarget (StateT σ ProbComp))
+      (prefixDraw plainSig s₁ s₂ challenges) (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t,
+        o.2.2 = some t ∧ middle.language () t] ≤ ε₁)
+    (hadmissible : Pr{let o ← (experiment init (g.liftTarget (StateT σ ProbComp))
+      (prefixDraw plainSig s₁ s₂ challenges) (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t,
+        o.2.2 = some t ∧ ¬ middle.admissible () t] ≤ δ)
+    (hsuffix : ∀ p state, (V₂ p).soundness (pure state) (g.liftTarget (StateT σ ProbComp))
+      (suffixDraw plainSig s₁ s₂ challenges p) middle output ε₂) :
+    Pr{let obs ← (experiment init (g.liftTarget (StateT σ ProbComp)) challenges
+      ((V₁.append V₂).run stmt prover))}[∃ u, obs.2.2 = some u ∧ output.language () u] ≤
+        ε₁ + δ + ε₂ :=
+  Verifier.append_soundness_of_standalone V₁ V₂ init _ challenges middle output stmt prover
+    ε₁ δ ε₂ (Verifier.boundaryDecidedRun_evalDistEq_of_stateless V₁ V₂ stmt prover init g
+      challenges) hprefix hadmissible hsuffix
+
+end Interaction.Core.CompositionSoundnessTests.Standalone
