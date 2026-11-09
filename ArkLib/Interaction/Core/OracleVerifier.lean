@@ -363,6 +363,20 @@ structure OracleVerifier {ι I J : Type u} (ambient : OracleSpec.{u, u} ι)
   outputMap : S → (p : Path s) → View s p →
     OracleMap (sumFamily inputs (pathFamily s p)) outputs
 
+/-- The decision with resource queries answered from concrete data; ambient queries remain.
+
+Its possible results, with every ambient answer allowed, are the statements the decision can
+return on that data and view.
+-/
+def OracleVerifier.decideWith {ι I J : Type u} {ambient : OracleSpec.{u, u} ι}
+    {s : OracleProtocol.{u}} {S T : Type u} {A : I → Type u} {B : J → Type u}
+    {inputs : OracleFamily.{u, u, u} I A} {outputs : OracleFamily.{u, u, u} J B}
+    (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (p : Path s) (v : View s p)
+    (data : ∀ i, (sumFamily inputs (pathFamily s p)).Realization i) :
+    OracleComp ambient (Option T) :=
+  simulateQ (QueryImpl.addLift (QueryImpl.id' ambient)
+    ((sumFamily inputs (pathFamily s p)).behaviorOfRealizations data)) (V.decide stmt p v).run
+
 /-- Interpret the decision's resource queries using the input and the actual run's payloads. -/
 def OracleVerifier.run {ι I J : Type u} {ambient : OracleSpec.{u, u} ι}
     {s : OracleProtocol.{u}} {S T : Type u} {A : I → Type u} {B : J → Type u}

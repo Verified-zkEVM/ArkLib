@@ -13,8 +13,10 @@ public import PolyFun.Interaction.TwoParty.Lens.Compose
 
 Prover composition constructs the suffix in the prefix leaf action. Samplers combine without
 running decisions at the seam. Decisions fold only after the whole interaction. Oracle routing
-uses the prefix output map; closure of output maps requires an explicit compatibility certificate
-because an intermediate decision may depend on ambient queries.
+uses the prefix output map, and the composed decision equals the prefix decision followed by the
+suffix decision on routed data. Closure of output maps requires an explicit compatibility
+certificate for the intermediate statements the prefix decision can accept, because that decision
+may depend on ambient queries.
 -/
 
 @[expose] public section
@@ -236,6 +238,27 @@ def OracleMap.withAmbient {ι I J : Type u} (ambient : OracleSpec.{u, u} ι)
   | .inr q => simulateQ
     (fun r => liftM ((ambient + In.spec).query (.inr r))) (route.impl q)
 
+/-- Routing through a map and answering from data agrees with answering from the mapped data. -/
+theorem OracleMap.simulate_withAmbient {ι I J : Type u} {ambient : OracleSpec.{u, u} ι}
+    {A : I → Type u} {B : J → Type u}
+    {In : OracleFamily.{u, u, u} I A} {Out : OracleFamily.{u, u, u} J B}
+    (route : OracleMap In Out) (x : ∀ i, A i) {α : Type u}
+    (program : OracleComp (ambient + Out.spec) α) :
+    simulateQ (QueryImpl.addLift (QueryImpl.id' ambient) (In.behaviorOfRealizations x) :
+        QueryImpl (ambient + In.spec) (OracleComp ambient))
+        (simulateQ (route.withAmbient ambient) program) =
+      simulateQ (QueryImpl.addLift (QueryImpl.id' ambient)
+        (Out.behaviorOfRealizations (route.f x)) :
+        QueryImpl (ambient + Out.spec) (OracleComp ambient)) program := by
+  refine QueryImpl.simulateQ_simulateQ_eq_of_apply (fun q => ?_) program
+  rcases q with q | q
+  · simp [OracleMap.withAmbient]
+  · simp only [OracleMap.withAmbient, QueryImpl.addLift_def, QueryImpl.liftTarget_self]
+    rw [QueryImpl.simulateQ_simulateQ_eq_of_apply
+      (impl := (In.behaviorOfRealizations x).liftTarget (OracleComp ambient))
+      (fun r => QueryImpl.simulateQ_add_query_right _ _ r), simulateQ_liftTarget, route.law]
+    rfl
+
 namespace OracleVerifier
 variable {ι I J K : Type u} {ambient : OracleSpec.{u, u} ι}
   {A : I → Type u} {B : J → Type u} {C : K → Type u}
@@ -260,19 +283,38 @@ def suffixRoute (V₁ : OracleVerifier ambient s₁ S T inputs middle)
     (OracleMap.embedding (pathFamily _ (Path.split s₁ s₂ p).2) id)).comp
       (resources (inputs := inputs) p)
 
-/-- A composite output map must represent every intermediate statement it permits.
+/-- A composite output map must represent every intermediate statement the prefix can accept.
 
-This explicit condition is needed because the prefix decision can query ambient oracles,
-whereas output maps cannot. It is automatic when suffix output maps ignore that statement.
+The condition concerns the actual prefix decision on the same view, with its resource queries
+answered from the routed input data and every ambient answer allowed. Statements the prefix cannot
+return impose no condition. The condition is still needed because the prefix decision can query
+ambient oracles, whereas output maps cannot.
 -/
 structure OutputCompatibility (V₁ : OracleVerifier ambient s₁ S T inputs middle)
     (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) T U middle outputs) where
   outputMap : S → (p : Path (s₁.append s₂)) → View (s₁.append s₂) p →
     OracleMap (sumFamily inputs (pathFamily (s₁.append s₂) p)) outputs
-  agrees : ∀ stmt p v mid data,
+  agrees : ∀ stmt p v data mid,
+    some mid ∈ support (V₁.decideWith stmt (Path.split s₁ s₂ p).1 (View.split s₁ s₂ p v).1
+      ((prefixRoute (inputs := inputs) p).f data)) →
     (outputMap stmt p v).f data =
       ((V₂ (Path.split s₁ s₂ p).1).outputMap mid (Path.split s₁ s₂ p).2
         (View.split s₁ s₂ p v).2).f ((suffixRoute V₁ stmt p v).f data)
+
+/-- Compatibility from a public intermediate statement that every accepted prefix result equals. -/
+def OutputCompatibility.ofStatement (V₁ : OracleVerifier ambient s₁ S T inputs middle)
+    (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) T U middle outputs)
+    (mid : S → (p : Path (s₁.append s₂)) → View (s₁.append s₂) p → T)
+    (accepted : ∀ stmt p v data t,
+      some t ∈ support (V₁.decideWith stmt (Path.split s₁ s₂ p).1 (View.split s₁ s₂ p v).1
+        ((prefixRoute (inputs := inputs) p).f data)) → t = mid stmt p v) :
+    OutputCompatibility V₁ V₂ where
+  outputMap stmt p v :=
+    ((V₂ (Path.split s₁ s₂ p).1).outputMap (mid stmt p v) (Path.split s₁ s₂ p).2
+      (View.split s₁ s₂ p v).2).comp (suffixRoute V₁ stmt p v)
+  agrees stmt p v data t h := by
+    rw [accepted stmt p v data t h]
+    rfl
 
 /-- Fold passive decisions at the end, routing all suffix resource queries through the prefix. -/
 def append (V₁ : OracleVerifier ambient s₁ S T inputs middle)
@@ -290,6 +332,29 @@ def append (V₁ : OracleVerifier ambient s₁ S T inputs middle)
       simulateQ ((suffixRoute V₁ stmt p v).withAmbient ambient)
         ((V₂ z.1).decide mid z.2 views.2).run
   outputMap := compatible.outputMap
+
+/-- The composed decision is the prefix decision followed by the suffix decision on routed data.
+
+Ambient queries keep their order: those of the prefix decision precede those of the suffix.
+-/
+theorem append_decideWith (V₁ : OracleVerifier ambient s₁ S T inputs middle)
+    (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) T U middle outputs)
+    (compatible : OutputCompatibility V₁ V₂) (stmt : S) (p : Path (s₁.append s₂))
+    (v : View (s₁.append s₂) p)
+    (data : ∀ i, (sumFamily inputs (pathFamily (s₁.append s₂) p)).Realization i) :
+    (V₁.append V₂ compatible).decideWith stmt p v data =
+      V₁.decideWith stmt (Path.split s₁ s₂ p).1 (View.split s₁ s₂ p v).1
+          ((prefixRoute (inputs := inputs) p).f data) >>= fun
+        | none => pure none
+        | some mid => (V₂ (Path.split s₁ s₂ p).1).decideWith mid (Path.split s₁ s₂ p).2
+            (View.split s₁ s₂ p v).2 ((suffixRoute V₁ stmt p v).f data) := by
+  simp only [decideWith, append, OptionT.run_mk, simulateQ_bind]
+  congr 1
+  · exact OracleMap.simulate_withAmbient _ _ _
+  · funext mid
+    cases mid with
+    | none => simp
+    | some mid => exact OracleMap.simulate_withAmbient _ _ _
 
 end OracleVerifier
 end Interaction.Core
