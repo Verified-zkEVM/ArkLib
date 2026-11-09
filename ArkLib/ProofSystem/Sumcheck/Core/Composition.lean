@@ -34,6 +34,9 @@ The main results are:
   `Prover.append`.
 
 The append results are stated for a single first round, whose decision makes no ambient query.
+The projection map and `projectedVerifier` are noncomputable mathematical views because the legacy
+multivariate evaluation and projected-polynomial construction are noncomputable. The executable
+message representation and its runtime instance belong to `Computable`.
 -/
 
 @[expose] public section
@@ -97,10 +100,8 @@ theorem run_eq_decideWith {Out : PathAlong oracleSig s → Type}
 
 variable (inputs) in
 /-- The input slot of a run's resources, as an oracle map. -/
-def inputSlot (p : Path s) : OracleMap (sumFamily inputs (pathFamily s p)) inputs where
-  f x i := x (.inl i)
-  impl q := liftM ((sumFamily inputs (pathFamily s p)).spec.query ⟨.inl q.1, q.2⟩)
-  law _ _ := rfl
+abbrev inputSlot (p : Path s) : OracleMap (sumFamily inputs (pathFamily s p)) inputs :=
+  OracleMap.embedding (sumFamily inputs (pathFamily s p)) Sum.inl
 
 end Decision
 
@@ -337,8 +338,8 @@ theorem decideWith_append_checkVerifier (stmt : S) (x : ∀ i, A i)
 /-- The run of a round appended to `V₂`. Both interactions run first. The decision is the
 round's check and, only after it accepts, the decision of `V₂` on the round's output oracle and
 the messages of `s`. -/
-theorem run_append_checkVerifier {Out : PathAlong oracleSig ((round R deg).append fun _ => s) →
-      Type}
+theorem run_append_checkVerifier
+    {Out : PathAlong oracleSig ((round R deg).append fun _ => s) → Type}
     (stmt : S) (x : ∀ i, A i)
     (prover : Prover oracleSig ambient ((round R deg).append fun _ => s) Out) :
     ((checkVerifier ambient inputs check out).append (fun _ => V₂) compatible).run stmt x
