@@ -354,7 +354,6 @@ def decisionLiftOn (p : Path (protocolOn R M eval n)) :
   fun q => liftM ((ambient + (sumFamily inputs
     (pathFamily (protocolOn R M eval n) p)).spec).query (.inr ⟨.inr q.1, q.2⟩))
 
-omit [SampleableType R] in
 /-- The Sumcheck oracle verifier over the message carrier `M` and the input family `inputs`: the
 legacy decision fold on the view's challenges, with every message query routed to its oracle
 node. The output oracle is the input family.
