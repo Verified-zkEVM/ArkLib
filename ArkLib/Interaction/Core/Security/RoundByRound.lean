@@ -54,6 +54,16 @@ def PrefixMoves.complete : {s : FreeM P PUnit} →
     rcases history with ⟨⟨x, h⟩, rest⟩
     exact ⟨x, h.symm ▸ PrefixMoves.complete tail rest⟩
 
+/-- Case analysis of a nonempty full prefix at its first move. -/
+def PrefixMoves.downCases {a : P.A} {next : P.B a → FreeM P PUnit} {t : FreeM P PUnit}
+    {motive : (b : P.B a) → (tail : Cursor.Spine (next b) t) →
+      PrefixMoves l (.down b tail) → Sort*}
+    (h : ∀ x tail history, motive (l.toFunB a x) tail ⟨⟨x, rfl⟩, history⟩)
+    (b : P.B a) (tail : Cursor.Spine (next b) t) (history : PrefixMoves l (.down b tail)) :
+    motive b tail history := by
+  rcases history with ⟨⟨x, rfl⟩, history⟩
+  exact h x tail history
+
 /-- The structural node reached by a cursor ending at an interaction node. -/
 def spineNode {a : P.A} {next : P.B a → FreeM P PUnit} :
     {s : FreeM P PUnit} → Cursor.Spine s (.liftBind a next) → Node s

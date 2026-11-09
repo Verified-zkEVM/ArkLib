@@ -4,8 +4,9 @@ These notes record where `ArkLib/Interaction/Core/` departs from the design reco
 directory. The records themselves are unchanged. Each entry states what the record said, what the
 code does and why. Entries 1–8 were identified by the review of the first implementation; entries
 9–12 were introduced while addressing that review, and entry 13 by core additions that the oracle
-migration needs. The final section records later core changes that keep to the records; they are
-not departures.
+migration needs. The section after them records later core changes that keep to the records; they
+are not departures. The last section records the choices of migration commit D3, which adds
+knowledge composition and measured extraction to the core.
 
 ## 1. Oracle interfaces in positions; challenges indexed by node occurrences
 
@@ -201,3 +202,84 @@ run extracts `w.val`.
 
 This keeps to record D7, whose problems already index witness types by the claim; D7 fixes no
 constant output witness type for either notion.
+
+## Migration commit D3: knowledge composition and measured extraction
+
+Migration commit D3 (not record D3) adds `Security/KnowledgeComposition.lean` and
+`Security/MeasuredResources.lean`. These are its choices.
+
+### Root, step and leaf stages are charged
+
+`MeasuredStages` names a budgeted VCVio program (`OracleComp.BudgetedProgram`) for the root map,
+for the step map at every interaction node and for the leaf map, each indexed by the statement and
+the full prefix. `BudgetAtMost` bounds the three kinds separately. `programAlong` composes the
+programs with VCVio's `BudgetedProgram.comp` and `contramap`, so its budget is the leaf budget,
+plus one step budget for each move of the transcript, plus the root budget. Under stage bounds,
+`programAlong_budget_le` gives `leafBound + length • stepBound + rootBound`. The legacy
+`length • b` bound is `programAlong_budget_le_nsmul`, the case with zero root and leaf bounds.
+ArkLib adds no second instruction-cost theory.
+
+### Bounds by cursor length
+
+`programFrom_budget_le` proves the bound by induction along the cursor, with the length of
+`completeSpine l tr`. The pinned PolyFun has node-dependent charges (`Path.chargeDec`, with
+`Path.chargeDec_le_length_nsmul`) and a full-move path conversion (`PathAlong.toMapLensPath`), so
+payload-dependent charges can be expressed there. Neither directly replaces this proof. The proof
+indexes stage programs by full prefixes, so using PolyFun's charges would need a decoration built
+from the statement and history, an identity between stage budgets and charges, a length bridge, and
+separate root and leaf accounting. The short induction stays. Later work that needs nonuniform
+path sums should reuse PolyFun's charge calculus.
+
+### The seam is a predicate
+
+`KnowledgeStateFunction.append` takes the seam as a hypothesis: the suffix root state implies the
+prefix valid output on the witness that the suffix root map extracts. `rbrKnowledgeSoundness_append`
+takes it between the suffix input relation and the prefix valid output, under the input promise.
+The suffix premise uses the composite valid output restricted along `PathAlong.append`. These
+theorems do not derive the security of `V₁.append V₂` from the standalone security statements of
+the two verifiers. The test fixture proves an acceptance iff for its own verifiers instead.
+
+A reusable acceptance bridge for appended verifiers is not in this commit; it is a recorded
+follow-up. It would start from `Verifier.append_decide` and `OracleVerifier.append_decideWith`,
+keep the ambient state through the decision bind, and use output compatibility on supported
+accepted prefix results. Its first theorem should be one-way: composite positive acceptance
+decomposes into a supported intermediate result and state, and positive suffix acceptance from that
+state. It must not be an iff between two separately existential `validAcceptance` predicates,
+because their ambient states can be incompatible. For example, a prefix that accepts only from
+state 0 and leaves state 0, followed by a suffix that accepts only from state 1, satisfies both
+standalone predicates, but the composition rejects. A deterministic-mid corollary needs the
+accepted-prefix-result law as a hypothesis. The fixed-protocol state-restoration proofs do not
+need the bridge; they use one state function, its local bound, its terminal obligation and its
+extractor.
+
+### Dependent witnesses
+
+Output witnesses are transcript families (see "Output witnesses are indexed by the transcript"
+above), and composition keeps them typed. The intermediate witness type is
+`Wmid : PathAlong l s₁ → Type`. The suffix state function at `tr₁` takes input witnesses in
+`Wmid tr₁`, and its output family is `fun tr₂ => W (PathAlong.append l s₁ s₂ tr₁ tr₂)`.
+
+- `extractFrom` takes its output witness at `PrefixMoves.completeWith l sp history tr`, the
+  completed transcript through the cursor's prefix followed by the rest of the transcript. It is
+  defined by recursion on the rest, so the leaf and step equations of `extractFrom` hold by
+  definition.
+- `extractAlong` and `terminalWitness` take `W tr`. They transport it by `cast` along
+  `PrefixMoves.completeWith_root` and `complete_completeMoves`; the transport reduces by definition
+  when the transcript is given by its moves.
+- `extractFrom_child` and `extractFrom_append_down` state the extraction below a first move for a
+  witness given with a transport to each side.
+- `MeasuredStages.leaf` takes `W (PrefixMoves.complete l sp history)`. `programAlong` precomposes
+  the same transport, so its input is `W tr`.
+
+There is one theory. A constant output witness type is the constant family `fun _ => W`. The
+tests run the composed extraction on the carriers `Fin (payload + 1)` and
+`Fin (payload + 1) × Unit` with identity leaf maps. They check that the composite terminal witness
+is the output witness itself, and they run the composed measured program on
+`witness : Fin (message.val + 1)`.
+
+### `combineDraw` combines errors
+
+The composite error is `combineDraw (m := fun _ => ℝ≥0∞) l s₁ s₂ ε₁ ε₂`: the combinator that
+combines the prefix and suffix draws, at a constant result family. Prefix challenge nodes keep the
+prefix error, and suffix challenge nodes keep the error of the suffix at their prefix path. No
+separate error traversal is added.

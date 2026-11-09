@@ -13,18 +13,25 @@ public import ArkLib.Interaction.Core.Security.RoundByRound
 
 A knowledge state function extracts backwards along a completed transcript: the leaf map turns an
 output witness into a witness at the terminal cursor, the step maps move it to earlier cursors, and
-the root map returns an input witness (`KnowledgeStateFunction.extractAlong`). Its round-by-round
-error is a bound on the probability of a bad challenge at every receiver prefix
-(`KnowledgeStateFunction.LocallyBounded`), which is exactly `rbrKnowledgeSoundness`.
+the root map returns an input witness (`KnowledgeStateFunction.extractAlong`). Output witness types
+form a family over completed transcripts. Extraction from a cursor (`extractFrom`) takes its output
+witness at the transcript that completes the cursor's prefix with the rest of the transcript
+(`PrefixMoves.completeWith`); along a whole transcript it takes a witness at that transcript.
+The round-by-round error of a state function is a bound on the probability of a bad challenge at
+every receiver prefix (`KnowledgeStateFunction.LocallyBounded`), which is exactly
+`rbrKnowledgeSoundness`.
 
 `KnowledgeStateFunction.append` composes a state function on a prefix protocol with a family of
 state functions on the suffixes, one for each completed prefix transcript, so suffix witness
-carriers may read prefix oracle payloads. The seam condition says that the suffix root state
-implies the prefix's valid output on the witness the suffix root map extracts. Extraction along an
-appended transcript is suffix extraction followed by prefix extraction (`extractAlong_append`), the
-terminal state is the suffix terminal state (`toFun_terminalWitness_append`), and the composite
-is locally bounded by the prefix and suffix errors combined along the protocol with `combineDraw`,
-the same combinator that combines the draws (`LocallyBounded.append`).
+carriers may read prefix oracle payloads. The intermediate witness type is a family over prefix
+transcripts: the suffix at `tr₁` takes input witnesses in `Wmid tr₁`, and its output family is
+the composite family along `PathAlong.append` at `tr₁`. The seam condition says that the suffix
+root state implies the prefix's valid output on the witness the suffix root map extracts.
+Extraction along an appended transcript is suffix extraction followed by prefix extraction
+(`extractAlong_append`), the terminal state is the suffix terminal state
+(`toFun_terminalWitness_append`), and the composite is locally bounded by the prefix and suffix
+errors combined along the protocol with `combineDraw`, the same combinator that combines the draws
+(`LocallyBounded.append`).
 
 `KnowledgeStateFunction.guard` restricts a state function to admissible statements and
 `KnowledgeStateFunction.comap` changes its statement type; both keep the local bound. The
@@ -72,18 +79,47 @@ def completeMoves : {s : FreeM P PUnit.{1}} → (tr : PathAlong l s) →
     (completeSpine l (s := .liftBind a next) ⟨x, tr⟩).length =
       (completeSpine l tr).length + 1 := rfl
 
+/-- The completed transcript through a full prefix followed by the rest of a transcript below its
+cursor. -/
+def PrefixMoves.completeWith {s : FreeM P PUnit.{1}} : {t : FreeM P PUnit.{1}} →
+    (sp : Cursor.Spine s t) → PrefixMoves l sp → PathAlong l t → PathAlong l s
+  | .pure _, sp, history, _ => PrefixMoves.complete l sp history
+  | .liftBind _ _, sp, history, ⟨x, tr⟩ =>
+    PrefixMoves.completeWith (sp.comp (.down _ (.root _))) (PrefixMoves.snoc l sp history x) tr
+
+/-- Below a first move, completing a prefix with a transcript keeps the move. -/
+@[simp] theorem PrefixMoves.completeWith_down {a : P.A} {next : P.B a → FreeM P PUnit.{1}}
+    (x : Move l a) : {t : FreeM P PUnit.{1}} → (sp : Cursor.Spine (next (l.toFunB a x)) t) →
+    (history : PrefixMoves l sp) → (tr : PathAlong l t) →
+    PrefixMoves.completeWith l (s := .liftBind a next) (.down _ sp) ⟨⟨x, rfl⟩, history⟩ tr =
+      ⟨x, PrefixMoves.completeWith l sp history tr⟩
+  | .pure _, _, _, _ => rfl
+  | .liftBind _ _, sp, history, ⟨y, tr⟩ =>
+    PrefixMoves.completeWith_down x (sp.comp _) (PrefixMoves.snoc l sp history y) tr
+
+/-- Completing the empty prefix with a transcript returns the transcript. -/
+@[simp] theorem PrefixMoves.completeWith_root : {s : FreeM P PUnit.{1}} → (tr : PathAlong l s) →
+    PrefixMoves.completeWith l (.root s) ⟨⟩ tr = tr
+  | .pure _, _ => rfl
+  | .liftBind a next, ⟨x, tr⟩ =>
+    (PrefixMoves.completeWith_down l (next := next) x (.root _) ⟨⟩ tr).trans
+      (congrArg (Sigma.mk (β := fun y => PathAlong l (next (l.toFunB a y))) x)
+        (PrefixMoves.completeWith_root tr))
+
 namespace KnowledgeStateFunction
 
-variable {l} {s : FreeM P PUnit.{1}} {S W Win : Type} {admissible : S → Prop}
-  {relIn : S → Win → Prop} {validOutput : S → PathAlong l s → W → Prop}
+variable {l} {s : FreeM P PUnit.{1}} {S Win : Type} {W : PathAlong l s → Type}
+  {admissible : S → Prop} {relIn : S → Win → Prop}
+  {validOutput : (stmt : S) → (tr : PathAlong l s) → W tr → Prop}
   (F : KnowledgeStateFunction l s S W Win admissible relIn validOutput)
 
 /-! ### Backward extraction along a transcript -/
 
-/-- Extract backwards from an output witness to the witness at a cursor, along the remaining
-transcript below that cursor. -/
+/-- Extract backwards to the witness at a cursor, along the remaining transcript below that
+cursor, from an output witness at the completed transcript through the cursor's prefix. -/
 def extractFrom (stmt : S) : {t : FreeM P PUnit.{1}} → (sp : Cursor.Spine s t) →
-    (history : PrefixMoves l sp) → PathAlong l t → W → F.Witness sp history
+    (history : PrefixMoves l sp) → (tr : PathAlong l t) →
+    W (PrefixMoves.completeWith l sp history tr) → F.Witness sp history
   | .pure _, sp, history, _, w => F.extractLeaf sp history stmt w
   | .liftBind _ _, sp, history, ⟨x, tr⟩, w =>
     F.extractStep sp history stmt x
@@ -91,27 +127,30 @@ def extractFrom (stmt : S) : {t : FreeM P PUnit.{1}} → (sp : Cursor.Spine s t)
 
 /-- At a completed cursor, extraction is the leaf map. -/
 @[simp] theorem extractFrom_pure (stmt : S) (sp : Cursor.Spine s (.pure ⟨⟩))
-    (history : PrefixMoves l sp) (tr : PathAlong l (.pure ⟨⟩ : FreeM P PUnit.{1})) (w : W) :
+    (history : PrefixMoves l sp) (tr : PathAlong l (.pure ⟨⟩ : FreeM P PUnit.{1}))
+    (w : W (PrefixMoves.complete l sp history)) :
     F.extractFrom stmt sp history tr w = F.extractLeaf sp history stmt w := rfl
 
 /-- At a node, extraction applies the node's step map to the witness extracted below it. This
 covers public messages, oracle messages and challenges alike. -/
 @[simp] theorem extractFrom_liftBind (stmt : S) {a : P.A} {next : P.B a → FreeM P PUnit.{1}}
     (sp : Cursor.Spine s (.liftBind a next)) (history : PrefixMoves l sp) (x : Move l a)
-    (tr : PathAlong l (next (l.toFunB a x))) (w : W) :
+    (tr : PathAlong l (next (l.toFunB a x)))
+    (w : W (PrefixMoves.completeWith l sp history (t := .liftBind a next) ⟨x, tr⟩)) :
     F.extractFrom stmt sp history (s := s) (t := .liftBind a next) ⟨x, tr⟩ w =
       F.extractStep sp history stmt x
         (F.extractFrom stmt _ (PrefixMoves.snoc l sp history x) tr w) := rfl
 
 /-- Backward extraction along a completed transcript: the leaf map, then the step maps from the
 last move to the first, then the root map. -/
-def extractAlong (stmt : S) (tr : PathAlong l s) (w : W) : Win :=
-  F.extractRoot stmt (F.extractFrom stmt (.root s) ⟨⟩ tr w)
+def extractAlong (stmt : S) (tr : PathAlong l s) (w : W tr) : Win :=
+  F.extractRoot stmt (F.extractFrom stmt (.root s) ⟨⟩ tr
+    (cast (congrArg W (PrefixMoves.completeWith_root l tr).symm) w))
 
 /-- The witness at the terminal cursor of a transcript, given an output witness. -/
-def terminalWitness (stmt : S) (tr : PathAlong l s) (w : W) :
+def terminalWitness (stmt : S) (tr : PathAlong l s) (w : W tr) :
     F.Witness (completeSpine l tr) (completeMoves l tr) :=
-  F.extractLeaf _ _ stmt w
+  F.extractLeaf _ _ stmt (cast (congrArg W (complete_completeMoves l tr).symm) w)
 
 /-! ### Local errors -/
 
@@ -141,9 +180,9 @@ end KnowledgeStateFunction
 
 /-- Round-by-round knowledge soundness is the existence of a locally bounded knowledge state
 function. -/
-theorem rbrKnowledgeSoundness_iff_exists_locallyBounded {s : FreeM P PUnit.{1}} {S W Win : Type}
-    {admissible : S → Prop} {relIn : S → Win → Prop}
-    {validOutput : S → PathAlong l s → W → Prop}
+theorem rbrKnowledgeSoundness_iff_exists_locallyBounded {s : FreeM P PUnit.{1}} {S Win : Type}
+    {W : PathAlong l s → Type} {admissible : S → Prop} {relIn : S → Win → Prop}
+    {validOutput : (stmt : S) → (tr : PathAlong l s) → W tr → Prop}
     {draw : QueryImpl (challengeSpec l s) ProbComp} {ε : ChallengeNode l s → ℝ≥0∞} :
     rbrKnowledgeSoundness l s admissible relIn validOutput draw ε ↔
       ∃ F : KnowledgeStateFunction l s S W Win admissible relIn validOutput,
@@ -157,11 +196,12 @@ variable {l}
 
 /-- The state function below a first move. Its input witnesses are the witnesses after that
 move, so its root obligation is vacuous; every other field is the original one. -/
-def child {a : P.A} {next : P.B a → FreeM P PUnit.{1}} {S W Win : Type} {admissible : S → Prop}
-    {relIn : S → Win → Prop} {validOutput : S → PathAlong l (.liftBind a next) → W → Prop}
+def child {a : P.A} {next : P.B a → FreeM P PUnit.{1}} {S Win : Type}
+    {W : PathAlong l (.liftBind a next) → Type} {admissible : S → Prop} {relIn : S → Win → Prop}
+    {validOutput : (stmt : S) → (tr : PathAlong l (.liftBind a next)) → W tr → Prop}
     (F : KnowledgeStateFunction l (.liftBind a next) S W Win admissible relIn validOutput)
     (x : Move l a) :
-    KnowledgeStateFunction l (next (l.toFunB a x)) S W
+    KnowledgeStateFunction l (next (l.toFunB a x)) S (fun tr => W ⟨x, tr⟩)
       (F.Witness (.down (l.toFunB a x) (.root _)) ⟨⟨x, rfl⟩, ⟨⟩⟩) (fun _ => False)
       (fun _ _ => True) (fun stmt tr w => validOutput stmt ⟨x, tr⟩ w) where
   Witness sp history := F.Witness (.down _ sp) ⟨⟨x, rfl⟩, history⟩
@@ -175,17 +215,7 @@ def child {a : P.A} {next : P.B a → FreeM P PUnit.{1}} {S W Win : Type} {admis
 
 /-! ### Sequential composition -/
 
-variable {S W Wmid : Type}
-
-/-- Case analysis of a nonempty full prefix at its first move. -/
-def PrefixMoves.downCases {a : P.A} {next : P.B a → FreeM P PUnit.{1}} {t : FreeM P PUnit.{1}}
-    {motive : (b : P.B a) → (tail : Cursor.Spine (next b) t) →
-      PrefixMoves l (.down b tail) → Sort*}
-    (h : ∀ x tail history, motive (l.toFunB a x) tail ⟨⟨x, rfl⟩, history⟩)
-    (b : P.B a) (tail : Cursor.Spine (next b) t) (history : PrefixMoves l (.down b tail)) :
-    motive b tail history := by
-  rcases history with ⟨⟨x, rfl⟩, history⟩
-  exact h x tail history
+variable {S : Type}
 
 /-- Witness types along the composite. -/
 def appendWitness : {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
@@ -196,7 +226,7 @@ def appendWitness : {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P
   | .pure _, _, _, W₂, _, sp, history => W₂ ⟨⟩ sp history
   | .liftBind _ _, _, W₁, _, _, .root _, _ => W₁ (.root _) ⟨⟩
   | .liftBind a cont, s₂, W₁, W₂, _, .down b tail, history =>
-    PrefixMoves.downCases (a := a) (next := fun b => (cont b).append (fun p => s₂ ⟨b, p⟩))
+    PrefixMoves.downCases l (a := a) (next := fun b => (cont b).append (fun p => s₂ ⟨b, p⟩))
       (motive := fun _ _ _ => Type)
       (fun x tail history => appendWitness (s₂ := fun p => s₂ ⟨l.toFunB a x, p⟩)
         (fun sp history => W₁ (.down _ sp) ⟨⟨x, rfl⟩, history⟩) (fun tr => W₂ ⟨x, tr⟩)
@@ -206,27 +236,30 @@ def appendWitness : {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P
 /-- The composite state on the witness types `appendWitness`: the prefix state before the seam and
 the suffix state after it. -/
 def appendToFun :
-    {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} → {Win : Type} →
+    {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
+    {Wmid : PathAlong l s₁ → Type} → {W : PathAlong l (s₁.append s₂) → Type} → {Win : Type} →
     {admissible : S → Prop} → {relIn : S → Win → Prop} →
-    {validMid : S → PathAlong l s₁ → Wmid → Prop} →
-    {admissible₂ : PathAlong l s₁ → S → Prop} → {relMid : PathAlong l s₁ → S → Wmid → Prop} →
-    {validOutput : S → PathAlong l (s₁.append s₂) → W → Prop} →
+    {validMid : (stmt : S) → (tr : PathAlong l s₁) → Wmid tr → Prop} →
+    {admissible₂ : PathAlong l s₁ → S → Prop} →
+    {relMid : (tr₁ : PathAlong l s₁) → S → Wmid tr₁ → Prop} →
+    {validOutput : (stmt : S) → (tr : PathAlong l (s₁.append s₂)) → W tr → Prop} →
     (F₁ : KnowledgeStateFunction l s₁ S Wmid Win admissible relIn validMid) →
     (F₂ : (tr₁ : PathAlong l s₁) → KnowledgeStateFunction l (s₂ (projectPathAlong l s₁ tr₁))
-      S W Wmid (admissible₂ tr₁) (relMid tr₁)
-      (fun stmt tr₂ w => validOutput stmt (PathAlong.append l s₁ s₂ tr₁ tr₂) w)) →
+      S (fun tr₂ => W (PathAlong.append l s₁ s₂ tr₁ tr₂)) (Wmid tr₁) (admissible₂ tr₁)
+      (relMid tr₁) (fun stmt tr₂ w => validOutput stmt (PathAlong.append l s₁ s₂ tr₁ tr₂) w)) →
     ∀ {t} (sp : Cursor.Spine (s₁.append s₂) t) (history : PrefixMoves l sp), S →
       appendWitness (s₂ := s₂) F₁.Witness (fun tr => (F₂ tr).Witness) sp history → Prop
-  | .pure _, _, _, _, _, _, _, _, _, _, F₂, _, sp, history => (F₂ ⟨⟩).toFun sp history
-  | .liftBind _ _, _, _, _, _, _, _, _, _, F₁, _, _, .root _, _ => F₁.toFun (.root _) ⟨⟩
-  | .liftBind a cont, s₂, _, _, _, validMid, admissible₂, relMid, validOutput, F₁, F₂, t,
+  | .pure _, _, _, _, _, _, _, _, _, _, _, _, F₂, _, sp, history => (F₂ ⟨⟩).toFun sp history
+  | .liftBind _ _, _, _, _, _, _, _, _, _, _, _, F₁, _, _, .root _, _ => F₁.toFun (.root _) ⟨⟩
+  | .liftBind a cont, s₂, Wmid, W, _, _, _, validMid, admissible₂, relMid, validOutput, F₁, F₂, t,
       .down b tail, history =>
-    PrefixMoves.downCases (a := a) (next := fun b => (cont b).append (fun p => s₂ ⟨b, p⟩))
+    PrefixMoves.downCases l (a := a) (next := fun b => (cont b).append (fun p => s₂ ⟨b, p⟩))
       (t := t)
       (motive := fun b tail history => S →
         appendWitness (s₂ := s₂) F₁.Witness (fun tr => (F₂ tr).Witness) (.down b tail) history →
           Prop)
       (fun x tail history => appendToFun (s₂ := fun p => s₂ ⟨l.toFunB a x, p⟩)
+        (Wmid := fun tr => Wmid ⟨x, tr⟩) (W := fun tr => W ⟨x, tr⟩)
         (validMid := fun stmt tr w => validMid stmt ⟨x, tr⟩ w)
         (admissible₂ := fun tr => admissible₂ ⟨x, tr⟩) (relMid := fun tr => relMid ⟨x, tr⟩)
         (validOutput := fun stmt tr w => validOutput stmt ⟨x, tr⟩ w)
@@ -236,50 +269,57 @@ def appendToFun :
 /-- Input extraction of the composite: through the prefix leaf and the suffix input extraction
 when the prefix is a leaf, and the prefix input extraction otherwise. -/
 def appendExtractRoot :
-    {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} → {Win : Type} →
+    {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
+    {Wmid : PathAlong l s₁ → Type} → {W : PathAlong l (s₁.append s₂) → Type} → {Win : Type} →
     {admissible : S → Prop} → {relIn : S → Win → Prop} →
-    {validMid : S → PathAlong l s₁ → Wmid → Prop} →
-    {admissible₂ : PathAlong l s₁ → S → Prop} → {relMid : PathAlong l s₁ → S → Wmid → Prop} →
-    {validOutput : S → PathAlong l (s₁.append s₂) → W → Prop} →
+    {validMid : (stmt : S) → (tr : PathAlong l s₁) → Wmid tr → Prop} →
+    {admissible₂ : PathAlong l s₁ → S → Prop} →
+    {relMid : (tr₁ : PathAlong l s₁) → S → Wmid tr₁ → Prop} →
+    {validOutput : (stmt : S) → (tr : PathAlong l (s₁.append s₂)) → W tr → Prop} →
     (F₁ : KnowledgeStateFunction l s₁ S Wmid Win admissible relIn validMid) →
     (F₂ : (tr₁ : PathAlong l s₁) → KnowledgeStateFunction l (s₂ (projectPathAlong l s₁ tr₁))
-      S W Wmid (admissible₂ tr₁) (relMid tr₁)
-      (fun stmt tr₂ w => validOutput stmt (PathAlong.append l s₁ s₂ tr₁ tr₂) w)) →
+      S (fun tr₂ => W (PathAlong.append l s₁ s₂ tr₁ tr₂)) (Wmid tr₁) (admissible₂ tr₁)
+      (relMid tr₁) (fun stmt tr₂ w => validOutput stmt (PathAlong.append l s₁ s₂ tr₁ tr₂) w)) →
     S → appendWitness (s₂ := s₂) F₁.Witness (fun tr => (F₂ tr).Witness) (.root _) ⟨⟩ → Win
-  | .pure _, _, _, _, _, _, _, _, _, F₁, F₂ => fun stmt w =>
+  | .pure _, _, _, _, _, _, _, _, _, _, _, F₁, F₂ => fun stmt w =>
     F₁.extractRoot stmt (F₁.extractLeaf (.root _) ⟨⟩ stmt ((F₂ ⟨⟩).extractRoot stmt w))
-  | .liftBind _ _, _, _, _, _, _, _, _, _, F₁, _ => F₁.extractRoot
+  | .liftBind _ _, _, _, _, _, _, _, _, _, _, _, F₁, _ => F₁.extractRoot
 
 /-- Backward extraction of the composite: the prefix step, entering the suffix through
 `appendExtractRoot` where a move reaches the seam, and the suffix step after it. -/
 def appendExtractStep :
-    {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} → {Win : Type} →
+    {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
+    {Wmid : PathAlong l s₁ → Type} → {W : PathAlong l (s₁.append s₂) → Type} → {Win : Type} →
     {admissible : S → Prop} → {relIn : S → Win → Prop} →
-    {validMid : S → PathAlong l s₁ → Wmid → Prop} →
-    {admissible₂ : PathAlong l s₁ → S → Prop} → {relMid : PathAlong l s₁ → S → Wmid → Prop} →
-    {validOutput : S → PathAlong l (s₁.append s₂) → W → Prop} →
+    {validMid : (stmt : S) → (tr : PathAlong l s₁) → Wmid tr → Prop} →
+    {admissible₂ : PathAlong l s₁ → S → Prop} →
+    {relMid : (tr₁ : PathAlong l s₁) → S → Wmid tr₁ → Prop} →
+    {validOutput : (stmt : S) → (tr : PathAlong l (s₁.append s₂)) → W tr → Prop} →
     (F₁ : KnowledgeStateFunction l s₁ S Wmid Win admissible relIn validMid) →
     (F₂ : (tr₁ : PathAlong l s₁) → KnowledgeStateFunction l (s₂ (projectPathAlong l s₁ tr₁))
-      S W Wmid (admissible₂ tr₁) (relMid tr₁)
-      (fun stmt tr₂ w => validOutput stmt (PathAlong.append l s₁ s₂ tr₁ tr₂) w)) →
+      S (fun tr₂ => W (PathAlong.append l s₁ s₂ tr₁ tr₂)) (Wmid tr₁) (admissible₂ tr₁)
+      (relMid tr₁) (fun stmt tr₂ w => validOutput stmt (PathAlong.append l s₁ s₂ tr₁ tr₂) w)) →
     ∀ {a' : P.A} {next' : P.B a' → FreeM P PUnit.{1}}
       (sp : Cursor.Spine (s₁.append s₂) (.liftBind a' next')) (history : PrefixMoves l sp),
       S → (y : Move l a') →
       appendWitness (s₂ := s₂) F₁.Witness (fun tr => (F₂ tr).Witness)
         (sp.comp (.down (l.toFunB a' y) (.root _))) (PrefixMoves.snoc l sp history y) →
       appendWitness (s₂ := s₂) F₁.Witness (fun tr => (F₂ tr).Witness) sp history
-  | .pure _, _, _, _, _, _, _, _, _, _, F₂, _, _, sp, history => (F₂ ⟨⟩).extractStep sp history
-  | .liftBind a _, s₂, _, _, _, validMid, admissible₂, relMid, validOutput, F₁, F₂, _, _,
+  | .pure _, _, _, _, _, _, _, _, _, _, _, _, F₂, _, _, sp, history =>
+    (F₂ ⟨⟩).extractStep sp history
+  | .liftBind a _, s₂, Wmid, W, _, _, _, validMid, admissible₂, relMid, validOutput, F₁, F₂, _, _,
       .root _, _ => fun stmt y w =>
     F₁.extractStep (.root _) ⟨⟩ stmt y (appendExtractRoot
         (s₂ := fun p => s₂ ⟨l.toFunB a y, p⟩)
+        (Wmid := fun tr => Wmid ⟨y, tr⟩) (W := fun tr => W ⟨y, tr⟩)
         (validMid := fun stmt tr w => validMid stmt ⟨y, tr⟩ w)
         (admissible₂ := fun tr => admissible₂ ⟨y, tr⟩) (relMid := fun tr => relMid ⟨y, tr⟩)
         (validOutput := fun stmt tr w => validOutput stmt ⟨y, tr⟩ w)
         (F₁.child y) (fun tr => F₂ ⟨y, tr⟩) stmt w)
-  | .liftBind a cont, s₂, _, _, _, validMid, admissible₂, relMid, validOutput, F₁, F₂, a', next',
+  | .liftBind a cont, s₂, Wmid, W, _, _, _, validMid, admissible₂, relMid, validOutput, F₁, F₂,
+      a', next',
       .down b tail, history =>
-    PrefixMoves.downCases (a := a) (next := fun b => (cont b).append (fun p => s₂ ⟨b, p⟩))
+    PrefixMoves.downCases l (a := a) (next := fun b => (cont b).append (fun p => s₂ ⟨b, p⟩))
       (t := .liftBind a' next')
       (motive := fun b (tail : Cursor.Spine ((cont b).append (fun p => s₂ ⟨b, p⟩))
           (.liftBind a' next')) history =>
@@ -291,6 +331,7 @@ def appendExtractStep :
           (PrefixMoves.snoc l sp history y) →
         appendWitness (s₂ := s₂) F₁.Witness (fun tr => (F₂ tr).Witness) sp history)
       (fun x tail history => appendExtractStep (s₂ := fun p => s₂ ⟨l.toFunB a x, p⟩)
+        (Wmid := fun tr => Wmid ⟨x, tr⟩) (W := fun tr => W ⟨x, tr⟩)
         (validMid := fun stmt tr w => validMid stmt ⟨x, tr⟩ w)
         (admissible₂ := fun tr => admissible₂ ⟨x, tr⟩) (relMid := fun tr => relMid ⟨x, tr⟩)
         (validOutput := fun stmt tr w => validOutput stmt ⟨x, tr⟩ w)
@@ -299,25 +340,29 @@ def appendExtractStep :
 
 /-- Leaf extraction of the composite, which is the suffix leaf extraction. -/
 def appendExtractLeaf :
-    {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} → {Win : Type} →
+    {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
+    {Wmid : PathAlong l s₁ → Type} → {W : PathAlong l (s₁.append s₂) → Type} → {Win : Type} →
     {admissible : S → Prop} → {relIn : S → Win → Prop} →
-    {validMid : S → PathAlong l s₁ → Wmid → Prop} →
-    {admissible₂ : PathAlong l s₁ → S → Prop} → {relMid : PathAlong l s₁ → S → Wmid → Prop} →
-    {validOutput : S → PathAlong l (s₁.append s₂) → W → Prop} →
+    {validMid : (stmt : S) → (tr : PathAlong l s₁) → Wmid tr → Prop} →
+    {admissible₂ : PathAlong l s₁ → S → Prop} →
+    {relMid : (tr₁ : PathAlong l s₁) → S → Wmid tr₁ → Prop} →
+    {validOutput : (stmt : S) → (tr : PathAlong l (s₁.append s₂)) → W tr → Prop} →
     (F₁ : KnowledgeStateFunction l s₁ S Wmid Win admissible relIn validMid) →
     (F₂ : (tr₁ : PathAlong l s₁) → KnowledgeStateFunction l (s₂ (projectPathAlong l s₁ tr₁))
-      S W Wmid (admissible₂ tr₁) (relMid tr₁)
-      (fun stmt tr₂ w => validOutput stmt (PathAlong.append l s₁ s₂ tr₁ tr₂) w)) →
-    ∀ (sp : Cursor.Spine (s₁.append s₂) (.pure ⟨⟩)) (history : PrefixMoves l sp), S → W →
+      S (fun tr₂ => W (PathAlong.append l s₁ s₂ tr₁ tr₂)) (Wmid tr₁) (admissible₂ tr₁)
+      (relMid tr₁) (fun stmt tr₂ w => validOutput stmt (PathAlong.append l s₁ s₂ tr₁ tr₂) w)) →
+    ∀ (sp : Cursor.Spine (s₁.append s₂) (.pure ⟨⟩)) (history : PrefixMoves l sp), S →
+      W (PrefixMoves.complete l sp history) →
       appendWitness (s₂ := s₂) F₁.Witness (fun tr => (F₂ tr).Witness) sp history
-  | .pure _, _, _, _, _, _, _, _, _, _, F₂, sp, history => (F₂ ⟨⟩).extractLeaf sp history
-  | .liftBind a cont, s₂, _, _, _, validMid, admissible₂, relMid, validOutput, F₁, F₂,
+  | .pure _, _, _, _, _, _, _, _, _, _, _, _, F₂, sp, history => (F₂ ⟨⟩).extractLeaf sp history
+  | .liftBind a cont, s₂, Wmid, W, _, _, _, validMid, admissible₂, relMid, validOutput, F₁, F₂,
       .down b tail, history =>
-    PrefixMoves.downCases (a := a) (next := fun b => (cont b).append (fun p => s₂ ⟨b, p⟩))
+    PrefixMoves.downCases l (a := a) (next := fun b => (cont b).append (fun p => s₂ ⟨b, p⟩))
       (t := .pure ⟨⟩)
-      (motive := fun b tail history => S → W →
+      (motive := fun b tail history => S → W (PrefixMoves.complete l (.down b tail) history) →
         appendWitness (s₂ := s₂) F₁.Witness (fun tr => (F₂ tr).Witness) (.down b tail) history)
       (fun x tail history => appendExtractLeaf (s₂ := fun p => s₂ ⟨l.toFunB a x, p⟩)
+        (Wmid := fun tr => Wmid ⟨x, tr⟩) (W := fun tr => W ⟨x, tr⟩)
         (validMid := fun stmt tr w => validMid stmt ⟨x, tr⟩ w)
         (admissible₂ := fun tr => admissible₂ ⟨x, tr⟩) (relMid := fun tr => relMid ⟨x, tr⟩)
         (validOutput := fun stmt tr w => validOutput stmt ⟨x, tr⟩ w)
@@ -327,35 +372,39 @@ def appendExtractLeaf :
 /-- The composite root state implies the prefix root state at a witness with the same input
 extraction. -/
 theorem appendToFun_root :
-    {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} → {Win : Type} →
+    {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
+    {Wmid : PathAlong l s₁ → Type} → {W : PathAlong l (s₁.append s₂) → Type} → {Win : Type} →
     {admissible : S → Prop} → {relIn : S → Win → Prop} →
-    {validMid : S → PathAlong l s₁ → Wmid → Prop} →
-    {admissible₂ : PathAlong l s₁ → S → Prop} → {relMid : PathAlong l s₁ → S → Wmid → Prop} →
-    {validOutput : S → PathAlong l (s₁.append s₂) → W → Prop} →
+    {validMid : (stmt : S) → (tr : PathAlong l s₁) → Wmid tr → Prop} →
+    {admissible₂ : PathAlong l s₁ → S → Prop} →
+    {relMid : (tr₁ : PathAlong l s₁) → S → Wmid tr₁ → Prop} →
+    {validOutput : (stmt : S) → (tr : PathAlong l (s₁.append s₂)) → W tr → Prop} →
     (F₁ : KnowledgeStateFunction l s₁ S Wmid Win admissible relIn validMid) →
     (F₂ : (tr₁ : PathAlong l s₁) → KnowledgeStateFunction l (s₂ (projectPathAlong l s₁ tr₁))
-      S W Wmid (admissible₂ tr₁) (relMid tr₁)
-      (fun stmt tr₂ w => validOutput stmt (PathAlong.append l s₁ s₂ tr₁ tr₂) w)) →
+      S (fun tr₂ => W (PathAlong.append l s₁ s₂ tr₁ tr₂)) (Wmid tr₁) (admissible₂ tr₁)
+      (relMid tr₁) (fun stmt tr₂ w => validOutput stmt (PathAlong.append l s₁ s₂ tr₁ tr₂) w)) →
     (∀ tr₁ stmt w, (F₂ tr₁).toFun (.root _) ⟨⟩ stmt w →
       validMid stmt tr₁ ((F₂ tr₁).extractRoot stmt w)) →
     ∀ stmt w, appendToFun F₁ F₂ (.root _) ⟨⟩ stmt w →
       ∃ w₁, appendExtractRoot F₁ F₂ stmt w = F₁.extractRoot stmt w₁ ∧
         F₁.toFun (.root _) ⟨⟩ stmt w₁
-  | .pure _, _, _, _, _, _, _, _, _, F₁, _, seam, stmt, w, h =>
+  | .pure _, _, _, _, _, _, _, _, _, _, _, F₁, _, seam, stmt, w, h =>
     ⟨_, rfl, F₁.leaf _ _ stmt _ (seam ⟨⟩ stmt w h)⟩
-  | .liftBind _ _, _, _, _, _, _, _, _, _, _, _, _, _, w, h => ⟨w, rfl, h⟩
+  | .liftBind _ _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, w, h => ⟨w, rfl, h⟩
 
 /-- The composite state is preserved backwards across sender moves. -/
 theorem appendToFun_send :
-    {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} → {Win : Type} →
+    {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
+    {Wmid : PathAlong l s₁ → Type} → {W : PathAlong l (s₁.append s₂) → Type} → {Win : Type} →
     {admissible : S → Prop} → {relIn : S → Win → Prop} →
-    {validMid : S → PathAlong l s₁ → Wmid → Prop} →
-    {admissible₂ : PathAlong l s₁ → S → Prop} → {relMid : PathAlong l s₁ → S → Wmid → Prop} →
-    {validOutput : S → PathAlong l (s₁.append s₂) → W → Prop} →
+    {validMid : (stmt : S) → (tr : PathAlong l s₁) → Wmid tr → Prop} →
+    {admissible₂ : PathAlong l s₁ → S → Prop} →
+    {relMid : (tr₁ : PathAlong l s₁) → S → Wmid tr₁ → Prop} →
+    {validOutput : (stmt : S) → (tr : PathAlong l (s₁.append s₂)) → W tr → Prop} →
     (F₁ : KnowledgeStateFunction l s₁ S Wmid Win admissible relIn validMid) →
     (F₂ : (tr₁ : PathAlong l s₁) → KnowledgeStateFunction l (s₂ (projectPathAlong l s₁ tr₁))
-      S W Wmid (admissible₂ tr₁) (relMid tr₁)
-      (fun stmt tr₂ w => validOutput stmt (PathAlong.append l s₁ s₂ tr₁ tr₂) w)) →
+      S (fun tr₂ => W (PathAlong.append l s₁ s₂ tr₁ tr₂)) (Wmid tr₁) (admissible₂ tr₁)
+      (relMid tr₁) (fun stmt tr₂ w => validOutput stmt (PathAlong.append l s₁ s₂ tr₁ tr₂) w)) →
     (∀ tr₁ stmt w, (F₂ tr₁).toFun (.root _) ⟨⟩ stmt w →
       validMid stmt tr₁ ((F₂ tr₁).extractRoot stmt w)) →
     ∀ {a' : P.A} {next' : P.B a' → FreeM P PUnit.{1}}
@@ -364,11 +413,12 @@ theorem appendToFun_send :
       appendToFun F₁ F₂ (sp.comp (.down (l.toFunB a' y) (.root _)))
         (PrefixMoves.snoc l sp history y) stmt w →
       appendToFun F₁ F₂ sp history stmt (appendExtractStep F₁ F₂ sp history stmt y w)
-  | .pure _, _, _, _, _, _, _, _, _, _, F₂, _, _, _, sp, history, stmt, ho, y, w, h =>
+  | .pure _, _, _, _, _, _, _, _, _, _, _, _, F₂, _, _, _, sp, history, stmt, ho, y, w, h =>
     (F₂ ⟨⟩).send sp history stmt ho y w h
-  | .liftBind a _, s₂, _, _, _, validMid, admissible₂, relMid, validOutput, F₁, F₂, seam, _, _,
-      .root _, _, stmt, ho, y, w, h => by
+  | .liftBind a _, s₂, Wmid, W, _, _, _, validMid, admissible₂, relMid, validOutput, F₁, F₂,
+      seam, _, _, .root _, _, stmt, ho, y, w, h => by
     obtain ⟨w₁, he, h₁⟩ := appendToFun_root (s₂ := fun p => s₂ ⟨l.toFunB a y, p⟩)
+          (Wmid := fun tr => Wmid ⟨y, tr⟩) (W := fun tr => W ⟨y, tr⟩)
           (validMid := fun stmt tr w => validMid stmt ⟨y, tr⟩ w)
           (admissible₂ := fun tr => admissible₂ ⟨y, tr⟩) (relMid := fun tr => relMid ⟨y, tr⟩)
           (validOutput := fun stmt tr w => validOutput stmt ⟨y, tr⟩ w)
@@ -376,10 +426,11 @@ theorem appendToFun_send :
     replace he : _ = w₁ := he
     subst he
     exact F₁.send (.root _) ⟨⟩ stmt ho y _ h₁
-  | .liftBind a _, s₂, _, _, _, validMid, admissible₂, relMid, validOutput, F₁, F₂, seam, _, _,
-      .down _ tail, history, stmt, ho, y, w, h => by
+  | .liftBind a _, s₂, Wmid, W, _, _, _, validMid, admissible₂, relMid, validOutput, F₁, F₂,
+      seam, _, _, .down _ tail, history, stmt, ho, y, w, h => by
     rcases history with ⟨⟨x, rfl⟩, history⟩
     exact appendToFun_send (s₂ := fun p => s₂ ⟨l.toFunB a x, p⟩)
+          (Wmid := fun tr => Wmid ⟨x, tr⟩) (W := fun tr => W ⟨x, tr⟩)
           (validMid := fun stmt tr w => validMid stmt ⟨x, tr⟩ w)
           (admissible₂ := fun tr => admissible₂ ⟨x, tr⟩) (relMid := fun tr => relMid ⟨x, tr⟩)
           (validOutput := fun stmt tr w => validOutput stmt ⟨x, tr⟩ w)
@@ -388,26 +439,29 @@ theorem appendToFun_send :
 
 /-- Accepted suffix outputs give the composite state at the leaf. -/
 theorem appendToFun_leaf :
-    {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} → {Win : Type} →
+    {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
+    {Wmid : PathAlong l s₁ → Type} → {W : PathAlong l (s₁.append s₂) → Type} → {Win : Type} →
     {admissible : S → Prop} → {relIn : S → Win → Prop} →
-    {validMid : S → PathAlong l s₁ → Wmid → Prop} →
-    {admissible₂ : PathAlong l s₁ → S → Prop} → {relMid : PathAlong l s₁ → S → Wmid → Prop} →
-    {validOutput : S → PathAlong l (s₁.append s₂) → W → Prop} →
+    {validMid : (stmt : S) → (tr : PathAlong l s₁) → Wmid tr → Prop} →
+    {admissible₂ : PathAlong l s₁ → S → Prop} →
+    {relMid : (tr₁ : PathAlong l s₁) → S → Wmid tr₁ → Prop} →
+    {validOutput : (stmt : S) → (tr : PathAlong l (s₁.append s₂)) → W tr → Prop} →
     (F₁ : KnowledgeStateFunction l s₁ S Wmid Win admissible relIn validMid) →
     (F₂ : (tr₁ : PathAlong l s₁) → KnowledgeStateFunction l (s₂ (projectPathAlong l s₁ tr₁))
-      S W Wmid (admissible₂ tr₁) (relMid tr₁)
-      (fun stmt tr₂ w => validOutput stmt (PathAlong.append l s₁ s₂ tr₁ tr₂) w)) →
+      S (fun tr₂ => W (PathAlong.append l s₁ s₂ tr₁ tr₂)) (Wmid tr₁) (admissible₂ tr₁)
+      (relMid tr₁) (fun stmt tr₂ w => validOutput stmt (PathAlong.append l s₁ s₂ tr₁ tr₂) w)) →
     (∀ tr₁ stmt w, (F₂ tr₁).toFun (.root _) ⟨⟩ stmt w →
       validMid stmt tr₁ ((F₂ tr₁).extractRoot stmt w)) →
     ∀ (sp : Cursor.Spine (s₁.append s₂) (.pure ⟨⟩)) (history : PrefixMoves l sp) stmt w,
       validOutput stmt (PrefixMoves.complete l sp history) w →
       appendToFun F₁ F₂ sp history stmt (appendExtractLeaf F₁ F₂ sp history stmt w)
-  | .pure _, _, _, _, _, _, _, _, _, _, F₂, _, sp, history, stmt, w, h =>
+  | .pure _, _, _, _, _, _, _, _, _, _, _, _, F₂, _, sp, history, stmt, w, h =>
     (F₂ ⟨⟩).leaf sp history stmt w h
-  | .liftBind a _, s₂, _, _, _, validMid, admissible₂, relMid, validOutput, F₁, F₂, seam,
+  | .liftBind a _, s₂, Wmid, W, _, _, _, validMid, admissible₂, relMid, validOutput, F₁, F₂, seam,
       .down _ tail, history, stmt, w, h => by
     rcases history with ⟨⟨x, rfl⟩, history⟩
     exact appendToFun_leaf (s₂ := fun p => s₂ ⟨l.toFunB a x, p⟩)
+          (Wmid := fun tr => Wmid ⟨x, tr⟩) (W := fun tr => W ⟨x, tr⟩)
           (validMid := fun stmt tr w => validMid stmt ⟨x, tr⟩ w)
           (admissible₂ := fun tr => admissible₂ ⟨x, tr⟩) (relMid := fun tr => relMid ⟨x, tr⟩)
           (validOutput := fun stmt tr w => validOutput stmt ⟨x, tr⟩ w)
@@ -415,10 +469,13 @@ theorem appendToFun_leaf :
 
 section append
 
-variable {s₁ : FreeM P PUnit.{1}} {s₂ : Path s₁ → FreeM P PUnit.{1}} {Win : Type}
-  {admissible : S → Prop} {relIn : S → Win → Prop} {validMid : S → PathAlong l s₁ → Wmid → Prop}
-  {admissible₂ : PathAlong l s₁ → S → Prop} {relMid : PathAlong l s₁ → S → Wmid → Prop}
-  {validOutput : S → PathAlong l (s₁.append s₂) → W → Prop}
+variable {s₁ : FreeM P PUnit.{1}} {s₂ : Path s₁ → FreeM P PUnit.{1}}
+  {Wmid : PathAlong l s₁ → Type} {W : PathAlong l (s₁.append s₂) → Type} {Win : Type}
+  {admissible : S → Prop} {relIn : S → Win → Prop}
+  {validMid : (stmt : S) → (tr : PathAlong l s₁) → Wmid tr → Prop}
+  {admissible₂ : PathAlong l s₁ → S → Prop}
+  {relMid : (tr₁ : PathAlong l s₁) → S → Wmid tr₁ → Prop}
+  {validOutput : (stmt : S) → (tr : PathAlong l (s₁.append s₂)) → W tr → Prop}
 
 /-- Sequential composition of knowledge state functions. The suffix state functions are indexed
 by the prefix transcript, so their states, witnesses and extractors may read every prefix
@@ -426,8 +483,8 @@ payload. The seam asks that a suffix root state extracts a witness that the pref
 valid output on that transcript. -/
 def append (F₁ : KnowledgeStateFunction l s₁ S Wmid Win admissible relIn validMid)
     (F₂ : (tr₁ : PathAlong l s₁) → KnowledgeStateFunction l (s₂ (projectPathAlong l s₁ tr₁))
-      S W Wmid (admissible₂ tr₁) (relMid tr₁)
-      (fun stmt tr₂ w => validOutput stmt (PathAlong.append l s₁ s₂ tr₁ tr₂) w))
+      S (fun tr₂ => W (PathAlong.append l s₁ s₂ tr₁ tr₂)) (Wmid tr₁) (admissible₂ tr₁)
+      (relMid tr₁) (fun stmt tr₂ w => validOutput stmt (PathAlong.append l s₁ s₂ tr₁ tr₂) w))
     (seam : ∀ tr₁ stmt w, (F₂ tr₁).toFun (.root _) ⟨⟩ stmt w →
       validMid stmt tr₁ ((F₂ tr₁).extractRoot stmt w)) :
     KnowledgeStateFunction l (s₁.append s₂) S W Win admissible relIn validOutput where
@@ -446,8 +503,8 @@ def append (F₁ : KnowledgeStateFunction l s₁ S Wmid Win admissible relIn val
 theorem root_append
     (F₁ : KnowledgeStateFunction l s₁ S Wmid Win admissible relIn validMid)
     (F₂ : (tr₁ : PathAlong l s₁) → KnowledgeStateFunction l (s₂ (projectPathAlong l s₁ tr₁))
-      S W Wmid (admissible₂ tr₁) (relMid tr₁)
-      (fun stmt tr₂ w => validOutput stmt (PathAlong.append l s₁ s₂ tr₁ tr₂) w))
+      S (fun tr₂ => W (PathAlong.append l s₁ s₂ tr₁ tr₂)) (Wmid tr₁) (admissible₂ tr₁)
+      (relMid tr₁) (fun stmt tr₂ w => validOutput stmt (PathAlong.append l s₁ s₂ tr₁ tr₂) w))
     (seam : ∀ tr₁ stmt w, (F₂ tr₁).toFun (.root _) ⟨⟩ stmt w →
       validMid stmt tr₁ ((F₂ tr₁).extractRoot stmt w))
     (stmt : S) (w : (append F₁ F₂ seam).Witness (.root _) ⟨⟩)
@@ -458,38 +515,43 @@ theorem root_append
 
 end append
 
-/-- Backward extraction below a first move is the extraction of the restricted state function. -/
-theorem extractFrom_child {a : P.A} {next : P.B a → FreeM P PUnit.{1}} {W Win : Type}
-    {admissible : S → Prop} {relIn : S → Win → Prop}
-    {validOutput : S → PathAlong l (.liftBind a next) → W → Prop}
+/-- Backward extraction below a first move is the extraction of the restricted state function.
+The output witness is transported to the completed transcript of either side. -/
+theorem extractFrom_child {a : P.A} {next : P.B a → FreeM P PUnit.{1}} {Win : Type}
+    {W : PathAlong l (.liftBind a next) → Type} {admissible : S → Prop} {relIn : S → Win → Prop}
+    {validOutput : (stmt : S) → (tr : PathAlong l (.liftBind a next)) → W tr → Prop}
     (F : KnowledgeStateFunction l (.liftBind a next) S W Win admissible relIn validOutput)
     (stmt : S) (x : Move l a) : ∀ {t : FreeM P PUnit.{1}}
       (sp : Cursor.Spine (next (l.toFunB a x)) t) (history : PrefixMoves l sp)
-      (tr : PathAlong l t) (w : W),
-      F.extractFrom stmt (.down _ sp) ⟨⟨x, rfl⟩, history⟩ tr w =
-        (F.child x).extractFrom stmt sp history tr w
-  | .pure _, _, _, _, _ => rfl
-  | .liftBind _ _, sp, history, ⟨y, tr⟩, w =>
+      (tr : PathAlong l t) {α : Type} (w : α)
+      (e : α = W (PrefixMoves.completeWith l (.down _ sp) ⟨⟨x, rfl⟩, history⟩ tr))
+      (e' : α = W ⟨x, PrefixMoves.completeWith l sp history tr⟩),
+      F.extractFrom stmt (.down _ sp) ⟨⟨x, rfl⟩, history⟩ tr (cast e w) =
+        (F.child x).extractFrom stmt sp history tr (cast e' w)
+  | .pure _, _, _, _, _, _, _, _ => rfl
+  | .liftBind _ _, sp, history, ⟨y, tr⟩, _, w, e, e' =>
     congrArg ((F.child x).extractStep sp history stmt y)
-      (extractFrom_child F stmt x (sp.comp _) (PrefixMoves.snoc l sp history y) tr w)
+      (extractFrom_child F stmt x (sp.comp _) (PrefixMoves.snoc l sp history y) tr w e e')
 
 /-- Over a leaf prefix, backward extraction of the composite is suffix extraction. -/
 theorem extractFrom_append_pure {u : PUnit.{1}}
-    {s₂ : Path (FreeM.pure (P := P) u) → FreeM P PUnit.{1}} {Win : Type}
-    {admissible : S → Prop} {relIn : S → Win → Prop}
-    {validMid : S → PathAlong l (FreeM.pure u) → Wmid → Prop}
+    {s₂ : Path (FreeM.pure (P := P) u) → FreeM P PUnit.{1}}
+    {Wmid : PathAlong l (FreeM.pure u) → Type} {W : PathAlong l ((FreeM.pure u).append s₂) → Type}
+    {Win : Type} {admissible : S → Prop} {relIn : S → Win → Prop}
+    {validMid : (stmt : S) → (tr : PathAlong l (FreeM.pure u)) → Wmid tr → Prop}
     {admissible₂ : PathAlong l (FreeM.pure u) → S → Prop}
-    {relMid : PathAlong l (FreeM.pure u) → S → Wmid → Prop}
-    {validOutput : S → PathAlong l ((FreeM.pure u).append s₂) → W → Prop}
+    {relMid : (tr₁ : PathAlong l (FreeM.pure u)) → S → Wmid tr₁ → Prop}
+    {validOutput : (stmt : S) → (tr : PathAlong l ((FreeM.pure u).append s₂)) → W tr → Prop}
     (F₁ : KnowledgeStateFunction l (FreeM.pure u) S Wmid Win admissible relIn validMid)
     (F₂ : (tr₁ : PathAlong l (FreeM.pure u)) →
       KnowledgeStateFunction l (s₂ (projectPathAlong l _ tr₁))
-      S W Wmid (admissible₂ tr₁) (relMid tr₁)
-      (fun stmt tr₂ w => validOutput stmt (PathAlong.append l _ s₂ tr₁ tr₂) w))
+      S (fun tr₂ => W (PathAlong.append l _ s₂ tr₁ tr₂)) (Wmid tr₁) (admissible₂ tr₁)
+      (relMid tr₁) (fun stmt tr₂ w => validOutput stmt (PathAlong.append l _ s₂ tr₁ tr₂) w))
     (seam : ∀ tr₁ stmt w, (F₂ tr₁).toFun (.root _) ⟨⟩ stmt w →
       validMid stmt tr₁ ((F₂ tr₁).extractRoot stmt w))
     (stmt : S) : ∀ {t : FreeM P PUnit.{1}} (sp : Cursor.Spine (s₂ ⟨⟩) t)
-      (history : PrefixMoves l sp) (tr : PathAlong l t) (w : W),
+      (history : PrefixMoves l sp) (tr : PathAlong l t)
+      (w : W (PrefixMoves.completeWith l sp history tr)),
       (append (s₂ := s₂) F₁ F₂ seam).extractFrom stmt sp history tr w =
         (F₂ ⟨⟩).extractFrom stmt sp history tr w
   | .pure _, _, _, _, _ => rfl
@@ -499,106 +561,125 @@ theorem extractFrom_append_pure {u : PUnit.{1}}
         tr w)
 
 /-- Below a first prefix move, backward extraction of the composite is extraction of the
-composite of the restricted prefix state function with the matching suffix family. -/
+composite of the restricted prefix state function with the matching suffix family. The output
+witness is transported to the completed transcript of either side. -/
 theorem extractFrom_append_down {a : P.A} {cont : P.B a → FreeM P PUnit.{1}}
     {s₂ : Path (FreeM.liftBind a cont) → FreeM P PUnit.{1}}
-    {Win : Type}
+    {Wmid : PathAlong l (FreeM.liftBind a cont) → Type}
+    {W : PathAlong l ((FreeM.liftBind a cont).append s₂) → Type} {Win : Type}
     {admissible : S → Prop} {relIn : S → Win → Prop}
-    {validMid : S → PathAlong l (FreeM.liftBind a cont) → Wmid → Prop}
+    {validMid : (stmt : S) → (tr : PathAlong l (FreeM.liftBind a cont)) → Wmid tr → Prop}
     {admissible₂ : PathAlong l (FreeM.liftBind a cont) → S → Prop}
-    {relMid : PathAlong l (FreeM.liftBind a cont) → S → Wmid → Prop}
-    {validOutput : S → PathAlong l ((FreeM.liftBind a cont).append s₂) → W → Prop}
+    {relMid : (tr₁ : PathAlong l (FreeM.liftBind a cont)) → S → Wmid tr₁ → Prop}
+    {validOutput : (stmt : S) → (tr : PathAlong l ((FreeM.liftBind a cont).append s₂)) →
+      W tr → Prop}
     (F₁ : KnowledgeStateFunction l (FreeM.liftBind a cont) S Wmid Win admissible relIn validMid)
     (F₂ : (tr₁ : PathAlong l (FreeM.liftBind a cont)) →
       KnowledgeStateFunction l (s₂ (projectPathAlong l _ tr₁))
-      S W Wmid (admissible₂ tr₁) (relMid tr₁)
-      (fun stmt tr₂ w => validOutput stmt (PathAlong.append l _ s₂ tr₁ tr₂) w))
+      S (fun tr₂ => W (PathAlong.append l _ s₂ tr₁ tr₂)) (Wmid tr₁) (admissible₂ tr₁)
+      (relMid tr₁) (fun stmt tr₂ w => validOutput stmt (PathAlong.append l _ s₂ tr₁ tr₂) w))
     (seam : ∀ tr₁ stmt w, (F₂ tr₁).toFun (.root _) ⟨⟩ stmt w →
       validMid stmt tr₁ ((F₂ tr₁).extractRoot stmt w))
     (stmt : S) (x : Move l a) : ∀ {t : FreeM P PUnit.{1}}
       (sp : Cursor.Spine ((cont (l.toFunB a x)).append (fun p => s₂ ⟨l.toFunB a x, p⟩)) t)
-      (history : PrefixMoves l sp) (tr : PathAlong l t) (w : W),
-      (append (s₂ := s₂) F₁ F₂ seam).extractFrom stmt (.down _ sp) ⟨⟨x, rfl⟩, history⟩ tr w =
+      (history : PrefixMoves l sp) (tr : PathAlong l t) {α : Type} (w : α)
+      (e : α = W (PrefixMoves.completeWith l (.down _ sp) ⟨⟨x, rfl⟩, history⟩ tr))
+      (e' : α = W ⟨x, PrefixMoves.completeWith l sp history tr⟩),
+      (append (s₂ := s₂) F₁ F₂ seam).extractFrom stmt (.down _ sp) ⟨⟨x, rfl⟩, history⟩ tr
+          (cast e w) =
         (append (s₂ := fun p => s₂ ⟨l.toFunB a x, p⟩)
+          (Wmid := fun tr => Wmid ⟨x, tr⟩) (W := fun tr => W ⟨x, tr⟩)
           (validMid := fun stmt tr w => validMid stmt ⟨x, tr⟩ w)
           (admissible₂ := fun tr => admissible₂ ⟨x, tr⟩) (relMid := fun tr => relMid ⟨x, tr⟩)
           (validOutput := fun stmt tr w => validOutput stmt ⟨x, tr⟩ w)
           (F₁.child x) (fun tr => F₂ ⟨x, tr⟩) (fun tr => seam ⟨x, tr⟩)).extractFrom
-            stmt sp history tr w
-  | .pure _, _, _, _, _ => rfl
-  | .liftBind _ _, sp, history, ⟨y, tr⟩, w =>
+            stmt sp history tr (cast e' w)
+  | .pure _, _, _, _, _, _, _, _ => rfl
+  | .liftBind _ _, sp, history, ⟨y, tr⟩, _, w, e, e' =>
     congrArg ((append (s₂ := fun p => s₂ ⟨l.toFunB a x, p⟩)
+          (Wmid := fun tr => Wmid ⟨x, tr⟩) (W := fun tr => W ⟨x, tr⟩)
           (validMid := fun stmt tr w => validMid stmt ⟨x, tr⟩ w)
           (admissible₂ := fun tr => admissible₂ ⟨x, tr⟩) (relMid := fun tr => relMid ⟨x, tr⟩)
           (validOutput := fun stmt tr w => validOutput stmt ⟨x, tr⟩ w)
           (F₁.child x) (fun tr => F₂ ⟨x, tr⟩) (fun tr => seam ⟨x, tr⟩)).extractStep
             sp history stmt y)
       (extractFrom_append_down F₁ F₂ seam stmt x (sp.comp _) (PrefixMoves.snoc l sp history y)
-        tr w)
+        tr w e e')
 
 /-- Backward extraction along an appended transcript runs the suffix extraction and then the
 prefix extraction from its input witness. -/
 theorem extractAlong_append :
-    {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} → {Win : Type} →
+    {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
+    {Wmid : PathAlong l s₁ → Type} → {W : PathAlong l (s₁.append s₂) → Type} → {Win : Type} →
     {admissible : S → Prop} → {relIn : S → Win → Prop} →
-    {validMid : S → PathAlong l s₁ → Wmid → Prop} →
-    {admissible₂ : PathAlong l s₁ → S → Prop} → {relMid : PathAlong l s₁ → S → Wmid → Prop} →
-    {validOutput : S → PathAlong l (s₁.append s₂) → W → Prop} →
+    {validMid : (stmt : S) → (tr : PathAlong l s₁) → Wmid tr → Prop} →
+    {admissible₂ : PathAlong l s₁ → S → Prop} →
+    {relMid : (tr₁ : PathAlong l s₁) → S → Wmid tr₁ → Prop} →
+    {validOutput : (stmt : S) → (tr : PathAlong l (s₁.append s₂)) → W tr → Prop} →
     (F₁ : KnowledgeStateFunction l s₁ S Wmid Win admissible relIn validMid) →
     (F₂ : (tr₁ : PathAlong l s₁) → KnowledgeStateFunction l (s₂ (projectPathAlong l s₁ tr₁))
-      S W Wmid (admissible₂ tr₁) (relMid tr₁)
-      (fun stmt tr₂ w => validOutput stmt (PathAlong.append l s₁ s₂ tr₁ tr₂) w)) →
+      S (fun tr₂ => W (PathAlong.append l s₁ s₂ tr₁ tr₂)) (Wmid tr₁) (admissible₂ tr₁)
+      (relMid tr₁) (fun stmt tr₂ w => validOutput stmt (PathAlong.append l s₁ s₂ tr₁ tr₂) w)) →
     (seam : ∀ tr₁ stmt w, (F₂ tr₁).toFun (.root _) ⟨⟩ stmt w →
       validMid stmt tr₁ ((F₂ tr₁).extractRoot stmt w)) →
     ∀ (stmt : S) (tr₁ : PathAlong l s₁) (tr₂ : PathAlong l (s₂ (projectPathAlong l s₁ tr₁)))
-      (w : W),
+      (w : W (PathAlong.append l s₁ s₂ tr₁ tr₂)),
       (append (s₂ := s₂) F₁ F₂ seam).extractAlong stmt (PathAlong.append l s₁ s₂ tr₁ tr₂) w =
         F₁.extractAlong stmt tr₁ ((F₂ tr₁).extractAlong stmt tr₂ w)
-  | .pure _, _, _, _, _, _, _, _, _, F₁, F₂, seam, stmt, _, tr₂, w =>
+  | .pure _, _, _, _, _, _, _, _, _, _, _, F₁, F₂, seam, stmt, _, tr₂, _ =>
     congrArg (fun z => F₁.extractRoot stmt (F₁.extractLeaf (.root _) ⟨⟩ stmt
       ((F₂ ⟨⟩).extractRoot stmt z)))
-      (extractFrom_append_pure F₁ F₂ seam stmt (.root _) ⟨⟩ tr₂ w)
-  | .liftBind a _, s₂, _, _, _, validMid, admissible₂, relMid, validOutput, F₁, F₂, seam,
+      (extractFrom_append_pure F₁ F₂ seam stmt (.root _) ⟨⟩ tr₂ _)
+  | .liftBind a _, s₂, Wmid, W, _, _, _, validMid, admissible₂, relMid, validOutput, F₁, F₂, seam,
       stmt, ⟨x, tr₁⟩, tr₂, w =>
     congrArg (fun z => F₁.extractRoot stmt (F₁.extractStep (.root _) ⟨⟩ stmt x z))
       (((congrArg (appendExtractRoot (s₂ := fun p => s₂ ⟨l.toFunB a x, p⟩)
+          (Wmid := fun tr => Wmid ⟨x, tr⟩) (W := fun tr => W ⟨x, tr⟩)
           (validMid := fun stmt tr w => validMid stmt ⟨x, tr⟩ w)
           (admissible₂ := fun tr => admissible₂ ⟨x, tr⟩) (relMid := fun tr => relMid ⟨x, tr⟩)
           (validOutput := fun stmt tr w => validOutput stmt ⟨x, tr⟩ w)
           (F₁.child x) (fun tr => F₂ ⟨x, tr⟩) stmt)
-        (extractFrom_append_down F₁ F₂ seam stmt x (.root _) ⟨⟩ _ w)).trans
+        (extractFrom_append_down F₁ F₂ seam stmt x (.root _) ⟨⟩ _ w
+          (congrArg W (PrefixMoves.completeWith_root l _).symm)
+          (congrArg (fun tr => W ⟨x, tr⟩) (PrefixMoves.completeWith_root l _).symm))).trans
         (extractAlong_append (s₂ := fun p => s₂ ⟨l.toFunB a x, p⟩)
+          (Wmid := fun tr => Wmid ⟨x, tr⟩) (W := fun tr => W ⟨x, tr⟩)
           (validMid := fun stmt tr w => validMid stmt ⟨x, tr⟩ w)
           (admissible₂ := fun tr => admissible₂ ⟨x, tr⟩) (relMid := fun tr => relMid ⟨x, tr⟩)
           (validOutput := fun stmt tr w => validOutput stmt ⟨x, tr⟩ w)
           (F₁.child x) (fun tr => F₂ ⟨x, tr⟩) (fun tr => seam ⟨x, tr⟩) stmt tr₁ tr₂ w)).trans
-        (extractFrom_child F₁ stmt x (.root _) ⟨⟩ tr₁ _).symm)
+        (extractFrom_child F₁ stmt x (.root _) ⟨⟩ tr₁ ((F₂ ⟨x, tr₁⟩).extractAlong stmt tr₂ w)
+          (congrArg Wmid (PrefixMoves.completeWith_root l (s := .liftBind a _) ⟨x, tr₁⟩).symm)
+          (congrArg (fun tr => Wmid ⟨x, tr⟩) (PrefixMoves.completeWith_root l tr₁).symm)).symm)
 
 /-- At a completed composite transcript, the composite state on the terminal witness is the
 suffix state on its own terminal witness. -/
 theorem toFun_terminalWitness_append :
-    {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} → {Win : Type} →
+    {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
+    {Wmid : PathAlong l s₁ → Type} → {W : PathAlong l (s₁.append s₂) → Type} → {Win : Type} →
     {admissible : S → Prop} → {relIn : S → Win → Prop} →
-    {validMid : S → PathAlong l s₁ → Wmid → Prop} →
-    {admissible₂ : PathAlong l s₁ → S → Prop} → {relMid : PathAlong l s₁ → S → Wmid → Prop} →
-    {validOutput : S → PathAlong l (s₁.append s₂) → W → Prop} →
+    {validMid : (stmt : S) → (tr : PathAlong l s₁) → Wmid tr → Prop} →
+    {admissible₂ : PathAlong l s₁ → S → Prop} →
+    {relMid : (tr₁ : PathAlong l s₁) → S → Wmid tr₁ → Prop} →
+    {validOutput : (stmt : S) → (tr : PathAlong l (s₁.append s₂)) → W tr → Prop} →
     (F₁ : KnowledgeStateFunction l s₁ S Wmid Win admissible relIn validMid) →
     (F₂ : (tr₁ : PathAlong l s₁) → KnowledgeStateFunction l (s₂ (projectPathAlong l s₁ tr₁))
-      S W Wmid (admissible₂ tr₁) (relMid tr₁)
-      (fun stmt tr₂ w => validOutput stmt (PathAlong.append l s₁ s₂ tr₁ tr₂) w)) →
+      S (fun tr₂ => W (PathAlong.append l s₁ s₂ tr₁ tr₂)) (Wmid tr₁) (admissible₂ tr₁)
+      (relMid tr₁) (fun stmt tr₂ w => validOutput stmt (PathAlong.append l s₁ s₂ tr₁ tr₂) w)) →
     (seam : ∀ tr₁ stmt w, (F₂ tr₁).toFun (.root _) ⟨⟩ stmt w →
       validMid stmt tr₁ ((F₂ tr₁).extractRoot stmt w)) →
     ∀ (stmt : S) (tr₁ : PathAlong l s₁) (tr₂ : PathAlong l (s₂ (projectPathAlong l s₁ tr₁)))
-      (w : W),
+      (w : W (PathAlong.append l s₁ s₂ tr₁ tr₂)),
       (append (s₂ := s₂) F₁ F₂ seam).toFun
           (completeSpine l (PathAlong.append l s₁ s₂ tr₁ tr₂)) (completeMoves l _) stmt
           ((append (s₂ := s₂) F₁ F₂ seam).terminalWitness stmt _ w) ↔
         (F₂ tr₁).toFun (completeSpine l tr₂) (completeMoves l tr₂) stmt
           ((F₂ tr₁).terminalWitness stmt tr₂ w)
-  | .pure _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ => Iff.rfl
-  | .liftBind a _, s₂, _, _, _, validMid, admissible₂, relMid, validOutput, F₁, F₂, seam,
+  | .pure _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ => Iff.rfl
+  | .liftBind a _, s₂, Wmid, W, _, _, _, validMid, admissible₂, relMid, validOutput, F₁, F₂, seam,
       stmt, ⟨x, tr₁⟩, tr₂, w =>
     toFun_terminalWitness_append (s₂ := fun p => s₂ ⟨l.toFunB a x, p⟩)
+          (Wmid := fun tr => Wmid ⟨x, tr⟩) (W := fun tr => W ⟨x, tr⟩)
           (validMid := fun stmt tr w => validMid stmt ⟨x, tr⟩ w)
           (admissible₂ := fun tr => admissible₂ ⟨x, tr⟩) (relMid := fun tr => relMid ⟨x, tr⟩)
           (validOutput := fun stmt tr w => validOutput stmt ⟨x, tr⟩ w)
@@ -606,9 +687,9 @@ theorem toFun_terminalWitness_append :
 
 /-- A bound for a state function survives restriction below a first move, with the draws and
 errors restricted to the challenge nodes below it. -/
-theorem BoundedAt.child {a : P.A} {next : P.B a → FreeM P PUnit.{1}} {W Win : Type}
-    {admissible : S → Prop} {relIn : S → Win → Prop}
-    {validOutput : S → PathAlong l (.liftBind a next) → W → Prop}
+theorem BoundedAt.child {a : P.A} {next : P.B a → FreeM P PUnit.{1}} {Win : Type}
+    {W : PathAlong l (.liftBind a next) → Type} {admissible : S → Prop} {relIn : S → Win → Prop}
+    {validOutput : (stmt : S) → (tr : PathAlong l (.liftBind a next)) → W tr → Prop}
     {F : KnowledgeStateFunction l (.liftBind a next) S W Win admissible relIn validOutput}
     {draw : QueryImpl (challengeSpec l (.liftBind a next)) ProbComp}
     {ε : ChallengeNode l (.liftBind a next) → ℝ≥0∞} {stmt : S} (h : F.BoundedAt draw ε stmt)
@@ -620,15 +701,17 @@ theorem BoundedAt.child {a : P.A} {next : P.B a → FreeM P PUnit.{1}} {W Win : 
 /-- Bounds compose along the composite: prefix challenges keep the prefix bound and suffix
 challenges keep the bound of the suffix state function at their prefix transcript. -/
 theorem BoundedAt.append :
-    {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} → {Win : Type} →
+    {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
+    {Wmid : PathAlong l s₁ → Type} → {W : PathAlong l (s₁.append s₂) → Type} → {Win : Type} →
     {admissible : S → Prop} → {relIn : S → Win → Prop} →
-    {validMid : S → PathAlong l s₁ → Wmid → Prop} →
-    {admissible₂ : PathAlong l s₁ → S → Prop} → {relMid : PathAlong l s₁ → S → Wmid → Prop} →
-    {validOutput : S → PathAlong l (s₁.append s₂) → W → Prop} →
+    {validMid : (stmt : S) → (tr : PathAlong l s₁) → Wmid tr → Prop} →
+    {admissible₂ : PathAlong l s₁ → S → Prop} →
+    {relMid : (tr₁ : PathAlong l s₁) → S → Wmid tr₁ → Prop} →
+    {validOutput : (stmt : S) → (tr : PathAlong l (s₁.append s₂)) → W tr → Prop} →
     (F₁ : KnowledgeStateFunction l s₁ S Wmid Win admissible relIn validMid) →
     (F₂ : (tr₁ : PathAlong l s₁) → KnowledgeStateFunction l (s₂ (projectPathAlong l s₁ tr₁))
-      S W Wmid (admissible₂ tr₁) (relMid tr₁)
-      (fun stmt tr₂ w => validOutput stmt (PathAlong.append l s₁ s₂ tr₁ tr₂) w)) →
+      S (fun tr₂ => W (PathAlong.append l s₁ s₂ tr₁ tr₂)) (Wmid tr₁) (admissible₂ tr₁)
+      (relMid tr₁) (fun stmt tr₂ w => validOutput stmt (PathAlong.append l s₁ s₂ tr₁ tr₂) w)) →
     (seam : ∀ tr₁ stmt w, (F₂ tr₁).toFun (.root _) ⟨⟩ stmt w →
       validMid stmt tr₁ ((F₂ tr₁).extractRoot stmt w)) →
     ∀ (draw₁ : QueryImpl (challengeSpec l s₁) ProbComp)
@@ -639,15 +722,16 @@ theorem BoundedAt.append :
         (ε₂ (projectPathAlong l s₁ tr₁)) stmt) →
       (append (s₂ := s₂) F₁ F₂ seam).BoundedAt (combineDraw l s₁ s₂ draw₁ draw₂)
         (combineDraw (m := fun _ => ℝ≥0∞) l s₁ s₂ ε₁ ε₂) stmt
-  | .pure _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, h₂ => h₂ ⟨⟩
-  | .liftBind a cont, s₂, _, _, _, validMid, admissible₂, relMid, validOutput, F₁, F₂, seam,
-      draw₁, draw₂, ε₁, ε₂, stmt, h₁, h₂ => by
+  | .pure _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, h₂ => h₂ ⟨⟩
+  | .liftBind a cont, s₂, Wmid, W, _, _, _, validMid, admissible₂, relMid, validOutput, F₁, F₂,
+      seam, draw₁, draw₂, ε₁, ε₂, stmt, h₁, h₂ => by
     intro a' next' sp ho history
     cases sp with
     | root =>
       refine le_trans (measure_mono ?_) (h₁ a cont (.root _) ho ⟨⟩)
       rintro y ⟨wit, hbad, hgood⟩
       obtain ⟨w₁, he, hw₁⟩ := appendToFun_root (s₂ := fun p => s₂ ⟨l.toFunB a y, p⟩)
+          (Wmid := fun tr => Wmid ⟨y, tr⟩) (W := fun tr => W ⟨y, tr⟩)
           (validMid := fun stmt tr w => validMid stmt ⟨y, tr⟩ w)
           (admissible₂ := fun tr => admissible₂ ⟨y, tr⟩) (relMid := fun tr => relMid ⟨y, tr⟩)
           (validOutput := fun stmt tr w => validOutput stmt ⟨y, tr⟩ w)
@@ -658,6 +742,7 @@ theorem BoundedAt.append :
     | down _ tail =>
       rcases history with ⟨⟨x, rfl⟩, history⟩
       exact BoundedAt.append (s₂ := fun p => s₂ ⟨l.toFunB a x, p⟩)
+          (Wmid := fun tr => Wmid ⟨x, tr⟩) (W := fun tr => W ⟨x, tr⟩)
           (validMid := fun stmt tr w => validMid stmt ⟨x, tr⟩ w)
           (admissible₂ := fun tr => admissible₂ ⟨x, tr⟩) (relMid := fun tr => relMid ⟨x, tr⟩)
           (validOutput := fun stmt tr w => validOutput stmt ⟨x, tr⟩ w)
@@ -668,8 +753,8 @@ theorem BoundedAt.append :
 
 section restrict
 
-variable {s : FreeM P PUnit.{1}} {W Win : Type} {admissible : S → Prop} {relIn : S → Win → Prop}
-  {validOutput : S → PathAlong l s → W → Prop}
+variable {s : FreeM P PUnit.{1}} {Win : Type} {W : PathAlong l s → Type} {admissible : S → Prop}
+  {relIn : S → Win → Prop} {validOutput : (stmt : S) → (tr : PathAlong l s) → W tr → Prop}
 
 /-- The state function whose states, and valid outputs, apply to admissible statements only. -/
 def guard (F : KnowledgeStateFunction l s S W Win admissible relIn validOutput) :
@@ -696,7 +781,7 @@ theorem BoundedAt.guard {F : KnowledgeStateFunction l s S W Win admissible relIn
 /-- Pull a state function back along a statement map, with a stronger valid-output predicate. -/
 def comap {S' : Type} (f : S' → S)
     (F : KnowledgeStateFunction l s S W Win admissible relIn validOutput)
-    {validOutput' : S' → PathAlong l s → W → Prop}
+    {validOutput' : (stmt : S') → (tr : PathAlong l s) → W tr → Prop}
     (hout : ∀ stmt tr w, validOutput' stmt tr w → validOutput (f stmt) tr w) :
     KnowledgeStateFunction l s S' W Win (fun stmt => admissible (f stmt))
       (fun stmt w => relIn (f stmt) w) validOutput' where
@@ -712,7 +797,7 @@ def comap {S' : Type} (f : S' → S)
 /-- A pulled-back state function has the bound of the original at the mapped statement. -/
 theorem BoundedAt.comap {S' : Type} {f : S' → S}
     {F : KnowledgeStateFunction l s S W Win admissible relIn validOutput}
-    {validOutput' : S' → PathAlong l s → W → Prop}
+    {validOutput' : (stmt : S') → (tr : PathAlong l s) → W tr → Prop}
     {hout : ∀ stmt tr w, validOutput' stmt tr w → validOutput (f stmt) tr w}
     {draw : QueryImpl (challengeSpec l s) ProbComp} {ε : ChallengeNode l s → ℝ≥0∞} {stmt : S'}
     (h : F.BoundedAt draw ε (f stmt)) : (F.comap f hout).BoundedAt draw ε stmt :=
@@ -722,10 +807,13 @@ end restrict
 
 section security
 
-variable {s₁ : FreeM P PUnit.{1}} {s₂ : Path s₁ → FreeM P PUnit.{1}} {Win : Type}
-  {admissible : S → Prop} {relIn : S → Win → Prop} {validMid : S → PathAlong l s₁ → Wmid → Prop}
-  {admissible₂ : PathAlong l s₁ → S → Prop} {relMid : PathAlong l s₁ → S → Wmid → Prop}
-  {validOutput : S → PathAlong l (s₁.append s₂) → W → Prop}
+variable {s₁ : FreeM P PUnit.{1}} {s₂ : Path s₁ → FreeM P PUnit.{1}}
+  {Wmid : PathAlong l s₁ → Type} {W : PathAlong l (s₁.append s₂) → Type} {Win : Type}
+  {admissible : S → Prop} {relIn : S → Win → Prop}
+  {validMid : (stmt : S) → (tr : PathAlong l s₁) → Wmid tr → Prop}
+  {admissible₂ : PathAlong l s₁ → S → Prop}
+  {relMid : (tr₁ : PathAlong l s₁) → S → Wmid tr₁ → Prop}
+  {validOutput : (stmt : S) → (tr : PathAlong l (s₁.append s₂)) → W tr → Prop}
 
 /-- Local bounds compose: with suffix admissibility implied by prefix admissibility, the
 composite is bounded by the prefix errors at prefix challenges and the suffix errors at suffix
@@ -733,8 +821,8 @@ challenges. -/
 theorem LocallyBounded.append
     {F₁ : KnowledgeStateFunction l s₁ S Wmid Win admissible relIn validMid}
     {F₂ : (tr₁ : PathAlong l s₁) → KnowledgeStateFunction l (s₂ (projectPathAlong l s₁ tr₁))
-      S W Wmid (admissible₂ tr₁) (relMid tr₁)
-      (fun stmt tr₂ w => validOutput stmt (PathAlong.append l s₁ s₂ tr₁ tr₂) w)}
+      S (fun tr₂ => W (PathAlong.append l s₁ s₂ tr₁ tr₂)) (Wmid tr₁) (admissible₂ tr₁)
+      (relMid tr₁) (fun stmt tr₂ w => validOutput stmt (PathAlong.append l s₁ s₂ tr₁ tr₂) w)}
     (seam : ∀ tr₁ stmt w, (F₂ tr₁).toFun (.root _) ⟨⟩ stmt w →
       validMid stmt tr₁ ((F₂ tr₁).extractRoot stmt w))
     {draw₁ : QueryImpl (challengeSpec l s₁) ProbComp}
@@ -755,9 +843,11 @@ end KnowledgeStateFunction
 
 section security
 
-variable {s₁ : FreeM P PUnit.{1}} {s₂ : Path s₁ → FreeM P PUnit.{1}} {S W Wmid Win : Type}
-  {admissible : S → Prop} {relIn : S → Win → Prop} {validMid : S → PathAlong l s₁ → Wmid → Prop}
-  {validOutput : S → PathAlong l (s₁.append s₂) → W → Prop}
+variable {s₁ : FreeM P PUnit.{1}} {s₂ : Path s₁ → FreeM P PUnit.{1}} {S Win : Type}
+  {Wmid : PathAlong l s₁ → Type} {W : PathAlong l (s₁.append s₂) → Type}
+  {admissible : S → Prop} {relIn : S → Win → Prop}
+  {validMid : (stmt : S) → (tr : PathAlong l s₁) → Wmid tr → Prop}
+  {validOutput : (stmt : S) → (tr : PathAlong l (s₁.append s₂)) → W tr → Prop}
   {draw₁ : QueryImpl (challengeSpec l s₁) ProbComp}
   {draw₂ : (p : Path s₁) → QueryImpl (challengeSpec l (s₂ p)) ProbComp}
   {ε₁ : ChallengeNode l s₁ → ℝ≥0∞} {ε₂ : (p : Path s₁) → ChallengeNode l (s₂ p) → ℝ≥0∞}
@@ -768,7 +858,7 @@ statements, suffix admissibility holds and the intermediate relation implies a v
 output. The composite error is the prefix error at prefix challenges and the suffix error at
 suffix challenges. -/
 theorem rbrKnowledgeSoundness_append {admissible₂ : PathAlong l s₁ → S → Prop}
-    {relMid : PathAlong l s₁ → S → Wmid → Prop}
+    {relMid : (tr₁ : PathAlong l s₁) → S → Wmid tr₁ → Prop}
     (h₁ : rbrKnowledgeSoundness l s₁ admissible relIn validMid draw₁ ε₁)
     (h₂ : ∀ tr₁, rbrKnowledgeSoundness l (s₂ (projectPathAlong l s₁ tr₁)) (admissible₂ tr₁)
       (relMid tr₁) (fun stmt tr₂ w => validOutput stmt (PathAlong.append l s₁ s₂ tr₁ tr₂) w)
@@ -789,9 +879,11 @@ theorem rbrKnowledgeSoundness_append {admissible₂ : PathAlong l s₁ → S →
 sound for its own statements; `mid` computes the suffix statement from the input statement and
 the prefix transcript, and composite valid outputs are suffix valid outputs at that statement. -/
 theorem rbrKnowledgeSoundness_append_of_mid {T : Type} (mid : S → PathAlong l s₁ → T)
-    {admissible₂ : PathAlong l s₁ → T → Prop} {relMid : PathAlong l s₁ → T → Wmid → Prop}
-    {validOutput₂ : (tr₁ : PathAlong l s₁) → T → PathAlong l (s₂ (projectPathAlong l s₁ tr₁)) →
-      W → Prop}
+    {admissible₂ : PathAlong l s₁ → T → Prop}
+    {relMid : (tr₁ : PathAlong l s₁) → T → Wmid tr₁ → Prop}
+    {validOutput₂ : (tr₁ : PathAlong l s₁) → T →
+      (tr₂ : PathAlong l (s₂ (projectPathAlong l s₁ tr₁))) →
+      W (PathAlong.append l s₁ s₂ tr₁ tr₂) → Prop}
     (h₁ : rbrKnowledgeSoundness l s₁ admissible relIn validMid draw₁ ε₁)
     (h₂ : ∀ tr₁, rbrKnowledgeSoundness l (s₂ (projectPathAlong l s₁ tr₁)) (admissible₂ tr₁)
       (relMid tr₁) (validOutput₂ tr₁)

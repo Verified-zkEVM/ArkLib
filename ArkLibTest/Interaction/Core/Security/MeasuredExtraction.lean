@@ -11,8 +11,9 @@ import ArkLibTest.Data.OracleComp.AddProgram
 
 A state function on a one-message protocol is measured stage by stage: one program with a charged
 addition realizes its step map for every message, although the witness after the message has a
-carrier that depends on the message. Measured state functions fix natural-number count profiles
-over a finite kind type, and every state function has zero-instruction stages.
+carrier that depends on the message, and the composed program runs on output witnesses in that
+carrier. Measured state functions fix natural-number count profiles over a finite kind type, and
+every state function has zero-instruction stages.
 -/
 
 open PFunctor PFunctor.FreeM Interaction.Core OracleComp AddProgramTest
@@ -22,9 +23,12 @@ namespace Interaction.Core.MeasuredExtractionTests
 /-- One public message in `Fin 8`. -/
 abbrev oneRound : Protocol.{0} := .liftBind (.message (Fin 8)) fun _ => .pure ⟨⟩
 
-/-- Input witnesses are natural numbers; after message `m`, a witness is a number below `m + 1`.
-The leaf map reduces an output number modulo `m + 1`, and the step map adds the message. -/
-def addState : KnowledgeStateFunction plainSig oneRound Unit Nat Nat (fun _ => True)
+/-- Output witnesses after message `m` are numbers below `m + 1`. -/
+abbrev OutWitness (tr : PathAlong plainSig oneRound) : Type := Fin (tr.1.val + 1)
+
+/-- Input witnesses are natural numbers; after message `m`, a witness is a number below `m + 1`,
+the output witness carrier. The leaf map is the identity, and the step map adds the message. -/
+def addState : KnowledgeStateFunction plainSig oneRound Unit OutWitness Nat (fun _ => True)
     (fun _ _ => True) (fun _ _ _ => True) where
   Witness {_} sp history := match sp, history with
     | .root _, _ => Nat
@@ -39,7 +43,7 @@ def addState : KnowledgeStateFunction plainSig oneRound Unit Nat Nat (fun _ => T
     cases sp with
     | down _ tail =>
       cases tail
-      exact ⟨w % (history.1.1.val + 1), Nat.mod_lt _ (Nat.succ_pos _)⟩
+      exact w
   root _ _ _ _ := trivial
   send _ _ _ _ _ _ _ := trivial
   leaf _ _ _ _ _ := trivial
@@ -62,18 +66,21 @@ example (m : Fin 8) (w : Fin (m.val + 1)) :
     (addStages.step () (.root _) ⟨⟩).program.run ⟨m, w⟩ = w.val + m.val :=
   ((addStages.step () (.root _) ⟨⟩).realizes _).symm
 
--- MeasuredExtraction row 4, along the transcript from an output witness.
-/-- The composed program reduces the output witness below `m + 1` and adds the message. -/
-example (m : Fin 8) (w : Nat) :
-    (addStages.programAlong () ⟨m, ⟨⟩⟩).program.run w = w % (m.val + 1) + m.val :=
-  addStages.run_programAlong () ⟨m, ⟨⟩⟩ w
+-- MeasuredExtraction row 4, along the transcript from an output witness in the carrier selected
+-- by the message.
+/-- The composed program retains the witness carrier selected by the actual message. -/
+example (message : Fin 8) (witness : Fin (message.val + 1)) :
+    (addStages.programAlong () ⟨message, ⟨⟩⟩).program.run witness =
+      witness.val + message.val :=
+  addStages.run_programAlong () ⟨message, ⟨⟩⟩ witness
 
 -- MeasuredExtraction row 5.
 /-- The budget along every transcript is one. -/
 example (m : Fin 8) : (addStages.programAlong () ⟨m, ⟨⟩⟩).budget = 1 := rfl
 
 /-- On the empty protocol, an empty witness carrier needs no fabricated witness. -/
-def emptyState : KnowledgeStateFunction plainSig (.pure ⟨⟩ : Protocol.{0}) Unit Empty Empty
+def emptyState : KnowledgeStateFunction plainSig (.pure ⟨⟩ : Protocol.{0}) Unit (fun _ => Empty)
+    Empty
     (fun _ => True) (fun _ _ => False) (fun _ _ _ => True) where
   Witness _ _ := Empty
   toFun _ _ _ _ := False
@@ -93,13 +100,15 @@ example (tr : PathAlong plainSig (.pure ⟨⟩ : Protocol.{0})) :
 -- MeasuredExtraction row 7.
 /-- Measured state functions fix natural-number profiles, needing only `[Finite Kind]`. -/
 example (Kind : Type) [Finite Kind] : Type 1 :=
-  MeasuredKnowledgeStateFunction Kind plainSig (.pure ⟨⟩ : Protocol.{0}) Unit Empty Empty
+  MeasuredKnowledgeStateFunction Kind plainSig (.pure ⟨⟩ : Protocol.{0}) Unit (fun _ => Empty)
+    Empty
     (fun _ => True) (fun _ _ => False) (fun _ _ _ => True)
 
 section FixedCountArithmetic
 
-variable {s : Protocol.{0}} {S W Win : Type} {admissible : S → Prop} {relIn : S → Win → Prop}
-  {validOutput : S → PathAlong plainSig s → W → Prop}
+variable {s : Protocol.{0}} {S Win : Type} {W : PathAlong plainSig s → Type}
+  {admissible : S → Prop} {relIn : S → Win → Prop}
+  {validOutput : (stmt : S) → (tr : PathAlong plainSig s) → W tr → Prop}
 
 -- MeasuredExtraction row 8.
 /-- Standard count stages extend a state function without supplying a cost model. -/
@@ -160,7 +169,8 @@ end ReversedWeights
 example : True := by
   fail_if_success
     have measuredType :=
-      MeasuredKnowledgeStateFunction Nat plainSig (.pure ⟨⟩ : Protocol.{0}) Unit Empty Empty
+      MeasuredKnowledgeStateFunction Nat plainSig (.pure ⟨⟩ : Protocol.{0}) Unit
+        (fun _ => Empty) Empty
         (fun _ => True) (fun _ _ => False) (fun _ _ _ => True)
   trivial
 
@@ -168,8 +178,9 @@ end FixedCountArithmetic
 
 section ZeroStageAccounting
 
-variable {s : Protocol.{0}} {S W Win : Type} {admissible : S → Prop} {relIn : S → Win → Prop}
-  {validOutput : S → PathAlong plainSig s → W → Prop}
+variable {s : Protocol.{0}} {S Win : Type} {W : PathAlong plainSig s → Type}
+  {admissible : S → Prop} {relIn : S → Win → Prop}
+  {validOutput : (stmt : S) → (tr : PathAlong plainSig s) → W tr → Prop}
 
 -- MeasuredExtraction row 12 (`zeroStages_budgetAtMost`), for every state function, with root,
 -- step and leaf bounds zero.
