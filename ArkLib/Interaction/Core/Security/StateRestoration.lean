@@ -22,7 +22,10 @@ The passive verifier then decides on the completed transcript. Its decision has 
 oracle, and its resource queries are answered from the input data and the transcript's oracle
 payloads, so its observation is a value of the completed transcript (`terminalObservation`,
 `closedTerminalObservation`). The game is that observation of the restored execution
-(`verificationGame_eq`, `closedVerificationGame_eq`).
+(`verificationGame_eq`, `closedVerificationGame_eq`). It is also the result of running the parties
+through `OracleVerifier.run`: the prover sends the selected messages (`scriptedProver`), and each
+challenge query is answered from the completed transcript (`recordedAnswers`). That run returns
+the game's transcript and observation (`run_scriptedProver`, `closedVerificationGame_eval_run`).
 
 Each key determines a receiver cursor of the protocol (`keySpine`) and the full prefix of moves
 reaching it (`keyHistory`), read from an answer table. Changing the answer at the key itself does
@@ -92,6 +95,7 @@ def input : {rounds : List Round} → Key Input Salt rounds → Input
   | _ :: rounds, .inl _ => rounds
   | _ :: _, .inr (_, _, key) => key.remaining
 
+/-- A key's challenge alphabet has its round's uniform sampler. -/
 instance instSampleableType {rounds : List Round} (key : Key Input Salt rounds) :
     SampleableType key.Challenge := by
   induction rounds with
@@ -397,6 +401,238 @@ theorem closedVerificationGame_eq (V : OracleVerifier []ₒ (protocol rounds) S 
   simp only [closedVerificationGame, restoredExecution, _root_.map_bind, LawfulApplicative.map_pure]
 
 end Verifier
+
+/-! ### Running the scripted prover against recorded challenges
+
+The game evaluates the verifier's observation on a completed transcript; it runs no parties. The
+correspondence below runs the parties through `OracleVerifier.run`: the prover sends the selected
+messages, and every challenge query is answered from a recorded transcript. When that transcript
+carries the selected messages, the run returns it together with the closed observation
+(`run_scriptedProver`). Instantiated with the transcript completed against an answer table, the
+run returns the game's transcript and observation (`closedVerificationGame_eval_run`). -/
+
+section Replay
+
+/-- The prover that sends the selected messages and makes no query. Salts are not sent. -/
+def scriptedProver {ι : Type} {ambient : OracleSpec ι} :
+    (rounds : List Round) → Messages Salt rounds →
+      Prover oracleSig ambient (protocol rounds) (fun _ => PUnit)
+  | [], _ => (pure ⟨⟩ : OracleComp ambient PUnit)
+  | _ :: rounds, (message, _, messages) =>
+      pure ⟨message, pure fun _ => scriptedProver rounds messages⟩
+
+/-- Each challenge node is answered with the recorded challenge of the node's round. The protocol
+shape does not depend on moves, so the round is the node's depth. -/
+def recordedChallenges : (rounds : List Round) → PathAlong oracleSig (protocol rounds) →
+    QueryImpl (challengeSpec oracleSig (protocol rounds)) Id
+  | [], _, ⟨n, _⟩ => n.elim
+  | _ :: _, _, ⟨.inl _, h⟩ => nomatch h
+  | _ :: _, ⟨_, ⟨c, _⟩⟩, ⟨.inr ⟨_, .inl _⟩, _⟩ => c
+  | _ :: rounds, ⟨_, ⟨_, tr⟩⟩, ⟨.inr ⟨_, .inr ⟨_, n⟩⟩, h⟩ => recordedChallenges rounds tr ⟨n, h⟩
+
+/-- The answers of a run without ambient oracle: every challenge is read from the recorded
+transcript. -/
+def recordedAnswers (rounds : List Round) (tr : PathAlong oracleSig (protocol rounds)) :
+    QueryImpl ([]ₒ + challengeSpec oracleSig (protocol rounds)) Id
+  | .inl q => PEmpty.elim q
+  | .inr c => recordedChallenges rounds tr c
+
+/-- A transcript carries the selected messages. -/
+def MatchesMessages : (rounds : List Round) → Messages Salt rounds →
+    PathAlong oracleSig (protocol rounds) → Prop
+  | [], _, _ => True
+  | _ :: rounds, (message, _, messages), ⟨sent, ⟨_, tr⟩⟩ =>
+      message = sent ∧ MatchesMessages rounds messages tr
+
+/-- The transcript completed from a selection carries its messages. -/
+theorem completedPath_matchesMessages : (rounds : List Round) → (z : Input) →
+    (messages : Messages Salt rounds) → (table : Table Input Salt rounds) →
+    MatchesMessages rounds messages (completedPath rounds z messages table)
+  | [], _, _, _ => trivial
+  | _ :: rounds, z, (_, _, messages), _ =>
+      ⟨rfl, completedPath_matchesMessages rounds z messages _⟩
+
+/-- Interpreting the scripted prover's first slot leaves a pure send of its first message. -/
+private theorem simulate_scriptedProver_cons {ι κ : Type} {ambient : OracleSpec ι}
+    {spec : OracleSpec κ} (impl : QueryImpl ambient (OracleComp spec)) (round : Round)
+    (rounds : List Round) (message : round.Message) (salt : Salt)
+    (messages : Messages Salt rounds) :
+    Prover.simulate impl (scriptedProver (ambient := ambient) (round :: rounds)
+      (message, salt, messages)) =
+      (pure ⟨message, pure fun _ => Prover.simulate impl
+        (scriptedProver (ambient := ambient) rounds messages)⟩ : OracleComp spec _) := rfl
+
+/-- Interpreting the scripted prover's slots leaves it the scripted prover. -/
+theorem simulate_scriptedProver {ι κ : Type} {ambient : OracleSpec ι} {spec : OracleSpec κ}
+    (impl : QueryImpl ambient (OracleComp spec)) : (rounds : List Round) →
+    (messages : Messages Salt rounds) →
+    Prover.simulate impl (scriptedProver (ambient := ambient) rounds messages) =
+      scriptedProver rounds messages
+  | [], _ => rfl
+  | round :: rounds, (message, salt, messages) => by
+    rw [simulate_scriptedProver_cons]
+    exact congrArg (fun next : Prover oracleSig spec (protocol rounds) (fun _ => PUnit) =>
+      (pure ⟨message, pure fun _ => next⟩ : OracleComp spec
+        ((_ : round.Message) × OracleComp spec (round.Challenge →
+          Prover oracleSig spec (protocol rounds) (fun _ => PUnit)))))
+      (simulate_scriptedProver impl rounds messages)
+
+/-- The runner at a challenge node: the focal observation slot, then the counterpart draw. -/
+private theorem run_challengeNode {m : Type → Type} [Monad m] [LawfulMonad m] (C : Type)
+    (rest : OraclePoly.B (OraclePos.challenge C) → OracleProtocol)
+    {OutP OutC : PathAlong oracleSig (.liftBind (OraclePos.challenge C) rest) → Type}
+    (p : Focal oracleSig m (.liftBind (OraclePos.challenge C) rest) OutP)
+    (c : Counterpart oracleSig m (.liftBind (OraclePos.challenge C) rest) OutC) :
+    TwoParty.Lens.run (l := oracleSig) (.liftBind (OraclePos.challenge C) rest) p c = (do
+      let f ← (p : m ((x : Move oracleSig (OraclePos.challenge C)) →
+        Focal oracleSig m (rest (oracleSig.toFunB _ x)) (fun tr => OutP ⟨x, tr⟩)))
+      let v ← (c : m ((x : Move oracleSig (OraclePos.challenge C)) ×
+        Counterpart oracleSig m (rest (oracleSig.toFunB _ x)) (fun tr => OutC ⟨x, tr⟩)))
+      let r ← TwoParty.Lens.run (l := oracleSig) (rest (oracleSig.toFunB _ v.1)) (f v.1) v.2
+      pure (⟨⟨v.1, r.1⟩, r.2.1, r.2.2⟩ : (tr : PathAlong oracleSig
+        (.liftBind (OraclePos.challenge C) rest)) × OutP tr × OutC tr)) := by
+  rw [run_node]
+  rfl
+
+/-- One round of the scripted run: the prover sends its message, the sampler draws at the first
+challenge node, and the run continues on the remaining rounds with the shifted draws. -/
+private theorem evalWithAnswerFn_run_scriptedProver_cons {κ : Type} {spec : OracleSpec κ}
+    (answers : QueryImpl spec Id) (round : Round) (rounds : List Round)
+    (message : round.Message) (salt : Salt) (messages : Messages Salt rounds)
+    (draw : (c : ChallengeNode oracleSig (protocol (round :: rounds))) →
+      OracleComp spec (challengeSpec oracleSig (protocol (round :: rounds)) c)) :
+    evalWithAnswerFn answers (TwoParty.Lens.run (protocol (round :: rounds))
+      (scriptedProver (ambient := spec) (round :: rounds) (message, salt, messages))
+      (sampler oracleSig (protocol (round :: rounds)) draw)) =
+      let x := evalWithAnswerFn answers
+        (draw ⟨.inr ⟨oracleSig.toFunB (.oracle round.Message round.interface) message, .inl ⟨⟩⟩,
+          rfl⟩)
+      let r := evalWithAnswerFn answers (TwoParty.Lens.run (protocol rounds)
+        (scriptedProver (ambient := spec) rounds messages)
+        (sampler oracleSig (protocol rounds) (fun c =>
+          draw ⟨.inr ⟨oracleSig.toFunB (.oracle round.Message round.interface) message,
+            .inr ⟨oracleSig.toFunB (.challenge round.Challenge) x, c.val⟩⟩, c.property⟩)))
+      ⟨⟨message, ⟨x, r.1⟩⟩, r.2⟩ := by
+  refine (congrArg (evalWithAnswerFn answers)
+    (run_node (l := oracleSig) (.oracle round.Message round.interface) _ _ _)).trans ?_
+  change evalWithAnswerFn answers (step .sender _ _ _ _) = _
+  simp only [step, Schedule.seq]
+  have prover : scriptedProver (ambient := spec) (round :: rounds) (message, salt, messages) =
+      pure ⟨message, pure fun _ => scriptedProver rounds messages⟩ := rfl
+  have afterMessage : sampler oracleSig (protocol (round :: rounds)) draw =
+      pure (fun x => sampler oracleSig
+        (FreeM.liftBind (OraclePos.challenge round.Challenge) fun _ => protocol rounds :
+          OracleProtocol)
+        (fun c => draw ⟨.inr ⟨oracleSig.toFunB (.oracle round.Message round.interface) x,
+          c.val⟩, c.property⟩)) := rfl
+  rw [prover, afterMessage]
+  change evalWithAnswerFn answers (do
+      let x ← TwoParty.Lens.run (l := oracleSig) (OutP := fun _ => PUnit) (OutC := fun _ => PUnit)
+        (FreeM.liftBind (OraclePos.challenge round.Challenge) fun _ => protocol rounds :
+          OracleProtocol)
+        (pure fun _ => scriptedProver (ambient := spec) rounds messages)
+        (sampler oracleSig
+          (FreeM.liftBind (OraclePos.challenge round.Challenge) fun _ => protocol rounds :
+            OracleProtocol)
+          (fun c => draw ⟨.inr ⟨oracleSig.toFunB (.oracle round.Message round.interface) message,
+            c.val⟩, c.property⟩))
+      pure (⟨⟨message, x.1⟩, x.2.1, x.2.2⟩ :
+        (_ : PathAlong oracleSig (protocol (round :: rounds))) × PUnit × PUnit)) = _
+  have atChallenge : sampler oracleSig
+      (FreeM.liftBind (OraclePos.challenge round.Challenge) fun _ => protocol rounds :
+        OracleProtocol)
+      (fun c => draw ⟨.inr ⟨oracleSig.toFunB (.oracle round.Message round.interface) message,
+        c.val⟩, c.property⟩) =
+      (fun x => ⟨x, sampler oracleSig (protocol rounds) (fun c =>
+        draw ⟨.inr ⟨oracleSig.toFunB (.oracle round.Message round.interface) message,
+          .inr ⟨oracleSig.toFunB (.challenge round.Challenge) x, c.val⟩⟩, c.property⟩)⟩) <$>
+        draw ⟨.inr ⟨oracleSig.toFunB (.oracle round.Message round.interface) message, .inl ⟨⟩⟩,
+          rfl⟩ :=
+    Functor.map_map _ _ _
+  rw [run_challengeNode, atChallenge]
+  simp only [evalWithAnswerFn_bind]
+  erw [evalWithAnswerFn_map]
+  rfl
+
+/-- The scripted prover against draws whose answers are the recorded challenges of a transcript
+carrying its messages returns that transcript. -/
+theorem evalWithAnswerFn_run_scriptedProver {κ : Type} {spec : OracleSpec κ}
+    (answers : QueryImpl spec Id) :
+    (rounds : List Round) → (messages : Messages Salt rounds) →
+    (tr : PathAlong oracleSig (protocol rounds)) → MatchesMessages rounds messages tr →
+    (draw : (c : ChallengeNode oracleSig (protocol rounds)) →
+      OracleComp spec (challengeSpec oracleSig (protocol rounds) c)) →
+    (∀ c, evalWithAnswerFn answers (draw c) = recordedChallenges rounds tr c) →
+    evalWithAnswerFn answers (TwoParty.Lens.run (protocol rounds)
+      (scriptedProver (ambient := spec) rounds messages)
+      (sampler oracleSig (protocol rounds) draw)) = ⟨tr, ⟨⟩, ⟨⟩⟩
+  | [], _, ⟨⟩, _, _, _ => rfl
+  | round :: rounds, (message, salt, messages), ⟨_, ⟨_, tr⟩⟩, ⟨rfl, carried⟩, draw, answered => by
+    rw [evalWithAnswerFn_run_scriptedProver_cons]
+    dsimp only
+    rw [answered]
+    erw [evalWithAnswerFn_run_scriptedProver answers rounds messages tr carried _
+      (fun _ => answered _)]
+    rfl
+
+section Verifier
+
+variable {rounds : List Round} {I J S T : Type} {A : I → Type} {B : J → Type}
+  {inputs : OracleFamily I A} {outputs : OracleFamily J B}
+
+/-- Running the scripted prover with the passive verifier, every challenge read from a transcript
+that carries the prover's messages, returns that transcript and the closed observation on it. -/
+theorem run_scriptedProver (V : OracleVerifier []ₒ (protocol rounds) S T inputs outputs)
+    (stmt : S × (∀ i, A i)) (messages : Messages Salt rounds)
+    (tr : PathAlong oracleSig (protocol rounds)) (carried : MatchesMessages rounds messages tr) :
+    evalWithAnswerFn (recordedAnswers rounds tr)
+      (V.run stmt.1 stmt.2 (scriptedProver rounds messages)) =
+      ⟨tr, ⟨⟩, closedTerminalObservation V stmt tr⟩ := by
+  simp only [OracleVerifier.run, evalWithAnswerFn_bind, simulate_scriptedProver]
+  rw [evalWithAnswerFn_run_scriptedProver (recordedAnswers rounds tr) rounds messages tr carried _
+    (fun _ => rfl)]
+  simp only [evalWithAnswerFn_simulateQ, evalWithAnswerFn_pure, closedTerminalObservation,
+    terminalObservation, OracleVerifier.decideWith]
+  congr 4
+  funext q
+  rcases q with q | q
+  · exact q.elim
+  · rfl
+
+/-- Against every answer table, running the scripted prover of the adversary's selection, every
+challenge read from the game's completed transcript, returns the closed game's transcript and
+observation. -/
+theorem closedVerificationGame_eval_run
+    (V : OracleVerifier []ₒ (protocol rounds) S T inputs outputs)
+    (adversary : OracleComp (oracleSpec (S × (∀ i, A i)) Salt rounds)
+      ((S × (∀ i, A i)) × Messages Salt rounds × W))
+    (table : Table (S × (∀ i, A i)) Salt rounds) :
+    let selection := evalWithAnswerFn (QueryImpl.ofFn table) adversary
+    let game := evalWithAnswerFn (QueryImpl.ofFn table) (closedVerificationGame V adversary)
+    evalWithAnswerFn (recordedAnswers rounds game.2.1)
+      (V.run selection.1.1 selection.1.2 (scriptedProver rounds selection.2.1)) =
+      ⟨game.2.1, ⟨⟩, game.2.2.1⟩ := by
+  simp only [closedVerificationGame_eq, evalWithAnswerFn_map, restoredExecution_eval]
+  exact run_scriptedProver V _ _ _ (completedPath_matchesMessages rounds _ _ table)
+
+/-- The plain game's transcript and decision are those of the same run. -/
+theorem verificationGame_eval_run
+    (V : OracleVerifier []ₒ (protocol rounds) S T inputs outputs)
+    (adversary : OracleComp (oracleSpec (S × (∀ i, A i)) Salt rounds)
+      ((S × (∀ i, A i)) × Messages Salt rounds × W))
+    (table : Table (S × (∀ i, A i)) Salt rounds) :
+    let selection := evalWithAnswerFn (QueryImpl.ofFn table) adversary
+    let game := evalWithAnswerFn (QueryImpl.ofFn table) (verificationGame V adversary)
+    let run := evalWithAnswerFn (recordedAnswers rounds game.2.1)
+      (V.run selection.1.1 selection.1.2 (scriptedProver rounds selection.2.1))
+    run.1 = game.2.1 ∧ run.2.2.map Prod.fst = game.2.2.1 := by
+  simp only [verificationGame_eq, evalWithAnswerFn_map, restoredExecution_eval]
+  rw [run_scriptedProver V _ _ _ (completedPath_matchesMessages rounds _ _ table)]
+  exact ⟨rfl, by simp [closedTerminalObservation, Option.map_map, Function.comp_def]⟩
+
+end Verifier
+
+end Replay
 
 /-! ### Knowledge soundness -/
 

@@ -98,8 +98,9 @@ example (z : Nat) (m : Fin 8) (rel : Fin 8 × (PUnit → Fin 8) → Prop) :
   rw [oracleObservation_false]
   simp
 
--- Row 9 (StateRestoration L175, nativeResult_eq): against any answer table, the game completes
--- the adversary's selection with the table's challenge, and the verifier decides on that path.
+/-- Against any answer table, the game completes the adversary's selection with the table's
+challenge, and the verifier decides on that path. This checks completion; `scriptedRun_eq` below
+runs the parties. -/
 theorem game_eval (table : Table Stmt Unit rounds) :
     evalWithAnswerFn (QueryImpl.ofFn table) (closedVerificationGame verifier adversary) =
       (stmt 0, path 7 (table key), closedTerminalObservation verifier (stmt 0) (path 7 (table key)),
@@ -115,15 +116,66 @@ def gameResult (c : Bool) : Nat × Bool × Option (Nat × Nat) × Nat :=
   let r := evalWithAnswerFn (QueryImpl.ofFn table) (closedVerificationGame verifier adversary)
   (r.1.1, r.2.1.2.1, r.2.2.1.map (fun claim => ((claim.1 : Nat), (claim.2 ⟨⟩ : Nat))), r.2.2.2)
 
--- Row 10 (StateRestoration L182): the game run on challenge `true`.
+-- The game on challenge `true`, a completion check beside row 10.
 /-- info: (0, true, some (7, 7), 6) -/
 #guard_msgs in
 #eval gameResult true
 
--- Row 11 (StateRestoration L183): the game run on challenge `false`.
+-- The game on challenge `false`, a completion check beside row 11.
 /-- info: (0, false, none, 6) -/
 #guard_msgs in
 #eval gameResult false
+
+/-! ### Running the parties
+
+The scripted prover sends the selected message through `OracleVerifier.run`; each challenge query
+is answered from the recorded transcript. -/
+
+/-- On every challenge `c`, running the scripted prover of the selection with the verifier, the
+challenge read from `path 7 c`, returns that transcript and the closed observation on it. -/
+theorem scriptedRun_eq (c : Bool) :
+    evalWithAnswerFn (recordedAnswers rounds (path 7 c))
+      (verifier.run 0 (stmt 0).2 (scriptedProver rounds messages)) =
+      ⟨path 7 c, ⟨⟩, closedTerminalObservation verifier (stmt 0) (path 7 c)⟩ :=
+  run_scriptedProver verifier (stmt 0) messages (path 7 c) ⟨rfl, trivial⟩
+
+/-- The sent message, the challenge and the closed claim of the run on challenge `c`, as plain
+numbers. -/
+def nativeResult (c : Bool) : Nat × Bool × Option (Nat × Nat) :=
+  let r := evalWithAnswerFn (recordedAnswers rounds (path 7 c))
+    (verifier.run 0 (stmt 0).2 (scriptedProver rounds messages))
+  ((show Fin 8 from r.1.1 : Nat), (show Bool from r.1.2.1),
+    r.2.2.map (fun claim => ((claim.1 : Nat), (claim.2 ⟨⟩ : Nat))))
+
+-- Row 9 (StateRestoration L175, nativeResult_eq).
+/-- On every challenge the run sends message 7 and records the challenge; it returns claim 7 with
+output oracle 7 on `true` and rejects on `false`. -/
+theorem nativeResult_eq (c : Bool) :
+    nativeResult c = (7, c, if c then some (7, 7) else none) := by
+  unfold nativeResult
+  rw [scriptedRun_eq]
+  cases c <;> rfl
+
+-- Row 10 (StateRestoration L182).
+/-- info: (7, true, some (7, 7)) -/
+#guard_msgs in
+#eval nativeResult true
+
+-- Row 11 (StateRestoration L183).
+/-- info: (7, false, none) -/
+#guard_msgs in
+#eval nativeResult false
+
+/-- Against every answer table, the run with the challenge of the game's transcript returns the
+game's transcript and observation: the game's challenge is the table's answer at `key`. -/
+theorem gameRun_eq (table : Table Stmt Unit rounds) :
+    evalWithAnswerFn (recordedAnswers rounds (path 7 (table key)))
+      (verifier.run 0 (stmt 0).2 (scriptedProver rounds messages)) =
+      ⟨path 7 (table key), ⟨⟩,
+        closedTerminalObservation verifier (stmt 0) (path 7 (table key))⟩ := by
+  have run := closedVerificationGame_eval_run verifier adversary table
+  rw [game_eval] at run
+  exact run
 
 -- Row 18 (StateRestoration L264): the closed observation on the `true` branch.
 /-- info: some (7, 7) -/
