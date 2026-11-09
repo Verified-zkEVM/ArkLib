@@ -8,6 +8,7 @@ import ArkLibTest.Interaction.Core.Oracle.PhasedRun
 import ArkLibTest.Interaction.Core.Oracle.QueryBounds
 import ArkLibTest.Interaction.Core.Oracle.RuntimeQueryBounds
 import VCVio.OracleComp.QueryTracking.CostModel.Simulation
+import ArkLibTest.Interaction.Core.Support
 
 /-! Weighted query cost of routed decisions and query counts of logged runs. A cost bound of a
 decision transfers through its route with VCVio's `WorstCaseCostBound.simulateQ` once every routed
@@ -126,7 +127,7 @@ A reveal request costs 3 and a dummy request 1; each input or export query costs
 import, one coin, costs 1. -/
 
 namespace Interaction.Core.QueryCostTests
-open Interaction.Core.LoggedExecutionTests Interaction.Core.RuntimeQueryBoundsTests
+open Interaction.Core.HiddenBitFixture Interaction.Core.RuntimeQueryBoundsTests
 
 /-- Charges on the prefix resources: 2 per input query. -/
 def inputCost : CostModel firstResources.spec Nat := ⟨fun _ => 2⟩

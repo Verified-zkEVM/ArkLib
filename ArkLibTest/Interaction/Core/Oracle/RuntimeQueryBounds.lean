@@ -4,11 +4,12 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLibTest.Interaction.Core.Oracle.LoggedExecution
+import ArkLibTest.Interaction.Core.Oracle.HiddenBitFixture
+import ArkLibTest.Interaction.Core.Support
 import VCVio.OracleComp.QueryTracking.QueryBound.Simulation
 
 /-! Access certificates for the hidden-bit composition of
-`ArkLibTest.Interaction.Core.Oracle.LoggedExecution`. The prefix exports its input slot and its
+`ArkLibTest.Interaction.Core.Oracle.HiddenBitFixture`. The prefix exports its input slot and its
 decision makes one dummy request. The suffix decision reads the export as a pad and reveals the
 hidden bit. Oracle access is typing: the export is a map over the prefix resources, which on the
 only prefix path are the inputs alone, and the suffix decision routed by `suffixRoute` queries only
@@ -16,7 +17,7 @@ the reveal request and the input slot of the composed resources. -/
 
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
   OracleComp OracleSpec
-open Interaction.Core.LoggedExecutionTests
+open Interaction.Core.HiddenBitFixture
 
 namespace Interaction.Core.RuntimeQueryBoundsTests
 
