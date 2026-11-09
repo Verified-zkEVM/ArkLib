@@ -129,6 +129,7 @@ example (hidden : Nat) : (observed hidden).1.2.1 = (777, hidden) := rfl
 example (hidden : Nat) : (publicResult hidden).1 = ⟨true, ⟨⟩, (18 : Nat), ⟨⟩, ⟨⟩⟩ := rfl
 
 -- ExecutionExample 5, restated: the same view with the verdict 37.
+/-- The view and verdict of the run, for every hidden value. -/
 theorem publicResult_eq (hidden : Nat) :
     publicResult hidden = (⟨true, ⟨⟩, (18 : Nat), ⟨⟩, ⟨⟩⟩, some 37) := rfl
 
@@ -201,6 +202,7 @@ oracle. The challenge preserves the shape and changes the suffix verdict. -/
   .liftBind (.oracle (Nat × Nat) firstInterface) (fun _ =>
     .liftBind (.challenge Nat) (fun _ => .pure ⟨⟩))
 
+/-- The prefix followed by one more pair oracle. -/
 abbrev combined : OracleProtocol := firstProtocol.append (fun _ => opaqueProtocol)
 
 /-- The prefix resources on its only shape path. -/
@@ -236,6 +238,7 @@ def secondVerifier : OracleVerifier ambient opaqueProtocol Nat Nat inputs noOutp
       pure (latest + mid)
   outputMap _ p _ := noOutputMap (sumFamily inputs (pathFamily opaqueProtocol p))
 
+/-- The composite output map is the suffix output map after `suffixRoute`. -/
 def compatible (proceed : Bool) :
     OracleVerifier.OutputCompatibility (firstVerifier proceed) (fun _ => secondVerifier) where
   outputMap stmt p v :=
@@ -244,6 +247,7 @@ def compatible (proceed : Bool) :
       (OracleVerifier.suffixRoute (firstVerifier proceed) stmt p v)
   agrees _ _ _ _ _ _ := rfl
 
+/-- The composed oracle verifier. -/
 def verifier (proceed : Bool) :=
   (firstVerifier proceed).append (fun _ => secondVerifier) (compatible proceed)
 
@@ -260,6 +264,7 @@ def secondProver (mid : Nat × Nat) : Prover oracleSig ambient opaqueProtocol (f
   let _ ← liftM (ambient.query 15)
   pure ⟨(mid.1 + 1, mid.2), pure mid.2⟩
 
+/-- The whole prover, built by `Prover.append`. -/
 def prover (hidden : Nat) : Prover oracleSig ambient combined (fun _ => Nat) :=
   Prover.append (firstProver hidden) (fun _ mid => pure (secondProver mid))
 
@@ -272,6 +277,7 @@ def logger (draw : Nat) : QueryImpl (ambient + challengeSpec oracleSig combined)
   | .inr ⟨.inr ⟨_, .inr ⟨_, .inl _⟩⟩, h⟩ => nomatch h
   | .inr ⟨.inr ⟨_, .inr ⟨_, .inr ⟨_, n⟩⟩⟩, _⟩ => n.elim
 
+/-- The composed run under the logger, with the challenge drawn as `draw`. -/
 def observed (proceed : Bool) (draw hidden : Nat) :=
   (simulateQ (logger draw) ((verifier proceed).run () seven (prover hidden))).run []
 
@@ -331,6 +337,7 @@ example : True := by
 Run separately, a completed prefix decision's effect precedes the next prover's. Appended, it is
 an end decision and follows the suffix prover. The two orders differ. -/
 
+/-- A protocol without interaction nodes. -/
 abbrev done : OracleProtocol := .pure ⟨⟩
 
 /-- The completed decision records 40 and forwards the input. -/
@@ -350,6 +357,7 @@ def nextProver : Prover oracleSig ambient opaqueProtocol (fun _ => Unit) := do
   let _ ← liftM (ambient.query 41)
   pure ⟨(11, 0), pure ()⟩
 
+/-- The composite output map is the quiet output map after `suffixRoute`. -/
 def movedCompatible :
     OracleVerifier.OutputCompatibility completedVerifier (fun _ => quietVerifier) where
   outputMap stmt p v :=
@@ -361,8 +369,10 @@ def movedCompatible :
 /-- The completed decision appended before the next interaction. -/
 def movedVerifier := completedVerifier.append (fun _ => quietVerifier) movedCompatible
 
+/-- A protocol without nodes has no challenges. -/
 theorem noChallengeDone : ChallengeNode oracleSig done → False := fun c => c.val.elim
 
+/-- A single oracle send has no challenges. -/
 theorem noChallengeOpaque : ChallengeNode oracleSig opaqueProtocol → False := by
   rintro ⟨_ | ⟨_, n⟩, h⟩
   · exact nomatch h
@@ -390,6 +400,7 @@ def completedThen : OracleComp ambient Unit := do
 def movedThen : OracleComp ambient Unit := do
   let _ ← ambientOnly noChallengeOpaque (movedVerifier.run () seven nextProver)
 
+/-- Record each ambient tag and answer it with itself. -/
 def tagLogger : QueryImpl ambient (StateM (List Nat)) := fun tag => do
   modify (· ++ [tag])
   pure tag
@@ -418,6 +429,7 @@ example : ((simulateQ tagLogger completedThen).run []).2 ≠
 @[instance_reducible] def secondPublic : OracleProtocol :=
   .liftBind (.challenge Nat) (fun _ => .pure ⟨⟩)
 
+/-- The public prefix followed by the sampled suffix. -/
 abbrev combinedPublic : OracleProtocol := firstPublic.append (fun _ => secondPublic)
 
 /-- The prefix decision records 49 and decides 9. -/
@@ -439,6 +451,7 @@ def secondPublicVerifier : OracleVerifier ambient secondPublic Nat Nat inputs no
     pure (if challenge = answer + mid then some challenge else none)
   outputMap _ p _ := noOutputMap (sumFamily inputs (pathFamily secondPublic p))
 
+/-- The composite output map is the suffix output map after `suffixRoute`. -/
 def publicCompatible :
     OracleVerifier.OutputCompatibility firstPublicVerifier (fun _ => secondPublicVerifier) where
   outputMap stmt p v :=
@@ -447,6 +460,7 @@ def publicCompatible :
       (OracleVerifier.suffixRoute firstPublicVerifier stmt p v)
   agrees _ _ _ _ _ _ := rfl
 
+/-- The composed oracle verifier. -/
 def publicVerifier :=
   firstPublicVerifier.append (fun _ => secondPublicVerifier) publicCompatible
 
@@ -461,6 +475,7 @@ def secondPublicProver (memory : Nat) : Prover oracleSig ambient secondPublic (f
     let response : Nat ← liftM (ambient.query 51)
     pure (memory + challenge + response)
 
+/-- The whole prover, built by `Prover.append`. -/
 def publicProver (hidden : Nat) : Prover oracleSig ambient combinedPublic (fun _ => Nat) :=
   Prover.append (firstPublicProver hidden) (fun _ memory => pure (secondPublicProver memory))
 
@@ -472,6 +487,7 @@ def publicLogger (draw : Nat) : QueryImpl (ambient + challengeSpec oracleSig com
   | .inr ⟨.inr ⟨_, .inl _⟩, _⟩ => do modify (· ++ [draw]); pure (draw : Nat)
   | .inr ⟨.inr ⟨_, .inr ⟨_, n⟩⟩, _⟩ => n.elim
 
+/-- The composed run under the logger, with the challenge drawn as 59. -/
 def observedPublic (hidden : Nat) :=
   (simulateQ (publicLogger 59) (publicVerifier.run () seven (publicProver hidden))).run []
 

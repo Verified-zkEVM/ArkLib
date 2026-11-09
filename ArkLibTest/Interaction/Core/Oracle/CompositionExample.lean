@@ -94,6 +94,7 @@ def secondVerifier : OracleVerifier ambient branchProtocol Bool Nat naturals boo
     pure (messageValue p + value)
   outputMap _ p _ := isEven (pathFamily branchProtocol p)
 
+/-- The interaction-free prefix followed by the branching suffix. -/
 abbrev composedProtocol : OracleProtocol := done.append (fun _ => branchProtocol)
 
 /-- The suffix output map ignores the intermediate statement. -/
@@ -105,6 +106,7 @@ def compatible (accept : Bool) :
       (OracleVerifier.suffixRoute (firstVerifier accept) stmt p v)
   agrees _ _ _ _ _ _ := rfl
 
+/-- The composed oracle verifier. -/
 def composed (accept : Bool) :=
   (firstVerifier accept).append (fun _ => secondVerifier) (compatible accept)
 
@@ -157,6 +159,7 @@ def summaryWith (choice accept : Bool) (answer hidden : Nat) :
     (proverWith choice hidden))).run []
   (z.1.2.2.map (fun r => (r.1, r.2 ())), z.1.2.1, z.2)
 
+/-- The summary of the honest prover's run. -/
 def summary (accept : Bool) (answer hidden : Nat) :=
   summaryWith (answer % 2 == 0) accept answer hidden
 
@@ -203,6 +206,7 @@ example (accept : Bool) (answer hidden : Nat) :=
 -- CompositionExample 6, restated: the normal form of the accepted run, for every branch choice,
 -- input and hidden value. The history becomes `[0, 2, 1, 3]`: the prover's events, then the
 -- decisions (Dec2, Dec12).
+/-- The accepted run for every branch choice, input and hidden value. -/
 theorem summaryWith_true (choice : Bool) (answer hidden : Nat) :
     summaryWith choice true answer hidden =
       (some ((if choice then hidden + 1 else 100) +

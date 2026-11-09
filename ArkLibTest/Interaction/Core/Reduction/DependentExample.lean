@@ -45,6 +45,7 @@ abbrev ambient : OracleSpec PEmpty := []ₒ
   | ⟨false, ⟨⟩⟩ => .liftBind (.message Bool) (fun _ => .pure ⟨⟩)
   | ⟨true, ⟨⟩⟩ => .liftBind (.message (Fin 3)) (fun _ => .pure ⟨⟩)
 
+/-- The prefix followed by the path-dependent suffix. -/
 abbrev composedTree : Protocol := prefixTree.append suffixTree
 
 /-- The prefix prover sends its witness bit and keeps it as statement, with no private witness. -/
@@ -127,9 +128,11 @@ def disagreeingVerifier : Verifier ambient prefixTree Unit Bool where
 def observingProver (mid : Bool × Nat) : Prover plainSig ambient (.pure ⟨⟩) (fun _ => Bool × Nat) :=
   pure (mid.1, mid.2 + 1)
 
+/-- A terminal suffix decision that returns the statement it received. -/
 def observingVerifier : Verifier ambient (.pure ⟨⟩) Bool Bool where
   decide stmt _ _ := pure stmt
 
+/-- The prefix followed by a terminal suffix. -/
 abbrev observedTree : Protocol := prefixTree.append (fun _ => .pure ⟨⟩)
 
 /-- The suffix prover is built from the prefix prover's output; the suffix verifier receives the
