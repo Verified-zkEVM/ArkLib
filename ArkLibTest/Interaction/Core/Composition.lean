@@ -1,7 +1,8 @@
 import ArkLib.Interaction.Core.Composition
 import ArkLibTest.Interaction.Core.Oracle
 
-/-! Terminal rejection never prevents the suffix interaction or its leaf effects. -/
+/-! Terminal rejection never prevents the suffix interaction or its leaf effects. Composed oracle
+decisions route suffix queries as materialized execution answers them. -/
 
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.TwoParty.Lens OracleComp
 
@@ -81,6 +82,111 @@ run_cmd do
   | none => throwError "composed oracle decision rejected"
   | some (_, data) =>
     unless data ⟨⟩ 3 == 16 do throwError "composed virtual output disagrees with routing"
+
+/-! Routing a suffix decision through both its input oracle and its own message oracle. -/
+
+/-- Ambient queries carry a label, which the trace handler records. -/
+abbrev labels : OracleSpec Nat := Nat →ₒ Nat
+
+abbrev twoStages : OracleProtocol := tree.append (fun _ => tree)
+
+/-- The prefix output is either its own message or a virtual oracle computed from it. -/
+abbrev PrefixOutput :=
+  (p : Path tree) → OracleMap (sumFamily emptyFamily (pathFamily tree p)) functions
+
+def embeddedOutput : PrefixOutput := fun p =>
+  OracleMap.embedding (sumFamily emptyFamily (pathFamily tree p)) (fun _ => .inr (.inl ⟨⟩))
+
+def virtualOutput : PrefixOutput := fun p => doubled.comp (embeddedOutput p)
+
+/-- The prefix records label 10, then evaluates its message at 3. -/
+def routedPrefix (out : PrefixOutput) :
+    OracleVerifier labels tree Unit Nat emptyFamily functions where
+  decide _ p _ := by
+    rcases p with ⟨⟨⟩, ⟨⟩⟩
+    exact do
+      let _ ← liftM ((labels + (sumFamily emptyFamily (pathFamily tree ⟨⟨⟩, ⟨⟩⟩)).spec).query
+        (.inl 10))
+      let n : Nat ← liftM ((labels + (sumFamily emptyFamily (pathFamily tree ⟨⟨⟩, ⟨⟩⟩)).spec).query
+        (.inr ⟨.inr (.inl ⟨⟩), (3 : Nat)⟩))
+      pure n
+  outputMap _ p _ := out p
+
+/-- The suffix records 20, evaluates its input oracle and its own message at 1, then records 30. -/
+def routedSuffix : OracleVerifier labels tree Nat (Nat × Nat × Nat) functions functions where
+  decide mid p _ := by
+    rcases p with ⟨⟨⟩, ⟨⟩⟩
+    exact do
+      let _ ← liftM ((labels + (sumFamily functions (pathFamily tree ⟨⟨⟩, ⟨⟩⟩)).spec).query
+        (.inl 20))
+      let input : Nat ← liftM
+        ((labels + (sumFamily functions (pathFamily tree ⟨⟨⟩, ⟨⟩⟩)).spec).query
+          (.inr ⟨.inl ⟨⟩, (1 : Nat)⟩))
+      let message : Nat ← liftM
+        ((labels + (sumFamily functions (pathFamily tree ⟨⟨⟩, ⟨⟩⟩)).spec).query
+          (.inr ⟨.inr (.inl ⟨⟩), (1 : Nat)⟩))
+      let _ ← liftM ((labels + (sumFamily functions (pathFamily tree ⟨⟨⟩, ⟨⟩⟩)).spec).query
+        (.inl 30))
+      pure (mid, input, message)
+  outputMap _ p _ := OracleMap.embedding (sumFamily functions (pathFamily tree p))
+    (fun _ => .inr (.inl ⟨⟩))
+
+/-- The suffix output map ignores the intermediate statement. -/
+def routedCompatible (out : PrefixOutput) :
+    OracleVerifier.OutputCompatibility (routedPrefix out) (fun _ => routedSuffix) where
+  outputMap stmt p v :=
+    (routedSuffix.outputMap 0 (Path.split tree (fun _ => tree) p).2
+      (View.split tree (fun _ => tree) p v).2).comp
+      (OracleVerifier.suffixRoute (routedPrefix out) stmt p v)
+  agrees _ _ _ _ _ _ := rfl
+
+def routed (out : PrefixOutput) :=
+  (routedPrefix out).append (fun _ => routedSuffix) (routedCompatible out)
+
+def firstMessage : PathAlong oracleSig tree := ⟨fun n => n + 5, ⟨⟩⟩
+def secondMessage : PathAlong oracleSig tree := ⟨fun n => 7 * n, ⟨⟩⟩
+
+def twoStageProver : Prover oracleSig labels twoStages (fun _ => PUnit) :=
+  pure ⟨firstMessage.1, pure ⟨secondMessage.1, pure ⟨⟩⟩⟩
+
+def labelHandler : QueryImpl labels (StateM (List Nat)) := fun n => do
+  modify (· ++ [n])
+  pure n
+
+def twoStageHandler : QueryImpl (labels + challengeSpec oracleSig twoStages)
+    (StateM (List Nat))
+  | .inl n => labelHandler n
+  | .inr ⟨.inl _, h⟩ => nomatch h
+  | .inr ⟨.inr ⟨_, .inl _⟩, h⟩ => nomatch h
+  | .inr ⟨.inr ⟨_, .inr ⟨_, n⟩⟩, _⟩ => n.elim
+
+/-- Decide each stage separately on materialized data: the prefix on its own payload, the suffix
+on the prefix's materialized output and its own payload. -/
+def materialized (out : PrefixOutput) : OracleComp labels (Option (Nat × Nat × Nat)) := do
+  let prefixData := sumData (fun i => i.elim) (payloads tree firstMessage)
+  let mid ← (routedPrefix out).decideWith () _ (toView tree firstMessage) prefixData
+  match mid with
+  | none => pure none
+  | some mid =>
+    let middleData := ((routedPrefix out).outputMap () _ (toView tree firstMessage)).f prefixData
+    routedSuffix.decideWith mid _ (toView tree secondMessage)
+      (sumData middleData (payloads tree secondMessage))
+
+def checkRouting (out : PrefixOutput) (input : Nat) : Lean.Elab.Command.CommandElabM Unit := do
+  let (obs, trace) := (simulateQ twoStageHandler
+    ((routed out).run () (fun i => i.elim) twoStageProver)).run []
+  let (expected, expectedTrace) := (simulateQ labelHandler (materialized out)).run []
+  unless trace == [10, 20, 30] && expectedTrace == trace do
+    throwError "routed ambient queries were reordered: {trace} versus {expectedTrace}"
+  match obs.2.2, expected with
+  | some (verdict, data), some materializedVerdict =>
+    unless verdict == (8, input, 7) && materializedVerdict == verdict do
+      throwError "routing disagrees with materialized execution: {verdict}"
+    unless data ⟨⟩ 3 == 21 do throwError "the composite output is not the suffix message"
+  | _, _ => throwError "a routed or materialized decision rejected"
+
+run_cmd checkRouting embeddedOutput 6
+run_cmd checkRouting virtualOutput 12
 
 /-- The prefix accepts only `false` and never consults the ambient oracle. -/
 def deterministicPrefix : OracleVerifier (Unit →ₒ Bool) emptyTree Unit Bool
