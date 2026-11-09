@@ -31,7 +31,7 @@ open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Intera
   OracleComp OracleSpec ProtocolSpec Interaction.Core.Legacy
 
 variable (R : Type) [CommSemiring R] [DecidableEq R] [SampleableType R] (deg n : ℕ)
-  {d : ℕ} (D : Fin d ↪ R) {ι : Type} (ambient : OracleSpec ι) [∀ t, Inhabited (ambient.Range t)]
+  {d : ℕ} (D : Fin d ↪ R) {ι : Type} (ambient : OracleSpec ι)
   {σ : Type} (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
 
 /-- Soundness of the interaction-layer Sumcheck verifier: a statement outside the round-`0`
@@ -48,11 +48,12 @@ theorem verifier_soundness [Fintype R] [IsDomain R] :
         (fun obs => obs.2.2)
         ((∑ _ : (Spec.pSpec R deg n).ChallengeIdx, (deg : ℝ≥0) / Fintype.card R : ℝ≥0) :
           ℝ≥0∞) := by
+  let : ∀ t, Inhabited (ambient.Range t) := fun t => ⟨supportedAnswer init impl t⟩
   rw [challengeQueryImpl_eq_legacy]
   intro Out
   refine ((verifier_agrees R deg n D ambient).soundness_iff (mObs := ⊤) init impl _ _ _ _ _).mpr ?_
   revert Out
-  refine (soundness_cast _ _ _ _ _ _ _ _).mpr ?_
+  refine (OracleVerifier.soundness_cast _ _ _ _ _ _ _ _).mpr ?_
   exact (oracleSoundness_iff init impl (Spec.oracleVerifier R deg D n ambient) _ _ _).mpr
     (OracleVerifier.soundness_of_rbrSoundness_of_guarded
       (Spec.oracleVerifierGuardedForm R deg D n ambient)

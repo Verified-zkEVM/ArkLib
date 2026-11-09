@@ -163,7 +163,7 @@ example {m : Type → Type} [Monad m] [LawfulMonad m] (impl : QueryImpl amb m) {
   have hv : legacyVerdict F 1 2 D amb stmt (decodeTranscript 2 tr) = none :=
     legacyVerdict_eq_none (k := 1) stmt (roundFullTranscript bad (chals 0))
       (legacyTranscript 1 _ _) hbad
-  have h := decide_trace F 1 2 D amb impl stmt oStmt tr
+  have h := decide_ambient_trace F 1 2 D amb impl stmt oStmt tr
   rw [hv] at h
   exact h
 
@@ -191,7 +191,7 @@ run_cmd do
   for decl in [``Sumcheck.Core.protocol_eq, ``Sumcheck.Core.oracleDecode_eq_decodeTranscript,
       ``Sumcheck.Core.verifier_agrees, ``Sumcheck.Core.challengeQueryImpl_eq_legacy,
       ``Sumcheck.Core.run_eq_legacy, ``Sumcheck.Core.legacyProver_pureChallengeSlots,
-      ``Sumcheck.Core.run_legacyProver, ``Sumcheck.Core.decide_trace,
+      ``Sumcheck.Core.run_legacyProver, ``Sumcheck.Core.decide_ambient_trace,
       ``Sumcheck.Core.LegacyEquivalenceTest.legacy_prover_run,
       ``Sumcheck.Core.LegacyEquivalenceTest.embedded_prover_generates,
       ``Sumcheck.Core.LegacyEquivalenceTest.legacy_run_badFirst] do

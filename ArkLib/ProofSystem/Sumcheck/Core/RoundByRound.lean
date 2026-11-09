@@ -19,9 +19,16 @@ the equivalence of `LegacyEquivalence` and the round-by-round transfers
 `embedOracleVerifier_rbrKnowledgeSoundness` and `embedOracleVerifier_rbrSoundness`, with no loss.
 
 A round-by-round transfer into the interaction layer needs a terminal certificate for every state
-function: a rejected terminal state must make the verifier reject. The legacy Sumcheck verifier
-has a guarded form, `Spec.oracleVerifierGuardedForm`, so the certificates are the guarded ones,
+function. For soundness, on a full transcript where the state function is false, the legacy
+verifier accepts into no output of the output language. For knowledge soundness, if the legacy
+verifier can accept an output related to an output witness, then the knowledge state function
+holds at the full transcript of the extracted witness. Neither certificate asks the verifier to
+reject every false terminal state. The legacy Sumcheck verifier has a guarded form,
+`Spec.oracleVerifierGuardedForm`, so the certificates are the guarded ones,
 `StateTerminalCertificate.of_guarded` and `KnowledgeTerminalCertificate.of_guarded`.
+
+The statements need no inhabitance assumption on the ambient oracle: the proofs answer the
+embedding's dropped ambient queries with `supportedAnswer`, an answer that `impl` can give.
 -/
 
 @[expose] public section
@@ -32,7 +39,7 @@ open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Intera
   OracleComp OracleSpec ProtocolSpec Interaction.Core.Legacy
 
 variable (R : Type) [CommSemiring R] [DecidableEq R] [SampleableType R] (deg n : ℕ)
-  {d : ℕ} (D : Fin d ↪ R) {ι : Type} (ambient : OracleSpec ι) [∀ t, Inhabited (ambient.Range t)]
+  {d : ℕ} (D : Fin d ↪ R) {ι : Type} (ambient : OracleSpec ι)
   {σ : Type} (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
 
 include init in
@@ -41,12 +48,13 @@ include init in
 theorem verifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
     (verifier R deg n D ambient).rbrKnowledgeSoundness impl (fun _ => True)
       (fun stmt w => (stmt, w) ∈ Spec.relationRound R n deg D 0)
-      (fun t w => (t, w) ∈ Spec.relationRound R n deg D (Fin.last n))
+      (fun _ t w => (t, w) ∈ Spec.relationRound R n deg D (Fin.last n))
       (challengeQueryImpl oracleSig (protocol R deg n))
       (fun _ => (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞)) := by
-  rw [challengeQueryImpl_eq_legacy, ← eqRec_const (protocol_eq R deg n).symm,
+  let : ∀ t, Inhabited (ambient.Range t) := fun t => ⟨supportedAnswer init impl t⟩
+  rw [challengeQueryImpl_eq_legacy, ← OracleVerifier.eqRec_const (protocol_eq R deg n).symm,
     (verifier_agrees R deg n D ambient).rbrKnowledgeSoundness_iff]
-  refine (rbrKnowledgeSoundness_cast _ _ _ _ _ _ _ _).mpr ?_
+  refine (OracleVerifier.rbrKnowledgeSoundness_cast _ _ _ _ _ _ _ _).mpr ?_
   exact embedOracleVerifier_rbrKnowledgeSoundness init impl (Spec.oracleVerifier R deg D n ambient)
     _ _ _ (fun _ _ K => KnowledgeTerminalCertificate.of_guarded
       (Spec.oracleVerifierGuardedForm R deg D n ambient) K)
@@ -61,9 +69,10 @@ theorem verifier_rbrSoundness [Fintype R] [IsDomain R] :
       (langProblem (Spec.relationRound R n deg D (Fin.last n)).language)
       (challengeQueryImpl oracleSig (protocol R deg n))
       (fun _ => (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞)) := by
-  rw [challengeQueryImpl_eq_legacy, ← eqRec_const (protocol_eq R deg n).symm,
+  let : ∀ t, Inhabited (ambient.Range t) := fun t => ⟨supportedAnswer init impl t⟩
+  rw [challengeQueryImpl_eq_legacy, ← OracleVerifier.eqRec_const (protocol_eq R deg n).symm,
     (verifier_agrees R deg n D ambient).rbrSoundness_iff]
-  refine (rbrSoundness_cast _ _ _ _ _ _ _).mpr ?_
+  refine (OracleVerifier.rbrSoundness_cast _ _ _ _ _ _ _).mpr ?_
   exact embedOracleVerifier_rbrSoundness init impl (Spec.oracleVerifier R deg D n ambient)
     _ _ _ (fun S => StateTerminalCertificate.of_guarded
       (Spec.oracleVerifierGuardedForm R deg D n ambient) S)

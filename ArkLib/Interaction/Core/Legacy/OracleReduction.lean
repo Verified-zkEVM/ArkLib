@@ -26,7 +26,9 @@ an oracle payload with its legacy query interface. This file embeds its two part
 The output query implementation of the interaction layer cannot query the shared oracles. Legacy
 `simulateOutputQuery` is typed with access to them, but its law shows that no reachable query
 uses them. `dropAmbient` removes those queries by answering them with a default value, so the
-embedding assumes inhabited answer types of the shared oracles.
+embedding assumes inhabited answer types of the shared oracles. A security statement comes with
+an interpreter of the shared oracles, and `supportedAnswer` reads an answer off that interpreter,
+so such statements need no separate inhabitance assumption.
 -/
 
 @[expose] public section
@@ -77,6 +79,37 @@ theorem simulateQ_dropAmbient_of_eq_pure [∀ t, Inhabited (oSpec.Range t)]
       exact ih _ _ hk
 
 end DropAmbient
+
+/-! ### Answers given by an interpreter -/
+
+section SupportedAnswer
+
+variable {ι σ : Type} {oSpec : OracleSpec ι}
+
+/-- An interpreter of the shared oracles answers every query: run `impl` from a supported initial
+state of `init` and take a supported answer. -/
+theorem exists_supportedAnswer (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (t : oSpec.Domain) :
+    ∃ a : oSpec.Range t, ∃ st ∈ support init, ∃ st', (a, st') ∈ support ((impl t).run st) := by
+  obtain ⟨st, hst⟩ := OracleComp.support_nonempty init
+  obtain ⟨⟨a, st'⟩, ha⟩ := OracleComp.support_nonempty ((impl t).run st)
+  exact ⟨a, st, hst, st', ha⟩
+
+/-- An answer to each shared-oracle query that the interpreter `impl` gives from a supported
+initial state of `init`. It inhabits the answer types, as `dropAmbient` needs, so a security
+statement about an interpreter needs no separate inhabitance assumption. -/
+noncomputable def supportedAnswer (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (t : oSpec.Domain) : oSpec.Range t :=
+  Classical.choose (exists_supportedAnswer init impl t)
+
+/-- The chosen answer is given by `impl` from a supported initial state of `init`. -/
+theorem supportedAnswer_mem (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (t : oSpec.Domain) :
+    ∃ st ∈ support init, ∃ st',
+      (supportedAnswer init impl t, st') ∈ support ((impl t).run st) :=
+  Classical.choose_spec (exists_supportedAnswer init impl t)
+
+end SupportedAnswer
 
 variable {n : ℕ} {pSpec : ProtocolSpec n} [Oₘ : ∀ i, OracleInterface.{0, 0} (pSpec.Message i)]
 

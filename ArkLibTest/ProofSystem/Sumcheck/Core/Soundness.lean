@@ -77,7 +77,7 @@ end Rejection
 section Universal
 
 variable {R : Type} [Field R] [Fintype R] [DecidableEq R] [SampleableType R] {deg : ℕ} {d : ℕ}
-  (D : Fin d ↪ R) {ι : Type} (amb : OracleSpec ι) [∀ t, Inhabited (amb.Range t)] {σ : Type}
+  (D : Fin d ↪ R) {ι : Type} (amb : OracleSpec ι) {σ : Type}
   (init : ProbComp σ) (impl : QueryImpl amb (StateT σ ProbComp))
 
 /-- Against every prover, a false one-round claim is accepted into the final language with

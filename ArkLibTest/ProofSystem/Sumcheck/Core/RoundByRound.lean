@@ -28,7 +28,7 @@ noncomputable section
 section Universal
 
 variable (F : Type) [Field F] [Fintype F] [DecidableEq F] [SampleableType F] (n deg : ℕ)
-  {d : ℕ} (D : Fin d ↪ F) {ι : Type} (amb : OracleSpec ι) [∀ t, Inhabited (amb.Range t)]
+  {d : ℕ} (D : Fin d ↪ F) {ι : Type} (amb : OracleSpec ι)
   {σ : Type} (init : ProbComp σ) (impl : QueryImpl amb (StateT σ ProbComp))
 
 -- Migration row: Sumcheck Interaction/RoundByRound #1.
@@ -83,7 +83,7 @@ example :
         (challengeQueryImpl oracleSig (protocol F 1 2)))
       (relProblem (Spec.relationRound F 2 1 D₂ 0))
       (relProblem (Spec.relationRound F 2 1 D₂ (Fin.last 2)))
-      (knowledgeJudgement (protocol F 1 2) (Spec.relationRound F 2 1 D₂ (Fin.last 2)))
+      (knowledgeJudgementOn (protocol F 1 2) (Spec.relationRound F 2 1 D₂ (Fin.last 2)))
       ((verifier F 1 2 D₂ ambient).classicalStraightline (fun _ => Unit) init impl
         (challengeQueryImpl oracleSig (protocol F 1 2))
         (fun _ (o : (Spec.StatementRound F 2 (Fin.last 2) ×
@@ -103,7 +103,7 @@ example :
         (challengeQueryImpl oracleSig (protocol F 2 3)))
       (relProblem (Spec.relationRound F 3 2 D₂ 0))
       (relProblem (Spec.relationRound F 3 2 D₂ (Fin.last 3)))
-      (knowledgeJudgement (protocol F 2 3) (Spec.relationRound F 3 2 D₂ (Fin.last 3)))
+      (knowledgeJudgementOn (protocol F 2 3) (Spec.relationRound F 3 2 D₂ (Fin.last 3)))
       (legacyProver F 2 3 D₂ ambient) 0 :=
   legacyProver_perfectCompleteness F 2 3 D₂ ambient init impl
 

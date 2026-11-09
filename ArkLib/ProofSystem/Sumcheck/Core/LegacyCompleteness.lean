@@ -31,7 +31,7 @@ open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Intera
   OracleComp OracleSpec ProtocolSpec Interaction.Core.Legacy
 
 variable (R : Type) [CommSemiring R] [DecidableEq R] [SampleableType R] (deg n : ℕ)
-  {d : ℕ} (D : Fin d ↪ R) {ι : Type} (ambient : OracleSpec ι) [∀ t, Inhabited (ambient.Range t)]
+  {d : ℕ} (D : Fin d ↪ R) {ι : Type} (ambient : OracleSpec ι)
   {σ : Type} (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
 
 /-- Perfect completeness of the embedded legacy honest Sumcheck prover against the
@@ -44,8 +44,9 @@ theorem legacyProver_perfectCompleteness :
         (challengeQueryImpl oracleSig (protocol R deg n)))
       (relProblem (Spec.relationRound R n deg D 0))
       (relProblem (Spec.relationRound R n deg D (Fin.last n)))
-      (knowledgeJudgement (protocol R deg n) (Spec.relationRound R n deg D (Fin.last n)))
+      (knowledgeJudgementOn (protocol R deg n) (Spec.relationRound R n deg D (Fin.last n)))
       (legacyProver R deg n D ambient) ((0 : ℝ≥0) : ℝ≥0∞) := by
+  let : ∀ t, Inhabited (ambient.Range t) := fun t => ⟨supportedAnswer init impl t⟩
   rw [challengeQueryImpl_eq_legacy]
   refine ((verifier_agrees R deg n D ambient).completeness_iff (mObs := ⊤) init impl _ _ _ _ _
     _).mpr ?_

@@ -27,7 +27,7 @@ open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Intera
   OracleComp OracleSpec ProtocolSpec Interaction.Core.Legacy
 
 variable (R : Type) [CommSemiring R] [DecidableEq R] [SampleableType R] (deg n : ℕ)
-  {d : ℕ} (D : Fin d ↪ R) {ι : Type} (ambient : OracleSpec ι) [∀ t, Inhabited (ambient.Range t)]
+  {d : ℕ} (D : Fin d ↪ R) {ι : Type} (ambient : OracleSpec ι)
   {σ : Type} (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
 
 /-- Knowledge soundness of the interaction-layer Sumcheck verifier, with the error of the legacy
@@ -41,13 +41,14 @@ theorem verifier_knowledgeSoundness [Fintype R] [IsDomain R] :
         (challengeQueryImpl oracleSig (protocol R deg n)))
       (relProblem (Spec.relationRound R n deg D 0))
       (relProblem (Spec.relationRound R n deg D (Fin.last n)))
-      (knowledgeJudgement (protocol R deg n) (Spec.relationRound R n deg D (Fin.last n)))
+      (knowledgeJudgementOn (protocol R deg n) (Spec.relationRound R n deg D (Fin.last n)))
       ((verifier R deg n D ambient).classicalStraightline (fun _ => Unit) init impl
         (challengeQueryImpl oracleSig (protocol R deg n))
         (fun _ (o : (Spec.StatementRound R n (Fin.last n) ×
           (∀ i, Spec.OracleStatement R n deg i)) × Unit) => o.2))
       ((∑ _ : (Spec.pSpec R deg n).ChallengeIdx, (deg : ℝ≥0) / Fintype.card R : ℝ≥0) :
         ℝ≥0∞) := by
+  let : ∀ t, Inhabited (ambient.Range t) := fun t => ⟨supportedAnswer init impl t⟩
   rw [challengeQueryImpl_eq_legacy]
   refine ((verifier_agrees R deg n D ambient).knowledgeSoundness_iff (mObs := ⊤)
     (mWit := fun _ => (⊤ : MeasurableSpace Unit)) init impl _ _
