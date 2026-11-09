@@ -8,6 +8,7 @@ module
 public import ArkLib.Interaction.Core.Legacy.Execution
 public import ArkLib.Interaction.Core.Security.Knowledge
 public import ArkLib.Interaction.Core.Security.RoundByRound
+public import ArkLib.OracleReduction.Security.GuardedSoundness
 public import ArkLib.OracleReduction.Security.Implications
 
 /-!
@@ -33,9 +34,12 @@ interaction-layer notions of the embedded reduction are equivalent to the legacy
   node is the legacy challenge of its round. State functions transfer along this
   correspondence in both directions, as do legacy knowledge state functions and extractors.
   The error at a challenge node is the legacy error of its round. Two departures from the
-  legacy statements are explicit hypotheses: the transfers into the interaction layer assume
-  that `init` can produce every ambient state, and the knowledge transfer out of the
-  interaction layer assumes an inhabited input witness type and yields a chosen extractor.
+  legacy statements are explicit hypotheses. The transfers into the interaction layer assume
+  all-state terminal certificates: the legacy terminal field restated for every ambient state.
+  They hold when `init` can produce every ambient state, when the legacy verdict does not
+  depend on the ambient state, and for every guarded verifier. The knowledge transfer out of
+  the interaction layer assumes an inhabited input witness type and yields a chosen
+  extractor.
 
 The transfers go through the execution correspondence in distribution, and its logged form for
 knowledge soundness. They hold for every prover and need only that the legacy challenge
@@ -832,6 +836,111 @@ theorem prEvent_legacy_fresh_pos_iff (init : ProbComp σ)
 
 end Acceptance
 
+/-! ### All-state terminal certificates
+
+The terminal obligation of an interaction-layer state function quantifies over every ambient
+state, while the terminal field of a legacy state function constrains only states drawn by
+`init`. An all-state terminal certificate is the legacy terminal field restated for every
+ambient state. It holds when `init` can produce every ambient state, when the legacy verdict does
+not depend on the ambient state, and in particular for every guarded verifier, for any `init`. -/
+
+section TerminalCertificate
+
+variable {StmtIn WitIn StmtOut WitOut σ : Type} {init : ProbComp σ}
+  {impl : QueryImpl oSpec (StateT σ ProbComp)} {V : _root_.Verifier oSpec StmtIn StmtOut pSpec}
+  {WitMid : Fin (n + 1) → Type}
+
+/-- An **all-state terminal certificate** for a legacy state function: on a full transcript where
+the state function is false, legacy `verify` accepts into no output in `langOut`, from any
+ambient state. -/
+def StateTerminalCertificate {langIn : Set StmtIn} {langOut : Set StmtOut}
+    (S : V.StateFunction init impl langIn langOut) : Prop :=
+  ∀ stmt tr, ¬ S.toFun (Fin.last n) stmt tr → ∀ (st : σ) t,
+    some t ∈ support ((simulateQ impl (V.verify stmt tr).run).run' st) → t ∉ langOut
+
+/-- An **all-state terminal certificate** for a legacy knowledge state function: if legacy
+`verify` can accept an output related to the witness `wo` from some ambient state, then the
+knowledge state function holds at the full transcript of the witness that the extractor returns
+from `wo`. -/
+def KnowledgeTerminalCertificate {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid}
+    (K : V.KnowledgeStateFunction init impl relIn relOut E) : Prop :=
+  ∀ stmt tr wo (st : σ) t, some t ∈ support ((simulateQ impl (V.verify stmt tr).run).run' st) →
+    (t, wo) ∈ relOut → K.toFun (Fin.last n) stmt tr (E.extractOut stmt tr wo)
+
+/-- A guarded legacy verifier returns its deterministic verdict and ignores the ambient state. -/
+theorem guarded_run' (G : V.GuardedForm) (stmt : StmtIn) (tr : FullTranscript pSpec) (st : σ) :
+    (simulateQ impl (V.verify stmt tr).run).run' st =
+      pure (if G.check stmt tr then some (G.out stmt tr) else none) := by
+  change Prod.fst <$> (simulateQ impl (V.run stmt tr)).run st = _
+  rw [G.run_state]
+  rfl
+
+variable {langIn : Set StmtIn} {langOut : Set StmtOut} {relIn : Set (StmtIn × WitIn)}
+  {relOut : Set (StmtOut × WitOut)}
+  {E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid}
+
+/-- **Full support.** When `init` can produce every ambient state, the legacy terminal field is an
+all-state terminal certificate. -/
+theorem StateTerminalCertificate.of_support_init (hinit : ∀ st, st ∈ support init)
+    (S : V.StateFunction init impl langIn langOut) : StateTerminalCertificate S :=
+  fun stmt tr hnot st t ht =>
+    (prEvent_legacy_fresh_eq_zero_iff init impl V stmt tr (· ∈ langOut)).mp
+      (S.toFun_full stmt tr hnot) st (hinit st) t ht
+
+/-- **State independence.** When the legacy verdict does not depend on the ambient state, the
+legacy terminal field is an all-state terminal certificate, for any `init`. -/
+theorem StateTerminalCertificate.of_stateIndependent
+    (hind : ∀ stmt tr (st st' : σ), (simulateQ impl (V.verify stmt tr).run).run' st =
+      (simulateQ impl (V.verify stmt tr).run).run' st')
+    (S : V.StateFunction init impl langIn langOut) : StateTerminalCertificate S := by
+  intro stmt tr hnot st t ht
+  obtain ⟨st₀, hst₀⟩ := OracleComp.support_nonempty init
+  exact (prEvent_legacy_fresh_eq_zero_iff init impl V stmt tr (· ∈ langOut)).mp
+    (S.toFun_full stmt tr hnot) st₀ hst₀ t (hind stmt tr st st₀ ▸ ht)
+
+/-- **Guarded verifiers.** For a guarded legacy verifier, the legacy terminal field is an
+all-state terminal certificate, for any `init`. -/
+theorem StateTerminalCertificate.of_guarded (G : V.GuardedForm)
+    (S : V.StateFunction init impl langIn langOut) : StateTerminalCertificate S :=
+  fun stmt tr hnot st =>
+    (OptionT.prEvent_mk_eq_zero_iff _ _).mp (G.stateFunction_full S stmt tr hnot st)
+
+/-- **Full support.** When `init` can produce every ambient state, the legacy terminal field of a
+knowledge state function is an all-state terminal certificate. -/
+theorem KnowledgeTerminalCertificate.of_support_init (hinit : ∀ st, st ∈ support init)
+    (K : V.KnowledgeStateFunction init impl relIn relOut E) : KnowledgeTerminalCertificate K :=
+  fun stmt tr wo st t ht hp => K.toFun_full stmt tr wo
+    ((prEvent_legacy_fresh_pos_iff init impl V stmt tr (fun t => (t, wo) ∈ relOut)).mpr
+      ⟨st, hinit st, t, ht, hp⟩)
+
+/-- **State independence.** When the legacy verdict does not depend on the ambient state, the
+legacy terminal field of a knowledge state function is an all-state terminal certificate, for
+any `init`. -/
+theorem KnowledgeTerminalCertificate.of_stateIndependent
+    (hind : ∀ stmt tr (st st' : σ), (simulateQ impl (V.verify stmt tr).run).run' st =
+      (simulateQ impl (V.verify stmt tr).run).run' st')
+    (K : V.KnowledgeStateFunction init impl relIn relOut E) : KnowledgeTerminalCertificate K := by
+  intro stmt tr wo st t ht hp
+  obtain ⟨st₀, hst₀⟩ := OracleComp.support_nonempty init
+  exact K.toFun_full stmt tr wo
+    ((prEvent_legacy_fresh_pos_iff init impl V stmt tr (fun t => (t, wo) ∈ relOut)).mpr
+      ⟨st₀, hst₀, t, hind stmt tr st st₀ ▸ ht, hp⟩)
+
+/-- **Guarded verifiers.** For a guarded legacy verifier, the legacy terminal field of a knowledge
+state function is an all-state terminal certificate, for any `init`. -/
+theorem KnowledgeTerminalCertificate.of_guarded (G : V.GuardedForm)
+    (K : V.KnowledgeStateFunction init impl relIn relOut E) : KnowledgeTerminalCertificate K := by
+  intro stmt tr wo st t ht hp
+  rw [guarded_run' G] at ht
+  have hc : G.check stmt tr = true ∧ t = G.out stmt tr := by
+    cases h : G.check stmt tr <;> simp_all
+  obtain ⟨hc, rfl⟩ := hc
+  exact K.toFun_full stmt tr wo ((G.prEvent_pos_iff stmt tr (fun t => (t, wo) ∈ relOut)).mpr
+    ⟨hc, hp⟩)
+
+end TerminalCertificate
+
 /-! ### Round-by-round soundness -/
 
 namespace Layout
@@ -846,10 +955,11 @@ variable (L : Layout pSpec) {StmtIn StmtOut σ : Type} {init : ProbComp σ}
 state when its legacy transcript prefix is.
 
 The terminal obligation of the interaction layer quantifies over every ambient state, while the
-legacy one constrains only states drawn by `init`; `hinit` closes that gap. -/
+legacy one constrains only states drawn by `init`; the all-state terminal certificate `hS` closes
+that gap. -/
 def embedStateFunction (hacc : L.AcceptanceAgrees impl V acc) {langIn : Set StmtIn}
-    {langOut : Set StmtOut} (hinit : ∀ st, st ∈ support init)
-    (S : V.StateFunction init impl langIn langOut) :
+    {langOut : Set StmtOut} (S : V.StateFunction init impl langIn langOut)
+    (hS : StateTerminalCertificate S) :
     StateFunction L.l L.protocol StmtIn ((langProblem langIn).admissible ())
       ((langProblem langIn).language ()) (acc ((langProblem langOut).language ())) where
   toFun sp hist stmt := Sigma.uncurry (fun j tr => S.toFun j stmt tr) (L.legacyPrefix sp hist)
@@ -864,11 +974,9 @@ def embedStateFunction (hacc : L.AcceptanceAgrees impl V acc) {langIn : Set Stmt
     exact S.toFun_next j (L.dir_eq_of_sender hown) stmt tr hnot _
   leaf sp hist stmt hnot := by
     rw [legacyPrefix_complete] at hnot
-    have hzero := (prEvent_legacy_fresh_eq_zero_iff init impl V stmt _ _).mp
-      (S.toFun_full stmt _ hnot)
     rw [hacc]
     rintro ⟨st, t, ht, hp⟩
-    exact hzero st (hinit st) t ht ((langProblem_language _ _).mp hp)
+    exact hS stmt _ hnot st t ht ((langProblem_language _ _).mp hp)
 
 /-- The legacy state function of an interaction-layer state function: a legacy prefix is in the
 state when every full prefix with that legacy transcript prefix is. -/
@@ -912,21 +1020,25 @@ def legacyStateFunction (hacc : L.AcceptanceAgrees impl V acc) {langIn : Set Stm
 
 variable [∀ i, SampleableType (pSpec.Challenge i)]
 
-/-- **Round-by-round soundness, legacy to interaction layer**, on any layout whose acceptance
-agrees with the legacy verifier. The error at a challenge node is the legacy error of its
-round. -/
-theorem rbrSoundness_of_legacy (hacc : L.AcceptanceAgrees impl V acc) (langIn : Set StmtIn)
-    (langOut : Set StmtOut) (ε : pSpec.ChallengeIdx → ℝ≥0) (hinit : ∀ st, st ∈ support init)
-    (h : V.rbrSoundness init impl langIn langOut ε) :
+/-- **Round-by-round soundness, legacy to interaction layer**, for one legacy state function
+with an all-state terminal certificate, on any layout whose acceptance agrees with the legacy
+verifier. The hypothesis `h` is the per-prefix bound of `Verifier.rbrSoundness` for `S`. The
+interaction-layer state function is `embedStateFunction`, and the error at a challenge node is
+the legacy error of its round. -/
+theorem rbrSoundness_of_legacyWith (hacc : L.AcceptanceAgrees impl V acc) (langIn : Set StmtIn)
+    (langOut : Set StmtOut) (ε : pSpec.ChallengeIdx → ℝ≥0)
+    (S : V.StateFunction init impl langIn langOut) (hS : StateTerminalCertificate S)
+    (h : ∀ stmtIn ∉ langIn, ∀ i : pSpec.ChallengeIdx, ∀ tr : Transcript i.1.castSucc pSpec,
+      Pr{let c ← $ᵗ (pSpec.Challenge i)}[
+        ¬ S i.1.castSucc stmtIn tr ∧ S i.1.succ stmtIn (tr.concat c)] ≤ ε i) :
     Core.rbrSoundness L.l L.protocol ((langProblem langIn).admissible ())
       ((langProblem langIn).language ()) (acc ((langProblem langOut).language ()))
       (L.challengeImpl ProtocolSpec.challengeQueryImpl)
       (fun c => ε (L.challengeRound 0 n (Nat.zero_add n) c)) := by
-  obtain ⟨S, hS⟩ := h
-  refine ⟨L.embedStateFunction hacc hinit S, fun stmt _ hlang a next sp hc hist => ?_⟩
+  refine ⟨L.embedStateFunction hacc S hS, fun stmt _ hlang a next sp hc hist => ?_⟩
   obtain ⟨j, rfl, tr, h1, h2, hch⟩ := L.prefixFrom_step 0 n _ default sp hist
   obtain ⟨hd, hcr, hmap⟩ := hch hc
-  have hbound := hS stmt (fun hm => hlang ((langProblem_language _ _).mpr hm)) ⟨j, hd⟩ tr
+  have hbound := h stmt (fun hm => hlang ((langProblem_language _ _).mpr hm)) ⟨j, hd⟩ tr
   let : MeasurableSpace (Move L.l (L.pos j)) := ⊤
   change _ ≤ ((ε (L.challengeRound 0 n _ (spineChallenge L.l sp hc)) : ℝ≥0) : ℝ≥0∞)
   rw [hcr]
@@ -940,6 +1052,22 @@ theorem rbrSoundness_of_legacy (hacc : L.AcceptanceAgrees impl V acc) (langIn : 
   exact (prEvent_map _ _ _).trans (prEvent_map _
     (fun x => L.move j (Eq.mp (congrArg (Move L.l) (spineNode_position sp)) x))
     (fun c => ¬ S.toFun j.castSucc stmt tr ∧ S.toFun j.succ stmt (tr.concat c))).symm
+
+/-- **Round-by-round soundness, legacy to interaction layer**, on any layout whose acceptance
+agrees with the legacy verifier, when every legacy state function has an all-state terminal
+certificate. The error at a challenge node is the legacy error of its round. The certificate
+hypothesis holds by `StateTerminalCertificate.of_support_init`,
+`StateTerminalCertificate.of_stateIndependent`, or `StateTerminalCertificate.of_guarded`. -/
+theorem rbrSoundness_of_legacy (hacc : L.AcceptanceAgrees impl V acc) (langIn : Set StmtIn)
+    (langOut : Set StmtOut) (ε : pSpec.ChallengeIdx → ℝ≥0)
+    (hcert : ∀ S : V.StateFunction init impl langIn langOut, StateTerminalCertificate S)
+    (h : V.rbrSoundness init impl langIn langOut ε) :
+    Core.rbrSoundness L.l L.protocol ((langProblem langIn).admissible ())
+      ((langProblem langIn).language ()) (acc ((langProblem langOut).language ()))
+      (L.challengeImpl ProtocolSpec.challengeQueryImpl)
+      (fun c => ε (L.challengeRound 0 n (Nat.zero_add n) c)) := by
+  obtain ⟨S, hS⟩ := h
+  exact L.rbrSoundness_of_legacyWith hacc langIn langOut ε S (hcert S) hS
 
 /-- **Round-by-round soundness, interaction layer to legacy**, on any layout whose acceptance
 agrees with the legacy verifier. No hypothesis on `init` is needed: an interaction-layer
@@ -1038,12 +1166,12 @@ theorem embedExtractStep_congr {relIn : Set (StmtIn × WitIn)} {relOut : Set (St
 
 /-- The interaction-layer knowledge state function of a legacy knowledge state function: the
 witness at a full prefix is the legacy intermediate witness at its legacy transcript prefix, and
-extraction is the legacy extractor's. The hypothesis `hinit` plays the role it plays in
-`embedStateFunction`. -/
+extraction is the legacy extractor's. The all-state terminal certificate `hK` plays the role
+that `hS` plays in `embedStateFunction`. -/
 def embedKnowledgeStateFunction (hacc : L.AcceptanceAgrees impl V acc)
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid}
-    (hinit : ∀ st, st ∈ support init) (K : V.KnowledgeStateFunction init impl relIn relOut E) :
+    (K : V.KnowledgeStateFunction init impl relIn relOut E) (hK : KnowledgeTerminalCertificate K) :
     KnowledgeStateFunction L.l L.protocol StmtIn WitOut WitIn (fun _ => True)
       (fun stmt w => (stmt, w) ∈ relIn)
       (fun stmt tr wit => acc (fun t => (t, wit) ∈ relOut) stmt tr) where
@@ -1061,13 +1189,10 @@ def embedKnowledgeStateFunction (hacc : L.AcceptanceAgrees impl V acc)
     have hc := L.embedExtractStep_congr K j sp hist tr h1 h2 stmt x wit
     exact hc.2.mpr (K.toFun_next j (L.dir_eq_of_sender hown) stmt tr _ _ (hc.1.mp h))
   leaf sp hist stmt wo hvalid := by
-    have hpos := (prEvent_legacy_fresh_pos_iff init impl V stmt
-      (L.decode (PrefixMoves.complete L.l sp hist)) (fun t => (t, wo) ∈ relOut)).mpr (by
-        obtain ⟨st, t, ht, hp⟩ := (hacc _ stmt _).mp hvalid
-        exact ⟨st, hinit st, t, ht, hp⟩)
+    obtain ⟨st, t, ht, hp⟩ := (hacc _ stmt _).mp hvalid
     exact (K.toFun_congr (congrArg Sigma.fst (L.legacyPrefix_complete sp hist)).symm stmt
       (heq_snd_of_eq (L.legacyPrefix_complete sp hist)).symm (cast_heq _ _).symm).mp
-        (K.toFun_full stmt _ wo hpos)
+        (hK stmt _ wo st t ht hp)
 
 /-- The interaction-layer state function of the induced languages: some intermediate witness
 makes the knowledge state true. -/
@@ -1090,23 +1215,26 @@ def languageStateFunction (hacc : L.AcceptanceAgrees impl V acc) {relIn : Set (S
 
 variable [∀ i, SampleableType (pSpec.Challenge i)]
 
-/-- **Round-by-round knowledge soundness, legacy to interaction layer**, on any layout whose
-acceptance agrees with the legacy verifier. The witness at a full prefix is the legacy
-intermediate witness at its legacy transcript prefix, and the extraction functions are the
-legacy extractor's, reindexed. -/
-theorem rbrKnowledgeSoundness_of_legacy (hacc : L.AcceptanceAgrees impl V acc)
+/-- **Round-by-round knowledge soundness, legacy to interaction layer**, for one legacy
+extractor and knowledge state function with an all-state terminal certificate, on any layout
+whose acceptance agrees with the legacy verifier. The interaction-layer knowledge state function
+is `embedKnowledgeStateFunction`: the witness at a full prefix is the legacy intermediate witness
+at its legacy transcript prefix, and the extraction functions are the legacy extractor's,
+reindexed. -/
+theorem rbrKnowledgeSoundness_of_legacyWith (hacc : L.AcceptanceAgrees impl V acc)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
-    (ε : pSpec.ChallengeIdx → ℝ≥0) (hinit : ∀ st, st ∈ support init)
-    (h : V.rbrKnowledgeSoundness init impl relIn relOut ε) :
+    (ε : pSpec.ChallengeIdx → ℝ≥0)
+    {E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid}
+    {K : V.KnowledgeStateFunction init impl relIn relOut E} (hK : KnowledgeTerminalCertificate K)
+    (h : V.rbrKnowledgeSoundnessWith init impl relIn relOut WitMid E K ε) :
     Core.rbrKnowledgeSoundness L.l L.protocol (fun _ => True) (fun stmt w => (stmt, w) ∈ relIn)
       (fun stmt tr wit => acc (fun t => (t, wit) ∈ relOut) stmt tr)
       (L.challengeImpl ProtocolSpec.challengeQueryImpl)
       (fun c => ε (L.challengeRound 0 n (Nat.zero_add n) c)) := by
-  obtain ⟨WitMid, E, K, hK⟩ := h
-  refine ⟨L.embedKnowledgeStateFunction hacc hinit K, fun stmt _ a next sp hc hist => ?_⟩
+  refine ⟨L.embedKnowledgeStateFunction hacc K hK, fun stmt _ a next sp hc hist => ?_⟩
   obtain ⟨j, rfl, tr, h1, h2, hch⟩ := L.prefixFrom_step 0 n _ default sp hist
   obtain ⟨hd, hcr, hmap⟩ := hch hc
-  have hbound := hK stmt ⟨j, hd⟩ tr
+  have hbound := h stmt ⟨j, hd⟩ tr
   let : MeasurableSpace (Move L.l (L.pos j)) := ⊤
   change _ ≤ ((ε (L.challengeRound 0 n _ (spineChallenge L.l sp hc)) : ℝ≥0) : ℝ≥0∞)
   rw [hcr]
@@ -1122,6 +1250,25 @@ theorem rbrKnowledgeSoundness_of_legacy (hacc : L.AcceptanceAgrees impl V acc)
   have hc := L.embedExtractStep_congr K j sp hist tr h1 h2 stmt
     (Eq.mp (congrArg (Move L.l) (spineNode_position sp)) y) wit
   exact ⟨_, fun h => hnot (hc.2.mpr h), hc.1.mp hyes⟩
+
+/-- **Round-by-round knowledge soundness, legacy to interaction layer**, on any layout whose
+acceptance agrees with the legacy verifier, when every legacy knowledge state function has an
+all-state terminal certificate. The certificate hypothesis holds by
+`KnowledgeTerminalCertificate.of_support_init`, `KnowledgeTerminalCertificate.of_stateIndependent`,
+or `KnowledgeTerminalCertificate.of_guarded`. -/
+theorem rbrKnowledgeSoundness_of_legacy (hacc : L.AcceptanceAgrees impl V acc)
+    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+    (ε : pSpec.ChallengeIdx → ℝ≥0)
+    (hcert : ∀ (M : Fin (n + 1) → Type)
+      (E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec M)
+      (K : V.KnowledgeStateFunction init impl relIn relOut E), KnowledgeTerminalCertificate K)
+    (h : V.rbrKnowledgeSoundness init impl relIn relOut ε) :
+    Core.rbrKnowledgeSoundness L.l L.protocol (fun _ => True) (fun stmt w => (stmt, w) ∈ relIn)
+      (fun stmt tr wit => acc (fun t => (t, wit) ∈ relOut) stmt tr)
+      (L.challengeImpl ProtocolSpec.challengeQueryImpl)
+      (fun c => ε (L.challengeRound 0 n (Nat.zero_add n) c)) := by
+  obtain ⟨M, E, K, hK⟩ := h
+  exact L.rbrKnowledgeSoundness_of_legacyWith hacc relIn relOut ε (hcert M E K) hK
 
 /-- **Round-by-round knowledge soundness, interaction layer to legacy**, on any layout whose
 acceptance agrees with the legacy verifier.
@@ -1165,18 +1312,21 @@ implementation, with the legacy error of each challenge node's round.
 
 The state at a full prefix is the legacy state at its legacy transcript prefix, and the fresh
 challenge at a node is the legacy challenge of its round, so each per-prefix bound is a legacy
-per-prefix bound. The hypothesis `hinit` says that `init` can produce every ambient state. It is
-needed because the interaction layer's terminal obligation quantifies over every ambient state,
-while the legacy one is stated for a fresh `init` state. -/
+per-prefix bound. The hypothesis `hcert` gives every legacy state function an all-state
+terminal certificate. It is needed because the interaction layer's terminal obligation
+quantifies over every ambient state, while the legacy one is stated for a fresh `init` state. It
+holds when `init` can produce every ambient state, when the legacy verdict does not depend on the
+ambient state, and for every guarded verifier. -/
 theorem embedVerifier_rbrSoundness (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (V : _root_.Verifier oSpec StmtIn StmtOut pSpec) (langIn : Set StmtIn) (langOut : Set StmtOut)
-    (ε : pSpec.ChallengeIdx → ℝ≥0) (hinit : ∀ st, st ∈ support init)
+    (ε : pSpec.ChallengeIdx → ℝ≥0)
+    (hcert : ∀ S : V.StateFunction init impl langIn langOut, StateTerminalCertificate S)
     (h : V.rbrSoundness init impl langIn langOut ε) :
     (embedVerifier V).rbrSoundness impl (langProblem langIn) (langProblem langOut)
       (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
       (fun c => ε (challengeRound 0 n (Nat.zero_add n) c)) :=
   (plainLayout pSpec).rbrSoundness_of_legacy (validAcceptance_embed_iff V impl) langIn langOut ε
-    hinit h
+    hcert h
 
 /-- **Round-by-round soundness, interaction layer to legacy.** If the embedded verifier is
 round-by-round sound under the reindexed legacy challenge implementation, with the legacy error
@@ -1192,32 +1342,37 @@ theorem rbrSoundness_of_embedVerifier (init : ProbComp σ)
 
 /-- Round-by-round soundness of the embedded verifier, under the reindexed legacy challenge
 implementation and with the legacy error of each node's round, is legacy round-by-round
-soundness, when `init` can produce every ambient state. -/
+soundness, when every legacy state function has an all-state terminal certificate. -/
 theorem rbrSoundness_iff (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (V : _root_.Verifier oSpec StmtIn StmtOut pSpec) (langIn : Set StmtIn) (langOut : Set StmtOut)
-    (ε : pSpec.ChallengeIdx → ℝ≥0) (hinit : ∀ st, st ∈ support init) :
+    (ε : pSpec.ChallengeIdx → ℝ≥0)
+    (hcert : ∀ S : V.StateFunction init impl langIn langOut, StateTerminalCertificate S) :
     (embedVerifier V).rbrSoundness impl (langProblem langIn) (langProblem langOut)
         (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
         (fun c => ε (challengeRound 0 n (Nat.zero_add n) c)) ↔
       V.rbrSoundness init impl langIn langOut ε :=
   ⟨rbrSoundness_of_embedVerifier init impl V langIn langOut ε,
-    embedVerifier_rbrSoundness init impl V langIn langOut ε hinit⟩
+    embedVerifier_rbrSoundness init impl V langIn langOut ε hcert⟩
 
 /-- **Round-by-round knowledge soundness, legacy to interaction layer.** A legacy round-by-round
 knowledge sound verifier embeds as a round-by-round knowledge sound verifier under the
 reindexed legacy challenge implementation, with the legacy error of each challenge node's round.
 The supplied extraction functions are kept, reindexed by legacy transcript prefixes. The
-hypothesis `hinit` plays the role it plays in `embedVerifier_rbrSoundness`. -/
+hypothesis `hcert` plays the role it plays in `embedVerifier_rbrSoundness`, for knowledge state
+functions. -/
 theorem embedVerifier_rbrKnowledgeSoundness (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp)) (V : _root_.Verifier oSpec StmtIn StmtOut pSpec)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
-    (ε : pSpec.ChallengeIdx → ℝ≥0) (hinit : ∀ st, st ∈ support init)
+    (ε : pSpec.ChallengeIdx → ℝ≥0)
+    (hcert : ∀ (M : Fin (n + 1) → Type)
+      (E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec M)
+      (K : V.KnowledgeStateFunction init impl relIn relOut E), KnowledgeTerminalCertificate K)
     (h : V.rbrKnowledgeSoundness init impl relIn relOut ε) :
     (embedVerifier V).rbrKnowledgeSoundness impl (fun _ => True) (fun stmt w => (stmt, w) ∈ relIn)
       (fun t w => (t, w) ∈ relOut) (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
       (fun c => ε (challengeRound 0 n (Nat.zero_add n) c)) :=
   (plainLayout pSpec).rbrKnowledgeSoundness_of_legacy (validAcceptance_embed_iff V impl) relIn
-    relOut ε hinit h
+    relOut ε hcert h
 
 /-- **Round-by-round knowledge soundness, interaction layer to legacy.** If the embedded
 verifier is round-by-round knowledge sound, then the legacy verifier is round-by-round knowledge
@@ -1236,19 +1391,22 @@ theorem rbrKnowledgeSoundness_of_embedVerifier [Nonempty WitIn] (init : ProbComp
 
 /-- Round-by-round knowledge soundness of the embedded verifier, under the reindexed legacy
 challenge implementation and with the legacy error of each node's round, is legacy
-round-by-round knowledge soundness, when `init` can produce every ambient state and the input
-witness type is inhabited. -/
+round-by-round knowledge soundness, when every legacy knowledge state function has an all-state
+terminal certificate and the input witness type is inhabited. -/
 theorem rbrKnowledgeSoundness_iff [Nonempty WitIn] (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp)) (V : _root_.Verifier oSpec StmtIn StmtOut pSpec)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
-    (ε : pSpec.ChallengeIdx → ℝ≥0) (hinit : ∀ st, st ∈ support init) :
+    (ε : pSpec.ChallengeIdx → ℝ≥0)
+    (hcert : ∀ (M : Fin (n + 1) → Type)
+      (E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec M)
+      (K : V.KnowledgeStateFunction init impl relIn relOut E), KnowledgeTerminalCertificate K) :
     (embedVerifier V).rbrKnowledgeSoundness impl (fun _ => True)
         (fun stmt w => (stmt, w) ∈ relIn) (fun t w => (t, w) ∈ relOut)
         (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
         (fun c => ε (challengeRound 0 n (Nat.zero_add n) c)) ↔
       V.rbrKnowledgeSoundness init impl relIn relOut ε :=
   ⟨rbrKnowledgeSoundness_of_embedVerifier init impl V relIn relOut ε,
-    embedVerifier_rbrKnowledgeSoundness init impl V relIn relOut ε hinit⟩
+    embedVerifier_rbrKnowledgeSoundness init impl V relIn relOut ε hcert⟩
 
 end Plain
 

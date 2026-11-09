@@ -180,14 +180,16 @@ example : legacyPrefix (pSpec := twoWay) (.root _) ⟨⟩ = ⟨0, default⟩ :=
   legacyPrefix_root twoWay
 
 /-- Legacy round-by-round soundness of `lastIfTrue` transfers to the embedded verifier when
-`init` is `pure ()`, which can produce every state of `Unit`. -/
+`init` is `pure ()`, which can produce every state of `Unit`: full support gives the all-state
+terminal certificates. -/
 example [∀ i, SampleableType (twoWay.Challenge i)] (impl : QueryImpl []ₒ (StateT Unit ProbComp))
     (langIn langOut : Set Nat) (ε : twoWay.ChallengeIdx → ℝ≥0)
     (h : lastIfTrue.rbrSoundness (pure ()) impl langIn langOut ε) :
     (embedVerifier lastIfTrue).rbrSoundness impl (langProblem langIn) (langProblem langOut)
       (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
       (fun c => ε (challengeRound 0 3 (Nat.zero_add 3) c)) :=
-  embedVerifier_rbrSoundness (pure ()) impl lastIfTrue langIn langOut ε (fun _ => by simp) h
+  embedVerifier_rbrSoundness (pure ()) impl lastIfTrue langIn langOut ε
+    (StateTerminalCertificate.of_support_init fun _ => by simp) h
 
 /-- Round-by-round soundness of the embedded verifier gives legacy round-by-round soundness for
 every `init`. -/
@@ -209,6 +211,60 @@ example [∀ i, SampleableType (twoWay.Challenge i)] (impl : QueryImpl []ₒ (St
         (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
         (fun c => ε (challengeRound 0 3 (Nat.zero_add 3) c)) ↔
       lastIfTrue.rbrKnowledgeSoundness (pure ()) impl relIn relOut ε :=
-  rbrKnowledgeSoundness_iff (pure ()) impl lastIfTrue relIn relOut ε (fun _ => by simp)
+  rbrKnowledgeSoundness_iff (pure ()) impl lastIfTrue relIn relOut ε
+    (fun _ _ => KnowledgeTerminalCertificate.of_support_init fun _ => by simp)
+
+/-! ### A `Bool` ambient state drawn as `pure false`
+
+`init := pure false` cannot produce the ambient state `true`, so full support fails. The verdict
+of `lastIfTrue` depends only on the statement and the transcript, and its guarded form supplies
+the all-state terminal certificates for this `init`. -/
+
+/-- `lastIfTrue` is guarded: it accepts exactly when the challenge is `true`. -/
+def lastIfTrueGuarded : lastIfTrue.GuardedForm where
+  check _ tr := show Bool from tr 1
+  out stmt tr := stmt + show Nat from tr 2
+  verify_eq _ _ := Bool.cond_eq_ite _ _ _
+
+/-- `pure false` does not produce the ambient state `true`. -/
+example : true ∉ support (pure false : ProbComp Bool) := by
+  simp
+
+/-- The legacy verdict of `lastIfTrue` is the same from both ambient states. -/
+example (impl : QueryImpl []ₒ (StateT Bool ProbComp)) (stmt : Nat) (tr : FullTranscript twoWay) :
+    (simulateQ impl (lastIfTrue.verify stmt tr).run).run' true =
+      (simulateQ impl (lastIfTrue.verify stmt tr).run).run' false := by
+  rw [guarded_run' lastIfTrueGuarded, guarded_run' lastIfTrueGuarded]
+
+/-- Legacy round-by-round soundness of `lastIfTrue` from `init := pure false` transfers to the
+embedded verifier through the guarded certificates. -/
+example [∀ i, SampleableType (twoWay.Challenge i)] (impl : QueryImpl []ₒ (StateT Bool ProbComp))
+    (langIn langOut : Set Nat) (ε : twoWay.ChallengeIdx → ℝ≥0)
+    (h : lastIfTrue.rbrSoundness (pure false) impl langIn langOut ε) :
+    (embedVerifier lastIfTrue).rbrSoundness impl (langProblem langIn) (langProblem langOut)
+      (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
+      (fun c => ε (challengeRound 0 3 (Nat.zero_add 3) c)) :=
+  embedVerifier_rbrSoundness (pure false) impl lastIfTrue langIn langOut ε
+    (StateTerminalCertificate.of_guarded lastIfTrueGuarded) h
+
+/-- Round-by-round knowledge soundness of the embedded verifier is legacy round-by-round
+knowledge soundness from `init := pure false`, through the guarded certificates. -/
+example [∀ i, SampleableType (twoWay.Challenge i)] (impl : QueryImpl []ₒ (StateT Bool ProbComp))
+    (relIn relOut : Set (Nat × Nat)) (ε : twoWay.ChallengeIdx → ℝ≥0) :
+    (embedVerifier lastIfTrue).rbrKnowledgeSoundness impl (fun _ => True)
+        (fun stmt w => (stmt, w) ∈ relIn) (fun t w => (t, w) ∈ relOut)
+        (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
+        (fun c => ε (challengeRound 0 3 (Nat.zero_add 3) c)) ↔
+      lastIfTrue.rbrKnowledgeSoundness (pure false) impl relIn relOut ε :=
+  rbrKnowledgeSoundness_iff (pure false) impl lastIfTrue relIn relOut ε
+    (fun _ _ => KnowledgeTerminalCertificate.of_guarded lastIfTrueGuarded)
+
+/-- The state-independence certificate applies to `lastIfTrue` from `init := pure false`. -/
+example [∀ i, SampleableType (twoWay.Challenge i)] (impl : QueryImpl []ₒ (StateT Bool ProbComp))
+    (langIn langOut : Set Nat)
+    (S : lastIfTrue.StateFunction (pure false) impl langIn langOut) :
+    StateTerminalCertificate S :=
+  StateTerminalCertificate.of_stateIndependent (fun stmt tr _ _ => by
+    rw [guarded_run' lastIfTrueGuarded, guarded_run' lastIfTrueGuarded]) S
 
 end Interaction.Core.Legacy.SecurityTests

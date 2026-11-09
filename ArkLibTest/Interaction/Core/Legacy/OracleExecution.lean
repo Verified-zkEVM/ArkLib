@@ -227,6 +227,7 @@ example [∀ i, SampleableType (twoWay.Challenge i)] (init : ProbComp Unit)
     (embedOracleVerifier sumVerifier).rbrSoundness impl (langProblem langIn)
       (langProblem langOut) (oracleChallengeImpl ProtocolSpec.challengeQueryImpl)
       (fun c => ε (oracleChallengeRound 0 3 (Nat.zero_add 3) c)) :=
-  embedOracleVerifier_rbrSoundness init impl sumVerifier langIn langOut ε hinit h
+  embedOracleVerifier_rbrSoundness init impl sumVerifier langIn langOut ε
+    (StateTerminalCertificate.of_support_init hinit) h
 
 end Interaction.Core.Legacy.OracleExecutionTests

@@ -263,19 +263,22 @@ variable {WitIn WitOut : Type} [∀ i, SampleableType (pSpec.Challenge i)]
 /-- **Round-by-round soundness of an oracle verifier, legacy to interaction layer.** A legacy
 round-by-round sound oracle verifier embeds as a round-by-round sound oracle verifier on the
 oracle tree, under the reindexed legacy challenge implementation, with the legacy error of each
-challenge node's round. The hypothesis `hinit` plays the role it plays in
-`embedVerifier_rbrSoundness`. -/
+challenge node's round. The hypothesis `hcert` plays the role it plays in
+`embedVerifier_rbrSoundness`: every legacy state function of `V.toVerifier` has an all-state
+terminal certificate. -/
 theorem embedOracleVerifier_rbrSoundness (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
     (V : _root_.OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec)
     (langIn : Set (StmtIn × (∀ i, OStmtIn i))) (langOut : Set (StmtOut × (∀ i, OStmtOut i)))
-    (ε : pSpec.ChallengeIdx → ℝ≥0) (hinit : ∀ st, st ∈ support init)
+    (ε : pSpec.ChallengeIdx → ℝ≥0)
+    (hcert : ∀ S : V.toVerifier.StateFunction init impl langIn langOut,
+      StateTerminalCertificate S)
     (h : V.rbrSoundness init impl langIn langOut ε) :
     (embedOracleVerifier V).rbrSoundness impl (langProblem langIn) (langProblem langOut)
       (oracleChallengeImpl ProtocolSpec.challengeQueryImpl)
       (fun c => ε (oracleChallengeRound 0 n (Nat.zero_add n) c)) :=
   (oracleLayout pSpec).rbrSoundness_of_legacy (oracleAcceptanceAgrees impl V) langIn langOut ε
-    hinit h
+    hcert h
 
 /-- **Round-by-round soundness of an oracle verifier, interaction layer to legacy**, for every
 `init`. -/
@@ -291,20 +294,26 @@ theorem rbrSoundness_of_embedOracleVerifier (init : ProbComp σ)
   (oracleLayout pSpec).legacy_rbrSoundness (oracleAcceptanceAgrees impl V) langIn langOut ε h
 
 /-- **Round-by-round knowledge soundness of an oracle verifier, legacy to interaction layer.**
-The supplied extraction functions are kept, reindexed by legacy transcript prefixes. -/
+The supplied extraction functions are kept, reindexed by legacy transcript prefixes. The
+hypothesis `hcert` gives every legacy knowledge state function of `V.toVerifier` an all-state
+terminal certificate. -/
 theorem embedOracleVerifier_rbrKnowledgeSoundness (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
     (V : _root_.OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec)
     (relIn : Set ((StmtIn × (∀ i, OStmtIn i)) × WitIn))
     (relOut : Set ((StmtOut × (∀ i, OStmtOut i)) × WitOut))
-    (ε : pSpec.ChallengeIdx → ℝ≥0) (hinit : ∀ st, st ∈ support init)
+    (ε : pSpec.ChallengeIdx → ℝ≥0)
+    (hcert : ∀ (M : Fin (n + 1) → Type)
+      (E : Extractor.RoundByRound oSpec (StmtIn × (∀ i, OStmtIn i)) WitIn WitOut pSpec M)
+      (K : V.toVerifier.KnowledgeStateFunction init impl relIn relOut E),
+      KnowledgeTerminalCertificate K)
     (h : V.rbrKnowledgeSoundness init impl relIn relOut ε) :
     (embedOracleVerifier V).rbrKnowledgeSoundness impl (fun _ => True)
       (fun stmt w => (stmt, w) ∈ relIn) (fun t w => (t, w) ∈ relOut)
       (oracleChallengeImpl ProtocolSpec.challengeQueryImpl)
       (fun c => ε (oracleChallengeRound 0 n (Nat.zero_add n) c)) :=
   (oracleLayout pSpec).rbrKnowledgeSoundness_of_legacy (oracleAcceptanceAgrees impl V) relIn
-    relOut ε hinit h
+    relOut ε hcert h
 
 /-- **Round-by-round knowledge soundness of an oracle verifier, interaction layer to legacy**,
 with a chosen extractor; see `Layout.legacy_rbrKnowledgeSoundness`. -/

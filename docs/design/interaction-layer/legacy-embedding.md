@@ -142,12 +142,14 @@ Each transfer reads the interaction-layer error at challenge node `c` as
 **Round-by-round soundness** (`embedVerifier_rbrSoundness`, `rbrSoundness_of_embedVerifier`,
 `rbrSoundness_iff`). For a legacy verifier `V` and `ε : pSpec.ChallengeIdx → ℝ≥0`:
 
-- `V.rbrSoundness init impl langIn langOut ε` and `hinit : ∀ st, st ∈ support init` give
+- `V.rbrSoundness init impl langIn langOut ε` and
+  `hcert : ∀ S : V.StateFunction init impl langIn langOut, StateTerminalCertificate S` give
   `(embedVerifier V).rbrSoundness impl (langProblem langIn) (langProblem langOut)
   (plainChallengeImpl challengeQueryImpl) (fun c => ε (challengeRound 0 n _ c))`.
-- The converse holds for every `init`, without `hinit`.
+- The converse holds for every `init`, without a certificate.
 
-`embedStateFunction` sends a legacy state function to the state at the legacy prefix.
+`embedStateFunction S hS` sends a legacy state function `S` with an all-state terminal
+certificate `hS` to the state at the legacy prefix.
 `legacyStateFunction` sends an interaction-layer state function to the legacy state "every full
 prefix with this legacy prefix is in the state". Each per-prefix bound is the other layer's bound
 at the corresponding prefix: the event is the image of the legacy event under the reindexed
@@ -158,7 +160,8 @@ challenge draw.
 instance has trivial admissibility, input relation `fun stmt w => (stmt, w) ∈ relIn`, and output
 relation `fun t w => (t, w) ∈ relOut`.
 
-- `V.rbrKnowledgeSoundness init impl relIn relOut ε` and `hinit` give
+- `V.rbrKnowledgeSoundness init impl relIn relOut ε` and a `KnowledgeTerminalCertificate` for
+  every legacy knowledge state function give
   `(embedVerifier V).rbrKnowledgeSoundness impl (fun _ => True) (fun stmt w => (stmt, w) ∈ relIn)
   (fun t w => (t, w) ∈ relOut) (plainChallengeImpl challengeQueryImpl)
   (fun c => ε (challengeRound 0 n _ c))`. `embedKnowledgeStateFunction` uses
@@ -166,6 +169,30 @@ relation `fun t w => (t, w) ∈ relOut`.
   extractor `E` to give the interaction-layer extraction functions.
 - With `[Nonempty WitIn]`, the converse holds for every `init`. It does not transport extractors
   (departure 16).
+
+**All-state terminal certificates** (`Security.lean`). The terminal obligation of an
+interaction-layer state function quantifies over every ambient state; the legacy one is stated
+for a fresh `init` state (departure 15). The certificates restate the legacy terminal field for
+every ambient state:
+
+- `StateTerminalCertificate S`: on a full transcript where `S` is false, legacy `verify` accepts
+  into no output in `langOut` from any ambient state.
+- `KnowledgeTerminalCertificate K`: if legacy `verify` can accept an output related to `wo` from
+  some ambient state, then `K` holds at the full transcript of the witness extracted from `wo`.
+
+Each certificate holds for every state function in three cases:
+
+| Constructor | Hypothesis | `init` |
+| --- | --- | --- |
+| `of_support_init` | `∀ st, st ∈ support init` | full support |
+| `of_stateIndependent` | the legacy verdict is the same from every ambient state | any |
+| `of_guarded` | a `Verifier.GuardedForm` of the legacy verifier | any |
+
+`Layout.rbrSoundness_of_legacyWith` and `Layout.rbrKnowledgeSoundness_of_legacyWith` take one
+certified state function, or one certified extractor and knowledge state function, with its
+bound. The existential transfers take a certificate for every state function. The test
+`ArkLibTest/Interaction/Core/Legacy/Security.lean` instantiates them for a guarded verifier with
+`σ = Bool` and `init := pure false`, which does not produce the state `true`.
 
 ## Oracle reductions
 
@@ -237,8 +264,8 @@ notions are defined through `V.toVerifier`.
   on the decoded transcript. The generic round-by-round transfers of `Layout` then give
   `embedOracleVerifier_rbrSoundness`, `rbrSoundness_of_embedOracleVerifier`,
   `embedOracleVerifier_rbrKnowledgeSoundness` and
-  `rbrKnowledgeSoundness_of_embedOracleVerifier`, with the terminal hypotheses of the plain
-  transfers.
+  `rbrKnowledgeSoundness_of_embedOracleVerifier`, with the certificate hypotheses of the plain
+  transfers, for the state functions of `V.toVerifier`.
 
 The straight-line knowledge transfer is stated for the plain tree only; see departure 17.
 
@@ -278,18 +305,24 @@ observation and witness types carry the discrete measurable structure. The acces
 which the classical straight-line interface meets. The qualification of entry 6 does not arise,
 because `classicalStraightline_marginal` gives marginal preservation for every extractor.
 
-### 15. Round-by-round transfers into the interaction layer assume `init` reaches every state
+### 15. Round-by-round transfers into the interaction layer assume all-state terminal certificates
 
-`embedVerifier_rbrSoundness`, `embedVerifier_rbrKnowledgeSoundness`, `rbrSoundness_iff` and
-`rbrKnowledgeSoundness_iff` assume `hinit : ∀ st, st ∈ support init`. The terminal obligation of
-an interaction-layer state function, `leaf`, refutes `validAcceptance`. That predicate holds when
-the verifier can accept *from some ambient state*. The legacy terminal obligation, `toFun_full`,
-bounds the acceptance probability from a fresh state drawn by `init`. A legacy state function
-therefore says nothing about states that `init` cannot produce, and the leaf obligation needs
-them covered. `hinit` holds whenever the ambient state type has a single value, as for
-`init := pure ()` on `Unit`, or when `init` samples with full support.
+`embedVerifier_rbrSoundness`, `embedVerifier_rbrKnowledgeSoundness`, `rbrSoundness_iff`,
+`rbrKnowledgeSoundness_iff`, their oracle forms and the `Layout` transfers assume an all-state
+terminal certificate (`StateTerminalCertificate`, `KnowledgeTerminalCertificate`). The terminal
+obligation of an interaction-layer state function, `leaf`, refutes `validAcceptance`. That
+predicate holds when the verifier can accept *from some ambient state*. The legacy terminal
+obligation, `toFun_full`, bounds the acceptance probability from a fresh state drawn by `init`.
+A legacy state function therefore says nothing about states that `init` cannot produce, and the
+leaf obligation needs them covered. The certificate is the legacy terminal field restated for
+every ambient state; the core terminal obligation is unchanged.
 
-The transfers out of the interaction layer need no such hypothesis: an interaction-layer leaf
+The certificate holds when `init` can produce every ambient state (`of_support_init`), when the
+legacy verdict does not depend on the ambient state (`of_stateIndependent`), and for every
+guarded verifier (`of_guarded`). The last two hold for any `init`, such as `init := pure false`
+on `Bool`.
+
+The transfers out of the interaction layer need no certificate: an interaction-layer leaf
 obligation covers every ambient state, hence every state that `init` draws.
 
 ### 16. Round-by-round knowledge soundness out of the interaction layer goes through induced languages
