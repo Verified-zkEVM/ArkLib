@@ -123,10 +123,10 @@ theorem oracleExtractionGame_embed
   · simp
 
 omit [∀ t, Inhabited (oSpec.Range t)] in
-/-- **Logged prover phase on the oracle tree.** The logged prover-sampler run of the oracle tree,
-decoded, has the run of the logged prover-sampler run of the transported prover on the plain tree,
-decoded, from every state: the same decoded transcript, prover output, shared-oracle log and final
-shared state. -/
+/-- **Logged prover phase on the oracle tree.** For every starting state, the decoded logged
+prover-sampler run on the oracle tree agrees in distribution with the decoded logged run of the
+transported prover on the plain tree, including the transcript, prover output, shared-oracle log and
+final shared state. -/
 theorem runEq_ambientLogged_oracleProver (impl : QueryImpl oSpec (StateT σ ProbComp))
     (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp) {X : Type}
     (p : Core.Prover oracleSig oSpec (oracleProtocol pSpec) (fun _ => X)) :

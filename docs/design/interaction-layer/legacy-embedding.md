@@ -277,9 +277,10 @@ straight-line oracle interface `OracleVerifier.classicalStraightline`, with the 
 prover's output witness. The oracle extraction game logs the decision before its input-oracle and
 message queries are answered, and gives the extractor the ambient part of that log.
 
-- `runEq_ambientLogged_oracleProver`: the logged prover-sampler run of the oracle tree, decoded,
-  has the run of the logged run of the transported prover on the plain tree: the same decoded
-  transcript, prover output, shared-oracle log and final shared state, from every state. With
+- `runEq_ambientLogged_oracleProver`: for every starting state, the decoded logged prover-sampler
+  run on the oracle tree agrees in distribution with the decoded logged run of the transported
+  prover on the plain tree, including the transcript, prover output, shared-oracle log and final
+  shared state. With
   `runEq_ambientLogged_prover` it reaches the legacy logged prover run.
 - `oracleExtractionGame_embed`: the oracle extraction game with a lifted legacy extractor, read as
   a legacy result, is that logged run followed by `knowledgeTail` for `V.toVerifier`. The ambient
