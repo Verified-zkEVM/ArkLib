@@ -33,7 +33,12 @@ Executable round messages live in the legacy implementation layer on CompPoly ca
 `Sumcheck.Impl.Computable.projectedMessage`, for nontrivial `R` with a lawful `BEq`, and
 `projectedStatementMessage_eq` identifies its mathematical reading with
 `projectedRoundPolynomial`. This file does not connect the interaction-layer honest prover to that
-layer, so it provides no executable honest prover.
+layer; `Sumcheck.Core.Computable` provides the executable honest prover on `protocolOn` at the
+CompPoly message carrier.
+
+The protocol is generic in its message carrier: `protocolOn R M eval n` sends messages in `M`
+with evaluation queries answered by `eval`, and `protocol R deg n` is its instance at the
+degree-bounded Mathlib polynomials.
 
 The main results are the closed form of the run against any sampler, `run_foldRounds`, and its
 invariance under simulation of the ambient oracle, `simulate_foldRounds`.
@@ -47,9 +52,17 @@ open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens
 
 variable (R : Type) [CommSemiring R] (deg : ℕ)
 
+omit [CommSemiring R] in
+/-- The `n`-round Sumcheck protocol over the message carrier `M`: `n` copies of
+`roundOn R M eval`. -/
+@[implicit_reducible]
+def protocolOn (M : Type) (eval : M → R → R) (n : ℕ) : OracleProtocol.{0} :=
+  FreeM.replicate ⟨⟩ (roundOn R M eval) n
+
 /-- The `n`-round Sumcheck protocol: `n` copies of `round R deg`. -/
 @[implicit_reducible]
-def protocol (n : ℕ) : OracleProtocol.{0} := FreeM.replicate ⟨⟩ (round R deg) n
+def protocol (n : ℕ) : OracleProtocol.{0} :=
+  protocolOn R (R⦃≤ deg⦄[X]) (fun p x => p.val.eval x) n
 
 /-- One more round is one oracle node and one challenge node before the remaining rounds. -/
 theorem protocol_succ (n : ℕ) : protocol R deg (n + 1) =
