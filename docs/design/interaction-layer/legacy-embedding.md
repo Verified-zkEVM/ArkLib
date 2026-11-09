@@ -102,7 +102,8 @@ verifier `V` and a legacy straight-line extractor `E`, the following are equival
 The observation and witness types carry the discrete measurable structure. The prover's output
 family is `fun _ => StmtOut × WitOut`. `knowledgeJudgement relOut` judges the verifier's
 statement with the prover's output witness, as the legacy bad event does, and the extractor
-reads that witness. `liftExtractor E` runs `E` on the decoded transcript, and
+reads that witness. `liftExtractor E` runs `E` on the decoded transcript, at the constant
+output witness family `fun _ => WitOut`, and
 `lowerExtractor` is its inverse, so the existential notions are also equivalent.
 
 Both layers' games end with the same phase, `knowledgeTail`: the logged verifier run, then the

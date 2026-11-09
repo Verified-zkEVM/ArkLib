@@ -427,20 +427,24 @@ theorem challengeMoveInvariant_extractor {κ : Type} {chal : OracleSpec κ}
 
 /-- The interaction-layer view of a legacy straight-line extractor. -/
 def liftExtractor (E : _root_.Extractor.Straightline oSpec StmtIn WitIn WitOut pSpec) :
-    Core.Extractor.Straightline oSpec (protocol pSpec) (fun _ : StmtIn => WitIn) WitOut :=
-  fun stmt w tr pl vl => E stmt w (decode pSpec tr) pl vl
+    Core.Extractor.Straightline oSpec (protocol pSpec) (fun _ : StmtIn => WitIn)
+      (fun _ => WitOut) :=
+  fun stmt tr w pl vl => E stmt w (decode pSpec tr) pl vl
 
 /-- The legacy view of an interaction-layer straight-line extractor on the plain tree. -/
 def lowerExtractor
-    (E : Core.Extractor.Straightline oSpec (protocol pSpec) (fun _ : StmtIn => WitIn) WitOut) :
+    (E : Core.Extractor.Straightline oSpec (protocol pSpec) (fun _ : StmtIn => WitIn)
+      (fun _ => WitOut)) :
     _root_.Extractor.Straightline oSpec StmtIn WitIn WitOut pSpec :=
-  fun stmt w tr pl vl => E stmt w ((transcriptEquiv pSpec).symm tr) pl vl
+  fun stmt w tr pl vl => E stmt ((transcriptEquiv pSpec).symm tr) w pl vl
 
 @[simp] theorem liftExtractor_lowerExtractor
-    (E : Core.Extractor.Straightline oSpec (protocol pSpec) (fun _ : StmtIn => WitIn) WitOut) :
+    (E : Core.Extractor.Straightline oSpec (protocol pSpec) (fun _ : StmtIn => WitIn)
+      (fun _ => WitOut)) :
     liftExtractor (lowerExtractor E) = E := by
-  funext stmt w tr pl vl
-  simp [liftExtractor, lowerExtractor, decode]
+  funext stmt tr w pl vl
+  simp only [liftExtractor, lowerExtractor, decode]
+  rw [Equiv.symm_apply_apply]
 
 /-- **Interaction-layer knowledge program.** The extraction game of the embedded verifier with a
 lifted legacy extractor, read as a legacy result, is the decoded logged prover-sampler run

@@ -152,27 +152,52 @@ Entries 14 onwards record the departures of the legacy embedding. They are in
 
 ## Changes that keep to the records
 
-### Round-by-round output witnesses are indexed by the transcript
+### Output witnesses are indexed by the transcript
 
-`KnowledgeStateFunction` and `rbrKnowledgeSoundness` in `Security/RoundByRound.lean` took a
-constant output witness type `W`, while the intermediate witnesses `Witness sp history` were
-already indexed by the full prefix. A protocol whose output witness depends on a message, such as
-an index `Fin (payload + 1)` bounded by a sent `payload`, could then be stated only through a
-larger constant carrier and a lossy conversion. The output witness is now a family
-`W : PathAlong l s → Type`: `validOutput` takes `(stmt : S) → (tr : PathAlong l s) → W tr → Prop`,
-and `extractLeaf sp history stmt` takes `W (PrefixMoves.complete l sp history)`. The input witness
-type `Win` stays a plain type. `Verifier.rbrKnowledgeSoundness` and
-`OracleVerifier.rbrKnowledgeSoundness` take the family implicitly and an output relation
-`relOut : (tr : PathAlong _ s) → T → W tr → Prop`.
+The round-by-round and straight-line knowledge interfaces took a constant output witness type,
+although the prover's output `Out : PathAlong l s → Type` and the intermediate witnesses
+`Witness sp history` of a knowledge state function were already indexed by the transcript. A
+protocol whose output witness depends on a message, such as an index `Fin (payload + 1)` bounded
+by a sent `payload`, had to encode that carrier into a constant type and track its compatibility
+with the transcript separately. The old interfaces could not expose the transcript-indexed carrier
+directly.
 
-There is one definition. Constant witness types are the constant family `fun _ => W` at the use
-site; the legacy transfers in `Legacy/Security.lean` and `Legacy/OracleSecurity.lean` use
-`fun _ => WitOut` and the output relation `fun _ t w => (t, w) ∈ relOut`, with the same relations,
-errors and extractors as before. The test `payload_rbrKnowledgeSoundness` in
-`ArkLibTest/Interaction/Core/Security.lean` uses the carrier `Fin (payload + 1)` directly as the
-leaf witness, and its bound alone gives the input relation.
+**Round-by-round knowledge** (`Security/RoundByRound.lean`). The output witness of
+`KnowledgeStateFunction` and `rbrKnowledgeSoundness` is a family `W : PathAlong l s → Type`.
+`validOutput` takes `(stmt : S) → (tr : PathAlong l s) → W tr → Prop`, and
+`extractLeaf sp history stmt` takes `W (PrefixMoves.complete l sp history)`. The input witness
+type `Win` stays a plain type. The verifier forms take the family implicitly, with output
+relations
+
+- `Verifier.rbrKnowledgeSoundness`: `relOut : (tr : PathAlong plainSig s) → T → W tr → Prop`;
+- `OracleVerifier.rbrKnowledgeSoundness`:
+  `relOut : (tr : PathAlong oracleSig s) → (T × ∀ j, B j) → W tr → Prop`, where the second
+  argument pairs the output statement with the output oracle data.
+
+**Straight-line knowledge** (`Security/Knowledge.lean`). The extractor interfaces
+`Extractor.Straightline`, `Extractor.TranscriptOnly`, `Extractor.OracleStraightline` and
+`Extractor.OracleTranscriptOnly` take an output witness family `Wout : PathAlong plainSig s → Type`
+or `Wout : PathAlong oracleSig s → Type`. Their arguments are ordered
+`(stmt : S) → (tr : PathAlong _ s) → Wout tr → …`, so the witness is typed at the transcript passed
+with it. The extraction games read the prover output through `readOut : ∀ tr, Out tr → Wout tr`;
+the identity is a valid `readOut` when `Wout = Out`. The `withLogs` adapters, both extraction
+games, `mem_support_extractionGame`, the classical interfaces and their marginal lemmas carry the
+family. `Prover`, the generic `knowledgeSoundnessWith` and `knowledgeSoundness`, and the input
+witness types are unchanged.
+
+There is one theory for each notion. Constant witness types are the constant family `fun _ => W`
+at the use site. The legacy round-by-round transfers in `Legacy/Security.lean` and
+`Legacy/OracleSecurity.lean` use `fun _ => WitOut` and the output relation
+`fun _ t w => (t, w) ∈ relOut`. The legacy extractor lifts `liftExtractor` and
+`liftOracleExtractor` use `fun _ => WitOut` and only reorder the transcript and witness arguments.
+Relations, errors and extractor behavior are as before.
+
+The tests in `ArkLibTest/Interaction/Core/Security.lean` use the carrier `Fin (payload + 1)`
+directly. In `payloadKnowledge` it is the leaf witness, and the input relation follows from its
+bound together with the acceptance equality `payload = stmt`; `payloadKnowledge_extract` gives
+the extraction equation for every payload. In `payload_extractionGame` a prover outputs
+`w : Fin 8` after sending `7`, the identity `readOut` passes it to the extractor, and the accepting
+run extracts `w.val`.
 
 This keeps to record D7, whose problems already index witness types by the claim; D7 fixes no
-constant output witness type for the round-by-round notions. The straight-line extractor of
-`Security/Knowledge.lean` still reads a constant `Wout` from the prover output family
-`Out : PathAlong l s → Type` through `readOut`; that notion is unchanged here.
+constant output witness type for either notion.
