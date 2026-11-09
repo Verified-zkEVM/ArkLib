@@ -515,9 +515,10 @@ variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn StmtOut : Type}
   {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} [Oₛₒ : ∀ i, OracleInterface.{0, 0} (OStmtOut i)]
 
 /-- Routing the legacy decision's queries to the oracle family of a path and answering them from
-concrete data is legacy `simOracle2` on the input data and the path's messages. -/
-theorem simulateQ_decisionImpl {κ : Type} {spec : OracleSpec κ}
-    (amb : QueryImpl oSpec (OracleComp spec)) (p : Path (oracleProtocol pSpec))
+concrete data is legacy `simOracle2` on the input data and the path's messages. The ambient
+queries go to any implementation `amb`: plain, stateful or logging. -/
+theorem simulateQ_decisionImpl {m : Type → Type} [Monad m] [LawfulMonad m]
+    (amb : QueryImpl oSpec m) (p : Path (oracleProtocol pSpec))
     (r : ∀ o, Sum.elim OStmtIn (OracleData (oracleProtocol pSpec) p) o) {α : Type}
     (x : OracleComp (oSpec + ([OStmtIn]ₒ + [pSpec.Message]ₒ)) α) :
     simulateQ (QueryImpl.addLift amb
@@ -534,7 +535,7 @@ theorem simulateQ_decisionImpl {κ : Type} {spec : OracleSpec κ}
     · simp only [decisionImpl, QueryImpl.addLift_def, QueryImpl.add_apply_inl,
         OracleInterface.simOracle2, QueryImpl.liftTarget_apply, QueryImpl.id_apply,
         QueryImpl.liftTarget_self]
-      refine (QueryImpl.simulateQ_add_query_left amb (QueryImpl.liftTarget (OracleComp spec)
+      refine (QueryImpl.simulateQ_add_query_left amb (QueryImpl.liftTarget m
         ((sumFamily (family OStmtIn) (pathFamily _ p)).behaviorOfRealizations r)) q).trans ?_
       rw [simulateQ_spec_query]
     · simp only [QueryImpl.addLift_def, OracleInterface.simOracle2, QueryImpl.liftTarget_self]
@@ -543,7 +544,7 @@ theorem simulateQ_decisionImpl {κ : Type} {spec : OracleSpec κ}
           (.inr t))) (resourceImpl p q)) = _
       rw [QueryImpl.simulateQ_simulateQ_eq_of_apply
         (impl := ((sumFamily (family OStmtIn) (pathFamily _ p)).behaviorOfRealizations r).liftTarget
-          (OracleComp spec)) (fun t => QueryImpl.simulateQ_add_query_right _ _ t),
+          m) (fun t => QueryImpl.simulateQ_add_query_right _ _ t),
         simulateQ_liftTarget, resourceImpl_law]
       change pure _ = simulateQ amb (pure _)
       rw [simulateQ_pure]
@@ -709,9 +710,9 @@ theorem oracleFinalize_toOracleObservation
 
 /-- The decision of the embedded oracle verifier on the actual payloads of a run is legacy
 `verify` on the decoded challenges, with message and input-oracle queries answered from the
-decoded messages and the input data. -/
-theorem simulateQ_embedOracleVerifier_decide {κ : Type} {spec : OracleSpec κ}
-    (amb : QueryImpl oSpec (OracleComp spec))
+decoded messages and the input data. The ambient queries go to any implementation `amb`. -/
+theorem simulateQ_embedOracleVerifier_decide {m : Type → Type} [Monad m] [LawfulMonad m]
+    (amb : QueryImpl oSpec m)
     (V : _root_.OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) (stmt : StmtIn)
     (oStmt : ∀ i, OStmtIn i) (tr : PathAlong oracleSig (oracleProtocol pSpec)) :
     simulateQ (QueryImpl.addLift amb

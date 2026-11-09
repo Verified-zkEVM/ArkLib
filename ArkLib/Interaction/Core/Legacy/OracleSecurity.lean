@@ -42,44 +42,9 @@ variable {n : ℕ} {pSpec : ProtocolSpec n} [Oₘ : ∀ i, OracleInterface.{0, 0
   {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} [Oₛₒ : ∀ i, OracleInterface.{0, 0} (OStmtOut i)]
   {σ : Type}
 
-/-! ### The oracle decision under a stateful ambient implementation -/
+/-! ### Acceptance of the oracle decision -/
 
 section Acceptance
-
-omit [∀ t, Inhabited (oSpec.Range t)] in
-/-- A stateful ambient implementation next to pure behaviors factors through the identity on the
-ambient queries. -/
-theorem simulateQ_addLift_id' {κ : Type} {R : OracleSpec κ} {α : Type}
-    (impl : QueryImpl oSpec (StateT σ ProbComp)) (beh : QueryImpl R Id)
-    (oa : OracleComp (oSpec + R) α) :
-    simulateQ (QueryImpl.addLift impl beh) oa =
-      simulateQ impl (simulateQ (QueryImpl.addLift (QueryImpl.id' oSpec) beh) oa) := by
-  induction oa using OracleComp.inductionOn with
-  | pure x => simp
-  | query_bind t k ih =>
-    simp only [QueryImpl.addLift_def, QueryImpl.liftTarget_self] at ih
-    rcases t with q | r
-    · simp [QueryImpl.addLift_def, ih]
-    · have h1 : (liftM (beh r) : StateT σ ProbComp _) = pure (beh r) := rfl
-      have h2 : (liftM (beh r) : OracleComp oSpec _) = pure (beh r) := rfl
-      simp [QueryImpl.addLift_def, h1, h2, ih]
-
-/-- The decision of the embedded oracle verifier on the actual payloads of a run, under a
-stateful ambient implementation, is legacy `verify` on the decoded challenges with message and
-input-oracle queries answered from the decoded messages and the input data. -/
-theorem simulateQ_embedOracleVerifier_decide_impl (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (V : _root_.OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) (stmt : StmtIn)
-    (oStmt : ∀ i, OStmtIn i) (tr : PathAlong oracleSig (oracleProtocol pSpec)) :
-    simulateQ (QueryImpl.addLift impl
-        ((sumFamily (family OStmtIn)
-          (pathFamily _ (projectPathAlong oracleSig _ tr))).behaviorOfRealizations
-            (sumData oStmt (payloads _ tr))))
-        ((embedOracleVerifier V).decide stmt (projectPathAlong oracleSig _ tr)
-          (toView _ tr)).run =
-      simulateQ impl
-        (simulateQ (OracleInterface.simOracle2 oSpec oStmt (oracleDecode pSpec tr).messages)
-          (V.verify stmt (oracleDecode pSpec tr).challenges).run) := by
-  rw [simulateQ_addLift_id', simulateQ_embedOracleVerifier_decide, simulateQ_id']
 
 /-- **Oracle acceptance agrees with the legacy verifier.** Valid acceptance of the embedded
 oracle verifier from some ambient state is a possible accepted output of the induced legacy
@@ -104,7 +69,7 @@ theorem oracleAcceptanceAgrees (impl : QueryImpl oSpec (StateT σ ProbComp))
         (oracleDecode pSpec tr).messages)) <$>
         simulateQ (OracleInterface.simOracle2 oSpec oStmt (oracleDecode pSpec tr).messages)
           (V.verify stmt (oracleDecode pSpec tr).challenges).run)) st) ∧ p t
-  rw [simulateQ_embedOracleVerifier_decide_impl, embedOracleVerifier_outputMap_f,
+  rw [simulateQ_embedOracleVerifier_decide, embedOracleVerifier_outputMap_f,
     ← prEvent_eq_evalDist _ _ measurable_from_top, prEvent_pos_iff, simulateQ_map,
     StateT.run'_map', _root_.support_map]
   constructor
