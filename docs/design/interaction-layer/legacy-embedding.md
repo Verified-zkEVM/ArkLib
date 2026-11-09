@@ -12,12 +12,14 @@ forms between the layers. Nothing here changes the legacy layer. The embedding r
 | `Protocol` | `protocol pSpec`, the plain tree of a legacy specification, and `oracleProtocol pSpec`, its oracle tree. Also `transcriptEquiv`, which identifies runtime paths with legacy full transcripts. |
 | `Prover` | `embedProver`, which turns a legacy prover into a focal strategy slot for slot. Also `legacySampler`, the public-coin sampler indexed by legacy challenge rounds. |
 | `Verifier` | `embedVerifier` and `embedReduction`. The verifier decides on the decoded transcript. |
-| `OracleReduction` | `embedOracleProver` and `embedOracleVerifier` on the oracle tree, for both legacy oracle-output representations. `OracleMap.ofLegacySimulation` turns a legacy output-oracle simulation into an oracle map. |
+| `OracleReduction` | `embedOracleProver` and `embedOracleVerifier` on the oracle tree, for both legacy oracle-output representations. `OracleMap.ofLegacySimulation` turns a legacy output-oracle simulation into an oracle map. `supportedAnswer` picks an ambient answer from the support of an ambient implementation, so the transfers need no inhabitance assumption on ambient answers. |
 | `Execution` | The common observation, the execution correspondence and its logged form. |
 | `OracleExecution` | The execution correspondence on the oracle tree: transport of oracle-tree strategies to the plain tree, the transcript read off a run, and `oracleFinalize`. |
 | `Security` | The completeness, soundness and knowledge-soundness transfers, the legacy transcript prefix of a full prefix, and the round-by-round transfers. |
 | `OracleSecurity` | The completeness, soundness and round-by-round transfers for the embedded oracle verifier on the oracle tree. |
-| `OracleKnowledge` | The straight-line knowledge-soundness transfers for the embedded oracle verifier on the oracle tree, with the logged form of the oracle execution correspondence. |
+| `OracleKnowledge` | The straight-line knowledge-soundness transfers for the embedded oracle verifier on the oracle tree, with the logged form of the oracle execution correspondence. Transport of completeness and knowledge soundness along an equality of protocol trees. |
+| `OracleAppend` | The oracle tree of an appended legacy specification: chains of message and challenge nodes, transcript decoding, message-query routing, and the uniform challenge oracle of the parts. |
+| `PureSlots` | Pure challenge slots of legacy provers are preserved by appending, the identity, context lifting and sequential composition. |
 
 ## The common observation
 

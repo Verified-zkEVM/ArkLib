@@ -51,6 +51,20 @@ These entries continue the numbering for Sumcheck in the interaction layer. They
 | [17](sumcheck.md#17-the-transferred-completeness-is-in-its-own-module) | The transferred completeness is in its own module, `LegacyCompleteness`. |
 | [18](sumcheck.md#18-the-verifier-has-no-interval-start) | The verifier has no interval start; first-round results are stated on the round-`0` check. |
 
+Entry 18 restates the interval assertions for all `n` rounds. It does not retire the assertions
+that remain open. [`sumcheck.md`](sumcheck.md#migration-disposition) gives a disposition for every
+migration row:
+
+- **Deferred to part D, commit 7.** The projection `OracleMap` of OQ16 and its answer law
+  (Projection #3). The execution through the projection map: the projected output of
+  Projection #7, and the standalone round of Projection #8 and ProjectionTransport #2. The append
+  equivalence (Protocol #7). The composition through an exported oracle (SourceRouting #4–#7).
+  The production lemma `relationRound_last_iff` (ArbitraryRounds #6).
+- **Deferred to part D, commit 6.** The four implication rows of
+  `ArkLibTest/Interaction/Oracle/Security/Soundness.lean`, #3–#6 (OQ3).
+- **Partly covered.** Projection #7, Projection #8 and ProjectionTransport #2 are covered on the
+  round-`0` check only. That check keeps the original input polynomial.
+
 ## The oracle correspondence gap and its resolution
 
 **Gap.** The first version of the legacy embedding defined `embedOracleProver` and

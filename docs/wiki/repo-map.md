@@ -43,8 +43,13 @@ home_page/            site assets and assembled website root
   `Execution.lean` runs a verifier against an arbitrary prover and keeps rejection as a returned
   verdict. `Composition.lean` appends verifiers, provers and oracle routes. `Security/` holds
   completeness and soundness over adversary models, classical straight-line and transcript-only
-  extraction, and round-by-round soundness and knowledge on cursor prefixes. Its acceptance
-  tests live in `ArkLibTest/Interaction/Core/`.
+  extraction, and round-by-round soundness and knowledge on cursor prefixes;
+  `Security/Agreement.lean` transfers runs, logged runs and every security notion between two
+  oracle verifiers whose decisions and output maps agree, and along an equality of protocol
+  trees. `Legacy/` embeds legacy protocol specifications
+  ([legacy embedding](../design/interaction-layer/legacy-embedding.md)), including the oracle
+  tree of appended specifications (`Legacy/OracleAppend.lean`) and pure challenge slots
+  (`Legacy/PureSlots.lean`). Its acceptance tests live in `ArkLibTest/Interaction/Core/`.
 - `ProofSystem/Sumcheck/Core/` is Sumcheck in the interaction layer: the replicated round, the
   verifier as the legacy decision fold, the equivalence with the embedded legacy Sumcheck
   (`LegacyEquivalence.lean`), and the transferred completeness, soundness, knowledge and
