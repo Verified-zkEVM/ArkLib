@@ -70,13 +70,34 @@ run_cmd do
     done leaf leafSampler).run 0).2 == 1 do
     throwError "the zero-round leaf must execute exactly once"
 
+/-- The second challenge of two appended coins is the suffix coin's only challenge. -/
+def secondChallenge : ChallengeNode plainSig (coin.append fun _ => coin) :=
+  ⟨.inr ⟨⟨⟩, .inl ⟨⟩⟩, rfl⟩
+
+example : ChallengeNode.appendEquiv plainSig coin (fun _ => coin) ⟨.inl ⟨⟩, rfl⟩ =
+    .inl ⟨.inl ⟨⟩, rfl⟩ := rfl
+
+example : ChallengeNode.appendEquiv plainSig coin (fun _ => coin) secondChallenge =
+    .inr ⟨⟨⟨⟩, ⟨⟩⟩, ⟨.inl ⟨⟩, rfl⟩⟩ := rfl
+
+example : (ChallengeNode.appendEquiv plainSig coin (fun _ => coin)).symm
+    (.inr ⟨⟨⟨⟩, ⟨⟩⟩, ⟨.inl ⟨⟩, rfl⟩⟩) = secondChallenge := rfl
+
+run_cmd do
+  unless (ChallengeNode.appendEquiv plainSig coin (fun _ => coin) secondChallenge).isRight do
+    throwError "the second challenge of two coins must belong to the suffix"
+
 end Interaction.Core.Tests
 
 run_cmd do
   for decl in [``Interaction.Core.toCounterpart_publicCoinSampler,
       ``Interaction.Core.toCounterpart_publicCoinOracleSampler,
       ``Interaction.Core.replay_publicCoinSampler,
-      ``Interaction.Core.replay_publicCoinOracleSampler] do
+      ``Interaction.Core.replay_publicCoinOracleSampler,
+      ``Interaction.Core.Node.appendJoin_appendSplit,
+      ``Interaction.Core.Node.appendSplit_appendJoin,
+      ``Interaction.Core.Node.position_appendEquiv,
+      ``Interaction.Core.ChallengeNode.appendEquiv] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"
