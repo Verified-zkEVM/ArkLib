@@ -108,11 +108,14 @@ def rbrSoundness {S : Type} (s : FreeM P PUnit)
 /-- Intermediate witnesses and their backwards extraction at full transcript prefixes.
 
 Witness types, states and extractors may all read the full prefix, including oracle payloads.
-As for soundness states, the root extraction obligation applies only within the input promise.
+The output witness type `W tr` is indexed by the completed transcript `tr`, and the leaf
+extractor receives a witness of the type at the transcript its prefix completes. The input
+witness type `Win` is fixed. As for soundness states, the root extraction obligation applies
+only within the input promise.
 -/
-structure KnowledgeStateFunction (s : FreeM P PUnit) (S W Win : Type)
-    (admissible : S → Prop) (relIn : S → Win → Prop)
-    (validOutput : S → PathAlong l s → W → Prop) where
+structure KnowledgeStateFunction (s : FreeM P PUnit) (S : Type) (W : PathAlong l s → Type)
+    (Win : Type) (admissible : S → Prop) (relIn : S → Win → Prop)
+    (validOutput : (stmt : S) → (tr : PathAlong l s) → W tr → Prop) where
   Witness : ∀ {t} (sp : Cursor.Spine s t), PrefixMoves l sp → Type
   toFun : ∀ {t} (sp : Cursor.Spine s t) (history : PrefixMoves l sp), S →
     Witness sp history → Prop
@@ -121,8 +124,8 @@ structure KnowledgeStateFunction (s : FreeM P PUnit) (S W Win : Type)
     (history : PrefixMoves l sp), S → (x : Move l a) →
       Witness (sp.comp (.down (l.toFunB a x) (.root _))) (PrefixMoves.snoc l sp history x) →
         Witness sp history
-  extractLeaf : ∀ (sp : Cursor.Spine s (.pure ⟨⟩)) (history : PrefixMoves l sp), S → W →
-    Witness sp history
+  extractLeaf : ∀ (sp : Cursor.Spine s (.pure ⟨⟩)) (history : PrefixMoves l sp), S →
+    W (PrefixMoves.complete l sp history) → Witness sp history
   root : ∀ stmt, admissible stmt → ∀ wit,
     toFun (.root s) ⟨⟩ stmt wit → relIn stmt (extractRoot stmt wit)
   send : ∀ {a next} (sp : Cursor.Spine s (.liftBind a next)) history stmt,
@@ -134,10 +137,11 @@ structure KnowledgeStateFunction (s : FreeM P PUnit) (S W Win : Type)
     validOutput stmt (PrefixMoves.complete l sp history) wit →
       toFun sp history stmt (extractLeaf sp history stmt wit)
 
-/-- Worst-case-per-prefix knowledge: a fresh challenge rarely defeats backwards extraction. -/
-def rbrKnowledgeSoundness {S W Win : Type} (s : FreeM P PUnit)
+/-- Worst-case-per-prefix knowledge: a fresh challenge rarely defeats backwards extraction.
+The output witness type `W tr` is indexed by the completed transcript `tr`. -/
+def rbrKnowledgeSoundness {S Win : Type} (s : FreeM P PUnit) {W : PathAlong l s → Type}
     (admissible : S → Prop) (relIn : S → Win → Prop)
-    (validOutput : S → PathAlong l s → W → Prop)
+    (validOutput : (stmt : S) → (tr : PathAlong l s) → W tr → Prop)
     (draw : QueryImpl (challengeSpec l s) ProbComp) (ε : ChallengeNode l s → ℝ≥0∞) : Prop :=
   ∃ F : KnowledgeStateFunction l s S W Win admissible relIn validOutput,
     ∀ stmt, admissible stmt →
@@ -171,15 +175,17 @@ abbrev Verifier.rbrSoundness {ι σ S T : Type} {ambient : OracleSpec ι} {s : P
   Core.rbrSoundness plainSig s (input.admissible ()) (input.language ())
     (V.validAcceptance impl (output.language ())) draw ε
 
-/-- The plain verifier's default round-by-round knowledge form. -/
-abbrev Verifier.rbrKnowledgeSoundness {ι σ S T W Win : Type} {ambient : OracleSpec ι}
-    {s : Protocol} (V : Verifier ambient s S T)
+/-- The plain verifier's default round-by-round knowledge form. The output witness type `W tr`
+and the output relation `relOut tr` are indexed by the completed transcript `tr`. -/
+abbrev Verifier.rbrKnowledgeSoundness {ι σ S T Win : Type} {ambient : OracleSpec ι}
+    {s : Protocol} {W : PathAlong plainSig s → Type} (V : Verifier ambient s S T)
     (impl : QueryImpl ambient (StateT σ ProbComp))
-    (admissible : S → Prop) (relIn : S → Win → Prop) (relOut : T → W → Prop)
+    (admissible : S → Prop) (relIn : S → Win → Prop)
+    (relOut : (tr : PathAlong plainSig s) → T → W tr → Prop)
     (draw : QueryImpl (challengeSpec plainSig s) ProbComp)
     (ε : ChallengeNode plainSig s → ℝ≥0∞) : Prop :=
   Core.rbrKnowledgeSoundness plainSig s admissible relIn
-    (fun stmt tr wit => V.validAcceptance impl (fun t => relOut t wit) stmt tr) draw ε
+    (fun stmt tr wit => V.validAcceptance impl (fun t => relOut tr t wit) stmt tr) draw ε
 
 namespace OracleVerifier
 variable {ι I J σ S T : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
@@ -209,16 +215,18 @@ abbrev rbrSoundness (V : OracleVerifier ambient s S T inputs outputs)
   Core.rbrSoundness oracleSig s (input.admissible ()) (input.language ())
     (V.validAcceptance impl (output.language ())) draw ε
 
-/-- Worst-case-per-prefix oracle knowledge with full payload-bearing prefix access. -/
-abbrev rbrKnowledgeSoundness {W Win : Type}
+/-- Worst-case-per-prefix oracle knowledge with full payload-bearing prefix access. The output
+witness type `W tr` and the output relation `relOut tr` are indexed by the completed
+transcript `tr`. -/
+abbrev rbrKnowledgeSoundness {Win : Type} {W : PathAlong oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (admissible : S × (∀ i, A i) → Prop) (relIn : (S × (∀ i, A i)) → Win → Prop)
-    (relOut : (T × (∀ j, B j)) → W → Prop)
+    (relOut : (tr : PathAlong oracleSig s) → (T × (∀ j, B j)) → W tr → Prop)
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp)
     (ε : ChallengeNode oracleSig s → ℝ≥0∞) : Prop :=
   Core.rbrKnowledgeSoundness oracleSig s admissible relIn
-    (fun stmt tr wit => V.validAcceptance impl (fun t => relOut t wit) stmt tr) draw ε
+    (fun stmt tr wit => V.validAcceptance impl (fun t => relOut tr t wit) stmt tr) draw ε
 
 end OracleVerifier
 

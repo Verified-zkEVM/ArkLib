@@ -4,7 +4,8 @@ These notes record where `ArkLib/Interaction/Core/` departs from the design reco
 directory. The records themselves are unchanged. Each entry states what the record said, what the
 code does and why. Entries 1–8 were identified by the review of the first implementation; entries
 9–12 were introduced while addressing that review, and entry 13 by core additions that the oracle
-migration needs.
+migration needs. The final section records later core changes that keep to the records; they are
+not departures.
 
 ## 1. Oracle interfaces in positions; challenges indexed by node occurrences
 
@@ -142,3 +143,61 @@ migration can read the resource queries without a second logged runner. Extracto
 only the ambient part, as record D7 requires: `OracleVerifier.runWithLog_fst` proves that the
 `QueryLog.fst` of the decision log is the log of a run that records ambient queries alone, and the
 oracle extraction game passes that projection.
+
+## Continuation
+
+Entries 14 onwards record the departures of the legacy embedding. They are in
+[`legacy-embedding.md`](../interaction-layer/legacy-embedding.md#departures), and
+[`departures.md`](../interaction-layer/departures.md) indexes every entry, including 1–13.
+
+## Changes that keep to the records
+
+### Output witnesses are indexed by the transcript
+
+The round-by-round and straight-line knowledge interfaces took a constant output witness type,
+although the prover's output `Out : PathAlong l s → Type` and the intermediate witnesses
+`Witness sp history` of a knowledge state function were already indexed by the transcript. A
+protocol whose output witness depends on a message, such as an index `Fin (payload + 1)` bounded
+by a sent `payload`, had to encode that carrier into a constant type and track its compatibility
+with the transcript separately. The old interfaces could not expose the transcript-indexed carrier
+directly.
+
+**Round-by-round knowledge** (`Security/RoundByRound.lean`). The output witness of
+`KnowledgeStateFunction` and `rbrKnowledgeSoundness` is a family `W : PathAlong l s → Type`.
+`validOutput` takes `(stmt : S) → (tr : PathAlong l s) → W tr → Prop`, and
+`extractLeaf sp history stmt` takes `W (PrefixMoves.complete l sp history)`. The input witness
+type `Win` stays a plain type. The verifier forms take the family implicitly, with output
+relations
+
+- `Verifier.rbrKnowledgeSoundness`: `relOut : (tr : PathAlong plainSig s) → T → W tr → Prop`;
+- `OracleVerifier.rbrKnowledgeSoundness`:
+  `relOut : (tr : PathAlong oracleSig s) → (T × ∀ j, B j) → W tr → Prop`, where the second
+  argument pairs the output statement with the output oracle data.
+
+**Straight-line knowledge** (`Security/Knowledge.lean`). The extractor interfaces
+`Extractor.Straightline`, `Extractor.TranscriptOnly`, `Extractor.OracleStraightline` and
+`Extractor.OracleTranscriptOnly` take an output witness family `Wout : PathAlong plainSig s → Type`
+or `Wout : PathAlong oracleSig s → Type`. Their arguments are ordered
+`(stmt : S) → (tr : PathAlong _ s) → Wout tr → …`, so the witness is typed at the transcript passed
+with it. The extraction games read the prover output through `readOut : ∀ tr, Out tr → Wout tr`;
+the identity is a valid `readOut` when `Wout = Out`. The `withLogs` adapters, both extraction
+games, `mem_support_extractionGame`, the classical interfaces and their marginal lemmas carry the
+family. `Prover`, the generic `knowledgeSoundnessWith` and `knowledgeSoundness`, and the input
+witness types are unchanged.
+
+There is one theory for each notion. Constant witness types are the constant family `fun _ => W`
+at the use site. The legacy round-by-round transfers in `Legacy/Security.lean` and
+`Legacy/OracleSecurity.lean` use `fun _ => WitOut` and the output relation
+`fun _ t w => (t, w) ∈ relOut`. The legacy extractor lifts `liftExtractor` and
+`liftOracleExtractor` use `fun _ => WitOut` and only reorder the transcript and witness arguments.
+Relations, errors and extractor behavior are as before.
+
+The tests in `ArkLibTest/Interaction/Core/Security.lean` use the carrier `Fin (payload + 1)`
+directly. In `payloadKnowledge` it is the leaf witness, and the input relation follows from its
+bound together with the acceptance equality `payload = stmt`; `payloadKnowledge_extract` gives
+the extraction equation for every payload. In `payload_extractionGame` a prover outputs
+`w : Fin 8` after sending `7`, the identity `readOut` passes it to the extractor, and the accepting
+run extracts `w.val`.
+
+This keeps to record D7, whose problems already index witness types by the claim; D7 fixes no
+constant output witness type for either notion.

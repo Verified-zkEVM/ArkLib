@@ -12,8 +12,6 @@ public import Mathlib.Data.List.FinRange
 import all CompPoly.Data.Array.Lemmas
 import all CompPoly.Univariate.Raw.Core
 import all CompPoly.Univariate.Raw.Ops
-import all VCVio.OracleComp.OracleQuery
-import all ToMathlib.Control.WriterT
 
 /-!
 # Measured coefficient-array arithmetic
@@ -32,7 +30,7 @@ variable {F A B : Type} [Zero F] [Add F] [Sub F] [Mul F] [Inv F] [DecidableEq F]
 @[simp]
 theorem profileArithmetic_pure (a : A) :
     profileArithmetic (F := F) (pure a) = (a, 0) := by
-  simp only [profileArithmetic, simulateQ_pure, AddWriterT.runAdd_pure]
+  rw [profileArithmetic_eq_charge]
   rfl
 
 /-- A bind adds the profiles of its first program and selected continuation. -/
@@ -42,17 +40,21 @@ theorem profileArithmetic_bind (p : OracleComp (ArithmeticSpec F) A)
       let a := profileArithmetic p
       let b := profileArithmetic (f a.1)
       (b.1, a.2 + b.2) := by
-  simp only [profileArithmetic, simulateQ_bind, AddWriterT.runAdd_bind]
-  rfl
+  simp only [profileArithmetic_eq_charge]
+  change (PFunctor.FreeM.output (PFunctor.FreeM.bind p f)
+      (PFunctor.FreeM.Path.ofHandler _ (PFunctor.FreeM.bind p f)),
+    PFunctor.FreeM.Path.charge _ (PFunctor.FreeM.bind p f)
+      (PFunctor.FreeM.Path.ofHandler _ (PFunctor.FreeM.bind p f))) = _
+  rw [PFunctor.FreeM.Path.ofHandler_bind, PFunctor.FreeM.Path.output_joinBind,
+    PFunctor.FreeM.Path.charge_joinBind]
 
 /-- One primitive request returns its certified answer and charges its own coordinate. -/
 @[simp]
 theorem profileArithmetic_query (op : ArithmeticOp F) :
     profileArithmetic (F := F) (liftM (OracleSpec.query (spec := ArithmeticSpec F) op)) =
       (arithmeticAnswer op, arithmeticCost op) := by
-  simp [profileArithmetic, simulateQ_query, OracleSpec.query_def, arithmeticMeasured,
-    QueryImpl.withCost_apply, AddWriterT.runAdd]
-  rfl
+  rw [profileArithmetic_eq_charge]
+  exact Prod.ext rfl (add_zero _)
 
 /-- A certified program's result is the unique value specified by its response type. -/
 @[simp]
