@@ -92,9 +92,12 @@ routed input data and every ambient answer allowed. `OutputCompatibility.ofState
 certificate when every accepted prefix result equals one public statement, and
 `append_decideWith` states the routing law: the composed decision is the prefix decision followed
 by the suffix decision on the routed data. Some condition is necessary: a prefix that returns an
-ambient random bit admits no certificate, which a test checks. Restricting to the support admits
-every deterministic or statement-determined composition, such as a rejecting zero-round prefix
-followed by a constant suffix.
+ambient random bit, followed by a suffix whose output oracle exposes that bit, admits no
+certificate, which a test checks. Compatibility depends on both verifiers: the same prefix
+followed by a suffix whose output map ignores the bit does admit one. `ofStatement` gives a
+sufficient condition, every accepted prefix result being one public statement; a test composes an
+accepting zero-round prefix that returns `false` with the bit-dependent constant-oracle suffix,
+and the composite accepts and returns the zero oracle.
 
 ## 10. Root obligations of state functions are guarded by the input promise
 
@@ -126,8 +129,9 @@ ArkLib for it. `Fiber`,
 but remain in ArkLib, marked as candidates for PolyFun; `project_split` is now derived from
 PolyFun's `projectPathAlong_append`, `append_split` and `split_append` laws. The same holds for
 `Node.appendEquiv` and `ChallengeNode.appendEquiv` in `Protocol.lean`, which split the node
-occurrences and challenge nodes of an appended protocol into prefix and suffix-fibre parts. Moving
-them would change the PolyFun pin, which this slice does not do.
+occurrences and challenge nodes of an appended protocol into prefix and suffix-fibre parts. They
+stay local to avoid a further PolyFun API change and repin beyond the merged lens work this slice
+pins to; moving them to PolyFun is a follow-up.
 
 ## 13. The oracle decision log is recorded in the core
 
