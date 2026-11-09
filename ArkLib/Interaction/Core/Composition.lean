@@ -29,25 +29,26 @@ open PFunctor FreeM TwoParty.Lens OracleComp Oracle
 attribute [local implicit_reducible] projectPathAlong projectPathAlongLocalMap
   Displayed.LocalMap.toHom Displayed.LocalMap.toHomFun owner Node Node.position challengeSpec
 
+-- `Fiber`, `project_split` and `splitFiber` are generic in the polynomial and the lens; they are
+-- candidates for PolyFun's path ledger, with `View.split` and `PlainView.split` remaining here.
+
 /-- A transcript over a fixed shape, for any interaction signature. -/
 abbrev Fiber {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
     (s : FreeM P PUnit.{u + 1}) (p : Path s) :=
   {tr : PathAlong l s // projectPathAlong l s tr = p}
 
 /-- Projection commutes with the prefix decomposition of a full transcript. -/
-theorem project_split {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u}) :
-    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
-    (tr : PathAlong l (s₁.append s₂)) →
+theorem project_split {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
+    (s₁ : FreeM P PUnit.{u + 1}) (s₂ : Path s₁ → FreeM P PUnit.{u + 1})
+    (tr : PathAlong l (s₁.append s₂)) :
     (let z := PathAlong.split l s₁ s₂ tr
      (⟨projectPathAlong l s₁ z.1, projectPathAlong l _ z.2⟩ :
        (p : Path s₁) × Path (s₂ p))) =
-      Path.split s₁ s₂ (projectPathAlong l (s₁.append s₂) tr)
-  | .pure _, _, _ => rfl
-  | .liftBind a next, s₂, ⟨x, tr⟩ =>
-    congrArg (fun z : (p : Path (next (l.toFunB a x))) × Path (s₂ ⟨l.toFunB a x, p⟩) =>
-      (⟨⟨l.toFunB a x, z.1⟩, z.2⟩ :
-      (p : Path (.liftBind a next)) × Path (s₂ p)))
-      (project_split l (next (l.toFunB a x)) (fun p => s₂ ⟨l.toFunB a x, p⟩) tr)
+      Path.split s₁ s₂ (projectPathAlong l (s₁.append s₂) tr) := by
+  let z := PathAlong.split l s₁ s₂ tr
+  have h := congrArg (Path.split s₁ s₂)
+    (PathAlong.projectPathAlong_append l s₁ s₂ z.1 z.2)
+  simpa only [z, PathAlong.append_split, Path.split_append] using h.symm
 
 /-- Split views along the shape split. Only the view transcripts are transported. -/
 def splitFiber {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
