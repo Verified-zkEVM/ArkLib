@@ -12,6 +12,7 @@ the interaction-layer verifier runs the legacy decision fold, and its relations 
 | Module | Contents |
 |---|---|
 | `SingleRound` | One round: an oracle node for the round polynomial, then one challenge in `R`. |
+| `Composition` | Standalone checked rounds, projected output oracles, and program equality of a first round appended to the remaining rounds. |
 | `Protocol` | `protocol R deg n`, the `n`-fold replication of the round; the honest prover as a fold with `pure` slots. |
 | `Execution` | The verifier: the legacy decision fold on the view's challenges, with message queries routed to oracle nodes. Closed forms of runs; the round check `roundCheck` and its accept and reject equations. |
 | `Completeness` | Perfect completeness of the interaction-layer honest prover, proved directly, for every challenge implementation. |
@@ -120,36 +121,37 @@ The acceptance tests are in `ArkLibTest/ProofSystem/Sumcheck/Core/`.
 | `Soundness` | Soundness against any one-round prover; a soundness bound over `ZMod 17`; exact probabilities over `ZMod 5`; the adaptive message's endpoint and hit facts; the exclusion of `X ^ 2` from the degree-one carrier. |
 | `RoundByRound` | Clients of the round-by-round, knowledge and completeness transfers. |
 | `Rounds` | Two- and three-round runs: challenge draws in round order, the accepted claim, a wrong target that still runs every round and rejects. Two honest rounds on the bilinear input `1 + 2 X₀ + 3 X₁ + 4 X₀ X₁` with the challenges `3` and then `5`: exactly two challenge queries, in round order, and the accepted claim `⟨14, ![3, 5]⟩` with the input polynomial as output oracle. The honest messages on that input, `5 + 8 X` and `1 + 2 c + 3 X + 4 c X`, their sums, and the first-round relation transport. |
+| `Composition` | `projection_bilinear`, `projection_answer`, `run_projected_bilinear`, `projected_relation`, `run_projected_relation`, and `run_append_bilinear`: the projected oracle, its standalone run and relation, and the append equivalence at two rounds. |
+| `Routing` | `accepted`, `prefix_rejected`, `suffix_rejected`, `accepted_relation`: two rounds through the exported polynomial `p(r, ·) + q(r)`. The private component is any `Nat`; every recorded run returns `hidden + 110` and trace `[1, 3, 2, 4]`. |
+| `LegacyVerifier` | `sent_target`, `inconsistent_sum_rejected`, `honest_zero_accepted`, `linear_sent_target`, `run_false_relation`: the regression cases on both the core verifier and the embedded legacy verifier. |
 | `Effects` | A prover with ambient effects before each message and after the last challenge: the run executes them in protocol order, and a recording handler observes the order. An accepted claim that is not in the final relation. A claim whose first check fails still runs both rounds and rejects, and the decision log holds only the first round's check queries (`decide_log_badFirst` for every completed run whose first message fails its check, at every round count; `runWithLog_wrong` for the logged execution of that prover). The round message's oracle interface. |
 
-## Open
+## Remaining integration work
 
-The verifier covers rounds `0` to `n`. There is no verifier for an interval of rounds that starts
-at round `i` (departure 18). The following are not ported and are deferred to the remaining
-Sumcheck ports of part D, commit 7. Open question OQ16 of the part-D decisions settles their
-design: the projection `OracleMap` is the round's output map in `Sumcheck/Core/SingleRound.lean`,
-with `projectedRoundPolynomial` as its data map, `simulateProjectedRoundPolynomial` as its query
-implementation, and the law from `simulateProjectedRoundPolynomial_eq`.
+The full verifier covers rounds `0` to `n`. `Composition.projectedVerifier` verifies an arbitrary
+single round `i`, while the appended full-protocol equality starts at `0`, as OQ11 permits.
+There is no general interval runner. Departure [20](../interaction-rebuild/IMPLEMENTATION-NOTES.md#20-sumcheck-ports)
+records the ports and restatements.
 
-- The projection of the input polynomial to the round polynomial as an `OracleMap`, with its
-  answer law.
-- A standalone round executed through that projection map: the projected univariate output and
-  the derived query handler. The tests state the first-round relation transport on the round-`0`
-  check, which retains the original input polynomial; this is not that execution.
-- The split of `n + 1` rounds into an appended first round and `n` rounds, as program equality
-  through `Prover.append` and `OracleVerifier.append`.
-- A two-round composition through an exported oracle, with a first-round verifier that exports a
-  transformed oracle: acceptance, rejection in either part, and the output-relation implication,
-  for an arbitrary hidden component.
-- `relationRound_last_iff`, the evaluation form of the final relation, next to `relationRound` in
-  `ArkLib/ProofSystem/Sumcheck/Spec/`. The tests prove it as `relationLast_iff_eval`.
+### Waits on D1/D5/D6
 
-The generic implication from round-by-round soundness to soundness in the interaction layer is
-not ported here; it is deferred to part D, commit 6. The Sumcheck soundness theorems do not need
-it: they transfer the legacy soundness, which is derived through the legacy guarded implication.
+The modules these rows need are added by part D, commits 1, 5 and 6, and are not on this
+branch's base. Sumcheck does not duplicate them.
 
-The protocol is not generic in its message carrier, so no computable instance shares its
-decision (open question OQ17).
+| Rows | Owner and dependency | Disposition on this branch |
+|---|---|---|
+| Generic routing clients outside Sumcheck | D1, `Core/Oracle/Routing.lean` | Waits on D1. The Sumcheck-specific one-round specialization is in `Core/Composition.lean`; SourceRouting #4–#7 do not wait. |
+| `Interaction/CompositionSoundness` #1–#14; `Interaction/Oracle/CompositionSoundnessExample` #1–#15 | D5, `Core/Security/CompositionSoundness.lean` | Waits on D1/D5. Preserve the arbitrary midpoint, weighted almost-everywhere suffix premise and final-query variants; do not duplicate them in Sumcheck. |
+| `Interaction/Oracle/RuntimeSoundness` #1–#22; `RuntimeQueryBounds` #12, #16, #17 | D5 and the VCVio runtime support (OQ2) | Waits on D1/D5. Runtime soundness is an application of composition soundness to `OracleRuntime.run`, not a second production module. |
+| `Interaction/Oracle/Security/Soundness` #3–#6 | D6, `Core/Security/Implications.lean` | Waits on D6: local-to-global soundness, uniform error, escape and averaged-prefix lemmas. The Sumcheck transfers already use the legacy guarded implication. |
+
+The migration list has **no LegacyVerifier rows tagged CompositionSoundness or
+RuntimeSoundness**: its 13 LegacyVerifier rows are all `keep`. The composition/runtime rows above
+belong to the generic interaction tests. The additional LegacyVerifier bridge obligations from
+§4.4 are accounted for below; they need no D1/D5/D6 module.
+
+OQ17's generic message-carrier change and the executable instance belong to part D, commit 8.
+Until then no computable instance shares the decision.
 
 ## Migration disposition
 
@@ -172,13 +174,13 @@ data, all `n` rounds, a passive verifier. Tests are in `ArkLibTest/ProofSystem/S
 | Closing #2, #3, #5–#8 | Covered by `SingleRound.run_oneRound`, the verdict equations, the output-relation examples and their axiom guards. |
 | Closing #4, #9 | Covered by direct perfect completeness and its uniform specialization. |
 | Legacy #1, #2 | Covered by `legacy_prover_run` and `embedded_prover_generates` in `LegacyEquivalence`, including wrong targets. |
-| Projection #3 | Deferred to part D, commit 7: the projection `OracleMap` of OQ16 and its answer law. |
-| Projection #7 | Partly covered. The round-`0` check on the bilinear input accepts the claim `⟨12, ![3]⟩` with the original input polynomial. The projected output and the execution through the projection map are deferred to part D, commit 7. |
-| Projection #8, ProjectionTransport #2 | Partly covered. `Rounds.firstRound_relation` states the first-round relation transport for every input, and the bilinear instance is checked. The standalone round executed through the projection handler is deferred to part D, commit 7. |
+| Projection #3 | Covered by `Sumcheck.Core.projectionMap`, `projectionMap_f`, `simulateQ_projectionMap` in `SingleRound`; tested by `CompositionTest.projection_bilinear` and `projection_answer`. The implementation and law reuse `Spec.SingleRound.simulateProjectedRoundPolynomial` and `simulateProjectedRoundPolynomial_eq`. |
+| Projection #7 | Covered by `projectedVerifier`, `run_projectedVerifier_roundProver`, and `CompositionTest.run_projected_bilinear`: challenge `3`, accepted target `12`, projected output `5 + 8 X`. The output map is the projection composed with the input-slot map. |
+| Projection #8, ProjectionTransport #2 | Covered by `projectedVerifier_relation`, `CompositionTest.projected_relation`, and `run_projected_relation`, which checks the relation on the standalone run's own returned verdict. `RoundsTest.firstRound_relation` retains the original input in the next-round relation. |
 | Protocol #1, #2 | Covered by `Effects.two_rounds` and the recording handler. |
 | Protocol #3, #4 | Covered. `Effects.bad_first_rounds` runs both rounds and rejects. `Effects.decide_log_badFirst` and `Effects.runWithLog_wrong` show that the decision log holds only the first round's check queries. |
 | Protocol #6, #8 | Covered by the sampled adaptive prover's bound and the soundness axiom guards. |
-| Protocol #7 | Deferred to part D, commit 7: program equality of the appended run through `Prover.append` and `OracleVerifier.append`. |
+| Protocol #7 | Covered by `run_append_foldVerifier` for every whole prover and `run_append_verifier` for `Prover.append p f`, with an effectful suffix constructor and dependent output. These are open-program equalities, preserving every query and verdict. `CompositionTest.run_append_bilinear` instantiates two rounds. |
 | Protocol #9, #10 | Covered by the completeness axiom guards. |
 | RoundByRound #1 | Covered by the round-by-round clients and `false_claim_bound`. |
 | Sequential #2, #4 | Covered by `Rounds.run_two_bilinear` and the recording example: challenges `3` then `5`, two challenge queries in round order, target `14`, the bilinear input as output oracle. |
@@ -188,14 +190,17 @@ data, all `n` rounds, a passive verifier. Tests are in `ArkLibTest/ProofSystem/S
 | Soundness #15, #16, #21, #23–#28 | Covered by the axiom guards, the committed and randomized prover bounds and the run equations. |
 | SourceRouting #1, #2 | Covered by the affine evaluation and oracle-interface tests in `Effects`, over `ZMod 17`. |
 | SourceRouting #3 | Covered by the protocol shape. The challenge and abort branches of `Option` are retired. |
-| SourceRouting #4–#7 | Deferred to part D, commit 7: the two-round composition through an exported oracle, with an arbitrary hidden component, acceptance, prefix and suffix rejection, and the output-relation implication. |
-| `Interaction/Oracle/Security/Soundness.lean` #3–#6 (lines 54, 55, 57, 58) | Deferred to part D, commit 6 (OQ3): the general local-to-global soundness theorem, its uniform-error corollary, the verifier-escape lemma and random-prefix averaging. |
+| SourceRouting #4 | Covered by `RoutingTest.exportPoly`, `eval_exportPoly`, `exportMap`, `exportOut`, `firstVerifier`, `secondVerifier`, `compatible`, `routed`, `run_routed`, and `accepted`: exported oracle `p(r, ·) + q(r)`, trace `[1, 3, 2, 4]`, private output `hidden + 110` for every `hidden : Nat`, accepted claim `(10, 10)`. |
+| SourceRouting #5 | Covered by `RoutingTest.routedVerdict_prefix` and `prefix_rejected`. Both interactions run and retain the same trace and private output. `decideWith_append_checkVerifier` skips the suffix decision when the prefix rejects. |
+| SourceRouting #6 | Covered by `RoutingTest.routedVerdict_suffix` and `suffix_rejected`, after both challenges and both prover events. |
+| SourceRouting #7 | Covered by `RoutingTest.routedVerdict_accepted` and `accepted_relation` for every pair of challenges and every returned claim. `run_routed` identifies that verdict with the composite run's verdict. |
+| `Interaction/Oracle/Security/Soundness.lean` #3–#6 | Waits on D6 (OQ3), as listed under [Remaining integration work](#waits-on-d1d5d6). |
 
 ### Fixture rows (OQ4)
 
 | Row | Disposition |
 |---|---|
-| ArbitraryRounds #6 | Covered in the tests: `Rounds.relationLast_iff_eval`, with an axiom guard. The production lemma `relationRound_last_iff` in `Sumcheck/Spec/` is deferred to part D, commit 7. |
+| ArbitraryRounds #6 | Covered by `Spec.relationRound_last_iff` next to `relationRound`. `RoundsTest.relationLast_iff_eval` uses it and keeps its axiom guard. |
 | Projection #1 | Covered: `Rounds.domain_points`. |
 | Projection #2 | Covered: `Rounds.suffix_points`. |
 | Projection #4 | Covered: `Rounds.bilinear_relation`. |
@@ -216,6 +221,38 @@ data, all `n` rounds, a passive verifier. Tests are in `ArkLibTest/ProofSystem/S
 | Soundness #18 | Covered: axiom guard of the adaptive message `adaptive`. |
 | Soundness #19, #20 | Covered: axiom guards of `adaptive_endpoints` and `adaptive_hits`. |
 | Soundness #22 | Covered: axiom guard of `fresh_bound_lt_one`. |
+
+### B and the kept legacy regressions
+
+| Rows | Disposition |
+|---|---|
+| Virtual V1 (B's one row, migration §3.3 / §4.4) | Already covered on this base: `OracleMap.ofLegacySimulation` and `Legacy.simulateQ_ofLegacySimulation_impl`, instantiated at `ToyProblem.SimplifiedIOR.outputSimulation` in `ArkLibTest/Interaction/Core/Legacy/OracleReduction.lean`. No duplicate lemma or fixture is added. |
+| LegacyVerifier #1, #2 | Keep the legacy tests `input_relation_false`, `message_sum_passes`. |
+| LegacyVerifier #3, #4 (bridge versions, §4.4) | `LegacyVerifierTest.answered_pair` and `sent_target` check both core and embedded decisions; the next target is the message's evaluation one. |
+| LegacyVerifier #5 (bridge version) | `LegacyVerifierTest.run_false_relation` checks the false output relation on each run's returned verdict, retaining input zero. |
+| LegacyVerifier #6, #7 (bridge versions) | `LegacyVerifierTest.inconsistent_sum_rejected`, `honest_zero_accepted`, on both verifiers at every challenge. |
+| LegacyVerifier #8, #9 (bridge versions) | `LegacyVerifierTest.linearMessage` and `linear_sent_target`: both decisions return `r + 1` for message `X + 1` at every `r : ZMod 5`. |
+| LegacyVerifier #10, #11 (bridge versions) | The axiom guard in `Core/LegacyVerifier.lean` checks `linear_sent_target` and `run_false_relation`, together with all four other bridge facts. |
+| LegacyVerifier #12, #13 | Keep the legacy RBR knowledge guards. Core transfers remain guarded in `Core/RoundByRound.lean`. |
+
+The original kept `ArkLibTest/ProofSystem/Sumcheck/LegacyVerifier.lean` is outside D7's editable
+paths. Its frozen import still needs retargeting when D9 removes the frozen providers. None of
+the new Core tests imports it.
+
+### Supporting declarations added by D7
+
+All names in this table are in `Sumcheck.Core` unless qualified otherwise. They support the rows
+above rather than adding independent security claims.
+
+| Module | Declarations and purpose |
+|---|---|
+| `Spec/PolynomialInterface` | `Spec.polynomialFamily`; the plain alias `Interaction.MultivariateRound.polynomialFamily` remains only until D9. Existing Core and `Impl/Projection` clients use the neutral name. |
+| `SingleRound` | `messageFamily`, `projectionMap`, `projectionMap_f`, `simulateQ_projectionMap`: the univariate output interface and lawful projection. |
+| `Composition`, decisions | `simulateQ_addLift_eq`, `simulateQ_decide_eq_decideWith`, `run_eq_decideWith`, `inputSlot`: resource interpretation and the existing `OracleMap.embedding` for the input slot. The simulation proof uses VCVio's `simulateQ_simulateQ_eq_of_apply`. |
+| `Composition`, round | `checkRoute`, `roundChallenges`, `checkVerifier`, `roundChallenges_eq`, `decideWith_checkVerifier`, `checkVerdict`, `run_checkVerifier`: reuse the legacy per-round check, with no ambient queries in that check. |
+| `Composition`, append | `splitFiber_val`, `split_toView_round`, `appendHead`, `appendTail`, `prefixRoute_round`, `suffixRoute_round`, `decideWith_append_checkVerifier`, `run_append_checkVerifier`: specialize the Core append routing to one Sumcheck round. The generic routing of part D, commit 1 is not duplicated. |
+| `Composition`, fold | `foldLift`, `foldVerifier`, `verifier_eq_foldVerifier`, `simulateQ_foldLift`, `decideWith_foldVerifier`, `foldHead`, `foldCompatibility`, `decideWith_append_foldVerifier`, `run_append_foldVerifier`, `run_append_verifier`: reuse `Spec.oracleVerifierProgram` and C's `simulateQ_oracleVerifierProgram_succ`, allowing a suffix that starts from a round-1 statement. |
+| `Composition`, projection | `simulate_roundProver`, `projectedVerifier`, `run_projectedVerifier_roundProver`, `projectedVerifier_relation`: run the standalone projected round and reuse `projected_sum_of_relationRound` and `relationRound_projected_output` for its mathematical relation. |
 
 ## Departures
 
@@ -245,10 +282,11 @@ The first-round relation transport is stated on the verifier's round-`0` check, 
 from the round-`0` relation, the check on the honest first message accepts a statement in the
 round-`1` relation (`firstRound_relation` in the `Rounds` test). This is a statement about the
 round check, which keeps the original input polynomial; it is not an execution through the
-projection map. The split of `n + 1` rounds is not stated.
+projection map. D7 now states the split of `n + 1` rounds as `run_append_verifier` and adds the standalone
+`projectedVerifier` at arbitrary round `i`.
 
-**Why.** A verifier for an interval of rounds changes the statement types of the composition and
-needs its own equivalence with the legacy single-round verifiers. Restating the interval
-assertions for all `n` rounds is allowed. The departure does not retire the append equivalence of
-Protocol #7 or the projection execution: both are deferred to part D, commit 7 (see
-[Migration disposition](#migration-disposition)).
+**Why.** A general interval runner changes the statement types of the composition and needs its
+own equivalence with the legacy interval verifiers. OQ11 permits the full-`n` restatement.
+Protocol #7 and the projection execution are now covered; see
+[Migration disposition](#migration-disposition) and departure
+[20](../interaction-rebuild/IMPLEMENTATION-NOTES.md#20-sumcheck-ports).

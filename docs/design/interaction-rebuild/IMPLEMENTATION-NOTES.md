@@ -201,3 +201,47 @@ run extracts `w.val`.
 
 This keeps to record D7, whose problems already index witness types by the claim; D7 fixes no
 constant output witness type for either notion.
+
+## 20. Sumcheck ports
+
+**Plan.** The frozen Sumcheck assertions include interval execution, a univariate standalone
+round through a virtual projection, and two rounds through an exported oracle. Decisions OQ4,
+OQ11, OQ16 and OQ18 assign their ports to D7 after C2. Entries 19 and 21 belong to other D commits;
+D7 uses 20.
+
+**Code.** `Sumcheck/Core/SingleRound.lean` supplies `projectionMap` with
+`projectedRoundPolynomial` as its data map, `simulateProjectedRoundPolynomial` as its query
+implementation, and `simulateProjectedRoundPolynomial_eq` as its law. There is no second
+univariate protocol. `Core/Composition.lean` supplies `projectedVerifier`, whose output map
+composes that projection with the input-slot embedding. Its statement retains the accumulated
+challenges; its output oracle is the univariate projected polynomial. The accepted verdict
+satisfies the simple evaluation relation, and with the original input it satisfies the next
+`Spec.relationRound`.
+
+`run_append_verifier` states Protocol #7 at full `n + 1`, including an effectful suffix constructor
+in `Prover.append` and the actual `OracleVerifier.append`. `foldVerifier` uses the existing legacy
+decision fold, allowing its suffix statement family to start at round 1. It adds no interval
+runner or soundness theorem.
+
+The routing test uses `ZMod 17` polynomials, matching C's concrete fixtures, with natural-number
+ambient event answers and an arbitrary private `hidden : Nat`. It preserves the recorded query
+order `[1, 3, 2, 4]`, accepted claim `(10, 10)` and exact private output `hidden + 110`. Polynomial
+arithmetic is in the field; private output arithmetic does not wrap. As D5 requires, a prefix
+rejection still runs both interactions, then skips the suffix decision. The frozen early-abort
+trace `[3]` and private output `hidden + 50` are replaced by the full trace and `hidden + 110`.
+Suffix rejection retains the same full trace.
+
+`Spec.polynomialFamily` replaces the former interaction namespace and C's duplicate `polyFamily`.
+The old interaction name is a documented plain alias for the untouched frozen layer and runtime
+script until D9. `Spec.relationRound_last_iff` is the production source of the final evaluation
+relation. The new tests keep standard-axiom guards and also check relations on the actual
+returned verdicts of the projected and embedded runs.
+
+**Why.** These restatements implement the approved passive decision boundary and the full-`n`
+execution choice. The projection construction and multivariate evaluation remain noncomputable
+mathematical views inherited from `Spec`; the generic executable carrier is D8's task under
+OQ17. No frozen assertion is silently retired. The
+[Sumcheck disposition table](../interaction-layer/sumcheck.md#migration-disposition) names each
+port and the existing B coverage. Generic routing, composition/runtime soundness and implications
+that are absent from this base wait on D1/D5/D6; they are listed separately there, without
+copying modules from those branches.
