@@ -164,14 +164,14 @@ example : rbrSoundness plainSig coin (fun _ => True) (· = true)
   intro stmt _ _ a next sp h history
   simp [state]
 
-def knowledgeState : KnowledgeStateFunction plainSig coin Bool Unit Unit
+def knowledgeState : KnowledgeStateFunction plainSig coin Bool Unit Unit (fun _ => True)
     (fun stmt _ => stmt = true) (fun stmt _ _ => stmt = true) where
   Witness _ := Unit
   toFun _ _ stmt _ := stmt = true
   extractRoot _ _ := ()
   extractStep _ _ _ _ _ := ()
   extractLeaf _ _ _ _ := ()
-  root _ _ h := h
+  root _ _ _ h := h
   send _ _ _ _ _ _ h := h
   leaf _ _ _ _ h := h
 
@@ -181,6 +181,24 @@ example : rbrKnowledgeSoundness plainSig coin (fun _ => True)
   refine ⟨knowledgeState, ?_⟩
   intro stmt _ a next sp h history
   simp [knowledgeState]
+
+/-- On zero rounds the promise `b = true` makes extraction immediate, while every input accepts. -/
+def promisedState : KnowledgeStateFunction plainSig zero Bool Unit Unit (· = true)
+    (fun b _ => b = true) (fun _ _ _ => True) where
+  Witness _ := Unit
+  toFun _ _ _ _ := True
+  extractRoot _ _ := ()
+  extractStep _ _ _ _ _ := ()
+  extractLeaf _ _ _ _ := ()
+  root _ h _ _ := h
+  send sp _ _ _ := nomatch sp
+  leaf _ _ _ _ _ := trivial
+
+/-- The promise excludes `false`, so its accepted runs need no witness. -/
+example (err : ChallengeNode plainSig zero → ℝ≥0∞) :
+    rbrKnowledgeSoundness plainSig zero (· = true) (fun b (_ : Unit) => b = true)
+      (fun (_ : Bool) _ (_ : Unit) => True) (fun c => c.val.elim) err :=
+  ⟨promisedState, fun _ _ _ _ sp => nomatch sp⟩
 
 end Interaction.Core.SecurityTests
 

@@ -105,9 +105,13 @@ def rbrSoundness {S : Type} (s : FreeM P PUnit)
         F.toFun (sp.comp (.down (l.toFunB a x) (.root _)))
           (PrefixMoves.snoc l sp history x) stmt} ≤ ε (spineChallenge l sp h)
 
-/-- Intermediate witnesses and their backwards extraction at full transcript prefixes. -/
+/-- Intermediate witnesses and their backwards extraction at full transcript prefixes.
+
+As for soundness states, the root extraction obligation applies only within the input promise.
+-/
 structure KnowledgeStateFunction (s : FreeM P PUnit) (S W Win : Type)
-    (relIn : S → Win → Prop) (validOutput : S → PathAlong l s → W → Prop) where
+    (admissible : S → Prop) (relIn : S → Win → Prop)
+    (validOutput : S → PathAlong l s → W → Prop) where
   Witness : ∀ {t}, Cursor.Spine s t → Type
   toFun : ∀ {t} (sp : Cursor.Spine s t), PrefixMoves l sp → S → Witness sp → Prop
   extractRoot : S → Witness (.root s) → Win
@@ -115,7 +119,8 @@ structure KnowledgeStateFunction (s : FreeM P PUnit) (S W Win : Type)
     PrefixMoves l sp → S → (x : Move l a) →
       Witness (sp.comp (.down (l.toFunB a x) (.root _))) → Witness sp
   extractLeaf : ∀ (sp : Cursor.Spine s (.pure ⟨⟩)), PrefixMoves l sp → S → W → Witness sp
-  root : ∀ stmt wit, toFun (.root s) ⟨⟩ stmt wit → relIn stmt (extractRoot stmt wit)
+  root : ∀ stmt, admissible stmt → ∀ wit,
+    toFun (.root s) ⟨⟩ stmt wit → relIn stmt (extractRoot stmt wit)
   send : ∀ {a next} (sp : Cursor.Spine s (.liftBind a next)) history stmt,
     owner l a = .sender → ∀ x wit,
       toFun (sp.comp (.down (l.toFunB a x) (.root _)))
@@ -130,7 +135,7 @@ def rbrKnowledgeSoundness {S W Win : Type} (s : FreeM P PUnit)
     (admissible : S → Prop) (relIn : S → Win → Prop)
     (validOutput : S → PathAlong l s → W → Prop)
     (draw : QueryImpl (challengeSpec l s) ProbComp) (ε : ChallengeNode l s → ℝ≥0∞) : Prop :=
-  ∃ F : KnowledgeStateFunction l s S W Win relIn validOutput,
+  ∃ F : KnowledgeStateFunction l s S W Win admissible relIn validOutput,
     ∀ stmt, admissible stmt →
     ∀ (a : P.A) (next : P.B a → FreeM P PUnit)
       (sp : Cursor.Spine s (.liftBind a next)) (h : owner l a = .receiver)
