@@ -48,7 +48,7 @@ This entry is in
 
 | Entry | Departure |
 | --- | --- |
-| [19](../interaction-rebuild/IMPLEMENTATION-NOTES.md#19-round-by-round-soundness-implies-soundness-for-plain-verifiers-in-the-classical-model) | Round-by-round soundness implies soundness for plain verifiers in the classical model, with a node-indexed error. |
+| [19](../interaction-rebuild/IMPLEMENTATION-NOTES.md#19-round-by-round-soundness-implies-soundness-in-the-classical-model) | Round-by-round soundness implies soundness for plain and oracle verifiers in the classical model, with a node-indexed error. |
 
 ## The oracle correspondence gap and its resolution
 
