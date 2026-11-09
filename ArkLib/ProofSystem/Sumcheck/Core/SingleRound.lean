@@ -60,9 +60,11 @@ def roundMessage (tr : PathAlong oracleSig (round R deg)) : R⦃≤ deg⦄[X] :=
 /-- The challenge recorded in a round transcript. -/
 def roundChallenge (tr : PathAlong oracleSig (round R deg)) : R := tr.2.1
 
+/-- The message of a round transcript is the message it was built from. -/
 @[simp] theorem roundMessage_roundTranscript (msg : R⦃≤ deg⦄[X]) (chal : R) :
     roundMessage (roundTranscript msg chal) = msg := rfl
 
+/-- The challenge of a round transcript is the challenge it was built from. -/
 @[simp] theorem roundChallenge_roundTranscript (msg : R⦃≤ deg⦄[X]) (chal : R) :
     roundChallenge (roundTranscript msg chal) = chal := rfl
 
@@ -80,6 +82,7 @@ theorem project_roundTranscript (msg : R⦃≤ deg⦄[X]) (chal : R) :
 /-- The verifier view of a round records the challenge and erases the message. -/
 def viewChallenge {p : Path (round R deg)} (v : View (round R deg) p) : R := v.1.2.1
 
+/-- The challenge in the view of a transcript is the transcript's challenge. -/
 @[simp] theorem viewChallenge_toView (tr : PathAlong oracleSig (round R deg)) :
     viewChallenge (toView (round R deg) tr) = roundChallenge tr := rfl
 

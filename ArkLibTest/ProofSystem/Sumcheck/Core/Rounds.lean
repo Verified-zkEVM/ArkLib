@@ -119,6 +119,7 @@ end Support
 
 noncomputable section
 
+/-- Seventeen is prime, so `ZMod 17` is a field. -/
 instance : Fact (Nat.Prime 17) := ⟨by decide⟩
 
 /-- The field with seventeen elements. -/
@@ -130,6 +131,7 @@ abbrev ambient : OracleSpec Unit := Unit →ₒ Unit
 /-- The domain `{0, 1}`. -/
 def D₂ : Fin 2 ↪ K := ⟨fun i => (i.val : K), by decide⟩
 
+/-- A variable has individual degree at most one. -/
 theorem X_mem {n : ℕ} (i : Fin n) :
     (MvPolynomial.X i : MvPolynomial (Fin n) K) ∈ MvPolynomial.restrictDegree (Fin n) K 1 := by
   rw [MvPolynomial.mem_restrictDegree]
@@ -139,6 +141,7 @@ theorem X_mem {n : ℕ} (i : Fin n) :
   rw [Finsupp.single_apply]
   split_ifs <;> omega
 
+/-- A constant has individual degree at most one. -/
 theorem C_mem {n : ℕ} (b : K) :
     (MvPolynomial.C b : MvPolynomial (Fin n) K) ∈ MvPolynomial.restrictDegree (Fin n) K 1 := by
   rw [MvPolynomial.mem_restrictDegree]
@@ -160,17 +163,21 @@ abbrev p3 : Spec.OracleStatement K 3 1 () := linear ![1, 2, 4] 0
 /-- `X₀ + 2 X₁ + 1`, which sums to `10` over `{0, 1}²`. -/
 abbrev p2 : Spec.OracleStatement K 2 1 () := linear ![1, 2] 1
 
+/-- `p3` sums to `11` over `{0, 1}³`. -/
 theorem relation_p3 : ((⟨11, Fin.elim0⟩, fun _ => p3), ()) ∈ Spec.relationRound K 3 1 D₂ 0 := by
   simpa [Spec.relationRound, linear, D₂, Fin.sum_univ_three] using (by decide :
     ∑ x ∈ Fintype.piFinset fun _ : Fin 3 => Finset.univ.map D₂, (x 0 + 2 * x 1 + 4 * x 2) = 11)
 
+/-- `p2` sums to `10` over `{0, 1}²`. -/
 theorem relation_p2 : ((⟨10, Fin.elim0⟩, fun _ => p2), ()) ∈ Spec.relationRound K 2 1 D₂ 0 := by
   simpa [Spec.relationRound, linear, D₂, Fin.sum_univ_two] using (by decide :
     ∑ x ∈ Fintype.piFinset fun _ : Fin 2 => Finset.univ.map D₂, (x 0 + 2 * x 1 + 1) = 10)
 
+/-- `p3` at `(3, 5, 7)` is `7`. -/
 theorem eval_p3 : MvPolynomial.eval ![3, 5, 7] p3.val = 7 := by
   simpa [linear, Fin.sum_univ_three] using (by decide : (3 + 2 * 5 + 4 * 7 : K) = 7)
 
+/-- `p2` at `(3, 5)` is `14`. -/
 theorem eval_p2 : MvPolynomial.eval ![3, 5] p2.val = 14 := by
   simpa [linear, Fin.sum_univ_two] using (by decide : (3 + 2 * 5 + 1 : K) = 14)
 
@@ -278,6 +285,7 @@ example : (some (⟨MvPolynomial.eval ![3, 5] p2.val, ![3, 5]⟩, fun _ => p2) :
 -- Migration rows: Sumcheck Interaction/Projection #7 (first-round relation), #8,
 -- ProjectionTransport #2; Sequential #2, #4.
 
+/-- The product `X₀ X₁` has individual degree at most one. -/
 theorem XX_mem : (MvPolynomial.X 0 * MvPolynomial.X 1 : MvPolynomial (Fin 2) K) ∈
     MvPolynomial.restrictDegree (Fin 2) K 1 := by
   have h : (MvPolynomial.X 0 * MvPolynomial.X 1 : MvPolynomial (Fin 2) K) =
@@ -297,6 +305,7 @@ def bilinear : Spec.OracleStatement K 2 1 () :=
       (Submodule.smul_mem _ _ (X_mem 0))) (Submodule.smul_mem _ _ (X_mem 1)))
       (Submodule.smul_mem _ _ XX_mem)⟩
 
+/-- `bilinear` sums to `1` over `{0, 1}²`. -/
 theorem bilinear_relation :
     ((⟨1, Fin.elim0⟩, fun _ => bilinear), ()) ∈ Spec.relationRound K 2 1 D₂ 0 := by
   simpa [Spec.relationRound, bilinear, D₂, Fin.sum_univ_two] using (by decide :
@@ -385,6 +394,7 @@ example : ∃ t, simulateQ (OracleInterface.simOracle0 _ (roundFullTranscript
   congr 1
   exact funext fun i => by fin_cases i; rfl
 
+/-- `bilinear` at `(3, 5)` is `14`. -/
 theorem eval_bilinear : MvPolynomial.eval ![3, 5] bilinear.val = 14 := by
   simpa [bilinear] using (by decide : (1 + 2 * 3 + 3 * 5 + 4 * (3 * 5) : K) = 14)
 

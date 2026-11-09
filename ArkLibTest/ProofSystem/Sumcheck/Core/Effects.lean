@@ -90,6 +90,7 @@ end Support
 
 noncomputable section
 
+/-- Seventeen is prime, so `ZMod 17` is a field. -/
 instance : Fact (Nat.Prime 17) := ⟨by decide⟩
 
 /-- The field with seventeen elements. -/
@@ -108,6 +109,7 @@ def affine (a b : K) : K⦃≤ 1⦄[X] :=
 
 -- Migration rows: Sumcheck Interaction/SourceRouting #1, #2.
 
+/-- The affine message `a X + b` evaluates to `a x + b`. -/
 theorem eval_affine (a b x : K) : (affine a b).val.eval x = a * x + b := by
   simp only [affine, eval_add, eval_mul, eval_C, eval_X]
 
@@ -135,6 +137,7 @@ def adaptive : Prover oracleSig events (protocol K 1 2) (fun _ => Unit) :=
 /-- The domain `{0}`. -/
 def D₀ : Fin 1 ↪ K := ⟨fun _ => 0, fun _ _ _ => Subsingleton.elim _ _⟩
 
+/-- Every point of the domain `{0}` is `0`. -/
 @[simp] theorem D₀_apply (i : Fin 1) : D₀ i = 0 := rfl
 
 /-- The initial claim with target `1`; the first message `a * X + 1` sums to `1` over `{0}`. -/
