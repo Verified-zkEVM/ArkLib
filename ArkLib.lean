@@ -703,6 +703,7 @@ public import ArkLib.Data.Probability.KoalaBear
 public import ArkLib.Data.Probability.Sequential
 public import ArkLib.Data.Probability.Uniform
 public import ArkLib.Interaction.CompositionSoundness
+public import ArkLib.Interaction.Core.Composition
 public import ArkLib.Interaction.Core.Execution
 public import ArkLib.Interaction.Core.OracleVerifier
 public import ArkLib.Interaction.Core.Protocol
