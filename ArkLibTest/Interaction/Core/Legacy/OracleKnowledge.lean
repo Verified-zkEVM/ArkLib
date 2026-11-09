@@ -158,7 +158,7 @@ def legacyAnswers (b : Bool) : QueryImpl (shared + [twoWay.Challenge]ₒ) Id :=
 /-- The verdict, the verifier's output oracles, and the extracted witness of an oracle
 extraction game. -/
 def gameOutputs (z : Observation oracleSig (oracleProtocol twoWay)
-      (fun _ => (Nat × (∀ i, OutCopy i)) × Nat) (Nat × (∀ i, OutCopy i)) × Option Nat) :
+    (fun _ => (Nat × (∀ i, OutCopy i)) × Nat) (Nat × (∀ i, OutCopy i)) × Option Nat) :
     Option (Nat × Nat × Nat) × Option Nat :=
   (z.1.2.2.map fun t => (t.1, t.2 true, t.2 false), z.2)
 
