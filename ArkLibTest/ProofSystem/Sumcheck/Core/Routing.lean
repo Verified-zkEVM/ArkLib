@@ -17,7 +17,8 @@ oracle, so its final claim is a claim about the exported polynomial.
 
 The composite is `OracleVerifier.append` of the two. The prover sends `2 X + 1`, runs an ambient
 event, sends `X + 3 r + 1 + bump`, and runs another event; its private output is an arbitrary
-`hidden` value plus both answers. Both rounds always run, and the challenges come from the
+`hidden` natural number plus both answers, without reduction modulo the field
+characteristic. Both rounds always run, and the challenges come from the
 challenge oracle.
 
 * With target `4` and `bump = 0` both checks pass, the claim summary is `(10, 10)` at the
@@ -34,6 +35,29 @@ open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Intera
   OracleComp OracleSpec ProtocolSpec Sumcheck.Core.EffectsTest
 
 noncomputable section
+
+/-- Ambient events return natural numbers, independently of the polynomial field. -/
+abbrev events : OracleSpec (Fin 4) := Fin 4 →ₒ ℕ
+
+/-- An ambient event. -/
+def event (i : Fin 4) : OracleComp events ℕ := liftM (events.query i)
+
+/-- The ambient events and the two-round challenge oracle. -/
+abbrev Q := events + challengeSpec oracleSig (protocol K 1 2)
+
+/-- Lift an ambient event into the run's oracle. -/
+abbrev eventE (i : Fin 4) : OracleComp Q ℕ := liftM (Q.query (.inl i))
+
+/-- The challenge requests of the two-round run. -/
+abbrev drawE := fun c : ChallengeNode oracleSig (protocol K 1 2) =>
+  (liftM (Q.query (.inr c)) : OracleComp Q _)
+
+/-- Preserve ambient queries when simulating the prover in the run. -/
+abbrev liftEvents : QueryImpl events (OracleComp Q) := fun q => liftM (Q.query (.inl q))
+
+/-- Simulating an event sends it to the ambient part of the run's oracle. -/
+theorem simulate_event (i : Fin 4) : simulateQ liftEvents (event i) = eventE i :=
+  simulateQ_spec_query _ _
 
 /-- The domain `{0, 1}`. -/
 def D₂ : Fin 2 ↪ K := ⟨fun i => (i.val : K), by decide⟩
@@ -133,32 +157,32 @@ def compatible : OracleVerifier.OutputCompatibility firstVerifier fun _ => secon
 def routed := firstVerifier.append (fun _ => secondVerifier) compatible
 
 /-- The prover's terminal action: event `3`, and the output `hidden + tag` plus its answer. -/
-def finishProver (hidden tag : K) : Prover oracleSig events (protocol K 1 0) (fun _ => K) :=
-  ((fun fin => hidden + tag + fin) <$> event 3 : OracleComp events K)
+def finishProver (hidden tag : ℕ) : Prover oracleSig events (protocol K 1 0) (fun _ => ℕ) :=
+  ((fun fin => hidden + tag + fin) <$> event 3 : OracleComp events ℕ)
 
 /-- The prover sends `2 X + 1`; after the challenge `r`, event `2` gives a tag, and it sends
 `X + 3 r + 1 + bump`; after the last challenge, event `3` gives another. Its private output is
 `hidden` plus both answers. -/
-def wholeProver (hidden bump : K) : Prover oracleSig events (protocol K 1 2) (fun _ => K) :=
+def wholeProver (hidden : ℕ) (bump : K) : Prover oracleSig events (protocol K 1 2) (fun _ => ℕ) :=
   consProver (affine 2 1) fun r => Strategy.joinSlot ((fun tag =>
     consProver (affine 1 (3 * r + 1 + bump)) fun _ => finishProver hidden tag) <$> event 2)
 
 /-- The terminal action of the prover runs event `3`. -/
-theorem run_finish (hidden tag : K)
+theorem run_finish (hidden tag : ℕ)
     (draw : (c : ChallengeNode oracleSig (protocol K 1 0)) →
       OracleComp Q (challengeSpec oracleSig _ c)) :
     Interaction.TwoParty.Lens.run (protocol K 1 0)
         (Prover.simulate liftEvents (finishProver hidden tag))
         (sampler oracleSig (protocol K 1 0) draw) =
       (do let fin ← eventE 3; pure ⟨⟨⟩, hidden + tag + fin, ⟨⟩⟩) := by
-  refine (run_done (l := oracleSig) (OutP := fun _ => K) (OutC := fun _ => PUnit)
+  refine (run_done (l := oracleSig) (OutP := fun _ => ℕ) (OutC := fun _ => PUnit)
     (simulateQ liftEvents ((fun fin => hidden + tag + fin) <$> event 3)) (pure ⟨⟩)).trans ?_
   simp [simulate_event]
   rfl
 
 /-- Against the challenge sampler the prover draws the first challenge, runs event `2`, draws
 the second challenge and runs event `3`, in this order. -/
-theorem run_wholeProver (hidden bump : K) :
+theorem run_wholeProver (hidden : ℕ) (bump : K) :
     Interaction.TwoParty.Lens.run (protocol K 1 2)
         (Prover.simulate liftEvents (wholeProver hidden bump))
         (sampler oracleSig (protocol K 1 2) drawE) = (do
@@ -168,7 +192,7 @@ theorem run_wholeProver (hidden bump : K) :
       let fin ← eventE 3
       pure (⟨consTranscript (affine 2 1) r
         (consTranscript (affine 1 (3 * r + 1 + bump)) s ⟨⟩), hidden + tag + fin, ⟨⟩⟩ :
-          (_ : PathAlong oracleSig (protocol K 1 2)) × K × PUnit)) := by
+          (_ : PathAlong oracleSig (protocol K 1 2)) × ℕ × PUnit)) := by
   rw [wholeProver, simulate_consProver, run_consProver]
   refine bind_congr fun r => ?_
   rw [simulate_joinSlot, run_joinSlot]
@@ -240,14 +264,14 @@ theorem compatible_output (target r : K) (msg : K⦃≤ 1⦄[X])
 
 /-- The composite run of the whole prover: the two draws and the two events in protocol order,
 then the composite verdict. -/
-theorem run_routed (target hidden bump : K) (x : ∀ i, Spec.OracleStatement K 2 1 i) :
+theorem run_routed (target : K) (hidden : ℕ) (bump : K) (x : ∀ i, Spec.OracleStatement K 2 1 i) :
     routed.run target x (wholeProver hidden bump) = (do
       let r : K ← drawE (headNode 1)
       let tag ← eventE 2
       let s : K ← tailDraw drawE (headNode 0)
       let fin ← eventE 3
       pure (⟨wholeTranscript bump r s, hidden + tag + fin, routedVerdict target bump x r s⟩ :
-        Observation oracleSig (protocol K 1 2) (fun _ => K)
+        Observation oracleSig (protocol K 1 2) (fun _ => ℕ)
           (Spec.StatementRound K 1 (Fin.last 1) × ∀ i, Spec.OracleStatement K 1 1 i))) := by
   refine (run_append_checkVerifier (s := protocol K 1 1) _ _ _ _ _ _ _ _ _).trans ?_
   erw [run_wholeProver]
@@ -298,7 +322,6 @@ theorem secondVerdict (t c s : K) :
       (fun e => h (hsum.symm.trans e))
     erw [hnone]
     rfl
-
 
 /-! ## Scenarios -/
 
@@ -356,20 +379,20 @@ theorem claimSummary_accepted (r s : K) :
 /-- A handler that records each query: the round of a challenge, and `i + 1` for event `i`. The
 challenges answer `2` and then `3`; events `2` and `3` answer `50` and `60`. -/
 def record : QueryImpl Q (StateM (List ℕ))
-  | .inl i => do modify (· ++ [i.val + 1]); pure (if i = 2 then 50 else 60 : K)
+  | .inl i => do modify (· ++ [i.val + 1]); pure (if i = 2 then 50 else 60 : ℕ)
   | .inr c => do
       modify (· ++ [RoundsTest.roundOf c])
       pure (cast (range_eq c).symm (if RoundsTest.roundOf c = 1 then 2 else 3 : K))
 
 /-- The recorded run of the composite: the prover's output and the summary of the final claim,
 with the recorded queries. -/
-def observed (target hidden bump : K) : ((K × Option (K × K)) × List ℕ) :=
+def observed (target : K) (hidden : ℕ) (bump : K) : ((ℕ × Option (K × K)) × List ℕ) :=
   (simulateQ record ((fun obs => (obs.2.1, obs.2.2.map claimSummary)) <$>
     (routed.run target (fun _ => input) (wholeProver hidden bump) : OracleComp Q _))).run []
 
 /-- The summarised run: the prover's output and the summary of the composite verdict, after the
 two draws and the two events. -/
-theorem summary_routed (target hidden bump : K) :
+theorem summary_routed (target : K) (hidden : ℕ) (bump : K) :
     ((fun obs => (obs.2.1, obs.2.2.map claimSummary)) <$>
       (routed.run target (fun _ => input) (wholeProver hidden bump) : OracleComp Q _)) = (do
       let r : K ← drawE (headNode 1)
@@ -386,32 +409,32 @@ theorem summary_routed (target hidden bump : K) :
   exact LawfulApplicative.map_pure _ _
 
 /-- Both rounds accept, and the claim `(10, 10)` holds of the exported polynomial. -/
-theorem accepted (hidden : K) : observed 4 hidden 0 =
-    ((hidden + 50 + 60, some (10, 10)), [1, 3, 2, 4]) := by
+theorem accepted (hidden : ℕ) : observed 4 hidden 0 =
+    ((hidden + 110, some (10, 10)), [1, 3, 2, 4]) := by
   refine (congrArg (fun prog => (simulateQ record prog).run [])
     (summary_routed 4 hidden 0)).trans ?_
   simp only [routedVerdict_accepted, Option.map_some, claimSummary_accepted]
   rfl
 
 /-- A wrong first sum rejects; both rounds still run. -/
-theorem prefix_rejected (hidden : K) : observed 0 hidden 0 =
-    ((hidden + 50 + 60, none), [1, 3, 2, 4]) := by
+theorem prefix_rejected (hidden : ℕ) : observed 0 hidden 0 =
+    ((hidden + 110, none), [1, 3, 2, 4]) := by
   refine (congrArg (fun prog => (simulateQ record prog).run [])
     (summary_routed 0 hidden 0)).trans ?_
   simp only [routedVerdict_prefix, Option.map_none]
   rfl
 
 /-- A bad second message rejects after its challenge and the prover's last event. -/
-theorem suffix_rejected (hidden : K) : observed 4 hidden 1 =
-    ((hidden + 50 + 60, none), [1, 3, 2, 4]) := by
+theorem suffix_rejected (hidden : ℕ) : observed 4 hidden 1 =
+    ((hidden + 110, none), [1, 3, 2, 4]) := by
   refine (congrArg (fun prog => (simulateQ record prog).run [])
     (summary_routed 4 hidden 1)).trans ?_
   simp only [routedVerdict_suffix, Option.map_none]
   rfl
 
 /-- Every claim the composite accepts lies in the final relation of the exported oracle. -/
-theorem accepted_relation (r s : K) (claim : Spec.StatementRound K 1 (Fin.last 1) ×
-      ∀ i, Spec.OracleStatement K 1 1 i)
+theorem accepted_relation (r s : K)
+    (claim : Spec.StatementRound K 1 (Fin.last 1) × ∀ i, Spec.OracleStatement K 1 1 i)
     (h : routedVerdict 4 0 (fun _ => input) r s = some claim) :
     ((claim.1, claim.2), ()) ∈ Spec.relationRound K 1 1 D₂ (Fin.last 1) := by
   rw [routedVerdict_accepted] at h

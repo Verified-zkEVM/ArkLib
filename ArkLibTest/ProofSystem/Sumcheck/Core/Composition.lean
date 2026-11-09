@@ -102,7 +102,7 @@ theorem projected_relation :
 
 /-- The append equivalence at two rounds on `bilinear`: the round-`0` check appended to the
 one-round verifier of the rest, run against any composed prover, is the two-round verifier. -/
-example {Mid : PathAlong oracleSig (round K 1) → Type}
+theorem run_append_bilinear {Mid : PathAlong oracleSig (round K 1) → Type}
     {Out : PathAlong oracleSig (protocol K 1 2) → Type}
     (p : Prover oracleSig ambient (round K 1) Mid)
     (f : (tr : PathAlong oracleSig (round K 1)) → Mid tr →
@@ -119,6 +119,22 @@ example {Mid : PathAlong oracleSig (round K 1) → Type}
         (Interaction.Core.Prover.append p f) :=
   run_append_verifier D₂ 1 ⟨1, Fin.elim0⟩ (fun _ => bilinear) p f
 
+/-- The relation is checked on the verdict returned by this same standalone projected run. -/
+theorem run_projected_relation :
+    simulateQ answerThree ((fun obs => obs.2.2.map fun out =>
+        (((out.1.target, out.1.challenges ⟨0, by decide⟩), out.2), ()) ∈
+          Spec.SingleRound.Simple.outputRelation K 1) <$>
+      (projectedVerifier 2 D₂ ambient 0).run ⟨1, Fin.elim0⟩ (fun _ => bilinear)
+        (roundProver (Out := fun _ => Unit) firstMsg fun _ => ())) = some True := by
+  rw [run_projectedVerifier_roundProver, Functor.map_map]
+  erw [simulateQ_map, simulateQ_spec_query]
+  change Option.map _ ((checkVerdict (roundCheck K 1 2 D₂ ambient 0) ⟨1, Fin.elim0⟩
+    (roundTranscript firstMsg 3)).map _) = _
+  rw [projected_verdict]
+  change some ((((12, 3), fun _ => firstMsg), ()) ∈
+    Spec.SingleRound.Simple.outputRelation K 1) = some True
+  exact congrArg some (propext ⟨fun _ => trivial, fun _ => projected_relation.1⟩)
+
 end
 
 run_cmd
@@ -127,7 +143,12 @@ run_cmd
       ``Sumcheck.Core.CompositionTest.projected_verdict,
       ``Sumcheck.Core.CompositionTest.round_range,
       ``Sumcheck.Core.CompositionTest.run_projected_bilinear,
-      ``Sumcheck.Core.CompositionTest.projected_relation] do
+      ``Sumcheck.Core.CompositionTest.projected_relation,
+      ``Sumcheck.Core.CompositionTest.run_projected_relation,
+      ``Sumcheck.Core.CompositionTest.run_append_bilinear,
+      ``Sumcheck.Core.projectionMap, ``Sumcheck.Core.simulateQ_projectionMap,
+      ``Sumcheck.Core.run_projectedVerifier_roundProver,
+      ``Sumcheck.Core.projectedVerifier_relation, ``Sumcheck.Core.run_append_verifier] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"
