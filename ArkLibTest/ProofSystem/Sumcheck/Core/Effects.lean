@@ -105,6 +105,18 @@ def affine (a b : K) : K⦃≤ 1⦄[X] :=
   ⟨C a * X + C b, Polynomial.mem_degreeLE.mpr
     (degree_add_le_of_degree_le (degree_C_mul_X_le a) (degree_C_le.trans zero_le_one))⟩
 
+-- Migration rows: Sumcheck Interaction/SourceRouting #1, #2.
+
+theorem eval_affine (a b x : K) : (affine a b).val.eval x = a * x + b := by
+  simp only [affine, eval_add, eval_mul, eval_C, eval_X]
+
+/-- The oracle interface of a round message answers a query by evaluation. -/
+theorem answer_affine (a b x : K) :
+    @OracleInterface.answer _ (OracleInterface.instPolynomialDegreeLE K 1) (affine a b) x =
+      a * x + b := by
+  change (affine a b).val.eval x = _
+  exact eval_affine a b x
+
 /-- The prover's terminal action: event `3`. -/
 def finalEvent : Prover oracleSig events (protocol K 1 0) (fun _ => Unit) :=
   (do let _ ← event 3; pure () : OracleComp events Unit)
