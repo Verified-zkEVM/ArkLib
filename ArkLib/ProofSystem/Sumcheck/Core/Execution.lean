@@ -409,18 +409,6 @@ section Run
 variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R] {deg n : ℕ}
   {d : ℕ} (D : Fin d ↪ R) {ι : Type} {ambient : OracleSpec ι}
 
-/-- A handler with deterministic answers runs a program to a pure result. -/
-theorem simulateQ_pure_answers {κ κ' : Type} {spec : OracleSpec κ} {spec' : OracleSpec κ'}
-    (f : QueryImpl spec Id) {α : Type} (oa : OracleComp spec α) :
-    simulateQ (fun q => (pure (f q) : OracleComp spec' _)) oa = pure (simulateQ f oa) := by
-  induction oa using OracleComp.inductionOn with
-  | pure x =>
-    simp only [simulateQ_pure]
-    rfl
-  | query_bind t next ih =>
-    simp [ih]
-    rfl
-
 omit [DecidableEq R] [SampleableType R] in
 /-- Lifted path-oracle queries are answered from the path payloads, without ambient effects. -/
 theorem simulateQ_decisionLift {κ : Type} {spec' : OracleSpec κ}
@@ -433,8 +421,12 @@ theorem simulateQ_decisionLift {κ : Type} {spec' : OracleSpec κ}
       (simulateQ (decisionLift R deg n ambient p) oa) =
       (pure (simulateQ ((pathFamily (protocol R deg n) p).behaviorOfRealizations pl) oa) :
         OracleComp spec' α) := by
-  rw [QueryImpl.simulateQ_simulateQ_eq_of_apply (fun t => ?_), simulateQ_pure_answers]
-  exact simulateQ_spec_query _ _
+  refine (QueryImpl.simulateQ_simulateQ_eq_of_apply
+    (impl := ((pathFamily (protocol R deg n) p).behaviorOfRealizations pl).liftTarget _)
+    (fun t => ?_) oa).trans ?_
+  · exact simulateQ_spec_query _ _
+  · rw [simulateQ_liftTarget]
+    rfl
 
 /-- On any completed run, the decision returns the legacy verdict of the decoded transcript. -/
 theorem simulateQ_decide {κ : Type} {spec' : OracleSpec κ}
@@ -460,8 +452,8 @@ theorem simulateQ_legacy_verify (stmt : Spec.StatementRound R n 0)
   rw [legacy_verify_eq]
   change simulateQ _ (OracleComp.liftComp _ _) = _
   rw [OracleComp.liftComp_def, QueryImpl.simulateQ_simulateQ_eq_of_apply
-    (impl := fun q => pure (OracleInterface.simOracle0 _ tr.messages q)) (fun _ => rfl),
-    simulateQ_pure_answers]
+    (impl := (OracleInterface.simOracle0 _ tr.messages).liftTarget _) (fun _ => rfl),
+    simulateQ_liftTarget]
   rfl
 
 /-- Closed form of the execution against a fold of pure rounds, whatever its messages: every

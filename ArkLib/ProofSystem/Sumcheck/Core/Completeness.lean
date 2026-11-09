@@ -196,14 +196,6 @@ def judgement :
 
 variable {R deg n} [DecidableEq R] [SampleableType R] {ι : Type} (ambient : OracleSpec ι)
 
-/-- Running a mapped program in the classical experiment maps the experiment. -/
-theorem experiment_map {κ σ α β : Type} {chal : OracleSpec κ} (init : ProbComp σ)
-    (impl : QueryImpl ambient (StateT σ ProbComp)) (challenges : QueryImpl chal ProbComp)
-    (f : α → β) (oa : OracleComp (ambient + chal) α) :
-    experiment init impl challenges (f <$> oa) = f <$> experiment init impl challenges oa := by
-  simp only [experiment, simulateQ_map, StateT.run'_eq, StateT.run_map, Functor.map_map,
-    _root_.map_bind]
-
 /-- Perfect completeness of the interaction-layer Sumcheck.
 
 For every ambient state, ambient oracle implementation and challenge implementation, the honest
