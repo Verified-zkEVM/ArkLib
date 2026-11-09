@@ -14,25 +14,12 @@ public import ArkLib.Interaction.Core.Security.Knowledge
 before routing: ambient queries and queries to the input and message oracles, in order and with
 repeats. Forgetting both logs gives `OracleVerifier.run` exactly.
 
-Logging after substitution, `OracleComp.withQueryLog_simulateQ`, records the target queries each
-handler program makes, in order. A persistent `OracleRuntime` executes the logged run directly as
+Logging after substitution, VCVio's `OracleComp.withQueryLog_simulateQ`, records the target
+queries each handler program makes, in order. A persistent `OracleRuntime` executes the logged run directly as
 `runtime.run (V.runWithLog stmt data prover)`.
 -/
 
 @[expose] public section
-
--- `OracleComp.withQueryLog_simulateQ` mentions no ArkLib type; it moves to VCVio next to
--- `QueryImpl.simulateQ_compose`, and is removed here when the pinned VCVio provides it.
-
-/-- Logging after substitution records the target queries actually made by each handler program,
-in their execution order. One source query may make zero, one, or many target queries. -/
-theorem OracleComp.withQueryLog_simulateQ {ι κ : Type} {source : OracleSpec ι}
-    {target : OracleSpec κ} {α : Type}
-    (route : QueryImpl source (OracleComp target)) (program : OracleComp source α) :
-    (simulateQ route program).withQueryLog =
-      (simulateQ (QueryImpl.compose target.loggingOracle route) program).run := by
-  unfold OracleComp.withQueryLog OracleSpec.loggingOracle
-  rw [QueryImpl.simulateQ_compose]
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle OracleSpec
