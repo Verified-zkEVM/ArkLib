@@ -495,12 +495,17 @@ def challengeReindex (oSpec : OracleSpec ι) (pSpec : ProtocolSpec n) :
   QueryImpl.add (liftShared oSpec pSpec)
     (legacyDraw (challengeOracle oSpec pSpec) 0 n (Nat.zero_add n))
 
-/-- The run of the interaction layer, with its challenges answered by the legacy challenge
-oracle, is the focal-first observation. -/
-theorem simulateQ_verifier_run (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOut)
-    (stmt : StmtIn) {Out : PathAlong plainSig (protocol pSpec) → Type}
+/-- The prover-sampler run of the interaction layer, with its queries reindexed, is the
+focal-first run against the legacy sampler. -/
+theorem simulateQ_challengeReindex_run {Out : PathAlong plainSig (protocol pSpec) → Type}
     (p : Core.Prover plainSig oSpec (protocol pSpec) Out) :
-    simulateQ (challengeReindex oSpec pSpec) (V.run stmt p) = observeWith .focalFirst V stmt p := by
+    simulateQ (challengeReindex oSpec pSpec) (TwoParty.Lens.run (protocol pSpec)
+      (p.simulate (fun q => liftM ((oSpec + challengeSpec plainSig (protocol pSpec)).query
+        (.inl q))))
+      (sampler plainSig (protocol pSpec) (fun c =>
+        liftM ((oSpec + challengeSpec plainSig (protocol pSpec)).query (.inr c))))) =
+      runWith .focalFirst (protocol pSpec) (p.simulate (liftShared oSpec pSpec))
+        (legacySampler pSpec (challengeOracle oSpec pSpec)) := by
   have hl : (fun q => simulateQ (challengeReindex oSpec pSpec)
       (liftM ((oSpec + challengeSpec plainSig (protocol pSpec)).query (.inl q)))) =
       liftShared oSpec pSpec :=
@@ -509,8 +514,16 @@ theorem simulateQ_verifier_run (V : Core.Verifier oSpec (protocol pSpec) StmtIn 
       (liftM ((oSpec + challengeSpec plainSig (protocol pSpec)).query (.inr c)))) =
       legacyDraw (challengeOracle oSpec pSpec) 0 n (Nat.zero_add n) :=
     funext fun c => QueryImpl.simulateQ_add_liftM_query_right _ _ c
-  rw [Core.Verifier.run, observeWith, simulateQ_bind, TwoParty.Lens.run, simulateQ_runWith,
-    simulate_simulate, hl, hr]
+  rw [TwoParty.Lens.run, simulateQ_runWith, simulate_simulate, hl, hr]
+  rfl
+
+/-- The run of the interaction layer, with its challenges answered by the legacy challenge
+oracle, is the focal-first observation. -/
+theorem simulateQ_verifier_run (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOut)
+    (stmt : StmtIn) {Out : PathAlong plainSig (protocol pSpec) → Type}
+    (p : Core.Prover plainSig oSpec (protocol pSpec) Out) :
+    simulateQ (challengeReindex oSpec pSpec) (V.run stmt p) = observeWith .focalFirst V stmt p := by
+  rw [Core.Verifier.run, observeWith, simulateQ_bind, simulateQ_challengeReindex_run]
   refine bind_congr fun r => ?_
   rcases r with ⟨tr, out, u⟩
   rw [simulateQ_bind]
@@ -519,7 +532,7 @@ theorem simulateQ_verifier_run (V : Core.Verifier oSpec (protocol pSpec) StmtIn 
   rw [liftComp_def, liftComp_def]
   refine QueryImpl.simulateQ_simulateQ_eq_of_apply (fun t => ?_) _
   rw [OracleComp.liftM_eq_liftM_liftM, OracleQuery.liftM_add_left_query]
-  refine (congrFun hl t).trans ?_
+  refine (QueryImpl.simulateQ_add_liftM_query_left _ _ t).trans ?_
   rw [liftShared, OracleComp.liftM_eq_liftM_liftM (spec := oSpec)]
   rfl
 
@@ -535,20 +548,20 @@ theorem stateless_challengeOracle {σ : Type} (impl : QueryImpl oSpec (StateT σ
     Stateless impl chImpl (challengeOracle oSpec pSpec i) :=
   stateless_query_inr impl chImpl ⟨i, ()⟩
 
-/-- Reindexing the challenges moves the experiment from the plain tree's challenge oracle to
-the legacy challenge oracle. -/
-theorem experiment_challengeReindex {σ α : Type} (init : ProbComp σ)
-    (impl : QueryImpl oSpec (StateT σ ProbComp)) (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp)
+/-- Reindexing the challenges moves the handler from the plain tree's challenge oracle to the
+legacy challenge oracle, for any shared-state implementation. -/
+theorem simulateQ_expHandler_challengeReindex {σ : Type}
+    (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp) {α : Type}
     (x : OracleComp (oSpec + challengeSpec plainSig (protocol pSpec)) α) :
-    experiment init impl (plainChallengeImpl chImpl) x =
-      experiment init impl chImpl (simulateQ (challengeReindex oSpec pSpec) x) := by
-  unfold experiment
-  refine bind_congr fun st => ?_
+    simulateQ (expHandler impl (plainChallengeImpl chImpl)) x =
+      simulateQ (expHandler impl chImpl) (simulateQ (challengeReindex oSpec pSpec) x) := by
   rw [QueryImpl.simulateQ_simulateQ_eq_of_apply (fun t => ?_) x]
   rcases t with q | c
   · exact QueryImpl.simulateQ_add_liftM_query_left _ _ q
   · change simulateQ _ ((challengeMove 0 n (Nat.zero_add n) c).symm <$>
       challengeOracle oSpec pSpec (challengeRound 0 n (Nat.zero_add n) c)) = _
+    simp only [expHandler]
     rw [simulateQ_map, QueryImpl.addLift_def]
     erw [QueryImpl.simulateQ_add_liftM_query_right]
     refine StateT.ext fun s => ?_
@@ -560,6 +573,17 @@ theorem experiment_challengeReindex {σ α : Type} (init : ProbComp σ)
     refine bind_congr fun _ => ?_
     erw [LawfulMonad.pure_bind]
     rfl
+
+/-- Reindexing the challenges moves the experiment from the plain tree's challenge oracle to
+the legacy challenge oracle. -/
+theorem experiment_challengeReindex {σ α : Type} (init : ProbComp σ)
+    (impl : QueryImpl oSpec (StateT σ ProbComp)) (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp)
+    (x : OracleComp (oSpec + challengeSpec plainSig (protocol pSpec)) α) :
+    experiment init impl (plainChallengeImpl chImpl) x =
+      experiment init impl chImpl (simulateQ (challengeReindex oSpec pSpec) x) := by
+  unfold experiment
+  exact bind_congr fun st =>
+    congrArg (fun y => StateT.run' y st) (simulateQ_expHandler_challengeReindex impl chImpl x)
 
 end Bridge
 
@@ -743,5 +767,187 @@ theorem simulateQ_finalize_observe (R : _root_.Reduction oSpec StmtIn WitIn Stmt
   exact congrArg _ (observeWith_focalFirst_eq R.prover hP _ stmt wit)
 
 end PureSlots
+
+/-! ### Logged execution
+
+The logged runs of both layers keep only the shared-oracle entries of the prover's log. The log is
+moved into the experiment's state (`run_ambientLogged`), where the exchange of slots in
+distribution applies unchanged, with the logging implementation `logImpl impl` as the shared-state
+implementation.
+-/
+
+section Logging
+
+variable {κ σ : Type} {ambient : OracleSpec ι} {chal : OracleSpec κ}
+
+/-- Record each shared-oracle query and its answer in the state, beside the shared state. -/
+def logImpl (impl : QueryImpl ambient (StateT σ ProbComp)) :
+    QueryImpl ambient (StateT (σ × QueryLog ambient) ProbComp) :=
+  fun q => StateT.mk fun p => (fun r => (r.1, (r.2, p.2 ++ [⟨q, r.1⟩]))) <$> (impl q).run p.1
+
+/-- Log every query of a program, then keep the shared-oracle entries. Challenge entries are
+dropped, so their position relative to shared-oracle queries does not matter. -/
+def ambientLogged {α : Type} (x : OracleComp (ambient + chal) α) :
+    OracleComp (ambient + chal) (α × QueryLog ambient) :=
+  (fun z => (z.1, z.2.fst)) <$> (simulateQ (QueryImpl.id' (ambient + chal)).withLogging x).run
+
+theorem ambientLogged_pure {α : Type} (a : α) :
+    ambientLogged (ambient := ambient) (chal := chal) (pure a) = pure (a, []) := by
+  simp [ambientLogged]
+  rfl
+
+theorem ambientLogged_query_bind {α : Type} (t : (ambient + chal).Domain)
+    (k : (ambient + chal).Range t → OracleComp (ambient + chal) α) :
+    ambientLogged (liftM ((ambient + chal).query t) >>= k) =
+      liftM ((ambient + chal).query t) >>= fun u =>
+        (fun z => (z.1, QueryLog.fst [⟨t, u⟩] ++ z.2)) <$> ambientLogged (k u) := by
+  rcases t with q | c <;> simp [ambientLogged, QueryLog.fst]
+
+/-- Under the experiment's handler, the shared-oracle log of a program is the log kept in the
+state by `logImpl`, appended to any starting log. -/
+theorem run_ambientLogged (impl : QueryImpl ambient (StateT σ ProbComp))
+    (chImpl : QueryImpl chal ProbComp) {α : Type} (x : OracleComp (ambient + chal) α) (st : σ)
+    (w : QueryLog ambient) :
+    (fun z => (z.1.1, (z.2, w ++ z.1.2))) <$>
+        (simulateQ (expHandler impl chImpl) (ambientLogged x)).run st =
+      (simulateQ (expHandler (logImpl impl) chImpl) x).run (st, w) := by
+  induction x using OracleComp.inductionOn generalizing st w with
+  | pure a => simp [ambientLogged_pure]
+  | query_bind t k ih =>
+    rw [ambientLogged_query_bind]
+    rcases t with q | c
+    · simp only [expHandler, QueryImpl.addLift_def, QueryImpl.liftTarget_self] at ih
+      simp [expHandler, logImpl, ← ih, QueryLog.fst]
+    · simp only [expHandler, QueryImpl.addLift_def, QueryImpl.liftTarget_self] at ih
+      simp [expHandler, ← ih, QueryLog.fst]
+
+/-- A function of a full log is invariant under moving challenge entries relative to
+shared-oracle entries: it depends on the shared-oracle entries in order and on the challenge
+entries in order, but not on how the two are interleaved. Different schedules of the same run
+interleave the two kinds of entries differently. -/
+def ChallengeMoveInvariant {β : Type} (f : QueryLog (ambient + chal) → β) : Prop :=
+  ∀ l l' : QueryLog (ambient + chal), l.fst = l'.fst → l.snd = l'.snd → f l = f l'
+
+/-- A function of the shared-oracle log alone is invariant under moving challenge entries. Both
+layers hand extractors only this projection of the prover's log. -/
+theorem challengeMoveInvariant_comp_fst {β : Type} (g : QueryLog ambient → β) :
+    ChallengeMoveInvariant (chal := chal) (g ∘ QueryLog.fst) :=
+  fun _ _ h _ => congrArg g h
+
+/-- Two programs, possibly over different oracle specifications, with the same distribution of
+output and final state from every initial state under their handlers. -/
+def RunEq {κ₁ κ₂ : Type} {spec₁ : OracleSpec κ₁} {spec₂ : OracleSpec κ₂}
+    (H₁ : QueryImpl spec₁ (StateT σ ProbComp)) (H₂ : QueryImpl spec₂ (StateT σ ProbComp))
+    {α : Type} (x : OracleComp spec₁ α) (y : OracleComp spec₂ α) : Prop :=
+  ∀ st, (simulateQ H₁ x).run st =ᵈ (simulateQ H₂ y).run st
+
+namespace RunEq
+variable {κ₁ κ₂ : Type} {spec₁ : OracleSpec κ₁} {spec₂ : OracleSpec κ₂}
+  {H₁ : QueryImpl spec₁ (StateT σ ProbComp)} {H₂ : QueryImpl spec₂ (StateT σ ProbComp)}
+  {α β : Type}
+
+theorem of_eq {x : OracleComp spec₁ α} {y : OracleComp spec₂ α}
+    (h : ∀ st, (simulateQ H₁ x).run st = (simulateQ H₂ y).run st) : RunEq H₁ H₂ x y :=
+  fun st => h st ▸ EvalDistEq.refl _
+
+theorem bind {x : OracleComp spec₁ α} {y : OracleComp spec₂ α}
+    {f : α → OracleComp spec₁ β} {g : α → OracleComp spec₂ β}
+    (h : RunEq H₁ H₂ x y) (hfg : ∀ a, RunEq H₁ H₂ (f a) (g a)) :
+    RunEq H₁ H₂ (x >>= f) (y >>= g) := fun st => by
+  simp only [simulateQ_bind, StateT.run_bind]
+  exact (h st).bind fun p => hfg p.1 p.2
+
+theorem pure (a : α) : RunEq H₁ H₂ (pure a : OracleComp spec₁ α) (pure a) :=
+  of_eq fun _ => by simp
+
+end RunEq
+
+/-- Experiments of related programs agree in distribution. -/
+theorem experiment_evalDistEq_of_runEq {κ₁ κ₂ : Type} {chal₁ : OracleSpec κ₁}
+    {chal₂ : OracleSpec κ₂} (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
+    (ch₁ : QueryImpl chal₁ ProbComp) (ch₂ : QueryImpl chal₂ ProbComp) {α : Type}
+    {x : OracleComp (ambient + chal₁) α} {y : OracleComp (ambient + chal₂) α}
+    (h : RunEq (expHandler impl ch₁) (expHandler impl ch₂) x y) :
+    experiment init impl ch₁ x =ᵈ experiment init impl ch₂ y := by
+  unfold experiment
+  refine EvalDistEq.bind (EvalDistEq.refl _) fun st => ?_
+  simp only [StateT.run'_eq]
+  exact (h st).map Prod.fst
+
+/-- A lifted shared-oracle program sees only the shared-state implementation. -/
+theorem simulateQ_expHandler_liftComp (impl : QueryImpl ambient (StateT σ ProbComp))
+    (chImpl : QueryImpl chal ProbComp) {β : Type} (y : OracleComp ambient β) :
+    simulateQ (expHandler impl chImpl) (liftComp y (ambient + chal)) = simulateQ impl y :=
+  QueryImpl.simulateQ_liftComp_left_eq_of_apply _ _
+    (fun t => by simp [expHandler, QueryImpl.addLift_def]) y
+
+theorem runEq_liftComp {κ₁ κ₂ : Type} {chal₁ : OracleSpec κ₁} {chal₂ : OracleSpec κ₂}
+    (impl : QueryImpl ambient (StateT σ ProbComp)) (ch₁ : QueryImpl chal₁ ProbComp)
+    (ch₂ : QueryImpl chal₂ ProbComp) {β : Type} (y : OracleComp ambient β) :
+    RunEq (expHandler impl ch₁) (expHandler impl ch₂) (liftComp y (ambient + chal₁))
+      (liftComp y (ambient + chal₂)) :=
+  RunEq.of_eq fun _ => by rw [simulateQ_expHandler_liftComp, simulateQ_expHandler_liftComp]
+
+/-- Logging the shared-oracle queries of a lifted program is lifting its logged run. -/
+theorem run_withLogging_inl {β : Type} (y : OracleComp ambient β) :
+    (simulateQ (QueryImpl.withLogging ((fun q => liftM ((ambient + chal).query (.inl q))) :
+        QueryImpl ambient (OracleComp (ambient + chal)))) y).run =
+      liftComp ((simulateQ ambient.loggingOracle y).run) (ambient + chal) := by
+  induction y using OracleComp.inductionOn with
+  | pure a => simp
+  | query_bind t k ih =>
+    simp [loggingOracle] at ih ⊢
+    simp only [← ih]
+    rfl
+
+/-- `run_ambientLogged` from the empty log, solved for the logged program. -/
+theorem run_ambientLogged_nil (impl : QueryImpl ambient (StateT σ ProbComp))
+    (chImpl : QueryImpl chal ProbComp) {α : Type} (x : OracleComp (ambient + chal) α) (st : σ) :
+    (simulateQ (expHandler impl chImpl) (ambientLogged x)).run st =
+      (fun z => ((z.1, z.2.2), z.2.1)) <$>
+        (simulateQ (expHandler (logImpl impl) chImpl) x).run (st, []) := by
+  rw [← run_ambientLogged impl chImpl x st [], Functor.map_map]
+  refine (LawfulFunctor.id_map _).symm.trans (congrArg (· <$> _) (funext fun z => ?_))
+  simp
+
+end Logging
+
+section LoggedProver
+
+variable {σ StmtIn WitIn StmtOut WitOut : Type}
+
+/-- Counterpart-first execution of an embedded legacy prover, decoded, is the legacy prover
+run. -/
+theorem decode_runWith_counterpartFirst (P : _root_.Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
+    (stmt : StmtIn) (wit : WitIn) :
+    (fun r => (decode pSpec r.1, r.2.1)) <$> runWith .counterpartFirst (protocol pSpec)
+        ((embedProver P stmt wit).simulate (liftShared oSpec pSpec))
+        (legacySampler pSpec (challengeOracle oSpec pSpec)) = P.run stmt wit := by
+  rw [prover_run_eq_foldFrom, map_eq_bind_pure_comp]
+  exact runWith_embedFrom P (fun tr o => pure (tr, o)) n 0 (Nat.zero_add n) default
+    (P.input (stmt, wit))
+
+/-- **Logged prover phase.** The interaction-layer prover-sampler run of an embedded legacy
+prover, with its shared-oracle log, has the legacy logged prover run's distribution of
+decoded result, shared-oracle log and final state, from every state. -/
+theorem runEq_ambientLogged_prover (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp)
+    (P : _root_.Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) (stmt : StmtIn) (wit : WitIn) :
+    RunEq (expHandler impl (plainChallengeImpl chImpl)) (expHandler impl chImpl)
+      ((fun z => ((decode pSpec z.1.1, z.1.2.1), z.2)) <$> ambientLogged
+        (TwoParty.Lens.run (protocol pSpec)
+          ((embedProver P stmt wit).simulate (fun q =>
+            liftM ((oSpec + challengeSpec plainSig (protocol pSpec)).query (.inl q))))
+          (sampler plainSig (protocol pSpec) (fun c =>
+            liftM ((oSpec + challengeSpec plainSig (protocol pSpec)).query (.inr c))))))
+      (ambientLogged (P.run stmt wit)) := fun st => by
+  rw [simulateQ_map, StateT.run_map, run_ambientLogged_nil, run_ambientLogged_nil,
+    Functor.map_map, simulateQ_expHandler_challengeReindex, simulateQ_challengeReindex_run,
+    ← decode_runWith_counterpartFirst P stmt wit, simulateQ_map, StateT.run_map,
+    Functor.map_map]
+  exact ((distEqFrom_runWith (logImpl impl) chImpl _ _ _ fun _ =>
+    (stateless_challengeOracle (logImpl impl) chImpl _).map _) (st, [])).map _
+
+end LoggedProver
 
 end Interaction.Core.Legacy
