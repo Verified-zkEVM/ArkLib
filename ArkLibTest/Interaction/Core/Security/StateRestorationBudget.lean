@@ -212,8 +212,8 @@ def valid (_ : Stmt) (tr : PathAlong oracleSig (protocol rounds)) (w : Nat) : Pr
 after the first challenge `c₁` a witness is known when `c₁` is `0`; after the second challenge a
 witness is known when a challenge is `0` and it is at most the second message. Extraction adds the
 message at each message step and copies the witness otherwise. -/
-def knowledge : KnowledgeStateFunction oracleSig (protocol rounds) Stmt Nat Nat (fun _ => True)
-    Rin valid where
+def knowledge : KnowledgeStateFunction oracleSig (protocol rounds) Stmt (fun _ => Nat) Nat
+    (fun _ => True) Rin valid where
   Witness _ _ := Nat
   toFun sp history z w := match sp, history with
     | .root _, _ => w ≤ z.1
@@ -418,7 +418,7 @@ theorem actual_nonuniform_game_bound :
         result.2.2.2) ∧
       ¬ Rin result.1 (knowledge.extractAlong result.1 result.2.1 result.2.2.2)] ≤ 7 / 16 := by
   have general := stateRestoration_oracle_knowledge_soundness_nonuniform verifier oracleRout
-    knowledge closedOutputLaw errors bounded adversary 2 queryBound
+    knowledge (fun _ _ w => w) closedOutputLaw errors bounded adversary 2 queryBound
   rwa [budget_value] at general
 
 -- Row 12 (StateRestorationBudget L292): the bad event is reachable: on `path 0 1` the claim is
@@ -620,8 +620,8 @@ example (z : Stmt) (m₁ : Fin 8) (tr : PathAlong oracleSig afterFirst) (w : Nat
   congrArg (knowledge.extractRoot z) (knowledge.extractFrom_eq_stageMap z start ⟨⟩ m₁ tr w)
 
 /-- The knowledge state function with its measured stages. -/
-def measured : MeasuredKnowledgeStateFunction Unit oracleSig (protocol rounds) Stmt Nat Nat
-    (fun _ => True) Rin valid :=
+def measured : MeasuredKnowledgeStateFunction Unit oracleSig (protocol rounds) Stmt (fun _ => Nat)
+    Nat (fun _ => True) Rin valid :=
   { knowledge with stages := stages }
 
 -- Row 29 (StateRestorationBudget L470): the measured state function's underlying state function
@@ -645,8 +645,8 @@ example :
       (∀ w, (measured.stages.programAlong z tr).program.run w = measured.extractAlong z tr w) ∧
       (measured.stages.programAlong z tr).program.CostAtMost 2 :=
   MeasuredKnowledgeStateFunction.stateRestoration_oracle_knowledge_soundness_nonuniform verifier
-    oracleRout measured closedOutputLaw errors bounded (fun _ => 0) (fun _ => 1) (fun _ => 0)
-    (fun _ => 0) (fun z _ => stages_protocolBudgetAtMost z) adversary 2 queryBound
+    oracleRout measured (fun _ _ w => w) closedOutputLaw errors bounded (fun _ => 0) (fun _ => 1)
+    (fun _ => 0) (fun _ => 0) (fun z _ => stages_protocolBudgetAtMost z) adversary 2 queryBound
 
 -- Row 32 (StateRestorationBudget L502): the same state function has the closed-game bound `7/16`
 -- and extraction cost at most two, with the event stated on the composed program's run.

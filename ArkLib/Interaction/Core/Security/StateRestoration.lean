@@ -405,32 +405,53 @@ section Knowledge
 variable {S W Win : Type} {admissible : S → Prop} {relIn : S → Win → Prop}
 
 /-- If backward extraction fails at the root of a completed transcript with a valid output, the
-answer at some key that completion queries is a bad challenge at that key's prefix. -/
+answer at some key that completion queries is a bad challenge at that key's prefix. The output
+witness is typed at the completed transcript and passed to `extractFrom` by
+`PrefixMoves.completeWith_root`. -/
 theorem exists_badChallenge_of_extraction_failure {Salt : Type} :
-    {rounds : List Round} → {Win : Type} → {admissible : S → Prop} → {relIn : S → Win → Prop} →
-    {validOutput : S → PathAlong oracleSig (protocol rounds) → W → Prop} →
-    (F : KnowledgeStateFunction oracleSig (protocol rounds) S W Win admissible relIn
+    {rounds : List Round} → {Wout : PathAlong oracleSig (protocol rounds) → Type} →
+    {Win : Type} → {admissible : S → Prop} → {relIn : S → Win → Prop} →
+    {validOutput : (stmt : S) → (tr : PathAlong oracleSig (protocol rounds)) → Wout tr → Prop} →
+    (F : KnowledgeStateFunction oracleSig (protocol rounds) S Wout Win admissible relIn
       validOutput) →
-    (z : S) → (messages : Messages Salt rounds) → (table : Table S Salt rounds) → (w : W) →
+    (z : S) → (messages : Messages Salt rounds) → (table : Table S Salt rounds) →
+    (w : Wout (completedPath rounds z messages table)) →
     validOutput z (completedPath rounds z messages table) w →
     ¬ F.toFun (.root _) ⟨⟩ z
-      (F.extractFrom z (.root _) ⟨⟩ (completedPath rounds z messages table) w) →
+      (F.extractFrom z (.root _) ⟨⟩ (completedPath rounds z messages table)
+        (cast (congrArg Wout
+          (PrefixMoves.completeWith_root oracleSig (completedPath rounds z messages table)).symm)
+          w)) →
     ∃ key ∈ completionKeys rounds z messages,
       table key ∈ F.badChallenge (keySpine key) (keyHistory key table) z
-  | [], _, _, _, _, F, z, _, _, w, valid, failure => (failure (F.leaf (.root _) ⟨⟩ z w valid)).elim
-  | _ :: rounds, _, _, _, _, F, z, (message, salt, messages), table, w, valid, failure => by
+  | [], _, _, _, _, _, F, z, _, _, w, valid, failure =>
+    (failure (F.leaf (.root _) ⟨⟩ z w valid)).elim
+  | round :: rounds, Wout, _, _, _, _, F, z, (message, salt, messages), table, w, valid,
+      failure => by
     let challenge := table (Key.here z message salt)
     let rest := completedPath rounds z messages (fun q => table (Key.later message salt q))
     let after := F.extractFrom z (.down ⟨⟩ (.down ⟨⟩ (.root _)))
-      ⟨⟨message, rfl⟩, ⟨⟨challenge, rfl⟩, ⟨⟩⟩⟩ rest w
+      ⟨⟨message, rfl⟩, ⟨⟨challenge, rfl⟩, ⟨⟩⟩⟩ rest
+      (cast (congrArg Wout (PrefixMoves.completeWith_root oracleSig
+        (completedPath (round :: rounds) z (message, salt, messages) table)).symm) w)
     by_cases holds : F.toFun (.down ⟨⟩ (.down ⟨⟩ (.root _)))
         ⟨⟨message, rfl⟩, ⟨⟨challenge, rfl⟩, ⟨⟩⟩⟩ z after
     · refine ⟨Key.here z message salt, List.mem_cons_self, after, ?_, holds⟩
       intro sent
       exact failure (F.send (.root _) ⟨⟩ z rfl message _ sent)
-    · have hafter : after = ((F.child message).child challenge).extractFrom z (.root _) ⟨⟩ rest w :=
-        (F.extractFrom_child z message (.down ⟨⟩ (.root _)) ⟨⟨challenge, rfl⟩, ⟨⟩⟩ rest w).trans
-          ((F.child message).extractFrom_child z challenge (.root _) ⟨⟩ rest w)
+    · have hafter : after = ((F.child message).child challenge).extractFrom z (.root _) ⟨⟩ rest
+          (cast (congrArg (fun tr => Wout ⟨message, ⟨challenge, tr⟩⟩)
+            (PrefixMoves.completeWith_root oracleSig rest).symm) w) :=
+        (F.extractFrom_child z message (.down ⟨⟩ (.root _)) ⟨⟨challenge, rfl⟩, ⟨⟩⟩ rest w
+          (congrArg Wout (PrefixMoves.completeWith_root oracleSig
+            (completedPath (round :: rounds) z (message, salt, messages) table)).symm)
+          ((congrArg Wout (PrefixMoves.completeWith_root oracleSig
+            (completedPath (round :: rounds) z (message, salt, messages) table)).symm).trans
+            (congrArg Wout (PrefixMoves.completeWith_down oracleSig
+              (a := .oracle round.Message round.interface)
+              (next := fun _ => .liftBind (.challenge round.Challenge) fun _ => protocol rounds)
+              message (.down ⟨⟩ (.root _)) ⟨⟨challenge, rfl⟩, ⟨⟩⟩ rest)))).trans
+          ((F.child message).extractFrom_child z challenge (.root _) ⟨⟩ rest w _ _)
       rw [hafter] at holds
       obtain ⟨key, hkey, hbad⟩ := exists_badChallenge_of_extraction_failure
         ((F.child message).child challenge) z messages
@@ -445,19 +466,19 @@ theorem exists_badChallenge_of_extraction_failure {Salt : Type} :
       rw [hz]
       exact hbad
 
-variable {Salt : Type} {rounds : List Round}
-  {validOutput : S → PathAlong oracleSig (protocol rounds) → W → Prop}
+variable {Salt : Type} {rounds : List Round} {Wout : PathAlong oracleSig (protocol rounds) → Type}
+  {validOutput : (stmt : S) → (tr : PathAlong oracleSig (protocol rounds)) → Wout tr → Prop}
 
 /-- An admissible key whose answer is a bad challenge at the key's prefix. -/
 def badKey
-    (F : KnowledgeStateFunction oracleSig (protocol rounds) S W Win admissible relIn validOutput)
+    (F : KnowledgeStateFunction oracleSig (protocol rounds) S Wout Win admissible relIn validOutput)
     (key : Key S Salt rounds) (table : Table S Salt rounds) : Prop :=
   admissible key.input ∧ table key ∈ F.badChallenge (keySpine key) (keyHistory key table) key.input
 
 /-- Resampling the answer at a key makes it bad with probability at most the error of the key's
 challenge node, for every background table. -/
 theorem badKey_resample_bound [DecidableEq (Key S Salt rounds)]
-    {F : KnowledgeStateFunction oracleSig (protocol rounds) S W Win admissible relIn validOutput}
+    {F : KnowledgeStateFunction oracleSig (protocol rounds) S Wout Win admissible relIn validOutput}
     {ε : ChallengeNode oracleSig (protocol rounds) → ENNReal}
     (bounded : F.LocallyBounded (uniformDraw rounds) ε)
     (key : Key S Salt rounds) (table : Table S Salt rounds) :
@@ -480,15 +501,19 @@ theorem badKey_resample_bound [DecidableEq (Key S Salt rounds)]
   · simp [hz]
 
 /-- On every answer table, a run of the restored execution whose output is valid and whose
-extraction fails queries a bad key. -/
+extraction fails queries a bad key. The adversary's witness is read at the completed transcript by
+`readOut`. -/
 theorem restored_bad_trace
-    (F : KnowledgeStateFunction oracleSig (protocol rounds) S W Win admissible relIn validOutput)
+    (F : KnowledgeStateFunction oracleSig (protocol rounds) S Wout Win admissible relIn validOutput)
+    (readOut : (stmt : S) → (tr : PathAlong oracleSig (protocol rounds)) → W → Wout tr)
     (adversary : OracleComp (oracleSpec S Salt rounds) (S × Messages Salt rounds × W))
     (table : Table S Salt rounds)
     (bad : let result :=
         evalWithAnswerFn (QueryImpl.ofFn table) (restoredExecution rounds adversary)
-      admissible result.1 ∧ validOutput result.1 result.2.1 result.2.2 ∧
-        ¬ relIn result.1 (F.extractAlong result.1 result.2.1 result.2.2)) :
+      admissible result.1 ∧
+        validOutput result.1 result.2.1 (readOut result.1 result.2.1 result.2.2) ∧
+        ¬ relIn result.1
+          (F.extractAlong result.1 result.2.1 (readOut result.1 result.2.1 result.2.2))) :
     ∃ q ∈ tableQueryLog (restoredExecution rounds adversary) table, badKey F q.1 table := by
   let result := evalWithAnswerFn (QueryImpl.ofFn table) adversary
   rcases hresult : result with ⟨z, messages, w⟩
@@ -500,7 +525,8 @@ theorem restored_bad_trace
   dsimp only at bad
   rw [heval] at bad
   obtain ⟨hadm, hvalid, hfail⟩ := bad
-  obtain ⟨key, hkey, hb⟩ := exists_badChallenge_of_extraction_failure F z messages table w hvalid
+  obtain ⟨key, hkey, hb⟩ := exists_badChallenge_of_extraction_failure F z messages table
+    (readOut z _ w) hvalid
     (fun holds => hfail (F.root z hadm _ holds))
   have hz := completionKeys_input rounds z messages key hkey
   have hmem : key ∈ (tableQueryLog (complete rounds z messages) table).map Sigma.fst := by
@@ -518,21 +544,24 @@ theorem restored_bad_trace
     exact hb
 
 /-- Knowledge soundness of the restored execution: for every adversary with at most `Q` queries,
-the probability that the selected input is admissible, the output is valid and extraction fails
-is at most `(Q + rounds.length) * error`. -/
+the probability that the selected input is admissible, the output read at the completed transcript
+is valid and extraction fails is at most `(Q + rounds.length) * error`. -/
 theorem restoredExecution_knowledge_soundness [DecidableEq (Key S Salt rounds)]
-    (F : KnowledgeStateFunction oracleSig (protocol rounds) S W Win admissible relIn validOutput)
+    (F : KnowledgeStateFunction oracleSig (protocol rounds) S Wout Win admissible relIn validOutput)
     (error : ENNReal) (bounded : F.LocallyBounded (uniformDraw rounds) (uniformEps rounds error))
+    (readOut : (stmt : S) → (tr : PathAlong oracleSig (protocol rounds)) → W → Wout tr)
     (adversary : OracleComp (oracleSpec S Salt rounds) (S × Messages Salt rounds × W))
     (Q : ℕ) (queryBound : IsTotalQueryBound adversary Q) :
     Pr{let result ← (simulateQ randomOracle (restoredExecution rounds adversary)).run' ∅}[
-      admissible result.1 ∧ validOutput result.1 result.2.1 result.2.2 ∧
-        ¬ relIn result.1 (F.extractAlong result.1 result.2.1 result.2.2)] ≤
+      admissible result.1 ∧
+        validOutput result.1 result.2.1 (readOut result.1 result.2.1 result.2.2) ∧
+        ¬ relIn result.1
+          (F.extractAlong result.1 result.2.1 (readOut result.1 result.2.1 result.2.2))] ≤
       (Q + rounds.length) * error := by
   rw [← Nat.cast_add]
   exact prEvent_randomOracle_le_of_bad_queries _ (Q + rounds.length)
     (restoredExecution_queryBound rounds adversary Q queryBound) _ (badKey F) error
-    (badKey_resample_bound bounded) (restored_bad_trace F adversary)
+    (badKey_resample_bound bounded) (restored_bad_trace F readOut adversary)
 
 end Knowledge
 
@@ -543,20 +572,26 @@ section Games
 variable {rounds : List Round} {I J S T Salt W Win : Type} {A : I → Type} {B : J → Type}
   {inputs : OracleFamily I A} {outputs : OracleFamily J B}
   {admissible : S × (∀ i, A i) → Prop} {relIn : S × (∀ i, A i) → Win → Prop}
-  {validOutput : S × (∀ i, A i) → PathAlong oracleSig (protocol rounds) → W → Prop}
+  {Wout : PathAlong oracleSig (protocol rounds) → Type}
+  {validOutput : (stmt : S × (∀ i, A i)) → (tr : PathAlong oracleSig (protocol rounds)) →
+    Wout tr → Prop}
 
-/-- State-restoration knowledge soundness of a verifier. The output relation may read the
-transcript; every accepted statement it relates to a witness is a valid output of the knowledge
-state function. For every adversary with at most `Q` queries, the probability that the selected
-input is admissible, the verifier accepts a statement related to the output witness, and backward
-extraction fails, is at most `(Q + rounds.length) * error`. -/
+/-- State-restoration knowledge soundness of a verifier. The knowledge state function's output
+witnesses are indexed by the transcript, and `readOut` reads the adversary's witness at the
+completed transcript. The output relation may read the transcript; every accepted statement it
+relates to a witness is a valid output of the knowledge state function at the read witness. For
+every adversary with at most `Q` queries, the probability that the selected input is admissible,
+the verifier accepts a statement related to the output witness, and backward extraction fails, is
+at most `(Q + rounds.length) * error`. -/
 theorem stateRestoration_knowledge_soundness [DecidableEq (Key (S × (∀ i, A i)) Salt rounds)]
     (V : OracleVerifier []ₒ (protocol rounds) S T inputs outputs)
     (relOut : S × (∀ i, A i) → PathAlong oracleSig (protocol rounds) → T → W → Prop)
-    (F : KnowledgeStateFunction oracleSig (protocol rounds) (S × (∀ i, A i)) W Win admissible
+    (F : KnowledgeStateFunction oracleSig (protocol rounds) (S × (∀ i, A i)) Wout Win admissible
       relIn validOutput)
+    (readOut : (stmt : S × (∀ i, A i)) → (tr : PathAlong oracleSig (protocol rounds)) → W →
+      Wout tr)
     (outputLaw : ∀ stmt tr t w, terminalObservation V stmt tr = some t → relOut stmt tr t w →
-      validOutput stmt tr w)
+      validOutput stmt tr (readOut stmt tr w))
     (error : ENNReal) (bounded : F.LocallyBounded (uniformDraw rounds) (uniformEps rounds error))
     (adversary : OracleComp (oracleSpec (S × (∀ i, A i)) Salt rounds)
       ((S × (∀ i, A i)) × Messages Salt rounds × W))
@@ -564,11 +599,12 @@ theorem stateRestoration_knowledge_soundness [DecidableEq (Key (S × (∀ i, A i
     Pr{let result ← (simulateQ randomOracle (verificationGame V adversary)).run' ∅}[
       admissible result.1 ∧
       (∃ t, result.2.2.1 = some t ∧ relOut result.1 result.2.1 t result.2.2.2) ∧
-      ¬ relIn result.1 (F.extractAlong result.1 result.2.1 result.2.2.2)] ≤
+      ¬ relIn result.1
+        (F.extractAlong result.1 result.2.1 (readOut result.1 result.2.1 result.2.2.2))] ≤
       (Q + rounds.length) * error := by
   rw [verificationGame_eq, simulateQ_map, StateT.run'_map', prEvent_map]
   refine le_trans (prEvent_mono _ _ _ ?_)
-    (restoredExecution_knowledge_soundness F error bounded adversary Q queryBound)
+    (restoredExecution_knowledge_soundness F error bounded readOut adversary Q queryBound)
   rintro ⟨stmt, tr, w⟩ ⟨hadm, ⟨t, ht, hrel⟩, hfail⟩
   exact ⟨hadm, outputLaw stmt tr t w ht hrel, hfail⟩
 
@@ -579,10 +615,12 @@ theorem stateRestoration_oracle_knowledge_soundness
     [DecidableEq (Key (S × (∀ i, A i)) Salt rounds)]
     (V : OracleVerifier []ₒ (protocol rounds) S T inputs outputs)
     (relOut : S × (∀ i, A i) → PathAlong oracleSig (protocol rounds) → T × (∀ j, B j) → W → Prop)
-    (F : KnowledgeStateFunction oracleSig (protocol rounds) (S × (∀ i, A i)) W Win admissible
+    (F : KnowledgeStateFunction oracleSig (protocol rounds) (S × (∀ i, A i)) Wout Win admissible
       relIn validOutput)
+    (readOut : (stmt : S × (∀ i, A i)) → (tr : PathAlong oracleSig (protocol rounds)) → W →
+      Wout tr)
     (outputLaw : ∀ stmt tr claim w, closedTerminalObservation V stmt tr = some claim →
-      relOut stmt tr claim w → validOutput stmt tr w)
+      relOut stmt tr claim w → validOutput stmt tr (readOut stmt tr w))
     (error : ENNReal) (bounded : F.LocallyBounded (uniformDraw rounds) (uniformEps rounds error))
     (adversary : OracleComp (oracleSpec (S × (∀ i, A i)) Salt rounds)
       ((S × (∀ i, A i)) × Messages Salt rounds × W))
@@ -590,11 +628,12 @@ theorem stateRestoration_oracle_knowledge_soundness
     Pr{let result ← (simulateQ randomOracle (closedVerificationGame V adversary)).run' ∅}[
       admissible result.1 ∧
       (∃ claim, result.2.2.1 = some claim ∧ relOut result.1 result.2.1 claim result.2.2.2) ∧
-      ¬ relIn result.1 (F.extractAlong result.1 result.2.1 result.2.2.2)] ≤
+      ¬ relIn result.1
+        (F.extractAlong result.1 result.2.1 (readOut result.1 result.2.1 result.2.2.2))] ≤
       (Q + rounds.length) * error := by
   rw [closedVerificationGame_eq, simulateQ_map, StateT.run'_map', prEvent_map]
   refine le_trans (prEvent_mono _ _ _ ?_)
-    (restoredExecution_knowledge_soundness F error bounded adversary Q queryBound)
+    (restoredExecution_knowledge_soundness F error bounded readOut adversary Q queryBound)
   rintro ⟨stmt, tr, w⟩ ⟨hadm, ⟨claim, hc, hrel⟩, hfail⟩
   exact ⟨hadm, outputLaw stmt tr claim w hc hrel, hfail⟩
 
@@ -604,10 +643,12 @@ theorem stateRestoration_knowledge_soundness_privateCoins
     [DecidableEq (Key (S × (∀ i, A i)) Salt rounds)]
     (V : OracleVerifier []ₒ (protocol rounds) S T inputs outputs)
     (relOut : S × (∀ i, A i) → PathAlong oracleSig (protocol rounds) → T → W → Prop)
-    (F : KnowledgeStateFunction oracleSig (protocol rounds) (S × (∀ i, A i)) W Win admissible
+    (F : KnowledgeStateFunction oracleSig (protocol rounds) (S × (∀ i, A i)) Wout Win admissible
       relIn validOutput)
+    (readOut : (stmt : S × (∀ i, A i)) → (tr : PathAlong oracleSig (protocol rounds)) → W →
+      Wout tr)
     (outputLaw : ∀ stmt tr t w, terminalObservation V stmt tr = some t → relOut stmt tr t w →
-      validOutput stmt tr w)
+      validOutput stmt tr (readOut stmt tr w))
     (error : ENNReal) (bounded : F.LocallyBounded (uniformDraw rounds) (uniformEps rounds error))
     {Coins : Type} (coins : OptionT ProbComp Coins)
     (adversary : Coins → OracleComp (oracleSpec (S × (∀ i, A i)) Salt rounds)
@@ -617,13 +658,14 @@ theorem stateRestoration_knowledge_soundness_privateCoins
         ((simulateQ randomOracle (verificationGame V (adversary c))).run' ∅))}[
       admissible result.1 ∧
       (∃ t, result.2.2.1 = some t ∧ relOut result.1 result.2.1 t result.2.2.2) ∧
-      ¬ relIn result.1 (F.extractAlong result.1 result.2.1 result.2.2.2)] ≤
+      ¬ relIn result.1
+        (F.extractAlong result.1 result.2.1 (readOut result.1 result.2.1 result.2.2.2))] ≤
       (Q + rounds.length) * error := by
   apply prEvent_bind_le_of_forall_le
   intro c
   rw [OptionT.prEvent_lift]
-  exact stateRestoration_knowledge_soundness V relOut F outputLaw error bounded (adversary c) Q
-    (queryBound c)
+  exact stateRestoration_knowledge_soundness V relOut F readOut outputLaw error bounded
+    (adversary c) Q (queryBound c)
 
 /-- The private-coins form of `stateRestoration_oracle_knowledge_soundness`. Coin failure
 contributes missing mass. -/
@@ -631,10 +673,12 @@ theorem stateRestoration_oracle_knowledge_soundness_privateCoins
     [DecidableEq (Key (S × (∀ i, A i)) Salt rounds)]
     (V : OracleVerifier []ₒ (protocol rounds) S T inputs outputs)
     (relOut : S × (∀ i, A i) → PathAlong oracleSig (protocol rounds) → T × (∀ j, B j) → W → Prop)
-    (F : KnowledgeStateFunction oracleSig (protocol rounds) (S × (∀ i, A i)) W Win admissible
+    (F : KnowledgeStateFunction oracleSig (protocol rounds) (S × (∀ i, A i)) Wout Win admissible
       relIn validOutput)
+    (readOut : (stmt : S × (∀ i, A i)) → (tr : PathAlong oracleSig (protocol rounds)) → W →
+      Wout tr)
     (outputLaw : ∀ stmt tr claim w, closedTerminalObservation V stmt tr = some claim →
-      relOut stmt tr claim w → validOutput stmt tr w)
+      relOut stmt tr claim w → validOutput stmt tr (readOut stmt tr w))
     (error : ENNReal) (bounded : F.LocallyBounded (uniformDraw rounds) (uniformEps rounds error))
     {Coins : Type} (coins : OptionT ProbComp Coins)
     (adversary : Coins → OracleComp (oracleSpec (S × (∀ i, A i)) Salt rounds)
@@ -644,13 +688,14 @@ theorem stateRestoration_oracle_knowledge_soundness_privateCoins
         ((simulateQ randomOracle (closedVerificationGame V (adversary c))).run' ∅))}[
       admissible result.1 ∧
       (∃ claim, result.2.2.1 = some claim ∧ relOut result.1 result.2.1 claim result.2.2.2) ∧
-      ¬ relIn result.1 (F.extractAlong result.1 result.2.1 result.2.2.2)] ≤
+      ¬ relIn result.1
+        (F.extractAlong result.1 result.2.1 (readOut result.1 result.2.1 result.2.2.2))] ≤
       (Q + rounds.length) * error := by
   apply prEvent_bind_le_of_forall_le
   intro c
   rw [OptionT.prEvent_lift]
-  exact stateRestoration_oracle_knowledge_soundness V relOut F outputLaw error bounded
-    (adversary c) Q (queryBound c)
+  exact stateRestoration_oracle_knowledge_soundness V relOut F readOut outputLaw error
+    bounded (adversary c) Q (queryBound c)
 
 end Games
 

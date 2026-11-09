@@ -160,8 +160,8 @@ def valid (_ : Stmt) (tr : PathAlong oracleSig (protocol rounds)) (w : Nat) : Pr
 /-- Before any move a witness is at most the input; after the message no witness is known; after
 the challenge `c` a witness is known when `c` is `true` and it is at most the message. Extraction
 adds the message at the message step and copies the witness otherwise. -/
-def knowledge : KnowledgeStateFunction oracleSig (protocol rounds) Stmt Nat Nat (fun _ => True)
-    Rin valid where
+def knowledge : KnowledgeStateFunction oracleSig (protocol rounds) Stmt (fun _ => Nat) Nat
+    (fun _ => True) Rin valid where
   Witness _ _ := Nat
   toFun sp history z w := match sp, history with
     | .root _, _ => w ≤ z.1
@@ -293,8 +293,8 @@ theorem actual_game_bound :
     Pr{let result ← (simulateQ randomOracle (verificationGame verifier adversary)).run' ∅}[
       True ∧ (∃ t, result.2.2.1 = some t ∧ Rout result.1 result.2.1 t result.2.2.2) ∧
       ¬ Rin result.1 (knowledge.extractAlong result.1 result.2.1 result.2.2.2)] ≤ 1 / 2 := by
-  have general := stateRestoration_knowledge_soundness verifier Rout knowledge plainOutputLaw
-    (1 / 2) bounded adversary 0 trivial
+  have general := stateRestoration_knowledge_soundness verifier Rout knowledge (fun _ _ w => w)
+    plainOutputLaw (1 / 2) bounded adversary 0 trivial
   simpa [rounds] using general
 
 /-- The oracle output relation: the witness is at most the output oracle's data. -/
@@ -329,7 +329,7 @@ theorem actual_oracle_game_bound :
         result.2.2.2) ∧
       ¬ Rin result.1 (knowledge.extractAlong result.1 result.2.1 result.2.2.2)] ≤ 1 / 2 := by
   have general := stateRestoration_oracle_knowledge_soundness verifier oracleRout knowledge
-    closedOutputLaw (1 / 2) bounded adversary 0 trivial
+    (fun _ _ w => w) closedOutputLaw (1 / 2) bounded adversary 0 trivial
   simpa [rounds] using general
 
 -- Row 20 (StateRestoration L274, actual_coin_oracle_game_bound): the same bound with uniform
@@ -342,8 +342,9 @@ theorem actual_coin_oracle_game_bound :
         result.2.2.2) ∧
       ¬ Rin result.1 (knowledge.extractAlong result.1 result.2.1 result.2.2.2)] ≤ 1 / 2 := by
   have general := stateRestoration_oracle_knowledge_soundness_privateCoins verifier oracleRout
-    knowledge closedOutputLaw (1 / 2) bounded (OptionT.lift ($ᵗ Bool) : OptionT ProbComp Bool)
-    coinAdversary 0 (fun coin => by cases coin <;> trivial)
+    knowledge (fun _ _ w => w) closedOutputLaw (1 / 2) bounded
+    (OptionT.lift ($ᵗ Bool) : OptionT ProbComp Bool) coinAdversary 0
+    (fun coin => by cases coin <;> trivial)
   simpa [rounds] using general
 
 -- The plain private-coins form.
@@ -354,8 +355,76 @@ example :
       True ∧ (∃ t, result.2.2.1 = some t ∧ Rout result.1 result.2.1 t result.2.2.2) ∧
       ¬ Rin result.1 (knowledge.extractAlong result.1 result.2.1 result.2.2.2)] ≤ 1 / 2 := by
   have general := stateRestoration_knowledge_soundness_privateCoins verifier Rout knowledge
-    plainOutputLaw (1 / 2) bounded (OptionT.lift ($ᵗ Bool) : OptionT ProbComp Bool)
+    (fun _ _ w => w) plainOutputLaw (1 / 2) bounded (OptionT.lift ($ᵗ Bool) : OptionT ProbComp Bool)
     coinAdversary 0 (fun coin => by cases coin <;> trivial)
+  simpa [rounds] using general
+
+/-! ### A transcript-indexed output witness
+
+The output witness of `knowledgeFin` has type `Fin (m + 1)` for the sent message `m`, so every
+output witness is at most the message by its type. The adversary still outputs a number, and
+`clampOut` reads it at the completed transcript. -/
+
+/-- The output witness family: an index bounded by the sent message. -/
+abbrev FinOut (tr : PathAlong oracleSig (protocol rounds)) : Type :=
+  Fin ((show Fin 8 from tr.1).val + 1)
+
+/-- A valid indexed output: the challenge is `true`. The bound is in the type. -/
+def validFin (_ : Stmt) (tr : PathAlong oracleSig (protocol rounds)) (_ : FinOut tr) : Prop :=
+  (show Bool from tr.2.1) = true
+
+/-- The state function `knowledge` with the indexed output witness; the leaf map forgets the
+bound. -/
+def knowledgeFin : KnowledgeStateFunction oracleSig (protocol rounds) Stmt FinOut Nat
+    (fun _ => True) Rin validFin where
+  Witness := knowledge.Witness
+  toFun := knowledge.toFun
+  extractRoot := knowledge.extractRoot
+  extractStep := knowledge.extractStep
+  extractLeaf _ _ _ w := w.val
+  root := knowledge.root
+  send := knowledge.send
+  leaf sp history z w hvalid :=
+    knowledge.leaf sp history z w.val ⟨hvalid, Nat.lt_succ_iff.mp w.isLt⟩
+
+/-- `knowledgeFin` has the same bad challenges as `knowledge`, so the same local bound. -/
+theorem boundedFin :
+    knowledgeFin.LocallyBounded (uniformDraw rounds) (uniformEps rounds (1 / 2)) :=
+  bounded
+
+/-- Reads a number as an index bounded by the sent message, clamping it to the message. -/
+def clampOut (_ : Stmt) (tr : PathAlong oracleSig (protocol rounds)) (n : Nat) : FinOut tr :=
+  ⟨min n (show Fin 8 from tr.1).val, Nat.lt_succ_of_le (Nat.min_le_right _ _)⟩
+
+-- Extraction along the path from the indexed output witness 6 below message 7 is `6 + 7`.
+example (c : Bool) :
+    knowledgeFin.extractAlong (stmt 0) (path 7 c) ⟨6, Nat.lt_succ_of_le (show 6 ≤ 7 by decide)⟩ =
+      13 := rfl
+
+-- The bad-key lemma with an output witness typed at the completed transcript.
+example (table : Table Stmt Unit rounds) (htrue : table key = true) :
+    ∃ k ∈ completionKeys rounds (stmt 0) messages,
+      table k ∈ knowledgeFin.badChallenge (keySpine k) (keyHistory k table) (stmt 0) := by
+  apply exists_badChallenge_of_extraction_failure knowledgeFin (stmt 0) messages table
+    ⟨6, Nat.lt_succ_of_le (show 6 ≤ 7 by decide)⟩ htrue
+  change ¬ (6 + 7 ≤ 0)
+  omega
+
+/-- Every accepted statement related to a number is a valid indexed output of the clamped
+number. -/
+theorem finOutputLaw (z : Stmt) (tr : PathAlong oracleSig (protocol rounds)) (t : Fin 8)
+    (w : Nat) (accepted : terminalObservation verifier z tr = some t) (related : Rout z tr t w) :
+    validFin z tr (clampOut z tr w) :=
+  (plainOutputLaw z tr t w accepted related).1
+
+-- The plain game bound with the indexed output witness, read from the adversary's number.
+example :
+    Pr{let result ← (simulateQ randomOracle (verificationGame verifier adversary)).run' ∅}[
+      True ∧ (∃ t, result.2.2.1 = some t ∧ Rout result.1 result.2.1 t result.2.2.2) ∧
+      ¬ Rin result.1 (knowledgeFin.extractAlong result.1 result.2.1
+        (clampOut result.1 result.2.1 result.2.2.2))] ≤ 1 / 2 := by
+  have general := stateRestoration_knowledge_soundness verifier Rout knowledgeFin clampOut
+    finOutputLaw (1 / 2) boundedFin adversary 0 trivial
   simpa [rounds] using general
 
 end Interaction.Core.StateRestorationTests
