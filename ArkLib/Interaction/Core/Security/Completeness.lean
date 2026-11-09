@@ -84,6 +84,16 @@ def experiment {ι κ σ α : Type} {ambient : OracleSpec ι} {chal : OracleSpec
     QueryImpl.addLift impl challengeQueryImpl
   (simulateQ handler program).run' (← init)
 
+/-- Running a mapped program in the experiment maps the experiment's result. -/
+theorem experiment_map {ι κ σ α β : Type} {ambient : OracleSpec ι} {chal : OracleSpec κ}
+    (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
+    (challengeQueryImpl : QueryImpl chal ProbComp) (f : α → β)
+    (program : OracleComp (ambient + chal) α) :
+    experiment init impl challengeQueryImpl (f <$> program) =
+      f <$> experiment init impl challengeQueryImpl program := by
+  simp only [experiment, simulateQ_map, StateT.run'_eq, StateT.run_map, Functor.map_map,
+    _root_.map_bind]
+
 /-- The usual fresh challenge implementation, sampled separately from shared oracle state. -/
 def challengeQueryImpl {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly)
     (s : FreeM P PUnit) [∀ c, SampleableType (challengeSpec l s c)] :

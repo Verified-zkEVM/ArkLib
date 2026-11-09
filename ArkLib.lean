@@ -705,6 +705,7 @@ public import ArkLib.Data.Probability.Uniform
 public import ArkLib.Interaction.CompositionSoundness
 public import ArkLib.Interaction.Core.Composition
 public import ArkLib.Interaction.Core.Execution
+public import ArkLib.Interaction.Core.LegacyAppend
 public import ArkLib.Interaction.Core.Oracle.LoggedExecution
 public import ArkLib.Interaction.Core.Oracle.Routing
 public import ArkLib.Interaction.Core.OracleVerifier
@@ -1030,6 +1031,10 @@ public import ArkLib.ProofSystem.Stir.OutOfDomSmpl
 public import ArkLib.ProofSystem.Stir.ProximityBound
 public import ArkLib.ProofSystem.Stir.ProximityGap
 public import ArkLib.ProofSystem.Stir.Quotienting
+public import ArkLib.ProofSystem.Sumcheck.Core.Completeness
+public import ArkLib.ProofSystem.Sumcheck.Core.Execution
+public import ArkLib.ProofSystem.Sumcheck.Core.Protocol
+public import ArkLib.ProofSystem.Sumcheck.Core.SingleRound
 public import ArkLib.ProofSystem.Sumcheck.Domain
 public import ArkLib.ProofSystem.Sumcheck.Impl.Basic
 public import ArkLib.ProofSystem.Sumcheck.Impl.OracleProver
