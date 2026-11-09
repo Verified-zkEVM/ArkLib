@@ -533,6 +533,21 @@ theorem extractFrom_child {a : P.A} {next : P.B a → FreeM P PUnit.{1}} {Win : 
     congrArg ((F.child x).extractStep sp history stmt y)
       (extractFrom_child F stmt x (sp.comp _) (PrefixMoves.snoc l sp history y) tr w e e')
 
+/-- Direct-family form of `extractFrom_child`: an output witness of the restricted state function's
+completed transcript is passed unchanged to the restricted extraction, and transported by
+`PrefixMoves.completeWith_down` on the left. -/
+theorem extractFrom_child_family {a : P.A} {next : P.B a → FreeM P PUnit.{1}} {Win : Type}
+    {W : PathAlong l (.liftBind a next) → Type} {admissible : S → Prop} {relIn : S → Win → Prop}
+    {validOutput : (stmt : S) → (tr : PathAlong l (.liftBind a next)) → W tr → Prop}
+    (F : KnowledgeStateFunction l (.liftBind a next) S W Win admissible relIn validOutput)
+    (stmt : S) (x : Move l a) {t : FreeM P PUnit.{1}}
+    (sp : Cursor.Spine (next (l.toFunB a x)) t) (history : PrefixMoves l sp)
+    (tr : PathAlong l t) (w : W ⟨x, PrefixMoves.completeWith l sp history tr⟩) :
+    F.extractFrom stmt (.down _ sp) ⟨⟨x, rfl⟩, history⟩ tr
+        (cast (congrArg W (PrefixMoves.completeWith_down l x sp history tr).symm) w) =
+      (F.child x).extractFrom stmt sp history tr w :=
+  extractFrom_child F stmt x sp history tr w _ rfl
+
 /-- Over a leaf prefix, backward extraction of the composite is suffix extraction. -/
 theorem extractFrom_append_pure {u : PUnit.{1}}
     {s₂ : Path (FreeM.pure (P := P) u) → FreeM P PUnit.{1}}
@@ -605,6 +620,42 @@ theorem extractFrom_append_down {a : P.A} {cont : P.B a → FreeM P PUnit.{1}}
             sp history stmt y)
       (extractFrom_append_down F₁ F₂ seam stmt x (sp.comp _) (PrefixMoves.snoc l sp history y)
         tr w e e')
+
+/-- Direct-family form of `extractFrom_append_down`: an output witness of the composite's
+completed transcript below the first move is passed unchanged to the restricted composite's
+extraction, and transported by `PrefixMoves.completeWith_down` on the left. -/
+theorem extractFrom_append_down_family {a : P.A} {cont : P.B a → FreeM P PUnit.{1}}
+    {s₂ : Path (FreeM.liftBind a cont) → FreeM P PUnit.{1}}
+    {Wmid : PathAlong l (FreeM.liftBind a cont) → Type}
+    {W : PathAlong l ((FreeM.liftBind a cont).append s₂) → Type} {Win : Type}
+    {admissible : S → Prop} {relIn : S → Win → Prop}
+    {validMid : (stmt : S) → (tr : PathAlong l (FreeM.liftBind a cont)) → Wmid tr → Prop}
+    {admissible₂ : PathAlong l (FreeM.liftBind a cont) → S → Prop}
+    {relMid : (tr₁ : PathAlong l (FreeM.liftBind a cont)) → S → Wmid tr₁ → Prop}
+    {validOutput : (stmt : S) → (tr : PathAlong l ((FreeM.liftBind a cont).append s₂)) →
+      W tr → Prop}
+    (F₁ : KnowledgeStateFunction l (FreeM.liftBind a cont) S Wmid Win admissible relIn validMid)
+    (F₂ : (tr₁ : PathAlong l (FreeM.liftBind a cont)) →
+      KnowledgeStateFunction l (s₂ (projectPathAlong l _ tr₁))
+      S (fun tr₂ => W (PathAlong.append l _ s₂ tr₁ tr₂)) (Wmid tr₁) (admissible₂ tr₁)
+      (relMid tr₁) (fun stmt tr₂ w => validOutput stmt (PathAlong.append l _ s₂ tr₁ tr₂) w))
+    (seam : ∀ tr₁ stmt w, (F₂ tr₁).toFun (.root _) ⟨⟩ stmt w →
+      validMid stmt tr₁ ((F₂ tr₁).extractRoot stmt w))
+    (stmt : S) (x : Move l a) {t : FreeM P PUnit.{1}}
+    (sp : Cursor.Spine ((cont (l.toFunB a x)).append (fun p => s₂ ⟨l.toFunB a x, p⟩)) t)
+    (history : PrefixMoves l sp) (tr : PathAlong l t)
+    (w : W ⟨x, PrefixMoves.completeWith l sp history tr⟩) :
+    (append (s₂ := s₂) F₁ F₂ seam).extractFrom stmt (.down _ sp) ⟨⟨x, rfl⟩, history⟩ tr
+        (cast (congrArg W (PrefixMoves.completeWith_down l
+          (next := fun b => (cont b).append (fun p => s₂ ⟨b, p⟩)) x sp history tr).symm) w) =
+      (append (s₂ := fun p => s₂ ⟨l.toFunB a x, p⟩)
+        (Wmid := fun tr => Wmid ⟨x, tr⟩) (W := fun tr => W ⟨x, tr⟩)
+        (validMid := fun stmt tr w => validMid stmt ⟨x, tr⟩ w)
+        (admissible₂ := fun tr => admissible₂ ⟨x, tr⟩) (relMid := fun tr => relMid ⟨x, tr⟩)
+        (validOutput := fun stmt tr w => validOutput stmt ⟨x, tr⟩ w)
+        (F₁.child x) (fun tr => F₂ ⟨x, tr⟩) (fun tr => seam ⟨x, tr⟩)).extractFrom
+          stmt sp history tr w :=
+  extractFrom_append_down F₁ F₂ seam stmt x sp history tr w _ rfl
 
 /-- Backward extraction along an appended transcript runs the suffix extraction and then the
 prefix extraction from its input witness. -/

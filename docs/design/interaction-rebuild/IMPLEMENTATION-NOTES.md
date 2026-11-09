@@ -215,7 +215,7 @@ for the step map at every interaction node and for the leaf map, each indexed by
 the full prefix. `BudgetAtMost` bounds the three kinds separately. `programAlong` composes the
 programs with VCVio's `BudgetedProgram.comp` and `contramap`, so its budget is the leaf budget,
 plus one step budget for each move of the transcript, plus the root budget. Under stage bounds,
-`programAlong_budget_le` gives `leafBound + length • stepBound + rootBound`. The legacy
+`programAlong_budget_le` gives `leafBound + length • stepBound + rootBound`. The frozen interaction-layer
 `length • b` bound is `programAlong_budget_le_nsmul`, the case with zero root and leaf bounds.
 ArkLib adds no second instruction-cost theory.
 

@@ -405,6 +405,32 @@ example (n : Nat) (b : Bool) (m : Nat) (w : Fin (n + 1) × Unit) :
     (firstPath n b) ⟨m, ⟨⟩⟩ w).trans (composed_validAcceptance_iff stmt₀
       (PathAlong.append oracleSig firstProtocol suffix (firstPath n b) ⟨m, ⟨⟩⟩)).symm
 
+-- Direct-family corollaries: the witness is given in the family at the completed transcript.
+/-- The prefix protocol after its oracle message. -/
+abbrev afterFirst : OracleProtocol := .liftBind (.challenge Bool) fun _ => .pure ⟨⟩
+
+/-- Prefix extraction below the oracle message `n` is the extraction of the restricted state
+function on the same output witness. -/
+example (n : Move oracleSig (.oracle Nat OracleInterface.instDefault))
+    (tr : PathAlong oracleSig afterFirst)
+    (w : MidWitness ⟨n, PrefixMoves.completeWith oracleSig (.root afterFirst) ⟨⟩ tr⟩) :
+    firstState.extractFrom stmt₀ (.down (oracleSig.toFunB _ n) (.root afterFirst))
+        ⟨⟨n, rfl⟩, ⟨⟩⟩ tr
+        (cast (congrArg MidWitness
+          (PrefixMoves.completeWith_down oracleSig (next := fun _ => afterFirst) n
+            (.root afterFirst) ⟨⟩ tr).symm) w) =
+      (firstState.child n).extractFrom stmt₀ (.root afterFirst) ⟨⟩ tr w :=
+  KnowledgeStateFunction.extractFrom_child_family firstState stmt₀ n (.root afterFirst) ⟨⟩ tr w
+
+/-- The direct-family corollary for composites applies to an output witness given in the family at
+the completed transcript, without a transport argument. -/
+example (n : Move oracleSig (.oracle Nat OracleInterface.instDefault))
+    (tr : PathAlong oracleSig (afterFirst.append fun p => suffix ⟨oracleSig.toFunB _ n, p⟩))
+    (w : OutWitness ⟨n, PrefixMoves.completeWith oracleSig (.root _) ⟨⟩ tr⟩) : True := by
+  have _ := KnowledgeStateFunction.extractFrom_append_down_family firstState secondState seam
+    stmt₀ n (.root _) ⟨⟩ tr w
+  trivial
+
 /-! ### Security -/
 
 -- KnowledgeComposition fixture `firstCertificate`: the prefix at error one.
