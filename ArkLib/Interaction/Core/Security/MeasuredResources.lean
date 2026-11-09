@@ -26,6 +26,11 @@ budget is then at most the leaf bound, plus the step bound once for each move of
 plus the root bound (`MeasuredStages.programAlong_budget_le`). With zero root and leaf bounds this
 is the transcript length times the step bound (`MeasuredStages.programAlong_budget_le_nsmul`).
 
+On an oracle protocol, `MeasuredStages.ProtocolBudgetAtMost` bounds the budgets for one statement
+by node kind: message and oracle-message steps by one bound, challenge steps by another
+(`MeasuredStages.stepBound`). A common step bound gives both
+(`MeasuredStages.BudgetAtMost.protocolBudgetAtMost`).
+
 ## Scope
 
 Each budget bounds the declared instructions of one stage under the accounting of
@@ -245,3 +250,46 @@ structure MeasuredKnowledgeStateFunction (Kind : Type) [Finite Kind] (l : PFunct
   stages : toKnowledgeStateFunction.MeasuredStages (Kind → Nat)
 
 end Interaction.Core
+
+/-! ### Budgets by node kind on oracle protocols -/
+
+namespace Interaction.Core.KnowledgeStateFunction.MeasuredStages
+open PFunctor FreeM TwoParty.Lens
+
+variable {s : OracleProtocol} {S Win : Type} {W : PathAlong oracleSig s → Type}
+  {admissible : S → Prop} {relIn : S → Win → Prop}
+  {validOutput : (stmt : S) → (tr : PathAlong oracleSig s) → W tr → Prop}
+  {F : KnowledgeStateFunction oracleSig s S W Win admissible relIn validOutput} {ω : Type}
+
+/-- The step bound at a node: `challengeBound` at a challenge, `messageBound` at a message or an
+oracle message. -/
+def stepBound (messageBound challengeBound : ω) : OraclePos → ω
+  | .challenge _ => challengeBound
+  | _ => messageBound
+
+/-- For one statement, the root and leaf budgets are bounded, every message and oracle-message
+step budget is at most `messageBound`, and every challenge step budget is at most
+`challengeBound`. -/
+structure ProtocolBudgetAtMost [AddCommMonoid ω] [Preorder ω] (stages : MeasuredStages F ω)
+    (stmt : S) (rootBound messageBound challengeBound leafBound : ω) : Prop where
+  /-- The root budget is bounded. -/
+  root : (stages.root stmt).budget ≤ rootBound
+  /-- Every step budget is bounded by the bound of its node's kind. -/
+  step : ∀ {a : OraclePos} {next : OraclePoly.B a → OracleProtocol}
+    (sp : Cursor.Spine s (.liftBind a next)) (history : PrefixMoves oracleSig sp),
+    (stages.step stmt sp history).budget ≤ stepBound messageBound challengeBound a
+  /-- Every leaf budget is bounded. -/
+  leaf : ∀ (sp : Cursor.Spine s (.pure ⟨⟩)) (history : PrefixMoves oracleSig sp),
+    (stages.leaf stmt sp history).budget ≤ leafBound
+
+/-- A common step bound gives equal message and challenge bounds. -/
+theorem BudgetAtMost.protocolBudgetAtMost [AddCommMonoid ω] [Preorder ω]
+    {stages : MeasuredStages F ω} {rootBound stepBound' leafBound : ω}
+    (h : stages.BudgetAtMost rootBound stepBound' leafBound) (stmt : S) :
+    stages.ProtocolBudgetAtMost stmt rootBound stepBound' stepBound' leafBound where
+  root := h.root stmt
+  step {a} _ sp history := by
+    cases a <;> exact h.step stmt sp history
+  leaf := h.leaf stmt
+
+end Interaction.Core.KnowledgeStateFunction.MeasuredStages
