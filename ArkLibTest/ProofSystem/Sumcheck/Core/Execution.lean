@@ -22,7 +22,8 @@ abbrev F := ZMod 5
 
 variable {ι : Type} (ambient : OracleSpec ι)
 
-/-- The uniform draws of the verifier in an execution. -/
+/-- The verifier's challenge requests in an execution: one query to the challenge oracle per
+challenge node. They are uniform when interpreted with `challengeQueryImpl`. -/
 abbrev drawOf (n : ℕ) :=
   fun c : ChallengeNode oracleSig (protocol F 1 n) =>
     (liftM ((ambient + challengeSpec oracleSig (protocol F 1 n)).query (.inr c)) :

@@ -21,6 +21,20 @@ remaining rounds is a `RoundState`: a round index `i` with `i + k = n`, the lega
 fold needs no casts on trees or transcripts. Every slot of the prover is `pure`, including the slot
 at each challenge node and the leaf, as in the legacy `receiveChallenge` and output.
 
+The honest prover is noncomputable, and so are `honestMessage`, `nextState`, `honestTranscript`
+and `honestOutput`. The blocker is the legacy mathematical representation they reuse. The round
+message is the legacy `Spec.SingleRound.projectedRoundPolynomial`, a sum of `evalExcept`
+restrictions of the Mathlib multivariate polynomial `R⦃≤ deg⦄[X Fin n]`, and the state update
+evaluates the Mathlib univariate message with `Polynomial.eval`. Mathlib implements both through
+noncomputable finitely supported functions. The protocol tree, `foldRounds` and the sampler do not
+depend on that representation.
+
+Executable round messages live in the legacy implementation layer on CompPoly carriers:
+`Sumcheck.Impl.Computable.projectedMessage`, for nontrivial `R` with a lawful `BEq`, and
+`projectedStatementMessage_eq` identifies its mathematical reading with
+`projectedRoundPolynomial`. This file does not connect the interaction-layer honest prover to that
+layer, so it provides no executable honest prover.
+
 The main results are the closed form of the run against any sampler, `run_foldRounds`, and its
 invariance under simulation of the ambient oracle, `simulate_foldRounds`.
 -/
@@ -277,7 +291,10 @@ def RoundState.index {k : ℕ} (st : RoundState R deg n (k + 1)) : Fin n :=
 
 variable {d : ℕ} (D : Fin d ↪ R)
 
-/-- The honest round polynomial: the legacy projected round polynomial. -/
+/-- The honest round polynomial: the legacy projected round polynomial. It is noncomputable
+because the projection works on the Mathlib multivariate polynomial; an executable counterpart on
+CompPoly carriers is `Sumcheck.Impl.Computable.projectedStatementMessage`, which
+`Sumcheck.Impl.Computable.projectedStatementMessage_eq` identifies with the projection. -/
 noncomputable def honestMessage (k : ℕ) (st : RoundState R deg n (k + 1)) : R⦃≤ deg⦄[X] :=
   Sumcheck.Spec.SingleRound.projectedRoundPolynomial R n deg D st.index
     st.statement.challenges st.poly

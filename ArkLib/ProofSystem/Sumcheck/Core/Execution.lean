@@ -12,11 +12,15 @@ public import ArkLib.Interaction.Core.LegacyAppend
 /-!
 # Sumcheck verification and execution in the interaction layer
 
-The verifier of the replicated Sumcheck protocol is the uniform sampler, which draws one ring
-challenge per round, followed by the legacy decision fold `Spec.oracleVerifierProgram` applied
-to the completed run. The decision reads the challenges from the verifier view and answers each
-legacy message query through `route`, which sends it to the oracle node of its round. The output
-oracle is the input polynomial, kept by an embedding output map.
+The verifier of the replicated Sumcheck protocol is the passive sampler, which requests one ring
+challenge per round as a query to the challenge oracle, followed by the legacy decision fold
+`Spec.oracleVerifierProgram` applied to the completed run. The verifier does not choose the
+challenge distribution: the requests are uniform when the challenge oracle is interpreted with
+`challengeQueryImpl`, as in `perfectCompleteness_uniform`.
+
+The decision reads the challenges from the verifier view and answers each legacy message query
+through `route`, which sends it to the oracle node of its round. The output oracle is the input
+polynomial, kept by an embedding output map.
 
 The interaction always runs every round. A failed round check makes the legacy fold return
 `none` and skips only the later checks.
