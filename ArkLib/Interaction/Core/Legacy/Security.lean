@@ -161,28 +161,17 @@ theorem completeness_iff (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ
 
 end Completeness
 
-/-! ### Mapping the outputs of a plain-tree strategy -/
+/-! ### Mapping the outputs of a strategy -/
 
-section MapOut
+section MapOutput
 
-/-- Map the leaf outputs of a focal strategy on a plain tree, keeping every slot. -/
-def mapOut {M : Type → Type} [Functor M] : (s : Protocol.{0}) →
-    {Out Out' : PathAlong plainSig s → Type} → (∀ tr, Out tr → Out' tr) →
-    Focal plainSig M s Out → Focal plainSig M s Out'
-  | .pure ⟨⟩, _, _, f, p => f ⟨⟩ <$> p
-  | .liftBind a rest, _, _, f, p =>
-    Choice.map .focal (owner plainSig a)
-      (fun x next => mapOut (rest (plainSig.toFunB a x)) (fun tr o => f ⟨x, tr⟩ o) next) <$> p
-
-/-- Interpreting the slots commutes with mapping the outputs. -/
-theorem simulate_mapOut {κ : Type} {spec : OracleSpec κ} {M : Type → Type} [Monad M]
-    [LawfulMonad M] (F : QueryImpl spec M) : (s : Protocol.{0}) →
-    {Out Out' : PathAlong plainSig s → Type} → (f : ∀ tr, Out tr → Out' tr) →
-    (p : Core.Prover plainSig spec s Out) →
-    Prover.simulate F (mapOut s f p) = mapOut s f (Prover.simulate F p)
-  | .pure ⟨⟩, _, _, f, p => by
-    rw [Prover.simulate_done, Prover.simulate_done]
-    exact simulateQ_map F p _
+/-- Interpreting the slots commutes with PolyFun's `Strategy.mapOutput`. -/
+theorem simulate_mapOutput {P : PFunctor.{1, 0}} {l : PFunctor.Lens P rolePoly.{0}} {κ : Type}
+    {spec : OracleSpec κ} {M : Type → Type} [Monad M] [LawfulMonad M] (F : QueryImpl spec M) :
+    (s : FreeM P PUnit.{1}) → {Out Out' : PathAlong l s → Type} → (f : ∀ tr, Out tr → Out' tr) →
+    (p : Core.Prover l spec s Out) →
+    Prover.simulate F (Strategy.mapOutput f p) = Strategy.mapOutput f (Prover.simulate F p)
+  | .pure _, _, _, f, p => simulateQ_map F p (f ⟨⟩)
   | .liftBind a rest, _, _, f, p => by
     rw [Prover.simulate_node, Prover.simulate_node]
     change _ <$> simulateQ F (_ <$> p) = _ <$> (_ <$> simulateQ F p)
@@ -190,40 +179,27 @@ theorem simulate_mapOut {κ : Type} {spec : OracleSpec κ} {M : Type → Type} [
     refine congrArg (· <$> simulateQ F p) (funext fun c => ?_)
     refine (congrFun (Choice.map_comp _ _ _ _) c).trans ?_
     refine Eq.trans ?_ (congrFun (Choice.map_comp _ _ _ _) c).symm
-    exact congrArg (fun g => Choice.map .focal (owner plainSig a) g c)
-      (funext fun x => funext fun q => simulate_mapOut F _ _ q)
+    exact congrArg (fun g => Choice.map .focal (owner l a) g c)
+      (funext fun x => funext fun q => simulate_mapOutput F _ (fun tr => f ⟨x, tr⟩) q)
 
-/-- Running a strategy with mapped outputs maps the outputs of the run. -/
-theorem runWith_mapOut {M : Type → Type} [Monad M] [LawfulMonad M] (order : Schedule) :
-    (s : Protocol.{0}) → {Out Out' OutC : PathAlong plainSig s → Type} →
-    (f : ∀ tr, Out tr → Out' tr) → (p : Focal plainSig M s Out) →
-    (c : Counterpart plainSig M s OutC) →
-    runWith order s (mapOut s f p) c =
-      (fun r => ⟨r.1, f r.1 r.2.1, r.2.2⟩) <$> runWith order s p c
-  | .pure ⟨⟩, _, _, _, f, p, c => by
-    erw [runWith_done, runWith_done]
-    cases order <;> simp [Schedule.seq, _root_.map_bind, mapOut]
-  | .liftBind a rest, _, _, _, f, p, c => by
-    rw [runWith_liftBind, runWith_liftBind]
-    change step _ _ (_ <$> p) c _ = _
-    rw [step_map_left, map_eq_bind_pure_comp, step_bind]
-    refine congrArg (step _ order p c) (funext fun x => funext fun q => funext fun c' => ?_)
-    rw [runWith_mapOut order _ _ q c', bind_map_left]
-    simp only [bind_assoc, LawfulMonad.pure_bind, Function.comp_apply]
-
-/-- The verifier's run of a strategy with mapped outputs maps the outputs of its observation. -/
-theorem verifier_run_mapOut {S T : Type} {s : Protocol.{0}}
+/-- The verifier's run of a strategy with mapped outputs maps the outputs of its observation. It
+is PolyFun's `runWith_mapOutput_mapOutput` with the identity map on the sampler. -/
+theorem verifier_run_mapOutput {S T : Type} {s : Protocol.{0}}
     (V : Core.Verifier oSpec s S T) (stmt : S) {Out Out' : PathAlong plainSig s → Type}
     (f : ∀ tr, Out tr → Out' tr) (p : Core.Prover plainSig oSpec s Out) :
-    V.run stmt (mapOut s f p) =
+    V.run stmt (Strategy.mapOutput f p) =
       (fun obs => ⟨obs.1, f obs.1 obs.2.1, obs.2.2⟩) <$> V.run stmt p := by
-  simp only [Core.Verifier.run, simulate_mapOut, TwoParty.Lens.run, runWith_mapOut,
-    bind_map_left, _root_.map_bind]
+  have h := runWith_mapOutput_mapOutput (m := OracleComp (oSpec + challengeSpec plainSig s))
+    .focalFirst s f (fun _ x => x)
+    (p.simulate (fun q => liftM ((oSpec + challengeSpec plainSig s).query (.inl q))))
+    (sampler plainSig s (fun c => liftM ((oSpec + challengeSpec plainSig s).query (.inr c))))
+  rw [Strategy.mapOutput_id] at h
+  simp only [Core.Verifier.run, simulate_mapOutput, TwoParty.Lens.run, h, bind_assoc,
+    LawfulMonad.pure_bind, _root_.map_bind]
   refine bind_congr fun r => ?_
-  rcases r with ⟨tr, out, ⟨⟩⟩
   simp
 
-end MapOut
+end MapOutput
 
 /-! ### Translating interaction-layer provers into legacy provers -/
 
@@ -358,7 +334,7 @@ theorem soundness_iff [∀ i, SampleableType (pSpec.Challenge i)] (init : ProbCo
     · refine le_of_eq_of_le (b := 0) ?_ zero_le
       simp only [IsEmpty.exists_iff, Set.ofPred_false, measure_empty]
     · obtain ⟨t₀⟩ := hT
-      let p' := mapOut _ (fun _ _ => ((t₀, ⟨⟩) : StmtOut × PUnit)) adv
+      let p' := Strategy.mapOutput (fun _ _ => ((t₀, ⟨⟩) : StmtOut × PUnit)) adv
       have hl := h PUnit PUnit ⟨⟩ (translate p') stmt
         (fun hl => hstmt ((langProblem_language langIn stmt).mpr hl))
       refine le_of_eq_of_le (Eq.symm ?_) hl
@@ -371,7 +347,7 @@ theorem soundness_iff [∀ i, SampleableType (pSpec.Challenge i)] (init : ProbCo
         ((embedVerifier V).run stmt (embedProver (translate p') stmt ⟨⟩))] _ = _
       rw [embedProver_translate]
       simp only [p']
-      erw [verifier_run_mapOut]
+      erw [verifier_run_mapOutput]
       rw [experiment_map, evalDist_map _ measurable_from_top,
         Measure.map_apply measurable_from_top MeasurableSpace.measurableSet_top,
         setOf_accept_eq langOut (fun _ _ => ((t₀, ⟨⟩) : StmtOut × PUnit))]

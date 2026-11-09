@@ -40,11 +40,12 @@ def cheat : Core.Prover plainSig []ₒ (protocol twoWay) (fun _ => Bool) :=
 /-- The legacy prover translated from the cheating prover, after its outputs are replaced by
 the fixed output statement `0` and the trivial witness. -/
 def cheatLegacy : _root_.Prover []ₒ Nat PUnit Nat PUnit twoWay :=
-  translate (mapOut _ (fun _ _ => ((0, ⟨⟩) : Nat × PUnit)) cheat)
+  translate (Strategy.mapOutput (fun _ _ => ((0, ⟨⟩) : Nat × PUnit)) cheat)
 
 /-- Embedding the translation gives back the cheating prover with its outputs replaced. -/
 example (stmt : Nat) :
-    embedProver cheatLegacy stmt ⟨⟩ = mapOut _ (fun _ _ => ((0, ⟨⟩) : Nat × PUnit)) cheat :=
+    embedProver cheatLegacy stmt ⟨⟩ =
+      Strategy.mapOutput (fun _ _ => ((0, ⟨⟩) : Nat × PUnit)) cheat :=
   embedProver_translate _ stmt
 
 def cheatOutputs (r : LegacyResult twoWay Nat PUnit) : Option (Nat × Nat × Nat) :=

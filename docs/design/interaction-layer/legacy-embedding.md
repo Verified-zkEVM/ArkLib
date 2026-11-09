@@ -80,7 +80,7 @@ Each direction translates every adversary of one layer into the other.
 
 - A legacy prover becomes an interaction-layer prover through `embedProver`.
 - An interaction-layer prover with any output family first has its outputs replaced by a fixed
-  statement `t₀` and the trivial witness (`mapOut`). It then becomes the legacy prover
+  statement `t₀` and the trivial witness (PolyFun's `Strategy.mapOutput`). It then becomes the legacy prover
   `translate`, whose state is the remaining strategy and whose output is the strategy's output.
   `embedProver_translate` shows that embedding the translation gives back the strategy. If
   `StmtOut` is empty, nothing is accepted and the bound holds trivially.
