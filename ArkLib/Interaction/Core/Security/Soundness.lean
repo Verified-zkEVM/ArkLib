@@ -43,4 +43,19 @@ abbrev Verifier.soundness {ι σ S T : Type} {ambient : OracleSpec ι}
   Core.soundness (V.classicalModel (Out := Out) init impl challenges) input output
     (fun obs => obs.2.2) ε
 
+/-- Classical oracle soundness uses the full class of focal strategies over the oracle protocol,
+with the input oracle data supplied to the run. -/
+abbrev OracleVerifier.soundness {ι I J σ S T : Type} {ambient : OracleSpec ι}
+    {s : OracleProtocol} {A : I → Type} {B : J → Type}
+    {inputs : OracleFamily I A} {outputs : OracleFamily J B}
+    (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
+    (impl : QueryImpl ambient (StateT σ ProbComp))
+    (challenges : QueryImpl (challengeSpec oracleSig s) ProbComp)
+    (input : StatementProblem (S × (∀ i, A i))) (output : StatementProblem (T × (∀ j, B j)))
+    (ε : ℝ≥0∞) : Prop :=
+  ∀ Out : PathAlong oracleSig s → Type,
+  letI : MeasurableSpace (Observation oracleSig s Out (T × (∀ j, B j))) := ⊤
+  Core.soundness (V.classicalModel (Out := Out) init impl challenges) input output
+    (fun obs => obs.2.2) ε
+
 end Interaction.Core
