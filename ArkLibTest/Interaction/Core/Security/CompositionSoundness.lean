@@ -38,6 +38,7 @@ noncomputable section
 
 attribute [local implicit_reducible] owner
 
+/-- The field of the guess and the challenge. -/
 abbrev F := ZMod 17
 
 /-- A guess message followed by a challenge. -/
@@ -133,11 +134,14 @@ open MeasureTheory
 
 noncomputable section
 
+/-- One oracle with three answers. -/
 @[reducible] def branchSpec : OracleSpec Unit := fun _ => Fin 3
 
+/-- Answers `0` and `1` each with probability `1/2`; answer `2` has mass zero. -/
 def branchMeasure : Measure (Fin 3) :=
   (1 / 2 : ℝ≥0∞) • Measure.dirac 0 + (1 / 2 : ℝ≥0∞) • Measure.dirac 1
 
+/-- Every query of `branchSpec` is answered by `branchMeasure`. -/
 instance : OracleSpec.AnswerMeasure branchSpec where
   toMeasure _ := branchMeasure
   isProbabilityMeasure _ := by
@@ -147,6 +151,7 @@ instance : OracleSpec.AnswerMeasure branchSpec where
       Measure.dirac_apply_of_mem (Set.mem_univ _), smul_eq_mul, mul_one, one_div]
     rw [← two_mul, ENNReal.mul_inv_cancel (by norm_num) (by simp)]
 
+/-- Programs querying `branchSpec`. -/
 abbrev M := OracleComp branchSpec
 
 /-- One challenge with three structural answers. -/
@@ -155,6 +160,7 @@ def tree : Protocol := .liftBind (.challenge (Fin 3)) fun _ => .pure ⟨⟩
 /-- The empty suffix. -/
 def rest : Path tree → Protocol := fun _ => .pure ⟨⟩
 
+/-- The prover has pure slots and the unit output. -/
 def prover : Focal plainSig M (tree.append rest) (fun _ => Unit) := pure fun _ => pure ()
 
 /-- The prefix counterpart publishes the answer and stores it in `Fin 4`. -/
@@ -166,24 +172,31 @@ def prefixVerifier : PureEnd plainSig M .counterpart tree (fun _ => Fin 4) := do
 def suffixVerifier (_ : PathAlong plainSig tree) (out : Fin 4) :
     Counterpart plainSig M (.pure ⟨⟩) (fun _ => Bool) := pure (out != 0)
 
+/-- The append boundary: the prefix transcript, the suffix strategy and the stored value. -/
 abbrev Boundary := AppendBoundary plainSig M tree rest (fun _ => Unit) (fun _ => Fin 4)
 
+/-- Every set of boundaries is measurable. -/
 instance : MeasurableSpace Boundary := ⊤
 
+/-- The measurable structure on boundaries is discrete. -/
 instance : DiscreteMeasurableSpace Boundary := ⟨fun _ => trivial⟩
 
+/-- The boundary after the answer `sample`, which stores `sample` in `Fin 4`. -/
 @[reducible] def boundary (sample : Fin 3) : Boundary :=
   ⟨⟨sample, ⟨⟩⟩, (pure () : M Unit), sample.castSucc⟩
 
+/-- The suffix error: one at the boundary storing `1`, zero elsewhere. -/
 def error (b : Boundary) : ℝ≥0∞ := if b.2.2 = 1 then 1 else 0
 
 -- Row 4 (`Weighted.prefix_execution`), restated over `PathAlong`.
+/-- The prefix run queries once and returns the boundary of the answer. -/
 theorem prefix_execution : TwoParty.Lens.run tree (Focal.splitPrefix prover)
     prefixVerifier.toStrategy = (query (spec := branchSpec) () : M (Fin 3)) >>=
       fun sample => pure (boundary sample) := by
   rfl
 
 -- Row 5 (`prefix_measure`), restated.
+/-- The prefix boundary has mass `1/2` at each of the answers `0` and `1`. -/
 theorem prefix_measure : 𝒟[TwoParty.Lens.run tree (Focal.splitPrefix prover)
     prefixVerifier.toStrategy] =
       (1 / 2 : ℝ≥0∞) • Measure.dirac (boundary 0) +
@@ -213,6 +226,7 @@ theorem suffix_run (sample : Fin 3) :
   rfl
 
 -- Row 6 (`suffix_at_boundary`), restated.
+/-- The suffix accepts with probability zero after the answer `0` and one otherwise. -/
 theorem suffix_at_boundary (sample : Fin 3) :
     Pr{let result ← (TwoParty.Lens.run (.pure ⟨⟩) (boundary sample).2.1
       (suffixVerifier (boundary sample).1 (boundary sample).2.2))}[result.2.2 = true] =
@@ -228,6 +242,7 @@ theorem null_boundary_supported : boundary 2 ∈ support
   exact ⟨(2 : Fin 3), OracleComp.mem_support_query (spec := branchSpec) () (2 : Fin 3), by simp⟩
 
 -- Row 8 (`null_boundary_mass`), restated.
+/-- The supported boundary `2` has mass zero. -/
 theorem null_boundary_mass : 𝒟[TwoParty.Lens.run tree (Focal.splitPrefix prover)
     prefixVerifier.toStrategy] {boundary 2} = 0 := by
   rw [prefix_measure]
@@ -395,6 +410,7 @@ def fullMeasure : (c : full.Domain) → @Measure (full.Range c) ⊤
   | .inr ⟨.inl _, _⟩ => branchMeasure
   | .inr ⟨.inr ⟨_, n⟩, _⟩ => n.elim
 
+/-- Ambient coins and challenges are answered by `fullMeasure`. -/
 instance : OracleSpec.AnswerMeasure full :=
   @PFunctor.AnswerMeasure.mk full.toPFunctor (fun _ => ⊤) fullMeasure fun c => by
     rcases c with _ | ⟨_ | ⟨_, n⟩, _⟩
@@ -450,8 +466,10 @@ def prover : Prover oracleSig ambient combined (fun _ => Unit) := pure fun _ => 
 /-- The append boundary of a run. -/
 abbrev Boundary := RunBoundary oracleSig ambient first (fun _ => second) (fun _ => Unit)
 
+/-- Every set of boundaries is measurable. -/
 instance : MeasurableSpace Boundary := ⊤
 
+/-- The measurable structure on boundaries is discrete. -/
 instance : DiscreteMeasurableSpace Boundary := ⟨fun _ => trivial⟩
 
 /-- The boundary after the challenge `sample`. -/
