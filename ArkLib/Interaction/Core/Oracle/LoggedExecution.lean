@@ -15,8 +15,8 @@ before routing: ambient queries and queries to the input and message oracles, in
 repeats. Forgetting both logs gives `OracleVerifier.run` exactly.
 
 Logging after substitution, VCVio's `OracleComp.withQueryLog_simulateQ`, records the target
-queries each handler program makes, in order. A persistent `OracleRuntime` executes the logged run directly as
-`runtime.run (V.runWithLog stmt data prover)`.
+queries each handler program makes, in order. A persistent `OracleRuntime` executes the logged run
+directly as `runtime.run (V.runWithLog stmt data prover)`.
 -/
 
 @[expose] public section
