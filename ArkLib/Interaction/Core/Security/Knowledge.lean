@@ -343,6 +343,35 @@ theorem runWithLog_fst {ι I J S T : Type} {ambient : OracleSpec ι} {s : Oracle
   rw [← map_run_withLogging_addLift_fst, bind_map_left]
   simp
 
+/-- Forgetting both logs preserves the entire oracle run. -/
+theorem map_fst_runWithLog {ι I J S T : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
+    {A : I → Type} {B : J → Type} {inputs : OracleFamily I A} {outputs : OracleFamily J B}
+    {Out : PathAlong oracleSig s → Type} (V : OracleVerifier ambient s S T inputs outputs)
+    (stmt : S) (data : ∀ i, A i) (prover : Prover oracleSig ambient s Out) :
+    Sigma.fst <$> V.runWithLog stmt data prover = V.run stmt data prover := by
+  simp only [runWithLog, _root_.map_bind, LawfulApplicative.map_pure]
+  rw [OracleVerifier.run]
+  conv_lhs =>
+    arg 2
+    intro a
+    rw [bind_logged _ _ (fun (verdict : Option T) => pure (⟨a.1.1, a.1.2.1, verdict.map fun t =>
+      (t, (V.outputMap stmt (projectPathAlong oracleSig s a.1.1) (toView s a.1.1)).f
+        (sumData data (payloads s a.1.1)))⟩ : Observation oracleSig s Out (T × (∀ j, B j))))]
+  rw [bind_logged (QueryImpl.id' (ambient + challengeSpec oracleSig s)) _
+    (fun result : (tr : PathAlong oracleSig s) × Out tr × PUnit => do
+      let verdict ← simulateQ (QueryImpl.addLift
+        ((fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q))) :
+          QueryImpl ambient (OracleComp (ambient + challengeSpec oracleSig s)))
+        ((sumFamily inputs
+          (pathFamily s (projectPathAlong oracleSig s result.1))).behaviorOfRealizations
+            (sumData data (payloads s result.1))))
+        (V.decide stmt (projectPathAlong oracleSig s result.1) (toView s result.1)).run
+      pure (⟨result.1, result.2.1, verdict.map fun t =>
+        (t, (V.outputMap stmt (projectPathAlong oracleSig s result.1) (toView s result.1)).f
+          (sumData data (payloads s result.1)))⟩ :
+        Observation oracleSig s Out (T × (∀ j, B j))))]
+  rw [simulateQ_id']
+
 end OracleVerifier
 
 namespace Extractor
@@ -413,6 +442,58 @@ noncomputable def classicalTranscriptOnly (Witness : (S × (∀ i, A i)) → Typ
   experiment E :=
     (V.classicalStraightline Witness init impl challenges readOut).experiment E.withLogs
   cost _ _ _ := 0
+
+/-- Classical straight-line oracle extraction preserves the run's observation law: the
+extractor runs after the observation is fixed. -/
+theorem classicalStraightline_marginal (Witness : (S × (∀ i, A i)) → Type)
+    [MeasurableSpace (Observation oracleSig s Out (T × (∀ j, B j)))]
+    [∀ stmt, MeasurableSpace (Witness stmt)]
+    (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
+    (impl : QueryImpl ambient (StateT σ ProbComp))
+    (challenges : QueryImpl (challengeSpec oracleSig s) ProbComp)
+    (readOut : ∀ tr, Out tr → Wout) (E : Extractor.OracleStraightline ambient s Witness Wout)
+    (stmt : S × (∀ i, A i)) (adv : Prover oracleSig ambient s Out) :
+    ((V.classicalStraightline Witness init impl challenges readOut).experiment E stmt adv).map
+      Prod.fst = (V.classicalModel init impl challenges).outcome stmt adv := by
+  change (𝒟[Core.experiment init impl challenges
+    (V.extractionGame readOut E stmt adv)]).map Prod.fst =
+      𝒟[Core.experiment init impl challenges (V.run stmt.1 stmt.2 adv)]
+  rw [← evalDist_map _ measurable_fst]
+  refine EvalDistEq.evalDist_eq ?_
+  simp only [Core.experiment, _root_.map_bind]
+  refine EvalDistEq.bind_right (m := ProbComp) _ fun st => ?_
+  have hgame : Prod.fst <$> V.extractionGame readOut E stmt adv =
+      V.runWithLog stmt.1 stmt.2 adv >>= fun y => (fun _ => y.1) <$> (match y.1.2.2 with
+        | none => pure none
+        | some _ => OracleComp.liftComp
+            (E stmt (readOut y.1.1 y.1.2.1) y.1.1 y.2.1 y.2.2.fst).run
+            (ambient + challengeSpec oracleSig s)) := by
+    simp only [extractionGame, _root_.map_bind]
+    congr 1
+    funext y
+    rcases y with ⟨⟨tr, out, verdict⟩, proveLog, verifyLog⟩
+    cases verdict <;> simp
+  have hmap : ∀ H : QueryImpl (ambient + challengeSpec oracleSig s) (StateT σ ProbComp),
+      Prod.fst <$> (simulateQ H (V.extractionGame readOut E stmt adv)).run' st =
+        (simulateQ H (Prod.fst <$> V.extractionGame readOut E stmt adv)).run' st := by
+    intro H
+    simp only [simulateQ_map, StateT.run'_eq, StateT.run_map, Functor.map_map]
+  rw [hmap, hgame]
+  refine (run'_bind_map_const _ _ _ _ st).trans ?_
+  rw [V.map_fst_runWithLog]
+
+/-- Oracle transcript-only extraction also preserves the run's observation law. -/
+theorem classicalTranscriptOnly_marginal (Witness : (S × (∀ i, A i)) → Type)
+    [MeasurableSpace (Observation oracleSig s Out (T × (∀ j, B j)))]
+    [∀ stmt, MeasurableSpace (Witness stmt)]
+    (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
+    (impl : QueryImpl ambient (StateT σ ProbComp))
+    (challenges : QueryImpl (challengeSpec oracleSig s) ProbComp)
+    (readOut : ∀ tr, Out tr → Wout) (E : Extractor.OracleTranscriptOnly ambient s Witness Wout)
+    (stmt : S × (∀ i, A i)) (adv : Prover oracleSig ambient s Out) :
+    ((V.classicalTranscriptOnly Witness init impl challenges readOut).experiment E stmt adv).map
+      Prod.fst = (V.classicalModel init impl challenges).outcome stmt adv :=
+  V.classicalStraightline_marginal Witness init impl challenges readOut E.withLogs stmt adv
 
 end OracleVerifier
 
