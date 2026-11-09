@@ -30,16 +30,35 @@ abbrev Prover {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
     {ι : Type u} (ambient : OracleSpec.{u, u} ι) (s : FreeM P PUnit.{u + 1})
     (Out : PathAlong l s → Type u) := Focal l (OracleComp ambient) s Out
 
-/-- Interpret each prover slot through an oracle handler using the generic strategy map. -/
+/-- Interpret each prover slot through an oracle handler, node by node and at the leaf.
+
+The recursion is the generic strategy map at this homomorphism, written out so that its node and
+leaf equations are available to importing modules. -/
 def Prover.simulate {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
     {ι : Type u} {ambient : OracleSpec.{u, u} ι} {m : Type u → Type u} [Monad m]
-    (impl : QueryImpl ambient m) {s : FreeM P PUnit.{u + 1}}
-    {Out : PathAlong l s → Type u} (p : Prover l ambient s Out) : Focal l m s Out :=
-  StrategyOver.map
-    (show StrategyOver.Hom (paired l (OracleComp ambient)) .focal (paired l m) .focal from
-      { mapNode := fun {pos} {_} {_} {_} f node =>
-          Choice.map .focal (owner l pos) f <$> simulateQ impl node })
-    (fun _ => simulateQ impl) p
+    (impl : QueryImpl ambient m) : {s : FreeM P PUnit.{u + 1}} →
+    {Out : PathAlong l s → Type u} → Prover l ambient s Out → Focal l m s Out
+  | .pure _, _, p => simulateQ impl p
+  | .liftBind a _, _, p =>
+    Choice.map .focal (owner l a) (fun _ next => Prover.simulate impl next) <$> simulateQ impl p
+
+/-- At a leaf, simulation interprets the terminal action. -/
+theorem Prover.simulate_done {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
+    {ι : Type u} {ambient : OracleSpec.{u, u} ι} {m : Type u → Type u} [Monad m]
+    (impl : QueryImpl ambient m)
+    {Out : PathAlong l (Pure.pure (f := FreeM P) PUnit.unit) → Type u}
+    (p : Prover l ambient (Pure.pure (f := FreeM P) PUnit.unit) Out) :
+    Prover.simulate impl p = (simulateQ impl p : m (Out ⟨⟩)) := rfl
+
+/-- At a node, simulation interprets the slot and simulates every continuation. -/
+theorem Prover.simulate_node {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
+    {ι : Type u} {ambient : OracleSpec.{u, u} ι} {m : Type u → Type u} [Monad m]
+    (impl : QueryImpl ambient m) (a : P.A) (rest : P.B a → FreeM P PUnit.{u + 1})
+    {Out : PathAlong l (.liftBind a rest) → Type u}
+    (p : Prover l ambient (.liftBind a rest) Out) :
+    Prover.simulate impl p =
+      Choice.map .focal (owner l a) (fun _ next => Prover.simulate impl next) <$>
+        simulateQ impl p := rfl
 
 /-- A sampler with a pure terminal payload. Its draws depend only on the indexed source node. -/
 def samplerEnd {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
