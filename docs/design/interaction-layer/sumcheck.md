@@ -11,15 +11,16 @@ the interaction-layer verifier runs the legacy decision fold, and its relations 
 
 | Module | Contents |
 |---|---|
-| `SingleRound` | One round: an oracle node for the round polynomial, then one challenge in `R`. |
-| `Protocol` | `protocol R deg n`, the `n`-fold replication of the round; the honest prover as a fold with `pure` slots. |
-| `Execution` | The verifier: the legacy decision fold on the view's challenges, with message queries routed to oracle nodes. Closed forms of runs; the round check `roundCheck` and its accept and reject equations. |
+| `SingleRound` | One round: an oracle node for the round message, then one challenge in `R`. `roundOn R M eval` is generic in the message carrier `M` and its evaluation `eval`; `round` is its instance at `R⦃≤ deg⦄[X]`. |
+| `Protocol` | `protocolOn R M eval n` and its instance `protocol R deg n`, the `n`-fold replication of the round; the honest prover as a fold with `pure` slots. |
+| `Execution` | The verifier `verifierOn` over any message carrier, and its instance `verifier`: the legacy decision fold on the view's challenges, with message queries routed to oracle nodes. Closed forms of runs; the round check `roundCheck` and its accept and reject equations. |
 | `Completeness` | Perfect completeness of the interaction-layer honest prover, proved directly, for every challenge implementation. |
 | `LegacyEquivalence` | The equivalence with the embedded legacy verifier, and the transport of every security notion along it. |
 | `LegacyCompleteness` | Perfect completeness of the embedded legacy honest prover, transferred. |
 | `Soundness` | Soundness, transferred, with error `∑ challenges, deg / |R|`, and its form `n * (deg / |R|)`. |
 | `Knowledge` | Straight-line knowledge soundness, transferred, with the same error. |
 | `RoundByRound` | Round-by-round soundness and knowledge soundness, transferred, with error `deg / |R|` at every challenge. |
+| `Computable` | The executable instance at CompPoly messages and inputs: protocol, verifier, verdict reader and honest prover. The run correspondence `run_eq_interpret`, perfect completeness and soundness, transported. |
 
 ## The protocol and the verifier
 
@@ -32,6 +33,14 @@ prover's effects of every round have already run. The output oracle is the input
 `run_verifier_foldRounds` gives the run of any prover whose slots are `pure` in closed form: draw
 every challenge in round order, then return the transcript, the output and the legacy verdict of
 the decoded transcript.
+
+The protocol, the round routing, the view's challenges, the decision lift and the verifier are
+generic in the message carrier: a type `M` with an evaluation `eval : M → R → R` that answers the
+round message's evaluation queries (open question OQ17). `round`, `protocol`, `route`,
+`decisionLift` and `verifier` are their instances at `R⦃≤ deg⦄[X]` with `Polynomial.eval`, with
+unchanged types. `verifierOn` and `decisionLiftOn` are `@[macro_inline]`: the compiler never
+receives the input family as a runtime argument, so `verifier` stays executable at a
+noncomputable input family.
 
 ## Equivalence with the legacy Sumcheck
 
@@ -108,6 +117,56 @@ prover, assumes uniform challenges, and judges the output witness as well.
 The knowledge transfers use a constant output-witness family: the extracted output witness is
 `Unit`, read from the prover's output by `fun _ o => o.2`.
 
+## The computable instance
+
+`Sumcheck.Core.Computable` instantiates the generic protocol and verifier at the CompPoly message
+carrier `Impl.Representation.Message R deg`, whose evaluation queries are answered by Horner
+evaluation, and at the input family of CompPoly multivariate polynomials `Computable.Input` with
+the individual degree bound. `toOracleStatement` reads an input as the mathematical polynomial
+(`interpretInput`).
+
+- **Executable definitions.** `Computable.protocol`, `Computable.verifier`, `Computable.observe`
+  and the honest prover `Computable.honestProver` are computable. The honest prover computes each
+  round message with `Impl.Computable.projectedMessage` and updates the target by Horner
+  evaluation.
+- **Run correspondence.** `run_eq_interpret` holds at every message carrier `M` with a reading
+  `f : M → R⦃≤ deg⦄[X]` that agrees with `eval`. Renaming the challenge queries of a run of
+  `verifierOn` at `M` (`renameQueries`) and mapping its observation gives the run of
+  `verifierOn` at the polynomial carrier against the interpreted prover
+  `interpretFocal f n g P`. The interpreted prover sends the messages read through `f`, keeps
+  every effect, and maps the output by `g`. Challenge nodes of the two protocols are different
+  types, so challenge implementations move between carriers by `transportDraw`;
+  `experiment_renameQueries` turns the renaming into a transported challenge implementation, and
+  `transportDraw_challengeQueryImpl` shows that uniform challenges transport to uniform
+  challenges.
+- **Honest prover.** `interpretProver_honestProver`: the computable honest prover, interpreted
+  through `toMessage`, is `Sumcheck.Core.honestProver` on the interpreted input
+  (`projectedMessage_toMessage`, `projectedMessage_evaluate`).
+- **Security.** `Computable.perfectCompleteness` holds for every challenge implementation and
+  `Computable.soundness` for uniform challenges, with the error of `verifier_soundness`. The
+  relations and languages are those of `Spec.relationRound` on the interpreted input. Both are
+  transported from the interaction-layer theorems through `run_eq_interpret`.
+
+### Runtime checks
+
+`scripts/SumcheckRuntime.lean` (`lake exe sumcheck-runtime`) compiles and runs the computable
+instance over `ZMod 17`. The challenge handler answers a fixed value and logs each draw; the
+ambient handler answers prover events from a fixed table and logs each event. The log holds prover
+events `.inl i` and challenge draws `.inr j` in execution order.
+
+| # | Check | Expected |
+|---|---|---|
+| 1 | `quadratic_degree`, compile-time: `x² + 3xy + 2y² + 5` has individual degree at most `2`. | Proved. |
+| 2 | Horner evaluation, including a trimmed zero leading coefficient. | `evaluate (affine 7 1) 3 = 5`, `evaluate (affine 0 4) 9 = 4`. |
+| 3 | Two rounds of an adaptive prover over the domain `{0}`, challenges `3`: private memory and effect order. | Verdict `(7, 3, 3, 0)`, log `[p0, c0, p2, c1, p3]`. |
+| 4 | The same prover over the empty domain: a failed first check still runs every round. | Rejection, log `[p0, c0, p2, c1, p3]`. |
+| 5 | Direct evaluation of the quadratic and its first projected message. | Cube sum `15`, value `16` at `(4, 4)`, first message `7` at `4`. |
+| 6 | The computable honest prover on the quadratic over `{0, 1, 2}`, challenges `4`. | Verdict `(16, 4, 4, 16)`, log `[c0, c1]`. |
+| 7 | The computable honest prover for zero rounds from the final round state `⟨16, ![4, 4]⟩`. | Output `(16, 4, 4, 16)`, no draws. |
+
+Rows 3, 4, 6 and 7 restate the frozen runtime's rows
+([departure 19](../interaction-rebuild/IMPLEMENTATION-NOTES.md#19-computable-sumcheck-runtime)).
+
 ## Tests
 
 The acceptance tests are in `ArkLibTest/ProofSystem/Sumcheck/Core/`.
@@ -120,6 +179,7 @@ The acceptance tests are in `ArkLibTest/ProofSystem/Sumcheck/Core/`.
 | `Soundness` | Soundness against any one-round prover; a soundness bound over `ZMod 17`; exact probabilities over `ZMod 5`; the adaptive message's endpoint and hit facts; the exclusion of `X ^ 2` from the degree-one carrier. |
 | `RoundByRound` | Clients of the round-by-round, knowledge and completeness transfers. |
 | `Rounds` | Two- and three-round runs: challenge draws in round order, the accepted claim, a wrong target that still runs every round and rejects. Two honest rounds on the bilinear input `1 + 2 X₀ + 3 X₁ + 4 X₀ X₁` with the challenges `3` and then `5`: exactly two challenge queries, in round order, and the accepted claim `⟨14, ![3, 5]⟩` with the input polynomial as output oracle. The honest messages on that input, `5 + 8 X` and `1 + 2 c + 3 X + 4 c X`, their sums, and the first-round relation transport. |
+| `Computable` | The honest message is the CompPoly projection; the interpreted honest prover; the run correspondence; the challenge transport round trip and uniformity; completeness and soundness over `ZMod 5`; computability of the executable definitions and axiom guards. |
 | `Effects` | A prover with ambient effects before each message and after the last challenge: the run executes them in protocol order, and a recording handler observes the order. An accepted claim that is not in the final relation. A claim whose first check fails still runs both rounds and rejects, and the decision log holds only the first round's check queries (`decide_log_badFirst` for every completed run whose first message fails its check, at every round count; `runWithLog_wrong` for the logged execution of that prover). The round message's oracle interface. |
 
 ## Open
@@ -147,9 +207,6 @@ implementation, and the law from `simulateProjectedRoundPolynomial_eq`.
 The generic implication from round-by-round soundness to soundness in the interaction layer is
 not ported here; it is deferred to part D, commit 6. The Sumcheck soundness theorems do not need
 it: they transfer the legacy soundness, which is derived through the legacy guarded implication.
-
-The protocol is not generic in its message carrier, so no computable instance shares its
-decision (open question OQ17).
 
 ## Migration disposition
 

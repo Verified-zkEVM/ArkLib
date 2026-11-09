@@ -185,8 +185,9 @@ carrier and its evaluation operation. `Native` retains the mathematical presenta
 `execute_eq_native` proves equality of actual closed executions after interpreting each sent
 message, preserving private continuations and effects on public abort. The interpretation is
 proof-only: the computational verifier runs directly on CompPoly data. Its soundness theorem
-retains the same bound and original-oracle assumptions. `sumcheck-runtime` checks the compiled
-execution, including private memory, effect order and rejection, with fixed test challenges.
+retains the same bound and original-oracle assumptions. `sumcheck-runtime` now runs the
+computable interaction-core Sumcheck `Sumcheck.Core.Computable` instead, including private memory,
+effect order and rejection, with fixed test challenges.
 
 `Impl/Projection` constructs each honest round message directly from a CompPoly multivariate
 polynomial. It splits out the current variable, evaluates the other variables at prior challenges

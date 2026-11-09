@@ -65,6 +65,15 @@ migration row:
 - **Partly covered.** Projection #7, Projection #8 and ProjectionTransport #2 are covered on the
   round-`0` check only. That check keeps the original input polynomial.
 
+## Computable Sumcheck: entry 19
+
+This entry is in
+[`interaction-rebuild/IMPLEMENTATION-NOTES.md`](../interaction-rebuild/IMPLEMENTATION-NOTES.md#19-computable-sumcheck-runtime).
+
+| Entry | Departure |
+| --- | --- |
+| [19](../interaction-rebuild/IMPLEMENTATION-NOTES.md#19-computable-sumcheck-runtime) | Computable Sumcheck runtime: the run correspondence renames challenge queries, inputs are CompPoly polynomials, and runtime rows 3, 4, 6 and 7 are restated. |
+
 ## The oracle correspondence gap and its resolution
 
 **Gap.** The first version of the legacy embedding defined `embedOracleProver` and

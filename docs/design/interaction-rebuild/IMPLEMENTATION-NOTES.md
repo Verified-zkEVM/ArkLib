@@ -146,9 +146,45 @@ oracle extraction game passes that projection.
 
 ## Continuation
 
-Entries 14 onwards record the departures of the legacy embedding. They are in
-[`legacy-embedding.md`](../interaction-layer/legacy-embedding.md#departures), and
+Entries 14–16 record the departures of the legacy embedding. They are in
+[`legacy-embedding.md`](../interaction-layer/legacy-embedding.md#departures). Entries 17 and 18
+are in [`sumcheck.md`](../interaction-layer/sumcheck.md#departures). Entry 19 follows.
 [`departures.md`](../interaction-layer/departures.md) indexes every entry, including 1–13.
+
+## 19. Computable Sumcheck runtime
+
+**Migration.** The migration list ports the frozen computable Sumcheck to the interaction core:
+`execute_eq_native`, the frozen `ComputableCompleteness` and `ComputableSoundness`, and the seven
+rows of `scripts/SumcheckRuntime.lean`. Rows 3, 4, 6 and 7 are restated.
+
+**Code.** `Sumcheck.Core.Computable` instantiates the carrier-generic protocol and verifier of
+`Sumcheck.Core` (open question OQ17) at CompPoly messages and CompPoly multivariate inputs; see
+[`sumcheck.md`](../interaction-layer/sumcheck.md#the-computable-instance).
+
+- `run_eq_interpret` replaces `execute_eq_native`. It equates the runs only after the challenge
+  queries are renamed (`renameQueries`): the challenge nodes of the protocol at two carriers are
+  different types. Challenge implementations move between the carriers by `transportDraw`, which
+  keeps uniform sampling.
+- The input oracle is a CompPoly multivariate polynomial with the individual degree bound,
+  answered by direct evaluation, rather than an arbitrary behavior. The relations and languages
+  are the legacy ones on the input read by `toOracleStatement`.
+- `verifierOn` and `decisionLiftOn` are `@[macro_inline]`, so the verifier at the noncomputable
+  Mathlib input family stays executable, and the computable verifier shares its decision.
+- Runtime rows. The challenges are drawn from the challenge oracle, not from a prover event, and
+  the log records each draw.
+  - Row 3 expects the log `[p0, c0, p2, c1, p3]` instead of `[0, 1, 2, 1, 3]`.
+  - Row 4 had a public abort that stopped before the challenge, with the log `[0, 2]`. The
+    verifier is passive, so a failed first check still runs every round: rejection with the log
+    `[p0, c0, p2, c1, p3]`.
+  - Row 6 expects the log `[c0, c1]` instead of `[1, 1]`.
+  - Row 7 ran the frozen executor for zero rounds from round `2`. There is no verifier with an
+    interval start (departure 18, open question OQ11). The row runs the computable honest prover
+    for zero rounds from the final round state, and reads the prover's output statement and output
+    oracle data. The values are unchanged and no challenge is drawn.
+
+**Why.** The interaction core has one protocol per message carrier and a passive verifier, and
+names challenges by node occurrences. The restated rows check the same values and effect order
+under those rules.
 
 ## Changes that keep to the records
 
