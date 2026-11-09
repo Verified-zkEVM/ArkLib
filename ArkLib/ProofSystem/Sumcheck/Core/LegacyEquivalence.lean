@@ -169,7 +169,7 @@ theorem simulateQ_decisionLift_monad {m : Type → Type} [Monad m] [LawfulMonad 
     (data : ∀ i, Spec.OracleStatement R n deg i)
     (pl : ∀ i, OracleData (protocol R deg n) p i) {α : Type}
     (oa : OracleComp (oracles (protocol R deg n) p) α) :
-    simulateQ (QueryImpl.addLift amb ((sumFamily (polyFamily R deg n)
+    simulateQ (QueryImpl.addLift amb ((sumFamily (Spec.polynomialFamily R n deg)
         (pathFamily (protocol R deg n) p)).behaviorOfRealizations (sumData data pl)))
       (simulateQ (decisionLift R deg n ambient p) oa) =
       (pure (simulateQ ((pathFamily (protocol R deg n) p).behaviorOfRealizations pl) oa) :
@@ -187,7 +187,7 @@ ambient queries answered in any lawful monad. -/
 theorem simulateQ_decide_monad {m : Type → Type} [Monad m] [LawfulMonad m]
     (amb : QueryImpl ambient m) (stmt : Spec.StatementRound R n 0)
     (data : ∀ i, Spec.OracleStatement R n deg i) (tr : PathAlong oracleSig (protocol R deg n)) :
-    simulateQ (QueryImpl.addLift amb ((sumFamily (polyFamily R deg n)
+    simulateQ (QueryImpl.addLift amb ((sumFamily (Spec.polynomialFamily R n deg)
         (pathFamily (protocol R deg n) (projectPathAlong oracleSig _ tr))).behaviorOfRealizations
           (sumData data (payloads _ tr))))
       ((verifier R deg n D ambient).decide stmt _ (toView _ tr)).run =
@@ -305,7 +305,7 @@ variable (R : Type) [CommSemiring R] [DecidableEq R] [SampleableType R] (deg n :
 /-- The target of the decision's queries on a path of an oracle tree: the ambient oracle, the
 input polynomial and the path's oracles. -/
 private abbrev decisionSpec (x : Σ s : OracleProtocol.{0}, Path s) :=
-  ambient + (sumFamily (polyFamily R deg n) (pathFamily x.1 x.2)).spec
+  ambient + (sumFamily (Spec.polynomialFamily R n deg) (pathFamily x.1 x.2)).spec
 
 /-- Lift path-oracle queries into the decision's query interface, on any oracle tree. -/
 private def pathLift (x : Σ s : OracleProtocol.{0}, Path s) :
@@ -332,8 +332,8 @@ variable (R deg n ambient) [∀ t, Inhabited (ambient.Range t)]
 /-- The embedding of the legacy Sumcheck oracle verifier, read on the interaction-layer Sumcheck
 tree. -/
 noncomputable def legacyVerifier : OracleVerifier ambient (protocol R deg n)
-    (Spec.StatementRound R n 0) (Spec.StatementRound R n (Fin.last n)) (polyFamily R deg n)
-    (polyFamily R deg n) :=
+    (Spec.StatementRound R n 0) (Spec.StatementRound R n (Fin.last n))
+    (Spec.polynomialFamily R n deg) (Spec.polynomialFamily R n deg) :=
   (protocol_eq R deg n).symm ▸ embedOracleVerifier (Spec.oracleVerifier R deg D n ambient)
 
 variable {R deg n D ambient}
@@ -384,7 +384,8 @@ theorem decide_eq_legacy (stmt : Spec.StatementRound R n 0)
   have htr : HEq tr (cast (congrArg (PathAlong oracleSig) (protocol_eq R deg n)) tr) :=
     (cast_heq _ _).symm
   exact eq_of_heq ((decide_heq_embed stmt tr _ htr).trans
-    (OracleVerifier.decide_cast (inputs := polyFamily R deg n) (outputs := polyFamily R deg n)
+    (OracleVerifier.decide_cast (inputs := Spec.polynomialFamily R n deg)
+      (outputs := Spec.polynomialFamily R n deg)
       (protocol_eq R deg n).symm (embedOracleVerifier (Spec.oracleVerifier R deg D n ambient))
       stmt tr _ htr).symm)
 
@@ -399,8 +400,8 @@ theorem outputMap_eq_legacy (stmt : Spec.StatementRound R n 0)
   have htr : HEq tr (cast (congrArg (PathAlong oracleSig) (protocol_eq R deg n)) tr) :=
     (cast_heq _ _).symm
   refine Eq.trans ?_
-    (OracleVerifier.outputMap_cast (inputs := polyFamily R deg n)
-      (outputs := polyFamily R deg n) (protocol_eq R deg n).symm
+    (OracleVerifier.outputMap_cast (inputs := Spec.polynomialFamily R n deg)
+      (outputs := Spec.polynomialFamily R n deg) (protocol_eq R deg n).symm
       (embedOracleVerifier (Spec.oracleVerifier R deg D n ambient)) stmt data _ _ htr).symm
   exact (embedOracleVerifier_outputMap_f (Spec.oracleVerifier R deg D n ambient) stmt data _).symm
 
@@ -608,12 +609,12 @@ message oracles, which the decisions do make, are compared by `runWithLog_eq_leg
 theorem decide_ambient_trace {m : Type → Type} [Monad m] [LawfulMonad m]
     (amb : QueryImpl ambient m) (stmt : Spec.StatementRound R n 0)
     (data : ∀ i, Spec.OracleStatement R n deg i) (tr : PathAlong oracleSig (protocol R deg n)) :
-    simulateQ (QueryImpl.addLift amb ((sumFamily (polyFamily R deg n)
+    simulateQ (QueryImpl.addLift amb ((sumFamily (Spec.polynomialFamily R n deg)
         (pathFamily (protocol R deg n) (projectPathAlong oracleSig _ tr))).behaviorOfRealizations
           (sumData data (payloads _ tr))))
       ((verifier R deg n D ambient).decide stmt _ (toView _ tr)).run =
       (pure (legacyVerdict R deg n D ambient stmt (decodeTranscript n tr)) : m _) ∧
-    simulateQ (QueryImpl.addLift amb ((sumFamily (polyFamily R deg n)
+    simulateQ (QueryImpl.addLift amb ((sumFamily (Spec.polynomialFamily R n deg)
         (pathFamily (protocol R deg n) (projectPathAlong oracleSig _ tr))).behaviorOfRealizations
           (sumData data (payloads _ tr))))
       ((legacyVerifier R deg n D ambient).decide stmt _ (toView _ tr)).run =

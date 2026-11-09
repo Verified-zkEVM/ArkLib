@@ -350,7 +350,7 @@ variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R] {deg k d
 to the oracle nodes of the run. -/
 def firstCheck (stmt : Spec.StatementRound R (k + 1) 0)
     (tr : FreeM.PathAlong oracleSig (protocol R deg (k + 1))) :
-    OracleComp (ambient + (sumFamily (polyFamily R deg (k + 1))
+    OracleComp (ambient + (sumFamily (Spec.polynomialFamily R (k + 1) deg)
       (pathFamily _ (FreeM.projectPathAlong oracleSig _ tr))).spec)
       (Option (Spec.StatementRound R (k + 1) (0 : Fin (k + 1)).succ)) :=
   simulateQ (decisionLift R deg (k + 1) ambient _) (simulateQ (route R deg (k + 1) _)
@@ -363,9 +363,9 @@ oracles answer from the input data and the run's payloads. -/
 abbrev checkHandler (amb : QueryImpl ambient (OracleComp full))
     (data : ∀ i, Spec.OracleStatement R (k + 1) deg i)
     (tr : FreeM.PathAlong oracleSig (protocol R deg (k + 1))) :
-    QueryImpl (ambient + (sumFamily (polyFamily R deg (k + 1))
+    QueryImpl (ambient + (sumFamily (Spec.polynomialFamily R (k + 1) deg)
       (pathFamily _ (FreeM.projectPathAlong oracleSig _ tr))).spec) (OracleComp full) :=
-  QueryImpl.addLift amb ((sumFamily (polyFamily R deg (k + 1))
+  QueryImpl.addLift amb ((sumFamily (Spec.polynomialFamily R (k + 1) deg)
     (pathFamily _ (FreeM.projectPathAlong oracleSig _ tr))).behaviorOfRealizations
       (sumData data (payloads _ tr)))
 
