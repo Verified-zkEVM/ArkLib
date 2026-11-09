@@ -26,7 +26,7 @@ These entries are in
 | 12 | Path-fiber splitting stays in ArkLib |
 | 13 | The oracle decision log is recorded in the core |
 
-## Legacy embedding: entries 14–17
+## Legacy embedding: entries 14–16
 
 These entries continue the numbering for the security transfers of the legacy embedding. They
 are in [`legacy-embedding.md`](legacy-embedding.md#departures).
@@ -36,7 +36,6 @@ are in [`legacy-embedding.md`](legacy-embedding.md#departures).
 | [14](legacy-embedding.md#14-the-knowledge-transfer-needs-no-extractor-invariance-premise) | The knowledge transfer needs no extractor-invariance premise. |
 | [15](legacy-embedding.md#15-round-by-round-transfers-into-the-interaction-layer-assume-all-state-terminal-certificates) | Round-by-round transfers into the interaction layer assume all-state terminal certificates. Full support of `init`, a state-independent verdict, and a guarded verifier each supply them. |
 | [16](legacy-embedding.md#16-round-by-round-knowledge-soundness-out-of-the-interaction-layer-goes-through-induced-languages) | Round-by-round knowledge soundness out of the interaction layer goes through induced languages. It needs `Nonempty WitIn` and does not transport the extractor. |
-| [17](legacy-embedding.md#17-straight-line-knowledge-soundness-is-transferred-on-the-plain-tree-only) | Straight-line knowledge soundness is transferred on the plain tree only. |
 
 Entries 15 and 16 are the two hypotheses that a client of the round-by-round transfers must
 check. Entry 15 applies to the direction into the interaction layer, and entry 16 to the
@@ -50,8 +49,8 @@ security transfer for the plain tree and `embedVerifier`. No theorem related a r
 embedded oracle parties to legacy `OracleReduction.run`, and the oracle tests used hand-supplied
 path data and output maps rather than a run.
 
-**Resolution.** The modules `Legacy/OracleExecution.lean` and `Legacy/OracleSecurity.lean` state
-the correspondence and the transfers on the oracle tree:
+**Resolution.** The modules `Legacy/OracleExecution.lean`, `Legacy/OracleSecurity.lean` and
+`Legacy/OracleKnowledge.lean` state the correspondence and the transfers on the oracle tree:
 
 - `oracleFinalize` reads the legacy result off an oracle-tree observation, including both
   parties' outputs and the verifier's output oracle data.
@@ -65,9 +64,21 @@ the correspondence and the transfers on the oracle tree:
   give `embedOracleVerifier_rbrSoundness`, `rbrSoundness_of_embedOracleVerifier`,
   `embedOracleVerifier_rbrKnowledgeSoundness` and
   `rbrKnowledgeSoundness_of_embedOracleVerifier`.
+- `oracleKnowledgeSoundnessWith_iff` and `oracleKnowledgeSoundness_iff` transfer straight-line
+  knowledge soundness, with the same relations, error, rejection semantics and explicit
+  extraction failure. They rest on the logged form of the oracle correspondence
+  (`runEq_ambientLogged_oracleProver`, `oracleExtractionGame_embed`): the decoded transcript,
+  outputs, shared-oracle logs and final shared state agree with the legacy knowledge game.
 - `OracleMap.ofLegacySimulation` turns a legacy output-oracle simulation into an oracle map, and
   `legacyOutputMap` is defined through it.
 
 The test `ArkLibTest/Interaction/Core/Legacy/OracleExecution.lean` runs the embedded oracle
 parties on accepting and rejecting challenges, with distinct prover and verifier outputs, for both
-legacy output-oracle representations. What remains open is entry 17.
+legacy output-oracle representations. The test
+`ArkLibTest/Interaction/Core/Legacy/OracleKnowledge.lean` instantiates the knowledge transfers for
+a decision that queries the shared oracle, the input oracle and a message, with an extractor that
+reads both shared-oracle logs. It runs the oracle extraction game and the legacy knowledge program
+to the same witness.
+
+An earlier entry 17 recorded that straight-line knowledge soundness was transferred on the plain
+tree only. `Legacy/OracleKnowledge.lean` closes it, and the entry is removed.

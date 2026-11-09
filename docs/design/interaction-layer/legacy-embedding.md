@@ -17,6 +17,7 @@ forms between the layers. Nothing here changes the legacy layer. The embedding r
 | `OracleExecution` | The execution correspondence on the oracle tree: transport of oracle-tree strategies to the plain tree, the transcript read off a run, and `oracleFinalize`. |
 | `Security` | The completeness, soundness and knowledge-soundness transfers, the legacy transcript prefix of a full prefix, and the round-by-round transfers. |
 | `OracleSecurity` | The completeness, soundness and round-by-round transfers for the embedded oracle verifier on the oracle tree. |
+| `OracleKnowledge` | The straight-line knowledge-soundness transfers for the embedded oracle verifier on the oracle tree, with the logged form of the oracle execution correspondence. |
 
 ## The common observation
 
@@ -218,7 +219,8 @@ On the runtime path `tr` of an actual run:
   `(oracleDecode pSpec tr).messages`.
 - `simulateQ_embedOracleVerifier_decide`: the routed decision, answered from the input data and
   the path's payloads, is legacy `verify` on the decoded challenges under
-  `simOracle2 oSpec oStmt (oracleDecode pSpec tr).messages`.
+  `simOracle2 oSpec oStmt (oracleDecode pSpec tr).messages`. The ambient queries go to any
+  implementation in a lawful monad: the identity, a stateful implementation, or a logging one.
 - `embedOracleVerifier_outputMap_f`: the output data are
   `V.materializeOutput (oracleDecode pSpec tr).challenges oStmt (oracleDecode pSpec tr).messages`.
 
@@ -267,7 +269,33 @@ notions are defined through `V.toVerifier`.
   `rbrKnowledgeSoundness_of_embedOracleVerifier`, with the certificate hypotheses of the plain
   transfers, for the state functions of `V.toVerifier`.
 
-The straight-line knowledge transfer is stated for the plain tree only; see departure 17.
+### Straight-line knowledge soundness
+
+`OracleKnowledge` states the straight-line transfers for `embedOracleVerifier V`, in the classical
+straight-line oracle interface `OracleVerifier.classicalStraightline`, with the judgement
+`oracleKnowledgeJudgement relOut`: the verifier's output statement and output oracle data, with the
+prover's output witness. The oracle extraction game logs the decision before its input-oracle and
+message queries are answered, and gives the extractor the ambient part of that log.
+
+- `runEq_ambientLogged_oracleProver`: the logged prover-sampler run of the oracle tree, decoded,
+  has the run of the logged run of the transported prover on the plain tree: the same decoded
+  transcript, prover output, shared-oracle log and final shared state, from every state. With
+  `runEq_ambientLogged_prover` it reaches the legacy logged prover run.
+- `oracleExtractionGame_embed`: the oracle extraction game with a lifted legacy extractor, read as
+  a legacy result, is that logged run followed by `knowledgeTail` for `V.toVerifier`. The ambient
+  part of the decision log is the log of the legacy decision, in which `simOracle2` answers the
+  input-oracle and message queries without ambient queries. The proof uses the core's
+  `OracleVerifier.runWithLog_fst` and `simulateQ_embedOracleVerifier_decide` with a logging
+  implementation.
+- `liftOracleExtractor` decodes the oracle transcript with `oracleDecode`; `lowerOracleExtractor`
+  reads a legacy transcript back with `(oracleTranscriptEquiv pSpec).symm`.
+- `oracleKnowledgeSoundnessWith_iff`: a legacy straight-line extractor `E` certifies knowledge
+  soundness of `embedOracleVerifier V` exactly when it certifies legacy
+  `V.knowledgeSoundnessWith`, with the same relations and error. A rejected run yields no witness
+  and an explicit extraction failure stays in the bad event, in both layers.
+  `oracleKnowledgeSoundness_iff` is the existential form.
+
+The observation-marginal obligation is the core's `OracleVerifier.classicalStraightline_marginal`.
 
 ### Output-oracle simulations
 
@@ -342,14 +370,3 @@ knowledge soundness with a classically chosen extractor. That lemma needs `Nonem
 Neither layer constrains its round-by-round extractor beyond the state-function obligations, so
 the existential notions are still equivalent. A statement that names a particular
 interaction-layer extractor is not transported back.
-
-### 17. Straight-line knowledge soundness is transferred on the plain tree only
-
-The oracle-tree transfers cover completeness, soundness, round-by-round soundness and
-round-by-round knowledge soundness. The straight-line knowledge transfer
-(`knowledgeSoundnessWith_iff`) is stated for `embedVerifier V.toVerifier` on the plain tree, not
-for `embedOracleVerifier V`. Its proof rests on the logged form of the execution correspondence
-(`runEq_ambientLogged_prover`, `extractionGame_embed`), and the oracle tree's logged run,
-`OracleVerifier.runWithLog`, also logs the decision's queries to the input and message oracles.
-The logged correspondence on the oracle tree, and the comparison of those decision logs with
-the legacy verifier log, are not stated.
