@@ -12,10 +12,12 @@ import ArkLibTest.Interaction.Core.Support
 The prefix prover sends a natural-number oracle and the verifier draws a Boolean challenge; the
 prefix verifier returns the challenge as its statement and exports the sent oracle. A fixed-shape
 suffix sends one more oracle, and the suffix verifier accepts its input statement. The prefix
-state function has witness carrier `Fin (payload + 1)` after the oracle message, and each suffix
-state function, indexed by the prefix transcript, has a carrier that reads the same payload.
-Composition with `KnowledgeStateFunction.append` extracts along both challenge values, and the
-security statements compose at the verifier level, with the prefix acceptance as the seam.
+state function has witness carrier `Fin (payload + 1)` after the oracle message, which is also its
+output witness carrier, and each suffix state function, indexed by the prefix transcript, takes
+input witnesses in that carrier and output witnesses in `Fin (payload + 1) × Unit`, with identity
+root and leaf maps. Composition with `KnowledgeStateFunction.append` extracts along both challenge
+values from these carriers, its terminal witness is the output witness itself, and the security
+statements compose at the verifier level, with the prefix acceptance as the seam.
 -/
 
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
@@ -55,6 +57,7 @@ abbrev bit : Move oracleSig (.challenge Bool) → Bool := id
 /-- The suffix, whose shape does not depend on the prefix path. -/
 abbrev suffix : Path firstProtocol → OracleProtocol := fun _ => secondProtocol
 
+/-- The prefix protocol followed by the oracle-message suffix. -/
 abbrev combined : OracleProtocol := firstProtocol.append suffix
 
 /-- The prefix verifier returns the challenge from its view and exports the sent oracle. -/
@@ -214,22 +217,30 @@ theorem composed_validAcceptance_iff (stmt : Stmt) (tr : PathAlong oracleSig com
     {v | ∃ t, v = some t ∧ t = true}) ↔ b = true
   cases b <;> simp
 
+/-- The prefix output witnesses: numbers below the sent payload plus one. -/
+abbrev MidWitness (tr : PathAlong oracleSig firstProtocol) : Type := Fin (payload tr.1 + 1)
+
+/-- The composite output witnesses: numbers below the prefix payload plus one, with a unit. -/
+abbrev OutWitness (tr : PathAlong oracleSig combined) : Type := Fin (payload tr.1 + 1) × Unit
+
 /-- The prefix valid output: acceptance with a true claim. -/
-abbrev validMid (stmt : Stmt) (tr : PathAlong oracleSig firstProtocol) (_ : Nat) : Prop :=
+abbrev validMid (stmt : Stmt) (tr : PathAlong oracleSig firstProtocol) (_ : MidWitness tr) :
+    Prop :=
   firstVerifier.validAcceptance impl (fun z => z.1 = true) stmt tr
 
 /-- The composite valid output: acceptance with a true claim. -/
-abbrev validOutput (stmt : Stmt) (tr : PathAlong oracleSig combined) (_ : Nat × Unit) : Prop :=
+abbrev validOutput (stmt : Stmt) (tr : PathAlong oracleSig combined) (_ : OutWitness tr) : Prop :=
   composed.validAcceptance impl (fun z => z.1 = true) stmt tr
 
 /-- The suffix input relation: the prefix challenge was true. -/
-abbrev relMid (tr₁ : PathAlong oracleSig firstProtocol) (_ : Stmt) (_ : Nat) : Prop :=
+abbrev relMid (tr₁ : PathAlong oracleSig firstProtocol) (_ : Stmt) (_ : MidWitness tr₁) : Prop :=
   bit tr₁.2.1 = true
 
-/-- The prefix state function. After the oracle message `n`, witnesses lie in `Fin (n + 1)`; the
-state is false until the challenge, and then holds exactly when the challenge is true. -/
-def firstState : KnowledgeStateFunction oracleSig firstProtocol Stmt Nat Nat (fun _ => True)
-    (fun _ _ => False) validMid where
+/-- The prefix state function. After the oracle message `n`, witnesses lie in `Fin (n + 1)`, the
+carrier of its output witnesses, and the leaf map is the identity; the state is false until the
+challenge, and then holds exactly when the challenge is true. -/
+def firstState : KnowledgeStateFunction oracleSig firstProtocol Stmt MidWitness Nat
+    (fun _ => True) (fun _ _ => False) validMid where
   Witness {_} sp history := match sp, history with
     | .root _, _ => Nat
     | .down _ _, history => Fin (payload history.1.1 + 1)
@@ -251,7 +262,7 @@ def firstState : KnowledgeStateFunction oracleSig firstProtocol Stmt Nat Nat (fu
       cases tail with
       | down _ tail =>
         cases tail
-        exact ⟨w % (payload history.1.1 + 1), Nat.mod_lt _ (Nat.succ_pos _)⟩
+        exact w
   root _ _ _ h := h
   send sp _ _ ho _ _ h := by
     cases sp with
@@ -270,18 +281,20 @@ def firstState : KnowledgeStateFunction oracleSig firstProtocol Stmt Nat Nat (fu
         exact (firstVerifier_validAcceptance_iff stmt ⟨n, b, ⟨⟩⟩).1 h
 
 /-- The suffix state function after the prefix transcript `tr₁`. Its witnesses lie in
-`Fin (n + 1)` for the prefix payload `n`, paired with a unit after the suffix message, and its
+`Fin (n + 1)` for the prefix payload `n`, paired with a unit after the suffix message; these are
+the carriers of its input and output witnesses, and its root and leaf maps are identities. Its
 state holds exactly when the prefix challenge was true. -/
 def secondState (tr₁ : PathAlong oracleSig firstProtocol) :
     KnowledgeStateFunction oracleSig (suffix (projectPathAlong oracleSig firstProtocol tr₁)) Stmt
-      (Nat × Unit) Nat (fun _ => True) (relMid tr₁)
+      (fun tr₂ => OutWitness (PathAlong.append oracleSig firstProtocol suffix tr₁ tr₂))
+      (MidWitness tr₁) (fun _ => True) (relMid tr₁)
       (fun stmt tr₂ w => validOutput stmt (PathAlong.append oracleSig firstProtocol suffix tr₁ tr₂)
         w) where
   Witness {_} sp _ := match sp with
     | .root _ => Fin (payload tr₁.1 + 1)
     | .down _ _ => Fin (payload tr₁.1 + 1) × Unit
   toFun _ _ _ _ := bit tr₁.2.1 = true
-  extractRoot _ w := w.val
+  extractRoot _ w := w
   extractStep sp _ _ _ w := by
     cases sp with
     | root => exact w.1
@@ -290,7 +303,7 @@ def secondState (tr₁ : PathAlong oracleSig firstProtocol) :
     cases sp with
     | down _ tail =>
       cases tail
-      exact (⟨w.1 % (payload tr₁.1 + 1), Nat.mod_lt _ (Nat.succ_pos _)⟩, ())
+      exact w
   root _ _ _ h := h
   send _ _ _ _ _ _ h := h
   leaf sp history stmt _ h := by
@@ -323,50 +336,63 @@ def falsePath : PathAlong oracleSig combined :=
 
 -- KnowledgeComposition row 2, restated with `extractAlong`: the carrier after the message reads
 -- the payload.
-/-- Prefix extraction on payload `7` passes through `Fin 8`. -/
-example : firstState.extractAlong stmt₀ (firstPath 7 true) 6 = 6 := rfl
+/-- Prefix extraction on payload `7` takes its output witness in `Fin 8`. -/
+example : firstState.extractAlong stmt₀ (firstPath 7 true) (⟨6, by decide⟩ : Fin 8) = 6 := rfl
 
 /-- info: 6 -/
 #guard_msgs in
-#eval firstState.extractAlong stmt₀ (firstPath 7 true) 6
+#eval firstState.extractAlong stmt₀ (firstPath 7 true) (⟨6, by decide⟩ : Fin 8)
+
+/-- The output witnesses of the composite at every transcript are the carrier `Fin (n + 1) × Unit`
+of the prefix payload `n`. -/
+example (n : Nat) (b : Bool) (m : Nat) :
+    OutWitness (PathAlong.append oracleSig firstProtocol suffix (firstPath n b) ⟨m, ⟨⟩⟩) =
+      (Fin (n + 1) × Unit) := rfl
 
 -- KnowledgeComposition rows 8 and 9, restated with `extractAlong_append`, for every payload,
--- challenge, suffix message and output witness.
-/-- Composite extraction is suffix extraction followed by prefix extraction. -/
-theorem compositeState_extractAlong (n : Nat) (b : Bool) (m w : Nat) :
+-- challenge, suffix message and output witness in the carrier of the payload.
+/-- Composite extraction is suffix extraction followed by prefix extraction, and returns the
+value of the output witness. -/
+theorem compositeState_extractAlong (n : Nat) (b : Bool) (m : Nat) (w : Fin (n + 1) × Unit) :
     compositeState.extractAlong stmt₀
-      (PathAlong.append oracleSig firstProtocol suffix (firstPath n b) ⟨m, ⟨⟩⟩) (w, ()) =
-      w % (n + 1) := by
-  rw [compositeState, KnowledgeStateFunction.extractAlong_append]
-  exact Nat.mod_mod w (n + 1)
+      (PathAlong.append oracleSig firstProtocol suffix (firstPath n b) ⟨m, ⟨⟩⟩) w = w.1.val :=
+  (KnowledgeStateFunction.extractAlong_append firstState secondState seam stmt₀ (firstPath n b)
+    ⟨m, ⟨⟩⟩ w).trans rfl
 
 -- KnowledgeComposition row 8.
-example : compositeState.extractAlong stmt₀ truePath (6, ()) = 6 :=
-  compositeState_extractAlong 7 true 5 6
+example : compositeState.extractAlong stmt₀ truePath (⟨⟨6, by decide⟩, ()⟩ : Fin 8 × Unit) = 6 :=
+  compositeState_extractAlong 7 true 5 _
 
 -- KnowledgeComposition row 9: the false challenge.
-example : compositeState.extractAlong stmt₀ falsePath (6, ()) = 6 :=
-  compositeState_extractAlong 7 false 99 6
+example : compositeState.extractAlong stmt₀ falsePath (⟨⟨6, by decide⟩, ()⟩ : Fin 8 × Unit) = 6 :=
+  compositeState_extractAlong 7 false 99 _
 
 -- KnowledgeComposition row 10.
 /-- info: 6 -/
 #guard_msgs in
-#eval compositeState.extractAlong stmt₀ truePath (6, ())
+#eval compositeState.extractAlong stmt₀ truePath (⟨⟨6, by decide⟩, ()⟩ : Fin 8 × Unit)
 
 -- KnowledgeComposition row 11.
 /-- info: 6 -/
 #guard_msgs in
-#eval compositeState.extractAlong stmt₀ falsePath (6, ())
+#eval compositeState.extractAlong stmt₀ falsePath (⟨⟨6, by decide⟩, ()⟩ : Fin 8 × Unit)
 
--- KnowledgeComposition row 12, restated with `toFun_terminalWitness_append` and the fixture iff
--- (R1): the terminal state of the composite is the suffix terminal state, and it holds exactly
--- when the composite accepts.
-/-- The suffix terminal witness on the true path keeps the extracted value. -/
-example : ((secondState (firstPath 7 true)).terminalWitness stmt₀ ⟨(5 : Nat), ⟨⟩⟩
-    (6, ())).1.val = 6 := rfl
+-- KnowledgeComposition row 12: the composite terminal witness is the claim's own carrier, and
+-- the composite terminal state, the suffix terminal state by `toFun_terminalWitness_append`, holds
+-- exactly when the composite accepts (R1).
+/-- On the true path, the composite terminal witness of an output witness in `Fin 8 × Unit` keeps
+its value. -/
+example : (compositeState.terminalWitness stmt₀ truePath
+    (⟨⟨6, by decide⟩, ()⟩ : Fin 8 × Unit)).1.val = 6 := rfl
+
+/-- At every composite transcript, the terminal witness carrier is the output witness carrier and
+the terminal witness is the output witness. -/
+example (n : Nat) (b : Bool) (m : Nat) (w : Fin (n + 1) × Unit) :
+    compositeState.terminalWitness stmt₀
+      (PathAlong.append oracleSig firstProtocol suffix (firstPath n b) ⟨m, ⟨⟩⟩) w = w := rfl
 
 /-- The composite terminal state holds exactly when the composite accepts. -/
-example (n : Nat) (b : Bool) (m : Nat) (w : Nat × Unit) :
+example (n : Nat) (b : Bool) (m : Nat) (w : Fin (n + 1) × Unit) :
     compositeState.toFun
         (completeSpine oracleSig
           (PathAlong.append oracleSig firstProtocol suffix (firstPath n b) ⟨m, ⟨⟩⟩))
@@ -374,10 +400,36 @@ example (n : Nat) (b : Bool) (m : Nat) (w : Nat × Unit) :
         (compositeState.terminalWitness stmt₀
           (PathAlong.append oracleSig firstProtocol suffix (firstPath n b) ⟨m, ⟨⟩⟩) w) ↔
       validOutput stmt₀
-        (PathAlong.append oracleSig firstProtocol suffix (firstPath n b) ⟨m, ⟨⟩⟩) w := by
-  rw [compositeState, KnowledgeStateFunction.toFun_terminalWitness_append]
-  exact (composed_validAcceptance_iff stmt₀
-    (PathAlong.append oracleSig firstProtocol suffix (firstPath n b) ⟨m, ⟨⟩⟩)).symm
+        (PathAlong.append oracleSig firstProtocol suffix (firstPath n b) ⟨m, ⟨⟩⟩) w :=
+  (KnowledgeStateFunction.toFun_terminalWitness_append firstState secondState seam stmt₀
+    (firstPath n b) ⟨m, ⟨⟩⟩ w).trans (composed_validAcceptance_iff stmt₀
+      (PathAlong.append oracleSig firstProtocol suffix (firstPath n b) ⟨m, ⟨⟩⟩)).symm
+
+-- Direct-family corollaries: the witness is given in the family at the completed transcript.
+/-- The prefix protocol after its oracle message. -/
+abbrev afterFirst : OracleProtocol := .liftBind (.challenge Bool) fun _ => .pure ⟨⟩
+
+/-- Prefix extraction below the oracle message `n` is the extraction of the restricted state
+function on the same output witness. -/
+example (n : Move oracleSig (.oracle Nat OracleInterface.instDefault))
+    (tr : PathAlong oracleSig afterFirst)
+    (w : MidWitness ⟨n, PrefixMoves.completeWith oracleSig (.root afterFirst) ⟨⟩ tr⟩) :
+    firstState.extractFrom stmt₀ (.down (oracleSig.toFunB _ n) (.root afterFirst))
+        ⟨⟨n, rfl⟩, ⟨⟩⟩ tr
+        (cast (congrArg MidWitness
+          (PrefixMoves.completeWith_down oracleSig (next := fun _ => afterFirst) n
+            (.root afterFirst) ⟨⟩ tr).symm) w) =
+      (firstState.child n).extractFrom stmt₀ (.root afterFirst) ⟨⟩ tr w :=
+  KnowledgeStateFunction.extractFrom_child_family firstState stmt₀ n (.root afterFirst) ⟨⟩ tr w
+
+/-- The direct-family corollary for composites applies to an output witness given in the family at
+the completed transcript, without a transport argument. -/
+example (n : Move oracleSig (.oracle Nat OracleInterface.instDefault))
+    (tr : PathAlong oracleSig (afterFirst.append fun p => suffix ⟨oracleSig.toFunB _ n, p⟩))
+    (w : OutWitness ⟨n, PrefixMoves.completeWith oracleSig (.root _) ⟨⟩ tr⟩) : True := by
+  have _ := KnowledgeStateFunction.extractFrom_append_down_family firstState secondState seam
+    stmt₀ n (.root _) ⟨⟩ tr w
+  trivial
 
 /-! ### Security -/
 
@@ -385,7 +437,7 @@ example (n : Nat) (b : Bool) (m : Nat) (w : Nat × Unit) :
 /-- The prefix verifier is round-by-round knowledge sound with error one. -/
 theorem first_rbrKnowledgeSoundness :
     firstVerifier.rbrKnowledgeSoundness impl (fun _ => True) (fun _ (_ : Nat) => False)
-      (fun z (_ : Nat) => z.1 = true) firstDraw (fun _ => 1) :=
+      (fun tr z (_ : MidWitness tr) => z.1 = true) firstDraw (fun _ => 1) :=
   ⟨firstState, fun _ _ a _ _ _ _ => by
     let : MeasurableSpace (Move oracleSig a) := ⊤
     exact evalDist_apply_le_one _ _⟩
@@ -423,7 +475,7 @@ example : compositeState.LocallyBounded
 /-- The appended verifier is round-by-round knowledge sound with the combined errors. -/
 theorem composed_rbrKnowledgeSoundness :
     composed.rbrKnowledgeSoundness impl (fun _ => True) (fun _ (_ : Nat) => False)
-      (fun z (_ : Nat × Unit) => z.1 = true)
+      (fun tr z (_ : OutWitness tr) => z.1 = true)
       (combineDraw oracleSig firstProtocol suffix firstDraw secondDraw)
       (combineDraw (m := fun _ => ℝ≥0∞) oracleSig firstProtocol suffix (fun _ => 1)
         (fun _ _ => 1)) :=
@@ -434,12 +486,13 @@ theorem composed_rbrKnowledgeSoundness :
 transcript `tr₁`; its witness carriers read the prefix payload. -/
 def suffixState (tr₁ : PathAlong oracleSig firstProtocol) :
     KnowledgeStateFunction oracleSig (suffix (projectPathAlong oracleSig firstProtocol tr₁)) Bool
-      (Nat × Unit) Nat (fun _ => True) (fun t _ => t = true) (fun t _ _ => t = true) where
+      (fun tr₂ => OutWitness (PathAlong.append oracleSig firstProtocol suffix tr₁ tr₂))
+      (MidWitness tr₁) (fun _ => True) (fun t _ => t = true) (fun t _ _ => t = true) where
   Witness {_} sp _ := match sp with
     | .root _ => Fin (payload tr₁.1 + 1)
     | .down _ _ => Fin (payload tr₁.1 + 1) × Unit
   toFun _ _ t _ := t = true
-  extractRoot _ w := w.val
+  extractRoot _ w := w
   extractStep sp _ _ _ w := by
     cases sp with
     | root => exact w.1
@@ -448,7 +501,7 @@ def suffixState (tr₁ : PathAlong oracleSig firstProtocol) :
     cases sp with
     | down _ tail =>
       cases tail
-      exact (⟨w.1 % (payload tr₁.1 + 1), Nat.mod_lt _ (Nat.succ_pos _)⟩, ())
+      exact w
   root _ _ _ h := h
   send _ _ _ _ _ _ h := h
   leaf _ _ _ _ h := h
@@ -458,7 +511,7 @@ def suffixState (tr₁ : PathAlong oracleSig firstProtocol) :
 /-- The appended verifier is knowledge sound from a suffix stated over its own statement. -/
 example :
     composed.rbrKnowledgeSoundness impl (fun _ => True) (fun _ (_ : Nat) => False)
-      (fun z (_ : Nat × Unit) => z.1 = true)
+      (fun tr z (_ : OutWitness tr) => z.1 = true)
       (combineDraw oracleSig firstProtocol suffix firstDraw secondDraw)
       (combineDraw (m := fun _ => ℝ≥0∞) oracleSig firstProtocol suffix (fun _ => 1)
         (fun _ _ => 1)) :=
@@ -474,7 +527,7 @@ example :
 -- KnowledgeComposition fixture `emptyExtractor`, restated on an `Empty` message.
 /-- Empty message carriers and empty witnesses need no fabricated message or witness. -/
 def emptyState : KnowledgeStateFunction plainSig
-    (.liftBind (.message Empty) fun _ => .pure ⟨⟩ : Protocol.{0}) Unit Empty Empty
+    (.liftBind (.message Empty) fun _ => .pure ⟨⟩ : Protocol.{0}) Unit (fun _ => Empty) Empty
     (fun _ => True) (fun _ _ => False) (fun _ _ _ => True) where
   Witness _ _ := Empty
   toFun _ _ _ _ := False

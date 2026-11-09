@@ -62,10 +62,11 @@ def isRoot {s t : Protocol.{0}} : Cursor.Spine s t → Bool
   | root => exact h
   | down => rfl
 
-/-- A state function with natural-number witnesses at every prefix, given step maps and identity
-root and leaf maps. Every state holds. -/
+/-- A state function with natural-number witnesses at every prefix and natural-number output
+witnesses at every transcript, given step maps and identity root and leaf maps. Every state
+holds. -/
 def natState (s : Protocol.{0}) (step : ∀ {a next}, Cursor.Spine s (.liftBind a next) → Nat → Nat) :
-    KnowledgeStateFunction plainSig s Unit Nat Nat (fun _ => True) (fun _ _ => True)
+    KnowledgeStateFunction plainSig s Unit (fun _ => Nat) Nat (fun _ => True) (fun _ _ => True)
       (fun _ _ _ => True) where
   Witness _ _ := Nat
   toFun _ _ _ _ := True
@@ -240,8 +241,9 @@ example (tr : PathAlong plainSig deep) :
 -- MeasuredPathBudgets row 10, restated for every state function on the empty protocol and every
 -- stages with zero root and leaf bounds.
 /-- On the empty protocol, stages with zero root and leaf bounds cost nothing. -/
-example {S W Win : Type} {admissible : S → Prop} {relIn : S → Win → Prop}
-    {validOutput : S → PathAlong plainSig (.pure ⟨⟩ : Protocol.{0}) → W → Prop}
+example {S Win : Type} {W : PathAlong plainSig (.pure ⟨⟩ : Protocol.{0}) → Type}
+    {admissible : S → Prop} {relIn : S → Win → Prop}
+    {validOutput : (stmt : S) → (tr : PathAlong plainSig (.pure ⟨⟩ : Protocol.{0})) → W tr → Prop}
     (F : KnowledgeStateFunction plainSig (.pure ⟨⟩ : Protocol.{0}) S W Win admissible relIn
       validOutput)
     (stages : F.MeasuredStages Nat) {stepBound : Nat} (h : stages.BudgetAtMost 0 stepBound 0)
