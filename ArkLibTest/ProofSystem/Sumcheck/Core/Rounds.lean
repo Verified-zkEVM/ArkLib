@@ -98,6 +98,24 @@ theorem run_honest_eval (stmt : Spec.StatementRound R n 0) (p : Spec.OracleState
   rw [← ht]
   rfl
 
+-- Migration rows: Sumcheck Interaction/Projection #8, ProjectionTransport #2.
+
+/-- The first stage of the verifier's decision on an honest run: from the round-`0` relation, the
+round-`0` check on the honest first message and any challenge accepts a statement in the
+round-`1` relation, with the input polynomial unchanged. -/
+theorem firstRound_relation {k : ℕ} (stmt : Spec.StatementRound R (k + 1) 0)
+    (p : Spec.OracleStatement R (k + 1) deg ())
+    (h : ((stmt, fun _ => p), ()) ∈ Spec.relationRound R (k + 1) deg D 0) (r : R) : ∃ t,
+      simulateQ (OracleInterface.simOracle0 _
+          (roundFullTranscript (honestMessage D k (initState stmt fun _ => p)) r).messages)
+        (roundCheck R deg (k + 1) D amb 0 stmt
+          (roundFullTranscript (honestMessage D k (initState stmt fun _ => p)) r).challenges).run =
+        some t ∧
+      ((t, fun _ => p), ()) ∈ Spec.relationRound R (k + 1) deg D (0 : Fin (k + 1)).succ := by
+  obtain ⟨t, ht, -, -, -, hrel⟩ :=
+    honestRel_step D amb p 0 k (initState stmt fun _ => p) stmt r ⟨rfl, HEq.rfl, rfl, h⟩
+  exact ⟨t, ht, hrel⟩
+
 end Support
 
 /-! ## Fixtures over `ZMod 17` -/
@@ -258,11 +276,77 @@ example : (some (⟨MvPolynomial.eval ![3, 5] p2.val, ![3, 5]⟩, fun _ => p2) :
     ((⟨14, ![3, 5]⟩, fun _ => p2), ()) ∈ Spec.relationRound K 2 1 D₂ (Fin.last 2) :=
   ⟨by rw [eval_p2], (relationLast_iff_eval D₂ p2 14 ![3, 5]).2 eval_p2⟩
 
+/-! ## The first of two rounds on a bilinear input -/
+
+-- Migration rows: Sumcheck Interaction/Projection #7, #8, ProjectionTransport #2.
+
+theorem XX_mem : (MvPolynomial.X 0 * MvPolynomial.X 1 : MvPolynomial (Fin 2) K) ∈
+    MvPolynomial.restrictDegree (Fin 2) K 1 := by
+  have h : (MvPolynomial.X 0 * MvPolynomial.X 1 : MvPolynomial (Fin 2) K) =
+      MvPolynomial.monomial (Finsupp.single 0 1 + Finsupp.single 1 1) 1 := by
+    simp [MvPolynomial.X]
+  rw [h, MvPolynomial.mem_restrictDegree]
+  intro s hs j
+  rw [Finset.mem_singleton.1 (MvPolynomial.support_monomial_subset hs)]
+  fin_cases j <;> simp
+
+/-- The bilinear polynomial `1 + 2 X₀ + 3 X₁ + 4 X₀ X₁`, which sums to `1` over `{0, 1}²`. -/
+def bilinear : Spec.OracleStatement K 2 1 () :=
+  ⟨MvPolynomial.C 1 + MvPolynomial.C 2 * MvPolynomial.X 0 + MvPolynomial.C 3 * MvPolynomial.X 1 +
+      MvPolynomial.C 4 * (MvPolynomial.X 0 * MvPolynomial.X 1), by
+    simp only [MvPolynomial.C_mul']
+    exact Submodule.add_mem _ (Submodule.add_mem _ (Submodule.add_mem _ (C_mem 1)
+      (Submodule.smul_mem _ _ (X_mem 0))) (Submodule.smul_mem _ _ (X_mem 1)))
+      (Submodule.smul_mem _ _ XX_mem)⟩
+
+theorem bilinear_relation :
+    ((⟨1, Fin.elim0⟩, fun _ => bilinear), ()) ∈ Spec.relationRound K 2 1 D₂ 0 := by
+  simpa [Spec.relationRound, bilinear, D₂, Fin.sum_univ_two] using (by decide :
+    ∑ x ∈ Fintype.piFinset fun _ : Fin 2 => Finset.univ.map D₂,
+      (1 + 2 * x 0 + 3 * x 1 + 4 * (x 0 * x 1)) = 1)
+
+/-- The honest first message on the bilinear input at the challenge `3`: the round-`0` check
+accepts the claim `⟨12, ![3]⟩`, and that claim with the unchanged input is in the round-`1`
+relation. -/
+example : ∃ t, simulateQ (OracleInterface.simOracle0 _ (roundFullTranscript
+        (honestMessage D₂ 1 (initState ⟨1, Fin.elim0⟩ fun _ => bilinear)) 3).messages)
+      (roundCheck K 1 2 D₂ ambient 0 ⟨1, Fin.elim0⟩ (roundFullTranscript
+        (honestMessage D₂ 1 (initState ⟨1, Fin.elim0⟩ fun _ => bilinear)) 3).challenges).run =
+        some t ∧ t = ⟨12, ![3]⟩ ∧
+      ((t, fun _ => bilinear), ()) ∈ Spec.relationRound K 2 1 D₂ 1 := by
+  obtain ⟨t, ht, hrel⟩ := firstRound_relation D₂ ambient ⟨1, Fin.elim0⟩ bilinear
+    bilinear_relation 3
+  refine ⟨t, ht, ?_, hrel⟩
+  have hsum := Spec.SingleRound.projected_sum_of_relationRound K 2 1 D₂ 0 ⟨1, Fin.elim0⟩ bilinear
+    bilinear_relation
+  rw [Finset.sum_map_toList] at hsum
+  rw [roundCheck_eq_some 0 _ _ hsum] at ht
+  cases Option.some.inj ht
+  have key (m : K) (hm : (((⟨m, Fin.snoc (Fin.elim0 : Fin 0 → K) 3⟩ :
+      Spec.StatementRound K 2 (Fin.succ 0)), fun _ => bilinear), ()) ∈
+        Spec.relationRound K 2 1 D₂ (Fin.succ 0)) : m = 12 := by
+    have h12 : ∑ x ∈ Fintype.piFinset fun _ : Fin 1 => Finset.univ.map D₂,
+        (1 + 2 * (Fin.snoc (Fin.elim0 : Fin 0 → K) 3 : Fin 1 → K) 0 +
+          3 * Fin.append (Fin.snoc (Fin.elim0 : Fin 0 → K) 3 : Fin 1 → K) x 1 +
+          4 * ((Fin.snoc (Fin.elim0 : Fin 0 → K) 3 : Fin 1 → K) 0 *
+            Fin.append (Fin.snoc (Fin.elim0 : Fin 0 → K) 3 : Fin 1 → K) x 1)) = 12 := by
+      decide
+    rw [← h12]
+    simpa [Spec.relationRound, bilinear, D₂] using hm.symm
+  have h12 : (honestMessage D₂ 1 (initState ⟨1, Fin.elim0⟩ fun _ => bilinear)).val.eval 3 = 12 :=
+    key _ hrel
+  change (⟨(honestMessage D₂ 1 (initState ⟨1, Fin.elim0⟩ fun _ => bilinear)).val.eval 3,
+    Fin.snoc (Fin.elim0 : Fin 0 → K) 3⟩ : Spec.StatementRound K 2 (Fin.succ 0)) = _
+  rw [h12]
+  congr 1
+  exact funext fun i => by fin_cases i; rfl
+
 end
 
 run_cmd
   for decl in [``Sumcheck.Core.RoundsTest.run_honest_eval, ``Sumcheck.Core.RoundsTest.run_three,
-      ``Sumcheck.Core.RoundsTest.run_three_wrong, ``Sumcheck.Core.RoundsTest.run_two] do
+      ``Sumcheck.Core.RoundsTest.run_three_wrong, ``Sumcheck.Core.RoundsTest.run_two,
+      ``Sumcheck.Core.RoundsTest.firstRound_relation] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"
