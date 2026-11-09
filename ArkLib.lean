@@ -709,6 +709,7 @@ public import ArkLib.Interaction.Core.Legacy.Execution
 public import ArkLib.Interaction.Core.Legacy.OracleReduction
 public import ArkLib.Interaction.Core.Legacy.Protocol
 public import ArkLib.Interaction.Core.Legacy.Prover
+public import ArkLib.Interaction.Core.Legacy.Security
 public import ArkLib.Interaction.Core.Legacy.Verifier
 public import ArkLib.Interaction.Core.LegacyAppend
 public import ArkLib.Interaction.Core.OracleVerifier

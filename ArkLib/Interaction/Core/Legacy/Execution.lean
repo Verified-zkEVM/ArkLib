@@ -743,7 +743,7 @@ theorem simulateQ_finalize_observe (R : _root_.Reduction oSpec StmtIn WitIn Stmt
     (hP : PureChallengeSlots R.prover) (stmt : StmtIn) (wit : WitIn) :
     simulateQ (challengeReindex oSpec pSpec) (finalize <$> (embedReduction R).observe stmt wit) =
       (R.run stmt wit).run := by
-  rw [simulateQ_map, Core.Reduction.observe, simulateQ_verifier_run, ← 
+  rw [simulateQ_map, Core.Reduction.observe, simulateQ_verifier_run, ←
     finalize_observeWith_counterpartFirst]
   exact congrArg _ (observeWith_focalFirst_eq R.prover hP _ stmt wit)
 
