@@ -42,8 +42,8 @@ The main results are:
   challenge step holds as program equality.
 * `Agrees` and its consequences, and the transport lemmas along `protocol_eq`, which carry every
   security notion of the classical model from the embedded legacy verifier to the Sumcheck
-  verifier. The transfers themselves are in `Completeness`, `Soundness`, `Knowledge` and
-  `RoundByRound`.
+  verifier. The transfers themselves are in `LegacyCompleteness`, `Soundness`,
+  `Knowledge` and `RoundByRound`.
 -/
 
 @[expose] public section

@@ -1040,9 +1040,13 @@ public import ArkLib.ProofSystem.Stir.ProximityGap
 public import ArkLib.ProofSystem.Stir.Quotienting
 public import ArkLib.ProofSystem.Sumcheck.Core.Completeness
 public import ArkLib.ProofSystem.Sumcheck.Core.Execution
+public import ArkLib.ProofSystem.Sumcheck.Core.Knowledge
+public import ArkLib.ProofSystem.Sumcheck.Core.LegacyCompleteness
 public import ArkLib.ProofSystem.Sumcheck.Core.LegacyEquivalence
 public import ArkLib.ProofSystem.Sumcheck.Core.Protocol
+public import ArkLib.ProofSystem.Sumcheck.Core.RoundByRound
 public import ArkLib.ProofSystem.Sumcheck.Core.SingleRound
+public import ArkLib.ProofSystem.Sumcheck.Core.Soundness
 public import ArkLib.ProofSystem.Sumcheck.Domain
 public import ArkLib.ProofSystem.Sumcheck.Impl.Basic
 public import ArkLib.ProofSystem.Sumcheck.Impl.OracleProver
