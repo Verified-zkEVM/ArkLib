@@ -41,6 +41,17 @@ def Verifier.run {ι : Type u} {ambient : OracleSpec.{u, u} ι}
     (ambient + challengeSpec plainSig s)
   pure ⟨tr, out, verdict⟩
 
+/-- Every possible verdict of a run is a possible verdict of the decision on its transcript. -/
+theorem Verifier.verdict_mem_support_run {ι : Type u} {ambient : OracleSpec.{u, u} ι}
+    {s : Protocol.{u}} {S T : Type u} {Out : PathAlong plainSig s → Type u}
+    (V : Verifier ambient s S T) (stmt : S) (p : Prover plainSig ambient s Out)
+    {obs : Observation plainSig s Out T} (h : obs ∈ support (V.run stmt p)) :
+    obs.2.2 ∈ support
+      (V.decide stmt (projectPathAlong plainSig s obs.1) (toPlainView s obs.1)).run := by
+  simp only [Verifier.run, mem_support_bind_iff, support_pure, Set.mem_singleton_iff] at h
+  obtain ⟨⟨tr, out, _⟩, -, verdict, hv, rfl⟩ := h
+  simpa only [mem_support_liftComp_iff] using hv
+
 /-- Execute the honest prover and terminal decision, retaining explicit rejection. -/
 def Reduction.observe {ι : Type u} {ambient : OracleSpec.{u, u} ι}
     {s : Protocol.{u}} {S W T : Type u} {Out : PathAlong plainSig s → Type u}
