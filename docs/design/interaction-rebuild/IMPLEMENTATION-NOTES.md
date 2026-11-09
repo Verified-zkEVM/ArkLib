@@ -142,3 +142,9 @@ migration can read the resource queries without a second logged runner. Extracto
 only the ambient part, as record D7 requires: `OracleVerifier.runWithLog_fst` proves that the
 `QueryLog.fst` of the decision log is the log of a run that records ambient queries alone, and the
 oracle extraction game passes that projection.
+
+## Continuation
+
+Entries 14 onwards record the departures of the legacy embedding. They are in
+[`legacy-embedding.md`](../interaction-layer/legacy-embedding.md#departures), and
+[`departures.md`](../interaction-layer/departures.md) indexes every entry, including 1–13.
