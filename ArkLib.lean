@@ -835,6 +835,7 @@ public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Com
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Heterogeneous
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.ScalarRound
