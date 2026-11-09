@@ -148,10 +148,11 @@ oracle extraction game passes that projection.
 
 Entries 14–16 record the departures of the legacy embedding. They are in
 [`legacy-embedding.md`](../interaction-layer/legacy-embedding.md#departures). Entries 17 and 18
-are in [`sumcheck.md`](../interaction-layer/sumcheck.md#departures). Entry 19 follows.
+are in [`sumcheck.md`](../interaction-layer/sumcheck.md#departures). Entries 19 and 20 belong to
+other part-D commits; entry 21 follows.
 [`departures.md`](../interaction-layer/departures.md) indexes every entry, including 1–13.
 
-## 19. Computable Sumcheck runtime
+## 21. Computable Sumcheck runtime
 
 **Migration.** The migration list ports the frozen computable Sumcheck to the interaction core:
 `execute_eq_native`, the frozen `ComputableCompleteness` and `ComputableSoundness`, and the seven
@@ -170,6 +171,10 @@ rows of `scripts/SumcheckRuntime.lean`. Rows 3, 4, 6 and 7 are restated.
   are the legacy ones on the input read by `toOracleStatement`.
 - `verifierOn` and `decisionLiftOn` are `@[macro_inline]`, so the verifier at the noncomputable
   Mathlib input family stays executable, and the computable verifier shares its decision.
+- `support_completeness` keeps the frozen supported-run guarantee without a probability or
+  normalization assumption. `perfectCompleteness` follows for every challenge implementation,
+  and `soundness` keeps the mathematical core error for every prover. As in departure 18, these
+  verifier theorems cover all `n` rounds rather than arbitrary interval starts.
 - Runtime rows. The challenges are drawn from the challenge oracle, not from a prover event, and
   the log records each draw.
   - Row 3 expects the log `[p0, c0, p2, c1, p3]` instead of `[0, 1, 2, 1, 3]`.

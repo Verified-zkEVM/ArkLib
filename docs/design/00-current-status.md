@@ -179,15 +179,21 @@ round polynomials. From a true initial claim, every supported execution returns 
 probabilistic completeness is one for any `ProbComp` challenge, whose oracle specification is
 normalized. Support preservation alone makes no assertion about total successful mass.
 
-`Native.Core` owns the single protocol and verifier definition, parameterized by the message
-carrier and its evaluation operation. `Native` retains the mathematical presentation;
-`Computable` specializes it to bounded CompPoly coefficient arrays and Horner evaluation.
-`execute_eq_native` proves equality of actual closed executions after interpreting each sent
-message, preserving private continuations and effects on public abort. The interpretation is
-proof-only: the computational verifier runs directly on CompPoly data. Its soundness theorem
-retains the same bound and original-oracle assumptions. `sumcheck-runtime` now runs the
-computable interaction-core Sumcheck `Sumcheck.Core.Computable` instead, including private memory,
-effect order and rejection, with fixed test challenges.
+`Sumcheck.Core` now owns a protocol and verifier generic in the message carrier and its
+evaluation operation (`protocolOn`, `verifierOn`). The existing polynomial names remain their
+Mathlib instances. `Sumcheck.Core.Computable` specializes the same definitions to bounded
+CompPoly coefficient arrays, Horner evaluation and CompPoly multivariate input data.
+`run_eq_interpret` relates complete runs through the proof-only message interpretation and
+challenge-query renaming, preserving private continuations and effects. Its `perfectCompleteness`
+holds for arbitrary challenge implementations, and `soundness` keeps the per-challenge error
+`deg / |F|` for uniform challenges and arbitrary provers. The relations read the input through its
+mathematical polynomial interpretation.
+
+`sumcheck-runtime` runs this computable core instance with fixed test challenges. It checks
+private memory and effect order, including both challenge draws after a failed first check,
+the honest quadratic run, and zero rounds from a final round state with no draws. The seven
+migration rows and their expected values are listed in
+[`interaction-layer/sumcheck.md`](interaction-layer/sumcheck.md#runtime-checks).
 
 `Impl/Projection` constructs each honest round message directly from a CompPoly multivariate
 polynomial. It splits out the current variable, evaluates the other variables at prior challenges
@@ -196,11 +202,10 @@ correspondence covers arbitrary individual degree bounds and finite domains. `in
 the original CompPoly polynomial directly; its equality to the mathematical oracle behavior is a
 separate theorem.
 
-`Computable.honestProver` uses this construction in ordinary prover continuations. Its complete
-execution equals the mathematical honest execution, giving support completeness and perfect
-completeness under the same true-input and original-oracle assumptions. The compiled runtime
-client exercises a quadratic with a cross term over a three-element domain, its retained original
-oracle, and execution with no rounds left.
+`Sumcheck.Core.Computable.honestProver` uses this construction in ordinary prover continuations.
+`interpretProver_honestProver` identifies it with the mathematical core honest prover; the run
+correspondence transfers support completeness and perfect completeness on true inputs. The
+compiled client evaluates the retained CompPoly input directly.
 
 This is a computable finite-enumeration prover; it makes no efficiency claim. Optimized multilinear
 algorithms remain separate work.

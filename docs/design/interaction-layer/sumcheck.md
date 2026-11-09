@@ -142,10 +142,12 @@ the individual degree bound. `toOracleStatement` reads an input as the mathemati
 - **Honest prover.** `interpretProver_honestProver`: the computable honest prover, interpreted
   through `toMessage`, is `Sumcheck.Core.honestProver` on the interpreted input
   (`projectedMessage_toMessage`, `projectedMessage_evaluate`).
-- **Security.** `Computable.perfectCompleteness` holds for every challenge implementation and
-  `Computable.soundness` for uniform challenges, with the error of `verifier_soundness`. The
-  relations and languages are those of `Spec.relationRound` on the interpreted input. Both are
-  transported from the interaction-layer theorems through `run_eq_interpret`.
+- **Security.** `Computable.support_completeness` accepts a true output on every supported
+  honest run, before any oracle distribution is chosen. `Computable.perfectCompleteness` follows
+  for every challenge implementation. `Computable.soundness` holds for uniform challenges, with
+  the error of `verifier_soundness`. The relations and languages are those of `Spec.relationRound`
+  on the interpreted input; the proofs transport the mathematical core results through
+  `run_eq_interpret`.
 
 ### Runtime checks
 
@@ -165,7 +167,7 @@ events `.inl i` and challenge draws `.inr j` in execution order.
 | 7 | The computable honest prover for zero rounds from the final round state `⟨16, ![4, 4]⟩`. | Output `(16, 4, 4, 16)`, no draws. |
 
 Rows 3, 4, 6 and 7 restate the frozen runtime's rows
-([departure 19](../interaction-rebuild/IMPLEMENTATION-NOTES.md#19-computable-sumcheck-runtime)).
+([departure 21](../interaction-rebuild/IMPLEMENTATION-NOTES.md#21-computable-sumcheck-runtime)).
 
 ## Tests
 
@@ -179,7 +181,7 @@ The acceptance tests are in `ArkLibTest/ProofSystem/Sumcheck/Core/`.
 | `Soundness` | Soundness against any one-round prover; a soundness bound over `ZMod 17`; exact probabilities over `ZMod 5`; the adaptive message's endpoint and hit facts; the exclusion of `X ^ 2` from the degree-one carrier. |
 | `RoundByRound` | Clients of the round-by-round, knowledge and completeness transfers. |
 | `Rounds` | Two- and three-round runs: challenge draws in round order, the accepted claim, a wrong target that still runs every round and rejects. Two honest rounds on the bilinear input `1 + 2 X₀ + 3 X₁ + 4 X₀ X₁` with the challenges `3` and then `5`: exactly two challenge queries, in round order, and the accepted claim `⟨14, ![3, 5]⟩` with the input polynomial as output oracle. The honest messages on that input, `5 + 8 X` and `1 + 2 c + 3 X + 4 c X`, their sums, and the first-round relation transport. |
-| `Computable` | The honest message is the CompPoly projection; the interpreted honest prover; the run correspondence; the challenge transport round trip and uniformity; completeness and soundness over `ZMod 5`; computability of the executable definitions and axiom guards. |
+| `Computable` | The honest message is the CompPoly projection; the interpreted honest prover; the run correspondence; the challenge transport round trip and uniformity; support completeness without an oracle distribution, and completeness and soundness over `ZMod 5`; computability of the executable definitions and axiom guards. |
 | `Effects` | A prover with ambient effects before each message and after the last challenge: the run executes them in protocol order, and a recording handler observes the order. An accepted claim that is not in the final relation. A claim whose first check fails still runs both rounds and rejects, and the decision log holds only the first round's check queries (`decide_log_badFirst` for every completed run whose first message fails its check, at every round count; `runWithLog_wrong` for the logged execution of that prover). The round message's oracle interface. |
 
 ## Open
