@@ -1,0 +1,127 @@
+# Implementation notes for the interaction core
+
+These notes record where `ArkLib/Interaction/Core/` departs from the design records in this
+directory. The records themselves are unchanged. Each entry states what the record said, what the
+code does and why. Entries 1–8 were identified by the review of the first implementation; entries
+9–12 were introduced while addressing that review.
+
+## 1. Oracle interfaces in positions; challenges indexed by node occurrences
+
+Records D1 and D4 left open where an oracle payload's query interface lives and how challenges are
+named. The code carries the interface in the oracle position (`OraclePos.oracle X interface` in
+`Signature.lean`) and indexes challenges by structural node occurrences (`Node`, `ChallengeNode`
+in `Protocol.lean`). This resolves the open choice without a separate decoration, and node
+occurrences name each challenge independently of any transcript. Positions stay one universe above
+moves and the monad, as D2 requires.
+
+## 2. Observations retain the transcript and output on rejection
+
+Records D4 and D7 describe a run that either outputs a statement or rejects. The code's
+`Observation` keeps the full transcript and prover output together with an optional verdict
+(`Execution.lean`), and `Reduction.run` gives the accepting `OptionT` presentation. Rejection is
+therefore a returned observation, distinct from missing probability mass. In the classical
+experiment every program is an `OracleComp`, which cannot fail, so rejection is the only way a run
+can fail to accept; the security tests check that half the mass of a one-challenge run is a returned
+rejection and that the total mass is one.
+
+## 3. Oracle append and split are lawful maps with data round trips
+
+Record D6 sketches routing through an equivalence of oracle signatures. The code represents
+append and split by lawful `OracleMap`s with round-trip laws on the materialized data
+(`OracleVerifier.lean`), with `payloadImpl_append` as the handler law. This is enough for both
+materialization and query routing. It does not claim syntactic equality of query traces, which
+the agreement law would not imply.
+
+## 4. Adversary models are indexed by input and observation types
+
+Record D7 attaches the adversary model to a verifier. The code's `AdversaryModel` is parameterized
+by input and observation types, with an input-indexed adversary class; `OutputJudgement` decodes
+the verdict and witness, and `StatementProblem` packages public context into the statement. The
+generalization lets the same predicates serve plain and oracle verifiers and other models. A client
+claiming correspondence with the legacy layer must choose the actual verdict and decode the actual
+prover witness. Plain completeness and soundness have classical convenience predicates; oracle
+security and knowledge assemble the generic predicate explicitly.
+
+## 5. Errors in `ℝ≥0∞` with measurable observations
+
+The legacy layer uses `ℝ≥0` errors. The code uses `ℝ≥0∞`, measurable observation spaces and
+outer-measure upper bounds for general models; the classical wrappers use discrete observations,
+so every event is measurable. The bounds are uninformative at error one or more, as usual.
+
+## 6. Knowledge requires marginal preservation and an access budget
+
+Record D9 section 4 asks knowledge soundness to preserve the run. The code requires the
+extraction experiment's observation marginal to equal the model's outcome, adds an access-cost
+budget counting adversary re-entry, and returns an optional witness, with an explicit `none`
+counted as bad (`Knowledge.lean`). This prevents an extractor from deleting accepted mass. For a
+general interface whose extractor can lose mass it is stronger than legacy `knowledgeSoundnessWith`,
+whose bad event simply drops the missing mass, so a transfer from the legacy layer needs a
+non-loss premise or a chosen failure-completion semantics. For the classical straight-line and
+transcript-only interfaces the qualification is moot: `classicalStraightline_marginal` and
+`classicalTranscriptOnly_marginal` prove that marginal preservation always holds, since the
+extractor runs after the observation is fixed and `OracleComp` cannot lose mass.
+
+## 7. Round-by-round terminal obligations cover every ambient state
+
+The legacy terminal experiment starts from a fresh `init`. The code's `validAcceptance` asks for
+positive acceptance probability from some ambient state (`RoundByRound.lean`). The interaction can
+change shared state before the decision, so a fresh-state check could be evaded; the stronger
+obligation needs suitable hypotheses for a transfer to the legacy layer. Structural spines with
+full-move decorations give the state function and extractor the full prefix, including oracle
+payloads.
+
+## 8. Model definitions live in the security files
+
+Record D9 sketches an optional `Model.lean`. The code defines models and extraction interfaces in
+`Security/Completeness.lean` and `Security/Knowledge.lean`, and moves the `OracleFamily` helpers
+to the neutral owner `ArkLib/Relation/Basic.lean`. Rewinding and quantum models, security
+composition theorems, legacy execution and transfer theorems, and the focal-first to
+counterpart-first exchange in distribution are outside this slice.
+
+## 9. Oracle append needs output compatibility on accepted prefix results
+
+Records D5 and D6 compose an oracle verifier by running the prefix decision and then the suffix
+decision on the routed oracles, with the output map composed through the prefix output map and no
+side condition. A composite output map, however, depends only on the statement, path and view,
+whereas the suffix output map depends on the intermediate statement that the prefix decision
+returns, possibly after ambient queries. The code therefore takes an `OutputCompatibility`
+certificate. Its `agrees` field requires equality only for intermediate statements in the support
+of `OracleVerifier.decideWith`, the prefix decision with its resource queries answered from the
+routed input data and every ambient answer allowed. `OutputCompatibility.ofStatement` builds the
+certificate when every accepted prefix result equals one public statement, and
+`append_decideWith` states the routing law: the composed decision is the prefix decision followed
+by the suffix decision on the routed data. Some condition is necessary: a prefix that returns an
+ambient random bit admits no certificate, which a test checks. Restricting to the support admits
+every deterministic or statement-determined composition, such as a rejecting zero-round prefix
+followed by a constant suffix.
+
+## 10. Root obligations of state functions are guarded by the input promise
+
+Record D7 sketches `toFun_root : ∀ stmt, toFun stmt root ⟨⟩ → stmt ∈ langIn` with no promise.
+In the code both `StateFunction.root` and `KnowledgeStateFunction.root` assume
+`admissible stmt`, and `KnowledgeStateFunction` takes the promise as a parameter. The error
+obligations already quantify only over admissible inputs, and terminal knowledge soundness is also
+promise-restricted. Without the guard, a zero-round protocol with promise `b = true` and
+immediate extraction has no knowledge state function at all, because the terminal obligation on
+the excluded input `false` forces the root relation on it.
+
+## 11. The public-coin sampler is presented beside the pure-end sampler
+
+Record D4 describes the sampler as the public-coin counterpart determined by the signature, with
+replay from PolyFun. The code keeps `samplerEnd` and `sampler`, the pure-end form on which the
+runner, `appendSampler` and the composition run laws are stated, and adds `publicCoinSampler` as a
+PolyFun `PublicCoinCounterpart`. `toCounterpart_publicCoinSampler` and
+`toCounterpart_publicCoinOracleSampler` prove that its conversion is the runner's sampler, and
+`replay_publicCoinSampler` and `replay_publicCoinOracleSampler` that its replay draws nothing. The
+bridge theorems are stated for `plainSig` and `oracleSig` rather than an arbitrary lens: the
+definition casts along the owner of each position, and that cast reduces only once the signature
+fixes the owner.
+
+## 12. Path-fiber splitting stays in ArkLib
+
+Record D5 splits paths and views at the seam with PolyFun's path operations and adds nothing to
+ArkLib for it. `Fiber`,
+`project_split` and `splitFiber` in `Composition.lean` are generic in the polynomial and the lens
+but remain in ArkLib, marked as candidates for PolyFun; `project_split` is now derived from
+PolyFun's `projectPathAlong_append`, `append_split` and `split_append` laws. Moving them would
+change the PolyFun pin, which this slice does not do.
