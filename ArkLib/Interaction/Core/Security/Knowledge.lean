@@ -15,7 +15,8 @@ An extraction interface specifies programs, their joint observation/witness expe
 adversary-access cost. Knowledge soundness requires that the experiment preserve the model's
 observation marginal. The classical straight-line interface runs after acceptance, with the
 full transcript and separate ambient query logs, so it always preserves the observation
-marginal. Its transcript-only subinterface ignores logs.
+marginal. Its transcript-only subinterface ignores logs. The output witness an extractor receives
+is indexed by the transcript, and the games read it from the prover output at that transcript.
 An explicit failed extraction remains in the bad event; rejection and missing mass remain distinct.
 For general measurable spaces, the error is an upper bound on the outer measure of the bad event.
 -/
@@ -104,28 +105,33 @@ theorem Verifier.runWithLog_fst {ι S T : Type} {ambient : OracleSpec ι} {s : P
 
 namespace Extractor
 
-/-- Classical straight-line extraction has no strategy or continuation argument to re-enter. -/
+/-- Classical straight-line extraction has no strategy or continuation argument to re-enter.
+The output witness type `Wout tr` is indexed by the transcript `tr` passed with it. -/
 abbrev Straightline {ι S : Type} (ambient : OracleSpec ι) (s : Protocol)
-    (Witness : S → Type) (Wout : Type) :=
-  (stmt : S) → Wout → PathAlong plainSig s → QueryLog ambient → QueryLog ambient →
+    (Witness : S → Type) (Wout : PathAlong plainSig s → Type) :=
+  (stmt : S) → (tr : PathAlong plainSig s) → Wout tr → QueryLog ambient → QueryLog ambient →
     OptionT (OracleComp ambient) (Witness stmt)
 
-/-- A transcript-only extractor cannot inspect either participant's query log. -/
+/-- A transcript-only extractor cannot inspect either participant's query log. The output
+witness type `Wout tr` is indexed by the transcript `tr`. -/
 abbrev TranscriptOnly {ι S : Type} (ambient : OracleSpec ι) (s : Protocol)
-    (Witness : S → Type) (Wout : Type) :=
-  (stmt : S) → Wout → PathAlong plainSig s → OptionT (OracleComp ambient) (Witness stmt)
+    (Witness : S → Type) (Wout : PathAlong plainSig s → Type) :=
+  (stmt : S) → (tr : PathAlong plainSig s) → Wout tr →
+    OptionT (OracleComp ambient) (Witness stmt)
 
 /-- Forgetting the logs embeds transcript-only extraction into the straight-line interface. -/
 def TranscriptOnly.withLogs {ι S : Type} {ambient : OracleSpec ι} {s : Protocol}
-    {Witness : S → Type} {Wout : Type} (E : TranscriptOnly ambient s Witness Wout) :
-    Straightline ambient s Witness Wout := fun stmt out tr _ _ => E stmt out tr
+    {Witness : S → Type} {Wout : PathAlong plainSig s → Type}
+    (E : TranscriptOnly ambient s Witness Wout) :
+    Straightline ambient s Witness Wout := fun stmt tr out _ _ => E stmt tr out
 
 end Extractor
 
-/-- The classical logged game keeps explicit extractor failure as a returned `none` witness. -/
-def extractionGame {ι S T Wout : Type} {ambient : OracleSpec ι} {s : Protocol}
-    {Out : PathAlong plainSig s → Type} {Witness : S → Type}
-    (V : Verifier ambient s S T) (readOut : ∀ tr, Out tr → Wout)
+/-- The classical logged game keeps explicit extractor failure as a returned `none` witness.
+The extractor receives the output witness `readOut tr out : Wout tr` at the run's transcript. -/
+def extractionGame {ι S T : Type} {ambient : OracleSpec ι} {s : Protocol}
+    {Out Wout : PathAlong plainSig s → Type} {Witness : S → Type}
+    (V : Verifier ambient s S T) (readOut : ∀ tr, Out tr → Wout tr)
     (E : Extractor.Straightline ambient s Witness Wout)
     (stmt : S) (prover : Prover plainSig ambient s Out) :
     OracleComp (ambient + challengeSpec plainSig s)
@@ -135,22 +141,22 @@ def extractionGame {ι S T Wout : Type} {ambient : OracleSpec ι} {s : Protocol}
   | none => pure (obs, none)
   | some _ => do
     let extracted ← OracleComp.liftComp
-      (E stmt (readOut obs.1 obs.2.1) obs.1 proveLog verifyLog).run
+      (E stmt obs.1 (readOut obs.1 obs.2.1) proveLog verifyLog).run
       (ambient + challengeSpec plainSig s)
     pure (obs, extracted)
 
 /-- A possible extraction outcome records a possible run, no witness after rejection, and a
 possible extractor result on some participant logs after acceptance. -/
-theorem mem_support_extractionGame {ι S T Wout : Type} {ambient : OracleSpec ι} {s : Protocol}
-    {Out : PathAlong plainSig s → Type} {Witness : S → Type}
-    (V : Verifier ambient s S T) (readOut : ∀ tr, Out tr → Wout)
+theorem mem_support_extractionGame {ι S T : Type} {ambient : OracleSpec ι} {s : Protocol}
+    {Out Wout : PathAlong plainSig s → Type} {Witness : S → Type}
+    (V : Verifier ambient s S T) (readOut : ∀ tr, Out tr → Wout tr)
     (E : Extractor.Straightline ambient s Witness Wout)
     (stmt : S) (prover : Prover plainSig ambient s Out)
     {z : Observation plainSig s Out T × Option (Witness stmt)}
     (h : z ∈ support (extractionGame V readOut E stmt prover)) :
     z.1 ∈ support (V.run stmt prover) ∧ (z.1.2.2 = none → z.2 = none) ∧
       (z.1.2.2 ≠ none → ∃ proveLog verifyLog,
-        z.2 ∈ support (E stmt (readOut z.1.1 z.1.2.1) z.1.1 proveLog verifyLog).run) := by
+        z.2 ∈ support (E stmt z.1.1 (readOut z.1.1 z.1.2.1) proveLog verifyLog).run) := by
   simp only [extractionGame, mem_support_bind_iff] at h
   obtain ⟨⟨obs, proveLog, verifyLog⟩, hy, hz⟩ := h
   have hobs : obs ∈ support (V.run stmt prover) := by
@@ -175,13 +181,13 @@ theorem mem_support_extractionGame {ι S T Wout : Type} {ambient : OracleSpec ι
 The knowledge predicate separately checks observation preservation, so an extractor that loses
 probability mass cannot obtain security by deleting inconvenient accepted observations.
 -/
-noncomputable def classicalStraightline {ι σ S T Wout : Type} {ambient : OracleSpec ι}
-    {s : Protocol} {Out : PathAlong plainSig s → Type} (Witness : S → Type)
+noncomputable def classicalStraightline {ι σ S T : Type} {ambient : OracleSpec ι}
+    {s : Protocol} {Out Wout : PathAlong plainSig s → Type} (Witness : S → Type)
     [MeasurableSpace (Observation plainSig s Out T)] [∀ stmt, MeasurableSpace (Witness stmt)]
     (V : Verifier ambient s S T) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (challenges : QueryImpl (challengeSpec plainSig s) ProbComp)
-    (readOut : ∀ tr, Out tr → Wout) :
+    (readOut : ∀ tr, Out tr → Wout tr) :
     ExtractionInterface (V.classicalModel (Out := Out) init impl challenges) Witness where
   Ext := Extractor.Straightline ambient s Witness Wout
   experiment E stmt adv := 𝒟[Core.experiment init impl challenges
@@ -189,13 +195,13 @@ noncomputable def classicalStraightline {ι σ S T Wout : Type} {ambient : Oracl
   cost _ _ _ := 0
 
 /-- Transcript-only extraction is the same classical experiment with the two logs inaccessible. -/
-noncomputable def classicalTranscriptOnly {ι σ S T Wout : Type} {ambient : OracleSpec ι}
-    {s : Protocol} {Out : PathAlong plainSig s → Type} (Witness : S → Type)
+noncomputable def classicalTranscriptOnly {ι σ S T : Type} {ambient : OracleSpec ι}
+    {s : Protocol} {Out Wout : PathAlong plainSig s → Type} (Witness : S → Type)
     [MeasurableSpace (Observation plainSig s Out T)] [∀ stmt, MeasurableSpace (Witness stmt)]
     (V : Verifier ambient s S T) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (challenges : QueryImpl (challengeSpec plainSig s) ProbComp)
-    (readOut : ∀ tr, Out tr → Wout) :
+    (readOut : ∀ tr, Out tr → Wout tr) :
     ExtractionInterface (V.classicalModel (Out := Out) init impl challenges) Witness where
   Ext := Extractor.TranscriptOnly ambient s Witness Wout
   experiment E :=
@@ -217,13 +223,13 @@ private theorem run'_bind_map_const {ι σ α β γ : Type} {spec : OracleSpec �
 
 The extractor runs after the observation is fixed, so its own queries and state changes cannot
 change the observation marginal. -/
-theorem classicalStraightline_marginal {ι σ S T Wout : Type} {ambient : OracleSpec ι}
-    {s : Protocol} {Out : PathAlong plainSig s → Type} (Witness : S → Type)
+theorem classicalStraightline_marginal {ι σ S T : Type} {ambient : OracleSpec ι}
+    {s : Protocol} {Out Wout : PathAlong plainSig s → Type} (Witness : S → Type)
     [MeasurableSpace (Observation plainSig s Out T)] [∀ stmt, MeasurableSpace (Witness stmt)]
     (V : Verifier ambient s S T) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (challenges : QueryImpl (challengeSpec plainSig s) ProbComp)
-    (readOut : ∀ tr, Out tr → Wout) (E : Extractor.Straightline ambient s Witness Wout)
+    (readOut : ∀ tr, Out tr → Wout tr) (E : Extractor.Straightline ambient s Witness Wout)
     (stmt : S) (adv : Prover plainSig ambient s Out) :
     ((classicalStraightline Witness V init impl challenges readOut).experiment E stmt adv).map
       Prod.fst = (V.classicalModel init impl challenges).outcome stmt adv := by
@@ -237,7 +243,7 @@ theorem classicalStraightline_marginal {ι σ S T Wout : Type} {ambient : Oracle
   have hgame : Prod.fst <$> extractionGame V readOut E stmt adv =
       V.runWithLog stmt adv >>= fun y => (fun _ => y.1) <$> (match y.1.2.2 with
         | none => pure none
-        | some _ => OracleComp.liftComp (E stmt (readOut y.1.1 y.1.2.1) y.1.1 y.2.1 y.2.2).run
+        | some _ => OracleComp.liftComp (E stmt y.1.1 (readOut y.1.1 y.1.2.1) y.2.1 y.2.2).run
             (ambient + challengeSpec plainSig s)) := by
     simp only [extractionGame, _root_.map_bind]
     congr 1
@@ -254,13 +260,13 @@ theorem classicalStraightline_marginal {ι σ S T Wout : Type} {ambient : Oracle
   rw [V.runWithLog_fst]
 
 /-- Transcript-only extraction also preserves the run's observation law. -/
-theorem classicalTranscriptOnly_marginal {ι σ S T Wout : Type} {ambient : OracleSpec ι}
-    {s : Protocol} {Out : PathAlong plainSig s → Type} (Witness : S → Type)
+theorem classicalTranscriptOnly_marginal {ι σ S T : Type} {ambient : OracleSpec ι}
+    {s : Protocol} {Out Wout : PathAlong plainSig s → Type} (Witness : S → Type)
     [MeasurableSpace (Observation plainSig s Out T)] [∀ stmt, MeasurableSpace (Witness stmt)]
     (V : Verifier ambient s S T) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (challenges : QueryImpl (challengeSpec plainSig s) ProbComp)
-    (readOut : ∀ tr, Out tr → Wout) (E : Extractor.TranscriptOnly ambient s Witness Wout)
+    (readOut : ∀ tr, Out tr → Wout tr) (E : Extractor.TranscriptOnly ambient s Witness Wout)
     (stmt : S) (adv : Prover plainSig ambient s Out) :
     ((classicalTranscriptOnly Witness V init impl challenges readOut).experiment E stmt adv).map
       Prod.fst = (V.classicalModel init impl challenges).outcome stmt adv :=
@@ -343,36 +349,70 @@ theorem runWithLog_fst {ι I J S T : Type} {ambient : OracleSpec ι} {s : Oracle
   rw [← map_run_withLogging_addLift_fst, bind_map_left]
   simp
 
+/-- Forgetting both logs preserves the entire oracle run. -/
+theorem map_fst_runWithLog {ι I J S T : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
+    {A : I → Type} {B : J → Type} {inputs : OracleFamily I A} {outputs : OracleFamily J B}
+    {Out : PathAlong oracleSig s → Type} (V : OracleVerifier ambient s S T inputs outputs)
+    (stmt : S) (data : ∀ i, A i) (prover : Prover oracleSig ambient s Out) :
+    Sigma.fst <$> V.runWithLog stmt data prover = V.run stmt data prover := by
+  simp only [runWithLog, _root_.map_bind, LawfulApplicative.map_pure]
+  rw [OracleVerifier.run]
+  conv_lhs =>
+    arg 2
+    intro a
+    rw [bind_logged _ _ (fun (verdict : Option T) => pure (⟨a.1.1, a.1.2.1, verdict.map fun t =>
+      (t, (V.outputMap stmt (projectPathAlong oracleSig s a.1.1) (toView s a.1.1)).f
+        (sumData data (payloads s a.1.1)))⟩ : Observation oracleSig s Out (T × (∀ j, B j))))]
+  rw [bind_logged (QueryImpl.id' (ambient + challengeSpec oracleSig s)) _
+    (fun result : (tr : PathAlong oracleSig s) × Out tr × PUnit => do
+      let verdict ← simulateQ (QueryImpl.addLift
+        ((fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q))) :
+          QueryImpl ambient (OracleComp (ambient + challengeSpec oracleSig s)))
+        ((sumFamily inputs
+          (pathFamily s (projectPathAlong oracleSig s result.1))).behaviorOfRealizations
+            (sumData data (payloads s result.1))))
+        (V.decide stmt (projectPathAlong oracleSig s result.1) (toView s result.1)).run
+      pure (⟨result.1, result.2.1, verdict.map fun t =>
+        (t, (V.outputMap stmt (projectPathAlong oracleSig s result.1) (toView s result.1)).f
+          (sumData data (payloads s result.1)))⟩ :
+        Observation oracleSig s Out (T × (∀ j, B j))))]
+  rw [simulateQ_id']
+
 end OracleVerifier
 
 namespace Extractor
 
-/-- Straight-line extraction from an oracle protocol sees the full payload-bearing transcript. -/
+/-- Straight-line extraction from an oracle protocol sees the full payload-bearing transcript.
+The output witness type `Wout tr` is indexed by that transcript `tr`. -/
 abbrev OracleStraightline {ι S : Type} (ambient : OracleSpec ι) (s : OracleProtocol)
-    (Witness : S → Type) (Wout : Type) :=
-  (stmt : S) → Wout → PathAlong oracleSig s → QueryLog ambient → QueryLog ambient →
+    (Witness : S → Type) (Wout : PathAlong oracleSig s → Type) :=
+  (stmt : S) → (tr : PathAlong oracleSig s) → Wout tr → QueryLog ambient → QueryLog ambient →
     OptionT (OracleComp ambient) (Witness stmt)
 
-/-- The oracle transcript-only interface omits both ambient logs. -/
+/-- The oracle transcript-only interface omits both ambient logs. The output witness type
+`Wout tr` is indexed by the transcript `tr`. -/
 abbrev OracleTranscriptOnly {ι S : Type} (ambient : OracleSpec ι) (s : OracleProtocol)
-    (Witness : S → Type) (Wout : Type) :=
-  (stmt : S) → Wout → PathAlong oracleSig s → OptionT (OracleComp ambient) (Witness stmt)
+    (Witness : S → Type) (Wout : PathAlong oracleSig s → Type) :=
+  (stmt : S) → (tr : PathAlong oracleSig s) → Wout tr →
+    OptionT (OracleComp ambient) (Witness stmt)
 
 /-- Embed the oracle transcript-only interface by ignoring the two logs. -/
 def OracleTranscriptOnly.withLogs {ι S : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
-    {Witness : S → Type} {Wout : Type} (E : OracleTranscriptOnly ambient s Witness Wout) :
-    OracleStraightline ambient s Witness Wout := fun stmt out tr _ _ => E stmt out tr
+    {Witness : S → Type} {Wout : PathAlong oracleSig s → Type}
+    (E : OracleTranscriptOnly ambient s Witness Wout) :
+    OracleStraightline ambient s Witness Wout := fun stmt tr out _ _ => E stmt tr out
 
 end Extractor
 
 namespace OracleVerifier
-variable {ι I J σ S T Wout : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
+variable {ι I J σ S T : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
   {A : I → Type} {B : J → Type} {inputs : OracleFamily I A} {outputs : OracleFamily J B}
-  {Out : PathAlong oracleSig s → Type}
+  {Out Wout : PathAlong oracleSig s → Type}
 
-/-- Oracle extraction uses actual inputs, full transcripts, and the ambient logs of the run. -/
+/-- Oracle extraction uses actual inputs, full transcripts, and the ambient logs of the run.
+The extractor receives the output witness `readOut tr out : Wout tr` at the run's transcript. -/
 def extractionGame (V : OracleVerifier ambient s S T inputs outputs)
-    {Witness : (S × (∀ i, A i)) → Type} (readOut : ∀ tr, Out tr → Wout)
+    {Witness : (S × (∀ i, A i)) → Type} (readOut : ∀ tr, Out tr → Wout tr)
     (E : Extractor.OracleStraightline ambient s Witness Wout)
     (stmt : S × (∀ i, A i)) (prover : Prover oracleSig ambient s Out) :
     OracleComp (ambient + challengeSpec oracleSig s)
@@ -382,7 +422,7 @@ def extractionGame (V : OracleVerifier ambient s S T inputs outputs)
   | none => pure (obs, none)
   | some _ => do
     let extracted ← OracleComp.liftComp
-      (E stmt (readOut obs.1 obs.2.1) obs.1 proveLog verifyLog.fst).run
+      (E stmt obs.1 (readOut obs.1 obs.2.1) proveLog verifyLog.fst).run
       (ambient + challengeSpec oracleSig s)
     pure (obs, extracted)
 
@@ -393,7 +433,7 @@ noncomputable def classicalStraightline (Witness : (S × (∀ i, A i)) → Type)
     (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (challenges : QueryImpl (challengeSpec oracleSig s) ProbComp)
-    (readOut : ∀ tr, Out tr → Wout) :
+    (readOut : ∀ tr, Out tr → Wout tr) :
     ExtractionInterface (V.classicalModel (Out := Out) init impl challenges) Witness where
   Ext := Extractor.OracleStraightline ambient s Witness Wout
   experiment E stmt adv := 𝒟[Core.experiment init impl challenges
@@ -407,12 +447,64 @@ noncomputable def classicalTranscriptOnly (Witness : (S × (∀ i, A i)) → Typ
     (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (challenges : QueryImpl (challengeSpec oracleSig s) ProbComp)
-    (readOut : ∀ tr, Out tr → Wout) :
+    (readOut : ∀ tr, Out tr → Wout tr) :
     ExtractionInterface (V.classicalModel (Out := Out) init impl challenges) Witness where
   Ext := Extractor.OracleTranscriptOnly ambient s Witness Wout
   experiment E :=
     (V.classicalStraightline Witness init impl challenges readOut).experiment E.withLogs
   cost _ _ _ := 0
+
+/-- Classical straight-line oracle extraction preserves the run's observation law: the
+extractor runs after the observation is fixed. -/
+theorem classicalStraightline_marginal (Witness : (S × (∀ i, A i)) → Type)
+    [MeasurableSpace (Observation oracleSig s Out (T × (∀ j, B j)))]
+    [∀ stmt, MeasurableSpace (Witness stmt)]
+    (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
+    (impl : QueryImpl ambient (StateT σ ProbComp))
+    (challenges : QueryImpl (challengeSpec oracleSig s) ProbComp)
+    (readOut : ∀ tr, Out tr → Wout tr) (E : Extractor.OracleStraightline ambient s Witness Wout)
+    (stmt : S × (∀ i, A i)) (adv : Prover oracleSig ambient s Out) :
+    ((V.classicalStraightline Witness init impl challenges readOut).experiment E stmt adv).map
+      Prod.fst = (V.classicalModel init impl challenges).outcome stmt adv := by
+  change (𝒟[Core.experiment init impl challenges
+    (V.extractionGame readOut E stmt adv)]).map Prod.fst =
+      𝒟[Core.experiment init impl challenges (V.run stmt.1 stmt.2 adv)]
+  rw [← evalDist_map _ measurable_fst]
+  refine EvalDistEq.evalDist_eq ?_
+  simp only [Core.experiment, _root_.map_bind]
+  refine EvalDistEq.bind_right (m := ProbComp) _ fun st => ?_
+  have hgame : Prod.fst <$> V.extractionGame readOut E stmt adv =
+      V.runWithLog stmt.1 stmt.2 adv >>= fun y => (fun _ => y.1) <$> (match y.1.2.2 with
+        | none => pure none
+        | some _ => OracleComp.liftComp
+            (E stmt y.1.1 (readOut y.1.1 y.1.2.1) y.2.1 y.2.2.fst).run
+            (ambient + challengeSpec oracleSig s)) := by
+    simp only [extractionGame, _root_.map_bind]
+    congr 1
+    funext y
+    rcases y with ⟨⟨tr, out, verdict⟩, proveLog, verifyLog⟩
+    cases verdict <;> simp
+  have hmap : ∀ H : QueryImpl (ambient + challengeSpec oracleSig s) (StateT σ ProbComp),
+      Prod.fst <$> (simulateQ H (V.extractionGame readOut E stmt adv)).run' st =
+        (simulateQ H (Prod.fst <$> V.extractionGame readOut E stmt adv)).run' st := by
+    intro H
+    simp only [simulateQ_map, StateT.run'_eq, StateT.run_map, Functor.map_map]
+  rw [hmap, hgame]
+  refine (run'_bind_map_const _ _ _ _ st).trans ?_
+  rw [V.map_fst_runWithLog]
+
+/-- Oracle transcript-only extraction also preserves the run's observation law. -/
+theorem classicalTranscriptOnly_marginal (Witness : (S × (∀ i, A i)) → Type)
+    [MeasurableSpace (Observation oracleSig s Out (T × (∀ j, B j)))]
+    [∀ stmt, MeasurableSpace (Witness stmt)]
+    (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
+    (impl : QueryImpl ambient (StateT σ ProbComp))
+    (challenges : QueryImpl (challengeSpec oracleSig s) ProbComp)
+    (readOut : ∀ tr, Out tr → Wout tr) (E : Extractor.OracleTranscriptOnly ambient s Witness Wout)
+    (stmt : S × (∀ i, A i)) (adv : Prover oracleSig ambient s Out) :
+    ((V.classicalTranscriptOnly Witness init impl challenges readOut).experiment E stmt adv).map
+      Prod.fst = (V.classicalModel init impl challenges).outcome stmt adv :=
+  V.classicalStraightline_marginal Witness init impl challenges readOut E.withLogs stmt adv
 
 end OracleVerifier
 
