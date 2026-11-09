@@ -16,8 +16,8 @@ open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.Two
 
 namespace Interaction.Core.RoutingTests
 
-/-- Ambient queries carry tags, which the trace handler records. -/
-abbrev ambient : OracleSpec Nat := Nat →ₒ PUnit
+/-- Ambient queries carry tags; the trace handler records each tag and answers with it. -/
+abbrev ambient : OracleSpec Nat := Nat →ₒ Nat
 
 /-- Two scalar input slots; slot `true` is never exported. -/
 @[instance_reducible] def inputs : OracleFamily Bool (fun _ => Nat) :=
@@ -78,8 +78,9 @@ def prefixVerifier : OracleVerifier ambient firstProtocol Unit Nat inputs export
 /-- The suffix resources on its only shape path. -/
 abbrev suffixResources := sumFamily exported (pathFamily secondProtocol ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩)
 
-/-- The suffix records 30, reads the export and its own message, and accepts when they agree,
-claiming the prefix's returned value together with its own message. -/
+/-- The suffix records 30, reads the export and its own message, records 40 and 60, and accepts
+when the export and the message agree, claiming the prefix's returned value together with its own
+message. -/
 def suffixVerifier : OracleVerifier ambient secondProtocol Nat (Nat × Nat) exported exported where
   decide stmt p _ := by
     rcases p with ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
@@ -87,6 +88,8 @@ def suffixVerifier : OracleVerifier ambient secondProtocol Nat (Nat × Nat) expo
       let _ ← liftM ((ambient + suffixResources.spec).query (.inl 30))
       let e : Nat ← liftM ((ambient + suffixResources.spec).query (.inr ⟨.inl ⟨⟩, ()⟩))
       let m : Nat ← liftM ((ambient + suffixResources.spec).query (.inr ⟨.inr (.inl ⟨⟩), ()⟩))
+      let _ ← liftM ((ambient + suffixResources.spec).query (.inl 40))
+      let _ ← liftM ((ambient + suffixResources.spec).query (.inl 60))
       pure (if e = m then some (stmt, m) else none)
   outputMap _ p _ := OracleMap.embedding (sumFamily exported (pathFamily secondProtocol p))
     (fun _ => .inl ⟨⟩)
@@ -107,21 +110,22 @@ def prefixProver (secret : Nat) :
   let _ ← liftM (ambient.query 1)
   pure ⟨(20, secret), pure secret⟩
 
-/-- The suffix prover records 20 at the seam, then 50 before echoing the challenge. -/
+/-- The suffix prover records 20 at the seam. After the challenge it queries 50, echoes the
+challenge, and keeps `memory + challenge + answer` as private output. -/
 def suffixProver (memory : Nat) :
     OracleComp ambient (Prover oracleSig ambient secondProtocol (fun _ => Nat)) := do
   let _ ← liftM (ambient.query 20)
   pure (pure fun c => do
-    let _ ← liftM (ambient.query 50)
-    pure ⟨c, pure (memory + (show Nat from c))⟩)
+    let answer : Nat ← liftM (ambient.query 50)
+    pure ⟨c, pure (memory + (show Nat from c) + answer)⟩)
 
 /-- The whole prover, built by `Prover.append`. -/
 def prover (secret : Nat) : Prover oracleSig ambient combined (fun _ => Nat) :=
   Prover.append (prefixProver secret) (fun _ memory => suffixProver memory)
 
-/-- Record ambient tags; answer the suffix challenge with 23. -/
+/-- Record ambient tags and answer each with its tag; answer the suffix challenge with 23. -/
 def traceHandler : QueryImpl (ambient + challengeSpec oracleSig combined) (StateM (List Nat))
-  | .inl n => modify (· ++ [n])
+  | .inl n => do modify (· ++ [n]); pure n
   | .inr ⟨.inl _, h⟩ => nomatch h
   | .inr ⟨.inr ⟨_, .inl _⟩, _⟩ => pure (23 : Nat)
   | .inr ⟨.inr ⟨_, .inr ⟨_, .inl _⟩⟩, h⟩ => nomatch h
@@ -130,31 +134,42 @@ def traceHandler : QueryImpl (ambient + challengeSpec oracleSig combined) (State
 def observed (hidden secret : Nat) :=
   (simulateQ traceHandler (composed.run () (inputData hidden) (prover secret))).run []
 
+/-- The private output, the claim with its output data, and the ambient history of one run. -/
+def resultSummary (hidden secret : Nat) : Nat × Option ((Nat × Nat) × Nat) × List Nat :=
+  let result := observed hidden secret
+  (result.1.2.1, result.1.2.2.map (fun z => (z.1, z.2 ⟨⟩)), result.2)
+
 /-! SourceRoutingExample SR1, restated: the composed oracle verifier is `OracleVerifier.append`
-with a prefix output map that exports `input false + sent.1` and hides input `true`. The frozen
-verifier's mid-run effects 10, 30 and 40 become effects of the end decisions (passive verifier),
-and the suffix challenge is sampled rather than computed from the export.
+with a prefix output map that exports `input false + sent.1` and hides input `true`. The verifier
+is passive, so the frozen verifier's effects 10, 30, 40 and 60 are made by the end decisions,
+after the prover's effects 1, 20 and 50. The suffix challenge is sampled (23) rather than computed
+from the export, and the frozen claim `(23, 23)` becomes `((20, 23), 23)`: the prefix's routed
+read of its own message, the suffix message, and the output data.
 
 QueryBounds 14, restated: the frozen row checks that an old query's join name survives inclusion
 into the terminal context. Names are retired, so the check is that the prefix decision's query to
 its message slot, routed by `prefixRoute` in the appended run, is answered from the prefix
-payload: the prefix returns `sent.1 = 20`, which the suffix claim carries. -/
+payload: the prefix returns `sent.1 = 20`, which the suffix claim carries.
+
+The statement holds for every hidden input and every secret; the proof rewrites with
+`OracleVerifier.run_append` and evaluates the two stages. -/
+example (hidden secret : Nat) : resultSummary hidden secret =
+    (secret + 23 + 50, some ((20, 23), 23), [1, 20, 50, 10, 30, 40, 60]) := by
+  unfold resultSummary observed composed
+  rw [OracleVerifier.run_append]
+  rfl
+
+-- Executable samples of the same summary.
 run_cmd do
   for hidden in [0, 1000] do
-    let (obs, trace) := observed hidden 7
-    unless trace == [1, 20, 50, 10, 30] do
-      throwError "prover or decision effects were lost or reordered: {trace}"
-    unless obs.2.1 == 7 + 23 do throwError "the prover's private memory was lost"
-    match obs.2.2 with
-    | none => throwError "the composed decision rejected"
-    | some (claim, data) =>
-      unless claim.1 == 20 do
-        throwError "the routed prefix slot was not answered from the prefix payload: {claim.1}"
-      unless claim.2 == 23 do throwError "the suffix message is wrong: {claim.2}"
-      unless data ⟨⟩ == 23 do throwError "the composite output is not the export of this run"
+    for secret in [0, 7] do
+      unless resultSummary hidden secret ==
+          (secret + 23 + 50, some ((20, 23), 23), [1, 20, 50, 10, 30, 40, 60]) do
+        throwError "the composed run summary is wrong: {resultSummary hidden secret}"
 
-/-- SourceRoutingExample SR3: the routing theorem accepts the ordinary whole prover, built by
-`Prover.append`, and the actual input data. -/
+-- SourceRoutingExample SR3: the routing theorem instantiated at the ordinary whole prover.
+/-- The routing theorem accepts the ordinary whole prover, built by `Prover.append`, and the
+actual input data. -/
 example (hidden secret : Nat) :=
   OracleVerifier.run_append prefixVerifier (fun _ => suffixVerifier) compatible ()
     (inputData hidden) (prover secret)

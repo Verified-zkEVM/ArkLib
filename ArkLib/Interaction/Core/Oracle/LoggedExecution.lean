@@ -6,19 +6,17 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Interaction.Core.Security.Knowledge
-public import VCVio.OracleComp.Runtime
 
 /-!
-# Logged and runtime execution of passive oracle verifiers
+# Logged execution of passive oracle verifiers
 
 `OracleVerifier.runWithLog` records the prover's ambient queries and every query of the decision
 before routing: ambient queries and queries to the input and message oracles, in order and with
 repeats. Forgetting both logs gives `OracleVerifier.run` exactly.
 
-A persistent `OracleRuntime` whose surface is the run's oracle interface (ambient queries and
-challenge draws) executes the logged run once, after its setup. The result pairs the logged
-observation with the final runtime state and the ordered surface trace. Erasing the logs and the
-trace gives the ordinary stateful execution of `OracleVerifier.run`.
+Logging after substitution, `OracleComp.withQueryLog_simulateQ`, records the target queries each
+handler program makes, in order. A persistent `OracleRuntime` executes the logged run directly as
+`runtime.run (V.runWithLog stmt data prover)`.
 -/
 
 @[expose] public section
@@ -63,51 +61,6 @@ theorem runWithLog_erase (V : OracleVerifier ambient s S T inputs outputs) (stmt
   rw [bind_run_withLogging (QueryImpl.addLift _ _)]
   refine bind_congr fun y => ?_
   simp
-
-/-- Execute the logged run once in a persistent runtime that interprets the run's ambient
-queries and challenge draws. -/
-def runWithRuntime (V : OracleVerifier ambient s S T inputs outputs)
-    {κ : Type} {Import : OracleSpec κ}
-    (runtime : OracleRuntime Import (ambient + challengeSpec oracleSig s)) (stmt : S)
-    (data : ∀ i, A i) (prover : Prover oracleSig ambient s Out) :
-    OracleComp Import (RunResult runtime
-      ((obs : Observation oracleSig s Out (T × (∀ j, B j))) × QueryLog ambient ×
-        QueryLog (ambient +
-          (sumFamily inputs (pathFamily s (projectPathAlong oracleSig s obs.1))).spec))) :=
-  runtime.run (V.runWithLog stmt data prover)
-
-/-- Runtime execution initializes once, then runs the logged program from that state, with no
-other execution or replay of resource queries. -/
-theorem runWithRuntime_eq (V : OracleVerifier ambient s S T inputs outputs)
-    {κ : Type} {Import : OracleSpec κ}
-    (runtime : OracleRuntime Import (ambient + challengeSpec oracleSig s)) (stmt : S)
-    (data : ∀ i, A i) (prover : Prover oracleSig ambient s Out) :
-    V.runWithRuntime runtime stmt data prover =
-      runtime.setup >>= fun state => runtime.runFrom state (V.runWithLog stmt data prover) :=
-  runtime.run_eq _
-
-/-- Erasing the logs and the trace leaves the run's observation and the actual final state of the
-ordinary stateful execution. -/
-theorem runWithRuntime_erase (V : OracleVerifier ambient s S T inputs outputs)
-    {κ : Type} {Import : OracleSpec κ}
-    (runtime : OracleRuntime Import (ambient + challengeSpec oracleSig s)) (stmt : S)
-    (data : ∀ i, A i) (prover : Prover oracleSig ambient s Out) :
-    (fun result => (result.output.1, result.state)) <$>
-        V.runWithRuntime runtime stmt data prover =
-      runtime.setup >>= fun state =>
-        runtime.handler.runState state (V.run stmt data prover) := by
-  rw [runWithRuntime_eq, _root_.map_bind]
-  refine bind_congr fun state => ?_
-  have erased := runtime.runFrom_eraseTrace state (V.runWithLog stmt data prover)
-  have paired := congrArg (fun program =>
-    (fun result => (result.1.1, result.2)) <$> program) erased
-  have logged := congrArg (runtime.handler.runState state) (V.runWithLog_erase stmt data prover)
-  calc
-    _ = (fun result => (result.1.1, result.2)) <$>
-        runtime.handler.runState state (V.runWithLog stmt data prover) := by
-      simpa only [Functor.map_map] using paired
-    _ = _ := by
-      simpa [QueryImpl.Stateful.runState, monad_norm] using logged
 
 end OracleVerifier
 end Interaction.Core
