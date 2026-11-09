@@ -45,65 +45,17 @@ namespace Sumcheck.Core
 open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
   OracleComp OracleSpec ProtocolSpec
 
-/-! ## Decisions inside a run -/
+/-! ## The input slot -/
 
-section Decision
+section InputSlot
 
-variable {ι κ J : Type} {amb : OracleSpec ι} {spec' : OracleSpec κ} {res : OracleSpec J}
+variable {s : OracleProtocol} {I : Type} {A : I → Type} (inputs : OracleFamily I A)
 
-/-- Answering resource queries from data while interpreting ambient queries by `f` is answering
-the resource queries first, keeping the ambient ones, and then interpreting those by `f`. -/
-theorem simulateQ_addLift_eq (f : QueryImpl amb (OracleComp spec')) (data : QueryImpl res Id)
-    {α : Type} (oa : OracleComp (amb + res) α) :
-    simulateQ (QueryImpl.addLift f data : QueryImpl (amb + res) (OracleComp spec')) oa =
-      simulateQ f (simulateQ (QueryImpl.addLift (QueryImpl.id' amb) data :
-        QueryImpl (amb + res) (OracleComp amb)) oa) := by
-  refine (QueryImpl.simulateQ_simulateQ_eq_of_apply (fun t => ?_) oa).symm
-  rcases t with q | q
-  · simp [QueryImpl.addLift_def]
-  · change simulateQ f (pure (data q)) = pure (data q)
-    exact simulateQ_pure f _
-
-variable {s : OracleProtocol} {S T : Type} {I : Type} {A : I → Type} {inputs : OracleFamily I A}
-  {K : Type} {C : K → Type} {outputs : OracleFamily K C}
-
-/-- The decision inside a run is the decision answered from the run's data, with its ambient
-queries sent to the ambient part of the run's oracle. -/
-theorem simulateQ_decide_eq_decideWith (V : OracleVerifier amb s S T inputs outputs) (stmt : S)
-    (p : Path s) (v : View s p) (data : ∀ i, (sumFamily inputs (pathFamily s p)).Realization i)
-    (f : QueryImpl amb (OracleComp spec')) :
-    simulateQ (QueryImpl.addLift f ((sumFamily inputs (pathFamily s p)).behaviorOfRealizations
-        data) : QueryImpl _ (OracleComp spec')) (V.decide stmt p v).run =
-      simulateQ f (V.decideWith stmt p v data) :=
-  simulateQ_addLift_eq f _ _
-
-/-- A run is the interaction, then the decision answered from the input and the run's payloads,
-with its ambient queries sent to the ambient part of the run's oracle. -/
-theorem run_eq_decideWith {Out : PathAlong oracleSig s → Type}
-    (V : OracleVerifier amb s S T inputs outputs) (stmt : S) (x : ∀ i, A i)
-    (prover : Prover oracleSig amb s Out) :
-    V.run stmt x prover = (do
-      let ⟨tr, out, _⟩ ← Interaction.TwoParty.Lens.run s
-        (prover.simulate fun q => liftM ((amb + challengeSpec oracleSig s).query (.inl q)))
-        (sampler oracleSig s fun c => liftM ((amb + challengeSpec oracleSig s).query (.inr c)))
-      let verdict ← simulateQ
-        (fun q => liftM ((amb + challengeSpec oracleSig s).query (.inl q)) :
-          QueryImpl amb (OracleComp (amb + challengeSpec oracleSig s)))
-        (V.decideWith stmt _ (toView s tr) (sumData x (payloads s tr)))
-      pure ⟨tr, out, verdict.map fun t =>
-        (t, (V.outputMap stmt _ (toView s tr)).f (sumData x (payloads s tr)))⟩) := by
-  unfold Interaction.Core.OracleVerifier.run
-  refine bind_congr fun y => ?_
-  obtain ⟨tr, o, ⟨⟩⟩ := y
-  dsimp only
-  rw [simulateQ_decide_eq_decideWith]
-
-variable (inputs) in
 /-- The input slot of a run's resources, as an oracle map. -/
 abbrev inputSlot (p : Path s) : OracleMap (sumFamily inputs (pathFamily s p)) inputs :=
   OracleMap.embedding (sumFamily inputs (pathFamily s p)) Sum.inl
 
-end Decision
+end InputSlot
 
 /-! ## One round -/
 
@@ -132,7 +84,7 @@ def roundChallenges {p : Path (round R deg)} (v : View (round R deg) p) :
 variable {S T : Type} {J : Type} {B : J → Type} {outputs : OracleFamily J B}
 
 /-- A single round verified by `check` on the round message and challenge. The output oracle is
-`out` applied to the input oracle. -/
+`out` applied to the input data and the round's message payload. -/
 def checkVerifier
     (check : S → (Spec.SingleRound.pSpec R deg).Challenges →
       OptionT (OracleComp [(Spec.SingleRound.pSpec R deg).Message]ₒ) T)
@@ -211,7 +163,7 @@ theorem run_checkVerifier {Out : PathAlong oracleSig (round R deg) → Type}
   refine bind_congr fun y => ?_
   obtain ⟨tr, o, ⟨⟩⟩ := y
   dsimp only
-  rw [simulateQ_decide_eq_decideWith, decideWith_checkVerifier]
+  rw [OracleVerifier.simulateQ_decide_eq_decideWith, decideWith_checkVerifier]
   simp only [simulateQ_pure]
   rfl
 
@@ -221,28 +173,8 @@ end Check
 
 section SplitView
 
-universe u uA
-
 attribute [local implicit_reducible] projectPathAlong projectPathAlongLocalMap
   Displayed.LocalMap.toHom Displayed.LocalMap.toHomFun
-
-/-- The split of a fiber of an appended shape splits its transcript, whatever the fiber's proof.
-
-`splitFiber` transports along a shape equality, so the split of a view built by `toView` does not
-reduce. The transcripts it carries are those of `PathAlong.split`. -/
-theorem splitFiber_val {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly)
-    (s₁ : FreeM P PUnit.{u + 1}) (s₂ : Path s₁ → FreeM P PUnit.{u + 1})
-    (p : Path (s₁.append s₂)) (v : Fiber l (s₁.append s₂) p) :
-    (splitFiber l s₁ s₂ p v).1.1 = (PathAlong.split l s₁ s₂ v.1).1 ∧
-      HEq (splitFiber l s₁ s₂ p v).2.1 (PathAlong.split l s₁ s₂ v.1).2 := by
-  rcases v with ⟨tr, rfl⟩
-  unfold splitFiber
-  dsimp only
-  generalize project_split l s₁ s₂ tr = h
-  revert h
-  generalize Path.split s₁ s₂ (projectPathAlong l (s₁.append s₂) tr) = q
-  rintro rfl
-  exact ⟨rfl, HEq.rfl⟩
 
 variable {R : Type} [CommSemiring R] {deg : ℕ} {s : OracleProtocol}
 
@@ -361,7 +293,7 @@ theorem run_append_checkVerifier
                 (sumData x (payloads _ (appendHead tr)))) (payloads s (appendTail tr))))
       pure ⟨tr, o, verdict.map fun t =>
         (t, (compatible.outputMap stmt _ (toView _ tr)).f (sumData x (payloads _ tr)))⟩) := by
-  rw [run_eq_decideWith]
+  rw [OracleVerifier.run_eq_decideWith]
   refine bind_congr fun y => ?_
   obtain ⟨tr, o, ⟨⟩⟩ := y
   dsimp only
@@ -380,11 +312,10 @@ variable (R : Type) [CommSemiring R] (deg : ℕ) {ι : Type} (ambient : OracleSp
 attribute [local implicit_reducible] FreeM.replicate projectPathAlong projectPathAlongLocalMap
   Displayed.LocalMap.toHom Displayed.LocalMap.toHomFun
 
-/-- Lift path-oracle queries into a decision's query interface. -/
+/-- Lift path-oracle queries into a decision's query interface: the path lift `pathLift`. -/
 def foldLift {s : OracleProtocol} (p : Path s) :
     QueryImpl (oracles s p) (OracleComp (ambient + (sumFamily inputs (pathFamily s p)).spec)) :=
-  fun q => liftM ((ambient + (sumFamily inputs (pathFamily s p)).spec).query
-    (.inr ⟨.inr q.1, q.2⟩))
+  pathLift ambient inputs p
 
 /-- The passive verifier of `k` rounds with statement family `S` and round checks `V`: the legacy
 decision fold on the view's challenges, with every message query routed to its oracle node. The
@@ -413,13 +344,8 @@ theorem simulateQ_foldLift {κ : Type} {spec' : OracleSpec κ}
     simulateQ (QueryImpl.addLift amb ((sumFamily inputs (pathFamily s p)).behaviorOfRealizations
         (sumData x pl))) (simulateQ (foldLift ambient inputs p) oa) =
       (pure (simulateQ ((pathFamily s p).behaviorOfRealizations pl) oa) :
-        OracleComp spec' α) := by
-  refine (QueryImpl.simulateQ_simulateQ_eq_of_apply
-    (impl := ((pathFamily s p).behaviorOfRealizations pl).liftTarget _)
-    (fun t => ?_) oa).trans ?_
-  · exact simulateQ_spec_query _ _
-  · rw [simulateQ_liftTarget]
-    rfl
+        OracleComp spec' α) :=
+  simulateQ_pathLift amb p x pl oa
 
 /-- On any completed run, the fold verifier returns the legacy fold's verdict on the decoded
 transcript, without ambient effects. -/
@@ -493,7 +419,8 @@ theorem run_append_foldVerifier (k : ℕ) (S : Fin (k + 2) → Type)
         (fun _ => foldVerifier R deg ambient inputs k (S ∘ Fin.succ) fun i => V i.succ)
         (foldCompatibility R deg ambient inputs k S V)).run stmt x prover =
       (foldVerifier R deg ambient inputs (k + 1) S V).run stmt x prover := by
-  rw [run_eq_decideWith (foldVerifier R deg ambient inputs (k + 1) S V), run_eq_decideWith]
+  rw [OracleVerifier.run_eq_decideWith (foldVerifier R deg ambient inputs (k + 1) S V),
+    OracleVerifier.run_eq_decideWith]
   refine bind_congr fun y => ?_
   obtain ⟨tr, o, ⟨⟩⟩ := y
   dsimp only

@@ -297,13 +297,13 @@ theorem legacy_verify_eq (stmt : Spec.StatementRound R n 0)
         (ambient + ([Spec.OracleStatement R n deg]ₒ + [(Spec.pSpec R deg n).Message]ₒ))) :=
   rfl
 
-/-- Lift path-oracle queries into the decision's query interface. -/
+/-- Lift path-oracle queries into the decision's query interface: the path lift `pathLift` with
+the input polynomial family. -/
 def decisionLift (p : Path (protocol R deg n)) :
     QueryImpl (oracles (protocol R deg n) p)
       (OracleComp (ambient + (sumFamily (Spec.polynomialFamily R n deg)
         (pathFamily (protocol R deg n) p)).spec)) :=
-  fun q => liftM ((ambient + (sumFamily (Spec.polynomialFamily R n deg)
-    (pathFamily (protocol R deg n) p)).spec).query (.inr ⟨.inr q.1, q.2⟩))
+  pathLift ambient (Spec.polynomialFamily R n deg) p
 
 /-- The Sumcheck oracle verifier: the legacy decision fold on the view's challenges, with every
 message query routed to its oracle node. The output oracle is the input polynomial. -/
@@ -358,13 +358,8 @@ theorem simulateQ_decisionLift {κ : Type} {spec' : OracleSpec κ}
         (pathFamily (protocol R deg n) p)).behaviorOfRealizations (sumData data pl)))
       (simulateQ (decisionLift R deg n ambient p) oa) =
       (pure (simulateQ ((pathFamily (protocol R deg n) p).behaviorOfRealizations pl) oa) :
-        OracleComp spec' α) := by
-  refine (QueryImpl.simulateQ_simulateQ_eq_of_apply
-    (impl := ((pathFamily (protocol R deg n) p).behaviorOfRealizations pl).liftTarget _)
-    (fun t => ?_) oa).trans ?_
-  · exact simulateQ_spec_query _ _
-  · rw [simulateQ_liftTarget]
-    rfl
+        OracleComp spec' α) :=
+  simulateQ_pathLift amb p data pl oa
 
 /-- On any completed run, the decision returns the legacy verdict of the decoded transcript. -/
 theorem simulateQ_decide {κ : Type} {spec' : OracleSpec κ}

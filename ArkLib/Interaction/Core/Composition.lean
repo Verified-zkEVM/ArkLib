@@ -63,6 +63,24 @@ def splitFiber {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
     Fiber l (s₂ (projectPathAlong l s₁ z.1)) (projectPathAlong l _ z.2) from
       (⟨z.1, rfl⟩, ⟨z.2, rfl⟩))
 
+/-- The split of a fiber of an appended shape splits its transcript, whatever the fiber's proof.
+
+`splitFiber` transports along a shape equality, so the split of a fiber built from a concrete
+transcript does not reduce. The transcripts it carries are those of `PathAlong.split`. -/
+theorem splitFiber_val {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
+    (s₁ : FreeM P PUnit.{u + 1}) (s₂ : Path s₁ → FreeM P PUnit.{u + 1})
+    (p : Path (s₁.append s₂)) (v : Fiber l (s₁.append s₂) p) :
+    (splitFiber l s₁ s₂ p v).1.1 = (PathAlong.split l s₁ s₂ v.1).1 ∧
+      HEq (splitFiber l s₁ s₂ p v).2.1 (PathAlong.split l s₁ s₂ v.1).2 := by
+  rcases v with ⟨tr, rfl⟩
+  unfold splitFiber
+  dsimp only
+  generalize project_split l s₁ s₂ tr = h
+  revert h
+  generalize Path.split s₁ s₂ (projectPathAlong l (s₁.append s₂) tr) = q
+  rintro rfl
+  exact ⟨rfl, HEq.rfl⟩
+
 /-- Split the oracle verifier's public view. -/
 abbrev View.split := splitFiber viewSig
 
