@@ -45,6 +45,11 @@ home_page/            site assets and assembled website root
   completeness and soundness over adversary models, classical straight-line and transcript-only
   extraction, and round-by-round soundness and knowledge on cursor prefixes. Its acceptance
   tests live in `ArkLibTest/Interaction/Core/`.
+- `ProofSystem/Sumcheck/Core/` is Sumcheck in the interaction layer: the replicated round, the
+  verifier as the legacy decision fold, the equivalence with the embedded legacy Sumcheck
+  (`LegacyEquivalence.lean`), and the transferred completeness, soundness, knowledge and
+  round-by-round results. [The Sumcheck design page](../design/interaction-layer/sumcheck.md)
+  describes them; the tests are in `ArkLibTest/ProofSystem/Sumcheck/Core/`.
 - The descriptions below cover the frozen interaction modules outside `Core/`.
 - `ArkLib/Interaction/Oracle/` refines generic type trees with public/oracle positions, keeps
   structural `BranchPath` separate from concrete `ExecutionPath` messages, and adds position-typed

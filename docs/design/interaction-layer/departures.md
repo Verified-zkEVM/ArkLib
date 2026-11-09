@@ -41,6 +41,16 @@ Entries 15 and 16 are the two hypotheses that a client of the round-by-round tra
 check. Entry 15 applies to the direction into the interaction layer, and entry 16 to the
 direction out of it.
 
+## Sumcheck: entries 17–18
+
+These entries continue the numbering for Sumcheck in the interaction layer. They are in
+[`sumcheck.md`](sumcheck.md#departures).
+
+| Entry | Departure |
+| --- | --- |
+| [17](sumcheck.md#17-the-transferred-completeness-is-in-its-own-module) | The transferred completeness is in its own module, `LegacyCompleteness`. |
+| [18](sumcheck.md#18-the-verifier-has-no-interval-start) | The verifier has no interval start; first-round results are stated on the round-`0` check. |
+
 ## The oracle correspondence gap and its resolution
 
 **Gap.** The first version of the legacy embedding defined `embedOracleProver` and
