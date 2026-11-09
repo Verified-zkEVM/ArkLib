@@ -282,6 +282,8 @@ oracle map of `V`'s output semantics read as a simulation.
 These entries continue the numbered departures of
 [`IMPLEMENTATION-NOTES.md`](../interaction-rebuild/IMPLEMENTATION-NOTES.md) for the security
 transfers of this embedding. They state each hypothesis or choice beyond the legacy statement.
+[`departures.md`](departures.md) indexes all entries, and records the oracle correspondence gap
+and its resolution.
 
 ### 14. The knowledge transfer needs no extractor-invariance premise
 

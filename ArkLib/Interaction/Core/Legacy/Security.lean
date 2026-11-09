@@ -32,7 +32,10 @@ interaction-layer notions of the embedded reduction are equivalent to the legacy
 * Round-by-round soundness and knowledge soundness: a full prefix of the plain tree corresponds
   to the legacy transcript prefix `legacyPrefix` it decodes to, and the challenge drawn at a
   node is the legacy challenge of its round. State functions transfer along this
-  correspondence in both directions, as do legacy knowledge state functions and extractors.
+  correspondence in both directions. The construction from the legacy layer keeps the supplied
+  knowledge state function and extraction functions, reindexed by legacy transcript prefixes.
+  The knowledge transfer back to the legacy layer preserves only the existential security
+  statement: it yields a classically chosen extractor.
   The error at a challenge node is the legacy error of its round. Two departures from the
   legacy statements are explicit hypotheses. The transfers into the interaction layer assume
   all-state terminal certificates: the legacy terminal field restated for every ambient state.
@@ -549,8 +552,9 @@ same relations and error.
 The extractor is lifted by decoding the transcript, and reads the same two shared-oracle logs:
 the prover's log with challenge queries removed, and the verifier's log. A legacy prover is
 embedded slot for slot. An interaction-layer prover is translated into a legacy prover by
-`translate`, which keeps its outputs. The extractor's output witness is the prover's output
-witness, and the output relation is judged on the verifier's statement with that witness. -/
+`translate`, which keeps its outputs. The extractor receives the prover's output witness and
+returns an optional input witness. The output relation is judged on the verifier's statement
+with the prover's output witness. -/
 theorem knowledgeSoundnessWith_iff (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp)) (V : _root_.Verifier oSpec StmtIn StmtOut pSpec)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
