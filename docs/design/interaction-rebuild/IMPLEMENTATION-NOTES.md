@@ -201,3 +201,48 @@ run extracts `w.val`.
 
 This keeps to record D7, whose problems already index witness types by the claim; D7 fixes no
 constant output witness type for either notion.
+
+## Migration commit D6
+
+`Security/Implications.lean` proves that round-by-round soundness implies soundness.
+`Verifier.soundness_of_rbrSoundness` takes `V.rbrSoundness impl input output draw ε`, with an
+error `ε : ChallengeNode plainSig s → ℝ≥0∞` on challenge nodes, to `V.soundness` with the
+challenge implementation `draw`, for every initial state distribution `init`. The error is the
+supremum, over shape paths, of the sum of `ε` over the challenge nodes the path meets
+(`challengeNodesOn`). `Verifier.soundness_of_rbrSoundness_tsum` bounds this by `∑' c, ε c`.
+`Verifier.soundness_of_rbrSoundness_uniform` gives `k • e` when every node error is at most `e`
+and every path meets at most `k` challenge nodes. The proof does not go through the legacy layer.
+
+### 19. Round-by-round soundness implies soundness for plain verifiers in the classical model
+
+The legacy layer proves `executeStrategies_soundness` and `executeStrategies_soundness_uniform`,
+with the helpers `OrdinaryState.exists_verifier_escape` and `LocalSoundness.random_prefix`. The
+interaction-layer forms differ in four ways.
+
+- **Execution model.** The legacy theorems hold for any lawful monad `m` with a handler, a
+  `MonadAttach` instance and a `FreshVerifier` hypothesis, and allow failure through `OptionT`.
+  The interaction-layer theorem is stated for `Verifier.soundness`, which is the classical model:
+  ambient queries run in `StateT σ ProbComp` from a state drawn by `init`, and each challenge is a
+  fresh draw from `draw`. Freshness therefore holds by construction and is not a hypothesis. The
+  averaged-prefix lemma `flip_random_prefix_le` takes a `ProbComp` author, which cannot fail,
+  where `LocalSoundness.random_prefix` takes an `OptionT ProbComp` author.
+- **Plain verifiers only.** The legacy trees include oracle nodes. The core has
+  `OracleVerifier.rbrSoundness` but no oracle soundness form beside `Verifier.soundness`, so the
+  implication is stated for plain verifiers. The oracle form waits for an oracle soundness
+  definition in the classical model.
+- **Node-indexed error.** The legacy error is indexed by a rank function, checked against a
+  `ChallengeSchedule` with a count, and summed as `∑ j ∈ Finset.range count, error j`. The
+  interaction-layer error is indexed by challenge nodes, as in `rbrSoundness`, and the bound is
+  the supremum over paths of the node errors along the path. The uniform corollary replaces the
+  schedule by the hypothesis that every path meets at most `k` challenge nodes, and
+  `(count : ℝ≥0∞) * error` by `k • e`.
+- **Escape statement.** `OrdinaryState.exists_verifier_escape` concludes
+  `VerifierEscapeOnPath` from an `OrdinaryState` certificate. `StateFunction.escapeAlong`
+  concludes `EscapeAlong` from a `StateFunction`, an admissible false statement and an accepted
+  transcript. `EscapeAlong` says that some receiver node on the transcript turns the state from
+  false to true.
+
+The tests in `ArkLibTest/Interaction/Core/Security/Implications.lean` restate the four general
+statements, give soundness `1 / 2` for the one-challenge coin protocol from every initial counter
+distribution, and give soundness `2 • (1 / 4)` for a protocol with two uniform `Fin 4`
+challenges through the uniform corollary.

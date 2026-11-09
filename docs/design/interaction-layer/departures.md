@@ -41,6 +41,15 @@ Entries 15 and 16 are the two hypotheses that a client of the round-by-round tra
 check. Entry 15 applies to the direction into the interaction layer, and entry 16 to the
 direction out of it.
 
+## Migration commit D6: entry 19
+
+This entry is in
+[`interaction-rebuild/IMPLEMENTATION-NOTES.md`](../interaction-rebuild/IMPLEMENTATION-NOTES.md#migration-commit-d6).
+
+| Entry | Departure |
+| --- | --- |
+| [19](../interaction-rebuild/IMPLEMENTATION-NOTES.md#19-round-by-round-soundness-implies-soundness-for-plain-verifiers-in-the-classical-model) | Round-by-round soundness implies soundness for plain verifiers in the classical model, with a node-indexed error. |
+
 ## The oracle correspondence gap and its resolution
 
 **Gap.** The first version of the legacy embedding defined `embedOracleProver` and
