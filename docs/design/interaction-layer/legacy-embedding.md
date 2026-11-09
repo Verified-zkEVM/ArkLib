@@ -2,8 +2,8 @@
 
 The modules under `ArkLib/Interaction/Core/Legacy/` embed legacy protocol specifications,
 provers, verifiers and oracle verifiers into the interaction layer. They also relate the two
-executions and transfer completeness, soundness and knowledge soundness between the layers. Nothing here changes
-the legacy layer. The embedding reads legacy definitions and reuses their meaning.
+executions and transfer completeness, soundness, knowledge soundness and their round-by-round
+forms between the layers. Nothing here changes the legacy layer. The embedding reads legacy definitions and reuses their meaning.
 
 ## Modules
 
@@ -14,7 +14,7 @@ the legacy layer. The embedding reads legacy definitions and reuses their meanin
 | `Verifier` | `embedVerifier` and `embedReduction`. The verifier decides on the decoded transcript. |
 | `OracleReduction` | `embedOracleProver` and `embedOracleVerifier` on the oracle tree, for both legacy oracle-output representations. |
 | `Execution` | The common observation, the execution correspondence and its logged form. |
-| `Security` | The completeness, soundness and knowledge-soundness transfers. |
+| `Security` | The completeness, soundness and knowledge-soundness transfers, the legacy transcript prefix of a full prefix, and the round-by-round transfers. |
 
 ## The common observation
 
@@ -116,6 +116,55 @@ the interleaving could tell the two executions apart, and a transfer would need 
 `QueryLog.fst` of the prover's log. Every such function is invariant
 (`challengeMoveInvariant_comp_fst`, `challengeMoveInvariant_extractor`).
 
+### Round-by-round soundness and knowledge soundness
+
+The interaction layer states round-by-round notions over full prefixes `(sp, hist)`: a cursor
+spine `sp` into `protocol pSpec` with the runtime moves `hist : PrefixMoves plainSig sp`. The
+legacy layer states them over transcript prefixes `Transcript j pSpec`.
+
+`legacyPrefix sp hist : (j : Fin (n + 1)) × Transcript j pSpec` is the legacy transcript prefix
+that a full prefix decodes to. Its lemmas carry the correspondence:
+
+- `legacyPrefix_root`: the empty full prefix is round `0` with the empty transcript.
+- `legacyPrefix_complete`: a terminal full prefix is round `n` with the decoded transcript.
+- `prefixFrom_step`: a full prefix ending at a node is at some round `j < n` with that node's
+  move type. One move `x` extends the legacy transcript to `tr.concat (plainMoveEquiv _ _ x)`.
+  At a challenge node, `challengeRound 0 n _` sends the node's challenge to the legacy
+  challenge index `⟨j, _⟩`. The draw `sampleAt` at the node under
+  `plainChallengeImpl challengeQueryImpl` is the legacy draw `$ᵗ pSpec.Challenge ⟨j, _⟩`,
+  transported along the move type (`sampleAt_plainChallengeImpl`).
+
+Each transfer reads the interaction-layer error at challenge node `c` as
+`ε (challengeRound 0 n (Nat.zero_add n) c)`, the legacy error of that node's round.
+
+**Round-by-round soundness** (`embedVerifier_rbrSoundness`, `rbrSoundness_of_embedVerifier`,
+`rbrSoundness_iff`). For a legacy verifier `V` and `ε : pSpec.ChallengeIdx → ℝ≥0`:
+
+- `V.rbrSoundness init impl langIn langOut ε` and `hinit : ∀ st, st ∈ support init` give
+  `(embedVerifier V).rbrSoundness impl (langProblem langIn) (langProblem langOut)
+  (plainChallengeImpl challengeQueryImpl) (fun c => ε (challengeRound 0 n _ c))`.
+- The converse holds for every `init`, without `hinit`.
+
+`embedStateFunction` sends a legacy state function to the state at the legacy prefix.
+`legacyStateFunction` sends an interaction-layer state function to the legacy state "every full
+prefix with this legacy prefix is in the state". Each per-prefix bound is the other layer's bound
+at the corresponding prefix: the event is the image of the legacy event under the reindexed
+challenge draw.
+
+**Round-by-round knowledge soundness** (`embedVerifier_rbrKnowledgeSoundness`,
+`rbrKnowledgeSoundness_of_embedVerifier`, `rbrKnowledgeSoundness_iff`). The interaction-layer
+instance has trivial admissibility, input relation `fun stmt w => (stmt, w) ∈ relIn`, and output
+relation `fun t w => (t, w) ∈ relOut`.
+
+- `V.rbrKnowledgeSoundness init impl relIn relOut ε` and `hinit` give
+  `(embedVerifier V).rbrKnowledgeSoundness impl (fun _ => True) (fun stmt w => (stmt, w) ∈ relIn)
+  (fun t w => (t, w) ∈ relOut) (plainChallengeImpl challengeQueryImpl)
+  (fun c => ε (challengeRound 0 n _ c))`. `embedKnowledgeStateFunction` uses
+  `WitMid (legacyPrefix sp hist).1` as the witness at a full prefix, and reindexes the legacy
+  extractor `E` to give the interaction-layer extraction functions.
+- With `[Nonempty WitIn]`, the converse holds for every `init`. It does not transport extractors
+  (departure 16).
+
 ## Departures
 
 These entries continue the numbered departures of
@@ -144,8 +193,36 @@ observation and witness types carry the discrete measurable structure. The acces
 which the classical straight-line interface meets. The qualification of entry 6 does not arise,
 because `classicalStraightline_marginal` gives marginal preservation for every extractor.
 
+### 15. Round-by-round transfers into the interaction layer assume `init` reaches every state
+
+`embedVerifier_rbrSoundness`, `embedVerifier_rbrKnowledgeSoundness`, `rbrSoundness_iff` and
+`rbrKnowledgeSoundness_iff` assume `hinit : ∀ st, st ∈ support init`. The terminal obligation of
+an interaction-layer state function, `leaf`, refutes `validAcceptance`. That predicate holds when
+the verifier can accept *from some ambient state*. The legacy terminal obligation, `toFun_full`,
+bounds the acceptance probability from a fresh state drawn by `init`. A legacy state function
+therefore says nothing about states that `init` cannot produce, and the leaf obligation needs
+them covered. `hinit` holds whenever the ambient state type has a single value, as for
+`init := pure ()` on `Unit`, or when `init` samples with full support.
+
+The transfers out of the interaction layer need no such hypothesis: an interaction-layer leaf
+obligation covers every ambient state, hence every state that `init` draws.
+
+### 16. Round-by-round knowledge soundness out of the interaction layer goes through induced languages
+
+`rbrKnowledgeSoundness_of_embedVerifier` and `rbrKnowledgeSoundness_iff` assume
+`[Nonempty WitIn]`, and the converse direction does not transport the extractor. Interaction-layer
+witnesses are indexed by full prefixes. Protocols live in `Type 1`, so a legacy intermediate
+witness family `WitMid : Fin (n + 1) → Type` cannot quantify over the spines that decode to a
+round. The proof therefore discards the witnesses. `languageStateFunction` sends a knowledge
+state function to a state function for the induced languages `relIn.language` and
+`relOut.language`, whose round-by-round soundness transfers by `rbrSoundness_of_embedVerifier`.
+The legacy `Verifier.rbrSoundness_implies_rbrKnowledgeSoundness` then gives round-by-round
+knowledge soundness with a classically chosen extractor. That lemma needs `Nonempty WitIn`.
+
+Neither layer constrains its round-by-round extractor beyond the state-function obligations, so
+the existential notions are still equivalent. A statement that names a particular
+interaction-layer extractor is not transported back.
+
 ## Not covered
 
-The round-by-round transfers are not stated. They need a relation between legacy and
-interaction-layer prefixes and state functions. The oracle-tree analogue of the execution
-correspondence is also not stated.
+The oracle-tree analogue of the execution correspondence is not stated.

@@ -7,8 +7,9 @@ import ArkLib.Interaction.Core.Legacy.Security
 import ArkLibTest.Interaction.Core.Legacy.Execution
 
 /-! Acceptance examples for the security transfers: completeness, soundness and knowledge
-soundness of an embedded legacy reduction, and adversarial interaction-layer provers passed
-through the soundness and knowledge-soundness transfers. -/
+soundness of an embedded legacy reduction, adversarial interaction-layer provers passed
+through the soundness and knowledge-soundness transfers, and the legacy transcript prefix of a
+full prefix with the round-by-round transfers. -/
 
 open PFunctor PFunctor.FreeM OracleComp OracleSpec Interaction.Core Interaction.TwoParty.Lens
   ProtocolSpec MeasureTheory
@@ -160,5 +161,53 @@ example [∀ i, SampleableType (twoWay.Challenge i)] (init : ProbComp Unit)
     coreKnowledge init impl relIn relOut ε ↔
       lastIfTrue.knowledgeSoundness init impl relIn relOut ε :=
   knowledgeSoundness_iff init impl lastIfTrue relIn relOut ε
+
+/-! ### Round-by-round soundness and knowledge soundness -/
+
+/-- The full prefix after the first message `42`. -/
+def afterFirst :=
+  PrefixMoves.snoc plainSig (Cursor.Spine.root (protocol twoWay)) PUnit.unit (42 : Nat)
+
+/-- After the first message `42`, the legacy prefix is at round `1` and records `42`. -/
+example : (legacyPrefix _ afterFirst).1 = 1 ∧
+    (show Nat from
+      (show Transcript 1 twoWay from (legacyPrefix _ afterFirst).2) ⟨0, by decide⟩) = 42 :=
+  ⟨rfl, rfl⟩
+
+/-- The empty full prefix is the empty legacy transcript at round `0`. -/
+example : legacyPrefix (pSpec := twoWay) (.root _) ⟨⟩ = ⟨0, default⟩ :=
+  legacyPrefix_root twoWay
+
+/-- Legacy round-by-round soundness of `lastIfTrue` transfers to the embedded verifier when
+`init` is `pure ()`, which can produce every state of `Unit`. -/
+example [∀ i, SampleableType (twoWay.Challenge i)] (impl : QueryImpl []ₒ (StateT Unit ProbComp))
+    (langIn langOut : Set Nat) (ε : twoWay.ChallengeIdx → ℝ≥0)
+    (h : lastIfTrue.rbrSoundness (pure ()) impl langIn langOut ε) :
+    (embedVerifier lastIfTrue).rbrSoundness impl (langProblem langIn) (langProblem langOut)
+      (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
+      (fun c => ε (challengeRound 0 3 (Nat.zero_add 3) c)) :=
+  embedVerifier_rbrSoundness (pure ()) impl lastIfTrue langIn langOut ε (fun _ => by simp) h
+
+/-- Round-by-round soundness of the embedded verifier gives legacy round-by-round soundness for
+every `init`. -/
+example [∀ i, SampleableType (twoWay.Challenge i)] (init : ProbComp Unit)
+    (impl : QueryImpl []ₒ (StateT Unit ProbComp)) (langIn langOut : Set Nat)
+    (ε : twoWay.ChallengeIdx → ℝ≥0)
+    (h : (embedVerifier lastIfTrue).rbrSoundness impl (langProblem langIn) (langProblem langOut)
+      (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
+      (fun c => ε (challengeRound 0 3 (Nat.zero_add 3) c))) :
+    lastIfTrue.rbrSoundness init impl langIn langOut ε :=
+  rbrSoundness_of_embedVerifier init impl lastIfTrue langIn langOut ε h
+
+/-- Round-by-round knowledge soundness of the embedded verifier is legacy round-by-round
+knowledge soundness, for `Nat` witnesses and `init := pure ()`. -/
+example [∀ i, SampleableType (twoWay.Challenge i)] (impl : QueryImpl []ₒ (StateT Unit ProbComp))
+    (relIn relOut : Set (Nat × Nat)) (ε : twoWay.ChallengeIdx → ℝ≥0) :
+    (embedVerifier lastIfTrue).rbrKnowledgeSoundness impl (fun _ => True)
+        (fun stmt w => (stmt, w) ∈ relIn) (fun t w => (t, w) ∈ relOut)
+        (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
+        (fun c => ε (challengeRound 0 3 (Nat.zero_add 3) c)) ↔
+      lastIfTrue.rbrKnowledgeSoundness (pure ()) impl relIn relOut ε :=
+  rbrKnowledgeSoundness_iff (pure ()) impl lastIfTrue relIn relOut ε (fun _ => by simp)
 
 end Interaction.Core.Legacy.SecurityTests
