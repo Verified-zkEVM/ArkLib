@@ -153,3 +153,31 @@ verifier has one statement type `T` (records D4 and D6), so `terminalObservation
 instead of relying on the type. The ported games also fix the decision's ambient oracle to
 `[]ₒ`; a state-restoration game whose decision shares an oracle with the adversary is a later
 milestone (record D9 §6).
+
+Knowledge soundness is stated with record D7's knowledge state function instead of the legacy
+layer's per-input round extractors. `stateRestoration_knowledge_soundness`,
+`stateRestoration_oracle_knowledge_soundness`, their `_privateCoins` forms and the `_nonuniform`
+forms in `StateRestorationBudget.lean` take one `KnowledgeStateFunction` whose admissibility
+predicate replaces the legacy set of admissible inputs, require it to be `LocallyBounded` at the
+uniform draw, and extract with `extractAlong` on the selected transcript. The output law is an
+implication from an accepted observation and the output relation to the state function's valid
+output, and the output relation may read the transcript; the legacy law is an equivalence between
+the terminal state and the output relation on the branch path. The theorems assume decidable
+equality of the key type, which the legacy forms derive from decidable equality of inputs and
+salts.
+
+The proof bounds the restored execution with VCVio's bad-query bounds for the random oracle.
+`exists_badChallenge_of_extraction_failure` shows that a valid output whose extraction fails
+passes a bad challenge at one completion key of the selected transcript. It is stated for the
+round protocol in `StateRestoration.lean`; its general form for every protocol belongs in
+`KnowledgeComposition.lean`. The game replays the selected transcript through
+`restoredExecution`, so the legacy scripted prover and its replay theorem have no counterpart.
+
+Measured extraction uses `MeasuredStages` and `programAlong` from `MeasuredResources.lean`, whose
+stages include a root and a leaf map. `ProtocolBudgetAtMost` in `StateRestorationBudget.lean`
+bounds the root and leaf budgets and the message and challenge step budgets of one statement, and
+`programAlong_budget_le_protocol` bounds the composed budget along every transcript by
+`leafBound + rounds.length • (messageBound + challengeBound) + rootBound`. The legacy bound has no
+root or leaf terms, and its paired form is the instance of `programAlong_costAtMost_protocol` at
+`BudgetAtMost.protocolBudgetAtMost`. The composed program already ends with the leaf map, so
+`run_programAlong` replaces the legacy terminal-witness bridge.

@@ -7,6 +7,7 @@ module
 
 public import ArkLib.Interaction.Core.Security.StateRestoration
 public import VCVio.OracleComp.QueryTracking.CostModel
+public import ArkLib.Interaction.Core.Security.MeasuredResources
 
 /-!
 # Per-round errors in the state-restoration experiment
@@ -22,7 +23,7 @@ the sum of the round errors, so the restored execution has worst-case charge at 
 @[expose] public section
 
 namespace Interaction.Core.StateRestoration
-open PFunctor FreeM TwoParty.Lens OracleComp OracleSpec
+open PFunctor FreeM TwoParty.Lens OracleComp OracleSpec Oracle
 
 /-- Local errors indexed by round, in protocol order. -/
 abbrev RoundErrors (rounds : List Round) := Fin rounds.length → ENNReal
@@ -158,4 +159,234 @@ theorem restoredExecution_round_cost {Input Salt W : Type} (rounds : List Round)
       (⟨keyError errors⟩ : CostModel (oracleSpec Input Salt rounds) ENNReal) 0 from by simp)
   simpa only [add_zero] using completed
 
+/-! ### Knowledge soundness with per-round errors -/
+
+section Knowledge
+
+variable {S W Win Salt : Type} {rounds : List Round} {admissible : S → Prop}
+  {relIn : S → Win → Prop} {validOutput : S → PathAlong oracleSig (protocol rounds) → W → Prop}
+
+/-- Knowledge soundness of the restored execution with per-round errors: for every adversary with
+at most `Q` queries, the probability that the selected input is admissible, the output is valid
+and extraction fails is at most `Q * max_j errors j + ∑ j, errors j`. -/
+theorem restoredExecution_knowledge_soundness_nonuniform [DecidableEq (Key S Salt rounds)]
+    (F : KnowledgeStateFunction oracleSig (protocol rounds) S W Win admissible relIn validOutput)
+    (errors : RoundErrors rounds)
+    (bounded : F.LocallyBounded (uniformDraw rounds) (roundEps errors))
+    (adversary : OracleComp (oracleSpec S Salt rounds) (S × Messages Salt rounds × W))
+    (Q : ℕ) (queryBound : IsTotalQueryBound adversary Q) :
+    Pr{let result ← (simulateQ randomOracle (restoredExecution rounds adversary)).run' ∅}[
+      admissible result.1 ∧ validOutput result.1 result.2.1 result.2.2 ∧
+        ¬ relIn result.1 (F.extractAlong result.1 result.2.1 result.2.2)] ≤
+      Q * Finset.univ.sup errors + ∑ j, errors j :=
+  prEvent_randomOracle_le_of_bad_queries_weighted _ (keyError errors) _
+    (restoredExecution_round_cost rounds errors adversary Q queryBound) _ (badKey F)
+    (fun key table => (keyError_eq_roundEps errors key).symm ▸
+      badKey_resample_bound bounded key table)
+    (restored_bad_trace F adversary)
+
+end Knowledge
+
+section Games
+
+variable {rounds : List Round} {I J S T Salt W Win : Type} {A : I → Type} {B : J → Type}
+  {inputs : OracleFamily I A} {outputs : OracleFamily J B}
+  {admissible : S × (∀ i, A i) → Prop} {relIn : S × (∀ i, A i) → Win → Prop}
+  {validOutput : S × (∀ i, A i) → PathAlong oracleSig (protocol rounds) → W → Prop}
+
+/-- State-restoration knowledge soundness of a verifier with per-round errors. -/
+theorem stateRestoration_knowledge_soundness_nonuniform
+    [DecidableEq (Key (S × (∀ i, A i)) Salt rounds)]
+    (V : OracleVerifier []ₒ (protocol rounds) S T inputs outputs)
+    (relOut : S × (∀ i, A i) → PathAlong oracleSig (protocol rounds) → T → W → Prop)
+    (F : KnowledgeStateFunction oracleSig (protocol rounds) (S × (∀ i, A i)) W Win admissible
+      relIn validOutput)
+    (outputLaw : ∀ stmt tr t w, terminalObservation V stmt tr = some t → relOut stmt tr t w →
+      validOutput stmt tr w)
+    (errors : RoundErrors rounds)
+    (bounded : F.LocallyBounded (uniformDraw rounds) (roundEps errors))
+    (adversary : OracleComp (oracleSpec (S × (∀ i, A i)) Salt rounds)
+      ((S × (∀ i, A i)) × Messages Salt rounds × W))
+    (Q : ℕ) (queryBound : IsTotalQueryBound adversary Q) :
+    Pr{let result ← (simulateQ randomOracle (verificationGame V adversary)).run' ∅}[
+      admissible result.1 ∧
+      (∃ t, result.2.2.1 = some t ∧ relOut result.1 result.2.1 t result.2.2.2) ∧
+      ¬ relIn result.1 (F.extractAlong result.1 result.2.1 result.2.2.2)] ≤
+      Q * Finset.univ.sup errors + ∑ j, errors j := by
+  rw [verificationGame_eq, simulateQ_map, StateT.run'_map', prEvent_map]
+  refine le_trans (prEvent_mono _ _ _ ?_)
+    (restoredExecution_knowledge_soundness_nonuniform F errors bounded adversary Q queryBound)
+  rintro ⟨stmt, tr, w⟩ ⟨hadm, ⟨t, ht, hrel⟩, hfail⟩
+  exact ⟨hadm, outputLaw stmt tr t w ht hrel, hfail⟩
+
+/-- State-restoration knowledge soundness with output oracle data and per-round errors. -/
+theorem stateRestoration_oracle_knowledge_soundness_nonuniform
+    [DecidableEq (Key (S × (∀ i, A i)) Salt rounds)]
+    (V : OracleVerifier []ₒ (protocol rounds) S T inputs outputs)
+    (relOut : S × (∀ i, A i) → PathAlong oracleSig (protocol rounds) → T × (∀ j, B j) → W → Prop)
+    (F : KnowledgeStateFunction oracleSig (protocol rounds) (S × (∀ i, A i)) W Win admissible
+      relIn validOutput)
+    (outputLaw : ∀ stmt tr claim w, closedTerminalObservation V stmt tr = some claim →
+      relOut stmt tr claim w → validOutput stmt tr w)
+    (errors : RoundErrors rounds)
+    (bounded : F.LocallyBounded (uniformDraw rounds) (roundEps errors))
+    (adversary : OracleComp (oracleSpec (S × (∀ i, A i)) Salt rounds)
+      ((S × (∀ i, A i)) × Messages Salt rounds × W))
+    (Q : ℕ) (queryBound : IsTotalQueryBound adversary Q) :
+    Pr{let result ← (simulateQ randomOracle (closedVerificationGame V adversary)).run' ∅}[
+      admissible result.1 ∧
+      (∃ claim, result.2.2.1 = some claim ∧ relOut result.1 result.2.1 claim result.2.2.2) ∧
+      ¬ relIn result.1 (F.extractAlong result.1 result.2.1 result.2.2.2)] ≤
+      Q * Finset.univ.sup errors + ∑ j, errors j := by
+  rw [closedVerificationGame_eq, simulateQ_map, StateT.run'_map', prEvent_map]
+  refine le_trans (prEvent_mono _ _ _ ?_)
+    (restoredExecution_knowledge_soundness_nonuniform F errors bounded adversary Q queryBound)
+  rintro ⟨stmt, tr, w⟩ ⟨hadm, ⟨claim, hc, hrel⟩, hfail⟩
+  exact ⟨hadm, outputLaw stmt tr claim w hc hrel, hfail⟩
+
+end Games
+
 end Interaction.Core.StateRestoration
+
+/-! ### Measured extraction along the rounds -/
+
+namespace Interaction.Core.KnowledgeStateFunction.MeasuredStages
+open PFunctor FreeM TwoParty.Lens OracleComp
+open Interaction.Core.StateRestoration
+
+variable {s : OracleProtocol} {S W Win : Type} {admissible : S → Prop} {relIn : S → Win → Prop}
+  {validOutput : S → PathAlong oracleSig s → W → Prop}
+  {F : KnowledgeStateFunction oracleSig s S W Win admissible relIn validOutput} {ω : Type}
+
+/-- The step bound at a node: `challengeBound` at a challenge, `messageBound` at a message or an
+oracle message. -/
+def stepBound (messageBound challengeBound : ω) : OraclePos → ω
+  | .challenge _ => challengeBound
+  | _ => messageBound
+
+/-- For one statement, the root and leaf budgets are bounded, every message and oracle-message
+step budget is at most `messageBound`, and every challenge step budget is at most
+`challengeBound`. -/
+structure ProtocolBudgetAtMost [AddCommMonoid ω] [Preorder ω] (stages : MeasuredStages F ω)
+    (stmt : S) (rootBound messageBound challengeBound leafBound : ω) : Prop where
+  /-- The root budget is bounded. -/
+  root : (stages.root stmt).budget ≤ rootBound
+  /-- Every step budget is bounded by the bound of its node's kind. -/
+  step : ∀ {a : OraclePos} {next : OraclePoly.B a → OracleProtocol}
+    (sp : Cursor.Spine s (.liftBind a next)) (history : PrefixMoves oracleSig sp),
+    (stages.step stmt sp history).budget ≤ stepBound messageBound challengeBound a
+  /-- Every leaf budget is bounded. -/
+  leaf : ∀ (sp : Cursor.Spine s (.pure ⟨⟩)) (history : PrefixMoves oracleSig sp),
+    (stages.leaf stmt sp history).budget ≤ leafBound
+
+/-- A common step bound gives equal message and challenge bounds. -/
+theorem BudgetAtMost.protocolBudgetAtMost [AddCommMonoid ω] [Preorder ω]
+    {stages : MeasuredStages F ω} {rootBound stepBound' leafBound : ω}
+    (h : stages.BudgetAtMost rootBound stepBound' leafBound) (stmt : S) :
+    stages.ProtocolBudgetAtMost stmt rootBound stepBound' stepBound' leafBound where
+  root := h.root stmt
+  step {a} _ sp history := by
+    cases a <;> exact h.step stmt sp history
+  leaf := h.leaf stmt
+
+variable [AddCommMonoid ω] [PartialOrder ω] [IsOrderedAddMonoid ω]
+
+/-- Under a per-node-kind bound, the budget from a cursor whose remaining protocol is `rounds` is
+at most the leaf bound plus, for each remaining round, the message and challenge bounds. -/
+theorem programFrom_budget_le_rounds (stages : MeasuredStages F ω) {stmt : S}
+    {rootBound messageBound challengeBound leafBound : ω}
+    (h : stages.ProtocolBudgetAtMost stmt rootBound messageBound challengeBound leafBound) :
+    (rounds : List Round) → (sp : Cursor.Spine s (protocol rounds)) →
+    (history : PrefixMoves oracleSig sp) → (tr : PathAlong oracleSig (protocol rounds)) →
+    (stages.programFrom stmt sp history tr).budget ≤
+      leafBound + rounds.length • (messageBound + challengeBound)
+  | [], sp, history, _ => le_of_le_of_eq (h.leaf sp history) (by simp)
+  | round :: rounds, sp, history, ⟨message, ⟨challenge, tr⟩⟩ => by
+    change (stages.programFrom stmt _ (PrefixMoves.snoc oracleSig _
+        (PrefixMoves.snoc oracleSig sp history message) challenge) tr).budget +
+      (stages.step stmt _ (PrefixMoves.snoc oracleSig sp history message)).budget +
+      (stages.step stmt sp history).budget ≤ _
+    calc
+      _ ≤ leafBound + rounds.length • (messageBound + challengeBound) + challengeBound +
+          messageBound :=
+        add_le_add (add_le_add (programFrom_budget_le_rounds stages h rounds _ _ tr)
+          (h.step _ _)) (h.step sp history)
+      _ = leafBound + (round :: rounds).length • (messageBound + challengeBound) := by
+        rw [List.length_cons, succ_nsmul]
+        ac_rfl
+
+/-- Under a per-node-kind bound, the budget along a transcript of `protocol rounds` is at most the
+leaf bound, plus `rounds.length` times the sum of the message and challenge bounds, plus the root
+bound. -/
+theorem programAlong_budget_le_protocol {rounds : List Round}
+    {valid : S → PathAlong oracleSig (protocol rounds) → W → Prop}
+    {G : KnowledgeStateFunction oracleSig (protocol rounds) S W Win admissible relIn valid}
+    (stages : MeasuredStages G ω) {stmt : S}
+    {rootBound messageBound challengeBound leafBound : ω}
+    (h : stages.ProtocolBudgetAtMost stmt rootBound messageBound challengeBound leafBound)
+    (tr : PathAlong oracleSig (protocol rounds)) :
+    (stages.programAlong stmt tr).budget ≤
+      leafBound + rounds.length • (messageBound + challengeBound) + rootBound :=
+  add_le_add (programFrom_budget_le_rounds stages h rounds (.root _) ⟨⟩ tr) h.root
+
+/-- Every execution path of the composed program along a transcript of `protocol rounds` costs at
+most the protocol budget. -/
+theorem programAlong_costAtMost_protocol {rounds : List Round}
+    {valid : S → PathAlong oracleSig (protocol rounds) → W → Prop}
+    {G : KnowledgeStateFunction oracleSig (protocol rounds) S W Win admissible relIn valid}
+    (stages : MeasuredStages G ω) {stmt : S}
+    {rootBound messageBound challengeBound leafBound : ω}
+    (h : stages.ProtocolBudgetAtMost stmt rootBound messageBound challengeBound leafBound)
+    (tr : PathAlong oracleSig (protocol rounds)) :
+    (stages.programAlong stmt tr).program.CostAtMost
+      (leafBound + rounds.length • (messageBound + challengeBound) + rootBound) :=
+  (stages.programAlong stmt tr).costAtMost.mono (programAlong_budget_le_protocol stages h tr)
+
+end Interaction.Core.KnowledgeStateFunction.MeasuredStages
+
+namespace Interaction.Core.MeasuredKnowledgeStateFunction
+open PFunctor FreeM TwoParty.Lens OracleComp OracleSpec Oracle
+open Interaction.Core.StateRestoration
+
+variable {rounds : List Round} {I J S T Salt W Win Kind : Type} [Finite Kind]
+  {A : I → Type} {B : J → Type} {inputs : OracleFamily I A} {outputs : OracleFamily J B}
+  {admissible : S × (∀ i, A i) → Prop} {relIn : S × (∀ i, A i) → Win → Prop}
+  {validOutput : S × (∀ i, A i) → PathAlong oracleSig (protocol rounds) → W → Prop}
+
+/-- A measured knowledge state function with per-round errors and per-node-kind stage bounds. The
+closed verification game has knowledge error at most `Q * max_j errors j + ∑ j, errors j`, and
+for every admissible input and transcript the composed stage program returns the extracted input
+witness and costs at most the protocol budget on every execution path. -/
+theorem stateRestoration_oracle_knowledge_soundness_nonuniform
+    [DecidableEq (Key (S × (∀ i, A i)) Salt rounds)]
+    (V : OracleVerifier []ₒ (protocol rounds) S T inputs outputs)
+    (relOut : S × (∀ i, A i) → PathAlong oracleSig (protocol rounds) → T × (∀ j, B j) → W → Prop)
+    (M : MeasuredKnowledgeStateFunction Kind oracleSig (protocol rounds) (S × (∀ i, A i)) W Win
+      admissible relIn validOutput)
+    (outputLaw : ∀ stmt tr claim w, closedTerminalObservation V stmt tr = some claim →
+      relOut stmt tr claim w → validOutput stmt tr w)
+    (errors : RoundErrors rounds)
+    (bounded : M.LocallyBounded (uniformDraw rounds) (roundEps errors))
+    (rootBound messageBound challengeBound leafBound : S × (∀ i, A i) → Kind → ℕ)
+    (budget : ∀ z, admissible z → M.stages.ProtocolBudgetAtMost z (rootBound z)
+      (messageBound z) (challengeBound z) (leafBound z))
+    (adversary : OracleComp (oracleSpec (S × (∀ i, A i)) Salt rounds)
+      ((S × (∀ i, A i)) × Messages Salt rounds × W))
+    (Q : ℕ) (queryBound : IsTotalQueryBound adversary Q) :
+    Pr{let result ← (simulateQ randomOracle (closedVerificationGame V adversary)).run' ∅}[
+      admissible result.1 ∧
+      (∃ claim, result.2.2.1 = some claim ∧ relOut result.1 result.2.1 claim result.2.2.2) ∧
+      ¬ relIn result.1 (M.extractAlong result.1 result.2.1 result.2.2.2)] ≤
+      Q * Finset.univ.sup errors + ∑ j, errors j ∧
+    ∀ z, admissible z → ∀ tr,
+      (∀ w, (M.stages.programAlong z tr).program.run w = M.extractAlong z tr w) ∧
+      (M.stages.programAlong z tr).program.CostAtMost
+        (leafBound z + rounds.length • (messageBound z + challengeBound z) + rootBound z) :=
+  ⟨StateRestoration.stateRestoration_oracle_knowledge_soundness_nonuniform V relOut
+      M.toKnowledgeStateFunction
+      outputLaw errors bounded adversary Q queryBound,
+    fun z hz tr => ⟨M.stages.run_programAlong z tr,
+      KnowledgeStateFunction.MeasuredStages.programAlong_costAtMost_protocol M.stages
+        (budget z hz) tr⟩⟩
+
+end Interaction.Core.MeasuredKnowledgeStateFunction
