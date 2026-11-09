@@ -66,7 +66,7 @@ example : simulateQ ((sumFamily source suffix).behaviorOfRealizations data)
 example : substituted.f data () = 135 := rfl
 
 -- Virtual V3: unchanged, since its providers (`OracleFamily.reindex`, `behaviorOfRealizations`)
--- are not part of the legacy layer being retired.
+-- are outside the frozen interaction layer and remain available.
 /-- Reindexing interface types does not identify independently supplied realizations. -/
 example :
     let repeated := scalarFamily.reindex (fun _ : Bool => ())

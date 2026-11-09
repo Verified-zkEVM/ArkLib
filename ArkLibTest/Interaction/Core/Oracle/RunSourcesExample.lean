@@ -186,6 +186,7 @@ abbrev combinedResources (branch : Bool) (hidden : Nat) :=
   sumFamily inputs (pathFamily combined
     (projectPathAlong oracleSig combined (combinedPath branch hidden)))
 
+/-- The input data and oracle payloads of the appended transcript. -/
 def combinedData (branch : Bool) (hidden : Nat) :
     ∀ i, (combinedResources branch hidden).Realization i :=
   sumData inputData (payloads combined (combinedPath branch hidden))

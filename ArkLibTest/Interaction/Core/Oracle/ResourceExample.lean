@@ -16,6 +16,9 @@ different carrier types apart. An embedding along a non-injective renaming makes
 indices share one realization; an embedding along `Bool.not` transports a carrier to the renamed
 index. Query and response types may vary with the index, and a carrier subtype states a degree
 bound that holds of every realization.
+
+The polynomial fixture is noncomputable because Mathlib's `Polynomial` is; it is used only for
+the evaluation and degree proofs.
 -/
 
 open Interaction.Core Interaction.Oracle OracleComp
