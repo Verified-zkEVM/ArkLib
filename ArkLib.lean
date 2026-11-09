@@ -703,6 +703,16 @@ public import ArkLib.Data.Probability.KoalaBear
 public import ArkLib.Data.Probability.Sequential
 public import ArkLib.Data.Probability.Uniform
 public import ArkLib.Interaction.CompositionSoundness
+public import ArkLib.Interaction.Core.Composition
+public import ArkLib.Interaction.Core.Execution
+public import ArkLib.Interaction.Core.OracleVerifier
+public import ArkLib.Interaction.Core.Protocol
+public import ArkLib.Interaction.Core.Reduction
+public import ArkLib.Interaction.Core.Security.Completeness
+public import ArkLib.Interaction.Core.Security.Knowledge
+public import ArkLib.Interaction.Core.Security.RoundByRound
+public import ArkLib.Interaction.Core.Security.Soundness
+public import ArkLib.Interaction.Core.Signature
 public import ArkLib.Interaction.Oracle.Access
 public import ArkLib.Interaction.Oracle.Claim
 public import ArkLib.Interaction.Oracle.Composition
@@ -1049,6 +1059,7 @@ public import ArkLib.ProofSystem.Sumcheck.Prover.Basic
 public import ArkLib.ProofSystem.Sumcheck.Prover.Enumeration
 public import ArkLib.ProofSystem.Sumcheck.Source
 public import ArkLib.ProofSystem.Sumcheck.Spec.General
+public import ArkLib.ProofSystem.Sumcheck.Spec.PolynomialInterface
 public import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
 public import ArkLib.ProofSystem.Sumcheck.Structured
 public import ArkLib.ProofSystem.Sumcheck.Structured.RoundLemmas
@@ -1065,6 +1076,7 @@ public import ArkLib.ProofSystem.ToyProblem.Spec.ErasureDecoder
 public import ArkLib.ProofSystem.ToyProblem.Spec.General
 public import ArkLib.ProofSystem.ToyProblem.Spec.KnowledgeSoundness
 public import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
+public import ArkLib.Relation.Basic
 public import ArkLib.ToCompPoly.Multilinear.Basic
 public import ArkLib.ToCompPoly.Multilinear.NestedEvaluationTree
 public import ArkLib.ToCompPoly.Multivariate.Eval

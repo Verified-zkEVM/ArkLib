@@ -33,7 +33,7 @@ section Sampling
 
 open scoped ProbabilityTheory
 
-variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+variable {ι : Type} [Fintype ι] [Nonempty ι]
 variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
 /-- Lower-bounds linear-code CA error by the probability that a uniformly sampled ambient

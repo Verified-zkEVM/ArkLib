@@ -76,8 +76,8 @@ Without a bound on `|S|`, a bad seed `x` still stays bad for the row combination
 nonzero row functional outside `goodRowFunctionals C U (T x)`, and a proper submodule leaves at
 least `q ^ (s - 1) * (q - 1)` of the `q ^ s - 1` nonzero functionals outside it
 (`Submodule.le_card_filter_notMem_of_ne_top`). Double counting over the nonzero row functionals
-(`Probability.natCast_mul_prob_le_sum_prob_of_le_card_filter`) gives the field-size-weighted
-bound.
+(`SampleableType.natCast_mul_prEvent_le_sum_prEvent_of_le_card_filter`) gives the
+field-size-weighted bound.
 
 The seedwise transfer is derived from `Code.exists_forall_isProjectionBad_of_interleaved` through
 `isMCA_iff_isProjectionBad`. The integer-threshold transfer and its exact-agreement consequences
@@ -286,7 +286,7 @@ theorem mcaError_moduleInterleavedCode_le_fieldWeighted
     simp [k, ENNReal.natCast_sub]
   refine iSup_le fun U ↦ ?_
   let V : (κ → F) → ℓ → ι → A := fun l j i ↦ ∑ r, l r • U j i r
-  have hcount := Probability.natCast_mul_prob_le_sum_prob_of_le_card_filter t
+  have hcount := SampleableType.natCast_mul_prEvent_le_sum_prEvent_of_le_card_filter t
     (fun x ↦ IsMCA G (C^⋈κ) x U δ) (fun l x ↦ IsMCA G C x (V l) δ) k
     (fun x hx ↦ card_le_card_filter_isMCA_rowCombination G C δ U x hx)
   have hsum : (k : ENNReal) * Pr{let x ← $ᵗ S}[IsMCA G (C^⋈κ) x U δ] ≤

@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.ProofSystem.Sumcheck.Interaction.ProjectionTransport
+public import ArkLib.ProofSystem.Sumcheck.Spec.PolynomialInterface
 
 /-!
 # A Sumcheck round retaining the multivariate oracle
@@ -26,10 +27,6 @@ open SingleRound
 noncomputable section
 
 variable (R : Type) [CommSemiring R] (n deg : ℕ)
-
-/-- The original multivariate polynomial remains available at every round boundary. -/
-def polynomialFamily : OracleFamily Unit (Spec.OracleStatement R n deg) :=
-  ⟨fun _ => inferInstance⟩
 
 /-- Input access extended by the actual univariate message. -/
 abbrev access :=
