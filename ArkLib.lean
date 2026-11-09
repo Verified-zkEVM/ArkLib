@@ -705,6 +705,7 @@ public import ArkLib.Data.Probability.Uniform
 public import ArkLib.Interaction.CompositionSoundness
 public import ArkLib.Interaction.Core.Composition
 public import ArkLib.Interaction.Core.Execution
+public import ArkLib.Interaction.Core.Legacy.Execution
 public import ArkLib.Interaction.Core.Legacy.OracleReduction
 public import ArkLib.Interaction.Core.Legacy.Protocol
 public import ArkLib.Interaction.Core.Legacy.Prover

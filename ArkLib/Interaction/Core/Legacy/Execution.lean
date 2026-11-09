@@ -1,0 +1,752 @@
+/-
+Copyright (c) 2026 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Quang Dao
+-/
+module
+
+public import ArkLib.Interaction.Core.Legacy.OracleReduction
+public import ArkLib.Interaction.Core.Execution
+public import ArkLib.Interaction.Core.Security.Completeness
+public import ArkLib.OracleReduction.Execution
+
+/-!
+# Execution of embedded legacy reductions
+
+This file runs interaction-layer parties on the tree of a legacy protocol in the legacy ambient
+monad `OracleComp (oSpec + [pSpec.Challenge]ₒ)`: the prover's shared-oracle queries go to the
+left summand, and the sampler draws each challenge from the legacy challenge oracle.
+-/
+
+@[expose] public section
+
+namespace Interaction.Core.Legacy
+open PFunctor FreeM TwoParty.Lens OracleComp OracleSpec ProtocolSpec
+
+variable {ι : Type} {oSpec : OracleSpec ι} {n : ℕ} {pSpec : ProtocolSpec n}
+
+/-- Send shared-oracle queries to the left summand of the legacy ambient spec. -/
+def liftShared (oSpec : OracleSpec ι) (pSpec : ProtocolSpec n) :
+    QueryImpl oSpec (OracleComp (oSpec + [pSpec.Challenge]ₒ)) :=
+  fun q => liftM ((oSpec + [pSpec.Challenge]ₒ).query (.inl q))
+
+theorem simulateQ_liftShared {α : Type} (x : OracleComp oSpec α) :
+    simulateQ (liftShared oSpec pSpec) x = (liftM x : OracleComp (oSpec + [pSpec.Challenge]ₒ) α) :=
+  rfl
+
+/-- The fold of legacy rounds `k, …, n - 1` from a transcript and state before round `k`. -/
+def foldFrom {StmtIn WitIn StmtOut WitOut : Type}
+    (P : _root_.Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) :
+    (k m : ℕ) → (h : k + m = n) →
+    pSpec.Transcript ⟨k, by omega⟩ × P.PrvState ⟨k, by omega⟩ →
+    OracleComp (oSpec + [pSpec.Challenge]ₒ)
+      (pSpec.Transcript (Fin.last n) × P.PrvState (Fin.last n))
+  | k, 0, h, x => pure (cast (by
+      have : (⟨k, by omega⟩ : Fin (n + 1)) = Fin.last n := Fin.ext (by simp; omega)
+      rw [this]) x)
+  | k, m + 1, h, x => P.processRound ⟨k, by omega⟩ (pure x) >>= foldFrom P (k + 1) m (by omega)
+
+theorem runToRound_last_eq_bind {StmtIn WitIn StmtOut WitOut : Type}
+    (P : _root_.Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) (stmt : StmtIn) (wit : WitIn) :
+    (m k : ℕ) → (h : k + m = n) →
+    P.runToRound (Fin.last n) stmt wit =
+      P.runToRound ⟨k, by omega⟩ stmt wit >>= foldFrom P k m h
+  | 0, k, h => by
+    subst h
+    simp only [foldFrom, cast_eq]
+    exact (bind_pure _).symm
+  | m + 1, k, h => by
+    rw [runToRound_last_eq_bind P stmt wit m (k + 1) (by omega)]
+    have := Prover.runToRound_succ (⟨k, by omega⟩ : Fin n) stmt wit P
+    simp only [Fin.succ_mk, Fin.castSucc_mk] at this
+    rw [this, Prover.processRound_bind, bind_assoc]
+    rfl
+
+
+section Node
+
+variable {StmtIn WitIn StmtOut WitOut : Type}
+
+theorem samplerEnd_message {M : Type → Type} [Monad M] (T : Type)
+    (rest : PlainPoly.B (plainPos .P_to_V T) → Protocol.{0})
+    (draw : (c : ChallengeNode plainSig (.liftBind (plainPos .P_to_V T) rest)) →
+      M (challengeSpec plainSig (.liftBind (plainPos .P_to_V T) rest) c)) :
+    samplerEnd plainSig (.liftBind (plainPos .P_to_V T) rest) draw =
+      pure (fun x => samplerEnd plainSig (rest (plainSig.toFunB _ x))
+        (fun c => draw ⟨.inr ⟨plainSig.toFunB _ x, c.val⟩, c.property⟩)) := rfl
+
+theorem samplerEnd_challenge {M : Type → Type} [Monad M] (T : Type)
+    (rest : PlainPoly.B (plainPos .V_to_P T) → Protocol.{0})
+    (draw : (c : ChallengeNode plainSig (.liftBind (plainPos .V_to_P T) rest)) →
+      M (challengeSpec plainSig (.liftBind (plainPos .V_to_P T) rest) c)) :
+    samplerEnd plainSig (.liftBind (plainPos .V_to_P T) rest) draw =
+      (fun x => ⟨x, samplerEnd plainSig (rest (plainSig.toFunB _ x))
+        (fun c => draw ⟨.inr ⟨plainSig.toFunB _ x, c.val⟩, c.property⟩)⟩) <$>
+        draw ⟨.inl ⟨⟩, rfl⟩ := rfl
+
+/-- One counterpart-first exchange at round `j` is one legacy `processRound`. The direction is
+generic, so the lemma applies at the node `plainPos (pSpec.dir j) _` of the tree. -/
+theorem step_counterpartFirst_roundSlot {β : Type}
+    (P : _root_.Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) (j : Fin n)
+    (D : Direction) (hD : pSpec.dir j = D)
+    (rest : PlainPoly.B (plainPos D (pSpec.«Type» j)) → Protocol.{0})
+    (draw : (c : ChallengeNode plainSig (.liftBind (plainPos D (pSpec.«Type» j)) rest)) →
+      OracleComp (oSpec + [pSpec.Challenge]ₒ)
+        (challengeSpec plainSig (.liftBind (plainPos D (pSpec.«Type» j)) rest) c))
+    (hdraw : ∀ hc, draw ⟨.inl ⟨⟩, hc⟩ = (plainMoveEquiv D _).symm <$>
+      challengeOracle oSpec pSpec ⟨j, hD.trans (dir_eq_of_owner hc)⟩)
+    (st : P.PrvState j.castSucc) (pre : pSpec.Transcript j.castSucc)
+    (F : pSpec.Transcript j.succ × P.PrvState j.succ →
+      OracleComp (oSpec + [pSpec.Challenge]ₒ) β)
+    (K : (x : Move plainSig (plainPos D (pSpec.«Type» j))) → P.PrvState j.succ →
+      Counterpart plainSig (OracleComp (oSpec + [pSpec.Challenge]ₒ))
+        (rest (plainSig.toFunB _ x)) (fun _ => PUnit) →
+      OracleComp (oSpec + [pSpec.Challenge]ₒ) β)
+    (hK : ∀ x st', K x st' (sampler plainSig (rest (plainSig.toFunB _ x))
+      (fun c => draw ⟨.inr ⟨plainSig.toFunB _ x, c.val⟩, c.property⟩)) =
+        F (pre.concat (plainMoveEquiv D _ x), st')) :
+    step (owner plainSig (plainPos D (pSpec.«Type» j))) .counterpartFirst
+        (simulateQ (liftShared oSpec pSpec) (roundSlot P j D hD st))
+        (sampler plainSig (.liftBind (plainPos D (pSpec.«Type» j)) rest) draw) K =
+      P.processRound j (pure (pre, st)) >>= F := by
+  dsimp only [sampler, PureEnd.toStrategy] at hK
+  cases D with
+  | P_to_V =>
+    rw [Prover.processRound_of_dir_eq_P_to_V j hD]
+    dsimp only [roundSlot, step, Schedule.seq, sampler, PureEnd.toStrategy,
+      PureEnd.mapOutput, owner_plainPos_P_to_V]
+    simp only [samplerEnd_message, simulateQ_map, simulateQ_liftShared, bind_map_left,
+      LawfulMonad.pure_bind, bind_assoc]
+    refine bind_congr fun a => ?_
+    exact hK a.1 a.2
+  | V_to_P =>
+    rw [Prover.processRound_of_dir_eq_V_to_P j hD]
+    dsimp only [roundSlot, step, Schedule.seq, sampler, PureEnd.toStrategy,
+      PureEnd.mapOutput, owner_plainPos_V_to_P]
+    rw [samplerEnd_challenge]
+    erw [hdraw]
+    simp only [LawfulMonad.pure_bind, bind_assoc]
+    erw [bind_map_left, bind_map_left, bind_map_left]
+    refine bind_congr fun c => bind_congr fun a => ?_
+    exact hK _ _
+
+
+theorem samplerFrom_zero {M : Type → Type} [Monad M]
+    (src : (i : pSpec.ChallengeIdx) → M (pSpec.Challenge i)) (k : ℕ) (h : k + 0 = n) :
+    samplerFrom src k 0 h = (pure ⟨⟩ : M PUnit) := rfl
+
+/-- The node equation of `runWith` on the plain tree, as one local exchange. -/
+theorem runWith_liftBind {M : Type → Type} [Monad M] [LawfulMonad M] (order : Schedule)
+    (a : PlainPos) (rest : PlainPoly.B a → Protocol.{0})
+    {OutP OutC : PathAlong plainSig (.liftBind a rest) → Type}
+    (p : Focal plainSig M (.liftBind a rest) OutP)
+    (c : Counterpart plainSig M (.liftBind a rest) OutC) :
+    runWith (l := plainSig) (m := M) order (.liftBind a rest) p c =
+      step (owner plainSig a) order p c (fun x pn cn =>
+        runWith (l := plainSig) (m := M) order (rest (plainSig.toFunB a x)) pn cn >>= fun r =>
+          pure (⟨⟨x, r.1⟩, r.2.1, r.2.2⟩ :
+            (t : PathAlong plainSig (.liftBind a rest)) × OutP t × OutC t)) :=
+  runWith_node (l := plainSig) (m := M) order a rest p c
+
+/-- A counterpart-first run whose first node is round `j`, with the embedded slot and a sampler
+whose draw at this node is the legacy challenge, is `processRound j` followed by the rest. -/
+theorem runWith_roundSlot {β Out : Type}
+    (P : _root_.Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) (j : Fin n)
+    (D : Direction) (hD : pSpec.dir j = D)
+    (rest : PlainPoly.B (plainPos D (pSpec.«Type» j)) → Protocol.{0})
+    (q : (x : Move plainSig (plainPos D (pSpec.«Type» j))) → P.PrvState j.succ →
+      Core.Prover plainSig oSpec (rest (plainSig.toFunB _ x)) (fun _ => Out))
+    (draw : (c : ChallengeNode plainSig (.liftBind (plainPos D (pSpec.«Type» j)) rest)) →
+      OracleComp (oSpec + [pSpec.Challenge]ₒ)
+        (challengeSpec plainSig (.liftBind (plainPos D (pSpec.«Type» j)) rest) c))
+    (hdraw : ∀ hc, draw ⟨.inl ⟨⟩, hc⟩ = (plainMoveEquiv D _).symm <$>
+      challengeOracle oSpec pSpec ⟨j, hD.trans (dir_eq_of_owner hc)⟩)
+    (st : P.PrvState j.castSucc) (pre : pSpec.Transcript j.castSucc)
+    (G : ((_ : PathAlong plainSig (.liftBind (plainPos D (pSpec.«Type» j)) rest)) × Out ×
+      PUnit) → OracleComp (oSpec + [pSpec.Challenge]ₒ) β)
+    (F : pSpec.Transcript j.succ × P.PrvState j.succ →
+      OracleComp (oSpec + [pSpec.Challenge]ₒ) β)
+    (hK : ∀ x st', (runWith .counterpartFirst (rest (plainSig.toFunB _ x))
+        (Prover.simulate (liftShared oSpec pSpec) (q x st'))
+        (sampler plainSig (rest (plainSig.toFunB _ x))
+          (fun c => draw ⟨.inr ⟨plainSig.toFunB _ x, c.val⟩, c.property⟩)) >>=
+        fun r => G ⟨⟨x, r.1⟩, r.2⟩) = F (pre.concat (plainMoveEquiv D _ x), st')) :
+    (runWith .counterpartFirst (.liftBind (plainPos D (pSpec.«Type» j)) rest)
+        (Prover.simulate (liftShared oSpec pSpec)
+          (Choice.map .focal _ q <$> roundSlot P j D hD st))
+        (sampler plainSig _ draw) >>= G) =
+      P.processRound j (pure (pre, st)) >>= F := by
+  rw [runWith_liftBind, step_bind]
+  change step _ _ (Choice.map .focal _ (fun _ => Prover.simulate (liftShared oSpec pSpec)) <$>
+    simulateQ (liftShared oSpec pSpec) (Choice.map .focal _ q <$> roundSlot P j D hD st)) _ _ = _
+  rw [step_map_left, simulateQ_map, step_map_left]
+  refine step_counterpartFirst_roundSlot P j D hD rest draw hdraw st pre F _ fun x st' => ?_
+  simp only [bind_assoc, LawfulMonad.pure_bind]
+  exact hK x st'
+
+/-- Counterpart-first execution of an embedded legacy prover from round `k` is the legacy fold
+of the remaining rounds followed by `output`, for any continuation of the decoded result. -/
+theorem runWith_embedFrom {β : Type}
+    (P : _root_.Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
+    (g : FullTranscript pSpec → StmtOut × WitOut → OracleComp (oSpec + [pSpec.Challenge]ₒ) β) :
+    (m k : ℕ) → (h : k + m = n) → (pre : pSpec.Transcript ⟨k, by omega⟩) →
+    (st : P.PrvState ⟨k, by omega⟩) →
+    (runWith .counterpartFirst (suffix pSpec k m h)
+        (Prover.simulate (liftShared oSpec pSpec) (embedFrom P k m h st))
+        (samplerFrom (challengeOracle oSpec pSpec) k m h) >>=
+      fun r => g (decodePlainFrom pSpec k m h pre r.1) r.2.1) =
+    foldFrom P k m h (pre, st) >>= fun x => liftM (P.output x.2) >>= g x.1
+  | 0, k, h, pre, st => by
+    subst h
+    change (runWith .counterpartFirst (Pure.pure PUnit.unit) _ _ >>= _) = _
+    erw [runWith_done]
+    simp only [foldFrom, embedFrom, cast_eq, Schedule.seq]
+    erw [samplerFrom_zero, LawfulMonad.pure_bind, bind_assoc]
+    simp only [LawfulMonad.pure_bind]
+    rfl
+  | m + 1, k, h, pre, st => by
+    change _ = (P.processRound ⟨k, by omega⟩ (pure (pre, st)) >>=
+      foldFrom P (k + 1) m (by omega)) >>= _
+    rw [bind_assoc]
+    exact runWith_roundSlot P ⟨k, by omega⟩ _ rfl (fun _ => suffix pSpec (k + 1) m (by omega))
+      (fun _ st' => embedFrom P (k + 1) m (by omega) st') _ (fun _ => rfl) st pre _ _
+      (fun x st' => runWith_embedFrom P g m (k + 1) (by omega) _ st')
+
+end Node
+
+/-! ### The common observation -/
+
+section Observation
+
+variable {StmtIn WitIn StmtOut WitOut : Type}
+
+/-- Run an embedded interaction under `order`, in the legacy query monad, against a prover on the
+plain tree, then decide. The challenge oracle is the legacy `[pSpec.Challenge]ₒ`. -/
+def observeWith (order : Schedule) (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOut)
+    (stmt : StmtIn) {Out : PathAlong plainSig (protocol pSpec) → Type}
+    (p : Core.Prover plainSig oSpec (protocol pSpec) Out) :
+    OracleComp (oSpec + [pSpec.Challenge]ₒ)
+      (Observation plainSig (protocol pSpec) Out StmtOut) := do
+  let r ← runWith order (protocol pSpec) (p.simulate (liftShared oSpec pSpec))
+    (legacySampler pSpec (challengeOracle oSpec pSpec))
+  let verdict ← liftComp (V.decide stmt (projectPathAlong plainSig _ r.1)
+    (toPlainView _ r.1)).run (oSpec + [pSpec.Challenge]ₒ)
+  pure ⟨r.1, r.2.1, verdict⟩
+
+/-- The legacy result of a plain reduction: the prover's transcript and outputs with the
+verifier's output statement, or `none` when the verifier rejects. -/
+abbrev LegacyResult (pSpec : ProtocolSpec n) (StmtOut WitOut : Type) :=
+  Option ((FullTranscript pSpec × StmtOut × WitOut) × StmtOut)
+
+/-- Forget the rejected run and decode the transcript of an accepted one. -/
+def finalize (r : Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) StmtOut) :
+    LegacyResult pSpec StmtOut WitOut :=
+  r.2.2.map fun t => ((decode pSpec r.1, r.2.1), t)
+
+theorem runToRound_zero (P : _root_.Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
+    (stmt : StmtIn) (wit : WitIn) :
+    P.runToRound 0 stmt wit = pure (default, P.input (stmt, wit)) := rfl
+
+/-- The legacy prover run is the fold of every round followed by `output`. -/
+theorem prover_run_eq_foldFrom (P : _root_.Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
+    (stmt : StmtIn) (wit : WitIn) :
+    P.run stmt wit = foldFrom P 0 n (Nat.zero_add n) (default, P.input (stmt, wit)) >>=
+      fun x => liftM (P.output x.2) >>= fun o => pure (x.1, o) := by
+  rw [_root_.Prover.run, runToRound_last_eq_bind P stmt wit n 0 (Nat.zero_add n)]
+  erw [runToRound_zero, LawfulMonad.pure_bind]
+  rfl
+
+/-- **Execution correspondence.** For every protocol shape, counterpart-first execution of an
+embedded legacy reduction is the legacy run, after finalization, as programs in the legacy query
+monad. -/
+theorem finalize_observeWith_counterpartFirst
+    (R : _root_.Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) (stmt : StmtIn)
+    (wit : WitIn) :
+    finalize <$> observeWith .counterpartFirst (embedVerifier R.verifier) stmt
+        (embedProver R.prover stmt wit) = (R.run stmt wit).run := by
+  rw [_root_.Reduction.run_run_eq_bind, prover_run_eq_foldFrom]
+  refine (Eq.trans ?_ (runWith_embedFrom R.prover (fun tr o =>
+      liftComp (R.verifier.verify stmt tr).run (oSpec + [pSpec.Challenge]ₒ) >>=
+        fun v => pure (v.map fun t => ((tr, o), t)))
+    n 0 (Nat.zero_add n) default (R.prover.input (stmt, wit)))).trans ?_
+  · rw [observeWith, map_eq_bind_pure_comp]
+    simp only [bind_assoc, LawfulMonad.pure_bind]
+    refine bind_congr fun r => bind_congr fun v => ?_
+    rfl
+  · erw [bind_assoc]
+    refine bind_congr fun x => ?_
+    erw [bind_assoc]
+    refine bind_congr fun o => ?_
+    erw [LawfulMonad.pure_bind]
+    rfl
+
+end Observation
+
+/-! ### Exchanging slots in distribution -/
+
+section Exchange
+
+variable {κ σ : Type} {ambient : OracleSpec ι} {chal : OracleSpec κ}
+
+/-- The handler of the classical experiment: shared state for the ambient oracles, and a
+stateless challenge implementation. -/
+abbrev expHandler (impl : QueryImpl ambient (StateT σ ProbComp))
+    (chImpl : QueryImpl chal ProbComp) : QueryImpl (ambient + chal) (StateT σ ProbComp) :=
+  QueryImpl.addLift impl chImpl
+
+/-- Two programs have the same distribution of output and final state from every initial state. -/
+def DistEqFrom (impl : QueryImpl ambient (StateT σ ProbComp)) (chImpl : QueryImpl chal ProbComp)
+    {α : Type} (x y : OracleComp (ambient + chal) α) : Prop :=
+  ∀ st, (simulateQ (expHandler impl chImpl) x).run st =ᵈ
+    (simulateQ (expHandler impl chImpl) y).run st
+
+/-- A program that never reads or writes the shared state. -/
+def Stateless (impl : QueryImpl ambient (StateT σ ProbComp)) (chImpl : QueryImpl chal ProbComp)
+    {β : Type} (d : OracleComp (ambient + chal) β) : Prop :=
+  ∃ q : ProbComp β, ∀ st, (simulateQ (expHandler impl chImpl) d).run st = (fun b => (b, st)) <$> q
+
+namespace DistEqFrom
+
+variable {impl : QueryImpl ambient (StateT σ ProbComp)} {chImpl : QueryImpl chal ProbComp}
+  {α β γ : Type}
+
+theorem refl (x : OracleComp (ambient + chal) α) : DistEqFrom impl chImpl x x :=
+  fun _ => EvalDistEq.refl _
+
+theorem of_eq {x y : OracleComp (ambient + chal) α} (h : x = y) : DistEqFrom impl chImpl x y :=
+  h ▸ refl x
+
+theorem trans {x y z : OracleComp (ambient + chal) α} (h₁ : DistEqFrom impl chImpl x y)
+    (h₂ : DistEqFrom impl chImpl y z) : DistEqFrom impl chImpl x z :=
+  fun st => (h₁ st).trans (h₂ st)
+
+theorem bind {x y : OracleComp (ambient + chal) α} {f g : α → OracleComp (ambient + chal) β}
+    (h : DistEqFrom impl chImpl x y) (hfg : ∀ a, DistEqFrom impl chImpl (f a) (g a)) :
+    DistEqFrom impl chImpl (x >>= f) (y >>= g) := fun st => by
+  simp only [simulateQ_bind, StateT.run_bind]
+  exact (h st).bind fun p => hfg p.1 p.2
+
+/-- A stateless program commutes in distribution with any program. -/
+theorem swap {A : OracleComp (ambient + chal) α} {d : OracleComp (ambient + chal) β}
+    (hd : Stateless impl chImpl d) (k : α → β → OracleComp (ambient + chal) γ) :
+    DistEqFrom impl chImpl (A >>= fun a => d >>= fun b => k a b)
+      (d >>= fun b => A >>= fun a => k a b) := fun st => by
+  obtain ⟨q, hq⟩ := hd
+  simp only [simulateQ_bind, StateT.run_bind, hq, bind_map_left]
+  exact EvalDistEq.bind_bind_swap _ _ _
+
+end DistEqFrom
+
+theorem Stateless.map {impl : QueryImpl ambient (StateT σ ProbComp)}
+    {chImpl : QueryImpl chal ProbComp} {β γ : Type} {d : OracleComp (ambient + chal) β}
+    (h : Stateless impl chImpl d) (f : β → γ) : Stateless impl chImpl (f <$> d) := by
+  obtain ⟨q, hq⟩ := h
+  exact ⟨f <$> q, fun st => by simp only [simulateQ_map, StateT.run_map, hq, Functor.map_map]⟩
+
+theorem stateless_query_inr (impl : QueryImpl ambient (StateT σ ProbComp))
+    (chImpl : QueryImpl chal ProbComp) (t : chal.Domain) :
+    Stateless impl chImpl (liftM (chal.query t) : OracleComp (ambient + chal) _) :=
+  ⟨chImpl t, fun st => by
+    rw [expHandler, QueryImpl.addLift_def, QueryImpl.simulateQ_add_liftM_query_right]
+    simp [map_eq_bind_pure_comp]⟩
+
+theorem sampler_message {M : Type → Type} [Monad M] [LawfulMonad M] (X : Type)
+    (rest : X → Protocol.{0})
+    (draw : (c : ChallengeNode plainSig (.liftBind (PlainPos.message X) rest)) →
+      M (challengeSpec plainSig (.liftBind (PlainPos.message X) rest) c)) :
+    sampler plainSig (.liftBind (PlainPos.message X) rest) draw =
+      pure (fun x => sampler plainSig (rest x) (fun c => draw ⟨.inr ⟨x, c.val⟩, c.property⟩)) := by
+  change Choice.map .counterpart .sender _ <$> pure _ = _
+  erw [LawfulApplicative.map_pure]
+  rfl
+
+theorem sampler_challenge {M : Type → Type} [Monad M] [LawfulMonad M] (C : Type)
+    (rest : PUnit → Protocol.{0})
+    (draw : (c : ChallengeNode plainSig (.liftBind (PlainPos.challenge C) rest)) →
+      M (challengeSpec plainSig (.liftBind (PlainPos.challenge C) rest) c)) :
+    sampler plainSig (.liftBind (PlainPos.challenge C) rest) draw =
+      (fun x => ⟨x, sampler plainSig (rest ⟨⟩)
+        (fun c => draw ⟨.inr ⟨⟨⟩, c.val⟩, c.property⟩)⟩) <$> draw ⟨.inl ⟨⟩, rfl⟩ := by
+  change Choice.map .counterpart .receiver _ <$> (_ <$> _) = _
+  erw [Functor.map_map]
+  rfl
+
+/-- **Exchange in distribution.** On any plain tree, when every challenge draw is stateless,
+the two schedules give the same distribution of output and final state, for every prover. -/
+theorem distEqFrom_runWith (impl : QueryImpl ambient (StateT σ ProbComp))
+    (chImpl : QueryImpl chal ProbComp) :
+    (s : Protocol.{0}) → {Out : PathAlong plainSig s → Type} →
+    (p : Focal plainSig (OracleComp (ambient + chal)) s Out) →
+    (draw : (c : ChallengeNode plainSig s) →
+      OracleComp (ambient + chal) (challengeSpec plainSig s c)) →
+    (∀ c, Stateless impl chImpl (draw c)) →
+    DistEqFrom impl chImpl
+      (runWith .focalFirst s p (sampler plainSig s draw))
+      (runWith .counterpartFirst s p (sampler plainSig s draw))
+  | .pure ⟨⟩, _, p, _, _ => by
+    refine DistEqFrom.of_eq ?_
+    erw [runWith_done, runWith_done]
+    simp only [Schedule.seq]
+    erw [LawfulMonad.pure_bind]
+    refine bind_congr fun a => ?_
+    erw [LawfulMonad.pure_bind]
+  | .liftBind (.message X) rest, _, p, draw, hdraw => by
+    rw [runWith_liftBind, runWith_liftBind, sampler_message]
+    simp only [step, Schedule.seq, owner_plain_message, LawfulMonad.pure_bind]
+    refine DistEqFrom.bind (DistEqFrom.refl _) fun v => DistEqFrom.bind ?_ fun _ =>
+      DistEqFrom.refl _
+    exact distEqFrom_runWith impl chImpl (rest v.1) v.2 _ fun c => hdraw _
+  | .liftBind (.challenge C) rest, _, p, draw, hdraw => by
+    rw [runWith_liftBind, runWith_liftBind, sampler_challenge]
+    simp only [step, Schedule.seq, owner_plain_challenge, bind_map_left]
+    refine DistEqFrom.trans (DistEqFrom.bind (DistEqFrom.refl _) fun f =>
+      DistEqFrom.bind (DistEqFrom.refl _) fun x => DistEqFrom.bind
+        (distEqFrom_runWith impl chImpl (rest ⟨⟩) (f x) _ fun c => hdraw _)
+        fun _ => DistEqFrom.refl _) ?_
+    exact DistEqFrom.swap (hdraw _) _
+
+end Exchange
+
+/-! ### Simulating a run -/
+
+section Simulate
+
+variable {κ κ' : Type} {spec : OracleSpec κ} {spec' : OracleSpec κ'}
+
+/-- Simulating a simulated prover composes the two handlers. -/
+theorem simulate_simulate {P : PFunctor.{1, 0}} {l : PFunctor.Lens P rolePoly.{0}}
+    {κ'' : Type} {spec'' : OracleSpec κ''}
+    (F : QueryImpl spec' (OracleComp spec'')) (G : QueryImpl spec (OracleComp spec')) :
+    (s : FreeM P PUnit.{1}) → {Out : PathAlong l s → Type} →
+    (p : Core.Prover l spec s Out) →
+    Prover.simulate F (Prover.simulate G p) = Prover.simulate (fun q => simulateQ F (G q)) p
+  | .pure _, _, p => QueryImpl.simulateQ_simulateQ_eq_of_apply (fun _ => rfl) p
+  | .liftBind a rest, _, p => by
+    change Choice.map .focal _ (fun _ => Prover.simulate F) <$> simulateQ F
+        (Choice.map .focal _ (fun _ => Prover.simulate G) <$> simulateQ G p) =
+      Choice.map .focal _ (fun _ => Prover.simulate (fun q => simulateQ F (G q))) <$>
+        simulateQ (fun q => simulateQ F (G q)) p
+    rw [simulateQ_map, Functor.map_map,
+      QueryImpl.simulateQ_simulateQ_eq_of_apply (fun _ => rfl) p]
+    refine congrArg (· <$> _) (funext fun v => ?_)
+    refine (congrFun (Choice.map_comp _ _ _ _) v).trans ?_
+    exact congrArg (fun f => Choice.map .focal (owner l a) f v)
+      (funext fun x => funext fun r => simulate_simulate F G _ r)
+
+/-- Simulating a run against a public-coin sampler simulates every prover slot and every draw. -/
+theorem simulateQ_runWith (F : QueryImpl spec (OracleComp spec')) (order : Schedule) :
+    (s : Protocol.{0}) → {Out : PathAlong plainSig s → Type} →
+    (p : Focal plainSig (OracleComp spec) s Out) →
+    (draw : (c : ChallengeNode plainSig s) → OracleComp spec (challengeSpec plainSig s c)) →
+    simulateQ F (runWith order s p (sampler plainSig s draw)) =
+      runWith order s (Prover.simulate F p)
+        (sampler plainSig s (fun c => simulateQ F (draw c)))
+  | .pure ⟨⟩, _, p, _ => by
+    erw [runWith_done, runWith_done]
+    cases order <;> simp only [Schedule.seq, simulateQ_bind, simulateQ_pure] <;> rfl
+  | .liftBind (.message X) rest, _, p, draw => by
+    rw [runWith_liftBind, runWith_liftBind, sampler_message, sampler_message]
+    change _ = step _ _ (Choice.map .focal _ (fun _ => Prover.simulate F) <$> simulateQ F p) _ _
+    cases order
+    · simp only [step, Schedule.seq, owner_plain_message]
+      erw [simulateQ_bind, bind_map_left]
+      refine bind_congr fun v => ?_
+      erw [LawfulMonad.pure_bind, LawfulMonad.pure_bind, simulateQ_bind,
+        simulateQ_runWith F .focalFirst (rest v.1) v.2]
+      refine bind_congr fun r => ?_
+      erw [simulateQ_pure]
+      rfl
+    · simp only [step, Schedule.seq, owner_plain_message]
+      erw [LawfulMonad.pure_bind, LawfulMonad.pure_bind, simulateQ_bind, bind_map_left]
+      refine bind_congr fun v => ?_
+      erw [simulateQ_bind, simulateQ_runWith F .counterpartFirst (rest v.1) v.2]
+      refine bind_congr fun r => ?_
+      erw [simulateQ_pure]
+      rfl
+  | .liftBind (.challenge C) rest, _, p, draw => by
+    rw [runWith_liftBind, runWith_liftBind, sampler_challenge, sampler_challenge]
+    change _ = step _ _ (Choice.map .focal _ (fun _ => Prover.simulate F) <$> simulateQ F p) _ _
+    cases order
+    · simp only [step, Schedule.seq, owner_plain_challenge, bind_map_left]
+      erw [simulateQ_bind]
+      refine bind_congr fun f => ?_
+      erw [simulateQ_bind]
+      refine bind_congr fun x => ?_
+      erw [simulateQ_bind, simulateQ_runWith F .focalFirst (rest ⟨⟩) (f x)]
+      refine bind_congr fun r => ?_
+      erw [simulateQ_pure]
+    · simp only [step, Schedule.seq, owner_plain_challenge, bind_map_left]
+      erw [simulateQ_bind]
+      refine bind_congr fun x => ?_
+      erw [simulateQ_bind]
+      refine bind_congr fun f => ?_
+      erw [simulateQ_bind, simulateQ_runWith F .counterpartFirst (rest ⟨⟩) (f x)]
+      refine bind_congr fun r => ?_
+      erw [simulateQ_pure]
+
+end Simulate
+
+/-! ### The default schedule -/
+
+section Bridge
+
+variable {StmtIn WitIn StmtOut WitOut : Type}
+
+/-- Answer the challenge queries of the plain tree with the legacy challenge oracle. -/
+def challengeReindex (oSpec : OracleSpec ι) (pSpec : ProtocolSpec n) :
+    QueryImpl (oSpec + challengeSpec plainSig (protocol pSpec))
+      (OracleComp (oSpec + [pSpec.Challenge]ₒ)) :=
+  QueryImpl.add (liftShared oSpec pSpec)
+    (legacyDraw (challengeOracle oSpec pSpec) 0 n (Nat.zero_add n))
+
+/-- The run of the interaction layer, with its challenges answered by the legacy challenge
+oracle, is the focal-first observation. -/
+theorem simulateQ_verifier_run (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOut)
+    (stmt : StmtIn) {Out : PathAlong plainSig (protocol pSpec) → Type}
+    (p : Core.Prover plainSig oSpec (protocol pSpec) Out) :
+    simulateQ (challengeReindex oSpec pSpec) (V.run stmt p) = observeWith .focalFirst V stmt p := by
+  have hl : (fun q => simulateQ (challengeReindex oSpec pSpec)
+      (liftM ((oSpec + challengeSpec plainSig (protocol pSpec)).query (.inl q)))) =
+      liftShared oSpec pSpec :=
+    funext fun q => QueryImpl.simulateQ_add_liftM_query_left _ _ q
+  have hr : (fun c => simulateQ (challengeReindex oSpec pSpec)
+      (liftM ((oSpec + challengeSpec plainSig (protocol pSpec)).query (.inr c)))) =
+      legacyDraw (challengeOracle oSpec pSpec) 0 n (Nat.zero_add n) :=
+    funext fun c => QueryImpl.simulateQ_add_liftM_query_right _ _ c
+  rw [Core.Verifier.run, observeWith, simulateQ_bind, TwoParty.Lens.run, simulateQ_runWith,
+    simulate_simulate, hl, hr]
+  refine bind_congr fun r => ?_
+  rcases r with ⟨tr, out, u⟩
+  rw [simulateQ_bind]
+  simp only [simulateQ_pure]
+  congr 1
+  rw [liftComp_def, liftComp_def]
+  refine QueryImpl.simulateQ_simulateQ_eq_of_apply (fun t => ?_) _
+  rw [OracleComp.liftM_eq_liftM_liftM, OracleQuery.liftM_add_left_query]
+  refine (congrFun hl t).trans ?_
+  rw [liftShared, OracleComp.liftM_eq_liftM_liftM (spec := oSpec)]
+  rfl
+
+/-- The challenge implementation of the plain tree induced by a legacy challenge
+implementation: each challenge node draws its round's legacy challenge. -/
+def plainChallengeImpl (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp) :
+    QueryImpl (challengeSpec plainSig (protocol pSpec)) ProbComp :=
+  fun c => (challengeMove 0 n (Nat.zero_add n) c).symm <$>
+    chImpl ⟨challengeRound 0 n (Nat.zero_add n) c, ()⟩
+
+theorem stateless_challengeOracle {σ : Type} (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp) (i : pSpec.ChallengeIdx) :
+    Stateless impl chImpl (challengeOracle oSpec pSpec i) :=
+  stateless_query_inr impl chImpl ⟨i, ()⟩
+
+/-- Reindexing the challenges moves the experiment from the plain tree's challenge oracle to
+the legacy challenge oracle. -/
+theorem experiment_challengeReindex {σ α : Type} (init : ProbComp σ)
+    (impl : QueryImpl oSpec (StateT σ ProbComp)) (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp)
+    (x : OracleComp (oSpec + challengeSpec plainSig (protocol pSpec)) α) :
+    experiment init impl (plainChallengeImpl chImpl) x =
+      experiment init impl chImpl (simulateQ (challengeReindex oSpec pSpec) x) := by
+  unfold experiment
+  refine bind_congr fun st => ?_
+  rw [QueryImpl.simulateQ_simulateQ_eq_of_apply (fun t => ?_) x]
+  rcases t with q | c
+  · exact QueryImpl.simulateQ_add_liftM_query_left _ _ q
+  · change simulateQ _ ((challengeMove 0 n (Nat.zero_add n) c).symm <$>
+      challengeOracle oSpec pSpec (challengeRound 0 n (Nat.zero_add n) c)) = _
+    rw [simulateQ_map, QueryImpl.addLift_def]
+    erw [QueryImpl.simulateQ_add_liftM_query_right]
+    refine StateT.ext fun s => ?_
+    simp only [QueryImpl.addLift_def, QueryImpl.add_apply_inr, QueryImpl.liftTarget_apply,
+      plainChallengeImpl, StateT.run_liftM]
+    erw [StateT.run_map, StateT.run_liftM]
+    simp only [map_eq_bind_pure_comp]
+    erw [bind_assoc, bind_map_left]
+    refine bind_congr fun _ => ?_
+    erw [LawfulMonad.pure_bind]
+    rfl
+
+end Bridge
+
+/-! ### Equality in distribution -/
+
+section Distribution
+
+variable {StmtIn WitIn StmtOut WitOut σ : Type}
+
+theorem DistEqFrom.map {κ : Type} {ambient : OracleSpec ι} {chal : OracleSpec κ}
+    {impl : QueryImpl ambient (StateT σ ProbComp)} {chImpl : QueryImpl chal ProbComp}
+    {α β : Type} {x y : OracleComp (ambient + chal) α} (h : DistEqFrom impl chImpl x y)
+    (f : α → β) : DistEqFrom impl chImpl (f <$> x) (f <$> y) := by
+  rw [map_eq_bind_pure_comp, map_eq_bind_pure_comp]
+  exact h.bind fun _ => DistEqFrom.refl _
+
+/-- The experiment only sees the distribution of output and final state from each initial
+state. -/
+theorem experiment_evalDistEq {κ : Type} {ambient : OracleSpec ι} {chal : OracleSpec κ}
+    (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
+    (chImpl : QueryImpl chal ProbComp) {α : Type} {x y : OracleComp (ambient + chal) α}
+    (h : DistEqFrom impl chImpl x y) :
+    experiment init impl chImpl x =ᵈ experiment init impl chImpl y := by
+  unfold experiment
+  refine EvalDistEq.bind (EvalDistEq.refl _) fun st => ?_
+  simp only [StateT.run'_eq]
+  exact (h st).map Prod.fst
+
+/-- The two schedules of the legacy observation agree in distribution, for every prover. -/
+theorem distEqFrom_observeWith (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp)
+    (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOut) (stmt : StmtIn)
+    {Out : PathAlong plainSig (protocol pSpec) → Type}
+    (p : Core.Prover plainSig oSpec (protocol pSpec) Out) :
+    DistEqFrom impl chImpl (observeWith .focalFirst V stmt p)
+      (observeWith .counterpartFirst V stmt p) :=
+  DistEqFrom.bind (distEqFrom_runWith impl chImpl _ _ _ fun _ =>
+    (stateless_challengeOracle impl chImpl _).map _) fun _ => DistEqFrom.refl _
+
+/-- **Observation transfer.** For every prover, the interaction-layer observation under the
+reindexed challenge implementation has the distribution of the legacy-indexed observation under
+the counterpart-first schedule. -/
+theorem experiment_verifier_run_evalDistEq (init : ProbComp σ)
+    (impl : QueryImpl oSpec (StateT σ ProbComp)) (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp)
+    (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOut) (stmt : StmtIn)
+    {Out : PathAlong plainSig (protocol pSpec) → Type}
+    (p : Core.Prover plainSig oSpec (protocol pSpec) Out) {β : Type}
+    (f : Observation plainSig (protocol pSpec) Out StmtOut → β) :
+    experiment init impl (plainChallengeImpl chImpl) (f <$> V.run stmt p) =ᵈ
+      experiment init impl chImpl (f <$> observeWith .counterpartFirst V stmt p) := by
+  rw [experiment_challengeReindex, simulateQ_map, simulateQ_verifier_run]
+  exact experiment_evalDistEq init impl chImpl ((distEqFrom_observeWith impl chImpl V stmt p).map f)
+
+/-- **Execution correspondence in distribution.** The finalized interaction-layer execution of
+the embedded reduction, with challenges drawn by the reindexed legacy challenge implementation,
+has the distribution of the legacy execution. -/
+theorem experiment_finalize_observe_evalDistEq (init : ProbComp σ)
+    (impl : QueryImpl oSpec (StateT σ ProbComp)) (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp)
+    (R : _root_.Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) (stmt : StmtIn)
+    (wit : WitIn) :
+    experiment init impl (plainChallengeImpl chImpl)
+        (finalize <$> (embedReduction R).observe stmt wit) =ᵈ
+      experiment init impl chImpl (R.run stmt wit).run := by
+  rw [← finalize_observeWith_counterpartFirst]
+  exact experiment_verifier_run_evalDistEq init impl chImpl _ stmt _ finalize
+
+/-- **Execution correspondence as measures.** For every measurable structure on the legacy
+result, the two output measures agree. Both experiments are `ProbComp`s, whose answer measure
+is the global uniform one; `none` is an outcome of the result type, not missing mass. -/
+theorem evalDist_experiment_finalize_observe [MeasurableSpace (LegacyResult pSpec StmtOut WitOut)]
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp)
+    (R : _root_.Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) (stmt : StmtIn)
+    (wit : WitIn) :
+    𝒟[experiment init impl (plainChallengeImpl chImpl)
+        (finalize <$> (embedReduction R).observe stmt wit)] =
+      𝒟[experiment init impl chImpl (R.run stmt wit).run] :=
+  (experiment_finalize_observe_evalDistEq init impl chImpl R stmt wit).evalDist_eq
+
+end Distribution
+
+/-! ### Pure challenge slots -/
+
+section PureSlots
+
+variable {StmtIn WitIn StmtOut WitOut : Type}
+
+/-- A legacy prover whose `receiveChallenge` has no effect before the challenge arrives. -/
+def PureChallengeSlots (P : _root_.Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) : Prop :=
+  ∀ i st, ∃ f, P.receiveChallenge i st = pure f
+
+/-- At round `j`, an embedded slot whose challenge-node effect is pure reacts purely as an
+observer of the sampler. -/
+theorem pureObservers_roundSlot {Out : Type}
+    (P : _root_.Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) (hP : PureChallengeSlots P)
+    (j : Fin n) (D : Direction) (hD : pSpec.dir j = D)
+    (rest : PlainPoly.B (plainPos D (pSpec.«Type» j)) → Protocol.{0})
+    (q : (x : Move plainSig (plainPos D (pSpec.«Type» j))) → P.PrvState j.succ →
+      Core.Prover plainSig oSpec (rest (plainSig.toFunB _ x)) (fun _ => Out))
+    (draw : (c : ChallengeNode plainSig (.liftBind (plainPos D (pSpec.«Type» j)) rest)) →
+      OracleComp (oSpec + [pSpec.Challenge]ₒ)
+        (challengeSpec plainSig (.liftBind (plainPos D (pSpec.«Type» j)) rest) c))
+    (st : P.PrvState j.castSucc)
+    (hq : ∀ x st', PureObservers (l := plainSig) (rest (plainSig.toFunB _ x))
+      (Prover.simulate (liftShared oSpec pSpec) (q x st'))
+      (sampler plainSig (rest (plainSig.toFunB _ x))
+        (fun c => draw ⟨.inr ⟨plainSig.toFunB _ x, c.val⟩, c.property⟩))) :
+    PureObservers (l := plainSig) (m := OracleComp (oSpec + [pSpec.Challenge]ₒ))
+      (.liftBind (plainPos D (pSpec.«Type» j)) rest) (OutP := fun _ => Out)
+      (Prover.simulate (l := plainSig) (s := .liftBind (plainPos D (pSpec.«Type» j)) rest)
+        (Out := fun _ => Out) (liftShared oSpec pSpec)
+        (Choice.map .focal (owner plainSig (plainPos D (pSpec.«Type» j))) q <$>
+          roundSlot P j D hD st))
+      (sampler plainSig _ draw) := by
+  have hp : Prover.simulate (l := plainSig) (s := .liftBind (plainPos D (pSpec.«Type» j)) rest)
+      (Out := fun _ => Out) (liftShared oSpec pSpec)
+      (Choice.map .focal (owner plainSig (plainPos D (pSpec.«Type» j))) q <$>
+        roundSlot P j D hD st) =
+      Choice.map .focal _ (fun x st' => Prover.simulate (liftShared oSpec pSpec) (q x st')) <$>
+        simulateQ (liftShared oSpec pSpec) (roundSlot P j D hD st) := by
+    change _ <$> simulateQ _ (_ <$> _) = _
+    rw [simulateQ_map, Functor.map_map]
+    exact congrArg (· <$> _) (funext fun a => congrFun (Choice.map_comp _ _ _ _) a)
+  cases D with
+  | P_to_V =>
+    refine ⟨_, PUnit, _, pure ⟨⟩, _, fun _ x => sampler plainSig (rest x)
+      (fun c => draw ⟨.inr ⟨x, c.val⟩, c.property⟩), hp, ?_, ⟨_, rfl⟩, ?_⟩
+    · refine (sampler_message _ rest draw).trans ?_
+      erw [LawfulApplicative.map_pure]
+      rfl
+    · intro i _
+      exact hq i.1 i.2
+  | V_to_P =>
+    obtain ⟨f, hf⟩ := hP ⟨j, hD⟩ st
+    refine ⟨_, _, _, draw ⟨.inl ⟨⟩, rfl⟩, _, fun x => ⟨x, sampler plainSig (rest ⟨⟩)
+      (fun c => draw ⟨.inr ⟨⟨⟩, c.val⟩, c.property⟩)⟩, hp, sampler_challenge _ rest draw,
+      ⟨f, ?_⟩, ?_⟩
+    · change simulateQ _ (P.receiveChallenge ⟨j, hD⟩ st) = _
+      rw [hf, simulateQ_pure]
+      rfl
+    · intro i x
+      exact hq x (i x)
+
+/-- An embedded prover with pure challenge slots reacts purely as an observer of the legacy
+sampler on the remaining rounds. -/
+theorem pureObservers_embedFrom (P : _root_.Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
+    (hP : PureChallengeSlots P)
+    (src : (i : pSpec.ChallengeIdx) → OracleComp (oSpec + [pSpec.Challenge]ₒ) (pSpec.Challenge i)) :
+    (m k : ℕ) → (h : k + m = n) → (st : P.PrvState ⟨k, by omega⟩) →
+    PureObservers (l := plainSig) (suffix pSpec k m h)
+      (Prover.simulate (liftShared oSpec pSpec) (embedFrom P k m h st)) (samplerFrom src k m h)
+  | 0, _, _, _ => ⟨⟨⟩, rfl⟩
+  | m + 1, k, h, st =>
+    pureObservers_roundSlot P hP ⟨k, by omega⟩ _ rfl (fun _ => suffix pSpec (k + 1) m (by omega))
+      (fun _ st' => embedFrom P (k + 1) m (by omega) st') _ st
+      (fun _ st' => pureObservers_embedFrom P hP src m (k + 1) (by omega) st')
+
+/-- **Schedule exchange as program equality.** When the honest prover's challenge slots are
+pure, the default and counterpart-first schedules of the embedded execution are the same
+program. -/
+theorem observeWith_focalFirst_eq (P : _root_.Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
+    (hP : PureChallengeSlots P) (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOut)
+    (stmt : StmtIn) (wit : WitIn) :
+    observeWith .focalFirst V stmt (embedProver P stmt wit) =
+      observeWith .counterpartFirst V stmt (embedProver P stmt wit) := by
+  have h := runWith_eq_of_pureObservers (l := plainSig) _ _ _
+    (pureObservers_embedFrom P hP (challengeOracle oSpec pSpec) n 0 (Nat.zero_add n)
+      (P.input (stmt, wit)))
+  unfold observeWith
+  erw [h]
+  rfl
+
+/-- **Execution correspondence as program equality.** When the honest prover's challenge slots
+are pure, reindexing the challenges of the finalized interaction-layer execution gives the
+legacy execution. -/
+theorem simulateQ_finalize_observe (R : _root_.Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
+    (hP : PureChallengeSlots R.prover) (stmt : StmtIn) (wit : WitIn) :
+    simulateQ (challengeReindex oSpec pSpec) (finalize <$> (embedReduction R).observe stmt wit) =
+      (R.run stmt wit).run := by
+  rw [simulateQ_map, Core.Reduction.observe, simulateQ_verifier_run, ← 
+    finalize_observeWith_counterpartFirst]
+  exact congrArg _ (observeWith_focalFirst_eq R.prover hP _ stmt wit)
+
+end PureSlots
+
+end Interaction.Core.Legacy
