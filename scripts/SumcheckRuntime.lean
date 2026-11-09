@@ -21,8 +21,10 @@ namespace SumcheckRuntime
 open OracleComp OracleSpec PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens
 open Sumcheck.Core.Computable
 
+/-- The test field `ZMod 17`. -/
 abbrev F := ZMod 17
 
+/-- `17` is prime, so `F` is a field. -/
 instance : Fact (Nat.Prime 17) := ⟨by decide⟩
 
 /-- Construct a two-coefficient array, trimming a zero leading coefficient. -/
@@ -37,8 +39,10 @@ def affine (a b : F) : Sumcheck.Impl.Representation.Message F 1 :=
         simp only [CompPoly.CPolynomial.degree, h]
         exact_mod_cast (show size ≤ 1 by omega)⟩
 
+/-- The prover's private event oracle: four indexed samples. -/
 abbrev events : OracleSpec (Fin 4) := Fin 4 →ₒ F
 
+/-- Query the `i`-th prover event. -/
 def event (i : Fin 4) : OracleComp events F := liftM (events.query i)
 
 /-- A logged effect: a prover event `.inl i`, or the `j`-th challenge draw `.inr j`. -/
@@ -84,6 +88,7 @@ def adaptive : Prover oracleSig events (protocol F 1 2) (fun _ => Unit) :=
     OracleComp events ((_ : Sumcheck.Impl.Representation.Message F 1) ×
       OracleComp events ((_ : F) → Prover oracleSig events (protocol F 1 1) (fun _ => Unit))))
 
+/-- The zero polynomial has every individual degree at most `1`. -/
 theorem zero_degree : ∀ j, (0 : CPoly.CMvPolynomial 2 F).degreeOf j ≤ 1 := by
   intro j
   rw [congrFun (CPoly.degreeOf_equiv (S := F) (p := 0)) j]
@@ -93,6 +98,7 @@ theorem zero_degree : ∀ j, (0 : CPoly.CMvPolynomial 2 F).degreeOf j ≤ 1 := b
 /-- The output oracle data of the adaptive runs: the zero polynomial. -/
 def original : ∀ _ : Unit, Input F 1 2 := fun _ => ⟨0, zero_degree⟩
 
+/-- The initial statement of the adaptive runs: target `1`, no challenges. -/
 def initial : Sumcheck.Spec.StatementRound F 2 0 := ⟨1, Fin.elim0⟩
 
 /-- The domain `{0}`. -/
@@ -112,10 +118,12 @@ def adaptiveObserve {d : ℕ} (D : Fin d ↪ F) : Option (F × F × F × F) × L
     ((fun obs => readVerdict (observe obs)) <$>
       (verifier F 1 2 D events).run initial original adaptive)).run []
 
+/-- Run a named check, failing with an error if it returns `false`. -/
 def check (label : String) (ok : Unit → Bool) : IO Unit := do
   unless ok () do throw (IO.userError s!"Sumcheck runtime check failed: {label}")
   IO.println s!"ok: {label}"
 
+/-- The Horner evaluation check and the adaptive two-round runs. -/
 def runChecks : IO Unit := do
   check "Horner evaluation, including trimmed zero leading coefficient" fun _ =>
     Sumcheck.Impl.Representation.evaluate F 1 (affine 7 1) 3 == 5 &&
@@ -133,6 +141,7 @@ def quadratic : CPoly.CMvPolynomial 2 F :=
   x ^ 2 + CPoly.CMvPolynomial.C 3 * x * y + CPoly.CMvPolynomial.C 2 * y ^ 2 +
     CPoly.CMvPolynomial.C 5
 
+/-- The quadratic has every individual degree at most `2`. -/
 theorem quadratic_degree : ∀ j, quadratic.degreeOf j ≤ 2 := by
   intro j
   rw [congrFun (CPoly.degreeOf_equiv (S := F) (p := quadratic)) j]
@@ -156,11 +165,13 @@ theorem quadratic_degree : ∀ j, quadratic.degreeOf j ≤ 2 := by
         ((MvPolynomial.degreeOf_pow_le j _ 2).trans (by omega))
   · simp
 
+/-- The domain `{0, 1, 2}`. -/
 def three : Fin 3 ↪ F := ⟨fun i => (i.val : F), by decide⟩
 
 /-- The input data of the honest runs: the quadratic. -/
 def quadraticInput : Input F 2 2 := ⟨quadratic, quadratic_degree⟩
 
+/-- The initial statement of the honest runs: the sum `15` of the quadratic over the domain. -/
 def quadraticInitial : Sumcheck.Spec.StatementRound F 2 0 := ⟨15, Fin.elim0⟩
 
 /-- Run the computable honest prover with challenges `4`; the log records the challenge draws. -/
@@ -170,6 +181,7 @@ def quadraticObserve : Option (F × F × F × F) × List Entry :=
       (verifier F 2 2 three events).run quadraticInitial (fun _ => quadraticInput)
         (honestProver three quadraticInitial fun _ => quadraticInput))).run []
 
+/-- The final statement of the honest runs with challenges `4`. -/
 def quadraticFinal : Sumcheck.Spec.StatementRound F 2 (Fin.last 2) := ⟨16, ![4, 4]⟩
 
 /-- The honest prover state after both rounds. -/
@@ -201,6 +213,7 @@ def quadraticChecks : IO Unit := do
 
 end SumcheckRuntime
 
+/-- Run every compiled Sumcheck check. -/
 def main : IO Unit := do
   SumcheckRuntime.runChecks
   SumcheckRuntime.quadraticChecks
