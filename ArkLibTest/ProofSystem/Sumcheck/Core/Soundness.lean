@@ -257,6 +257,13 @@ theorem empty_domain_rejection {σ : Type} (init : ProbComp σ)
 -- Migration rows: Sumcheck Interaction/Soundness #10, #21.
 
 
+-- Migration rows: Sumcheck Interaction/Soundness #7, #8, #9, #11.
+
+/-- The degree-one message carrier excludes `X ^ 2`. -/
+theorem excludes_quadratic : (X ^ 2 : F[X]) ∉ Polynomial.degreeLE F 1 := by
+  rw [Polynomial.mem_degreeLE, Polynomial.degree_X_pow]
+  decide
+
 /-- A degree-two message chosen with knowledge of the challenge `r`: it passes the false claim
 that the zero polynomial sums to one over `{0, 1}` and vanishes at `r`. -/
 def adaptive (r : F) : F⦃≤ 2⦄[X] :=
@@ -335,7 +342,7 @@ end
 
 end Sumcheck.Core.SoundnessTest
 
--- Migration rows: Sumcheck Interaction/Soundness #15, #16, #21, #23, #25–#28.
+-- Migration rows: Sumcheck Interaction/Soundness #13, #14, #15, #16, #17–#23, #25–#28.
 run_cmd do
   for decl in [``Sumcheck.Core.SoundnessTest.oneRound_soundness,
       ``Sumcheck.Core.SoundnessTest.committed_soundness,
@@ -346,6 +353,10 @@ run_cmd do
       ``Sumcheck.Core.SoundnessTest.empty_domain_rejection,
       ``Sumcheck.Core.SoundnessTest.challenge_first_probability,
       ``Sumcheck.Core.SoundnessTest.fresh_bound_lt_one,
+      ``Sumcheck.Core.SoundnessTest.excludes_quadratic,
+      ``Sumcheck.Core.SoundnessTest.adaptive, ``Sumcheck.Core.SoundnessTest.adaptive_endpoints,
+      ``Sumcheck.Core.SoundnessTest.adaptive_hits, ``Sumcheck.Core.SingleRoundTest.poly0,
+      ``Sumcheck.Core.CompletenessTest.polyX, ``Sumcheck.Core.SoundnessTest.polyXK,
       ``Sumcheck.Core.verifier_soundness, ``Sumcheck.Core.verifier_soundness_rounds,
       ``Sumcheck.Core.card_challengeIdx] do
     for ax in ← Lean.collectAxioms decl do

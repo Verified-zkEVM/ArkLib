@@ -291,6 +291,15 @@ example : (simulateQ record ((fun obs => obs.2.2.map fun t => t.1.target) <$>
   rw [two_rounds]
   rfl
 
+-- Migration row: Sumcheck Interaction/Protocol #5.
+
+/-- Passing every round check does not certify the final relation: the recorded run above accepts
+the claim `⟨7, ![3, 3]⟩`, but the zero input polynomial is not `7` at the challenges `3, 3`. -/
+theorem target_seven_not_final :
+    ((⟨7, ![3, 3]⟩, fun _ => original), ()) ∉ Spec.relationRound K 2 1 D₀ (Fin.last 2) := by
+  have : IsEmpty (Fin (2 - (Fin.last 2 : ℕ))) := ⟨fun i => by have := i.2; simp at this⟩
+  simpa [Spec.relationRound, original] using (by decide : (0 : K) ≠ 7)
+
 /-! ## A bad first round followed by a good round -/
 
 -- Migration rows: Sumcheck Interaction/Protocol #3, #4.
@@ -509,7 +518,8 @@ run_cmd
       ``Sumcheck.Core.EffectsTest.two_rounds, ``Sumcheck.Core.EffectsTest.bad_first_rounds,
       ``Sumcheck.Core.EffectsTest.range_eq, ``Sumcheck.Core.EffectsTest.decide_log_badFirst,
       ``Sumcheck.Core.EffectsTest.mem_support_adaptive,
-      ``Sumcheck.Core.EffectsTest.runWithLog_wrong] do
+      ``Sumcheck.Core.EffectsTest.runWithLog_wrong,
+      ``Sumcheck.Core.EffectsTest.target_seven_not_final] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"

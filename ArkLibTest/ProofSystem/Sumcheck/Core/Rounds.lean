@@ -308,6 +308,52 @@ theorem bilinear_relation :
     ∑ x ∈ Fintype.piFinset fun _ : Fin 2 => Finset.univ.map D₂,
       (1 + 2 * x 0 + 3 * x 1 + 4 * (x 0 * x 1)) = 1)
 
+-- Migration rows: Sumcheck Interaction/Projection #1, #2, #4, #5, #6, ProjectionTransport #1;
+-- Sequential #1, #3.
+
+/-- The domain `{0, 1}` as a finite set. -/
+theorem domain_points : Finset.univ.map D₂ = {0, 1} := by decide
+
+/-- The one-coordinate suffixes over `{0, 1}`. -/
+theorem suffix_points :
+    Fintype.piFinset (fun _ : Fin 1 => Finset.univ.map D₂) = {![0], ![1]} := by decide
+
+/-- The honest first message on `bilinear`. -/
+abbrev firstMsg : K⦃≤ 1⦄[X] := honestMessage D₂ 1 (initState ⟨1, Fin.elim0⟩ fun _ => bilinear)
+
+/-- The honest first message is `5 + 8 X`: `bilinear` with the second variable summed out. -/
+theorem projected_eval (x : K) : firstMsg.val.eval x = 5 + 8 * x :=
+  (Spec.SingleRound.relationRound_output_iff K 2 1 D₂ 0 ⟨1, Fin.elim0⟩ bilinear x
+    (5 + 8 * x)).1 (by
+      change ∑ y ∈ Fintype.piFinset fun _ : Fin 1 => Finset.univ.map D₂, _ = _
+      rw [suffix_points, Finset.sum_pair (by decide)]
+      simp [bilinear, Fin.append, Fin.addCases, Fin.snoc]
+      ring)
+
+/-- The honest first message passes the round-`0` sum check. -/
+theorem projected_sum : ∑ x ∈ Finset.univ.map D₂, firstMsg.val.eval x = 1 := by
+  rw [domain_points, Finset.sum_pair (by decide), projected_eval, projected_eval]
+  decide
+
+/-- The honest second message on `bilinear` after the first challenge `c`. -/
+abbrev secondMsg (c : K) : K⦃≤ 1⦄[X] :=
+  honestMessage D₂ 0
+    (nextState (honestMessage D₂) 1 (initState ⟨1, Fin.elim0⟩ fun _ => bilinear) c)
+
+/-- The honest second message is `bilinear` with the first variable fixed to `c`. -/
+theorem second_eval (c x : K) : (secondMsg c).val.eval x = 1 + 2 * c + 3 * x + 4 * c * x :=
+  (Spec.SingleRound.relationRound_output_iff K 2 1 D₂ 1
+    ⟨firstMsg.val.eval c, Fin.snoc Fin.elim0 c⟩ bilinear x (1 + 2 * c + 3 * x + 4 * c * x)).1 (by
+      refine (relationLast_iff_eval D₂ bilinear _ _).2 ?_
+      simp [bilinear, Fin.snoc]
+      ring)
+
+/-- At every first challenge `c`, the honest second message sums to the first message at `c`. -/
+theorem second_sum (c : K) :
+    ∑ x ∈ Finset.univ.map D₂, (secondMsg c).val.eval x = firstMsg.val.eval c := by
+  rw [domain_points, Finset.sum_pair (by decide), second_eval, second_eval, projected_eval]
+  ring
+
 /-- The honest first message on the bilinear input at the challenge `3`: the round-`0` check
 accepts the claim `⟨12, ![3]⟩`, and that claim with the unchanged input is in the round-`1`
 relation. -/
@@ -409,7 +455,12 @@ run_cmd
   for decl in [``Sumcheck.Core.RoundsTest.run_honest_eval, ``Sumcheck.Core.RoundsTest.run_three,
       ``Sumcheck.Core.RoundsTest.run_three_wrong, ``Sumcheck.Core.RoundsTest.run_two,
       ``Sumcheck.Core.RoundsTest.firstRound_relation,
-      ``Sumcheck.Core.RoundsTest.run_two_bilinear, ``Sumcheck.Core.RoundsTest.range_eq] do
+      ``Sumcheck.Core.RoundsTest.run_two_bilinear, ``Sumcheck.Core.RoundsTest.range_eq,
+      ``Sumcheck.Core.RoundsTest.relationLast_iff_eval, ``Sumcheck.Core.RoundsTest.bilinear,
+      ``Sumcheck.Core.RoundsTest.bilinear_relation, ``Sumcheck.Core.RoundsTest.domain_points,
+      ``Sumcheck.Core.RoundsTest.suffix_points, ``Sumcheck.Core.RoundsTest.projected_eval,
+      ``Sumcheck.Core.RoundsTest.projected_sum, ``Sumcheck.Core.RoundsTest.second_eval,
+      ``Sumcheck.Core.RoundsTest.second_sum] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"

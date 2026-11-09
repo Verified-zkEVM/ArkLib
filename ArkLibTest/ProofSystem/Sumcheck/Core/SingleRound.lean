@@ -195,6 +195,12 @@ def finishWith (q : F⦃≤ 1⦄[X]) (c : F) : F × F := (q.val.eval c, c)
 
 -- Migration rows: Sumcheck Interaction/SingleRound #2–#6, Closing #2, #3, #5.
 
+-- Migration row: Sumcheck Interaction/SingleRound #1.
+
+/-- The message `X` sums to one over `{0, 1}`. -/
+theorem msgX_sum : ∑ x ∈ Finset.univ.map D₂, msgX.val.eval x = 1 := by
+  simp [msgX, D₂, Fin.sum_univ_two]
+
 /-- Committing to `X` on the true claim that `X₀` sums to one over `{0, 1}`: the run with
 challenge three records `(X, 3)`, the prover outputs `(3, 3)`, and the verifier accepts the
 target three with history three and the input polynomial `X₀`. -/
@@ -285,7 +291,8 @@ run_cmd do
       ``Sumcheck.Core.SingleRoundTest.verdict_fail, ``Sumcheck.Core.SingleRoundTest.run_oneRound,
       ``Sumcheck.Core.SingleRoundTest.experiment_drawOne,
       ``Sumcheck.Core.SingleRoundTest.outcome_oneRound,
-      ``Sumcheck.Core.SingleRoundTest.relationLast_iff] do
+      ``Sumcheck.Core.SingleRoundTest.relationLast_iff,
+      ``Sumcheck.Core.SingleRoundTest.msgX_sum] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"
