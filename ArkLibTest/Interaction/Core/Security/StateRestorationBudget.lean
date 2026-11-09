@@ -44,6 +44,7 @@ namespace Interaction.Core.StateRestorationBudgetTests
   interface := messageInterface
   sampleChallenge := inferInstance
 
+/-- The protocol has the rounds `firstRound` and `secondRound`. -/
 @[implicit_reducible] def rounds : List Round := [firstRound, secondRound]
 
 /-- The first round's local error is `1/8`, the second's `1/16`. -/
@@ -67,6 +68,8 @@ instance : DecidableEq Stmt := fun a b =>
 instance lateKeyDecidableEq : DecidableEq ((Stmt × Fin 8 × Unit) ⊕ (Fin 8 × Unit × Empty)) :=
   inferInstance
 
+/-- Keys have decidable equality: a key is a first-round triple or a first message and salt above a
+second-round key. -/
 instance : DecidableEq (Key Stmt Unit rounds) :=
   inferInstanceAs (DecidableEq ((Stmt × Fin 8 × Unit) ⊕
     (Fin 8 × Unit × ((Stmt × Fin 8 × Unit) ⊕ (Fin 8 × Unit × Empty)))))
@@ -90,6 +93,7 @@ def verifier : OracleVerifier []ₒ (protocol rounds) Nat (Fin 8) emptyFamily ou
 def path (first : Fin 8) (second : Fin 16) : PathAlong oracleSig (protocol rounds) :=
   ⟨(5 : Fin 8), ⟨first, ⟨(7 : Fin 8), ⟨second, ⟨⟩⟩⟩⟩⟩
 
+/-- The selected messages 5 and 7, each with salt `()`. -/
 def messages : Messages Unit rounds := ⟨(5 : Fin 8), (), (7 : Fin 8), (), PUnit.unit⟩
 
 /-- The second-round key below first message 5 and input 0. -/
@@ -107,9 +111,9 @@ def transcript (m₁ : Fin 8) (c₁ : Fin 8) (m₂ : Fin 8) (c₂ : Fin 16) :
     PathAlong oracleSig (protocol rounds) :=
   ⟨m₁, ⟨c₁, ⟨m₂, ⟨c₂, ⟨⟩⟩⟩⟩⟩
 
--- Row 4 (StateRestorationBudget L182, observation): on every transcript, the closed observation
--- returns the second message as the claim and its output oracle when a challenge is `0`, and
--- rejects otherwise.
+-- Row 4 (StateRestorationBudget L182, observation).
+/-- On every transcript, the closed observation returns the second message as the claim and its
+output oracle when a challenge is `0`, and rejects otherwise. -/
 theorem observation (z : Stmt) (m₁ c₁ m₂ : Fin 8) (c₂ : Fin 16) :
     closedTerminalObservation verifier z (transcript m₁ c₁ m₂ c₂) =
       if c₁ = 0 ∨ c₂ = 0 then some (m₂, fun _ => m₂) else none := by
@@ -137,7 +141,8 @@ theorem observation (z : Stmt) (m₁ c₁ m₂ : Fin 8) (c₂ : Fin 16) :
 #eval (closedTerminalObservation verifier (stmt 0) (path 1 1)).map
   (fun claim => ((claim.1 : Nat), (claim.2 ⟨⟩ : Nat)))
 
--- Row 6 (StateRestorationBudget L235, queryBound): the adversary makes two queries.
+-- Row 6 (StateRestorationBudget L235, queryBound).
+/-- The adversary makes two queries. -/
 theorem queryBound : IsTotalQueryBound adversary 2 := by
   unfold adversary
   rw [isTotalQueryBound_query_bind_iff]
@@ -145,7 +150,8 @@ theorem queryBound : IsTotalQueryBound adversary 2 := by
   rw [isTotalQueryBound_query_bind_iff]
   exact ⟨by decide, fun _ => trivial⟩
 
--- Row 8 (StateRestorationBudget L246, max_errors): the largest round error is `1/8`.
+-- Row 8 (StateRestorationBudget L246, max_errors).
+/-- The largest round error is `1/8`. -/
 theorem max_errors : Finset.univ.sup errors = (1 / 8 : ENNReal) := by
   apply le_antisymm
   · apply Finset.sup_le
@@ -153,7 +159,8 @@ theorem max_errors : Finset.univ.sup errors = (1 / 8 : ENNReal) := by
     fin_cases j <;> norm_num [errors]
   · exact Finset.le_sup (f := errors) (Finset.mem_univ (0 : Fin 2))
 
--- Row 9 (StateRestorationBudget L253, sum_errors): the round errors sum to `3/16`.
+-- Row 9 (StateRestorationBudget L253, sum_errors).
+/-- The round errors sum to `3/16`. -/
 theorem sum_errors : (∑ j, errors j) = (3 / 16 : ENNReal) := by
   change (∑ j : Fin 2, errors j) = _
   rw [Fin.sum_univ_two]
@@ -163,8 +170,9 @@ theorem sum_errors : (∑ j, errors j) = (3 / 16 : ENNReal) := by
     ENNReal.coe_div (by norm_num : (16 : NNReal) ≠ 0), ENNReal.coe_ofNat, ENNReal.coe_one] using
     congrArg (fun x : NNReal => (x : ENNReal)) equality
 
--- Row 10, cost half (StateRestorationBudget L261, actual_nonuniform_game_bound): the restored
--- execution is charged at most `7/16` on every branch, the budget the frozen game bound uses.
+-- Row 10, cost half (StateRestorationBudget L261, actual_nonuniform_game_bound).
+/-- The restored execution is charged at most `7/16` on every branch, the budget the frozen game
+bound uses. -/
 theorem restoredExecution_charge :
     WorstCaseCostBound (restoredExecution rounds adversary)
       (⟨keyError errors⟩ : CostModel (oracleSpec Stmt Unit rounds) ENNReal) (7 / 16) := by
@@ -275,9 +283,10 @@ abbrev lateMoves (m₁ c₁ m₂ : Fin 8) :
     PrefixMoves oracleSig (s := protocol rounds) (.down ⟨⟩ (.down ⟨⟩ (.down ⟨⟩ (.root _)))) :=
   ⟨⟨m₁, rfl⟩, ⟨⟨c₁, rfl⟩, ⟨⟨m₂, rfl⟩, ⟨⟩⟩⟩⟩
 
--- Row 1 (StateRestorationBudget L91, preserving): the send law at both messages, the only prover
--- moves. No witness is known after the first message; at the second message the state after the
--- message implies the state before it on the extracted witness.
+-- Row 1 (StateRestorationBudget L91, preserving).
+/-- The send law at both messages, the only prover moves. No witness is known after the first
+message; at the second message the state after the message implies the state before it on the
+extracted witness. -/
 theorem preserving :
     (∀ (z : Stmt) (m₁ : Fin 8) (w : Nat),
       ¬ knowledge.toFun (.down ⟨⟩ (.root _)) ⟨⟨m₁, rfl⟩, ⟨⟩⟩ z w) ∧
@@ -297,16 +306,19 @@ abbrev secondChallenge : Cursor.Spine (protocol rounds)
     (.liftBind (OraclePos.challenge (Fin 16)) (fun _ => protocol [])) :=
   .down ⟨⟩ (.down ⟨⟩ (.down ⟨⟩ (.root _)))
 
+/-- The uniform `Fin 8` is `0` with probability `1/8`. -/
 theorem uniform_zero_eight : 𝒟[($ᵗ Fin 8 : ProbComp (Fin 8))] {0} = 1 / 8 := by
   rw [SampleableType.evalDist_uniformSample_singleton, one_div]
   simp
 
+/-- The uniform `Fin 16` is `0` with probability `1/16`. -/
 theorem uniform_zero_sixteen : 𝒟[($ᵗ Fin 16 : ProbComp (Fin 16))] {0} = 1 / 16 := by
   rw [SampleableType.evalDist_uniformSample_singleton, one_div]
   simp
 
--- Row 2 (StateRestorationBudget L104, bounded): the state function is locally bounded by the
--- round errors, `1/8` at the first challenge and `1/16` at the second.
+-- Row 2 (StateRestorationBudget L104, bounded).
+/-- The state function is locally bounded by the round errors, `1/8` at the first challenge and
+`1/16` at the second. -/
 theorem bounded : knowledge.LocallyBounded (uniformDraw rounds) (roundEps errors) := by
   intro z _ a next sp h history
   cases sp with
@@ -357,7 +369,8 @@ theorem bounded : knowledge.LocallyBounded (uniformDraw rounds) (roundEps errors
           exact sixteenth
         | down _ tail => cases tail
 
--- Row 3 (StateRestorationBudget L176, inputLaw): the root state is the input relation.
+-- Row 3 (StateRestorationBudget L176, inputLaw).
+/-- The root state is the input relation. -/
 theorem inputLaw (z : Stmt) (w : Nat) : knowledge.toFun (.root _) ⟨⟩ z w ↔ Rin z w := Iff.rfl
 
 /-- The oracle output relation: the witness is at most the output oracle's data. -/
@@ -365,8 +378,9 @@ def oracleRout (_ : Stmt) (_ : PathAlong oracleSig (protocol rounds))
     (claim : Fin 8 × (PUnit.{1} → Fin 8)) (w : Nat) : Prop :=
   w ≤ (claim.2 ⟨⟩).val
 
--- Row 5 (StateRestorationBudget L198, outputLaw): on every transcript, the terminal state on the
--- terminal witness is an accepted closed claim related to the witness.
+-- Row 5 (StateRestorationBudget L198, outputLaw).
+/-- On every transcript, the terminal state on the terminal witness is an accepted closed claim
+related to the witness. -/
 theorem outputLaw (z : Stmt) (tr : PathAlong oracleSig (protocol rounds)) (w : Nat) :
     knowledge.toFun (completeSpine oracleSig tr) (completeMoves oracleSig tr) z
       (knowledge.terminalWitness z tr w) ↔
@@ -381,6 +395,7 @@ theorem outputLaw (z : Stmt) (tr : PathAlong oracleSig (protocol rounds)) (w : N
   · simp [accepted, oracleRout]
   · simp [accepted]
 
+/-- An accepted closed claim related to the witness is a valid output. -/
 theorem closedOutputLaw (z : Stmt) (tr : PathAlong oracleSig (protocol rounds))
     (claim : Fin 8 × (PUnit.{1} → Fin 8)) (w : Nat)
     (accepted : closedTerminalObservation verifier z tr = some claim)
@@ -399,7 +414,7 @@ example (first : Fin 8) (second : Fin 16) :
 #guard_msgs in
 #eval knowledge.extractAlong (stmt 0) (path 0 1) 6
 
-/-- The closed knowledge error is at most `7/16`. -/
+/-- The nonuniform error budget, twice the largest round error plus their sum, is `7/16`. -/
 theorem budget_value :
     (2 : Nat) * Finset.univ.sup errors + ∑ j, errors j = (7 / 16 : ENNReal) := by
   rw [max_errors, sum_errors]
@@ -410,8 +425,9 @@ theorem budget_value :
     ENNReal.coe_ofNat, ENNReal.coe_one] using
     congrArg (fun x : NNReal => (x : ENNReal)) equality
 
--- Row 10 (StateRestorationBudget L261, actual_nonuniform_game_bound): the closed game has
--- knowledge error at most `2 * (1/8) + (1/8 + 1/16) = 7/16` for the two-query adversary.
+-- Row 10 (StateRestorationBudget L261, actual_nonuniform_game_bound).
+/-- The closed game has knowledge error at most `2 * (1/8) + (1/8 + 1/16) = 7/16` for the two-query
+adversary. -/
 theorem actual_nonuniform_game_bound :
     Pr{let result ← (simulateQ randomOracle (closedVerificationGame verifier adversary)).run' ∅}[
       True ∧ (∃ claim, result.2.2.1 = some claim ∧ oracleRout result.1 result.2.1 claim
@@ -486,8 +502,8 @@ example (z : Stmt) (m₁ c₁ m₂ : Fin 8) :
       (stages.root z).budget = 0 :=
   ⟨rfl, rfl, rfl, rfl, rfl⟩
 
--- Row 17 (StateRestorationBudget L360, stages_budgetAtMost_one): every step stage costs at most
--- one addition; the root and leaf stages cost none.
+-- Row 17 (StateRestorationBudget L360, stages_budgetAtMost_one).
+/-- Every step stage costs at most one addition; the root and leaf stages cost none. -/
 theorem stages_budgetAtMost_one : stages.BudgetAtMost 0 1 0 where
   root _ := le_rfl
   step _ _ _ sp _ := by
@@ -505,8 +521,9 @@ theorem stages_budgetAtMost_one : stages.BudgetAtMost 0 1 0 where
           | down _ tail => cases tail
   leaf _ _ _ := le_rfl
 
--- Row 18 (StateRestorationBudget L365, stages_protocolBudgetAtMost): each round has one charged
--- message stage and an uncharged challenge stage, at every statement.
+-- Row 18 (StateRestorationBudget L365, stages_protocolBudgetAtMost).
+/-- Each round has one charged message stage and an uncharged challenge stage, at every
+statement. -/
 theorem stages_protocolBudgetAtMost (z : Stmt) : stages.ProtocolBudgetAtMost z 0 1 0 0 where
   root := le_rfl
   step sp _ := by
@@ -531,13 +548,13 @@ example (z : Stmt) (tr : PathAlong oracleSig (protocol rounds)) :
       (0 + rounds.length • ((1 : Unit → Nat) + 1) + 0) :=
   stages.programAlong_costAtMost_protocol (stages_budgetAtMost_one.protocolBudgetAtMost z) tr
 
--- Row 20 (StateRestorationBudget L381, extractionProgram_budget): the composed program has
--- budget two on every statement and transcript.
+-- Row 20 (StateRestorationBudget L381, extractionProgram_budget).
+/-- The composed program has budget two on every statement and transcript. -/
 theorem extractionProgram_budget (z : Stmt) (tr : PathAlong oracleSig (protocol rounds)) :
     (stages.programAlong z tr).budget = 2 := rfl
 
--- Row 21 (StateRestorationBudget L385, extractionProgram_costAtMost): every execution of the
--- composed program costs at most two, on every statement and transcript.
+-- Row 21 (StateRestorationBudget L385, extractionProgram_costAtMost).
+/-- Every execution of the composed program costs at most two, on every statement and transcript. -/
 theorem extractionProgram_costAtMost (z : Stmt) (tr : PathAlong oracleSig (protocol rounds)) :
     (stages.programAlong z tr).program.CostAtMost 2 := by
   simpa only [extractionProgram_budget] using (stages.programAlong z tr).costAtMost
@@ -547,8 +564,8 @@ example (z : Stmt) (tr : PathAlong oracleSig (protocol rounds)) (w : Nat) :
     (stages.programAlong z tr).program.run w = knowledge.extractAlong z tr w :=
   stages.run_programAlong z tr w
 
--- Row 23 (StateRestorationBudget L396, extractionProgram_run_inputWitness): on every transcript
--- the composed run adds both messages to the output witness.
+-- Row 23 (StateRestorationBudget L396, extractionProgram_run_inputWitness).
+/-- On every transcript the composed run adds both messages to the output witness. -/
 theorem extractionProgram_run (z : Stmt) (m₁ c₁ m₂ : Fin 8) (c₂ : Fin 16) (w : Nat) :
     (stages.programAlong z (transcript m₁ c₁ m₂ c₂)).program.run w = w + m₂.val + m₁.val :=
   stages.run_programAlong z _ w
@@ -560,15 +577,15 @@ def extractionObservation (z : Stmt) (tr : PathAlong oracleSig (protocol rounds)
   (simulateQ ((program.answer (program.view w)).withAddCost program.cost)
     (program.program (program.view w))).runAdd.run.map id (fun count => count ())
 
--- Row 24 (StateRestorationBudget L410, extractionObservation_cost): every run records the two
--- message additions.
+-- Row 24 (StateRestorationBudget L410, extractionObservation_cost).
+/-- Every run records the two message additions. -/
 theorem extractionObservation_cost (z : Stmt) (tr : PathAlong oracleSig (protocol rounds))
     (w : Nat) : (extractionObservation z tr w).2 = 2 := by
   rcases tr with ⟨m₁, ⟨c₁, ⟨m₂, ⟨c₂, ⟨⟩⟩⟩⟩⟩
   rfl
 
--- Row 25 (StateRestorationBudget L417, extractionObservation_result): erasing the recorded cost
--- returns the extracted witness.
+-- Row 25 (StateRestorationBudget L417, extractionObservation_result).
+/-- Erasing the recorded cost returns the extracted witness. -/
 theorem extractionObservation_result (z : Stmt) (tr : PathAlong oracleSig (protocol rounds))
     (w : Nat) : (extractionObservation z tr w).1 = knowledge.extractAlong z tr w := by
   rcases tr with ⟨m₁, ⟨c₁, ⟨m₂, ⟨c₂, ⟨⟩⟩⟩⟩⟩
@@ -581,8 +598,9 @@ abbrev afterFirst : OracleProtocol :=
 /-- The root cursor of the protocol. -/
 abbrev start : Cursor.Spine (protocol rounds) (protocol rounds) := .root _
 
--- Row 26 (StateRestorationBudget L424, extractionProgram_writer): on every transcript the writer
--- run from the root executes the rest of the transcript before the first message stage.
+-- Row 26 (StateRestorationBudget L424, extractionProgram_writer).
+/-- On every transcript the writer run from the root executes the rest of the transcript before the
+first message stage. -/
 theorem extractionProgram_writer (z : Stmt) (m₁ : Fin 8) (tr : PathAlong oracleSig afterFirst) :
     let suffix := stages.programFrom z _ (PrefixMoves.snoc oracleSig start ⟨⟩ m₁) tr
     let first := (stages.step z start ⟨⟩).program.contramap

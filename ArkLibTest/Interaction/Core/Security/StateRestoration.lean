@@ -30,6 +30,7 @@ namespace Interaction.Core.StateRestorationTests
   interface := messageInterface
   sampleChallenge := inferInstance
 
+/-- The protocol has the single round `round`. -/
 @[implicit_reducible] def rounds : List Round := [round]
 
 /-- The output is one `Fin 8` oracle. -/
@@ -46,6 +47,7 @@ def stmt (z : Nat) : Stmt := (z, fun i => PEmpty.elim i)
 instance : DecidableEq Stmt := fun a b =>
   decidable_of_iff (a.1 = b.1) ⟨fun h => Prod.ext h (funext fun i => i.elim), congrArg Prod.fst⟩
 
+/-- Keys have decidable equality: a key is a first-round triple, and no later round exists. -/
 instance : DecidableEq (Key Stmt Unit rounds) :=
   inferInstanceAs (DecidableEq ((Stmt × Fin 8 × Unit) ⊕ (Fin 8 × Unit × Empty)))
 
@@ -66,9 +68,10 @@ def verifier : OracleVerifier []ₒ (protocol rounds) Nat (Fin 8) emptyFamily ou
 /-- The transcript with message `m` and challenge `c`. -/
 def path (m : Fin 8) (c : Bool) : PathAlong oracleSig (protocol rounds) := ⟨m, ⟨c, ⟨⟩⟩⟩
 
-/-- The adversary selects input 0, message 7, salt `()` and witness 6 without querying. -/
+/-- The selected message 7 with salt `()`. -/
 def messages : Messages Unit rounds := ⟨(7 : Fin 8), (), PUnit.unit⟩
 
+/-- The adversary selects input 0, message 7, salt `()` and witness 6 without querying. -/
 def adversary : OracleComp (oracleSpec Stmt Unit rounds) (Stmt × Messages Unit rounds × Nat) :=
   pure ⟨stmt 0, messages, 6⟩
 
@@ -80,13 +83,13 @@ def key : Key Stmt Unit rounds := Key.here (stmt 0) (7 : Fin 8) ()
 example : sampleAt oracleSig (uniformDraw rounds) (keySpine key) rfl = ($ᵗ Bool) :=
   sampleAt_keySpine key
 
--- Row 13 (StateRestoration L215, oracleObservation_true): on `true` the closed observation returns
--- the message as the claim and as its output oracle.
+-- Row 13 (StateRestoration L215, oracleObservation_true).
+/-- On `true` the closed observation returns the message as the claim and as its output oracle. -/
 theorem oracleObservation_true (z : Nat) (m : Fin 8) :
     closedTerminalObservation verifier (stmt z) (path m true) = some (m, fun _ => m) := rfl
 
--- Row 14 (StateRestoration L219, oracleObservation_false): on `false` the closed observation is
--- `none`.
+-- Row 14 (StateRestoration L219, oracleObservation_false).
+/-- On `false` the closed observation is `none`. -/
 theorem oracleObservation_false (z : Nat) (m : Fin 8) :
     closedTerminalObservation verifier (stmt z) (path m false) = none := rfl
 
@@ -246,19 +249,21 @@ def knowledge : KnowledgeStateFunction oracleSig (protocol rounds) Stmt (fun _ =
         rcases history with ⟨⟨m, ⟨⟩⟩, ⟨⟨c, ⟨⟩⟩, ⟨⟩⟩⟩
         exact hvalid
 
--- Row 1 (StateRestoration L87, inputLaw): the root state is the input relation.
+-- Row 1 (StateRestoration L87, inputLaw).
+/-- The root state is the input relation. -/
 theorem inputLaw (z : Stmt) (w : Nat) : knowledge.toFun (.root _) ⟨⟩ z w ↔ Rin z w := Iff.rfl
 
--- Row 2 (StateRestoration L89, outputLaw): the terminal state on the terminal witness is the
--- valid-output relation, on every transcript.
+-- Row 2 (StateRestoration L89, outputLaw).
+/-- The terminal state on the terminal witness is the valid-output relation, on every transcript. -/
 theorem outputLaw (z : Stmt) (tr : PathAlong oracleSig (protocol rounds)) (w : Nat) :
     knowledge.toFun (completeSpine oracleSig tr) (completeMoves oracleSig tr) z
       (knowledge.terminalWitness z tr w) ↔ valid z tr w := by
   rcases tr with ⟨m, ⟨c, ⟨⟩⟩⟩
   rfl
 
--- Row 3 (StateRestoration L96, preserving): the send law at the message, the only prover move.
--- No witness is known after the message, so preservation is vacuous there.
+-- Row 3 (StateRestoration L96, preserving).
+/-- The send law at the message, the only prover move. No witness is known after the message, so
+preservation is vacuous there. -/
 theorem preserving (z : Stmt) (m : Fin 8) (w : Nat) :
     ¬ knowledge.toFun (.down ⟨⟩ (.root _)) ⟨⟨m, rfl⟩, ⟨⟩⟩ z w := id
 
@@ -267,8 +272,8 @@ abbrev challengeSpine : Cursor.Spine (protocol rounds)
     (.liftBind (OraclePos.challenge Bool) (fun _ => protocol [])) :=
   .down ⟨⟩ (.root _)
 
--- Row 4 (StateRestoration L105, badChallenge_iff): below every message the bad challenges are
--- exactly `true`.
+-- Row 4 (StateRestoration L105, badChallenge_iff).
+/-- Below every message the bad challenges are exactly `true`. -/
 theorem badChallenge_iff (z : Stmt) (m : Fin 8) (c : Bool) :
     c ∈ knowledge.badChallenge challengeSpine ⟨⟨m, rfl⟩, ⟨⟩⟩ z ↔ c = true := by
   constructor
@@ -277,12 +282,14 @@ theorem badChallenge_iff (z : Stmt) (m : Fin 8) (c : Bool) :
   · intro isTrue
     exact ⟨(0 : Nat), id, isTrue, Nat.zero_le _⟩
 
+/-- The uniform `Bool` is `true` with probability `1/2`. -/
 theorem uniform_true : 𝒟[($ᵗ Bool : ProbComp Bool)] {true} = 1 / 2 := by
   rw [SampleableType.evalDist_uniformSample_singleton, one_div]
   simp
 
--- Row 5 (StateRestoration L113, bounded): the state function is locally bounded by `1/2` at the
--- uniform draw, hence round-by-round knowledge sound.
+-- Row 5 (StateRestoration L113, bounded).
+/-- The state function is locally bounded by `1/2` at the uniform draw, hence round-by-round
+knowledge sound. -/
 theorem bounded : knowledge.LocallyBounded (uniformDraw rounds) (uniformEps rounds (1 / 2)) := by
   intro z _ a next sp h history
   cases sp with
@@ -330,6 +337,7 @@ example (table : Table Stmt Unit rounds) (htrue : table key = true) :
 def Rout (_ : Stmt) (_ : PathAlong oracleSig (protocol rounds)) (t : Fin 8) (w : Nat) : Prop :=
   w ≤ t.val
 
+/-- An accepted statement related to the witness is a valid output. -/
 theorem plainOutputLaw (z : Stmt) (tr : PathAlong oracleSig (protocol rounds)) (t : Fin 8)
     (w : Nat) (accepted : terminalObservation verifier z tr = some t) (related : Rout z tr t w) :
     valid z tr w := by
@@ -339,8 +347,8 @@ theorem plainOutputLaw (z : Stmt) (tr : PathAlong oracleSig (protocol rounds)) (
   · cases accepted
     exact ⟨rfl, related⟩
 
--- Row 8 (StateRestoration L156, actual_game_bound): the plain game has knowledge error at most
--- `1/2` for an adversary without queries.
+-- Row 8 (StateRestoration L156, actual_game_bound).
+/-- The plain game has knowledge error at most `1/2` for an adversary without queries. -/
 theorem actual_game_bound :
     Pr{let result ← (simulateQ randomOracle (verificationGame verifier adversary)).run' ∅}[
       True ∧ (∃ t, result.2.2.1 = some t ∧ Rout result.1 result.2.1 t result.2.2.2) ∧
@@ -354,8 +362,9 @@ def oracleRout (_ : Stmt) (_ : PathAlong oracleSig (protocol rounds))
     (claim : Fin 8 × (PUnit.{1} → Fin 8)) (w : Nat) : Prop :=
   w ≤ (claim.2 ⟨⟩).val
 
--- Row 15 (StateRestoration L223, oracleOutputLaw): the terminal state on the terminal witness is
--- an accepted closed claim related to the witness.
+-- Row 15 (StateRestoration L223, oracleOutputLaw).
+/-- The terminal state on the terminal witness is an accepted closed claim related to the
+witness. -/
 theorem oracleOutputLaw (z : Stmt) (tr : PathAlong oracleSig (protocol rounds)) (w : Nat) :
     knowledge.toFun (completeSpine oracleSig tr) (completeMoves oracleSig tr) z
       (knowledge.terminalWitness z tr w) ↔
@@ -367,14 +376,15 @@ theorem oracleOutputLaw (z : Stmt) (tr : PathAlong oracleSig (protocol rounds)) 
   · change (true = true ∧ w ≤ m.val) ↔ ∃ claim, some (m, fun _ => m) = some claim ∧ _
     simp [oracleRout]
 
+/-- An accepted closed claim related to the witness is a valid output. -/
 theorem closedOutputLaw (z : Stmt) (tr : PathAlong oracleSig (protocol rounds))
     (claim : Fin 8 × (PUnit.{1} → Fin 8)) (w : Nat)
     (accepted : closedTerminalObservation verifier z tr = some claim)
     (related : oracleRout z tr claim w) : valid z tr w :=
   (outputLaw z tr w).mp ((oracleOutputLaw z tr w).mpr ⟨claim, accepted, related⟩)
 
--- Row 16 (StateRestoration L245, actual_oracle_game_bound): the closed game has knowledge error at
--- most `1/2`.
+-- Row 16 (StateRestoration L245, actual_oracle_game_bound).
+/-- The closed game has knowledge error at most `1/2`. -/
 theorem actual_oracle_game_bound :
     Pr{let result ← (simulateQ randomOracle (closedVerificationGame verifier adversary)).run' ∅}[
       True ∧ (∃ claim, result.2.2.1 = some claim ∧ oracleRout result.1 result.2.1 claim
@@ -384,8 +394,8 @@ theorem actual_oracle_game_bound :
     (fun _ _ w => w) closedOutputLaw (1 / 2) bounded adversary 0 trivial
   simpa [rounds] using general
 
--- Row 20 (StateRestoration L274, actual_coin_oracle_game_bound): the same bound with uniform
--- private coins choosing between two adversaries.
+-- Row 20 (StateRestoration L274, actual_coin_oracle_game_bound).
+/-- The same bound with uniform private coins choosing between two adversaries. -/
 theorem actual_coin_oracle_game_bound :
     Pr{let result ← ((OptionT.lift ($ᵗ Bool) : OptionT ProbComp Bool) >>= fun coin =>
       OptionT.lift ((simulateQ randomOracle
