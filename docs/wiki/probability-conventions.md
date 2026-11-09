@@ -46,9 +46,11 @@ belong upstream in VCVio before their ArkLib consumers are integrated.
 `ArkLib/Data/Probability/Instances.lean` retains specialized mathematical facts about
 Schwartz–Zippel, dot products, and coordinate membership. `Combinatorial.lean` contains the
 collision-to-image-size argument for probability measures on a countable full-mass carrier.
-These mathematical helpers live in `namespace Probability`. `Sequential.lean` averages the error of
-a second computation over the actual output distribution of the first, charging exceptional outputs
-separately and needing no losslessness assumption. `KoalaBear.lean` gives the sextic extension
+These mathematical helpers live in `namespace Probability`. To average the error of a second
+computation over the actual output distribution of the first, charging exceptional outputs
+separately and needing no losslessness assumption, use VCVio's
+`prEvent_bind_le_prEvent_add_lintegral_ae` (`VCVio.EvalDist.Monad.Disagreement.Measure`), or
+`OracleRuntime.run_bind_success_le` and its variants for resumed runtime runs. `KoalaBear.lean` gives the sextic extension
 `KoalaBear.Ext6` a computable `SampleableType` instance that samples six base-field limbs.
 
 `VCVio.EvalDist.ProbabilityBounds` also supplies

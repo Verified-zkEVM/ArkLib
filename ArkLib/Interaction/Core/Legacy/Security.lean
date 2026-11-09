@@ -427,20 +427,24 @@ theorem challengeMoveInvariant_extractor {κ : Type} {chal : OracleSpec κ}
 
 /-- The interaction-layer view of a legacy straight-line extractor. -/
 def liftExtractor (E : _root_.Extractor.Straightline oSpec StmtIn WitIn WitOut pSpec) :
-    Core.Extractor.Straightline oSpec (protocol pSpec) (fun _ : StmtIn => WitIn) WitOut :=
-  fun stmt w tr pl vl => E stmt w (decode pSpec tr) pl vl
+    Core.Extractor.Straightline oSpec (protocol pSpec) (fun _ : StmtIn => WitIn)
+      (fun _ => WitOut) :=
+  fun stmt tr w pl vl => E stmt w (decode pSpec tr) pl vl
 
 /-- The legacy view of an interaction-layer straight-line extractor on the plain tree. -/
 def lowerExtractor
-    (E : Core.Extractor.Straightline oSpec (protocol pSpec) (fun _ : StmtIn => WitIn) WitOut) :
+    (E : Core.Extractor.Straightline oSpec (protocol pSpec) (fun _ : StmtIn => WitIn)
+      (fun _ => WitOut)) :
     _root_.Extractor.Straightline oSpec StmtIn WitIn WitOut pSpec :=
-  fun stmt w tr pl vl => E stmt w ((transcriptEquiv pSpec).symm tr) pl vl
+  fun stmt w tr pl vl => E stmt ((transcriptEquiv pSpec).symm tr) w pl vl
 
 @[simp] theorem liftExtractor_lowerExtractor
-    (E : Core.Extractor.Straightline oSpec (protocol pSpec) (fun _ : StmtIn => WitIn) WitOut) :
+    (E : Core.Extractor.Straightline oSpec (protocol pSpec) (fun _ : StmtIn => WitIn)
+      (fun _ => WitOut)) :
     liftExtractor (lowerExtractor E) = E := by
-  funext stmt w tr pl vl
-  simp [liftExtractor, lowerExtractor, decode]
+  funext stmt tr w pl vl
+  simp only [liftExtractor, lowerExtractor, decode]
+  rw [Equiv.symm_apply_apply]
 
 /-- **Interaction-layer knowledge program.** The extraction game of the embedded verifier with a
 lifted legacy extractor, read as a legacy result, is the decoded logged prover-sampler run
@@ -1163,13 +1167,13 @@ theorem embedExtractStep_congr {relIn : Set (StmtIn × WitIn)} {relOut : Set (St
 
 /-- The interaction-layer knowledge state function of a legacy knowledge state function: the
 witness at a full prefix is the legacy intermediate witness at its legacy transcript prefix, and
-extraction is the legacy extractor's. The all-state terminal certificate `hK` plays the role
-that `hS` plays in `embedStateFunction`. -/
+extraction is the legacy extractor's, at the constant output witness family `fun _ => WitOut`.
+The all-state terminal certificate `hK` plays the role that `hS` plays in `embedStateFunction`. -/
 def embedKnowledgeStateFunction (hacc : L.AcceptanceAgrees impl V acc)
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid}
     (K : V.KnowledgeStateFunction init impl relIn relOut E) (hK : KnowledgeTerminalCertificate K) :
-    KnowledgeStateFunction L.l L.protocol StmtIn WitOut WitIn (fun _ => True)
+    KnowledgeStateFunction L.l L.protocol StmtIn (fun _ => WitOut) WitIn (fun _ => True)
       (fun stmt w => (stmt, w) ∈ relIn)
       (fun stmt tr wit => acc (fun t => (t, wit) ∈ relOut) stmt tr) where
   Witness sp hist := WitMid (L.legacyPrefix sp hist).1
@@ -1195,7 +1199,7 @@ def embedKnowledgeStateFunction (hacc : L.AcceptanceAgrees impl V acc)
 makes the knowledge state true. -/
 def languageStateFunction (hacc : L.AcceptanceAgrees impl V acc) {relIn : Set (StmtIn × WitIn)}
     {relOut : Set (StmtOut × WitOut)}
-    (F : KnowledgeStateFunction L.l L.protocol StmtIn WitOut WitIn (fun _ => True)
+    (F : KnowledgeStateFunction L.l L.protocol StmtIn (fun _ => WitOut) WitIn (fun _ => True)
       (fun stmt w => (stmt, w) ∈ relIn)
       (fun stmt tr wit => acc (fun t => (t, wit) ∈ relOut) stmt tr)) :
     StateFunction L.l L.protocol StmtIn
@@ -1366,7 +1370,7 @@ theorem embedVerifier_rbrKnowledgeSoundness (init : ProbComp σ)
       (K : V.KnowledgeStateFunction init impl relIn relOut E), KnowledgeTerminalCertificate K)
     (h : V.rbrKnowledgeSoundness init impl relIn relOut ε) :
     (embedVerifier V).rbrKnowledgeSoundness impl (fun _ => True) (fun stmt w => (stmt, w) ∈ relIn)
-      (fun t w => (t, w) ∈ relOut) (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
+      (fun _ t w => (t, w) ∈ relOut) (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
       (fun c => ε (challengeRound 0 n (Nat.zero_add n) c)) :=
   (plainLayout pSpec).rbrKnowledgeSoundness_of_legacy (validAcceptance_embed_iff V impl) relIn
     relOut ε hcert h
@@ -1379,7 +1383,7 @@ theorem rbrKnowledgeSoundness_of_embedVerifier [Nonempty WitIn] (init : ProbComp
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (ε : pSpec.ChallengeIdx → ℝ≥0)
     (h : (embedVerifier V).rbrKnowledgeSoundness impl (fun _ => True)
-      (fun stmt w => (stmt, w) ∈ relIn) (fun t w => (t, w) ∈ relOut)
+      (fun stmt w => (stmt, w) ∈ relIn) (fun _ t w => (t, w) ∈ relOut)
       (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
       (fun c => ε (challengeRound 0 n (Nat.zero_add n) c))) :
     V.rbrKnowledgeSoundness init impl relIn relOut ε :=
@@ -1398,7 +1402,7 @@ theorem rbrKnowledgeSoundness_iff [Nonempty WitIn] (init : ProbComp σ)
       (E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec M)
       (K : V.KnowledgeStateFunction init impl relIn relOut E), KnowledgeTerminalCertificate K) :
     (embedVerifier V).rbrKnowledgeSoundness impl (fun _ => True)
-        (fun stmt w => (stmt, w) ∈ relIn) (fun t w => (t, w) ∈ relOut)
+        (fun stmt w => (stmt, w) ∈ relIn) (fun _ t w => (t, w) ∈ relOut)
         (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
         (fun c => ε (challengeRound 0 n (Nat.zero_add n) c)) ↔
       V.rbrKnowledgeSoundness init impl relIn relOut ε :=

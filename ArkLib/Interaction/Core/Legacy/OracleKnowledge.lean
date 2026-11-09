@@ -51,23 +51,24 @@ the transcript decoded from the oracle tree, and the same two shared-oracle logs
 def liftOracleExtractor
     (E : _root_.Extractor.Straightline oSpec (StmtIn × ∀ i, OStmtIn i) WitIn WitOut pSpec) :
     Core.Extractor.OracleStraightline oSpec (oracleProtocol pSpec)
-      (fun _ : StmtIn × (∀ i, OStmtIn i) => WitIn) WitOut :=
-  fun stmt w tr pl vl => E stmt w (oracleDecode pSpec tr) pl vl
+      (fun _ : StmtIn × (∀ i, OStmtIn i) => WitIn) (fun _ => WitOut) :=
+  fun stmt tr w pl vl => E stmt w (oracleDecode pSpec tr) pl vl
 
 /-- The legacy view of an interaction-layer straight-line extractor on the oracle tree. -/
 def lowerOracleExtractor
     (E : Core.Extractor.OracleStraightline oSpec (oracleProtocol pSpec)
-      (fun _ : StmtIn × (∀ i, OStmtIn i) => WitIn) WitOut) :
+      (fun _ : StmtIn × (∀ i, OStmtIn i) => WitIn) (fun _ => WitOut)) :
     _root_.Extractor.Straightline oSpec (StmtIn × ∀ i, OStmtIn i) WitIn WitOut pSpec :=
-  fun stmt w T pl vl => E stmt w ((oracleTranscriptEquiv pSpec).symm T) pl vl
+  fun stmt w T pl vl => E stmt ((oracleTranscriptEquiv pSpec).symm T) w pl vl
 
 omit [∀ t, Inhabited (oSpec.Range t)] Oₛᵢ Oₛₒ in
 @[simp] theorem liftOracleExtractor_lowerOracleExtractor
     (E : Core.Extractor.OracleStraightline oSpec (oracleProtocol pSpec)
-      (fun _ : StmtIn × (∀ i, OStmtIn i) => WitIn) WitOut) :
+      (fun _ : StmtIn × (∀ i, OStmtIn i) => WitIn) (fun _ => WitOut)) :
     liftOracleExtractor (lowerOracleExtractor E) = E := by
-  funext stmt w tr pl vl
-  simp [liftOracleExtractor, lowerOracleExtractor, oracleDecode]
+  funext stmt tr w pl vl
+  simp only [liftOracleExtractor, lowerOracleExtractor, oracleDecode]
+  rw [Equiv.symm_apply_apply]
 
 /-! ### The oracle knowledge program -/
 
