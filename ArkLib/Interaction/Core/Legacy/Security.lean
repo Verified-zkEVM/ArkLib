@@ -167,9 +167,10 @@ theorem simulate_mapOut {κ : Type} {spec : OracleSpec κ} {M : Type → Type} [
     (p : Core.Prover plainSig spec s Out) →
     Prover.simulate F (mapOut s f p) = mapOut s f (Prover.simulate F p)
   | .pure ⟨⟩, _, _, f, p => by
-    change simulateQ F (_ <$> p) = _ <$> simulateQ F p
+    rw [Prover.simulate_done, Prover.simulate_done]
     exact simulateQ_map F p _
   | .liftBind a rest, _, _, f, p => by
+    rw [Prover.simulate_node, Prover.simulate_node]
     change _ <$> simulateQ F (_ <$> p) = _ <$> (_ <$> simulateQ F p)
     rw [simulateQ_map, Functor.map_map, Functor.map_map]
     refine congrArg (· <$> simulateQ F p) (funext fun c => ?_)

@@ -176,10 +176,8 @@ theorem runWith_roundSlot {β Out : Type}
           (Choice.map .focal _ q <$> roundSlot P j D hD st))
         (sampler plainSig _ draw) >>= G) =
       P.processRound j (pure (pre, st)) >>= F := by
-  rw [runWith_liftBind, step_bind]
-  change step _ _ (Choice.map .focal _ (fun _ => Prover.simulate (liftShared oSpec pSpec)) <$>
-    simulateQ (liftShared oSpec pSpec) (Choice.map .focal _ q <$> roundSlot P j D hD st)) _ _ = _
-  rw [step_map_left, simulateQ_map, step_map_left]
+  rw [runWith_liftBind, step_bind, Prover.simulate_node, step_map_left, simulateQ_map,
+    step_map_left]
   refine step_counterpartFirst_roundSlot P j D hD rest draw hdraw st pre F _ fun x st' => ?_
   simp only [bind_assoc, LawfulMonad.pure_bind]
   exact hK x st'
@@ -420,14 +418,12 @@ theorem simulate_simulate {P : PFunctor.{1, 0}} {l : PFunctor.Lens P rolePoly.{0
     (s : FreeM P PUnit.{1}) → {Out : PathAlong l s → Type} →
     (p : Core.Prover l spec s Out) →
     Prover.simulate F (Prover.simulate G p) = Prover.simulate (fun q => simulateQ F (G q)) p
-  | .pure _, _, p => QueryImpl.simulateQ_simulateQ_eq_of_apply (fun _ => rfl) p
+  | .pure _, _, p => by
+    rw [Prover.simulate_done, Prover.simulate_done, Prover.simulate_done]
+    exact QueryImpl.simulateQ_simulateQ_eq_of_apply (fun _ => rfl) p
   | .liftBind a rest, _, p => by
-    change Choice.map .focal _ (fun _ => Prover.simulate F) <$> simulateQ F
-        (Choice.map .focal _ (fun _ => Prover.simulate G) <$> simulateQ G p) =
-      Choice.map .focal _ (fun _ => Prover.simulate (fun q => simulateQ F (G q))) <$>
-        simulateQ (fun q => simulateQ F (G q)) p
-    rw [simulateQ_map, Functor.map_map,
-      QueryImpl.simulateQ_simulateQ_eq_of_apply (fun _ => rfl) p]
+    rw [Prover.simulate_node, Prover.simulate_node, Prover.simulate_node, simulateQ_map,
+      Functor.map_map, QueryImpl.simulateQ_simulateQ_eq_of_apply (fun _ => rfl) p]
     refine congrArg (· <$> _) (funext fun v => ?_)
     refine (congrFun (Choice.map_comp _ _ _ _) v).trans ?_
     exact congrArg (fun f => Choice.map .focal (owner l a) f v)
@@ -446,7 +442,7 @@ theorem simulateQ_runWith (F : QueryImpl spec (OracleComp spec')) (order : Sched
     cases order <;> simp only [Schedule.seq, simulateQ_bind, simulateQ_pure] <;> rfl
   | .liftBind (.message X) rest, _, p, draw => by
     rw [runWith_liftBind, runWith_liftBind, sampler_message, sampler_message]
-    change _ = step _ _ (Choice.map .focal _ (fun _ => Prover.simulate F) <$> simulateQ F p) _ _
+    rw [Prover.simulate_node]
     cases order
     · simp only [step, Schedule.seq, owner_plain_message]
       erw [simulateQ_bind, bind_map_left]
@@ -465,7 +461,7 @@ theorem simulateQ_runWith (F : QueryImpl spec (OracleComp spec')) (order : Sched
       rfl
   | .liftBind (.challenge C) rest, _, p, draw => by
     rw [runWith_liftBind, runWith_liftBind, sampler_challenge, sampler_challenge]
-    change _ = step _ _ (Choice.map .focal _ (fun _ => Prover.simulate F) <$> simulateQ F p) _ _
+    rw [Prover.simulate_node]
     cases order
     · simp only [step, Schedule.seq, owner_plain_challenge, bind_map_left]
       erw [simulateQ_bind]
@@ -684,8 +680,7 @@ theorem pureObservers_roundSlot {Out : Type}
         roundSlot P j D hD st) =
       Choice.map .focal _ (fun x st' => Prover.simulate (liftShared oSpec pSpec) (q x st')) <$>
         simulateQ (liftShared oSpec pSpec) (roundSlot P j D hD st) := by
-    change _ <$> simulateQ _ (_ <$> _) = _
-    rw [simulateQ_map, Functor.map_map]
+    rw [Prover.simulate_node, simulateQ_map, Functor.map_map]
     exact congrArg (· <$> _) (funext fun a => congrFun (Choice.map_comp _ _ _ _) a)
   cases D with
   | P_to_V =>
