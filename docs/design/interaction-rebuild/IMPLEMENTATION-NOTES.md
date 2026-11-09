@@ -4,7 +4,8 @@ These notes record where `ArkLib/Interaction/Core/` departs from the design reco
 directory. The records themselves are unchanged. Each entry states what the record said, what the
 code does and why. Entries 1–8 were identified by the review of the first implementation; entries
 9–12 were introduced while addressing that review, and entry 13 by core additions that the oracle
-migration needs.
+migration needs. The final section records later core changes that keep to the records; they are
+not departures.
 
 ## 1. Oracle interfaces in positions; challenges indexed by node occurrences
 
@@ -148,3 +149,30 @@ oracle extraction game passes that projection.
 Entries 14 onwards record the departures of the legacy embedding. They are in
 [`legacy-embedding.md`](../interaction-layer/legacy-embedding.md#departures), and
 [`departures.md`](../interaction-layer/departures.md) indexes every entry, including 1–13.
+
+## Changes that keep to the records
+
+### Round-by-round output witnesses are indexed by the transcript
+
+`KnowledgeStateFunction` and `rbrKnowledgeSoundness` in `Security/RoundByRound.lean` took a
+constant output witness type `W`, while the intermediate witnesses `Witness sp history` were
+already indexed by the full prefix. A protocol whose output witness depends on a message, such as
+an index `Fin (payload + 1)` bounded by a sent `payload`, could then be stated only through a
+larger constant carrier and a lossy conversion. The output witness is now a family
+`W : PathAlong l s → Type`: `validOutput` takes `(stmt : S) → (tr : PathAlong l s) → W tr → Prop`,
+and `extractLeaf sp history stmt` takes `W (PrefixMoves.complete l sp history)`. The input witness
+type `Win` stays a plain type. `Verifier.rbrKnowledgeSoundness` and
+`OracleVerifier.rbrKnowledgeSoundness` take the family implicitly and an output relation
+`relOut : (tr : PathAlong _ s) → T → W tr → Prop`.
+
+There is one definition. Constant witness types are the constant family `fun _ => W` at the use
+site; the legacy transfers in `Legacy/Security.lean` and `Legacy/OracleSecurity.lean` use
+`fun _ => WitOut` and the output relation `fun _ t w => (t, w) ∈ relOut`, with the same relations,
+errors and extractors as before. The test `payload_rbrKnowledgeSoundness` in
+`ArkLibTest/Interaction/Core/Security.lean` uses the carrier `Fin (payload + 1)` directly as the
+leaf witness, and its bound alone gives the input relation.
+
+This keeps to record D7, whose problems already index witness types by the claim; D7 fixes no
+constant output witness type for the round-by-round notions. The straight-line extractor of
+`Security/Knowledge.lean` still reads a constant `Wout` from the prover output family
+`Out : PathAlong l s → Type` through `readOut`; that notion is unchanged here.

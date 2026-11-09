@@ -159,12 +159,12 @@ challenge draw.
 **Round-by-round knowledge soundness** (`embedVerifier_rbrKnowledgeSoundness`,
 `rbrKnowledgeSoundness_of_embedVerifier`, `rbrKnowledgeSoundness_iff`). The interaction-layer
 instance has trivial admissibility, input relation `fun stmt w => (stmt, w) ∈ relIn`, and output
-relation `fun t w => (t, w) ∈ relOut`.
+relation `fun _ t w => (t, w) ∈ relOut`, at the constant output witness family `fun _ => WitOut`.
 
 - `V.rbrKnowledgeSoundness init impl relIn relOut ε` and a `KnowledgeTerminalCertificate` for
   every legacy knowledge state function give
   `(embedVerifier V).rbrKnowledgeSoundness impl (fun _ => True) (fun stmt w => (stmt, w) ∈ relIn)
-  (fun t w => (t, w) ∈ relOut) (plainChallengeImpl challengeQueryImpl)
+  (fun _ t w => (t, w) ∈ relOut) (plainChallengeImpl challengeQueryImpl)
   (fun c => ε (challengeRound 0 n _ c))`. `embedKnowledgeStateFunction` uses
   `WitMid (legacyPrefix sp hist).1` as the witness at a full prefix, and reindexes the legacy
   extractor `E` to give the interaction-layer extraction functions.
