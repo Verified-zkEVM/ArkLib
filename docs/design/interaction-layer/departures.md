@@ -41,6 +41,16 @@ Entries 15 and 16 are the two hypotheses that a client of the round-by-round tra
 check. Entry 15 applies to the direction into the interaction layer, and entry 16 to the
 direction out of it.
 
+## Interaction-layer migration: entry 18
+
+This entry continues the numbering for the migration of the frozen interaction layer into the
+interaction core; entry 17 was removed (see the end of this page). It is in
+[`interaction-rebuild/IMPLEMENTATION-NOTES.md`](../interaction-rebuild/IMPLEMENTATION-NOTES.md).
+
+| Entry | Departure |
+| --- | --- |
+| [18](../interaction-rebuild/IMPLEMENTATION-NOTES.md#18-state-restoration-fixes-the-output-type-and-the-decision-ambient) | State restoration fixes the output type and the decision ambient. The verifier has one output statement type, and a rejecting branch is `none` in an `Option` output, not a type with no claim. The decision has the empty ambient oracle `[]ₒ`. A knowledge state function with a transcript-indexed output witness family replaces per-input round extractors; the adversary's witness is read at the completed transcript by a map, not an equivalence, and the output law is an implication from an accepted observation and the output relation. |
+
 ## The oracle correspondence gap and its resolution
 
 **Gap.** The first version of the legacy embedding defined `embedOracleProver` and

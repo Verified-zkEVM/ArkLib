@@ -289,30 +289,31 @@ separate error traversal is added.
 
 ## 18. State restoration fixes the output type and the decision ambient
 
-The legacy layer's state-restoration games let the output statement type depend on the transcript
-branch, so a claim on a rejecting branch was impossible by typing. In the interaction layer the
-verifier has one statement type `T` (records D4 and D6), so `terminalObservation` and
-`closedTerminalObservation` in `Core/Security/StateRestoration.lean` return `Option T` and
-`Option (T × ∀ j, B j)`: a rejecting branch is the value `none`, and its tests check that value
-instead of relying on the type. The ported games also fix the decision's ambient oracle to
-`[]ₒ`; a state-restoration game whose decision shares an oracle with the adversary is a later
-milestone (record D9 §6).
+The source of this port is the frozen interaction layer's state-restoration games
+(`ArkLib/Interaction/Oracle/Security/StateRestoration*.lean`) and their tests. Those games let the
+output statement type depend on the transcript branch, so a claim on a rejecting branch was
+impossible by typing. In the interaction core the verifier has one statement type `T` (records D4
+and D6), so `terminalObservation` and `closedTerminalObservation` in
+`Core/Security/StateRestoration.lean` return `Option T` and `Option (T × ∀ j, B j)`: a rejecting
+branch is the value `none`, and its tests check that value instead of relying on the type. The
+ported games also fix the decision's ambient oracle to `[]ₒ`; a state-restoration game whose
+decision shares an oracle with the adversary is a later milestone (record D9 §6).
 
-Knowledge soundness is stated with record D7's knowledge state function instead of the legacy
+Knowledge soundness is stated with record D7's knowledge state function instead of the frozen
 layer's per-input round extractors. `stateRestoration_knowledge_soundness`,
 `stateRestoration_oracle_knowledge_soundness`, their `_privateCoins` forms and the `_nonuniform`
 forms in `StateRestorationBudget.lean` take one `KnowledgeStateFunction` whose admissibility
-predicate replaces the legacy set of admissible inputs, require it to be `LocallyBounded` at the
-uniform draw, and extract with `extractAlong` on the selected transcript. The state function's
-output witnesses are a transcript family `Wout`. The adversary outputs a witness of one type `W`
-before completion fixes the challenges, as in the legacy game, and the map
+predicate replaces the frozen layer's set of admissible inputs, require it to be `LocallyBounded`
+at the uniform draw, and extract with `extractAlong` on the selected transcript. The state
+function's output witnesses are a transcript family `Wout`. The adversary outputs a witness of one
+type `W` before completion fixes the challenges, as in the frozen game, and the map
 `readOut : stmt → (tr : PathAlong _ _) → W → Wout tr` reads it at the completed transcript. It has
-the role of the legacy `terminalWitness`, which is an equivalence; a map suffices, and the identity
-is the case `Wout = fun _ => W`. The output law is an implication from an accepted observation and
-the output relation to the state function's valid output at the read witness, and the output
-relation may read the transcript; the legacy law is an equivalence between the terminal state and
-the output relation on the branch path. The theorems assume decidable equality of the key type,
-which the legacy forms derive from decidable equality of inputs and salts.
+the role of the frozen layer's `terminalWitness`, which is an equivalence; a map suffices, and the
+identity is the case `Wout = fun _ => W`. The output law is an implication from an accepted
+observation and the output relation to the state function's valid output at the read witness, and
+the output relation may read the transcript; the frozen law is an equivalence between the terminal
+state and the output relation on the branch path. The theorems assume decidable equality of the
+key type, which the frozen forms derive from decidable equality of inputs and salts.
 
 The proof bounds the restored execution with VCVio's bad-query bounds for the random oracle.
 `exists_badChallenge_of_extraction_failure` shows that a valid output whose extraction fails
@@ -320,20 +321,32 @@ passes a bad challenge at one completion key of the selected transcript. The out
 typed at the completed transcript. The statement reads the completion keys, their cursors and
 prefixes (`keySpine`, `keyHistory`) and the answer table, so it stays in `StateRestoration.lean`. A
 general form for every protocol, without keys, would belong in `KnowledgeComposition.lean`; it is
-not in this commit. The game replays the selected transcript through `restoredExecution`, so the
-legacy scripted prover and its replay theorem have no counterpart.
+not in this commit.
+
+The game evaluates the verifier's observation on the transcript that `restoredExecution`
+completes; it runs no parties. The replay theorem of the frozen layer has a counterpart that runs
+them. `scriptedProver` sends the selected messages, `recordedAnswers` answers every challenge query
+from a recorded transcript, and `run_scriptedProver` shows that `OracleVerifier.run` with these
+parties returns that transcript and its closed observation whenever the transcript carries the
+selected messages. `closedVerificationGame_eval_run` instantiates it at the transcript completed
+against an answer table, so the run returns the game's transcript and observation;
+`verificationGame_eval_run` is the plain form. In the test, `scriptedRun_eq` runs the fixture on
+every challenge, `nativeResult_eq` states the sent message, the challenge and the terminal result,
+and two evaluations run the parties on `true` and on `false`. The completion check `game_eval`
+remains beside them.
 
 Measured extraction uses `MeasuredStages` and `programAlong` from `MeasuredResources.lean`, whose
-stages include a root and a leaf map. `ProtocolBudgetAtMost` in `StateRestorationBudget.lean`
-bounds the root and leaf budgets and the message and challenge step budgets of one statement, and
-`programAlong_budget_le_protocol` bounds the composed budget along every transcript by
-`leafBound + rounds.length • (messageBound + challengeBound) + rootBound`. The legacy bound has no
+stages include a root and a leaf map. `ProtocolBudgetAtMost` in `MeasuredResources.lean` bounds the
+root and leaf budgets and the message and challenge step budgets of one statement on an oracle
+protocol, and `programAlong_budget_le_protocol` in `StateRestorationBudget.lean` bounds the
+composed budget along every transcript by
+`leafBound + rounds.length • (messageBound + challengeBound) + rootBound`. The frozen bound has no
 root or leaf terms, and its paired form is the instance of `programAlong_costAtMost_protocol` at
-`BudgetAtMost.protocolBudgetAtMost`. The composed program already ends with the leaf map, and
-takes the output witness `Wout tr` at the transcript, so `run_programAlong` replaces the legacy
-terminal-witness bridge.
+`BudgetAtMost.protocolBudgetAtMost`. The composed program applies the leaf map first, then the
+step maps backwards along the transcript, then the root map. It takes the output witness `Wout tr`
+at the transcript, so `run_programAlong` replaces the frozen layer's terminal-witness bridge.
 
 The ported test fixtures use the constant family `fun _ => Nat` with the identity `readOut`,
-because the legacy fixtures have a constant witness type. The fixture `knowledgeFin` in
+because the frozen fixtures have a constant witness type. The fixture `knowledgeFin` in
 `ArkLibTest/Interaction/Core/Security/StateRestoration.lean` has the output witness family
 `Fin (m + 1)` for the sent message `m`, and runs the bad-key lemma and the plain game bound on it.
