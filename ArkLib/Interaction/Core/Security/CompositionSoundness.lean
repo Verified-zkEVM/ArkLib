@@ -32,10 +32,10 @@ runtime form through VCVio's `OracleRuntime.run_bind_success_le`.
 A corollary starts from the suffix verifier's standalone soundness
 (`Verifier.append_soundness_of_standalone`). Because the prefix decision runs after the suffix
 interaction, it takes one explicit hypothesis: taking the prefix decision at the boundary leaves
-the law of the run unchanged. The hypothesis holds for a prefix decision without ambient queries
-(`Verifier.boundaryDecidedRun_eq_of_pure`) and for a stateless ambient implementation
-(`Verifier.boundaryDecidedRun_evalDistEq_of_stateless`). Inadmissible intermediate statements are
-charged `δ`, giving `ε₁ + δ + ε₂`.
+the law of the final verdict unchanged. The hypothesis holds for a prefix decision without ambient
+queries (`Verifier.boundaryDecidedRun_eq_of_pure`) and for a stateless ambient implementation
+(`Verifier.boundaryDecidedRun_evalDistEq_of_stateless`), which leave the law of the whole run
+unchanged. Inadmissible intermediate statements are charged `δ`, giving `ε₁ + δ + ε₂`.
 -/
 
 @[expose] public section
@@ -676,10 +676,11 @@ end soundness
 
 /-! ## Standalone suffix soundness
 
-The corollary below starts from the suffix verifier's standalone soundness. Its one hypothesis
-compares the end-decided run with `Verifier.boundaryDecidedRun`, which takes the prefix decision
-at the boundary. The hypothesis holds when the prefix decision makes no ambient query and when
-the ambient implementation is stateless.
+The corollaries below start from the suffix verifier's standalone soundness. Their one
+hypothesis compares the verdict of the end-decided run with that of
+`Verifier.boundaryDecidedRun`, which takes the prefix decision at the boundary. The hypothesis
+holds when the prefix decision makes no ambient query and when the ambient implementation is
+stateless.
 -/
 
 /-- Splitting the transcript of an appended run, with its view, returns the prefix and suffix
@@ -1029,11 +1030,14 @@ theorem Verifier.boundaryDecidedRun_evalDistEq_of_stateless
   exact hswap _ _ _ _
 
 /-- Composition soundness from the suffix verifier's standalone soundness. The one hypothesis
-`hreorder` states that taking the prefix decision at the boundary leaves the law of the run
-unchanged; `Verifier.boundaryDecidedRun_eq_of_pure` and
-`Verifier.boundaryDecidedRun_evalDistEq_of_stateless` discharge it. `ε₁` bounds the standalone
-prefix run accepting a true intermediate statement, `δ` bounds it accepting an inadmissible one,
-and every suffix verifier is sound with error `ε₂` from every ambient state. -/
+`hreorder` states that taking the prefix decision at the boundary leaves the law of the final
+verdict unchanged; the transcript and the prover output may change in law. A full-observation
+equality implies it (`Verifier.append_soundness_of_standalone_of_evalDistEq`), and so do a
+prefix decision without ambient queries (`Verifier.append_soundness_of_standalone_of_pure`) and a
+stateless ambient implementation (`Verifier.append_soundness_of_standalone_of_stateless`). `ε₁`
+bounds the standalone prefix run accepting a true intermediate statement, `δ` bounds it
+accepting an inadmissible one, and every suffix verifier is sound with error `ε₂` from every
+ambient state. -/
 theorem Verifier.append_soundness_of_standalone {s₁ : Protocol} {s₂ : Path s₁ → Protocol}
     {S T U : Type} {Out : PathAlong plainSig (s₁.append s₂) → Type}
     (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) T U)
@@ -1041,8 +1045,10 @@ theorem Verifier.append_soundness_of_standalone {s₁ : Protocol} {s₂ : Path s
     (challenges : QueryImpl (challengeSpec plainSig (s₁.append s₂)) ProbComp)
     (middle : StatementProblem T) (output : StatementProblem U) (stmt : S)
     (prover : Prover plainSig ambient (s₁.append s₂) Out) (ε₁ δ ε₂ : ℝ≥0∞)
-    (hreorder : experiment init impl challenges ((V₁.append V₂).run stmt prover) =ᵈ
-      experiment init impl challenges (Verifier.boundaryDecidedRun V₁ V₂ stmt prover))
+    (hreorder : (fun obs => obs.2.2) <$>
+        experiment init impl challenges ((V₁.append V₂).run stmt prover) =ᵈ
+      (fun obs => obs.2.2) <$>
+        experiment init impl challenges (Verifier.boundaryDecidedRun V₁ V₂ stmt prover))
     (hprefix : Pr{let o ← (experiment init impl (prefixDraw plainSig s₁ s₂ challenges)
       (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t, o.2.2 = some t ∧ middle.language () t] ≤ ε₁)
     (hadmissible : Pr{let o ← (experiment init impl (prefixDraw plainSig s₁ s₂ challenges)
@@ -1057,8 +1063,9 @@ theorem Verifier.append_soundness_of_standalone {s₁ : Protocol} {s₂ : Path s
       experiment init impl ch x = Prod.fst <$> experimentWithState init impl ch x := by
     intro α κ chal ch x
     simp only [experiment, experimentWithState, StateT.run'_eq, _root_.map_bind]
-  rw [hreorder.prEvent_eq (fun obs => ∃ u, obs.2.2 = some u ∧ output.language () u),
-    Verifier.boundaryDecidedRun, experiment_bind,
+  have hverdict := hreorder.prEvent_eq (fun v => ∃ u, v = some u ∧ output.language () u)
+  rw [prEvent_map, prEvent_map] at hverdict
+  rw [hverdict, Verifier.boundaryDecidedRun, experiment_bind,
     experimentWithState_simulateQ init impl challenges _ _
       (simulateQ_prefixQueries impl challenges)]
   refine prEvent_bind_le_truth_invalid_uniform_ae _ _
@@ -1094,6 +1101,76 @@ theorem Verifier.append_soundness_of_standalone {s₁ : Protocol} {s₂ : Path s
         (fun tail => Out (PathAlong.append plainSig s₁ s₂ tr₁ tail)) U) := ⊤
       rw [prEvent_eq_evalDist _ _ (measurable_from_top)]
       exact h
+
+/-- Composition soundness from standalone suffix soundness, when taking the prefix decision at
+the boundary leaves the law of the whole observation unchanged. -/
+theorem Verifier.append_soundness_of_standalone_of_evalDistEq {s₁ : Protocol}
+    {s₂ : Path s₁ → Protocol} {S T U : Type} {Out : PathAlong plainSig (s₁.append s₂) → Type}
+    (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) T U)
+    (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
+    (challenges : QueryImpl (challengeSpec plainSig (s₁.append s₂)) ProbComp)
+    (middle : StatementProblem T) (output : StatementProblem U) (stmt : S)
+    (prover : Prover plainSig ambient (s₁.append s₂) Out) (ε₁ δ ε₂ : ℝ≥0∞)
+    (hreorder : experiment init impl challenges ((V₁.append V₂).run stmt prover) =ᵈ
+      experiment init impl challenges (Verifier.boundaryDecidedRun V₁ V₂ stmt prover))
+    (hprefix : Pr{let o ← (experiment init impl (prefixDraw plainSig s₁ s₂ challenges)
+      (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t, o.2.2 = some t ∧ middle.language () t] ≤ ε₁)
+    (hadmissible : Pr{let o ← (experiment init impl (prefixDraw plainSig s₁ s₂ challenges)
+      (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t, o.2.2 = some t ∧
+        ¬ middle.admissible () t] ≤ δ)
+    (hsuffix : ∀ p state, (V₂ p).soundness (pure state) impl
+      (suffixDraw plainSig s₁ s₂ challenges p) middle output ε₂) :
+    Pr{let obs ← (experiment init impl challenges ((V₁.append V₂).run stmt prover))}[
+      ∃ u, obs.2.2 = some u ∧ output.language () u] ≤ ε₁ + δ + ε₂ :=
+  Verifier.append_soundness_of_standalone V₁ V₂ init impl challenges middle output stmt prover
+    ε₁ δ ε₂ (hreorder.map _) hprefix hadmissible hsuffix
+
+/-- A prefix decision without ambient queries composes with a standalone-sound suffix at
+`ε₁ + δ + ε₂`. -/
+theorem Verifier.append_soundness_of_standalone_of_pure {s₁ : Protocol}
+    {s₂ : Path s₁ → Protocol} {S T U : Type} {Out : PathAlong plainSig (s₁.append s₂) → Type}
+    (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) T U)
+    (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
+    (challenges : QueryImpl (challengeSpec plainSig (s₁.append s₂)) ProbComp)
+    (middle : StatementProblem T) (output : StatementProblem U) (stmt : S)
+    (prover : Prover plainSig ambient (s₁.append s₂) Out) (ε₁ δ ε₂ : ℝ≥0∞)
+    (hpure : ∀ p v, ∃ r, (V₁.decide stmt p v).run = pure r)
+    (hprefix : Pr{let o ← (experiment init impl (prefixDraw plainSig s₁ s₂ challenges)
+      (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t, o.2.2 = some t ∧ middle.language () t] ≤ ε₁)
+    (hadmissible : Pr{let o ← (experiment init impl (prefixDraw plainSig s₁ s₂ challenges)
+      (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t, o.2.2 = some t ∧
+        ¬ middle.admissible () t] ≤ δ)
+    (hsuffix : ∀ p state, (V₂ p).soundness (pure state) impl
+      (suffixDraw plainSig s₁ s₂ challenges p) middle output ε₂) :
+    Pr{let obs ← (experiment init impl challenges ((V₁.append V₂).run stmt prover))}[
+      ∃ u, obs.2.2 = some u ∧ output.language () u] ≤ ε₁ + δ + ε₂ :=
+  Verifier.append_soundness_of_standalone V₁ V₂ init impl challenges middle output stmt prover
+    ε₁ δ ε₂ (Verifier.boundaryDecidedRun_eq_of_pure V₁ V₂ stmt prover hpure ▸ .refl _) hprefix
+    hadmissible hsuffix
+
+/-- Under a stateless ambient implementation any prefix verifier composes with a standalone-sound
+suffix at `ε₁ + δ + ε₂`. -/
+theorem Verifier.append_soundness_of_standalone_of_stateless {s₁ : Protocol}
+    {s₂ : Path s₁ → Protocol} {S T U : Type} {Out : PathAlong plainSig (s₁.append s₂) → Type}
+    (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) T U)
+    (init : ProbComp σ) (g : QueryImpl ambient ProbComp)
+    (challenges : QueryImpl (challengeSpec plainSig (s₁.append s₂)) ProbComp)
+    (middle : StatementProblem T) (output : StatementProblem U) (stmt : S)
+    (prover : Prover plainSig ambient (s₁.append s₂) Out) (ε₁ δ ε₂ : ℝ≥0∞)
+    (hprefix : Pr{let o ← (experiment init (g.liftTarget (StateT σ ProbComp))
+      (prefixDraw plainSig s₁ s₂ challenges) (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t,
+        o.2.2 = some t ∧ middle.language () t] ≤ ε₁)
+    (hadmissible : Pr{let o ← (experiment init (g.liftTarget (StateT σ ProbComp))
+      (prefixDraw plainSig s₁ s₂ challenges) (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t,
+        o.2.2 = some t ∧ ¬ middle.admissible () t] ≤ δ)
+    (hsuffix : ∀ p state, (V₂ p).soundness (pure state) (g.liftTarget (StateT σ ProbComp))
+      (suffixDraw plainSig s₁ s₂ challenges p) middle output ε₂) :
+    Pr{let obs ← (experiment init (g.liftTarget (StateT σ ProbComp)) challenges
+      ((V₁.append V₂).run stmt prover))}[∃ u, obs.2.2 = some u ∧ output.language () u] ≤
+        ε₁ + δ + ε₂ :=
+  Verifier.append_soundness_of_standalone_of_evalDistEq V₁ V₂ init _ challenges middle output
+    stmt prover ε₁ δ ε₂ (Verifier.boundaryDecidedRun_evalDistEq_of_stateless V₁ V₂ stmt prover
+      init g challenges) hprefix hadmissible hsuffix
 
 end standalone
 

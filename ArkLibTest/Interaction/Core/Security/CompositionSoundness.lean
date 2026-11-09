@@ -658,7 +658,8 @@ namespace Interaction.Core.CompositionSoundnessTests.Standalone
 
 /-!
 The standalone corollary with each named discharge of its reordering hypothesis, for arbitrary
-verifiers, provers, implementations and challenge samplers.
+verifiers, provers, implementations and challenge samplers. Each discharge equates the whole
+observations, which implies the verdict equality the corollary asks for.
 -/
 
 variable {ι σ : Type} {ambient : OracleSpec ι} {s₁ : Protocol} {s₂ : Path s₁ → Protocol}
@@ -706,7 +707,7 @@ theorem append_soundness_of_stateless
       ((V₁.append V₂).run stmt prover))}[∃ u, obs.2.2 = some u ∧ output.language () u] ≤
         ε₁ + δ + ε₂ :=
   Verifier.append_soundness_of_standalone V₁ V₂ init _ challenges middle output stmt prover
-    ε₁ δ ε₂ (Verifier.boundaryDecidedRun_evalDistEq_of_stateless V₁ V₂ stmt prover init g
-      challenges) hprefix hadmissible hsuffix
+    ε₁ δ ε₂ ((Verifier.boundaryDecidedRun_evalDistEq_of_stateless V₁ V₂ stmt prover init g
+      challenges).map _) hprefix hadmissible hsuffix
 
 end Interaction.Core.CompositionSoundnessTests.Standalone
