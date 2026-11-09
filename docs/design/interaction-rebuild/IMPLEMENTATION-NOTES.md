@@ -3,7 +3,8 @@
 These notes record where `ArkLib/Interaction/Core/` departs from the design records in this
 directory. The records themselves are unchanged. Each entry states what the record said, what the
 code does and why. Entries 1–8 were identified by the review of the first implementation; entries
-9–12 were introduced while addressing that review.
+9–12 were introduced while addressing that review, and entry 13 by core additions that the oracle
+migration needs.
 
 ## 1. Oracle interfaces in positions; challenges indexed by node occurrences
 
@@ -123,5 +124,17 @@ Record D5 splits paths and views at the seam with PolyFun's path operations and 
 ArkLib for it. `Fiber`,
 `project_split` and `splitFiber` in `Composition.lean` are generic in the polynomial and the lens
 but remain in ArkLib, marked as candidates for PolyFun; `project_split` is now derived from
-PolyFun's `projectPathAlong_append`, `append_split` and `split_append` laws. Moving them would
-change the PolyFun pin, which this slice does not do.
+PolyFun's `projectPathAlong_append`, `append_split` and `split_append` laws. The same holds for
+`Node.appendEquiv` and `ChallengeNode.appendEquiv` in `Protocol.lean`, which split the node
+occurrences and challenge nodes of an appended protocol into prefix and suffix-fibre parts. Moving
+them would change the PolyFun pin, which this slice does not do.
+
+## 13. The oracle decision log is recorded in the core
+
+Record D6 assigns logged execution to the later oracle migration. The core's
+`OracleVerifier.runWithLog` already logs the decision over the ambient oracles and the input and
+message oracle families, before the resource queries are routed to the materialized data, so the
+migration can read the resource queries without a second logged runner. Extractors still receive
+only the ambient part, as record D7 requires: `OracleVerifier.runWithLog_fst` proves that the
+`QueryLog.fst` of the decision log is the log of a run that records ambient queries alone, and the
+oracle extraction game passes that projection.
