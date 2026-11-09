@@ -37,6 +37,27 @@ example : (Interaction.TwoParty.Lens.run (OutC := fun _ => PUnit) coin echo fals
     false := by
   rfl
 
+/-- A stored challenge draw that always fails. -/
+def failingDraw : (c : ChallengeNode plainSig coin) → Option (challengeSpec plainSig coin c) :=
+  fun _ => none
+
+def optionEcho : Focal plainSig Option coin (fun _ => Bool) := some fun b => some b
+
+/-- Executing the converted sampler runs the failing draw. -/
+example : Interaction.TwoParty.Lens.run (OutC := fun _ => PUnit) coin optionEcho
+    (publicCoinSampler plainSig coin failingDraw).toCounterpart = none := rfl
+
+/-- Replay follows the recorded challenge without executing the failing draw. -/
+example : (publicCoinSampler plainSig coin failingDraw).replay ⟨true, ⟨⟩⟩ = some ⟨⟩ :=
+  replay_publicCoinSampler coin failingDraw ⟨true, ⟨⟩⟩
+
+run_cmd do
+  unless ((publicCoinSampler plainSig coin failingDraw).replay ⟨false, ⟨⟩⟩).isSome do
+    throwError "replay executed the stored draw"
+  unless (Interaction.TwoParty.Lens.run (OutC := fun _ => PUnit) coin optionEcho
+      (sampler plainSig coin failingDraw)).isNone do
+    throwError "the runner's sampler did not execute its draw"
+
 def leaf : Focal plainSig (StateM Nat) done (fun _ => Nat) := do
   modify (· + 1)
   get
@@ -53,3 +74,12 @@ run_cmd do
     throwError "the zero-round leaf must execute exactly once"
 
 end Interaction.Core.Tests
+
+run_cmd do
+  for decl in [``Interaction.Core.toCounterpart_publicCoinSampler,
+      ``Interaction.Core.toCounterpart_publicCoinOracleSampler,
+      ``Interaction.Core.replay_publicCoinSampler,
+      ``Interaction.Core.replay_publicCoinOracleSampler] do
+    for ax in ← Lean.collectAxioms decl do
+      unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
+        throwError "unexpected axiom {ax} in {decl}"
