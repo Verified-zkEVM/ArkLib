@@ -11,7 +11,9 @@ import ArkLibTest.ProofSystem.Sumcheck.Core.RoundByRound
 Honest runs of two and three rounds over `ZMod 17`: the challenges are drawn from the challenge
 oracle once per round, in round order, and the verdict is the input polynomial evaluated at the
 challenges, with the input polynomial as output oracle. With a wrong target every round still
-runs and the verdict rejects.
+runs and the verdict rejects. On the bilinear input `1 + 2 X₀ + 3 X₁ + 4 X₀ X₁` with the
+challenges `3` and then `5`, the run makes exactly two challenge queries, in round order, and
+accepts the claim `⟨14, ![3, 5]⟩` with the input polynomial as output oracle.
 -/
 
 namespace Sumcheck.Core.RoundsTest
@@ -221,7 +223,7 @@ example : (some (⟨MvPolynomial.eval ![3, 5, 7] p3.val, ![3, 5, 7]⟩, fun _ =>
 
 /-- On the wrong target `12` the first honest message sums to `11`, so the verdict rejects; the
 run still queries the challenge oracle at all three challenge nodes, in round order. The decision
-itself queries nothing: it is `pure` of the verdict (`decide_trace`). -/
+queries the round messages but never the ambient oracle (`decide_ambient_trace`). -/
 theorem run_three_wrong :
     (verifier K 1 3 D₂ ambient).run ⟨12, Fin.elim0⟩ (fun _ => p3)
         (honestProver D₂ ⟨12, Fin.elim0⟩ fun _ => p3) =
@@ -276,9 +278,10 @@ example : (some (⟨MvPolynomial.eval ![3, 5] p2.val, ![3, 5]⟩, fun _ => p2) :
     ((⟨14, ![3, 5]⟩, fun _ => p2), ()) ∈ Spec.relationRound K 2 1 D₂ (Fin.last 2) :=
   ⟨by rw [eval_p2], (relationLast_iff_eval D₂ p2 14 ![3, 5]).2 eval_p2⟩
 
-/-! ## The first of two rounds on a bilinear input -/
+/-! ## Two rounds on a bilinear input -/
 
--- Migration rows: Sumcheck Interaction/Projection #7, #8, ProjectionTransport #2.
+-- Migration rows: Sumcheck Interaction/Projection #7 (first-round relation), #8,
+-- ProjectionTransport #2; Sequential #2, #4.
 
 theorem XX_mem : (MvPolynomial.X 0 * MvPolynomial.X 1 : MvPolynomial (Fin 2) K) ∈
     MvPolynomial.restrictDegree (Fin 2) K 1 := by
@@ -341,12 +344,72 @@ example : ∃ t, simulateQ (OracleInterface.simOracle0 _ (roundFullTranscript
   congr 1
   exact funext fun i => by fin_cases i; rfl
 
+theorem eval_bilinear : MvPolynomial.eval ![3, 5] bilinear.val = 14 := by
+  simpa [bilinear] using (by decide : (1 + 2 * 3 + 3 * 5 + 4 * (3 * 5) : K) = 14)
+
+/-- Two honest rounds on the claim that `bilinear` sums to `1`: the run queries the challenge
+oracle at the first and then the second round's challenge node, and accepts `bilinear` evaluated
+at the drawn challenges, with `bilinear` as output oracle. -/
+theorem run_two_bilinear :
+    (verifier K 1 2 D₂ ambient).run ⟨1, Fin.elim0⟩ (fun _ => bilinear)
+        (honestProver D₂ ⟨1, Fin.elim0⟩ fun _ => bilinear) =
+      (fun chals => (⟨honestTranscript D₂ ⟨1, Fin.elim0⟩ (fun _ => bilinear) chals,
+        honestOutput D₂ ⟨1, Fin.elim0⟩ (fun _ => bilinear) chals,
+        some (⟨MvPolynomial.eval chals bilinear.val, chals⟩, fun _ => bilinear)⟩ : Obs 2)) <$> (do
+          let c₀ : K ← drawOf 2 (headNode 1)
+          let c₁ : K ← tailDraw (drawOf 2) (headNode 0)
+          pure ![c₀, c₁]) := by
+  rw [run_honest_eval D₂ ambient _ bilinear bilinear_relation fun chals => funext fun i => by
+    fin_cases i <;> rfl]
+  rw [drawChallenges_two]
+
+/-- Every challenge of the two-round protocol ranges over `K`. -/
+theorem range_eq (c : ChallengeNode oracleSig (protocol K 1 2)) :
+    challengeSpec oracleSig (protocol K 1 2) c = K := by
+  obtain ⟨n, h⟩ := c
+  rcases n with _ | ⟨_, _ | ⟨_, _ | ⟨_, _ | ⟨_, n⟩⟩⟩⟩
+  · cases h
+  · rfl
+  · cases h
+  · rfl
+  · cases n
+
+/-- The round of a challenge node: `1` for the first round's node, `2` for the second's. -/
+def roundOf : ChallengeNode oracleSig (protocol K 1 2) → ℕ
+  | ⟨.inr ⟨_, .inl _⟩, _⟩ => 1
+  | _ => 2
+
+/-- A handler that records the round of each challenge node it is asked for and answers `3` in
+the first round and `5` in the second. The ambient oracle is never queried. -/
+def recordChallenges :
+    QueryImpl (ambient + challengeSpec oracleSig (protocol K 1 2)) (StateM (List ℕ))
+  | .inl _ => pure ()
+  | .inr c => do
+      modify (· ++ [roundOf c])
+      pure (cast (range_eq c).symm (if roundOf c = 1 then 3 else 5 : K))
+
+/-- With the challenges `3` and then `5`, the run makes exactly two challenge queries, at the first
+round's node and then at the second's, and accepts the claim `⟨14, ![3, 5]⟩` with `bilinear` as
+output oracle. -/
+example : (simulateQ recordChallenges ((fun obs => obs.2.2) <$>
+    (verifier K 1 2 D₂ ambient).run ⟨1, Fin.elim0⟩ (fun _ => bilinear)
+      (honestProver D₂ ⟨1, Fin.elim0⟩ fun _ => bilinear))).run [] =
+      (some (⟨14, ![3, 5]⟩, fun _ => bilinear), [1, 2]) := by
+  rw [run_two_bilinear, ← eval_bilinear]
+  rfl
+
+/-- The accepted claim `⟨14, ![3, 5]⟩` lies in the final relation. -/
+example : ((⟨14, ![3, 5]⟩, fun _ => bilinear), ()) ∈
+    Spec.relationRound K 2 1 D₂ (Fin.last 2) :=
+  (relationLast_iff_eval D₂ bilinear 14 ![3, 5]).2 eval_bilinear
+
 end
 
 run_cmd
   for decl in [``Sumcheck.Core.RoundsTest.run_honest_eval, ``Sumcheck.Core.RoundsTest.run_three,
       ``Sumcheck.Core.RoundsTest.run_three_wrong, ``Sumcheck.Core.RoundsTest.run_two,
-      ``Sumcheck.Core.RoundsTest.firstRound_relation] do
+      ``Sumcheck.Core.RoundsTest.firstRound_relation,
+      ``Sumcheck.Core.RoundsTest.run_two_bilinear, ``Sumcheck.Core.RoundsTest.range_eq] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"

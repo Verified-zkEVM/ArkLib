@@ -11,9 +11,10 @@ import ArkLibTest.ProofSystem.Sumcheck.Core.RoundByRound
 A two-round prover over `ZMod 17` performs an ambient effect before each message and one after
 the last challenge, and keeps the first effect's answer in private memory for its second message.
 The execution runs the prover's effects and the challenge draws in protocol order: event `0`,
-the first challenge, event `2`, the second challenge, event `3`. On a true claim the verdict is
-the last message at the last challenge; on a false initial claim every round still runs and the
-verdict rejects. A recording handler observes the order `[0, 1, 2, 1, 3]`, with `1` standing for a
+the first challenge, event `2`, the second challenge, event `3`. On a claim whose round checks
+pass the verdict is the last message at the last challenge; on a claim whose first check fails
+every round still runs, the verdict rejects, and the decision logs only the first check's
+queries. A recording handler observes the order `[0, 1, 2, 1, 3]`, with `1` standing for a
 challenge. A prover that samples its private memory instead is bounded by the transferred
 soundness error `2 / 17`.
 -/
@@ -240,8 +241,9 @@ theorem verdict_adaptive (a b r s : K) :
   rw [hvec]
   simp [affine]
 
-/-- The execution on the true claim: every effect in protocol order, then the claim that the
-input polynomial evaluates to `(b + a) * s + (a * r + 1)` at the challenges `r, s`. -/
+/-- The execution on a claim whose round checks pass: every effect in protocol order, then the
+claim that the input polynomial evaluates to `(b + a) * s + (a * r + 1)` at the challenges
+`r, s`. -/
 theorem two_rounds : (verifier K 1 2 D₀ events).run initial (fun _ => original) adaptive = (do
     let a ← eventE 0
     let r : K ← drawE (headNode 1)
@@ -294,7 +296,8 @@ example : (simulateQ record ((fun obs => obs.2.2.map fun t => t.1.target) <$>
 -- Migration rows: Sumcheck Interaction/Protocol #3, #4.
 
 /-- On the false claim the first check fails, yet the execution still runs both rounds and every
-effect in protocol order, and the verdict rejects. The decision itself queries nothing. -/
+effect in protocol order, and the verdict rejects. The decision's own queries stop after the
+first round's check; see `runWithLog_wrong`. -/
 theorem bad_first_rounds :
     (verifier K 1 2 D₀ events).run wrong (fun _ => original) adaptive = (do
       let a ← eventE 0
@@ -325,6 +328,145 @@ example : (simulateQ record ((fun obs => obs.2.2.isSome) <$>
     (verifier K 1 2 D₀ events).run wrong (fun _ => original) adaptive)).run [] =
       (false, [0, 1, 2, 1, 3]) := by
   rw [bad_first_rounds]
+  rfl
+
+/-! ## The decision log of a bad first round -/
+
+section DecisionLog
+
+variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R] {deg k d : ℕ}
+  (D : Fin d ↪ R) {ι : Type} {ambient : OracleSpec ι} {κ : Type} {full : OracleSpec.{0, 0} κ}
+
+/-- The first round's check of the decision on a completed run, with its message queries routed
+to the oracle nodes of the run. -/
+def firstCheck (stmt : Spec.StatementRound R (k + 1) 0)
+    (tr : FreeM.PathAlong oracleSig (protocol R deg (k + 1))) :
+    OracleComp (ambient + (sumFamily (polyFamily R deg (k + 1))
+      (pathFamily _ (FreeM.projectPathAlong oracleSig _ tr))).spec)
+      (Option (Spec.StatementRound R (k + 1) (0 : Fin (k + 1)).succ)) :=
+  simulateQ (decisionLift R deg (k + 1) ambient _) (simulateQ (route R deg (k + 1) _)
+    (simulateQ (Spec.leftMessageQuery R deg k) (roundCheck R deg (k + 1) D ambient 0 stmt
+      (Challenges.fst (pSpec₁ := Spec.SingleRound.pSpec R deg) (pSpec₂ := Spec.pSpec R deg k)
+        (viewChallenges (toView _ tr)))).run))
+
+/-- The handler of the logged decision: ambient queries go to `amb`, and the input and message
+oracles answer from the input data and the run's payloads. -/
+abbrev checkHandler (amb : QueryImpl ambient (OracleComp full))
+    (data : ∀ i, Spec.OracleStatement R (k + 1) deg i)
+    (tr : FreeM.PathAlong oracleSig (protocol R deg (k + 1))) :
+    QueryImpl (ambient + (sumFamily (polyFamily R deg (k + 1))
+      (pathFamily _ (FreeM.projectPathAlong oracleSig _ tr))).spec) (OracleComp full) :=
+  QueryImpl.addLift amb ((sumFamily (polyFamily R deg (k + 1))
+    (pathFamily _ (FreeM.projectPathAlong oracleSig _ tr))).behaviorOfRealizations
+      (sumData data (payloads _ tr)))
+
+attribute [local implicit_reducible] FreeM.replicate in
+/-- When the first round's check fails, the logged decision rejects and its log is the log of
+that check alone: no query of a later round is made. -/
+theorem decide_log_badFirst (amb : QueryImpl ambient (OracleComp full))
+    (stmt : Spec.StatementRound R (k + 1) 0) (data : ∀ i, Spec.OracleStatement R (k + 1) deg i)
+    (msg : R⦃≤ deg⦄[X]) (chal : R) (tail : FreeM.PathAlong oracleSig (protocol R deg k))
+    (h : ∑ x ∈ Finset.univ.map D, msg.val.eval x ≠ stmt.target) :
+    (simulateQ (checkHandler amb data (consTranscript msg chal tail)).withLogging
+        ((verifier R deg (k + 1) D ambient).decide stmt _
+          (toView _ (consTranscript msg chal tail))).run).run =
+      (fun z => (none, z.2)) <$>
+        (simulateQ (checkHandler amb data (consTranscript msg chal tail)).withLogging
+          (firstCheck D stmt (consTranscript msg chal tail))).run := by
+  set tr := consTranscript msg chal tail
+  obtain ⟨cont, hcont, hprog⟩ :
+      ∃ cont : Option (Spec.StatementRound R (k + 1) (0 : Fin (k + 1)).succ) →
+        OracleComp [(Spec.pSpec R deg (k + 1)).Message]ₒ
+          (Option (Spec.StatementRound R (k + 1) (Fin.last (k + 1)))), cont none = pure none ∧
+        legacyProgram R deg (k + 1) D ambient stmt (viewChallenges (toView _ tr)) =
+          (simulateQ (Spec.leftMessageQuery R deg k) (roundCheck R deg (k + 1) D ambient 0 stmt
+            (Challenges.fst (pSpec₁ := Spec.SingleRound.pSpec R deg)
+              (pSpec₂ := Spec.pSpec R deg k) (viewChallenges (toView _ tr)))).run :
+            OracleComp [(Spec.pSpec R deg (k + 1)).Message]ₒ _) >>= cont :=
+    ⟨_, rfl, rfl⟩
+  have hF : simulateQ (checkHandler amb data tr) (firstCheck D stmt tr) = pure none := by
+    unfold firstCheck checkHandler
+    refine (simulateQ_decisionLift_monad (m := OracleComp full) amb _ data _ _).trans ?_
+    refine congrArg pure ((QueryImpl.simulateQ_simulateQ_eq_of_apply
+      (simulateQ_route (k + 1) tr) _).trans ?_)
+    rw [viewChallenges_toView]
+    change simulateQ (OracleInterface.simOracle0 _
+      (roundFullTranscript msg chal ++ₜ decodeTranscript k tail).messages)
+      (simulateQ (Spec.leftMessageQuery R deg k) (roundCheck R deg (k + 1) D ambient 0 stmt
+        (Challenges.fst (roundFullTranscript msg chal ++ₜ decodeTranscript k tail).challenges)).run)
+      = _
+    rw [simulateQ_leftMessageQuery, Legacy.challenges_append_fst,
+      roundCheck_eq_none 0 stmt _ h]
+  have hsupp : ∀ z ∈ support (simulateQ (checkHandler amb data tr).withLogging
+      (firstCheck D stmt tr)).run, z.1 = none := by
+    intro z hz
+    have : z.1 ∈ support (Prod.fst <$> (simulateQ (checkHandler amb data tr).withLogging
+        (firstCheck D stmt tr)).run) := by
+      rw [support_map]; exact ⟨z, hz, rfl⟩
+    rwa [QueryImpl.fst_map_run_withLogging, hF, support_pure, Set.mem_singleton_iff] at this
+  rw [verifier_decide, hprog]
+  refine (congrArg (fun x => (simulateQ (checkHandler amb data tr).withLogging x).run)
+    ((congrArg (simulateQ _) (simulateQ_bind _ _ _)).trans (simulateQ_bind _ _ _))).trans ?_
+  refine (congrArg WriterT.run (simulateQ_bind _ _ _)).trans ?_
+  rw [WriterT.run_bind', map_eq_bind_pure_comp]
+  refine bind_congr_of_forall_mem_support _ fun z hz => ?_
+  obtain ⟨v, w⟩ := z
+  obtain rfl : v = none := hsupp _ hz
+  dsimp only
+  rw [hcont]
+  simp
+
+end DecisionLog
+
+/-- Every run of the adaptive prover sends `a * X + 1` first. -/
+theorem mem_support_adaptive {x} (hx : x ∈ support (simulateQ (QueryImpl.id' Q).withLogging
+    (Interaction.TwoParty.Lens.run (protocol K 1 2) (Prover.simulate liftEvents adaptive)
+      (sampler oracleSig (protocol K 1 2) drawE))).run) :
+    ∃ a r tail, x.1.1 = consTranscript (affine a 1) r tail := by
+  have : x.1 ∈ support (Prod.fst <$> (simulateQ (QueryImpl.id' Q).withLogging
+      (Interaction.TwoParty.Lens.run (protocol K 1 2) (Prover.simulate liftEvents adaptive)
+        (sampler oracleSig (protocol K 1 2) drawE))).run) := by
+    rw [support_map]; exact ⟨x, hx, rfl⟩
+  rw [QueryImpl.fst_map_run_withLogging, simulateQ_id', run_adaptive] at this
+  obtain ⟨a, -, h⟩ := support_bind_exists this
+  obtain ⟨r, -, h⟩ := support_bind_exists h
+  obtain ⟨b, -, h⟩ := support_bind_exists h
+  obtain ⟨s, -, h⟩ := support_bind_exists h
+  obtain ⟨_, -, h⟩ := support_bind_exists h
+  rw [mem_support_pure_iff] at h
+  exact ⟨a, r, _, congrArg Sigma.fst h⟩
+
+/-- On the false claim the logged execution runs every effect of the adaptive prover, rejects, and
+its decision log holds exactly the queries of the first round's check. -/
+theorem runWithLog_wrong :
+    (verifier K 1 2 D₀ events).runWithLog wrong (fun _ => original) adaptive = (do
+      let x ← (simulateQ (QueryImpl.id' Q).withLogging
+        (Interaction.TwoParty.Lens.run (protocol K 1 2) (Prover.simulate liftEvents adaptive)
+          (sampler oracleSig (protocol K 1 2) drawE))).run
+      let y ← (simulateQ (checkHandler liftEvents (fun _ => original) x.1.1).withLogging
+        (firstCheck D₀ wrong x.1.1)).run
+      pure ⟨⟨x.1.1, x.1.2.1, none⟩, x.2.fst, y.2⟩) := by
+  unfold OracleVerifier.runWithLog
+  refine bind_congr_of_forall_mem_support _ fun x hx => ?_
+  obtain ⟨a, r, tail, htr⟩ := mem_support_adaptive hx
+  obtain ⟨⟨tr, out, c⟩, log⟩ := x
+  obtain rfl : tr = _ := htr
+  dsimp only
+  erw [decide_log_badFirst D₀ liftEvents wrong (fun _ => original) (affine a 1) r tail (by
+    change ∑ x ∈ Finset.univ.map D₀, (affine a 1).val.eval x ≠ 2
+    simpa [affine] using (by decide : (1 : K) ≠ 2))]
+  simp
+
+/-- Forgetting the logs, the logged execution on the false claim records the order
+`[0, 1, 2, 1, 3]`: both rounds still run. -/
+example : (simulateQ record ((fun z => z.1.2.2.isSome) <$>
+    (verifier K 1 2 D₀ events).runWithLog wrong (fun _ => original) adaptive)).run [] =
+      (false, [0, 1, 2, 1, 3]) := by
+  rw [show ((fun z => z.1.2.2.isSome) <$>
+      (verifier K 1 2 D₀ events).runWithLog wrong (fun _ => original) adaptive) =
+    (fun obs => obs.2.2.isSome) <$> (Sigma.fst <$>
+      (verifier K 1 2 D₀ events).runWithLog wrong (fun _ => original) adaptive) by
+    rw [Functor.map_map], OracleVerifier.map_fst_runWithLog, bad_first_rounds]
   rfl
 
 /-! ## A sampled adaptive prover -/
@@ -365,7 +507,9 @@ end
 run_cmd
   for decl in [``Sumcheck.Core.EffectsTest.run_verifier_eq,
       ``Sumcheck.Core.EffectsTest.two_rounds, ``Sumcheck.Core.EffectsTest.bad_first_rounds,
-      ``Sumcheck.Core.EffectsTest.range_eq] do
+      ``Sumcheck.Core.EffectsTest.range_eq, ``Sumcheck.Core.EffectsTest.decide_log_badFirst,
+      ``Sumcheck.Core.EffectsTest.mem_support_adaptive,
+      ``Sumcheck.Core.EffectsTest.runWithLog_wrong] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"

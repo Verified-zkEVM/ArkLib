@@ -323,7 +323,8 @@ theorem challenge_first_probability (impl : QueryImpl ambient (StateT Unit ProbC
   rw [hall]
   exact OracleComp.evalDist_apply_univ_eq_one _
 
-/-- The challenge-first success exceeds the two-round fresh-challenge bound. -/
+/-- The challenge-first success exceeds the fresh-challenge bound `2 / 5` of one round with
+degree-two messages over `F`. -/
 theorem fresh_bound_lt_one : (2 : ℝ≥0∞) / 5 < 1 := by
   rw [ENNReal.div_lt_iff (by norm_num) (by norm_num)]
   norm_num
