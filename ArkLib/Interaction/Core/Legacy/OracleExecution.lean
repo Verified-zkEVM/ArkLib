@@ -619,7 +619,7 @@ theorem simulateQ_oracleChallengeReindex_run
     erw [QueryImpl.simulateQ_add_liftM_query_right]
     exact map_oracleLegacyDraw _ 0 n _ c
   rw [TwoParty.Lens.run, runWith_toPlainFrom, simulateQ_map, toPlainFrom_simulate,
-    toPlainFrom_sampler, simulateQ_runWith, simulate_simulate, hl, hr,
+    toPlainFrom_sampler, simulateQ_runWith, Prover.simulate_simulate, hl, hr,
     runWith_oracleLegacySampler]
   rfl
 

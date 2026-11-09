@@ -742,55 +742,14 @@ variable {ι κ : Type} {ambient : OracleSpec ι} {spec : OracleSpec κ} {n : Ty
 
 /-- Interpreting a plain run against a sampler interprets every prover slot and every draw. -/
 theorem simulateQ_run_simulate_sampler (h : QueryImpl spec n)
-    (ιm : QueryImpl ambient (OracleComp spec)) :
-    (s : Protocol.{0}) → {Out : PathAlong plainSig s → Type} →
-    (k : Prover plainSig ambient s Out) →
-    (draw : (c : ChallengeNode plainSig s) → OracleComp spec (challengeSpec plainSig s c)) →
+    (ιm : QueryImpl ambient (OracleComp spec)) (s : Protocol.{0})
+    {Out : PathAlong plainSig s → Type} (k : Prover plainSig ambient s Out)
+    (draw : (c : ChallengeNode plainSig s) → OracleComp spec (challengeSpec plainSig s c)) :
     simulateQ h (TwoParty.Lens.run s (k.simulate ιm) (sampler plainSig s draw)) =
       TwoParty.Lens.run s (k.simulate fun q => simulateQ h (ιm q))
-        (sampler plainSig s fun c => simulateQ h (draw c))
-  | .pure ⟨⟩, _, k, draw => by
-    simp only [sampler, samplerEnd, PureEnd.toStrategy, PureEnd.mapOutput, FreeM.pure_eq_pure,
-      Prover.simulate_done, run_done, simulateQ_bind, simulateQ_pure]
-    rw [QueryImpl.simulateQ_simulateQ_eq_of_apply (fun _ => rfl)]
-  | .liftBind (.message X) rest, _, k, draw => by
-    rw [run_node, run_node, Prover.simulate_node, Prover.simulate_node]
-    have hs : ∀ {m : Type → Type} [Monad m] [LawfulMonad m]
-        (d : (c : ChallengeNode plainSig (.liftBind (.message X) rest)) →
-          m (challengeSpec plainSig (.liftBind (.message X) rest) c)),
-        sampler plainSig (.liftBind (.message X) rest) d =
-          pure (fun x => sampler plainSig (rest x)
-            (fun c => d ⟨.inr ⟨x, c.val⟩, c.property⟩)) := fun _ => by
-      change Choice.map .counterpart .sender _ <$> pure _ = _
-      erw [LawfulApplicative.map_pure]
-      rfl
-    rw [hs, hs]
-    simp only [step, Schedule.seq, owner_plain_message]
-    simp only [simulateQ_bind, simulateQ_pure, bind_map_left]
-    erw [QueryImpl.simulateQ_simulateQ_eq_of_apply (fun _ => rfl) k]
-    refine bind_congr fun v => ?_
-    erw [LawfulMonad.pure_bind, LawfulMonad.pure_bind]
-    erw [simulateQ_run_simulate_sampler h ιm (rest v.1) v.2]
-    rfl
-  | .liftBind (.challenge C) rest, _, k, draw => by
-    have hs : ∀ {m : Type → Type} [Monad m] [LawfulMonad m]
-        (d : (c : ChallengeNode plainSig (.liftBind (.challenge C) rest)) →
-          m (challengeSpec plainSig (.liftBind (.challenge C) rest) c)),
-        sampler plainSig (.liftBind (.challenge C) rest) d =
-          (fun x => ⟨x, sampler plainSig (rest ⟨⟩)
-            (fun c => d ⟨.inr ⟨⟨⟩, c.val⟩, c.property⟩)⟩) <$> d ⟨.inl ⟨⟩, rfl⟩ := fun _ => by
-      change Choice.map .counterpart .receiver _ <$> (_ <$> _) = _
-      erw [Functor.map_map]
-      rfl
-    rw [run_node, run_node, Prover.simulate_node, Prover.simulate_node, hs, hs]
-    simp only [step, Schedule.seq, owner_plain_challenge, bind_map_left]
-    erw [simulateQ_bind, QueryImpl.simulateQ_simulateQ_eq_of_apply (fun _ => rfl) k]
-    refine bind_congr fun f => ?_
-    erw [simulateQ_bind]
-    refine bind_congr fun x => ?_
-    erw [simulateQ_bind, simulateQ_run_simulate_sampler h ιm (rest ⟨⟩) (f x)]
-    refine bind_congr fun r => ?_
-    erw [simulateQ_pure]
+        (sampler plainSig s fun c => simulateQ h (draw c)) := by
+  rw [TwoParty.Lens.run, simulateQ_runWith_sampler, Prover.simulate_simulate]
+  rfl
 
 /-- Splitting the first slot of a simulated prover simulates the split slot and then the
 returned strategy. -/
