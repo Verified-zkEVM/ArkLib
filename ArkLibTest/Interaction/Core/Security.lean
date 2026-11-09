@@ -200,6 +200,346 @@ example (err : ChallengeNode plainSig zero → ℝ≥0∞) :
       (fun (_ : Bool) _ (_ : Unit) => True) (fun c => c.val.elim) err :=
   ⟨promisedState, fun _ _ _ _ sp => nomatch sp⟩
 
+/-! ### A classical one-challenge protocol
+
+The verifier reads a shared counter and accepts a true statement or a true challenge. The prover
+reads the counter before and after the challenge, so the verifier's reading records both.
+-/
+
+abbrev counter : OracleSpec Unit := Unit →ₒ Nat
+
+/-- A shared counter: each query returns the current value and increments it. -/
+def tick : QueryImpl counter (StateT Nat ProbComp) := fun _ => do
+  let n ← get
+  set (n + 1)
+  pure n
+
+/-- Reads the counter, then accepts a true statement or a true challenge with that reading. -/
+def coinVerifier : Verifier counter coin Bool Nat where
+  decide stmt _ v := OptionT.mk do
+    let n ← liftM (counter.query ())
+    pure (if (stmt || v.val.1) = true then some n else none)
+
+theorem decide_run' (stmt : Bool) (p) (v) (st : Nat) :
+    (simulateQ tick (coinVerifier.decide stmt p v).run).run' st =
+      pure (if (stmt || v.val.1) = true then some st else none) := by
+  rfl
+
+@[instance_reducible] def boolProblem : StatementProblem Bool where
+  Witness _ _ := Unit
+  admissible _ _ := True
+  rel _ b _ := b = true
+  rel_admissible _ _ _ _ := trivial
+
+@[instance_reducible] def anyOutput : StatementProblem Nat where
+  Witness _ _ := Unit
+  admissible _ _ := True
+  rel _ _ _ := True
+  rel_admissible _ _ _ _ := trivial
+
+theorem validAcceptance_iff {langOut : Nat → Prop} (hl : ∀ t, langOut t) (stmt : Bool)
+    (tr : PathAlong plainSig coin) :
+    coinVerifier.validAcceptance tick langOut stmt tr ↔
+      (stmt || (tr.1 : Bool)) = true := by
+  rcases tr with ⟨x, ⟨⟩⟩
+  have key : ∀ st, (simulateQ tick (coinVerifier.decide stmt _
+      (toPlainView coin ⟨x, ⟨⟩⟩)).run).run' st =
+        pure (if (stmt || (x : Bool)) = true then some st else none) :=
+    fun st => decide_run' stmt _ _ st
+  simp only [Verifier.validAcceptance, key, evalDist_pure]
+  cases stmt <;> cases x <;> simp [hl]
+
+/-- The state is true at the root of a true statement and at a leaf with a true challenge. -/
+def coinState : StateFunction plainSig coin Bool (boolProblem.admissible ())
+    (boolProblem.language ()) (coinVerifier.validAcceptance tick (anyOutput.language ())) where
+  toFun {_} sp history stmt := match sp, history with
+    | .root _, _ => stmt = true
+    | .down _ _, history => (stmt || (history.1.1 : Bool)) = true
+  root _ _ h := ⟨(), h⟩
+  send sp _ _ h := by
+    cases sp with
+    | root => exact nomatch h
+    | down _ tail => cases tail
+  leaf sp history stmt h := by
+    cases sp with
+    | down _ tail =>
+      cases tail
+      rcases history with ⟨⟨x, _⟩, ⟨⟩⟩
+      rw [validAcceptance_iff (fun _ => ⟨(), trivial⟩)]
+      exact h
+
+/-- The only challenge node of the protocol. -/
+def onlyChallenge : ChallengeNode plainSig coin := ⟨.inl ⟨⟩, rfl⟩
+
+theorem sampleAt_root (h) : sampleAt plainSig draw (.root coin) h = ($ᵗ Bool : ProbComp Bool) :=
+  LawfulFunctor.id_map _
+
+theorem uniform_singleton (b : Bool) : 𝒟[($ᵗ Bool : ProbComp Bool)] {b} = 1 / 2 := by
+  rw [SampleableType.evalDist_uniformSample_singleton, one_div]
+  simp
+
+theorem uniform_true : 𝒟[($ᵗ Bool : ProbComp Bool)] {true} = 1 / 2 := uniform_singleton true
+
+/-- A false statement becomes true exactly when the challenge is true. -/
+theorem coin_rbrSoundness :
+    coinVerifier.rbrSoundness tick boolProblem anyOutput draw (fun _ => 1 / 2) := by
+  refine ⟨coinState, ?_⟩
+  intro stmt _ _ a next sp h history
+  cases sp with
+  | down _ tail => cases tail
+  | root =>
+    rw [sampleAt_root, ← uniform_true]
+    refine measure_mono fun x hx => ?_
+    obtain ⟨hstmt, hx⟩ := hx
+    change ¬ stmt = true at hstmt
+    change (stmt || (x : Bool)) = true at hx
+    cases stmt
+    · simpa using hx
+    · exact absurd rfl hstmt
+
+/-- No state function achieves an error below one half. -/
+theorem coin_not_rbrSoundness (ε : ChallengeNode plainSig coin → ℝ≥0∞)
+    (hε : ε onlyChallenge < 1 / 2) :
+    ¬ coinVerifier.rbrSoundness tick boolProblem anyOutput draw ε := by
+  rintro ⟨F, hF⟩
+  have hroot : ¬ F.toFun (.root coin) ⟨⟩ false := fun h => by
+    obtain ⟨_, h⟩ := F.root false trivial h
+    exact Bool.false_ne_true h
+  have hleaf : F.toFun (.down ⟨⟩ (.root _)) ⟨⟨true, rfl⟩, ⟨⟩⟩ false := by
+    by_contra hc
+    exact F.leaf _ _ false hc ((validAcceptance_iff (fun _ => ⟨(), trivial⟩) _ _).2 rfl)
+  have bound := hF false trivial (fun ⟨_, h⟩ => Bool.false_ne_true h) _ _ (.root coin) rfl ⟨⟩
+  erw [sampleAt_root] at bound
+  refine absurd (lt_of_le_of_lt ?_ hε) (lt_irrefl _)
+  refine le_trans ?_ bound
+  rw [← uniform_true]
+  refine measure_mono fun x hx => ?_
+  rw [Set.mem_singleton_iff] at hx
+  subst hx
+  exact ⟨hroot, hleaf⟩
+
+/-- The knowledge state carries no witness and tracks the soundness state. -/
+def coinKnowledge : KnowledgeStateFunction plainSig coin Bool Unit Unit (fun _ => True)
+    (fun b _ => b = true) (fun stmt tr (_ : Unit) =>
+      coinVerifier.validAcceptance tick (fun _ => True) stmt tr) where
+  Witness _ := Unit
+  toFun {_} sp history stmt _ := match sp, history with
+    | .root _, _ => stmt = true
+    | .down _ _, history => (stmt || (history.1.1 : Bool)) = true
+  extractRoot _ _ := ()
+  extractStep _ _ _ _ _ := ()
+  extractLeaf _ _ _ _ := ()
+  root _ _ _ h := h
+  send sp _ _ h := by
+    cases sp with
+    | root => exact nomatch h
+    | down _ tail => cases tail
+  leaf sp history stmt _ h := by
+    cases sp with
+    | down _ tail =>
+      cases tail
+      rcases history with ⟨⟨x, _⟩, ⟨⟩⟩
+      exact (validAcceptance_iff (fun _ => trivial) _ _).1 h
+
+/-- Backwards extraction fails exactly when a false statement meets a true challenge. -/
+theorem coin_rbrKnowledgeSoundness :
+    coinVerifier.rbrKnowledgeSoundness tick (fun _ => True) (fun b (_ : Unit) => b = true)
+      (fun (_ : Nat) (_ : Unit) => True) draw (fun _ => 1 / 2) := by
+  refine ⟨coinKnowledge, ?_⟩
+  intro stmt _ a next sp h history
+  cases sp with
+  | down _ tail => cases tail
+  | root =>
+    rw [sampleAt_root, ← uniform_true]
+    refine measure_mono fun x hx => ?_
+    obtain ⟨_, hstmt, hx⟩ := hx
+    change ¬ stmt = true at hstmt
+    change (stmt || (x : Bool)) = true at hx
+    cases stmt
+    · simpa using hx
+    · exact absurd rfl hstmt
+
+/-- No knowledge state function achieves an error below one half. -/
+theorem coin_not_rbrKnowledgeSoundness (ε : ChallengeNode plainSig coin → ℝ≥0∞)
+    (hε : ε onlyChallenge < 1 / 2) :
+    ¬ coinVerifier.rbrKnowledgeSoundness tick (fun _ => True) (fun b (_ : Unit) => b = true)
+      (fun (_ : Nat) (_ : Unit) => True) draw ε := by
+  rintro ⟨F, hF⟩
+  have hroot : ∀ w, ¬ F.toFun (.root coin) ⟨⟩ false w := fun w h =>
+    Bool.false_ne_true (F.root false trivial w h)
+  have hleaf := F.leaf (.down ⟨⟩ (.root _)) ⟨⟨true, rfl⟩, ⟨⟩⟩ false ()
+    ((validAcceptance_iff (fun _ => trivial) _ _).2 rfl)
+  have bound := hF false trivial _ _ (.root coin) rfl ⟨⟩
+  erw [sampleAt_root] at bound
+  refine absurd (lt_of_le_of_lt ?_ hε) (lt_irrefl _)
+  refine le_trans ?_ bound
+  rw [← uniform_true]
+  refine measure_mono fun x hx => ?_
+  rw [Set.mem_singleton_iff] at hx
+  subst hx
+  exact ⟨_, hroot _, hleaf⟩
+
+/-- Reads the counter before the challenge and again after it, and outputs the second reading. -/
+def countingProver : Prover plainSig counter coin (fun _ => Nat) := do
+  let _ ← liftM (counter.query ())
+  pure fun _ => liftM (counter.query ())
+
+/-- The observation of a run with challenge `b`. -/
+def coinObs (stmt b : Bool) : Observation plainSig coin (fun _ => Nat) Nat :=
+  ⟨⟨b, ⟨⟩⟩, 1, if (stmt || b) = true then some 2 else none⟩
+
+theorem experiment_counting (stmt : Bool) :
+    experiment (pure 0) tick draw (coinVerifier.run stmt countingProver) =
+      (($ᵗ Bool : ProbComp Bool) >>= fun b => pure (coinObs stmt b)) := by
+  rfl
+
+instance : MeasurableSpace (Observation plainSig coin (fun _ => Nat) Nat) := ⊤
+
+instance : DiscreteMeasurableSpace (Observation plainSig coin (fun _ => Nat) Nat) :=
+  ⟨fun _ => MeasurableSpace.measurableSet_top⟩
+
+instance : Countable (PathAlong plainSig coin) :=
+  Function.Injective.countable (β := Bool) (f := fun tr => tr.1) fun
+    | ⟨_, ⟨⟩⟩, ⟨_, ⟨⟩⟩, rfl => rfl
+
+/-- The classical model of the coin verifier, with fresh challenges and a shared counter. -/
+noncomputable abbrev coinModel :=
+  coinVerifier.classicalModel (Out := fun _ => Nat) (pure 0) tick draw
+
+theorem outcome_counting (stmt : Bool) (S : Set (Observation plainSig coin (fun _ => Nat) Nat)) :
+    coinModel.outcome stmt countingProver S =
+      𝒟[($ᵗ Bool : ProbComp Bool)] (coinObs stmt ⁻¹' S) := by
+  change 𝒟[experiment (pure 0) tick draw (coinVerifier.run stmt countingProver)] S = _
+  rw [experiment_counting, LawfulMonad.bind_pure_comp, evalDist_map _ Measurable.of_discrete,
+    Measure.map_apply Measurable.of_discrete MeasurableSet.of_discrete]
+
+/-- On a false statement, half of the mass is a returned rejection. -/
+example : coinModel.outcome false countingProver
+    {obs | obs.2.2 = none} = 1 / 2 := by
+  rw [outcome_counting, ← uniform_singleton false]
+  congr 1
+  ext b
+  cases b
+  · exact iff_of_true rfl rfl
+  · exact iff_of_false (fun h => Option.some_ne_none _ h) Bool.noConfusion
+
+/-- The other half accepts, after the prover's two readings and the verifier's third. -/
+example : coinModel.outcome false countingProver
+    {obs | obs.2.2 = some 2} = 1 / 2 := by
+  rw [outcome_counting, ← uniform_true]
+  congr 1
+  ext b
+  cases b
+  · refine iff_of_false (fun h => ?_) Bool.noConfusion
+    change (none : Option Nat) = some 2 at h
+    cases h
+  · exact iff_of_true rfl rfl
+
+/-- No mass is missing: rejection is an observation of the run. -/
+example : coinModel.outcome false countingProver
+    Set.univ = 1 := by
+  rw [outcome_counting, Set.preimage_univ]
+  simp
+
+/-- A true statement or a true challenge bit witnesses the input. -/
+@[instance_reducible] def coinInput : StatementProblem Bool where
+  Witness _ _ := Bool × Nat
+  admissible _ _ := True
+  rel _ b w := (b || w.1) = true
+  rel_admissible _ _ _ _ := trivial
+
+instance : ∀ b, MeasurableSpace (coinInput.Witness () b) := fun _ => ⊤
+
+instance : ∀ b, DiscreteMeasurableSpace (coinInput.Witness () b) :=
+  fun _ => ⟨fun _ => MeasurableSpace.measurableSet_top⟩
+
+instance : ∀ b, Countable (coinInput.Witness () b) := fun _ =>
+  inferInstanceAs (Countable (Bool × Nat))
+
+def coinJudgement : OutputJudgement (Observation plainSig coin (fun _ => Nat) Nat) Nat anyOutput :=
+  .ofObservation anyOutput (fun _ n => n) (fun _ _ _ => ())
+
+/-- Reads the challenge from the transcript and the sizes of both participant logs. -/
+def coinLoggedExtractor : Extractor.Straightline counter coin (coinInput.Witness ()) Nat :=
+  fun _ _ tr proveLog verifyLog => pure (tr.1, proveLog.length + verifyLog.length)
+
+/-- Reads the challenge and the prover output from the transcript alone. -/
+def coinTranscriptExtractor : Extractor.TranscriptOnly counter coin (coinInput.Witness ()) Nat :=
+  fun _ out tr => pure (tr.1, out)
+
+theorem accepted_of_mem_support (stmt : Bool)
+    (adv : Prover plainSig counter coin (fun _ => Nat))
+    {obs : Observation plainSig coin (fun _ => Nat) Nat}
+    (h : obs ∈ support (coinVerifier.run stmt adv))
+    {t : Nat} (ht : obs.2.2 = some t) : (stmt || (obs.1.1 : Bool)) = true := by
+  have hv := Verifier.verdict_mem_support_run coinVerifier stmt adv h
+  rw [ht] at hv
+  change some t ∈ support ((liftM (counter.query ()) : OracleComp counter Nat) >>= fun n =>
+    pure (if (stmt || (obs.1.1 : Bool)) = true then some n else none)) at hv
+  by_contra hc
+  simp [hc] at hv
+
+/-- An extractor that returns the transcript's challenge bit never misses a witness. -/
+theorem bad_eq_zero (E : Extractor.Straightline counter coin (coinInput.Witness ()) Nat)
+    (hE : ∀ stmt out tr proveLog verifyLog, ∀ w ∈ support (E stmt out tr proveLog verifyLog).run,
+      ∃ n, w = some ((tr.1 : Bool), n))
+    (stmt : Bool) (adv : Prover plainSig counter coin (fun _ => Nat)) :
+    (classicalStraightline (coinInput.Witness ()) coinVerifier (pure 0) tick draw
+      (fun _ n => n)).experiment E stmt adv
+      {z | coinJudgement.valid z.1 ∧ ∀ wit ∈ z.2, ¬ coinInput.rel () stmt wit} = 0 := by
+  refine evalDist.apply_eq_zero_of_disjoint_support _ (Set.to_countable _).measurableSet ?_
+  rintro z hz ⟨⟨t, ht, -⟩, hbad⟩
+  change z.1.2.2 = some t at ht
+  simp only [experiment, mem_support_bind_iff, support_pure, Set.mem_singleton_iff] at hz
+  obtain ⟨_, rfl, hz⟩ := hz
+  obtain ⟨hrun, -, hext⟩ := mem_support_extractionGame coinVerifier (fun _ n => n) E stmt adv
+    (support_simulateQ_run'_subset _ _ _ hz)
+  have hacc := accepted_of_mem_support stmt adv hrun ht
+  obtain ⟨proveLog, verifyLog, hw⟩ := hext (by rw [ht]; exact Option.some_ne_none t)
+  obtain ⟨n, hn⟩ := hE _ _ _ _ _ _ hw
+  exact hbad _ hn hacc
+
+/-- The logged extractor certifies classical knowledge soundness with zero error. -/
+example : knowledgeSoundnessWith coinModel coinInput anyOutput coinJudgement
+    (classicalStraightline (coinInput.Witness ()) coinVerifier (pure 0) tick draw
+      (fun _ n => n)) coinLoggedExtractor 0 := fun stmt _ adv =>
+  ⟨classicalStraightline_marginal _ _ _ _ _ _ _ _ _, le_refl _,
+    (bad_eq_zero coinLoggedExtractor (fun _ _ _ _ _ _ hw => ⟨_, hw⟩) stmt adv).le⟩
+
+/-- The transcript-only extractor certifies the same bound without either log. -/
+example : knowledgeSoundnessWith coinModel coinInput anyOutput coinJudgement
+    (classicalTranscriptOnly (coinInput.Witness ()) coinVerifier (pure 0) tick draw
+      (fun _ n => n)) coinTranscriptExtractor 0 := fun stmt _ adv =>
+  ⟨classicalTranscriptOnly_marginal _ _ _ _ _ _ _ _ _, le_refl _,
+    (bad_eq_zero coinTranscriptExtractor.withLogs (fun _ _ _ _ _ _ hw => ⟨_, hw⟩) stmt adv).le⟩
+
+/-- Records ambient queries and challenges in order, answering every challenge with `b`. -/
+def traceHandler (b : Bool) :
+    QueryImpl (counter + challengeSpec plainSig coin) (StateM (List String × Nat))
+  | .inl _ => do
+    let (trace, n) ← get
+    set (trace ++ ["ambient"], n + 1)
+    pure n
+  | .inr ⟨.inl _, _⟩ => (show StateM _ Bool from do
+    modify fun (trace, n) => (trace ++ ["challenge"], n)
+    pure b)
+  | .inr ⟨.inr ⟨_, i⟩, _⟩ => i.elim
+
+run_cmd do
+  let ((obs, extracted), trace, _) := (simulateQ (traceHandler true)
+    (extractionGame coinVerifier (fun _ n => n) coinLoggedExtractor false countingProver)).run
+      ([], 0)
+  unless trace == ["ambient", "challenge", "ambient", "ambient"] do
+    throwError "the challenge was not drawn between the prover's two ambient queries"
+  unless obs.2.1 == 1 && obs.2.2 == some 2 &&
+      extracted.map (fun (w : Bool × Nat) => w) == some (true, 3) do
+    throwError "the accepting branch lost the shared state or a participant log"
+  let ((obs, extracted), _) := (simulateQ (traceHandler false)
+    (extractionGame coinVerifier (fun _ n => n) coinLoggedExtractor false countingProver)).run
+      ([], 0)
+  unless obs.2.2 == none && extracted.isNone do
+    throwError "the rejecting branch accepted or extracted"
+
 end Interaction.Core.SecurityTests
 
 run_cmd do
@@ -207,7 +547,15 @@ run_cmd do
       ``Interaction.Core.knowledgeSoundnessWith, ``Interaction.Core.classicalStraightline,
       ``Interaction.Core.classicalTranscriptOnly, ``Interaction.Core.Verifier.runWithLog_fst,
       ``Interaction.Core.OracleVerifier.classicalStraightline, ``Interaction.Core.rbrSoundness,
-      ``Interaction.Core.rbrKnowledgeSoundness] do
+      ``Interaction.Core.rbrKnowledgeSoundness, ``Interaction.Core.Verifier.verdict_mem_support_run,
+      ``Interaction.Core.mem_support_extractionGame,
+      ``Interaction.Core.classicalStraightline_marginal,
+      ``Interaction.Core.classicalTranscriptOnly_marginal,
+      ``Interaction.Core.SecurityTests.coin_rbrSoundness,
+      ``Interaction.Core.SecurityTests.coin_not_rbrSoundness,
+      ``Interaction.Core.SecurityTests.coin_rbrKnowledgeSoundness,
+      ``Interaction.Core.SecurityTests.coin_not_rbrKnowledgeSoundness,
+      ``Interaction.Core.SecurityTests.bad_eq_zero] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"
