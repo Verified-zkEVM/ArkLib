@@ -55,6 +55,33 @@ def suffixDraw {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
     suffixDraw l (next b) (fun p => s₂ ⟨b, p⟩)
       (fun c => draw ⟨.inr ⟨b, c.val⟩, c.property⟩) p c
 
+section draws
+variable {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u}) {m m' : Type u → Type u}
+
+/-- Restricting draws to the prefix commutes with transforming every draw. -/
+theorem prefixDraw_comp (f : ∀ {α : Type u}, m α → m' α) :
+    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
+    (draw : (c : ChallengeNode l (s₁.append s₂)) → m (challengeSpec l (s₁.append s₂) c)) →
+    (c : ChallengeNode l s₁) →
+    prefixDraw l s₁ s₂ (fun c => f (draw c)) c = f (prefixDraw l s₁ s₂ draw c)
+  | .pure _, _, _, c => c.val.elim
+  | .liftBind _ _, _, _, ⟨.inl _, _⟩ => rfl
+  | .liftBind _ next, s₂, draw, ⟨.inr ⟨b, c⟩, h⟩ =>
+    prefixDraw_comp f (next b) (fun p => s₂ ⟨b, p⟩)
+      (fun c => draw ⟨.inr ⟨b, c.val⟩, c.property⟩) ⟨c, h⟩
+
+/-- Restricting draws to a suffix commutes with transforming every draw. -/
+theorem suffixDraw_comp (f : ∀ {α : Type u}, m α → m' α) :
+    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
+    (draw : (c : ChallengeNode l (s₁.append s₂)) → m (challengeSpec l (s₁.append s₂) c)) →
+    (p : Path s₁) → (c : ChallengeNode l (s₂ p)) →
+    suffixDraw l s₁ s₂ (fun c => f (draw c)) p c = f (suffixDraw l s₁ s₂ draw p c)
+  | .pure _, _, _, ⟨⟩, _ => rfl
+  | .liftBind _ next, s₂, draw, ⟨b, p⟩, c =>
+    suffixDraw_comp f (next b) (fun p => s₂ ⟨b, p⟩)
+      (fun c => draw ⟨.inr ⟨b, c.val⟩, c.property⟩) p c
+end draws
+
 /-- Combining the prefix and suffix restrictions of challenge draws recovers the draws. -/
 theorem combineDraw_prefixDraw_suffixDraw {P : PFunctor.{uA, u}}
     (l : PFunctor.Lens P rolePoly.{u}) {m : Type u → Type u} :
