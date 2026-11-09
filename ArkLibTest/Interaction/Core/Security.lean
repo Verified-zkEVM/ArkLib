@@ -94,8 +94,8 @@ def loggedVerifier : Verifier service zero Unit Nat where
     let n ← liftM (service.query 6)
     pure n
 
-def loggedExtractor : Extractor.Straightline service zero (fun _ : Unit => Nat) Nat :=
-  fun _ out _ proverLog verifierLog => do
+def loggedExtractor : Extractor.Straightline service zero (fun _ : Unit => Nat) (fun _ => Nat) :=
+  fun _ _ out proverLog verifierLog => do
     let n ← liftM (service.query 9)
     pure (out + proverLog.length + verifierLog.length + n)
 
@@ -132,8 +132,8 @@ def oracleProver : Prover oracleSig OracleSpec.emptySpec tree (fun _ => Nat) :=
   pure ⟨fun n => n + 5, pure 7⟩
 
 def oracleExtractor : Extractor.OracleStraightline OracleSpec.emptySpec tree
-    (fun _ : Unit × (∀ i, emptyFamily.{0, 0, 0}.Realization i) => Nat) Nat :=
-  fun _ out _ proveLog verifyLog => pure (out + proveLog.length + verifyLog.length)
+    (fun _ : Unit × (∀ i, emptyFamily.{0, 0, 0}.Realization i) => Nat) (fun _ => Nat) :=
+  fun _ _ out proveLog verifyLog => pure (out + proveLog.length + verifyLog.length)
 
 def oracleHandler : QueryImpl (OracleSpec.emptySpec + challengeSpec oracleSig tree) Id
   | .inl i => i.elim
@@ -177,7 +177,7 @@ example : rbrSoundness plainSig coin (fun _ => True) (· = true)
   intro stmt _ _ a next sp h history
   simp [state]
 
-def knowledgeState : KnowledgeStateFunction plainSig coin Bool Unit Unit (fun _ => True)
+def knowledgeState : KnowledgeStateFunction plainSig coin Bool (fun _ => Unit) Unit (fun _ => True)
     (fun stmt _ => stmt = true) (fun stmt _ _ => stmt = true) where
   Witness _ _ := Unit
   toFun _ _ stmt _ := stmt = true
@@ -196,7 +196,7 @@ example : rbrKnowledgeSoundness plainSig coin (fun _ => True)
   simp [knowledgeState]
 
 /-- On zero rounds the promise `b = true` makes extraction immediate, while every input accepts. -/
-def promisedState : KnowledgeStateFunction plainSig zero Bool Unit Unit (· = true)
+def promisedState : KnowledgeStateFunction plainSig zero Bool (fun _ => Unit) Unit (· = true)
     (fun b _ => b = true) (fun _ _ _ => True) where
   Witness _ _ := Unit
   toFun _ _ _ _ := True
@@ -333,7 +333,7 @@ theorem coin_not_rbrSoundness (ε : ChallengeNode plainSig coin → ℝ≥0∞)
 
 /-- The knowledge state tracks the soundness state; its leaf witness records the challenge read
 from the transcript. -/
-def coinKnowledge : KnowledgeStateFunction plainSig coin Bool Unit Unit (fun _ => True)
+def coinKnowledge : KnowledgeStateFunction plainSig coin Bool (fun _ => Unit) Unit (fun _ => True)
     (fun b _ => b = true) (fun stmt tr (_ : Unit) =>
       coinVerifier.validAcceptance tick (fun _ => True) stmt tr) where
   Witness {_} sp history := match sp, history with
@@ -367,7 +367,7 @@ def coinKnowledge : KnowledgeStateFunction plainSig coin Bool Unit Unit (fun _ =
 /-- Backwards extraction fails exactly when a false statement meets a true challenge. -/
 theorem coin_rbrKnowledgeSoundness :
     coinVerifier.rbrKnowledgeSoundness tick (fun _ => True) (fun b (_ : Unit) => b = true)
-      (fun (_ : Nat) (_ : Unit) => True) draw (fun _ => 1 / 2) := by
+      (fun _ (_ : Nat) (_ : Unit) => True) draw (fun _ => 1 / 2) := by
   refine ⟨coinKnowledge, ?_⟩
   intro stmt _ a next sp h history
   cases sp with
@@ -386,7 +386,7 @@ theorem coin_rbrKnowledgeSoundness :
 theorem coin_not_rbrKnowledgeSoundness (ε : ChallengeNode plainSig coin → ℝ≥0∞)
     (hε : ε onlyChallenge < 1 / 2) :
     ¬ coinVerifier.rbrKnowledgeSoundness tick (fun _ => True) (fun b (_ : Unit) => b = true)
-      (fun (_ : Nat) (_ : Unit) => True) draw ε := by
+      (fun _ (_ : Nat) (_ : Unit) => True) draw ε := by
   rintro ⟨F, hF⟩
   have hroot : ∀ w, ¬ F.toFun (.root coin) ⟨⟩ false w := fun w h =>
     Bool.false_ne_true (F.root false trivial w h)
@@ -401,6 +401,152 @@ theorem coin_not_rbrKnowledgeSoundness (ε : ChallengeNode plainSig coin → ℝ
   rw [Set.mem_singleton_iff] at hx
   subst hx
   exact ⟨_, hroot _, hleaf⟩
+
+/-! ### A transcript-dependent output witness
+
+The prover sends `payload : Nat` and the verifier accepts when it equals the statement. The
+output witness is an index `Fin (payload + 1)`, whose type depends on the message. The leaf
+extractor keeps that carrier as the intermediate witness; its bound together with the acceptance
+equality gives `w ≤ stmt`. Unrestricted `Nat` cannot support the same identity/value extraction
+contract.
+-/
+
+/-- One prover message carrying a natural number. -/
+abbrev payloadMsg : Protocol := .liftBind (.message Nat) (fun _ => .pure ⟨⟩)
+
+/-- The payload of a completed transcript. -/
+def payloadOf (tr : PathAlong plainSig payloadMsg) : Nat := tr.1
+
+/-- The output witness carrier: an index bounded by the payload. -/
+abbrev BoundedIndex (tr : PathAlong plainSig payloadMsg) : Type := Fin (payloadOf tr + 1)
+
+/-- Accepts when the payload equals the statement, and outputs the payload. -/
+def payloadVerifier : Verifier counter payloadMsg Nat Nat where
+  decide stmt _ v := OptionT.mk
+    (pure (if payloadOf v.val = stmt then some (payloadOf v.val) else none))
+
+theorem payload_validAcceptance_iff {langOut : Nat → Prop} (stmt : Nat)
+    (tr : PathAlong plainSig payloadMsg) :
+    payloadVerifier.validAcceptance tick langOut stmt tr ↔ payloadOf tr = stmt ∧ langOut stmt := by
+  rcases tr with ⟨x, ⟨⟩⟩
+  have key : ∀ st, (simulateQ tick (payloadVerifier.decide stmt _
+      (toPlainView payloadMsg ⟨x, ⟨⟩⟩)).run).run' st =
+        pure (if payloadOf ⟨x, ⟨⟩⟩ = stmt then some (payloadOf ⟨x, ⟨⟩⟩) else none) :=
+    fun _ => rfl
+  simp only [Verifier.validAcceptance, key, evalDist_pure]
+  by_cases hx : payloadOf ⟨x, ⟨⟩⟩ = stmt <;> by_cases hl : langOut stmt <;> simp [hx, hl]
+
+/-- The root witness is the input witness; at the leaf it is the output witness `Fin (payload + 1)`
+itself, so leaf extraction is the identity. -/
+def payloadKnowledge : KnowledgeStateFunction plainSig payloadMsg Nat BoundedIndex Nat
+    (fun _ => True) (fun stmt w => w ≤ stmt) (fun stmt tr (_ : BoundedIndex tr) =>
+      payloadVerifier.validAcceptance tick (fun _ => True) stmt tr) where
+  Witness {_} sp history := match sp, history with
+    | .root _, _ => Nat
+    | .down _ _, history => Fin ((show Nat from history.1.1) + 1)
+  toFun {_} sp history stmt w := match sp, history, w with
+    | .root _, _, w => w ≤ stmt
+    | .down _ _, history, _ => (show Nat from history.1.1) = stmt
+  extractRoot _ w := w
+  extractStep sp _ _ _ w := by
+    cases sp with
+    | root => exact Fin.val w
+    | down _ tail => cases tail
+  extractLeaf sp history _ w := by
+    cases sp with
+    | down _ tail =>
+      cases tail
+      exact w
+  root _ _ _ h := h
+  send sp _ _ _ x w h := by
+    cases sp with
+    | root =>
+      change (show Nat from x) = _ at h
+      subst h
+      exact Nat.le_of_lt_succ w.isLt
+    | down _ tail => cases tail
+  leaf sp history stmt _ h := by
+    cases sp with
+    | down _ tail =>
+      cases tail
+      rcases history with ⟨⟨x, _⟩, ⟨⟩⟩
+      exact ((payload_validAcceptance_iff _ _).1 h).1
+
+/-- The move sending payload `n`. -/
+def sendPayload (n : Nat) : TwoParty.Lens.Move plainSig (.message Nat) := n
+
+/-- The complete cursor of the run sending payload `n`. -/
+def payloadLeaf (n : Nat) : Cursor.Spine payloadMsg (.pure ⟨⟩) := .down (sendPayload n) (.root _)
+
+/-- The full prefix of the run sending payload `n`. -/
+def payloadHistory (n : Nat) : PrefixMoves plainSig (payloadLeaf n) := ⟨⟨sendPayload n, rfl⟩, ⟨⟩⟩
+
+/-- Backwards extraction from the output witness `5 : Fin 8` at payload `7` returns `5`. -/
+example : payloadKnowledge.extractRoot 7
+    (payloadKnowledge.extractStep (.root payloadMsg) ⟨⟩ 7 (sendPayload 7)
+      (payloadKnowledge.extractLeaf (payloadLeaf 7) (payloadHistory 7) 7 (5 : Fin 8))) = 5 :=
+  rfl
+
+/-- The leaf extractor passes the dependent output witness through unchanged. -/
+example (w : Fin 8) :
+    (payloadKnowledge.extractLeaf (payloadLeaf 7) (payloadHistory 7) 7 w : Fin 8) = w :=
+  rfl
+
+/-- The payload protocol has no challenge, so its knowledge state function has error zero under
+every challenge implementation. -/
+theorem payload_rbrKnowledgeSoundness
+    (draw : QueryImpl (challengeSpec plainSig payloadMsg) ProbComp) :
+    payloadVerifier.rbrKnowledgeSoundness tick (fun _ => True) (fun stmt (w : Nat) => w ≤ stmt)
+      (fun tr (_ : Nat) (_ : BoundedIndex tr) => True) draw (fun _ => 0) := by
+  refine ⟨payloadKnowledge, ?_⟩
+  intro _ _ a next sp h _
+  cases sp with
+  | root => exact nomatch h
+  | down _ tail => cases tail
+
+/-- For every payload `n` and output witness `w : Fin (n + 1)`, backwards extraction returns
+`w.val`. -/
+theorem payloadKnowledge_extract (n : Nat) (w : Fin (n + 1)) :
+    payloadKnowledge.extractRoot n
+      (payloadKnowledge.extractStep (.root payloadMsg) ⟨⟩ n (sendPayload n)
+        (payloadKnowledge.extractLeaf (payloadLeaf n) (payloadHistory n) n w)) = w.val :=
+  rfl
+
+/-! ### A transcript-dependent output witness in straight-line extraction
+
+The prover sends `n` and outputs an index `w : Fin (n + 1)`. The game reads that output with the
+identity `readOut` into the carrier `BoundedIndex`, and the extractor receives it at its own
+transcript.
+-/
+
+/-- Sends `n` and outputs the index `w`, whose type depends on the message. -/
+def payloadProver (n : Nat) (w : Fin (n + 1)) : Prover plainSig counter payloadMsg BoundedIndex :=
+  pure ⟨sendPayload n, pure w⟩
+
+/-- Returns the value of the transcript-indexed output witness. -/
+def payloadExtractor :
+    Extractor.Straightline counter payloadMsg (fun _ : Nat => Nat) BoundedIndex :=
+  fun _ _ w _ _ => pure w.val
+
+/-- Answers every ambient query with zero; the payload protocol has no challenge. -/
+def payloadHandler : QueryImpl (counter + challengeSpec plainSig payloadMsg) Id
+  | .inl _ => (0 : Nat)
+  | .inr ⟨.inl _, h⟩ => nomatch h
+  | .inr ⟨.inr ⟨_, i⟩, _⟩ => i.elim
+
+/-- On the accepting run with payload `7`, the extractor receives every prover output
+`w : Fin 8` itself and returns its value. -/
+theorem payload_extractionGame (w : Fin 8) :
+    simulateQ payloadHandler (extractionGame payloadVerifier (fun _ w => w) payloadExtractor 7
+      (payloadProver 7 w)) = ((⟨⟨sendPayload 7, ⟨⟩⟩, w, some 7⟩, some w.val) :
+        Observation plainSig payloadMsg BoundedIndex Nat × Option Nat) :=
+  rfl
+
+run_cmd do
+  let (obs, extracted) := simulateQ payloadHandler
+    (extractionGame payloadVerifier (fun _ w => w) payloadExtractor 7 (payloadProver 7 5))
+  unless obs.2.2 == some 7 && extracted == some 5 do
+    throwError "the accepting payload run lost the dependent output witness"
 
 /-- Reads the counter before the challenge and again after it, and outputs the second reading. -/
 def countingProver : Prover plainSig counter coin (fun _ => Nat) := do
@@ -483,12 +629,14 @@ def coinJudgement : OutputJudgement (Observation plainSig coin (fun _ => Nat) Na
   .ofObservation anyOutput (fun _ n => n) (fun _ _ _ => ())
 
 /-- Reads the challenge from the transcript and the sizes of both participant logs. -/
-def coinLoggedExtractor : Extractor.Straightline counter coin (coinInput.Witness ()) Nat :=
-  fun _ _ tr proveLog verifyLog => pure (tr.1, proveLog.length + verifyLog.length)
+def coinLoggedExtractor :
+    Extractor.Straightline counter coin (coinInput.Witness ()) (fun _ => Nat) :=
+  fun _ tr _ proveLog verifyLog => pure (tr.1, proveLog.length + verifyLog.length)
 
 /-- Reads the challenge and the prover output from the transcript alone. -/
-def coinTranscriptExtractor : Extractor.TranscriptOnly counter coin (coinInput.Witness ()) Nat :=
-  fun _ out tr => pure (tr.1, out)
+def coinTranscriptExtractor :
+    Extractor.TranscriptOnly counter coin (coinInput.Witness ()) (fun _ => Nat) :=
+  fun _ tr out => pure (tr.1, out)
 
 theorem accepted_of_mem_support (stmt : Bool)
     (adv : Prover plainSig counter coin (fun _ => Nat))
@@ -503,8 +651,8 @@ theorem accepted_of_mem_support (stmt : Bool)
   simp [hc] at hv
 
 /-- An extractor that returns the transcript's challenge bit never misses a witness. -/
-theorem bad_eq_zero (E : Extractor.Straightline counter coin (coinInput.Witness ()) Nat)
-    (hE : ∀ stmt out tr proveLog verifyLog, ∀ w ∈ support (E stmt out tr proveLog verifyLog).run,
+theorem bad_eq_zero (E : Extractor.Straightline counter coin (coinInput.Witness ()) (fun _ => Nat))
+    (hE : ∀ stmt tr out proveLog verifyLog, ∀ w ∈ support (E stmt tr out proveLog verifyLog).run,
       ∃ n, w = some ((tr.1 : Bool), n))
     (stmt : Bool) (adv : Prover plainSig counter coin (fun _ => Nat)) :
     (classicalStraightline (coinInput.Witness ()) coinVerifier (pure 0) tick draw
@@ -580,6 +728,9 @@ run_cmd do
       ``Interaction.Core.SecurityTests.coin_not_rbrSoundness,
       ``Interaction.Core.SecurityTests.coin_rbrKnowledgeSoundness,
       ``Interaction.Core.SecurityTests.coin_not_rbrKnowledgeSoundness,
+      ``Interaction.Core.SecurityTests.payload_rbrKnowledgeSoundness,
+      ``Interaction.Core.SecurityTests.payloadKnowledge_extract,
+      ``Interaction.Core.SecurityTests.payload_extractionGame,
       ``Interaction.Core.SecurityTests.bad_eq_zero] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
