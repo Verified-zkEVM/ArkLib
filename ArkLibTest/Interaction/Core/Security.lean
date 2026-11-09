@@ -173,7 +173,7 @@ example : rbrSoundness plainSig coin (fun _ => True) (· = true)
 
 def knowledgeState : KnowledgeStateFunction plainSig coin Bool Unit Unit (fun _ => True)
     (fun stmt _ => stmt = true) (fun stmt _ _ => stmt = true) where
-  Witness _ := Unit
+  Witness _ _ := Unit
   toFun _ _ stmt _ := stmt = true
   extractRoot _ _ := ()
   extractStep _ _ _ _ _ := ()
@@ -192,7 +192,7 @@ example : rbrKnowledgeSoundness plainSig coin (fun _ => True)
 /-- On zero rounds the promise `b = true` makes extraction immediate, while every input accepts. -/
 def promisedState : KnowledgeStateFunction plainSig zero Bool Unit Unit (· = true)
     (fun b _ => b = true) (fun _ _ _ => True) where
-  Witness _ := Unit
+  Witness _ _ := Unit
   toFun _ _ _ _ := True
   extractRoot _ _ := ()
   extractStep _ _ _ _ _ := ()
@@ -325,17 +325,27 @@ theorem coin_not_rbrSoundness (ε : ChallengeNode plainSig coin → ℝ≥0∞)
   subst hx
   exact ⟨hroot, hleaf⟩
 
-/-- The knowledge state carries no witness and tracks the soundness state. -/
+/-- The knowledge state tracks the soundness state; its leaf witness records the challenge read
+from the transcript. -/
 def coinKnowledge : KnowledgeStateFunction plainSig coin Bool Unit Unit (fun _ => True)
     (fun b _ => b = true) (fun stmt tr (_ : Unit) =>
       coinVerifier.validAcceptance tick (fun _ => True) stmt tr) where
-  Witness _ := Unit
+  Witness {_} sp history := match sp, history with
+    | .root _, _ => Unit
+    | .down _ _, history => {b : Bool // b = history.1.1}
   toFun {_} sp history stmt _ := match sp, history with
     | .root _, _ => stmt = true
     | .down _ _, history => (stmt || (history.1.1 : Bool)) = true
   extractRoot _ _ := ()
-  extractStep _ _ _ _ _ := ()
-  extractLeaf _ _ _ _ := ()
+  extractStep sp _ _ _ _ := by
+    cases sp with
+    | root => exact ()
+    | down _ tail => cases tail
+  extractLeaf sp history _ _ := by
+    cases sp with
+    | down _ tail =>
+      cases tail
+      exact ⟨history.1.1, rfl⟩
   root _ _ _ h := h
   send sp _ _ h := by
     cases sp with

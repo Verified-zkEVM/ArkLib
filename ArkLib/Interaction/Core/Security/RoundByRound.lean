@@ -107,18 +107,22 @@ def rbrSoundness {S : Type} (s : FreeM P PUnit)
 
 /-- Intermediate witnesses and their backwards extraction at full transcript prefixes.
 
+Witness types, states and extractors may all read the full prefix, including oracle payloads.
 As for soundness states, the root extraction obligation applies only within the input promise.
 -/
 structure KnowledgeStateFunction (s : FreeM P PUnit) (S W Win : Type)
     (admissible : S → Prop) (relIn : S → Win → Prop)
     (validOutput : S → PathAlong l s → W → Prop) where
-  Witness : ∀ {t}, Cursor.Spine s t → Type
-  toFun : ∀ {t} (sp : Cursor.Spine s t), PrefixMoves l sp → S → Witness sp → Prop
-  extractRoot : S → Witness (.root s) → Win
-  extractStep : ∀ {a next} (sp : Cursor.Spine s (.liftBind a next)),
-    PrefixMoves l sp → S → (x : Move l a) →
-      Witness (sp.comp (.down (l.toFunB a x) (.root _))) → Witness sp
-  extractLeaf : ∀ (sp : Cursor.Spine s (.pure ⟨⟩)), PrefixMoves l sp → S → W → Witness sp
+  Witness : ∀ {t} (sp : Cursor.Spine s t), PrefixMoves l sp → Type
+  toFun : ∀ {t} (sp : Cursor.Spine s t) (history : PrefixMoves l sp), S →
+    Witness sp history → Prop
+  extractRoot : S → Witness (.root s) ⟨⟩ → Win
+  extractStep : ∀ {a next} (sp : Cursor.Spine s (.liftBind a next))
+    (history : PrefixMoves l sp), S → (x : Move l a) →
+      Witness (sp.comp (.down (l.toFunB a x) (.root _))) (PrefixMoves.snoc l sp history x) →
+        Witness sp history
+  extractLeaf : ∀ (sp : Cursor.Spine s (.pure ⟨⟩)) (history : PrefixMoves l sp), S → W →
+    Witness sp history
   root : ∀ stmt, admissible stmt → ∀ wit,
     toFun (.root s) ⟨⟩ stmt wit → relIn stmt (extractRoot stmt wit)
   send : ∀ {a next} (sp : Cursor.Spine s (.liftBind a next)) history stmt,
