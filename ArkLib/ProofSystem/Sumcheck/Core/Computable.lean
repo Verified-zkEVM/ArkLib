@@ -394,7 +394,8 @@ theorem interpretFocal_foldRoundsOn (f : M → M') (o : Out → Out')
 
 end FoldOn
 
-/-- C's fold of pure rounds is the fold at the polynomial carrier. -/
+/-- The polynomial-carrier fold of pure rounds is `foldRoundsOn` specialized to polynomial
+evaluation. -/
 theorem foldRounds_eq_foldRoundsOn {R : Type} [CommSemiring R] {deg : ℕ} {m : Type → Type}
     [Monad m] {State : ℕ → Type} {Out : Type} (msg : (k : ℕ) → State (k + 1) → R⦃≤ deg⦄[X])
     (next : (k : ℕ) → State (k + 1) → R → State k) (finish : State 0 → Out) :

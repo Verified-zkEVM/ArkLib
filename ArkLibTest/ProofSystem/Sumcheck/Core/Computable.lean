@@ -21,8 +21,10 @@ open scoped ENNReal NNReal
 open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
   OracleComp OracleSpec Sumcheck.Core.Computable Sumcheck.Impl.Representation
 
+/-- The test field `ZMod 5`. -/
 abbrev F := ZMod 5
 
+/-- `5` is prime, which gives `ZMod 5` its field structure. -/
 instance : Fact (Nat.Prime 5) := ⟨by decide⟩
 
 /-- The evaluation domain `{0, 1}`. -/
