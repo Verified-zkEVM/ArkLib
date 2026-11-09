@@ -406,8 +406,9 @@ theorem coin_not_rbrKnowledgeSoundness (ε : ChallengeNode plainSig coin → ℝ
 
 The prover sends `payload : Nat` and the verifier accepts when it equals the statement. The
 output witness is an index `Fin (payload + 1)`, whose type depends on the message. The leaf
-extractor keeps that carrier as the intermediate witness, and its bound alone yields the input
-relation `w ≤ stmt`; a constant carrier such as `Nat` would not.
+extractor keeps that carrier as the intermediate witness; its bound together with the acceptance
+equality gives `w ≤ stmt`. Unrestricted `Nat` cannot support the same identity/value extraction
+contract.
 -/
 
 /-- One prover message carrying a natural number. -/
