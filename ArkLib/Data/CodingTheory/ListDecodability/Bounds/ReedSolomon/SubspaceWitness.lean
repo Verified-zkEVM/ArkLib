@@ -15,7 +15,7 @@ public import ArkLib.Data.Polynomial.SubspacePolynomial
 Over a finite field `F` with `q = 2 ^ m` elements, let `a ≤ v ≤ m` and let `V` range over the
 additive subgroups of `F` of size `2 ^ v`. The proof outline for superpolynomial lists is:
 1. There are at least `2 ^ (v * (m - v))` such subgroups
-   (`Polynomial.exists_finset_addSubgroup_card`).
+   (`FiniteField.two_pow_le_card_addSubgroup`).
 2. The subspace polynomial `P_V` of `V` is monic, `2`-linearized and of degree `2 ^ v`. Its
    coefficients at `X ^ (2 ^ a), …, X ^ (2 ^ (v - 1))` take at most `q ^ (v - a)` values. By
    pigeonhole, some value `b` is shared by at least `2 ^ (v * (m - v)) / q ^ (v - a)` subgroups.
@@ -24,18 +24,13 @@ additive subgroups of `F` of size `2 ^ v`. The proof outline for superpolynomial
    relative distance `1 - 2 ^ v / q` from `evalOnPoints domain g`
    (`card_le_ncard_closeCodewordsRel_of_topCoeffs`).
 
-## Main definitions
-
-* `CodingTheory.subspaceTopCoeffs`: the coefficients of `X ^ (2 ^ a), …, X ^ (2 ^ (v - 1))`.
-* `CodingTheory.subspaceTopPoly`: the polynomial `X ^ (2 ^ v) + ∑ j, b j * X ^ (2 ^ (a + j))`.
+`Polynomial.subspaceTopCoeffs`, `Polynomial.subspaceTopPoly` and
+`Polynomial.subspaceTopPoly_sub_mem_degreeLT` are in
+`ArkLib/Data/Polynomial/SubspacePolynomial.lean`.
 
 ## Main statements
 
-* `CodingTheory.subspaceTopPoly_sub_mem_degreeLT`
 * `CodingTheory.card_le_ncard_closeCodewordsRel_of_topCoeffs`
-
-`subspaceTopCoeffs` and `subspaceTopPoly` are noncomputable because Mathlib's `Polynomial`
-arithmetic is noncomputable.
 
 The consumer is `rs_lambda_superpoly_extension` in
 `ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon.lean`.
@@ -47,82 +42,6 @@ namespace CodingTheory
 
 open Polynomial Code ReedSolomon
 
-section TopPolynomial
-
-variable {F : Type*} [Field F]
-
-/-- The coefficients of `X^(2^a), …, X^(2^(v-1))`. -/
-noncomputable def subspaceTopCoeffs (a v : ℕ) (P : F[X]) : Fin (v - a) → F :=
-  fun j => P.coeff (2 ^ (a + (j : ℕ)))
-
-/-- `X^(2^v) + ∑_j b_j X^(2^(a+j))`. -/
-noncomputable def subspaceTopPoly (a v : ℕ) (b : Fin (v - a) → F) : F[X] :=
-  X ^ (2 ^ v) + ∑ j : Fin (v - a), C (b j) * X ^ (2 ^ (a + (j : ℕ)))
-
-/-- For a monic linearized `P` of degree `2^v` and `a ≤ v`, removing the top part leaves a
-polynomial of degree `< 2^a`. -/
-theorem subspaceTopPoly_sub_mem_degreeLT {P : F[X]} (hP : IsTwoLinearized P) (hmon : P.Monic)
-    {a v : ℕ} (hdeg : P.natDegree = 2 ^ v) (hav : a ≤ v) :
-    subspaceTopPoly a v (subspaceTopCoeffs a v P) - P ∈ degreeLT F (2 ^ a) := by
-  classical
-  rw [mem_degreeLT, degree_lt_iff_coeff_zero]
-  intro n hn
-  rw [coeff_sub]
-  have hmon' : P.coeff (2 ^ v) = 1 := by rw [← hdeg]; exact hmon
-  have hle : ∀ m, 2 ^ v < m → P.coeff m = 0 := fun m hm =>
-    coeff_eq_zero_of_natDegree_lt (by rw [hdeg]; exact hm)
-  have hpow : 2 ^ a ≤ n := hn
-  have hsum : (∑ j : Fin (v - a), C (subspaceTopCoeffs a v P j) * X ^ (2 ^ (a + (j : ℕ)))).coeff n =
-      ∑ j : Fin (v - a), if n = 2 ^ (a + (j : ℕ)) then subspaceTopCoeffs a v P j else 0 := by
-    rw [finsetSum_coeff]
-    refine Finset.sum_congr rfl fun j _ => ?_
-    rw [coeff_C_mul, coeff_X_pow]; split_ifs <;> simp
-  unfold subspaceTopPoly
-  rw [coeff_add, coeff_X_pow, hsum]
-  by_cases hP0 : P.coeff n = 0
-  · rw [hP0, sub_zero]
-    by_cases h1 : n = 2 ^ v
-    · exfalso
-      rw [h1] at hP0 hn
-      rw [hP0] at hmon'; exact zero_ne_one hmon'
-    · simp only [h1, ite_false, zero_add]
-      refine Finset.sum_eq_zero fun j _ => ?_
-      split_ifs with h3
-      · subst h3; exact hP0
-      · rfl
-  · obtain ⟨i, rfl⟩ := hP n hP0
-    have hiv : i ≤ v := by
-      by_contra h
-      push Not at h
-      exact hP0 (hle _ (Nat.pow_lt_pow_right (by norm_num) h))
-    have hai : a ≤ i := by
-      by_contra h
-      push Not at h
-      exact absurd hn (not_le.mpr (Nat.pow_lt_pow_right (by norm_num) h))
-    rcases hiv.eq_or_lt with rfl | hlt
-    · rw [hmon']
-      have : ∀ j : Fin (i - a), (2 ^ i = 2 ^ (a + (j : ℕ))) = False := fun j => by
-        apply eq_false; intro h
-        have := Nat.pow_right_injective (le_refl 2) h
-        have := j.2; omega
-      simp [this]
-    · have hne : ¬ (2 ^ i = 2 ^ v) := (Nat.pow_right_injective (le_refl 2)).ne hlt.ne
-      simp only [hne, ite_false]
-      have : ∑ j : Fin (v - a),
-          (if 2 ^ i = 2 ^ (a + (j : ℕ)) then subspaceTopCoeffs a v P j else 0) =
-            P.coeff (2 ^ i) := by
-        rw [Finset.sum_eq_single ⟨i - a, by omega⟩]
-        · simp [subspaceTopCoeffs, Nat.add_sub_cancel' hai]
-        · intro j _ hj
-          rw [ite_eq_right_iff]
-          intro h
-          have := Nat.pow_right_injective (le_refl 2) h
-          exact (hj (Fin.ext (by simp; omega))).elim
-        · simp
-      rw [this]; ring
-
-end TopPolynomial
-
 section Fiber
 
 variable {F : Type*} [Field F] [Fintype F]
@@ -132,7 +51,7 @@ variable {F : Type*} [Field F] [Fintype F]
 Distinct `V` give distinct codewords. -/
 theorem card_le_ncard_closeCodewordsRel_of_topCoeffs [CharP F 2]
     {ι : Type*} [Fintype ι] [Nonempty ι]
-    (domain : ι ↪ F) (hdom : Fintype.card ι = Fintype.card F) {a v : ℕ} (hav : a ≤ v)
+    (domain : ι ↪ F) (hdom : Fintype.card ι = Fintype.card F) {a v : ℕ}
     (b : Fin (v - a) → F) (S : Finset (AddSubgroup F))
     (hS : ∀ V ∈ S, Nat.card V = 2 ^ v ∧ subspaceTopCoeffs a v (subspacePolynomial V) = b) :
     (S.card : ℝ) ≤
@@ -149,7 +68,7 @@ theorem card_le_ncard_closeCodewordsRel_of_topCoeffs [CharP F 2]
     obtain ⟨h1, h2⟩ := hS V hV
     have := subspaceTopPoly_sub_mem_degreeLT (isTwoLinearized_subspacePolynomial V)
       (monic_subspacePolynomial V)
-      (a := a) (v := v) (by rw [natDegree_subspacePolynomial, h1]) hav
+      (a := a) (v := v) (by rw [natDegree_subspacePolynomial, h1])
     rw [h2] at this
     exact this
   have hagree : ∀ V : AddSubgroup F, ∀ i, (evalOnPoints domain g) i = f V i ↔ domain i ∈ V := by

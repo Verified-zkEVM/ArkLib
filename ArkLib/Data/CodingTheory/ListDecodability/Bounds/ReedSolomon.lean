@@ -44,58 +44,6 @@ open Code
 
 section ReedSolomonBounds
 
-/-- Pigeonhole: some fiber of `f` on `T` has at least `|T| / |β|` elements. -/
-private theorem exists_div_le_card_filter_eq {α β : Type*} [Fintype β] [Nonempty β]
-    [DecidableEq β] (T : Finset α) (f : α → β) :
-    ∃ b, (T.card : ℝ) / Fintype.card β ≤ ((T.filter (fun x => f x = b)).card : ℝ) := by
-  have hN : (Fintype.card β : ℝ) ≠ 0 := by exact_mod_cast Fintype.card_ne_zero
-  obtain ⟨b, -, hb⟩ := Finset.exists_le_card_fiber_of_nsmul_le_card_of_maps_to
-    (s := T) (t := Finset.univ) (f := f) (b := (T.card : ℝ) / Fintype.card β)
-    (fun x _ => Finset.mem_univ (f x)) Finset.univ_nonempty
-    (by rw [Finset.card_univ, nsmul_eq_mul, mul_div_cancel₀ _ hN])
-  exact ⟨b, hb⟩
-
-/-- Common denominator for `0 < α < β < 1` rational. -/
-private theorem exists_common_denom_of_rat (α β : ℚ) (hα : 0 < α) (hαβ : α < β)
-    (hβ : β < 1) :
-    ∃ d a₀ v₀ : ℕ, 0 < a₀ ∧ a₀ < v₀ ∧ v₀ < d ∧
-      (α : ℝ) = (a₀ : ℝ) / d ∧ (β : ℝ) = (v₀ : ℝ) / d := by
-  have hαn : 0 < α.num := Rat.num_pos.mpr hα
-  have hβn : 0 < β.num := Rat.num_pos.mpr (hα.trans hαβ)
-  have hαd : (0 : ℝ) < α.den := by exact_mod_cast α.den_pos
-  have hβd : (0 : ℝ) < β.den := by exact_mod_cast β.den_pos
-  have hαr : (α : ℝ) = ((α.num.toNat * β.den : ℕ) : ℝ) / ((α.den * β.den : ℕ) : ℝ) := by
-    have h1 : ((α.num.toNat : ℕ) : ℝ) = (α.num : ℝ) := by
-      have := Int.toNat_of_nonneg hαn.le
-      exact_mod_cast this
-    rw [Rat.cast_def]
-    push_cast
-    rw [h1]
-    field_simp
-  have hβr : (β : ℝ) = ((β.num.toNat * α.den : ℕ) : ℝ) / ((α.den * β.den : ℕ) : ℝ) := by
-    have h1 : ((β.num.toNat : ℕ) : ℝ) = (β.num : ℝ) := by
-      have := Int.toNat_of_nonneg hβn.le
-      exact_mod_cast this
-    rw [Rat.cast_def]
-    push_cast
-    rw [h1]
-    field_simp
-  have hdpos : (0 : ℝ) < ((α.den * β.den : ℕ) : ℝ) := by
-    push_cast; positivity
-  have hαβr : (α : ℝ) < β := by exact_mod_cast hαβ
-  have hβ1 : (β : ℝ) < 1 := by exact_mod_cast hβ
-  have hα0 : (0 : ℝ) < α := by exact_mod_cast hα
-  refine ⟨α.den * β.den, α.num.toNat * β.den, β.num.toNat * α.den, ?_, ?_, ?_, hαr, hβr⟩
-  · rw [hαr] at hα0
-    have := (div_pos_iff_of_pos_right hdpos).mp hα0
-    exact_mod_cast this
-  · rw [hαr, hβr] at hαβr
-    have := (div_lt_div_iff_of_pos_right hdpos).mp hαβr
-    exact_mod_cast this
-  · rw [hβr] at hβ1
-    have := (div_lt_one hdpos).mp hβ1
-    exact_mod_cast this
-
 /-- `⌊(2^(dn))^(a₀/d)⌋ = 2^(a₀ n)`. -/
 private theorem floor_two_pow_rpow {α : ℚ} {d a₀ n : ℕ} (hd : 0 < d)
     (hα : (α : ℝ) = (a₀ : ℝ) / d) :
@@ -184,7 +132,24 @@ theorem rs_lambda_superpoly_extension
             let C := ReedSolomon.code domain k
             ((closeCodewordsRel ((C : Set (ι → F))) w δ).ncard : ℝ) ≥
               (q : ℝ) ^ (((α : ℝ) - (β : ℝ) ^ 2) * Real.logb 2 q) := by
-  obtain ⟨d, a₀, v₀, ha₀, hav, hvd, hα, hβ⟩ := exists_common_denom_of_rat α β hα_pos hα_lt hβ_lt
+  have hD : (0 : ℚ) < (α.den * β.den : ℕ) := by positivity
+  have hnum (γ : ℚ) (hγ : 0 < γ) (e : ℕ) : ((γ.num.natAbs * e : ℕ) : ℚ) = γ * (γ.den * e : ℕ) := by
+    simp only [Nat.cast_mul, Nat.cast_natAbs, Int.cast_abs,
+      abs_of_pos (Int.cast_pos.2 (Rat.num_pos.2 hγ))]
+    rw [← Rat.mul_den_eq_num]; ring
+  have ha := hnum α hα_pos β.den
+  have hv := hnum β (hα_pos.trans hα_lt) α.den
+  rw [mul_comm β.den] at hv
+  obtain ⟨d, a₀, v₀, ha₀, hav, hvd, hα, hβ⟩ : ∃ d a₀ v₀ : ℕ, 0 < a₀ ∧ a₀ < v₀ ∧ v₀ < d ∧
+      (α : ℝ) = (a₀ : ℝ) / d ∧ (β : ℝ) = (v₀ : ℝ) / d :=
+    ⟨α.den * β.den, α.num.natAbs * β.den, β.num.natAbs * α.den,
+      Nat.cast_pos (α := ℚ) |>.1 (by rw [ha]; exact mul_pos hα_pos hD),
+      Nat.cast_lt (α := ℚ) |>.1 (by rw [ha, hv]; exact mul_lt_mul_of_pos_right hα_lt hD),
+      Nat.cast_lt (α := ℚ) |>.1 (by rw [hv]; exact mul_lt_of_lt_one_left hD hβ_lt),
+      (congrArg (Rat.cast (K := ℝ)) (eq_div_of_mul_eq hD.ne' ha.symm)).trans
+        (by rw [Rat.cast_div, Rat.cast_natCast, Rat.cast_natCast]),
+      (congrArg (Rat.cast (K := ℝ)) (eq_div_of_mul_eq hD.ne' hv.symm)).trans
+        (by rw [Rat.cast_div, Rat.cast_natCast, Rat.cast_natCast])⟩
   have hd : 0 < d := by omega
   refine ⟨fun i => 2 ^ (d * (i + 1)), ?_, ?_, ?_⟩
   · intro i j hij
@@ -195,15 +160,25 @@ theorem rs_lambda_superpoly_extension
     dsimp only at hF hι
     have : CharP F 2 := charP_of_card_eq_prime_pow hF
     have hvm : v₀ * (i + 1) ≤ d * (i + 1) := Nat.mul_le_mul_right _ hvd.le
-    have hav' : a₀ * (i + 1) ≤ v₀ * (i + 1) := Nat.mul_le_mul_right _ hav.le
-    obtain ⟨T, hTcard, hTV⟩ := Polynomial.exists_finset_addSubgroup_card hF hvm
-    obtain ⟨b, hb⟩ := exists_div_le_card_filter_eq T
-      (fun V => subspaceTopCoeffs (a₀ * (i + 1)) (v₀ * (i + 1)) (Polynomial.subspacePolynomial V))
+    classical
+    let T : Finset (AddSubgroup F) := Finset.univ.filter (Nat.card · = 2 ^ (v₀ * (i + 1)))
+    have hTcard : 2 ^ (v₀ * (i + 1) * (d * (i + 1) - v₀ * (i + 1))) ≤ T.card :=
+      (FiniteField.two_pow_le_card_addSubgroup hF hvm).trans
+        (by rw [Nat.card_eq_fintype_card, Fintype.card_subtype])
+    have hTV : ∀ V ∈ T, Nat.card V = 2 ^ (v₀ * (i + 1)) := fun V hV => (Finset.mem_filter.1 hV).2
+    have hN : (Fintype.card (Fin (v₀ * (i + 1) - a₀ * (i + 1)) → F) : ℝ) ≠ 0 := by
+      exact_mod_cast Fintype.card_ne_zero
+    obtain ⟨b, -, hb⟩ := Finset.exists_le_card_fiber_of_nsmul_le_card_of_maps_to (s := T)
+      (t := Finset.univ) (b := (T.card : ℝ) / Fintype.card (Fin (v₀ * (i + 1) - a₀ * (i + 1)) → F))
+      (f := fun V => Polynomial.subspaceTopCoeffs (a₀ * (i + 1)) (v₀ * (i + 1))
+        (Polynomial.subspacePolynomial V))
+      (fun _ _ => Finset.mem_univ _) Finset.univ_nonempty
+      (by rw [Finset.card_univ, nsmul_eq_mul, mul_div_cancel₀ _ hN])
     let domain : ι ↪ F := (Fintype.equivOfCardEq (hι.trans hF.symm)).toEmbedding
     refine ⟨domain, ReedSolomon.evalOnPoints domain
-      (subspaceTopPoly (a₀ * (i + 1)) (v₀ * (i + 1)) b), ?_⟩
-    have key := card_le_ncard_closeCodewordsRel_of_topCoeffs domain (hι.trans hF.symm) hav' b
-      (T.filter fun V => subspaceTopCoeffs (a₀ * (i + 1)) (v₀ * (i + 1))
+      (Polynomial.subspaceTopPoly (a₀ * (i + 1)) (v₀ * (i + 1)) b), ?_⟩
+    have key := card_le_ncard_closeCodewordsRel_of_topCoeffs domain (hι.trans hF.symm) b
+      (T.filter fun V => Polynomial.subspaceTopCoeffs (a₀ * (i + 1)) (v₀ * (i + 1))
         (Polynomial.subspacePolynomial V) = b)
       (fun V hV => ⟨hTV V (Finset.mem_filter.1 hV).1, (Finset.mem_filter.1 hV).2⟩)
     dsimp only

@@ -31,7 +31,8 @@ cover an adversary whose private randomness interleaves with its oracle queries 
 [below](#interaction-layer-security)).
 
 No declaration under `ArkLib/` uses `sorry` outside the four solicited proofs recorded in
-`scripts/axiom_baseline.json` (coding-theory bounds, issue
+`scripts/axiom_baseline.json` (a correlated-agreement lower bound, two list-size lower bounds and a
+random-domain list-size upper bound, issue
 [#1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352)); none of those is under
 `ArkLib/Interaction/` or `ArkLib/ProofSystem/Sumcheck/`.
 

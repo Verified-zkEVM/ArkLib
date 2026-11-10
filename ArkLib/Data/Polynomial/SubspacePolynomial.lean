@@ -31,11 +31,17 @@ The file proves:
 
 * `Polynomial.subspacePolynomial`: the polynomial `∏ x ∈ V, (X - x)`.
 * `Polynomial.IsTwoLinearized`: only coefficients at powers of two are nonzero.
+* `Polynomial.subspaceTopCoeffs`, `Polynomial.subspaceTopPoly`: the coefficients of
+  `X ^ (2 ^ a), …, X ^ (2 ^ (v - 1))`, and `X ^ (2 ^ v) + ∑ j, b j * X ^ (2 ^ (a + j))`.
 
 ## Main statements
 
-* `Polynomial.isTwoLinearized_subspacePolynomial`
-* `Polynomial.exists_finset_addSubgroup_card`
+* `Polynomial.isTwoLinearized_subspacePolynomial`, `Polynomial.isTwoLinearized_X`
+* `Polynomial.subspacePolynomial_range_eq_prod`: for an injective `L`, the subspace polynomial of
+  its range is `∏ g, (X - C (L g))`.
+* `Polynomial.subspaceTopPoly_sub_mem_degreeLT`: for any monic `2`-linearized `P` of degree `2 ^ v`
+  (not only a subspace polynomial), removing its top coefficients leaves degree `< 2 ^ a`.
+* `FiniteField.two_pow_le_card_addSubgroup`
 
 `subspacePolynomial` is noncomputable because Mathlib's `Polynomial` arithmetic is noncomputable.
 -/
@@ -87,6 +93,17 @@ theorem subspacePolynomial_bot : subspacePolynomial (⊥ : AddSubgroup F) = X :=
   have : (Finset.univ.filter (· ∈ (⊥ : AddSubgroup F))) = {0} := by
     ext x; simp
   rw [this]; simp
+
+/-- The subspace polynomial of the range of an injective additive map is the product over its
+domain. -/
+theorem subspacePolynomial_range_eq_prod {G : Type*} [AddCommGroup G] [Fintype G] (L : G →+ F)
+    (hL : Function.Injective L) : subspacePolynomial L.range = ∏ g, (X - C (L g)) := by
+  classical
+  unfold subspacePolynomial
+  rw [← Finset.prod_image (f := fun x => X - C x) (s := Finset.univ) fun x _ y _ h => hL h]
+  congr 1
+  ext x
+  simp [AddMonoidHom.mem_range]
 
 /-- Adjoining `b ∉ V` in characteristic `2` multiplies the subspace polynomial by its translate:
 `P_{V ⊔ ⟨b⟩} = P_V * P_V (X - b)`. -/
@@ -146,6 +163,14 @@ section Linearized
 
 variable {F : Type*} [Field F]
 
+/-- `X` is `2`-linearized. -/
+theorem isTwoLinearized_X : IsTwoLinearized (X : F[X]) := by
+  intro j hj
+  rw [coeff_X] at hj
+  split_ifs at hj with h
+  · exact ⟨0, by rw [← h, pow_zero]⟩
+  · exact absurd rfl hj
+
 /-- A `2`-linearized polynomial is additive in characteristic `2`: `P (X - b) = P - P b`. -/
 theorem IsTwoLinearized.comp_X_sub_C [CharP F 2] {P : F[X]} (hP : IsTwoLinearized P) (b : F) :
     P.comp (X - C b) = P - C (P.eval b) := by
@@ -184,6 +209,82 @@ theorem IsTwoLinearized.sq_sub_C_mul [CharP F 2] {P : F[X]} (hP : IsTwoLinearize
 
 end Linearized
 
+section TopPolynomial
+
+variable {F : Type*} [Field F]
+
+/-- The coefficients of `X^(2^a), …, X^(2^(v-1))`. -/
+noncomputable def subspaceTopCoeffs (a v : ℕ) (P : F[X]) : Fin (v - a) → F :=
+  fun j => P.coeff (2 ^ (a + (j : ℕ)))
+
+/-- `X^(2^v) + ∑_j b_j X^(2^(a+j))`. -/
+noncomputable def subspaceTopPoly (a v : ℕ) (b : Fin (v - a) → F) : F[X] :=
+  X ^ (2 ^ v) + ∑ j : Fin (v - a), C (b j) * X ^ (2 ^ (a + (j : ℕ)))
+
+/-- For a monic `2`-linearized `P` of degree `2^v`, removing the top part leaves a polynomial of
+degree `< 2^a`. -/
+theorem subspaceTopPoly_sub_mem_degreeLT {P : F[X]} (hP : IsTwoLinearized P) (hmon : P.Monic)
+    {a v : ℕ} (hdeg : P.natDegree = 2 ^ v) :
+    subspaceTopPoly a v (subspaceTopCoeffs a v P) - P ∈ degreeLT F (2 ^ a) := by
+  classical
+  rw [mem_degreeLT, degree_lt_iff_coeff_zero]
+  intro n hn
+  rw [coeff_sub]
+  have hmon' : P.coeff (2 ^ v) = 1 := by rw [← hdeg]; exact hmon
+  have hle : ∀ m, 2 ^ v < m → P.coeff m = 0 := fun m hm =>
+    coeff_eq_zero_of_natDegree_lt (by rw [hdeg]; exact hm)
+  have hpow : 2 ^ a ≤ n := hn
+  have hsum : (∑ j : Fin (v - a), C (subspaceTopCoeffs a v P j) * X ^ (2 ^ (a + (j : ℕ)))).coeff n =
+      ∑ j : Fin (v - a), if n = 2 ^ (a + (j : ℕ)) then subspaceTopCoeffs a v P j else 0 := by
+    rw [finsetSum_coeff]
+    refine Finset.sum_congr rfl fun j _ => ?_
+    rw [coeff_C_mul, coeff_X_pow]; split_ifs <;> simp
+  unfold subspaceTopPoly
+  rw [coeff_add, coeff_X_pow, hsum]
+  by_cases hP0 : P.coeff n = 0
+  · rw [hP0, sub_zero]
+    by_cases h1 : n = 2 ^ v
+    · exfalso
+      rw [h1] at hP0 hn
+      rw [hP0] at hmon'; exact zero_ne_one hmon'
+    · simp only [h1, ite_false, zero_add]
+      refine Finset.sum_eq_zero fun j _ => ?_
+      split_ifs with h3
+      · subst h3; exact hP0
+      · rfl
+  · obtain ⟨i, rfl⟩ := hP n hP0
+    have hiv : i ≤ v := by
+      by_contra h
+      push Not at h
+      exact hP0 (hle _ (Nat.pow_lt_pow_right (by norm_num) h))
+    have hai : a ≤ i := by
+      by_contra h
+      push Not at h
+      exact absurd hn (not_le.mpr (Nat.pow_lt_pow_right (by norm_num) h))
+    rcases hiv.eq_or_lt with rfl | hlt
+    · rw [hmon']
+      have : ∀ j : Fin (i - a), (2 ^ i = 2 ^ (a + (j : ℕ))) = False := fun j => by
+        apply eq_false; intro h
+        have := Nat.pow_right_injective (le_refl 2) h
+        have := j.2; omega
+      simp [this]
+    · have hne : ¬ (2 ^ i = 2 ^ v) := (Nat.pow_right_injective (le_refl 2)).ne hlt.ne
+      simp only [hne, ite_false]
+      have : ∑ j : Fin (v - a),
+          (if 2 ^ i = 2 ^ (a + (j : ℕ)) then subspaceTopCoeffs a v P j else 0) =
+            P.coeff (2 ^ i) := by
+        rw [Finset.sum_eq_single ⟨i - a, by omega⟩]
+        · simp [subspaceTopCoeffs, Nat.add_sub_cancel' hai]
+        · intro j _ hj
+          rw [ite_eq_right_iff]
+          intro h
+          have := Nat.pow_right_injective (le_refl 2) h
+          exact (hj (Fin.ext (by simp; omega))).elim
+        · simp
+      rw [this]; ring
+
+end TopPolynomial
+
 section Linearization
 
 variable {F : Type*} [Field F] [Fintype F]
@@ -198,14 +299,7 @@ theorem isTwoLinearized_subspacePolynomial [CharP F 2] (V : AddSubgroup F) :
     induction S using Finset.induction_on with
     | empty =>
       simp only [Finset.coe_empty, AddSubgroup.closure_empty, subspacePolynomial_bot]
-      intro j hj
-      refine ⟨0, ?_⟩
-      by_contra hne
-      apply hj
-      rw [coeff_X]
-      split_ifs with h
-      · exact absurd h.symm (by simpa using hne)
-      · rfl
+      exact isTwoLinearized_X
     | insert a S ha ih =>
       have hcl : AddSubgroup.closure ((insert a S : Finset F) : Set F)
           = AddSubgroup.closure (S : Set F) ⊔ AddSubgroup.zmultiples a := by
@@ -229,93 +323,68 @@ theorem isTwoLinearized_subspacePolynomial [CharP F 2] (V : AddSubgroup F) :
 
 end Linearization
 
+end Polynomial
+
+namespace FiniteField
+
 section Counting
 
-/-- A field of characteristic `2` with `2 ^ m` elements is additively `(ZMod 2) ^ m`. -/
-private theorem nonempty_addEquiv_pi_zmod_two {F : Type*} [Field F] [Fintype F] [CharP F 2]
-    {m : ℕ} (hF : Fintype.card F = 2 ^ m) : Nonempty (F ≃+ (Fin m → ZMod 2)) := by
+variable {F : Type*} [Field F] [Fintype F]
+
+/-- A field of characteristic `2` with `2 ^ m` elements is additively
+`(ZMod 2) ^ v × (ZMod 2) ^ (m - v)`. -/
+private theorem nonempty_addEquiv_prod [CharP F 2] {m v : ℕ} (hF : Fintype.card F = 2 ^ m)
+    (hv : v ≤ m) : Nonempty (F ≃+ (Fin v → ZMod 2) × (Fin (m - v) → ZMod 2)) := by
   let : Module (ZMod 2) F := AddCommGroup.zmodModule (n := 2) (fun x => by
     rw [two_nsmul]; exact CharTwo.add_self_eq_zero x)
   have h1 : Fintype.card F = Fintype.card (ZMod 2) ^ Module.finrank (ZMod 2) F :=
     Module.card_eq_pow_finrank
   rw [ZMod.card, hF] at h1
-  have h2 : Module.finrank (ZMod 2) F = m :=
-    (Nat.pow_right_injective (le_refl 2) h1).symm
-  have h3 : Module.finrank (ZMod 2) F = Module.finrank (ZMod 2) (Fin m → ZMod 2) := by
-    rw [h2, Module.finrank_fin_fun]
-  exact ⟨(LinearEquiv.ofFinrankEq F (Fin m → ZMod 2) h3).toAddEquiv⟩
+  have h2 : Module.finrank (ZMod 2) F = m := (Nat.pow_right_injective (le_refl 2) h1).symm
+  have h3 : Module.finrank (ZMod 2) F =
+      Module.finrank (ZMod 2) ((Fin v → ZMod 2) × (Fin (m - v) → ZMod 2)) := by
+    rw [h2, Module.finrank_prod, Module.finrank_fin_fun, Module.finrank_fin_fun]
+    omega
+  exact ⟨(LinearEquiv.ofFinrankEq _ _ h3).toAddEquiv⟩
 
-/-- The graph of the `𝔽₂`-linear map with matrix `A`, as an additive map
-`𝔽₂ ^ v → 𝔽₂ ^ m`. -/
-private def graphHom {m v : ℕ} (hv : v ≤ m) (A : Fin (m - v) → Fin v → ZMod 2) :
-    (Fin v → ZMod 2) →+ (Fin m → ZMod 2) where
-  toFun y i := if h : i.val < v then y ⟨i, h⟩ else ∑ j, A ⟨i - v, by omega⟩ j * y j
-  map_zero' := by ext i; simp
-  map_add' := by
-    intro x y; ext i
-    by_cases h : i.val < v <;> simp [h, mul_add, Finset.sum_add_distrib]
+private theorem linearMap_graph_injective {v k : ℕ} :
+    Function.Injective fun g : (Fin v → ZMod 2) →ₗ[ZMod 2] (Fin k → ZMod 2) => g.graph := by
+  intro g h hgh
+  refine LinearMap.ext fun x => ?_
+  have hx : (x, g x) ∈ h.graph := by
+    rw [← show g.graph = h.graph from hgh]
+    exact (LinearMap.mem_graph_iff g (x, g x)).2 rfl
+  exact (LinearMap.mem_graph_iff h (x, g x)).1 hx
 
-private theorem graphHom_apply_lt {m v : ℕ} (hv : v ≤ m) (A : Fin (m - v) → Fin v → ZMod 2)
-    (y : Fin v → ZMod 2) (j : Fin v) : graphHom hv A y ⟨j, by omega⟩ = y j := by
-  simp [graphHom]
-
-private theorem graphHom_injective {m v : ℕ} (hv : v ≤ m) (A : Fin (m - v) → Fin v → ZMod 2) :
-    Function.Injective (graphHom hv A) := by
-  intro x y h
-  funext j
-  rw [← graphHom_apply_lt hv A x j, ← graphHom_apply_lt hv A y j, h]
-
-private theorem range_graphHom_injective {m v : ℕ} (hv : v ≤ m) :
-    Function.Injective (fun A : Fin (m - v) → Fin v → ZMod 2 => (graphHom hv A).range) := by
-  intro A B h
-  funext r j
-  have hmem : graphHom hv A (Pi.single j 1) ∈ (graphHom hv B).range := by
-    have : graphHom hv A (Pi.single j 1) ∈ (graphHom hv A).range := ⟨_, rfl⟩
-    simpa [h] using this
-  obtain ⟨y, hy⟩ := hmem
-  have hyj : y = Pi.single j 1 := by
-    funext k
-    have := congrFun hy ⟨k, by omega⟩
-    rw [graphHom_apply_lt, graphHom_apply_lt] at this
-    exact this
-  subst hyj
-  have := congrFun hy ⟨v + r, by omega⟩
-  have hnl : ¬ (v + r.val < v) := by omega
-  simp [graphHom, hnl, Pi.single_apply] at this
-  exact this.symm
-
-private theorem exists_finset_addSubgroup_pi_zmod_two {m v : ℕ} (hv : v ≤ m) :
-    ∃ T : Finset (AddSubgroup (Fin m → ZMod 2)),
-      2 ^ (v * (m - v)) ≤ T.card ∧ ∀ V ∈ T, Nat.card V = 2 ^ v := by
-  classical
-  refine ⟨Finset.univ.image (fun A => (graphHom hv A).range), ?_, ?_⟩
-  · rw [Finset.card_image_of_injective _ (range_graphHom_injective hv)]
-    simp [ZMod.card, ← pow_mul]
-  · intro V hV
-    obtain ⟨A, -, rfl⟩ := Finset.mem_image.1 hV
-    have : Nat.card (graphHom hv A).range = Nat.card (Fin v → ZMod 2) :=
-      (Nat.card_congr (AddMonoidHom.ofInjective (graphHom_injective hv A)).toEquiv).symm
-    rw [this]; simp [Nat.card_eq_fintype_card, ZMod.card]
-
-variable {F : Type*} [Field F] [Fintype F]
+private theorem card_linearMap_graph {v k : ℕ}
+    (g : (Fin v → ZMod 2) →ₗ[ZMod 2] (Fin k → ZMod 2)) :
+    Nat.card g.graph = 2 ^ v := by
+  rw [LinearMap.graph_eq_range_prod]
+  have hinj : Function.Injective (LinearMap.id.prod g) := fun x y h => congrArg Prod.fst h
+  rw [← Nat.card_congr (LinearEquiv.ofInjective _ hinj).toEquiv]
+  simp [Nat.card_eq_fintype_card, ZMod.card]
 
 /-- A finite field of characteristic `2` with `2 ^ m` elements has at least `2 ^ (v * (m - v))`
-additive subgroups of size `2 ^ v`. -/
-theorem exists_finset_addSubgroup_card [CharP F 2] {m v : ℕ} (hF : Fintype.card F = 2 ^ m)
-    (hv : v ≤ m) :
-    ∃ T : Finset (AddSubgroup F), 2 ^ (v * (m - v)) ≤ T.card ∧ ∀ V ∈ T, Nat.card V = 2 ^ v := by
-  classical
-  obtain ⟨e⟩ := nonempty_addEquiv_pi_zmod_two hF
-  obtain ⟨T, hc, hV⟩ := exists_finset_addSubgroup_pi_zmod_two (m := m) hv
-  refine ⟨T.image (AddSubgroup.map e.symm.toAddMonoidHom), ?_, ?_⟩
-  · rw [Finset.card_image_of_injective _ (AddSubgroup.map_injective e.symm.injective)]
-    exact hc
-  · intro W hW
-    obtain ⟨V, hV', rfl⟩ := Finset.mem_image.1 hW
-    rw [← hV V hV']
-    exact (Nat.card_congr (AddSubgroup.equivMapOfInjective V e.symm.toAddMonoidHom
-      e.symm.injective)).symm
+additive subgroups of size `2 ^ v`: the graphs of the `𝔽₂`-linear maps `𝔽₂ ^ v → 𝔽₂ ^ (m - v)`. -/
+theorem two_pow_le_card_addSubgroup [CharP F 2] {m v : ℕ} (hF : Fintype.card F = 2 ^ m)
+    (hv : v ≤ m) : 2 ^ (v * (m - v)) ≤ Nat.card {V : AddSubgroup F // Nat.card V = 2 ^ v} := by
+  obtain ⟨e⟩ := nonempty_addEquiv_prod hF hv
+  let f : ((Fin v → ZMod 2) →ₗ[ZMod 2] (Fin (m - v) → ZMod 2)) →
+      {V : AddSubgroup F // Nat.card V = 2 ^ v} := fun g =>
+    ⟨g.graph.toAddSubgroup.map e.symm.toAddMonoidHom, by
+      rw [← card_linearMap_graph g]
+      exact (Nat.card_congr (AddSubgroup.equivMapOfInjective g.graph.toAddSubgroup
+        e.symm.toAddMonoidHom e.symm.injective).toEquiv).symm⟩
+  have hf : Function.Injective f := fun g h hgh =>
+    linearMap_graph_injective (Submodule.toAddSubgroup_injective
+      (AddSubgroup.map_injective e.symm.injective (congrArg Subtype.val hgh)))
+  have hcard : Nat.card ((Fin v → ZMod 2) →ₗ[ZMod 2] (Fin (m - v) → ZMod 2)) =
+      2 ^ (v * (m - v)) := by
+    rw [Nat.card_congr (LinearMap.toMatrix' (R := ZMod 2)).toEquiv]
+    simp [Nat.card_eq_fintype_card, Matrix, ZMod.card, ← pow_mul]
+  rw [← hcard]
+  exact Nat.card_le_card_of_injective f hf
 
 end Counting
 
-end Polynomial
+end FiniteField
