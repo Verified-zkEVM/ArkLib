@@ -1,0 +1,87 @@
+State-restoration (SR) security allows a prover to explore several continuations of an interactive execution. We consider an ordinary public-coin IP: the prover is probabilistic, every verifier message is sampled independently and uniformly, and the final verifier decision is deterministic given the statement and full transcript. The single-salt game below includes a salt from \(\SaltType\) separately in every query, while the original IP statement and verifier remain unchanged. The challenge functions below implement the restoration game. They are not an additional oracle available to the underlying IP. The family of verifier message function distributions \(\SRChallengeOracleDistribution(s,\InstanceSizeBound)\), indexed by salt-size parameter \(s\) and instance-size bound \(\InstanceSizeBound\), is fixed for each SR security notion. The basic FS and DSFS reductions sample these functions independently and uniformly. In the probability displays below, the left column states the event and the right column specifies the experiment; the separator does not denote conditioning. The salt parameter indexes the specified carrier: for bit strings one takes \(\SaltType(s,\InstanceSizeBound)=\{0,1\}^{s}\). In the DSFS specialization, \(s=\SaltLength\) measures alphabet symbols and the encoding embeds \(\Alphabet^{\SaltLength}\) into the chosen salt carrier; an injective bit-string encoding requires at least \(\lceil\SaltLength\log_2|\Alphabet|\rceil\) bits.
+
+\begin{definition}[State-restoration prover {\cite[Definition~13.2.1]{snarg-book}}]
+  \label{def:sr_prover}
+  Let \(\IPSymbol\) be a public-coin IP with \(\IPRoundComplexity\) rounds, each consisting of a prover message followed by a verifier message. Let \(\SaltType\) be the salt space, and let \(\OracleFamily=(\OracleFunction_{\RoundIndex})_{\RoundIndex\in[\IPRoundComplexity]}\) be the functions used to obtain verifier messages. An \emph{IP state-restoration prover} \(\IPMaliciousSRProver\) is a probabilistic algorithm that makes moves as follows:
+  \begin{enumerate}
+    \item The prover outputs \((\RoundIndex,\Instance,\SaltString,(\IPProverMessage_1,\ldots,\IPProverMessage_{\RoundIndex}))\), where
+      \(\Instance\) is a statement, \(\SaltString\in\SaltType\) is a chosen salt, and \((\IPProverMessage_1,\ldots,\IPProverMessage_{\RoundIndex})\) are prover messages.
+    \item The game sets
+      \(\IPVerifierMessage_{\RoundIndex}:=\OracleFunction_{\RoundIndex}(\Instance,\SaltString,\IPProverMessage_1,\ldots,\IPProverMessage_{\RoundIndex})\).
+    \item The game sends \(\IPVerifierMessage_{\RoundIndex}\) to the prover.
+  \end{enumerate}
+  The prover repeats these steps until it decides to stop, then outputs \((\Instance,\SaltString,(\IPProverMessage_1,\ldots,\IPProverMessage_{\IPRoundComplexity}))\). We say that the prover is \emph{\(\SRMoveBound\)-move} if it stops after at most \(\SRMoveBound\) moves (\Cref{def:counted_queries}). The same prover interface is used for soundness and knowledge soundness. The implementation supports arbitrary protocol schedules; the displays use alternating rounds for readability.
+
+  \lean{PublicCoinIP.SRProver}
+  \uses{def:public_coin_ip_structure, def:transcript}
+  \leanok
+\end{definition}
+
+\begin{definition}[IP state-restoration game {\cite[Definition~3.12]{CO25}~\cite[Definition~13.2.1]{snarg-book}}]
+  \label{def:ip_state_restoration_game}
+  Fix \(\IPSymbol\) with \(\IPRoundComplexity\) rounds as in \Cref{def:sr_prover}. The IP state-restoration game takes as input a salt-size parameter \(s\in\mathbb N\) with associated salt space \(\SaltType\), verifier-message functions \(\OracleFamily=(\OracleFunction_{\RoundIndex})_{\RoundIndex\in[\IPRoundComplexity]}\) and an SR prover \(\IPMaliciousSRProver\), and returns a statement \(\Instance\), a chosen salt \(\SaltString\in\SaltType\), prover messages \(\IPProverMessages=(\IPProverMessage_1,\ldots,\IPProverMessage_{\IPRoundComplexity})\), and verifier messages \(\IPVerifierMessages=(\IPVerifierMessage_1,\ldots,\IPVerifierMessage_{\IPRoundComplexity})\):
+  \[
+  \begin{gathered}
+  \IPStateRestorationGame{s}{\OracleFamily}{\IPMaliciousSRProver}:\\
+  \left[\begin{array}{rl}
+    1. & \text{Repeat until }\IPMaliciousSRProver\text{ ends its moves:}\\
+    (a) & \quad\text{receive }(\RoundIndex,\Instance',\SaltString',(\IPProverMessage'_j)_{j\in[\RoundIndex]})
+      \text{ from }\IPMaliciousSRProver;\\
+    (b) & \quad\IPVerifierMessage':=\OracleFunction_{\RoundIndex}(\Instance',\SaltString',\IPProverMessage'_1,\ldots,\IPProverMessage'_{\RoundIndex});\\
+    (c) & \quad\text{send }\IPVerifierMessage'\text{ to }\IPMaliciousSRProver.\\
+    2. & \text{Receive the final output }(\Instance,\SaltString,\IPProverMessages)
+      \text{ from }\IPMaliciousSRProver.\\
+    3. & \text{For }\RoundIndex=1,\ldots,\IPRoundComplexity:
+      \quad\IPVerifierMessage_{\RoundIndex}:=\OracleFunction_{\RoundIndex}(\Instance,\SaltString,\IPProverMessage_1,\ldots,\IPProverMessage_{\RoundIndex}).\\
+    4. & \text{Return }(\Instance,\SaltString,\IPProverMessages,\IPVerifierMessages).
+  \end{array}\right]
+  \end{gathered}
+  \]
+  The vectors \(\IPProverMessages\) and \(\IPVerifierMessages\) specify the full transcript \((\IPProverMessage_1,\IPVerifierMessage_1,\ldots,\IPProverMessage_{\IPRoundComplexity},\IPVerifierMessage_{\IPRoundComplexity})\). The move--response trace \(\QueryLog^{\mathrm{sr}}\) is the ordered list of pairs \(\bigl((\RoundIndex,\Instance',\SaltString',\IPProverMessage'_1,\ldots,\IPProverMessage'_{\RoundIndex}),\IPVerifierMessage'\bigr)\) from Step~1. A \emph{\(\SRMoveBound\)-move} prover performs at most \(\SRMoveBound\) iterations of Step~1, under the counting convention of \Cref{def:counted_queries}.
+  \lean{PublicCoinIP.srGame}
+  \uses{def:sr_prover, def:transcript, def:counted_queries}
+  \leanok
+\end{definition}
+
+\begin{definition}[State-restoration soundness {\cite[Definition~3.13]{CO25}~\cite[Definition~13.2.2]{snarg-book}}]
+  \label{def:ip_state_restoration_soundness}
+  Fix a family of salt spaces \(\SaltType(s,\InstanceSizeBound)\), public-coin IP verifiers \(\IPVerifier\), and verifier message function distributions \(\SRChallengeOracleDistribution(s,\InstanceSizeBound)\), with a common relation \(\Relation\subseteq\InstanceSpace\times\WitnessSpace\) and size function \(\InstanceSizeOf{\cdot}\). These public parameters may determine the protocol and message spaces and are supplied to all algorithms; we suppress them in algorithm calls. The verifier has \emph{state-restoration soundness error} \(\IPSRSoundnessError:\mathbb N^3\to[0,\infty]\) if, for every salt-size parameter \(s\in\mathbb N\), instance-size bound \(\InstanceSizeBound\in\mathbb N\), move budget \(\SRMoveBound\in\mathbb N\) and every \(\SRMoveBound\)-move malicious SR prover \(\IPMaliciousSRProver\),
+  \begin{equation*}
+    \Pr\left[\begin{array}{l|rl}
+      \InstanceSizeOf{\Instance}\le\InstanceSizeBound\ \land\ \Instance\notin\RelationLanguage{\Relation}
+        & 1. & \OracleFamily\leftarrow\SRChallengeOracleDistribution(s,\InstanceSizeBound);\\
+      {}\land b=1
+        & 2. & (\Instance,\SaltString,\IPProverMessages,\IPVerifierMessages)\leftarrow
+          \IPStateRestorationGame{s}{\OracleFamily}{\IPMaliciousSRProver};\\
+        & 3. & b\leftarrow \IPVerifier(\Instance,\IPProverMessages,\IPVerifierMessages)
+    \end{array}\right]\le\IPSRSoundnessError(s,\InstanceSizeBound,\SRMoveBound).
+  \end{equation*}
+  The size test restricts the failure event; it neither conditions the sampling nor changes the game.
+  \lean{PublicCoinIP.srSoundness}
+  \uses{def:ip_state_restoration_game, def:counted_queries}
+  \leanok
+\end{definition}
+
+\begin{definition}[State-restoration knowledge soundness {\cite[Definition~3.14]{CO25}~\cite[Definition~13.2.3]{snarg-book}}]
+  \label{def:sr_knowledge_soundness}
+  Fix a family of salt spaces \(\SaltType(s,\InstanceSizeBound)\), public-coin IP verifiers \(\IPVerifier\), and verifier message function distributions \(\SRChallengeOracleDistribution(s,\InstanceSizeBound)\), with a common relation \(\Relation\subseteq\InstanceSpace\times\WitnessSpace\) and size function \(\InstanceSizeOf{\cdot}\). These public parameters may determine the protocol and message spaces and are supplied to all algorithms; we suppress them in algorithm calls. The verifier has \emph{state-restoration knowledge-soundness error} \(\IPSRKnowledgeSoundnessError:\mathbb N^3\to[0,\infty]\) if there exists a probabilistic straightline knowledge extractor \(\SRExtractor\) such that, for every salt-size parameter \(s\in\mathbb N\), instance-size bound \(\InstanceSizeBound\in\mathbb N\), move budget \(\SRMoveBound\in\mathbb N\) and every \(\SRMoveBound\)-move malicious SR prover \(\IPMaliciousSRProver\),
+  \begin{equation*}
+    \Pr\left[\begin{array}{l|rl}
+      \InstanceSizeOf{\Instance}\le\InstanceSizeBound\ \land\ b=1
+        & 1. & \OracleFamily\leftarrow\SRChallengeOracleDistribution(s,\InstanceSizeBound);\\
+      {}\land (\Instance,\WitnessValue)\notin\Relation
+        & 2. & (\Instance,\SaltString,\IPProverMessages,\IPVerifierMessages)\xleftarrow{\QueryLog^{\mathrm{sr}}}
+          \IPStateRestorationGame{s}{\OracleFamily}{\IPMaliciousSRProver};\\
+        & 3. & b\leftarrow\IPVerifier(\Instance,\IPProverMessages,\IPVerifierMessages);\\
+        & 4. & \WitnessValue\leftarrow\SRExtractor
+          (\Instance,\SaltString,\IPProverMessages,\IPVerifierMessages,\QueryLog^{\mathrm{sr}})
+    \end{array}\right]\le\IPSRKnowledgeSoundnessError(s,\InstanceSizeBound,\SRMoveBound).
+  \end{equation*}
+  The extractor receives the original statement \(\Instance\), the chosen salt \(\SaltString\) separately, all prover messages \(\IPProverMessages\), all verifier messages \(\IPVerifierMessages\), and the prover's move--response trace \(\QueryLog^{\mathrm{sr}}\) from \Cref{def:ip_state_restoration_game}. It returns a witness for \(\Instance\) or \(\bot\), and may use fresh private randomness; by convention, \((\Instance,\bot)\notin\Relation\).
+
+  One extractor family is chosen before all \(s,\InstanceSizeBound,\SRMoveBound\) and adversaries. It may use the public salt-size and instance-size parameters, but not the move budget. The size restriction applies to the entire failure event, including missing witnesses. This is the information-theoretic straightline definition with the book's full-transcript extractor interface; no polynomial-time requirement is imposed. The single-salt game specializes the paper's vector of per-round salts to a salt supplied from the first round, with no fresh later salts.
+  \lean{PublicCoinIP.SRExtractor, PublicCoinIP.srKnowledgeSoundnessFailureProb,
+    PublicCoinIP.srKnowledgeSoundness}
+  \uses{def:ip_state_restoration_game, def:counted_queries, def:oracle_run}
+  \leanok
+\end{definition}

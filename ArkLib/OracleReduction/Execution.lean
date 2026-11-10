@@ -1,7 +1,8 @@
 /-
 Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao, Alexander Hicks, Devon Tuma, Pietro Monticone, Tobias Rothmann
+Authors: Quang Dao, Alexander Hicks, Devon Tuma, Pietro Monticone, Tobias Rothmann,
+Chung Thai Nguyen, Yuxi Zheng, Michele Orrù
 -/
 module
 
@@ -14,6 +15,7 @@ public import ToMathlib.Data.Vector
 -- Owns `OracleComp.support_ofFn_mapM_index`, used in `Verifier.run_all_eq_bind` below.
 public import VCVio.OracleComp.Constructions.Replicate
 public import VCVio.OracleComp.QueryTracking.LoggingOracle.Core
+public import VCVio.OracleComp.SimSemantics.OptionT.Basic
 
 /-!
   # Execution Semantics of Interactive Oracle Reductions
@@ -438,17 +440,6 @@ theorem OracleReduction.run_eq_run_reduction [∀ i, OracleInterface (pSpec.Mess
   simp only [OracleReduction.run, Reduction.run, OracleVerifier.run_eq_run_verifier,
     OracleReduction.toReduction]
 
-/-- Running an oracle reduction with logging of queries to the shared oracle is equal to running its
-  non-oracle counterpart with logging of queries to the shared oracle -/
-@[simp]
-theorem OracleReduction.runWithLog_eq_runWithLog_reduction [∀ i, OracleInterface (pSpec.Message i)]
-    {stmt : StmtIn} {oStmt : ∀ i, OStmtIn i} {wit : WitIn}
-    {oracleReduction : OracleReduction oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut pSpec} :
-      oracleReduction.run stmt oStmt wit =
-        oracleReduction.toReduction.run ⟨stmt, oStmt⟩ wit := by
-  simp only [OracleReduction.run, Reduction.run, OracleVerifier.run_eq_run_verifier,
-    OracleReduction.toReduction]
-
 @[simp]
 theorem Prover.runToRound_zero_of_prover_first
     (stmt : StmtIn) (wit : WitIn) (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) :
@@ -644,5 +635,57 @@ theorem Reduction.run_of_prover_first [ProverOnly pSpec] (stmt : StmtIn) (wit : 
   rw [Prover.run_of_prover_first]
   simp only [liftComp_eq_liftM, bind_assoc, pure_bind, monadLift_bind, monadLift_pure,
     monadLift_liftM_OptionT]
+
+namespace Reduction
+
+local instance nonInteractiveProverOnly (Message : Type) :
+    ProverOnly (⟨!v[.P_to_V], !v[Message]⟩ : ProtocolSpec 1) where
+  prover_first' := rfl
+
+private theorem sim_add_optionLift {ι κ : Type} {spec : OracleSpec ι}
+    {extra : OracleSpec κ} {α : Type} (impl : QueryImpl spec ProbComp)
+    (g : QueryImpl extra ProbComp) (oa : OracleComp spec α) :
+    simulateQ (impl + g) (liftM oa : OptionT (OracleComp (spec + extra)) α).run =
+      some <$> simulateQ impl oa := by
+  rw [← monadLift_liftM_OptionT]
+  simp only [OptionT.run_monadLift, simulateQ_map, ← liftComp_eq_liftM, monadLift_self]
+  rw [QueryImpl.simulateQ_add_liftComp_left]
+
+/-- Interpreting an optional value retains both success and failure unchanged. -/
+private theorem simulateQ_getM_run {ι α : Type} {spec : OracleSpec ι}
+    {m : Type → Type*} [Monad m] (impl : QueryImpl spec m) (x : Option α) :
+    simulateQ impl (x.getM : OptionT (OracleComp spec) α).run = pure x := by
+  cases x <;> rfl
+
+/-- Under a stateless oracle handler, a one-message execution first generates the message,
+then computes the prover's output from its final state and verifies the single-message transcript.
+The result is `none` if verification fails. -/
+theorem simulate_narg_run {ι : Type} {spec : OracleSpec ι} {Message Stmt Wit Out OutWit : Type}
+    (R : NonInteractiveReduction Message spec Stmt Wit Out OutWit)
+    (impl : QueryImpl spec ProbComp) (stmt : Stmt) (wit : Wit) :
+    simulateQ (impl + (fun q => isEmptyElim q.1 : QueryImpl
+      ([(⟨!v[.P_to_V], !v[Message]⟩ : ProtocolSpec 1).Challenge]ₒ'challengeOracleInterface)
+      ProbComp))
+      (R.run stmt wit).run = (do
+      let (message, lastPrvState) ← simulateQ impl
+        (R.prover.sendMessage ⟨0, rfl⟩ (R.prover.input (stmt, wit)))
+      let output ← simulateQ impl (R.prover.output lastPrvState)
+      let transcript : (⟨!v[.P_to_V], !v[Message]⟩ : ProtocolSpec 1).FullTranscript :=
+        fun i => match i with | ⟨0, _⟩ => message
+      let result ← simulateQ impl (R.verifier.verify stmt transcript).run
+      pure (result.map fun b => ((transcript, output), b))) := by
+  rw [Reduction.run_of_prover_first]
+  simp only [OptionT.run_bind, Option.elimM, simulateQ_bind, sim_add_optionLift, bind_map_left,
+    Option.elim_some]
+  apply bind_congr
+  intro sent
+  apply bind_congr
+  intro output
+  simp only [simulateQ_getM_run, pure_bind]
+  apply bind_congr
+  intro result
+  cases result <;> rfl
+
+end Reduction
 
 end SingleMessage

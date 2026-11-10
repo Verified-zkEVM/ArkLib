@@ -155,7 +155,7 @@ Below, we define folding of a polynomial followed by folding of a function.
 Polynomial.FoldingPolynomial.polyFold_natDegree_le}
 \leanok
 \uses{fact:poly_folding}
-    Given a polynomial $\hat{f}\in\field[X]$, a folding parameter $k\in\N$ with $k\ge1$ and $r\in\field$, we define a polynomial $\mathsf{PolyFold}(\hat{f},k,r)\in\field[X]$ as follows. Let $\hat{Q}[X,Y]$ be the bivariate polynomial derived from $\hat{f}$ using Fact~\ref{fact:poly_folding} with the non-constant polynomial $\hat{q}(X):=X^k$. Then $\mathsf{PolyFold}(\hat{f},k,r)(X):=\hat{Q}(X,r)$. Its degree is at most $\lfloor\polydeg(\hat{f})/k\rfloor$.
+    Given a polynomial $\hat{f}\in\field[X]$, a folding parameter $k\in\N$ with $k\ge1$ and $r\in\field$, we define a polynomial $\mathsf{PolyFold}(\hat{f},k,r)\in\field[X]$ as follows. Let $\hat{Q}[X,Y]$ be the bivariate polynomial derived from $\hat{f}$ using \Cref{fact:poly_folding} with the non-constant polynomial $\hat{q}(X):=X^k$. Then $\mathsf{PolyFold}(\hat{f},k,r)(X):=\hat{Q}(X,r)$. Its degree is at most $\lfloor\polydeg(\hat{f})/k\rfloor$.
 \end{definition}
 
 \begin{definition}\label{def:fn_folding}
@@ -183,7 +183,7 @@ The following lemma shows that the distance of a function is preserved under fol
     \[
         \Pr_{r^{\mathsf{fold}}\gets\field}[\Delta(\mathsf{Fold}(f,2^k,r^{\mathsf{fold}}),\rscode[\field,{\evaldomain}^{2^k}, \degree/2^k])\le\distance]\le\err^*(\degree/2^k,\rate,\distance,2^k).
     \]
-    Above, ${\mathsf{B}}^*$ and ${\err}^*$ are the proximity bound and error (respectively) described in Section~\ref{sec:proximity_gap}.
+    Above, ${\mathsf{B}}^*$ and ${\err}^*$ are the proximity bound and error (respectively) described in \Cref{sec:proximity_gap}.
 \end{lemma}
 
 \subsubsection{Combine functions of varying degrees}\label{sec:combine}
@@ -324,7 +324,7 @@ resolve this discrepancy.
         \item $\epsilon^{\mathsf{shift}}_i\leq {(1-\distance_{i-1})}^{t_{i-1}}+\err^*(\degree_i,\rate_i,\distance_i,t_{i-1}+s)+\err^*(\degree_i/k_i,\rate_i,\distance_i,k_i)$.
         \item $\epsilon^{\mathsf{fin}}\leq{(1-\distance_M)}^{t_M}$.
     \end{itemize}
-    Above, ${\mathsf{B}}^*$ and ${\err}^*$ are the proximity bound and error (respectively) described in Section~\ref{sec:proximity_gap}.
+    Above, ${\mathsf{B}}^*$ and ${\err}^*$ are the proximity bound and error (respectively) described in \Cref{sec:proximity_gap}.
 \end{lemma}
 
 \begin{remark}[Formalization target]

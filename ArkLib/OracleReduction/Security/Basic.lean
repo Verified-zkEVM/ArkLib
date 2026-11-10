@@ -1,29 +1,36 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao
+Authors: Quang Dao, Chung Thai Nguyen, Yuxi Zheng, Michele Orrù
 -/
 module
 
 public import ArkLib.OracleReduction.Execution
 public import VCVio.OracleComp.SimSemantics.StateT.Measure
+public import VCVio.OracleComp.QueryTracking.QueryBound.Basic
 
 /-!
-  # Security Definitions for (Oracle) Reductions
+# Security Definitions for (Oracle) Reductions
 
-  This file defines basic security notions for (oracle) reductions:
+This file defines basic security notions for (oracle) reductions:
 
-  - (Perfect) Completeness
+- (Perfect) Completeness
 
-  - (Straightline) (Knowledge) Soundness
+- (Straightline) (Knowledge) Soundness
 
-  - (Honest-verifier) Zero-knowledge
+- Adaptive, query-bounded NARG soundness and knowledge soundness
+- Simulator types for zero-knowledge
 
-  For each security notion, we provide a typeclass for it, so that security can be synthesized
-  automatically with verified transformations.
+Security notions are predicates on reductions and verifiers. Adaptive NARG notions have
+unbounded and query-bounded forms. Bounded knowledge soundness fixes an extractor before
+quantifying over every natural-number budget.
 
-  See other files in the same directory for more refined soundness notions (i.e. state-restoration,
-  round-by-round, rewinding, etc.)
+See other files in the same directory for more refined soundness notions (i.e. state-restoration,
+round-by-round, rewinding, etc.)
+
+## References
+
+* [Chiesa, A. and Orrù, M., *A Fiat–Shamir Transformation From Duplex Sponges*][CO25]
 -/
 
 @[expose] public section
@@ -66,7 +73,6 @@ TODO: the "right" factoring for the security definitions are the following:
 namespace Reduction
 
 section Completeness
-
 
 /-- A reduction satisfies **completeness** with regards to:
   - an initialization function `init : ProbComp σ` for some ambient state `σ`,
@@ -173,13 +179,43 @@ theorem perfectCompleteness_eq_prob_one :
     ⟨fun h => le_antisymm (prEvent_le_one _) (ge_iff_le.mp h),
      fun h => ge_of_eq h⟩
 
+/-- Under a stateless handler, completeness is a support property of the interpreted run.
+The supplied initialization is independent and has no effect on this property. -/
+theorem perfectCompleteness_stateless_iff
+    {n : ℕ} {pSpec : ProtocolSpec n} {ι : Type} {spec : OracleSpec ι}
+    {Stmt Wit Out OutWit σ : Type} [∀ i, SampleableType (pSpec.Challenge i)]
+    (P : Reduction spec Stmt Wit Out OutWit pSpec)
+    (init : ProbComp σ) (impl : QueryImpl spec ProbComp)
+    (relation : Set (Stmt × Wit)) (relOut : Set (Out × OutWit)) :
+    P.perfectCompleteness init (impl.liftTarget (StateT σ ProbComp)) relation relOut ↔
+    ∀ stmt wit, (stmt, wit) ∈ relation →
+      ∀ x ∈ support (simulateQ (impl + challengeQueryImpl) (P.run stmt wit).run),
+        ∃ result, x = some result ∧
+          (result.2, result.1.2.2) ∈ relOut ∧ result.1.2.1 = result.2 := by
+  rw [Reduction.perfectCompleteness_eq_prob_one]
+  have hi : QueryImpl.addLift (impl.liftTarget (StateT σ ProbComp))
+      (challengeQueryImpl (pSpec := pSpec)) =
+      (impl + challengeQueryImpl).liftTarget (StateT σ ProbComp) := by
+    funext q
+    cases q <;> rfl
+  simp only [hi, simulateQ_liftTarget, StateT.run'_eq, StateT.run_monadLift,
+    map_bind, map_pure, monadLift_self, bind_pure, OptionT.prEvent_mk_eq_one_iff,
+    mem_support_bind_iff]
+  constructor
+  · intro h stmt wit hrel x hx
+    obtain ⟨s, hs⟩ := support_nonempty init
+    exact h stmt wit hrel x ⟨s, hs, hx⟩
+  · intro h stmt wit hrel x hx
+    obtain ⟨s, _hs, hx⟩ := hx
+    exact h stmt wit hrel x hx
+
 /-- **Support criterion for perfect completeness.** A reduction is perfectly complete as soon as
 every element of the support of the *unsimulated* execution `(reduction.run stmtIn witIn).run` is
 a successful result satisfying the completeness event.
 
 This is the standard route to `perfectCompleteness` for protocols whose honest execution is
-deterministic in the challenges: it discharges the probabilistic content once and for all, leaving
-a purely support-level obligation about `Reduction.run`. In particular no property of the challenge
+deterministic in the verifier messages: it discharges the probabilistic content once and for all,
+leaving a purely support-level obligation about `Reduction.run`. No property of the verifier message
 distribution is needed — only that `oSpec`'s queries are answered by `impl` and the initial state
 is drawn from `init`, both of which the underlying VCVio lemma
 `OptionT.prEvent_mk_simulateQ_run'_eq_one_of_support` handles uniformly.
@@ -284,8 +320,8 @@ class IsSound (langIn : Set StmtIn) (langOut : Set StmtOut)
   is_sound : soundness init impl langIn langOut verifier soundnessError
 
 -- How would one define a rewinding extractor? It should have oracle access to the prover's
--- functions (receive challenges and send messages), and be able to observe & simulate the prover's
--- oracle queries
+-- functions (receive verifier messages and send messages), and be able to observe & simulate the
+-- prover's oracle queries
 /-- The straightline knowledge-soundness game for one specified extractor.
 
 Unlike `knowledgeSoundness`, this predicate keeps the extractor's identity in its type. This is
@@ -412,6 +448,178 @@ class Extractor.Straightline.IsMonotone
 
 end Verifier
 
+/-! ## Adaptive NARG security
+
+The prover chooses a statement and NARG string, using public oracles and private randomness.
+Each notion has one experiment. Unbounded and query-bounded predicates differ only in which
+provers they quantify over; private draws are excluded from public-query budgets.
+
+The KS extractor receives the statement, NARG string, and both public-query logs. Its
+`extractorSpec` and handler specify its oracle permissions independently of the prover's
+private sampler. A lifted `ProbComp` handler gives standalone extraction; an explicitly shared
+handler can provide public-oracle access in the state left by verification. Neither the
+extractor nor its handler receives a prover handle. No running-time bound is imposed here.
+-/
+section AdaptiveNARG
+
+/-- **[CO25, Definition 3.5]** False-acceptance event on the NARG soundness experiment output
+`Option (StmtIn × StmtOut)`: the prover output a false statement (`x ∉ langIn`) the verifier
+accepted into `stmtOut ∈ langOut`. The unbounded and query-bounded predicates use the
+same event. -/
+def nargSoundFailEvent {StmtIn StmtOut : Type} (langIn : Set StmtIn) (langOut : Set StmtOut) :
+    Option (StmtIn × StmtOut) → Prop
+  | some (x, stmtOut) => x ∉ langIn ∧ stmtOut ∈ langOut
+  | none => False
+
+/-- Run a non-interactive verifier and record its base-oracle queries, including on rejection. -/
+abbrev runVerifierWithLog {ι : Type} {oSpec : OracleSpec ι}
+    {StmtIn Proof StmtOut : Type}
+    (verifier : NonInteractiveVerifier Proof oSpec StmtIn StmtOut)
+    (x : StmtIn) (π : Proof) : OracleComp oSpec (Option StmtOut × QueryLog oSpec) :=
+  withQueryLog (verifier.verify x (Fin.cons π (fun i => i.elim0))).run
+
+/-- **[CO25, Definition 3.6]** Extraction-failure event on the NARG-KS experiment output
+`StmtIn × Option WitIn × Option StmtOut`: the verifier accepted into `langOut` yet the extracted
+input witness misses `relIn` (or none was produced). No output witness is supplied by the malicious
+NARG prover: Definition 3.6 quantifies over the same adversaries producing only a statement and
+NARG string `(x, π)` as Definition 3.5. -/
+def nargKSFailEvent {StmtIn WitIn StmtOut : Type}
+    (relIn : Set (StmtIn × WitIn)) (langOut : Set StmtOut) :
+    StmtIn × Option WitIn × Option StmtOut → Prop
+  | (x, some witIn, some stmtOut) => stmtOut ∈ langOut ∧ (x, witIn) ∉ relIn
+  | (_, none, some stmtOut) => stmtOut ∈ langOut
+  | _ => False
+
+/-- Extraction-failure event for ArkLib's relation-valued reduction and state-restoration
+interfaces. Unlike the paper's NARG event, these interfaces genuinely carry an output witness. -/
+def relationKSFailEvent {StmtIn WitIn StmtOut WitOut : Type}
+    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut)) :
+    StmtIn × Option WitIn × Option StmtOut × WitOut → Prop
+  | (x, some witIn, some stmtOut, witOut) => (stmtOut, witOut) ∈ relOut ∧ (x, witIn) ∉ relIn
+  | (_, none, some stmtOut, witOut) => (stmtOut, witOut) ∈ relOut
+  | _ => False
+
+/-- **[CO25, Definition 3.5]** Run the adaptive prover and verifier in one public-oracle state.
+The private sampler serves only the prover. An absent verifier output produces `none`. The sampler
+parameter supports internal reductions; the security predicates use standard `unifSpec`. -/
+def adaptiveNARGSoundnessExp
+    {ι κ : Type} {oSpec : OracleSpec ι} {privateSpec : OracleSpec κ}
+    {σ StmtIn Proof StmtOut : Type}
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (privateImpl : QueryImpl privateSpec ProbComp)
+    (verifier : NonInteractiveVerifier Proof oSpec StmtIn StmtOut)
+    (P : OracleComp (oSpec + privateSpec) (StmtIn × Proof)) :
+    ProbComp (Option (StmtIn × StmtOut)) := do
+  (simulateQ (impl.addLift privateImpl : QueryImpl _ (StateT σ ProbComp)) (do
+    let ⟨x, π⟩ ← P
+    let stmtOut ← OptionT.mk (liftComp (verifier.verify x
+      (Fin.cons π (fun i => i.elim0))).run (oSpec + privateSpec))
+    return (x, stmtOut) : OptionT (OracleComp (oSpec + privateSpec))
+      (StmtIn × StmtOut))).run' (← init)
+
+/-- **[CO25, Definition 3.6, adapted]** Run the prover, verifier, and non-rewinding extractor.
+The extractor receives separate public-query logs; private prover samples are excluded.
+`extractorImpl` explicitly controls whether extraction can use the public-oracle state.
+It does not receive the prover or its private samples. Extractor failure is retained as `none`. -/
+def adaptiveNARGKnowledgeSoundnessExp
+    {ι κ κE : Type} {oSpec : OracleSpec ι} {privateSpec : OracleSpec κ}
+    {extractorSpec : OracleSpec κE} {σ StmtIn Proof StmtOut WitIn : Type}
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (privateImpl : QueryImpl privateSpec ProbComp)
+    (extractorImpl : QueryImpl extractorSpec (StateT σ ProbComp))
+    (verifier : NonInteractiveVerifier Proof oSpec StmtIn StmtOut)
+    (extractor : StmtIn → Proof → QueryLog oSpec → QueryLog oSpec →
+      OptionT (OracleComp extractorSpec) WitIn)
+    (P : OracleComp (oSpec + privateSpec) (StmtIn × Proof)) :
+    ProbComp (StmtIn × Option WitIn × Option StmtOut) := do
+  StateT.run' (do
+    let ⟨x, π, proverLog, stmtOut, trV⟩ ←
+      simulateQ (impl.addLift privateImpl) (do
+        let ⟨⟨x, π⟩, proverLog⟩ ← P.withQueryLog
+        let ⟨stmtOut, trV⟩ ← liftComp (runVerifierWithLog verifier x π) _
+        return (x, π, proverLog, stmtOut, trV))
+    let trP := proverLog.publicQueries
+    let witIn ← simulateQ extractorImpl (extractor x π trP trV).run
+    return (x, witIn, stmtOut)) (← init)
+
+/-- Count public queries and exclude private sampling in `oSpec + privateSpec`. -/
+def nargPublicQuery {ι κ : Type} : ι ⊕ κ → Prop
+  | .inl _ => True
+  | .inr _ => False
+
+instance instDecidablePredNargPublicQuery {ι κ : Type} :
+    DecidablePred (nargPublicQuery (ι := ι) (κ := κ)) := fun q =>
+  match q with
+  | .inl _ => isTrue True.intro
+  | .inr _ => isFalse id
+
+namespace Verifier
+
+variable {ι κE : Type} {oSpec : OracleSpec ι} {extractorSpec : OracleSpec κE}
+  {σ StmtIn Proof StmtOut WitIn : Type}
+  (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+  (extractorImpl : QueryImpl extractorSpec (StateT σ ProbComp))
+  (verifier : NonInteractiveVerifier Proof oSpec StmtIn StmtOut)
+
+/-- **[CO25, Definition 3.5, adapted]** Adaptive soundness against every prover, with private
+sampling available. The error is independent of any query budget. -/
+def adaptiveNARGSoundness (langIn : Set StmtIn) (langOut : Set StmtOut)
+    (error : ENNReal) : Prop :=
+  ∀ P : OracleComp (oSpec + unifSpec) (StmtIn × Proof),
+    Pr{let out ← adaptiveNARGSoundnessExp init impl (QueryImpl.id' unifSpec) verifier P}[
+      nargSoundFailEvent langIn langOut out] ≤ error
+
+/-- **[CO25, Definition 3.5]** Adaptive soundness for a public-query selector and budget.
+The predicate excludes private draws from the budget; it does not truncate the experiment. -/
+def adaptiveNARGSoundnessQueryBounded (langIn : Set StmtIn) (langOut : Set StmtOut)
+    (queryBoundSelector : ι → Prop) [DecidablePred queryBoundSelector]
+    (t : ℕ) (error : ENNReal) : Prop :=
+  ∀ P : OracleComp (oSpec + unifSpec) (StmtIn × Proof),
+    P.IsQueryBoundP (publicQuerySelector queryBoundSelector) t →
+      Pr{let out ← adaptiveNARGSoundnessExp init impl (QueryImpl.id' unifSpec) verifier P}[
+        nargSoundFailEvent langIn langOut out] ≤ error
+
+/-- Adaptive knowledge soundness for a supplied extractor, without a prover-query bound. -/
+def adaptiveNARGKnowledgeSoundnessWithExtractor
+    (relIn : Set (StmtIn × WitIn)) (langOut : Set StmtOut)
+    (extractor : StmtIn → Proof → QueryLog oSpec → QueryLog oSpec →
+      OptionT (OracleComp extractorSpec) WitIn) (error : ENNReal) : Prop :=
+  ∀ P : OracleComp (oSpec + unifSpec) (StmtIn × Proof),
+    Pr{let out ← adaptiveNARGKnowledgeSoundnessExp init impl (QueryImpl.id' unifSpec)
+          extractorImpl verifier extractor P}[nargKSFailEvent relIn langOut out] ≤ error
+
+/-- Adaptive knowledge soundness with one extractor for all provers. Extractor oracle permissions
+are supplied through `extractorImpl`; private prover sampling does not grant additional access. -/
+def adaptiveNARGKnowledgeSoundness
+    (relIn : Set (StmtIn × WitIn)) (langOut : Set StmtOut) (error : ENNReal) : Prop :=
+  ∃ extractor, adaptiveNARGKnowledgeSoundnessWithExtractor init impl extractorImpl verifier
+    relIn langOut extractor error
+
+/-- **[CO25, Definition 3.6, adapted]** Knowledge soundness for a supplied non-rewinding extractor
+and a public-query budget. The extractor receives both public logs, excluding private draws. -/
+def adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor
+    (relIn : Set (StmtIn × WitIn)) (langOut : Set StmtOut)
+    (extractor : StmtIn → Proof → QueryLog oSpec → QueryLog oSpec →
+      OptionT (OracleComp extractorSpec) WitIn)
+    (queryBoundSelector : ι → Prop) [DecidablePred queryBoundSelector]
+    (t : ℕ) (error : ENNReal) : Prop :=
+  ∀ P : OracleComp (oSpec + unifSpec) (StmtIn × Proof),
+    P.IsQueryBoundP (publicQuerySelector queryBoundSelector) t →
+      Pr{let out ← adaptiveNARGKnowledgeSoundnessExp init impl (QueryImpl.id' unifSpec)
+            extractorImpl verifier extractor P}[nargKSFailEvent relIn langOut out] ≤ error
+
+/-- One non-rewinding extractor for all public-query budgets. The extractor is chosen before
+both the budget and the prover; private sampling is available in every execution. -/
+def adaptiveNARGKnowledgeSoundnessQueryBounded
+    (relIn : Set (StmtIn × WitIn)) (langOut : Set StmtOut)
+    (queryBoundSelector : ι → Prop) [DecidablePred queryBoundSelector]
+    (error : ℕ → ENNReal) : Prop :=
+  ∃ extractor, ∀ t, adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor
+    init impl extractorImpl verifier relIn langOut extractor queryBoundSelector t (error t)
+
+end Verifier
+end AdaptiveNARG
+
 end Soundness
 
 namespace Reduction
@@ -426,7 +634,8 @@ structure Simulator (oSpec : OracleSpec ι) (StmtIn : Type) {n : ℕ} (pSpec : P
   oracleSim : QueryImpl oSpec (StateT SimState (OracleComp oSpec))
   proverSim : StmtIn → StateT SimState (OracleComp oSpec) pSpec.FullTranscript
 
-/- Honest-verifier zero-knowledge is not yet formalized. -/
+/- Public-coin honest-verifier and adaptive NARG zero-knowledge are defined in
+`ArkLib.OracleReduction.Security.ZeroKnowledge`. -/
 
 end ZeroKnowledge
 
@@ -552,6 +761,20 @@ def knowledgeSoundness (relation : Set (Statement × Witness))
     (verifier : Verifier oSpec Statement Bool pSpec)
     (knowledgeError : ℝ≥0) : Prop :=
   verifier.knowledgeSoundness init impl relation acceptRejectRel knowledgeError
+
+/-- Under a stateless handler, completeness is a support property of the interpreted run.
+The supplied initialization is independent and has no effect on this property. -/
+theorem perfectCompleteness_stateless_iff
+    {n : ℕ} {pSpec : ProtocolSpec n} {ι : Type} {spec : OracleSpec ι}
+    {Stmt Wit σ : Type} [∀ i, SampleableType (pSpec.Challenge i)]
+    (P : Proof spec Stmt Wit pSpec) (init : ProbComp σ) (impl : QueryImpl spec ProbComp)
+    (relation : Set (Stmt × Wit)) :
+    P.perfectCompleteness init (impl.liftTarget (StateT σ ProbComp)) relation ↔
+    ∀ stmt wit, (stmt, wit) ∈ relation →
+      ∀ x ∈ support (simulateQ (impl + challengeQueryImpl) (P.run stmt wit).run),
+        ∃ result, x = some result ∧
+          (result.2, result.1.2.2) ∈ acceptRejectRel ∧ result.1.2.1 = result.2 :=
+  Reduction.perfectCompleteness_stateless_iff P init impl relation acceptRejectRel
 
 end Proof
 

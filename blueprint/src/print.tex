@@ -16,12 +16,14 @@
 
 \usepackage{expl3}
 
+% Load before cleveref so shared theorem counters retain their reference types.
+\usepackage{aliascnt}
 \input{macros/packages}
 
 \usepackage[warnings-off={mathtools-colon,mathtools-overbracket}]{unicode-math}
 
-\input{macros/common}
 \input{macros/print}
+\input{macros/common}
 
 \title{Formally Verified Arguments of Knowledge in Lean}
 \author{}

@@ -1,0 +1,51 @@
+A non-interactive argument (NARG) consists of an argument prover and an argument verifier \(\NARGVerifier\), which accepts or rejects. Let \(\Relation\subseteq\InstanceSpace\times\WitnessSpace\) be the relation being proved, with language \(\RelationLanguage{\Relation}:=\{\Instance:\exists\WitnessValue,\ (\Instance,\WitnessValue)\in\Relation\}\). An adaptive malicious argument prover \(\NARGMaliciousProver\) is a probabilistic algorithm that chooses both the statement \(\Instance\) and its NARG string \(\NARGString\).
+
+As in~\cite[Section~9.1]{snarg-book}, let \(\secpar\in\mathbb N\) be a security parameter and \(\InstanceSizeBound\in\mathbb N\) an instance-size bound, for a specified size function \(\InstanceSizeOf{\cdot}:\InstanceSpace\to\mathbb N\). An oracle distribution \(\OracleDistribution(\secpar,\InstanceSizeBound)\) samples the public oracles for these parameters. The query and answer types, oracle interpretation, NARG-string space, and algorithms may also depend on \((\secpar,\InstanceSizeBound)\). Both parameters are public inputs to every algorithm, including the extractor; we suppress these inputs in the displays. The entire family is fixed before the query budget and adversary are chosen.
+
+Write \(\OracleFamily\) for the public oracles specified by the NARG's model. For DSFS these are the sampled hash function, permutation and inverse \((\SpongeOracles)\leftarrow\SpongeOracleDistribution\); for basic Fiat--Shamir they are the independent round functions \((\OracleFunction_i)_i\). These are the only public oracles in the experiment. An assignment \(z\leftarrow A^{\OracleFamily}\) means run \(A\) with query access to these oracles. The prover and verifier use the same initialized public-oracle state, continuing that state between their executions when the specified model is stateful. The prover and verifier are probabilistic algorithms with independent private randomness. We write \(b=1\) for acceptance; rejection or an absent returned bit does not satisfy this event. The symbol \(\bot\) denotes a missing output or witness; by convention, \((\Instance,\bot)\notin\Relation\) for every statement \(\Instance\) and witness relation \(\Relation\). In the probability displays below, the left column states the event and the right column specifies the experiment; the separator does not denote conditioning. Probabilities include the oracle initialization and the algorithms' private randomness.
+
+\begin{definition}[Adaptive NARG soundness {\cite[Definition~3.5]{CO25}~\cite[Definition~7.1.4]{snarg-book}}]
+  \label{def:narg_adaptive_soundness}
+  Let \(\NARGVerifier\) be a NARG verifier for relation \(\Relation\), with oracle distribution \(\OracleDistribution\). The NARG has \emph{adaptive soundness error} \(\NARGSoundnessError:\mathbb N^3\to[0,\infty]\) if, for every security parameter \(\secpar\in\mathbb N\), instance-size bound \(\InstanceSizeBound\in\mathbb N\), query budget \(\PublicOracleQueryBound\in\mathbb N\), and \(\PublicOracleQueryBound\)-query malicious argument prover \(\NARGMaliciousProver\) (\Cref{def:counted_queries}),
+  \begin{equation*}
+  \Pr\left[\begin{array}{l|rl}
+    \InstanceSizeOf{\Instance}\le\InstanceSizeBound
+      & 1. & \OracleFamily\leftarrow\OracleDistribution(\secpar,\InstanceSizeBound);\\
+    {}\land\Instance\notin\RelationLanguage{\Relation}
+      & 2. & (\Instance,\NARGString)\leftarrow\NARGMaliciousProver^{\OracleFamily};\\
+    {}\land b=1
+      & 3. & b\leftarrow\NARGVerifier^{\OracleFamily}(\Instance,\NARGString)
+  \end{array}\right]\le\NARGSoundnessError(\secpar,\InstanceSizeBound,\PublicOracleQueryBound).
+  \end{equation*}
+
+  \lean{NARG.adaptiveSoundness, NARG.soundnessFailureEventSizeBounded,
+    NARG.soundnessExperiment, NARG.soundnessFailureEvent}
+  \uses{def:oracle_run, def:counted_queries}
+  \leanok
+\end{definition}
+
+\begin{definition}[Adaptive NARG knowledge soundness {\cite[Definition~3.6]{CO25}~\cite[Definition~7.1.5]{snarg-book}}]
+  \label{def:adaptive_narg_knowledge_soundness}
+  Let \(\NARGVerifier\) be a NARG verifier for relation \(\Relation\), with oracle distribution \(\OracleDistribution(\secpar,\InstanceSizeBound)\) and the public parameter convention above.
+
+  A probabilistic straightline knowledge extractor \(\NARGExtractor\) receives a statement \(\Instance\), a NARG string \(\NARGString\), and the prover and verifier public query--answer logs \(\QueryLog_{\NARGMaliciousProver},\QueryLog_{\NARGVerifier}\), and returns a candidate witness \(\WitnessValue\) for \(\Instance\) or \(\bot\). The extractor uses only these inputs and its own private randomness; it cannot query the public oracles or invoke the malicious prover.
+
+  The verifier has \emph{adaptive knowledge-soundness error} \(\NARGKnowledgeSoundnessError:\mathbb N^3\to[0,\infty]\) if there exists such an extractor \(\NARGExtractor\) such that, for every security parameter \(\secpar\in\mathbb N\), instance-size bound \(\InstanceSizeBound\in\mathbb N\), query budget \(\PublicOracleQueryBound\in\mathbb N\), and \(\PublicOracleQueryBound\)-query malicious argument prover \(\NARGMaliciousProver\) (\Cref{def:counted_queries}),
+  \begin{equation*}
+    \Pr\left[\begin{array}{l|rl}
+      \InstanceSizeOf{\Instance}\le\InstanceSizeBound
+        & 1. & \OracleFamily\leftarrow\OracleDistribution(\secpar,\InstanceSizeBound);\\
+      {}\land b=1
+        & 2. & (\Instance,\NARGString)\xleftarrow{\QueryLog_{\NARGMaliciousProver}}\NARGMaliciousProver^{\OracleFamily};\\
+      {}\land (\Instance,\WitnessValue)\notin\Relation
+        & 3. & b\xleftarrow{\QueryLog_{\NARGVerifier}}\NARGVerifier^{\OracleFamily}(\Instance,\NARGString);\\
+        & 4. & \WitnessValue\leftarrow\NARGExtractor
+          (\Instance,\NARGString,\QueryLog_{\NARGMaliciousProver},\QueryLog_{\NARGVerifier})
+    \end{array}\right]\le\NARGKnowledgeSoundnessError(\secpar,\InstanceSizeBound,\PublicOracleQueryBound).
+  \end{equation*}
+  The annotated arrows record public query--answer logs. No running-time requirement is imposed.
+  \lean{NARG.adaptiveKnowledgeSoundness, NARG.knowledgeSoundnessFailureEventSizeBounded,
+    NARG.Extractor, NARG.knowledgeSoundnessExperiment, NARG.knowledgeSoundnessFailureEvent}
+  \uses{def:oracle_run, def:counted_queries}
+  \leanok
+\end{definition}

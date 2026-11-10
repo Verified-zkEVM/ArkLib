@@ -6,7 +6,7 @@ This section contains definitions and theorems about coding theory as they are u
     \label{def:code_distance}
     \lean{Code.dist}
     \leanok
-    The distance of a code $\code\subseteq\Sigma^{\evaldomain}$ is the least Hamming distance
+    The distance of a code $\code\subseteq\Alphabet^{\evaldomain}$ is the least Hamming distance
     between two distinct codewords; it is $0$ if $\code$ has fewer than two elements.
 \end{definition}
 
@@ -36,9 +36,9 @@ This section contains definitions and theorems about coding theory as they are u
 
 \begin{definition}[Code]
     \label{def:code}
-    A code of length $\evaldomain$ over an alphabet $\Sigma$ is a set
-    $\code\subseteq\Sigma^{\evaldomain}$ of words. The formalization uses
-    $\mathsf{Set}\,(\evaldomain\to\Sigma)$ directly and has no separate declaration for it.
+    A code of length $\evaldomain$ over an alphabet $\Alphabet$ is a set
+    $\code\subseteq\Alphabet^{\evaldomain}$ of words. The formalization uses
+    $\mathsf{Set}\,(\evaldomain\to\Alphabet)$ directly and has no separate declaration for it.
 \end{definition}
 
 \begin{definition}[Linear Code]

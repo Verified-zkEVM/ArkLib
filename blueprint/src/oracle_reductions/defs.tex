@@ -4,10 +4,66 @@ In this section, we give the basic definitions of a public-coin interactive orac
 (henceforth called an oracle reduction or IOR). We will define its building blocks, and various
 security properties.
 
+\subsection{Probability and Oracle Computations}
+\label{sec:finite_probability_interface}
+
+We write \(\Uniform(A)\) for the uniform distribution on a nonempty finite set \(A\),
+and \(\Delta\) for event-supremum statistical distance, including for subprobability distributions.
+A probabilistic algorithm uses its own private coins. An oracle superscript specifies
+which oracles it may query.
+
+\subsubsection{Oracle Queries and Traces}
+\label{sec:oracle_trace_interface}
+
+\paragraph{Query and answer types.}
+A query type \(Q\) and answer types \(A(q)\) specify the type of a function
+\(\OracleFunction\in\prod_{q\in Q}A(q)\). An algorithm with query access to \(\OracleFunction\)
+receives \(\OracleFunction(q)\) when it submits \(q\). In Lean,
+\href{../docs/find/\#doc/OracleSpec}{\texttt{OracleSpec}}
+specifies only these types; it does not specify a probability distribution.
+In general, a random function may be sampled from independently chosen
+distributions \(\mu_q\) on the answer types. The Lean random-oracle handler
+below uses uniform sampling.
+
+The query and answer types and their probability laws are fixed before an oracle experiment begins. In particular, an oracle's output size is part of its answer type. For parameterized NARG security, these data may depend on a public security parameter \(\secpar\in\mathbb N\) and instance-size bound \(\InstanceSizeBound\in\mathbb N\); the experiment samples from \(\OracleDistribution(\secpar,\InstanceSizeBound)\). A concrete construction may fix these data and write simply \(\OracleDistribution\). The oracle distribution never depends on the adversary's query budget.
+
+\begin{definition}[Lazy sampling table]
+\label{def:lazy_sampling_table}
+\lean{OracleSpec.QueryCache, OracleSpec.randomOracle}
+\leanok
+For an oracle specification with sampleable answer types \(A(q)\), a lazy sampling
+table \(C\) is a partial map \(C(q)\in\operatorname{Option}(A(q))\). Its domain
+\begin{equation*}
+\operatorname{dom}(C)=\{q\in Q\mid C(q)\text{ is defined}\}
+\end{equation*}
+is the set of queries with stored answers. On query \(q\), the uniform random-oracle
+handler returns the stored answer if \(q\in\operatorname{dom}(C)\); otherwise it
+samples \(a\) uniformly from \(A(q)\), stores \(C(q)=a\), and returns \(a\).
+Lean's \texttt{QueryCache} imposes no finite-domain requirement, and
+\texttt{randomOracle} implements this cache-hit and cache-miss behavior.
+\end{definition}
+
+\begin{definition}[Oracle computation with trace]
+\label{def:oracle_run}
+\lean{OracleComp, simulateQ, OracleComp.withQueryLog}
+\leanok
+An oracle algorithm is an \texttt{OracleComp} computation. A query handler
+interprets its calls, possibly maintaining a lazy table as in
+\Cref{def:lazy_sampling_table}. Logging additionally records each query and answer
+in order, including repetitions; Lean uses such logs for extraction and backtracking. We
+write
+\begin{equation*}
+y\xleftarrow{T}\OracleRun_{\OracleSpec}(\adv)
+\end{equation*}
+to mean: run \(\adv\) with the specified oracle handler, return \(y\), and
+record the ordered query-answer log \(T\), including repeated queries.
+The log is distinct from the final cache.
+\end{definition}
+
 \subsection{Format}\label{sec:oracle_reductions_defs_format}
 
 An \textbf{(interactive) oracle reduction (IOR)} is an interactive protocol between two parties, a
-\emph{prover} $\mathcal{P}$ and a \emph{verifier} $\mathcal{V}$. In ArkLib, IORs are defined in the
+\emph{prover} \(\IORProver\) and a \emph{verifier} \(\IORVerifier\). In ArkLib, IORs are defined in the
 following setting:
 \begin{enumerate}
     \item We work in an ambient dependent type theory (in our case, Lean).
@@ -18,11 +74,12 @@ following setting:
     \item The prover and verifier has access to some inputs (called the \emph{(oracle) context}) at
     the beginning of the protocol. These inputs are classified as follows:
     \begin{itemize}
-        \item \emph{Public inputs} (or \emph{statement}) $\mathbbm{x}$: available to both parties;
-        \item \emph{Private inputs} (or \emph{witness}) $\mathbbm{w}$: available only to the prover;
-        \item \emph{Oracle inputs} (or \emph{oracle statement}) $\mathbbm{ox}$: the underlying data
-        is available to the prover, but it's only exposed as an oracle to the verifier. See~\Cref{def:oracle_interface} for more information.
-        \item \emph{Shared oracle} $\mathcal{O}$: the oracle is available to both parties via an
+        \item \emph{Public inputs} (or \emph{statement}) \(\Instance\): available to both parties;
+        \item \emph{Private inputs} (or \emph{witness}) \(\WitnessValue\): available only to the prover;
+        \item \emph{Oracle inputs} (or \emph{oracle statement}) \(\mathbbm{ox}\): the underlying data
+        is available to the prover, but it's only exposed as an oracle to the verifier.
+        See~\Cref{def:oracle_interface} for more information.
+        \item \emph{Shared oracle} \(\AmbientOracles\): the oracle is available to both parties via an
         interface; in most cases, it is either empty, a probabilistic sampling oracle, a random
         oracle, or a group oracle (for the Algebraic Group Model). See~\Cref{sec:vcvio} for more
         information on oracle computations.
@@ -36,7 +93,7 @@ following setting:
     through oracle interfaces. In the (non-oracle) reduction setting, all messages are available
     directly. Future extensions may allow for mixed visibility for prover's messages.
 
-    \item $\mathcal{V}$ is assumed to be \emph{public-coin}, meaning that its challenges are chosen
+    \item \(\IORVerifier\) is assumed to be \emph{public-coin}, meaning that its challenges are chosen
     uniformly at random from the finite type corresponding to that round, and it uses no randomness
     otherwise, except from those coming from the shared oracle.
 
@@ -57,7 +114,7 @@ following setting:
 \begin{remark}[Literature Comparison]
 In the literature, our definition corresponds to the notion of \emph{functional} IORs. Historically,
 (vector) IOPs were the first notion to be introduced by~\cite{IOPs}; these are IORs where the output
-statement is true/false, all oracle statements and messages are vectors over some alphabet $\Sigma$,
+statement is true/false, all oracle statements and messages are vectors over some alphabet \(\Alphabet\),
 and the oracle interfaces are for querying specific positions in the vector. More recent works have
 considered other oracle interfaces, e.g., polynomial oracles~\cite{Marlin, DARK}, generalized proofs
 to reductions~\cite{ARoK, WARP, Arc, fics-facs}, and considered general oracle
@@ -71,22 +128,22 @@ We now go into more details on these objects, and how they are represented in Le
 
 \begin{definition}[Oracle Interface]
     \label{def:oracle_interface}
-    An oracle interface for an underlying data type $\mathsf{D}$ consists of the following:
+    An oracle interface for an underlying data type \(\mathsf{D}\) consists of the following:
     \begin{itemize}
-        \item A type $\mathsf{Q}$ for queries to the oracle,
-        \item A response family $\mathsf{R} : \mathsf{Q} \to \Type$, so that the type of the
+        \item A type \(\mathsf{Q}\) for queries to the oracle,
+        \item A response family \(\mathsf{R} : \mathsf{Q} \to \Type\), so that the type of the
         response may depend on the query,
-        \item An answering function $\mathsf{answer} : \mathsf{D} \to (q : \mathsf{Q}) \to
-        \mathsf{R}(q)$ that specifies the oracle's behavior given the underlying data and a query.
+        \item An answering function \(\mathsf{answer} : \mathsf{D} \to (q : \mathsf{Q}) \to
+        \mathsf{R}(q)\) that specifies the oracle's behavior given the underlying data and a query.
     \end{itemize}
     In Lean the response family and answering function are packaged as an oracle context whose
-    implementation reads the underlying data. A constant response family $\mathsf{R}(q) = \mathsf{R}$
+    implementation reads the underlying data. A constant response family \(\mathsf{R}(q) = \mathsf{R}\)
     is the common special case.
     \lean{OracleInterface}
     \leanok
 \end{definition}
 
-See \texttt{OracleInterface.lean} for common instances of $\mathsf{OracleInterface}$.
+See \texttt{OracleInterface.lean} for common instances of \(\mathsf{OracleInterface}\).
 
 
 \begin{definition}[Context]
@@ -100,13 +157,13 @@ See \texttt{OracleInterface.lean} for common instances of $\mathsf{OracleInterfa
 
 \begin{definition}[Protocol Specification]
     \label{def:protocol_spec}
-    A protocol specification for an $n$-message (oracle) reduction, is an element of the following type:
+    A protocol specification for an \(n\)-message (oracle) reduction, is an element of the following type:
     \begin{align*}
         \ProtocolSpec\ n &:= \Fin\ n \to \Direction \times \Type.
     \end{align*}
-    In the above, $\Direction := \{ \PtoVdir, \VtoPdir \}$ is the type of possible directions of messages, and $\Fin\ n := \{ i : \bbN \quotient i < n \}$ is the type of all natural numbers less than $n$.
+    In the above, \(\Direction := \{ \PtoVdir, \VtoPdir \}\) is the type of possible directions of messages, and \(\Fin\ n := \{ i : \bbN \quotient i < n \}\) is the type of all natural numbers less than \(n\).
 
-    In other words, for each step $i$ of interaction, the protocol specification describes the \emph{direction} of the message sent in that step, i.e., whether it is from the prover or from the verifier. It also describes the \emph{type} of that message.
+    In other words, for each step \(i\) of interaction, the protocol specification describes the \emph{direction} of the message sent in that step, i.e., whether it is from the prover or from the verifier. It also describes the \emph{type} of that message.
 
     In the oracle setting, we also expect an oracle interface for each message from the prover to the verifier.
     \lean{ProtocolSpec}
@@ -117,14 +174,14 @@ We define some supporting definitions for a protocol specification.
 
 \begin{definition}[Protocol Specification Components]
     \label{def:protocol_spec_components}
-    Given a protocol spec $\pSpec : \ProtocolSpec\ n$, we define:
+    Given a protocol spec \(\pSpec : \ProtocolSpec\ n\), we define:
     \begin{itemize}
-        \item $\pSpec.\Dir\ i := (\pSpec\ i).\mathsf{fst}$ extracts the direction of the $i$-th message.
-        \item $\pSpec.\Type\ i := (\pSpec\ i).\mathsf{snd}$ extracts the type of the $i$-th message.
-        \item $\pSpec.\MessageIdx := \{i : \Fin\ n \quotient \pSpec.\Dir\ i = \PtoVdir\}$ is the subtype of indices corresponding to prover messages.
-        \item $\pSpec.\ChallengeIdx := \{i : \Fin\ n \quotient \pSpec.\Dir\ i = \VtoPdir\}$ is the subtype of indices corresponding to verifier challenges.
-        \item $\pSpec.\mathsf{Message}\ i := (i : \pSpec.\MessageIdx) \to \pSpec.\Type\ i.\mathsf{val}$ is an indexed family of message types in the protocol.
-        \item $\pSpec.\mathsf{Challenge}\ i := (i : \pSpec.\ChallengeIdx) \to \pSpec.\Type\ i.\mathsf{val}$ is an indexed family of challenge types in the protocol.
+        \item \(\pSpec.\Dir\ i := (\pSpec\ i).\mathsf{fst}\) extracts the direction of the \(i\)-th message.
+        \item \(\pSpec.\Type\ i := (\pSpec\ i).\mathsf{snd}\) extracts the type of the \(i\)-th message.
+        \item \(\pSpec.\MessageIdx := \{i : \Fin\ n \quotient \pSpec.\Dir\ i = \PtoVdir\}\) is the subtype of indices corresponding to prover messages.
+        \item \(\pSpec.\ChallengeIdx := \{i : \Fin\ n \quotient \pSpec.\Dir\ i = \VtoPdir\}\) is the subtype of indices corresponding to verifier challenges.
+        \item \(\pSpec.\mathsf{Message}\ i := (i : \pSpec.\MessageIdx) \to \pSpec.\Type\ i.\mathsf{val}\) is an indexed family of message types in the protocol.
+        \item \(\pSpec.\mathsf{Challenge}\ i := (i : \pSpec.\ChallengeIdx) \to \pSpec.\Type\ i.\mathsf{val}\) is an indexed family of challenge types in the protocol.
     \end{itemize}
     \lean{ProtocolSpec.dir, ProtocolSpec.Type, ProtocolSpec.MessageIdx, ProtocolSpec.ChallengeIdx, ProtocolSpec.Message, ProtocolSpec.Challenge}
     \leanok
@@ -133,31 +190,31 @@ We define some supporting definitions for a protocol specification.
 
 \begin{definition}[Protocol Transcript]
     \label{def:transcript}
-        Given protocol specification $\pSpec : \ProtocolSpec\ n$, we define:
+        Given protocol specification \(\pSpec : \ProtocolSpec\ n\), we define:
     \begin{itemize}
-        \item A \emph{transcript} up to round $k : \Fin\ (n + 1)$ is an element of type
-                \[ \Transcript\ k\ \pSpec := (i : \Fin\ k) \to \pSpec.\Type\ (\uparrow i : \Fin\ n) \]
-        where $\uparrow i : \Fin\ n$ denotes casting $i : \Fin\ k$ to $\Fin\ n$ (valid since $k \leq n + 1$).
+        \item A \emph{transcript} up to round \(k : \Fin\ (n + 1)\) is an element of type
+                \begin{equation*} \Transcript\ k\ \pSpec := (i : \Fin\ k) \to \pSpec.\Type\ (\uparrow i : \Fin\ n) \end{equation*}
+        where \(\uparrow i : \Fin\ n\) denotes casting \(i : \Fin\ k\) to \(\Fin\ n\) (valid since \(k \leq n + 1\)).
 
-        \item A \emph{full transcript} is $\FullTranscript\ \pSpec := (i : \Fin\ n) \to \pSpec.\Type\ i$.
+        \item A \emph{full transcript} is \(\FullTranscript\ \pSpec := (i : \Fin\ n) \to \pSpec.\Type\ i\).
 
         \item The type of all \emph{messages} from prover to verifier is
-        \[ \pSpec.\Messages := \prod_{i : \pSpec.\MessageIdx} \pSpec.\Message\ i \]
+        \begin{equation*} \pSpec.\Messages := \prod_{i : \pSpec.\MessageIdx} \pSpec.\Message\ i \end{equation*}
 
         \item The type of all \emph{challenges} from verifier to prover is
-        \[ \pSpec.\Challenges := \prod_{i : \pSpec.\ChallengeIdx} \pSpec.\Challenge\ i \]
+        \begin{equation*} \pSpec.\Challenges := \prod_{i : \pSpec.\ChallengeIdx} \pSpec.\Challenge\ i \end{equation*}
     \end{itemize}
     \lean{ProtocolSpec.Transcript, ProtocolSpec.FullTranscript, ProtocolSpec.Messages, ProtocolSpec.Challenges}
     \leanok
     \uses{def:protocol_spec, def:protocol_spec_components}
 \end{definition}
 
-% In the interactive protocols we consider, both parties $P$ and $V$ may have access to a shared
-% oracle $O$. An interactive protocol becomes an \emph{interactive (oracle) reduction} if its
-% execution reduces an input relation $R_{\mathsf{in}}$ to an output relation $R_{\mathsf{out}}$. Here
-% a relation is just a function $\mathsf{IsValid}: \mathsf{Statement} \times \mathsf{Witness} \to
-% \mathsf{Bool}$, for some types \verb|Statement| and \verb|Witness|. We do not concern ourselves with
-% the running time of $\mathsf{IsValid}$ in this project (though future extensions may prove that
+% In the interactive protocols we consider, both parties \(P\) and \(V\) may have access to a shared
+% oracle \(O\). An interactive protocol becomes an \emph{interactive (oracle) reduction} if its
+% execution reduces an input relation \(R_{\mathsf{in}}\) to an output relation \(R_{\mathsf{out}}\). Here
+% a relation is just a function \(\mathsf{IsValid}: \mathsf{Statement} \times \mathsf{Witness} \to
+% \mathsf{Bool}\), for some types \verb|Statement| and \verb|Witness|. We do not concern ourselves with
+% the running time of \(\mathsf{IsValid}\) in this project (though future extensions may prove that
 % relations can be decided in polynomial time, for a suitable model of computation).
 
 \begin{remark}[Design Decision]
@@ -166,26 +223,26 @@ We define some supporting definitions for a protocol specification.
 
 \begin{definition}[Type Signature of a Prover]
     \label{def:prover}
-    A prover $\mathcal{P}$ in a reduction consists of the following components:
+    A prover \(\IORProver\) in a reduction consists of the following components:
 
     \begin{itemize}
-        \item \textbf{Prover State}: A family of types $\mathsf{PrvState} : \Fin(n+1) \to \Type$ representing the prover's internal state at each round of the protocol.
+        \item \textbf{Prover State}: A family of types \(\mathsf{PrvState} : \Fin(n+1) \to \Type\) representing the prover's internal state at each round of the protocol.
 
         \item \textbf{Input Processing}: A function
-        \[ \mathsf{input} : \StmtIn \to \WitIn \to \mathsf{PrvState}(0) \]
+        \begin{equation*} \mathsf{input} : \StmtIn \to \WitIn \to \mathsf{PrvState}(0) \end{equation*}
         that initializes the prover's state from the input statement and witness.
 
-        \item \textbf{Message Sending}: For each message index $i : \pSpec.\MessageIdx$, a function
-        \[ \mathsf{sendMessage}_i : \mathsf{PrvState}(i.\mathsf{val}.\mathsf{castSucc}) \to \OracleComp(\oSpec, \pSpec.\Message(i) \times \mathsf{PrvState}(i.\mathsf{val}.\mathsf{succ})) \]
+        \item \textbf{Message Sending}: For each message index \(i : \pSpec.\MessageIdx\), a function
+        \begin{equation*} \mathsf{sendMessage}_i : \mathsf{PrvState}(i.\mathsf{val}.\mathsf{castSucc}) \to \OracleComp(\oSpec, \pSpec.\Message(i) \times \mathsf{PrvState}(i.\mathsf{val}.\mathsf{succ})) \end{equation*}
         that generates the message and updates the prover's state.
 
-        \item \textbf{Challenge Processing}: For each challenge index $i : \pSpec.\ChallengeIdx$, a function
-        \[ \mathsf{receiveChallenge}_i : \mathsf{PrvState}(i.\mathsf{val}.\mathsf{castSucc}) \to \OracleComp(\oSpec, \pSpec.\Challenge(i) \to \mathsf{PrvState}(i.\mathsf{val}.\mathsf{succ})) \]
+        \item \textbf{Challenge Processing}: For each challenge index \(i : \pSpec.\ChallengeIdx\), a function
+        \begin{equation*} \mathsf{receiveChallenge}_i : \mathsf{PrvState}(i.\mathsf{val}.\mathsf{castSucc}) \to \OracleComp(\oSpec, \pSpec.\Challenge(i) \to \mathsf{PrvState}(i.\mathsf{val}.\mathsf{succ})) \end{equation*}
         Before seeing the challenge, the prover runs an oracle computation that returns a
         state-update function; applying it to the challenge gives the next state.
 
         \item \textbf{Output Generation}: A function
-        \[ \mathsf{output} : \mathsf{PrvState}(\Fin.\mathsf{last}(n)) \to \OracleComp(\oSpec, \StmtOut \times \WitOut) \]
+        \begin{equation*} \mathsf{output} : \mathsf{PrvState}(\Fin.\mathsf{last}(n)) \to \OracleComp(\oSpec, \StmtOut \times \WitOut) \end{equation*}
         that produces the final output statement and witness from the prover's final state. It
         may query the shared oracle.
     \end{itemize}
@@ -195,10 +252,10 @@ We define some supporting definitions for a protocol specification.
 
 \begin{definition}[Type Signature of an Oracle Prover]
     \label{def:oracle_prover}
-    An oracle prover is a prover whose input statement includes the underlying data for oracle statements, and whose output includes oracle statements. Formally, it is a prover with input statement type $\StmtIn \times (\forall i : \iota_{\mathsf{si}}, \OStmtIn(i))$ and output statement type $\StmtOut \times (\forall i : \iota_{\mathsf{so}}, \OStmtOut(i))$, where:
+    An oracle prover is a prover whose input statement includes the underlying data for oracle statements, and whose output includes oracle statements. Formally, it is a prover with input statement type \(\StmtIn \times (\forall i : \iota_{\mathsf{si}}, \OStmtIn(i))\) and output statement type \(\StmtOut \times (\forall i : \iota_{\mathsf{so}}, \OStmtOut(i))\), where:
     \begin{itemize}
-        \item $\OStmtIn : \iota_{\mathsf{si}} \to \Type$ are the input oracle statement types
-        \item $\OStmtOut : \iota_{\mathsf{so}} \to \Type$ are the output oracle statement types
+        \item \(\OStmtIn : \iota_{\mathsf{si}} \to \Type\) are the input oracle statement types
+        \item \(\OStmtOut : \iota_{\mathsf{so}} \to \Type\) are the output oracle statement types
     \end{itemize}
     \lean{OracleProver}
     \leanok
@@ -219,10 +276,10 @@ of the context, and oracle access to either the shared oracle, or the oracle inp
 
 \begin{definition}[Type Signature of a Verifier]
     \label{def:verifier}
-    A verifier $\mathcal{V}$ in a reduction is specified by a single function:
-    \[ \mathsf{verify} : \StmtIn \to \FullTranscript(\pSpec) \to \mathsf{OptionT}(\OracleComp(\oSpec), \StmtOut) \]
+    A verifier \(\IORVerifier\) in a reduction is specified by a single function:
+    \begin{equation*} \mathsf{verify} : \StmtIn \to \FullTranscript(\pSpec) \to \mathsf{OptionT}(\OracleComp(\oSpec), \StmtOut) \end{equation*}
 
-    This function takes the input statement and the complete transcript of the protocol interaction, and performs an oracle computation (potentially querying the shared oracle $\oSpec$) that either produces an output statement or fails. Failure, the $\mathsf{none}$ result of the $\mathsf{OptionT}$ layer, is how the verifier rejects.
+    This function takes the input statement and the complete transcript of the protocol interaction, and performs an oracle computation (potentially querying the shared oracle \(\oSpec\)) that either produces an output statement or fails. Failure, the \(\mathsf{none}\) result of the \(\mathsf{OptionT}\) layer, is how the verifier rejects.
 
     The verifier is assumed to be \emph{public-coin}, meaning it only sends uniformly random challenges and uses no other randomness beyond what is provided by the shared oracle.
     \lean{Verifier}
@@ -231,27 +288,27 @@ of the context, and oracle access to either the shared oracle, or the oracle inp
 
 \begin{definition}[Type Signature of an Oracle Verifier]
     \label{def:oracle_verifier}
-    An oracle verifier $\mathcal{V}$ consists of the following components:
+    An oracle verifier \(\IORVerifier\) consists of the following components:
 
     \begin{itemize}
         \item \textbf{Verification Logic}: A function
-        \[ \mathsf{verify} : \StmtIn \to \pSpec.\Challenges \to \mathsf{OptionT}(\OracleComp(\oSpec \mathrel{++_\mathsf{o}} ([\OStmtIn]_\mathsf{o} \mathrel{++_\mathsf{o}} [\pSpec.\Message]_\mathsf{o})), \StmtOut) \]
-        that takes the input statement and verifier challenges, and performs oracle queries to the shared oracle, input oracle statements, and prover messages to produce an output statement or reject. As for a verifier, rejection is the $\mathsf{none}$ result of the $\mathsf{OptionT}$ layer.
+        \begin{equation*} \mathsf{verify} : \StmtIn \to \pSpec.\Challenges \to \mathsf{OptionT}(\OracleComp(\oSpec \mathrel{++_\mathsf{o}} ([\OStmtIn]_\mathsf{o} \mathrel{++_\mathsf{o}} [\pSpec.\Message]_\mathsf{o})), \StmtOut) \end{equation*}
+        that takes the input statement and verifier challenges, and performs oracle queries to the shared oracle, input oracle statements, and prover messages to produce an output statement or reject. As for a verifier, rejection is the \(\mathsf{none}\) result of the \(\mathsf{OptionT}\) layer.
 
         \item \textbf{Output Oracle Representation}: one of the following two forms.
         \begin{itemize}
             \item \emph{Embedding.} An injective function
-            \[ \mathsf{embed} : \iota_{\mathsf{so}} \hookrightarrow \iota_{\mathsf{si}} \oplus \pSpec.\MessageIdx \]
+            \begin{equation*} \mathsf{embed} : \iota_{\mathsf{so}} \hookrightarrow \iota_{\mathsf{si}} \oplus \pSpec.\MessageIdx \end{equation*}
             that selects, for each output oracle statement, an input oracle statement or a prover
             message, together with a proof
-            \[ \mathsf{hEq} : \forall i : \iota_{\mathsf{so}}, \OStmtOut(i) = \begin{cases}
+            \begin{equation*} \mathsf{hEq} : \forall i : \iota_{\mathsf{so}}, \OStmtOut(i) = \begin{cases}
                 \OStmtIn(j) & \text{if } \mathsf{embed}(i) = \mathsf{inl}(j) \\
                 \pSpec.\Message(k) & \text{if } \mathsf{embed}(i) = \mathsf{inr}(k)
-            \end{cases} \]
+            \end{cases} \end{equation*}
             that the types match, and a proof that the oracle interfaces match.
-            \item \emph{Virtual simulation.} A map $\mathsf{materializeOutput}$ from the
+            \item \emph{Virtual simulation.} A map \(\mathsf{materializeOutput}\) from the
             challenges, the input oracle data and the messages to the output oracle data; a query
-            implementation $\mathsf{simulateOutputQuery}$ answering each output-oracle query by
+            implementation \(\mathsf{simulateOutputQuery}\) answering each output-oracle query by
             queries to the input oracle statements and prover messages; and a proof that, on actual
             data, the simulated answer equals the answer computed from the materialized output.
         \end{itemize}
@@ -266,11 +323,11 @@ of the context, and oracle access to either the shared oracle, or the oracle inp
 
     The conversion works as follows: when the oracle verifier needs to make an oracle query to some data, the converted verifier can respond to this query immediately using the actual underlying data it possesses. This is accomplished through the \texttt{OracleInterface} type class, which specifies for each data type how to respond to queries given the underlying data.
 
-    Specifically, given an oracle verifier $\mathcal{V}_{\text{oracle}}$:
+    Specifically, given an oracle verifier \(\IORVerifier_{\text{oracle}}\):
     \begin{itemize}
-        \item The converted verifier $\mathcal{V}_{\text{oracle}}.\mathsf{toVerifier}$ takes as input both the statement \emph{and} the actual underlying data for all oracle statements
-        \item When $\mathcal{V}_{\text{oracle}}$ attempts to query an oracle statement or prover message, the converted verifier uses the corresponding \texttt{OracleInterface} instance to compute the response from the actual data
-        \item The output oracle statements are the materialized output: in the embedding case, the selected input oracle statements and prover messages; in the virtual case, the value of $\mathsf{materializeOutput}$ on the challenges, input oracle data and messages
+        \item The converted verifier \(\IORVerifier_{\text{oracle}}.\mathsf{toVerifier}\) takes as input both the statement \emph{and} the actual underlying data for all oracle statements
+        \item When \(\IORVerifier_{\text{oracle}}\) attempts to query an oracle statement or prover message, the converted verifier uses the corresponding \texttt{OracleInterface} instance to compute the response from the actual data
+        \item The output oracle statements are the materialized output: in the embedding case, the selected input oracle statements and prover messages; in the virtual case, the value of \(\mathsf{materializeOutput}\) on the challenges, input oracle data and messages
         \item If the oracle verifier rejects, so does the converted verifier
     \end{itemize}
     \lean{OracleVerifier.toVerifier}
@@ -283,13 +340,13 @@ verifier for that type signature.
 
 \begin{definition}[Interactive Reduction]
     \label{def:reduction}
-    An interactive reduction for protocol specification $\pSpec : \ProtocolSpec(n)$ and oracle specification $\oSpec$ consists of:
+    An interactive reduction for protocol specification \(\pSpec : \ProtocolSpec(n)\) and oracle specification \(\oSpec\) consists of:
     \begin{itemize}
-        \item A \textbf{prover} $\mathcal{P} : \Prover(\pSpec, \oSpec, \StmtIn, \WitIn, \StmtOut, \WitOut)$
-        \item A \textbf{verifier} $\mathcal{V} : \Verifier(\pSpec, \oSpec, \StmtIn, \StmtOut)$
+        \item A \textbf{prover} \(\IORProver : \Prover(\pSpec, \oSpec, \StmtIn, \WitIn, \StmtOut, \WitOut)\)
+        \item A \textbf{verifier} \(\IORVerifier : \Verifier(\pSpec, \oSpec, \StmtIn, \StmtOut)\)
     \end{itemize}
 
-    The reduction establishes a relationship between input relations on $(\StmtIn, \WitIn)$ and output relations on $(\StmtOut, \WitOut)$ through the interactive protocol defined by $\pSpec$.
+    The reduction establishes a relationship between input relations on \((\StmtIn, \WitIn)\) and output relations on \((\StmtOut, \WitOut)\) through the interactive protocol defined by \(\pSpec\).
     \lean{Reduction}
     \leanok
     \uses{def:prover, def:verifier}
@@ -297,16 +354,16 @@ verifier for that type signature.
 
 \begin{definition}[Interactive Oracle Reduction]
     \label{def:oracle_reduction}
-    An interactive oracle reduction for protocol specification $\pSpec : \ProtocolSpec(n)$ with oracle interfaces for all prover messages, and oracle specification $\oSpec$, consists of:
+    An interactive oracle reduction for protocol specification \(\pSpec : \ProtocolSpec(n)\) with oracle interfaces for all prover messages, and oracle specification \(\oSpec\), consists of:
     \begin{itemize}
-        \item An \textbf{oracle prover} $\mathcal{P} : \OracleProver(\pSpec, \oSpec, \StmtIn, \WitIn, \StmtOut, \WitOut, \OStmtIn, \OStmtOut)$
-        \item An \textbf{oracle verifier} $\mathcal{V} : \OracleVerifier(\pSpec, \oSpec, \StmtIn, \StmtOut, \OStmtIn, \OStmtOut)$
+        \item An \textbf{oracle prover} \(\IORProver : \OracleProver(\pSpec, \oSpec, \StmtIn, \WitIn, \StmtOut, \WitOut, \OStmtIn, \OStmtOut)\)
+        \item An \textbf{oracle verifier} \(\IORVerifier : \OracleVerifier(\pSpec, \oSpec, \StmtIn, \StmtOut, \OStmtIn, \OStmtOut)\)
     \end{itemize}
 
     where:
     \begin{itemize}
-        \item $\OStmtIn : \iota_{\mathsf{si}} \to \Type$ are the input oracle statement types with oracle interfaces
-        \item $\OStmtOut : \iota_{\mathsf{so}} \to \Type$ are the output oracle statement types
+        \item \(\OStmtIn : \iota_{\mathsf{si}} \to \Type\) are the input oracle statement types with oracle interfaces
+        \item \(\OStmtOut : \iota_{\mathsf{so}} \to \Type\) are the output oracle statement types
     \end{itemize}
 
     The oracle reduction allows the verifier to access prover messages and oracle statements only through specified oracle interfaces, enabling more flexible and composable protocol designs.
@@ -314,6 +371,51 @@ verifier for that type signature.
     \leanok
     \uses{def:oracle_prover, def:oracle_verifier}
 \end{definition}
+
+\subsubsection{Public-Coin Interactive Proofs}
+
+The following is the ordinary interactive-proof specialization of the reduction
+framework: the verifier returns an acceptance bit rather than a new statement.
+
+\begin{definition}[Public-coin IP structure {\cite[Definition~13.1.3]{snarg-book}}]
+\label{def:public_coin_ip_structure}
+\uses{def:prover, def:verifier}
+For input statement \(\Instance\) and witness \(\WitnessValue\), write \(\IPProverMessages=(\IPProverMessage_{\RoundIndex})_{\RoundIndex\in[\IPRoundComplexity]}\) and \(\IPVerifierMessages=(\IPVerifierMessage_{\RoundIndex})_{\RoundIndex\in[\IPRoundComplexity]}\) for the complete prover- and verifier-message tuples in the alternating schedule with \(\IPRoundComplexity\) rounds. An ordinary public-coin IP consists of:
+\begin{itemize}
+\item a round count \(\IPRoundComplexity\);
+\item prover message spaces
+\(\IPProverMessageSpace{\RoundIndex}\) and verifier message spaces
+\(\IPVerifierMessageSpace{\RoundIndex}\) for each round;
+\item a probabilistic, possibly stateful prover transition that produces the next prover
+message from the instance, witness, previous prover state, and previous
+verifier message;
+\item a deterministic verifier predicate
+\(\IPVerifier(\IPVerifierInput)\in\Bits\).
+\end{itemize}
+The public-coin property is represented by sampling verifier messages
+uniformly and independently from their round message spaces.
+The predicate \(\IPVerifier\) is the final decision procedure, not the source
+of these messages. The public-coin view below records the message exchange
+without evaluating that predicate.
+The prover uses private randomness, and the IP has no additional oracle access.
+The Lean specialization uses a Boolean verifier with an empty external-oracle
+interface; an implementation that returns no verifier result is treated as rejecting.
+The general reduction interfaces remain available internally.
+\lean{PublicCoinIP.Verifier}
+\leanok
+\end{definition}
+
+\paragraph{Transcript notation.}
+A full transcript (\Cref{def:transcript}) records both parties'
+messages in protocol order. Let \(\IPProverPositions\) and \(\IPVerifierPositions\) be the prover- and verifier-message
+positions. Write the transcript as \(T=(\IPProverMessages,\IPVerifierMessages)\), where
+\(\IPProverMessages=(\IPProverMessage_i)_{i\in \IPProverPositions}\) and \(\IPVerifierMessages=(\IPVerifierMessage_i)_{i\in \IPVerifierPositions}\) are the prover-
+and verifier-message tuples; the fixed schedule determines their interleaving.
+In the paper's alternating schedule, this is
+\(((\IPProverMessage_1,\IPVerifierMessage_1),\ldots,(\IPProverMessage_{\IPRoundComplexity},\IPVerifierMessage_{\IPRoundComplexity}))\), where \(\IPRoundComplexity\) is the round count.
+The instance \(\Instance\) is separate from \(T\), and recording \(T\) does not require
+running the verifier's final decision procedure. This notation applies whether
+verifier messages are sampled during an interaction or derived from an oracle.
 
 \subsection{Execution Semantics}\label{sec:execution_semantics}
 
@@ -326,22 +428,22 @@ about the execution, such as the log of oracle queries for the shared oracles, f
 
 \begin{definition}[Prover Execution to Round]
     \label{def:prover_run_to_round}
-    The execution of a prover up to round $i : \Fin(n+1)$ is defined inductively:
+    The execution of a prover up to round \(i : \Fin(n+1)\) is defined inductively:
 
-    \[ \mathsf{Prover}.\mathsf{runToRound}(i, \mathsf{stmt}, \mathsf{wit}) := \]
-    \[ \mathsf{Fin}.\mathsf{induction}( \]
-    \[ \quad \mathsf{pure}(\langle \mathsf{default}, \mathsf{prover}.\mathsf{input}(\mathsf{stmt}, \mathsf{wit}) \rangle), \]
-    \[ \quad \mathsf{prover}.\mathsf{processRound}, \]
-    \[ \quad i \]
-    \[ ) \]
+    \begin{equation*} \mathsf{Prover}.\mathsf{runToRound}(i, \mathsf{stmt}, \mathsf{wit}) := \end{equation*}
+    \begin{equation*} \mathsf{Fin}.\mathsf{induction}( \end{equation*}
+    \begin{equation*} \quad \mathsf{pure}(\langle \mathsf{default}, \mathsf{prover}.\mathsf{input}(\mathsf{stmt}, \mathsf{wit}) \rangle), \end{equation*}
+    \begin{equation*} \quad \mathsf{prover}.\mathsf{processRound}, \end{equation*}
+    \begin{equation*} \quad i \end{equation*}
+    \begin{equation*} ) \end{equation*}
 
-    where $\mathsf{processRound}$ handles individual rounds by either:
+    where \(\mathsf{processRound}\) handles individual rounds by either:
     \begin{itemize}
-        \item \textbf{Verifier Challenge} ($\pSpec.\mathsf{dir}(j) = \mathsf{V\_to\_P}$): Query for a challenge and update prover state
-        \item \textbf{Prover Message} ($\pSpec.\mathsf{dir}(j) = \mathsf{P\_to\_V}$): Generate message via $\mathsf{sendMessage}$ and update state
+        \item \textbf{Verifier Challenge} (\(\pSpec.\mathsf{dir}(j) = \mathsf{V\_to\_P}\)): Query for a challenge and update prover state
+        \item \textbf{Prover Message} (\(\pSpec.\mathsf{dir}(j) = \mathsf{P\_to\_V}\)): Generate message via \(\mathsf{sendMessage}\) and update state
     \end{itemize}
 
-    Returns the transcript up to round $i$ and the prover's state after round $i$.
+    Returns the transcript up to round \(i\) and the prover's state after round \(i\).
     \lean{Prover.runToRound, Prover.processRound}
     \leanok
     \uses{def:prover, def:protocol_spec, def:transcript}
@@ -351,11 +453,11 @@ about the execution, such as the log of oracle queries for the shared oracles, f
     \label{def:prover_run}
     The complete execution of a prover is defined as:
 
-    \[ \mathsf{Prover}.\mathsf{run}(\mathsf{stmt}, \mathsf{wit}) := \mathsf{do} \; \{ \]
-    \[ \quad \langle \mathsf{transcript}, \mathsf{state} \rangle \leftarrow \mathsf{prover}.\mathsf{runToRound}(\Fin.\mathsf{last}(n), \mathsf{stmt}, \mathsf{wit}) \]
-    \[ \quad \langle \mathsf{stmtOut}, \mathsf{witOut} \rangle \leftarrow \mathsf{prover}.\mathsf{output}(\mathsf{state}) \]
-    \[ \quad \mathsf{return} \; \langle \mathsf{transcript}, \mathsf{stmtOut}, \mathsf{witOut} \rangle \]
-    \[ \} \]
+    \begin{equation*} \mathsf{Prover}.\mathsf{run}(\mathsf{stmt}, \mathsf{wit}) := \mathsf{do} \; \{ \end{equation*}
+    \begin{equation*} \quad \langle \mathsf{transcript}, \mathsf{state} \rangle \leftarrow \mathsf{prover}.\mathsf{runToRound}(\Fin.\mathsf{last}(n), \mathsf{stmt}, \mathsf{wit}) \end{equation*}
+    \begin{equation*} \quad \langle \mathsf{stmtOut}, \mathsf{witOut} \rangle \leftarrow \mathsf{prover}.\mathsf{output}(\mathsf{state}) \end{equation*}
+    \begin{equation*} \quad \mathsf{return} \; \langle \mathsf{transcript}, \mathsf{stmtOut}, \mathsf{witOut} \rangle \end{equation*}
+    \begin{equation*} \} \end{equation*}
 
     Returns the complete transcript, the output statement and the output witness, as an oracle
     computation that may also query the challenge oracle.
@@ -368,7 +470,7 @@ about the execution, such as the log of oracle queries for the shared oracles, f
     \label{def:verifier_run}
     The execution of a verifier is simply the application of its verification function:
 
-    \[ \mathsf{Verifier}.\mathsf{run}(\mathsf{stmt}, \mathsf{transcript}) := \mathsf{verifier}.\mathsf{verify}(\mathsf{stmt}, \mathsf{transcript}) \]
+    \begin{equation*} \mathsf{Verifier}.\mathsf{run}(\mathsf{stmt}, \mathsf{transcript}) := \mathsf{verifier}.\mathsf{verify}(\mathsf{stmt}, \mathsf{transcript}) \end{equation*}
 
     This takes the input statement and full transcript, and returns the output statement, or
     rejects, via an optional oracle computation.
@@ -381,12 +483,12 @@ about the execution, such as the log of oracle queries for the shared oracles, f
     \label{def:oracle_verifier_run}
     The execution of an oracle verifier is the execution of its converted verifier:
 
-    \[ \mathsf{OracleVerifier}.\mathsf{run}(\mathsf{stmt}, \mathsf{oStmtIn}, \mathsf{transcript}) := \mathsf{verifier}.\mathsf{toVerifier}.\mathsf{run}(\langle \mathsf{stmt}, \mathsf{oStmtIn} \rangle, \mathsf{transcript}) \]
+    \begin{equation*} \mathsf{OracleVerifier}.\mathsf{run}(\mathsf{stmt}, \mathsf{oStmtIn}, \mathsf{transcript}) := \mathsf{verifier}.\mathsf{toVerifier}.\mathsf{run}(\langle \mathsf{stmt}, \mathsf{oStmtIn} \rangle, \mathsf{transcript}) \end{equation*}
 
     It answers queries to the input oracle statements and prover messages from the actual data,
     runs the verification logic, and on acceptance returns the pair of the output statement and
     the materialized output oracle data. Its type is
-    $\mathsf{OptionT}(\OracleComp(\oSpec), \StmtOut \times (\forall i, \OStmtOut(i)))$.
+    \(\mathsf{OptionT}(\OracleComp(\oSpec), \StmtOut \times (\forall i, \OStmtOut(i)))\).
     \lean{OracleVerifier.run}
     \leanok
     \uses{def:oracle_verifier, def:oracle_interface}
@@ -396,11 +498,11 @@ about the execution, such as the log of oracle queries for the shared oracles, f
     \label{def:reduction_run}
     The execution of an interactive reduction consists of running the prover followed by the verifier:
 
-    \[ \mathsf{Reduction}.\mathsf{run}(\mathsf{stmt}, \mathsf{wit}) := \mathsf{do} \; \{ \]
-    \[ \quad \langle \mathsf{transcript}, \mathsf{prvStmtOut}, \mathsf{witOut} \rangle \leftarrow \mathsf{reduction}.\mathsf{prover}.\mathsf{run}(\mathsf{stmt}, \mathsf{wit}) \]
-    \[ \quad \mathsf{stmtOut} \leftarrow \mathsf{reduction}.\mathsf{verifier}.\mathsf{run}(\mathsf{stmt}, \mathsf{transcript}) \]
-    \[ \quad \mathsf{return} \; (\langle \mathsf{transcript}, \mathsf{prvStmtOut}, \mathsf{witOut} \rangle, \mathsf{stmtOut}) \]
-    \[ \} \]
+    \begin{equation*} \mathsf{Reduction}.\mathsf{run}(\mathsf{stmt}, \mathsf{wit}) := \mathsf{do} \; \{ \end{equation*}
+    \begin{equation*} \quad \langle \mathsf{transcript}, \mathsf{prvStmtOut}, \mathsf{witOut} \rangle \leftarrow \mathsf{reduction}.\mathsf{prover}.\mathsf{run}(\mathsf{stmt}, \mathsf{wit}) \end{equation*}
+    \begin{equation*} \quad \mathsf{stmtOut} \leftarrow \mathsf{reduction}.\mathsf{verifier}.\mathsf{run}(\mathsf{stmt}, \mathsf{transcript}) \end{equation*}
+    \begin{equation*} \quad \mathsf{return} \; (\langle \mathsf{transcript}, \mathsf{prvStmtOut}, \mathsf{witOut} \rangle, \mathsf{stmtOut}) \end{equation*}
+    \begin{equation*} \} \end{equation*}
 
     Returns the prover's result (the complete transcript, output statement and output witness)
     and the verifier's output statement. The execution is an optional oracle computation: it fails
@@ -415,16 +517,16 @@ about the execution, such as the log of oracle queries for the shared oracles, f
     The execution of an interactive oracle reduction runs the oracle prover on the statement
     together with the oracle statement data, and then the oracle verifier:
 
-    \[ \mathsf{OracleReduction}.\mathsf{run}(\mathsf{stmt}, \mathsf{oStmt}, \mathsf{wit}) := \mathsf{do} \; \{ \]
-    \[ \quad \langle \mathsf{transcript}, \mathsf{prvStmtOut}, \mathsf{witOut} \rangle \leftarrow \mathsf{reduction}.\mathsf{prover}.\mathsf{run}(\langle \mathsf{stmt}, \mathsf{oStmt} \rangle, \mathsf{wit}) \]
-    \[ \quad \mathsf{stmtOut} \leftarrow \mathsf{reduction}.\mathsf{verifier}.\mathsf{run}(\mathsf{stmt}, \mathsf{oStmt}, \mathsf{transcript}) \]
-    \[ \quad \mathsf{return} \; (\langle \mathsf{transcript}, \mathsf{prvStmtOut}, \mathsf{witOut} \rangle, \mathsf{stmtOut}) \]
-    \[ \} \]
+    \begin{equation*} \mathsf{OracleReduction}.\mathsf{run}(\mathsf{stmt}, \mathsf{oStmt}, \mathsf{wit}) := \mathsf{do} \; \{ \end{equation*}
+    \begin{equation*} \quad \langle \mathsf{transcript}, \mathsf{prvStmtOut}, \mathsf{witOut} \rangle \leftarrow \mathsf{reduction}.\mathsf{prover}.\mathsf{run}(\langle \mathsf{stmt}, \mathsf{oStmt} \rangle, \mathsf{wit}) \end{equation*}
+    \begin{equation*} \quad \mathsf{stmtOut} \leftarrow \mathsf{reduction}.\mathsf{verifier}.\mathsf{run}(\mathsf{stmt}, \mathsf{oStmt}, \mathsf{transcript}) \end{equation*}
+    \begin{equation*} \quad \mathsf{return} \; (\langle \mathsf{transcript}, \mathsf{prvStmtOut}, \mathsf{witOut} \rangle, \mathsf{stmtOut}) \end{equation*}
+    \begin{equation*} \} \end{equation*}
 
-    Here $\mathsf{prvStmtOut}$ and $\mathsf{stmtOut}$ each pair an output statement with output
+    Here \(\mathsf{prvStmtOut}\) and \(\mathsf{stmtOut}\) each pair an output statement with output
     oracle data. The execution fails when the verifier rejects, and it returns no query logs.
 
-    The logged variant $\mathsf{OracleReduction}.\mathsf{runWithLog}$ runs the prover and the
+    The logged variant \(\mathsf{OracleReduction}.\mathsf{runWithLog}\) runs the prover and the
     verifier under the logging oracle. On acceptance it returns the same two components, followed
     by the log of the prover's queries (to the shared oracle and the challenge oracle) and the
     log of the verifier's queries to the shared oracle. Extractors read these logs.
@@ -435,8 +537,9 @@ about the execution, such as the log of oracle queries for the shared oracles, f
 
 \subsection{Security Properties}\label{sec:security}
 
-We can now define properties of interactive reductions. The two main properties we consider in this
-project are completeness and various notions of soundness. Zero-knowledge is not yet formalized.
+We can now define security properties: completeness, various notions of soundness, and zero knowledge.
+
+Each security notion specifies protocol and message spaces, statement and witness spaces, a relation or language, honest algorithms, and any oracle sampling, answering, and programming procedures. In parameterized NARG definitions the public parameters \((\secpar,\InstanceSizeBound)\) may index the oracle model and algorithms; the entire family is fixed before the adversary is chosen. Error bounds display the varying parameters, such as \((\secpar,\InstanceSizeBound,\PublicOracleQueryBound)\). A concrete theorem may fix the model and give a bound depending only on the query or move budget, uniform over all its allowed statements. Such bounds imply their size-restricted specializations.
 
 First, for completeness, this is essentially probabilistic Hoare-style conditions on the execution
 of the oracle reduction (with the honest prover and verifier). In other words, given a predicate on
@@ -444,17 +547,19 @@ the initial context, and a predicate on the final context, we require that if th
 holds, then the final predicate holds with high probability (except for some \emph{completeness}
 error).
 
+\subsubsection{Completeness}
+
 \begin{definition}[Completeness]
     \label{def:completeness}
-    A reduction satisfies \textbf{completeness} with error $\epsilon \geq 0$ and with respect to
-    input relation $R_{\text{in}}$ and output relation $R_{\text{out}}$, if for all valid statement-witness pair
-    $(x_{\text{in}}, w_{\text{in}})$ for $R_{\text{in}}$, the execution between the honest prover and the honest verifier
-    will result in a tuple $((x_{\text{out}}^P, w_{\text{out}}), x_{\text{out}}^V)$ such that:
+    A reduction satisfies \textbf{completeness} with error \(\epsilon \geq 0\) and with respect to
+    input relation \(\InputRelation\) and output relation \(\OutputRelation\), if for all valid statement-witness pair
+    \((\Instance_{\text{in}}, \WitnessValue_{\text{in}})\) for \(\InputRelation\), the execution between the honest prover and the honest verifier
+    will result in a tuple \(((\Instance_{\text{out}}^P, \WitnessValue_{\text{out}}), \Instance_{\text{out}}^V)\) such that:
     \begin{itemize}
-        \item $R_{\text{out}}(x_{\text{out}}^V, w_{\text{out}}) = \text{True}$ (the output statement-witness pair is valid), and
-        \item $x_{\text{out}}^P = x_{\text{out}}^V$ (the output statements are the same from both prover and verifier)
+        \item \(\OutputRelation(\Instance_{\text{out}}^V, \WitnessValue_{\text{out}}) = \text{True}\) (the output statement-witness pair is valid), and
+        \item \(\Instance_{\text{out}}^P = \Instance_{\text{out}}^V\) (the output statements are the same from both prover and verifier)
     \end{itemize}
-    except with probability $\epsilon$.
+    except with probability \(\epsilon\).
     \lean{Reduction.completeness}
     \leanok
     \uses{def:reduction, def:reduction_run}
@@ -462,9 +567,9 @@ error).
 
 \begin{definition}[Perfect Completeness]
     \label{def:perfect_completeness}
-    A reduction satisfies \textbf{perfect completeness} if it satisfies completeness with error $0$.
+    A reduction satisfies \textbf{perfect completeness} if it satisfies completeness with error \(0\).
     This means that the probability of the reduction outputting a valid statement-witness pair is
-    \emph{exactly} 1 (instead of at least $1 - 0$).
+    \emph{exactly} 1 (instead of at least \(1 - 0\)).
     \lean{Reduction.perfectCompleteness}
     \leanok
     \uses{def:completeness}
@@ -481,12 +586,12 @@ For knowledge soundness, we need to consider different types of extractors that 
     \label{def:straightline_extractor}
     A \textbf{straightline extractor} takes in:
     \begin{itemize}
-        \item the initial statement $x_{\text{in}}$,
-        \item the output witness $w_{\text{out}}$,
-        \item the IOR transcript $\tau$,
+        \item the initial statement \(\Instance_{\text{in}}\),
+        \item the output witness \(\WitnessValue_{\text{out}}\),
+        \item the IOR transcript \(\TranscriptValue\),
         \item the query logs from the prover and verifier
     \end{itemize}
-    and returns a corresponding initial witness $w_{\text{in}}$. It runs once, after the
+    and returns a corresponding initial witness \(\WitnessValue_{\text{in}}\). It runs once, after the
     execution, without rewinding the prover. It may query the shared oracle and may fail.
 
     Note that the extractor does not need to take in the output statement, since it can be derived
@@ -512,15 +617,15 @@ For knowledge soundness, we need to consider different types of extractors that 
 
 \begin{definition}[Round-by-Round Extractor]
     \label{def:rbr_extractor}
-    Given intermediate witness types $W_0, \ldots, W_n$, a \textbf{round-by-round extractor}
+    Given intermediate witness types \(W_0, \ldots, W_n\), a \textbf{round-by-round extractor}
     extracts the input witness backward from the output witness, one round at a time. It consists
-    of three functions, each also given the input statement $x_{\text{in}}$:
+    of three functions, each also given the input statement \(\Instance_{\text{in}}\):
     \begin{itemize}
-        \item $\mathsf{extractOut}$ maps a full transcript and an output witness to an
-        intermediate witness in $W_n$;
-        \item $\mathsf{extractMid}$, for each round $m < n$, maps the transcript up to round $m+1$
-        and an intermediate witness in $W_{m+1}$ to one in $W_m$;
-        \item $\mathsf{extractIn}$ maps an intermediate witness in $W_0$ to an input witness.
+        \item \(\mathsf{extractOut}\) maps a full transcript and an output witness to an
+        intermediate witness in \(W_n\);
+        \item \(\mathsf{extractMid}\), for each round \(m < n\), maps the transcript up to round \(m+1\)
+        and an intermediate witness in \(W_{m+1}\) to one in \(W_m\);
+        \item \(\mathsf{extractIn}\) maps an intermediate witness in \(W_0\) to an input witness.
     \end{itemize}
     The extractor reads no query log.
     \lean{Extractor.RoundByRound}
@@ -563,15 +668,15 @@ not yet formalized.
 
 \begin{definition}[Soundness]
     \label{def:soundness}
-    A reduction satisfies \textbf{soundness} with error $\epsilon \geq 0$ and with respect to input
-    language $L_{\text{in}} \subseteq \text{Statement}_{\text{in}}$ and output language $L_{\text{out}} \subseteq \text{Statement}_{\text{out}}$ if:
+    A reduction satisfies \textbf{soundness} with error \(\epsilon \geq 0\) and with respect to input
+    language \(\InputLanguage \subseteq \text{Statement}_{\text{in}}\) and output language \(\OutputLanguage \subseteq \text{Statement}_{\text{out}}\) if:
     \begin{itemize}
         \item for all (malicious) provers with arbitrary types for witness types,
         \item for all arbitrary input witness,
-        \item for all input statement $x_{\text{in}} \notin L_{\text{in}}$,
+        \item for all input statement \(\Instance_{\text{in}} \notin \InputLanguage\),
     \end{itemize}
     the execution between the prover and the honest verifier will result in an output statement
-    $x_{\text{out}} \in L_{\text{out}}$ with probability at most $\epsilon$.
+    \(\Instance_{\text{out}} \in \OutputLanguage\) with probability at most \(\epsilon\).
     \lean{Verifier.soundness}
     \leanok
     \uses{def:verifier, def:prover_run}
@@ -579,20 +684,20 @@ not yet formalized.
 
 \begin{definition}[Knowledge Soundness]
     \label{def:knowledge_soundness}
-    A reduction satisfies \textbf{(straightline) knowledge soundness} with error $\epsilon \geq 0$ and
-    with respect to input relation $R_{\text{in}}$ and output relation $R_{\text{out}}$ if:
+    A reduction satisfies \textbf{(straightline) knowledge soundness} with error \(\epsilon \geq 0\) and
+    with respect to input relation \(\InputRelation\) and output relation \(\OutputRelation\) if:
     \begin{itemize}
-        \item there exists a straightline extractor $E$, such that
-        \item for every input statement $x_{\text{in}}$, every private-input type and private input
-        of the prover, and every (malicious) prover, all chosen after $E$,
-        \item if the execution with the honest verifier results in a pair $(x_{\text{out}}, w_{\text{out}})$,
+        \item there exists a straightline extractor \(E\), such that
+        \item for every input statement \(\Instance_{\text{in}}\), every private-input type and private input
+        of the prover, and every (malicious) prover, all chosen after \(E\),
+        \item if the execution with the honest verifier results in a pair \((\Instance_{\text{out}}, \WitnessValue_{\text{out}})\),
     \end{itemize}
-    then the probability that $(x_{\text{out}}, w_{\text{out}})$ is valid for $R_{\text{out}}$ and yet the extractor fails to produce a witness $w'_{\text{in}}$ such that $(x_{\text{in}}, w'_{\text{in}})$ is valid for $R_{\text{in}}$ is at most $\epsilon$.
+    then the probability that \((\Instance_{\text{out}}, \WitnessValue_{\text{out}})\) is valid for \(\OutputRelation\) and yet the extractor fails to produce a witness \(\WitnessValue'_{\text{in}}\) such that \((\Instance_{\text{in}}, \WitnessValue'_{\text{in}})\) is valid for \(\InputRelation\) is at most \(\epsilon\).
 
     Note that the extractor failing outright (it is a partial computation) counts as a win for the adversary: whenever the prover convinces the verifier, the extractor is obliged to succeed and produce a valid witness. (Excluding extractor failure from the bad event would render the definition vacuous, as the always-failing extractor would satisfy it for any verifier.) In contrast, runs in which the protocol execution itself fails (e.g.\ the verifier aborts) impose no obligation on the extractor, matching the convention for plain soundness.
 
-    The same game for one named extractor $E$ is $\mathsf{knowledgeSoundnessWith}$; knowledge
-    soundness is its existential closure over $E$.
+    The same game for one named extractor \(E\) is \(\mathsf{knowledgeSoundnessWith}\); knowledge
+    soundness is its existential closure over \(E\).
     \lean{Verifier.knowledgeSoundness, Verifier.knowledgeSoundnessWith}
     \leanok
     \uses{def:verifier, def:reduction_run, def:straightline_extractor}
@@ -607,15 +712,15 @@ not yet formalized.
     (\Cref{thm:knowledge_soundness_iff_relation_soundness}). Knowledge soundness in the
     cryptographic sense is the game for a named extractor together with a cost bound for that
     extractor. The measured contract
-    $\mathsf{knowledgeSoundnessWithResources}$ adds this bound: the extractor's run is the
+    \(\mathsf{knowledgeSoundnessWithResources}\) adds this bound: the extractor's run is the
     execution of a named measured program, without querying the shared oracle, and every
     execution path of the program costs at most a stated budget.
 \end{remark}
 
 \begin{theorem}[Unbounded Knowledge Soundness is Relation Soundness]
     \label{thm:knowledge_soundness_iff_relation_soundness}
-    Knowledge soundness with error $\epsilon$ holds if and only if relation soundness with error
-    $\epsilon$ holds, for the same relations.
+    Knowledge soundness with error \(\epsilon\) holds if and only if relation soundness with error
+    \(\epsilon\) holds, for the same relations.
     \lean{Verifier.knowledgeSoundness_iff_relationSoundness}
     \leanok
     \uses{def:knowledge_soundness}
@@ -623,11 +728,11 @@ not yet formalized.
 
 \begin{definition}[Knowledge Soundness with Measured Extraction]
     \label{def:knowledge_soundness_with_resources}
-    For a named straightline extractor $E$, a measured program $M$ and a budget $B$,
-    $\mathsf{knowledgeSoundnessWithResources}$ holds when $E$ satisfies the knowledge game of
-    \Cref{def:knowledge_soundness} with error $\epsilon$, the run of $E$ is the execution of $M$ on
-    its view without querying the shared oracle, and every execution path of $M$ costs at most
-    $B$. The budget counts only the instructions that $M$ declares.
+    For a named straightline extractor \(E\), a measured program \(M\) and a budget \(B\),
+    \(\mathsf{knowledgeSoundnessWithResources}\) holds when \(E\) satisfies the knowledge game of
+    \Cref{def:knowledge_soundness} with error \(\epsilon\), the run of \(E\) is the execution of \(M\) on
+    its view without querying the shared oracle, and every execution path of \(M\) costs at most
+    \(B\). The budget counts only the instructions that \(M\) declares.
     \lean{Verifier.knowledgeSoundnessWithResources}
     \leanok
     \uses{def:knowledge_soundness}
@@ -635,12 +740,12 @@ not yet formalized.
 
 \subsubsection{Round-by-Round Security}
 
-To define round-by-round (knowledge) soundness, we need to define the notion of a \emph{state function}. This is a (possibly inefficient) function $\mathsf{StateF}$ that, for every challenge sent by the verifier, takes in the transcript of the protocol so far and outputs whether the state is doomed or not. Roughly speaking, the requirement of round-by-round soundness is that, for any (possibly malicious) prover $P$, if the state function outputs that the state is doomed on some partial transcript of the protocol, then the verifier will reject with high probability.
+To define round-by-round (knowledge) soundness, we need to define the notion of a \emph{state function}. This is a (possibly inefficient) function \(\mathsf{StateF}\) that, for every challenge sent by the verifier, takes in the transcript of the protocol so far and outputs whether the state is doomed or not. Roughly speaking, the requirement of round-by-round soundness is that, for any (possibly malicious) prover \(P\), if the state function outputs that the state is doomed on some partial transcript of the protocol, then the verifier will reject with high probability.
 
 \begin{definition}[State Function]
     \label{def:state_function}
-    A \textbf{(deterministic) state function} for a verifier, with respect to input language $L_{\text{in}}$ and
-    output language $L_{\text{out}}$, consists of a function that maps partial transcripts to boolean values, satisfying:
+    A \textbf{(deterministic) state function} for a verifier, with respect to input language \(\InputLanguage\) and
+    output language \(\OutputLanguage\), consists of a function that maps partial transcripts to boolean values, satisfying:
     \begin{itemize}
         \item For all input statements not in the language, the state function is false for the empty transcript
         \item If the state function is false for a partial transcript, and the next message is from the
@@ -655,8 +760,8 @@ To define round-by-round (knowledge) soundness, we need to define the notion of 
 
 \begin{definition}[Knowledge State Function]
     \label{def:knowledge_state_function}
-    A \textbf{knowledge state function} for a verifier, with respect to input relation $R_{\text{in}}$, output
-    relation $R_{\text{out}}$, and intermediate witness types, extends the basic state function to track
+    A \textbf{knowledge state function} for a verifier, with respect to input relation \(\InputRelation\), output
+    relation \(\OutputRelation\), and intermediate witness types, extends the basic state function to track
     witness validity throughout the protocol execution. This is used to define round-by-round knowledge soundness.
     \lean{Verifier.KnowledgeStateFunction}
     \leanok
@@ -670,20 +775,20 @@ state restoration, where the adversary chooses the prefix to extend.
 
 \begin{definition}[Round-by-Round Soundness]
     \label{def:round_by_round_soundness}
-    A protocol with verifier $\mathcal{V}$ satisfies \textbf{round-by-round soundness} with respect to input language
-    $L_{\text{in}}$, output language $L_{\text{out}}$, and error function $\epsilon: \text{ChallengeIdx} \to \mathbb{R}_{\geq 0}$ if:
+    A protocol with verifier \(\IORVerifier\) satisfies \textbf{round-by-round soundness} with respect to input language
+    \(\InputLanguage\), output language \(\OutputLanguage\), and error function \(\epsilon: \text{ChallengeIdx} \to \mathbb{R}_{\geq 0}\) if:
     \begin{itemize}
         \item there exists a state function for the verifier and the input/output languages, such that
-        \item for all initial statements $x_{\text{in}} \notin L_{\text{in}}$,
-        \item for all challenge rounds $i$,
-        \item for all transcript prefixes $\tau$ up to round $i$,
+        \item for all initial statements \(\Instance_{\text{in}} \notin \InputLanguage\),
+        \item for all challenge rounds \(i\),
+        \item for all transcript prefixes \(\TranscriptValue\) up to round \(i\),
     \end{itemize}
-    the probability, over the next challenge $c$ chosen uniformly at random, that:
+    the probability, over the next challenge \(c\) chosen uniformly at random, that:
     \begin{itemize}
-        \item the state function is false at $\tau$, and
-        \item the state function is true at $\tau$ extended by $c$
+        \item the state function is false at \(\TranscriptValue\), and
+        \item the state function is true at \(\TranscriptValue\) extended by \(c\)
     \end{itemize}
-    is at most $\epsilon(i)$. This is the formulation of~\cite{CCHLRRW19} and~\cite{ABF26}.
+    is at most \(\epsilon(i)\). This is the formulation of~\cite{CCHLRRW19} and~\cite{ABF26}.
     \lean{Verifier.rbrSoundness}
     \leanok
     \uses{def:verifier, def:state_function}
@@ -691,22 +796,22 @@ state restoration, where the adversary chooses the prefix to extend.
 
 \begin{definition}[Round-by-Round Knowledge Soundness]
     \label{def:round_by_round_knowledge_soundness}
-    A protocol with verifier $\mathcal{V}$ satisfies \textbf{round-by-round knowledge soundness} with respect to input
-    relation $R_{\text{in}}$, output relation $R_{\text{out}}$, and error function $\epsilon: \text{ChallengeIdx} \to \mathbb{R}_{\geq 0}$ if:
+    A protocol with verifier \(\IORVerifier\) satisfies \textbf{round-by-round knowledge soundness} with respect to input
+    relation \(\InputRelation\), output relation \(\OutputRelation\), and error function \(\epsilon: \text{ChallengeIdx} \to \mathbb{R}_{\geq 0}\) if:
     \begin{itemize}
         \item there exist a family of intermediate witness types, a round-by-round extractor, and a
         knowledge state function for the verifier and the input/output relations, such that
         \item for all initial statements,
-        \item for all challenge rounds $i$,
-        \item for all transcript prefixes $\tau$ up to round $i$,
+        \item for all challenge rounds \(i\),
+        \item for all transcript prefixes \(\TranscriptValue\) up to round \(i\),
     \end{itemize}
-    the probability, over the next challenge $c$ chosen uniformly at random, that some
-    intermediate witness $w$ satisfies:
+    the probability, over the next challenge \(c\) chosen uniformly at random, that some
+    intermediate witness \(\WitnessValue\) satisfies:
     \begin{itemize}
-        \item the knowledge state function is true for $w$ at $\tau$ extended by $c$, and
-        \item it is false at $\tau$ for the witness extracted back from $w$
+        \item the knowledge state function is true for \(\WitnessValue\) at \(\TranscriptValue\) extended by \(c\), and
+        \item it is false at \(\TranscriptValue\) for the witness extracted back from \(\WitnessValue\)
     \end{itemize}
-    is at most $\epsilon(i)$. As for round-by-round soundness, the bound holds at every fixed
+    is at most \(\epsilon(i)\). As for round-by-round soundness, the bound holds at every fixed
     transcript prefix. As in \Cref{rem:extraction_cost}, the extractor is unconstrained.
     \lean{Verifier.rbrKnowledgeSoundness}
     \leanok
@@ -715,7 +820,7 @@ state restoration, where the adversary chooses the prefix to extend.
 
 \begin{definition}[Round-by-Round Knowledge Soundness with a Named Extractor]
     \label{def:round_by_round_knowledge_soundness_with}
-    $\mathsf{rbrKnowledgeSoundnessWith}$ is the condition of
+    \(\mathsf{rbrKnowledgeSoundnessWith}\) is the condition of
     \Cref{def:round_by_round_knowledge_soundness} for one given family of intermediate witness
     types, round-by-round extractor and knowledge state function. These objects stay visible in the
     statement, so downstream composition and extraction theorems can name them. Round-by-round
@@ -744,13 +849,13 @@ share every message before the round where their challenges diverge.
 
 \begin{definition}[Tree Special Soundness]
     \label{def:tree_special_soundness}
-    A verifier is \textbf{tree special sound} for a shape $S$ and relations
-    $R_{\text{in}}, R_{\text{out}}$ if there is a tree-based extractor such that, for every input
-    statement and every challenge tree that satisfies $S$ and on which the verifier accepts every
+    A verifier is \textbf{tree special sound} for a shape \(S\) and relations
+    \(\InputRelation, \OutputRelation\) if there is a tree-based extractor such that, for every input
+    statement and every challenge tree that satisfies \(S\) and on which the verifier accepts every
     leaf, the extractor returns a valid input witness from every valid witnessing of the leaves.
-    \emph{$(k_i)$-special soundness} is the instance in which the $k_i$ sibling challenges at
+    \emph{\((k_i)\)-special soundness} is the instance in which the \(k_i\) sibling challenges at
     each round are pairwise distinct. \emph{Coordinate-wise special soundness}~\cite{FMN24} is the
-    instance with arity $\ell_i(k_i - 1) + 1$ and the coordinate-wise sibling condition.
+    instance with arity \(\ell_i(k_i - 1) + 1\) and the coordinate-wise sibling condition.
     \lean{Verifier.treeSpecialSound, Verifier.specialSound, Verifier.coordinateWiseSpecialSound,
       Verifier.coordinateWiseSpecialSoundWith}
     \leanok
@@ -759,8 +864,8 @@ share every message before the round where their challenges diverge.
 
 \begin{theorem}[Coordinate-Wise Special Soundness Generalizes Special Soundness]
     \label{thm:cwss_of_special_sound_iff}
-    For $k_i \geq 2$, coordinate-wise special soundness with one coordinate per round ($\ell_i = 1$)
-    is equivalent to $(k_i)$-special soundness, for the same relations.
+    For \(k_i \geq 2\), coordinate-wise special soundness with one coordinate per round (\(\ell_i = 1\))
+    is equivalent to \((k_i)\)-special soundness, for the same relations.
     \lean{Verifier.coordinateWiseSpecialSound_ofSpecialSound_iff}
     \leanok
     \uses{def:tree_special_soundness}
@@ -790,9 +895,9 @@ verifier runs, so the usual argument does not apply.
 
 \begin{theorem}[RBR Soundness Implies Soundness]
     \label{thm:rbr_soundness_implies_soundness}
-    For a verifier with a guarded form, round-by-round soundness with error function $\epsilon$
-    implies soundness with error $\sum_i \epsilon(i)$, where the sum is over all challenge rounds
-    $i$, for arbitrary shared-oracle state and provers.
+    For a verifier with a guarded form, round-by-round soundness with error function \(\epsilon\)
+    implies soundness with error \(\sum_i \epsilon(i)\), where the sum is over all challenge rounds
+    \(i\), for arbitrary shared-oracle state and provers.
     \lean{Verifier.GuardedForm.soundness_of_rbrSoundness}
     \leanok
     \uses{def:round_by_round_soundness, def:soundness, def:guarded_verifier}
@@ -800,9 +905,9 @@ verifier runs, so the usual argument does not apply.
 
 \begin{theorem}[RBR Knowledge Soundness Implies RBR Soundness]
     \label{thm:rbr_knowledge_soundness_implies_rbr_soundness}
-    Round-by-round knowledge soundness for relations $R_{\text{in}}, R_{\text{out}}$ with error
-    function $\epsilon$ implies round-by-round soundness for the induced languages (the statements
-    that have some valid witness) with the same error function $\epsilon$.
+    Round-by-round knowledge soundness for relations \(\InputRelation, \OutputRelation\) with error
+    function \(\epsilon\) implies round-by-round soundness for the induced languages (the statements
+    that have some valid witness) with the same error function \(\epsilon\).
     \lean{Verifier.rbrKnowledgeSoundness_implies_rbrSoundness}
     \leanok
     \uses{def:round_by_round_knowledge_soundness, def:round_by_round_soundness}
@@ -811,8 +916,8 @@ verifier runs, so the usual argument does not apply.
 \begin{theorem}[RBR Soundness and RBR Knowledge Soundness Coincide]
     \label{thm:rbr_soundness_iff_rbr_knowledge_soundness}
     If the input witness type is nonempty, round-by-round soundness of the induced languages with
-    error function $\epsilon$ is equivalent to round-by-round knowledge soundness with the same
-    $\epsilon$. More precisely, this equivalence holds for all relations and all error functions
+    error function \(\epsilon\) is equivalent to round-by-round knowledge soundness with the same
+    \(\epsilon\). More precisely, this equivalence holds for all relations and all error functions
     if and only if the input witness type is nonempty, or no input statement, full transcript and
     output witness exist together. The condition depends neither on the verifier nor on the error.
     The equivalence uses an unconstrained round-by-round extractor.
@@ -825,8 +930,8 @@ verifier runs, so the usual argument does not apply.
 \begin{theorem}[RBR Knowledge Soundness Implies Knowledge Soundness]
     \label{thm:rbr_knowledge_soundness_implies_knowledge_soundness}
     For a verifier with a guarded form, round-by-round knowledge soundness with error function
-    $\epsilon$ implies knowledge soundness with error $\sum_i \epsilon(i)$, where the sum is over
-    all challenge rounds $i$. The extractor folds the round-by-round extractor backward along the
+    \(\epsilon\) implies knowledge soundness with error \(\sum_i \epsilon(i)\), where the sum is over
+    all challenge rounds \(i\). The extractor folds the round-by-round extractor backward along the
     transcript.
     \lean{Verifier.GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundness}
     \leanok
@@ -852,8 +957,10 @@ verifier runs, so the usual argument does not apply.
     \emph{Honest-verifier} zero-knowledge asks for a simulator whose transcripts, on every valid
     input, are (statistically) indistinguishable from those of the interaction between the honest
     prover and the honest verifier. Full zero-knowledge asks the same against every (malicious)
-    verifier. Neither definition is formalized.
+    verifier. Public-coin honest-verifier zero-knowledge is formalized below (\Cref{def:hvzk}); full interactive zero-knowledge is not.
 \end{remark}
+
+\input{oracle_reductions/security/zero-knowledge}
 
 \subsubsection{Oracle-Specific Security}
 
@@ -908,7 +1015,7 @@ For oracle reductions, the security definitions are analogous to those for stand
 
 State-restoration security is developed in the interaction layer (\texttt{ArkLib/Interaction}),
 which is meant to replace the legacy oracle-reduction layer used in the rest of this chapter. It
-covers a fixed-round public-coin oracle protocol: $k$ rounds, in each
+covers a fixed-round public-coin oracle protocol: \(k\) rounds, in each
 of which the prover sends an oracle message from a finite type and the verifier replies with a
 uniform challenge from a finite nonempty type. In the state-restoration setting the adversary may
 query challenges for any transcript prefix it likes, in any order and repeatedly, before it
@@ -916,15 +1023,15 @@ commits to one transcript.
 
 \begin{definition}[State-Restoration Experiment]
     \label{def:sr_experiment}
-    A \textbf{restoration key} for round $j$ consists of an input, the prover messages of rounds
-    $1, \ldots, j$, and a salt for each of those rounds. Earlier verifier challenges are not part
+    A \textbf{restoration key} for round \(j\) consists of an input, the prover messages of rounds
+    \(1, \ldots, j\), and a salt for each of those rounds. Earlier verifier challenges are not part
     of the key. The challenge oracle answers each key with a challenge of that round, and is
     implemented as a lazily sampled random oracle starting from an empty cache.
 
     A \textbf{state-restoration adversary} is an oracle computation against this challenge oracle
-    that makes at most $Q$ queries in total and returns an input $z$, a prover message and salt
-    for every round, and an output witness $w$. The experiment then completes the selected
-    transcript by querying the same oracle once per round (so at most $Q + k$ queries are made in
+    that makes at most \(Q\) queries in total and returns an input \(z\), a prover message and salt
+    for every round, and an output witness \(\WitnessValue\). The experiment then completes the selected
+    transcript by querying the same oracle once per round (so at most \(Q + k\) queries are made in
     all), and runs the verifier on the completed path. In the closed-oracle variant, the
     verifier returns either a rejection or an oracle claim, whose behavior is observed through the
     accumulated oracle handler of the same path.
@@ -938,14 +1045,14 @@ commits to one transcript.
 
 \begin{definition}[Round-by-Round Knowledge Certificate in the Interaction Layer]
     \label{def:interaction_knowledge_certificate}
-    For an input $z$, an \textbf{interaction-layer round-by-round extractor} assigns to each node of the
+    For an input \(z\), an \textbf{interaction-layer round-by-round extractor} assigns to each node of the
     protocol tree a knowledge state (a witness type with a validity predicate) and a named map
     that transports a later witness one step backward. It is \emph{prover preserving} if prover
     messages cannot make an invalid witness valid under these maps. It is \emph{locally bounded}
-    with error $\epsilon_j$ at round $j$ if, at every authored transcript prefix before a
-    challenge of round $j$, including prefixes of probability zero in an honest run, the
+    with error \(\epsilon_j\) at round \(j\) if, at every authored transcript prefix before a
+    challenge of round \(j\), including prefixes of probability zero in an honest run, the
     probability over the fresh uniform challenge that some later witness is valid while its
-    backward image is invalid is at most $\epsilon_j$. A \emph{knowledge certificate} bundles
+    backward image is invalid is at most \(\epsilon_j\). A \emph{knowledge certificate} bundles
     such an extractor with these two properties; a \emph{measured} certificate adds a budgeted
     program for each extraction stage.
     \lean{Interaction.Oracle.Security.RoundExtractor,
@@ -959,20 +1066,20 @@ commits to one transcript.
 
 \begin{theorem}[State-Restoration Knowledge Soundness]
     \label{thm:sr_knowledge_soundness}
-    Fix a set $Z$ of permitted inputs and an error $\epsilon$. Suppose that, for every $z \in Z$,
-    the interaction-layer round-by-round extractor for $z$ is prover preserving and locally bounded with error
-    $\epsilon$ at every round. Suppose also that its input knowledge state is the input relation
-    $R_{\text{in}}(z, \cdot)$, and that its terminal knowledge state on every completed path is
-    the output relation $R_{\text{out}}$ of the verifier's output on that path, after a named
+    Fix a set \(Z\) of permitted inputs and an error \(\epsilon\). Suppose that, for every \(z \in Z\),
+    the interaction-layer round-by-round extractor for \(z\) is prover preserving and locally bounded with error
+    \(\epsilon\) at every round. Suppose also that its input knowledge state is the input relation
+    \(\InputRelation(z, \cdot)\), and that its terminal knowledge state on every completed path is
+    the output relation \(\OutputRelation\) of the verifier's output on that path, after a named
     equivalence between the adversary's witness type and the terminal witness type.
 
-    Then for every state-restoration adversary making at most $Q$ queries, the probability that
-    the selected input $z$ lies in $Z$, the output witness $w$ is valid for the verifier's actual
-    output, and the input witness extracted backward from $w$ along the completed path is invalid
-    for $R_{\text{in}}(z, \cdot)$, is at most
-    \[
+    Then for every state-restoration adversary making at most \(Q\) queries, the probability that
+    the selected input \(z\) lies in \(Z\), the output witness \(\WitnessValue\) is valid for the verifier's actual
+    output, and the input witness extracted backward from \(\WitnessValue\) along the completed path is invalid
+    for \(\InputRelation(z, \cdot)\), is at most
+    \begin{equation*}
         (Q + k) \cdot \epsilon .
-    \]
+    \end{equation*}
     The extractor is the named backward map, not an existentially chosen witness. The same bound
     holds for the closed-oracle variant, where a rejection is never a valid output, and, with
     private coins of the adversary sampled before the game, for both variants.
@@ -989,19 +1096,19 @@ commits to one transcript.
     which the knowledge state switches from invalid to valid. Its key was queried by the adversary
     or by completion. The key's knowledge state depends only on strictly earlier keys, so
     resampling its answer leaves that state unchanged, and the local bound gives probability at
-    most $\epsilon$ for each of the at most $Q + k$ queries.
+    most \(\epsilon\) for each of the at most \(Q + k\) queries.
 \end{proof}
 
 \begin{theorem}[State-Restoration Knowledge Soundness with Per-Round Errors]
     \label{thm:sr_knowledge_soundness_nonuniform}
     Under the hypotheses of \Cref{thm:sr_knowledge_soundness} for the closed-oracle variant, but
-    with local error $\epsilon_j$ at round $j$, the bound becomes
-    \[
+    with local error \(\epsilon_j\) at round \(j\), the bound becomes
+    \begin{equation*}
         Q \cdot \max_j \epsilon_j + \sum_{j} \epsilon_j .
-    \]
+    \end{equation*}
     For a measured knowledge certificate whose challenge schedule has these errors and whose stage
-    budgets are at most $B$ on every input in $Z$, the same bound holds together with the stage
-    budget $B$ for the same named extractor.
+    budgets are at most \(B\) on every input in \(Z\), the same bound holds together with the stage
+    budget \(B\) for the same named extractor.
     \lean{Interaction.Oracle.Security.StateRestoration.stateRestoration_oracle_knowledge_soundness_nonuniform,
       Interaction.Oracle.Security.MeasuredKnowledgeCertificate.stateRestoration_oracle_knowledge_soundness_nonuniform}
     \leanok
@@ -1009,12 +1116,29 @@ commits to one transcript.
 \end{theorem}
 \begin{proof}
     \leanok
-    Charge each queried key the error of its round. The adversary's at most $Q$ queries cost at
-    most $Q \cdot \max_j \epsilon_j$, and completion queries one key per round, costing
-    $\sum_j \epsilon_j$.
+    Charge each queried key the error of its round. The adversary's at most \(Q\) queries cost at
+    most \(Q \cdot \max_j \epsilon_j\), and completion queries one key per round, costing
+    \(\sum_j \epsilon_j\).
 \end{proof}
 
-The library states state-restoration security only in this knowledge form. The bound concerns the
+The interaction layer states state-restoration security only in this knowledge form. The bound concerns the
 interaction-layer verifier; its transfer to the Fiat--Shamir transform is discussed in
 \Cref{sec:fiat_shamir_security}. \texttt{docs/design/00-current-status.md} records the status of
 the interaction layer.
+
+\subsubsection{Query bounds}
+
+\begin{definition}[Counted prover queries]
+  \label{def:counted_queries}
+An argument prover is \emph{\(\CountedQueryBound\)-query} if it makes at most   \(\CountedQueryBound\) calls to the oracles designated by the experiment in every   execution, for every sequence of oracle replies and private choices; repeated   queries count again. Private coins do not contribute to the count.
+  \lean{nargPublicQuery, Verifier.StateRestoration.isSrChallengeMove}
+  \leanok
+\end{definition}
+
+\subsubsection{Adaptive NARG soundness and knowledge soundness}
+
+\input{oracle_reductions/security/adaptive-narg}
+
+\subsubsection{State-restoration security}
+
+\input{oracle_reductions/security/state-restoration}
