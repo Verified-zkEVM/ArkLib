@@ -568,7 +568,8 @@ home_page/            site assets and assembled website root
   subspace-design theorem), `ExtensionCodes.lean` (extension-field presentations and extension
   codes), `Erasure.lean` (erasure-consistency uniqueness below minimum distance),
   `HammingBallVolume.lean`,
-  `Basic/Entropy.lean` (`qEntropy`). List-size bounds of Johnson type are in
+  `Basic/Entropy.lean` (`qEntropy`), `Basic/ParityCheck.lean` (codes cut out by parity checks and
+  the counts of parity-check tuples). List-size bounds of Johnson type are in
   `JohnsonBound/Family.lean`, alongside the pre-existing `JohnsonBound/Basic.lean` machinery it
   consumes.
 - List-size bounds that are *not* of Johnson type are under `ListDecodability/Bounds/`, with
@@ -576,8 +577,8 @@ home_page/            site assets and assembled website root
   the quantification conventions and the shared reference list. The split is by scope, not by paper:
   `Bounds/Basic.lean` (the three counting identities everything rests on), `Bounds/Linear.lean`
   (bounds valid for every linear code — Elias volume and its entropy form, the rate–radius
-  arithmetic, the generalized Singleton bound, random linear codes, with the [GLMRSW22] proof in
-  `Bounds/RandomLinear/`),
+  arithmetic, the generalized Singleton bound), `Bounds/RandomLinear.lean` (the random-linear-code
+  bound, with the [GLMRSW22] proof in `Bounds/RandomLinear/`),
   `Bounds/LargeAlphabet.lean` (the exponential-alphabet barrier, over the four-file development in
   `Bounds/LargeAlphabet/`: statements and family counting, centres and incidence counting, the local
   neighbourhood bound and pigeonhole barrier, then sparse large-union families and the assembly),
@@ -633,7 +634,9 @@ home_page/            site assets and assembled website root
 - Finite-probability helpers live under the `Probability` namespace in
   `ArkLib/Data/Probability/Instances.lean` (see
   [probability-conventions.md](probability-conventions.md)); the collision bound for random
-  functions is `ArkLib/Data/Probability/Combinatorial.lean`.
+  functions is `ArkLib/Data/Probability/Combinatorial.lean`. Shannon entropy and Chernoff tails for
+  real weights on finite types are `ArkLib/Data/Probability/FiniteEntropy.lean` and
+  `ArkLib/Data/Probability/FiniteChernoff.lean`.
 - Vandermonde matrix utilities shared across Reed-Solomon and proximity-gap developments live in
   `ArkLib/Data/Matrix/Vandermonde.lean`, not in the Reed-Solomon file.
 - Trivariate polynomial utilities used by the BCIKS20 proximity-gap proofs

@@ -82,6 +82,7 @@ public import ArkLib.Data.CodingTheory.Basic.Distance
 public import ArkLib.Data.CodingTheory.Basic.Entropy
 public import ArkLib.Data.CodingTheory.Basic.LinearCode
 public import ArkLib.Data.CodingTheory.Basic.MDSCode
+public import ArkLib.Data.CodingTheory.Basic.ParityCheck
 public import ArkLib.Data.CodingTheory.Basic.RelativeDistance
 public import ArkLib.Data.CodingTheory.BerlekampWelch.BerlekampWelch
 public import ArkLib.Data.CodingTheory.BerlekampWelch.Condition
@@ -255,14 +256,14 @@ public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.LargeAlphabet.Bas
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.LargeAlphabet.Centers
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.LargeAlphabet.Pigeonhole
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Linear
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.BerP
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.Chernoff
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.Defs
-public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.Entropy
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.Main
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.NotRare
-public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.ParityCheck
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.ProductLaw
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.RowOrbit
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.SecondMoment
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.Types
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon
@@ -708,6 +709,8 @@ public import ArkLib.Data.Polynomial.TaylorPrefix
 public import ArkLib.Data.Polynomial.Trivariate
 public import ArkLib.Data.Polynomial.UniversalHenselNumerator
 public import ArkLib.Data.Probability.Combinatorial
+public import ArkLib.Data.Probability.FiniteChernoff
+public import ArkLib.Data.Probability.FiniteEntropy
 public import ArkLib.Data.Probability.Instances
 public import ArkLib.Data.Probability.KoalaBear
 public import ArkLib.Data.Probability.Sequential
@@ -1127,6 +1130,7 @@ public import ArkLib.ToMathlib.LinearAlgebra.LagrangeLine
 public import ArkLib.ToMathlib.LinearAlgebra.LineInjectivity
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.Determinant
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.InvertibleCombination
+public import ArkLib.ToMathlib.LinearAlgebra.Matrix.Pivot
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.PrimitiveKernel
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.Rank
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.RowBasis

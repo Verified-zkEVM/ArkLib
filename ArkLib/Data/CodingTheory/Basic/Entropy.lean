@@ -37,7 +37,7 @@ monotonicity, concavity — transfers through a single division by the positive 
   `CodingTheory.qEntropy_lt_one`.
 * `CodingTheory.qEntropy_nonneg`, `CodingTheory.qEntropy_pos`: sign on `[0, 1]` / `(0, 1)`.
 * `CodingTheory.qEntropy_strictMonoOn`, `CodingTheory.qEntropy_strictAntiOn`: strict
-  monotonicity either side of the maximum at `1 - 1/q`.
+  monotonicity either side of the maximum at `1 - 1/q`; `CodingTheory.qEntropy_monotoneOn`.
 * `CodingTheory.qEntropy_continuous`, `CodingTheory.concaveOn_qEntropy`.
 * `CodingTheory.qEntropy_zero`, `CodingTheory.qEntropy_one`: the endpoints of `[0, 1]`.
 * `CodingTheory.qEntropy_two`, `CodingTheory.qEntropy_two_inv`: the binary case, in bits.
@@ -207,6 +207,10 @@ lemma qEntropy_lt_one (hq : 2 ≤ q) (hx₀ : 0 ≤ x) (hx₁ : x < 1 - 1 / q) :
     rw [sub_nonneg, div_le_one (by positivity)]; exact_mod_cast (by omega : 1 ≤ q)
   rw [← qEntropy_one_sub_inv hq]
   exact qEntropy_strictMonoOn hq ⟨hx₀, hx₁.le⟩ ⟨hm, le_rfl⟩ hx₁
+
+/-- `H_q` is monotone on `[0, 1 - 1/q]`. -/
+lemma qEntropy_monotoneOn (hq : 2 ≤ q) : MonotoneOn (qEntropy q) (Set.Icc 0 (1 - 1 / q)) :=
+  (qEntropy_strictMonoOn hq).monotoneOn
 
 /-- `H_q` is concave on `[0, 1]`, inherited from `Real.strictConcaveOn_qaryEntropy` through
 nonnegative rescaling. This includes `q = 0` and `q = 1`, where the rescaling and hence

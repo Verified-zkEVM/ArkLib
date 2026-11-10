@@ -6,22 +6,20 @@ Authors: XC0R
 module
 
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.ProductLaw
+public import ArkLib.Data.Probability.FiniteChernoff
 
 /-!
-# Chernoff bounds and the plurality decoder
+# The plurality decoder
 
-Exponential-moment tail bounds for a count of coordinates under a product weight, and the error
-probability of the plurality decoder.
+The error probability of the plurality decoder, from the Chernoff tails
+`Probability.prodLaw_count_ge_le` and `Probability.prodLaw_count_le_le`.
 
 ## Main statements
 
-* `CodingTheory.RandomLinearInternal.prodLaw_count_ge_le`: the upper Chernoff tail.
-* `CodingTheory.RandomLinearInternal.prodLaw_count_le_le`: the lower Chernoff tail.
 * `CodingTheory.RandomLinearInternal.law_plurality_err_le`: the plurality decoder recovers `α` from
   `(v_i + w_i α)_{i ∈ J}` with `v ∼ Ber_q(p)^J`, except with probability `q · exp(-|J| κ)`.
 
-For `a ≠ 0`, `kl t a = a * InformationTheory.klFun (t / a)`. It is written out because the tail
-bounds use this form directly. `kl` and `kappa` are noncomputable (`Real.log`). `plurality` is a
+`kappa` is noncomputable (`Real.log`). `plurality` is a
 proof device, not an executable decoder: it takes a maximiser with `Classical.choose`, and any
 maximiser works.
 -/
@@ -30,8 +28,7 @@ maximiser works.
 
 namespace CodingTheory.RandomLinearInternal
 
-/-- The Chernoff exponent `t log(t/a) - t + a`. -/
-noncomputable def kl (t a : ℝ) : ℝ := t * Real.log (t / a) - t + a
+open Probability
 
 /-- The decoder's error exponent. -/
 noncomputable def kappa (q : ℕ) (p : ℝ) : ℝ :=
@@ -43,167 +40,30 @@ noncomputable def plurality {I F : Type} [Field F] [Fintype F] [DecidableEq F]
   Classical.choose (Finset.exists_max_image Finset.univ
     (fun c : F => (Finset.univ.filter (fun i : J => y i = c * w i)).card) Finset.univ_nonempty)
 
-variable {I A : Type} [Fintype I] [DecidableEq I] [Fintype A] [DecidableEq A]
+variable {I : Type} [Fintype I] [DecidableEq I]
 
-omit [DecidableEq A] in
-private theorem sum_prod_mul_eq_prod_sum (b f : I → A → ℝ) :
-    ∑ ω : I → A, ∏ i, (b i (ω i) * f i (ω i)) = ∏ i, ∑ x, b i x * f i x := by
-  rw [Finset.prod_univ_sum]
-  simp [Fintype.piFinset_univ]
+/-- `p < 1 - 1/q` is `p q < q - 1`. -/
+theorem mul_lt_sub_one {q : ℕ} (hq : 2 ≤ q) {p : ℝ} (hp1 : p < 1 - 1 / q) : p * q < q - 1 := by
+  have hq' : (2 : ℝ) ≤ q := by exact_mod_cast hq
+  have := mul_lt_mul_of_pos_right hp1 (by linarith : (0 : ℝ) < q)
+  rw [sub_mul, one_div, inv_mul_cancel₀ (by linarith)] at this
+  linarith
 
-omit [DecidableEq I] [DecidableEq A] in
-private theorem prodLaw_nonneg (b : I → A → ℝ) (hb : ∀ i, IsProb (b i))
-    (ω : I → A) :
-    0 ≤ prodLaw b ω :=
-  Finset.prod_nonneg fun i _ => (hb i).1 _
-
-private theorem sum_prodLaw_mul_exp_count_le (b : I → A → ℝ) (hb : ∀ i, IsProb (b i)) (T : Finset I)
-    (E : I → Finset A) (a : ℝ) (hp : ∀ i ∈ T, ∑ x ∈ E i, b i x = a) (lam : ℝ) :
-    ∑ ω, prodLaw b ω *
-        Real.exp (lam * ((T.filter (fun i => ω i ∈ E i)).card : ℝ)) ≤
-      Real.exp (T.card * (a * (Real.exp lam - 1))) := by
-  set g : I → A → ℝ :=
-      fun i x => Real.exp (lam * if i ∈ T ∧ x ∈ E i then 1 else 0) with hg
-  have h1 : ∀ ω : I → A,
-      prodLaw b ω * Real.exp (lam * ((T.filter (fun i => ω i ∈ E i)).card : ℝ)) =
-        ∏ i, (b i (ω i) * g i (ω i)) := by
-    intro ω
-    have hc : ((T.filter fun i => ω i ∈ E i).card : ℝ) =
-        ∑ i, if i ∈ T ∧ ω i ∈ E i then (1 : ℝ) else 0 := by
-      rw [Finset.sum_boole]
-      congr 2
-      ext i
-      simp
-    rw [Finset.prod_mul_distrib, prodLaw, hc, Finset.mul_sum, Real.exp_sum]
-  simp_rw [h1]
-  rw [sum_prod_mul_eq_prod_sum b g]
-  have h2 : ∀ i, ∑ x, b i x * g i x ≤
-      Real.exp (if i ∈ T then a * (Real.exp lam - 1) else 0) := by
-    intro i
-    by_cases hi : i ∈ T
-    · have e1 : ∀ x, b i x * g i x =
-          b i x + (Real.exp lam - 1) * (if x ∈ E i then b i x else 0) := by
-        intro x
-        by_cases hx : x ∈ E i
-        · simp [hg, hi, hx]; ring
-        · simp [hg, hi, hx]
-      simp_rw [e1]
-      rw [Finset.sum_add_distrib, ← Finset.mul_sum, (hb i).2, Finset.sum_ite_mem,
-        Finset.univ_inter, hp i hi]
-      simp only [hi, ite_true]
-      linarith [Real.add_one_le_exp (a * (Real.exp lam - 1))]
-    · have e1 : ∀ x, b i x * g i x = b i x := by
-        intro x
-        simp [hg, hi]
-      simp_rw [e1]
-      simp [hi, (hb i).2]
-  calc ∏ i, ∑ x, b i x * g i x
-      ≤ ∏ i, Real.exp (if i ∈ T then a * (Real.exp lam - 1) else 0) := by
-        apply Finset.prod_le_prod₀
-        · exact fun i _ =>
-            Finset.sum_nonneg fun x _ => mul_nonneg ((hb i).1 x) (Real.exp_pos _).le
-        · exact fun i _ => h2 i
-    _ = _ := by
-        rw [← Real.exp_sum, ← Finset.sum_filter]
-        simp
-
-private theorem sum_prodLaw_mul_le_exp (b : I → A → ℝ) (hb : ∀ i, IsProb (b i)) (T : Finset I)
-    (E : I → Finset A) (a : ℝ) (hp : ∀ i ∈ T, ∑ x ∈ E i, b i x = a) (t lam : ℝ)
-    (ind : (I → A) → ℝ)
-    (hind : ∀ ω, ind ω ≤
-      Real.exp (lam * (((T.filter (fun i => ω i ∈ E i)).card : ℝ) - t * T.card))) :
-    ∑ ω, prodLaw b ω * ind ω ≤
-      Real.exp (-(lam * t * T.card) + T.card * (a * (Real.exp lam - 1))) := by
-  calc ∑ ω, prodLaw b ω * ind ω
-      ≤ ∑ ω, Real.exp (-(lam * t * T.card)) *
-          (prodLaw b ω * Real.exp (lam * ((T.filter (fun i => ω i ∈ E i)).card : ℝ))) := by
-        refine Finset.sum_le_sum fun ω _ => ?_
-        calc prodLaw b ω * ind ω ≤ prodLaw b ω * Real.exp (lam * (((T.filter
-              (fun i => ω i ∈ E i)).card : ℝ) - t * T.card)) :=
-            mul_le_mul_of_nonneg_left (hind ω) (prodLaw_nonneg b hb ω)
-          _ = _ := by
-            rw [show lam * (((T.filter (fun i => ω i ∈ E i)).card : ℝ) - t * T.card) =
-              -(lam * t * T.card) + lam * ((T.filter (fun i => ω i ∈ E i)).card : ℝ) by ring,
-              Real.exp_add]
-            ring
-    _ = Real.exp (-(lam * t * T.card)) * ∑ ω, prodLaw b ω *
-          Real.exp (lam * ((T.filter (fun i => ω i ∈ E i)).card : ℝ)) := by
-        rw [← Finset.mul_sum]
-    _ ≤ Real.exp (-(lam * t * T.card)) * Real.exp (T.card * (a * (Real.exp lam - 1))) :=
-        mul_le_mul_of_nonneg_left (sum_prodLaw_mul_exp_count_le b hb T E a hp lam)
-          (Real.exp_pos _).le
-    _ = _ := by rw [← Real.exp_add]
-
-/-- Upper Chernoff tail for a count under a product weight. -/
-theorem prodLaw_count_ge_le (b : I → A → ℝ) (hb : ∀ i, IsProb (b i)) (T : Finset I)
-    (E : I → Finset A) (a t : ℝ) (hp : ∀ i ∈ T, ∑ x ∈ E i, b i x = a) (hat : 0 < a)
-    (hta : a < t) :
-    ∑ ω, prodLaw b ω *
-        (if t * T.card ≤ ((T.filter (fun i => ω i ∈ E i)).card : ℝ) then 1 else 0) ≤
-      Real.exp (-(T.card * (t * Real.log (t / a) - t + a))) := by
-  have ht : 0 < t := hat.trans hta
-  have hl : 0 ≤ Real.log (t / a) :=
-    (Real.log_pos ((one_lt_div hat).2 hta)).le
-  refine (sum_prodLaw_mul_le_exp b hb T E a hp t (Real.log (t / a)) _ fun ω => ?_).trans_eq ?_
-  · split_ifs with h
-    · exact Real.one_le_exp (mul_nonneg hl (by linarith))
-    · exact (Real.exp_pos _).le
-  · congr 1
-    rw [Real.exp_log (div_pos ht hat)]
-    have : a * (t / a - 1) = t - a := by field_simp
-    rw [this]
-    ring
-
-/-- Lower Chernoff tail for a count under a product weight. -/
-theorem prodLaw_count_le_le (b : I → A → ℝ) (hb : ∀ i, IsProb (b i)) (T : Finset I)
-    (E : I → Finset A) (a t : ℝ) (hp : ∀ i ∈ T, ∑ x ∈ E i, b i x = a) (ht : 0 < t)
-    (hta : t < a) :
-    ∑ ω, prodLaw b ω *
-        (if ((T.filter (fun i => ω i ∈ E i)).card : ℝ) ≤ t * T.card then 1 else 0) ≤
-      Real.exp (-(T.card * (t * Real.log (t / a) - t + a))) := by
-  have hat : 0 < a := ht.trans hta
-  have hl : Real.log (t / a) ≤ 0 :=
-    (Real.log_neg (div_pos ht hat) ((div_lt_one hat).2 hta)).le
-  refine (sum_prodLaw_mul_le_exp b hb T E a hp t (Real.log (t / a)) _ fun ω => ?_).trans_eq ?_
-  · split_ifs with h
-    · exact Real.one_le_exp (mul_nonneg_of_nonpos_of_nonpos hl (by linarith))
-    · exact (Real.exp_pos _).le
-  · congr 1
-    rw [Real.exp_log (div_pos ht hat)]
-    have : a * (t / a - 1) = t - a := by field_simp
-    rw [this]
-    ring
-
-/-- The Chernoff exponent is positive off the diagonal. -/
-theorem kl_pos {a t : ℝ} (ha : 0 < a) (ht : 0 < t) (h : t ≠ a) :
-    0 < t * Real.log (t / a) - t + a := by
-  have h1 : Real.log (a / t) < a / t - 1 :=
-    Real.log_lt_sub_one_of_pos (div_pos ha ht) (fun h' => h ((div_eq_one_iff_eq ht.ne').1 h').symm)
-  have h2 : Real.log (t / a) = -Real.log (a / t) := by
-    rw [← Real.log_inv, inv_div]
-  have h3 : t * Real.log (a / t) < t * (a / t - 1) := mul_lt_mul_of_pos_left h1 ht
-  have h4 : t * (a / t - 1) = a - t := by field_simp
-  rw [h2]
-  nlinarith
+/-- `p < 1 - 1/q` gives `p / (q - 1) < 1/q`, the weight of a nonzero symbol under `Ber_q(p)`. -/
+theorem div_sub_one_lt_one_div {q : ℕ} (hq : 2 ≤ q) {p : ℝ} (hp1 : p < 1 - 1 / q) :
+    p / ((q : ℝ) - 1) < 1 / q := by
+  have hq' : (2 : ℝ) ≤ q := by exact_mod_cast hq
+  rw [div_lt_div_iff₀ (by linarith) (by linarith)]
+  linarith [mul_lt_sub_one hq hp1]
 
 /-- The decoder's error exponent is positive. -/
 theorem kappa_pos {q : ℕ} (hq : 2 ≤ q) {p : ℝ} (hp0 : 0 < p) (hp1 : p < 1 - 1 / q) :
     0 < kappa q p := by
   have hq' : (2 : ℝ) ≤ q := by exact_mod_cast hq
-  have hq0 : (0 : ℝ) < q := by linarith
-  have hq1 : (0 : ℝ) < (q : ℝ) - 1 := by linarith
-  have hlt : p / ((q : ℝ) - 1) < 1 / q := by
-    rw [div_lt_div_iff₀ hq1 hq0]
-    have : p < 1 - 1 / (q : ℝ) := hp1
-    have h2 : p * q < q - 1 := by
-      have := mul_lt_mul_of_pos_right this hq0
-      rw [sub_mul, one_div, inv_mul_cancel₀ hq0.ne'] at this
-      linarith
-    linarith
+  have hlt := div_sub_one_lt_one_div hq hp1
   have hlt2 : 1 / (q : ℝ) < 1 - p := by linarith
-  refine lt_min (kl_pos (div_pos hp0 hq1) (by positivity) hlt.ne')
-    (kl_pos ?_ (by positivity) hlt2.ne)
-  linarith [hlt2, one_div_pos.2 hq0]
+  exact lt_min (kl_pos (div_pos hp0 (by linarith)) (by positivity) hlt.ne')
+    (kl_pos (by linarith [one_div_pos.2 (by linarith : (0 : ℝ) < q)]) (by positivity) hlt2.ne)
 
 private theorem card_filter_univ_subtype {I : Type} (J : Finset I) (P : I → Prop)
     [DecidablePred P] :
@@ -235,13 +95,7 @@ theorem law_plurality_err_le {F : Type} [Field F] [Fintype F] [DecidableEq F] {q
   have hq' : (2 : ℝ) ≤ q := by exact_mod_cast hq2
   have hq0 : (0 : ℝ) < q := by linarith
   have hq1 : (0 : ℝ) < (q : ℝ) - 1 := by linarith
-  have hlt : p / ((q : ℝ) - 1) < 1 / q := by
-    rw [div_lt_div_iff₀ hq1 hq0]
-    have h2 : p * q < q - 1 := by
-      have := mul_lt_mul_of_pos_right (show p < 1 - 1 / (q : ℝ) from hp1) hq0
-      rw [sub_mul, one_div, inv_mul_cancel₀ hq0.ne'] at this
-      linarith
-    linarith
+  have hlt := div_sub_one_lt_one_div hq2 hp1
   have hlt2 : 1 / (q : ℝ) < 1 - p := by linarith
   have hn : (0 : ℝ) ≤ J.card := Nat.cast_nonneg _
   have hZ := prodLaw_count_le_le b hb J (fun i => ({(0 : F) * w i} : Finset F)) (1 - p) (1 / q)

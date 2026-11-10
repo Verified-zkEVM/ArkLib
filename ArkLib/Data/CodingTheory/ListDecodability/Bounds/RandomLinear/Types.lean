@@ -7,6 +7,7 @@ module
 
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.ProductLaw
 public import Mathlib.Analysis.SpecialFunctions.Stirling
+public import Mathlib.Data.Nat.Choose.Multinomial
 public import Mathlib.GroupTheory.Perm.DomMulAct
 
 /-!
@@ -18,7 +19,9 @@ bad matrix `M₀`. [GLMRSW22], Section 2, sketches this rounding in a remark.
 
 ## Main statements
 
-* `CodingTheory.RandomLinearInternal.rowOrbit_ncard_mul`: `|rowOrbit N| · ∏_b c_b! = n!`.
+* `CodingTheory.RandomLinearInternal.rowOrbit_ncard_mul`: `|rowOrbit N| · ∏_b c_b! = n!`, by
+  orbit–stabilizer; `CodingTheory.RandomLinearInternal.ncard_rowOrbit`: the size is
+  `Nat.multinomial`.
 * `CodingTheory.RandomLinearInternal.factorial_mul_lower`: the entropy lower bound for multinomials.
 * `CodingTheory.RandomLinearInternal.exists_badMatrix`: the columns of `M₀` are independent and lie
   in one Hamming ball of radius `⌊δ n⌋`. Every full-rank image `A M₀` has a large row orbit.
@@ -33,6 +36,7 @@ The key [GLMRSW22] is resolved in the reference list of
 
 namespace CodingTheory.RandomLinearInternal
 
+open Probability
 
 variable {ι : Type} [Fintype ι] [DecidableEq ι]
 
@@ -42,35 +46,26 @@ theorem rowOrbit_ncard_mul {β : Type} [Fintype β] [DecidableEq β] (N : ι →
     (rowOrbit N).ncard * ∏ b, (Fintype.card {j // N j = b}).factorial =
       (Fintype.card ι).factorial := by
   classical
-  set φ : Equiv.Perm ι → (ι → β) := fun σ => N ∘ σ with hφ
-  have h1 : (rowOrbit N).ncard = (Finset.univ.image φ).card := by
-    rw [← Set.ncard_coe_finset]
-    congr 1
-    ext x
-    simp [rowOrbit, φ]
-  have h2 : ∀ x ∈ Finset.univ.image φ, (Finset.univ.filter (fun σ => φ σ = x)).card =
+  have hstab : Nat.card (MulAction.stabilizer (Equiv.Perm ι)ᵈᵐᵃ N) =
       ∏ b, (Fintype.card {j // N j = b}).factorial := by
-    intro x hx
-    obtain ⟨σ₀, -, rfl⟩ := Finset.mem_image.1 hx
-    rw [← DomMulAct.stabilizer_card N, Fintype.card_subtype]
-    refine Finset.card_bij (fun σ _ => σ * σ₀⁻¹) ?_ ?_ ?_
-    · intro σ hσ
-      simp only [Finset.mem_filter, Finset.mem_univ, true_and, φ] at hσ ⊢
-      funext i
-      have := congrFun hσ (σ₀⁻¹ i)
-      simpa using this
-    · intro a _ b _ h
-      simpa using h
-    · intro g hg
-      simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hg
-      refine ⟨g * σ₀, ?_, by simp⟩
-      simp only [Finset.mem_filter, Finset.mem_univ, true_and, φ]
-      funext i
-      have := congrFun hg (σ₀ i)
-      simpa using this
-  have h3 := Finset.card_eq_sum_card_image φ Finset.univ
-  rw [Finset.sum_congr rfl h2, Finset.sum_const, smul_eq_mul] at h3
-  rw [h1, ← Fintype.card_perm, ← Finset.card_univ, h3]
+    rw [← DomMulAct.stabilizer_card N, ← Nat.card_eq_fintype_card]
+    exact Nat.card_congr (Equiv.subtypeEquiv DomMulAct.mk fun _ => by
+      rw [MulAction.mem_stabilizer_iff]; exact Iff.rfl).symm
+  have h := Subgroup.card_mul_index (MulAction.stabilizer (Equiv.Perm ι)ᵈᵐᵃ N)
+  rw [MulAction.index_stabilizer, hstab, Nat.card_congr DomMulAct.mk.symm,
+    Nat.card_eq_fintype_card, Fintype.card_perm] at h
+  rw [← h, mul_comm]
+  rfl
+
+omit [DecidableEq ι] in
+/-- The row orbit of `N` has multinomial size `n! / ∏_b c_b!`. -/
+theorem ncard_rowOrbit {β : Type} [Fintype β] [DecidableEq β] (N : ι → β) :
+    (rowOrbit N).ncard = Nat.multinomial Finset.univ fun b => Fintype.card {j // N j = b} := by
+  have h2 := Nat.multinomial_spec Finset.univ fun b => Fintype.card {j // N j = b}
+  have hsum : ∑ b, Fintype.card {j // N j = b} = Fintype.card ι := by
+    rw [← Fintype.card_sigma]; exact Fintype.card_congr (Equiv.sigmaFiberEquiv N)
+  rw [hsum, ← rowOrbit_ncard_mul N, mul_comm] at h2
+  exact (Nat.eq_of_mul_eq_mul_right (Finset.prod_pos fun _ _ => Nat.factorial_pos _) h2).symm
 
 private theorem factorial_le_exp_mul_pow_div (c n : ℕ) (hc : c ≤ n) :
     (c.factorial : ℝ) ≤ Real.exp 1 * (n + 1) * (((c : ℝ) ^ c) / Real.exp 1 ^ c) := by
@@ -280,56 +275,6 @@ theorem exists_fun_fiber_card {Ω : Type} [Fintype Ω] [DecidableEq Ω] (N : Ω 
   rw [Fintype.card_congr (e2.trans (Equiv.sigmaSubtype ω))]
   simp
 
-/-- Uniform continuity of entropy of push-forwards, with a modulus independent of the spaces. -/
-theorem entQ_pushforward_close (η : ℝ) (hη : 0 < η) :
-    ∃ θ > 0, ∀ {Ω β : Type} [Fintype Ω] [Fintype β] [DecidableEq β] (μ ν : Ω → ℝ),
-      IsProb μ → IsProb ν → ∀ f : Ω → β, (∀ ω, |μ ω - ν ω| ≤ θ / Fintype.card Ω) →
-        |∑ b, Real.negMulLog (law μ f b) - ∑ b, Real.negMulLog (law ν f b)| ≤
-          Fintype.card β * η := by
-  have huc := (isCompact_Icc (a := (0 : ℝ)) (b := 1)).uniformContinuousOn_of_continuous
-    Real.continuous_negMulLog.continuousOn
-  obtain ⟨d, hd, hdist⟩ := Metric.uniformContinuousOn_iff.1 huc η hη
-  refine ⟨d / 2, by positivity, fun {Ω β} _ _ _ μ ν hμ hν f hclose => ?_⟩
-  classical
-  have hΩ : 0 < Fintype.card Ω := by
-    rw [Fintype.card_pos_iff]
-    by_contra h
-    rw [not_nonempty_iff] at h
-    have := hμ.2
-    simp at this
-  have hΩR : (0 : ℝ) < Fintype.card Ω := by exact_mod_cast hΩ
-  have hmem : ∀ (ρ : Ω → ℝ), IsProb ρ → ∀ b, law ρ f b ∈ Set.Icc (0 : ℝ) 1 := by
-    intro ρ hρ b
-    refine ⟨Finset.sum_nonneg fun ω _ => hρ.1 ω, ?_⟩
-    rw [← hρ.2]
-    exact Finset.sum_le_sum_of_subset_of_nonneg (Finset.filter_subset _ _)
-      fun ω _ _ => hρ.1 ω
-  have hlaw : ∀ b, |law μ f b - law ν f b| ≤ d / 2 := by
-    intro b
-    unfold law
-    rw [← Finset.sum_sub_distrib]
-    calc |∑ ω ∈ Finset.univ.filter (fun ω => f ω = b), (μ ω - ν ω)|
-        ≤ ∑ ω ∈ Finset.univ.filter (fun ω => f ω = b), |μ ω - ν ω| :=
-          Finset.abs_sum_le_sum_abs _ _
-      _ ≤ ∑ ω ∈ Finset.univ.filter (fun ω => f ω = b), (d / 2) / Fintype.card Ω :=
-          Finset.sum_le_sum fun ω _ => hclose ω
-      _ ≤ ∑ ω : Ω, (d / 2) / Fintype.card Ω :=
-          Finset.sum_le_sum_of_subset_of_nonneg (Finset.filter_subset _ _)
-            fun _ _ _ => by positivity
-      _ = d / 2 := by
-          rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
-          field_simp
-  rw [← Finset.sum_sub_distrib]
-  calc |∑ b, (Real.negMulLog (law μ f b) - Real.negMulLog (law ν f b))|
-      ≤ ∑ b, |Real.negMulLog (law μ f b) - Real.negMulLog (law ν f b)| :=
-        Finset.abs_sum_le_sum_abs _ _
-    _ ≤ ∑ _b : β, η := Finset.sum_le_sum fun b _ => by
-        have := hdist _ (hmem μ hμ b) _ (hmem ν hν b)
-          (by rw [Real.dist_eq]; linarith [hlaw b])
-        rw [Real.dist_eq] at this
-        exact this.le
-    _ = Fintype.card β * η := by simp
-
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
 private theorem one_sub_inv_mem_Ioo {q : ℕ} (hq : 2 ≤ q) :
@@ -477,8 +422,8 @@ theorem exists_badMatrix (q : ℕ) (hq : 2 ≤ q) (δ : ℝ) (hδ0 : 0 < δ) (h�
     ∃ n₁ : ℕ, ∀ {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
       {F : Type} [Field F] [Fintype F] [DecidableEq F], Fintype.card F = q →
       n₁ ≤ Fintype.card ι → ∃ M₀ : ι → Fin L → F,
-        (∃ z : ι → F, ∀ i, hammingDist (cols M₀ i) z ≤ ⌊δ * Fintype.card ι⌋₊) ∧
-        LinearIndependent F (cols M₀) ∧
+        (∃ z : ι → F, ∀ i, hammingDist (Function.swap M₀ i) z ≤ ⌊δ * Fintype.card ι⌋₊) ∧
+        LinearIndependent F (Function.swap M₀) ∧
         ∀ s : ℕ, 1 ≤ s → ∀ A : Matrix (Fin s) (Fin L) F, LinearIndependent F A →
           (q : ℝ) ^ ((Fintype.card ι : ℝ) *
               (entQ q (badLaw q δ L F) (fun ω => A.mulVec (badRow ω)) - η)) ≤
@@ -513,12 +458,12 @@ theorem exists_badMatrix (q : ℕ) (hq : 2 ≤ q) (δ : ℝ) (hδ0 : 0 < δ) (h�
     rw [hNeq ω hω]; exact Nat.floor_le (mul_nonneg hnR.le (hμ.1 ω))
   refine ⟨fun j => badRow (g j), ⟨fun j => g j none, fun i => ?_⟩, ?_, ?_⟩
   · set S := Finset.univ.filter (fun ω : Option (Fin L) → F => ω (some i) ≠ 0) with hS
-    have h1 : hammingDist (cols (fun j => badRow (g j)) i) (fun j => g j none) =
+    have h1 : hammingDist (Function.swap (fun j => badRow (g j)) i) (fun j => g j none) =
         (Finset.univ.filter fun j => g j ∈ S).card := by
       unfold hammingDist
       congr 1
       ext j
-      simp [cols, badRow, hS]
+      simp [Function.swap, badRow, hS]
     rw [h1, card_filter_mem_eq_sum_card]
     apply Nat.le_floor
     push_cast
@@ -549,7 +494,7 @@ theorem exists_badMatrix (q : ℕ) (hq : 2 ≤ q) (δ : ℝ) (hδ0 : 0 < δ) (h�
     rw [linearIndependent_iff']
     intro s a hs i hi
     have := congrFun hs (j i)
-    simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul, cols, hj, badRow] at this
+    simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul, Function.swap, hj, badRow] at this
     simpa [Pi.single_apply, hi] using this
   · intro s hs A hA
     have hsL : s ≤ L := by

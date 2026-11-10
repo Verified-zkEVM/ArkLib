@@ -5,17 +5,15 @@ Authors: XC0R
 -/
 module
 
-public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.Entropy
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.Defs
 
 /-!
-# Product weights
+# Bernoulli coordinates under product weights
 
-Product weights on `I → A` and the entropy of `q`-ary Bernoulli coordinates.
+The entropy of `q`-ary Bernoulli coordinates under a product weight.
 
 ## Main statements
 
-* `CodingTheory.RandomLinearInternal.entQ_pair_eq_add_of_disjoint`: under a product weight, the
-  entropy is additive on variables that depend on disjoint sets of coordinates.
 * `CodingTheory.RandomLinearInternal.entQ_ber_block`: `d` independent `Ber_q(p)` coordinates have
   entropy `d · H_q(p)`.
 * `CodingTheory.RandomLinearInternal.law_add_smul_ber`: if `w ≠ 0`, then `Ber_q(p) + w · Ber_q(p')`
@@ -26,141 +24,9 @@ Product weights on `I → A` and the entropy of `q`-ary Bernoulli coordinates.
 
 namespace CodingTheory.RandomLinearInternal
 
-variable {I A : Type} [Fintype I] [DecidableEq I] [Fintype A] [DecidableEq A]
-variable {β γ : Type} [Fintype β] [DecidableEq β] [Fintype γ] [DecidableEq γ]
+open Probability
 
-omit [DecidableEq A] [Fintype A] in
-private theorem sum_piFinset_prodLaw (b : I → A → ℝ) (t : I → Finset A) :
-    ∑ ω ∈ Fintype.piFinset t, prodLaw b ω = ∏ i, ∑ a ∈ t i, b i a :=
-  (Finset.prod_univ_sum t fun i a => b i a).symm
-
-omit [DecidableEq A] in
-private theorem sum_prodLaw_mul_eq_split (b : I → A → ℝ) (p : I → Prop) [DecidablePred p]
-    (h : (I → A) → ℝ) :
-    ∑ ω, prodLaw b ω * h ω = ∑ x : ({i // p i} → A) × ({i // ¬p i} → A),
-      ((∏ i : {i // p i}, b i (x.1 i)) * ∏ i : {i // ¬p i}, b i (x.2 i)) *
-        h ((Equiv.piEquivPiSubtypeProd p fun _ => A).symm x) := by
-  rw [← (Equiv.piEquivPiSubtypeProd p fun _ => A).symm.sum_comp]
-  refine Finset.sum_congr rfl fun x _ => ?_
-  congr 1
-  rw [prodLaw, ← Fintype.prod_subtype_mul_prod_subtype p]
-  congr 1
-  · refine Finset.prod_congr rfl fun i _ => ?_
-    simp [Equiv.piEquivPiSubtypeProd_symm_apply, i.2]
-  · refine Finset.prod_congr rfl fun i _ => ?_
-    simp [Equiv.piEquivPiSubtypeProd_symm_apply, i.2]
-
-omit [DecidableEq A] in
-private theorem sum_prod_subtype_eq_one (b : I → A → ℝ) (hb : ∀ i, IsProb (b i)) (p : I → Prop)
-    [DecidablePred p] :
-    ∑ u : {i // p i} → A, ∏ i : {i // p i}, b i (u i) = 1 := by
-  have := Finset.prod_univ_sum (fun _ : {i // p i} => (Finset.univ : Finset A))
-    fun (i : {i // p i}) a => b i a
-  rw [Fintype.piFinset_univ] at this
-  rw [← this]
-  exact Finset.prod_eq_one fun i _ => (hb i).2
-
-omit [DecidableEq A] in
-private theorem sum_prodLaw_mul_mul_of_disjoint (b : I → A → ℝ) (hb : ∀ i, IsProb (b i))
-    {f g : (I → A) → ℝ} {P Q : Set I} (hPQ : Disjoint P Q) (hf : DependsOn f P)
-    (hg : DependsOn g Q) :
-    ∑ ω, prodLaw b ω * (f ω * g ω) =
-      (∑ ω, prodLaw b ω * f ω) * ∑ ω, prodLaw b ω * g ω := by
-  classical
-  rcases isEmpty_or_nonempty (I → A) with hE | ⟨⟨ω0⟩⟩
-  · simp
-  set e := Equiv.piEquivPiSubtypeProd (fun i => i ∈ P) fun _ : I => A with he
-  set f' : ({i // i ∈ P} → A) → ℝ := fun u => f (e.symm (u, (e ω0).2)) with hf'
-  set g' : ({i // ¬ i ∈ P} → A) → ℝ := fun v => g (e.symm ((e ω0).1, v)) with hg'
-  have hf1 : ∀ u v, f (e.symm (u, v)) = f' u := fun u v =>
-    hf fun i hi => by simp [he, Equiv.piEquivPiSubtypeProd_symm_apply, hi]
-  have hg1 : ∀ u v, g (e.symm (u, v)) = g' v := fun u v =>
-    hg fun i hi => by
-      have : i ∉ P := Set.disjoint_right.1 hPQ hi
-      simp [he, Equiv.piEquivPiSubtypeProd_symm_apply, this]
-  rw [sum_prodLaw_mul_eq_split b (· ∈ P), sum_prodLaw_mul_eq_split b (· ∈ P) f,
-    sum_prodLaw_mul_eq_split b (· ∈ P) g]
-  simp only [Fintype.sum_prod_type, ← he, hf1, hg1]
-  have hQ := sum_prod_subtype_eq_one b hb (fun i => ¬ i ∈ P)
-  have hP := sum_prod_subtype_eq_one b hb (fun i => i ∈ P)
-  have h1 : ∀ u : {i // i ∈ P} → A, ∑ v : {i // ¬ i ∈ P} → A,
-      ((∏ i : {i // i ∈ P}, b i (u i)) * ∏ i : {i // ¬ i ∈ P}, b i (v i)) * f' u =
-      (∏ i : {i // i ∈ P}, b i (u i)) * f' u := fun u => by
-    rw [← mul_one ((∏ i : {i // i ∈ P}, b i (u i)) * f' u), ← hQ, Finset.mul_sum]
-    exact Finset.sum_congr rfl fun v _ => by ring
-  have h2 : ∀ u : {i // i ∈ P} → A, ∑ v : {i // ¬ i ∈ P} → A,
-      ((∏ i : {i // i ∈ P}, b i (u i)) * ∏ i : {i // ¬ i ∈ P}, b i (v i)) * g' v =
-      (∏ i : {i // i ∈ P}, b i (u i)) * ∑ v : {i // ¬ i ∈ P} → A,
-        (∏ i : {i // ¬ i ∈ P}, b i (v i)) * g' v := fun u => by
-    rw [Finset.mul_sum]
-    exact Finset.sum_congr rfl fun v _ => by ring
-  simp only [h1, h2]
-  rw [← Finset.sum_mul, hP, one_mul, Finset.sum_mul_sum]
-  exact Finset.sum_congr rfl fun u _ => Finset.sum_congr rfl fun v _ => by ring
-
-omit [DecidableEq A] in
-private theorem law_eq_sum_mul_ite {Ω : Type} [Fintype Ω] {β : Type} [DecidableEq β] (μ : Ω → ℝ)
-    (Y : Ω → β) (y : β) : law μ Y y = ∑ ω, μ ω * if Y ω = y then 1 else 0 := by
-  simp [law, Finset.sum_filter]
-
-omit [DecidableEq A] in
-/-- A product of probability weights is a probability weight. -/
-theorem isProb_prodLaw (b : I → A → ℝ) (hb : ∀ i, IsProb (b i)) : IsProb (prodLaw b) := by
-  refine ⟨fun ω => Finset.prod_nonneg fun i _ => (hb i).1 _, ?_⟩
-  have := sum_piFinset_prodLaw b (fun _ => Finset.univ)
-  simpa [Fintype.piFinset_univ, (hb _).2] using this
-
-omit [DecidableEq A] [Fintype β] [Fintype γ] in
-/-- Variables depending on disjoint coordinate sets are independent under a product weight. -/
-theorem law_pair_eq_mul_of_disjoint (b : I → A → ℝ) (hb : ∀ i, IsProb (b i))
-    {X : (I → A) → β} {Z : (I → A) → γ} {P Q : Set I} (hX : DependsOn X P)
-    (hZ : DependsOn Z Q) (hPQ : Disjoint P Q) (x : β) (z : γ) :
-    law (prodLaw b) (fun ω => (X ω, Z ω)) (x, z) = law (prodLaw b) X x * law (prodLaw b) Z z := by
-  simp only [law_eq_sum_mul_ite]
-  rw [← sum_prodLaw_mul_mul_of_disjoint b hb hPQ (f := fun ω => if X ω = x then 1 else 0)
-    (g := fun ω => if Z ω = z then 1 else 0)
-    (fun u v h => by simp [hX h]) (fun u v h => by simp [hZ h])]
-  refine Finset.sum_congr rfl fun ω _ => ?_
-  by_cases h1 : X ω = x <;> by_cases h2 : Z ω = z <;> simp [h1, h2]
-
-omit [DecidableEq A] in
-/-- Entropy is additive on variables depending on disjoint coordinate sets. -/
-theorem entQ_pair_eq_add_of_disjoint (q : ℕ) (b : I → A → ℝ) (hb : ∀ i, IsProb (b i))
-    {X : (I → A) → β} {Z : (I → A) → γ} {P Q : Set I} (hX : DependsOn X P)
-    (hZ : DependsOn Z Q) (hPQ : Disjoint P Q) :
-    entQ q (prodLaw b) (fun ω => (X ω, Z ω)) =
-      entQ q (prodLaw b) X + entQ q (prodLaw b) Z := by
-  have hμ := isProb_prodLaw b hb
-  have hX1 := sum_law hμ X
-  have hZ1 := sum_law hμ Z
-  have : ∑ p : β × γ, Real.negMulLog (law (prodLaw b) (fun ω => (X ω, Z ω)) p) =
-      ∑ x, Real.negMulLog (law (prodLaw b) X x) +
-        ∑ z, Real.negMulLog (law (prodLaw b) Z z) := by
-    rw [Fintype.sum_prod_type]
-    simp only [law_pair_eq_mul_of_disjoint b hb hX hZ hPQ, Real.negMulLog_mul]
-    simp only [Finset.sum_add_distrib, ← Finset.mul_sum, ← Finset.sum_mul, hX1, hZ1]
-    simp
-  rw [entQ, entQ, entQ, this, add_div]
-
-/-- The law of a coordinate under a product weight is its factor. -/
-theorem law_coord (b : I → A → ℝ) (hb : ∀ i, IsProb (b i)) (i : I) (a : A) :
-    law (prodLaw b) (fun ω => ω i) a = b i a := by
-  have h := sum_piFinset_prodLaw b (fun j => if j = i then {a} else Finset.univ)
-  have hs : Fintype.piFinset (fun j => if j = i then {a} else (Finset.univ : Finset A)) =
-      Finset.univ.filter (fun ω : I → A => ω i = a) := by
-    ext ω
-    simp only [Fintype.mem_piFinset, Finset.mem_filter, Finset.mem_univ, true_and]
-    constructor
-    · intro hω; simpa using hω i
-    · intro hω j
-      by_cases hj : j = i
-      · subst hj; simp [hω]
-      · simp [hj]
-  rw [law, ← hs, h, Finset.prod_eq_single i]
-  · simp
-  · intro j _ hj; simp [hj, (hb j).2]
-  · simp
-
+variable {I : Type} [Fintype I] [DecidableEq I]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F] {q : ℕ}
 
 /-- `Ber_q(t)` sums to one over a field with `q` elements. -/

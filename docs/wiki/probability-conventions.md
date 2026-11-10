@@ -46,10 +46,14 @@ belong upstream in VCVio before their ArkLib consumers are integrated.
 `ArkLib/Data/Probability/Instances.lean` retains specialized mathematical facts about
 Schwartz–Zippel, dot products, and coordinate membership. `Combinatorial.lean` contains the
 collision-to-image-size argument for probability measures on a countable full-mass carrier.
-These mathematical helpers live in `namespace Probability`. `Sequential.lean` averages the error of
-a second computation over the actual output distribution of the first, charging exceptional outputs
-separately and needing no losslessness assumption. `KoalaBear.lean` gives the sextic extension
-`KoalaBear.Ext6` a computable `SampleableType` instance that samples six base-field limbs.
+These mathematical helpers live in `namespace Probability`. `FiniteEntropy.lean` and
+`FiniteChernoff.lean` work with real weights on finite types (`IsProb`, `law`, `prodLaw`): base-`q`
+Shannon entropy with data processing, submodularity and a Fano-type bound, and Chernoff tails for
+counts under product weights. Mathlib and VCVio have no Shannon entropy for these weights.
+`Sequential.lean` averages the error of a second computation over the actual output distribution of
+the first, charging exceptional outputs separately and needing no losslessness assumption.
+`KoalaBear.lean` gives the sextic extension `KoalaBear.Ext6` a computable `SampleableType` instance
+that samples six base-field limbs.
 
 `VCVio.EvalDist.ProbabilityBounds` also supplies
 `prEvent_exists_finset_le_card_mul` for a fixed finite candidate set and

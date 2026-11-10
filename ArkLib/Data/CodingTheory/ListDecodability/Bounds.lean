@@ -9,6 +9,7 @@ public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.KKH26Asymptotic
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.LargeAlphabet
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Linear
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.SubspaceDesign
 
@@ -69,8 +70,9 @@ This file is the umbrella; the statements are in `Bounds/`.
 
 * `Bounds/Basic.lean` — the three counting identities everything else rests on.
 * `Bounds/Linear.lean` — bounds valid for every linear code: Elias volume and its entropy form, the
-  rate–radius arithmetic, the generalized Singleton bound, random linear codes. The random-linear
-  proof is in `Bounds/RandomLinear/`.
+  rate–radius arithmetic, the generalized Singleton bound.
+* `Bounds/RandomLinear.lean` — the random-linear-code lower bound, over the development in
+  `Bounds/RandomLinear/`.
 * `Bounds/LargeAlphabet.lean` — the barrier that attaining the generalized Singleton bound forces an
   exponentially large alphabet, over the four-file development in `Bounds/LargeAlphabet/`.
 * `Bounds/ReedSolomon.lean` — two Reed-Solomon separations, the internal codimension-one lemma, and

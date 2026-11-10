@@ -5,8 +5,9 @@ Authors: XC0R
 -/
 module
 
-public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.ParityCheck
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.RowOrbit
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.Types
+public import ArkLib.Data.Probability.FiniteChernoff
 
 /-!
 # Second moment for one row orbit
@@ -32,23 +33,15 @@ full-rank `A₂` with `s` rows. Such a fiber is small.
 
 namespace CodingTheory.RandomLinearInternal
 
-variable {ι : Type} [Fintype ι] [DecidableEq ι] {F : Type} [Field F] [Fintype F] [DecidableEq F]
+open Probability
 
-/-- Chebyshev in counting form: `#{X = 0} · μ² ≤ Σ (X - μ)²`. -/
-theorem card_zero_mul_sq_le {α : Type} [Fintype α] (X : α → ℝ) (μ : ℝ) :
-    ((Finset.univ.filter (fun a => X a = 0)).card : ℝ) * μ ^ 2 ≤ ∑ a, (X a - μ) ^ 2 := by
-  calc _ = ∑ a ∈ Finset.univ.filter (fun a => X a = 0), (X a - μ) ^ 2 := by
-        rw [Finset.sum_congr rfl (fun a ha => by
-          rw [(Finset.mem_filter.1 ha).2, zero_sub, neg_sq])]
-        simp
-    _ ≤ _ := Finset.sum_le_sum_of_subset_of_nonneg (Finset.filter_subset _ _)
-        (fun _ _ _ => sq_nonneg _)
+variable {ι : Type} [Fintype ι] [DecidableEq ι] {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
 open Classical in
 /-- The number of matrices of the row orbit of `M₀` whose columns lie in `C(H)`. -/
 noncomputable def pcCount {L : ℕ} (M₀ : ι → Fin L → F) (m : ℕ)
     (H : Fin m → Module.Dual F (ι → F)) : ℕ :=
-  ((Set.toFinite (rowOrbit M₀)).toFinset.filter (fun M => ∀ i, cols M i ∈ pcCode m H)).card
+  ((Set.toFinite (rowOrbit M₀)).toFinset.filter (fun M => ∀ i, Function.swap M i ∈ pcCode m H)).card
 
 open Classical in
 omit [DecidableEq ι] [DecidableEq F] in
@@ -61,15 +54,15 @@ private theorem card_filter_le_pcCode [Fintype (Module.Dual F (ι → F))] (m : 
 
 omit [DecidableEq ι] [Fintype ι] [DecidableEq F] [Fintype F] in
 private theorem cols_mem_and_iff_span_le {L : ℕ} (M M' : ι → Fin L → F) (P : Submodule F (ι → F)) :
-    ((∀ i, cols M i ∈ P) ∧ ∀ i, cols M' i ∈ P) ↔
-      Submodule.span F (Set.range (cols M) ∪ Set.range (cols M')) ≤ P := by
+    ((∀ i, Function.swap M i ∈ P) ∧ ∀ i, Function.swap M' i ∈ P) ↔
+      Submodule.span F (Set.range (Function.swap M) ∪ Set.range (Function.swap M')) ≤ P := by
   rw [Submodule.span_le, Set.union_subset_iff, Set.range_subset_iff, Set.range_subset_iff]
   rfl
 
 omit [DecidableEq ι] [DecidableEq F] in
 /-- First moment of `pcCount`. -/
 theorem sum_pcCount [Fintype (Module.Dual F (ι → F))] {L : ℕ} (M₀ : ι → Fin L → F)
-    (hM₀ : LinearIndependent F (cols M₀)) (m : ℕ) :
+    (hM₀ : LinearIndependent F (Function.swap M₀)) (m : ℕ) :
     ∑ H : Fin m → Module.Dual F (ι → F), pcCount M₀ m H =
       (rowOrbit M₀).ncard * Fintype.card F ^ (m * (Fintype.card ι - L)) := by
   classical
@@ -80,7 +73,7 @@ theorem sum_pcCount [Fintype (Module.Dual F (ι → F))] {L : ℕ} (M₀ : ι �
   refine Finset.sum_congr rfl fun M hM => ?_
   have hMo : M ∈ rowOrbit M₀ := (Set.toFinite _).mem_toFinset.1 hM
   have hli := linearIndependent_cols_of_mem_rowOrbit hMo hM₀
-  have hc := card_filter_le_pcCode m (Submodule.span F (Set.range (cols M)))
+  have hc := card_filter_le_pcCode m (Submodule.span F (Set.range (Function.swap M)))
   rw [finrank_span_eq_card hli, Fintype.card_fin] at hc
   rw [← hc, Finset.card_filter]
   refine Finset.sum_congr rfl fun H _ => ?_
@@ -93,7 +86,7 @@ theorem sum_pcCount_sq [Fintype (Module.Dual F (ι → F))] {L : ℕ} (M₀ : ι
     ∑ H : Fin m → Module.Dual F (ι → F), pcCount M₀ m H ^ 2 =
       ∑ M ∈ (Set.toFinite (rowOrbit M₀)).toFinset, ∑ M' ∈ (Set.toFinite (rowOrbit M₀)).toFinset,
         Fintype.card F ^ (m * (Fintype.card ι - Module.finrank F
-          (Submodule.span F (Set.range (cols M) ∪ Set.range (cols M'))))) := by
+          (Submodule.span F (Set.range (Function.swap M) ∪ Set.range (Function.swap M'))))) := by
   classical
   unfold pcCount
   simp_rw [Finset.card_filter, sq, Finset.sum_mul_sum]
@@ -105,21 +98,23 @@ theorem sum_pcCount_sq [Fintype (Module.Dual F (ι → F))] {L : ℕ} (M₀ : ι
   refine Finset.sum_congr rfl fun H _ => ?_
   simp only [← cols_mem_and_iff_span_le, ite_mul, one_mul, zero_mul, ite_and]
 
-
 omit [Fintype ι] [DecidableEq ι] [Fintype F] [DecidableEq F] in
 /-- Rank deficiency `s` of `[M | M']` gives an `s`-dimensional relation with full-rank `A₂`. -/
-theorem exists_relation {L : ℕ} (M M' : ι → Fin L → F) (hM : LinearIndependent F (cols M))
-    (s : ℕ) (hr : Module.finrank F (Submodule.span F (Set.range (cols M) ∪ Set.range (cols M')))
+theorem exists_relation {L : ℕ} (M M' : ι → Fin L → F) (hM : LinearIndependent F (Function.swap M))
+    (s : ℕ) (hr : Module.finrank F
+      (Submodule.span F (Set.range (Function.swap M) ∪ Set.range (Function.swap M')))
       + s ≤ 2 * L) :
     ∃ A₁ A₂ : Matrix (Fin s) (Fin L) F, LinearIndependent F A₂ ∧
       ∀ j, A₂.mulVec (M' j) = -A₁.mulVec (M j) := by
   classical
-  set V := Submodule.span F (Set.range (cols M) ∪ Set.range (cols M')) with hV
+  set V := Submodule.span F (Set.range (Function.swap M) ∪ Set.range (Function.swap M')) with hV
   have : Module.Finite F V := FiniteDimensional.span_of_finite F
     ((Set.finite_range _).union (Set.finite_range _))
   let φ : ((Fin L → F) × (Fin L → F)) →ₗ[F] (ι → F) :=
-    (Fintype.linearCombination F (cols M)).coprod (Fintype.linearCombination F (cols M'))
-  have hφ : ∀ x, φ x = ∑ i, x.1 i • cols M i + ∑ i, x.2 i • cols M' i := fun x => rfl
+    (Fintype.linearCombination F (Function.swap M)).coprod
+      (Fintype.linearCombination F (Function.swap M'))
+  have hφ : ∀ x, φ x = ∑ i, x.1 i • Function.swap M i + ∑ i, x.2 i • Function.swap M' i :=
+    fun x => rfl
   have hrange : LinearMap.range φ ≤ V := by
     rintro _ ⟨x, rfl⟩
     rw [hφ]
@@ -140,7 +135,7 @@ theorem exists_relation {L : ℕ} (M M' : ι → Fin L → F) (hM : LinearIndepe
     rintro ⟨⟨a, b'⟩, hx⟩ h
     have hb' : b' = 0 := h
     subst hb'
-    have hx' : ∑ i, a i • cols M i = 0 := by simpa [hφ] using hx
+    have hx' : ∑ i, a i • Function.swap M i = 0 := by simpa [hφ] using hx
     have := Fintype.linearIndependent_iff.1 hM a hx'
     exact Subtype.ext (Prod.ext (funext this) rfl)
   have hli : LinearIndependent F (fun k : Fin s => g (b (Fin.castLE hs k))) :=
@@ -155,7 +150,7 @@ theorem exists_relation {L : ℕ} (M M' : ι → Fin L → F) (hM : LinearIndepe
   simp only [Pi.add_apply, Finset.sum_apply, Pi.smul_apply, smul_eq_mul, Pi.zero_apply] at this
   simp only [Matrix.mulVec, dotProduct, Matrix.of_apply, Pi.neg_apply, g, LinearMap.comp_apply,
     Submodule.subtype_apply, LinearMap.snd_apply]
-  simp only [cols] at this
+  simp only [Function.swap] at this
   linear_combination this
 
 omit [Fintype ι] [DecidableEq ι] in
@@ -164,12 +159,14 @@ theorem ncard_fiber_rowOrbit_mul_le [Finite ι] {β γ : Type} (M₀ : ι → β
     (N : ι → γ) :
     {M ∈ rowOrbit M₀ | f ∘ M = N}.ncard * (rowOrbit (f ∘ M₀)).ncard ≤ (rowOrbit M₀).ncard := by
   classical
-  have hfin : (rowOrbit M₀).Finite := Set.finite_range _
+  have hfin : (rowOrbit M₀).Finite :=
+    (Set.finite_range fun σ : Equiv.Perm ι => M₀ ∘ σ).subset fun _ hM => mem_rowOrbit.1 hM
   rcases Set.eq_empty_or_nonempty {M ∈ rowOrbit M₀ | f ∘ M = N} with h | ⟨M₁, hM₁o, hM₁⟩
   · simp [h]
-  obtain ⟨σ₁, rfl⟩ := hM₁o
+  obtain ⟨σ₁, rfl⟩ := mem_rowOrbit.1 hM₁o
   have hN : ∀ N' ∈ rowOrbit (f ∘ M₀), ∃ ρ : Equiv.Perm ι, N ∘ ρ = N' := by
-    rintro N' ⟨τ, rfl⟩
+    intro N' hN'
+    obtain ⟨τ, rfl⟩ := mem_rowOrbit.1 hN'
     refine ⟨σ₁⁻¹ * τ, ?_⟩
     rw [← hM₁]
     funext x
@@ -182,8 +179,9 @@ theorem ncard_fiber_rowOrbit_mul_le [Finite ι] {β γ : Type} (M₀ : ι → β
     exact h.choose_spec
   rw [← Set.ncard_prod]
   refine Set.ncard_le_ncard_of_injOn (fun p => p.1 ∘ r p.2) ?_ ?_ hfin
-  · rintro ⟨M, N'⟩ ⟨⟨⟨σ, rfl⟩, -⟩, -⟩
-    exact ⟨σ * r N', by funext x; simp [Function.comp_def]⟩
+  · rintro ⟨M, N'⟩ ⟨⟨hMo, -⟩, -⟩
+    obtain ⟨σ, rfl⟩ := mem_rowOrbit.1 hMo
+    exact mem_rowOrbit.2 ⟨σ * r N', by funext x; simp [Function.comp_def]⟩
   · rintro ⟨M, N'⟩ ⟨⟨hMo, hM⟩, hN'⟩ ⟨M'', N''⟩ ⟨⟨hMo', hM'⟩, hN''⟩ h
     simp only at h hM hM' hN' hN''
     have e1 : N' = N'' := by
@@ -201,7 +199,7 @@ theorem ncard_fiber_rowOrbit_mul_le [Finite ι] {β γ : Type} (M₀ : ι → β
 
 /-- Rank of the joint column span of two matrices. -/
 private noncomputable def jointRank {L : ℕ} (M M' : ι → Fin L → F) : ℕ :=
-  Module.finrank F (Submodule.span F (Set.range (cols M) ∪ Set.range (cols M')))
+  Module.finrank F (Submodule.span F (Set.range (Function.swap M) ∪ Set.range (Function.swap M')))
 
 omit [Fintype ι] [DecidableEq ι] [Fintype F] [DecidableEq F] in
 private theorem jointRank_le {L : ℕ} (M M' : ι → Fin L → F) : jointRank M M' ≤ 2 * L := by
@@ -213,18 +211,26 @@ omit [DecidableEq ι] [Fintype F] [DecidableEq F] in
 private theorem jointRank_le_card {L : ℕ} (M M' : ι → Fin L → F) :
     jointRank M M' ≤ Fintype.card ι := by
   unfold jointRank
-  simpa using Submodule.finrank_le (Submodule.span F (Set.range (cols M) ∪ Set.range (cols M')))
+  simpa using Submodule.finrank_le
+    (Submodule.span F (Set.range (Function.swap M) ∪ Set.range (Function.swap M')))
 
 omit [Fintype ι] [DecidableEq ι] [Fintype F] [DecidableEq F] in
-private theorem le_jointRank {L : ℕ} (M M' : ι → Fin L → F) (hM : LinearIndependent F (cols M)) :
+private theorem le_jointRank {L : ℕ} (M M' : ι → Fin L → F)
+    (hM : LinearIndependent F (Function.swap M)) :
     L ≤ jointRank M M' := by
   unfold jointRank
-  have : Module.Finite F (Submodule.span F (Set.range (cols M) ∪ Set.range (cols M'))) :=
+  have : Module.Finite F
+      (Submodule.span F (Set.range (Function.swap M) ∪ Set.range (Function.swap M'))) :=
     FiniteDimensional.span_of_finite F ((Set.finite_range _).union (Set.finite_range _))
   have h := Submodule.finrank_mono (R := F)
-    (Submodule.span_mono (Set.subset_union_left : Set.range (cols M) ⊆
-      Set.range (cols M) ∪ Set.range (cols M')))
+    (Submodule.span_mono (Set.subset_union_left : Set.range (Function.swap M) ⊆
+      Set.range (Function.swap M) ∪ Set.range (Function.swap M')))
   rwa [finrank_span_eq_card hM, Fintype.card_fin] at h
+
+/-- Every full-rank image `A M₀` with `s ≥ 1` rows has a row orbit of size at least `R q^{m s}`. -/
+def LargeImageOrbits {L : ℕ} (M₀ : ι → Fin L → F) (m : ℕ) (R : ℝ) : Prop :=
+  ∀ s : ℕ, 1 ≤ s → ∀ A : Matrix (Fin s) (Fin L) F, LinearIndependent F A →
+    R * (Fintype.card F : ℝ) ^ (m * s) ≤ (rowOrbit (fun j => A.mulVec (M₀ j))).ncard
 
 omit [DecidableEq ι] in
 private theorem card_fiber_mul_le {L : ℕ} (M₀ : ι → Fin L → F) (R : ℝ) (m s : ℕ)
@@ -250,9 +256,8 @@ private theorem card_fiber_mul_le {L : ℕ} (M₀ : ι → Fin L → F) (R : ℝ
 
 omit [Fintype ι] [DecidableEq ι] [DecidableEq F] in
 private theorem card_jointRank_eq_mul_le [Finite ι] {L : ℕ} (M₀ : ι → Fin L → F)
-    (hM₀ : LinearIndependent F (cols M₀)) (m : ℕ) (R : ℝ) (hR : 0 < R)
-    (hrare : ∀ s : ℕ, 1 ≤ s → ∀ A : Matrix (Fin s) (Fin L) F, LinearIndependent F A →
-      R * (Fintype.card F : ℝ) ^ (m * s) ≤ (rowOrbit (fun j => A.mulVec (M₀ j))).ncard)
+    (hM₀ : LinearIndependent F (Function.swap M₀)) (m : ℕ) (R : ℝ) (hR : 0 < R)
+    (hrare : LargeImageOrbits M₀ m R)
     (s : ℕ) (hs : 1 ≤ s) (M : ι → Fin L → F) (hM : M ∈ rowOrbit M₀) :
     (((Set.toFinite (rowOrbit M₀)).toFinset.filter
         (fun M' => jointRank M M' + s = 2 * L)).card : ℝ) * (R * (Fintype.card F : ℝ) ^ (m * s))
@@ -300,9 +305,8 @@ private theorem card_jointRank_eq_mul_le [Finite ι] {L : ℕ} (M₀ : ι → Fi
 
 omit [Fintype ι] [DecidableEq ι] [DecidableEq F] in
 private theorem sum_sum_jointRank_le [Finite ι] {L : ℕ} (M₀ : ι → Fin L → F)
-    (hM₀ : LinearIndependent F (cols M₀)) (m : ℕ) (R : ℝ) (hR : 0 < R)
-    (hrare : ∀ s : ℕ, 1 ≤ s → ∀ A : Matrix (Fin s) (Fin L) F, LinearIndependent F A →
-      R * (Fintype.card F : ℝ) ^ (m * s) ≤ (rowOrbit (fun j => A.mulVec (M₀ j))).ncard)
+    (hM₀ : LinearIndependent F (Function.swap M₀)) (m : ℕ) (R : ℝ) (hR : 0 < R)
+    (hrare : LargeImageOrbits M₀ m R)
     (c : ℝ) (hc : 0 ≤ c) :
     ∑ M ∈ (Set.toFinite (rowOrbit M₀)).toFinset, ∑ M' ∈ (Set.toFinite (rowOrbit M₀)).toFinset,
         c * ((Fintype.card F : ℝ) ^ (m * (2 * L - jointRank M M')) - 1) ≤
@@ -366,12 +370,11 @@ private theorem sum_sum_jointRank_le [Finite ι] {L : ℕ} (M₀ : ι → Fin L 
 
 omit [DecidableEq ι] [DecidableEq F] in
 /-- Combinatorial second-moment bound: few parity-check matrices avoid the orbit of `M₀`. -/
-theorem card_pc_avoid_le {L : ℕ} (M₀ : ι → Fin L → F) (hM₀ : LinearIndependent F (cols M₀))
+theorem card_pc_avoid_le {L : ℕ} (M₀ : ι → Fin L → F) (hM₀ : LinearIndependent F (Function.swap M₀))
     (m : ℕ) (R : ℝ) (hR : 0 < R)
-    (hrare : ∀ s : ℕ, 1 ≤ s → ∀ A : Matrix (Fin s) (Fin L) F, LinearIndependent F A →
-      R * (Fintype.card F : ℝ) ^ (m * s) ≤ (rowOrbit (fun j => A.mulVec (M₀ j))).ncard) :
+    (hrare : LargeImageOrbits M₀ m R) :
     (Nat.card {H : Fin m → Module.Dual F (ι → F) //
-        ∀ M ∈ rowOrbit M₀, ¬ ∀ i, cols M i ∈ pcCode m H} : ℝ)
+        ∀ M ∈ rowOrbit M₀, ¬ ∀ i, Function.swap M i ∈ pcCode m H} : ℝ)
       ≤ ((L : ℝ) * (Fintype.card F : ℝ) ^ (2 * L ^ 2) / R) *
           (Fintype.card F : ℝ) ^ (Fintype.card ι * m) := by
   classical
@@ -391,7 +394,7 @@ theorem card_pc_avoid_le {L : ℕ} (M₀ : ι → Fin L → F) (hM₀ : LinearIn
     rw [Set.ncard_eq_toFinset_card _ (Set.toFinite _)]
   -- the bad set
   have hbad : (Nat.card {H : Fin m → Module.Dual F (ι → F) //
-        ∀ M ∈ rowOrbit M₀, ¬ ∀ i, cols M i ∈ pcCode m H} : ℝ) =
+        ∀ M ∈ rowOrbit M₀, ¬ ∀ i, Function.swap M i ∈ pcCode m H} : ℝ) =
       ((Finset.univ.filter (fun H : Fin m → Module.Dual F (ι → F) =>
         (pcCount M₀ m H : ℝ) = 0)).card : ℝ) := by
     rw [Nat.card_eq_fintype_card, Fintype.card_subtype]

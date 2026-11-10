@@ -8,7 +8,9 @@ source_metadata: ../sources/GLMRSW22/metadata.yml
 status: seeded
 related_modules:
   - ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean
-  - ArkLib/Data/CodingTheory/ListDecodability/Bounds/Linear.lean
+  - ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear.lean
+  - ArkLib/Data/CodingTheory/Basic/ParityCheck.lean
+  - ArkLib/Data/Probability/FiniteEntropy.lean
   - ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear/Main.lean
   - ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear/NotRare.lean
   - ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear/BerP.lean
@@ -31,7 +33,7 @@ that for `ε ∈ (0, ε_{p,q,δ})` and `n` large, a random linear code of rate `
 ## Main ArkLib Touchpoints
 
 `random_linear_lambda_lower` in
-[Bounds/Linear.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/Linear.lean), with the
+[Bounds/RandomLinear.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear.lean), with the
 derived existence form `random_linear_lambda_lower_exists`. Both are proved. The proof is in
 [Bounds/RandomLinear/](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear):
 
@@ -49,8 +51,11 @@ derived existence form `random_linear_lambda_lower_exists`. Both are proved. The
 subspace of `F_q^n` of certain dimension." ArkLib has no distribution over linear codes, so the
 `1 − q^{−Ω(n)}` conclusion is carried in the equivalent finite **counting** form over
 `{C | finrank C = k}` — which is therefore the source's probability exactly, not an approximation.
-(Its §1.2 working model is the kernel of a uniformly random parity-check matrix, the same distribution
-conditioned on full rank, by `GL_n`-invariance.)
+Its §1.2 working model is the code of a uniformly random parity-check tuple. The proof transfers
+from that model to uniform subspaces by counting: every code of dimension `n - m` has the same
+number of independent tuples (`card_fiber_pcCode`), at least half of all tuples are independent
+(`card_linIndep_ge`), so the fraction of bad codes is at most twice the fraction of bad tuples
+(`ncard_subspace_le_of_pc`).
 
 **Endpoint corrected to the primary source.** This paper defines `(p, L)`-list-decodable with a
 *strict* inequality, `|{c ∈ C : δ(c,z) ≤ p}| < L`, so "not `(p, ⌊·⌋)`-list-decodable" is

@@ -5,31 +5,39 @@ Authors: XC0R
 -/
 module
 
-public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.Defs
+public import Mathlib.Basic.Real.Basic
+public import Mathlib.Data.Set.Card
+public import Mathlib.FieldTheory.Finiteness
+public import Mathlib.LinearAlgebra.Dual.Lemmas
 public import Mathlib.LinearAlgebra.Matrix.GeneralLinearGroup.Card
 
 /-!
-# Parity-check model of random linear codes
+# Codes cut out by parity checks
 
-Counts of parity-check matrices, and the transfer from uniform parity-check matrices to uniform
-`k`-dimensional subspaces.
+The code `pcCode m H` of `m` parity checks `H : Fin m → Module.Dual F (ι → F)`, and counts of
+parity-check tuples over a finite field.
 
 ## Main statements
 
-* `CodingTheory.RandomLinearInternal.card_pc_contains`: `#{H | V ≤ C(H)} = q^{m (n - dim V)}`.
-* `CodingTheory.RandomLinearInternal.ncard_subspace_le_of_pc`: the fraction of `k`-dimensional codes
-  with a property is at most twice the fraction of parity-check matrices whose code has it.
-* `CodingTheory.RandomLinearInternal.lambda_ge_of_contains`: a code that contains `L` independent
-  words in one Hamming ball of radius `⌊δ n⌋` has `Λ ≥ L`.
+* `CodingTheory.card_pc_contains`: `#{H | V ≤ pcCode m H} = q^{m (n - dim V)}`.
+* `CodingTheory.finrank_pcCode`: independent parity checks cut out a code of dimension `n - m`.
+* `CodingTheory.card_fiber_pcCode`: every `(n - m)`-dimensional code has the same number of
+  independent parity-check tuples.
+* `CodingTheory.card_linIndep_ge`: at least half of all parity-check tuples are independent.
+* `CodingTheory.ncard_subspace_le_of_pc`: the fraction of `k`-dimensional codes with a property is
+  at most twice the fraction of parity-check tuples whose code has it.
 -/
 
 @[expose] public section
 
-namespace CodingTheory.RandomLinearInternal
+namespace CodingTheory
 
-open Code
+/-- The code cut out by `m` parity checks. -/
+def pcCode {ι F : Type*} [Field F] (m : ℕ) (H : Fin m → Module.Dual F (ι → F)) :
+    Submodule F (ι → F) :=
+  ⨅ i, LinearMap.ker (H i)
 
-variable {ι : Type} [Fintype ι] [DecidableEq ι] {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {ι : Type*} [Fintype ι] [DecidableEq ι] {F : Type*} [Field F] [Fintype F] [DecidableEq F]
 
 omit [Fintype ι] [DecidableEq ι] [Fintype F] [DecidableEq F] in
 private theorem pcCode_eq_dualCoannihilator (m : ℕ) (H : Fin m → Module.Dual F (ι → F)) :
@@ -82,7 +90,7 @@ theorem finrank_pcCode {m : ℕ} (H : Fin m → Module.Dual F (ι → F)) (hH : 
   omega
 
 omit [Fintype ι] [DecidableEq ι] [Fintype F] [DecidableEq F] in
-private theorem linearIndependent_subtype_coe_iff {V : Type} [AddCommGroup V] [Module F V]
+private theorem linearIndependent_subtype_coe_iff {V : Type*} [AddCommGroup V] [Module F V]
     (W : Submodule F V)
     {m : ℕ} (s : Fin m → W) :
     LinearIndependent F s ↔ LinearIndependent F (fun i => (s i : V)) :=
@@ -108,7 +116,7 @@ private theorem pcCode_eq_of_dualAnnihilator [Finite ι] {m : ℕ} (C : Submodul
   rw [pcCode_eq_dualCoannihilator, heq, Subspace.dualAnnihilator_dualCoannihilator_eq]
 
 omit [DecidableEq ι] [DecidableEq F] in
-/-- Every `(n-m)`-dimensional code has the same number of independent parity-check matrices. -/
+/-- Every `(n-m)`-dimensional code has the same number of independent parity-check tuples. -/
 theorem card_fiber_pcCode (m : ℕ) (C : Submodule F (ι → F))
     (hC : Module.finrank F C + m = Fintype.card ι) :
     Nat.card {H : Fin m → Module.Dual F (ι → F) // LinearIndependent F H ∧ pcCode m H = C} =
@@ -151,7 +159,7 @@ private theorem pow_mul_le_prod_range (q n : ℕ) (hq : 1 ≤ q) (j : ℕ) (hj :
     nlinarith [this, h2]
 
 omit [DecidableEq ι] [DecidableEq F] in
-/-- At least half of all parity-check matrices are linearly independent when `k ≥ 1`. -/
+/-- At least half of all parity-check tuples are linearly independent when `k ≥ 1`. -/
 theorem card_linIndep_ge (k m : ℕ) (hk : 1 ≤ k) (hkm : k + m = Fintype.card ι) :
     Fintype.card F ^ (Fintype.card ι * m) ≤
       2 * Nat.card {H : Fin m → Module.Dual F (ι → F) // LinearIndependent F H} := by
@@ -218,7 +226,7 @@ private theorem card_linIndep_pc_eq (Q : Submodule F (ι → F) → Prop) (k m :
 
 omit [DecidableEq ι] [DecidableEq F] in
 /-- Transfer: the fraction of `k`-dimensional codes with property `P` is at most twice the
-fraction of parity-check matrices whose code has `P`. -/
+fraction of parity-check tuples whose code has `P`. -/
 theorem ncard_subspace_le_of_pc (P : Submodule F (ι → F) → Prop) (k m : ℕ)
     (hkm : k + m = Fintype.card ι) (hk : 1 ≤ k) :
     ({C : Submodule F (ι → F) | Module.finrank F C = k ∧ P C}.ncard : ℝ) ≤
@@ -267,41 +275,4 @@ theorem ncard_subspace_le_of_pc (P : Submodule F (ι → F) → Prop) (k m : ℕ
   rw [this, le_div_iff₀ hQ]
   exact h5
 
-omit [DecidableEq ι] [Fintype F] in
-/-- A code containing `L` independent words in one ball of radius `⌊δ n⌋` has `Λ ≥ L`. -/
-theorem lambda_ge_of_contains (δ : ℝ) (hδ : 0 ≤ δ) {L : ℕ} (C : Submodule F (ι → F))
-    (M : ι → Fin L → F) (hM : LinearIndependent F (cols M)) (hC : ∀ i, cols M i ∈ C)
-    (z : ι → F) (hz : ∀ i, hammingDist (cols M i) z ≤ ⌊δ * Fintype.card ι⌋₊) :
-    ((L : ℕ) : ℕ∞) ≤ Code.Lambda (C : Set (ι → F)) δ := by
-  have hsub : Set.range (cols M) ⊆ closeCodewordsRel (C : Set (ι → F)) z δ := by
-    rintro _ ⟨i, rfl⟩
-    rw [closeCodewordsRel_eq_setOf _ δ hδ]
-    exact ⟨hC i, hz i⟩
-  have h := encard_le_Lambda_of_subset_closeCodewordsRel hsub
-  rwa [hM.injective.encard_range, ENat.card_eq_coe_fintype_card,
-    Fintype.card_fin] at h
-
-omit [Field F] [DecidableEq ι] [Fintype F] in
-/-- Closeness of the columns to a common centre is invariant under row permutation. -/
-theorem exists_center_of_mem_rowOrbit {L : ℕ} {M₀ M : ι → Fin L → F} (hM : M ∈ rowOrbit M₀)
-    (r : ℕ) (z : ι → F) (hz : ∀ i, hammingDist (cols M₀ i) z ≤ r) :
-    ∃ z' : ι → F, ∀ i, hammingDist (cols M i) z' ≤ r := by
-  obtain ⟨σ, rfl⟩ := hM
-  refine ⟨z ∘ σ, fun i => ?_⟩
-  have : cols (M₀ ∘ σ) i = cols M₀ i ∘ σ := rfl
-  rw [this]
-  refine le_trans (le_of_eq ?_) (hz i)
-  exact Finset.card_equiv σ (by simp)
-
-omit [Fintype ι] [DecidableEq ι] [Fintype F] [DecidableEq F] in
-/-- Column independence is invariant under row permutation. -/
-theorem linearIndependent_cols_of_mem_rowOrbit {L : ℕ} {M₀ M : ι → Fin L → F}
-    (hM : M ∈ rowOrbit M₀) (h : LinearIndependent F (cols M₀)) :
-    LinearIndependent F (cols M) := by
-  obtain ⟨σ, rfl⟩ := hM
-  have hker : LinearMap.ker (LinearMap.funLeft F F σ) = ⊥ := by
-    rw [LinearMap.ker_eq_bot]
-    exact fun a b hab => funext fun x => by simpa using congrFun hab (σ.symm x)
-  exact h.map' _ hker
-
-end CodingTheory.RandomLinearInternal
+end CodingTheory

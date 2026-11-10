@@ -291,10 +291,10 @@ guard `k ≤ ringChar F` for degree-`< k` messages.
     of them — Theorem 3.4 at [CZ25] Theorem B.5's `(k−1)`-level premise, which makes Corollary 3.5,
     the two `η`-forms, and the univariate-multiplicity sibling axiom-clean along with it; and
     Theorem 3.10, whose consequence `large_alphabet_card_ge_exp_of_inv_length` is axiom-clean with
-    it. The internal codimension-one Reed-Solomon interpolation lemma is also axiom-clean.
+    it; and Theorem 3.11 with its existence form `random_linear_lambda_lower_exists`. The internal
+    codimension-one Reed-Solomon interpolation lemma is also axiom-clean.
     Six of these landed from one round of Aleph prover runs (ArkLib #724–#728, #732).
-  - Admitted with the source statement in the docstring: Theorem 3.6, Theorem 3.11, Theorem 3.12.
-    `random_linear_lambda_lower_exists` is *derived* from Theorem 3.11, so it inherits that admit.
+  - Admitted with the source statement in the docstring: Theorem 3.6, Theorem 3.12.
   - **§3 numbering follows the tex, not the cached PDF.** The cached [ABF26] build stops at Theorem
     3.14 and numbers the [CW07] barrier 3.15; the tex inserts the [KKH26] asymptotic Reed-Solomon
     lower bound as **Theorem 3.15** and pushes [CW07] to **3.16**. Theorem 3.15 is now derived from

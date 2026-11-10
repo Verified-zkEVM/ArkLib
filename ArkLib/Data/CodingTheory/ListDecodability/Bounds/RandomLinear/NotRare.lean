@@ -6,6 +6,7 @@ Authors: XC0R
 module
 
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.BerP
+public import ArkLib.ToMathlib.LinearAlgebra.Matrix.Pivot
 
 /-!
 # The bad distribution is not implicitly rare
@@ -31,6 +32,7 @@ The key [GLMRSW22] is resolved in the reference list of
 
 namespace CodingTheory.RandomLinearInternal
 
+open Probability
 
 /-- Block decomposition: lower bound for coordinates `r ∈ T` mixed with the `α`-coordinates `αs`,
 given the bound `hβ` of `CodingTheory.RandomLinearInternal.entQ_add_mul_ber_lower` for the product
@@ -38,12 +40,9 @@ weight `b`. -/
 theorem block_entropy_lower {I F : Type} [Fintype I] [DecidableEq I] [Field F] [Fintype F]
     [DecidableEq F] {q : ℕ} (hq : 2 ≤ q) (hF : Fintype.card F = q) (p : ℝ) (L : ℕ) (β₀ : ℝ)
     (b : I → F → ℝ) (hb : ∀ i, IsProb (b i))
-    (hβ : ∀ (J : Finset I) (a : I), a ∉ J → (∀ i ∈ J, b i = ber q p) →
-      (∃ p', p ≤ p' ∧ p' ≤ 1 - 1 / q ∧ b a = ber q p') → J.card ≤ L →
-      ∀ w : I → F, (∀ i ∈ J, w i ≠ 0) →
-        (J.card : ℝ) * β₀ ≤ entQ q (prodLaw b) (fun ω (i : J) => ω i + w i * ω a))
+    (hβ : BlockEntropyBound q p L β₀ b)
     (V αs : Finset I) (hd : Disjoint V αs) (hV : ∀ i ∈ V, b i = ber q p)
-    (hα : ∀ a ∈ αs, ∃ p', p ≤ p' ∧ p' ≤ 1 - 1 / q ∧ b a = ber q p')
+    (hα : ∀ a ∈ αs, BerAtLeast q p (b a))
     (W : I → I → F) (T : Finset I) (hT : T ⊆ V) (hcov : ∀ r ∈ T, ∃ a ∈ αs, W r a ≠ 0)
     (hTL : T.card ≤ L) :
     (T.card : ℝ) * β₀ ≤
@@ -63,7 +62,7 @@ theorem block_entropy_lower {I F : Type} [Fintype I] [DecidableEq I] [Field F] [
   | insert a αs haαs ih =>
     have haV : a ∉ V := fun h => Finset.disjoint_left.1 hd h (Finset.mem_insert_self _ _)
     have hd' : Disjoint V αs := hd.mono_right (Finset.subset_insert _ _)
-    have hα' : ∀ a ∈ αs, ∃ p', p ≤ p' ∧ p' ≤ 1 - 1 / q ∧ b a = ber q p' :=
+    have hα' : ∀ a ∈ αs, BerAtLeast q p (b a) :=
       fun a' h => hα a' (Finset.mem_insert_of_mem h)
     set J := T.filter (fun r => W r a ≠ 0) with hJ
     set T' := T.filter (fun r => ¬ W r a ≠ 0) with hT'
@@ -150,30 +149,6 @@ theorem block_entropy_lower {I F : Type} [Fintype I] [DecidableEq I] [Field F] [
     rw [← hfg]
     linarith [hpeel, ih', hβJ]
 
-/-- Gaussian elimination to pivot form `B A = [I | W]` (up to a column embedding `S`). -/
-theorem exists_mul_eq_pivot {F : Type} [Field F] {s L : ℕ} (A : Matrix (Fin s) (Fin L) F)
-    (hA : LinearIndependent F A) :
-    ∃ (S : Fin s ↪ Fin L) (B : Matrix (Fin s) (Fin s) F), IsUnit B.det ∧
-      ∀ r r', (B * A) r (S r') = if r = r' then 1 else 0 := by
-  classical
-  obtain ⟨κ, a, ha, hsp, hli⟩ := exists_linearIndependent' F A.col
-  have hrank : A.rank = s := by simpa using hA.rank_matrix
-  have h1 : Module.finrank F (Submodule.span F (Set.range A.col)) = s := by
-    rw [← Matrix.rank_eq_finrank_span_cols]; exact hrank
-  have : Fintype κ := Fintype.ofInjective a ha
-  have h2 := finrank_span_eq_card hli
-  rw [hsp, h1] at h2
-  let e : Fin s ≃ κ := (Fintype.equivFinOfCardEq h2.symm).symm
-  let S : Fin s ↪ Fin L := ⟨a ∘ e, ha.comp e.injective⟩
-  let N : Matrix (Fin s) (Fin s) F := A.submatrix id S
-  have hN : IsUnit N := by
-    rw [← Matrix.linearIndependent_col_iff_isUnit]
-    exact hli.comp e e.injective
-  have hdet : IsUnit N.det := (Matrix.isUnit_iff_isUnit_det N).1 hN
-  refine ⟨S, N⁻¹, Matrix.isUnit_nonsing_inv_det _ hdet, fun r r' => ?_⟩
-  have : (N⁻¹ * A) r (S r') = (N⁻¹ * N) r r' := by simp [Matrix.mul_apply, N]
-  rw [this, Matrix.nonsing_inv_mul _ hdet, Matrix.one_apply]
-
 /-- For every `δ' > 0` there is `L₀` such that for all `L ≥ L₀` and every `s × L` matrix `A`
 with independent rows (`s ≥ 1`), `H_q(A (u + α · 1_L)) ≥ s (H_q(p) + H_q(p)/(L + δ'))`
 under `badLaw q p L F`. -/
@@ -189,7 +164,7 @@ theorem entQ_badLaw_mulVec_lower (q : ℕ) (hq : 2 ≤ q) (p : ℝ) (hp0 : 0 < p
   refine ⟨L₀, fun L hL F _ _ _ hF s hs A hA => ?_⟩
   have hq1 : 1 < q := by omega
   have hp1' : p ≤ 1 - 1 / (q : ℝ) := hp1.le
-  obtain ⟨S, B, hB, hBA⟩ := exists_mul_eq_pivot A hA
+  obtain ⟨S, B, hB, hBA⟩ := Matrix.exists_mul_eq_pivot A hA
   let b : Option (Fin L) → F → ℝ := fun o => ber q (o.elim (1 - 1 / (q : ℝ)) (fun _ => p))
   have hb : ∀ o, IsProb (b o) := by
     intro o
@@ -198,12 +173,7 @@ theorem entQ_badLaw_mulVec_lower (q : ℕ) (hq : 2 ≤ q) (p : ℝ) (hp0 : 0 < p
     | none => exact isProb_ber (t := 1 - 1 / (q : ℝ)) hq hF (hp0.le.trans hp1.le) (by linarith)
     | some j => exact isProb_ber (t := p) hq hF hp0.le (by linarith)
   have hμ : IsProb (badLaw q p L F) := isProb_prodLaw b hb
-  have hβ : ∀ (J : Finset (Option (Fin L))) (a : Option (Fin L)), a ∉ J →
-      (∀ i ∈ J, b i = ber q p) → (∃ p', p ≤ p' ∧ p' ≤ 1 - 1 / (q : ℝ) ∧ b a = ber q p') →
-      J.card ≤ L → ∀ w : Option (Fin L) → F, (∀ i ∈ J, w i ≠ 0) →
-      (J.card : ℝ) * (qEntropy q p + qEntropy q p / ((L : ℝ) + δ')) ≤
-        entQ q (prodLaw b) (fun ω (i : J) => ω i + w i * ω a) :=
-    fun J a haJ hJ ha hJL w hw => hL₀ L hL hF b hb J a haJ hJ ha hJL w hw
+  have hβ := hL₀ L hL hF b hb
   let A' : Matrix (Fin s) (Fin L) F := B * A
   let e : Fin s → Option (Fin L) := fun r => some (S r)
   have he : Function.Injective e := fun r r' h => S.injective (Option.some_injective _ h)

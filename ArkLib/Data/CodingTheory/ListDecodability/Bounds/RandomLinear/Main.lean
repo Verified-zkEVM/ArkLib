@@ -32,6 +32,8 @@ The key [GLMRSW22] is resolved in the reference list of
 
 namespace CodingTheory.RandomLinearInternal
 
+open Probability
+
 open Code
 
 /-- With `h = H_q(δ)` and `γ = min (h/(L₀+1)) ((1-h)/2)`, every rate `ρ ∈ (1 - h - γ, 1 - h)` is
@@ -177,8 +179,7 @@ theorem random_linear_contains_list (q : ℕ) (hq : 2 ≤ q) (δ : ℝ) (hδ0 : 
     rw [hRdef]
     have := Real.rpow_pos_of_pos hq0 (3 * c₀ * Fintype.card ι)
     positivity
-  have hrare : ∀ s : ℕ, 1 ≤ s → ∀ A : Matrix (Fin s) (Fin L) F, LinearIndependent F A →
-      R * (Fintype.card F : ℝ) ^ (m * s) ≤ (rowOrbit (fun j => A.mulVec (M₀ j))).ncard := by
+  have hrare : LargeImageOrbits M₀ m R := by
     intro s hs A hA
     have h1 := horb s hs A hA
     have h2 := hent hF s hs A hA
@@ -208,7 +209,7 @@ theorem random_linear_contains_list (q : ℕ) (hq : 2 ≤ q) (δ : ℝ) (hδ0 : 
   have hsub : Nat.card {H : Fin m → Module.Dual F (ι → F) //
       Code.Lambda ((pcCode m H : Submodule F (ι → F)) : Set (ι → F)) δ < ((L : ℕ) : ℕ∞)} ≤
       Nat.card {H : Fin m → Module.Dual F (ι → F) //
-        ∀ M ∈ rowOrbit M₀, ¬ ∀ i, cols M i ∈ pcCode m H} := by
+        ∀ M ∈ rowOrbit M₀, ¬ ∀ i, Function.swap M i ∈ pcCode m H} := by
     refine Nat.card_le_card_of_injective (fun H => ⟨H.1, ?_⟩) ?_
     · intro M hM hall
       obtain ⟨z', hz'⟩ := exists_center_of_mem_rowOrbit hM _ z hz
