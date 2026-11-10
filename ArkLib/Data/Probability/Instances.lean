@@ -291,36 +291,4 @@ theorem prob_uniform_pi_mem_finset_le
       ((A.card : ℝ≥0∞) / Fintype.card ι) ^ t :=
   le_of_eq (prob_uniform_pi_mem_finset_eq A t)
 
-/-! ## Double counting -/
-
-open Classical in
-/-- **Double counting for uniform events.** Let `t` be a finite set and `k` a natural number.
-If every sample `x` with `bad x` satisfies `rel l x` for at least `k` elements `l ∈ t`, then
-`k · Pr[bad] ≤ ∑ l ∈ t, Pr[rel l]` for a uniformly random sample. -/
-theorem natCast_mul_prob_le_sum_prob_of_le_card_filter
-    {S L : Type} [SampleableType S]
-    (t : Finset L) (bad : S → Prop) (rel : L → S → Prop) (k : ℕ)
-    (h : ∀ x, bad x → k ≤ (t.filter fun l ↦ rel l x).card) :
-    (k : ℝ≥0∞) * Pr{let x ← $ᵗ S}[bad x] ≤
-      ∑ l ∈ t, Pr{let x ← $ᵗ S}[rel l x] := by
-  classical
-  have := Fintype.ofFinite S
-  have hc : k * (Finset.univ.filter bad).card ≤
-      ∑ l ∈ t, (Finset.univ.filter (rel l)).card := by
-    calc
-      k * (Finset.univ.filter bad).card =
-          ∑ x ∈ Finset.univ.filter bad, k := by simp [Nat.mul_comm]
-      _ ≤ ∑ x ∈ Finset.univ.filter bad, (t.filter fun l ↦ rel l x).card :=
-        Finset.sum_le_sum fun x hx ↦ h x (Finset.mem_filter.mp hx).2
-      _ ≤ ∑ x : S, (t.filter fun l ↦ rel l x).card :=
-        Finset.sum_le_sum_of_subset_of_nonneg (Finset.filter_subset _ _) (by intros; omega)
-      _ = ∑ l ∈ t, (Finset.univ.filter (rel l)).card := by
-        simp only [Finset.card_filter]
-        exact Finset.sum_comm
-  simp_rw [SampleableType.prEvent_uniformSample]
-  simp only [div_eq_mul_inv]
-  rw [← Finset.sum_mul, ← mul_assoc]
-  gcongr
-  exact_mod_cast hc
-
 end Probability

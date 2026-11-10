@@ -49,11 +49,12 @@ collision-to-image-size argument for probability measures on a countable full-ma
 These mathematical helpers live in `namespace Probability`. `FiniteEntropy.lean` and
 `FiniteChernoff.lean` work with real weights on finite types (`IsProb`, `law`, `prodLaw`): base-`q`
 Shannon entropy with data processing, submodularity and a Fano-type bound, and Chernoff tails for
-counts under product weights. Mathlib and VCVio have no Shannon entropy for these weights.
-`Sequential.lean` averages the error of a second computation over the actual output distribution of
-the first, charging exceptional outputs separately and needing no losslessness assumption.
-`KoalaBear.lean` gives the sextic extension `KoalaBear.Ext6` a computable `SampleableType` instance
-that samples six base-field limbs.
+counts under product weights. Mathlib and VCVio have no Shannon entropy for these weights. To
+average the error of a second computation over the actual output distribution of the first,
+charging exceptional outputs separately and needing no losslessness assumption, use VCVio's
+`prEvent_bind_le_prEvent_add_lintegral_ae` (`VCVio.EvalDist.Monad.Disagreement.Measure`), or
+`OracleRuntime.run_bind_success_le` and its variants for resumed runtime runs. `KoalaBear.lean` gives the sextic extension
+`KoalaBear.Ext6` a computable `SampleableType` instance that samples six base-field limbs.
 
 `VCVio.EvalDist.ProbabilityBounds` also supplies
 `prEvent_exists_finset_le_card_mul` for a fixed finite candidate set and

@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Oracle.Claim
+public import ArkLib.Relation.Basic
 
 /-!
 # Universal constraint system abstraction
