@@ -530,6 +530,7 @@ public import ArkLib.Data.Domain.FftDomain.Ops
 public import ArkLib.Data.Domain.FftDomain.Subdomain
 public import ArkLib.Data.Domain.FftDomain.ToSubgroup
 public import ArkLib.Data.EllipticCurve.BN254
+public import ArkLib.Data.Encoding.Serializer
 public import ArkLib.Data.Equiv.FiberCycle
 public import ArkLib.Data.FieldTheory.BinaryTrace
 public import ArkLib.Data.Fin.Basic
@@ -554,6 +555,10 @@ public import ArkLib.Data.Finset.WeightedSimplex.Moments
 public import ArkLib.Data.Finset.WeightedSimplex.RankIntegral
 public import ArkLib.Data.Finset.WeightedSimplex.Variance
 public import ArkLib.Data.GroupTheory.PrimeOrder
+public import ArkLib.Data.Hash.DuplexSponge
+public import ArkLib.Data.Hash.DuplexSponge.CapacityInitialization
+public import ArkLib.Data.Hash.DuplexSponge.Deterministic
+public import ArkLib.Data.Hash.DuplexSponge.Initialization
 public import ArkLib.Data.Hash.Poseidon2
 public import ArkLib.Data.Lattices.CyclotomicRing.Core
 public import ArkLib.Data.Lattices.CyclotomicRing.Core.Basic
@@ -768,6 +773,7 @@ public import ArkLib.InteractiveProof.Soundness
 public import ArkLib.InteractiveProof.StateRestorationSoundness
 public import ArkLib.InteractiveProof.ZeroKnowledge
 public import ArkLib.NonInteractiveArgument.Legacy
+public import ArkLib.NonInteractiveArgument.Legacy.Serialization
 public import ArkLib.NonInteractiveArgument.NARG
 public import ArkLib.NonInteractiveArgument.ZeroKnowledge
 public import ArkLib.OracleReduction.BCS.Basic
@@ -798,8 +804,38 @@ public import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
 public import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
 public import ArkLib.OracleReduction.Equiv
 public import ArkLib.OracleReduction.Execution
+public import ArkLib.OracleReduction.Execution.NonInteractive
+public import ArkLib.OracleReduction.Execution.Transcript
 public import ArkLib.OracleReduction.FiatShamir.Basic
+public import ArkLib.OracleReduction.FiatShamir.Canonical
+public import ArkLib.OracleReduction.FiatShamir.Canonical.Completeness
+public import ArkLib.OracleReduction.FiatShamir.Canonical.Ordinary
+public import ArkLib.OracleReduction.FiatShamir.Canonical.RandomOracleCompleteness
 public import ArkLib.OracleReduction.FiatShamir.Completeness
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Defs
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Execution
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Execution.LazySampling
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.InitialObject
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.InitialObject.Execution
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Nondegeneracy
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.QueryBounds
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Completeness
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.Completeness
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.Execution
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.MessageLaw
+public import
+  ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.ZeroKnowledge.SaltAbsorption
+public import
+  ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.ZeroKnowledge.SaltForest
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Salted
+public import ArkLib.OracleReduction.FiatShamir.Protocol
+public import ArkLib.OracleReduction.FiatShamir.Protocol.Canonical
+public import ArkLib.OracleReduction.FiatShamir.Protocol.CanonicalCompleteness
+public import ArkLib.OracleReduction.FiatShamir.Protocol.DuplexSponge
+public import ArkLib.OracleReduction.FiatShamir.Protocol.ReductionCompleteness
+public import ArkLib.OracleReduction.FiatShamir.Protocol.Serialization
+public import ArkLib.OracleReduction.FiatShamir.Protocol.SerializationSecurity
 public import ArkLib.OracleReduction.LiftContext.Lens
 public import ArkLib.OracleReduction.LiftContext.OracleReduction
 public import ArkLib.OracleReduction.LiftContext.Purity
@@ -1102,6 +1138,7 @@ public import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
 public import ArkLib.Relation.Basic
 public import ArkLib.Security.Game
 public import ArkLib.Security.PrivateCoins
+public import ArkLib.ToCompPoly.HasSize
 public import ArkLib.ToCompPoly.Multilinear.Basic
 public import ArkLib.ToCompPoly.Multilinear.NestedEvaluationTree
 public import ArkLib.ToCompPoly.Multivariate.Eval
@@ -1242,3 +1279,5 @@ public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.PrincipalOpen
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.PrincipalOpenParametrization
 public import ArkLib.ToMathlib.RingTheory.Radical.Representative
 public import ArkLib.ToMathlib.Set.Finite
+public import ArkLib.VCVioStaging.OracleComp.Constructions.RandomPermutation.Basic
+public import ArkLib.VCVioStaging.OracleComp.SimSemantics.OptionT

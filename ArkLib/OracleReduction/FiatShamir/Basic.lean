@@ -1,34 +1,24 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao
+Authors: Quang Dao, Chung Thai Nguyen
 -/
 module
 
 public import ArkLib.OracleReduction.Security.Basic
+public import ArkLib.OracleReduction.Security.OracleSampling
 
 /-!
-  # The Basic Fiat-Shamir Transformation
+# Shared Fiat-Shamir round execution
 
-  This file defines the basic Fiat-Shamir transformation. This transformation takes in a
-  (public-coin) interactive reduction (IR) `R` and transforms it into a non-interactive reduction in
-  the following way:
-  - Each verifier's challenge, instead of being sent from the verifier, will be obtained from a
-    Fiat-Shamir oracle, which for the `i`-th challenge requires the input statement and all messages
-    up to round `i`
+These helpers execute the state-restoration round schedule. The public transformation,
+`fiatShamirSalted`, is defined in `Canonical.lean`. The core `fiatShamir` compiler in this
+module keys each verifier-message query by its input statement and preceding prover messages.
+Statements, witnesses and interactive message types are unchanged by that transformation.
 
-  This is the _basic_ (or slow) version, as opposed to the more efficient duplex-sponge version,
-  which is not formalized here.
+## References
 
-  We will show that the transformation satisfies security properties as follows:
-
-  - Completeness is preserved
-  - State-restoration (knowledge) soundness implies (knowledge) soundness
-  - Honest-verifier zero-knowledge implies zero-knowledge
-
-  ## Notes
-
-  Our formalization mostly follows the treatment in the Chiesa-Yogev textbook.
+* [Chiesa, A. and Orrù, M., *A Fiat-Shamir Transformation From Duplex Sponges*][CO25]
 -/
 
 @[expose] public section
@@ -37,19 +27,7 @@ universe u v
 
 section find_home
 
-variable {n : ℕ} {σ τ : Type u} {m : Type u → Type v} [Monad m]
-
-/-- Traverse a dependent function indexed by `Fin n` in any monad. -/
-def Fin.traverseM {β : Fin n → Type u}
-    (f : (i : Fin n) → m (β i)) : m ((i : Fin n) → β i) :=
-  let rec aux (k : ℕ) (h : k ≤ n) : m ((i : Fin k) → β (Fin.castLE h i)) :=
-    match k with
-    | 0 => pure (fun i => i.elim0)
-    | k' + 1 => do
-      let tail ← aux k' (Nat.le_of_succ_le h)
-      let head ← f (Fin.castLE h (Fin.last k'))
-      return (Fin.snoc tail head)
-  aux n (le_refl n)
+variable {σ τ : Type u} {m : Type u → Type v} [Monad m]
 
 instance : MonadLift (StateT σ m) (StateT (σ × τ) m) where
   monadLift := fun x st => do let y ← x st.1; return (y.1, y.2, st.2)
@@ -81,7 +59,7 @@ lemma StateT.run_liftLeft {α : Type u} (x : StateT σ m α) (s : σ) (t : τ) :
 
 end find_home
 
-open ProtocolSpec OracleComp OracleSpec
+open ProtocolSpec OracleComp OracleSpec OracleReduction
 
 open scoped BigOperators
 
@@ -97,7 +75,8 @@ variable {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
 /--
 Prover's function for processing the next round, given the current result of the previous round.
 
-  This is modified for Fiat-Shamir, where we only accumulate the messages and not the challenges.
+  This is modified for Fiat-Shamir, where we only accumulate the prover messages and not the
+  verifier messages.
 -/
 @[inline, specialize]
 def Prover.processRoundFS (j : Fin n)
