@@ -65,8 +65,8 @@ Entry 22 covers Sumcheck in the interaction layer. Its two departures are descri
 The second departure distinguishes the unchanged full-run interface from the arbitrary interval interface.
 The [exact-row disposition](sumcheck.md#migration-disposition) now names native interval,
 projection and append targets. The behavior-guarantee interface gaps remain unresolved.
-Both full-run and suffix soundness use the generic round-by-round-to-soundness implication over indexed domains, including
-lists with repetitions.
+Both full-run and suffix soundness use the generic round-by-round-to-soundness implication over
+indexed domains, including lists with repetitions.
 
 Entry [21](../interaction-rebuild/IMPLEMENTATION-NOTES.md#21-round-by-round-soundness-implies-soundness-for-lawful-distribution-monads)
 records the generic soundness implication. The

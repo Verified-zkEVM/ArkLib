@@ -365,7 +365,7 @@ The exact parent dispositions, including freshness and failure scope, are in
 
 ## Remaining work
 
-The parent's behavior-guarantee rows remain unresolved until the corresponding interfaces exist.
+The behavior-guarantee rows remain unresolved until the corresponding Core interfaces exist.
 `Interpreted` supplies a native passive verifier for arbitrary evaluated message carriers;
 `InterpretedExecution` preserves message slots, challenge-response slots and terminal outputs
 under interpretation. This generic interface does not make Mathlib polynomial projections
