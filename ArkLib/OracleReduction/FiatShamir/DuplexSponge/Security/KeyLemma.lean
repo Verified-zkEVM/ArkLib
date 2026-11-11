@@ -134,7 +134,12 @@ def filterD2SChallengePlusUnitQueryLog
 `(b, 𝕩, π = (τ̌, messages), tr)` where
 - `τ̌ = bin (τ) ∈ {0,1}^{δ⋆}`
 - `tr` is the combined query log over the salted `fsChallengeOracle (StmtIn × Salt) pSpec`
--/
+
+The games return `Option` of this type, and the decision bit `b` is refined to the output
+statement. On acceptance a game returns `some (𝕩, stmtOut, π, tr)`. On rejection it returns
+`none`, which discards `(𝕩, π, tr)`. CO25 Lemma 5.1 compares `(b, 𝕩, π, tr)` and keeps
+`(𝕩, π, tr)` when `b = 0`, so a distance bound between these games is weaker than the paper's.
+It is enough for the soundness reductions, which use `(𝕩, π, tr)` only on acceptance. -/
 abbrev BasicFiatShamirGameOutput :=
   StmtIn × StmtOut × FSSaltedProof pSpec Salt ×
     TaggedQueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)
@@ -172,7 +177,10 @@ def basicFSVerifierComp (V : Verifier oSpec StmtIn StmtOut pSpec)
 Runs `𝒱_std^f` against the compiled prover `D2SAlgo^f(𝒫̃~)`.
 - Prover outputs `(𝕩, (τ̌, messages))`
 - Verifier queries `f` at `(𝕩, τ̌, messages)`
--/
+
+If the prover aborts, the verifier runs on `(default, (SaltCodec.encode default, default))`, the
+same fallback as `hybridGame`. The game returns `none` when the verifier rejects
+(`stmtOut.getM`); see `BasicFiatShamirGameOutput`. -/
 def basicFiatShamirGame (V : Verifier oSpec StmtIn StmtOut pSpec)
     (P : AbortComp (oSpec +
       D2SChallengePlusUnitOracle (U := U) (fsChallengeOracle (StmtIn × Salt) pSpec))
@@ -185,9 +193,13 @@ def basicFiatShamirGame (V : Verifier oSpec StmtIn StmtOut pSpec)
   -- De-aborted via `getD default` bound to a *single, non-destructured* `let` (project with
   -- `.1`/`.2` below) — crucially NOT `let ⟨stmtIn, proof⟩ := …`, since the pair-destructure floats
   -- `getD`'s `some/none` match out and duplicates the verifier into both branches, blocking the
-  -- `hyb4_eq` log-strip.  A failed compiled prover yields `default` statement+proof; the same
-  -- `default` is used by the induced SR prover (`nargInducedProver`); acceptance on it is in `η★`.
-  let stmtAndProof := stmtAndProof?.getD default
+  -- `hyb4_eq` log-strip. A failed compiled prover yields the `default` statement and the proof
+  -- `(SaltCodec.encode default, default)`: the proof `hybridGame` substitutes on a prover abort,
+  -- after the `bin` re-encoding of D2SAlgo Items 4-6. So Hyb₃ and Hyb₄ continue from the same
+  -- `(𝕩, π)`, and their verifiers query `f` at the same keys. An induced SR prover built from
+  -- this game must use the same fallback.
+  let stmtAndProof := stmtAndProof?.getD
+    (default, (SaltCodec.encode (U := U) (δ := δ) (Salt := Salt) default, default))
   let verifierComp :
       OracleComp (oSpec +
         D2SChallengePlusUnitOracle (U := U) (fsChallengeOracle (StmtIn × Salt) pSpec))
@@ -205,7 +217,9 @@ def basicFiatShamirGame (V : Verifier oSpec StmtIn StmtOut pSpec)
 Runs `𝒱^{h,p}` against the malicious prover `𝒫̃~` (this is `Hyb_0`).
 - Prover outputs `(𝕩, (τ, messages))`
 - Verifier queries `h, p` only (no `p⁻¹` per Figure 4 line 3)
--/
+
+The game returns `none` when the verifier rejects (`stmtOut.getM`), discarding `(𝕩, π, tr)`;
+see `BasicFiatShamirGameOutput`. -/
 def dsfsGame (V : Verifier oSpec StmtIn StmtOut pSpec)
     (P : MaliciousProver oSpec pSpec StmtIn U δ) :
     AbortComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
@@ -298,15 +312,29 @@ away the auxiliary unit-sampling randomness. Polymorphic over the **inner state 
 that `gImpl` carries beneath `D2SQuery`'s own `StateT (D2SQueryState …)` layer:
 
 - `Hyb_1` / `Hyb_2`: trivial inner state `M := PUnit` (no memo — pass `StateT.lift ∘ oldGImpl`).
-- `Hyb_3` (paper §5.4 D2SAlgo Item 3): `M := D2SAlgoMemo …`. The `tr_i` memo is
-  **initialized fresh at the start of the prover run** and **passed forward to the verifier
-  run** (same `d2fRaw` pipeline), so a repeated encoded `gᵢ` key reuses the
-  cached `ρ̂_i` — paper's "`tr_i` is global to a single run of `D2SAlgo`".
+- `Hyb_3` (paper §5.4 D2SAlgo Item 3): `M := D2SAlgoMemo …`, the `tr_i` memo.
 
-For `M := PUnit`, the threaded state is vacuous and the body collapses to the plain
-no-memo skeleton; for `M := D2SAlgoMemo …`, threading realizes the paper's
+The prover and the verifier share one `D2SQuery` state (trace, `tr_∇`, `Cache_p`): the verifier
+phase resumes the state the prover phase returns, as in `(𝒫̃ ‖ 𝒱)^{D2SQuery}`. The inner state
+`M` is **not** shared. Each phase starts from `default`. The `tr_i` memo belongs to one run of
+`D2SAlgo(𝒫̃)` (§5.4 D2SAlgo Item 1 initializes it), and the Hyb₃ verifier
+`𝒱^{D2SQuery^{ψ⁻¹∘f∘φ⁻¹}}` (Figure 4 line 3) is not part of that run. If the verifier resumed the
+prover's memo, each of its boundary `gᵢ` calls would be a memo hit and would query no `fᵢ`, so
+Hyb₃'s verifier segment of the trace would be empty, while Hyb₂ and Hyb₄ log one challenge query
+per round. With a fresh memo, each verifier `gᵢ` call queries `fᵢ`. Its fresh `ψ⁻¹` preimage is
+discarded by Item 4(e)ii, because the prover's `tr_∇.p` already holds the boundary pair.
+
+For `M := PUnit` the inner state is vacuous; for `M := D2SAlgoMemo …` the prover phase is
 `𝒫̃^{D2SQuery^{ψ⁻¹∘f∘φ⁻¹}}` (paper Eq. 17 RHS), mirroring `D2FQueryProver` in
-`ProverTransform.lean`. -/
+`ProverTransform.lean`.
+
+If the prover phase aborts, the game continues with `default` statement and proof
+`(default : StmtIn, (default : Vector U δ, default))`, which `hybridGameDist` reports as
+`π = (SaltCodec.encode default, default)`. `basicFiatShamirGame` substitutes the same proof, so
+Hyb₃ and Hyb₄ handle a prover abort identically.
+
+The game returns `none` when the verifier rejects or its simulation aborts (`stmtOut?.getM`), so
+`(𝕩, π, tr)` is discarded on rejection; see `BasicFiatShamirGameOutput`. -/
 def hybridGame
     [∀ i, DecidableEq (pSpec.Message i)]
     {κ : Type} {challengeSpec : OracleSpec κ}
@@ -324,15 +352,16 @@ def hybridGame
   let ⟨proverTriple?, proveQueryLogRaw⟩ ← (simulateQ loggingOracle proverComp.run).run
   -- Success preserves both states; failure selects defaults, not the partial failed state.
   -- The prover's separately collected query log remains available in either case.
-  let ⟨stmtIn, proof, d2sState₁, memo₁⟩ :=
+  let ⟨stmtIn, proof, d2sState₁⟩ :=
     match proverTriple? with
-    | some ⟨⟨⟨stmtIn, proof⟩, d2sState₁⟩, memo₁⟩ => (stmtIn, proof, d2sState₁, memo₁)
-    | none => (default, default, default, default)
+    | some ⟨⟨⟨stmtIn, proof⟩, d2sState₁⟩, _⟩ => (stmtIn, proof, d2sState₁)
+    | none => (default, default, default)
   -- Run the honest forward-only verifier using the selected statement and proof.
   let rawVerifierComp := runForwardVerifierWide δ V stmtIn proof
-  -- Resume the prover's trace, tables, synthesis cache, and inner memo.
+  -- Resume the prover's D2SQuery state (trace, tables, synthesis cache). The inner `gImpl`
+  -- state (Hyb₃'s `tr_i` memo) starts fresh: `tr_i` is local to the prover's `D2SAlgo` run.
   let verifierComp := d2fRawFrom (T_H := T_H) (T_P := T_P)
-    gImpl rawVerifierComp d2sState₁ memo₁
+    gImpl rawVerifierComp d2sState₁ default
   -- V has same simulated (h,p,p⁻¹) oracle access via `D2SQuery^{gImpl}` as P~.
   let ⟨verifierTriple?, verifyQueryLogRaw⟩ ← (simulateQ loggingOracle verifierComp.run).run
   -- Simulation failure and the verifier's own rejection both remain rejection.
@@ -421,7 +450,7 @@ def basicFiatShamirGameDist
       (StmtIn × FSSaltedProof pSpec Salt)) :
     ProbComp (Option <| BasicFiatShamirGameOutput (oSpec := oSpec) (StmtIn := StmtIn)
       (StmtOut := StmtOut) (pSpec := pSpec) (Salt := Salt)) := do
-  (simulateQ impl (basicFiatShamirGame (V := V) (Salt := Salt) P)).run' (← init)
+  (simulateQ impl (basicFiatShamirGame (V := V) (Salt := Salt) (δ := δ) P)).run' (← init)
 
 /-- CO25 Lemma 5.1. Distribution of the DSFS game (`Hyb_0` left-hand side) under a concrete
 oracle implementation (oracle family `𝒟_𝔖`). Used via `mappedDSFSGameDist`. -/
@@ -811,10 +840,9 @@ def hyb_3
   -- bridged via `SaltCodec.encode = bin`) → `ψᵢ⁻¹` uniform preimage.  The `OptionT`
   -- abort layer carries `φ⁻¹` parse failure (⊥ on malformed encoded-message prefixes).
   -- CO25 §5.4 D2SAlgo Item 3 — paper's `𝒫̃^{D2SQuery^{ψ⁻¹∘f∘φ⁻¹}}` threads a `tr_i` memo
-  -- (`d2sCodecBridgeImplMemo`) so repeated encoded `gᵢ` keys reuse the cached `ρ̂_i`; the
-  -- unified `hybridGameDist` instantiated at `M := D2SAlgoMemo …` shares that memo between
-  -- prover and verifier within one game run (Item 3: `tr_i` is global to a single run of
-  -- `D2SAlgo`).
+  -- (`d2sCodecBridgeImplMemo`) so repeated encoded `gᵢ` keys reuse the cached `ρ̂_i`. The memo
+  -- is local to each phase of `hybridGame`: the verifier phase starts with an empty memo, so
+  -- each of its `gᵢ` calls queries `fᵢ` (see `hybridGame`).
   let gImpl := d2sCodecBridgeImplMemo (δ := δ) (Salt := Salt)
     (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
   exact
@@ -871,7 +899,7 @@ def hyb_4
     D_IP_salted.sample (StmtIn := StmtIn) (Salt := Salt) (pSpec := pSpec)
   exact basicFiatShamirGameDist
     (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-    (pSpec := pSpec) (Salt := Salt)
+    (pSpec := pSpec) (Salt := Salt) (δ := δ)
     (init := sampleChallenge)
     (impl := hybChallengeImpl (instSampleable := VCVCompatible.toSampleableType)
       (oSpec := oSpec) (U := U) (challengeSpec := challengeSpec) oSpecImpl)
