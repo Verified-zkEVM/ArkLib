@@ -21,7 +21,7 @@ may depend on ambient queries.
 
 @[expose] public section
 
-universe u uA v uι uS uI uJ uK uV uX uY dX dY wI wJ wK
+universe u uA v w uι uS uI uJ uK uV uX uY dX dY wI wJ wK
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
@@ -76,6 +76,32 @@ theorem splitFiber_pair {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u}
   apply Sigma.ext (project_split l s₁ s₂ tr).symm
   exact eqRec_heq (φ := fun ps : (p₁ : Path s₁) × Path (s₂ p₁) =>
     Fiber l s₁ ps.1 × Fiber l (s₂ ps.1) ps.2) (project_split l s₁ s₂ tr) _
+
+/-- Splitting the transcript of an appended run, with its view, returns the prefix and suffix
+transcripts and their own views. -/
+theorem splitFiber_append {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
+    (s₁ : FreeM P PUnit.{u + 1}) (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) {X : Sort*}
+    (G : (p : Path s₁) → (q : Path (s₂ p)) → Fiber l s₁ p → Fiber l (s₂ p) q → X)
+    (tr₁ : PathAlong l s₁) (tr₂ : PathAlong l (s₂ (projectPathAlong l s₁ tr₁))) :
+    G (Path.split s₁ s₂ (projectPathAlong l _ (PathAlong.append l s₁ s₂ tr₁ tr₂))).1
+      (Path.split s₁ s₂ (projectPathAlong l _ (PathAlong.append l s₁ s₂ tr₁ tr₂))).2
+      (splitFiber l s₁ s₂ _ ⟨PathAlong.append l s₁ s₂ tr₁ tr₂, rfl⟩).1
+      (splitFiber l s₁ s₂ _ ⟨PathAlong.append l s₁ s₂ tr₁ tr₂, rfl⟩).2 =
+    G (projectPathAlong l s₁ tr₁) (projectPathAlong l _ tr₂) ⟨tr₁, rfl⟩ ⟨tr₂, rfl⟩ := by
+  have key : ∀ (tr : PathAlong l (s₁.append s₂)),
+      G (Path.split s₁ s₂ (projectPathAlong l _ tr)).1
+        (Path.split s₁ s₂ (projectPathAlong l _ tr)).2
+        (splitFiber l s₁ s₂ _ ⟨tr, rfl⟩).1 (splitFiber l s₁ s₂ _ ⟨tr, rfl⟩).2 =
+      G (projectPathAlong l s₁ (PathAlong.split l s₁ s₂ tr).1)
+        (projectPathAlong l _ (PathAlong.split l s₁ s₂ tr).2)
+        ⟨(PathAlong.split l s₁ s₂ tr).1, rfl⟩ ⟨(PathAlong.split l s₁ s₂ tr).2, rfl⟩ := by
+    intro tr
+    simp only [splitFiber]
+    generalize project_split l s₁ s₂ tr = h
+    generalize Path.split s₁ s₂ (projectPathAlong l (s₁.append s₂) tr) = w at h ⊢
+    subst h
+    rfl
+  rw [key, PathAlong.split_append]
 
 /-- Split the oracle verifier's public view. -/
 abbrev View.split := splitFiber viewSig
@@ -238,6 +264,34 @@ def suffixDraw {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
     suffixDraw l (next b) (fun p => s₂ ⟨b, p⟩)
       (fun c => draw ⟨.inr ⟨b, c.val⟩, c.property⟩) p c
 
+section draws
+variable {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
+  {m : Type u → Type v} {m' : Type u → Type w}
+
+/-- Restricting draws to the prefix commutes with transforming every draw. -/
+theorem prefixDraw_comp (f : ∀ {α : Type u}, m α → m' α) :
+    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
+    (draw : (c : ChallengeNode l (s₁.append s₂)) → m (challengeSpec l (s₁.append s₂) c)) →
+    (c : ChallengeNode l s₁) →
+    prefixDraw l s₁ s₂ (fun c => f (draw c)) c = f (prefixDraw l s₁ s₂ draw c)
+  | .pure _, _, _, c => c.val.elim
+  | .liftBind _ _, _, _, ⟨.inl _, _⟩ => rfl
+  | .liftBind _ next, s₂, draw, ⟨.inr ⟨b, c⟩, h⟩ =>
+    prefixDraw_comp f (next b) (fun p => s₂ ⟨b, p⟩)
+      (fun c => draw ⟨.inr ⟨b, c.val⟩, c.property⟩) ⟨c, h⟩
+
+/-- Restricting draws to a suffix commutes with transforming every draw. -/
+theorem suffixDraw_comp (f : ∀ {α : Type u}, m α → m' α) :
+    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
+    (draw : (c : ChallengeNode l (s₁.append s₂)) → m (challengeSpec l (s₁.append s₂) c)) →
+    (p : Path s₁) → (c : ChallengeNode l (s₂ p)) →
+    suffixDraw l s₁ s₂ (fun c => f (draw c)) p c = f (suffixDraw l s₁ s₂ draw p c)
+  | .pure _, _, _, ⟨⟩, _ => rfl
+  | .liftBind _ next, s₂, draw, ⟨b, p⟩, c =>
+    suffixDraw_comp f (next b) (fun p => s₂ ⟨b, p⟩)
+      (fun c => draw ⟨.inr ⟨b, c.val⟩, c.property⟩) p c
+end draws
+
 /-- Combining the prefix and suffix restrictions of challenge draws recovers the draws. -/
 theorem combineDraw_prefixDraw_suffixDraw {P : PFunctor.{uA, u}}
     (l : PFunctor.Lens P rolePoly.{u}) {m : Type u → Type v} :
@@ -298,6 +352,7 @@ theorem appendSampler_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
   | liftBind a next ih =>
     cases a <;>
       simp only [appendSampler, Counterpart.appendFlat, sampler, samplerEnd,
+        samplerSlot, rootDraw,
         FreeM.append_liftBind, PureEnd.graft, PureEnd.toStrategy, PureEnd.mapOutput,
         owner, plainSig, Choice, Move, Choice.map, combineDraw,
         LawfulApplicative.map_pure, Functor.map_map]
@@ -326,6 +381,7 @@ theorem appendOracleSampler_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
   | liftBind a next ih =>
     cases a <;>
       simp only [appendSampler, Counterpart.appendFlat, sampler, samplerEnd,
+        samplerSlot, rootDraw,
         FreeM.append_liftBind, PureEnd.graft, PureEnd.toStrategy, PureEnd.mapOutput,
         owner, oracleSig, Choice, Move, Choice.map, combineDraw,
         LawfulApplicative.map_pure, Functor.map_map]
@@ -354,6 +410,15 @@ theorem sampler_append_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
     sampler oracleSig (s₁.append s₂) draw = appendSampler s₁ s₂
       (prefixDraw oracleSig s₁ s₂ draw) (suffixDraw oracleSig s₁ s₂ draw) := by
   rw [appendOracleSampler_eq, combineDraw_prefixDraw_suffixDraw]
+
+/-- The sampler of an appended plain protocol is the append of its restricted samplers. -/
+theorem plainSampler_append_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
+    (s₁ : Protocol.{u}) (s₂ : Path s₁ → Protocol.{u})
+    (draw : (c : ChallengeNode plainSig (s₁.append s₂)) →
+      m (challengeSpec plainSig (s₁.append s₂) c)) :
+    sampler plainSig (s₁.append s₂) draw = appendSampler s₁ s₂
+      (prefixDraw plainSig s₁ s₂ draw) (suffixDraw plainSig s₁ s₂ draw) := by
+  rw [appendSampler_eq, combineDraw_prefixDraw_suffixDraw]
 
 /-- Composed execution preserves seam effects in their actual order. -/
 theorem run_appendSampler {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}

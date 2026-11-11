@@ -415,3 +415,28 @@ No challenge-indexed parent output interface is required.
 
 The required targeted reverse-dependency build and guard commands are the acceptance checks for
 this branch. The disposition record gives their scope. No whole-library validation is requested.
+
+## 21. Round-by-round soundness implies soundness for lawful distribution monads
+
+The probability-free escape theory is polymorphic in protocol positions and moves. Only the
+probability bounds require small moves. `Security/RoundByRound.lean` owns the shared full-prefix
+interface `PrefixDraw`, its oracle-program form `PrefixChallengePrograms`, `prefixSampleAt`,
+and `prefixSampler` with its execution laws. Node-indexed draws embed through
+`PrefixDraw.ofNodes`, which ignores history and agrees with `sampleAt`.
+
+`Security/Implications.lean` bounds actual flip events at full prefixes. Its passive sampler
+retains history-dependent challenge programs, and an exact equation identifies its execution
+with the ordinary Core runner. Encoded event marginals transport prefix-indexed challenge models
+into that bound. The plain and oracle verifier implications give the corresponding bound for
+structural draws.
+All forms allow missing probability mass in any lawful distribution monad.
+
+`soundnessUsing` interprets the whole computation. Exact specialization laws retain the
+classical initial state distribution and the existential terminal state of `validAcceptance`.
+The generic and classical implications share their run-to-decision and acceptance proof.
+The path supremum is bounded by arbitrary finite rank-indexed sums, as well as the existing
+all-node sum and uniform-error corollaries.
+
+The [disposition record](../interaction-layer/soundness-implication-disposition.md) gives the
+source-to-target inventory, the freshness argument, failure tests, and limits of the correspondence.
+Inherited universe constraints remain in [entry 18](#18-run-outputs-are-tied-to-the-monad-universe).
