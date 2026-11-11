@@ -9,6 +9,7 @@ public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.KKH26Asymptotic
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.LargeAlphabet
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Linear
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.SubspaceDesign
 
@@ -69,7 +70,9 @@ This file is the umbrella; the statements are in `Bounds/`.
 
 * `Bounds/Basic.lean` — the three counting identities everything else rests on.
 * `Bounds/Linear.lean` — bounds valid for every linear code: Elias volume and its entropy form, the
-  rate–radius arithmetic, the generalized Singleton bound, random linear codes.
+  rate–radius arithmetic, the generalized Singleton bound.
+* `Bounds/RandomLinear.lean` — the random-linear-code lower bound, over the development in
+  `Bounds/RandomLinear/`.
 * `Bounds/LargeAlphabet.lean` — the barrier that attaining the generalized Singleton bound forces an
   exponentially large alphabet, over the four-file development in `Bounds/LargeAlphabet/`.
 * `Bounds/ReedSolomon.lean` — two Reed-Solomon separations, the internal codimension-one lemma, and
@@ -81,22 +84,20 @@ This file is the umbrella; the statements are in `Bounds/`.
 
 ## External admits
 
-Three statements are admitted with a tagged `sorry`, never an `axiom`: the random-linear-code bound
-(`random_linear_lambda_lower`, [GLMRSW22]), the extension-field Reed-Solomon separation
-(`rs_lambda_superpoly_extension`, [BKR06]), and the random-evaluation-domain bound
-(`rs_random_domain_lambda_le`, [AGL24]). Source locators and formulation notes are recorded in the
-defining modules and knowledge-base pages.
+One statement is admitted with a tagged `sorry`, never an `axiom`: the random-evaluation-domain
+bound (`rs_random_domain_lambda_le`, [AGL24]). Its source locator and formulation notes are recorded
+in the defining module and knowledge-base page.
 
-One derivation inherits an admit and is therefore reachable-`sorryAx`, carrying no more information
-than its input: `random_linear_lambda_lower_exists`.
-
-Everything else is proved and axiom-clean, including the alphabet-generic volume/averaging lower
+Everything else is proved and axiom-clean, including the random-linear-code bound
+`random_linear_lambda_lower` ([GLMRSW22]) and its existence form
+`random_linear_lambda_lower_exists`, the alphabet-generic volume/averaging lower
 bounds `lambda_ge_elias_volume` and `lambda_ge_entropy_volume` and their field specializations
 `linear_lambda_ge_elias_volume` and `linear_lambda_ge_entropy_volume`, both halves of the
 generalized Singleton bound (`linear_card_le_of_rate_radius`,
 `linear_card_le_generalized_singleton`), the prime-field Reed-Solomon separation
-`rs_lambda_large_prime`, the elementary `rs_codimension_one_list_size`, the [AGL23]
-large-alphabet barrier
+`rs_lambda_large_prime`, the extension-field Reed-Solomon separation
+`rs_lambda_superpoly_extension` ([BKR06]), the elementary `rs_codimension_one_list_size`,
+the [AGL23] large-alphabet barrier
 `large_alphabet_lambda_lower` with its `η = Θ(1/n)` consequence
 `large_alphabet_card_ge_exp_of_inv_length`, the number-theoretic KKH sum-set estimate
 `two_pow_mul_choose_le_card_sumSet` ([KKH26] Lemma 1, proved via a signed subset-sum

@@ -654,7 +654,7 @@ theorem run_scriptedProver (V : OracleVerifier []ₒ (protocol rounds) S T input
     evalWithAnswerFn (recordedAnswers rounds tr)
       (V.run stmt.1 stmt.2 (scriptedProver rounds messages)) =
       ⟨tr, ⟨⟩, closedTerminalObservation V stmt tr⟩ := by
-  simp only [OracleVerifier.run, evalWithAnswerFn_bind, simulate_scriptedProver]
+  simp only [OracleVerifier.run_eq, evalWithAnswerFn_bind, simulate_scriptedProver]
   rw [evalWithAnswerFn_run_scriptedProver (recordedAnswers rounds tr) rounds messages tr carried _
     (fun _ => rfl)]
   simp only [evalWithAnswerFn_simulateQ, evalWithAnswerFn_pure, closedTerminalObservation,

@@ -195,7 +195,7 @@ def knowledgeState : KnowledgeStateFunction plainSig coin Bool (fun _ _ => Unit)
   send _ _ _ _ _ _ h := h
   leaf _ _ _ _ h := h
 
-example : rbrKnowledgeSoundness.{0, 0, 0} plainSig coin (fun _ => True)
+example : rbrKnowledgeSoundnessOfNodes.{0, 0, 0} plainSig coin (fun _ => True)
     (fun stmt (_ : Unit) => stmt = true) (fun stmt _ (_ : Unit) => stmt = true)
     draw (fun _ => 0) := by
   refine ⟨knowledgeState, ?_⟩
@@ -203,10 +203,10 @@ example : rbrKnowledgeSoundness.{0, 0, 0} plainSig coin (fun _ => True)
   simp [knowledgeState]
 
 /-- The same bound holds with the intermediate witnesses lifted to any universe `v`. -/
-example : rbrKnowledgeSoundness.{0, 0, v} plainSig coin (fun _ => True)
+example : rbrKnowledgeSoundnessOfNodes.{0, 0, v} plainSig coin (fun _ => True)
     (fun stmt (_ : Unit) => stmt = true) (fun stmt _ (_ : Unit) => stmt = true)
     draw (fun _ => 0) := by
-  apply rbrKnowledgeSoundness.lift.{0, 0, 0, 0, v}
+  apply rbrKnowledgeSoundness.lift.{0, 0, 0, 0, 1, v}
   refine ⟨knowledgeState, ?_⟩
   intro stmt _ a next sp h history
   simp [knowledgeState]
@@ -226,7 +226,7 @@ def promisedState : KnowledgeStateFunction plainSig zero Bool (fun _ _ => Unit) 
 
 /-- The promise excludes `false`, so its accepted runs need no witness. -/
 example (err : ChallengeNode plainSig zero → ℝ≥0∞) :
-    rbrKnowledgeSoundness.{0, 0, 0} plainSig zero (· = true) (fun b (_ : Unit) => b = true)
+    rbrKnowledgeSoundnessOfNodes.{0, 0, 0} plainSig zero (· = true) (fun b (_ : Unit) => b = true)
       (fun (_ : Bool) _ (_ : Unit) => True) (fun c => c.val.elim) err :=
   ⟨promisedState, fun _ _ _ _ sp => nomatch sp⟩
 
@@ -385,7 +385,7 @@ def coinKnowledge : KnowledgeStateFunction plainSig coin Bool (fun _ _ => Unit) 
 
 /-- Backwards extraction fails exactly when a false statement meets a true challenge. -/
 theorem coin_rbrKnowledgeSoundness :
-    Verifier.rbrKnowledgeSoundness.{0, 0, 0} coinVerifier tick (fun _ => True)
+    Verifier.rbrKnowledgeSoundnessOfNodes.{0, 0, 0} coinVerifier tick (fun _ => True)
       (fun b (_ : Unit) => b = true)
       (fun _ _ (_ : Nat) (_ : Unit) => True) draw (fun _ => 1 / 2) := by
   refine ⟨coinKnowledge, ?_⟩
@@ -393,7 +393,7 @@ theorem coin_rbrKnowledgeSoundness :
   cases sp with
   | down _ tail => cases tail
   | root =>
-    rw [sampleAt_root, ← uniform_true]
+    rw [prefixSampleAt_ofNodes, sampleAt_root, ← uniform_true]
     refine measure_mono fun x hx => ?_
     obtain ⟨_, hstmt, hx⟩ := hx
     change ¬ stmt = true at hstmt
@@ -405,7 +405,7 @@ theorem coin_rbrKnowledgeSoundness :
 /-- No knowledge state function achieves an error below one half. -/
 theorem coin_not_rbrKnowledgeSoundness (ε : ChallengeNode plainSig coin → ℝ≥0∞)
     (hε : ε onlyChallenge < 1 / 2) :
-    ¬ Verifier.rbrKnowledgeSoundness.{0, 0, 0} coinVerifier tick (fun _ => True)
+    ¬ Verifier.rbrKnowledgeSoundnessOfNodes.{0, 0, 0} coinVerifier tick (fun _ => True)
       (fun b (_ : Unit) => b = true)
       (fun _ _ (_ : Nat) (_ : Unit) => True) draw ε := by
   rintro ⟨F, hF⟩
@@ -414,6 +414,8 @@ theorem coin_not_rbrKnowledgeSoundness (ε : ChallengeNode plainSig coin → ℝ
   have hleaf := F.leaf (.down ⟨⟩ (.root _)) ⟨⟨true, rfl⟩, ⟨⟩⟩ false ()
     ((validAcceptance_iff (fun _ => trivial) _ _).2 rfl)
   have bound := hF false trivial _ _ (.root coin) rfl ⟨⟩
+  let : MeasurableSpace (TwoParty.Lens.Move plainSig (.challenge Bool)) := ⊤
+  change 𝒟[sampleAt plainSig draw (.root coin) rfl] _ ≤ ε onlyChallenge at bound
   erw [sampleAt_root] at bound
   refine absurd (lt_of_le_of_lt ?_ hε) (lt_irrefl _)
   refine le_trans ?_ bound
@@ -518,7 +520,7 @@ example (w : Fin 8) :
 every challenge implementation. -/
 theorem payload_rbrKnowledgeSoundness
     (draw : QueryImpl (challengeSpec plainSig payloadMsg) ProbComp) :
-    Verifier.rbrKnowledgeSoundness.{0, 0, 0} payloadVerifier tick (fun _ => True)
+    Verifier.rbrKnowledgeSoundnessOfNodes.{0, 0, 0} payloadVerifier tick (fun _ => True)
       (fun stmt (w : Nat) => w ≤ stmt)
       (fun _ tr (_ : Nat) (_ : BoundedIndex tr) => True) draw (fun _ => 0) := by
   refine ⟨payloadKnowledge, ?_⟩

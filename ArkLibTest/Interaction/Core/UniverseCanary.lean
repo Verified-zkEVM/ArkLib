@@ -51,7 +51,7 @@ def bigInputs : OracleFamily.{1, 0, 0} Type (fun _ => Nat) := ⟨fun _ => natInt
 abbrev done : Protocol := .pure ⟨⟩
 
 /-- The oracle protocol with no rounds. -/
-abbrev oracleDone : OracleProtocol := .pure ⟨⟩
+abbrev oracleDone : OracleProtocol.{0, 0} := .pure ⟨⟩
 
 /-! ### Plain verifiers and reductions -/
 
@@ -255,6 +255,110 @@ theorem typeQueryAppend_decideWith (stmt : Unit)
             ((OracleVerifier.suffixRoute typeQueryVerifier stmt p v).f data) :=
   OracleVerifier.append_decideWith _ _ _ _ _ _ _
 
+/-! ### Independent oracle-node queries -/
+
+/-- The default leaves retain the original protocol carrier by definitional equality. -/
+example : OracleProtocol.{0, 1} = FreeM OraclePoly.{0, 1} PUnit.{1} := rfl
+
+/-- A nontrivial leaf type is an actual return type of the authored tree. -/
+def returningTree : OracleProtocol.{0, 1} Nat := .pure 23
+
+/-- The explicit leaf parameter stores a value that can be read from the tree. -/
+example : (match returningTree with | .pure n => n | .liftBind _ _ => 0) = 23 := rfl
+
+/-- A small payload with queries in `Type 1` is attached to an actual oracle node. -/
+def typeQueryProtocol : OracleProtocol.{0, 1} :=
+  .liftBind (.oracle Nat typeQueries) (fun _ => .pure ⟨⟩)
+
+/-- Query the payload through its interface and return its answer. -/
+def nodeQueryVerifier : OracleVerifier smallAmbient typeQueryProtocol Unit (fun _ => Nat)
+    typeQueryInputs (fun _ => smallOutputs) where
+  decide _ p _ := liftM
+    ((smallAmbient + (pathResources typeQueryInputs typeQueryProtocol p).spec).query
+      (.inr (.inr ⟨.inl ⟨⟩, Bool⟩)))
+  outputMap _ p _ :=
+    { f := fun x _ => x.1 ()
+      impl := fun _ => liftM
+        ((pathResources typeQueryInputs typeQueryProtocol p).spec.query (.inl ⟨(), Bool⟩))
+      law := fun _ _ => rfl }
+
+/-- The prover sends a natural-number oracle payload and terminates. -/
+def nodeProver : Prover oracleSig smallAmbient typeQueryProtocol (fun _ => PUnit) :=
+  pure ⟨(17 : Nat), pure ⟨⟩⟩
+
+/-- No challenges occur; the ambient oracle is unused by this run. -/
+def nodeHandler : QueryImpl (smallAmbient + challengeSpec oracleSig typeQueryProtocol) Id
+  | .inl _ => true
+  | .inr ⟨.inl _, h⟩ => nomatch h
+  | .inr ⟨.inr ⟨_, n⟩, _⟩ => n.elim
+
+/-- The decision reads the sent payload, independently of the input resource's value. -/
+example : (simulateQ nodeHandler (nodeQueryVerifier.run () (fun _ => 5) nodeProver)).2.2.map
+    Prod.fst = some 17 := rfl
+
+/-! ### R26 and R27 with independent realization and response universes -/
+
+section IndependentRealizations
+
+universe i a e q s h
+
+variable {Name : Type i} {Query : Name → Type q} {Realization : Name → Type a}
+  {Response : (n : Name) → Query n → Type e}
+
+/-- A view queries selected named resources while retaining the whole context's data (R27). -/
+def viewResources (answer : ∀ n, Realization n → (q : Query n) → Response n q)
+    {Index : Type s} (name : Index → Name) {Visible : Type h} (select : Visible → Index) :
+    Resources.{e, max h q, max s a} where
+  Index := (x : Visible) × Query (name (select x))
+  spec query := Response (name (select query.1)) query.2
+  Data := (x : Index) → Realization (name x)
+  answer data query := answer _ (data (select query.1)) query.2
+
+/-- The whole named context is the identity view (R26). -/
+abbrev namedResources (answer : ∀ n, Realization n → (q : Query n) → Response n q)
+    {Index : Type s} (name : Index → Name) : Resources.{e, max s q, max s a} :=
+  viewResources answer name id
+
+/-- R26 retains its exact query and data carriers without identifying `a` with `e`. -/
+example (answer : ∀ n, Realization n → (q : Query n) → Response n q)
+    {Index : Type s} (name : Index → Name) :
+    (namedResources answer name).Index = ((x : Index) × Query (name x)) ∧
+      (namedResources answer name).Data = ((x : Index) → Realization (name x)) := ⟨rfl, rfl⟩
+
+/-- R27 retains the original context's data when the visible index has its own universe. -/
+example (answer : ∀ n, Realization n → (q : Query n) → Response n q)
+    {Index : Type s} (name : Index → Name) {Visible : Type h} (select : Visible → Index) :
+    (viewResources answer name select).Index = ((x : Visible) × Query (name (select x))) ∧
+      (viewResources answer name select).Data = ((x : Index) → Realization (name x)) :=
+  ⟨rfl, rfl⟩
+
+/-- No output oracles are needed to test the verifier's resource input boundary. -/
+def noOutputs : OracleFamily.{e, e, e} PEmpty (fun _ => PUnit) := ⟨fun x => x.elim⟩
+
+/-- A verifier consumes an R26-shaped input, with independent realization `a` and response `e`.
+Its decision returns one input answer, using no realization encoding. -/
+def namedVerifier (answer : ∀ n, Realization n → (q : Query n) → Response n q)
+    {Index : Type s} (name : Index → Name) (x : Index) (query : Query (name x)) :
+    OracleVerifier (PEmpty.{e + 1} →ₒ PUnit.{e + 1}) (.pure ⟨⟩ : OracleProtocol.{e, q})
+      PUnit.{e + 1} (fun _ => Response (name x) query) (namedResources answer name)
+      (fun _ => noOutputs) where
+  decide _ p _ := liftM
+    (((PEmpty.{e + 1} →ₒ PUnit.{e + 1}) +
+      (pathResources (namedResources answer name) (.pure ⟨⟩ : OracleProtocol.{e, q}) p).spec).query
+      (.inr (.inl ⟨x, query⟩)))
+  outputMap _ _ _ :=
+    { f := fun _ x => x.elim
+      impl := fun query => query.1.elim
+      law := fun _ query => query.1.elim }
+
+/-- The run also accepts the unencoded realization family at the independent universe `a`. -/
+example (answer : ∀ n, Realization n → (q : Query n) → Response n q)
+    {Index : Type s} (name : Index → Name) (x : Index) (query : Query (name x))
+    (data : (x : Index) → Realization (name x)) :=
+  (namedVerifier answer name x query).run (Out := fun _ => PUnit.{e + 1}) ⟨⟩ data (pure ⟨⟩)
+
+end IndependentRealizations
+
 /-! ### Security models with large inputs -/
 
 /-- Observations of `runnable` and `typeQueryVerifier` are small, so every set of them may be
@@ -384,19 +488,19 @@ def typeCertificate {P : PFunctor.{1, 0}} (l : PFunctor.Lens P TwoParty.Lens.rol
 
 /-- Round-by-round knowledge with intermediate witnesses in `Type 1`, a small input witness and an
 input statement in `Type 2`. -/
-example : rbrKnowledgeSoundness.{2, 0, 1} plainSig done (fun (_ : Type 1) => True)
+example : rbrKnowledgeSoundnessOfNodes.{2, 0, 1} plainSig done (fun (_ : Type 1) => True)
     (fun _ (_ : Unit) => True) (fun _ _ (_ : Unit) => True) (fun c => c.val.elim) (fun _ => 0) :=
   ⟨typeCertificate plainSig _, fun _ _ _ _ sp => nomatch sp⟩
 
 /-- The plain verifier wrapper at the same unequal universes. -/
-example : Verifier.rbrKnowledgeSoundness.{2, 0, 1} reduction.verifier plainAmbientTrue
+example : Verifier.rbrKnowledgeSoundnessOfNodes.{2, 0, 1} reduction.verifier plainAmbientTrue
     (fun _ => True) (fun _ (_ : Unit) => True) (fun _ _ _ (_ : Unit) => True) noPlainChallenges
     (fun _ => 0) :=
   ⟨typeCertificate plainSig _, fun _ _ _ _ sp => nomatch sp⟩
 
 /-- The oracle verifier wrapper for `runnable`, with intermediate witnesses in `Type 1`, a small
 input witness, an input statement in `Type 2` and an input index in `Type 1`. -/
-example : OracleVerifier.rbrKnowledgeSoundness.{2, 0, 1, 0, 1, 0, 0} runnable ambientTrue
+example : OracleVerifier.rbrKnowledgeSoundnessOfNodes.{2, 0, 1, 0} runnable ambientTrue
     (fun _ => True) (fun _ (_ : Unit) => True) (fun _ _ _ (_ : Unit) => True) noChallenges
     (fun _ => 0) :=
   ⟨typeCertificate oracleSig _, fun _ _ _ _ sp => nomatch sp⟩
@@ -443,11 +547,11 @@ example (stmt : Type 1 × Nat) (w : Fin (stmt.2 + 1)) :
     (indexedLargeCertificate.lift.{2, 2, 1, 0, 1, 0, 3}).extractRoot stmt ⟨⟨w⟩⟩ = ULift.up w := rfl
 
 /-- Lifting a bound retains the same dependent input and output carriers at a larger universe. -/
-example : rbrKnowledgeSoundness.{2, 2, 3} plainSig done
+example : rbrKnowledgeSoundnessOfNodes.{2, 2, 3} plainSig done
     (fun (_ : Type 1 × Nat) => True)
     (fun stmt (_ : ULift.{2} (Fin (stmt.2 + 1))) => True)
     (fun stmt _ (_ : Fin (stmt.2 + 1)) => True) noPlainChallenges (fun _ => 0) :=
-  rbrKnowledgeSoundness.lift.{2, 2, 1, 0, 3} plainSig
+  rbrKnowledgeSoundness.lift.{2, 2, 1, 0, 1, 3} plainSig
     ⟨indexedLargeCertificate, fun _ _ _ _ sp => nomatch sp⟩
 
 /-- Pure backward maps accept types themselves as terminal, seam and input witnesses. -/
@@ -498,13 +602,13 @@ def largeOutputCertificate {P : PFunctor.{1, 0}} (l : PFunctor.Lens P TwoParty.L
   leaf _ _ _ _ _ := trivial
 
 /-- The plain wrapper accepts large terminal witnesses independently of its run output. -/
-example : Verifier.rbrKnowledgeSoundness.{2, 0, 1, 1} reduction.verifier plainAmbientTrue
+example : Verifier.rbrKnowledgeSoundnessOfNodes.{2, 0, 1, 1} reduction.verifier plainAmbientTrue
     (fun _ => True) (fun _ (_ : Unit) => True) (fun _ _ _ (_ : Type) => True)
     noPlainChallenges (fun _ => 0) :=
   ⟨largeOutputCertificate plainSig _, fun _ _ _ _ sp => nomatch sp⟩
 
 /-- The oracle wrapper also accepts large terminal witnesses independently of its run output. -/
-example : OracleVerifier.rbrKnowledgeSoundness.{2, 0, 1, 1, 1, 0, 0} runnable ambientTrue
+example : OracleVerifier.rbrKnowledgeSoundnessOfNodes.{2, 0, 1, 1} runnable ambientTrue
     (fun _ => True) (fun _ (_ : Unit) => True) (fun _ _ _ (_ : Type) => True)
     noChallenges (fun _ => 0) :=
   ⟨largeOutputCertificate oracleSig _, fun _ _ _ _ sp => nomatch sp⟩

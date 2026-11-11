@@ -212,7 +212,7 @@ any universe `v`, is legacy round-by-round knowledge soundness, for `Nat` witnes
 `init := pure ()`. -/
 example [∀ i, SampleableType (twoWay.Challenge i)] (impl : QueryImpl []ₒ (StateT Unit ProbComp))
     (relIn relOut : Set (Nat × Nat)) (ε : twoWay.ChallengeIdx → ℝ≥0) :
-    Verifier.rbrKnowledgeSoundness.{0, 0, v} (embedVerifier lastIfTrue) impl (fun _ => True)
+    Verifier.rbrKnowledgeSoundnessOfNodes.{0, 0, v} (embedVerifier lastIfTrue) impl (fun _ => True)
         (fun stmt w => (stmt, w) ∈ relIn) (fun _ _ t w => (t, w) ∈ relOut)
         (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
         (fun c => ε (challengeRound 0 3 (Nat.zero_add 3) c)) ↔
@@ -258,7 +258,7 @@ example [∀ i, SampleableType (twoWay.Challenge i)] (impl : QueryImpl []ₒ (St
 guarded certificates. -/
 example [∀ i, SampleableType (twoWay.Challenge i)] (impl : QueryImpl []ₒ (StateT Bool ProbComp))
     (relIn relOut : Set (Nat × Nat)) (ε : twoWay.ChallengeIdx → ℝ≥0) :
-    Verifier.rbrKnowledgeSoundness.{0, 0, 2} (embedVerifier lastIfTrue) impl (fun _ => True)
+    Verifier.rbrKnowledgeSoundnessOfNodes.{0, 0, 2} (embedVerifier lastIfTrue) impl (fun _ => True)
         (fun stmt w => (stmt, w) ∈ relIn) (fun _ _ t w => (t, w) ∈ relOut)
         (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
         (fun c => ε (challengeRound 0 3 (Nat.zero_add 3) c)) ↔

@@ -15,6 +15,7 @@ kernel. The elaborator's definitional unfolding does not cache terms with free v
 checks the same proof term directly and rejects it when the sides differ. -/
 elab "kernel_rfl" : tactic => do
   let goal ← getMainGoal
-  let some (_, lhs, _) := (← goal.getType).eq?
+  let goalType ← instantiateMVars (← goal.getType)
+  let some (_, lhs, _) := goalType.consumeMData.eq?
     | throwError "kernel_rfl: the goal is not an equality"
   goal.assign (← mkEqRefl lhs)

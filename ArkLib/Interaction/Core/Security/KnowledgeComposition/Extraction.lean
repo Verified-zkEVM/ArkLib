@@ -32,20 +32,20 @@ root state implies the prefix's valid output on the witness the suffix root map 
 Extraction along an appended transcript is suffix extraction followed by prefix extraction
 (`extractAlong_append`), the terminal state is the suffix terminal state
 (`toFun_terminalWitness_append`), and the composite is locally bounded by the prefix and suffix
-errors combined along the protocol with `combineDraw`, the same combinator that combines the draws
+errors combined along the protocol with `combinePrefixDraw`, which also combines the draws
 (`LocallyBounded.append`).
 
 `KnowledgeStateFunction.guard` restricts a state function to admissible statements and
 `KnowledgeStateFunction.comap` changes its statement type; both keep the local bound. The
-theorem `rbrKnowledgeSoundness_append` composes the security statements themselves, with a seam
-stated between the suffix input relation and the prefix output relation under the input promise;
-`rbrKnowledgeSoundness_append_of_mid` is its special case where the suffix statement is a
+theorem `rbrKnowledgeSoundness_append_prefix` composes the security statements themselves. Its seam
+is stated between the suffix input relation and the prefix output relation under the input promise;
+`rbrKnowledgeSoundness_append_of_mid_prefix` is its special case where the suffix statement is a
 function of the prefix statement and transcript.
 -/
 
 @[expose] public section
 
-universe uS uW uK uO uM uO₂ uS' uW' uT uI wI wJ wK uW₂ uA u
+universe v uS uW uK uO uM uO₂ uS' uW' uT uI wI wJ wK uW₂ uA u
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle MeasureTheory
@@ -106,6 +106,105 @@ def PrefixMoves.completeWith {s : FreeM P PUnit.{u + 1}} : {t : FreeM P PUnit.{u
     (PrefixMoves.completeWith_down l (next := next) x (.root _) ⟨⟩ tr).trans
       (congrArg (Sigma.mk (β := fun y => PathAlong l (next (l.toFunB a y))) x)
         (PrefixMoves.completeWith_root tr))
+
+/-- Combine prefix actions. The suffix family is selected by the full first transcript;
+errors use this same combinator with a constant result family. -/
+def combinePrefixDraw {m : Type u → Type v} :
+    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
+    PrefixDraw l m s₁ →
+    ((tr₁ : PathAlong l s₁) → PrefixDraw l m (s₂ (projectPathAlong l s₁ tr₁))) →
+    PrefixDraw l m (s₁.append s₂)
+  | .pure _, _, _, draw₂ => draw₂ ⟨⟩
+  | .liftBind a next, s₂, draw₁, draw₂ => fun sp h history => by
+    cases sp with
+    | root => exact draw₁ (.root _) h ⟨⟩
+    | down b tail =>
+      rcases history with ⟨⟨x, rfl⟩, history⟩
+      exact combinePrefixDraw (next (l.toFunB a x)) (fun p => s₂ ⟨l.toFunB a x, p⟩)
+        (fun sp h history => draw₁ (.down _ sp) h ⟨⟨x, rfl⟩, history⟩)
+        (fun tr => draw₂ ⟨x, tr⟩) tail h history
+
+/-- Append passive samplers, selecting the suffix sampler from the full first transcript. -/
+def appendPrefixSampler {m : Type u → Type u} [Monad m]
+    (s₁ : FreeM P PUnit.{u + 1}) (s₂ : Path s₁ → FreeM P PUnit.{u + 1})
+    (draw₁ : PrefixDraw l m s₁)
+    (draw₂ : (tr₁ : PathAlong l s₁) → PrefixDraw l m (s₂ (projectPathAlong l s₁ tr₁))) :
+    Counterpart l m (s₁.append s₂) (fun _ => PUnit.{u + 1}) :=
+  Counterpart.appendFlatM (prefixSampler l s₁ draw₁)
+    (fun tr _ => prefixSampler l _ (draw₂ tr))
+
+/-- Appending prefix samplers is exactly sampling with the combined full-prefix draw. -/
+theorem appendPrefixSampler_eq_combinePrefixDraw {m : Type u → Type u} [Monad m] [LawfulMonad m]
+    (s₁ : FreeM P PUnit.{u + 1}) (s₂ : Path s₁ → FreeM P PUnit.{u + 1})
+    (draw₁ : PrefixDraw l m s₁)
+    (draw₂ : (tr₁ : PathAlong l s₁) → PrefixDraw l m (s₂ (projectPathAlong l s₁ tr₁))) :
+    appendPrefixSampler l s₁ s₂ draw₁ draw₂ =
+      prefixSampler l (s₁.append s₂) (combinePrefixDraw l s₁ s₂ draw₁ draw₂) := by
+  induction s₁ using FreeM.rec with
+  | pure x =>
+    cases x
+    have pureSlot {t : FreeM P PUnit.{u + 1}}
+        (c : Counterpart l m t (fun _ => PUnit.{u + 1})) :
+        Strategy.joinSlot (pure c) = c := by
+      cases t <;> simp only [Strategy.joinSlot, LawfulMonad.pure_bind, id_eq]
+    change Strategy.joinSlot ((fun _ : PUnit.{u + 1} =>
+      prefixSampler l (s₂ ⟨⟩) (draw₂ ⟨⟩)) <$> pure ⟨⟩) = _
+    rw [LawfulApplicative.map_pure]
+    exact pureSlot _
+  | liftBind a next ih =>
+    simp only [appendPrefixSampler, Counterpart.appendFlatM, PureEnd.graft, prefixSampler,
+      FreeM.append_liftBind, samplerSlot_map]
+    congr 1
+    funext x
+    exact ih (l.toFunB a x) (fun p => s₂ ⟨l.toFunB a x, p⟩)
+      (fun sp h history => draw₁ (.down _ sp) h ⟨⟨x, rfl⟩, history⟩)
+      (fun tr => draw₂ ⟨x, tr⟩)
+
+/-- Combining node draws through the full-prefix interface recovers the node combination. -/
+theorem combinePrefixDraw_ofNodes {m : Type u → Type v} [Functor m]
+    (s₁ : FreeM P PUnit.{u + 1}) (s₂ : Path s₁ → FreeM P PUnit.{u + 1})
+    (draw₁ : (c : ChallengeNode l s₁) → m (challengeSpec l s₁ c))
+    (draw₂ : (p : Path s₁) → (c : ChallengeNode l (s₂ p)) → m (challengeSpec l (s₂ p) c)) :
+    (combinePrefixDraw l s₁ s₂ (PrefixDraw.ofNodes l draw₁)
+        (fun tr => PrefixDraw.ofNodes l (draw₂ (projectPathAlong l s₁ tr))) :
+      PrefixDraw l m (s₁.append s₂)) =
+      (fun {a next} => PrefixDraw.ofNodes l (combineDraw l s₁ s₂ draw₁ draw₂)
+        (a := a) (next := next)) := by
+  induction s₁ using FreeM.rec with
+  | pure _ => rfl
+  | liftBind a next ih =>
+    funext a' next' sp h history
+    cases sp with
+    | root => rfl
+    | down b tail =>
+      rcases history with ⟨⟨x, rfl⟩, history⟩
+      exact congrArg (fun d : PrefixDraw l m _ => d tail h history)
+        (ih (l.toFunB a x) (fun p => s₂ ⟨l.toFunB a x, p⟩)
+          (fun c => draw₁ ⟨.inr ⟨l.toFunB a x, c.val⟩, c.property⟩)
+          (fun p => draw₂ ⟨l.toFunB a x, p⟩))
+
+/-- Combining node errors is the history-independent case of combining prefix errors. -/
+theorem combinePrefixError_ofNodes
+    (s₁ : FreeM P PUnit.{u + 1}) (s₂ : Path s₁ → FreeM P PUnit.{u + 1})
+    (ε₁ : ChallengeNode l s₁ → ℝ≥0∞)
+    (ε₂ : (p : Path s₁) → ChallengeNode l (s₂ p) → ℝ≥0∞) :
+    (combinePrefixDraw (m := fun _ => ℝ≥0∞) l s₁ s₂ (PrefixError.ofNodes l ε₁)
+        (fun tr => PrefixError.ofNodes l (ε₂ (projectPathAlong l s₁ tr))) :
+      PrefixError l (s₁.append s₂)) =
+      (fun {a next} => PrefixError.ofNodes l
+        (combineDraw (m := fun _ => ℝ≥0∞) l s₁ s₂ ε₁ ε₂) (a := a) (next := next)) := by
+  induction s₁ using FreeM.rec with
+  | pure _ => rfl
+  | liftBind a next ih =>
+    funext a' next' sp h history
+    cases sp with
+    | root => rfl
+    | down b tail =>
+      rcases history with ⟨⟨x, rfl⟩, history⟩
+      exact congrArg (fun d : PrefixError l _ => d tail h history)
+        (ih (l.toFunB a x) (fun p => s₂ ⟨l.toFunB a x, p⟩)
+          (fun c => ε₁ ⟨.inr ⟨l.toFunB a x, c.val⟩, c.property⟩)
+          (fun p => ε₂ ⟨l.toFunB a x, p⟩))
 
 namespace KnowledgeStateFunction
 
@@ -1130,18 +1229,28 @@ variable {s : FreeM P PUnit.{1}} {Win : S → Type uW}
   (F : KnowledgeStateFunction.{uS, uW, uK, uO} l s S W Win admissible relIn validOutput)
 
 /-- For one statement, every receiver prefix draws a bad challenge with probability at most the
-error of its challenge node. -/
-def BoundedAt (draw : QueryImpl (challengeSpec l s) ProbComp) (ε : ChallengeNode l s → ℝ≥0∞)
+error at that same full prefix. -/
+def BoundedAt (draw : PrefixDraw l ProbComp s) (ε : PrefixError l s)
     (stmt : S) : Prop :=
   ∀ (a : P.A) (next : P.B a → FreeM P PUnit.{1}) (sp : Cursor.Spine s (.liftBind a next))
     (h : owner l a = .receiver) (history : PrefixMoves l sp),
     letI : MeasurableSpace (Move l a) := ⊤
-    𝒟[sampleAt l draw sp h] (F.badChallenge sp history stmt) ≤ ε (spineChallenge l sp h)
+    𝒟[prefixSampleAt l draw sp h history] (F.badChallenge sp history stmt) ≤ ε sp h history
 
 /-- Every admissible statement has the local error bound at every receiver prefix. -/
-def LocallyBounded (draw : QueryImpl (challengeSpec l s) ProbComp)
-    (ε : ChallengeNode l s → ℝ≥0∞) : Prop :=
+def LocallyBounded (draw : PrefixDraw l ProbComp s)
+    (ε : PrefixError l s) : Prop :=
   ∀ stmt, admissible stmt → F.BoundedAt draw ε stmt
+
+/-- Node-indexed bounds are the specialization ignoring the full prefix history. -/
+abbrev BoundedAtOfNodes (draw : QueryImpl (challengeSpec l s) ProbComp)
+    (ε : ChallengeNode l s → ℝ≥0∞) (stmt : S) : Prop :=
+  F.BoundedAt (PrefixDraw.ofNodes l draw) (PrefixError.ofNodes l ε) stmt
+
+/-- Node-indexed local boundedness uses the same prefix certificate. -/
+abbrev LocallyBoundedOfNodes (draw : QueryImpl (challengeSpec l s) ProbComp)
+    (ε : ChallengeNode l s → ℝ≥0∞) : Prop :=
+  F.LocallyBounded (PrefixDraw.ofNodes l draw) (PrefixError.ofNodes l ε)
 
 end KnowledgeStateFunction
 
@@ -1153,7 +1262,7 @@ theorem rbrKnowledgeSoundness_iff_exists_locallyBounded {s : FreeM P PUnit.{1}} 
     {Win : S → Type uW}
     {W : S → PathAlong l s → Type uO} {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
     {validOutput : (stmt : S) → (tr : PathAlong l s) → W stmt tr → Prop}
-    {draw : QueryImpl (challengeSpec l s) ProbComp} {ε : ChallengeNode l s → ℝ≥0∞} :
+    {draw : PrefixDraw l ProbComp s} {ε : PrefixError l s} :
     rbrKnowledgeSoundness.{_, _, uK} l s admissible relIn validOutput draw ε ↔
       ∃ F : KnowledgeStateFunction.{_, _, uK} l s S W Win admissible relIn validOutput,
         F.LocallyBounded draw ε := Iff.rfl
@@ -1162,19 +1271,19 @@ namespace KnowledgeStateFunction
 
 variable {l} {S : Type uS}
 
-/-- A bound for a state function survives restriction below a first move, with the draws and
-errors restricted to the challenge nodes below it. -/
+/-- A bound survives restriction below a first move by prepending that actual move to both
+the draw history and the error history. -/
 theorem BoundedAt.child {a : P.A} {next : P.B a → FreeM P PUnit.{1}} {Win : S → Type uW}
     {W : S → PathAlong l (.liftBind a next) → Type uO} {admissible : S → Prop} {relIn : (stmt : S) →
       Win stmt → Prop}
     {validOutput : (stmt : S) → (tr : PathAlong l (.liftBind a next)) → W stmt tr → Prop}
     {F : KnowledgeStateFunction.{_, _, uK} l (.liftBind a next) S W Win admissible relIn
     validOutput}
-    {draw : QueryImpl (challengeSpec l (.liftBind a next)) ProbComp}
-    {ε : ChallengeNode l (.liftBind a next) → ℝ≥0∞} {stmt : S} (h : F.BoundedAt draw ε stmt)
+    {draw : PrefixDraw l ProbComp (.liftBind a next)}
+    {ε : PrefixError l (.liftBind a next)} {stmt : S} (h : F.BoundedAt draw ε stmt)
     (x : Move l a) :
-    (F.child x).BoundedAt (fun c => draw ⟨.inr ⟨l.toFunB a x, c.val⟩, c.property⟩)
-      (fun c => ε ⟨.inr ⟨l.toFunB a x, c.val⟩, c.property⟩) stmt :=
+    (F.child x).BoundedAt (fun sp ho history => draw (.down _ sp) ho ⟨⟨x, rfl⟩, history⟩)
+      (fun sp ho history => ε (.down _ sp) ho ⟨⟨x, rfl⟩, history⟩) stmt :=
   fun a' next' sp ho history => h a' next' (.down _ sp) ho ⟨⟨x, rfl⟩, history⟩
 
 /-- Bounds compose along the composite: prefix challenges keep the prefix bound and suffix
@@ -1196,14 +1305,15 @@ theorem BoundedAt.appendAux :
       (relMid tr₁) (fun stmt tr₂ w => validOutput stmt (PathAlong.append l s₁ s₂ tr₁ tr₂) w)) →
     (seam : ∀ tr₁ stmt w, (F₂ tr₁).toFun stmt (.root _) ⟨⟩ w →
       validMid stmt tr₁ ((F₂ tr₁).extractRoot stmt w)) →
-    ∀ (draw₁ : QueryImpl (challengeSpec l s₁) ProbComp)
-      (draw₂ : (p : Path s₁) → QueryImpl (challengeSpec l (s₂ p)) ProbComp)
-      (ε₁ : ChallengeNode l s₁ → ℝ≥0∞) (ε₂ : (p : Path s₁) → ChallengeNode l (s₂ p) → ℝ≥0∞)
+    ∀ (draw₁ : PrefixDraw l ProbComp s₁)
+      (draw₂ : (tr₁ : PathAlong l s₁) → PrefixDraw l ProbComp (s₂ (projectPathAlong l s₁ tr₁)))
+      (ε₁ : PrefixError l s₁)
+      (ε₂ : (tr₁ : PathAlong l s₁) → PrefixError l (s₂ (projectPathAlong l s₁ tr₁)))
       (stmt : S), F₁.BoundedAt draw₁ ε₁ stmt →
-      (∀ tr₁, (F₂ tr₁).BoundedAt (draw₂ (projectPathAlong l s₁ tr₁))
-        (ε₂ (projectPathAlong l s₁ tr₁)) stmt) →
-      (append (s₂ := s₂) F₁ F₂ seam).BoundedAt (combineDraw l s₁ s₂ draw₁ draw₂)
-        (combineDraw (m := fun _ => ℝ≥0∞) l s₁ s₂ ε₁ ε₂) stmt
+      (∀ tr₁, (F₂ tr₁).BoundedAt (draw₂ tr₁)
+        (ε₂ tr₁) stmt) →
+      (append (s₂ := s₂) F₁ F₂ seam).BoundedAt (combinePrefixDraw l s₁ s₂ draw₁ draw₂)
+        (combinePrefixDraw (m := fun _ => ℝ≥0∞) l s₁ s₂ ε₁ ε₂) stmt
   | .pure _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, h₂ => h₂ ⟨⟩
   | .liftBind a cont, s₂, Wmid, W, _, _, _, validMid, admissible₂, relMid, validOutput, F₁, F₂,
       seam, draw₁, draw₂, ε₁, ε₂, stmt, h₁, h₂ => by
@@ -1229,8 +1339,8 @@ theorem BoundedAt.appendAux :
           (admissible₂ := fun tr => admissible₂ ⟨x, tr⟩) (relMid := fun tr => relMid ⟨x, tr⟩)
           (validOutput := fun stmt tr w => validOutput stmt ⟨x, tr⟩ w)
           (F₁.child x) (fun tr => F₂ ⟨x, tr⟩) (fun tr => seam ⟨x, tr⟩)
-        (fun c => draw₁ ⟨.inr ⟨l.toFunB a x, c.val⟩, c.property⟩) (fun p => draw₂ ⟨_, p⟩)
-        (fun c => ε₁ ⟨.inr ⟨l.toFunB a x, c.val⟩, c.property⟩) (fun p => ε₂ ⟨_, p⟩) stmt
+        (fun sp ho history => draw₁ (.down _ sp) ho ⟨⟨x, rfl⟩, history⟩) (fun tr => draw₂ ⟨x, tr⟩)
+        (fun sp ho history => ε₁ (.down _ sp) ho ⟨⟨x, rfl⟩, history⟩) (fun tr => ε₂ ⟨x, tr⟩) stmt
         (h₁.child x) (fun tr => h₂ ⟨x, tr⟩) a' next' tail ho history
 
 /-- The same composition law with an independent input-witness universe. -/
@@ -1251,14 +1361,15 @@ theorem BoundedAt.append :
       (relMid tr₁) (fun stmt tr₂ w => validOutput stmt (PathAlong.append l s₁ s₂ tr₁ tr₂) w)) →
     (seam : ∀ tr₁ stmt w, (F₂ tr₁).toFun stmt (.root _) ⟨⟩ w →
       validMid stmt tr₁ ((F₂ tr₁).extractRoot stmt w)) →
-    ∀ (draw₁ : QueryImpl (challengeSpec l s₁) ProbComp)
-      (draw₂ : (p : Path s₁) → QueryImpl (challengeSpec l (s₂ p)) ProbComp)
-      (ε₁ : ChallengeNode l s₁ → ℝ≥0∞) (ε₂ : (p : Path s₁) → ChallengeNode l (s₂ p) → ℝ≥0∞)
+    ∀ (draw₁ : PrefixDraw l ProbComp s₁)
+      (draw₂ : (tr₁ : PathAlong l s₁) → PrefixDraw l ProbComp (s₂ (projectPathAlong l s₁ tr₁)))
+      (ε₁ : PrefixError l s₁)
+      (ε₂ : (tr₁ : PathAlong l s₁) → PrefixError l (s₂ (projectPathAlong l s₁ tr₁)))
       (stmt : S), F₁.BoundedAt draw₁ ε₁ stmt →
-      (∀ tr₁, (F₂ tr₁).BoundedAt (draw₂ (projectPathAlong l s₁ tr₁))
-        (ε₂ (projectPathAlong l s₁ tr₁)) stmt) →
-      (append (s₂ := s₂) F₁ F₂ seam).BoundedAt (combineDraw l s₁ s₂ draw₁ draw₂)
-        (combineDraw (m := fun _ => ℝ≥0∞) l s₁ s₂ ε₁ ε₂) stmt := by
+      (∀ tr₁, (F₂ tr₁).BoundedAt (draw₂ tr₁)
+        (ε₂ tr₁) stmt) →
+      (append (s₂ := s₂) F₁ F₂ seam).BoundedAt (combinePrefixDraw l s₁ s₂ draw₁ draw₂)
+        (combinePrefixDraw (m := fun _ => ℝ≥0∞) l s₁ s₂ ε₁ ε₂) stmt := by
   intro s₁ s₂ Wmid W Win admissible relIn validMid admissible₂ relMid validOutput F₁ F₂ seam
   exact BoundedAt.appendAux F₁.withRootWitness F₂ seam
 
