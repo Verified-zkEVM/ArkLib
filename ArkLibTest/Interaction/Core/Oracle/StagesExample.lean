@@ -25,6 +25,8 @@ the first two stages runs both interactions before either decision, with history
 
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
   OracleComp Interaction.Core.CompositionExampleTests
+open Interaction.Core.LoggedExecutionTests (inputs)
+open Interaction.Core.DependentRoutingTests (done)
 
 namespace Interaction.Core.StagesExampleTests
 
@@ -35,19 +37,19 @@ of closed stages. -/
 
 section FrozenLaws
 
-universe u
+universe u w
 
 variable {ι : Type u} {ambient : OracleSpec.{u, u} ι}
 
 -- The frozen zero law.
-example (I : Fin 1 → StageInterface.{u})
+example (I : Fin 1 → StageInterface.{u, w})
     (stages : (i : Fin 0) → ClosedStage ambient (I i.castSucc) (I i.succ))
     (input : (I ⟨0, Nat.zero_lt_succ _⟩).State) :
     ClosedStage.runStages 0 I stages input = pure (some input) :=
   foldStages_zero _ _ _
 
 -- The frozen successor law.
-example (n : Nat) (I : Fin (n + 2) → StageInterface.{u})
+example (n : Nat) (I : Fin (n + 2) → StageInterface.{u, w})
     (stages : (i : Fin (n + 1)) → ClosedStage ambient (I i.castSucc) (I i.succ))
     (input : (I ⟨0, Nat.zero_lt_succ _⟩).State) :
     ClosedStage.runStages (n + 1) I stages input =
@@ -57,7 +59,7 @@ example (n : Nat) (I : Fin (n + 2) → StageInterface.{u})
   foldStages_succ _ _ _ _
 
 -- The frozen successor-on-reject law.
-example (n : Nat) (I : Fin (n + 2) → StageInterface.{u})
+example (n : Nat) (I : Fin (n + 2) → StageInterface.{u, w})
     (stages : (i : Fin (n + 1)) → ClosedStage ambient (I i.castSucc) (I i.succ))
     (input : (I ⟨0, Nat.zero_lt_succ _⟩).State)
     (h : (stages ⟨0, Nat.zero_lt_succ _⟩).run input = pure none) :
@@ -65,7 +67,7 @@ example (n : Nat) (I : Fin (n + 2) → StageInterface.{u})
   foldStages_succ_of_reject _ _ _ _ h
 
 -- The frozen split law, with the frozen cast along `m + n = n + m`.
-example (m n : Nat) (I : Fin (n + m + 1) → StageInterface.{u})
+example (m n : Nat) (I : Fin (n + m + 1) → StageInterface.{u, w})
     (stages : (i : Fin (n + m)) → ClosedStage ambient (I i.castSucc) (I i.succ))
     (input : (I ⟨0, Nat.zero_lt_succ _⟩).State) :
     ClosedStage.runStages (n + m) I stages input =
@@ -81,7 +83,7 @@ example (m n : Nat) (I : Fin (n + m + 1) → StageInterface.{u})
     input
 
 -- The frozen deterministic invariant law.
-example (n : Nat) (I : Fin (n + 1) → StageInterface.{u})
+example (n : Nat) (I : Fin (n + 1) → StageInterface.{u, w})
     (stages : (i : Fin n) → ClosedStage ambient (I i.castSucc) (I i.succ))
     (Inv : (i : Fin (n + 1)) → (I i).State → Prop)
     (preserves : ∀ (i : Fin n) (input : (I i.castSucc).State), Inv i.castSucc input →
@@ -92,7 +94,7 @@ example (n : Nat) (I : Fin (n + 1) → StageInterface.{u})
   foldStages_preserves n _ _ Inv preserves input hinput
 
 -- The frozen support invariant law.
-example (n : Nat) (I : Fin (n + 1) → StageInterface.{u})
+example (n : Nat) (I : Fin (n + 1) → StageInterface.{u, w})
     (stages : (i : Fin n) → ClosedStage ambient (I i.castSucc) (I i.succ))
     (Inv : (i : Fin (n + 1)) → (I i).State → Prop)
     (preserves : ∀ (i : Fin n) (input : (I i.castSucc).State), Inv i.castSucc input →
@@ -104,7 +106,7 @@ example (n : Nat) (I : Fin (n + 1) → StageInterface.{u})
   foldStages_preserves_support n _ _ Inv preserves input hinput
 
 -- The frozen almost-sure invariant law.
-example [ambient.AnswerMeasure] (n : Nat) (I : Fin (n + 1) → StageInterface.{u})
+example [ambient.AnswerMeasure] (n : Nat) (I : Fin (n + 1) → StageInterface.{u, w})
     [∀ i, MeasurableSpace (I i).State] [∀ i, DiscreteMeasurableSpace (I i).State]
     (stages : (i : Fin n) → ClosedStage ambient (I i.castSucc) (I i.succ))
     (Inv : (i : Fin (n + 1)) → (I i).State → Prop)
@@ -123,7 +125,7 @@ abbrev inputInterface : StageInterface where
   Stmt := Unit
   Index := Unit
   Data := fun _ => Nat
-  oracles := naturals
+  oracles := inputs
   Private := Nat
 
 /-- After the first stage: a `Bool` statement, the exported natural-number oracle, and a
@@ -132,7 +134,7 @@ abbrev parityInterface : StageInterface where
   Stmt := Bool
   Index := Unit
   Data := fun _ => Nat
-  oracles := naturals
+  oracles := inputs
   Private := Nat
 
 /-- After the second stage: a `Nat` statement, a `Bool` oracle, and two natural numbers. -/
@@ -194,13 +196,13 @@ def responseDraw : (c : ChallengeNode oracleSig responseProtocol) →
 
 /-- The decision resources on a path of `responseProtocol`. -/
 abbrev responseResources (p : Path responseProtocol) :=
-  sumFamily booleans (pathFamily responseProtocol p)
+  pathResources booleans responseProtocol p
 
 /-- Export the negation of the `Bool` input oracle. -/
 def negate (p : Path responseProtocol) : OracleMap (responseResources p) booleans where
-  f x _ := !(show Bool from x (.inl ()))
+  f x _ := !(show Bool from x.1 ())
   impl _ := do
-    let b : Bool ← liftM ((responseResources p).spec.query ⟨.inl (), ()⟩)
+    let b : Bool ← liftM ((responseResources p).spec.query (.inl ⟨(), ()⟩))
     pure !b
   law _ _ := by
     simp only [simulateQ_bind]
@@ -212,7 +214,7 @@ def responseVerifier : OracleVerifier ambient responseProtocol Nat (fun _ => Boo
     (fun _ => booleans) where
   decide stmt p v := OptionT.mk do
     let _ ← liftM ((ambient + (responseResources p).spec).query (.inl 6))
-    let b : Bool ← liftM ((ambient + (responseResources p).spec).query (.inr ⟨.inl (), ()⟩))
+    let b : Bool ← liftM ((ambient + (responseResources p).spec).query (.inr (.inl ⟨(), ()⟩)))
     let challenge : Nat := v.val.1
     let response : Nat := v.val.2.1
     pure (if response = challenge + 1 then some (b, stmt + response) else none)

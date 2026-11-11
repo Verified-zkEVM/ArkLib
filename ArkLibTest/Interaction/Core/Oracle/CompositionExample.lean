@@ -20,40 +20,37 @@ or skipped effects.
 
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
   OracleComp
+open Interaction.Core.LoggedExecutionTests (inputs)
+open Interaction.Core.DependentRoutingTests (done)
+
+universe uX dX
 
 namespace Interaction.Core.CompositionExampleTests
 
 /-- Tagged ambient events. -/
 abbrev ambient : OracleSpec Nat := Nat →ₒ Unit
 
-/-- Scalar natural-number oracles. -/
-@[instance_reducible] def naturals : OracleFamily Unit (fun _ => Nat) :=
-  ⟨fun _ => OracleInterface.instDefault⟩
-
 /-- A distinct scalar Boolean oracle. -/
-@[instance_reducible] def booleans : OracleFamily Unit (fun _ => Bool) :=
+@[instance_reducible] def booleans : OracleFamily.{0, 0, 0} Unit (fun _ => Bool) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
-/-- The prefix has no interaction nodes. -/
-abbrev done : OracleProtocol := .pure ⟨⟩
-
-/-- Export the scalar input plus 11, next to any message oracles. -/
-def addEleven {J : Type} {B : J → Type} (messages : OracleFamily J B) :
-    OracleMap (sumFamily naturals messages) naturals where
-  f x _ := (show Nat from x (.inl ())) + 11
+/-- Export the scalar input plus 11, next to any message resources. -/
+def addEleven (messages : Resources.{0, uX, dX}) :
+    OracleMap (Resources.sum inputs messages) inputs where
+  f x _ := (show Nat from x.1 ()) + 11
   impl _ := do
-    let old : Nat ← liftM ((sumFamily naturals messages).spec.query ⟨.inl (), ()⟩)
+    let old : Nat ← liftM ((Resources.sum inputs messages).spec.query (.inl ⟨(), ()⟩))
     pure (old + 11)
   law _ _ := by
     simp only [simulateQ_bind]
     rfl
 
-/-- Export the parity of the scalar input, next to any message oracles. -/
-def isEven {J : Type} {B : J → Type} (messages : OracleFamily J B) :
-    OracleMap (sumFamily naturals messages) booleans where
-  f x _ := (show Nat from x (.inl ())) % 2 == 0
+/-- Export the parity of the scalar input, next to any message resources. -/
+def isEven (messages : Resources.{0, uX, dX}) :
+    OracleMap (Resources.sum inputs messages) booleans where
+  f x _ := (show Nat from x.1 ()) % 2 == 0
   impl _ := do
-    let value : Nat ← liftM ((sumFamily naturals messages).spec.query ⟨.inl (), ()⟩)
+    let value : Nat ← liftM ((Resources.sum inputs messages).spec.query (.inl ⟨(), ()⟩))
     pure (value % 2 == 0)
   law _ _ := by
     simp only [simulateQ_bind]
@@ -61,11 +58,11 @@ def isEven {J : Type} {B : J → Type} (messages : OracleFamily J B) :
 
 /-- The prefix decision records 1, reads the input and decides its parity, or rejects. -/
 def firstVerifier (accept : Bool) :
-    OracleVerifier ambient done Unit (fun _ => Bool) naturals (fun _ => naturals) where
+    OracleVerifier ambient done Unit (fun _ => Bool) inputs (fun _ => inputs) where
   decide _ p _ := OptionT.mk do
-    let _ ← liftM ((ambient + (sumFamily naturals (pathFamily done p)).spec).query (.inl 1))
-    let old : Nat ← liftM ((ambient + (sumFamily naturals (pathFamily done p)).spec).query
-      (.inr ⟨.inl (), ()⟩))
+    let _ ← liftM ((ambient + (pathResources inputs done p).spec).query (.inl 1))
+    let old : Nat ← liftM ((ambient + (pathResources inputs done p).spec).query
+      (.inr (.inl ⟨(), ()⟩)))
     pure (if accept then some (old % 2 == 0) else none)
   outputMap _ p _ := addEleven (pathFamily done p)
 
@@ -85,13 +82,13 @@ def messageValue : Path branchProtocol → Nat
 
 /-- The suffix decision records 3, reads the exported oracle, and adds the message value. -/
 def secondVerifier :
-    OracleVerifier ambient branchProtocol Bool (fun _ => Nat) naturals (fun _ => booleans) where
+    OracleVerifier ambient branchProtocol Bool (fun _ => Nat) inputs (fun _ => booleans) where
   decide _ p _ := do
-    let _ ← liftM ((ambient + (sumFamily naturals (pathFamily branchProtocol p)).spec).query
+    let _ ← liftM ((ambient + (pathResources inputs branchProtocol p).spec).query
       (.inl 3))
     let value : Nat ← liftM
-      ((ambient + (sumFamily naturals (pathFamily branchProtocol p)).spec).query
-        (.inr ⟨.inl (), ()⟩))
+      ((ambient + (pathResources inputs branchProtocol p).spec).query
+        (.inr (.inl ⟨(), ()⟩)))
     pure (messageValue p + value)
   outputMap _ p _ := isEven (pathFamily branchProtocol p)
 

@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Core.OracleVerifier
+import ArkLibTest.Interaction.Core.Oracle.LoggedExecution
 
 /-!
 # Closing the verifier's output with the same run's data
@@ -17,52 +17,33 @@ the same run. A stateful logger exposes the exact effect order.
 
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
   OracleComp
+open Interaction.Core.LoggedExecutionTests (inputs seven pairSend pairResources)
 
 namespace Interaction.Core.CoreRunExampleTests
 
 /-- Observable ambient events. -/
 abbrev ambient : OracleSpec Nat := Nat →ₒ Unit
 
-/-- One scalar input slot. -/
-@[instance_reducible] def naturals : OracleFamily Unit (fun _ => Nat) :=
-  ⟨fun _ => OracleInterface.instDefault⟩
-
-/-- The input data: the single slot holds 7. -/
-def seven : ∀ _ : Unit, Nat := fun _ => 7
-
-/-- Only the first coordinate of a sent pair is observable. -/
-@[reducible] def interface : OracleInterface (Nat × Nat) where
-  Query := Unit
-  toOC.spec := fun _ => Nat
-  toOC.impl _ := do return (← read).1
-
-/-- The prover sends one pair oracle. -/
-@[instance_reducible] def protocol : OracleProtocol :=
-  .liftBind (.oracle (Nat × Nat) interface) (fun _ => .pure ⟨⟩)
-
-/-- The decision resources on the only path of `protocol`. -/
-abbrev resources := sumFamily naturals (pathFamily protocol ⟨⟨⟩, ⟨⟩⟩)
-
 /-- The output data adds the input to the observable coordinate of the sent pair. -/
-def outputMap : OracleMap resources naturals where
-  f x _ := (show Nat from x (.inl ())) + (show Nat × Nat from x (.inr (.inl ⟨⟩))).1
+def outputMap : OracleMap pairResources inputs where
+  f x _ := (show Nat from x.1 ()) + (show Nat × Nat from x.2 (.inl ⟨⟩)).1
   impl _ := do
-    let old : Nat ← liftM (resources.spec.query ⟨.inl (), ()⟩)
-    let sent : Nat ← liftM (resources.spec.query ⟨.inr (.inl ⟨⟩), ()⟩)
+    let old : Nat ← liftM (pairResources.spec.query (.inl ⟨(), ()⟩))
+    let sent : Nat ← liftM (pairResources.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
     pure (old + sent)
   law _ _ := by
     simp only [simulateQ_bind]
     rfl
 
 /-- The decision records 1, records 2, reads the sent oracle, and accepts with it or rejects. -/
-def verifier (accept : Bool) : OracleVerifier ambient protocol Unit (fun _ => Nat) naturals
-    (fun _ => naturals) where
+def verifier (accept : Bool) : OracleVerifier ambient pairSend Unit (fun _ => Nat) inputs
+    (fun _ => inputs) where
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact OptionT.mk do
-      let _ ← liftM ((ambient + resources.spec).query (.inl 1))
-      let _ ← liftM ((ambient + resources.spec).query (.inl 2))
-      let sent : Nat ← liftM ((ambient + resources.spec).query (.inr ⟨.inr (.inl ⟨⟩), ()⟩))
+      let _ ← liftM ((ambient + pairResources.spec).query (.inl 1))
+      let _ ← liftM ((ambient + pairResources.spec).query (.inl 2))
+      let sent : Nat ← liftM ((ambient + pairResources.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
       pure (if accept then some sent else none)
   outputMap _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
@@ -71,12 +52,12 @@ def verifier (accept : Bool) : OracleVerifier ambient protocol Unit (fun _ => Na
 /-- The prover makes the `setup` events and event 0, sends `(message, hidden)`, and keeps
 `hidden` as private output. -/
 def prover (setup : List Nat) (message hidden : Nat) :
-    Prover oracleSig ambient protocol (fun _ => Nat) := do
+    Prover oracleSig ambient pairSend (fun _ => Nat) := do
   for t in setup ++ [0] do liftM (ambient.query t)
   pure ⟨(message, hidden), pure hidden⟩
 
-/-- Log each ambient event without assuming effect commutativity; `protocol` has no challenges. -/
-def logger : QueryImpl (ambient + challengeSpec oracleSig protocol) (StateM (List Nat))
+/-- Log each ambient event without assuming effect commutativity; `pairSend` has no challenges. -/
+def logger : QueryImpl (ambient + challengeSpec oracleSig pairSend) (StateM (List Nat))
   | .inl tag => modify (· ++ [tag])
   | .inr ⟨.inl _, h⟩ => nomatch h
   | .inr ⟨.inr ⟨_, n⟩, _⟩ => n.elim

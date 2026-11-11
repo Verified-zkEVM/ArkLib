@@ -83,9 +83,8 @@ example (impl : QueryImpl tagged.spec Id) (q : tagged.spec.Domain) :
 -- same materialized data.
 example (x : ∀ i, tagged.Realization i) {α : Type} (program : OracleComp tagged.spec α) :
     simulateQ (tagged.behaviorOfRealizations x) (simulateQ repeated.impl program) =
-      simulateQ (tagged.behaviorOfRealizations x) (simulateQ identity.impl program) := by
-  rw [OracleMap.simulate_eq, OracleMap.simulate_eq]
-  rfl
+      simulateQ (tagged.behaviorOfRealizations x) (simulateQ identity.impl program) :=
+  (repeated.simulate_eq x program).trans (identity.simulate_eq x program).symm
 
 -- ClaimExample 4, restated: the frozen row closes a substituted open claim. Substitution is
 -- `OracleMap.comp`: under every deterministic handler of the inner inputs, the composite answers
@@ -111,7 +110,6 @@ example {I : Type} {A : I → Type} {In : OracleFamily I A} (a b : OracleMap In 
       simulateQ (In.behaviorOfRealizations x) (b.impl q))
     (s : Nat) (x : ∀ i, A i) :
     answerProblem.language () (s, a.f x) ↔ answerProblem.language () (s, b.f x) := by
-  refine language_congr s _ _ (funext fun q => ?_)
-  rw [← a.law, ← b.law, ho]
+  exact language_congr s _ _ (funext fun q => (a.law x q).symm.trans ((ho x q).trans (b.law x q)))
 
 end Interaction.Core.ClaimExampleTests

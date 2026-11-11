@@ -30,7 +30,7 @@ and a rejecting stage skips the interactions of the later stages, which an appen
 
 @[expose] public section
 
-universe u v w
+universe u v w uQ uQ'
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
@@ -221,7 +221,8 @@ theorem foldStages_preserves_measure {ι : Type w} {spec : OracleSpec.{w, u} ι}
 end Fold
 
 /-- A boundary between stages: a public statement with a concrete oracle family, and a separate
-private prover state. -/
+private prover state. The query and answer types of the oracle interfaces live in their own
+universe `uQ`. -/
 structure StageInterface where
   /-- Public statement type. -/
   Stmt : Type u
@@ -230,21 +231,22 @@ structure StageInterface where
   /-- Concrete data at each exported oracle. -/
   Data : Index → Type u
   /-- The query interfaces of the exported oracles. -/
-  oracles : OracleFamily.{u, u, u} Index Data
+  oracles : OracleFamily.{u, u, uQ} Index Data
   /-- Private prover state passed between stages. -/
   Private : Type u
 
 /-- The public claim at a boundary: a statement and concrete data for the exported oracles. It is
 the accepted output `OracleVerifier.Output` of an oracle verifier that targets the interface. -/
-abbrev StageInterface.Claim (I : StageInterface.{u}) := I.Stmt × ∀ i, I.Data i
+abbrev StageInterface.Claim (I : StageInterface.{u, uQ}) := I.Stmt × ∀ i, I.Data i
 
 /-- The public claim and the separate private state required to run the next stage. -/
-abbrev StageInterface.State (I : StageInterface.{u}) := I.Claim × I.Private
+abbrev StageInterface.State (I : StageInterface.{u, uQ}) := I.Claim × I.Private
 
 /-- A stage of oracle reductions between two declared interfaces. The protocol and the challenge
 implementation are selected by the public statement. The prover additionally sees the claim's
 oracle data and the private state, and the verifier has query access to the claim's oracles. -/
-structure ClosedStage {ι : Type u} (ambient : OracleSpec.{u, u} ι) (I J : StageInterface.{u}) where
+structure ClosedStage {ι : Type u} (ambient : OracleSpec.{u, u} ι) (I : StageInterface.{u, uQ})
+    (J : StageInterface.{u, uQ'}) where
   /-- The protocol, selected by the public statement. -/
   protocol : I.Stmt → OracleProtocol.{u}
   /-- The challenge implementation of the selected protocol, over the shared oracles. -/
@@ -263,7 +265,8 @@ structure ClosedStage {ι : Type u} (ambient : OracleSpec.{u, u} ι) (I J : Stag
 
 namespace ClosedStage
 
-variable {ι : Type u} {ambient : OracleSpec.{u, u} ι} {I J : StageInterface.{u}}
+variable {ι : Type u} {ambient : OracleSpec.{u, u} ι} {I : StageInterface.{u, uQ}}
+  {J : StageInterface.{u, uQ'}}
 
 /-- The stage's challenge queries answered by its draws; shared queries stay shared. -/
 def handler (stage : ClosedStage ambient I J) (stmt : I.Stmt) :
@@ -289,7 +292,7 @@ theorem run_eq (stage : ClosedStage ambient I J) (input : I.State) :
 
 /-- Run a finite family of closed stages across declared interfaces. Each accepted claim is the
 next stage's input claim, with the next private state. -/
-abbrev runStages (n : Nat) (I : Fin (n + 1) → StageInterface.{u})
+abbrev runStages (n : Nat) (I : Fin (n + 1) → StageInterface.{u, uQ})
     (stages : (i : Fin n) → ClosedStage ambient (I i.castSucc) (I i.succ)) :
     (I ⟨0, Nat.zero_lt_succ n⟩).State → OracleComp ambient (Option (I (Fin.last n)).State) :=
   foldStages n (fun i => (I i).State) (fun i => (stages i).run)
