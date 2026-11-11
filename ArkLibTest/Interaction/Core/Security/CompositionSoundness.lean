@@ -201,7 +201,7 @@ instance : MeasurableSpace Boundary := ⊤
 instance : DiscreteMeasurableSpace Boundary := ⟨fun _ => trivial⟩
 
 /-- The boundary after the answer `sample`, which stores `sample` in `Fin 4`. -/
-@[reducible] def boundary (sample : Fin 3) : Boundary :=
+def boundary (sample : Fin 3) : Boundary :=
   ⟨⟨sample, ⟨⟩⟩, (pure () : M Unit), sample.castSucc⟩
 
 /-- The suffix error: one at the boundary storing `1`, zero elsewhere. -/
@@ -399,18 +399,18 @@ noncomputable section
 abbrev ambient := branchSpec
 
 /-- One natural-number input slot, used for the exports as well. -/
-@[instance_reducible] def nats : OracleFamily Unit (fun _ => Nat) :=
+def nats : OracleFamily Unit (fun _ => Nat) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
 /-- The input slot holds `7`. -/
 def input : ∀ _ : Unit, Nat := fun _ => 7
 
 /-- The verifier sends a `Fin 3` challenge. -/
-@[instance_reducible] def first : OracleProtocol :=
+def first : OracleProtocol :=
   .liftBind (.challenge (Fin 3)) (fun _ => .pure ⟨⟩)
 
 /-- The empty suffix. -/
-@[instance_reducible] def second : OracleProtocol := .pure ⟨⟩
+def second : OracleProtocol := .pure ⟨⟩
 
 /-- The challenge, then nothing. -/
 abbrev combined : OracleProtocol := first.append (fun _ => second)
