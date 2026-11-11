@@ -56,7 +56,6 @@ section Transport
 variable {R : Type} {M M' : Type} {eval : M → R → R} {eval' : M' → R → R}
 
 
-
 /-- Rename the queries of a run of `protocolOn` to the queries of a run at another carrier:
 ambient queries are kept and each challenge query asks the corresponding challenge node. -/
 def renameQueries {ι : Type} (ambient : OracleSpec ι) (k : ℕ) :
@@ -136,90 +135,6 @@ theorem experiment_renameQueries {ι σ α : Type} {ambient : OracleSpec ι} (k 
 
 end Transport
 
-/-! ## The decision at another message carrier -/
-
-section Decision
-
-variable {R : Type} [CommSemiring R] {deg : ℕ} {M : Type} {eval : M → R → R}
-
-
-
-/-- Read a transcript of `protocolOn` as a transcript of `protocol` through `f`. -/
-abbrev polyTranscript (f : M → R⦃≤ deg⦄[X]) (k : ℕ)
-    (tr : PathAlong oracleSig (protocolOn R M eval k)) : PathAlong oracleSig (protocol R deg k) :=
-  Interpreted.mapTranscript (evaluateN := fun (p : R⦃≤ deg⦄[X]) (x : R) => p.val.eval x) f k tr
-
-/-- A routed query of a replicated protocol with one more round splits by its legacy half. -/
-theorem routeOn_succ_sumEquiv (k : ℕ) (p : Path (protocolOn R M eval k))
-    (s : (Spec.SingleRound.pSpec R deg).MessageIdx ⊕ (Spec.pSpec R deg k).MessageIdx)
-    (q : OracleInterface.Query
-      ((Spec.SingleRound.pSpec R deg ++ₚ Spec.pSpec R deg k).Message (MessageIdx.sumEquiv s))) :
-    routeOn R deg M eval (k + 1) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩ ⟨MessageIdx.sumEquiv s, q⟩ =
-      Legacy.routePart (roundRouteOn R deg M eval k p)
-        (fun q => simulateQ
-          (Interpreted.tailLift (⟨⟨⟩, ⟨⟨⟩, p⟩⟩ : Path (protocolOn R M eval (k + 1))))
-          (routeOn R deg M eval k p q))
-        s q :=
-  Legacy.appendRoute_sumEquiv _ _ s q
-
-/-- If `eval` answers as `f` followed by polynomial evaluation, then answering routed queries
-from the run's payloads answers the legacy message queries from the decoded transcript of the
-mapped run. -/
-theorem simulateQ_routeOn {f : M → R⦃≤ deg⦄[X]} (hf : ∀ x r, eval x r = (f x).val.eval r) :
-    (k : ℕ) → (tr : PathAlong oracleSig (protocolOn R M eval k)) →
-    (q : [(Spec.pSpec R deg k).Message]ₒ.Domain) →
-    simulateQ (payloadImpl (protocolOn R M eval k) tr)
-        (routeOn R deg M eval k (projectPathAlong oracleSig _ tr) q) =
-      OracleInterface.simOracle0 (Spec.pSpec R deg k).Message
-        (decodeTranscript k (polyTranscript f k tr)).messages q
-  | 0, _, q => q.1.1.elim0
-  | k + 1, ⟨msg, ⟨chal, tail⟩⟩, ⟨j, q⟩ => by
-    obtain ⟨s, rfl⟩ := (MessageIdx.sumEquiv (pSpec₁ := Spec.SingleRound.pSpec R deg)
-      (pSpec₂ := Spec.pSpec R deg k)).surjective j
-    refine (congrArg (simulateQ _)
-      (routeOn_succ_sumEquiv k (projectPathAlong oracleSig _ tail) s q)).trans ?_
-    rcases s with i | i
-    · refine Legacy.simulateQ_queryAlongHEq _ _ _ _ _ _ _ (roundFullTranscript (f msg) chal i.1)
-        ?_ ?_ q
-      · exact (FullTranscript.fst_apply_heq _ _).symm.trans
-          (heq_of_eq (congrFun (FullTranscript.append_fst _ _) _))
-      · intro q'
-        obtain rfl := Unique.eq_default i
-        exact (simulateQ_spec_query _ _).trans (hf msg q')
-    · refine Legacy.simulateQ_queryAlongHEq _ _ _ _ _ _ _
-        ((decodeTranscript k (polyTranscript f k tail)).messages i) ?_ ?_ q
-      · exact (FullTranscript.snd_apply_heq _ _).symm.trans
-          (heq_of_eq (congrFun (FullTranscript.append_snd _ _) _))
-      · intro q'
-        refine (QueryImpl.simulateQ_simulateQ_eq_of_apply
-          (impl := payloadImpl (protocolOn R M eval k) tail) (fun t => ?_) _).trans
-          (simulateQ_routeOn hf k tail ⟨i, q'⟩)
-        exact simulateQ_spec_query _ _
-
-/-- Erasing the messages keeps every challenge, whatever the message carrier. -/
-theorem viewChallengeListOn_toView (f : M → R⦃≤ deg⦄[X]) :
-    (k : ℕ) → (tr : PathAlong oracleSig (protocolOn R M eval k)) →
-    viewChallengeListOn k (toView (protocolOn R M eval k) tr).1 =
-      transcriptChallenges k (polyTranscript f k tr)
-  | 0, _ => rfl
-  | k + 1, ⟨_, ⟨chal, tail⟩⟩ => by
-    change (Fin.cons chal (viewChallengeListOn k (toView (protocolOn R M eval k) tail).1) :
-        Fin (k + 1) → R) =
-      Fin.cons chal (transcriptChallenges k (polyTranscript f k tail))
-    rw [viewChallengeListOn_toView f k tail]
-
-/-- The view of a run has the challenges of the decoded transcript of the mapped run. -/
-theorem viewChallengesOn_toView (f : M → R⦃≤ deg⦄[X]) (k : ℕ)
-    (tr : PathAlong oracleSig (protocolOn R M eval k)) :
-    viewChallengesOn (deg := deg) (toView (protocolOn R M eval k) tr) =
-      (decodeTranscript k (polyTranscript f k tr)).challenges := by
-  funext j
-  unfold viewChallengesOn
-  rw [viewChallengeListOn_toView f]
-  exact (legacyTranscript_apply_challenge k _ _ j.1 j.2).symm
-
-end Decision
-
 /-! ## The verifier at another message carrier -/
 
 section VerifierOn
@@ -227,7 +142,6 @@ section VerifierOn
 variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R] {deg n : ℕ} {d : ℕ}
   (D : Fin d ↪ R) {ι : Type} {ambient : OracleSpec ι} {M : Type} {eval : M → R → R} {I : Type uI}
   {A : I → Type} (inputs : OracleFamily.{uI, 0, wI} I A)
-
 
 
 variable {f : M → R⦃≤ deg⦄[X]} (hf : ∀ x r, eval x r = (f x).val.eval r)
@@ -327,7 +241,6 @@ end RunVerifierOn
 /-! ## Uniform challenges at any carrier -/
 
 section Uniform
-
 
 
 /-- Every challenge of `protocolOn` is a ring element, so it can be sampled uniformly. -/

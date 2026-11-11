@@ -152,8 +152,11 @@ example (tr₁ tr₂ : PathAlong oracleSig (protocol F 1 2))
     (h : transcriptChallenges 2 tr₁ = transcriptChallenges 2 tr₂) :
     viewChallenges (toView (protocol F 1 2) tr₁) =
       viewChallenges (toView (protocol F 1 2) tr₂) := by
-  unfold viewChallenges
-  rw [viewChallengeList_toView, viewChallengeList_toView, h]
+  have h₁ := viewChallengeList_toView 2 tr₁
+  have h₂ := viewChallengeList_toView 2 tr₂
+  unfold viewChallengeList at h₁ h₂
+  unfold viewChallenges viewChallengesOn
+  rw [h₁, h₂, h]
 
 /-- The decoded challenges are those recorded in the view, whatever the messages. -/
 example (tr : PathAlong oracleSig (protocol F 1 3)) :
