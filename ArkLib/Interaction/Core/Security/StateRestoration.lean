@@ -498,6 +498,23 @@ theorem completedPath_matchesMessages : (rounds : List Round) → (z : Input) �
   | _ :: rounds, z, (_, _, messages), _ =>
       ⟨rfl, completedPath_matchesMessages rounds z messages _⟩
 
+/-- Every transcript in the open completion program's support carries the selected messages.
+The statement requires no consistent answer table. -/
+theorem complete_support_matches (rounds : List Round) (z : Input)
+    (messages : Messages Salt rounds) (tr : PathAlong oracleSig (protocol rounds))
+    (supported : tr ∈ support (complete rounds z messages)) :
+    MatchesMessages rounds messages tr := by
+  induction rounds with
+  | nil => trivial
+  | cons round rounds ih =>
+      rcases messages with ⟨message, salt, messages⟩
+      simp only [complete] at supported
+      obtain ⟨challenge, _, hs⟩ := OracleComp.mem_support_bind_peel _ _ supported
+      obtain ⟨tail, htail, hpure⟩ := OracleComp.mem_support_bind_peel _ _ hs
+      have same := OracleComp.eq_of_mem_support_pure _ hpure
+      subst tr
+      exact ⟨rfl, ih messages tail (support_simulateQ_subset _ _ htail)⟩
+
 /-- Interpreting the scripted prover's first slot leaves a pure send of its first message. -/
 private theorem simulate_scriptedProver_cons {ι κ : Type} {ambient : OracleSpec ι}
     {spec : OracleSpec κ} (impl : QueryImpl ambient (OracleComp spec)) (round : Round)
@@ -657,6 +674,18 @@ variable {rounds : List Round} {I S : Type} {A : I → Type}
   {B : (p : Path (protocol rounds)) → J p → Type}
   {inputs : OracleFamily.{0, 0, wI} I A}
   {outputs : (p : Path (protocol rounds)) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+
+/-- Every supported completion can be replayed by the actual parties with its recorded
+challenges, returning the completed transcript and its closed terminal observation. -/
+theorem run_scriptedProver_of_mem_support
+    (V : OracleVerifier []ₒ (protocol rounds) S T inputs outputs)
+    (stmt : S × (∀ i, A i)) (messages : Messages Salt rounds)
+    (tr : PathAlong oracleSig (protocol rounds))
+    (supported : tr ∈ support (complete rounds stmt messages)) :
+    evalWithAnswerFn (recordedAnswers rounds tr)
+      (V.run stmt.1 stmt.2 (scriptedProver rounds messages)) =
+      ⟨tr, ⟨⟩, closedTerminalObservation V stmt tr⟩ :=
+  run_scriptedProver V stmt messages tr (complete_support_matches rounds stmt messages tr supported)
 
 /-- Against every answer table, running the scripted prover of the adversary's selection, every
 challenge read from the game's completed transcript, returns the closed game's transcript and

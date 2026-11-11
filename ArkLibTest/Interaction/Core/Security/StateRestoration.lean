@@ -1096,7 +1096,9 @@ example (F : KnowledgeStateFunction.{uS, uW, uK, uO, uA, u} l (.liftBind a next)
 end GeneralMoveUniverses
 
 run_cmd do
-  for decl in [``Interaction.Core.StateRestorationTests.plainScriptedRun_eq,
+  for decl in [``Interaction.Core.StateRestoration.complete_support_matches,
+      ``Interaction.Core.StateRestoration.run_scriptedProver_of_mem_support,
+      ``Interaction.Core.StateRestorationTests.plainScriptedRun_eq,
       ``Interaction.Core.StateRestorationTests.selectedScriptedRun_eq,
       ``Interaction.Core.StateRestorationTests.replayResult_eq,
       ``Interaction.Core.StateRestorationTests.oracleReplayResult_eq,

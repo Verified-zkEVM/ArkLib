@@ -329,6 +329,18 @@ theorem programAlong_budget_le_protocol {rounds : List Round}
       leafBound + rounds.length • (messageBound + challengeBound) + rootBound :=
   add_le_add (programFrom_budget_le_rounds stages h rounds (.root _) ⟨⟩ tr) h.root
 
+/-- Zero root and leaf budgets recover the bound that counts only the two stages per round. -/
+theorem programAlong_budget_le_protocol_zero {rounds : List Round}
+    {Wout : S → PathAlong oracleSig (protocol rounds) → Type}
+    {valid : (stmt : S) → (tr : PathAlong oracleSig (protocol rounds)) → Wout stmt tr → Prop}
+    {G : KnowledgeStateFunction.{uS, 0, 0, 0, 1, 0} oracleSig (protocol rounds)
+      S Wout Win admissible relIn valid}
+    (stages : MeasuredStages G ω) {stmt : S} {messageBound challengeBound : ω}
+    (h : stages.ProtocolBudgetAtMost stmt 0 messageBound challengeBound 0)
+    (tr : PathAlong oracleSig (protocol rounds)) :
+    (stages.programAlong stmt tr).budget ≤ rounds.length • (messageBound + challengeBound) := by
+  simpa only [zero_add, add_zero] using programAlong_budget_le_protocol stages h tr
+
 /-- Every execution path of the composed program along a transcript of `protocol rounds` costs at
 most the protocol budget. -/
 theorem programAlong_costAtMost_protocol {rounds : List Round}

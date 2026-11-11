@@ -412,7 +412,7 @@ theorem closedOutputLaw (z : Stmt) (tr : PathAlong oracleSig (protocol rounds))
 example (first : Fin 8) (second : Fin 16) :
     knowledge.extractAlong (stmt 0) (path first second) 6 = 18 := rfl
 
--- Row 14 (StateRestorationBudget L308): the extracted input witness.
+-- Additional evaluation of row 7 (StateRestorationBudget L242): the extracted input witness.
 /-- info: 18 -/
 #guard_msgs in
 #eval knowledge.extractAlong (stmt 0) (path 0 1) 6
@@ -970,7 +970,8 @@ end PublicSelection
 end Interaction.Core.StateRestorationBudgetTests
 
 run_cmd do
-  for decl in [``Interaction.Core.StateRestorationBudgetTests.PublicSelection.observation,
+  for decl in [``KnowledgeStateFunction.MeasuredStages.programAlong_budget_le_protocol_zero,
+      ``Interaction.Core.StateRestorationBudgetTests.PublicSelection.observation,
       ``Interaction.Core.StateRestorationBudgetTests.PublicSelection.outputLaw,
       ``Interaction.Core.StateRestorationBudgetTests.PublicSelection.actual_nonuniform_game_bound,
       ``Interaction.Core.StateRestorationBudgetTests.PublicSelection.run_selectedProver,
