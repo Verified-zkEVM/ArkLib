@@ -69,14 +69,15 @@ variable {R : Type} [CommSemiring R] {deg : ℕ} {ι : Type uι} (ambient : Orac
   {I : Type uI} {A : I → Type} (inputs : OracleFamily.{uI, 0, wI} I A)
 
 
-/-- Route the legacy round message's queries to the oracle node of a round. -/
+/-- Route the legacy round message's queries to the oracle node of a round, then lift them with the
+shared `Interaction.Core.pathLift`. -/
 def checkRoute : (p : Path (round R deg)) →
     QueryImpl [(Spec.SingleRound.pSpec R deg).Message]ₒ
       (OracleComp (ambient + (pathResources inputs (round R deg) p).spec))
   | ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ => fun ⟨i, q⟩ => by
     obtain rfl := Unique.eq_default i
-    exact liftM ((ambient + (pathResources inputs (round R deg)
-      ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩).spec).query (.inr (.inr ⟨.inl ⟨⟩, q⟩)))
+    exact Interaction.Core.pathLift ambient inputs (s := round R deg) ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
+      ⟨.inl ⟨⟩, q⟩
 
 /-- The legacy challenges of a round view. -/
 def roundChallenges {p : Path (round R deg)} (v : View (round R deg) p) :
