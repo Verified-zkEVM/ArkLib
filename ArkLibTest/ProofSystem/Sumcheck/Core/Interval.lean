@@ -15,7 +15,7 @@ import ArkLib.ProofSystem.Sumcheck.Core.IntervalAdaptive
 import ArkLib.ProofSystem.Sumcheck.Core.Behavior
 import ArkLib.ProofSystem.Sumcheck.Core.InterpretedExecution
 
-/-! # Native interval boundary and security regressions -/
+/-! # Interaction-layer interval boundary and security regressions -/
 
 namespace Sumcheck.Core.IntervalTest
 open Polynomial MvPolynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens
@@ -23,7 +23,7 @@ open Polynomial MvPolynomial PFunctor FreeM Interaction.Core Interaction.TwoPart
 
 noncomputable section
 
-/-- An unused ambient oracle for deterministic native executions. -/
+/-- An unused ambient oracle for deterministic interaction-layer executions. -/
 abbrev ambient : OracleSpec Unit := Unit →ₒ Unit
 
 /-- A repeated indexed domain, with both occurrences retained. -/
@@ -90,7 +90,7 @@ theorem zero_run :
   simp only [simulateQ_pure, LawfulApplicative.map_pure]
   rfl
 
-/-- Generic native suffix soundness retains arbitrary nonzero starts and zero counts. -/
+/-- Generic interaction-layer suffix soundness retains arbitrary nonzero starts and zero counts. -/
 example {R : Type} [CommSemiring R] [DecidableEq R] [IsDomain R] [Fintype R]
     [SampleableType R] {n deg d : ℕ} (D : Fin d → R) {ι σ : Type} (a : OracleSpec ι)
     (init : ProbComp σ) (impl : QueryImpl a (StateT σ ProbComp))

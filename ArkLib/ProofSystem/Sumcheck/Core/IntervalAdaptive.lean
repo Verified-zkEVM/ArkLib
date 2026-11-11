@@ -47,7 +47,7 @@ noncomputable def intervalAdaptiveDraw (D : Fin d → R) (p : R⦃≤ deg⦄[X F
       pure (cast (protocol_challengeRange count c).symm r, ⟨k, intervalNext D p k st r⟩)
 
 /-- Perfect completeness includes every current-statement challenge program from the arbitrary
-interval interface, implemented by the actual native challenge oracle. -/
+interval interface, implemented by the actual interaction-layer challenge oracle. -/
 theorem intervalVerifier_adaptive_perfectCompleteness (D : Fin d → R)
     (p : R⦃≤ deg⦄[X Fin n]) {ι : Type} (ambient : OracleSpec ι)
     (start count : ℕ) (bound : start + count ≤ n)

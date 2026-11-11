@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.ProofSystem.Sumcheck.Core.IntervalExecution
+public import ArkLib.ProofSystem.Sumcheck.Core.Indexed
 public import VCVio.OracleComp.EvalDist.Measure
 
 /-! # Soundness of one interval round at an arbitrary variable -/
@@ -68,7 +69,7 @@ theorem intervalRoundExecute_eq {ι : Type} (ambient : OracleSpec ι)
   congr 1
   exact QueryImpl.simulateQ_add_query_right _ _ _
 
-/-- Every variable position has the native false-to-true one-round bound. -/
+/-- Every variable position has the interaction-layer false-to-true one-round bound. -/
 theorem intervalRoundExecute_soundness [IsDomain R] [Fintype R] [SampleableType R]
     (i : Fin n) (stmt : RoundStatement R n i.castSucc)
     (data : ∀ j, PolynomialData R n deg j) (q : R⦃≤ deg⦄[X])

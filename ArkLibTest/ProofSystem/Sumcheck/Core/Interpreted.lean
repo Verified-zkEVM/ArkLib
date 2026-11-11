@@ -23,13 +23,15 @@ def checks : RoundChecks ℕ (fun _ => ℕ) := fun _ target r => OptionT.mk do
     return some value
   else return none
 
-/-- A concrete native prover with an explicit pure challenge-response slot and private output. -/
+/-- A concrete interaction-layer prover with an explicit pure challenge-response slot and
+private output. -/
 def prover : Focal oracleSig Id (Interpreted.protocol ℕ (ℕ × ℕ) evaluate 1) (fun _ => ℕ) :=
   show Id ((_msg : ℕ × ℕ) × Id (ℕ →
     Focal oracleSig Id (Interpreted.protocol ℕ (ℕ × ℕ) evaluate 0) (fun _ => ℕ))) from
     pure ⟨(3, 1), pure fun r => pure (r + 50)⟩
 
-/-- The actual deterministic native run uses challenge `2` and retains original data `11`. -/
+/-- The actual deterministic interaction-layer run uses challenge `2` and retains original
+data `11`. -/
 def runExample : ℕ × Option (ℕ × ℕ) :=
   execute (pure 2 : Id ℕ) checks id 1 5 11 prover
 
@@ -38,7 +40,8 @@ example : runExample = (52, some (7, 11)) := rfl
 
 #eval runExample
 
-/-- Interpreting coefficient pairs as evaluation functions preserves the actual native run. -/
+/-- Interpreting coefficient pairs as evaluation functions preserves the actual
+interaction-layer run. -/
 example :
     execute (pure 2 : Id ℕ) checks id 1 5 11
       (transportProver (evaluateN := fun (f : ℕ → ℕ) r => f r) evaluate 1 prover) =

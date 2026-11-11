@@ -8,7 +8,7 @@ module
 public import ArkLib.ProofSystem.Sumcheck.Core.ComputableInterval
 public import ArkLib.ProofSystem.Sumcheck.Core.IntervalSoundness
 
-/-! # Native suffix soundness for computable message carriers -/
+/-! # Interaction-layer suffix soundness for computable message carriers -/
 
 @[expose] public section
 
@@ -19,7 +19,7 @@ open scoped ENNReal NNReal
 variable {R : Type} [CommSemiring R] [DecidableEq R] {deg n d : ℕ}
 
 omit [DecidableEq R] in
-/-- Uniform interpreted draws agree with the native mathematical sampler at every node. -/
+/-- Uniform interpreted draws agree with the mathematical sampler at every node. -/
 theorem indexedDraw_eq_interpreted [SampleableType R] (k : ℕ) :
     indexedDraw (R := R) (deg := deg) k =
       Interpreted.draw (evaluate := fun (q : R⦃≤ deg⦄[X]) r => q.val.eval r) ($ᵗ R) k := by
@@ -125,8 +125,9 @@ theorem executeExperiment_eq_native [BEq R] [LawfulBEq R] (D : Fin d → R)
     count (intervalInitial start count bound stmt) data (Prover.simulate impl prover)
   rw [h]
 
-/-- Every suffix has native soundness against arbitrary computational-message provers. The
-original oracle data, all prover effects and private continuations are retained by the bridge. -/
+/-- Every suffix has interaction-layer soundness against arbitrary computational-message
+provers. The original oracle data, all prover effects and private continuations are retained by
+the bridge. -/
 theorem execute_soundness [BEq R] [LawfulBEq R] [IsDomain R] [Fintype R] (D : Fin d → R)
     {ι σ Out : Type} (ambient : OracleSpec ι) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp)) (start count : ℕ) (finish : start + count = n)

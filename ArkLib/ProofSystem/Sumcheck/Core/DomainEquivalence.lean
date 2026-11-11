@@ -133,7 +133,7 @@ private theorem indexedVerdict_claimFold [DecidableEq R] (D : Fin d → R) :
       rfl
   | succ k ih =>
     intro st tr
-    rw [indexedVerdict, ih]
+    rw [indexedVerdict_succ, ih]
     cases st with
     | none => rfl
     | some st =>
@@ -142,7 +142,8 @@ private theorem indexedVerdict_claimFold [DecidableEq R] (D : Fin d → R) :
         indexedNext]
       split <;> rfl
 
-/-- The compatibility and native full-run verdicts agree after fieldwise statement conversion. -/
+/-- The compatibility and interaction-layer full-run verdicts agree after fieldwise statement
+conversion. -/
 theorem legacyVerdict_native [DecidableEq R] [SampleableType R]
     (D : Fin d ↪ R) {ι : Type} (ambient : OracleSpec ι)
     (stmt : Spec.StatementRound R n 0) (tr : PathAlong oracleSig (protocol R deg n)) :
@@ -168,7 +169,7 @@ theorem legacyVerdict_native [DecidableEq R] [SampleableType R]
         simpa [Finset.sum_map, roundFullTranscript] using hs)]
       simp [claimStep, nativeStatement, hs]
 
-/-- Map a compatibility observation to its native statement representation, retaining the
+/-- Map a compatibility observation to its interaction-layer statement representation, retaining the
 transcript, private output and the original oracle data. -/
 def nativeObservation {s : OracleProtocol} {Out : PathAlong oracleSig s → Type}
     {Data : Type}
@@ -178,7 +179,8 @@ def nativeObservation {s : OracleProtocol} {Out : PathAlong oracleSig s → Type
       (fun _ => RoundStatement R n (Fin.last n) × Data) :=
   ⟨obs.1, obs.2.1, obs.2.2.map (fun t => (nativeStatement t.1, t.2))⟩
 
-/-- Every compatibility run is the native indexed run after converting the verdict statement. -/
+/-- Every compatibility run is the interaction-layer indexed run after converting the verdict
+statement. -/
 theorem verifier_run_native [DecidableEq R] [SampleableType R]
     (D : Fin d ↪ R) {ι : Type} (ambient : OracleSpec ι)
     (stmt : Spec.StatementRound R n 0) (data : ∀ i, PolynomialData R n deg i)
@@ -199,8 +201,8 @@ theorem verifier_run_native [DecidableEq R] [SampleableType R]
   simp only [verifier_outputMap, OracleMap.fst, Option.map_map]
   rfl
 
-/-- The compatibility run is precisely the zero-start native interval, including arbitrary
-private continuations and output families. -/
+/-- The compatibility run is precisely the zero-start interaction-layer interval, including
+arbitrary private continuations and output families. -/
 theorem verifier_run_full_interval [DecidableEq R] [SampleableType R]
     (D : Fin d ↪ R) {ι : Type} (ambient : OracleSpec ι)
     (stmt : Spec.StatementRound R n 0) (data : ∀ i, PolynomialData R n deg i)
@@ -227,7 +229,8 @@ private theorem nativeHonestState_next (D : Fin d ↪ R)
   exact congrArg (fun (msg : R⦃≤ deg⦄[X]) => (nativeHonestState st).next (msg.val.eval r) r)
     (projectedRoundPolynomial_embedding D st.index st.statement.challenges st.poly).symm
 
-/-- Compatibility honest transcripts and terminal states are the native honest interval fold. -/
+/-- Compatibility honest transcripts and terminal states are the interaction-layer honest interval
+fold. -/
 theorem honestFold_native (D : Fin d ↪ R) :
     (k : ℕ) → (st : RoundState R deg n k) → (chals : Fin k → R) →
     foldTranscript (eval := fun (p : R⦃≤ deg⦄[X]) x => p.val.eval x) (honestMessage D)
@@ -255,7 +258,8 @@ theorem honestFold_native (D : Fin d ↪ R) :
       rw [← nativeHonestState_next]
       exact ht.2
 
-/-- The compatibility honest prover's terminal public statement is its native interval output. -/
+/-- The compatibility honest prover's terminal public statement is its interaction-layer interval
+output. -/
 theorem finishState_native (st : RoundState R deg n 0) :
     nativeStatement (finishState st).1.1 = (nativeHonestState st).finish := rfl
 
@@ -266,8 +270,9 @@ private theorem honestFold_poly (D : Fin d ↪ R) :
   | k + 1, st, chals => honestFold_poly D k
       (nextState (honestMessage D) k st (chals 0)) (Fin.tail chals)
 
-/-- Full compatibility honesty follows from native interval completeness at endpoints `0, n`.
-The accepted statement equals the honest prover output, and the original polynomial is retained. -/
+/-- Full compatibility honesty follows from interaction-layer interval completeness at
+endpoints `0, n`. The accepted statement equals the honest prover output, and the original
+polynomial is retained. -/
 theorem honest_full_interval [DecidableEq R] [SampleableType R]
     (D : Fin d ↪ R) {ι : Type} (ambient : OracleSpec ι)
     (stmt : Spec.StatementRound R n 0) (data : ∀ i, Spec.OracleStatement R n deg i)
@@ -285,13 +290,11 @@ theorem honest_full_interval [DecidableEq R] [SampleableType R]
   change honestTranscript D stmt data chals = _ ∧ _ at hf
   rw [← hf.1, ← hf.2] at h
   have he := legacyVerdict_native D ambient stmt (honestTranscript D stmt data chals)
-  have hei := intervalVerdict_eq_indexed (⇑D) n
-    (nativeHonestState (initState stmt data)) (honestTranscript D stmt data chals)
   have hv : legacyVerdict R deg n D ambient stmt
       (decodeTranscript n (honestTranscript D stmt data chals)) =
       some (honestOutput D stmt data chals).1.1 := by
     apply Option.map_injective nativeStatement_injective
-    exact he.trans (hei.symm.trans h.1)
+    exact he.trans h.1
   have hd : (honestOutput D stmt data chals).1.2 = data := by
     funext u
     cases u

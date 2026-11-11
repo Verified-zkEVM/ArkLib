@@ -62,12 +62,12 @@ Entry 22 covers Sumcheck in the interaction layer. Its two departures are descri
 | [22](sumcheck.md#the-transferred-completeness-is-in-its-own-module) | The transferred completeness is in its own module, `LegacyCompleteness`. |
 | [22](sumcheck.md#full-run-and-interval-verifier-interfaces) | Full-run verifiers keep their interface; interval verifiers add arbitrary endpoints and public interval composition. |
 
-The second departure distinguishes the unchanged full-run interface from the arbitrary interval interface.
-The [exact-row disposition](sumcheck.md#migration-disposition) now names native interval,
-projection and append targets. The generic `OracleModel.satisfies_guarantee` interface has no
-Core counterpart and is tracked as a separate gap.
-Both full-run and suffix soundness use the generic round-by-round-to-soundness implication over
-indexed domains, including lists with repetitions.
+The second departure distinguishes the unchanged full-run interface from the arbitrary interval
+interface. The [exact-row disposition](sumcheck.md#migration-disposition) now names
+interaction-layer interval, projection and append targets. The generic
+`OracleModel.satisfies_guarantee` interface has no Core counterpart and is tracked as a separate
+gap. Both full-run and suffix soundness use the generic round-by-round-to-soundness implication
+over indexed domains, including lists with repetitions.
 
 Entry [21](../interaction-rebuild/IMPLEMENTATION-NOTES.md#21-round-by-round-soundness-implies-soundness-for-lawful-distribution-monads)
 records the generic soundness implication. The
@@ -83,7 +83,7 @@ and prover outputs. P1 and P2 explain changed decision timing and public abort s
 
 | Entry | Departure |
 | --- | --- |
-| [23](../interaction-rebuild/IMPLEMENTATION-NOTES.md#23-sumcheck-ports) | Sumcheck ports: arbitrary interval completeness, native suffix soundness, public interval append, projected behavior, generic message interpretation and routing over `Nat`. |
+| [23](../interaction-rebuild/IMPLEMENTATION-NOTES.md#23-sumcheck-ports) | Sumcheck ports: arbitrary interval completeness, interaction-layer suffix soundness, public interval append, projected behavior, generic message interpretation and routing over `Nat`. |
 
 ## Computable Sumcheck: entry 24
 

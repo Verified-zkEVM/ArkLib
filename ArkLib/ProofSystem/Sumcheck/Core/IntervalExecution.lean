@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.Interval
+public import ArkLib.ProofSystem.Sumcheck.Core.Indexed
 
 /-! # Boundary execution equations for Sumcheck intervals -/
 

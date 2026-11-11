@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 module
 
+public import ArkLib.ProofSystem.Sumcheck.Core.Domain
 public import ArkLib.ProofSystem.Sumcheck.Core.Fold
 
 /-! # Sumcheck verifiers between arbitrary endpoints
@@ -195,29 +196,5 @@ theorem intervalVerifier_run {ι : Type} (ambient : OracleSpec ι)
     (intervalVerifier R deg n D ambient start count bound).run stmt data prover =
       (foldVerifier R deg ambient (polynomialFamily R n deg) (intervalCheck D)
         IntervalClaim.finish count).run (intervalInitial start count bound stmt) data prover := rfl
-
-/-- A suffix claim has the same state as the native full-run verifier at that round. -/
-def IntervalClaim.toIndexed {k : ℕ} (st : IntervalClaim R n (Fin.last n) k) :
-    IndexedClaim R n k := ⟨st.round, st.round_add, st.statement⟩
-
-/-- The interval and indexed verdicts agree for every suffix state and transcript. -/
-theorem intervalVerdict_eq_indexed : ∀ (k : ℕ) (st : IntervalClaim R n (Fin.last n) k)
-    (tr : PathAlong oracleSig (protocol R deg k)),
-    intervalVerdict D k st tr = indexedVerdict D k (some st.toIndexed) tr := by
-  intro k
-  induction k with
-  | zero => intros; rfl
-  | succ k ih =>
-    intro st tr
-    unfold intervalVerdict
-    rw [foldVerdict_succ, roundVerdict_intervalCheck]
-    unfold indexedVerdict indexedNext
-    dsimp only [IntervalClaim.toIndexed]
-    simp only [Option.bind_some]
-    split
-    · simp only [Option.bind_some]
-      exact ih _ (Interpreted.tail tr)
-    · simp only [Option.bind_none]
-      exact (indexedVerdict_none D k _).symm
 
 end Sumcheck.Core

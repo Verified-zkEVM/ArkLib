@@ -37,7 +37,7 @@ def projectedPolynomial (D : Fin d → R) (i : Fin (n + 1))
   ∑ x : Fin (n - i) → Fin d,
     CPolynomial.mapRingHom (evalHom (roundSuffix i c (D ∘ x))) (finSuccEquivNth i poly)
 
-/-- Computational projection interprets to the native indexed polynomial. -/
+/-- Computational projection interprets to the mathematical indexed polynomial. -/
 theorem projectedPolynomial_toPoly (D : Fin d → R) (i : Fin (n + 1))
     (c : Fin i.castSucc → R) (poly : CMvPolynomial (n + 1) R)
     (hpoly : ∀ j, poly.degreeOf j ≤ deg) :
@@ -86,7 +86,7 @@ theorem projectedMessage_toMessage (D : Fin d → R) (i : Fin n)
     rw [Impl.Representation.toMessage_val]
     exact projectedPolynomial_toPoly D i c poly hpoly
 
-/-- Runtime Horner evaluation answers exactly the native honest projection. -/
+/-- Runtime Horner evaluation answers exactly the mathematical honest projection. -/
 theorem projectedMessage_evaluate (D : Fin d → R) (i : Fin n)
     (c : Fin i.castSucc → R) (poly : CMvPolynomial n R)
     (hpoly : ∀ j, poly.degreeOf j ≤ deg) (r : R) :

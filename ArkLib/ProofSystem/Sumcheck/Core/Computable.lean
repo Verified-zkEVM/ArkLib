@@ -33,8 +33,9 @@ whose evaluation queries are answered by Horner evaluation, and at CompPoly mult
   `toMessage`; it is used only in proofs.
 * `Computable.interpretProver_honestProver` identifies the interpreted computable honest prover
   with `Sumcheck.Core.honestProver` on the interpreted input.
-* `Computable.support_completeness` and `Computable.perfectCompleteness` specialize native
-  interval honesty at endpoints `0, n`, preserving the honest prover's output statement.
+* `Computable.support_completeness` and `Computable.perfectCompleteness` specialize
+  interaction-layer interval honesty at endpoints `0, n`, preserving the honest prover's output
+  statement.
   `Computable.soundness` specializes `interval_soundness` through `full_run_interval` and keeps
   its original sum error. Challenge implementations move between carriers by
   `Interpreted.transportDraw`, which keeps uniform sampling.
@@ -875,7 +876,7 @@ section FullRunBridge
 variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R]
   {deg n d : ℕ} (D : Fin d ↪ R) {ι : Type} (ambient : OracleSpec ι)
 
-/-- The full CompPoly run is the native zero-start interval after converting its verdict.
+/-- The full CompPoly run is the interaction-layer zero-start interval after converting its verdict.
 Every private output, prover effect and original computational input is retained. -/
 theorem full_run_interval (stmt : Spec.StatementRound R n 0)
     (data : ∀ _ : Unit, Input R deg n)
@@ -892,15 +893,12 @@ theorem full_run_interval (stmt : Spec.StatementRound R n 0)
   rw [run_interpreted, Functor.map_map]
   refine congrArg (· <$> _) (funext fun x => ?_)
   have he := legacyVerdict_native D ambient stmt (polyTranscript (toMessage R deg) n x.1)
-  have hi := intervalVerdict_eq_indexed (⇑D) n
-    (intervalInitial 0 n (by omega) (nativeStatement stmt))
-    (polyTranscript (toMessage R deg) n x.1)
   have ht := Interpreted.verdict_transport
     (evaluateN := fun (p : R⦃≤ deg⦄[X]) r => p.val.eval r)
     (intervalCheck (⇑D)) IntervalClaim.finish
     (toMessage R deg) (fun q r => (evaluate_eq R deg q r).symm) n
     (intervalInitial 0 n (by omega) (nativeStatement stmt)) x.1
-  have hv := he.trans (hi.symm.trans ht)
+  have hv := he.trans ht
   simp only [nativeObservation, Option.map_map]
   rw [← hv]
   simp only [Option.map_map]
