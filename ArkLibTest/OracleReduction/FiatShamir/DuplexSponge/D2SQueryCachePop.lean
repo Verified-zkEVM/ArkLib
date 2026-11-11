@@ -58,7 +58,7 @@ instance (lV : ℕ) : ∀ i, DecidableEq ((pS lV).Message i)
     | ⟨⟨0, _⟩, h⟩, _ => by simp [pS, pSDir] at h
     | ⟨⟨1, _⟩, _⟩, v => v
   decodingBias := fun _ => 1
-  decode_isBiased := fun _ _ _ _ _ => PMF.tvDist_le_one _ _
+  decode_isBiased := fun _ _ _ _ _ => Codec.tvDist_uniformOn_map_le_one _
   decode_surjective
     | ⟨⟨0, _⟩, h⟩ => by simp [pS, pSDir] at h
     | ⟨⟨1, _⟩, _⟩ => fun v => ⟨v, rfl⟩

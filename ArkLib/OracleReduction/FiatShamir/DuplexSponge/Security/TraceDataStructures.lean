@@ -112,7 +112,7 @@ lemma TraceTableOps.mem_toMultiSet_insert_iff
   · have hmem' : (k, v) ∈ LawfulTraceTable.toMultiSet t := by
       rw [← LawfulTraceTable.toMultiSet_ofEntries]
       exact Multiset.mem_coe.mpr hmem
-    simp only [TraceTableOps.insert, hmem, if_pos]
+    simp only [TraceTableOps.insert, hmem, ite_eq_left]
     constructor
     · exact Or.inr
     · rintro (rfl | h)
@@ -471,7 +471,7 @@ lemma isPermutationForwardFirst_eq_true_iff
   | cons e rest ih =>
       rw [isPermutationForwardFirst]
       by_cases hnp : normalizedPermutationPair? e = some (sIn, sOut)
-      · rw [if_pos hnp]
+      · rw [ite_eq_left hnp]
         rcases e with ⟨q, answer⟩
         rcases q with stmt | a | b
         · simp [normalizedPermutationPair?] at hnp
@@ -490,7 +490,7 @@ lemma isPermutationForwardFirst_eq_true_iff
           rw [decide_eq_false hne]
           simp only [Bool.false_eq_true, false_iff]
           exact PermutationForwardFirst.not_cons_inv (StmtIn := StmtIn) rest
-      · rw [if_neg hnp, ih, PermutationForwardFirst.cons_of_ne hnp]
+      · rw [ite_eq_right hnp, ih, PermutationForwardFirst.cons_of_ne hnp]
 
 instance PermutationForwardFirst.decidable
     (trace : DuplexSpongeTrace StmtIn U) (sIn sOut : CanonicalSpongeState U) :
@@ -621,7 +621,7 @@ lemma buildForwardPermutationIndex_eq_self
       PermutationForwardFirst trace pair.1 pair.2) :
     buildForwardPermutationIndex (T := T) trace p = p := by
   unfold buildForwardPermutationIndex
-  rw [if_pos]
+  rw [ite_eq_left]
   rw [List.all_eq_true]
   exact fun pair hmem => (isPermutationForwardFirst_eq_true_iff _ _ _).mpr (hfwd pair hmem)
 

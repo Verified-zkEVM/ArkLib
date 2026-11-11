@@ -52,7 +52,7 @@ instance instCodec : Codec (spec k msz csz) UInt8 where
   encode_injective _ _ _ h := h
   decode _ v := v
   decodingBias _ := 1
-  decode_isBiased _ := PMF.tvDist_le_one _ _
+  decode_isBiased _ := Codec.tvDist_uniformOn_map_le_one _
   decode_surjective _ c := ⟨c, rfl⟩
 
 instance instChallenge (i : (spec k msz csz).ChallengeIdx) :

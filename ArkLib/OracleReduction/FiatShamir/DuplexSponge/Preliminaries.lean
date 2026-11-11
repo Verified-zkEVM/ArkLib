@@ -5,352 +5,231 @@ Authors: Chung Thai Nguyen
 -/
 module
 
-public import ArkLib.Data.Classes.Serde
-public import ArkLib.Data.Probability.Instances
-public import Mathlib.Probability.ProbabilityMassFunction.Constructions
-public import ToMathlib.Probability.ProbabilityMassFunction.TotalVariation
+public import CompPoly.Data.Classes.Serialize
+public import Mathlib.MeasureTheory.Integral.Lebesgue.Countable
+public import Mathlib.MeasureTheory.Measure.GiryMonad
+public import Mathlib.Probability.ConditionalProbability
+public import Mathlib.Probability.UniformOn
+public import ToMathlib.MeasureTheory.Measure.TotalVariation
 
 /-!
 # DSFS Preliminaries
 
-This file contains preliminaries for the duplex-sponge Fiat-Shamir formalization:
-- CO25 Lemma 3.2 (uniform preimage sampling preserves the uniform distribution), for the `PMF`
-  sampler `sampleUniformPreimage`;
+This file contains preliminaries for the duplex-sponge Fiat-Shamir formalization, stated for
+probability measures:
+- CO25 Lemma 3.2 (uniform preimage sampling preserves the uniform distribution), for the
+  uniform-on-the-fiber measure `sampleUniformPreimage`;
 - CY24 Claim 1.2.10 (conditioning bound on total-variation distance), `claim_1_2_10`.
+
+Statistical distance is VCVio's `MeasureTheory.Measure.tvDist`, the largest probability
+discrepancy over measurable events. Under the discrete σ-algebra it is `½ ∑ₓ |μ{x} − ν{x}|`
+(`MeasureTheory.Measure.tvDist_eq_half_sum_abs` on a finite type).
 
 No declaration in Section 5 uses these results yet. Section 5 samples `ψᵢ⁻¹` preimages with the
 `OracleComp` sampler `ProverTransform.uniformDeserializePreimage`, which draws an index into the
 list of the fiber `deserializePreimageFinset` with one `unifSpec` query. A proof of Claim 5.22
 that uses Lemma 3.2 needs a bridge lemma: under a handler that answers `unifSpec` queries
-uniformly, the output distribution of `uniformDeserializePreimage α` is
-`sampleUniformPreimage Deserialize.deserialize (Codec.decode_surjective i) α`. That lemma is not
-formalized yet.
+uniformly, the output measure of `uniformDeserializePreimage α` is
+`sampleUniformPreimage Deserialize.deserialize α`. That lemma is not formalized yet.
 -/
 
 @[expose] public section
 
-open ProbabilityTheory
-open scoped BigOperators ProbabilityTheory
+open MeasureTheory ProbabilityTheory
+open scoped BigOperators ENNReal ProbabilityTheory
 
 namespace DuplexSpongeFS.Preliminaries
 
 section Lemma32
 
-variable {A B : Type*} [DecidableEq A] [Fintype B]
+variable {A B : Type*}
 
 /-- The fiber of `ψ` over `a`. -/
 abbrev Preimage (ψ : B → A) (a : A) := { b : B // ψ b = a }
 
-omit [DecidableEq A] [Fintype B] in
 /-- Surjectivity provides a canonical nonempty witness for each fiber. -/
 theorem preimageNonempty (ψ : B → A) (hψ : Function.Surjective ψ) (a : A) :
     Nonempty (Preimage ψ a) := by
   rcases hψ a with ⟨b, rfl⟩
   exact ⟨⟨b, rfl⟩⟩
 
-/-- Sample a uniformly random preimage of `a` under `ψ`. -/
-noncomputable def sampleUniformPreimage (ψ : B → A) (hψ : Function.Surjective ψ) (a : A) :
-    PMF B := by
-  classical
-  let _ := preimageNonempty ψ hψ a
-  exact (PMF.uniformOfFintype (Preimage ψ a)).map Subtype.val
+variable [MeasurableSpace B]
 
-/-- Pointwise description of `sampleUniformPreimage`
+/-- Sample a uniformly random preimage of `a` under `ψ`: the uniform measure on the fiber. -/
+noncomputable def sampleUniformPreimage (ψ : B → A) (a : A) : Measure B :=
+  uniformOn {b | ψ b = a}
+
+/-- On a surjective map, the uniform preimage sampler is a probability measure at every point. -/
+theorem isProbabilityMeasure_sampleUniformPreimage [Finite B] [MeasurableSingletonClass B]
+    (ψ : B → A) (hψ : Function.Surjective ψ) (a : A) :
+    IsProbabilityMeasure (sampleUniformPreimage ψ a) := by
+  obtain ⟨b, rfl⟩ := hψ a
+  exact isProbabilityMeasure_uniformOn (Set.toFinite _) ⟨b, rfl⟩
+
+/-- Pointwise description of `sampleUniformPreimage`.
 Probability of sampling `b` from the fiber of `a` = `1/|fiber_{a}|` or `0` -/
-theorem sampleUniformPreimage_apply (ψ : B → A) (hψ : Function.Surjective ψ) (a : A) (b : B) :
-    sampleUniformPreimage ψ hψ a b =
-      if ψ b = a then (Fintype.card (Preimage ψ a) : ENNReal)⁻¹ else 0 := by
-  classical
-  let _ := preimageNonempty ψ hψ a
-  rw [sampleUniformPreimage, PMF.map_apply]
+theorem sampleUniformPreimage_apply_singleton [DecidableEq A] [Fintype B]
+    [MeasurableSingletonClass B] (ψ : B → A) (a : A) (b : B) :
+    sampleUniformPreimage ψ a {b} =
+      if ψ b = a then (Fintype.card (Preimage ψ a) : ℝ≥0∞)⁻¹ else 0 := by
+  rw [sampleUniformPreimage, uniformOn, cond_apply' (measurableSet_singleton b),
+    Measure.count_apply (Set.toFinite _).measurableSet,
+    Set.encard_eq_coe_toFinset_card, Set.toFinset_card]
   by_cases h : ψ b = a
-  · rw [tsum_eq_single ⟨b, h⟩]
-    · simp [PMF.uniformOfFintype_apply, h]
-    · intro y hy
-      have hy' : b ≠ y.1 := by
-        intro hEq
-        apply hy
-        apply Subtype.ext
-        simpa using hEq.symm
-      simp [hy']
-  · rw [if_neg h]
-    rw [ENNReal.tsum_eq_zero]
-    intro y
-    have hy' : b ≠ y.1 := by
-      intro hEq
-      exact h (by simpa [hEq] using y.2)
-    simp [hy']
+  · rw [Set.inter_singleton_of_mem (s := {b | ψ b = a}) h, Measure.count_singleton, mul_one]
+    simp only [h, ite_true]
+    rfl
+  · rw [(Set.inter_singleton_eq_empty (s := {b | ψ b = a})).mpr h, measure_empty, mul_zero]
+    simp [h]
 
-variable [Nonempty B]
+variable [Finite B] [MeasurableSingletonClass B]
 
-/-- Paper notation `𝒰(X)` for the uniform distribution on a finite inhabited type `X`. -/
-noncomputable abbrev 𝒰 (X : Type*) [Fintype X] [Nonempty X] : PMF X := $ᵖ X
-
-/-- Distribution-level action of a deterministic map. This is the `ψ` in
-`ψ⁻¹ ∘ ψ ∘ 𝒰(B)`. -/
-noncomputable abbrev pushforward (ψ : B → A) : PMF B → PMF A := PMF.map ψ
-
-/-- Distribution-level action of the uniform preimage sampler. This is the `ψ⁻¹` in
-`ψ⁻¹ ∘ ψ ∘ 𝒰(B)`. -/
-noncomputable abbrev uniformPreimageSampler
-    (ψ : B → A) (hψ : Function.Surjective ψ) : PMF A → PMF B :=
-  fun D => D.bind (sampleUniformPreimage ψ hψ)
-
--- monadic computation
-
--- ψ⁻¹ ∘ ψ ∘ U(B)
-
-/-- CO25 Lemma 3.2 as an equality of PMFs. -/
-theorem bind_sampleUniformPreimage_eq_uniform (ψ : B → A) (hψ : Function.Surjective ψ) :
-    (do
-      let b' ← $ᵖ B
-      sampleUniformPreimage ψ hψ (ψ b')) = $ᵖ B := by
+/-- CO25 Lemma 3.2 as an equality of measures: drawing `b'` uniformly and then a uniform
+preimage of `ψ b'` is a uniform draw. -/
+theorem bind_sampleUniformPreimage_eq_uniform (ψ : B → A) :
+    (uniformOn Set.univ : Measure B).bind (fun b' => sampleUniformPreimage ψ (ψ b')) =
+      uniformOn Set.univ := by
   classical
-  change PMF.bind ($ᵖ B : PMF B) (fun b' => sampleUniformPreimage ψ hψ (ψ b')) = $ᵖ B
-  apply PMF.ext
-  intro b
-  let c : ENNReal := (Fintype.card (Preimage ψ (ψ b)) : ENNReal)⁻¹
-  have hcard_nat : Fintype.card (Preimage ψ (ψ b)) ≠ 0 := by
-    let _ := preimageNonempty ψ hψ (ψ b)
-    exact Fintype.card_ne_zero
-  have hcard :
-      (Fintype.card (Preimage ψ (ψ b)) : ENNReal) ≠ 0 := by
-    exact_mod_cast hcard_nat
-  have hfiber :
-      (Finset.filter (fun b' : B => ψ b' = ψ b) Finset.univ).card =
-        Fintype.card (Preimage ψ (ψ b)) := by
-    simpa [Preimage] using
-      (Fintype.card_subtype (fun b' : B => ψ b' = ψ b)).symm
+  let := Fintype.ofFinite B
+  refine Measure.ext_of_singleton fun b => ?_
+  rw [Measure.bind_apply (measurableSet_singleton b) Measurable.of_discrete.aemeasurable,
+    lintegral_fintype]
+  simp only [sampleUniformPreimage_apply_singleton, uniformOn_univ, Measure.count_singleton]
+  let c : ℝ≥0∞ := (Fintype.card (Preimage ψ (ψ b)) : ℝ≥0∞)⁻¹
+  have hcard : (Fintype.card (Preimage ψ (ψ b)) : ℝ≥0∞) ≠ 0 := by
+    have : Nonempty (Preimage ψ (ψ b)) := ⟨⟨b, rfl⟩⟩
+    exact_mod_cast Fintype.card_ne_zero
   let s : Finset B := Finset.filter (fun b' : B => ψ b' = ψ b) Finset.univ
-  have hs_def : s = Finset.filter (fun b' : B => ψ b' = ψ b) Finset.univ := rfl
-  have hs_card : s.card = Fintype.card (Preimage ψ (ψ b)) := by
-    rw [hs_def]
-    exact hfiber
-  change (PMF.bind ($ᵖ B : PMF B) (fun b' => sampleUniformPreimage ψ hψ (ψ b'))) b =
-    ($ᵖ B : PMF B) b
-  rw [PMF.bind_apply]
-  rw [tsum_eq_sum
-    (α := ENNReal)
-    (β := B)
-    (f := fun x => (($ᵖ B : PMF B) x) * sampleUniformPreimage ψ hψ (ψ x) b)
-    (s := s)
-    (hf := fun x hx => by
-      have hx' : ψ x ≠ ψ b := by
-        rw [hs_def] at hx
-        simpa [Finset.mem_filter] using hx
-      have hx'' : ψ b ≠ ψ x := by
-        intro hEq
-        exact hx' hEq.symm
-      change (($ᵖ B : PMF B) x) * sampleUniformPreimage ψ hψ (ψ x) b = 0
-      simp [PMF.uniformOfFintype_apply, sampleUniformPreimage_apply, hx''])]
-  calc
-    s.sum (fun x => (($ᵖ B : PMF B) x) * sampleUniformPreimage ψ hψ (ψ x) b)
-        =
-      s.sum (fun _ => (Fintype.card B : ENNReal)⁻¹ * c) := by
-          apply Finset.sum_congr rfl
-          intro x hx
-          have hx' : ψ x = ψ b := by
-            rw [hs_def] at hx
-            simpa using (Finset.mem_filter.mp hx).2
-          rw [PMF.uniformOfFintype_apply, sampleUniformPreimage_apply, if_pos hx'.symm]
-          simp [c, hx']
-  _ = s.card * ((Fintype.card B : ENNReal)⁻¹ * c) := by
-          rw [Finset.sum_const, nsmul_eq_mul]
-  _ = (Fintype.card (Preimage ψ (ψ b)) : ENNReal) * ((Fintype.card B : ENNReal)⁻¹ * c) := by
-          rw [hs_card]
-  _ = ((Fintype.card (Preimage ψ (ψ b)) : ENNReal) * (Fintype.card B : ENNReal)⁻¹) * c := by
-          rw [← mul_assoc]
-  _ = ((Fintype.card (Preimage ψ (ψ b)) : ENNReal) * (Fintype.card B : ENNReal)⁻¹) *
-        ((Fintype.card (Preimage ψ (ψ b)) : ENNReal)⁻¹) := by
-          rfl
-  _ = ((Fintype.card (Preimage ψ (ψ b)) : ENNReal) *
-        ((Fintype.card (Preimage ψ (ψ b)) : ENNReal)⁻¹)) *
-        (Fintype.card B : ENNReal)⁻¹ := by
-          ac_rfl
-  _ = (Fintype.card B : ENNReal)⁻¹ := by
-          simpa [mul_assoc] using
-            congrArg (fun t : ENNReal => t * (Fintype.card B : ENNReal)⁻¹)
-              (ENNReal.mul_inv_cancel hcard
-                (ENNReal.natCast_ne_top (Fintype.card (Preimage ψ (ψ b)))))
-  _ = ($ᵖ B : PMF B) b := by
-          rw [PMF.uniformOfFintype_apply]
+  have hs_card : s.card = Fintype.card (Preimage ψ (ψ b)) :=
+    (Fintype.card_subtype (fun b' : B => ψ b' = ψ b)).symm
+  calc ∑ x, (if ψ b = ψ x then (Fintype.card (Preimage ψ (ψ x)) : ℝ≥0∞)⁻¹ else 0) *
+        (1 / (Fintype.card B : ℝ≥0∞))
+      = ∑ x ∈ s, c * (1 / (Fintype.card B : ℝ≥0∞)) := by
+        rw [Finset.sum_filter]
+        refine Finset.sum_congr rfl fun x _ => ?_
+        by_cases hx : ψ x = ψ b
+        · simp only [hx, ite_true]; rfl
+        · simp [hx, Ne.symm hx]
+    _ = (Fintype.card (Preimage ψ (ψ b)) : ℝ≥0∞) * c * (1 / (Fintype.card B : ℝ≥0∞)) := by
+        rw [Finset.sum_const, nsmul_eq_mul, hs_card, mul_assoc]
+    _ = 1 / (Fintype.card B : ℝ≥0∞) := by
+        rw [ENNReal.mul_inv_cancel hcard (ENNReal.natCast_ne_top _), one_mul]
 
 /-- CO25 Lemma 3.2: resampling a uniformly random element via a uniformly random preimage preserves
 the uniform distribution.
 ψ⁻¹ ∘ ψ ∘ U(B) = U(B), where ψ⁻¹ is uniform sampling of fiber of a value in `A`
 -/
-theorem lemma_3_2 (ψ : B → A) (hψ : Function.Surjective ψ) :
-    Dist.dist ($ᵖ B)
-      (do
-        let b ← $ᵖ B
-        sampleUniformPreimage ψ hψ (ψ b)) = 0 := by
-  rw [bind_sampleUniformPreimage_eq_uniform (ψ := ψ) hψ]
-  simp [dist]
+theorem lemma_3_2 (ψ : B → A) :
+    (uniformOn Set.univ : Measure B).tvDist
+      ((uniformOn Set.univ : Measure B).bind fun b => sampleUniformPreimage ψ (ψ b)) = 0 := by
+  rw [bind_sampleUniformPreimage_eq_uniform ψ, Measure.tvDist_self]
+
+variable [MeasurableSpace A] [DiscreteMeasurableSpace A]
+
+/-- Paper notation `𝒰(X)` for the uniform distribution on a finite type `X`. -/
+noncomputable abbrev 𝒰 (X : Type*) [MeasurableSpace X] : Measure X := uniformOn Set.univ
+
+/-- Distribution-level action of a deterministic map. This is the `ψ` in
+`ψ⁻¹ ∘ ψ ∘ 𝒰(B)`. -/
+noncomputable abbrev pushforward (ψ : B → A) : Measure B → Measure A := Measure.map ψ
+
+/-- Distribution-level action of the uniform preimage sampler. This is the `ψ⁻¹` in
+`ψ⁻¹ ∘ ψ ∘ 𝒰(B)`. -/
+noncomputable abbrev uniformPreimageSampler (ψ : B → A) : Measure A → Measure B :=
+  fun D => D.bind (sampleUniformPreimage ψ)
 
 /-- CO25 Lemma 3.2 as the paper's composition equation:
 `ψ⁻¹ ∘ ψ ∘ 𝒰(B) = 𝒰(B)`. -/
-theorem lemma_3_2_paperEquation (ψ : B → A) (hψ : Function.Surjective ψ) :
-    ((uniformPreimageSampler ψ hψ) ∘ pushforward ψ) (𝒰 B) = 𝒰 B := by
-  have h := bind_sampleUniformPreimage_eq_uniform (ψ := ψ) hψ
-  change ($ᵖ B : PMF B).bind (fun b => sampleUniformPreimage ψ hψ (ψ b)) = $ᵖ B at h
-  simpa [uniformPreimageSampler, pushforward, 𝒰, Functor.map, Function.comp_def] using
-    h
+theorem lemma_3_2_paperEquation (ψ : B → A) :
+    ((uniformPreimageSampler ψ) ∘ pushforward ψ) (𝒰 B) = 𝒰 B := by
+  rw [Function.comp_apply, uniformPreimageSampler, pushforward,
+    Measure.bind_map Measurable.of_discrete.aemeasurable Measurable.of_discrete.aemeasurable]
+  exact bind_sampleUniformPreimage_eq_uniform ψ
 
 /-- CO25 Lemma 3.2 in the paper's `Δ(...)=0` form:
 `Δ(𝒰(B), ψ⁻¹ ∘ ψ ∘ 𝒰(B)) = 0`.
 
 The helper definitions `𝒰`, `pushforward`, and `uniformPreimageSampler` make the Lean statement
 track the paper notation directly. -/
-theorem lemma_3_2_paperNotation (ψ : B → A) (hψ : Function.Surjective ψ) :
-    Dist.dist (𝒰 B) (((uniformPreimageSampler ψ hψ) ∘ pushforward ψ) (𝒰 B)) = 0 := by
-  rw [lemma_3_2_paperEquation (ψ := ψ) hψ]
-  simp [dist, 𝒰]
+theorem lemma_3_2_paperNotation (ψ : B → A) :
+    (𝒰 B).tvDist (((uniformPreimageSampler ψ) ∘ pushforward ψ) (𝒰 B)) = 0 := by
+  rw [lemma_3_2_paperEquation ψ, Measure.tvDist_self]
 
 end Lemma32
 
 section Claim1210
 
-variable {α : Type*}
+variable {α : Type*} [MeasurableSpace α]
 
--- TV distance conditioning bound via indicator decomposition (CY24 Claim 1.2.10)
+/-- If two pairs of values differ by their first components up to `d` and their second
+components are at most `k`, the sums differ by at most `d + k`. -/
+private lemma absDiff_add_le_of_le {a b a' b' k : ℝ≥0∞} (ha' : a' ≤ k) (hb' : b' ≤ k) :
+    ENNReal.absDiff (a + a') (b + b') ≤ ENNReal.absDiff a b + k := by
+  obtain ⟨hab, hba⟩ := ENNReal.absDiff_le_iff.mp (le_refl (ENNReal.absDiff a b))
+  refine ENNReal.absDiff_le_iff.mpr ⟨?_, ?_⟩
+  · calc a + a' ≤ (b + ENNReal.absDiff a b) + (b' + k) :=
+          add_le_add hab (ha'.trans le_add_self)
+      _ = b + b' + (ENNReal.absDiff a b + k) := by ring
+  · calc b + b' ≤ (a + ENNReal.absDiff a b) + (a' + k) :=
+          add_le_add hba (hb'.trans le_add_self)
+      _ = a + a' + (ENNReal.absDiff a b + k) := by ring
+
 /-- CY24 Claim 1.2.10: conditioning on equi-probable events bounds TV distance.
 
-Let `p q : PMF α` be distributions and `s₁ s₂ : Set α` events with equal probability
-under `p` and `q` respectively (`Pr_p[s₁] = Pr_q[s₂]`). Then
-`Δ(p, q) ≤ Δ(p | s₁, q | s₂) + Pr_p[s₁ᶜ]`,
-where `p | s₁` is `p.filter s₁` (PMF `p` conditioned on `s₁`, see `PMF.filter`),
-and `Pr_p[s₁ᶜ] = 1 - Pr_p[s₁] = 1 - ∑' a ∈ s₁, p a`. -/
+Let `μ ν` be probability measures and `s₁ s₂` measurable events with equal probability
+under `μ` and `ν` respectively (`Pr_μ[s₁] = Pr_ν[s₂]`), and `Pr_μ[s₁] ≠ 0`. Then
+`Δ(μ, ν) ≤ Δ(μ | s₁, ν | s₂) + Pr_μ[s₁ᶜ]`,
+where `μ | s₁` is the conditional measure `μ[|s₁]` (see `ProbabilityTheory.cond`),
+and `Pr_μ[s₁ᶜ] = 1 - Pr_μ[s₁]`. -/
 theorem claim_1_2_10
-    (p q : PMF α) (s₁ s₂ : Set α)
-    (hs₁ : ∃ a ∈ s₁, a ∈ p.support)
-    (hs₂ : ∃ a ∈ s₂, a ∈ q.support)
-    (hProb : ∑' a, s₁.indicator p a = ∑' a, s₂.indicator q a) :
-    p.tvDist q ≤ (p.filter s₁ hs₁).tvDist (q.filter s₂ hs₂) +
-      (1 - (∑' a, s₁.indicator p a).toReal) := by
-  set c := ∑' a, s₁.indicator p a with hc_def
-  -- Basic properties of c (= Pr_p[s₁] = Pr_q[s₂])
-  have hc_le : c ≤ 1 :=
-    (ENNReal.tsum_le_tsum fun a => Set.indicator_le_self s₁ p a).trans p.tsum_coe.le
-  have hc_ne_top : c ≠ ⊤ := ne_top_of_le_ne_top ENNReal.one_ne_top hc_le
-  have hc_ne_zero : c ≠ 0 := by
-    obtain ⟨a, ha₁, ha_p⟩ := hs₁
-    have : 0 < s₁.indicator p a := by
-      rw [Set.indicator_of_mem ha₁]
-      exact ha_p.bot_lt
-    exact (this.trans_le (ENNReal.le_tsum a)).ne'
-  have hc_inv_ne_top : c⁻¹ ≠ ⊤ := ENNReal.inv_ne_top.mpr hc_ne_zero
-  -- Each filter value equals the indicator value * c⁻¹
-  -- Pointwise: absDiff of filter values = absDiff of indicators * c⁻¹
-  have habs_filter : ∀ x,
-      ENNReal.absDiff ((p.filter s₁ hs₁) x) ((q.filter s₂ hs₂) x) =
-      ENNReal.absDiff (s₁.indicator p x) (s₂.indicator q x) * c⁻¹ := by
-    intro x
-    rw [PMF.filter_apply, PMF.filter_apply, ← hProb, ← hc_def]
-    simp only [ENNReal.absDiff]
-    rw [← ENNReal.sub_mul (fun _ _ => hc_inv_ne_top),
-        ← ENNReal.sub_mul (fun _ _ => hc_inv_ne_top),
-        ← add_mul]
-  -- Sum: ∑' x, absDiff (filter1 x) (filter2 x) = (∑' x, absDiff (ind1 x) (ind2 x)) * c⁻¹
-  have hsum_abs_filter :
-      ∑' x, ENNReal.absDiff ((p.filter s₁ hs₁) x) ((q.filter s₂ hs₂) x) =
-      (∑' x, ENNReal.absDiff (s₁.indicator p x) (s₂.indicator q x)) * c⁻¹ := by
-    simp_rw [habs_filter, ← ENNReal.tsum_mul_right]
-  -- Pointwise: absDiff (p x) (q x) ≤ absDiff (ind1 x) (ind2 x) + compl1 x + compl2 x
-  have hpointwise : ∀ x, ENNReal.absDiff (p x) (q x) ≤
-      ENNReal.absDiff (s₁.indicator p x) (s₂.indicator q x) +
-      (s₁ᶜ).indicator p x + (s₂ᶜ).indicator q x := by
-    intro x
-    have hpx : s₁.indicator p x ≠ ⊤ :=
-      ne_top_of_le_ne_top (PMF.apply_ne_top p x) (Set.indicator_le_self s₁ p x)
-    have hqx : (s₂ᶜ).indicator q x ≠ ⊤ :=
-      ne_top_of_le_ne_top (PMF.apply_ne_top q x) (Set.indicator_le_self _ q x)
-    rw [← Set.indicator_self_add_compl_apply s₁ p x,
-        ← Set.indicator_self_add_compl_apply s₂ q x]
-    -- two-step triangle: absDiff(a+b)(c+d) ≤ absDiff a c + absDiff b d
-    calc ENNReal.absDiff (s₁.indicator p x + (s₁ᶜ).indicator p x)
-            (s₂.indicator q x + (s₂ᶜ).indicator q x)
-        ≤ ENNReal.absDiff (s₁.indicator p x + (s₁ᶜ).indicator p x)
-              (s₁.indicator p x + (s₂ᶜ).indicator q x) +
-          ENNReal.absDiff (s₁.indicator p x + (s₂ᶜ).indicator q x)
-              (s₂.indicator q x + (s₂ᶜ).indicator q x) :=
-              ENNReal.absDiff_triangle _ _ _
-      _ = ENNReal.absDiff ((s₁ᶜ).indicator p x) ((s₂ᶜ).indicator q x) +
-            ENNReal.absDiff (s₁.indicator p x) (s₂.indicator q x) := by
-            simp only [ENNReal.absDiff,
-              ENNReal.add_sub_add_eq_sub_left hpx,
-              ENNReal.add_sub_add_eq_sub_right hqx]
-      _ ≤ (s₁ᶜ).indicator p x + (s₂ᶜ).indicator q x +
-            ENNReal.absDiff (s₁.indicator p x) (s₂.indicator q x) := by
-            gcongr; exact ENNReal.absDiff_le_add _ _
-      _ = _ := by ring
-  -- Complement tsums equal 1 - c
-  have hcompl₁ : ∑' a, (s₁ᶜ).indicator p a = 1 - c := by
-    have h : c + ∑' a, (s₁ᶜ).indicator p a = 1 := by
-      calc c + ∑' a, (s₁ᶜ).indicator p a
-          = ∑' a, s₁.indicator p a + ∑' a, (s₁ᶜ).indicator p a := rfl
-        _ = ∑' a, (s₁.indicator p a + (s₁ᶜ).indicator p a) := (ENNReal.tsum_add).symm
-        _ = ∑' a, p a := by
-            congr 1; ext a; exact Set.indicator_self_add_compl_apply s₁ p a
-        _ = 1 := p.tsum_coe
-    have key : c + ∑' a, (s₁ᶜ).indicator p a - c = ∑' a, (s₁ᶜ).indicator p a :=
-      ENNReal.add_sub_cancel_left hc_ne_top
-    rw [h] at key; exact key.symm
-  have hcompl₂ : ∑' a, (s₂ᶜ).indicator q a = 1 - c := by
-    have h : c + ∑' a, (s₂ᶜ).indicator q a = 1 := by
-      calc c + ∑' a, (s₂ᶜ).indicator q a
-          = ∑' a, s₂.indicator q a + ∑' a, (s₂ᶜ).indicator q a := by rw [hProb]
-        _ = ∑' a, (s₂.indicator q a + (s₂ᶜ).indicator q a) := (ENNReal.tsum_add).symm
-        _ = ∑' a, q a := by
-            congr 1; ext a; exact Set.indicator_self_add_compl_apply s₂ q a
-        _ = 1 := q.tsum_coe
-    have key : c + ∑' a, (s₂ᶜ).indicator q a - c = ∑' a, (s₂ᶜ).indicator q a :=
-      ENNReal.add_sub_cancel_left hc_ne_top
-    rw [h] at key; exact key.symm
-  -- Sum bound: ∑' absDiff (p) (q) ≤ ∑' absDiff (ind1) (ind2) + (1-c) + (1-c)
-  have hsum_ineq : ∑' x, ENNReal.absDiff (p x) (q x) ≤
-      (∑' x, ENNReal.absDiff (s₁.indicator p x) (s₂.indicator q x)) + (1 - c) + (1 - c) := by
-    calc ∑' x, ENNReal.absDiff (p x) (q x)
-        ≤ ∑' x, (ENNReal.absDiff (s₁.indicator p x) (s₂.indicator q x) +
-              (s₁ᶜ).indicator p x + (s₂ᶜ).indicator q x) :=
-            ENNReal.tsum_le_tsum hpointwise
-      _ = (∑' x, ENNReal.absDiff (s₁.indicator p x) (s₂.indicator q x)) +
-          (∑' x, (s₁ᶜ).indicator p x) + ∑' x, (s₂ᶜ).indicator q x := by
-            rw [← ENNReal.tsum_add, ← ENNReal.tsum_add]
-      _ = _ := by rw [hcompl₁, hcompl₂]
-  -- Main ENNReal inequality: etvDist p q ≤ c * etvDist(filter1, filter2) + (1 - c)
-  have hmain_ennreal : p.etvDist q ≤ c * (p.filter s₁ hs₁).etvDist (q.filter s₂ hs₂) + (1 - c) := by
-    rw [PMF.etvDist, PMF.etvDist, hsum_abs_filter]
-    -- c * (sum_ind * c⁻¹ / 2) = sum_ind / 2
-    have hc_mul : c * ((∑' x, ENNReal.absDiff (s₁.indicator p x) (s₂.indicator q x)) * c⁻¹ / 2) =
-        (∑' x, ENNReal.absDiff (s₁.indicator p x) (s₂.indicator q x)) / 2 := by
-      rw [← mul_div_assoc, ← mul_assoc, mul_comm c, mul_assoc,
-          ENNReal.mul_inv_cancel hc_ne_zero hc_ne_top, mul_one]
-    rw [hc_mul]
-    calc (∑' x, ENNReal.absDiff (p x) (q x)) / 2
-        ≤ ((∑' x, ENNReal.absDiff (s₁.indicator p x) (s₂.indicator q x)) + (1 - c) + (1 - c)) / 2 :=
-            ENNReal.div_le_div_right hsum_ineq 2
-      _ = (∑' x, ENNReal.absDiff (s₁.indicator p x) (s₂.indicator q x)) / 2 + (1 - c) := by
-            rw [ENNReal.add_div, ENNReal.add_div, add_assoc, ENNReal.add_halves]
-  -- Convert to ℝ:
-  -- tvDist ≤ c.toReal * tvDist(filter) + (1 - c.toReal) ≤ tvDist(filter) + (1 - c.toReal)
-  have hc_toReal_le : c.toReal ≤ 1 := by
-    rw [← ENNReal.toReal_one]
-    exact ENNReal.toReal_mono ENNReal.one_ne_top hc_le
-  have h1mc_eq : (1 - c).toReal = 1 - c.toReal :=
-    ENNReal.toReal_sub_of_le hc_le ENNReal.one_ne_top
-  have hmain_real :
-      p.tvDist q ≤ c.toReal * (p.filter s₁ hs₁).tvDist (q.filter s₂ hs₂) + (1 - c.toReal) := by
-    rw [PMF.tvDist, PMF.tvDist]
-    have hRHS_ne_top : c * (p.filter s₁ hs₁).etvDist (q.filter s₂ hs₂) + (1 - c) ≠ ⊤ :=
-      ENNReal.add_ne_top.mpr ⟨ENNReal.mul_ne_top hc_ne_top (PMF.etvDist_ne_top _ _),
-        ENNReal.sub_ne_top ENNReal.one_ne_top⟩
-    have := ENNReal.toReal_mono hRHS_ne_top hmain_ennreal
-    rw [ENNReal.toReal_add (ENNReal.mul_ne_top hc_ne_top (PMF.etvDist_ne_top _ _))
-          (ENNReal.sub_ne_top ENNReal.one_ne_top),
-        ENNReal.toReal_mul, h1mc_eq] at this
-    exact this
-  linarith [PMF.tvDist_nonneg (p.filter s₁ hs₁) (q.filter s₂ hs₂),
-    mul_le_of_le_one_left (PMF.tvDist_nonneg (p.filter s₁ hs₁) (q.filter s₂ hs₂)) hc_toReal_le]
+    (μ ν : Measure α) [IsProbabilityMeasure μ] [IsProbabilityMeasure ν] {s₁ s₂ : Set α}
+    (hs₁ : MeasurableSet s₁) (hs₂ : MeasurableSet s₂) (hμs₁ : μ s₁ ≠ 0)
+    (hProb : μ s₁ = ν s₂) :
+    μ.tvDist ν ≤ (μ[|s₁]).tvDist (ν[|s₂]) + (1 - (μ s₁).toReal) := by
+  set c := μ s₁ with hc_def
+  have hc_ne_top : c ≠ ⊤ := measure_ne_top μ s₁
+  have hνs₂ : ν s₂ ≠ 0 := hProb ▸ hμs₁
+  have : IsProbabilityMeasure μ[|s₁] := cond_isProbabilityMeasure hμs₁
+  have : IsProbabilityMeasure ν[|s₂] := cond_isProbabilityMeasure hνs₂
+  -- Each measurable event splits into its part inside the conditioning event, which is `c` times
+  -- its conditional probability, and its part outside, which has mass at most `1 - c`.
+  have hmain : μ.etvDist ν ≤ (μ[|s₁]).etvDist (ν[|s₂]) + (1 - c) := by
+    refine iSup_le fun T => ?_
+    obtain ⟨T, hT⟩ := T
+    have hμT : μ T = c * μ[T|s₁] + μ (T \ s₁) := by
+      rw [← measure_inter_add_sdiff T hs₁, Set.inter_comm, ← cond_mul_eq_inter hs₁, mul_comm]
+    have hνT : ν T = c * ν[T|s₂] + ν (T \ s₂) := by
+      rw [← measure_inter_add_sdiff T hs₂, Set.inter_comm, ← cond_mul_eq_inter hs₂, mul_comm,
+        hProb]
+    have hμout : μ (T \ s₁) ≤ 1 - c := by
+      rw [← prob_compl_eq_one_sub hs₁]
+      exact measure_mono (Set.sdiff_subset_compl _ _)
+    have hνout : ν (T \ s₂) ≤ 1 - c := by
+      rw [hProb, ← prob_compl_eq_one_sub hs₂]
+      exact measure_mono (Set.sdiff_subset_compl _ _)
+    have hc_le : c ≤ 1 := prob_le_one
+    calc ENNReal.absDiff (μ T) (ν T)
+        ≤ ENNReal.absDiff (c * μ[T|s₁]) (c * ν[T|s₂]) + (1 - c) := by
+          rw [hμT, hνT]
+          exact absDiff_add_le_of_le hμout hνout
+      _ ≤ ENNReal.absDiff (μ[T|s₁]) (ν[T|s₂]) * c + (1 - c) := by
+          gcongr
+          rw [mul_comm c, mul_comm c]
+          exact ENNReal.absDiff_mul_right_le _ _ _
+      _ ≤ ENNReal.absDiff (μ[T|s₁]) (ν[T|s₂]) + (1 - c) := by
+          gcongr
+          exact mul_le_of_le_one_right' hc_le
+      _ ≤ (μ[|s₁]).etvDist (ν[|s₂]) + (1 - c) := by
+          gcongr
+          exact Measure.absDiff_apply_le_etvDist _ _ hT
+  have hcond_ne_top : (μ[|s₁]).etvDist (ν[|s₂]) ≠ ⊤ :=
+    Measure.etvDist_ne_top _ _ prob_le_one prob_le_one
+  have hc_le : c ≤ 1 := prob_le_one
+  have h := ENNReal.toReal_mono
+    (ENNReal.add_ne_top.mpr ⟨hcond_ne_top, ENNReal.sub_ne_top ENNReal.one_ne_top⟩) hmain
+  rw [ENNReal.toReal_add hcond_ne_top (ENNReal.sub_ne_top ENNReal.one_ne_top),
+    ENNReal.toReal_sub_of_le hc_le ENNReal.one_ne_top, ENNReal.toReal_one] at h
+  exact h
 
 end Claim1210
 

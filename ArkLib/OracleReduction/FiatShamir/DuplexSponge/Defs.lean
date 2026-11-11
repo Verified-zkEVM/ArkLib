@@ -5,11 +5,13 @@ Authors: Quang Dao, Chung Thai Nguyen
 -/
 module
 
+public import ArkLib.Data.Classes.CloseToUniform
 public import ArkLib.Data.Hash.DuplexSponge
 public import ArkLib.OracleReduction.FiatShamir.Basic
 public import ArkLib.OracleReduction.FiatShamir.SingleSalt
 
 public import ArkLib.OracleReduction.Security.OracleSampling
+public import ToMathlib.MeasureTheory.Measure.TotalVariation.Fintype
 
 /-!
 # Duplex Sponge Fiat-Shamir
@@ -30,6 +32,8 @@ This file provides:
 -/
 
 @[expose] public section
+
+open MeasureTheory ProbabilityTheory
 
 /-- Explicitly distinguish Prover and Verifier queries within a single combined query log.
 Used by the §5 Fiat-Shamir games to preserve boundary information after trace concatenation,
@@ -181,14 +185,19 @@ class Codec {n : ℕ} (pSpec : ProtocolSpec n) (U : Type)
   /-- `ψᵢ : Σ^{ℓ_V(i)} → Challenge i` — challenge decoder (CO25 Def. 4.1). -/
   decode : (i : pSpec.ChallengeIdx) → Vector U (challengeSize i) → pSpec.Challenge i
   decodingBias : pSpec.ChallengeIdx → NNReal -- `ε_cdc`
-  /-- For every `i`, `decode i` is ε-biased in total variation:
-    `tvDist (𝒰 Challenge_i) (decode_i <$> 𝒰 Domain_i) ≤ decodingBias i`
-    (CO25 Definition 4.1). -/
+  /-- For every `i`, `decode i` is ε-biased (CO25 Definition 4.1): the statistical distance
+    between the uniform distribution on `Challenge i` and the pushforward of the uniform
+    distribution on `Σ^{ℓ_V(i)}` along `decode i` is at most `decodingBias i`. Both types carry
+    the discrete σ-algebra, so `Measure.tvDist` is the statistical distance
+    `½ ∑ₓ |μ{x} − ν{x}|` (`Measure.tvDist_eq_half_sum_abs`). -/
   decode_isBiased : ∀ (i : pSpec.ChallengeIdx)
       [Fintype (Vector U (challengeSize i))] [Nonempty (Vector U (challengeSize i))]
       [Fintype (pSpec.Challenge i)] [Nonempty (pSpec.Challenge i)],
-      (PMF.uniformOfFintype (pSpec.Challenge i)).tvDist
-        (decode i <$> PMF.uniformOfFintype (Vector U (challengeSize i))) ≤ decodingBias i
+      letI : MeasurableSpace (pSpec.Challenge i) := ⊤
+      letI : MeasurableSpace (Vector U (challengeSize i)) := ⊤
+      (uniformOn Set.univ : Measure (pSpec.Challenge i)).tvDist
+        ((uniformOn Set.univ : Measure (Vector U (challengeSize i))).map (decode i))
+        ≤ decodingBias i
   /-- For every `i`, `decode i` is surjective: every challenge has at least one encoded preimage.
     `uniformDeserializePreimage`, the `ψ⁻¹` sampler of `D2SAlgo` (CO25 §5.4, Item 3(e)),
     needs it. -/
@@ -211,18 +220,29 @@ instance (priority := high) instDeserializeChallenge [c : Codec pSpec U] (i : pS
     Deserialize (pSpec.Challenge i) (Vector U (challengeSize i)) where
   deserialize := c.decode i
 
+/-- Every map is `1`-biased: the statistical distance between two probability measures is at
+most one. Instances without a sharper bias can use it for `decode_isBiased`. -/
+theorem tvDist_uniformOn_map_le_one {α β : Type} [Finite α] [Nonempty α] [Finite β]
+    [Nonempty β] {_ : MeasurableSpace α} {_ : MeasurableSpace β} (f : α → β) :
+    (uniformOn Set.univ : Measure β).tvDist ((uniformOn Set.univ : Measure α).map f) ≤ 1 :=
+  Measure.tvDist_le_one _ _ prob_le_one prob_le_one
+
 /-- hax-pipeline constructor: assemble a `Codec` from external `Serialize`/`Deserialize`
-    instances supplied by Rust→hax extraction, plus the math-side metadata. `decodingBias` is
-    derived from `[decChalUniform]`'s `ε` field; no separate bias parameter is needed. -/
+    instances supplied by Rust→hax extraction, plus the math-side metadata.
+    `Deserialize.CloseToUniform` bounds the sum of absolute singleton-mass differences by `ε`, which
+    is twice the statistical distance, so the decoding bias is `ε / 2`. -/
 @[instance_reducible]
-def mk' {n : ℕ} (pSpec : ProtocolSpec n) (U : Type)
+noncomputable def mk' {n : ℕ} (pSpec : ProtocolSpec n) (U : Type)
     (mSize : pSpec.MessageIdx → Nat) (cSize : pSpec.ChallengeIdx → Nat)
     [∀ i, Fintype (Vector U (cSize i))] [∀ i, Nonempty (Vector U (cSize i))]
     [∀ i, Fintype (pSpec.Challenge i)] [∀ i, Nonempty (pSpec.Challenge i)]
     [serMsg : ∀ i, Serialize (pSpec.Message i) (Vector U (mSize i))]
     [serMsgInj : ∀ i, Serialize.IsInjective (pSpec.Message i) (Vector U (mSize i))]
     [decChal : ∀ i, Deserialize (pSpec.Challenge i) (Vector U (cSize i))]
-    [decChalUniform : ∀ i, Deserialize.CloseToUniform (pSpec.Challenge i) (Vector U (cSize i))]
+    [decChalUniform : ∀ i,
+      letI : MeasurableSpace (pSpec.Challenge i) := ⊤
+      letI : MeasurableSpace (Vector U (cSize i)) := ⊤
+      Deserialize.CloseToUniform (pSpec.Challenge i) (Vector U (cSize i))]
     (dechalSurj : ∀ i, Function.Surjective ((decChal i).deserialize)) :
     Codec pSpec U where
   messageSize := mSize
@@ -230,12 +250,16 @@ def mk' {n : ℕ} (pSpec : ProtocolSpec n) (U : Type)
   encode := fun i => (serMsg i).serialize
   encode_injective := fun i => (serMsgInj i).serialize_inj
   decode := fun i => (decChal i).deserialize
-  decodingBias := fun i => (decChalUniform i).ε
+  decodingBias := fun i => (decChalUniform i).ε / 2
   decode_isBiased := fun i [_h1 : Fintype (Vector U (cSize i))]
       [_h2 : Nonempty (Vector U (cSize i))]
       [_h3 : Fintype (pSpec.Challenge i)]
       [_h4 : Nonempty (pSpec.Challenge i)] => by
-    convert (decChalUniform i).ε_close using 4
+    let : MeasurableSpace (pSpec.Challenge i) := ⊤
+    let : MeasurableSpace (Vector U (cSize i)) := ⊤
+    rw [Measure.tvDist_eq_half_sum_abs, NNReal.coe_div, NNReal.coe_two]
+    gcongr
+    convert (decChalUniform i).ε_close
   decode_surjective := dechalSurj
 
 end Codec

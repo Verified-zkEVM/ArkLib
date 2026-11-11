@@ -70,7 +70,7 @@ theorem d2sTraceSalted_repeatBoundary
   simp only [repeatLog, d2sTraceSalted.go, stdTraceHandlePQuery, stdTraceDelta]
   simp only [repeatTrace] at hBT hLA
   simp only [repeatTrace, List.length_cons, List.length_nil, hBT]
-  simp only [stdTraceHandleBacktrackTuple, hImg, if_true, stdTraceLookupOrLookAhead]
+  simp only [stdTraceHandleBacktrackTuple, hImg, ite_true, stdTraceLookupOrLookAhead]
   simp [lookupStdTraceMemo, hLA, StdTraceState.appendMemoAndEntry, StdTraceState.appendEntry,
     insertStdTraceMemo, hMap, dedupChallengesPerSource, dedupChallengesPerSourceAux]
 

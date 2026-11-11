@@ -95,7 +95,7 @@ instance instCodec : Codec (spec k msz csz) UInt8 where
     exact (cast_inj (msgType i)).mp this
   decode i v := cast (chalType i).symm v
   decodingBias _ := 1
-  decode_isBiased _ := PMF.tvDist_le_one _ _
+  decode_isBiased _ := Codec.tvDist_uniformOn_map_le_one _
   decode_surjective i c := ⟨cast (chalType i) c, by simp⟩
 
 /-- The bit of a message. -/

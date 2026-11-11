@@ -306,7 +306,7 @@ lemma BacktrackSequence.Index_snd_val (seq : BacktrackSequence trace state)
           (seq.permute_or_inv_in_trace i)).val := by
   classical
   simp only [BacktrackSequence.Index]
-  rw [dif_pos i.isLt]
+  rw [dite_eq_left i.isLt]
   rfl
 
 /-- Each permutation-step index `j_ι` indexes one of the two query forms of the step. -/
@@ -338,7 +338,7 @@ lemma BacktrackSequence.Index_snd_eq_length (seq : BacktrackSequence trace state
     ((BacktrackSequence.Index trace state seq).2 ⟨k, hki⟩).val = trace.length := by
   classical
   simp only [BacktrackSequence.Index]
-  rw [dif_neg (by omega)]
+  rw [dite_eq_right (by omega)]
 
 /-- Neither query form of step `ι` occurs before its `j_ι` index. -/
 lemma BacktrackSequence.Index_snd_not_mem_take (seq : BacktrackSequence trace state)

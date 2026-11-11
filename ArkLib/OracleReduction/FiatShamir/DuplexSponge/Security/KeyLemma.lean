@@ -11,7 +11,7 @@ public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Nondegeneracy
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.ProverTransform
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.TraceTransform
 public import ArkLib.OracleReduction.FiatShamir.SingleSalt
-public import VCVio.EvalDist.TVDist
+public import VCVio.EvalDist.DiscreteTVDist
 public import VCVio.OracleComp.QueryTracking.QueryBound
 
 /-!
@@ -301,8 +301,7 @@ lemma d2sRateBlocksFromUnitsM_queryBound (m : ℕ) (units : List U) :
       | exact trivial
       | exact ih _
       | exact d2sSampleVector_queryBound _
-      | (refine isQueryBoundP_bind_zero ?_ ?_ <;> try intro x)
-      | (obtain ⟨_, _⟩ := x))
+      | (refine isQueryBoundP_bind_zero ?_ ?_ <;> try intro x))
 
 lemma d2sRateBlocksFromChallenge_queryBound {i : pSpec.ChallengeIdx}
     (c : Vector U (challengeSize (pSpec := pSpec) i)) :
@@ -944,7 +943,7 @@ def mappedDSFSGameDist
       -- Trace-synthesis abort (a sponge bad event) is a distinguished bad-trace value, NOT a
       -- suppressed acceptance: the verifier's `(𝕩, stmtOut)` decision survives. Matches CO25
       -- Hyb₀, where a `tr = ⊥` bad event keeps the acceptance bit `b`; the abort then lives only
-      -- in the trace component, inside `tvDist(Hyb₀, Hyb₄) ≤ η★` (Claims 5.21–5.24), rather than
+      -- in the trace component, inside `Δ(Hyb₀, Hyb₄) ≤ η★` (Claims 5.21–5.24), rather than
       -- wrongly zeroing the soundness event.
       | none => return some (stmtIn, stmtOut, π, [])
       | some fullTraceFS => return some (stmtIn, stmtOut, π, fullTraceFS)
@@ -1441,7 +1440,7 @@ def Lemma5_1Statement
   NondegenerateRounds pSpec →
     ∀ maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ,
       IsLemma5_1QueryBound maliciousProver tₕ tₚ tₚᵢ →
-        tvDist
+        discreteTVDist
             (hyb_0 (δ := δ) (Salt := Salt) (oSpec := oSpec) (StmtIn := StmtIn)
               (StmtOut := StmtOut) (pSpec := pSpec) (U := U)
               oSpecImpl V maliciousProver

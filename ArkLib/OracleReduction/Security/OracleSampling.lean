@@ -31,7 +31,7 @@ initial state, state preservation, and absence of failure. -/
 def IsFreshUniformSampler {ι σ α : Type} {spec : OracleSpec ι}
     [instSampleable : SampleableType α]
     (sampler : OracleComp spec α) (impl : QueryImpl spec (StateT σ ProbComp)) : Prop :=
-  ∀ state, discreteEvalDist ((simulateQ impl sampler).run state) = discreteEvalDist (do
+  ∀ state, (simulateQ impl sampler).run state =ᵈ (do
     let value ← uniformSample _ (h := instSampleable)
     return (value, state))
 
@@ -92,84 +92,46 @@ private lemma mapRangeAt_apply_self {spec : OracleSpec ι} (q : spec.Domain)
   let _ : DecidableEq spec.Domain := Classical.typeDecidableEq _
   simp [mapRangeAt, Function.update]
 
-private theorem probOutput_uniform_marginal_eq
+/-- Every value of a fixed query has the same probability under a uniformly sampled table:
+swapping two values at that query is a bijection of tables. -/
+private theorem prEvent_uniform_query_eq_eq
     [SampleableType (QueryImpl spec Id)] (q : spec.Domain)
     (y z : spec.Range q) :
-    Pr[= y | do let g ← (uniformSample (QueryImpl spec Id)); pure (g q)] =
-      Pr[= z | do let g ← (uniformSample (QueryImpl spec Id)); pure (g q)] := by
-  let _ : DecidableEq (spec.Range q) := Classical.typeDecidableEq _
-  let e : spec.Range q ≃ spec.Range q := Equiv.swap y z
-  let T : (QueryImpl spec Id) ≃ (QueryImpl spec Id) := mapRangeAt q e
-  rw [probOutput_bind_eq_tsum, probOutput_bind_eq_tsum]
-  change (∑' (x : (QueryImpl spec Id)),
-      Pr[= x | (uniformSample (QueryImpl spec Id))] *
-        Pr[= y | (pure (x q) : ProbComp (spec.Range q))]) =
-    ∑' (x : (QueryImpl spec Id)),
-      Pr[= x | (uniformSample (QueryImpl spec Id))] *
-        Pr[= z | (pure (x q) : ProbComp (spec.Range q))]
-  rw [← Equiv.tsum_eq T (fun g =>
-    Pr[= g | (uniformSample (QueryImpl spec Id))] *
-      Pr[= y | (pure (g q) : ProbComp (spec.Range q))])]
-  apply tsum_congr
-  intro g
-  have hsample : Pr[= T g | (uniformSample (QueryImpl spec Id))] =
-      Pr[= g | (uniformSample (QueryImpl spec Id))] := by
-    exact SampleableType.probOutput_selectElem_eq (T g) g
-  have hpure : Pr[= y | (pure ((T g) q) : ProbComp (spec.Range q))] =
-      Pr[= z | (pure (g q) : ProbComp (spec.Range q))] := by
-    rw [probOutput_pure, probOutput_pure]
-    change (if y = (mapRangeAt q (Equiv.swap y z) g) q then 1 else 0) =
-      if z = g q then 1 else 0
-    rw [mapRangeAt_apply_self]
-    by_cases hz : z = g q
-    · have hy : y = (Equiv.swap y z) (g q) := by
-        calc
-          y = (Equiv.swap y z) z := (Equiv.swap_apply_right y z).symm
-          _ = (Equiv.swap y z) (g q) := congrArg (Equiv.swap y z) hz
-      rw [if_pos hy, if_pos hz]
-    · have hy : y ≠ (Equiv.swap y z) (g q) := by
-        intro hy
-        have hswap : (Equiv.swap y z) (g q) = y := hy.symm
-        rw [Equiv.swap_apply_eq_iff] at hswap
-        rw [Equiv.swap_apply_left] at hswap
-        exact hz hswap.symm
-      rw [if_neg hy, if_neg hz]
-  rw [hsample, hpure]
-
-/-- **Level 2.** Marginal at a single query is uniform over the range. -/
-theorem probOutput_uniform_marginal
-    [SampleableType (QueryImpl spec Id)] (q : spec.Domain)
-    [Fintype (spec.Range q)] (y : spec.Range q) :
-    Pr[= y | do let g ← (uniformSample (QueryImpl spec Id)); pure (g q)] =
-      (Fintype.card (spec.Range q) : ℝ≥0∞)⁻¹ := by
-  let M : ProbComp (spec.Range q) := do
-    let g ← (uniformSample (QueryImpl spec Id))
-    pure (g q)
-  change Pr[= y | M] = (Fintype.card (spec.Range q) : ℝ≥0∞)⁻¹
-  have hsum : ∑ z, Pr[= z | M] = 1 := by
-    exact sum_probOutput_eq_one probFailure_eq_zero
-  have hconst : ∑ _z : spec.Range q, Pr[= y | M] = 1 := by
-    rw [← hsum]
-    apply Finset.sum_congr rfl
-    intro z _hz
-    change Pr[= y | do let g ← (uniformSample (QueryImpl spec Id)); pure (g q)] =
-      Pr[= z | do let g ← (uniformSample (QueryImpl spec Id)); pure (g q)]
-    exact probOutput_uniform_marginal_eq q y z
-  rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul] at hconst
-  rw [mul_comm] at hconst
-  exact ENNReal.eq_inv_of_mul_eq_one_left hconst
+    Pr{let g ← $ᵗ (QueryImpl spec Id)}[g q = y] =
+      Pr{let g ← $ᵗ (QueryImpl spec Id)}[g q = z] := by
+  classical
+  rw [← SampleableType.prEvent_uniformSample_equiv (mapRangeAt q (Equiv.swap y z))
+    (fun g : QueryImpl spec Id => g q = y)]
+  refine prEvent_congr _ _ _ fun g => ?_
+  rw [mapRangeAt_apply_self, Equiv.swap_apply_eq_iff, Equiv.swap_apply_left]
 
 /-- Reading a fixed query from a uniformly sampled table has uniform marginal distribution. -/
-lemma probEvent_uniform_query_eq
+theorem prEvent_uniform_query_eq
     [SampleableType (QueryImpl spec Id)] (q : spec.Domain)
     [Fintype (spec.Range q)] (y : spec.Range q) :
-    Pr[ fun g => g q = y | (uniformSample (QueryImpl spec Id)) ] =
+    Pr{let g ← $ᵗ (QueryImpl spec Id)}[g q = y] =
       (Fintype.card (spec.Range q) : ℝ≥0∞)⁻¹ := by
-  rw [← probOutput_uniform_marginal (spec := spec) q y, ← probEvent_eq_eq_probOutput]
-  exact (probEvent_bind_pure_comp
-    (mx := (uniformSample (QueryImpl spec Id)))
-    (f := fun g : (QueryImpl spec Id) => g q)
-    (q := fun x : spec.Range q => x = y)).symm
+  let : MeasurableSpace (spec.Range q) := ⊤
+  have hsum : ∑ z : spec.Range q, Pr{let g ← $ᵗ (QueryImpl spec Id)}[g q = z] = 1 := by
+    let read : QueryImpl spec Id → spec.Range q := fun g => g q
+    calc _ = ∑ z : spec.Range q, 𝒟[read <$> ($ᵗ (QueryImpl spec Id))] {z} :=
+          Finset.sum_congr rfl fun z _ => by rw [← prEvent_eq_evalDist_singleton, prEvent_map]
+      _ = 1 := by
+        rw [MeasureTheory.sum_measure_singleton, Finset.coe_univ, MeasureTheory.measure_univ]
+  have hconst : ∑ _z : spec.Range q, Pr{let g ← $ᵗ (QueryImpl spec Id)}[g q = y] = 1 := by
+    rw [← hsum]
+    exact Finset.sum_congr rfl fun z _ => prEvent_uniform_query_eq_eq q y z
+  rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul, mul_comm] at hconst
+  exact ENNReal.eq_inv_of_mul_eq_one_left hconst
+
+/-- **Level 2.** Marginal at a single query is uniform over the range. -/
+theorem prEvent_uniform_marginal
+    [SampleableType (QueryImpl spec Id)] (q : spec.Domain)
+    [Fintype (spec.Range q)] (y : spec.Range q) :
+    Pr{let x ← (do let g ← $ᵗ (QueryImpl spec Id); pure (g q))}[x = y] =
+      (Fintype.card (spec.Range q) : ℝ≥0∞)⁻¹ := by
+  rw [← prEvent_uniform_query_eq q y]
+  simp
 
 end MarginalLaws
 

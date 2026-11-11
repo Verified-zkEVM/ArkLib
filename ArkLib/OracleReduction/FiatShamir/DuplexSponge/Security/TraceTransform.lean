@@ -386,7 +386,7 @@ lemma challengeKeys_dedupChallengesPerSourceAux (seen : List (SourceTag × κ))
       · by_cases hq : (tag, q) ∈ seen
         · simpa [dedupChallengesPerSourceAux, hq] using ih seen
         · obtain ⟨hnd, hfresh⟩ := ih ((tag, q) :: seen)
-          simp only [dedupChallengesPerSourceAux, hq, if_false]
+          simp only [dedupChallengesPerSourceAux, hq, ite_false]
           refine ⟨List.nodup_cons.mpr ⟨fun hmem => hfresh _ hmem (.head _), hnd⟩, ?_⟩
           rintro k (_ | ⟨_, hk⟩)
           · exact hq
@@ -412,7 +412,7 @@ lemma dedupChallengesPerSourceAux_of_nodup (seen : List (SourceTag × κ))
         simp only [dedupChallengesPerSourceAux, ih seen hnd hfresh]
       · simp only [challengeKeys, List.filterMap_cons, List.nodup_cons, List.mem_cons,
           forall_eq_or_imp] at hnd hfresh
-        simp only [dedupChallengesPerSourceAux, hfresh.1, if_false]
+        simp only [dedupChallengesPerSourceAux, hfresh.1, ite_false]
         congr 1
         refine ih _ hnd.2 fun k hk hks => ?_
         rcases List.mem_cons.mp hks with rfl | hks
