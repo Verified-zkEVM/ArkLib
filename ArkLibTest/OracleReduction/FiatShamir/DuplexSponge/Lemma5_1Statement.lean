@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Alexander Hicks
+-/
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.KeyLemma
 
 /-!
@@ -31,6 +36,23 @@ example (oSpecImpl : QueryImpl oSpec ProbComp) (V : Verifier oSpec StmtIn StmtOu
       (ProverTransform.d2sAlgo (Salt := Salt) (T_H := T_H) (T_P := T_P) P)
       (θStar tₕ tₚ tₚᵢ) :=
   (h hND P hP).2
+
+/-- The "Moreover" clause of Lemma 5.1 is a theorem: `D2SAlgo(𝒫̃)` makes at most `θ★ = t_p`
+challenge queries. -/
+example (P : MaliciousProver oSpec pSpec StmtIn U δ) (tₕ tₚ tₚᵢ : ℕ)
+    (hP : IsLemma5_1QueryBound P tₕ tₚ tₚᵢ) :
+    IsD2SAlgoChallengeQueryBound
+      (ProverTransform.d2sAlgo (Salt := Salt) (T_H := T_H) (T_P := T_P) P)
+      (θStar tₕ tₚ tₚᵢ) :=
+  isD2SAlgoChallengeQueryBound_d2sAlgo P tₕ tₚ tₚᵢ hP
+
+/-- A prover that makes no oracle query compiles to a `D2SAlgo` prover that makes no challenge
+query. -/
+example (out : StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ) :
+    IsD2SAlgoChallengeQueryBound
+      (ProverTransform.d2sAlgo (Salt := Salt) (T_H := T_H) (T_P := T_P)
+        (pure out : MaliciousProver oSpec pSpec StmtIn U δ)) 0 :=
+  isD2SAlgoChallengeQueryBound_d2sAlgo (pure out) 0 0 0 ⟨trivial, trivial, trivial⟩
 
 end Statement
 

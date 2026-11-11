@@ -76,6 +76,447 @@ noncomputable section
 
 open OracleComp OracleSpec ProtocolSpec
 
+/-! ## Query bound of `D2SAlgo` (CO25 §5.4, "Query complexity of D2SAlgo")
+
+`D2SAlgo(𝒫̃)` queries `f` only on a `tr_i` miss in the memoized codec bridge
+(`d2sCodecBridgeImplMemo`), and the bridge is called only in D2SQuery Item 4(e)i, at most once per
+forward-permutation query of `𝒫̃`. The lemmas below track this through the simulation layers:
+`StateQueryBound` is a query bound for a `StateT σ (OptionT (OracleComp spec))` computation from
+every initial state, and the `*_queryBound` lemmas bound the `gᵢ` / `fᵢ` queries of each
+D2SQuery handler. The final statement is `KeyLemma.isD2SAlgoChallengeQueryBound_d2sAlgo`. -/
+
+namespace DuplexSpongeFS.D2SAlgoQueryBound
+
+open DuplexSpongeFS.ProverTransform
+
+/-! ### Generic transfer lemmas -/
+
+section Generic
+
+variable {ι ι' : Type} {spec : OracleSpec ι} {spec' : OracleSpec ι'}
+  {q : ι' → Prop} [DecidablePred q]
+
+/-- Query bound of a `StateT σ (OptionT (OracleComp spec'))` computation from every state. -/
+def StateQueryBound {σ α : Type} (x : StateT σ (OptionT (OracleComp spec')) α) (q : ι' → Prop)
+    [DecidablePred q] (k : ℕ) : Prop :=
+  ∀ s, IsQueryBoundP (x.run s).run q k
+
+lemma StateQueryBound.mono {σ α : Type} {x : StateT σ (OptionT (OracleComp spec')) α} {k k' : ℕ}
+    (h : StateQueryBound x q k) (hk : k ≤ k') : StateQueryBound x q k' := fun s => (h s).mono hk
+
+lemma stateQueryBound_pure {σ α : Type} (a : α) :
+    StateQueryBound (pure a : StateT σ (OptionT (OracleComp spec')) α) q 0 := fun _ => trivial
+
+lemma stateQueryBound_get {σ : Type} :
+    StateQueryBound (get : StateT σ (OptionT (OracleComp spec')) σ) q 0 :=
+  fun _ => trivial
+
+lemma stateQueryBound_set {σ : Type} (s' : σ) :
+    StateQueryBound (set s' : StateT σ (OptionT (OracleComp spec')) PUnit) q 0 := fun _ => trivial
+
+lemma stateQueryBound_modify {σ : Type} (f : σ → σ) :
+    StateQueryBound (modify f : StateT σ (OptionT (OracleComp spec')) PUnit) q 0 := fun _ => trivial
+
+lemma stateQueryBound_failure {σ α : Type} :
+    StateQueryBound (StateT.lift failure : StateT σ (OptionT (OracleComp spec')) α) q 0 :=
+  fun _ => trivial
+
+lemma stateQueryBound_lift {σ α : Type} {x : OracleComp spec' α} {k : ℕ}
+    (hx : IsQueryBoundP x q k) :
+    StateQueryBound (StateT.lift (OptionT.lift x) : StateT σ (OptionT (OracleComp spec')) α)
+      q k := by
+  intro s
+  have h : ((StateT.lift (OptionT.lift x) : StateT σ (OptionT (OracleComp spec')) α).run s).run
+      = (fun a => some (a, s)) <$> x := by
+    simp only [StateT.run_lift, OptionT.run_bind, OptionT.lift, OptionT.mk, Option.elimM,
+      map_eq_bind_pure_comp]
+    change (x >>= pure ∘ some) >>= _ = _
+    simp [bind_assoc, map_eq_bind_pure_comp]
+  rw [h, isQueryBoundP_map_iff]
+  exact hx
+
+lemma stateQueryBound_bind {σ α β : Type} {x : StateT σ (OptionT (OracleComp spec')) α}
+    {f : α → StateT σ (OptionT (OracleComp spec')) β} {k₁ k₂ : ℕ}
+    (hx : StateQueryBound x q k₁) (hf : ∀ a, StateQueryBound (f a) q k₂) :
+    StateQueryBound (x >>= f) q (k₁ + k₂) := by
+  intro s
+  simp only [StateT.run_bind, OptionT.run_bind]
+  refine isQueryBoundP_bind (hx s) fun o _ => ?_
+  rcases o with _ | ⟨a, s'⟩
+  · exact trivial
+  · exact hf a s'
+
+lemma isQueryBoundP_bind_zero {α β : Type} {x : OracleComp spec' α} {f : α → OracleComp spec' β}
+    (hx : IsQueryBoundP x q 0) (hf : ∀ a, IsQueryBoundP (f a) q 0) :
+    IsQueryBoundP (x >>= f) q 0 := by
+  simpa using isQueryBoundP_bind hx (fun a _ => hf a)
+
+lemma stateQueryBound_bind_zero {σ α β : Type} {x : StateT σ (OptionT (OracleComp spec')) α}
+    {f : α → StateT σ (OptionT (OracleComp spec')) β}
+    (hx : StateQueryBound x q 0) (hf : ∀ a, StateQueryBound (f a) q 0) :
+    StateQueryBound (x >>= f) q 0 :=
+  stateQueryBound_bind hx hf
+
+lemma stateQueryBound_liftOpt {σ α : Type} {z : OptionT (OracleComp spec') α} {k : ℕ}
+    (hz : IsQueryBoundP z.run q k) :
+    StateQueryBound (StateT.lift z : StateT σ (OptionT (OracleComp spec')) α) q k := by
+  intro s
+  simp only [StateT.run_lift, OptionT.run_bind, Option.elimM]
+  have := isQueryBoundP_bind (m := 0) hz
+    (ob := fun o => o.elim (pure none) fun x => pure (some (x, s))) fun o _ => by
+      cases o <;> exact trivial
+  simpa using this
+
+/-- Stateless transfer through `simulateQ`. -/
+lemma isQueryBoundP_simulateQ {ι₀ : Type} {spec₀ : OracleSpec ι₀} {p : ι₀ → Prop}
+    [DecidablePred p] {impl : QueryImpl spec₀ (OracleComp spec')} {α : Type}
+    {oa : OracleComp spec₀ α} {k : ℕ} (h : IsQueryBoundP oa p k)
+    (hstep : ∀ t, IsQueryBoundP (impl t) q (if p t then 1 else 0)) :
+    IsQueryBoundP (simulateQ impl oa) q k := by
+  induction oa using OracleComp.inductionOn generalizing k with
+  | pure x => exact trivial
+  | query_bind t mx ih =>
+      rw [isQueryBoundP_query_bind_iff] at h
+      simp only [simulateQ_query_bind, OracleQuery.input_query, monadLift_self]
+      have hbound : (if p t then 1 else 0) + (if p t then k - 1 else k) = k := by grind
+      simpa [hbound] using isQueryBoundP_bind (hstep t) fun u _ => ih u (h.2 u)
+
+/-- Transfer through `simulateQ` into `StateT σ (OptionT (OracleComp spec'))`. -/
+lemma isQueryBoundP_simulateQ_StateT_OptionT {ι₀ : Type} {spec₀ : OracleSpec ι₀}
+    {p : ι₀ → Prop} [DecidablePred p] {σ : Type}
+    {impl : QueryImpl spec₀ (StateT σ (OptionT (OracleComp spec')))} {α : Type}
+    {oa : OracleComp spec₀ α} {k : ℕ} (h : IsQueryBoundP oa p k)
+    (hstep : ∀ t, StateQueryBound (impl t) q (if p t then 1 else 0)) :
+    StateQueryBound (simulateQ impl oa) q k := by
+  induction oa using OracleComp.inductionOn generalizing k with
+  | pure x => exact fun _ => trivial
+  | query_bind t mx ih =>
+      rw [isQueryBoundP_query_bind_iff] at h
+      simp only [simulateQ_query_bind, OracleQuery.input_query]
+      have hbound : (if p t then 1 else 0) + (if p t then k - 1 else k) = k := by grind
+      have := stateQueryBound_bind (q := q) (hstep t) fun u => ih u (h.2 u)
+      simp only [hbound] at this
+      exact this
+
+/-- Transfer through `simulateQ` into `StateT σ₁ (StateT σ₂ (OptionT (OracleComp spec')))`. -/
+lemma isQueryBoundP_simulateQ_StateT_StateT_OptionT {ι₀ : Type} {spec₀ : OracleSpec ι₀}
+    {p : ι₀ → Prop} [DecidablePred p] {σ₁ σ₂ : Type}
+    {impl : QueryImpl spec₀ (StateT σ₁ (StateT σ₂ (OptionT (OracleComp spec'))))} {α : Type}
+    {oa : OracleComp spec₀ α} {k : ℕ} (h : IsQueryBoundP oa p k)
+    (hstep : ∀ t s₁, StateQueryBound ((impl t).run s₁) q (if p t then 1 else 0)) (s₁ : σ₁) :
+    StateQueryBound ((simulateQ impl oa).run s₁) q k := by
+  induction oa using OracleComp.inductionOn generalizing k s₁ with
+  | pure x => exact fun _ => trivial
+  | query_bind t mx ih =>
+      rw [isQueryBoundP_query_bind_iff] at h
+      simp only [simulateQ_query_bind, OracleQuery.input_query, StateT.run_bind]
+      have hbound : (if p t then 1 else 0) + (if p t then k - 1 else k) = k := by grind
+      have := stateQueryBound_bind (q := q) (hstep t s₁) fun us => ih us.1 (h.2 us.1) us.2
+      simp only [hbound] at this
+      exact this
+
+lemma isQueryBoundP_bind_pure {α β : Type} {x : OracleComp spec' α} {f : α → β} {k : ℕ}
+    (hx : IsQueryBoundP x q k) : IsQueryBoundP (x >>= fun a => pure (f a)) q k := by
+  simpa using isQueryBoundP_bind (m := 0) (ob := fun a => (pure (f a) : OracleComp spec' β))
+    hx fun _ _ => trivial
+
+/-- A single query lifted along a sub-spec inclusion is one query at its image index. -/
+lemma isQueryBoundP_liftM_query {ι₀ : Type} {spec₀ : OracleSpec ι₀} [h : spec₀ ⊂ₒ spec']
+    (t : spec₀.Domain) {k : ℕ} (hk : q (h.onQuery t) → 0 < k) :
+    IsQueryBoundP (liftM (spec₀.query t) : OracleComp spec' (spec₀.Range t)) q k := by
+  rw [show (liftM (spec₀.query t) : OracleComp spec' (spec₀.Range t)) =
+      liftM (spec'.query (h.onQuery t)) >>= fun u => pure (h.onResponse t u) by
+    change ((liftM (spec₀.query t) : OracleQuery spec' (spec₀.Range t)) :
+        OracleComp spec' (spec₀.Range t)) =
+      (liftM (spec'.query (h.onQuery t)) >>= fun u => pure (h.onResponse t u))
+    rw [show (liftM (spec₀.query t) : OracleQuery spec' (spec₀.Range t)) =
+        ⟨h.onQuery t, h.onResponse t⟩ from h.liftM_eq_lift _]
+    rfl]
+  exact isQueryBoundP_bind_pure ((isQueryBoundP_query_iff _ _ _).2 hk)
+
+end Generic
+
+
+section Samplers
+
+variable {n : ℕ} {pSpec : ProtocolSpec n} {StmtIn U : Type} [SpongeUnit U] [SpongeSize]
+  [codec : Codec pSpec U] {δ : ℕ}
+
+/-- `gᵢ` queries in the `D2SQuery` oracle spec. -/
+def isChallengeSlotQuery {κ : Type} {challengeSpec : OracleSpec κ} :
+    (D2SChallengePlusUnitOracle (U := U) challengeSpec).Domain → Prop
+  | .inl _ => True
+  | .inr _ => False
+
+instance {κ : Type} {challengeSpec : OracleSpec κ} :
+    DecidablePred (isChallengeSlotQuery (U := U) (challengeSpec := challengeSpec)) := fun t =>
+  match t with
+  | .inl _ => isTrue trivial
+  | .inr _ => isFalse id
+
+local notation "G0" x => IsQueryBoundP x (isChallengeSlotQuery (U := U)
+  (challengeSpec := gSpec (U := U) StmtIn pSpec δ)) 0
+
+omit [SpongeSize] in
+lemma d2sSampleUnit_queryBound :
+    G0 (d2sSampleUnit (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)) := by
+  simp [d2sSampleUnit, isChallengeSlotQuery]
+
+omit [SpongeSize] in
+lemma d2sSampleArrayExact_queryBound (m : ℕ) :
+    G0 (d2sSampleArrayExact (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ) m) := by
+  induction m with
+  | zero => exact trivial
+  | succ m ih =>
+    simp only [d2sSampleArrayExact]
+    refine isQueryBoundP_bind_zero d2sSampleUnit_queryBound fun _ =>
+      isQueryBoundP_bind_zero ih fun x => ?_
+    obtain ⟨_, _⟩ := x
+    exact trivial
+
+omit [SpongeSize] in
+lemma d2sSampleVector_queryBound (m : ℕ) :
+    G0 (d2sSampleVector (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ) m) := by
+  refine isQueryBoundP_bind_zero (d2sSampleArrayExact_queryBound m) fun x => ?_
+  obtain ⟨_, _⟩ := x
+  exact trivial
+
+lemma d2sSampleCapacityList_queryBound (m : ℕ) :
+    G0 (d2sSampleCapacityList (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ) m) := by
+  induction m with
+  | zero => exact trivial
+  | succ m ih =>
+    simp only [d2sSampleCapacityList]
+    exact isQueryBoundP_bind_zero (d2sSampleVector_queryBound _) fun _ =>
+      isQueryBoundP_bind_zero ih fun _ => trivial
+
+lemma d2sRateBlocksFromUnitsM_queryBound (m : ℕ) (units : List U) :
+    G0 (d2sRateBlocksFromUnitsM (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ) m units) := by
+  induction m generalizing units with
+  | zero => exact trivial
+  | succ m ih =>
+    simp only [d2sRateBlocksFromUnitsM]
+    split <;>
+    repeat (first
+      | exact trivial
+      | exact ih _
+      | exact d2sSampleVector_queryBound _
+      | (refine isQueryBoundP_bind_zero ?_ ?_ <;> try intro x)
+      | (obtain ⟨_, _⟩ := x))
+
+lemma d2sRateBlocksFromChallenge_queryBound {i : pSpec.ChallengeIdx}
+    (c : Vector U (challengeSize (pSpec := pSpec) i)) :
+    G0 (d2sRateBlocksFromChallenge (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ) c) := by
+  refine isQueryBoundP_bind_zero (d2sRateBlocksFromUnitsM_queryBound _ _) fun x => ?_
+  obtain ⟨_, _⟩ := x
+  exact trivial
+
+omit [SpongeSize] in
+lemma d2sQueryG_queryBound (i : pSpec.ChallengeIdx) (stmt : StmtIn) (salt : Vector U δ)
+    (msgs : pSpec.EncodedMessagesBefore U i.1.castSucc) :
+    IsQueryBoundP (d2sQueryG (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
+      i stmt salt msgs) (isChallengeSlotQuery (U := U)
+        (challengeSpec := gSpec (U := U) StmtIn pSpec δ)) 1 := by
+  unfold d2sQueryG
+  exact (isQueryBoundP_query_iff _ _ _).2 fun _ => Nat.one_pos
+
+end Samplers
+
+section Handlers
+
+variable {n : ℕ} {pSpec : ProtocolSpec n} {StmtIn U : Type} [SpongeUnit U] [SpongeSize]
+  [codec : Codec pSpec U] {δ : ℕ} [DecidableEq StmtIn] [DecidableEq U] [Fintype U]
+  {T_H T_P : Type} [DSTraceStorage.LawfulTraceNablaImpl T_H T_P StmtIn U]
+  [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)]
+
+local notation "QG" x "," k => StateQueryBound x (isChallengeSlotQuery (U := U)
+  (challengeSpec := gSpec (U := U) StmtIn pSpec δ)) k
+
+macro "state_query_bound_zero" : tactic => `(tactic| repeat (first
+  | with_reducible exact stateQueryBound_pure _
+  | with_reducible exact stateQueryBound_get
+  | with_reducible exact stateQueryBound_set _
+  | with_reducible exact stateQueryBound_modify _
+  | with_reducible exact stateQueryBound_failure
+  | with_reducible exact stateQueryBound_lift (d2sSampleVector_queryBound _)
+  | with_reducible exact stateQueryBound_lift (d2sSampleCapacityList_queryBound _)
+  | with_reducible exact stateQueryBound_lift (d2sRateBlocksFromChallenge_queryBound _)
+  | with_reducible refine stateQueryBound_bind_zero ?_ fun _ => ?_
+  | fail_if_no_progress dsimp only
+  | split))
+
+omit [Fintype U] [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)] in
+lemma d2sHandleHashQuery_queryBound (stmt : StmtIn) :
+    QG (d2sHandleHashQuery (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn)
+      (pSpec := pSpec) (U := U) stmt), 0 := by
+  unfold d2sHandleHashQuery d2sSampleCapacity
+  state_query_bound_zero
+
+omit [Fintype U] [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)] in
+lemma d2sHandleInversePermQuery_queryBound (s : CanonicalSpongeState U) :
+    QG (d2sHandleInversePermQuery (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn)
+      (pSpec := pSpec) (U := U) s), 0 := by
+  unfold d2sHandleInversePermQuery d2sSampleState
+  state_query_bound_zero
+
+omit [Fintype U] [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)] in
+lemma d2sHandleBacktrackNoResult_queryBound (s : CanonicalSpongeState U) :
+    QG (d2sHandleBacktrackNoResult (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn)
+      (pSpec := pSpec) (U := U) s), 0 := by
+  unfold d2sHandleBacktrackNoResult d2sSampleState
+  state_query_bound_zero
+
+omit [Fintype U] [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)] in
+lemma d2sSynthesizeStateFromRateBlocks_queryBound (blocks : List (Vector U SpongeSize.R)) :
+    QG (d2sSynthesizeStateFromRateBlocks (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn)
+      (pSpec := pSpec) (U := U) blocks), 0 := by
+  unfold d2sSynthesizeStateFromRateBlocks
+  refine stateQueryBound_bind_zero stateQueryBound_get fun st => ?_
+  split
+  · exact stateQueryBound_failure
+  · refine stateQueryBound_bind_zero
+      (stateQueryBound_lift (d2sSampleCapacityList_queryBound _)) fun caps => ?_
+    dsimp only
+    split
+    · exact stateQueryBound_failure
+    · exact stateQueryBound_pure _
+
+omit [Fintype U] [∀ i, DecidableEq (pSpec.Message i)] in
+lemma d2sHandleBacktrackSome_queryBound (s : CanonicalSpongeState U)
+    (bt : Backtrack.BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
+    QG (d2sHandleBacktrackSome (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn)
+      (pSpec := pSpec) (U := U) s bt), 1 := by
+  unfold d2sHandleBacktrackSome
+  refine (stateQueryBound_bind (k₁ := 0) (k₂ := 1) stateQueryBound_get fun st => ?_).mono le_rfl
+  split
+  · refine (stateQueryBound_bind (k₁ := 1) (k₂ := 0)
+      (stateQueryBound_lift (d2sQueryG_queryBound _ _ _ _)) fun ρ => ?_).mono
+      le_rfl
+    state_query_bound_zero
+    · exact d2sSynthesizeStateFromRateBlocks_queryBound _
+    · rename_i x
+      obtain ⟨_, _⟩ := x
+      state_query_bound_zero
+  · refine StateQueryBound.mono ?_ (Nat.zero_le 1)
+    unfold d2sSampleState
+    state_query_bound_zero
+
+omit [Fintype U] [∀ i, DecidableEq (pSpec.Message i)] in
+lemma d2sHandleForwardPermQuery_queryBound (s : CanonicalSpongeState U) :
+    QG (d2sHandleForwardPermQuery (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn)
+      (pSpec := pSpec) (U := U) s), 1 := by
+  unfold d2sHandleForwardPermQuery
+  refine (stateQueryBound_bind (k₁ := 0) (k₂ := 1) stateQueryBound_get fun st => ?_).mono le_rfl
+  split
+  · exact stateQueryBound_failure.mono (Nat.zero_le 1)
+  · exact (d2sHandleBacktrackNoResult_queryBound s).mono (Nat.zero_le 1)
+  · exact d2sHandleBacktrackSome_queryBound s _
+
+/-- Forward-permutation queries of the duplex-sponge spec. -/
+def isDSPermQuery : (duplexSpongeChallengeOracle StmtIn U).Domain → Prop
+  | .inr (.inl _) => True
+  | _ => False
+
+instance : DecidablePred (isDSPermQuery (StmtIn := StmtIn) (U := U)) := fun t =>
+  match t with
+  | .inl _ => isFalse id
+  | .inr (.inl _) => isTrue trivial
+  | .inr (.inr _) => isFalse id
+
+omit [Fintype U] [∀ i, DecidableEq (pSpec.Message i)] in
+lemma d2sQueryStep_queryBound (dq : (duplexSpongeChallengeOracle StmtIn U).Domain) :
+    QG (d2sQueryStep (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn)
+      (pSpec := pSpec) (U := U) dq), (if isDSPermQuery dq then 1 else 0) := by
+  rcases dq with x | x | x
+  · exact d2sHandleHashQuery_queryBound x
+  · exact d2sHandleForwardPermQuery_queryBound x
+  · exact d2sHandleInversePermQuery_queryBound x
+
+end Handlers
+
+section Bridge
+
+variable {n : ℕ} {pSpec : ProtocolSpec n} {StmtIn U : Type} [SpongeUnit U] [SpongeSize]
+  [codec : Codec pSpec U] {δ : ℕ} [DecidableEq StmtIn] [DecidableEq U] [Fintype U]
+  [∀ i, Fintype (pSpec.Challenge i)] [∀ i, DecidableEq (pSpec.Challenge i)]
+  [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)]
+  {Salt : Type} [SaltCodec U δ Salt]
+
+local notation "QF" x "," k => StateQueryBound x (isChallengeSlotQuery (U := U)
+  (challengeSpec := fsChallengeOracle (StmtIn × Salt) pSpec)) k
+
+omit [SpongeSize] [DecidableEq StmtIn] [∀ i, DecidableEq (pSpec.Message i)] in
+lemma d2sCodecBridgeImpl_queryBound (g : (gSpec (U := U) StmtIn pSpec δ).Domain) :
+    IsQueryBoundP (d2sCodecBridgeImpl (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
+      (Salt := Salt) g).run (isChallengeSlotQuery (U := U)
+        (challengeSpec := fsChallengeOracle (StmtIn × Salt) pSpec)) 1 := by
+  unfold d2sCodecBridgeImpl
+  dsimp only
+  split
+  · simp only [pure_bind, OptionT.run_bind, Option.elimM, Option.elim]
+    refine (isQueryBoundP_bind (n := 1) (m := 0) ?_ fun o _ => ?_).mono le_rfl
+    · simp only [OptionT.lift, OptionT.run_mk]
+      exact isQueryBoundP_bind_pure ((isQueryBoundP_query_iff _ _ _).2 fun _ => Nat.one_pos)
+    · rcases o with _ | c
+      · exact trivial
+      · simp only [OptionT.lift, OptionT.run_mk]
+        refine isQueryBoundP_bind_pure ?_
+        unfold uniformDeserializePreimage sampleFromList
+        exact isQueryBoundP_bind_zero ((isQueryBoundP_query_iff _ _ _).2 fun h => h.elim)
+          fun _ => trivial
+  · simp
+
+omit [SpongeSize] [∀ i, DecidableEq (pSpec.Message i)] in
+lemma d2sCodecBridgeImplMemo_queryBound (g : (gSpec (U := U) StmtIn pSpec δ).Domain) :
+    QF (d2sCodecBridgeImplMemo (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
+      (Salt := Salt) g), 1 := by
+  unfold d2sCodecBridgeImplMemo
+  refine (stateQueryBound_bind (k₁ := 0) (k₂ := 1) stateQueryBound_get fun memo => ?_).mono le_rfl
+  split
+  · exact (stateQueryBound_pure _).mono (Nat.zero_le 1)
+  · refine (stateQueryBound_bind (k₁ := 1) (k₂ := 0)
+      (stateQueryBound_liftOpt (d2sCodecBridgeImpl_queryBound g)) fun r => ?_).mono
+      le_rfl
+    exact stateQueryBound_bind_zero (stateQueryBound_modify _) fun _ => stateQueryBound_pure _
+
+variable {T_H T_P : Type} [DSTraceStorage.LawfulTraceNablaImpl T_H T_P StmtIn U]
+
+omit [∀ i, DecidableEq (pSpec.Message i)] in
+lemma d2sQueryImpl_queryBound
+    {auxImpl : QueryImpl ((Unit →ₒ U) + unifSpec)
+      (StateT (D2SAlgoMemo StmtIn U δ Salt pSpec)
+        (OptionT (OracleComp (D2SChallengePlusUnitOracle (U := U)
+          (fsChallengeOracle (StmtIn × Salt) pSpec)))))}
+    (haux : ∀ aux, StateQueryBound (auxImpl aux) (isChallengeSlotQuery (U := U)
+      (challengeSpec := fsChallengeOracle (StmtIn × Salt) pSpec)) 0)
+    (dq : (duplexSpongeChallengeOracle StmtIn U).Domain)
+    (s₁ : D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec)
+      (U := U)) :
+    QF ((d2sQueryImpl (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec)
+      (U := U)
+      (d2sCodecBridgeImplMemo (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
+        (Salt := Salt))
+      auxImpl dq).run s₁),
+      (if isDSPermQuery dq then 1 else 0) := by
+  unfold d2sQueryImpl
+  dsimp only [StateT.run]
+  refine (stateQueryBound_bind (k₂ := 0) (isQueryBoundP_simulateQ_StateT_OptionT
+    (d2sQueryStep_queryBound (δ := δ) (T_H := T_H) (T_P := T_P) dq s₁) fun t => ?_)
+      fun o => ?_).mono
+      (by simp)
+  · rcases t with g | aux
+    · exact d2sCodecBridgeImplMemo_queryBound g
+    · exact haux aux
+  · rcases o with _ | ⟨_, _⟩
+    · intro _
+      simp only [StateT.run_failure, OptionT.run_failure]
+      exact trivial
+    · exact stateQueryBound_pure _
+
+end Bridge
+
+end DuplexSpongeFS.D2SAlgoQueryBound
+
 namespace DuplexSpongeFS.KeyLemma
 
 open DuplexSpongeFS.ProverTransform DuplexSpongeFS.TraceTransform DuplexSpongeFS.DSTraceStorage
@@ -517,10 +958,15 @@ open scoped NNReal
 /-! ### Numerical bounds: `θ★`, `CodecBias`, `η★`, per-claim bounds -/
 
 /-- CO25 Lemma 5.1 / Eq. (6). `θ★(t) := t_p` — forward-permutation query budget of `𝒫̃`,
-used as the query-bound multiplier in `η★`. The printed statement assumes
-`t_p ≥ max {L_P, L_V}`. That side condition is not used by the query-count or
-statistical-distance statements formalized here; ArkLib does not state the paper's running-time
-bound. -/
+used as the query-bound multiplier in `η★` and as the challenge-query bound of `D2SAlgo(𝒫̃)`.
+
+Eq. (6) also assumes `t_p ≥ max {L_P, L_V}`. The paper uses that condition only for the running
+time of `D2SAlgo` (Eq. 18). The query-count and statistical-distance statements in this file do not
+need it, and this file states no cost bound. Operation counts of `D2SAlgo` can be expressed with
+VCVio's resource model (`CostModel`, `ResourceProfile`, `MeasuredProgram`) and ArkLib's
+`MeasuredKnowledgeCertificate` / `StateRestorationBudget`; a bound on complete execution time
+cannot be expressed yet. A cost statement for `D2SAlgo` must take `t_p ≥ max {L_P, L_V}` as a
+hypothesis again. -/
 def θStar (_tₕ tₚ _tₚᵢ : ℕ) : ℕ := tₚ
 
 /-- CO25 Definition 4.1. Per-round codec bias profile `i ↦ ε_{cdc,i}(λ,n)`.
@@ -904,6 +1350,74 @@ abbrev IsD2SAlgoChallengeQueryBound
   exact OracleComp.IsQueryBoundP prover
     (isD2SAlgoChallengeQuery (oSpec := oSpec) (StmtIn := StmtIn) (U := U)
       (Salt := Salt) (pSpec := pSpec)) t
+
+/-! ### `θ★` query bound of `D2SAlgo` -/
+
+section ThetaStarBound
+
+open DuplexSpongeFS.D2SAlgoQueryBound DuplexSpongeFS.ProverTransform
+
+omit [VCVCompatible StmtIn] [VCVCompatible Salt] in
+lemma d2fOuterImpl_queryBound
+    {_ : DecidablePred (isLemma5_1PermQuery (oSpec := oSpec) (StmtIn := StmtIn) (U := U))}
+    {_ : DecidablePred (isD2SAlgoChallengeQuery (oSpec := oSpec) (StmtIn := StmtIn) (U := U)
+      (Salt := Salt) (pSpec := pSpec))}
+    (t : (oSpec + duplexSpongeChallengeOracle StmtIn U).Domain)
+    (s₁ : D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec)
+      (U := U)) :
+    StateQueryBound (((d2fOuterImpl (oSpec := oSpec) (T_H := T_H) (T_P := T_P)
+      (d2sCodecBridgeImplMemo (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
+        (Salt := Salt))) t).run s₁)
+      (isD2SAlgoChallengeQuery (oSpec := oSpec) (StmtIn := StmtIn) (U := U)
+      (Salt := Salt) (pSpec := pSpec))
+      (if isLemma5_1PermQuery t then 1 else 0) := by
+  intro s₂
+  rcases t with oq | dq
+  · refine IsQueryBoundP.mono (n := 0) ?_ (Nat.zero_le _)
+    exact stateQueryBound_lift (x := liftM (OracleSpec.query
+      (spec := oSpec + D2SChallengePlusUnitOracle (U := U)
+        (fsChallengeOracle (StmtIn × Salt) pSpec)) (Sum.inl oq)))
+        ((isQueryBoundP_query_iff _ _ _).2 fun h => h.elim) s₂
+  · simp only [d2fOuterImpl, QueryImpl.addLift_def, QueryImpl.add_apply_inr,
+      QueryImpl.liftTarget_apply]
+    have hk : (if isDSPermQuery dq then 1 else 0) =
+        (if isLemma5_1PermQuery (oSpec := oSpec) (Sum.inr dq) then 1 else 0) := by
+      rcases dq with _ | _ | _ <;> simp [isDSPermQuery, isLemma5_1PermQuery]
+    rw [← hk]
+    refine isQueryBoundP_simulateQ (p := isChallengeSlotQuery (U := U)
+      (challengeSpec := fsChallengeOracle (StmtIn × Salt) pSpec))
+      (d2sQueryImpl_queryBound (T_H := T_H) (T_P := T_P) (fun aux s => ?_) dq s₁ s₂) fun t => ?_
+    · exact stateQueryBound_lift (x := liftM (OracleSpec.query
+        (spec := D2SChallengePlusUnitOracle (U := U)
+          (fsChallengeOracle (StmtIn × Salt) pSpec)) (Sum.inr aux)))
+        ((isQueryBoundP_query_iff _ _ _).2 fun h => h.elim) s
+    · refine isQueryBoundP_liftM_query t fun h => ?_
+      rcases t with _ | _
+      · exact Nat.one_pos
+      · exact h.elim
+
+omit [VCVCompatible StmtIn] [VCVCompatible Salt] in
+theorem isD2SAlgoChallengeQueryBound_d2sAlgo
+    (P : MaliciousProver oSpec pSpec StmtIn U δ) (tₕ tₚ tₚᵢ : ℕ)
+    (h : IsLemma5_1QueryBound P tₕ tₚ tₚᵢ) :
+    IsD2SAlgoChallengeQueryBound
+      (ProverTransform.d2sAlgo (Salt := Salt) (T_H := T_H) (T_P := T_P) P)
+      (θStar tₕ tₚ tₚᵢ) := by
+  classical
+  obtain ⟨-, hp, -⟩ := h
+  have hraw := isQueryBoundP_simulateQ_StateT_StateT_OptionT hp
+    (fun t s₁ => d2fOuterImpl_queryBound (oSpec := oSpec) (pSpec := pSpec) (U := U) (δ := δ)
+      (Salt := Salt) (T_H := T_H) (T_P := T_P) t s₁) default default
+  unfold IsD2SAlgoChallengeQueryBound θStar
+  unfold d2sAlgo D2FQueryProver d2fRaw d2fRawFrom
+  change IsQueryBoundP (OptionT.run _) _ _
+  rw [OptionT.run_bind, Option.elimM]
+  refine (isQueryBoundP_bind (n := tₚ) (m := 0) ?_ fun o _ => ?_).mono (by simp)
+  · rw [OptionT.run_map, OptionT.run_map, isQueryBoundP_map_iff, isQueryBoundP_map_iff]
+    exact hraw
+  · rcases o with _ | ⟨_, _, _⟩ <;> exact trivial
+
+end ThetaStarBound
 
 /-! ### CO25 Lemma 5.1 as a proposition -/
 

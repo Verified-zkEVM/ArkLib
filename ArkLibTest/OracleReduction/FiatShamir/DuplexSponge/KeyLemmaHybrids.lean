@@ -1,4 +1,17 @@
+/-
+Copyright (c) 2026 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Alexander Hicks
+-/
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.KeyLemma
+
+/-!
+# Regression tests for the Section 5.8 hybrid games
+
+- On a prover abort, `Hyb₄` continues with the same proof that `Hyb₁`–`Hyb₃` substitute.
+- The verifier phase of a hybrid game starts its `tr_i` memo from `default`, so its boundary
+  `gᵢ` calls are memo misses that query `fᵢ`.
+-/
 
 open OracleComp OracleSpec ProtocolSpec DuplexSpongeFS DuplexSpongeFS.KeyLemma
 
