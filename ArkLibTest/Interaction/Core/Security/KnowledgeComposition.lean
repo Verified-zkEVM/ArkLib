@@ -30,13 +30,13 @@ namespace Interaction.Core.KnowledgeCompositionTests
 abbrev NoData : PEmpty.{1} → Type := fun i => i.elim
 
 /-- No input oracles. -/
-@[instance_reducible] def noInputs : OracleFamily PEmpty NoData := ⟨fun i => i.elim⟩
+@[instance_reducible] def noInputs : OracleFamily.{0, 0, 0} PEmpty NoData := ⟨fun i => i.elim⟩
 
 /-- The input data of `noInputs`. -/
 def noData : ∀ i, NoData i := fun i => i.elim
 
 /-- One exported scalar oracle. -/
-@[instance_reducible] def exportFamily : OracleFamily PUnit (fun _ => Nat) :=
+@[instance_reducible] def exportFamily : OracleFamily.{0, 0, 0} PUnit (fun _ => Nat) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
 /-- The prefix sends a natural-number oracle, then draws a Boolean challenge. -/
@@ -61,18 +61,20 @@ abbrev suffix : Path firstProtocol → OracleProtocol := fun _ => secondProtocol
 abbrev combined : OracleProtocol := firstProtocol.append suffix
 
 /-- The prefix verifier returns the challenge from its view and exports the sent oracle. -/
-def firstVerifier : OracleVerifier OracleSpec.emptySpec firstProtocol Unit Bool noInputs
-    exportFamily where
+def firstVerifier : OracleVerifier.{0, 0, 0, 0, 0, 0, 0} OracleSpec.emptySpec firstProtocol
+    Unit (fun _ => Bool) noInputs
+    (fun _ => exportFamily) where
   decide _ _ v := pure (show Bool from v.val.2.1)
-  outputMap _ p _ := OracleMap.embedding (sumFamily noInputs (pathFamily firstProtocol p))
-    (fun _ => .inr (.inl ⟨⟩))
+  outputMap _ p _ := (OracleMap.embedding (pathFamily firstProtocol p) (fun _ => .inl ⟨⟩)).comp
+    (OracleMap.snd _ _)
 
 /-- The suffix verifier accepts its input statement and passes the export through. -/
-def secondVerifier : OracleVerifier OracleSpec.emptySpec secondProtocol Bool Bool exportFamily
-    exportFamily where
+def secondVerifier : OracleVerifier.{0, 0, 0, 0, 0, 0, 0} OracleSpec.emptySpec secondProtocol
+    Bool (fun _ => Bool)
+    exportFamily
+    (fun _ => exportFamily) where
   decide stmt _ _ := pure stmt
-  outputMap _ q _ := OracleMap.embedding (sumFamily exportFamily (pathFamily secondProtocol q))
-    (fun _ => .inl ⟨⟩)
+  outputMap _ _ _ := OracleMap.fst _ _
 
 /-- The composite output map is the suffix output map after `suffixRoute`. -/
 def compatible :
@@ -94,7 +96,7 @@ abbrev firstPath (n : Nat) (b : Bool) : PathAlong oracleSig firstProtocol := ⟨
 example (n : Nat) (b : Bool) :
     (firstVerifier.outputMap () (projectPathAlong oracleSig firstProtocol (firstPath n b))
       (toView firstProtocol (firstPath n b))).f
-        (sumData noData (payloads firstProtocol (firstPath n b))) ⟨⟩ = n := rfl
+        (noData, payloads firstProtocol (firstPath n b)) ⟨⟩ = n := rfl
 
 /-! ### Runs -/
 
@@ -201,7 +203,7 @@ def impl : QueryImpl OracleSpec.emptySpec (StateT Unit ProbComp) := fun i => i.e
 
 /-- The prefix accepts with a true claim exactly when the challenge is true. -/
 theorem firstVerifier_validAcceptance_iff (stmt : Stmt) (tr : PathAlong oracleSig firstProtocol) :
-    firstVerifier.validAcceptance impl (fun z => z.1 = true) stmt tr ↔ bit tr.2.1 = true := by
+    firstVerifier.validAcceptance impl stmt tr (fun z => z.1 = true) ↔ bit tr.2.1 = true := by
   rcases tr with ⟨n, b, ⟨⟩⟩
   let : MeasurableSpace (Option Bool) := ⊤
   change (∃ _ : Unit, 0 < 𝒟[(pure (some b) : ProbComp (Option Bool))]
@@ -210,7 +212,7 @@ theorem firstVerifier_validAcceptance_iff (stmt : Stmt) (tr : PathAlong oracleSi
 
 /-- The composite accepts with a true claim exactly when the challenge is true. -/
 theorem composed_validAcceptance_iff (stmt : Stmt) (tr : PathAlong oracleSig combined) :
-    composed.validAcceptance impl (fun z => z.1 = true) stmt tr ↔ bit tr.2.1 = true := by
+    composed.validAcceptance impl stmt tr (fun z => z.1 = true) ↔ bit tr.2.1 = true := by
   rcases tr with ⟨n, b, m, ⟨⟩⟩
   let : MeasurableSpace (Option Bool) := ⊤
   change (∃ _ : Unit, 0 < 𝒟[(pure (some b) : ProbComp (Option Bool))]
@@ -226,11 +228,11 @@ abbrev OutWitness (tr : PathAlong oracleSig combined) : Type := Fin (payload tr.
 /-- The prefix valid output: acceptance with a true claim. -/
 abbrev validMid (stmt : Stmt) (tr : PathAlong oracleSig firstProtocol) (_ : MidWitness tr) :
     Prop :=
-  firstVerifier.validAcceptance impl (fun z => z.1 = true) stmt tr
+  firstVerifier.validAcceptance impl stmt tr (fun z => z.1 = true)
 
 /-- The composite valid output: acceptance with a true claim. -/
 abbrev validOutput (stmt : Stmt) (tr : PathAlong oracleSig combined) (_ : OutWitness tr) : Prop :=
-  composed.validAcceptance impl (fun z => z.1 = true) stmt tr
+  composed.validAcceptance impl stmt tr (fun z => z.1 = true)
 
 /-- The suffix input relation: the prefix challenge was true. -/
 abbrev relMid (tr₁ : PathAlong oracleSig firstProtocol) (_ : Stmt) (_ : MidWitness tr₁) : Prop :=
@@ -444,7 +446,8 @@ example (n : Move oracleSig (.oracle Nat OracleInterface.instDefault))
 -- KnowledgeComposition fixture `firstCertificate`: the prefix at error one.
 /-- The prefix verifier is round-by-round knowledge sound with error one. -/
 theorem first_rbrKnowledgeSoundness :
-    firstVerifier.rbrKnowledgeSoundness impl (fun _ => True) (fun _ (_ : Nat) => False)
+    OracleVerifier.rbrKnowledgeSoundness.{0, 0, 0, 0, 0, 0} firstVerifier impl (fun _ => True)
+    (fun _ (_ : Nat) => False)
       (fun _ tr z (_ : MidWitness tr) => z.1 = true) firstDraw (fun _ => 1) :=
   ⟨firstState, fun _ _ a _ _ _ _ => by
     let : MeasurableSpace (Move oracleSig a) := ⊤
@@ -454,7 +457,8 @@ theorem first_rbrKnowledgeSoundness :
 -- error one.
 /-- Every suffix state function is locally bounded with error one. -/
 theorem second_rbrKnowledgeSoundness (tr₁ : PathAlong oracleSig firstProtocol) :
-    rbrKnowledgeSoundness oracleSig (suffix (projectPathAlong oracleSig firstProtocol tr₁))
+    rbrKnowledgeSoundness.{0, 0, 0} oracleSig (suffix (projectPathAlong oracleSig firstProtocol
+    tr₁))
       (fun _ => True) (relMid tr₁)
       (fun stmt tr₂ w => validOutput stmt (PathAlong.append oracleSig firstProtocol suffix tr₁ tr₂)
         w)
@@ -482,7 +486,8 @@ example : compositeState.LocallyBounded
 -- level: the seam is the prefix acceptance.
 /-- The appended verifier is round-by-round knowledge sound with the combined errors. -/
 theorem composed_rbrKnowledgeSoundness :
-    composed.rbrKnowledgeSoundness impl (fun _ => True) (fun _ (_ : Nat) => False)
+    OracleVerifier.rbrKnowledgeSoundness.{0, 0, 0, 0, 0, 0} composed impl (fun _ => True) (fun
+    _ (_ : Nat) => False)
       (fun _ tr z (_ : OutWitness tr) => z.1 = true)
       (combineDraw oracleSig firstProtocol suffix firstDraw secondDraw)
       (combineDraw (m := fun _ => ℝ≥0∞) oracleSig firstProtocol suffix (fun _ => 1)
@@ -518,12 +523,14 @@ def suffixState (tr₁ : PathAlong oracleSig firstProtocol) :
 -- is the prefix challenge, a function of the prefix transcript.
 /-- The appended verifier is knowledge sound from a suffix stated over its own statement. -/
 example :
-    composed.rbrKnowledgeSoundness impl (fun _ => True) (fun _ (_ : Nat) => False)
+    OracleVerifier.rbrKnowledgeSoundness.{0, 0, 0, 0, 0, 0} composed impl (fun _ => True) (fun
+    _ (_ : Nat) => False)
       (fun _ tr z (_ : OutWitness tr) => z.1 = true)
       (combineDraw oracleSig firstProtocol suffix firstDraw secondDraw)
       (combineDraw (m := fun _ => ℝ≥0∞) oracleSig firstProtocol suffix (fun _ => 1)
         (fun _ _ => 1)) :=
-  rbrKnowledgeSoundness_append_of_mid oracleSig (fun _ tr₁ => bit tr₁.2.1)
+  rbrKnowledgeSoundness_append_of_mid oracleSig (T := fun _ => Bool)
+    (fun _ tr₁ => bit tr₁.2.1)
     first_rbrKnowledgeSoundness
     (fun tr₁ => ⟨suffixState tr₁, fun _ _ a _ _ _ _ => by
       let : MeasurableSpace (Move oracleSig a) := ⊤
@@ -537,7 +544,7 @@ example :
 abbrev indexedProtocol : Protocol := .pure ⟨⟩
 
 /-- A verifier that returns its input natural-number statement. -/
-def indexedVerifier : Verifier OracleSpec.emptySpec indexedProtocol Nat Nat where
+def indexedVerifier : Verifier OracleSpec.emptySpec indexedProtocol Nat (fun _ => Nat) where
   decide n _ _ := pure n
 
 /-- The empty protocol has no challenge. -/
@@ -547,7 +554,7 @@ def indexedDraw : QueryImpl (challengeSpec plainSig indexedProtocol) ProbComp :=
 /-- A standalone knowledge state function at statement `n`, with witness type `Fin (n + 1)`. -/
 def indexedCertificate : KnowledgeStateFunction plainSig indexedProtocol Nat
     (fun n _ => Fin (n + 1)) (fun n => Fin (n + 1)) (fun _ => True) (fun _ _ => True)
-    (fun n tr w => indexedVerifier.validAcceptance impl (fun _ => w.val ≤ n) n tr) where
+    (fun n tr w => indexedVerifier.validAcceptance impl n tr (fun _ => w.val ≤ n)) where
   Witness n {_} _ _ := Fin (n + 1)
   toFun _ {_} _ _ _ := True
   extractRoot _ w := w
@@ -558,7 +565,8 @@ def indexedCertificate : KnowledgeStateFunction plainSig indexedProtocol Nat
   leaf _ _ _ _ _ := trivial
 
 /-- The standalone verifier theorem quantifies statement-indexed input and output witnesses. -/
-theorem indexed_standalone : indexedVerifier.rbrKnowledgeSoundness impl (fun _ => True)
+theorem indexed_standalone : Verifier.rbrKnowledgeSoundness.{0, 0, 0} indexedVerifier impl (fun
+    _ => True)
     (fun n (_ : Fin (n + 1)) => True) (fun n _ _ (w : Fin (n + 1)) => w.val ≤ n)
     indexedDraw (fun _ => 0) :=
   ⟨indexedCertificate, fun _ _ _ _ sp => nomatch sp⟩
@@ -566,7 +574,8 @@ theorem indexed_standalone : indexedVerifier.rbrKnowledgeSoundness impl (fun _ =
 /-- Verifier composition uses the suffix's standalone theorem at its own statement and witness
 family. Both witness maps are identities in the carrier selected by the statement. -/
 theorem indexed_composed :
-    (indexedVerifier.append (fun _ => indexedVerifier)).rbrKnowledgeSoundness impl
+    Verifier.rbrKnowledgeSoundness.{0, 0, 0}
+      (indexedVerifier.append (fun _ => indexedVerifier)) impl
     (fun _ => True) (fun n (_ : Fin (n + 1)) => True)
     (fun n _ _ (w : Fin (n + 1)) => w.val ≤ n)
     (combineDraw plainSig indexedProtocol (fun _ => indexedProtocol) indexedDraw
@@ -579,7 +588,7 @@ theorem indexed_composed :
   · exact fun _ _ _ => trivial
   · intro n tr w _
     exact Nat.le_of_lt_succ w.isLt
-  · exact fun _ _ _ _ _ h => h
+  · exact fun _ _ _ _ _ _ _ h => h
 
 /-- A shared counter for checking the ambient state at a composition boundary. -/
 abbrev seamSpec : OracleSpec Unit := Unit →ₒ Nat
@@ -591,13 +600,13 @@ def seamHandler : QueryImpl seamSpec (StateT Nat ProbComp) := fun _ => do
   pure n
 
 /-- The prefix returns the counter value that it reads. -/
-def seamFirst : Verifier seamSpec indexedProtocol Unit Nat where
+def seamFirst : Verifier seamSpec indexedProtocol Unit (fun _ => Nat) where
   decide _ _ _ := OptionT.mk do
     let n ← liftM (seamSpec.query ())
     pure (some n)
 
 /-- The suffix accepts only if it reads the successor of the prefix result. -/
-def seamSecond : Verifier seamSpec indexedProtocol Nat Nat where
+def seamSecond : Verifier seamSpec indexedProtocol Nat (fun _ => Nat) where
   decide n _ _ := OptionT.mk do
     let next ← liftM (seamSpec.query ())
     pure (if next = n + 1 then some next else none)

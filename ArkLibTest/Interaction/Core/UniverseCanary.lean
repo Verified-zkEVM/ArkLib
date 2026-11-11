@@ -6,7 +6,7 @@ Authors: Quang Dao
 
 import ArkLib.Interaction.Core.Composition
 import ArkLib.Interaction.Core.Security.Knowledge
-import ArkLib.Interaction.Core.Security.RoundByRound
+import ArkLib.Interaction.Core.Security.KnowledgeComposition
 
 /-!
 # Components that are not run outputs live in their own universes
@@ -368,12 +368,13 @@ types, in `Type 1`, while its input witness is the unit, in `Type 0`. The root e
 type to the unit. -/
 def typeCertificate {P : PFunctor.{1, 0}} (l : PFunctor.Lens P TwoParty.Lens.rolePoly)
     {S : Type v} (validOutput : S → PathAlong l (.pure ⟨⟩ : FreeM P PUnit) → Unit → Prop) :
-    KnowledgeStateFunction.{v, 0, 1} l (.pure ⟨⟩) S (fun _ => Unit) Unit (fun _ => True)
+    KnowledgeStateFunction.{v, 0, 1} l (.pure ⟨⟩) S (fun _ _ => Unit) (fun _ => Unit)
+    (fun _ => True)
       (fun _ _ => True) validOutput where
-  Witness _ _ := Type
-  toFun _ _ _ _ := True
+  Witness _ {_} _ _ := Type
+  toFun _ {_} _ _ _ := True
   extractRoot _ _ := ()
-  extractStep _ _ _ _ _ := Unit
+  extractStep _ {_ _} sp := nomatch sp
   extractLeaf _ _ _ _ := Unit
   root _ _ _ _ := trivial
   send sp _ _ _ := nomatch sp
@@ -387,15 +388,64 @@ example : rbrKnowledgeSoundness.{2, 0, 1} plainSig done (fun (_ : Type 1) => Tru
 
 /-- The plain verifier wrapper at the same unequal universes. -/
 example : Verifier.rbrKnowledgeSoundness.{2, 0, 1} reduction.verifier plainAmbientTrue
-    (fun _ => True) (fun _ (_ : Unit) => True) (fun _ _ (_ : Unit) => True) noPlainChallenges
+    (fun _ => True) (fun _ (_ : Unit) => True) (fun _ _ _ (_ : Unit) => True) noPlainChallenges
     (fun _ => 0) :=
   ⟨typeCertificate plainSig _, fun _ _ _ _ sp => nomatch sp⟩
 
 /-- The oracle verifier wrapper for `runnable`, with intermediate witnesses in `Type 1`, a small
 input witness, an input statement in `Type 2` and an input index in `Type 1`. -/
 example : OracleVerifier.rbrKnowledgeSoundness.{2, 0, 1, 1, 0, 0} runnable ambientTrue
-    (fun _ => True) (fun _ (_ : Unit) => True) (fun _ _ (_ : Unit) => True) noChallenges
+    (fun _ => True) (fun _ (_ : Unit) => True) (fun _ _ _ (_ : Unit) => True) noChallenges
     (fun _ => 0) :=
   ⟨typeCertificate oracleSig _, fun _ _ _ _ sp => nomatch sp⟩
+
+/-- Statement-dependent finite witnesses at three independent universes. -/
+def indexedLargeCertificate : KnowledgeStateFunction.{2, 2, 1} plainSig done
+    (Type 1 × Nat) (fun stmt _ => Fin (stmt.2 + 1))
+    (fun stmt => ULift.{2} (Fin (stmt.2 + 1))) (fun _ => True) (fun _ _ => True)
+    (fun _ _ _ => True) where
+  Witness stmt {_} _ _ := ULift.{1} (Fin (stmt.2 + 1))
+  toFun _ {_} _ _ _ := True
+  extractRoot _ w := ⟨w.down⟩
+  extractStep _ {_ _} sp := nomatch sp
+  extractLeaf _ _ _ w := ⟨w⟩
+  root _ _ _ _ := trivial
+  send sp := nomatch sp
+  leaf _ _ _ _ _ := trivial
+
+/-- The suffix extracts a small finite input witness from a large intermediate witness. -/
+def indexedSmallCertificate : KnowledgeStateFunction.{2, 0, 1} plainSig done
+    (Type 1 × Nat) (fun stmt _ => Fin (stmt.2 + 1))
+    (fun stmt => Fin (stmt.2 + 1)) (fun _ => True) (fun _ _ => True)
+    (fun _ _ _ => True) where
+  Witness stmt {_} _ _ := ULift.{1} (Fin (stmt.2 + 1))
+  toFun _ {_} _ _ _ := True
+  extractRoot _ w := w.down
+  extractStep _ {_ _} sp := nomatch sp
+  extractLeaf _ _ _ w := ⟨w⟩
+  root _ _ _ _ := trivial
+  send sp := nomatch sp
+  leaf _ _ _ _ _ := trivial
+
+/-- Composition keeps the large statement-indexed input carrier and small seam carrier. -/
+example (stmt : Type 1 × Nat) (w : Fin (stmt.2 + 1)) :
+    (KnowledgeStateFunction.append (s₂ := fun _ => done)
+      (W := fun stmt _ => Fin (stmt.2 + 1)) (validOutput := fun _ _ _ => True)
+      (admissible₂ := fun _ _ => True) (relMid := fun _ _ _ => True)
+      indexedLargeCertificate (fun _ =>
+    indexedSmallCertificate)
+      (fun _ _ _ _ => trivial)).extractAlong stmt ⟨⟩ w = ULift.up w := rfl
+
+/-- Lifting preserves statement-dependent witnesses and the root extraction map. -/
+example (stmt : Type 1 × Nat) (w : Fin (stmt.2 + 1)) :
+    (indexedLargeCertificate.lift.{2, 2, 1, 3}).extractRoot stmt ⟨⟨w⟩⟩ = ULift.up w := rfl
+
+/-- Lifting a bound retains the same dependent input and output carriers at a larger universe. -/
+example : rbrKnowledgeSoundness.{2, 2, 3} plainSig done
+    (fun (_ : Type 1 × Nat) => True)
+    (fun stmt (_ : ULift.{2} (Fin (stmt.2 + 1))) => True)
+    (fun stmt _ (_ : Fin (stmt.2 + 1)) => True) noPlainChallenges (fun _ => 0) :=
+  rbrKnowledgeSoundness.lift.{2, 2, 1, 3} plainSig
+    ⟨indexedLargeCertificate, fun _ _ _ _ sp => nomatch sp⟩
 
 end Interaction.Core.UniverseCanaryTests

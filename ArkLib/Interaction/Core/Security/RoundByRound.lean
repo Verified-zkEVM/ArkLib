@@ -122,7 +122,8 @@ def rbrSoundness {S : Type uS} (s : FreeM P PUnit)
 
 Every witness carrier may depend on the input statement. Intermediate carriers may also read
 all earlier moves, including oracle payloads, and output carriers may read the complete
-transcript. The root extraction obligation applies within the input promise.
+transcript. Statements, input witnesses and intermediate witnesses lie in independent
+universes. The root extraction obligation applies within the input promise.
 -/
 structure KnowledgeStateFunction (s : FreeM P PUnit) (S : Type uS)
     (W : S → PathAlong l s → Type) (Win : S → Type uW) (admissible : S → Prop)
@@ -174,10 +175,10 @@ def KnowledgeStateFunction.lift.{v} {s : FreeM P PUnit} {S : Type uS} {W : S →
     {validOutput : (stmt : S) → (tr : PathAlong l s) → W stmt tr → Prop}
     (F : KnowledgeStateFunction.{uS, uW, uK} l s S W Win admissible relIn validOutput) :
     KnowledgeStateFunction.{uS, uW, max uK v} l s S W Win admissible relIn validOutput where
-  Witness stmt sp history := ULift.{v} (F.Witness stmt sp history)
-  toFun stmt sp history wit := F.toFun stmt sp history wit.down
+  Witness stmt {_} sp history := ULift.{v} (F.Witness stmt sp history)
+  toFun stmt {_} sp history wit := F.toFun stmt sp history wit.down
   extractRoot stmt wit := F.extractRoot stmt wit.down
-  extractStep stmt sp history x wit := ULift.up (F.extractStep stmt sp history x wit.down)
+  extractStep stmt {_ _} sp history x wit := ULift.up (F.extractStep stmt sp history x wit.down)
   extractLeaf stmt sp history wit := ULift.up (F.extractLeaf stmt sp history wit)
   root stmt ha wit h := F.root stmt ha wit.down h
   send sp history stmt ho x wit h := F.send sp history stmt ho x wit.down h
@@ -242,10 +243,12 @@ abbrev Verifier.rbrSoundness {ι σ : Type} {S : Type uS} {ambient : OracleSpec 
 /-- The plain verifier's default round-by-round knowledge form. The output witness type `W stmt tr`
 and the output relation are indexed by the input statement and completed transcript. -/
 abbrev Verifier.rbrKnowledgeSoundness {ι σ : Type} {S : Type uS} {Win : S → Type uW}
-    {ambient : OracleSpec ι} {s : Protocol} {T : Path s → Type} {W : S → PathAlong plainSig s → Type} (V : Verifier ambient s S T)
+    {ambient : OracleSpec ι} {s : Protocol} {T : Path s → Type}
+    {W : S → PathAlong plainSig s → Type} (V : Verifier ambient s S T)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (admissible : S → Prop) (relIn : (stmt : S) → Win stmt → Prop)
-    (relOut : (stmt : S) → (tr : PathAlong plainSig s) → T (projectPathAlong plainSig s tr) → W stmt tr → Prop)
+    (relOut : (stmt : S) → (tr : PathAlong plainSig s) → T (projectPathAlong plainSig s tr) → W
+    stmt tr → Prop)
     (draw : QueryImpl (challengeSpec plainSig s) ProbComp)
     (ε : ChallengeNode plainSig s → ℝ≥0∞) : Prop :=
   Core.rbrKnowledgeSoundness.{uS, uW, uK} plainSig s admissible relIn

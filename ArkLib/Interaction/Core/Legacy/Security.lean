@@ -1211,7 +1211,8 @@ def embedKnowledgeStateFunction (hacc : L.AcceptanceAgrees impl V acc)
 makes the knowledge state true. -/
 def languageStateFunction (hacc : L.AcceptanceAgrees impl V acc) {relIn : Set (StmtIn × WitIn)}
     {relOut : Set (StmtOut × WitOut)}
-    (F : KnowledgeStateFunction L.l L.protocol StmtIn (fun _ _ => WitOut) (fun _ => WitIn) (fun _ =>
+    (F : KnowledgeStateFunction.{0, 0, uK} L.l L.protocol StmtIn (fun _ _ => WitOut)
+    (fun _ => WitIn) (fun _ =>
       True)
       (fun stmt w => (stmt, w) ∈ relIn)
       (fun stmt tr wit => acc (fun t => (t, wit) ∈ relOut) stmt tr)) :
@@ -1300,7 +1301,7 @@ knowledge soundness with a chosen extractor. That last step needs `Nonempty WitI
 theorem legacy_rbrKnowledgeSoundness [Nonempty WitIn] (hacc : L.AcceptanceAgrees impl V acc)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (ε : pSpec.ChallengeIdx → ℝ≥0)
-    (h : Core.rbrKnowledgeSoundness L.l L.protocol (fun _ => True)
+    (h : Core.rbrKnowledgeSoundness.{0, 0, uK} L.l L.protocol (fun _ => True)
       (fun stmt w => (stmt, w) ∈ relIn)
       (fun stmt tr wit => acc (fun t => (t, wit) ∈ relOut) stmt tr)
       (L.challengeImpl ProtocolSpec.challengeQueryImpl)
@@ -1401,7 +1402,7 @@ theorem rbrKnowledgeSoundness_of_embedVerifier [Nonempty WitIn] (init : ProbComp
     (impl : QueryImpl oSpec (StateT σ ProbComp)) (V : _root_.Verifier oSpec StmtIn StmtOut pSpec)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (ε : pSpec.ChallengeIdx → ℝ≥0)
-    (h : (embedVerifier V).rbrKnowledgeSoundness impl (fun _ => True)
+    (h : Core.Verifier.rbrKnowledgeSoundness.{0, 0, uK} (embedVerifier V) impl (fun _ => True)
       (fun stmt w => (stmt, w) ∈ relIn) (fun _ _ t w => (t, w) ∈ relOut)
       (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
       (fun c => ε (challengeRound 0 n (Nat.zero_add n) c))) :

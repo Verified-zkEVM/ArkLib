@@ -354,7 +354,7 @@ from the transcript. -/
 def coinKnowledge : KnowledgeStateFunction plainSig coin Bool (fun _ _ => Unit) (fun _ => Unit) (fun
     _ => True)
     (fun b _ => b = true) (fun stmt tr (_ : Unit) =>
-      coinVerifier.validAcceptance tick (fun _ => True) stmt tr) where
+      coinVerifier.validAcceptance tick stmt tr (fun _ => True)) where
   Witness _ {_} sp history := match sp, history with
     | .root _, _ => Unit
     | .down _ _, history => {b : Bool // b = history.1.1}
@@ -385,7 +385,8 @@ def coinKnowledge : KnowledgeStateFunction plainSig coin Bool (fun _ _ => Unit) 
 
 /-- Backwards extraction fails exactly when a false statement meets a true challenge. -/
 theorem coin_rbrKnowledgeSoundness :
-    coinVerifier.rbrKnowledgeSoundness tick (fun _ => True) (fun b (_ : Unit) => b = true)
+    Verifier.rbrKnowledgeSoundness.{0, 0, 0} coinVerifier tick (fun _ => True)
+      (fun b (_ : Unit) => b = true)
       (fun _ _ (_ : Nat) (_ : Unit) => True) draw (fun _ => 1 / 2) := by
   refine ⟨coinKnowledge, ?_⟩
   intro stmt _ a next sp h history
@@ -404,7 +405,8 @@ theorem coin_rbrKnowledgeSoundness :
 /-- No knowledge state function achieves an error below one half. -/
 theorem coin_not_rbrKnowledgeSoundness (ε : ChallengeNode plainSig coin → ℝ≥0∞)
     (hε : ε onlyChallenge < 1 / 2) :
-    ¬ coinVerifier.rbrKnowledgeSoundness tick (fun _ => True) (fun b (_ : Unit) => b = true)
+    ¬ Verifier.rbrKnowledgeSoundness.{0, 0, 0} coinVerifier tick (fun _ => True)
+      (fun b (_ : Unit) => b = true)
       (fun _ _ (_ : Nat) (_ : Unit) => True) draw ε := by
   rintro ⟨F, hF⟩
   have hroot : ∀ w, ¬ F.toFun false (.root coin) ⟨⟩ w := fun w h =>
@@ -460,7 +462,7 @@ itself, so leaf extraction is the identity. -/
 def payloadKnowledge : KnowledgeStateFunction plainSig payloadMsg Nat (fun _ => BoundedIndex) (fun _
     => Nat)
     (fun _ => True) (fun stmt w => w ≤ stmt) (fun stmt tr (_ : BoundedIndex tr) =>
-      payloadVerifier.validAcceptance tick (fun _ => True) stmt tr) where
+      payloadVerifier.validAcceptance tick stmt tr (fun _ => True)) where
   Witness _ {_} sp history := match sp, history with
     | .root _, _ => Nat
     | .down _ _, history => Fin ((show Nat from history.1.1) + 1)
@@ -516,7 +518,8 @@ example (w : Fin 8) :
 every challenge implementation. -/
 theorem payload_rbrKnowledgeSoundness
     (draw : QueryImpl (challengeSpec plainSig payloadMsg) ProbComp) :
-    payloadVerifier.rbrKnowledgeSoundness tick (fun _ => True) (fun stmt (w : Nat) => w ≤ stmt)
+    Verifier.rbrKnowledgeSoundness.{0, 0, 0} payloadVerifier tick (fun _ => True)
+      (fun stmt (w : Nat) => w ≤ stmt)
       (fun _ tr (_ : Nat) (_ : BoundedIndex tr) => True) draw (fun _ => 0) := by
   refine ⟨payloadKnowledge, ?_⟩
   intro _ _ a next sp h _

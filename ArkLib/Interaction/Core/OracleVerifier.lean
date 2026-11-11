@@ -18,7 +18,7 @@ oracles are one map containing concrete data, query simulation and their agreeme
 
 @[expose] public section
 
-universe u uι uS uI uJ uK uL uX uY uZ uW dX dY dZ dW w wI wJ
+universe v u uι uS uI uJ uK uL uX uY uZ uW dX dY dZ dW w wI wJ
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle

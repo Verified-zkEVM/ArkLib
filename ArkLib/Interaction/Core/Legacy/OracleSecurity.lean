@@ -294,7 +294,8 @@ theorem rbrKnowledgeSoundness_of_embedOracleVerifier [Nonempty WitIn] (init : Pr
     (relIn : Set ((StmtIn × (∀ i, OStmtIn i)) × WitIn))
     (relOut : Set ((StmtOut × (∀ i, OStmtOut i)) × WitOut))
     (ε : pSpec.ChallengeIdx → ℝ≥0)
-    (h : (embedOracleVerifier V).rbrKnowledgeSoundness impl (fun _ => True)
+    (h : Core.OracleVerifier.rbrKnowledgeSoundness.{0, 0, uK, 0, 0, 0}
+      (embedOracleVerifier V) impl (fun _ => True)
       (fun stmt w => (stmt, w) ∈ relIn) (fun _ _ t w => (t, w) ∈ relOut)
       (oracleChallengeImpl ProtocolSpec.challengeQueryImpl)
       (fun c => ε (oracleChallengeRound 0 n (Nat.zero_add n) c))) :

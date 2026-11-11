@@ -117,7 +117,8 @@ theorem Verifier.append_decide {ι : Type uι} {ambient : OracleSpec.{uι, u} ι
         (PlainView.split s₁ s₂ p v).2) := rfl
 
 /-- On an appended full transcript, plain decisions use exactly the two component transcripts. -/
-theorem Verifier.append_decide_pathAlong {ι : Type u} {ambient : OracleSpec.{u, u} ι}
+theorem Verifier.append_decide_pathAlong {ι : Type uι}
+    {ambient : OracleSpec.{uι, u} ι}
     {s₁ : Protocol.{u}} {s₂ : Path s₁ → Protocol.{u}} {S : Type uS}
     {T : Path s₁ → Type u} {U : (p : Path s₁) → Path (s₂ p) → Type u}
     (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) (T p) (U p))
@@ -169,7 +170,8 @@ theorem Verifier.support_append {ι : Type uι} {σ : Type u} {ambient : OracleS
     {T : Path s₁ → Type u} {U : (p : Path s₁) → Path (s₂ p) → Type u}
     (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) (T p) (U p))
     (impl : QueryImpl ambient (StateT σ m)) (stmt : S)
-    (p : Path (s₁.append s₂)) (v : PlainView (s₁.append s₂) p) (state final : σ) (out : splitFamily U p)
+    (p : Path (s₁.append s₂)) (v : PlainView (s₁.append s₂) p) (state final : σ)
+    (out : splitFamily U p)
     (h : (some out, final) ∈ MonadAttach.support
       ((simulateQ impl ((V₁.append V₂).decide stmt p v).run).run state)) :
     ∃ mid between,
