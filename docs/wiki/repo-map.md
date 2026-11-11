@@ -76,7 +76,8 @@ home_page/            site assets and assembled website root
   layer while protocol clients migrate. `FiatShamir/Basic.lean` owns the transform;
   `FiatShamir/Completeness.lean` adds fixed-table perfect completeness and shared lazy
   random-oracle completeness.
-  Generic transcript projection and reconstruction equations live in `ProtocolSpec/Basic.lean`;
+  Core transcript operations live in `ProtocolSpec/Basic.lean`. Message and challenge prefix
+  lemmas live in `ProtocolSpec/PrefixLemmas.lean`;
   round and optional-run factorization lemmas live in `Execution.lean`.
 - `ArkLib/Relation/Basic.lean` is the neutral owner of claims, witness relations with an
   admissibility boundary, and oracle data families; it depends on no protocol tree. Likewise

@@ -803,6 +803,7 @@ public import ArkLib.OracleReduction.Prelude
 public import ArkLib.OracleReduction.ProtocolSpec.Basic
 public import ArkLib.OracleReduction.ProtocolSpec.Cast
 public import ArkLib.OracleReduction.ProtocolSpec.DeriveTranscript
+public import ArkLib.OracleReduction.ProtocolSpec.PrefixLemmas
 public import ArkLib.OracleReduction.ProtocolSpec.SeqCompose
 public import ArkLib.OracleReduction.Salt
 public import ArkLib.OracleReduction.Security.Acceptance

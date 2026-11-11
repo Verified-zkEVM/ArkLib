@@ -5,7 +5,7 @@ Authors: Michele Orrù, Chung Thai Nguyen, Yuxi Zheng
 -/
 module
 
-public import ArkLib.OracleReduction.ProtocolSpec.Basic
+public import ArkLib.OracleReduction.ProtocolSpec.PrefixLemmas
 public import VCVio.OracleComp.QueryTracking.QueryLog
 
 /-!
