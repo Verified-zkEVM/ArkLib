@@ -7,6 +7,7 @@ module
 
 public import ArkLib.ProofSystem.Sumcheck.Core.Domain
 public import ArkLib.ProofSystem.Sumcheck.Core.Tree
+public import ArkLib.ProofSystem.Sumcheck.Core.InterpretedPath
 public import ArkLib.Interaction.Core.Security.Implications
 
 /-! # Sumcheck verification over indexed domains
@@ -68,54 +69,6 @@ noncomputable def indexedVerdict : (k : ℕ) → Option (IndexedClaim R n k) →
   | k + 1, st, tr => indexedVerdict k (indexedNext D st (headMessage tr) (headChallenge tr))
       (tailTranscript tr)
 
-/-- Query the first round polynomial at a field or semiring element. -/
-def indexedHeadQuery {k : ℕ} : (p : Path (protocol R deg (k + 1))) → R →
-    OracleComp (oracles (protocol R deg (k + 1)) p) R
-  | ⟨⟨⟩, ⟨⟨⟩, p⟩⟩, r => liftM
-      ((oracles (protocol R deg (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩).query ⟨.inl ⟨⟩, r⟩)
-
-omit [DecidableEq R] in
-/-- The transcript payload answers a query to the first round polynomial. -/
-theorem simulateQ_indexedHeadQuery {k : ℕ}
-    (tr : PathAlong oracleSig (protocol R deg (k + 1))) (r : R) :
-    simulateQ (payloadImpl (protocol R deg (k + 1)) tr)
-      (indexedHeadQuery (projectPathAlong oracleSig _ tr) r) = (headMessage tr).val.eval r := by
-  rcases tr with ⟨msg, chal, tail⟩
-  rfl
-
-/-- The shape path of the remaining Sumcheck rounds. -/
-def indexedTailPath {k : ℕ} : Path (protocol R deg (k + 1)) → Path (protocol R deg k)
-  | ⟨⟨⟩, ⟨⟨⟩, p⟩⟩ => p
-
-/-- Lift a query from the remaining rounds along a full Sumcheck shape path. -/
-def indexedTailLift {k : ℕ} (p : Path (protocol R deg (k + 1))) :
-    QueryImpl (oracles (protocol R deg k) (indexedTailPath p))
-      (OracleComp (oracles (protocol R deg (k + 1)) p)) := by
-  rcases p with ⟨⟨⟩, ⟨⟨⟩, p⟩⟩
-  exact tailLift R deg k p
-
-/-- Read the first challenge from a verifier view. -/
-def indexedViewChallenge {k : ℕ} {p : Path (protocol R deg (k + 1))}
-    (v : View (protocol R deg (k + 1)) p) : R := v.1.2.1
-
-/-- Restrict a verifier view to the remaining rounds. -/
-def indexedTailView {k : ℕ} {p : Path (protocol R deg (k + 1))}
-    (v : View (protocol R deg (k + 1)) p) : View (protocol R deg k) (indexedTailPath p) :=
-  ⟨v.1.2.2, (protocolPath_eq R deg k _).trans (protocolPath_eq R deg k _).symm⟩
-
-omit [DecidableEq R] in
-/-- Answering lifted suffix queries uses precisely the suffix transcript's payloads. -/
-theorem simulateQ_indexedTailLift {k : ℕ}
-    (tr : PathAlong oracleSig (protocol R deg (k + 1))) {α : Type}
-    (oa : OracleComp (oracles (protocol R deg k)
-      (indexedTailPath (projectPathAlong oracleSig _ tr))) α) :
-    simulateQ (payloadImpl (protocol R deg (k + 1)) tr)
-        (simulateQ (indexedTailLift (projectPathAlong oracleSig _ tr)) oa) =
-      simulateQ (payloadImpl (protocol R deg k) (tailTranscript tr)) oa := by
-  refine QueryImpl.simulateQ_simulateQ_eq_of_apply (fun q => ?_) oa
-  rcases tr with ⟨msg, chal, tail⟩
-  rfl
-
 /-- Query the sent message at every domain index before continuing to the next round. -/
 def indexedDecision : (k : ℕ) → Option (IndexedClaim R n k) →
     (p : Path (protocol R deg k)) → View (protocol R deg k) p →
@@ -125,12 +78,12 @@ def indexedDecision : (k : ℕ) → Option (IndexedClaim R n k) →
       match st with
       | none => return none
       | some st =>
-        let values ← (List.finRange d).mapM fun a => indexedHeadQuery p (D a)
+        let values ← (List.finRange d).mapM fun a => Interpreted.headQuery p (D a)
         if values.sum = st.statement.target then
-          let r := indexedViewChallenge v
-          let value ← indexedHeadQuery p r
-          simulateQ (indexedTailLift p) (indexedDecision k (some (st.next value r))
-            (indexedTailPath p) (indexedTailView v))
+          let r := Interpreted.viewChallenge v
+          let value ← Interpreted.headQuery p r
+          simulateQ (Interpreted.tailLift p) (indexedDecision k (some (st.next value r))
+            (Interpreted.tailPath p) (Interpreted.tailView v))
         else return none
 
 /-- Lift the round-message queries into the verifier's final resource interface. -/
@@ -208,12 +161,12 @@ theorem simulateQ_indexedDecision : ∀ (k : ℕ) (st : Option (IndexedClaim R n
               st.statement.target := by
             rwa [← List.ofFn_eq_map, List.sum_ofFn]
           simp only [hl, ite_true]
-          rw [simulateQ_bind, simulateQ_indexedHeadQuery]
+          rw [simulateQ_bind, Interpreted.simulate_head]
           change simulateQ _ (simulateQ
-            (indexedTailLift (projectPathAlong oracleSig _ ⟨msg, chal, tail⟩))
+            (Interpreted.tailLift (projectPathAlong oracleSig _ ⟨msg, chal, tail⟩))
             (indexedDecision D k (some (st.next (msg.val.eval chal) chal)) _
-              (indexedTailView (toView (protocol R deg (k + 1)) ⟨msg, chal, tail⟩)))) = _
-          rw [simulateQ_indexedTailLift (R := R) (deg := deg) (k := k)
+              (Interpreted.tailView (toView (protocol R deg (k + 1)) ⟨msg, chal, tail⟩)))) = _
+          rw [Interpreted.simulate_tail (k := k)
             (⟨msg, chal, tail⟩ : PathAlong oracleSig (protocol R deg (k + 1)))]
           change simulateQ (payloadImpl (protocol R deg k) tail)
             (indexedDecision D k (some (st.next (msg.val.eval chal) chal))
@@ -468,7 +421,7 @@ omit [DecidableEq R] in
 /-- Sum the first message's query answers in the supplied list order. -/
 def indexedSumQueries {k : ℕ} (domain : List R) (p : Path (protocol R deg (k + 1))) :
     OracleComp (oracles (protocol R deg (k + 1)) p) R := do
-  let values ← domain.mapM (indexedHeadQuery p)
+  let values ← domain.mapM (Interpreted.headQuery p)
   pure values.sum
 
 omit [DecidableEq R] in
