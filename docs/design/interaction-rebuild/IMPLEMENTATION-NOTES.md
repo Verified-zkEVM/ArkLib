@@ -6,7 +6,7 @@ code does and why. Entries 1–8 were identified by the review of the first impl
 9–12 were introduced while addressing that review, and entry 13 by core additions that the oracle
 migration needs. The section after them records later core changes that keep to the records; they
 are not departures. The section after that records the choices of migration commit D3, which adds
-knowledge composition and measured extraction to the core. The last entry, 18, was introduced by
+knowledge composition and measured extraction to the core. The last entry, 19, was introduced by
 the state-restoration port.
 
 ## 1. Oracle interfaces in positions; challenges indexed by node occurrences
@@ -151,8 +151,9 @@ oracle extraction game passes that projection.
 Entries 14 onwards record the departures of the legacy embedding. They are in
 [`legacy-embedding.md`](../interaction-layer/legacy-embedding.md#departures), and
 [`departures.md`](../interaction-layer/departures.md) indexes every entry, including 1–13.
-Entry 18, at the end of this page, records the departures of the state-restoration port. The
-number 17 belonged to a removed legacy-embedding entry and is not reused.
+Entry 19, at the end of this page, records state restoration's equivalent witness interfaces,
+premise-required restriction and unresolved output-family omission. Entry 17 belonged to a removed
+legacy-embedding entry and is not reused; entry 18 is reserved for the Sumcheck interval entry.
 
 ## Changes that keep to the records
 
@@ -460,66 +461,61 @@ combines the prefix and suffix draws, at a constant result family. Prefix challe
 prefix error, and suffix challenge nodes keep the error of the suffix at their prefix path. No
 separate error traversal is added.
 
-## 18. State restoration fixes the output type and the decision ambient
+## 19. State restoration: witness families, replay and remaining output-family omission
 
-The source of this port is the frozen interaction layer's state-restoration games
-(`ArkLib/Interaction/Oracle/Security/StateRestoration*.lean`) and their tests. Those games let the
-output statement type depend on the transcript branch, so a claim on a rejecting branch was
-impossible by typing. In the interaction core the verifier has one statement type `T` (records D4
-and D6), so `terminalObservation` and `closedTerminalObservation` in
-`Core/Security/StateRestoration.lean` return `Option T` and `Option (T × ∀ j, B j)`: a rejecting
-branch is the value `none`, and its tests check that value instead of relying on the type. The
-ported games also fix the decision's ambient oracle to `[]ₒ`; a state-restoration game whose
-decision shares an oracle with the adversary is a later milestone (record D9 §6).
+The source is the frozen interaction layer's state-restoration games and tests under
+`ArkLib/Interaction/Oracle/Security/StateRestoration*.lean` and the corresponding test directory.
+The knowledge interfaces retain statement-dependent witness carriers directly. The restoration
+theorems take `Win : S → Type`, `relIn : (stmt : S) → Win stmt → Prop` and
+`Wout : S → PathAlong oracleSig (protocol rounds) → Type`. The output relation and `readOut` use
+`Wout stmt tr`; extraction returns `Win stmt`. The statement includes the concrete input oracle
+data in the verifier games. There is no encoding of a family into a constant witness type.
 
-Knowledge soundness is stated with record D7's knowledge state function instead of the frozen
-layer's per-input round extractors. `stateRestoration_knowledge_soundness`,
-`stateRestoration_oracle_knowledge_soundness`, their `_privateCoins` forms and the `_nonuniform`
-forms in `StateRestorationBudget.lean` take one `KnowledgeStateFunction` whose admissibility
-predicate replaces the frozen layer's set of admissible inputs, require it to be `LocallyBounded`
-at the uniform draw, and extract with `extractAlong` on the selected transcript. The state
-function's output witnesses are a transcript family `Wout`. The adversary outputs a witness of one
-type `W` before completion fixes the challenges, as in the frozen game, and the map
-`readOut : stmt → (tr : PathAlong _ _) → W → Wout tr` reads it at the completed transcript. It has
-the role of the frozen layer's `terminalWitness`, which is an equivalence; a map suffices, and the
-identity is the case `Wout = fun _ => W`. The output law is an implication from an accepted
-observation and the output relation to the state function's valid output at the read witness, and
-the output relation may read the transcript; the frozen law is an equivalence between the terminal
-state and the output relation on the branch path. The theorems assume decidable equality of the
-key type, which the frozen forms derive from decidable equality of inputs and salts.
+The same signatures propagate through the per-round error theorems, measured protocol budgets
+and the paired measured-extraction theorem. Composition and generic measured extraction use the
+parent's statement-indexed API. `ProtocolBudgetAtMost` bounds the root and leaf budgets and the
+message and challenge step budgets of one statement on any oracle protocol. The round-list
+corollary bounds the composed program by
+`leafBound + rounds.length • (messageBound + challengeBound) + rootBound`. This is an instruction
+budget for the named stage programs, not a polynomial-time claim.
 
-The proof bounds the restored execution with VCVio's bad-query bounds for the random oracle.
-`exists_badChallenge_of_extraction_failure` shows that a valid output whose extraction fails
-passes a bad challenge at one completion key of the selected transcript. The output witness is
-typed at the completed transcript. The statement reads the completion keys, their cursors and
-prefixes (`keySpine`, `keyHistory`) and the answer table, so it stays in `StateRestoration.lean`. A
-general form for every protocol, without keys, would belong in `KnowledgeComposition.lean`; it is
-not in this commit.
+For arbitrary protocol trees and completed execution paths,
+`KnowledgeStateFunction.extraction_failure_implies_badChallengeAlong` retains the suffix-extracted
+witness at a failing receiver transition. Its root-state form needs neither admissibility nor an
+input-relation premise. The restriction equations `badChallengeFrom_child` and
+`badChallengeAlong_liftBind` preserve the same terminal witness when descending a tree.
+`badChallengeAlong_completion` locates this generic transition at a salted completion key.
+`exists_badChallenge_of_extraction_failure` is the resulting keyed corollary; its conclusion is
+`BadChallengeOnCompletion F stmt messages table w key`. This predicate retains the actual suffix
+extraction of `w`. Only `BadChallengeOnCompletion.mem_badChallenge`, used in the probability
+bound, forgets that witness to obtain the locally bounded bad-challenge event. The earlier local
+proof that independently found a witness is removed.
 
-The game evaluates the verifier's observation on the transcript that `restoredExecution`
-completes; it runs no parties. The replay theorem of the frozen layer has a counterpart that runs
-them. `scriptedProver` sends the selected messages, `recordedAnswers` answers every challenge query
-from a recorded transcript, and `run_scriptedProver` shows that `OracleVerifier.run` with these
-parties returns that transcript and its closed observation whenever the transcript carries the
-selected messages. `closedVerificationGame_eval_run` instantiates it at the transcript completed
-against an answer table, so the run returns the game's transcript and observation;
-`verificationGame_eval_run` is the plain form. In the test, `scriptedRun_eq` runs the fixture on
-every challenge, `nativeResult_eq` states the sent message, the challenge and the terminal result,
-and two evaluations run the parties on `true` and on `false`. The completion check `game_eval`
-remains beside them.
+The adversary's supplied witness still has one carrier `W`, as in the frozen restoration game.
+`readOut : (stmt : S) → (tr : PathAlong _ _) → W → Wout stmt tr` supplies the terminal witness
+from it after completion. The generic output law is an implication from an accepted observation
+and its output relation. The frozen equivalence is a sufficient special case. The key equality
+premise can be obtained from decidable equality of input statements, messages and salts in any
+concrete finite-round fixture.
 
-Measured extraction uses `MeasuredStages` and `programAlong` from `MeasuredResources.lean`, whose
-stages include a root and a leaf map. `ProtocolBudgetAtMost` in `MeasuredResources.lean` bounds the
-root and leaf budgets and the message and challenge step budgets of one statement on an oracle
-protocol, and `programAlong_budget_le_protocol` in `StateRestorationBudget.lean` bounds the
-composed budget along every transcript by
-`leafBound + rounds.length • (messageBound + challengeBound) + rootBound`. The frozen bound has no
-root or leaf terms, and its paired form is the instance of `programAlong_costAtMost_protocol` at
-`BudgetAtMost.protocolBudgetAtMost`. The composed program applies the leaf map first, then the
-step maps backwards along the transcript, then the root map. It takes the output witness `Wout tr`
-at the transcript, so `run_programAlong` replaces the frozen layer's terminal-witness bridge.
+Replay has two separate terminals. The plain replay reads and returns payload 7 on both `true`
+and `false`: `replayResult_eq` gives `pure (7, challenge, 7)`, and both evaluations check it.
+`oracleReplayResult_eq` instead uses the rejecting oracle verifier: it returns the output oracle
+on `true` and `none` on `false`. The completion checks remain separate from these party runs.
 
-The ported test fixtures use the constant family `fun _ => Nat` with the identity `readOut`,
-because the frozen fixtures have a constant witness type. The fixture `knowledgeFin` in
-`ArkLibTest/Interaction/Core/Security/StateRestoration.lean` has the output witness family
-`Fin (m + 1)` for the sent message `m`, and runs the bad-key lemma and the plain game bound on it.
+### Dispositions
+
+| Frozen assertion | Disposition |
+| --- | --- |
+| Statement-indexed input state and extractor in the restoration bounds | Equivalent carrier generality: `Win stmt`, `Wout stmt tr`, and statement-first extraction at every cursor. The `indexedKnowledge` fixture carries `Fin (stmt.1 + 1)` through extraction and instantiates the game bound. |
+| Arbitrary-tree extraction failure and its suffix witness | Covered by the generic `BadChallengeAlong` theorem; the keyed theorem is a witness-preserving corollary for completed round lists. |
+| Plain replay rows 9–11 (frozen test lines 175, 182–183) | Returned values restored on both challenges, with a total computation and a universal replay theorem. The full dependent-output statement remains open until the verifier supports the frozen `Fin 8`/`Fin 9` family. The fixed-carrier test alone does not close these rows. |
+| Rejecting oracle replay and observations, rows 13–19 | Rejecting behaviour retained separately. Dependent-output typing remains open. |
+| Output statement and output oracle families of the verification games | Unresolved omission: the parent `OracleVerifier` still fixes `T` and `outputs`. The frozen output types and oracle families may depend on the branch. The current fixed-output games do not close these rows. |
+| Decision ambient | Premise-required scope: the restoration experiment has empty decision ambient `[]ₒ`; the shared-oracle decision experiment needs separate theory. |
+
+The fixed-output restriction is a missing dependency, not an approved weakening or a completed
+port. The oracle-verifier output-family interface must be generalized in its owning parent before
+the full dependent-output game statements can be restored. The earlier ledger entry numbered 18
+also conflated the plain replay with the rejecting oracle terminal; this entry supersedes that
+account and leaves the affected dependent-output rows open.

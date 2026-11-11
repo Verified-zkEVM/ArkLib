@@ -41,15 +41,14 @@ Entries 15 and 16 are the two hypotheses that a client of the round-by-round tra
 check. Entry 15 applies to the direction into the interaction layer, and entry 16 to the
 direction out of it.
 
-## Interaction-layer migration: entry 18
+## Interaction-layer migration: entry 19
 
-This entry continues the numbering for the migration of the frozen interaction layer into the
-interaction core; entry 17 was removed (see the end of this page). It is in
-[`interaction-rebuild/IMPLEMENTATION-NOTES.md`](../interaction-rebuild/IMPLEMENTATION-NOTES.md).
+Entry 17 was removed (see the end of this page); entry 18 is reserved for the Sumcheck interval
+entry. State restoration uses entry 19 to avoid the duplicate numbering.
 
-| Entry | Departure |
+| Entry | Status and scope |
 | --- | --- |
-| [18](../interaction-rebuild/IMPLEMENTATION-NOTES.md#18-state-restoration-fixes-the-output-type-and-the-decision-ambient) | State restoration fixes the output type and the decision ambient. The verifier has one output statement type, and a rejecting branch is `none` in an `Option` output, not a type with no claim. The decision has the empty ambient oracle `[]ₒ`. A knowledge state function with a transcript-indexed output witness family replaces per-input round extractors; the adversary's witness is read at the completed transcript by a map, not an equivalence, and the output law is an implication from an accepted observation and the output relation. |
+| [19](../interaction-rebuild/IMPLEMENTATION-NOTES.md#19-state-restoration-witness-families-replay-and-remaining-output-family-omission) | Statement-indexed witnesses and witness-preserving extraction are equivalent ports. Empty decision ambient is an explicit premise. Dependent output statements and output oracle families remain unresolved: the parent's fixed-output verifier cannot express the frozen games. The plain replay returns its payload on both challenges; rejection belongs to the separate oracle terminal. A fixed-output replacement does not close a dependent-output row. |
 
 ## The oracle correspondence gap and its resolution
 

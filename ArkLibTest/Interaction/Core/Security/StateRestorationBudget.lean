@@ -31,24 +31,25 @@ namespace Interaction.Core.StateRestorationBudgetTests
   toOC := { spec := fun _ => Fin 8, impl := fun _ => do return (← read) }
 
 /-- The first round: a `Fin 8` oracle message and a `Fin 8` challenge. -/
-@[implicit_reducible] def firstRound : Round where
+def firstRound : Round where
   Message := Fin 8
   Challenge := Fin 8
   interface := messageInterface
   sampleChallenge := inferInstance
 
 /-- The second round: a `Fin 8` oracle message and a `Fin 16` challenge. -/
-@[implicit_reducible] def secondRound : Round where
+def secondRound : Round where
   Message := Fin 8
   Challenge := Fin 16
   interface := messageInterface
   sampleChallenge := inferInstance
 
 /-- The protocol has the rounds `firstRound` and `secondRound`. -/
-@[implicit_reducible] def rounds : List Round := [firstRound, secondRound]
+def rounds : List Round := [firstRound, secondRound]
 
 /-- The first round's local error is `1/8`, the second's `1/16`. -/
-noncomputable def errors : RoundErrors rounds := fun j : Fin 2 => if j = 0 then 1 / 8 else 1 / 16
+noncomputable def errors : RoundErrors rounds :=
+    fun j : Fin 2 => if j.val = 0 then 1 / 8 else 1 / 16
 
 /-- The output is one `Fin 8` oracle. -/
 @[instance_reducible] def outputFamily : OracleFamily PUnit (fun _ => Fin 8) :=
@@ -162,8 +163,7 @@ theorem max_errors : Finset.univ.sup errors = (1 / 8 : ENNReal) := by
 -- Row 9 (StateRestorationBudget L253, sum_errors).
 /-- The round errors sum to `3/16`. -/
 theorem sum_errors : (∑ j, errors j) = (3 / 16 : ENNReal) := by
-  change (∑ j : Fin 2, errors j) = _
-  rw [Fin.sum_univ_two]
+  refine (Fin.sum_univ_two (fun j : Fin 2 => errors j)).trans ?_
   change (1 / 8 : ENNReal) + 1 / 16 = 3 / 16
   have equality : (1 / 8 : NNReal) + 1 / 16 = 3 / 16 := by norm_num
   simpa only [ENNReal.coe_add, ENNReal.coe_div (by norm_num : (8 : NNReal) ≠ 0),
@@ -220,10 +220,10 @@ def valid (_ : Stmt) (tr : PathAlong oracleSig (protocol rounds)) (w : Nat) : Pr
 after the first challenge `c₁` a witness is known when `c₁` is `0`; after the second challenge a
 witness is known when a challenge is `0` and it is at most the second message. Extraction adds the
 message at each message step and copies the witness otherwise. -/
-def knowledge : KnowledgeStateFunction oracleSig (protocol rounds) Stmt (fun _ => Nat) Nat
-    (fun _ => True) Rin valid where
-  Witness _ _ := Nat
-  toFun sp history z w := match sp, history with
+def knowledge : KnowledgeStateFunction oracleSig (protocol rounds) Stmt
+    (fun _ _ => Nat) (fun _ => Nat) (fun _ => True) Rin valid where
+  Witness _ {_} _ _ := Nat
+  toFun z {_} sp history w := match sp, history with
     | .root _, _ => w ≤ z.1
     | .down _ (.root _), _ => False
     | .down _ (.down _ (.root _)), history => (show Fin 8 from history.2.1.1) = 0
@@ -232,7 +232,7 @@ def knowledge : KnowledgeStateFunction oracleSig (protocol rounds) Stmt (fun _ =
       ((show Fin 8 from history.2.1.1) = 0 ∨ (show Fin 16 from history.2.2.2.1.1) = 0) ∧
         w ≤ (show Fin 8 from history.2.2.1.1).val
   extractRoot _ w := w
-  extractStep sp _ _ x w := by
+  extractStep _ {_ _} sp _ x w := by
     cases sp with
     | root => exact w + (show Fin 8 from x).val
     | down _ tail =>
@@ -289,11 +289,11 @@ message; at the second message the state after the message implies the state bef
 extracted witness. -/
 theorem preserving :
     (∀ (z : Stmt) (m₁ : Fin 8) (w : Nat),
-      ¬ knowledge.toFun (.down ⟨⟩ (.root _)) ⟨⟨m₁, rfl⟩, ⟨⟩⟩ z w) ∧
+      ¬ knowledge.toFun z (.down ⟨⟩ (.root _)) ⟨⟨m₁, rfl⟩, ⟨⟩⟩ w) ∧
     ∀ (z : Stmt) (m₁ c₁ m₂ : Fin 8) (w : Nat),
-      knowledge.toFun _ (lateMoves m₁ c₁ m₂) z w →
-        knowledge.toFun _ (middleMoves m₁ c₁) z
-          (knowledge.extractStep _ (middleMoves m₁ c₁) z m₂ w) :=
+      knowledge.toFun z _ (lateMoves m₁ c₁ m₂) w →
+        knowledge.toFun z _ (middleMoves m₁ c₁)
+          (knowledge.extractStep z _ (middleMoves m₁ c₁) m₂ w) :=
   ⟨fun _ _ _ => id, fun _ _ _ _ _ known => known⟩
 
 /-- The receiver cursor at the first challenge, below the first message. -/
@@ -371,7 +371,7 @@ theorem bounded : knowledge.LocallyBounded (uniformDraw rounds) (roundEps errors
 
 -- Row 3 (StateRestorationBudget L176, inputLaw).
 /-- The root state is the input relation. -/
-theorem inputLaw (z : Stmt) (w : Nat) : knowledge.toFun (.root _) ⟨⟩ z w ↔ Rin z w := Iff.rfl
+theorem inputLaw (z : Stmt) (w : Nat) : knowledge.toFun z (.root _) ⟨⟩ w ↔ Rin z w := Iff.rfl
 
 /-- The oracle output relation: the witness is at most the output oracle's data. -/
 def oracleRout (_ : Stmt) (_ : PathAlong oracleSig (protocol rounds))
@@ -382,7 +382,7 @@ def oracleRout (_ : Stmt) (_ : PathAlong oracleSig (protocol rounds))
 /-- On every transcript, the terminal state on the terminal witness is an accepted closed claim
 related to the witness. -/
 theorem outputLaw (z : Stmt) (tr : PathAlong oracleSig (protocol rounds)) (w : Nat) :
-    knowledge.toFun (completeSpine oracleSig tr) (completeMoves oracleSig tr) z
+    knowledge.toFun z (completeSpine oracleSig tr) (completeMoves oracleSig tr)
       (knowledge.terminalWitness z tr w) ↔
       ∃ claim, closedTerminalObservation verifier z tr = some claim ∧ oracleRout z tr claim w := by
   rcases tr with ⟨m₁, ⟨c₁, ⟨m₂, ⟨c₂, ⟨⟩⟩⟩⟩⟩
@@ -458,10 +458,10 @@ section Measured
 addition; the challenge stages copy the witness uncharged. -/
 def stages : knowledge.MeasuredStages (Unit → Nat) where
   root _ := BudgetedProgram.ofFun _
-  step z _ _ sp history := by
+  step z {_ _} sp history := by
     cases sp with
     | root =>
-      exact ⟨addCountProgram fun x : knowledge.StageInput (.root _) history =>
+      exact ⟨addCountProgram fun x : knowledge.StageInput z (.root _) history =>
           (x.2, (show Fin 8 from x.1).val), 1, addCountProgram_realizes _,
         addCountProgram_costAtMost_one _⟩
     | down _ tail =>
@@ -470,7 +470,7 @@ def stages : knowledge.MeasuredStages (Unit → Nat) where
       | down _ tail =>
         cases tail with
         | root =>
-          exact ⟨addCountProgram fun x : knowledge.StageInput _ history =>
+          exact ⟨addCountProgram fun x : knowledge.StageInput z _ history =>
               (x.2, (show Fin 8 from x.1).val), 1, addCountProgram_realizes _,
             addCountProgram_costAtMost_one _⟩
         | down _ tail =>
@@ -604,8 +604,8 @@ first message stage. -/
 theorem extractionProgram_writer (z : Stmt) (m₁ : Fin 8) (tr : PathAlong oracleSig afterFirst) :
     let suffix := stages.programFrom z _ (PrefixMoves.snoc oracleSig start ⟨⟩ m₁) tr
     let first := (stages.step z start ⟨⟩).program.contramap
-      (fun w : knowledge.Witness _ (PrefixMoves.snoc oracleSig start ⟨⟩ m₁) =>
-        (⟨m₁, w⟩ : knowledge.StageInput start ⟨⟩))
+      (fun w : knowledge.Witness z _ (PrefixMoves.snoc oracleSig start ⟨⟩ m₁) =>
+        (⟨m₁, w⟩ : knowledge.StageInput z start ⟨⟩))
     let full := stages.programFrom z start ⟨⟩ ⟨m₁, tr⟩
     ∀ view : suffix.program.View,
       simulateQ ((full.program.answer view).withAddCost full.program.cost)
@@ -638,8 +638,8 @@ example (z : Stmt) (m₁ : Fin 8) (tr : PathAlong oracleSig afterFirst) (w : Nat
   congrArg (knowledge.extractRoot z) (knowledge.extractFrom_eq_stageMap z start ⟨⟩ m₁ tr w)
 
 /-- The knowledge state function with its measured stages. -/
-def measured : MeasuredKnowledgeStateFunction Unit oracleSig (protocol rounds) Stmt (fun _ => Nat)
-    Nat (fun _ => True) Rin valid :=
+def measured : MeasuredKnowledgeStateFunction Unit oracleSig (protocol rounds) Stmt (fun _ _ => Nat)
+    (fun _ => Nat) (fun _ => True) Rin valid :=
   { knowledge with stages := stages }
 
 -- Row 29 (StateRestorationBudget L470): the measured state function's underlying state function

@@ -638,72 +638,121 @@ end Replay
 
 section Knowledge
 
-variable {S W Win : Type} {admissible : S → Prop} {relIn : S → Win → Prop}
+variable {S W : Type} {Win : S → Type} {admissible : S → Prop}
+  {relIn : (stmt : S) → Win stmt → Prop}
 
-/-- If backward extraction fails at the root of a completed transcript with a valid output, the
-answer at some key that completion queries is a bad challenge at that key's prefix. The output
-witness is typed at the completed transcript and passed to `extractFrom` by
-`PrefixMoves.completeWith_root`. -/
-theorem exists_badChallenge_of_extraction_failure {Salt : Type} :
-    {rounds : List Round} → {Wout : PathAlong oracleSig (protocol rounds) → Type} →
-    {Win : Type} → {admissible : S → Prop} → {relIn : S → Win → Prop} →
-    {validOutput : (stmt : S) → (tr : PathAlong oracleSig (protocol rounds)) → Wout tr → Prop} →
+/-- A completion key whose challenge fails preservation on the witness extracted from the
+actual remaining transcript and the supplied output witness. Later keys restrict the same state
+function below the earlier recorded moves, preserving the suffix extraction. -/
+def BadChallengeOnCompletion {Salt : Type} :
+    {rounds : List Round} → {Wout : S → PathAlong oracleSig (protocol rounds) → Type} →
+    {Win : S → Type} → {admissible : S → Prop} →
+    {relIn : (stmt : S) → Win stmt → Prop} →
+    {validOutput : (stmt : S) → (tr : PathAlong oracleSig (protocol rounds)) →
+      Wout stmt tr → Prop} →
     (F : KnowledgeStateFunction oracleSig (protocol rounds) S Wout Win admissible relIn
       validOutput) →
     (z : S) → (messages : Messages Salt rounds) → (table : Table S Salt rounds) →
-    (w : Wout (completedPath rounds z messages table)) →
-    validOutput z (completedPath rounds z messages table) w →
-    ¬ F.toFun (.root _) ⟨⟩ z
-      (F.extractFrom z (.root _) ⟨⟩ (completedPath rounds z messages table)
-        (cast (congrArg Wout
-          (PrefixMoves.completeWith_root oracleSig (completedPath rounds z messages table)).symm)
-          w)) →
-    ∃ key ∈ completionKeys rounds z messages,
-      table key ∈ F.badChallenge (keySpine key) (keyHistory key table) z
-  | [], _, _, _, _, _, F, z, _, _, w, valid, failure =>
-    (failure (F.leaf (.root _) ⟨⟩ z w valid)).elim
-  | round :: rounds, Wout, _, _, _, _, F, z, (message, salt, messages), table, w, valid,
-      failure => by
-    let challenge := table (Key.here z message salt)
-    let rest := completedPath rounds z messages (fun q => table (Key.later message salt q))
-    let after := F.extractFrom z (.down ⟨⟩ (.down ⟨⟩ (.root _)))
-      ⟨⟨message, rfl⟩, ⟨⟨challenge, rfl⟩, ⟨⟩⟩⟩ rest
-      (cast (congrArg Wout (PrefixMoves.completeWith_root oracleSig
-        (completedPath (round :: rounds) z (message, salt, messages) table)).symm) w)
-    by_cases holds : F.toFun (.down ⟨⟩ (.down ⟨⟩ (.root _)))
-        ⟨⟨message, rfl⟩, ⟨⟨challenge, rfl⟩, ⟨⟩⟩⟩ z after
-    · refine ⟨Key.here z message salt, List.mem_cons_self, after, ?_, holds⟩
-      intro sent
-      exact failure (F.send (.root _) ⟨⟩ z rfl message _ sent)
-    · have hafter : after = ((F.child message).child challenge).extractFrom z (.root _) ⟨⟩ rest
-          (cast (congrArg (fun tr => Wout ⟨message, ⟨challenge, tr⟩⟩)
-            (PrefixMoves.completeWith_root oracleSig rest).symm) w) :=
-        (F.extractFrom_child z message (.down ⟨⟩ (.root _)) ⟨⟨challenge, rfl⟩, ⟨⟩⟩ rest w
-          (congrArg Wout (PrefixMoves.completeWith_root oracleSig
-            (completedPath (round :: rounds) z (message, salt, messages) table)).symm)
-          ((congrArg Wout (PrefixMoves.completeWith_root oracleSig
-            (completedPath (round :: rounds) z (message, salt, messages) table)).symm).trans
-            (congrArg Wout (PrefixMoves.completeWith_down oracleSig
-              (a := .oracle round.Message round.interface)
-              (next := fun _ => .liftBind (.challenge round.Challenge) fun _ => protocol rounds)
-              message (.down ⟨⟩ (.root _)) ⟨⟨challenge, rfl⟩, ⟨⟩⟩ rest)))).trans
-          ((F.child message).extractFrom_child z challenge (.root _) ⟨⟩ rest w _ _)
-      rw [hafter] at holds
-      obtain ⟨key, hkey, hbad⟩ := exists_badChallenge_of_extraction_failure
-        ((F.child message).child challenge) z messages
-        (fun q => table (Key.later message salt q)) w valid holds
-      refine ⟨Key.later message salt key,
-        List.mem_cons_of_mem _ (List.mem_map.mpr ⟨key, hkey, rfl⟩), ?_⟩
-      have hz := completionKeys_input rounds z messages key hkey
-      change table (Key.later message salt key) ∈ F.badChallenge
-        (.down ⟨⟩ (.down ⟨⟩ (keySpine key)))
-        ⟨⟨message, rfl⟩, ⟨⟨table (Key.here key.input message salt), rfl⟩,
-          keyHistory key (fun q => table (Key.later message salt q))⟩⟩ z
-      rw [hz]
-      exact hbad
+    Wout z (completedPath rounds z messages table) → Key S Salt rounds → Prop
+  | [], _, _, _, _, _, _, _, _, _, _, key => key.elim
+  | _ :: rounds, Wout, _, _, _, _, F, z, (message, salt, messages), table, w, .inl data =>
+    data = (z, message, salt) ∧
+      let challenge := table (Key.here z message salt)
+      let rest := completedPath rounds z messages (fun q => table (Key.later message salt q))
+      let G := F.child message
+      let after := (G.child challenge).extractFrom z (.root _) ⟨⟩ rest
+        (cast (congrArg (fun tr => Wout z ⟨message, ⟨challenge, tr⟩⟩)
+          (PrefixMoves.completeWith_root oracleSig rest).symm) w)
+      ¬ G.toFun z (.root _) ⟨⟩ (G.extractStep z (.root _) ⟨⟩ challenge after) ∧
+        (G.child challenge).toFun z (.root _) ⟨⟩ after
+  | _ :: _, _, _, _, _, _, F, z, (message, salt, messages), table, w, .inr (m, s, key) =>
+    m = message ∧ s = salt ∧
+      BadChallengeOnCompletion ((F.child message).child (table (Key.here z message salt))) z
+        messages (fun q => table (Key.later message salt q)) w key
 
-variable {Salt : Type} {rounds : List Round} {Wout : PathAlong oracleSig (protocol rounds) → Type}
-  {validOutput : (stmt : S) → (tr : PathAlong oracleSig (protocol rounds)) → Wout tr → Prop}
+/-- A witness-preserving bad transition on a completed transcript belongs to one of the actual
+completion keys. This only locates the generic bad transition; it does not repeat extraction. -/
+theorem badChallengeAlong_completion {Salt : Type} :
+    {rounds : List Round} → {Wout : S → PathAlong oracleSig (protocol rounds) → Type} →
+    {Win : S → Type} → {admissible : S → Prop} →
+    {relIn : (stmt : S) → Win stmt → Prop} →
+    {validOutput : (stmt : S) → (tr : PathAlong oracleSig (protocol rounds)) →
+      Wout stmt tr → Prop} →
+    (F : KnowledgeStateFunction oracleSig (protocol rounds) S Wout Win admissible relIn
+      validOutput) →
+    (z : S) → (messages : Messages Salt rounds) → (table : Table S Salt rounds) →
+    (w : Wout z (completedPath rounds z messages table)) →
+    F.BadChallengeAlong z (completedPath rounds z messages table) w →
+    ∃ key ∈ completionKeys rounds z messages, BadChallengeOnCompletion F z messages table w key
+  | [], _, _, _, _, _, _, _, _, _, _, bad => bad.elim
+  | _ :: rounds, _, _, _, _, _, F, z, (message, salt, messages), table, w, bad => by
+    rcases (F.badChallengeAlong_liftBind z message _ w).mp bad with bad | bad
+    · cases bad.1
+    rcases ((F.child message).badChallengeAlong_liftBind z
+      (table (Key.here z message salt)) _ w).mp bad with bad | bad
+    · exact ⟨Key.here z message salt, List.mem_cons_self, rfl, bad.2⟩
+    · obtain ⟨key, hkey, hb⟩ := badChallengeAlong_completion
+        ((F.child message).child (table (Key.here z message salt))) z messages
+        (fun q => table (Key.later message salt q)) w bad
+      exact ⟨Key.later message salt key,
+        List.mem_cons_of_mem _ (List.mem_map.mpr ⟨key, hkey, rfl⟩), rfl, rfl, hb⟩
+
+/-- Extraction failure on a valid completed transcript identifies a completion key together with
+the failing transition on the actual suffix-extracted witness. The arbitrary-protocol extraction
+result is `KnowledgeStateFunction.extraction_failure_implies_badChallengeAlong`. -/
+theorem exists_badChallenge_of_extraction_failure {Salt : Type} {rounds : List Round}
+    {Wout : S → PathAlong oracleSig (protocol rounds) → Type}
+    {validOutput : (stmt : S) → (tr : PathAlong oracleSig (protocol rounds)) →
+      Wout stmt tr → Prop}
+    (F : KnowledgeStateFunction oracleSig (protocol rounds) S Wout Win admissible relIn validOutput)
+    (z : S) (messages : Messages Salt rounds) (table : Table S Salt rounds)
+    (w : Wout z (completedPath rounds z messages table))
+    (valid : validOutput z (completedPath rounds z messages table) w)
+    (failure : ¬ F.toFun z (.root _) ⟨⟩
+      (F.extractFrom z (.root _) ⟨⟩ (completedPath rounds z messages table)
+        (cast (congrArg (Wout z)
+          (PrefixMoves.completeWith_root oracleSig (completedPath rounds z messages table)).symm)
+          w))) :
+    ∃ key ∈ completionKeys rounds z messages, BadChallengeOnCompletion F z messages table w key :=
+  badChallengeAlong_completion F z messages table w
+    (F.extraction_failure_implies_badChallengeAlong_of_root z _ w valid failure)
+
+/-- Forgetting the named suffix witness of a bad completion key gives the bad-challenge event
+used by the local probability bound. -/
+theorem BadChallengeOnCompletion.mem_badChallenge {Salt : Type} :
+    {rounds : List Round} → {Wout : S → PathAlong oracleSig (protocol rounds) → Type} →
+    {Win : S → Type} → {admissible : S → Prop} →
+    {relIn : (stmt : S) → Win stmt → Prop} →
+    {validOutput : (stmt : S) → (tr : PathAlong oracleSig (protocol rounds)) →
+      Wout stmt tr → Prop} →
+    (F : KnowledgeStateFunction oracleSig (protocol rounds) S Wout Win admissible relIn
+      validOutput) →
+    (z : S) → (messages : Messages Salt rounds) → (table : Table S Salt rounds) →
+    (w : Wout z (completedPath rounds z messages table)) → (key : Key S Salt rounds) →
+    key ∈ completionKeys rounds z messages → BadChallengeOnCompletion F z messages table w key →
+    table key ∈ F.badChallenge (keySpine key) (keyHistory key table) z
+  | [], _, _, _, _, _, _, _, _, _, _, key, _, _ => key.elim
+  | _ :: _, _, _, _, _, _, _, _, (_, _, _), _, _, .inl _, _, ⟨rfl, hb⟩ =>
+    ⟨_, hb.1, hb.2⟩
+  | _ :: rounds, _, _, _, _, _, F, z, (message, salt, messages), table, w,
+      .inr (_, _, key), hkey, ⟨rfl, rfl, hb⟩ => by
+    have hk : key ∈ completionKeys rounds z messages := by
+      simpa [completionKeys, Key.here, Key.later] using hkey
+    have ih := BadChallengeOnCompletion.mem_badChallenge
+      ((F.child message).child (table (Key.here z message salt))) z messages
+      (fun q => table (Key.later message salt q)) w key hk hb
+    have hz := completionKeys_input rounds z messages key hk
+    change table (Key.later message salt key) ∈ F.badChallenge
+      (.down ⟨⟩ (.down ⟨⟩ (keySpine key)))
+      ⟨⟨message, rfl⟩, ⟨⟨table (Key.here key.input message salt), rfl⟩,
+        keyHistory key (fun q => table (Key.later message salt q))⟩⟩ z
+    rw [hz]
+    exact ih
+
+variable {Salt : Type} {rounds : List Round}
+  {Wout : S → PathAlong oracleSig (protocol rounds) → Type}
+  {validOutput : (stmt : S) → (tr : PathAlong oracleSig (protocol rounds)) →
+    Wout stmt tr → Prop}
 
 /-- An admissible key whose answer is a bad challenge at the key's prefix. -/
 def badKey
@@ -741,7 +790,7 @@ extraction fails queries a bad key. The adversary's witness is read at the compl
 `readOut`. -/
 theorem restored_bad_trace
     (F : KnowledgeStateFunction oracleSig (protocol rounds) S Wout Win admissible relIn validOutput)
-    (readOut : (stmt : S) → (tr : PathAlong oracleSig (protocol rounds)) → W → Wout tr)
+    (readOut : (stmt : S) → (tr : PathAlong oracleSig (protocol rounds)) → W → Wout stmt tr)
     (adversary : OracleComp (oracleSpec S Salt rounds) (S × Messages Salt rounds × W))
     (table : Table S Salt rounds)
     (bad : let result :=
@@ -762,8 +811,9 @@ theorem restored_bad_trace
   rw [heval] at bad
   obtain ⟨hadm, hvalid, hfail⟩ := bad
   obtain ⟨key, hkey, hb⟩ := exists_badChallenge_of_extraction_failure F z messages table
-    (readOut z _ w) hvalid
-    (fun holds => hfail (F.root z hadm _ holds))
+    (readOut z _ w) hvalid (fun holds => hfail (F.root z hadm _ holds))
+  have hb := BadChallengeOnCompletion.mem_badChallenge F z messages table (readOut z _ w)
+    key hkey hb
   have hz := completionKeys_input rounds z messages key hkey
   have hmem : key ∈ (tableQueryLog (complete rounds z messages) table).map Sigma.fst := by
     rwa [complete_log_keys]
@@ -785,7 +835,7 @@ is valid and extraction fails is at most `(Q + rounds.length) * error`. -/
 theorem restoredExecution_knowledge_soundness [DecidableEq (Key S Salt rounds)]
     (F : KnowledgeStateFunction oracleSig (protocol rounds) S Wout Win admissible relIn validOutput)
     (error : ENNReal) (bounded : F.LocallyBounded (uniformDraw rounds) (uniformEps rounds error))
-    (readOut : (stmt : S) → (tr : PathAlong oracleSig (protocol rounds)) → W → Wout tr)
+    (readOut : (stmt : S) → (tr : PathAlong oracleSig (protocol rounds)) → W → Wout stmt tr)
     (adversary : OracleComp (oracleSpec S Salt rounds) (S × Messages Salt rounds × W))
     (Q : ℕ) (queryBound : IsTotalQueryBound adversary Q) :
     Pr{let result ← (simulateQ randomOracle (restoredExecution rounds adversary)).run' ∅}[
@@ -805,12 +855,13 @@ end Knowledge
 
 section Games
 
-variable {rounds : List Round} {I J S T Salt W Win : Type} {A : I → Type} {B : J → Type}
+variable {rounds : List Round} {I J S T Salt W : Type} {A : I → Type} {B : J → Type}
+  {Win : S × (∀ i, A i) → Type}
   {inputs : OracleFamily I A} {outputs : OracleFamily J B}
-  {admissible : S × (∀ i, A i) → Prop} {relIn : S × (∀ i, A i) → Win → Prop}
-  {Wout : PathAlong oracleSig (protocol rounds) → Type}
+  {admissible : S × (∀ i, A i) → Prop} {relIn : (stmt : S × (∀ i, A i)) → Win stmt → Prop}
+  {Wout : (S × (∀ i, A i)) → PathAlong oracleSig (protocol rounds) → Type}
   {validOutput : (stmt : S × (∀ i, A i)) → (tr : PathAlong oracleSig (protocol rounds)) →
-    Wout tr → Prop}
+    Wout stmt tr → Prop}
 
 /-- State-restoration knowledge soundness of a verifier. The knowledge state function's output
 witnesses are indexed by the transcript, and `readOut` reads the adversary's witness at the
@@ -825,7 +876,7 @@ theorem stateRestoration_knowledge_soundness [DecidableEq (Key (S × (∀ i, A i
     (F : KnowledgeStateFunction oracleSig (protocol rounds) (S × (∀ i, A i)) Wout Win admissible
       relIn validOutput)
     (readOut : (stmt : S × (∀ i, A i)) → (tr : PathAlong oracleSig (protocol rounds)) → W →
-      Wout tr)
+      Wout stmt tr)
     (outputLaw : ∀ stmt tr t w, terminalObservation V stmt tr = some t → relOut stmt tr t w →
       validOutput stmt tr (readOut stmt tr w))
     (error : ENNReal) (bounded : F.LocallyBounded (uniformDraw rounds) (uniformEps rounds error))
@@ -854,7 +905,7 @@ theorem stateRestoration_oracle_knowledge_soundness
     (F : KnowledgeStateFunction oracleSig (protocol rounds) (S × (∀ i, A i)) Wout Win admissible
       relIn validOutput)
     (readOut : (stmt : S × (∀ i, A i)) → (tr : PathAlong oracleSig (protocol rounds)) → W →
-      Wout tr)
+      Wout stmt tr)
     (outputLaw : ∀ stmt tr claim w, closedTerminalObservation V stmt tr = some claim →
       relOut stmt tr claim w → validOutput stmt tr (readOut stmt tr w))
     (error : ENNReal) (bounded : F.LocallyBounded (uniformDraw rounds) (uniformEps rounds error))
@@ -882,7 +933,7 @@ theorem stateRestoration_knowledge_soundness_privateCoins
     (F : KnowledgeStateFunction oracleSig (protocol rounds) (S × (∀ i, A i)) Wout Win admissible
       relIn validOutput)
     (readOut : (stmt : S × (∀ i, A i)) → (tr : PathAlong oracleSig (protocol rounds)) → W →
-      Wout tr)
+      Wout stmt tr)
     (outputLaw : ∀ stmt tr t w, terminalObservation V stmt tr = some t → relOut stmt tr t w →
       validOutput stmt tr (readOut stmt tr w))
     (error : ENNReal) (bounded : F.LocallyBounded (uniformDraw rounds) (uniformEps rounds error))
@@ -912,7 +963,7 @@ theorem stateRestoration_oracle_knowledge_soundness_privateCoins
     (F : KnowledgeStateFunction oracleSig (protocol rounds) (S × (∀ i, A i)) Wout Win admissible
       relIn validOutput)
     (readOut : (stmt : S × (∀ i, A i)) → (tr : PathAlong oracleSig (protocol rounds)) → W →
-      Wout tr)
+      Wout stmt tr)
     (outputLaw : ∀ stmt tr claim w, closedTerminalObservation V stmt tr = some claim →
       relOut stmt tr claim w → validOutput stmt tr (readOut stmt tr w))
     (error : ENNReal) (bounded : F.LocallyBounded (uniformDraw rounds) (uniformEps rounds error))

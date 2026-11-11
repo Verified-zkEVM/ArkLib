@@ -24,14 +24,14 @@ namespace Interaction.Core.StateRestorationTests
   toOC := { spec := fun _ => Fin 8, impl := fun _ => do return (← read) }
 
 /-- One round: a `Fin 8` oracle message, then a uniform `Bool` challenge. -/
-@[implicit_reducible] def round : Round where
+def round : Round where
   Message := Fin 8
   Challenge := Bool
   interface := messageInterface
   sampleChallenge := inferInstance
 
 /-- The protocol has the single round `round`. -/
-@[implicit_reducible] def rounds : List Round := [round]
+def rounds : List Round := [round]
 
 /-- The output is one `Fin 8` oracle. -/
 @[instance_reducible] def outputFamily : OracleFamily PUnit (fun _ => Fin 8) :=
@@ -108,7 +108,6 @@ theorem game_eval (table : Table Stmt Unit rounds) :
     evalWithAnswerFn (QueryImpl.ofFn table) (closedVerificationGame verifier adversary) =
       (stmt 0, path 7 (table key), closedTerminalObservation verifier (stmt 0) (path 7 (table key)),
         6) := by
-  rw [closedVerificationGame_eq, evalWithAnswerFn_map, restoredExecution_eval]
   rfl
 
 /-- The game's output against the constant table `c`, as plain numbers. -/
@@ -144,30 +143,73 @@ theorem scriptedRun_eq (c : Bool) :
 
 /-- The sent message, the challenge and the closed claim of the run on challenge `c`, as plain
 numbers. -/
-def nativeResult (c : Bool) : Nat × Bool × Option (Nat × Nat) :=
+def oracleReplayResult (c : Bool) : Nat × Bool × Option (Nat × Nat) :=
   let r := evalWithAnswerFn (recordedAnswers rounds (path 7 c))
     (verifier.run 0 (stmt 0).2 (scriptedProver rounds messages))
   ((show Fin 8 from r.1.1 : Nat), (show Bool from r.1.2.1),
     r.2.2.map (fun claim => ((claim.1 : Nat), (claim.2 ⟨⟩ : Nat))))
 
--- Row 9 (StateRestoration L175, nativeResult_eq).
+-- The rejecting oracle verifier is a separate replay from the plain terminal.
 /-- On every challenge the run sends message 7 and records the challenge; it returns claim 7 with
 output oracle 7 on `true` and rejects on `false`. -/
-theorem nativeResult_eq (c : Bool) :
-    nativeResult c = (7, c, if c then some (7, 7) else none) := by
-  unfold nativeResult
+theorem oracleReplayResult_eq (c : Bool) :
+    oracleReplayResult c = (7, c, if c then some (7, 7) else none) := by
+  unfold oracleReplayResult
   rw [scriptedRun_eq]
   cases c <;> rfl
 
--- Row 10 (StateRestoration L182).
+-- The oracle verifier accepts on the true challenge.
 /-- info: (7, true, some (7, 7)) -/
 #guard_msgs in
-#eval nativeResult true
+#eval oracleReplayResult true
 
--- Row 11 (StateRestoration L183).
+-- The oracle verifier rejects on the false challenge.
 /-- info: (7, false, none) -/
 #guard_msgs in
-#eval nativeResult false
+#eval oracleReplayResult false
+
+/-- The plain terminal always reads and returns the sent payload, on either challenge. -/
+def plainVerifier : OracleVerifier []ₒ (protocol rounds) Nat (Fin 8) emptyFamily outputFamily where
+  decide _ p _ := by
+    rcases p with ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
+    exact liftM (([]ₒ + (sumFamily emptyFamily
+      (pathFamily (protocol rounds) ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩)).spec).query (.inr ⟨.inr (.inl ⟨⟩), ()⟩))
+  outputMap := verifier.outputMap
+
+/-- Replaying the plain terminal returns its payload for every challenge. -/
+theorem plainScriptedRun_eq (c : Bool) :
+    evalWithAnswerFn (recordedAnswers rounds (path 7 c))
+      (plainVerifier.run 0 (stmt 0).2 (scriptedProver rounds messages)) =
+      ⟨path 7 c, ⟨⟩, some (7, fun _ => 7)⟩ := by
+  exact (run_scriptedProver plainVerifier (stmt 0) messages (path 7 c) ⟨rfl, trivial⟩).trans rfl
+
+/-- The message, challenge and returned payload of the plain replay. The replay equation
+certifies that the returned verdict contains a payload on both challenges. -/
+def replayResult (c : Bool) : OracleComp []ₒ (Nat × Bool × Nat) :=
+  let r := evalWithAnswerFn (recordedAnswers rounds (path 7 c))
+    (plainVerifier.run 0 (stmt 0).2 (scriptedProver rounds messages))
+  have accepted : r.2.2.isSome := by
+    dsimp only [r]
+    rw [plainScriptedRun_eq]
+    trivial
+  pure ((show Fin 8 from r.1.1).val, (show Bool from r.1.2.1), (r.2.2.get accepted).1.val)
+
+-- Row 9 (StateRestoration L175): the plain replay returns its payload on both challenges.
+/-- Both challenges return the selected message and payload 7. -/
+theorem replayResult_eq (c : Bool) : replayResult c = pure (7, c, 7) := by
+  unfold replayResult
+  simp only [plainScriptedRun_eq]
+  rfl
+
+-- Row 10 (StateRestoration L182): the plain replay on true.
+/-- info: (7, true, 7) -/
+#guard_msgs in
+#eval evalWithAnswerFn (fun q : PEmpty.{1} => q.elim) (replayResult true)
+
+-- Row 11 (StateRestoration L183): the plain replay on false.
+/-- info: (7, false, 7) -/
+#guard_msgs in
+#eval evalWithAnswerFn (fun q : PEmpty.{1} => q.elim) (replayResult false)
 
 /-- Against every answer table, the run with the challenge of the game's transcript returns the
 game's transcript and observation: the game's challenge is the table's answer at `key`. -/
@@ -176,9 +218,7 @@ theorem gameRun_eq (table : Table Stmt Unit rounds) :
       (verifier.run 0 (stmt 0).2 (scriptedProver rounds messages)) =
       ⟨path 7 (table key), ⟨⟩,
         closedTerminalObservation verifier (stmt 0) (path 7 (table key))⟩ := by
-  have run := closedVerificationGame_eval_run verifier adversary table
-  rw [game_eval] at run
-  exact run
+  exact closedVerificationGame_eval_run verifier adversary table
 
 -- Row 18 (StateRestoration L264): the closed observation on the `true` branch.
 /-- info: some (7, 7) -/
@@ -215,16 +255,16 @@ def valid (_ : Stmt) (tr : PathAlong oracleSig (protocol rounds)) (w : Nat) : Pr
 /-- Before any move a witness is at most the input; after the message no witness is known; after
 the challenge `c` a witness is known when `c` is `true` and it is at most the message. Extraction
 adds the message at the message step and copies the witness otherwise. -/
-def knowledge : KnowledgeStateFunction oracleSig (protocol rounds) Stmt (fun _ => Nat) Nat
-    (fun _ => True) Rin valid where
-  Witness _ _ := Nat
-  toFun sp history z w := match sp, history with
+def knowledge : KnowledgeStateFunction oracleSig (protocol rounds) Stmt
+    (fun _ _ => Nat) (fun _ => Nat) (fun _ => True) Rin valid where
+  Witness _ {_} _ _ := Nat
+  toFun z {_} sp history w := match sp, history with
     | .root _, _ => w ≤ z.1
     | .down _ (.root _), _ => False
     | .down _ (.down _ _), history =>
       (show Bool from history.2.1.1) = true ∧ w ≤ (show Fin 8 from history.1.1).val
   extractRoot _ w := w
-  extractStep sp _ _ x w := by
+  extractStep _ {_ _} sp _ x w := by
     cases sp with
     | root => exact w + (show Fin 8 from x).val
     | down _ tail =>
@@ -251,12 +291,12 @@ def knowledge : KnowledgeStateFunction oracleSig (protocol rounds) Stmt (fun _ =
 
 -- Row 1 (StateRestoration L87, inputLaw).
 /-- The root state is the input relation. -/
-theorem inputLaw (z : Stmt) (w : Nat) : knowledge.toFun (.root _) ⟨⟩ z w ↔ Rin z w := Iff.rfl
+theorem inputLaw (z : Stmt) (w : Nat) : knowledge.toFun z (.root _) ⟨⟩ w ↔ Rin z w := Iff.rfl
 
 -- Row 2 (StateRestoration L89, outputLaw).
 /-- The terminal state on the terminal witness is the valid-output relation, on every transcript. -/
 theorem outputLaw (z : Stmt) (tr : PathAlong oracleSig (protocol rounds)) (w : Nat) :
-    knowledge.toFun (completeSpine oracleSig tr) (completeMoves oracleSig tr) z
+    knowledge.toFun z (completeSpine oracleSig tr) (completeMoves oracleSig tr)
       (knowledge.terminalWitness z tr w) ↔ valid z tr w := by
   rcases tr with ⟨m, ⟨c, ⟨⟩⟩⟩
   rfl
@@ -265,7 +305,7 @@ theorem outputLaw (z : Stmt) (tr : PathAlong oracleSig (protocol rounds)) (w : N
 /-- The send law at the message, the only prover move. No witness is known after the message, so
 preservation is vacuous there. -/
 theorem preserving (z : Stmt) (m : Fin 8) (w : Nat) :
-    ¬ knowledge.toFun (.down ⟨⟩ (.root _)) ⟨⟨m, rfl⟩, ⟨⟩⟩ z w := id
+    ¬ knowledge.toFun z (.down ⟨⟩ (.root _)) ⟨⟨m, rfl⟩, ⟨⟩⟩ w := id
 
 /-- The receiver cursor at the challenge, below message `m`. -/
 abbrev challengeSpine : Cursor.Spine (protocol rounds)
@@ -327,7 +367,7 @@ example (c : Bool) : knowledge.extractAlong (stmt 0) (path 7 c) 6 = 13 := rfl
 -- input 0, and the bad key is the selection's first-round key.
 example (table : Table Stmt Unit rounds) (htrue : table key = true) :
     ∃ k ∈ completionKeys rounds (stmt 0) messages,
-      table k ∈ knowledge.badChallenge (keySpine k) (keyHistory k table) (stmt 0) := by
+      BadChallengeOnCompletion knowledge (stmt 0) messages table 6 k := by
   apply exists_badChallenge_of_extraction_failure knowledge (stmt 0) messages table 6
   · exact ⟨htrue, show 6 ≤ 7 by omega⟩
   · change ¬ (6 + 7 ≤ 0)
@@ -366,7 +406,7 @@ def oracleRout (_ : Stmt) (_ : PathAlong oracleSig (protocol rounds))
 /-- The terminal state on the terminal witness is an accepted closed claim related to the
 witness. -/
 theorem oracleOutputLaw (z : Stmt) (tr : PathAlong oracleSig (protocol rounds)) (w : Nat) :
-    knowledge.toFun (completeSpine oracleSig tr) (completeMoves oracleSig tr) z
+    knowledge.toFun z (completeSpine oracleSig tr) (completeMoves oracleSig tr)
       (knowledge.terminalWitness z tr w) ↔
       ∃ claim, closedTerminalObservation verifier z tr = some claim ∧ oracleRout z tr claim w := by
   rcases tr with ⟨m, ⟨c, ⟨⟩⟩⟩
@@ -437,8 +477,8 @@ def validFin (_ : Stmt) (tr : PathAlong oracleSig (protocol rounds)) (_ : FinOut
 
 /-- The state function `knowledge` with the indexed output witness; the leaf map forgets the
 bound. -/
-def knowledgeFin : KnowledgeStateFunction oracleSig (protocol rounds) Stmt FinOut Nat
-    (fun _ => True) Rin validFin where
+def knowledgeFin : KnowledgeStateFunction oracleSig (protocol rounds) Stmt
+    (fun _ => FinOut) (fun _ => Nat) (fun _ => True) Rin validFin where
   Witness := knowledge.Witness
   toFun := knowledge.toFun
   extractRoot := knowledge.extractRoot
@@ -466,7 +506,8 @@ example (c : Bool) :
 -- The bad-key lemma with an output witness typed at the completed transcript.
 example (table : Table Stmt Unit rounds) (htrue : table key = true) :
     ∃ k ∈ completionKeys rounds (stmt 0) messages,
-      table k ∈ knowledgeFin.badChallenge (keySpine k) (keyHistory k table) (stmt 0) := by
+      BadChallengeOnCompletion knowledgeFin (stmt 0) messages table
+        ⟨6, Nat.lt_succ_of_le (show 6 ≤ 7 by decide)⟩ k := by
   apply exists_badChallenge_of_extraction_failure knowledgeFin (stmt 0) messages table
     ⟨6, Nat.lt_succ_of_le (show 6 ≤ 7 by decide)⟩ htrue
   change ¬ (6 + 7 ≤ 0)
@@ -488,5 +529,71 @@ example :
   have general := stateRestoration_knowledge_soundness verifier Rout knowledgeFin clampOut
     finOutputLaw (1 / 2) boundedFin adversary 0 trivial
   simpa [rounds] using general
+
+/-! ### Statement-indexed witness carriers -/
+
+/-- The witness includes an index bounded by the input statement. -/
+abbrev IndexedWitness (z : Stmt) : Type := Nat × Fin (z.1 + 1)
+
+/-- The indexed input relation bounds the numeric part of the witness. -/
+def indexedRin (z : Stmt) (w : IndexedWitness z) : Prop := Rin z w.1
+
+/-- The indexed output relation checks the same numeric witness on the completed transcript. -/
+def indexedValid (z : Stmt) (tr : PathAlong oracleSig (protocol rounds))
+    (w : IndexedWitness z) : Prop := valid z tr w.1
+
+/-- Backward extraction retains the statement-indexed component through every cursor. -/
+def indexedKnowledge : KnowledgeStateFunction oracleSig (protocol rounds) Stmt
+    (fun z _ => IndexedWitness z) IndexedWitness (fun _ => True) indexedRin indexedValid where
+  Witness z {_} _ _ := IndexedWitness z
+  toFun z {_} sp history w := knowledge.toFun z sp history w.1
+  extractRoot _ w := w
+  extractStep z {_ _} sp history x w := (knowledge.extractStep z sp history x w.1, w.2)
+  extractLeaf _ _ _ w := w
+  root _ _ _ h := h
+  send sp history z h x w hw := knowledge.send sp history z h x w.1 hw
+  leaf sp history z w hv := knowledge.leaf sp history z w.1 hv
+
+/-- The statement-indexed state function has the same bad-challenge events. -/
+theorem indexedBadChallenge_eq (z : Stmt) {a : OraclePos}
+    {next : OraclePoly.B a → OracleProtocol}
+    (sp : Cursor.Spine (protocol rounds) (.liftBind a next))
+    (history : PrefixMoves oracleSig sp) :
+    indexedKnowledge.badChallenge sp history z = knowledge.badChallenge sp history z := by
+  ext x
+  constructor
+  · rintro ⟨w, hbefore, hafter⟩
+    exact ⟨w.1, hbefore, hafter⟩
+  · rintro ⟨w, hbefore, hafter⟩
+    exact ⟨(w, ⟨0, Nat.zero_lt_succ _⟩), hbefore, hafter⟩
+
+/-- Statement-indexed extraction has the same uniform local error. -/
+theorem indexedBounded :
+    indexedKnowledge.LocallyBounded (uniformDraw rounds) (uniformEps rounds (1 / 2)) := by
+  intro z hz a next sp h history
+  simpa only [indexedBadChallenge_eq] using bounded z hz a next sp h history
+
+/-- Reading the adversary's number retains a well-typed statement index. -/
+def indexedReadOut (z : Stmt) (_ : PathAlong oracleSig (protocol rounds))
+    (w : Nat) : IndexedWitness z := (w, ⟨0, Nat.zero_lt_succ _⟩)
+
+/-- The accepted observation provides a valid statement-indexed output witness. -/
+theorem indexedOutputLaw (z : Stmt) (tr : PathAlong oracleSig (protocol rounds)) (t : Fin 8)
+    (w : Nat) (accepted : terminalObservation verifier z tr = some t) (related : Rout z tr t w) :
+    indexedValid z tr (indexedReadOut z tr w) := plainOutputLaw z tr t w accepted related
+
+/-- The restoration bound returns witnesses in the selected statement's own carrier. -/
+theorem indexed_game_bound :
+    Pr{let result ← (simulateQ randomOracle (verificationGame verifier adversary)).run' ∅}[
+      True ∧ (∃ t, result.2.2.1 = some t ∧ Rout result.1 result.2.1 t result.2.2.2) ∧
+      ¬ indexedRin result.1 (indexedKnowledge.extractAlong result.1 result.2.1
+        (indexedReadOut result.1 result.2.1 result.2.2.2))] ≤ 1 / 2 := by
+  have general := stateRestoration_knowledge_soundness verifier Rout indexedKnowledge
+    indexedReadOut indexedOutputLaw (1 / 2) indexedBounded adversary 0 trivial
+  simpa [rounds] using general
+
+/-- Indexed extraction preserves the input-dependent index while adding the message. -/
+example (z : Stmt) (c : Bool) (i : Fin (z.1 + 1)) :
+    indexedKnowledge.extractAlong z (path 7 c) (6, i) = (13, i) := rfl
 
 end Interaction.Core.StateRestorationTests

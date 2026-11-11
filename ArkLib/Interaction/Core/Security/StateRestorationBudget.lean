@@ -163,9 +163,9 @@ theorem restoredExecution_round_cost {Input Salt W : Type} (rounds : List Round)
 
 section Knowledge
 
-variable {S W Win Salt : Type} {rounds : List Round} {admissible : S → Prop}
-  {relIn : S → Win → Prop} {Wout : PathAlong oracleSig (protocol rounds) → Type}
-  {validOutput : (stmt : S) → (tr : PathAlong oracleSig (protocol rounds)) → Wout tr → Prop}
+variable {S W Salt : Type} {Win : S → Type} {rounds : List Round} {admissible : S → Prop}
+  {relIn : (stmt : S) → Win stmt → Prop} {Wout : S → PathAlong oracleSig (protocol rounds) → Type}
+  {validOutput : (stmt : S) → (tr : PathAlong oracleSig (protocol rounds)) → Wout stmt tr → Prop}
 
 /-- Knowledge soundness of the restored execution with per-round errors: for every adversary with
 at most `Q` queries, the probability that the selected input is admissible, the output read at the
@@ -175,7 +175,7 @@ theorem restoredExecution_knowledge_soundness_nonuniform [DecidableEq (Key S Sal
     (F : KnowledgeStateFunction oracleSig (protocol rounds) S Wout Win admissible relIn validOutput)
     (errors : RoundErrors rounds)
     (bounded : F.LocallyBounded (uniformDraw rounds) (roundEps errors))
-    (readOut : (stmt : S) → (tr : PathAlong oracleSig (protocol rounds)) → W → Wout tr)
+    (readOut : (stmt : S) → (tr : PathAlong oracleSig (protocol rounds)) → W → Wout stmt tr)
     (adversary : OracleComp (oracleSpec S Salt rounds) (S × Messages Salt rounds × W))
     (Q : ℕ) (queryBound : IsTotalQueryBound adversary Q) :
     Pr{let result ← (simulateQ randomOracle (restoredExecution rounds adversary)).run' ∅}[
@@ -194,12 +194,13 @@ end Knowledge
 
 section Games
 
-variable {rounds : List Round} {I J S T Salt W Win : Type} {A : I → Type} {B : J → Type}
+variable {rounds : List Round} {I J S T Salt W : Type} {A : I → Type} {B : J → Type}
+  {Win : S × (∀ i, A i) → Type}
   {inputs : OracleFamily I A} {outputs : OracleFamily J B}
-  {admissible : S × (∀ i, A i) → Prop} {relIn : S × (∀ i, A i) → Win → Prop}
-  {Wout : PathAlong oracleSig (protocol rounds) → Type}
+  {admissible : S × (∀ i, A i) → Prop} {relIn : (stmt : S × (∀ i, A i)) → Win stmt → Prop}
+  {Wout : (S × (∀ i, A i)) → PathAlong oracleSig (protocol rounds) → Type}
   {validOutput : (stmt : S × (∀ i, A i)) → (tr : PathAlong oracleSig (protocol rounds)) →
-    Wout tr → Prop}
+    Wout stmt tr → Prop}
 
 /-- State-restoration knowledge soundness of a verifier with per-round errors. -/
 theorem stateRestoration_knowledge_soundness_nonuniform
@@ -209,7 +210,7 @@ theorem stateRestoration_knowledge_soundness_nonuniform
     (F : KnowledgeStateFunction oracleSig (protocol rounds) (S × (∀ i, A i)) Wout Win admissible
       relIn validOutput)
     (readOut : (stmt : S × (∀ i, A i)) → (tr : PathAlong oracleSig (protocol rounds)) → W →
-      Wout tr)
+      Wout stmt tr)
     (outputLaw : ∀ stmt tr t w, terminalObservation V stmt tr = some t → relOut stmt tr t w →
       validOutput stmt tr (readOut stmt tr w))
     (errors : RoundErrors rounds)
@@ -238,7 +239,7 @@ theorem stateRestoration_oracle_knowledge_soundness_nonuniform
     (F : KnowledgeStateFunction oracleSig (protocol rounds) (S × (∀ i, A i)) Wout Win admissible
       relIn validOutput)
     (readOut : (stmt : S × (∀ i, A i)) → (tr : PathAlong oracleSig (protocol rounds)) → W →
-      Wout tr)
+      Wout stmt tr)
     (outputLaw : ∀ stmt tr claim w, closedTerminalObservation V stmt tr = some claim →
       relOut stmt tr claim w → validOutput stmt tr (readOut stmt tr w))
     (errors : RoundErrors rounds)
@@ -269,9 +270,9 @@ namespace Interaction.Core.KnowledgeStateFunction.MeasuredStages
 open PFunctor FreeM TwoParty.Lens OracleComp
 open Interaction.Core.StateRestoration
 
-variable {s : OracleProtocol} {S Win : Type} {W : PathAlong oracleSig s → Type}
-  {admissible : S → Prop} {relIn : S → Win → Prop}
-  {validOutput : (stmt : S) → (tr : PathAlong oracleSig s) → W tr → Prop}
+variable {s : OracleProtocol} {S : Type} {Win : S → Type} {W : S → PathAlong oracleSig s → Type}
+  {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
+  {validOutput : (stmt : S) → (tr : PathAlong oracleSig s) → W stmt tr → Prop}
   {F : KnowledgeStateFunction oracleSig s S W Win admissible relIn validOutput} {ω : Type}
 
 variable [AddCommMonoid ω] [PartialOrder ω] [IsOrderedAddMonoid ω]
@@ -304,8 +305,8 @@ theorem programFrom_budget_le_rounds (stages : MeasuredStages F ω) {stmt : S}
 leaf bound, plus `rounds.length` times the sum of the message and challenge bounds, plus the root
 bound. -/
 theorem programAlong_budget_le_protocol {rounds : List Round}
-    {Wout : PathAlong oracleSig (protocol rounds) → Type}
-    {valid : (stmt : S) → (tr : PathAlong oracleSig (protocol rounds)) → Wout tr → Prop}
+    {Wout : S → PathAlong oracleSig (protocol rounds) → Type}
+    {valid : (stmt : S) → (tr : PathAlong oracleSig (protocol rounds)) → Wout stmt tr → Prop}
     {G : KnowledgeStateFunction oracleSig (protocol rounds) S Wout Win admissible relIn valid}
     (stages : MeasuredStages G ω) {stmt : S}
     {rootBound messageBound challengeBound leafBound : ω}
@@ -318,8 +319,8 @@ theorem programAlong_budget_le_protocol {rounds : List Round}
 /-- Every execution path of the composed program along a transcript of `protocol rounds` costs at
 most the protocol budget. -/
 theorem programAlong_costAtMost_protocol {rounds : List Round}
-    {Wout : PathAlong oracleSig (protocol rounds) → Type}
-    {valid : (stmt : S) → (tr : PathAlong oracleSig (protocol rounds)) → Wout tr → Prop}
+    {Wout : S → PathAlong oracleSig (protocol rounds) → Type}
+    {valid : (stmt : S) → (tr : PathAlong oracleSig (protocol rounds)) → Wout stmt tr → Prop}
     {G : KnowledgeStateFunction oracleSig (protocol rounds) S Wout Win admissible relIn valid}
     (stages : MeasuredStages G ω) {stmt : S}
     {rootBound messageBound challengeBound leafBound : ω}
@@ -335,12 +336,13 @@ namespace Interaction.Core.MeasuredKnowledgeStateFunction
 open PFunctor FreeM TwoParty.Lens OracleComp OracleSpec Oracle
 open Interaction.Core.StateRestoration
 
-variable {rounds : List Round} {I J S T Salt W Win Kind : Type} [Finite Kind]
-  {A : I → Type} {B : J → Type} {inputs : OracleFamily I A} {outputs : OracleFamily J B}
-  {admissible : S × (∀ i, A i) → Prop} {relIn : S × (∀ i, A i) → Win → Prop}
-  {Wout : PathAlong oracleSig (protocol rounds) → Type}
+variable {rounds : List Round} {I J S T Salt W Kind : Type} [Finite Kind]
+  {A : I → Type} {B : J → Type} {Win : S × (∀ i, A i) → Type}
+  {inputs : OracleFamily I A} {outputs : OracleFamily J B}
+  {admissible : S × (∀ i, A i) → Prop} {relIn : (stmt : S × (∀ i, A i)) → Win stmt → Prop}
+  {Wout : (S × (∀ i, A i)) → PathAlong oracleSig (protocol rounds) → Type}
   {validOutput : (stmt : S × (∀ i, A i)) → (tr : PathAlong oracleSig (protocol rounds)) →
-    Wout tr → Prop}
+    Wout stmt tr → Prop}
 
 /-- A measured knowledge state function with per-round errors and per-node-kind stage bounds. The
 closed verification game has knowledge error at most `Q * max_j errors j + ∑ j, errors j`, and
@@ -353,7 +355,7 @@ theorem stateRestoration_oracle_knowledge_soundness_nonuniform
     (M : MeasuredKnowledgeStateFunction Kind oracleSig (protocol rounds) (S × (∀ i, A i)) Wout
       Win admissible relIn validOutput)
     (readOut : (stmt : S × (∀ i, A i)) → (tr : PathAlong oracleSig (protocol rounds)) → W →
-      Wout tr)
+      Wout stmt tr)
     (outputLaw : ∀ stmt tr claim w, closedTerminalObservation V stmt tr = some claim →
       relOut stmt tr claim w → validOutput stmt tr (readOut stmt tr w))
     (errors : RoundErrors rounds)
