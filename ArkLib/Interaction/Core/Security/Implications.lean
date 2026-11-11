@@ -917,7 +917,7 @@ theorem OracleVerifier.soundnessUsing_of_localSoundness
   have hrun : V.run stmt.1 stmt.2 p = TwoParty.Lens.run s (Prover.simulate liftAmbient p)
       (sampler oracleSig s fun c => liftM ((ambient + challengeSpec oracleSig s).query (.inr c)))
         >>= fun r => k r.1 r.2.1 := by
-    unfold OracleVerifier.run
+    rw [OracleVerifier.run_eq]
     refine bind_congr fun r => ?_
     exact LawfulMonad.bind_pure_comp _ _
   rw [hrun]

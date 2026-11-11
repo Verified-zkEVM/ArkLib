@@ -38,7 +38,7 @@ noncomputable section
 /-- A final claim: the claimed bit and the output data. -/
 abbrev Claim := Bool × (∀ _ : Unit, Bool)
 /-- The observation of a run of the composed hidden-bit verifier. -/
-abbrev Obs := Observation oracleSig bitCombined (fun _ => Nat) (fun _ => Claim)
+abbrev Obs := Observation oracleSig.{0, 0} bitCombined (fun _ => Nat) (fun _ => Claim)
 
 /-- A final claim is true when its output oracle answers its statement. -/
 def TruthFinal (claim : Claim) : Prop := claim.2 () = claim.1
@@ -48,7 +48,7 @@ def Success (obs : Obs) : Prop := obs.2.2.map TruthFinal = some True
 def Answer (obs : Obs) : Option (Bool × Bool) := obs.2.2.map fun claim => (claim.2 (), claim.1)
 
 /-- The append boundary of a hidden-bit run. -/
-abbrev Boundary := RunBoundary oracleSig bitAmbient bitFirst (fun _ => bitSecond) (fun _ => Nat)
+abbrev Boundary := RunBoundary oracleSig bitAmbient bitFirst.{0} (fun _ => bitSecond) (fun _ => Nat)
 
 /-- The prefix interaction of a hidden-bit run, up to its append boundary. -/
 abbrev prefixRun (prover : Prover oracleSig bitAmbient bitCombined (fun _ => Nat)) :=
