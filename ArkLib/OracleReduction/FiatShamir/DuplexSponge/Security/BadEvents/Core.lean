@@ -22,14 +22,15 @@ The bad-event surface mirrors the paper definitions directly:
 - **Collision family (Def 5.9):** `collisionFwdFwd` / `collisionBwdBwd` / `collisionFwdBwd` /
   `collisionBwdFwd` / `collisionPerm`, with paper aliases `E_col_p` / `E_col_pinv` /
   `E_col_p_pinv` / `E_col_pinv_p` / `E_prp`.
-- **BackTrack-family events (Defs 5.11, 5.13, 5.15):** `E_inv`, `E_fork` (with subcases
-  `E_fork_h`, `E_fork_p`, `E_fork_h_p`), and `E_time` (with subcases `E_time_h`, `E_time_p`).
+- **BackTrack-family events (Defs 5.11, 5.13, 5.15):** `E_inv`, `E_fork`, and `E_time` (with
+  subcases `E_time_h`, `E_time_p`).
   These take `(S_BT : Backtrack.S_BT trace state)` as an explicit parameter and quantify over
   the family `S_BT.seqFamily` and the index-list family `Backtrack.J_BT S_BT` (CO25 Defs 5.3 &
   5.4).
 
 Lemmas `lemma_5_12` / `lemma_5_14` / `lemma_5_16` are the paper-faithful "if `E(tr) = 0` then
-the BackTrack-family event vanishes" statements.
+the BackTrack-family event vanishes" statements. Their proofs use only `¬E_dup`
+(`not_E_dup_of_not_E`), so they also hold under the paper's weaker `¬E`.
 -/
 
 @[expose] public section
@@ -495,13 +496,21 @@ E_func(tr) := ∃ j > 0 :
       (tr̄_{j'} = (p, s_in', s_out) ∧ s_in' ≠ s_in)
 ```
 
-Note: `E_func(tr)` never holds for a true permutation `p` and its inverse `p⁻¹`, but may hold
-(with small probability) for the D2SQuery simulator.
+Note: `E_func(tr)` never holds for a true permutation `p` and its inverse `p⁻¹`. For the
+`D2SQuery` simulator it is unlikely only if `D2SQuery` records every answer it gives in `tr_∇.p`:
+a replayed query whose earlier answer is missing from `tr_∇.p` is answered afresh, and then
+`E_func` holds.
 
-**Strengthening:** bidirectional. Case 1 (`j`-th entry `p`-forward) is Eq. 27; Case 2 (`j`-th entry
-`p⁻¹`) has no paper counterpart but is *required* by `not_collisionFwdBwd_of_not_combined`
-(Lemma 5.10, Item 3). It symmetrically excludes a later forward query on the same input that
-disagrees with an earlier inverse query; the `≠`-output guards exclude redundant copies. -/
+**Strengthening:** bidirectional. Case 1 (`j`-th entry `p`-forward) is Eq. 27; Case 2 (`j`-th
+entry `p⁻¹`) has no paper counterpart. It has two sub-cases:
+- **Case 2b** (an earlier `(p, s_in', s_out)`, `s_in' ≠ s_in`) is *necessary*: CO25 Lemma 5.10
+  fails without it. The base trace `[(h, x, c), (p, s₀, s₁), (p, s₁, s₂), (p⁻¹, s₂, s₁')]` with
+  `s₁' ≠ s₁` and a fresh capacity for `s₁'` has `E = 0` under Eq. 27 alone, but
+  `E_{col,p,p⁻¹} = 1` (Def 5.9 Item 3). `not_collisionFwdBwd_of_not_combined` uses Case 2b.
+- **Case 2a** (an earlier `(p⁻¹, s_out, s_in')`) is used by no proof; it keeps the definition
+  symmetric.
+
+The `≠`-output guards exclude redundant copies. -/
 def E_func : Prop :=
   let baseTrace := getBaseTrace trace
   ∃ j : Fin baseTrace.length, ∃ stateIn stateOut : CanonicalSpongeState U,
@@ -528,7 +537,7 @@ def E : Prop :=
 end Def57_TraceOnlyBadEvents
 
 
-/-! ## Definition 5.9 — permutation collisions; paper `E_prp`; well-formed trace predicate -/
+/-! ## Definition 5.9 — permutation collisions; paper `E_prp` -/
 section Def5_9_CollisionsAndConsistency
 
 /-! Then we define other bad events that don't hold (`= 0`)
@@ -683,8 +692,8 @@ lemma not_collisionBwdFwd_of_not_combined (h : ¬ E trace) : ¬ collisionBwdFwd 
       Or.inr (Or.inr (Or.inr (Or.inl ⟨⟨j, hj⟩, h_lt.le, sI, sO', hgj, rfl⟩)))⟩
 
 /-- CO25 Lemma 5.10 — helper.
-For a well-formed `(h, p, p⁻¹)` trace, if `E(tr) = 0`, then the exact paper-form
-`E_prp(tr)` does not hold. -/
+For every `(h, p, p⁻¹)` trace, if `E(tr) = 0`, then the exact paper-form `E_prp(tr)` does not
+hold. Item 3 needs Case 2b of `E_func`. -/
 lemma not_collisionPerm_of_not_combined
     (h : ¬ E trace) : ¬ E_prp trace := by
   intro hprp
@@ -695,7 +704,8 @@ lemma not_collisionPerm_of_not_combined
   · exact not_collisionBwdFwd_of_not_combined (trace := trace) h hbf
 
 /-- CO25 Lemma 5.10.
-For a well-formed `(h, p, p⁻¹)` trace, if `E(tr) = 0` then `E_prp(tr) = 0`. -/
+For every `(h, p, p⁻¹)` trace, if `E(tr) = 0` then `E_prp(tr) = 0`. Here `E` includes Case 2b
+of `E_func`, without which the paper's statement fails (see `E_func`). -/
 theorem lemma_5_10 (h : ¬ E trace) : ¬ E_prp trace :=
   not_collisionPerm_of_not_combined (trace := trace) h
 
@@ -894,7 +904,8 @@ Patch §5.2: by **minimal inversion**.  Suppose some step's representative is a 
 minimal such step `ι*` (strong induction).  If `ι* = 0`, the hash anchor and the inverted step are
 two distinct base entries with equal answer capacity (`acap = s_{C,in,0}`), contradicting (B1).  If
 `ι* ≥ 1`, minimality makes step `ι*-1` forward, and the chain condition forces its answer capacity
-to equal the inverted step's — again two distinct base entries colliding, contradicting (B1). -/
+to equal the inverted step's — again two distinct base entries colliding, contradicting (B1).
+The proof uses only `¬E_dup`. -/
 lemma lemma_5_12 (h : ¬ E trace)
     (seq_BT : Backtrack.S_BT trace state) :
     ¬ E_inv trace state seq_BT := by
@@ -1053,46 +1064,9 @@ end Def511_Lemma512
 /-! ## Lemma 5.14 -/
 section Def513_Lemma514
 
-/-- CO25 Definition 5.13 / Eq. 39 — `E_{fork,h}(tr, s)`: collision of two outputs of `h`.
-Two backtrack sequences in `𝒮_BT(tr, s)` have distinct input statements `𝕩^{(1)} ≠ 𝕩^{(2)}` but
-their first input states share the same capacity segment `s_{C,in,0}^{(1)} = s_{C,in,0}^{(2)}`. -/
-def E_fork_h (S_BT : Backtrack.S_BT trace state) : Prop :=
-  ∃ S₁ ∈ S_BT.seqFamily, ∃ S₂ ∈ S_BT.seqFamily,
-    S₁.stmt ≠ S₂.stmt ∧
-    (S₁.inputState[0]'(by
-      have := S₁.inputState_length_eq_outputState_length_succ; omega)).capacitySegment =
-    (S₂.inputState[0]'(by
-      have := S₂.inputState_length_eq_outputState_length_succ; omega)).capacitySegment
-
-/-- CO25 Definition 5.13 / Eq. 40 — `E_{fork,p}(tr, s)`: capacity-segment collision of two
-outputs of `p`.  There exist `S^{(1)}, S^{(2)} ∈ 𝒮_BT(tr, s)` and indices
-`ι_1 ∈ [0, m_1 - 1]`, `ι_2 ∈ [0, m_2 - 1]` with `s_{in,ι_1}^{(1)} ≠ s_{in,ι_2}^{(2)}` (full input
-states differ) and `s_{C,out,ι_1}^{(1)} = s_{C,out,ι_2}^{(2)}` (output capacity segments
-coincide). -/
-def E_fork_p (S_BT : Backtrack.S_BT trace state) : Prop :=
-  ∃ S₁ ∈ S_BT.seqFamily, ∃ S₂ ∈ S_BT.seqFamily,
-  ∃ ι₁ : Fin S₁.outputState.length, ∃ ι₂ : Fin S₂.outputState.length,
-    S₁.inputState[ι₁.val]'(by have := S₁.inputState_length_eq_outputState_length_succ; omega) ≠
-    S₂.inputState[ι₂.val]'(by have := S₂.inputState_length_eq_outputState_length_succ; omega) ∧
-    S₁.outputState[ι₁].capacitySegment = S₂.outputState[ι₂].capacitySegment
-
-/-- CO25 Definition 5.13 / Eq. 41 — `E_{fork,h,p}(tr, s)`: collision of `h` with the output
-capacity segment of a query to `p`.  There exist `S^{(1)}, S^{(2)} ∈ 𝒮_BT(tr, s)` and
-`ι ∈ [m_2 - 1]` (paper notation: `{1, …, m₂ - 1}`) with
-`s_{C,in,0}^{(1)} = s_{C,out,ι}^{(2)}`.
-
-Note: `ι ≥ 1` is required by the paper — the `ι = 0` case cannot arise in the
-exhaustiveness proof (Claim 5.19) because it would be handled by `E_fork_h` instead. -/
-def E_fork_h_p (S_BT : Backtrack.S_BT trace state) : Prop :=
-  ∃ S₁ ∈ S_BT.seqFamily, ∃ S₂ ∈ S_BT.seqFamily,
-  ∃ ι : Fin S₂.outputState.length,
-    0 < ι.val ∧ (S₁.inputState[0]'(by
-      have := S₁.inputState_length_eq_outputState_length_succ; omega)).capacitySegment =
-    S₂.outputState[ι].capacitySegment
-
 /-- CO25 Definition 5.13 — `E_fork(tr, s)`: the backtrack family has multiple sequences.
-`E_fork_h`, `E_fork_p`, and `E_fork_h_p` are the paper's unconsumed special cases
-(Eqs. 39–41); their exhaustiveness is not formalized here. -/
+The paper's special cases `E_{fork,h}`, `E_{fork,p}`, `E_{fork,h,p}` (Eqs. 39–41) are not
+formalized: no proof uses them, and Lemma 5.14 goes through `¬E_dup` directly. -/
 def E_fork (S_BT : Backtrack.S_BT trace state) : Prop :=
   S_BT.seqFamily.card > 1
 
@@ -1256,7 +1230,8 @@ private lemma bt_seq_eq_of_le (h : ¬ E trace) (S_BT : Backtrack.S_BT trace stat
       exact (fwdEntry_inj he).2
   exact Backtrack.BacktrackSequence.ext hstmt hin hout
 
-/-- CO25 Lemma 5.14 — If `E(tr) = 0` then `E_fork(tr, s) = 0`. -/
+/-- CO25 Lemma 5.14 — If `E(tr) = 0` then `E_fork(tr, s) = 0`. The proof uses only `¬E_dup`.
+It holds for every family `S_BT`, including `Backtrack.canonicalBacktrackFamily`. -/
 lemma lemma_5_14 (h : ¬ E trace)
     (S_BT : Backtrack.S_BT trace state) :
     ¬ E_fork trace state S_BT := by
@@ -1303,7 +1278,7 @@ def E_time (S_BT : Backtrack.S_BT trace state) : Prop :=
 Patch §5.4: by Lemma 5.12 every step is forward (`p`), so each index points at a base `p` entry and
 the hash index at a base `h` entry, in trace order = base order.  An out-of-order pair would make a
 *later* base entry's answer capacity equal an *earlier* base entry's query capacity (via the chain
-condition / hash anchor), contradicting (B2). -/
+condition / hash anchor), contradicting (B2). The proof uses only `¬E_dup`. -/
 lemma lemma_5_16 (h : ¬ E trace)
     (S_BT : Backtrack.S_BT trace state) :
     ¬ E_time trace state S_BT := by
