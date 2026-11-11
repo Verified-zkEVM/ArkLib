@@ -167,7 +167,7 @@ private def lintRepository (config : Config) : IO UInt32 := do
   for path in ← arkLibPaths do
     let content ← IO.FS.readFile path
     let lines := sourceLines content
-    let mut violations := lintLines lines path.toString
+    let mut violations := lintLines lines
     if content.contains "\r\n" then
       violations := violations.push
         { code := "ERR_WIN", line := 1, message := "Windows line endings; use LF" }
@@ -181,7 +181,7 @@ private def lintRepository (config : Config) : IO UInt32 := do
   if errorCount == 0 then
     IO.println "Lean source style checks passed"
   else
-    IO.eprintln s!"lint-style: found {errorCount} violation(s); only the authorized oracle protocol alias exception is supported"
+    IO.eprintln s!"lint-style: found {errorCount} violation(s); no exceptions or suppressions are supported"
   return violationExitCode errorCount
 
 /-- Entry point for `lake exe lint-style`. -/

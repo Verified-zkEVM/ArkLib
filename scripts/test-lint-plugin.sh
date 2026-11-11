@@ -47,27 +47,4 @@ for token in '$ᵖ' 'Pr_{' 'Pr[' '𝒮['; do
   grep -Fq "Retired probability notation \`$token\`" "$fixture_tmp/probability-rejected.log"
 done
 
-alias_fixture="scripts/LintStyleFixtures/OracleProtocolAlias.lean"
-alias_path="ArkLib/Interaction/Core/Protocol.lean"
-lake env lean --plugin="$plugin_path" --stdin "$alias_path" < "$alias_fixture"
-if lake env lean --plugin="$plugin_path" "$alias_fixture" \
-    >"$fixture_tmp/alias-module.log" 2>&1; then
-  echo "ERROR: oracle protocol exception applied in another module" >&2
-  exit 1
-fi
-grep -Fq 'Forbidden `set_option linter.*`' "$fixture_tmp/alias-module.log"
-for mutation in global name body; do
-  case "$mutation" in
-    global) sed 's/linter.checkUnivs false in/linter.checkUnivs false/' "$alias_fixture" ;;
-    name) sed 's/abbrev OracleProtocol :=/abbrev AnotherProtocol :=/' "$alias_fixture" ;;
-    body) sed 's/FreeM OraclePoly.{u, q} PUnit.{u + 1}/Nat/' "$alias_fixture" ;;
-  esac > "$fixture_tmp/alias-$mutation.lean"
-  if lake env lean --plugin="$plugin_path" --stdin "$alias_path" \
-      < "$fixture_tmp/alias-$mutation.lean" > "$fixture_tmp/alias-$mutation.log" 2>&1; then
-    echo "ERROR: oracle protocol exception accepted altered $mutation" >&2
-    exit 1
-  fi
-  grep -Fq 'Forbidden `set_option linter.*`' "$fixture_tmp/alias-$mutation.log"
-done
-
 echo "ArkLib source-policy plugin fixtures passed"
