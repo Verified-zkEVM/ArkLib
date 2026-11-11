@@ -66,7 +66,7 @@ abbrev resources (announced : Bool) :=
 3, and reads the final sent oracle. It accepts the latest answer plus the challenge if the
 challenge is the input plus the first answer and the prover announced `true`, and decides 0 on
 `false`. -/
-def verifier : OracleVerifier ambient protocol Unit Nat inputs noOutputs where
+def verifier : OracleVerifier ambient protocol Unit (fun _ => Nat) inputs (fun _ => noOutputs) where
   decide _ p v := by
     rcases p with ⟨announced, ⟨⟩, ⟨⟩, ⟨⟩, ⟨⟩⟩
     exact OptionT.mk do
@@ -112,12 +112,12 @@ def publicResult (hidden : Nat) : PathAlong viewSig protocol × Option Nat :=
   ((toView protocol (observed hidden).1.1).val, (observed hidden).1.2.2.map Prod.fst)
 
 -- ExecutionExample 1, restated: the frozen verifier computes its challenge 7 + 11 by querying.
--- Challenges are sampled (Dec12), so the sampler draws 18; the decision checks it against the
+-- Challenges are sampled, so the sampler draws 18; the decision checks it against the
 -- queried input and first message and returns the final message 19 plus 18. For every hidden value.
 example (hidden : Nat) : (observed hidden).1.2.2.map Prod.fst = some 37 := rfl
 
 -- ExecutionExample 2, restated: the frozen schedule interleaves verifier effects between the
--- prover's. The verifier is passive (Dec2, Dec12): the prover's events 1 and 4, then the decision's
+-- prover's. The verifier is passive: the prover's events 1 and 4, then the decision's
 -- events 0, 5, 2 and 3, each once, for every hidden value.
 example (hidden : Nat) : (observed hidden).2 = [1, 4, 0, 5, 2, 3] := rfl
 
@@ -141,14 +141,16 @@ example (hidden₁ hidden₂ : Nat) : publicResult hidden₁ = publicResult hidd
 -- is `PUnit`, so a decision reading the payload's hidden coordinate does not elaborate.
 example : True := by
   fail_if_success
-    have _ : OracleVerifier ambient opaqueProtocol Unit Nat inputs noOutputs :=
+    have _ : OracleVerifier ambient opaqueProtocol Unit (fun _ => Nat) inputs
+        (fun _ => noOutputs) :=
       { decide := fun _ _ v => pure (show Nat × Nat from v.val.1).2
         outputMap := fun _ p _ => noOutputMap (sumFamily inputs (pathFamily opaqueProtocol p)) }
   trivial
 
 -- ExecutionExample 8, restated: its positive counterpart reaches the payload only through the
 -- query interface, which answers the observable coordinate.
-example : OracleVerifier ambient opaqueProtocol Unit Nat inputs noOutputs where
+example : OracleVerifier ambient opaqueProtocol Unit (fun _ => Nat) inputs
+    (fun _ => noOutputs) where
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact liftM ((ambient + (sumFamily inputs (pathFamily opaqueProtocol ⟨⟨⟩, ⟨⟩⟩)).spec).query
@@ -156,7 +158,7 @@ example : OracleVerifier ambient opaqueProtocol Unit Nat inputs noOutputs where
   outputMap _ p _ := noOutputMap (sumFamily inputs (pathFamily opaqueProtocol p))
 
 -- ExecutionExample 10, restated: the frozen row erases the oracle executor to an ordinary paired
--- run through tree conversions, which are retired (Dec5). The oracle verifier's run of these
+-- run through tree conversions, which are retired. The oracle verifier's run of these
 -- strategies is, by definition, the paired run against the sampler followed by the decision with
 -- its resource queries answered from the input and this run's payloads.
 example (hidden : Nat) :
@@ -214,7 +216,7 @@ abbrev suffixResources := sumFamily inputs (pathFamily opaqueProtocol ⟨⟨⟩,
 /-- The prefix decision records 11, reads its sent oracle, records 12, reads the input, and passes
 the sent answer on, or rejects. Its output map forwards the input. -/
 def firstVerifier (proceed : Bool) :
-    OracleVerifier ambient firstProtocol Unit Nat inputs inputs where
+    OracleVerifier ambient firstProtocol Unit (fun _ => Nat) inputs (fun _ => inputs) where
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩, ⟨⟩⟩
     exact OptionT.mk do
@@ -227,7 +229,8 @@ def firstVerifier (proceed : Bool) :
     (fun _ => .inl ()) : OracleMap _ inputs)
 
 /-- The suffix decision records 16 and 17, reads its sent oracle, and adds the prefix value. -/
-def secondVerifier : OracleVerifier ambient opaqueProtocol Nat Nat inputs noOutputs where
+def secondVerifier :
+    OracleVerifier ambient opaqueProtocol Nat (fun _ => Nat) inputs (fun _ => noOutputs) where
   decide mid p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact do
@@ -310,7 +313,7 @@ example (draw hidden : Nat) :
   rfl
 
 -- ExecutionExample 22, restated: the frozen abort comes from an `Option` challenge. Here the
--- prefix decision rejects at the end (Dec2, Dec11, D5): the verdict is `none`, the suffix
+-- prefix decision rejects at the end: the verdict is `none`, the suffix
 -- interaction still runs (event 15), and the suffix decision's events 16 and 17 are skipped.
 example (draw hidden : Nat) :
     summary false draw hidden = (⟨⟨⟩, ⟨⟩, ⟨⟩, ⟨⟩⟩, none, hidden + 14, [10, 14, 15, 11, 12]) := by
@@ -319,7 +322,7 @@ example (draw hidden : Nat) :
   rfl
 
 -- ExecutionExample 9, restated: the frozen row checks that a verifier node before the second send
--- cannot query the second oracle. A decision's resources are fixed by its own shape path (D6): the
+-- cannot query the second oracle. A decision's resources are fixed by its own shape path: the
 -- composed decision can name the second sent oracle, the prefix decision cannot.
 example : OracleComp (ambient +
     (sumFamily inputs (pathFamily combined ⟨⟨⟩, ⟨⟩, ⟨⟩, ⟨⟩⟩)).spec) Nat :=
@@ -341,14 +344,16 @@ an end decision and follows the suffix prover. The two orders differ. -/
 abbrev done : OracleProtocol := .pure ⟨⟩
 
 /-- The completed decision records 40 and forwards the input. -/
-def completedVerifier : OracleVerifier ambient done Unit Unit inputs inputs where
+def completedVerifier :
+    OracleVerifier ambient done Unit (fun _ => Unit) inputs (fun _ => inputs) where
   decide _ p _ := do
     let _ ← liftM ((ambient + (sumFamily inputs (pathFamily done p)).spec).query (.inl 40))
   outputMap _ p _ := (OracleMap.embedding (sumFamily inputs (pathFamily done p))
     (fun _ => .inl ()) : OracleMap _ inputs)
 
 /-- A decision without effects. -/
-def quietVerifier : OracleVerifier ambient opaqueProtocol Unit Unit inputs noOutputs where
+def quietVerifier :
+    OracleVerifier ambient opaqueProtocol Unit (fun _ => Unit) inputs (fun _ => noOutputs) where
   decide _ _ _ := pure ()
   outputMap _ p _ := noOutputMap (sumFamily inputs (pathFamily opaqueProtocol p))
 
@@ -433,7 +438,8 @@ example : ((simulateQ tagLogger completedThen).run []).2 ≠
 abbrev combinedPublic : OracleProtocol := firstPublic.append (fun _ => secondPublic)
 
 /-- The prefix decision records 49 and decides 9. -/
-def firstPublicVerifier : OracleVerifier ambient firstPublic Unit Nat inputs inputs where
+def firstPublicVerifier :
+    OracleVerifier ambient firstPublic Unit (fun _ => Nat) inputs (fun _ => inputs) where
   decide _ p _ := do
     let _ ← liftM ((ambient + (sumFamily inputs (pathFamily firstPublic p)).spec).query (.inl 49))
     pure 9
@@ -442,7 +448,8 @@ def firstPublicVerifier : OracleVerifier ambient firstPublic Unit Nat inputs inp
 
 /-- The suffix decision reads answer 50, records 52, and accepts the sampled challenge if it is
 that answer plus the prefix value. -/
-def secondPublicVerifier : OracleVerifier ambient secondPublic Nat Nat inputs noOutputs where
+def secondPublicVerifier :
+    OracleVerifier ambient secondPublic Nat (fun _ => Nat) inputs (fun _ => noOutputs) where
   decide mid p v := OptionT.mk do
     let answer : Nat ← liftM ((ambient + (sumFamily inputs (pathFamily secondPublic p)).spec).query
       (.inl 50))
@@ -492,7 +499,7 @@ def observedPublic (hidden : Nat) :=
   (simulateQ (publicLogger 59) (publicVerifier.run () seven (publicProver hidden))).run []
 
 -- ExecutionExample 28, restated: the frozen suffix verifier computes its challenge from an
--- ambient answer at the seam. The challenge is sampled (Dec12): the draw (logged as its value 59)
+-- ambient answer at the seam. The challenge is sampled: the draw (logged as its value 59)
 -- follows the prover's event 48 and precedes its response 51; the decisions' events 49, 50 and 52
 -- follow, for every hidden value.
 example (hidden : Nat) : (observedPublic hidden).2 = [48, 59, 51, 49, 50, 52] := by

@@ -61,7 +61,7 @@ def isEven {J : Type} {B : J → Type} (messages : OracleFamily J B) :
 
 /-- The prefix decision records 1, reads the input and decides its parity, or rejects. -/
 def firstVerifier (accept : Bool) :
-    OracleVerifier ambient done Unit Bool naturals naturals where
+    OracleVerifier ambient done Unit (fun _ => Bool) naturals (fun _ => naturals) where
   decide _ p _ := OptionT.mk do
     let _ ← liftM ((ambient + (sumFamily naturals (pathFamily done p)).spec).query (.inl 1))
     let old : Nat ← liftM ((ambient + (sumFamily naturals (pathFamily done p)).spec).query
@@ -84,7 +84,8 @@ def messageValue : Path branchProtocol → Nat
   | ⟨false, b, ⟨⟩⟩ => if show Bool from b then 100 else 200
 
 /-- The suffix decision records 3, reads the exported oracle, and adds the message value. -/
-def secondVerifier : OracleVerifier ambient branchProtocol Bool Nat naturals booleans where
+def secondVerifier :
+    OracleVerifier ambient branchProtocol Bool (fun _ => Nat) naturals (fun _ => booleans) where
   decide _ p _ := do
     let _ ← liftM ((ambient + (sumFamily naturals (pathFamily branchProtocol p)).spec).query
       (.inl 3))

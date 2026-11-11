@@ -55,7 +55,8 @@ def outputMap : OracleMap resources naturals where
     rfl
 
 /-- The decision records 1, records 2, reads the sent oracle, and accepts with it or rejects. -/
-def verifier (accept : Bool) : OracleVerifier ambient protocol Unit Nat naturals naturals where
+def verifier (accept : Bool) : OracleVerifier ambient protocol Unit (fun _ => Nat) naturals
+    (fun _ => naturals) where
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact OptionT.mk do

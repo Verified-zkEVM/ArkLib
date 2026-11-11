@@ -30,7 +30,7 @@ universe u
 /-- Compile-time canary: a reduction elaborates at an arbitrary universe. -/
 abbrev UniverseCanary {ι : Type u} (ambient : OracleSpec.{u, u} ι) (s : Protocol.{u})
     (Statement Witness StatementOut : Type u) (WitnessOut : PathAlong plainSig s → Type u) :=
-  Reduction ambient s Statement Witness StatementOut WitnessOut
+  Reduction ambient s Statement Witness (fun _ => StatementOut) WitnessOut
 
 end UniverseCanary
 
@@ -53,7 +53,7 @@ def prefixProver (bit : Bool) : Prover plainSig ambient prefixTree (fun _ => Boo
   pure ⟨bit, pure (bit, ())⟩
 
 /-- The prefix verifier forwards the sent bit as its intermediate statement. -/
-def prefixVerifier : Verifier ambient prefixTree Unit Bool where
+def prefixVerifier : Verifier ambient prefixTree Unit (fun _ => Bool) where
   decide _ p _ := pure p.1
 
 /-- The suffix prover emits a branch-specific message and claims the statement 0 or 2.
@@ -66,12 +66,12 @@ def suffixProver : (p : Path prefixTree) →
   | ⟨true, ⟨⟩⟩ => pure ⟨(2 : Fin 3), pure (2, ())⟩
 
 /-- The suffix verifier turns its branch-specific message into a natural-number statement. -/
-def suffixVerifier : (p : Path prefixTree) → Verifier ambient (suffixTree p) Bool Nat
+def suffixVerifier : (p : Path prefixTree) → Verifier ambient (suffixTree p) Bool (fun _ => Nat)
   | ⟨false, ⟨⟩⟩ => ⟨fun _ q _ => pure (if (show Bool from q.1) then 1 else 0)⟩
   | ⟨true, ⟨⟩⟩ => ⟨fun _ q _ => pure (show Fin 3 from q.1).val⟩
 
 /-- The dependent two-stage reduction: the suffix prover is chosen by the prefix transcript. -/
-def composed : Reduction ambient composedTree Unit Bool Nat (fun _ => Nat × Unit) where
+def composed : Reduction ambient composedTree Unit Bool (fun _ => Nat) (fun _ => Nat × Unit) where
   prover _ bit := Prover.append (prefixProver bit)
     (fun tr _ => pure (suffixProver (projectPathAlong plainSig prefixTree tr)))
   verifier := prefixVerifier.append suffixVerifier
@@ -121,7 +121,7 @@ def disagreeingProver (bit : Bool) : Prover plainSig ambient prefixTree (fun _ =
   pure ⟨bit, pure (true, 7)⟩
 
 /-- The prefix verifier decides `false`, whatever is sent. -/
-def disagreeingVerifier : Verifier ambient prefixTree Unit Bool where
+def disagreeingVerifier : Verifier ambient prefixTree Unit (fun _ => Bool) where
   decide _ _ _ := pure false
 
 /-- A terminal suffix exposing the statement and witness it actually received. -/
@@ -129,7 +129,7 @@ def observingProver (mid : Bool × Nat) : Prover plainSig ambient (.pure ⟨⟩)
   pure (mid.1, mid.2 + 1)
 
 /-- A terminal suffix decision that returns the statement it received. -/
-def observingVerifier : Verifier ambient (.pure ⟨⟩) Bool Bool where
+def observingVerifier : Verifier ambient (.pure ⟨⟩) Bool (fun _ => Bool) where
   decide stmt _ _ := pure stmt
 
 /-- The prefix followed by a terminal suffix. -/
@@ -137,7 +137,8 @@ abbrev observedTree : Protocol := prefixTree.append (fun _ => .pure ⟨⟩)
 
 /-- The suffix prover is built from the prefix prover's output; the suffix verifier receives the
 prefix verifier's decided statement. -/
-def disagreeing : Reduction ambient observedTree Unit Bool Bool (fun _ => Bool × Nat) where
+def disagreeing : Reduction ambient observedTree Unit Bool (fun _ => Bool)
+    (fun _ => Bool × Nat) where
   prover _ bit := Prover.append (disagreeingProver bit) (fun _ mid => pure (observingProver mid))
   verifier := disagreeingVerifier.append (fun _ => observingVerifier)
 

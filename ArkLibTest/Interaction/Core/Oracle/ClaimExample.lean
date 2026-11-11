@@ -25,8 +25,8 @@ namespace Interaction.Core.ClaimExampleTests
     { Query := Unit
       toOC := { spec := fun _ => Nat, impl := fun _ value => value.1 } }
 
--- ClaimExample 1, restated: the frozen row compares two closed claims. Claims are concrete data
--- (OQ8), so the restated row compares the behavior of the two realizations: the unobservable tag
+-- ClaimExample 1, restated: the frozen row compares two closed claims. Claims are concrete data,
+-- so the restated row compares the behavior of the two realizations: the unobservable tag
 -- vanishes.
 example : tagged.behaviorOfRealizations (fun _ => (7, true)) =
     tagged.behaviorOfRealizations (fun _ => (7, false)) := rfl
@@ -46,7 +46,7 @@ def answerProblem : Problem claims where
   rel := fun _ claim wit => observed claim ∧ wit.val = claim.1
   rel_admissible := fun _ _ _ h => h.1
 
--- ClaimExample 2, restated (OQ8): the claim-dependent witness relation holds on the concrete claim
+-- ClaimExample 2, restated: the claim-dependent witness relation holds on the concrete claim
 -- with statement 7 and tagged data `(7, true)`.
 example : answerProblem.language () (7, fun _ => (7, true)) :=
   ⟨⟨7, by decide⟩, rfl, rfl⟩
