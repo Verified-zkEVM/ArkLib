@@ -100,9 +100,13 @@ The [source-to-port inventory](logged-execution-disposition.md) lists each froze
 assertion, its exact port or missing interface, and the assertions retired by the approved passive
 verifier and fixed-shape premises. Its unresolved rows remain migration obligations.
 
-## Stage fold and oracle execution acceptance clients
+## Stage composition and oracle execution acceptance clients
 
 The [stage and execution inventory](stage-execution-disposition.md) lists each frozen assertion of
 the claim, composition, core-run, execution and dependent-reduction clients and each replaced
 ordered-execution law, with its exact port, the premise that retires part of it, or the removed
-mechanism it belonged to. It also records the universe placement of stage interfaces.
+mechanism it belonged to. The frozen ordered execution decided each stage before the next one and
+skipped the later stages after a rejection; the port composes passive stages, runs every
+interaction before the decisions, and selects later stages by shape paths only. The inventory
+also records the universe placement of stage chains. Its one unresolved row, the split of a chain
+at an arbitrary stage, remains a migration obligation.

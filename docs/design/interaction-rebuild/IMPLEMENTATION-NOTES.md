@@ -263,36 +263,52 @@ routing example.
 
 The interaction layer had no replacement for the frozen ordered execution of a finite family of
 closed stages (`ExecutionInterface`, `ClosedStage`, `OrderedExecution.run` in
-`ArkLib/Interaction/Oracle/Composition.lean`). `ArkLib/Interaction/Core/Stages.lean` adds it.
+`ArkLib/Interaction/Oracle/Composition.lean`). `ArkLib/Interaction/Core/Stages.lean` adds an n-ary
+composition through the passive append `OracleVerifier.append` (record D5).
 
-- `foldStages n State step` runs `n` optional steps across boundary types
-  `State : Fin (n + 1) → Type u` in any monad and stops at the first rejection. Its laws are
-  `foldStages_zero`, `foldStages_succ`, `foldStages_one`, `foldStages_succ_of_reject`,
-  `foldStages_succ_last`, the split laws `foldStages_add` (the first `a` of `a + b` stages, then
-  the last `b`, without a cast) and `foldStages_split` (any `a + b = k`, with the cast of the
-  frozen `run_append`), `simulateQ_foldStages`, and invariant propagation deterministically
-  (`foldStages_preserves`), over the support (`foldStages_preserves_support`) and almost surely
-  (`foldStages_preserves_measure`). The frozen laws are stated for `OracleComp`; these hold in
-  every monad the proofs allow.
-- `StageInterface` is a claim interface: a statement type, an oracle family with its data, and a
-  private type. Claims are concrete data, as record D6 fixes. The family's query types have their
-  own universe, and a closed stage may change the query universe between `I` and `J`, as the
-  path-indexed resources of `OracleVerifier` allow. Answer types stay in the computation universe
-  `u` (entry 18).
-- `ClosedStage ambient I J` pairs a protocol, its challenge draws in `OracleComp ambient`, an
-  honest prover and a passive oracle verifier from `I` to `J`. `ClosedStage.run` is the core run
-  `OracleVerifier.run` with the challenges answered by the draws; it returns the accepted output
-  claim with the next private state. `ClosedStage.runStages` folds a family of closed stages.
+- `Stages ambient S inputs` is a finite chain of passive oracle verifiers from the statement type
+  `S` and the oracle family `inputs`. `Stages.nil` has no stages. `Stages.cons s V map h draw rest`
+  has a first stage with protocol `s`, verifier `V`, output map `map` (with `h` stating that `V`'s
+  output map is `map` at every statement) and challenge draws `draw`, followed at each shape path
+  `p` of `s` by the chain `rest p`, whose inputs are `V`'s output statement type and output family
+  at `p`. Statement types and families may change at every boundary and may depend on the shape
+  paths. Statements live in the computation universe `u`, and the chain's families share one query
+  universe.
+- `Stages.protocol`, `Stages.verifier` and `Stages.draw` are the composed protocol, the composed
+  passive verifier and the combined draws. `Stages.verifier_cons` and `Stages.draw_cons` state that
+  a chain with a first stage composes by `OracleVerifier.append` and `combineDraw`. `Stages.run`
+  is the core run `OracleVerifier.run` of the composed verifier with the challenges answered by
+  the draws, and `Stages.run_cons` states that it is the run of the binary append of the first
+  stage and the composed rest, which `OracleVerifier.run_append` splits into both interactions
+  and both decisions.
+- The decision laws are `Stages.decideWith_nil` (no stages accept the input statement, and
+  `Stages.map_nil` forwards the input data), `Stages.decideWith_one` (one stage decides as that
+  stage) and `Stages.decideWith_cons_of_reject` (a rejecting first decision rejects). With
+  `Stages.verifier_cons`, the binary laws apply to a chain: `OracleVerifier.append_decideWith`
+  (the first decision, then the rest's decision after acceptance only), and invariant
+  propagation deterministically (`OracleVerifier.append_decideWith_of_accept`), over the support
+  (`OracleVerifier.append_decideWith_preserves_support`) and almost surely
+  (`OracleVerifier.append_decideWith_preserves_measure`).
 
-The fold is not iterated `OracleVerifier.append`. An append runs every interaction and then the
-decisions (record D5), while the fold decides each stage before the next one starts, as the frozen
-executor does. The two programs order their effects differently, and after a rejection the fold
-skips the later interactions, which an append still runs. The tests show both on the same two
-stages: `ArkLibTest/Interaction/Core/Oracle/StagesExample.lean` records the fold's history
-`[0, 1, 2, 3]` and `CompositionExample.lean` the append's `[0, 2, 1, 3]`. `StagesExample` ports the
-frozen two-stage tests and adds a third stage that samples a challenge, checked by `rfl`. The fold
-is also a dependent finite fold for the open point of record D5 on dependent iteration state; the
-Sumcheck round does not use it yet.
+The composition runs the interactions of all stages and then folds the decisions. A rejecting
+decision makes the composite reject and skips the later decisions, but no interaction. A later
+stage is selected only by the shape path of the earlier stages, which records the prover's public
+messages: neither a challenge, nor an oracle payload, nor an earlier verdict selects it (premises
+P1 and P2 of the
+[stage and execution inventory](../interaction-layer/stage-execution-disposition.md)). A stage's
+output map does not read its input statement, which in the composition is the result of the
+previous decision; the composite output map then needs no compatibility certificate
+(`OutputCompatibility.ofStatementFree`).
+
+The frozen executor decided each stage before the next one started, so a rejection skipped the
+later interactions, and selected each stage's protocol by the statement the previous stage had
+accepted. P1 and P2 retire both. `ArkLibTest/Interaction/Core/Oracle/StagesExample.lean` ports the
+frozen two-stage tests with the history `[0, 2, 1, 3]` and the rejection history `[0, 2, 1]`, runs
+three stages with a sampled challenge (`[0, 2, 4, 5, 1, 3, 6]`, and `[0, 2, 4, 5, 1]` when the
+first decision rejects), and selects a second stage by the first stage's prover message. The
+split of a composition at an arbitrary middle stage would need associativity of
+`OracleVerifier.append` up to path reindexing, which the layer does not provide; the split after
+the first stage is `Stages.run_cons`.
 
 ### Output witnesses are indexed by the transcript
 

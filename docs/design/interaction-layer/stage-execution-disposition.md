@@ -1,4 +1,4 @@
-# Stage fold and oracle execution: source-to-port inventory
+# Stage composition and oracle execution: source-to-port inventory
 
 This inventory compares six frozen sources with their interaction-layer ports:
 
@@ -23,20 +23,22 @@ mathematical observation, at least as generally as the source. A **premise-requi
 the premise, states which part of the assertion that premise retires, and states what the target
 keeps. A **retired** row belongs to a removed mechanism, which it names; every mathematical
 observation the mechanism carried has its own row. An **unresolved** row needs a parent interface
-that does not exist yet, and names it. No row in this inventory is unresolved.
+that does not exist yet, and names it. One row is unresolved: the split of an ordered execution at
+an arbitrary stage (`Composition.lean` L258).
 
 ## Universes
 
-The ports keep the frozen universe placement, with one generalization and one restriction.
+The ports keep the frozen universe placement, with one restriction in the dependent-reduction
+canary.
 
-- `StageInterface.{u, uQ}` ([stageInterface]) puts the statement, the index, the data and the
-  private state in `u`, as `ExecutionInterface.{u}` does. Answer types stay in `u`. Query types
-  have their own universe `uQ`, and a `ClosedStage` may change it between its input interface and
-  its output interface. The frozen stage passes its input resource as
-  `I.oracles.spec.toPFunctor : PFunctor.{u, u}`, so its query domain lies in `u`.
-- `ClosedStage` ([closedStage]) takes `ambient : OracleSpec.{u, u} ι` with `ι : Type u`, as the
-  frozen stage does.
-- The fold `foldStages` ([foldStages]) takes an arbitrary family of state types in `u`.
+- `Stages` ([stages]) puts every statement type, oracle index type and oracle data type of a chain
+  in the computation universe `u`, as `ExecutionInterface.{u}` does, and takes
+  `ambient : OracleSpec.{u, u} ι` with `ι : Type u`, as the frozen stage does. All oracle families
+  of one chain have their query types in one universe `w`. The frozen stage passes its input
+  resource as `I.oracles.spec.toPFunctor : PFunctor.{u, u}`, so its query domain lies in `u`, the
+  case `w = u`.
+- The frozen private state lies in `u`. In the port it is part of the prover's output, whose
+  family lies in `u` ([stagesRun]).
 - The dependent-reduction canary ([depCanary]) keeps the shared, statement, witness and
   interaction universes independent, as the frozen canary does. The restriction: a nonempty
   ambient specification lies in the interaction universe, because the prover runs in
@@ -72,28 +74,32 @@ The ports keep the frozen universe placement, with one generalization and one re
 
 ## CompositionExample.lean
 
-The frozen ordered execution is ported as the stage fold in `StagesExample.lean`. The binary
-composition of the same two stages in `CompositionExample.lean` ([compRow1], [compRow2True],
-[compRow2False], [compRow3to5], [compSummary], [compRow13]) is additional coverage. It is a
-different execution: both passive decisions run after the whole interaction, so its history is
-`[0, 2, 1, 3]`.
+The frozen ordered execution decides each stage before the next stage's interaction starts, and
+a rejection skips the later stages. P1 retires that schedule: a passive decision runs after the
+whole interaction, and its resource queries occur in the final decision. The port is the chain
+`twoStages` in `StagesExample.lean`. Both interactions run first, then the decisions fold, so the
+accepted history is `[0, 2, 1, 3]`, and a rejecting first decision still runs the second stage's
+interaction. `Stages.run_cons` identifies the chain's run with the binary composition of the same
+two stages in `CompositionExample.lean` ([compRow3to5], [compSummary], [compRow13]), which states
+the same rows. Additional coverage: a third stage with a sampled challenge, whose interaction
+also runs after a rejection ([threeAccept], [threeReject]), and a second stage selected by the
+first stage's prover message ([shapeTrue], [shapeFalse]).
 
 | Source assertion | Status | Exact target or remaining obligation |
 | --- | --- | --- |
 | L24, local `implicit_reducible` attribute | retired | Removed mechanism: a local transparency override on `OracleInterface.toOracleSpec` and `OracleInterface.Response`. The ports need no transparency command. |
-| L134, `firstStage_run` | equivalent | [firstStageRun]: for every verdict, input and hidden value, events 0 then 1, the input's parity as statement, the input plus 11 as data, and `hidden + 1` as private state. The frozen input behavior `answers : naturals.spec.Domain → Nat` and the target data `answers : Unit → Nat` determine each other: the family has one index with one `Unit` query, answered by the data. |
-| L144, `secondStage_run` | equivalent | [secondStageRun]: for both message types and every input and hidden value, events 2 then 3 and the same statement, data and private state. The frozen setup event 2 is the prover's first slot. |
-| L169, `stages_zero` | equivalent | [twoStagesZero]. |
-| L173, `stages_one` | equivalent | [twoStagesOne]. |
-| L176, `run_two` | equivalent | [runTwo]: the fold runs the first stage, returns `none` on rejection, and otherwise runs the second stage on the accepted state. [runThree] extends it to three stages. |
-| L202, `observed_true` | equivalent | [observedTwoTrue]: the same normal form for every input and hidden value, with history `[0, 1, 2, 3]`. |
-| L217, history `[0, 1, 2, 3]` | equivalent | [stagesRow7]. |
+| L134, `firstStage_run` | equivalent | [compRow1]: for every verdict, input, branch choice and hidden value, events 0 then 1, the input's parity as statement, the input plus 11 as data, and `hidden + 1` in the prover output. The frozen input behavior `answers : naturals.spec.Domain → Nat` and the target data `answers : Unit → Nat` determine each other: the family has one index with one `Unit` query, answered by the data. |
+| L144, `secondStage_run` | equivalent | [compRow2True] and [compRow2False]: for both message types and every input statement, exported value and hidden value, events 2 then 3 and the same statement, data and private output. The frozen setup event 2 is the prover's first slot. |
+| L169 `stages_zero` and L173 `stages_one` | retired | Removed mechanism: the `Fin`-indexed stage family built with `Fin.cons`, whose indices must be resolved. A chain lists its stages in order as constructors. [threeVerifierCons] states that a chain's verifier is the append of its first stage and the rest, without unfolding either. |
+| L176, `run_two` | premise-required | P1 retires running the first stage to its decision before the second stage's interaction, and skipping the second stage after a rejection. [twoRunCons] keeps the resolution of the chain into its two actual stages: the chain's run is the run of the binary append of the first stage and the second, which [runAppend] splits into the first interaction, the second interaction, the first decision and, after acceptance only, the second decision. [threeRunCons] states the same for three stages. |
+| L202, `observed_true` | premise-required | P1 retires the order of L217. [summaryTwoWithTrue] keeps the normal form, the statement, the oracle and the private outputs for every branch choice, input and hidden value, with history `[0, 2, 1, 3]`. |
+| L217, history `[0, 1, 2, 3]` | premise-required | P1 retires the first decision's event 1 before the second stage's events. [stagesRow7] keeps each of the four events once, in the passive order `[0, 2, 1, 3]`. |
 | L220, statement 118 on the `Bool` branch | equivalent | [stagesRow8]. |
 | L225, statement 72 on the `Nat` branch | equivalent | [stagesRow9]. |
 | L230, final oracle `true` | equivalent | [stagesRow10]: the data of the exported `Bool` oracle, which is its answer. |
 | L235, final oracle `false` | equivalent | [stagesRow11]. |
 | L241, private outputs `(41, 42)` | equivalent | [stagesRow12]. |
-| L246, rejection gives `(none, [0, 1])` | equivalent | [stagesRow13]. |
+| L246, rejection gives `(none, [0, 1])` | premise-required | P1 retires the abort on rejection, which skips the second stage's seam event 2 and its interaction. [stagesRow13] keeps the `none` verdict and the skipped second decision, whose event 3 does not run, for every branch choice, input and hidden value; the second stage's interaction runs, so the history is `[0, 2, 1]`. [stagesRow13Fixed] states `(none, (41, 42), [0, 2, 1])` at the frozen input. |
 | L249, the lower adapter keeps oracle output and private output | equivalent | [compRow14]: output data 18 and private output `hidden`, for every hidden value. `executeClosed` is retired in the table for `Composition.lean`. |
 
 ## ExecutionExample.lean
@@ -119,8 +125,8 @@ different execution: both passive decisions run after the whole interaction, so 
 | L292, verdict `some 30` | premise-required | P1 and P2. The frozen prefix computes an `Option Nat` challenge from its oracle (P1), and `some` selects the branch with a second oracle send (P2). [execRow19] keeps the verdict `19 + 11 = 30` at the draw 18: the second message's answer plus the prefix value 11. [execRow19All] states the verdict for every draw on the same shape. |
 | L295, history `[10, 11, 12, 14, 15, 16, 17]` | premise-required | P1 retires prefix verifier events 11 and 12 before the prover's response. [execRow19] keeps the seven events, each once, as `[10, 14, 15, 11, 12, 16, 17]`. |
 | L298, private output `hidden + 14` | equivalent | [execRow19] and [execRow19All]: the private output keeps the ambient answer 14 read after the challenge. |
-| L300, abort gives `none` | premise-required | P2 retires the `none` challenge that selects a branch without a second send. [execRow22] keeps the `none` verdict through a rejecting prefix decision, for every draw and hidden value. |
-| L303, abort history `[10, 11, 12, 14, 17]` | premise-required | P1 and P2 change the schedule, but not the final action. P2 retires the abort branch without a second send, so the suffix send's event 15 runs on the fixed shape. P1 retires the prefix verifier events 11 and 12 before the response, so they follow the prover's events. The final action 17 is kept: [execRow22] gives `[10, 14, 15, 11, 12, 17]` for every draw and hidden value, with event 17 recorded once by the rejecting prefix decision ([execFirstVerifier]). The skipped suffix decision records neither 16 nor its own 17. |
+| L300, abort gives `none` | premise-required | P1 and P2. P2 retires the `none` challenge that selects a branch without a second send. P1 retires the abort, which ends the execution before the remaining interaction. [execRow22] keeps the `none` verdict, for every draw and hidden value, through a rejecting prefix decision that runs after the whole interaction. |
+| L303, abort history `[10, 11, 12, 14, 17]` | premise-required | P1 and P2. P1 retires abort on rejection: the frozen run stops at the abort and runs the abort branch's final action 17 instead of the remaining interaction. Under P1 every interaction runs before any decision, so the prefix verifier events 11 and 12 follow the prover's events. P2 retires the abort branch without a second send, so the suffix send's event 15 runs on the fixed shape. The port keeps the six frozen events, each once, and the `none` verdict: [execRow22] gives `[10, 14, 15, 11, 12, 17]` for every draw and hidden value. Event 17 is no longer an abort action; the rejecting prefix decision records it once as its last query ([execFirstVerifier]). The skipped suffix decision records neither 16 nor its own 17. |
 | L305, abort private output `hidden + 14` | equivalent | [execRow22]. |
 | L352, completed prefix then next send: `[40, 41]` | equivalent | [execRow25]. |
 | L354, appended: `[41, 40]` | equivalent | [execRow26]. The appended completed decision is an end decision, so event 40 follows the next prover's event 41, as in the frozen run. |
@@ -147,20 +153,20 @@ different execution: both passive decisions run after the whole interaction, so 
 | Source assertion | Status | Exact target or remaining obligation |
 | --- | --- | --- |
 | L34 `ClosedOutput`, L44 `CoreRun.closedOutput`, L54 `executeClosed` | retired | Removed mechanism: closing an open terminal claim with the run's input handler and sent messages. [oracleRun] applies the verifier's output map to the run's input data and payloads. CompositionExample L249 keeps the adapter's observation ([compRow14]). |
-| L70, `ExecutionInterface` | equivalent | [stageInterface], with the universes recorded under Universes. |
-| L83, `ExecutionInterface.Claim` as a closed claim | retired | Removed mechanism: behavior-only claims at a stage boundary, which record D6 replaces by concrete data. [stageClaim] is a statement with concrete data, the accepted output of an oracle verifier. The fold laws below hold for an arbitrary family of state types ([foldStages]), including states whose claims are behaviors. |
-| L86, `ExecutionInterface.State` | equivalent | [stageState]. |
-| L92, `ClosedStage` | premise-required | P1 and P2. The frozen stage runs verifier strategies with node effects and verifier-computed challenges on a protocol that challenges may branch, and its prover sees a witness prepared from the private state. [closedStage] keeps the protocol selected by the public statement and the private-state transport `nextPrivate`. Challenges come from `draw`, the verifier is a passive oracle verifier, and the prover sees the claim and the private state. |
-| L119, `ClosedStage.run` | equivalent | [stageRun]: one core run on the input claim's data, which hands over the accepted output claim with the next private state; a rejection hands over nothing. |
-| L128, `run_eq_executeCore` | equivalent | [stageRunEq]: the handoff is the verdict of the same core run, paired with the private state computed from that run's transcript and prover output. |
-| L145, `OrderedExecution.run` | equivalent | [runStages], the fold [foldStages] of the stage runs. |
-| L157, `run_zero` | equivalent | [foldZero]; [lawZero] instantiates it for every family of closed stages. |
-| L162, `run_succ` | equivalent | [foldSucc]; [lawSucc]. |
-| L171, `run_succ_of_reject` | equivalent | [foldReject]; [lawReject]. |
-| L182, `run_preserves` | equivalent | [foldPreserves]; [lawPreserves]. |
-| L203, `run_preserves_support` | equivalent | [foldSupport]; [lawSupport]. |
-| L230, `run_preserves_measure` | equivalent | [foldMeasure]; [lawMeasure], under the frozen assumptions: an answer measure on the ambient oracles and measurable, discrete state spaces. |
-| L258, `run_append` | equivalent | [foldSplit]; [lawSplit] states it with the frozen cast along `m + n = n + m`. |
+| L70, `ExecutionInterface` | retired | Removed mechanism: boundary records that pair a public claim with a private prover state. A chain's boundary is the statement type and the oracle family of a stage's verifier output, which may depend on the shape path ([stages]); the private state is the prover's output ([stagesRow12]). |
+| L83, `ExecutionInterface.Claim` as a closed claim | retired | Removed mechanism: behavior-only claims at a stage boundary, which record D6 replaces by concrete data. A chain's accepted claim is a statement with concrete data, the verdict of [stagesRun]. |
+| L86, `ExecutionInterface.State` | retired | Removed mechanism: the boundary record of L70. Its public part is the claim of L83; its private part is the prover's output. |
+| L92, `ClosedStage` | premise-required | P1 and P2. P1 retires a stage that runs its own verifier strategies, with node effects and verifier-computed challenges, to a decision before the next stage starts. P2 retires the protocol selected by the statement the previous stage accepted, which a challenge or an oracle answer may determine. [stages] keeps a stage as a passive oracle verifier with its protocol, its output map, which does not read the stage's input statement, and its challenge draws. The next stage is selected by the shape path, which records prover messages only ([shapeTrue], [shapeFalse]). The prover sees its private state through its own output instead of a witness prepared by the executor. |
+| L119, `ClosedStage.run` | premise-required | P1 retires a stage run that ends in a decision before the next stage, with the next private state handed over after acceptance only. [decideWithOne] keeps the single stage: a chain of one stage decides as that stage. [compRow1] keeps the observation of the first stage's run; [rejectCons] keeps that a rejection hands over no claim. |
+| L128, `run_eq_executeCore` | equivalent | [stagesRun]: a chain's run is by definition the core run `OracleVerifier.run` of the composed verifier under the stages' combined draws ([drawCons]). Its verdict is the accepted claim, and the prover's output in the same run replaces the computed private state. |
+| L145, `OrderedExecution.run` | premise-required | P1 and P2. P1 retires the fold of whole stage runs, in which each stage decides before the next interaction and a rejection skips the later interactions and draws. P2 retires later protocols selected by accepted statements. [stagesRun] keeps an n-ary execution of heterogeneous stages: every interaction runs, then the decisions fold through the binary append ([verifierCons]); later stages are selected by shape paths. |
+| L157, `run_zero` | equivalent | [decideWithNil] and [mapNil]: the empty chain accepts the input statement with the input data. |
+| L162, `run_succ` | premise-required | P1 retires running the first stage to its decision before the rest. [runCons] keeps the split after the first stage: a chain's run is the run of the binary append of its first stage and the rest, which [runAppend] splits into both interactions, the first decision and, after acceptance only, the rest's decision ([appendDecide]). |
+| L171, `run_succ_of_reject` | premise-required | P1 retires skipping the later interactions after a rejection. [rejectCons] keeps the rejection: a rejecting first decision makes the chain reject and skips the later decisions; [appendReject] states it for the binary append. The later interactions have run ([stagesRow13], [threeReject]). |
+| L182, `run_preserves` | premise-required | P1 retires the invariant over whole stage runs, which include each stage's interaction. [appendAccept] keeps deterministic propagation over decisions at one stage boundary, and [verifierCons] applies it to a chain. The statement over all boundaries of a chain follows by induction on the chain and is not stated separately. |
+| L203, `run_preserves_support` | premise-required | P1, as for L182. [appendSupport] keeps propagation over the support at one boundary. |
+| L230, `run_preserves_measure` | premise-required | P1, as for L182. [appendMeasure] keeps almost-sure propagation at one boundary, under the frozen assumptions: an answer measure on the ambient oracles and measurable, discrete statement spaces. |
+| L258, `run_append` | unresolved | The split of a chain at an arbitrary stage needs the concatenation of chains, which needs associativity of `FreeM.append` on protocols and of `OracleVerifier.append`, up to the path reindexing `Path.split`. The parent layer provides neither. [runCons] gives the split after the first stage. |
 
 [logged]: logged-execution-disposition.md
 [full]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L557
@@ -189,34 +195,6 @@ different execution: both passive decisions run after the whole interaction, so 
 [coreRow6]: ../../../ArkLibTest/Interaction/Core/Oracle/CoreRunExample.lean#L87
 [coreRow7]: ../../../ArkLibTest/Interaction/Core/Oracle/CoreRunExample.lean#L92
 [coreRunCmd]: ../../../ArkLibTest/Interaction/Core/Oracle/CoreRunExample.lean#L97
-[compRow1]: ../../../ArkLibTest/Interaction/Core/Oracle/CompositionExample.lean#L168
-[compRow2True]: ../../../ArkLibTest/Interaction/Core/Oracle/CompositionExample.lean#L180
-[compRow2False]: ../../../ArkLibTest/Interaction/Core/Oracle/CompositionExample.lean#L187
-[compRow3to5]: ../../../ArkLibTest/Interaction/Core/Oracle/CompositionExample.lean#L201
-[compSummary]: ../../../ArkLibTest/Interaction/Core/Oracle/CompositionExample.lean#L211
-[compRow13]: ../../../ArkLibTest/Interaction/Core/Oracle/CompositionExample.lean#L263
-[compRow14]: ../../../ArkLibTest/Interaction/Core/Oracle/CompositionExample.lean#L272
-[lawZero]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L47
-[lawSucc]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L54
-[lawReject]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L64
-[lawSplit]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L72
-[lawPreserves]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L88
-[lawSupport]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L99
-[lawMeasure]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L111
-[firstStageRun]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L244
-[secondStageRun]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L255
-[twoStagesZero]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L311
-[twoStagesOne]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L315
-[runTwo]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L323
-[observedTwoTrue]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L341
-[stagesRow7]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L355
-[stagesRow8]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L359
-[stagesRow9]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L365
-[stagesRow10]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L370
-[stagesRow11]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L375
-[stagesRow12]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L381
-[stagesRow13]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L387
-[runThree]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L399
 [execRow1]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L102
 [execRow2]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L107
 [execRow3]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L110
@@ -249,21 +227,43 @@ different execution: both passive decisions run after the whole interaction, so 
 [depObserveFalse]: ../../../ArkLibTest/Interaction/Core/Reduction/DependentExample.lean#L126
 [depObserveTrue]: ../../../ArkLibTest/Interaction/Core/Reduction/DependentExample.lean#L129
 [depRow6]: ../../../ArkLibTest/Interaction/Core/Reduction/DependentExample.lean#L165
-[foldStages]: ../../../ArkLib/Interaction/Core/Stages.lean#L44
-[foldZero]: ../../../ArkLib/Interaction/Core/Stages.lean#L53
-[foldSucc]: ../../../ArkLib/Interaction/Core/Stages.lean#L59
-[foldReject]: ../../../ArkLib/Interaction/Core/Stages.lean#L66
-[foldSplit]: ../../../ArkLib/Interaction/Core/Stages.lean#L125
-[foldPreserves]: ../../../ArkLib/Interaction/Core/Stages.lean#L156
-[foldSupport]: ../../../ArkLib/Interaction/Core/Stages.lean#L176
-[foldMeasure]: ../../../ArkLib/Interaction/Core/Stages.lean#L199
-[stageInterface]: ../../../ArkLib/Interaction/Core/Stages.lean#L226
-[stageClaim]: ../../../ArkLib/Interaction/Core/Stages.lean#L240
-[stageState]: ../../../ArkLib/Interaction/Core/Stages.lean#L243
-[closedStage]: ../../../ArkLib/Interaction/Core/Stages.lean#L248
-[stageRun]: ../../../ArkLib/Interaction/Core/Stages.lean#L278
-[stageRunEq]: ../../../ArkLib/Interaction/Core/Stages.lean#L286
-[runStages]: ../../../ArkLib/Interaction/Core/Stages.lean#L295
+[compRow1]: ../../../ArkLibTest/Interaction/Core/Oracle/CompositionExample.lean#L168
+[compRow2True]: ../../../ArkLibTest/Interaction/Core/Oracle/CompositionExample.lean#L179
+[compRow2False]: ../../../ArkLibTest/Interaction/Core/Oracle/CompositionExample.lean#L186
+[compRow3to5]: ../../../ArkLibTest/Interaction/Core/Oracle/CompositionExample.lean#L198
+[compSummary]: ../../../ArkLibTest/Interaction/Core/Oracle/CompositionExample.lean#L208
+[compRow13]: ../../../ArkLibTest/Interaction/Core/Oracle/CompositionExample.lean#L260
+[compRow14]: ../../../ArkLibTest/Interaction/Core/Oracle/CompositionExample.lean#L269
+[threeVerifierCons]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L123
+[threeRunCons]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L154
+[threeAccept]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L161
+[threeReject]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L170
+[twoRunCons]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L228
+[summaryTwoWithTrue]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L235
+[stagesRow7]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L258
+[stagesRow8]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L262
+[stagesRow9]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L268
+[stagesRow10]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L273
+[stagesRow11]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L278
+[stagesRow12]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L284
+[stagesRow13]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L289
+[stagesRow13Fixed]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L302
+[shapeTrue]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L389
+[shapeFalse]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L393
+[appendReject]: ../../../ArkLib/Interaction/Core/Stages.lean#L95
+[appendAccept]: ../../../ArkLib/Interaction/Core/Stages.lean#L103
+[appendSupport]: ../../../ArkLib/Interaction/Core/Stages.lean#L116
+[appendMeasure]: ../../../ArkLib/Interaction/Core/Stages.lean#L137
+[stages]: ../../../ArkLib/Interaction/Core/Stages.lean#L171
+[stagesRun]: ../../../ArkLib/Interaction/Core/Stages.lean#L281
+[verifierCons]: ../../../ArkLib/Interaction/Core/Stages.lean#L313
+[drawCons]: ../../../ArkLib/Interaction/Core/Stages.lean#L319
+[runCons]: ../../../ArkLib/Interaction/Core/Stages.lean#L327
+[rejectCons]: ../../../ArkLib/Interaction/Core/Stages.lean#L341
+[decideWithNil]: ../../../ArkLib/Interaction/Core/Stages.lean#L351
+[mapNil]: ../../../ArkLib/Interaction/Core/Stages.lean#L361
+[decideWithOne]: ../../../ArkLib/Interaction/Core/Stages.lean#L369
+[appendDecide]: ../../../ArkLib/Interaction/Core/Composition.lean#L474
 [pathResources]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L462
 [oracleRun]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L503
 [runAppend]: ../../../ArkLib/Interaction/Core/Oracle/Routing.lean#L119
