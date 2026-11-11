@@ -52,7 +52,7 @@ def noData : ∀ i, NoData i := fun i => i.elim
 abbrev payload : Move oracleSig (.oracle Nat OracleInterface.instDefault) → Nat := id
 
 /-- A Boolean challenge. -/
-abbrev bit : Move oracleSig (.challenge Bool) → Bool := id
+abbrev bit : Move oracleSig.{0, 0} (.challenge Bool) → Bool := id
 
 /-- The suffix shape depends only on the public prover selector. -/
 abbrev suffix : Path firstProtocol → OracleProtocol := fun p => secondProtocol p.2.2.1

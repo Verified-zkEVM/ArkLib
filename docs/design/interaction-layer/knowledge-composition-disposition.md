@@ -493,11 +493,11 @@ This restriction affects sampling and probability bounds, not the frozen pure ex
 [r177]: ../../../ArkLibTest/Interaction/Oracle/Security/KnowledgeComposition.lean#L308
 [r178]: ../../../ArkLibTest/Interaction/Core/Security/KnowledgeComposition.lean#L486
 [r179]: ../../../ArkLibTest/Interaction/Oracle/Security/KnowledgeComposition.lean#L316
-[r180]: ../../../ArkLibTest/Interaction/Core/UniverseCanary.lean#L454
+[r180]: ../../../ArkLibTest/Interaction/Core/UniverseCanary.lean#L558
 [r181]: ../../../ArkLibTest/Interaction/Oracle/Security/KnowledgeComposition.lean#L318
-[r182]: ../../../ArkLibTest/Interaction/Core/UniverseCanary.lean#L531
+[r182]: ../../../ArkLibTest/Interaction/Core/UniverseCanary.lean#L635
 [r183]: ../../../ArkLibTest/Interaction/Oracle/Security/KnowledgeComposition.lean#L322
-[r184]: ../../../ArkLibTest/Interaction/Core/UniverseCanary.lean#L554
+[r184]: ../../../ArkLibTest/Interaction/Core/UniverseCanary.lean#L658
 [r185]: ../../../ArkLibTest/OracleReduction/MeasuredExtraction.lean#L86
 [r186]: ../../../ArkLibTest/Interaction/Core/Security/MeasuredExtraction.lean#L74
 [r187]: ../../../ArkLibTest/OracleReduction/MeasuredExtraction.lean#L91
@@ -560,5 +560,5 @@ This restriction affects sampling and probability bounds, not the frozen pure ex
 [r244]: ../../../ArkLibTest/Interaction/Core/Security/MeasuredPathBudgets.lean#L341
 [r245]: ../../../ArkLibTest/Interaction/Oracle/Security/MeasuredPathBudgets.lean#L191
 [r246]: ../../../ArkLibTest/Interaction/Core/Security/MeasuredPathBudgets.lean#L327
-[r247]: ../../../ArkLib/Interaction/Core/Protocol.lean#L65
+[r247]: ../../../ArkLib/Interaction/Core/Protocol.lean#L66
 [r248]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L90

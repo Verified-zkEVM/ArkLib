@@ -608,7 +608,7 @@ example : Verifier.rbrKnowledgeSoundnessOfNodes.{2, 0, 1, 1} reduction.verifier 
   ⟨largeOutputCertificate plainSig _, fun _ _ _ _ sp => nomatch sp⟩
 
 /-- The oracle wrapper also accepts large terminal witnesses independently of its run output. -/
-example : OracleVerifier.rbrKnowledgeSoundnessOfNodes.{2, 0, 1, 1, 1, 0, 0} runnable ambientTrue
+example : OracleVerifier.rbrKnowledgeSoundnessOfNodes.{2, 0, 1, 1} runnable ambientTrue
     (fun _ => True) (fun _ (_ : Unit) => True) (fun _ _ _ (_ : Type) => True)
     noChallenges (fun _ => 0) :=
   ⟨largeOutputCertificate oracleSig _, fun _ _ _ _ sp => nomatch sp⟩
