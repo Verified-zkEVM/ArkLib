@@ -36,6 +36,7 @@ The status is one of equivalent, premise-required or unresolved.
 | --- | --- | --- |
 | 18 | Run outputs and a prover's ambient index are tied to the monad universe `u`; every other component takes its own universe, including input and output oracle query types | premise-required: positions live one universe up and the runner is `m : Type u → Type u` |
 | 18 | Input oracle data stays in the response universe `Type u`; the full-log oracle runner `runWithLog` keeps the input index and query type in `Type`, while extraction runs on the general ambient-log runner | unresolved: `OracleInterface` ties data and responses through `ReaderM`, and the full log records input queries |
+| 21 | Round-by-round soundness implies soundness for lawful distribution monads, with prefix-indexed freshness | equivalent; see the soundness disposition record below |
 
 ## Legacy embedding: entries 14–16
 
@@ -52,7 +53,7 @@ Entries 15 and 16 are the two hypotheses that a client of the round-by-round tra
 check. Entry 15 applies to the direction into the interaction layer, and entry 16 to the
 direction out of it.
 
-Entry [19](../interaction-rebuild/IMPLEMENTATION-NOTES.md#19-round-by-round-soundness-implies-soundness-for-lawful-distribution-monads)
+Entry [21](../interaction-rebuild/IMPLEMENTATION-NOTES.md#21-round-by-round-soundness-implies-soundness-for-lawful-distribution-monads)
 records the generic soundness implication. The
 [soundness disposition record](soundness-implication-disposition.md) compares every ported frozen
 statement and test, explains prefix-indexed freshness, and links the classical specialization laws.
