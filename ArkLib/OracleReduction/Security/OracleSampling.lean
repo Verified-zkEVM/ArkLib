@@ -67,10 +67,11 @@ context and `α[<i]` is the preceding prover-message tuple. In the single-salt s
 `Statement := StmtIn × Salt`, so the query context is `(𝕩, τ)`.
 `D_IP.sample` samples one table of answers for all such queries. -/
 
-/-- Bridge instance: finiteness of the statement, message, and challenge types, plus inhabited
-challenge types, suffices to derive `SampleableType (QueryImpl (fsChallengeOracle Statement pSpec)
-Id)`. (`VCVCompatible` hypotheses supply all of these.) -/
-noncomputable instance instSampleableTypeFSChallengeOracle
+/-- Construct a sampler for deterministic Fiat-Shamir challenge tables from the finite statement,
+message, and challenge types, with inhabited challenge types. Callers choose this sampler
+explicitly because `SampleableType` carries sampling data. -/
+@[reducible]
+noncomputable def sampleableTypeFSChallengeOracle
     {n : ℕ} {pSpec : ProtocolSpec n} {Statement : Type}
     [Fintype Statement]
     [∀ i, Fintype (pSpec.Message i)]
@@ -108,7 +109,7 @@ noncomputable def D_IP.sample {n : ℕ} (Statement : Type) (pSpec : ProtocolSpec
     [∀ i, Fintype (pSpec.Message i)]
     [∀ i, Fintype (pSpec.Challenge i)] [∀ i, Inhabited (pSpec.Challenge i)] :
     ProbComp (QueryImpl (ProtocolSpec.fsChallengeOracle Statement pSpec) Id) :=
-  D_ROM.sample (instSampleable := instSampleableTypeFSChallengeOracle)
+  D_ROM.sample (instSampleable := sampleableTypeFSChallengeOracle)
 
 end SamplingExamples
 

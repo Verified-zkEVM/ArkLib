@@ -1143,8 +1143,8 @@ def srChallengeOracle (Statement : Type) {n : ℕ} (pSpec : ProtocolSpec n) :
 
 alias fsChallengeOracle := srChallengeOracle
 
--- The alias must be reducible so that `rw`-matching sees through whichever of the two names
--- appears.
+-- Fiat-Shamir completeness rewrites computations under `srChallengeOracle` handlers
+-- using terms typed with `fsChallengeOracle`.
 attribute [reducible] fsChallengeOracle
 
 /-- Define the query implementation for the state-restoration / (slow) Fiat-Shamir oracle (returns a
