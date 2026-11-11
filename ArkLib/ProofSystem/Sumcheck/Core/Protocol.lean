@@ -98,9 +98,6 @@ def foldState (next : (k : ℕ) → State (k + 1) → R → State k) :
 
 section Run
 
-attribute [local implicit_reducible] projectPathAlong projectPathAlongLocalMap
-  Displayed.LocalMap.toHom Displayed.LocalMap.toHomFun owner Node Node.position challengeSpec
-  consTranscript FreeM.replicate
 
 /-- The challenge node of the first round, named by shape branches alone. -/
 def headNode (k : ℕ) : ChallengeNode oracleSig (protocolOn R M eval (k + 1)) :=
@@ -169,9 +166,10 @@ theorem run_consProver {m : Type → Type} [Monad m] [LawfulMonad m] (k : ℕ)
       let ⟨tail, out, u⟩ ← Interaction.TwoParty.Lens.run (protocolOn R M eval k) (next chal)
         (sampler oracleSig (protocolOn R M eval k) (tailDraw draw))
       pure ⟨consTranscript msg chal tail, out, u⟩) := by
+  unfold consTranscript at next ⊢
   rw [run_succ]
-  simp only [consProver, LawfulMonad.pure_bind]
-  rfl
+  simp only [consProver]
+  erw [LawfulMonad.pure_bind, LawfulMonad.pure_bind]
 
 /-- Closed form of a fold of pure rounds against the sampler: the transcript and output are
 pure functions of the drawn challenges. -/
@@ -214,12 +212,13 @@ theorem simulate_foldRounds {ι : Type} {ambient : OracleSpec ι} {m : Type → 
   | zero => exact (Prover.simulate_done impl _).trans (simulateQ_pure impl _)
   | succ k ih =>
     refine (Prover.simulate_node impl _ _ _).trans ?_
-    simp only [foldRounds, consProver, simulateQ_pure, LawfulApplicative.map_pure]
-    refine congrArg pure (Sigma.ext rfl (heq_of_eq ?_))
+    simp only [foldRounds, consProver]
+    erw [simulateQ_pure, LawfulApplicative.map_pure]
+    refine congrArg (pure (f := m)) (Sigma.ext rfl (heq_of_eq ?_))
     change Prover.simulate impl _ = _
     refine (Prover.simulate_node impl _ _ _).trans ?_
-    simp only [simulateQ_pure, LawfulApplicative.map_pure]
-    exact congrArg pure (funext fun _ => ih _)
+    erw [simulateQ_pure, LawfulApplicative.map_pure]
+    exact congrArg (pure (f := m)) (funext fun _ => ih _)
 
 end Run
 

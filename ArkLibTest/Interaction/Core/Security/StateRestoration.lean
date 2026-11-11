@@ -895,7 +895,9 @@ theorem selectedGame_bound (b : Bool)
     (selectedRelation b) knowledge (fun _ _ w => w) (selectedOutputLaw b) (1 / 2) bounded adv Q hQ
   erw [closedVerificationGame_eq, simulateQ_map, StateT.run'_map', prEvent_map] at h
   erw [selectedClosedGame, simulateQ_map, StateT.run'_map', prEvent_map]
-  simpa only [oracleObservation_prepend, selectedRelation] using h
+  simp only [selectedRelation] at h
+  apply le_trans (le_of_eq ?_) h
+  congr 1
 
 /-- The full dependent observation agrees with the game for every possible table. -/
 theorem selectedGame_eval (b : Bool) (table : Table Stmt Unit rounds) :

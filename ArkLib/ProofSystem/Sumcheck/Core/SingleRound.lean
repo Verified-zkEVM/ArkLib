@@ -31,8 +31,9 @@ open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Intera
 
 variable (R : Type) [CommSemiring R] (deg : ℕ)
 
-/-- One round: an evaluation oracle for the round polynomial, then one ring challenge. -/
-@[implicit_reducible]
+/-- One round: an evaluation oracle for the round polynomial, then one ring challenge. Reduction
+exposes the node constructors when elaborating dependent paths. -/
+@[reducible]
 def round : OracleProtocol.{0} :=
   .liftBind (.oracle (R⦃≤ deg⦄[X]) inferInstance) fun _ =>
     .liftBind (.challenge R) fun _ => .pure ⟨⟩
@@ -103,9 +104,6 @@ def roundProver {m : Type → Type} [Monad m] {Out : PathAlong oracleSig (round 
 
 section Run
 
-attribute [local implicit_reducible] projectPathAlong projectPathAlongLocalMap
-  Displayed.LocalMap.toHom Displayed.LocalMap.toHomFun owner Node Node.position challengeSpec
-  roundTranscript
 
 /-- Splitting the shape of a round followed by a suffix recovers the suffix shape. -/
 theorem split_round_suffix {s : OracleProtocol} (msg : R⦃≤ deg⦄[X]) (chal : R)
@@ -129,15 +127,26 @@ theorem run_roundProver {m : Type → Type} [Monad m] [LawfulMonad m]
     Interaction.TwoParty.Lens.run (round R deg) (roundProver msg next)
         (sampler oracleSig (round R deg) draw) =
       (fun chal => ⟨roundTranscript msg chal, next chal, ⟨⟩⟩) <$> draw roundChallengeNode := by
-  change Interaction.TwoParty.Lens.run (.liftBind _ _) _ _ = _
-  simp only [sampler, PureEnd.toStrategy, samplerEnd_round]
-  simp only [run_node, roundProver, owner, oracleSig, Choice, Move, Choice.map, step,
-    Schedule.seq, PureEnd.mapOutput, LawfulMonad.pure_bind, LawfulApplicative.map_pure,
-    bind_map_left]
-  simp only [FreeM.pure_eq_pure, run_done, LawfulApplicative.map_pure, Functor.map_map,
-    LawfulMonad.bind_pure_comp]
-  simp only [liftBind_eq, bind_eq_bind, Displayed.pure_eq]
-  exact (Functor.map_map _ _ _).trans rfl
+  unfold roundProver roundTranscript round at *
+  rw [← bind_pure (Interaction.TwoParty.Lens.run _ _ (sampler oracleSig _ draw))]
+  erw [run_sampler_sender rfl]
+  change ((pure (f := m) ⟨msg, pure (f := m) fun chal => pure (f := m) (next chal)⟩ :
+    Focal oracleSig m
+      (.liftBind (.oracle (R⦃≤ deg⦄[X]) inferInstance) fun _ =>
+        .liftBind (.challenge R) fun _ => .pure ⟨⟩) Out) >>= _) = _
+  erw [LawfulMonad.pure_bind]
+  erw [run_sampler_receiver rfl]
+  erw [LawfulMonad.pure_bind]
+  simp only [sampler, samplerEnd, roundChallengeNode,
+    PureEnd.toStrategy, PureEnd.mapOutput]
+  let result (chal : R) : (tr : PathAlong oracleSig _) × Out tr × PUnit :=
+    ⟨⟨msg, ⟨chal, ⟨⟩⟩⟩, next chal, ⟨⟩⟩
+  refine Eq.trans (b := (draw roundChallengeNode >>= fun chal => pure (result chal))) ?_ ?_
+  · refine bind_congr fun (chal : R) => ?_
+    erw [run_done]
+    simp only [LawfulMonad.pure_bind, result]
+  · exact LawfulMonad.bind_pure_comp result (draw roundChallengeNode)
+
 
 end Run
 

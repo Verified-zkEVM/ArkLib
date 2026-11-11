@@ -191,7 +191,7 @@ def forwardQueries (p : Path oracleDone) :
     OracleMap (pathResources typeQueryInputs oracleDone p) (Resources.ofFamily bigQueryOracles)
     where
   f x _ := x.1 ()
-  impl _ := liftM ((pathResources typeQueryInputs oracleDone p).spec.query (.inl ⟨(), Nat⟩))
+  impl _ := (OracleMap.fst typeQueryInputs (pathFamily oracleDone p)).impl ⟨(), Nat⟩
   law _ _ := rfl
 
 /-- An oracle verifier whose input queries lie in `Type 1` and whose output queries lie in
@@ -223,8 +223,7 @@ def typeQuerySuffix : OracleVerifier smallAmbient oracleDone Nat (fun _ => Nat)
         (.inr (.inl ⟨(), Type⟩)))
   outputMap _ p _ :=
     { f := fun x _ => x.1 ()
-      impl := fun _ => liftM
-        ((pathResources bigQueryOracles oracleDone p).spec.query (.inl ⟨(), Type⟩))
+      impl := fun _ => (OracleMap.fst bigQueryOracles (pathFamily oracleDone p)).impl ⟨(), Type⟩
       law := fun _ _ => rfl }
 
 /-- The composite output map ignores the intermediate statement, so any certificate holds. -/

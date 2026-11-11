@@ -71,11 +71,11 @@ def Verifier.runWithLog {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s :
   let full := ambient + challengeSpec plainSig s
   let ⟨⟨tr, out, _⟩, proveLog⟩ ← (simulateQ (QueryImpl.id' full).withLogging
     (TwoParty.Lens.run s
-      (prover.simulate (fun q => liftM (full.query (.inl q))))
-      (sampler plainSig s (fun c => liftM (full.query (.inr c)))))).run
+      (prover.simulate ((QueryImpl.id' full).restrictLeft))
+      (sampler plainSig s ((QueryImpl.id' full).restrictRight)))).run
   let ⟨verdict, verifyLog⟩ ← (simulateQ
     (QueryImpl.withLogging
-      ((fun q => liftM (full.query (.inl q))) : QueryImpl ambient (OracleComp full)))
+      (((QueryImpl.id' full).restrictLeft) : QueryImpl ambient (OracleComp full)))
     (V.decide stmt (projectPathAlong plainSig s tr) (toPlainView s tr)).run).run
   pure (⟨tr, out, verdict⟩, proveLog.fst, verifyLog)
 
@@ -98,7 +98,7 @@ theorem Verifier.runWithLog_fst {ι : Type} {S : Type uS} {ambient : OracleSpec 
     intro a
     rw [bind_logged _ _ (fun verdict =>
       pure (⟨a.1.1, a.1.2.1, verdict⟩ : Observation plainSig s Out T))]
-  rw [bind_logged (QueryImpl.id' (ambient + challengeSpec plainSig s)) _
+  erw [bind_logged (QueryImpl.id' (ambient + challengeSpec plainSig s)) _
     (fun result : (tr : PathAlong plainSig s) × Out tr × PUnit => do
     let verdict ← simulateQ
       ((fun q => liftM ((ambient + challengeSpec plainSig s).query (.inl q))) :

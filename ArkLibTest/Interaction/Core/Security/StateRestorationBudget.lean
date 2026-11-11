@@ -821,7 +821,9 @@ theorem actual_nonuniform_game_bound (b : Bool) :
   calc
     _ ≤ 2 * Finset.univ.sup errors + ∑ j, errors j := by
       erw [game, simulateQ_map, StateT.run'_map', prEvent_map]
-      simpa only [observation_prepend, relation, Nat.cast_ofNat] using h
+      simp only [relation, Nat.cast_ofNat] at h
+      apply le_trans (le_of_eq ?_) h
+      congr 1
     _ = 7 / 16 := budget_value
 
 /-- The prover sends its authored selector and the original salted-message selection. -/
@@ -929,7 +931,9 @@ theorem measured_game_bound (b : Bool) :
   · have hp := h.1
     erw [closedVerificationGame_eq, simulateQ_map, StateT.run'_map', prEvent_map] at hp
     erw [game, simulateQ_map, StateT.run'_map', prEvent_map]
-    simpa only [observation_prepend, relation, Nat.cast_ofNat] using hp
+    simp only [relation, Nat.cast_ofNat] at hp
+    apply le_trans (le_of_eq ?_) hp
+    congr 1
   · exact h.2
 
 /-- The game event uses the actual measured program's result, retaining cost two and error 7/16. -/

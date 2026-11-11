@@ -85,12 +85,10 @@ abbrev pairResources := pathResources inputs pairSend ⟨⟨⟩, ⟨⟩⟩
 def closeMap : OracleMap pairResources exported where
   f x _ := (show Nat from x.1 ()) + (show Nat × Nat from x.2 (.inl ⟨⟩)).1
   impl _ := do
-    let a : Nat ← liftM (pairResources.spec.query (.inl ⟨(), ()⟩))
-    let b : Nat ← liftM (pairResources.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
+    let a : Nat ← (OracleMap.fst inputs (pathFamily pairSend ⟨⟨⟩, ⟨⟩⟩)).impl ⟨(), ()⟩
+    let b : Nat ← (OracleMap.snd inputs (pathFamily pairSend ⟨⟨⟩, ⟨⟩⟩)).impl ⟨.inl ⟨⟩, ()⟩
     pure (a + b)
-  law _ _ := by
-    simp only [simulateQ_bind]
-    rfl
+  law _ _ := rfl
 
 /-- The decision records 1, reads the sent oracle, records 2, and accepts or rejects. -/
 def pairVerifier (accept : Bool) :
@@ -99,7 +97,7 @@ def pairVerifier (accept : Bool) :
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact OptionT.mk do
       let _ ← liftM ((ambient + pairResources.spec).query (.inl 1))
-      let sent : Nat ← liftM ((ambient + pairResources.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+      let sent : Nat ← pathLift ambient inputs (s := pairSend) ⟨⟨⟩, ⟨⟩⟩ ⟨.inl ⟨⟩, ()⟩
       let _ ← liftM ((ambient + pairResources.spec).query (.inl 2))
       pure (if accept then some sent else none)
   outputMap _ p _ := by
@@ -180,8 +178,7 @@ def terminalVerifier (mode : Nat) :
     exact OptionT.mk do
       let _ ← liftM ((ambient + pairResources.spec).query (.inl 1))
       let _ ← liftM ((ambient + pairResources.spec).query (.inl 2))
-      let sent : Nat ← liftM ((ambient + pairResources.spec).query
-        (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+      let sent : Nat ← pathLift ambient inputs (s := pairSend) ⟨⟨⟩, ⟨⟩⟩ ⟨.inl ⟨⟩, ()⟩
       if mode = 1 then
         let _ ← liftM ((ambient + pairResources.spec).query (.inl 17))
         pure none
@@ -206,9 +203,9 @@ def terminalObserved (mode old message hidden : Nat) :=
   (do
     let ⟨tr, out, _⟩ ← simulateQ (logger pairChallenges) (TwoParty.Lens.run pairSend
       ((pairProver [9] message hidden).simulate
-        (fun q => liftM ((ambient + challengeSpec oracleSig pairSend).query (.inl q))))
-      (sampler oracleSig pairSend (fun c =>
-        liftM ((ambient + challengeSpec oracleSig pairSend).query (.inr c)))))
+        ((QueryImpl.id' (ambient + challengeSpec oracleSig pairSend)).restrictLeft))
+      (sampler oracleSig pairSend
+        ((QueryImpl.id' (ambient + challengeSpec oracleSig pairSend)).restrictRight)))
     let p := projectPathAlong oracleSig pairSend tr
     let data : (pathResources inputs pairSend p).Data := (fun _ => old, payloads pairSend tr)
     let (verdict, log) ← (terminalVerifier mode).decideWithFailureLog terminalHandler () p
@@ -271,8 +268,7 @@ def unitVerifier :
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact do
       let _ ← liftM ((unitAmbient + pairResources.spec).query (.inl 1))
-      let sent : Nat ← liftM ((unitAmbient + pairResources.spec).query
-        (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+      let sent : Nat ← pathLift unitAmbient inputs (s := pairSend) ⟨⟨⟩, ⟨⟩⟩ ⟨.inl ⟨⟩, ()⟩
       let _ ← liftM ((unitAmbient + pairResources.spec).query (.inl 2))
       pure sent
   outputMap _ p _ := by
@@ -326,11 +322,11 @@ def readInput : OracleComp (ambient + twiceResources.spec) Nat :=
 
 /-- Read the first scalar message oracle. -/
 def readFirst : OracleComp (ambient + twiceResources.spec) Nat :=
-  liftM ((ambient + twiceResources.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+  pathLift ambient inputs (s := sendTwice) ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ ⟨.inl ⟨⟩, ()⟩
 
 /-- Read the second scalar message oracle. -/
 def readSecond : OracleComp (ambient + twiceResources.spec) Nat :=
-  liftM ((ambient + twiceResources.spec).query (.inr (.inr ⟨.inr (.inl ⟨⟩), ()⟩)))
+  pathLift ambient inputs (s := sendTwice) ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ ⟨.inr (.inl ⟨⟩), ()⟩
 
 /-- A verifier on `sendTwice` running a fixed decision program; its outputs are its inputs. -/
 def twiceVerifier (program : Decision) :
@@ -442,9 +438,7 @@ def phasedVerifier :
       for t in [2, 3] do
         let _ ← liftM (OracleSpec.query (spec :=
           ambient + (pathResources inputs phased ⟨b, c, ⟨⟩, ⟨⟩⟩).spec) (.inl t))
-      let sent : Nat ← liftM (OracleSpec.query (spec :=
-        ambient + (pathResources inputs phased ⟨b, c, ⟨⟩, ⟨⟩⟩).spec)
-        (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+      let sent : Nat ← pathLift ambient inputs (s := phased) ⟨b, c, ⟨⟩, ⟨⟩⟩ ⟨.inl ⟨⟩, ()⟩
       for t in [6, 7] do
         let _ ← liftM (OracleSpec.query (spec :=
           ambient + (pathResources inputs phased ⟨b, c, ⟨⟩, ⟨⟩⟩).spec) (.inl t))
@@ -542,9 +536,8 @@ def scheduleVerifier : OracleVerifier ambient schedule Unit (fun _ => Nat) input
     rcases p with ⟨b, ⟨⟨⟩, ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩⟩⟩
     exact do
       let _ ← liftM (ambient.query 3)
-      let last : Nat ← liftM ((ambient + (pathResources inputs schedule
-        ⟨b, ⟨⟨⟩, ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩⟩⟩).spec).query
-          (.inr (.inr ⟨.inr (.inl ⟨⟩), ()⟩)))
+      let last : Nat ← pathLift ambient inputs (s := schedule)
+        ⟨b, ⟨⟨⟩, ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩⟩⟩ ⟨.inr (.inl ⟨⟩), ()⟩
       pure (if (show Bool from b) then last + (show Nat from view.val.2.2.1) else 0)
   outputMap _ _ _ := OracleMap.fst _ _
 
@@ -585,18 +578,15 @@ abbrev prefixResources := pathResources inputs single ⟨⟨⟩, ⟨⟩⟩
 def sumExport : OracleMap prefixResources exported where
   f x _ := (show Nat from x.1 ()) + (show Nat from x.2 (.inl ⟨⟩))
   impl _ := do
-    let a : Nat ← liftM (prefixResources.spec.query (.inl ⟨(), ()⟩))
-    let b : Nat ← liftM (prefixResources.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
+    let a : Nat ← (OracleMap.fst inputs (pathFamily single ⟨⟨⟩, ⟨⟩⟩)).impl ⟨(), ()⟩
+    let b : Nat ← (OracleMap.snd inputs (pathFamily single ⟨⟨⟩, ⟨⟩⟩)).impl ⟨.inl ⟨⟩, ()⟩
     pure (a + b)
-  law _ _ := by
-    simp only [simulateQ_bind]
-    rfl
+  law _ _ := rfl
 
 /-- Export the prefix message. -/
-def messageExport : OracleMap prefixResources exported where
-  f x _ := show Nat from x.2 (.inl ⟨⟩)
-  impl _ := liftM (prefixResources.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
-  law _ _ := rfl
+def messageExport : OracleMap prefixResources exported :=
+  (OracleMap.embedding (pathFamily single ⟨⟨⟩, ⟨⟩⟩) (fun _ : Unit => Sum.inl PUnit.unit)).comp
+    (OracleMap.snd inputs (pathFamily single ⟨⟨⟩, ⟨⟩⟩))
 
 /-- A prefix verifier with a fixed decision program and export. -/
 def prefixVerifier (program : OptionT (OracleComp (ambient + prefixResources.spec)) Nat)
@@ -611,7 +601,7 @@ def prefixVerifier (program : OptionT (OracleComp (ambient + prefixResources.spe
 
 /-- The prefix decision reads its message. -/
 def readPrefix : OptionT (OracleComp (ambient + prefixResources.spec)) Nat :=
-  liftM ((ambient + prefixResources.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+  liftM (pathLift ambient inputs (s := single) ⟨⟨⟩, ⟨⟩⟩ ⟨.inl ⟨⟩, ()⟩)
 
 /-- The suffix resources on the only path of `single`. -/
 abbrev suffixResources := pathResources exported single ⟨⟨⟩, ⟨⟩⟩
@@ -625,7 +615,7 @@ def suffixVerifier :
     exact do
       let _ ← liftM ((ambient + suffixResources.spec).query (.inl 3))
       let e : Nat ← liftM ((ambient + suffixResources.spec).query (.inr (.inl ⟨(), ()⟩)))
-      let m : Nat ← liftM ((ambient + suffixResources.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+      let m : Nat ← pathLift ambient exported (s := single) ⟨⟨⟩, ⟨⟩⟩ ⟨.inl ⟨⟩, ()⟩
       pure (stmt + e + m)
   outputMap _ p _ := OracleMap.fst _ _
 
@@ -751,12 +741,12 @@ example (secret : Nat) :
   kernel_rfl
 
 /-- Ambient requests of the composed run, as full-surface queries. -/
-def toFull : QueryImpl bitAmbient (OracleComp bitFull) := fun q => liftM (bitFull.query (.inl q))
+def toFull : QueryImpl bitAmbient (OracleComp bitFull) := (QueryImpl.id' bitFull).restrictLeft
 
 /-- Challenge draws of the composed run, as full-surface queries. -/
 def fullDraw : (c : ChallengeNode oracleSig bitCombined) →
     OracleComp bitFull (challengeSpec oracleSig bitCombined c) :=
-  fun c => liftM (bitFull.query (.inr c))
+  (QueryImpl.id' bitFull).restrictRight
 
 /-- The prefix stage of `OracleVerifier.run_append`: the prefix interaction, ending after the
 seam slot. -/
@@ -1007,11 +997,10 @@ def twoOracleVerifier :
     OracleVerifier ambient twoOracles Unit (fun _ => Nat) inputs (fun _ => exported) where
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
-    let spec := ambient + (pathResources inputs twoOracles ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩).spec
     exact do
-      let a : Nat ← liftM (spec.query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
-      let b : Nat ← liftM (spec.query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
-      let c : Nat ← liftM (spec.query (.inr (.inr ⟨.inr (.inl ⟨⟩), ()⟩)))
+      let a : Nat ← pathLift ambient inputs (s := twoOracles) ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ ⟨.inl ⟨⟩, ()⟩
+      let b : Nat ← pathLift ambient inputs (s := twoOracles) ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ ⟨.inl ⟨⟩, ()⟩
+      let c : Nat ← pathLift ambient inputs (s := twoOracles) ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ ⟨.inr (.inl ⟨⟩), ()⟩
       pure (a + b + c)
   outputMap _ _ _ := OracleMap.fst _ _
 
@@ -1142,8 +1131,7 @@ def liftedVerifier : OracleVerifier ambient liftedNode Unit (fun _ => Nat) input
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact do
-      let sent : Nat ← liftM ((ambient + (pathResources inputs liftedNode ⟨⟨⟩, ⟨⟩⟩).spec).query
-        (.inr (.inr ⟨.inl ⟨⟩, ⟨()⟩⟩)))
+      let sent : Nat ← pathLift ambient inputs (s := liftedNode) ⟨⟨⟩, ⟨⟩⟩ ⟨.inl ⟨⟩, ⟨()⟩⟩
       pure sent
   outputMap _ _ _ := OracleMap.fst _ _
 

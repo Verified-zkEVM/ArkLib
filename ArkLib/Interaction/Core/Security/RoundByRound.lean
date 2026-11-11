@@ -27,13 +27,12 @@ namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle MeasureTheory
 open scoped ENNReal
 
-attribute [local implicit_reducible] projectPathAlong projectPathAlongLocalMap
-  Displayed.LocalMap.toHom Displayed.LocalMap.toHomFun
 
 variable {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
 
-/-- Full runtime moves decorating a structural cursor, including erased payloads. -/
-@[implicit_reducible]
+/-- Full runtime moves decorating a structural cursor, including erased payloads. Reduction
+exposes the history type when extending a concrete cursor. -/
+@[reducible]
 def PrefixMoves : {s t : FreeM P PUnit.{u + 1}} → Cursor.Spine s t → Type u
   | _, _, .root _ => PUnit
   | _, _, .down (a := a) b tail =>

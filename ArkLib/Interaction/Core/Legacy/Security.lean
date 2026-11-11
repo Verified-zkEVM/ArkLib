@@ -200,8 +200,9 @@ theorem verifier_run_mapOutput {S : Type} {s : Protocol.{0}} {T : Path s → Typ
       (fun obs => ⟨obs.1, f obs.1 obs.2.1, obs.2.2⟩) <$> V.run stmt p := by
   have h := runWith_mapOutput_mapOutput (m := OracleComp (oSpec + challengeSpec plainSig s))
     .focalFirst s f (fun _ x => x)
-    (p.simulate (fun q => liftM ((oSpec + challengeSpec plainSig s).query (.inl q))))
-    (sampler plainSig s (fun c => liftM ((oSpec + challengeSpec plainSig s).query (.inr c))))
+    (p.simulate (QueryImpl.ofLift oSpec (OracleComp (oSpec + challengeSpec plainSig s))))
+    (sampler plainSig s (QueryImpl.ofLift (challengeSpec plainSig s)
+      (OracleComp (oSpec + challengeSpec plainSig s))))
   rw [Strategy.mapOutput_id] at h
   simp only [Core.Verifier.run, simulate_mapOutput, TwoParty.Lens.run, h, bind_assoc,
     LawfulMonad.pure_bind, _root_.map_bind]
@@ -473,6 +474,8 @@ theorem extractionGame_embed (V : _root_.Verifier oSpec StmtIn StmtOut pSpec)
         knowledgeTail (challengeSpec plainSig (protocol pSpec)) V E stmt := by
   simp only [extractionGame, Core.Verifier.runWithLog, ambientLogged, _root_.map_bind,
     bind_map_left, bind_assoc]
+  unfold QueryImpl.restrictLeft QueryImpl.restrictRight
+  simp only [QueryImpl.id'_apply]
   refine bind_congr fun a => ?_
   rcases a with ⟨⟨tr, out, ⟨⟩⟩, pl⟩
   simp only [knowledgeTail, run_withLogging_inl, embedVerifier_decide,

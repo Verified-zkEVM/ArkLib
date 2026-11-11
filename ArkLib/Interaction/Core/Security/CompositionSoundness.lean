@@ -299,9 +299,10 @@ def appendPrefixRun {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
     OracleComp (ambient + challengeSpec l (s₁.append s₂)) (RunBoundary l ambient s₁ s₂ Out) :=
   TwoParty.Lens.run s₁
     (Focal.splitPrefix (prover.simulate
-      (fun q => liftM ((ambient + challengeSpec l (s₁.append s₂)).query (.inl q)))))
+      (QueryImpl.ofLift ambient (OracleComp (ambient + challengeSpec l (s₁.append s₂))))))
     (sampler l s₁ (prefixDraw l s₁ s₂
-      (fun c => liftM ((ambient + challengeSpec l (s₁.append s₂)).query (.inr c)))))
+      (QueryImpl.ofLift (challengeSpec l (s₁.append s₂))
+        (OracleComp (ambient + challengeSpec l (s₁.append s₂))))))
 
 /-- The rest of a plain run after the append boundary: the suffix interaction against the
 returned continuation, then the end decision on the whole transcript. -/
@@ -314,7 +315,8 @@ def Verifier.suffixRun {s₁ : Protocol.{u}} {s₂ : Path s₁ → Protocol.{u}}
       (Observation plainSig (s₁.append s₂) Out T) := do
   let ⟨tail, out, _⟩ ← TwoParty.Lens.run _ b.2.1
     (sampler plainSig _ (suffixDraw plainSig s₁ s₂
-      (fun c => liftM ((ambient + challengeSpec plainSig (s₁.append s₂)).query (.inr c)))
+      (QueryImpl.ofLift (challengeSpec plainSig (s₁.append s₂))
+        (OracleComp (ambient + challengeSpec plainSig (s₁.append s₂))))
       (projectPathAlong plainSig s₁ b.1)))
   let tr := PathAlong.append plainSig s₁ s₂ b.1 tail
   let verdict ← OracleComp.liftComp
@@ -352,7 +354,8 @@ def OracleVerifier.suffixRun {s₁ : OracleProtocol.{u}} {s₂ : Path s₁ → O
       (Observation oracleSig (s₁.append s₂) Out (OracleVerifier.Output T B)) := do
   let ⟨tail, out, _⟩ ← TwoParty.Lens.run _ b.2.1
     (sampler oracleSig _ (suffixDraw oracleSig s₁ s₂
-      (fun c => liftM ((ambient + challengeSpec oracleSig (s₁.append s₂)).query (.inr c)))
+      (QueryImpl.ofLift (challengeSpec oracleSig (s₁.append s₂))
+        (OracleComp (ambient + challengeSpec oracleSig (s₁.append s₂))))
       (projectPathAlong oracleSig s₁ b.1)))
   let tr := PathAlong.append oracleSig s₁ s₂ b.1 tail
   let p := projectPathAlong oracleSig _ tr
@@ -360,7 +363,7 @@ def OracleVerifier.suffixRun {s₁ : OracleProtocol.{u}} {s₂ : Path s₁ → O
   let resources := (data, payloads _ tr)
   let verdict ← simulateQ
     (QueryImpl.addLift
-      ((fun q => liftM ((ambient + challengeSpec oracleSig (s₁.append s₂)).query (.inl q))) :
+      ((QueryImpl.ofLift ambient (OracleComp (ambient + challengeSpec oracleSig (s₁.append s₂)))) :
         QueryImpl ambient (OracleComp (ambient + challengeSpec oracleSig (s₁.append s₂))))
       ((pathResources inputs _ p).answer resources))
     (V.decide stmt p view).run
@@ -699,7 +702,6 @@ stateless.
 -/
 
 
-
 section standalone
 
 variable {ι σ : Type} {ambient : OracleSpec ι}
@@ -709,20 +711,20 @@ protocol. -/
 def prefixQueries (s₁ : Protocol.{0}) (s₂ : Path s₁ → Protocol) :
     QueryImpl (ambient + challengeSpec plainSig s₁)
       (OracleComp (ambient + challengeSpec plainSig (s₁.append s₂))) :=
-  ((fun q => liftM ((ambient + challengeSpec plainSig (s₁.append s₂)).query (.inl q))) :
+  (((QueryImpl.id' (ambient + challengeSpec plainSig (s₁.append s₂))).restrictLeft) :
     QueryImpl ambient (OracleComp (ambient + challengeSpec plainSig (s₁.append s₂)))) +
   prefixDraw (m := OracleComp (ambient + challengeSpec plainSig (s₁.append s₂))) plainSig s₁ s₂
-    (fun c => liftM ((ambient + challengeSpec plainSig (s₁.append s₂)).query (.inr c)))
+    ((QueryImpl.id' (ambient + challengeSpec plainSig (s₁.append s₂))).restrictRight)
 
 /-- Answer the queries of a standalone suffix run from the run interface of the appended
 protocol. -/
 def suffixQueries (s₁ : Protocol.{0}) (s₂ : Path s₁ → Protocol) (p : Path s₁) :
     QueryImpl (ambient + challengeSpec plainSig (s₂ p))
       (OracleComp (ambient + challengeSpec plainSig (s₁.append s₂))) :=
-  ((fun q => liftM ((ambient + challengeSpec plainSig (s₁.append s₂)).query (.inl q))) :
+  (((QueryImpl.id' (ambient + challengeSpec plainSig (s₁.append s₂))).restrictLeft) :
     QueryImpl ambient (OracleComp (ambient + challengeSpec plainSig (s₁.append s₂)))) +
   suffixDraw (m := OracleComp (ambient + challengeSpec plainSig (s₁.append s₂))) plainSig s₁ s₂
-    (fun c => liftM ((ambient + challengeSpec plainSig (s₁.append s₂)).query (.inr c))) p
+    ((QueryImpl.id' (ambient + challengeSpec plainSig (s₁.append s₂))).restrictRight) p
 
 /-- The run of `V₁.append V₂` with the prefix decision taken at the boundary: the standalone
 run of `V₁` against the split prover, then the standalone run of `V₂` against the returned
@@ -778,12 +780,14 @@ theorem simulateQ_prefixQueries {s₁ : Protocol} {s₂ : Path s₁ → Protocol
       (QueryImpl.addLift impl (prefixDraw plainSig s₁ s₂ ch) :
         QueryImpl _ (StateT σ ProbComp)) t := by
   rcases t with q | c
-  · simp only [prefixQueries, QueryImpl.add_apply_inl, simulateQ_spec_query]
+  · simp only [prefixQueries, QueryImpl.add_apply_inl, QueryImpl.restrictLeft,
+      QueryImpl.id'_apply, simulateQ_spec_query]
     rfl
   · simp only [prefixQueries, QueryImpl.add_apply_inr]
     rw [← prefixDraw_comp plainSig (m' := StateT σ ProbComp)
       (fun x => simulateQ (QueryImpl.addLift impl ch : QueryImpl _ (StateT σ ProbComp)) x)]
-    simp only [simulateQ_spec_query, QueryImpl.addLift_def, QueryImpl.add_apply_inr,
+    simp only [QueryImpl.restrictRight, QueryImpl.id'_apply, simulateQ_spec_query,
+      QueryImpl.addLift_def, QueryImpl.add_apply_inr,
       QueryImpl.liftTarget_apply]
     exact prefixDraw_comp plainSig (fun x => liftM x) s₁ s₂ ch c
 
@@ -797,12 +801,14 @@ theorem simulateQ_suffixQueries {s₁ : Protocol} {s₂ : Path s₁ → Protocol
       (QueryImpl.addLift impl (suffixDraw plainSig s₁ s₂ ch p) :
         QueryImpl _ (StateT σ ProbComp)) t := by
   rcases t with q | c
-  · simp only [suffixQueries, QueryImpl.add_apply_inl, simulateQ_spec_query]
+  · simp only [suffixQueries, QueryImpl.add_apply_inl, QueryImpl.restrictLeft,
+      QueryImpl.id'_apply, simulateQ_spec_query]
     rfl
   · simp only [suffixQueries, QueryImpl.add_apply_inr]
     rw [← suffixDraw_comp plainSig (m' := StateT σ ProbComp)
       (fun x => simulateQ (QueryImpl.addLift impl ch : QueryImpl _ (StateT σ ProbComp)) x)]
-    simp only [simulateQ_spec_query, QueryImpl.addLift_def, QueryImpl.add_apply_inr,
+    simp only [QueryImpl.restrictRight, QueryImpl.id'_apply, simulateQ_spec_query,
+      QueryImpl.addLift_def, QueryImpl.add_apply_inr,
       QueryImpl.liftTarget_apply]
     exact suffixDraw_comp plainSig (fun x => liftM x) s₁ s₂ ch p c
 
@@ -876,10 +882,20 @@ theorem Verifier.boundaryDecidedRun_eq {s₁ : Protocol} {s₂ : Path s₁ → P
         (toPlainView _ r.1)).run full
       pure ⟨PathAlong.append plainSig s₁ s₂ o.1 r.1, r.2.1, v⟩) := by
   intro full toFull draw
-  simp only [Verifier.boundaryDecidedRun, Verifier.run, simulateQ_bind, simulateQ_pure, bind_assoc]
+  have routeAmbient (t : Protocol) :
+      QueryImpl.ofLift ambient (OracleComp (ambient + challengeSpec plainSig t)) =
+        (fun q => liftM ((ambient + challengeSpec plainSig t).query (.inl q))) := rfl
+  have routeChallenge (t : Protocol) :
+      QueryImpl.ofLift (challengeSpec plainSig t)
+          (OracleComp (ambient + challengeSpec plainSig t)) =
+        (fun c => liftM ((ambient + challengeSpec plainSig t).query (.inr c))) := rfl
+  simp only [Verifier.boundaryDecidedRun, Verifier.run, routeAmbient, routeChallenge,
+    simulateQ_bind, simulateQ_pure, bind_assoc]
+  unfold prefixQueries suffixQueries QueryImpl.restrictLeft QueryImpl.restrictRight
+  simp only [QueryImpl.id'_apply]
   rw [simulateQ_run_simulate_sampler]
-  simp only [simulateQ_spec_query, prefixQueries, suffixQueries, QueryImpl.add_apply_inl,
-    QueryImpl.add_apply_inr, QueryImpl.simulateQ_add_liftComp_left]
+  simp only [simulateQ_spec_query, QueryImpl.add_apply_inl, QueryImpl.add_apply_inr,
+    QueryImpl.simulateQ_add_liftComp_left]
   refine bind_congr fun o => ?_
   refine bind_congr fun mid => ?_
   erw [LawfulMonad.pure_bind]

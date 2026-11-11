@@ -794,3 +794,36 @@ rows of `scripts/SumcheckRuntime.lean`. Rows 3, 4 and 6 are premise-required und
 **Why.** The interaction core has one protocol per message carrier and a passive verifier, and
 names challenges by node occurrences. The restated rows check the same values and effect order
 under those rules.
+
+## 25. Routing owners and transparency
+
+**Code.** The remaining forwarding subexpressions in the interaction layer and Sumcheck Core
+use `OracleMap.fst`, `OracleMap.snd`, `OracleMap.embedding`, `Interaction.Core.pathLift` and
+VCVio's `QueryImpl.id'` restrictions (or `QueryImpl.ofLift` for universe-polymorphic sums). Legacy index elimination, equality transport, path
+elimination, export arithmetic and surrounding effects are preserved. `OracleMap.par` uses the
+resource projections. The parent's `OracleMap.sum` already composes `par` and the family/resource
+representation maps. `oracles_split` delegates its empty-prefix family routing to `embedding`.
+The ordinary and traced runners forward ambient queries and challenge requests through the
+identity handler, without substituting a sampler. Legacy `decisionImpl` retains its substantive
+resource translation and delegates only the outer sum routing to identity restrictions.
+
+**Parent fixes retained.** `Interpreted.headQuery` and `tailLift` already use `embedding`.
+`Execution.verifier.outputMap` already uses `fst`; its carrier-generic `verifierOn` now does too.
+`roundRoute` already specializes `roundRouteOn`; the latter now delegates to `headQuery`.
+The Sumcheck `Routing` test already uses identity restrictions and projection handlers throughout
+its export map. `OracleVerifier.runWithLog` and `runWithAmbientLog` already specialize traced
+runners; the forwarding implementations in `Oracle/SlotTrace` now use identity restrictions.
+
+**Transparency.** The Core layers and their tests carry no local transparency overrides.
+Imported replication and path projection algorithms retain their definition-site transparency;
+proofs use explicit reduction and their equations where needed. The existing definition-site
+annotations on `PlainPoly`, `plainSig`, `OraclePoly`, `oracleSig`, `viewSig`, `oracleIdx`,
+`OracleData`, `sumFamily`, `singletonFamily`, `pathFamily`, `PrefixMoves` and Sumcheck `round`
+use `reducible`. Their docstrings explain the dependent constructor or query types exposed by
+reduction. `OracleMap.fst` is `macro_inline` so the carrier-generic verifier can project its
+inputs without computing the mathematical input family's interpreter. No attribute command
+changes another declaration's transparency.
+
+**Disposition.** No ledger row changes status. P1 still permits challenge distributions that
+depend on earlier public moves and confines resource queries to the final decision. P2 still
+prevents challenges and payloads from selecting shape. No statement or premise changes.

@@ -55,9 +55,7 @@ def queryDecision : OracleVerifier noAmbient tree Unit (fun _ => Nat) emptyFamil
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact do
-      let n : Nat ← liftM (OracleSpec.query (spec :=
-        noAmbient + (pathResources emptyFamily tree ⟨⟨⟩, ⟨⟩⟩).spec)
-        (.inr (.inr ⟨.inl ⟨⟩, (3 : Nat)⟩)))
+      let n : Nat ← pathLift noAmbient emptyFamily (s := tree) ⟨⟨⟩, ⟨⟩⟩ ⟨.inl ⟨⟩, (3 : Nat)⟩
       pure n
   outputMap _ p _ :=
     (OracleMap.embedding (pathFamily tree p) (fun _ => .inl ⟨⟩)).comp (OracleMap.snd _ _)

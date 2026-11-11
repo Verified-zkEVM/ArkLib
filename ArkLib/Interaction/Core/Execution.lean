@@ -41,9 +41,9 @@ def Verifier.run {ι : Type u} {ambient : OracleSpec.{u, u} ι}
     (V : Verifier ambient s S T) (stmt : S) (p : Prover plainSig ambient s Out) :
     OracleComp (ambient + challengeSpec plainSig s) (Observation plainSig s Out T) := do
   let ⟨tr, out, _⟩ ← TwoParty.Lens.run s
-    (p.simulate (fun q => liftM ((ambient + challengeSpec plainSig s).query (.inl q))))
-    (sampler plainSig s (fun c =>
-      liftM ((ambient + challengeSpec plainSig s).query (.inr c))))
+    (p.simulate (QueryImpl.ofLift ambient (OracleComp (ambient + challengeSpec plainSig s))))
+    (sampler plainSig s (QueryImpl.ofLift (challengeSpec plainSig s)
+      (OracleComp (ambient + challengeSpec plainSig s))))
   let verdict ← OracleComp.liftComp
     (V.decide stmt (projectPathAlong plainSig s tr) (toPlainView s tr)).run
     (ambient + challengeSpec plainSig s)

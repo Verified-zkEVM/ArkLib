@@ -45,7 +45,7 @@ variable {ι κ : Type} {oSpec : OracleSpec ι} {spec : OracleSpec κ}
 /-- Answer each shared-oracle query with a default value, and keep the other queries. -/
 def dropAmbient [∀ t, Inhabited (oSpec.Range t)] :
     QueryImpl (oSpec + spec) (OracleComp spec) :=
-  QueryImpl.add (fun _ => pure default) (fun t => liftM (spec.query t))
+  QueryImpl.add (fun _ => pure default) (QueryImpl.id' spec)
 
 /-- If a computation simulates to `pure x` while its shared-oracle queries are passed through,
 then it reaches no shared-oracle query, so dropping them leaves the value `x`. -/
@@ -212,7 +212,7 @@ def viewChallenges (v : PathAlong viewSig (oracleProtocol pSpec)) : pSpec.Challe
 /-- Queries to the right summand of a sum family. -/
 def liftRight {I J : Type} {A : I → Type} {B : J → Type} (a : OracleFamily.{0, 0, 0} I A)
     (b : OracleFamily.{0, 0, 0} J B) : QueryImpl b.spec (OracleComp (sumFamily a b).spec) :=
-  fun q => liftM ((sumFamily a b).spec.query ⟨.inr q.1, q.2⟩)
+  (OracleMap.embedding (sumFamily a b) Sum.inr).impl
 
 omit Oₘ in
 /-- A message round other than a challenge round `j` lies after `j`. -/
@@ -246,8 +246,9 @@ def queryMsgNode (j : Fin n) (rest : OracleProtocol.{0})
   | .P_to_V, hd, ⟨b, p⟩, i, hi, q =>
     if hij : i.1.val = j.val then
       match i, (Subtype.ext (Fin.ext hij) : i = ⟨j, hd⟩), q with
-      | _, rfl, q => liftM ((pathFamily (FreeM.liftBind (oraclePos pSpec j .P_to_V hd)
-          (fun _ => rest)) ⟨b, p⟩).spec.query ⟨.inl ⟨⟩, q⟩)
+      | _, rfl, q => (OracleMap.embedding
+          (pathFamily (FreeM.liftBind (oraclePos pSpec j .P_to_V hd) (fun _ => rest)) ⟨b, p⟩)
+          (fun _ : PUnit.{1} => Sum.inl PUnit.unit)).impl ⟨PUnit.unit, q⟩
     else simulateQ (liftRight _ _) (recur p i (by omega) q)
   | .V_to_P, hd, ⟨_, p⟩, i, hi, q => recur p i (lt_of_challenge hd i hi) q
 
@@ -322,11 +323,9 @@ def resourceImpl (p : Path (oracleProtocol pSpec)) :
     QueryImpl ([OStmtIn]ₒ + [pSpec.Message]ₒ)
       (OracleComp (pathResources (family OStmtIn) (oracleProtocol pSpec) p).spec) :=
   QueryImpl.add
-    (fun q => liftM ((pathResources (family OStmtIn) (oracleProtocol pSpec) p).spec.query
-      (.inl q)))
+    (OracleMap.fst (family OStmtIn) (pathFamily (oracleProtocol pSpec) p)).impl
     (fun q => simulateQ
-      (fun t => liftM ((pathResources (family OStmtIn) (oracleProtocol pSpec) p).spec.query
-        (.inr t)))
+      (OracleMap.snd (family OStmtIn) (pathFamily (oracleProtocol pSpec) p)).impl
       (queryMsg 0 n _ p q.1 (Nat.zero_le _) q.2))
 
 /-- Routing answers each legacy query from the statement data and the path's messages. -/
@@ -348,10 +347,10 @@ def decisionImpl (p : Path (oracleProtocol pSpec)) :
     QueryImpl (oSpec + ([OStmtIn]ₒ + [pSpec.Message]ₒ))
       (OracleComp (oSpec + (pathResources (family OStmtIn) (oracleProtocol pSpec) p).spec)) :=
   QueryImpl.add
-    (fun q => liftM ((oSpec +
-      (pathResources (family OStmtIn) (oracleProtocol pSpec) p).spec).query (.inl q)))
-    (fun q => simulateQ (fun t => liftM ((oSpec +
-      (pathResources (family OStmtIn) (oracleProtocol pSpec) p).spec).query (.inr t)))
+    (QueryImpl.id' (oSpec +
+      (pathResources (family OStmtIn) (oracleProtocol pSpec) p).spec)).restrictLeft
+    (fun q => simulateQ (QueryImpl.id' (oSpec +
+      (pathResources (family OStmtIn) (oracleProtocol pSpec) p).spec)).restrictRight
       (resourceImpl p q))
 
 /-- The output map of a legacy output-oracle simulation, for the challenges of a run. Its data

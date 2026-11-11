@@ -25,20 +25,19 @@ universe v v' uκ uρ
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
 
--- Reduce the shape projection when the payload family descends to a child.
-attribute [local implicit_reducible] projectPathAlong projectPathAlongLocalMap
-  Displayed.LocalMap.toHom Displayed.LocalMap.toHomFun
 
-/-- The oracle nodes on a completed shape path. -/
-@[implicit_reducible]
+/-- The oracle nodes on a completed shape path. Reduction exposes the concrete index and response
+families in dependent query types. -/
+@[reducible]
 def oracleIdx : (s : OracleProtocol.{u, q}) → Path s → Type u
   | .pure _, _ => PEmpty
   | .liftBind (.message _) next, ⟨x, p⟩ => oracleIdx (next x) p
   | .liftBind (.challenge _) next, ⟨x, p⟩ => oracleIdx (next x) p
   | .liftBind (.oracle _ _) next, ⟨x, p⟩ => PUnit ⊕ oracleIdx (next x) p
 
-/-- Concrete data carriers of the oracle nodes on a completed path. -/
-@[implicit_reducible]
+/-- Concrete data carriers of the oracle nodes on a completed path. Reduction exposes the concrete
+index and response families in dependent query types. -/
+@[reducible]
 def OracleData : (s : OracleProtocol.{u, q}) → (p : Path s) → oracleIdx s p → Type u
   | .pure _, _ => fun i => i.elim
   | .liftBind (.message _) next, ⟨x, p⟩ => OracleData (next x) p
@@ -46,20 +45,23 @@ def OracleData : (s : OracleProtocol.{u, q}) → (p : Path s) → oracleIdx s p 
   | .liftBind (.oracle X _) next, ⟨x, p⟩ =>
     Sum.elim (fun _ => X) (OracleData (next x) p)
 
-/-- Independent families of concrete data, with disjoint query access. -/
-@[implicit_reducible]
+/-- Independent families of concrete data, with disjoint query access. Reduction exposes the
+concrete index and response families in dependent query types. -/
+@[reducible]
 def sumFamily {I : Type uI} {J : Type uJ} {A : I → Type u} {B : J → Type u}
     (a : OracleFamily.{uI, u, w} I A) (b : OracleFamily.{uJ, u, w} J B) :
     OracleFamily (I ⊕ J) (Sum.elim A B) :=
   ⟨fun | .inl i => a.interface i | .inr j => b.interface j⟩
 
-/-- The family consisting of one oracle payload. -/
-@[implicit_reducible]
+/-- The family consisting of one oracle payload. Reduction exposes the concrete index and response
+families in dependent query types. -/
+@[reducible]
 def singletonFamily {X : Type u} (I : OracleInterface.{u, q} X) :
     OracleFamily.{u, u, q} PUnit (fun _ => X) := ⟨fun _ => I⟩
 
-/-- The concrete oracle family at a completed path. -/
-@[implicit_reducible]
+/-- The concrete oracle family at a completed path. Reduction exposes the concrete index and
+response families in dependent query types. -/
+@[reducible]
 def pathFamily : (s : OracleProtocol.{u, q}) → (p : Path s) →
     OracleFamily (oracleIdx s p) (OracleData s p)
   | .pure _, _ => ⟨fun i => i.elim⟩
@@ -177,7 +179,9 @@ def id (R : Resources.{u, uX, dX}) : OracleMap R R where
   impl q := liftM (R.spec.query q)
   law _ _ := rfl
 
-/-- Keep the left side of disjoint resources. -/
+/-- Keep the left side of disjoint resources. Inlining erases the unused resource interpreters
+when a computable verifier specializes this projection to a mathematical oracle family. -/
+@[macro_inline]
 def fst (R : Resources.{u, uX, dX}) (R' : Resources.{u, uY, dY}) : OracleMap (R.sum R') R where
   f x := x.1
   impl q := liftM ((R.spec + R'.spec).query (.inl q))
@@ -194,8 +198,8 @@ def par (h : OracleMap In Mid) (g : OracleMap Out Other) :
     OracleMap (In.sum Out) (Mid.sum Other) where
   f x := (h.f x.1, g.f x.2)
   impl
-    | .inl q => simulateQ (fun r => liftM ((In.spec + Out.spec).query (.inl r))) (h.impl q)
-    | .inr q => simulateQ (fun r => liftM ((In.spec + Out.spec).query (.inr r))) (g.impl q)
+    | .inl q => simulateQ (fst In Out).impl (h.impl q)
+    | .inr q => simulateQ (snd In Out).impl (g.impl q)
   law x q := by
     cases q with
     | inl q =>
@@ -346,8 +350,9 @@ def oracles_split : (s₁ : OracleProtocol.{u, q}) → (s₂ : Path s₁ → Ora
     { f := fun x => sumData (fun i => i.elim) x
       impl := fun
         | ⟨.inl i, _⟩ => i.elim
-        | ⟨.inr i, q⟩ => (liftM ((pathFamily (s₂ ⟨⟩) p₂).spec.query ⟨i, q⟩) :
-        OracleComp (pathFamily (s₂ ⟨⟩) p₂).spec _)
+        | ⟨.inr i, q⟩ => (OracleMap.embedding (pathFamily (s₂ ⟨⟩) p₂)
+            (fun j : PEmpty.{u + 1} ⊕ oracleIdx (s₂ ⟨⟩) p₂ =>
+              match j with | .inl e => e.elim | .inr j => j)).impl ⟨.inr i, q⟩
       law := fun _ q => by
         rcases q with ⟨i | i, q⟩
         · exact i.elim
@@ -616,12 +621,12 @@ def OracleVerifier.run {ι : Type u} {ambient : OracleSpec.{u, u} ι}
   Sigma.fst <$> V.executeWith stmt data
     (ITrace := PUnit) (DTrace := fun _ => PUnit)
     (fun action => (fun result => (result, PUnit.unit)) <$> action)
-    (prover.simulate (fun r => liftM ((ambient + challengeSpec oracleSig s).query (.inl r))))
-    (sampler oracleSig s (fun c =>
-      liftM ((ambient + challengeSpec oracleSig s).query (.inr c))))
+    (prover.simulate (QueryImpl.ofLift ambient (OracleComp (ambient + challengeSpec oracleSig s))))
+    (sampler oracleSig s (QueryImpl.ofLift (challengeSpec oracleSig s)
+      (OracleComp (ambient + challengeSpec oracleSig s))))
     (fun p view resources => (fun verdict => (verdict, PUnit.unit)) <$>
       simulateQ (QueryImpl.addLift
-        ((fun r => liftM ((ambient + challengeSpec oracleSig s).query (.inl r))) :
+        ((QueryImpl.ofLift ambient (OracleComp (ambient + challengeSpec oracleSig s))) :
           QueryImpl ambient (OracleComp (ambient + challengeSpec oracleSig s)))
         ((pathResources inputs s p).answer resources)) (V.decide stmt p view).run)
 
@@ -651,7 +656,10 @@ theorem OracleVerifier.run_eq {ι : Type u} {ambient : OracleSpec.{u, u} ι}
     (V.decide stmt p view).run
   pure ⟨tr, out, verdict.map fun t => (t, (V.outputMap stmt p view).f resources)⟩
 ) := by
-  simp [OracleVerifier.run, OracleVerifier.executeWith, _root_.map_bind, bind_map_left]
+  unfold OracleVerifier.run OracleVerifier.executeWith
+  unfold QueryImpl.ofLift
+  simp only [_root_.map_bind, bind_map_left]
+  rfl
 
 /-- A run is the interaction, then the decision answered from the input and the run's payloads,
 with its ambient queries sent to the ambient part of the run's oracle. -/

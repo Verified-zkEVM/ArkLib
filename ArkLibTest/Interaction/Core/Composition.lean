@@ -115,8 +115,7 @@ def routedPrefix (out : PrefixOutput) :
     exact do
       let _ ← liftM ((labels + (pathResources emptyFamily tree ⟨⟨⟩, ⟨⟩⟩).spec).query
         (.inl 10))
-      let n : Nat ← liftM ((labels + (pathResources emptyFamily tree ⟨⟨⟩, ⟨⟩⟩).spec).query
-        (.inr (.inr ⟨.inl ⟨⟩, (3 : Nat)⟩)))
+      let n : Nat ← pathLift labels emptyFamily (s := tree) ⟨⟨⟩, ⟨⟩⟩ ⟨.inl ⟨⟩, (3 : Nat)⟩
       pure n
   outputMap _ p _ := out p
 
@@ -131,9 +130,7 @@ def routedSuffix :
       let input : Nat ← liftM
         ((labels + (pathResources functions tree ⟨⟨⟩, ⟨⟩⟩).spec).query
           (.inr (.inl ⟨⟨⟩, (1 : Nat)⟩)))
-      let message : Nat ← liftM
-        ((labels + (pathResources functions tree ⟨⟨⟩, ⟨⟩⟩).spec).query
-          (.inr (.inr ⟨.inl ⟨⟩, (1 : Nat)⟩)))
+      let message : Nat ← pathLift labels functions (s := tree) ⟨⟨⟩, ⟨⟩⟩ ⟨.inl ⟨⟩, (1 : Nat)⟩
       let _ ← liftM ((labels + (pathResources functions tree ⟨⟨⟩, ⟨⟩⟩).spec).query
         (.inl 30))
       pure (mid, input, message)

@@ -41,7 +41,6 @@ section Fold
 
 variable {R : Type} [CommSemiring R] {deg : ℕ} {State : ℕ → Type}
 
-attribute [local implicit_reducible] FreeM.replicate
 
 /-- The decoded transcript of one more round is the first round followed by the rest. -/
 theorem decodeTranscript_foldTranscript_succ (msg : (k : ℕ) → State (k + 1) → R⦃≤ deg⦄[X])
@@ -145,7 +144,6 @@ theorem legacyVerdict_honestTranscript (stmt : Spec.StatementRound R n 0)
 end Honest
 
 /-! ## Uniform challenges -/
-
 
 
 /-! ## Completeness -/

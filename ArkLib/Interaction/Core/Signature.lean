@@ -30,13 +30,15 @@ inductive PlainPos : Type (u + 1) where
   | message (X : Type u)
   | challenge (C : Type u)
 
-/-- Only public messages select the next subtree. -/
-@[implicit_reducible]
+/-- Only public messages select the next subtree. Reduction exposes the node constructors when
+elaborating dependent paths. -/
+@[reducible]
 def PlainPoly : PFunctor.{u + 1, u} :=
   ⟨PlainPos, fun | .message X => X | .challenge _ => PUnit⟩
 
-/-- Plain messages belong to the prover; challenges belong to the sampler. -/
-@[implicit_reducible]
+/-- Plain messages belong to the prover; challenges belong to the sampler. Reduction exposes the
+dependent move and branch types at concrete nodes. -/
+@[reducible]
 def plainSig : PFunctor.Lens PlainPoly rolePoly.{u} where
   toFunA | .message X => (.sender, X) | .challenge C => (.receiver, C)
   toFunB | .message _ => id | .challenge _ => fun _ => ⟨⟩
@@ -48,13 +50,15 @@ inductive OraclePos : Type (max (u + 1) (q + 1)) where
   | challenge (C : Type u)
   | oracle (X : Type u) (interface : OracleInterface.{u, q} X)
 
-/-- Oracle payloads, like challenges, cannot select a subtree. -/
-@[implicit_reducible]
+/-- Oracle payloads, like challenges, cannot select a subtree. Reduction exposes the node
+constructors when elaborating dependent paths. -/
+@[reducible]
 def OraclePoly : PFunctor.{max (u + 1) (q + 1), u} :=
   ⟨OraclePos.{u, q}, fun | .message X => X | .challenge _ | .oracle _ _ => PUnit⟩
 
-/-- The oracle signature records all moves and erases private payloads from branching. -/
-@[implicit_reducible]
+/-- The oracle signature records all moves and erases private payloads from branching. Reduction
+exposes the dependent move and branch types at concrete nodes. -/
+@[reducible]
 def oracleSig : PFunctor.Lens OraclePoly.{u, q} rolePoly.{u} where
   toFunA
     | .message X | .oracle X _ => (.sender, X)
@@ -63,8 +67,9 @@ def oracleSig : PFunctor.Lens OraclePoly.{u, q} rolePoly.{u} where
     | .message _ => id
     | .challenge _ | .oracle _ _ => fun _ => ⟨⟩
 
-/-- The verifier sees public messages and challenges, and a marker for each oracle payload. -/
-@[implicit_reducible]
+/-- The verifier sees public messages and challenges, and a marker for each oracle payload.
+Reduction exposes the dependent move and branch types at concrete nodes. -/
+@[reducible]
 def viewSig : PFunctor.Lens OraclePoly.{u, q} rolePoly.{u} where
   toFunA
     | .message X => (.sender, X)
