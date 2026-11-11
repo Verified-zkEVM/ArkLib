@@ -335,15 +335,20 @@ derived from the slot constructor. The final verifier decision is its own termin
 full logged, ambient logged and ordinary executions exactly. `phases_queries` states ordered
 ambient-log concatenation, and `simulateQ_runWithTrace_logView` preserves the correspondence under
 lawful interpreters, including stateful runtimes. The existing full-log universe restriction in
-entry 18 applies to this full-log trace result as well; prefix resources themselves retain
-independent input-data, input-query and oracle-node-query universes.
+entry 18 applies to the full-log trace result. `runWithAmbientTrace` uses the same slot runner
+and returns only ambient decision queries, preserving independent input-data, input-query and
+oracle-node-query universes. `runWithAmbientLog` is its aggregate projection;
+`runWithAmbientTrace_erase` gives ordinary erasure. `runWithTrace_ambientView` identifies the
+full trace with this ambient view at small query universes, including every slot prefix and owner.
 
 `Oracle/PrefixResources.lean` defines available payload families at actual prefixes, intrinsic
 node names, prefix-resource inclusion and typed query inclusion. `includeQuery_name` and
 `familyInclusion_query` relate canonical naming to actual query routing;
 `pathResourcesInclusion_data` identifies completed-prefix data with the payloads used by the
 verifier. `runWithTrace_prefixes` certifies that each produced phase precedes the actual completed
-transcript, and `available_at_terminal` transports its availability certificate. `joinToTerminal_name` preserves names from an appended protocol's actual seam to its
+transcript, and `available_at_terminal` transports its availability certificate.
+`runWithAmbientTrace_prefixes` gives the same provenance certificate for independent query
+universes. A compile-time acceptance canary checks these universe parameters directly. `joinToTerminal_name` preserves names from an appended protocol's actual seam to its
 terminal prefix. The append route continues to use `prefixRoute_payload` and `splitOutputs`.
 
 The acceptance client keeps the aggregate tests and adds per-slot runtime observations, actual

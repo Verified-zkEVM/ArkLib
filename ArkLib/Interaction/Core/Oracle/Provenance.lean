@@ -17,7 +17,7 @@ separate terminal phase. Logging each slot preserves the order and multiplicity 
 
 @[expose] public section
 
-universe u q uS dI wJ
+universe u q uS uI dI wJ
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle OracleSpec
@@ -104,6 +104,53 @@ theorem simulateQ_runWithTrace_logView {m : Type → Type u} [Monad m] [LawfulMo
     TracedRun.logView <$> simulateQ handler (V.runWithTrace stmt data prover) =
       simulateQ handler (V.runWithLog stmt data prover) := by
   rw [← simulateQ_map, runWithTrace_logView]
+
+/-- Keep only ambient decision queries while retaining the same produced interaction slots. -/
+def TracedRun.ambientView {V : OracleVerifier ambient s S T inputs outputs}
+    (r : TracedRun V Out) : AmbientTracedRun V Out :=
+  ⟨r.observation, r.interaction, r.decisionQueries.fst⟩
+
+/-- Full and ambient traces use exactly the same produced prefixes, owners and query groups. -/
+theorem runWithTrace_ambientView (V : OracleVerifier ambient s S T inputs outputs) (stmt : S)
+    (data : inputs.Data) (prover : Prover oracleSig ambient s Out) :
+    TracedRun.ambientView <$> V.runWithTrace stmt data prover =
+      V.runWithAmbientTrace stmt data prover := by
+  simp only [runWithTrace, runWithAmbientTrace, _root_.map_bind]
+  refine bind_congr fun r => ?_
+  rw [← map_run_withLogging_addLift_fst, bind_map_left]
+  simp [TracedRun.ambientView]
+
+section AmbientTrace
+
+variable {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol.{0, q}}
+  {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
+  {inputs : Resources.{0, uI, dI}} {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+  {Out : PathAlong oracleSig s → Type}
+
+/-- Forgetting ambient phase boundaries gives exactly the existing ambient logged run. -/
+theorem runWithAmbientTrace_logView (V : OracleVerifier ambient s S T inputs outputs) (stmt : S)
+    (data : inputs.Data) (prover : Prover oracleSig ambient s Out) :
+    AmbientTracedRun.logView <$> V.runWithAmbientTrace stmt data prover =
+      V.runWithAmbientLog stmt data prover := rfl
+
+/-- Ambient provenance erases to the ordinary run with independent resource-query universes. -/
+theorem runWithAmbientTrace_erase (V : OracleVerifier ambient s S T inputs outputs) (stmt : S)
+    (data : inputs.Data) (prover : Prover oracleSig ambient s Out) :
+    AmbientTracedRun.observation <$> V.runWithAmbientTrace stmt data prover =
+      V.run stmt data prover := by
+  have h := congrArg (Functor.map Prod.fst) (V.runWithAmbientTrace_logView stmt data prover)
+  simpa only [Functor.map_map, AmbientTracedRun.logView, map_fst_runWithAmbientLog] using h
+
+/-- Ambient trace projection also commutes with every lawful interpreter. -/
+theorem simulateQ_runWithAmbientTrace_logView {m : Type → Type u} [Monad m] [LawfulMonad m]
+    (V : OracleVerifier ambient s S T inputs outputs)
+    (handler : QueryImpl (ambient + challengeSpec oracleSig s) m) (stmt : S)
+    (data : inputs.Data) (prover : Prover oracleSig ambient s Out) :
+    AmbientTracedRun.logView <$> simulateQ handler (V.runWithAmbientTrace stmt data prover) =
+      simulateQ handler (V.runWithAmbientLog stmt data prover) := by
+  rw [← simulateQ_map, runWithAmbientTrace_logView]
+
+end AmbientTrace
 
 end OracleVerifier
 

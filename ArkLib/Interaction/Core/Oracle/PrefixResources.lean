@@ -200,6 +200,8 @@ theorem familyInclusion_query : {s : OracleProtocol.{u, q}} → {h k : FullPrefi
   | _, _, _, @Extends.cons (.oracle _ _) _ _ _ _ _, ⟨.inl _, _⟩ => by
     rfl
   | _, _, _, @Extends.cons (.oracle _ I) _ _ h k tail, ⟨.inr i, r⟩ => by
+    dsimp only [familyInclusion]
+    erw [OracleMap.sum_impl_inr]
     have ih := familyInclusion_query tail ⟨i, r⟩
     let handler : QueryImpl (family k).spec
         (OracleComp (sumFamily (singletonFamily I) (family k)).spec) := fun r =>
@@ -389,6 +391,27 @@ theorem available_at_terminal {ι : Type} {S : Type u} {ambient : OracleSpec ι}
     (available : phase.prefix.Available n) : r.terminalPhase.prefix.Available n := by
   obtain ⟨e⟩ := V.runWithTrace_prefixes stmt input prover hr phase hp
   exact available.mono e
+
+/-- Ambient traces retain actual prefix provenance for arbitrary resource-query universes. -/
+theorem runWithAmbientTrace_prefixes {ι : Type} {S : Type u} {ambient : OracleSpec ι}
+    {s : OracleProtocol.{0, q}} {T : Path s → Type} {J : Path s → Type}
+    {B : (p : Path s) → J p → Type} {inputs : Resources.{0, uI, dI}}
+    {outputs : (p : Path s) → OracleFamily (J p) (B p)}
+    {Out : PathAlong oracleSig s → Type}
+    (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (input : inputs.Data)
+    (prover : Prover oracleSig ambient s Out) {r : AmbientTracedRun V Out}
+    (hr : r ∈ support (V.runWithAmbientTrace stmt input prover))
+    (phase : SlotPhase ambient s) (hp : phase ∈ r.phases) :
+    Nonempty (FullPrefix.Extends phase.prefix (FullPrefix.complete s r.observation.1)) := by
+  simp only [runWithAmbientTrace, mem_support_bind_iff, mem_support_pure_iff] at hr
+  obtain ⟨interaction, hi, decision, _, heq⟩ := hr
+  subst r
+  simp only [AmbientTracedRun.phases, List.mem_append, List.mem_singleton] at hp
+  rcases hp with hp | rfl
+  · obtain ⟨raw, hraw, heq⟩ := List.mem_map.mp hp
+    subst phase
+    exact FullPrefix.runSlotTrace_prefixes s _ _ hi raw hraw
+  · exact ⟨FullPrefix.Extends.refl _⟩
 
 end OracleVerifier
 end Interaction.Core

@@ -249,7 +249,9 @@ example (hidden : Nat) :
     (fun result => (result.output.1.2.1, result.state, result.trace)) <$>
       (counter 7 pairChallenges).run
         ((pairVerifier true).runWithLog () (fun _ => 7) (pairProver [] 11 hidden)) =
-    pure (hidden, 10, [⟨.inl 0, (8 : Nat)⟩, ⟨.inl 1, (9 : Nat)⟩, ⟨.inl 2, (10 : Nat)⟩]) := rfl
+    pure (hidden, 10, [⟨.inl 0, (8 : Nat)⟩, ⟨.inl 1, (9 : Nat)⟩, ⟨.inl 2, (10 : Nat)⟩]) := by
+  rw [OracleVerifier.runWithLog_eq]
+  rfl
 
 /-- Tagged ambient requests with a unique unit response. -/
 abbrev unitAmbient : OracleSpec Nat := Nat →ₒ Unit
@@ -289,7 +291,9 @@ in chronological order. -/
 theorem unit_runtime_trace (hidden : Nat) :
     (fun result => (result.output.1.2.1, result.state, result.trace)) <$>
       unitCounter.run (unitVerifier.runWithLog () seven (unitProver hidden)) =
-    pure (hidden, 10, [⟨.inl 0, ()⟩, ⟨.inl 1, ()⟩, ⟨.inl 2, ()⟩]) := rfl
+    pure (hidden, 10, [⟨.inl 0, ()⟩, ⟨.inl 1, ()⟩, ⟨.inl 2, ()⟩]) := by
+  rw [OracleVerifier.runWithLog_eq]
+  rfl
 
 run_cmd do
   for hidden in [0, 42] do
@@ -892,16 +896,23 @@ theorem phase_trace_contract : tracedPhaseSummary = pure
       (3, .receiver, [2, 3, 6, 7])], 23, some 31, 2102563478) := by
   kernel_rfl
 
+/-- Answer ambient requests by their tags and use the designated challenge interpreter. -/
+def answerTags {s : OracleProtocol} (draw : QueryImpl (challengeSpec oracleSig s) Id) :
+    QueryImpl (ambient + challengeSpec oracleSig s) Id
+  | .inl n => n
+  | .inr c => draw c
+
 /-- The produced scheduling trace retains actual public challenges and hidden payloads. -/
-def actualPhaseTrace := simulateQ (QueryImpl.addLift (fun n => (n : Id Nat)) phasedChallenges)
+def actualPhaseTrace : OracleVerifier.TracedRun phaseVerifier (fun _ => Nat) :=
+  simulateQ (answerTags phasedChallenges)
   (phaseVerifier.runWithTrace () seven phaseProver)
 
 /-- Reading actual prefixes observes the sampled bit and the concrete sent payload. -/
 theorem actual_phase_prefixes :
     (actualPhaseTrace.phases[4]'(by decide)).prefix =
-      FullPrefix.cons true (FullPrefix.cons true .here) ∧
+      (some ⟨true, some ⟨true, none⟩⟩ : FullPrefix phased) ∧
     actualPhaseTrace.terminalPhase.prefix =
-      FullPrefix.cons true (FullPrefix.cons true (FullPrefix.cons (17 : Nat) .here)) := by
+      (some ⟨true, some ⟨true, some ⟨(17 : Nat), none⟩⟩⟩ : FullPrefix phased) := by
   constructor <;> kernel_rfl
 
 /-- An explicit setup retains its own slot before the same sends and terminal output. -/
@@ -917,8 +928,8 @@ def phaseSetup : OracleComp ambient (Prover oracleSig ambient phased (fun _ => N
         pure ⟨(17 : Nat), pure 23⟩⟩)
 
 /-- Execute the explicitly separate setup and interaction in the same ambient world. -/
-def setupPhaseTrace := simulateQ
-  (QueryImpl.addLift (fun n => (n : Id Nat)) phasedChallenges)
+def setupPhaseTrace : OracleVerifier.TracedRun phaseVerifier (fun _ => Nat) :=
+  simulateQ (answerTags phasedChallenges)
   (phaseVerifier.runWithSetupTrace () seven phaseSetup)
 
 /-- Setup and first-send query groups stay separate, at the same actual empty prefix. -/
@@ -957,15 +968,14 @@ theorem moved_query_same_log :
       fixedVerifier.runWithLog () seven (moveQuery false) := by
   kernel_rfl
 
+/-- The fixed-message protocol has no receiver nodes. -/
+def fixedDraw : QueryImpl (challengeSpec oracleSig fixedMessage) Id
+  | ⟨.inl _, h⟩ => nomatch h
+  | ⟨.inr ⟨_, n⟩, _⟩ => n.elim
+
 /-- Interpret a trace using the tag as its answer; this protocol has no challenge nodes. -/
-def movedQueryTrace (early : Bool) := simulateQ
-  (QueryImpl.addLift (fun n => (n : Id Nat))
-    (fun c => by
-      rcases c with ⟨n, h⟩
-      rcases n with _ | ⟨_, n⟩
-      · cases h
-      · exact n.elim))
-  (fixedVerifier.runWithTrace () seven (moveQuery early))
+def movedQueryTrace (early : Bool) : OracleVerifier.TracedRun fixedVerifier (fun _ => Nat) :=
+  simulateQ (answerTags fixedDraw) (fixedVerifier.runWithTrace () seven (moveQuery early))
 
 /-- The actual query prefixes differ even though all aggregate observations coincide. -/
 theorem moved_query_different_prefixes :
@@ -982,7 +992,7 @@ theorem moved_query_different_prefixes :
 
 /-- The sent payloads and private result are distinct. -/
 def twoOracleProver : Prover oracleSig ambient twoOracles (fun _ => Nat) :=
-  pure ⟨1, pure ⟨2, pure 3⟩⟩
+  pure ⟨(1 : Nat), pure ⟨(2 : Nat), pure 3⟩⟩
 
 /-- Read the old payload twice and then the fresh payload, retaining the full decision log. -/
 def twoOracleVerifier :
@@ -1004,7 +1014,8 @@ def twoOracleDraw : QueryImpl (challengeSpec oracleSig twoOracles) Id
   | ⟨.inr ⟨_, .inr ⟨_, n⟩⟩, _⟩ => n.elim
 
 /-- Execute the strategies once to obtain the phase artifacts and their raw source log. -/
-def twoOracleTrace := simulateQ (QueryImpl.addLift (fun n => (n : Id Nat)) twoOracleDraw)
+def twoOracleTrace : OracleVerifier.TracedRun twoOracleVerifier (fun _ => Nat) :=
+  simulateQ (answerTags twoOracleDraw)
   (twoOracleVerifier.runWithTrace () seven twoOracleProver)
 
 /-- The first suffix prover slot is the passive join phase. -/
@@ -1021,13 +1032,17 @@ theorem terminalPhase_mem : terminalPhase ∈ twoOracleTrace.phases :=
   twoOracleTrace.terminalPhase_mem
 
 /-- The actual join prefix contains the first sent payload and stops before the second. -/
-theorem joinPhase_prefix : joinPhase.prefix = FullPrefix.cons (1 : Nat) .here := by
+theorem joinPhase_prefix : joinPhase.prefix = (some ⟨(1 : Nat), none⟩ : FullPrefix twoOracles) := by
   kernel_rfl
 
 /-- The actual terminal prefix contains both concrete payloads. -/
 theorem terminalPhase_prefix : terminalPhase.prefix =
-    FullPrefix.cons (1 : Nat) (FullPrefix.cons (2 : Nat) .here) := by
+    (some ⟨(1 : Nat), some ⟨(2 : Nat), none⟩⟩ : FullPrefix twoOracles) := by
   kernel_rfl
+
+/-- Join ownership is prover ownership; the terminal action is the verifier's decision slot. -/
+theorem phase_intrinsic_owners : joinPhase.slot = .prover ∧ terminalPhase.slot = .decision := by
+  constructor <;> kernel_rfl
 
 /-- The actual join includes into the actual terminal context. -/
 def producedInclusion : FullPrefix.Extends joinPhase.prefix terminalPhase.prefix :=
@@ -1082,3 +1097,16 @@ example : OracleVerifier.TracedRun.logView <$>
 #print axioms FullPrefix.contextInclusion_name
 
 end Interaction.Core.LoggedExecutionTests
+
+universe uQuery uInput uData
+
+/-- Ambient provenance preserves the parent verifier's independent resource universes. -/
+example {ι : Type} {S : Type uS} {ambient : OracleSpec ι}
+    {s : OracleProtocol.{0, uQuery}} {T J : FreeM.Path s → Type}
+    {B : (p : FreeM.Path s) → J p → Type} {inputs : Resources.{0, uInput, uData}}
+    {outputs : (p : FreeM.Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+    {Out : PathAlong oracleSig s → Type}
+    (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
+    (prover : Prover oracleSig ambient s Out) :
+    OracleVerifier.AmbientTracedRun.observation <$> V.runWithAmbientTrace stmt data prover =
+      V.run stmt data prover := V.runWithAmbientTrace_erase stmt data prover

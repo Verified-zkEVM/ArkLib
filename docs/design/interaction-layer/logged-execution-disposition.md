@@ -204,7 +204,9 @@ boundaries. P1 retires those actions and their original phase assignments, as th
 premise-required rows state.
 
 The pre-existing large-query full-log restriction remains recorded in implementation note 18;
-this provenance port adds no restriction to the ordinary or ambient-log APIs.
+`runWithAmbientTrace` retains provenance at independent input-query and oracle-node-query
+universes, with erasure to `runWithAmbientLog` and the ordinary run.
+`runWithTrace_ambientView` equates its produced slots with the full trace at small universes.
 
 Ports owned by the oracle-access tests:
 

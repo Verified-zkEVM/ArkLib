@@ -18,7 +18,7 @@ separate terminal phase. Logging each slot preserves the order and multiplicity 
 
 @[expose] public section
 
-universe u q uS dI wJ
+universe u q uS uI dI wJ
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle OracleSpec
@@ -205,6 +205,18 @@ theorem runSlotTrace_log {ι : Type} {spec : OracleSpec ι} :
       rfl
     · exact loggedStep_log _ _ _ _
 
+/-- Projecting each slot to ambient queries commutes with chronological concatenation. -/
+theorem slotQueries_fst {ι κ : Type} {a : OracleSpec ι} {b : OracleSpec κ}
+    {s : OracleProtocol.{0, q}} (phases : List (SlotPhase (a + b) s)) :
+    slotQueries (phases.map (fun phase =>
+      (⟨phase.prefix, phase.slot, phase.queries.fst⟩ : SlotPhase a s))) =
+      (slotQueries phases).fst := by
+  induction phases with
+  | nil => rfl
+  | cons phase rest ih =>
+    simpa only [slotQueries, List.map_cons, List.flatMap_cons, QueryLog.fst_append] using
+      congrArg (phase.queries.fst ++ ·) ih
+
 namespace OracleVerifier
 
 variable {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
@@ -251,12 +263,7 @@ theorem interaction_queries {V : OracleVerifier ambient s S T inputs outputs}
     (r : TracedRun V Out) :
     slotQueries (r.interaction.map (fun phase =>
       (⟨phase.prefix, phase.slot, phase.queries.fst⟩ : SlotPhase ambient s))) =
-      (slotQueries r.interaction).fst := by
-  induction r.interaction with
-  | nil => rfl
-  | cons phase rest ih =>
-    simpa only [slotQueries, List.map_cons, List.flatMap_cons, QueryLog.fst_append] using
-      congrArg (phase.queries.fst ++ ·) ih
+      (slotQueries r.interaction).fst := slotQueries_fst r.interaction
 
 /-- Aggregate ambient logs are the ordered concatenation of all per-slot queries. -/
 theorem phases_queries {V : OracleVerifier ambient s S T inputs outputs} (r : TracedRun V Out) :
@@ -336,6 +343,105 @@ theorem runWithTrace_log (V : OracleVerifier ambient s S T inputs outputs) (stmt
   rw [id_logging, ← runSlotTrace_log, bind_map_left]
   refine bind_congr fun r => ?_
   simp [TracedRun.logView]
+
+section AmbientTrace
+
+variable {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol.{0, q}}
+  {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
+  {inputs : Resources.{0, uI, dI}} {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+  {Out : PathAlong oracleSig s → Type}
+
+/-- Ambient provenance permits independent input and oracle-node query universes. The only
+returned queries are ambient requests and challenge draws, whose indices are small. -/
+structure AmbientTracedRun (V : OracleVerifier ambient s S T inputs outputs)
+    (Out : PathAlong oracleSig s → Type) where
+  /-- The ordinary completed observation, including output resources and rejection. -/
+  observation : Observation oracleSig s Out (OracleVerifier.Output T B)
+  /-- The slots produced by the same interaction runner used by the full trace. -/
+  interaction : List (SlotPhase (ambient + challengeSpec oracleSig s) s)
+  /-- The decision's ambient requests and their actual responses. -/
+  decisionQueries : QueryLog ambient
+
+namespace AmbientTracedRun
+
+/-- Forget the phase boundaries to recover the existing two ambient logs. -/
+def logView {V : OracleVerifier ambient s S T inputs outputs} (r : AmbientTracedRun V Out) :=
+  (r.observation, (slotQueries r.interaction).fst, r.decisionQueries)
+
+/-- The final verifier decision has the completed actual prefix and receiver ownership. -/
+def terminalPhase {V : OracleVerifier ambient s S T inputs outputs} (r : AmbientTracedRun V Out) :
+    SlotPhase ambient s :=
+  ⟨FullPrefix.complete s r.observation.1, .decision, r.decisionQueries⟩
+
+/-- Ambient phases, including the decision as its own terminal phase. -/
+def phases {V : OracleVerifier ambient s S T inputs outputs} (r : AmbientTracedRun V Out) :
+    List (SlotPhase ambient s) :=
+  r.interaction.map (fun phase => ⟨phase.prefix, phase.slot, phase.queries.fst⟩) ++
+    [r.terminalPhase]
+
+/-- Every selected phase belongs to the produced ambient trace. -/
+theorem phase_mem {V : OracleVerifier ambient s S T inputs outputs} (r : AmbientTracedRun V Out)
+    (i : Fin r.phases.length) : r.phases[i] ∈ r.phases := List.getElem_mem _
+
+/-- The terminal decision belongs to the produced ambient trace. -/
+theorem terminalPhase_mem {V : OracleVerifier ambient s S T inputs outputs}
+    (r : AmbientTracedRun V Out) : r.terminalPhase ∈ r.phases := by simp [phases]
+
+/-- The ambient aggregate logs concatenate the produced per-slot query groups in order. -/
+theorem phases_queries {V : OracleVerifier ambient s S T inputs outputs}
+    (r : AmbientTracedRun V Out) :
+    slotQueries r.phases = (slotQueries r.interaction).fst ++ r.decisionQueries := by
+  change (List.flatMap (fun phase : SlotPhase ambient s => phase.queries) (_ ++ _)) = _
+  rw [List.flatMap_append]
+  simpa only [slotQueries, List.flatMap_cons, List.flatMap_nil, List.append_nil,
+    terminalPhase] using congrArg (· ++ r.decisionQueries) (slotQueries_fst r.interaction)
+
+end AmbientTracedRun
+
+/-- Instrument the same participant slots, logging only ambient queries of the final decision.
+Resource indices and input data retain their independent universes. -/
+def runWithAmbientTrace (V : OracleVerifier ambient s S T inputs outputs) (stmt : S)
+    (data : inputs.Data) (prover : Prover oracleSig ambient s Out) :
+    OracleComp (ambient + challengeSpec oracleSig s) (AmbientTracedRun V Out) := do
+  let full := ambient + challengeSpec oracleSig s
+  let toFull : QueryImpl ambient (OracleComp full) := fun r => liftM (full.query (.inl r))
+  let ⟨⟨tr, out, _⟩, phases⟩ ← runSlotTrace s (prover.simulate toFull)
+    (sampler oracleSig s (fun c => liftM (full.query (.inr c))))
+  let p := projectPathAlong oracleSig s tr
+  let view := toView s tr
+  let resources : (pathResources inputs s p).Data := (data, payloads s tr)
+  let (verdict, queries) ← (simulateQ
+    (QueryImpl.addLift toFull.withLogging ((pathResources inputs s p).answer resources) :
+      QueryImpl _ (WriterT (QueryLog ambient) (OracleComp full)))
+    (V.decide stmt p view).run).run
+  pure ⟨⟨tr, out, verdict.map fun t => (t, (V.outputMap stmt p view).f resources)⟩, phases, queries⟩
+
+/-- Erasing ambient slot boundaries gives the original ambient logging equation. -/
+theorem runWithAmbientTrace_log (V : OracleVerifier ambient s S T inputs outputs) (stmt : S)
+    (data : inputs.Data) (prover : Prover oracleSig ambient s Out) :
+    AmbientTracedRun.logView <$> V.runWithAmbientTrace stmt data prover = (
+let full := ambient + challengeSpec oracleSig s
+  let toFull : QueryImpl ambient (OracleComp full) := fun q => liftM (full.query (.inl q))
+  (simulateQ (QueryImpl.id' full).withLogging (TwoParty.Lens.run s (prover.simulate toFull)
+    (sampler oracleSig s (fun c => liftM (full.query (.inr c)))))).run >>= fun x =>
+  let tr := x.1.1
+  let p := projectPathAlong oracleSig s tr
+  let resources : (pathResources inputs s p).Data := (data, payloads s tr)
+  (simulateQ (QueryImpl.addLift toFull.withLogging
+      ((pathResources inputs s p).answer resources) :
+        QueryImpl _ (WriterT (QueryLog ambient) (OracleComp full)))
+    (V.decide stmt p (toView s tr)).run).run >>= fun y =>
+  pure (⟨tr, x.1.2.1, y.1.map fun t => (t, (V.outputMap stmt p (toView s tr)).f resources)⟩,
+    x.2.fst, y.2)) := by
+  simp only [runWithAmbientTrace, _root_.map_bind]
+  have id_logging {α : Type} (p : OracleComp (ambient + challengeSpec oracleSig s) α) :
+      (simulateQ (QueryImpl.id' (ambient + challengeSpec oracleSig s)).withLogging p).run =
+        p.withQueryLog := rfl
+  rw [id_logging, ← runSlotTrace_log, bind_map_left]
+  refine bind_congr fun r => ?_
+  simp [AmbientTracedRun.logView]
+
+end AmbientTrace
 
 end OracleVerifier
 end Interaction.Core

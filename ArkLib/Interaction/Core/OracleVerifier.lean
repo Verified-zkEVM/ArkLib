@@ -273,6 +273,26 @@ def sum (h : OracleMap In Mid) (g : OracleMap Out Other) :
     OracleMap (sumFamily In Out) (sumFamily Mid Other) :=
   (toSumFamily Mid Other).comp ((h.par g).comp (ofSumFamily In Out))
 
+/-- A left-family query follows its component map and retains the left source occurrence. -/
+theorem sum_impl_inl (h : OracleMap In Mid) (g : OracleMap Out Other)
+    (j : J) (q : (Mid.interface j).Query) :
+    (h.sum g).impl ⟨.inl j, q⟩ = simulateQ
+      (fun r => liftM ((sumFamily In Out).spec.query ⟨.inl r.1, r.2⟩)) (h.impl ⟨j, q⟩) := by
+  simp only [sum, comp, QueryImpl.apply_compose, toSumFamily, par]
+  erw [simulateQ_spec_query]
+  simp only [QueryImpl.apply_compose]
+  exact QueryImpl.simulateQ_simulateQ_eq_of_apply (fun _ => rfl) _
+
+/-- A right-family query follows its component map and retains the right source occurrence. -/
+theorem sum_impl_inr (h : OracleMap In Mid) (g : OracleMap Out Other)
+    (j : L) (q : (Other.interface j).Query) :
+    (h.sum g).impl ⟨.inr j, q⟩ = simulateQ
+      (fun r => liftM ((sumFamily In Out).spec.query ⟨.inr r.1, r.2⟩)) (g.impl ⟨j, q⟩) := by
+  simp only [sum, comp, QueryImpl.apply_compose, toSumFamily, par]
+  erw [simulateQ_spec_query]
+  simp only [QueryImpl.apply_compose]
+  exact QueryImpl.simulateQ_simulateQ_eq_of_apply (fun _ => rfl) _
+
 /-- Reassociate family data through the resource reassociation and representation bridges. -/
 def assoc (In : OracleFamily.{uI, u, w} I A) (Mid : OracleFamily.{uJ, u, w} J B)
     (Out : OracleFamily.{uK, u, w} K C) :

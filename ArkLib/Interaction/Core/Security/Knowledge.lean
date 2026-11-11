@@ -444,7 +444,18 @@ def runWithAmbientLog {ι : Type} {S : Type uS} {ambient : OracleSpec ι}
     OracleComp (ambient + challengeSpec oracleSig s)
       (Observation oracleSig s Out (OracleVerifier.Output T B) × QueryLog ambient ×
         QueryLog ambient) :=
-  let full := ambient + challengeSpec oracleSig s
+  AmbientTracedRun.logView <$> V.runWithAmbientTrace stmt data prover
+
+/-- The ambient logged specialization retains the original interaction and decision equation. -/
+theorem runWithAmbientLog_eq {ι : Type} {S : Type uS} {ambient : OracleSpec ι}
+    {s : OracleProtocol.{0, q}} {T : Path s → Type} {J : Path s → Type}
+    {B : (p : Path s) → J p → Type} {inputs : Resources.{0, uI, dI}}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+    {Out : PathAlong oracleSig s → Type}
+    (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
+    (prover : Prover oracleSig ambient s Out) :
+    V.runWithAmbientLog stmt data prover = (
+let full := ambient + challengeSpec oracleSig s
   let toFull : QueryImpl ambient (OracleComp full) := fun q => liftM (full.query (.inl q))
   (simulateQ (QueryImpl.id' full).withLogging (TwoParty.Lens.run s (prover.simulate toFull)
     (sampler oracleSig s (fun c => liftM (full.query (.inr c)))))).run >>= fun x =>
@@ -456,7 +467,8 @@ def runWithAmbientLog {ι : Type} {S : Type uS} {ambient : OracleSpec ι}
         QueryImpl _ (WriterT (QueryLog ambient) (OracleComp full)))
     (V.decide stmt p (toView s tr)).run).run >>= fun y =>
   pure (⟨tr, x.1.2.1, y.1.map fun t => (t, (V.outputMap stmt p (toView s tr)).f resources)⟩,
-    x.2.fst, y.2)
+    x.2.fst, y.2)) :=
+  V.runWithAmbientTrace_log stmt data prover
 
 /-- With small input universes, the ambient-log run is the full-log run with the decision log
 restricted to its ambient entries. -/
@@ -469,7 +481,9 @@ theorem map_runWithLog_eq_runWithAmbientLog {ι : Type} {S : Type uS} {ambient :
     (prover : Prover oracleSig ambient s Out) :
     (fun z => (z.1, z.2.1, z.2.2.fst)) <$> V.runWithLog stmt data prover =
       V.runWithAmbientLog stmt data prover :=
-  V.runWithLog_fst stmt data prover
+by
+  rw [runWithAmbientLog_eq]
+  exact V.runWithLog_fst stmt data prover
 
 /-- Forgetting both ambient logs preserves the entire oracle run. -/
 theorem map_fst_runWithAmbientLog {ι : Type} {S : Type uS}
@@ -479,7 +493,7 @@ theorem map_fst_runWithAmbientLog {ι : Type} {S : Type uS}
     {Out : PathAlong oracleSig s → Type} (V : OracleVerifier ambient s S T inputs outputs)
     (stmt : S) (data : inputs.Data) (prover : Prover oracleSig ambient s Out) :
     Prod.fst <$> V.runWithAmbientLog stmt data prover = V.run stmt data prover := by
-  simp only [runWithAmbientLog, OracleVerifier.run, _root_.map_bind, LawfulApplicative.map_pure]
+  simp only [runWithAmbientLog_eq, OracleVerifier.run, _root_.map_bind, LawfulApplicative.map_pure]
   simp only [← map_fst_run_addLift_withLogging, bind_map_left]
   conv_rhs =>
     arg 1
