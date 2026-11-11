@@ -1,10 +1,8 @@
 # Logged execution and routing: source-to-port inventory
 
 This inventory compares the frozen acceptance clients with the interaction-layer port on
-`feat/interaction-migrate-core`. Source line numbers identify individual declarations. An unresolved row is not established
-in this slice. Rows owned by the oracle-access tests name their port there; their unresolved
-status here does not imply that the parent lacks the interface. Related additional coverage is
-linked even where it does not discharge a row.
+`feat/interaction-migrate-core`. Source line numbers identify individual declarations.
+Related additional coverage is linked even where it does not discharge a row.
 
 The two approved premises are:
 
@@ -12,9 +10,12 @@ The two approved premises are:
   the final decision. A challenge cannot be computed from an input or previously sent oracle.
 - **P2 (shape):** neither a challenge nor an oracle payload selects the protocol's subtree.
 
-An equivalent row preserves the stated mathematical observation. A premise-required row states
-exactly which assertion P1 or P2 retires. An unresolved row names the interface or outstanding
-port it needs. Retiring an API name alone does not retire its mathematical assertions.
+Each row has one of four statuses. An **equivalent** row preserves the stated mathematical
+observation. A **premise-required** row states exactly which assertion P1 or P2 retires. A
+**child-owned** row is fully expressible with the current interfaces and is ported in the
+oracle-access tests ([access]), not here. An **unresolved** row needs a parent interface that
+does not exist yet, and names it. Retiring an API name alone does not retire its mathematical
+assertions.
 
 The files inventoried here are the eight frozen files cited by this branch's acceptance clients.
 `ExecutionExample.lean` and `CoreRunExample.lean` supply fixtures to those files; their other
@@ -131,15 +132,15 @@ access, exact double-read fixtures and cost certificates are ported in the oracl
 
 | Source assertion | Status | Exact target or remaining obligation |
 | --- | --- | --- |
-| `route_cost`, L96 | unresolved | The exact double-read export/cost fixture and bound are ported in the oracle-access tests; this slice does not duplicate that port. |
-| `program_cost`, L117 | unresolved | The authored double-read suffix and its cost bound are ported in the oracle-access tests; this slice does not duplicate that port. |
-| L130, routed weighted cost at most 5 | unresolved | The exact routed cost-five bound is ported in the oracle-access tests; this slice does not duplicate that port. |
+| `route_cost`, L96 | child-owned | The exact double-read export/cost fixture and bound are ported in the oracle-access tests ([access]). |
+| `program_cost`, L117 | child-owned | The authored double-read suffix and its cost bound are ported in the oracle-access tests ([access]). |
+| L130, routed weighted cost at most 5 | child-owned | The exact routed cost-five bound is ported in the oracle-access tests ([access]). |
 | `routed_available`, L149 | unresolved | Missing Core canonical accumulated-prefix query names, availability and inclusion. The typed routing part is ported in the oracle-access tests. |
-| L165, actual raw log old/old/fresh and claim 4 | unresolved | The exact composed logged execution, including the old/old/fresh log, closure and private output, is ported in the oracle-access tests; this slice does not duplicate that port. |
-| `future_rejected`, L184, typed future-slot exclusion | unresolved | Typed exclusion for every prefix program, without a budget restriction, is ported in the oracle-access tests; this slice does not duplicate that port. |
+| L165, actual raw log old/old/fresh and claim 4 | child-owned | The exact composed logged execution, including the old/old/fresh log, closure and private output, is ported in the oracle-access tests ([access]). |
+| `future_rejected`, L184, typed future-slot exclusion | child-owned | Typed exclusion for every prefix program, without a budget restriction, is ported in the oracle-access tests ([access]). |
 | `future_rejected`, L184, canonical prefix-context certificate | unresolved | Missing Core canonical prefix query names and context-availability certificates. |
 | L209, old canonical name stable, old distinct from fresh | unresolved | Missing Core canonical query names and accumulated-context inclusion. Distinct typed old/fresh slots and repeated use of the old slot are ported in the oracle-access tests. |
-| L225, closed execution retains old/old/fresh and private output | unresolved | The exact composed logged execution, closure and private output are ported in the oracle-access tests; this slice does not duplicate that port. |
+| L225, closed execution retains old/old/fresh and private output | child-owned | The exact composed logged execution, closure and private output are ported in the oracle-access tests ([access]). |
 | L251, actual join-phase prefix | unresolved | Missing produced per-slot phase prefixes. |
 | L252, actual terminal-phase prefix | unresolved | Missing produced per-slot phase prefixes. |
 | `joinPhase_mem`, L255 | unresolved | Missing actual phase membership interface. |
@@ -148,7 +149,7 @@ access, exact double-read fixtures and cost certificates are ported in the oracl
 | L277, old query name survives join-to-terminal inclusion | unresolved | Missing Core canonical names under phase-prefix inclusion. Typed routing is ported in the oracle-access tests. |
 | L286, no budget makes fresh slot available at actual join | unresolved | Missing Core availability certificates at produced phase prefixes. Typed exclusion without a budget restriction is ported in the oracle-access tests. |
 | L300, phased raw log is old/old/fresh | unresolved | Missing Core phased/logged correspondence. The exact raw log part is ported in the oracle-access tests. |
-| L320, routed cost cannot be bounded by 4 | unresolved | The inhabited cost-five witness excluding a bound of four is ported in the oracle-access tests; this slice does not duplicate that port. |
+| L320, routed cost cannot be bounded by 4 | child-owned | The inhabited cost-five witness excluding a bound of four is ported in the oracle-access tests ([access]). |
 
 ## RuntimeQueryBounds.lean
 
@@ -161,22 +162,22 @@ forgetting answers or summing costs.
 | --- | --- | --- |
 | `exported_certificate`, L47 | unresolved | Missing Core canonical prefix availability. Export access and the cost-two certificate are ported in the oracle-access tests. |
 | `source_name`, L57 | unresolved | Missing Core canonical accumulated-prefix query names. The actual input index is ported in the oracle-access tests. |
-| `first_returns_exported`, L61 | unresolved | The exact decision and output-map/data equations are ported in the oracle-access tests; this slice does not duplicate that port. |
-| `suffixAction_eq`, L72 | unresolved | The exact suffix decision equation is ported in the oracle-access tests; this slice does not duplicate that port. |
+| `first_returns_exported`, L61 | child-owned | The exact decision and output-map/data equations are ported in the oracle-access tests ([access]). |
+| `suffixAction_eq`, L72 | child-owned | The exact suffix decision equation is ported in the oracle-access tests ([access]). |
 | `suffix_access`, L87 | unresolved | Missing Core canonical prefix availability. Typed source access is ported in the oracle-access tests. |
-| `suffix_budget`, L102 | unresolved | The suffix cost certificate is ported in the oracle-access tests; this slice does not duplicate that port. |
-| `routed_suffix_budget`, L124 | unresolved | The routed suffix cost certificate is ported in the oracle-access tests; this slice does not duplicate that port. |
+| `suffix_budget`, L102 | child-owned | The suffix cost certificate is ported in the oracle-access tests ([access]). |
+| `routed_suffix_budget`, L124 | child-owned | The routed suffix cost certificate is ported in the oracle-access tests ([access]). |
 | `routed_suffix_access`, L145 | unresolved | Missing Core canonical prefix availability. Typed routed access is ported in the oracle-access tests. |
 | `actual_history`, L167 | equivalent | [bitPlain] retains the two ambient requests and charge 4; its full trace additionally retains the challenge. |
 | `informed_actual_history`, L182 | premise-required | P1 retires the prefix verifier's dummy request before the prover's reveal at the seam. [bitInformed] checks reveal/dummy/reveal and charge 7 as additional passive coverage. |
-| `setup_budget`, L197 | unresolved | The imported setup cost theorem is ported in the oracle-access tests; this slice does not duplicate that port. |
-| `native_split_history`, L207, passive schedule | unresolved | The all-prover charged runtime/history observation of [appendLaw] is ported in the oracle-access tests; this slice does not duplicate that port. |
+| `setup_budget`, L197 | child-owned | The imported setup cost theorem is ported in the oracle-access tests ([access]). |
+| `native_split_history`, L207, passive schedule | child-owned | The all-prover charged runtime/history observation of [appendLaw] is ported in the oracle-access tests ([access]). |
 | `native_split_history`, L207, effectful prefix order | premise-required | P1 excludes the prefix verifier's dummy request before the prover's suffix interaction. |
 | `native_actual_history`, L227 | equivalent | [bitLog] retains the actual chronological ambient history, answers, final state and charge 4. |
 | `informed_native_history`, L235 | premise-required | Same retired dummy-before-reveal order under P1; [bitInformed] is additional coverage. |
-| `native_import_budget`, L244 | unresolved | Import-cost reflection is ported in the oracle-access tests; this slice does not duplicate that port. |
+| `native_import_budget`, L244 | child-owned | Import-cost reflection is ported in the oracle-access tests ([access]). |
 | `fixed_native_resource_bounds`, L258 | unresolved | Missing Core canonical prefix availability. The integrated expressible access/cost/history/half-bound conjunction is ported in the oracle-access tests. |
-| `informed_cost_does_not_give_half`, L289 | unresolved | Charge seven and success one for the passive schedule are ported together in the oracle-access tests; this slice does not duplicate that port. |
+| `informed_cost_does_not_give_half`, L289 | child-owned | Charge seven and success one for the passive schedule are ported together in the oracle-access tests ([access]). |
 
 ## Erasure, closing and open interface obligations
 
@@ -250,3 +251,4 @@ Ports owned by the oracle-access tests:
 [sourceClosing]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L255
 [unitRuntime]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L288
 [optionalClosing]: ../../../ArkLib/Interaction/Core/Oracle/LoggedExecution.lean#L93
+[access]: oracle-access-tests.md
