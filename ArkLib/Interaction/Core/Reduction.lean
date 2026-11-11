@@ -60,6 +60,23 @@ theorem Prover.simulate_node {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePol
       Choice.map .focal (owner l a) (fun _ next => Prover.simulate impl next) <$>
         simulateQ impl p := rfl
 
+/-- Simulation interprets a computation constructing a prover before simulating its slots. -/
+theorem Prover.simulate_joinSlot {P : PFunctor.{uA, u}}
+    {l : PFunctor.Lens P rolePoly.{u}} {ι : Type u}
+    {ambient : OracleSpec.{u, u} ι} {m : Type u → Type u} [Monad m] [LawfulMonad m]
+    (impl : QueryImpl ambient m) {s : FreeM P PUnit.{u + 1}}
+    {Out : PathAlong l s → Type u} (p : OracleComp ambient (Prover l ambient s Out)) :
+    Prover.simulate impl (Strategy.joinSlot p) =
+      Strategy.joinSlot (Prover.simulate impl <$> simulateQ impl p) := by
+  cases s with
+  | pure x =>
+      simp only [Strategy.joinSlot, Prover.simulate, simulateQ_bind, bind_map_left, id_eq]
+  | liftBind a rest =>
+      rw [Prover.simulate_node]
+      change _ <$> simulateQ impl (p >>= id) = (_ <$> simulateQ impl p) >>= id
+      rw [simulateQ_bind, _root_.map_bind, bind_map_left]
+      rfl
+
 /-- A sampler with a pure terminal payload. Its draws depend only on the indexed source node. -/
 def samplerEnd {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
     {m : Type u → Type u} [Monad m] :

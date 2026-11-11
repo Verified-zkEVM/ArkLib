@@ -93,13 +93,6 @@ theorem protocol_eq : ∀ n, protocol R deg n = oracleProtocol (Spec.pSpec R deg
     · exact (chain_natAdd (a := 2) _ _ (oracleRound_append_natAdd A B) 0 N (by omega)
         (by omega)).symm
 
-attribute [local implicit_reducible] FreeM.replicate in
-/-- Decoding one more round prepends that round's message and challenge. -/
-theorem decodeTranscript_succ {n : ℕ} (msg : R⦃≤ deg⦄[X]) (chal : R)
-    (tail : PathAlong oracleSig (protocol R deg n)) :
-    decodeTranscript (n + 1) (consTranscript msg chal tail) =
-      roundFullTranscript msg chal ++ₜ decodeTranscript n tail := rfl
-
 variable {R deg}
 
 /-- **Transcript correspondence.** Decoding an interaction-layer Sumcheck transcript gives the
@@ -202,7 +195,6 @@ end DecideM
 section Routing
 variable {R : Type} [CommSemiring R] {deg : ℕ}
 
-attribute [local implicit_reducible] FreeM.replicate in
 /-- **Routing correspondence.** `route` sends each legacy message query to the node of the Sumcheck
 tree that the routing `queryMsg` of the legacy embedding selects on the legacy oracle tree, with
 the same query. -/
@@ -453,7 +445,6 @@ end Uniform
 section ChallengeImpl
 variable (R : Type) [CommSemiring R] [SampleableType R] (deg : ℕ)
 
-attribute [local implicit_reducible] FreeM.replicate Node.position challengeSpec in
 /-- The uniform challenge oracle samples a uniform ring element at every challenge node. -/
 theorem challengeQueryImpl_heq : ∀ (k : ℕ) (c : ChallengeNode oracleSig (protocol R deg k)),
     HEq (challengeQueryImpl oracleSig (protocol R deg k) c) ($ᵗ R)

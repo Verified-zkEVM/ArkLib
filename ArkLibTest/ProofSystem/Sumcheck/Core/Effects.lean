@@ -31,19 +31,6 @@ section Support
 
 variable {R : Type} [CommSemiring R] {deg : ℕ} {ι : Type} {amb : OracleSpec ι}
 
-/-- Simulating a prover whose first slot is built by an ambient computation simulates that
-computation and then the prover it builds. -/
-theorem simulate_joinSlot {m : Type → Type} [Monad m] [LawfulMonad m]
-    (impl : QueryImpl amb m) {k : ℕ}
-    {Out : FreeM.PathAlong oracleSig (protocol R deg (k + 1)) → Type}
-    (p : OracleComp amb (Prover oracleSig amb (protocol R deg (k + 1)) Out)) :
-    Prover.simulate impl (Strategy.joinSlot p) =
-      Strategy.joinSlot (Prover.simulate impl <$> simulateQ impl p) := by
-  refine (Prover.simulate_node impl _ _ _).trans ?_
-  change _ <$> simulateQ impl (p >>= id) = (_ <$> simulateQ impl p) >>= id
-  erw [simulateQ_bind, map_bind, bind_map_left]
-  rfl
-
 /-- Simulating a pure round simulates its continuations. -/
 theorem simulate_consProver {m : Type → Type} [Monad m] [LawfulMonad m]
     (impl : QueryImpl amb m) {k : ℕ}
@@ -90,6 +77,7 @@ end Support
 
 noncomputable section
 
+/-- Seventeen is prime. -/
 instance : Fact (Nat.Prime 17) := ⟨by decide⟩
 
 /-- The field with seventeen elements. -/
@@ -102,21 +90,48 @@ abbrev events : OracleSpec (Fin 4) := Fin 4 →ₒ K
 def event (i : Fin 4) : OracleComp events K := liftM (events.query i)
 
 /-- The affine round polynomial `a * X + b`. -/
-def affine (a b : K) : K⦃≤ 1⦄[X] :=
+def affine {R : Type} [CommSemiring R] (a b : R) : R⦃≤ 1⦄[X] :=
   ⟨C a * X + C b, Polynomial.mem_degreeLE.mpr
     (degree_add_le_of_degree_le (degree_C_mul_X_le a) (degree_C_le.trans zero_le_one))⟩
 
 -- Migration rows: Sumcheck Interaction/SourceRouting #1, #2.
 
-theorem eval_affine (a b x : K) : (affine a b).val.eval x = a * x + b := by
+/-- Evaluating an affine polynomial gives its affine expression. -/
+theorem eval_affine {R : Type} [CommSemiring R] (a b x : R) :
+    (affine a b).val.eval x = a * x + b := by
   simp only [affine, eval_add, eval_mul, eval_C, eval_X]
 
 /-- The oracle interface of a round message answers a query by evaluation. -/
-theorem answer_affine (a b x : K) :
-    @OracleInterface.answer _ (OracleInterface.instPolynomialDegreeLE K 1) (affine a b) x =
+theorem answer_affine {R : Type} [CommSemiring R] (a b x : R) :
+    @OracleInterface.answer _ (OracleInterface.instPolynomialDegreeLE R 1) (affine a b) x =
       a * x + b := by
   change (affine a b).val.eval x = _
   exact eval_affine a b x
+
+/-- Routing a one-round affine message answers by evaluating that sent message. -/
+theorem route_affine {R : Type} [CommSemiring R] (a b x r : R) :
+    simulateQ (payloadImpl (protocol R 1 1) (SingleRoundTest.tr1 (affine a b) r))
+        (route R 1 1
+          (FreeM.projectPathAlong oracleSig _ (SingleRoundTest.tr1 (affine a b) r))
+          ⟨⟨⟨0, by decide⟩, rfl⟩, x⟩) = pure (a * x + b) := by
+  rw [simulateQ_route]
+  change (pure ((affine a b).val.eval x) : Id R) = pure (a * x + b)
+  rw [eval_affine]
+
+/-- The affine evaluation law holds on natural numbers for the routing fixture's first message. -/
+example (x : ℕ) : (affine 2 1).val.eval x = 2 * x + 1 := eval_affine 2 1 x
+
+/-- The polynomial oracle answers over natural numbers for the routing fixture's first message. -/
+example (x : ℕ) :
+    @OracleInterface.answer _ (OracleInterface.instPolynomialDegreeLE ℕ 1) (affine 2 1) x =
+      2 * x + 1 := answer_affine 2 1 x
+
+/-- Routing the first message at challenge two returns five over natural numbers. -/
+example : simulateQ (payloadImpl (protocol ℕ 1 1) (SingleRoundTest.tr1 (affine 2 1) 2))
+    (route ℕ 1 1
+      (FreeM.projectPathAlong oracleSig _ (SingleRoundTest.tr1 (affine 2 1) 2))
+      ⟨⟨⟨0, by decide⟩, rfl⟩, (2 : ℕ)⟩) = pure (5 : ℕ) := by
+  exact route_affine (2 : ℕ) 1 2 2
 
 /-- The prover's terminal action: event `3`. -/
 def finalEvent : Prover oracleSig events (protocol K 1 0) (fun _ => Unit) :=
@@ -188,7 +203,7 @@ theorem run_last (a r : K) :
       let s : K ← tailDraw drawE (headNode 0)
       let _ ← eventE 3
       pure ⟨consTranscript (affine (b + a) (a * r + 1)) s ⟨⟩, (), ⟨⟩⟩) := by
-  rw [simulate_joinSlot, run_joinSlot]
+  rw [Prover.simulate_joinSlot, run_joinSlot]
   simp only [simulateQ_map, Functor.map_map, bind_map_left, simulate_event]
   refine bind_congr fun b => ?_
   rw [lastProver, simulate_consProver, run_consProver]
@@ -208,7 +223,7 @@ theorem run_adaptive :
       let _ ← eventE 3
       pure ⟨consTranscript (affine a 1) r (consTranscript (affine (b + a) (a * r + 1)) s ⟨⟩),
         (), ⟨⟩⟩) := by
-  rw [adaptive, simulate_joinSlot, run_joinSlot]
+  rw [adaptive, Prover.simulate_joinSlot, run_joinSlot]
   simp only [simulateQ_map, Functor.map_map, bind_map_left, simulate_event]
   refine bind_congr fun a => ?_
   rw [simulate_consProver, run_consProver]
@@ -369,7 +384,6 @@ abbrev checkHandler (amb : QueryImpl ambient (OracleComp full))
     (pathFamily _ (FreeM.projectPathAlong oracleSig _ tr))).behaviorOfRealizations
       (sumData data (payloads _ tr)))
 
-attribute [local implicit_reducible] FreeM.replicate in
 /-- When the first round's check fails, the logged decision rejects and its log is the log of
 that check alone: no query of a later round is made. -/
 theorem decide_log_badFirst (amb : QueryImpl ambient (OracleComp full))
@@ -514,7 +528,9 @@ example {σ : Type} (init : ProbComp σ) (impl : QueryImpl unifSpec (StateT σ P
 end
 
 run_cmd
-  for decl in [``Sumcheck.Core.EffectsTest.run_verifier_eq,
+  for decl in [``Interaction.Core.Prover.simulate_joinSlot,
+      ``Sumcheck.Core.EffectsTest.eval_affine, ``Sumcheck.Core.EffectsTest.answer_affine,
+      ``Sumcheck.Core.EffectsTest.route_affine, ``Sumcheck.Core.EffectsTest.run_verifier_eq,
       ``Sumcheck.Core.EffectsTest.two_rounds, ``Sumcheck.Core.EffectsTest.bad_first_rounds,
       ``Sumcheck.Core.EffectsTest.range_eq, ``Sumcheck.Core.EffectsTest.decide_log_badFirst,
       ``Sumcheck.Core.EffectsTest.mem_support_adaptive,

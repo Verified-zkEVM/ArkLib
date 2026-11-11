@@ -201,3 +201,32 @@ run extracts `w.val`.
 
 This keeps to record D7, whose problems already index witness types by the claim; D7 fixes no
 constant output witness type for either notion.
+
+### Sumcheck domain multiplicity and routing laws
+
+The current `Sumcheck.Core.Soundness` transfer and the committed and randomized one-round bounds
+in the acceptance tests still require `D : Fin d ↪ R`. They bound acceptance into the final
+Sumcheck language for the actual core run, with error `deg / card R` per round. Arbitrary maps
+`Fin d → R`, arbitrary lists, and repeated-point honest runs remain open. The Sumcheck disposition
+table records these soundness rows as partial.
+
+Generalizing the existing Spec relations to index sums also changes their definitional unfolding.
+The frozen proof `Sumcheck/Interaction/Legacy.lean`, theorem `legacy_input_iff`, unfolds
+`Spec.SingleRound.Simple.inputRelation` with `change` to a sum over `Finset.univ.map D`.
+For an injective map, the equality between these sums is propositional. The `change` tactic
+requires definitional equality. Completing this change requires a decision about adapting that proof or
+retaining an injective compatibility API alongside the generalized relations.
+
+`Interaction.Core.Prover.simulate_joinSlot` belongs beside `Prover.simulate` in
+`Interaction/Core/Reduction.lean`. It now covers every protocol tree, lens, dependent prover
+output family and lawful target monad, including terminal trees. The Sumcheck tests use this law.
+`decodeTranscript_succ` is a simplification equation beside `decodeTranscript` in
+`Sumcheck/Core/Execution.lean`. The four local transparency attributes added by the Sumcheck
+migration have been removed.
+
+The affine message construction, evaluation law and oracle-answer law in `Effects` now quantify
+over every commutative semiring. Their natural-number instances use `2 * X + 1`, and an actual
+routed query at `2` returns `5`. These deterministic assertions require no sampling instance.
+The other `ZMod 17` fixtures correspond to frozen `Protocol`, `Sequential`, `ArbitraryRounds`
+and soundness fixtures over that same field. Uniform sampling is used in the probabilistic
+soundness statements.

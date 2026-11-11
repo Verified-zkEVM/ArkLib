@@ -184,9 +184,9 @@ data, all `n` rounds, a passive verifier. Tests are in `ArkLibTest/ProofSystem/S
 | Sequential #2, #4 | Covered by `Rounds.run_two_bilinear` and the recording example: challenges `3` then `5`, two challenge queries in round order, target `14`, the bilinear input as output oracle. |
 | Sequential #5, #6 | Covered: rejection after both draws, and honest completeness. |
 | SingleRound #2–#6 | Covered by the committed-run equations, the acceptance, rejection and dishonest-output examples, and their axiom guards. |
-| Soundness #1–#6, #10, #12 | Covered by the accepted and rejected observations, the bound, the exact repair and rejection probabilities, the challenge-first attack and empty-domain rejection. |
-| Soundness #15, #16, #21, #23–#28 | Covered by the axiom guards, the committed and randomized prover bounds and the run equations. |
-| SourceRouting #1, #2 | Covered by the affine evaluation and oracle-interface tests in `Effects`, over `ZMod 17`. |
+| Soundness #1–#6, #10, #12 | Partial. Accepted and rejected observations, exact probabilities, the challenge-first attack and empty-domain rejection are checked. The committed bound currently requires an injective domain. Its arbitrary-list generalization remains open. |
+| Soundness #15, #16, #21, #23–#28 | Partial. Axiom guards and run equations are checked. `committed_soundness` and `randomCommitment_soundness` bound the actual core run by `deg / card R` for `D : Fin d ↪ R`. The arbitrary-map and arbitrary-list forms, including repeated points, remain open. |
+| SourceRouting #1, #2 | Covered by `Effects.eval_affine` and `Effects.answer_affine` for every commutative semiring, instantiated at `Nat` with the first message `2 * X + 1`. `Effects.route_affine` checks actual message-query routing and its `Nat` instance returns `5` at `2`. |
 | SourceRouting #3 | Covered by the protocol shape. The challenge and abort branches of `Option` are retired. |
 | SourceRouting #4–#7 | Deferred to part D, commit 7: the two-round composition through an exported oracle, with an arbitrary hidden component, acceptance, prefix and suffix rejection, and the output-relation implication. |
 | `Interaction/Oracle/Security/Soundness.lean` #3–#6 (lines 54, 55, 57, 58) | Deferred to part D, commit 6 (OQ3): the general local-to-global soundness theorem, its uniform-error corollary, the verifier-escape lemma and random-prefix averaging. |

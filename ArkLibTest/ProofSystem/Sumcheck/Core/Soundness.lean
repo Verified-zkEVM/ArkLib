@@ -133,6 +133,7 @@ end Universal
 
 -- Migration row: Sumcheck Interaction/Soundness #3.
 
+/-- Seventeen is prime. -/
 instance : Fact (Nat.Prime 17) := ⟨by decide⟩
 
 /-- The field with seventeen elements. -/
@@ -181,6 +182,7 @@ section Exact
 
 open Sumcheck.Core.CompletenessTest
 
+/-- Five is prime. -/
 instance : Fact (Nat.Prime 5) := ⟨by decide⟩
 
 variable {Out : Type} (finish : F → Out) (c₀ : F)
@@ -277,12 +279,14 @@ def adaptive (r : F) : F⦃≤ 2⦄[X] :=
     apply (Polynomial.natDegree_mul_le).trans
     simp)⟩
 
+/-- The adaptive polynomial has endpoint sum one. -/
 theorem adaptive_endpoints (r : F) :
     (adaptive r).val.eval 0 + (adaptive r).val.eval 1 = 1 := by
   by_cases h : r = 1
   · simp [adaptive, h]
   · simp [adaptive, h, sub_ne_zero.mpr (Ne.symm h)]
 
+/-- The adaptive polynomial vanishes at the selected challenge. -/
 theorem adaptive_hits (r : F) : (adaptive r).val.eval r = 0 := by
   by_cases h : r = 1 <;> simp [adaptive, h]
 

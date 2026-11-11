@@ -69,6 +69,7 @@ section Concrete
 
 open Sumcheck.Core.CompletenessTest Sumcheck.Core.SingleRoundTest
 
+/-- Five is prime. -/
 instance : Fact (Nat.Prime 5) := ⟨by decide⟩
 
 variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))

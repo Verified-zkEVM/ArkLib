@@ -81,6 +81,13 @@ def decodeTranscript (k : ℕ) (tr : PathAlong oracleSig (protocol R deg k)) :
 
 end Decode
 
+/-- Decoding one more round prepends that round's message and challenge. -/
+@[simp] theorem decodeTranscript_succ (R : Type) [CommSemiring R] (deg : ℕ)
+    {n : ℕ} (msg : R⦃≤ deg⦄[X]) (chal : R)
+    (tail : PathAlong oracleSig (protocol R deg n)) :
+    decodeTranscript (n + 1) (consTranscript msg chal tail) =
+      roundFullTranscript msg chal ++ₜ decodeTranscript n tail := rfl
+
 /-! ## Routing message queries -/
 
 section Route

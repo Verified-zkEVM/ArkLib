@@ -181,9 +181,11 @@ def D₀ : Fin 0 ↪ F := ⟨Fin.elim0, fun i => i.elim0⟩
 /-- A claim with target `t` and no challenges yet. -/
 def claim (t : F) : Spec.StatementRound F 1 0 := ⟨t, Fin.elim0⟩
 
+/-- The coordinate polynomial evaluates to the unique coordinate. -/
 theorem eval_X₀ (c : F) : MvPolynomial.eval (fun _ => c) polyX.val = c := by
   simp [polyX]
 
+/-- The zero polynomial evaluates to zero. -/
 theorem eval_poly0 {deg : ℕ} (c : F) : MvPolynomial.eval (fun _ => c) (poly0 deg).val = 0 := by
   simp [poly0]
 
