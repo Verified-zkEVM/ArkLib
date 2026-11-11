@@ -289,6 +289,21 @@ lemma Messages.challengesOfLog_canonChalLog (stmt : Statement) (m : pSpec.Messag
   unfold ChallengesUpTo.getAt
   rfl
 
+/-- A canonical derivation log still determines the challenges inside a larger log if the
+preceding entries leave each challenge key unanswered. Later entries cannot override a match. -/
+lemma Messages.challengesOfLog_append_canonChalLog (stmt : Statement) (m : pSpec.Messages)
+    (cs : pSpec.ChallengesUpTo ⟨n, Nat.lt_succ_self n⟩)
+    (earlier later : QueryLog (srChallengeOracle Statement pSpec))
+    (hEarlier : ∀ r : pSpec.ChallengeIdx,
+      earlier.lookup? ⟨r, (stmt, m.take r.1.castSucc)⟩ = none) :
+    Messages.challengesOfLog stmt m
+      (earlier ++ (canonChalLog stmt m ⟨n, Nat.lt_succ_self n⟩ cs ++ later))
+      = (show pSpec.Challenges from fun r => cs ⟨⟨r.1.1, r.1.2⟩, r.2⟩) := by
+  funext r
+  simp only [Messages.challengesOfLog, QueryLog.lookup?_append, hEarlier r, lookup?_canonChalLog,
+    dite_eq_left r.1.2]
+  rfl
+
 end Reconstruction
 
 end ProtocolSpec
