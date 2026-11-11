@@ -374,7 +374,7 @@ logs remain equal, while the traced query prefixes differ. P1 retires intermedia
 verifier actions and their former query groups; it does not retire prover slots or their prefixes.
 The disposition inventory records those qualifications separately.
 
-## 19. Knowledge composition and measured extraction
+## 26. Knowledge composition and measured extraction
 
 The [assertion disposition record](../interaction-layer/knowledge-composition-disposition.md)
 compares this branch's frozen production laws and acceptance assertions with their exact targets.
