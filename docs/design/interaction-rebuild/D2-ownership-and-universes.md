@@ -49,9 +49,38 @@ interfaces, if record D1's open point puts them there) may remain in the generic
 | `Participant.{u}` | `Type u` | Matches the monad's universe |
 | `PUnit.{u+1}` (challenge and oracle branches) | `Type u` | So constant branches fit `P.B a : Type u` |
 | ArkLib positions `PlainPos`, `OraclePos` | `Type (u+1)` | A position names a type |
+| Run outputs: output statements `StmtOut p`, output oracle data `B p j`, prover outputs | `Type u` | Returned by the runner `m : Type u → Type u` |
+| Oracle responses (ambient, input, path and output oracles) | `Type u` | Answered in the runner's monad |
+| Ambient oracle index `ι` of a verifier | independent | Only queried, never returned |
+| Ambient oracle index `ι` of a prover, reduction or run | `Type u` | `OracleComp ambient` must be `Type u → Type u` |
+| Input oracle index `I` | independent | Simulated away before the verdict |
+| Output oracle index `J p` of an oracle verifier | independent; `Type u` in a run | A run returns `∀ j, B p j` |
+| Input statement and input witness | independent | Arguments of the decision and the prover, never returned |
+| Input and output oracle query types | independent | Answered by `simulateQ`, never returned |
+| Input oracle data `A i` | `Type u` (unresolved) | `OracleInterface` ties data and responses through `ReaderM` |
+| Input statement `S`, honest input witness `W` and input oracle index `I` in the security wrappers | independent | Arguments of the run |
+| Intermediate witnesses of a knowledge state function | independent | The extractors are plain functions, not runner computations |
+| Input oracle index and query types of the extraction games and models | independent | `runWithAmbientLog` returns only ambient logs |
+| Input oracle index and query type of the full-log `OracleVerifier.runWithLog` | `Type` (unresolved) | The returned log records input queries |
 
 ArkLib's polynomials therefore live in `PFunctor.{u+1, u}`, like `rolePoly`. The ambient monad is
 not enlarged because a position contains a type: positions are never values of the monad.
+
+Every component that is not a run output takes its own universe as far as the definitions allow,
+and only run outputs and oracle responses are tied to `u`. A prover's ambient index is also tied:
+`OracleComp ambient : Type u → Type (max uι u)` is the prover's monad and the runner needs
+`Type u → Type u`. Two restrictions are unresolved rather than required by the runner. The input
+oracle data is in `Type u` because `OracleInterface` stores an
+`OracleContext Query (ReaderM Message)` (`ArkLib/OracleReduction/OracleInterface.lean:55`), and
+the pinned `ReaderM` puts the responses in the universe of the data; separating them needs a
+change to `OracleInterface`, outside this slice. The full-log `OracleVerifier.runWithLog` returns
+a log of the input queries, so its input index and query type stay in `Type`. Extraction runs on
+`OracleVerifier.runWithAmbientLog` instead, which logs only ambient queries and is general. The
+intermediate witnesses of a knowledge state function take their own universe, because its
+extractors are plain functions. The query types of input and output oracles are independent: the
+decision reads the disjoint sum of the input and path specifications (`pathResources`), with
+separately typed data. Implementation note 18 lists the remaining security-wrapper restrictions. The test
+`ArkLibTest/Interaction/Core/UniverseCanary.lean` instantiates the independent universes.
 
 ## Why
 

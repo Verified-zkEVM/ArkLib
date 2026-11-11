@@ -218,14 +218,15 @@ end Node
 section Observation
 
 variable {StmtIn WitIn StmtOut WitOut : Type}
+  {StmtOutAt : Path (protocol pSpec) → Type}
 
 /-- Run an embedded interaction under `order`, in the legacy query monad, against a prover on the
 plain tree, then decide. The challenge oracle is the legacy `[pSpec.Challenge]ₒ`. -/
-def observeWith (order : Schedule) (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOut)
+def observeWith (order : Schedule) (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOutAt)
     (stmt : StmtIn) {Out : PathAlong plainSig (protocol pSpec) → Type}
     (p : Core.Prover plainSig oSpec (protocol pSpec) Out) :
     OracleComp (oSpec + [pSpec.Challenge]ₒ)
-      (Observation plainSig (protocol pSpec) Out StmtOut) := do
+      (Observation plainSig (protocol pSpec) Out StmtOutAt) := do
   let r ← runWith order (protocol pSpec) (p.simulate (liftShared oSpec pSpec))
     (legacySampler pSpec (challengeOracle oSpec pSpec))
   let verdict ← liftComp (V.decide stmt (projectPathAlong plainSig _ r.1)
@@ -238,7 +239,8 @@ abbrev LegacyResult (pSpec : ProtocolSpec n) (StmtOut WitOut : Type) :=
   Option ((FullTranscript pSpec × StmtOut × WitOut) × StmtOut)
 
 /-- Forget the rejected run and decode the transcript of an accepted one. -/
-def finalize (r : Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) StmtOut) :
+def finalize
+    (r : Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) (fun _ => StmtOut)) :
     LegacyResult pSpec StmtOut WitOut :=
   r.2.2.map fun t => ((decode pSpec r.1, r.2.1), t)
 
@@ -488,6 +490,7 @@ end Simulate
 section Bridge
 
 variable {StmtIn WitIn StmtOut WitOut : Type}
+  {StmtOutAt : Path (protocol pSpec) → Type}
 
 /-- Answer the challenge queries of a layout's tree with the legacy challenge oracle. -/
 def Layout.challengeReindex (L : Layout pSpec) (oSpec : OracleSpec ι) :
@@ -525,7 +528,7 @@ theorem simulateQ_challengeReindex_run {Out : PathAlong plainSig (protocol pSpec
 
 /-- The run of the interaction layer, with its challenges answered by the legacy challenge
 oracle, is the focal-first observation. -/
-theorem simulateQ_verifier_run (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOut)
+theorem simulateQ_verifier_run (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOutAt)
     (stmt : StmtIn) {Out : PathAlong plainSig (protocol pSpec) → Type}
     (p : Core.Prover plainSig oSpec (protocol pSpec) Out) :
     simulateQ (challengeReindex oSpec pSpec) (V.run stmt p) = observeWith .focalFirst V stmt p := by
@@ -623,6 +626,7 @@ end Bridge
 section Distribution
 
 variable {StmtIn WitIn StmtOut WitOut σ : Type}
+  {StmtOutAt : Path (protocol pSpec) → Type}
 
 theorem DistEqFrom.map {κ : Type} {ambient : OracleSpec ι} {chal : OracleSpec κ}
     {impl : QueryImpl ambient (StateT σ ProbComp)} {chImpl : QueryImpl chal ProbComp}
@@ -646,7 +650,7 @@ theorem experiment_evalDistEq {κ : Type} {ambient : OracleSpec ι} {chal : Orac
 /-- The two schedules of the legacy observation agree in distribution, for every prover. -/
 theorem distEqFrom_observeWith (impl : QueryImpl oSpec (StateT σ ProbComp))
     (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp)
-    (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOut) (stmt : StmtIn)
+    (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOutAt) (stmt : StmtIn)
     {Out : PathAlong plainSig (protocol pSpec) → Type}
     (p : Core.Prover plainSig oSpec (protocol pSpec) Out) :
     DistEqFrom impl chImpl (observeWith .focalFirst V stmt p)
@@ -659,10 +663,10 @@ reindexed challenge implementation has the distribution of the legacy-indexed ob
 the counterpart-first schedule. -/
 theorem experiment_verifier_run_evalDistEq (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp)) (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp)
-    (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOut) (stmt : StmtIn)
+    (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOutAt) (stmt : StmtIn)
     {Out : PathAlong plainSig (protocol pSpec) → Type}
     (p : Core.Prover plainSig oSpec (protocol pSpec) Out) {β : Type}
-    (f : Observation plainSig (protocol pSpec) Out StmtOut → β) :
+    (f : Observation plainSig (protocol pSpec) Out StmtOutAt → β) :
     experiment init impl (plainChallengeImpl chImpl) (f <$> V.run stmt p) =ᵈ
       experiment init impl chImpl (f <$> observeWith .counterpartFirst V stmt p) := by
   rw [experiment_challengeReindex, simulateQ_map, simulateQ_verifier_run]
@@ -701,6 +705,7 @@ end Distribution
 section PureSlots
 
 variable {StmtIn WitIn StmtOut WitOut : Type}
+  {StmtOutAt : Path (protocol pSpec) → Type}
 
 /-- A legacy prover whose `receiveChallenge` has no effect before the challenge arrives. -/
 def PureChallengeSlots (P : _root_.Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) : Prop :=
@@ -775,7 +780,7 @@ theorem pureObservers_embedFrom (P : _root_.Prover oSpec StmtIn WitIn StmtOut Wi
 pure, the default and counterpart-first schedules of the embedded execution are the same
 program. -/
 theorem observeWith_focalFirst_eq (P : _root_.Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
-    (hP : PureChallengeSlots P) (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOut)
+    (hP : PureChallengeSlots P) (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOutAt)
     (stmt : StmtIn) (wit : WitIn) :
     observeWith .focalFirst V stmt (embedProver P stmt wit) =
       observeWith .counterpartFirst V stmt (embedProver P stmt wit) := by

@@ -18,7 +18,7 @@ oracles are one map containing concrete data, query simulation and their agreeme
 
 @[expose] public section
 
-universe u v
+universe v u uι uS uI uJ uK uL uX uY uZ uW dX dY dZ dW w wI wJ
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
@@ -46,8 +46,8 @@ def OracleData : (s : OracleProtocol.{u}) → (p : Path s) → oracleIdx s p →
 
 /-- Independent families of concrete data, with disjoint query access. -/
 @[implicit_reducible]
-def sumFamily {I J : Type u} {A : I → Type u} {B : J → Type u}
-    (a : OracleFamily.{u, u, u} I A) (b : OracleFamily.{u, u, u} J B) :
+def sumFamily {I : Type uI} {J : Type uJ} {A : I → Type u} {B : J → Type u}
+    (a : OracleFamily.{uI, u, w} I A) (b : OracleFamily.{uJ, u, w} J B) :
     OracleFamily (I ⊕ J) (Sum.elim A B) :=
   ⟨fun | .inl i => a.interface i | .inr j => b.interface j⟩
 
@@ -85,40 +85,72 @@ def payloadImpl (s : OracleProtocol.{u}) (tr : PathAlong oracleSig s) :
   (pathFamily s (projectPathAlong oracleSig s tr)).behaviorOfRealizations (payloads s tr)
 
 /-- Pair the data of two disjoint families. -/
-def sumData {I J : Type u} {A : I → Type u} {B : J → Type u}
+def sumData {I : Type uI} {J : Type uJ} {A : I → Type u} {B : J → Type u}
     (a : ∀ i, A i) (b : ∀ j, B j) : ∀ k, Sum.elim A B k
   | .inl i => a i
   | .inr j => b j
 
 /-- Reassembling disjoint data from its two restrictions is the identity. -/
-theorem sumData_eta {I J : Type u} {A : I → Type u} {B : J → Type u}
+theorem sumData_eta {I : Type uI} {J : Type uJ} {A : I → Type u} {B : J → Type u}
     (x : ∀ k, Sum.elim A B k) :
     sumData (fun i => x (.inl i)) (fun j => x (.inr j)) = x := by
   funext k
   cases k <;> rfl
 
+/-- Oracle resources: a query specification and the concrete data that answers it. The query
+indices and the data may lie in any universe; only the responses lie in `Type u`, the universe of
+the computations that receive them. The universe parameters of `Resources.{u, uX, dX}` are those of
+the responses, the query indices and the data, in this order. -/
+structure Resources : Type (max (uX + 1) (u + 1) (dX + 1)) where
+  /-- The query indices. -/
+  Index : Type uX
+  /-- The queries and their response types. -/
+  spec : OracleSpec.{uX, u} Index
+  /-- The concrete data. -/
+  Data : Type dX
+  /-- How concrete data answers each query. -/
+  answer : Data → QueryImpl spec Id
+
+/-- The resources of an oracle family: queries through its interfaces, answered from concrete
+realizations. The query universe `wI` of the interfaces is independent of the response universe.
+-/
+@[reducible] def Resources.ofFamily {I : Type uI} {A : I → Type u}
+    (F : OracleFamily.{uI, u, wI} I A) : Resources.{u, max uI wI, max uI u} where
+  Index := (i : I) × (F.interface i).Query
+  spec := F.spec
+  Data := ∀ i, A i
+  answer := F.behaviorOfRealizations
+
+attribute [coe] Resources.ofFamily
+
+/-- An oracle family is used as resources through its interfaces. -/
+instance {I : Type uI} {A : I → Type u} :
+    CoeOut (OracleFamily.{uI, u, wI} I A) Resources.{u, max uI wI, max uI u} :=
+  ⟨Resources.ofFamily⟩
+
+/-- Disjoint resources: each query goes to one side and is answered from that side's data. The
+two sides keep their own index and data universes, and their data stays a pair. -/
+@[reducible] def Resources.sum (R : Resources.{u, uX, dX}) (R' : Resources.{u, uY, dY}) :
+    Resources.{u, max uX uY, max dX dY} where
+  Index := R.Index ⊕ R'.Index
+  spec := R.spec + R'.spec
+  Data := R.Data × R'.Data
+  answer x := R.answer x.1 + R'.answer x.2
+
 /-- A concrete oracle map and its query-by-query implementation agree on all input data. -/
-structure OracleMap {I J : Type u} {A : I → Type u} {B : J → Type u}
-    (In : OracleFamily.{u, u, u} I A) (Out : OracleFamily.{u, u, u} J B) where
+structure OracleMap (In : Resources.{u, uX, dX}) (Out : Resources.{u, uY, dY}) where
   /-- Concrete output data, available to a subsequent honest prover. -/
-  f : (∀ i, A i) → (∀ j, B j)
+  f : In.Data → Out.Data
   /-- Output queries are simulated using only input oracle queries. -/
   impl : QueryImpl Out.spec (OracleComp In.spec)
   /-- Simulation answers exactly as the materialized output data. -/
-  law : ∀ x q, simulateQ (In.behaviorOfRealizations x) (impl q) =
-    Out.behaviorOfRealizations (f x) q
+  law : ∀ x q, simulateQ (In.answer x) (impl q) = Out.answer (f x) q
 
 namespace OracleMap
-variable {I J K : Type u} {A : I → Type u} {B : J → Type u} {C : K → Type u}
-  {In : OracleFamily.{u, u, u} I A} {Mid : OracleFamily.{u, u, u} J B}
-  {Out : OracleFamily.{u, u, u} K C}
 
-/-- Embeddings are oracle maps that retain or rename existing input slots. -/
-def embedding (In : OracleFamily.{u, u, u} I A) (rename : J → I) :
-    OracleMap In (In.reindex rename) where
-  f x j := x (rename j)
-  impl q := liftM (In.spec.query ⟨rename q.1, q.2⟩)
-  law _ _ := rfl
+section Resources
+variable {In : Resources.{u, uX, dX}} {Mid : Resources.{u, uY, dY}}
+  {Out : Resources.{u, uZ, dZ}} {Other : Resources.{u, uW, dW}}
 
 /-- Compose concrete data maps and substitute query implementations. -/
 def comp (g : OracleMap Mid Out) (h : OracleMap In Mid) : OracleMap In Out where
@@ -126,21 +158,89 @@ def comp (g : OracleMap Mid Out) (h : OracleMap In Mid) : OracleMap In Out where
   impl := QueryImpl.compose h.impl g.impl
   law x q := by
     rw [QueryImpl.apply_compose, ← QueryImpl.simulateQ_compose]
-    have he : QueryImpl.compose (In.behaviorOfRealizations x) h.impl =
-        Mid.behaviorOfRealizations (h.f x) := funext (h.law x)
+    have he : QueryImpl.compose (In.answer x) h.impl = Mid.answer (h.f x) := funext (h.law x)
     rw [he]
     exact g.law (h.f x) q
 
 /-- Routing every query through a map agrees with materializing its output first. -/
-theorem simulate_eq (h : OracleMap In Out) (x : ∀ i, A i)
+theorem simulate_eq (h : OracleMap In Out) (x : In.Data)
     {α : Type u} (program : OracleComp Out.spec α) :
-    simulateQ (In.behaviorOfRealizations x) (simulateQ h.impl program) =
-      simulateQ (Out.behaviorOfRealizations (h.f x)) program :=
+    simulateQ (In.answer x) (simulateQ h.impl program) =
+      simulateQ (Out.answer (h.f x)) program :=
   QueryImpl.simulateQ_simulateQ_eq_of_apply (h.law x) program
 
+/-- The identity map of resources. -/
+def id (R : Resources.{u, uX, dX}) : OracleMap R R where
+  f x := x
+  impl q := liftM (R.spec.query q)
+  law _ _ := rfl
+
+/-- Keep the left side of disjoint resources. -/
+def fst (R : Resources.{u, uX, dX}) (R' : Resources.{u, uY, dY}) : OracleMap (R.sum R') R where
+  f x := x.1
+  impl q := liftM ((R.spec + R'.spec).query (.inl q))
+  law _ _ := rfl
+
+/-- Keep the right side of disjoint resources. -/
+def snd (R : Resources.{u, uX, dX}) (R' : Resources.{u, uY, dY}) : OracleMap (R.sum R') R' where
+  f x := x.2
+  impl q := liftM ((R.spec + R'.spec).query (.inr q))
+  law _ _ := rfl
+
 /-- Apply two oracle maps to disjoint resources. -/
-def sum {L : Type u} {D : L → Type u} {Other : OracleFamily.{u, u, u} L D}
-    (h : OracleMap In Mid) (g : OracleMap Out Other) :
+def par (h : OracleMap In Mid) (g : OracleMap Out Other) :
+    OracleMap (In.sum Out) (Mid.sum Other) where
+  f x := (h.f x.1, g.f x.2)
+  impl
+    | .inl q => simulateQ (fun r => liftM ((In.spec + Out.spec).query (.inl r))) (h.impl q)
+    | .inr q => simulateQ (fun r => liftM ((In.spec + Out.spec).query (.inr r))) (g.impl q)
+  law x q := by
+    cases q with
+    | inl q =>
+      exact (QueryImpl.simulateQ_simulateQ_eq_of_apply (impl := In.answer x.1)
+        (fun _ => rfl) (h.impl q)).trans (h.law _ _)
+    | inr q =>
+      exact (QueryImpl.simulateQ_simulateQ_eq_of_apply (impl := Out.answer x.2)
+        (fun _ => rfl) (g.impl q)).trans (g.law _ _)
+
+/-- Regroup disjoint resources to the left without changing their data or answers. -/
+def reassoc (R₁ : Resources.{u, uX, dX}) (R₂ : Resources.{u, uY, dY})
+    (R₃ : Resources.{u, uZ, dZ}) : OracleMap (R₁.sum (R₂.sum R₃)) ((R₁.sum R₂).sum R₃) where
+  f x := ((x.1, x.2.1), x.2.2)
+  impl
+    | .inl (.inl q) => liftM ((R₁.spec + (R₂.spec + R₃.spec)).query (.inl q))
+    | .inl (.inr q) => liftM ((R₁.spec + (R₂.spec + R₃.spec)).query (.inr (.inl q)))
+    | .inr q => liftM ((R₁.spec + (R₂.spec + R₃.spec)).query (.inr (.inr q)))
+  law x q := by rcases q with (q | q) | q <;> rfl
+
+end Resources
+
+section Families
+variable {I : Type uI} {J : Type uJ} {K : Type uK} {A : I → Type u} {B : J → Type u}
+  {C : K → Type u}
+
+/-- Embeddings are oracle maps that retain or rename existing input slots. -/
+def embedding (In : OracleFamily.{uI, u, wI} I A) (rename : J → I) :
+    OracleMap In (In.reindex rename) where
+  f x j := x (rename j)
+  impl q := liftM (In.spec.query ⟨rename q.1, q.2⟩)
+  law _ _ := rfl
+
+/-- View a family of disjoint data as disjoint resources, with its data split into a pair. -/
+def ofSumFamily (a : OracleFamily.{uI, u, w} I A) (b : OracleFamily.{uJ, u, w} J B) :
+    OracleMap (sumFamily a b) (Resources.sum a b) where
+  f x := (fun i => x (.inl i), fun j => x (.inr j))
+  impl
+    | .inl q => liftM ((sumFamily a b).spec.query ⟨.inl q.1, q.2⟩)
+    | .inr q => liftM ((sumFamily a b).spec.query ⟨.inr q.1, q.2⟩)
+  law x q := by rcases q with q | q <;> rfl
+
+variable {L : Type uL} {D : L → Type u} {In : OracleFamily.{uI, u, w} I A}
+  {Mid : OracleFamily.{uJ, u, wJ} J B} {Out : OracleFamily.{uK, u, w} K C}
+  {Other : OracleFamily.{uL, u, wJ} L D}
+
+/-- Apply two oracle maps to the two parts of a family of disjoint data. -/
+def sum (h : OracleMap In Mid) (g : OracleMap Out Other) :
     OracleMap (sumFamily In Out) (sumFamily Mid Other) where
   f x := sumData (h.f (fun i => x (.inl i))) (g.f (fun j => x (.inr j)))
   impl
@@ -154,15 +254,17 @@ def sum {L : Type u} {D : L → Type u} {Other : OracleFamily.{u, u, u} L D}
     | inl j =>
       exact (QueryImpl.simulateQ_simulateQ_eq_of_apply
         (impl := In.behaviorOfRealizations (fun i => x (.inl i)))
-        (fun _ => rfl) (h.impl ⟨j, q⟩)).trans (h.law _ _)
+        (fun _ => rfl) (h.impl ⟨j, q⟩)).trans
+        (h.law (fun i => x (.inl i)) ⟨j, q⟩)
     | inr j =>
       exact (QueryImpl.simulateQ_simulateQ_eq_of_apply
         (impl := Out.behaviorOfRealizations (fun i => x (.inr i)))
-        (fun _ => rfl) (g.impl ⟨j, q⟩)).trans (g.law _ _)
+        (fun _ => rfl) (g.impl ⟨j, q⟩)).trans
+        (g.law (fun i => x (.inr i)) ⟨j, q⟩)
 
-/-- Reassociate disjoint resources without changing their data or answers. -/
-def assoc (In : OracleFamily.{u, u, u} I A) (Mid : OracleFamily.{u, u, u} J B)
-    (Out : OracleFamily.{u, u, u} K C) :
+/-- Reassociate disjoint data without changing it or its answers. -/
+def assoc (In : OracleFamily.{uI, u, w} I A) (Mid : OracleFamily.{uJ, u, w} J B)
+    (Out : OracleFamily.{uK, u, w} K C) :
     OracleMap (sumFamily (sumFamily In Mid) Out) (sumFamily In (sumFamily Mid Out)) where
   f x := sumData (fun i => x (.inl (.inl i)))
     (sumData (fun j => x (.inl (.inr j))) (fun k => x (.inr k)))
@@ -174,9 +276,9 @@ def assoc (In : OracleFamily.{u, u, u} I A) (Mid : OracleFamily.{u, u, u} J B)
       liftM ((sumFamily (sumFamily In Mid) Out).spec.query ⟨.inr k, q⟩)
   law x q := by rcases q with ⟨i | (j | k), q⟩ <;> rfl
 
-/-- The inverse reassociation of disjoint resources. -/
-def unassoc (In : OracleFamily.{u, u, u} I A) (Mid : OracleFamily.{u, u, u} J B)
-    (Out : OracleFamily.{u, u, u} K C) :
+/-- The inverse reassociation of disjoint data. -/
+def unassoc (In : OracleFamily.{uI, u, w} I A) (Mid : OracleFamily.{uJ, u, w} J B)
+    (Out : OracleFamily.{uK, u, w} K C) :
     OracleMap (sumFamily In (sumFamily Mid Out)) (sumFamily (sumFamily In Mid) Out) where
   f x := sumData (sumData (fun i => x (.inl i)) (fun j => x (.inr (.inl j))))
     (fun k => x (.inr (.inr k)))
@@ -188,6 +290,8 @@ def unassoc (In : OracleFamily.{u, u, u} I A) (Mid : OracleFamily.{u, u, u} J B)
     | ⟨.inr k, q⟩ =>
       liftM ((sumFamily In (sumFamily Mid Out)).spec.query ⟨.inr (.inr k), q⟩)
   law x q := by rcases q with ⟨(i | j) | k, q⟩ <;> rfl
+
+end Families
 
 end OracleMap
 
@@ -352,44 +456,64 @@ theorem payloadImpl_append (s₁ : OracleProtocol.{u})
   refine Sigma.ext rfl (heq_of_eq ?_)
   exact (funext ((oracles_append s₁ s₂ _ _).law _)).symm
 
-/-- A passive oracle verifier with one fixed output oracle family. -/
-structure OracleVerifier {ι I J : Type u} (ambient : OracleSpec.{u, u} ι)
-    (s : OracleProtocol.{u}) (S T : Type u) {A : I → Type u} {B : J → Type u}
-    (inputs : OracleFamily.{u, u, u} I A) (outputs : OracleFamily.{u, u, u} J B) where
+/-- The resources a decision at path `p` may query: the input family and the payloads on the
+path, as disjoint resources. The input data and the path data stay separately typed, and the two
+families may use different query universes. -/
+abbrev pathResources {I : Type uI} {A : I → Type u} (inputs : OracleFamily.{uI, u, wI} I A)
+    (s : OracleProtocol.{u}) (p : Path s) :=
+  Resources.sum (Resources.ofFamily inputs) (Resources.ofFamily (pathFamily s p))
+
+/-- A passive oracle verifier. The output statement type `T p` and the output oracle family
+`outputs p` are indexed by the public shape path `p` of the run, so a public message may change
+both. A verifier with one output type and family uses constant families. -/
+structure OracleVerifier {ι : Type uι} {I : Type uI} (ambient : OracleSpec.{uι, u} ι)
+    (s : OracleProtocol.{u}) (S : Type uS) (T : Path s → Type u) {A : I → Type u}
+    {J : Path s → Type uJ} {B : (p : Path s) → J p → Type u}
+    (inputs : OracleFamily.{uI, u, wI} I A)
+    (outputs : (p : Path s) → OracleFamily.{uJ, u, wJ} (J p) (B p)) where
   /-- The decision has query access to inputs and path payloads, never their raw values. -/
   decide : S → (p : Path s) → View s p →
-    OptionT (OracleComp (ambient + (sumFamily inputs (pathFamily s p)).spec)) T
+    OptionT (OracleComp (ambient + (pathResources inputs s p).spec)) (T p)
   /-- The output interface may use the public statement and verifier view. -/
   outputMap : S → (p : Path s) → View s p →
-    OracleMap (sumFamily inputs (pathFamily s p)) outputs
+    OracleMap (pathResources inputs s p) (Resources.ofFamily (outputs p))
+
+/-- The output statement paired with the concrete output oracle data, at each shape path. -/
+abbrev OracleVerifier.Output {s : OracleProtocol.{u}} (T : Path s → Type u)
+    {J : Path s → Type u} (B : (p : Path s) → J p → Type u) (p : Path s) : Type u :=
+  T p × (∀ j, B p j)
 
 /-- The decision with resource queries answered from concrete data; ambient queries remain.
 
 Its possible results, with every ambient answer allowed, are the statements the decision can
 return on that data and view.
 -/
-def OracleVerifier.decideWith {ι I J : Type u} {ambient : OracleSpec.{u, u} ι}
-    {s : OracleProtocol.{u}} {S T : Type u} {A : I → Type u} {B : J → Type u}
-    {inputs : OracleFamily.{u, u, u} I A} {outputs : OracleFamily.{u, u, u} J B}
+def OracleVerifier.decideWith {ι : Type uι} {I : Type uI} {ambient : OracleSpec.{uι, u} ι}
+    {s : OracleProtocol.{u}} {S : Type uS} {T : Path s → Type u} {A : I → Type u}
+    {J : Path s → Type uJ} {B : (p : Path s) → J p → Type u}
+    {inputs : OracleFamily.{uI, u, wI} I A}
+    {outputs : (p : Path s) → OracleFamily.{uJ, u, wJ} (J p) (B p)}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (p : Path s) (v : View s p)
-    (data : ∀ i, (sumFamily inputs (pathFamily s p)).Realization i) :
-    OracleComp ambient (Option T) :=
+    (data : (pathResources inputs s p).Data) :
+    OracleComp ambient (Option (T p)) :=
   simulateQ (QueryImpl.addLift (QueryImpl.id' ambient)
-    ((sumFamily inputs (pathFamily s p)).behaviorOfRealizations data)) (V.decide stmt p v).run
+    ((pathResources inputs s p).answer data)) (V.decide stmt p v).run
 
 /-- Interpreting ambient queries after closing resource queries agrees with closing them
 together under the ambient handler. -/
-theorem OracleVerifier.simulateQ_decideWith {ι I J : Type u}
-    {ambient : OracleSpec.{u, u} ι} {s : OracleProtocol.{u}} {S T : Type u}
-    {A : I → Type u} {B : J → Type u}
-    {inputs : OracleFamily.{u, u, u} I A} {outputs : OracleFamily.{u, u, u} J B}
+theorem OracleVerifier.simulateQ_decideWith {ι : Type uι} {I : Type uI}
+    {ambient : OracleSpec.{uι, u} ι} {s : OracleProtocol.{u}} {S : Type uS}
+    {T : Path s → Type u} {A : I → Type u}
+    {J : Path s → Type uJ} {B : (p : Path s) → J p → Type u}
+    {inputs : OracleFamily.{uI, u, wI} I A}
+    {outputs : (p : Path s) → OracleFamily.{uJ, u, wJ} (J p) (B p)}
     {m : Type u → Type v} [Monad m] [LawfulMonad m]
     (V : OracleVerifier ambient s S T inputs outputs) (impl : QueryImpl ambient m)
     (stmt : S) (p : Path s) (v : View s p)
-    (data : ∀ i, (sumFamily inputs (pathFamily s p)).Realization i) :
+    (data : (pathResources inputs s p).Data) :
     simulateQ impl (V.decideWith stmt p v data) =
       simulateQ (QueryImpl.addLift impl
-        ((sumFamily inputs (pathFamily s p)).behaviorOfRealizations data))
+        ((pathResources inputs s p).answer data))
         (V.decide stmt p v).run := by
   unfold OracleVerifier.decideWith
   refine QueryImpl.simulateQ_simulateQ_eq_of_apply (fun q => ?_) _
@@ -400,26 +524,28 @@ theorem OracleVerifier.simulateQ_decideWith {ι I J : Type u}
     simp
 
 /-- Interpret the decision's resource queries using the input and the actual run's payloads. -/
-def OracleVerifier.run {ι I J : Type u} {ambient : OracleSpec.{u, u} ι}
-    {s : OracleProtocol.{u}} {S T : Type u} {A : I → Type u} {B : J → Type u}
-    {inputs : OracleFamily.{u, u, u} I A} {outputs : OracleFamily.{u, u, u} J B}
+def OracleVerifier.run {ι : Type u} {I : Type uI} {ambient : OracleSpec.{u, u} ι}
+    {s : OracleProtocol.{u}} {S : Type uS} {T : Path s → Type u} {A : I → Type u}
+    {J : Path s → Type u} {B : (p : Path s) → J p → Type u}
+    {inputs : OracleFamily.{uI, u, wI} I A}
+    {outputs : (p : Path s) → OracleFamily.{u, u, wJ} (J p) (B p)}
     {Out : PathAlong oracleSig s → Type u}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : ∀ i, A i)
     (prover : Prover oracleSig ambient s Out) :
     OracleComp (ambient + challengeSpec oracleSig s)
-      (Observation oracleSig s Out (T × (∀ j, B j))) := do
+      (Observation oracleSig s Out (OracleVerifier.Output T B)) := do
   let ⟨tr, out, _⟩ ← TwoParty.Lens.run s
     (prover.simulate (fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q))))
     (sampler oracleSig s (fun c =>
       liftM ((ambient + challengeSpec oracleSig s).query (.inr c))))
   let p := projectPathAlong oracleSig s tr
   let view := toView s tr
-  let resources := sumData data (payloads s tr)
+  let resources : (pathResources inputs s p).Data := (data, payloads s tr)
   let verdict ← simulateQ
     (QueryImpl.addLift
       ((fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q))) :
         QueryImpl ambient (OracleComp (ambient + challengeSpec oracleSig s)))
-      ((sumFamily inputs (pathFamily s p)).behaviorOfRealizations resources))
+      ((pathResources inputs s p).answer resources))
     (V.decide stmt p view).run
   pure ⟨tr, out, verdict.map fun t => (t, (V.outputMap stmt p view).f resources)⟩
 

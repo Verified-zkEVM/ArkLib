@@ -58,6 +58,8 @@ uses `Unit → Nat`.
 
 @[expose] public section
 
+universe uS
+
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp
 
@@ -65,7 +67,7 @@ variable {P : PFunctor.{1, 0}} {l : PFunctor.Lens P rolePoly}
 
 namespace KnowledgeStateFunction
 
-variable {s : FreeM P PUnit.{1}} {S : Type} {Win : S → Type} {W : S → PathAlong l s → Type}
+variable {s : FreeM P PUnit.{1}} {S : Type uS} {Win : S → Type} {W : S → PathAlong l s → Type}
   {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
   {validOutput : (stmt : S) → (tr : PathAlong l s) → W stmt tr → Prop}
   (F : KnowledgeStateFunction l s S W Win admissible relIn validOutput)
@@ -243,7 +245,7 @@ end KnowledgeStateFunction
 /-- A knowledge state function with a budgeted program for every extraction stage, charging
 natural-number counts indexed by the finite type `Kind`. -/
 structure MeasuredKnowledgeStateFunction (Kind : Type) [Finite Kind] (l : PFunctor.Lens P rolePoly)
-    (s : FreeM P PUnit.{1}) (S : Type) (W : S → PathAlong l s → Type) (Win : S → Type)
+    (s : FreeM P PUnit.{1}) (S : Type uS) (W : S → PathAlong l s → Type) (Win : S → Type)
     (admissible : S → Prop) (relIn : (stmt : S) → Win stmt → Prop)
     (validOutput : (stmt : S) → (tr : PathAlong l s) → W stmt tr → Prop)
     extends KnowledgeStateFunction l s S W Win admissible relIn validOutput where
