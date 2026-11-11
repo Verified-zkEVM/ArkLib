@@ -12,6 +12,8 @@ import ArkLibTest.Interaction.Core.Oracle
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle OracleComp MeasureTheory
 open scoped ENNReal
 
+universe v
+
 namespace Interaction.Core.SecurityTests
 
 @[instance_reducible] def problem : StatementProblem Bool where
@@ -194,6 +196,15 @@ def knowledgeState : KnowledgeStateFunction plainSig coin Bool (fun _ => Unit) U
 example : rbrKnowledgeSoundness.{0, 0, 0} plainSig coin (fun _ => True)
     (fun stmt (_ : Unit) => stmt = true) (fun stmt _ (_ : Unit) => stmt = true)
     draw (fun _ => 0) := by
+  refine ⟨knowledgeState, ?_⟩
+  intro stmt _ a next sp h history
+  simp [knowledgeState]
+
+/-- The same bound holds with the intermediate witnesses lifted to any universe `v`. -/
+example : rbrKnowledgeSoundness.{0, 0, v} plainSig coin (fun _ => True)
+    (fun stmt (_ : Unit) => stmt = true) (fun stmt _ (_ : Unit) => stmt = true)
+    draw (fun _ => 0) := by
+  apply rbrKnowledgeSoundness.lift.{0, 0, 0, v}
   refine ⟨knowledgeState, ?_⟩
   intro stmt _ a next sp h history
   simp [knowledgeState]

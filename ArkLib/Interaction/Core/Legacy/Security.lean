@@ -56,6 +56,8 @@ compare the legacy probability of an event with the interaction-layer measure of
 
 @[expose] public section
 
+universe uK
+
 namespace Interaction.Core.Legacy
 open PFunctor FreeM TwoParty.Lens OracleComp OracleSpec ProtocolSpec MeasureTheory
 open Interaction.Oracle (Problem ClaimFamily)
@@ -1230,18 +1232,20 @@ extractor and knowledge state function with an all-state terminal certificate, o
 whose acceptance agrees with the legacy verifier. The interaction-layer knowledge state function
 is `embedKnowledgeStateFunction`: the witness at a full prefix is the legacy intermediate witness
 at its legacy transcript prefix, and the extraction functions are the legacy extractor's,
-reindexed. -/
+reindexed. The conclusion holds for intermediate witnesses in every universe `uK`, by
+`rbrKnowledgeSoundness.lift`. -/
 theorem rbrKnowledgeSoundness_of_legacyWith (hacc : L.AcceptanceAgrees impl V acc)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (ε : pSpec.ChallengeIdx → ℝ≥0)
     {E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid}
     {K : V.KnowledgeStateFunction init impl relIn relOut E} (hK : KnowledgeTerminalCertificate K)
     (h : V.rbrKnowledgeSoundnessWith init impl relIn relOut WitMid E K ε) :
-    Core.rbrKnowledgeSoundness.{0, 0, 0} L.l L.protocol (fun _ => True)
+    Core.rbrKnowledgeSoundness.{0, 0, uK} L.l L.protocol (fun _ => True)
       (fun stmt w => (stmt, w) ∈ relIn)
       (fun stmt tr wit => acc (fun t => (t, wit) ∈ relOut) stmt tr)
       (L.challengeImpl ProtocolSpec.challengeQueryImpl)
       (fun c => ε (L.challengeRound 0 n (Nat.zero_add n) c)) := by
+  apply Core.rbrKnowledgeSoundness.lift.{0, 0, 0, uK}
   refine ⟨L.embedKnowledgeStateFunction hacc K hK, fun stmt _ a next sp hc hist => ?_⟩
   obtain ⟨j, rfl, tr, h1, h2, hch⟩ := L.prefixFrom_step 0 n _ default sp hist
   obtain ⟨hd, hcr, hmap⟩ := hch hc
@@ -1264,7 +1268,8 @@ theorem rbrKnowledgeSoundness_of_legacyWith (hacc : L.AcceptanceAgrees impl V ac
 
 /-- **Round-by-round knowledge soundness, legacy to interaction layer**, on any layout whose
 acceptance agrees with the legacy verifier, when every legacy knowledge state function has an
-all-state terminal certificate. The certificate hypothesis holds by
+all-state terminal certificate. The conclusion holds for intermediate witnesses in every universe
+`uK`. The certificate hypothesis holds by
 `KnowledgeTerminalCertificate.of_support_init`, `KnowledgeTerminalCertificate.of_stateIndependent`,
 or `KnowledgeTerminalCertificate.of_guarded`. -/
 theorem rbrKnowledgeSoundness_of_legacy (hacc : L.AcceptanceAgrees impl V acc)
@@ -1274,7 +1279,7 @@ theorem rbrKnowledgeSoundness_of_legacy (hacc : L.AcceptanceAgrees impl V acc)
       (E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec M)
       (K : V.KnowledgeStateFunction init impl relIn relOut E), KnowledgeTerminalCertificate K)
     (h : V.rbrKnowledgeSoundness init impl relIn relOut ε) :
-    Core.rbrKnowledgeSoundness.{0, 0, 0} L.l L.protocol (fun _ => True)
+    Core.rbrKnowledgeSoundness.{0, 0, uK} L.l L.protocol (fun _ => True)
       (fun stmt w => (stmt, w) ∈ relIn)
       (fun stmt tr wit => acc (fun t => (t, wit) ∈ relOut) stmt tr)
       (L.challengeImpl ProtocolSpec.challengeQueryImpl)
@@ -1371,7 +1376,7 @@ knowledge sound verifier embeds as a round-by-round knowledge sound verifier und
 reindexed legacy challenge implementation, with the legacy error of each challenge node's round.
 The supplied extraction functions are kept, reindexed by legacy transcript prefixes. The
 hypothesis `hcert` plays the role it plays in `embedVerifier_rbrSoundness`, for knowledge state
-functions. -/
+functions. The conclusion holds for intermediate witnesses in every universe `uK`. -/
 theorem embedVerifier_rbrKnowledgeSoundness (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp)) (V : _root_.Verifier oSpec StmtIn StmtOut pSpec)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
@@ -1380,7 +1385,7 @@ theorem embedVerifier_rbrKnowledgeSoundness (init : ProbComp σ)
       (E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec M)
       (K : V.KnowledgeStateFunction init impl relIn relOut E), KnowledgeTerminalCertificate K)
     (h : V.rbrKnowledgeSoundness init impl relIn relOut ε) :
-    Core.Verifier.rbrKnowledgeSoundness.{0, 0, 0} (embedVerifier V) impl (fun _ => True)
+    Core.Verifier.rbrKnowledgeSoundness.{0, 0, uK} (embedVerifier V) impl (fun _ => True)
       (fun stmt w => (stmt, w) ∈ relIn)
       (fun _ t w => (t, w) ∈ relOut) (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
       (fun c => ε (challengeRound 0 n (Nat.zero_add n) c)) :=
@@ -1405,7 +1410,8 @@ theorem rbrKnowledgeSoundness_of_embedVerifier [Nonempty WitIn] (init : ProbComp
 /-- Round-by-round knowledge soundness of the embedded verifier, under the reindexed legacy
 challenge implementation and with the legacy error of each node's round, is legacy
 round-by-round knowledge soundness, when every legacy knowledge state function has an all-state
-terminal certificate and the input witness type is inhabited. -/
+terminal certificate and the input witness type is inhabited. The equivalence holds for
+intermediate witnesses in every universe `uK`. -/
 theorem rbrKnowledgeSoundness_iff [Nonempty WitIn] (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp)) (V : _root_.Verifier oSpec StmtIn StmtOut pSpec)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
@@ -1413,7 +1419,7 @@ theorem rbrKnowledgeSoundness_iff [Nonempty WitIn] (init : ProbComp σ)
     (hcert : ∀ (M : Fin (n + 1) → Type)
       (E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec M)
       (K : V.KnowledgeStateFunction init impl relIn relOut E), KnowledgeTerminalCertificate K) :
-    Core.Verifier.rbrKnowledgeSoundness.{0, 0, 0} (embedVerifier V) impl (fun _ => True)
+    Core.Verifier.rbrKnowledgeSoundness.{0, 0, uK} (embedVerifier V) impl (fun _ => True)
         (fun stmt w => (stmt, w) ∈ relIn) (fun _ t w => (t, w) ∈ relOut)
         (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
         (fun c => ε (challengeRound 0 n (Nat.zero_add n) c)) ↔

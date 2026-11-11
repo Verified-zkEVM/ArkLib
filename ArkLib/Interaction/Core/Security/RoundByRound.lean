@@ -162,6 +162,35 @@ def rbrKnowledgeSoundness {S : Type uS} {Win : Type uW} (s : FreeM P PUnit)
         F.toFun (sp.comp (.down (l.toFunB a x) (.root _)))
           (PrefixMoves.snoc l sp history x) stmt wit} ≤ ε (spineChallenge l sp h)
 
+/-- Move a knowledge state function to a larger universe of intermediate witnesses. Each new
+intermediate witness is an old one in a larger universe; the states, extractors and obligations
+are the old ones. -/
+def KnowledgeStateFunction.lift.{v} {s : FreeM P PUnit} {S : Type uS} {W : PathAlong l s → Type}
+    {Win : Type uW} {admissible : S → Prop} {relIn : S → Win → Prop}
+    {validOutput : (stmt : S) → (tr : PathAlong l s) → W tr → Prop}
+    (F : KnowledgeStateFunction.{uS, uW, uK} l s S W Win admissible relIn validOutput) :
+    KnowledgeStateFunction.{uS, uW, max uK v} l s S W Win admissible relIn validOutput where
+  Witness sp history := ULift.{v} (F.Witness sp history)
+  toFun sp history stmt wit := F.toFun sp history stmt wit.down
+  extractRoot stmt wit := F.extractRoot stmt wit.down
+  extractStep sp history stmt x wit := ULift.up (F.extractStep sp history stmt x wit.down)
+  extractLeaf sp history stmt wit := ULift.up (F.extractLeaf sp history stmt wit)
+  root stmt ha wit h := F.root stmt ha wit.down h
+  send sp history stmt ho x wit h := F.send sp history stmt ho x wit.down h
+  leaf sp history stmt wit h := F.leaf sp history stmt wit h
+
+/-- Round-by-round knowledge soundness with intermediate witnesses in a universe `uK` implies
+it with intermediate witnesses in any larger universe, at the same error. -/
+theorem rbrKnowledgeSoundness.lift.{v} {S : Type uS} {Win : Type uW} {s : FreeM P PUnit}
+    {W : PathAlong l s → Type} {admissible : S → Prop} {relIn : S → Win → Prop}
+    {validOutput : (stmt : S) → (tr : PathAlong l s) → W tr → Prop}
+    {draw : QueryImpl (challengeSpec l s) ProbComp} {ε : ChallengeNode l s → ℝ≥0∞}
+    (h : rbrKnowledgeSoundness.{uS, uW, uK} l s admissible relIn validOutput draw ε) :
+    rbrKnowledgeSoundness.{uS, uW, max uK v} l s admissible relIn validOutput draw ε := by
+  obtain ⟨F, hF⟩ := h
+  refine ⟨F.lift, fun stmt ha a next sp ho hist => ?_⟩
+  simpa only [KnowledgeStateFunction.lift, ULift.exists] using hF stmt ha a next sp ho hist
+
 /-- Valid plain acceptance from some ambient state at the fixed complete transcript.
 Terminal obligations therefore cover state changes made during the interaction. The event is a
 predicate on the output statement type at the transcript's shape path. The input statement may

@@ -29,6 +29,8 @@ oracle notions are defined through the induced plain verifier `OracleVerifier.to
 
 @[expose] public section
 
+universe uK
+
 noncomputable section
 
 namespace Interaction.Core.Legacy
@@ -264,7 +266,7 @@ theorem rbrSoundness_of_embedOracleVerifier (init : ProbComp σ)
 /-- **Round-by-round knowledge soundness of an oracle verifier, legacy to interaction layer.**
 The supplied extraction functions are kept, reindexed by legacy transcript prefixes. The
 hypothesis `hcert` gives every legacy knowledge state function of `V.toVerifier` an all-state
-terminal certificate. -/
+terminal certificate. The conclusion holds for intermediate witnesses in every universe `uK`. -/
 theorem embedOracleVerifier_rbrKnowledgeSoundness (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
     (V : _root_.OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec)
@@ -276,7 +278,7 @@ theorem embedOracleVerifier_rbrKnowledgeSoundness (init : ProbComp σ)
       (K : V.toVerifier.KnowledgeStateFunction init impl relIn relOut E),
       KnowledgeTerminalCertificate K)
     (h : V.rbrKnowledgeSoundness init impl relIn relOut ε) :
-    Core.OracleVerifier.rbrKnowledgeSoundness.{0, 0, 0, 0, 0, 0} (embedOracleVerifier V) impl
+    Core.OracleVerifier.rbrKnowledgeSoundness.{0, 0, uK, 0, 0, 0} (embedOracleVerifier V) impl
       (fun _ => True)
       (fun stmt w => (stmt, w) ∈ relIn) (fun _ t w => (t, w) ∈ relOut)
       (oracleChallengeImpl ProtocolSpec.challengeQueryImpl)

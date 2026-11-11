@@ -220,9 +220,12 @@ extractors are plain functions, not computations of the runner, so the root extr
 intermediate witness in one universe to an input witness in another. `rbrKnowledgeSoundness`,
 `Verifier.rbrKnowledgeSoundness` and `OracleVerifier.rbrKnowledgeSoundness` take `uK` as an
 explicit universe parameter and pass it to the existential, so elaboration does not specialize
-it. The legacy-to-interaction theorems state their conclusions at `uK = 0`, because a legacy
-intermediate witness lies in `Type`; the interaction-to-legacy theorems drop the witnesses and
-hold for every `uK`. Extracted witnesses returned by the extraction games are values of the
+it. `KnowledgeStateFunction.lift` moves a knowledge state function to a larger witness universe
+by lifting each intermediate witness, and `rbrKnowledgeSoundness.lift` transports the bound from
+`uK` to `max uK v` at the same error. A legacy intermediate witness lies in `Type`, which fixes
+the universe of the certificate that the legacy-to-interaction theorems construct but not the
+universe of their conclusions: they lift that certificate and hold for every `uK`. The
+interaction-to-legacy theorems drop the witnesses and hold for every `uK` as well. Extracted witnesses returned by the extraction games are values of the
 runner and stay in `Type`. The restrictions that remain are the premise-required ones above
 (ambient index and experiment state in `Type`, output data, output index and extracted witnesses
 in `Type`) and the two unresolved ones (input oracle data in `Type`, and the full-log runner).
