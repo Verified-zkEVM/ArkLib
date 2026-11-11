@@ -22,9 +22,10 @@ adaptive NARG experiment can be reused by other Fiat--Shamir transformations.
 
 * `IPVerifierView` and `honestVerifierView` capture the information-theoretic content of
   the public-coin specialization of [CO25] Definition 7.2.
-* `HonestVerifierSimulator` and `honestVerifierZeroKnowledge` do the same for Definition 7.3.
+* `HonestVerifierSimulator` and `honestVerifierZeroKnowledgeWithSimulator` do the same for
+  Definition 7.3.
 * `NARGZKAdversary`, `adaptiveNARGZKRealExp`, `adaptiveNARGZKSimExp`, and
-  `adaptiveNARGZeroKnowledge` do the same for Definition 7.4.
+  `adaptiveNARGZeroKnowledgeWithSimulator` do the same for Definition 7.4.
 
 The real and simulated experiments sample one public oracle shared by both adversarial stages.
 The simulator sees the unprogrammed oracle and returns a proof and a program; only the second
@@ -35,11 +36,10 @@ a programming function explicitly. No distribution wrapper is needed.
 
 ## Formalization boundary
 
-As elsewhere in ArkLib's information-theoretic security layer, polynomial-time efficiency is not
-represented in the types. The public adaptive definition includes security parameter,
-instance-size bound, and query
-budget; the oracle model and algorithm types may vary with the public parameters. One
-simulator family works for all relevant budgets and adversaries.
+The predicates for supplied simulators bound statistical distance. Efficiency requires a
+separate resource bound. The public adaptive definition includes the security parameter,
+instance-size bound, and query budget. The oracle model and algorithm types may vary with the
+public parameters. One simulator family works for all relevant budgets and adversaries.
 The programming operation is abstract here; a concrete transformation must define its program
 type and prove the required consistency properties.
 
@@ -118,23 +118,48 @@ abbrev HonestVerifierSimulator (StmtIn : Type) (pSpec : ProtocolSpec n) :=
   StmtIn → ProbComp (IPVerifierView StmtIn pSpec)
 
 /-- **[CO25, Definition 7.3]** Statistical honest-verifier zero knowledge for a public-coin
-interactive proof.
+interactive proof with a supplied simulator.
 
 For each relation member `(stmt, wit)`, the honest and simulated verifier views have total
 variation distance at most `error stmt`. A uniform bound is expressed by `error := fun _ => zIP`.
 This is denoted `z_IP(𝕩)` in **[snarg-book, Definition 13.1.7]**.
-The protocol schedule, message spaces, and ambient-oracle handler are fixed before choosing
-the simulator. The simulator receives no witness; its output has the same type as the honest
-view, but need not retain the input statement exactly. Any such discrepancy contributes to the
-distance. No verifier decision is executed or conditioned upon.
-Polynomial-time efficiency of the simulator is not expressed by this definition. -/
+The simulator receives only the statement. Discrepancies in the statement and transcript both
+contribute to the distance. The views are unconditional and contain no verifier decision.
+Efficiency of the supplied simulator requires a separate resource bound. -/
+def honestVerifierZeroKnowledgeWithSimulator
+    (impl : QueryImpl oSpec ProbComp)
+    (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
+    (simulator : HonestVerifierSimulator StmtIn pSpec)
+    (relation : Set (StmtIn × WitIn)) (error : StmtIn → ℝ) : Prop :=
+  ∀ stmt wit, (stmt, wit) ∈ relation →
+    discreteTVDist (honestVerifierView impl prover stmt wit) (simulator stmt) ≤ error stmt
+
+/-- Existential honest-verifier zero knowledge. With unique witnesses and an inhabited witness
+type, classical choice supplies a simulator with error zero for any prover
+(`honestVerifierZeroKnowledge_of_uniqueWitness`). -/
 def honestVerifierZeroKnowledge
     (impl : QueryImpl oSpec ProbComp)
     (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (relation : Set (StmtIn × WitIn)) (error : StmtIn → ℝ) : Prop :=
-  ∃ simulator : HonestVerifierSimulator StmtIn pSpec,
-    ∀ stmt wit, (stmt, wit) ∈ relation →
-      discreteTVDist (honestVerifierView impl prover stmt wit) (simulator stmt) ≤ error stmt
+  ∃ simulator, honestVerifierZeroKnowledgeWithSimulator impl prover simulator relation error
+
+/-- For a relation with unique witnesses, a simulator can choose a witness classically and run
+the honest prover, giving error zero for every prover. -/
+theorem honestVerifierZeroKnowledge_of_uniqueWitness [Inhabited WitIn]
+    (impl : QueryImpl oSpec ProbComp)
+    (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
+    (relation : Set (StmtIn × WitIn))
+    (hUnique : ∀ stmt wit wit', (stmt, wit) ∈ relation → (stmt, wit') ∈ relation → wit = wit') :
+    honestVerifierZeroKnowledge impl prover relation (fun _ => 0) := by
+  classical
+  refine ⟨fun stmt => honestVerifierView impl prover stmt
+    (if h : ∃ wit, (stmt, wit) ∈ relation then h.choose else default), ?_⟩
+  intro stmt wit hMem
+  have h : ∃ wit, (stmt, wit) ∈ relation := ⟨wit, hMem⟩
+  change discreteTVDist (honestVerifierView impl prover stmt wit)
+    (honestVerifierView impl prover stmt (if h : ∃ wit, (stmt, wit) ∈ relation
+      then h.choose else default)) ≤ 0
+  rw [dite_eq_left h, hUnique stmt _ _ h.choose_spec hMem, discreteTVDist.self]
 
 /-- **[CO25, Definition 7.3; snarg-book, Definition 13.1.7]** The size-dependent HVZK
 error envelope. For nonnegative errors, when the maximum exists this is the paper's
@@ -398,43 +423,82 @@ variable {Statement Witness : Type}
   (relation : Set (Statement × Witness)) (statementSize : Statement → ℕ)
 
 /-- **[CO25, Definition 7.4; snarg-book, general-oracle adaptive zero knowledge]**
-Adaptive statistical zero knowledge for every public security parameter, instance-size bound,
-and public-query budget. The sampled oracle models `D(λ,n)`. One simulator family is chosen
-before all parameters, budgets, output types, and adversaries. Each adversary chooses a valid
-instance–witness pair of size at most `n`, and both stages share the query budget.
-Private-coin queries are excluded. The definition imposes no efficiency requirement. -/
-def adaptiveNARGZeroKnowledge (error : ℕ → ℕ → ℕ → ℝ) : Prop :=
-  ∃ simulator : ∀ securityParameter sizeBound,
+Adaptive statistical zero knowledge for a supplied simulator family and every public security
+parameter, instance-size bound, and public-query budget. The sampled oracle models `D(λ,n)`.
+Each adversary chooses a valid instance–witness pair of size at most `n`, and both stages share
+the public-query budget. Efficiency of the supplied simulator requires a separate resource bound. -/
+def adaptiveNARGZeroKnowledgeWithSimulator
+    (simulator : ∀ securityParameter sizeBound,
       NARGZKSimulator (publicSpec securityParameter sizeBound) Statement
-        (NARGString securityParameter sizeBound) (Program securityParameter sizeBound),
-    ∀ securityParameter sizeBound t (Output : Type)
-      (adversary : NARGZKAdversary (publicSpec securityParameter sizeBound) Statement Witness
-        (NARGString securityParameter sizeBound) Output
-        (fun x w => (x, w) ∈ relation ∧ statementSize x ≤ sizeBound)),
-      adversary.HasAggregateQueryBound (fun _ => True) t →
-        discreteTVDist
-          (adaptiveNARGZKRealExp (sampleOracle securityParameter sizeBound)
-            (oracleImpl securityParameter sizeBound) (prover securityParameter sizeBound)
-            adversary)
-          (adaptiveNARGZKSimExp (sampleOracle securityParameter sizeBound)
-            (oracleImpl securityParameter sizeBound) (programImpl securityParameter sizeBound)
-            (simulator securityParameter sizeBound) adversary) ≤
-          error securityParameter sizeBound t
+        (NARGString securityParameter sizeBound) (Program securityParameter sizeBound))
+    (error : ℕ → ℕ → ℕ → ℝ) : Prop :=
+  ∀ securityParameter sizeBound t (Output : Type)
+    (adversary : NARGZKAdversary (publicSpec securityParameter sizeBound) Statement Witness
+      (NARGString securityParameter sizeBound) Output
+      (fun x w => (x, w) ∈ relation ∧ statementSize x ≤ sizeBound)),
+    adversary.HasAggregateQueryBound (fun _ => True) t →
+      discreteTVDist
+        (adaptiveNARGZKRealExp (sampleOracle securityParameter sizeBound)
+          (oracleImpl securityParameter sizeBound) (prover securityParameter sizeBound)
+          adversary)
+        (adaptiveNARGZKSimExp (sampleOracle securityParameter sizeBound)
+          (oracleImpl securityParameter sizeBound) (programImpl securityParameter sizeBound)
+          (simulator securityParameter sizeBound) adversary) ≤
+        error securityParameter sizeBound t
+
+/-- Existential adaptive NARG zero knowledge. A single simulator family works for every public
+parameter, budget, output type, and adversary. For a relation with unique witnesses, an inhabited
+witness type, and a no-op program, classical choice gives error zero for any prover
+(`adaptiveNARGZeroKnowledge_of_uniqueWitness`). -/
+def adaptiveNARGZeroKnowledge (error : ℕ → ℕ → ℕ → ℝ) : Prop :=
+  ∃ simulator, adaptiveNARGZeroKnowledgeWithSimulator publicSpec sampleOracle oracleImpl
+    programImpl prover relation statementSize simulator error
+
+/-- For a relation with unique witnesses and a no-op oracle program, a simulator can choose
+the witness classically and run the honest prover. This gives error zero even when the NARG
+string reveals the witness. -/
+theorem adaptiveNARGZeroKnowledge_of_uniqueWitness [Inhabited Witness]
+    (noop : ∀ l n, Program l n)
+    (hNoop : ∀ l n realization,
+      programImpl l n realization (noop l n) = oracleImpl l n realization)
+    (hUnique : ∀ stmt wit wit', (stmt, wit) ∈ relation → (stmt, wit') ∈ relation → wit = wit') :
+    adaptiveNARGZeroKnowledge publicSpec sampleOracle oracleImpl programImpl prover
+      relation statementSize (fun _ _ _ => 0) := by
+  classical
+  let witness : Statement → Witness := fun stmt =>
+    if h : ∃ wit, (stmt, wit) ∈ relation then h.choose else default
+  let simulator : ∀ l n, NARGZKSimulator (publicSpec l n) Statement
+      (NARGString l n) (Program l n) := fun l n stmt =>
+    (fun proof => (proof, noop l n)) <$> prover l n stmt (witness stmt)
+  refine ⟨simulator, ?_⟩
+  intro l n _ Output adversary _
+  have hExp :
+      adaptiveNARGZKRealExp (sampleOracle l n) (oracleImpl l n) (prover l n) adversary =
+        adaptiveNARGZKSimExp (sampleOracle l n) (oracleImpl l n) (programImpl l n)
+          (simulator l n) adversary := by
+    unfold adaptiveNARGZKRealExp adaptiveNARGZKSimExp
+    refine bind_congr fun realization => bind_congr fun ⟨xw, state⟩ => ?_
+    have h : ∃ wit, (xw.1.1, wit) ∈ relation := ⟨xw.1.2, xw.property.1⟩
+    have hWitness : witness xw.1.1 = xw.1.2 := by
+      simpa only [witness, dite_eq_left h] using hUnique _ _ _ h.choose_spec xw.property.1
+    simp [simulator, hWitness, simulateQ_map, hNoop]
+  rw [hExp, discreteTVDist.self]
 
 variable {publicSpec sampleOracle oracleImpl programImpl prover relation statementSize}
 
-/-- Pure NARG-string encoding preserves the same error and aggregate public-query budget.
-The simulator applies the encoding to its output and retains its programming instructions. -/
-theorem adaptiveNARGZeroKnowledge.map {Encoded : ℕ → ℕ → Type}
+/-- Pure NARG-string encoding preserves the bound for the simulator that encodes its output
+and retains its programming instructions. -/
+theorem adaptiveNARGZeroKnowledgeWithSimulator.map {Encoded : ℕ → ℕ → Type}
+    {simulator : ∀ l n, NARGZKSimulator (publicSpec l n) Statement
+      (NARGString l n) (Program l n)}
     (encode : ∀ l n, NARGString l n → Encoded l n) {error : ℕ → ℕ → ℕ → ℝ}
-    (h : adaptiveNARGZeroKnowledge publicSpec sampleOracle oracleImpl programImpl prover
-      relation statementSize error) :
-    adaptiveNARGZeroKnowledge publicSpec sampleOracle oracleImpl programImpl
+    (h : adaptiveNARGZeroKnowledgeWithSimulator publicSpec sampleOracle oracleImpl programImpl
+      prover relation statementSize simulator error) :
+    adaptiveNARGZeroKnowledgeWithSimulator publicSpec sampleOracle oracleImpl programImpl
       (fun l n stmt wit => encode l n <$> prover l n stmt wit)
-      relation statementSize error := by
-  obtain ⟨simulator, hSimulator⟩ := h
-  refine ⟨fun l n stmt => (fun result => (encode l n result.1, result.2)) <$>
-    simulator l n stmt, ?_⟩
+      relation statementSize
+      (fun l n stmt => (fun result => (encode l n result.1, result.2)) <$> simulator l n stmt)
+      error := by
   intro l n t Output adversary hQueries
   let reduced : NARGZKAdversary (publicSpec l n) Statement Witness (NARGString l n) Output
       (fun x w => (x, w) ∈ relation ∧ statementSize x ≤ n) :=
@@ -443,9 +507,21 @@ theorem adaptiveNARGZeroKnowledge.map {Encoded : ℕ → ℕ → Type}
       distinguish := fun state payload => adversary.distinguish state (encode l n payload) }
   have hr : reduced.HasAggregateQueryBound (fun _ => True) t :=
     ⟨hQueries.1, fun payload => hQueries.2 (encode l n payload)⟩
-  have bound := hSimulator l n t Output reduced hr
+  have bound := h l n t Output reduced hr
   simpa [adaptiveNARGZKRealExp, adaptiveNARGZKSimExp, reduced, simulateQ_map,
     bind_map_left] using bound
+
+/-- Pure NARG-string encoding preserves existential zero knowledge with the same error and
+aggregate public-query budget. -/
+theorem adaptiveNARGZeroKnowledge.map {Encoded : ℕ → ℕ → Type}
+    (encode : ∀ l n, NARGString l n → Encoded l n) {error : ℕ → ℕ → ℕ → ℝ}
+    (h : adaptiveNARGZeroKnowledge publicSpec sampleOracle oracleImpl programImpl prover
+      relation statementSize error) :
+    adaptiveNARGZeroKnowledge publicSpec sampleOracle oracleImpl programImpl
+      (fun l n stmt wit => encode l n <$> prover l n stmt wit)
+      relation statementSize error := by
+  obtain ⟨simulator, hSimulator⟩ := h
+  exact ⟨_, hSimulator.map encode⟩
 
 end Parameterized
 

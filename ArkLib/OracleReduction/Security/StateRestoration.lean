@@ -240,7 +240,10 @@ def knowledgeSoundnessWithExtractor
 /-- SR knowledge soundness with error `ε`:
 `∃ E, ∀ P, Pr[valid verifier output ∧ extraction failure] ≤ ε`, with no query bound.
 The non-rewinding extractor `E` is fixed before the prover. Failure `w_in = ⊥` is included
-in the event defined by `knowledgeSoundnessFailureProb`. -/
+in the event defined by `knowledgeSoundnessFailureProb`. The extractor is unrestricted:
+classical choice can recover a witness from any true statement, ignoring the transcript and logs.
+See `Verifier.knowledgeSoundness_iff_relationSoundness` for the analogous equivalence for
+fixed-statement interaction. -/
 def knowledgeSoundness
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
@@ -268,7 +271,8 @@ def knowledgeSoundnessQueryBoundedWithExtractor
 /-- One non-rewinding extractor for all query budgets:
 `∃ E, ∀ t, ∀ P with ≤ t selected queries, Pr[valid output ∧ extraction failure] ≤ error t`.
 The extractor is fixed before both the budget and prover; `queryBoundSelector` chooses which
-non-private prover queries count. -/
+non-private prover queries count. As in `knowledgeSoundness`, the extractor may use classical
+choice to recover a witness from the input statement. -/
 def knowledgeSoundnessQueryBounded
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)

@@ -71,9 +71,13 @@ Verifier.GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundness
 Reduction.Simulator
 Reduction.honestVerifierView
 Reduction.HonestVerifierSimulator
+Reduction.honestVerifierZeroKnowledgeWithSimulator
 Reduction.honestVerifierZeroKnowledge
+Reduction.honestVerifierZeroKnowledge_of_uniqueWitness
 Reduction.honestVerifierErrorEnvelope
+Reduction.adaptiveNARGZeroKnowledgeWithSimulator
 Reduction.adaptiveNARGZeroKnowledge
+Reduction.adaptiveNARGZeroKnowledge_of_uniqueWitness
 Reduction.NARGZKAdversary.HasAggregateQueryBound
 Reduction.adaptiveNARGZKRealExp
 Reduction.adaptiveNARGZKSimExp
@@ -105,6 +109,7 @@ NARG.soundnessFailureEventSizeBounded
 NARG.soundnessExperiment
 NARG.soundnessFailureEvent
 NARG.adaptiveKnowledgeSoundness
+NARG.adaptiveKnowledgeSoundnessWithExtractor
 NARG.knowledgeSoundnessFailureEventSizeBounded
 NARG.Extractor
 NARG.knowledgeSoundnessExperiment
@@ -115,6 +120,7 @@ PublicCoinIP.srSoundness
 PublicCoinIP.SRExtractor
 PublicCoinIP.srKnowledgeSoundnessFailureProb
 PublicCoinIP.srKnowledgeSoundness
+PublicCoinIP.srKnowledgeSoundnessWithExtractor
 ProtocolSpec.append
 ProtocolSpec.FullTranscript.append
 Prover.append

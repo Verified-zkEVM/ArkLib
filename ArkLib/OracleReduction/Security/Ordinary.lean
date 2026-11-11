@@ -171,17 +171,26 @@ def srSoundness (language : Set Statement) (size : Statement → ℕ)
     (init s n) emptyImpl language {true} ((V s n).restrictSize size n)
     (_root_.Verifier.StateRestoration.isSrChallengeMove (Salt := Salt s n)) t (error s n t)
 
+/-- The state-restoration bound for a supplied non-rewinding extractor family, for every
+salt-size parameter `s`, instance-size bound `n`, move budget, and adversary. The family may
+depend on `s` and `n`; no efficiency guarantee is imposed. -/
+def srKnowledgeSoundnessWithExtractor (relation : Set (Statement × Witness)) (size : Statement → ℕ)
+    (E : ∀ s n, SRExtractor Statement Witness (pSpec s n) (Salt := Salt s n))
+    (error : ℕ → ℕ → ℕ → ENNReal) : Prop :=
+  ∀ s n t (P : SRProver Statement (pSpec s n) (Salt := Salt s n)),
+    P.IsQueryBoundP (publicQuerySelector
+      (_root_.Verifier.StateRestoration.isSrChallengeMove (Salt := Salt s n) (oSpec := []ₒ))) t →
+    srKnowledgeSoundnessFailureProb (init s n) relation ((V s n).restrictSize size n)
+      (E s n) P ≤ error s n t
+
 /-- **[snarg-book, state-restoration knowledge soundness]** One non-rewinding extractor
-family precedes all salt-size and instance-size parameters, move budgets, and adversaries.
-The parameter `s` indexes the specified salt carrier; no efficiency guarantee is imposed. -/
+family satisfies `srKnowledgeSoundnessWithExtractor`. With no resource bound on the
+extractor, classical witness selection gives an extractor from soundness for the relation's
+language. See `Verifier.knowledgeSoundness_iff_relationSoundness` for this argument in the
+ordinary interactive game. -/
 def srKnowledgeSoundness (relation : Set (Statement × Witness)) (size : Statement → ℕ)
     (error : ℕ → ℕ → ℕ → ENNReal) : Prop :=
-  ∃ E : ∀ s n, SRExtractor Statement Witness (pSpec s n) (Salt := Salt s n),
-    ∀ s n t (P : SRProver Statement (pSpec s n) (Salt := Salt s n)),
-      P.IsQueryBoundP (publicQuerySelector
-        (_root_.Verifier.StateRestoration.isSrChallengeMove (Salt := Salt s n) (oSpec := []ₒ))) t →
-      srKnowledgeSoundnessFailureProb (init s n) relation ((V s n).restrictSize size n)
-        (E s n) P ≤ error s n t
+  ∃ E, srKnowledgeSoundnessWithExtractor init V relation size E error
 
 end Families
 
@@ -351,23 +360,34 @@ def adaptiveSoundness (language : Set Statement) (size : Statement → ℕ)
         soundnessFailureEventSizeBounded size instanceBound language out] ≤
       error securityParam instanceBound t
 
-/-- **[snarg-book, Section 9.1]** One parameterized extractor is chosen before all public
-parameters, query budgets, and adversaries. No uniform polynomial-time claim is imposed. -/
+/-- The adaptive NARG bound for a supplied extractor family, for all public parameters,
+query budgets, and adversaries. The family may use the security parameter and instance-size
+bound; no uniform polynomial-time claim is imposed. -/
+def adaptiveKnowledgeSoundnessWithExtractor
+    (relation : Set (Statement × Witness)) (size : Statement → ℕ)
+    (E : ∀ securityParam instanceBound,
+      Extractor (publicSpec securityParam instanceBound) Statement Witness
+        (NARGString securityParam instanceBound))
+    (error : ℕ → ℕ → ℕ → ENNReal) : Prop :=
+  ∀ securityParam instanceBound t
+      (P : Prover (publicSpec securityParam instanceBound) Statement
+        (NARGString securityParam instanceBound)),
+    P.IsQueryBoundP (publicQuerySelector countsPublicQuery) t →
+    Pr{let out ← (knowledgeSoundnessExperiment (init securityParam instanceBound)
+      (impl securityParam instanceBound) (V securityParam instanceBound)
+      (E securityParam instanceBound) P)}[
+        knowledgeSoundnessFailureEventSizeBounded size instanceBound relation out] ≤
+      error securityParam instanceBound t
+
+/-- **[snarg-book, Section 9.1]** One extractor family satisfies
+`adaptiveKnowledgeSoundnessWithExtractor`. With no resource bound on the extractor,
+classical witness selection gives an extractor from soundness for the relation's language.
+See `Verifier.knowledgeSoundness_iff_relationSoundness` for this argument in the ordinary
+interactive game. -/
 def adaptiveKnowledgeSoundness
     (relation : Set (Statement × Witness)) (size : Statement → ℕ)
     (error : ℕ → ℕ → ℕ → ENNReal) : Prop :=
-  ∃ E : ∀ securityParam instanceBound,
-      Extractor (publicSpec securityParam instanceBound) Statement Witness
-        (NARGString securityParam instanceBound),
-    ∀ securityParam instanceBound t
-        (P : Prover (publicSpec securityParam instanceBound) Statement
-          (NARGString securityParam instanceBound)),
-      P.IsQueryBoundP (publicQuerySelector countsPublicQuery) t →
-      Pr{let out ← (knowledgeSoundnessExperiment (init securityParam instanceBound)
-        (impl securityParam instanceBound) (V securityParam instanceBound)
-        (E securityParam instanceBound) P)}[
-          knowledgeSoundnessFailureEventSizeBounded size instanceBound relation out] ≤
-        error securityParam instanceBound t
+  ∃ E, adaptiveKnowledgeSoundnessWithExtractor publicSpec init impl V relation size E error
 
 end Parameterized
 

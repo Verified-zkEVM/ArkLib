@@ -43,8 +43,9 @@ Write \(\OracleFamily\) for the public oracles specified by the NARG's model. Fo
           (\Instance,\NARGString,\QueryLog_{\NARGMaliciousProver},\QueryLog_{\NARGVerifier})
     \end{array}\right]\le\NARGKnowledgeSoundnessError(\secpar,\InstanceSizeBound,\PublicOracleQueryBound).
   \end{equation*}
-  The annotated arrows record public query--answer logs. No running-time requirement is imposed.
-  \lean{NARG.adaptiveKnowledgeSoundness, NARG.knowledgeSoundnessFailureEventSizeBounded,
+  The annotated arrows record public query--answer logs. Lean also states the bound for a supplied extractor family, so a reduction can identify the algorithm that achieves it. The existential form allows classical witness selection from the statement alone, which gives an unrestricted extractor whenever the verifier is sound for the relation's language.
+  \lean{NARG.adaptiveKnowledgeSoundness, NARG.adaptiveKnowledgeSoundnessWithExtractor,
+    NARG.knowledgeSoundnessFailureEventSizeBounded,
     NARG.Extractor, NARG.knowledgeSoundnessExperiment, NARG.knowledgeSoundnessFailureEvent}
   \uses{def:oracle_run, def:counted_queries}
   \leanok

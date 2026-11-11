@@ -589,7 +589,11 @@ def adaptiveNARGKnowledgeSoundnessWithExtractor
           extractorImpl verifier extractor P}[nargKSFailEvent relIn langOut out] ≤ error
 
 /-- Adaptive knowledge soundness with one extractor for all provers. Extractor oracle permissions
-are supplied through `extractorImpl`; private prover sampling does not grant additional access. -/
+are supplied through `extractorImpl`; private prover sampling does not grant additional access.
+The existential quantifier imposes no computability or resource bound. A classical witness
+selector can ignore the logs and return a witness for any true statement. See
+`Verifier.knowledgeSoundness_iff_relationSoundness` for the analogous equivalence for the
+fixed-statement interactive game. -/
 def adaptiveNARGKnowledgeSoundness
     (relIn : Set (StmtIn × WitIn)) (langOut : Set StmtOut) (error : ENNReal) : Prop :=
   ∃ extractor, adaptiveNARGKnowledgeSoundnessWithExtractor init impl extractorImpl verifier
@@ -609,7 +613,9 @@ def adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor
             extractorImpl verifier extractor P}[nargKSFailEvent relIn langOut out] ≤ error
 
 /-- One non-rewinding extractor for all public-query budgets. The extractor is chosen before
-both the budget and the prover; private sampling is available in every execution. -/
+both the budget and the prover; private sampling is available in every execution.
+The budgets restrict the prover. As in `adaptiveNARGKnowledgeSoundness`, the existential
+extractor can select a witness by classical choice. -/
 def adaptiveNARGKnowledgeSoundnessQueryBounded
     (relIn : Set (StmtIn × WitIn)) (langOut : Set StmtOut)
     (queryBoundSelector : ι → Prop) [DecidablePred queryBoundSelector]
