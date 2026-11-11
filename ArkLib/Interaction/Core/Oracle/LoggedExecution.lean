@@ -22,16 +22,16 @@ directly as `runtime.run (V.runWithLog stmt data prover)`.
 
 @[expose] public section
 
-universe v
+universe v uS wJ
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle OracleSpec
 
 namespace OracleVerifier
-variable {ι I S : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
+variable {ι I : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol}
   {T : Path s → Type} {A : I → Type} {J : Path s → Type}
-  {B : (p : Path s) → J p → Type} {inputs : OracleFamily I A}
-  {outputs : (p : Path s) → OracleFamily (J p) (B p)}
+  {B : (p : Path s) → J p → Type} {inputs : OracleFamily.{0, 0, 0} I A}
+  {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
   {Out : PathAlong oracleSig s → Type}
 
 /-- Forgetting both logs gives the oracle verifier's run, including the statement and output

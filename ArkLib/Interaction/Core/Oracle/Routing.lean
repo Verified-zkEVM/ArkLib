@@ -23,7 +23,7 @@ prefix transcript alone.
 
 @[expose] public section
 
-universe u uI uJ uS
+universe u uI uJ uS wI wJ wK
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
@@ -82,15 +82,15 @@ theorem splitOracles_payloads (s₁ : OracleProtocol.{u}) (s₂ : Path s₁ → 
 
 namespace OracleVerifier
 variable {ι : Type u} {I : Type uI} {ambient : OracleSpec.{u, u} ι}
-  {A : I → Type u} {inputs : OracleFamily.{uI, u, u} I A}
+  {A : I → Type u} {inputs : OracleFamily.{uI, u, wI} I A}
   {s₁ : OracleProtocol.{u}} {s₂ : Path s₁ → OracleProtocol.{u}} {S : Type uS}
   {T : Path s₁ → Type u} {U : (p : Path s₁) → Path (s₂ p) → Type u}
   {J : Path s₁ → Type uJ} {B : (p : Path s₁) → J p → Type u}
-  {middle : (p : Path s₁) → OracleFamily.{uJ, u, u} (J p) (B p)}
+  {middle : (p : Path s₁) → OracleFamily.{uJ, u, wJ} (J p) (B p)}
   {K : (p : Path s₁) → Path (s₂ p) → Type u}
   {C : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → K p₁ p₂ → Type u}
   {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
-    OracleFamily.{u, u, u} (K p₁ p₂) (C p₁ p₂)}
+    OracleFamily.{u, u, wK} (K p₁ p₂) (C p₁ p₂)}
 
 /-- In an appended run, the prefix decision's resources are the inputs and the prefix payloads:
 every prefix-slot query routed by `prefixRoute` is answered as `payloadImpl s₁ tr₁` answers it. -/
@@ -100,17 +100,16 @@ theorem prefixRoute_payload (data : ∀ i, A i) (tr₁ : PathAlong oracleSig s�
         (projectPathAlong oracleSig _ (PathAlong.append oracleSig s₁ s₂ tr₁ tr₂))).1,
       (prefixRoute (inputs := inputs)
         (projectPathAlong oracleSig _ (PathAlong.append oracleSig s₁ s₂ tr₁ tr₂))).f
-        (sumData data (payloads _ (PathAlong.append oracleSig s₁ s₂ tr₁ tr₂)))⟩ :
-      (p : Path s₁) × (∀ i, (sumFamily inputs (pathFamily s₁ p)).Realization i)) =
-      ⟨projectPathAlong oracleSig s₁ tr₁, sumData data (payloads s₁ tr₁)⟩ := by
+        (data, payloads _ (PathAlong.append oracleSig s₁ s₂ tr₁ tr₂))⟩ :
+      (p : Path s₁) × (pathResources inputs s₁ p).Data) =
+      ⟨projectPathAlong oracleSig s₁ tr₁, (data, payloads s₁ tr₁)⟩ := by
   have h := congrArg (fun z : SplitData s₁ s₂ =>
-      (⟨z.1.1, sumData data (fun j => z.2 (.inl j))⟩ :
-        (p : Path s₁) × (∀ i, (sumFamily inputs (pathFamily s₁ p)).Realization i)))
+      (⟨z.1.1, (data, fun j => z.2 (.inl j))⟩ :
+        (p : Path s₁) × (pathResources inputs s₁ p).Data))
     (splitOracles_payloads s₁ s₂ tr₁ tr₂)
   refine Eq.trans ?_ h
   refine Sigma.ext rfl (heq_of_eq ?_)
-  funext i
-  rcases i with i | i <;> rfl
+  rfl
 
 /-- A composed oracle run splits into the prefix interaction and the suffix interaction, followed
 by the prefix decision on the data `prefixRoute` selects and, after prefix acceptance only, the
@@ -135,17 +134,17 @@ theorem run_append (V₁ : OracleVerifier ambient s₁ S T inputs middle)
       let tr := PathAlong.append oracleSig s₁ s₂ tr₁ tr₂
       let p := projectPathAlong oracleSig _ tr
       let v := toView _ tr
-      let resources := sumData data (payloads _ tr)
+      let resources := (data, payloads _ tr)
       let mid ← simulateQ (QueryImpl.addLift toFull
-          ((sumFamily inputs (pathFamily s₁ (Path.split s₁ s₂ p).1)).behaviorOfRealizations
+          ((pathResources inputs s₁ (Path.split s₁ s₂ p).1).answer
             ((prefixRoute (inputs := inputs) p).f resources)))
         (V₁.decide stmt (Path.split s₁ s₂ p).1 (View.split s₁ s₂ p v).1).run
       match mid with
       | none => pure ⟨tr, out, none⟩
       | some mid => do
         let verdict ← simulateQ (QueryImpl.addLift toFull
-            ((sumFamily (middle (Path.split s₁ s₂ p).1)
-              (pathFamily _ (Path.split s₁ s₂ p).2)).behaviorOfRealizations
+            ((pathResources (middle (Path.split s₁ s₂ p).1)
+              _ (Path.split s₁ s₂ p).2).answer
               ((suffixRoute V₁ stmt p v).f resources)))
           ((V₂ (Path.split s₁ s₂ p).1).decide mid (Path.split s₁ s₂ p).2
             (View.split s₁ s₂ p v).2).run
@@ -160,13 +159,19 @@ theorem run_append (V₁ : OracleVerifier ambient s₁ S T inputs middle)
   obtain ⟨tr₂, out, _⟩ := y
   refine (pure_bind _ _).trans ?_
   simp only [append, OptionT.run_mk, simulateQ_bind, bind_assoc]
-  erw [OracleMap.simulate_withAmbient_addLift]
+  erw [OracleMap.simulate_withAmbient_addLift toFull
+    (prefixRoute (inputs := inputs)
+      (projectPathAlong oracleSig _ (PathAlong.append oracleSig s₁ s₂ tr₁ tr₂)))
+    (data, payloads _ (PathAlong.append oracleSig s₁ s₂ tr₁ tr₂))]
   refine bind_congr fun mid => ?_
   cases mid with
   | none => simp
   | some mid =>
-    erw [OracleMap.simulate_withAmbient_addLift]
-    rfl
+    erw [OracleMap.simulate_withAmbient_addLift toFull
+      (suffixRoute V₁ stmt
+        (projectPathAlong oracleSig _ (PathAlong.append oracleSig s₁ s₂ tr₁ tr₂))
+        (toView _ (PathAlong.append oracleSig s₁ s₂ tr₁ tr₂)))
+      (data, payloads _ (PathAlong.append oracleSig s₁ s₂ tr₁ tr₂))]
 
 end OracleVerifier
 end Interaction.Core

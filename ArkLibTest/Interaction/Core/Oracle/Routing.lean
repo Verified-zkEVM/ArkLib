@@ -52,14 +52,14 @@ abbrev combined : OracleProtocol := firstProtocol.append (fun _ => secondProtoco
   ⟨fun _ => OracleInterface.instDefault⟩
 
 /-- The prefix resources on its only path. -/
-abbrev prefixResources := sumFamily inputs (pathFamily firstProtocol ⟨⟨⟩, ⟨⟩⟩)
+abbrev prefixResources := pathResources inputs firstProtocol ⟨⟨⟩, ⟨⟩⟩
 
 /-- Export input slot `false` plus the observable coordinate of the prefix message. -/
 def exportMap : OracleMap prefixResources exported where
-  f x _ := (show Nat from x (.inl false)) + (show Nat × Nat from x (.inr (.inl ⟨⟩))).1
+  f x _ := (show Nat from x.1 false) + (show Nat × Nat from x.2 (.inl ⟨⟩)).1
   impl _ := do
-    let a : Nat ← liftM (prefixResources.spec.query ⟨.inl false, ()⟩)
-    let b : Nat ← liftM (prefixResources.spec.query ⟨.inr (.inl ⟨⟩), ()⟩)
+    let a : Nat ← liftM (prefixResources.spec.query (.inl ⟨false, ()⟩))
+    let b : Nat ← liftM (prefixResources.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
     pure (a + b)
   law x q := by
     simp only [simulateQ_bind]
@@ -72,14 +72,14 @@ def prefixVerifier :
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact do
       let _ ← liftM ((ambient + prefixResources.spec).query (.inl 10))
-      let n : Nat ← liftM ((ambient + prefixResources.spec).query (.inr ⟨.inr (.inl ⟨⟩), ()⟩))
+      let n : Nat ← liftM ((ambient + prefixResources.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
       pure n
   outputMap _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact exportMap
 
 /-- The suffix resources on its only shape path. -/
-abbrev suffixResources := sumFamily exported (pathFamily secondProtocol ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩)
+abbrev suffixResources := pathResources exported secondProtocol ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
 
 /-- The suffix records 30, reads the export and its own message, records 40 and 60, and accepts
 when the export and the message agree, claiming the prefix's returned value together with its own
@@ -90,13 +90,12 @@ def suffixVerifier : OracleVerifier ambient secondProtocol Nat (fun _ => Nat × 
     rcases p with ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
     exact OptionT.mk do
       let _ ← liftM ((ambient + suffixResources.spec).query (.inl 30))
-      let e : Nat ← liftM ((ambient + suffixResources.spec).query (.inr ⟨.inl ⟨⟩, ()⟩))
-      let m : Nat ← liftM ((ambient + suffixResources.spec).query (.inr ⟨.inr (.inl ⟨⟩), ()⟩))
+      let e : Nat ← liftM ((ambient + suffixResources.spec).query (.inr (.inl ⟨⟨⟩, ()⟩)))
+      let m : Nat ← liftM ((ambient + suffixResources.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
       let _ ← liftM ((ambient + suffixResources.spec).query (.inl 40))
       let _ ← liftM ((ambient + suffixResources.spec).query (.inl 60))
       pure (if e = m then some (stmt, m) else none)
-  outputMap _ p _ := OracleMap.embedding (sumFamily exported (pathFamily secondProtocol p))
-    (fun _ => .inl ⟨⟩)
+  outputMap _ p _ := OracleMap.fst _ _
 
 /-- The composite output map is the suffix output map after `suffixRoute`. -/
 def compatible : OracleVerifier.OutputCompatibility prefixVerifier (fun _ => suffixVerifier) where
@@ -199,13 +198,13 @@ example (hidden secret : Nat) :
         (projectPathAlong oracleSig combined
           (PathAlong.append oracleSig firstProtocol (fun _ => secondProtocol)
             (prefixTranscript secret) suffixTranscript))).f
-        (sumData (inputData hidden) (payloads combined
+        (inputData hidden, payloads combined
           (PathAlong.append oracleSig firstProtocol (fun _ => secondProtocol)
-            (prefixTranscript secret) suffixTranscript)))⟩ :
+            (prefixTranscript secret) suffixTranscript))⟩ :
       (p : FreeM.Path firstProtocol) ×
-        (∀ i, (sumFamily inputs (pathFamily firstProtocol p)).Realization i)) =
+        (pathResources inputs firstProtocol p).Data) =
       ⟨projectPathAlong oracleSig firstProtocol (prefixTranscript secret),
-        sumData (inputData hidden) (payloads firstProtocol (prefixTranscript secret))⟩ :=
+        (inputData hidden, payloads firstProtocol (prefixTranscript secret))⟩ :=
   OracleVerifier.prefixRoute_payload (s₂ := fun _ => secondProtocol) (inputData hidden)
     (prefixTranscript secret) suffixTranscript
 
@@ -237,13 +236,13 @@ example : observed 7 = (false, 29, some (7, 7)) := by
 
 end Interaction.Core.DependentRoutingTests
 
-universe uι uI uJ v
+universe uι uI uJ v wI wJ wK
 
 /-- Ambient routing permits independent index universes and a larger lawful target monad. -/
 example {ι : Type uι} {I : Type uI} {J : Type uJ}
     {ambient : OracleSpec.{uι, 0} ι} {m : Type → Type v} [Monad m] [LawfulMonad m]
     {A : I → Type} {B : J → Type}
-    {inputs : OracleFamily.{uI, 0, 0} I A} {outputs : OracleFamily.{uJ, 0, 0} J B}
+    {inputs : OracleFamily.{uI, 0, wI} I A} {outputs : OracleFamily.{uJ, 0, wJ} J B}
     (handler : QueryImpl ambient m) (route : OracleMap inputs outputs) (data : ∀ i, A i)
     {α : Type} (program : OracleComp (ambient + outputs.spec) α) :
     simulateQ (QueryImpl.addLift handler (inputs.behaviorOfRealizations data) :
@@ -256,13 +255,13 @@ example {ι : Type uι} {I : Type uI} {J : Type uJ}
 /-- Split execution accepts large input statements and oracle indices while its final outputs
 remain in the run universe. Both output families may depend on their paths. -/
 example {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol}
-    {I : Type 1} {A : I → Type} {inputs : OracleFamily.{1, 0, 0} I A} {S : Type 3}
+    {I : Type 1} {A : I → Type} {inputs : OracleFamily.{1, 0, wI} I A} {S : Type 3}
     {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
     {J : Path s₁ → Type 2} {B : (p : Path s₁) → J p → Type}
-    {middle : (p : Path s₁) → OracleFamily.{2, 0, 0} (J p) (B p)}
+    {middle : (p : Path s₁) → OracleFamily.{2, 0, wJ} (J p) (B p)}
     {K : (p : Path s₁) → Path (s₂ p) → Type}
     {C : (p : Path s₁) → (q : Path (s₂ p)) → K p q → Type}
-    {outputs : (p : Path s₁) → (q : Path (s₂ p)) → OracleFamily.{0, 0, 0} (K p q) (C p q)}
+    {outputs : (p : Path s₁) → (q : Path (s₂ p)) → OracleFamily.{0, 0, wK} (K p q) (C p q)}
     {ambient : OracleSpec Nat}
     (V₁ : OracleVerifier ambient s₁ S T inputs middle)
     (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p))
@@ -270,3 +269,19 @@ example {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol}
     {Out : PathAlong oracleSig (s₁.append s₂) → Type}
     (prover : Prover oracleSig ambient (s₁.append s₂) Out) :=
   OracleVerifier.run_append V₁ V₂ compatible stmt data prover
+
+
+universe u uX uY dX dY
+
+/-- Ambient routing permits independent resource index and data universes. -/
+example {ι : Type uι} {ambient : OracleSpec.{uι, u} ι}
+    {m : Type u → Type v} [Monad m] [LawfulMonad m]
+    {inputs : Resources.{u, uX, dX}} {outputs : Resources.{u, uY, dY}}
+    (handler : QueryImpl ambient m) (route : OracleMap inputs outputs) (data : inputs.Data)
+    {α : Type u} (program : OracleComp (ambient + outputs.spec) α) :
+    simulateQ (QueryImpl.addLift handler (inputs.answer data) :
+        QueryImpl (ambient + inputs.spec) m)
+        (simulateQ (route.withAmbient ambient) program) =
+      simulateQ (QueryImpl.addLift handler (outputs.answer (route.f data)) :
+        QueryImpl (ambient + outputs.spec) m) program :=
+  OracleMap.simulate_withAmbient_addLift handler route data program
