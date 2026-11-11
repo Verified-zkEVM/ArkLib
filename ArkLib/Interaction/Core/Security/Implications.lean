@@ -542,7 +542,7 @@ theorem prEvent_runPrefixChallenges_le {m : Type → Type v} [Monad m] [LawfulMo
   | pure u =>
     cases u
     intro Out G ε d k hlocal hk p
-    simp only [runPrefixChallenges, bind_assoc, LawfulMonad.pure_bind, simulateQ_bind]
+    simp only [runPrefixChallenges_done, bind_assoc, LawfulMonad.pure_bind, simulateQ_bind]
     exact (prEvent_bind_le_of_forall_le _ _ _ fun out => (hk ⟨⟩ out id).le).trans zero_le
   | liftBind a next ih =>
     intro Out G ε d k hlocal hk p
@@ -558,20 +558,16 @@ theorem prEvent_runPrefixChallenges_le {m : Type → Type v} [Monad m] [LawfulMo
     simp only [simulateQ_bind] at hsub
     cases hown : owner l a with
     | sender =>
-      simp only [runPrefixChallenges, simulateQ_bind]
-      split <;> rename_i heq
-      all_goals try (solve | cases hown.symm.trans heq)
-      simp only [simulateQ_bind, bind_assoc, LawfulMonad.pure_bind, simulateQ_pure]
+      rw [runPrefixChallenges_sender l hown]
+      simp only [simulateQ_bind, bind_assoc, LawfulMonad.pure_bind]
       refine prEvent_bind_le_of_forall_le _ _ _ fun v => ?_
       refine (hsub v.1 (fun tr out hne => hk ⟨v.1, tr⟩ out fun hesc =>
         hesc.elim (fun h => nomatch h.1.symm.trans hown) hne) v.2).trans ?_
       refine iSup_le fun path => le_iSup_of_le ⟨l.toFunB a v.1, path⟩ ?_
       rw [sum_challengeNodesOn_sender hown]
     | receiver =>
-      simp only [runPrefixChallenges, simulateQ_bind]
-      split <;> rename_i heq
-      all_goals try (solve | cases hown.symm.trans heq)
-      simp only [simulateQ_bind, bind_assoc, LawfulMonad.pure_bind, simulateQ_pure]
+      rw [runPrefixChallenges_receiver l hown]
+      simp only [simulateQ_bind, bind_assoc, LawfulMonad.pure_bind]
       refine prEvent_bind_le_of_forall_le _ _ _ fun f => ?_
       rcases isEmpty_or_nonempty (Path (FreeM.liftBind a next)) with hempty | hne
       · refine le_trans ?_ zero_le

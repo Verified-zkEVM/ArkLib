@@ -153,30 +153,11 @@ private theorem cast_prefixSampler {m : Type u → Type u} [Monad m]
   rfl
 
 /-- Execute a focal strategy with passive challenges selected from its full prefix. -/
-def runPrefixChallenges {ι : Type u} {spec : OracleSpec.{u, u} ι} :
-    (s : FreeM P PUnit.{u + 1}) → {Out : PathAlong l s → Type u} →
-    Focal l (OracleComp spec) s Out → PrefixChallengePrograms l spec s →
-    OracleComp spec ((tr : PathAlong l s) × Out tr × PUnit.{u + 1})
-  | .pure _, _, p, _ => do
-    let out ← p
-    pure ⟨⟨⟩, out, ⟨⟩⟩
-  | .liftBind a next, Out, p, d =>
-    match h : owner l a with
-    | .sender => do
-      let v ← cast (congrArg (fun r => OracleComp spec (Choice .focal r (Move l a)
-        (fun x => Focal l (OracleComp spec) (next (l.toFunB a x))
-          (fun tr => Out ⟨x, tr⟩)))) h) p
-      let r ← runPrefixChallenges (next (l.toFunB a v.1)) v.2
-        (fun sp h history => d (.down (l.toFunB a v.1) sp) h ⟨⟨v.1, rfl⟩, history⟩)
-      pure ⟨⟨v.1, r.1⟩, r.2.1, r.2.2⟩
-    | .receiver => do
-      let f ← cast (congrArg (fun r => OracleComp spec (Choice .focal r (Move l a)
-        (fun x => Focal l (OracleComp spec) (next (l.toFunB a x))
-          (fun tr => Out ⟨x, tr⟩)))) h) p
-      let x ← d (.root _) h ⟨⟩
-      let r ← runPrefixChallenges (next (l.toFunB a x)) (f x)
-        (fun sp h history => d (.down (l.toFunB a x) sp) h ⟨⟨x, rfl⟩, history⟩)
-      pure ⟨⟨x, r.1⟩, r.2.1, r.2.2⟩
+def runPrefixChallenges {ι : Type u} {spec : OracleSpec.{u, u} ι}
+    (s : FreeM P PUnit.{u + 1}) {Out : PathAlong l s → Type u}
+    (p : Focal l (OracleComp spec) s Out) (d : PrefixChallengePrograms l spec s) :
+    OracleComp spec ((tr : PathAlong l s) × Out tr × PUnit.{u + 1}) :=
+  TwoParty.Lens.run s p (prefixSampler l s d)
 
 /-- Prefix-dependent execution is the ordinary focal-first Core runner with its passive
 counterpart. It does not restart or replay the focal strategy. -/
@@ -184,25 +165,53 @@ theorem runPrefixChallenges_eq_run {ι : Type u} {spec : OracleSpec.{u, u} ι}
     (s : FreeM P PUnit.{u + 1}) :
     ∀ {Out : PathAlong l s → Type u} (p : Focal l (OracleComp spec) s Out)
       (d : PrefixChallengePrograms l spec s),
-      runPrefixChallenges l s p d = TwoParty.Lens.run s p (prefixSampler l s d) := by
-  induction s using FreeM.rec with
-  | pure u =>
-    cases u
-    intro Out p d
-    simpa only [runPrefixChallenges, prefixSampler, FreeM.pure_eq_pure,
-      LawfulMonad.pure_bind] using
-      (run_done (l := l) (OutC := fun _ => PUnit.{u + 1}) p (pure ⟨⟩)).symm
-  | liftBind a next ih =>
-    intro Out p d
-    rw [runPrefixChallenges]
-    split <;> rename_i h
-    · rw [run_node, step_sender (owner l a) h, cast_prefixSampler l h]
-      simp only [samplerSlot, LawfulMonad.pure_bind]
-      exact bind_congr fun v => congrArg (fun x => x >>= _) (ih _ v.2 _)
-    · rw [run_node, step_receiver (owner l a) h, cast_prefixSampler l h]
-      simp only [samplerSlot, bind_map_left]
-      exact bind_congr fun f => bind_congr fun x =>
-        congrArg (fun y => y >>= _) (ih _ (f x) _)
+      runPrefixChallenges l s p d = TwoParty.Lens.run s p (prefixSampler l s d) :=
+  fun _ _ => rfl
+
+/-- At termination the focal output executes before the sampler's pure terminal action. -/
+theorem runPrefixChallenges_done {ι : Type u} {spec : OracleSpec.{u, u} ι}
+    {Out : PathAlong l (.pure PUnit.unit) → Type u} (p : OracleComp spec (Out ⟨⟩))
+    (d : PrefixChallengePrograms l spec (.pure PUnit.unit)) :
+    runPrefixChallenges l (.pure PUnit.unit) p d = (do
+      let out ← p
+      pure ⟨⟨⟩, out, ⟨⟩⟩) := by
+  simp only [runPrefixChallenges, prefixSampler, FreeM.pure_eq_pure, run_done,
+    LawfulMonad.pure_bind]
+
+/-- A sender slot supplies the move before the passive sampler observes it. -/
+theorem runPrefixChallenges_sender {ι : Type u} {spec : OracleSpec.{u, u} ι}
+    {a : P.A} {next : P.B a → FreeM P PUnit.{u + 1}}
+    {Out : PathAlong l (.liftBind a next) → Type u} (h : owner l a = .sender)
+    (p : Focal l (OracleComp spec) (.liftBind a next) Out)
+    (d : PrefixChallengePrograms l spec (.liftBind a next)) :
+    runPrefixChallenges l (.liftBind a next) p d = (do
+      let v ← cast (congrArg (fun r => OracleComp spec (Choice .focal r (Move l a)
+        (fun x => Focal l (OracleComp spec) (next (l.toFunB a x))
+          (fun tr => Out ⟨x, tr⟩)))) h) p
+      let r ← runPrefixChallenges l (next (l.toFunB a v.1)) v.2
+        (fun sp h history => d (.down (l.toFunB a v.1) sp) h ⟨⟨v.1, rfl⟩, history⟩)
+      pure ⟨⟨v.1, r.1⟩, r.2.1, r.2.2⟩) := by
+  rw [runPrefixChallenges, run_node, step_sender (owner l a) h, cast_prefixSampler l h]
+  simp only [samplerSlot, LawfulMonad.pure_bind]
+  rfl
+
+/-- A receiver slot supplies its focal continuation before the history-selected challenge. -/
+theorem runPrefixChallenges_receiver {ι : Type u} {spec : OracleSpec.{u, u} ι}
+    {a : P.A} {next : P.B a → FreeM P PUnit.{u + 1}}
+    {Out : PathAlong l (.liftBind a next) → Type u} (h : owner l a = .receiver)
+    (p : Focal l (OracleComp spec) (.liftBind a next) Out)
+    (d : PrefixChallengePrograms l spec (.liftBind a next)) :
+    runPrefixChallenges l (.liftBind a next) p d = (do
+      let f ← cast (congrArg (fun r => OracleComp spec (Choice .focal r (Move l a)
+        (fun x => Focal l (OracleComp spec) (next (l.toFunB a x))
+          (fun tr => Out ⟨x, tr⟩)))) h) p
+      let x ← d (.root _) h ⟨⟩
+      let r ← runPrefixChallenges l (next (l.toFunB a x)) (f x)
+        (fun sp h history => d (.down (l.toFunB a x) sp) h ⟨⟨x, rfl⟩, history⟩)
+      pure ⟨⟨x, r.1⟩, r.2.1, r.2.2⟩) := by
+  rw [runPrefixChallenges, run_node, step_receiver (owner l a) h, cast_prefixSampler l h]
+  simp only [samplerSlot, bind_map_left]
+  rfl
 
 /-- A state predicate on every full prefix, with root, sender and terminal obligations. The
 statement may lie in any universe. -/
