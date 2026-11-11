@@ -510,7 +510,7 @@ separate error traversal is added.
 Approved premise P2 says that challenges and oracle messages never select protocol shape.
 `Path s` therefore retains public prover messages and erases challenges. The frozen fixtures'
 challenge-selected `Fin 8`/`Fin 9` statement carriers are **premise-required and retired under P2**.
-They are not a missing parent dependency, as entry 19 also records.
+They are not a missing parent dependency, as entry 26 also records.
 
 The replacement fixture prepends a prover-authored Boolean `b` to the original one- or two-round
 protocol. That public message selects the exact statement carriers `Fin 8` and `Fin 9`. The

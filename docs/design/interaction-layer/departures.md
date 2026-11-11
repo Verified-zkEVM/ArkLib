@@ -68,7 +68,7 @@ The implication applies to lawful distribution monads, including optional comput
 
 ## Interaction-layer migration: entry 20
 
-Entry 18 records the core's universe constraints, entry 19 knowledge composition, and entry 20
+Entry 18 records the core's universe constraints, entry 26 knowledge composition, and entry 20
 state restoration. Under approved premise P2, challenges and oracle messages never select shape.
 
 | Entry | Status and scope |
