@@ -20,7 +20,7 @@ verifier with an honest prover.
 
 @[expose] public section
 
-universe u uA
+universe u uA uι uS uW
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp
@@ -204,15 +204,21 @@ theorem replay_publicCoinOracleSampler {m : Type u → Type u} [Monad m] [Lawful
     | challenge C => exact ih ⟨⟩ _ tr
     | oracle X I => exact (LawfulMonad.pure_bind _ _).trans (ih ⟨⟩ _ tr)
 
-/-- A plain verifier's only operation is its terminal decision. -/
-structure Verifier {ι : Type u} (ambient : OracleSpec.{u, u} ι)
-    (s : Protocol.{u}) (StmtIn StmtOut : Type u) where
-  /-- Decide from the public transcript after every interaction slot has run. -/
-  decide : StmtIn → (p : Path s) → PlainView s p → OptionT (OracleComp ambient) StmtOut
+/-- A plain verifier's only operation is its terminal decision.
 
-/-- An honest reduction with separately retained prover and verifier outputs. -/
+The output statement type `StmtOut p` may depend on the public shape path `p` of the run. A
+verifier with one output type `T` uses the constant family `fun _ => T`.
+-/
+structure Verifier {ι : Type uι} (ambient : OracleSpec.{uι, u} ι)
+    (s : Protocol.{u}) (StmtIn : Type uS) (StmtOut : Path s → Type u) where
+  /-- Decide from the public transcript after every interaction slot has run. -/
+  decide : StmtIn → (p : Path s) → PlainView s p → OptionT (OracleComp ambient) (StmtOut p)
+
+/-- An honest reduction with separately retained prover and verifier outputs. The verifier's
+output statement type is indexed by the shape path. -/
 structure Reduction {ι : Type u} (ambient : OracleSpec.{u, u} ι) (s : Protocol.{u})
-    (StmtIn WitIn StmtOut : Type u) (Out : PathAlong plainSig s → Type u) where
+    (StmtIn : Type uS) (WitIn : Type uW) (StmtOut : Path s → Type u)
+    (Out : PathAlong plainSig s → Type u) where
   /-- Honest focal strategy, including its terminal action. -/
   prover : StmtIn → WitIn → Prover plainSig ambient s Out
   /-- Passive terminal decision. -/

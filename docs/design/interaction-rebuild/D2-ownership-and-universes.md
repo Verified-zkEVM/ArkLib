@@ -49,9 +49,26 @@ interfaces, if record D1's open point puts them there) may remain in the generic
 | `Participant.{u}` | `Type u` | Matches the monad's universe |
 | `PUnit.{u+1}` (challenge and oracle branches) | `Type u` | So constant branches fit `P.B a : Type u` |
 | ArkLib positions `PlainPos`, `OraclePos` | `Type (u+1)` | A position names a type |
+| Run outputs: output statements `StmtOut p`, output oracle data `B p j`, prover outputs | `Type u` | Returned by the runner `m : Type u → Type u` |
+| Oracle responses (ambient, input, path and output oracles) | `Type u` | Answered in the runner's monad |
+| Ambient oracle index `ι` of a verifier | independent | Only queried, never returned |
+| Ambient oracle index `ι` of a prover, reduction or run | `Type u` | `OracleComp ambient` must be `Type u → Type u` |
+| Input oracle index `I` | independent | Simulated away before the verdict |
+| Output oracle index `J p` of an oracle verifier | independent; `Type u` in a run | A run returns `∀ j, B p j` |
+| Input statement and input witness | independent | Arguments of the decision and the prover, never returned |
+| Input oracle data `A i` and its query type | `Type u` | Shares one oracle family with the path's payloads |
 
 ArkLib's polynomials therefore live in `PFunctor.{u+1, u}`, like `rolePoly`. The ambient monad is
 not enlarged because a position contains a type: positions are never values of the monad.
+
+Every component that is not a run output takes its own universe as far as the definitions allow,
+and only run outputs and oracle responses are tied to `u`. Two non-output components remain tied.
+The ambient index of a prover is in `Type u` because `OracleComp ambient : Type u → Type (max uι
+u)` is the prover's monad and the runner needs `Type u → Type u`. The input oracle data and its
+query type are in `Type u` because the decision queries the inputs and the path's payloads through
+one family `sumFamily inputs (pathFamily s p)`, which has one realization universe and one
+interface universe, and the path's payloads are in `Type u`. The test
+`ArkLibTest/Interaction/Core/UniverseCanary.lean` instantiates the independent universes.
 
 ## Why
 

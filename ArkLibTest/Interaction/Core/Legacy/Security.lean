@@ -70,7 +70,8 @@ example [∀ i, SampleableType (twoWay.Challenge i)] (init : ProbComp Unit)
     (impl : QueryImpl []ₒ (StateT Unit ProbComp))
     (langIn langOut : Set Nat) (ε : ℝ≥0) (h : lastIfTrue.soundness init impl langIn langOut ε)
     (stmt : Nat) (hstmt : stmt ∉ langIn) :
-    letI : MeasurableSpace (Observation plainSig (protocol twoWay) (fun _ => Bool) Nat) := ⊤
+    letI : MeasurableSpace
+      (Observation plainSig (protocol twoWay) (fun _ => Bool) (fun _ => Nat)) := ⊤
     𝒟[experiment init impl (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
         ((embedVerifier lastIfTrue).run stmt cheat)]
       {obs | ∃ t, obs.2.2 = some t ∧ (langProblem langOut).language () t} ≤ ε :=
@@ -104,7 +105,8 @@ def firstMessage : _root_.Extractor.Straightline []ₒ Nat Nat Nat twoWay :=
   fun _ _ tr _ _ => pure (show Nat from tr 0)
 
 def extractionOutputs
-    (z : Observation plainSig (protocol twoWay) (fun _ => Nat × Nat) Nat × Option Nat) :
+    (z : Observation plainSig (protocol twoWay) (fun _ => Nat × Nat) (fun _ => Nat) ×
+      Option Nat) :
     Option Nat × Option Nat :=
   (z.1.2.2, z.2)
 
@@ -132,7 +134,7 @@ example [∀ i, SampleableType (twoWay.Challenge i)] (init : ProbComp Unit)
     (impl : QueryImpl []ₒ (StateT Unit ProbComp)) (relIn relOut : Set (Nat × Nat)) (ε : ℝ≥0)
     (h : lastIfTrue.knowledgeSoundnessWith init impl relIn relOut firstMessage ε) (stmt : Nat) :
     letI : MeasurableSpace
-      (Observation plainSig (protocol twoWay) (fun _ => Nat × Nat) Nat) := ⊤
+      (Observation plainSig (protocol twoWay) (fun _ => Nat × Nat) (fun _ => Nat)) := ⊤
     letI : MeasurableSpace Nat := ⊤
     (classicalStraightline (Out := fun _ => Nat × Nat) (fun _ => Nat) (embedVerifier lastIfTrue)
         init impl (plainChallengeImpl ProtocolSpec.challengeQueryImpl) (fun _ o => o.2)).experiment
@@ -146,7 +148,8 @@ example [∀ i, SampleableType (twoWay.Challenge i)] (init : ProbComp Unit)
 def coreKnowledge [∀ i, SampleableType (twoWay.Challenge i)] (init : ProbComp Unit)
     (impl : QueryImpl []ₒ (StateT Unit ProbComp)) (relIn relOut : Set (Nat × Nat)) (ε : ℝ≥0) :
     Prop :=
-  letI : MeasurableSpace (Observation plainSig (protocol twoWay) (fun _ => Nat × Nat) Nat) := ⊤
+  letI : MeasurableSpace
+    (Observation plainSig (protocol twoWay) (fun _ => Nat × Nat) (fun _ => Nat)) := ⊤
   letI : MeasurableSpace Nat := ⊤
   knowledgeSoundness
     ((embedVerifier lastIfTrue).classicalModel init impl
