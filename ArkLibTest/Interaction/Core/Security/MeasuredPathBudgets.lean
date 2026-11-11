@@ -66,12 +66,13 @@ def isRoot {s t : Protocol.{0}} : Cursor.Spine s t → Bool
 witnesses at every transcript, given step maps and identity root and leaf maps. Every state
 holds. -/
 def natState (s : Protocol.{0}) (step : ∀ {a next}, Cursor.Spine s (.liftBind a next) → Nat → Nat) :
-    KnowledgeStateFunction plainSig s Unit (fun _ => Nat) Nat (fun _ => True) (fun _ _ => True)
+    KnowledgeStateFunction plainSig s Unit (fun _ _ => Nat) (fun _ => Nat) (fun _ => True) (fun _ _
+      => True)
       (fun _ _ _ => True) where
-  Witness _ _ := Nat
-  toFun _ _ _ _ := True
+  Witness _ {_} _ _ := Nat
+  toFun _ {_} _ _ _ := True
   extractRoot _ w := w
-  extractStep sp _ _ _ w := step sp w
+  extractStep _ {_ _} sp _ _ w := step sp w
   extractLeaf _ _ _ w := w
   root _ _ _ _ := trivial
   send _ _ _ _ _ _ _ := trivial
@@ -112,13 +113,15 @@ def deepState := natState deep (fun sp w => countMap (isRoot sp) w)
 /-- One charged addition at every chain message. -/
 def chainStages (n : Nat) : (chainState n).MeasuredStages Nat where
   root _ := BudgetedProgram.ofFun _
-  step _ _ _ sp history := countProgram (fun x : (chainState n).StageInput sp history => x.2) false
+  step _ _ _ sp history := countProgram (fun x : (chainState n).StageInput () sp history => x.2)
+    false
   leaf _ _ _ := BudgetedProgram.ofFun _
 
 /-- The first stage requests no instruction; every chain stage requests one addition. -/
 def deepStages : deepState.MeasuredStages Nat where
   root _ := BudgetedProgram.ofFun _
-  step _ _ _ sp history := countProgram (fun x : deepState.StageInput sp history => x.2) (isRoot sp)
+  step _ _ _ sp history := countProgram (fun x : deepState.StageInput () sp history => x.2) (isRoot
+    sp)
   leaf _ _ _ := BudgetedProgram.ofFun _
 
 /-- The chain transcript. -/
@@ -161,7 +164,7 @@ theorem deep_budgetFrom : (k : Nat) → (sp : Cursor.Spine deep (chain k)) → i
   | 0, _, _, _ => rfl
   | k + 1, sp, hsp, history => by
     change (deepStages.programFrom () _ _ (chainPath k)).budget +
-      (countProgram (fun x : deepState.StageInput sp history => x.2) (isRoot sp)).budget = k + 1
+      (countProgram (fun x : deepState.StageInput () sp history => x.2) (isRoot sp)).budget = k + 1
     rw [hsp]
     exact congrArg (· + 1) (deep_budgetFrom k _ (isRoot_comp sp _ rfl) _)
 
@@ -204,7 +207,7 @@ theorem deep_recordedFrom : (k : Nat) → (sp : Cursor.Spine deep (chain k)) →
   | k + 1, sp, hsp, history, w => by
     refine (congrArg Prod.snd (recorded_comp _ _ w)).trans ?_
     refine congrArg₂ (· + ·) (deep_recordedFrom k _ (isRoot_comp sp _ rfl) _ w) ?_
-    change (recorded (countProgram (fun x : deepState.StageInput sp history => x.2)
+    change (recorded (countProgram (fun x : deepState.StageInput () sp history => x.2)
       (isRoot sp)).program _).2 = 1
     rw [hsp]
     rfl
@@ -241,9 +244,10 @@ example (tr : PathAlong plainSig deep) :
 -- MeasuredPathBudgets row 10, restated for every state function on the empty protocol and every
 -- stages with zero root and leaf bounds.
 /-- On the empty protocol, stages with zero root and leaf bounds cost nothing. -/
-example {S Win : Type} {W : PathAlong plainSig (.pure ⟨⟩ : Protocol.{0}) → Type}
-    {admissible : S → Prop} {relIn : S → Win → Prop}
-    {validOutput : (stmt : S) → (tr : PathAlong plainSig (.pure ⟨⟩ : Protocol.{0})) → W tr → Prop}
+example {S : Type} {Win : S → Type} {W : S → PathAlong plainSig (.pure ⟨⟩ : Protocol.{0}) → Type}
+    {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
+    {validOutput : (stmt : S) → (tr : PathAlong plainSig (.pure ⟨⟩ : Protocol.{0})) → W stmt tr →
+      Prop}
     (F : KnowledgeStateFunction plainSig (.pure ⟨⟩ : Protocol.{0}) S W Win admissible relIn
       validOutput)
     (stages : F.MeasuredStages Nat) {stepBound : Nat} (h : stages.BudgetAtMost 0 stepBound 0)
@@ -295,7 +299,7 @@ def orderedState := natState orderedProtocol (fun sp w => orderedMap sp.length w
 /-- The stage programs of `orderedState`. -/
 def orderedStages : orderedState.MeasuredStages Nat where
   root _ := BudgetedProgram.ofFun _
-  step _ _ _ sp history := orderedProgram (fun x : orderedState.StageInput sp history => x.2)
+  step _ _ _ sp history := orderedProgram (fun x : orderedState.StageInput () sp history => x.2)
     sp.length
   leaf _ _ _ := BudgetedProgram.ofFun _
 

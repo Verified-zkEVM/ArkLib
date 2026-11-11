@@ -177,12 +177,14 @@ example : rbrSoundness plainSig coin (fun _ => True) (· = true)
   intro stmt _ _ a next sp h history
   simp [state]
 
-def knowledgeState : KnowledgeStateFunction plainSig coin Bool (fun _ => Unit) Unit (fun _ => True)
+/-- Knowledge of a true Boolean statement is preserved at every prefix. -/
+def knowledgeState : KnowledgeStateFunction plainSig coin Bool (fun _ _ => Unit) (fun _ => Unit)
+    (fun _ => True)
     (fun stmt _ => stmt = true) (fun stmt _ _ => stmt = true) where
-  Witness _ _ := Unit
-  toFun _ _ stmt _ := stmt = true
+  Witness _ {_} _ _ := Unit
+  toFun stmt {_} _ _ _ := stmt = true
   extractRoot _ _ := ()
-  extractStep _ _ _ _ _ := ()
+  extractStep _ {_ _} _ _ _ _ := ()
   extractLeaf _ _ _ _ := ()
   root _ _ _ h := h
   send _ _ _ _ _ _ h := h
@@ -196,12 +198,13 @@ example : rbrKnowledgeSoundness plainSig coin (fun _ => True)
   simp [knowledgeState]
 
 /-- On zero rounds the promise `b = true` makes extraction immediate, while every input accepts. -/
-def promisedState : KnowledgeStateFunction plainSig zero Bool (fun _ => Unit) Unit (· = true)
+def promisedState : KnowledgeStateFunction plainSig zero Bool (fun _ _ => Unit) (fun _ => Unit) (· =
+    true)
     (fun b _ => b = true) (fun _ _ _ => True) where
-  Witness _ _ := Unit
-  toFun _ _ _ _ := True
+  Witness _ {_} _ _ := Unit
+  toFun _ {_} _ _ _ := True
   extractRoot _ _ := ()
-  extractStep _ _ _ _ _ := ()
+  extractStep _ {_ _} _ _ _ _ := ()
   extractLeaf _ _ _ _ := ()
   root _ h _ _ := h
   send sp _ _ _ := nomatch sp
@@ -333,21 +336,22 @@ theorem coin_not_rbrSoundness (ε : ChallengeNode plainSig coin → ℝ≥0∞)
 
 /-- The knowledge state tracks the soundness state; its leaf witness records the challenge read
 from the transcript. -/
-def coinKnowledge : KnowledgeStateFunction plainSig coin Bool (fun _ => Unit) Unit (fun _ => True)
+def coinKnowledge : KnowledgeStateFunction plainSig coin Bool (fun _ _ => Unit) (fun _ => Unit) (fun
+    _ => True)
     (fun b _ => b = true) (fun stmt tr (_ : Unit) =>
       coinVerifier.validAcceptance tick (fun _ => True) stmt tr) where
-  Witness {_} sp history := match sp, history with
+  Witness _ {_} sp history := match sp, history with
     | .root _, _ => Unit
     | .down _ _, history => {b : Bool // b = history.1.1}
-  toFun {_} sp history stmt _ := match sp, history with
+  toFun stmt {_} sp history _ := match sp, history with
     | .root _, _ => stmt = true
     | .down _ _, history => (stmt || (history.1.1 : Bool)) = true
   extractRoot _ _ := ()
-  extractStep sp _ _ _ _ := by
+  extractStep _ {_ _} sp _ _ _ := by
     cases sp with
     | root => exact ()
     | down _ tail => cases tail
-  extractLeaf sp history _ _ := by
+  extractLeaf _ sp history _ := by
     cases sp with
     | down _ tail =>
       cases tail
@@ -367,7 +371,7 @@ def coinKnowledge : KnowledgeStateFunction plainSig coin Bool (fun _ => Unit) Un
 /-- Backwards extraction fails exactly when a false statement meets a true challenge. -/
 theorem coin_rbrKnowledgeSoundness :
     coinVerifier.rbrKnowledgeSoundness tick (fun _ => True) (fun b (_ : Unit) => b = true)
-      (fun _ (_ : Nat) (_ : Unit) => True) draw (fun _ => 1 / 2) := by
+      (fun _ _ (_ : Nat) (_ : Unit) => True) draw (fun _ => 1 / 2) := by
   refine ⟨coinKnowledge, ?_⟩
   intro stmt _ a next sp h history
   cases sp with
@@ -386,9 +390,9 @@ theorem coin_rbrKnowledgeSoundness :
 theorem coin_not_rbrKnowledgeSoundness (ε : ChallengeNode plainSig coin → ℝ≥0∞)
     (hε : ε onlyChallenge < 1 / 2) :
     ¬ coinVerifier.rbrKnowledgeSoundness tick (fun _ => True) (fun b (_ : Unit) => b = true)
-      (fun _ (_ : Nat) (_ : Unit) => True) draw ε := by
+      (fun _ _ (_ : Nat) (_ : Unit) => True) draw ε := by
   rintro ⟨F, hF⟩
-  have hroot : ∀ w, ¬ F.toFun (.root coin) ⟨⟩ false w := fun w h =>
+  have hroot : ∀ w, ¬ F.toFun false (.root coin) ⟨⟩ w := fun w h =>
     Bool.false_ne_true (F.root false trivial w h)
   have hleaf := F.leaf (.down ⟨⟩ (.root _)) ⟨⟨true, rfl⟩, ⟨⟩⟩ false ()
     ((validAcceptance_iff (fun _ => trivial) _ _).2 rfl)
@@ -438,21 +442,22 @@ theorem payload_validAcceptance_iff {langOut : Nat → Prop} (stmt : Nat)
 
 /-- The root witness is the input witness; at the leaf it is the output witness `Fin (payload + 1)`
 itself, so leaf extraction is the identity. -/
-def payloadKnowledge : KnowledgeStateFunction plainSig payloadMsg Nat BoundedIndex Nat
+def payloadKnowledge : KnowledgeStateFunction plainSig payloadMsg Nat (fun _ => BoundedIndex) (fun _
+    => Nat)
     (fun _ => True) (fun stmt w => w ≤ stmt) (fun stmt tr (_ : BoundedIndex tr) =>
       payloadVerifier.validAcceptance tick (fun _ => True) stmt tr) where
-  Witness {_} sp history := match sp, history with
+  Witness _ {_} sp history := match sp, history with
     | .root _, _ => Nat
     | .down _ _, history => Fin ((show Nat from history.1.1) + 1)
-  toFun {_} sp history stmt w := match sp, history, w with
+  toFun stmt {_} sp history w := match sp, history, w with
     | .root _, _, w => w ≤ stmt
     | .down _ _, history, _ => (show Nat from history.1.1) = stmt
   extractRoot _ w := w
-  extractStep sp _ _ _ w := by
+  extractStep _ {_ _} sp _ _ w := by
     cases sp with
     | root => exact Fin.val w
     | down _ tail => cases tail
-  extractLeaf sp history _ w := by
+  extractLeaf _ sp history w := by
     cases sp with
     | down _ tail =>
       cases tail
@@ -483,13 +488,13 @@ def payloadHistory (n : Nat) : PrefixMoves plainSig (payloadLeaf n) := ⟨⟨sen
 
 /-- Backwards extraction from the output witness `5 : Fin 8` at payload `7` returns `5`. -/
 example : payloadKnowledge.extractRoot 7
-    (payloadKnowledge.extractStep (.root payloadMsg) ⟨⟩ 7 (sendPayload 7)
-      (payloadKnowledge.extractLeaf (payloadLeaf 7) (payloadHistory 7) 7 (5 : Fin 8))) = 5 :=
+    (payloadKnowledge.extractStep 7 (.root payloadMsg) ⟨⟩ (sendPayload 7)
+      (payloadKnowledge.extractLeaf 7 (payloadLeaf 7) (payloadHistory 7) (5 : Fin 8))) = 5 :=
   rfl
 
 /-- The leaf extractor passes the dependent output witness through unchanged. -/
 example (w : Fin 8) :
-    (payloadKnowledge.extractLeaf (payloadLeaf 7) (payloadHistory 7) 7 w : Fin 8) = w :=
+    (payloadKnowledge.extractLeaf 7 (payloadLeaf 7) (payloadHistory 7) w : Fin 8) = w :=
   rfl
 
 /-- The payload protocol has no challenge, so its knowledge state function has error zero under
@@ -497,7 +502,7 @@ every challenge implementation. -/
 theorem payload_rbrKnowledgeSoundness
     (draw : QueryImpl (challengeSpec plainSig payloadMsg) ProbComp) :
     payloadVerifier.rbrKnowledgeSoundness tick (fun _ => True) (fun stmt (w : Nat) => w ≤ stmt)
-      (fun tr (_ : Nat) (_ : BoundedIndex tr) => True) draw (fun _ => 0) := by
+      (fun _ tr (_ : Nat) (_ : BoundedIndex tr) => True) draw (fun _ => 0) := by
   refine ⟨payloadKnowledge, ?_⟩
   intro _ _ a next sp h _
   cases sp with
@@ -508,8 +513,8 @@ theorem payload_rbrKnowledgeSoundness
 `w.val`. -/
 theorem payloadKnowledge_extract (n : Nat) (w : Fin (n + 1)) :
     payloadKnowledge.extractRoot n
-      (payloadKnowledge.extractStep (.root payloadMsg) ⟨⟩ n (sendPayload n)
-        (payloadKnowledge.extractLeaf (payloadLeaf n) (payloadHistory n) n w)) = w.val :=
+      (payloadKnowledge.extractStep n (.root payloadMsg) ⟨⟩ (sendPayload n)
+        (payloadKnowledge.extractLeaf n (payloadLeaf n) (payloadHistory n) w)) = w.val :=
   rfl
 
 /-! ### A transcript-dependent output witness in straight-line extraction

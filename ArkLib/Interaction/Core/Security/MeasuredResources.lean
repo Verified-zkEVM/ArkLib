@@ -60,29 +60,29 @@ variable {P : PFunctor.{1, 0}} {l : PFunctor.Lens P rolePoly}
 
 namespace KnowledgeStateFunction
 
-variable {s : FreeM P PUnit.{1}} {S Win : Type} {W : PathAlong l s → Type}
-  {admissible : S → Prop} {relIn : S → Win → Prop}
-  {validOutput : (stmt : S) → (tr : PathAlong l s) → W tr → Prop}
+variable {s : FreeM P PUnit.{1}} {S : Type} {Win : S → Type} {W : S → PathAlong l s → Type}
+  {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
+  {validOutput : (stmt : S) → (tr : PathAlong l s) → W stmt tr → Prop}
   (F : KnowledgeStateFunction l s S W Win admissible relIn validOutput)
 
 /-- The input of the step at an interaction node: a move and a witness of the state after it. -/
-def StageInput {a : P.A} {next : P.B a → FreeM P PUnit.{1}}
+def StageInput (stmt : S) {a : P.A} {next : P.B a → FreeM P PUnit.{1}}
     (sp : Cursor.Spine s (.liftBind a next)) (history : PrefixMoves l sp) : Type :=
-  (x : Move l a) × F.Witness (sp.comp (.down (l.toFunB a x) (.root _)))
+  (x : Move l a) × F.Witness stmt (sp.comp (.down (l.toFunB a x) (.root _)))
     (PrefixMoves.snoc l sp history x)
 
 /-- The backward witness map at an interaction node. -/
 def stageMap (stmt : S) {a : P.A} {next : P.B a → FreeM P PUnit.{1}}
     (sp : Cursor.Spine s (.liftBind a next)) (history : PrefixMoves l sp)
-    (input : F.StageInput sp history) : F.Witness sp history :=
-  F.extractStep sp history stmt input.1 input.2
+    (input : F.StageInput stmt sp history) : F.Witness stmt sp history :=
+  F.extractStep stmt sp history input.1 input.2
 
 /-- Backward extraction at an interaction node applies the stage map to the witness extracted
 from the rest of the transcript. -/
 theorem extractFrom_eq_stageMap (stmt : S) {a : P.A} {next : P.B a → FreeM P PUnit.{1}}
     (sp : Cursor.Spine s (.liftBind a next)) (history : PrefixMoves l sp)
     (x : Move l a) (tr : PathAlong l (next (l.toFunB a x)))
-    (w : W (PrefixMoves.completeWith l sp history (t := .liftBind a next) ⟨x, tr⟩)) :
+    (w : W stmt (PrefixMoves.completeWith l sp history (t := .liftBind a next) ⟨x, tr⟩)) :
     F.extractFrom stmt sp history ⟨x, tr⟩ w =
       F.stageMap stmt sp history
         ⟨x, F.extractFrom stmt _ (PrefixMoves.snoc l sp history x) tr w⟩ := rfl
@@ -99,7 +99,7 @@ structure MeasuredStages (ω : Type) [AddCommMonoid ω] [Preorder ω] where
   /-- The terminal-witness map at every completed prefix, from output witnesses at its
   transcript. -/
   leaf : ∀ stmt (sp : Cursor.Spine s (.pure ⟨⟩)) (history : PrefixMoves l sp),
-    BudgetedProgram (F.extractLeaf sp history stmt) ω
+    BudgetedProgram (F.extractLeaf stmt sp history) ω
 
 namespace MeasuredStages
 
@@ -150,7 +150,8 @@ def programFrom (stages : MeasuredStages F ω) (stmt : S) :
   | .pure _, sp, history, _ => stages.leaf stmt sp history
   | .liftBind _ _, sp, history, ⟨x, tr⟩ =>
     ((stages.step stmt sp history).contramap
-      (fun w : F.Witness _ (PrefixMoves.snoc l sp history x) => (⟨x, w⟩ : F.StageInput _ _))).comp
+      (fun w : F.Witness stmt _ (PrefixMoves.snoc l sp history x) => (⟨x, w⟩ : F.StageInput stmt _
+        _))).comp
       (programFrom stages stmt _ (PrefixMoves.snoc l sp history x) tr)
 
 /-- The stage programs composed along a completed transcript, ending with the root program. Its
@@ -158,11 +159,11 @@ input is an output witness at that transcript. -/
 def programAlong (stages : MeasuredStages F ω) (stmt : S) (tr : PathAlong l s) :
     BudgetedProgram (F.extractAlong stmt tr) ω :=
   ((stages.root stmt).comp (stages.programFrom stmt (.root s) ⟨⟩ tr)).contramap
-    (cast (congrArg W (PrefixMoves.completeWith_root l tr).symm))
+    (cast (congrArg (W stmt) (PrefixMoves.completeWith_root l tr).symm))
 
 /-- The composed program returns the extracted input witness. -/
 theorem run_programAlong (stages : MeasuredStages F ω) (stmt : S) (tr : PathAlong l s)
-    (w : W tr) :
+    (w : W stmt tr) :
     (stages.programAlong stmt tr).program.run w = F.extractAlong stmt tr w :=
   ((stages.programAlong stmt tr).realizes w).symm
 
@@ -237,9 +238,9 @@ end KnowledgeStateFunction
 /-- A knowledge state function with a budgeted program for every extraction stage, charging
 natural-number counts indexed by the finite type `Kind`. -/
 structure MeasuredKnowledgeStateFunction (Kind : Type) [Finite Kind] (l : PFunctor.Lens P rolePoly)
-    (s : FreeM P PUnit.{1}) (S : Type) (W : PathAlong l s → Type) (Win : Type)
-    (admissible : S → Prop) (relIn : S → Win → Prop)
-    (validOutput : (stmt : S) → (tr : PathAlong l s) → W tr → Prop)
+    (s : FreeM P PUnit.{1}) (S : Type) (W : S → PathAlong l s → Type) (Win : S → Type)
+    (admissible : S → Prop) (relIn : (stmt : S) → Win stmt → Prop)
+    (validOutput : (stmt : S) → (tr : PathAlong l s) → W stmt tr → Prop)
     extends KnowledgeStateFunction l s S W Win admissible relIn validOutput where
   /-- A measured program and budget for each extraction stage. -/
   stages : toKnowledgeStateFunction.MeasuredStages (Kind → Nat)

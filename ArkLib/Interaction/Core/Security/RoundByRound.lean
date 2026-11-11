@@ -115,43 +115,42 @@ def rbrSoundness {S : Type} (s : FreeM P PUnit)
         F.toFun (sp.comp (.down (l.toFunB a x) (.root _)))
           (PrefixMoves.snoc l sp history x) stmt} ≤ ε (spineChallenge l sp h)
 
-/-- Intermediate witnesses and their backwards extraction at full transcript prefixes.
+/-- Intermediate witnesses and backwards extraction at full transcript prefixes.
 
-Witness types, states and extractors may all read the full prefix, including oracle payloads.
-The output witness type `W tr` is indexed by the completed transcript `tr`, and the leaf
-extractor receives a witness of the type at the transcript its prefix completes. The input
-witness type `Win` is fixed. As for soundness states, the root extraction obligation applies
-only within the input promise.
+Every witness carrier may depend on the input statement. Intermediate carriers may also read
+all earlier moves, including oracle payloads, and output carriers may read the complete
+transcript. The root extraction obligation applies within the input promise.
 -/
-structure KnowledgeStateFunction (s : FreeM P PUnit) (S : Type) (W : PathAlong l s → Type)
-    (Win : Type) (admissible : S → Prop) (relIn : S → Win → Prop)
-    (validOutput : (stmt : S) → (tr : PathAlong l s) → W tr → Prop) where
-  Witness : ∀ {t} (sp : Cursor.Spine s t), PrefixMoves l sp → Type
-  toFun : ∀ {t} (sp : Cursor.Spine s t) (history : PrefixMoves l sp), S →
-    Witness sp history → Prop
-  extractRoot : S → Witness (.root s) ⟨⟩ → Win
-  extractStep : ∀ {a next} (sp : Cursor.Spine s (.liftBind a next))
-    (history : PrefixMoves l sp), S → (x : Move l a) →
-      Witness (sp.comp (.down (l.toFunB a x) (.root _))) (PrefixMoves.snoc l sp history x) →
-        Witness sp history
-  extractLeaf : ∀ (sp : Cursor.Spine s (.pure ⟨⟩)) (history : PrefixMoves l sp), S →
-    W (PrefixMoves.complete l sp history) → Witness sp history
+structure KnowledgeStateFunction (s : FreeM P PUnit) (S : Type)
+    (W : S → PathAlong l s → Type) (Win : S → Type) (admissible : S → Prop)
+    (relIn : (stmt : S) → Win stmt → Prop)
+    (validOutput : (stmt : S) → (tr : PathAlong l s) → W stmt tr → Prop) where
+  Witness : ∀ (_stmt : S) {t} (sp : Cursor.Spine s t), PrefixMoves l sp → Type
+  toFun : ∀ (stmt : S) {t} (sp : Cursor.Spine s t) (history : PrefixMoves l sp),
+    Witness stmt sp history → Prop
+  extractRoot : ∀ stmt, Witness stmt (.root s) ⟨⟩ → Win stmt
+  extractStep : ∀ (stmt : S) {a next} (sp : Cursor.Spine s (.liftBind a next))
+    (history : PrefixMoves l sp) (x : Move l a),
+    Witness stmt (sp.comp (.down (l.toFunB a x) (.root _)))
+        (PrefixMoves.snoc l sp history x) → Witness stmt sp history
+  extractLeaf : ∀ (stmt : S) (sp : Cursor.Spine s (.pure ⟨⟩)) (history : PrefixMoves l sp),
+    W stmt (PrefixMoves.complete l sp history) → Witness stmt sp history
   root : ∀ stmt, admissible stmt → ∀ wit,
-    toFun (.root s) ⟨⟩ stmt wit → relIn stmt (extractRoot stmt wit)
+    toFun stmt (.root s) ⟨⟩ wit → relIn stmt (extractRoot stmt wit)
   send : ∀ {a next} (sp : Cursor.Spine s (.liftBind a next)) history stmt,
     owner l a = .sender → ∀ x wit,
-      toFun (sp.comp (.down (l.toFunB a x) (.root _)))
-        (PrefixMoves.snoc l sp history x) stmt wit →
-      toFun sp history stmt (extractStep sp history stmt x wit)
+      toFun stmt (sp.comp (.down (l.toFunB a x) (.root _)))
+        (PrefixMoves.snoc l sp history x) wit →
+      toFun stmt sp history (extractStep stmt sp history x wit)
   leaf : ∀ (sp : Cursor.Spine s (.pure ⟨⟩)) history stmt wit,
     validOutput stmt (PrefixMoves.complete l sp history) wit →
-      toFun sp history stmt (extractLeaf sp history stmt wit)
+      toFun stmt sp history (extractLeaf stmt sp history wit)
 
-/-- Worst-case-per-prefix knowledge: a fresh challenge rarely defeats backwards extraction.
-The output witness type `W tr` is indexed by the completed transcript `tr`. -/
-def rbrKnowledgeSoundness {S Win : Type} (s : FreeM P PUnit) {W : PathAlong l s → Type}
-    (admissible : S → Prop) (relIn : S → Win → Prop)
-    (validOutput : (stmt : S) → (tr : PathAlong l s) → W tr → Prop)
+/-- A fresh challenge rarely defeats backwards extraction, uniformly over later witnesses. -/
+def rbrKnowledgeSoundness {S : Type} {Win : S → Type} (s : FreeM P PUnit)
+    {W : S → PathAlong l s → Type} (admissible : S → Prop)
+    (relIn : (stmt : S) → Win stmt → Prop)
+    (validOutput : (stmt : S) → (tr : PathAlong l s) → W stmt tr → Prop)
     (draw : QueryImpl (challengeSpec l s) ProbComp) (ε : ChallengeNode l s → ℝ≥0∞) : Prop :=
   ∃ F : KnowledgeStateFunction l s S W Win admissible relIn validOutput,
     ∀ stmt, admissible stmt →
@@ -160,9 +159,9 @@ def rbrKnowledgeSoundness {S Win : Type} (s : FreeM P PUnit) {W : PathAlong l s 
       (history : PrefixMoves l sp),
       letI : MeasurableSpace (Move l a) := ⊤
       𝒟[sampleAt l draw sp h] {x | ∃ wit,
-        ¬ F.toFun sp history stmt (F.extractStep sp history stmt x wit) ∧
-        F.toFun (sp.comp (.down (l.toFunB a x) (.root _)))
-          (PrefixMoves.snoc l sp history x) stmt wit} ≤ ε (spineChallenge l sp h)
+        ¬ F.toFun stmt sp history (F.extractStep stmt sp history x wit) ∧
+        F.toFun stmt (sp.comp (.down (l.toFunB a x) (.root _)))
+          (PrefixMoves.snoc l sp history x) wit} ≤ ε (spineChallenge l sp h)
 
 /-- Valid plain acceptance from some ambient state at the fixed complete transcript.
 Terminal obligations therefore cover state changes made during the interaction. -/
@@ -175,6 +174,25 @@ def Verifier.validAcceptance {ι σ S T : Type} {ambient : OracleSpec ι} {s : P
     (V.decide stmt (projectPathAlong plainSig s tr) (toPlainView s tr)).run).run' state :
       ProbComp (Option T))] {v | ∃ t, v = some t ∧ langOut t}
 
+/-- Positive acceptance is a supported accepted result, including its final ambient state. -/
+theorem Verifier.validAcceptance_iff_support {ι σ S T : Type} {ambient : OracleSpec ι}
+    {s : Protocol} (V : Verifier ambient s S T)
+    (impl : QueryImpl ambient (StateT σ ProbComp)) (langOut : T → Prop)
+    (stmt : S) (tr : PathAlong plainSig s) :
+    V.validAcceptance impl langOut stmt tr ↔
+      ∃ state t final, (some t, final) ∈ support
+        ((simulateQ impl (V.decide stmt (projectPathAlong plainSig s tr)
+          (toPlainView s tr)).run).run state) ∧ langOut t := by
+  let : MeasurableSpace (Option T) := ⊤
+  unfold Verifier.validAcceptance
+  simp only [← prEvent_eq_evalDist _ _ measurable_from_top, prEvent_pos_iff,
+    StateT.run'_eq, _root_.support_map, Set.mem_image]
+  constructor
+  · rintro ⟨state, v, ⟨⟨result, final⟩, hr, rfl⟩, t, rfl, ht⟩
+    exact ⟨state, t, final, hr, ht⟩
+  · rintro ⟨state, t, final, hr, ht⟩
+    exact ⟨state, some t, ⟨(some t, final), hr, rfl⟩, t, rfl, ht⟩
+
 /-- The plain verifier's default round-by-round soundness form. -/
 abbrev Verifier.rbrSoundness {ι σ S T : Type} {ambient : OracleSpec ι} {s : Protocol}
     (V : Verifier ambient s S T)
@@ -185,17 +203,17 @@ abbrev Verifier.rbrSoundness {ι σ S T : Type} {ambient : OracleSpec ι} {s : P
   Core.rbrSoundness plainSig s (input.admissible ()) (input.language ())
     (V.validAcceptance impl (output.language ())) draw ε
 
-/-- The plain verifier's default round-by-round knowledge form. The output witness type `W tr`
-and the output relation `relOut tr` are indexed by the completed transcript `tr`. -/
-abbrev Verifier.rbrKnowledgeSoundness {ι σ S T Win : Type} {ambient : OracleSpec ι}
-    {s : Protocol} {W : PathAlong plainSig s → Type} (V : Verifier ambient s S T)
+/-- The plain verifier's default round-by-round knowledge form. The output witness type `W stmt tr`
+and the output relation are indexed by the input statement and completed transcript. -/
+abbrev Verifier.rbrKnowledgeSoundness {ι σ S T : Type} {Win : S → Type} {ambient : OracleSpec ι}
+    {s : Protocol} {W : S → PathAlong plainSig s → Type} (V : Verifier ambient s S T)
     (impl : QueryImpl ambient (StateT σ ProbComp))
-    (admissible : S → Prop) (relIn : S → Win → Prop)
-    (relOut : (tr : PathAlong plainSig s) → T → W tr → Prop)
+    (admissible : S → Prop) (relIn : (stmt : S) → Win stmt → Prop)
+    (relOut : (stmt : S) → (tr : PathAlong plainSig s) → T → W stmt tr → Prop)
     (draw : QueryImpl (challengeSpec plainSig s) ProbComp)
     (ε : ChallengeNode plainSig s → ℝ≥0∞) : Prop :=
   Core.rbrKnowledgeSoundness plainSig s admissible relIn
-    (fun stmt tr wit => V.validAcceptance impl (fun t => relOut tr t wit) stmt tr) draw ε
+    (fun stmt tr wit => V.validAcceptance impl (fun t => relOut stmt tr t wit) stmt tr) draw ε
 
 namespace OracleVerifier
 variable {ι I J σ S T : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
@@ -215,6 +233,26 @@ def validAcceptance (V : OracleVerifier ambient s S T inputs outputs)
   ∃ state : σ, 0 < 𝒟[(simulateQ handler (V.decide stmt.1 p view).run).run' state]
       {v | ∃ t, v = some t ∧ langOut (t, (V.outputMap stmt.1 p view).f resources)}
 
+/-- Positive oracle acceptance has a supported accepted result and a final ambient state. -/
+theorem validAcceptance_iff_support (V : OracleVerifier ambient s S T inputs outputs)
+    (impl : QueryImpl ambient (StateT σ ProbComp)) (langOut : T × (∀ j, B j) → Prop)
+    (stmt : S × (∀ i, A i)) (tr : PathAlong oracleSig s) :
+    V.validAcceptance impl langOut stmt tr ↔
+      ∃ state t final, (some t, final) ∈ support
+        ((simulateQ impl (V.decideWith stmt.1 (projectPathAlong oracleSig s tr)
+          (toView s tr) (sumData stmt.2 (payloads s tr)))).run state) ∧
+        langOut (t, (V.outputMap stmt.1 (projectPathAlong oracleSig s tr) (toView s tr)).f
+          (sumData stmt.2 (payloads s tr))) := by
+  let : MeasurableSpace (Option T) := ⊤
+  simp only [validAcceptance, OracleVerifier.simulateQ_decideWith,
+    ← prEvent_eq_evalDist _ _ measurable_from_top, prEvent_pos_iff,
+    StateT.run'_eq, _root_.support_map, Set.mem_image]
+  constructor
+  · rintro ⟨state, v, ⟨⟨result, final⟩, hr, rfl⟩, t, rfl, ht⟩
+    exact ⟨state, t, final, hr, ht⟩
+  · rintro ⟨state, t, final, hr, ht⟩
+    exact ⟨state, some t, ⟨(some t, final), hr, rfl⟩, t, rfl, ht⟩
+
 /-- Worst-case-per-prefix oracle soundness with the full input admissibility boundary. -/
 abbrev rbrSoundness (V : OracleVerifier ambient s S T inputs outputs)
     (impl : QueryImpl ambient (StateT σ ProbComp))
@@ -226,17 +264,19 @@ abbrev rbrSoundness (V : OracleVerifier ambient s S T inputs outputs)
     (V.validAcceptance impl (output.language ())) draw ε
 
 /-- Worst-case-per-prefix oracle knowledge with full payload-bearing prefix access. The output
-witness type `W tr` and the output relation `relOut tr` are indexed by the completed
-transcript `tr`. -/
-abbrev rbrKnowledgeSoundness {Win : Type} {W : PathAlong oracleSig s → Type}
+witness type `W stmt tr` and the output relation are indexed by the input statement, including
+its oracle data, and the completed transcript. -/
+abbrev rbrKnowledgeSoundness {Win : (S × (∀ i, A i)) → Type}
+    {W : (S × (∀ i, A i)) → PathAlong oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs)
     (impl : QueryImpl ambient (StateT σ ProbComp))
-    (admissible : S × (∀ i, A i) → Prop) (relIn : (S × (∀ i, A i)) → Win → Prop)
-    (relOut : (tr : PathAlong oracleSig s) → (T × (∀ j, B j)) → W tr → Prop)
+    (admissible : S × (∀ i, A i) → Prop) (relIn : (stmt : S × (∀ i, A i)) → Win stmt → Prop)
+    (relOut : (stmt : S × (∀ i, A i)) → (tr : PathAlong oracleSig s) →
+      (T × (∀ j, B j)) → W stmt tr → Prop)
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp)
     (ε : ChallengeNode oracleSig s → ℝ≥0∞) : Prop :=
   Core.rbrKnowledgeSoundness oracleSig s admissible relIn
-    (fun stmt tr wit => V.validAcceptance impl (fun t => relOut tr t wit) stmt tr) draw ε
+    (fun stmt tr wit => V.validAcceptance impl (fun t => relOut stmt tr t wit) stmt tr) draw ε
 
 end OracleVerifier
 

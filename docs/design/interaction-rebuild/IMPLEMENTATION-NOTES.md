@@ -163,17 +163,14 @@ by a sent `payload`, had to encode that carrier into a constant type and track i
 with the transcript separately. The old interfaces could not expose the transcript-indexed carrier
 directly.
 
-**Round-by-round knowledge** (`Security/RoundByRound.lean`). The output witness of
-`KnowledgeStateFunction` and `rbrKnowledgeSoundness` is a family `W : PathAlong l s → Type`.
-`validOutput` takes `(stmt : S) → (tr : PathAlong l s) → W tr → Prop`, and
-`extractLeaf sp history stmt` takes `W (PrefixMoves.complete l sp history)`. The input witness
-type `Win` stays a plain type. The verifier forms take the family implicitly, with output
-relations
-
-- `Verifier.rbrKnowledgeSoundness`: `relOut : (tr : PathAlong plainSig s) → T → W tr → Prop`;
-- `OracleVerifier.rbrKnowledgeSoundness`:
-  `relOut : (tr : PathAlong oracleSig s) → (T × ∀ j, B j) → W tr → Prop`, where the second
-  argument pairs the output statement with the output oracle data.
+**Round-by-round knowledge** (`Security/RoundByRound.lean`). Input witnesses have family
+`Win : S → Type`; output witnesses have family `W : S → PathAlong l s → Type`.
+`validOutput` takes `(stmt : S) → (tr : PathAlong l s) → W stmt tr → Prop`, and
+`extractLeaf stmt sp history` takes `W stmt (PrefixMoves.complete l sp history)`.
+Intermediate carriers also take `stmt` first. The verifier forms take both witness families
+implicitly; their output relations take the input statement, transcript, output claim and witness.
+For an oracle verifier, the input statement includes its input oracle data, and the output claim
+pairs the output statement with its output oracle data.
 
 **Straight-line knowledge** (`Security/Knowledge.lean`). The extractor interfaces
 `Extractor.Straightline`, `Extractor.TranscriptOnly`, `Extractor.OracleStraightline` and
@@ -230,52 +227,228 @@ from the statement and history, an identity between stage budgets and charges, a
 separate root and leaf accounting. The short induction stays. Later work that needs nonuniform
 path sums should reuse PolyFun's charge calculus.
 
-### The seam is a predicate
+### Acceptance and the middle claim
 
-`KnowledgeStateFunction.append` takes the seam as a hypothesis: the suffix root state implies the
-prefix valid output on the witness that the suffix root map extracts. `rbrKnowledgeSoundness_append`
-takes it between the suffix input relation and the prefix valid output, under the input promise.
-The suffix premise uses the composite valid output restricted along `PathAlong.append`. These
-theorems do not derive the security of `V₁.append V₂` from the standalone security statements of
-the two verifiers. The test fixture proves an acceptance iff for its own verifiers instead.
+`KnowledgeStateFunction.append` takes a seam hypothesis: the suffix root state implies the
+prefix valid output on the witness extracted by the suffix root map. The lower-level
+`rbrKnowledgeSoundness_append` keeps this predicate interface.
 
-A reusable acceptance bridge for appended verifiers is not in this commit; it is a recorded
-follow-up. It would start from `Verifier.append_decide` and `OracleVerifier.append_decideWith`,
-keep the ambient state through the decision bind, and use output compatibility on supported
-accepted prefix results. Its first theorem should be one-way: composite positive acceptance
-decomposes into a supported intermediate result and state, and positive suffix acceptance from that
-state. It must not be an iff between two separately existential `validAcceptance` predicates,
-because their ambient states can be incompatible. For example, a prefix that accepts only from
-state 0 and leaves state 0, followed by a suffix that accepts only from state 1, satisfies both
-standalone predicates, but the composition rejects. A deterministic-mid corollary needs the
-accepted-prefix-result law as a hypothesis. The fixed-protocol state-restoration proofs do not
-need the bridge; they use one state function, its local bound, its terminal obligation and its
-extractor.
+`Verifier.validAcceptance_append` and `OracleVerifier.validAcceptance_append` now decompose a
+positive composite acceptance into supported accepted prefix and suffix results. They retain the
+same intermediate ambient state. The oracle theorem also retains the actual routed suffix data.
+The underlying `Verifier.support_append` and `OracleVerifier.support_append` in `Core/Composition`
+work in any lawful monad with lawful support, without probability or inhabited-carrier premises.
+They use the owning module's `simulateQ_append_run` equations. `splitFiber_pair` exposes the
+transport used when splitting views, and `Verifier.append_decide_pathAlong` identifies the plain
+component transcripts. No new transparency attributes are used.
 
-### Dependent witnesses
+`Verifier.rbrKnowledgeSoundness_append` uses each verifier's standalone knowledge theorem. Its
+`accepted` law identifies every supported accepted prefix result with `mid stmt tr₁`. This law
+does not assert that the middle claim is true, that it has a witness, or that the prefix accepts.
+It matches the frozen composition's named path-dependent closed middle claim. The prefix may use
+ambient effects. `Verifier.rbrKnowledgeSoundness_append_of_pure` derives this law when the prefix
+decision returns the middle claim directly.
 
-Output witnesses are transcript families (see "Output witnesses are indexed by the transcript"
-above), and composition keeps them typed. The intermediate witness type is
-`Wmid : PathAlong l s₁ → Type`. The suffix state function at `tr₁` takes input witnesses in
-`Wmid tr₁`, and its output family is `fun tr₂ => W (PathAlong.append l s₁ s₂ tr₁ tr₂)`.
+The proof conditions the suffix states on possible prefix acceptance. Suffix admissibility is
+required wherever the input promise holds, including paths whose middle relation is false.
+`KnowledgeStateFunction.condition` preserves the local error bound because the condition is
+constant over the suffix transcript. Thus the suffix premise has its own output relation, not
+the composite verifier's valid-output predicate.
 
-- `extractFrom` takes its output witness at `PrefixMoves.completeWith l sp history tr`, the
-  completed transcript through the cursor's prefix followed by the rest of the transcript. It is
-  defined by recursion on the rest, so the leaf and step equations of `extractFrom` hold by
-  definition.
-- `extractAlong` and `terminalWitness` take `W tr`. They transport it by `cast` along
-  `PrefixMoves.completeWith_root` and `complete_completeMoves`; the transport reduces by definition
-  when the transcript is given by its moves.
-- `extractFrom_child` and `extractFrom_append_down` state the extraction below a first move for a
-  witness given with a transport to each side.
-- `MeasuredStages.leaf` takes `W (PrefixMoves.complete l sp history)`. `programAlong` precomposes
-  the same transport, so its input is `W tr`.
+No theorem equates two independently existential acceptance predicates with composite acceptance.
+A prefix that leaves state 0 and a suffix that accepts only from state 1 illustrate why such an
+equivalence would be false.
 
-There is one theory. A constant output witness type is the constant family `fun _ => W`. The
-tests run the composed extraction on the carriers `Fin (payload + 1)` and
-`Fin (payload + 1) × Unit` with identity leaf maps. They check that the composite terminal witness
-is the output witness itself, and they run the composed measured program on
-`witness : Fin (message.val + 1)`.
+### Statement-indexed witnesses
+
+All carriers now retain the input statement:
+
+- `Win : Type` becomes `Win : S → Type`, and `relIn : S → Win → Prop` becomes
+  `relIn : (stmt : S) → Win stmt → Prop`.
+- `W : PathAlong l s → Type` becomes `W : S → PathAlong l s → Type`. Valid-output predicates
+  and verifier output relations take witnesses in `W stmt tr`.
+- `Witness sp history` becomes `Witness stmt sp history`. `toFun`, `extractStep` and `extractLeaf`
+  take the statement first. `extractRoot stmt` returns `Win stmt`.
+- Composition uses `Wmid : S → PathAlong l s₁ → Type`; the suffix at `tr₁` takes input witnesses
+  in `fun stmt => Wmid stmt tr₁`.
+- `extractFrom`, `extractAlong`, `terminalWitness` and the measured stages preserve these indices.
+  `StageInput` also takes the statement first. `MeasuredKnowledgeStateFunction` uses the same
+  dependent families.
+- `comap` pulls back statements and accepts input/output witness maps between the dependent
+  families. Its input relation is the image of the original relation under the input witness map.
+  `rbrKnowledgeSoundness_append_of_mid` exposes those witness maps as well.
+
+These signature changes propagate through `rbrKnowledgeSoundness`, the plain and oracle verifier
+abbreviations, all append witness/state/extraction helpers and their equations, `BoundedAt` and
+`LocallyBounded`, the legacy security transfers and their acceptance tests. The legacy transfers
+specialize the families to constant legacy witness types. There is no second non-indexed API and
+no encoding of a statement-dependent witness family.
+
+`BadChallengeFrom` follows the rest of a transcript below any full prefix. At each receiver move it
+compares the states on the witness extracted from the supplied output witness at that suffix.
+`BadChallengeAlong` starts this predicate at the root. The theorem
+`extraction_failure_implies_badChallengeAlong` proves that an admissible valid output with invalid
+extracted input has such a receiver transition, for every permitted protocol tree. It never
+replaces that extracted witness by an unrelated existential witness.
+
+The acceptance tests retain their payload-dependent carriers and both challenge values. New
+examples use `Win n := Fin (n + 1)` directly, execute measured extraction in that carrier, and
+compose standalone verifier knowledge theorems with a statement-dependent suffix carrier.
+
+### Changed-signature inventory
+
+The following substitutions describe the old and new signatures of every affected production
+API. All other premises and conclusions remain unchanged unless stated here.
+
+1. Input families: `Win : Type` and `relIn : S → Win → Prop` become
+   `Win : S → Type` and `relIn : (stmt : S) → Win stmt → Prop`.
+2. Output families: `W : PathAlong l s → Type` and `W tr` become
+   `W : S → PathAlong l s → Type` and `W stmt tr`. Similarly, `Wmid tr₁` becomes
+   `Wmid stmt tr₁`.
+3. Intermediate carriers: `Witness sp history` becomes `Witness stmt sp history`.
+   The old `toFun sp history stmt`, `extractStep sp history stmt` and
+   `extractLeaf sp history stmt` become `toFun stmt sp history`, `extractStep stmt sp history`
+   and `extractLeaf stmt sp history`. `extractRoot stmt` now returns `Win stmt`.
+4. Verifier relations: `relOut tr out w` becomes `relOut stmt tr out w`, including the oracle
+   form whose `stmt` includes input data and whose `out` includes output data.
+5. Pullback: the old `comap f F hout` kept fixed input/output witness types. The new
+   `comap f F inputMap outputMap hout` maps the dependent witness families explicitly, and
+   returns the image input relation. `BoundedAt.comap` has the matching parameters.
+6. Deterministic statement composition: `rbrKnowledgeSoundness_append_of_mid` now takes
+   `Wmid₂ tr₁ t`, `W₂ tr₁ t tr₂`, `midWitness` and `outWitness`; the previous fixed-carrier
+   theorem is the specialization to constant statement families and identity witness maps.
+7. Stage inputs: `StageInput sp history` becomes `StageInput stmt sp history`.
+
+In `Security/RoundByRound.lean`, substitutions 1–4 affect `KnowledgeStateFunction` and its
+fields, `rbrKnowledgeSoundness`, `Verifier.rbrKnowledgeSoundness` and
+`OracleVerifier.rbrKnowledgeSoundness`.
+
+In `Security/KnowledgeComposition.lean`, substitutions 1–3 affect these declarations:
+
+- `extractFrom`, `extractFrom_pure`, `extractFrom_liftBind`, `extractAlong`, `terminalWitness`;
+- `badChallenge`, `BoundedAt`, `LocallyBounded`,
+  `rbrKnowledgeSoundness_iff_exists_locallyBounded`, `child`;
+- `appendWitness`, `appendToFun`, `appendExtractRoot`, `appendExtractStep`, `appendExtractLeaf`;
+- `appendToFun_root`, `appendToFun_send`, `appendToFun_leaf`, `append`, `root_append`;
+- `extractFrom_child`, `extractFrom_child_family`, `extractFrom_append_pure`,
+  `extractFrom_append_down`, `extractFrom_append_down_family`, `extractAlong_append`,
+  `toFun_terminalWitness_append`;
+- `BoundedAt.child`, `BoundedAt.append`, `guard`, `BoundedAt.guard`, `LocallyBounded.append`;
+- `rbrKnowledgeSoundness_append`, `rbrKnowledgeSoundness_append_of_mid`.
+
+`comap` and `BoundedAt.comap` additionally use substitution 5, and
+`rbrKnowledgeSoundness_append_of_mid` uses substitution 6.
+
+In `Security/MeasuredResources.lean`, substitutions 1–3 and 7 affect `StageInput`, `stageMap`,
+`extractFrom_eq_stageMap`, `MeasuredStages` (including its root/step/leaf fields),
+`MeasuredStages.BudgetAtMost`, `zero`, `zero_budgetAtMost`, `programFrom`, `programAlong`,
+`run_programAlong`, `programFrom_budget_pure`, `programFrom_budget_liftBind`,
+`programAlong_budget`, `programFrom_budget_le`, `programAlong_budget_le`,
+`programAlong_budget_le_nsmul`, `programAlong_costAtMost`, `programAlong_costAtMost_nsmul`,
+and `MeasuredKnowledgeStateFunction`.
+
+The legacy statements keep constant legacy carriers. Their type specializations change in
+`Legacy/Security.lean`: `embedKnowledgeStateFunction`, `languageStateFunction`,
+`embedVerifier_rbrKnowledgeSoundness`, `rbrKnowledgeSoundness_of_embedVerifier` and
+`rbrKnowledgeSoundness_iff`. In `Legacy/OracleSecurity.lean`, the corresponding changes are
+`embedOracleVerifier_rbrKnowledgeSoundness` and `rbrKnowledgeSoundness_of_embedOracleVerifier`.
+Their mathematical statements are unchanged.
+
+### New declarations
+
+The following source locations identify the new production definitions and theorems. Unqualified
+names below `Security/KnowledgeComposition` belong to `KnowledgeStateFunction`; unqualified
+acceptance and support laws in the other files belong to `OracleVerifier`.
+
+`ArkLib/Interaction/Core/Composition.lean`:
+
+- Line 67: `splitFiber_pair`.
+- Line 108: `Verifier.append_decide_pathAlong`.
+- Line 130: `Verifier.simulateQ_append_run`.
+- Line 150: `Verifier.support_append`.
+- Line 439: `simulateQ_append_run`.
+- Line 460: `support_append`.
+
+`ArkLib/Interaction/Core/OracleVerifier.lean`:
+
+- Line 382: `OracleVerifier.simulateQ_decideWith`.
+
+`ArkLib/Interaction/Core/Security/RoundByRound.lean`:
+
+- Line 178: `Verifier.validAcceptance_iff_support`.
+- Line 237: `validAcceptance_iff_support`.
+
+`ArkLib/Interaction/Core/Security/KnowledgeComposition.lean`:
+
+- Line 156: `BadChallengeFrom`.
+- Line 170: `BadChallengeAlong`.
+- Line 176: `state_or_badChallengeFrom`.
+- Line 196: `extraction_failure_implies_badChallengeAlong`.
+- Line 931: `condition`.
+- Line 948: `BoundedAt.condition`.
+- Line 1106: `Verifier.validAcceptance_append`.
+- Line 1131: `Verifier.rbrKnowledgeSoundness_append`.
+- Line 1205: `Verifier.rbrKnowledgeSoundness_append_of_pure`.
+- Line 1254: `OracleVerifier.validAcceptance_append`.
+
+### Added acceptance cases
+
+`ArkLibTest/Interaction/Core/Security/KnowledgeComposition.lean` checks the generic failure
+theorem on every payload and supplied terminal witness. `indexed_standalone` and
+`indexed_composed` use `Fin (n + 1)` at input and output, and compose the suffix verifier's own
+standalone theorem. An example with a shared counter checks the actual intermediate state one between two
+accepted decisions, and `largeSeamHandler` checks the decision-fold law in an oracle computation with a higher-universe
+empty query index. Its output universe is larger than its input universe, without an adapter.
+
+`ArkLibTest/Interaction/Core/Security/MeasuredExtraction.lean` adds `indexedState` and executes
+its measured program at statement three and witness two, returning two in `Fin 4`. The generic
+empty-protocol case in `MeasuredPathBudgets.lean` now quantifies statement-indexed input and output
+families. The existing charged-stage, unbounded-depth, signed-weight and empty-carrier tests stay.
+
+The knowledge-composition acceptance module collects the axioms of the new failure and verifier
+composition theorems alongside the existing composition equations.
+
+### New test declarations
+
+`ArkLibTest/Interaction/Core/Security/KnowledgeComposition.lean`:
+
+- Line 537: `indexedProtocol`.
+- Line 540: `indexedVerifier`.
+- Line 544: `indexedDraw`.
+- Line 548: `indexedCertificate`.
+- Line 561: `indexed_standalone`.
+- Line 568: `indexed_composed`.
+- Line 585: `seamSpec`.
+- Line 588: `seamHandler`.
+- Line 594: `seamFirst`.
+- Line 600: `seamSecond`.
+- Line 628: `largeSpec`.
+- Line 631: `largeSeamHandler`.
+
+`ArkLibTest/Interaction/Core/Security/MeasuredExtraction.lean`:
+
+- Line 109: `indexedState`.
+
+### Review dispositions
+
+| Finding | Disposition and evidence |
+| --- | --- |
+| 2, interface | Statement-indexed input, intermediate and terminal witnesses throughout the single knowledge API. The child state-restoration port remains outside this branch. |
+| 3, generic theorem | `BadChallengeAlong` and `extraction_failure_implies_badChallengeAlong` preserve the suffix-extracted witness on arbitrary trees. The keyed specialization belongs to the child branch. |
+| 9 | Generic plain/oracle support and acceptance decompositions preserve the seam state; the plain verifier knowledge theorem uses standalone component hypotheses and has a pure-middle corollary. |
+| 12 | Removed this branch's local transparency attribute. Constructor and transport equations are exposed in `Core/Composition`. |
+
+### Validation
+
+Both prescribed checks passed on 2026-11-10:
+
+- `~/claude-work/restack-1110/check.sh feat/interaction-migrate-core build` exited zero.
+- `DOC_BASE=feat/interaction-migrate-core ~/claude-work/restack-1110/check.sh
+  feat/interaction-migrate-core guards` exited zero.
+
+The build includes the compile-time acceptance examples, runtime evaluations and targeted axiom
+checks. The guards cover added escape hatches, frozen paths, documentation, headers, imports,
+line style and transparency overrides. No whole-library validation command was run.
 
 ### `combineDraw` combines errors
 
