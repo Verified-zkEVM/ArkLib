@@ -145,7 +145,7 @@ theorem srKnowledgeSoundnessQueryBoundedWithExtractor_to_generic
     simpa only [SRProver.ofReduction, isQueryBoundP_map_iff] using hP
   have hResult := h (SRProver.ofReduction P) hBound
   unfold srKnowledgeSoundnessFailureProb at hResult
-  erw [SRProver.toReduction_ofReduction] at hResult
+  simp only [SRProver.toReduction_ofReduction] at hResult
   exact hResult
 
 end

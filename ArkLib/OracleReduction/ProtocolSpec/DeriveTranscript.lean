@@ -315,6 +315,12 @@ section HandlerAgreement
 variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
   {n : ℕ} {pSpec : ProtocolSpec n}
 
+private theorem simulateQ_getChallengeSR {m : Type → Type} [Monad m] [LawfulMonad m]
+    (impl : QueryImpl (oSpec + srChallengeOracle StmtIn pSpec) m)
+    (i : pSpec.ChallengeIdx) (input : StmtIn × pSpec.MessagesUpTo i.1.castSucc) :
+    simulateQ impl (getChallengeSR i input) = impl (.inr ⟨i, input⟩) :=
+  simulateQ_spec_query _ _
+
 private theorem simulateQ_chalTupleUpTo_eq
     {κ : Type} {otherSpec : OracleSpec κ} {m : Type → Type} [Monad m] [LawfulMonad m]
     (left : QueryImpl (oSpec + srChallengeOracle StmtIn pSpec) m)
@@ -331,8 +337,7 @@ private theorem simulateQ_chalTupleUpTo_eq
     rw [ih]
     refine bind_congr fun cs => ?_
     split
-    · unfold getChallengeSR
-      erw [simulateQ_bind, simulateQ_bind, simulateQ_spec_query, simulateQ_spec_query, h]
+    · simp only [simulateQ_bind, simulateQ_getChallengeSR, h]
       rfl
     · rfl
 
@@ -344,9 +349,13 @@ theorem simulateQ_deriveTranscriptSR_eq
     (h : ∀ q, left (.inr q) = right (.inr q)) (x : StmtIn) (messages : pSpec.Messages) :
     simulateQ left (messages.deriveTranscriptSR x) =
       simulateQ right (messages.deriveTranscriptSR x) := by
-  simp only [Messages.deriveTranscriptSR_eq_chalTupleUpTo]
-  erw [simulateQ_bind, simulateQ_bind, simulateQ_chalTupleUpTo_eq left right h]
-  rfl
+  let j : Fin (n + 1) := ⟨n, Nat.lt_succ_self n⟩
+  have hLeft := congrArg (simulateQ left (α := Transcript j pSpec))
+    (Messages.deriveTranscriptSR_eq_chalTupleUpTo x messages)
+  have hRight := congrArg (simulateQ right (α := Transcript j pSpec))
+    (Messages.deriveTranscriptSR_eq_chalTupleUpTo x messages)
+  refine hLeft.trans (Eq.trans ?_ hRight.symm)
+  simp only [simulateQ_bind, simulateQ_pure, simulateQ_chalTupleUpTo_eq left right h]
 
 end HandlerAgreement
 end ProtocolSpec

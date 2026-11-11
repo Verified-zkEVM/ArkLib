@@ -634,13 +634,16 @@ lemma Reduction.fiatShamir_randomOracle_outputs
   apply EvalDistEq.bind_right
   rintro ⟨⟨tr, st⟩, s'⟩
   dsimp only
-  erw [simulateQ_addLift_run_left, QueryImpl.simulateQ_addLift_liftM_left]
+  dsimp only [Transcript, ProtocolSpec.take, FullTranscript] at tr ⊢
+  rw [fsRandomOracleImpl, simulateQ_addLift_run_left, QueryImpl.simulateQ_addLift_liftM_left]
   simp only [bind_assoc, pure_bind]
   apply EvalDistEq.bind_right
   rintro ⟨ctx, s''⟩
   dsimp only
-  erw [simulateQ_fsRandom_deriveTranscriptFS, pure_bind, simulateQ_addLift_run_left,
-    QueryImpl.simulateQ_addLift_liftM_left]
+  rw [← fsRandomOracleImpl, simulateQ_fsRandom_deriveTranscriptFS impl tr stmt s'']
+  dsimp only [Transcript, FullTranscript, SliceLT.sliceLT, ProtocolSpec.take, Fin.take, Fin.castLE]
+  simp only [pure_bind]
+  rw [fsRandomOracleImpl, simulateQ_addLift_run_left, QueryImpl.simulateQ_addLift_liftM_left]
   simp only [bind_assoc, pure_bind]
   apply EvalDistEq.bind_right
   rintro ⟨vr, sOut⟩

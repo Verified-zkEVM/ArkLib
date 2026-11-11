@@ -102,7 +102,7 @@ theorem publicQueries_withQueryLog_normalizePrivateCoins
   | inl q => simp [privateCoinsImpl, withQueryLog_query, QueryLog.fst]
   | inr q =>
     dsimp only [privateCoinsImpl]
-    erw [fst_withQueryLog_liftComp_right]
+    rw [fst_withQueryLog_liftComp_right]
     rfl
 
 end OracleComp
@@ -415,7 +415,7 @@ theorem soundnessQueryBounded_addPrivateCoins
     soundnessQueryBounded (Salt := Salt) init (impl.addLift (QueryImpl.id' unifSpec)) langIn langOut
       (V.liftOracles (targetSpec := oSpec + unifSpec)) (isSrChallengeMove (Salt := Salt)) t ε := by
   intro P hP
-  erw [soundnessFailureProb_mergePrivateCoins (Salt := Salt)]
+  rw [soundnessFailureProb_mergePrivateCoins (Salt := Salt)]
   apply hSR P.mergeRight
   apply hP.simulateQ_of_step <;> intro q hq <;>
     rcases q with ((q | q) | q) | q <;>
@@ -465,7 +465,7 @@ theorem knowledgeSoundnessFailureProb_mergePrivateCoins
   simp only [simulateQ_bind, simulateQ_pure,
     hlog, QueryImpl.addLift_def, QueryImpl.liftTarget_self,
     simulateQ_add_liftComp_sum_left, simulateQ_add_add_liftComp_left, bind_assoc, pure_bind]
-  erw [simulateQ_mergeRight]
+  rw [simulateQ_mergeRight]
   simp only [simulateQ_map, bind_map_left]
   simp only [addPrivateCoinsExtractor, OptionT.run_mk, liftCompLeft,
     QueryImpl.simulateQ_add_liftComp_left]
@@ -488,7 +488,7 @@ theorem knowledgeSoundnessQueryBoundedWithExtractor_addPrivateCoins
       relIn relOut (V.liftOracles (targetSpec := oSpec + unifSpec))
       (addPrivateCoinsExtractor (Salt := Salt) E) (isSrChallengeMove (Salt := Salt)) t ε := by
   intro P hP
-  erw [knowledgeSoundnessFailureProb_mergePrivateCoins (Salt := Salt)]
+  rw [knowledgeSoundnessFailureProb_mergePrivateCoins (Salt := Salt)]
   apply hSR P.mergeRight
   apply hP.simulateQ_of_step <;> intro q hq <;>
     rcases q with ((q | q) | q) | q <;>
