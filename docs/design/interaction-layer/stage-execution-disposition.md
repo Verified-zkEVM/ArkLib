@@ -120,7 +120,7 @@ different execution: both passive decisions run after the whole interaction, so 
 | L295, history `[10, 11, 12, 14, 15, 16, 17]` | premise-required | P1 retires prefix verifier events 11 and 12 before the prover's response. [execRow19] keeps the seven events, each once, as `[10, 14, 15, 11, 12, 16, 17]`. |
 | L298, private output `hidden + 14` | equivalent | [execRow19] and [execRow19All]: the private output keeps the ambient answer 14 read after the challenge. |
 | L300, abort gives `none` | premise-required | P2 retires the `none` challenge that selects a branch without a second send. [execRow22] keeps the `none` verdict through a rejecting prefix decision, for every draw and hidden value. |
-| L303, abort history `[10, 11, 12, 14, 17]` | premise-required | P1 and P2: the frozen abort branch has no second send, and its events 11 and 12 precede the response. [execRow22] runs each event at most once, as `[10, 14, 15, 11, 12]`: the suffix send's event 15 runs on the fixed shape, and the suffix decision's events 16 and 17 are skipped. |
+| L303, abort history `[10, 11, 12, 14, 17]` | premise-required | P1 and P2 change the schedule, but not the final action. P2 retires the abort branch without a second send, so the suffix send's event 15 runs on the fixed shape. P1 retires the prefix verifier events 11 and 12 before the response, so they follow the prover's events. The final action 17 is kept: [execRow22] gives `[10, 14, 15, 11, 12, 17]` for every draw and hidden value, with event 17 recorded once by the rejecting prefix decision ([execFirstVerifier]). The skipped suffix decision records neither 16 nor its own 17. |
 | L305, abort private output `hidden + 14` | equivalent | [execRow22]. |
 | L352, completed prefix then next send: `[40, 41]` | equivalent | [execRow25]. |
 | L354, appended: `[41, 40]` | equivalent | [execRow26]. The appended completed decision is an end decision, so event 40 follows the next prover's event 41, as in the frozen run. |
@@ -226,18 +226,19 @@ different execution: both passive decisions run after the whole interaction, so 
 [execRow7]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L127
 [execRow8]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L137
 [execRow10]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L149
-[execRow19]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L282
-[execRow19All]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L291
-[execRow22]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L301
-[execRow9Pos]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L310
-[execRow9Neg]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L315
-[execRow25]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L394
-[execRow26]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L398
-[execRow27]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L401
-[execRow28]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L483
-[execRow29]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L489
-[execRow30]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L496
-[execAxioms]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L504
+[execFirstVerifier]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L203
+[execRow19]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L285
+[execRow19All]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L294
+[execRow22]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L308
+[execRow9Pos]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L318
+[execRow9Neg]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L323
+[execRow25]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L402
+[execRow26]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L406
+[execRow27]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L409
+[execRow28]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L491
+[execRow29]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L497
+[execRow30]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L504
+[execAxioms]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L512
 [depCanary]: ../../../ArkLibTest/Interaction/Core/Reduction/DependentExample.lean#L35
 [depCanaryUse]: ../../../ArkLibTest/Interaction/Core/Reduction/DependentExample.lean#L50
 [depComposed]: ../../../ArkLibTest/Interaction/Core/Reduction/DependentExample.lean#L92

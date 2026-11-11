@@ -198,7 +198,8 @@ abbrev prefixResources := pathResources inputs firstProtocol ⟨⟨⟩, ⟨⟨�
 abbrev suffixResources := pathResources inputs pairSend ⟨⟨⟩, ⟨⟩⟩
 
 /-- The prefix decision records 11, reads its sent oracle, records 12, reads the input, and passes
-the sent answer on, or rejects. Its output map forwards the input. -/
+the sent answer on. Otherwise it records the final event 17 and rejects. Its output map forwards
+the input. -/
 def firstVerifier (proceed : Bool) :
     OracleVerifier ambient firstProtocol Unit (fun _ => Nat) inputs (fun _ => inputs) where
   decide _ p _ := by
@@ -208,7 +209,9 @@ def firstVerifier (proceed : Bool) :
       let sent : Nat ← liftM ((ambient + prefixResources.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
       let _ ← liftM ((ambient + prefixResources.spec).query (.inl 12))
       let _ ← liftM ((ambient + prefixResources.spec).query (.inr (.inl ⟨(), ()⟩)))
-      pure (if proceed then some sent else none)
+      if proceed then pure (some sent) else do
+        let _ ← liftM ((ambient + prefixResources.spec).query (.inl 17))
+        pure none
   outputMap _ _ _ := OracleMap.fst _ _
 
 /-- The suffix decision records 16 and 17, reads its sent oracle, and adds the prefix value. -/
@@ -295,11 +298,16 @@ example (draw hidden : Nat) :
   rw [OracleVerifier.run_append]
   rfl
 
--- ExecutionExample 22, restated: the frozen abort comes from an `Option` challenge. Here the
--- prefix decision rejects at the end: the verdict is `none`, the suffix
--- interaction still runs (event 15), and the suffix decision's events 16 and 17 are skipped.
+-- ExecutionExample 22 to 24, restated: the frozen abort comes from an `Option` challenge that
+-- selects a branch without a second send, and its final action records 17 once after the
+-- prover's response. Here the prefix decision rejects at the end with verdict `none`. Because the
+-- shape is fixed, the suffix interaction still runs (event 15); because decisions are passive, the
+-- prefix events 11 and 12 follow the prover's events. The final action 17 is kept: the rejecting
+-- prefix decision records it once, and the skipped suffix decision records neither 16 nor its own
+-- 17. The private output keeps the answer 14. Stated for every draw and hidden value.
 example (draw hidden : Nat) :
-    summary false draw hidden = (⟨⟨⟩, ⟨⟩, ⟨⟩, ⟨⟩⟩, none, hidden + 14, [10, 14, 15, 11, 12]) := by
+    summary false draw hidden =
+      (⟨⟨⟩, ⟨⟩, ⟨⟩, ⟨⟩⟩, none, hidden + 14, [10, 14, 15, 11, 12, 17]) := by
   unfold summary observed verifier
   rw [OracleVerifier.run_append]
   rfl
