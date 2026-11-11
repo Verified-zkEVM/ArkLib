@@ -48,21 +48,13 @@ def event (i : Fin 4) : OracleComp events F := liftM (events.query i)
 /-- A logged effect: a prover event `.inl i`, or the `j`-th challenge draw `.inr j`. -/
 abbrev Entry := Fin 4 ⊕ ℕ
 
-
-
-/-- The challenge at every node of the computable protocol is the fixed value `x`. -/
-def constChallenge {deg : ℕ} (x : F) : (k : ℕ) →
-    (c : ChallengeNode oracleSig (protocol F deg k)) → challengeSpec oracleSig _ c
-  | 0, ⟨n, _⟩ => nomatch n
-  | _ + 1, ⟨.inl _, h⟩ => nomatch h
-  | _ + 1, ⟨.inr ⟨_, .inl _⟩, _⟩ => x
-  | k + 1, ⟨.inr ⟨_, .inr ⟨_, c⟩⟩, h⟩ => constChallenge x k ⟨c, h⟩
-
-/-- Answer every challenge with `x`, logging the draw with its position among the draws. -/
+/-- Answer every challenge with `x` through the library challenge implementation
+`Sumcheck.Core.Interpreted.draw`, logging the draw with its position among the draws. -/
 def draw {deg : ℕ} (x : F) (k : ℕ) :
-    QueryImpl (challengeSpec oracleSig (protocol F deg k)) (StateM (List Entry)) := fun c => do
-  modify fun log => log ++ [.inr (log.countP Sum.isRight)]
-  return constChallenge x k c
+    QueryImpl (challengeSpec oracleSig (protocol F deg k)) (StateM (List Entry)) :=
+  Sumcheck.Core.Interpreted.draw (do
+    modify fun log => log ++ [.inr (log.countP Sum.isRight)]
+    return x) k
 
 /-- Answer the prover's events from a fixed table, logging each event. -/
 def record : QueryImpl events (StateM (List Entry)) := fun i => do
