@@ -13,8 +13,18 @@ public import ToMathlib.Probability.ProbabilityMassFunction.TotalVariation
 /-!
 # DSFS Preliminaries
 
-This file contains preliminaries for the duplex-sponge Fiat-Shamir formalization.
-Currently it provides CO25 Lemma 3.2 about uniform preimage sampling.
+This file contains preliminaries for the duplex-sponge Fiat-Shamir formalization:
+- CO25 Lemma 3.2 (uniform preimage sampling preserves the uniform distribution), for the `PMF`
+  sampler `sampleUniformPreimage`;
+- CY24 Claim 1.2.10 (conditioning bound on total-variation distance), `claim_1_2_10`.
+
+No declaration in Section 5 uses these results yet. Section 5 samples `ψᵢ⁻¹` preimages with the
+`OracleComp` sampler `ProverTransform.uniformDeserializePreimage`, which draws an index into the
+list of the fiber `deserializePreimageFinset` with one `unifSpec` query. A proof of Claim 5.22
+that uses Lemma 3.2 needs a bridge lemma: under a handler that answers `unifSpec` queries
+uniformly, the output distribution of `uniformDeserializePreimage α` is
+`sampleUniformPreimage Deserialize.deserialize (Codec.decode_surjective i) α`. That lemma is not
+formalized yet.
 -/
 
 @[expose] public section

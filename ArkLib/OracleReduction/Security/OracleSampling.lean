@@ -199,7 +199,9 @@ The Fiat-Shamir challenge oracle (`fsChallengeOracle` / `srChallengeOracle`) is 
 `D_IP.sample` samples a single deterministic such function.
 
 DSFS Hyb3 / Hyb4 (salted) instantiate `D_IP.sample` with the *salted* statement type
-`Statement := StmtIn × Vector U δ`, i.e. `D_IP.sample (StmtIn × Vector U δ) pSpec`. -/
+`Statement := StmtIn × Salt`, i.e. `D_IP.sample (StmtIn × Salt) pSpec` (`D_IP_salted.sample` in
+`DuplexSponge/Defs.lean`). `Salt` is the binary salt type `{0,1}^{δ⋆}`; the on-sponge salt
+`Vector U δ` enters the oracle key only through `SaltCodec.encode = bin`. -/
 
 /-- Bridge instance: granular `VCVCompatible` hypotheses on statement, message, and challenge
 types suffice to derive `SampleableType (QueryImpl (fsChallengeOracle Statement pSpec) Id)`. -/
@@ -235,7 +237,7 @@ noncomputable instance instSampleableTypeFSChallengeOracle
 
 /-- `D_IP.sample` over `fsChallengeOracle Statement pSpec`:
 uniform random function from prover-prefix
-queries to challenges. DSFS Hyb3 / Hyb4 use this with `Statement := StmtIn × Vector U δ`. -/
+queries to challenges. DSFS Hyb3 / Hyb4 use this with `Statement := StmtIn × Salt`. -/
 @[reducible]
 noncomputable def D_IP.sample {n : ℕ} (Statement : Type) (pSpec : ProtocolSpec n)
     [VCVCompatible Statement]
@@ -247,7 +249,7 @@ noncomputable def D_IP.sample {n : ℕ} (Statement : Type) (pSpec : ProtocolSpec
 /-! ### `D_Σ` — §5.8 encoded-challenge oracle.
 
 Paper `D_Σ` (Hyb1) has domain
-`(i : pSpec.ChallengeIdx) × (StmtIn × Vector U δ × List <prover-prefix entries>)`
+`(i : pSpec.ChallengeIdx) × (StmtIn × Vector U δ × pSpec.EncodedMessagesBefore U i.1.castSucc)`
 and range `Vector U (challengeSize i)`.
 
 The concrete `gSpec` and `D_Sigma.sample` declarations live in `DuplexSponge/Defs.lean`; their

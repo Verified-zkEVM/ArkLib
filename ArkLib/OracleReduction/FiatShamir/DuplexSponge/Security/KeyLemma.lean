@@ -63,10 +63,11 @@ The triangle-inequality sum of the four paper bounds gives `η★` (CO25 Eq. 5).
    - `hybridGameDist`, `basicFiatShamirGameDist`, `dsfsGameDist`,
      `mappedDSFSGameDist` — game-to-`ProbComp` distribution wrappers.
 3. **`section KeyLemma`** — numerical bounds, hybrid chain, and future-proof interfaces:
-   - **Bounds**: `θ★`, `CodecBias`, `η★`, `tvDist_hybridChain4` (triangle helper),
-     `claim5_2{1,2,4}Bound`.
+   - **Bounds**: `θ★`, `CodecBias`, `η★`, `claim5_2{1,2,4}Bound`, and the Eq. (5) and Eq. (56)
+     identities `ηStar_eq_claimBounds`, `claim5_24Bound_eq_sum`.
    - **Hybrid chain (paper order)**: `hyb_0` → `hyb_1` → `hyb_2` → `hyb_3` → `hyb_4`.
    - **Query interfaces**: `IsLemma5_1QueryBound`, `IsD2SAlgoChallengeQueryBound`.
+   - **Lemma 5.1 statement**: `Lemma5_1Statement`.
 -/
 
 @[expose] public section
@@ -88,7 +89,8 @@ variable {n : ℕ} {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
   [codec : Codec pSpec U]
   {δ : Nat}
   -- Pre-encoded salt type used by FS-standard side (paper's `{0,1}^{δ⋆}`); bridged from the
-  -- on-sponge `Vector U δ` salt via `SaltCodec.encode = bin` (CO25 line 1188 / line 1729).
+  -- on-sponge `Vector U δ` salt via `SaltCodec.encode = bin` (CO25 §5.4 D2SAlgo Item 3(c);
+  -- injectivity of `bin` is used in the proof of Claim 5.23).
   {Salt : Type} [VCVCompatible Salt] [SaltCodec U δ Salt]
   [DecidableEq StmtIn] [DecidableEq U]
   {T_H : Type}
@@ -433,8 +435,8 @@ def hybridGameDist -- apply traceMap into output of `hybridGame`
           (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (Salt := Salt)
           traceMap projectedTrace
       match outputFS? with
-      | none => -- NOTE: this is for consistency with `mappedDSFSGameDist`,
-        -- even though this branch won't be reached in `Hyb₂, Hyb₃, Hyb₄`
+      | none => -- NOTE: this is for consistency with `mappedDSFSGameDist`, even though the
+        -- line-4 maps of `Hyb₁`–`Hyb₃` (the only users of this wrapper) never abort
         return some (stmtIn, stmtOut, π, [])
       | some fullTraceFS =>
           return some (stmtIn, stmtOut, π, fullTraceFS)
@@ -469,7 +471,8 @@ def dsfsGameDist
 
 /-- CO25 Lemma 5.1. Left experiment of Lemma 5.1 (`Hyb_0`): run the DSFS game under
 `𝒟_𝔖(λ,n)` and apply the line-4 trace map D2STrace = `(φ⁻¹, ψ) ∘ StdTrace` to produce a
-basic-FS query log. Corresponds to `Pr[𝒱^{h,p}(𝕩, π) = 1]` in the lemma statement. -/
+basic-FS query log. This is the full output distribution of the left experiment of Lemma 5.1, not
+only its acceptance probability `Pr[𝒱^{h,p}(𝕩, π) = 1]`. -/
 def mappedDSFSGameDist
     [instSampleable : SampleableType U]
     {σ : Type}
@@ -555,30 +558,6 @@ def ηStar (U : Type) [SpongeUnit U] [Fintype U]
   let secondTerm : ℝ := (θStar tₕ tₚ tₚᵢ : ℝ) * iSup (fun i => (εcodec i : ℝ))
   let thirdTerm : ℝ := ∑ i, (εcodec i : ℝ)
   firstTermNumerator / firstTermDenominator + secondTerm + thirdTerm
-
-/-! ### Triangle-inequality helper for the four-step hybrid chain -/
-
-omit [SpongeSize] in
-/-- CO25 §5.8. Four-step hybrid composition bound via triangle inequality.
-Combines `tvDist H₀ H₁ ≤ e₀₁`, …, `tvDist H₃ H₄ ≤ e₃₄` into
-`tvDist H₀ H₄ ≤ e₀₁ + e₁₂ + e₂₃ + e₃₄`. This remains a generic helper; the
-Section 5.8 claim statements below are exposed as public lemma surfaces. -/
-lemma tvDist_hybridChain4
-    {α : Type}
-    (H₀ H₁ H₂ H₃ H₄ : ProbComp α)
-    {e₀₁ e₁₂ e₂₃ e₃₄ : ℝ}
-    (h₀₁ : tvDist H₀ H₁ ≤ e₀₁)
-    (h₁₂ : tvDist H₁ H₂ ≤ e₁₂)
-    (h₂₃ : tvDist H₂ H₃ ≤ e₂₃)
-    (h₃₄ : tvDist H₃ H₄ ≤ e₃₄) :
-    tvDist H₀ H₄ ≤ e₀₁ + e₁₂ + e₂₃ + e₃₄ := by
-  have h₀₄ : tvDist H₀ H₄ ≤ tvDist H₀ H₁ + tvDist H₁ H₄ := by
-    simpa using tvDist_triangle H₀ H₁ H₄
-  have h₁₄ : tvDist H₁ H₄ ≤ tvDist H₁ H₂ + tvDist H₂ H₄ := by
-    simpa using tvDist_triangle H₁ H₂ H₄
-  have h₂₄ : tvDist H₂ H₄ ≤ tvDist H₂ H₃ + tvDist H₃ H₄ := by
-    simpa using tvDist_triangle H₂ H₃ H₄
-  linarith
 
 /-- CO25 Claim 5.21. Statistical-distance bound for `Hyb_0` vs `Hyb_1` (Eq. from the claim):
 `(7·T² − 3·T) / (2·|Σ|^c)` where `T = t_h + 1 + t_p + L + t_{p⁻¹}`. -/
@@ -863,31 +842,27 @@ def hyb_3
 
 /-- CO25 §5.8 Hyb_4. `Hyb_4` right-experiment distribution sampled via state-based evaluation
 (`simulateQ` with `StateT`): ambient `oSpec` answered by caller-supplied `oSpecImpl`, salted
-Fiat–Shamir oracle `f ← 𝒟_IP(λ,n)` (CO25 line 1784) sampled eagerly via `D_IP_salted.sample` —
-the **same** distribution as `Hyb_3`. The proof type `DSSaltedProof = Vector U δ ×
-pSpec.Messages` is identical on both sides; the on-sponge `Vector U δ` salt is bridged to
-the paper's `{0,1}^{δ⋆}` via `SaltCodec.encode = bin` at the FS-oracle query boundary.
+Fiat–Shamir oracle `f ← 𝒟_IP(λ,n)` (CO25 §5.8 Hyb₄, Figure 4 line 1) sampled eagerly via
+`D_IP_salted.sample`, the same distribution as `Hyb_3`. Lemma 5.1 instantiates
+`d2sAlgoTransform` with `ProverTransform.d2sAlgo` (see `Lemma5_1Statement`).
 
-**What actually changes Hyb_3 → Hyb_4 is the verifier's interpretation of `(𝕩, π)`:**
+Differences from `Hyb_3` (`hybridGame` at `M := D2SAlgoMemo …`, `gImpl := d2sCodecBridgeImplMemo`):
 
-- `Hyb_3` (`hybridGame` instantiated at `M := D2SAlgoMemo …` with
-  `gImpl := d2sCodecBridgeImplMemo`): verifier surface is `V.toDSFS δ` (paper `𝒱^{h,p}`)
-  reading `π` as a **DSFS proof**, then `liftComp` wide and `d2fRaw` wraps
-  its `(h, p)` queries through `D2SQuery^{ψ⁻¹∘f∘φ⁻¹}`.
-- `Hyb_4` (`basicFiatShamirGame`): verifier surface is `V.verify` directly on a
-  `deriveTranscriptFS`-derived transcript, reading `π` as a **standard FS proof** with
-  oracle keyed at `(𝕩, SaltCodec.encode τ)`; queries `f` directly with **no D2SQuery wrap**.
+- Prover. `Hyb_3` runs `𝒫̃^{D2SQuery^{ψ⁻¹∘f∘φ⁻¹}}` (`d2fRaw` with the memoized bridge) and keeps
+  the on-sponge salt `Vector U δ`; `hybridGameDist` reports `π = (bin τ, messages)`. `Hyb_4`
+  runs `d2sAlgo`, which is the same pipeline (`D2FQueryProver`) followed by `bin` on the salt
+  (D2SAlgo Items 4-6), and returns `FSSaltedProof pSpec Salt` directly. The two prover phases make
+  the same queries. On a prover abort both games continue with the proof
+  `(default, (SaltCodec.encode default, default))`.
+- Verifier. `Hyb_3` runs `𝒱^{h,p}` on the DSFS proof, with its `(h, p)` queries answered by
+  `D2SQuery` from the prover's `D2SQuery` state and a fresh `tr_i` memo; it can abort inside
+  `D2SQuery`. `Hyb_4` runs `𝒱_std^f` (`basicFSVerifierComp`) on the FS proof and queries `f` at
+  `(𝕩, bin τ, messages)` directly.
 
-The prover surface is **identical** on both sides (paper Eq. 17): `Hyb_3` uses
-`𝒫̃^{D2SQuery^{ψ⁻¹∘f∘φ⁻¹}}` = `D2FQueryProver` (`d2sQueryImpl` composed with the
-`tr_i`-memoized bridge `d2sCodecBridgeImplMemo` from CO25 §5.4 D2SAlgo Item 3); `Hyb_4`
-uses `D2SAlgo^f(𝒫̃)` = `d2sAlgo`, which is `D2FQueryProver` post-processed by
-`SaltCodec.encode` on the salt component (Items 4-6). Both run the same memo-threaded
-inner loop, so the response distribution is identical at the prover surface.
-
-The non-zero Claim 5.24 bound comes from the verifier asymmetry only: `Hyb_3`'s verifier
-can abort via `D2SQuery` parse failure; `Hyb_4`'s `𝒱_std^f` cannot (no D2SQuery wrap on
-V path). The gap is exactly the paper's `Pr[E_𝒱]`. -/
+CO25 Claim 5.24 bounds the distance by `Pr[E_𝒱]`, the probability that the verifier's `D2SQuery`
+aborts while the prover's does not, and Eq. (57) states that the hybrids agree otherwise. Neither
+step is formalized. The paper's argument compares the decision bits and the challenges `ρᵢ`;
+the trace components `tr` must also agree for the full output distributions to agree. -/
 def hyb_4
     (oSpecImpl : QueryImpl oSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
