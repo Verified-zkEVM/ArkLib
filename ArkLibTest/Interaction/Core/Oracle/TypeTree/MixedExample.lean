@@ -38,7 +38,7 @@ end UniverseCanary
 
 -- MixedExample fixture: the frozen tree's public node is re-authored as a prover message.
 /-- A public bit selects a `Bool` oracle payload or a `Fin 3` oracle payload. -/
-@[instance_reducible] def mixedTree : OracleProtocol :=
+def mixedTree : OracleProtocol :=
   .liftBind (.message Bool) fun
     | false => .liftBind (.oracle Bool OracleInterface.instDefault) (fun _ => .pure ⟨⟩)
     | true => .liftBind (.oracle (Fin 3) OracleInterface.instDefault) (fun _ => .pure ⟨⟩)
@@ -82,5 +82,8 @@ example (x y : Fin 3) :
     (toView mixedTree ⟨true, x, ⟨⟩⟩).val = (toView mixedTree ⟨true, y, ⟨⟩⟩).val := rfl
 
 example : (toView mixedTree finPayload).val = ⟨true, ⟨⟩, ⟨⟩⟩ := rfl
+
+/-- The runtime transcript contains the public branch and the complete `Fin 3` payload. -/
+theorem finPayload_runtime : finPayload = ⟨true, (2 : Fin 3), ⟨⟩⟩ := rfl
 
 end Interaction.Core.MixedExampleTests

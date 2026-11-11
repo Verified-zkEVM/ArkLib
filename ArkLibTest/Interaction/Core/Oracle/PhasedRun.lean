@@ -20,14 +20,14 @@ namespace Interaction.Core.PhasedRunTests
 abbrev ambient : OracleSpec Nat := Nat →ₒ Unit
 
 /-- No input oracles. -/
-@[instance_reducible] def noInputs : OracleFamily PEmpty (fun i => PEmpty.elim i) :=
+def noInputs : OracleFamily PEmpty (fun i => PEmpty.elim i) :=
   ⟨fun i => i.elim⟩
 
 /-- The empty input data. -/
 def noData : ∀ i : PEmpty, PEmpty.elim i := fun i => i.elim
 
 /-- The prover sends a public bit, receives a challenge bit, then sends a hidden scalar. -/
-@[instance_reducible] def phased : OracleProtocol :=
+def phased : OracleProtocol :=
   .liftBind (.message Bool) (fun _ => .liftBind (.challenge Bool) (fun _ =>
     .liftBind (.oracle Nat OracleInterface.instDefault) (fun _ => .pure ⟨⟩)))
 

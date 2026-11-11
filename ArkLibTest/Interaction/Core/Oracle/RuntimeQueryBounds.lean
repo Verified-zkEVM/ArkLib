@@ -7,6 +7,7 @@ Authors: Quang Dao
 import ArkLibTest.Interaction.Core.Oracle.HiddenBitFixture
 import ArkLibTest.Interaction.Core.Support
 import VCVio.OracleComp.QueryTracking.QueryBound.Simulation
+import VCVio.OracleComp.EvalDist.AnswerMeasure
 
 /-! Access certificates for the hidden-bit composition of
 `ArkLibTest.Interaction.Core.Oracle.HiddenBitFixture`. The prefix exports its input slot and its
@@ -130,5 +131,66 @@ theorem routed_suffix_access (p : Path bitCombined) (v : View bitCombined p) :
         (pathResources bits bitCombined (combinedPath guess)).spec)
         (.inr (.inl ⟨(), ()⟩)) _).mpr rfl
   · exact i.elim
+
+/-- The observation of the hidden-bit protocol, including the materialized output oracle. -/
+abbrev BitObservation := Observation oracleSig bitCombined (fun _ => Nat)
+  (OracleVerifier.Output (fun _ => Bool) (fun _ (_ : Unit) => Bool))
+
+/-- Compare the actual output-oracle answer with the accepted target bit. -/
+def answers (observation : BitObservation) : Option (Bool × Bool) :=
+  observation.2.2.map fun claim => (claim.2 (), claim.1)
+
+/-- The fixed guess and the actual target bit are both retained by the runtime execution. -/
+theorem guess_answers (guess : Bool) (secret : Nat) :
+    (fun result => answers result.output) <$>
+      bitRuntime.run (bitVerifier.run () falseData (guessProver guess secret)) =
+    (fun hidden => some (guess, hidden)) <$> (coinSpec.query () : OracleComp coinSpec Bool) := by
+  calc
+    _ = (fun hidden => some (guess ^^ false, hidden ^^ false)) <$>
+        (coinSpec.query () : OracleComp coinSpec Bool) := by kernel_rfl
+    _ = _ := by simp only [Bool.xor_false]
+
+/-- A prover querying the hidden bit returns that bit as both output answer and target. -/
+theorem informed_answers (secret : Nat) :
+    (fun result => answers result.output) <$>
+      bitRuntime.run (bitVerifier.run () falseData (informedProver secret)) =
+    (fun hidden => some (hidden, hidden)) <$> (coinSpec.query () : OracleComp coinSpec Bool) := by
+  calc
+    _ = (fun hidden => some (hidden ^^ false, hidden ^^ false)) <$>
+        (coinSpec.query () : OracleComp coinSpec Bool) := by kernel_rfl
+    _ = _ := by simp only [Bool.xor_false]
+
+open MeasureTheory in
+/-- Every fixed guess matches the accepted output-oracle answer with probability one half. -/
+theorem guess_success (guess : Bool) (secret : Nat) :
+    Pr{let result ← bitRuntime.run (bitVerifier.run () falseData (guessProver guess secret))}[
+      (answers result.output).map (fun pair => pair.1 = pair.2) = some True] =
+      (2 : ENNReal)⁻¹ := by
+  have mass := congrArg (fun program : OracleComp coinSpec (Option (Bool × Bool)) =>
+    Pr{let pair ← program}[pair.map (fun pair : Bool × Bool => pair.1 = pair.2) = some True])
+    (guess_answers guess secret)
+  simp only [prEvent_map] at mass
+  refine mass.trans ?_
+  simp only [Option.map_some, Option.some.injEq]
+  rw [prEvent_eq_evalDist_of_discrete,
+    OracleComp.evalDist_liftM_query_apply (spec := coinSpec) () MeasurableSet.of_discrete]
+  have event : {hidden : Bool | (guess = hidden) = True} = {guess} := by
+    ext hidden
+    simp only [Set.mem_ofPred_eq, Set.mem_singleton_iff, eq_iff_iff, true_iff, eq_comm]
+  rw [event, OracleSpec.UniformAnswerMeasure.toMeasure_singleton]
+  rfl
+
+/-- The query-informed prover's actual output-oracle answer matches the target with probability
+one; resource access alone does not imply the fixed-guess half bound. -/
+theorem informed_success (secret : Nat) :
+    Pr{let result ← bitRuntime.run (bitVerifier.run () falseData (informedProver secret))}[
+      (answers result.output).map (fun pair => pair.1 = pair.2) = some True] = 1 := by
+  have mass := congrArg (fun program : OracleComp coinSpec (Option (Bool × Bool)) =>
+    Pr{let pair ← program}[pair.map (fun pair : Bool × Bool => pair.1 = pair.2) = some True])
+    (informed_answers secret)
+  simp only [prEvent_map] at mass
+  refine mass.trans ?_
+  simp only [Option.map_some, eq_self, prEvent_true_eq_evalDist_apply_univ,
+    OracleComp.evalDist_apply_univ_eq_one]
 
 end Interaction.Core.RuntimeQueryBoundsTests

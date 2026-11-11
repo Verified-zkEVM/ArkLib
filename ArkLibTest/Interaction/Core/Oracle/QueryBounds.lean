@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Interaction.Core.Oracle.Routing
+import ArkLib.Interaction.Core.Oracle.LoggedExecution
 import ArkLibTest.Interaction.Core.Support
 import VCVio.OracleComp.QueryTracking.QueryBound.Simulation
 
@@ -25,14 +26,14 @@ namespace Interaction.Core.QueryBoundsTests
 abbrev ambient : OracleSpec Nat := Nat →ₒ Nat
 
 /-- No input oracles; also the empty output family. -/
-@[instance_reducible] def none' : OracleFamily PEmpty (fun i => PEmpty.elim i) :=
+def none' : OracleFamily PEmpty (fun i => PEmpty.elim i) :=
   ⟨fun i => i.elim⟩
 
 /-- The empty input data. -/
 def noData : ∀ i : PEmpty, PEmpty.elim i := fun i => i.elim
 
 /-- One scalar oracle send; both components of the composition are this protocol. -/
-@[instance_reducible] def single : OracleProtocol :=
+def single : OracleProtocol :=
   .liftBind (.oracle Nat OracleInterface.instDefault) (fun _ => .pure ⟨⟩)
 
 /-- The prefix send, then the suffix send. -/
@@ -45,7 +46,7 @@ abbrev singlePath : Path single := ⟨⟨⟩, ⟨⟩⟩
 abbrev combinedPath : Path combined := ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
 
 /-- One exported scalar oracle. -/
-@[instance_reducible] def exported : OracleFamily Unit (fun _ => Nat) :=
+def exported : OracleFamily Unit (fun _ => Nat) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
 /-- The prefix decision resources. -/
@@ -223,5 +224,29 @@ example (a b : Nat) : (splitOracles single (fun _ => single) combinedPath).f
 example (a b : Nat) : (splitOracles single (fun _ => single) combinedPath).f
     (payloads combined (PathAlong.append oracleSig single (fun _ => single) ⟨a, ⟨⟩⟩ ⟨b, ⟨⟩⟩))
     (.inr (.inl ⟨⟩)) = b := rfl
+
+-- The full decision log fixes input indices and queries to `Type`; output queries stay
+-- independent. See interaction rebuild implementation note 18.
+/-- Private output, verdict and every raw decision query of the composed logged run. -/
+def loggedSummary.{qJ} (a b : Nat) :
+    Nat × Option Nat × QueryLog (ambient + rawResources.spec) :=
+  let result := simulateQ tagHandler
+    (composed.{0, 0, 0, qJ}.runWithLog () noData (prover a b))
+  (result.1.2.1, result.1.2.2.map Prod.fst, result.2.2)
+
+/-- One exported query expands into two separately recorded prefix reads, then the suffix read.
+The same run keeps the private sum and accepts with the doubled prefix plus the suffix. -/
+theorem loggedSummary_eq (a b : Nat) :
+    loggedSummary.{wJ} a b =
+      (a + b, some (a + a + b),
+        [⟨.inr prefixSlot, a⟩, ⟨.inr prefixSlot, a⟩, ⟨.inr suffixSlot, b⟩]) := by
+  kernel_rfl
+
+/-- Prefix value one and suffix value two recover the concrete repeated-read observation. -/
+example : loggedSummary.{0} 1 2 =
+    (3, some 4,
+      [⟨.inr prefixSlot, (1 : Nat)⟩, ⟨.inr prefixSlot, (1 : Nat)⟩,
+        ⟨.inr suffixSlot, (2 : Nat)⟩]) :=
+  loggedSummary_eq 1 2
 
 end Interaction.Core.QueryBoundsTests

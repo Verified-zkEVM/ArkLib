@@ -17,19 +17,19 @@ open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle OracleComp Orac
 namespace Interaction.Core.AccessExampleTests
 
 /-- One scalar input slot. -/
-@[instance_reducible] def inputs : OracleFamily Unit (fun _ => Nat) :=
+def inputs : OracleFamily Unit (fun _ => Nat) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
 /-- The input data: the single slot holds 7. -/
 def seven : ∀ _ : Unit, Nat := fun _ => 7
 
 /-- The part of `accessTree` before its oracle send: the public bit. -/
-@[instance_reducible] def before : OracleProtocol :=
+def before : OracleProtocol :=
   .liftBind (.message Bool) (fun _ => .pure ⟨⟩)
 
 /-- The part of `accessTree` after the public bit: a branch-dependent oracle send, then a public
 message. -/
-@[instance_reducible] def after : Path before → OracleProtocol
+def after : Path before → OracleProtocol
   | ⟨false, ⟨⟩⟩ => .liftBind (.oracle Bool OracleInterface.instDefault)
       (fun _ => .liftBind (.message (Fin 2)) (fun _ => .pure ⟨⟩))
   | ⟨true, ⟨⟩⟩ => .liftBind (.oracle (Fin 3) OracleInterface.instDefault)
@@ -114,13 +114,13 @@ example : oracles accessTree (projectPathAlong oracleSig accessTree leftPath) =
     oracles accessTree (projectPathAlong oracleSig accessTree rightPath) := rfl
 
 /-- Only the first coordinate of a sent pair is observable. -/
-@[reducible] def firstInterface : OracleInterface (Nat × Nat) where
+@[instance_reducible] def firstInterface : OracleInterface (Nat × Nat) where
   Query := Unit
   toOC.spec := fun _ => Nat
   toOC.impl _ := do return (← read).1
 
 /-- One pair send followed by the leaf. -/
-@[instance_reducible] def terminalTree : OracleProtocol :=
+def terminalTree : OracleProtocol :=
   .liftBind (.oracle (Nat × Nat) firstInterface) (fun _ => .pure ⟨⟩)
 
 /-- The only shape path of `terminalTree`. -/
@@ -174,7 +174,7 @@ example : True := by
   trivial
 
 /-- Two pair sends. -/
-@[instance_reducible] def twoSends : OracleProtocol :=
+def twoSends : OracleProtocol :=
   .liftBind (.oracle (Nat × Nat) firstInterface)
     (fun _ => .liftBind (.oracle (Nat × Nat) firstInterface) (fun _ => .pure ⟨⟩))
 

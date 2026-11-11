@@ -26,25 +26,25 @@ abbrev UniverseProtocol := OracleProtocol.{uProtocol}
 end UniverseCanary
 
 /-- The public future after the `Bool` oracle node. -/
-@[instance_reducible] def falseFuture : OracleProtocol :=
+def falseFuture : OracleProtocol :=
   .liftBind (.message (Fin 2)) (fun _ => .pure ⟨⟩)
 
-/-- The public future after the `Fin 3` oracle node. -/
-@[instance_reducible] def trueFuture : OracleProtocol :=
-  .liftBind (.message Bool) (fun _ => .pure ⟨⟩)
+/-- The receiver-owned public future after the `Fin 3` oracle node. -/
+def trueFuture : OracleProtocol :=
+  .liftBind (.challenge Bool) (fun _ => .pure ⟨⟩)
 
 /-- The oracle subtree selected by `false`. -/
-@[instance_reducible] def falseOracle : OracleProtocol :=
+def falseOracle : OracleProtocol :=
   .liftBind (.oracle Bool OracleInterface.instDefault) (fun _ => falseFuture)
 
 /-- The oracle subtree selected by `true`. -/
-@[instance_reducible] def trueOracle : OracleProtocol :=
+def trueOracle : OracleProtocol :=
   .liftBind (.oracle (Fin 3) OracleInterface.instDefault) (fun _ => trueFuture)
 
 -- DecorationExample fixture: the frozen tree's receiver-owned root is re-authored as a prover
 -- message, since challenges never select the shape.
 /-- A public bit selects two different oracle nodes and two different public futures. -/
-@[instance_reducible] def mixedTree : OracleProtocol :=
+def mixedTree : OracleProtocol :=
   .liftBind (.message Bool) fun
     | false => falseOracle
     | true => trueOracle
@@ -85,5 +85,43 @@ def trueOracleCursor : Cursor.Spine mixedTree trueOracle := .down true (.root _)
 example : owner oracleSig (Node.position mixedTree falseNode) = .sender := rfl
 
 example : owner oracleSig (Node.position mixedTree trueNode) = .sender := rfl
+
+/-- The root is the sender's branch-selecting public message. -/
+theorem root_owner : owner oracleSig (Node.position mixedTree (.inl ⟨⟩)) = .sender := rfl
+
+/-- The public node reached through the Boolean oracle marker. -/
+def falseFutureNode : Node mixedTree := .inr ⟨false, .inr ⟨⟨⟩, .inl ⟨⟩⟩⟩
+
+/-- The public node reached through the `Fin 3` oracle marker. -/
+def trueFutureNode : Node mixedTree := .inr ⟨true, .inr ⟨⟨⟩, .inl ⟨⟩⟩⟩
+
+/-- The cursor crosses the Boolean oracle marker to the sender's public future. -/
+def falseFutureCursor : Cursor.Spine mixedTree falseFuture :=
+  .down false (.down ⟨⟩ (.root _))
+
+/-- The cursor crosses the `Fin 3` oracle marker to the receiver's public future. -/
+def trueFutureCursor : Cursor.Spine mixedTree trueFuture :=
+  .down true (.down ⟨⟩ (.root _))
+
+/-- The Boolean oracle is followed by a public `Fin 2` message. -/
+theorem falseFuture_position :
+    Node.position mixedTree falseFutureNode = .message (Fin 2) := rfl
+
+/-- The `Fin 3` oracle is followed by a public Boolean challenge. -/
+theorem trueFuture_position : Node.position mixedTree trueFutureNode = .challenge Bool := rfl
+
+/-- Crossing the Boolean oracle marker reaches a sender-owned public future. -/
+theorem falseFuture_owner :
+    owner oracleSig (Node.position mixedTree falseFutureNode) = .sender := rfl
+
+/-- Crossing the `Fin 3` oracle marker reaches a receiver-owned public future. -/
+theorem trueFuture_owner :
+    owner oracleSig (Node.position mixedTree trueFutureNode) = .receiver := rfl
+
+/-- The two oracle markers lead to distinct public position constructors. -/
+theorem future_positions_ne :
+    Node.position mixedTree falseFutureNode ≠ Node.position mixedTree trueFutureNode := by
+  intro equal
+  cases equal
 
 end Interaction.Core.DecorationExampleTests

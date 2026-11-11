@@ -10,13 +10,13 @@ import ArkLib.Interaction.Core.Security.RoundByRound
 `PrefixMoves oracleSig sp`, so hidden oracle payloads stay in the prefix while the spine records
 only shape branches. Oracle slots are typed by the completed shape path. -/
 
-open PFunctor PFunctor.FreeM Interaction.Core Interaction.TwoParty.Lens
+open PFunctor PFunctor.FreeM Interaction.Core Interaction.TwoParty.Lens OracleComp
 
 namespace Interaction.Core.PrefixTests
 
 -- Prefix fixture: the frozen tree's public node is re-authored as a prover message.
 /-- One hidden `Bool` payload followed by a public `Fin 3` message. -/
-@[instance_reducible] def mixed : OracleProtocol :=
+def mixed : OracleProtocol :=
   .liftBind (.oracle Bool OracleInterface.instDefault)
     (fun _ => .liftBind (.message (Fin 3)) (fun _ => .pure ⟨⟩))
 
@@ -61,7 +61,7 @@ example : (FreeM.pure ⟨⟩ : OracleProtocol).append (fun _ => mixed) = mixed :
 example : IsEmpty (oracleIdx (.pure ⟨⟩) ⟨⟩) := inferInstanceAs (IsEmpty PEmpty)
 
 /-- One send of an `Empty` payload. -/
-@[instance_reducible] def emptySend : OracleProtocol :=
+def emptySend : OracleProtocol :=
   .liftBind (.oracle Empty OracleInterface.instDefault) (fun _ => .pure ⟨⟩)
 
 -- Prefix 5, restated: the root prefix exists for an `Empty` payload type, and so does the shape
@@ -91,5 +91,21 @@ example : PrefixMoves.complete oracleSig full fullMoves = ⟨true, (2 : Fin 3), 
 
 -- Prefix 8, restated: the first entry of the complete prefix is the hidden payload `true`.
 example : fullMoves.1.1 = true := rfl
+
+/-- The actual prefix ending immediately after the oracle send, before the public choice. -/
+def oraclePrefix : OracleProtocol :=
+  .liftBind (.oracle Bool OracleInterface.instDefault) (fun _ => .pure ⟨⟩)
+
+/-- The crossed-send prefix followed by the public future is exactly the original protocol. -/
+theorem oraclePrefix_append :
+    oraclePrefix.append (fun _ => .liftBind (.message (Fin 3)) (fun _ => .pure ⟨⟩)) = mixed := rfl
+
+/-- A decision at the crossed-send boundary can query the oracle without choosing a future. -/
+def prefixQuery : OracleComp (oracles oraclePrefix ⟨⟨⟩, ⟨⟩⟩) Bool :=
+  liftM ((oracles oraclePrefix ⟨⟨⟩, ⟨⟩⟩).query ⟨.inl ⟨⟩, ()⟩)
+
+/-- The oracle available at the crossed-send boundary answers from that prefix's own payload. -/
+theorem crossed_send_answer (message : Bool) :
+    simulateQ (payloadImpl oraclePrefix ⟨message, ⟨⟩⟩) prefixQuery = message := rfl
 
 end Interaction.Core.PrefixTests

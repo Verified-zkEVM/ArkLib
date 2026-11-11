@@ -221,6 +221,52 @@ theorem import_budget (guess : Bool) (secret : Nat) :
   rw [guess_history]
   exact (worstCaseCostBound_map_iff _ _ importCost 1).mpr (worstCaseCostBound_query () importCost)
 
+/-- The fixed guessing prover has the certified export, source and routed cost bounds, one
+import query, the charged runtime history, and success probability one half in the same run. -/
+theorem fixed_resource_bounds (guess : Bool) (secret : Nat) :
+    (∀ v : View bitFirst firstPath,
+      (bitPrefix.decide () firstPath v).run = (do
+        let _ : Bool ← liftM ((bitAmbient + firstResources.spec).query (.inl false))
+        pure (some ())) ∧
+      exportMap v = OracleMap.fst _ _ ∧
+      AllQueriesSatisfy ((exportMap v).impl ⟨(), ()⟩) (fun q => q = .inl ⟨(), ()⟩) ∧
+      WorstCaseCostBound ((exportMap v).impl ⟨(), ()⟩) inputCost 2) ∧
+    (∀ (p : Path bitCombined) (v : View bitCombined p),
+      AllQueriesSatisfy (routedSuffix p v) (rawAllowed p) ∧
+      WorstCaseCostBound (routedSuffix p v) (bitRawCost p) 5) ∧
+    WorstCaseCostBound (bitRuntime.run (bitVerifier.run () falseData (guessProver guess secret)))
+      importCost 1 ∧
+    ((fun result => (result.state, result.trace, bitCharge result.trace.fst)) <$>
+      bitRuntime.run (bitVerifier.run () falseData (guessProver guess secret)) =
+      (fun hidden => ((hidden, 2),
+        ([⟨challengeEntry, ()⟩, ⟨.inl false, false⟩, ⟨.inl true, hidden⟩] : QueryLog bitFull), 4))
+        <$> (coinSpec.query () : OracleComp coinSpec Bool)) ∧
+    Pr{let result ← bitRuntime.run (bitVerifier.run () falseData (guessProver guess secret))}[
+      (answers result.output).map (fun pair => pair.1 = pair.2) = some True] ≤
+      (2 : ENNReal)⁻¹ := by
+  refine ⟨?_, ?_, import_budget guess secret, guess_history guess secret,
+    (guess_success guess secret).le⟩
+  · intro v
+    exact ⟨rfl, rfl, export_access v,
+      worstCaseCostBound_query (spec := firstResources.spec) (.inl ⟨(), ()⟩) inputCost⟩
+  · intro p v
+    exact ⟨routed_suffix_access p v, routed_suffix_budget p v⟩
+
+/-- The query-informed prover has chronological ambient charge seven and success one. Its
+reveal precedes the passive prefix decision's dummy request. -/
+theorem informed_cost_does_not_give_half (secret : Nat) :
+    ((fun result => (result.state, result.trace, bitCharge result.trace.fst)) <$>
+      bitRuntime.run (bitVerifier.run () falseData (informedProver secret)) =
+      (fun hidden => ((hidden, 3),
+        ([⟨challengeEntry, ()⟩, ⟨.inl true, hidden⟩, ⟨.inl false, false⟩, ⟨.inl true, hidden⟩] :
+          QueryLog bitFull), 7)) <$> (coinSpec.query () : OracleComp coinSpec Bool)) ∧
+    Pr{let result ← bitRuntime.run (bitVerifier.run () falseData (informedProver secret))}[
+      (answers result.output).map (fun pair => pair.1 = pair.2) = some True] = 1 := by
+  refine ⟨?_, informed_success secret⟩
+  unfold bitVerifier
+  rw [OracleVerifier.run_append]
+  kernel_rfl
+
 end Interaction.Core.QueryCostTests
 
 /-! ## Query profiles: `PhasedRun.lean` -/
