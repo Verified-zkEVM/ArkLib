@@ -83,7 +83,8 @@ theorem run_honest_eval (stmt : Spec.StatementRound R n 0) (p : Spec.OracleState
         honestOutput D stmt (fun _ => p) chals,
         some (⟨MvPolynomial.eval chals p.val, chals⟩, fun _ => p)⟩ :
           Observation oracleSig (protocol R deg n) (fun _ => HonestOutput R deg n)
-            (Spec.StatementRound R n (Fin.last n) × ∀ i, Spec.OracleStatement R n deg i))) <$>
+            (fun _ => Spec.StatementRound R n (Fin.last n) × ∀ i, Spec.OracleStatement R n deg i)))
+              <$>
         drawChallenges n (fun c =>
           liftM ((amb + challengeSpec oracleSig (protocol R deg n)).query (.inr c))) := by
   rw [run_verifier_honestProver]
@@ -195,7 +196,7 @@ abbrev drawOf (n : ℕ) :=
 /-- The observation of a three-round run on the claim `t` about `p3`. -/
 abbrev Obs (n : ℕ) :=
   Observation oracleSig (protocol K 1 n) (fun _ => HonestOutput K 1 n)
-    (Spec.StatementRound K n (Fin.last n) × ∀ i, Spec.OracleStatement K n 1 i)
+    (fun _ => Spec.StatementRound K n (Fin.last n) × ∀ i, Spec.OracleStatement K n 1 i)
 
 /-! ## Three rounds -/
 

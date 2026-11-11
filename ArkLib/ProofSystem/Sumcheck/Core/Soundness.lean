@@ -40,12 +40,13 @@ for every prover. -/
 theorem verifier_soundness [Fintype R] [IsDomain R] :
     ∀ Out : PathAlong oracleSig (protocol R deg n) → Type,
       letI : MeasurableSpace (Observation oracleSig (protocol R deg n) Out
-        (Spec.StatementRound R n (Fin.last n) × (∀ i, Spec.OracleStatement R n deg i))) := ⊤
+        (fun _ => Spec.StatementRound R n (Fin.last n) × (∀ i, Spec.OracleStatement R n deg i))) :=
+          ⊤
       soundness ((verifier R deg n D ambient).classicalModel (Out := Out) init impl
           (challengeQueryImpl oracleSig (protocol R deg n)))
         (langProblem (Spec.relationRound R n deg D 0).language)
         (langProblem (Spec.relationRound R n deg D (Fin.last n)).language)
-        (fun obs => obs.2.2)
+        (fun obs => projectPathAlong oracleSig _ obs.1) (fun obs => obs.2.2)
         ((∑ _ : (Spec.pSpec R deg n).ChallengeIdx, (deg : ℝ≥0) / Fintype.card R : ℝ≥0) :
           ℝ≥0∞) := by
   let : ∀ t, Inhabited (ambient.Range t) := fun t => ⟨supportedAnswer init impl t⟩
@@ -54,7 +55,8 @@ theorem verifier_soundness [Fintype R] [IsDomain R] :
   refine ((verifier_agrees R deg n D ambient).soundness_iff (mObs := ⊤) init impl _ _ _ _ _).mpr ?_
   revert Out
   refine (OracleVerifier.soundness_cast _ _ _ _ _ _ _ _).mpr ?_
-  exact (oracleSoundness_iff init impl (Spec.oracleVerifier R deg D n ambient) _ _ _).mpr
+  simpa only [OracleVerifier.langProblem_cast, polyFamily, family] using (oracleSoundness_iff init
+    impl (Spec.oracleVerifier R deg D n ambient) _ _ _).mpr
     (OracleVerifier.soundness_of_rbrSoundness_of_guarded
       (Spec.oracleVerifierGuardedForm R deg D n ambient)
       (_root_.Verifier.rbrSoundness_of_rbrKnowledgeSoundness (init := init) (impl := impl)
@@ -94,12 +96,13 @@ theorem card_challengeIdx : Fintype.card (Spec.pSpec R deg n).ChallengeIdx = n :
 theorem verifier_soundness_rounds [Fintype R] [IsDomain R] :
     ∀ Out : PathAlong oracleSig (protocol R deg n) → Type,
       letI : MeasurableSpace (Observation oracleSig (protocol R deg n) Out
-        (Spec.StatementRound R n (Fin.last n) × (∀ i, Spec.OracleStatement R n deg i))) := ⊤
+        (fun _ => Spec.StatementRound R n (Fin.last n) × (∀ i, Spec.OracleStatement R n deg i))) :=
+          ⊤
       soundness ((verifier R deg n D ambient).classicalModel (Out := Out) init impl
           (challengeQueryImpl oracleSig (protocol R deg n)))
         (langProblem (Spec.relationRound R n deg D 0).language)
         (langProblem (Spec.relationRound R n deg D (Fin.last n)).language)
-        (fun obs => obs.2.2)
+        (fun obs => projectPathAlong oracleSig _ obs.1) (fun obs => obs.2.2)
         ((n * ((deg : ℝ≥0) / Fintype.card R) : ℝ≥0) : ℝ≥0∞) := by
   have h := verifier_soundness R deg n D ambient init impl
   rwa [Finset.sum_const, Finset.card_univ, card_challengeIdx, nsmul_eq_mul] at h

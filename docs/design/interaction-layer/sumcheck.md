@@ -125,7 +125,7 @@ The acceptance tests are in `ArkLibTest/ProofSystem/Sumcheck/Core/`.
 ## Open
 
 The verifier covers rounds `0` to `n`. There is no verifier for an interval of rounds that starts
-at round `i` (departure 18). The following are not ported and are deferred to the remaining
+at round `i` (departure 21). The following are not ported and are deferred to the remaining
 Sumcheck ports of part D, commit 7. Open question OQ16 of the part-D decisions settles their
 design: the projection `OracleMap` is the round's output map in `Sumcheck/Core/SingleRound.lean`,
 with `projectedRoundPolynomial` as its data map, `simulateProjectedRoundPolynomial` as its query
@@ -221,7 +221,7 @@ data, all `n` rounds, a passive verifier. Tests are in `ArkLibTest/ProofSystem/S
 
 These entries continue the numbering of [`departures.md`](departures.md).
 
-### 17. The transferred completeness is in its own module
+### 20. The transferred completeness is in its own module
 
 **Plan.** The implementation plan for the Sumcheck modules lists `Completeness` as the home of completeness.
 
@@ -234,7 +234,7 @@ so it cannot live in `Completeness`. The two theorems state different things: th
 for the interaction-layer honest prover and every challenge implementation; the transferred one is
 for the embedded legacy honest prover with uniform challenges, and judges the output witness.
 
-### 18. The verifier has no interval start
+### 21. The verifier has no interval start
 
 **Migration.** The migration list of the frozen Sumcheck tests restates several assertions on a run that
 starts at round `i`: a single round of a multi-round statement, and the split of `n + 1` rounds

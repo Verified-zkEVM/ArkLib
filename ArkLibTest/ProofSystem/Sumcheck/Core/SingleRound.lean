@@ -62,7 +62,7 @@ theorem verdict_fail (stmt : Spec.StatementRound R 1 0) (q : R⦃≤ deg⦄[X]) 
 /-- The observation of a one-round run at the challenge `c`. -/
 abbrev Obs1 (Out : Type) :=
   Observation oracleSig (protocol R deg 1) (fun _ => Out)
-    (Spec.StatementRound R 1 (Fin.last 1) × ∀ i, Spec.OracleStatement R 1 deg i)
+    (fun _ => Spec.StatementRound R 1 (Fin.last 1) × ∀ i, Spec.OracleStatement R 1 deg i)
 
 /-- The observation of the committed run at the challenge `c`. -/
 noncomputable def obs1 {Out : Type} (q : R⦃≤ deg⦄[X]) (finish : R → Out)

@@ -26,16 +26,17 @@ noncomputable section
 def accepted {R : Type} [CommSemiring R] {deg n : ℕ} {d : ℕ} (D : Fin d ↪ R)
     {Out : FreeM.PathAlong oracleSig (protocol R deg n) → Type} :
     Set (Observation oracleSig (protocol R deg n) Out
-      (Spec.StatementRound R n (Fin.last n) × (∀ i, Spec.OracleStatement R n deg i))) :=
+      (fun _ => Spec.StatementRound R n (Fin.last n) × (∀ i, Spec.OracleStatement R n deg i))) :=
   {obs | ∃ t, obs.2.2 = some t ∧ t ∈ (Spec.relationRound R n deg D (Fin.last n)).language}
 
 /-- The soundness event of the Sumcheck languages is the acceptance event. -/
 theorem soundnessEvent_eq {R : Type} [CommSemiring R] {deg n : ℕ} {d : ℕ} (D : Fin d ↪ R)
     {Out : FreeM.PathAlong oracleSig (protocol R deg n) → Type} :
     {obs : Observation oracleSig (protocol R deg n) Out
-        (Spec.StatementRound R n (Fin.last n) × (∀ i, Spec.OracleStatement R n deg i)) |
+        (fun _ => Spec.StatementRound R n (Fin.last n) × (∀ i, Spec.OracleStatement R n deg i)) |
       ∃ t, obs.2.2 = some t ∧
-        (langProblem (Spec.relationRound R n deg D (Fin.last n)).language).language () t} =
+        (langProblem (Spec.relationRound R n deg D (Fin.last n)).language).language
+          (FreeM.projectPathAlong oracleSig _ obs.1) t} =
       accepted D := by
   ext obs
   exact exists_congr fun t => and_congr_right fun _ => langProblem_language _ t
@@ -87,12 +88,12 @@ theorem oneRound_soundness {Out : FreeM.PathAlong oracleSig (protocol R deg 1) �
     (stmt : Spec.StatementRound R 1 0) (oStmt : ∀ i, Spec.OracleStatement R 1 deg i)
     (hfalse : (stmt, oStmt) ∉ (Spec.relationRound R 1 deg D 0).language) :
     letI : MeasurableSpace (Observation oracleSig (protocol R deg 1) Out
-      (Spec.StatementRound R 1 (Fin.last 1) × (∀ i, Spec.OracleStatement R 1 deg i))) := ⊤
+      (fun _ => Spec.StatementRound R 1 (Fin.last 1) × (∀ i, Spec.OracleStatement R 1 deg i))) := ⊤
     𝒟[experiment init impl (challengeQueryImpl oracleSig (protocol R deg 1))
         ((verifier R deg 1 D amb).run stmt oStmt P)] (accepted D) ≤
       (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞) := by
   let : MeasurableSpace (Observation oracleSig (protocol R deg 1) Out
-      (Spec.StatementRound R 1 (Fin.last 1) × (∀ i, Spec.OracleStatement R 1 deg i))) := ⊤
+      (fun _ => Spec.StatementRound R 1 (Fin.last 1) × (∀ i, Spec.OracleStatement R 1 deg i))) := ⊤
   have h := verifier_soundness_rounds R deg 1 D amb init impl Out (stmt, oStmt) trivial
     (by simpa only [langProblem_language] using hfalse) P
   rw [Nat.cast_one, one_mul] at h

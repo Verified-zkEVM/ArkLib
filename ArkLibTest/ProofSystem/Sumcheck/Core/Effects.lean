@@ -59,7 +59,8 @@ theorem run_verifier_eq {Out : FreeM.PathAlong oracleSig (protocol R deg n) → 
       (fun x => (⟨x.1, x.2.1, (legacyVerdict R deg n D amb stmt
           (decodeTranscript n x.1)).map fun t => (t, oStmt)⟩ :
           Observation oracleSig (protocol R deg n) Out
-            (Spec.StatementRound R n (Fin.last n) × ∀ i, Spec.OracleStatement R n deg i))) <$>
+            (fun _ => Spec.StatementRound R n (Fin.last n) × ∀ i, Spec.OracleStatement R n deg i)))
+              <$>
         Interaction.TwoParty.Lens.run (protocol R deg n)
           (P.simulate fun q => liftM ((amb + challengeSpec oracleSig (protocol R deg n)).query
             (.inl q)))
@@ -268,7 +269,7 @@ theorem two_rounds : (verifier K 1 2 D₀ events).run initial (fun _ => original
     pure (⟨consTranscript (affine a 1) r (consTranscript (affine (b + a) (a * r + 1)) s ⟨⟩), (),
       some (⟨(b + a) * s + (a * r + 1), ![r, s]⟩, fun _ => original)⟩ :
       Observation oracleSig (protocol K 1 2) (fun _ => Unit)
-        (Spec.StatementRound K 2 (Fin.last 2) × ∀ i, Spec.OracleStatement K 2 1 i))) := by
+        (fun _ => Spec.StatementRound K 2 (Fin.last 2) × ∀ i, Spec.OracleStatement K 2 1 i))) := by
   rw [run_verifier_eq]
   erw [run_adaptive]
   refine (_root_.map_bind _ _ _).trans (bind_congr fun a => ?_)
@@ -331,7 +332,8 @@ theorem bad_first_rounds :
       let _ ← eventE 3
       pure (⟨consTranscript (affine a 1) r (consTranscript (affine (b + a) (a * r + 1)) s ⟨⟩),
         (), none⟩ : Observation oracleSig (protocol K 1 2) (fun _ => Unit)
-          (Spec.StatementRound K 2 (Fin.last 2) × ∀ i, Spec.OracleStatement K 2 1 i))) := by
+          (fun _ => Spec.StatementRound K 2 (Fin.last 2) × ∀ i, Spec.OracleStatement K 2 1 i))) :=
+            by
   rw [run_verifier_eq]
   erw [run_adaptive]
   refine (_root_.map_bind _ _ _).trans (bind_congr fun a => ?_)
@@ -365,8 +367,8 @@ variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R] {deg k d
 to the oracle nodes of the run. -/
 def firstCheck (stmt : Spec.StatementRound R (k + 1) 0)
     (tr : FreeM.PathAlong oracleSig (protocol R deg (k + 1))) :
-    OracleComp (ambient + (sumFamily (polyFamily R deg (k + 1))
-      (pathFamily _ (FreeM.projectPathAlong oracleSig _ tr))).spec)
+    OracleComp (ambient + (pathResources (polyFamily R deg (k + 1)) _ (FreeM.projectPathAlong
+      oracleSig _ tr)).spec)
       (Option (Spec.StatementRound R (k + 1) (0 : Fin (k + 1)).succ)) :=
   simulateQ (decisionLift R deg (k + 1) ambient _) (simulateQ (route R deg (k + 1) _)
     (simulateQ (Spec.leftMessageQuery R deg k) (roundCheck R deg (k + 1) D ambient 0 stmt
@@ -378,11 +380,10 @@ oracles answer from the input data and the run's payloads. -/
 abbrev checkHandler (amb : QueryImpl ambient (OracleComp full))
     (data : ∀ i, Spec.OracleStatement R (k + 1) deg i)
     (tr : FreeM.PathAlong oracleSig (protocol R deg (k + 1))) :
-    QueryImpl (ambient + (sumFamily (polyFamily R deg (k + 1))
-      (pathFamily _ (FreeM.projectPathAlong oracleSig _ tr))).spec) (OracleComp full) :=
-  QueryImpl.addLift amb ((sumFamily (polyFamily R deg (k + 1))
-    (pathFamily _ (FreeM.projectPathAlong oracleSig _ tr))).behaviorOfRealizations
-      (sumData data (payloads _ tr)))
+    QueryImpl (ambient + (pathResources (polyFamily R deg (k + 1)) _ (FreeM.projectPathAlong
+      oracleSig _ tr)).spec) (OracleComp full) :=
+  QueryImpl.addLift amb ((pathResources (polyFamily R deg (k + 1)) _ (FreeM.projectPathAlong
+    oracleSig _ tr)).answer (data, payloads _ tr))
 
 /-- When the first round's check fails, the logged decision rejects and its log is the log of
 that check alone: no query of a later round is made. -/
@@ -516,7 +517,7 @@ theorem initial_false :
 `2 / 17`, the soundness error `n * deg / |K|`. -/
 example {σ : Type} (init : ProbComp σ) (impl : QueryImpl unifSpec (StateT σ ProbComp)) :
     letI : MeasurableSpace (Observation oracleSig (protocol K 1 2) (fun _ => Unit)
-      (Spec.StatementRound K 2 (Fin.last 2) × (∀ i, Spec.OracleStatement K 2 1 i))) := ⊤
+      (fun _ => Spec.StatementRound K 2 (Fin.last 2) × (∀ i, Spec.OracleStatement K 2 1 i))) := ⊤
     𝒟[experiment init impl (challengeQueryImpl oracleSig (protocol K 1 2))
         ((verifier K 1 2 D₀ unifSpec).run initial (fun _ => original) sampledAdaptive)]
         (accepted D₀) ≤ 2 / 17 := by

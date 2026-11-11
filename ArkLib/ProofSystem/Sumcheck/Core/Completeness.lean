@@ -174,9 +174,11 @@ section Completeness
 
 variable (R : Type) [CommSemiring R] (deg n : ℕ) {d : ℕ} (D : Fin d ↪ R)
 
-/-- The Sumcheck relation at round `i` as a statement problem with unit witness and no promise. -/
-def relationProblem (i : Fin (n + 1)) :
-    StatementProblem (Spec.StatementRound R n i × ∀ j, Spec.OracleStatement R n deg j) where
+/-- The Sumcheck relation at round `i` as a problem with unit witness and no promise, with the
+same statement type in every public context. -/
+def relationProblem {Ctx : Type} (i : Fin (n + 1)) :
+    Problem (⟨fun _ : Ctx => Spec.StatementRound R n i × ∀ j, Spec.OracleStatement R n deg j⟩ :
+      ClaimFamily Ctx) where
   Witness _ _ := Unit
   admissible _ _ := True
   rel _ x _ := (x, ()) ∈ Spec.relationRound R n deg D i
@@ -185,13 +187,12 @@ def relationProblem (i : Fin (n + 1)) :
 /-- The observation of a Sumcheck run with the honest prover's output type. -/
 abbrev HonestObservation :=
   Observation oracleSig (protocol R deg n) (fun _ => HonestOutput R deg n)
-    (Spec.StatementRound R n (Fin.last n) × ∀ i, Spec.OracleStatement R n deg i)
+    (fun _ => Spec.StatementRound R n (Fin.last n) × ∀ i, Spec.OracleStatement R n deg i)
 
 /-- Judge a Sumcheck run by the verifier verdict and the statement in the prover output. -/
 def judgement :
     OutputJudgement (HonestObservation R deg n)
-      (Spec.StatementRound R n (Fin.last n) × ∀ i, Spec.OracleStatement R n deg i)
-      (relationProblem R deg n D (Fin.last n)) :=
+      (relationProblem (Ctx := Path (protocol R deg n)) R deg n D (Fin.last n)) :=
   OutputJudgement.ofObservation _ (fun _ out => out.1) fun _ _ _ => ()
 
 variable {R deg n} [DecidableEq R] [SampleableType R] {ι : Type} (ambient : OracleSpec ι)

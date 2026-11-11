@@ -26,6 +26,17 @@ These entries are in
 | 12 | Path-fiber splitting stays in ArkLib |
 | 13 | The oracle decision log is recorded in the core |
 
+## Interaction core: later entries
+
+These entries are also in
+[`interaction-rebuild/IMPLEMENTATION-NOTES.md`](../interaction-rebuild/IMPLEMENTATION-NOTES.md).
+The status is one of equivalent, premise-required or unresolved.
+
+| Entry | Departure | Status |
+| --- | --- | --- |
+| 18 | Run outputs and a prover's ambient index are tied to the monad universe `u`; every other component takes its own universe, including input and output oracle query types | premise-required: positions live one universe up and the runner is `m : Type u → Type u` |
+| 18 | Input oracle data stays in the response universe `Type u`; the full-log oracle runner `runWithLog` keeps the input index and query type in `Type`, while extraction runs on the general ambient-log runner | unresolved: `OracleInterface` ties data and responses through `ReaderM`, and the full log records input queries |
+
 ## Legacy embedding: entries 14–16
 
 These entries continue the numbering for the security transfers of the legacy embedding. They
@@ -41,17 +52,17 @@ Entries 15 and 16 are the two hypotheses that a client of the round-by-round tra
 check. Entry 15 applies to the direction into the interaction layer, and entry 16 to the
 direction out of it.
 
-## Sumcheck: entries 17–18
+## Sumcheck: entries 20–21
 
 These entries continue the numbering for Sumcheck in the interaction layer. They are in
 [`sumcheck.md`](sumcheck.md#departures).
 
 | Entry | Departure |
 | --- | --- |
-| [17](sumcheck.md#17-the-transferred-completeness-is-in-its-own-module) | The transferred completeness is in its own module, `LegacyCompleteness`. |
-| [18](sumcheck.md#18-the-verifier-has-no-interval-start) | The verifier has no interval start; first-round results are stated on the round-`0` check. |
+| [20](sumcheck.md#20-the-transferred-completeness-is-in-its-own-module) | The transferred completeness is in its own module, `LegacyCompleteness`. |
+| [21](sumcheck.md#21-the-verifier-has-no-interval-start) | The verifier has no interval start; first-round results are stated on the round-`0` check. |
 
-Entry 18 restates the interval assertions for all `n` rounds. It does not retire the assertions
+Entry 21 restates the interval assertions for all `n` rounds. It does not retire the assertions
 that remain open. [`sumcheck.md`](sumcheck.md#migration-disposition) gives a disposition for every
 migration row:
 
@@ -64,6 +75,11 @@ migration row:
   `ArkLibTest/Interaction/Oracle/Security/Soundness.lean`, #3–#6 (OQ3).
 - **Partly covered.** Projection #7, Projection #8 and ProjectionTransport #2 are covered on the
   round-`0` check only. That check keeps the original input polynomial.
+Entry [19](../interaction-rebuild/IMPLEMENTATION-NOTES.md#19-round-by-round-soundness-implies-soundness-for-lawful-distribution-monads)
+records the generic soundness implication. The
+[soundness disposition record](soundness-implication-disposition.md) compares every ported frozen
+statement and test, explains prefix-indexed freshness, and links the classical specialization laws.
+The implication applies to lawful distribution monads, including optional computations.
 
 ## The oracle correspondence gap and its resolution
 
@@ -106,3 +122,9 @@ to the same witness.
 
 An earlier entry 17 recorded that straight-line knowledge soundness was transferred on the plain
 tree only. `Legacy/OracleKnowledge.lean` closes it, and the entry is removed.
+
+## Logged execution and routing acceptance clients
+
+The [source-to-port inventory](logged-execution-disposition.md) lists each frozen acceptance
+assertion, its exact port or missing interface, and the assertions retired by the approved passive
+verifier and fixed-shape premises. Its unresolved rows remain migration obligations.

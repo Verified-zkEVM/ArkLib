@@ -716,11 +716,15 @@ public import ArkLib.Interaction.Core.Legacy.PureSlots
 public import ArkLib.Interaction.Core.Legacy.Security
 public import ArkLib.Interaction.Core.Legacy.Verifier
 public import ArkLib.Interaction.Core.LegacyAppend
+public import ArkLib.Interaction.Core.Oracle.LoggedExecution
+public import ArkLib.Interaction.Core.Oracle.Routing
 public import ArkLib.Interaction.Core.OracleVerifier
 public import ArkLib.Interaction.Core.Protocol
 public import ArkLib.Interaction.Core.Reduction
 public import ArkLib.Interaction.Core.Security.Agreement
 public import ArkLib.Interaction.Core.Security.Completeness
+public import ArkLib.Interaction.Core.Security.CompositionSoundness
+public import ArkLib.Interaction.Core.Security.Implications
 public import ArkLib.Interaction.Core.Security.Knowledge
 public import ArkLib.Interaction.Core.Security.RoundByRound
 public import ArkLib.Interaction.Core.Security.Soundness
