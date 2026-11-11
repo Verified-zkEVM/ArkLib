@@ -288,33 +288,11 @@ variable {StmtIn U : Type} [SpongeUnit U] [SpongeSize]
 
 variable {T_H T_P : Type} [LawfulTraceNablaImpl T_H T_P StmtIn U]
 
-/-- Build a `TraceNabla` from a `DuplexSpongeTrace` (CO25 Definition 5.2).
-
-Generic over any `LawfulTraceTable` implementations `T_H` and `T_P`; set-semantic `insert`
-coalesces repeated identical pairs while retaining distinct conflicting mappings.
-
-Dispatch rules (matching the three tuple forms of Definition 5.2):
-- `.inl stmt`         → `('h', stmt, capSeg)` → `T_H.insert acc.h stmt capSeg`
-- `.inr (.inl sIn)`   → `('p', sIn, sOut)`    → `T_P.insert acc.p sIn sOut`
-- `.inr (.inr sOut)`  → `('p⁻¹', sOut, sIn)`  → `T_P.insert acc.p sIn sOut`
-
-Both permutation directions contribute `(s_in, s_out)` pairs to the **same** bidirectional `p`
-table, because `tr_∇.p` is the single bidirectional structure over `(s_in, s_out)` pairs. -/
-def TraceNabla.ofQueryLog
-    (log : DuplexSpongeTrace StmtIn U) :
-    TraceNabla T_H T_P StmtIn U :=
-  log.foldl (init := ⟨TraceTableOps.empty, TraceTableOps.empty⟩)
-    fun acc entry =>
-      match entry with
-      | ⟨.inl stmt,        capSeg⟩ => { acc with h := TraceTableOps.insert acc.h stmt capSeg }
-      | ⟨.inr (.inl sIn),  sOut⟩   => { acc with p := TraceTableOps.insert acc.p sIn sOut }
-      | ⟨.inr (.inr sOut), sIn⟩    => { acc with p := TraceTableOps.insert acc.p sIn sOut }
-
 /-- Build the `tr_∇` used by CO25 StdTrace §5.5.1 Step 3.
 
-Unlike `TraceNabla.ofQueryLog`, this constructor deliberately ignores inverse-permutation trace
-entries, matching Step 3(c) of StdTrace. It coalesces repeated identical forward entries; D2SQuery
-still uses the bidirectional constructor above. -/
+This constructor ignores inverse-permutation trace entries, matching Step 3(c) of StdTrace, and
+coalesces repeated identical forward entries. (D2SQuery instead maintains its `tr_∇` incrementally,
+query by query.) -/
 def TraceNabla.ofQueryLogForwardOnly
     (log : DuplexSpongeTrace StmtIn U) :
     TraceNabla T_H T_P StmtIn U :=
@@ -325,23 +303,7 @@ def TraceNabla.ofQueryLogForwardOnly
       | ⟨.inr (.inl sIn),  sOut⟩   => { acc with p := TraceTableOps.insert acc.p sIn sOut }
       | ⟨.inr (.inr _),    _⟩      => acc
 
-/-- Regression for occurrence replay: two adjacent identical log entries have the same normalized
-bidirectional `tr_∇` as one occurrence. -/
-lemma TraceNabla.ofQueryLog_duplicate_head
-    (entry : duplexSpongeTraceEntry (StartType := StmtIn) (U := U))
-    (trace : DuplexSpongeTrace StmtIn U) :
-    TraceNabla.ofQueryLog (T_H := T_H) (T_P := T_P) (entry :: entry :: trace) =
-      TraceNabla.ofQueryLog (T_H := T_H) (T_P := T_P) (entry :: trace) := by
-  rcases entry with ⟨q, answer⟩
-  rcases q with stmt | stateIn | stateOut
-  · simp only [TraceNabla.ofQueryLog, List.foldl_cons]
-    rw [TraceTableOps.insert_idem]
-  · simp only [TraceNabla.ofQueryLog, List.foldl_cons]
-    rw [TraceTableOps.insert_idem]
-  · simp only [TraceNabla.ofQueryLog, List.foldl_cons]
-    rw [TraceTableOps.insert_idem]
-
-/-- The forward-only StdTrace constructor likewise coalesces repeated identical occurrences. -/
+/-- The forward-only StdTrace constructor coalesces repeated identical occurrences. -/
 lemma TraceNabla.ofQueryLogForwardOnly_duplicate_head
     (entry : duplexSpongeTraceEntry (StartType := StmtIn) (U := U))
     (trace : DuplexSpongeTrace StmtIn U) :
@@ -735,185 +697,6 @@ lemma TraceNabla.IsSubsetOfQueryLog.forwardIndex
   ⟨h.1, fun s_in s_out hmem =>
     h.2 s_in s_out
       ((mem_entries_buildForwardPermutationIndex trace trΔ.p (s_in, s_out)).mp hmem).1⟩
-
-/-- The operational trace-index invariant needed by `BackTrack` and `LookAhead`.
-
-Unlike an exact index, this predicate deliberately does not require every raw trace entry to be
-represented in `trΔ`: `D2SQuery`'s live table omits cache-pop realizations, while StdTrace's table
-omits inverse-only entries.  What the executable searches need is exactly
-
-* provenance: every stored pair really occurs in the source trace; and
-* normalization: an identical stored pair occurs at most once, so multiplicity alone cannot turn
-  a lookup into a spurious conflict. -/
-structure TraceNabla.IsNormalizedSubindex
-    (trΔ : TraceNabla T_H T_P StmtIn U) (trace : DuplexSpongeTrace StmtIn U) : Prop where
-  isSubset : trΔ.IsSubsetOfQueryLog trace
-  hash_nodup : (TraceTableOps.entries (V := Vector U SpongeSize.C) trΔ.h).Nodup
-  permutation_nodup : (TraceTableOps.entries (V := CanonicalSpongeState U) trΔ.p).Nodup
-
-/-- The forward-first sub-index preserves the operational trace-index invariant. -/
-lemma TraceNabla.IsNormalizedSubindex.forwardIndex
-    {trΔ : TraceNabla T_H T_P StmtIn U} {trace : DuplexSpongeTrace StmtIn U}
-    (h : trΔ.IsNormalizedSubindex trace) :
-    ({ trΔ with p := buildForwardPermutationIndex trace trΔ.p } :
-      TraceNabla T_H T_P StmtIn U).IsNormalizedSubindex trace :=
-  ⟨h.isSubset.forwardIndex, h.hash_nodup,
-    buildForwardPermutationIndex_nodup trace h.permutation_nodup⟩
-
-
-/-- The fold step from `TraceNabla.ofQueryLog`, factored out for reuse in proofs. -/
-private def ofQueryLogStep
-    (acc : TraceNabla T_H T_P StmtIn U)
-    (entry : duplexSpongeTraceEntry (StartType := StmtIn) (U := U)) :
-    TraceNabla T_H T_P StmtIn U :=
-  match entry with
-  | ⟨.inl stmt, capSeg⟩ =>
-      { acc with h := TraceTableOps.insert acc.h stmt capSeg }
-  | ⟨.inr (.inl sIn), sOut⟩ =>
-      { acc with p := TraceTableOps.insert acc.p sIn sOut }
-  | ⟨.inr (.inr sOut), sIn⟩ =>
-      { acc with p := TraceTableOps.insert acc.p sIn sOut }
-
-private lemma ofQueryLog_eq_foldl
-    (trace : DuplexSpongeTrace StmtIn U) :
-    TraceNabla.ofQueryLog trace =
-      List.foldl ofQueryLogStep
-        ⟨(TraceTableOps.empty : T_H), (TraceTableOps.empty : T_P)⟩ trace := by
-  rfl
-
-/-- After processing a trace list via the fold step, every entry in the hash multiset
-either came from the init or from a hash query in the trace. -/
-private lemma hash_ms_foldl_inv
-    (init : TraceNabla T_H T_P StmtIn U)
-    (trace : DuplexSpongeTrace StmtIn U)
-    (p : StmtIn × Vector U SpongeSize.C)
-    (hp : p ∈ LawfulTraceTable.toMultiSet
-      (List.foldl ofQueryLogStep init trace).h) :
-    p ∈ LawfulTraceTable.toMultiSet init.h ∨ ⟨.inl p.1, p.2⟩ ∈ trace := by
-  induction trace generalizing init with
-  | nil =>
-    simp only [List.foldl_nil] at hp
-    exact Or.inl hp
-  | cons entry trace' ih =>
-    simp only [List.foldl_cons] at hp
-    rcases entry with ⟨q, a⟩
-    rcases q with stmt' | sIn' | sOut'
-    -- Hash query: adds (stmt', a) to h
-    case inl =>
-      simp only [ofQueryLogStep] at hp
-      have hIH := ih {init with h := TraceTableOps.insert init.h stmt' a} hp
-      have : ({init with h := TraceTableOps.insert init.h stmt' a} :
-          TraceNabla T_H T_P StmtIn U).h = TraceTableOps.insert init.h stmt' a := rfl
-      rw [this] at hIH
-      rcases hIH with hMem | hIn
-      · rw [TraceTableOps.mem_toMultiSet_insert_iff] at hMem
-        rcases hMem with hEq | hRest
-        · subst hEq; right; exact .head ..
-        · exact Or.inl hRest
-      · exact Or.inr (List.mem_cons_of_mem _ hIn)
-    -- Forward perm: h unchanged
-    case inr.inl =>
-      simp only [ofQueryLogStep] at hp
-      rcases ih {init with p := TraceTableOps.insert init.p sIn' a} hp with hMem | hIn
-      · exact Or.inl hMem
-      · exact Or.inr (List.mem_cons_of_mem _ hIn)
-    -- Inverse perm: h unchanged
-    case inr.inr =>
-      simp only [ofQueryLogStep] at hp
-      rcases ih {init with p := TraceTableOps.insert init.p a sOut'} hp with hMem | hIn
-      · exact Or.inl hMem
-      · exact Or.inr (List.mem_cons_of_mem _ hIn)
-
-/-- After processing a trace list via the fold step, every entry in the perm multiset
-either came from the init or from a permutation query in the trace. -/
-private lemma perm_ms_foldl_inv
-    (init : TraceNabla T_H T_P StmtIn U)
-    (trace : DuplexSpongeTrace StmtIn U)
-    (p : CanonicalSpongeState U × CanonicalSpongeState U)
-    (hp : p ∈ LawfulTraceTable.toMultiSet
-      (List.foldl ofQueryLogStep init trace).p) :
-    p ∈ LawfulTraceTable.toMultiSet init.p ∨
-      ⟨.inr (.inl p.1), p.2⟩ ∈ trace ∨
-        ⟨.inr (.inr p.2), p.1⟩ ∈ trace := by
-  induction trace generalizing init with
-  | nil =>
-    simp only [List.foldl_nil] at hp
-    exact Or.inl hp
-  | cons entry trace' ih =>
-    simp only [List.foldl_cons] at hp
-    rcases entry with ⟨q, a⟩
-    rcases q with stmt' | sIn' | sOut'
-    -- Hash query: p unchanged
-    case inl =>
-      simp only [ofQueryLogStep] at hp
-      rcases ih {init with h := TraceTableOps.insert init.h stmt' a} hp with hMem | h1 | h2
-      · exact Or.inl hMem
-      · exact Or.inr (Or.inl (List.mem_cons_of_mem _ h1))
-      · exact Or.inr (Or.inr (List.mem_cons_of_mem _ h2))
-    -- Forward perm: adds (sIn', a) to p
-    case inr.inl =>
-      simp only [ofQueryLogStep] at hp
-      have hIH := ih {init with p := TraceTableOps.insert init.p sIn' a} hp
-      have : ({init with p := TraceTableOps.insert init.p sIn' a} :
-          TraceNabla T_H T_P StmtIn U).p = TraceTableOps.insert init.p sIn' a := rfl
-      rw [this] at hIH
-      rcases hIH with hMem | hIn
-      · rw [TraceTableOps.mem_toMultiSet_insert_iff] at hMem
-        rcases hMem with hEq | hRest
-        · subst hEq; exact Or.inr (Or.inl (by exact .head ..))
-        · exact Or.inl hRest
-      · rcases hIn with h1 | h2
-        · exact Or.inr (Or.inl (List.mem_cons_of_mem _ h1))
-        · exact Or.inr (Or.inr (List.mem_cons_of_mem _ h2))
-    -- Inverse perm: adds (a, sOut') to p
-    case inr.inr =>
-      simp only [ofQueryLogStep] at hp
-      have hIH := ih {init with p := TraceTableOps.insert init.p a sOut'} hp
-      have : ({init with p := TraceTableOps.insert init.p a sOut'} :
-          TraceNabla T_H T_P StmtIn U).p = TraceTableOps.insert init.p a sOut' := rfl
-      rw [this] at hIH
-      rcases hIH with hMem | hIn
-      · rw [TraceTableOps.mem_toMultiSet_insert_iff] at hMem
-        rcases hMem with hEq | hRest
-        · subst hEq; exact Or.inr (Or.inr (by exact .head ..))
-        · exact Or.inl hRest
-      · rcases hIn with h1 | h2
-        · exact Or.inr (Or.inl (List.mem_cons_of_mem _ h1))
-        · exact Or.inr (Or.inr (List.mem_cons_of_mem _ h2))
-
-lemma TraceNabla.ofQueryLog_isSubset
-    (trace : DuplexSpongeTrace StmtIn U) :
-    (TraceNabla.ofQueryLog (T_H := T_H) (T_P := T_P) trace).IsSubsetOfQueryLog trace := by
-  constructor
-  · intro stmt cap hMem
-    rw [ofQueryLog_eq_foldl] at hMem
-    have hMS : (stmt, cap) ∈ LawfulTraceTable.toMultiSet
-        (List.foldl ofQueryLogStep
-          ⟨(TraceTableOps.empty : T_H), (TraceTableOps.empty : T_P)⟩ trace).h := by
-      have h := LawfulTraceTable.toMultiSet_ofEntries
-          (List.foldl ofQueryLogStep
-            ⟨(TraceTableOps.empty : T_H), (TraceTableOps.empty : T_P)⟩ trace).h
-      rw [← h]; exact Multiset.mem_coe.mpr hMem
-    rcases hash_ms_foldl_inv
-        ⟨(TraceTableOps.empty : T_H), (TraceTableOps.empty : T_P)⟩ trace
-        (stmt, cap) hMS with hMem' | hIn
-    · simp [LawfulTraceTable.toMultiSet_empty] at hMem'
-    · exact hIn
-  · intro s_in s_out hMem
-    rw [ofQueryLog_eq_foldl] at hMem
-    have hMS : (s_in, s_out) ∈ LawfulTraceTable.toMultiSet
-        (List.foldl ofQueryLogStep
-          ⟨(TraceTableOps.empty : T_H), (TraceTableOps.empty : T_P)⟩ trace).p := by
-      have h := LawfulTraceTable.toMultiSet_ofEntries
-          (List.foldl ofQueryLogStep
-            ⟨(TraceTableOps.empty : T_H), (TraceTableOps.empty : T_P)⟩ trace).p
-      rw [← h]; exact Multiset.mem_coe.mpr hMem
-    rcases perm_ms_foldl_inv
-        ⟨(TraceTableOps.empty : T_H), (TraceTableOps.empty : T_P)⟩ trace
-        (s_in, s_out) hMS with hMem' | h1 | h2
-    · simp [LawfulTraceTable.toMultiSet_empty] at hMem'
-    · exact Or.inl h1
-    · exact Or.inr h2
 
 private def ofQueryLogForwardOnlyStep
     (acc : TraceNabla T_H T_P StmtIn U)
@@ -1348,7 +1131,7 @@ instance instLawfulListBasedTraceTable {K V : Type} [DecidableEq K] [DecidableEq
   outlu_eq_some       := fun t k v => outlu_eq_some_iff t k v
   toMultiSet_ofEntries  := fun _ => rfl
 
-/-! ### Default `tr_∇` type alias and `ofQueryLog` -/
+/-! ### Default `tr_∇` type alias -/
 
 instance instLawfulTraceNablaImplListBased :
     LawfulTraceNablaImpl
@@ -1367,10 +1150,6 @@ abbrev DefaultTraceDelta (StmtIn U : Type) [SpongeUnit U]
       (CanonicalSpongeState U) (CanonicalSpongeState U))
     StmtIn U
 
-/-- Specialization of `TraceNabla.ofQueryLog` to the default list-backed implementation. -/
-def DefaultTraceDelta.ofQueryLog
-    (log : DuplexSpongeTrace StmtIn U) : DefaultTraceDelta StmtIn U :=
-    TraceNabla.ofQueryLog log
 end ListBacked
 
 lemma TraceNabla.IsSubsetOfQueryLog_empty_nil :

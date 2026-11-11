@@ -33,7 +33,7 @@ variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type} [DecidableEq StmtIn
 
 noncomputable section
 
-/-- Key for `StdTrace` memoized `gᵢ`-style entries (CO25 §5.2 Step 4.D output; strict shape
+/-- Key for `StdTrace` memoized `gᵢ`-style entries (CO25 §5.5.1 Item 4(a)iv.D output; strict shape
 `BacktrackOutput`). -/
 abbrev StdTraceQuery :=
   Backtrack.BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
@@ -238,8 +238,9 @@ def stdTraceLookupOrLookAhead
           -- CO25 `err`: multiple lookahead chains found (unexpected after backtrack).
           failure
       | .noResult =>
-          -- CO25 §5.5.1 Item 4(a)ivB-D: once BackTrack returns a valid tuple for the
-          -- current `p` entry, LookAhead should find the matching successor in `tr`.
+          -- CO25 §5.5.1 Item 4(a)ivD: once BackTrack returns a valid tuple for the current
+          -- `p` entry, LookAhead finds its successor in `tr`, unless `L_V(i) = 0` (a zero-length
+          -- challenge, excluded by `NondegenerateRounds.challengePos`).
           failure
       | .some rhoHat_i =>
           -- Item 4(a)ivD — append `((i, 𝕩, τ, α̂_{<i}), ρ̂_i)` to `tr_std^LA` and `tr_std`.
@@ -317,13 +318,13 @@ noncomputable def hybEncodedMessagesBefore?
 /-! ## Salted FS variants (CO25 §5.5.1 Item 4(a)v)
 
 CO25's standard FS reduction `R_FS` keeps the public *pre-encoded* salt `τ̌ ∈ {0,1}^{δ★}` threaded
-through the augmented statement of the FS-standard oracle (paper line 1187-1192, Eq. 55-56).
+through the augmented statement of the FS-standard oracle (CO25 Construction 3.17 and Eq. 55).
 We model this as the abstract type `Salt`, bridged from the on-sponge `Vector U δ` salt via
 `SaltCodec.encode = bin`. The salted variants below feed into `KeyLemma`'s `Hyb₃`/`Hyb₄`. -/
 
 /-- Salted variant of `stdTraceEntryToFSQuery?` — projects the BackTrack salt
 `out.salt : Vector U δ` to the FS-standard side via `bin = SaltCodec.encode` before placing it
-in the augmented statement of the salted FS oracle query (paper line 1188). -/
+in the augmented statement of the salted FS oracle query (D2STrace Item 3). -/
 noncomputable def stdTraceEntryToFSQuerySalted?
     {Salt : Type} [SaltCodec U δ Salt]
     (entry : StdTraceEntry (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
@@ -337,8 +338,103 @@ noncomputable def stdTraceEntryToFSQuerySalted?
   pure ⟨⟨entry.query.roundIdx,
     ((entry.query.stmt, SaltCodec.encode entry.query.salt), messagesBefore)⟩, challenge⟩
 
+/-! ## First occurrences per source segment
+
+`D2SAlgo` answers a repeated `gᵢ` key from its `tr_i` memo without querying `f` (CO25 §5.4
+D2SAlgo Item 3(a)), so the `Hyb₄` prover trace holds one entry per distinct key, and `𝒱_std`
+queries each of its keys once. A trace that records every repeat (StdTrace Item 4(a)ivA, a raw
+`gᵢ` or `eᵢ` log) would instead differ from it whenever the prover repeats a round-boundary
+query. The line-4 trace maps therefore keep, within each source segment (`SourceTag`), only the
+first entry of each challenge query. Ambient `oSpec` entries are kept as they are. -/
+
+section FirstOccurrences
+
+variable {κ : Type} {challengeSpec : OracleSpec κ}
+
+/-- The `(source, query)` keys of the challenge entries of a tagged log, in order. -/
+def challengeKeys (log : TaggedQueryLog (oSpec + challengeSpec)) : List (SourceTag × κ) :=
+  log.filterMap fun
+    | (tag, ⟨.inr q, _⟩) => some (tag, q)
+    | (_, ⟨.inl _, _⟩) => none
+
+open Classical in
+/-- Worker for `dedupChallengesPerSource`: `seen` holds the keys already kept. -/
+noncomputable def dedupChallengesPerSourceAux (seen : List (SourceTag × κ)) :
+    TaggedQueryLog (oSpec + challengeSpec) → TaggedQueryLog (oSpec + challengeSpec)
+  | [] => []
+  | (tag, ⟨.inl q, r⟩) :: rest => (tag, ⟨.inl q, r⟩) :: dedupChallengesPerSourceAux seen rest
+  | (tag, ⟨.inr q, r⟩) :: rest =>
+      if (tag, q) ∈ seen then dedupChallengesPerSourceAux seen rest
+      else (tag, ⟨.inr q, r⟩) :: dedupChallengesPerSourceAux ((tag, q) :: seen) rest
+
+/-- Keep the first entry of each challenge query within each source segment, and every ambient
+`oSpec` entry. -/
+noncomputable def dedupChallengesPerSource (log : TaggedQueryLog (oSpec + challengeSpec)) :
+    TaggedQueryLog (oSpec + challengeSpec) :=
+  dedupChallengesPerSourceAux [] log
+
+omit [SpongeSize] in
+lemma challengeKeys_dedupChallengesPerSourceAux (seen : List (SourceTag × κ))
+    (log : TaggedQueryLog (oSpec + challengeSpec)) :
+    (challengeKeys (dedupChallengesPerSourceAux seen log)).Nodup ∧
+      ∀ k ∈ challengeKeys (dedupChallengesPerSourceAux seen log), k ∉ seen := by
+  induction log generalizing seen with
+  | nil => simp [dedupChallengesPerSourceAux, challengeKeys]
+  | cons e rest ih =>
+      obtain ⟨tag, ⟨q | q, r⟩⟩ := e
+      · simpa [dedupChallengesPerSourceAux, challengeKeys] using ih seen
+      · by_cases hq : (tag, q) ∈ seen
+        · simpa [dedupChallengesPerSourceAux, hq] using ih seen
+        · obtain ⟨hnd, hfresh⟩ := ih ((tag, q) :: seen)
+          simp only [dedupChallengesPerSourceAux, hq, if_false]
+          refine ⟨List.nodup_cons.mpr ⟨fun hmem => hfresh _ hmem (.head _), hnd⟩, ?_⟩
+          rintro k (_ | ⟨_, hk⟩)
+          · exact hq
+          · exact fun hks => hfresh k hk (.tail _ hks)
+
+omit [SpongeSize] in
+/-- After `dedupChallengesPerSource`, no source repeats a challenge query. -/
+lemma nodup_challengeKeys_dedupChallengesPerSource
+    (log : TaggedQueryLog (oSpec + challengeSpec)) :
+    (challengeKeys (dedupChallengesPerSource log)).Nodup :=
+  (challengeKeys_dedupChallengesPerSourceAux [] log).1
+
+omit [SpongeSize] in
+lemma dedupChallengesPerSourceAux_of_nodup (seen : List (SourceTag × κ))
+    (log : TaggedQueryLog (oSpec + challengeSpec)) (hnd : (challengeKeys log).Nodup)
+    (hfresh : ∀ k ∈ challengeKeys log, k ∉ seen) :
+    dedupChallengesPerSourceAux seen log = log := by
+  induction log generalizing seen with
+  | nil => rfl
+  | cons e rest ih =>
+      obtain ⟨tag, ⟨q | q, r⟩⟩ := e
+      · simp only [challengeKeys, List.filterMap_cons] at hnd hfresh
+        simp only [dedupChallengesPerSourceAux, ih seen hnd hfresh]
+      · simp only [challengeKeys, List.filterMap_cons, List.nodup_cons, List.mem_cons,
+          forall_eq_or_imp] at hnd hfresh
+        simp only [dedupChallengesPerSourceAux, hfresh.1, if_false]
+        congr 1
+        refine ih _ hnd.2 fun k hk hks => ?_
+        rcases List.mem_cons.mp hks with rfl | hks
+        · exact hnd.1 hk
+        · exact hfresh.2 k hk hks
+
+omit [SpongeSize] in
+/-- A log in which no source repeats a challenge query (such as a `Hyb₄` trace) is unchanged. -/
+lemma dedupChallengesPerSource_of_nodup (log : TaggedQueryLog (oSpec + challengeSpec))
+    (hnd : (challengeKeys log).Nodup) :
+    dedupChallengesPerSource log = log :=
+  dedupChallengesPerSourceAux_of_nodup [] log hnd (by simp)
+
+end FirstOccurrences
+
 /-- §5.5.2 `D2STrace` — the single D2STrace engine.  Processes a `TaggedQueryLog` iteratively to
-map DSFS traces to FS-standard traces while preserving the `SourceTag` and exact ordering. -/
+map DSFS traces to FS-standard traces while preserving the `SourceTag` and exact ordering, then
+keeps the first entry of each challenge query per source (`dedupChallengesPerSource`).
+
+StdTrace Item 4(a)ivA adds an entry for every repeat of a round-boundary `p`-query, while the
+`Hyb₄` prover trace has one `f`-entry per distinct key (D2SAlgo Item 3(a)); keeping first
+occurrences per source makes the two traces comparable as lists (CO25 Lemma 5.1). -/
 noncomputable def d2sTraceSalted
     {T_H T_P : Type} {Salt : Type} [SaltCodec U δ Salt]
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
@@ -378,13 +474,13 @@ noncomputable def d2sTraceSalted
               | some mapped => some (tag, ⟨.inr mapped.1, mapped.2⟩)
             go rest st' (out ++ mappedNewEntries)
         | _ => go rest st out
-  go log { trStd := [], trStdLA := [] } []
+  dedupChallengesPerSource <$> go log { trStd := [], trStdLA := [] } []
 
 section Line4Trace
 
 /-- Section 5.8 `Hyb₁` line-4 per-entry remap. Encoded prover-prefix + encoded verifier response
 ↦ decoded prover-prefix + decoded challenge. Salt is projected `Σ^δ → Salt` via
-`SaltCodec.encode = bin` (paper line 1188). `oSpec` entries are forwarded verbatim. -/
+`SaltCodec.encode = bin` (D2STrace Item 3). `oSpec` entries are forwarded verbatim. -/
 noncomputable def hyb1RemapEntry?
     {Salt : Type} [SaltCodec U δ Salt]
     (entry : Sigma (oSpec + gSpec (U := U) StmtIn pSpec δ)) :
@@ -407,21 +503,23 @@ noncomputable def hyb1RemapEntry?
 /-- Section 5.8 `Hyb₁` line-4 trace translation.
 
 This is the explicit `(φ⁻¹, ψ)(tr)` post-processing map applied directly to the single concatenated
-query-answer trace `tr = tr_P̃ || tr_V`. -/
+query-answer trace `tr = tr_P̃ || tr_V`, keeping the first entry of each challenge query per source
+(`dedupChallengesPerSource`, as in `d2sTraceSalted`): D2SQuery Item 4(e)i queries `gᵢ` again on
+every repeat of a round-boundary `p`-query. -/
 noncomputable def hyb1Line4Trace
     {Salt : Type} [SaltCodec U δ Salt]
     (log : TaggedQueryLog (oSpec + gSpec (U := U) StmtIn pSpec δ)) :
     UnitSampleM U
       (TaggedQueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)) :=
-  pure (log.filterMap fun ⟨tag, entry⟩ =>
+  pure <| dedupChallengesPerSource <| log.filterMap fun ⟨tag, entry⟩ =>
     match hyb1RemapEntry? (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec)
         (U := U) (δ := δ) (Salt := Salt) entry with
     | some mapped => some (tag, mapped)
-    | none => none)
+    | none => none
 
 /-- Section 5.8 `Hyb₂` line-4 per-entry remap. Encoded prover-prefix + decoded verifier response
 ↦ decoded prover-prefix + decoded challenge. Salt is projected `Σ^δ → Salt` via
-`SaltCodec.encode = bin` (paper line 1188). `oSpec` entries are forwarded verbatim. -/
+`SaltCodec.encode = bin` (D2STrace Item 3). `oSpec` entries are forwarded verbatim. -/
 noncomputable def hyb2RemapEntry?
     {Salt : Type} [SaltCodec U δ Salt]
     (entry : Sigma (oSpec + eSpec (U := U) StmtIn pSpec δ)) :
@@ -440,22 +538,24 @@ noncomputable def hyb2RemapEntry?
 /-- Section 5.8 `Hyb₂` line-4 trace translation.
 
 This is the explicit `φ⁻¹(tr)` post-processing map applied directly to the single concatenated
-query-answer trace `tr = tr_P̃ || tr_V`. -/
+query-answer trace `tr = tr_P̃ || tr_V`, keeping the first entry of each challenge query per source
+(`dedupChallengesPerSource`, as in `d2sTraceSalted`). -/
 noncomputable def hyb2Line4Trace
     {Salt : Type} [SaltCodec U δ Salt]
     (log : TaggedQueryLog (oSpec + eSpec (U := U) StmtIn pSpec δ)) :
     UnitSampleM U
       (TaggedQueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)) :=
-  pure (log.filterMap fun ⟨tag, entry⟩ =>
+  pure <| dedupChallengesPerSource <| log.filterMap fun ⟨tag, entry⟩ =>
     match hyb2RemapEntry? (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec)
         (U := U) (δ := δ) (Salt := Salt) entry with
     | some mapped => some (tag, mapped)
-    | none => none)
+    | none => none
 
 /-- Section 5.8 `Hyb₃` line-4 trace translation.
 
 This is the identity-on-line-4 trace surface, viewed through the common single-log Section 5
-interface used by `KeyLemma`. -/
+interface used by `KeyLemma`. The `tr_i` memo already keeps one `f`-entry per distinct key of each
+source, so `dedupChallengesPerSource` would not change this trace. -/
 noncomputable def hyb3Line4Trace
     {Salt : Type}
     (log : TaggedQueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)) :
