@@ -314,7 +314,8 @@ def decisionLift (p : Path (protocol R deg n)) :
 /-- The Sumcheck oracle verifier: the legacy decision fold on the view's challenges, with every
 message query routed to its oracle node. The output oracle is the input polynomial. -/
 def verifier : OracleVerifier ambient (protocol R deg n) (Spec.StatementRound R n 0)
-    (Spec.StatementRound R n (Fin.last n)) (polyFamily R deg n) (polyFamily R deg n) where
+    (fun _ => Spec.StatementRound R n (Fin.last n)) (polyFamily R deg n)
+    (fun _ => polyFamily R deg n) where
   decide stmt p v := OptionT.mk (simulateQ (decisionLift R deg n ambient p)
     (simulateQ (route R deg n p) (legacyProgram R deg n D ambient stmt (viewChallenges v))))
   outputMap _ p _ :=
@@ -410,7 +411,8 @@ theorem run_verifier_foldRounds {State : ℕ → Type} {Out : Type}
         (legacyVerdict R deg n D ambient stmt
           (decodeTranscript n (foldTranscript msg next n st chals))).map fun t => (t, oStmt)⟩ :
           Observation oracleSig (protocol R deg n) (fun _ => Out)
-            (Spec.StatementRound R n (Fin.last n) × ∀ i, Spec.OracleStatement R n deg i))) <$>
+            (fun _ =>
+              Spec.StatementRound R n (Fin.last n) × ∀ i, Spec.OracleStatement R n deg i))) <$>
         drawChallenges n (fun c =>
           liftM ((ambient + challengeSpec oracleSig (protocol R deg n)).query (.inr c))) := by
   unfold Interaction.Core.OracleVerifier.run
@@ -429,7 +431,8 @@ theorem run_verifier_honestProver (stmt : Spec.StatementRound R n 0)
         (legacyVerdict R deg n D ambient stmt
           (decodeTranscript n (honestTranscript D stmt oStmt chals))).map fun t => (t, oStmt)⟩ :
           Observation oracleSig (protocol R deg n) (fun _ => HonestOutput R deg n)
-            (Spec.StatementRound R n (Fin.last n) × ∀ i, Spec.OracleStatement R n deg i))) <$>
+            (fun _ =>
+              Spec.StatementRound R n (Fin.last n) × ∀ i, Spec.OracleStatement R n deg i))) <$>
         drawChallenges n (fun c =>
           liftM ((ambient + challengeSpec oracleSig (protocol R deg n)).query (.inr c))) :=
   run_verifier_foldRounds D _ _ _ _ stmt oStmt

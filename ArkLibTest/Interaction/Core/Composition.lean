@@ -30,12 +30,14 @@ def composed : Prover plainSig ambient (done.append (fun _ => done)) (fun _ => P
     liftM (ambient.query 1)
     pure suffix)
 
-def reject : Verifier ambient done Unit Unit where
+/-- A verifier that queries the ambient oracle at `3` and then rejects. -/
+def reject : Verifier ambient done Unit (fun _ => Unit) where
   decide _ _ _ := OptionT.mk do
     liftM (ambient.query 3)
     pure none
 
-def accept : Verifier ambient done Unit Unit where
+/-- A verifier that queries the ambient oracle at `4` and then accepts. -/
+def accept : Verifier ambient done Unit (fun _ => Unit) where
   decide _ _ _ := do
     liftM (ambient.query 4)
     pure ()
@@ -57,7 +59,8 @@ run_cmd do
 open Interaction.Core.OracleTests
 
 /-- A suffix computes a virtual output from an embedded prefix oracle. -/
-def virtualSuffix : OracleVerifier OracleSpec.emptySpec emptyTree Nat Unit functions functions where
+def virtualSuffix : OracleVerifier noAmbient emptyTree Nat (fun _ => Unit) functions
+    (fun _ => functions) where
   decide _ _ _ := pure ()
   outputMap _ p _ := doubled.comp
     (OracleMap.embedding (sumFamily functions (pathFamily emptyTree p))
@@ -72,12 +75,13 @@ def compatible : OracleVerifier.OutputCompatibility queryDecision (fun _ => virt
 
 def combined := queryDecision.append (fun _ => virtualSuffix) compatible
 
-def oracleProver : Prover oracleSig OracleSpec.emptySpec
+/-- The prover sends the function `n ↦ n + 5` and finishes. -/
+def oracleProver : Prover oracleSig noAmbient
     (tree.append (fun _ => emptyTree)) (fun _ => PUnit) :=
   pure ⟨fun n => n + 5, pure ⟨⟩⟩
 
 def oracleHandler : QueryImpl
-    (OracleSpec.emptySpec + challengeSpec oracleSig (tree.append (fun _ => emptyTree))) Id
+    (noAmbient + challengeSpec oracleSig (tree.append (fun _ => emptyTree))) Id
   | .inl i => i.elim
   | .inr ⟨.inl _, h⟩ => nomatch h
   | .inr ⟨.inr ⟨_, i⟩, _⟩ => i.elim
@@ -107,7 +111,7 @@ def virtualOutput : PrefixOutput := fun p => doubled.comp (embeddedOutput p)
 
 /-- The prefix records label 10, then evaluates its message at 3. -/
 def routedPrefix (out : PrefixOutput) :
-    OracleVerifier labels tree Unit Nat emptyFamily functions where
+    OracleVerifier labels tree Unit (fun _ => Nat) emptyFamily (fun _ => functions) where
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact do
@@ -119,7 +123,8 @@ def routedPrefix (out : PrefixOutput) :
   outputMap _ p _ := out p
 
 /-- The suffix records 20, evaluates its input oracle and its own message at 1, then records 30. -/
-def routedSuffix : OracleVerifier labels tree Nat (Nat × Nat × Nat) functions functions where
+def routedSuffix :
+    OracleVerifier labels tree Nat (fun _ => Nat × Nat × Nat) functions (fun _ => functions) where
   decide mid p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact do
@@ -195,8 +200,8 @@ run_cmd checkRouting embeddedOutput 6
 run_cmd checkRouting virtualOutput 12
 
 /-- The prefix accepts only `false` and never consults the ambient oracle. -/
-def deterministicPrefix : OracleVerifier (Unit →ₒ Bool) emptyTree Unit Bool
-    emptyFamily emptyFamily where
+def deterministicPrefix : OracleVerifier (Unit →ₒ Bool) emptyTree Unit (fun _ => Bool)
+    emptyFamily (fun _ => emptyFamily) where
   decide _ _ _ := pure false
   outputMap := ambientPrefix.outputMap
 
@@ -246,10 +251,35 @@ example : ¬ Nonempty
   change (c.outputMap () p v).f emptyData PUnit.unit 0 = 1 at h₁
   exact Nat.zero_ne_one (h₀.symm.trans h₁)
 
+/-- Draw splitting recovers prefix draws without any monad structure, at unequal universes. -/
+example {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly) {m : Type → Type 1}
+    (s₁ : FreeM P PUnit) (s₂ : Path s₁ → FreeM P PUnit)
+    (draw₁ : (c : ChallengeNode l s₁) → m (challengeSpec l s₁ c))
+    (draw₂ : (p : Path s₁) → (c : ChallengeNode l (s₂ p)) → m (challengeSpec l (s₂ p) c)) :
+    prefixDraw l s₁ s₂ (combineDraw l s₁ s₂ draw₁ draw₂) = draw₁ :=
+  prefixDraw_combineDraw l s₁ s₂ draw₁ draw₂
+
+/-- Draw splitting recovers each path-dependent suffix at unequal universes. -/
+example {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly) {m : Type → Type 1}
+    (s₁ : FreeM P PUnit) (s₂ : Path s₁ → FreeM P PUnit)
+    (draw₁ : (c : ChallengeNode l s₁) → m (challengeSpec l s₁ c))
+    (draw₂ : (p : Path s₁) → (c : ChallengeNode l (s₂ p)) → m (challengeSpec l (s₂ p) c)) :
+    suffixDraw l s₁ s₂ (combineDraw l s₁ s₂ draw₁ draw₂) = draw₂ :=
+  suffixDraw_combineDraw l s₁ s₂ draw₁ draw₂
+
+/-- Combining split draws recovers the original family at unequal universes. -/
+example {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly) {m : Type → Type 1}
+    (s₁ : FreeM P PUnit) (s₂ : Path s₁ → FreeM P PUnit)
+    (draw : (c : ChallengeNode l (s₁.append s₂)) → m (challengeSpec l (s₁.append s₂) c)) :
+    combineDraw l s₁ s₂ (prefixDraw l s₁ s₂ draw) (suffixDraw l s₁ s₂ draw) = draw :=
+  combineDraw_prefixDraw_suffixDraw l s₁ s₂ draw
+
 end Interaction.Core.CompositionTests
 
 run_cmd do
   for decl in [``Interaction.Core.appendSampler_eq, ``Interaction.Core.appendOracleSampler_eq,
+      ``Interaction.Core.prefixDraw_combineDraw, ``Interaction.Core.suffixDraw_combineDraw,
+      ``Interaction.Core.combineDraw_prefixDraw_suffixDraw,
       ``Interaction.Core.run_appendSampler, ``Interaction.Core.run_splitSampler,
       ``Interaction.Core.OracleVerifier.append,
       ``Interaction.Core.OracleVerifier.append_decideWith,

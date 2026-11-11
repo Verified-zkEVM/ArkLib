@@ -26,7 +26,7 @@ namespace Interaction.Core.HiddenBitFixture
 abbrev bitAmbient : OracleSpec Bool := Bool →ₒ Bool
 
 /-- One bit-valued oracle slot, used for the input and the exports. -/
-@[instance_reducible] def bits : OracleFamily Unit (fun _ => Bool) :=
+@[instance_reducible] def bits : OracleFamily.{0, 0, 0} Unit (fun _ => Bool) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
 /-- The input slot holds `false`. -/
@@ -47,7 +47,7 @@ abbrev bitCombined : OracleProtocol := bitFirst.append (fun _ => bitSecond)
 abbrev firstResources := sumFamily bits (pathFamily bitFirst ⟨⟨⟩, ⟨⟩⟩)
 
 /-- The prefix decision makes the dummy request; the prefix exports its input. -/
-def bitPrefix : OracleVerifier bitAmbient bitFirst Unit Unit bits bits where
+def bitPrefix : OracleVerifier bitAmbient bitFirst Unit (fun _ => Unit) bits (fun _ => bits) where
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact do
@@ -69,7 +69,7 @@ def xorMap (guess : Bool) : OracleMap (secondResources guess) bits where
     rfl
 
 /-- The suffix decision reads the pad, reveals the hidden bit and claims `hidden ^^ pad`. -/
-def bitSuffix : OracleVerifier bitAmbient bitSecond Unit Bool bits bits where
+def bitSuffix : OracleVerifier bitAmbient bitSecond Unit (fun _ => Bool) bits (fun _ => bits) where
   decide _ p _ := by
     rcases p with ⟨guess, ⟨⟩⟩
     exact do

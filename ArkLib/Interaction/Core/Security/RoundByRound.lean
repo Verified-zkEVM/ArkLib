@@ -155,78 +155,89 @@ def rbrKnowledgeSoundness {S Win : Type} (s : FreeM P PUnit) {W : PathAlong l s 
           (PrefixMoves.snoc l sp history x) stmt wit} ≤ ε (spineChallenge l sp h)
 
 /-- Valid plain acceptance from some ambient state at the fixed complete transcript.
-Terminal obligations therefore cover state changes made during the interaction. -/
-def Verifier.validAcceptance {ι σ S T : Type} {ambient : OracleSpec ι} {s : Protocol}
-    (V : Verifier ambient s S T)
-    (impl : QueryImpl ambient (StateT σ ProbComp)) (langOut : T → Prop)
-    (stmt : S) (tr : PathAlong plainSig s) : Prop :=
-  letI : MeasurableSpace (Option T) := ⊤
+Terminal obligations therefore cover state changes made during the interaction. The event is a
+predicate on the output statement type at the transcript's shape path. -/
+def Verifier.validAcceptance {ι σ S : Type} {ambient : OracleSpec ι} {s : Protocol}
+    {T : Path s → Type} (V : Verifier ambient s S T)
+    (impl : QueryImpl ambient (StateT σ ProbComp)) (stmt : S) (tr : PathAlong plainSig s)
+    (event : T (projectPathAlong plainSig s tr) → Prop) : Prop :=
+  letI : MeasurableSpace (Option (T (projectPathAlong plainSig s tr))) := ⊤
   ∃ state : σ, 0 < 𝒟[((simulateQ impl
     (V.decide stmt (projectPathAlong plainSig s tr) (toPlainView s tr)).run).run' state :
-      ProbComp (Option T))] {v | ∃ t, v = some t ∧ langOut t}
+      ProbComp (Option (T (projectPathAlong plainSig s tr))))] {v | ∃ t, v = some t ∧ event t}
 
-/-- The plain verifier's default round-by-round soundness form. -/
-abbrev Verifier.rbrSoundness {ι σ S T : Type} {ambient : OracleSpec ι} {s : Protocol}
-    (V : Verifier ambient s S T)
+/-- The plain verifier's default round-by-round soundness form. The output language is indexed
+by the shape path and judged at the transcript's path. -/
+abbrev Verifier.rbrSoundness {ι σ S : Type} {ambient : OracleSpec ι} {s : Protocol}
+    {T : Path s → Type} (V : Verifier ambient s S T)
     (impl : QueryImpl ambient (StateT σ ProbComp))
-    (input : StatementProblem S) (output : StatementProblem T)
+    (input : StatementProblem S) (output : PathProblem s T)
     (draw : QueryImpl (challengeSpec plainSig s) ProbComp)
     (ε : ChallengeNode plainSig s → ℝ≥0∞) : Prop :=
   Core.rbrSoundness plainSig s (input.admissible ()) (input.language ())
-    (V.validAcceptance impl (output.language ())) draw ε
+    (fun stmt tr => V.validAcceptance impl stmt tr
+      (output.language (projectPathAlong plainSig s tr))) draw ε
 
 /-- The plain verifier's default round-by-round knowledge form. The output witness type `W tr`
-and the output relation `relOut tr` are indexed by the completed transcript `tr`. -/
-abbrev Verifier.rbrKnowledgeSoundness {ι σ S T Win : Type} {ambient : OracleSpec ι}
-    {s : Protocol} {W : PathAlong plainSig s → Type} (V : Verifier ambient s S T)
+and the output relation `relOut tr` are indexed by the completed transcript `tr`, and the output
+statement has the type at its shape path. -/
+abbrev Verifier.rbrKnowledgeSoundness {ι σ S Win : Type} {ambient : OracleSpec ι}
+    {s : Protocol} {T : Path s → Type} {W : PathAlong plainSig s → Type}
+    (V : Verifier ambient s S T)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (admissible : S → Prop) (relIn : S → Win → Prop)
-    (relOut : (tr : PathAlong plainSig s) → T → W tr → Prop)
+    (relOut : (tr : PathAlong plainSig s) → T (projectPathAlong plainSig s tr) → W tr → Prop)
     (draw : QueryImpl (challengeSpec plainSig s) ProbComp)
     (ε : ChallengeNode plainSig s → ℝ≥0∞) : Prop :=
   Core.rbrKnowledgeSoundness plainSig s admissible relIn
-    (fun stmt tr wit => V.validAcceptance impl (fun t => relOut tr t wit) stmt tr) draw ε
+    (fun stmt tr wit => V.validAcceptance impl stmt tr (fun t => relOut tr t wit)) draw ε
 
 namespace OracleVerifier
-variable {ι I J σ S T : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
-  {A : I → Type} {B : J → Type} {inputs : OracleFamily I A} {outputs : OracleFamily J B}
+variable {ι I σ S : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
+  {T : Path s → Type} {A : I → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
+  {inputs : OracleFamily I A} {outputs : (p : Path s) → OracleFamily (J p) (B p)}
 
-/-- Oracle acceptance from a possible terminal state, with actual input and path payloads. -/
+/-- Oracle acceptance from a possible terminal state, with actual input and path payloads. The
+event is a predicate on the output statement and oracle data at the transcript's shape path. -/
 def validAcceptance (V : OracleVerifier ambient s S T inputs outputs)
-    (impl : QueryImpl ambient (StateT σ ProbComp)) (langOut : T × (∀ j, B j) → Prop)
-    (stmt : S × (∀ i, A i)) (tr : PathAlong oracleSig s) : Prop :=
+    (impl : QueryImpl ambient (StateT σ ProbComp))
+    (stmt : S × (∀ i, A i)) (tr : PathAlong oracleSig s)
+    (event : OracleVerifier.Output T B (projectPathAlong oracleSig s tr) → Prop) : Prop :=
   let p := projectPathAlong oracleSig s tr
   let view := toView s tr
   let resources := sumData stmt.2 (payloads s tr)
-  letI : MeasurableSpace (Option T) := ⊤
+  letI : MeasurableSpace (Option (T p)) := ⊤
   let handler : QueryImpl (ambient + (sumFamily inputs (pathFamily s p)).spec)
       (StateT σ ProbComp) := QueryImpl.addLift impl
         ((sumFamily inputs (pathFamily s p)).behaviorOfRealizations resources)
   ∃ state : σ, 0 < 𝒟[(simulateQ handler (V.decide stmt.1 p view).run).run' state]
-      {v | ∃ t, v = some t ∧ langOut (t, (V.outputMap stmt.1 p view).f resources)}
+      {v | ∃ t, v = some t ∧ event (t, (V.outputMap stmt.1 p view).f resources)}
 
-/-- Worst-case-per-prefix oracle soundness with the full input admissibility boundary. -/
+/-- Worst-case-per-prefix oracle soundness with the full input admissibility boundary. The
+output language is indexed by the shape path and judged at the transcript's path. -/
 abbrev rbrSoundness (V : OracleVerifier ambient s S T inputs outputs)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (input : StatementProblem (S × (∀ i, A i)))
-    (output : StatementProblem (T × (∀ j, B j)))
+    (output : PathProblem s (OracleVerifier.Output T B))
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp)
     (ε : ChallengeNode oracleSig s → ℝ≥0∞) : Prop :=
   Core.rbrSoundness oracleSig s (input.admissible ()) (input.language ())
-    (V.validAcceptance impl (output.language ())) draw ε
+    (fun stmt tr => V.validAcceptance impl stmt tr
+      (output.language (projectPathAlong oracleSig s tr))) draw ε
 
 /-- Worst-case-per-prefix oracle knowledge with full payload-bearing prefix access. The output
 witness type `W tr` and the output relation `relOut tr` are indexed by the completed
-transcript `tr`. -/
+transcript `tr`, and the output statement and oracle data have the types at its shape path. -/
 abbrev rbrKnowledgeSoundness {Win : Type} {W : PathAlong oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (admissible : S × (∀ i, A i) → Prop) (relIn : (S × (∀ i, A i)) → Win → Prop)
-    (relOut : (tr : PathAlong oracleSig s) → (T × (∀ j, B j)) → W tr → Prop)
+    (relOut : (tr : PathAlong oracleSig s) →
+      OracleVerifier.Output T B (projectPathAlong oracleSig s tr) → W tr → Prop)
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp)
     (ε : ChallengeNode oracleSig s → ℝ≥0∞) : Prop :=
   Core.rbrKnowledgeSoundness oracleSig s admissible relIn
-    (fun stmt tr wit => V.validAcceptance impl (fun t => relOut tr t wit) stmt tr) draw ε
+    (fun stmt tr wit => V.validAcceptance impl stmt tr (fun t => relOut tr t wit)) draw ε
 
 end OracleVerifier
 

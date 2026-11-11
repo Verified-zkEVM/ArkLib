@@ -6,6 +6,7 @@ Authors: Quang Dao
 
 import ArkLib.Interaction.Core.Oracle.LoggedExecution
 import ArkLib.Interaction.Core.Oracle.Routing
+import ArkLibTest.Interaction.Core.Oracle.DependentRouting
 import VCVio.OracleComp.Runtime
 import ArkLibTest.Interaction.Core.Support
 import ArkLibTest.Interaction.Core.Oracle.HiddenBitFixture
@@ -26,11 +27,11 @@ updated count. -/
 abbrev ambient : OracleSpec Nat := Nat →ₒ Nat
 
 /-- One scalar input slot. -/
-@[instance_reducible] def inputs : OracleFamily Unit (fun _ => Nat) :=
+@[instance_reducible] def inputs : OracleFamily.{0, 0, 0} Unit (fun _ => Nat) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
 /-- One exported scalar oracle. -/
-@[instance_reducible] def exported : OracleFamily Unit (fun _ => Nat) :=
+@[instance_reducible] def exported : OracleFamily.{0, 0, 0} Unit (fun _ => Nat) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
 /-- The input data: the single slot holds 7. -/
@@ -91,7 +92,8 @@ def closeMap : OracleMap pairResources exported where
     rfl
 
 /-- The decision records 1, reads the sent oracle, records 2, and accepts or rejects. -/
-def pairVerifier (accept : Bool) : OracleVerifier ambient pairSend Unit Nat inputs exported where
+def pairVerifier (accept : Bool) :
+    OracleVerifier ambient pairSend Unit (fun _ => Nat) inputs (fun _ => exported) where
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact OptionT.mk do
@@ -165,7 +167,8 @@ example (hidden : Nat) :
   rfl
 
 /-! TerminalRun TR1 and TR2, restated: the frozen rows run to a fault. The decisions have no fault
-outcome (OQ7), so the rows run to a rejection. The setup query 9 becomes the prover's first query,
+outcome, and these runs instead end in rejection. The setup query 9 becomes the prover's first
+query,
 and the frozen reception query 1 moves into the decision. For every hidden value the history keeps
 the prover and decision effects `[9, 0, 1, 2]`, and the result keeps the private output and the
 decision log, whose resource query answered the sent value 11.
@@ -210,18 +213,21 @@ abbrev twiceResources := sumFamily inputs (pathFamily sendTwice ⟨⟨⟩, ⟨�
 /-- Decision programs over the ambient and the resources of `sendTwice`. -/
 abbrev Decision := OptionT (OracleComp (ambient + twiceResources.spec)) (List Nat)
 
+/-- Read the scalar input oracle. -/
 def readInput : OracleComp (ambient + twiceResources.spec) Nat :=
   liftM ((ambient + twiceResources.spec).query (.inr ⟨.inl (), ()⟩))
 
+/-- Read the first scalar message oracle. -/
 def readFirst : OracleComp (ambient + twiceResources.spec) Nat :=
   liftM ((ambient + twiceResources.spec).query (.inr ⟨.inr (.inl ⟨⟩), ()⟩))
 
+/-- Read the second scalar message oracle. -/
 def readSecond : OracleComp (ambient + twiceResources.spec) Nat :=
   liftM ((ambient + twiceResources.spec).query (.inr ⟨.inr (.inr (.inl ⟨⟩)), ()⟩))
 
 /-- A verifier on `sendTwice` running a fixed decision program; its outputs are its inputs. -/
 def twiceVerifier (program : Decision) :
-    OracleVerifier ambient sendTwice Unit (List Nat) inputs inputs where
+    OracleVerifier ambient sendTwice Unit (fun _ => List Nat) inputs (fun _ => inputs) where
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
     exact program
@@ -327,7 +333,8 @@ def phasedProver : Prover oracleSig ambient phased (fun _ => Nat) := do
       pure ⟨(if (show Bool from c) then 11 else 0 : Nat), pure 0⟩⟩
 
 /-- The decision records 2 and 3, reads the oracle, then records 6 and 7. -/
-def phasedVerifier : OracleVerifier ambient phased Unit (List Nat) inputs inputs where
+def phasedVerifier :
+    OracleVerifier ambient phased Unit (fun _ => List Nat) inputs (fun _ => inputs) where
   decide _ p _ := by
     rcases p with ⟨b, c, ⟨⟩, ⟨⟩⟩
     exact do
@@ -381,6 +388,7 @@ run_cmd do
 @[instance_reducible] def single : OracleProtocol :=
   .liftBind (.oracle Nat OracleInterface.instDefault) (fun _ => .pure ⟨⟩)
 
+/-- Two consecutive scalar oracle sends. -/
 abbrev pair : OracleProtocol := single.append (fun _ => single)
 
 /-- The prefix resources on the only path of `single`. -/
@@ -406,7 +414,7 @@ def messageExport : OracleMap prefixResources exported where
 /-- A prefix verifier with a fixed decision program and export. -/
 def prefixVerifier (program : OptionT (OracleComp (ambient + prefixResources.spec)) Nat)
     (exportMap : OracleMap prefixResources exported) :
-    OracleVerifier ambient single Unit Nat inputs exported where
+    OracleVerifier ambient single Unit (fun _ => Nat) inputs (fun _ => exported) where
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact program
@@ -423,7 +431,8 @@ abbrev suffixResources := sumFamily exported (pathFamily single ⟨⟨⟩, ⟨�
 
 /-- The suffix records 3, reads the export and its own message, and claims their sum plus the
 statement. -/
-def suffixVerifier : OracleVerifier ambient single Nat Nat exported exported where
+def suffixVerifier :
+    OracleVerifier ambient single Nat (fun _ => Nat) exported (fun _ => exported) where
   decide stmt p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact do
@@ -434,14 +443,15 @@ def suffixVerifier : OracleVerifier ambient single Nat Nat exported exported whe
   outputMap _ p _ := OracleMap.embedding (sumFamily exported (pathFamily single p)) .inl
 
 /-- The composite output map is the suffix output map after `suffixRoute`. -/
-def compatible (V : OracleVerifier ambient single Unit Nat inputs exported) :
+def compatible (V : OracleVerifier ambient single Unit (fun _ => Nat) inputs (fun _ => exported)) :
     OracleVerifier.OutputCompatibility V (fun _ => suffixVerifier) where
   outputMap stmt p v :=
     (suffixVerifier.outputMap 0 (Path.split single (fun _ => single) p).2
       (View.split single (fun _ => single) p v).2).comp (OracleVerifier.suffixRoute V stmt p v)
   agrees _ _ _ _ _ _ := rfl
 
-def composed (V : OracleVerifier ambient single Unit Nat inputs exported) :=
+/-- Append the suffix verifier using its routed output map. -/
+def composed (V : OracleVerifier ambient single Unit (fun _ => Nat) inputs (fun _ => exported)) :=
   V.append (fun _ => suffixVerifier) (compatible V)
 
 /-- The prover sends the counter's answers to queries 1 and 2, keeping `out` as private output. -/
@@ -471,7 +481,9 @@ def describeAppend (p : FreeM.Path pair) :
     | ⟨.inr ⟨.inr (.inr (.inr n)), _⟩, _⟩ => n.elim
 
 /-- Private output, claim with output data, decision log, final count and full trace. -/
-def appendSummary (V : OracleVerifier ambient single Unit Nat inputs exported) (out : Nat) :=
+def appendSummary
+    (V : OracleVerifier ambient single Unit (fun _ => Nat) inputs (fun _ => exported))
+    (out : Nat) :=
   (fun result => (result.output.1.2.1, result.output.1.2.2.map (fun r => (r.1, r.2 ())),
       describeAppend _ result.output.2.2, result.state, result.trace)) <$>
     (counter 0 appendChallenges).run ((composed V).runWithLog () seven (appendProver out))
@@ -620,30 +632,24 @@ example (guess : Bool) (secret : Nat) :
 
 /-! ## Erasure under a runtime -/
 
-/-- Running the logged run in a persistent runtime and erasing the logs and the trace gives the
-ordinary stateful execution of the run. This composes VCVio's `runFrom_eraseTrace` with
-`runWithLog_erase`. -/
-theorem runtime_runWithLog_erase {ι I J S T κ : Type} {ambient : OracleSpec ι}
-    {s : OracleProtocol} {A : I → Type} {B : J → Type} {inputs : OracleFamily I A}
-    {outputs : OracleFamily J B} {Out : PathAlong oracleSig s → Type}
-    {Import : OracleSpec κ} (V : OracleVerifier ambient s S T inputs outputs)
-    (runtime : OracleRuntime Import (ambient + challengeSpec oracleSig s)) (stmt : S)
-    (data : ∀ i, A i) (prover : Prover oracleSig ambient s Out) :
+/-- Erasure commutes with handlers whose lawful target monad has a larger universe. -/
+example {m : Type → Type 1} [Monad m] [LawfulMonad m]
+    (handler : QueryImpl bitFull m) (guess : Bool) (secret : Nat) :
+    Sigma.fst <$> simulateQ handler
+        (bitVerifier.runWithLog () falseData (guessProver guess secret)) =
+      simulateQ handler (bitVerifier.run () falseData (guessProver guess secret)) :=
+  OracleVerifier.simulateQ_runWithLog_erase bitVerifier handler () falseData
+    (guessProver guess secret)
+
+/-- The hidden-bit runtime satisfies logged-run erasure for every guess and secret. -/
+example (guess : Bool) (secret : Nat) :
     (fun result => (result.output.1, result.state)) <$>
-        runtime.run (V.runWithLog stmt data prover) =
-      runtime.setup >>= fun state => runtime.handler.runState state (V.run stmt data prover) := by
-  rw [OracleRuntime.run_eq, _root_.map_bind]
-  refine bind_congr fun state => ?_
-  have erased := runtime.runFrom_eraseTrace state (V.runWithLog stmt data prover)
-  have paired := congrArg (fun program =>
-    (fun result => (result.1.1, result.2)) <$> program) erased
-  have logged := congrArg (runtime.handler.runState state) (V.runWithLog_erase stmt data prover)
-  calc
-    _ = (fun result => (result.1.1, result.2)) <$>
-        runtime.handler.runState state (V.runWithLog stmt data prover) := by
-      simpa only [Functor.map_map] using paired
-    _ = _ := by
-      simpa [QueryImpl.Stateful.runState, monad_norm] using logged
+        bitRuntime.run (bitVerifier.runWithLog () falseData (guessProver guess secret)) =
+      bitRuntime.setup >>= fun state =>
+        bitRuntime.handler.runState state
+          (bitVerifier.run () falseData (guessProver guess secret)) :=
+  OracleVerifier.runtime_runWithLog_erase bitVerifier bitRuntime () falseData
+    (guessProver guess secret)
 
 end Interaction.Core.LoggedExecutionTests
 
@@ -655,8 +661,33 @@ row guards the terminal erase law; the decisions have no terminal layer, so it g
 run_cmd do
   for decl in [``Interaction.Core.OracleVerifier.runWithLog_fst,
       ``Interaction.Core.OracleVerifier.runWithLog_erase,
-      ``Interaction.Core.LoggedExecutionTests.runtime_runWithLog_erase,
+      ``Interaction.Core.OracleVerifier.runtime_runWithLog_erase,
+      ``Interaction.Core.OracleVerifier.simulateQ_runWithLog_erase,
       ``OracleComp.withQueryLog_simulateQ] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"
+
+namespace Interaction.Core.DependentRoutingTests
+
+/-- Observe the logged run with the statement and output oracle selected by its public Boolean.
+The dependent claim is read through that selected oracle interface. -/
+def loggedObserved (input : Nat) : Bool × Nat × Option (Nat × Nat) :=
+  let obs := (simulateQ noQueries (composite.runWithLog () (fun _ => input) (prover input))).1
+  ((projectPathAlong oracleSig combined obs.1).1, obs.2.1,
+    obs.2.2.map (readClaim (projectPathAlong oracleSig combined obs.1)))
+
+/-- Logging retains the unit statement and scalar realization of the zero branch. -/
+example : loggedObserved 0 = (true, 13, some (0, 0)) := rfl
+
+/-- Logging retains the natural statement and pair realization of the nonzero branch. -/
+example : loggedObserved 7 = (false, 29, some (7, 7)) := rfl
+
+/-- Erasing a logged run retains the dependent observation for every input. -/
+example (input : Nat) : loggedObserved input = observed input := by
+  have h := OracleVerifier.simulateQ_runWithLog_erase composite noQueries ()
+    (fun _ => input) (prover input)
+  exact congrArg (fun obs => ((projectPathAlong oracleSig combined obs.1).1, obs.2.1,
+    obs.2.2.map (readClaim (projectPathAlong oracleSig combined obs.1)))) h
+
+end Interaction.Core.DependentRoutingTests

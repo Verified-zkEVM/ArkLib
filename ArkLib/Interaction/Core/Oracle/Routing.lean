@@ -23,82 +23,10 @@ prefix transcript alone.
 
 @[expose] public section
 
-universe u uA
+universe u uI uJ uS
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
-
-attribute [local implicit_reducible] projectPathAlong projectPathAlongLocalMap
-  Displayed.LocalMap.toHom Displayed.LocalMap.toHomFun owner Node Node.position challengeSpec
-
-/-- Restrict challenge draws of an appended protocol to the challenge nodes of its prefix. -/
-def prefixDraw {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
-    {m : Type u → Type u} :
-    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
-    ((c : ChallengeNode l (s₁.append s₂)) → m (challengeSpec l (s₁.append s₂) c)) →
-    (c : ChallengeNode l s₁) → m (challengeSpec l s₁ c)
-  | .pure _, _, _, c => c.val.elim
-  | .liftBind _ _, _, draw, ⟨.inl x, h⟩ => draw ⟨.inl x, h⟩
-  | .liftBind _ next, s₂, draw, ⟨.inr ⟨b, c⟩, h⟩ =>
-    prefixDraw l (next b) (fun p => s₂ ⟨b, p⟩)
-      (fun c => draw ⟨.inr ⟨b, c.val⟩, c.property⟩) ⟨c, h⟩
-
-/-- Restrict challenge draws of an appended protocol to the challenge nodes of the suffix at a
-completed prefix path. -/
-def suffixDraw {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
-    {m : Type u → Type u} :
-    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
-    ((c : ChallengeNode l (s₁.append s₂)) → m (challengeSpec l (s₁.append s₂) c)) →
-    (p : Path s₁) → (c : ChallengeNode l (s₂ p)) → m (challengeSpec l (s₂ p) c)
-  | .pure _, _, draw, ⟨⟩, c => draw c
-  | .liftBind _ next, s₂, draw, ⟨b, p⟩, c =>
-    suffixDraw l (next b) (fun p => s₂ ⟨b, p⟩)
-      (fun c => draw ⟨.inr ⟨b, c.val⟩, c.property⟩) p c
-
-/-- Combining the prefix and suffix restrictions of challenge draws recovers the draws. -/
-theorem combineDraw_prefixDraw_suffixDraw {P : PFunctor.{uA, u}}
-    (l : PFunctor.Lens P rolePoly.{u}) {m : Type u → Type u} :
-    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
-    (draw : (c : ChallengeNode l (s₁.append s₂)) → m (challengeSpec l (s₁.append s₂) c)) →
-    combineDraw l s₁ s₂ (prefixDraw l s₁ s₂ draw) (suffixDraw l s₁ s₂ draw) = draw
-  | .pure _, _, _ => rfl
-  | .liftBind _ next, s₂, draw => by
-    funext c
-    rcases c with ⟨x | ⟨b, c⟩, h⟩
-    · rfl
-    · exact congrFun (combineDraw_prefixDraw_suffixDraw l (next b) (fun p => s₂ ⟨b, p⟩)
-        (fun c => draw ⟨.inr ⟨b, c.val⟩, c.property⟩)) ⟨c, h⟩
-
-/-- The sampler of an appended oracle protocol is the append of its restricted samplers. -/
-theorem sampler_append_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
-    (s₁ : OracleProtocol.{u}) (s₂ : Path s₁ → OracleProtocol.{u})
-    (draw : (c : ChallengeNode oracleSig (s₁.append s₂)) →
-      m (challengeSpec oracleSig (s₁.append s₂) c)) :
-    sampler oracleSig (s₁.append s₂) draw = appendSampler s₁ s₂
-      (prefixDraw oracleSig s₁ s₂ draw) (suffixDraw oracleSig s₁ s₂ draw) := by
-  rw [appendOracleSampler_eq, combineDraw_prefixDraw_suffixDraw]
-
-/-- Routing through a map and answering from data agrees with answering from the mapped data,
-for any interpretation of the ambient queries. -/
-theorem OracleMap.simulate_withAmbient_addLift {ι κ I J : Type u}
-    {ambient : OracleSpec.{u, u} ι} {full : OracleSpec.{u, u} κ}
-    {A : I → Type u} {B : J → Type u}
-    {In : OracleFamily.{u, u, u} I A} {Out : OracleFamily.{u, u, u} J B}
-    (lift : QueryImpl ambient (OracleComp full)) (route : OracleMap In Out) (x : ∀ i, A i)
-    {α : Type u} (program : OracleComp (ambient + Out.spec) α) :
-    simulateQ (QueryImpl.addLift lift (In.behaviorOfRealizations x) :
-        QueryImpl (ambient + In.spec) (OracleComp full))
-        (simulateQ (route.withAmbient ambient) program) =
-      simulateQ (QueryImpl.addLift lift (Out.behaviorOfRealizations (route.f x)) :
-        QueryImpl (ambient + Out.spec) (OracleComp full)) program := by
-  refine QueryImpl.simulateQ_simulateQ_eq_of_apply (fun q => ?_) program
-  rcases q with q | q
-  · simp [OracleMap.withAmbient]
-  · simp only [OracleMap.withAmbient, QueryImpl.addLift_def]
-    rw [QueryImpl.simulateQ_simulateQ_eq_of_apply
-      (impl := (In.behaviorOfRealizations x).liftTarget (OracleComp full))
-      (fun r => QueryImpl.simulateQ_add_query_right _ _ r), simulateQ_liftTarget, route.law]
-    rfl
 
 /-- Component paths of an appended protocol with data for both component oracle families. -/
 abbrev SplitData (s₁ : OracleProtocol.{u}) (s₂ : Path s₁ → OracleProtocol.{u}) :=
@@ -153,11 +81,16 @@ theorem splitOracles_payloads (s₁ : OracleProtocol.{u}) (s₂ : Path s₁ → 
   rw [oracles_split_append]
 
 namespace OracleVerifier
-variable {ι I J K : Type u} {ambient : OracleSpec.{u, u} ι}
-  {A : I → Type u} {B : J → Type u} {C : K → Type u}
-  {inputs : OracleFamily.{u, u, u} I A} {middle : OracleFamily.{u, u, u} J B}
-  {outputs : OracleFamily.{u, u, u} K C}
-  {s₁ : OracleProtocol.{u}} {s₂ : Path s₁ → OracleProtocol.{u}} {S T U : Type u}
+variable {ι : Type u} {I : Type uI} {ambient : OracleSpec.{u, u} ι}
+  {A : I → Type u} {inputs : OracleFamily.{uI, u, u} I A}
+  {s₁ : OracleProtocol.{u}} {s₂ : Path s₁ → OracleProtocol.{u}} {S : Type uS}
+  {T : Path s₁ → Type u} {U : (p : Path s₁) → Path (s₂ p) → Type u}
+  {J : Path s₁ → Type uJ} {B : (p : Path s₁) → J p → Type u}
+  {middle : (p : Path s₁) → OracleFamily.{uJ, u, u} (J p) (B p)}
+  {K : (p : Path s₁) → Path (s₂ p) → Type u}
+  {C : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → K p₁ p₂ → Type u}
+  {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
+    OracleFamily.{u, u, u} (K p₁ p₂) (C p₁ p₂)}
 
 /-- In an appended run, the prefix decision's resources are the inputs and the prefix payloads:
 every prefix-slot query routed by `prefixRoute` is answered as `payloadImpl s₁ tr₁` answers it. -/
@@ -182,9 +115,10 @@ theorem prefixRoute_payload (data : ∀ i, A i) (tr₁ : PathAlong oracleSig s�
 /-- A composed oracle run splits into the prefix interaction and the suffix interaction, followed
 by the prefix decision on the data `prefixRoute` selects and, after prefix acceptance only, the
 suffix decision on the data `suffixRoute` selects. The output data is the composite output map
-on the inputs and all payloads of the same run. Ambient and challenge queries keep their order. -/
+on the inputs and all payloads of the same run. Ambient and challenge queries keep their order.
+Intermediate and final statements and oracle families may depend on their public paths. -/
 theorem run_append (V₁ : OracleVerifier ambient s₁ S T inputs middle)
-    (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) T U middle outputs)
+    (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p))
     (compatible : OutputCompatibility V₁ V₂) (stmt : S) (data : ∀ i, A i)
     {Out : PathAlong oracleSig (s₁.append s₂) → Type u}
     (prover : Prover oracleSig ambient (s₁.append s₂) Out) :
@@ -210,7 +144,8 @@ theorem run_append (V₁ : OracleVerifier ambient s₁ S T inputs middle)
       | none => pure ⟨tr, out, none⟩
       | some mid => do
         let verdict ← simulateQ (QueryImpl.addLift toFull
-            ((sumFamily middle (pathFamily _ (Path.split s₁ s₂ p).2)).behaviorOfRealizations
+            ((sumFamily (middle (Path.split s₁ s₂ p).1)
+              (pathFamily _ (Path.split s₁ s₂ p).2)).behaviorOfRealizations
               ((suffixRoute V₁ stmt p v).f resources)))
           ((V₂ (Path.split s₁ s₂ p).1).decide mid (Path.split s₁ s₂ p).2
             (View.split s₁ s₂ p v).2).run

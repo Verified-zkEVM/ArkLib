@@ -29,7 +29,7 @@ variable {n : ℕ} {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
 
 /-- The embedded verifier decides by calling legacy `verify` on the decoded transcript. -/
 def embedVerifier (V : _root_.Verifier oSpec StmtIn StmtOut pSpec) :
-    Core.Verifier oSpec (protocol pSpec) StmtIn StmtOut where
+    Core.Verifier oSpec (protocol pSpec) StmtIn (fun _ => StmtOut) where
   decide stmt _ view := V.verify stmt (decode pSpec view.val)
 
 @[simp] theorem embedVerifier_decide (V : _root_.Verifier oSpec StmtIn StmtOut pSpec)
@@ -38,7 +38,8 @@ def embedVerifier (V : _root_.Verifier oSpec StmtIn StmtOut pSpec) :
 
 /-- The embedded reduction. -/
 def embedReduction (R : _root_.Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) :
-    Core.Reduction oSpec (protocol pSpec) StmtIn WitIn StmtOut (fun _ => StmtOut × WitOut) where
+    Core.Reduction oSpec (protocol pSpec) StmtIn WitIn (fun _ => StmtOut)
+      (fun _ => StmtOut × WitOut) where
   prover := embedProver R.prover
   verifier := embedVerifier R.verifier
 
