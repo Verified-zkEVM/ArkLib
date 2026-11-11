@@ -19,7 +19,7 @@ uses discrete observations, so every event is measurable.
 
 @[expose] public section
 
-universe v uS uI wI wJ
+universe v v' uS uI wI wJ
 
 namespace Interaction.Core
 open PFunctor FreeM OracleComp Oracle
@@ -41,30 +41,65 @@ def soundness {S Obs Ctx : Type*} {T : ClaimFamily Ctx} [MeasurableSpace Obs]
 
 /-- Soundness of a plain run interpreted in an arbitrary distribution monad.
 Ambient failure contributes no mass to the accepting event. -/
+def Verifier.soundnessUsing {m : Type → Type v} [Monad m] [EvalDistSemantics m]
+    {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : Protocol}
+    {T : Path s → Type}
+    (V : Verifier ambient s S T)
+    (run : {α : Type} → OracleComp (ambient + challengeSpec plainSig s) α → m α)
+    (input : StatementProblem S) (output : PathProblem s T) (ε : ℝ≥0∞) : Prop :=
+  ∀ (Out : PathAlong plainSig s → Type) stmt,
+    input.admissible () stmt → ¬ input.language () stmt →
+    ∀ p : Prover plainSig ambient s Out,
+      Pr{let obs ← run (V.run stmt p)}[
+        ∃ t, obs.2.2 = some t ∧ output.language (projectPathAlong _ s obs.1) t] ≤ ε
+
+/-- Interpret the whole run with a query handler. -/
 abbrev Verifier.soundnessWith {m : Type → Type v} [Monad m] [EvalDistSemantics m]
     {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : Protocol}
     {T : Path s → Type}
     (V : Verifier ambient s S T)
     (handler : QueryImpl (ambient + challengeSpec plainSig s) m)
     (input : StatementProblem S) (output : PathProblem s T) (ε : ℝ≥0∞) : Prop :=
-  ∀ (Out : PathAlong plainSig s → Type) stmt,
-    input.admissible () stmt → ¬ input.language () stmt →
-    ∀ p : Prover plainSig ambient s Out,
-      Pr{let obs ← simulateQ handler (V.run stmt p)}[
-        ∃ t, obs.2.2 = some t ∧ output.language (projectPathAlong _ s obs.1) t] ≤ ε
+  V.soundnessUsing (simulateQ handler) input output ε
 
 /-- A plain decision has positive probability of accepting an output in the language. -/
+def Verifier.validAcceptanceUsing {m : Type → Type v} {n : Type → Type v'}
+    [Monad m] [Monad n] [EvalDistSemantics n]
+    {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : Protocol}
+    {T : Path s → Type}
+    (V : Verifier ambient s S T) (impl : QueryImpl ambient m)
+    (run : {α : Type} → m α → n α) (langOut : (p : Path s) → T p → Prop)
+    (stmt : S) (tr : PathAlong plainSig s) : Prop :=
+  0 < Pr{let v ← run (simulateQ impl
+      (V.decide stmt (projectPathAlong plainSig s tr) (toPlainView s tr)).run)}[
+        ∃ t, v = some t ∧ langOut (projectPathAlong plainSig s tr) t]
+
+/-- Interpret the decision without an additional execution map. -/
 def Verifier.validAcceptanceWith {m : Type → Type v} [Monad m] [EvalDistSemantics m]
     {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : Protocol}
     {T : Path s → Type}
     (V : Verifier ambient s S T) (impl : QueryImpl ambient m) (langOut : (p : Path s) → T p → Prop)
     (stmt : S) (tr : PathAlong plainSig s) : Prop :=
-  0 < Pr{let v ← (simulateQ impl
-      (V.decide stmt (projectPathAlong plainSig s tr) (toPlainView s tr)).run)}[
-        ∃ t, v = some t ∧ langOut (projectPathAlong plainSig s tr) t]
+  V.validAcceptanceUsing impl (fun x => x) langOut stmt tr
 
 /-- Soundness of an oracle run interpreted in an arbitrary distribution monad, with the output
 oracle data read from the verifier's output map. -/
+def OracleVerifier.soundnessUsing {m : Type → Type v} [Monad m] [EvalDistSemantics m]
+    {ι : Type} {I : Type uI} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol}
+    {T : Path s → Type} {A : I → Type} {J : Path s → Type}
+    {B : (p : Path s) → J p → Type} {inputs : OracleFamily.{uI, 0, wI} I A}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+    (V : OracleVerifier ambient s S T inputs outputs)
+    (run : {α : Type} → OracleComp (ambient + challengeSpec oracleSig s) α → m α)
+    (input : StatementProblem (S × (∀ i, A i))) (output : PathProblem s (OracleVerifier.Output T B))
+    (ε : ℝ≥0∞) : Prop :=
+  ∀ (Out : PathAlong oracleSig s → Type) stmt,
+    input.admissible () stmt → ¬ input.language () stmt →
+    ∀ p : Prover oracleSig ambient s Out,
+      Pr{let obs ← run (V.run stmt.1 stmt.2 p)}[
+        ∃ t, obs.2.2 = some t ∧ output.language (projectPathAlong _ s obs.1) t] ≤ ε
+
+/-- Interpret the whole run with a query handler. -/
 abbrev OracleVerifier.soundnessWith {m : Type → Type v} [Monad m] [EvalDistSemantics m]
     {ι : Type} {I : Type uI} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol}
     {T : Path s → Type} {A : I → Type} {J : Path s → Type}
@@ -74,20 +109,18 @@ abbrev OracleVerifier.soundnessWith {m : Type → Type v} [Monad m] [EvalDistSem
     (handler : QueryImpl (ambient + challengeSpec oracleSig s) m)
     (input : StatementProblem (S × (∀ i, A i))) (output : PathProblem s (OracleVerifier.Output T B))
     (ε : ℝ≥0∞) : Prop :=
-  ∀ (Out : PathAlong oracleSig s → Type) stmt,
-    input.admissible () stmt → ¬ input.language () stmt →
-    ∀ p : Prover oracleSig ambient s Out,
-      Pr{let obs ← simulateQ handler (V.run stmt.1 stmt.2 p)}[
-        ∃ t, obs.2.2 = some t ∧ output.language (projectPathAlong _ s obs.1) t] ≤ ε
+  V.soundnessUsing (simulateQ handler) input output ε
 
 /-- An oracle decision has positive probability of accepting an output in the language,
 using the input data and the full transcript payloads to answer resource queries. -/
-def OracleVerifier.validAcceptanceWith {m : Type → Type v} [Monad m] [EvalDistSemantics m]
+def OracleVerifier.validAcceptanceUsing {m : Type → Type v} {n : Type → Type v'}
+    [Monad m] [Monad n] [EvalDistSemantics n]
     {ι : Type} {I : Type uI} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol}
     {T : Path s → Type} {A : I → Type} {J : Path s → Type}
     {B : (p : Path s) → J p → Type} {inputs : OracleFamily.{uI, 0, wI} I A}
     {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
     (V : OracleVerifier ambient s S T inputs outputs) (impl : QueryImpl ambient m)
+    (run : {α : Type} → m α → n α)
     (langOut : (p : Path s) → OracleVerifier.Output T B p → Prop) (stmt : S × (∀ i, A i))
     (tr : PathAlong oracleSig s) : Prop :=
   let p := projectPathAlong oracleSig s tr
@@ -96,8 +129,19 @@ def OracleVerifier.validAcceptanceWith {m : Type → Type v} [Monad m] [EvalDist
   let handler : QueryImpl (ambient + (pathResources inputs s p).spec) m :=
     QueryImpl.addLift impl
       ((pathResources inputs s p).answer resources)
-  0 < Pr{let v ← simulateQ handler (V.decide stmt.1 p view).run}[
+  0 < Pr{let v ← run (simulateQ handler (V.decide stmt.1 p view).run)}[
     ∃ t, v = some t ∧ langOut p (t, (V.outputMap stmt.1 p view).f resources)]
+
+/-- Interpret the decision without an additional execution map. -/
+def OracleVerifier.validAcceptanceWith {m : Type → Type v} [Monad m] [EvalDistSemantics m]
+    {ι : Type} {I : Type uI} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol}
+    {T : Path s → Type} {A : I → Type} {J : Path s → Type}
+    {B : (p : Path s) → J p → Type} {inputs : OracleFamily.{uI, 0, wI} I A}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+    (V : OracleVerifier ambient s S T inputs outputs) (impl : QueryImpl ambient m)
+    (langOut : (p : Path s) → OracleVerifier.Output T B p → Prop) (stmt : S × (∀ i, A i))
+    (tr : PathAlong oracleSig s) : Prop :=
+  V.validAcceptanceUsing impl (fun x => x) langOut stmt tr
 
 /-- Classical soundness uses the full class of focal strategies, including private continuations.
 The output language is indexed by the shape path of the run. The input statement may lie in any
@@ -112,6 +156,30 @@ abbrev Verifier.soundness {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι}
   letI : MeasurableSpace (Observation plainSig s Out T) := ⊤
   Core.soundness (V.classicalModel (Out := Out) init impl challenges) input output
     (fun obs => projectPathAlong plainSig s obs.1) (fun obs => obs.2.2) ε
+
+/-- Classical soundness specializes the whole-computation experiment interface. -/
+theorem Verifier.soundness_iff_soundnessUsing {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι}
+    {s : Protocol} {T : Path s → Type}
+    (V : Verifier ambient s S T) (init : ProbComp σ)
+    (impl : QueryImpl ambient (StateT σ ProbComp))
+    (challenges : QueryImpl (challengeSpec plainSig s) ProbComp)
+    (input : StatementProblem S) (output : PathProblem s T) (ε : ℝ≥0∞) :
+    V.soundness init impl challenges input output ε ↔
+      V.soundnessUsing (experiment init impl challenges) input output ε := by
+  unfold Verifier.soundness Verifier.soundnessUsing Core.soundness
+  apply forall_congr'
+  intro Out
+  let : MeasurableSpace (Observation plainSig s Out T) := ⊤
+  apply forall_congr'
+  intro stmt
+  apply forall_congr'
+  intro hadm
+  apply forall_congr'
+  intro hfalse
+  apply forall_congr'
+  intro p
+  rw [prEvent_eq_evalDist_of_discrete]
+  rfl
 
 /-- Classical oracle soundness uses the full class of focal strategies over the oracle protocol,
 with the input oracle data supplied to the run. -/
@@ -128,5 +196,33 @@ abbrev OracleVerifier.soundness {ι σ : Type} {I : Type uI} {S : Type uS} {ambi
   letI : MeasurableSpace (Observation oracleSig s Out (OracleVerifier.Output T B)) := ⊤
   Core.soundness (V.classicalModel (Out := Out) init impl challenges) input output
     (fun obs => projectPathAlong oracleSig s obs.1) (fun obs => obs.2.2) ε
+
+/-- Classical soundness specializes the whole-computation experiment interface. -/
+theorem OracleVerifier.soundness_iff_soundnessUsing {ι σ : Type} {I : Type uI} {S : Type uS}
+    {ambient : OracleSpec ι}
+    {s : OracleProtocol} {T : Path s → Type} {A : I → Type} {J : Path s → Type}
+    {B : (p : Path s) → J p → Type} {inputs : OracleFamily.{uI, 0, wI} I A}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+    (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
+    (impl : QueryImpl ambient (StateT σ ProbComp))
+    (challenges : QueryImpl (challengeSpec oracleSig s) ProbComp)
+    (input : StatementProblem (S × (∀ i, A i)))
+    (output : PathProblem s (OracleVerifier.Output T B)) (ε : ℝ≥0∞) :
+    V.soundness init impl challenges input output ε ↔
+      V.soundnessUsing (experiment init impl challenges) input output ε := by
+  unfold OracleVerifier.soundness OracleVerifier.soundnessUsing Core.soundness
+  apply forall_congr'
+  intro Out
+  let : MeasurableSpace (Observation oracleSig s Out (OracleVerifier.Output T B)) := ⊤
+  apply forall_congr'
+  intro stmt
+  apply forall_congr'
+  intro hadm
+  apply forall_congr'
+  intro hfalse
+  apply forall_congr'
+  intro p
+  rw [prEvent_eq_evalDist_of_discrete]
+  rfl
 
 end Interaction.Core

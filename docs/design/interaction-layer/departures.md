@@ -53,8 +53,10 @@ check. Entry 15 applies to the direction into the interaction layer, and entry 1
 direction out of it.
 
 Entry [19](../interaction-rebuild/IMPLEMENTATION-NOTES.md#19-round-by-round-soundness-implies-soundness-for-lawful-distribution-monads)
-records the generic soundness implication under fresh challenge marginals. The former restriction
-to the classical state model has been removed; it is not an unresolved departure.
+records the generic soundness implication. The
+[soundness disposition record](soundness-implication-disposition.md) compares every ported frozen
+statement and test, explains prefix-indexed freshness, and links the classical specialization laws.
+The implication applies to lawful distribution monads, including optional computations.
 
 ## The oracle correspondence gap and its resolution
 

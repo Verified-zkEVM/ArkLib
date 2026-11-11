@@ -311,53 +311,21 @@ constant output witness type for either notion.
 
 ## Migration commit D6
 
-`Security/Implications.lean` proves that round-by-round soundness implies soundness, for plain
-and oracle verifiers. `Verifier.soundness_of_rbrSoundness` takes `V.rbrSoundness impl input output
-draw ε`, with an error `ε : ChallengeNode plainSig s → ℝ≥0∞` on challenge nodes, to
-`V.soundness` with the challenge implementation `draw`, for every initial state distribution
-`init`. The error is the supremum, over shape paths, of the sum of `ε` over the challenge nodes
-the path meets (`challengeNodesOn`). `OracleVerifier.soundness_of_rbrSoundness` does the same
-from `OracleVerifier.rbrSoundness` to `OracleVerifier.soundness`, the model soundness of
-`OracleVerifier.classicalModel` with the verdict and output oracle data of the observation. Its
-acceptance is the actual oracle run: the decision answers resource queries from the input data and
-the run's payloads, and reads its output through the verifier's output oracle map, as in
-`OracleVerifier.validAcceptance`. Neither theorem has an acceptance-link hypothesis. The `_tsum`
-corollaries bound the error by `∑' c, ε c`. The `_uniform` corollaries give `k • e` when every node
-error is at most `e` and every path meets at most `k` challenge nodes. One induction over the
-protocol tree, for any signature lens, serves both verifier forms. The proofs go through neither
-the legacy layer nor the frozen interaction layer.
-
 ### 19. Round-by-round soundness implies soundness for lawful distribution monads
 
-`prEvent_run_le` bounds the actual interpreted run for every `m : Type → Type v` with
-`Monad`, `LawfulMonad`, `EvalDistSemantics` and `LawfulEvalDistSemantics`. It assumes the
-specified fresh event marginals at each receiver node and the local false-to-true bounds.
-No attachment or losslessness instance is required. Missing mass in the author's actions and
-terminal continuation contributes no accepting probability.
+`Security/Implications.lean` bounds actual flip events at full prefixes. Its passive sampler
+retains history-dependent challenge programs, and an exact equation identifies its execution
+with the ordinary Core runner. Encoded event marginals transport prefix-indexed challenge models
+into that bound. The plain and oracle verifier implications give the corresponding bound for
+structural draws.
+All forms allow missing probability mass in any lawful distribution monad.
 
-`FreshChallenges`, beside `Verifier.run` in `Core/Execution.lean`, names the event-marginal
-premise: every interpreted challenge action has the distribution specified by `draw`. The lawful
-bind semantics makes this distribution independent of the history. `FreshChallengesAt` states
-this property from every current ambient state, permitting the challenge to change that state.
-`freshChallengesAt_addLift` proves it for a separate challenge draw lifted beside a state handler.
+`soundnessUsing` interprets the whole computation. Exact specialization laws retain the
+classical initial state distribution and the existential terminal state of `validAcceptance`.
+The generic and classical implications share their run-to-decision and acceptance proof.
+The path supremum is bounded by arbitrary finite rank-indexed sums, as well as the existing
+all-node sum and uniform-error corollaries.
 
-`Verifier.soundnessWith_of_rbrSoundness` and `OracleVerifier.soundnessWith_of_rbrSoundness`
-apply the run bound to their actual decisions. The oracle form answers resource queries using
-the input data and the run's payloads, then reads the output through the output oracle map.
-The `soundnessWith` predicates in `Core/Security/Soundness.lean` quantify over the handler's
-monad. The existing classical `soundness` abbreviations and their implication theorem names
-remain available. They use the same run induction, `prEvent_run_state_le`, specialized to
-`ProbComp`, with freshness proved from every state. There is no second soundness induction.
-
-The path bound is the supremum over shape paths of the sum of the errors at the challenge nodes
-on that path. Both generic verifier forms and both classical forms have `_tsum` and `_uniform`
-corollaries. The former sums all node errors; the latter gives `k • e` when every node error is
-at most `e` and every shape path meets at most `k` challenge nodes.
-
-The frozen `FreshVerifier` also specifies event marginals of the actual receiver action and
-recurses through supported continuations. The Core sampler already supplies the structural
-continuations, and its challenge actions are indexed by the structural node. The generic run
-bound therefore requires only the fresh challenge marginals, with the local certificate checked
-at every full prefix. This restores the frozen monad quantifier, including optional computations.
-The tests instantiate the generic implication with an `OptionT ProbComp` ambient handler whose
-successful mass is one half and discharge the fresh challenge premise for its separate draw.
+The [disposition record](../interaction-layer/soundness-implication-disposition.md) gives the
+source-to-target inventory, the freshness argument, failure tests, and limits of the correspondence.
+Inherited universe constraints remain in [entry 18](#18-run-outputs-are-tied-to-the-monad-universe).

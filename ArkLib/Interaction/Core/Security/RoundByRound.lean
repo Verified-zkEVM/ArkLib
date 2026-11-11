@@ -204,6 +204,20 @@ def Verifier.validAcceptance {ι σ : Type} {S : Type uS} {ambient : OracleSpec 
     (V.decide stmt (projectPathAlong plainSig s tr) (toPlainView s tr)).run).run' state :
       ProbComp (Option (T (projectPathAlong plainSig s tr))))] {v | ∃ t, v = some t ∧ event t}
 
+/-- Classical acceptance quantifies over the possible terminal states. -/
+theorem Verifier.validAcceptance_iff_validAcceptanceUsing {ι σ : Type} {S : Type uS}
+    {ambient : OracleSpec ι} {s : Protocol}
+    {T : Path s → Type} (V : Verifier ambient s S T)
+    (impl : QueryImpl ambient (StateT σ ProbComp)) (stmt : S) (tr : PathAlong plainSig s)
+    (event : (p : Path s) → T p → Prop) :
+    V.validAcceptance impl stmt tr (event (projectPathAlong plainSig s tr)) ↔
+      ∃ state : σ, V.validAcceptanceUsing impl (fun x => x.run' state)
+        event stmt tr := by
+  unfold Verifier.validAcceptance Verifier.validAcceptanceUsing
+  dsimp only
+  let : MeasurableSpace (Option (T (projectPathAlong plainSig s tr))) := ⊤
+  exact exists_congr fun state => by rw [prEvent_eq_evalDist_of_discrete]
+
 /-- The plain verifier's default round-by-round soundness form. The output language is indexed
 by the shape path and judged at the transcript's path. -/
 abbrev Verifier.rbrSoundness {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι} {s : Protocol}
@@ -253,6 +267,19 @@ def validAcceptance (V : OracleVerifier ambient s S T inputs outputs)
         ((pathResources inputs s p).answer resources)
   ∃ state : σ, 0 < 𝒟[(simulateQ handler (V.decide stmt.1 p view).run).run' state]
       {v | ∃ t, v = some t ∧ event (t, (V.outputMap stmt.1 p view).f resources)}
+
+/-- Classical acceptance quantifies over the possible terminal states. -/
+theorem validAcceptance_iff_validAcceptanceUsing (V : OracleVerifier ambient s S T inputs outputs)
+    (impl : QueryImpl ambient (StateT σ ProbComp))
+    (stmt : S × (∀ i, A i)) (tr : PathAlong oracleSig s)
+    (event : (p : Path s) → OracleVerifier.Output T B p → Prop) :
+    V.validAcceptance impl stmt tr (event (projectPathAlong oracleSig s tr)) ↔
+      ∃ state : σ, V.validAcceptanceUsing impl (fun x => x.run' state)
+        event stmt tr := by
+  unfold validAcceptance validAcceptanceUsing
+  dsimp only
+  let : MeasurableSpace (Option (T (projectPathAlong oracleSig s tr))) := ⊤
+  exact exists_congr fun state => by rw [prEvent_eq_evalDist_of_discrete]
 
 /-- Worst-case-per-prefix oracle soundness with the full input admissibility boundary. The
 output language is indexed by the shape path and judged at the transcript's path. -/

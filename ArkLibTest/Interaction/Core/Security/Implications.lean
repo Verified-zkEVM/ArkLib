@@ -19,13 +19,23 @@ open scoped ENNReal
 
 universe uS uI wI wJ
 
+-- These ordinary imports expose both classical specialization laws for each verifier form.
+#check Verifier.soundness_iff_soundnessUsing
+#check OracleVerifier.soundness_iff_soundnessUsing
+#check Verifier.validAcceptance_iff_validAcceptanceUsing
+#check OracleVerifier.validAcceptance_iff_validAcceptanceUsing
+
+#check runPrefixChallenges_eq_run
+#check prEvent_runPrefixChallenges_le
+#check prEvent_runPrefixChallenges_soundness
+
 namespace Interaction.Core.ImplicationsTests
 
 open Interaction.Core.SecurityTests
 
 /-! ### The general statements -/
 
--- Row #3: frozen `Interaction.Oracle.Security.executeStrategies_soundness`.
+-- Disposition S2: soundness-implication-disposition.md#soundnesslean.
 example {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι} {s : Protocol}
     {T : Path s → Type}
     (V : Verifier ambient s S T) (init : ProbComp σ)
@@ -39,7 +49,7 @@ example {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι} {s : Protocol}
     V.soundness init impl draw input output (∑' c, ε c) :=
   ⟨Verifier.soundness_of_rbrSoundness h, Verifier.soundness_of_rbrSoundness_tsum h⟩
 
--- Row #4: frozen `Interaction.Oracle.Security.executeStrategies_soundness_uniform`.
+-- Disposition S3: soundness-implication-disposition.md#soundnesslean.
 example {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι} {s : Protocol}
     {T : Path s → Type}
     (V : Verifier ambient s S T) (init : ProbComp σ)
@@ -51,7 +61,7 @@ example {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι} {s : Protocol}
     V.soundness init impl draw input output (k • e) :=
   Verifier.soundness_of_rbrSoundness_uniform h (fun _ => le_rfl) hcount
 
--- Row #3, oracle verifiers: frozen `Interaction.Oracle.Security.executeStrategies_soundness`.
+-- Disposition S2, oracle form: soundness-implication-disposition.md#soundnesslean.
 example {ι σ : Type} {I : Type uI} {S : Type uS}
     {ambient : OracleSpec ι} {s : OracleProtocol} {T : Path s → Type} {A : I → Type}
     {J : Path s → Type} {B : (p : Path s) → J p → Type}
@@ -68,8 +78,7 @@ example {ι σ : Type} {I : Type uI} {S : Type uS}
     V.soundness init impl draw input output (∑' c, ε c) :=
   ⟨OracleVerifier.soundness_of_rbrSoundness h, OracleVerifier.soundness_of_rbrSoundness_tsum h⟩
 
--- Row #4, oracle verifiers:
--- frozen `Interaction.Oracle.Security.executeStrategies_soundness_uniform`.
+-- Disposition S3, oracle form: soundness-implication-disposition.md#soundnesslean.
 example {ι σ : Type} {I : Type uI} {S : Type uS}
     {ambient : OracleSpec ι} {s : OracleProtocol} {T : Path s → Type} {A : I → Type}
     {J : Path s → Type} {B : (p : Path s) → J p → Type}
@@ -102,7 +111,7 @@ example {ι σ : Type} {I : Type uI} {S : Type uS}
           (fun obs => projectPathAlong oracleSig s obs.1) (fun obs => obs.2.2) ε :=
   Iff.rfl
 
--- Row #5: frozen `Interaction.Oracle.Security.OrdinaryState.exists_verifier_escape`.
+-- Disposition R1: soundness-implication-disposition.md#roundbyroundlean.
 example {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly) {s : FreeM P PUnit} {S : Type uS}
     {admissible language : S → Prop} {accepts : S → PathAlong l s → Prop}
     (F : StateFunction l s S admissible language accepts) (stmt : S)
@@ -111,7 +120,7 @@ example {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly) {s : FreeM P PUnit}
     EscapeAlong l s (fun sp history => F.toFun sp history stmt) tr :=
   F.escapeAlong l hadm hlang hacc
 
--- Row #6: frozen `Interaction.Oracle.Security.LocalSoundness.random_prefix`.
+-- Disposition S4: soundness-implication-disposition.md#soundnesslean.
 example {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly) {s : FreeM P PUnit} {S : Type uS}
     {admissible language : S → Prop} {accepts : S → PathAlong l s → Prop}
     (draw : QueryImpl (challengeSpec l s) ProbComp) (ε : ChallengeNode l s → ℝ≥0∞)
@@ -131,7 +140,7 @@ example {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly) {s : FreeM P PUnit}
   flip_random_prefix_le l (fun sp history => F.toFun sp history stmt) draw ε hF author select
     hselect
 
--- Row #6 at a fixed receiver node, with a nonfailing author of the prefix.
+-- Disposition S4 also covers a fixed receiver node and a nonfailing prefix author.
 example {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly) {s : FreeM P PUnit} {S : Type uS}
     {admissible language : S → Prop} {accepts : S → PathAlong l s → Prop}
     (draw : QueryImpl (challengeSpec l s) ProbComp) (ε : ChallengeNode l s → ℝ≥0∞)
@@ -178,7 +187,7 @@ theorem afterBit_node_ne : (afterBit true).node ≠ (afterBit false).node := by
   injection h' with h'
   cases h'
 
--- Row #6 with a selected node that depends on the author's output.
+-- Disposition S4 also permits the selected node to depend on the author's output.
 example (G : ∀ {t : Protocol}, (sp : Cursor.Spine branchy t) → PrefixMoves plainSig sp → Prop)
     (draw : QueryImpl (challengeSpec plainSig branchy) ProbComp)
     (ε : ChallengeNode plainSig branchy → ℝ≥0∞)
@@ -338,6 +347,58 @@ example (init : ProbComp Nat) :
     twoVerifier.soundness init tick drawTwo boolProblem twoOutput (2 • (1 / 4)) :=
   Verifier.soundness_of_rbrSoundness_uniform two_rbrSoundness (fun _ => le_rfl) two_card
 
+-- Disposition S1/S2: the path bound recovers arbitrary finite rank-indexed sums.
+example {P : PFunctor.{1, 0}} {l : PFunctor.Lens P rolePoly} {s : FreeM P PUnit}
+    (rank : ChallengeNode l s → ℕ) (error : ℕ → ℝ≥0∞) (count : ℕ)
+    (hinj : ∀ path, Set.InjOn rank (challengeNodesOn l s path))
+    (hrange : ∀ path c, c ∈ challengeNodesOn l s path → rank c < count) :
+    ⨆ path : Path s, ∑ c ∈ challengeNodesOn l s path, error (rank c) ≤
+      ∑ j ∈ Finset.range count, error j := by
+  simpa only [Nat.Ico_zero_eq_range] using
+    iSup_sum_challengeNodesOn_le_rank_sum (fun c => error (rank c)) rank error 0 count
+      hinj (fun path c hc => Finset.mem_Ico.mpr ⟨Nat.zero_le _, hrange path c hc⟩)
+      (fun _ => le_rfl)
+
+/-! ### Prefix-dependent challenge samplers -/
+
+namespace AdaptiveChallenges
+
+/-- Two erased Boolean challenges have one fixed shape path. -/
+def protocol : Protocol := .liftBind (.challenge Bool) (fun _ =>
+  .liftBind (.challenge Bool) (fun _ => .pure ⟨⟩))
+
+/-- The first challenge comes from the ambient service. -/
+abbrev ambient : OracleSpec Unit := Unit →ₒ Bool
+
+/-- The second challenge is the negation of the first, without changing shape. -/
+def draws : PrefixChallengePrograms plainSig ambient protocol
+  | _, _, .root _, _, _ => ambient.query ()
+  | _, _, .down _ (.root _), _, history => pure (!history.1.1)
+  | _, _, .down _ (.down _ tail), _, _ => nomatch tail
+
+/-- A focal strategy that observes both challenges and returns a unit output. -/
+def prover : Prover plainSig ambient protocol (fun _ => Unit) :=
+  pure (fun _ => pure (fun _ => pure ()))
+
+/-- The actual executor retains the first challenge when choosing the second sampler. -/
+theorem execution : runPrefixChallenges plainSig protocol prover draws =
+    (do let x ← ambient.query ()
+        pure ⟨⟨x, !x, ⟨⟩⟩, (), ⟨⟩⟩) := by
+  rfl
+
+end AdaptiveChallenges
+
+-- Disposition S4: models and their result types may vary with the authored prefix.
+example {α : Type} (author : OptionT ProbComp α) {Result : α → Type}
+    (sample : (a : α) → ProbComp (Result a)) (flip : (a : α) → Result a → Prop)
+    (rank : α → ℕ) (error : ℕ → ℝ≥0∞) (round : ℕ)
+    (hlocal : ∀ a, Pr{let r ← sample a}[flip a r] ≤ error (rank a))
+    (hrank : ∀ a, rank a = round) :
+    Pr{let escape ← (author >>= fun a => flip a <$> OptionT.lift (sample a))}[escape] ≤
+      error round :=
+  flip_random_model_le author sample flip (fun a => error (rank a)) hlocal
+    (fun a => le_of_eq (congrArg error (hrank a)))
+
 /-! ### A handler with missing probability mass -/
 
 /-- Each ambient call succeeds with probability one half, independently of the challenge. -/
@@ -387,7 +448,7 @@ theorem optionalAcceptance (stmt : Bool) (tr : PathAlong plainSig coin) :
   have key : simulateQ optionalAmbient (optionalVerifier.decide stmt _
       (toPlainView coin ⟨x, ⟨⟩⟩)).run =
         (pure (if (stmt || x) = true then some 0 else none) : OptionT ProbComp (Option Nat)) := rfl
-  rw [Verifier.validAcceptanceWith, key, prEvent_pure]
+  rw [Verifier.validAcceptanceWith, Verifier.validAcceptanceUsing, key, prEvent_pure]
   cases stmt <;> cases x <;> simp [Oracle.Problem.language, anyOutput]
 
 /-- The one-challenge certificate applies to the optional handler without a state encoding. -/
@@ -440,6 +501,59 @@ theorem optionalAmbient_mass : Pr{let _ ← optionalAmbient ()}[True] = 1 / 2 :=
   ext b
   cases b <;> simp
 
+/-! ### Failure of the actual execution -/
+
+namespace EmptyResponse
+
+/-- An ambient service without any possible answer. -/
+abbrev ambient : OracleSpec Unit := Unit →ₒ Empty
+
+/-- Interpret every service request by failure. -/
+def handler : QueryImpl ambient (OptionT ProbComp) := fun _ => failure
+
+/-- One public sender move. -/
+def protocol : Protocol := .liftBind (.message Unit) (fun _ => .pure ⟨⟩)
+
+/-- The prover must obtain an impossible answer before sending. -/
+def prover : Prover plainSig ambient protocol (fun _ => Unit) := do
+  let impossible ← liftM (ambient.query ())
+  nomatch impossible
+
+/-- A terminal decision that accepts every completed interaction. -/
+def verifier : Verifier ambient protocol Unit (fun _ => Unit) where
+  decide _ _ _ := pure ()
+
+/-- The empty-response query fails before the prover can produce a move. -/
+theorem interpreted_action : simulateQ handler prover =
+    (failure : OptionT ProbComp ((_move : Unit) ×
+      Prover plainSig ambient (.pure ⟨⟩) (fun _ => Unit))) := by
+  simp [prover, handler, simulateQ_bind]
+
+/-- There are no challenge nodes in the one-message protocol. -/
+def noChallenges : QueryImpl (challengeSpec plainSig protocol) ProbComp := fun c => by
+  rcases c with ⟨node, h⟩
+  rcases node with root | ⟨_, node⟩
+  · cases h
+  · nomatch node
+
+/-- The actual verifier run has no returned observation, including returned rejection. -/
+theorem run_mass :
+    Pr{let _ ← (simulateQ
+      (handler.addLift noChallenges :
+        QueryImpl (ambient + challengeSpec plainSig protocol) (OptionT ProbComp))
+      (verifier.run () prover))}[True] = 0 := by
+  have hfail : simulateQ
+      (handler.addLift noChallenges :
+        QueryImpl (ambient + challengeSpec plainSig protocol) (OptionT ProbComp))
+      (verifier.run () prover) =
+        (failure : OptionT ProbComp (Observation plainSig protocol (fun _ => Unit)
+          (fun _ => Unit))) := by
+    rfl
+  rw [hfail]
+  simp
+
+end EmptyResponse
+
 end Interaction.Core.ImplicationsTests
 
 run_cmd do
@@ -449,12 +563,28 @@ run_cmd do
       ``Interaction.Core.OracleVerifier.soundness_of_rbrSoundness,
       ``Interaction.Core.OracleVerifier.soundness_of_rbrSoundness_tsum,
       ``Interaction.Core.OracleVerifier.soundness_of_rbrSoundness_uniform,
+      ``Interaction.Core.runPrefixChallenges_eq_run,
+      ``Interaction.Core.prEvent_runPrefixChallenges_le,
+      ``Interaction.Core.prEvent_runPrefixChallenges_soundness,
+      ``Interaction.Core.flip_random_model_le,
+      ``Interaction.Core.ImplicationsTests.AdaptiveChallenges.execution,
       ``Interaction.Core.prEvent_run_le,
       ``Interaction.Core.prEvent_run_state_le,
+      ``Interaction.Core.prEvent_run_state_le_of_local,
+      ``Interaction.Core.ReceiverPrefix.flip_le_of_encoded_marginals,
+      ``Interaction.Core.iSup_sum_challengeNodesOn_le_rank_sum,
+      ``Interaction.Core.Verifier.soundnessUsing_of_localSoundness,
+      ``Interaction.Core.OracleVerifier.soundnessUsing_of_localSoundness,
+      ``Interaction.Core.Verifier.soundness_iff_soundnessUsing,
+      ``Interaction.Core.OracleVerifier.soundness_iff_soundnessUsing,
+      ``Interaction.Core.Verifier.validAcceptance_iff_validAcceptanceUsing,
+      ``Interaction.Core.OracleVerifier.validAcceptance_iff_validAcceptanceUsing,
       ``Interaction.Core.Verifier.soundnessWith_of_rbrSoundness,
       ``Interaction.Core.OracleVerifier.soundnessWith_of_rbrSoundness,
       ``Interaction.Core.ImplicationsTests.optional_soundness,
       ``Interaction.Core.ImplicationsTests.optionalAmbient_mass,
+      ``Interaction.Core.ImplicationsTests.EmptyResponse.interpreted_action,
+      ``Interaction.Core.ImplicationsTests.EmptyResponse.run_mass,
       ``Interaction.Core.simulateQ_addLift_resources,
       ``Interaction.Core.StateFunction.escapeAlong,
       ``Interaction.Core.flip_random_prefix_le,
