@@ -274,12 +274,6 @@ lemma natDegree_solutionToQ :
   rw [WithBot.unbotD_le_iff] <;>
   aesop (add safe (by omega))
 
-private lemma eval_solutionToQ_aux {i : Fin ((solutionToQ e k v).natDegree + 1)} [NeZero e] :
-    e + i < 2 * e + k := by
-  have : e ≠ 0 := by aesop
-  have := natDegree_solutionToQ (e := e) (k := k) (v := v)
-  omega
-
 lemma eval_solutionToQ_cast {x : F} (h : e = 0) :
     eval x (solutionToQ e k v) = ∑ i ∈ Finset.range k, liftF v i * x ^ i := by
   subst h

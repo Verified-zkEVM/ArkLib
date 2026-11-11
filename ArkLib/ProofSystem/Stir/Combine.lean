@@ -107,18 +107,6 @@ private def block_start (dstar : ℕ) (degs : Fin m → ℕ) (i : Fin m) :=
   ∑ j ∈ univ.filter (· < i), block_size dstar degs j
 private def total_terms (dstar : ℕ) (degs : Fin m → ℕ) := ∑ i, block_size dstar degs i
 
-private lemma block_start_monotone
-  {dstar : ℕ} {degs : Fin m → ℕ} {i j : Fin m} (h : i ≤ j) :
-  block_start dstar degs i ≤ block_start dstar degs j := by
-  have h_subset :
-    Finset.filter (· < i) Finset.univ ⊆ Finset.filter (· < j) Finset.univ := by
-      grind
-  exact Finset.sum_le_sum_of_subset h_subset
-
-private lemma block_start_zero
-  {dstar : ℕ} {degs : Fin m.succ → ℕ} :
-  block_start dstar degs 0 = 0 := by simp [block_start]
-
 private lemma block_end_le_block_start
   {dstar : ℕ} {degs : Fin m → ℕ} {i j : Fin m} (hij : i < j) :
   block_start dstar degs i + block_size dstar degs i ≤ block_start dstar degs j := by

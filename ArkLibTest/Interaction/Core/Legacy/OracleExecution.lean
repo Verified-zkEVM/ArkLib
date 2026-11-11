@@ -213,10 +213,11 @@ example {σ : Type} [∀ i, SampleableType (twoWay.Challenge i)] (init : ProbCom
     (h : sumVerifier.soundness init impl langIn langOut ε)
     (Out : PathAlong oracleSig (oracleProtocol twoWay) → Type) :
     letI : MeasurableSpace (Observation oracleSig (oracleProtocol twoWay) Out
-      (Nat × ∀ i, OutSum i)) := ⊤
+      (fun _ => Nat × ∀ i, OutSum i)) := ⊤
     Core.soundness ((embedOracleVerifier sumVerifier).classicalModel (Out := Out) init impl
         (oracleChallengeImpl ProtocolSpec.challengeQueryImpl))
-      (langProblem langIn) (langProblem langOut) (fun obs => obs.2.2) ε :=
+      (langProblem langIn) (langProblem langOut)
+      (fun obs => projectPathAlong oracleSig _ obs.1) (fun obs => obs.2.2) ε :=
   (oracleSoundness_iff init impl sumVerifier langIn langOut ε).mpr h Out
 
 example [∀ i, SampleableType (twoWay.Challenge i)] (init : ProbComp Unit)

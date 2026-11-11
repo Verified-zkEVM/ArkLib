@@ -33,7 +33,13 @@ example : simulateQ (functions.behaviorOfRealizations (fun _ n => n + 5))
 example : simulateQ (functions.behaviorOfRealizations (fun _ n => n + 5))
     ((doubled.comp embedded).impl ⟨⟨⟩, (3 : Nat)⟩) = (16 : Nat) := rfl
 
-def emptyFamily : OracleFamily PEmpty (fun i => PEmpty.elim i) := ⟨fun i => i.elim⟩
+/-- No ambient oracles, with the index in `Type 0`. -/
+abbrev noAmbient : OracleSpec.{0, 0} PEmpty := OracleSpec.emptySpec
+
+/-- The empty input family, with its index in `Type 0`. -/
+def emptyFamily : OracleFamily.{0, 0, 0} PEmpty.{1} (fun i => PEmpty.elim i) :=
+  ⟨fun i => i.elim⟩
+
 @[instance_reducible] def tree : OracleProtocol :=
   .liftBind (.oracle (Nat → Nat) OracleInterface.instFunction) (fun _ => .pure ⟨⟩)
 
@@ -44,16 +50,17 @@ example : projectPathAlong oracleSig tree first = projectPathAlong oracleSig tre
 example : (toView tree first).val = (toView tree second).val := rfl
 
 /-- The decision can name an evaluation query but receives no function payload. -/
-def queryDecision : OracleVerifier OracleSpec.emptySpec tree Unit Nat emptyFamily functions where
+def queryDecision : OracleVerifier noAmbient tree Unit (fun _ => Nat) emptyFamily
+    (fun _ => functions) where
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact do
       let n : Nat ← liftM (OracleSpec.query (spec :=
-        OracleSpec.emptySpec + (sumFamily emptyFamily (pathFamily tree ⟨⟨⟩, ⟨⟩⟩)).spec)
-        (.inr ⟨.inr (.inl ⟨⟩), (3 : Nat)⟩))
+        noAmbient + (pathResources emptyFamily tree ⟨⟨⟩, ⟨⟩⟩).spec)
+        (.inr (.inr ⟨.inl ⟨⟩, (3 : Nat)⟩)))
       pure n
-  outputMap _ p _ := OracleMap.embedding (sumFamily emptyFamily (pathFamily tree p))
-    (fun _ => .inr (.inl ⟨⟩))
+  outputMap _ p _ :=
+    (OracleMap.embedding (pathFamily tree p) (fun _ => .inl ⟨⟩)).comp (OracleMap.snd _ _)
 
 example : payloadImpl tree first ⟨.inl ⟨⟩, (3 : Nat)⟩ = (8 : Nat) := rfl
 example : payloadImpl tree second ⟨.inl ⟨⟩, (3 : Nat)⟩ = (6 : Nat) := rfl
@@ -68,15 +75,15 @@ end Interaction.Core.OracleTests
 namespace Interaction.Core.OracleTests
 
 abbrev emptyTree : OracleProtocol := .pure ⟨⟩
-abbrev emptyResources := sumFamily emptyFamily (pathFamily emptyTree ⟨⟩)
+/-- The resources of the protocol with no rounds and no input oracles: both parts are empty. -/
+abbrev emptyResources := pathResources emptyFamily emptyTree ⟨⟩
 
-def emptyData : ∀ i, emptyResources.Realization i
-  | .inl i => i.elim
-  | .inr i => i.elim
+/-- The empty pair of input data and path payloads. -/
+def emptyData : emptyResources.Data := (fun i => i.elim, fun i => i.elim)
 
 /-- The prefix can return a statement obtained from an ambient query. -/
-def ambientPrefix : OracleVerifier (Unit →ₒ Bool) emptyTree Unit Bool
-    emptyFamily emptyFamily where
+def ambientPrefix : OracleVerifier (Unit →ₒ Bool) emptyTree Unit (fun _ => Bool)
+    emptyFamily (fun _ => emptyFamily) where
   decide _ p _ := by
     cases p
     exact do
@@ -88,8 +95,8 @@ def ambientPrefix : OracleVerifier (Unit →ₒ Bool) emptyTree Unit Bool
       law := fun _ q => q.1.elim }
 
 /-- The suffix can lawfully expose its input statement as a constant oracle. -/
-def constantSuffix : OracleVerifier (Unit →ₒ Bool) emptyTree Bool Unit
-    emptyFamily functions where
+def constantSuffix : OracleVerifier (Unit →ₒ Bool) emptyTree Bool (fun _ => Unit)
+    emptyFamily (fun _ => functions) where
   decide _ _ _ := pure ()
   outputMap bit _ _ :=
     { f := fun _ _ _ => if bit then 1 else 0
