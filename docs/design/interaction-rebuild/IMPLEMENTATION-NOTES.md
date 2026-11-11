@@ -195,6 +195,38 @@ core use them, so their statements are unchanged. Record D6 is updated according
 `ArkLibTest/Interaction/Core/Oracle/DependentRouting.lean` ports the frozen layer's dependent
 routing example.
 
+### Finite heterogeneous stage composition
+
+The interaction layer had no replacement for the frozen ordered execution of a finite family of
+closed stages (`ExecutionInterface`, `ClosedStage`, `OrderedExecution.run` in
+`ArkLib/Interaction/Oracle/Composition.lean`). `ArkLib/Interaction/Core/Stages.lean` adds it.
+
+- `foldStages n State step` runs `n` optional steps across boundary types
+  `State : Fin (n + 1) → Type u` in any monad and stops at the first rejection. Its laws are
+  `foldStages_zero`, `foldStages_succ`, `foldStages_one`, `foldStages_succ_of_reject`,
+  `foldStages_succ_last`, the split laws `foldStages_add` (the first `a` of `a + b` stages, then
+  the last `b`, without a cast) and `foldStages_split` (any `a + b = k`, with the cast of the
+  frozen `run_append`), `simulateQ_foldStages`, and invariant propagation deterministically
+  (`foldStages_preserves`), over the support (`foldStages_preserves_support`) and almost surely
+  (`foldStages_preserves_measure`). The frozen laws are stated for `OracleComp`; these hold in
+  every monad the proofs allow.
+- `StageInterface` is a claim interface: a statement type, an oracle family with its data, and a
+  private type. Claims are concrete data, as record D6 fixes.
+- `ClosedStage ambient I J` pairs a protocol, its challenge draws in `OracleComp ambient`, an
+  honest prover and a passive oracle verifier from `I` to `J`. `ClosedStage.run` is the core run
+  `OracleVerifier.run` with the challenges answered by the draws; it returns the accepted output
+  claim with the next private state. `ClosedStage.runStages` folds a family of closed stages.
+
+The fold is not iterated `OracleVerifier.append`. An append runs every interaction and then the
+decisions (record D5), while the fold decides each stage before the next one starts, as the frozen
+executor does. The two programs order their effects differently, and after a rejection the fold
+skips the later interactions, which an append still runs. The tests show both on the same two
+stages: `ArkLibTest/Interaction/Core/Oracle/StagesExample.lean` records the fold's history
+`[0, 1, 2, 3]` and `CompositionExample.lean` the append's `[0, 2, 1, 3]`. `StagesExample` ports the
+frozen two-stage tests and adds a third stage that samples a challenge, checked by `rfl`. The fold
+is also a dependent finite fold for the open point of record D5 on dependent iteration state; the
+Sumcheck round does not use it yet.
+
 ### Output witnesses are indexed by the transcript
 
 The round-by-round and straight-line knowledge interfaces took a constant output witness type,
