@@ -26,7 +26,7 @@ theorem decideWith_behaviorIntervalVerifier (start count : ℕ) (bound : start +
       stmt _ (toView _ tr)
       (data, payloads _ tr) = pure (intervalVerdict D count
         (intervalInitial start count bound stmt) tr) :=
-  simulateQ_foldVerifier_decide (QueryImpl.id' ambient) _ _ _ _ _ _
+  Interpreted.simulate_verifier (QueryImpl.id' ambient) _ _ _ _ _ _
 
 /-- The public one-round interval and its public suffix retain the arbitrary original behavior. -/
 noncomputable def behaviorPublicIntervalCompatibility (start count : ℕ)
@@ -97,7 +97,7 @@ theorem run_append_behaviorIntervalVerifier (start count : ℕ) (bound : start +
           stmt data prover := by
   have hd : data = fun _ => data () := funext fun u => by cases u; rfl
   rw [hd]
-  rw [OracleVerifier.run_eq_decideWith, behaviorIntervalVerifier_run, foldVerifier_run,
+  rw [OracleVerifier.run_eq_decideWith, behaviorIntervalVerifier_run, Interpreted.verifier_run,
     _root_.map_bind]
   refine bind_congr fun result => ?_
   rcases result with ⟨tr, out, u⟩

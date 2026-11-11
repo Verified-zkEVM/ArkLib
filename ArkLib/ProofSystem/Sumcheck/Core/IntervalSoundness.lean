@@ -152,7 +152,7 @@ theorem intervalVerifier_full_run {ι : Type} (ambient : OracleSpec ι)
     (prover : Prover oracleSig ambient (protocol R deg n) Out) :
     (intervalVerifier R deg n D ambient 0 n (by omega)).run stmt data prover =
       (indexedVerifier R deg n D ambient).run stmt data prover := by
-  erw [intervalVerifier_run, foldVerifier_run, indexedVerifier_run]
+  erw [intervalVerifier_run, Interpreted.verifier_run, indexedVerifier_run]
   refine bind_congr fun result => ?_
   rcases result with ⟨tr, out, u⟩
   exact congrArg (fun v : Option (RoundStatement R n (Fin.last n)) =>

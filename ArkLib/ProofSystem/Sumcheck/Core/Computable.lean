@@ -1039,7 +1039,6 @@ theorem interval_run_eq_interpret [BEq R] [LawfulBEq R]
     (intervalCheck D) IntervalClaim.finish (toMessage R deg)
     (fun q r => (evaluate_eq R deg q r).symm) count
     (intervalInitial start count bound stmt) (interpretInput R deg n) data g P
-  rw [Interpreted.verifier_polynomial] at h
   exact h
 
 variable [BEq R] [LawfulBEq R] [Nontrivial R]
@@ -1274,7 +1273,6 @@ theorem full_run_interval (stmt : Spec.StatementRound R n 0)
     (intervalCheck (⇑D)) IntervalClaim.finish
     (toMessage R deg) (fun q r => (evaluate_eq R deg q r).symm) n
     (intervalInitial 0 n (by omega) (nativeStatement stmt)) x.1
-  rw [Interpreted.verdict_polynomial] at ht
   have hv := he.trans (hi.symm.trans ht)
   simp only [nativeObservation, Option.map_map]
   rw [← hv]

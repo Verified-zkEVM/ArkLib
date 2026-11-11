@@ -109,7 +109,7 @@ theorem roundVerdict_intervalCheck {stop : Fin (n + 1)} (k : ℕ)
     roundVerdict (intervalCheck D k) st msg r =
       if (∑ a : Fin d, msg.val.eval (D a)) = st.statement.target then
         some (st.next (msg.val.eval r) r) else none := by
-  unfold roundVerdict
+  unfold roundVerdict Interpreted.roundVerdict
   change simulateQ _ ((List.finRange d).mapM (fun a => liftM ((R →ₒ R).query (D a))) >>= _) = _
   simp only [simulateQ_bind, simulateQ_list_mapM]
   change ((List.finRange d).mapM (fun a => (pure (msg.val.eval (D a)) : Id R)) >>= _) = _
@@ -148,11 +148,11 @@ theorem intervalVerdict_succ_public (start count : ℕ) (bound : start + (count 
           intervalVerdict D count (intervalInitial (1 + start) count (by omega) mid) tail := by
   rw [intervalVerdict_transport]
   unfold intervalVerdict
-  rw [foldVerdict, foldVerdict, roundVerdict_intervalCheck, roundVerdict_intervalCheck]
+  rw [foldVerdict_succ, foldVerdict_succ, roundVerdict_intervalCheck, roundVerdict_intervalCheck]
   dsimp only [headMessage, headChallenge, tailTranscript, IntervalClaim.transport,
     intervalInitial, consTranscript, roundTranscript]
   by_cases h : (∑ a : Fin d, msg.val.eval (D a)) = stmt.target
-  · simp only [h, ite_true, Option.bind_some, foldVerdict]
+  · simp only [h, ite_true, Option.bind_some]
     congr 1
     apply IntervalClaim.ext (Fin.ext (by
       change start + 1 = 1 + start
@@ -184,7 +184,7 @@ theorem simulateQ_intervalVerifier_decide {ι : Type} {ambient : OracleSpec ι}
       (protocol R deg count) (projectPathAlong oracleSig _ tr)).answer (data, payloads _ tr)))
       ((intervalVerifier R deg n D ambient start count bound).decide stmt _ (toView _ tr)).run =
       (pure (intervalVerdict D count (intervalInitial start count bound stmt) tr) : m _) :=
-  simulateQ_foldVerifier_decide impl _ _ _ _ _ _
+  Interpreted.simulate_verifier impl _ _ _ _ _ _
 
 /-- The interval run is an actual interaction followed by the transcript's final decision. -/
 theorem intervalVerifier_run {ι : Type} (ambient : OracleSpec ι)
@@ -210,7 +210,7 @@ theorem intervalVerdict_eq_indexed : ∀ (k : ℕ) (st : IntervalClaim R n (Fin.
   | succ k ih =>
     intro st tr
     unfold intervalVerdict
-    rw [foldVerdict, roundVerdict_intervalCheck]
+    rw [foldVerdict_succ, roundVerdict_intervalCheck]
     unfold indexedVerdict indexedNext
     dsimp only [IntervalClaim.toIndexed]
     simp only [Option.bind_some]

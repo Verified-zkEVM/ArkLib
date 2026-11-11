@@ -1072,7 +1072,6 @@ public import ArkLib.ProofSystem.Sumcheck.Core.LegacyEquivalence
 public import ArkLib.ProofSystem.Sumcheck.Core.LegacyProjection
 public import ArkLib.ProofSystem.Sumcheck.Core.LegacyProtocol
 public import ArkLib.ProofSystem.Sumcheck.Core.LegacySoundness
-public import ArkLib.ProofSystem.Sumcheck.Core.MessageEquivalence
 public import ArkLib.ProofSystem.Sumcheck.Core.MessageTree
 public import ArkLib.ProofSystem.Sumcheck.Core.Projection
 public import ArkLib.ProofSystem.Sumcheck.Core.Protocol

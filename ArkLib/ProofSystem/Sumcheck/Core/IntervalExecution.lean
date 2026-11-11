@@ -30,7 +30,7 @@ theorem intervalVerifier_run_one {ι : Type} (ambient : OracleSpec ι)
               (∀ i, PolynomialData R n deg i)))) <$>
         (liftM ((ambient + challengeSpec oracleSig (protocol R deg 1)).query
           (.inr (roundChallengeNode (R := R) (deg := deg))))) := by
-  rw [intervalVerifier_run, foldVerifier_run]
+  rw [intervalVerifier_run, Interpreted.verifier_run]
   change (do
     let ⟨tr, out, _⟩ ← Interaction.TwoParty.Lens.run (round R deg)
       (roundProver msg finish) (sampler oracleSig (round R deg) (fun c =>
@@ -57,7 +57,7 @@ theorem intervalVerifier_run_zero {ι : Type} (ambient : OracleSpec ι)
               (∀ i, PolynomialData R n deg i)))) <$>
         simulateQ (fun q => liftM
           ((ambient + challengeSpec oracleSig (protocol R deg 0)).query (.inl q))) prover := by
-  rw [intervalVerifier_run, foldVerifier_run]
+  rw [intervalVerifier_run, Interpreted.verifier_run]
   change (do
     let ⟨tr, out, _⟩ ← Interaction.TwoParty.Lens.run (OutP := fun _ => Out) (OutC := fun _ => PUnit)
       (.pure PUnit.unit)

@@ -81,7 +81,7 @@ theorem intervalVerdict_honest : ∀ (k : ℕ) (st : IntervalClaim R n stop k)
     obtain ⟨haccept, hrel⟩ := ih _ hnext (Fin.tail chals)
     refine ⟨?_, hrel⟩
     unfold intervalVerdict
-    rw [foldTranscript, foldVerdict, headMessage_consTranscript, headChallenge_consTranscript,
+    rw [foldTranscript, foldVerdict_succ, headMessage_consTranscript, headChallenge_consTranscript,
       tailTranscript_consTranscript, hcheck]
     exact haccept
 
@@ -103,7 +103,7 @@ theorem intervalVerifier_honest_run {ι : Type} (ambient : OracleSpec ι)
         drawChallenges count (fun c => liftM
           ((ambient + challengeSpec oracleSig (protocol R deg count)).query (.inr c))) := by
   dsimp only
-  rw [intervalVerifier_run, foldVerifier_run]
+  rw [intervalVerifier_run, Interpreted.verifier_run]
   unfold intervalProver
   rw [simulate_foldRounds, run_foldRounds]
   rw [bind_map_left]
