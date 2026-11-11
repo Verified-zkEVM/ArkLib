@@ -38,7 +38,7 @@ rev = "a1ac8925bde72472724e978d7aa9b94bef3149d9"
 [[lean_lib]]
 name = "ArkLibLintPlugin"
 srcDir = "scripts"
-roots = ["ArkLibLintPlugin"]
+roots = ["ArkLibLintPlugin", "LintStyle.OracleProtocolPolicy"]
 
 # Every file in the production library is a `module` (issue #795). Lake enforces that here so a
 # reverted or hand-written header fails the build rather than silently dropping a file back to

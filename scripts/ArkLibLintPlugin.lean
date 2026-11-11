@@ -5,12 +5,13 @@ Authors: Quang Dao
 -/
 
 import Lean.Elab.Command
+import LintStyle.OracleProtocolPolicy
 
 /-!
 # ArkLib build-time source-policy plugin
 
-This plugin rejects linter suppressions and retired probability notation in each ArkLib module. Inspecting the
-actual syntax tree is important: terms inside extensible interpolated strings are active syntax,
+This plugin rejects linter suppressions except the authorized oracle protocol alias command,
+and rejects retired probability notation in each ArkLib module. Inspecting the syntax tree matters: terms inside extensible interpolated strings are active syntax,
 while identical text in comments and ordinary strings is inert.
 -/
 
@@ -54,8 +55,17 @@ private partial def collectSuppressions (stx : Syntax) (acc : Array (Syntax × M
   return result
 
 private def suppressionLinter : ModuleLinter where
-  run commands := for command in commands do
-    for (location, message) in collectSuppressions command #[] do logErrorAt location message
+  run commands := do
+    let authorizedSource := "\n".intercalate oracleProtocolAliasLines.toList
+    let env ← getEnv
+    let authorizedModule := env.mainModule.toString == oracleProtocolModule &&
+      env.contains `Interaction.Core.OracleProtocol
+    let authorizedCommands := commands.filter fun command =>
+      authorizedModule && command.reprint.any (·.trimAscii.toString == authorizedSource)
+    for command in commands do
+      -- Accept only one complete alias command, never a surrounding section or term.
+      if authorizedCommands.size == 1 && authorizedCommands.contains command then continue
+      for (location, message) in collectSuppressions command #[] do logErrorAt location message
 
 initialize addModuleLinter suppressionLinter
 

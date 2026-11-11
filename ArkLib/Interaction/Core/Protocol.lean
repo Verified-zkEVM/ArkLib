@@ -25,6 +25,8 @@ open PFunctor FreeM TwoParty.Lens
 /-- A plain protocol is authored directly over the plain polynomial. -/
 abbrev Protocol := FreeM PlainPoly.{u} PUnit.{u + 1}
 
+-- The linter sees only the sort; OraclePoly uses independent u and q separately.
+set_option linter.checkUnivs false in
 /-- An oracle protocol is authored directly over the oracle polynomial. -/
 abbrev OracleProtocol := FreeM OraclePoly.{u, q} PUnit.{u + 1}
 

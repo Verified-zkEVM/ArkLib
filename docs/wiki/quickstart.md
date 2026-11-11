@@ -139,7 +139,12 @@ by `ArkLib.lean` and every tracked `ArkLibTest` module, parses import headers wi
 project-specific mathematical Unicode notation, while rejecting invisible controls, bidirectional
 controls, and nonstandard space characters that can conceal source changes. It also rejects
 blanket package-root imports. The normal `lake build` loads ArkLib's Lean syntax-tree plugin, which
-rejects source-level linter suppressions in their actual parsed context.
+rejects source-level linter suppressions in their actual parsed context. The sole authorized
+exception is the declaration-scoped universe-linter setting on `Interaction.Core.OracleProtocol`: the
+pinned linter sees only its result sort and misses the separately used universe arguments in
+`OraclePoly`. Both policy layers require the exact alias command in its designated module/path;
+other declarations, options and scopes remain rejected. `scripts/test-lint-plugin.sh` tests the
+exception and its rejection boundaries.
 
 The header policy understands the Lean module system, so `module`, `public import`, `meta import`
 and `import all` all parse, and it pins the canonical header order every file under `ArkLib/`
