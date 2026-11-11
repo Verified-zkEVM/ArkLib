@@ -146,7 +146,13 @@ run_cmd do
       ``Sumcheck.Core.transportDraw_challengeQueryImpl,
       ``Sumcheck.Core.Computable.interpretProver_honestProver,
       ``Sumcheck.Core.Computable.support_completeness,
-      ``Sumcheck.Core.Computable.perfectCompleteness, ``Sumcheck.Core.Computable.soundness] do
+      ``Sumcheck.Core.Computable.perfectCompleteness, ``Sumcheck.Core.Computable.soundness,
+      ``Sumcheck.Core.Computable.interval_run_eq_interpret,
+      ``Sumcheck.Core.Computable.interval_support_completeness,
+      ``Sumcheck.Core.Computable.interval_perfectCompleteness,
+      ``Sumcheck.Core.Computable.interval_measureCompleteness,
+      ``Sumcheck.Core.Computable.interval_soundness,
+      ``ComputableSumcheckTest.zero_interval_verdict] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"

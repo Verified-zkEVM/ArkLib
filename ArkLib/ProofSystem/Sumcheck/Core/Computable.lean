@@ -656,7 +656,7 @@ theorem interpretFocal_eq_transport {m : Type → Type} [Monad m] [LawfulMonad m
   induction k with
   | zero => exact id_map P
   | succ k ih =>
-    simp only [interpretFocal, Interpreted.transportProver, bind_map_left]
+    simp only [interpretFocal, Interpreted.transportProver]
     erw [LawfulMonad.bind_pure_comp]
     congr 1
     funext chosen
@@ -665,6 +665,25 @@ theorem interpretFocal_eq_transport {m : Type → Type} [Monad m] [LawfulMonad m
     congr 1
     funext respond r
     exact ih (respond r)
+
+/-- Interpreting messages commutes with packing dependent private outputs into a fixed type. -/
+theorem transport_interpretFocal {m : Type → Type} [Monad m] [LawfulMonad m]
+    {O : Type} (k : ℕ) {Out : PathAlong oracleSig (protocolOn R M eval k) → Type}
+    (g : ∀ tr, Out tr → O) (P : Focal oracleSig m (protocolOn R M eval k) Out) :
+    Interpreted.transportProver (evaluateN := evalN) f k
+      (interpretFocal (eval' := eval) id k g P) = interpretFocal f k g P := by
+  induction k with
+  | zero => rfl
+  | succ k ih =>
+    dsimp only [interpretFocal, Interpreted.transportProver]
+    erw [bind_map_left, LawfulMonad.bind_pure_comp]
+    congr 1
+    funext chosen
+    congr 1
+    erw [bind_map_left, LawfulMonad.bind_pure_comp]
+    congr 1
+    funext respond r
+    exact ih (fun tail => g ⟨chosen.1, r, tail⟩) (respond r)
 
 end InterpretedTransport
 
@@ -1175,28 +1194,19 @@ theorem interval_soundness [SampleableType R] [Fintype R] [IsDomain R]
           indexedRelation D _ t.1 (toPolynomial (t.2 ()).val (t.2 ()).property)] ≤
       (count : ℝ≥0∞) * (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞) := by
   let Out' : PathAlong oracleSig (Core.protocol R deg count) → Type := fun _ => Σ tr, Out tr
-  have h := ((Core.intervalVerifier R deg n D ambient start count finish.le).soundness_iff_soundnessUsing
-    init impl (indexedDraw (R := R) (deg := deg) count)
-      (intervalInputProblem D ⟨start, by omega⟩)
-      (intervalOutputProblem D ⟨count + start, by omega⟩ count) _).mp
-        (Core.intervalVerifier_soundness D ambient init impl start count finish)
-  have hb := h Out' (stmt, interpretInput R deg n data) trivial
-    (by simpa [intervalInputProblem, Problem.language, interpretInput,
-      toPolynomial, Sumcheck.Impl.Computable.toOracleStatement] using hfalse)
-    (interpretFocal (toMessage R deg) count (Out' := Out') (fun tr o => ⟨tr, o⟩) P)
+  have hb := execute_soundness D ambient init impl start count finish stmt
+    (interpretInput R deg n data)
+    (interpretFocal (eval' := evaluate R deg) id count (Out' := fun _ => Σ tr, Out tr)
+      (fun tr o => ⟨tr, o⟩) P)
+    (by simpa [interpretInput, toPolynomial, Sumcheck.Impl.Computable.toOracleStatement]
+      using hfalse)
+  rw [executeExperiment_eq_native, prEvent_map, transport_interpretFocal] at hb
   have hrun := interval_run_eq_interpret D ambient start count finish.le stmt data
     (Out' := Out') (fun tr o => ⟨tr, o⟩) P
   have hch : transportDraw (M' := R⦃≤ deg⦄[X]) (eval' := fun p x => p.val.eval x) count
       (indexedDraw (R := R) (deg := deg) count) =
       challengeQueryImpl oracleSig (protocol R deg count) :=
     funext (transportDraw_challengeQueryImpl R deg _ _ count)
-  change Pr{let obs ← (experiment init impl (indexedDraw (R := R) (deg := deg) count)
-    ((Core.intervalVerifier R deg n D ambient start count finish.le).run stmt
-      (interpretInput R deg n data)
-      (interpretFocal (toMessage R deg) count (Out' := Out') (fun tr o => ⟨tr, o⟩) P)))}[
-      ∃ t, obs.2.2 = some t ∧
-        (intervalOutputProblem D ⟨count + start, by omega⟩ count).language
-          (projectPathAlong oracleSig _ obs.1) t] ≤ _ at hb
   rw [← hrun] at hb
   have he := experiment_renameQueries (M := Message R deg) (eval := evaluate R deg)
     (M' := R⦃≤ deg⦄[X]) (eval' := fun p x => p.val.eval x) count init impl
@@ -1230,7 +1240,8 @@ theorem interval_perfectCompleteness_list (domain : List R) {σ : Type} (init : 
   interval_perfectCompleteness domain.get ambient init start count bound impl stmt data htrue
 
 /-- An injective domain specializes the indexed result. -/
-theorem interval_perfectCompleteness_injective (embedding : Fin d ↪ R) {σ : Type} (init : ProbComp σ)
+theorem interval_perfectCompleteness_injective (embedding : Fin d ↪ R)
+    {σ : Type} (init : ProbComp σ)
     (start count : ℕ) (bound : start + count ≤ n)
     (impl : QueryImpl (ambient + challengeSpec oracleSig (protocol R deg count))
       (StateT σ ProbComp))
@@ -1244,6 +1255,7 @@ theorem interval_perfectCompleteness_injective (embedding : Fin d ↪ R) {σ : T
         indexedRelation (⇑embedding) _ t (toPolynomial (data ()).val (data ()).property)] = 1 :=
   interval_perfectCompleteness (⇑embedding) ambient init start count bound impl stmt data htrue
 
+omit [Nontrivial R] in
 /-- A list domain retains every repeated point. -/
 theorem interval_soundness_list (domain : List R) [SampleableType R] [Fintype R] [IsDomain R]
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
@@ -1260,14 +1272,17 @@ theorem interval_soundness_list (domain : List R) [SampleableType R] [Fintype R]
       (count : ℝ≥0∞) * (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞) :=
   interval_soundness domain.get ambient init impl start count finish stmt data P hfalse
 
+omit [Nontrivial R] in
 /-- An injective domain specializes the indexed result. -/
-theorem interval_soundness_injective (embedding : Fin d ↪ R) [SampleableType R] [Fintype R] [IsDomain R]
+theorem interval_soundness_injective (embedding : Fin d ↪ R)
+    [SampleableType R] [Fintype R] [IsDomain R]
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
     (start count : ℕ) (finish : start + count = n)
     (stmt : RoundStatement R n ⟨start, by omega⟩) (data : ∀ _ : Unit, Input R deg n)
     {Out : PathAlong oracleSig (protocol R deg count) → Type}
     (P : Prover oracleSig ambient (protocol R deg count) Out)
-    (hfalse : ¬ indexedRelation (⇑embedding) _ stmt (toPolynomial (data ()).val (data ()).property)) :
+    (hfalse : ¬ indexedRelation (⇑embedding) _ stmt
+      (toPolynomial (data ()).val (data ()).property)) :
     Pr{let obs ← (experiment init impl
       (challengeQueryImpl oracleSig (protocol R deg count))
       ((intervalVerifier (⇑embedding) ambient start count finish.le).run stmt data P))}[

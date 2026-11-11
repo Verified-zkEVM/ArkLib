@@ -226,8 +226,8 @@ events `.inl i` and challenge draws `.inr j` in execution order.
 | 6 | The computable honest prover on the quadratic over `{0, 1, 2}`, challenges `4`. | Verdict `(16, 4, 4, 16)`, log `[c0, c1]`. |
 | 7 | The zero-round interval verifier from the final round state `⟨16, ![4, 4]⟩`. | Verifier verdict `some (16, 4, 4, 16)`, empty trace. The prover-only observation remains an additional check. |
 
-Rows 3, 4, 6 and 7 restate the frozen runtime's rows
-([departure 21](../interaction-rebuild/IMPLEMENTATION-NOTES.md#21-computable-sumcheck-runtime)).
+Rows 3, 4 and 6 require P1/P2; row 7 preserves the frozen verifier assertion
+([entry 24](../interaction-rebuild/IMPLEMENTATION-NOTES.md#24-computable-sumcheck-runtime)).
 
 ## Tests
 
@@ -693,6 +693,20 @@ corollaries preserve the parent's domain specializations. The proofs reuse the p
 interval invariants and security bounds. The parent’s more general original-data executor
 contracts remain the targets of the frozen production rows below; these computational-input
 specializations do not replace them.
+
+### Full-run compatibility corollaries
+
+The original full-run compatibility statements remain available with their existing guarantees.
+They have not yet been rederived from the native interval at `start = 0`, `count = n`.
+The missing interface is a fieldwise statement conversion, a compatibility/native transcript
+verdict equation for every prover, and an honest-output bridge that retains the equality required
+by `judgement.honest`. `indexedRelation_embedding` supplies only the relation part of that bridge.
+
+| Exact source | Exact target | Status |
+|---|---|---|
+| `Sumcheck.Core.Computable.support_completeness`, C/Computable.lean, original full-run statement | C/Computable.lean: `interval_support_completeness D ambient 0 n`; existing full-run proof remains | unresolved (missing compatibility/native verdict and honest-output bridge) |
+| `Sumcheck.Core.Computable.perfectCompleteness`, C/Computable.lean, original full-run statement | C/Computable.lean: `interval_perfectCompleteness D ambient init 0 n`; existing full-run proof remains | unresolved (missing compatibility/native full-run and honest-output bridge) |
+| `Sumcheck.Core.Computable.soundness`, C/Computable.lean, original full-run statement and sum error | C/Computable.lean: `interval_soundness D ambient init impl 0 n`; existing compatibility-security proof remains | unresolved (missing compatibility/native full-run verdict bridge) |
 
 ### Production: Computable
 
