@@ -21,7 +21,7 @@ may depend on ambient queries.
 
 @[expose] public section
 
-universe u uA uι uS uI uJ uK uV uX uY dX dY wI wJ wK
+universe u q dI uA uι uS uI uJ uK uV uX uY dX dY wI wJ wK
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
@@ -159,7 +159,7 @@ theorem appendSampler_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
 
 /-- Appending samplers equals sampling the appended tree with the combined implementation. -/
 theorem appendOracleSampler_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
-    (s₁ : OracleProtocol.{u}) (s₂ : Path s₁ → OracleProtocol.{u})
+    (s₁ : OracleProtocol.{u, q}) (s₂ : Path s₁ → OracleProtocol.{u, q})
     (draw₁ : (c : ChallengeNode oracleSig s₁) → m (challengeSpec oracleSig s₁ c))
     (draw₂ : (p : Path s₁) → (c : ChallengeNode oracleSig (s₂ p)) →
       m (challengeSpec oracleSig (s₂ p) c)) :
@@ -225,7 +225,7 @@ theorem run_splitSampler {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u
   run_appendFlat_splitPrefix p (samplerEnd l s₁ draw₁) _
 
 /-- Split the oracle resources of an arbitrary completed appended path. -/
-def splitOracles : (s₁ : OracleProtocol.{u}) → (s₂ : Path s₁ → OracleProtocol.{u}) →
+def splitOracles : (s₁ : OracleProtocol.{u, q}) → (s₂ : Path s₁ → OracleProtocol.{u, q}) →
     (p : Path (s₁.append s₂)) →
     OracleMap (pathFamily (s₁.append s₂) p)
       (sumFamily (pathFamily s₁ (Path.split s₁ s₂ p).1)
@@ -271,9 +271,9 @@ theorem OracleMap.simulate_withAmbient {ι : Type uι}
     rfl
 
 namespace OracleVerifier
-variable {ι : Type uι} {I : Type uI} {ambient : OracleSpec.{uι, u} ι} {A : I → Type u}
-  {inputs : OracleFamily.{uI, u, wI} I A}
-  {s₁ : OracleProtocol.{u}} {s₂ : Path s₁ → OracleProtocol.{u}} {S : Type uS}
+variable {ι : Type uι} {ambient : OracleSpec.{uι, u} ι}
+  {inputs : Resources.{u, uI, dI}}
+  {s₁ : OracleProtocol.{u, q}} {s₂ : Path s₁ → OracleProtocol.{u, q}} {S : Type uS}
   {T : Path s₁ → Type u} {U : (p : Path s₁) → Path (s₂ p) → Type u}
   {J : Path s₁ → Type uJ} {B : (p : Path s₁) → J p → Type u}
   {middle : (p : Path s₁) → OracleFamily.{uJ, u, wJ} (J p) (B p)}
@@ -286,10 +286,10 @@ def resources (p : Path (s₁.append s₂)) :
     OracleMap (pathResources inputs (s₁.append s₂) p)
       (Resources.sum (pathResources inputs s₁ (Path.split s₁ s₂ p).1)
         (Resources.ofFamily (pathFamily _ (Path.split s₁ s₂ p).2))) :=
-  (OracleMap.reassoc (Resources.ofFamily inputs)
+  (OracleMap.reassoc inputs
     (Resources.ofFamily (pathFamily s₁ (Path.split s₁ s₂ p).1))
     (Resources.ofFamily (pathFamily _ (Path.split s₁ s₂ p).2))).comp
-    ((OracleMap.id (Resources.ofFamily inputs)).par
+    ((OracleMap.id inputs).par
       ((OracleMap.ofSumFamily _ _).comp (splitOracles s₁ s₂ p)))
 
 /-- Prefix decisions see the original inputs and only prefix messages. -/

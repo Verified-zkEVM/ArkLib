@@ -17,7 +17,7 @@ a fibre over the shape path. Node indices are structural and never contain erase
 
 @[expose] public section
 
-universe u uA
+universe u q uA
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens
@@ -26,14 +26,14 @@ open PFunctor FreeM TwoParty.Lens
 abbrev Protocol := FreeM PlainPoly.{u} PUnit.{u + 1}
 
 /-- An oracle protocol is authored directly over the oracle polynomial. -/
-abbrev OracleProtocol := FreeM OraclePoly.{u} PUnit.{u + 1}
+abbrev OracleProtocol := FreeM OraclePoly.{u, q} PUnit.{u + 1}
 
 /-- The oracle verifier's observation, over a specified shape path. -/
-def View (s : OracleProtocol.{u}) (p : Path s) : Type u :=
+def View (s : OracleProtocol.{u, q}) (p : Path s) : Type u :=
   {v : PathAlong viewSig s // projectPathAlong viewSig s v = p}
 
 /-- Erase oracle payloads from a completed run, retaining its exact shape path. -/
-def toView (s : OracleProtocol.{u}) (tr : PathAlong oracleSig s) :
+def toView (s : OracleProtocol.{u, q}) (tr : PathAlong oracleSig s) :
     View s (projectPathAlong oracleSig s tr) :=
   ⟨PathAlong.mapMoves eraseOracle s tr, projectPathAlong_mapMoves eraseOracle s tr⟩
 
@@ -169,8 +169,8 @@ theorem plain_challenge_shape (C : Type u) (s : Protocol.{u})
       projectPathAlong plainSig (.liftBind (.challenge C) (fun _ => s)) ⟨y, tr⟩ := rfl
 
 /-- An oracle payload likewise changes no branch of the source path. -/
-theorem oracle_payload_shape (X : Type u) (I : OracleInterface.{u, u} X)
-    (s : OracleProtocol.{u}) (x y : X) (tr : PathAlong oracleSig s) :
+theorem oracle_payload_shape (X : Type u) (I : OracleInterface.{u, q} X)
+    (s : OracleProtocol.{u, q}) (x y : X) (tr : PathAlong oracleSig s) :
     projectPathAlong oracleSig (.liftBind (.oracle X I) (fun _ => s)) ⟨x, tr⟩ =
       projectPathAlong oracleSig (.liftBind (.oracle X I) (fun _ => s)) ⟨y, tr⟩ := rfl
 

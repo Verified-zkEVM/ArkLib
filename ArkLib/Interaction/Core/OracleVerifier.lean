@@ -18,7 +18,7 @@ oracles are one map containing concrete data, query simulation and their agreeme
 
 @[expose] public section
 
-universe u uι uS uI uJ uK uL uX uY uZ uW dX dY dZ dW w wI wJ
+universe u q dI uι uS uI uJ uK uL uX uY uZ uW dX dY dZ dW w wI wJ
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
@@ -29,7 +29,7 @@ attribute [local implicit_reducible] projectPathAlong projectPathAlongLocalMap
 
 /-- The oracle nodes on a completed shape path. -/
 @[implicit_reducible]
-def oracleIdx : (s : OracleProtocol.{u}) → Path s → Type u
+def oracleIdx : (s : OracleProtocol.{u, q}) → Path s → Type u
   | .pure _, _ => PEmpty
   | .liftBind (.message _) next, ⟨x, p⟩ => oracleIdx (next x) p
   | .liftBind (.challenge _) next, ⟨x, p⟩ => oracleIdx (next x) p
@@ -37,7 +37,7 @@ def oracleIdx : (s : OracleProtocol.{u}) → Path s → Type u
 
 /-- Concrete data carriers of the oracle nodes on a completed path. -/
 @[implicit_reducible]
-def OracleData : (s : OracleProtocol.{u}) → (p : Path s) → oracleIdx s p → Type u
+def OracleData : (s : OracleProtocol.{u, q}) → (p : Path s) → oracleIdx s p → Type u
   | .pure _, _ => fun i => i.elim
   | .liftBind (.message _) next, ⟨x, p⟩ => OracleData (next x) p
   | .liftBind (.challenge _) next, ⟨x, p⟩ => OracleData (next x) p
@@ -53,12 +53,12 @@ def sumFamily {I : Type uI} {J : Type uJ} {A : I → Type u} {B : J → Type u}
 
 /-- The family consisting of one oracle payload. -/
 @[implicit_reducible]
-def singletonFamily {X : Type u} (I : OracleInterface.{u, u} X) :
-    OracleFamily.{u, u, u} PUnit (fun _ => X) := ⟨fun _ => I⟩
+def singletonFamily {X : Type u} (I : OracleInterface.{u, q} X) :
+    OracleFamily.{u, u, q} PUnit (fun _ => X) := ⟨fun _ => I⟩
 
 /-- The concrete oracle family at a completed path. -/
 @[implicit_reducible]
-def pathFamily : (s : OracleProtocol.{u}) → (p : Path s) →
+def pathFamily : (s : OracleProtocol.{u, q}) → (p : Path s) →
     OracleFamily (oracleIdx s p) (OracleData s p)
   | .pure _, _ => ⟨fun i => i.elim⟩
   | .liftBind (.message _) next, ⟨x, p⟩ => pathFamily (next x) p
@@ -67,10 +67,10 @@ def pathFamily : (s : OracleProtocol.{u}) → (p : Path s) →
     sumFamily (singletonFamily I) (pathFamily (next x) p)
 
 /-- Queries to the oracle nodes on a completed path. -/
-abbrev oracles (s : OracleProtocol.{u}) (p : Path s) := (pathFamily s p).spec
+abbrev oracles (s : OracleProtocol.{u, q}) (p : Path s) := (pathFamily s p).spec
 
 /-- Read the concrete payloads from exactly the full transcript that produced this shape. -/
-def payloads : (s : OracleProtocol.{u}) → (tr : PathAlong oracleSig s) →
+def payloads : (s : OracleProtocol.{u, q}) → (tr : PathAlong oracleSig s) →
     (i : oracleIdx s (projectPathAlong oracleSig s tr)) →
       OracleData s (projectPathAlong oracleSig s tr) i
   | .pure _, _, i => i.elim
@@ -80,7 +80,7 @@ def payloads : (s : OracleProtocol.{u}) → (tr : PathAlong oracleSig s) →
   | .liftBind (.oracle _ _) next, ⟨_, tr⟩, .inr i => payloads (next ⟨⟩) tr i
 
 /-- The sole payload handler used by execution answers from the completed run. -/
-def payloadImpl (s : OracleProtocol.{u}) (tr : PathAlong oracleSig s) :
+def payloadImpl (s : OracleProtocol.{u, q}) (tr : PathAlong oracleSig s) :
     QueryImpl (oracles s (projectPathAlong oracleSig s tr)) Id :=
   (pathFamily s (projectPathAlong oracleSig s tr)).behaviorOfRealizations (payloads s tr)
 
@@ -296,7 +296,7 @@ end Families
 end OracleMap
 
 /-- Route the oracles of an appended path into its two completed component paths. -/
-def oracles_append : (s₁ : OracleProtocol.{u}) → (s₂ : Path s₁ → OracleProtocol.{u}) →
+def oracles_append : (s₁ : OracleProtocol.{u, q}) → (s₂ : Path s₁ → OracleProtocol.{u, q}) →
     (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
     OracleMap (sumFamily (pathFamily s₁ p₁) (pathFamily (s₂ p₁) p₂))
       (pathFamily (s₁.append s₂) (Path.append s₁ s₂ p₁ p₂))
@@ -314,7 +314,7 @@ def oracles_append : (s₁ : OracleProtocol.{u}) → (s₂ : Path s₁ → Oracl
         (pathFamily (s₂ ⟨x, p₁⟩) p₂))
 
 /-- Route either component's oracle queries into the completed appended path. -/
-def oracles_split : (s₁ : OracleProtocol.{u}) → (s₂ : Path s₁ → OracleProtocol.{u}) →
+def oracles_split : (s₁ : OracleProtocol.{u, q}) → (s₂ : Path s₁ → OracleProtocol.{u, q}) →
     (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
     OracleMap (pathFamily (s₁.append s₂) (Path.append s₁ s₂ p₁ p₂))
       (sumFamily (pathFamily s₁ p₁) (pathFamily (s₂ p₁) p₂))
@@ -339,8 +339,8 @@ def oracles_split : (s₁ : OracleProtocol.{u}) → (s₂ : Path s₁ → Oracle
         (oracles_split (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂))
 
 /-- Materializing the append route and then splitting it recovers both component families. -/
-theorem oracles_split_append : (s₁ : OracleProtocol.{u}) →
-    (s₂ : Path s₁ → OracleProtocol.{u}) → (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
+theorem oracles_split_append : (s₁ : OracleProtocol.{u, q}) →
+    (s₂ : Path s₁ → OracleProtocol.{u, q}) → (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
     (x : ∀ i, (sumFamily (pathFamily s₁ p₁) (pathFamily (s₂ p₁) p₂)).Realization i) →
     (oracles_split s₁ s₂ p₁ p₂).f ((oracles_append s₁ s₂ p₁ p₂).f x) = x
   | .pure _, _, ⟨⟩, _, _ => by
@@ -362,8 +362,8 @@ theorem oracles_split_append : (s₁ : OracleProtocol.{u}) →
     · exact congrFun ih (.inr i)
 
 /-- Splitting and recombining an appended family preserves every concrete payload. -/
-theorem oracles_append_split : (s₁ : OracleProtocol.{u}) →
-    (s₂ : Path s₁ → OracleProtocol.{u}) → (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
+theorem oracles_append_split : (s₁ : OracleProtocol.{u, q}) →
+    (s₂ : Path s₁ → OracleProtocol.{u, q}) → (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
     (x : ∀ i, OracleData (s₁.append s₂) (Path.append s₁ s₂ p₁ p₂) i) →
     (oracles_append s₁ s₂ p₁ p₂).f ((oracles_split s₁ s₂ p₁ p₂).f x) = x
   | .pure _, _, ⟨⟩, _, _ => rfl
@@ -390,10 +390,10 @@ theorem oracles_append_split : (s₁ : OracleProtocol.{u}) →
           (fun k => data (.inr k))))).trans (congrFun ih i)
 
 /-- A completed shape paired with the concrete payloads at its oracle nodes. -/
-abbrev PathData (s : OracleProtocol.{u}) := (p : Path s) × (∀ i, OracleData s p i)
+abbrev PathData (s : OracleProtocol.{u, q}) := (p : Path s) × (∀ i, OracleData s p i)
 
 /-- Prepend one full move to a materialized path. -/
-def PathData.prepend : (a : OraclePos.{u}) → (next : OraclePoly.B a → OracleProtocol) →
+def PathData.prepend : (a : OraclePos.{u, q}) → (next : OraclePoly.B a → OracleProtocol) →
     (x : Move oracleSig a) → PathData (next (oracleSig.toFunB a x)) →
       PathData (.liftBind a next)
   | .message _, _, x, ⟨p, data⟩ => ⟨⟨x, p⟩, data⟩
@@ -401,8 +401,8 @@ def PathData.prepend : (a : OraclePos.{u}) → (next : OraclePoly.B a → Oracle
   | .oracle _ _, _, x, ⟨p, data⟩ => ⟨⟨⟨⟩, p⟩, sumData (fun _ => x) data⟩
 
 /-- Appending full transcripts materializes exactly the two routed payload families. -/
-theorem payloads_append : (s₁ : OracleProtocol.{u}) →
-    (s₂ : Path s₁ → OracleProtocol.{u}) → (tr₁ : PathAlong oracleSig s₁) →
+theorem payloads_append : (s₁ : OracleProtocol.{u, q}) →
+    (s₂ : Path s₁ → OracleProtocol.{u, q}) → (tr₁ : PathAlong oracleSig s₁) →
     (tr₂ : PathAlong oracleSig (s₂ (projectPathAlong oracleSig s₁ tr₁))) →
     (⟨projectPathAlong oracleSig (s₁.append s₂) (PathAlong.append oracleSig s₁ s₂ tr₁ tr₂),
       payloads (s₁.append s₂) (PathAlong.append oracleSig s₁ s₂ tr₁ tr₂)⟩ :
@@ -433,8 +433,8 @@ theorem payloads_append : (s₁ : OracleProtocol.{u}) →
     · rfl
 
 /-- The appended transcript's handler agrees with routing into its component handlers. -/
-theorem payloadImpl_append (s₁ : OracleProtocol.{u})
-    (s₂ : Path s₁ → OracleProtocol.{u}) (tr₁ : PathAlong oracleSig s₁)
+theorem payloadImpl_append (s₁ : OracleProtocol.{u, q})
+    (s₂ : Path s₁ → OracleProtocol.{u, q}) (tr₁ : PathAlong oracleSig s₁)
     (tr₂ : PathAlong oracleSig (s₂ (projectPathAlong oracleSig s₁ tr₁))) :
     (⟨projectPathAlong oracleSig (s₁.append s₂) (PathAlong.append oracleSig s₁ s₂ tr₁ tr₂),
       payloadImpl (s₁.append s₂) (PathAlong.append oracleSig s₁ s₂ tr₁ tr₂)⟩ :
@@ -456,20 +456,20 @@ theorem payloadImpl_append (s₁ : OracleProtocol.{u})
   refine Sigma.ext rfl (heq_of_eq ?_)
   exact (funext ((oracles_append s₁ s₂ _ _).law _)).symm
 
-/-- The resources a decision at path `p` may query: the input family and the payloads on the
-path, as disjoint resources. The input data and the path data stay separately typed, and the two
-families may use different query universes. -/
-abbrev pathResources {I : Type uI} {A : I → Type u} (inputs : OracleFamily.{uI, u, wI} I A)
-    (s : OracleProtocol.{u}) (p : Path s) :=
-  Resources.sum (Resources.ofFamily inputs) (Resources.ofFamily (pathFamily s p))
+/-- The resources a decision at path `p` may query: the input resources and the path
+payloads. Input data may lie in a universe independent of responses and moves. Input queries
+and oracle-node queries also have independent universes. -/
+abbrev pathResources (inputs : Resources.{u, uI, dI})
+    (s : OracleProtocol.{u, q}) (p : Path s) :=
+  Resources.sum inputs (Resources.ofFamily (pathFamily s p))
 
 /-- A passive oracle verifier. The output statement type `T p` and the output oracle family
 `outputs p` are indexed by the public shape path `p` of the run, so a public message may change
 both. A verifier with one output type and family uses constant families. -/
-structure OracleVerifier {ι : Type uι} {I : Type uI} (ambient : OracleSpec.{uι, u} ι)
-    (s : OracleProtocol.{u}) (S : Type uS) (T : Path s → Type u) {A : I → Type u}
+structure OracleVerifier {ι : Type uι} (ambient : OracleSpec.{uι, u} ι)
+    (s : OracleProtocol.{u, q}) (S : Type uS) (T : Path s → Type u)
     {J : Path s → Type uJ} {B : (p : Path s) → J p → Type u}
-    (inputs : OracleFamily.{uI, u, wI} I A)
+    (inputs : Resources.{u, uI, dI})
     (outputs : (p : Path s) → OracleFamily.{uJ, u, wJ} (J p) (B p)) where
   /-- The decision has query access to inputs and path payloads, never their raw values. -/
   decide : S → (p : Path s) → View s p →
@@ -479,7 +479,7 @@ structure OracleVerifier {ι : Type uι} {I : Type uI} (ambient : OracleSpec.{u�
     OracleMap (pathResources inputs s p) (Resources.ofFamily (outputs p))
 
 /-- The output statement paired with the concrete output oracle data, at each shape path. -/
-abbrev OracleVerifier.Output {s : OracleProtocol.{u}} (T : Path s → Type u)
+abbrev OracleVerifier.Output {s : OracleProtocol.{u, q}} (T : Path s → Type u)
     {J : Path s → Type u} (B : (p : Path s) → J p → Type u) (p : Path s) : Type u :=
   T p × (∀ j, B p j)
 
@@ -488,10 +488,10 @@ abbrev OracleVerifier.Output {s : OracleProtocol.{u}} (T : Path s → Type u)
 Its possible results, with every ambient answer allowed, are the statements the decision can
 return on that data and view.
 -/
-def OracleVerifier.decideWith {ι : Type uι} {I : Type uI} {ambient : OracleSpec.{uι, u} ι}
-    {s : OracleProtocol.{u}} {S : Type uS} {T : Path s → Type u} {A : I → Type u}
+def OracleVerifier.decideWith {ι : Type uι} {ambient : OracleSpec.{uι, u} ι}
+    {s : OracleProtocol.{u, q}} {S : Type uS} {T : Path s → Type u}
     {J : Path s → Type uJ} {B : (p : Path s) → J p → Type u}
-    {inputs : OracleFamily.{uI, u, wI} I A}
+    {inputs : Resources.{u, uI, dI}}
     {outputs : (p : Path s) → OracleFamily.{uJ, u, wJ} (J p) (B p)}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (p : Path s) (v : View s p)
     (data : (pathResources inputs s p).Data) :
@@ -500,13 +500,13 @@ def OracleVerifier.decideWith {ι : Type uι} {I : Type uI} {ambient : OracleSpe
     ((pathResources inputs s p).answer data)) (V.decide stmt p v).run
 
 /-- Interpret the decision's resource queries using the input and the actual run's payloads. -/
-def OracleVerifier.run {ι : Type u} {I : Type uI} {ambient : OracleSpec.{u, u} ι}
-    {s : OracleProtocol.{u}} {S : Type uS} {T : Path s → Type u} {A : I → Type u}
+def OracleVerifier.run {ι : Type u} {ambient : OracleSpec.{u, u} ι}
+    {s : OracleProtocol.{u, q}} {S : Type uS} {T : Path s → Type u}
     {J : Path s → Type u} {B : (p : Path s) → J p → Type u}
-    {inputs : OracleFamily.{uI, u, wI} I A}
+    {inputs : Resources.{u, uI, dI}}
     {outputs : (p : Path s) → OracleFamily.{u, u, wJ} (J p) (B p)}
     {Out : PathAlong oracleSig s → Type u}
-    (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : ∀ i, A i)
+    (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
     (prover : Prover oracleSig ambient s Out) :
     OracleComp (ambient + challengeSpec oracleSig s)
       (Observation oracleSig s Out (OracleVerifier.Output T B)) := do
