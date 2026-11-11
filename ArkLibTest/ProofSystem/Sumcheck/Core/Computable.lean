@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 import ArkLib.ProofSystem.Sumcheck.Core.Computable
 import Mathlib.Algebra.Field.ZMod
+import SumcheckRuntime
 
 /-!
 # The computable interaction-layer Sumcheck
@@ -60,7 +61,7 @@ example (stmt : Sumcheck.Spec.StatementRound F 3 0) (data : ∀ _ : Unit, Input 
       (Sumcheck.Core.verifier F 2 3 D₂ ambient).run stmt (interpretInput F 2 3 data)
         (interpretProver (Out' := fun _ => Σ tr, Out tr) (fun tr o => ⟨tr, o⟩) P) :=
   Sumcheck.Core.run_eq_interpret D₂ (inputFamily F 2 3) (evaluate_eq F 2)
-    (Sumcheck.Core.polyFamily F 2 3) (interpretInput F 2 3) stmt data _ P
+    (Sumcheck.Spec.polynomialFamily F 3 2) (interpretInput F 2 3) stmt data _ P
 
 /-- Transporting challenges to the polynomial carrier and back returns them. -/
 example (challenges : QueryImpl (challengeSpec oracleSig (protocol F 2 3)) ProbComp) :
@@ -70,15 +71,18 @@ example (challenges : QueryImpl (challengeSpec oracleSig (protocol F 2 3)) ProbC
 
 /-- Uniform challenges at the polynomial carrier transport to uniform computable challenges. -/
 example : Sumcheck.Core.transportDraw (M' := F⦃≤ 2⦄[X]) (eval' := fun p x => p.val.eval x) 3
-      (challengeQueryImpl oracleSig (Sumcheck.Core.protocol F 2 3)) =
-    challengeQueryImpl oracleSig (protocol F 2 3) :=
+      (@challengeQueryImpl _ oracleSig (Sumcheck.Core.protocol F 2 3)
+        (Sumcheck.Core.challengeSampleable F 2 3)) =
+    @challengeQueryImpl _ oracleSig (protocol F 2 3)
+          (Sumcheck.Core.challengeSampleableOn F _ _ 3) :=
   funext (Sumcheck.Core.transportDraw_challengeQueryImpl F 2 _ _ 3)
 
 /-- Perfect completeness of the computable Sumcheck with uniform challenges. -/
 example :
     letI : MeasurableSpace (HonestObservation F 2 3) := ⊤
     completeness ((verifier F 2 3 D₂ ambient).classicalModel init impl
-        (challengeQueryImpl oracleSig (protocol F 2 3)))
+        (@challengeQueryImpl _ oracleSig (protocol F 2 3)
+          (Sumcheck.Core.challengeSampleableOn F _ _ 3)))
       (relationProblem F 2 3 D₂ 0) (relationProblem F 2 3 D₂ (Fin.last 3))
       (judgement F 2 3 D₂) (fun x _ => honestProver D₂ x.1 x.2) 0 :=
   perfectCompleteness D₂ ambient init impl _
@@ -97,11 +101,34 @@ example (stmt : Sumcheck.Spec.StatementRound F 3 0) (data : ∀ _ : Unit, Input 
 example (Out : PathAlong oracleSig (protocol F 2 3) → Type) :
     letI : MeasurableSpace (Obs F 2 3 Out) := ⊤
     Interaction.Core.soundness ((verifier F 2 3 D₂ ambient).classicalModel (Out := Out) init impl
-        (challengeQueryImpl oracleSig (protocol F 2 3)))
+        (@challengeQueryImpl _ oracleSig (protocol F 2 3)
+          (Sumcheck.Core.challengeSampleableOn F _ _ 3)))
       (Legacy.langProblem (language F 2 3 D₂ 0))
-      (Legacy.langProblem (language F 2 3 D₂ (Fin.last 3))) (fun obs => obs.2.2)
+      (Legacy.langProblem (language F 2 3 D₂ (Fin.last 3)))
+      (fun obs => projectPathAlong oracleSig _ obs.1) (fun obs => obs.2.2)
       ((∑ _ : (Sumcheck.Spec.pSpec F 2 3).ChallengeIdx, (2 : ℝ≥0) / Fintype.card F : ℝ≥0) : ℝ≥0∞) :=
   soundness F 2 3 D₂ ambient init impl Out
+
+/-- Direct evaluation of the quadratic at the final challenge prefix. -/
+theorem quadratic_final_value : SumcheckRuntime.quadratic.eval ![4, 4] = 16 := by
+  rw [CPoly.eval_equiv]
+  change (CPoly.polyRingEquiv (n := 2) (R := SumcheckRuntime.F)
+    SumcheckRuntime.quadratic).eval ![4, 4] = 16
+  norm_num [SumcheckRuntime.quadratic, map_add, map_mul, map_pow, CPoly.coe_polyRingEquiv,
+    CPoly.CMvPolynomial.fromCMvPolynomial_X, CPoly.CMvPolynomial.fromCMvPolynomial_C]
+  decide
+
+/-- The final-state empty interval returns the verifier's accepted value without queries. -/
+theorem zero_interval_verdict :
+    SumcheckRuntime.quadraticZeroObserve = (some (16, 4, 4, 16), []) := by
+  change (some (16, 4, 4, SumcheckRuntime.quadratic.eval ![4, 4]), []) = _
+  rw [quadratic_final_value]
+
+/-- The separate empty prover observation retains the same polynomial evaluation. -/
+theorem zero_prover_output :
+    SumcheckRuntime.quadraticZeroProverObserve = ((16, 4, 4, 16), []) := by
+  change ((16, 4, 4, SumcheckRuntime.quadratic.eval ![4, 4]), []) = _
+  rw [quadratic_final_value]
 
 end ComputableSumcheckTest
 

@@ -5,123 +5,31 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.SingleRound
+public import ArkLib.ProofSystem.Sumcheck.Core.Tree
 public import PolyFun.PFunctor.Free.Replicate
 
-/-!
-# The Sumcheck protocol and its honest prover in the interaction layer
+/-! # Native folds of Sumcheck prover rounds
 
-The `n`-round protocol replicates the fixed round tree `n` times. Its carriers do not depend on
-the round index, the challenge history or the running target, so every shape path is the same.
-
-The honest prover is a dependent fold over the number of remaining rounds. Its state at `k`
-remaining rounds is a `RoundState`: a round index `i` with `i + k = n`, the legacy statement
-`Spec.StatementRound R n i` and the multivariate polynomial. Indexing by the remaining count makes
-`protocol R deg (k + 1)` unfold definitionally to one round followed by `protocol R deg k`, so the
-fold needs no casts on trees or transcripts. Every slot of the prover is `pure`, including the slot
-at each challenge node and the leaf, as in the legacy `receiveChallenge` and output.
-
-The honest prover is noncomputable, and so are `honestMessage`, `nextState`, `honestTranscript`
-and `honestOutput`. The blocker is the legacy mathematical representation they reuse. The round
-message is the legacy `Spec.SingleRound.projectedRoundPolynomial`, a sum of `evalExcept`
-restrictions of the Mathlib multivariate polynomial `R⦃≤ deg⦄[X Fin n]`, and the state update
-evaluates the Mathlib univariate message with `Polynomial.eval`. Mathlib implements both through
-noncomputable finitely supported functions. The protocol tree, `foldRounds` and the sampler do not
-depend on that representation.
-
-Executable round messages live in the legacy implementation layer on CompPoly carriers:
-`Sumcheck.Impl.Computable.projectedMessage`, for nontrivial `R` with a lawful `BEq`, and
-`projectedStatementMessage_eq` identifies its mathematical reading with
-`projectedRoundPolynomial`. This file does not connect the interaction-layer honest prover to that
-layer; `Sumcheck.Core.Computable` provides the executable honest prover on `protocolOn` at the
-CompPoly message carrier.
-
-The protocol is generic in its message carrier: `protocolOn R M eval n` sends messages in `M`
-with evaluation queries answered by `eval`, and `protocol R deg n` is its instance at the
-degree-bounded Mathlib polynomials.
-
-The main results are the closed form of the run against any sampler, `run_foldRounds`, and its
-invariance under simulation of the ambient oracle, `simulate_foldRounds`.
+The generic fold sends a message from its current state, receives a public challenge and updates
+that state. Its closed execution laws retain the entire challenge sequence and terminal output.
+The tree, fold and explicit challenge handlers are executable. Mathematical honest messages
+are supplied separately by `IntervalCompleteness`; legacy comparison clients use `LegacyProtocol`.
 -/
 
 @[expose] public section
 
 namespace Sumcheck.Core
-
 open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens
+variable {R : Type} [CommSemiring R] {deg : ℕ}
 
-variable (R : Type) [CommSemiring R] (deg : ℕ)
+/-- The fixed Sumcheck tree over an arbitrary evaluation carrier. -/
+@[reducible]
+def protocolOn (R M : Type) (eval : M → R → R) (n : ℕ) : OracleProtocol :=
+  Interpreted.protocol R M eval n
 
-omit [CommSemiring R] in
-/-- The `n`-round Sumcheck protocol over the message carrier `M`: `n` copies of
-`roundOn R M eval`. -/
-@[implicit_reducible]
-def protocolOn (M : Type) (eval : M → R → R) (n : ℕ) : OracleProtocol.{0} :=
-  FreeM.replicate ⟨⟩ (roundOn R M eval) n
-
-/-- The `n`-round Sumcheck protocol: `n` copies of `round R deg`. -/
-@[implicit_reducible]
-def protocol (n : ℕ) : OracleProtocol.{0} :=
-  protocolOn R (R⦃≤ deg⦄[X]) (fun p x => p.val.eval x) n
-
-/-- One more round is one oracle node and one challenge node before the remaining rounds. -/
-theorem protocol_succ (n : ℕ) : protocol R deg (n + 1) =
-    .liftBind (.oracle (R⦃≤ deg⦄[X]) inferInstance) fun _ =>
-      .liftBind (.challenge R) fun _ => protocol R deg n := rfl
-
-/-- The unique shape path of the `n`-round protocol. -/
-def protocolPath : (n : ℕ) → Path (protocol R deg n)
-  | 0 => ⟨⟩
-  | n + 1 => ⟨⟨⟩, ⟨⟨⟩, protocolPath n⟩⟩
-
-/-- Challenges never select shape: every shape path of the protocol is the unique one. -/
-theorem protocolPath_eq : ∀ (n : ℕ) (p : Path (protocol R deg n)), p = protocolPath R deg n
-  | 0, ⟨⟩ => rfl
-  | n + 1, ⟨⟨⟩, ⟨⟨⟩, p⟩⟩ => by
-    rw [protocolPath_eq n p]
-    rfl
-
-variable {R deg}
-
-/-- Every full transcript projects to the unique shape path, whatever its messages and
-challenges. -/
-theorem project_eq_protocolPath {n : ℕ} (tr : PathAlong oracleSig (protocol R deg n)) :
-    projectPathAlong oracleSig (protocol R deg n) tr = protocolPath R deg n :=
-  protocolPath_eq R deg n _
-
-/-- Prepend one round to a transcript of the remaining rounds. -/
-def consTranscript {n : ℕ} (msg : R⦃≤ deg⦄[X]) (chal : R)
-    (tail : PathAlong oracleSig (protocol R deg n)) :
-    PathAlong oracleSig (protocol R deg (n + 1)) := ⟨msg, ⟨chal, tail⟩⟩
-
-/-- The round polynomial of the first round of a transcript. -/
-def headMessage {n : ℕ} (tr : PathAlong oracleSig (protocol R deg (n + 1))) : R⦃≤ deg⦄[X] :=
-  tr.1
-
-/-- The challenge of the first round of a transcript. -/
-def headChallenge {n : ℕ} (tr : PathAlong oracleSig (protocol R deg (n + 1))) : R := tr.2.1
-
-/-- The transcript of the remaining rounds. -/
-def tailTranscript {n : ℕ} (tr : PathAlong oracleSig (protocol R deg (n + 1))) :
-    PathAlong oracleSig (protocol R deg n) := tr.2.2
-
-@[simp] theorem headMessage_consTranscript {n : ℕ} (msg : R⦃≤ deg⦄[X]) (chal : R)
-    (tail : PathAlong oracleSig (protocol R deg n)) :
-    headMessage (consTranscript msg chal tail) = msg := rfl
-
-@[simp] theorem headChallenge_consTranscript {n : ℕ} (msg : R⦃≤ deg⦄[X]) (chal : R)
-    (tail : PathAlong oracleSig (protocol R deg n)) :
-    headChallenge (consTranscript msg chal tail) = chal := rfl
-
-@[simp] theorem tailTranscript_consTranscript {n : ℕ} (msg : R⦃≤ deg⦄[X]) (chal : R)
-    (tail : PathAlong oracleSig (protocol R deg n)) :
-    tailTranscript (consTranscript msg chal tail) = tail := rfl
-
-/-- A transcript is determined by its first round and its tail. -/
-theorem consTranscript_eta {n : ℕ} (tr : PathAlong oracleSig (protocol R deg (n + 1))) :
-    consTranscript (headMessage tr) (headChallenge tr) (tailTranscript tr) = tr := rfl
-
-/-! ## Folding pure rounds -/
+/-- A round check receives a public challenge and queries its polynomial. -/
+abbrev RoundChecks (R : Type) (State : ℕ → Type) :=
+  (k : ℕ) → State (k + 1) → R → OptionT (OracleComp (R →ₒ R)) (State k)
 
 section Fold
 
@@ -219,11 +127,11 @@ theorem run_consProver {m : Type → Type} [Monad m] [LawfulMonad m] (k : ℕ)
       let ⟨tail, out, u⟩ ← Interaction.TwoParty.Lens.run (protocol R deg k) (next chal)
         (sampler oracleSig (protocol R deg k) (tailDraw draw))
       pure ⟨consTranscript msg chal tail, out, u⟩) := by
-  change Interaction.TwoParty.Lens.run (.liftBind _ _) _ _ = _
-  simp only [sampler, PureEnd.toStrategy, samplerEnd_succ]
+  simp only [sampler, PureEnd.toStrategy]
+  rw [samplerEnd_succ k draw]
   simp only [run_node, consProver, owner, oracleSig, Choice, Move, Choice.map, step,
     Schedule.seq, PureEnd.mapOutput, LawfulMonad.pure_bind, LawfulApplicative.map_pure,
-    bind_map_left, FreeM.append_liftBind]
+    bind_map_left]
   simp only [LawfulMonad.bind_assoc, LawfulMonad.pure_bind]
   exact (_root_.bind_map_left (m := m) _ _ _).trans rfl
 
@@ -245,7 +153,9 @@ theorem run_foldRounds {m : Type → Type} [Monad m] [LawfulMonad m] {Out : Type
     simp [drawChallenges]
     rfl
   | succ k ih =>
-    simp only [foldRounds, run_consProver, ih]
+    simp only [foldRounds]
+    rw [run_consProver k]
+    simp only [ih]
     simp only [drawChallenges, foldTranscript, foldState]
     refine Eq.trans ?_ (_root_.map_bind (m := m) _ _ _).symm
     refine bind_congr fun chal => ?_
@@ -272,104 +182,5 @@ theorem simulate_foldRounds {ι : Type} {ambient : OracleSpec ι} {m : Type → 
     exact congrArg pure (funext fun _ => ih _)
 
 end Run
-
-/-! ## The honest Sumcheck prover -/
-
-section Honest
-
-variable (R deg) (n : ℕ)
-
-/-- The honest prover's state with `k` rounds remaining. The round index `round` satisfies
-`round + k = n`, so the state type does not change the protocol shape. -/
-structure RoundState (k : ℕ) where
-  /-- The index of the next round, or `n` after the last round. -/
-  round : Fin (n + 1)
-  /-- The round index and the remaining count add up to the number of variables. -/
-  round_add : round.val + k = n
-  /-- The legacy statement at the current round. -/
-  statement : Spec.StatementRound R n round
-  /-- The multivariate polynomial being summed. -/
-  poly : Spec.OracleStatement R n deg ()
-
-/-- The prover output: the legacy output statement, the output oracle statement and the unit
-witness. -/
-abbrev HonestOutput :=
-  (Spec.StatementRound R n (Fin.last n) × (∀ i, Spec.OracleStatement R n deg i)) × Unit
-
-variable {R deg n}
-
-/-- The round being played when `k + 1` rounds remain. -/
-def RoundState.index {k : ℕ} (st : RoundState R deg n (k + 1)) : Fin n :=
-  ⟨st.round.val, by have := st.round_add; omega⟩
-
-variable {d : ℕ} (D : Fin d ↪ R)
-
-/-- The honest round polynomial: the legacy projected round polynomial. It is noncomputable
-because the projection works on the Mathlib multivariate polynomial; an executable counterpart on
-CompPoly carriers is `Sumcheck.Impl.Computable.projectedStatementMessage`, which
-`Sumcheck.Impl.Computable.projectedStatementMessage_eq` identifies with the projection. -/
-noncomputable def honestMessage (k : ℕ) (st : RoundState R deg n (k + 1)) : R⦃≤ deg⦄[X] :=
-  Sumcheck.Spec.SingleRound.projectedRoundPolynomial R n deg D st.index
-    st.statement.challenges st.poly
-
-/-- The legacy statement update: the new target is the round polynomial at the challenge, and the
-challenge is appended to the history. -/
-noncomputable def nextState (msg : (k : ℕ) → RoundState R deg n (k + 1) → R⦃≤ deg⦄[X])
-    (k : ℕ) (st : RoundState R deg n (k + 1)) (chal : R) : RoundState R deg n k where
-  round := st.index.succ
-  round_add := by
-    have := st.round_add
-    change st.round.val + 1 + k = n
-    omega
-  statement := ⟨(msg k st).val.eval chal, Fin.snoc st.statement.challenges chal⟩
-  poly := st.poly
-
-/-- Read the legacy output from the state after the last round. -/
-def finishState (st : RoundState R deg n 0) : HonestOutput R deg n :=
-  ((⟨st.statement.target, fun j => st.statement.challenges (Fin.cast (by
-      have := st.round_add; simp only [Fin.val_last]; omega) j)⟩, fun _ => st.poly), ())
-
-/-- The initial state: round `0` with the input statement and polynomial. -/
-def initState (stmt : Spec.StatementRound R n 0) (oStmt : ∀ i, Spec.OracleStatement R n deg i) :
-    RoundState R deg n n :=
-  ⟨0, Nat.zero_add n, stmt, oStmt ()⟩
-
-/-- The honest Sumcheck prover. Every slot is `pure` and the output is pure. -/
-noncomputable def honestProver {m : Type → Type} [Monad m]
-    (stmt : Spec.StatementRound R n 0) (oStmt : ∀ i, Spec.OracleStatement R n deg i) :
-    Focal oracleSig m (protocol R deg n) (fun _ => HonestOutput R deg n) :=
-  foldRounds (honestMessage D) (nextState (honestMessage D)) finishState n (initState stmt oStmt)
-
-/-- The honest transcript on the given challenges. -/
-noncomputable def honestTranscript (stmt : Spec.StatementRound R n 0)
-    (oStmt : ∀ i, Spec.OracleStatement R n deg i) (chals : Fin n → R) :
-    PathAlong oracleSig (protocol R deg n) :=
-  foldTranscript (honestMessage D) (nextState (honestMessage D)) n (initState stmt oStmt) chals
-
-/-- The honest prover output on the given challenges. -/
-noncomputable def honestOutput (stmt : Spec.StatementRound R n 0)
-    (oStmt : ∀ i, Spec.OracleStatement R n deg i) (chals : Fin n → R) : HonestOutput R deg n :=
-  finishState (foldState (nextState (honestMessage D)) n (initState stmt oStmt) chals)
-
-/-- Closed form of the honest run: draw every challenge, then return the honest transcript and
-output. -/
-theorem run_honestProver {m : Type → Type} [Monad m] [LawfulMonad m]
-    (stmt : Spec.StatementRound R n 0) (oStmt : ∀ i, Spec.OracleStatement R n deg i)
-    (draw : (c : ChallengeNode oracleSig (protocol R deg n)) → m (challengeSpec oracleSig _ c)) :
-    Interaction.TwoParty.Lens.run (protocol R deg n) (honestProver D stmt oStmt)
-        (sampler oracleSig (protocol R deg n) draw) =
-      (fun chals => ⟨honestTranscript D stmt oStmt chals, honestOutput D stmt oStmt chals, ⟨⟩⟩) <$>
-        drawChallenges n draw :=
-  run_foldRounds _ _ _ n _ draw
-
-/-- Simulating the ambient oracle leaves the honest prover unchanged. -/
-theorem simulate_honestProver {ι : Type} {ambient : OracleSpec ι} {m : Type → Type} [Monad m]
-    [LawfulMonad m] (impl : QueryImpl ambient m)
-    (stmt : Spec.StatementRound R n 0) (oStmt : ∀ i, Spec.OracleStatement R n deg i) :
-    Prover.simulate impl (honestProver (m := OracleComp ambient) D stmt oStmt) =
-      honestProver (m := m) D stmt oStmt :=
-  simulate_foldRounds impl _ _ _ n _
-
-end Honest
 
 end Sumcheck.Core

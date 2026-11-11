@@ -29,6 +29,7 @@ abbrev Protocol := FreeM PlainPoly.{u} PUnit.{u + 1}
 abbrev OracleProtocol := FreeM OraclePoly.{u} PUnit.{u + 1}
 
 /-- The oracle verifier's observation, over a specified shape path. -/
+@[reducible]
 def View (s : OracleProtocol.{u}) (p : Path s) : Type u :=
   {v : PathAlong viewSig s // projectPathAlong viewSig s v = p}
 

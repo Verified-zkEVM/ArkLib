@@ -48,7 +48,7 @@ def event (i : Fin 4) : OracleComp events F := liftM (events.query i)
 /-- A logged effect: a prover event `.inl i`, or the `j`-th challenge draw `.inr j`. -/
 abbrev Entry := Fin 4 ⊕ ℕ
 
-attribute [local implicit_reducible] FreeM.replicate Node.position challengeSpec
+
 
 /-- The challenge at every node of the computable protocol is the fixed value `x`. -/
 def constChallenge {deg : ℕ} (x : F) : (k : ℕ) →
@@ -189,13 +189,24 @@ def finalState : RoundState F 2 0 := ⟨Fin.last 2, rfl, quadraticFinal⟩
 
 /-- Run the computable honest prover for zero rounds from the final round state, against a
 sampler that logs every draw, and read the output statement and the output oracle at its point. -/
-def quadraticZeroObserve : (F × F × F × F) × List Entry :=
+def quadraticZeroProverObserve : (F × F × F × F) × List Entry :=
   ((fun x => let out := x.2.1.1
       (out.1.target, out.1.challenges ⟨0, by decide⟩, out.1.challenges ⟨1, by decide⟩,
         (out.2 ()).val.eval out.1.challenges)) <$>
     Interaction.TwoParty.Lens.run (protocol F 2 0)
       (honestFrom (m := StateM (List Entry)) three quadraticInput 0 finalState)
       (sampler oracleSig (protocol F 2 0) (draw 4 0))).run []
+
+/-- Run the zero-round interval verifier at the final statement and read its optional verdict. -/
+def quadraticZeroObserve : Option (F × F × F × F) × List Entry :=
+  (simulateQ (QueryImpl.add record (draw 4 0))
+    ((fun obs => obs.2.2.map fun v =>
+      (v.1.target, v.1.challenges ⟨0, by decide⟩, v.1.challenges ⟨1, by decide⟩,
+        (v.2 ()).val.eval v.1.challenges)) <$>
+      (intervalVerifier (⇑three) events 2 0 (by decide)).run ⟨16, ![4, 4]⟩
+        (fun _ => quadraticInput)
+        (intervalHonestProver (⇑three) quadratic quadratic_degree 0
+          (Sumcheck.Core.intervalInitial 2 0 (by decide) ⟨16, ![4, 4]⟩)))).run []
 
 /-- The total sum `117`, first-round value `109`, and final value `101`, reduced modulo `17`,
 are calculated independently of the projection implementation. -/
@@ -209,7 +220,9 @@ def quadraticChecks : IO Unit := do
   check "honest computable two rounds and retained computational input" fun _ =>
     quadraticObserve == (some (16, 4, 4, 16), [.inr 0, .inr 1])
   check "zero rounds from the final state retain the computational input without sampling"
-    fun _ => quadraticZeroObserve == ((16, 4, 4, 16), [])
+    fun _ => quadraticZeroObserve == (some (16, 4, 4, 16), [])
+  check "zero-round prover output retains the computational input"
+    fun _ => quadraticZeroProverObserve == ((16, 4, 4, 16), [])
 
 end SumcheckRuntime
 
