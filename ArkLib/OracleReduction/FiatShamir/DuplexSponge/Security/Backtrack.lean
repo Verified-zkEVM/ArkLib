@@ -7,6 +7,7 @@ module
 
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Nondegeneracy
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.TraceDataStructures
+public import Mathlib.Data.Set.Finite.List
 
 /-!
 # Backtracking sequence family and procedure
@@ -19,6 +20,8 @@ Fiat-Shamir, following Section 5.2 in the paper.
   consumed as an explicit structure hypothesis by the bad-event lemmas (`BadEvents`,
   `AbortAnalysis`); no family-enumeration algorithm is provided — the executable surface is
   the linear scan (see the design note in `section S_BT_BacktrackComputation`).
+- `canonicalBacktrackFamily`: the paper's `S_BT(tr, s)`, the family of all maximal sequences
+  (`BacktrackSequence.IsMaximal`), finite by `BacktrackSequence.finite`.
 - `J_BT`: the set of occurence index sequences of `S_BT`
   - `BacktrackSequence.Index`: compute the index sequence of a single backtrack sequence.
 - `backTrack`: the core backtrack algorithm
@@ -349,10 +352,13 @@ lemma BacktrackSequence.Index_snd_not_mem_take (seq : BacktrackSequence trace st
 
 end IndexSpec
 
-/-- CO25 Def 5.3 `S_BT(tr, s)` — maximal family of backtrack sequences
-(Eq. 9 & BackTrack §5.2 Step 2, Eq. 11): a finite set of `BacktrackSequence` pairs
-`(s_{in,ι}, s_{out,ι})` starting at an initial `StmtIn` and ending at sponge state `s`,
-with no sequence strictly containing another. -/
+/-- A family of backtrack sequences for CO25 Def 5.3 (Eq. 9 & BackTrack §5.2 Step 2, Eq. 11): a
+finite set of `BacktrackSequence` pairs `(s_{in,ι}, s_{out,ι})` starting at an initial `StmtIn`
+and ending at sponge state `s`, with no sequence strictly containing another.
+
+Any such antichain qualifies, including `∅`; the paper's `S_BT(tr, s)`, the set of **all**
+maximal sequences, is `canonicalBacktrackFamily`. Lemmas stated for every family (5.12, 5.14,
+5.16) apply to it. -/
 structure BacktrackSequenceFamily (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (state : CanonicalSpongeState U) where
   /-- `S_BT(tr, s)` — finite set of backtrack sequences (CO25 Def 5.3). -/
@@ -383,6 +389,113 @@ lemma BacktrackSequence.ext
   simp only at hstmt hin hout
   subst hstmt; subst hin; subst hout
   rfl
+
+/-! ### The canonical family `S_BT(tr, s)` -/
+
+section Canonical
+
+variable {trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
+  {state : CanonicalSpongeState U}
+
+/-- CO25 Def 5.3 maximality: no valid sequence with the same statement strictly contains `seq`.
+Containment is `Sublist` on the flattened state sequences, as in `BacktrackSequenceFamily`. -/
+def BacktrackSequence.IsMaximal (seq : BacktrackSequence trace state) : Prop :=
+  ∀ seq' : BacktrackSequence trace state, seq.stmt = seq'.stmt →
+    seq.flattenStateSequence.Sublist seq'.flattenStateSequence → seq = seq'
+
+/-- The permutation states named by a trace entry. -/
+def traceEntryStates :
+    ((t : (duplexSpongeChallengeOracle StmtIn U).Domain) ×
+      (duplexSpongeChallengeOracle StmtIn U).Range t) → List (CanonicalSpongeState U)
+  | ⟨.inl _, _⟩ => []
+  | ⟨.inr (.inl a), b⟩ => [a, b]
+  | ⟨.inr (.inr b), a⟩ => [b, a]
+
+/-- The statement of an `h` entry. -/
+def traceEntryStmt :
+    ((t : (duplexSpongeChallengeOracle StmtIn U).Domain) ×
+      (duplexSpongeChallengeOracle StmtIn U).Range t) → Option StmtIn
+  | ⟨.inl x, _⟩ => some x
+  | ⟨.inr _, _⟩ => none
+
+omit [SpongeUnit U] [SpongeSize] in
+private lemma finite_lists_of_subset {α : Type*} (S : Set α) (hS : S.Finite) (n : ℕ) :
+    {l : List α | l.length ≤ n ∧ ∀ x ∈ l, x ∈ S}.Finite := by
+  have := hS.to_subtype
+  refine ((List.finite_length_le S n).image (List.map Subtype.val)).subset ?_
+  rintro l ⟨hl, hlS⟩
+  refine ⟨l.attach.map fun x => ⟨x.1, hlS x.1 x.2⟩, by simpa using hl, ?_⟩
+  simp [List.map_map, Function.comp_def]
+
+/-- A trace admits finitely many backtrack sequences ending at a given state: every state is
+named by a trace entry or is `state`, input capacities are distinct, and the statement is an `h`
+query of the trace. -/
+instance BacktrackSequence.finite : Finite (BacktrackSequence trace state) := by
+  classical
+  let S : Finset (CanonicalSpongeState U) := insert state (trace.flatMap traceEntryStates).toFinset
+  let A : Set StmtIn := {x | x ∈ trace.filterMap traceEntryStmt}
+  let L : Set (List (CanonicalSpongeState U)) := {l | l.length ≤ S.card ∧ ∀ x ∈ l, x ∈ S}
+  let f : BacktrackSequence trace state →
+      StmtIn × List (CanonicalSpongeState U) × List (CanonicalSpongeState U) :=
+    fun seq => (seq.stmt, seq.inputState, seq.outputState)
+  have hf : Function.Injective f := by
+    intro s₁ s₂ h
+    simp only [f, Prod.mk.injEq] at h
+    exact BacktrackSequence.ext h.1 h.2.1 h.2.2
+  have hL : L.Finite := by
+    simpa [L] using finite_lists_of_subset (S : Set (CanonicalSpongeState U)) S.finite_toSet S.card
+  have hA : A.Finite := (trace.filterMap traceEntryStmt).finite_toSet
+  have hrange : Set.range f ⊆ A ×ˢ (L ×ˢ L) := by
+    rintro _ ⟨seq, rfl⟩
+    have hlen := seq.inputState_length_eq_outputState_length_succ
+    -- every input and output state is named by a trace entry, or is `state`
+    have hpair : ∀ i : Fin seq.outputState.length,
+        seq.inputState[i.val]'(by omega) ∈ S ∧ seq.outputState[i] ∈ S := by
+      intro i
+      rcases seq.permute_or_inv_in_trace i with h | h
+      · constructor <;> refine Finset.mem_insert_of_mem (List.mem_toFinset.mpr
+          (List.mem_flatMap.mpr ⟨_, h, by simp [traceEntryStates]⟩))
+      · constructor <;> refine Finset.mem_insert_of_mem (List.mem_toFinset.mpr
+          (List.mem_flatMap.mpr ⟨_, h, by simp [traceEntryStates]⟩))
+    have hin : ∀ x ∈ seq.inputState, x ∈ S := by
+      intro x hx
+      obtain ⟨i, hi, rfl⟩ := List.mem_iff_getElem.mp hx
+      by_cases hio : i < seq.outputState.length
+      · exact (hpair ⟨i, hio⟩).1
+      · have : i = seq.inputState.length - 1 := by omega
+        subst this
+        rw [seq.last_inputState_eq_state]
+        exact Finset.mem_insert_self _ _
+    have hout : ∀ x ∈ seq.outputState, x ∈ S := by
+      intro x hx
+      obtain ⟨i, hi, rfl⟩ := List.mem_iff_getElem.mp hx
+      exact (hpair ⟨i, hi⟩).2
+    have hnodup : seq.inputState.Nodup := seq.inputCapacities_nodup.of_map _
+    have hcard : seq.inputState.length ≤ S.card := by
+      rw [← List.toFinset_card_of_nodup hnodup]
+      exact Finset.card_le_card fun x hx => hin x (List.mem_toFinset.mp hx)
+    change seq.stmt ∈ A ∧ seq.inputState ∈ L ∧ seq.outputState ∈ L
+    refine ⟨?_, ⟨hcard, hin⟩, ⟨by omega, hout⟩⟩
+    exact List.mem_filterMap.mpr ⟨_, seq.hash_in_trace, rfl⟩
+  have : Finite (Set.range f) := ((hA.prod (hL.prod hL)).subset hrange).to_subtype
+  exact Finite.of_injective_finite_range hf
+
+/-- CO25 Def 5.3 `S_BT(tr, s)`: the family of **all** maximal backtrack sequences ending at
+`state`. `BacktrackSequenceFamily` admits any antichain, including `∅`; this is the canonical one.
+Validity is Lean's `BacktrackSequence`, whose condition (e) (distinct input capacities) is
+stronger than the paper's. -/
+noncomputable def canonicalBacktrackFamily : BacktrackSequenceFamily trace state where
+  seqFamily := (Set.toFinite {seq : BacktrackSequence trace state | seq.IsMaximal}).toFinset
+  maximality := by
+    intro s hs s' _ hne hsub
+    exact hne ((Set.Finite.mem_toFinset _).mp hs s' hsub.1 hsub.2)
+
+lemma mem_canonicalBacktrackFamily {seq : BacktrackSequence trace state} :
+    seq ∈ (canonicalBacktrackFamily (trace := trace) (state := state)).seqFamily ↔
+      seq.IsMaximal :=
+  Set.Finite.mem_toFinset _
+
+end Canonical
 
 /-- Definition 5.4: index list payload attached to one sequence. -/
 abbrev BacktrackIndexList

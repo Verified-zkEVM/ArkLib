@@ -1231,7 +1231,7 @@ private lemma bt_seq_eq_of_le (h : ¬ E trace) (S_BT : Backtrack.S_BT trace stat
   exact Backtrack.BacktrackSequence.ext hstmt hin hout
 
 /-- CO25 Lemma 5.14 — If `E(tr) = 0` then `E_fork(tr, s) = 0`. The proof uses only `¬E_dup`.
-It holds for every family `S_BT`. -/
+It holds for every family `S_BT`, including `Backtrack.canonicalBacktrackFamily`. -/
 lemma lemma_5_14 (h : ¬ E trace)
     (S_BT : Backtrack.S_BT trace state) :
     ¬ E_fork trace state S_BT := by
