@@ -440,8 +440,9 @@ rows of `scripts/SumcheckRuntime.lean`. Rows 3, 4 and 6 are premise-required und
   Mathlib input family stays executable, and the computable verifier shares its decision.
 - `support_completeness` keeps the frozen supported-run guarantee without a probability or
   normalization assumption. `perfectCompleteness` follows for every challenge implementation,
-  and `soundness` keeps the mathematical core error for every prover. The indexed CompPoly interval results cover every bounded endpoint; suffix soundness retains
-  the parent’s `count * (deg / |R|)` bound.
+  and `soundness` keeps the mathematical core error for every prover. The indexed CompPoly
+  interval results cover every bounded endpoint; suffix soundness has the interval verifier's
+  `count * (deg / |R|)` bound.
 - Runtime rows. The challenges are drawn from the challenge oracle, not from a prover event, and
   the log records each draw.
   - Row 3 expects the log `[p0, c0, p2, c1, p3]` instead of `[0, 1, 2, 1, 3]`.
