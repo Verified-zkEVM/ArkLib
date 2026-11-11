@@ -201,7 +201,7 @@ theorem comapInputs_run {ι : Type u} {ambient : OracleSpec.{u, u} ι} {s : Orac
     (r : OracleMap (Resources.ofFamily inputs') (Resources.ofFamily inputs)) (stmt : S)
     (data : ∀ i, A' i) (prover : Prover oracleSig ambient s Out) :
     (V.comapInputs r).run stmt data prover = V.run stmt (r.f data) prover := by
-  unfold OracleVerifier.run
+  rw [OracleVerifier.run_eq, OracleVerifier.run_eq]
   refine _root_.bind_congr fun z => ?_
   obtain ⟨tr, out, _⟩ := z
   change (simulateQ _ (OptionT.mk (simulateQ ((r.par (OracleMap.id _)).withAmbient ambient)
@@ -346,7 +346,7 @@ inductive Stages {ι : Type u} (ambient : OracleSpec.{u, u} ι) :
       Stages ambient S inputs
   /-- A first stage, then the remaining stages selected by its shape path. -/
   | cons {S : Type u} {I : Type u} {A : I → Type u} {inputs : OracleFamily.{u, u, w} I A}
-      (s : OracleProtocol.{u}) {T : Path s → Type u} {J : Path s → Type u}
+      (s : OracleProtocol.{u, u}) {T : Path s → Type u} {J : Path s → Type u}
       {B : (p : Path s) → J p → Type u}
       {middle : (p : Path s) → OracleFamily.{u, u, w} (J p) (B p)}
       (verifier : OracleVerifier ambient s S T inputs middle)
