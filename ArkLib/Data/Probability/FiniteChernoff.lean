@@ -18,9 +18,9 @@ number of zeros of `X`.
 
 ## Main statements
 
-* `Probability.prodLaw_count_ge_le`: the upper tail `≤ exp(-|T| kl t a)` for `a < t`.
-* `Probability.prodLaw_count_le_le`: the lower tail `≤ exp(-|T| kl t a)` for `t < a`.
-* `Probability.kl_pos`: the exponent is positive for `t ≠ a`.
+* `Probability.prodLaw_count_ge_le`: the upper tail `≤ exp(-|T| chernoffExp t a)` for `a < t`.
+* `Probability.prodLaw_count_le_le`: the lower tail `≤ exp(-|T| chernoffExp t a)` for `t < a`.
+* `Probability.chernoffExp_pos`: the exponent is positive for `t ≠ a`.
 * `Probability.card_zero_mul_sq_le`: Chebyshev in counting form.
 -/
 
@@ -32,15 +32,15 @@ open InformationTheory
 
 /-- The Chernoff exponent `a · klFun (t / a)`, which is `t log(t/a) - t + a` for `a ≠ 0`: the
 Kullback-Leibler divergence of `Poisson(t)` from `Poisson(a)`, not of two Bernoulli laws. -/
-noncomputable def kl (t a : ℝ) : ℝ := a * klFun (t / a)
+noncomputable def chernoffExp (t a : ℝ) : ℝ := a * klFun (t / a)
 
-theorem kl_eq {t a : ℝ} (ha : a ≠ 0) : kl t a = t * Real.log (t / a) - t + a := by
-  rw [kl, klFun_apply]
+theorem chernoffExp_eq {t a : ℝ} (ha : a ≠ 0) : chernoffExp t a = t * Real.log (t / a) - t + a := by
+  rw [chernoffExp, klFun_apply]
   field_simp
   ring
 
 /-- The Chernoff exponent is positive off the diagonal. -/
-theorem kl_pos {a t : ℝ} (ha : 0 < a) (ht : 0 ≤ t) (h : t ≠ a) : 0 < kl t a :=
+theorem chernoffExp_pos {a t : ℝ} (ha : 0 < a) (ht : 0 ≤ t) (h : t ≠ a) : 0 < chernoffExp t a :=
   mul_pos ha <| (klFun_nonneg (div_nonneg ht ha.le)).lt_of_ne' fun h0 =>
     h ((div_eq_one_iff_eq ha.ne').1 ((klFun_eq_zero_iff (div_nonneg ht ha.le)).1 h0))
 
@@ -56,8 +56,8 @@ theorem card_zero_mul_sq_le {α : Type*} [Fintype α] (X : α → ℝ) (μ : ℝ
 
 variable {I A : Type*} [Fintype I] [DecidableEq I] [Fintype A] [DecidableEq A]
 
-private theorem sum_prodLaw_mul_exp_count_le (b : I → A → ℝ) (hb : ∀ i, IsProb (b i)) (T : Finset I)
-    (E : I → Finset A) (a : ℝ) (hp : ∀ i ∈ T, ∑ x ∈ E i, b i x = a) (lam : ℝ) :
+private theorem sum_prodLaw_mul_exp_count_le (b : I → A → ℝ) (hb : ∀ i, IsProbWeight (b i))
+    (T : Finset I) (E : I → Finset A) (a : ℝ) (hp : ∀ i ∈ T, ∑ x ∈ E i, b i x = a) (lam : ℝ) :
     ∑ ω, prodLaw b ω *
         Real.exp (lam * ((T.filter (fun i => ω i ∈ E i)).card : ℝ)) ≤
       Real.exp (T.card * (a * (Real.exp lam - 1))) := by
@@ -106,7 +106,7 @@ private theorem sum_prodLaw_mul_exp_count_le (b : I → A → ℝ) (hb : ∀ i, 
         rw [← Real.exp_sum, ← Finset.sum_filter]
         simp
 
-private theorem sum_prodLaw_mul_le_exp (b : I → A → ℝ) (hb : ∀ i, IsProb (b i)) (T : Finset I)
+private theorem sum_prodLaw_mul_le_exp (b : I → A → ℝ) (hb : ∀ i, IsProbWeight (b i)) (T : Finset I)
     (E : I → Finset A) (a : ℝ) (hp : ∀ i ∈ T, ∑ x ∈ E i, b i x = a) (t lam : ℝ)
     (ind : (I → A) → ℝ)
     (hind : ∀ ω, ind ω ≤
@@ -134,14 +134,14 @@ private theorem sum_prodLaw_mul_le_exp (b : I → A → ℝ) (hb : ∀ i, IsProb
     _ = _ := by rw [← Real.exp_add]
 
 /-- Upper Chernoff tail for a count under a product weight. -/
-theorem prodLaw_count_ge_le (b : I → A → ℝ) (hb : ∀ i, IsProb (b i)) (T : Finset I)
+theorem prodLaw_count_ge_le (b : I → A → ℝ) (hb : ∀ i, IsProbWeight (b i)) (T : Finset I)
     (E : I → Finset A) (a t : ℝ) (hp : ∀ i ∈ T, ∑ x ∈ E i, b i x = a) (hat : 0 < a)
     (hta : a < t) :
     ∑ ω, prodLaw b ω *
         (if t * T.card ≤ ((T.filter (fun i => ω i ∈ E i)).card : ℝ) then 1 else 0) ≤
-      Real.exp (-(T.card * kl t a)) := by
+      Real.exp (-(T.card * chernoffExp t a)) := by
   have ht : 0 < t := hat.trans hta
-  rw [kl_eq hat.ne']
+  rw [chernoffExp_eq hat.ne']
   have hl : 0 ≤ Real.log (t / a) :=
     (Real.log_pos ((one_lt_div hat).2 hta)).le
   refine (sum_prodLaw_mul_le_exp b hb T E a hp t (Real.log (t / a)) _ fun ω => ?_).trans_eq ?_
@@ -155,14 +155,14 @@ theorem prodLaw_count_ge_le (b : I → A → ℝ) (hb : ∀ i, IsProb (b i)) (T 
     ring
 
 /-- Lower Chernoff tail for a count under a product weight. -/
-theorem prodLaw_count_le_le (b : I → A → ℝ) (hb : ∀ i, IsProb (b i)) (T : Finset I)
+theorem prodLaw_count_le_le (b : I → A → ℝ) (hb : ∀ i, IsProbWeight (b i)) (T : Finset I)
     (E : I → Finset A) (a t : ℝ) (hp : ∀ i ∈ T, ∑ x ∈ E i, b i x = a) (ht : 0 < t)
     (hta : t < a) :
     ∑ ω, prodLaw b ω *
         (if ((T.filter (fun i => ω i ∈ E i)).card : ℝ) ≤ t * T.card then 1 else 0) ≤
-      Real.exp (-(T.card * kl t a)) := by
+      Real.exp (-(T.card * chernoffExp t a)) := by
   have hat : 0 < a := ht.trans hta
-  rw [kl_eq hat.ne']
+  rw [chernoffExp_eq hat.ne']
   have hl : Real.log (t / a) ≤ 0 :=
     (Real.log_neg (div_pos ht hat) ((div_lt_one hat).2 hta)).le
   refine (sum_prodLaw_mul_le_exp b hb T E a hp t (Real.log (t / a)) _ fun ω => ?_).trans_eq ?_

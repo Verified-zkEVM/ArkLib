@@ -192,7 +192,7 @@ theorem factorial_mul_lower (q : ℕ) (hq : 1 < q) {β : Type} [Fintype β] (c :
   nlinarith [a, b, d]
 
 /-- Rounding a probability weight to counts summing to `n`. -/
-theorem exists_rounding {Ω : Type} [Fintype Ω] (μ : Ω → ℝ) (hμ : IsProb μ)
+theorem exists_rounding {Ω : Type} [Fintype Ω] (μ : Ω → ℝ) (hμ : IsProbWeight μ)
     (ω₀ : Ω) (n : ℕ) (hn : 0 < n) :
     ∃ N : Ω → ℕ, ∑ ω, N ω = n ∧ (∀ ω ≠ ω₀, N ω = ⌊n * μ ω⌋₊) ∧
       ∀ ω, |(N ω : ℝ) / n - μ ω| ≤ Fintype.card Ω / n := by
@@ -284,18 +284,18 @@ private theorem one_sub_inv_mem_Ioo {q : ℕ} (hq : 2 ≤ q) :
   have h2 : 1 / (q : ℝ) ≤ 1 / 2 := one_div_le_one_div_of_le (by norm_num) this
   constructor <;> linarith
 
-private theorem isProb_badLaw_factor {q : ℕ} (hq : 2 ≤ q) (hF : Fintype.card F = q) {p : ℝ}
+private theorem isProbWeight_badLaw_factor {q : ℕ} (hq : 2 ≤ q) (hF : Fintype.card F = q) {p : ℝ}
     (hp0 : 0 ≤ p) (hp1 : p ≤ 1 - 1 / q) (L : ℕ) (o : Option (Fin L)) :
-    IsProb (ber q (o.elim (1 - 1 / (q : ℝ)) (fun _ => p)) : F → ℝ) := by
+    IsProbWeight (ber q (o.elim (1 - 1 / (q : ℝ)) (fun _ => p)) : F → ℝ) := by
   have := one_sub_inv_mem_Ioo hq
   cases o with
-  | none => exact isProb_ber hq hF this.1.le this.2.le
-  | some i => exact isProb_ber (t := p) hq hF hp0 (by linarith)
+  | none => exact isProbWeight_ber hq hF this.1.le this.2.le
+  | some i => exact isProbWeight_ber (t := p) hq hF hp0 (by linarith)
 
 /-- The bad distribution is a probability weight. -/
-theorem isProb_badLaw {q : ℕ} (hq : 2 ≤ q) (hF : Fintype.card F = q) {p : ℝ} (hp0 : 0 ≤ p)
-    (hp1 : p ≤ 1 - 1 / q) (L : ℕ) : IsProb (badLaw q p L F) :=
-  isProb_prodLaw _ (isProb_badLaw_factor hq hF hp0 hp1 L)
+theorem isProbWeight_badLaw {q : ℕ} (hq : 2 ≤ q) (hF : Fintype.card F = q) {p : ℝ} (hp0 : 0 ≤ p)
+    (hp1 : p ≤ 1 - 1 / q) (L : ℕ) : IsProbWeight (badLaw q p L F) :=
+  isProbWeight_prodLaw _ (isProbWeight_badLaw_factor hq hF hp0 hp1 L)
 
 /-- Each `u`-coordinate of the bad distribution is nonzero with probability `p`. -/
 theorem sum_badLaw_coord_ne_zero {q : ℕ} (hq : 2 ≤ q) (hF : Fintype.card F = q) {p : ℝ}
@@ -305,11 +305,11 @@ theorem sum_badLaw_coord_ne_zero {q : ℕ} (hq : 2 ≤ q) (hF : Fintype.card F =
   have hq1 : (0 : ℝ) < (q : ℝ) - 1 := by
     have : (2 : ℝ) ≤ q := by exact_mod_cast hq
     linarith
-  have key := law_coord _ (isProb_badLaw_factor hq hF hp0 hp1 L) (some i)
+  have key := weightLaw_coord _ (isProbWeight_badLaw_factor hq hF hp0 hp1 L) (some i)
   have h1 : ∑ ω ∈ Finset.univ.filter (fun ω : Option (Fin L) → F => ω (some i) ≠ 0),
       badLaw q p L F ω = ∑ a ∈ Finset.univ.filter (fun a : F => a ≠ 0),
-        law (badLaw q p L F) (fun ω => ω (some i)) a := by
-    unfold law
+        weightLaw (badLaw q p L F) (fun ω => ω (some i)) a := by
+    unfold weightLaw
     exact (Finset.sum_fiberwise_of_maps_to (s := Finset.univ.filter
       (fun ω : Option (Fin L) → F => ω (some i) ≠ 0)) (t := Finset.univ.filter (fun a : F => a ≠ 0))
       (g := fun ω => ω (some i)) (f := badLaw q p L F) (fun ω hω => by simpa using hω)).symm.trans
@@ -320,7 +320,7 @@ theorem sum_badLaw_coord_ne_zero {q : ℕ} (hq : 2 ≤ q) (hF : Fintype.card F =
           · intro h; exact ⟨by simpa [h] using (Finset.mem_filter.1 ha).2, h⟩)
   rw [h1]
   have h2 : ∀ a ∈ Finset.univ.filter (fun a : F => a ≠ 0),
-      law (badLaw q p L F) (fun ω => ω (some i)) a = p / ((q : ℝ) - 1) := by
+      weightLaw (badLaw q p L F) (fun ω => ω (some i)) a = p / ((q : ℝ) - 1) := by
     intro a ha
     have := key a
     simp only [Finset.mem_filter, Finset.mem_univ, true_and] at ha
@@ -394,9 +394,9 @@ private theorem rpow_entQ_le_rowOrbit_ncard (q : ℕ) (hq : 1 < q) {Ω β : Type
     simp only [c]
     rw [Fintype.card_subtype, this]
     exact Finset.sum_congr rfl fun ω _ => hg ω
-  have hlaw : ∀ b, law (fun ω => (N ω : ℝ) / n) φ b = (c b : ℝ) / n := by
+  have hlaw : ∀ b, weightLaw (fun ω => (N ω : ℝ) / n) φ b = (c b : ℝ) / n := by
     intro b
-    unfold law
+    unfold weightLaw
     rw [← Finset.sum_div, hcb b]
     push_cast
     rfl
@@ -448,7 +448,7 @@ theorem exists_badMatrix (q : ℕ) (hq : 2 ≤ q) (δ : ℝ) (hδ0 : 0 < δ) (h�
     exact (Nat.le_ceil _).trans (by exact_mod_cast h)
   set n := Fintype.card ι with hn_def
   have hnR : (0 : ℝ) < n := by exact_mod_cast hn1
-  have hμ : IsProb (badLaw q δ L F) := isProb_badLaw hq hF hδ0.le hδ1.le L
+  have hμ : IsProbWeight (badLaw q δ L F) := isProbWeight_badLaw hq hF hδ0.le hδ1.le L
   have hcardΩ : (Fintype.card (Option (Fin L) → F) : ℝ) = (q : ℝ) ^ (L + 1) := by
     rw [Fintype.card_fun, Fintype.card_option, Fintype.card_fin, hF]
     push_cast; rfl
@@ -502,7 +502,7 @@ theorem exists_badMatrix (q : ℕ) (hq : 2 ≤ q) (δ : ℝ) (hδ0 : 0 < δ) (h�
       simpa using this
     have hlow := rpow_entQ_le_rowOrbit_ncard (ι := ι) q (by omega) N g hg
       (fun ω => A.mulVec (badRow ω))
-    have hν : IsProb (fun ω => (N ω : ℝ) / n) := by
+    have hν : IsProbWeight (fun ω => (N ω : ℝ) / n) := by
       refine ⟨fun ω => by positivity, ?_⟩
       have : ∑ ω, (N ω : ℝ) = n := by exact_mod_cast hNsum
       rw [← Finset.sum_div, this, div_self hnR.ne']
@@ -531,8 +531,9 @@ theorem exists_badMatrix (q : ℕ) (hq : 2 ≤ q) (δ : ℝ) (hδ0 : 0 < δ) (h�
     have hent : entQ q (badLaw q δ L F) (fun ω => A.mulVec (badRow ω)) - η ≤
         entQ q (fun ω => (N ω : ℝ) / n) (fun ω => A.mulVec (badRow ω)) := by
       have h := (abs_le.1 hcl4).2
-      have h2 : (∑ b, Real.negMulLog (law (badLaw q δ L F) (fun ω => A.mulVec (badRow ω)) b)) /
-          Real.log q - (∑ b, Real.negMulLog (law (fun ω => (N ω : ℝ) / n)
+      have h2 : (∑ b, Real.negMulLog
+            (weightLaw (badLaw q δ L F) (fun ω => A.mulVec (badRow ω)) b)) /
+          Real.log q - (∑ b, Real.negMulLog (weightLaw (fun ω => (N ω : ℝ) / n)
             (fun ω => A.mulVec (badRow ω)) b)) / Real.log q ≤ η := by
         rw [← sub_div, div_le_iff₀ hlogq]
         linarith [hkey]

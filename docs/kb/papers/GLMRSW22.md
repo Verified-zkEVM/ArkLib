@@ -73,7 +73,7 @@ needed case by a second-moment count over parity-check matrices for the row orbi
 `n` (`RandomLinearInternal.exists_badMatrix`), which makes the source's remark on non-integral types
 precise. The source bounds a conditional entropy with Fano's and Hoeffding's inequalities. ArkLib
 bounds it by the entropy of the error of a plurality decoder, with a Chernoff bound
-(`RandomLinearInternal.law_plurality_err_le`).
+(`RandomLinearInternal.prodLaw_plurality_err_le`).
 
 ## Open Formalization Gaps
 

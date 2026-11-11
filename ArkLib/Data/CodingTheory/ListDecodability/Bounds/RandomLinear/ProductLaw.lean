@@ -16,8 +16,8 @@ The entropy of `q`-ary Bernoulli coordinates under a product weight.
 
 * `CodingTheory.RandomLinearInternal.entQ_ber_block`: `d` independent `Ber_q(p)` coordinates have
   entropy `d · H_q(p)`.
-* `CodingTheory.RandomLinearInternal.law_add_smul_ber`: if `w ≠ 0`, then `Ber_q(p) + w · Ber_q(p')`
-  is `Ber_q(pstar q p p')`.
+* `CodingTheory.RandomLinearInternal.weightLaw_add_smul_ber`: if `w ≠ 0`, then
+  `Ber_q(p) + w · Ber_q(p')` is `Ber_q(pstar q p p')`.
 -/
 
 @[expose] public section
@@ -48,8 +48,8 @@ theorem sum_ber (hq : 2 ≤ q) (hF : Fintype.card F = q) (t : ℝ) : ∑ a : F, 
   linarith
 
 /-- `Ber_q(t)` is a probability weight for `t ∈ [0, 1]`. -/
-theorem isProb_ber (hq : 2 ≤ q) (hF : Fintype.card F = q) {t : ℝ} (h0 : 0 ≤ t) (h1 : t ≤ 1) :
-    IsProb (ber q t : F → ℝ) := by
+theorem isProbWeight_ber (hq : 2 ≤ q) (hF : Fintype.card F = q) {t : ℝ} (h0 : 0 ≤ t) (h1 : t ≤ 1) :
+    IsProbWeight (ber q t : F → ℝ) := by
   have hq1 : (0 : ℝ) < (q : ℝ) - 1 := by
     have : (2 : ℝ) ≤ q := by exact_mod_cast hq
     linarith
@@ -61,8 +61,8 @@ theorem isProb_ber (hq : 2 ≤ q) (hF : Fintype.card F = q) {t : ℝ} (h0 : 0 �
 
 /-- A `Ber_q(t)`-shaped law has entropy `H_q(t)`. -/
 theorem entQ_ber_shape {Ω : Type} [Fintype Ω] {μ : Ω → ℝ} (hF : Fintype.card F = q)
-    (X : Ω → F) (t : ℝ) (h0 : law μ X 0 = 1 - t)
-    (h1 : ∀ a ≠ 0, law μ X a = t / ((q : ℝ) - 1)) : entQ q μ X = qEntropy q t := by
+    (X : Ω → F) (t : ℝ) (h0 : weightLaw μ X 0 = 1 - t)
+    (h1 : ∀ a ≠ 0, weightLaw μ X a = t / ((q : ℝ) - 1)) : entQ q μ X = qEntropy q t := by
   have hq1 : (1 : ℝ) < q := by
     rw [← hF]; exact_mod_cast Fintype.one_lt_card
   have hq0 : ((q : ℝ) - 1) ≠ 0 := by linarith
@@ -82,13 +82,13 @@ theorem entQ_ber_shape {Ω : Type} [Fintype Ω] {μ : Ω → ℝ} (hF : Fintype.
 
 /-- A block of i.i.d. `Ber_q(p)` coordinates has entropy `|J| · H_q(p)`. -/
 theorem entQ_ber_block (hF : Fintype.card F = q) (p : ℝ) (b : I → F → ℝ)
-    (hb : ∀ i, IsProb (b i)) (J : Finset I) (hJ : ∀ i ∈ J, b i = ber q p) :
+    (hb : ∀ i, IsProbWeight (b i)) (J : Finset I) (hJ : ∀ i ∈ J, b i = ber q p) :
     entQ q (prodLaw b) (fun ω (i : J) => ω i) = J.card * qEntropy q p := by
   have hq1 : 1 < q := by rw [← hF]; exact Fintype.one_lt_card
-  have hμ := isProb_prodLaw b hb
+  have hμ := isProbWeight_prodLaw b hb
   induction J using Finset.induction_on with
   | empty =>
-    have h1 := sum_law hμ (fun (ω : I → F) (i : (∅ : Finset I)) => ω i)
+    have h1 := sum_weightLaw hμ (fun (ω : I → F) (i : (∅ : Finset I)) => ω i)
     rw [Fintype.sum_subsingleton _ default] at h1
     simp [entQ, h1]
   | insert a J ha ih =>
@@ -104,10 +104,10 @@ theorem entQ_ber_block (hF : Fintype.card F = q) (p : ℝ) (b : I → F → ℝ)
       by_cases h : i = a
       · subst h; simp [f]
       · simp [f, h]
-    have h0 : law (prodLaw b) (fun ω : I → F => ω a) 0 = 1 - p := by
-      rw [law_coord b hb, hba]; simp [ber]
-    have h1 : ∀ c ≠ 0, law (prodLaw b) (fun ω : I → F => ω a) c = p / ((q : ℝ) - 1) := by
-      intro c hc; rw [law_coord b hb, hba]; simp [ber, hc]
+    have h0 : weightLaw (prodLaw b) (fun ω : I → F => ω a) 0 = 1 - p := by
+      rw [weightLaw_coord b hb, hba]; simp [ber]
+    have h1 : ∀ c ≠ 0, weightLaw (prodLaw b) (fun ω : I → F => ω a) c = p / ((q : ℝ) - 1) := by
+      intro c hc; rw [weightLaw_coord b hb, hba]; simp [ber, hc]
     rw [Finset.card_insert_of_notMem ha, Nat.cast_add, Nat.cast_one, ← hfX,
       entQ_eq_of_inverse hμ hq1 _ f g (fun ω => Prod.ext (by simp [f, g]) (funext fun i => by
         have : (i : I) ≠ a := fun h => ha (h ▸ i.2)
@@ -120,24 +120,24 @@ theorem entQ_ber_block (hF : Fintype.card F = q) (p : ℝ) (b : I → F → ℝ)
     ring
 
 /-- `Ber_q(p) + w · Ber_q(p')` with `w ≠ 0` is `Ber_q(pstar q p p')`. -/
-theorem law_add_smul_ber (hF : Fintype.card F = q) (p p' : ℝ) (b : I → F → ℝ)
-    (hb : ∀ i, IsProb (b i)) {i a : I} (hia : i ≠ a) (hi : b i = ber q p)
+theorem weightLaw_add_smul_ber (hF : Fintype.card F = q) (p p' : ℝ) (b : I → F → ℝ)
+    (hb : ∀ i, IsProbWeight (b i)) {i a : I} (hia : i ≠ a) (hi : b i = ber q p)
     (ha : b a = ber q p') {w : F} (hw : w ≠ 0) :
-    law (prodLaw b) (fun ω => ω i + w * ω a) 0 = 1 - pstar q p p' ∧
-      ∀ c ≠ 0, law (prodLaw b) (fun ω => ω i + w * ω a) c = pstar q p p' / ((q : ℝ) - 1) := by
+    weightLaw (prodLaw b) (fun ω => ω i + w * ω a) 0 = 1 - pstar q p p' ∧
+      ∀ c ≠ 0, weightLaw (prodLaw b) (fun ω => ω i + w * ω a) c = pstar q p p' / ((q : ℝ) - 1) := by
   have hq1 : (1 : ℝ) < q := by
     rw [← hF]; exact_mod_cast Fintype.one_lt_card
   have hq0 : ((q : ℝ) - 1) ≠ 0 := by linarith
-  have hpair : ∀ x z, law (prodLaw b) (fun ω => (ω i, ω a)) (x, z) =
+  have hpair : ∀ x z, weightLaw (prodLaw b) (fun ω => (ω i, ω a)) (x, z) =
       ber q p x * ber q p' z := by
     intro x z
-    rw [law_pair_eq_mul_of_disjoint b hb (X := fun ω => ω i) (Z := fun ω => ω a)
+    rw [weightLaw_pair_eq_mul_of_disjoint b hb (X := fun ω => ω i) (Z := fun ω => ω a)
       (P := {i}) (Q := {a}) (fun x y h => h i rfl) (fun x y h => h a rfl)
-      (Set.disjoint_singleton.2 hia), law_coord b hb, law_coord b hb, hi, ha]
-  have hlaw : ∀ c, law (prodLaw b) (fun ω => ω i + w * ω a) c =
+      (Set.disjoint_singleton.2 hia), weightLaw_coord b hb, weightLaw_coord b hb, hi, ha]
+  have hlaw : ∀ c, weightLaw (prodLaw b) (fun ω => ω i + w * ω a) c =
       ∑ z : F, ber q p (c - w * z) * ber q p' z := by
     intro c
-    have := (law_comp (μ := prodLaw b) (fun ω => (ω i, ω a))
+    have := (weightLaw_comp (μ := prodLaw b) (fun ω => (ω i, ω a))
       (fun y : F × F => y.1 + w * y.2) c).trans (Finset.sum_filter _ _)
     rw [show (fun ω : I → F => ω i + w * ω a) =
       (fun y : F × F => y.1 + w * y.2) ∘ fun ω => (ω i, ω a) from rfl, this,

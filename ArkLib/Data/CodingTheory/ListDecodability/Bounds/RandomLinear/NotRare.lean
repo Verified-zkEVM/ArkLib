@@ -39,7 +39,7 @@ given the bound `hβ` of `CodingTheory.RandomLinearInternal.entQ_add_mul_ber_low
 weight `b`. -/
 theorem block_entropy_lower {I F : Type} [Fintype I] [DecidableEq I] [Field F] [Fintype F]
     [DecidableEq F] {q : ℕ} (hq : 2 ≤ q) (hF : Fintype.card F = q) (p : ℝ) (L : ℕ) (β₀ : ℝ)
-    (b : I → F → ℝ) (hb : ∀ i, IsProb (b i))
+    (b : I → F → ℝ) (hb : ∀ i, IsProbWeight (b i))
     (hβ : BlockEntropyBound q p L β₀ b)
     (V αs : Finset I) (hd : Disjoint V αs) (hV : ∀ i ∈ V, b i = ber q p)
     (hα : ∀ a ∈ αs, BerAtLeast q p (b a))
@@ -48,7 +48,7 @@ theorem block_entropy_lower {I F : Type} [Fintype I] [DecidableEq I] [Field F] [
     (T.card : ℝ) * β₀ ≤
       entQ q (prodLaw b) (fun ω (r : T) => ω r + ∑ a ∈ αs, W r a * ω a) := by
   classical
-  have hμ : IsProb (prodLaw b) := isProb_prodLaw b hb
+  have hμ : IsProbWeight (prodLaw b) := isProbWeight_prodLaw b hb
   have hq1 : 1 < q := by omega
   induction αs using Finset.induction_on generalizing T with
   | empty =>
@@ -166,13 +166,14 @@ theorem entQ_badLaw_mulVec_lower (q : ℕ) (hq : 2 ≤ q) (p : ℝ) (hp0 : 0 < p
   have hp1' : p ≤ 1 - 1 / (q : ℝ) := hp1.le
   obtain ⟨S, B, hB, hBA⟩ := Matrix.exists_mul_eq_pivot A hA
   let b : Option (Fin L) → F → ℝ := fun o => ber q (o.elim (1 - 1 / (q : ℝ)) (fun _ => p))
-  have hb : ∀ o, IsProb (b o) := by
+  have hb : ∀ o, IsProbWeight (b o) := by
     intro o
     have hinv : (0 : ℝ) ≤ 1 / q := by positivity
     cases o with
-    | none => exact isProb_ber (t := 1 - 1 / (q : ℝ)) hq hF (hp0.le.trans hp1.le) (by linarith)
-    | some j => exact isProb_ber (t := p) hq hF hp0.le (by linarith)
-  have hμ : IsProb (badLaw q p L F) := isProb_prodLaw b hb
+    | none =>
+      exact isProbWeight_ber (t := 1 - 1 / (q : ℝ)) hq hF (hp0.le.trans hp1.le) (by linarith)
+    | some j => exact isProbWeight_ber (t := p) hq hF hp0.le (by linarith)
+  have hμ : IsProbWeight (badLaw q p L F) := isProbWeight_prodLaw b hb
   have hβ := hL₀ L hL hF b hb
   let A' : Matrix (Fin s) (Fin L) F := B * A
   let e : Fin s → Option (Fin L) := fun r => some (S r)

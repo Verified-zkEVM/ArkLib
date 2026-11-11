@@ -16,8 +16,8 @@ The error probability of the plurality decoder, from the Chernoff tails
 
 ## Main statements
 
-* `CodingTheory.RandomLinearInternal.law_plurality_err_le`: the plurality decoder recovers `α` from
-  `(v_i + w_i α)_{i ∈ J}` with `v ∼ Ber_q(p)^J`, except with probability `q · exp(-|J| κ)`.
+* `CodingTheory.RandomLinearInternal.prodLaw_plurality_err_le`: the plurality decoder recovers `α`
+  from `(v_i + w_i α)_{i ∈ J}` with `v ∼ Ber_q(p)^J`, except with probability `q · exp(-|J| κ)`.
 
 `kappa` is noncomputable (`Real.log`). `plurality` is a
 proof device, not an executable decoder: it takes a maximiser with `Classical.choose`, and any
@@ -32,7 +32,7 @@ open Probability
 
 /-- The decoder's error exponent. -/
 noncomputable def kappa (q : ℕ) (p : ℝ) : ℝ :=
-  min (kl (1 / (q : ℝ)) (p / ((q : ℝ) - 1))) (kl (1 / (q : ℝ)) (1 - p))
+  min (chernoffExp (1 / (q : ℝ)) (p / ((q : ℝ) - 1))) (chernoffExp (1 / (q : ℝ)) (1 - p))
 
 /-- Plurality decoder: the `c` maximising `#{i ∈ J | y i = c * w i}`. -/
 noncomputable def plurality {I F : Type} [Field F] [Fintype F] [DecidableEq F]
@@ -62,8 +62,9 @@ theorem kappa_pos {q : ℕ} (hq : 2 ≤ q) {p : ℝ} (hp0 : 0 < p) (hp1 : p < 1 
   have hq' : (2 : ℝ) ≤ q := by exact_mod_cast hq
   have hlt := div_sub_one_lt_one_div hq hp1
   have hlt2 : 1 / (q : ℝ) < 1 - p := by linarith
-  exact lt_min (kl_pos (div_pos hp0 (by linarith)) (by positivity) hlt.ne')
-    (kl_pos (by linarith [one_div_pos.2 (by linarith : (0 : ℝ) < q)]) (by positivity) hlt2.ne)
+  exact lt_min (chernoffExp_pos (div_pos hp0 (by linarith)) (by positivity) hlt.ne')
+    (chernoffExp_pos (by linarith [one_div_pos.2 (by linarith : (0 : ℝ) < q)]) (by positivity)
+      hlt2.ne)
 
 private theorem card_filter_univ_subtype {I : Type} (J : Finset I) (P : I → Prop)
     [DecidablePred P] :
@@ -83,9 +84,9 @@ private theorem card_filter_le_plurality {I F : Type} [Field F] [Fintype F] [Dec
 
 /-- The plurality decoder recovers `ω a` from `(ω i + w i * ω a)_{i ∈ J}` except with
 probability `≤ q · exp(-|J| κ)`. -/
-theorem law_plurality_err_le {F : Type} [Field F] [Fintype F] [DecidableEq F] {q : ℕ}
+theorem prodLaw_plurality_err_le {F : Type} [Field F] [Fintype F] [DecidableEq F] {q : ℕ}
     (hF : Fintype.card F = q) {p : ℝ} (hp0 : 0 < p) (hp1 : p < 1 - 1 / q)
-    (b : I → F → ℝ) (hb : ∀ i, IsProb (b i)) (J : Finset I) (a : I)
+    (b : I → F → ℝ) (hb : ∀ i, IsProbWeight (b i)) (J : Finset I) (a : I)
     (hJ : ∀ i ∈ J, b i = ber q p) (w : I → F) (hw : ∀ i ∈ J, w i ≠ 0) :
     ∑ ω, prodLaw b ω *
         (if plurality J w (fun i : J => ω i + w i * ω a) ≠ ω a then 1 else 0) ≤
@@ -105,7 +106,7 @@ theorem law_plurality_err_le {F : Type} [Field F] [Fintype F] [DecidableEq F] {q
   have hU : ∀ β : F, β ≠ 0 → ∑ ω, prodLaw b ω *
       (if 1 / (q : ℝ) * J.card ≤
         ((J.filter (fun i => ω i ∈ ({β * w i} : Finset F))).card : ℝ)
-        then 1 else 0) ≤ Real.exp (-(J.card * kl (1 / q) (p / ((q : ℝ) - 1)))) := by
+        then 1 else 0) ≤ Real.exp (-(J.card * chernoffExp (1 / q) (p / ((q : ℝ) - 1)))) := by
     intro β hβ
     exact prodLaw_count_ge_le b hb J (fun i => ({β * w i} : Finset F)) (p / ((q : ℝ) - 1))
       (1 / q) (by

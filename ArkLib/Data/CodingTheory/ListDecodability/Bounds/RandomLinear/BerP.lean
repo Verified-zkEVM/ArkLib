@@ -106,14 +106,14 @@ def BlockEntropyBound (q : ℕ) (p : ℝ) (L : ℕ) (β₀ : ℝ) (b : I → F �
 /-- If `w_i ≠ 0` on `J ≠ ∅`, the coordinates `i ∈ J` are `Ber_q(p)`, `a ∉ J` is `Ber_q(p')` and the
 weight is a product, then `H((ω_i + w_i ω_a)_{i ∈ J}) ≥ (|J| - 1) H_q(p) + H_q(pstar q p p')`. -/
 theorem entQ_add_mul_ber_ge_pstar {q : ℕ} (hq : 2 ≤ q) (hF : Fintype.card F = q) {p p' : ℝ}
-    (b : I → F → ℝ) (hb : ∀ i, IsProb (b i)) (J : Finset I) (a : I) (haJ : a ∉ J)
+    (b : I → F → ℝ) (hb : ∀ i, IsProbWeight (b i)) (J : Finset I) (a : I) (haJ : a ∉ J)
     (hJ : ∀ i ∈ J, b i = ber q p) (ha : b a = ber q p') (w : I → F) (hw : ∀ i ∈ J, w i ≠ 0)
     (hd : 1 ≤ J.card) :
     ((J.card : ℝ) - 1) * qEntropy q p + qEntropy q (pstar q p p') ≤
       entQ q (prodLaw b) (fun ω (i : J) => ω i + w i * ω a) := by
   have hq1 : 1 < q := by omega
   obtain ⟨i₀, hi₀⟩ := Finset.card_pos.1 hd
-  have hbp := isProb_prodLaw b hb
+  have hbp := isProbWeight_prodLaw b hb
   have hia : i₀ ≠ a := fun h => haJ (h ▸ hi₀)
   let J' := J.erase i₀
   let Z : (I → F) → F × F := fun ω => (ω i₀, ω a)
@@ -136,7 +136,7 @@ theorem entQ_add_mul_ber_ge_pstar {q : ℕ} (hq : 2 ≤ q) (hF : Fintype.card F 
       · exact haJ (Finset.mem_of_mem_erase hi')
   have key := entQ_peel (q := q) (μ := prodLaw b) hbp hq1 Y₁ V Z φ ψ (fun ω => rfl) hind
   have hY1 : entQ q (prodLaw b) Y₁ = qEntropy q (pstar q p p') := by
-    obtain ⟨l0, l1⟩ := law_add_smul_ber hF p p' b hb hia (hJ i₀ hi₀) ha (hw i₀ hi₀)
+    obtain ⟨l0, l1⟩ := weightLaw_add_smul_ber hF p p' b hb hia (hJ i₀ hi₀) ha (hw i₀ hi₀)
     exact entQ_ber_shape hF Y₁ _ l0 l1
   have hV : entQ q (prodLaw b) V = ((J.card : ℝ) - 1) * qEntropy q p := by
     have := entQ_ber_block hF p b hb J' (fun i hi => hJ i (Finset.mem_of_mem_erase hi))
@@ -166,14 +166,14 @@ theorem entQ_add_mul_ber_ge_pstar {q : ℕ} (hq : 2 ≤ q) (hF : Fintype.card F 
 `H((ω_i + w_i ω_a)_{i ∈ J}) ≥ |J| H_q(p) + H_q(p) - errEnt q t` for `t = q e^{-|J| κ}`. -/
 theorem entQ_add_mul_ber_ge_sub_errEnt {q : ℕ} (hq : 2 ≤ q) (hF : Fintype.card F = q) {p p' : ℝ}
     (hp0 : 0 < p) (hp1 : p < 1 - 1 / q) (hp' : p ≤ p') (hp'1 : p' ≤ 1 - 1 / q)
-    (b : I → F → ℝ) (hb : ∀ i, IsProb (b i)) (J : Finset I) (a : I) (haJ : a ∉ J)
+    (b : I → F → ℝ) (hb : ∀ i, IsProbWeight (b i)) (J : Finset I) (a : I) (haJ : a ∉ J)
     (hJ : ∀ i ∈ J, b i = ber q p) (ha : b a = ber q p') (w : I → F) (hw : ∀ i ∈ J, w i ≠ 0)
     (ht : (q : ℝ) * Real.exp (-(J.card * kappa q p)) ≤ Real.exp (-1)) :
     (J.card : ℝ) * qEntropy q p + qEntropy q p -
         errEnt q ((q : ℝ) * Real.exp (-(J.card * kappa q p))) ≤
       entQ q (prodLaw b) (fun ω (i : J) => ω i + w i * ω a) := by
   have hq1 : 1 < q := by omega
-  have hbp := isProb_prodLaw b hb
+  have hbp := isProbWeight_prodLaw b hb
   let t : ℝ := (q : ℝ) * Real.exp (-(J.card * kappa q p))
   let α : (I → F) → F := fun ω => ω a
   let Y : (I → F) → (J → F) := fun ω i => ω i + w i * ω a
@@ -200,17 +200,17 @@ theorem entQ_add_mul_ber_ge_sub_errEnt {q : ℕ} (hq : 2 ≤ q) (hF : Fintype.ca
     entQ_ber_block hF p b hb J hJ
   have h5 : entQ q (prodLaw b) α = qEntropy q p' := by
     refine entQ_ber_shape hF α p' ?_ ?_
-    · have := law_coord b hb a 0
+    · have := weightLaw_coord b hb a 0
       simp only [α]; rw [this, ha]; simp [ber]
     · intro c hc
-      have := law_coord b hb a c
+      have := weightLaw_coord b hb a c
       simp only [α]; rw [this, ha]; simp [ber, hc]
   have h6 := qEntropy_monotoneOn hq ⟨hp0.le, hp1.le⟩ ⟨by linarith, hp'1⟩ hp'
   have h7 : entQ q (prodLaw b) (fun ω => α ω - plurality J w (Y ω)) ≤ errEnt q t := by
-    refine entQ_le_of_law_zero hbp hF _ t ht ?_
-    have herr := law_plurality_err_le hF hp0 hp1 b hb J a hJ w hw
+    refine entQ_le_of_weightLaw_zero hbp hF _ t ht ?_
+    have herr := prodLaw_plurality_err_le hF hp0 hp1 b hb J a hJ w hw
     have hsum := hbp.2
-    unfold law
+    unfold weightLaw
     rw [Finset.sum_filter]
     have : ∑ ω, prodLaw b ω *
         (if plurality J w (fun i : J => ω i + w i * ω a) ≠ ω a then (1 : ℝ) else 0) =
@@ -303,7 +303,7 @@ theorem entQ_add_mul_ber_lower (q : ℕ) (hq : 2 ≤ q) (p : ℝ) (hp0 : 0 < p) 
     (δ' : ℝ) (hδ' : 0 < δ') :
     ∃ L₀ : ℕ, ∀ L : ℕ, L₀ ≤ L →
       ∀ {I F : Type} [Fintype I] [DecidableEq I] [Field F] [Fintype F] [DecidableEq F],
-      Fintype.card F = q → ∀ b : I → F → ℝ, (∀ i, IsProb (b i)) →
+      Fintype.card F = q → ∀ b : I → F → ℝ, (∀ i, IsProbWeight (b i)) →
         BlockEntropyBound q p L (qEntropy q p + qEntropy q p / ((L : ℝ) + δ')) b := by
   have hq1 : 1 < q := by omega
   have hh : 0 < qEntropy q p :=
@@ -319,7 +319,7 @@ theorem entQ_add_mul_ber_lower (q : ℕ) (hq : 2 ≤ q) (p : ℝ) (hp0 : 0 < p) 
   have hdL : (J.card : ℝ) ≤ L := by exact_mod_cast hJL
   by_cases hd0 : J.card = 0
   · rw [hd0]
-    simpa using entQ_nonneg (q := q) (isProb_prodLaw b hb) hq1
+    simpa using entQ_nonneg (q := q) (isProbWeight_prodLaw b hb) hq1
       (fun ω (i : J) => ω i + w i * ω a)
   have hd : 1 ≤ J.card := Nat.pos_of_ne_zero hd0
   have hLpos : 0 < (L : ℝ) + δ' := add_pos_of_nonneg_of_pos (Nat.cast_nonneg L) hδ'
