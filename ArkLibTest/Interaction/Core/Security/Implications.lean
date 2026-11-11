@@ -120,6 +120,15 @@ example {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly) {s : FreeM P PUnit}
     EscapeAlong l s (fun sp history => F.toFun sp history stmt) tr :=
   F.escapeAlong l hadm hlang hacc
 
+-- Pure escape certificates accept a move universe strictly above Type.
+example {s : Protocol.{1}} {S : Type uS}
+    {admissible language : S → Prop} {accepts : S → PathAlong plainSig s → Prop}
+    (F : StateFunction plainSig s S admissible language accepts) {stmt : S}
+    (hadm : admissible stmt) (hlang : ¬ language stmt) {tr : PathAlong plainSig s}
+    (hacc : accepts stmt tr) :
+    EscapeAlong plainSig s (fun sp history => F.toFun sp history stmt) tr :=
+  F.escapeAlong plainSig hadm hlang hacc
+
 -- Disposition S4: soundness-implication-disposition.md#soundnesslean.
 example {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly) {s : FreeM P PUnit} {S : Type uS}
     {admissible language : S → Prop} {accepts : S → PathAlong l s → Prop}

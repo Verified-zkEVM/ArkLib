@@ -406,7 +406,7 @@ def nats : OracleFamily Unit (fun _ => Nat) :=
 def input : ∀ _ : Unit, Nat := fun _ => 7
 
 /-- The verifier sends a `Fin 3` challenge. -/
-def first : OracleProtocol :=
+def first : OracleProtocol.{0, 0} :=
   .liftBind (.challenge (Fin 3)) (fun _ => .pure ⟨⟩)
 
 /-- The empty suffix. -/

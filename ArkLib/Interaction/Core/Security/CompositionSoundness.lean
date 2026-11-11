@@ -379,7 +379,7 @@ theorem OracleVerifier.run_eq_bind {s₁ : OracleProtocol.{u}} {s₂ : Path s₁
     (V : OracleVerifier ambient (s₁.append s₂) S T inputs outputs) (stmt : S)
     (data : ∀ i, A i) (prover : Prover oracleSig ambient (s₁.append s₂) Out) :
     V.run stmt data prover = appendPrefixRun prover >>= V.suffixRun stmt data := by
-  simp only [OracleVerifier.run, appendPrefixRun]
+  simp only [OracleVerifier.run_eq, appendPrefixRun]
   rw [sampler_append_eq, run_splitSampler]
   simp only [bind_assoc]
   exact bind_congr fun _ => bind_congr fun _ => LawfulMonad.pure_bind _ _
