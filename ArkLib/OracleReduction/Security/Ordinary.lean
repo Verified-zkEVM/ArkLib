@@ -218,11 +218,6 @@ abbrev Prover {ι : Type} (publicSpec : OracleSpec ι) (Statement NARGString : T
 abbrev Extractor {ι : Type} (publicSpec : OracleSpec ι) (Statement Witness NARGString : Type) :=
   Statement → NARGString → QueryLog publicSpec → QueryLog publicSpec → OptionT ProbComp Witness
 
-/-- Every query to the named public interface contributes to the NARG budget. -/
-def countsPublicQuery {ι : Type} : ι → Prop := fun _ => True
-
-instance {ι : Type} : DecidablePred (@countsPublicQuery ι) := fun _ => isTrue trivial
-
 /-- The generic backend's handler for an extractor with private randomness only. -/
 def privateExtractorImpl {σ : Type} : QueryImpl unifSpec (StateT σ ProbComp) :=
   fun q => StateT.lift ((QueryImpl.id' unifSpec) q)
@@ -354,7 +349,7 @@ def adaptiveSoundness (language : Set Statement) (size : Statement → ℕ)
   ∀ securityParam instanceBound t
       (P : Prover (publicSpec securityParam instanceBound) Statement
         (NARGString securityParam instanceBound)),
-    P.IsQueryBoundP (publicQuerySelector countsPublicQuery) t →
+    P.IsQueryBoundP (publicQuerySelector fun _ => True) t →
     Pr{let out ← (soundnessExperiment (init securityParam instanceBound)
       (impl securityParam instanceBound) (V securityParam instanceBound) P)}[
         soundnessFailureEventSizeBounded size instanceBound language out] ≤
@@ -372,7 +367,7 @@ def adaptiveKnowledgeSoundnessWithExtractor
   ∀ securityParam instanceBound t
       (P : Prover (publicSpec securityParam instanceBound) Statement
         (NARGString securityParam instanceBound)),
-    P.IsQueryBoundP (publicQuerySelector countsPublicQuery) t →
+    P.IsQueryBoundP (publicQuerySelector fun _ => True) t →
     Pr{let out ← (knowledgeSoundnessExperiment (init securityParam instanceBound)
       (impl securityParam instanceBound) (V securityParam instanceBound)
       (E securityParam instanceBound) P)}[

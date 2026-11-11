@@ -542,17 +542,6 @@ def adaptiveNARGKnowledgeSoundnessExp
     let witIn ← simulateQ extractorImpl (extractor x π trP trV).run
     return (x, witIn, stmtOut)) (← init)
 
-/-- Count public queries and exclude private sampling in `oSpec + privateSpec`. -/
-def nargPublicQuery {ι κ : Type} : ι ⊕ κ → Prop
-  | .inl _ => True
-  | .inr _ => False
-
-instance instDecidablePredNargPublicQuery {ι κ : Type} :
-    DecidablePred (nargPublicQuery (ι := ι) (κ := κ)) := fun q =>
-  match q with
-  | .inl _ => isTrue True.intro
-  | .inr _ => isFalse id
-
 namespace Verifier
 
 variable {ι κE : Type} {oSpec : OracleSpec ι} {extractorSpec : OracleSpec κE}

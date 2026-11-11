@@ -138,7 +138,7 @@ def extractor (securityParam instanceBound : ℕ) :
 -- A fixed-configuration probability bound supplies the whole parameterized definition.
 example (language : Set ℕ) (error : ℕ → ℕ → ℕ → ENNReal)
     (h : ∀ sec n t (P : NARG.Prover (publicSpec sec n) ℕ (Fin (sec + n + 1))),
-      P.IsQueryBoundP (publicQuerySelector NARG.countsPublicQuery) t →
+      P.IsQueryBoundP (publicQuerySelector fun _ => True) t →
       Pr{let out ← (NARG.soundnessExperiment (sampleOracle sec n) (oracleImpl sec n)
         (verifier sec n) P)}[NARG.soundnessFailureEvent language out] ≤ error sec n t) :
     NARG.adaptiveSoundness publicSpec sampleOracle oracleImpl verifier language id error := by
@@ -152,7 +152,7 @@ example (language : Set ℕ) (error : ℕ → ℕ → ℕ → ENNReal)
 -- The named extractor is one family, fixed before all budgets and adversaries.
 example (relation : Set (ℕ × Unit)) (error : ℕ → ℕ → ℕ → ENNReal)
     (h : ∀ sec n t (P : NARG.Prover (publicSpec sec n) ℕ (Fin (sec + n + 1))),
-      P.IsQueryBoundP (publicQuerySelector NARG.countsPublicQuery) t →
+      P.IsQueryBoundP (publicQuerySelector fun _ => True) t →
       Pr{let out ←
         (NARG.knowledgeSoundnessExperiment (sampleOracle sec n) (oracleImpl sec n)
           (verifier sec n) (extractor sec n) P)}[NARG.knowledgeSoundnessFailureEvent relation out] ≤

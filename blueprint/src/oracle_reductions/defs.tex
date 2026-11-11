@@ -1131,7 +1131,7 @@ the interaction layer.
 \begin{definition}[Counted prover queries]
   \label{def:counted_queries}
 An argument prover is \emph{\(\CountedQueryBound\)-query} if it makes at most   \(\CountedQueryBound\) calls to the oracles designated by the experiment in every   execution, for every sequence of oracle replies and private choices; repeated   queries count again. Private coins do not contribute to the count.
-  \lean{nargPublicQuery, Verifier.StateRestoration.isSrChallengeMove}
+  \lean{OracleComp.publicQuerySelector, Verifier.StateRestoration.isSrChallengeMove}
   \leanok
 \end{definition}
 
