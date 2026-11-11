@@ -57,13 +57,12 @@ theorem oracleAcceptanceAgrees (impl : QueryImpl oSpec (StateT σ ProbComp))
   let : MeasurableSpace (Option StmtOut) := ⊤
   refine exists_congr fun st => ?_
   change 0 < 𝒟[StateT.run' (simulateQ (QueryImpl.addLift impl
-      ((sumFamily (family OStmtIn)
-        (pathFamily _ (projectPathAlong oracleSig _ tr))).behaviorOfRealizations
-          (sumData oStmt (payloads _ tr))))
+      ((pathResources (family OStmtIn) _ (projectPathAlong oracleSig _ tr)).answer
+        (oStmt, payloads _ tr)))
       ((embedOracleVerifier V).decide stmt (projectPathAlong oracleSig _ tr)
         (toView _ tr)).run) st]
       {v | ∃ t, v = some t ∧ p (t, ((embedOracleVerifier V).outputMap stmt
-        (projectPathAlong oracleSig _ tr) (toView _ tr)).f (sumData oStmt (payloads _ tr)))} ↔
+        (projectPathAlong oracleSig _ tr) (toView _ tr)).f (oStmt, payloads _ tr))} ↔
     ∃ t, some t ∈ support (StateT.run' (simulateQ impl
       (Option.map (fun s => (s, V.materializeOutput (oracleDecode pSpec tr).challenges oStmt
         (oracleDecode pSpec tr).messages)) <$>

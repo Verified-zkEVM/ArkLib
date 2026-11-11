@@ -68,8 +68,8 @@ abbrev msgChalPath : Path (oracleProtocol msgChal) :=
   projectPathAlong oracleSig _ msgChalRun
 
 /-- Input oracle `5` beside the run's message. -/
-def msgChalData : ∀ o, Sum.elim InStmt (OracleData (oracleProtocol msgChal) msgChalPath) o :=
-  sumData (fun _ => (5 : Nat)) (payloads _ msgChalRun)
+def msgChalData : (pathResources (family InStmt) (oracleProtocol msgChal) msgChalPath).Data :=
+  (fun _ => (5 : Nat), payloads _ msgChalRun)
 
 def nineChallenges : msgChal.Challenges := fun _ => (9 : Nat)
 
@@ -84,12 +84,12 @@ example : (legacyOutputMap sumVerifier nineChallenges msgChalPath).f msgChalData
     (18 : Nat) := rfl
 
 /-- Queries agree with the materialized data in both cases. -/
-example : simulateQ ((sumFamily (family InStmt) (pathFamily _ msgChalPath)).behaviorOfRealizations
-      msgChalData) ((legacyOutputMap sumVerifier nineChallenges msgChalPath).impl ⟨(), ()⟩) =
+example : simulateQ ((pathResources (family InStmt) _ msgChalPath).answer msgChalData)
+    ((legacyOutputMap sumVerifier nineChallenges msgChalPath).impl ⟨(), ()⟩) =
     (18 : Nat) :=
   (legacyOutputMap sumVerifier nineChallenges msgChalPath).law msgChalData ⟨(), ()⟩
-example : simulateQ ((sumFamily (family InStmt) (pathFamily _ msgChalPath)).behaviorOfRealizations
-      msgChalData) ((legacyOutputMap copyVerifier nineChallenges msgChalPath).impl ⟨false, ()⟩) =
+example : simulateQ ((pathResources (family InStmt) _ msgChalPath).answer msgChalData)
+    ((legacyOutputMap copyVerifier nineChallenges msgChalPath).impl ⟨false, ()⟩) =
     (4 : Nat) :=
   (legacyOutputMap copyVerifier nineChallenges msgChalPath).law msgChalData ⟨false, ()⟩
 
@@ -107,16 +107,15 @@ example (stmt : Unit) (view : View (oracleProtocol msgChal) msgChalPath) :
 example {ι F A : Type} [Fintype ι] [Field F] [AddCommGroup A] [Module F A]
     (challenges : (ToyProblem.SimplifiedIOR.pSpec (F := F)).Challenges)
     (p : Path (oracleProtocol (ToyProblem.SimplifiedIOR.pSpec (F := F))))
-    (r : ∀ o, Sum.elim (ToyProblem.Spec.OracleStatement ι A)
-      (OracleData (oracleProtocol (ToyProblem.SimplifiedIOR.pSpec (F := F))) p) o)
+    (r : (pathResources (family (ToyProblem.Spec.OracleStatement ι A))
+      (oracleProtocol (ToyProblem.SimplifiedIOR.pSpec (F := F))) p).Data)
     (q : [ToyProblem.SimplifiedIOR.OutputOracleStatement ι A]ₒ.Domain) :
-    (pure (simulateQ ((sumFamily (family (ToyProblem.Spec.OracleStatement ι A))
-        (pathFamily _ p)).behaviorOfRealizations r)
+    (pure (simulateQ
+        ((pathResources (family (ToyProblem.Spec.OracleStatement ι A)) _ p).answer r)
         ((OracleMap.ofLegacySimulation ToyProblem.SimplifiedIOR.outputSimulation challenges p).impl
           q)) : OracleComp []ₒ _) =
       simulateQ (OracleInterface.simOracle2 (T₁ := ToyProblem.Spec.OracleStatement ι A)
-        (T₂ := (ToyProblem.SimplifiedIOR.pSpec (F := F)).Message) []ₒ (fun i => r (.inl i))
-        (pathMessages p (fun o => r (.inr o))))
+        (T₂ := (ToyProblem.SimplifiedIOR.pSpec (F := F)).Message) []ₒ r.1 (pathMessages p r.2))
         (ToyProblem.SimplifiedIOR.outputSimulation.simulateOutputQuery challenges q) :=
   simulateQ_ofLegacySimulation_impl _ challenges p r q
 

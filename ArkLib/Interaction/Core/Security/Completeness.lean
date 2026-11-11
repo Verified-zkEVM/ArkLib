@@ -20,7 +20,7 @@ output witness. The relation objects retain their explicit admissibility boundar
 
 @[expose] public section
 
-universe u uA v
+universe u uA v uS uW uI wI wJ
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle MeasureTheory
@@ -114,9 +114,10 @@ def challengeQueryImpl {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly)
     (s : FreeM P PUnit) [∀ c, SampleableType (challengeSpec l s c)] :
     QueryImpl (challengeSpec l s) ProbComp := fun c => $ᵗ (challengeSpec l s c)
 
-/-- The default classical model contains every focal prover over the ambient oracle interface. -/
+/-- The default classical model contains every focal prover over the ambient oracle interface.
+The input statement is an argument of the run, so its type may lie in any universe. -/
 noncomputable def Verifier.classicalModel {ι σ : Type} {ambient : OracleSpec ι}
-    {s : Protocol} {S : Type} {T : Path s → Type} {Out : PathAlong plainSig s → Type}
+    {s : Protocol} {S : Type uS} {T : Path s → Type} {Out : PathAlong plainSig s → Type}
     [MeasurableSpace (Observation plainSig s Out T)]
     (V : Verifier ambient s S T) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
@@ -128,12 +129,16 @@ noncomputable def Verifier.classicalModel {ι σ : Type} {ambient : OracleSpec �
 
 /-- The classical oracle model also supplies the input oracle data to the run.
 
-The verifier itself obtains that data only through its declared query interface.
+The verifier itself obtains that data only through its declared query interface. The input
+statement, the input index and the input query type are arguments of the run, so they may lie in
+any universe.
 -/
-noncomputable def OracleVerifier.classicalModel {ι I σ : Type} {ambient : OracleSpec ι}
-    {s : OracleProtocol} {S : Type} {T : Path s → Type} {A : I → Type}
+noncomputable def OracleVerifier.classicalModel {ι σ : Type} {I : Type uI}
+    {ambient : OracleSpec ι}
+    {s : OracleProtocol} {S : Type uS} {T : Path s → Type} {A : I → Type}
     {J : Path s → Type} {B : (p : Path s) → J p → Type}
-    {inputs : OracleFamily I A} {outputs : (p : Path s) → OracleFamily (J p) (B p)}
+    {inputs : OracleFamily.{uI, 0, wI} I A}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
     {Out : PathAlong oracleSig s → Type}
     [MeasurableSpace (Observation oracleSig s Out (OracleVerifier.Output T B))]
     (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
@@ -146,8 +151,9 @@ noncomputable def OracleVerifier.classicalModel {ι I σ : Type} {ambient : Orac
   mass_le_one _ _ := evalDist_apply_univ_le_one _
 
 /-- The ordinary reduction specializes model completeness without changing its experiment. The
-output problem's claims are indexed by the shape path. -/
-abbrev Reduction.completeness {ι σ S W : Type} {ambient : OracleSpec ι}
+output problem's claims are indexed by the shape path. The input statement and the honest input
+witness are arguments of the run, so their types may lie in any universe. -/
+abbrev Reduction.completeness {ι σ : Type} {S : Type uS} {W : Type uW} {ambient : OracleSpec ι}
     {s : Protocol} {T : Path s → Type} {Out : PathAlong plainSig s → Type}
     (R : Reduction ambient s S W T Out) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
