@@ -104,7 +104,7 @@ move universes. Entry 20 records the forcing declarations and dependency pin.
 | SR-085 | [`ArkLib/Interaction/Oracle/Security/StateRestoration.lean:85`][r13], `Key.instDecidableEq` | retired (automatic key equality instance) | [`ArkLib/Interaction/Core/Security/StateRestoration.lean#L63`][r14], `Key`. Core asks clients for DecidableEq of the full key at the probability theorems instead of storing message equality in Round. |
 | SR-094 | [`ArkLib/Interaction/Oracle/Security/StateRestoration.lean:94`][r15], `Key.input` | equivalent | [`ArkLib/Interaction/Core/Security/StateRestoration.lean#L83`][r16], `input`. Same selected input recovered from a key. |
 | SR-100 | [`ArkLib/Interaction/Oracle/Security/StateRestoration.lean:100`][r17], `Key.Challenge` | equivalent | [`ArkLib/Interaction/Core/Security/StateRestoration.lean#L89`][r18], `Challenge`. Same answer alphabet at the key depth. |
-| SR-106 | [`ArkLib/Interaction/Oracle/Security/StateRestoration.lean:106`][r19], `Key.remaining` | retired (remaining-round list metadata) | [`ArkLib/Interaction/Core/Security/StateRestoration.lean#L260`][r20], `keySpine`. A typed receiver cursor replaces the redundant suffix-list projection. |
+| SR-106 | [`ArkLib/Interaction/Oracle/Security/StateRestoration.lean:106`][r19], `Key.remaining` | equivalent | [`ArkLib/Interaction/Core/Security/StateRestoration.lean#L95`][r20], `Key.remaining`. Same three recursive cases: it returns the rounds after the addressed challenge. `keySpine` uses it in its result type. |
 | SR-111 | [`ArkLib/Interaction/Oracle/Security/StateRestoration.lean:111`][r21], `instance : Finite key.Challenge` | equivalent | [`ArkLib/Interaction/Core/Security/StateRestoration.lean#L101`][r22], `instSampleableType`. The same Finite fact follows from the key sampler by pinned VCVio SampleableType.finite; the duplicated specialized instance is unnecessary. |
 | SR-119 | [`ArkLib/Interaction/Oracle/Security/StateRestoration.lean:119`][r23], `instance : Nonempty key.Challenge` | equivalent | [`ArkLib/Interaction/Core/Security/StateRestoration.lean#L101`][r24], `instSampleableType`. The same Nonempty fact follows from the key sampler by pinned VCVio SampleableType.nonempty. |
 | SR-127 | [`ArkLib/Interaction/Oracle/Security/StateRestoration.lean:127`][r25], `instance : SampleableType key.Challenge` | equivalent | [`ArkLib/Interaction/Core/Security/StateRestoration.lean#L101`][r26], `instSampleableType`. The key inherits exactly its round sampler. |
@@ -308,7 +308,7 @@ No whole-library or site build is part of this branch's acceptance checks.
 [r17]: ../../../ArkLib/Interaction/Oracle/Security/StateRestoration.lean#L100
 [r18]: ../../../ArkLib/Interaction/Core/Security/StateRestoration.lean#L89
 [r19]: ../../../ArkLib/Interaction/Oracle/Security/StateRestoration.lean#L106
-[r20]: ../../../ArkLib/Interaction/Core/Security/StateRestoration.lean#L260
+[r20]: ../../../ArkLib/Interaction/Core/Security/StateRestoration.lean#L95
 [r21]: ../../../ArkLib/Interaction/Oracle/Security/StateRestoration.lean#L111
 [r22]: ../../../ArkLib/Interaction/Core/Security/StateRestoration.lean#L101
 [r23]: ../../../ArkLib/Interaction/Oracle/Security/StateRestoration.lean#L119
