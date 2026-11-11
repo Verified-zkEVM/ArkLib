@@ -78,11 +78,6 @@ This is deliberately not an instance because `FinEnum` carries enumeration data.
   equiv := Fintype.equivFin α
   decEq := inferInstance
 
-/-- Explicit `FinEnum (Vector α n)` construction via `Equiv.rootVectorEquivFin`. -/
-@[reducible] noncomputable def Vector.toFinEnum
-    {α : Type*} {n : ℕ} [FinEnum α] : FinEnum (Vector α n) :=
-  FinEnum.ofEquiv _ Equiv.rootVectorEquivFin
-
 /-- Explicit `VCVCompatible` to `SampleableType` bridge.
 This is deliberately not an instance because `SampleableType` carries sampler data. -/
 @[reducible] noncomputable def VCVCompatible.toSampleableType
