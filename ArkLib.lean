@@ -1059,6 +1059,7 @@ public import ArkLib.ProofSystem.Sumcheck.Core.FoldComposition
 public import ArkLib.ProofSystem.Sumcheck.Core.Indexed
 public import ArkLib.ProofSystem.Sumcheck.Core.Interpreted
 public import ArkLib.ProofSystem.Sumcheck.Core.InterpretedExecution
+public import ArkLib.ProofSystem.Sumcheck.Core.InterpretedPath
 public import ArkLib.ProofSystem.Sumcheck.Core.Interval
 public import ArkLib.ProofSystem.Sumcheck.Core.IntervalAdaptive
 public import ArkLib.ProofSystem.Sumcheck.Core.IntervalCompleteness
