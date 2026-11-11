@@ -70,12 +70,12 @@ def legacyTranscript : (k : ℕ) → (Fin k → R⦃≤ deg⦄[X]) → (Fin k �
 def transcriptMessages :
     (k : ℕ) → PathAlong oracleSig (protocol R deg k) → Fin k → R⦃≤ deg⦄[X]
   | 0, _ => Fin.elim0
-  | k + 1, tr => Fin.cons (headMessage tr) (transcriptMessages k (tailTranscript tr))
+  | k + 1, tr => Fin.cons (Interpreted.message tr) (transcriptMessages k (Interpreted.tail tr))
 
 /-- The challenges of an interaction-layer transcript. -/
 def transcriptChallenges : (k : ℕ) → PathAlong oracleSig (protocol R deg k) → Fin k → R
   | 0, _ => Fin.elim0
-  | k + 1, tr => Fin.cons (headChallenge tr) (transcriptChallenges k (tailTranscript tr))
+  | k + 1, tr => Fin.cons (Interpreted.challenge tr) (transcriptChallenges k (Interpreted.tail tr))
 
 /-- Decode an interaction-layer transcript into the legacy full transcript. -/
 def decodeTranscript (k : ℕ) (tr : PathAlong oracleSig (protocol R deg k)) :
@@ -111,31 +111,21 @@ def roundRouteOn (k : ℕ) (p : Path (protocolOn R M eval k)) :
     exact liftM
       ((oracles (protocolOn R M eval (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩).query ⟨.inl ⟨⟩, q⟩)
 
-omit [CommSemiring R] in
-/-- Lift the queries of the remaining rounds to a replicated protocol with one more round, over
-the message carrier `M`. -/
-def tailLiftOn (k : ℕ) (p : Path (protocolOn R M eval k)) :
-    QueryImpl (oracles (protocolOn R M eval k) p)
-      (OracleComp (oracles (protocolOn R M eval (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩)) :=
-  fun q => liftM
-    ((oracles (protocolOn R M eval (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩).query ⟨.inr q.1, q.2⟩)
-
 /-- Route legacy message queries to the oracle nodes of a completed shape path, over the message
 carrier `M`. The legacy and node queries are both evaluation points in `R`. -/
 def routeOn : (k : ℕ) → (p : Path (protocolOn R M eval k)) →
     QueryImpl [(Spec.pSpec R deg k).Message]ₒ (OracleComp (oracles (protocolOn R M eval k) p))
   | 0, _ => fun q => q.1.1.elim0
   | k + 1, ⟨⟨⟩, ⟨⟨⟩, p⟩⟩ => Legacy.appendRoute (roundRouteOn R deg M eval k p)
-      (fun q => simulateQ (tailLiftOn R M eval k p) (routeOn k p q))
+      (fun q => simulateQ
+        (Interpreted.tailLift (⟨⟨⟩, ⟨⟨⟩, p⟩⟩ : Path (protocolOn R M eval (k + 1))))
+        (routeOn k p q))
 
 /-- Route the round message's queries to the first oracle node of a replicated protocol. -/
 def roundRoute (k : ℕ) (p : Path (protocol R deg k)) :
     QueryImpl [(Spec.SingleRound.pSpec R deg).Message]ₒ
       (OracleComp (oracles (protocol R deg (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩)) :=
-  fun ⟨i, q⟩ => by
-    obtain rfl := Unique.eq_default i
-    exact liftM
-      ((oracles (protocol R deg (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩).query ⟨.inl ⟨⟩, q⟩)
+  roundRouteOn R deg _ _ k p
 
 /-- Route legacy message queries to the oracle nodes of a completed shape path. -/
 def route (k : ℕ) (p : Path (protocol R deg k)) :
@@ -158,7 +148,9 @@ theorem route_succ_sumEquiv (k : ℕ) (p : Path (protocol R deg k))
       ((Spec.SingleRound.pSpec R deg ++ₚ Spec.pSpec R deg k).Message (MessageIdx.sumEquiv s))) :
     route R deg (k + 1) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩ ⟨MessageIdx.sumEquiv s, q⟩ =
       Legacy.routePart (roundRoute R deg k p)
-        (fun q => simulateQ (tailLift R deg k p) (route R deg k p q))
+        (fun q => simulateQ
+          (Interpreted.tailLift (⟨⟨⟩, ⟨⟨⟩, p⟩⟩ : Path (protocol R deg (k + 1))))
+          (route R deg k p q))
         s q :=
   Legacy.appendRoute_sumEquiv _ _ s q
 

@@ -156,7 +156,9 @@ theorem routeOn_succ_sumEquiv (k : ℕ) (p : Path (protocolOn R M eval k))
       ((Spec.SingleRound.pSpec R deg ++ₚ Spec.pSpec R deg k).Message (MessageIdx.sumEquiv s))) :
     routeOn R deg M eval (k + 1) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩ ⟨MessageIdx.sumEquiv s, q⟩ =
       Legacy.routePart (roundRouteOn R deg M eval k p)
-        (fun q => simulateQ (tailLiftOn R M eval k p) (routeOn R deg M eval k p q))
+        (fun q => simulateQ
+          (Interpreted.tailLift (⟨⟨⟩, ⟨⟨⟩, p⟩⟩ : Path (protocolOn R M eval (k + 1))))
+          (routeOn R deg M eval k p q))
         s q :=
   Legacy.appendRoute_sumEquiv _ _ s q
 

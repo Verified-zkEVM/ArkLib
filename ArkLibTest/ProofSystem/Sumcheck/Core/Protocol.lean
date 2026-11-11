@@ -30,7 +30,7 @@ example (msg₁ msg₂ : F⦃≤ 1⦄[X]) (c₁ c₂ : F) :
 example (tr₁ tr₂ : PathAlong oracleSig (protocol F 1 3)) :
     projectPathAlong oracleSig (protocol F 1 3) tr₁ =
       projectPathAlong oracleSig (protocol F 1 3) tr₂ := by
-  rw [project_eq_protocolPath, project_eq_protocolPath]
+  rw [project_eq_shape, project_eq_shape]
 
 /-- The challenge carrier at every round is the field, whatever was drawn before. -/
 example (k : ℕ) (draw : (c : ChallengeNode oracleSig (protocol F 1 (k + 1))) →
@@ -46,7 +46,7 @@ example (msg₁ msg₂ : F⦃≤ 1⦄[X]) (c : F) :
 
 example : protocol F 1 0 = .pure ⟨⟩ := rfl
 
-example (p : Path (protocol F 1 0)) : p = protocolPath F 1 0 := protocolPath_eq F 1 0 p
+example (p : Path (protocol F 1 0)) : p = Interpreted.shape 0 := Interpreted.shape_unique 0 p
 
 /-- With zero rounds the honest prover only returns its pure output. -/
 example {d : ℕ} (D : Fin d ↪ F) (stmt : Spec.StatementRound F 0 0)
@@ -96,8 +96,8 @@ example (msg : F⦃≤ 1⦄[X])
 /-- The honest transcript records every drawn challenge in order. -/
 example {d : ℕ} (D : Fin d ↪ F) (stmt : Spec.StatementRound F 2 0)
     (oStmt : ∀ i, Spec.OracleStatement F 2 1 i) (chals : Fin 2 → F) :
-    headChallenge (honestTranscript D stmt oStmt chals) = chals 0 ∧
-      headChallenge (tailTranscript (honestTranscript D stmt oStmt chals)) = chals 1 :=
+    Interpreted.challenge (honestTranscript D stmt oStmt chals) = chals 0 ∧
+      Interpreted.challenge (Interpreted.tail (honestTranscript D stmt oStmt chals)) = chals 1 :=
   ⟨rfl, rfl⟩
 
 /-- The honest output records the challenges as the legacy output statement's history. -/
@@ -109,7 +109,7 @@ example {d : ℕ} (D : Fin d ↪ F) (stmt : Spec.StatementRound F 2 0)
 end Sumcheck.Core.ProtocolTest
 
 run_cmd do
-  for decl in [``Sumcheck.Core.protocolPath_eq, ``Sumcheck.Core.run_roundProver,
+  for decl in [``Sumcheck.Core.project_eq_shape, ``Sumcheck.Core.run_roundProver,
       ``Sumcheck.Core.run_consProver, ``Sumcheck.Core.run_foldRounds,
       ``Sumcheck.Core.simulate_foldRounds, ``Sumcheck.Core.run_honestProver,
       ``Sumcheck.Core.simulate_honestProver, ``Interaction.Core.Prover.simulate_node] do

@@ -33,7 +33,7 @@ reached statement. The list and injective forms specialize the same indexed-doma
 | `RoundByRound` | Round-by-round soundness and knowledge soundness, transferred, with error `deg / |R|` at every challenge. |
 | `Computable` | The executable instance at CompPoly messages and inputs: protocol, verifier, verdict reader and honest prover. The run correspondence `run_eq_interpret`, perfect completeness and soundness, transported. |
 | `Types` | Native round statements, polynomial oracle data and prefix/suffix coordinates. |
-| `SingleRound`, `MessageTree`, `Tree` | The oracle-message/public-challenge round, the fixed full-run tree, transcript access and sampling. |
+| `SingleRound`, `MessageTree`, `Tree` | The oracle-message/public-challenge round, the fixed full-run tree, transcript prepending and sampling. Transcript access uses the `InterpretedPath` helpers. |
 | `Domain` | Indexed remaining sums, honest projected polynomials, the successor identity and final evaluation relation. |
 | `Indexed` | The native indexed verifier, its actual-run equation, the state function and native local-to-global soundness proof. |
 | `Soundness` | Full-run, arbitrary-list and injective corollaries; actual-run committed and randomized bounds in probability and measure form. |
@@ -44,7 +44,7 @@ reached statement. The list and injective forms specialize the same indexed-doma
 | `IntervalSoundness`, `IntervalRoundSoundness` | Native suffix RBR soundness, implication bounds, list/injective forms, full-run identity and actual one-round bounds at every variable position. |
 | `FoldComposition`, `BehaviorComposition` | Append equations for generic folds and public intervals, preserving every prover effect, private output and arbitrary original behavior. |
 | `Projection`, `Behavior` | Derived projected handlers and closed execution; retained arbitrary original behavior and its final evaluation relation. |
-| `InterpretedPath`, `Interpreted`, `InterpretedExecution` | Head queries, tail lifts and views for generic message trees, shared with `Indexed`; passive verification for generic message representations, the carrier transport of provers and challenge implementations (`transportFocal`, its constant-output instance `transportProver`, `transportDraw`), and effect-preserving execution interpretation. The polynomial fold in `Fold` abbreviates this verification at polynomial evaluation. |
+| `InterpretedPath`, `Interpreted`, `InterpretedExecution` | Shape paths, transcript heads and tails, head queries, tail lifts and views for generic message trees, shared with `Tree`, `Indexed` and the legacy route; passive verification for generic message representations, the carrier transport of provers and challenge implementations (`transportFocal`, its constant-output instance `transportProver`, `transportDraw`), and effect-preserving execution interpretation. The polynomial fold in `Fold` abbreviates this verification at polynomial evaluation. |
 | `ComputableProjection`, `ComputableInterval`, `ComputableSoundness` | Indexed CompPoly projections, concrete honest interval folds, execution interpretation, completeness and native suffix soundness. |
 | `LegacyProtocol`, `Execution`, `Completeness` | Compatibility honest prover, decision, closed-form runs and direct completeness. |
 | `LegacyProjection`, `Composition` | Separate legacy projection and decision-fold comparisons. |

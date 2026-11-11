@@ -66,8 +66,8 @@ noncomputable def indexedNext {k : ℕ} (st : Option (IndexedClaim R n (k + 1)))
 noncomputable def indexedVerdict : (k : ℕ) → Option (IndexedClaim R n k) →
     PathAlong oracleSig (protocol R deg k) → Option (RoundStatement R n (Fin.last n))
   | 0, st, _ => st.map IndexedClaim.finish
-  | k + 1, st, tr => indexedVerdict k (indexedNext D st (headMessage tr) (headChallenge tr))
-      (tailTranscript tr)
+  | k + 1, st, tr => indexedVerdict k
+      (indexedNext D st (Interpreted.message tr) (Interpreted.challenge tr)) (Interpreted.tail tr)
 
 /-- Query the sent message at every domain index before continuing to the next round. -/
 def indexedDecision : (k : ℕ) → Option (IndexedClaim R n k) →
@@ -133,7 +133,7 @@ def indexedVerifier (R : Type) [CommSemiring R] [DecidableEq R] (deg n : ℕ)
   intro k
   induction k with
   | zero => intro tr; rfl
-  | succ k ih => intro tr; exact ih (tailTranscript tr)
+  | succ k ih => intro tr; exact ih (Interpreted.tail tr)
 
 /-- Answering the indexed decision from a transcript computes the indexed verdict. -/
 theorem simulateQ_indexedDecision : ∀ (k : ℕ) (st : Option (IndexedClaim R n k))
@@ -173,12 +173,13 @@ theorem simulateQ_indexedDecision : ∀ (k : ℕ) (st : Option (IndexedClaim R n
               (projectPathAlong oracleSig (protocol R deg k) tail)
               (toView (protocol R deg k) tail)) = _
           rw [ih _ tail]
-          simp [indexedVerdict, indexedNext, hs, headMessage, headChallenge, tailTranscript]
+          simp [indexedVerdict, indexedNext, hs, Interpreted.message, Interpreted.challenge,
+            Interpreted.tail]
         · have hl : (List.map (fun a => msg.val.eval (D a)) (List.finRange d)).sum ≠
               st.statement.target := by
             rwa [← List.ofFn_eq_map, List.sum_ofFn]
           simp only [hl, ite_false, simulateQ_pure]
-          simp [indexedVerdict, indexedNext, hs, headMessage]
+          simp [indexedVerdict, indexedNext, hs, Interpreted.message]
           rfl
 
 omit [DecidableEq R] in
@@ -430,7 +431,7 @@ theorem simulateQ_indexedSumQueries {k : ℕ} (domain : List R)
     (tr : PathAlong oracleSig (protocol R deg (k + 1))) :
     simulateQ (payloadImpl (protocol R deg (k + 1)) tr)
       (indexedSumQueries domain (projectPathAlong oracleSig _ tr)) =
-      (domain.map (fun x => (headMessage tr).val.eval x)).sum := by
+      (domain.map (fun x => (Interpreted.message tr).val.eval x)).sum := by
   rcases tr with ⟨msg, r, tail⟩
   unfold indexedSumQueries
   rw [simulateQ_bind, simulateQ_list_mapM]
@@ -446,7 +447,7 @@ theorem simulateQ_indexedSumQueries_monad {k : ℕ} (domain : List R)
     {m : Type → Type} [Monad m] [LawfulMonad m] :
     simulateQ ((payloadImpl (protocol R deg (k + 1)) tr).liftTarget m)
       (indexedSumQueries domain (projectPathAlong oracleSig _ tr)) =
-      (pure (domain.map (fun x => (headMessage tr).val.eval x)).sum : m R) := by
+      (pure (domain.map (fun x => (Interpreted.message tr).val.eval x)).sum : m R) := by
   rw [simulateQ_liftTarget, simulateQ_indexedSumQueries]
   rfl
 
@@ -588,7 +589,7 @@ theorem indexedVerifier_run_one {ι : Type} (ambient : OracleSpec ι)
   refine bind_congr fun r => ?_
   change R at r
   congr 2
-  simp only [indexedVerdict, indexedNext, headMessage, headChallenge,
+  simp only [indexedVerdict, indexedNext, Interpreted.message, Interpreted.challenge,
     roundTranscript, IndexedClaim.initial, Option.bind_some,
     Option.map_map]
   split <;> rename_i h <;> simp only [h, ite_true, ite_false] <;> rfl

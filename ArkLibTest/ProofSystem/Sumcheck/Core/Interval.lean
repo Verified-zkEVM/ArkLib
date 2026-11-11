@@ -48,8 +48,8 @@ theorem nonzero_verdict :
       (roundTranscript zeroMessage 3) = some ⟨0, ![7, 3]⟩ := by
   unfold intervalVerdict
   rw [foldVerdict_succ, roundVerdict_intervalCheck]
-  simp [repeated, zeroMessage, headMessage, headChallenge, roundTranscript, foldVerdict,
-    Interpreted.verdict, IntervalClaim.finish, IntervalClaim.next, IntervalClaim.index,
+  simp [repeated, zeroMessage, Interpreted.message, Interpreted.challenge, roundTranscript,
+    foldVerdict, Interpreted.verdict, IntervalClaim.finish, IntervalClaim.next, IntervalClaim.index,
     intervalInitial, initial]
 
 /-- The actual interval run preserves its private output and the earlier challenge. -/
@@ -72,7 +72,7 @@ theorem nonzero_rejects :
       (⟨1, ![7]⟩ : RoundStatement ℕ 3 1)) (roundTranscript zeroMessage 3) = none := by
   unfold intervalVerdict
   rw [foldVerdict_succ, roundVerdict_intervalCheck]
-  simp [repeated, zeroMessage, headMessage, roundTranscript, intervalInitial]
+  simp [repeated, zeroMessage, Interpreted.message, roundTranscript, intervalInitial]
 
 /-- Zero rounds accept the unchanged endpoint claim without issuing a challenge. -/
 theorem zero_count :

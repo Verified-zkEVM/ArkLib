@@ -83,7 +83,7 @@ theorem decideWith_append_foldVerifier (k : ℕ) (stmt : State (k + 1)) (data : 
   erw [suffixRoute_foldHead]
   rw [decideWith_foldVerifier]
   rw [foldVerdict_succ]
-  simp only [headMessage, headChallenge, tailTranscript]
+  simp only [Interpreted.message, Interpreted.challenge, Interpreted.tail]
   cases h : roundVerdict (V k) stmt msg r with
   | none => rfl
   | some mid =>
@@ -162,9 +162,9 @@ theorem decideWith_append_publicInterval (start count : ℕ) (bound : start + (c
       (publicIntervalCompatibility ambient D start count bound)).decideWith stmt _ (toView _ tr)
         (data, payloads _ tr) = pure
       ((intervalVerdict D 1 (intervalInitial start 1 (by omega) stmt)
-        (roundTranscript (headMessage tr) (headChallenge tr))).bind fun mid =>
+        (roundTranscript (Interpreted.message tr) (Interpreted.challenge tr))).bind fun mid =>
           intervalVerdict D count (intervalInitial (1 + start) count (by omega) mid)
-            (tailTranscript tr)) := by
+            (Interpreted.tail tr)) := by
   rcases tr with ⟨msg, r, tail⟩
   erw [OracleVerifier.append_decideWith, split_toView_round, prefixRoute_round]
   refine (congrArg (fun z => z >>= _)
@@ -172,7 +172,7 @@ theorem decideWith_append_publicInterval (start count : ℕ) (bound : start + (c
       (roundTranscript msg r))).trans ?_
   refine (pure_bind _ _).trans ?_
   erw [suffixRoute_publicInterval ambient D start count bound]
-  dsimp only [headMessage, headChallenge, tailTranscript]
+  dsimp only [Interpreted.message, Interpreted.challenge, Interpreted.tail]
   cases h : intervalVerdict D 1 (intervalInitial start 1 (by omega) stmt)
       (roundTranscript msg r) with
   | none => rfl
@@ -209,7 +209,7 @@ theorem run_append_public_intervalVerifier (start count : ℕ) (bound : start + 
   have hm := congrArg (Option.map (fun t => (t, data))) hv
   simp only [Option.map_map] at hm
   simpa only [OracleVerifier.append, publicIntervalCompatibility, OracleMap.fst,
-    headMessage, headChallenge, tailTranscript, Option.map_map, Function.comp_def,
+    Interpreted.message, Interpreted.challenge, Interpreted.tail, Option.map_map, Function.comp_def,
     intervalVerdict, consTranscript, OracleVerifier.Output, splitFamily] using
     congrArg (fun decision => (pure ⟨⟨msg, r, tail⟩, out, decision⟩ :
     OracleComp (ambient + challengeSpec oracleSig (protocol R deg (count + 1)))

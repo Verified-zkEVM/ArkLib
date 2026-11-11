@@ -65,13 +65,13 @@ private def claimFold {S : Type} (step : R⦃≤ deg⦄[X] → R → S → Optio
     (k : ℕ) → Option S → PathAlong oracleSig (protocol R deg k) → Option S
   | 0, st, _ => st
   | k + 1, st, tr => claimFold step k
-      (st.bind (step (headMessage tr) (headChallenge tr))) (tailTranscript tr)
+      (st.bind (step (Interpreted.message tr) (Interpreted.challenge tr))) (Interpreted.tail tr)
 
 private theorem claimFold_none {S : Type} (step : R⦃≤ deg⦄[X] → R → S → Option S) :
     (k : ℕ) → (tr : PathAlong oracleSig (protocol R deg k)) →
     claimFold step k none tr = none
   | 0, _ => rfl
-  | k + 1, tr => claimFold_none step k (tailTranscript tr)
+  | k + 1, tr => claimFold_none step k (Interpreted.tail tr)
 
 private theorem legacyProgram_claimFold {X : Type}
     (step : R⦃≤ deg⦄[X] → R → X → Option X) :
