@@ -161,10 +161,10 @@ def summaryWith (choice accept : Bool) (answer hidden : Nat) :
 def summary (accept : Bool) (answer hidden : Nat) :=
   summaryWith (answer % 2 == 0) accept answer hidden
 
--- CompositionExample 1 is ported as a closed stage in `StagesExample.firstStage_run`. Here, the
--- same stage as an open program: the prefix verifier's run against the prefix prover is the
--- prover's event 0, then the decision's event 1; the statement is the input's parity, and the
--- output data is the input plus 11. Stated for every verdict, input, choice and hidden value.
+-- CompositionExample 1, the first stage on its own: the prefix verifier's run against the prefix
+-- prover is the prover's event 0, then the decision's event 1; the statement is the input's parity,
+-- and the output data is the input plus 11. Stated for every verdict, input, choice and hidden
+-- value.
 example (accept choice : Bool) (answer hidden : Nat) :
     (firstVerifier accept).run () (fun _ => answer) (firstProver choice hidden) = (do
       liftM ((ambient + challengeSpec oracleSig done).query (.inl 0))
@@ -173,10 +173,9 @@ example (accept choice : Bool) (answer hidden : Nat) :
         if accept then some (answer % 2 == 0, fun _ => answer + 11) else none⟩) := by
   cases accept <;> rfl
 
--- CompositionExample 2 is ported as a closed stage in `StagesExample.secondStage_run`. Here, the
--- same stage as an open program on both message types. The frozen stage's setup event 2 is the
--- seam action, here the suffix prover's first slot; the branch is chosen by the prover's `Bool`
--- message. Stated for every input statement, exported value and hidden value.
+-- CompositionExample 2, the second stage on its own, on both message types. The frozen stage's
+-- setup event 2 is the seam action, here the suffix prover's first slot; the branch is chosen by
+-- the prover's `Bool` message. Stated for every input statement, exported value and hidden value.
 example (mid : Bool) (value hidden : Nat) :
     secondVerifier.run mid (fun _ => value) (Strategy.joinSlot (seam (hidden, true))) = (do
       liftM ((ambient + challengeSpec oracleSig branchProtocol).query (.inl 2))
@@ -192,21 +191,19 @@ example (mid : Bool) (value hidden : Nat) :
         some ((if decide (hidden > 0) then 100 else 200) + value, fun _ => value % 2 == 0)⟩) :=
   rfl
 
--- CompositionExample 3 to 5 are ported in `StagesExample`: the two-stage family resolves its
--- indices (`twoStages_zero`, `twoStages_one`), and its fold runs the second stage only after the
--- first accepts (`run_two`; `run_three` extends this to three stages). The rows below
--- are the companion for the binary composition of the same two stages, a different execution: it
--- runs both interactions, then the prefix decision, then the suffix decision only after prefix
--- acceptance. This is `OracleVerifier.run_append` at this fixture and the ordinary whole prover.
+-- CompositionExample 3 to 5: the same two stages as a chain are `StagesExample.twoStages`, whose
+-- run is this binary composition (`Stages.run_cons`). Both run both interactions, then the prefix
+-- decision, then the suffix decision only after prefix acceptance. This is
+-- `OracleVerifier.run_append` at this fixture and the ordinary whole prover.
 example (accept : Bool) (answer hidden : Nat) :=
   OracleVerifier.run_append (firstVerifier accept) (fun _ => secondVerifier) (compatible accept) ()
     (fun _ => answer) (prover answer hidden)
 
--- CompositionExample 6 to 13 are ported for the stage fold in `StagesExample`, with the frozen
--- history `[0, 1, 2, 3]` extended by the third stage. Here, the same rows for the binary
--- composition. CompositionExample 6: the normal form of the accepted run, for every branch choice,
--- input and hidden value. The history becomes `[0, 2, 1, 3]`: the prover's events, then the
--- decisions, because both decisions are passive and run after the whole interaction.
+-- CompositionExample 6 to 13 are also ported for the stage chain in `StagesExample`, with a third
+-- stage. Here, the same rows for the binary composition. CompositionExample 6: the normal form of
+-- the accepted run, for every branch choice, input and hidden value. The history becomes
+-- `[0, 2, 1, 3]`: the prover's events, then the decisions, because both decisions are passive and
+-- run after the whole interaction.
 /-- The accepted run for every branch choice, input and hidden value. -/
 theorem summaryWith_true (choice : Bool) (answer hidden : Nat) :
     summaryWith choice true answer hidden =
@@ -258,8 +255,8 @@ example : (summary true 7 40).2.1 = (41, 42) := by
 
 -- CompositionExample 13, restated for the binary composition: a rejecting prefix decision yields
 -- no claim and skips the suffix decision's event 3. The suffix interaction and its seam event 2
--- still run, because the composition decides after the whole interaction; the stage fold skips
--- them. Stated for every branch choice, input and hidden value.
+-- still run, because the composition decides after the whole interaction. Stated for every branch
+-- choice, input and hidden value.
 example (choice : Bool) (answer hidden : Nat) :
     summaryWith choice false answer hidden = (none, (hidden + 1, hidden + 1 + 1), [0, 2, 1]) := by
   unfold summaryWith composed
