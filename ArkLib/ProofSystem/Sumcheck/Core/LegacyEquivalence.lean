@@ -10,6 +10,7 @@ public import ArkLib.Interaction.Core.Legacy.OracleAppend
 public import ArkLib.Interaction.Core.Legacy.OracleKnowledge
 public import ArkLib.Interaction.Core.Legacy.PureSlots
 public import ArkLib.Interaction.Core.Security.Agreement
+public import ArkLib.ProofSystem.Sumcheck.Core.Indexed
 
 /-!
 # The interaction-layer Sumcheck is the embedded legacy Sumcheck
@@ -596,4 +597,87 @@ theorem decide_ambient_trace {m : Type → Type} [Monad m] [LawfulMonad m]
     rw [← decide_eq_legacy]; exact simulateQ_decide_monad D amb stmt data tr⟩
 
 end Honest
+section SimpleCompatibility
+variable (R : Type) [CommSemiring R] (deg : ℕ)
+
+local instance : ∀ i, OracleInterface ((Spec.SingleRound.pSpec R deg).Challenge i) :=
+  ProtocolSpec.challengeOracleInterface
+
+/-- The legacy two-message transcript corresponding to the typed concrete path. -/
+def simpleLegacyTranscript (p : R⦃≤ deg⦄[X]) (r : R) :
+    (Spec.SingleRound.pSpec R deg).FullTranscript :=
+  fun i => Fin.cases p (fun j => Fin.cases r (fun k => Fin.elim0 k) j) i
+
+/-- The first Simple transcript entry is the sent polynomial. -/
+@[simp]
+theorem simpleLegacyTranscript_message (p : R⦃≤ deg⦄[X]) (r : R) :
+    simpleLegacyTranscript R deg p r 0 = p := rfl
+
+/-- The second Simple transcript entry is the prescribed challenge. -/
+@[simp]
+theorem simpleLegacyTranscript_challenge (p : R⦃≤ deg⦄[X]) (r : R) :
+    simpleLegacyTranscript R deg p r 1 = r := rfl
+
+/-- Run the actual legacy prover with its challenge query answered by the chosen challenge. -/
+theorem simpleLegacyProver_run {ι : Type} (ambient : OracleSpec ι)
+    (p : R⦃≤ deg⦄[X]) (target r : R) :
+    simulateQ (OracleInterface.simOracle ambient
+      (T := (Spec.SingleRound.pSpec R deg).Challenge) (simpleLegacyTranscript R deg p r).challenges)
+      ((Spec.SingleRound.Simple.prover R deg ambient).run (target, fun _ => p) ()) =
+      pure (simpleLegacyTranscript R deg p r, ((p.val.eval r, r), fun _ : Unit => p), ()) := by
+  have hfirst : (Spec.SingleRound.Simple.prover R deg ambient).runToRound (1 : Fin 3)
+      (target, fun _ => p) () =
+      pure (ProtocolSpec.Transcript.concat (m := (0 : Fin 2))
+        (pSpec := Spec.SingleRound.pSpec R deg) p (fun i => Fin.elim0 i), p) := by
+    erw [Prover.runToRound_succ (0 : Fin 2)]
+    erw [Prover.processRound_of_dir_eq_P_to_V 0 rfl]
+    simp [Spec.SingleRound.Simple.prover]
+    rfl
+  have hsecond : simulateQ
+      (OracleInterface.simOracle ambient (T := (Spec.SingleRound.pSpec R deg).Challenge)
+        (simpleLegacyTranscript R deg p r).challenges)
+      ((Spec.SingleRound.Simple.prover R deg ambient).runToRound (2 : Fin 3)
+        (target, fun _ => p) ()) =
+      pure (ProtocolSpec.Transcript.concat (m := (1 : Fin 2)) r
+        (ProtocolSpec.Transcript.concat (m := (0 : Fin 2))
+          (pSpec := Spec.SingleRound.pSpec R deg) p (fun i => Fin.elim0 i)),
+        (p, r)) := by
+    erw [Prover.runToRound_succ (1 : Fin 2)]
+    erw [Prover.processRound_of_dir_eq_V_to_P 1 rfl, hfirst]
+    simp only [Spec.SingleRound.Simple.prover, LawfulMonad.pure_bind, monadLift_pure,
+      ProtocolSpec.getChallenge, LawfulApplicative.map_pure, LawfulMonad.bind_pure_comp,
+      simulateQ_map, HasQuery.query]
+    erw [simulateQ_query]
+    rfl
+  simp only [Prover.run, simulateQ_bind]
+  change (simulateQ _ ((Spec.SingleRound.Simple.prover R deg ambient).runToRound
+    (2 : Fin 3) (target, fun _ => p) ()) >>= _) = _
+  rw [hsecond]
+  have ht : ProtocolSpec.Transcript.concat (m := (1 : Fin 2)) r
+      (ProtocolSpec.Transcript.concat (m := (0 : Fin 2))
+        (pSpec := Spec.SingleRound.pSpec R deg) p (fun i => Fin.elim0 i)) =
+      simpleLegacyTranscript R deg p r := by
+    funext i
+    fin_cases i <;> rfl
+  simp only [Spec.SingleRound.Simple.prover, LawfulMonad.pure_bind, monadLift_pure, simulateQ_pure]
+  erw [ht]
+
+/-- The Simple legacy verifier has the same scalar verdict as the native arbitrary-message run,
+including rejection and retention of the original input polynomial. -/
+theorem simpleLegacyVerifier_correspondence [DecidableEq R]
+    {ι : Type} (ambient : OracleSpec ι) {m : ℕ} (D : Fin m ↪ R)
+    (p q : R⦃≤ deg⦄[X]) (target r : R) :
+    (Option.map Prod.fst) <$>
+      ((Spec.SingleRound.Simple.oracleVerifier R deg D ambient).toVerifier.verify
+        (target, fun _ => p) (simpleLegacyTranscript R deg q r)).run =
+      (fun result => result.2.2.map
+        (fun out => (out.1.target, out.1.challenges ⟨0, by decide⟩))) <$>
+        indexedExecute (Finset.univ.map D).toList.get ambient (QueryImpl.id' ambient) (pure r)
+          (fun _ => univariateData p) q target := by
+  rw [Spec.SingleRound.Simple.oracleVerifier_eq_verifier, indexedExecuteAt_list_eq]
+  by_cases h : (∑ x, q.val.eval (D x)) = target <;>
+    simp [Spec.SingleRound.Simple.verifier, Finset.sum_map_toList, h, Fin.snoc]
+
+end SimpleCompatibility
+
 end Sumcheck.Core

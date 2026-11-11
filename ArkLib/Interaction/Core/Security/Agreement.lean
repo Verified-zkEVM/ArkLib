@@ -29,7 +29,7 @@ also gives equal decision logs (`runWithLog_eq_of_decide_eq`).
 
 @[expose] public section
 
-universe uK
+universe uK uS uI wI wJ
 
 namespace Interaction.Core.OracleVerifier
 open scoped ENNReal
@@ -38,8 +38,9 @@ open PFunctor FreeM TwoParty.Lens Oracle OracleComp OracleSpec
 /-! ## Agreement -/
 
 section Agree
-variable {ι I J S T : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
-  {A : I → Type} {B : J → Type} {inputs : OracleFamily.{0, 0, 0} I A} {outputs : OracleFamily J B}
+variable {ι J T : Type} {S : Type uS} {I : Type uI}
+  {ambient : OracleSpec ι} {s : OracleProtocol} {A : I → Type} {B : J → Type}
+  {inputs : OracleFamily.{uI, 0, wI} I A} {outputs : OracleFamily.{0, 0, wJ} J B}
 
 /-- Two oracle verifiers on the same tree agree on every completed run: their decisions, with the
 input and path oracles answered from the actual data and ambient queries answered in any lawful
@@ -82,8 +83,11 @@ theorem Agrees.run_eq (h : Agrees V V') (stmt : S) (data : ∀ i, A i)
 
 /-- Verifiers whose decisions on every completed run are the same program, and whose output data
 agree, have equal logged runs: the same observation, prover log and decision log before
-routing. -/
-theorem runWithLog_eq_of_decide_eq
+routing. `OracleVerifier.runWithLog` in `Security/Knowledge.lean` requires small input
+indices and input queries because its full decision log is a run output. -/
+theorem runWithLog_eq_of_decide_eq {I : Type} {A : I → Type}
+    {inputs : OracleFamily.{0, 0, 0} I A}
+    {V V' : OracleVerifier ambient s S (fun _ => T) inputs (fun _ => outputs)}
     (hd : ∀ (stmt : S) (tr : PathAlong oracleSig s),
       V.decide stmt _ (toView s tr) = V'.decide stmt _ (toView s tr))
     (ho : ∀ (stmt : S) (data : ∀ i, A i) (tr : PathAlong oracleSig s),
@@ -197,8 +201,8 @@ theorem Agrees.rbrKnowledgeSoundness_iff (h : Agrees V V') {Win : Type}
     (admissible : S × (∀ i, A i) → Prop) (relIn : (S × (∀ i, A i)) → Win → Prop)
     (relOut : (tr : PathAlong oracleSig s) → (T × (∀ j, B j)) → W tr → Prop)
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp) (ε : ChallengeNode oracleSig s → ℝ≥0∞) :
-    V.rbrKnowledgeSoundness.{0, 0, uK} impl admissible relIn relOut draw ε ↔
-      V'.rbrKnowledgeSoundness.{0, 0, uK} impl admissible relIn relOut draw ε := by
+    V.rbrKnowledgeSoundness.{uS, 0, uK} impl admissible relIn relOut draw ε ↔
+      V'.rbrKnowledgeSoundness.{uS, 0, uK} impl admissible relIn relOut draw ε := by
   have eq : (fun stmt tr wit => V.validAcceptance impl stmt tr (fun t => relOut tr t wit)) =
       (fun stmt tr wit => V'.validAcceptance impl stmt tr (fun t => relOut tr t wit)) :=
     funext fun stmt => funext fun tr => funext fun _ =>
@@ -211,8 +215,9 @@ end Agree
 /-! ## Transport along a tree equality -/
 
 section Cast
-variable {ι I J S T σ : Type} {ambient : OracleSpec ι} {s s' : OracleProtocol}
-  {A : I → Type} {B : J → Type} {inputs : OracleFamily.{0, 0, 0} I A} {outputs : OracleFamily J B}
+variable {ι J T σ : Type} {S : Type uS} {I : Type uI}
+  {ambient : OracleSpec ι} {s s' : OracleProtocol} {A : I → Type} {B : J → Type}
+  {inputs : OracleFamily.{uI, 0, wI} I A} {outputs : OracleFamily.{0, 0, wJ} J B}
 
 /-- Transporting a verifier along a tree equality does not change its decision on corresponding
 transcripts. -/
@@ -305,8 +310,8 @@ theorem rbrKnowledgeSoundness_cast (e : s' = s) (V : OracleVerifier ambient s' S
     (relOut : (tr : PathAlong oracleSig s) → (T × (∀ j, B j)) → W tr → Prop)
     (draw : QueryImpl (challengeSpec oracleSig s') ProbComp)
     (ε : ChallengeNode oracleSig s' → ℝ≥0∞) :
-    (e ▸ V).rbrKnowledgeSoundness.{0, 0, uK} impl admissible relIn relOut (e ▸ draw) (e ▸ ε) ↔
-      V.rbrKnowledgeSoundness.{0, 0, uK} impl admissible relIn (W := fun tr => W (e ▸ tr))
+    (e ▸ V).rbrKnowledgeSoundness.{uS, 0, uK} impl admissible relIn relOut (e ▸ draw) (e ▸ ε) ↔
+      V.rbrKnowledgeSoundness.{uS, 0, uK} impl admissible relIn (W := fun tr => W (e ▸ tr))
         (fun tr => relOut (e ▸ tr)) draw ε := by
   subst e
   rfl

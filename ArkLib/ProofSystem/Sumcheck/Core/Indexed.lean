@@ -463,6 +463,39 @@ theorem indexedVerifier_run {ι : Type} (ambient : OracleSpec ι)
   simp only [LawfulMonad.pure_bind]
   rfl
 
+omit [DecidableEq R] in
+/-- Sum the first message's query answers in the supplied list order. -/
+def indexedSumQueries {k : ℕ} (domain : List R) (p : Path (protocol R deg (k + 1))) :
+    OracleComp (oracles (protocol R deg (k + 1)) p) R := do
+  let values ← domain.mapM (indexedHeadQuery p)
+  pure values.sum
+
+omit [DecidableEq R] in
+/-- Interpreting the scalar sum fragment computes the list sum, without equality decisions. -/
+theorem simulateQ_indexedSumQueries {k : ℕ} (domain : List R)
+    (tr : PathAlong oracleSig (protocol R deg (k + 1))) :
+    simulateQ (payloadImpl (protocol R deg (k + 1)) tr)
+      (indexedSumQueries domain (projectPathAlong oracleSig _ tr)) =
+      (domain.map (fun x => (headMessage tr).val.eval x)).sum := by
+  rcases tr with ⟨msg, r, tail⟩
+  unfold indexedSumQueries
+  rw [simulateQ_bind, simulateQ_list_mapM]
+  change ((domain.mapM (fun x => (pure (msg.val.eval x) : Id R))) >>= fun values =>
+    pure values.sum) = _
+  simp only [List.mapM_pure, LawfulMonad.pure_bind]
+  rfl
+
+omit [DecidableEq R] in
+/-- The scalar sum fragment has the same pure interpretation in every lawful target monad. -/
+theorem simulateQ_indexedSumQueries_monad {k : ℕ} (domain : List R)
+    (tr : PathAlong oracleSig (protocol R deg (k + 1)))
+    {m : Type → Type} [Monad m] [LawfulMonad m] :
+    simulateQ ((payloadImpl (protocol R deg (k + 1)) tr).liftTarget m)
+      (indexedSumQueries domain (projectPathAlong oracleSig _ tr)) =
+      (pure (domain.map (fun x => (headMessage tr).val.eval x)).sum : m R) := by
+  rw [simulateQ_liftTarget, simulateQ_indexedSumQueries]
+  rfl
+
 /-- The initial indexed Sumcheck claim, with the polynomial supplied as oracle data. -/
 def indexedInputProblem : StatementProblem
     (RoundStatement R n 0 × (∀ i, PolynomialData R n deg i)) where
@@ -559,5 +592,339 @@ theorem indexedVerifier_soundness [IsDomain R] [Fintype R] [SampleableType R]
     (OracleVerifier.soundness_of_rbrSoundness_uniform (init := init)
       (indexedVerifier_rbrSoundness D ambient impl) (fun _ => le_rfl)
       (fun path => (card_challengeNodesOn_protocol n path).le))
+
+/-- Commit a polynomial before drawing the one-round challenge. -/
+def committedProver {ι : Type} (ambient : OracleSpec ι) {R : Type} [CommSemiring R]
+    {deg : ℕ} {Out : Type} (msg : R⦃≤ deg⦄[X]) (finish : R → Out) :
+    Prover oracleSig ambient (protocol R deg 1) (fun _ => Out) :=
+  pure ⟨msg, pure fun r => pure (finish r)⟩
+
+/-- The complete one-round observation, retaining the original input polynomial data. -/
+noncomputable def indexedRoundResult (data : ∀ i, PolynomialData R 1 deg i)
+    (msg : R⦃≤ deg⦄[X]) (target r : R) :
+    Observation oracleSig (protocol R deg 1) (fun _ => R × R)
+      (fun _ => RoundStatement R 1 (Fin.last 1) × (∀ i, PolynomialData R 1 deg i)) :=
+  ⟨roundTranscript msg r, (msg.val.eval r, r),
+    if (∑ a : Fin d, msg.val.eval (D a)) = target then
+      some (⟨msg.val.eval r, Fin.snoc Fin.elim0 r⟩, data) else none⟩
+
+/-- The actual one-round run draws exactly one challenge and counts every domain index.
+No distribution or sampling structure is required. -/
+theorem indexedVerifier_run_one {ι : Type} (ambient : OracleSpec ι)
+    (data : ∀ i, PolynomialData R 1 deg i) (msg : R⦃≤ deg⦄[X]) (target : R) :
+    (indexedVerifier R deg 1 D ambient).run ⟨target, Fin.elim0⟩ data
+      (committedProver ambient msg (fun r => (msg.val.eval r, r))) =
+      indexedRoundResult D data msg target <$>
+        (liftM ((ambient + challengeSpec oracleSig (protocol R deg 1)).query
+          (.inr (roundChallengeNode (R := R) (deg := deg))))) := by
+  rw [indexedVerifier_run]
+  change (do
+    let ⟨tr, out, _⟩ ← Interaction.TwoParty.Lens.run (round R deg)
+      (roundProver msg (fun r => (msg.val.eval r, r)))
+      (sampler oracleSig (round R deg) (fun c =>
+        liftM ((ambient + challengeSpec oracleSig (protocol R deg 1)).query (.inr c))))
+    pure (⟨tr, out, (indexedVerdict D 1
+      (some (IndexedClaim.initial ⟨target, Fin.elim0⟩)) tr).map
+      (fun t => (t, data))⟩ : Observation oracleSig (protocol R deg 1)
+        (fun _ => R × R) (fun _ => RoundStatement R 1 (Fin.last 1) ×
+          (∀ i, PolynomialData R 1 deg i)))) = _
+  rw [run_roundProver]
+  simp only [bind_map_left, LawfulMonad.pure_bind]
+  rw [map_eq_bind_pure_comp]
+  refine bind_congr fun r => ?_
+  change R at r
+  congr 2
+  simp only [indexedVerdict, indexedNext, headMessage, headChallenge,
+    roundTranscript, IndexedClaim.initial, Option.bind_some,
+    Option.map_map]
+  split <;> rename_i h <;> simp only [h, ite_true, ite_false] <;> rfl
+
+/-- Answer the unique one-round challenge with a supplied computation. -/
+def indexedRoundDraw {m : Type → Type} (challenge : m R) :
+    QueryImpl (challengeSpec oracleSig (protocol R deg 1)) m := by
+  rintro ⟨pos, h⟩
+  rcases pos with ⟨⟩ | ⟨⟨⟩, pos⟩
+  · cases h
+  · rcases pos with ⟨⟩ | ⟨⟨⟩, pos⟩
+    · exact challenge
+    · cases pos
+
+/-- Execute the actual indexed verifier with any challenge program, including a fixed value. -/
+noncomputable def indexedExecute {ι : Type} (ambient : OracleSpec ι) {m : Type → Type} [Monad m]
+    (impl : QueryImpl ambient m) (challenge : m R)
+    (data : ∀ i, PolynomialData R 1 deg i) (msg : R⦃≤ deg⦄[X]) (target : R) :
+    m (Observation oracleSig (protocol R deg 1) (fun _ => R × R)
+      (fun _ => RoundStatement R 1 (Fin.last 1) × (∀ i, PolynomialData R 1 deg i))) :=
+  simulateQ (QueryImpl.addLift (r := m) impl (indexedRoundDraw (deg := deg) challenge))
+    ((indexedVerifier R deg 1 D ambient).run ⟨target, Fin.elim0⟩ data
+      (committedProver ambient msg (fun r => (msg.val.eval r, r))))
+
+/-- Execution transports the supplied challenge computation to complete native observations. -/
+theorem indexedExecute_eq {ι : Type} (ambient : OracleSpec ι)
+    {m : Type → Type} [Monad m] [LawfulMonad m]
+    (impl : QueryImpl ambient m) (challenge : m R)
+    (data : ∀ i, PolynomialData R 1 deg i) (msg : R⦃≤ deg⦄[X]) (target : R) :
+    indexedExecute D ambient impl challenge data msg target =
+      indexedRoundResult D data msg target <$> challenge := by
+  unfold indexedExecute
+  rw [indexedVerifier_run_one, simulateQ_map]
+  congr 1
+  exact QueryImpl.simulateQ_add_query_right _ _ _
+
+/-- Prescribing a challenge gives the full deterministic execution equation over arbitrary maps. -/
+theorem indexedExecuteAt_eq {ι : Type} (ambient : OracleSpec ι)
+    (data : ∀ i, PolynomialData R 1 deg i) (msg : R⦃≤ deg⦄[X]) (target r : R) :
+    indexedExecute D ambient (QueryImpl.id' ambient) (pure r) data msg target =
+      pure (indexedRoundResult D data msg target r) := by
+  rw [indexedExecute_eq, LawfulApplicative.map_pure]
+
+/-- A successful sum check gives an accepted deterministic observation at every challenge. -/
+theorem indexedExecuteAt_accepted {ι : Type} (ambient : OracleSpec ι)
+    (data : ∀ i, PolynomialData R 1 deg i) (msg : R⦃≤ deg⦄[X]) (target r : R)
+    (h : (∑ a : Fin d, msg.val.eval (D a)) = target) :
+    indexedExecute D ambient (QueryImpl.id' ambient) (pure r) data msg target =
+      pure ⟨roundTranscript msg r, (msg.val.eval r, r),
+        some (⟨msg.val.eval r, Fin.snoc Fin.elim0 r⟩, data)⟩ := by
+  rw [indexedExecuteAt_eq]
+  simp only [indexedRoundResult, ite_eq_left h]
+
+/-- The arbitrary-list deterministic equation retains every occurrence of a domain point. -/
+theorem indexedExecuteAt_list_eq {ι : Type} (ambient : OracleSpec ι) (domain : List R)
+    (data : ∀ i, PolynomialData R 1 deg i) (msg : R⦃≤ deg⦄[X]) (target r : R) :
+    indexedExecute domain.get ambient (QueryImpl.id' ambient) (pure r) data msg target =
+      pure ⟨roundTranscript msg r, (msg.val.eval r, r),
+        if (domain.map (fun x => msg.val.eval x)).sum = target then
+          some (⟨msg.val.eval r, Fin.snoc Fin.elim0 r⟩, data) else none⟩ := by
+  rw [indexedExecuteAt_eq]
+  simp only [indexedRoundResult]
+  rw [sum_domain_list domain (fun x => msg.val.eval x)]
+
+/-- Accepted arbitrary-list execution needs only the list sum condition, with no sampler. -/
+theorem indexedExecuteAt_list_accepted {ι : Type} (ambient : OracleSpec ι) (domain : List R)
+    (data : ∀ i, PolynomialData R 1 deg i) (msg : R⦃≤ deg⦄[X]) (target r : R)
+    (h : (domain.map (fun x => msg.val.eval x)).sum = target) :
+    indexedExecute domain.get ambient (QueryImpl.id' ambient) (pure r) data msg target =
+      pure ⟨roundTranscript msg r, (msg.val.eval r, r),
+        some (⟨msg.val.eval r, Fin.snoc Fin.elim0 r⟩, data)⟩ := by
+  rw [indexedExecuteAt_list_eq, ite_eq_left h]
+
+/-- A failed sum check explicitly rejects while retaining the completed transcript and outputs. -/
+theorem indexedRoundResult_rejects (data : ∀ i, PolynomialData R 1 deg i)
+    (msg : R⦃≤ deg⦄[X]) (target r : R)
+    (h : (∑ a : Fin d, msg.val.eval (D a)) ≠ target) :
+    (indexedRoundResult D data msg target r).2.2 = none := by
+  simp [indexedRoundResult, h]
+
+/-- Executing a committed message preserves exactly the challenge computation's total mass. -/
+theorem indexedExecute_failure {ι : Type} (ambient : OracleSpec ι)
+    (impl : QueryImpl ambient ProbComp) (challenge : ProbComp R)
+    (data : ∀ i, PolynomialData R 1 deg i) (msg : R⦃≤ deg⦄[X]) (target : R) :
+    Pr{let _ ← indexedExecute D ambient impl challenge data msg target}[True] =
+      Pr{let _ ← challenge}[True] := by
+  rw [indexedExecute_eq, prEvent_map]
+
+/-- A one-round output is true exactly when the check accepts and the retained input agrees
+with the sent message at the challenge. -/
+theorem indexedRoundResult_true_iff (data : ∀ i, PolynomialData R 1 deg i)
+    (msg : R⦃≤ deg⦄[X]) (target r : R) :
+    (indexedRoundResult D data msg target r).2.2.map
+      (fun out => (out.2 ()).val.eval out.1.challenges = out.1.target) = some True ↔
+      (∑ a : Fin d, msg.val.eval (D a)) = target ∧
+        (data ()).val.eval (Fin.snoc Fin.elim0 r) = msg.val.eval r := by
+  by_cases h : (∑ a : Fin d, msg.val.eval (D a)) = target
+  · simp [indexedRoundResult, h]
+  · simp [indexedRoundResult, h]
+
+/-- The honest one-round message at an empty challenge prefix. -/
+noncomputable def indexedHonestMessage (D : Fin d → R)
+    (data : ∀ i, PolynomialData R 1 deg i) : R⦃≤ deg⦄[X] :=
+  projectedRoundPolynomial D 0 Fin.elim0 (data ())
+
+/-- Every challenge produces an accepted true output on an honest indexed input. -/
+theorem indexedRoundResult_honest (data : ∀ i, PolynomialData R 1 deg i) (target r : R)
+    (h : indexedRelation D 0 ⟨target, Fin.elim0⟩ (data ())) :
+    (indexedRoundResult D data (indexedHonestMessage D data) target r).2.2.map
+      (fun out => (out.2 ()).val.eval out.1.challenges = out.1.target) = some True := by
+  apply (indexedRoundResult_true_iff D data _ target r).mpr
+  constructor
+  · exact (sum_projectedRoundPolynomial D 0 Fin.elim0 (data ())).trans h
+  · have hs := roundSum_succ D (0 : Fin 1) Fin.elim0 (data ()) r
+    have hl := (indexedRelation_last D
+      (⟨(indexedHonestMessage D data).val.eval r, Fin.snoc Fin.elim0 r⟩ :
+        RoundStatement R 1 (Fin.last 1)) (data ())).mp hs
+    exact hl
+
+/-- Honest execution with an arbitrary challenge program transports the complete observation. -/
+theorem indexedExecute_honest_eq {ι : Type} (ambient : OracleSpec ι)
+    {m : Type → Type} [Monad m] [LawfulMonad m]
+    (impl : QueryImpl ambient m) (challenge : m R)
+    (data : ∀ i, PolynomialData R 1 deg i) (target : R)
+    (h : indexedRelation D 0 ⟨target, Fin.elim0⟩ (data ())) :
+    indexedExecute D ambient impl challenge data (indexedHonestMessage D data) target =
+      (fun r => ⟨roundTranscript (indexedHonestMessage D data) r,
+        ((indexedHonestMessage D data).val.eval r, r),
+        some (⟨(indexedHonestMessage D data).val.eval r, Fin.snoc Fin.elim0 r⟩, data)⟩) <$>
+          challenge := by
+  rw [indexedExecute_eq]
+  congr 1
+  funext r
+  unfold indexedRoundResult
+  have hs : (∑ a : Fin d, (indexedHonestMessage D data).val.eval (D a)) = target :=
+    (sum_projectedRoundPolynomial D 0 Fin.elim0 (data ())).trans h
+  rw [ite_eq_left hs]
+
+/-- Every supported honest execution satisfies the final evaluation relation. -/
+theorem indexedExecute_honest_support {ι : Type} (ambient : OracleSpec ι)
+    (impl : QueryImpl ambient ProbComp) (challenge : ProbComp R)
+    (data : ∀ i, PolynomialData R 1 deg i) (target : R)
+    (h : indexedRelation D 0 ⟨target, Fin.elim0⟩ (data ()))
+    (obs : Observation oracleSig (protocol R deg 1) (fun _ => R × R)
+      (fun _ => RoundStatement R 1 (Fin.last 1) × (∀ i, PolynomialData R 1 deg i)))
+    (ho : obs ∈ support (indexedExecute D ambient impl challenge data
+      (indexedHonestMessage D data) target)) :
+    obs.2.2.map (fun out => (out.2 ()).val.eval out.1.challenges = out.1.target) =
+      some True := by
+  rw [indexedExecute_eq, _root_.support_map] at ho
+  obtain ⟨r, _, rfl⟩ := ho
+  exact indexedRoundResult_honest D data target r h
+
+/-- Honest one-round completeness holds for every challenge computation, without sampling
+assumptions on the semiring. -/
+theorem indexedExecute_perfectCompleteness {ι : Type} (ambient : OracleSpec ι)
+    (impl : QueryImpl ambient ProbComp) (challenge : ProbComp R)
+    (data : ∀ i, PolynomialData R 1 deg i) (target : R)
+    (h : indexedRelation D 0 ⟨target, Fin.elim0⟩ (data ())) :
+    Pr{let obs ← (indexedExecute D ambient impl challenge data
+      (indexedHonestMessage D data) target)}[
+        obs.2.2.map (fun out => (out.2 ()).val.eval out.1.challenges = out.1.target) =
+          some True] = 1 :=
+  OracleComp.prEvent_eq_one_of_forall_mem_support _ _
+    (indexedExecute_honest_support D ambient impl challenge data target h)
+
+/-- The measure of honest valid accepted outputs is one for an arbitrary challenge program. -/
+theorem indexedExecute_measureCompleteness {ι : Type} (ambient : OracleSpec ι)
+    (impl : QueryImpl ambient ProbComp) (challenge : ProbComp R)
+    (data : ∀ i, PolynomialData R 1 deg i) (target : R)
+    (h : indexedRelation D 0 ⟨target, Fin.elim0⟩ (data ())) :
+    𝒟[(fun obs => obs.2.2.map
+      (fun out => (out.2 ()).val.eval out.1.challenges = out.1.target) = some True) <$>
+        indexedExecute D ambient impl challenge data (indexedHonestMessage D data) target]
+      {True} = 1 := by
+  rw [← prEvent_eq_evalDist_map]
+  exact indexedExecute_perfectCompleteness D ambient impl challenge data target h
+
+/-- Embed a degree-bounded univariate input into the native one-variable polynomial resource. -/
+noncomputable def univariateData {R : Type} [CommSemiring R] {deg : ℕ} (p : R⦃≤ deg⦄[X]) :
+    R⦃≤ deg⦄[X Fin 1] :=
+  ⟨(MvPolynomial.uniqueAlgEquiv R (Fin 1)).symm p.val, by
+    rw [MvPolynomial.mem_restrictDegree_iff_degreeOf_le]
+    intro i
+    change MvPolynomial.degreeOf i (Polynomial.aeval (MvPolynomial.X (0 : Fin 1)) p.val) ≤ deg
+    exact (MvPolynomial.degreeOf_aeval_le i p.val _ (by
+      rcases subsingleton_or_nontrivial R with hs | hn
+      · let := hs
+        rw [Subsingleton.elim (MvPolynomial.X (0 : Fin 1)) 0, MvPolynomial.degreeOf_zero]
+        exact Nat.zero_le _
+      · let := hn
+        simp [Subsingleton.elim i 0])).trans
+      (Polynomial.natDegree_le_of_degree_le (Polynomial.mem_degreeLE.mp p.property))⟩
+/-- The univariate adapter preserves evaluation at every challenge, with no sampling assumption. -/
+theorem univariateData_eval {R : Type} [CommSemiring R] {deg : ℕ}
+    (p : R⦃≤ deg⦄[X]) (r : R) :
+    (univariateData p).val.eval (Fin.snoc Fin.elim0 r) = p.val.eval r := by
+  change MvPolynomial.eval₂ (RingHom.id R) _
+    ((MvPolynomial.uniqueAlgEquiv R (Fin 1)).symm p.val) = _
+  rw [MvPolynomial.eval₂_uniqueAlgEquiv_symm]
+  rfl
+
+/-- Honest univariate execution over any list retains the original input and accepts every
+prescribed challenge whenever the list sum claim holds. -/
+theorem indexedExecuteAt_univariate_honest {ι : Type} (ambient : OracleSpec ι)
+    (domain : List R) (p : R⦃≤ deg⦄[X]) (target r : R)
+    (h : (domain.map (fun x => p.val.eval x)).sum = target) :
+    indexedExecute domain.get ambient (QueryImpl.id' ambient) (pure r)
+      (fun _ => univariateData p) p target =
+      pure ⟨roundTranscript p r, (p.val.eval r, r),
+        some (⟨p.val.eval r, Fin.snoc Fin.elim0 r⟩, fun _ => univariateData p)⟩ :=
+  indexedExecuteAt_list_accepted ambient domain (fun _ => univariateData p) p target r h
+
+/-- The full honest observation equation transports every lawful challenge program. -/
+theorem indexedExecute_univariate_honest_eq {ι : Type} (ambient : OracleSpec ι)
+    {m : Type → Type} [Monad m] [LawfulMonad m]
+    (impl : QueryImpl ambient m) (challenge : m R)
+    (domain : List R) (p : R⦃≤ deg⦄[X]) (target : R)
+    (h : (domain.map (fun x => p.val.eval x)).sum = target) :
+    indexedExecute domain.get ambient impl challenge (fun _ => univariateData p) p target =
+      (fun r => ⟨roundTranscript p r, (p.val.eval r, r),
+        some (⟨p.val.eval r, Fin.snoc Fin.elim0 r⟩, fun _ => univariateData p)⟩) <$>
+          challenge := by
+  rw [indexedExecute_eq]
+  congr 1
+  funext r
+  simp only [indexedRoundResult]
+  rw [sum_domain_list domain (fun x => p.val.eval x), ite_eq_left h]
+
+/-- An honest univariate normal form has a true closed evaluation output for every challenge. -/
+theorem indexedRoundResult_univariate_honest (domain : List R) (p : R⦃≤ deg⦄[X])
+    (target r : R) (h : (domain.map (fun x => p.val.eval x)).sum = target) :
+    (indexedRoundResult domain.get (fun _ => univariateData p) p target r).2.2.map
+      (fun out => (out.2 ()).val.eval out.1.challenges = out.1.target) = some True := by
+  apply (indexedRoundResult_true_iff domain.get _ p target r).mpr
+  exact ⟨(sum_domain_list domain (fun x => p.val.eval x)).trans h, univariateData_eval p r⟩
+
+/-- Evaluating the actual honest output yields `some True`, preserving all challenge effects. -/
+theorem indexedExecute_univariate_complete {ι : Type} (ambient : OracleSpec ι)
+    {m : Type → Type} [Monad m] [LawfulMonad m]
+    (impl : QueryImpl ambient m) (challenge : m R)
+    (domain : List R) (p : R⦃≤ deg⦄[X]) (target : R)
+    (h : (domain.map (fun x => p.val.eval x)).sum = target) :
+    (fun obs => obs.2.2.map
+      (fun out => (out.2 ()).val.eval out.1.challenges = out.1.target)) <$>
+        indexedExecute domain.get ambient impl challenge (fun _ => univariateData p) p target =
+      (fun _ => some True) <$> challenge := by
+  rw [indexedExecute_eq, Functor.map_map]
+  congr 1
+  funext r
+  exact indexedRoundResult_univariate_honest domain p target r h
+
+/-- Every supported honest univariate run has a true accepted output, for an arbitrary list. -/
+theorem indexedExecute_univariate_support {ι : Type} (ambient : OracleSpec ι)
+    (impl : QueryImpl ambient ProbComp) (challenge : ProbComp R)
+    (domain : List R) (p : R⦃≤ deg⦄[X]) (target : R)
+    (h : (domain.map (fun x => p.val.eval x)).sum = target)
+    (obs : Observation oracleSig (protocol R deg 1) (fun _ => R × R)
+      (fun _ => RoundStatement R 1 (Fin.last 1) × (∀ i, PolynomialData R 1 deg i)))
+    (ho : obs ∈ support (indexedExecute domain.get ambient impl challenge
+      (fun _ => univariateData p) p target)) :
+    obs.2.2.map (fun out => (out.2 ()).val.eval out.1.challenges = out.1.target) =
+      some True := by
+  rw [indexedExecute_eq, _root_.support_map] at ho
+  obtain ⟨r, _, rfl⟩ := ho
+  exact indexedRoundResult_univariate_honest domain p target r h
+
+/-- The arbitrary-list honest univariate executor is perfectly complete for every challenge
+program, without a sampling structure on the semiring. -/
+theorem indexedExecute_univariate_perfectCompleteness {ι : Type} (ambient : OracleSpec ι)
+    (impl : QueryImpl ambient ProbComp) (challenge : ProbComp R)
+    (domain : List R) (p : R⦃≤ deg⦄[X]) (target : R)
+    (h : (domain.map (fun x => p.val.eval x)).sum = target) :
+    Pr{let obs ← (indexedExecute domain.get ambient impl challenge
+      (fun _ => univariateData p) p target)}[
+        obs.2.2.map (fun out => (out.2 ()).val.eval out.1.challenges = out.1.target) =
+          some True] = 1 :=
+  OracleComp.prEvent_eq_one_of_forall_mem_support _ _
+    (indexedExecute_univariate_support ambient impl challenge domain p target h)
+
+/-- The same honest arbitrary-list event has measure one in the actual run. -/
+theorem indexedExecute_univariate_measureCompleteness {ι : Type} (ambient : OracleSpec ι)
+    (impl : QueryImpl ambient ProbComp) (challenge : ProbComp R)
+    (domain : List R) (p : R⦃≤ deg⦄[X]) (target : R)
+    (h : (domain.map (fun x => p.val.eval x)).sum = target) :
+    𝒟[(fun obs => obs.2.2.map
+      (fun out => (out.2 ()).val.eval out.1.challenges = out.1.target) = some True) <$>
+        indexedExecute domain.get ambient impl challenge (fun _ => univariateData p) p target]
+      {True} = 1 := by
+  rw [← prEvent_eq_evalDist_map]
+  exact indexedExecute_univariate_perfectCompleteness ambient impl challenge domain p target h
 
 end Sumcheck.Core
