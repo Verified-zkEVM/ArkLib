@@ -109,7 +109,7 @@ run_cmd
       ``Sumcheck.Core.intervalVerifier_soundness_injective,
       ``Sumcheck.Core.intervalVerifier_supportCompleteness,
       ``Sumcheck.Core.intervalVerifier_perfectCompleteness,
-      ``Sumcheck.Core.Computable.interpret_honestProver,
+      ``Sumcheck.Core.Computable.interpret_intervalHonestProver,
       ``Sumcheck.Core.Computable.execute_perfectCompleteness,
       ``Sumcheck.Core.Computable.execute_soundness,
       ``Sumcheck.Core.intervalRoundExecute_soundness,

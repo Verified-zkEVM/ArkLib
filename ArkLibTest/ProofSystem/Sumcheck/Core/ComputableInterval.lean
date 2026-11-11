@@ -21,7 +21,7 @@ def computedRun : Option (ℕ × ℕ × ℕ × ℕ) :=
     (⟨0, ![7]⟩ : RoundStatement ℕ 3 1)
   (Interpreted.execute (pure 3 : Id ℕ) (intervalCheck (fun _ : Fin 2 => 0))
     IntervalClaim.finish 1 st 29
-    (Computable.honestProver (fun _ : Fin 2 => 0) (0 : CPoly.CMvPolynomial 3 ℕ)
+    (Computable.intervalHonestProver (fun _ : Fin 2 => 0) (0 : CPoly.CMvPolynomial 3 ℕ)
       zero_degree 1 st)).2.map fun t => (t.1.target, t.1.challenges 0, t.1.challenges 1, t.2)
 
 /-- The actual computed-message executor accepts and preserves the earlier prefix and data. -/

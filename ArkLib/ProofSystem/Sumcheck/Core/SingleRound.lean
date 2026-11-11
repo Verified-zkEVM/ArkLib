@@ -23,6 +23,8 @@ the challenge only by choosing its pure continuation, as the legacy `receiveChal
 
 @[expose] public section
 
+universe uI wI
+
 namespace Sumcheck.Core
 
 open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
@@ -152,7 +154,8 @@ theorem split_toView_round (msg : R⦃≤ deg⦄[X]) (chal : R) (tail : PathAlon
   exact Prod.ext (Subtype.ext h.1) (Subtype.ext (eq_of_heq h.2))
 
 
-variable {I : Type} {A : I → Type} (inputs : Interaction.Oracle.OracleFamily I A)
+variable {I : Type uI} {A : I → Type}
+  (inputs : Interaction.Oracle.OracleFamily.{uI, 0, wI} I A)
 
 /-- The first round of a transcript of a round followed by `s`. -/
 def appendHead (tr : PathAlong oracleSig ((round R deg).append fun _ => s)) :

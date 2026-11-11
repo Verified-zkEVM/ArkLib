@@ -21,28 +21,28 @@ variable {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
   (hpoly : ∀ j, poly.degreeOf j ≤ deg) {stop : Fin (n + 1)}
 
 /-- Send computed projections and store each actual challenge in the continuation. -/
-def honestProver {m : Type → Type} [Monad m] : (k : ℕ) → IntervalClaim R n stop k →
+def intervalHonestProver {m : Type → Type} [Monad m] : (k : ℕ) → IntervalClaim R n stop k →
     Focal oracleSig m (Interpreted.protocol R (Impl.Representation.Message R deg)
       (Impl.Representation.evaluate R deg) k) (fun _ => RoundStatement R n stop)
   | 0, st => pure st.finish
   | k + 1, st =>
     let msg := projectedMessage D st.index st.statement.challenges poly hpoly
-    pure (⟨msg, pure fun r => honestProver k
+    pure (⟨msg, pure fun r => intervalHonestProver k
       (st.next (Impl.Representation.evaluate R deg msg r) r)⟩ :
         ((_msg : Impl.Representation.Message R deg) × m (R →
           Focal oracleSig m (Interpreted.protocol R (Impl.Representation.Message R deg)
             (Impl.Representation.evaluate R deg) k) (fun _ => RoundStatement R n stop))))
 
 /-- Interpreting the whole computed honest prover gives exactly the native honest fold. -/
-theorem interpret_honestProver {m : Type → Type} [Monad m] [LawfulMonad m]
+theorem interpret_intervalHonestProver {m : Type → Type} [Monad m] [LawfulMonad m]
     (k : ℕ) (st : IntervalClaim R n stop k) :
     Interpreted.transportProver (evaluateN := fun (q : R⦃≤ deg⦄[X]) r => q.val.eval r)
-      (Impl.Representation.toMessage R deg) k (honestProver D poly hpoly k st) =
+      (Impl.Representation.toMessage R deg) k (intervalHonestProver D poly hpoly k st) =
       intervalProver D (toPolynomial poly hpoly) (m := m) k st := by
   induction k with
   | zero => rfl
   | succ k ih =>
-    simp only [honestProver, Interpreted.transportProver]
+    simp only [intervalHonestProver, Interpreted.transportProver]
     erw [LawfulMonad.pure_bind]
     dsimp only
     erw [LawfulMonad.pure_bind]
@@ -62,7 +62,7 @@ variable [DecidableEq R]
 theorem execute_honest_eq_native {m : Type → Type} [Monad m] [LawfulMonad m]
     {Data : Type} (next : m R) (k : ℕ) (st : IntervalClaim R n stop k) (data : Data) :
     Interpreted.execute next (intervalCheck D) IntervalClaim.finish k st data
-      (honestProver D poly hpoly k st) =
+      (intervalHonestProver D poly hpoly k st) =
     Interpreted.execute next (intervalCheck D) IntervalClaim.finish k st data
       (intervalProver D (toPolynomial poly hpoly) k st) := by
   have h := Interpreted.execute_transport
@@ -71,8 +71,8 @@ theorem execute_honest_eq_native {m : Type → Type} [Monad m] [LawfulMonad m]
     (Impl.Representation.toMessage R deg)
     (fun q r => (Impl.Representation.evaluate_eq R deg q r).symm)
     k st data
-    (honestProver D poly hpoly k st)
-  rw [interpret_honestProver] at h
+    (intervalHonestProver D poly hpoly k st)
+  rw [interpret_intervalHonestProver] at h
   exact h.symm
 
 /-- Every honest computed interval is a map of explicit draws, with true endpoint output. -/
@@ -80,7 +80,7 @@ theorem execute_honest {m : Type → Type} [Monad m] [LawfulMonad m] {Data : Typ
     (next : m R) (k : ℕ) (st : IntervalClaim R n stop k) (data : Data)
     (h : indexedRelation D st.round st.statement (toPolynomial poly hpoly)) :
     Interpreted.execute next (intervalCheck D) IntervalClaim.finish k st data
-      (honestProver D poly hpoly k st) =
+      (intervalHonestProver D poly hpoly k st) =
       (fun chals =>
         let t := (foldState (intervalNext D (toPolynomial poly hpoly)) k st chals).finish
         (t, some (t, data))) <$>
@@ -101,7 +101,7 @@ theorem execute_supportCompleteness {Data : Type} (next : ProbComp R) (k : ℕ)
     (st : IntervalClaim R n stop k) (data : Data)
     (h : indexedRelation D st.round st.statement (toPolynomial poly hpoly)) :
     ∀ result ∈ support (Interpreted.execute next (intervalCheck D) IntervalClaim.finish k st data
-      (honestProver D poly hpoly k st)),
+      (intervalHonestProver D poly hpoly k st)),
       ∃ t, result.2 = some (t, data) ∧ indexedRelation D stop t (toPolynomial poly hpoly) := by
   rw [execute_honest D poly hpoly next k st data h, MonadAttach.support_map]
   rintro result ⟨chals, _, rfl⟩
@@ -112,7 +112,7 @@ theorem execute_perfectCompleteness {Data : Type} (next : ProbComp R) (k : ℕ)
     (st : IntervalClaim R n stop k) (data : Data)
     (h : indexedRelation D st.round st.statement (toPolynomial poly hpoly)) :
     Pr{let result ← (Interpreted.execute next (intervalCheck D) IntervalClaim.finish k st data
-      (honestProver D poly hpoly k st))}[
+      (intervalHonestProver D poly hpoly k st))}[
         ∃ t, result.2 = some (t, data) ∧
           indexedRelation D stop t (toPolynomial poly hpoly)] = 1 := by
   exact prEvent_eq_one_of_forall_mem_support _ _

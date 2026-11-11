@@ -92,7 +92,7 @@ with `start + count`. This order makes the full endpoint `n + 0` definitionally 
 | `run_append_public_intervalVerifier` | Actual append of `intervalVerifier start 1` and `intervalVerifier (1 + start) count`, with explicit endpoint transport. |
 | `projectedInput_eq`, `simulateQ_projectedInput`, `projectedExecute_closed`, `projectedExecute_related` | Derived query behavior, arbitrary standalone programs, returned projected behavior and the final evaluation claim. |
 
-`Computable.projectedMessage_toMessage` and `Computable.interpret_honestProver` identify the
+`Computable.projectedMessage_toMessage` and `Computable.interpret_intervalHonestProver` identify the
 computed honest messages with the native interval fold. `Computable.execute_soundness`
 transfers the native suffix bound to every computational-message prover, including ambient
 effects and arbitrary private continuations. These modules do not import the legacy `Spec`.
@@ -571,8 +571,8 @@ neither the old nor the new total-mass equation asserts a positive probability o
 
 | Exact source | Exact target | Status |
 |---|---|---|
-| `Sumcheck.Interaction.Computable.honestProver`, `ArkLib/ProofSystem/Sumcheck/Interaction/ComputableCompleteness.lean:37` | C/ComputableInterval.lean: `Sumcheck.Core.Computable.honestProver` | premise-required (P1, P2) |
-| `Sumcheck.Interaction.Computable.interpretProver_honestProver`, `ArkLib/ProofSystem/Sumcheck/Interaction/ComputableCompleteness.lean:51` | C/ComputableInterval.lean: `Sumcheck.Core.Computable.interpret_honestProver` | premise-required (P1, P2) |
+| `Sumcheck.Interaction.Computable.honestProver`, `ArkLib/ProofSystem/Sumcheck/Interaction/ComputableCompleteness.lean:37` | C/ComputableInterval.lean: `Sumcheck.Core.Computable.intervalHonestProver` | premise-required (P1, P2) |
+| `Sumcheck.Interaction.Computable.interpretProver_honestProver`, `ArkLib/ProofSystem/Sumcheck/Interaction/ComputableCompleteness.lean:51` | C/ComputableInterval.lean: `Sumcheck.Core.Computable.interpret_intervalHonestProver` | premise-required (P1, P2) |
 | `Sumcheck.Interaction.Computable.execute_honestProver_eq_native`, `ArkLib/ProofSystem/Sumcheck/Interaction/ComputableCompleteness.lean:81` | C/ComputableInterval.lean: `Sumcheck.Core.Computable.execute_honest_eq_native` | premise-required (P1, P2) |
 | `Sumcheck.Interaction.Computable.execute_support_completeness`, `ArkLib/ProofSystem/Sumcheck/Interaction/ComputableCompleteness.lean:95` | C/ComputableInterval.lean: `Sumcheck.Core.Computable.execute_supportCompleteness` | premise-required (P1, P2) |
 | `Sumcheck.Interaction.Computable.execute_perfectCompleteness`, `ArkLib/ProofSystem/Sumcheck/Interaction/ComputableCompleteness.lean:116` | C/ComputableInterval.lean: `Sumcheck.Core.Computable.execute_perfectCompleteness` | premise-required (P1, P2) |
