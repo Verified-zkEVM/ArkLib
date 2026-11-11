@@ -293,7 +293,7 @@ private abbrev decisionSpec (x : Σ s : OracleProtocol.{0}, Path s) :=
 transport proof below can move along the tree. -/
 private def pathLift (x : Σ s : OracleProtocol.{0}, Path s) :
     QueryImpl (pathFamily x.1 x.2).spec (OracleComp (decisionSpec R deg n ambient x)) :=
-  Interaction.Core.pathLift ambient (polyFamily R deg n) x.2
+  Interaction.Core.pathLift ambient (Spec.polynomialFamily R n deg) x.2
 
 variable {R deg n ambient}
 
