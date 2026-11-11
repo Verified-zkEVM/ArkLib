@@ -19,20 +19,38 @@ open PFunctor PFunctor.FreeM Interaction.Core Interaction.TwoParty.Lens OracleCo
 
 namespace Interaction.Core.DependentExampleTests
 
--- DependentExample 1, restated: the frozen canary checks independent shared, statement, witness
--- and interaction universes. A reduction of the interaction layer has no shared index and puts
--- the ambient index, statements, witness and protocol in one universe (OQ6(b)), so the restated
--- canary is weaker: it checks only that a reduction elaborates at an arbitrary universe.
+-- DependentExample 1, restated: the shared, statement, witness and interaction universes are
+-- independent, as in the frozen canary. A family of reductions over a shared index is a function
+-- from the index; ownership comes from the signature, so there is no role decoration. The output
+-- statement and the prover output stay in the interaction universe, as in the frozen canary. The
+-- ambient index is also in the interaction universe, because the prover runs in
+-- `OracleComp ambient : Type u → Type u` (implementation note 18, premise-required); the frozen
+-- canary has no ambient oracles, which the empty specification below recovers.
 section UniverseCanary
 
-universe u
+universe uShared uStatement uWitness uInteraction
 
-/-- Compile-time canary: a reduction elaborates at an arbitrary universe. -/
-abbrev UniverseCanary {ι : Type u} (ambient : OracleSpec.{u, u} ι) (s : Protocol.{u})
-    (Statement Witness StatementOut : Type u) (WitnessOut : PathAlong plainSig s → Type u) :=
-  Reduction ambient s Statement Witness (fun _ => StatementOut) WitnessOut
+/-- Compile-time canary that shared, statement, witness and interaction universes remain
+independent. -/
+abbrev UniverseSeparatedReduction {ι : Type uInteraction}
+    (ambient : OracleSpec.{uInteraction, uInteraction} ι)
+    (Shared : Type uShared)
+    (Context : Shared → Protocol.{uInteraction})
+    (Statement : Shared → Type uStatement)
+    (Witness : Shared → Type uWitness)
+    (StatementOut : (i : Shared) → Path (Context i) → Type uInteraction)
+    (WitnessOut : (i : Shared) → PathAlong plainSig (Context i) → Type uInteraction) :=
+  (i : Shared) → Reduction ambient (Context i) (Statement i) (Witness i) (StatementOut i)
+    (WitnessOut i)
 
 end UniverseCanary
+
+-- The canary at four distinct universes, with no ambient oracles: the shared index lies in
+-- `Type 3`, the statements in `Type 2`, the witnesses in `Type 1` and the interaction in `Type 0`.
+example : UniverseSeparatedReduction ([]ₒ : OracleSpec.{0, 0} PEmpty) (Type 2)
+    (fun _ => (.pure ⟨⟩ : Protocol)) (fun X => X) (fun _ => Type) (fun _ _ => Unit)
+    (fun _ _ => PUnit) :=
+  fun _ => { prover := fun _ _ => pure ⟨⟩, verifier := { decide := fun _ _ _ => pure () } }
 
 /-- No ambient oracle. -/
 abbrev ambient : OracleSpec PEmpty := []ₒ
