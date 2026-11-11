@@ -32,8 +32,8 @@ This file provides:
 @[expose] public section
 
 /-- Explicitly distinguish Prover and Verifier queries within a single combined query log.
-Used by the §5 Fiat-Shamir games to preserve boundary information after trace-concatenation,
-allowing `ksFactKernel` to extract `tr_P` and `tr_V` securely. -/
+Used by the §5 Fiat-Shamir games to preserve boundary information after trace concatenation,
+so that `TaggedQueryLog.proverLog` and `TaggedQueryLog.verifierLog` recover `tr_P` and `tr_V`. -/
 inductive SourceTag | prover | verifier
   deriving Inhabited, DecidableEq, Repr
 
@@ -56,8 +56,7 @@ def untagged {ι : Type} {spec : OracleSpec ι}
 
 /-- Tagging the prover/verifier logs then concatenating, then projecting the prover side, recovers
 the original prover log exactly — regardless of how many entries (incl. `oSpec` queries) each side
-made.  This is what makes `ksFactKernel`'s boundary recovery exact (replacing the old `len − k`
-suffix split). -/
+made. So the prover/verifier boundary is recovered exactly, without a length-based split. -/
 theorem proverLog_tagAppend {ι : Type} {spec : OracleSpec ι}
     (P V : OracleSpec.QueryLog spec) :
     proverLog (P.map (fun e => (SourceTag.prover, e)) ++ V.map (fun e => (SourceTag.verifier, e)))
@@ -142,7 +141,7 @@ end EncodedMessagesBefore
 
 `Codec pSpec U` is the generic-parameter carrier for everything DSFS needs about a
 protocol's per-round encoder/decoder: per-round vector sizes, the encoder, its injectivity proof,
-the decoder, the per-round decoder bias `ε_cdc`, and the per-round preimage sampler.
+the decoder, the per-round decoder bias `ε_cdc`, and the surjectivity of the decoder.
 
 It extends the `U`-independent size classes `HasMessageSize` / `HasChallengeSize`, and projects
 to per-index `Serialize` / `Deserialize` / `Serialize.IsInjective` instances via the projection
@@ -191,7 +190,8 @@ class Codec {n : ℕ} (pSpec : ProtocolSpec n) (U : Type)
       (PMF.uniformOfFintype (pSpec.Challenge i)).tvDist
         (decode i <$> PMF.uniformOfFintype (Vector U (challengeSize i))) ≤ decodingBias i
   /-- For every `i`, `decode i` is surjective: every challenge has at least one encoded preimage.
-    Required for the `ψ⁻¹` sampler in the Section 5.8 reduction. -/
+    `uniformDeserializePreimage`, the `ψ⁻¹` sampler of `D2SAlgo` (CO25 §5.4, Item 3(e)),
+    needs it. -/
   decode_surjective : ∀ i, Function.Surjective (decode i)
 
 namespace Codec
@@ -241,7 +241,7 @@ def mk' {n : ℕ} (pSpec : ProtocolSpec n) (U : Type)
 end Codec
 
 /-!
-## Salt codec (CO25 line 1188, line 1729)
+## Salt codec (CO25 §5.4 `D2SAlgo` Item 3(c); §5.8 proof of Claim 5.23)
 
 The paper distinguishes two views of a single salt:
 
@@ -251,30 +251,30 @@ The paper distinguishes two views of a single salt:
   binary string in `{0,1}^{δ★}` (where `δ★ := δ · log₂|Σ|`) used as part of the FS-standard
   oracle key. We model this as an abstract type `Salt`.
 
-The two views are bridged by an injective encoding `bin : Σ^δ → {0,1}^{δ★}` (paper line 1188:
-`τ̌ := bin(τ) ∈ {0,1}^{δ★}`; line 1729 states `bin(·)` is injective). The encoding contributes
-*no* bias to the §5 error analysis — only the time cost `t_bin = δ · log|Σ|`.
+The two views are bridged by an injective encoding `bin : Σ^δ → {0,1}^{δ★}` (`D2SAlgo` Item 3(c):
+`τ̌ := bin(τ) ∈ {0,1}^{δ★}`; the proof of Claim 5.23 states that `bin(·)` is injective). The
+encoding contributes *no* bias to the §5 error analysis — only the time cost `t_bin = δ · log|Σ|`.
 
 `SaltCodec U δ Salt` packages `bin` and its left inverse. The class is intentionally minimal:
 `decode_encode` gives injectivity of `encode` automatically.
 -/
 
 /-- Bridge between on-sponge salts (`Σ^δ = Vector U δ`) and the pre-encoded abstract salt type
-`Salt` (paper's `{0,1}^{δ★}`). `encode = bin` per CO25 line 1188. -/
+`Salt` (paper's `{0,1}^{δ★}`). `encode = bin` per CO25 §5.4 `D2SAlgo` Item 3(c). -/
 class SaltCodec (U : Type) (δ : Nat) (Salt : Type) where
   /-- `bin : Σ^δ → {0,1}^{δ★}` — inject `Σ^δ` salt into the FS-standard pre-encoded salt type. -/
   encode : Vector U δ → Salt
   /-- Left inverse of `encode`. Exists because `encode = bin` is injective with a recoverable
-    code (paper line 1729). -/
+    code (CO25 §5.8, proof of Claim 5.23). -/
   decode : Salt → Vector U δ
-  /-- `decode ∘ encode = id`. Gives **injectivity** of `encode` (and matches CO25 line 1729). -/
+  /-- `decode ∘ encode = id`. Gives **injectivity** of `encode` (CO25 §5.8, proof of Claim 5.23). -/
   decode_encode : ∀ τ, decode (encode τ) = τ
 
 namespace SaltCodec
 
 variable {U : Type} {δ : Nat} {Salt : Type}
 
-/-- `encode` is injective, derived from `decode_encode`. Matches CO25 line 1729. -/
+/-- `encode` is injective, derived from `decode_encode`. Matches CO25 §5.8, proof of Claim 5.23. -/
 theorem encode_injective [SaltCodec U δ Salt] :
     Function.Injective (encode (U := U) (δ := δ) (Salt := Salt)) := by
   intro a b h
@@ -314,14 +314,14 @@ def totalNumPermQueriesMessage : Nat :=
 
 alias Lₚ := totalNumPermQueriesMessage
 
-/-- Number of queries to the permutation oracle needed to absorb the `i`-th challenge of the
+/-- Number of queries to the permutation oracle needed to squeeze the `i`-th challenge of the
   protocol specification. This is `Lᵥ(i)` in the paper block-count notation (Equation 7). -/
 def numPermQueriesChallenge (i : pSpec.ChallengeIdx) : Nat :=
   Nat.ceil ((challengeSize i : ℚ) / SpongeSize.R)
 
 alias Lᵥᵢ := numPermQueriesChallenge
 
-/-- Total number of queries to the permutation oracle needed to absorb all challenges of the
+/-- Total number of queries to the permutation oracle needed to squeeze all challenges of the
   protocol specification. This is `Lᵥ` in the paper block-count notation (Equation 8). -/
 def totalNumPermQueriesChallenge : Nat :=
   ∑ i, pSpec.Lᵥᵢ i
@@ -486,8 +486,8 @@ salted Fiat–Shamir challenge oracle for `Hyb₃` and `Hyb₄`.
 
 Samples a single full random table `f : (q : Domain) → Range q` once at game start over the
 salted domain `dom'_i = {0,1}^≤n × {0,1}^{δ⋆} × ℳ_{P,1} × … × ℳ_{P,i}` with range `ℳ_{V,i}`.
-Per CO25 line 1784, Hyb₃ and Hyb₄ both sample from this same distribution; the difference
-between hybrids lies in the prover/verifier algorithm, not the oracle.
+Per CO25 §5.8 (definition of Hyb₄), Hyb₃ and Hyb₄ both sample from this same distribution; the
+difference between hybrids lies in the prover/verifier algorithm, not the oracle.
 
 The salt slot of `dom'_i` is the pre-encoded `{0,1}^{δ⋆}`-side, modeled here by the abstract
 type `Salt`. The on-sponge `Σ^δ` salt produced by Construction 4.3 is projected via
@@ -742,7 +742,7 @@ abbrev DSSaltedProof (pSpec : ProtocolSpec n) (U : Type) (δ : Nat) :=
   Vector U δ × pSpec.Messages
 
 /-- Paper-faithful type of the malicious DSFS prover `𝒫̃` (`\tilde{\mathcal{P}}`), per
-CO25 §5.4 line 1136 (paper Step 4 of `D2SAlgo`):
+CO25 §5.4, `D2SAlgo` Item 4:
 *"Let `𝒜`'s output be `(x, π_𝒜)`, and parse `π_𝒜` as `(τ, α_1, ..., α_k)`"*.
 
 `𝒫̃` queries `(h, p, p⁻¹) = duplexSpongeChallengeOracle` plus an ambient `oSpec` (for oracle-IP
@@ -1081,9 +1081,7 @@ def Verifier.toDSFS (δ : Nat) (V : Verifier oSpec StmtIn StmtOut pSpec) :
 `(stmtIn, proof : DSSaltedProof pSpec U δ)`, then lift the resulting computation with
 `liftDuplexSpongeForward` to the wide spec `oSpec + duplexSpongeChallengeOracle StmtIn U`.
 
-Shared by:
-- `dsfsGame` / `hybridGame` (KeyLemma.lean — `Hyb_0` through `Hyb_3` skeleton);
-- `lemma5_8ProjectedTraceDistAbortable` (BadEvents.lean — §5.6).
+Used by `dsfsGame` and `hybridGame` (KeyLemma.lean — the `Hyb_0` through `Hyb_3` skeleton).
 
 Encodes CO25 Figure 4 line 3 at the type level: the narrow input spec
 `oSpec + duplexSpongeForwardOracle StmtIn U` exposes only `(h, p)`, while the wide output spec
@@ -1140,7 +1138,8 @@ variable {ι : Type} {oSpec : OracleSpec ι}
 
 `D2SChallengePlusUnitOracle challengeSpec` is `challengeSpec + (Unit →ₒ U) + unifSpec`:
 the sum of the caller-supplied challenge oracle `gᵢ`-family, the auxiliary unit-sampling
-oracle `𝒰(Σ)` used by D2SQuery fresh-sample branches (§5.4 Items 2(b), 3(b), 4(c)iii, 4(e)iiiC),
+oracle `𝒰(Σ)` used by D2SQuery fresh-sample branches (§5.4 Items 2(b), 3(b), 4(c)iii, 4(d)ii,
+4(e)iiiA, 4(e)iiiC),
 and `unifSpec` for any additional uniform randomness. -/
 abbrev D2SChallengePlusUnitOracle {κ : Type} (challengeSpec : OracleSpec κ) :=
   challengeSpec + ((Unit →ₒ U) + unifSpec)
@@ -1156,8 +1155,8 @@ Polymorphic over:
 - basic-FS challenge spec `challengeSpec` (e.g. `gSpec` / `eSpec` /
   `fsChallengeOracle (StmtIn × Salt) pSpec` per-hybrid).
 
-Used by `d2sCodecBridgeImplMemo`, `d2fOuterImpl`, `d2fProverRaw` (this file) and by
-`KeyLemma.hybridGame` / `hybridGameDist` / inline `Hyb_i` `gImpl` realizations. -/
+Used by `d2sCodecBridgeImplMemo`, `d2fOuterImpl`, `d2fRawFrom` and `d2fRaw` (ProverTransform.lean)
+and by `KeyLemma.hybridGame` / `hybridGameDist` / inline `Hyb_i` `gImpl` realizations. -/
 abbrev GImpl {κ : Type} (challengeSpec : OracleSpec κ) (M : Type) :=
   QueryImpl (gSpec (U := U) StmtIn pSpec δ)
     (StateT M
