@@ -394,7 +394,7 @@ example : Verifier.rbrKnowledgeSoundness.{2, 0, 1} reduction.verifier plainAmbie
 
 /-- The oracle verifier wrapper for `runnable`, with intermediate witnesses in `Type 1`, a small
 input witness, an input statement in `Type 2` and an input index in `Type 1`. -/
-example : OracleVerifier.rbrKnowledgeSoundness.{2, 0, 1, 1, 0, 0} runnable ambientTrue
+example : OracleVerifier.rbrKnowledgeSoundness.{2, 0, 1, 0, 1, 0, 0} runnable ambientTrue
     (fun _ => True) (fun _ (_ : Unit) => True) (fun _ _ _ (_ : Unit) => True) noChallenges
     (fun _ => 0) :=
   ⟨typeCertificate oracleSig _, fun _ _ _ _ sp => nomatch sp⟩
@@ -438,14 +438,73 @@ example (stmt : Type 1 × Nat) (w : Fin (stmt.2 + 1)) :
 
 /-- Lifting preserves statement-dependent witnesses and the root extraction map. -/
 example (stmt : Type 1 × Nat) (w : Fin (stmt.2 + 1)) :
-    (indexedLargeCertificate.lift.{2, 2, 1, 3}).extractRoot stmt ⟨⟨w⟩⟩ = ULift.up w := rfl
+    (indexedLargeCertificate.lift.{2, 2, 1, 0, 3}).extractRoot stmt ⟨⟨w⟩⟩ = ULift.up w := rfl
 
 /-- Lifting a bound retains the same dependent input and output carriers at a larger universe. -/
 example : rbrKnowledgeSoundness.{2, 2, 3} plainSig done
     (fun (_ : Type 1 × Nat) => True)
     (fun stmt (_ : ULift.{2} (Fin (stmt.2 + 1))) => True)
     (fun stmt _ (_ : Fin (stmt.2 + 1)) => True) noPlainChallenges (fun _ => 0) :=
-  rbrKnowledgeSoundness.lift.{2, 2, 1, 3} plainSig
+  rbrKnowledgeSoundness.lift.{2, 2, 1, 0, 3} plainSig
     ⟨indexedLargeCertificate, fun _ _ _ _ sp => nomatch sp⟩
+
+/-- Pure backward maps accept types themselves as terminal, seam and input witnesses. -/
+def largeTerminalCertificate : KnowledgeStateFunction.{0, v + 1, v + 1, v + 1} plainSig done Unit
+    (fun _ _ => Type v) (fun _ => Type v) (fun _ => True) (fun _ _ => True)
+    (fun _ _ _ => True) where
+  Witness _ {_} _ _ := Type v
+  toFun _ {_} _ _ _ := True
+  extractRoot _ w := w
+  extractStep _ {_ _} sp := nomatch sp
+  extractLeaf _ _ _ w := w
+  root _ _ _ _ := trivial
+  send sp := nomatch sp
+  leaf _ _ _ _ _ := trivial
+
+/-- Composition passes a terminal witness in `Type 1` through a seam in `Type 1` directly. -/
+example (A : Type) :
+    (KnowledgeStateFunction.append (s₂ := fun _ => done)
+      (W := fun _ _ => Type) (validOutput := fun _ _ _ => True)
+      (admissible₂ := fun _ _ => True) (relMid := fun _ _ _ => True)
+      largeTerminalCertificate (fun _ => largeTerminalCertificate)
+      (fun _ _ _ _ => trivial)).extractAlong () ⟨⟩ A = A := rfl
+
+/-- The same pure composition accepts a terminal and seam carrier in `Type 2`. -/
+example (A : Type 1) :
+    (KnowledgeStateFunction.append (s₂ := fun _ => done)
+      (W := fun _ _ => Type 1) (validOutput := fun _ _ _ => True)
+      (admissible₂ := fun _ _ => True) (relMid := fun _ _ _ => True)
+      largeTerminalCertificate (fun _ => largeTerminalCertificate)
+      (fun _ _ _ _ => trivial)).extractAlong () ⟨⟩ A = A := rfl
+
+/-- Lifting intermediate witnesses keeps the large terminal and input carriers directly. -/
+example (A : Type) :
+    (largeTerminalCertificate.lift.{0, 1, 1, 1, 2}).extractAlong () ⟨⟩ A = A := rfl
+
+/-- The terminal witness may be a type even when the extracted input witness is small. -/
+def largeOutputCertificate {P : PFunctor.{1, 0}} (l : PFunctor.Lens P TwoParty.Lens.rolePoly)
+    {S : Type v} (validOutput : S → PathAlong l (.pure ⟨⟩ : FreeM P PUnit) → Type → Prop) :
+    KnowledgeStateFunction.{v, 0, 1, 1} l (.pure ⟨⟩) S (fun _ _ => Type) (fun _ => Unit)
+      (fun _ => True) (fun _ _ => True) validOutput where
+  Witness _ {_} _ _ := Type
+  toFun _ {_} _ _ _ := True
+  extractRoot _ _ := ()
+  extractStep _ {_ _} sp := nomatch sp
+  extractLeaf _ _ _ w := w
+  root _ _ _ _ := trivial
+  send sp := nomatch sp
+  leaf _ _ _ _ _ := trivial
+
+/-- The plain wrapper accepts large terminal witnesses independently of its run output. -/
+example : Verifier.rbrKnowledgeSoundness.{2, 0, 1, 1} reduction.verifier plainAmbientTrue
+    (fun _ => True) (fun _ (_ : Unit) => True) (fun _ _ _ (_ : Type) => True)
+    noPlainChallenges (fun _ => 0) :=
+  ⟨largeOutputCertificate plainSig _, fun _ _ _ _ sp => nomatch sp⟩
+
+/-- The oracle wrapper also accepts large terminal witnesses independently of its run output. -/
+example : OracleVerifier.rbrKnowledgeSoundness.{2, 0, 1, 1, 1, 0, 0} runnable ambientTrue
+    (fun _ => True) (fun _ (_ : Unit) => True) (fun _ _ _ (_ : Type) => True)
+    noChallenges (fun _ => 0) :=
+  ⟨largeOutputCertificate oracleSig _, fun _ _ _ _ sp => nomatch sp⟩
 
 end Interaction.Core.UniverseCanaryTests

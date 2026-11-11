@@ -206,7 +206,7 @@ example : rbrKnowledgeSoundness.{0, 0, 0} plainSig coin (fun _ => True)
 example : rbrKnowledgeSoundness.{0, 0, v} plainSig coin (fun _ => True)
     (fun stmt (_ : Unit) => stmt = true) (fun stmt _ (_ : Unit) => stmt = true)
     draw (fun _ => 0) := by
-  apply rbrKnowledgeSoundness.lift.{0, 0, 0, v}
+  apply rbrKnowledgeSoundness.lift.{0, 0, 0, 0, v}
   refine ⟨knowledgeState, ?_⟩
   intro stmt _ a next sp h history
   simp [knowledgeState]

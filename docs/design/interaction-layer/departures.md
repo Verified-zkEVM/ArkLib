@@ -108,3 +108,11 @@ tree only. `Legacy/OracleKnowledge.lean` closes it, and the entry is removed.
 The [source-to-port inventory](logged-execution-disposition.md) lists each frozen acceptance
 assertion, its exact port or missing interface, and the assertions retired by the approved passive
 verifier and fixed-shape premises. Its unresolved rows remain migration obligations.
+
+## Knowledge composition and measured extraction
+
+The [assertion disposition record](knowledge-composition-disposition.md) maps the frozen
+production laws and acceptance assertions to the composition and measured-extraction port. It
+records the public prover selector required by P2, the explicit zero root and leaf budgets that
+recover the frozen bound, and VCVio's small-carrier restriction on measured programs. Pure
+backward maps accept large terminal and seam witnesses directly.
