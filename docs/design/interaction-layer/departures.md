@@ -30,14 +30,20 @@ These entries are in
 
 These entries are also in
 [`interaction-rebuild/IMPLEMENTATION-NOTES.md`](../interaction-rebuild/IMPLEMENTATION-NOTES.md).
-The status is one of equivalent, premise-required or unresolved.
+The status is one of equivalent, premise-required, retired or unresolved.
 
 | Entry | Departure | Status |
 | --- | --- | --- |
-| 18 | Run outputs and a prover's ambient index are tied to the monad universe `u`; every other component takes its own universe, including input and output oracle query types | premise-required: positions live one universe up and the runner is `m : Type u → Type u` |
-| 18 | Input oracle data stays in the response universe `Type u`; the full-log oracle runner `runWithLog` keeps the input index and query type in `Type`, while extraction runs on the general ambient-log runner | unresolved: `OracleInterface` ties data and responses through `ReaderM`, and the full log records input queries |
+| 19 | Writer instrumentation of the authoritative runner produces per-slot prefix, owner and query provenance with exact log erasure, in `Oracle/SlotTrace.lean`, `Oracle/Provenance.lean` and `Oracle/PrefixResources.lean` | equivalent |
+| 19 | P1 retires intermediate verifier queries and their former phase assignments; prover slots and their prefixes remain | premise-required |
+| 18 | Input data, input queries and oracle-node queries have independent universes; families specialize the general resource API | equivalent: `Resources` inputs remove the realization/response coupling, and `OracleProtocol.{u, q}` separates node queries from moves |
+| 18 | Run outputs and a prover's ambient index remain in the monad universe `u` | equivalent: the retained D2 runner contract is `m : Type u → Type u`; neither P1 nor P2 changes this contract |
+| 18 | The full-log runner returns only small resource-query logs; ambient-log execution supports arbitrary resource-query universes | unresolved: a parent logging interface that returns large query indices through the small computation monad is missing |
 | 19 | Full-prefix knowledge composition with independent witness carriers and measured root, step and leaf maps | equivalent; node-indexed bounds specialize full-prefix bounds, see the knowledge inventory below |
 | 21 | Round-by-round soundness implies soundness for lawful distribution monads, with prefix-indexed freshness | equivalent; see the soundness disposition record below |
+
+The [resource and node universe inventory](resource-universes-disposition.md) records the frozen
+R26, R27 and decoration canaries closed by entry 18.
 
 ## Legacy embedding: entries 14–16
 
@@ -106,7 +112,11 @@ tree only. `Legacy/OracleKnowledge.lean` closes it, and the entry is removed.
 
 The [source-to-port inventory](logged-execution-disposition.md) lists each frozen acceptance
 assertion, its exact port or missing interface, and the assertions retired by the approved passive
-verifier and fixed-shape premises. Its unresolved rows remain migration obligations.
+verifier and fixed-shape premises. The produced provenance rows are equivalent under the passive
+schedule. R1 removes the separate recursive slot executor: instrumented strategies run through `TwoParty.Lens.run`, and ordinary,
+full-trace and ambient-trace APIs share `OracleVerifier.executeWith`. Erasure specializes a
+general runner naturality law and writer laws. The premise-required rows identify the intermediate
+verifier actions and phase assignments retired by P1.
 
 ## Knowledge composition and measured extraction
 

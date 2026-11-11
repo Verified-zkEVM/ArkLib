@@ -21,7 +21,7 @@ on the entire earlier history; node-indexed draws and errors are specializations
 
 @[expose] public section
 
-universe uS uW uK uO uI wI wJ uA u vDraw uι uQ
+universe uS uW uK uO uI wI wJ uA u vDraw uι uQ dI q
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle MeasureTheory
@@ -87,7 +87,7 @@ def spineChallenge {s : FreeM P PUnit.{u + 1}} {a : P.A} {next : P.B a → FreeM
   ⟨spineNode sp, (congrArg (owner l) (spineNode_position sp)).trans h⟩
 
 /-- Draw a fresh move at the receiver position selected by a structural prefix. -/
-def sampleAt {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly)
+def sampleAt {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
     {s : FreeM P PUnit.{1}} {a : P.A} {next : P.B a → FreeM P PUnit.{1}}
     (draw : QueryImpl (challengeSpec l s) ProbComp)
     (sp : Cursor.Spine s (.liftBind a next)) (h : owner l a = .receiver) : ProbComp (Move l a) :=
@@ -124,7 +124,7 @@ def PrefixDraw.ofNodes {m : Type u → Type vDraw} [Functor m] {s : FreeM P PUni
     draw (spineChallenge l sp h)
 
 /-- Ignoring history recovers node-indexed sampling at the same receiver cursor. -/
-theorem prefixSampleAt_ofNodes {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly)
+theorem prefixSampleAt_ofNodes {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
     {s : FreeM P PUnit.{1}} (draw : QueryImpl (challengeSpec l s) ProbComp)
     {a next} (sp : Cursor.Spine s (.liftBind a next)) (h : owner l a = .receiver)
     (history : PrefixMoves l sp) :
@@ -227,7 +227,7 @@ structure StateFunction (s : FreeM P PUnit.{u + 1}) (S : Type uS)
     ¬ toFun sp history stmt → ¬ accepts stmt (PrefixMoves.complete l sp history)
 
 /-- Worst-case-per-prefix round-by-round soundness; there is no adversary-model argument. -/
-def rbrSoundness {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly)
+def rbrSoundness {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
     {S : Type uS} (s : FreeM P PUnit.{1})
     (admissible language : S → Prop) (accepts : S → PathAlong l s → Prop)
     (draw : QueryImpl (challengeSpec l s) ProbComp) (ε : ChallengeNode l s → ℝ≥0∞) : Prop :=
@@ -277,7 +277,7 @@ structure KnowledgeStateFunction (s : FreeM P PUnit.{u + 1}) (S : Type uS)
 
 /-- At each receiver prefix, the history-selected challenge defeats backwards extraction with
 probability at most that prefix's error, uniformly over later witnesses. -/
-def rbrKnowledgeSoundness {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly)
+def rbrKnowledgeSoundness {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
     {S : Type uS} {Win : S → Type uW} (s : FreeM P PUnit.{1})
     {W : S → PathAlong l s → Type uO} (admissible : S → Prop)
     (relIn : (stmt : S) → Win stmt → Prop)
@@ -295,7 +295,7 @@ def rbrKnowledgeSoundness {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly)
           (PrefixMoves.snoc l sp history x) wit} ≤ ε sp h history
 
 /-- Knowledge soundness for node-indexed draws and errors, as a prefix specialization. -/
-abbrev rbrKnowledgeSoundnessOfNodes {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly)
+abbrev rbrKnowledgeSoundnessOfNodes {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
     {S : Type uS} {Win : S → Type uW} (s : FreeM P PUnit.{1})
     {W : S → PathAlong l s → Type uO} (admissible : S → Prop)
     (relIn : (stmt : S) → Win stmt → Prop)
@@ -324,7 +324,7 @@ def KnowledgeStateFunction.lift.{v} {s : FreeM P PUnit.{u + 1}} {S : Type uS}
 
 /-- Round-by-round knowledge soundness with intermediate witnesses in a universe `uK` implies
 it with intermediate witnesses in any larger universe, at the same error. -/
-theorem rbrKnowledgeSoundness.lift.{v} {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly)
+theorem rbrKnowledgeSoundness.lift.{v} {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
     {S : Type uS} {Win : S → Type uW} {s : FreeM P PUnit.{1}}
     {W : S → PathAlong l s → Type uO} {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
     {validOutput : (stmt : S) → (tr : PathAlong l s) → W stmt tr → Prop}
@@ -423,9 +423,9 @@ abbrev Verifier.rbrKnowledgeSoundnessOfNodes {ι σ : Type} {S : Type uS} {Win :
     (PrefixDraw.ofNodes plainSig draw) (PrefixError.ofNodes plainSig ε)
 
 namespace OracleVerifier
-variable {ι σ : Type} {I : Type uI} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol}
-  {T : Path s → Type} {A : I → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-  {inputs : OracleFamily.{uI, 0, wI} I A}
+variable {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol.{0, q}}
+  {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
+  {inputs : Resources.{0, uI, dI}}
   {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
 
 /-- Oracle acceptance from a possible terminal state, with actual input and path payloads. The
@@ -433,7 +433,7 @@ event is a predicate on the output statement and oracle data at the transcript's
 The input statement, the input index and the input query type may lie in any universe. -/
 def validAcceptance (V : OracleVerifier ambient s S T inputs outputs)
     (impl : QueryImpl ambient (StateT σ ProbComp))
-    (stmt : S × (∀ i, A i)) (tr : PathAlong oracleSig s)
+    (stmt : S × inputs.Data) (tr : PathAlong oracleSig s)
     (event : OracleVerifier.Output T B (projectPathAlong oracleSig s tr) → Prop) : Prop :=
   let p := projectPathAlong oracleSig s tr
   let view := toView s tr
@@ -448,7 +448,7 @@ def validAcceptance (V : OracleVerifier ambient s S T inputs outputs)
 /-- Positive oracle acceptance has a supported accepted result and a final ambient state. -/
 theorem validAcceptance_iff_support (V : OracleVerifier ambient s S T inputs outputs)
     (impl : QueryImpl ambient (StateT σ ProbComp))
-    (stmt : S × (∀ i, A i)) (tr : PathAlong oracleSig s)
+    (stmt : S × inputs.Data) (tr : PathAlong oracleSig s)
     (langOut : OracleVerifier.Output T B (projectPathAlong oracleSig s tr) → Prop) :
     V.validAcceptance impl stmt tr langOut ↔
       ∃ state t final, (some t, final) ∈ support
@@ -468,7 +468,8 @@ theorem validAcceptance_iff_support (V : OracleVerifier ambient s S T inputs out
 
 
 /-- Classical acceptance quantifies over the possible terminal states. -/
-theorem validAcceptance_iff_validAcceptanceUsing (V : OracleVerifier ambient s S T inputs outputs)
+theorem validAcceptance_iff_validAcceptanceUsing {I : Type uI} {A : I → Type}
+    {inputs : OracleFamily.{uI, 0, wI} I A} (V : OracleVerifier ambient s S T inputs outputs)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (stmt : S × (∀ i, A i)) (tr : PathAlong oracleSig s)
     (event : (p : Path s) → OracleVerifier.Output T B p → Prop) :
@@ -484,7 +485,7 @@ theorem validAcceptance_iff_validAcceptanceUsing (V : OracleVerifier ambient s S
 output language is indexed by the shape path and judged at the transcript's path. -/
 abbrev rbrSoundness (V : OracleVerifier ambient s S T inputs outputs)
     (impl : QueryImpl ambient (StateT σ ProbComp))
-    (input : StatementProblem (S × (∀ i, A i)))
+    (input : StatementProblem (S × inputs.Data))
     (output : PathProblem s (OracleVerifier.Output T B))
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp)
     (ε : ChallengeNode oracleSig s → ℝ≥0∞) : Prop :=
@@ -495,29 +496,29 @@ abbrev rbrSoundness (V : OracleVerifier ambient s S T inputs outputs)
 /-- Worst-case-per-prefix oracle knowledge with full payload-bearing prefix access. The output
 witness type `W stmt tr` and the output relation are indexed by the input statement, including
 its oracle data, and the completed transcript. -/
-abbrev rbrKnowledgeSoundness {Win : (S × (∀ i, A i)) → Type uW}
-    {W : (S × (∀ i, A i)) → PathAlong oracleSig s → Type uO}
+abbrev rbrKnowledgeSoundness {Win : (S × inputs.Data) → Type uW}
+    {W : (S × inputs.Data) → PathAlong oracleSig s → Type uO}
     (V : OracleVerifier ambient s S T inputs outputs)
     (impl : QueryImpl ambient (StateT σ ProbComp))
-    (admissible : S × (∀ i, A i) → Prop) (relIn : (stmt : S × (∀ i, A i)) → Win stmt → Prop)
-    (relOut : (stmt : S × (∀ i, A i)) → (tr : PathAlong oracleSig s) →
+    (admissible : S × inputs.Data → Prop) (relIn : (stmt : S × inputs.Data) → Win stmt → Prop)
+    (relOut : (stmt : S × inputs.Data) → (tr : PathAlong oracleSig s) →
       OracleVerifier.Output T B (projectPathAlong oracleSig s tr) → W stmt tr → Prop)
     (draw : PrefixDraw oracleSig ProbComp s)
     (ε : PrefixError oracleSig s) : Prop :=
-  Core.rbrKnowledgeSoundness.{max uS uI, uW, uK, uO} oracleSig s admissible relIn
+  Core.rbrKnowledgeSoundness.{max uS dI, uW, uK, uO} oracleSig s admissible relIn
     (fun stmt tr wit => V.validAcceptance impl stmt tr (fun t => relOut stmt tr t wit)) draw ε
 
 /-- Node-indexed knowledge soundness is the shared prefix predicate ignoring history. -/
-abbrev rbrKnowledgeSoundnessOfNodes {Win : (S × (∀ i, A i)) → Type uW}
-    {W : (S × (∀ i, A i)) → PathAlong oracleSig s → Type uO}
+abbrev rbrKnowledgeSoundnessOfNodes {Win : (S × inputs.Data) → Type uW}
+    {W : (S × inputs.Data) → PathAlong oracleSig s → Type uO}
     (V : OracleVerifier ambient s S T inputs outputs)
     (impl : QueryImpl ambient (StateT σ ProbComp))
-    (admissible : S × (∀ i, A i) → Prop) (relIn : (stmt : S × (∀ i, A i)) → Win stmt → Prop)
-    (relOut : (stmt : S × (∀ i, A i)) → (tr : PathAlong oracleSig s) →
+    (admissible : S × inputs.Data → Prop) (relIn : (stmt : S × inputs.Data) → Win stmt → Prop)
+    (relOut : (stmt : S × inputs.Data) → (tr : PathAlong oracleSig s) →
       OracleVerifier.Output T B (projectPathAlong oracleSig s tr) → W stmt tr → Prop)
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp)
     (ε : ChallengeNode oracleSig s → ℝ≥0∞) : Prop :=
-  rbrKnowledgeSoundness.{uS, uW, uK, uO, uI, wI, wJ} V impl admissible relIn relOut
+  rbrKnowledgeSoundness.{uS, uW, uK, uO} V impl admissible relIn relOut
     (PrefixDraw.ofNodes oracleSig draw) (PrefixError.ofNodes oracleSig ε)
 
 end OracleVerifier
