@@ -36,8 +36,6 @@ namespace Interaction.Core.CompositionSoundnessTests
 
 noncomputable section
 
-attribute [local implicit_reducible] owner
-
 /-- The field of the guess and the challenge. -/
 abbrev F := ZMod 17
 
@@ -48,7 +46,8 @@ abbrev guessTree : Protocol :=
 /-- The guess is fixed before sampling; the counterpart's output records a match or `prior`. -/
 def guessVerifierEnd {m : Type → Type} [Monad m] (challenge : m F) (prior : Prop) :
     PureEnd plainSig m .counterpart guessTree (fun _ => Prop) :=
-  pure fun guess => (fun sample => ⟨sample, prior ∨ guess = sample⟩) <$> challenge
+  pure fun guess => ((fun sample => ⟨sample, prior ∨ guess = sample⟩) <$> challenge :
+    m ((_ : F) × Prop))
 
 /-- The guess counterpart as an ordinary counterpart. -/
 abbrev guessVerifier {m : Type → Type} [Monad m] (challenge : m F) (prior : Prop) :
@@ -66,13 +65,33 @@ theorem run_guess {m : Type → Type} [Monad m] [LawfulMonad m]
       let sample ← challenge
       let out ← respond sample
       pure ⟨⟨v.1, sample, ⟨⟩⟩, out, prior ∨ v.1 = sample⟩) := by
+  change m ((guess : F) × m ((sample : F) → m (Out ⟨guess, sample, ⟨⟩⟩))) at prover
   dsimp only [TwoParty.Lens.run, runWith, Interaction.InteractionOver.run, contexts, interaction,
     participantProfile, collectParticipantOutputs, step, Schedule.seq, owner_plain_message,
     owner_plain_challenge, guessVerifier, guessVerifierEnd, PureEnd.toStrategy,
     PureEnd.mapOutput, Choice.map]
-  simp only [LawfulMonad.bind_assoc, LawfulApplicative.map_pure, LawfulMonad.pure_bind,
-    bind_map_left]
-  rfl
+  erw [LawfulApplicative.map_pure]
+  change (do
+    let result ← (do
+      let chosen ← prover
+      let counterpart ← (pure (fun guess : F =>
+        (fun v : (_ : F) × Prop => (⟨v.1, pure v.2⟩ : (_ : F) × m Prop)) <$>
+          ((fun sample : F => (⟨sample, prior ∨ guess = sample⟩ : (_ : F) × Prop)) <$>
+            challenge)) : m (F → m ((_ : F) × m Prop)))
+      let tail ← (do
+        let respond ← chosen.2
+        let sample ← counterpart chosen.1
+        let terminal ← pure (⟨⟨⟩, respond sample.1, sample.2⟩ :
+          (tr : PUnit) × m (Out ⟨chosen.1, sample.1, tr⟩) × m Prop)
+        pure (⟨⟨sample.1, terminal.1⟩, terminal.2.1, terminal.2.2⟩ :
+          (tr : (_ : F) × PUnit) × m (Out ⟨chosen.1, tr⟩) × m Prop))
+      pure (⟨⟨chosen.1, tail.1⟩, tail.2.1, tail.2.2⟩ :
+        (tr : PathAlong plainSig guessTree) × m (Out tr) × m Prop))
+    let out ← result.2.1
+    let matched ← result.2.2
+    pure (⟨result.1, out, matched⟩ :
+      (tr : PathAlong plainSig guessTree) × Out tr × Prop)) = _
+  simp only [LawfulMonad.bind_assoc, LawfulMonad.pure_bind, bind_map_left]
 
 -- Row 1 (`guess_soundness`), restated over `TwoParty.Lens.run` on plainSig
 -- `.message F; .challenge F` with a `Prop`-output counterpart; the frozen transparency

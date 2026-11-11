@@ -130,6 +130,7 @@ theorem appendSampler_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
   | liftBind a next ih =>
     cases a <;>
       simp only [appendSampler, Counterpart.appendFlat, sampler, samplerEnd,
+        samplerSlot, rootDraw,
         FreeM.append_liftBind, PureEnd.graft, PureEnd.toStrategy, PureEnd.mapOutput,
         owner, plainSig, Choice, Move, Choice.map, combineDraw,
         LawfulApplicative.map_pure, Functor.map_map]
@@ -158,6 +159,7 @@ theorem appendOracleSampler_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
   | liftBind a next ih =>
     cases a <;>
       simp only [appendSampler, Counterpart.appendFlat, sampler, samplerEnd,
+        samplerSlot, rootDraw,
         FreeM.append_liftBind, PureEnd.graft, PureEnd.toStrategy, PureEnd.mapOutput,
         owner, oracleSig, Choice, Move, Choice.map, combineDraw,
         LawfulApplicative.map_pure, Functor.map_map]

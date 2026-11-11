@@ -118,6 +118,17 @@ theorem sampler_challenge {M : Type u → Type u} [Monad M] [LawfulMonad M] (C :
 variable {κ κ' : Type u} {spec : OracleSpec.{u, u} κ} {spec' : OracleSpec.{u, u} κ'}
   {n : Type u → Type u} [Monad n] [LawfulMonad n]
 
+/-- Simulation interprets both slots and the continuation of a local exchange. -/
+theorem simulateQ_step {X : Type u} {A B : X → Type u} {R : Type u}
+    (F : QueryImpl spec n) (role : TwoParty.Role) (order : Schedule)
+    (p : OracleComp spec (Choice .focal role X A))
+    (c : OracleComp spec (Choice .counterpart role X B))
+    (k : ∀ x, A x → B x → OracleComp spec R) :
+    simulateQ F (step role order p c k) =
+      step role order (simulateQ F p) (simulateQ F c)
+        (fun x a b => simulateQ F (k x a b)) := by
+  cases role <;> cases order <;> simp only [step, Schedule.seq, simulateQ_bind]
+
 /-- Simulating a simulated prover composes the two handlers. -/
 theorem Prover.simulate_simulate {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
     (F : QueryImpl spec' n) (G : QueryImpl spec (OracleComp spec')) :
@@ -136,56 +147,27 @@ theorem Prover.simulate_simulate {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rol
       (funext fun x => funext fun r => Prover.simulate_simulate F G _ r)
 
 /-- Simulating a run against a public-coin sampler, under either schedule, simulates every
-prover slot and every draw. -/
-theorem simulateQ_runWith_sampler (F : QueryImpl spec n) (order : Schedule) :
-    (s : Protocol.{u}) → {Out : PathAlong plainSig s → Type u} →
-    (p : Prover plainSig spec s Out) →
-    (draw : (c : ChallengeNode plainSig s) → OracleComp spec (challengeSpec plainSig s c)) →
-    simulateQ F (runWith order s p (sampler plainSig s draw)) =
+    prover slot and every draw for any ownership lens. -/
+theorem simulateQ_runWith_sampler {P : PFunctor.{uA, u}}
+    {l : PFunctor.Lens P rolePoly.{u}} (F : QueryImpl spec n) (order : Schedule) :
+    (s : FreeM P PUnit.{u + 1}) → {Out : PathAlong l s → Type u} →
+    (p : Prover l spec s Out) →
+    (draw : (c : ChallengeNode l s) → OracleComp spec (challengeSpec l s c)) →
+    simulateQ F (runWith order s p (sampler l s draw)) =
       runWith order s (Prover.simulate F p)
-        (sampler plainSig s (fun c => simulateQ F (draw c)))
+        (sampler l s (fun c => simulateQ F (draw c)))
   | .pure ⟨⟩, _, p, _ => by
     erw [runWith_done, runWith_done]
     cases order <;> simp only [Schedule.seq, simulateQ_bind, simulateQ_pure] <;> rfl
-  | .liftBind (.message X) rest, _, p, draw => by
-    rw [runWith_liftBind, runWith_liftBind, sampler_message, sampler_message]
-    rw [Prover.simulate_node]
-    cases order
-    · simp only [step, Schedule.seq, owner_plain_message]
-      erw [simulateQ_bind, bind_map_left]
-      refine bind_congr fun v => ?_
-      erw [LawfulMonad.pure_bind, LawfulMonad.pure_bind, simulateQ_bind,
-        simulateQ_runWith_sampler F .focalFirst (rest v.1) v.2]
-      refine bind_congr fun r => ?_
-      erw [simulateQ_pure]
+  | .liftBind a rest, _, p, draw => by
+    rw [runWith_liftBind, runWith_liftBind, Prover.simulate_node, sampler_node, sampler_node]
+    rw [simulateQ_step, simulateQ_map, simulateQ_samplerSlot, step_map_right, step_map]
+    apply congrArg₂ (fun c k => step (owner l a) order (simulateQ F p) c k)
+    · rfl
+    · funext x pn cn
+      rw [simulateQ_bind, simulateQ_runWith_sampler F order]
+      simp only [simulateQ_pure]
       rfl
-    · simp only [step, Schedule.seq, owner_plain_message]
-      erw [LawfulMonad.pure_bind, LawfulMonad.pure_bind, simulateQ_bind, bind_map_left]
-      refine bind_congr fun v => ?_
-      erw [simulateQ_bind, simulateQ_runWith_sampler F .counterpartFirst (rest v.1) v.2]
-      refine bind_congr fun r => ?_
-      erw [simulateQ_pure]
-      rfl
-  | .liftBind (.challenge C) rest, _, p, draw => by
-    rw [runWith_liftBind, runWith_liftBind, sampler_challenge, sampler_challenge]
-    rw [Prover.simulate_node]
-    cases order
-    · simp only [step, Schedule.seq, owner_plain_challenge, bind_map_left]
-      erw [simulateQ_bind]
-      refine bind_congr fun f => ?_
-      erw [simulateQ_bind]
-      refine bind_congr fun x => ?_
-      erw [simulateQ_bind, simulateQ_runWith_sampler F .focalFirst (rest ⟨⟩) (f x)]
-      refine bind_congr fun r => ?_
-      erw [simulateQ_pure]
-    · simp only [step, Schedule.seq, owner_plain_challenge, bind_map_left]
-      erw [simulateQ_bind]
-      refine bind_congr fun x => ?_
-      erw [simulateQ_bind]
-      refine bind_congr fun f => ?_
-      erw [simulateQ_bind, simulateQ_runWith_sampler F .counterpartFirst (rest ⟨⟩) (f x)]
-      refine bind_congr fun r => ?_
-      erw [simulateQ_pure]
 
 end Simulate
 

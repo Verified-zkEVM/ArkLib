@@ -28,9 +28,6 @@ universe u uA
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
 
-attribute [local implicit_reducible] projectPathAlong projectPathAlongLocalMap
-  Displayed.LocalMap.toHom Displayed.LocalMap.toHomFun owner Node Node.position challengeSpec
-
 /-- Restrict challenge draws of an appended protocol to the challenge nodes of its prefix. -/
 def prefixDraw {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
     {m : Type u → Type u} :

@@ -454,7 +454,7 @@ theorem prefix_returns_export :
 
 -- RuntimeQueryBounds row 16 (`fixed_native_resource_bounds`), restated: "for every boundary"
 -- ranges over the paths and views of the combined protocol. The source-name and source-access
--- conjuncts are retired (OQ5): oracle family indices are the names, and resource access is
+-- conjuncts are redundant: oracle family indices are the names, and resource access is
 -- fixed by the decision's type.
 /-- The export identity, the export and routed-suffix costs, the ambient access of the routed
 suffix, the import budget, the charged history and the `1/2` bound hold together. -/
