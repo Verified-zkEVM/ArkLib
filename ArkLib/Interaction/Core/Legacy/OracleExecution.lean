@@ -133,7 +133,8 @@ theorem runWith_node_toPlain {M : Type → Type} [Monad M] [LawfulMonad M] (orde
           (toPlainChoice .focal j D hD TP <$> p) (toPlainChoice .counterpart j D hD TC <$> c) := by
   cases D with
   | P_to_V =>
-    rw [runWith_liftBind, runWith_liftBind]
+    rw [TwoParty.Lens.runWith_node, TwoParty.Lens.runWith_node]
+    simp only [interaction]
     change step .sender order p c _ = _ <$> step .sender order
       (Choice.map .focal .sender TP <$> p) (Choice.map .counterpart .sender TC <$> c) _
     erw [step_map_left, step_map_right, map_step]
@@ -141,7 +142,8 @@ theorem runWith_node_toPlain {M : Type → Type} [Monad M] [LawfulMonad M] (orde
     erw [ih x a b, map_eq_bind_pure_comp, bind_assoc]
     exact bind_pure_bind_pure _ _ _ _ _ fun _ => rfl
   | V_to_P =>
-    rw [runWith_liftBind, runWith_liftBind]
+    rw [TwoParty.Lens.runWith_node, TwoParty.Lens.runWith_node]
+    simp only [interaction]
     change step .receiver order p c _ = _ <$> step .receiver order
       (Choice.map .focal .receiver TP <$> p) (Choice.map .counterpart .receiver TC <$> c) _
     erw [step_map_left, step_map_right, map_step]
@@ -620,7 +622,7 @@ theorem simulateQ_oracleChallengeReindex_run
     erw [QueryImpl.simulateQ_add_liftM_query_right]
     exact map_oracleLegacyDraw _ 0 n _ c
   rw [TwoParty.Lens.run, runWith_toPlainFrom, simulateQ_map, toPlainFrom_simulate,
-    toPlainFrom_sampler, simulateQ_runWith, Prover.simulate_simulate, hl, hr,
+    toPlainFrom_sampler, simulateQ_runWith_sampler, Prover.simulate_simulate, hl, hr,
     runWith_oracleLegacySampler]
   rfl
 

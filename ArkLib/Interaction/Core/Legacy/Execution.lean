@@ -163,7 +163,9 @@ theorem runWith_roundSlot {β Out : Type}
           (Choice.map .focal _ q <$> roundSlot P j D hD st))
         (sampler plainSig _ draw) >>= G) =
       P.processRound j (pure (pre, st)) >>= F := by
-  rw [runWith_liftBind, step_bind, Prover.simulate_node, step_map_left, simulateQ_map,
+  rw [TwoParty.Lens.runWith_node]
+  simp only [interaction]
+  rw [step_bind, Prover.simulate_node, step_map_left, simulateQ_map,
     step_map_left]
   refine step_counterpartFirst_roundSlot P j D hD rest draw hdraw st pre F _ fun x st' => ?_
   simp only [bind_assoc, LawfulMonad.pure_bind]
@@ -357,14 +359,14 @@ theorem distEqFrom_runWith (impl : QueryImpl ambient (StateT σ ProbComp))
     refine bind_congr fun a => ?_
     erw [LawfulMonad.pure_bind]
   | .liftBind (.message X) rest, _, p, draw, hdraw => by
-    rw [runWith_liftBind, runWith_liftBind, sampler_message]
-    simp only [step, Schedule.seq, owner_plain_message, LawfulMonad.pure_bind]
+    rw [TwoParty.Lens.runWith_node, TwoParty.Lens.runWith_node, sampler_message]
+    simp only [interaction, step, Schedule.seq, owner_plain_message, LawfulMonad.pure_bind]
     refine DistEqFrom.bind (DistEqFrom.refl _) fun v => DistEqFrom.bind ?_ fun _ =>
       DistEqFrom.refl _
     exact distEqFrom_runWith impl chImpl (rest v.1) v.2 _ fun c => hdraw _
   | .liftBind (.challenge C) rest, _, p, draw, hdraw => by
-    rw [runWith_liftBind, runWith_liftBind, sampler_challenge]
-    simp only [step, Schedule.seq, owner_plain_challenge, bind_map_left]
+    rw [TwoParty.Lens.runWith_node, TwoParty.Lens.runWith_node, sampler_challenge]
+    simp only [interaction, step, Schedule.seq, owner_plain_challenge, bind_map_left]
     refine DistEqFrom.trans (DistEqFrom.bind (DistEqFrom.refl _) fun f =>
       DistEqFrom.bind (DistEqFrom.refl _) fun x => DistEqFrom.bind
         (distEqFrom_runWith impl chImpl (rest ⟨⟩) (f x) _ fun c => hdraw _)
@@ -372,25 +374,6 @@ theorem distEqFrom_runWith (impl : QueryImpl ambient (StateT σ ProbComp))
     exact DistEqFrom.swap (hdraw _) _
 
 end Exchange
-
-/-! ### Simulating a run -/
-
-section Simulate
-
-variable {κ κ' : Type} {spec : OracleSpec κ} {spec' : OracleSpec κ'}
-
-/-- Simulating a run against a public-coin sampler, into another oracle computation, simulates
-every prover slot and every draw. -/
-theorem simulateQ_runWith (F : QueryImpl spec (OracleComp spec')) (order : Schedule)
-    (s : Protocol.{0}) {Out : PathAlong plainSig s → Type}
-    (p : Focal plainSig (OracleComp spec) s Out)
-    (draw : (c : ChallengeNode plainSig s) → OracleComp spec (challengeSpec plainSig s c)) :
-    simulateQ F (runWith order s p (sampler plainSig s draw)) =
-      runWith order s (Prover.simulate F p)
-        (sampler plainSig s (fun c => simulateQ F (draw c))) :=
-  simulateQ_runWith_sampler F order s p draw
-
-end Simulate
 
 /-! ### The default schedule -/
 
@@ -430,7 +413,7 @@ theorem simulateQ_challengeReindex_run {Out : PathAlong plainSig (protocol pSpec
       (liftM ((oSpec + challengeSpec plainSig (protocol pSpec)).query (.inr c)))) =
       legacyDraw (challengeOracle oSpec pSpec) 0 n (Nat.zero_add n) :=
     funext fun c => QueryImpl.simulateQ_add_liftM_query_right _ _ c
-  rw [TwoParty.Lens.run, simulateQ_runWith, Prover.simulate_simulate, hl, hr]
+  rw [TwoParty.Lens.run, simulateQ_runWith_sampler, Prover.simulate_simulate, hl, hr]
   rfl
 
 /-- The run of the interaction layer, with its challenges answered by the legacy challenge

@@ -7,7 +7,6 @@ module
 
 public import ArkLib.Interaction.Core.Reduction
 public import PolyFun.Interaction.TwoParty.Lens.Compose
-public import VCVio.OracleComp.SimSemantics.QueryImpl.Compose
 
 /-!
 # Plain execution
@@ -82,43 +81,6 @@ def Reduction.run {ι : Type u} {ambient : OracleSpec.{u, u} ι}
 
 section Simulate
 
-/-- The node equation of `runWith`, as one local exchange. -/
-theorem runWith_liftBind {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
-    {M : Type u → Type u} [Monad M] [LawfulMonad M] (order : Schedule)
-    (a : P.A) (rest : P.B a → FreeM P PUnit.{u + 1})
-    {OutP OutC : PathAlong l (.liftBind a rest) → Type u}
-    (p : Focal l M (.liftBind a rest) OutP)
-    (c : Counterpart l M (.liftBind a rest) OutC) :
-    runWith (l := l) (m := M) order (.liftBind a rest) p c =
-      step (owner l a) order p c (fun x pn cn =>
-        runWith (l := l) (m := M) order (rest (l.toFunB a x)) pn cn >>= fun r =>
-          pure (⟨⟨x, r.1⟩, r.2.1, r.2.2⟩ :
-            (t : PathAlong l (.liftBind a rest)) × OutP t × OutC t)) :=
-  runWith_node (l := l) (m := M) order a rest p c
-
-/-- At a message node, the sampler draws nothing and continues on the sent message. -/
-theorem sampler_message {M : Type u → Type u} [Monad M] [LawfulMonad M] (X : Type u)
-    (rest : X → Protocol.{u})
-    (draw : (c : ChallengeNode plainSig (.liftBind (PlainPos.message X) rest)) →
-      M (challengeSpec plainSig (.liftBind (PlainPos.message X) rest) c)) :
-    sampler plainSig (.liftBind (PlainPos.message X) rest) draw =
-      pure (fun x => sampler plainSig (rest x) (fun c => draw ⟨.inr ⟨x, c.val⟩, c.property⟩)) := by
-  change Choice.map .counterpart .sender _ <$> pure _ = _
-  erw [LawfulApplicative.map_pure]
-  rfl
-
-/-- At a challenge node, the sampler draws the challenge and continues on it. -/
-theorem sampler_challenge {M : Type u → Type u} [Monad M] [LawfulMonad M] (C : Type u)
-    (rest : PUnit → Protocol.{u})
-    (draw : (c : ChallengeNode plainSig (.liftBind (PlainPos.challenge C) rest)) →
-      M (challengeSpec plainSig (.liftBind (PlainPos.challenge C) rest) c)) :
-    sampler plainSig (.liftBind (PlainPos.challenge C) rest) draw =
-      (fun x => ⟨x, sampler plainSig (rest ⟨⟩)
-        (fun c => draw ⟨.inr ⟨⟨⟩, c.val⟩, c.property⟩)⟩) <$> draw ⟨.inl ⟨⟩, rfl⟩ := by
-  change Choice.map .counterpart .receiver _ <$> (_ <$> _) = _
-  erw [Functor.map_map]
-  rfl
-
 variable {κ κ' : Type u} {spec : OracleSpec.{u, u} κ} {spec' : OracleSpec.{u, u} κ'}
   {n : Type u → Type u} [Monad n] [LawfulMonad n]
 
@@ -132,23 +94,6 @@ theorem simulateQ_step {X : Type u} {A B : X → Type u} {R : Type u}
       step role order (simulateQ F p) (simulateQ F c)
         (fun x a b => simulateQ F (k x a b)) := by
   cases role <;> cases order <;> simp only [step, Schedule.seq, simulateQ_bind]
-
-/-- Simulating a simulated prover composes the two handlers. -/
-theorem Prover.simulate_simulate {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
-    (F : QueryImpl spec' n) (G : QueryImpl spec (OracleComp spec')) :
-    (s : FreeM P PUnit.{u + 1}) → {Out : PathAlong l s → Type u} →
-    (p : Prover l spec s Out) →
-    Prover.simulate F (Prover.simulate G p) = Prover.simulate (fun q => simulateQ F (G q)) p
-  | .pure _, _, p => by
-    rw [Prover.simulate_done, Prover.simulate_done, Prover.simulate_done]
-    exact QueryImpl.simulateQ_simulateQ_eq_of_apply (fun _ => rfl) p
-  | .liftBind a rest, _, p => by
-    rw [Prover.simulate_node, Prover.simulate_node, Prover.simulate_node, simulateQ_map,
-      Functor.map_map, QueryImpl.simulateQ_simulateQ_eq_of_apply (fun _ => rfl) p]
-    refine congrArg (· <$> _) (funext fun v => ?_)
-    refine (congrFun (Choice.map_comp _ _ _ _) v).trans ?_
-    exact congrArg (fun f => Choice.map .focal (owner l a) f v)
-      (funext fun x => funext fun r => Prover.simulate_simulate F G _ r)
 
 /-- Simulating a run against a public-coin sampler, under either schedule, simulates every
     prover slot and every draw for any ownership lens. -/
@@ -164,7 +109,9 @@ theorem simulateQ_runWith_sampler {P : PFunctor.{uA, u}}
     erw [runWith_done, runWith_done]
     cases order <;> simp only [Schedule.seq, simulateQ_bind, simulateQ_pure] <;> rfl
   | .liftBind a rest, _, p, draw => by
-    rw [runWith_liftBind, runWith_liftBind, Prover.simulate_node, sampler_node, sampler_node]
+    rw [TwoParty.Lens.runWith_node, TwoParty.Lens.runWith_node]
+    simp only [interaction]
+    rw [Prover.simulate_node, sampler_node, sampler_node]
     rw [simulateQ_step, simulateQ_map, simulateQ_samplerSlot, step_map_right, step_map]
     apply congrArg₂ (fun c k => step (owner l a) order (simulateQ F p) c k)
     · rfl

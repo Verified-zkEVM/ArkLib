@@ -21,7 +21,7 @@ may depend on ambient queries.
 
 @[expose] public section
 
-universe u uA v uι uS uI uJ uK uV uX uY dX dY wI wJ wK
+universe u uA v w uι uS uI uJ uK uV uX uY dX dY wI wJ wK
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
@@ -180,7 +180,8 @@ def suffixDraw {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
       (fun c => draw ⟨.inr ⟨b, c.val⟩, c.property⟩) p c
 
 section draws
-variable {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u}) {m m' : Type u → Type u}
+variable {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
+  {m : Type u → Type v} {m' : Type u → Type w}
 
 /-- Restricting draws to the prefix commutes with transforming every draw. -/
 theorem prefixDraw_comp (f : ∀ {α : Type u}, m α → m' α) :

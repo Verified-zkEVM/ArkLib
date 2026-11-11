@@ -7,6 +7,7 @@ module
 
 public import ArkLib.Interaction.Core.Protocol
 public import VCVio.OracleComp.SimSemantics.Append
+public import VCVio.OracleComp.SimSemantics.QueryImpl.Compose
 
 /-!
 # Provers and passive verifiers
@@ -20,7 +21,7 @@ verifier with an honest prover.
 
 @[expose] public section
 
-universe u uA uι uS uW
+universe u v uA uι uS uW
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp
@@ -60,9 +61,28 @@ theorem Prover.simulate_node {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePol
       Choice.map .focal (owner l a) (fun _ next => Prover.simulate impl next) <$>
         simulateQ impl p := rfl
 
+/-- Simulating a simulated prover composes the two handlers. -/
+theorem Prover.simulate_simulate {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
+    {κ κ' : Type u} {spec : OracleSpec.{u, u} κ} {spec' : OracleSpec.{u, u} κ'}
+    {n : Type u → Type u} [Monad n] [LawfulMonad n]
+    (F : QueryImpl spec' n) (G : QueryImpl spec (OracleComp spec')) :
+    (s : FreeM P PUnit.{u + 1}) → {Out : PathAlong l s → Type u} →
+    (p : Prover l spec s Out) →
+    Prover.simulate F (Prover.simulate G p) = Prover.simulate (fun q => simulateQ F (G q)) p
+  | .pure _, _, p => by
+    rw [Prover.simulate_done, Prover.simulate_done, Prover.simulate_done]
+    exact QueryImpl.simulateQ_simulateQ_eq_of_apply (fun _ => rfl) p
+  | .liftBind a rest, _, p => by
+    rw [Prover.simulate_node, Prover.simulate_node, Prover.simulate_node, simulateQ_map,
+      Functor.map_map, QueryImpl.simulateQ_simulateQ_eq_of_apply (fun _ => rfl) p]
+    refine congrArg (· <$> _) (funext fun v => ?_)
+    refine (congrFun (Choice.map_comp _ _ _ _) v).trans ?_
+    exact congrArg (fun f => Choice.map .focal (owner l a) f v)
+      (funext fun x => funext fun r => Prover.simulate_simulate F G _ r)
+
 /-- Restrict a node-indexed draw family to a child subtree. -/
 def childDraw {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
-    {m : Type u → Type u} (a : P.A) (next : P.B a → FreeM P PUnit.{u + 1})
+    {m : Type u → Type v} (a : P.A) (next : P.B a → FreeM P PUnit.{u + 1})
     (draw : (c : ChallengeNode l (.liftBind a next)) →
       m (challengeSpec l (.liftBind a next) c)) (b : P.B a)
     (c : ChallengeNode l (next b)) : m (challengeSpec l (next b) c) :=
@@ -70,7 +90,7 @@ def childDraw {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
 
 /-- Draw the move at a receiver root. -/
 def rootDraw {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
-    {m : Type u → Type u} (a : P.A) (next : P.B a → FreeM P PUnit.{u + 1})
+    {m : Type u → Type v} (a : P.A) (next : P.B a → FreeM P PUnit.{u + 1})
     (draw : (c : ChallengeNode l (.liftBind a next)) →
       m (challengeSpec l (.liftBind a next) c)) (h : owner l a = .receiver) :
     m (Move l a) := draw ⟨.inl ⟨⟩, h⟩
@@ -119,7 +139,7 @@ def sampler {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
 
 /-- At a node, the sampler attaches each child sampler to its public-coin slot. -/
 theorem sampler_node {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
-    {m : Type u → Type u} [Monad m] [LawfulMonad m]
+    {m : Type u → Type u} [Monad m] [LawfulApplicative m]
     (a : P.A) (next : P.B a → FreeM P PUnit.{u + 1})
     (draw : (c : ChallengeNode l (.liftBind a next)) →
       m (challengeSpec l (.liftBind a next) c)) :
@@ -128,6 +148,29 @@ theorem sampler_node {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
         sampler l (next (l.toFunB a x)) (childDraw l a next draw (l.toFunB a x))) <$>
           samplerSlot (owner l a) (rootDraw l a next draw) (fun _ => PUnit.unit) := by
   simp only [sampler, PureEnd.toStrategy, PureEnd.mapOutput, samplerEnd, samplerSlot_map]
+  rfl
+
+/-- At a message node, the sampler draws nothing and continues on the sent message. -/
+theorem sampler_message {M : Type u → Type u} [Monad M] [LawfulApplicative M] (X : Type u)
+    (rest : X → Protocol.{u})
+    (draw : (c : ChallengeNode plainSig (.liftBind (PlainPos.message X) rest)) →
+      M (challengeSpec plainSig (.liftBind (PlainPos.message X) rest) c)) :
+    sampler plainSig (.liftBind (PlainPos.message X) rest) draw =
+      pure (fun x => sampler plainSig (rest x) (fun c => draw ⟨.inr ⟨x, c.val⟩, c.property⟩)) := by
+  change Choice.map .counterpart .sender _ <$> pure _ = _
+  erw [LawfulApplicative.map_pure]
+  rfl
+
+/-- At a challenge node, the sampler draws the challenge and continues on it. -/
+theorem sampler_challenge {M : Type u → Type u} [Monad M] [LawfulFunctor M] (C : Type u)
+    (rest : PUnit → Protocol.{u})
+    (draw : (c : ChallengeNode plainSig (.liftBind (PlainPos.challenge C) rest)) →
+      M (challengeSpec plainSig (.liftBind (PlainPos.challenge C) rest) c)) :
+    sampler plainSig (.liftBind (PlainPos.challenge C) rest) draw =
+      (fun x => ⟨x, sampler plainSig (rest ⟨⟩)
+        (fun c => draw ⟨.inr ⟨⟨⟩, c.val⟩, c.property⟩)⟩) <$> draw ⟨.inl ⟨⟩, rfl⟩ := by
+  change Choice.map .counterpart .receiver _ <$> (_ <$> _) = _
+  erw [Functor.map_map]
   rfl
 
 /-- The sampler as a PolyFun public-coin counterpart, exposing each draw beside its continuation.
