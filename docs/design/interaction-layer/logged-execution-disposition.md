@@ -12,10 +12,10 @@ The two approved premises are:
 
 Each row has one of four statuses. An **equivalent** row preserves the stated mathematical
 observation. A **premise-required** row states exactly which assertion P1 or P2 retires. A
-**child-owned** row is fully expressible with the current interfaces and is ported in the
-oracle-access tests ([access]), not here. An **unresolved** row needs a parent interface that
-does not exist yet, and names it. Retiring an API name alone does not retire its mathematical
-assertions.
+**retired** row names a removed mechanism. An **unresolved** row names a missing parent interface.
+The oracle-access tests ([access]) own the access and cost fixtures cited below; this branch
+provides their prefix-resource and phase interfaces. Retiring an API name alone does not retire
+its mathematical assertions.
 
 The files inventoried here are the eight frozen files cited by this branch's acceptance clients.
 `ExecutionExample.lean` and `CoreRunExample.lean` supply fixtures to those files; their other
@@ -72,27 +72,27 @@ does not assert preservation of the former reception phase boundary.
 
 ## PhasedRun.lean
 
-The base's [erasure] theorem describes a log of the prover interaction and a log of the final
-decision. It does not return a list of per-slot phase artifacts. [phases] tests every available
-log, the completed prefix's public message/challenge/payload, private output, verdict and digit
-state together. It keeps duplicate setup requests. It is additional passive coverage, not a
-claim that the old phase list is returned by this API.
+[slots] produces the actual slots and their accumulated full prefixes, including challenges
+and oracle payloads. The owner comes from the executed participant slot, and the final verifier
+decision is a distinct terminal phase. [tracePhases] checks the passive phase groups and runtime
+state; the original aggregate-log [phases] check remains. Explicit setup can be retained as its
+own slot by `runWithSetupTrace`; setup fused into a prover's first slot stays in that slot.
 
 | Source assertion | Status | Exact target or remaining obligation |
 | --- | --- | --- |
-| L84, produced phase owners cannot be replaced | unresolved | Missing Core artifact with intrinsic per-slot owner and prefix fields; the base runner has two query logs but no `phases` field. [phases] does not fill that gap. |
+| L84, produced phase owners cannot be replaced | equivalent | [slots] derives each phase owner from its slot constructor; no replacement role decoration is an argument. [tracePhases] checks the produced owners. |
 | L91, verifier effects 2 and 3 before challenge, effect 6 on receive | premise-required | P1 retires these non-passive verifier actions at those boundaries. It consequently retires the exact eight-region list and state `2102345678`. |
 | L91, setup/prover/decision effects and private output | equivalent | [phases] retains `[9, 9, 1, 4, 5]` and `[2, 3, 6, 7]`, payload 17, private output 23 and verdict 31. The passive order is witnessed by state `2102563478`. |
-| L91, remaining per-boundary prefix/owner information | unresolved | Missing Core phase artifact that associates each actual slot with its accumulated full prefix. [phases] only checks the two produced log regions and completed prefix. |
+| L91, remaining per-boundary prefix/owner information | equivalent | [tracePhases] and [actualPrefixes] observe the actual message, challenge and payload prefixes and each slot's owner and queries. Explicit setup remains a separate slot through `runWithSetupTrace`. |
 | L114, setup query 9 has multiplicity two | equivalent | [phases] asserts the complete prover log, including both 9s. |
 | L121, final prefix has payload 17 | equivalent | [phases] reads 17 from the actual completed transcript. |
 | L178, input 7, accepted export 18, sent log and world order | equivalent | [closing] and [faults] retain all these observations together with arbitrary private output. |
 | L178, setup/send/reception/terminal phase groups | premise-required | P1 retires the separate effectful verifier reception group `[1]`; it now executes in the final decision with `[2]`. |
-| L178, phase artifact for the remaining allowed groups | unresolved | Missing the same produced-prefix phase interface; [terminalAPI] returns terminal query logs, not a per-slot artifact. |
+| L178, phase artifact for the remaining allowed groups | equivalent | [trace] retains explicit setup, prover slots and the terminal decision, with full-log and ordinary erasure. P1's retired reception action is identified separately above. |
 | L194, explicit rejection | equivalent | [faults], third conjunct. |
 | L198, explicit fault 17 | equivalent | [faults], first conjunct; rejection is a different constructor. |
-| L201, phased closing audit | unresolved | No phase-artifact closing correspondence exists in Core. [audit] checks the available log erasure laws, not that missing correspondence. |
-| L202, phased terminal closing audit | unresolved | Same missing phase-artifact terminal correspondence; [terminalAPI] supplies only the terminal failure/log interpreter. |
+| L201, phased closing audit | equivalent | `runWithTrace_erase` and `runWithTrace_logView` in [trace] retain the ordinary observation, including its closed optional verdict and output resources. |
+| L202, phased terminal closing audit | equivalent | [trace] preserves the same closed optional verdict under log projection; [optionalClosing] preserves the optional verdict through the labelled terminal presentation. |
 
 ## SourceRoutingExample.lean
 
@@ -114,42 +114,45 @@ The frozen filename is `NativeRuntime.lean`; this heading describes its mathemat
 | --- | --- | --- |
 | L79, setup/prefix/suffix share one counter and dependent private output | equivalent | [countSetup] retains both actual answers, the private output in `Fin (first + 1)`, raw decision requests, final state and world trace. |
 | L106, direct runtime without setup | equivalent | [countDirect] retains the two actual sends and final count 2. |
-| L125, direct phased adapter agrees with logged runtime | unresolved | Missing Core per-slot phase artifact and its runtime/log correspondence. [runtimeErasure] is not a replacement for this equality. |
+| L125, direct phased adapter agrees with logged runtime | equivalent | `simulateQ_runWithTrace_logView` in [trace] preserves the existing logged execution under every lawful interpreter, including the persistent stateful runtime. [tracePhases] checks the same runtime state. |
 | L228, expanded export keeps raw input and both sent answers | equivalent | [append] retains private memory, claim 10, the raw input/prefix/suffix requests, state 3 and the ordered world answers. |
 | L263, one export request expands to two raw requests | equivalent | [raw] uses the same logging-after-substitution law and retains both answers. |
-| L276, expanded phased/logged runtime correspondence | unresolved | Same missing phase-artifact correspondence; [append] is logged execution only. |
+| L276, expanded phased/logged runtime correspondence | equivalent | [trace] commutes with full-log erasure after routing, and its interpreter law preserves the persistent runtime observation. Existing [append] and [raw] tests retain expanded source queries. |
 | L285, direct logged erasure audit | equivalent | [erasure] and [audit]. |
 | L286, runtime erasure audit | equivalent | [runtimeErasure] and [audit]. |
 | L287, logging-after-substitution audit | equivalent | [raw] and [audit] use `OracleComp.withQueryLog_simulateQ`. |
-| L288, phased/logged observation audit | unresolved | Missing the phase-artifact log-view law. |
+| L288, phased/logged observation audit | equivalent | `runWithTrace_logView`, `runWithTrace_erase` and `simulateQ_runWithTrace_logView` in [trace]. |
 
 ## QueryBounds.lean
 
-Canonical prefix certificates identify available queries and their inclusion across accumulated
-contexts. The [payload] law supplies same-run routing evidence. Canonical query names and
-join-prefix availability certificates require the open Core interfaces listed below. Typed
-access, exact double-read fixtures and cost certificates are ported in the oracle-access tests.
+[prefixResources] identifies the available payloads at a full prefix, includes their resources
+in longer prefixes, and preserves canonical names and typed query routing. Its
+`pathResourcesInclusion_data` law connects the canonical family to the same transcript's
+`pathResources`. `OracleVerifier.prefixRoute_payload` connects the append route, whose outputs
+use `splitOutputs`, to that prefix's inputs and payloads. [joinName], [joinAvailable] and
+[terminalAvailable] exercise the canonical names on actual produced phases. Typed access and cost
+certificates remain in the oracle-access tests.
 
 | Source assertion | Status | Exact target or remaining obligation |
 | --- | --- | --- |
-| `route_cost`, L96 | child-owned | The exact double-read export/cost fixture and bound are ported in the oracle-access tests ([access]). |
-| `program_cost`, L117 | child-owned | The authored double-read suffix and its cost bound are ported in the oracle-access tests ([access]). |
-| L130, routed weighted cost at most 5 | child-owned | The exact routed cost-five bound is ported in the oracle-access tests ([access]). |
-| `routed_available`, L149 | unresolved | Missing Core canonical accumulated-prefix query names, availability and inclusion. The typed routing part is ported in the oracle-access tests. |
-| L165, actual raw log old/old/fresh and claim 4 | child-owned | The exact composed logged execution, including the old/old/fresh log, closure and private output, is ported in the oracle-access tests ([access]). |
-| `future_rejected`, L184, typed future-slot exclusion | child-owned | Typed exclusion for every prefix program, without a budget restriction, is ported in the oracle-access tests ([access]). |
-| `future_rejected`, L184, canonical prefix-context certificate | unresolved | Missing Core canonical prefix query names and context-availability certificates. |
-| L209, old canonical name stable, old distinct from fresh | unresolved | Missing Core canonical query names and accumulated-context inclusion. Distinct typed old/fresh slots and repeated use of the old slot are ported in the oracle-access tests. |
-| L225, closed execution retains old/old/fresh and private output | child-owned | The exact composed logged execution, closure and private output are ported in the oracle-access tests ([access]). |
-| L251, actual join-phase prefix | unresolved | Missing produced per-slot phase prefixes. |
-| L252, actual terminal-phase prefix | unresolved | Missing produced per-slot phase prefixes. |
-| `joinPhase_mem`, L255 | unresolved | Missing actual phase membership interface. |
-| `terminalPhase_mem`, L257 | unresolved | Missing actual phase membership interface. |
-| L266, terminal prefix certifies availability and cost 5 | unresolved | Missing Core canonical phase-prefix availability certificates. The cost-five part is ported in the oracle-access tests. |
-| L277, old query name survives join-to-terminal inclusion | unresolved | Missing Core canonical names under phase-prefix inclusion. Typed routing is ported in the oracle-access tests. |
-| L286, no budget makes fresh slot available at actual join | unresolved | Missing Core availability certificates at produced phase prefixes. Typed exclusion without a budget restriction is ported in the oracle-access tests. |
-| L300, phased raw log is old/old/fresh | unresolved | Missing Core phased/logged correspondence. The exact raw log part is ported in the oracle-access tests. |
-| L320, routed cost cannot be bounded by 4 | child-owned | The inhabited cost-five witness excluding a bound of four is ported in the oracle-access tests ([access]). |
+| `route_cost`, L96 | equivalent | The exact double-read export/cost fixture and bound are ported in the oracle-access tests ([access]). |
+| `program_cost`, L117 | equivalent | The authored double-read suffix and its cost bound are ported in the oracle-access tests ([access]). |
+| L130, routed weighted cost at most 5 | equivalent | The exact routed cost-five bound is ported in the oracle-access tests ([access]). |
+| `routed_available`, L149 | equivalent | [prefixResources] provides canonical availability, `contextInclusion`, and `includeQuery_name`; the access tests supply the routed program certificate. |
+| L165, actual raw log old/old/fresh and claim 4 | equivalent | The exact composed logged execution, including the old/old/fresh log, closure and private output, is ported in the oracle-access tests ([access]). |
+| `future_rejected`, L184, typed future-slot exclusion | equivalent | Typed exclusion for every prefix program, without a budget restriction, is ported in the oracle-access tests ([access]). |
+| `future_rejected`, L184, canonical prefix-context certificate | equivalent | [prefixResources] defines availability using only already sent oracle occurrences. [joinAvailable] excludes the future slot at the actual join. |
+| L209, old canonical name stable, old distinct from fresh | equivalent | `includeQuery_name` in [prefixResources] preserves names and query arguments. [joinName] and [terminalAvailable] check stability and distinctness on produced phases. |
+| L225, closed execution retains old/old/fresh and private output | equivalent | The exact composed logged execution, closure and private output are ported in the oracle-access tests ([access]). |
+| L251, actual join-phase prefix | equivalent | [joinPrefix] reads the first suffix prover slot from the produced execution. P1 retires the former verifier decision at this seam, not the seam prefix. |
+| L252, actual terminal-phase prefix | equivalent | [terminalPrefix] reads the complete actual payload prefix from the produced terminal decision. |
+| `joinPhase_mem`, L255 | equivalent | [joinMember] proves membership of the selected actual join phase; `TracedRun.phase_mem` in [slots] is the general selection law. |
+| `terminalPhase_mem`, L257 | equivalent | [terminalMember] and `TracedRun.terminalPhase_mem` in [slots] prove membership in the produced execution. |
+| L266, terminal prefix certifies availability and cost 5 | equivalent | [terminalAvailable] certifies the actual terminal resources. [prefixResources] supplies inclusion and routing; the access tests retain the cost-five certificate. |
+| L277, old query name survives join-to-terminal inclusion | equivalent | [joinName] uses `includeIndex_name` for the actual produced prefixes. `joinToTerminal_name` and `contextInclusion_name` in [prefixResources] give the general laws. |
+| L286, no budget makes fresh slot available at actual join | equivalent | [joinAvailable] excludes the fresh occurrence independently of any cost budget; [terminalAvailable] identifies that occurrence at the terminal boundary. |
+| L300, phased raw log is old/old/fresh | equivalent | [phaseSource] retains the exact old/old/fresh log, private output 3 and verdict 4. [trace] proves full-log correspondence for every prover. |
+| L320, routed cost cannot be bounded by 4 | equivalent | The inhabited cost-five witness excluding a bound of four is ported in the oracle-access tests ([access]). |
 
 ## RuntimeQueryBounds.lean
 
@@ -160,24 +163,24 @@ forgetting answers or summing costs.
 
 | Source assertion | Status | Exact target or remaining obligation |
 | --- | --- | --- |
-| `exported_certificate`, L47 | unresolved | Missing Core canonical prefix availability. Export access and the cost-two certificate are ported in the oracle-access tests. |
-| `source_name`, L57 | unresolved | Missing Core canonical accumulated-prefix query names. The actual input index is ported in the oracle-access tests. |
-| `first_returns_exported`, L61 | child-owned | The exact decision and output-map/data equations are ported in the oracle-access tests ([access]). |
-| `suffixAction_eq`, L72 | child-owned | The exact suffix decision equation is ported in the oracle-access tests ([access]). |
-| `suffix_access`, L87 | unresolved | Missing Core canonical prefix availability. Typed source access is ported in the oracle-access tests. |
-| `suffix_budget`, L102 | child-owned | The suffix cost certificate is ported in the oracle-access tests ([access]). |
-| `routed_suffix_budget`, L124 | child-owned | The routed suffix cost certificate is ported in the oracle-access tests ([access]). |
-| `routed_suffix_access`, L145 | unresolved | Missing Core canonical prefix availability. Typed routed access is ported in the oracle-access tests. |
+| `exported_certificate`, L47 | equivalent | [prefixResources] supplies the canonical prefix family and its availability predicate. The access tests supply export access and cost two. |
+| `source_name`, L57 | equivalent | `queryName`, `includeQuery_name` and `familyInclusion_query` in [prefixResources] name and route the same available occurrence without changing the query argument. |
+| `first_returns_exported`, L61 | equivalent | The exact decision and output-map/data equations are ported in the oracle-access tests ([access]). |
+| `suffixAction_eq`, L72 | equivalent | The exact suffix decision equation is ported in the oracle-access tests ([access]). |
+| `suffix_access`, L87 | equivalent | [prefixResources] supplies canonical availability and prefix inclusion; the access tests supply typed suffix access. |
+| `suffix_budget`, L102 | equivalent | The suffix cost certificate is ported in the oracle-access tests ([access]). |
+| `routed_suffix_budget`, L124 | equivalent | The routed suffix cost certificate is ported in the oracle-access tests ([access]). |
+| `routed_suffix_access`, L145 | equivalent | [prefixResources] supplies canonical availability, typed query inclusion and its naming/routing law; the access tests supply typed routed access. |
 | `actual_history`, L167 | equivalent | [bitPlain] retains the two ambient requests and charge 4; its full trace additionally retains the challenge. |
 | `informed_actual_history`, L182 | premise-required | P1 retires the prefix verifier's dummy request before the prover's reveal at the seam. [bitInformed] checks reveal/dummy/reveal and charge 7 as additional passive coverage. |
-| `setup_budget`, L197 | child-owned | The imported setup cost theorem is ported in the oracle-access tests ([access]). |
-| `native_split_history`, L207, passive schedule | child-owned | The all-prover charged runtime/history observation of [appendLaw] is ported in the oracle-access tests ([access]). |
+| `setup_budget`, L197 | equivalent | The imported setup cost theorem is ported in the oracle-access tests ([access]). |
+| `native_split_history`, L207, passive schedule | equivalent | The all-prover charged runtime/history observation of [appendLaw] is ported in the oracle-access tests ([access]). |
 | `native_split_history`, L207, effectful prefix order | premise-required | P1 excludes the prefix verifier's dummy request before the prover's suffix interaction. |
 | `native_actual_history`, L227 | equivalent | [bitLog] retains the actual chronological ambient history, answers, final state and charge 4. |
 | `informed_native_history`, L235 | premise-required | Same retired dummy-before-reveal order under P1; [bitInformed] is additional coverage. |
-| `native_import_budget`, L244 | child-owned | Import-cost reflection is ported in the oracle-access tests ([access]). |
-| `fixed_native_resource_bounds`, L258 | unresolved | Missing Core canonical prefix availability. The integrated expressible access/cost/history/half-bound conjunction is ported in the oracle-access tests. |
-| `informed_cost_does_not_give_half`, L289 | child-owned | Charge seven and success one for the passive schedule are ported together in the oracle-access tests ([access]). |
+| `native_import_budget`, L244 | equivalent | Import-cost reflection is ported in the oracle-access tests ([access]). |
+| `fixed_native_resource_bounds`, L258 | equivalent | [prefixResources] supplies canonical prefix availability. The access tests retain the integrated access, cost, history and half-bound conjunction. |
+| `informed_cost_does_not_give_half`, L289 | equivalent | Charge seven and success one for the passive schedule are ported together in the oracle-access tests ([access]). |
 
 ## Erasure, closing and open interface obligations
 
@@ -192,17 +195,25 @@ Its input statement and output-query universes match the full-decision-log inter
 [optionalClosing] states the optional-closing correspondence for the output map and resources
 of any completed transcript, with independent input-index, input-query and output-query universes.
 
-Open interface obligations:
+The produced provenance obligations are equivalent under the passive schedule. R1 replaces the
+separate slot executor with writer-instrumented strategies executed by `TwoParty.Lens.run`.
+`OracleVerifier.executeWith` supplies the single interaction/decision sequence for ordinary,
+full-trace and ambient-trace execution; both aggregate log APIs project these traces. The
+general `SlotInstrumentation.run_natural` law, added next to its use because pinned PolyFun
+lacks it, and writer/monad laws give erasure. No provenance disposition changes status.
+[trace] supplies ordinary, full-log and ambient-log erasure, ordered per-slot concatenation and interpreter
+correspondence. [prefixResources] supplies canonical availability and inclusion. [movedQuery]
+checks the distinguishing case: identical transcripts, outputs and aggregate logs, with a query
+at different actual prefixes. These facts do not restore verifier queries at intermediate
+boundaries. P1 retires those actions and their original phase assignments, as the corresponding
+premise-required rows state.
 
-- A produced per-slot artifact with intrinsic owners, accumulated full prefixes and membership
-  is needed by PhasedRun L84, L91 and L178, and QueryBounds L251, L252, `joinPhase_mem` and
-  `terminalPhase_mem`.
-- Closing, terminal-closing and logged-runtime correspondences for that phase artifact are
-  needed by PhasedRun L201/L202, the persistent-runtime file L125/L276/L288, and QueryBounds L300.
-- Canonical accumulated-prefix query names, context availability and inclusion certificates
-  are needed by QueryBounds `routed_available`, the canonical-context part of `future_rejected`,
-  L209, L266, L277 and L286; and RuntimeQueryBounds `exported_certificate`, `source_name`,
-  `suffix_access`, `routed_suffix_access` and `fixed_native_resource_bounds`.
+The pre-existing large-query full-log restriction remains recorded in implementation note 18;
+`runWithAmbientTrace` retains provenance at independent input-query and oracle-node-query
+universes, with erasure to `runWithAmbientLog` and the ordinary run.
+`runWithTrace_ambientView` equates its produced slots with the full trace at small universes.
+[largeTrace] executes an actual `Nat` oracle node with queries in `Type 1`, reads its sent
+payload in the decision, and checks the produced terminal prefix.
 
 Ports owned by the oracle-access tests:
 
@@ -220,25 +231,25 @@ Ports owned by the oracle-access tests:
   and charge-seven/success-one assertion cover the corresponding parts of
   `fixed_native_resource_bounds` and `informed_cost_does_not_give_half`.
 
-[faults]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L218
-[closing]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L231
-[full]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L557
-[phases]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L510
-[source]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L367
+[faults]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L221
+[closing]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L234
+[full]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L560
+[phases]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L513
+[source]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L370
 [accepted]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L155
-[rejected]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L160
-[runtime]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L248
-[countSetup]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L398
-[countDirect]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L401
-[append]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L672
-[repeat]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L681
-[raw]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L713
-[bitLog]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L727
-[bitPlain]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L760
-[bitInformed]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L737
-[bitSplit]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L755
-[audit]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L825
-[erasure]: ../../../ArkLib/Interaction/Core/Security/Knowledge.lean#L388
+[rejected]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L163
+[runtime]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L251
+[countSetup]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L401
+[countDirect]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L404
+[append]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L675
+[repeat]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L684
+[raw]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L716
+[bitLog]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L730
+[bitPlain]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L763
+[bitInformed]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L740
+[bitSplit]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L758
+[audit]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L828
+[erasure]: ../../../ArkLib/Interaction/Core/Security/Knowledge.lean#L402
 [runtimeErasure]: ../../../ArkLib/Interaction/Core/Oracle/LoggedExecution.lean#L49
 [terminalAPI]: ../../../ArkLib/Interaction/Core/Oracle/LoggedExecution.lean#L73
 [rawHidden]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L83
@@ -249,6 +260,24 @@ Ports owned by the oracle-access tests:
 [appendLaw]: ../../../ArkLib/Interaction/Core/Oracle/Routing.lean#L119
 [substitution]: ../../../ArkLib/Interaction/Core/Composition.lean#L335
 [sourceClosing]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L255
-[unitRuntime]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L288
+[unitRuntime]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L291
 [optionalClosing]: ../../../ArkLib/Interaction/Core/Oracle/LoggedExecution.lean#L93
 [access]: oracle-access-tests.md
+
+[trace]: ../../../ArkLib/Interaction/Core/Oracle/Provenance.lean
+[prefixResources]: ../../../ArkLib/Interaction/Core/Oracle/PrefixResources.lean
+[tracePhases]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L901
+[actualPrefixes]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L919
+[joinPrefix]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1043
+[terminalPrefix]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1047
+[joinMember]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1036
+[terminalMember]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1039
+[joinName]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1064
+[joinAvailable]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1069
+[terminalAvailable]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1080
+[phaseSource]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1090
+[movedQuery]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L989
+
+[slots]: ../../../ArkLib/Interaction/Core/Oracle/SlotTrace.lean
+
+[largeTrace]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1163
