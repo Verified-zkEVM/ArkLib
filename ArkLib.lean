@@ -1041,6 +1041,7 @@ public import ArkLib.ProofSystem.Stir.ProximityBound
 public import ArkLib.ProofSystem.Stir.ProximityGap
 public import ArkLib.ProofSystem.Stir.Quotienting
 public import ArkLib.ProofSystem.Sumcheck.Core.Completeness
+public import ArkLib.ProofSystem.Sumcheck.Core.Domain
 public import ArkLib.ProofSystem.Sumcheck.Core.Execution
 public import ArkLib.ProofSystem.Sumcheck.Core.Knowledge
 public import ArkLib.ProofSystem.Sumcheck.Core.LegacyCompleteness

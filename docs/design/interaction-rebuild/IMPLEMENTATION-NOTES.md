@@ -210,12 +210,22 @@ Sumcheck language for the actual core run, with error `deg / card R` per round. 
 `Fin d → R`, arbitrary lists, and repeated-point honest runs remain open. The Sumcheck disposition
 table records these soundness rows as partial.
 
-Generalizing the existing Spec relations to index sums also changes their definitional unfolding.
-The frozen proof `Sumcheck/Interaction/Legacy.lean`, theorem `legacy_input_iff`, unfolds
-`Spec.SingleRound.Simple.inputRelation` with `change` to a sum over `Finset.univ.map D`.
-For an injective map, the equality between these sums is propositional. The `change` tactic
-requires definitional equality. Completing this change requires a decision about adapting that proof or
-retaining an injective compatibility API alongside the generalized relations.
+`Core/Domain.lean` defines the remaining sum `roundSum` and honest projected polynomial for
+arbitrary maps `Fin d → R`. `sum_domain_embedding` and
+`projectedRoundPolynomial_embedding` prove agreement with the injective Spec representation.
+`sum_domain_list` identifies the indexed sum with the mapped list sum. The projection sum and
+successor-sum identities hold for every commutative semiring. The domain tests check that the
+constant polynomial one has indexed sum two over `[0, 0]`, and sum one after deduplication.
+The actual repeated-point honest run remains open.
+
+The current base lacks a public generic Core implication from oracle round-by-round soundness
+to run-level soundness, and the corresponding knowledge implication. The alternative legacy
+composition proof needs the generic fold-to-sequential verifier bridge
+`oracleVerifierProgram_lift`, which is private in `Sumcheck/Spec/General.lean`. Its public wrapper
+`oracleVerifier_verify_eq_seqCompose` fixes Spec's injective-domain round family. The arbitrary-domain
+round family needed by the Core verifier cannot instantiate that wrapper. Completing the run-level security
+proofs needs either the Core security implications or a public generic fold bridge in the base.
+These generic laws belong in their owning modules and cannot be reproduced locally in Sumcheck.
 
 `Interaction.Core.Prover.simulate_joinSlot` belongs beside `Prover.simulate` in
 `Interaction/Core/Reduction.lean`. It now covers every protocol tree, lens, dependent prover
