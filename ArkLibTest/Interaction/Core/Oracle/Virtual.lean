@@ -4,7 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Core.OracleVerifier
+import ArkLib.Interaction.Core.Oracle.ResourceOps
+import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
 
 /-!
 # Derived oracles as oracle maps
@@ -14,9 +15,35 @@ separate suffix oracle keeps both source routes and the suffix answer. Reindexin
 family does not identify independently supplied realizations.
 -/
 
-open Interaction.Core Interaction.Oracle OracleComp
+open Interaction.Core Interaction.Oracle OracleComp OracleSpec
 
 namespace Interaction.Core.VirtualTests
+
+section ToyProblem
+
+variable {ι F A : Type} [Fintype ι] [Field F] [AddCommGroup A] [Module F A]
+    [DecidableEq ι] [Fintype A] [DecidableEq A]
+
+/-- Reuse the toy protocol's simulation for every pure handler of its input specification. -/
+def toyMap (challenges : (ToyProblem.SimplifiedIOR.pSpec (F := F)).Challenges) :=
+  OracleMap.ofQuery
+    (Resources.ofSpec ([]ₒ + ([ToyProblem.Spec.OracleStatement ι A]ₒ +
+      [(ToyProblem.SimplifiedIOR.pSpec (F := F)).Message]ₒ)))
+    ([ToyProblem.SimplifiedIOR.OutputOracleStatement ι A]ₒ)
+    (ToyProblem.SimplifiedIOR.outputSimulation.simulateOutputQuery challenges)
+
+-- Virtual V1: arbitrary pure handlers remain arbitrary; no materialized input data is assumed.
+/-- The output behavior agrees with the original toy simulation on every query and handler. -/
+example (challenges : (ToyProblem.SimplifiedIOR.pSpec (F := F)).Challenges)
+    (impl : QueryImpl
+      ([]ₒ + ([ToyProblem.Spec.OracleStatement ι A]ₒ +
+        [(ToyProblem.SimplifiedIOR.pSpec (F := F)).Message]ₒ)) Id)
+    (q : [ToyProblem.SimplifiedIOR.OutputOracleStatement ι A]ₒ.Domain) :
+    (toyMap (ι := ι) (A := A) challenges).f impl q =
+      simulateQ impl (ToyProblem.SimplifiedIOR.outputSimulation.simulateOutputQuery challenges q) :=
+  rfl
+
+end ToyProblem
 
 /-- A scalar interface whose only query reveals its natural-number realization. -/
 @[instance_reducible] def scalarFamily : OracleFamily Unit (fun _ => Nat) :=

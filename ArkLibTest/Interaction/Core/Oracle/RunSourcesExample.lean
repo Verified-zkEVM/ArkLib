@@ -127,6 +127,26 @@ def combinedPath (branch : Bool) (hidden : Nat) : PathAlong oracleSig combined :
   PathAlong.append oracleSig firstTree secondTree (firstPath branch hidden)
     (secondPath branch hidden)
 
+-- RunSourcesExample RS4: tree conversion is absent; the dependent appended shape is explicit.
+/-- Appending preserves the one-send and two-send suffix shapes selected by the message. -/
+example : combined = .liftBind (.message Bool) (fun branch =>
+    .liftBind (.oracle (Nat × Nat) interface) (fun _ => match branch with
+      | true => .liftBind (.oracle (Nat × Nat) interface) (fun _ => .pure ⟨⟩)
+      | false => .liftBind (.message Unit) (fun _ =>
+          .liftBind (.oracle (Nat × Nat) interface) (fun _ =>
+            .liftBind (.oracle (Nat × Nat) interface) (fun _ => .pure ⟨⟩))))) := by
+  apply congrArg (FreeM.liftBind (P := OraclePoly) (OraclePos.message Bool))
+  funext branch
+  cases branch <;> rfl
+
+-- RunSourcesExample RS7: the concrete transcript split keeps every sent and hidden coordinate.
+/-- Splitting the appended transcript recovers both full component transcripts. -/
+example (branch : Bool) (hidden : Nat) :
+    PathAlong.split oracleSig firstTree secondTree (combinedPath branch hidden) =
+      ⟨firstPath branch hidden, secondPath branch hidden⟩ :=
+  PathAlong.split_append oracleSig firstTree secondTree (firstPath branch hidden)
+    (secondPath branch hidden)
+
 -- RunSourcesExample RS8, restated: splitting the projected appended path selects the same
 -- dependent suffix as projecting the two component runs; this is `project_split` with the
 -- concrete `PathAlong.split` of an appended run. Holds for every branch and hidden value.
@@ -232,5 +252,52 @@ example (branch : Bool) (hidden₁ hidden₂ : Nat) :
   cases branch <;> apply heq_of_eq <;> funext q
   · rcases q with ⟨_ | _ | _ | _ | i, _⟩ <;> rfl
   · rcases q with ⟨_ | _ | _ | i, _⟩ <;> rfl
+
+/-! ## Receiver-selected shapes in the general two-party signature
+
+The general signature permits a receiver move to select a suffix shape. Ownership comes from
+positions, without converting a separate role decoration. -/
+
+/-- A receiver bit followed by one sender pair. -/
+abbrev receiverPrefix : FreeM rolePoly.{0} PUnit.{1} :=
+  .liftBind (.receiver, Bool) fun _ =>
+    .liftBind (.sender, Nat × Nat) fun _ => .pure ⟨⟩
+
+/-- One sender pair, or a sender unit followed by two sender pairs. -/
+abbrev receiverSuffix : Path receiverPrefix → FreeM rolePoly.{0} PUnit.{1}
+  | ⟨true, _, _⟩ => .liftBind (.sender, Nat × Nat) fun _ => .pure ⟨⟩
+  | ⟨false, _, _⟩ => .liftBind (.sender, Unit) fun _ =>
+      .liftBind (.sender, Nat × Nat) fun _ =>
+        .liftBind (.sender, Nat × Nat) fun _ => .pure ⟨⟩
+
+/-- The protocol whose receiver bit selects the suffix shape. -/
+abbrev receiverCombined := receiverPrefix.append receiverSuffix
+
+-- RunSourcesExample RS5: the generic position append law preserves the owner at every node.
+/-- Appended ownership is the ownership of the corresponding prefix or suffix position. -/
+example (node : Node receiverCombined) :
+    owner (PFunctor.Lens.id rolePoly) (node.position receiverCombined) =
+      Sum.elim (fun n => owner (PFunctor.Lens.id rolePoly) (n.position receiverPrefix))
+        (fun x => owner (PFunctor.Lens.id rolePoly) (x.2.position (receiverSuffix x.1)))
+        (Node.appendEquiv receiverPrefix receiverSuffix node) := by
+  rw [Node.position_appendEquiv]
+  cases Node.appendEquiv receiverPrefix receiverSuffix node <;> rfl
+
+/-- The first sender node in either receiver-selected suffix. -/
+abbrev receiverSuffixRoot : (path : Path receiverPrefix) → Node (receiverSuffix path)
+  | ⟨true, _, _⟩ => .inl ⟨⟩
+  | ⟨false, _, _⟩ => .inl ⟨⟩
+
+-- RunSourcesExample RS6: the root is receiver-owned and each suffix root is sender-owned.
+/-- The appended root belongs to the receiver who chooses the bit. -/
+example : owner (PFunctor.Lens.id rolePoly)
+    (Node.position receiverCombined (.inl ⟨⟩)) = .receiver := rfl
+
+/-- Both suffix roots belong to the sender, for every prefix pair and receiver bit. -/
+example (branch : Bool) (message : Nat × Nat) :
+    owner (PFunctor.Lens.id rolePoly)
+      (Node.position receiverCombined (Node.appendJoin receiverPrefix receiverSuffix
+        (.inr ⟨⟨branch, message, ⟨⟩⟩, receiverSuffixRoot ⟨branch, message, ⟨⟩⟩⟩))) = .sender := by
+  cases branch <;> rfl
 
 end Interaction.Core.RunSourcesExampleTests

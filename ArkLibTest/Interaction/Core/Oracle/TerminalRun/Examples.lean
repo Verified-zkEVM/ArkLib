@@ -103,3 +103,9 @@ run_cmd do
       throwError "the second accepted run is wrong: {summary 13 19 hidden}"
 
 end Interaction.Core.TerminalRunTests
+
+-- TerminalRun TR7: output closure is part of the runner; its full implementation is checked.
+run_cmd do
+  for ax in ← Lean.collectAxioms ``Interaction.Core.OracleVerifier.run do
+    unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
+      throwError "unexpected axiom {ax} in the oracle runner"

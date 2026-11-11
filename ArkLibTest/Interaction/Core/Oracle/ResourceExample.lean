@@ -198,7 +198,7 @@ abbrev LowDegree := {p : Polynomial Nat // p.natDegree < 2}
   toOC.impl point := do return (← read).val.eval point
 
 /-- One polynomial oracle. -/
-@[instance_reducible] def polynomials : OracleFamily Unit (fun _ => LowDegree) :=
+def polynomials : OracleFamily Unit (fun _ => LowDegree) :=
   ⟨fun _ => evaluation⟩
 
 /-- The polynomial `X`, whose carrier certifies its degree bound. -/
@@ -225,6 +225,34 @@ example (x : ∀ i, polynomials.Realization i) (i : Unit) : (x i).val.natDegree 
   (x i).property
 
 example : linearRealization.val.natDegree < 2 := linearRealization.property
+
+-- ResourceExample R9: the alias reads the original three-valued carrier, including its bound.
+/-- Every aliased realization satisfies its carrier's bound. -/
+example (data : ∀ i, left.Realization i) : (aliases.f data true).val < 3 :=
+  (data PUnit.unit).isLt
+
+-- ResourceExample R10 and R11: the numerical false property remains expressible without symbols.
+/-- The zero realization does not satisfy a strict bound of zero. -/
+example : ¬ (0 : Carrier false).val < 0 := Nat.not_lt_zero _
+
+/-- No family of proofs can impose the impossible bound zero on every three-valued object. -/
+example (h : ∀ obj : Carrier false, obj.val < 0) : False := Nat.not_lt_zero _ (h 0)
+
+/-- The zero object in each of the two independently indexed carriers. -/
+def zeroRealization (index : Bool) : Carrier index :=
+  ⟨0, by cases index <;> decide⟩
+
+-- ResourceExample R12 and R13: equal answers do not identify the two family indices.
+/-- The two zero objects have equal query behavior. -/
+example : (fun query : Bool => model.behaviorOfRealizations zeroRealization ⟨false, query⟩) =
+    (fun query : Bool => model.behaviorOfRealizations zeroRealization ⟨true, query⟩) := rfl
+
+/-- The indices of the two equal-behavior objects are still distinct. -/
+example : (false : model.Index) ≠ true := by decide
+
+-- ResourceExample R24: the false degree property is a numerical fact about the same polynomial.
+/-- The polynomial cannot have natural degree strictly below zero. -/
+example : ¬ linearRealization.val.natDegree < 0 := Nat.not_lt_zero _
 
 section Universes
 

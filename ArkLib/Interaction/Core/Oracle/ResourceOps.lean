@@ -25,6 +25,22 @@ universe v u w v' u' w' v'' u'' w''
 
 namespace Interaction.Core
 
+/-- Realize a specification by any pure handler, without a representability requirement. -/
+def Resources.ofSpec {I : Type u} (spec : OracleSpec.{u, v} I) :
+    Resources.{v, u, max u v} where
+  Index := I
+  spec := spec
+  Data := QueryImpl spec Id
+  answer data := data
+
+/-- A query program defines output behavior by interpreting it in the supplied resources. -/
+def OracleMap.ofQuery (R : Resources.{v, u, w}) {J : Type u'}
+    (spec : OracleSpec.{u', v} J) (query : QueryImpl spec (OracleComp R.spec)) :
+    OracleMap R (Resources.ofSpec spec) where
+  f data q := simulateQ (R.answer data) (query q)
+  impl := query
+  law _ _ := rfl
+
 /-- Pair queries, answers and backing data, keeping both components' universes independent. -/
 def Resources.tensor (R : Resources.{v, u, w}) (S : Resources.{v', u', w'}) :
     Resources.{max v v', max u u', max w w'} where

@@ -189,7 +189,7 @@ example : simulateQ (both.behaviorOfRealizations (sumData (env true 2) answers))
     (tensor.impl ⟨⟨⟩, (true, false)⟩) = ((2 : Fin 3), (2 : Nat)) := rfl
 
 /-- A family of function oracles indexed by a bit. -/
-@[instance_reducible] def functions : OracleFamily Bool (fun _ => Bool → Nat) :=
+def functions : OracleFamily Bool (fun _ => Bool → Nat) :=
   ⟨fun _ => OracleInterface.instFunction⟩
 
 -- SourceExample S9, restated: `SourceCtx.sigma` becomes a `Bool`-indexed family of function

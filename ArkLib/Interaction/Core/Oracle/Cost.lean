@@ -20,6 +20,12 @@ resource query it implements. This is VCVio's `WorstCaseCostBound.simulateQ` for
 
 Query multiplicities of a recorded run are counted with VCVio's `QueryLog.countQ`, which adds
 over appended logs (`QueryLog.countQ_append`).
+
+The ambient index, resource-query indices, responses, results and cost carrier are restricted to
+`Type` by the pinned VCVio cost API. Only backing-data universes are independent here. Lifting
+this unresolved restriction requires generalizing VCVio's `CostModel`, `costDist`,
+`WorstCaseCostBound` and `WorstCaseCostBound.simulateQ`, with their cost-writer helpers. Query
+indices and the cost carrier are not restricted by the protocol semantics.
 -/
 
 @[expose] public section
