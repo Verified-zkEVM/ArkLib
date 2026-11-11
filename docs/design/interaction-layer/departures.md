@@ -26,6 +26,17 @@ These entries are in
 | 12 | Path-fiber splitting stays in ArkLib |
 | 13 | The oracle decision log is recorded in the core |
 
+## Interaction core: later entries
+
+These entries are also in
+[`interaction-rebuild/IMPLEMENTATION-NOTES.md`](../interaction-rebuild/IMPLEMENTATION-NOTES.md).
+The status is one of equivalent, premise-required or unresolved.
+
+| Entry | Departure | Status |
+| --- | --- | --- |
+| 18 | Run outputs and a prover's ambient index are tied to the monad universe `u`; every other component takes its own universe, including input and output oracle query types | premise-required: positions live one universe up and the runner is `m : Type u → Type u` |
+| 18 | Input oracle data stays in the response universe `Type u`; the full-log oracle runner `runWithLog` keeps the input index and query type in `Type`, while extraction runs on the general ambient-log runner | unresolved: `OracleInterface` ties data and responses through `ReaderM`, and the full log records input queries |
+
 ## Legacy embedding: entries 14–16
 
 These entries continue the numbering for the security transfers of the legacy embedding. They

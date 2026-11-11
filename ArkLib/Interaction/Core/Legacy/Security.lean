@@ -56,30 +56,37 @@ compare the legacy probability of an event with the interaction-layer measure of
 
 @[expose] public section
 
+universe uK
+
 namespace Interaction.Core.Legacy
 open PFunctor FreeM TwoParty.Lens OracleComp OracleSpec ProtocolSpec MeasureTheory
+open Interaction.Oracle (Problem ClaimFamily)
 open scoped ENNReal NNReal
 
 variable {ι : Type} {oSpec : OracleSpec ι} {n : ℕ} {pSpec : ProtocolSpec n}
 
 /-! ### Statement problems of legacy relations and languages -/
 
-/-- The statement problem of a legacy relation. Every statement is admissible. -/
-abbrev relProblem {S W : Type} (rel : Set (S × W)) : StatementProblem S where
+/-- The problem of a legacy relation, with the same statement type in every public context. Every
+statement is admissible. -/
+abbrev relProblem {Ctx S W : Type} (rel : Set (S × W)) :
+    Problem (⟨fun _ : Ctx => S⟩ : ClaimFamily Ctx) where
   Witness _ _ := W
   admissible _ _ := True
   rel _ s w := (s, w) ∈ rel
   rel_admissible _ _ _ _ := trivial
 
-/-- The statement problem of a legacy language, with trivial witnesses. -/
-abbrev langProblem {S : Type} (lang : Set S) : StatementProblem S where
+/-- The problem of a legacy language, with the same statement type in every public context and
+trivial witnesses. -/
+abbrev langProblem {Ctx S : Type} (lang : Set S) :
+    Problem (⟨fun _ : Ctx => S⟩ : ClaimFamily Ctx) where
   Witness _ _ := Unit
   admissible _ _ := True
   rel _ s _ := s ∈ lang
   rel_admissible _ _ _ _ := trivial
 
-@[simp] theorem langProblem_language {S : Type} (lang : Set S) (s : S) :
-    (langProblem lang).language () s ↔ s ∈ lang :=
+@[simp] theorem langProblem_language {Ctx S : Type} (lang : Set S) {ctx : Ctx} (s : S) :
+    (langProblem lang).language ctx s ↔ s ∈ lang :=
   ⟨fun ⟨_, h⟩ => h, fun h => ⟨⟨⟩, h⟩⟩
 
 /-! ### Events of the legacy result -/
@@ -91,14 +98,15 @@ variable {StmtOut WitOut σ : Type}
 /-- An event of the legacy result, read through `OptionT`, has the probability of the event
 "accepted, and the legacy event holds" on the finalized observation. -/
 theorem prEvent_mk_finalize
-    (x : ProbComp (Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) StmtOut))
+    (x : ProbComp
+      (Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) (fun _ => StmtOut)))
     (q : (FullTranscript pSpec × StmtOut × WitOut) × StmtOut → Prop) :
     Pr{let r ← OptionT.mk (finalize <$> x)}[q r] =
       letI : MeasurableSpace
-        (Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) StmtOut) := ⊤
+        (Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) (fun _ => StmtOut)) := ⊤
       𝒟[x] {obs | (finalize obs).elim False q} := by
   let : MeasurableSpace
-    (Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) StmtOut) := ⊤
+    (Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) (fun _ => StmtOut)) := ⊤
   rw [OptionT.prEvent_mk, prEvent_map]
   exact prEvent_eq_evalDist x _ measurable_from_top
 
@@ -110,7 +118,7 @@ theorem prEvent_legacy_run {StmtIn WitIn : Type} (init : ProbComp σ)
     (q : (FullTranscript pSpec × StmtOut × WitOut) × StmtOut → Prop) :
     Pr{let r ← OptionT.mk (experiment init impl chImpl (R.run stmt wit).run)}[q r] =
       letI : MeasurableSpace
-        (Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) StmtOut) := ⊤
+        (Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) (fun _ => StmtOut)) := ⊤
       𝒟[experiment init impl (plainChallengeImpl chImpl)
         ((embedReduction R).observe stmt wit)] {obs | (finalize obs).elim False q} := by
   rw [← prEvent_mk_finalize, ← experiment_map, OptionT.prEvent_mk, OptionT.prEvent_mk]
@@ -134,7 +142,8 @@ theorem completeness_iff (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ
         (relProblem relIn) (relProblem relOut) (fun _ o => o.1) (fun obs _ _ => obs.2.1.2)
         (fun _ w => w) ε ↔
       R.completeness init impl relIn relOut ε := by
-  have hset : {obs : Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) StmtOut |
+  have hset :
+      {obs : Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) (fun _ => StmtOut) |
       (OutputJudgement.ofObservation (relProblem relOut) (fun _ o => o.1)
         (fun obs _ _ => obs.2.1.2)).honest obs} =
       {obs | (finalize obs).elim False fun r => (r.2, r.1.2.2) ∈ relOut ∧ r.1.2.1 = r.2} := by
@@ -184,7 +193,7 @@ theorem simulate_mapOutput {P : PFunctor.{1, 0}} {l : PFunctor.Lens P rolePoly.{
 
 /-- The verifier's run of a strategy with mapped outputs maps the outputs of its observation. It
 is PolyFun's `runWith_mapOutput_mapOutput` with the identity map on the sampler. -/
-theorem verifier_run_mapOutput {S T : Type} {s : Protocol.{0}}
+theorem verifier_run_mapOutput {S : Type} {s : Protocol.{0}} {T : Path s → Type}
     (V : Core.Verifier oSpec s S T) (stmt : S) {Out Out' : PathAlong plainSig s → Type}
     (f : ∀ tr, Out tr → Out' tr) (p : Core.Prover plainSig oSpec s Out) :
     V.run stmt (Strategy.mapOutput f p) =
@@ -298,10 +307,11 @@ variable {StmtIn StmtOut σ : Type}
 /-- The accepted-in-language event is the legacy event on the finalized observation. -/
 theorem setOf_accept_eq {Out : PathAlong plainSig (protocol pSpec) → Type} {WitOut : Type}
     (langOut : Set StmtOut) (g : ∀ tr, Out tr → StmtOut × WitOut) :
-    {obs : Observation plainSig (protocol pSpec) Out StmtOut |
-        ∃ t, obs.2.2 = some t ∧ (langProblem langOut).language () t} =
+    {obs : Observation plainSig (protocol pSpec) Out (fun _ => StmtOut) |
+        ∃ t, obs.2.2 = some t ∧
+          (langProblem langOut).language (projectPathAlong plainSig _ obs.1) t} =
       (fun obs => (⟨obs.1, g obs.1 obs.2.1, obs.2.2⟩ :
-        Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) StmtOut)) ⁻¹'
+        Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) (fun _ => StmtOut))) ⁻¹'
         {obs | (finalize obs).elim False fun r => r.2 ∈ langOut} := by
   ext ⟨tr, out, v⟩
   cases v <;> simp [finalize]
@@ -341,8 +351,8 @@ theorem soundness_iff [∀ i, SampleableType (pSpec.Challenge i)] (init : ProbCo
       refine (prEvent_legacy_run init impl ProtocolSpec.challengeQueryImpl
         ⟨translate p', V⟩ stmt ⟨⟩ _).trans ?_
       let : MeasurableSpace
-        (Observation plainSig (protocol pSpec) (fun _ => StmtOut × PUnit) StmtOut) := ⊤
-      let : MeasurableSpace (Observation plainSig (protocol pSpec) Out StmtOut) := ⊤
+        (Observation plainSig (protocol pSpec) (fun _ => StmtOut × PUnit) (fun _ => StmtOut)) := ⊤
+      let : MeasurableSpace (Observation plainSig (protocol pSpec) Out (fun _ => StmtOut)) := ⊤
       change 𝒟[experiment init impl (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
         ((embedVerifier V).run stmt (embedProver (translate p') stmt ⟨⟩))] _ = _
       rw [embedProver_translate]
@@ -489,8 +499,9 @@ theorem runEq_knowledgeTail {σ κ₁ κ₂ : Type} {chal₁ : OracleSpec κ₁}
 /-- The output judgement of a legacy relation: the verifier's verdict with the prover's output
 witness. -/
 def knowledgeJudgement (relOut : Set (StmtOut × WitOut)) :
-    OutputJudgement (Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) StmtOut)
-      StmtOut (relProblem relOut) :=
+    OutputJudgement
+      (Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) (fun _ => StmtOut))
+      (relProblem relOut : PathProblem (protocol pSpec) (fun _ => StmtOut)) :=
   OutputJudgement.ofObservation (relProblem relOut) (fun _ o => o.1) (fun obs _ _ => obs.2.1.2)
 
 variable [∀ i, SampleableType (pSpec.Challenge i)]
@@ -507,14 +518,14 @@ theorem prEvent_legacy_knowledge [MeasurableSpace WitIn] (init : ProbComp σ)
         (ambientLogged (P.run stmt aux) >>= knowledgeTail [pSpec.Challenge]ₒ V E stmt))}[
         (∀ w ∈ r.2.1, (r.1, w) ∉ relIn) ∧ (r.2.2.1, r.2.2.2) ∈ relOut] =
       letI : MeasurableSpace
-        (Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) StmtOut) := ⊤
+        (Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) (fun _ => StmtOut)) := ⊤
       𝒟[experiment init impl (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
         (extractionGame (embedVerifier V) (fun _ o => o.2) (liftExtractor E) stmt
           (embedProver P stmt aux))]
         {z | (knowledgeJudgement relOut).valid z.1 ∧
           ∀ wit ∈ z.2, ¬ (relProblem relIn).rel () stmt wit} := by
   let : MeasurableSpace
-    (Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) StmtOut) := ⊤
+    (Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) (fun _ => StmtOut)) := ⊤
   have hrun : experiment init impl (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
       ((fun z => z.1.2.2.map fun t => (stmt, z.2, t, z.1.2.1.2)) <$>
         extractionGame (embedVerifier V) (fun _ o => o.2) (liftExtractor E) stmt
@@ -526,7 +537,7 @@ theorem prEvent_legacy_knowledge [MeasurableSpace WitIn] (init : ProbComp σ)
     exact RunEq.bind (runEq_ambientLogged_prover impl _ P stmt aux)
       (runEq_knowledgeTail impl _ _ V E stmt)
   have hmeas : MeasurableSet {z : Observation plainSig (protocol pSpec)
-      (fun _ => StmtOut × WitOut) StmtOut × Option WitIn |
+      (fun _ => StmtOut × WitOut) (fun _ => StmtOut) × Option WitIn |
       (knowledgeJudgement relOut).valid z.1 ∧
         ∀ wit ∈ z.2, ¬ (relProblem relIn).rel () stmt wit} :=
     show MeasurableSet (Prod.fst ⁻¹' {obs | (knowledgeJudgement relOut).valid obs} ∩
@@ -557,7 +568,7 @@ theorem knowledgeSoundnessWith_iff (init : ProbComp σ)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (E : _root_.Extractor.Straightline oSpec StmtIn WitIn WitOut pSpec) (ε : ℝ≥0) :
     letI : MeasurableSpace
-      (Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) StmtOut) := ⊤
+      (Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) (fun _ => StmtOut)) := ⊤
     letI : MeasurableSpace WitIn := ⊤
     knowledgeSoundnessWith
         ((embedVerifier V).classicalModel init impl
@@ -568,7 +579,7 @@ theorem knowledgeSoundnessWith_iff (init : ProbComp σ)
         (liftExtractor E) ε ↔
       V.knowledgeSoundnessWith init impl relIn relOut E ε := by
   let : MeasurableSpace
-    (Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) StmtOut) := ⊤
+    (Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) (fun _ => StmtOut)) := ⊤
   let : MeasurableSpace WitIn := ⊤
   have hW : ∀ s : Set WitIn, MeasurableSet s := fun _ => MeasurableSpace.measurableSet_top
   constructor
@@ -594,7 +605,7 @@ theorem knowledgeSoundness_iff (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp)) (V : _root_.Verifier oSpec StmtIn StmtOut pSpec)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut)) (ε : ℝ≥0) :
     letI : MeasurableSpace
-      (Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) StmtOut) := ⊤
+      (Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) (fun _ => StmtOut)) := ⊤
     letI : MeasurableSpace WitIn := ⊤
     knowledgeSoundness
         ((embedVerifier V).classicalModel init impl
@@ -792,7 +803,7 @@ the legacy verifier, run from that state on the decoded transcript. -/
 theorem validAcceptance_embed_iff (V : _root_.Verifier oSpec StmtIn StmtOut pSpec)
     (impl : QueryImpl oSpec (StateT σ ProbComp)) :
     (plainLayout pSpec).AcceptanceAgrees impl V
-      (fun p => (embedVerifier V).validAcceptance impl p) := by
+      (fun p stmt tr => (embedVerifier V).validAcceptance impl stmt tr p) := by
   intro p stmt tr
   let : MeasurableSpace (Option StmtOut) := ⊤
   refine exists_congr fun st => ?_
@@ -1223,17 +1234,20 @@ extractor and knowledge state function with an all-state terminal certificate, o
 whose acceptance agrees with the legacy verifier. The interaction-layer knowledge state function
 is `embedKnowledgeStateFunction`: the witness at a full prefix is the legacy intermediate witness
 at its legacy transcript prefix, and the extraction functions are the legacy extractor's,
-reindexed. -/
+reindexed. The conclusion holds for intermediate witnesses in every universe `uK`, by
+`rbrKnowledgeSoundness.lift`. -/
 theorem rbrKnowledgeSoundness_of_legacyWith (hacc : L.AcceptanceAgrees impl V acc)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (ε : pSpec.ChallengeIdx → ℝ≥0)
     {E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid}
     {K : V.KnowledgeStateFunction init impl relIn relOut E} (hK : KnowledgeTerminalCertificate K)
     (h : V.rbrKnowledgeSoundnessWith init impl relIn relOut WitMid E K ε) :
-    Core.rbrKnowledgeSoundness L.l L.protocol (fun _ => True) (fun stmt w => (stmt, w) ∈ relIn)
+    Core.rbrKnowledgeSoundness.{0, 0, uK} L.l L.protocol (fun _ => True)
+      (fun stmt w => (stmt, w) ∈ relIn)
       (fun stmt tr wit => acc (fun t => (t, wit) ∈ relOut) stmt tr)
       (L.challengeImpl ProtocolSpec.challengeQueryImpl)
       (fun c => ε (L.challengeRound 0 n (Nat.zero_add n) c)) := by
+  apply Core.rbrKnowledgeSoundness.lift.{0, 0, 0, uK}
   refine ⟨L.embedKnowledgeStateFunction hacc K hK, fun stmt _ a next sp hc hist => ?_⟩
   obtain ⟨j, rfl, tr, h1, h2, hch⟩ := L.prefixFrom_step 0 n _ default sp hist
   obtain ⟨hd, hcr, hmap⟩ := hch hc
@@ -1256,7 +1270,8 @@ theorem rbrKnowledgeSoundness_of_legacyWith (hacc : L.AcceptanceAgrees impl V ac
 
 /-- **Round-by-round knowledge soundness, legacy to interaction layer**, on any layout whose
 acceptance agrees with the legacy verifier, when every legacy knowledge state function has an
-all-state terminal certificate. The certificate hypothesis holds by
+all-state terminal certificate. The conclusion holds for intermediate witnesses in every universe
+`uK`. The certificate hypothesis holds by
 `KnowledgeTerminalCertificate.of_support_init`, `KnowledgeTerminalCertificate.of_stateIndependent`,
 or `KnowledgeTerminalCertificate.of_guarded`. -/
 theorem rbrKnowledgeSoundness_of_legacy (hacc : L.AcceptanceAgrees impl V acc)
@@ -1266,7 +1281,8 @@ theorem rbrKnowledgeSoundness_of_legacy (hacc : L.AcceptanceAgrees impl V acc)
       (E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec M)
       (K : V.KnowledgeStateFunction init impl relIn relOut E), KnowledgeTerminalCertificate K)
     (h : V.rbrKnowledgeSoundness init impl relIn relOut ε) :
-    Core.rbrKnowledgeSoundness L.l L.protocol (fun _ => True) (fun stmt w => (stmt, w) ∈ relIn)
+    Core.rbrKnowledgeSoundness.{0, 0, uK} L.l L.protocol (fun _ => True)
+      (fun stmt w => (stmt, w) ∈ relIn)
       (fun stmt tr wit => acc (fun t => (t, wit) ∈ relOut) stmt tr)
       (L.challengeImpl ProtocolSpec.challengeQueryImpl)
       (fun c => ε (L.challengeRound 0 n (Nat.zero_add n) c)) := by
@@ -1362,7 +1378,7 @@ knowledge sound verifier embeds as a round-by-round knowledge sound verifier und
 reindexed legacy challenge implementation, with the legacy error of each challenge node's round.
 The supplied extraction functions are kept, reindexed by legacy transcript prefixes. The
 hypothesis `hcert` plays the role it plays in `embedVerifier_rbrSoundness`, for knowledge state
-functions. -/
+functions. The conclusion holds for intermediate witnesses in every universe `uK`. -/
 theorem embedVerifier_rbrKnowledgeSoundness (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp)) (V : _root_.Verifier oSpec StmtIn StmtOut pSpec)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
@@ -1371,7 +1387,8 @@ theorem embedVerifier_rbrKnowledgeSoundness (init : ProbComp σ)
       (E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec M)
       (K : V.KnowledgeStateFunction init impl relIn relOut E), KnowledgeTerminalCertificate K)
     (h : V.rbrKnowledgeSoundness init impl relIn relOut ε) :
-    (embedVerifier V).rbrKnowledgeSoundness impl (fun _ => True) (fun stmt w => (stmt, w) ∈ relIn)
+    Core.Verifier.rbrKnowledgeSoundness.{0, 0, uK} (embedVerifier V) impl (fun _ => True)
+      (fun stmt w => (stmt, w) ∈ relIn)
       (fun _ _ t w => (t, w) ∈ relOut) (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
       (fun c => ε (challengeRound 0 n (Nat.zero_add n) c)) :=
   (plainLayout pSpec).rbrKnowledgeSoundness_of_legacy (validAcceptance_embed_iff V impl) relIn
@@ -1395,7 +1412,8 @@ theorem rbrKnowledgeSoundness_of_embedVerifier [Nonempty WitIn] (init : ProbComp
 /-- Round-by-round knowledge soundness of the embedded verifier, under the reindexed legacy
 challenge implementation and with the legacy error of each node's round, is legacy
 round-by-round knowledge soundness, when every legacy knowledge state function has an all-state
-terminal certificate and the input witness type is inhabited. -/
+terminal certificate and the input witness type is inhabited. The equivalence holds for
+intermediate witnesses in every universe `uK`. -/
 theorem rbrKnowledgeSoundness_iff [Nonempty WitIn] (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp)) (V : _root_.Verifier oSpec StmtIn StmtOut pSpec)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
@@ -1403,7 +1421,7 @@ theorem rbrKnowledgeSoundness_iff [Nonempty WitIn] (init : ProbComp σ)
     (hcert : ∀ (M : Fin (n + 1) → Type)
       (E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec M)
       (K : V.KnowledgeStateFunction init impl relIn relOut E), KnowledgeTerminalCertificate K) :
-    (embedVerifier V).rbrKnowledgeSoundness impl (fun _ => True)
+    Core.Verifier.rbrKnowledgeSoundness.{0, 0, uK} (embedVerifier V) impl (fun _ => True)
         (fun stmt w => (stmt, w) ∈ relIn) (fun _ _ t w => (t, w) ∈ relOut)
         (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
         (fun c => ε (challengeRound 0 n (Nat.zero_add n) c)) ↔

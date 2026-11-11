@@ -514,7 +514,7 @@ theorem advantage_le_moduleSIS (base : ZMod q)
   unfold advantage experiment ModuleSIS.advantage SIS.advantage SIS.experiment
     ModuleSIS.problem innerAdvToModuleSIS outerAdvToModuleSIS
   simp only [monad_norm]
-  rw [← evalDist_bind_bind_swap
+  rw [← OracleComp.evalDist_bind_bind_swap
     ($ᵗ (Simple.PublicParams 𝓜(q, α) innerRows (messageRows * messageDigits)))
     ($ᵗ (Simple.PublicParams 𝓜(q, α) outerRows (blocks * (innerRows * innerDigits)))) _]
   refine evalDist_bind_apply_le_add_of_support
