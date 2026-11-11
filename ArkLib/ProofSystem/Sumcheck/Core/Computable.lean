@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.ProofSystem.Sumcheck.Core.Completeness
+public import ArkLib.ProofSystem.Sumcheck.Core.DomainEquivalence
 public import ArkLib.ProofSystem.Sumcheck.Core.LegacySoundness
 public import ArkLib.ProofSystem.Sumcheck.Core.ComputableSoundness
 public import ArkLib.ProofSystem.Sumcheck.Impl.Projection
@@ -32,10 +33,11 @@ whose evaluation queries are answered by Horner evaluation, and at CompPoly mult
   `toMessage`; it is used only in proofs.
 * `Computable.interpretProver_honestProver` identifies the interpreted computable honest prover
   with `Sumcheck.Core.honestProver` on the interpreted input.
-* `Computable.support_completeness` transports the mathematical honest verdict on every
-  supported run; `Computable.perfectCompleteness` follows for every challenge implementation.
-  `Computable.soundness` transports `Sumcheck.Core.verifier_soundness`. Challenge implementations
-  move between carriers by `transportDraw`, which keeps uniform sampling.
+* `Computable.support_completeness` and `Computable.perfectCompleteness` specialize native
+  interval honesty at endpoints `0, n`, preserving the honest prover's output statement.
+  `Computable.soundness` specializes `interval_soundness` through `full_run_interval` and keeps
+  its original sum error. Challenge implementations move between carriers by `transportDraw`,
+  which keeps uniform sampling.
 -/
 
 @[expose] public section
@@ -944,7 +946,7 @@ theorem support_completeness (stmt : Spec.StatementRound R n 0)
       (mapObservation (toMessage R deg) n (fun _ => honestOutputMap)
         (interpretInput R deg n) obs) := by
     rw [← heq]
-    obtain ⟨hv, hout, hrel⟩ := Core.legacyVerdict_honestTranscript D ambient stmt
+    obtain ⟨hv, hout, hrel⟩ := Core.honest_full_interval D ambient stmt
       (interpretInput R deg n data) hx chals
     refine ⟨(Core.honestOutput D stmt (interpretInput R deg n data) chals).1, ?_, rfl, hrel⟩
     change Option.map _ (legacyVerdict R deg n D ambient stmt _) = _
@@ -987,71 +989,6 @@ theorem perfectCompleteness {σ : Type} (init : ProbComp σ)
     (support_simulateQ_run'_subset _ _ st hs)
 
 end Completeness
-
-/-! ## Soundness -/
-
-section Soundness
-
-variable (R : Type) [CommSemiring R] [DecidableEq R] (deg n : ℕ) {d : ℕ} (D : Fin d ↪ R)
-
-/-- The Sumcheck language at round `i` on computable inputs: the statements whose interpreted
-input lies in the legacy language. -/
-def language (i : Fin (n + 1)) : Set (Spec.StatementRound R n i × ∀ _ : Unit, Input R deg n) :=
-  {x | (x.1, interpretInput R deg n x.2) ∈ (Spec.relationRound R n deg D i).language}
-
-variable [SampleableType R] {ι : Type} (ambient : OracleSpec ι)
-  {σ : Type} (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
-
-/-- Soundness of the computable Sumcheck verifier: a statement outside the round-`0` language is
-accepted into the final language with probability at most `deg / |R|` per challenge, for every
-prover and every prover output type. Challenges are sampled uniformly. The proof transports
-`Sumcheck.Core.verifier_soundness` through `run_eq_interpret`; the transported prover outputs
-the computable transcript together with its output. -/
-theorem soundness [Fintype R] [IsDomain R] :
-    ∀ Out : PathAlong oracleSig (protocol R deg n) → Type,
-      letI : MeasurableSpace (Obs R deg n Out) := ⊤
-      Interaction.Core.soundness ((verifier R deg n D ambient).classicalModel (Out := Out) init
-          impl (challengeQueryImpl oracleSig (protocol R deg n)))
-        (Legacy.langProblem (language R deg n D 0))
-        (Legacy.langProblem (language R deg n D (Fin.last n)))
-        (fun obs => projectPathAlong oracleSig _ obs.1) (fun obs => obs.2.2)
-        ((∑ _ : (Spec.pSpec R deg n).ChallengeIdx, (deg : ℝ≥0) / Fintype.card R : ℝ≥0) :
-          ℝ≥0∞) := by
-  intro Out
-  let : MeasurableSpace (Obs R deg n Out) := ⊤
-  let Out' : PathAlong oracleSig (Core.protocol R deg n) → Type := fun _ => Σ tr, Out tr
-  let : MeasurableSpace (Observation oracleSig (Core.protocol R deg n) Out'
-    (fun _ => Spec.StatementRound R n (Fin.last n) × ∀ j, Spec.OracleStatement R n deg j)) := ⊤
-  let : MeasurableSpace (Observation oracleSig
-    (protocolOn R (R⦃≤ deg⦄[X]) (fun p x => p.val.eval x) n) Out'
-    (fun _ => Spec.StatementRound R n (Fin.last n) × ∀ j, Spec.OracleStatement R n deg j)) := ⊤
-  rintro ⟨stmt, data⟩ - hnot P
-  have hC := Core.legacyVerifier_soundness R deg n D ambient init impl Out'
-    (stmt, interpretInput R deg n data) trivial (by
-      simpa [Legacy.langProblem_language, language] using hnot)
-    (interpretFocal (toMessage R deg) n (Out' := Out') (fun tr o => ⟨tr, o⟩) P)
-  have hrun := run_eq_interpret D (ambient := ambient) (inputFamily R deg n)
-    (evaluate_eq R deg) (Spec.polynomialFamily R n deg) (interpretInput R deg n) stmt data
-    (Out' := Out') (fun tr o => ⟨tr, o⟩) P
-  change 𝒟[experiment init impl _ ((verifierOn R deg n D ambient _ _
-    (Spec.polynomialFamily R n deg)).run stmt (interpretInput R deg n data)
-      (interpretFocal (toMessage R deg) n _ P))] _ ≤ _ at hC
-  have hch : transportDraw (M' := R⦃≤ deg⦄[X]) (eval' := fun p x => p.val.eval x) n
-      (challengeQueryImpl oracleSig (Core.protocol R deg n)) =
-      challengeQueryImpl oracleSig (protocol R deg n) :=
-    funext (transportDraw_challengeQueryImpl R deg _ _ n)
-  rw [← hrun, experiment_renameQueries, hch, experiment_map, evalDist_map _ measurable_from_top,
-    Measure.map_apply measurable_from_top MeasurableSpace.measurableSet_top] at hC
-  refine le_trans (measure_mono fun obs hobs => ?_) hC
-  obtain ⟨t, ht, hlang⟩ := hobs
-  refine ⟨(t.1, interpretInput R deg n t.2), ?_, ?_⟩
-  · change Option.map _ obs.2.2 = _
-    change obs.2.2 = some t at ht
-    rw [ht]
-    rfl
-  · simpa [Legacy.langProblem_language, language] using hlang
-
-end Soundness
 
 /-! ## Indexed intervals on computational inputs -/
 
@@ -1293,6 +1230,111 @@ theorem interval_soundness_injective (embedding : Fin d ↪ R)
 
 end Intervals
 
+
+section FullRunBridge
+
+variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R]
+  {deg n d : ℕ} (D : Fin d ↪ R) {ι : Type} (ambient : OracleSpec ι)
+
+/-- The full CompPoly run is the native zero-start interval after converting its verdict.
+Every private output, prover effect and original computational input is retained. -/
+theorem full_run_interval (stmt : Spec.StatementRound R n 0)
+    (data : ∀ _ : Unit, Input R deg n)
+    {Out : PathAlong oracleSig (protocol R deg n) → Type}
+    (P : Prover oracleSig ambient (protocol R deg n) Out) :
+    nativeObservation <$> (verifier R deg n D ambient).run stmt data P =
+      (intervalVerifier (⇑D) ambient 0 n (by omega)).run (nativeStatement stmt) data P := by
+  have hc := run_verifierOn D (ambient := ambient) (inputFamily R deg n)
+    (evaluate_eq R deg) stmt data P
+  change (verifier R deg n D ambient).run stmt data P = _ at hc
+  rw [hc]
+  change _ = (Interpreted.verifier ambient (inputFamily R deg n) (intervalCheck (⇑D))
+    IntervalClaim.finish n).run (intervalInitial 0 n (by omega) (nativeStatement stmt)) data P
+  rw [run_interpreted, Functor.map_map]
+  refine congrArg (· <$> _) (funext fun x => ?_)
+  have he := legacyVerdict_native D ambient stmt (polyTranscript (toMessage R deg) n x.1)
+  have hi := intervalVerdict_eq_indexed (⇑D) n
+    (intervalInitial 0 n (by omega) (nativeStatement stmt))
+    (polyTranscript (toMessage R deg) n x.1)
+  have ht := Interpreted.verdict_transport
+    (evaluateN := fun (p : R⦃≤ deg⦄[X]) r => p.val.eval r)
+    (intervalCheck (⇑D)) IntervalClaim.finish
+    (toMessage R deg) (fun q r => (evaluate_eq R deg q r).symm) n
+    (intervalInitial 0 n (by omega) (nativeStatement stmt)) x.1
+  rw [Interpreted.verdict_polynomial] at ht
+  have hv := he.trans (hi.symm.trans ht)
+  simp only [nativeObservation, Option.map_map]
+  rw [← hv]
+  simp only [Option.map_map]
+  rfl
+
+end FullRunBridge
+
+/-! ## Soundness -/
+
+section Soundness
+
+variable (R : Type) [CommSemiring R] [DecidableEq R] (deg n : ℕ) {d : ℕ} (D : Fin d ↪ R)
+
+/-- The Sumcheck language at round `i` on computable inputs: the statements whose interpreted
+input lies in the legacy language. -/
+def language (i : Fin (n + 1)) : Set (Spec.StatementRound R n i × ∀ _ : Unit, Input R deg n) :=
+  {x | (x.1, interpretInput R deg n x.2) ∈ (Spec.relationRound R n deg D i).language}
+
+variable [SampleableType R] {ι : Type} (ambient : OracleSpec ι)
+  {σ : Type} (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
+
+/-- Soundness of the computable Sumcheck verifier: a statement outside the round-`0` language is
+accepted into the final language with probability at most `deg / |R|` per challenge, for every
+prover and every prover output type. Challenges are sampled uniformly. The proof specializes
+`interval_soundness` at endpoints `0, n` through `full_run_interval`, preserving the transcript,
+private output and original computational input. -/
+theorem soundness [Fintype R] [IsDomain R] :
+    ∀ Out : PathAlong oracleSig (protocol R deg n) → Type,
+      letI : MeasurableSpace (Obs R deg n Out) := ⊤
+      Interaction.Core.soundness ((verifier R deg n D ambient).classicalModel (Out := Out) init
+          impl (challengeQueryImpl oracleSig (protocol R deg n)))
+        (Legacy.langProblem (language R deg n D 0))
+        (Legacy.langProblem (language R deg n D (Fin.last n)))
+        (fun obs => projectPathAlong oracleSig _ obs.1) (fun obs => obs.2.2)
+        ((∑ _ : (Spec.pSpec R deg n).ChallengeIdx, (deg : ℝ≥0) / Fintype.card R : ℝ≥0) :
+          ℝ≥0∞) := by
+  intro Out
+  let : MeasurableSpace (Obs R deg n Out) := ⊤
+  rintro ⟨stmt, data⟩ - hnot P
+  have hfalse : ¬ indexedRelation (⇑D) 0 (nativeStatement stmt)
+      (toPolynomial (data ()).val (data ()).property) := by
+    intro h
+    apply hnot
+    apply (Legacy.langProblem_language (language R deg n D 0) (stmt, data)).mpr
+    change (stmt, interpretInput R deg n data) ∈ (Spec.relationRound R n deg D 0).language
+    apply (Set.mem_language_iff _ _).mpr
+    exact ⟨(), (indexedRelation_embedding D 0 stmt _).mp h⟩
+  have hC := interval_soundness (⇑D) ambient init impl 0 n (by omega)
+    (nativeStatement stmt) data P hfalse
+  rw [← full_run_interval D ambient stmt data P, experiment_map, prEvent_map] at hC
+  have herror : (n : ℝ≥0∞) * (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞) =
+      ((∑ _ : (Spec.pSpec R deg n).ChallengeIdx,
+        (deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞) := by
+    simp only [Finset.sum_const, Finset.card_univ, card_challengeIdx, nsmul_eq_mul,
+      ENNReal.coe_mul, ENNReal.coe_natCast]
+  rw [herror] at hC
+  rw [prEvent_eq_evalDist_of_discrete] at hC
+  refine le_trans (measure_mono fun obs hobs => ?_) hC
+  obtain ⟨t, ht, hlang⟩ := hobs
+  refine ⟨(nativeStatement t.1, t.2), ?_, ?_⟩
+  · change Option.map _ obs.2.2 = _
+    change obs.2.2 = some t at ht
+    rw [ht]
+    rfl
+  · have hl : (t.1, interpretInput R deg n t.2) ∈
+        (Spec.relationRound R n deg D (Fin.last n)).language :=
+      (Legacy.langProblem_language (language R deg n D (Fin.last n)) t).mp hlang
+    obtain ⟨w, hw⟩ := (Set.mem_language_iff _ _).mp hl
+    cases w
+    exact (indexedRelation_embedding D (Fin.last n) t.1 _).mpr hw
+
+end Soundness
 
 end Computable
 

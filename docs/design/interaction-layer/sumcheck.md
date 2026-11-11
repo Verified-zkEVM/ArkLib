@@ -37,7 +37,7 @@ reached statement. The list and injective forms specialize the same indexed-doma
 | `Domain` | Indexed remaining sums, honest projected polynomials, the successor identity and final evaluation relation. |
 | `Indexed` | The native indexed verifier, its actual-run equation, the state function and native local-to-global soundness proof. |
 | `Soundness` | Full-run, arbitrary-list and injective corollaries; actual-run committed and randomized bounds in probability and measure form. |
-| `DomainEquivalence` | Separate agreement checks with the injective legacy `Spec` representation. |
+| `DomainEquivalence` | Injective-domain relation and projection agreement, full-run verdict and oracle-program equations, and honest interval output correspondence. |
 | `Protocol`, `Fold` | Native prover folds and passive final checks, with actual-run and resource-interpretation equations. |
 | `Interval`, `IntervalExecution` | Arbitrary endpoints, public midpoint transport, and one-round and empty-run equations. |
 | `IntervalCompleteness`, `IntervalAdaptive` | Support, perfect and measure completeness for every bounded interval and adaptive statement-dependent challenges. |
@@ -696,17 +696,23 @@ specializations do not replace them.
 
 ### Full-run compatibility corollaries
 
-The original full-run compatibility statements remain available with their existing guarantees.
-They have not yet been rederived from the native interval at `start = 0`, `count = n`.
-The missing interface is a fieldwise statement conversion, a compatibility/native transcript
-verdict equation for every prover, and an honest-output bridge that retains the equality required
-by `judgement.honest`. `indexedRelation_embedding` supplies only the relation part of that bridge.
+The full-run theorem statements retain their original binders, verdict guarantees and error terms.
+`DomainEquivalence.legacyVerdict_native` proves equality on every completed transcript;
+`verifier_run_full_interval` lifts this to equality of actual oracle computations at endpoints
+`0, n`, retaining every dependent private output and original oracle data. `honestFold_native`,
+`finishState_native` and `honest_full_interval` identify the honest terminal state and preserve
+the equality with the prover output required by `judgement.honest`.
+
+The CompPoly bridge `Computable.full_run_interval` retains the computational input itself.
+Completeness uses native interval honesty through `honest_full_interval`; soundness applies
+`Computable.interval_soundness` at `0, n` and converts its product error to the unchanged sum.
+These proofs do not call the compatibility security theorems.
 
 | Exact source | Exact target | Status |
 |---|---|---|
-| `Sumcheck.Core.Computable.support_completeness`, C/Computable.lean, original full-run statement | C/Computable.lean: `interval_support_completeness D ambient 0 n`; existing full-run proof remains | unresolved (missing compatibility/native verdict and honest-output bridge) |
-| `Sumcheck.Core.Computable.perfectCompleteness`, C/Computable.lean, original full-run statement | C/Computable.lean: `interval_perfectCompleteness D ambient init 0 n`; existing full-run proof remains | unresolved (missing compatibility/native full-run and honest-output bridge) |
-| `Sumcheck.Core.Computable.soundness`, C/Computable.lean, original full-run statement and sum error | C/Computable.lean: `interval_soundness D ambient init impl 0 n`; existing compatibility-security proof remains | unresolved (missing compatibility/native full-run verdict bridge) |
+| `Sumcheck.Core.Computable.support_completeness`, C/Computable.lean, original full-run statement | C/DomainEquivalence.lean: `Sumcheck.Core.honest_full_interval`, `honestFold_native`, `finishState_native`; C/IntervalCompleteness.lean: `intervalVerdict_honest` at endpoints `0, n` | equivalent |
+| `Sumcheck.Core.Computable.perfectCompleteness`, C/Computable.lean, original full-run statement | C/Computable.lean: `Sumcheck.Core.Computable.support_completeness`, using `Sumcheck.Core.honest_full_interval` at endpoints `0, n` | equivalent |
+| `Sumcheck.Core.Computable.soundness`, C/Computable.lean, original full-run statement and sum error | C/Computable.lean: `Sumcheck.Core.Computable.full_run_interval`, `interval_soundness` at endpoints `0, n`; C/DomainEquivalence.lean: `Sumcheck.Core.legacyVerdict_native` | equivalent |
 
 ### Production: Computable
 
