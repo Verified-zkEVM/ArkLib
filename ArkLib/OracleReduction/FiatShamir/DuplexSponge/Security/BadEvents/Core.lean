@@ -29,7 +29,8 @@ The bad-event surface mirrors the paper definitions directly:
   5.4).
 
 Lemmas `lemma_5_12` / `lemma_5_14` / `lemma_5_16` are the paper-faithful "if `E(tr) = 0` then
-the BackTrack-family event vanishes" statements.
+the BackTrack-family event vanishes" statements. Their proofs use only `¬E_dup`
+(`not_E_dup_of_not_E`), so they also hold under the paper's weaker `¬E`.
 -/
 
 @[expose] public section
@@ -495,13 +496,21 @@ E_func(tr) := ∃ j > 0 :
       (tr̄_{j'} = (p, s_in', s_out) ∧ s_in' ≠ s_in)
 ```
 
-Note: `E_func(tr)` never holds for a true permutation `p` and its inverse `p⁻¹`, but may hold
-(with small probability) for the D2SQuery simulator.
+Note: `E_func(tr)` never holds for a true permutation `p` and its inverse `p⁻¹`. For the
+`D2SQuery` simulator it is unlikely only if `D2SQuery` records every answer it gives in `tr_∇.p`:
+a replayed query whose earlier answer is missing from `tr_∇.p` is answered afresh, and then
+`E_func` holds.
 
-**Strengthening:** bidirectional. Case 1 (`j`-th entry `p`-forward) is Eq. 27; Case 2 (`j`-th entry
-`p⁻¹`) has no paper counterpart but is *required* by `not_collisionFwdBwd_of_not_combined`
-(Lemma 5.10, Item 3). It symmetrically excludes a later forward query on the same input that
-disagrees with an earlier inverse query; the `≠`-output guards exclude redundant copies. -/
+**Strengthening:** bidirectional. Case 1 (`j`-th entry `p`-forward) is Eq. 27; Case 2 (`j`-th
+entry `p⁻¹`) has no paper counterpart. It has two sub-cases:
+- **Case 2b** (an earlier `(p, s_in', s_out)`, `s_in' ≠ s_in`) is *necessary*: CO25 Lemma 5.10
+  fails without it. The base trace `[(h, x, c), (p, s₀, s₁), (p, s₁, s₂), (p⁻¹, s₂, s₁')]` with
+  `s₁' ≠ s₁` and a fresh capacity for `s₁'` has `E = 0` under Eq. 27 alone, but
+  `E_{col,p,p⁻¹} = 1` (Def 5.9 Item 3). `not_collisionFwdBwd_of_not_combined` uses Case 2b.
+- **Case 2a** (an earlier `(p⁻¹, s_out, s_in')`) is used by no proof; it keeps the definition
+  symmetric.
+
+The `≠`-output guards exclude redundant copies. -/
 def E_func : Prop :=
   let baseTrace := getBaseTrace trace
   ∃ j : Fin baseTrace.length, ∃ stateIn stateOut : CanonicalSpongeState U,
@@ -528,7 +537,7 @@ def E : Prop :=
 end Def57_TraceOnlyBadEvents
 
 
-/-! ## Definition 5.9 — permutation collisions; paper `E_prp`; well-formed trace predicate -/
+/-! ## Definition 5.9 — permutation collisions; paper `E_prp` -/
 section Def5_9_CollisionsAndConsistency
 
 /-! Then we define other bad events that don't hold (`= 0`)
@@ -683,8 +692,8 @@ lemma not_collisionBwdFwd_of_not_combined (h : ¬ E trace) : ¬ collisionBwdFwd 
       Or.inr (Or.inr (Or.inr (Or.inl ⟨⟨j, hj⟩, h_lt.le, sI, sO', hgj, rfl⟩)))⟩
 
 /-- CO25 Lemma 5.10 — helper.
-For a well-formed `(h, p, p⁻¹)` trace, if `E(tr) = 0`, then the exact paper-form
-`E_prp(tr)` does not hold. -/
+For every `(h, p, p⁻¹)` trace, if `E(tr) = 0`, then the exact paper-form `E_prp(tr)` does not
+hold. Item 3 needs Case 2b of `E_func`. -/
 lemma not_collisionPerm_of_not_combined
     (h : ¬ E trace) : ¬ E_prp trace := by
   intro hprp
@@ -695,7 +704,8 @@ lemma not_collisionPerm_of_not_combined
   · exact not_collisionBwdFwd_of_not_combined (trace := trace) h hbf
 
 /-- CO25 Lemma 5.10.
-For a well-formed `(h, p, p⁻¹)` trace, if `E(tr) = 0` then `E_prp(tr) = 0`. -/
+For every `(h, p, p⁻¹)` trace, if `E(tr) = 0` then `E_prp(tr) = 0`. Here `E` includes Case 2b
+of `E_func`, without which the paper's statement fails (see `E_func`). -/
 theorem lemma_5_10 (h : ¬ E trace) : ¬ E_prp trace :=
   not_collisionPerm_of_not_combined (trace := trace) h
 
@@ -894,7 +904,8 @@ Patch §5.2: by **minimal inversion**.  Suppose some step's representative is a 
 minimal such step `ι*` (strong induction).  If `ι* = 0`, the hash anchor and the inverted step are
 two distinct base entries with equal answer capacity (`acap = s_{C,in,0}`), contradicting (B1).  If
 `ι* ≥ 1`, minimality makes step `ι*-1` forward, and the chain condition forces its answer capacity
-to equal the inverted step's — again two distinct base entries colliding, contradicting (B1). -/
+to equal the inverted step's — again two distinct base entries colliding, contradicting (B1).
+The proof uses only `¬E_dup`. -/
 lemma lemma_5_12 (h : ¬ E trace)
     (seq_BT : Backtrack.S_BT trace state) :
     ¬ E_inv trace state seq_BT := by
@@ -1219,7 +1230,8 @@ private lemma bt_seq_eq_of_le (h : ¬ E trace) (S_BT : Backtrack.S_BT trace stat
       exact (fwdEntry_inj he).2
   exact Backtrack.BacktrackSequence.ext hstmt hin hout
 
-/-- CO25 Lemma 5.14 — If `E(tr) = 0` then `E_fork(tr, s) = 0`. -/
+/-- CO25 Lemma 5.14 — If `E(tr) = 0` then `E_fork(tr, s) = 0`. The proof uses only `¬E_dup`.
+It holds for every family `S_BT`. -/
 lemma lemma_5_14 (h : ¬ E trace)
     (S_BT : Backtrack.S_BT trace state) :
     ¬ E_fork trace state S_BT := by
@@ -1266,7 +1278,7 @@ def E_time (S_BT : Backtrack.S_BT trace state) : Prop :=
 Patch §5.4: by Lemma 5.12 every step is forward (`p`), so each index points at a base `p` entry and
 the hash index at a base `h` entry, in trace order = base order.  An out-of-order pair would make a
 *later* base entry's answer capacity equal an *earlier* base entry's query capacity (via the chain
-condition / hash anchor), contradicting (B2). -/
+condition / hash anchor), contradicting (B2). The proof uses only `¬E_dup`. -/
 lemma lemma_5_16 (h : ¬ E trace)
     (S_BT : Backtrack.S_BT trace state) :
     ¬ E_time trace state S_BT := by
