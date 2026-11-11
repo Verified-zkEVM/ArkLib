@@ -673,10 +673,10 @@ Single interface used by:
   `D2SChallengePlusUnitOracle`.
 - §5.8 hybrid games (`hybridGame`): `m = OptionT (OracleComp _)`,
   `gImpl` varies per hybrid (`g`, `e`, `f`, …); `auxImpl` lifts to the same outer spec.
-- `lemma5_8SigmaTraceDist` (BadEvents): `m = OptionT ProbComp`, `auxImpl` resolves
-  `(Unit →ₒ U) + unifSpec` directly via `d2sUnitSampleImpl + QueryImpl.id' unifSpec`. The
-  `OptionT`-abort halts the §5.8 experiment (Item 4(b)); the partial trace at the moment
-  of abort is preserved by `BadEvents.lemma5_8ProjectedTraceDistAbortable`. -/
+- Lemma 5.8-style trace experiments (not in this development yet): `m = OptionT ProbComp`,
+  with `auxImpl` resolving `(Unit →ₒ U) + unifSpec` directly via
+  `d2sUnitSampleImpl + QueryImpl.id' unifSpec`. The `OptionT`-abort halts the experiment
+  (Item 4(b)). -/
 def d2sQueryImpl
     {m : Type → Type} [AlternativeMonad m]
     (gImpl :
@@ -879,8 +879,8 @@ Raw post-`simulateQ` shape of the paper Eq. 17 RHS prover loop, keeping the two 
 (`D2SQueryState`, inner `M`) so different call sites can project differently:
 - `D2FQueryProver` projects via `Prod.fst ∘ Prod.fst` — drops both states, used by Hyb_4.
 - `KeyLemma.hybridGame` keeps the triple — uses `D2SQueryState` for the verifier-half
-  independent run and threads `M` (paper Item 3 `tr_i`) from prover to verifier, matching
-  CO25 §5.4 D2SAlgo Item 3 ("`tr_i` is global to a single run").
+  run; the inner `M` (`tr_i`) is local to the prover run (CO25 §5.4 D2SAlgo Item 1), so the
+  verifier half starts it from `default`.
 
 Polymorphic over `M` (`PUnit` for Hyb_1 / Hyb_2's inline `g` / `e` realizations;
 `D2SAlgoMemo …` for Hyb_3 / Hyb_4's memoized `gᵢ` bridge) and `challengeSpec` (`gSpec` /
@@ -899,7 +899,8 @@ variable {T_H : Type} {T_P : Type}
 /-- CO25 §5.4 — Outer-spec `QueryImpl` for the paper Eq. 17 RHS simulator:
 `id_oSpec ⊕ D2SQuery^{gImpl}`. Reused by `d2fProverRaw` and by `KeyLemma.hybridGame`'s
 verifier-half (which re-runs the same `QueryImpl` against the honest verifier with the
-shared `M` state threaded in — paper §5.4 D2SAlgo Item 3, `tr_i` global to a single run). -/
+`D2SQueryState` resumed and the inner `M` state started from `default`; `tr_i` is local to the
+prover run, CO25 §5.4 D2SAlgo Item 1). -/
 noncomputable def d2fOuterImpl
     {κ : Type} {challengeSpec : OracleSpec κ}
     {M : Type}
@@ -920,7 +921,8 @@ noncomputable def d2fOuterImpl
           (Sum.inr aux)))
 
 /-- Run a simulated computation from explicit outer D2SQuery and inner oracle states.
-The verifier phase resumes both states returned by the prover. -/
+The verifier phase of `KeyLemma.hybridGame` resumes the D2SQuery state and starts the inner
+state from `default`. -/
 noncomputable def d2fRawFrom
     {α : Type}
     {κ : Type} {challengeSpec : OracleSpec κ}

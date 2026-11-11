@@ -673,7 +673,7 @@ def dsfsGame (V : Verifier oSpec StmtIn StmtOut pSpec)
         (StmtOut := StmtOut) (pSpec := pSpec) (U := U) (δ := δ)) := do
   let ⟨⟨stmtIn, proof⟩, proveQueryLog⟩ ← (simulateQ loggingOracle P).run
   -- Type-level CO25 Figure 4 line 3 (`𝒱^{h,p}`): the narrow forward-only verifier is built and
-  -- `liftComp`-ed to the wide spec via `runForwardVerifierWide`; the subsequent
+  -- lifted to the wide spec (`liftDuplexSpongeForward`) by `runForwardVerifierWide`; the subsequent
   -- `simulateQ loggingOracle` emits a wide-spec query log with no `p⁻¹` entries from `V`.
   let verifyCompWide := runForwardVerifierWide δ V stmtIn proof
   let ⟨stmtOut, verifyQueryLog⟩ ← liftM (simulateQ loggingOracle verifyCompWide).run

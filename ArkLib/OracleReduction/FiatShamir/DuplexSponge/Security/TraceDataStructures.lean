@@ -54,42 +54,6 @@ namespace DSTraceStorage
 abbrev DuplexSpongeTrace (StmtIn U : Type) [SpongeUnit U] [SpongeSize] :=
   QueryLog (duplexSpongeChallengeOracle StmtIn U)
 
-section TraceFilters
-
-variable {StmtIn U : Type} [SpongeUnit U] [SpongeSize]
-
-/-- `tr^{<j}`: The first `j-1` entries of the trace. -/
-def prefix_lt_j (tr : DuplexSpongeTrace StmtIn U) (j : ℕ) : DuplexSpongeTrace StmtIn U :=
-  tr.take (j - 1)
-
-/-- `tr_h`: Filter the trace for hash queries (`'h'`).
-`(tr.prefix_lt_j j).filterHash` is exactly `tr_h^{<j}` from CO25 Definition 5.2.
-This is the log of the oracle spec `(StartType →ₒ Vector U SpongeSize.C)`. -/
-def filterHash (tr : DuplexSpongeTrace StmtIn U) : List (StmtIn × Vector U SpongeSize.C) :=
-  tr.filterMap fun
-    | ⟨.inl stmt, capSeg⟩ => some (stmt, capSeg)
-    | _ => none
-
-/-- `tr_p`: Filter the trace for forward permutation queries (`'p'`).
-`(tr.prefix_lt_j j).filterFwdPerm` is exactly `tr_p^{<j}` from CO25 Definition 5.2.
-This is the log of the oracle spec `(forwardPermutationOracle (CanonicalSpongeState U))`. -/
-def filterFwdPerm (tr : DuplexSpongeTrace StmtIn U) :
-    List (CanonicalSpongeState U × CanonicalSpongeState U) :=
-  tr.filterMap fun
-    | ⟨.inr (.inl sIn), sOut⟩ => some (sIn, sOut)
-    | _ => none
-
-/-- `tr_{p⁻¹}`: Filter the trace for backward permutation queries (`'p⁻¹'`).
-`(tr.prefix_lt_j j).filterBwdPerm` is exactly `tr_{p⁻¹}^{<j}` from CO25 Definition 5.2.
-This is the log of the oracle spec `(backwardPermutationOracle (CanonicalSpongeState U))`. -/
-def filterBwdPerm (tr : DuplexSpongeTrace StmtIn U) :
-    List (CanonicalSpongeState U × CanonicalSpongeState U) :=
-  tr.filterMap fun
-    | ⟨.inr (.inr sOut), sIn⟩ => some (sOut, sIn)
-    | _ => none
-
-end TraceFilters
-
 section TraceDataStructures
 
 /-! ### Generic operations typeclass -/
@@ -617,8 +581,9 @@ variable {T : Type}
 what makes the wrapper a no-op on inverse-free traces (`buildForwardPermutationIndex_eq_self`).
 
 This is `BackTrack`'s Step 2(b) candidate source after FIX-BT: the bidirectional `tr_∇.p` also
-records the `(s_in, s_out)` pair created by an adversarially chosen `p⁻¹` query, and such a pair
-can never sit on a hash-anchored chain (CO25 Def. 5.3(b)), yet it does branch the executable
+records the `(s_in, s_out)` pair created by an adversarially chosen `p⁻¹` query. Such a pair may
+lie on an `S_BT` chain in general (Def. 5.3 allows `p⁻¹` links; that case is `E_inv`), but under
+`¬E` Lemma 5.12 excludes it from every chain, while it would still branch the executable
 single-chain scan. -/
 def buildForwardPermutationIndex
     (trace : DuplexSpongeTrace StmtIn U) (p : T) : T :=
