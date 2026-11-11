@@ -9,6 +9,8 @@ Many developments are paper-scoped and spread across several modules.
 ArkLib/
   Data/               foundational math, coding theory, polynomials, probability, etc.
   Interaction/        typed prover, verifier, and reduction foundations
+    Core/             rebuilt interaction core on PolyFun trees (staged migration)
+  Relation/           claims, witness relations, and oracle data families
   OracleReduction/    core IOR abstractions and security theory
   Commitments/        commitments and opening arguments
   AGM/                algebraic group model representations
@@ -32,6 +34,18 @@ home_page/            site assets and assembled website root
   `CompositionSoundness.lean` adds an exact append execution law and quantitative
   soundness under lawful distribution semantics, with an explicit admissibility-error variant.
   It quantifies over ordinary whole-tree prover strategies and uses the existing paired runner.
+- `ArkLib/Interaction/Core/` is the rebuilt interaction core. It is being introduced in stages
+  beside the existing interaction modules, which stay frozen until their clients move; Core
+  imports none of them. Protocols are PolyFun `FreeM` trees whose roles come from the
+  `plainSig` and `oracleSig` lenses (`Signature.lean`); `Protocol.lean` owns paths, views and
+  nodes. `Reduction.lean` defines provers, verifiers, reductions and the public-coin sampler;
+  `OracleVerifier.lean` adds oracle verifiers with routed input and message oracles;
+  `Execution.lean` runs a verifier against an arbitrary prover and keeps rejection as a returned
+  verdict. `Composition.lean` appends verifiers, provers and oracle routes. `Security/` holds
+  completeness and soundness over adversary models, classical straight-line and transcript-only
+  extraction, and round-by-round soundness and knowledge on cursor prefixes. Its acceptance
+  tests live in `ArkLibTest/Interaction/Core/`.
+- The descriptions below cover the frozen interaction modules outside `Core/`.
 - `ArkLib/Interaction/Oracle/` refines generic type trees with public/oracle positions, keeps
   structural `BranchPath` separate from concrete `ExecutionPath` messages, and adds position-typed
   role/interface decorations plus the minimal decorated `Oracle.Protocol` bundle.
@@ -64,6 +78,10 @@ home_page/            site assets and assembled website root
   random-oracle completeness.
   Generic transcript projection and reconstruction equations live in `ProtocolSpec/Basic.lean`;
   round and optional-run factorization lemmas live in `Execution.lean`.
+- `ArkLib/Relation/Basic.lean` is the neutral owner of claims, witness relations with an
+  admissibility boundary, and oracle data families; it depends on no protocol tree. Likewise
+  `ProofSystem/Sumcheck/Spec/PolynomialInterface.lean` owns the sum-check polynomial's
+  evaluation-query interface, shared by the specification and the computational handler.
 - `ArkLib/Data/`, `ArkLib/ToMathlib/`, and `ArkLib/ToCompPoly/` support the
   core with reusable definitions and lemmas.
 - `ArkLib/Commitments/` and `ArkLib/ProofSystem/` build on top of those foundations.
@@ -74,6 +92,8 @@ home_page/            site assets and assembled website root
 
 - Extending foundational math or coding theory: start in `ArkLib/Data/`.
 - Changing typed interaction or dependent reduction foundations: start in `ArkLib/Interaction/`.
+  New interaction-layer work goes in `ArkLib/Interaction/Core/`; the modules beside it are frozen
+  during the staged migration.
 - Changing legacy reduction or security abstractions: start in `ArkLib/OracleReduction/`.
 - Working on protocol statements or proofs: start in `ArkLib/ProofSystem/`.
 - Updating commitment interfaces or concrete schemes: start in `ArkLib/Commitments/`
@@ -1024,3 +1044,7 @@ home_page/            site assets and assembled website root
 `ArkLibTest/` mirrors production module paths for compile-time examples and regression tests.
 `lake test` builds all test modules; the default validation wrapper runs it. Tests stay outside
 the generated `ArkLib.lean` umbrella and production modules must not import them.
+`ArkLibTest/Interaction/Core/` holds the rebuilt core's tests: `Plain.lean` (shapes, recorded
+challenges and the public-coin sampler), `Oracle.lean` (query-only decisions and output
+oracles), `Composition.lean` (routed composed oracle queries) and `Security.lean`
+(classical-model and round-by-round security).

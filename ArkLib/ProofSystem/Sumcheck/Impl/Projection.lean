@@ -6,7 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
-public import ArkLib.ProofSystem.Sumcheck.Interaction.MultivariateRound
+public import ArkLib.ProofSystem.Sumcheck.Spec.PolynomialInterface
 public import ArkLib.ProofSystem.Sumcheck.Impl.Representation
 public import CompPoly.Multivariate.FinSuccEquiv
 public import CompPoly.Multivariate.Eval
