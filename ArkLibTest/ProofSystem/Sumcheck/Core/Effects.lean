@@ -66,7 +66,7 @@ theorem run_verifier_eq {Out : FreeM.PathAlong oracleSig (protocol R deg n) → 
             (.inl q)))
           (sampler oracleSig (protocol R deg n) fun c =>
             liftM ((amb + challengeSpec oracleSig (protocol R deg n)).query (.inr c))) := by
-  unfold Interaction.Core.OracleVerifier.run
+  rw [Interaction.Core.OracleVerifier.run_eq]
   rw [map_eq_bind_pure_comp]
   refine bind_congr fun x => ?_
   simp only [simulateQ_decide]
@@ -479,7 +479,7 @@ theorem runWithLog_wrong :
       let y ← (simulateQ (checkHandler liftEvents (fun _ => original) x.1.1).withLogging
         (firstCheck D₀ wrong x.1.1)).run
       pure ⟨⟨x.1.1, x.1.2.1, none⟩, x.2.fst, y.2⟩) := by
-  unfold OracleVerifier.runWithLog
+  rw [OracleVerifier.runWithLog_eq]
   refine bind_congr_of_forall_mem_support _ fun x hx => ?_
   obtain ⟨a, r, tail, htr⟩ := mem_support_adaptive hx
   obtain ⟨⟨tr, out, c⟩, log⟩ := x

@@ -528,7 +528,7 @@ theorem run_verifier_foldRounds {State : ℕ → Type} {Out : Type}
               Spec.StatementRound R n (Fin.last n) × ∀ i, Spec.OracleStatement R n deg i))) <$>
         drawChallenges n (fun c =>
           liftM ((ambient + challengeSpec oracleSig (protocol R deg n)).query (.inr c))) := by
-  unfold Interaction.Core.OracleVerifier.run
+  rw [Interaction.Core.OracleVerifier.run_eq]
   rw [simulate_foldRounds, run_foldRounds, _root_.bind_map_left, map_eq_bind_pure_comp]
   refine bind_congr fun chals => ?_
   simp only [simulateQ_decide]

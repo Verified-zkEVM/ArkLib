@@ -366,11 +366,23 @@ theorem decide_eq_legacy (stmt : Spec.StatementRound R n 0)
       (legacyVerifier R deg n D ambient).decide stmt _ (toView _ tr) := by
   have htr : HEq tr (cast (congrArg (PathAlong oracleSig) (protocol_eq R deg n)) tr) :=
     (cast_heq _ _).symm
-  exact eq_of_heq ((decide_heq_embed stmt tr _ htr).trans
-    (OracleVerifier.decide_cast (inputs := Spec.polynomialFamily R n deg)
-      (outputs := Spec.polynomialFamily R n deg)
-      (protocol_eq R deg n).symm (embedOracleVerifier (Spec.oracleVerifier R deg D n ambient))
-      stmt tr _ htr).symm)
+  have hcast := OracleVerifier.cast_const
+    (T := Spec.StatementRound R n (Fin.last n)) (outputs := family (Spec.OracleStatement R n deg))
+    (inputs := family (Spec.OracleStatement R n deg)) (protocol_eq R deg n).symm
+    (embedOracleVerifier (Spec.oracleVerifier R deg D n ambient))
+  have hc := OracleVerifier.decide_cast
+    (T := fun _ => Spec.StatementRound R n (Fin.last n))
+    (inputs := family (Spec.OracleStatement R n deg))
+    (outputs := fun _ => family (Spec.OracleStatement R n deg))
+    (protocol_eq R deg n).symm (embedOracleVerifier (Spec.oracleVerifier R deg D n ambient))
+    stmt tr _ htr
+  rw [hcast] at hc
+  have hc' : HEq ((legacyVerifier R deg n D ambient).decide stmt _ (toView _ tr))
+      ((embedOracleVerifier (Spec.oracleVerifier R deg D n ambient)).decide stmt _
+        (toView _ (cast (congrArg (PathAlong oracleSig) (protocol_eq R deg n)) tr))) := by
+    dsimp only [legacyVerifier]
+    convert hc using 1 <;> rfl
+  exact eq_of_heq ((decide_heq_embed stmt tr _ htr).trans hc'.symm)
 
 /-- On every completed run, the Sumcheck verifier and the embedded legacy verifier keep the same
 output data: the input polynomial. -/
@@ -382,11 +394,26 @@ theorem outputMap_eq_legacy (stmt : Spec.StatementRound R n 0)
         (data, payloads _ tr) := by
   have htr : HEq tr (cast (congrArg (PathAlong oracleSig) (protocol_eq R deg n)) tr) :=
     (cast_heq _ _).symm
-  refine Eq.trans ?_
-    (OracleVerifier.outputMap_cast (inputs := Spec.polynomialFamily R n deg)
-      (outputs := Spec.polynomialFamily R n deg) (protocol_eq R deg n).symm
-      (embedOracleVerifier (Spec.oracleVerifier R deg D n ambient)) stmt data _ _ htr).symm
-  exact (embedOracleVerifier_outputMap_f (Spec.oracleVerifier R deg D n ambient) stmt data _).symm
+  have hcast := OracleVerifier.cast_const
+    (T := Spec.StatementRound R n (Fin.last n)) (outputs := family (Spec.OracleStatement R n deg))
+    (inputs := family (Spec.OracleStatement R n deg)) (protocol_eq R deg n).symm
+    (embedOracleVerifier (Spec.oracleVerifier R deg D n ambient))
+  have hc := OracleVerifier.outputMap_cast
+    (T := fun _ => Spec.StatementRound R n (Fin.last n))
+    (inputs := family (Spec.OracleStatement R n deg))
+    (outputs := fun _ => family (Spec.OracleStatement R n deg))
+    (protocol_eq R deg n).symm (embedOracleVerifier (Spec.oracleVerifier R deg D n ambient))
+    stmt data tr _ htr
+  rw [hcast] at hc
+  have hc' : ((legacyVerifier R deg n D ambient).outputMap stmt _ (toView _ tr)).f
+      (data, payloads _ tr) =
+      ((embedOracleVerifier (Spec.oracleVerifier R deg D n ambient)).outputMap stmt _
+        (toView _ (cast (congrArg (PathAlong oracleSig) (protocol_eq R deg n)) tr))).f
+        (data, payloads _ _) := by
+    simpa only [legacyVerifier, Spec.polynomialFamily, family, inferInstance, eqRec_eq_cast]
+      using eq_of_heq hc
+  exact (embedOracleVerifier_outputMap_f (Spec.oracleVerifier R deg D n ambient)
+    stmt data _).symm.trans hc'.symm
 
 variable (R deg n D ambient)
 
@@ -504,10 +531,20 @@ theorem run_eq_legacy {WitOut : Type} (stmt : Spec.StatementRound R n 0)
         (oracleFinalize <$> (embedOracleVerifier (Spec.oracleVerifier R deg D n ambient)).run
           stmt oStmt ((protocol_eq R deg n) ▸ p)) := by
   rw [(verifier_agrees R deg n D ambient).run_eq]
-  exact OracleVerifier.run_cast (protocol_eq R deg n).symm _ _ finalize oracleFinalize
-    (fun tr out v => by
-      simp only [finalize, oracleFinalize]
-      rw [← oracleDecode_eq_decodeTranscript n _ tr (eqRec_heq _ _)]) stmt oStmt p
+  have hcast := OracleVerifier.cast_const
+    (T := Spec.StatementRound R n (Fin.last n)) (outputs := family (Spec.OracleStatement R n deg))
+    (inputs := family (Spec.OracleStatement R n deg)) (protocol_eq R deg n).symm
+    (embedOracleVerifier (Spec.oracleVerifier R deg D n ambient))
+  simpa only [legacyVerifier, challengeReindex, hcast, Spec.polynomialFamily, family, inferInstance,
+    eqRec_eq_cast] using
+    (OracleVerifier.run_cast (T := fun _ => Spec.StatementRound R n (Fin.last n))
+      (inputs := family (Spec.OracleStatement R n deg))
+      (outputs := fun _ => family (Spec.OracleStatement R n deg))
+      (protocol_eq R deg n).symm (embedOracleVerifier (Spec.oracleVerifier R deg D n ambient))
+      (oracleChallengeReindex ambient (Spec.pSpec R deg n)) finalize oracleFinalize
+      (fun tr out v => by
+        simp only [finalize, oracleFinalize, cast_eq]
+        rw [← oracleDecode_eq_decodeTranscript n _ tr (eqRec_heq _ _)]) stmt oStmt p)
 
 end Run
 
@@ -670,8 +707,8 @@ theorem simpleLegacyProver_run {ι : Type} (ambient : OracleSpec ι)
   simp only [Spec.SingleRound.Simple.prover, LawfulMonad.pure_bind, monadLift_pure, simulateQ_pure]
   erw [ht]
 
-/-- The Simple legacy verifier has the same scalar verdict as the native arbitrary-message run,
-including rejection and retention of the original input polynomial. -/
+/-- The Simple legacy verifier has the same scalar verdict as the arbitrary-message run in the
+interaction layer, including rejection and retention of the original input polynomial. -/
 theorem simpleLegacyVerifier_correspondence [DecidableEq R]
     {ι : Type} (ambient : OracleSpec ι) {m : ℕ} (D : Fin m ↪ R)
     (p q : R⦃≤ deg⦄[X]) (target r : R) :

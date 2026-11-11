@@ -119,7 +119,7 @@ theorem verifier_run {ι : Type} (ambient : OracleSpec ι) {I : Type} {A : I →
           ((ambient + challengeSpec oracleSig (protocol R M evaluate k)).query (.inr c))))
       pure (⟨tr, out, (verdict evaluate checks finish k st tr).map (fun t => (t, data))⟩ :
         Observation oracleSig _ Out (fun _ => T × (∀ i, A i)))) := by
-  unfold Interaction.Core.OracleVerifier.run
+  rw [OracleVerifier.run_eq]
   refine bind_congr fun result => ?_
   rcases result with ⟨tr, out, u⟩
   dsimp only

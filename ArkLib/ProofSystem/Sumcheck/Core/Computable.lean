@@ -192,7 +192,7 @@ theorem run_verifierOn (stmt : Spec.StatementRound R n 0) (data : ∀ i, A i)
             ((ambient + challengeSpec oracleSig (protocolOn R M eval n)).query (.inl q)))
           (sampler oracleSig _ fun c => liftM
             ((ambient + challengeSpec oracleSig (protocolOn R M eval n)).query (.inr c))) := by
-  unfold Interaction.Core.OracleVerifier.run
+  rw [OracleVerifier.run_eq]
   rw [map_eq_bind_pure_comp]
   refine bind_congr fun x => ?_
   obtain ⟨tr, out, u⟩ := x

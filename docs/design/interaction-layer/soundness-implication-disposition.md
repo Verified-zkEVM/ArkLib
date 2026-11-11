@@ -84,12 +84,14 @@ can choose different public-coin programs. For example, after a Boolean challeng
 challenge can be deterministically `!x` without changing shape. The [adaptive execution test][adaptive]
 checks this case.
 
-The general interface therefore uses `PrefixChallengePrograms`, indexed by the structural spine
+The shared interface in `Security/RoundByRound.lean` uses `PrefixChallengePrograms`, indexed by
+the structural spine
 **and the full history**, and retains every erased challenge and oracle payload in `PrefixMoves`.
 At a sender, the passive continuation observes the sent value. At a receiver, the draw at that
 history selects the move and hence its pure continuation. Recursing this construction yields
-`prefixSampler`; [runPrefixChallenges_eq_run][prefix-run] proves exact equality with the ordinary
-Core focal-first runner against that counterpart. Resource effects can still fail in focal slots
+`prefixSampler`. `runPrefixChallenges` directly applies the ordinary Core focal-first runner to
+that counterpart; [runPrefixChallenges_eq_run][prefix-run] is definitional. Its sender and receiver
+equations follow from the owner's execution laws. Resource effects can still fail in focal slots
 or the final decision. No draw restarts the prover or an ambient handler.
 
 Supported-continuation freshness says nothing about a prefix after an unsupported challenge.
@@ -165,41 +167,41 @@ by this implication. This record adds no second inventory of those constraints.
 [source-test-escape]: ../../../ArkLibTest/Interaction/Oracle/Security/Soundness.lean#L57
 [source-test-prefix]: ../../../ArkLibTest/Interaction/Oracle/Security/Soundness.lean#L58
 [universes]: ../interaction-rebuild/IMPLEMENTATION-NOTES.md#18-run-outputs-are-tied-to-the-monad-universe
-[state-local]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L307
-[prefix-bound]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L599
-[prefix-sound]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L674
-[prefix-run]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L574
+[state-local]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L312
+[prefix-bound]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L526
+[prefix-sound]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L597
+[prefix-run]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L164
 [escape-general]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L69
-[rank-sum]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L711
-[plain-local]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L746
-[oracle-local]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L953
-[plain-with]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L832
-[oracle-with]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L1049
-[plain-uniform]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L888
-[oracle-uniform]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L1120
-[random-prefix]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L193
-[random-model]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L177
-[encoded]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L158
+[rank-sum]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L635
+[plain-local]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L670
+[oracle-local]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L877
+[plain-with]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L756
+[oracle-with]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L973
+[plain-uniform]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L861
+[oracle-uniform]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L1102
+[random-prefix]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L196
+[random-model]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L180
+[encoded]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L161
 [escape]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L100
-[action-marginals]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L279
-[action-at]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L269
+[action-marginals]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L284
+[action-at]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L274
 [plain-bridge]: ../../../ArkLib/Interaction/Core/Security/Soundness.lean#L161
 [oracle-bridge]: ../../../ArkLib/Interaction/Core/Security/Soundness.lean#L201
-[plain-acc]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L208
-[oracle-acc]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L272
+[plain-acc]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L373
+[oracle-acc]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L471
 [fresh]: ../../../ArkLib/Interaction/Core/Execution.lean#L55
 [fresh-state]: ../../../ArkLib/Interaction/Core/Execution.lean#L75
-[half-mass]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L494
-[optional]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L465
-[adaptive]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L384
-[test-action]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L527
-[test-run]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L540
+[half-mass]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L503
+[optional]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L474
+[adaptive]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L393
+[test-action]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L536
+[test-run]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L549
 [test-bridges]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L23
-[test-rank]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L351
+[test-rank]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L360
 [test-sound]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L39
 [test-oracle]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L65
 [test-uniform]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L53
 [test-oracle-uniform]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L82
 [test-escape]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L115
-[test-prefix]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L124
-[test-model]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L392
+[test-prefix]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L133
+[test-model]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L401

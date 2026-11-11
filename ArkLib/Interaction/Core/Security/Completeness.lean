@@ -20,7 +20,7 @@ output witness. The relation objects retain their explicit admissibility boundar
 
 @[expose] public section
 
-universe u uA v uS uW uI wI wJ
+universe u uA v uS uW uI wI wJ dI q
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle MeasureTheory
@@ -58,7 +58,7 @@ structure OutputJudgement (Obs : Type*) {Ctx : Type*} {T : ClaimFamily Ctx} (P :
 
 /-- Judge an actual observation using its verifier verdict and decoded prover output. The claim
 type is indexed by the shape path of the observation's transcript. -/
-def OutputJudgement.ofObservation {P : PFunctor.{1, 0}}
+def OutputJudgement.ofObservation {P : PFunctor.{uA, 0}}
     {l : PFunctor.Lens P rolePoly} {s : FreeM P PUnit}
     {Out : PathAlong l s → Type} {T : Path s → Type} (output : PathProblem s T)
     (readStatement : ∀ tr, Out tr → T (projectPathAlong l s tr))
@@ -110,7 +110,7 @@ theorem experiment_map {ι κ σ α β : Type} {ambient : OracleSpec ι} {chal :
     _root_.map_bind]
 
 /-- The usual fresh challenge implementation, sampled separately from shared oracle state. -/
-def challengeQueryImpl {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly)
+def challengeQueryImpl {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
     (s : FreeM P PUnit) [∀ c, SampleableType (challengeSpec l s c)] :
     QueryImpl (challengeSpec l s) ProbComp := fun c => $ᵗ (challengeSpec l s c)
 
@@ -133,18 +133,18 @@ The verifier itself obtains that data only through its declared query interface.
 statement, the input index and the input query type are arguments of the run, so they may lie in
 any universe.
 -/
-noncomputable def OracleVerifier.classicalModel {ι σ : Type} {I : Type uI}
+noncomputable def OracleVerifier.classicalModel {ι σ : Type}
     {ambient : OracleSpec ι}
-    {s : OracleProtocol} {S : Type uS} {T : Path s → Type} {A : I → Type}
+    {s : OracleProtocol.{0, q}} {S : Type uS} {T : Path s → Type}
     {J : Path s → Type} {B : (p : Path s) → J p → Type}
-    {inputs : OracleFamily.{uI, 0, wI} I A}
+    {inputs : Resources.{0, uI, dI}}
     {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
     {Out : PathAlong oracleSig s → Type}
     [MeasurableSpace (Observation oracleSig s Out (OracleVerifier.Output T B))]
     (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (challenges : QueryImpl (challengeSpec oracleSig s) ProbComp) :
-    AdversaryModel (S × (∀ i, A i))
+    AdversaryModel (S × inputs.Data)
       (Observation oracleSig s Out (OracleVerifier.Output T B)) where
   Adv _ := Prover oracleSig ambient s Out
   outcome stmt adv := 𝒟[experiment init impl challenges (V.run stmt.1 stmt.2 adv)]

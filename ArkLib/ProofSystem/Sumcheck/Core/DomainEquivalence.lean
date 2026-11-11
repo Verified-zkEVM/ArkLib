@@ -189,7 +189,7 @@ theorem verifier_run_native [DecidableEq R] [SampleableType R]
     nativeObservation <$> (verifier R deg n D ambient).run stmt data P =
       (indexedVerifier R deg n (⇑D) ambient).run (nativeStatement stmt) data P := by
   rw [indexedVerifier_run]
-  unfold Interaction.Core.OracleVerifier.run
+  rw [OracleVerifier.run_eq]
   rw [_root_.map_bind]
   refine bind_congr fun x => ?_
   rcases x with ⟨tr, out, u⟩

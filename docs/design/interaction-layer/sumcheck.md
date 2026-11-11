@@ -510,7 +510,7 @@ above rather than adding independent security claims.
 |---|---|
 | `Spec/PolynomialInterface` | `Spec.polynomialFamily`; the plain alias `Interaction.MultivariateRound.polynomialFamily` remains only until D9. Existing Core and `Impl/Projection` clients use the neutral name. |
 | `LegacyProjection` | `messageFamily`, `projectionMap`, `projectionMap_f`, `simulateQ_projectionMap`: the univariate output interface and lawful projection. |
-| `Interaction/Core/OracleVerifier` | `Interaction.Core.pathLift`, `Interaction.Core.simulateQ_pathLift`: the path-query lift of any decision, for any input family and protocol, and its interpretation law in any lawful monad. `decisionLift`, `foldLift` and their laws `simulateQ_decisionLift`, `simulateQ_decisionLift_monad`, `simulateQ_foldLift` are instances. `OracleVerifier.simulateQ_decide_eq_decideWith` and `OracleVerifier.run_eq_decideWith` express a run through `decideWith`. |
+| `Interaction/Core/OracleVerifier` | `Interaction.Core.pathLift`, `Interaction.Core.simulateQ_pathLift`: the path-query lift of any decision, for any input family and protocol, and its interpretation law in any lawful monad. `decisionLift`, `foldLift` and their laws `simulateQ_decisionLift`, `simulateQ_decisionLift_monad`, `simulateQ_foldLift` are instances. `OracleVerifier.run_eq_decideWith` expresses a run through `decideWith` using the shared owner lemma `OracleVerifier.simulateQ_decideWith` in reverse. |
 | `Interaction/Core/Composition` | `Interaction.Core.splitFiber_val`: the split of a fiber carries the transcripts of `PathAlong.split`. |
 | `Composition`, input slot | `inputSlot`: the existing `OracleMap.embedding` for the input slot. |
 | `Composition`, round | `checkRoute`, `roundChallenges`, `checkVerifier`, `roundChallenges_eq`, `decideWith_checkVerifier`, `checkVerdict`, `run_checkVerifier`: reuse the legacy per-round check, with no ambient queries in that check. |
@@ -552,20 +552,41 @@ message representation or original-oracle behavior quantified by the correspondi
 
 ## Agreement universes and parent limits
 
-`Interaction.Core.OracleVerifier.Agrees`, its ordinary-run, extraction, classical-security and
-Cast lemmas, and `Interaction.Core.Legacy.knowledgeSoundness_cast` / `completeness_cast` preserve
-independent input statement (`uS`), input index (`uI`), input query (`wI`) and output query (`wJ`)
-universes. They match `OracleVerifier` in `ArkLib/Interaction/Core/OracleVerifier.lean:471`.
-`ArkLibTest/Interaction/Core/AgreementUniverses.lean` uses ordinary imports with these four
-universes set to 2, 1, 3 and 4.
+`Interaction.Core.OracleVerifier.Agrees` and every law in `Security/Agreement.lean` accept
+path-dependent output statements `T p`, oracle indices `J p`, carriers `B p j` and interfaces
+`outputs p`. Observations and output problems use `OracleVerifier.Output T B`. The decision and
+output-map cast laws retain the verifier owner's independent ambient and output-index universes;
+ordinary runs retain its move/response universe `u`. `cast_const` identifies the general
+transport with ordinary equality substitution for constant output families. Ordinary substitution
+keeps those output carriers fixed while changing the tree. Classical probability interfaces specialize
+the move and returned-value universe to zero, as their owners require.
 
-The remaining restrictions come from these exact parent interfaces:
+Agreement accepts general `Resources.{u, uI, dI}` inputs, with independent query and data
+universes. Family-shaped inputs specialize this API through `Resources.ofFamily`.
+Round-by-round knowledge agreement and transport retain `Win stmt`, `W stmt tr`, and relations
+`relOut stmt tr output witness`, with independent witness universes. They also preserve the
+parent's full-prefix challenge distributions and local errors. Sumcheck's compatibility theorem
+uses `rbrKnowledgeSoundnessOfNodes`, the parent specialization that ignores prefix history.
+
+| Reviewed contract | Status | Evidence |
+|---|---|---|
+| F7: path-dependent outputs throughout Agreement | equivalent | `Agrees`, all agreement consequences and every `*_cast` law reindex the statement and oracle families together. No constant-output replacement remains. |
+| 3A: statement-dependent knowledge witnesses and relations | equivalent | `Agrees.rbrKnowledgeSoundness_iff` and `rbrKnowledgeSoundness_cast` use the unchanged owner's argument shapes. Sumcheck passes `fun _ _ t w => (t, w) ∈ Spec.relationRound R n deg D (Fin.last n)`. |
+
+`ArkLibTest/Interaction/Core/AgreementUniverses.lean` imports the public API with statement,
+input-index, input-query, output-query and oracle-node-query universes 2, 1, 3, 4 and 5. Its
+knowledge client uses statement-dependent input witnesses in `Type 6` and
+statement-and-transcript-dependent output witnesses in `Type 7`. Output families depend on the
+shape path. Further clients exercise general move, ambient-index and output-index universes.
+
+The remaining restrictions come from these parent interfaces:
 
 | New API | Parent interface | Required restriction |
 |---|---|---|
-| `OracleVerifier.runWithLog_eq_of_decide_eq` | `OracleVerifier.runWithLog`, `ArkLib/Interaction/Core/Security/Knowledge.lean:332` | Input indices and input queries are in `Type 0`; the full resource log is a small run output. Input statements and output queries remain independent. |
-| Ordinary `Agrees` run, extraction and classical security lemmas | `OracleVerifier.run`, `ArkLib/Interaction/Core/OracleVerifier.lean:505`; `classicalModel`, `Security/Completeness.lean:136`; `extractionGame`, `Security/Knowledge.lean:514`; `classicalStraightline`, `Security/Knowledge.lean:530` | Protocol moves, responses, ambient indices, output statements and output indices are small in these probability/run interfaces. These limits do not restrict `uS`, `uI`, `wI` or `wJ`. |
-| Legacy tree relation adapter `treeRelationProblem` | `Legacy.relProblem`, `ArkLib/Interaction/Core/Legacy/Security.lean:72` | The parent convenience adapter fixes claims to `Type 0`; the new adapter removes that incidental restriction. The underlying `Problem` and classical security interfaces already accept larger claims. |
+| `OracleVerifier.runWithLog_eq_of_decide_eq` | `OracleVerifier.runWithLog` in `Security/Knowledge.lean` | Resource-query indices and oracle-node queries are small because the full log is a small run output. Input data and output queries remain independent. |
+| `Agrees.run_eq` and `run_cast` | `OracleVerifier.run` in `Core/OracleVerifier.lean` | Ambient and output indices share the move/response universe `u`. Output statements and oracle data are values in `Type u`; node and output queries remain independent. |
+| Extraction and classical security laws | `classicalModel`, `extractionGame`, `classicalStraightline`, `validAcceptance` and the RBR wrappers | Probability computations return small values, including output statements, output indices and extracted witnesses. Input data and queries remain independent. Pure RBR witness carriers retain the owner's independent universes. |
+| Legacy tree relation adapter `treeRelationProblem` | `Legacy.relProblem` in `Core/Legacy/Security.lean` | The parent convenience adapter fixes claims to `Type 0`; the tree adapter accepts larger claims. The underlying `Problem` and classical security interfaces already accept larger claims. |
 
 ## Production declaration inventory
 

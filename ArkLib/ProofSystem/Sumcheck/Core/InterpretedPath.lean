@@ -50,16 +50,18 @@ def tailPath {k : ℕ} : Path (protocol R M evaluate (k + 1)) → Path (protocol
 /-- A query to the first message's evaluation interface. -/
 def headQuery {k : ℕ} : (p : Path (protocol R M evaluate (k + 1))) → R →
     OracleComp (oracles (protocol R M evaluate (k + 1)) p) R
-  | ⟨⟨⟩, ⟨⟨⟩, p⟩⟩, r => liftM
-      ((oracles (protocol R M evaluate (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩).query ⟨.inl PUnit.unit, r⟩)
+  | ⟨⟨⟩, ⟨⟨⟩, p⟩⟩, r =>
+      (OracleMap.embedding
+        (pathFamily (protocol R M evaluate (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩)
+        (fun _ : PUnit.{1} => Sum.inl PUnit.unit)).impl ⟨PUnit.unit, r⟩
 
 /-- A lifted query to the remaining messages. -/
 def tailLift {k : ℕ} (p : Path (protocol R M evaluate (k + 1))) :
     QueryImpl (oracles (protocol R M evaluate k) (tailPath p))
       (OracleComp (oracles (protocol R M evaluate (k + 1)) p)) := by
   rcases p with ⟨⟨⟩, ⟨⟨⟩, p⟩⟩
-  exact fun q => liftM ((oracles (protocol R M evaluate (k + 1))
-    ⟨⟨⟩, ⟨⟨⟩, p⟩⟩).query ⟨.inr q.1, q.2⟩)
+  exact (OracleMap.embedding
+    (pathFamily (protocol R M evaluate (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩) Sum.inr).impl
 
 /-- The challenge read from a verifier view. -/
 def viewChallenge {k : ℕ} {p : Path (protocol R M evaluate (k + 1))}
