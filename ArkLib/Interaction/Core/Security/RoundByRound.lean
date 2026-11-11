@@ -75,7 +75,7 @@ def spineChallenge {s : FreeM P PUnit.{u + 1}} {a : P.A} {next : P.B a → FreeM
   ⟨spineNode sp, (congrArg (owner l) (spineNode_position sp)).trans h⟩
 
 /-- Draw a fresh move at the receiver position selected by a structural prefix. -/
-def sampleAt {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly)
+def sampleAt {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
     {s : FreeM P PUnit.{1}} {a : P.A} {next : P.B a → FreeM P PUnit.{1}}
     (draw : QueryImpl (challengeSpec l s) ProbComp)
     (sp : Cursor.Spine s (.liftBind a next)) (h : owner l a = .receiver) : ProbComp (Move l a) :=
@@ -104,7 +104,7 @@ def PrefixDraw.ofNodes {m : Type u → Type vDraw} [Functor m] {s : FreeM P PUni
     draw (spineChallenge l sp h)
 
 /-- Ignoring history recovers node-indexed sampling at the same receiver cursor. -/
-theorem prefixSampleAt_ofNodes {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly)
+theorem prefixSampleAt_ofNodes {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
     {s : FreeM P PUnit.{1}} (draw : QueryImpl (challengeSpec l s) ProbComp)
     {a next} (sp : Cursor.Spine s (.liftBind a next)) (h : owner l a = .receiver)
     (history : PrefixMoves l sp) :
@@ -206,7 +206,7 @@ structure StateFunction (s : FreeM P PUnit.{u + 1}) (S : Type uS)
   leaf : ∀ (sp : Cursor.Spine s (.pure ⟨⟩)) history stmt,
     ¬ toFun sp history stmt → ¬ accepts stmt (PrefixMoves.complete l sp history)
 
-variable {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly)
+variable {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
 
 /-- Worst-case-per-prefix round-by-round soundness; there is no adversary-model argument. -/
 def rbrSoundness {S : Type uS} (s : FreeM P PUnit)
@@ -383,7 +383,8 @@ def validAcceptance (V : OracleVerifier ambient s S T inputs outputs)
       {v | ∃ t, v = some t ∧ event (t, (V.outputMap stmt.1 p view).f resources)}
 
 /-- Classical acceptance quantifies over the possible terminal states. -/
-theorem validAcceptance_iff_validAcceptanceUsing (V : OracleVerifier ambient s S T inputs outputs)
+theorem validAcceptance_iff_validAcceptanceUsing {I : Type uI} {A : I → Type}
+    {inputs : OracleFamily.{uI, 0, wI} I A} (V : OracleVerifier ambient s S T inputs outputs)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (stmt : S × (∀ i, A i)) (tr : PathAlong oracleSig s)
     (event : (p : Path s) → OracleVerifier.Output T B p → Prop) :

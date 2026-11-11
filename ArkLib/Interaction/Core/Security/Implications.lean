@@ -133,7 +133,7 @@ abbrev ReceiverPrefix.Flips {s : FreeM P PUnit.{u + 1}}
     G (pfx.spine.comp (.down (l.toFunB pfx.pos x) (.root _)))
       (PrefixMoves.snoc l pfx.spine pfx.history x)
 
-variable {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly)
+variable {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
 
 /-- At a fixed receiver node, a flip averaged over a random full prefix before the node has
 probability at most any bound on the flip probability at each prefix. -/
@@ -248,7 +248,7 @@ private theorem sum_challengeNodesOn_receiver {a : P.A} {next : P.B a → FreeM 
   · rename_i h'
     cases h.symm.trans h'
 
-variable {P : PFunctor.{1, 0}} {l : PFunctor.Lens P rolePoly}
+variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly}
 
 /-- Sampling at the root receiver node is the root draw. -/
 private theorem sampleAt_root {a : P.A} {next : P.B a → FreeM P PUnit}
@@ -519,7 +519,7 @@ end Experiment
 
 section PrefixExecution
 
-variable {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly)
+variable {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
 
 /-- Actual prefix-dependent flip bounds control the full passive execution in any lawful
 subprobability monad. Each draw is evaluated at its matching history. -/
