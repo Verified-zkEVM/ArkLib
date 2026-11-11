@@ -52,14 +52,14 @@ Entries 15 and 16 are the two hypotheses that a client of the round-by-round tra
 check. Entry 15 applies to the direction into the interaction layer, and entry 16 to the
 direction out of it.
 
-## Interaction-layer migration: entry 19
+## Interaction-layer migration: entry 20
 
-Entry 17 was removed (see the end of this page); entry 18 is reserved for the Sumcheck interval
-entry. State restoration uses entry 19 to avoid the duplicate numbering.
+Entry 18 records the core's universe constraints, entry 19 knowledge composition, and entry 20
+state restoration. Under approved premise P2, challenges and oracle messages never select shape.
 
 | Entry | Status and scope |
 | --- | --- |
-| [19](../interaction-rebuild/IMPLEMENTATION-NOTES.md#19-state-restoration-witness-families-replay-and-remaining-output-family-omission) | Statement-indexed witnesses and witness-preserving extraction are equivalent ports. Empty decision ambient is an explicit premise. Dependent output statements and output oracle families remain unresolved: the parent's fixed-output verifier cannot express the frozen games. The plain replay returns its payload on both challenges; rejection belongs to the separate oracle terminal. A fixed-output replacement does not close a dependent-output row. |
+| [20](../interaction-rebuild/IMPLEMENTATION-NOTES.md#20-state-restoration-under-p2-authored-output-selection) | Premise-required: frozen challenge-selected output carriers are retired by P2. A prover-authored Boolean selects the exact `Fin 8`/`Fin 9` statement carriers instead. All remaining replay, observation, game, private-coin and measured assertions are ported, with a per-row ledger. Frozen output oracles stay `Fin 8`; additional fixtures exercise path-dependent output oracle families. |
 
 ## The oracle correspondence gap and its resolution
 

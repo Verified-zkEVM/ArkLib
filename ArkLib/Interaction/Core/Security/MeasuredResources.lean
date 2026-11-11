@@ -259,7 +259,7 @@ end Interaction.Core
 namespace Interaction.Core.KnowledgeStateFunction.MeasuredStages
 open PFunctor FreeM TwoParty.Lens
 
-variable {s : OracleProtocol} {S : Type} {Win : S → Type} {W : S → PathAlong oracleSig s → Type}
+variable {s : OracleProtocol} {S : Type uS} {Win : S → Type} {W : S → PathAlong oracleSig s → Type}
   {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
   {validOutput : (stmt : S) → (tr : PathAlong oracleSig s) → W stmt tr → Prop}
   {F : KnowledgeStateFunction oracleSig s S W Win admissible relIn validOutput} {ω : Type}

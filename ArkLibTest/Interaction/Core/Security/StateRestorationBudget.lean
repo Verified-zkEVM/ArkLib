@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Interaction.Core.Security.StateRestorationBudget
+import ArkLibTest.Interaction.Core.Security.StateRestoration
 import ArkLibTest.Interaction.Core.Oracle
 import ArkLibTest.Data.OracleComp.AddProgram
 
@@ -80,15 +81,17 @@ abbrev shape : Path (protocol rounds) := ⟨⟨⟩, ⟨⟨⟩, ⟨⟨⟩, ⟨⟨
 
 /-- Accept when either challenge is `0`, reading the second payload as the claim. The output
 oracle is the second payload. -/
-def verifier : OracleVerifier []ₒ (protocol rounds) Nat (Fin 8) emptyFamily outputFamily where
+def verifier : OracleVerifier.{0, 0, 0, 0, 0, 0, 0} []ₒ (protocol rounds) Nat (fun _ => Fin 8)
+    emptyFamily
+    (fun _ => outputFamily) where
   decide _ p v :=
     if (show Fin 8 from v.1.2.1) = 0 ∨ (show Fin 16 from v.1.2.2.2.1) = 0 then
-      liftM (([]ₒ + (sumFamily emptyFamily (pathFamily (protocol rounds) p)).spec).query
-        (.inr ⟨.inr (.inr (.inl ⟨⟩)), ()⟩))
+      liftM (([]ₒ + (pathResources emptyFamily (protocol rounds) p).spec).query
+        (.inr (.inr ⟨.inr (.inl ⟨⟩), ()⟩)))
     else failure
   outputMap _ p _ :=
-    OracleMap.embedding (sumFamily emptyFamily (pathFamily (protocol rounds) p))
-      (fun _ => .inr (.inr (.inl ⟨⟩)))
+    (OracleMap.embedding (pathFamily (protocol rounds) p)
+      (fun _ => .inr (.inl ⟨⟩))).comp (OracleMap.snd _ _)
 
 /-- The transcript with messages 5 and 7 and challenges `first` and `second`. -/
 def path (first : Fin 8) (second : Fin 16) : PathAlong oracleSig (protocol rounds) :=
@@ -681,4 +684,282 @@ example :
 
 end Measured
 
+/-! ### Dependent-output games with a public selector -/
+
+namespace PublicSelection
+open Interaction.Core.StateRestorationTests
+  (SelectedValue selectedValue selectedPayload selectedFamily)
+
+/-- A prover-authored selector precedes the original two restoration rounds. -/
+abbrev selectedProtocol : OracleProtocol := .liftBind (.message Bool) fun _ => protocol rounds
+
+/-- Query the second payload and return it in the authored carrier. -/
+def readSelected (b : Bool) (p : Path (protocol rounds)) :
+    OptionT (OracleComp ([]ₒ + (pathResources emptyFamily (protocol rounds) p).spec))
+      (SelectedValue b) := do
+  let m ← liftM (([]ₒ + (pathResources emptyFamily (protocol rounds) p).spec).query
+    (.inr (.inr ⟨.inr (.inl ⟨⟩), ()⟩)))
+  pure (selectedPayload b m)
+
+/-- The frozen output-oracle family routes the second payload without changing its carrier. -/
+def selectedMap (_b : Bool) (p : Path (protocol rounds)) :
+    OracleMap (pathResources emptyFamily (protocol rounds) p) outputFamily :=
+  (OracleMap.embedding (pathFamily (protocol rounds) p)
+    (fun _ => .inr (.inl ⟨⟩))).comp (OracleMap.snd _ _)
+
+/-- Carrier selection is fixed by the authored bit; acceptance still reads both challenges. -/
+def suffixVerifier (b : Bool) : OracleVerifier.{0, 0, 0, 0, 0, 0, 0} []ₒ (protocol rounds) Nat
+    (fun _ => SelectedValue b) emptyFamily (fun _ => selectedFamily b) where
+  decide _ p v :=
+    if (show Fin 8 from v.1.2.1) = 0 ∨ (show Fin 16 from v.1.2.2.2.1) = 0 then
+      readSelected b p else failure
+  outputMap _ p _ := selectedMap b p
+
+/-- The full verifier has a path-dependent statement and the original output oracle. -/
+def verifier : OracleVerifier.{0, 0, 0, 0, 0, 0, 0} []ₒ selectedProtocol Nat (fun p =>
+    SelectedValue p.1)
+    emptyFamily (fun p => selectedFamily p.1) where
+  decide _ p v :=
+    if (show Fin 8 from v.1.2.2.1) = 0 ∨ (show Fin 16 from v.1.2.2.2.2.1) = 0 then
+      readSelected p.1 p.2 else failure
+  outputMap _ p _ := selectedMap p.1 p.2
+
+/-- The authored bit is retained alongside every original message and challenge. -/
+def selectedTranscript (b : Bool) (m₁ c₁ m₂ : Fin 8) (c₂ : Fin 16) :
+    PathAlong oracleSig selectedProtocol := ⟨b, transcript m₁ c₁ m₂ c₂⟩
+
+/-- The accepted statement and its oracle retain the original second-payload value. -/
+def returnedClaim (b : Bool) (m : Fin 8) : SelectedValue b × (PUnit.{1} → Fin 8) :=
+  (selectedPayload b m, fun _ => m)
+
+/-- All frozen observation quantifiers and the challenge-based acceptance condition are retained. -/
+theorem observation (b : Bool) (z : Stmt) (m₁ c₁ m₂ : Fin 8) (c₂ : Fin 16) :
+    closedTerminalObservation verifier z (selectedTranscript b m₁ c₁ m₂ c₂) =
+      if c₁ = 0 ∨ c₂ = 0 then some (returnedClaim b m₂) else none := by
+  simp only [closedTerminalObservation, terminalObservation, OracleVerifier.decideWith, verifier,
+    selectedTranscript, transcript]
+  by_cases accepted : c₁ = 0 ∨ c₂ = 0
+  · rw [ite_eq_left_of_eq_true _ _ (eq_true accepted)]
+    split
+    · cases b <;> rfl
+    · contradiction
+  · rw [ite_eq_right_of_eq_false _ _ (eq_false accepted)]
+    split
+    · contradiction
+    · rfl
+
+/-- The full selected observation equals that of the suffix at the same authored bit. -/
+theorem observation_prepend (b : Bool) (z : Stmt)
+    (tr : PathAlong oracleSig (protocol rounds)) :
+    closedTerminalObservation verifier z ⟨b, tr⟩ =
+      closedTerminalObservation (suffixVerifier b) z tr := by
+  cases b <;> kernel_rfl
+
+/-- The relation reads the selected output oracle's numerical payload. -/
+def relation (b : Bool) (_ : Stmt) (_ : PathAlong oracleSig (protocol rounds))
+    (claim : SelectedValue b × (PUnit.{1} → Fin 8)) (w : Nat) : Prop :=
+  w ≤ (claim.2 ⟨⟩).val
+
+/-- The selected suffix has exactly the terminal-state equivalence of the frozen game. -/
+theorem outputLaw (b : Bool) (z : Stmt) (tr : PathAlong oracleSig (protocol rounds)) (w : Nat) :
+    valid z tr w ↔ ∃ claim, closedTerminalObservation (suffixVerifier b) z tr = some claim ∧
+      relation b z tr claim w := by
+  rcases tr with ⟨m₁, ⟨c₁, ⟨m₂, ⟨c₂, ⟨⟩⟩⟩⟩⟩
+  change Fin 8 at m₁ c₁ m₂
+  change Fin 16 at c₂
+  have obs : closedTerminalObservation (suffixVerifier b) z (transcript m₁ c₁ m₂ c₂) =
+      if c₁ = 0 ∨ c₂ = 0 then some (returnedClaim b m₂) else none :=
+    observation b z m₁ c₁ m₂ c₂
+  change ((c₁ = 0 ∨ c₂ = 0) ∧ w ≤ m₂.val) ↔ _
+  erw [obs]
+  by_cases accepted : c₁ = 0 ∨ c₂ = 0
+  · cases b <;> simp [accepted, relation, returnedClaim, selectedPayload]
+  · simp [accepted]
+
+/-- The accepted selected claim supplies the terminal state used in the error theorem. -/
+theorem closedOutputLaw (b : Bool) (z : Stmt)
+    (tr : PathAlong oracleSig (protocol rounds))
+    (claim : SelectedValue b × (PUnit.{1} → Fin 8)) (w : Nat)
+    (accepted : closedTerminalObservation (suffixVerifier b) z tr = some claim)
+    (related : relation b z tr claim w) : valid z tr w :=
+  (outputLaw b z tr w).mpr ⟨claim, accepted, related⟩
+
+/-- Restore the original adversary and evaluate the full dependent verifier after the selector. -/
+def game (b : Bool) : OracleComp (oracleSpec Stmt Unit rounds)
+    (Stmt × (tr : PathAlong oracleSig selectedProtocol) ×
+      Option (SelectedValue tr.1 × (PUnit.{1} → Fin 8)) × Nat) :=
+  (fun r => ⟨r.1, ⟨b, r.2.1⟩, closedTerminalObservation verifier r.1 ⟨b, r.2.1⟩, r.2.2⟩) <$>
+    restoredExecution rounds adversary
+
+/-- The dependent game retains the sharper error seven sixteenths and the original adversary. -/
+theorem actual_nonuniform_game_bound (b : Bool) :
+    Pr{let r ← (simulateQ randomOracle (game b)).run' ∅}[
+      True ∧ (∃ claim, r.2.2.1 = some claim ∧
+        r.2.2.2 ≤ (claim.2 ⟨⟩).val) ∧
+      ¬ Rin r.1 (knowledge.extractAlong r.1 r.2.1.2 r.2.2.2)] ≤ 7 / 16 := by
+  have h := StateRestoration.stateRestoration_oracle_knowledge_soundness_nonuniform
+    (suffixVerifier b) (relation b) knowledge (fun _ _ w => w) (closedOutputLaw b)
+    errors bounded adversary 2 queryBound
+  erw [closedVerificationGame_eq, simulateQ_map, StateT.run'_map', prEvent_map] at h
+  calc
+    _ ≤ 2 * Finset.univ.sup errors + ∑ j, errors j := by
+      erw [game, simulateQ_map, StateT.run'_map', prEvent_map]
+      simpa only [observation_prepend, relation, Nat.cast_ofNat] using h
+    _ = 7 / 16 := budget_value
+
+/-- The prover sends its authored selector and the original salted-message selection. -/
+def selectedProver (b : Bool) (ms : Messages Unit rounds) :
+    Prover oracleSig []ₒ selectedProtocol (fun _ => PUnit.{1}) :=
+  pure ⟨b, scriptedProver rounds ms⟩
+
+/-- All full-protocol challenge queries are answered from the original recorded suffix. -/
+def selectedAnswers (tr : PathAlong oracleSig (protocol rounds)) :
+    QueryImpl ([]ₒ + challengeSpec oracleSig selectedProtocol) Id
+  | .inl q => q.elim
+  | .inr ⟨.inl _, h⟩ => nomatch h
+  | .inr ⟨.inr ⟨_, n⟩, h⟩ => recordedChallenges rounds tr ⟨n, h⟩
+
+/-- The selected interaction returns every recorded challenge and both authored messages. -/
+theorem selectedInteraction_eq (b : Bool) (ms : Messages Unit rounds)
+    (tr : PathAlong oracleSig (protocol rounds)) (carried : MatchesMessages rounds ms tr) :
+    evalWithAnswerFn (selectedAnswers tr)
+      (TwoParty.Lens.run selectedProtocol
+        ((selectedProver b ms).simulate (fun q =>
+          liftM (([]ₒ + challengeSpec oracleSig selectedProtocol).query (.inl q))))
+        (sampler oracleSig selectedProtocol (fun c =>
+          liftM (([]ₒ + challengeSpec oracleSig selectedProtocol).query (.inr c))))) =
+      ⟨⟨b, tr⟩, ⟨⟩, ⟨⟩⟩ := by
+  rcases tr with ⟨m₁, ⟨c₁, ⟨m₂, ⟨c₂, ⟨⟩⟩⟩⟩⟩
+  rcases ms with ⟨n₁, s₁, n₂, s₂, ⟨⟩⟩
+  rcases carried with ⟨rfl, rfl, _⟩
+  kernel_rfl
+
+/-- Evaluate the selected verifier's terminal action on the actual interaction result. -/
+def finishSelected (z : Stmt)
+    (answers : QueryImpl ([]ₒ + challengeSpec oracleSig selectedProtocol) Id)
+    (r : (_ : PathAlong oracleSig selectedProtocol) × PUnit.{1} × PUnit.{1}) :
+    Observation oracleSig selectedProtocol (fun _ => PUnit.{1})
+      (OracleVerifier.Output (fun p => SelectedValue p.1) (fun _ (_ : PUnit.{1}) => Fin 8)) :=
+  let p := projectPathAlong oracleSig selectedProtocol r.1
+  let view := toView selectedProtocol r.1
+  let resources : (pathResources emptyFamily selectedProtocol p).Data :=
+    (z.2, payloads selectedProtocol r.1)
+  let verdict := evalWithAnswerFn answers (simulateQ
+    (QueryImpl.addLift
+      ((fun q => liftM (([]ₒ + challengeSpec oracleSig selectedProtocol).query (.inl q))) :
+        QueryImpl []ₒ (OracleComp ([]ₒ + challengeSpec oracleSig selectedProtocol)))
+      ((pathResources emptyFamily selectedProtocol p).answer resources))
+    (verifier.decide z.1 p view).run)
+  ⟨r.1, r.2.1, verdict.map fun t => (t, (verifier.outputMap z.1 p view).f resources)⟩
+
+/-- With no ambient queries, finalization is the full verifier's closed observation. -/
+theorem finishSelected_eq (z : Stmt)
+    (answers : QueryImpl ([]ₒ + challengeSpec oracleSig selectedProtocol) Id)
+    (r : (_ : PathAlong oracleSig selectedProtocol) × PUnit.{1} × PUnit.{1}) :
+    finishSelected z answers r =
+      ⟨r.1, r.2.1, closedTerminalObservation verifier z r.1⟩ := by
+  simp only [finishSelected, evalWithAnswerFn_simulateQ, closedTerminalObservation,
+    terminalObservation, OracleVerifier.decideWith]
+  congr 4
+  funext q
+  rcases q with q | q
+  · exact q.elim
+  · rfl
+
+/-- Authored selection followed by the real parties returns the full dependent observation. -/
+theorem run_selectedProver (b : Bool) (z : Stmt) (ms : Messages Unit rounds)
+    (tr : PathAlong oracleSig (protocol rounds)) (carried : MatchesMessages rounds ms tr) :
+    evalWithAnswerFn (selectedAnswers tr) (verifier.run z.1 z.2 (selectedProver b ms)) =
+      ⟨⟨b, tr⟩, ⟨⟩, closedTerminalObservation verifier z ⟨b, tr⟩⟩ := by
+  have h := (congrArg (finishSelected z (selectedAnswers tr))
+    (selectedInteraction_eq b ms tr carried)).trans (finishSelected_eq _ _ _)
+  simp only [OracleVerifier.run, evalWithAnswerFn_bind, evalWithAnswerFn_pure]
+  dsimp only [finishSelected] at h
+  exact h
+
+/-- Every table gives the same full transcript and observation in the dependent game. -/
+theorem game_eval (b : Bool) (table : Table Stmt Unit rounds) :
+    evalWithAnswerFn (QueryImpl.ofFn table) (game b) =
+      let tr := completedPath rounds (stmt 0) messages table
+      ⟨stmt 0, ⟨b, tr⟩, closedTerminalObservation verifier (stmt 0) ⟨b, tr⟩, 6⟩ := by
+  erw [game, evalWithAnswerFn_map, restoredExecution_eval]
+  rfl
+
+/-- The adaptive, repeated-query game agrees with an actual selected-party replay. -/
+theorem game_eval_run (b : Bool) (table : Table Stmt Unit rounds) :
+    let result := evalWithAnswerFn (QueryImpl.ofFn table) (game b)
+    evalWithAnswerFn (selectedAnswers result.2.1.2)
+      (verifier.run 0 (stmt 0).2 (selectedProver b messages)) =
+        ⟨result.2.1, ⟨⟩, result.2.2.1⟩ := by
+  erw [game_eval]
+  exact run_selectedProver b (stmt 0) messages _
+    (completedPath_matchesMessages rounds _ _ table)
+
+/-- The packaged measured theorem applies to the full dependent-output game and exact programs. -/
+theorem measured_game_bound (b : Bool) :
+    Pr{let r ← (simulateQ randomOracle (game b)).run' ∅}[
+      True ∧ (∃ claim, r.2.2.1 = some claim ∧ r.2.2.2 ≤ (claim.2 ⟨⟩).val) ∧
+      ¬ Rin r.1 (measured.extractAlong r.1 r.2.1.2 r.2.2.2)] ≤
+      2 * Finset.univ.sup errors + ∑ j, errors j ∧
+    ∀ z, True → ∀ tr,
+      (∀ w, (measured.stages.programAlong z tr).program.run w = measured.extractAlong z tr w) ∧
+      (measured.stages.programAlong z tr).program.CostAtMost 2 := by
+  have h := MeasuredKnowledgeStateFunction.stateRestoration_oracle_knowledge_soundness_nonuniform
+    (suffixVerifier b) (relation b) measured (fun _ _ w => w) (closedOutputLaw b)
+    errors bounded (fun _ => 0) (fun _ => 1) (fun _ => 0) (fun _ => 0)
+    (fun z _ => stages_protocolBudgetAtMost z) adversary 2 queryBound
+  constructor
+  · have hp := h.1
+    erw [closedVerificationGame_eq, simulateQ_map, StateT.run'_map', prEvent_map] at hp
+    erw [game, simulateQ_map, StateT.run'_map', prEvent_map]
+    simpa only [observation_prepend, relation, Nat.cast_ofNat] using hp
+  · exact h.2
+
+/-- The game event uses the actual measured program's result, retaining cost two and error 7/16. -/
+theorem program_run_game_bound (b : Bool) :
+    Pr{let r ← (simulateQ randomOracle (game b)).run' ∅}[
+      True ∧ (∃ claim, r.2.2.1 = some claim ∧ r.2.2.2 ≤ (claim.2 ⟨⟩).val) ∧
+      ¬ Rin r.1 ((stages.programAlong r.1 r.2.1.2).program.run r.2.2.2)] ≤ 7 / 16 ∧
+    ∀ z tr, (stages.programAlong z tr).program.CostAtMost 2 := by
+  constructor
+  · simpa only [stages.run_programAlong] using actual_nonuniform_game_bound b
+  · exact extractionProgram_costAtMost
+
+/-- The accepting frozen execution still extracts eighteen from the supplied witness six. -/
+example (b : Bool) : ∃ claim,
+    closedTerminalObservation verifier (stmt 0) (selectedTranscript b 5 0 7 1) = some claim ∧
+    6 ≤ (claim.2 ⟨⟩).val ∧ ¬ Rin (stmt 0)
+      (knowledge.extractAlong (stmt 0) (path 0 1) 6) := by
+  refine ⟨returnedClaim b 7, ?_, ?_, ?_⟩
+  · have obs := observation b (stmt 0) 5 0 7 1
+    erw [ite_eq_left (Or.inl rfl)] at obs
+    exact obs
+  · cases b <;> decide
+  · change ¬ (18 : Nat) ≤ 0
+    omega
+
+/-- info: some (7, 7) -/
+#guard_msgs in
+#eval (closedTerminalObservation verifier (stmt 0) (selectedTranscript false 5 0 7 1)).map
+  (fun claim => (selectedValue false claim.1, (claim.2 ⟨⟩).val))
+
+/-- info: none -/
+#guard_msgs in
+#eval (closedTerminalObservation verifier (stmt 0) (selectedTranscript true 5 1 7 1)).map
+  (fun claim => (selectedValue true claim.1, (claim.2 ⟨⟩).val))
+
+end PublicSelection
+
 end Interaction.Core.StateRestorationBudgetTests
+
+run_cmd do
+  for decl in [``Interaction.Core.StateRestorationBudgetTests.PublicSelection.observation,
+      ``Interaction.Core.StateRestorationBudgetTests.PublicSelection.outputLaw,
+      ``Interaction.Core.StateRestorationBudgetTests.PublicSelection.actual_nonuniform_game_bound,
+      ``Interaction.Core.StateRestorationBudgetTests.PublicSelection.run_selectedProver,
+      ``Interaction.Core.StateRestorationBudgetTests.PublicSelection.game_eval_run,
+      ``Interaction.Core.StateRestorationBudgetTests.PublicSelection.measured_game_bound,
+      ``Interaction.Core.StateRestorationBudgetTests.PublicSelection.program_run_game_bound] do
+    for ax in ← Lean.collectAxioms decl do
+      unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
+        throwError "unexpected axiom {ax} in {decl}"

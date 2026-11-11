@@ -554,61 +554,142 @@ This is a missing parent dependency. The child restoration branch has not been m
 adapted here, and none of those rows is marked restored. No constant family, extra public message,
 or encoding of `Fin 8`/`Fin 9` is substituted for the frozen statement.
 
-## 20. State restoration: witness families, replay and remaining output-family omission
+## 20. State restoration under P2: authored output selection
 
-The source is the frozen interaction layer's state-restoration games and tests under
-`ArkLib/Interaction/Oracle/Security/StateRestoration*.lean` and the corresponding test directory.
-The knowledge interfaces retain statement-dependent witness carriers directly. The restoration
-theorems take `Win : S → Type`, `relIn : (stmt : S) → Win stmt → Prop` and
-`Wout : S → PathAlong oracleSig (protocol rounds) → Type`. The output relation and `readOut` use
-`Wout stmt tr`; extraction returns `Win stmt`. The statement includes the concrete input oracle
-data in the verifier games. There is no encoding of a family into a constant witness type.
+Approved premise P2 says that challenges and oracle messages never select protocol shape.
+`Path s` therefore retains public prover messages and erases challenges. The frozen fixtures'
+challenge-selected `Fin 8`/`Fin 9` statement carriers are **premise-required and retired under P2**.
+They are not a missing parent dependency. This disposition supersedes entry 19's restoration
+readiness diagnosis; entries 1–19 are retained unchanged.
 
-The same signatures propagate through the per-round error theorems, measured protocol budgets
-and the paired measured-extraction theorem. Composition and generic measured extraction use the
-parent's statement-indexed API. `ProtocolBudgetAtMost` bounds the root and leaf budgets and the
-message and challenge step budgets of one statement on any oracle protocol. The round-list
-corollary bounds the composed program by
-`leafBound + rounds.length • (messageBound + challengeBound) + rootBound`. This is an instruction
-budget for the named stage programs, not a polynomial-time claim.
+The replacement fixture prepends a prover-authored Boolean `b` to the original one- or two-round
+protocol. That public message selects the exact statement carriers `Fin 8` and `Fin 9`. The
+challenge remains independent and continues to control acceptance, rejection and knowledge-state
+transitions. The fixtures quantify over both selectors and every original challenge, statement,
+message and output witness. In particular the diagonal selectors reproduce the numerical frozen
+replays, while all four selector/challenge combinations are checked by universal theorems.
+The frozen output oracle stays `PUnit → Fin 8`, with the original interface and payload. A
+separate `varyingVerifier`/`varyingGame` fixture additionally checks genuinely path-dependent
+output oracle carriers and interfaces; it does not replace the frozen rows.
 
-For arbitrary protocol trees and completed execution paths,
-`KnowledgeStateFunction.extraction_failure_implies_badChallengeAlong` retains the suffix-extracted
-witness at a failing receiver transition. Its root-state form needs neither admissibility nor an
-input-relation premise. The restriction equations `badChallengeFrom_child` and
-`badChallengeAlong_liftBind` preserve the same terminal witness when descending a tree.
-`badChallengeAlong_completion` locates this generic transition at a salted completion key.
-`exists_badChallenge_of_extraction_failure` is the resulting keyed corollary; its conclusion is
-`BadChallengeOnCompletion F stmt messages table w key`. This predicate retains the actual suffix
-extraction of `w`. Only `BadChallengeOnCompletion.mem_badChallenge`, used in the probability
-bound, forgets that witness to obtain the locally bounded bad-challenge event. The earlier local
-proof that independently found a witness is removed.
+### Games and execution
 
-The adversary's supplied witness still has one carrier `W`, as in the frozen restoration game.
-`readOut : (stmt : S) → (tr : PathAlong _ _) → W → Wout stmt tr` supplies the terminal witness
-from it after completion. The generic output law is an implication from an accepted observation
-and its output relation. The frozen equivalence is a sufficient special case. The key equality
-premise can be obtained from decidable equality of input statements, messages and salts in any
-concrete finite-round fixture.
+`selectedPlainGame`, `selectedClosedGame` and the two-round `PublicSelection.game` restore the
+original adversary and evaluate the full verifier on the public-selector-prefixed transcript.
+Their output is dependent on that returned transcript. The public selector makes no restoration
+oracle query, so the original salted keys, adaptive repeated query, query counts and error
+charges are unchanged. The suffix verifier at each fixed selector is used to instantiate the
+generic soundness theorem. Observation equations and party-run correspondence identify its
+output with the full verifier's output; the game is not a manually predicted verdict.
 
-Replay has two separate terminals. The plain replay reads and returns payload 7 on both `true`
-and `false`: `replayResult_eq` gives `pure (7, challenge, 7)`, and both evaluations check it.
-`oracleReplayResult_eq` instead uses the rejecting oracle verifier: it returns the output oracle
-on `true` and `none` on `false`. The completion checks remain separate from these party runs.
+`plainScriptedRun_eq` and `replayResult_eq` return payload seven on every Boolean challenge, in
+both exact statement carriers. `selectedScriptedRun_eq` and `oracleReplayResult_eq` separately
+retain rejection on a false challenge. The one-round `selectedGame_eval_run` and two-round
+`PublicSelection.game_eval_run` connect restored games to actual `OracleVerifier.run` executions.
+The one-round `selected_fresh` checks the complete interaction's uniform challenge marginal,
+independently of input, authored selector and oracle payload.
 
-### Dispositions
+### Signature inventory
 
-| Frozen assertion | Disposition |
+| API | Before this restack | After this restack |
+| --- | --- | --- |
+| `terminalObservation` | Only `protocol rounds`, fixed `T`, small inputs | Any `s`, `S : Type uS`, input index `I : Type uI`, independent query universes; result `Option (T (projectPathAlong _ _ tr))` |
+| `closedTerminalObservation` | Fixed statement and output oracle carriers | Statement and oracle data at the transcript's path; output index may have its own universe outside a run |
+| `verificationGame`, `closedVerificationGame` and their equality/evaluation laws | Product of transcript and a fixed observation type | Input paired with a dependent pair of transcript and observation at that path, plus the unchanged adversary witness |
+| Uniform, private-coin, per-round and measured game relations | `relOut stmt tr out w` at a fixed output carrier | Same arguments, with `out : T (projectPathAlong _ _ tr)` or the closed path-indexed output |
+| `verificationGame_eval_run` | Separate path equality and output equality in a fixed carrier | Equality of the dependent pair containing the path and its correctly typed observation |
+| `run_scriptedProver` | Small statement and input-index types | Independent statement, input-index and query universes; run output constraints remain those of entry 18 |
+| Unmeasured keyed predicates and restoration bounds | `Win stmt` and intermediate witnesses in `Type` | Independent input-witness universe `uW` and certificate universe `uK`, retaining statement-indexed carriers and every original relation |
+| Measured node-kind budgets and stage bounds | Small statement index | Independent statement universe; program input/result carriers retain pinned VCVio's small-universe scope |
+| Plain replay | Constant statement carrier | Prover-authored `b` selects `Fin 8`/`Fin 9`, with all original challenge quantifiers and returned values |
+
+The probabilistic restoration games return the selected input and oracle data; these are run
+outputs and remain small under entry 18. Input witnesses are not returned by the game and take
+universe `uW`. Intermediate certificate witnesses take universe `uK` independently. Deterministic
+observations and the scripted-run theorem have the larger argument universes listed above.
+
+### Shared extraction laws and merge resolution
+
+The merge conflicted in `Security/KnowledgeComposition.lean` and this notes file. The parent's
+composition module and entries 1–19 were kept. The root-failure theorem and the two child
+restriction laws contributed by state restoration were moved beside the definitions in
+`Security/KnowledgeComposition/Extraction.lean`, retaining independent universes.
+`badChallengeFromMaps` factors the same bad-transition recursion through the certificate's actual
+states and extraction maps, so unused root obligations do not affect it. Keyed recursive helpers
+use `withRootWitness` internally, as the parent composition does; their public signatures retain
+the original input carrier.
+
+`exists_badChallenge_of_extraction_failure` still concludes
+`BadChallengeOnCompletion F stmt messages table w key`. Every transition keeps the witness
+extracted from the actual remaining transcript and the supplied `w`. Only the explicitly named
+`BadChallengeOnCompletion.mem_badChallenge` forgets that witness for the probability bound.
+The larger-certificate canary checks keyed localization after lifting the certificate to `Type 1`.
+
+### Frozen one-round rows
+
+Locations below refer to the existing row annotations in
+`ArkLibTest/Interaction/Core/Security/StateRestoration.lean` and the corresponding frozen file.
+
+| Row | P2 disposition and ported assertion |
 | --- | --- |
-| Statement-indexed input state and extractor in the restoration bounds | Equivalent carrier generality: `Win stmt`, `Wout stmt tr`, and statement-first extraction at every cursor. The `indexedKnowledge` fixture carries `Fin (stmt.1 + 1)` through extraction and instantiates the game bound. |
-| Arbitrary-tree extraction failure and its suffix witness | Covered by the generic `BadChallengeAlong` theorem; the keyed theorem is a witness-preserving corollary for completed round lists. |
-| Plain replay rows 9–11 (frozen test lines 175, 182–183) | Returned values restored on both challenges, with a total computation and a universal replay theorem. The full dependent-output statement remains open until the verifier supports the frozen `Fin 8`/`Fin 9` family. The fixed-carrier test alone does not close these rows. |
-| Rejecting oracle replay and observations, rows 13–19 | Rejecting behaviour retained separately. Dependent-output typing remains open. |
-| Output statement and output oracle families of the verification games | Unresolved omission: the parent `OracleVerifier` still fixes `T` and `outputs`. The frozen output types and oracle families may depend on the branch. The current fixed-output games do not close these rows. |
-| Decision ambient | Premise-required scope: the restoration experiment has empty decision ambient `[]ₒ`; the shared-oracle decision experiment needs separate theory. |
+| 1, input law | Unchanged: every input and witness satisfies exactly the original root relation. |
+| 2, plain output law | Challenge-selected carrier retired by P2. `selectedPlainOutputLaw_iff` retains the full equivalence for every authored selector, input, transcript and witness. |
+| 3–5, preservation and local bound | Shape-independent and retained unchanged, including both challenge values and the exact `1/2` bound. |
+| 6, extraction | Unchanged value thirteen from witness six and payload seven, on every challenge; the selector does not enter extraction. |
+| 7, freshness | Shape-independent uniform sampling retained; `selected_fresh` checks the full selected interaction for every input, selector and payload. |
+| 8, plain game bound | Authored carrier replacement; `selected_actual_game_bound` retains the always-returning terminal, challenge-based relation and error `1/2`. |
+| 9–11, replay and evaluations | Challenge-selected carrier retired by P2. `plainScriptedRun_eq`, `replayResult_eq` and the two evaluations retain payload seven on both challenges in the selected carriers. |
+| 12, extraction evaluation | Unchanged value thirteen. |
+| 13–14, oracle observations | `selectedObservation` retains every input and payload, exact accepted claim on true and rejection on false; only the statement-carrier selector changes. |
+| 15, oracle output law | `selectedOracleOutputLaw` retains the complete terminal-state equivalence, including every supplied witness. Output oracles remain `Fin 8`. |
+| 16, closed game bound | `selected_actual_oracle_game_bound` retains `1/2` in both authored carriers, with a general bounded-adversary theorem underneath it. |
+| 17, rejecting relation | The selected false-branch assertion retains arbitrary relations and excludes every related claim. |
+| 18–19, closed evaluations | The selected oracle replay evaluates to `some (7, 7)` on true and `none` on false. |
+| 20, private coins | `selected_actual_coin_game_bound` retains the two original coin-selected adversaries and `1/2`. |
+| 21, failed coins | The selected-game failure assertion retains probability zero. |
 
-The fixed-output restriction is a missing dependency, not an approved weakening or a completed
-port. The oracle-verifier output-family interface must be generalized in its owning parent before
-the full dependent-output game statements can be restored. The earlier ledger entry numbered 18
-also conflated the plain replay with the rejecting oracle terminal; this entry supersedes that
-account and leaves the affected dependent-output rows open.
+### Frozen two-round rows
+
+The row annotations are in `ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean`.
+
+| Row | P2 disposition and ported assertion |
+| --- | --- |
+| 1–3, input law, preservation, local bounds | Shape-independent and retained, including the distinct challenge alphabets and round errors `1/8` and `1/16`. |
+| 4–5, observation and output law | Challenge-selected carrier retired by P2. `PublicSelection.observation` and `outputLaw` retain every input, both messages, both challenges and every witness, with the original acceptance disjunction. |
+| 6, query bound | The original adversary still queries the later salted key twice before completion; query bound two is unchanged. |
+| 7, extraction | Unchanged extraction eighteen on every pair of challenges. |
+| 8–9, error arithmetic | Unchanged maximum error `1/8` and error sum `3/16`. |
+| 10, nonuniform game bound and charge | `PublicSelection.actual_nonuniform_game_bound` retains the same adaptive adversary and `7/16` in both authored carriers; the original round-charge theorem remains unchanged. |
+| 11, strict improvement | Unchanged comparison with the coarser uniform bound. |
+| 12, reachable bad execution | The selected accepting claim with witness six still extracts eighteen and fails the input relation. |
+| 13, accepting/rejecting observation evaluations | Selected evaluations retain `some (7, 7)` and `none`. |
+| 14, extraction evaluation | Unchanged extracted value eighteen. |
+| 15–30, measured extraction | Shape-independent stage maps, budgets, execution results, empty carriers and program equalities remain unchanged, with every original path and witness quantifier. |
+| 31, packaged measured game | `PublicSelection.measured_game_bound` instantiates the packaged theorem for each selected carrier and retains all statement/path/witness quantifiers and cost two. |
+| 32, program-result event | `PublicSelection.program_run_game_bound` states failure on the actual program result, with error `7/16` and cost two. |
+
+The one- and two-round closed games also have table-evaluation and actual-party replay laws. No
+challenge-selected output carrier is asserted inside the P2 core, and no approved row is left
+pending path-indexed outputs.
+
+### Validation
+
+On 2026-11-11, the ancestry check against `feat/interaction-migrate-core-3` passed, and both
+prescribed checks exited zero from this worktree:
+
+```sh
+~/claude-work/restack-1110/check.sh feat/interaction-migrate-core-3 build
+DOC_BASE=feat/interaction-migrate-core-3 ~/claude-work/restack-1110/check.sh \
+    feat/interaction-migrate-core-3 guards
+```
+
+The build includes both restoration test modules, their executable replay assertions, and the
+transitive axiom checks on the new game and replay theorems. The guards cover documentation,
+frozen paths, forbidden proof escapes, headers, imports and Lean source style. The parent's
+ancestry, build and guards were also rerun successfully from its worktree. Every changed Lean
+file has fewer than 1500 lines and no line exceeds 100 characters.
+
+Independent statement review checked the P2 dispositions, all original non-carrier quantifiers,
+actual party runs, keyed witnesses, nonuniform errors and measured costs. Blind read-back of the
+production declarations independently confirmed their dependent output types and witness
+universes.
