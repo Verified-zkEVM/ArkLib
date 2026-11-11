@@ -23,6 +23,8 @@ the challenge only by choosing its pure continuation, as the legacy `receiveChal
 
 @[expose] public section
 
+universe uI wI
+
 namespace Sumcheck.Core
 
 open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
@@ -46,8 +48,10 @@ def roundOn (M : Type) (eval : M → R → R) : OracleProtocol.{0} :=
     .liftBind (.challenge R) fun _ => .pure ⟨⟩
 
 /-- One round: an evaluation oracle for the round polynomial, then one ring challenge. -/
-@[reducible]
-def round : OracleProtocol.{0} := roundOn R (R⦃≤ deg⦄[X]) fun p x => p.val.eval x
+@[implicit_reducible]
+def round : OracleProtocol.{0} :=
+  .liftBind (.oracle (R⦃≤ deg⦄[X]) inferInstance) fun _ =>
+    .liftBind (.challenge R) fun _ => .pure ⟨⟩
 
 /-- The unique shape path of a round. Neither move selects a branch. -/
 def roundPath : Path (round R deg) := ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
@@ -166,7 +170,8 @@ theorem split_toView_round (msg : R⦃≤ deg⦄[X]) (chal : R) (tail : PathAlon
   exact Prod.ext (Subtype.ext h.1) (Subtype.ext (eq_of_heq h.2))
 
 
-variable {I : Type} {A : I → Type} (inputs : Interaction.Oracle.OracleFamily I A)
+variable {I : Type uI} {A : I → Type}
+  (inputs : Interaction.Oracle.OracleFamily.{uI, 0, wI} I A)
 
 /-- The first round of a transcript of a round followed by `s`. -/
 def appendHead (tr : PathAlong oracleSig ((round R deg).append fun _ => s)) :

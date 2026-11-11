@@ -43,7 +43,7 @@ message representation and its runtime instance belong to `Computable`.
 
 @[expose] public section
 
-universe uI uS
+universe uI uJ uK uS uι wI wJ wK
 
 namespace Sumcheck.Core
 open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
@@ -53,7 +53,7 @@ open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Intera
 
 section InputSlot
 
-variable {s : OracleProtocol} {I : Type uI} {A : I → Type} (inputs : OracleFamily I A)
+variable {s : OracleProtocol} {I : Type uI} {A : I → Type} (inputs : OracleFamily.{uI, 0, wI} I A)
 
 /-- The input slot of a run's resources, as an oracle map. -/
 abbrev inputSlot (p : Path s) : OracleMap (pathResources inputs s p) inputs :=
@@ -65,8 +65,8 @@ end InputSlot
 
 section Check
 
-variable {R : Type} [CommSemiring R] {deg : ℕ} {ι : Type} (ambient : OracleSpec ι)
-  {I : Type} {A : I → Type} (inputs : OracleFamily I A)
+variable {R : Type} [CommSemiring R] {deg : ℕ} {ι : Type uι} (ambient : OracleSpec.{uι, 0} ι)
+  {I : Type uI} {A : I → Type} (inputs : OracleFamily.{uI, 0, wI} I A)
 
 
 /-- Route the legacy round message's queries to the oracle node of a round. -/
@@ -83,7 +83,8 @@ def roundChallenges {p : Path (round R deg)} (v : View (round R deg) p) :
     (Spec.SingleRound.pSpec R deg).Challenges :=
   fun j => roundChallengeFn (deg := deg) (viewChallenge v) j.1 j.2
 
-variable {S T : Type} {J : Type} {B : J → Type} {outputs : OracleFamily J B}
+variable {S : Type uS} {T : Type} {J : Type uJ} {B : J → Type}
+  {outputs : OracleFamily.{uJ, 0, wJ} J B}
 
 /-- A single round verified by `check` on the round message and challenge. The output oracle is
 `out` applied to the input data and the round's message payload. -/
@@ -143,6 +144,10 @@ def checkVerdict
       (roundFullTranscript (roundMessage tr) (roundChallenge tr)).messages)
     (check stmt (roundFullTranscript (roundMessage tr) (roundChallenge tr)).challenges).run
 
+variable {ι : Type} (ambient : OracleSpec ι)
+  (inputs : OracleFamily.{uI, 0, wI} I A) {J : Type} {B : J → Type}
+  {outputs : OracleFamily.{0, 0, wJ} J B}
+
 /-- The run of a single round: the interaction, then the verdict of the check on the completed
 round, with the output oracle mapped from the input data and the round's payloads. -/
 theorem run_checkVerifier {Out : PathAlong oracleSig (round R deg) → Type}
@@ -182,11 +187,11 @@ end SplitView
 
 section Append
 
-variable {R : Type} [CommSemiring R] {deg : ℕ} {ι : Type} (ambient : OracleSpec ι)
-  {I : Type} {A : I → Type} (inputs : OracleFamily I A)
-  {J : Type} {B : J → Type} {middle : OracleFamily J B}
-  {K : Type} {C : K → Type} {outputs : OracleFamily K C}
-  {s : OracleProtocol} {S T U : Type}
+variable {R : Type} [CommSemiring R] {deg : ℕ} {ι : Type uι} (ambient : OracleSpec.{uι, 0} ι)
+  {I : Type uI} {A : I → Type} (inputs : OracleFamily.{uI, 0, wI} I A)
+  {J : Type uJ} {B : J → Type} {middle : OracleFamily.{uJ, 0, wJ} J B}
+  {K : Type uK} {C : K → Type} {outputs : OracleFamily.{uK, 0, wK} K C}
+  {s : OracleProtocol} {S : Type uS} {T U : Type}
 
 
 
@@ -234,6 +239,17 @@ theorem decideWith_append_checkVerifier (stmt : S) (x : ∀ i, A i)
   unfold appendHead appendTail checkVerdict roundMessage roundChallenge
   simp only [split_round_suffix]
   split <;> rename_i h <;> simp only [h]
+
+variable {ι : Type} (ambient : OracleSpec ι)
+  (inputs : OracleFamily.{uI, 0, wI} I A) {K : Type} {C : K → Type}
+  {outputs : OracleFamily.{0, 0, wK} K C}
+  (check : S → (Spec.SingleRound.pSpec R deg).Challenges →
+    OptionT (OracleComp [(Spec.SingleRound.pSpec R deg).Message]ₒ) T)
+  (out : S → (p : Path (round R deg)) → View (round R deg) p →
+    OracleMap (pathResources inputs (round R deg) p) middle)
+  (V₂ : OracleVerifier ambient s T (fun _ => U) middle (fun _ => outputs))
+  (compatible : OracleVerifier.OutputCompatibility (checkVerifier ambient inputs check out)
+    fun _ => V₂)
 
 /-- The run of a round appended to `V₂`. Both interactions run first. The decision is the
 round's check and, only after it accepts, the decision of `V₂` on the round's output oracle and

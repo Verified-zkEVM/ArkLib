@@ -26,6 +26,31 @@ namespace Sumcheck.Core.CompositionTest
 open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
   OracleComp OracleSpec ProtocolSpec Sumcheck.Core.RoundsTest
 
+section UnequalUniverses
+
+variable (clientAmbient : OracleSpec Unit) {I : Type 1} {A : I → Type}
+  (inputs : OracleFamily.{1, 0, 1} I A)
+  {J : Type} {B : J → Type} (outputs : OracleFamily.{0, 0, 1} J B)
+  (check : Type 1 → (Spec.SingleRound.pSpec ℕ 1).Challenges →
+    OptionT (OracleComp [(Spec.SingleRound.pSpec ℕ 1).Message]ₒ) ℕ)
+  (out : Type 1 → (p : Path (round ℕ 1)) → View (round ℕ 1) p →
+    OracleMap (pathResources inputs (round ℕ 1) p) (Resources.ofFamily outputs))
+
+/-- A large input statement and resource queries can produce a small round output. -/
+def largeInputVerifier :
+    OracleVerifier clientAmbient (round ℕ 1) (Type 1) (fun _ => ℕ) inputs
+      (fun _ => outputs) :=
+  checkVerifier clientAmbient inputs check out
+
+-- These ordinary-import clients exercise the decision, execution and append APIs too.
+#check decideWith_checkVerifier clientAmbient inputs check out
+#check run_checkVerifier clientAmbient inputs check out
+#check suffixRoute_round clientAmbient inputs check out
+#check decideWith_append_checkVerifier clientAmbient inputs check out
+#check run_append_checkVerifier clientAmbient inputs check out
+
+end UnequalUniverses
+
 noncomputable section
 
 -- Migration row: Sumcheck Interaction/Projection #3.
