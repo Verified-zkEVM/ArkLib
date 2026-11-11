@@ -19,6 +19,8 @@ uses discrete observations, so every event is measurable.
 
 @[expose] public section
 
+universe uS
+
 namespace Interaction.Core
 open PFunctor FreeM OracleComp Oracle
 open scoped ENNReal
@@ -38,8 +40,9 @@ def soundness {S Obs Ctx : Type*} {T : ClaimFamily Ctx} [MeasurableSpace Obs]
         {obs | ∃ t, verdict obs = some t ∧ output.language (context obs) t} ≤ ε
 
 /-- Classical soundness uses the full class of focal strategies, including private continuations.
-The output language is indexed by the shape path of the run. -/
-abbrev Verifier.soundness {ι σ S : Type} {ambient : OracleSpec ι}
+The output language is indexed by the shape path of the run. The input statement may lie in any
+universe. -/
+abbrev Verifier.soundness {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι}
     {s : Protocol} {T : Path s → Type}
     (V : Verifier ambient s S T) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))

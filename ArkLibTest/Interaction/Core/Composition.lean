@@ -62,9 +62,7 @@ open Interaction.Core.OracleTests
 def virtualSuffix : OracleVerifier noAmbient emptyTree Nat (fun _ => Unit) functions
     (fun _ => functions) where
   decide _ _ _ := pure ()
-  outputMap _ p _ := doubled.comp
-    (OracleMap.embedding (sumFamily functions (pathFamily emptyTree p))
-      (fun _ => Sum.inl PUnit.unit))
+  outputMap _ _ _ := doubled.comp (OracleMap.fst _ _)
 
 def compatible : OracleVerifier.OutputCompatibility queryDecision (fun _ => virtualSuffix) where
   outputMap stmt p v :=
@@ -102,10 +100,10 @@ abbrev twoStages : OracleProtocol := tree.append (fun _ => tree)
 
 /-- The prefix output is either its own message or a virtual oracle computed from it. -/
 abbrev PrefixOutput :=
-  (p : Path tree) → OracleMap (sumFamily emptyFamily (pathFamily tree p)) functions
+  (p : Path tree) → OracleMap (pathResources emptyFamily tree p) functions
 
 def embeddedOutput : PrefixOutput := fun p =>
-  OracleMap.embedding (sumFamily emptyFamily (pathFamily tree p)) (fun _ => .inr (.inl ⟨⟩))
+  (OracleMap.embedding (pathFamily tree p) (fun _ => .inl ⟨⟩)).comp (OracleMap.snd _ _)
 
 def virtualOutput : PrefixOutput := fun p => doubled.comp (embeddedOutput p)
 
@@ -115,10 +113,10 @@ def routedPrefix (out : PrefixOutput) :
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact do
-      let _ ← liftM ((labels + (sumFamily emptyFamily (pathFamily tree ⟨⟨⟩, ⟨⟩⟩)).spec).query
+      let _ ← liftM ((labels + (pathResources emptyFamily tree ⟨⟨⟩, ⟨⟩⟩).spec).query
         (.inl 10))
-      let n : Nat ← liftM ((labels + (sumFamily emptyFamily (pathFamily tree ⟨⟨⟩, ⟨⟩⟩)).spec).query
-        (.inr ⟨.inr (.inl ⟨⟩), (3 : Nat)⟩))
+      let n : Nat ← liftM ((labels + (pathResources emptyFamily tree ⟨⟨⟩, ⟨⟩⟩).spec).query
+        (.inr (.inr ⟨.inl ⟨⟩, (3 : Nat)⟩)))
       pure n
   outputMap _ p _ := out p
 
@@ -128,19 +126,19 @@ def routedSuffix :
   decide mid p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact do
-      let _ ← liftM ((labels + (sumFamily functions (pathFamily tree ⟨⟨⟩, ⟨⟩⟩)).spec).query
+      let _ ← liftM ((labels + (pathResources functions tree ⟨⟨⟩, ⟨⟩⟩).spec).query
         (.inl 20))
       let input : Nat ← liftM
-        ((labels + (sumFamily functions (pathFamily tree ⟨⟨⟩, ⟨⟩⟩)).spec).query
-          (.inr ⟨.inl ⟨⟩, (1 : Nat)⟩))
+        ((labels + (pathResources functions tree ⟨⟨⟩, ⟨⟩⟩).spec).query
+          (.inr (.inl ⟨⟨⟩, (1 : Nat)⟩)))
       let message : Nat ← liftM
-        ((labels + (sumFamily functions (pathFamily tree ⟨⟨⟩, ⟨⟩⟩)).spec).query
-          (.inr ⟨.inr (.inl ⟨⟩), (1 : Nat)⟩))
-      let _ ← liftM ((labels + (sumFamily functions (pathFamily tree ⟨⟨⟩, ⟨⟩⟩)).spec).query
+        ((labels + (pathResources functions tree ⟨⟨⟩, ⟨⟩⟩).spec).query
+          (.inr (.inr ⟨.inl ⟨⟩, (1 : Nat)⟩)))
+      let _ ← liftM ((labels + (pathResources functions tree ⟨⟨⟩, ⟨⟩⟩).spec).query
         (.inl 30))
       pure (mid, input, message)
-  outputMap _ p _ := OracleMap.embedding (sumFamily functions (pathFamily tree p))
-    (fun _ => .inr (.inl ⟨⟩))
+  outputMap _ p _ :=
+    (OracleMap.embedding (pathFamily tree p) (fun _ => .inl ⟨⟩)).comp (OracleMap.snd _ _)
 
 /-- The suffix output map ignores the intermediate statement. -/
 def routedCompatible (out : PrefixOutput) :
@@ -174,14 +172,15 @@ def twoStageHandler : QueryImpl (labels + challengeSpec oracleSig twoStages)
 /-- Decide each stage separately on materialized data: the prefix on its own payload, the suffix
 on the prefix's materialized output and its own payload. -/
 def materialized (out : PrefixOutput) : OracleComp labels (Option (Nat × Nat × Nat)) := do
-  let prefixData := sumData (fun i => i.elim) (payloads tree firstMessage)
+  let prefixData : (pathResources emptyFamily tree _).Data :=
+    (fun i => i.elim, payloads tree firstMessage)
   let mid ← (routedPrefix out).decideWith () _ (toView tree firstMessage) prefixData
   match mid with
   | none => pure none
   | some mid =>
     let middleData := ((routedPrefix out).outputMap () _ (toView tree firstMessage)).f prefixData
     routedSuffix.decideWith mid _ (toView tree secondMessage)
-      (sumData middleData (payloads tree secondMessage))
+      (middleData, payloads tree secondMessage)
 
 def checkRouting (out : PrefixOutput) (input : Nat) : Lean.Elab.Command.CommandElabM Unit := do
   let (obs, trace) := (simulateQ twoStageHandler
