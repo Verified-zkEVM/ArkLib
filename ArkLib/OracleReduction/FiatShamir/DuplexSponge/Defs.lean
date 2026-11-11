@@ -694,6 +694,41 @@ end OracleDistribution
 
 end OracleSpec
 
+namespace OracleComp
+
+open OracleSpec
+
+variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn U : Type} [SpongeUnit U] [SpongeSize]
+
+/-- Embed a computation over the forward-only spec `oSpec + (h, p)` into the full DSFS spec
+`oSpec + (h, p, p⁻¹)`. Every permutation query goes to the forward slot `p`
+(`liftDuplexSpongeForward_query_perm`).
+
+The honest prover and the honest verifier both lift their sponge operations through this map,
+so they make the same queries. Do not lift a `forwardPermutationOracle` computation into the full
+spec with a bare `liftM`. `forwardPermutationOracle` and `backwardPermutationOracle` both reduce
+to `α →ₒ α`, and instance search then picks the `p⁻¹` summand. -/
+def liftDuplexSpongeForward {α : Type}
+    (oa : OracleComp (oSpec + duplexSpongeForwardOracle StmtIn U) α) :
+    OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U) α :=
+  liftComp oa _
+
+/-- `liftDuplexSpongeForward` sends a forward permutation query to the `p` slot, not to `p⁻¹`. -/
+theorem liftDuplexSpongeForward_query_perm (s : CanonicalSpongeState U) :
+    liftDuplexSpongeForward (oSpec := oSpec) (StmtIn := StmtIn) (U := U)
+        (query (spec := oSpec + duplexSpongeForwardOracle StmtIn U) (Sum.inr (Sum.inr s))) =
+      query (spec := oSpec + duplexSpongeChallengeOracle StmtIn U) (Sum.inr (dsPermQuery s)) :=
+  rfl
+
+/-- `liftDuplexSpongeForward` sends a hash query to the `h` slot. -/
+theorem liftDuplexSpongeForward_query_hash (x : StmtIn) :
+    liftDuplexSpongeForward (oSpec := oSpec) (StmtIn := StmtIn) (U := U)
+        (query (spec := oSpec + duplexSpongeForwardOracle StmtIn U) (Sum.inr (Sum.inl x))) =
+      query (spec := oSpec + duplexSpongeChallengeOracle StmtIn U) (Sum.inr (dsHashQuery x)) :=
+  rfl
+
+end OracleComp
+
 open OracleComp OracleSpec ProtocolSpec
 
 variable {n : ℕ} {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
@@ -816,9 +851,8 @@ def Prover.processRoundDSFS (j : Fin n)
     let inst : Deserialize (pSpec.Challenge idx) (Vector U (challengeSize idx)) :=
       Codec.instDeserializeChallenge idx
     let f ← prover.receiveChallenge idx state
-    let (challenge, newSponge) ←
-      liftM (m := OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U))
-        (DuplexSponge.squeeze sponge (challengeSize idx))
+    let (challenge, newSponge) ← liftDuplexSpongeForward
+      (liftM (DuplexSponge.squeeze sponge (challengeSize idx)))
     -- Deserialize the challenge
     let deserializedChallenge : pSpec.Challenge idx := inst.deserialize challenge
     return ⟨messages.extend hDir, newSponge, f deserializedChallenge⟩
@@ -828,9 +862,8 @@ def Prover.processRoundDSFS (j : Fin n)
       Codec.instSerializeMessage idx
     let ⟨msg, newState⟩ ← prover.sendMessage idx state
     let serializedMessage : Vector U (messageSize idx) := inst.serialize msg
-    let newSponge ← liftM
-      (m := OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U))
-      (DuplexSponge.absorb sponge serializedMessage.toList)
+    let newSponge ← liftDuplexSpongeForward
+      (liftM (DuplexSponge.absorb sponge serializedMessage.toList))
     return ⟨messages.concat hDir msg, newSponge, newState⟩
 
 /--
@@ -848,7 +881,7 @@ def Prover.runToRoundDSFS (i : Fin (n + 1))
   Fin.induction
     (do
       -- Initialize the sponge with the input statement
-      let sponge ← liftM (DuplexSponge.start stmt)
+      let sponge ← liftDuplexSpongeForward (liftM (DuplexSponge.start stmt))
       return ⟨default, sponge, state⟩
     )
     (prover.processRoundDSFS)
@@ -876,7 +909,8 @@ The verify body itself only uses forward operations (`start`, `absorb`, `squeeze
 helper `deriveTranscriptDSFS`; the surface is kept at the wide
 `oSpec + duplexSpongeChallengeOracle StmtIn U` so it lines up with
 `Reduction.duplexSpongeFiatShamir` (which requires the prover and verifier to share a single
-oracle spec). The helper is `liftComp`-ed into the wide spec at the call site.
+oracle spec). The helper is lifted into the wide spec with `liftDuplexSpongeForward`, as the
+prover's sponge steps are.
 For the strict CO25 Figure 4 line 3 typing
 (`𝒱^{h,p}` — no `p⁻¹`) used inside security games, see
 `Verifier.duplexSpongeFiatShamirForward`. -/
@@ -889,8 +923,8 @@ def Verifier.duplexSpongeFiatShamir (V : Verifier oSpec StmtIn StmtOut pSpec) :
     -- Derive the full transcript based on the messages and the sponge (forward-only helper),
     -- then lift into the wide spec required by this surface.
     let ⟨_, transcript⟩ ←
-      liftComp (messages.deriveTranscriptDSFS (oSpec := oSpec) (U := U) stmtIn)
-        (oSpec + duplexSpongeChallengeOracle StmtIn U)
+      OptionT.lift <| liftDuplexSpongeForward
+        (messages.deriveTranscriptDSFS (oSpec := oSpec) (U := U) stmtIn)
     let v ← (V.verify stmtIn transcript).run
     v.getM
     -- Option.getM (← (V.verify stmtIn transcript).run)
@@ -946,8 +980,8 @@ def Prover.runToRoundDSFSSalted {δ : Nat}
             DuplexSponge U (Vector U SpongeSize.N) × prover.PrvState i) :=
   Fin.induction
     (do
-      let sponge0 ← liftM (DuplexSponge.start stmt)
-      let sponge ← liftM (DuplexSponge.absorb sponge0 salt.toList)
+      let sponge0 ← liftDuplexSpongeForward (liftM (DuplexSponge.start stmt))
+      let sponge ← liftDuplexSpongeForward (liftM (DuplexSponge.absorb sponge0 salt.toList))
       return ⟨default, sponge, state⟩
     )
     (prover.processRoundDSFS)
@@ -991,10 +1025,9 @@ def Verifier.duplexSpongeFiatShamirSalted (δ : Nat)
     let salt : Vector U δ := saltedProof.1
     let messages : pSpec.Messages := saltedProof.2
     let ⟨_, transcript⟩ ←
-      liftComp
+      OptionT.lift <| liftDuplexSpongeForward
         (messages.deriveTranscriptDSFSSalted
           (pSpec := pSpec) (oSpec := oSpec) (U := U) stmtIn salt)
-        (oSpec + duplexSpongeChallengeOracle StmtIn U)
     let v ← (V.verify stmtIn transcript).run
     v.getM
 
@@ -1039,8 +1072,8 @@ def Verifier.toDSFS (δ : Nat) (V : Verifier oSpec StmtIn StmtOut pSpec) :
   V.duplexSpongeFiatShamirSaltedForward δ
 
 /-- Run the narrow-spec salted forward verifier `𝒱^{h,p}` (`V.toDSFS δ`) on
-`(stmtIn, proof : DSSaltedProof pSpec U δ)`, then `liftComp` the resulting computation up to the
-wide spec `oSpec + duplexSpongeChallengeOracle StmtIn U`.
+`(stmtIn, proof : DSSaltedProof pSpec U δ)`, then lift the resulting computation with
+`liftDuplexSpongeForward` to the wide spec `oSpec + duplexSpongeChallengeOracle StmtIn U`.
 
 Shared by:
 - `dsfsGame` / `hybridGame` (KeyLemma.lean — `Hyb_0` through `Hyb_3` skeleton);
@@ -1048,15 +1081,16 @@ Shared by:
 
 Encodes CO25 Figure 4 line 3 at the type level: the narrow input spec
 `oSpec + duplexSpongeForwardOracle StmtIn U` exposes only `(h, p)`, while the wide output spec
-`oSpec + duplexSpongeChallengeOracle StmtIn U` exposes `(h, p, p⁻¹)`. Because the body is just
-`liftComp`-ed from the narrow surface, no `p⁻¹` query ever appears in the resulting query log. -/
+`oSpec + duplexSpongeChallengeOracle StmtIn U` exposes `(h, p, p⁻¹)`. Because the body is lifted
+from the narrow surface by `liftDuplexSpongeForward`, no `p⁻¹` query appears in the resulting
+query log. -/
 def runForwardVerifierWide (δ : Nat) (V : Verifier oSpec StmtIn StmtOut pSpec)
     (stmtIn : StmtIn) (proof : DSSaltedProof (pSpec := pSpec) (U := U) δ) :
     OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U) (Option StmtOut) :=
   let verifyCompNarrow :
       OracleComp (oSpec + duplexSpongeForwardOracle StmtIn U) (Option StmtOut) :=
     ((V.toDSFS δ).run stmtIn (fun i => match i with | ⟨0, _⟩ => proof)).run
-  liftComp verifyCompNarrow (oSpec + duplexSpongeChallengeOracle StmtIn U)
+  liftDuplexSpongeForward verifyCompNarrow
 
 /-- Short alias for `Verifier.singleSaltFiatShamir` — lift an interactive `Verifier` to the
 paper-faithful FS-standard salted NARG verifier `𝒱_std^f` (`FSStdSaltedVerifier`).
