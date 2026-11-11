@@ -100,7 +100,7 @@ def backtrackOutputMessagesInImage
 
 /-- CO25 §5.4 Items 4(d)/(e) — paper predicate `∀ ι ∈ [i], α̂_ι ∈ Im(φ_ι)`, decided as a
 `Serialize`-image check on the recovered encoded messages. -/
-noncomputable def d2sInCodecImagePredicate
+def d2sInCodecImagePredicate
     (out : BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) : Bool :=
   backtrackOutputMessagesInImage
     (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
@@ -428,17 +428,22 @@ def d2sHandleBacktrackNoResult
   -- find `s_out` for `s_in` from `Cache_p -> inlu -> sample`
   let st ← get
   match popCacheByInput (U := U) st.cacheP stateIn with
-  -- Item 4(c)i — cache pop: `(s_out, Cache_p') := pop(Cache_p, s_in)`. The paper adds to
-  -- `tr_∇.p` ONLY in Item 4(c)iii (its Eq. 48 consistency list excludes 4(c)i): a
-  -- Cache_p-popped answer must NOT enter `tr_∇`, so a later repeat `p`-query on the same
-  -- `s_in` falls through to 4(c)iii and can answer inconsistently — exactly the `E_func`
-  -- event that Lemma 5.8 bounds via the `Cache_p ∩ tr` count (CO25 Eqs. 31–33).
+  -- Item 4(c)i — cache pop: `(s_out, Cache_p') := pop(Cache_p, s_in)`, then
+  -- `tr_∇.p.add(s_in, s_out)`. Item 4(c)i does not spell out the `add`, but Item 1 makes
+  -- `tr_∇` maintain the entries of `tr`, and the Eq. 48 argument ("new queries to p are
+  -- stored in tr_∇.p") needs the popped pair there: without it, a repeat `p(s_in)` (e.g. the
+  -- verifier replaying a squeeze) misses `Cache_p` and `tr_∇.p` and is resampled in
+  -- 4(c)iii, and `BackTrack`, which reads predecessors from `tr_∇.p` only, cannot step
+  -- through squeeze pairs. The only inconsistency left at this item is a pop that conflicts
+  -- with an earlier `tr` entry, which is the `E_func` case counted by CO25 Eqs. 32–34.
   | some (cachedOut, cacheTail) =>
       -- Item 4(f) — append `('p', s_in, s_out)` to `tr` (shared across 4(c)/(d)/(e)).
       let trace' := st.trace ++ [⟨dsPermQuery stateIn, cachedOut⟩]
-      let h_inv' : st.trΔ.IsSubsetOfQueryLog trace' :=
-        TraceNabla.IsSubsetOfQueryLog_append_any st.h_inv ⟨dsPermQuery stateIn, cachedOut⟩
-      set { st with trace := trace', cacheP := cacheTail, h_inv := h_inv' }
+      let trΔ' : TraceNabla T_H T_P StmtIn U :=
+        { st.trΔ with p := TraceTableOps.insert st.trΔ.p stateIn cachedOut }
+      let h_inv' : trΔ'.IsSubsetOfQueryLog trace' :=
+        TraceNabla.IsSubsetOfQueryLog_append_perm st.h_inv stateIn cachedOut
+      set { st with trace := trace', cacheP := cacheTail, trΔ := trΔ', h_inv := h_inv' }
       return cachedOut
   | none =>
       match TraceTableOps.inlu st.trΔ.p stateIn with
