@@ -2,7 +2,8 @@
 
 These rows supersede the earlier retirement of the frozen source and resource universe canaries.
 The frozen files remain unchanged. Tests use the interaction layer's `Resources`, `OracleFamily`
-and `OracleMap` APIs.
+and `OracleMap` APIs, with tensor and response lifting in
+[`ResourceOps.lean`](../../../ArkLib/Interaction/Core/Oracle/ResourceOps.lean).
 
 The source counterpart is
 [`Core/Oracle/SourceExample.lean`](../../../ArkLibTest/Interaction/Core/Oracle/SourceExample.lean),
@@ -13,11 +14,11 @@ Both contain a `Universes` section.
 | Frozen row | Frozen lines | Contract | Disposition |
 | --- | --- | --- | --- |
 | SourceExample S10 | 113–114 | Disjoint sum | Restored at all frozen universes |
-| SourceExample S11 | 116–117 | Tensor | Blocked: resource tensor API missing |
-| SourceExample S12 | 119–120 | Response lifting | Blocked: resource lifting API missing |
-| SourceExample S13 | 123–124 | Raw routing equivalence | Blocked: raw routing API missing |
-| SourceExample S14 | 127–128 | Unwrap raised answer | Blocked: lifting and routing APIs missing |
-| SourceExample S15 | 131–132 | Rewrap answer | Blocked: lifting and routing APIs missing |
+| SourceExample S11 | 116–117 | Tensor | Restored at all frozen universes |
+| SourceExample S12 | 119–120 | Response lifting | Restored at all frozen universes |
+| SourceExample S13 | 123–124 | Raw routing equivalence | Restored at all frozen universes |
+| SourceExample S14 | 127–128 | Unwrap raised answer | Restored at response universes 0 and 2 |
+| SourceExample S15 | 131–132 | Rewrap answer | Restored at response universes 0 and 2 |
 | ResourceExample R26 | 278–282 | Context interface | Restored with entry 18's data/response tie |
 | ResourceExample R27 | 284–288 | View interface | Restored with entry 18's data/response tie |
 
@@ -28,6 +29,26 @@ Both contain a `Universes` section.
 `Resources.{v, max u u', max w w'}`. Further tests assert the exact disjoint index carrier,
 product data carrier and componentwise answer handler. No universe is tied beyond the frozen
 sum's shared response universe.
+
+**SourceExample S11.** `Resources.tensor` pairs the queries, responses and backing data. The
+query universes `u`, `u'`, response universes `v`, `v'` and data universes `w`, `w'` remain
+independent. Its result is `Resources.{max v v', max u u', max w w'}`. The tests also check the
+exact product query and backing-data carriers.
+
+**SourceExample S12.** `Resources.liftResponse` raises responses from `v` to `max v v'` with
+`ULift`, preserving query universe `u`, data universe `w`, and both original carriers. This is
+the response-lifting contract itself.
+
+**SourceExample S13.** `ResourceEquiv.liftResponse` gives coherent raw maps between the original
+resource and its lifted responses. Both composites are identity resource maps, including their
+query, response and backing-data maps. The general pullback round-trip laws apply to arbitrary
+pure answers. The universe canary retains independent `u`, `v`, `v'` and `w`; additional checks
+assert that both directions preserve each backing datum.
+
+**SourceExample S14 and S15.** Both concrete checks use universe instantiation `{0, 0, 0, 2}`
+and close by `rfl`. Unwrapping the lifted answer gives `5`; rewrapping the original answer has
+`.down = 5`. The natural-number family retains its original backing data, and its query
+`⟨true, ()⟩` selects the frozen example's index `true`.
 
 **ResourceExample R26.** Names, context indices and queries keep independent universes `i`, `s`
 and `q`. The selected resources have queries in `max s q` and data in `max s a`. Tests check the
@@ -41,28 +62,10 @@ universe `max s a`. `OracleMap.embedding` selects that data, and a universally q
 equality checks the selected index. Universes `i`, `s`, `h` and `q` stay independent. Only `e = a`
 remains tied, for the same interface dependency.
 
-## Remaining dependencies
+## Interface restriction
 
 [Implementation note 18](../interaction-rebuild/IMPLEMENTATION-NOTES.md)
 records that `OracleInterface` ties realization data and responses through `ReaderM`. This is the
 only restriction used in the restored resource canaries. The logged-runner restriction does not
-apply to these tests.
-
-**SourceExample S11** requires a tensor with independent query universes `u`, `u'`, response
-universes `v`, `v'` and data universes `w`, `w'`. The base has no resource tensor combining these
-response universes. The concrete pair-interface example does not close this row.
-
-**SourceExample S12** requires lifting responses from `v` to `max v v'` while preserving query
-universe `u` and data universe `w`. The base has no resource response-lifting operation.
-
-**SourceExample S13** requires reversible raw routing between response universes `v` and
-`max v v'`, preserving the backing data. `OracleMap` has one shared response universe; the base
-has no raw resource-routing equivalence. Instantiating both sides at the same response universe
-would narrow the frozen pure-routing contract.
-
-**SourceExample S14 and S15** require unwrapping and rewrapping an answer lifted from response
-universe `0` to `2`, with the resulting scalar equal to `5`. They depend on response lifting and
-both raw routes. No homogeneous replacement is counted.
-
-These rows remain open dependencies, rather than accepted universe departures. They require an
-owner-level API on the base and are not implemented as test-local substitutes.
+apply to these tests. The source sum, tensor, lifting and raw-routing canaries retain all their
+frozen universe instantiations.

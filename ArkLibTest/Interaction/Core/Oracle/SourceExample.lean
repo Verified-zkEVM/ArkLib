@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Core.OracleVerifier
+import ArkLib.Interaction.Core.Oracle.ResourceOps
 
 /-!
 # Oracle families and oracle maps: dependent answers, routing and hidden data
@@ -19,7 +19,7 @@ open Interaction.Core Interaction.Oracle OracleComp
 
 namespace Interaction.Core.SourceExampleTests
 
-universe u v w u' w'
+universe u v w u' v' w'
 
 /-- The carrier of the `false` index is `Bool`; the carrier of the `true` index is `Fin 3`. -/
 abbrev Carrier : Bool → Type
@@ -216,6 +216,48 @@ example (S : Resources.{v, u, w}) (T : Resources.{v, u', w'}) :
 /-- Each query is answered from its own component of the pair. -/
 example (S : Resources.{v, u, w}) (T : Resources.{v, u', w'})
     (x : S.Data × T.Data) : (S.sum T).answer x = S.answer x.1 + T.answer x.2 := rfl
+
+-- SourceExample S11: the two sources retain independent query, response and data universes.
+/-- A paired query and answer resource has the maxima of the independent component universes. -/
+example (S : Resources.{v, u, w}) (T : Resources.{v', u', w'}) :
+    Resources.{max v v', max u u', max w w'} := S.tensor T
+
+/-- Tensor queries use the exact product of the two original query carriers. -/
+example (S : Resources.{v, u, w}) (T : Resources.{v', u', w'}) :
+    OracleSpec.{max u u', max v v'} (S.Index × T.Index) := (S.tensor T).spec
+
+/-- Tensor backing data remains the exact product of the two original data carriers. -/
+example (S : Resources.{v, u, w}) (T : Resources.{v', u', w'}) :
+    (S.tensor T).Data = (S.Data × T.Data) := rfl
+
+-- SourceExample S12: lifting responses preserves the original query and backing-data universes.
+/-- The response universe can be raised independently of the query and data universes. -/
+example (S : Resources.{v, u, w}) : Resources.{max v v', u, w} :=
+  S.liftResponse.{v, u, w, v'}
+
+-- SourceExample S13: coherent raw maps are inverse even when response universes differ.
+/-- Response lifting gives an equivalence of queries, responses and backing data. -/
+example (S : Resources.{v, u, w}) : ResourceEquiv S (S.liftResponse.{v, u, w, v'}) :=
+  ResourceEquiv.liftResponse S
+
+/-- The forward route leaves each backing datum unchanged. -/
+example (S : Resources.{v, u, w}) (data : S.Data) :
+    (ResourceEquiv.liftResponse.{v, u, w, v'} S).toHom.pullData data = data := rfl
+
+/-- The inverse route leaves each backing datum unchanged. -/
+example (S : Resources.{v, u, w}) (data : S.Data) :
+    (ResourceEquiv.liftResponse.{v, u, w, v'} S).invHom.pullData data = data := rfl
+
+-- SourceExample S14: the concrete response universe is raised from 0 to 2, with no data change.
+/-- Unwrapping the raised answer at index true recovers five. -/
+example : (ResourceHom.toLiftResponse.{0, 0, 0, 2} (Resources.ofFamily numbers)).pull
+    (((Resources.ofFamily numbers).liftResponse.{0, 0, 0, 2}).answer answers)
+    ⟨true, ()⟩ = (5 : Nat) := rfl
+
+-- SourceExample S15: the inverse raw route rewraps the same answer in response universe 2.
+/-- Rewrapping the answer at index true has underlying value five. -/
+example : ((ResourceEquiv.liftResponse.{0, 0, 0, 2} (Resources.ofFamily numbers)).invHom.pull
+    (numbers.behaviorOfRealizations answers) ⟨true, ()⟩).down = (5 : Nat) := rfl
 
 end Universes
 
