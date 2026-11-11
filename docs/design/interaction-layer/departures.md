@@ -102,3 +102,9 @@ to the same witness.
 
 An earlier entry 17 recorded that straight-line knowledge soundness was transferred on the plain
 tree only. `Legacy/OracleKnowledge.lean` closes it, and the entry is removed.
+
+## Logged execution and routing acceptance clients
+
+The [source-to-port inventory](logged-execution-disposition.md) lists each frozen acceptance
+assertion, its exact port or missing interface, and the assertions retired by the approved passive
+verifier and fixed-shape premises. Its unresolved rows remain migration obligations.

@@ -415,26 +415,6 @@ def OracleMap.withAmbient {ι : Type uι}
   | .inr q => simulateQ
     (fun r => liftM ((ambient + In.spec).query (.inr r))) (route.impl q)
 
-/-- Routing through a map and answering from data agrees with answering from the mapped data. -/
-theorem OracleMap.simulate_withAmbient {ι : Type uι}
-    {ambient : OracleSpec.{uι, u} ι} {In : Resources.{u, uX, dX}} {Out : Resources.{u, uY, dY}}
-    (route : OracleMap In Out) (x : In.Data) {α : Type u}
-    (program : OracleComp (ambient + Out.spec) α) :
-    simulateQ (QueryImpl.addLift (QueryImpl.id' ambient) (In.answer x) :
-        QueryImpl (ambient + In.spec) (OracleComp ambient))
-        (simulateQ (route.withAmbient ambient) program) =
-      simulateQ (QueryImpl.addLift (QueryImpl.id' ambient)
-        (Out.answer (route.f x)) :
-        QueryImpl (ambient + Out.spec) (OracleComp ambient)) program := by
-  refine QueryImpl.simulateQ_simulateQ_eq_of_apply (fun q => ?_) program
-  rcases q with q | q
-  · simp [OracleMap.withAmbient]
-  · simp only [OracleMap.withAmbient, QueryImpl.addLift_def, QueryImpl.liftTarget_self]
-    rw [QueryImpl.simulateQ_simulateQ_eq_of_apply
-      (impl := (In.answer x).liftTarget (OracleComp ambient))
-      (fun r => QueryImpl.simulateQ_add_query_right _ _ r), simulateQ_liftTarget, route.law]
-    rfl
-
 /-- Routing through a map and answering from data agrees with answering from the mapped data,
 for any interpretation of the ambient queries. -/
 theorem OracleMap.simulate_withAmbient_addLift {ι : Type uι}
@@ -455,6 +435,19 @@ theorem OracleMap.simulate_withAmbient_addLift {ι : Type uι}
       (impl := (In.answer x).liftTarget m)
       (fun r => QueryImpl.simulateQ_add_query_right _ _ r), simulateQ_liftTarget, route.law]
     rfl
+
+/-- Routing through a map and answering from data agrees with answering from the mapped data. -/
+theorem OracleMap.simulate_withAmbient {ι : Type uι}
+    {ambient : OracleSpec.{uι, u} ι} {In : Resources.{u, uX, dX}} {Out : Resources.{u, uY, dY}}
+    (route : OracleMap In Out) (x : In.Data) {α : Type u}
+    (program : OracleComp (ambient + Out.spec) α) :
+    simulateQ (QueryImpl.addLift (QueryImpl.id' ambient) (In.answer x) :
+        QueryImpl (ambient + In.spec) (OracleComp ambient))
+        (simulateQ (route.withAmbient ambient) program) =
+      simulateQ (QueryImpl.addLift (QueryImpl.id' ambient)
+        (Out.answer (route.f x)) :
+        QueryImpl (ambient + Out.spec) (OracleComp ambient)) program :=
+  OracleMap.simulate_withAmbient_addLift (QueryImpl.id' ambient) route x program
 
 namespace OracleVerifier
 variable {ι : Type uι} {I : Type uI} {ambient : OracleSpec.{uι, u} ι} {A : I → Type u}
