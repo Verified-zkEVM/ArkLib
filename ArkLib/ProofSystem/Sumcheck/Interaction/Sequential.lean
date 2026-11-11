@@ -71,25 +71,26 @@ theorem executeTwo_rejected [DecidableEq R] (i : Fin (n + 1)) (domain : List R)
     (r₁ r₂ : R)
     (h : (domain.map (fun x => first.val.eval x)).sum ≠ stmt.target) :
     executeTwo R n deg ambient i domain stmt impl first second r₁ r₂ = pure none := by
-  rw [executeTwo, executeCore_eq, if_neg h]
+  rw [executeTwo, executeCore_eq, ite_eq_right h]
   rfl
 
-/-- A successful prefix cannot turn a rejecting suffix into an accepted final claim. -/
+/-- A rejecting suffix prevents acceptance, regardless of whether the prefix succeeds. -/
 theorem executeTwo_second_rejected [DecidableEq R] (i : Fin (n + 1)) (domain : List R)
     (stmt : Spec.StatementRound R (n + 2) i.castSucc.castSucc)
     (impl : (polynomialFamily R (n + 2) deg).Behavior) (first : Message R deg)
     (second : Spec.StatementRound R (n + 2) i.castSucc.succ → Message R deg)
     (r₁ r₂ : R)
-    (h₁ : (domain.map (fun x => first.val.eval x)).sum = stmt.target)
     (h₂ : (domain.map (fun x =>
       (second ⟨first.val.eval r₁, Fin.snoc stmt.challenges r₁⟩).val.eval x)).sum ≠
         first.val.eval r₁) :
     executeTwo R n deg ambient i domain stmt impl first second r₁ r₂ = pure none := by
-  rw [executeTwo, executeCore_accepted R (n + 2) deg ambient i.castSucc stmt impl first
-    domain r₁ h₁]
-  simp only [pure_bind, acceptedRun_closed]
-  rw [executeCore_eq, if_neg h₂]
-  rfl
+  by_cases h₁ : (domain.map (fun x => first.val.eval x)).sum = stmt.target
+  · rw [executeTwo, executeCore_accepted R (n + 2) deg ambient i.castSucc stmt impl first
+      domain r₁ h₁]
+    simp only [pure_bind, acceptedRun_closed]
+    rw [executeCore_eq, ite_eq_right h₂]
+    rfl
+  · exact executeTwo_rejected R n deg ambient i domain stmt impl first second r₁ r₂ h₁
 
 /-- Two actual sampled stages; the suffix challenge runs only after successful prefix closing. -/
 def executeTwoSampled [DecidableEq R] (i : Fin (n + 1)) (domain : List R)
@@ -153,7 +154,7 @@ theorem executeTwoSampled_rejected [DecidableEq R] (i : Fin (n + 1)) (domain : L
   rw [map_eq_bind_pure_comp]
   congr 1
   funext r₁
-  rw [executeCore_eq, if_neg h]
+  rw [executeCore_eq, ite_eq_right h]
   rfl
 
 /-- Honest two-round execution starts from the multivariate relation, with no second assumption. -/
@@ -172,9 +173,9 @@ theorem executeTwo_honest [DecidableEq R] {m : ℕ} (D : Fin m ↪ R) (i : Fin (
             ClosedClaim (Spec.StatementRound R (n + 2) i.succ.succ)
               (polynomialFamily R (n + 2) deg))) := by
   apply executeTwo_accepted
-  · exact projected_sum_of_relationRound R (n + 2) deg D i.castSucc stmt p h
-  · exact projected_sum_of_relationRound R (n + 2) deg D i.succ _ p
-      (relationRound_projected_output R (n + 2) deg D i.castSucc stmt p r₁)
+  · exact Spec.SingleRound.projected_sum_of_relationRound R (n + 2) deg D i.castSucc stmt p h
+  · exact Spec.SingleRound.projected_sum_of_relationRound R (n + 2) deg D i.succ _ p
+      (Spec.SingleRound.relationRound_projected_output R (n + 2) deg D i.castSucc stmt p r₁)
 
 /-- Actual honest sequential execution ends in a claim satisfying the final round relation. -/
 theorem executeTwo_complete [DecidableEq R] {m : ℕ} (D : Fin m ↪ R) (i : Fin (n + 1))

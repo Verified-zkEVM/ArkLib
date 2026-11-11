@@ -216,7 +216,7 @@ theorem liftReduction_perfectCompleteness_params {F : Type} [Field F] [Sampleabl
       dRows) (base : ZMod q) :
     (liftReduction (oSpec := oSpec) (F := F) Φ P.γ P.bZero K hd).perfectCompleteness init impl
       (relRlinImage (zDigits := zDigits) Φ pp base ω P.γ) (relLift Φ P.γ P.bZero K φF) :=
-  liftReduction_perfectCompleteness_image Φ P.hbZero P.hbZeroq P.hbZeroγ K φF init impl hd
+  liftReduction_perfectCompleteness_image Φ P.hbZeroγ K φF init impl hd
     pp base ω
 
 omit [NeZero q] in
@@ -224,7 +224,7 @@ omit [NeZero q] in
 two honest range hypotheses are exactly the bundled ones, and `relLift γ bZero` is *literally* the
 bridge's input relation, so the two links meet on the nose. No arity conditions are needed on this
 side (they belong to the pull-back). -/
-theorem batchReduction_perfectCompleteness_params {F : Type} [Field F] [BEq F] [LawfulBEq F]
+theorem batchReduction_perfectCompleteness_params {F : Type} [Field F]
     {n μ m₀ m₁ : ℕ} (P : HonestRangeParams q)
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ P.γ P.bZero))
@@ -233,7 +233,7 @@ theorem batchReduction_perfectCompleteness_params {F : Type} [Field F] [BEq F] [
       (relLift Φ P.γ P.bZero K φF)
       (relBatched Φ m₀ m₁ P.γ P.bZero K φF P.bZero) :=
   batchReduction_perfectCompleteness Φ m₀ m₁ P.γ P.bZero init impl K φF P.bZero
-    P.one_lt_bZero hd P.hγZero P.digitBaseOk_range
+    hd P.hγZero P.digitBaseOk_range
 
 end Seams
 
@@ -307,7 +307,7 @@ def completePrefixReduction (P : HonestRangeParams q)
   (bridgeReduction (oSpec := oSpec) Φ).append
     ((quadEvalReduction (oSpec := oSpec) (zDigits := zDigits) (ω := ω) Φ pp
       (balancedZmodDigitDecomposition P.b messageDigits P.hb hqm)
-      (boundedBalancedZmodDigitDecomposition P.b zDigits zBound P.hb hcap)).append
+      (boundedBalancedZmodDigitDecomposition P.b zDigits zBound hcap)).append
     ((rlinReduction (oSpec := oSpec) (zDigits := zDigits) Φ pp (P.b : ZMod q) ω P.γ).append
     ((liftReduction (oSpec := oSpec) (F := F) Φ P.γ P.bZero K hd).append
     ((batchReduction (oSpec := oSpec) Φ P.γ P.bZero K).append
@@ -338,7 +338,7 @@ theorem completePrefixReduction_outputIsPure (P : HonestRangeParams q)
   repeat' apply Prover.OutputIsPure.append
   all_goals exact ⟨_, fun _ => rfl⟩
 
-omit [DecidableEq F] in
+omit [DecidableEq F] [BEq F] [LawfulBEq F] in
 /-- The honest Hachi prefix is perfectly complete from the short-message evaluation relation
 to the nested zero-check relation. -/
 theorem completePrefixReduction_perfectCompleteness
@@ -351,7 +351,7 @@ theorem completePrefixReduction_perfectCompleteness
       dRows)
     (hqm : q ≤ P.b ^ messageDigits) (hcap : zBound ≤ balancedDigitCapacity P.b zDigits)
     (hmul : Rq.HasMulLInftyBound Φ) (hzb : 2 ^ r * ω * (P.b / 2) ≤ zBound)
-    (hmd : 0 < messageDigits) (hτ : 0 < zDigits) (hd : 0 < Φ.φ.natDegree)
+    (hd : 0 < Φ.φ.natDegree)
     (K : LiftCom (LiftedWitness Φ μ₀ n₀) (liftShort Φ P.γ P.bZero))
     (φF : ZMod q →+* F) (hμn : (μ₀ + n₀ * rhoDigitCount q P.bZero) * Φ.φ.natDegree ≤ 2 ^ m₀)
     (hZeroγ : P.bZero - 1 ≤ P.γ)
@@ -367,9 +367,9 @@ theorem completePrefixReduction_perfectCompleteness
     quadEvalReduction_perfectCompleteness (zDigits := zDigits) (ω := ω)
       (βSq := βSq) (γ := P.γ) (κ := κ) (msgBound := P.b / 2)
       Φ start impl pp (balancedZmodDigitDecomposition P.b messageDigits P.hb hqm)
-      (boundedBalancedZmodDigitDecomposition P.b zDigits zBound P.hb hcap)
-      hmul hmd hτ hd hzb
-      (fun x e => le_trans (balancedZmodDigit_natAbs_le P.hb hqm P.hbq x e) P.hbγ)
+      (boundedBalancedZmodDigitDecomposition P.b zDigits zBound hcap)
+      hmul hzb
+      (fun x e => le_trans (balancedZmodDigit_natAbs_le P.hb hqm x e) P.hbγ)
       (fun x e => le_trans (boundedBalancedZmodDigit_natAbs_le P.hb P.hbq x e) P.hbγ)
   have hRlin (start : ProbComp σ) :=
     rlinReduction_perfectCompleteness_params (zDigits := zDigits) (ω := ω)
@@ -381,7 +381,7 @@ theorem completePrefixReduction_perfectCompleteness
     batchReduction_perfectCompleteness_params (m₀ := m₀) (m₁ := m₁)
     Φ P start impl K φF hd
   have hZero (start : ProbComp σ) := nestedZeroCheckReduction_perfectCompleteness
-    Φ m₀ m₁ P.γ P.bZero start impl K φF P.bZero hd hμn hZeroγ P.digitBaseOk
+    Φ m₀ m₁ P.γ P.bZero start impl K φF P.bZero hμn hZeroγ P.digitBaseOk
   let sampleEmptyNested : ∀ i, SampleableType
       (((!p[] : ProtocolSpec 0) ++ₚ pSpecNestedZeroCheck F m₀ m₁).Challenge i) :=
     ProtocolSpec.instSampleableTypeChallengeAppend
@@ -514,7 +514,7 @@ theorem completeThroughSumcheckReduction_perfectCompleteness
       dRows)
     (hqm : q ≤ P.b ^ messageDigits) (hcap : zBound ≤ balancedDigitCapacity P.b zDigits)
     (hmul : Rq.HasMulLInftyBound Φ) (hzb : 2 ^ r * ω * (P.b / 2) ≤ zBound)
-    (hmd : 0 < messageDigits) (hτ : 0 < zDigits) (hd : 0 < Φ.φ.natDegree)
+    (hd : 0 < Φ.φ.natDegree)
     (hbZero : 0 < P.bZero)
     (K : LiftCom (LiftedWitness Φ μ₀ n₀) (liftShort Φ P.γ P.bZero))
     (φF : ZMod q →+* F) (hμn : (μ₀ + n₀ * rhoDigitCount q P.bZero) * Φ.φ.natDegree ≤ 2 ^ (M + 1))
@@ -530,7 +530,7 @@ theorem completeThroughSumcheckReduction_perfectCompleteness
     (fun _ => Or.inl (completePrefixReduction_outputIsPure Φ P pp hqm hcap K hd))
     (completePrefixReduction_perfectCompleteness (zDigits := zDigits) (ω := ω)
       (m₀ := M + 1) (m₁ := m₁) (βSq := βSq) (κ := κ)
-      Φ P init impl pp hqm hcap hmul hzb hmd hτ hd K φF hμn hZeroγ)
+      Φ P init impl pp hqm hcap hmul hzb hd K φF hμn hZeroγ)
     (fun s => sumcheckReduction_perfectCompleteness Φ m₁ P.γ P.bZero P.bZero
       (pure s) impl K hbZero P.one_lt_bZero φF hd hμn)
 

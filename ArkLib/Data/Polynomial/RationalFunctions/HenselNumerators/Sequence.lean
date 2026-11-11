@@ -56,7 +56,6 @@ theorem regular_numerator_shape_succ (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     (hα0 : αseq 0 = functionFieldT (H := H) /
       liftToFunctionField (H := H) H.leadingCoeff)
     (hroot : evalRAtPowerSeries x₀ H R (gammaFromAlpha H αseq) = 0)
-    (hzeta : zeta R x₀ H ≠ 0)
     (t : ℕ) (βprev : Fin (t + 1) → 𝒪 H)
     (hprev : ∀ i : Fin (t + 1),
       embeddingOf𝒪Into𝕃 H (βprev i) /
@@ -78,12 +77,13 @@ theorem regular_numerator_shape_succ (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     PowerSeries.coeff (t + 1) (evalRAtPowerSeries x₀ H R (gammaFromAlpha H αseq)) -
       zeta R x₀ H * αseq (t + 1)
   have hSreg : S * Ddiv ∈ regularElementsSet H := by
-    exact henselCoeffResidual_regular_after_clearing x₀ R H hHyp αseq hα0 hroot hzeta t βprev hprev
+    exact henselCoeffResidual_regular_after_clearing x₀ R H hHyp αseq hα0 t βprev hprev
   have hW : W ≠ 0 := by
     simpa [W] using (liftToFunctionField_leadingCoeff_ne_zero (H := H))
   have heta : eta ≠ 0 := by
     have hξeq := embeddingOf𝒪Into𝕃_xi x₀ R H hHyp
-    simpa [eta, W, hξeq] using mul_ne_zero (pow_ne_zero (R.natDegree - 2) hW) hzeta
+    simpa [eta, W, hξeq] using mul_ne_zero (pow_ne_zero (R.natDegree - 2) hW)
+      (zeta_ne_zero_of_hypotheses x₀ R H hHyp)
   have hD : D ≠ 0 := by
     simp only [D]
     exact mul_ne_zero (pow_ne_zero _ hW) (pow_ne_zero _ heta)
@@ -157,20 +157,19 @@ theorem exists_regular_numerator_shape (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
         rcases ih with ⟨βpref, hβpref⟩
         have hnext : ∃ βnext : 𝒪 H, shapeAt (n + 1) βnext := by
           unfold shapeAt
-          exact regular_numerator_shape_succ x₀ R H hHyp αseq hα0 hroot
-            (zeta_ne_zero_of_hypotheses x₀ R H hHyp) n βpref (by
+          exact regular_numerator_shape_succ x₀ R H hHyp αseq hα0 hroot n βpref (by
               intro i
               exact hβpref i)
         rcases hnext with ⟨βnext, hβnext⟩
         refine ⟨fun i => if hlt : i.val < n + 1 then βpref ⟨i.val, hlt⟩ else βnext, ?_⟩
         intro i
         by_cases hlt : i.val < n + 1
-        · simp only [dif_pos hlt]
+        · simp only [dite_eq_left hlt]
           exact hβpref ⟨i.val, hlt⟩
         · have hval : i.val = n + 1 := by
             have hi_lt : i.val < n + 1 + 1 := i.isLt
             omega
-          simp only [dif_neg hlt]
+          simp only [dite_eq_right hlt]
           rw [hval]
           exact hβnext
   let βseq : ℕ → 𝒪 H := fun t => (Classical.choose (hprefix t)) ⟨t, Nat.lt_succ_self t⟩

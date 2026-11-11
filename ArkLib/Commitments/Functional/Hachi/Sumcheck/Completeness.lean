@@ -110,7 +110,7 @@ theorem honestComputeG_snd_eval {TCom : Type} (hb : 0 < b) (φF : ZMod q →+* F
 omit [NeZero q] [IsCyclotomic Φ] [DecidableEq F] in
 /-- **The honest round message passes the round check.** For each summand the round-`i` claim of
 `nestedRoundRel` *is* the partial cube sum, which splits into its two Boolean extensions
-(`hypercubeSum_succ`); those two are the honest polynomial's values at `0` and `1`
+(`MvPolynomial.hypercubeSum_succ`); those two are the honest polynomial's values at `0` and `1`
 (`computableRoundPoly_eval`). So `g(0) + g(1) = targetᵢ` for both components, which is exactly
 `roundCheck`.
 
@@ -128,10 +128,8 @@ theorem roundCheck_honestComputeG
   change hypercubeSum (M + 1)
     (sumcheckPolyAlpha Φ (M + 1) m₁ φF b stmt.zc.rlin stmt.zc.α stmt.zc.τα w) i
     stmt.challenges = stmt.targetα at hAlpha
-  rw [hypercubeSum_succ (i := ⟨i, hi⟩)] at hZero hAlpha
-  rw [roundCheck, Bool.and_eq_true, beq_iff_eq, beq_iff_eq,
-    honestComputeG_fst_eval, honestComputeG_fst_eval,
-    honestComputeG_snd_eval, honestComputeG_snd_eval]
+  simp only [roundCheck, Bool.and_eq_true, beq_iff_eq, honestComputeG,
+    CPolynomial.eval_toPoly, computableRoundPoly_toPoly, roundPoly_sum]
   exact ⟨hZero, hAlpha⟩
 
 omit [NeZero q] [IsCyclotomic Φ] [DecidableEq F] in
@@ -178,7 +176,7 @@ Holds by `rfl`. -/
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (hb : 0 < b) (φF : ZMod q →+* F) (i : ℕ) (hi : i < M + 1) :
     (roundReduction (oSpec := oSpec) (TCom := K.TCom) Φ m₁ b hb φF i hi).verifier
-      = (roundPackage Φ (M + 1) m₁ bound bDig b init impl K φF hb i hi).verifier :=
+      = (roundPackage Φ (M + 1) m₁ bound bDig b init impl K φF i hi).verifier :=
   rfl
 
 -- v4.33 respects transparency when matching implicit arguments: `rw` no longer unifies
@@ -256,7 +254,6 @@ Failure is excluded by `roundCheck_honestComputeG` — the round verifier is
 lemma roundReduction_run_support
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (hb : 0 < b) (φF : ZMod q →+* F) (i : ℕ) (hi : i < M + 1)
-    (hdir : (pSpecScalar (RoundMsg F b) F).dir 1 = .V_to_P)
     (stmt : NestedRoundStatement Φ K.TCom F n μ (M + 1) m₁ i) (w : LiftedWitness Φ μ n)
     (h : (stmt, w) ∈ nestedRoundRel Φ (M + 1) m₁ bound bDig K φF b i) :
     ∀ x ∈ support ((roundReduction (oSpec := oSpec) (TCom := K.TCom)
@@ -283,12 +280,12 @@ lemma roundReduction_run_support
   subst hprOpt
   rw [show (roundReduction (oSpec := oSpec) (TCom := K.TCom) Φ m₁ b hb φF i hi).prover
       = roundProver Φ (M + 1) m₁ b i (honestComputeG Φ m₁ b hb φF i hi) from rfl,
-    roundProver_run_eq Φ m₁ b i _ stmt w hdir, mem_support_bind_iff] at hpr
+    roundProver_run_eq Φ m₁ b i _ stmt w rfl, mem_support_bind_iff] at hpr
   obtain ⟨a, -, hpr⟩ := hpr
   rw [mem_support_pure_iff] at hpr
   subst hpr
   refine ⟨a, ?_⟩
-  simp only [Option.elim_some, roundReduction, roundVerifier, Verifier.run, hg, if_true] at hx
+  simp only [Option.elim_some, roundReduction, roundVerifier, Verifier.run, hg, ite_true] at hx
   simp only [OptionT.run_pure, liftM_pure, ProgrammingPolicy.empty_apply, pure_bind,
     Option.elim_some, Option.getM_some, support_pure, Set.mem_singleton_iff] at hx
   exact hx
@@ -316,7 +313,7 @@ theorem roundReduction_perfectCompleteness
   apply Reduction.perfectCompleteness_of_run_support
   intro stmt w h x hx
   obtain ⟨a, hx'⟩ :=
-    roundReduction_run_support Φ m₁ bound bDig b K hb φF i hi rfl stmt w h x hx
+    roundReduction_run_support Φ m₁ bound bDig b K hb φF i hi stmt w h x hx
   refine ⟨_, hx', ?_, rfl⟩
   exact mem_nestedRoundRel_roundOut_honestComputeG Φ m₁ bound bDig b K hb φF i hi stmt w h a
 
@@ -381,7 +378,7 @@ theorem roundsReduction_verifier (init : ProbComp σ)
     (hb : 0 < b) (φF : ZMod q →+* F) :
     ∀ (count : ℕ) (hcount : count ≤ M + 1),
       (roundsReduction (oSpec := oSpec) (TCom := K.TCom) Φ m₁ b hb φF count hcount).verifier
-        = (roundsChain Φ (M + 1) m₁ bound bDig b init impl K φF hb count hcount).verifier
+        = (roundsChain Φ (M + 1) m₁ bound bDig b init impl K φF count hcount).verifier
   | 0, _ => rfl
   | count + 1, hcount =>
     congrArg (fun V => Verifier.append V (roundVerifier Φ (M + 1) m₁ b (TCom := K.TCom) count))

@@ -6,21 +6,23 @@ Authors: Alexander Hicks
 module
 
 public import ArkLib.Data.CodingTheory.ProximityGap.Basic
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineCoefficients.Basic
 public import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
+public import ArkLib.Data.CodingTheory.ProximityGenerator.Interleaving
 public import ArkLib.Data.CodingTheory.ProximityGenerator.TensorGenerator
 public import ArkLib.Data.Probability.Instances
-public import Mathlib.FieldTheory.Finiteness
 
 /-!
 # Numeric proximity-gap and correlated-agreement errors
 
 This file defines numeric proximity-gap and correlated-agreement errors and compares them with
-`CoreDefinitions.mcaError` specialized to affine lines.
+`CoreDefinitions.mcaError` for arbitrary proximity generators.
 
 ## Main definitions
 
 * `epsPg` — the proximity-gap error.
-* `epsCa` — the correlated-agreement error with separate fold and interleaved radii.
+* `caError` — generator-indexed correlated agreement with separate fold and interleaved radii.
+* `epsCa` — the affine-line abbreviation for `caError`.
 * `epsCa'` — the equal-radius specialization of `epsCa`.
 * `epsMca` — affine-line notation for the canonical `mcaError`.
 
@@ -53,7 +55,7 @@ open Probability
 section McaNotation
 
 variable {ι : Type} [Fintype ι]
-variable {F : Type} [Field F] [Fintype F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F]
 variable {A : Type} [AddCommMonoid A] [Module F A]
 
 /-- The affine-line mutual-correlated-agreement error at a nonnegative radius. -/
@@ -65,278 +67,98 @@ end McaNotation
 section McaStructuralInterleaving
 
 variable {ι : Type} [Fintype ι]
-variable {F : Type} [Field F] [Fintype F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F]
 variable {A : Type} [AddCommMonoid A] [Module F A]
 
 /-- Affine-line MCA of a code is at most that of any nonempty row-wise interleaving. -/
 theorem mcaError_le_moduleInterleavedCode
     (C : ModuleCode ι F A) (t : ℕ) (δ : ℝ≥0)
-    (ht : 0 < t) (hδ_le : δ ≤ 1) :
+    (ht : 0 < t) :
     mcaError (AffineLineGenerator F) C (δ : ℝ) ≤
-      mcaError (AffineLineGenerator F) (C ^⋈ (Fin t)) (δ : ℝ) := by
+      mcaError (AffineLineGenerator F) (C^⋈(Fin t)) (δ : ℝ) := by
   let : Nonempty (Fin t) := Fin.pos_iff_nonempty.mp ht
-  let ε : I → ℝ≥0 := fun γ =>
-    ENNReal.toNNReal (mcaError (AffineLineGenerator F) (C ^⋈ (Fin t)) (γ : ℝ))
-  have hInterleaved : IsMCAGenerator (AffineLineGenerator F) ε (C ^⋈ (Fin t)) := by
-    intro γ
-    dsimp [ε]
-    rw [ENNReal.coe_toNNReal
-      (mcaError_ne_top (AffineLineGenerator F) (C ^⋈ (Fin t)) (γ : ℝ))]
-  have hBase := TensorMCA.isMCAGenerator_of_moduleInterleavedCode
-    (ℓ := Fin t) (AffineLineGenerator F) ε C hInterleaved
-  let δI : I :=
-    ⟨(δ : ℝ), ⟨NNReal.coe_nonneg δ, by exact_mod_cast hδ_le⟩⟩
-  simpa [δI, ε, ENNReal.coe_toNNReal
-    (mcaError_ne_top (AffineLineGenerator F) (C ^⋈ (Fin t)) (δ : ℝ))] using hBase δI
+  exact mcaError_le_mcaError_moduleInterleavedCode (AffineLineGenerator F) C (δ : ℝ)
 
 end McaStructuralInterleaving
 
-section
+section GeneratorCa
 
-variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
-variable {A : Type} [Fintype A] [DecidableEq A] [AddCommGroup A] [Module F A]
-
-open Classical in
-/-- The largest fraction of an affine line that is close to `C` without the whole line being
-close. -/
-noncomputable def epsPg (C : Set (ι → A)) (δ : ℝ≥0) : ENNReal :=
-  ⨆ u : WordStack A (Fin 2) ι,
-    if (∀ γ : F, δᵣ(u 0 + γ • u 1, C) ≤ δ) then (0 : ENNReal)
-    else Pr_{let γ ← $ᵖ F}[δᵣ(u 0 + γ • u 1, C) ≤ δ]
+variable {ι ℓ S F A : Type} [Fintype ι] [Fintype ℓ]
+variable [Field F] [AddCommGroup A] [Module F A] [DecidableEq A] [SampleableType S]
 
 open Classical in
-/-- The largest probability that an affine combination is `δ_fld`-close to `C` when its two
-components are not jointly `δ_int`-close to `C`. -/
-noncomputable def epsCa (C : Set (ι → A)) (δ_fld δ_int : ℝ≥0) : ENNReal :=
-  ⨆ u : WordStack A (Fin 2) ι,
+/-- The largest fold-close probability among stacks that are not jointly close.
+The generator specifies the distribution of linear combinations of the rows. -/
+noncomputable def caError (G : Generator S ℓ F) (C : Set (ι → A))
+    (δ_fld δ_int : ℝ≥0) : ENNReal :=
+  ⨆ u : WordStack A ℓ ι,
     if jointProximity C (u := u) δ_int then (0 : ENNReal)
-    else Pr_{let γ ← $ᵖ F}[δᵣ(u 0 + γ • u 1, C) ≤ δ_fld]
+    else Pr{let x ← $ᵗ S}[δᵣ(∑ j, G x j • u j, C) ≤ δ_fld]
 
-/-- The equal-radius specialization `epsCa C δ δ`. -/
-noncomputable def epsCa' (C : Set (ι → A)) (δ : ℝ≥0) : ENNReal :=
-  epsCa (F := F) C δ δ
-
-open Classical in
-/-- Correlated-agreement error for degree-`k` polynomial combinations. -/
-noncomputable def epsCaCurves
-    (C : Set (ι → A)) (k : ℕ) (δ_fld δ_int : ℝ≥0) : ENNReal :=
-  ⨆ u : WordStack A (Fin (k + 1)) ι,
-    if jointProximity C (u := u) δ_int then (0 : ENNReal)
-    else Pr_{let r ← $ᵖ F}[δᵣ(∑ i : Fin (k + 1), (r ^ (i : ℕ)) • u i, C) ≤ δ_fld]
-
-open Classical in
-/-- Correlated-agreement error for uniform samples from the affine span of a word stack. -/
-noncomputable def epsCaAffineSpaces
-    (C : Set (ι → A)) (k : ℕ) (δ_fld δ_int : ℝ≥0) : ENNReal :=
-  ⨆ u : WordStack A (Fin (k + 1)) ι,
-    if jointProximity C (u := u) δ_int then (0 : ENNReal)
-    else Pr_{let y ← $ᵖ ↥(Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u))}[
-      δᵣ(y.1, C) ≤ δ_fld]
-
-/-! ## Monotonicity -/
-
-omit [Nonempty ι] [DecidableEq ι] [DecidableEq F] [Fintype A] in
-/-- `epsCa` is monotone in its fold radius. -/
-theorem epsCa_mono_left
-    (C : Set (ι → A)) {δ_fld δ_fld' : ℝ≥0} (δ_int : ℝ≥0) (h : δ_fld ≤ δ_fld') :
-    epsCa (F := F) C δ_fld δ_int ≤ epsCa (F := F) C δ_fld' δ_int := by
+/-- A stack outside joint proximity contributes its fold-close probability to `caError`. -/
+theorem prob_le_caError (G : Generator S ℓ F) (C : Set (ι → A))
+    (u : WordStack A ℓ ι) (δ_fld δ_int : ℝ≥0)
+    (h : ¬ jointProximity C (u := u) δ_int) :
+    Pr{let x ← $ᵗ S}[δᵣ(∑ j, G x j • u j, C) ≤ δ_fld] ≤
+      caError G C δ_fld δ_int := by
   classical
-  unfold epsCa
+  unfold caError
+  exact le_iSup_of_le u (ite_eq_right h).symm.le
+
+/-- `caError` is monotone in its fold radius. -/
+theorem caError_mono_left
+    (G : Generator S ℓ F) (C : Set (ι → A))
+    {δ_fld δ_fld' : ℝ≥0} (δ_int : ℝ≥0) (h : δ_fld ≤ δ_fld') :
+    caError G C δ_fld δ_int ≤ caError G C δ_fld' δ_int := by
+  classical
+  unfold caError
   apply iSup_mono
   intro u
   by_cases hjp : jointProximity (C := C) (u := u) δ_int
-  · rw [if_pos hjp, if_pos hjp]
-  · rw [if_neg hjp, if_neg hjp]
-    apply Pr_le_Pr_of_implies
+  · rw [ite_eq_left hjp, ite_eq_left hjp]
+  · rw [ite_eq_right hjp, ite_eq_right hjp]
+    apply prEvent_mono
     intro _ hclose
     exact le_trans hclose (by exact_mod_cast h)
 
-omit [Nonempty ι] [DecidableEq ι] [DecidableEq F] [Fintype A] in
-/-- `epsCa` is antitone in its interleaved radius. -/
-theorem epsCa_antitone_right
-    (C : Set (ι → A)) (δ_fld : ℝ≥0) {δ_int δ_int' : ℝ≥0} (h : δ_int ≤ δ_int') :
-    epsCa (F := F) C δ_fld δ_int' ≤ epsCa (F := F) C δ_fld δ_int := by
+/-- `caError` is antitone in its interleaved radius. -/
+theorem caError_antitone_right
+    (G : Generator S ℓ F) (C : Set (ι → A))
+    (δ_fld : ℝ≥0) {δ_int δ_int' : ℝ≥0} (h : δ_int ≤ δ_int') :
+    caError G C δ_fld δ_int' ≤ caError G C δ_fld δ_int := by
   classical
-  unfold epsCa
+  unfold caError
   apply iSup_mono
   intro u
   have hjp_mono : jointProximity (C := C) (u := u) δ_int →
       jointProximity (C := C) (u := u) δ_int' :=
     fun hjp => le_trans hjp (by exact_mod_cast h)
   by_cases hjp' : jointProximity (C := C) (u := u) δ_int'
-  · rw [if_pos hjp']
+  · rw [ite_eq_left hjp']
     exact zero_le
   · have hjp : ¬ jointProximity (C := C) (u := u) δ_int := fun h0 => hjp' (hjp_mono h0)
-    rw [if_neg hjp', if_neg hjp]
+    rw [ite_eq_right hjp', ite_eq_right hjp]
 
-/-! ## Endpoint behavior -/
-
-omit [DecidableEq ι] in
-/-- Every word is within relative distance `δ` of a nonempty code once `1 ≤ δ`. -/
-lemma relDistFromCode_le_of_one_le {α : Type} [DecidableEq α] {C : Set (ι → α)}
-    (hC : C.Nonempty) (w : ι → α) {δ : ℝ≥0} (hδ : 1 ≤ δ) : δᵣ(w, C) ≤ (δ : ENNReal) := by
-  have hne : Nonempty C := hC.to_subtype
-  rw [relDistFromCode_le_iff_distFromCode_le]
-  refine le_trans (distFromCode_le_card_index_of_Nonempty w) ?_
-  have hfloor : Fintype.card ι ≤ Nat.floor (δ * (Fintype.card ι : ℝ≥0)) := by
-    refine Nat.le_floor ?_
-    calc ((Fintype.card ι : ℕ) : ℝ≥0) = 1 * (Fintype.card ι : ℝ≥0) := by ring
-      _ ≤ δ * (Fintype.card ι : ℝ≥0) := by gcongr
-  exact_mod_cast hfloor
-
-omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
-/-- `epsPg C δ = 0` for `δ ≥ 1`. -/
-theorem epsPg_eq_zero_of_one_le {C : Set (ι → A)} (hC : C.Nonempty) {δ : ℝ≥0} (hδ : 1 ≤ δ) :
-    epsPg (F := F) C δ = 0 := by
-  classical
-  refine le_antisymm ?_ zero_le
-  unfold epsPg
-  refine iSup_le fun u => ?_
-  have hguard : ∀ γ : F, δᵣ(u 0 + γ • u 1, C) ≤ (δ : ENNReal) :=
-    fun γ => relDistFromCode_le_of_one_le hC _ hδ
-  rw [if_pos hguard]
-
-omit [DecidableEq ι] [Fintype A] [AddCommGroup A] in
-/-- Every two-word stack is jointly close once the radius is at least one. -/
-lemma jointProximity_of_one_le {C : Set (ι → A)} (hC : C.Nonempty)
-    (u : WordStack A (Fin 2) ι) {δ : ℝ≥0} (hδ : 1 ≤ δ) :
-    jointProximity C (u := u) δ := by
-  classical
-  obtain ⟨v, hv⟩ := hC
-  have hne : (interleavedCodeSet (κ := Fin 2) (C := C)).Nonempty := by
-    refine ⟨fun i (_ : Fin 2) => v i, fun k => ?_⟩
-    have hrow : Matrix.transpose (fun i (_ : Fin 2) => v i) k = v := by
-      funext i
-      rw [Matrix.transpose_apply]
-    rwa [hrow]
-  exact relDistFromCode_le_of_one_le hne _ hδ
-
-omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
-/-- `epsCa` is zero when its interleaved radius is at least one. -/
-theorem epsCa_eq_zero_of_one_le_right {C : Set (ι → A)} (hC : C.Nonempty)
-    (δ_fld : ℝ≥0) {δ_int : ℝ≥0} (hδ : 1 ≤ δ_int) :
-    epsCa (F := F) C δ_fld δ_int = 0 := by
-  classical
-  refine le_antisymm ?_ zero_le
-  unfold epsCa
-  exact iSup_le fun u => by rw [if_pos (jointProximity_of_one_le hC u hδ)]
-
-omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
-/-- `epsCa'` is zero at every radius at least one. -/
-theorem epsCa'_eq_zero_of_one_le {C : Set (ι → A)} (hC : C.Nonempty)
-    {δ : ℝ≥0} (hδ : 1 ≤ δ) : epsCa' (F := F) C δ = 0 :=
-  epsCa_eq_zero_of_one_le_right hC δ hδ
-
-omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
-/-- A globally monotone `epsPg` is zero throughout the closed unit interval. -/
-theorem epsPg_eq_zero_of_mono {C : Set (ι → A)} (hC : C.Nonempty)
-    (hmono : ∀ δ δ' : ℝ≥0, δ ≤ δ' → epsPg (F := F) C δ ≤ epsPg (F := F) C δ')
-    {δ : ℝ≥0} (hδ : δ ≤ 1) : epsPg (F := F) C δ = 0 :=
-  le_antisymm (le_of_le_of_eq (hmono δ 1 hδ) (epsPg_eq_zero_of_one_le hC le_rfl)) zero_le
-
-omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
-/-- A globally monotone `epsCa'` is zero throughout the closed unit interval. -/
-theorem epsCa'_eq_zero_of_mono {C : Set (ι → A)} (hC : C.Nonempty)
-    (hmono : ∀ δ δ' : ℝ≥0, δ ≤ δ' → epsCa' (F := F) C δ ≤ epsCa' (F := F) C δ')
-    {δ : ℝ≥0} (hδ : δ ≤ 1) : epsCa' (F := F) C δ = 0 :=
-  le_antisymm (le_of_le_of_eq (hmono δ 1 hδ) (epsCa'_eq_zero_of_one_le hC le_rfl)) zero_le
-
-omit [DecidableEq ι] [Field F] [Fintype F] in
-private lemma dist_le_zero_iff_mem {C : Set (ι → F)} (u : ι → F) :
-    δᵣ(u, C) ≤ (0 : ℝ≥0) ↔ u ∈ C := by
-  rw [relDistFromCode_le_iff_distFromCode_le]
-  simp [distFromCode_eq_zero_iff_mem]
-
-omit [Fintype ι] [DecidableEq ι] [Fintype F] [DecidableEq F] in
-private lemma const_mem_zero_iff (γ : F) :
-    ((fun _ : ι => γ) ∈ ({0} : Set (ι → F))) ↔ γ = 0 := by
-  simp [Set.mem_singleton_iff, funext_iff]
-
-omit [DecidableEq ι] in
-/-- The proximity-gap error of the zero singleton code is positive at radius zero. -/
-theorem epsPg_singleton_zero_pos :
-    (0 : ENNReal) < epsPg (F := F) (A := F) (ι := ι) ({0} : Set (ι → F)) 0 := by
-  classical
-  set u : WordStack F (Fin 2) ι := ![(0 : ι → F), (1 : ι → F)] with hu
-  have hfold : ∀ γ : F, u 0 + γ • u 1 = (fun _ : ι => γ) := by
-    intro γ
-    funext i
-    simp [hu]
-  have hevent : ∀ γ : F,
-      (δᵣ(u 0 + γ • u 1, ({0} : Set (ι → F))) ≤ (0 : ℝ≥0)) ↔ γ = 0 := by
-    intro γ
-    rw [hfold γ, dist_le_zero_iff_mem, const_mem_zero_iff]
-  have hguard : ¬ (∀ γ : F,
-      δᵣ(u 0 + γ • u 1, ({0} : Set (ι → F))) ≤ (0 : ℝ≥0)) :=
-    fun h => one_ne_zero ((hevent 1).mp (h 1))
-  have hterm : Pr_{let γ ← $ᵖ F}[
-      δᵣ(u 0 + γ • u 1, ({0} : Set (ι → F))) ≤ (0 : ℝ≥0)] =
-      Pr_{let γ ← $ᵖ F}[γ = 0] := Pr_congr (fun γ => hevent γ)
-  have hpos : (0 : ENNReal) < Pr_{let γ ← $ᵖ F}[(γ : F) = 0] := by
-    rw [prob_uniform_eq_card_filter_div_card]
-    simp [Finset.filter_eq']
-  calc
-    (0 : ENNReal) < Pr_{let γ ← $ᵖ F}[(γ : F) = 0] := hpos
-    _ = Pr_{let γ ← $ᵖ F}[
-        δᵣ(u 0 + γ • u 1, ({0} : Set (ι → F))) ≤ (0 : ℝ≥0)] := hterm.symm
-    _ ≤ epsPg (F := F) ({0} : Set (ι → F)) 0 := by
-      unfold epsPg
-      refine le_trans (le_of_eq ?_) (le_iSup _ u)
-      rw [if_neg hguard]
-
-/-! ## Comparison and predicate bridges -/
-
-omit [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A] in
-/-- If a pair is jointly close to a module code, every affine combination is close to the code. -/
-theorem line_close_of_jointProximity
-    (MC : ModuleCode ι F A) (u : WordStack A (Fin 2) ι) (δ : ℝ≥0)
-    (h : jointProximity (C := (MC : Set (ι → A))) (u := u) δ) :
-    ∀ γ : F, δᵣ(u 0 + γ • u 1, (MC : Set (ι → A))) ≤ δ := by
-  rw [← jointAgreement_iff_jointProximity] at h
-  obtain ⟨S, hS_card, v, hv⟩ := h
-  have hagree : ∀ j ∈ S, v 0 j = u 0 j ∧ v 1 j = u 1 j := by
-    intro j hj
-    refine ⟨?_, ?_⟩
-    · exact (Finset.mem_filter.mp ((hv 0).2 hj)).2
-    · exact (Finset.mem_filter.mp ((hv 1).2 hj)).2
-  intro γ
-  have hvγ : v 0 + γ • v 1 ∈ MC := MC.add_mem (hv 0).1 (MC.smul_mem γ (hv 1).1)
-  rw [relCloseToCode_iff_relCloseToCodeword_of_minDist]
-  refine ⟨v 0 + γ • v 1, hvγ, ?_⟩
-  rw [relCloseToWord_iff_exists_agreementCols]
-  refine ⟨S, (relDist_floor_bound_iff_complement_bound _ _ _).mpr hS_card, ?_⟩
-  intro j
-  refine ⟨fun hj => ?_, fun hne hj => ?_⟩
-  · obtain ⟨h0, h1⟩ := hagree j hj
-    simp [Pi.add_apply, Pi.smul_apply, h0, h1]
-  · obtain ⟨h0, h1⟩ := hagree j hj
-    exact hne (by simp [Pi.add_apply, Pi.smul_apply, h0, h1])
-
-omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
-/-- The proximity-gap error is at most the equal-radius correlated-agreement error. -/
-theorem epsPg_le_epsCa (MC : ModuleCode ι F A) (δ : ℝ≥0) :
-    epsPg (F := F) (MC : Set (ι → A)) δ ≤ epsCa (F := F) (MC : Set (ι → A)) δ δ := by
-  unfold epsPg epsCa
-  apply iSup_mono
-  intro u
-  by_cases hjp : jointProximity (C := (MC : Set (ι → A))) (u := u) δ
-  · have hall : ∀ γ : F, δᵣ(u 0 + γ • u 1, (MC : Set (ι → A))) ≤ δ :=
-      line_close_of_jointProximity MC u δ hjp
-    rw [if_pos hall, if_pos hjp]
-  · by_cases hall : ∀ γ : F, δᵣ(u 0 + γ • u 1, (MC : Set (ι → A))) ≤ δ
-    · rw [if_pos hall, if_neg hjp]
-      exact zero_le
-    · rw [if_neg hall, if_neg hjp]
-
-omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
-/-- A line-close event outside joint proximity satisfies affine-line `IsMCA`. -/
-lemma isMCA_affineLine_of_line_close_of_not_jointProximity
-    (MC : ModuleCode ι F A) (u : WordStack A (Fin 2) ι) (δ : ℝ≥0) (γ : F)
+omit [SampleableType S] in
+/-- A close combination of a stack outside joint proximity witnesses MCA. -/
+lemma isMCA_of_close_of_not_jointProximity [Fintype S] [Nonempty S]
+    (G : Generator S ℓ F) (MC : ModuleCode ι F A)
+    (u : WordStack A ℓ ι) (δ : ℝ≥0) (x : S)
     (hjp : ¬ jointProximity (C := (MC : Set (ι → A))) (u := u) δ)
-    (hline : δᵣ(u 0 + γ • u 1, (MC : Set (ι → A))) ≤ δ) :
-    IsMCA (AffineLineGenerator F) MC γ u (δ : ℝ) := by
+    (hline : δᵣ(∑ j, G x j • u j, (MC : Set (ι → A))) ≤ δ) :
+    IsMCA G MC x u (δ : ℝ) := by
   classical
+  rcases isEmpty_or_nonempty ι with hι | hι
+  · have hmem : (⋈|u) ∈ interleavedCodeSet (MC : Set (ι → A)) := by
+      intro j
+      have hz : Matrix.transpose (⋈|u) j = (0 : ι → A) := Subsingleton.elim _ _
+      rw [hz]
+      exact MC.zero_mem
+    have hd : δᵣ(⋈|u, interleavedCodeSet (MC : Set (ι → A))) ≤ (0 : ENNReal) := by
+      convert relDistFromCode_le_relDist_to_mem (⋈|u) (⋈|u) hmem using 1
+      norm_num [relHammingDist, Fintype.card_eq_zero, ENNReal.coe_NNRat_coe_NNReal]
+    exact (hjp (hd.trans zero_le)).elim
+  let := hι
   rw [relCloseToCode_iff_relCloseToCodeword_of_minDist] at hline
   obtain ⟨w, hw, hwclose⟩ := hline
   rw [relCloseToWord_iff_exists_agreementCols] at hwclose
@@ -358,7 +180,7 @@ lemma isMCA_affineLine_of_line_close_of_not_jointProximity
     refine ⟨w, hw, ?_⟩
     funext i
     simp only [LinearCode.projectedWord, Set.domRestrict_apply]
-    simpa [AffineLineGenerator] using (hagree i).1 i.property
+    simpa only [Finset.sum_apply, Pi.smul_apply] using (hagree i).1 i.property
   · by_contra hall
     push Not at hall
     apply hjp
@@ -372,30 +194,306 @@ lemma isMCA_affineLine_of_line_close_of_not_jointProximity
     refine ⟨Finset.mem_univ i, ?_⟩
     exact congr_fun (hvproj j).symm ⟨i, hi⟩
 
-omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
-/-- The equal-radius correlated-agreement error is at most affine-line MCA. -/
-theorem epsCa_le_mcaError_affineLine (MC : ModuleCode ι F A) (δ : ℝ≥0) :
-    epsCa (F := F) (MC : Set (ι → A)) δ δ ≤
-      mcaError (AffineLineGenerator F) MC (δ : ℝ) := by
-  unfold epsCa mcaError
+/-- At equal radii, generator-indexed correlated agreement is at most MCA. -/
+theorem caError_le_mcaError [Fintype S]
+    (G : Generator S ℓ F) (MC : ModuleCode ι F A) (δ : ℝ≥0) :
+    caError G (MC : Set (ι → A)) δ δ ≤ mcaError G MC (δ : ℝ) := by
+  classical
+  unfold caError mcaError
   apply iSup_mono
   intro u
   by_cases hjp : jointProximity (C := (MC : Set (ι → A))) (u := u) δ
-  · rw [if_pos hjp]
+  · rw [ite_eq_left hjp]
     exact zero_le
-  · rw [if_neg hjp]
-    apply Pr_le_Pr_of_implies
-    intro γ hline
-    exact isMCA_affineLine_of_line_close_of_not_jointProximity MC u δ γ hjp hline
+  · rw [ite_eq_right hjp]
+    apply prEvent_mono
+    intro x hclose
+    exact isMCA_of_close_of_not_jointProximity G MC u δ x hjp hclose
+
+end GeneratorCa
+
+section
+
+variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
+variable {A : Type} [Fintype A] [DecidableEq A] [AddCommGroup A] [Module F A]
+
+open Classical in
+/-- The largest fraction of an affine line that is close to `C` without the whole line being
+close. -/
+noncomputable def epsPg (C : Set (ι → A)) (δ : ℝ≥0) : ENNReal :=
+  ⨆ u : WordStack A (Fin 2) ι,
+    if (∀ γ : F, δᵣ(u 0 + γ • u 1, C) ≤ δ) then (0 : ENNReal)
+    else Pr{let γ ← $ᵗ F}[δᵣ(u 0 + γ • u 1, C) ≤ δ]
+
+/-- The affine-line instance of generator-indexed correlated agreement. -/
+noncomputable abbrev epsCa (C : Set (ι → A)) (δ_fld δ_int : ℝ≥0) : ENNReal :=
+  caError (AffineLineGenerator F) C δ_fld δ_int
+
+/-- The equal-radius specialization `epsCa C δ δ`. -/
+noncomputable abbrev epsCa' (C : Set (ι → A)) (δ : ℝ≥0) : ENNReal :=
+  epsCa (F := F) C δ δ
+
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A] in
+open Classical in
+/-- The affine-line error in its original sampling form. -/
+theorem epsCa_eq (C : Set (ι → A)) (δ_fld δ_int : ℝ≥0) :
+    epsCa (F := F) C δ_fld δ_int =
+      ⨆ u : WordStack A (Fin 2) ι,
+        if jointProximity C (u := u) δ_int then (0 : ENNReal)
+        else Pr{let γ ← $ᵗ F}[δᵣ(u 0 + γ • u 1, C) ≤ δ_fld] := by
+  simp only [epsCa, caError, AffineLineGenerator, Fin.sum_univ_two,
+    Matrix.cons_val_zero, Matrix.cons_val_one, one_smul]
+
+omit [Nonempty ι] [Fintype F] [DecidableEq F] in
+open Classical in
+/-- Uniform coefficient sampling equals uniform sampling of the affine image. -/
+theorem caError_affineSpace_eq (C : Set (ι → A)) (k : ℕ) (δ_fld δ_int : ℝ≥0) :
+    caError (AffineSpaceGenerator F k) C δ_fld δ_int =
+      ⨆ u : WordStack A (Fin (k + 1)) ι,
+        if jointProximity C (u := u) δ_int then (0 : ENNReal)
+        else Pr{let y ← $ᵗ ↥(Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u))}[
+          δᵣ(y.1, C) ≤ δ_fld] := by
+  unfold caError
+  congr 1
+  funext u
+  congr 1
+  simpa [AffineSpaceGenerator, Fin.sum_univ_succ] using
+    uniform_affine_combination (F := F) k u (fun w => δᵣ(w, C) ≤ δ_fld)
+
+/-! ## Monotonicity -/
+
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A] in
+/-- `epsCa` is monotone in its fold radius. -/
+theorem epsCa_mono_left
+    (C : Set (ι → A)) {δ_fld δ_fld' : ℝ≥0} (δ_int : ℝ≥0) (h : δ_fld ≤ δ_fld') :
+    epsCa (F := F) C δ_fld δ_int ≤ epsCa (F := F) C δ_fld' δ_int :=
+  caError_mono_left (AffineLineGenerator F) C δ_int h
+
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A] in
+/-- `epsCa` is antitone in its interleaved radius. -/
+theorem epsCa_antitone_right
+    (C : Set (ι → A)) (δ_fld : ℝ≥0) {δ_int δ_int' : ℝ≥0} (h : δ_int ≤ δ_int') :
+    epsCa (F := F) C δ_fld δ_int' ≤ epsCa (F := F) C δ_fld δ_int :=
+  caError_antitone_right (AffineLineGenerator F) C δ_fld h
+
+/-! ## Endpoint behavior -/
+
+omit [DecidableEq ι] in
+/-- Every word is within relative distance `δ` of a nonempty code once `1 ≤ δ`. -/
+lemma relDistFromCode_le_of_one_le {α : Type} [DecidableEq α] {C : Set (ι → α)}
+    (hC : C.Nonempty) (w : ι → α) {δ : ℝ≥0} (hδ : 1 ≤ δ) : δᵣ(w, C) ≤ (δ : ENNReal) := by
+  have hne : Nonempty C := hC.to_subtype
+  rw [relDistFromCode_le_iff_distFromCode_le]
+  refine le_trans (distFromCode_le_card_index_of_Nonempty w) ?_
+  have hfloor : Fintype.card ι ≤ Nat.floor (δ * (Fintype.card ι : ℝ≥0)) := by
+    refine Nat.le_floor ?_
+    calc ((Fintype.card ι : ℕ) : ℝ≥0) = 1 * (Fintype.card ι : ℝ≥0) := by ring
+      _ ≤ δ * (Fintype.card ι : ℝ≥0) := by gcongr
+  exact_mod_cast hfloor
 
 omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
+/-- `epsPg C δ = 0` for `δ ≥ 1`. -/
+theorem epsPg_eq_zero_of_one_le {C : Set (ι → A)} {δ : ℝ≥0} (hδ : 1 ≤ δ) :
+    epsPg (F := F) C δ = 0 := by
+  classical
+  by_cases hC : C.Nonempty
+  swap
+  · rw [Set.not_nonempty_iff_eq_empty.mp hC]
+    simp [epsPg, relDistFromCode_of_empty]
+  refine le_antisymm ?_ zero_le
+  unfold epsPg
+  refine iSup_le fun u => ?_
+  have hguard : ∀ γ : F, δᵣ(u 0 + γ • u 1, C) ≤ (δ : ENNReal) :=
+    fun γ => relDistFromCode_le_of_one_le hC _ hδ
+  rw [ite_eq_left hguard]
+
+omit [DecidableEq ι] [Fintype A] [AddCommGroup A] in
+/-- Every two-word stack is jointly close once the radius is at least one. -/
+lemma jointProximity_of_one_le {C : Set (ι → A)} (hC : C.Nonempty)
+    (u : WordStack A (Fin 2) ι) {δ : ℝ≥0} (hδ : 1 ≤ δ) :
+    jointProximity C (u := u) δ := by
+  classical
+  obtain ⟨v, hv⟩ := hC
+  have hne : (interleavedCodeSet (κ := Fin 2) (C := C)).Nonempty := by
+    refine ⟨fun i (_ : Fin 2) => v i, fun k => ?_⟩
+    have hrow : Matrix.transpose (fun i (_ : Fin 2) => v i) k = v := by
+      funext i
+      rw [Matrix.transpose_apply]
+    rwa [hrow]
+  exact relDistFromCode_le_of_one_le hne _ hδ
+
+omit [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A] in
+/-- `epsCa` is zero when its interleaved radius is at least one. -/
+theorem epsCa_eq_zero_of_one_le_right {C : Set (ι → A)} (hC : C.Nonempty)
+    (δ_fld : ℝ≥0) {δ_int : ℝ≥0} (hδ : 1 ≤ δ_int) :
+    epsCa (F := F) C δ_fld δ_int = 0 := by
+  classical
+  refine le_antisymm ?_ zero_le
+  simp only [epsCa_eq]
+  exact iSup_le fun u => by rw [ite_eq_left (jointProximity_of_one_le hC u hδ)]
+
+omit [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A] in
+/-- `epsCa'` is zero at every radius at least one. -/
+theorem epsCa'_eq_zero_of_one_le {C : Set (ι → A)} (hC : C.Nonempty)
+    {δ : ℝ≥0} (hδ : 1 ≤ δ) : epsCa' (F := F) C δ = 0 :=
+  epsCa_eq_zero_of_one_le_right hC δ hδ
+
+omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
+/-- A globally monotone `epsPg` is zero throughout the closed unit interval. -/
+theorem epsPg_eq_zero_of_mono {C : Set (ι → A)}
+    (hmono : ∀ δ δ' : ℝ≥0, δ ≤ δ' → epsPg (F := F) C δ ≤ epsPg (F := F) C δ')
+    {δ : ℝ≥0} (hδ : δ ≤ 1) : epsPg (F := F) C δ = 0 :=
+  le_antisymm (le_of_le_of_eq (hmono δ 1 hδ) (epsPg_eq_zero_of_one_le le_rfl)) zero_le
+
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A] in
+/-- A globally monotone `epsCa'` is zero throughout the closed unit interval. -/
+theorem epsCa'_eq_zero_of_mono {C : Set (ι → A)}
+    (hmono : ∀ δ δ' : ℝ≥0, δ ≤ δ' → epsCa' (F := F) C δ ≤ epsCa' (F := F) C δ')
+    {δ : ℝ≥0} (hδ : δ ≤ 1) : epsCa' (F := F) C δ = 0 := by
+  classical
+  by_cases hC : C.Nonempty
+  swap
+  · rw [Set.not_nonempty_iff_eq_empty.mp hC]
+    simp [epsCa', epsCa_eq, relDistFromCode_of_empty]
+  rcases isEmpty_or_nonempty ι with hι | hι
+  · refine le_antisymm ?_ zero_le
+    simp only [epsCa', epsCa_eq]
+    refine iSup_le fun u => ?_
+    have hmem : (⋈|u) ∈ interleavedCodeSet C := by
+      intro j
+      obtain ⟨c, hc⟩ := hC
+      rwa [Subsingleton.elim (Matrix.transpose (⋈|u) j) c]
+    have hd : δᵣ(⋈|u, interleavedCodeSet C) ≤ (0 : ENNReal) := by
+      convert relDistFromCode_le_relDist_to_mem (⋈|u) (⋈|u) hmem using 1
+      norm_num [relHammingDist, Fintype.card_eq_zero, ENNReal.coe_NNRat_coe_NNReal]
+    rw [ite_eq_left (show jointProximity C u δ from hd.trans zero_le)]
+  let := hι
+  exact le_antisymm
+    (le_of_le_of_eq (hmono δ 1 hδ) (epsCa'_eq_zero_of_one_le hC le_rfl)) zero_le
+
+omit [DecidableEq ι] [Field F] [Fintype F] [SampleableType F] in
+private lemma dist_le_zero_iff_mem {C : Set (ι → F)} (u : ι → F) :
+    δᵣ(u, C) ≤ (0 : ℝ≥0) ↔ u ∈ C := by
+  rw [relDistFromCode_le_iff_distFromCode_le]
+  simp [distFromCode_eq_zero_iff_mem]
+
+omit [Fintype ι] [DecidableEq ι] [Fintype F] [SampleableType F] [DecidableEq F] in
+private lemma const_mem_zero_iff (γ : F) :
+    ((fun _ : ι => γ) ∈ ({0} : Set (ι → F))) ↔ γ = 0 := by
+  simp [Set.mem_singleton_iff, funext_iff]
+
+omit [DecidableEq ι] in
+/-- The proximity-gap error of the zero singleton code is positive at radius zero. -/
+theorem epsPg_singleton_zero_pos :
+    (0 : ENNReal) < epsPg (F := F) (A := F) (ι := ι) ({0} : Set (ι → F)) 0 := by
+  classical
+  set u : WordStack F (Fin 2) ι := ![(0 : ι → F), (1 : ι → F)] with hu
+  have hfold : ∀ γ : F, u 0 + γ • u 1 = (fun _ : ι => γ) := by
+    intro γ
+    funext i
+    simp [hu]
+  have hevent : ∀ γ : F,
+      (δᵣ(u 0 + γ • u 1, ({0} : Set (ι → F))) ≤ (0 : ℝ≥0)) ↔ γ = 0 := by
+    intro γ
+    rw [hfold γ, dist_le_zero_iff_mem, const_mem_zero_iff]
+  have hguard : ¬ (∀ γ : F,
+      δᵣ(u 0 + γ • u 1, ({0} : Set (ι → F))) ≤ (0 : ℝ≥0)) :=
+    fun h => one_ne_zero ((hevent 1).mp (h 1))
+  have hterm : Pr{let γ ← $ᵗ F}[
+      δᵣ(u 0 + γ • u 1, ({0} : Set (ι → F))) ≤ (0 : ℝ≥0)] =
+      Pr{let γ ← $ᵗ F}[γ = 0] := prEvent_congr _ _ _ (fun γ => hevent γ)
+  have hpos : (0 : ENNReal) < Pr{let γ ← $ᵗ F}[(γ : F) = 0] := by
+    rw [SampleableType.prEvent_uniformSample]
+    simp [Finset.filter_eq']
+  calc
+    (0 : ENNReal) < Pr{let γ ← $ᵗ F}[(γ : F) = 0] := hpos
+    _ = Pr{let γ ← $ᵗ F}[
+        δᵣ(u 0 + γ • u 1, ({0} : Set (ι → F))) ≤ (0 : ℝ≥0)] := hterm.symm
+    _ ≤ epsPg (F := F) ({0} : Set (ι → F)) 0 := by
+      unfold epsPg
+      refine le_trans (le_of_eq ?_) (le_iSup _ u)
+      rw [ite_eq_right hguard]
+
+/-! ## Comparison and predicate bridges -/
+
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] [SampleableType F] [DecidableEq F] [Fintype A] in
+/-- If a pair is jointly close to a module code, every affine combination is close to the code. -/
+theorem line_close_of_jointProximity
+    (MC : ModuleCode ι F A) (u : WordStack A (Fin 2) ι) (δ : ℝ≥0)
+    (h : jointProximity (C := (MC : Set (ι → A))) (u := u) δ) :
+    ∀ γ : F, δᵣ(u 0 + γ • u 1, (MC : Set (ι → A))) ≤ δ := by
+  classical
+  rcases isEmpty_or_nonempty ι with hι | hι
+  · intro γ
+    have hd : δᵣ(u 0 + γ • u 1, (MC : Set (ι → A))) ≤ (0 : ENNReal) := by
+      convert relDistFromCode_le_relDist_to_mem (u 0 + γ • u 1) 0 MC.zero_mem using 1
+      norm_num [relHammingDist, Fintype.card_eq_zero, ENNReal.coe_NNRat_coe_NNReal]
+    exact hd.trans zero_le
+  let := hι
+  rw [← jointAgreement_iff_jointProximity] at h
+  obtain ⟨S, hS_card, v, hv⟩ := h
+  have hagree : ∀ j ∈ S, v 0 j = u 0 j ∧ v 1 j = u 1 j := by
+    intro j hj
+    refine ⟨?_, ?_⟩
+    · exact (Finset.mem_filter.mp ((hv 0).2 hj)).2
+    · exact (Finset.mem_filter.mp ((hv 1).2 hj)).2
+  intro γ
+  have hvγ : v 0 + γ • v 1 ∈ MC := MC.add_mem (hv 0).1 (MC.smul_mem γ (hv 1).1)
+  rw [relCloseToCode_iff_relCloseToCodeword_of_minDist]
+  refine ⟨v 0 + γ • v 1, hvγ, ?_⟩
+  rw [relCloseToWord_iff_exists_agreementCols]
+  refine ⟨S, (relDist_floor_bound_iff_complement_bound _ _ _).mpr hS_card, ?_⟩
+  intro j
+  refine ⟨fun hj => ?_, fun hne hj => ?_⟩
+  · obtain ⟨h0, h1⟩ := hagree j hj
+    simp [Pi.add_apply, Pi.smul_apply, h0, h1]
+  · obtain ⟨h0, h1⟩ := hagree j hj
+    exact hne (by simp [Pi.add_apply, Pi.smul_apply, h0, h1])
+
+omit [Nonempty ι] [DecidableEq ι] [DecidableEq F] [Fintype A] in
+/-- The proximity-gap error is at most the equal-radius correlated-agreement error. -/
+theorem epsPg_le_epsCa (MC : ModuleCode ι F A) (δ : ℝ≥0) :
+    epsPg (F := F) (MC : Set (ι → A)) δ ≤ epsCa (F := F) (MC : Set (ι → A)) δ δ := by
+  unfold epsPg
+  simp only [epsCa_eq]
+  apply iSup_mono
+  intro u
+  by_cases hjp : jointProximity (C := (MC : Set (ι → A))) (u := u) δ
+  · have hall : ∀ γ : F, δᵣ(u 0 + γ • u 1, (MC : Set (ι → A))) ≤ δ :=
+      line_close_of_jointProximity MC u δ hjp
+    rw [ite_eq_left hall, ite_eq_left hjp]
+  · by_cases hall : ∀ γ : F, δᵣ(u 0 + γ • u 1, (MC : Set (ι → A))) ≤ δ
+    · rw [ite_eq_left hall, ite_eq_right hjp]
+      exact zero_le
+    · rw [ite_eq_right hall, ite_eq_right hjp]
+
+omit [Nonempty ι] [DecidableEq ι] [DecidableEq F] [Fintype A] [SampleableType F] in
+/-- A line-close event outside joint proximity satisfies affine-line `IsMCA`. -/
+lemma isMCA_affineLine_of_line_close_of_not_jointProximity
+    (MC : ModuleCode ι F A) (u : WordStack A (Fin 2) ι) (δ : ℝ≥0) (γ : F)
+    (hjp : ¬ jointProximity (C := (MC : Set (ι → A))) (u := u) δ)
+    (hline : δᵣ(u 0 + γ • u 1, (MC : Set (ι → A))) ≤ δ) :
+    IsMCA (AffineLineGenerator F) MC γ u (δ : ℝ) := by
+  apply isMCA_of_close_of_not_jointProximity (AffineLineGenerator F) MC u δ γ hjp
+  simpa only [AffineLineGenerator, Fin.sum_univ_two, Matrix.cons_val_zero,
+    Matrix.cons_val_one, one_smul] using hline
+
+omit [Nonempty ι] [DecidableEq ι] [DecidableEq F] [Fintype A] in
+/-- The equal-radius correlated-agreement error is at most affine-line MCA. -/
+theorem epsCa_le_mcaError_affineLine (MC : ModuleCode ι F A) (δ : ℝ≥0) :
+    epsCa (F := F) (MC : Set (ι → A)) δ δ ≤
+      mcaError (AffineLineGenerator F) MC (δ : ℝ) :=
+  caError_le_mcaError (AffineLineGenerator F) MC δ
+
+omit [Nonempty ι] [DecidableEq ι] [DecidableEq F] [Fintype A] in
 /-- The proximity-gap, correlated-agreement, and affine-line MCA errors are ordered. -/
 theorem epsPg_le_epsCa_le_epsMca (MC : ModuleCode ι F A) (δ : ℝ≥0) :
     epsPg (F := F) (MC : Set (ι → A)) δ ≤ epsCa (F := F) (MC : Set (ι → A)) δ δ ∧
     epsCa (F := F) (MC : Set (ι → A)) δ δ ≤ epsMca MC δ :=
   ⟨epsPg_le_epsCa MC δ, epsCa_le_mcaError_affineLine MC δ⟩
 
-omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
+omit [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A] in
 /-- `epsCa` is constant when both radii have the same integer error bounds. -/
 theorem epsCa_eq_of_floors_eq (C : Set (ι → A))
     (δ_fld δ_fld' δ_int δ_int' : ℝ≥0)
@@ -404,7 +502,7 @@ theorem epsCa_eq_of_floors_eq (C : Set (ι → A))
     (hint : Nat.floor (δ_int * Fintype.card ι) =
       Nat.floor (δ_int' * Fintype.card ι)) :
     epsCa (F := F) C δ_fld δ_int = epsCa (F := F) C δ_fld' δ_int' := by
-  unfold epsCa
+  simp only [epsCa_eq]
   apply iSup_congr
   intro u
   have hiff : jointProximity (C := C) (u := u) δ_int ↔
@@ -417,31 +515,51 @@ theorem epsCa_eq_of_floors_eq (C : Set (ι → A))
     intro γ
     rw [relDistFromCode_le_iff_distFromCode_le, relDistFromCode_le_iff_distFromCode_le, hfld]
   by_cases hjp : jointProximity (C := C) (u := u) δ_int
-  · rw [if_pos hjp, if_pos (hiff.mp hjp)]
-  · rw [if_neg hjp, if_neg (mt hiff.mpr hjp)]
-    exact Pr_congr hclose
+  · rw [ite_eq_left hjp, ite_eq_left (hiff.mp hjp)]
+  · rw [ite_eq_right hjp, ite_eq_right (mt hiff.mpr hjp)]
+    exact prEvent_congr _ _ _ hclose
 
-omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A] in
 /-- `epsCa` is constant when its interleaved radii have the same integer agreement bound. -/
 theorem epsCa_eq_of_floor_eq (C : Set (ι → A)) (δ_fld δ_int δ_int' : ℝ≥0)
     (h : Nat.floor (δ_int * Fintype.card ι) = Nat.floor (δ_int' * Fintype.card ι)) :
-    epsCa (F := F) C δ_fld δ_int = epsCa (F := F) C δ_fld δ_int' :=
-  epsCa_eq_of_floors_eq C δ_fld δ_fld δ_int δ_int' rfl h
+    epsCa (F := F) C δ_fld δ_int = epsCa (F := F) C δ_fld δ_int' := by
+  classical
+  by_cases hC : C.Nonempty
+  swap
+  · rw [Set.not_nonempty_iff_eq_empty.mp hC]
+    simp [epsCa_eq, relDistFromCode_of_empty]
+  rcases isEmpty_or_nonempty ι with hι | hι
+  · simp only [epsCa_eq]
+    apply iSup_congr
+    intro u
+    have hmem : (⋈|u) ∈ interleavedCodeSet C := by
+      intro j
+      obtain ⟨c, hc⟩ := hC
+      rwa [Subsingleton.elim (Matrix.transpose (⋈|u) j) c]
+    have hd : δᵣ(⋈|u, interleavedCodeSet C) ≤ (0 : ENNReal) := by
+      convert relDistFromCode_le_relDist_to_mem (⋈|u) (⋈|u) hmem using 1
+      norm_num [relHammingDist, Fintype.card_eq_zero, ENNReal.coe_NNRat_coe_NNReal]
+    rw [ite_eq_left (show jointProximity C u δ_int from hd.trans zero_le),
+      ite_eq_left (show jointProximity C u δ_int' from hd.trans zero_le)]
+  let := hι
+  exact epsCa_eq_of_floors_eq C δ_fld δ_fld δ_int δ_int' rfl h
 
-omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
+omit [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A] in
 /-- Bridge between affine-line correlated agreement and the numeric CA error. -/
 theorem δ_ε_correlatedAgreementAffineLines_iff_epsCa_le
     (C : Set (ι → A)) (δ ε : ℝ≥0) :
     δ_ε_correlatedAgreementAffineLines (F := F) C δ ε ↔
       epsCa (F := F) C δ δ ≤ (ε : ENNReal) := by
   classical
+  rw [epsCa_eq]
   constructor
   · intro hpred
     refine iSup_le fun u => ?_
     by_cases hjp : jointProximity (C := C) (u := u) δ
-    · rw [if_pos hjp]
+    · rw [ite_eq_left hjp]
       exact zero_le
-    · rw [if_neg hjp]
+    · rw [ite_eq_right hjp]
       have hnja : ¬ jointAgreement (C := C) (W := u) δ := by
         rw [jointAgreement_iff_jointProximity]
         exact hjp
@@ -449,28 +567,27 @@ theorem δ_ε_correlatedAgreementAffineLines_iff_epsCa_le
       push Not at hgt
       exact hnja (hpred u hgt)
   · intro heps u hpr
-    unfold epsCa at heps
     have hterm := iSup_le_iff.mp heps u
     by_cases hjp : jointProximity (C := C) (u := u) δ
     · rw [jointAgreement_iff_jointProximity]
       exact hjp
-    · rw [if_neg hjp] at hterm
+    · rw [ite_eq_right hjp] at hterm
       exact absurd hpr (not_lt.mpr hterm)
 
-omit [DecidableEq ι] [DecidableEq F] in
+omit [DecidableEq ι] [Fintype F] [DecidableEq F] in
 /-- Bridge for the polynomial-curve correlated-agreement predicate. -/
-theorem δ_ε_correlatedAgreementCurves_iff_epsCaCurves_le {k : ℕ}
+theorem δ_ε_correlatedAgreementCurves_iff_caError_le {k : ℕ}
     (C : Set (ι → A)) (δ ε : ℝ≥0) :
     δ_ε_correlatedAgreementCurves (F := F) (k := k) C δ ε ↔
-      epsCaCurves (F := F) C k δ δ ≤ ((k * ε : ℝ≥0) : ENNReal) := by
+      caError (univariatePowersGenerator F k) C δ δ ≤ ((k * ε : ℝ≥0) : ENNReal) := by
   classical
   constructor
   · intro hpred
     refine iSup_le fun u => ?_
     by_cases hjp : jointProximity (C := C) (u := u) δ
-    · rw [if_pos hjp]
+    · rw [ite_eq_left hjp]
       exact zero_le
-    · rw [if_neg hjp]
+    · rw [ite_eq_right hjp]
       have hnja : ¬ jointAgreement (C := C) (W := u) δ := by
         rw [jointAgreement_iff_jointProximity]
         exact hjp
@@ -478,28 +595,29 @@ theorem δ_ε_correlatedAgreementCurves_iff_epsCaCurves_le {k : ℕ}
       push Not at hgt
       exact hnja (hpred u hgt)
   · intro heps u hpr
-    unfold epsCaCurves at heps
+    unfold caError at heps
     have hterm := iSup_le_iff.mp heps u
     by_cases hjp : jointProximity (C := C) (u := u) δ
     · rw [jointAgreement_iff_jointProximity]
       exact hjp
-    · rw [if_neg hjp] at hterm
+    · rw [ite_eq_right hjp] at hterm
       exact absurd hpr (not_lt.mpr hterm)
 
 omit [Fintype F] [DecidableEq F] in
 /-- Bridge for the affine-space correlated-agreement predicate. -/
-theorem δ_ε_correlatedAgreementAffineSpaces_iff_epsCaAffineSpaces_le {k : ℕ}
+theorem δ_ε_correlatedAgreementAffineSpaces_iff_caError_le {k : ℕ}
     (C : Set (ι → A)) (δ ε : ℝ≥0) :
     δ_ε_correlatedAgreementAffineSpaces (F := F) (k := k) C δ ε ↔
-      epsCaAffineSpaces (F := F) C k δ δ ≤ (ε : ENNReal) := by
+      caError (AffineSpaceGenerator F k) C δ δ ≤ (ε : ENNReal) := by
   classical
+  rw [caError_affineSpace_eq]
   constructor
   · intro hpred
     refine iSup_le fun u => ?_
     by_cases hjp : jointProximity (C := C) (u := u) δ
-    · rw [if_pos hjp]
+    · rw [ite_eq_left hjp]
       exact zero_le
-    · rw [if_neg hjp]
+    · rw [ite_eq_right hjp]
       have hnja : ¬ jointAgreement (C := C) (W := u) δ := by
         rw [jointAgreement_iff_jointProximity]
         exact hjp
@@ -507,12 +625,11 @@ theorem δ_ε_correlatedAgreementAffineSpaces_iff_epsCaAffineSpaces_le {k : ℕ}
       push Not at hgt
       exact hnja (hpred u hgt)
   · intro heps u hpr
-    unfold epsCaAffineSpaces at heps
     have hterm := iSup_le_iff.mp heps u
     by_cases hjp : jointProximity (C := C) (u := u) δ
     · rw [jointAgreement_iff_jointProximity]
       exact hjp
-    · rw [if_neg hjp] at hterm
+    · rw [ite_eq_right hjp] at hterm
       exact absurd hpr (not_lt.mpr hterm)
 
 /-! ## Unique decoding and interleaving -/
@@ -522,13 +639,13 @@ end
 section UniqueDecoding
 
 variable {ι : Type} [Fintype ι] [Nonempty ι]
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
 private noncomputable def pairErrors (u c : Fin 2 → ι → F) : Finset ι := by
   classical
   exact disagreementCols (u 0) (c 0) ∪ disagreementCols (u 1) (c 1)
 
-omit [Fintype F] in
+omit [Fintype F] [SampleableType F] in
 private lemma jointProximity_iff_exists_pairErrors_le
     (C : LinearCode ι F) (u : Fin 2 → ι → F) (δ : ℝ≥0) :
     jointProximity (C := (C : Set (ι → F))) (u := u) δ ↔
@@ -569,6 +686,7 @@ private lemma jointProximity_iff_exists_pairErrors_le
       · exact of_not_not hiE.1 |>.symm
       · exact of_not_not hiE.2 |>.symm
 
+omit [SampleableType F] in
 private lemma line_close_of_isMCA_affineLine
     (C : LinearCode ι F) (u : Fin 2 → ι → F) (δ : ℝ≥0) (γ : F)
     (h : IsMCA (AffineLineGenerator F) C γ u (δ : ℝ)) :
@@ -597,13 +715,22 @@ private lemma line_close_of_isMCA_affineLine
       have := congr_fun hproj ⟨i, hi⟩
       exact hne (by simpa [projectedWord, AffineLineGenerator] using this)
 
+omit [Nonempty ι] in
 open Classical in
 /-- Below half the relative minimum distance, affine-line MCA is at most correlated agreement. -/
-theorem mcaError_le_epsCa_of_pos_of_two_mul_lt_dist
-    (C : LinearCode ι F) (δ : ℝ≥0) (_hδ_pos : 0 < δ)
+theorem mcaError_le_epsCa_of_two_mul_lt_dist
+    (C : LinearCode ι F) (δ : ℝ≥0)
     (h_udr : 2 * (δ : ℝ) * Fintype.card ι < Code.dist (C : Set (ι → F))) :
     mcaError (AffineLineGenerator F) C (δ : ℝ) ≤
       epsCa (F := F) (A := F) (C : Set (ι → F)) δ δ := by
+  have hn : 0 < Fintype.card ι := by
+    have hd := Code.dist_le_card (C : Set (ι → F))
+    have hdR : (Code.dist (C : Set (ι → F)) : ℝ) ≤ Fintype.card ι := by
+      exact_mod_cast hd
+    have hnR : (0 : ℝ) < Fintype.card ι := by
+      nlinarith [δ.coe_nonneg]
+    exact_mod_cast hnR
+  let : Nonempty ι := Fintype.card_pos_iff.mp hn
   let e := Nat.floor (δ * Fintype.card ι)
   have hdist_eq : Code.dist (C : Set (ι → F)) = Code.minDist (C : Set (ι → F)) :=
     Code.dist_eq_minDist (C : Set (ι → F))
@@ -634,19 +761,10 @@ theorem mcaError_le_epsCa_of_pos_of_two_mul_lt_dist
   have fold_probability_le_epsCa_of_not_jointProximity
       (v : WordStack F (Fin 2) ι)
       (hv : ¬ jointProximity (C := (C : Set (ι → F))) (u := v) δ) :
-      Pr_{let x ← $ᵖ F}[δᵣ(v 0 + x • v 1, (C : Set (ι → F))) ≤ δ] ≤
+      Pr{let x ← $ᵗ F}[δᵣ(v 0 + x • v 1, (C : Set (ι → F))) ≤ δ] ≤
         epsCa (F := F) (C : Set (ι → F)) δ δ := by
-    unfold epsCa
-    calc
-      Pr_{let x ← $ᵖ F}[δᵣ(v 0 + x • v 1, (C : Set (ι → F))) ≤ δ] =
-          (if jointProximity (C := (C : Set (ι → F))) (u := v) δ then 0
-          else Pr_{let x ← $ᵖ F}[δᵣ(v 0 + x • v 1, (C : Set (ι → F))) ≤ δ]) :=
-        (if_neg hv).symm
-      _ ≤ ⨆ w : WordStack F (Fin 2) ι,
-          if jointProximity (C := (C : Set (ι → F))) (u := w) δ then 0
-          else Pr_{let x ← $ᵖ F}[δᵣ(w 0 + x • w 1, (C : Set (ι → F))) ≤ δ] :=
-        @le_iSup ENNReal (WordStack F (Fin 2) ι)
-          ENNReal.instCompleteLinearOrder.toCompleteLattice _ v
+    simp only [epsCa_eq]
+    exact le_iSup_of_le v (ite_eq_right hv).symm.le
   by_cases hjp : jointProximity (C := (C : Set (ι → F))) (u := u) δ
   · obtain ⟨c, hc, hE⟩ :=
       (jointProximity_iff_exists_pairErrors_le C u δ).mp hjp
@@ -876,9 +994,9 @@ theorem mcaError_le_epsCa_of_pos_of_two_mul_lt_dist
         rw [pairRelDist_le_iff_pairDist_le]
         exact hdist
       calc
-        Pr_{let γ ← $ᵖ F}[IsMCA (AffineLineGenerator F) C γ u (δ : ℝ)] ≤
-            Pr_{let x ← $ᵖ F}[δᵣ(v 0 + x • v 1, (C : Set (ι → F))) ≤ δ] := by
-          rw [prob_uniform_eq_card_filter_div_card, prob_uniform_eq_card_filter_div_card]
+        Pr{let γ ← $ᵗ F}[IsMCA (AffineLineGenerator F) C γ u (δ : ℝ)] ≤
+            Pr{let x ← $ᵗ F}[δᵣ(v 0 + x • v 1, (C : Set (ι → F))) ≤ δ] := by
+          rw [SampleableType.prEvent_uniformSample, SampleableType.prEvent_uniformSample]
           apply ENNReal.div_le_div_right
           exact_mod_cast (calc
             (Finset.univ.filter fun γ : F =>
@@ -898,28 +1016,29 @@ theorem mcaError_le_epsCa_of_pos_of_two_mul_lt_dist
         _ ≤ epsCa (F := F) (C : Set (ι → F)) δ δ :=
           fold_probability_le_epsCa_of_not_jointProximity v hvNotJoint
     · have hBempty : B = ∅ := Finset.not_nonempty_iff_eq_empty.mp hBne
-      rw [prob_uniform_eq_card_filter_div_card]
+      rw [SampleableType.prEvent_uniformSample]
       have hfilter : (Finset.univ.filter fun γ : F =>
           IsMCA (AffineLineGenerator F) C γ u (δ : ℝ)) = B := rfl
       rw [hfilter, hBempty]
       simp
   · calc
-      Pr_{let γ ← $ᵖ F}[IsMCA (AffineLineGenerator F) C γ u (δ : ℝ)] ≤
-          Pr_{let γ ← $ᵖ F}[δᵣ(u 0 + γ • u 1, (C : Set (ι → F))) ≤ δ] := by
-        apply Pr_le_Pr_of_implies
+      Pr{let γ ← $ᵗ F}[IsMCA (AffineLineGenerator F) C γ u (δ : ℝ)] ≤
+          Pr{let γ ← $ᵗ F}[δᵣ(u 0 + γ • u 1, (C : Set (ι → F))) ≤ δ] := by
+        apply prEvent_mono
         intro γ h
         exact line_close_of_isMCA_affineLine C u δ γ h
       _ ≤ epsCa (F := F) (C : Set (ι → F)) δ δ :=
         fold_probability_le_epsCa_of_not_jointProximity u hjp
 
+omit [Nonempty ι] in
 open Classical in
 /-- Below half the relative minimum distance, affine-line MCA equals correlated agreement. -/
-theorem mcaError_eq_epsCa_of_pos_of_two_mul_lt_dist
-    (C : LinearCode ι F) (δ : ℝ≥0) (hδ_pos : 0 < δ)
+theorem mcaError_eq_epsCa_of_two_mul_lt_dist
+    (C : LinearCode ι F) (δ : ℝ≥0)
     (h_udr : 2 * (δ : ℝ) * Fintype.card ι < Code.dist (C : Set (ι → F))) :
     mcaError (AffineLineGenerator F) C (δ : ℝ) =
       epsCa (F := F) (A := F) (C : Set (ι → F)) δ δ :=
-  le_antisymm (mcaError_le_epsCa_of_pos_of_two_mul_lt_dist C δ hδ_pos h_udr)
+  le_antisymm (mcaError_le_epsCa_of_two_mul_lt_dist C δ h_udr)
     (epsCa_le_mcaError_affineLine C δ)
 
 end UniqueDecoding
@@ -927,181 +1046,27 @@ end UniqueDecoding
 section Interleaving
 
 variable {ι : Type} [Fintype ι]
-variable {F : Type} [Field F] [Fintype F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F]
 variable {A : Type} [AddCommMonoid A] [Module F A]
 
-/-- At most `|K|` proper subspaces cannot cover a nontrivial finite `K`-vector space. -/
-private lemma exists_forall_notMem_of_card_le
-    {α K M : Type} [Field K] [Fintype K] [AddCommGroup M] [Module K M]
-    [Finite M] [Nontrivial M]
-    (s : Finset α) (p : α → Submodule K M)
-    (hp : ∀ i ∈ s, p i ≠ ⊤) (hs : s.card ≤ Fintype.card K) :
-    ∃ x : M, ∀ i ∈ s, x ∉ p i := by
-  classical
-  let := Fintype.ofFinite M
-  let q := Fintype.card K
-  let d := Module.finrank K M
-  let nz (i : α) := Finset.univ.filter fun x : M => x ∈ p i ∧ x ≠ 0
-  let covered := insert (0 : M) (s.biUnion nz)
-  have hq : 1 < q := Fintype.one_lt_card
-  have hd : 0 < d := Module.finrank_pos
-  have hnz (i : α) (hi : i ∈ s) : (nz i).card ≤ q ^ (d - 1) - 1 := by
-    let allp := Finset.univ.filter fun x : M => x ∈ p i
-    have hzero : (0 : M) ∈ allp := by simp [allp]
-    have hnz_eq : nz i = allp.erase 0 := by
-      ext x
-      simp [nz, allp, and_comm]
-    rw [hnz_eq, Finset.card_erase_of_mem hzero]
-    have hcard : allp.card = Fintype.card (p i) := by
-      symm
-      exact Fintype.card_ofFinset allp (by simp [allp])
-    have hcardpow : Fintype.card (p i) = q ^ Module.finrank K (p i) := by
-      simpa [q] using (Module.card_eq_pow_finrank (K := K) (V := p i))
-    rw [hcard, hcardpow]
-    exact Nat.sub_le_sub_right
-      (Nat.pow_le_pow_right (Nat.zero_lt_of_lt hq)
-        (Nat.le_sub_one_of_lt (Submodule.finrank_lt (hp i hi)))) 1
-  have hcovered : covered.card < Fintype.card M := by
-    have hbi : (s.biUnion nz).card ≤ s.card * (q ^ (d - 1) - 1) := by
-      calc
-        (s.biUnion nz).card ≤ ∑ i ∈ s, (nz i).card := Finset.card_biUnion_le
-        _ ≤ ∑ _i ∈ s, (q ^ (d - 1) - 1) :=
-          Finset.sum_le_sum fun i hi => hnz i hi
-        _ = s.card * (q ^ (d - 1) - 1) := by simp
-    have hmul : s.card * (q ^ (d - 1) - 1) ≤ q * (q ^ (d - 1) - 1) :=
-      Nat.mul_le_mul_right _ hs
-    have hpow : q ^ d = q * q ^ (d - 1) := by
-      conv_lhs => rw [← Nat.succ_pred_eq_of_pos hd]
-      simp [pow_succ, Nat.mul_comm]
-    have hcardM : Fintype.card M = q ^ d := by
-      simpa [q, d] using (Module.card_eq_pow_finrank (K := K) (V := M))
-    rw [hcardM, hpow]
-    calc
-      covered.card ≤ (s.biUnion nz).card + 1 := Finset.card_insert_le _ _
-      _ ≤ s.card * (q ^ (d - 1) - 1) + 1 := Nat.add_le_add_right hbi 1
-      _ ≤ q * (q ^ (d - 1) - 1) + 1 := Nat.add_le_add_right hmul 1
-      _ < q * q ^ (d - 1) := by
-        have hpos : 0 < q ^ (d - 1) := pow_pos (Nat.zero_lt_of_lt hq) _
-        have hqmul : q ≤ q * q ^ (d - 1) := by
-          simpa using Nat.mul_le_mul_left q hpos
-        rw [Nat.mul_sub_left_distrib]
-        simp only [mul_one]
-        omega
-  obtain ⟨x, -, hx⟩ := Finset.exists_mem_notMem_of_card_lt_card
-    (s := covered) (t := Finset.univ) (by simpa using hcovered)
-  refine ⟨x, fun i hi hxi => hx ?_⟩
-  by_cases hx0 : x = 0
-  · simp [covered, hx0]
-  · simp only [covered, Finset.mem_insert]
-    exact Or.inr (Finset.mem_biUnion.mpr ⟨i, hi, by simp [nz, hxi, hx0]⟩)
-
-/-- A nonempty row-wise interleaving does not increase affine-line MCA at radii in `(0, 1)`. -/
+/-- A nonempty row-wise interleaving does not increase affine-line MCA. -/
 theorem mcaError_interleaved_le
     (C : ModuleCode ι F A) (t : ℕ) (δ : ℝ≥0)
-    (ht : 0 < t) (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1) :
-    mcaError (AffineLineGenerator F) (C ^⋈ (Fin t)) (δ : ℝ) ≤
+    (ht : 0 < t) :
+    mcaError (AffineLineGenerator F) (C^⋈(Fin t)) (δ : ℝ) ≤
       mcaError (AffineLineGenerator F) C (δ : ℝ) := by
-  classical
   let : Nonempty (Fin t) := Fin.pos_iff_nonempty.mp ht
-  unfold mcaError
-  refine iSup_le fun U => ?_
-  let isBad (x : F) := IsMCA (AffineLineGenerator F) (C ^⋈ (Fin t)) x U (δ : ℝ)
-  let B := Finset.univ.filter isBad
-  obtain ⟨T, hT⟩ : ∃ T : F → Finset ι, ∀ x, isBad x →
-      (T x).card ≥ (Fintype.card ι : ℝ) * (1 - (δ : ℝ)) ∧
-      projectedWord (fun k => ∑ j, AffineLineGenerator F x j • U j k) (T x) ∈
-        projectedCodeSubmod (C ^⋈ (Fin t)) (T x) ∧
-      ∃ j, projectedWord (U j) (T x) ∉ projectedCodeSubmod (C ^⋈ (Fin t)) (T x) := by
-    choose! T hT using fun x (hx : isBad x) => hx
-    exact ⟨T, hT⟩
-  let rowComb (l : Fin t → F) (j : Fin 2) : ι → A :=
-    fun k => ∑ i, l i • U j k i
-  let K (x : F) : Submodule F (Fin t → F) :=
-    { carrier := {l | ∀ j, projectedWord (rowComb l j) (T x) ∈ projectedCodeSubmod C (T x)}
-      zero_mem' := by
-        intro j
-        have hz : projectedWord (rowComb 0 j) (T x) = 0 := by
-          ext k
-          simp [projectedWord, rowComb]
-        rw [hz]
-        exact (projectedCodeSubmod C (T x)).zero_mem
-      add_mem' := by
-        intro l l' hl hl' j
-        have hadd : projectedWord (rowComb (l + l') j) (T x) =
-            projectedWord (rowComb l j) (T x) + projectedWord (rowComb l' j) (T x) := by
-          ext k
-          simp [projectedWord, rowComb, add_smul, Finset.sum_add_distrib]
-        rw [hadd]
-        exact (projectedCodeSubmod C (T x)).add_mem (hl j) (hl' j)
-      smul_mem' := by
-        intro a l hl j
-        have hsmul : projectedWord (rowComb (a • l) j) (T x) =
-            a • projectedWord (rowComb l j) (T x) := by
-          ext k
-          simp [projectedWord, rowComb, Finset.smul_sum, mul_smul]
-        rw [hsmul]
-        exact (projectedCodeSubmod C (T x)).smul_mem a (hl j) }
-  have hK (x : F) (hx : x ∈ B) : K x ≠ ⊤ := by
-    obtain ⟨j, hj⟩ := (hT x (Finset.mem_filter.mp hx).2).2.2
-    have hj' : ¬ ∀ i : Fin t,
-        projectedWord (fun k => U j k i) (T x) ∈ projectedCodeSubmod C (T x) := by
-      intro hall
-      apply hj
-      exact (projectedCodeSubmod_moduleInterleavedCode_iff
-        F A (Fin t) ι C (U j) (T x)).mpr hall
-    push Not at hj'
-    obtain ⟨i, hi⟩ := hj'
-    intro htop
-    have he : Pi.single i (1 : F) ∈ K x := by rw [htop]; exact Submodule.mem_top
-    apply hi
-    simpa [K, rowComb] using he j
-  have hBcard : B.card ≤ Fintype.card F := by
-    simpa [B] using Finset.card_filter_le Finset.univ isBad
-  obtain ⟨l, hl⟩ := exists_forall_notMem_of_card_le B K hK hBcard
-  let V : Fin 2 → (ι → A) := rowComb l
-  have himp : ∀ x : F, isBad x → IsMCA (AffineLineGenerator F) C x V (δ : ℝ) := by
-    intro x hx
-    have hxB : x ∈ B := Finset.mem_filter.mpr ⟨Finset.mem_univ _, hx⟩
-    have hdata := hT x hx
-    refine ⟨T x, hdata.1, ?_, ?_⟩
-    · have hrows : ∀ i : Fin t,
-          projectedWord (fun k => ∑ j, AffineLineGenerator F x j • U j k i) (T x) ∈
-            projectedCodeSubmod C (T x) :=
-        (projectedCodeSubmod_moduleInterleavedCode_iff F A (Fin t) ι C
-          (fun k => ∑ j, AffineLineGenerator F x j • U j k) (T x)).mp hdata.2.1
-      rw [mem_projectedCodeSubmod_iff]
-      convert projectedCode_linearCombination C (T x)
-        (fun i k => ∑ j, AffineLineGenerator F x j • U j k i) l
-        (fun i => (mem_projectedCodeSubmod_iff C (T x) _).mp (hrows i)) using 1
-      ext k
-      simp only [projectedWord, Set.domRestrict_apply, V, rowComb, Finset.smul_sum, smul_smul]
-      rw [Finset.sum_comm]
-      apply Finset.sum_congr rfl
-      intro i _
-      apply Finset.sum_congr rfl
-      intro j _
-      rw [mul_comm]
-    · have hnot := hl x hxB
-      change ¬ ∀ j, projectedWord (rowComb l j) (T x) ∈ projectedCodeSubmod C (T x) at hnot
-      push Not at hnot
-      simpa [V] using hnot
-  calc
-    Pr_{let x ← $ᵖ F}[IsMCA (AffineLineGenerator F) (C ^⋈ (Fin t)) x U (δ : ℝ)]
-        ≤ Pr_{let x ← $ᵖ F}[IsMCA (AffineLineGenerator F) C x V (δ : ℝ)] :=
-      Pr_le_Pr_of_implies _ _ _ himp
-    _ ≤ ⨆ V : Fin 2 → (ι → A),
-        Pr_{let x ← $ᵖ F}[IsMCA (AffineLineGenerator F) C x V (δ : ℝ)] :=
-      le_iSup (fun V : Fin 2 → (ι → A) =>
-        Pr_{let x ← $ᵖ F}[IsMCA (AffineLineGenerator F) C x V (δ : ℝ)]) V
+  exact mcaError_moduleInterleavedCode_le_of_card_le (AffineLineGenerator F) C (δ : ℝ)
+    le_rfl
 
-/-- Affine-line MCA is invariant under nonempty row-wise interleaving at radii in `(0, 1)`. -/
+/-- Affine-line MCA is invariant under nonempty row-wise interleaving. -/
 theorem mcaError_interleaved_eq
     (C : ModuleCode ι F A) (t : ℕ) (δ : ℝ≥0)
-    (ht : 0 < t) (hδ_pos : 0 < δ) (hδ_lt : δ < 1) :
+    (ht : 0 < t) :
     mcaError (AffineLineGenerator F) (C ^⋈ (Fin t)) (δ : ℝ) =
       mcaError (AffineLineGenerator F) C (δ : ℝ) :=
-  le_antisymm (mcaError_interleaved_le C t δ ht hδ_pos hδ_lt)
-    (mcaError_le_moduleInterleavedCode C t δ ht hδ_lt.le)
+  le_antisymm (mcaError_interleaved_le C t δ ht)
+    (mcaError_le_moduleInterleavedCode C t δ ht)
 
 end Interleaving
 

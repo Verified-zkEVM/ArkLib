@@ -33,8 +33,6 @@ theorem initial_root_at_x0_of_dvd (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
   rcases hdvd with ⟨Q, hQ⟩
   rw [hQ, Polynomial.eval₂_mul, H_eval2_T_div_W_eq_zero H, zero_mul]
 
-set_option maxHeartbeats 800000 in
--- Reducing the explicit fraction-field lift composite needs extra elaboration heartbeats.
 /-- Separability over any fraction field of the coefficient ring makes the initial root simple.
 The fraction-field embedding is constructed explicitly from the native coefficient embedding. -/
 theorem zeta_ne_zero_of_fractionField_separable

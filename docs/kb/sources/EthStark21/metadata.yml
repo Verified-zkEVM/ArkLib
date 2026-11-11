@@ -1,0 +1,5 @@
+bibkey: EthStark21
+source_kind: bibliography-only
+canonical_url: https://eprint.iacr.org/2021/582
+committed_artifacts: []
+notes: "Version 1.2 (July 2023) provides STARK context for the reusable coset-chunk algebra."

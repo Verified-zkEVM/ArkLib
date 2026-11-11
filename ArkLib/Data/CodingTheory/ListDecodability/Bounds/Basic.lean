@@ -55,7 +55,7 @@ theorem card_filter_hammingDist_le_eq_hammingBallVolume {A : Type} [Fintype A] [
     Code.mem_hammingBall_iff]
   congr!
 
-omit [DecidableEq ι] in
+omit [Nonempty ι] [DecidableEq ι] in
 /-- **Relative-distance close-codeword set as an explicit absolute-distance set.**
 
 Stated for an arbitrary alphabet rather than a linear code over a field: the identity is pure
@@ -64,6 +64,11 @@ theorem closeCodewordsRel_eq_setOf {A : Type} [DecidableEq A]
     (C : Set (ι → A)) (δ : ℝ) (hδ : 0 ≤ δ) (f : ι → A) :
     closeCodewordsRel C f δ =
       {c : ι → A | c ∈ C ∧ hammingDist c f ≤ ⌊δ * Fintype.card ι⌋₊} := by
+  rcases isEmpty_or_nonempty ι with hι | hι
+  · let := hι
+    ext c
+    simp [closeCodewordsRel, Code.relHammingBall, Code.relHammingDist, hδ, Subsingleton.elim c f]
+  let := hι
   have h_n_pos : 0 < Fintype.card ι := Fintype.card_pos
   ext c
   simp only [closeCodewordsRel, Code.relHammingBall, Set.mem_ofPred_eq,
@@ -94,6 +99,10 @@ theorem submodule_ncard_eq_rpow_finrank [Finite ι] (C : Submodule F (ι → F))
       = (Fintype.card F : ℝ) ^ (Module.finrank F C : ℝ) := by
   rw [submodule_ncard_eq_pow_finrank, Nat.cast_pow, Real.rpow_natCast]
 
+section
+
+variable {ι : Type} [Fintype ι]
+
 open Classical in
 /-- **Averaging identity (Fubini), for an arbitrary code over a finite alphabet.** Summing the
 point-list size `|Λ(C, δ, f)|` over all centres `f` gives `|C| · Vol_q(δ, n)`: swap the order of
@@ -122,7 +131,7 @@ theorem sum_ncard_closeCodewordsRel_eq_of_set {A : Type} [Fintype A]
         = if c ∈ C then hammingBallVolume (Fintype.card A) δ (Fintype.card ι) else 0 := by
     intro c
     by_cases hc : c ∈ C
-    · simp only [hc, true_and, if_true]
+    · simp only [hc, true_and, ite_true]
       rw [← Finset.card_filter]
       exact card_filter_hammingDist_le_eq_hammingBallVolume c δ
     · simp [hc]
@@ -142,6 +151,8 @@ theorem sum_ncard_closeCodewordsRel_eq
     ∑ f : ι → F, (closeCodewordsRel ((C : Set (ι → F))) f δ).ncard
       = (C : Set (ι → F)).ncard * hammingBallVolume (Fintype.card F) δ (Fintype.card ι) :=
   sum_ncard_closeCodewordsRel_eq_of_set (C : Set (ι → F)) δ hδ
+
+end
 
 end LowerBounds_General
 

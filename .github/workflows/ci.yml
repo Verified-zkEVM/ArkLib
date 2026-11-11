@@ -3,25 +3,35 @@ name: CI
 on:
   push:
     branches: ["main"]
+  # Every pull request is checked, including stacked ones whose base is another PR branch.
   pull_request:
-    branches: ["main"]
   merge_group:
     types: [checks_requested]
+  # Nightly clean build of `main`: the absolute build-time trend, and a check that nothing passes
+  # only because of the build cache.
+  schedule:
+    - cron: "40 6 * * *"
   workflow_dispatch:
+    inputs:
+      clean_build:
+        description: "Ignore the build cache and build the library from scratch"
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Runs on `main` save the build cache that later runs start from, so a newer push waits for the
+  # running one instead of cancelling it.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
-  build:
+  blueprint:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
-
     steps:
       - name: Cleanup to free disk space
-        uses: jlumbroso/free-disk-space@v1.3.1
+        uses: jlumbroso/free-disk-space@v2.0.0
         with:
           tool-cache: false
           android: true
@@ -33,7 +43,84 @@ jobs:
 
       - uses: actions/checkout@v7
         with:
+          persist-credentials: false
+
+      # Keep the existing renderer image and commands on a runner without Lean build caches.
+      # The renderer installs leanblueprint with pip inside the TeX Live container, which cannot
+      # see the runner's uv. Host-side Python in this job runs through uv as elsewhere.
+      - name: Render blueprint PDF and HTML
+        uses: xu-cheng/texlive-action@f886de8159e5952a131848a5fa9c3196a2132b5d # v2
+        with:
+          docker_image: ghcr.io/xu-cheng/texlive-full:20250401
+          run: |
+            apk update
+            apk add --update make py3-pip git pkgconfig graphviz graphviz-dev gcc musl-dev
+            git config --global --add safe.directory $GITHUB_WORKSPACE
+            git config --global --add safe.directory `pwd`
+            python3 -m venv env
+            source env/bin/activate
+            pip install --upgrade pip requests wheel
+            pip install pygraphviz --config-settings="--global-option=build_ext" --config-settings="--global-option=-L/usr/lib/graphviz/" --config-settings="--global-option=-R/usr/lib/graphviz/"
+            pip install leanblueprint
+            leanblueprint pdf
+            mkdir -p home_page
+            cp blueprint/print/print.pdf home_page/blueprint.pdf
+            leanblueprint web
+            cp -r blueprint/web home_page/blueprint
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.13.6"
+          enable-cache: false
+
+      - name: Stage generated blueprint outputs
+        run: uv run --no-project --python 3.12 python scripts/blueprint-ci.py stage-artifact "$RUNNER_TEMP/arklib-blueprint"
+
+      - name: Upload generated blueprint outputs
+        uses: actions/upload-artifact@v7
+        with:
+          name: arklib-blueprint
+          path: ${{ runner.temp }}/arklib-blueprint
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  # Starts alongside `blueprint` instead of after it: the renderer needs no Lean build, and the
+  # build reads its outputs only at the blueprint declaration check, where it waits for that job.
+  build:
+    runs-on: ubuntu-24.04
+    permissions:
+      # `actions: read` lets the build read the renderer job's status in this run.
+      actions: read
+      contents: read
+    env:
+      CLEAN_BUILD: ${{ github.event_name == 'schedule' || inputs.clean_build == true }}
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
           fetch-depth: 0
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.13.6"
+          enable-cache: false
+
+      - name: Test blueprint CI safeguards
+        run: uv run --no-project --python 3.12 python scripts/blueprint-ci.py self-test
+
+      - name: Cleanup to free disk space
+        uses: jlumbroso/free-disk-space@v2.0.0
+        with:
+          tool-cache: false
+          android: true
+          dotnet: false
+          haskell: false
+          large-packages: false
+          docker-images: false
+          swap-storage: false
 
       - name: Reject generated KB updates in PRs
         if: >-
@@ -53,7 +140,12 @@ jobs:
             exit 1
           fi
 
+      # PR-controlled values (the branch name) reach the script through `env`, never through
+      # `${{ }}` interpolation into the script text.
       - name: Initialize timing paths
+        env:
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          SOURCE_BRANCH: ${{ github.head_ref || github.ref_name }}
         run: |
           echo "BUILD_TIMING_RESULTS=$RUNNER_TEMP/build-timing.jsonl" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_LOG_DIR=$RUNNER_TEMP/build-timing-logs" >> "$GITHUB_ENV"
@@ -62,32 +154,49 @@ jobs:
           echo "BUILD_TIMING_METADATA_PATH=$RUNNER_TEMP/build-timing-artifact/metadata.json" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_REPORT=$RUNNER_TEMP/build-timing.md" >> "$GITHUB_ENV"
           echo "SOURCE_TRUST_REPORT=$RUNNER_TEMP/source-trust.json" >> "$GITHUB_ENV"
-          echo "BUILD_TIMING_SOURCE_SHA=${{ github.event.pull_request.head.sha || github.sha }}" >> "$GITHUB_ENV"
-          echo "BUILD_TIMING_SOURCE_BRANCH=${{ github.head_ref || github.ref_name }}" >> "$GITHUB_ENV"
+          echo "MODULE_TIMES_BASE=$RUNNER_TEMP/module-times-base.json" >> "$GITHUB_ENV"
+          echo "BUILD_TIMING_SOURCE_SHA=$SOURCE_SHA" >> "$GITHUB_ENV"
+          echo "BUILD_TIMING_SOURCE_BRANCH=$SOURCE_BRANCH" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_TEST_NAME=Validation wrapper" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_TEST_COMMAND=./scripts/validate.sh" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_NATIVE_NAME=Native build" >> "$GITHUB_ENV"
-          echo "BUILD_TIMING_NATIVE_COMMAND=lake build toyproblem-runtime hachi-runtime lint-style" >> "$GITHUB_ENV"
+          echo "BUILD_TIMING_NATIVE_COMMAND=lake build toyproblem-runtime hachi-runtime sumcheck-runtime fri-extractor-runtime lint-style" >> "$GITHUB_ENV"
           {
             echo "BUILD_TIMING_SOURCE_SUBJECT<<EOF"
             git log -1 --format=%s
             echo "EOF"
           } >> "$GITHUB_ENV"
 
-      - name: Restore Lean cache
+      # Two caches with different lifetimes. Dependencies change only with the manifest; the
+      # ArkLib build changes with every commit, so it is saved per `main` run and restored from the
+      # newest one. Lake decides what to rebuild from content hashes of each module's source and
+      # imports, so a restored build is only a starting point: whatever this checkout changed, and
+      # everything importing it, is rebuilt. Lake regenerates the `*.setup.json` files per build and
+      # never reads old ones; leaving them out halves the uncompressed size.
+      - name: Restore dependency cache
         uses: actions/cache/restore@v6
-        id: lake-cache
+        id: deps-cache
         with:
-          path: ./.lake
-          key: ${{ runner.os }}-lean-ci-${{ hashFiles('lake-manifest.json') }}
+          path: |
+            .lake/packages
+            !.lake/packages/**/*.setup.json
+          key: ${{ runner.os }}-lean-deps-${{ hashFiles('lake-manifest.json', 'lean-toolchain') }}
+          # On a dependency bump, start from the previous packages; Lake checks out the new
+          # revisions and rebuilds only the packages that changed.
           restore-keys: |
-            ${{ runner.os }}-lean-ci-
-            ${{ runner.os }}-lean-docs-${{ hashFiles('lake-manifest.json') }}
-            ${{ runner.os }}-lean-docs-
+            ${{ runner.os }}-lean-deps-
 
-      - uses: actions/setup-python@v7
+      - name: Restore build cache
+        if: env.CLEAN_BUILD != 'true'
+        uses: actions/cache/restore@v6
         with:
-          python-version: "3.12"
+          path: |
+            .lake/build
+            !.lake/build/**/*.setup.json
+          key: ${{ runner.os }}-arklib-build-${{ hashFiles('lake-manifest.json', 'lean-toolchain') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-arklib-build-${{ hashFiles('lake-manifest.json', 'lean-toolchain') }}-
+            ${{ runner.os }}-arklib-build-
 
       # Complements the kernel-level sweep with a lexical inventory of constructs that
       # attach to no environment declaration (for example `example`s and sorry-backed
@@ -97,17 +206,17 @@ jobs:
         env:
           SOURCE_TRUST_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before || '' }}
         run: |
-          python3 scripts/test-source-trust-audit.py
+          uv run --no-project --python 3.12 python scripts/test-source-trust-audit.py
           args=(--json "$SOURCE_TRUST_REPORT")
           if [ -n "$SOURCE_TRUST_BASE_REF" ] &&
              [ "$SOURCE_TRUST_BASE_REF" != "0000000000000000000000000000000000000000" ]; then
             args+=(--base-ref "$SOURCE_TRUST_BASE_REF")
           fi
-          python3 scripts/source-trust-audit.py "${args[@]}" | tee "$RUNNER_TEMP/source-trust.md"
+          uv run --no-project --python 3.12 python scripts/source-trust-audit.py "${args[@]}" | tee "$RUNNER_TEMP/source-trust.md"
           cat "$RUNNER_TEMP/source-trust.md" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Set up Lean environment
-        uses: leanprover/lean-action@v1.6.0
+        uses: leanprover/lean-action@v1.7.0
         with:
           auto-config: false
           build: false
@@ -119,14 +228,16 @@ jobs:
       - name: Fetch dependency cache
         run: lake exe cache get
 
-      - name: Time clean build
+      # The module times recorded with the restored build are this run's per-module baseline.
+      - name: Keep cached module times as the baseline
         run: |
-          bash scripts/build_timing_report.sh run clean_build "$BUILD_TIMING_RESULTS" -- \
-            bash -eo pipefail -c 'rm -rf .lake/build && lake build'
+          if [ -f .lake/build/arklib-module-times.json ]; then
+            cp .lake/build/arklib-module-times.json "$MODULE_TIMES_BASE"
+          fi
 
-      - name: Time warm rebuild
+      - name: Time library build
         run: |
-          bash scripts/build_timing_report.sh run warm_rebuild "$BUILD_TIMING_RESULTS" -- \
+          bash scripts/build_timing_report.sh run library_build "$BUILD_TIMING_RESULTS" -- \
             bash -eo pipefail -c 'lake build'
 
       # VCVio's FFI C sources live in git submodules that Lake does not fetch, and every
@@ -140,16 +251,16 @@ jobs:
             git -C .lake/packages/VCVio submodule update --init --recursive
           fi
 
-      # `validate.sh` runs `lake exe toyproblem-runtime` and `lake exe hachi-runtime`, which link
+      # `validate.sh` runs the toyproblem, hachi, and sumcheck runtime targets, which link
       # the native `.c.o` chain for the whole dependency graph. That work is billed here rather
-      # than to the validation wrapper: the `.lake` cache key is `hashFiles('lake-manifest.json')`,
-      # so a dependency bump misses the cache and the compile costs ~5 minutes, which used to read
-      # as a wrapper regression. Every compiled executable `validate.sh` runs belongs in this
-      # command; otherwise its link cost silently lands in the `test_path` row instead.
+      # than to the validation wrapper: a dependency bump misses the dependency cache and the
+      # compile costs ~5 minutes, which used to read as a wrapper regression. Every compiled
+      # executable `validate.sh` runs belongs in this command; otherwise its link cost silently
+      # lands in the `test_path` row instead.
       - name: Time native build
         run: |
           bash scripts/build_timing_report.sh run native_build "$BUILD_TIMING_RESULTS" -- \
-            bash -eo pipefail -c 'lake build toyproblem-runtime hachi-runtime lint-style'
+            bash -eo pipefail -c 'lake build toyproblem-runtime hachi-runtime sumcheck-runtime fri-extractor-runtime lint-style'
 
       # The fixture matrix is enforcing: it certifies the sweep tool itself (gate
       # directions, native-trust floor, exit-code contract), independent of any
@@ -167,25 +278,76 @@ jobs:
           bash scripts/build_timing_report.sh run test_path "$BUILD_TIMING_RESULTS" -- \
             bash -eo pipefail -c './scripts/validate.sh'
 
-      - name: Save Lean cache
-        if: success() && steps.lake-cache.outputs.cache-hit != 'true'
+      - name: Record module times
+        run: |
+          uv run --no-project --python 3.12 python scripts/module_times.py update .lake/build/arklib-module-times.json \
+            --commit "$GITHUB_SHA" \
+            "$BUILD_TIMING_LOG_DIR/library_build.log" "$BUILD_TIMING_LOG_DIR/test_path.log"
+
+      # Only `main` writes caches. Pull request and merge-queue runs restore them and discard their
+      # own build, so untrusted code never publishes an artifact another run would load, and PR
+      # builds do not evict the `main` caches from the repository's 10 GB budget.
+      - name: Save dependency cache
+        if: github.ref == 'refs/heads/main' && steps.deps-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v6
         with:
-          path: ./.lake
-          key: ${{ runner.os }}-lean-ci-${{ hashFiles('lake-manifest.json') }}
+          path: |
+            .lake/packages
+            !.lake/packages/**/*.setup.json
+          key: ${{ steps.deps-cache.outputs.cache-primary-key }}
 
-      # Reuse the project build above for blueprint/checkdecls validation and, on trusted
-      # main pushes, API-doc generation. The action cannot publish from this read-only job.
-      - name: Build blueprint and documentation
+      # Keyed by run as well as commit, so a nightly clean build of an already-cached commit still
+      # lands; restores take the newest match.
+      - name: Save build cache
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            .lake/build
+            !.lake/build/**/*.setup.json
+          key: ${{ runner.os }}-arklib-build-${{ hashFiles('lake-manifest.json', 'lean-toolchain') }}-${{ github.sha }}-${{ github.run_id }}
+
+      - name: Build blueprint declaration environment
+        run: lake build ArkLibBlueprint
+
+      # A failed, cancelled or skipped renderer fails the required build check here.
+      - name: Require successful blueprint rendering
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: uv run --no-project --python 3.12 python scripts/blueprint-ci.py wait-for-success
+
+      - name: Download generated blueprint outputs
+        uses: actions/download-artifact@v8
+        with:
+          name: arklib-blueprint
+          path: .
+
+      - name: Check generated blueprint declarations
+        run: lake exe checkdecls blueprint/lean_decls
+
+      # Reuse the existing project build for API documentation on trusted main pushes.
+      # The blueprint was rendered separately; this action cannot publish from the read-only job.
+      - name: Build API documentation
         uses: leanprover-community/docgen-action@10db47458f91456d87804787d3dfcd914b9a19e3 # 2026-06-07
         env:
           DISABLE_EQUATIONS: 1
         with:
-          blueprint: true
+          blueprint: false
           homepage: home_page
           build-page: false
           deploy: false
           references: blueprint/src/references.bib
+
+      # The action selects API facets from defaultTargets. Add the nondefault blueprint root
+      # in its existing docbuild project so the abstract declaration links have published pages.
+      - name: Add blueprint dependency API documentation
+        if: github.event_name == 'push'
+        env:
+          DISABLE_EQUATIONS: 1
+        run: |
+          cd docbuild
+          lake build ArkLibBlueprint:docs
+          cp -a .lake/build/doc/. ../home_page/docs/
 
       # The pinned docgen action writes blueprint/API output under `homepage` and, with
       # build-page false, its own deploy path is exactly `${homepage}/`. Transfer that directory
@@ -210,18 +372,26 @@ jobs:
           BUILD_TIMING_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           BUILD_TIMING_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || '' }}
           BUILD_TIMING_REF: ${{ github.head_ref || github.ref_name }}
-          BUILD_TIMING_CACHE_EXACT_HIT: ${{ steps.lake-cache.outputs.cache-hit }}
-          BUILD_TIMING_CACHE_PRIMARY_KEY: ${{ steps.lake-cache.outputs.cache-primary-key }}
-          BUILD_TIMING_CACHE_MATCHED_KEY: ${{ steps.lake-cache.outputs.cache-matched-key }}
+          BUILD_TIMING_CACHE_EXACT_HIT: ${{ steps.deps-cache.outputs.cache-hit }}
+          BUILD_TIMING_CACHE_PRIMARY_KEY: ${{ steps.deps-cache.outputs.cache-primary-key }}
+          BUILD_TIMING_CACHE_MATCHED_KEY: ${{ steps.deps-cache.outputs.cache-matched-key }}
         run: |
           rm -rf "$BUILD_TIMING_ARTIFACT_DIR"
           mkdir -p "$BUILD_TIMING_ARTIFACT_DIR"
-          python3 scripts/build_timing_metadata.py "$BUILD_TIMING_METADATA_PATH"
+          uv run --no-project --python 3.12 python scripts/build_timing_metadata.py "$BUILD_TIMING_METADATA_PATH"
           if [ -f "$BUILD_TIMING_RESULTS" ]; then
             cp "$BUILD_TIMING_RESULTS" "$BUILD_TIMING_ARTIFACT_DIR/results.jsonl"
           fi
-          if [ -f "$BUILD_TIMING_LOG_DIR/clean_build.log" ]; then
-            cp "$BUILD_TIMING_LOG_DIR/clean_build.log" "$BUILD_TIMING_ARTIFACT_DIR/clean_build.log"
+          for log in library_build test_path; do
+            if [ -f "$BUILD_TIMING_LOG_DIR/$log.log" ]; then
+              cp "$BUILD_TIMING_LOG_DIR/$log.log" "$BUILD_TIMING_ARTIFACT_DIR/$log.log"
+            fi
+          done
+          if [ -f "$MODULE_TIMES_BASE" ]; then
+            cp "$MODULE_TIMES_BASE" "$BUILD_TIMING_ARTIFACT_DIR/module-times-base.json"
+          fi
+          if [ -f .lake/build/arklib-module-times.json ]; then
+            cp .lake/build/arklib-module-times.json "$BUILD_TIMING_ARTIFACT_DIR/module-times.json"
           fi
           if [ -f "$SOURCE_TRUST_REPORT" ]; then
             cp "$SOURCE_TRUST_REPORT" "$BUILD_TIMING_ARTIFACT_DIR/source-trust.json"
@@ -239,7 +409,8 @@ jobs:
       - name: Render build timing report
         if: always()
         run: |
-          bash scripts/build_timing_report.sh render "$BUILD_TIMING_RESULTS" > "$BUILD_TIMING_REPORT"
+          BUILD_TIMING_LOG_DIR="$BUILD_TIMING_ARTIFACT_DIR" bash scripts/build_timing_report.sh \
+            render "$BUILD_TIMING_ARTIFACT_DIR/results.jsonl" > "$BUILD_TIMING_REPORT"
           cat "$BUILD_TIMING_REPORT" >> "$GITHUB_STEP_SUMMARY"
 
   # This job is never instantiated for a pull_request event, so PR-head code receives
@@ -268,4 +439,4 @@ jobs:
 
       - name: Deploy GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

@@ -51,3 +51,80 @@ After stripping away the polynomial commitment scheme, the protocol has the foll
 \end{description}
 
 \subsection{Formalization using IOR Composition}
+
+We fix an R1CS size with $m$ constraints, $n_x$ public inputs and $n_w$ witness variables, and set
+\[
+  s = \lceil \log_2 m \rceil, \qquad t = \lceil \log_2 \max(n_x, n_w) \rceil + 1.
+\]
+The formalized PIOP pads the instance to $2^s$ constraints and to public-input and witness
+vectors of length $2^{t-1}$, so that $z = (x, w)$ is indexed by $\{0,1\}^t$. It is the sequential
+composition of seven oracle reductions; the bound in brackets is the round-by-round knowledge
+error charged to each challenge of that stage, where $q = |\mathbb{F}|$.
+
+\begin{definition}[Spartan PIOP]
+    \label{def:spartan_reduction}
+    \lean{Spartan.oracleReduction, Spartan.Assembly.stage,
+      Spartan.PublicParams.forSize}
+    \leanok
+    \uses{def:oracle_reduction, def:sendsinglewitness_adapter, def:sumcheck_single_round}
+    The Spartan oracle reduction is the composition of:
+    \begin{enumerate}
+        \item \textbf{Witness attachment} [$0$]: the prover sends the padded witness table as an
+        oracle message, an instance of the adapter of Definition~\ref{def:sendsinglewitness_adapter}.
+        \item \textbf{Zero-check} [$s/q$]: the verifier samples $\tau \in \mathbb{F}^{s}$, reducing
+        the claim that every constraint holds (the multilinear extension of the residual
+        $(Az) \circ (Bz) - Cz$ is zero) to the claim that this extension vanishes at $\tau$,
+        equivalently
+        $\sum_{x \in \{0,1\}^s} \tilde{\text{eq}}(\tau, x)\,((Az)_x (Bz)_x - (Cz)_x) = 0$.
+        \item \textbf{First sum-check} [$3/q$]: sum-check of degree $3$ in $s$ rounds, ending at a
+        point $r_x$.
+        \item \textbf{Send evaluations} [$0$]: the prover sends $v_A, v_B, v_C$, and the verifier
+        checks the first sum-check's final claim against them.
+        \item \textbf{Batching} [$1/q$]: the verifier samples one challenge consisting of three
+        independent coefficients $(r_A, r_B, r_C)$, forming the claim
+        $T_2 = r_A v_A + r_B v_B + r_C v_C$.
+        \item \textbf{Second sum-check} [$2/q$]: sum-check of degree $2$ in $t$ rounds, ending at
+        a point $r_y$.
+        \item \textbf{Terminal check} [$0$]: the verifier evaluates the second virtual polynomial at
+        $r_y$ through the matrix and witness oracles and compares it with the final claim.
+    \end{enumerate}
+\end{definition}
+
+\begin{theorem}[Perfect completeness]
+    \label{thm:spartan_completeness}
+    \lean{Spartan.perfectCompleteness}
+    \leanok
+    \uses{def:spartan_reduction, thm:sumcheck_perfect_completeness}
+    The Spartan oracle reduction is perfectly complete from the original (unpadded) R1CS
+    satisfiability relation to the trivial output relation.
+\end{theorem}
+
+\begin{theorem}[Round-by-round knowledge soundness]
+    \label{thm:spartan_rbr}
+    \lean{Spartan.rbrKnowledgeSoundnessWith, Spartan.challengeError}
+    \leanok
+    \uses{def:spartan_reduction, thm:sumcheck_rbr_knowledge_soundness_standard}
+    The Spartan verifier is fixed-prefix round-by-round knowledge sound for the original R1CS
+    relation, with each challenge charged the error of its stage listed in
+    Definition~\ref{def:spartan_reduction}. The state function is the composition of the stage
+    state functions, retaining every earlier rejecting check.
+\end{theorem}
+
+\begin{theorem}[Knowledge soundness]
+    \label{thm:spartan_knowledge_soundness}
+    \lean{Spartan.totalError, Spartan.error_ledger, Spartan.sum_challengeError,
+      Spartan.knowledgeSoundnessWith, Spartan.straightlineExtractor,
+      Spartan.foldExtractor_eq_straightlineExtractor,
+      Spartan.knowledgeSoundnessWith_straightlineExtractor, Spartan.knowledgeSoundness,
+      Spartan.knowledgeSoundness_clipped}
+    \leanok
+    \uses{thm:spartan_rbr, thm:rbr_knowledge_soundness_implies_knowledge_soundness}
+    The per-challenge errors sum to
+    \[
+      \frac{s}{q} + s \cdot \frac{3}{q} + \frac{1}{q} + t \cdot \frac{2}{q} = \frac{4s + 2t + 1}{q}.
+    \]
+    The Spartan verifier is knowledge sound for the original R1CS relation with error
+    $(4s + 2t + 1)/q$, and also with error $\min(1, (4s + 2t + 1)/q)$. The extractor obtained by
+    folding the round-by-round extractors equals an executable straight-line extractor, which
+    restricts the first message (the padded witness table) to the original witness coordinates.
+\end{theorem}

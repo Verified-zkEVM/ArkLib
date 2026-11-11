@@ -120,11 +120,6 @@ def lift : OuterStmtIn × (∀ i, OuterOStmtIn i) → InnerStmtOut × (∀ i, In
     OuterStmtOut × (∀ i, OuterOStmtOut i) :=
   lens.toFunB
 
--- def toVerifierLens : Statement.Lens
---     (OuterStmtIn × ∀ i, OuterOStmtIn i) (OuterStmtOut × ∀ i, OuterOStmtOut i)
---     (InnerStmtIn × ∀ i, InnerOStmtIn i) (InnerStmtOut × ∀ i, InnerOStmtOut i)
---   := oStmtLens
-
 end OracleStatement.Lens
 
 /-! ### Executable oracle-statement lenses
@@ -419,15 +414,6 @@ def proj (lens : Extractor.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOu
     OuterStmtIn × OuterWitOut → InnerStmtIn × InnerWitOut :=
   fun ⟨stmtIn, witOut⟩ => ⟨lens.stmt.proj stmtIn, lens.wit.proj (stmtIn, witOut)⟩
 
--- /-- Transport the inner input witness to the outer input witness, also relying on the tuple
--- (outer--   input statement, outer output witness) -/
--- @[inline, reducible]
--- def lift (lens : Extractor.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
---               OuterWitIn OuterWitOut InnerWitIn InnerWitOut) :
---     OuterStmtIn × OuterWitOut → InnerWitIn → OuterWitIn :=
---   fun ⟨stmtIn, witOut⟩ innerWitIn =>
---     lens.wit.lift (stmtIn, witOut) innerWitIn
-
 end Extractor.Lens
 
 /-- Conditions for the lens / transformation to preserve completeness
@@ -486,6 +472,7 @@ class Statement.Lens.IsSound {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut 
     outerStmtIn ∉ outerLangIn → lens.proj outerStmtIn ∉ innerLangIn
 
   lift_sound : ∀ outerStmtIn innerStmtOut,
+    outerStmtIn ∉ outerLangIn →
     compatStmt outerStmtIn innerStmtOut →
     innerStmtOut ∉ innerLangOut →
     lens.lift outerStmtIn innerStmtOut ∉ outerLangOut
@@ -521,11 +508,14 @@ class Extractor.Lens.IsKnowledgeSound
     (lens : Extractor.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
                             OuterWitIn OuterWitOut InnerWitIn InnerWitOut) where
 
-  /-- outer_to_inner for output witness (note: for statements, it's `lift` in this condition) -/
+  /-- An accepting output witness either projects inward or lifts every compatible input
+  witness to a valid outer input witness. -/
   proj_knowledgeSound : ∀ outerStmtIn innerStmtOut outerWitOut,
     compatStmt outerStmtIn innerStmtOut →
     (lens.stmt.lift outerStmtIn innerStmtOut, outerWitOut) ∈ outerRelOut →
-    (innerStmtOut, lens.wit.proj (outerStmtIn, outerWitOut)) ∈ innerRelOut
+    (innerStmtOut, lens.wit.proj (outerStmtIn, outerWitOut)) ∈ innerRelOut ∨
+      ∀ innerWitIn, compatWit outerWitOut innerWitIn →
+        (outerStmtIn, lens.wit.lift (outerStmtIn, outerWitOut) innerWitIn) ∈ outerRelIn
 
   /-- inner_to_outer for input witness (note: for statements, it's `proj` in this condition) -/
   lift_knowledgeSound : ∀ outerStmtIn outerWitOut innerWitIn,
@@ -546,8 +536,9 @@ variable {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
     (lens : Extractor.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
                 OuterWitIn OuterWitOut InnerWitIn InnerWitOut)
 
-/-- If an extractor lens is knowledge sound, then the associated statement lens is sound. -/
-instance [Inhabited OuterWitOut]
+/-- A knowledge-sound extractor lens induces a sound statement lens. Nonempty inner input
+witnesses let the shortcut supply an outer input witness. -/
+instance [Inhabited OuterWitOut] [Nonempty InnerWitIn]
     [instKS : lens.IsKnowledgeSound
                 outerRelIn innerRelIn
                 outerRelOut innerRelOut
@@ -564,15 +555,15 @@ instance [Inhabited OuterWitOut]
     let outerWitIn := lens.wit.lift (outerStmtIn, default) innerWitIn
     have hOuterWitIn := instKS.lift_knowledgeSound outerStmtIn default innerWitIn (by simp) hRelIn
     exact ⟨outerWitIn, hOuterWitIn⟩
-  lift_sound := fun outerStmtIn innerStmtOut hCompat hInnerRelOut => by
+  lift_sound := fun outerStmtIn innerStmtOut hOuterRelIn hCompat hInnerRelOut => by
     simp only [Set.mem_image, Prod.exists, exists_and_right, exists_eq_right,
-      not_exists] at hCompat hInnerRelOut ⊢
+      not_exists] at hOuterRelIn hInnerRelOut ⊢
     intro outerWitOut hOuterRelOut
-    contrapose! hInnerRelOut
-    let innerWitOut := lens.wit.proj (outerStmtIn, outerWitOut)
-    have hInnerWitOut :=
-      instKS.proj_knowledgeSound outerStmtIn innerStmtOut outerWitOut hCompat hOuterRelOut
-    exact ⟨innerWitOut, hInnerWitOut⟩
+    rcases instKS.proj_knowledgeSound outerStmtIn innerStmtOut outerWitOut
+      hCompat hOuterRelOut with hInner | hShortcut
+    · exact hInnerRelOut _ hInner
+    · obtain ⟨innerWitIn⟩ := ‹Nonempty InnerWitIn›
+      exact hOuterRelIn _ (hShortcut innerWitIn trivial)
 
 end Extractor.Lens.IsKnowledgeSound
 
@@ -811,6 +802,48 @@ def idWit {stmtLens : Statement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerS
   wit := Witness.InvLens.id
 
 alias trivialWit := Extractor.Lens.idWit
+
+variable (stmtLens : Statement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut)
+    (outerLangIn : Set OuterStmtIn) (outerLangOut : Set OuterStmtOut)
+    (innerLangIn : Set InnerStmtIn) (innerLangOut : Set InnerStmtOut)
+    (compatStmt : OuterStmtIn → InnerStmtOut → Prop)
+
+/-- A sound statement lens is knowledge sound with trivial `Unit` witnesses. -/
+theorem unit_knowledgeSound
+    (h : stmtLens.IsSound outerLangIn outerLangOut innerLangIn innerLangOut compatStmt) :
+    (idWit (stmtLens := stmtLens) (OuterWitIn := Unit) (OuterWitOut := Unit)).IsKnowledgeSound
+      (outerLangIn ×ˢ Set.univ) (innerLangIn ×ˢ Set.univ)
+      (outerLangOut ×ˢ Set.univ) (innerLangOut ×ˢ Set.univ) compatStmt (fun _ _ => True) where
+  proj_knowledgeSound := by
+    intro x y _ hc ho
+    by_cases hi : y ∈ innerLangOut
+    · exact Or.inl ⟨hi, trivial⟩
+    · right
+      have hx : x ∈ outerLangIn := by
+        by_contra hx
+        exact h.lift_sound x y hx hc hi ho.1
+      exact fun _ _ => ⟨hx, trivial⟩
+  lift_knowledgeSound := by
+    intro x _ _ _ hi
+    refine ⟨?_, trivial⟩
+    by_contra hx
+    exact h.proj_sound x hx hi.1
+
+/-- Knowledge soundness with trivial `Unit` witnesses implies statement soundness. -/
+theorem sound_of_unit_knowledgeSound
+    (h : (idWit (stmtLens := stmtLens) (OuterWitIn := Unit)
+      (OuterWitOut := Unit)).IsKnowledgeSound
+      (outerLangIn ×ˢ Set.univ) (innerLangIn ×ˢ Set.univ)
+      (outerLangOut ×ˢ Set.univ) (innerLangOut ×ˢ Set.univ) compatStmt (fun _ _ => True)) :
+    stmtLens.IsSound outerLangIn outerLangOut innerLangIn innerLangOut compatStmt where
+  proj_sound := by
+    intro x hx hi
+    exact hx (h.lift_knowledgeSound x () () trivial ⟨hi, trivial⟩).1
+  lift_sound := by
+    intro x y hx hc hi ho
+    rcases h.proj_knowledgeSound x y () hc ⟨ho, trivial⟩ with hInner | hShortcut
+    · exact hi hInner.1
+    · exact hx (hShortcut () trivial).1
 
 end Extractor.Lens
 

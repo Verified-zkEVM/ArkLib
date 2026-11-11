@@ -196,18 +196,15 @@ def HasNumeratorShape (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
 numerator is forced to be the image of the polynomial variable. -/
 theorem beta_zero_eq_X_of_shape (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
-    (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree) {D : ℕ}
-    (_hD_H : Bivariate.totalDegree H ≤ D)
-    (_hD_R : ∀ i ∈ R.support, Bivariate.totalDegree (R.coeff i) + i ≤ D)
+    (hHyp : Hypotheses x₀ R H)
     (αseq : ℕ → 𝕃 H) (βseq : ℕ → 𝒪 H)
     (hα0 : αseq 0 = functionFieldT (H := H) /
       liftToFunctionField (H := H) H.leadingCoeff)
-    (_hroot : evalRAtPowerSeries x₀ H R (gammaFromAlpha H αseq) = 0)
     (hshape : HasNumeratorShape x₀ R H hHyp αseq βseq) :
     βseq 0 =
       (Ideal.Quotient.mk (Ideal.span {monicize H}) (Polynomial.X : F[X][Y]) : 𝒪 H) := by
   classical
-  apply embeddingOf𝒪Into𝕃_injective hH
+  apply embeddingOf𝒪Into𝕃_injective _H_natDegree_pos.out
   have h0 := hshape 0
   unfold alphaOfNumerators at h0
   simp only [henselDenominatorExponent_zero, pow_zero, mul_one, zero_add, pow_one] at h0
@@ -427,7 +424,7 @@ theorem bSeq_succ_def (x₀ : F) (R : F[X][X][Y]) (N : ℕ) :
 /-- A step does not disturb the coefficients already computed. -/
 theorem bSeq_succ_eq_below (x₀ : F) (R : F[X][X][Y]) (N i : ℕ) (hi : i < N + 1) :
     bSeq x₀ R H (N+1) i = bSeq x₀ R H N i := by
-  rw [bSeq_succ_def, Function.update_apply, if_neg (by omega)]
+  rw [bSeq_succ_def, Function.update_apply, ite_eq_right (by omega)]
 
 -- value 0 is T/W for all N
 /-- Every approximation starts at `α₀ = T/W`. -/
@@ -472,7 +469,7 @@ theorem bSeq_eq_zero_of_gt (x₀ : F) (R : F[X][X][Y]) (N j : ℕ) (hj : N < j) 
       have : j ≠ 0 := by omega
       simp [bSeq, this]
   | succ N ih =>
-      rw [bSeq_succ_def, Function.update_apply, if_neg (by omega)]
+      rw [bSeq_succ_def, Function.update_apply, ite_eq_right (by omega)]
       exact ih j (by omega)
 
 -- δ helper: mk (bSeq (N+1)) = mk (bSeq N) + δ with δ low order N+1
@@ -631,8 +628,8 @@ theorem gammaOfNumerators_eq_gammaFromAlpha (x₀ : F) (R : F[X][X][Y]) (H : F[X
   exact hshape n
 
 /-- The residual at step `t`: the `(t+1)`-st coefficient of `R(x₀+S, γ, Z)` with the `ζ·α_{t+1}`
-term removed.  It vanishes exactly when `α_{t+1}` solves the Hensel equation, and after clearing
-denominators it becomes the next numerator. -/
+term removed. The `(t+1)`-st coefficient equation holds exactly when
+`ζ·α_{t+1} + residual = 0`; after clearing denominators, its negative gives the next numerator. -/
 noncomputable def henselCoeffResidual (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [Fact (Irreducible H)] [Fact (0 < H.natDegree)]
     (αseq : ℕ → 𝕃 H) (t : ℕ) : 𝕃 H :=
@@ -857,16 +854,16 @@ theorem henselCoeffResidual_eq_trunc (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     intro i hi
     rw [hδ_def, map_sub, PowerSeries.coeff_mk, PowerSeries.coeff_mk, hαtrunc]
     simp only []
-    rw [if_pos (by omega)]; ring
+    rw [ite_eq_left (by omega)]; ring
   have hδtop : PowerSeries.coeff (t + 1) δ = αseq (t + 1) := by
     rw [hδ_def, map_sub, PowerSeries.coeff_mk, PowerSeries.coeff_mk, hαtrunc]
     simp only []
-    rw [if_neg (by omega)]; ring
+    rw [ite_eq_right (by omega)]; ring
   have hΓ0 : PowerSeries.constantCoeff (PowerSeries.mk αtrunc) =
       functionFieldT (H := H) / liftToFunctionField (H := H) H.leadingCoeff := by
     rw [← PowerSeries.coeff_zero_eq_constantCoeff_apply, PowerSeries.coeff_mk, hαtrunc]
     simp only []
-    rw [if_pos (by omega), hα0]
+    rw [ite_eq_left (by omega), hα0]
   rw [hsum, coeff_evalR_split x₀ R (t + 1) (by omega) (PowerSeries.mk αtrunc) δ hδlow hΓ0,
     hδtop]
   ring
@@ -897,7 +894,7 @@ theorem henselClearedTerm_regular (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
           (liftToFunctionField (H := H) H.leadingCoeff ^ (i + 1) *
             (embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp)) ^ henselDenominatorExponent i)
       else 0)
-    (j : ℕ) (hj : j ∈ Finset.range (R.natDegree + 1)) :
+    (j : ℕ) :
     PowerSeries.coeff (t + 1)
         (liftCoeffToPowerSeries x₀ H (R.coeff j) * (PowerSeries.mk αtrunc) ^ j) *
       (liftToFunctionField (H := H) H.leadingCoeff ^ (t + 1 + 1) *
@@ -905,24 +902,24 @@ theorem henselClearedTerm_regular (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
         liftToFunctionField (H := H) H.leadingCoeff ^ (R.natDegree - 2)) ∈
       regularElementsSet H := by
   classical
+  by_cases hjle : j ≤ R.natDegree
+  case neg => simp [coeff_eq_zero_of_natDegree_lt (not_le.mp hjle)]
   set W : 𝕃 H := liftToFunctionField (H := H) H.leadingCoeff with hWdef
   set eta : 𝕃 H := embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp) with hetadef
   have hWne : W ≠ 0 := liftToFunctionField_leadingCoeff_ne_zero (H := H)
   have hetane : eta ≠ 0 := by
     rw [hetadef, embeddingOf𝒪Into𝕃_xi]
     exact mul_ne_zero (pow_ne_zero _ hWne) (zeta_ne_zero_of_hypotheses x₀ R H hHyp)
-  have hjle : j ≤ R.natDegree := by
-    rw [Finset.mem_range] at hj; omega
   -- regularity of cleared numerators (clearing the denominator of each `αtrunc i`, `i ≤ t`)
   have hnumReg : ∀ i, i ≤ t →
       αtrunc i * (W ^ (i + 1) * eta ^ henselDenominatorExponent i) ∈ regularElementsSet H := by
     intro i hi
-    rw [hshape i, dif_pos hi, hWdef, hetadef,
+    rw [hshape i, dite_eq_left hi, hWdef, hetadef,
       div_mul_cancel₀ _ (mul_ne_zero (pow_ne_zero _ hWne) (pow_ne_zero _ hetane))]
     exact ⟨βprev ⟨i, by omega⟩, rfl⟩
   -- `αtrunc` vanishes above the truncation point
   have hαzero : ∀ i, t < i → αtrunc i = 0 := by
-    intro i hi; rw [hshape i, dif_neg (by omega)]
+    intro i hi; rw [hshape i, dite_eq_right (by omega)]
   -- Step: distribute `coeff_mul` and `coeff_pow`, reduce to a single composition `l`.
   rw [PowerSeries.coeff_mul, Finset.sum_mul]
   apply regularElementsSet_sum
@@ -1040,7 +1037,6 @@ theorem henselClearedTerm_regular (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     · -- non-boundary: the `W`-budget `(t+2)+(d-2)` already covers `Pw = p.2 + j`.
       have hbudget : Pw ≤ (t + 1 + 1) + (R.natDegree - 2) := by
         rw [hPweq]
-        rw [Finset.mem_range] at hj
         -- `¬(p.2 = t+1 ∧ j = d ∧ 2 ≤ d)`; with `p.2 ≤ t+1`, `j ≤ d`
         rcases Nat.lt_or_ge R.natDegree 2 with hd | hd
         · omega
@@ -1083,8 +1079,6 @@ theorem henselCoeffResidual_regular_after_clearing (x₀ : F) (R : F[X][X][Y]) (
     (hHyp : Hypotheses x₀ R H) (αseq : ℕ → 𝕃 H)
     (hα0 : αseq 0 = functionFieldT (H := H) /
       liftToFunctionField (H := H) H.leadingCoeff)
-    (_hroot : evalRAtPowerSeries x₀ H R (gammaFromAlpha H αseq) = 0)
-    (_hzeta : zeta R x₀ H ≠ 0)
     (t : ℕ) (βprev : Fin (t + 1) → 𝒪 H)
     (hprev : ∀ i : Fin (t + 1),
       embeddingOf𝒪Into𝕃 H (βprev i) /
@@ -1114,19 +1108,19 @@ theorem henselCoeffResidual_regular_after_clearing (x₀ : F) (R : F[X][X][Y]) (
       else 0 := by
     intro i
     by_cases h : i ≤ t
-    · have hval : αtrunc i = αseq i := by rw [hαtrunc]; simp only [if_pos h]
-      rw [hval, dif_pos h]
+    · have hval : αtrunc i = αseq i := by rw [hαtrunc]; simp only [ite_eq_left h]
+      rw [hval, dite_eq_left h]
       have := hprev ⟨i, by omega⟩
       simpa using this.symm
-    · have hval : αtrunc i = 0 := by rw [hαtrunc]; simp only [if_neg h]
-      rw [hval, dif_neg h]
+    · have hval : αtrunc i = 0 := by rw [hαtrunc]; simp only [ite_eq_right h]
+      rw [hval, dite_eq_right h]
   change PowerSeries.coeff (t + 1)
       (evalRAtPowerSeries x₀ H R (PowerSeries.mk αtrunc)) * Ddiv ∈ regularElementsSet H
   unfold evalRAtPowerSeries
   rw [Polynomial.eval₂_eq_sum_range, map_sum, Finset.sum_mul]
   apply regularElementsSet_sum
-  intro j hj
-  exact henselClearedTerm_regular x₀ R H hHyp t βprev αtrunc hshape j hj
+  intro j _
+  exact henselClearedTerm_regular x₀ R H hHyp t βprev αtrunc hshape j
 
 
 end HenselNumerators

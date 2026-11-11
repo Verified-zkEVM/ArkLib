@@ -60,15 +60,12 @@ theorem galoisAut_fixed_of_mem (α k : ℕ) {c : Rq (powTwoCyclotomic (R := R) �
     induction a with
     | zero => rw [pow_zero, galoisAut_one_eq]
     | succ a ih =>
-      rw [pow_succ', ← galoisAut_comp α (4 * k + 1) ((4 * k + 1) ^ a) hodd1 hodd1.pow, ih, hgen']
+      rw [pow_succ', ← galoisAut_comp α (4 * k + 1) ((4 * k + 1) ^ a) hodd1, ih, hgen']
   have hmpos : 0 < 2 ^ (α + 1) := by positivity
-  have h2d : (2 : ℕ) ∣ 2 ^ (α + 1) := dvd_pow_self 2 (Nat.succ_ne_zero α)
   intro m hm
   rw [Hexp, Finset.mem_biUnion] at hm
   obtain ⟨a, _, hma⟩ := hm
   have hpa : (4 * k + 1) ^ a % 2 ^ (α + 1) < 2 ^ (α + 1) := Nat.mod_lt _ hmpos
-  have hpa_odd : Odd ((4 * k + 1) ^ a % 2 ^ (α + 1)) := by
-    rw [Nat.odd_iff, Nat.mod_mod_of_dvd _ h2d]; exact Nat.odd_iff.mp hodd1.pow
   rw [Finset.mem_insert, Finset.mem_singleton] at hma
   rcases hma with rfl | rfl
   · rw [← galoisAut_periodic, hgen_pow]
@@ -88,7 +85,7 @@ theorem galoisAut_fixed_of_mem (α k : ℕ) {c : Rq (powTwoCyclotomic (R := R) �
           (Nat.modEq_zero_iff_dvd.mpr ⟨1, (mul_one _).symm⟩).symm
       exact hmodeq.symm
     rw [hmodneg, ← galoisAut_periodic,
-      ← galoisAut_comp α (conjExp α) ((4 * k + 1) ^ a % 2 ^ (α + 1)) (conjExp_odd α) hpa_odd,
+      ← galoisAut_comp α (conjExp α) ((4 * k + 1) ^ a % 2 ^ (α + 1)) (conjExp_odd α),
       ← galoisAut_periodic, hgen_pow, hconj']
 
 /-- **`Tr_H` is `R_q^H`-linear**: `Tr_H(c·y) = c·Tr_H(y)` for `c ∈ R_q^H`, since each `σ_m`
@@ -156,15 +153,15 @@ theorem traceH_kernel (α κ : ℕ) (h2 : (2 : R) ≠ 0) (hκ : κ + 1 ≤ α)
       exact Nat.ModEq.add_right_cancel' eq hb
   by_cases hpq : p = q
   · subst hpq
-    rw [if_pos rfl,
+    rw [ite_eq_left rfl,
       show ep + ep * conjExp α = 2 ^ (α + 1) * ep from by
         rw [conjExp, Nat.mul_sub, mul_one, Nat.add_sub_cancel'
           (Nat.le_mul_of_pos_right _ (by positivity)), mul_comm],
-      Xpow_mul, Xpow_conductor, one_pow, traceH_one α (2 ^ κ) ⟨κ, rfl⟩ hk]
-  · rw [if_neg hpq]
+      Xpow_mul, Xpow_conductor, one_pow, traceH_one α (2 ^ κ) hk]
+  · rw [ite_eq_right hpq]
     by_cases hmod : p.val % n = q.val % n
     · -- `±d/2` case: `X^{2J} = -1`, generalized Claim 3
-      refine traceH_Xpow_neg_one_sq α (2 ^ κ) _ ⟨κ, rfl⟩ hk ?_
+      refine traceH_Xpow_neg_one_sq α (2 ^ κ) _ hk ?_
       have hqlt : q.val < 2 * n := htwon ▸ q.isLt
       have hplt : p.val < 2 * n := htwon ▸ p.isLt
       have hne : p.val ≠ q.val := fun h => hpq (Fin.ext h)
@@ -177,9 +174,9 @@ theorem traceH_kernel (α κ : ℕ) (h2 : (2 : R) ≠ 0) (hκ : κ + 1 ≤ α)
             have hq' : q.val % n = q.val - n := by
               rw [Nat.mod_eq_sub_mod (Nat.not_lt.mp hqn), Nat.mod_eq_of_lt (by omega)]
             rw [hp', hq'] at hmod; exact hmod.symm
-          have hepv : ep = p.val := by rw [hep]; unfold packExp; rw [← hn, if_pos hpn]
+          have hepv : ep = p.val := by rw [hep]; unfold packExp; rw [← hn, ite_eq_left hpn]
           have heqv : eq = 2 ^ (α - 1) + p.val := by
-            rw [heq]; unfold packExp; rw [← hn, if_neg hqn, hqv]
+            rw [heq]; unfold packExp; rw [← hn, ite_eq_right hqn, hqv]
           rw [hepv, heqv, Nat.ModEq,
             show 2 ^ α + 2 * (2 ^ (α - 1) + p.val) = 2 ^ (α + 1) + 2 * p.val from by omega,
             Nat.add_mod_left]
@@ -196,8 +193,8 @@ theorem traceH_kernel (α κ : ℕ) (h2 : (2 : R) ≠ 0) (hκ : κ + 1 ≤ α)
             have hq' : q.val % n = q.val := Nat.mod_eq_of_lt hqn
             rw [hp', hq'] at hmod; exact hmod
           have hepv : ep = 2 ^ (α - 1) + q.val := by
-            rw [hep]; unfold packExp; rw [← hn, if_neg (not_lt.mpr hpn), hpv]
-          have heqv : eq = q.val := by rw [heq]; unfold packExp; rw [← hn, if_pos hqn]
+            rw [hep]; unfold packExp; rw [← hn, ite_eq_right (not_lt.mpr hpn), hpv]
+          have heqv : eq = q.val := by rw [heq]; unfold packExp; rw [← hn, ite_eq_left hqn]
           rw [hepv, heqv,
             show 2 * (2 ^ (α - 1) + q.val) = 2 ^ α + 2 * q.val from by omega]
       have hJ2 : 2 * (ep + eq * conjExp α) + 2 * eq ≡ 2 * ep [MOD 2 ^ (α + 1)] := by
@@ -230,13 +227,13 @@ theorem traceH_sum (α k : ℕ) {ι : Type*} (s : Finset ι)
 `⟨a,b⟩ = Σ_i a_i b_i` is the inner product over `R_q^H`. Expand the product as a double sum,
 pull the `R_q^H`-coefficients out of `Tr_H` (`traceH_smul_fixed`), evaluate the monomial kernel
 (`traceH_kernel`, which is `(d/k)·[p=q]`), and collapse the diagonal. -/
-theorem traceH_psi_mul_conj (α k : ℕ) (h2 : (2 : R) ≠ 0) (hk2pow : ∃ κ, k = 2 ^ κ)
+theorem traceH_psi_mul_conj (α k : ℕ) (h2 : (2 : R) ≠ 0)
     (hk : 2 * k ∣ 2 ^ α)
     (a b : Fin (2 ^ α / k) → fixedSubring (R := R) α k) :
     traceH α k (psi α k a * conjAut α (psi α k b))
       = (2 ^ α / k) • ((∑ i, a i * b i : fixedSubring (R := R) α k) :
           Rq (powTwoCyclotomic (R := R) α)) := by
-  obtain ⟨κ, rfl⟩ := hk2pow
+  obtain ⟨κ, rfl⟩ := exists_eq_two_pow_of_two_mul_dvd hk
   have hκ : κ + 1 ≤ α := succ_le_of_two_mul_two_pow_dvd hk
   -- `σ_{-1}(ψ(b)) = Σ_q ↑(b q)·X^{e_q·σ_{-1}}` (`σ_{-1}` fixes `b q ∈ R_q^H`)
   have hconjpsi : conjAut α (psi α (2 ^ κ) b)
@@ -257,7 +254,7 @@ theorem traceH_psi_mul_conj (α k : ℕ) (h2 : (2 : R) ≠ 0) (hk2pow : ∃ κ, 
   rw [Finset.sum_congr rfl (fun p _ => Finset.sum_congr rfl (fun q _ => by
     rw [mul_mul_mul_comm, ← Xpow_add, traceH_smul_fixed α (2 ^ κ) (mul_mem (a p).2 (b q).2),
       traceH_kernel α κ h2 hκ p q]))]
-  simp only [mul_ite, mul_zero, Finset.sum_ite_eq, Finset.mem_univ, if_true, mul_smul_comm,
+  simp only [mul_ite, mul_zero, Finset.sum_ite_eq, Finset.mem_univ, ite_true, mul_smul_comm,
     mul_one]
   rw [← Finset.smul_sum]
   congr 1
@@ -266,27 +263,49 @@ theorem traceH_psi_mul_conj (α k : ℕ) (h2 : (2 : R) ≠ 0) (hk2pow : ∃ κ, 
 
 /-! ## `ψ` is injective (from the non-degenerate trace pairing) -/
 
+omit [DecidableEq R] in
+/-- The trace scale is a unit in the ambient quotient ring: it is a power of the unit `2`.
+This uses the coefficient field, without asserting that the fixed subring is a field. -/
+theorem isUnit_traceScale (α κ : ℕ) (h2 : (2 : R) ≠ 0)
+    (hk : 2 * 2 ^ κ ∣ 2 ^ α) :
+    IsUnit ((2 ^ α / 2 ^ κ : ℕ) : Rq (powTwoCyclotomic (R := R) α)) := by
+  have hκ : κ ≤ α := Nat.le_of_succ_le (succ_le_of_two_mul_two_pow_dvd hk)
+  rw [Nat.pow_div hκ (by norm_num), Nat.cast_pow, Nat.cast_ofNat]
+  exact (isUnit_two (powTwoCyclotomic α) h2).pow _
+
 /-- **`ψ` is injective** (Hachi [NOZ26, §3, Theorem 2]). The trace form `(a,b) ↦ ⟨a,b⟩` is
 non-degenerate (testing against `b = eⱼ` recovers `aⱼ`), and `d/k` is a unit in `R_q` (it is a
 power of `2`, invertible since `q` is odd). So `ψ(a) = ψ(b)` forces `⟨a,eⱼ⟩ = ⟨b,eⱼ⟩`, i.e.
 `aⱼ = bⱼ`, for every `j`. -/
-theorem psi_injective (α k : ℕ) (h2 : (2 : R) ≠ 0) (hk2pow : ∃ κ, k = 2 ^ κ)
+theorem psi_injective (α k : ℕ) (h2 : (2 : R) ≠ 0)
     (hk : 2 * k ∣ 2 ^ α) : Function.Injective (psi (R := R) α k) := by
-  obtain ⟨κ, rfl⟩ := hk2pow
-  have hκ : κ ≤ α := Nat.le_of_succ_le (succ_le_of_two_mul_two_pow_dvd hk)
-  have hunit : IsUnit ((2 ^ α / 2 ^ κ : ℕ) : Rq (powTwoCyclotomic (R := R) α)) := by
-    rw [Nat.pow_div hκ (by norm_num), Nat.cast_pow, Nat.cast_ofNat]
-    exact (isUnit_two (powTwoCyclotomic α) h2).pow _
+  obtain ⟨κ, rfl⟩ := exists_eq_two_pow_of_two_mul_dvd hk
+  have hunit := isUnit_traceScale (R := R) α κ h2 hk
   intro a b hab
   funext j
-  have ha := traceH_psi_mul_conj α (2 ^ κ) h2 ⟨κ, rfl⟩ hk a (Pi.single j 1)
-  have hb := traceH_psi_mul_conj α (2 ^ κ) h2 ⟨κ, rfl⟩ hk b (Pi.single j 1)
+  have ha := traceH_psi_mul_conj α (2 ^ κ) h2 hk a (Pi.single j 1)
+  have hb := traceH_psi_mul_conj α (2 ^ κ) h2 hk b (Pi.single j 1)
   rw [hab] at ha
   have heq := ha.symm.trans hb
   rw [nsmul_eq_mul, nsmul_eq_mul] at heq
   have hcancel := hunit.mul_left_cancel heq
   simp only [Pi.single_apply, mul_ite, mul_one, mul_zero, Finset.sum_ite_eq', Finset.mem_univ,
-    if_true] at hcancel
+    ite_true] at hcancel
   exact Subtype.coe_injective hcancel
+
+/-- Cancelling the genuine (unnormalized) trace scale recovers the scalar inner product. -/
+theorem traceH_psi_mul_conj_eq_iff (α κ : ℕ) (h2 : (2 : R) ≠ 0)
+    (hk : 2 * 2 ^ κ ∣ 2 ^ α)
+    (a b : Fin (2 ^ α / 2 ^ κ) → fixedSubring (R := R) α (2 ^ κ))
+    (z : fixedSubring (R := R) α (2 ^ κ)) :
+    traceH α (2 ^ κ) (psi α (2 ^ κ) a * conjAut α (psi α (2 ^ κ) b)) =
+        (2 ^ α / 2 ^ κ) • (z : Rq (powTwoCyclotomic α)) ↔
+      ∑ i, a i * b i = z := by
+  rw [traceH_psi_mul_conj α (2 ^ κ) h2 hk, nsmul_eq_mul, nsmul_eq_mul]
+  constructor
+  · intro h
+    exact Subtype.coe_injective ((isUnit_traceScale α κ h2 hk).mul_left_cancel h)
+  · intro h
+    rw [h]
 
 end ArkLib.Lattices.CyclotomicModulus

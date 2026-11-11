@@ -36,8 +36,8 @@ lemma pow_dvd_det_of_forall_mem_col_dvd {R : Type*} [CommRing R] {n : Type*}
     have hM : M = Matrix.updateCol M j₀ (fun i => d * v i) := by
       ext i j
       by_cases hj : j = j₀
-      · subst hj; rw [Matrix.updateCol_apply, if_pos rfl, hv i]
-      · rw [Matrix.updateCol_apply, if_neg hj]
+      · subst hj; rw [Matrix.updateCol_apply, ite_eq_left rfl, hv i]
+      · rw [Matrix.updateCol_apply, ite_eq_right hj]
     rw [Finset.card_insert_of_notMem hj₀, hM]
     have hsmul : (Matrix.updateCol M j₀ fun i => d * v i) =
         Matrix.updateCol M j₀ (d • v) := by
@@ -46,7 +46,7 @@ lemma pow_dvd_det_of_forall_mem_col_dvd {R : Type*} [CommRing R] {n : Type*}
     have hrec : d ^ t.card ∣ (Matrix.updateCol M j₀ v).det := by
       refine ih (Matrix.updateCol M j₀ v) fun j hj i => ?_
       have hne : j ≠ j₀ := fun hcontra => hj₀ (hcontra ▸ hj)
-      rw [Matrix.updateCol_apply, if_neg hne]
+      rw [Matrix.updateCol_apply, ite_eq_right hne]
       exact h j (Finset.mem_insert_of_mem hj) i
     rw [pow_succ']
     exact mul_dvd_mul_left d hrec

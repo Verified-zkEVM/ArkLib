@@ -1,0 +1,5 @@
+bibkey: CHA24
+source_kind: eprint
+canonical_url: https://eprint.iacr.org/2024/1548
+committed_artifacts: []
+notes: "Provenance for integer fingerprinting; ArkLib's multivariate theorem correspondence uses BGKLSW26 Lemma 4.8."

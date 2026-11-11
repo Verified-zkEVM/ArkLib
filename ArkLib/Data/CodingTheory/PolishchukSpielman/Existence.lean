@@ -33,7 +33,7 @@ open scoped BigOperators
 
 
 /-- A bivariate polynomial of degree zero in both variables divides every polynomial. -/
-lemma ps_exists_p_of_degree_x_eq_zero_nat_degree_y_eq_zero {F : Type} [Field F]
+lemma ps_exists_p_of_degree_x_eq_zero_nat_degree_y_eq_zero {F : Type*} [Field F]
     {A B : F[X][Y]} (hA0 : A ≠ 0)
     (hdegX : degreeX A = 0) (hdegY : natDegreeY A = 0) :
     ∃ P : F[X][Y], B = P * A := by
@@ -45,7 +45,7 @@ lemma ps_exists_p_of_degree_x_eq_zero_nat_degree_y_eq_zero {F : Type} [Field F]
   exact ⟨B * C (C a⁻¹), by ext n m : 2; simp [coeff_mul_C, inv_mul_cancel_right₀ hA0]⟩
 
 /-- After cancellation in X, a large subset of evaluation points witnesses `P = quot_y`. -/
-lemma ps_exists_qx_of_cancel {F : Type} [Field F]
+lemma ps_exists_qx_of_cancel {F : Type*} [Field F]
     (a_x : ℕ) (n_x : ℕ+) {A B P : F[X][Y]} (hA : A ≠ 0) (hBA : B = P * A)
     (P_x : Finset F) (h_card_Px : n_x ≤ P_x.card) (quot_y : F → F[X])
     (h_quot_y : ∀ x ∈ P_x, evalX x B = (quot_y x) * (evalX x A))
@@ -63,7 +63,7 @@ lemma ps_exists_qx_of_cancel {F : Type} [Field F]
       (by rw [← evalX_mul, ← hBA]; exact h_quot_y x (Finset.mem_of_mem_filter x hx))
 
 /-- After cancellation in Y, a large subset of evaluation points witnesses `P = quot_x`. -/
-lemma ps_exists_qy_of_cancel {F : Type} [Field F]
+lemma ps_exists_qy_of_cancel {F : Type*} [Field F]
     (a_y : ℕ) (n_y : ℕ+) {A B P : F[X][Y]} (hA : A ≠ 0) (hBA : B = P * A)
     (P_y : Finset F) (h_card_Py : n_y ≤ P_y.card) (quot_x : F → F[X])
     (h_quot_x : ∀ y ∈ P_y, evalY y B = (quot_x y) * (evalY y A))
@@ -82,13 +82,13 @@ lemma ps_exists_qy_of_cancel {F : Type} [Field F]
       exact h_quot_x y (Finset.mem_filter.mp hy).1)
 
 /-- If `A` and `B` are coprime and agree on sufficiently many lines, then `A` is constant. -/
-lemma ps_coprime_case_constant {F : Type} [Field F]
+lemma ps_coprime_case_constant {F : Type*} [Field F]
     (a_x a_y b_x b_y : ℕ) (n_x n_y : ℕ+)
     (h_bx_ge_ax : b_x ≥ a_x) (h_by_ge_ay : b_y ≥ a_y)
-    (A B : F[X][Y]) (hA0 : A ≠ 0) (hB0 : B ≠ 0) (hrel : IsRelPrime A B)
+    (A B : F[X][Y]) (hA0 : A ≠ 0) (hrel : IsRelPrime A B)
     (h_f_degX : a_x ≥ degreeX A) (h_g_degX : b_x ≥ degreeX B)
     (h_f_degY : a_y ≥ natDegreeY A) (h_g_degY : b_y ≥ natDegreeY B)
-    (P_x P_y : Finset F) [Nonempty P_x] [Nonempty P_y]
+    (P_x P_y : Finset F)
     (quot_x quot_y : F → F[X])
     (h_card_Px : n_x ≤ P_x.card) (h_card_Py : n_y ≤ P_y.card)
     (h_quot_x : ∀ y ∈ P_y, (quot_x y).natDegree ≤ (b_x - a_x) ∧
@@ -102,7 +102,6 @@ lemma ps_coprime_case_constant {F : Type} [Field F]
   set RY := resultant B A b_y mY with hRY
   set RX := resultant (swap B) (swap A) b_x mX with hRX
   have hA0' : swap A ≠ 0 := fun h ↦ hA0 (swap.injective (by simpa using h))
-  have hB0' : swap B ≠ 0 := fun h ↦ hB0 (swap.injective (by simpa using h))
   have hRY0 : RY ≠ 0 := by
     simpa [RY, hRY, mY, hmY] using ps_resultant_ne_zero_of_is_rel_prime _ _ b_y
       (by simpa using h_g_degY) hA0 hrel
@@ -116,12 +115,12 @@ lemma ps_coprime_case_constant {F : Type} [Field F]
     Finset.prod_dvd_of_coprime (fun _ _ _ _ hxy ↦ by simpa using (hcop hxy).pow) fun x hx ↦ by
       obtain ⟨hdegQ, hQ⟩ := h_quot_y x hx
       simpa [RY, hRY, mY, hmY] using ps_resultant_dvd_pow_eval_x _ _ _ _ b_y
-        (by omega) (by simpa using h_g_degY) (by omega) hQ
+        (by omega) (by omega) hQ
   have hprod_dvd_RX : (∏ y ∈ P_y, (X - C y) ^ mX) ∣ RX :=
     Finset.prod_dvd_of_coprime (fun _ _ _ _ hyy' ↦ by simpa using (hcop hyy').pow) fun y hy ↦ by
       obtain ⟨hdegQ, hQ⟩ := h_quot_x y hy
       simpa [RX, hRX, mX, hmX] using ps_resultant_dvd_pow_eval_y A B y (quot_x y) b_x
-        (by omega) (by simpa using h_g_degX) (by omega) hQ
+        (by omega) (by omega) hQ
   have hdeg_prod (S : Finset F) (m : ℕ) :
       (∏ x ∈ S, (X - C x) ^ m).natDegree = m * S.card := by
     rw [natDegree_prod _ _ (fun x _ ↦ pow_ne_zero _ (X_sub_C_ne_zero x))]
@@ -137,12 +136,15 @@ lemma ps_coprime_case_constant {F : Type} [Field F]
     · rw [ps_degree_x_swap B]; exact Nat.mul_le_mul_left _ (by simpa using h_g_degY)
     · rw [ps_degree_x_swap A]; exact le_of_eq (Nat.mul_comm b_x (natDegreeY A))
   -- Show D := mX * b_y + mY * b_x = 0 via rational argument
-  have hmy_le_D : mY * (n_x : ℕ) ≤ mX * b_y + mY * b_x :=
-    le_trans (le_trans (Nat.mul_le_mul_left _ h_card_Px)
-      ((hdeg_prod P_x mY).symm ▸ natDegree_le_of_dvd hprod_dvd_RY hRY0)) (by linarith)
-  have hmx_le_D : mX * (n_y : ℕ) ≤ mX * b_y + mY * b_x :=
-    le_trans (le_trans (Nat.mul_le_mul_left _ h_card_Py)
-      ((hdeg_prod P_y mX).symm ▸ natDegree_le_of_dvd hprod_dvd_RX hRX0)) hRX_le
+  have hmy_le_D : mY * (n_x : ℕ) ≤ mX * b_y + mY * b_x := by
+    have h := natDegree_le_of_dvd hprod_dvd_RY hRY0
+    rw [hdeg_prod] at h
+    exact ((Nat.mul_le_mul_left _ h_card_Px).trans h).trans
+      (hRY_le.trans_eq (Nat.add_comm _ _))
+  have hmx_le_D : mX * (n_y : ℕ) ≤ mX * b_y + mY * b_x := by
+    have h := natDegree_le_of_dvd hprod_dvd_RX hRX0
+    rw [hdeg_prod] at h
+    exact ((Nat.mul_le_mul_left _ h_card_Py).trans h).trans hRX_le
   suffices mX * b_y + mY * b_x = 0 by
     constructor
     · simpa [mX, hmX] using show mX = 0 from by
@@ -156,27 +158,32 @@ lemma ps_coprime_case_constant {F : Type} [Field F]
   have hn_y0 : (0 : ℚ) < n_y := by exact_mod_cast n_y.pos
   have hmyq : (mY : ℚ) * n_x ≤ ((mX * b_y + mY * b_x : ℕ) : ℚ) := by exact_mod_cast hmy_le_D
   have hmxq : (mX : ℚ) * n_y ≤ ((mX * b_y + mY * b_x : ℕ) : ℚ) := by exact_mod_cast hmx_le_D
+  have h1 : (mY : ℚ) * b_x ≤ D * ((b_x : ℚ) / n_x) :=
+    calc (mY : ℚ) * b_x = (mY * n_x) * (b_x / n_x) := by
+          rw [mul_assoc, mul_div_cancel₀ _ hn_x0.ne']
+      _ ≤ D * ((b_x : ℚ) / n_x) :=
+          mul_le_mul_of_nonneg_right hmyq (div_nonneg (Nat.cast_nonneg b_x) hn_x0.le)
+  have h2 : (mX : ℚ) * b_y ≤ D * ((b_y : ℚ) / n_y) :=
+    calc (mX : ℚ) * b_y = (mX * n_y) * (b_y / n_y) := by
+          rw [mul_assoc, mul_div_cancel₀ _ hn_y0.ne']
+      _ ≤ D * ((b_y : ℚ) / n_y) :=
+          mul_le_mul_of_nonneg_right hmxq (div_nonneg (Nat.cast_nonneg b_y) hn_y0.le)
+  have hD : D = (mX : ℚ) * b_y + (mY : ℚ) * b_x := by
+    simp only [D, Nat.cast_add, Nat.cast_mul]
   have hDle : D ≤ D * ((b_x : ℚ) / n_x + (b_y : ℚ) / n_y) := by
-    linarith [mul_add D ((b_x : ℚ) / n_x) ((b_y : ℚ) / n_y),
-      show D = (mX : ℚ) * b_y + (mY : ℚ) * b_x from by simp [D, Nat.cast_add, Nat.cast_mul],
-      show (mY : ℚ) * b_x ≤ D * ((b_x : ℚ) / n_x) from by
-        linarith [mul_le_mul_of_nonneg_right hmyq (div_nonneg (Nat.cast_nonneg b_x) hn_x0.le),
-          show (mY : ℚ) * n_x * (b_x / n_x) = (mY : ℚ) * b_x from by field_simp],
-      show (mX : ℚ) * b_y ≤ D * ((b_y : ℚ) / n_y) from by
-        linarith [mul_le_mul_of_nonneg_right hmxq (div_nonneg (Nat.cast_nonneg b_y) hn_y0.le),
-          show (mX : ℚ) * n_y * (b_y / n_y) = (mX : ℚ) * b_y from by field_simp]]
+    rw [mul_add]; linarith only [h1, h2, hD]
   by_contra hD0
-  linarith [mul_lt_mul_of_pos_left (show (b_x : ℚ) / n_x + b_y / n_y < 1 by linarith)
-    (show 0 < D by positivity)]
+  have hDpos : 0 < D := Nat.cast_pos.mpr (Nat.pos_of_ne_zero hD0)
+  exact lt_irrefl D (hDle.trans_lt ((mul_lt_mul_of_pos_left h_le_1 hDpos).trans_eq (mul_one D)))
 
 /-- Existence of `P` with `B = P * A` when both `A` and `B` are nonzero. -/
-lemma ps_exists_p_nonzero {F : Type} [Field F]
+lemma ps_exists_p_nonzero {F : Type*} [Field F]
     (a_x a_y b_x b_y : ℕ) (n_x n_y : ℕ+)
     (h_bx_ge_ax : b_x ≥ a_x) (h_by_ge_ay : b_y ≥ a_y)
     (A B : F[X][Y]) (hA0 : A ≠ 0) (hB0 : B ≠ 0)
     (h_f_degX : a_x ≥ degreeX A) (h_g_degX : b_x ≥ degreeX B)
     (h_f_degY : a_y ≥ natDegreeY A) (h_g_degY : b_y ≥ natDegreeY B)
-    (P_x P_y : Finset F) [Nonempty P_x] [Nonempty P_y]
+    (P_x P_y : Finset F)
     (quot_x quot_y : F → F[X])
     (h_card_Px : n_x ≤ P_x.card) (h_card_Py : n_y ≤ P_y.card)
     (h_quot_x : ∀ y ∈ P_y, (quot_x y).natDegree ≤ (b_x - a_x) ∧
@@ -192,11 +199,11 @@ lemma ps_exists_p_nonzero {F : Type} [Field F]
   have hdegX_A : degreeX A = g_x + degreeX A1 := by
     rw [hA]; simpa [g_x] using degreeX_mul G A1 hG0 hA1
   have hdegY_A : natDegreeY A = g_y + natDegreeY A1 := by
-    rw [hA]; simpa [g_y] using degreeY_mul G A1 hG0 hA1
+    rw [hA]; simpa [g_y, natDegreeY] using Polynomial.natDegree_mul hG0 hA1
   have hdegX_B : degreeX B = g_x + degreeX B1 := by
     rw [hB]; simpa [g_x] using degreeX_mul G B1 hG0 hB1
   have hdegY_B : natDegreeY B = g_y + natDegreeY B1 := by
-    rw [hB]; simpa [g_y] using degreeY_mul G B1 hG0 hB1
+    rw [hB]; simpa [g_y, natDegreeY] using Polynomial.natDegree_mul hG0 hB1
   have hbxltnx := ps_bx_lt_nx h_le_1
   have hbyltny := ps_by_lt_ny h_le_1
   have hgx_le_ax : g_x ≤ a_x := le_trans (by simp [hdegX_A]) h_f_degX
@@ -244,8 +251,8 @@ lemma ps_exists_p_nonzero {F : Type} [Field F]
       simp [nx', Nat.cast_sub (le_of_lt hx_lt_nx)]
     rw [hbx'cast, hnx'cast,
       div_le_div_iff₀ (by rw [hnx'cast] at hn2; exact hn2) (by exact_mod_cast n_x.pos)]
-    nlinarith [show (b_x : ℚ) ≤ n_x from by exact_mod_cast le_of_lt hbxltnx,
-      Nat.cast_nonneg (α := ℚ) g_x]
+    nlinarith only [mul_le_mul_of_nonneg_left
+      (show (b_x : ℚ) ≤ n_x from by exact_mod_cast le_of_lt hbxltnx) (Nat.cast_nonneg (α := ℚ) g_x)]
   have hyfrac : (by' : ℚ) / (ny' : ℚ) ≤ (b_y : ℚ) / (n_y : ℚ) := by
     have hn2 : (0 : ℚ) < (ny' : ℚ) := by exact_mod_cast ny'.pos
     have hby'cast : (by' : ℚ) = (b_y : ℚ) - g_y := by simp [by', Nat.cast_sub hgy_le_by]
@@ -253,12 +260,12 @@ lemma ps_exists_p_nonzero {F : Type} [Field F]
       simp [ny', Nat.cast_sub (le_of_lt hy_lt_ny)]
     rw [hby'cast, hny'cast,
       div_le_div_iff₀ (by rw [hny'cast] at hn2; exact hn2) (by exact_mod_cast n_y.pos)]
-    nlinarith [show (b_y : ℚ) ≤ n_y from by exact_mod_cast le_of_lt hbyltny,
-      Nat.cast_nonneg (α := ℚ) g_y]
+    nlinarith only [mul_le_mul_of_nonneg_left
+      (show (b_y : ℚ) ≤ n_y from by exact_mod_cast le_of_lt hbyltny) (Nat.cast_nonneg (α := ℚ) g_y)]
   have hconst := ps_coprime_case_constant ax' ay' bx' by' nx' ny'
     (by simpa [bx', ax'] using Nat.sub_le_sub_right h_bx_ge_ax g_x)
     (by simpa [by', ay'] using Nat.sub_le_sub_right h_by_ge_ay g_y)
-    A1 B1 hA1 hB1 hrel
+    A1 B1 hA1 hrel
     (by simpa [ax', ge_iff_le] using
       le_tsub_of_add_le_left (show g_x + degreeX A1 ≤ a_x by simpa [hdegX_A] using h_f_degX))
     (by simpa [bx', ge_iff_le] using
@@ -275,13 +282,13 @@ lemma ps_exists_p_nonzero {F : Type} [Field F]
   exact ⟨P1, by rw [hB, hB1fac, hA]; ring⟩
 
 /-- Main existence: if `B/A` agrees with low-degree quotients on enough lines, then `A ∣ B`. -/
-lemma ps_exists_p {F : Type} [Field F]
+lemma ps_exists_p {F : Type*} [Field F]
     (a_x a_y b_x b_y : ℕ) (n_x n_y : ℕ+)
     (h_bx_ge_ax : b_x ≥ a_x) (h_by_ge_ay : b_y ≥ a_y)
     (A B : F[X][Y])
     (h_f_degX : a_x ≥ degreeX A) (h_g_degX : b_x ≥ degreeX B)
     (h_f_degY : a_y ≥ natDegreeY A) (h_g_degY : b_y ≥ natDegreeY B)
-    (P_x P_y : Finset F) [Nonempty P_x] [Nonempty P_y]
+    (P_x P_y : Finset F)
     (quot_x : F → F[X]) (quot_y : F → F[X])
     (h_card_Px : n_x ≤ P_x.card) (h_card_Py : n_y ≤ P_y.card)
     (h_quot_x : ∀ y ∈ P_y, (quot_x y).natDegree ≤ (b_x - a_x) ∧

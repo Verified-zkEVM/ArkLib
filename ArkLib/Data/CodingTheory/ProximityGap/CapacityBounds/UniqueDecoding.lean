@@ -35,7 +35,7 @@ open UniqueDecoding.Internal
 section ReedSolomon
 
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
 open scoped NNReal ProbabilityTheory in
 omit [DecidableEq ι] in
@@ -49,7 +49,7 @@ private theorem rs_fold_probability_le_bound_of_not_joint_proximity
     (u : Fin 2 → ι → F)
     (hjoint : ¬ Code.jointProximity
       (C := (ReedSolomon.code domain k : Set (ι → F))) (u := u) δ_int) :
-    Pr_{let z ← $ᵖ F}[
+    Pr{let z ← $ᵗ F}[
       δᵣ(u 0 + z • u 1, ReedSolomon.code domain k) ≤ δ_fld] ≤
       ENNReal.ofReal
         (max
@@ -71,7 +71,7 @@ private theorem rs_fold_probability_le_bound_of_not_joint_proximity
       rs_good_coeffs_card_le_max_threshold_of_not_joint_proximity
         domain k δ_fld δ_int u h_ud h_dmin h_lt hjoint
   have hq : (0 : ℝ) < Fintype.card F := by exact_mod_cast Fintype.card_pos
-  rw [Probability.prob_uniform_eq_ofReal]
+  rw [SampleableType.prEvent_uniformSample_eq_ofReal]
   apply ENNReal.ofReal_le_ofReal
   change (good.card : ℝ) / Fintype.card F ≤
     max
@@ -103,7 +103,7 @@ private theorem rs_fold_probability_le_bound_of_not_joint_proximity
 
 open scoped NNReal in
 open scoped ProbabilityTheory in
-omit [DecidableEq ι] in
+omit [Nonempty ι] [DecidableEq ι] in
 /-- Bounds Reed--Solomon CA error when `δ_fld` lies between one third of the minimum
 distance and the finite-length unique-decoding radius, and `δ_fld < δ_int`. -/
 theorem rs_epsCa_le_in_unique_decoding_range
@@ -120,14 +120,28 @@ theorem rs_epsCa_le_in_unique_decoding_range
     epsCa (F := F) (A := F) ((ReedSolomon.code domain k : Set (ι → F))) δ_fld δ_int ≤
       ENNReal.ofReal bound := by
   classical
+  rcases isEmpty_or_nonempty ι with hι | hι
+  · have := hι
+    simp only [epsCa_eq]
+    refine iSup_le fun u => ?_
+    have hj : Code.jointProximity
+        (C := (ReedSolomon.code domain k : Set (ι → F))) (u := u) δ_int := by
+      apply (Code.relDistFromCode_le_relDist_to_mem _ 0 ?_).trans
+      · norm_num [Code.relHammingDist, Fintype.card_eq_zero]
+        rw [← ENNReal.coe_nnratCast, NNRat.cast_zero, ENNReal.coe_zero]
+        exact zero_le
+      · exact fun _ => (ReedSolomon.code domain k).zero_mem
+    rw [ite_eq_left hj]
+    exact zero_le
+  have := hι
   dsimp
-  unfold epsCa
+  simp only [epsCa_eq]
   refine iSup_le fun u => ?_
   by_cases hj : Code.jointProximity
       (C := (ReedSolomon.code domain k : Set (ι → F))) (u := u) δ_int
-  · rw [if_pos hj]
+  · rw [ite_eq_left hj]
     exact zero_le
-  · rw [if_neg hj]
+  · rw [ite_eq_right hj]
     exact rs_fold_probability_le_bound_of_not_joint_proximity
       domain k δ_fld δ_int _h_ud _h_dmin _h_lt u hj
 

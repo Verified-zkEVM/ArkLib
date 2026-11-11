@@ -12,7 +12,7 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
 - [`repo-map.md`](repo-map.md) - where to edit and how the main subtrees relate.
 - [`generated-files.md`](generated-files.md) - derived outputs and their sources of truth.
 - [`module-system.md`](module-system.md) - Lean's module system: the canonical file shape, the
-  error-to-fix table, the measured payoff, and what tightening is still on the table.
+  error-to-fix table, what the boundary buys, and what tightening is still on the table.
 - [`blueprint-and-citations.md`](blueprint-and-citations.md) - blueprint workflow, paper
   references, and citation keys.
 - [`knowledge-base.md`](knowledge-base.md) - when to use `docs/kb/` and how it relates to the
@@ -26,10 +26,14 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
   correlated-agreement, and mutual-correlated-agreement APIs and their numeric types.
 - [`interaction-naming.md`](interaction-naming.md) - intrinsic meanings and migration of typed
   interaction sources, named oracle contexts, and sequential composition.
-- [`sequential-composition.md`](sequential-composition.md) - theorem selection for shared-state
+- [`ring-switching-consumers.md`](ring-switching-consumers.md) - instantiate the packing,
+  batching, shared protocol and opening contracts for a consumer.
+- [`sequential-composition.md`](sequential-composition.md) - legacy theorem selection for shared-state
   execution, completeness, and round-by-round soundness.
 - [`probability-conventions.md`](probability-conventions.md) - namespace and export conventions
   for reusable helpers in `ArkLib/Data/Probability/`.
+- [`porting-conventions.md`](porting-conventions.md) - where port history lives, naming and
+  layout rules, and the review checklist for code ported from another snapshot.
 - [`../design/README.md`](../design/README.md) - normative typed interaction and oracle-reduction
   architecture, current implementation status, and staged migration plan.
 - [`../kb/audits/open-problems-list-decoding-and-correlated-agreement.md`](../kb/audits/open-problems-list-decoding-and-correlated-agreement.md)
@@ -37,7 +41,7 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
 
 ## Maintenance Contract
 
-- `AGENTS.md` is the canonical root guide. `CLAUDE.md` is only a symlink.
+- `AGENTS.md` is the canonical root guide.
 - Keep one primary owner topic per page. The current pages are:
   - `quickstart.md` for commands, validation, and when to run which checks.
   - `repo-map.md` for repo structure and main work areas.
@@ -50,8 +54,10 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
   - `proximity-error-conventions.md` for the public APIs and numeric types of the proximity-error
     notions in `CodingTheory/ProximityGap/`.
   - `interaction-naming.md` for typed interaction API meanings and name migrations.
-  - `sequential-composition.md` for composition APIs and their hypotheses.
+  - `ring-switching-consumers.md` for ring-switching consumer instantiation.
+  - `sequential-composition.md` for legacy composition APIs and their hypotheses.
   - `probability-conventions.md` for namespace/export conventions in `Data/Probability/`.
+  - `porting-conventions.md` for port history, naming, layout and the port review checklist.
 - Add new pages when a recurring topic no longer fits cleanly in an existing guide.
 - If a PR changes commands, repo structure, generated-file behavior, or the paper workflow,
   update the matching page in the same PR, or add a new page when that is the cleaner split.
@@ -69,5 +75,6 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
 - [`../../README.md`](../../README.md) - project overview.
 - [`../../CONTRIBUTING.md`](../../CONTRIBUTING.md) - style, naming, docstrings, citations, and
   large contributions.
-- [`../../ROADMAP.md`](../../ROADMAP.md) - planned directions.
-- [`../../BACKGROUND.md`](../../BACKGROUND.md) - background references.
+- [`../../ROADMAP.md`](../../ROADMAP.md) - status: what is complete, in progress, and planned.
+- [`../../BACKGROUND.md`](../../BACKGROUND.md) - background theory and references, and how
+  ArkLib's oracle reductions compare with the literature.

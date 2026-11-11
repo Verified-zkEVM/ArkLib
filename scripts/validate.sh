@@ -22,11 +22,14 @@ Default checks:
   - ./scripts/test-lint-plugin.sh
   - lake exe toyproblem-runtime
   - lake exe hachi-runtime
+  - lake exe sumcheck-runtime
+  - lake exe fri-extractor-runtime
   - fail on non-`sorry` warnings under ArkLib/
+  - ./scripts/test-retiredsweep.sh and lake exe retiredsweep --require-empty
   - ./scripts/check-imports.sh
   - ./scripts/test-build-timing-report.sh
-  - python3 ./scripts/check-docs-integrity.py
-  - python3 ./scripts/kb/lint.py
+  - uv run --no-project --python 3.12 python ./scripts/check-docs-integrity.py
+  - uv run --no-project --python 3.12 python ./scripts/kb/lint.py
 
 Optional checks:
   --lint    Deprecated compatibility flag; style linting is always enforced
@@ -78,16 +81,21 @@ lake test 2>&1 | tee -a "$build_log"
 
 echo ""
 echo "# Checking ArkLibTest warning budget"
-python3 ./scripts/check-warning-log.py "$build_log" \
+uv run --no-project --python 3.12 python ./scripts/check-warning-log.py "$build_log" \
   --path-prefix ArkLibTest/ \
   --label "ArkLibTest warnings (including admissions)"
 
 echo ""
 echo "# Checking ArkLib warning budget"
-python3 ./scripts/check-warning-log.py "$build_log" \
+uv run --no-project --python 3.12 python ./scripts/check-warning-log.py "$build_log" \
   --path-prefix ArkLib/ \
   --exclude-substring 'declaration uses `sorry`' \
   --label 'ArkLib non-sorry warnings'
+
+echo ""
+echo "# Checking native probability retirement"
+./scripts/test-retiredsweep.sh
+lake exe retiredsweep --require-empty
 
 echo ""
 echo "# Running Lean-native source-policy gate"
@@ -112,6 +120,14 @@ echo "# Running nonrecursive-Hachi compiled runtime checks"
 lake exe hachi-runtime
 
 echo ""
+echo "# Running computable Sumcheck runtime checks"
+lake exe sumcheck-runtime
+
+echo ""
+echo "# Running measured FRI extractor runtime checks"
+lake exe fri-extractor-runtime
+
+echo ""
 echo "# Checking umbrella imports"
 ./scripts/check-imports.sh
 
@@ -121,11 +137,11 @@ echo "# Testing build timing report fixtures"
 
 echo ""
 echo "# Checking docs integrity"
-python3 ./scripts/check-docs-integrity.py
+uv run --no-project --python 3.12 python ./scripts/check-docs-integrity.py
 
 echo ""
 echo "# Checking knowledge base"
-python3 ./scripts/kb/lint.py
+uv run --no-project --python 3.12 python ./scripts/kb/lint.py
 
 if (( run_axioms )); then
   echo ""

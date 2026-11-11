@@ -44,26 +44,18 @@ variable {q : ℕ} [NeZero q]
 
 /-! ## Minimality and triangle inequality for the centered representative -/
 
+omit [NeZero q] in
 /-- The centered representative `valMinAbs` has the least absolute value among all
 integer representatives of a residue class. -/
 theorem valMinAbs_natAbs_le {a : ZMod q} (m : ℤ) (h : (m : ZMod q) = a) :
     a.valMinAbs.natAbs ≤ m.natAbs := by
-  have hmem := ZMod.valMinAbs_mem_Ioc a
-  rw [Set.mem_Ioc] at hmem
-  have hcast : (m : ZMod q) = ((a.valMinAbs : ℤ) : ZMod q) := by rw [h, ZMod.coe_valMinAbs]
-  rw [ZMod.intCast_eq_intCast_iff_dvd_sub] at hcast
-  obtain ⟨t, ht⟩ := hcast
-  have hq : (1 : ℤ) ≤ (q : ℤ) := by exact_mod_cast Nat.one_le_iff_ne_zero.mpr (NeZero.ne q)
-  rcases eq_or_ne t 0 with ht0 | ht0
-  · subst ht0; simp only [mul_zero] at ht; omega
-  · have habs : q ≤ ((q : ℤ) * t).natAbs := by
-      have ht1 : 1 ≤ t.natAbs := Int.natAbs_pos.mpr ht0
-      rw [Int.natAbs_mul]; simp only [Int.natAbs_natCast]; nlinarith [ht1]
-    revert ht habs
-    generalize (q : ℤ) * t = k
-    intro ht habs
-    omega
+  rcases q with _ | q
+  · change m = a at h
+    exact le_of_eq (congrArg Int.natAbs h.symm)
+  · exact ZMod.natAbs_min_of_le_div_two (q + 1) a.valMinAbs m
+      (by rw [ZMod.coe_valMinAbs, h]) (ZMod.natAbs_valMinAbs_le a)
 
+omit [NeZero q] in
 /-- Centered representative of a product: submultiplicative. Note there is **no wraparound
 condition**: `valMinAbs` is minimal among all integer representatives
 (`valMinAbs_natAbs_le`), and `a.valMinAbs * b.valMinAbs` is one, so the bound survives however
@@ -74,6 +66,7 @@ theorem valMinAbs_natAbs_mul_le (a b : ZMod q) :
     rw [Int.cast_mul, ZMod.coe_valMinAbs, ZMod.coe_valMinAbs]
   exact le_of_le_of_eq (valMinAbs_natAbs_le _ h) (Int.natAbs_mul _ _)
 
+omit [NeZero q] in
 /-- Centered representative of a finite sum: triangle inequality. Again no wraparound condition is
 needed, for the same reason as `valMinAbs_natAbs_mul_le`. -/
 theorem valMinAbs_natAbs_sum_le {ι : Type*} (s : Finset ι) (f : ι → ZMod q) :
@@ -86,6 +79,7 @@ theorem valMinAbs_natAbs_sum_le {ι : Type*} (s : Finset ι) (f : ι → ZMod q)
       ≤ ∑ i ∈ s, (f i).valMinAbs.natAbs := Int.natAbs_sum_le s _
     _ = ∑ i ∈ s, (f i).valMinAbs.natAbs := rfl
 
+omit [NeZero q] in
 /-- Uniform bound on a finite sum of centered representatives: `card · β`. The shape most norm
 arguments need (`Finset.sum_le_card_nsmul` at a constant bound). -/
 theorem valMinAbs_natAbs_sum_le_card_mul {ι : Type*} (s : Finset ι) (f : ι → ZMod q) {β : ℕ}
@@ -94,6 +88,7 @@ theorem valMinAbs_natAbs_sum_le_card_mul {ι : Type*} (s : Finset ι) (f : ι �
   le_trans (valMinAbs_natAbs_sum_le s f)
     (le_trans (Finset.sum_le_sum hf) (by rw [Finset.sum_const, smul_eq_mul]))
 
+omit [NeZero q] in
 /-- Centered representative of a difference: bounded by the sum of the centered
 representatives' absolute values. -/
 theorem valMinAbs_sub_natAbs_le (a b : ZMod q) :
@@ -185,12 +180,12 @@ theorem Rq.l1Norm_one (h : 1 ≤ Φ.φ.natDegree) : ‖(1 : Rq Φ)‖₁ = 1 := 
   have hq2 : 2 ≤ q := (Fact.out (p := Nat.Prime q)).two_le
   unfold Rq.l1Norm
   rw [Finset.sum_eq_single (0 : ℕ)]
-  · rw [Rq.one_val Φ h, CompPoly.CPolynomial.coeff_one, if_pos rfl,
+  · rw [Rq.one_val Φ h, CompPoly.CPolynomial.coeff_one, ite_eq_left rfl,
       show (1 : ZMod q) = ((1 : ℕ) : ZMod q) by norm_cast,
       ZMod.valMinAbs_natCast_of_le_half (by omega)]
     norm_num
   · intro k _ hk
-    rw [Rq.one_val Φ h, CompPoly.CPolynomial.coeff_one, if_neg hk]
+    rw [Rq.one_val Φ h, CompPoly.CPolynomial.coeff_one, ite_eq_right hk]
     simp
   · intro h0
     exact absurd (Finset.mem_range.mpr (by omega)) h0
@@ -228,6 +223,7 @@ def scalarVecMulMulL2NormSqBound (κ βSq : ℕ) : ℕ := κ ^ 2 * βSq
 
 /-! ## The subtraction bound (proven) -/
 
+omit [NeZero q] in
 /-- Per-element subtraction bound: `‖a - b‖₂² ≤ 2·(‖a‖₂² + ‖b‖₂²)`. -/
 theorem Rq.l2NormSq_sub_le (a b : Rq Φ) :
     ‖a - b‖₂² ≤ 2 * (‖a‖₂² + ‖b‖₂²) := by
@@ -247,6 +243,7 @@ theorem Rq.l2NormSq_sub_le (a b : Rq Φ) :
       sq_nonneg (((a.1.coeff k).valMinAbs.natAbs : ℤ) - (b.1.coeff k).valMinAbs.natAbs)]
   exact_mod_cast key
 
+omit [NeZero q] in
 /-- **Subtraction bound.** The squared `ℓ₂` norm of a difference of two vectors, each
 within `boundSq`, is within `subL2NormSqBound boundSq = 4·boundSq`. -/
 theorem sub_l2NormSq_le {cols : ℕ} (v w : PolyVec (Rq Φ) cols) {boundSq : ℕ}
@@ -263,6 +260,7 @@ theorem sub_l2NormSq_le {cols : ℕ} (v w : PolyVec (Rq Φ) cols) {boundSq : ℕ
 
 /-! ## The `ℓ∞` subtraction bound (proven) -/
 
+omit [NeZero q] in
 /-- Per-element `ℓ∞` triangle inequality: `‖a - b‖∞ ≤ ‖a‖∞ + ‖b‖∞`. -/
 theorem Rq.lInftyNorm_sub_le (a b : Rq Φ) :
     Rq.lInftyNorm Φ (a - b) ≤ Rq.lInftyNorm Φ a + Rq.lInftyNorm Φ b := by
@@ -280,6 +278,7 @@ theorem Rq.lInftyNorm_sub_le (a b : Rq Φ) :
           (Finset.le_sup (f := fun k => (a.1.coeff k).valMinAbs.natAbs) hk)
           (Finset.le_sup (f := fun k => (b.1.coeff k).valMinAbs.natAbs) hk)
 
+omit [NeZero q] in
 /-- **`ℓ∞` subtraction bound.** The `ℓ∞` norm of a difference of two vectors, each within
 `bound`, is within `subLInftyNormBound bound = 2·bound`. -/
 theorem sub_lInftyNorm_le {cols : ℕ} (v w : PolyVec (Rq Φ) cols) {bound : ℕ}
@@ -301,6 +300,7 @@ theorem sub_lInftyNorm_le {cols : ℕ} (v w : PolyVec (Rq Φ) cols) {bound : ℕ
 
 /-! ## `ℓ₁` triangle inequality for subtraction -/
 
+omit [NeZero q] in
 /-- **`ℓ₁` subtraction triangle inequality** (ring element): `‖a - b‖₁ ≤ ‖a‖₁ + ‖b‖₁`. -/
 theorem Rq.l1Norm_sub_le (a b : Rq Φ) : ‖a - b‖₁ ≤ ‖a‖₁ + ‖b‖₁ := by
   unfold Rq.l1Norm
@@ -410,6 +410,7 @@ theorem vecLInftyNorm_scalarVecMul_le (hmul : Rq.HasMulLInftyBound Φ) {cols κ 
   exact le_trans (hmul c (v i))
     (Nat.mul_le_mul hc (Rq.lInftyNorm_le_of_vecLInftyNorm_le Φ hv i))
 
+omit [NeZero q] in
 /-- **`ℓ∞` triangle inequality for a finite sum of vectors**, in the uniform form the folded
 witness needs: a sum of `s.card` vectors each within `K` is within `s.card · K`. The centered
 representative of a sum is bounded by the sum of the centered representatives

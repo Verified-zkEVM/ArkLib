@@ -5,6 +5,7 @@ Authors: Alexander Hicks, Aleph
 -/
 module
 
+public import ArkLib.Data.CodingTheory.ReedSolomon
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Linear
 public import Mathlib.Analysis.Complex.ExponentialBounds
 public import Mathlib.Combinatorics.Enumerative.DoubleCounting
@@ -132,11 +133,10 @@ noncomputable def cs25OverlapSum (q n k f : ℕ) : ℝ :=
     (Nat.choose f ℓ : ℝ) * (Nat.choose (n - f) ℓ : ℝ) / (q : ℝ) ^ ℓ
 
 theorem cs25OverlapSum_le_exp_two_sqrt
-    (q n k f : ℕ) (hq : 0 < q) :
+    (q n k f : ℕ) :
     cs25OverlapSum q n k f ≤
       Real.exp (2 * Real.sqrt ((f : ℝ) * (n - f : ℕ) / q)) := by
   let x : ℝ := Real.sqrt ((f : ℝ) * (n - f : ℕ) / q)
-  have hqR : (0 : ℝ) < q := by exact_mod_cast hq
   have hbase : 0 ≤ (f : ℝ) * (n - f : ℕ) / q := by positivity
   have hx : 0 ≤ x := by exact Real.sqrt_nonneg _
   have hterm : ∀ ℓ : ℕ,
@@ -146,18 +146,16 @@ theorem cs25OverlapSum_le_exp_two_sqrt
     calc
       (Nat.choose f ℓ : ℝ) * Nat.choose (n - f) ℓ / (q : ℝ) ^ ℓ ≤
           (((f : ℝ) ^ ℓ / (Nat.factorial ℓ : ℝ)) *
-            ((n - f : ℕ) ^ ℓ / (Nat.factorial ℓ : ℝ))) / (q : ℝ) ^ ℓ := by
-        gcongr
-        · exact Nat.choose_le_pow_div ℓ f
-        · exact Nat.choose_le_pow_div ℓ (n - f)
+            ((n - f : ℕ) ^ ℓ / (Nat.factorial ℓ : ℝ))) / (q : ℝ) ^ ℓ :=
+        div_le_div_of_nonneg_right
+          (mul_le_mul (Nat.choose_le_pow_div ℓ f) (Nat.choose_le_pow_div ℓ (n - f))
+            (Nat.cast_nonneg _) (by positivity)) (by positivity)
       _ = (x ^ ℓ / (Nat.factorial ℓ : ℝ)) ^ 2 := by
-        have hfac : (Nat.factorial ℓ : ℝ) ≠ 0 := by positivity
-        have hqpow : (q : ℝ) ^ ℓ ≠ 0 := pow_ne_zero _ hqR.ne'
         dsimp [x]
         rw [div_pow]
         rw [← pow_mul, Nat.mul_comm ℓ 2, pow_mul, Real.sq_sqrt hbase]
         rw [div_pow, mul_pow]
-        field_simp
+        ring
   unfold cs25OverlapSum
   calc
     (∑ ℓ ∈ Finset.range (n - f - k),
@@ -179,8 +177,7 @@ theorem cs25OverlapSum_le_exp_two_sqrt
             apply Finset.sum_nonneg
             intro ℓ hℓ
             positivity
-          have hexp : 0 < Real.exp x := Real.exp_pos x
-          nlinarith only [hsum, hsum_nonneg, hexp]
+          exact pow_le_pow_left₀ hsum_nonneg hsum 2
     _ = Real.exp (2 * Real.sqrt ((f : ℝ) * (n - f : ℕ) / q)) := by
           rw [pow_two, ← Real.exp_add]
           congr 1
@@ -204,7 +201,7 @@ def cs25SecondMomentANat (q n k f : ℕ) : ℕ :=
 
 open scoped BigOperators in
 private theorem cs25SecondMomentA_eq_weighted_sum_proof
-    (q n k f : ℕ) (hq : 0 < q) :
+    (q n k f : ℕ) :
     cs25SecondMomentA q n k f =
       ∑ ℓ ∈ Finset.range (n - f - k),
         (Nat.choose f ℓ : ℝ) * (Nat.choose (n - f) ℓ : ℝ) *
@@ -213,16 +210,22 @@ private theorem cs25SecondMomentA_eq_weighted_sum_proof
   rw [Finset.mul_sum]
   apply Finset.sum_congr rfl
   intro ℓ hℓ
-  have hle : ℓ ≤ n - f - k := Nat.le_of_lt (Finset.mem_range.mp hℓ)
-  have hqne : (q : ℝ) ≠ 0 := by exact_mod_cast (Nat.ne_of_gt hq)
-  rw [div_eq_mul_inv, pow_sub₀ (q : ℝ) hqne hle]
-  ring
+  have hlt := Finset.mem_range.mp hℓ
+  have hle : ℓ ≤ n - f - k := Nat.le_of_lt hlt
+  by_cases hq : q = 0
+  · subst q
+    have hm : n - f - k ≠ 0 := by omega
+    have he : n - f - k - ℓ ≠ 0 := by omega
+    simp [hm, he]
+  · have hqne : (q : ℝ) ≠ 0 := by exact_mod_cast hq
+    rw [div_eq_mul_inv, pow_sub₀ (q : ℝ) hqne hle]
+    ring
 
 open scoped BigOperators in
 theorem cs25SecondMomentANat_cast_proof
-    (q n k f : ℕ) (hq : 0 < q) :
+    (q n k f : ℕ) :
     (cs25SecondMomentANat q n k f : ℝ) = cs25SecondMomentA q n k f := by
-  rw [cs25SecondMomentA_eq_weighted_sum_proof q n k f hq]
+  rw [cs25SecondMomentA_eq_weighted_sum_proof q n k f]
   unfold cs25SecondMomentANat
   push_cast
   rfl
@@ -233,20 +236,20 @@ theorem cs25SecondMomentA_nonneg_proof (q n k f : ℕ) :
   exact mul_nonneg (by positivity) (cs25OverlapSum_nonneg q n k f)
 
 theorem cs25_entropy_shell_le_choose_proof
-    (q n f : ℕ) (hq : 10 ≤ q) (hn : 0 < n)
+    (q n f : ℕ) (hq : 10 ≤ q)
     (hfpos : 0 < f) (hflt : f < n) :
     (q : ℝ) ^ ((n : ℝ) * qEntropy q ((f : ℝ) / n)) ≤
       (Nat.choose n f : ℝ) * ((q : ℝ) - 1) ^ f *
         (8 * (n : ℝ) * ((f : ℝ) / n) * (1 - (f : ℝ) / n)) ^ ((1 : ℝ) / 2) := by
   have hq2 : 2 ≤ q := by omega
-  have hnR : (0 : ℝ) < n := by exact_mod_cast hn
+  have hnR : (0 : ℝ) < n := by exact_mod_cast (lt_trans hfpos hflt)
   have hxpos : (0 : ℝ) < (f : ℝ) / n := by positivity
   have hxlt : (f : ℝ) / n < 1 :=
     (div_lt_one hnR).2 (by exact_mod_cast hflt)
   have hd : (f : ℝ) = ((f : ℝ) / n) * n := by
     field_simp [hnR.ne']
   have hshell := qary_shell_entropy_lower q n f ((f : ℝ) / n)
-    hq2 hn hxpos hxlt hd
+    hq2 hd
   let D : ℝ :=
     (8 * (n : ℝ) * ((f : ℝ) / n) * (1 - (f : ℝ) / n)) ^ ((1 : ℝ) / 2)
   have hDpos : 0 < D := by
@@ -269,6 +272,11 @@ theorem cs25_entropy_shell_le_choose_proof
       mul_le_mul_of_nonneg_right hshell hDpos.le
     _ = (Nat.choose n f : ℝ) * ((q : ℝ) - 1) ^ f * D := by
       rw [hcast]
+
+/-- The product `y (1 - y)` is at most `1 / 4`. -/
+private theorem mul_one_sub_le_one_div_four (y : ℝ) : y * (1 - y) ≤ 1 / 4 := by
+  have h : 1 / 4 - y * (1 - y) = (y - 1 / 2) ^ 2 := by ring
+  exact sub_nonneg.1 (h ▸ sq_nonneg _)
 
 private theorem cs25_log_card_gt_two (q : ℕ) (hq : 10 ≤ q) :
     2 < Real.log q := by
@@ -300,9 +308,12 @@ private theorem cs25EntropyGapFn_endpoints_proof
       have hQ' :
           Real.qaryEntropy q (1 - 1 / (q : ℝ)) / Real.log (q : ℝ) = 1 := hQ
       exact (div_eq_one_iff_eq hlogpos.ne').mp hQ'
-    have ha_le : 1 - 1 / (q : ℝ) ≤ 1 := by
-      have hinv : 0 ≤ 1 / (q : ℝ) := by positivity
-      linarith
+    have hinv : 0 ≤ 1 / (q : ℝ) := by positivity
+    have h4 : 4 * (1 - 1 / (q : ℝ)) ≤ Real.log (q : ℝ) ^ 2 := by
+      rw [sq]
+      exact (mul_le_of_le_one_right (by norm_num) (sub_le_self 1 hinv)).trans
+        ((by norm_num : (4 : ℝ) = 2 * 2) ▸
+          mul_le_mul hloggt.le hloggt.le zero_le_two hlogpos.le)
     unfold cs25EntropyGapFn
     rw [hqary]
     calc
@@ -311,7 +322,7 @@ private theorem cs25EntropyGapFn_endpoints_proof
             4 * (1 - 1 / (q : ℝ)) * (1 - (1 - 1 / (q : ℝ))) =
           (1 - (1 - 1 / (q : ℝ))) *
             (Real.log (q : ℝ) ^ 2 - 4 * (1 - 1 / (q : ℝ))) := by ring
-      _ ≥ 0 := mul_nonneg (by positivity) (by nlinarith [sq_nonneg (Real.log (q : ℝ) - 2)])
+      _ ≥ 0 := mul_nonneg (by rw [sub_sub_cancel]; exact hinv) (sub_nonneg.2 h4)
 
 private theorem cs25_entropy_gap_lt_half_proof
     (q : ℕ) (x : ℝ) (hq : 10 ≤ q) (hx : 0 ≤ x) :
@@ -347,7 +358,7 @@ private theorem cs25_entropy_gap_lt_half_proof
     exact h
   have hfrac : Real.log 2 / Real.log (q : ℝ) < (1 : ℝ) / 2 := by
     rw [div_lt_iff₀ hlogpos]
-    nlinarith
+    linarith
   exact lt_of_le_of_lt hmain hfrac
 
 theorem cs25_quadratic_entropy_gap_proof
@@ -364,10 +375,7 @@ theorem cs25_quadratic_entropy_gap_proof
     dsimp [a]
     have hq1 : (1 : ℝ) ≤ q := by exact_mod_cast (show 1 ≤ q by omega)
     exact sub_nonneg.mpr (div_le_one hqR |>.2 hq1)
-  have halt : a < 1 := by
-    dsimp [a]
-    have hinv : 0 < 1 / (q : ℝ) := by positivity
-    linarith
+  have halt : a < 1 := sub_lt_self 1 (by positivity)
   have hconc : StrictConcaveOn ℝ (Set.Icc 0 a) (cs25EntropyGapFn q) := by
     apply strictConcaveOn_of_deriv2_neg (convex_Icc 0 a)
       (cs25EntropyGapFn_continuous_proof q).continuousOn
@@ -378,10 +386,9 @@ theorem cs25_quadratic_entropy_gap_proof
     have hy1 : y ≠ 1 := ne_of_lt hy1lt
     rw [cs25EntropyGapFn_deriv2_proof q y hy0 hy1]
     have hp : 0 < y * (1 - y) := mul_pos hy.1 (sub_pos.mpr hy1lt)
-    have hquad : y * (1 - y) ≤ 1 / 4 := by
-      nlinarith only [sq_nonneg (y - 1 / 2)]
+    have hquad : y * (1 - y) ≤ 1 / 4 := mul_one_sub_le_one_div_four y
     have hmul : 8 * (y * (1 - y)) < Real.log (q : ℝ) := by
-      nlinarith only [hquad, hloggt]
+      linarith only [hquad, hloggt]
     have hdiv : 8 < Real.log (q : ℝ) / (y * (1 - y)) :=
       (lt_div_iff₀ hp).2 hmul
     linarith
@@ -414,16 +421,16 @@ private theorem cs25_shell_factor_lt_q
   have hqR : (0 : ℝ) < q := by exact_mod_cast (lt_of_lt_of_le (by omega : 0 < 10) hq)
   apply (Real.sqrt_lt' hqR).2
   let x : ℝ := (f : ℝ) / n
-  have hquad : x * (1 - x) ≤ 1 / 4 := by
-    nlinarith only [sq_nonneg (x - 1 / 2)]
   have hmul : (n : ℝ) * (x * (1 - x)) ≤ (n : ℝ) * (1 / 4) :=
-    mul_le_mul_of_nonneg_left hquad hnR.le
+    mul_le_mul_of_nonneg_left (mul_one_sub_le_one_div_four x) hnR.le
   have hA : 8 * (n : ℝ) * x * (1 - x) ≤ 2 * n := by
-    nlinarith only [hmul]
+    linarith only [hmul]
   have hnqR : (n : ℝ) ≤ q := by exact_mod_cast hnq
   have hq10R : (10 : ℝ) ≤ q := by exact_mod_cast hq
-  dsimp [x] at hA ⊢
-  nlinarith only [hA, hnqR, hq10R]
+  calc 8 * (n : ℝ) * x * (1 - x) ≤ 2 * n := hA
+    _ ≤ 2 * q := by linarith only [hnqR]
+    _ < q * q := mul_lt_mul_of_pos_right (by linarith only [hq10R]) hqR
+    _ = (q : ℝ) ^ 2 := (sq _).symm
 
 theorem cs25_shell_power_bound
     (q n f : ℕ) (hq : 10 ≤ q) (hnq : n ≤ q)
@@ -448,30 +455,31 @@ theorem cs25_shell_power_bound
       simp only [pow_succ]
 
 private theorem epsCa_le_one
-    {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {ι : Type} [Fintype ι]
+    {F : Type} [Field F] [SampleableType F] [DecidableEq F]
     (C : Set (ι → F)) (δ_fld δ_int : NNReal) :
     epsCa (F := F) (A := F) C δ_fld δ_int ≤ 1 := by
   classical
-  unfold epsCa
+  simp only [epsCa_eq]
   refine iSup_le fun u => ?_
   split_ifs
   · exact zero_le_one
-  · exact PMF.coe_le_one _ _
+  · exact prEvent_le_one _
 
 open scoped ProbabilityTheory in
 theorem epsCa_eq_one_of_all_folds_close_not_joint
-    {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {ι : Type} [Fintype ι]
+    {F : Type} [Field F] [SampleableType F] [DecidableEq F]
     (C : Set (ι → F)) (δ : NNReal) (u : Code.WordStack F (Fin 2) ι)
     (hjoint : ¬ Code.jointProximity C (u := u) δ)
     (hclose : ∀ γ : F, Code.relDistFromCode (u 0 + γ • u 1) C ≤ (δ : ENNReal)) :
     epsCa (F := F) (A := F) C δ δ = 1 := by
   classical
+  let _ := Fintype.ofFinite F
   refine le_antisymm (epsCa_le_one C δ δ) ?_
   have hprob :
-      Pr_{let γ ← $ᵖ F}[Code.relDistFromCode (u 0 + γ • u 1) C ≤ (δ : ENNReal)] = 1 := by
-    rw [Probability.prob_uniform_eq_card_filter_div_card]
+      Pr{let γ ← $ᵗ F}[Code.relDistFromCode (u 0 + γ • u 1) C ≤ (δ : ENNReal)] = 1 := by
+    rw [SampleableType.prEvent_uniformSample]
     have hfilter :
         Finset.univ.filter (fun γ : F =>
           Code.relDistFromCode (u 0 + γ • u 1) C ≤ (δ : ENNReal)) = Finset.univ := by
@@ -483,19 +491,19 @@ theorem epsCa_eq_one_of_all_folds_close_not_joint
     · simp
     · simp
   calc
-    1 = Pr_{let γ ← $ᵖ F}[Code.relDistFromCode (u 0 + γ • u 1) C ≤ (δ : ENNReal)] := hprob.symm
+    1 = Pr{let γ ← $ᵗ F}[Code.relDistFromCode (u 0 + γ • u 1) C ≤ (δ : ENNReal)] := hprob.symm
     _ = (if Code.jointProximity C (u := u) δ then 0
-        else Pr_{let γ ← $ᵖ F}[
-          Code.relDistFromCode (u 0 + γ • u 1) C ≤ (δ : ENNReal)]) := (if_neg hjoint).symm
+        else Pr{let γ ← $ᵗ F}[
+          Code.relDistFromCode (u 0 + γ • u 1) C ≤ (δ : ENNReal)]) := (ite_eq_right hjoint).symm
     _ ≤ epsCa (F := F) (A := F) C δ δ := by
-      unfold epsCa
+      simp only [epsCa_eq]
       exact le_iSup (fun w : Code.WordStack F (Fin 2) ι =>
         if Code.jointProximity C (u := w) δ then 0
-        else Pr_{let γ ← $ᵖ F}[
+        else Pr{let γ ← $ᵗ F}[
           Code.relDistFromCode (w 0 + γ • w 1) C ≤ (δ : ENNReal)]) u
 
 theorem exists_base_all_translates_close_of_bad_count
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     (C : Set (ι → F)) (v : ι → F) (f : ℕ)
     (hbad :
@@ -503,6 +511,20 @@ theorem exists_base_all_translates_close_of_bad_count
         (Fintype.card F) ^ (Fintype.card ι - 1)) :
     ∃ u : ι → F, ∀ γ : F, Code.distFromCode (u + γ • v) C ≤ f := by
   classical
+  by_cases hι : IsEmpty ι
+  · let := hι
+    refine ⟨0, fun γ => ?_⟩
+    have hzero :
+        (Finset.univ.filter fun w : ι → F => ¬ Code.distFromCode w C ≤ f) = ∅ := by
+      apply Finset.card_eq_zero.mp
+      simpa using hbad
+    by_contra hfar
+    have hmem : (0 : ι → F) + γ • v ∈
+        Finset.univ.filter (fun w : ι → F => ¬ Code.distFromCode w C ≤ f) := by
+      exact Finset.mem_filter.mpr ⟨Finset.mem_univ _, hfar⟩
+    rw [hzero] at hmem
+    simp only [Finset.notMem_empty] at hmem
+  have : Nonempty ι := not_isEmpty_iff.mp hι
   let B : Finset (ι → F) :=
     Finset.univ.filter fun w : ι → F => ¬ Code.distFromCode w C ≤ f
   let U : Finset (ι → F) :=
@@ -557,10 +579,19 @@ theorem exists_base_all_translates_close_of_bad_count
 
 theorem nat_card_lt_pow_pred_of_weighted_bound
     (q n N B : ℕ) (A : ℝ)
-    (hq : 1 < q) (hn : 0 < n) (hN : 0 < N) (hA : 0 ≤ A)
+    (hq : 1 < q) (hA : 0 ≤ A)
     (hsmall : ((q : ℝ) - 1) * A < (N : ℝ))
     (hbound : (B : ℝ) * ((N : ℝ) + A) ≤ (q : ℝ) ^ n * A) :
     B < q ^ (n - 1) := by
+  by_cases hn : n = 0
+  · subst n
+    simp only [Nat.zero_sub, pow_zero, one_mul] at hbound ⊢
+    by_contra hnot
+    have hB : (1 : ℝ) ≤ B := by exact_mod_cast (by omega : 1 ≤ B)
+    have hqR : (2 : ℝ) ≤ q := by exact_mod_cast (by omega : 2 ≤ q)
+    have hNA : (0 : ℝ) ≤ (N : ℝ) + A := by positivity
+    have hmul := mul_le_mul_of_nonneg_right hB hNA
+    nlinarith [mul_nonneg (by linarith : 0 ≤ (q : ℝ) - 2) hA]
   by_contra hnot
   have hB : q ^ (n - 1) ≤ B := Nat.le_of_not_gt hnot
   have hBreal : (q : ℝ) ^ (n - 1) ≤ (B : ℝ) := by exact_mod_cast hB
@@ -593,7 +624,7 @@ theorem nat_card_lt_pow_pred_of_weighted_bound
 
 theorem not_jointProximity_of_second_row_far
     {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [DecidableEq F]
+    {F : Type} [DecidableEq F]
     (C : Set (ι → F)) (u : Code.WordStack F (Fin 2) ι) (δ : NNReal)
     (hfar : ¬ Code.relDistFromCode (u 1) C ≤ (δ : ENNReal)) :
     ¬ Code.jointProximity C (u := u) δ := by
@@ -652,7 +683,7 @@ private theorem rsAgreementSpace_mem_iff
       simp [Pi.add_apply, Pi.sub_apply]
 
 private theorem rsAgreementSpace_eq_top_of_large
-    {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι F : Type} [Fintype ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k : ℕ) (E : Finset ι)
     (hlarge : Fintype.card ι ≤ k + E.card) :
@@ -684,7 +715,7 @@ def rsBoundaryWord {ι F : Type} [Monoid F] (domain : ι ↪ F) (k : ℕ) : ι �
   fun i => domain i ^ k
 
 theorem rsBoundaryWord_far
-    {ι : Type} [Fintype ι] [Nonempty ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Field F] [DecidableEq F]
     (domain : ι ↪ F) (k f : ℕ)
     (hslack : k + f + 2 ≤ Fintype.card ι) :
@@ -732,7 +763,7 @@ theorem rsBoundaryWord_far
   exact (not_le_of_gt hfar) (by exact_mod_cast hdist)
 
 private theorem rsCode_disjoint_supported_of_small
-    {ι F : Type} [Fintype ι] [Nonempty ι]
+    {ι F : Type} [Fintype ι]
     [Field F]
     (domain : ι ↪ F) (k : ℕ) (E : Finset ι)
     (hsmall : k + E.card ≤ Fintype.card ι) :
@@ -758,7 +789,7 @@ private theorem rsCode_disjoint_supported_of_small
   omega
 
 private theorem rsAgreementSpace_finrank_small
-    {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι F : Type} [Fintype ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k : ℕ) (E : Finset ι)
     (hsmall : k + E.card ≤ Fintype.card ι) :
@@ -778,7 +809,7 @@ private theorem rsAgreementSpace_finrank_small
   omega
 
 private theorem rsAgreementSpace_filter_card_small_proof
-    {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι F : Type} [Fintype ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k : ℕ) (E : Finset ι)
     (hsmall : k + E.card ≤ Fintype.card ι) :
@@ -803,7 +834,7 @@ private theorem rsAgreementSpace_filter_card_small_proof
       rw [rsAgreementSpace_finrank_small domain k E hsmall]
 
 theorem rsAgreementSpace_finrank
-    {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι F : Type} [Fintype ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k : ℕ) (E : Finset ι) :
     Module.finrank F (rsAgreementSpace domain k E) =
@@ -814,17 +845,7 @@ theorem rsAgreementSpace_finrank
     rw [rsAgreementSpace_eq_top_of_large domain k E hlarge, finrank_top,
       Module.finrank_pi, min_eq_left hlarge]
 
-private theorem rsAgreementSpace_ncard_small_proof
-    {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    [Field F] [Fintype F] [DecidableEq F]
-    (domain : ι ↪ F) (k : ℕ) (E : Finset ι)
-    (hsmall : k + E.card ≤ Fintype.card ι) :
-    (rsAgreementSpace domain k E : Set (ι → F)).ncard =
-      Fintype.card F ^ (k + E.card) := by
-  rw [submodule_ncard_eq_pow_finrank,
-    rsAgreementSpace_finrank_small domain k E hsmall]
-
-def rsExactErrorSets {ι : Type} [Fintype ι] [DecidableEq ι]
+def rsExactErrorSets {ι : Type} [Fintype ι]
     (f : ℕ) : Finset (Finset ι) :=
   Finset.univ.powersetCard f
 
@@ -954,14 +975,14 @@ theorem cs25CertificateCount_sq_sum_eq_pair_sum_nat_proof
       exact Finset.sum_product _ _ _
 
 theorem rsExactErrorSets_card_proof
-    {ι : Type} [Fintype ι] [DecidableEq ι] (f : ℕ) :
+    {ι : Type} [Fintype ι] (f : ℕ) :
     (rsExactErrorSets (ι := ι) f).card = Nat.choose (Fintype.card ι) f := by
   unfold rsExactErrorSets
   rw [Finset.card_powersetCard, Finset.card_univ]
 
 open scoped BigOperators in
 theorem cs25CertificateCount_sum_nat_proof
-    {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι F : Type} [Fintype ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k f : ℕ)
     (hsmall : k + f ≤ Fintype.card ι) :
@@ -1074,17 +1095,7 @@ theorem rsAgreementSpace_sup
     rsAgreementSpace domain k E ⊔ rsAgreementSpace domain k E' =
       rsAgreementSpace domain k (E ∪ E') := by
   unfold rsAgreementSpace
-  rw [← rsSupportedSpace_sup E E']
-  calc
-    (ReedSolomon.code domain k ⊔ Pi.spanSubset F (E : Set ι)) ⊔
-        (ReedSolomon.code domain k ⊔ Pi.spanSubset F (E' : Set ι)) =
-      ReedSolomon.code domain k ⊔
-        (ReedSolomon.code domain k ⊔
-          (Pi.spanSubset F (E : Set ι) ⊔ Pi.spanSubset F (E' : Set ι))) := by
-            ac_rfl
-    _ = ReedSolomon.code domain k ⊔
-        (Pi.spanSubset F (E : Set ι) ⊔ Pi.spanSubset F (E' : Set ι)) := by
-          rw [← sup_assoc, sup_idem]
+  rw [← rsSupportedSpace_sup E E', sup_sup_sup_comm, sup_idem]
 
 theorem rs_close_words_eq_certificate_support_proof
     {ι F : Type} [Fintype ι] [DecidableEq ι]
@@ -1098,13 +1109,15 @@ theorem rs_close_words_eq_certificate_support_proof
   simp [rsFarWords, cs25CertificateCount_pos_iff_close_proof domain k f w hf]
 
 theorem rs_entropy_rate_d_le_kf_proof
-    (q n k f : ℕ) (hq : 10 ≤ q) (hn : 0 < n)
+    (q n k f : ℕ) (hq : 10 ≤ q)
     (hlo :
       1 - qEntropy q ((f : ℝ) / n) + 2 / (n : ℝ) +
           ((qEntropy q ((f : ℝ) / n) - (f : ℝ) / n) / (n : ℝ)) ^ ((1 : ℝ) / 2)
         ≤ (k : ℝ) / n) :
     n - f - k ≤ k + f := by
-  have hnR : (0 : ℝ) < n := by exact_mod_cast hn
+  by_cases hn : n = 0
+  · simp [hn]
+  have hnR : (0 : ℝ) < n := by exact_mod_cast (Nat.pos_of_ne_zero hn)
   let s : ℝ :=
     ((qEntropy q ((f : ℝ) / n) - (f : ℝ) / n) / (n : ℝ)) ^ ((1 : ℝ) / 2)
   have hs : 0 ≤ s := by
@@ -1117,17 +1130,18 @@ theorem rs_entropy_rate_d_le_kf_proof
   have hkn :
       (1 - qEntropy q ((f : ℝ) / n) + 2 / (n : ℝ) + s) * n ≤ k := by
     calc
-      _ ≤ ((k : ℝ) / n) * n := by simpa only [s] using hm
-      _ = k := by field_simp [hnR.ne']
+      _ ≤ ((k : ℝ) / n) * n := hm
+      _ = k := div_mul_cancel₀ _ hnR.ne'
   have hkn' :
       (n : ℝ) - (n : ℝ) * qEntropy q ((f : ℝ) / n) + 2 + (n : ℝ) * s ≤ k := by
     calc
       _ = (1 - qEntropy q ((f : ℝ) / n) + 2 / (n : ℝ) + s) * n := by
-        field_simp [hnR.ne']
+        rw [add_mul, add_mul, sub_mul, one_mul, div_mul_cancel₀ _ hnR.ne']
+        ring
       _ ≤ k := hkn
   have hreal : (n : ℝ) < 2 * ((k : ℝ) + f) := by
-    field_simp [hnR.ne'] at hgap_scaled
-    nlinarith only [hgap_scaled, hkn', hs]
+    rw [sub_mul, div_mul_cancel₀ _ hnR.ne'] at hgap_scaled
+    linarith only [hgap_scaled, hkn', mul_nonneg hnR.le hs]
   have hnat : n < 2 * (k + f) := by exact_mod_cast hreal
   omega
 

@@ -77,8 +77,8 @@ theorem galoisAut_Xpow (α m : ℕ) {i : ℕ} (hi : i < 2 ^ α) :
       = CompPoly.CPolynomial.monomial (i * m) (1 : R) := by
     rw [Finset.sum_eq_single_of_mem i (Finset.mem_range.mpr hi')
         (fun kk _ hkk => by
-          rw [Xpow_coeff_of_lt α hi, if_neg hkk, CPolynomial.monomial_eq_zero (R := R)]),
-      Xpow_coeff_of_lt α hi, if_pos rfl]
+          rw [Xpow_coeff_of_lt α hi, ite_eq_right hkk, CPolynomial.monomial_eq_zero (R := R)]),
+      Xpow_coeff_of_lt α hi, ite_eq_left rfl]
   rw [galoisAut, key, Xpow]
 
 /-! ## Algebraic toolkit for `X^n`: folding via `X^d = -1`
@@ -185,11 +185,12 @@ theorem galoisAut_Xpow' (α m j : ℕ) (hm : Odd m) :
   rw [galoisAut_toQuotient α m hm, Xpow_toQuotient, galoisAutₛ_mk, Xpow_toQuotient,
     map_pow, Polynomial.aeval_X, ← pow_mul, Nat.mul_comm]
 
-/-- `X^{2^{α+1}} = 1` (the conductor `2d = 2^{α+1}` is the order of `X`): `X^{2d} = (X^d)^2 = 1`. -/
+/-- `X^{2^{α+1}} = 1`: the conductor `2d = 2^{α+1}` is a period of the powers of `X`,
+since `X^{2d} = (X^d)^2 = 1`. -/
 theorem Xpow_conductor (α : ℕ) : Xpow (powTwoCyclotomic (R := R) α) (2 ^ (α + 1)) = 1 := by
   rw [pow_succ, Xpow_mul, Xpow_natDegree, neg_one_sq]
 
-/-- **Conductor periodicity**: `X^n = X^{n mod 2^{α+1}}` (no sign — `X` has order `2d`). -/
+/-- **Conductor periodicity**: `X^n = X^{n mod 2^{α+1}}`, since `X^{2d} = 1`. -/
 theorem Xpow_periodic (α n : ℕ) :
     Xpow (powTwoCyclotomic (R := R) α) n
       = Xpow (powTwoCyclotomic (R := R) α) (n % 2 ^ (α + 1)) := by
@@ -282,14 +283,14 @@ def Rq.powTwoCoeffEquiv (α : ℕ) :
     intro k
     rw [Rq.ofFinCoeff_coeff _ _ (le_of_eq (powTwoCyclotomic_toPoly_degree α).symm)]
     by_cases hk : k < 2 ^ α
-    · rw [if_pos hk, dif_pos hk]
-    · rw [if_neg hk]; exact (coeff_eq_zero_of_le α a (Nat.not_lt.mp hk)).symm
+    · rw [ite_eq_left hk, dite_eq_left hk]
+    · rw [ite_eq_right hk]; exact (coeff_eq_zero_of_le α a (Nat.not_lt.mp hk)).symm
   right_inv c := by
     funext i
     change (Rq.ofFinCoeff (powTwoCyclotomic α) (2 ^ α)
       (fun j => if h : j < 2 ^ α then c ⟨j, h⟩ else 0)).1.coeff i.val = c i
-    rw [Rq.ofFinCoeff_coeff _ _ (le_of_eq (powTwoCyclotomic_toPoly_degree α).symm), if_pos i.isLt,
-      dif_pos i.isLt]
+    rw [Rq.ofFinCoeff_coeff _ _ (le_of_eq (powTwoCyclotomic_toPoly_degree α).symm),
+      ite_eq_left i.isLt, dite_eq_left i.isLt]
 
 noncomputable instance Rq.fintypePowTwo (α : ℕ) [Fintype R] :
     Fintype (Rq (powTwoCyclotomic (R := R) α)) :=
@@ -313,11 +314,11 @@ theorem conjAut_Xpow (α e : ℕ) :
       = Xpow (powTwoCyclotomic (R := R) α) (e * conjExp α) := by
   rw [conjAut, galoisRingHom_apply, galoisAut_Xpow' α (conjExp α) e (conjExp_odd α)]
 
-/-- **`σ_{-1}(X^e) = -X^{d-e}`** for `0 < e < d`: the conjugate of a sub-`d/2` monomial is minus
-the complementary monomial. The only nonzero coefficient of `σ_{-1}(X^e)` sits at `d - e`, with
-sign `-1`: from `e·conjExp ≡ 2^{α+1} - e (mod 2^{α+1})` we get
+/-- **`σ_{-1}(X^e) = -X^{d-e}`** for `e < d`: the conjugate of a sub-`d` monomial is minus
+the complementary monomial. For `e > 0`, its only nonzero coefficient sits at `d - e`, with
+sign `-1`; at `e = 0`, both sides equal `1`. From `e·conjExp ≡ 2^{α+1} - e (mod 2^{α+1})` we get
 `σ_{-1}(X^e) = X^{d + (d-e)} = -X^{d-e}`. -/
-theorem conjAut_Xpow_eq_neg (α : ℕ) {e : ℕ} (he0 : 0 < e) (heα : e < 2 ^ α) :
+theorem conjAut_Xpow_eq_neg (α : ℕ) {e : ℕ} (heα : e < 2 ^ α) :
     conjAut α (Xpow (powTwoCyclotomic (R := R) α) e)
       = - Xpow (powTwoCyclotomic (R := R) α) (2 ^ α - e) := by
   have hc : conjExp α + 1 = 2 ^ (α + 1) := Nat.sub_add_cancel Nat.one_le_two_pow
@@ -338,17 +339,23 @@ theorem conjAut_Xpow_eq_neg (α : ℕ) {e : ℕ} (he0 : 0 < e) (heα : e < 2 ^ �
 
 /-- **`X^e + σ_{-1}(X^e) ∈ R_q^H`** when `d/2k ∣ e`: `X^e` is then `σ_{4k+1}`-fixed (its exponent
 is a multiple of `d/2k`), and the sum is symmetric under `σ_{-1}` (which has order `2`). -/
-theorem mem_fixed_symm (α κ : ℕ) (hκ : κ + 1 ≤ α) {e : ℕ} (hdvd : 2 ^ (α - κ - 1) ∣ e) :
+theorem mem_fixed_symm (α κ : ℕ) {e : ℕ} (hdvd : 2 ^ (α - κ - 1) ∣ e) :
     Xpow (powTwoCyclotomic (R := R) α) e + conjAut α (Xpow (powTwoCyclotomic α) e)
       ∈ fixedSubring α (2 ^ κ) := by
   have hgenX : ∀ f, genAut α (2 ^ κ) (Xpow (powTwoCyclotomic (R := R) α) f)
       = Xpow (powTwoCyclotomic α) (f * genExp (2 ^ κ)) := fun f => by
     rw [genAut, galoisRingHom_apply, galoisAut_Xpow' α (genExp (2 ^ κ)) f (genExp_odd (2 ^ κ))]
-  have hpow : 4 * 2 ^ κ * 2 ^ (α - κ - 1) = 2 ^ (α + 1) := by
-    rw [show (4 : ℕ) = 2 ^ 2 from rfl, _root_.mul_assoc, ← pow_add, ← pow_add]; congr 1; omega
   have h4ke : (2 : ℕ) ^ (α + 1) ∣ 4 * 2 ^ κ * e := by
-    obtain ⟨t, rfl⟩ := hdvd
-    exact ⟨t, by rw [← _root_.mul_assoc, hpow]⟩
+    by_cases hκ : κ + 1 ≤ α
+    · have hpow : 4 * 2 ^ κ * 2 ^ (α - κ - 1) = 2 ^ (α + 1) := by
+        rw [show (4 : ℕ) = 2 ^ 2 from rfl, _root_.mul_assoc, ← pow_add, ← pow_add]
+        congr 1; omega
+      obtain ⟨t, rfl⟩ := hdvd
+      exact ⟨t, by rw [← _root_.mul_assoc, hpow]⟩
+    · have hd : (2 : ℕ) ^ (α + 1) ∣ 4 * 2 ^ κ := by
+        rw [show (4 : ℕ) = 2 ^ 2 from rfl, ← pow_add]
+        exact pow_dvd_pow 2 (by omega)
+      exact hd.mul_right e
   have hconjsq : e * conjExp α * conjExp α ≡ e [MOD 2 ^ (α + 1)] := by
     have hcsq : conjExp α * conjExp α ≡ 1 [MOD 2 ^ (α + 1)] := by
       have hid : conjExp α * conjExp α = 2 ^ (α + 1) * (2 ^ (α + 1) - 2) + 1 := by
@@ -419,9 +426,9 @@ theorem Xpow_coeff_eq_zero_of_ne (α f p : ℕ) (hne : p ≠ f % 2 ^ α) :
   have hmod : f % 2 ^ α < 2 ^ α := Nat.mod_lt _ (by positivity)
   rw [Xpow, mk_monomial_fold]
   rcases Nat.even_or_odd (f / 2 ^ α) with he | ho
-  · rw [he.neg_one_pow, _root_.one_mul, mk_monomial_coeff_lt α hmod, if_neg hne]
+  · rw [he.neg_one_pow, _root_.one_mul, mk_monomial_coeff_lt α hmod, ite_eq_right hne]
   · rw [ho.neg_one_pow, neg_one_mul, Rq.neg_val, CPolynomial.coeff_neg,
-      mk_monomial_coeff_lt α hmod, if_neg hne, neg_zero]
+      mk_monomial_coeff_lt α hmod, ite_eq_right hne, neg_zero]
 
 /-- Right-multiplying a (folded or unfolded) monomial by `X^e` adds `e` to the exponent:
 `(c·X^k)·X^e = c·X^{k+e}` in `R_q`. -/
@@ -447,24 +454,24 @@ theorem Xpow_mul_coeff (α e : ℕ) (he : e < 2 ^ α) (x : Rq (powTwoCyclotomic 
   conv_lhs => rw [hexp, Finset.sum_mul, ← Rq.coeffHom_apply, map_sum]
   simp only [Rq.coeffHom_apply, mk_monomial_mul_Xpow, mk_monomial_coeff_full]
   by_cases hep : e ≤ p
-  · rw [if_pos hep, Finset.sum_eq_single (p - e)]
+  · rw [ite_eq_left hep, Finset.sum_eq_single (p - e)]
     · have h1 : p - e + e = p := by omega
-      rw [h1, Nat.mod_eq_of_lt hp, Nat.div_eq_of_lt hp, pow_zero, _root_.one_mul, if_pos rfl]
+      rw [h1, Nat.mod_eq_of_lt hp, Nat.div_eq_of_lt hp, pow_zero, _root_.one_mul, ite_eq_left rfl]
     · intro k hk hkne
       rw [Finset.mem_range] at hk
-      rw [if_neg]
+      rw [ite_eq_right]
       intro hpk
       rcases lt_or_ge (k + e) (2 ^ α) with hlt | hge
       · rw [Nat.mod_eq_of_lt hlt] at hpk; exact hkne (by omega)
       · rw [Nat.mod_eq_sub_mod hge, Nat.mod_eq_of_lt (by omega)] at hpk; omega
     · intro h; exact absurd (Finset.mem_range.mpr (by omega : p - e < 2 ^ α)) h
-  · rw [if_neg hep, Finset.sum_eq_single (p + 2 ^ α - e)]
+  · rw [ite_eq_right hep, Finset.sum_eq_single (p + 2 ^ α - e)]
     · have h1 : p + 2 ^ α - e + e = p + 2 ^ α := by omega
       rw [h1, Nat.add_mod_right, Nat.mod_eq_of_lt hp, Nat.add_div_right _ (by positivity),
-        Nat.div_eq_of_lt hp, _root_.zero_add, pow_one, neg_one_mul, if_pos rfl]
+        Nat.div_eq_of_lt hp, _root_.zero_add, pow_one, neg_one_mul, ite_eq_left rfl]
     · intro k hk hkne
       rw [Finset.mem_range] at hk
-      rw [if_neg]
+      rw [ite_eq_right]
       intro hpk
       rcases lt_or_ge (k + e) (2 ^ α) with hlt | hge
       · rw [Nat.mod_eq_of_lt hlt] at hpk; omega
@@ -489,26 +496,29 @@ theorem mul_conjExp_mod (α : ℕ) {e : ℕ} (he0 : 0 < e) (he : e < 2 ^ α) :
 
 /-- **`σ_{-1}(X^e)` has no low-degree coefficient**: for `0 < e < d/2` and `p < d/2`,
 `(σ_{-1}(X^e)).coeff p = 0` (its only coefficient sits at `d - e > d/2`). -/
-theorem conjAut_Xpow_coeff_low (α : ℕ) (hα : 1 ≤ α) {e p : ℕ} (he0 : 0 < e)
+theorem conjAut_Xpow_coeff_low (α : ℕ) {e p : ℕ} (he0 : 0 < e)
     (he : e < 2 ^ (α - 1)) (hp : p < 2 ^ (α - 1)) :
     (conjAut α (Xpow (powTwoCyclotomic (R := R) α) e)).1.coeff p = 0 := by
-  have hhalf : (2 : ℕ) ^ α = 2 * 2 ^ (α - 1) := by rw [← pow_succ']; congr 1; omega
-  rw [conjAut_Xpow]
-  refine Xpow_coeff_eq_zero_of_ne α (e * conjExp α) p ?_
-  rw [mul_conjExp_mod α he0 (by omega)]
-  omega
+  rcases Nat.eq_zero_or_pos α with rfl | hα
+  · simp at he
+    omega
+  · have hhalf : (2 : ℕ) ^ α = 2 * 2 ^ (α - 1) := by rw [← pow_succ']; congr 1; omega
+    rw [conjAut_Xpow]
+    refine Xpow_coeff_eq_zero_of_ne α (e * conjExp α) p ?_
+    rw [mul_conjExp_mod α he0 (by omega)]
+    omega
 
 /-! ## The basis `{X^{(d/2k)·j} + σ_{-1}(X^{(d/2k)·j})}` of `R_q^H` -/
 
 /-- The `j`-th symmetric basis element of `R_q^H`: `X^{(d/2k)·j} + σ_{-1}(X^{(d/2k)·j})`. -/
-noncomputable def vElt (α κ : ℕ) (hκ : κ + 1 ≤ α) (j : Fin (2 ^ κ)) :
+noncomputable def vElt (α κ : ℕ) (j : Fin (2 ^ κ)) :
     fixedSubring (R := R) α (2 ^ κ) :=
   ⟨Xpow (powTwoCyclotomic α) (2 ^ (α - κ - 1) * (j : ℕ))
       + conjAut α (Xpow (powTwoCyclotomic α) (2 ^ (α - κ - 1) * (j : ℕ))),
-    mem_fixed_symm α κ hκ ⟨(j : ℕ), rfl⟩⟩
+    mem_fixed_symm α κ ⟨(j : ℕ), rfl⟩⟩
 
-theorem vElt_coe (α κ : ℕ) (hκ : κ + 1 ≤ α) (j : Fin (2 ^ κ)) :
-    (vElt α κ hκ j).val
+theorem vElt_coe (α κ : ℕ) (j : Fin (2 ^ κ)) :
+    (vElt α κ j).val
       = Xpow (powTwoCyclotomic (R := R) α) (2 ^ (α - κ - 1) * (j : ℕ))
         + conjAut α (Xpow (powTwoCyclotomic (R := R) α) (2 ^ (α - κ - 1) * (j : ℕ))) := rfl
 
@@ -517,7 +527,7 @@ position `(d/2k)·s`. The two basis exponents of `v_j` are `(d/2k)·j` (degree `
 conjugate (degree `> d/2`); only the former can equal `(d/2k)·s < d/2`, except at `j=0` where the
 conjugate coincides (giving the doubling). -/
 theorem vElt_coeff (α κ : ℕ) (hκ : κ + 1 ≤ α) (j s : Fin (2 ^ κ)) :
-    (vElt α κ hκ j).val.1.coeff (2 ^ (α - κ - 1) * (s : ℕ))
+    (vElt α κ j).val.1.coeff (2 ^ (α - κ - 1) * (s : ℕ))
       = if s = j then (if (j : ℕ) = 0 then (2 : R) else 1) else 0 := by
   have hα : 1 ≤ α := by omega
   have hhalf : (2 : ℕ) ^ (α - 1) = 2 ^ (α - κ - 1) * 2 ^ κ := by rw [← pow_add]; congr 1; omega
@@ -533,33 +543,33 @@ theorem vElt_coeff (α κ : ℕ) (hκ : κ + 1 ≤ α) (j s : Fin (2 ^ κ)) :
     rw [mul_right_inj' hpos.ne', Fin.val_inj]
   rw [vElt_coe, Rq.add_val, CPolynomial.coeff_add, Xpow_coeff_of_lt α hejα]
   by_cases hsj : s = j
-  · rw [if_pos (heq_iff.mpr hsj), if_pos hsj]
+  · rw [ite_eq_left (heq_iff.mpr hsj), ite_eq_left hsj]
     by_cases hj0 : (j : ℕ) = 0
     · rw [hj0, Nat.mul_zero, conjAut_Xpow, Nat.zero_mul,
         Xpow_coeff_of_lt α (show (0 : ℕ) < 2 ^ α from by positivity)]
       have hs0 : 2 ^ (α - κ - 1) * (s : ℕ) = 0 := by
         rw [show (s : ℕ) = (j : ℕ) from by rw [hsj], hj0, Nat.mul_zero]
-      rw [if_pos hs0, if_pos rfl]; norm_num
-    · rw [conjAut_Xpow_coeff_low α hα
-          (Nat.mul_pos hpos (Nat.pos_of_ne_zero hj0)) hej hes, _root_.add_zero, if_neg hj0]
-  · rw [if_neg (fun h => hsj (heq_iff.mp h)), if_neg hsj]
+      rw [ite_eq_left hs0, ite_eq_left rfl]; norm_num
+    · rw [conjAut_Xpow_coeff_low α
+          (Nat.mul_pos hpos (Nat.pos_of_ne_zero hj0)) hej hes, _root_.add_zero, ite_eq_right hj0]
+  · rw [ite_eq_right (fun h => hsj (heq_iff.mp h)), ite_eq_right hsj]
     by_cases hj0 : (j : ℕ) = 0
     · rw [hj0, Nat.mul_zero, conjAut_Xpow, Nat.zero_mul,
         Xpow_coeff_of_lt α (show (0 : ℕ) < 2 ^ α from by positivity)]
       have hs0 : ¬ (2 ^ (α - κ - 1) * (s : ℕ) = 0) := by
         rw [Nat.mul_eq_zero, not_or]
         exact ⟨hpos.ne', fun h => hsj (Fin.ext (h.trans hj0.symm))⟩
-      rw [if_neg hs0, _root_.add_zero]
-    · rw [conjAut_Xpow_coeff_low α hα
+      rw [ite_eq_right hs0, _root_.add_zero]
+    · rw [conjAut_Xpow_coeff_low α
           (Nat.mul_pos hpos (Nat.pos_of_ne_zero hj0)) hej hes, _root_.add_zero]
 
-/-- **Full coefficient formula for the basis element `v_j`.** For every position `p < d`, the
+/-- **Full coefficient formula for the basis element `v_j`.** For every position `p`, the
 `p`-th coefficient of `v_j = X^{(d/2k)·j} + σ_{-1}(X^{(d/2k)·j})` is: `2` at `p = 0` when `j = 0`;
 otherwise `+1` at `p = (d/2k)·j`, `-1` at the complementary position `p = d - (d/2k)·j`, and `0`
 elsewhere. This extends `vElt_coeff` (which only covers the positions `(d/2k)·s`) to all positions,
 pinning down the *support* of `v_j` — at most two nonzero coefficients. -/
-theorem vElt_coeff_full (α κ : ℕ) (hκ : κ + 1 ≤ α) (j : Fin (2 ^ κ)) {p : ℕ} (hp : p < 2 ^ α) :
-    (vElt α κ hκ j).val.1.coeff p
+theorem vElt_coeff_full (α κ : ℕ) (hκ : κ + 1 ≤ α) (j : Fin (2 ^ κ)) {p : ℕ} :
+    (vElt α κ j).val.1.coeff p
       = if (j : ℕ) = 0 then (if p = 0 then (2 : R) else 0)
         else if p = 2 ^ (α - κ - 1) * (j : ℕ) then 1
              else if p = 2 ^ α - 2 ^ (α - κ - 1) * (j : ℕ) then -1 else 0 := by
@@ -574,11 +584,11 @@ theorem vElt_coeff_full (α κ : ℕ) (hκ : κ + 1 ≤ α) (j : Fin (2 ^ κ)) {
   rw [Xpow_coeff_of_lt α hejα p]
   by_cases hj0 : (j : ℕ) = 0
   · have he0 : e = 0 := by rw [he_def, hj0, Nat.mul_zero]
-    rw [if_pos hj0, he0, conjAut_Xpow, Nat.zero_mul, Xpow_coeff_of_lt α (by positivity) p]
+    rw [ite_eq_left hj0, he0, conjAut_Xpow, Nat.zero_mul, Xpow_coeff_of_lt α (by positivity) p]
     split_ifs with h <;> norm_num
   · have hepos : 0 < e := by
       rw [he_def]; exact Nat.mul_pos (by positivity) (Nat.pos_of_ne_zero hj0)
-    rw [if_neg hj0, conjAut_Xpow_eq_neg α hepos hejα, Rq.neg_val, CPolynomial.coeff_neg,
+    rw [ite_eq_right hj0, conjAut_Xpow_eq_neg α hejα, Rq.neg_val, CPolynomial.coeff_neg,
       Xpow_coeff_of_lt α (by omega : 2 ^ α - e < 2 ^ α) p]
     split_ifs with h1 h2 <;> first | (exfalso; omega) | ring
 

@@ -5,7 +5,8 @@ Authors: Quang Dao, scaraven
 -/
 module
 
-public import Mathlib.Logic.Basic
+public import Mathlib.Basic.Logic.Basic
+public import Mathlib.Logic.Function.Basic
 public import CompPoly.Data.Classes.DCast
 
 /-!
@@ -39,15 +40,6 @@ theorem heq_apply {α α' : Sort u} {β β' : Sort v} (hα : α = α') (hβ : β
   obtain rfl := eq_of_heq hf
   obtain rfl := eq_of_heq ha
   rfl
-
-/-- Extensionality for `HEq` of non-dependent functions: two functions between propositionally
-equal domains and codomains are `HEq` as soon as they agree on `HEq` arguments. -/
-theorem heq_funext {α α' : Sort u} {β β' : Sort v} (hα : α = α') (hβ : β = β')
-    {f : α → β} {f' : α' → β'}
-    (h : ∀ (a : α) (a' : α'), HEq a a' → HEq (f a) (f' a')) : HEq f f' := by
-  subst hα
-  subst hβ
-  exact heq_of_eq (funext fun a => eq_of_heq (h a a HEq.rfl))
 
 /-- Extensionality for `HEq` of dependent functions over a *fixed* domain: two sections of
 propositionally equal families are `HEq` as soon as they agree pointwise. -/

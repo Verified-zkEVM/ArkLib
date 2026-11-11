@@ -78,8 +78,8 @@ This is definitionally the `digit` field of `balancedZmodDigitDecomposition`
 (`balancedDigit_eq_digit`, `rfl`): that field never mentions the structure's `hb`/`hq` arguments,
 which are consumed only by `reconstruct`. Erasing them here is what lets `rhoDigits` — and hence
 `liftMessage`, `liftShort` and the `w̃` table — be stated without dragging `1 < b` and `q ≤ b ^ δ`
-through every downstream signature; the two hypotheses reappear exactly where they are needed, on
-the reconstruction lemma. -/
+through every downstream signature; the power bound reappears where it is needed, on the
+reconstruction lemma. -/
 def balancedDigit (b digits : ℕ) (c : ZMod q) (e : ℕ) : ZMod q :=
   (((Nat.digits b (c + balancedShift b digits).val).getD e 0 : ℕ) : ZMod q)
     - ((b / 2 : ℕ) : ZMod q)
@@ -94,18 +94,40 @@ theorem balancedDigit_eq_digit {b digits : ℕ} (hb : 1 < b) (hq : q ≤ b ^ dig
 
 /-- **Coefficient-level reconstruction**: the `δ` balanced digits of a residue recombine to it
 under the public weights `b^u`. Inherited from `DigitDecomposition.reconstruct`. -/
-theorem balancedDigit_reconstruct {b digits : ℕ} (hb : 1 < b) (hq : q ≤ b ^ digits) (c : ZMod q) :
-    ∑ e : Fin digits, (b : ZMod q) ^ (e : ℕ) * balancedDigit b digits c (e : ℕ) = c :=
-  (balancedZmodDigitDecomposition b digits hb hq).reconstruct c
+theorem balancedDigit_reconstruct {b digits : ℕ} (hq : q ≤ b ^ digits) (c : ZMod q) :
+    ∑ e : Fin digits, (b : ZMod q) ^ (e : ℕ) * balancedDigit b digits c (e : ℕ) = c := by
+  by_cases hb : 1 < b
+  · exact (balancedZmodDigitDecomposition b digits hb hq).reconstruct c
+  · have hp : b ^ digits ≤ 1 := by
+      simpa using Nat.pow_le_pow_left (by omega : b ≤ 1) digits
+    have hq1 : q = 1 := by have := NeZero.ne q; omega
+    subst q
+    exact Subsingleton.elim _ _
 
 /-- **Core per-digit bound**, ball form: every balanced digit is `⌊b/2⌋`-bounded as a centered
 residue — for *every* input, with no shortness hypothesis on `c`. This is what makes the digit
 encoding unconditional where `rhoShort_half` was forced up to `q/2`. -/
-theorem balancedDigit_valMinAbs_natAbs_le {b digits : ℕ} (hb : 1 < b) (hq : q ≤ b ^ digits)
-    (hbq : b ≤ q / 2) (c : ZMod q) {e : ℕ} (he : e < digits) :
+theorem balancedDigit_valMinAbs_natAbs_le {b digits : ℕ} (hb : 1 < b)
+    (c : ZMod q) {e : ℕ} :
     (balancedDigit b digits c e).valMinAbs.natAbs ≤ b / 2 := by
-  rw [show e = ((⟨e, he⟩ : Fin digits) : ℕ) from rfl, balancedDigit_eq_digit hb hq]
-  exact balancedZmodDigit_natAbs_le hb hq hbq c _
+  by_cases hhalf : q / 2 ≤ b / 2
+  · exact (ZMod.natAbs_valMinAbs_le _).trans hhalf
+  have hq0 : 0 < q := Nat.pos_of_ne_zero (NeZero.ne q)
+  unfold balancedDigit
+  set u := (Nat.digits b (c + balancedShift b digits).val).getD e 0 with hu
+  have hub : u < b := by
+    rcases lt_or_ge e (Nat.digits b (c + balancedShift b digits).val).length with hlt | hge
+    · rw [hu, List.getD_eq_getElem _ _ hlt]
+      exact Nat.digits_lt_base hb (List.getElem_mem _)
+    · rw [hu, List.getD_eq_default _ _ hge]; omega
+  have hval : ((u : ZMod q) - ((b / 2 : ℕ) : ZMod q)).valMinAbs
+      = (u : ℤ) - ((b / 2 : ℕ) : ℤ) := by
+    refine (ZMod.valMinAbs_spec _ _).mpr ⟨?_, ?_⟩
+    · simp only [Int.cast_sub, Int.cast_natCast]
+    · rw [Set.mem_Ioc]
+      omega
+  rw [hval]
+  omega
 
 end BalancedDigit
 
@@ -139,13 +161,21 @@ below the ring dimension, and zero above it. -/
   rw [rhoDigits, CPolynomial.coeff_ofFinCoeff]
 
 omit [NeZero q] in
+/-- Over a constant modulus every quotient digit is zero: `rhoDigits` truncates at `deg φ = 0`. -/
+theorem rhoDigits_eq_zero_of_natDegree_eq_zero (hd : Φ.φ.natDegree = 0) (b : ℕ)
+    (ρ : CPolynomial (ZMod q)) (u : ℕ) : rhoDigits Φ b ρ u = 0 := by
+  rw [CPolynomial.eq_iff_coeff]
+  intro k
+  simp [rhoDigits_coeff, hd, CPolynomial.coeff_zero]
+
+omit [NeZero q] in
 /-- Quotient digits are `d`-wide blocks: `natDegree ≤ d − 1`, the same degree bound
 `LiftedWitness.hρ` imposes on the rows they decompose. So a digit is a legitimate quotient-shaped
 object, and `Rq.ofFinCoeff` reads it back into `Rq Φ` losslessly. -/
 theorem rhoDigits_natDegree_le (b : ℕ) (ρ : CPolynomial (ZMod q)) (u : ℕ) :
     (rhoDigits Φ b ρ u).toPoly.natDegree ≤ Φ.φ.natDegree - 1 := by
   refine Polynomial.natDegree_le_iff_coeff_eq_zero.mpr fun k hk => ?_
-  rw [← CPolynomial.coeff_toPoly, rhoDigits_coeff, if_neg (by omega)]
+  rw [← CPolynomial.coeff_toPoly, rhoDigits_coeff, ite_eq_right (by omega)]
 
 omit [NeZero q] in
 /-- Every digit coefficient of every quotient row is `⌊b/2⌋`-bounded, unconditionally.
@@ -154,12 +184,12 @@ This is the honest prover's per-digit norm obligation, and it holds for an **arb
 shortness hypothesis on the quotient, no assumption that the commitment key is short. It is the
 whole point of the encoding: the quotient block of the committed vector is short by construction,
 where the raw block was only `q/2`-bounded (`rhoShort_half`). -/
-theorem rhoDigits_valMinAbs_natAbs_le {b : ℕ} (hb : 1 < b) (hbq : b ≤ q / 2)
-    (ρ : CPolynomial (ZMod q)) {u : ℕ} (hu : u < rhoDigitCount q b) (k : ℕ) :
+theorem rhoDigits_valMinAbs_natAbs_le {b : ℕ} (hb : 1 < b)
+    (ρ : CPolynomial (ZMod q)) (u k : ℕ) :
     ((rhoDigits Φ b ρ u).coeff k).valMinAbs.natAbs ≤ b / 2 := by
   rw [rhoDigits_coeff]
   split
-  · exact balancedDigit_valMinAbs_natAbs_le hb (Nat.le_pow_clog hb q) hbq _ hu
+  · exact balancedDigit_valMinAbs_natAbs_le hb _
   · simp
 
 omit [NeZero q] in
@@ -181,10 +211,10 @@ theorem rhoDigits_reconstruct {b : ℕ} (hb : 1 < b) (hd : 0 < Φ.φ.natDegree)
   rw [Polynomial.finsetSum_coeff]
   simp only [Polynomial.coeff_C_mul, hcoe]
   by_cases hk : k < Φ.φ.natDegree
-  · simp only [if_pos hk]
-    rw [balancedDigit_reconstruct hb (Nat.le_pow_clog hb q) (ρ.coeff k),
+  · simp only [ite_eq_left hk]
+    rw [balancedDigit_reconstruct (Nat.le_pow_clog hb q) (ρ.coeff k),
       ← CPolynomial.coeff_toPoly]
-  · simp only [if_neg hk, mul_zero, Finset.sum_const_zero]
+  · simp only [ite_eq_right hk, mul_zero, Finset.sum_const_zero]
     exact Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)
 
 omit [NeZero q] in

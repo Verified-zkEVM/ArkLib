@@ -33,16 +33,32 @@ namespace ArkLib.Lattices.CyclotomicModulus
 
 variable (q : ℕ) [Fact (Nat.Prime q)] [NeZero q] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
 
+omit [NeZero q] in
 /-- **`ψ` is bijective** (Hachi [NOZ26, §3, Theorem 2]): injective (from the non-degenerate trace
 pairing, `psi_injective`) and a cardinality match `|(R_q^H)^{d/k}| = (q^k)^{d/k} = q^d = |R_q|`. -/
 theorem psi_bijective (α κ : ℕ) (h2 : (2 : ZMod q) ≠ 0) (hk : 2 * 2 ^ κ ∣ 2 ^ α) :
     Function.Bijective (psi (R := ZMod q) α (2 ^ κ)) := by
   have hκ : κ + 1 ≤ α := succ_le_of_two_mul_two_pow_dvd hk
   rw [Fintype.bijective_iff_injective_and_card]
-  refine ⟨psi_injective α (2 ^ κ) h2 ⟨κ, rfl⟩ hk, ?_⟩
+  refine ⟨psi_injective α (2 ^ κ) h2 hk, ?_⟩
   rw [Fintype.card_fun, Fintype.card_fin, card_fixedSubring_eq q α κ h2 hk, Rq.card_powTwo,
     Nat.pow_div (by omega) (by norm_num), ← pow_mul]
   congr 1
   rw [← pow_add]; congr 1; omega
+
+/-- Fixed-subring linear coordinates of the packing map. -/
+noncomputable def psiLinearEquiv (α κ : ℕ) (h2 : (2 : ZMod q) ≠ 0)
+    (hk : 2 * 2 ^ κ ∣ 2 ^ α) :
+    (Fin (2 ^ α / 2 ^ κ) → fixedSubring (R := ZMod q) α (2 ^ κ)) ≃ₗ[
+        fixedSubring (R := ZMod q) α (2 ^ κ)]
+      Rq (powTwoCyclotomic (R := ZMod q) α) :=
+  LinearEquiv.ofBijective (psiLinearMap α (2 ^ κ)) (psi_bijective q α κ h2 hk)
+
+omit [NeZero q] in
+/-- The linear equivalence computes `psi`. -/
+@[simp] theorem psiLinearEquiv_apply (α κ : ℕ) (h2 : (2 : ZMod q) ≠ 0)
+    (hk : 2 * 2 ^ κ ∣ 2 ^ α)
+    (a : Fin (2 ^ α / 2 ^ κ) → fixedSubring (R := ZMod q) α (2 ^ κ)) :
+    psiLinearEquiv q α κ h2 hk a = psi α (2 ^ κ) a := rfl
 
 end ArkLib.Lattices.CyclotomicModulus

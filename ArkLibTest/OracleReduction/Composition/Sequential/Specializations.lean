@@ -12,8 +12,8 @@ import ArkLib.OracleReduction.Composition.Sequential.Completeness
 # Specialized composition contracts and their axiom boundaries
 
 The one-message specialization retains arbitrary effectful component provers and accepts the
-all-distributions suffix premise used by the original theorem. The n-ary and fixed-prefix RBR
-results must not acquire dependencies on the legacy admitted composition contracts.
+all-distributions suffix premise used by the original theorem. The n-ary and RBR
+results depend only on the proved guarded composition theorems.
 -/
 
 open OracleComp OracleSpec ProtocolSpec
@@ -78,25 +78,11 @@ info: 'Reduction.seqCompose_perfectCompleteness_of_pure' depends on axioms:
 #print axioms Reduction.seqCompose_perfectCompleteness_of_pure
 
 /--
-info: 'Verifier.append_rbrSoundnessWorstCase_of_pure_first' depends on axioms:
+info: 'Verifier.append_rbrSoundness_of_pure_first' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Verifier.append_rbrSoundnessWorstCase_of_pure_first
-
-/--
-info: 'Verifier.append_rbrSoundness_of_worst_case_of_pure_first' depends on axioms:
-[propext, Classical.choice, Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Verifier.append_rbrSoundness_of_worst_case_of_pure_first
-
-/--
-info: 'OracleVerifier.append_rbrSoundness_of_worst_case_of_pure_first' depends on axioms:
-[propext, Classical.choice, Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms OracleVerifier.append_rbrSoundness_of_worst_case_of_pure_first
+#print axioms Verifier.append_rbrSoundness_of_pure_first
 
 /--
 info: 'AppendSpecializationRegression.message_only_suffix_factorization' depends on axioms:

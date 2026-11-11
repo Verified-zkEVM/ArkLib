@@ -14,13 +14,14 @@ public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Pac
   A sequence of scalar challenge rounds reducing the batched polynomial identities
   `H₀ ≡ 0 ∧ H_α ≡ 0` (`relBatched`, `ZeroCheck/Batch.lean`) to evaluations at direct points; the
   two evaluation claims then seed the sumcheck (`Sumcheck/Bridge.lean`). Stated over the lifted
-  witness `LiftedWitness Φ μ n` and the weak-binding `LiftCom`.
+  witness `LiftedWitness Φ μ n` and a generic commitment `LiftCom`.
 
   ## Deviation from the paper's Lemma 10
 
-  What fails in [NOZ26] is not Figure 5 but its proof: the attempt to certify the polynomial
-  identity `H₀ ≡ 0` *deterministically*, from a coordinate-wise star of accepting transcripts. Two
-  things go wrong at once (full analysis in `docs/kb/audits/noz26-zero-check-lemma10.md`):
+  A coordinate-wise star of accepting transcripts does not by itself certify the polynomial
+  identity `H₀ ≡ 0` deterministically. This gap in [NOZ26]'s argument establishes neither an
+  attack nor a knowledge-soundness theorem for Figure 5. The identity-testing argument has two
+  distinct issues (full analysis in `docs/kb/audits/noz26-zero-check-lemma10.md`):
 
   * *Shape.* `SS(S, ℓ, k)` is star-shaped by definition, so a coordinate-wise family only certifies
     that a multilinear `H` vanishes on the axis cross through the family's center — which for two
@@ -28,46 +29,45 @@ public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Pac
     (`MvPolynomial.exists_nonzero_vanishing_on_axis_cross`), and putting more points on the
     same arms does not help. Under the lemma's own `ℓ = 2` reading the arms carry arbitrary distinct
     challenge *vectors* rather than collinear points, so the axis cross does not apply directly;
-    there the objection is a dimension count — `D` points cannot pin down the `2 ^ m₀`-dimensional
-    space of multilinears — which is *not* formalized here.
+    there the objection is a dimension count: when `D < 2 ^ m₀`, `D` points cannot pin down
+    that space of multilinears. This dimension-count argument is not formalized here.
   * *Degree.* Lemma 10's `D = max (2 * d) (2 * b - 1)` is a degree in `α` (Lemma 9) and in the
     witness value `w̃(u, ℓ)` respectively; neither is a degree in a coordinate of `τ`. In `τ` both
     batching polynomials are multilinear, so two distinct labels per coordinate suffice. The
     printed lemma thus over-asks in `D` and under-asks in tree shape.
 
-  Since `w̃` is committed before `τ` is drawn, the *protocol* is fine: Schwartz–Zippel gives
-  knowledge error `≈ (m₀ + m₁) / |F|` for Figure 5 exactly as printed. That argument is
-  probabilistic, so it does not fit the coordinate-wise special-soundness framework this chain
-  composes in ([FMN24], `CWSSPackage`), which is why the scalar-round route below is stated
-  instead.
+  For a fixed nonzero `H₀` of total degree at most `m₀`, chosen before an independent uniform
+  point `τ₀`, Schwartz–Zippel bounds `Pr[H₀(τ₀) = 0]` by `m₀ / |F|`. The analogous estimate
+  holds for a fixed nonzero `H_α` of total degree at most `m₁` before its own independent
+  uniform point. Their sum `(m₀ + m₁) / |F|` is a conditional identity-testing estimate, not
+  a protocol knowledge-error theorem. A prior commitment alone does not establish polynomial
+  fixing for the abstract `LiftCom`. The actual protocol's fixing/binding argument, escape
+  reduction and knowledge bridge remain open. The certificate below instead gives the
+  deterministic structured-tree guarantee composed by `CWSSPackage`.
 
-  ## What the scalar rounds change, and what they do not
+  ## Scalar-round protocol
 
-  This formalization draws the coordinates of `τ₀` and `τα` as `m₀ + m₁` consecutive scalar
-  rounds. Since **no prover message separates them** (`pSpecNestedScalar` has no `P_to_V` round),
-  the *interactive* protocol is unchanged: the verifier map, the prover, and the uniform
-  distribution on `F^{m₀ + m₁}` are the same as Figure 5's. What changes is the shape of transcript
-  tree the extractor is handed — a path-dependent complete binary tree instead of a star — plus,
-  under Fiat–Shamir, the requirement that the challenge coordinates be hashed *sequentially* rather
-  than drawn from one atomic hash call.
+  `pSpecNestedZeroCheck` contains `m₀ + m₁` consecutive scalar verifier-challenge rounds and
+  no prover-message rounds. `nestedZeroCheckVerifier` splits their transcript into the direct
+  points `τ₀` and `τα` and appends these points to the statement.
 
-  Path dependence is more than is needed here (a product grid of challenge vectors in the single
-  original round would do, and is obtainable by rewinding a one-round prover). Round splitting is
-  what lets `SS(S, ℓ, k)` and [FMN24] Lemma 4 be reused verbatim; expressing a product-shaped
-  family instead would need a new soundness notion and new composition theorems.
+  The certificate uses a complete sibling-distinct binary transcript tree with `m₀ + m₁`
+  levels. Its first `m₀` levels certify `H₀ ≡ 0`, and its last `m₁` levels certify `H_α ≡ 0`
+  when all valid leaf responses share one opening. Distinct valid openings instead establish the
+  escape event.
 
   ## Coordinate-wise special soundness
 
   `nestedZeroCheck_coordinateWiseSpecialSoundWithEscape` reads the complete binary transcript tree
   and lands in one of two cases:
 
-  1. Two leaves carry **distinct** openings of the shared commitment `t`. Both are short (the
-     `liftShort` conjunct of `relNestedZeroCheck`), so the pair is a member of `LiftCom.Collision`
-     and the escape event `nestedZeroCheckEsc` fires — a Module-SIS break of the fixed key by
-     [NOZ26] Lemma 7 / Remark 2. Weak binding is **not** a field of `LiftCom` and not an extractor
-     output: it is an event on `(statement, tree)`, which is what keeps it from being trivially
-     satisfiable (a compressing commitment's collision set is never empty).
-  2. All leaves carry one opening `w̃`: `H₀` is read through the first `m₀` levels of the *one*
+  1. Two valid leaf responses give distinct short openings of the shared commitment `t`.
+     Their `liftShort` conjuncts place the pair in `K.Collision`, establishing the escape event
+     `nestedZeroCheckEsc`. This is an abstract collision event, not an algorithm producing a
+     collision or an unconditional Module-SIS conclusion. The latter requires a concrete
+     commitment instantiation and a reduction. `LiftCom` itself assumes no binding property.
+  2. All valid leaf responses share one opening `w̃`.
+     `H₀` is read through the first `m₀` levels of the *one*
      evaluation tree and `H_α` through its last `m₁` levels
      (`NestedEvaluationTree.eq_zero_of_vanishes_comp`), yielding both polynomial identities, hence
      `relBatched` membership.
@@ -79,23 +79,54 @@ public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Pac
   from validity witnesses in order to invoke the evaluation-tree argument. Tree size:
   `nestedZeroCheck_numLeaves`/`_lt`.
 
+  ## Knowledge-error reference
+
+  [FMN24] Lemma 2.31 gives the numeric term `μ * ℓ * (k - 1) / |S|`. For these scalar rounds,
+  `μ = m₀ + m₁`, `ℓ = 1`, `k = 2`, hence the candidate is `(m₀ + m₁) / |F|`, matching the
+  Schwartz–Zippel term numerically. This is not a proved knowledge bound here: tree acquisition,
+  the actual `2 ^ (m₀ + m₁)` leaf-growth bound, efficient extraction and escape-producing
+  reductions remain obligations. The printed growth condition must not replace the actual leaf
+  bound in this binary case. [NOZ26] Lemma 4 prints a different formula; under the intended
+  accepting-tree CWSS reading it cannot be used as a general knowledge bound. See
+  `docs/kb/audits/noz26-zero-check-lemma10.md` for the primary-source comparison and counterexample.
+
   ## Where the norm sits
 
-  `relNestedZeroCheck` carries `liftShort` because that predicate is the commitment's *shortness
-  index*: `LiftCom.Collision` is defined on pairs of distinct **short** openings, which is what an
-  Ajtai-style scheme's binding actually gives — a collision of two long openings is no Module-SIS
-  solution. So the conjunct is what makes the escape event sound, not a range assumption smuggled
-  in ahead of its proof.
+  `relNestedZeroCheck` explicitly requires `liftShort`. Two distinct valid openings of the
+  same commitment therefore form a `K.Collision`: both satisfy its shortness index. For a
+  concrete Ajtai commitment, short openings provide a bound on their difference; arbitrary
+  long openings have no guaranteed short-difference bound.
 
-  The range claim proper — the `‖z‖∞ ≤ bound` half of `liftShort` — is still **derived**, at the
-  batching bridge, from `H₀ ≡ 0` (`hZero_eq_zero_imp_liftShort`), and `relBatched` remains
-  norm-free. (Its quotient half needs no derivation: the committed block holds base-`b` digits,
-  which are `⌊b/2⌋`-bounded by construction.) That separation is what this seam has to preserve,
-  because this seam genuinely cannot recover the range identity: a single evaluation
-  `H₀(τ₀) = 0` never implies `H₀ ≡ 0`.
+  The batching bridge derives `liftShort` from `H₀ ≡ 0` under its arity, base and bound
+  hypotheses (`hZero_eq_zero_imp_liftShort`); `relBatched` has no shortness conjunct.
+  For an admissible digit base `bDig` (`1 < bDig ≤ q / 2`), the encoding itself bounds each
+  quotient digit by `⌊bDig/2⌋` (`rhoDigits_valMinAbs_natAbs_le`). The point relation supplies
+  shortness explicitly: a single evaluation `H₀(τ₀) = 0` does not in general imply `H₀ ≡ 0`.
+
+  ## Source correspondence
+
+  `relNestedZeroCheck` is the point relation used in the scalar-round repair of [NOZ26] Figure 5.
+  `nestedZeroCheckEsc` records the binding alternative, and
+  `nestedZeroCheck_coordinateWiseSpecialSoundWithEscape` supplies the replacement for Lemma 10.
+  A Module-SIS interpretation requires a concrete commitment instantiation and collision
+  reduction, as in [NOZ26] Lemma 7 / Remark 2. These declarations remain parametric in
+  `LiftCom` and do not supply that reduction or a hardness bound.
+
+  ## Parameter comparison
+
+  Concretely, at [NOZ26]'s `ℓ = 30` parameters (Fig. 9) the `H₀` table has `(μ + n·δ) * deg φ`
+  entries, `δ = clog_b q`. The digit widening touches only the quotient block: at `q ≈ 2 ^ 32` and
+  `deg φ = 2 ^ 10` it grows from `n·d ≈ 2 ^ 12.3` to `n·δ·d ≤ 2 ^ 17.3` (`δ ≤ 32`, maximal at
+  `b = 2`), adding `≲ 0.25%` to the `≈ 2 ^ 26` that `μ·d` contributes. The widened table can
+  require `m₀ = 27` if it crosses the `2 ^ 26` cap. If `m₀ = 26` and `m₁ = 3` (five rows),
+  the tree has `2 ^ 29` leaves, against the `2 * D - 1 = 4095` of the printed Lemma 10's
+  `SS(F, 2, D)` family at `D = max (2 * d) (2 * b - 1) = 2048`: roughly `2 ^ 17` times as many.
+  CWSS leaf counts multiply across rounds.
 
   ## References
 
+  * [Fenzi, G., Moghaddas, H., and Nguyen, N. K., *Lattice-Based Polynomial Commitments:
+      Towards Asymptotic and Concrete Efficiency*][FMN24]
   * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
       Polynomial Commitments over Extension Fields*][NOZ26]
 -/
@@ -148,19 +179,10 @@ size, with two caveats on what they establish:
 * `nestedZeroCheck_numLeaves_lt` is arithmetic on naturals: minimality of `m₀`, `m₁` enters as its
   hypotheses rather than being enforced, since `hμn` and `hn` bound the arities from below only.
 
-Concretely, at [NOZ26]'s `ℓ = 30` parameters (Fig. 9) the `H₀` table has `(μ + n·δ) * deg φ`
-entries, `δ = clog_b q`. The digit widening touches only the quotient block: at `q ≈ 2 ^ 32` and
-`deg φ = 2 ^ 10` it grows from `n·d ≈ 2 ^ 12.3` to `n·δ·d ≤ 2 ^ 17.3` (`δ ≤ 32`, maximal at
-`b = 2`), adding `≲ 0.25%` to the `≈ 2 ^ 26` that `μ·d` contributes — so the table is still
-`≈ 2 ^ 26` and `m₀ = 26`, and `rlinRows = 5` rows gives `m₁ = 3`: about `2 ^ 29` transcripts,
-against the `2 * D - 1 = 4095` of the printed Lemma 10's `SS(F, 2, D)` family at
-`D = max (2 * d) (2 * b - 1) = 2048`. Polynomial in the witness dimensions, but roughly `2 ^ 17`
-times the paper's family, and CWSS leaf counts multiply across rounds.
-
 Only `2 ^ m₀ + 2 ^ m₁ - 1` leaves are *used* (`H₀` needs one accepting continuation per
 `τ₀`-prefix, `H_α` one complete `m₁`-subtree), while `ChallengeTree.IsStructured` demands the
-complete tree. Converting coordinate-wise special soundness into a knowledge error would need
-`K = poly(λ)` in an [FMN24] Lemma-4-style bridge, which this repository does not formalize. -/
+complete tree. A knowledge conversion must bound the actual leaf count by a polynomial in the
+security parameter; the probability and execution obligations in the module overview remain open. -/
 
 /-- The evaluation tree the adapter produces has exactly `2 ^ (m₀ + m₁)` leaves: `m₀ + m₁` challenge
 rounds, two pairwise-distinct children each. -/
@@ -376,7 +398,7 @@ def nestedZcMapStmt {TCom : Type} (stmt : LiftStatement Φ TCom F n μ)
   NestedZeroCheckStatement Φ TCom F n μ m₀ m₁ :=
   ⟨stmt.1, stmt.2.1, stmt.2.2, τ₀, τα⟩
 
-/-- Figure-5 verifier: read `m₀ + m₁` consecutive scalar challenges, split them into
+/-- Scalar-round verifier: read `m₀ + m₁` consecutive scalar challenges, split them into
 the direct points `τ₀` and `τα`, and append those points to the statement. -/
 def nestedZeroCheckVerifier {TCom : Type} :
     Verifier oSpec (LiftStatement Φ TCom F n μ)
@@ -394,7 +416,7 @@ def nestedZeroCheckVerifierPureForm {TCom : Type} :
     (nestedZeroCheckTauZero tr) (nestedZeroCheckTauAlpha tr)
   verify_eq := fun _ _ => rfl
 
-/-- Figure-5 honest prover. Since all rounds are verifier challenges, its state is the
+/-- Honest scalar-round prover. Since all rounds are verifier challenges, its state is the
 input statement/witness together with the scalar prefix received so far. The stage is generic in
 the witness type — it only transports whatever the commitment's openings are.
 
@@ -414,14 +436,8 @@ def nestedZeroCheckProver {TCom Wit : Type} :
       (fun i => challenges (Fin.castAdd m₁ i))
       (fun i => challenges (Fin.natAdd m₀ i)), wit)
 
-/-- The Figure-5 zero-check **protocol**: the honest prover paired with the verifier.
-
-This is the primary object of the link, and it is deliberately computable — it is what an honest
-execution runs, what completeness is stated about (`ZeroCheck/Completeness.lean`), and what the
-extraction rail consumes. The soundness certificate `nestedZeroCheckPackage` is a statement
-*about* it: that package's `verifier` field is defined as this reduction's verifier, so the two
-security directions cannot drift apart onto different verifiers. The certificate stays
-`noncomputable` because it carries an extractor; nothing of that leaks into the protocol. -/
+/-- The computable scalar-round zero-check protocol, pairing `nestedZeroCheckProver` with
+`nestedZeroCheckVerifier`. Its verifier is also used by `nestedZeroCheckPackage`. -/
 def nestedZeroCheckReduction {TCom Wit : Type} :
     Reduction oSpec (LiftStatement Φ TCom F n μ) Wit
       (NestedZeroCheckStatement Φ TCom F n μ m₀ m₁) Wit
@@ -429,17 +445,12 @@ def nestedZeroCheckReduction {TCom Wit : Type} :
   prover := nestedZeroCheckProver Φ m₀ m₁
   verifier := nestedZeroCheckVerifier Φ m₀ m₁
 
-/-- Figure-5 point relation: an opening of `t` at which the two computable batching polynomials
-vanish at the direct points carried by the statement.
+/-- An opening of the statement's commitment satisfying `liftShort`, with both batching
+polynomials zero at the statement's evaluation points and `bound ≤ stmt.rlin.bound`.
 
-The `liftShort` conjunct is the commitment's **shortness index**, not a range assumption smuggled
-in: it is what makes a pair of colliding branch openings a member of `LiftCom.Collision`, hence a
-Module-SIS break under [NOZ26] Lemma 7 / Remark 2. Its `RhoShort` half — the range claim Lemma 10
-exists to establish — is still *derived*, at the batching bridge, from `H₀ ≡ 0`
-(`hZero_eq_zero_imp_liftShort`); it is never assumed here. What this seam genuinely cannot
-recover, and does not pretend to, is the range identity itself: a single evaluation
-`H₀(τ₀) = 0` never implies `H₀ ≡ 0`
-(`MvPolynomial.exists_nonzero_vanishing_on_axis_cross`). -/
+The shortness conjunct ensures that distinct valid openings of the same commitment form a
+`K.Collision`. This relation asserts evaluations at the statement's points, not zero-polynomial
+identities. -/
 def relNestedZeroCheck (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F) (b : ℕ) :
     Set (NestedZeroCheckStatement Φ K.TCom F n μ m₀ m₁ × LiftedWitness Φ μ n) :=
@@ -473,17 +484,12 @@ def nestedZeroCheckExtractor {TCom : Type} :
 
 /-! ## The weak-binding escape event -/
 
-/-- **The zero-check's escape event** (the weak-binding case of the corrected Lemma 10): the tree
-admits per-leaf `relNestedZeroCheck`-responses among which two are **distinct short openings** of
-the statement's commitment `t` — a member of `LiftCom.Collision`, hence a Module-SIS break of the
-fixed key by [NOZ26] Lemma 7.
+/-- The tree admits a valid response at every leaf, with two responses forming a `K.Collision`.
+Every response satisfies `relNestedZeroCheck`, so both colliding responses open the statement's
+shared commitment and satisfy its shortness condition.
 
-Against the `ChallengeTree.EscapeEvent` contract: the collision conjunct is an unconditional break
-at *every* `(statement, tree)`; it mentions neither the extractor, nor acceptance, nor the
-sampling; and the responses are pinned to the **output** relation, which is what keeps the event
-tight — it cannot fire on trees where all leaves share one opening, which is exactly where
-extraction succeeds. Both openings automatically open `t`: `relNestedZeroCheck`'s first conjunct
-pins `K.com w = t` and every leaf's output statement carries the same `t`. -/
+This is an existential event on the statement and tree, not an algorithm producing a collision
+or a bound on that algorithm's cost. -/
 def nestedZeroCheckEsc (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F) (b : ℕ) :
     ChallengeTree.EscapeEvent (LiftStatement Φ K.TCom F n μ)
@@ -547,12 +553,13 @@ theorem nestedAssembly_escape_or_mem_relBatched
         evTree hDistinct (hVanishesα hcol)
 
 omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
-/-- **Escape-threaded coordinate-wise special soundness of the nested scalar-round zero-check**
-(the corrected Hachi Lemma 10), at the named extractor `nestedZeroCheckExtractor`.
+/-- Coordinate-wise special soundness at `nestedZeroCheckExtractor`, with `nestedZeroCheckEsc`
+as the escape event. The extraction argument uses two windows of one depth-`m₀ + m₁`
+evaluation tree.
 
-The weak-binding failure mode is the escape disjunct `nestedZeroCheckEsc`; the extraction side is
-the evaluation-tree zero test through the two windows of one depth-`m₀ + m₁` tree. Tree size is
-machine-checked by `nestedZeroCheck_numLeaves`/`_lt`. -/
+`nestedZeroCheck_numLeaves` and `nestedZeroCheck_numLeaves_lt` separately bound the
+evaluation-tree adapter's leaf count.
+This theorem bounds neither tree acquisition nor extraction time. -/
 theorem nestedZeroCheck_coordinateWiseSpecialSoundWithEscape
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))

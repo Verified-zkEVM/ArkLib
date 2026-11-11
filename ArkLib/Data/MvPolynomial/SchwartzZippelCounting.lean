@@ -5,10 +5,9 @@ Authors: Katerina Hristova, Aristotle
 -/
 module
 
-public import ArkLib.Data.Probability.Notation
+public import ArkLib.Data.Probability.Uniform
 public import Mathlib.Algebra.MvPolynomial.SchwartzZippel
-public import Mathlib.Data.Rat.Star
-public import Mathlib.Probability.Distributions.Uniform
+public import Mathlib.Algebra.Order.Star.Rat
 public import Mathlib.RingTheory.SimpleRing.Principal
 
 /-! ## Schwartz-Zippel derived bound
@@ -32,10 +31,13 @@ theorem schwartz_zippel_counting
     {s : ℕ}
     (f : MvPolynomial (Fin s) F) (hf : f ≠ 0)
     (S : Fin s → Finset F)
-    (d m : ℕ) (hd : f.totalDegree ≤ d) (hm_pos : 0 < m)
+    (d m : ℕ) (hd : f.totalDegree ≤ d)
     (hm : ∀ i, m ≤ (S i).card) :
     (Finset.filter (fun x => MvPolynomial.eval x f = 0) (Fintype.piFinset S)).card * m
     ≤ d * ∏ i, (S i).card := by
+  by_cases hm_zero : m = 0
+  · simp [hm_zero]
+  have hm_pos : 0 < m := Nat.pos_of_ne_zero hm_zero
   have h_schwartz_zippel : (Finset.card (Finset.filter (fun x => (MvPolynomial.eval x) f = 0)
       (Fintype.piFinset S))) / (∏ i, (S i).card : ℝ≥0∞) ≤ d / (m : ℝ≥0∞) := by
     convert MvPolynomial.schwartz_zippel_sup_sum hf S |> le_trans <| ?_ using 1
@@ -77,14 +79,6 @@ theorem schwartz_zippel_counting
   · exact Or.inr (ENNReal.div_ne_top (by aesop) (by aesop))
   · exact Or.inl <| ENNReal.prod_ne_top fun i _ => ENNReal.natCast_ne_top _
 
-/-- The uniform probability of a decidable event equals the ratio of favorable outcomes
-to total outcomes, expressed in `ℝ≥0∞`. -/
-lemma uniform_prob_eq_card_div {α : Type} [Fintype α] [Nonempty α]
-    (P : α → Prop) [DecidablePred P] :
-    Pr_{let x ←$ᵖ α}[P x] = ↑((Finset.univ.filter (fun x => P x)).card) / ↑(Fintype.card α) := by
-  erw [PMF.map_apply]
-  simp [div_eq_mul_inv, Finset.sum_ite]
-
 /-- The number of elements in `∀ i, ↥(S i)` satisfying `eval (↑·) f = 0` equals
 the number of elements in `Fintype.piFinset (fun i => (S i).toFinset)` satisfying
 `eval · f = 0`. -/
@@ -104,24 +98,20 @@ lemma card_filter_eval_subtype_eq_piFinset
     true_and, exists_prop, and_imp]
     exact fun b hb hb' => ⟨fun i => ⟨b i, hb i⟩, hb', rfl⟩
 
-/- If `k * m ≤ d * n` with `m > 0` and `n > 0`, then `k / n ≤ d / m` in `ℝ≥0∞`. -/
+/- If `k * m ≤ d * n` with `m > 0`, then `k / n ≤ d / m` in `ℝ≥0∞`. -/
 lemma ENNReal.div_le_div_of_mul_le {k n d m : ℕ}
-    (hm_pos : 0 < m) (hn_pos : 0 < n) (h : k * m ≤ d * n) :
+    (hm_pos : 0 < m) (h : k * m ≤ d * n) :
     (k : ℝ≥0∞) / n ≤ d / m := by
+  by_cases hn_zero : n = 0
+  · have hk_zero : k = 0 := by nlinarith
+    simp [hk_zero]
+  have hn_pos : 0 < n := Nat.pos_of_ne_zero hn_zero
   rw [ENNReal.div_le_iff_le_mul] <;> norm_cast
   · rw [← ENNReal.toReal_le_toReal] <;> norm_num
     · rw [div_mul_eq_mul_div, le_div_iff₀] <;> norm_cast
     · exact ENNReal.mul_ne_top (ENNReal.div_ne_top (by aesop) (by aesop)) (by aesop)
   · grind
   · exact Or.inl <| ENNReal.natCast_ne_top _
-
-/- A PMF probability is always at most `1`. -/
-lemma pmf_prob_le_one {α : Type} [Fintype α] [Nonempty α] (P : α → Prop) :
-    Pr_{let x ←$ᵖ α}[P x] ≤ 1 := by
-  erw [PMF.bind_apply, tsum_fintype]
-  refine le_trans (Finset.sum_le_sum fun _ _ => mul_le_of_le_one_right ( by positivity ) ?_) ?_
-  · exact PMF.coe_le_one _ True
-  · norm_num
 
 /-- Probability of a nonzero polynomial evaluating to zero over a uniform product distribution
 is at most `d / m`, where `d` bounds the total degree and `m` bounds below the cardinality
@@ -131,47 +121,54 @@ of each factor. This bridges `schwartz_zippel_counting` with the probability for
 lemma prob_eval_zero_le_div
     {F : Type} [Field F]
   {s : ℕ}
-  {S : Fin s → Set F} [∀ i, Fintype ↥(S i)] [∀ i, Nonempty ↥(S i)]
+  {S : Fin s → Set F} [∀ i, Fintype ↥(S i)]
+  [SampleableType (∀ i, ↥(S i))]
   (f : MvPolynomial (Fin s) F) (hf : f ≠ 0)
-  (d m : ℕ) (hd : f.totalDegree ≤ d) (hm_pos : 0 < m)
+  (d m : ℕ) (hd : f.totalDegree ≤ d)
   (hm : ∀ i, m ≤ (S i).toFinset.card) :
-  Pr_{let x ←$ᵖ (∀ i, ↥(S i))}[MvPolynomial.eval (fun i => (↑(x i) : F)) f = 0] ≤
+  Pr{let x ← $ᵗ (∀ i, ↥(S i))}[MvPolynomial.eval (fun i => (↑(x i) : F)) f = 0] ≤
     (d : ℝ≥0∞) / m := by
   classical
-  convert ENNReal.div_le_div_of_mul_le hm_pos _ _ using 1
-  · convert uniform_prob_eq_card_div _
-    · infer_instance
-  · exact Fintype.card_pos_iff.mpr ⟨fun _ => Classical.arbitrary _⟩
-  · convert schwartz_zippel_counting f hf ( fun i => ( S i ).toFinset ) d m hd hm_pos hm using 1
-    · convert congr_arg₂ (· * ·) (card_filter_eval_subtype_eq_piFinset S f) rfl
-    · rw [Fintype.card_pi]
-      aesop
+  rw [@SampleableType.prEvent_uniformSample _ _ _
+    (fun x : ∀ i, ↥(S i) => MvPolynomial.eval (fun i => (↑(x i) : F)) f = 0)
+    (fun _ => Classical.propDecidable _)]
+  by_cases hm_zero : m = 0
+  · subst m
+    by_cases hd_zero : d = 0
+    · subst d
+      have hc := MvPolynomial.totalDegree_eq_zero_iff_eq_C.mp (Nat.eq_zero_of_le_zero hd)
+      have hc_ne : f.coeff 0 ≠ 0 := by
+        intro hz
+        exact hf (by simpa [hz] using hc)
+      rw [hc]
+      simp [hc_ne]
+    · have htop : (d : ℝ≥0∞) / 0 = ⊤ := by simp [ENNReal.div_eq_top, hd_zero]
+      rw [Nat.cast_zero, htop]
+      exact le_top
+  have hm_pos : 0 < m := Nat.pos_of_ne_zero hm_zero
+  refine ENNReal.div_le_div_of_mul_le hm_pos ?_
+  convert @schwartz_zippel_counting F _ (Classical.decEq F) s f hf
+      (fun i => (S i).toFinset) d m hd hm using 1
+  · convert congr_arg₂ (· * ·)
+      (@card_filter_eval_subtype_eq_piFinset F _ (Classical.decEq F) s S _ f) rfl
+  · rw [Fintype.card_pi]
+    aesop
 
-/-- Full-carrier specialization of `prob_eval_zero_le_div`, transported along the
-equivalence between a product of `Set.univ` subtypes and the ordinary function type. -/
+/-- Full-carrier specialization of `prob_eval_zero_le_div`. -/
 lemma prob_eval_zero_univ_le_div
-    {F : Type} [Field F] [Fintype F] {s d : ℕ}
+    {F : Type} [Field F] [Fintype F] [SampleableType F] {s d : ℕ}
     (f : MvPolynomial (Fin s) F) (hf : f ≠ 0) (hd : f.totalDegree ≤ d) :
-    Pr_{let x ←$ᵖ (Fin s → F)}[MvPolynomial.eval x f = 0] ≤
+    Pr{let x ← $ᵗ (Fin s → F)}[MvPolynomial.eval x f = 0] ≤
       (d : ℝ≥0∞) / Fintype.card F := by
   classical
-  let S : Fin s → Set F := fun _ => Set.univ
-  let e : (∀ i, ↑(S i)) ≃ (Fin s → F) :=
-    Equiv.piCongrRight fun _ => Equiv.Set.univ F
-  have h := prob_eval_zero_le_div (S := S) f hf d (Fintype.card F) hd
-    Fintype.card_pos (fun i => by simp [S])
-  have heval :
-      (fun x : ∀ i, ↑(S i) => MvPolynomial.eval (e x) f = 0) =
-        (fun x : ∀ i, ↑(S i) =>
-          MvPolynomial.eval (fun i => (↑(x i) : F)) f = 0) := by
-    funext x
-    congr 2
-  rw [← ProbabilityTheory.Pr_uniform_equiv e
-    (fun x => MvPolynomial.eval x f = 0)]
-  change ((PMF.uniformOfFintype (∀ i, ↑(S i))).map
-    (fun x => MvPolynomial.eval (e x) f = 0)) True ≤ _
-  rw [heval]
-  exact h
+  rw [@SampleableType.prEvent_uniformSample _ _ _
+    (fun x : Fin s → F => MvPolynomial.eval x f = 0)
+    (fun _ => Classical.propDecidable _)]
+  refine ENNReal.div_le_div_of_mul_le Fintype.card_pos ?_
+  simpa only [Fintype.piFinset_univ, Finset.card_univ, Finset.prod_const,
+    Fintype.card_fin, Fintype.card_fun] using
+      @schwartz_zippel_counting F _ (Classical.decEq F) s f hf
+        (fun _ => Finset.univ) d (Fintype.card F) hd (fun _ => le_rfl)
 
 section ZeroCount
 
@@ -185,7 +182,7 @@ theorem MvPolynomial.card_zeros_le_of_totalDegree_le_fin
     #{x : Fin s → F | MvPolynomial.eval x f = 0} ≤ D * Fintype.card F ^ (s - 1) := by
   classical
   have hq : 0 < Fintype.card F := Fintype.card_pos
-  have key := schwartz_zippel_counting f hf (fun _ => Finset.univ) D (Fintype.card F) hd hq
+  have key := schwartz_zippel_counting f hf (fun _ => Finset.univ) D (Fintype.card F) hd
     (fun i => by simp)
   simp only [Fintype.piFinset_univ, Finset.card_univ, Finset.prod_const] at key
   match s with

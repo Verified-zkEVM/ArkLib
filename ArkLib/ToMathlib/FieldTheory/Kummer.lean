@@ -37,7 +37,7 @@ private lemma expand_card_pow (i : ℕ) (f : F[X]) :
   induction i with
   | zero => simp
   | succ i ih =>
-    rw [pow_succ, expand_mul, FiniteField.expand_card, map_pow, ih, ← pow_mul]
+    rw [pow_succ, expand_mul, FiniteField.Polynomial.expand_card, map_pow, ih, ← pow_mul]
 
 /-- Frobenius transport for evaluation of a polynomial over a finite field. -/
 lemma aeval_pow_card_pow {K : Type*} [CommSemiring K] [Algebra F K]

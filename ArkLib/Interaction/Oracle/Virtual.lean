@@ -7,6 +7,7 @@ module
 
 public import ArkLib.Interaction.Oracle.Source
 public import ArkLib.OracleReduction.OracleInterface
+public import ArkLib.Relation.Basic
 
 /-!
 # Virtual oracle programs
@@ -24,41 +25,12 @@ universe u v w u' w' u'' w'' t a b
 
 namespace Interaction.Oracle
 
-/-- An indexed family of realization types with explicitly selected oracle interfaces. -/
-structure OracleFamily (Index : Type u) (Realization : Index → Type v) where
-  /-- Observable interface, supplied as data rather than inferred. -/
-  interface : ∀ i, OracleInterface.{v, w} (Realization i)
-
 namespace OracleFamily
 
 variable {I : Type u} {Data : I → Type v}
 
-/-- Index carrier of the interface family. -/
-abbrev Index (_ : OracleFamily.{u, v, w} I Data) := I
-
-/-- The admissible realization type at each index. -/
-abbrev Realization (O : OracleFamily.{u, v, w} I Data) : O.Index → Type v := Data
-
-/-- The dependent query signature of the explicit interfaces. -/
-abbrev spec (O : OracleFamily.{u, v, w} I Data) := [O.Realization]ₒ' O.interface
-
-/-- Arbitrary deterministic answers, without a representability assumption. -/
-abbrev Behavior (O : OracleFamily.{u, v, w} I Data) := QueryImpl O.spec Id
-
-/-- Interpret a family of admissible realizations through its declared interfaces. -/
-def behaviorOfRealizations (O : OracleFamily.{u, v, w} I Data)
-    (data : ∀ i, O.Realization i) : O.Behavior :=
-  fun q => (O.interface q.1).answer (data q.1) q.2
-
 /-- The source whose environments are arbitrary behaviors, including unrepresentable ones. -/
 def asBehaviorSource (O : OracleFamily.{u, v, w} I Data) := SourceCtx.ofSpec O.spec
-
-/-- Pull back the indexed interface family along an arbitrary map.
-
-Repeated indices copy interface types; they do not force independently supplied realizations or
-behaviors to agree. Use a named-context view when aliases must share a realization. -/
-def reindex (O : OracleFamily.{u, v, w} I Data) {J : Type u'} (f : J → O.Index) :
-    OracleFamily J (O.Realization ∘ f) := ⟨fun j => O.interface (f j)⟩
 
 end OracleFamily
 
@@ -80,7 +52,9 @@ variable {I : Type u} {J : Type u'} {K : Type u''}
 def ofQuery (query : QueryImpl A.spec (OracleComp srcSpec)) : VirtualOracle srcSpec A :=
   ⟨query⟩
 
-/-- Evaluate each query using a deterministic source handler. -/
+/-- Evaluate each query using a deterministic source handler. Compiler inlining erases the
+realization interface: interpreting an abstract query program needs only its source handler. -/
+@[macro_inline]
 def eval (a : VirtualOracle srcSpec A) (impl : QueryImpl srcSpec Id) : A.Behavior :=
   QueryImpl.compose impl a.query
 
@@ -88,6 +62,7 @@ def eval (a : VirtualOracle srcSpec A) (impl : QueryImpl srcSpec Id) : A.Behavio
 def SemEquiv (a b : VirtualOracle srcSpec A) : Prop := ∀ impl, a.eval impl = b.eval impl
 
 /-- Identity view exports the source interface unchanged. -/
+@[macro_inline]
 def id (A : OracleFamily.{a, v, w} AI AO) : VirtualOracle A.spec A :=
   ⟨QueryImpl.id' A.spec⟩
 
@@ -97,6 +72,7 @@ theorem eval_id (impl : A.Behavior) : (id A).eval impl = impl := by
   simp [eval, id, QueryImpl.compose, QueryImpl.id']
 
 /-- Substitute query programs for every source query. -/
+@[macro_inline]
 def substSource (a : VirtualOracle srcSpec A)
     {L : Type t} {targetSpec : OracleSpec.{t, v} L}
     (route : QueryImpl srcSpec (OracleComp targetSpec)) : VirtualOracle targetSpec A :=
@@ -135,6 +111,7 @@ theorem eval_mapSource {E : Type w'} {F : Type w''}
 
 
 /-- Add unused sources on the right. -/
+@[macro_inline]
 def sumWeaken (a : VirtualOracle srcSpec A) {L : Type t} (extra : OracleSpec.{t, v} L) :
     VirtualOracle (srcSpec + extra) A :=
   a.substSource (fun q => liftM ((srcSpec + extra).query (.inl q)))

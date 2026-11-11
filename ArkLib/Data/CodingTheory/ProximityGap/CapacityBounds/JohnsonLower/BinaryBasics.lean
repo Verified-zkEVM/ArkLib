@@ -12,8 +12,8 @@ public import Mathlib.FieldTheory.Finite.Basic
 /-!
 # Binary foundations for the Reed--Solomon Johnson lower bound
 
-This internal module develops binary linearized polynomials, functionals, and graph subspaces
-used by `CapacityBounds.JohnsonLower`.
+This internal module develops the binary functionals and functional root polynomials used by
+`CapacityBounds.JohnsonLower`.
 
 ## References
 
@@ -34,9 +34,6 @@ variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
 /- Internal binary-algebra infrastructure for the Johnson-radius lower bound. -/
 namespace JohnsonLowerInternal
-
-def IsBinaryLinearized {K : Type} [Field K] (P : Polynomial K) : Prop :=
-  ∀ n ∈ P.support, ∃ i : ℕ, n = 2 ^ i
 
 open scoped NNReal in
 theorem agreement_card_gt_two_mul_of_lt_seven_eighths
@@ -64,14 +61,6 @@ theorem agreement_card_gt_two_mul_of_lt_seven_eighths
 
 def binary_basis_vector {b : ℕ} (i : Fin b) : Fin b → ZMod 2 :=
   fun i' => if i' = i then 1 else 0
-
-open scoped BigOperators in
-theorem binary_basis_vector_sum {b : ℕ}
-    (x : Fin b → ZMod 2) :
-    (∑ i : Fin b, x i • binary_basis_vector i) = x := by
-  classical
-  funext j
-  simp [binary_basis_vector]
 
 private theorem binary_functional_ker_nat_card {b : ℕ}
     (h : (Fin b → ZMod 2) →ₗ[ZMod 2] ZMod 2) (hh : h ≠ 0) :
@@ -175,46 +164,7 @@ theorem binary_functional_lambda_zero (b : ℕ) (hb : 0 < b) :
   rw [Polynomial.coeff_X_pow]
   have hsub : b - 1 < b := by omega
   have hpow : 2 ^ (b - 1) < 2 ^ b := pow_right_strictMono₀ (by omega) hsub
-  rw [if_neg (ne_of_lt hpow)]
-
-def binary_graph_embedding_prod {b : ℕ}
-    (φ : (Fin b → ZMod 2) →ₗ[ZMod 2] (Fin 2 → ZMod 2)) :
-    (Fin b → ZMod 2) →ₗ[ZMod 2]
-      ((Fin b → ZMod 2) × (Fin 2 → ZMod 2)) :=
-  LinearMap.prod LinearMap.id φ
-
-private theorem binary_graph_embedding_prod_injective {b : ℕ}
-    (φ : (Fin b → ZMod 2) →ₗ[ZMod 2] (Fin 2 → ZMod 2)) :
-    Function.Injective (binary_graph_embedding_prod φ) := by
-  intro x y hxy
-  exact congrArg Prod.fst hxy
-
-def binary_graph_subspace_prod {b : ℕ}
-    (φ : (Fin b → ZMod 2) →ₗ[ZMod 2] (Fin 2 → ZMod 2)) :
-    Submodule (ZMod 2) ((Fin b → ZMod 2) × (Fin 2 → ZMod 2)) :=
-  LinearMap.range (binary_graph_embedding_prod φ)
-
-private theorem binary_graph_subspace_prod_finrank {b : ℕ}
-    (φ : (Fin b → ZMod 2) →ₗ[ZMod 2] (Fin 2 → ZMod 2)) :
-    Module.finrank (ZMod 2) (binary_graph_subspace_prod φ) = b := by
-  rw [binary_graph_subspace_prod, LinearMap.finrank_range_of_inj
-    (binary_graph_embedding_prod_injective φ)]
-  simp
-
-private theorem binary_graph_subspace_prod_injective {b : ℕ} :
-    Function.Injective (binary_graph_subspace_prod (b := b)) := by
-  intro φ ψ hφψ
-  apply LinearMap.ext
-  intro x
-  funext j
-  have hx : binary_graph_embedding_prod φ x ∈ binary_graph_subspace_prod ψ := by
-    rw [← hφψ]
-    exact ⟨x, rfl⟩
-  rcases hx with ⟨y, hy⟩
-  have hyx : y = x := congrArg Prod.fst hy
-  subst y
-  exact congrFun (congrArg Prod.snd hy).symm j
-
+  rw [ite_eq_right (ne_of_lt hpow)]
 
 end JohnsonLowerInternal
 

@@ -298,7 +298,7 @@ theorem nonrecursiveOpeningReduction_perfectCompleteness
       dRows)
     (hqm : q ≤ P.b ^ messageDigits) (hcap : zBound ≤ balancedDigitCapacity P.b zDigits)
     (hmul : Rq.HasMulLInftyBound Φ) (hzb : 2 ^ r * ω * (P.b / 2) ≤ zBound)
-    (hmd : 0 < messageDigits) (hτ : 0 < zDigits) (hd : 0 < Φ.φ.natDegree)
+    (hd : 0 < Φ.φ.natDegree)
     (hbZero : 0 < P.bZero)
     (K : LiftCom (LiftedWitness Φ μ₀ n₀) (liftShort Φ P.γ P.bZero)) [DecidableEq K.TCom]
     (φF : ZMod q →+* F) (hμn : (μ₀ + n₀ * rhoDigitCount q P.bZero) * Φ.φ.natDegree ≤ 2 ^ (M + 1))
@@ -316,7 +316,7 @@ theorem nonrecursiveOpeningReduction_perfectCompleteness
     (fun _ => Or.inr rfl)
     (completeThroughSumcheckReduction_perfectCompleteness (zDigits := zDigits) (ω := ω)
       (M := M) (m₁ := m₁) (βSq := βSq) (κ := κ)
-      Φ P init impl pp hqm hcap hmul hzb hmd hτ hd hbZero K φF hμn hZeroγ)
+      Φ P init impl pp hqm hcap hmul hzb hd hbZero K φF hμn hZeroγ)
     (fun s => nonrecursiveTerminalReduction_perfectCompleteness
       Φ (M + 1) P.γ P.bZero P.bZero K φF (pure s) impl)
 
@@ -404,8 +404,7 @@ derived message matrix of the honest opening *is* the
 committed coefficient matrix (`generateDecomps_derivedMessage`), whose polynomial is the data
 (`toPolynomial_toMatrix`), evaluated at the recombined query point
 (`Vector.cast_take_append_cast_drop`). -/
-theorem mem_relPolyEvalMsgShort_of_relCommitInput {βSq γ κ : ℕ} (hb : 1 < b)
-    (hbq : b ≤ q / 2) (hdeg : 1 ≤ 𝓜(q, α).φ.natDegree) (hclog : 0 < Nat.clog b q) (hκ : 1 ≤ κ)
+theorem mem_relPolyEvalMsgShort_of_relCommitInput {βSq γ κ : ℕ} (hb : 1 < b) (hκ : 1 ≤ κ)
     (hβSq : (2 ^ m) * Nat.clog b q * (𝓜(q, α).φ.natDegree * (b / 2) ^ 2) ≤ βSq)
     (hγ : b / 2 ≤ γ)
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) (Nat.clog b q) outerRows (2 ^ r)
@@ -439,35 +438,31 @@ theorem mem_relPolyEvalMsgShort_of_relCommitInput {βSq γ κ : ℕ} (hb : 1 < b
       refine le_trans ?_ hβSq
       change ‖gadgetDecompose 𝓜(q, α) dd _‖₂² ≤ _
       exact gadgetDecompose_vecL2NormSq_le_of_digit_le 𝓜(q, α) dd
-        (fun c e => balancedZmodDigit_natAbs_le hb (Nat.le_pow_clog hb q) hbq c e) _
+        (fun c e => balancedZmodDigit_natAbs_le hb (Nat.le_pow_clog hb q) c e) _
     have hγ' : vecLInftyNorm 𝓜(q, α) (PolyVec.flattenBlocks (generateDecomps 𝓜(q, α)
         (Decomposition.ofDigits 𝓜(q, α) dd dd) pp.toPublicParams
         (Hachi.toMatrix w.1)).innerDecomp) ≤ γ := by
       refine le_trans (vecLInftyNorm_flattenBlocks_le 𝓜(q, α) _ fun i => ?_) hγ
       change vecLInftyNorm 𝓜(q, α) (gadgetDecompose 𝓜(q, α) dd _) ≤ b / 2
       exact gadgetDecompose_vecLInftyNorm_le_of_digit_le 𝓜(q, α) dd
-        (fun c e => balancedZmodDigit_natAbs_le hb (Nat.le_pow_clog hb q) hbq c e) _
+        (fun c e => balancedZmodDigit_natAbs_le hb (Nat.le_pow_clog hb q) c e) _
     have hκle : ‖(1 : Rq 𝓜(q, α))‖₁ ≤ κ := by
-      rw [Rq.l1Norm_one 𝓜(q, α) hdeg]; exact hκ
+      rw [Rq.l1Norm_one 𝓜(q, α) (by rw [hachiModulus_natDegree]; exact Nat.one_le_two_pow)]
+      exact hκ
     change VerifiedOpening 𝓜(q, α) (b : ZMod q) βSq γ κ pp.toPublicParams
       (commitInputStmtMap (innerRows := innerRows) (dRows := dRows) b s).u _
     rw [show (commitInputStmtMap (innerRows := innerRows) (dRows := dRows) b s).u = s.1
       from rfl, hu]
     exact verifiedOpening_honestOpening 𝓜(q, α) (b : ZMod q) βSq γ κ
       (Decomposition.ofDigits 𝓜(q, α) dd dd)
-      (gadgetDecompose_lawful 𝓜(q, α) hclog hdeg dd) hκle pp.toPublicParams
+      (gadgetDecompose_lawful 𝓜(q, α) dd) hκle pp.toPublicParams
       (Hachi.toMatrix w.1) hβ hγ'
   · -- Evaluation consistency: reconstruction, then the query split round-trip.
-    have hM : derivedMsgMatrix 𝓜(q, α) (b : ZMod q)
-        (honestOpening 𝓜(q, α) (Decomposition.ofDigits 𝓜(q, α) dd dd)
-          pp.toPublicParams (Hachi.toMatrix w.1)) = Hachi.toMatrix w.1 := by
-      funext i k
-      exact congrFun (generateDecomps_derivedMessage 𝓜(q, α) (b : ZMod q)
-        (Decomposition.ofDigits 𝓜(q, α) dd dd)
-        (gadgetDecompose_lawful 𝓜(q, α) hclog hdeg dd) pp.toPublicParams
-        (Hachi.toMatrix w.1) i) k
-    change CMlPolynomial.eval (extractedPoly 𝓜(q, α) (b : ZMod q) _) _ = _
-    rw [extractedPoly, hM, Hachi.toPolynomial_toMatrix]
+    change CMlPolynomial.eval (extractedPoly 𝓜(q, α) (b : ZMod q)
+      (honestOpening 𝓜(q, α) (Decomposition.ofDigits 𝓜(q, α) dd dd)
+        pp.toPublicParams (Hachi.toMatrix w.1))) _ = _
+    rw [extractedPoly_honestOpening 𝓜(q, α) (b : ZMod q) _
+      (gadgetDecompose_lawful 𝓜(q, α) dd)]
     change CMlPolynomial.eval w.1
       ((s.2.1.take r).cast (by omega) ++ (s.2.1.drop r).cast (by omega)) = s.2.2
     rw [Vector.cast_take_append_cast_drop]
@@ -477,14 +472,14 @@ theorem mem_relPolyEvalMsgShort_of_relCommitInput {βSq γ κ : ℕ} (hb : 1 < b
     intro i
     change vecLInftyNorm 𝓜(q, α) (gadgetDecompose 𝓜(q, α) dd _) ≤ b / 2
     exact gadgetDecompose_vecLInftyNorm_le_of_digit_le 𝓜(q, α) dd
-      (fun c e => balancedZmodDigit_natAbs_le hb (Nat.le_pow_clog hb q) hbq c e) _
+      (fun c e => balancedZmodDigit_natAbs_le hb (Nat.le_pow_clog hb q) c e) _
 
 /-- **The honest commitment input satisfies `relPolyEval`** — the old, weaker form of
 `mem_relPolyEvalMsgShort_of_relCommitInput`, through the forgetful inclusion
 `relPolyEvalMsgShort ⊆ relPolyEval`. Kept because it is the statement any consumer of the
 unstrengthened relation wants. -/
 theorem mem_relPolyEval_of_relCommitInput {βSq γ κ : ℕ} (hb : 1 < b)
-    (hbq : b ≤ q / 2) (hdeg : 1 ≤ 𝓜(q, α).φ.natDegree) (hclog : 0 < Nat.clog b q) (hκ : 1 ≤ κ)
+    (hκ : 1 ≤ κ)
     (hβSq : (2 ^ m) * Nat.clog b q * (𝓜(q, α).φ.natDegree * (b / 2) ^ 2) ≤ βSq)
     (hγ : b / 2 ≤ γ)
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) (Nat.clog b q) outerRows (2 ^ r)
@@ -494,7 +489,7 @@ theorem mem_relPolyEval_of_relCommitInput {βSq γ κ : ℕ} (hb : 1 < b)
     (commitInputStmtMap (innerRows := innerRows) (dRows := dRows) b s,
       commitInputWitMap b w) ∈ relPolyEval 𝓜(q, α) pp (b : ZMod q) βSq γ κ :=
   relPolyEvalMsgShort_subset_relPolyEval 𝓜(q, α) pp (b : ZMod q) βSq γ κ (b / 2)
-    (mem_relPolyEvalMsgShort_of_relCommitInput b hb hbq hdeg hclog hκ hβSq hγ pp s w h)
+    (mem_relPolyEvalMsgShort_of_relCommitInput b hb hκ hβSq hγ pp s w h)
 
 /-- **The commitment-input adapter**: the zero-round `ReduceClaim` head converting the
 commitment API's opening claim into the Hachi chain's polynomial-evaluation claim. -/
@@ -513,7 +508,7 @@ def commitInputReduction :
 relation lemma. Axiom-clean. -/
 theorem commitInputReduction_perfectCompleteness {βSq γ κ : ℕ} (hb : 1 < b)
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (hbq : b ≤ q / 2) (hdeg : 1 ≤ 𝓜(q, α).φ.natDegree) (hclog : 0 < Nat.clog b q) (hκ : 1 ≤ κ)
+    (hκ : 1 ≤ κ)
     (hβSq : (2 ^ m) * Nat.clog b q * (𝓜(q, α).φ.natDegree * (b / 2) ^ 2) ≤ βSq)
     (hγ : b / 2 ≤ γ)
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) (Nat.clog b q) outerRows (2 ^ r)
@@ -524,7 +519,7 @@ theorem commitInputReduction_perfectCompleteness {βSq γ κ : ℕ} (hb : 1 < b)
       (relPolyEvalMsgShort 𝓜(q, α) pp (b : ZMod q) βSq γ κ (b / 2)) :=
   ReduceClaim.reduction_completeness_of_imp _ _
     (fun stmt wit h =>
-      mem_relPolyEvalMsgShort_of_relCommitInput b hb hbq hdeg hclog hκ hβSq hγ pp stmt wit h)
+      mem_relPolyEvalMsgShort_of_relCommitInput b hb hκ hβSq hγ pp stmt wit h)
 
 end InputAdapter
 
@@ -594,16 +589,14 @@ theorem hachiNonrecursiveOpening_perfectCompleteness
     (init : ProbComp σ) (impl : QueryImpl unifSpec (StateT σ ProbComp))
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) (δ P) outerRows (2 ^ r) (δ P) dRows)
     (hcap : zBound ≤ balancedDigitCapacity P.b τ)
-    (hzb : 2 ^ r * ω * (P.b / 2) ≤ zBound) (hτ : 0 < τ)
-    (hclog : 0 < Nat.clog P.b q) (hd : 0 < 𝓜(q, α).φ.natDegree)
+    (hzb : 2 ^ r * ω * (P.b / 2) ≤ zBound)
+    (hd : 0 < 𝓜(q, α).φ.natDegree)
     (hbZero : 0 < P.bZero)
     (K : LiftCom (LiftedWitness 𝓜(q, α) (μ₀ P) n₀) (liftShort 𝓜(q, α) P.γ P.bZero))
     [DecidableEq K.TCom]
     (φF : ZMod q →+* F)
     (hμn : ((μ₀ P) + n₀ * rhoDigitCount q P.bZero) * 𝓜(q, α).φ.natDegree ≤ 2 ^ (M + 1))
-    (hZeroγ : P.bZero - 1 ≤ P.γ)
-    {βSq κ : ℕ} (hκ : 1 ≤ κ)
-    (hβSq : (2 ^ m) * Nat.clog P.b q * (𝓜(q, α).φ.natDegree * (P.b / 2) ^ 2) ≤ βSq) :
+    (hZeroγ : P.bZero - 1 ≤ P.γ) :
     (hachiNonrecursiveOpening (F := F) (ω := ω) (M := M) (m₁ := m₁)
       P pp hcap K hd hbZero φF).perfectCompleteness init impl
       (relCommitInput P.b P.hb pp) acceptRejectRel :=
@@ -615,13 +608,13 @@ theorem hachiNonrecursiveOpening_perfectCompleteness
       (M := M) (m₁ := m₁) 𝓜(q, α) P pp (Nat.le_pow_clog P.hb q)
       hcap K hd hbZero φF)
     (fun _ => Or.inl ⟨_, fun _ => rfl⟩)
-    (commitInputReduction_perfectCompleteness (βSq := βSq) (γ := P.γ) (κ := κ)
-      P.b P.hb init impl P.hbq hd hclog hκ hβSq P.hbγ pp)
+    (commitInputReduction_perfectCompleteness (γ := P.γ) (κ := 1)
+      P.b P.hb init impl le_rfl le_rfl P.hbγ pp)
     (fun s => nonrecursiveOpeningReduction_perfectCompleteness (zDigits := τ) (ω := ω)
-      (M := M) (m₁ := m₁) (βSq := βSq) (κ := κ)
+      (M := M) (m₁ := m₁) (κ := 1)
       𝓜(q, α) P (pure s) impl pp (Nat.le_pow_clog P.hb q) hcap
       (powTwoCyclotomic_hasMulLInftyBound α) hzb
-      hclog hτ hd hbZero K φF hμn hZeroγ)
+      hd hbZero K φF hμn hZeroγ)
 
 /-- **Hachi, nonrecursive, as a functional commitment** (`Commitment.Scheme`): the multilinear
 evaluation oracle, honest key generation, the honest committer `commit`, and the
@@ -659,7 +652,7 @@ def hachiNonrecursive (P : HonestRangeParams q)
 
 omit [DecidableEq F] in
 /-- The nonrecursive Hachi commitment scheme is perfectly correct under the stated parameter
-bounds, provided initialization and simulated key generation never fail. -/
+bounds. -/
 theorem hachiNonrecursive_perfectCorrectness
     [∀ i, SampleableType
       ((CoordinateWise.SingleRound.pSpec
@@ -670,13 +663,9 @@ theorem hachiNonrecursive_perfectCorrectness
       (Simple.PublicParams 𝓜(q, α) outerRows ((2 ^ r) * (innerRows * Nat.clog P.b q)))]
     [SampleableType (Simple.PublicParams 𝓜(q, α) dRows ((2 ^ r) * Nat.clog P.b q))]
     (init : ProbComp σ) (impl : QueryImpl unifSpec (StateT σ ProbComp))
-    (hInit : NeverFail init)
-    (hKeygen : ∀ s : σ, NeverFail ((simulateQ impl
-      (keygen (q := q) (α := α) (innerRows := innerRows) (outerRows := outerRows)
-        (dRows := dRows) (m := m) (r := r) P.b)).run s))
     (hcap : zBound ≤ balancedDigitCapacity P.b τ)
-    (hzb : 2 ^ r * ω * (P.b / 2) ≤ zBound) (hτ : 0 < τ)
-    (hclog : 0 < Nat.clog P.b q) (hd : 0 < 𝓜(q, α).φ.natDegree) (hbZero : 0 < P.bZero)
+    (hzb : 2 ^ r * ω * (P.b / 2) ≤ zBound)
+    (hd : 0 < 𝓜(q, α).φ.natDegree) (hbZero : 0 < P.bZero)
     (K : LiftCom (LiftedWitness 𝓜(q, α) (μ₀ P) n₀) (liftShort 𝓜(q, α) P.γ P.bZero))
     [DecidableEq K.TCom]
     (φF : ZMod q →+* F)
@@ -685,10 +674,7 @@ theorem hachiNonrecursive_perfectCorrectness
     Commitment.perfectCorrectness init impl
       (hachiNonrecursive (F := F) (ω := ω) (M := M) (m₁ := m₁) P hcap K hd hbZero φF) := by
   refine Commitment.perfectCorrectness_of_opening_perfectCompleteness init impl _
-    (fun ck _vk => relCommitInput P.b P.hb ck) hInit hKeygen ?_ ?_ ?_
-  · -- The committer is deterministic (`pure`), so its simulation never fails.
-    intro data ck s
-    exact ⟨by simp [hachiNonrecursive]⟩
+    (fun ck _vk => relCommitInput P.b P.hb ck) ?_ ?_
   · -- The honest keygen/commit outputs satisfy the input relation.
     intro data query ck vk cm dc _hkg hcm
     simp only [hachiNonrecursive, support_pure, Set.mem_singleton_iff] at hcm
@@ -696,8 +682,7 @@ theorem hachiNonrecursive_perfectCorrectness
   · -- The composed opening is perfectly complete from every post-setup state.
     intro ck vk _hkg s
     exact hachiNonrecursiveOpening_perfectCompleteness (F := F) (ω := ω) (M := M) (m₁ := m₁)
-      (βSq := (2 ^ m) * Nat.clog P.b q * (𝓜(q, α).φ.natDegree * (P.b / 2) ^ 2)) (κ := 1)
-      P (pure s) impl ck hcap hzb hτ hclog hd hbZero K φF hμn hZeroγ le_rfl le_rfl
+      P (pure s) impl ck hcap hzb hd hbZero K φF hμn hZeroγ
 
 end Scheme
 

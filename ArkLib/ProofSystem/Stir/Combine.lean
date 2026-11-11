@@ -8,12 +8,12 @@ module
 
 public import Mathlib.Tactic.FieldSimp
 public import Mathlib.Tactic.Cases
-public import Mathlib.Tactic.LinearCombinationPrime
+public import Mathlib.Tactic.LinearCombination
 
 public import ArkLib.Data.CodingTheory.ProximityGap.Basic
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Curves
 public import ArkLib.Data.CodingTheory.ReedSolomon
-public import ArkLib.Data.Probability.Notation
+public import VCVio.OracleComp.Constructions.SampleableType.Measure
 public import ArkLib.ProofSystem.Stir.ProximityBound
 public import ArkLib.ToMathlib.Polynomial.EvalExt
 
@@ -90,11 +90,11 @@ lemma combine_eq_cases {F ι : Type*} [Field F] [DecidableEq F]
   funext x
   simp only [combine]
   split_ifs with hq
-  · simp_rw [geom_sum_cases, if_pos hq]
+  · simp_rw [geom_sum_cases, ite_eq_left hq]
     apply Finset.sum_congr rfl
     intro i _
     ring
-  · simp_rw [geom_sum_cases, if_neg hq]
+  · simp_rw [geom_sum_cases, ite_eq_right hq]
     apply Finset.sum_congr rfl
     intro i _
     rw [Nat.cast_add, Nat.cast_sub (hdegs i), Nat.cast_one]
@@ -106,18 +106,6 @@ def block_size (dstar : ℕ) (degs : Fin m → ℕ) (i : Fin m) := dstar - degs 
 private def block_start (dstar : ℕ) (degs : Fin m → ℕ) (i : Fin m) :=
   ∑ j ∈ univ.filter (· < i), block_size dstar degs j
 private def total_terms (dstar : ℕ) (degs : Fin m → ℕ) := ∑ i, block_size dstar degs i
-
-private lemma block_start_monotone
-  {dstar : ℕ} {degs : Fin m → ℕ} {i j : Fin m} (h : i ≤ j) :
-  block_start dstar degs i ≤ block_start dstar degs j := by
-  have h_subset :
-    Finset.filter (· < i) Finset.univ ⊆ Finset.filter (· < j) Finset.univ := by
-      grind
-  exact Finset.sum_le_sum_of_subset h_subset
-
-private lemma block_start_zero
-  {dstar : ℕ} {degs : Fin m.succ → ℕ} :
-  block_start dstar degs 0 = 0 := by simp [block_start]
 
 private lemma block_end_le_block_start
   {dstar : ℕ} {degs : Fin m → ℕ} {i j : Fin m} (hij : i < j) :
@@ -191,22 +179,21 @@ private lemma combine_eq_flat
               (fun i => degs i.castSucc)
               h
             exists (Fin.castSucc a)
-            constructor
-            · simp_all only [forall_const, Fin.sum_univ_castSucc]
-              convert ha₁ using 1
+            have hs : ∑ i ∈ univ.filter (· < a.castSucc), (dstar - degs i + 1) =
+                ∑ i ∈ univ.filter (· < a), (dstar - degs i.castSucc + 1) := by
               simp only [sum_filter, Fin.sum_univ_castSucc, Fin.castSucc_lt_castSucc_iff,
                 Nat.add_eq_left, ite_eq_right_iff, Nat.add_eq_zero_iff, one_ne_zero, and_false,
                 imp_false, not_lt]
               exact Fin.le_last _
-            · aesop
-                (add simp [Fin.sum_univ_castSucc, Finset.sum_filter])
-                (add safe (by grind))
+            rw [hs]
+            exact ⟨ha₁, ha₂⟩
           · exists (Fin.last m)
-            constructor
-            · simp_all only [forall_const, Fin.sum_univ_castSucc, not_lt]
-              rw [Finset.sum_filter, Fin.sum_univ_castSucc]
-              aesop
-            · simp_all [Fin.sum_univ_castSucc, Finset.sum_filter]
+            have hs : ∑ i ∈ univ.filter (· < Fin.last m), (dstar - degs i + 1) =
+                ∑ i : Fin m, (dstar - degs i.castSucc + 1) := by
+              simp only [sum_filter, Fin.sum_univ_castSucc, Fin.castSucc_lt_last, ite_true,
+                lt_self_iff_false, ite_false, add_zero]
+            rw [hs]
+            exact ⟨not_lt.mp h, (Fin.sum_univ_castSucc (fun i => dstar - degs i + 1)) ▸ hL⟩
       · rintro ⟨i, hi⟩
         exact lt_of_lt_of_le hi.2 <| by
           rw [←Finset.sum_sdiff
@@ -378,8 +365,6 @@ private lemma combine_eq_flat_final
       rw [h]
       rfl
 
--- def DegCor
-
 /-- Definition 4.12.1
     DegCor(d*, r, f, degree)(x) := f(x) * ( sum_{ l < d* - d + 1 } (r * φ(x))^l ) -/
 def degCor
@@ -411,7 +396,7 @@ private lemma glorious_lemma
     (1 - rho - 1 / (↑m))))
   (hrho : rho = n / (↑m : ℚ≥0)) :
   ↑rho + 1 / ↑(m) < 1 - δ := by
-  all_goals first | infer_instance | simp_all +decide [lt_tsub_iff_left]
+  all_goals simp_all +decide [lt_tsub_iff_left]
   ring_nf at *
   exact hδLt.2.trans_le' (by norm_cast)
 
@@ -426,11 +411,11 @@ private lemma even_more_glorious_lemma
  ring
 
 omit [DecidableEq F] [Fintype F] in
-open LinearCode Classical ProbabilityTheory ReedSolomon STIR in
+open LinearCode ProbabilityTheory ReedSolomon STIR in
 lemma master_lemma
     [Nonempty ι]
   {φ : ι ↪ F} {dstar m : ℕ}
-  {fs : Fin m → ι → F} {degs : Fin m → ℕ} (hdegs : ∀ i, degs i ≤ dstar)
+  {fs : Fin m → ι → F} {degs : Fin m → ℕ}
   {δ : ℝ≥0}
   (hδLt : δ < (min (1 - (ReedSolomon.sqrtRate dstar φ))
     (1 - (rate (code φ dstar)) - 1 / Fintype.card ι)))
@@ -442,10 +427,18 @@ lemma master_lemma
   (i : Fin m)
   (j : Fin (block_size dstar degs i)) :
   (v i j).degree < degs i + j := by
+  by_cases hdeg : degs i ≤ dstar
+  swap
+  · apply (hv_deg i j).trans_le
+    change WithBot.some dstar ≤ WithBot.some (degs i) + WithBot.some j.val
+    exact WithBot.coe_le_coe.mpr (show dstar ≤ degs i + j.val by omega)
+  classical
   have hlt : dstar < Fintype.card ι := by
     by_contra contra
-    aesop
-      (add simp [ReedSolomon.rateOfLinearCode_eq_min_div, min_eq_right])
+    have h2 := (lt_min_iff.mp hδLt).2
+    rw [ReedSolomon.rateOfLinearCode_eq_min_div, min_eq_right (not_lt.mp contra),
+      div_self (Nat.cast_ne_zero.mpr Fintype.card_ne_zero)] at h2
+    simp only [NNRat.cast_one, tsub_self, zero_tsub, not_lt_zero] at h2
   rcases j with ⟨j, hj⟩
   simp only [block_size] at hj
   simp only [gt_iff_lt]
@@ -459,7 +452,7 @@ lemma master_lemma
     rw [←WithBot.coe_natCast,
         show WithBot.some (dstar - degs i) = Nat.cast (dstar - degs i) by rfl,
         ←WithBot.coe_natCast, ←WithBot.coe_add, ←Nat.cast_add,
-        Nat.add_sub_of_le (hdegs _)]
+        Nat.add_sub_of_le hdeg]
     exact hv_deg i ⟨j, hj⟩
   | succ j' ih =>
     intro j hj hj'
@@ -480,12 +473,8 @@ lemma master_lemma
     have hq_coincide :=
       Polynomial.eq_of_eval_eq_degree
         (q := v i ⟨j + 1, h_fin⟩)
-        hq_deg (lt_trans (hv_deg _ _) <| by
-          rw [WithBot.lt_def]
-          right
-          exists dstar, (dstar + 1)
-          aesop
-        ) (Finset.image φ S) (by {
+        hq_deg (lt_trans (hv_deg _ _) (WithBot.coe_lt_coe.mpr (Nat.lt_succ_self dstar)))
+        (Finset.image φ S) (by {
           simp only [Nat.cast_id, ge_iff_le, Order.add_one_le_iff]
           rw [Finset.card_image_of_injective _ φ.injective]
           have h : ↑(rate (code φ dstar)) + 1 / ↑(Fintype.card ι) < 1 - δ :=
@@ -518,19 +507,22 @@ lemma master_lemma
     exact (WithBot.add_lt_add_iff_right (by simp)).mp ih
 
 open LinearCode Classical ProbabilityTheory ReedSolomon STIR in
-/-- Lemma 4.13
-  Let `dstar` be the target degree, `f₁,...,f_{m-1} : ι → F`,
-  `0 < degs₁,...,degs_{m-1} < dstar` be degrees and
-  `δ ∈ (0, min{(1-BStar(ρ)), (1-ρ-1/|ι|)})` be a distance parameter, then
-      Pr_{r ← F} [δᵣ(Combine(dstar,r,(f₁,degs₁),...,(fₘ,degsₘ)))]
-                   > err' (dstar, ρ, δ, m * (dstar + 1) - ∑ i degsᵢ) -/
+/-- Lemma 4.13. Let the target degree `dstar` be positive and let each component
+bound `degs i` be at most `dstar`. If the probability that the combined word is within distance
+`δ` of the target Reed–Solomon code exceeds the curve error bound, all component words agree
+with codewords of their respective degrees on a common set of at least `(1 - δ) * |ι|` positions.
+
+The positive target degree is essential for this error bound. At degree zero,
+its Johnson branch vanishes, although a random linear combination can have
+zero coordinates when its coefficient words have no common zero. -/
 theorem combine_theorem
-    {φ : ι ↪ F} {dstar m : ℕ}
+    [SampleableType F] {φ : ι ↪ F} {dstar m : ℕ}
   (fs : Fin m → ι → F) (degs : Fin m → ℕ) (hdegs : ∀ i, degs i ≤ dstar)
-  (δ : ℝ≥0) (hδPos : δ > 0)
+  (hdeg_pos : 0 < dstar)
+  (δ : ℝ≥0)
   (hδLt : δ < (min (1 - (ReedSolomon.sqrtRate dstar φ))
                    (1 - (rate (code φ dstar)) - 1 / Fintype.card ι)))
-  (hProb : Pr_{ let r ← $ᵖ F}[δᵣ((combine φ dstar r fs degs), (code φ dstar)) ≤ δ] >
+  (hProb : Pr{let r ← $ᵗ F}[δᵣ((combine φ dstar r fs degs), (code φ dstar)) ≤ δ] >
     (m * (dstar + 1) - ∑ i, degs i - 1) * ProximityGap.errorBound δ dstar φ) :
     ∃ S : Finset ι, S.card ≥ (1 - δ) * (Fintype.card ι) ∧
       ∃ v : Fin m → ι → F, ∀ i,
@@ -552,14 +544,13 @@ theorem combine_theorem
     rw [Fintype.card_eq_zero_iff, not_isEmpty_iff] at hempty
     rcases total with _ | total
     · rcases m with _ | m
-      · aesop
-          (add simp [total_terms, block_size])
-          (add safe (by exists Finset.univ))
-      · aesop (add simp [total_terms, block_size])
+      · refine ⟨Finset.univ, ?_, fun i => i.elim0, fun i => i.elim0⟩
+        rw [ge_iff_le, Finset.card_univ]
+        exact mul_le_of_le_one_left (Nat.cast_nonneg _) tsub_le_self
+      · simp [total_terms, block_size] at htotal
     · have proximity_gap :=
-        @ProximityGap.correlatedAgreement_affine_curves ι _ _ F _ _ _
-          (total_terms dstar degs - 1) dstar φ δ hδPos (by
-            aesop (add simp [lt_min_iff, ReedSolomon.sqrtRate]))
+        @ProximityGap.correlatedAgreement_affine_curves ι _ _ F _ _ _ _
+          (total_terms dstar degs - 1) dstar φ δ hdeg_pos (lt_min_iff.mp hδLt).1
       simp only [ProximityGap.δ_ε_correlatedAgreementCurves] at proximity_gap
       specialize proximity_gap
           (fun l (x : ι) ↦ (
@@ -570,21 +561,6 @@ theorem combine_theorem
               fs i x * (φ x) ^ k
           ))
           (by {
-            simp only [bind_pure_comp, Functor.map, PMF.bind_apply,
-              PMF.uniformOfFintype_apply,
-              tsum_fintype, Function.comp_apply, PMF.pure_apply,
-              eq_iff_iff, true_iff, mul_ite, mul_one,
-              mul_zero, gt_iff_lt] at hProb
-            conv at hProb =>
-              rhs
-              rhs
-              ext x
-              rw [combine_eq_flat_final φ dstar x]
-            simp only [bind_pure_comp, Functor.map, PMF.bind_apply,
-              PMF.uniformOfFintype_apply,
-              tsum_fintype, Function.comp_apply, PMF.pure_apply,
-              eq_iff_iff, true_iff, mul_ite, mul_one,
-              mul_zero, gt_iff_lt]
             apply lt_of_le_of_lt
               (b := ((↑m : ENNReal) * (↑dstar + 1) - ↑(∑ i, degs i) - 1) *
                       ↑(ProximityGap.errorBound δ dstar φ))
@@ -592,12 +568,16 @@ theorem combine_theorem
               rw [htotal, add_tsub_cancel_right,
                   Nat.cast_sum, mul_add, mul_one,
                   show (↑m : ENNReal) * ↑dstar
-                    = ∑ x : Fin m, ↑dstar by simp,
-                  show (↑m : ENNReal) = ∑ x : Fin m, 1 by simp,
+                    = ∑ x : Fin m, ↑dstar by
+                      simp only [Finset.sum_const, Finset.card_univ, Fintype.card_fin,
+                        nsmul_eq_mul],
+                  show (↑m : ENNReal) = ∑ x : Fin m, 1 by
+                    simp only [Finset.sum_const, Finset.card_univ, Fintype.card_fin,
+                      nsmul_eq_mul, mul_one],
                   ←Finset.sum_add_distrib,
                   show ∑ x : Fin m, ((↑dstar : ENNReal) + 1) - ∑ x, ↑(degs x)
                     = ↑(∑ x : Fin m, (dstar + 1)) - ↑(∑ x, degs x)
-                      by simp; ring_nf,
+                      by simp only [Nat.cast_sum, Nat.cast_add, Nat.cast_one],
                   ←ENNReal.natCast_sub,
                   ←Finset.sum_tsub_distrib _ (fun x _ ↦
                     le_trans (hdegs x) (by omega))]
@@ -611,13 +591,13 @@ theorem combine_theorem
               rw [show ∑ x, (dstar - degs x + 1) = total + 1 by
                 simpa only [total_terms, block_size] using htotal]
               simp
-            · exact lt_of_lt_of_le hProb <| le_of_eq <| by
-                congr
-                ext x
-                congr <;> try (rw [htotal]; omega)
-                refine (Fin.heq_fun_iff ?_).mpr ?_
-                · aesop (add safe (by omega))
-                · aesop
+            · exact lt_of_lt_of_le hProb <| le_of_eq <|
+                prEvent_congr ($ᵗ F) _ _ fun x => by
+                  rw [combine_eq_flat_final φ dstar x]
+                  have hn : total_terms dstar degs - 1 + 1 = total_terms dstar degs := by
+                    rw [htotal]
+                    omega
+                  rw [hn]
       })
       simp only [jointAgreement, ge_iff_le, SetLike.mem_coe] at proximity_gap
       have proximity_gap :
@@ -642,13 +622,16 @@ theorem combine_theorem
             rcases j with ⟨j, hj⟩
             apply lt_of_lt_of_le
             · apply Nat.add_lt_add_left (m := dstar - degs ⟨i, hi⟩ + 1)
-                (by aesop (add simp [block_size]) (add safe (by omega)))
+                hj
             · rw [Finset.sum_equiv
                 (t := Finset.erase {x : Fin _ | x ≤ ⟨i, hi⟩} ⟨i, hi⟩)
+                (f := fun x => (dstar - degs x + 1))
                 (g := fun x => (dstar - degs x + 1))
                 (Equiv.refl _)
-                (by aesop (add safe (by omega)))
-                (by aesop), Finset.sum_erase_add _ _ (by simp)]
+                (fun x => by
+                  simp only [mem_filter, mem_univ, true_and, Equiv.refl_apply, mem_erase]
+                  exact lt_iff_le_and_ne.trans and_comm)
+                (fun _ _ => rfl), Finset.sum_erase_add _ _ (by simp)]
               exact Finset.sum_le_sum_of_subset (by simp)
           }⟩
           simp only [Polynomial.degreeLT, ge_iff_le, Submodule.mem_iInf, LinearMap.mem_ker,
@@ -671,7 +654,7 @@ theorem combine_theorem
       rcases proximity_gap with ⟨S, ⟨hS_card, ⟨v, hv⟩⟩⟩
       have master_lemma :=
         @master_lemma _ _ _ _ hempty
-          _ _ _ _ hdegs _
+          _ _ _ _ _
           hδLt _ hS_card (v := v) (fs := fs)
           (fun i j => (hv i j).1)
           (fun i j x hx => (hv i j).2 x hx)

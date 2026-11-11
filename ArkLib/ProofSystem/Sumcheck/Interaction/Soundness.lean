@@ -6,7 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.ProofSystem.Sumcheck.Interaction.Closing
-public import Mathlib.Algebra.Polynomial.Roots
+public import ArkLib.Data.Probability.Instances
 
 /-! # One-round soundness for the actual closed Sumcheck execution
 
@@ -53,13 +53,13 @@ theorem executeCommitted_eq [DecidableEq F] (challenge : ProbComp F)
     (p q : Message F deg) (domain : List F) (target : F) :
     executeCommitted F deg challenge p q domain target =
       committedRun F deg p q domain target <$> challenge := by
-  simp only [executeCommitted, executeCore, _root_.Interaction.Oracle.Reduction.execute,
+  simp only [executeCommitted, executeCore_eq_execute, _root_.Interaction.Oracle.Reduction.execute,
     sampledClaimReduction, pure_bind]
   simp only [executeStrategies, prover, sampledClaimVerifier, protocol,
     Protocol.oracleWith_tree, Protocol.oracleWith_roles, Protocol.oracleWith_oracles,
     Protocol.public_tree, Protocol.public_roles, Protocol.public_oracles,
     Protocol.done_tree, Protocol.done_roles, Protocol.done_oracles,
-    Verifier.toCounterpart,
+    Verifier.toCounterpart, Verifier.toCounterpartWith,
     TypeTree.toTypeTree_oracle, TypeTree.toTypeTree_public, TypeTree.toTypeTree_done,
     TypeTree.RoleDecoration.toTypeTreeRoles_oracle,
     TypeTree.RoleDecoration.toTypeTreeRoles_public,
@@ -79,7 +79,8 @@ theorem executeCommitted_eq [DecidableEq F] (challenge : ProbComp F)
     rw [QueryImpl.simulateQ_liftComp_left_eq_of_apply _ (QueryImpl.id' unifSpec)
       (fun _ => rfl), simulateQ_id']
   simp only [id_eq, simulateQ_bind, simulateQ_pure, hc, bind_assoc, pure_bind,
-    simulateQ_map, simulate_terminal, map_pure]
+    simulateQ_map, TypeTree.accessAfter_oracle, TypeTree.accessAfter_public,
+    TypeTree.accessAfter_done, simulate_terminal, map_pure]
   simp only [bind_pure_comp]
   congr 1
   funext r
@@ -93,7 +94,7 @@ theorem committedRun_true_iff [DecidableEq F] (p q : Message F deg)
         some True ↔
       (domain.map (fun x => q.val.eval x)).sum = target ∧ p.val.eval r = q.val.eval r := by
   by_cases h : (domain.map (fun x => q.val.eval x)).sum = target
-  · simp only [committedRun, h, if_pos]
+  · simp only [committedRun, h, ite_eq_left]
     change some (p.val.eval r = q.val.eval r) = some True ↔ _
     simp
   · simp [committedRun, h, CoreRun.closed]
@@ -101,8 +102,9 @@ theorem committedRun_true_iff [DecidableEq F] (p q : Message F deg)
 /-- Ambient failure is preserved; rejection is instead an explicit completed run. -/
 theorem executeCommitted_failure [DecidableEq F] (challenge : ProbComp F)
     (p q : Message F deg) (domain : List F) (target : F) :
-    Pr[⊥ | executeCommitted F deg challenge p q domain target] = Pr[⊥ | challenge] := by
-  rw [executeCommitted_eq, probFailure_map]
+    Pr{let _ ← executeCommitted F deg challenge p q domain target}[True] =
+      Pr{let _ ← challenge}[True] := by
+  rw [executeCommitted_eq, prEvent_map]
 
 /-- A failed sum check cannot produce any closed output claim. -/
 theorem committedRun_rejects [DecidableEq F] (p q : Message F deg)
@@ -111,41 +113,44 @@ theorem committedRun_rejects [DecidableEq F] (p q : Message F deg)
     (committedRun F deg p q domain target r).closed = none := by
   simp [committedRun, h, CoreRun.closed]
 
+/-- `prEvent_eq_evalDist_map` at `OracleComp unifSpec`, stated so that the `Pr{...}` side uses
+the same `Bind`/`Pure` instances as `do` notation elaborated at this monad. -/
+private theorem prEvent_eq_evalDist_map_unifSpec {α : Type} (mx : OracleComp unifSpec α)
+    (p : α → Prop) : Pr{let x ← mx}[p x] = 𝒟[p <$> mx] {True} :=
+  prEvent_eq_evalDist_map mx p
+
+/-- `prEvent_bind_le_of_forall_le` at `OracleComp unifSpec`, with `do`-notation instances. -/
+private theorem prEvent_bind_le_of_forall_le_unifSpec {α β : Type}
+    (mx : OracleComp unifSpec α) (f : α → OracleComp unifSpec β) (q : β → Prop) {ε : ENNReal}
+    (h : ∀ a, Pr{let y ← f a}[q y] ≤ ε) : Pr{let y ← mx >>= f}[q y] ≤ ε :=
+  prEvent_bind_le_of_forall_le mx f q h
+
 variable [Fintype F] [DecidableEq F] [SampleableType F]
 
 /-- Soundness against every polynomial fixed before the fresh uniform challenge. -/
 theorem executeCommitted_soundness (p q : Message F deg) (domain : List F) (target : F)
     (hfalse : (domain.map (fun x => p.val.eval x)).sum ≠ target) :
-    Pr[fun run => run.closed.map (closedOutputRelation F deg) = some True |
-      executeCommitted F deg ($ᵗ F) p q domain target] ≤
+    Pr{let run ← executeCommitted F deg ($ᵗ F) p q domain target}[
+      run.closed.map (closedOutputRelation F deg) = some True] ≤
         (deg : ENNReal) / Fintype.card F := by
-  rw [executeCommitted_eq, probEvent_map]
-  simp only [Function.comp_def]
+  rw [executeCommitted_eq, prEvent_map]
   by_cases hsum : (domain.map (fun x => q.val.eval x)).sum = target
-  · have hne : p.val - q.val ≠ 0 := by
-      intro h
-      have hpq := sub_eq_zero.mp h
-      exact hfalse (hpq ▸ hsum)
-    have hcard : (Finset.univ.filter (fun r => p.val.eval r = q.val.eval r)).card ≤ deg := by
-      apply (Polynomial.card_le_degree_of_subset_roots (p := p.val - q.val) ?_).trans
-      · exact natDegree_le_of_degree_le
-          ((degree_sub_le _ _).trans (max_le (message_degree F deg p) (message_degree F deg q)))
-      · intro r hr
-        apply (mem_roots hne).mpr
-        simpa only [IsRoot, eval_sub, sub_eq_zero] using (Finset.mem_filter.mp hr).2
+  · have hne : p.val ≠ q.val := fun h => hfalse (h ▸ hsum)
     have hevent : (fun r => (committedRun F deg p q domain target r).closed.map
         (closedOutputRelation F deg) = some True) = (fun r => p.val.eval r = q.val.eval r) := by
       funext r
       exact propext ((committedRun_true_iff F deg p q domain target r).trans (and_iff_right hsum))
-    rw [hevent, probEvent_uniformSample]
-    gcongr
+    rw [prEvent_congr ($ᵗ F) _ _ (fun r => iff_of_eq (congrFun hevent r))]
+    exact Probability.prob_polynomial_eval_eq_le hne
+      (natDegree_le_of_degree_le (message_degree F deg p))
+      (natDegree_le_of_degree_le (message_degree F deg q))
   · have hevent : (fun r => (committedRun F deg p q domain target r).closed.map
         (closedOutputRelation F deg) = some True) = (fun _ => False) := by
       funext r
       apply propext
       rw [committedRun_true_iff]
       simp [hsum]
-    rw [hevent]
+    rw [prEvent_congr ($ᵗ F) _ _ (fun r => iff_of_eq (congrFun hevent r))]
     simp
 
 /-- Arbitrary randomized commitment, possibly failing, followed by a fresh verifier sample.
@@ -153,41 +158,32 @@ The commitment distribution may depend on `p`, the domain and target, but is sam
 theorem executeRandomCommitment_soundness (messages : ProbComp (Message F deg))
     (p : Message F deg) (domain : List F) (target : F)
     (hfalse : (domain.map (fun x => p.val.eval x)).sum ≠ target) :
-    Pr[fun run => run.closed.map (closedOutputRelation F deg) = some True |
-      messages >>= fun q => executeCommitted F deg ($ᵗ F) p q domain target] ≤
+    Pr{let run ← messages >>= fun q => executeCommitted F deg ($ᵗ F) p q domain target}[
+      run.closed.map (closedOutputRelation F deg) = some True] ≤
         (deg : ENNReal) / Fintype.card F := by
-  exact probEvent_bind_le_of_forall_le
-    (fun q _ => executeCommitted_soundness F deg p q domain target hfalse)
+  exact prEvent_bind_le_of_forall_le_unifSpec _ _ _
+    (fun q => executeCommitted_soundness F deg p q domain target hfalse)
 
 /-- Primary measure-valued soundness on the actual executor's closed output.
 No countability assumption on the dependent run type is required. -/
 theorem executeCommitted_measureSoundness (p q : Message F deg)
     (domain : List F) (target : F)
     (hfalse : (domain.map (fun x => p.val.eval x)).sum ≠ target) :
-    discreteEvalDist (executeCommitted F deg ($ᵗ F) p q domain target)
-      {run | run.closed.map (closedOutputRelation F deg) = some True} ≤
+    𝒟[(fun run => run.closed.map (closedOutputRelation F deg) = some True) <$>
+        executeCommitted F deg ($ᵗ F) p q domain target] {True} ≤
         (deg : ENNReal) / Fintype.card F := by
-  let : MeasurableSpace
-      (CoreRun (protocol F deg) (inputSpec F).toPFunctor (fun _ => F × F)
-        (fun _ => outputFamily F deg) (fun _ => F × F)) := ⊤
-  have h := executeCommitted_soundness F deg p q domain target hfalse
-  rw [probEvent_eq_evalSPMF_toMeasure] at h
-  exact h
+  rw [← prEvent_eq_evalDist_map_unifSpec]
+  exact executeCommitted_soundness F deg p q domain target hfalse
 
 /-- Primary measure bound for any possibly failing randomized commitment made first. -/
 theorem executeRandomCommitment_measureSoundness (messages : ProbComp (Message F deg))
     (p : Message F deg) (domain : List F) (target : F)
     (hfalse : (domain.map (fun x => p.val.eval x)).sum ≠ target) :
-    discreteEvalDist
-      (messages >>= fun q => executeCommitted F deg ($ᵗ F) p q domain target)
-      {run | run.closed.map (closedOutputRelation F deg) = some True} ≤
+    𝒟[(fun run => run.closed.map (closedOutputRelation F deg) = some True) <$>
+        (messages >>= fun q => executeCommitted F deg ($ᵗ F) p q domain target)] {True} ≤
         (deg : ENNReal) / Fintype.card F := by
-  let : MeasurableSpace
-      (CoreRun (protocol F deg) (inputSpec F).toPFunctor (fun _ => F × F)
-        (fun _ => outputFamily F deg) (fun _ => F × F)) := ⊤
-  have h := executeRandomCommitment_soundness F deg messages p domain target hfalse
-  rw [probEvent_eq_evalSPMF_toMeasure] at h
-  exact h
+  rw [← prEvent_eq_evalDist_map_unifSpec]
+  exact executeRandomCommitment_soundness F deg messages p domain target hfalse
 
 end
 end Sumcheck.Interaction.SingleRound

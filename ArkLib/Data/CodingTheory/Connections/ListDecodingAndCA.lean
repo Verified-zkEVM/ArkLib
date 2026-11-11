@@ -22,13 +22,17 @@ in-tree real-radius corollary of the integer-radius CS25 statement.
 
 ## Main statements
 
-- `linear_mcaError_le_of_Lambda_le` turns a list-size bound below the relative minimum distance
+- `linear_mcaError_le_of_Lambda_le` turns a list-size bound
   into an affine-line MCA bound.
 - `rs_Lambda_le_card_of_epsCa_lt` bounds an RS list by the field size from a small CA error.
 - `rs_Lambda_extended_le_of_epsCa_int_radius` is the integer-radius CS25 bound for a related RS
   code; `rs_Lambda_extended_le_of_epsCa` is its real-radius corollary.
-- `rs_epsCa_large_below_johnson_radius` separates list decoding from CA for characteristic-two
-  Reed--Solomon codes.
+
+ABF26 Theorem 5.4, the characteristic-two separation between list decoding and CA after
+[BenSassonGKS20] Lemma 3.3, is not stated here. As printed it is false: its trace witness has a
+term of degree `|F|/8`, outside the rate-`1/8` code. Stronger separations over binary fields are
+proved in [DKTZ26], whose results are formalized in Lean at
+<https://github.com/GUJustin/binary_field_gap_counterexamples>.
 
 Real-valued numeric bounds are embedded into `ENNReal` with `ENNReal.ofReal`. MCA statements use
 the real-radius `mcaError`; CA statements use the nonnegative-radius `epsCa` interface.
@@ -41,6 +45,8 @@ the real-radius `mcaError`; CA statements use the nonnegative-radius `epsCa` int
 - [BCHKS25] Theorem 1.9.
 - [CS25] Theorem 2.
 - [BenSassonGKS20] Lemma 3.3.
+- [DKTZ26] Dao, Kominers, Thaler, Zheng. *Counterexamples to Beyond-Johnson Proximity Gaps over
+  Binary Fields*. 2026.
 -/
 
 @[expose] public section
@@ -53,27 +59,27 @@ open Code CoreDefinitions ProximityGap
 section ListImpliesMCA
 
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
 end ListImpliesMCA
 
 section CAImpliesList
 
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
-omit [Nonempty ι] [DecidableEq ι] in
-/-- `ε_ca` is never `⊤`: each branch of the supremum is `0` or a `PMF` probability
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] in
+/-- `ε_ca` is never `⊤`: each branch of the supremum is `0` or a native event probability
 (`≤ 1`). Derivation infrastructure for `rs_Lambda_extended_le_of_epsCa`. -/
 private lemma epsCa_ne_top (C : Set (ι → F)) (δ_fld δ_int : ℝ≥0) :
     epsCa (F := F) (A := F) C δ_fld δ_int ≠ ⊤ := by
   classical
   refine ne_top_of_le_ne_top ENNReal.one_ne_top ?_
-  unfold epsCa
+  simp only [epsCa_eq]
   refine iSup_le fun u => ?_
   split_ifs
   · exact zero_le_one
-  · exact PMF.coe_le_one _ _
+  · exact prEvent_le_one _
 
 /-- `Nat.floor` commutes with the `ℝ≥0 → ℝ` coercion. Derivation infrastructure for
 `rs_Lambda_extended_le_of_epsCa`. -/
@@ -82,7 +88,7 @@ private lemma nat_floor_coe_nnreal (x : ℝ≥0) : Nat.floor (x : ℝ) = Nat.flo
     (Nat.le_floor (by exact_mod_cast Nat.floor_le x.coe_nonneg))
     (Nat.le_floor (by exact_mod_cast Nat.floor_le (zero_le (α := ℝ≥0))))
 
-omit [DecidableEq ι] [Field F] [Fintype F] [DecidableEq F] in
+omit [DecidableEq ι] [Field F] [Fintype F] [SampleableType F] [DecidableEq F] in
 /-- `Λ(C, ·)` is `1/n`-quantised: relative Hamming distance takes values in
 `{0, 1/n, …, 1}`, so the list size at a real radius `δ ≥ 0` equals the list size at the
 grid point `⌊δ·n⌋/n`. `Lambda` analogue of `ProximityGap.epsCa_eq_of_floor_eq`;
@@ -108,7 +114,7 @@ private lemma Lambda_eq_floor_div_card (C : Set (ι → F)) {δ : ℝ} (hδ : 0 
 
 omit [DecidableEq ι] in
 /-- A real-radius corollary of `rs_Lambda_extended_le_of_epsCa_int_radius`. For
-`δ ∈ (0, (n-k-1)/n)` and `η ∈ [0,1)`, if
+`δ ∈ (0, (n-k-1)/n)` and `η < 1`, if
 
   `ε_ca(C, δ) ≤ η · (1/k - n/(k·|F|))`
 
@@ -120,7 +126,7 @@ theorem rs_Lambda_extended_le_of_epsCa
     (hk_pos : 0 < k)
     (hδ_pos : 0 < δ)
     (hδ_radius : δ < ((Fintype.card ι : ℝ) - k - 1) / Fintype.card ι)
-    (_hη_lo : 0 ≤ η) (hη_lt : η < 1)
+    (hη_lt : η < 1)
     (hn_lt_F : Fintype.card ι < Fintype.card F)
     (hε_ca :
         (epsCa (F := F) (A := F)
@@ -194,7 +200,7 @@ theorem rs_Lambda_extended_le_of_epsCa
   have hmain :=
     rs_Lambda_extended_le_of_epsCa_int_radius
       (domain := domain) (k := k) (f := f) (ε := ε)
-      hk_pos hf_lt hε_lt h_eps_toReal
+      hf_lt hε_lt h_eps_toReal
   -- `Λ` at `δ` equals `Λ` at the grid point `f/n`.
   have hΛ :
       Lambda ((ReedSolomon.code domain (k + 1) : Set (ι → F))) δ
@@ -219,37 +225,5 @@ theorem rs_Lambda_extended_le_of_epsCa
   exact hmain.trans (by exact_mod_cast hceil)
 
 end CAImpliesList
-
-section ListVsCAseparation
-
-/-- A characteristic-two Reed--Solomon family separating list decoding from CA. For the
-full-domain code of rate `ρ = 1/8`,
-
-  `ε_ca(C, 1 - ρ^{1/3}) ≥ 1 - 1/|F|` .
-
-The interleaved threshold is strictly below `1 - ρ^{2/3}`, because the source supplies joint
-distance equal to that boundary while `epsCa` uses a non-strict guard. -/
-theorem rs_epsCa_large_below_johnson_radius
-    {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F] [CharP F 2]
-    (_hF_eq_ι : Fintype.card F = Fintype.card ι)
-    -- Without `|F| ≥ 8` the dimension `k = ⌊|F| / 8⌋` truncates to 0,
-    -- giving the trivial code `{0}` for which the conclusion's
-    -- `ε_ca(C, _) ≥ 1 - 1/|F|` is not the intended separation result.
-    -- The paper implicitly assumes `|F|` large enough for a meaningful
-    -- rate-`1/8` code; we surface that hypothesis explicitly.
-    (_hF_ge : 8 ≤ Fintype.card F) (δ_int : ℝ≥0)
-    (_hδ_int : (δ_int : ℝ) < 1 - (1 / 8 : ℝ) ^ ((2 : ℝ) / 3))
-    (domain : ι ↪ F) :
-    let k : ℕ := Fintype.card F / 8
-    let ρ : ℝ := 1 / 8
-    let C := ReedSolomon.code domain k
-    epsCa (F := F) (A := F) ((C : Set (ι → F)))
-        ((1 - ρ ^ ((1 : ℝ) / 3)).toNNReal)
-        δ_int ≥
-      ENNReal.ofReal (1 - 1 / Fintype.card F) := by
-  sorry -- ABF26-T5.4; external admit [BenSassonGKS20 Lem 3.3].
-
-end ListVsCAseparation
 
 end CodingTheory

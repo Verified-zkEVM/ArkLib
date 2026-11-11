@@ -72,13 +72,6 @@ theorem singleEqPolynomial_zeroOne_C (r : Fin 2) (x : Fin 2) :
     (singleEqPolynomial (r : R) (C x) : MvPolynomial σ R) = if x = r then 1 else 0 := by
   fin_cases r <;> fin_cases x <;> simp
 
--- @[simp]
--- theorem singleEqPolynomial_eval_zeroOne (x : Fin n → Fin 2) (r : Fin n → Fin 2) (i : Fin n) :
---     (eval fun i => ↑↑(x i))
---     (match r i with
---     | 0 => 1 - X i
---     | 1 => X i) = 1 := by
-
 variable [Fintype σ]
 
 abbrev eqPolynomial' : R[X (σ ⊕ σ)] :=
@@ -120,6 +113,17 @@ theorem eqTilde_append {m n : ℕ} (x₁ y₁ : Fin m → R) (x₂ y₂ : Fin n 
   rw [Fin.prod_univ_add]
   congr 1 <;> exact Finset.prod_congr rfl fun i _ => by simp [Fin.append]
 
+/-- Ring homomorphisms commute with the equality kernel. -/
+theorem map_eqTilde {S : Type*} [CommRing S] (f : R →+* S) (x y : σ → R) :
+    f (eqTilde x y) = eqTilde (fun i => f (x i)) (fun i => f (y i)) := by
+  simp [eqTilde_eq_prod, map_prod]
+
+/-- The equality polynomial factors off its first coordinate. -/
+theorem eqTilde_cons {n : ℕ} (x₀ y₀ : R) (x y : Fin n → R) :
+    eqTilde (Fin.cons x₀ x : Fin (n + 1) → R) (Fin.cons y₀ y) =
+      (x₀ * y₀ + (1 - x₀) * (1 - y₀)) * eqTilde x y := by
+  simp only [eqTilde_eq_prod, Fin.prod_univ_succ, Fin.cons_zero, Fin.cons_succ]
+
 -- @[simp]
 theorem eqPolynomial_zeroOne (r : σ → Fin 2) : (eqPolynomial r : MvPolynomial σ R) =
     ∏ i : σ, if r i = 0 then 1 - X i else X i := by
@@ -135,7 +139,7 @@ theorem eqPolynomial_eval_zeroOne (r x : σ → Fin 2) :
     have (i : Fin 2) : (1 - (i : R)) * (1 - (i : R)) + i * i = 1 := by
       fin_cases i <;> ring_nf <;> simp
     simp [this]
-  · rw [if_neg h]
+  · rw [ite_eq_right h]
     have : ∃ i : σ, x i ≠ r i := Function.ne_iff.mp h
     obtain ⟨i, hi⟩ := this
     refine Finset.prod_eq_zero (Finset.mem_univ i) ?_
@@ -166,6 +170,15 @@ theorem MLE_eval (x : σ → R) (evals : (σ → Fin 2) → R) :
     eval x (MLE evals) =
       ∑ b : σ → Fin 2, eqTilde (b : σ → R) x * evals b := by
   simp only [MLE, eval_sum, eval_mul, eval_C, eqTilde]
+
+/-- Evaluation of an integer-indexed Boolean table in the equality-kernel basis. -/
+theorem MLE'_eval {n : ℕ} (r : Fin n → R) (v : Fin (2 ^ n) → R) :
+    eval r (MLE' v) = ∑ j : Fin (2 ^ n),
+      eqTilde (finFunctionFinEquiv.symm j : Fin n → R) r * v j := by
+  rw [MLE', MLE_eval]
+  simpa only [Equiv.symm_apply_apply, Function.comp_apply] using
+    (finFunctionFinEquiv.sum_comp (fun j : Fin (2 ^ n) =>
+      eqTilde (finFunctionFinEquiv.symm j : Fin n → R) r * v j))
 
 @[simp]
 theorem MLE_eval_zeroOne (x : σ → Fin 2) (evals : (σ → Fin 2) → R) :
@@ -340,6 +353,29 @@ theorem eq_MLE_of_degreeOf_le_one_of_eval_zeroOne_eq {n : ℕ}
   refine eq_of_degreeOf_le_one_of_eval_zeroOne_eq p (MLE evals) hdegree
     (MLE_degreeOf evals) fun x => ?_
   rw [heval x, MLE_eval_zeroOne]
+
+/-- A multilinear evaluation in an algebra is the equality-weighted sum of the transported
+Boolean evaluations. Boolean interpolation makes this valid over commutative rings, including
+rings with zero divisors. -/
+theorem aeval_multilinear_eq_sum_eqTilde {A : Type*} [CommRing A] [Algebra R A]
+    {n : ℕ} {p : MvPolynomial (Fin n) R} (hp : p ∈ R⦃≤ 1⦄[X Fin n])
+    (r : Fin n → A) :
+    aeval r p = ∑ y : Fin n → Fin 2,
+      eqTilde (y : Fin n → A) r * algebraMap R A (eval (y : Fin n → R) p) := by
+  have hq : map (algebraMap R A) p ∈ A⦃≤ 1⦄[X Fin n] := by
+    rw [mem_restrictDegree] at hp ⊢
+    exact fun s hs i => hp s (support_map_subset _ _ hs) i
+  have hMLE : map (algebraMap R A) p =
+      MLE (fun y : Fin n → Fin 2 => algebraMap R A (eval (y : Fin n → R) p)) := by
+    refine eq_MLE_of_degreeOf_le_one_of_eval_zeroOne_eq _ _
+      ((mem_restrictDegree_iff_degreeOf_le _ _).mp hq) fun y => ?_
+    have hpt : (y : Fin n → A) = fun i => algebraMap R A ((y : Fin n → R) i) :=
+      funext fun i => (map_natCast (algebraMap R A) _).symm
+    rw [hpt, eval_map]
+    exact (eval₂_comp (algebraMap R A) (y : Fin n → R) p).symm
+  calc
+    aeval r p = eval r (map (algebraMap R A) p) := by rw [eval_map, aeval_def]
+    _ = _ := by rw [hMLE, MLE_eval]
 
 /-! ### Axis-cross vanishing does not determine a multilinear polynomial
 

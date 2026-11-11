@@ -4,6 +4,28 @@ The typed interaction API names describe the mathematical data and its interpret
 layer lives in [`Source.lean`](../../ArkLib/Interaction/Oracle/Source.lean); named contexts and their
 models live in [`Resource.lean`](../../ArkLib/Interaction/Oracle/Resource.lean).
 
+## Public names and explanations
+
+Write theorem names, docstrings, and PR descriptions for a general cryptographic audience.
+Prefer prover, verifier, transcript, oracle, private memory, soundness, completeness, and sequential
+composition. Define a less familiar term where the distinction first matters.
+
+A public theorem's docstring should first state its mathematical conclusion and assumptions.
+Then explain implementation details and restrictions. For example, say "the prover's remaining
+strategy, including its private memory" before referring to a continuation. Say "the output
+satisfies the next protocol's input assumptions" when explaining admissibility. Say "interpret
+the output oracles using this execution's inputs and messages" when explaining closing.
+
+Names such as `execute_append` or `soundness_append` are good choices when the namespace and
+statement identify the operation. Supporting lemmas may name the exact upstream operation, such
+as `appendFlat` or `splitPrefix`. Do not rename existing public APIs just to shorten their names;
+preserve useful distinctions and compatibility. Prefer sensible namespace placement and local
+qualified names to repeated `_root_` qualifiers when possible.
+
+Review wording together with the theorem: identify the quantified prover, what is random, the
+winning event, which intermediate inputs need a bound, and whether effects may be reordered.
+Plain language must preserve these conditions.
+
 ## Sources and their morphisms
 
 `SourceCtx Query Env` is a reader-valued `OracleContext`. It specifies a response type for each
@@ -90,6 +112,23 @@ it to closed oracle claims. `Problem` adds claim-dependent witnesses, admissibil
 that entails admissibility. `language` existentially quantifies the witness. `Relation` removes the
 admissibility restriction; it does not assert that every claim has a witness.
 
+## Verifier strategies and fragments
+
+`Verifier.Fragment` is the existing restricted strategy type with a chosen family of leaf values.
+Queries still run at the protocol nodes, using their declared access. Returning a leaf value does
+not execute a terminal action. `Verifier.Strategy` is the completed-protocol specialization whose
+leaf value is the final query program; `executeStrategies` runs that program once.
+
+Both forms use the same recursive interpreter, `toCounterpartWith`. `toCounterpartValue` returns
+a fragment's value directly; `toCounterpart` leaves the translated final query program for the
+executor to run. The interpreter receives concrete messages and maintains the handler. Verifier
+authoring receives only the declared query interface.
+
+`Verifier.appendFragment` joins a value-returning prefix to a suffix selected by a pure function of
+the public prefix path and returned value. The path determines the suffix tree, roles, and oracle
+interfaces; the value selects its strategy within that tree. `Verifier.append` specializes the
+suffix to a completed verifier. Neither operation executes a pending action at the join.
+
 ## Execution data and closing
 
 `CoreRun` stores a concrete path, initial behavior, private output, and the terminal open claim.
@@ -112,9 +151,10 @@ state, and computes the next private state from the actual execution path and ac
 `OrderedExecution` runs these stages in order and stops on rejection.
 
 The invariant theorems require preservation at every stage. Their probabilistic forms require
-almost-sure acceptance and invariant preservation; the measure bridge additionally assumes the
-stated discrete response spaces and agreement between the query measures and their probability
-mass functions. These interfaces and theorems do not by themselves assert execution provenance,
+almost-sure acceptance and invariant preservation; the measure bridge additionally assumes
+discrete measurable spaces on the stage states and `OracleSpec.AnswerMeasure` answer measures,
+whose answers carry the discrete σ-algebra and need no measurable-space assumption. These
+interfaces and theorems do not by themselves assert execution provenance,
 noninterference of values captured when constructing a stage, or a security composition theorem.
 
 `TypeTree.sourceAfter` is one source context for the final accumulated access signature. Its
@@ -142,9 +182,16 @@ bounds accepted true outputs for a false input sum under a fresh uniform finite-
 before that challenge. Neither theorem states multi-round or knowledge soundness.
 
 `legacy_input_iff` and `legacy_output_iff` give both directions of relation correspondence for
-arbitrary concrete claims. `legacy_honest_verifier_correspondence` is narrower: it compares honest
-executions. The legacy verifier reads the input polynomial for its next target, while the typed
-verifier reads the sent polynomial. Their arbitrary-message executions are not identified.
+arbitrary concrete claims. `legacy_verifier_correspondence` identifies single-round scalar outputs
+for arbitrary sent polynomials and fixed challenges, including rejection: both verifiers take the
+sent polynomial at the challenge as the next target and keep the input polynomial as the output
+oracle. It does not relate the legacy-layer and interaction-layer security games.
+
+The legacy round-by-round knowledge-soundness statements in `Sumcheck/Spec/` require
+`[IsDomain R]` on top of `[Fintype R]`; without it the error `deg / |R|` fails over rings with zero
+divisors. A finite commutative semiring with `IsDomain` is a finite field or the Boolean semiring,
+and two degree-`deg` polynomials that differ somewhere agree on at most `deg` points in both cases.
+Verifier execution and completeness keep the commutative-semiring generality.
 
 ## Consecutive multivariate rounds
 
@@ -296,7 +343,6 @@ unchanged. For named contexts and their views, replace old `tensor` uses by `dis
 | `executeRoundsSampled_measure_complete` | `executeRoundsSampled_measureCompleteness` |
 | `executeRounds_uniform_measure_complete` | `executeRounds_uniform_measureCompleteness` |
 | Soundness `*_measure_soundness` | `*_measureSoundness` |
-| `legacy_verifier_correspondence` | `legacy_honest_verifier_correspondence` |
 | `TypeTree.FullPrefix` | `TypeTree.ExecutionPrefix` |
 | Prefix `resources`, `resourceInclusion` | `availableContext`, `contextInclusion` |
 | Prefix `no_future` | `available_length_le` |

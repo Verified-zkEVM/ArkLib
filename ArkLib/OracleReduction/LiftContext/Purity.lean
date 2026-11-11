@@ -6,7 +6,7 @@ Authors: ArkLib Contributors
 module
 
 public import ArkLib.OracleReduction.Composition.Sequential.GuardedCompleteness
-public import ArkLib.OracleReduction.LiftContext.Reduction
+public import ArkLib.OracleReduction.LiftContext.OracleReduction
 
 /-!
 # Purity and guardedness under context lifting
@@ -46,3 +46,19 @@ def Verifier.GuardedForm.liftContext (lens : Statement.Lens A B C D)
         pure (lens.lift stmt (G.out (lens.proj stmt) tr)) else failure
     rw [G.verify_eq]
     split <;> simp
+
+/-- Executable oracle context lifting preserves the guard on the materialized verifier. -/
+def OracleVerifier.liftContextGuardedForm
+    {Outer_ιₛᵢ Outer_ιₛₒ Inner_ιₛᵢ Inner_ιₛₒ : Type}
+    {OuterOStmtIn : Outer_ιₛᵢ → Type} {OuterOStmtOut : Outer_ιₛₒ → Type}
+    {InnerOStmtIn : Inner_ιₛᵢ → Type} {InnerOStmtOut : Inner_ιₛₒ → Type}
+    [∀ i, OracleInterface (OuterOStmtIn i)] [∀ i, OracleInterface (OuterOStmtOut i)]
+    [∀ i, OracleInterface (InnerOStmtIn i)] [∀ i, OracleInterface (InnerOStmtOut i)]
+    [∀ i, OracleInterface (p.Message i)]
+    (lens : OracleStatement.ExecutableLens A B C D
+      OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut)
+    (V : OracleVerifier spec C InnerOStmtIn D InnerOStmtOut p)
+    (output : V.LiftContextOutput lens) (G : V.toVerifier.GuardedForm) :
+    (V.liftContext lens output).toVerifier.GuardedForm :=
+  (G.liftContext lens.toLens V.toVerifier).ofEq
+    (V.liftContext_toVerifier_comm lens output).symm

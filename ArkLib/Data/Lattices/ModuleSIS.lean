@@ -16,9 +16,9 @@ A small, ArkLib-native generic `SIS` search game and its Module-SIS specializati
 over the computable cyclotomic ring `Rq Φ`. The kernel-form relation: given a uniformly
 random matrix `A`, find a nonzero short vector `z` with `A *ᵥ z = 0`.
 
-Note, there is another SIS definition in VCV-io, that is however not defined over computable
-polynomials (CompPoly), for details checkout:
-`VCV-io/LatticeCrypto/HardnessAssumptions/ShortIntegerSolution.lean`.
+Note, there is another SIS definition in VCVio, that is however not defined over computable
+polynomials (CompPoly), for details checkout VCVio's
+`LatticeCrypto/HardnessAssumptions/ShortIntegerSolution.lean`.
 
 This is the hardness assumption the Ajtai [Ajt96] commitment binding reductions target, in
 the module form used by Greyhound [NS24] and Hachi [NOZ26].
@@ -69,7 +69,7 @@ def experiment (problem : Problem Sample Solution) (adv : Adversary problem) : P
 /-- Search advantage for a SIS-style problem. -/
 noncomputable def advantage (problem : Problem Sample Solution) (adv : Adversary problem) :
     ℝ≥0∞ :=
-  Pr[= true | experiment problem adv]
+  𝒟[experiment problem adv] {true}
 
 end SIS
 

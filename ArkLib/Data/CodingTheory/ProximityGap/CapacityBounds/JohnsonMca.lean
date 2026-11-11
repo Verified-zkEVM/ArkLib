@@ -32,7 +32,7 @@ open CoreDefinitions ProximityGap
 section General
 
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
 omit [DecidableEq ι] in
 /-- Bounds affine-line MCA error below the 1.5-Johnson radius of a linear code. -/
@@ -40,7 +40,6 @@ theorem linear_mcaError_le_one_point_five_johnson
     (C : LinearCode ι F) (δ_min η δ : ℝ≥0)
     (_h_δ_min : (δ_min : ℝ) = (Code.minDist (C : Set (ι → F)) : ℝ) / Fintype.card ι)
     (_hη : 0 < η) (_hη_lt_δ_min : η < δ_min)
-    (_hδ_pos : 0 < δ)
     (_hδ : (δ : ℝ) ≤ 1 - ((1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / 3))) :
     mcaError (AffineLineGenerator F) C (δ : ℝ) ≤
       ENNReal.ofReal

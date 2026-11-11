@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 module
 
+public import Mathlib.Algebra.Polynomial.Eval.SMul
 public import Mathlib.RingTheory.Polynomial.DegreeLT
 
 /-!
@@ -53,17 +54,10 @@ theorem hasseCoeffAt_zero_eq_coeff (i : ℕ) (p : R[X]) :
     hasseCoeffAt (0 : R) i p = p.coeff i := by
   rw [hasseCoeffAt_apply, ← taylor_coeff, taylor_zero]
 
-/-- Hasse derivatives commute with mapping polynomial coefficients along a ring homomorphism. -/
-@[simp]
-theorem map_hasseDeriv {S : Type*} [Semiring S] (f : R →+* S) (i : ℕ) (p : R[X]) :
-    (hasseDeriv i p).map f = hasseDeriv i (p.map f) := by
-  ext n
-  simp [hasseDeriv_coeff]
-
 /-- Hasse coefficients are natural under coefficient-ring homomorphisms. -/
 theorem map_hasseCoeffAt {S : Type*} [Semiring S] (f : R →+* S) (a : R) (i : ℕ)
     (p : R[X]) : f (hasseCoeffAt a i p) = hasseCoeffAt (f a) i (p.map f) := by
-  rw [hasseCoeffAt_apply, hasseCoeffAt_apply, ← eval_map_apply, map_hasseDeriv]
+  rw [hasseCoeffAt_apply, hasseCoeffAt_apply, ← eval_map_apply, ← hasseDeriv_map]
 
 /-- The first `m` Hasse coefficients of a polynomial at `r`.
 

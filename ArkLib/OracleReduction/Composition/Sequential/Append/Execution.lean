@@ -31,7 +31,7 @@ section Execution
 The appended prover `P₁.append P₂` is defined by a three-way `dif` on the round index (below the
 seam / at the seam / above the seam), and each branch transports its state along a type equality.
 Reasoning about `runToRound` therefore forces us to work up to `HEq`.  The lemmas below build the
-transport ladder that `Prover.append_run` needs; they are all `private`, since they exist only to
+transport ladder that `Prover.append_run` needs; most are `private`, since they exist only to
 serve that proof and the security proofs later in this file.
 -/
 
@@ -42,9 +42,10 @@ variable {P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁}
 
 /-! ### Transport helpers
 
-The generic `HEq` congruence lemmas this ladder runs on (`heq_apply`, `heq_funext`, `heq_pi`,
-`heq_prod`, `heq_bind`, `heq_dcast`, …) live in `ArkLib/ToMathlib/Logic/HEq.lean`; only the one
-below is specific to `OracleComp` and so stays here. -/
+The generic `HEq` congruence lemmas this ladder runs on (`heq_apply`, `heq_pi`, `heq_prod`,
+`heq_bind`, `heq_dcast`, …) live in `ArkLib/ToMathlib/Logic/HEq.lean`; Mathlib's `Function.hfunext`
+supplies function extensionality. Only the lemma below is specific to `OracleComp` and stays
+here. -/
 
 /-- Congruence for `liftM` along a fixed `SubSpec` inclusion. The `OracleComp` analogue of
 `heq_bind` / `heq_pure`, which cannot live with them because it mentions `SubSpec`. -/
@@ -69,7 +70,7 @@ private theorem append_sendMessage_left (i : Fin (m + n)) (hi : i.val < m)
         (P₁.sendMessage ⟨⟨i.val, hi⟩, hDir₁⟩ state₁) := by
   conv_lhs => unfold Prover.append
   dsimp only
-  rw [dif_pos hi]
+  rw [dite_eq_left hi]
   refine (cast_heq _ _).trans (heq_of_eq ?_)
   congr 1
   exact eq_of_heq ((cast_heq _ _).trans hst)
@@ -85,7 +86,7 @@ private theorem append_receiveChallenge_left (i : Fin (m + n)) (hi : i.val < m)
         (P₁.receiveChallenge ⟨⟨i.val, hi⟩, hDir₁⟩ state₁) := by
   conv_lhs => unfold Prover.append
   dsimp only
-  rw [dif_pos hi]
+  rw [dite_eq_left hi]
   refine (cast_heq _ _).trans (heq_of_eq ?_)
   congr 1
   exact eq_of_heq ((cast_heq _ _).trans hst)
@@ -145,7 +146,7 @@ private theorem processRound_eq_bind {N : ℕ} {pSpec : ProtocolSpec N} (j : Fin
 
 /-- Lifting an `oSpec` computation into the first component and then into the appended protocol
 is the same as lifting it into the appended protocol directly. -/
-private theorem liftAppendLeft_liftM {α : Type} (oa : OracleComp oSpec α) :
+theorem liftAppendLeft_liftM {α : Type} (oa : OracleComp oSpec α) :
     (liftAppendLeft pSpec₂ (liftM oa : OracleComp (oSpec + [pSpec₁.Challenge]ₒ) α))
       = (liftM oa : OracleComp (oSpec + [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) α) := by
   unfold liftAppendLeft
@@ -157,7 +158,7 @@ private theorem liftAppendLeft_liftM {α : Type} (oa : OracleComp oSpec α) :
 
 /-- Lifting a left-component challenge query into the appended protocol queries the
 left-injected index and transports the response back. -/
-private theorem liftAppendLeft_getChallenge (i : ChallengeIdx pSpec₁) :
+theorem liftAppendLeft_getChallenge (i : ChallengeIdx pSpec₁) :
     liftAppendLeft pSpec₂
         ((liftM (pSpec₁.getChallenge i)) :
           OracleComp (oSpec + [pSpec₁.Challenge]ₒ) (pSpec₁.Challenge i))
@@ -217,12 +218,12 @@ private theorem append_processRound_left_pure_input (j : Fin (m + n)) (hj : j.va
           (pSpec₁.Challenge ⟨⟨j.val, hj⟩, hB⟩ → P₁.PrvState (⟨j.val, hj⟩ : Fin m).succ) :=
       congrArg _ hFun
     refine heq_bind rfl hPairOut HEq.rfl ?_
-    refine heq_funext rfl hMOut ?_
+    refine Function.hfunext rfl ?_
     intro c c' hc
     obtain rfl := eq_of_heq hc
     refine heq_bind hFun hPairOut ?_ ?_
     · exact heq_liftM hFun (append_receiveChallenge_left j hj hA hB st st₁ hst)
-    · refine heq_funext hFun hMOut ?_
+    · refine Function.hfunext hFun ?_
       intro f f' hf
       exact heq_pure hPairOut
         (heq_prod hTrS hStS
@@ -257,7 +258,7 @@ private theorem append_processRound_left_pure_input (j : Fin (m + n)) (hj : j.va
             (pSpec₁.Transcript (⟨j.val, hj⟩ : Fin m).succ
               × P₁.PrvState (⟨j.val, hj⟩ : Fin m).succ) :=
         congrArg _ hPairOut
-      refine heq_funext hPairIn hMOut ?_
+      refine Function.hfunext hPairIn ?_
       intro x x' hx
       exact heq_pure hPairOut
         (heq_prod hTrS hStS (heq_concat_left j hj (heq_fst hMsg hStS hx) htr)
@@ -314,8 +315,7 @@ private theorem append_runToRound_left (stmt : Stmt₁) (wit : Wit₁) (j : Fin 
     simp only [liftM_bind]
     refine heq_bind (payload_left_eq _ _ (by simp)) (payload_left_eq _ _ (by simp))
       (ih _ (by simp)) ?_
-    refine heq_funext (payload_left_eq _ _ (by simp))
-      (congrArg _ (payload_left_eq _ _ (by simp))) ?_
+    refine Function.hfunext (payload_left_eq _ _ (by simp)) ?_
     intro x x' hx
     exact append_processRound_left_pure_input (Fin.castLE hle i) i.isLt
       x.1 x.2 x'.1 x'.2
@@ -337,7 +337,7 @@ private theorem append_sendMessage_seam (i : Fin (m + n)) (him : i.val = m) (hn 
         (P₁.output state₁ >>= fun ctx => P₂.sendMessage ⟨⟨0, hn⟩, hDir₂⟩ (P₂.input ctx)) := by
   conv_lhs => unfold Prover.append
   dsimp only
-  rw [dif_neg (by omega : ¬ i.val < m), dif_pos him]
+  rw [dite_eq_right (by omega : ¬ i.val < m), dite_eq_left him]
   refine (cast_heq _ _).trans (heq_of_eq ?_)
   exact congrArg (fun z => P₁.output z >>= fun ctx =>
     P₂.sendMessage ⟨⟨0, hn⟩, hDir₂⟩ (P₂.input ctx))
@@ -356,7 +356,7 @@ private theorem append_receiveChallenge_seam (i : Fin (m + n)) (him : i.val = m)
         (P₂.receiveChallenge ⟨⟨0, hn⟩, hDir₂⟩ (P₂.input (outputFn state₁))) := by
   conv_lhs => unfold Prover.append
   dsimp only
-  rw [dif_neg (by omega : ¬ i.val < m), dif_pos him]
+  rw [dite_eq_right (by omega : ¬ i.val < m), dite_eq_left him]
   refine (cast_heq _ _).trans (heq_of_eq ?_)
   rw [hOutput]
   simp only [pure_bind]
@@ -373,7 +373,7 @@ private theorem append_sendMessage_right (i : Fin (m + n)) (hi : m < i.val) (hik
         (P₂.sendMessage ⟨⟨i.val - m, hik⟩, hDir₂⟩ state₂) := by
   conv_lhs => unfold Prover.append
   dsimp only
-  rw [dif_neg (by omega : ¬ i.val < m), dif_neg (by omega : ¬ i.val = m)]
+  rw [dite_eq_right (by omega : ¬ i.val < m), dite_eq_right (by omega : ¬ i.val = m)]
   refine (cast_heq _ _).trans (heq_of_eq ?_)
   congr 1
   exact eq_of_heq ((heq_dcast _ _).trans ((cast_heq _ _).trans hst))
@@ -389,7 +389,7 @@ private theorem append_receiveChallenge_right (i : Fin (m + n)) (hi : m < i.val)
         (P₂.receiveChallenge ⟨⟨i.val - m, hik⟩, hDir₂⟩ state₂) := by
   conv_lhs => unfold Prover.append
   dsimp only
-  rw [dif_neg (by omega : ¬ i.val < m), dif_neg (by omega : ¬ i.val = m)]
+  rw [dite_eq_right (by omega : ¬ i.val < m), dite_eq_right (by omega : ¬ i.val = m)]
   refine (cast_heq _ _).trans (heq_of_eq ?_)
   congr 1
   exact eq_of_heq ((heq_dcast _ _).trans ((cast_heq _ _).trans hst))
@@ -456,7 +456,7 @@ private theorem concatLR_apply_lt {k : Fin (m + n + 1)} {l : Fin (n + 1)} (hkl :
     (i : Fin k.val) (h : i.val < m) :
     HEq (concatLR hkl tr₁ tr₂ i) (tr₁ ⟨i.val, h⟩) := by
   unfold concatLR
-  rw [dif_pos h]
+  rw [dite_eq_left h]
   exact cast_heq _ _
 
 /-- Past the seam, `concatLR` reads from its right (partial) transcript. -/
@@ -465,7 +465,7 @@ private theorem concatLR_apply_ge {k : Fin (m + n + 1)} {l : Fin (n + 1)} (hkl :
     (i : Fin k.val) (h : ¬ i.val < m) (h2 : i.val - m < l.val) :
     HEq (concatLR hkl tr₁ tr₂ i) (tr₂ ⟨i.val - m, h2⟩) := by
   unfold concatLR
-  rw [dif_neg h]
+  rw [dite_eq_right h]
   exact cast_heq _ _
 
 /-- The empty transcript at round `0` of a non-empty protocol. -/
@@ -597,13 +597,13 @@ private theorem append_processRound_right_pure_input (l : Fin n) (hl : 0 < l.val
         = (pSpec₂.Challenge ⟨l, hB⟩ → P₂.PrvState l.succ) :=
       congrArg₂ (fun X Y => X → Y) hChal hStS
     refine heq_bind rfl (congrArg₂ Prod rfl hStS) HEq.rfl ?_
-    refine heq_funext rfl (congrArg _ (congrArg₂ Prod rfl hStS)) ?_
+    refine Function.hfunext rfl ?_
     intro c c' hc
     obtain rfl := eq_of_heq hc
     refine heq_bind hFun (congrArg₂ Prod rfl hStS) ?_ ?_
     · exact heq_liftM hFun
         (append_receiveChallenge_right' (Fin.natAdd m l) l hil hl hA hB st st₂ hst)
-    · refine heq_funext hFun (congrArg _ (congrArg₂ Prod rfl hStS)) ?_
+    · refine Function.hfunext hFun ?_
       intro f f' hf
       refine heq_pure (congrArg₂ Prod rfl hStS) ?_
       refine heq_prod rfl hStS ?_ (heq_apply hChal hStS hf (cast_heq hChal c).symm)
@@ -624,7 +624,7 @@ private theorem append_processRound_right_pure_input (l : Fin n) (hl : 0 < l.val
     refine heq_bind hPairIn (congrArg₂ Prod rfl hStS) ?_ ?_
     · exact heq_liftM hPairIn
         (append_sendMessage_right' (Fin.natAdd m l) l hil hl hA hB st st₂ hst)
-    · refine heq_funext hPairIn (congrArg _ (congrArg₂ Prod rfl hStS)) ?_
+    · refine Function.hfunext hPairIn ?_
       intro x x' hx
       refine heq_pure (congrArg₂ Prod rfl hStS) ?_
       refine heq_prod rfl hStS ?_ (heq_snd hMsgIdx hStS hx)
@@ -679,13 +679,13 @@ private theorem append_processRound_seam_pure_input (hjlt : m < m + n) (hn : 0 <
         = (pSpec₂.Challenge ⟨⟨0, hn⟩, hB⟩ → P₂.PrvState (⟨0, hn⟩ : Fin n).succ) :=
       congrArg₂ (fun X Y => X → Y) hChal hStS
     refine heq_bind rfl hβ HEq.rfl ?_
-    refine heq_funext rfl (congrArg _ hβ) ?_
+    refine Function.hfunext rfl ?_
     intro c c' hc
     obtain rfl := eq_of_heq hc
     refine heq_bind hFun hβ ?_ ?_
     · exact heq_liftM hFun
         (append_receiveChallenge_seam ⟨m, hjlt⟩ rfl hn outputFn hOutput hA hB st st₁ hst)
-    · refine heq_funext hFun (congrArg _ hβ) ?_
+    · refine Function.hfunext hFun ?_
       intro f f' hf
       refine heq_pure hβ ?_
       refine heq_prod rfl hStS ?_ (heq_apply hChal hStS hf (cast_heq hChal c).symm)
@@ -706,7 +706,7 @@ private theorem append_processRound_seam_pure_input (hjlt : m < m + n) (hn : 0 <
     · exact heq_liftM hα
         (by simpa only [hOutput, pure_bind] using
           append_sendMessage_seam ⟨m, hjlt⟩ rfl hn hA hB st st₁ hst)
-    · refine heq_funext hα (congrArg _ hβ) ?_
+    · refine Function.hfunext hα ?_
       intro x x' hx
       refine heq_pure hβ ?_
       refine heq_prod rfl hStS ?_ (heq_snd hMsgIdx hStS hx)
@@ -770,7 +770,7 @@ private theorem append_processRound_seam (hjlt : m < m + n) (hn : 0 < n)
     refine HEq.trans (heq_bind hα hβ hSend
       (f' := fun x => pure (concatLR hkl tr₁ (Transcript.concat x.1 (emptyTranscript hn)),
         x.2)) ?_) ?_
-    · refine heq_funext hα (congrArg _ hβ) ?_
+    · refine Function.hfunext hα ?_
       intro x x' hx
       refine heq_pure hβ ?_
       refine heq_prod rfl hStS ?_ (heq_snd hMsgIdx hStS hx)
@@ -837,7 +837,7 @@ private theorem append_runToRound_right (hn : 0 < n)
     rw [processRound_eq_bind]
     refine heq_bind (payload_left_eq _ (Fin.last m) (by simp)) hβ
       (append_runToRound_left stmt wit (Fin.last m) _ (by simp)) ?_
-    refine heq_funext (payload_left_eq _ (Fin.last m) (by simp)) (congrArg _ hβ) ?_
+    refine Function.hfunext (payload_left_eq _ (Fin.last m) (by simp)) ?_
     intro x p₁ hx
     refine HEq.trans (append_processRound_seam hjlt hl hSeam x.1 p₁.1
       (heq_fst (transcript_left_type_eq _ (Fin.last m) (by simp))
@@ -871,7 +871,7 @@ private theorem append_runToRound_right (hn : 0 < n)
             × P₂.PrvState ((⟨l + 1, hl⟩ : Fin n).castSucc)) =>
           (P₁.append P₂).processRound (Fin.natAdd m (⟨l + 1, hl⟩ : Fin n))
             (pure (x'.1, cast hStS.symm x'.2))) := by
-      refine heq_funext hα rfl ?_
+      refine Function.hfunext hα ?_
       intro x x' hx
       have h1 : x.1 = x'.1 := eq_of_heq (heq_fst rfl hStS hx)
       have h2 : x.2 = cast hStS.symm x'.2 :=
@@ -901,7 +901,7 @@ private theorem append_runToRound_right (hn : 0 < n)
                 (Fin.natAdd m (⟨l + 1, hl⟩ : Fin n)).succ), p.2)) <$>
             liftAppendRight pSpec₁
               (P₂.processRound (⟨l + 1, hl⟩ : Fin n) (pure q.2)))) := by
-      refine heq_funext rfl (congrArg _ hβ') ?_
+      refine Function.hfunext rfl ?_
       intro q q' hq
       obtain rfl := eq_of_heq hq
       exact append_processRound_right_pure_input (⟨l + 1, hl⟩ : Fin n) (Nat.succ_pos l) q.1 q.2.1
@@ -963,7 +963,7 @@ private theorem append_run_pos (hn : 0 < n)
         ((liftM (P₂.output p.2) :
             OracleComp (oSpec + [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) (Stmt₃ × Wit₃))
           >>= fun ctx => pure ((p.1 : (pSpec₁ ++ₚ pSpec₂).FullTranscript), ctx))) := by
-    refine heq_funext hα rfl ?_
+    refine Function.hfunext hα ?_
     intro p p' hp
     refine heq_of_eq ?_
     have h1 : p.1 = p'.1 := eq_of_heq (heq_fst rfl hStS hp)
@@ -1036,7 +1036,7 @@ theorem append_run_of_seam
               OracleComp (oSpec + [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) (Stmt₃ × Wit₃))
             >>= fun ctx => pure ((cast hTr.symm p.1 : (pSpec₁ ++ₚ pSpec₂).FullTranscript),
               ctx))) := by
-      refine heq_funext hα rfl ?_
+      refine Function.hfunext hα ?_
       intro p p' hp
       refine heq_of_eq ?_
       rw [Prover.append_output_zero rfl p.2 p'.2 (heq_snd hTr hStS hp),

@@ -14,8 +14,8 @@ public import ArkLib.Data.Fin.Tuple.Lemmas
 This file defines the R1CS (Rank-1 Constraint System) relation
 - The definition is in terms of `Fin` vectors and matrices. In the future, we may consider more
   efficient representations such as `Vector` and `Vector m (Vector n α)`.
-- We define padding (on the right) for R1CS instances, and show that padding preserves the R1CS
-  relation.
+- Enlarging an instance pads its public and witness column blocks separately, preserving and
+  reflecting the relation with an explicit witness pullback.
 -/
 
 @[expose] public section
@@ -29,10 +29,11 @@ variable (R : Type*) [CommSemiring R]
 inductive MatrixIdx where | A | B | C deriving Inhabited, DecidableEq
 
 structure Size where
-  m : ℕ -- number of columns
-  n : ℕ -- number of rows
+  m : ℕ -- number of rows
+  n : ℕ -- number of columns
   n_w : ℕ -- number of witness variables
-  n_w_le_n : n_w ≤ n := by omega -- Number of witness variables must be at most the number of rows
+  -- The witness dimension is at most the column dimension.
+  n_w_le_n : n_w ≤ n := by omega
 
 attribute [simp] Size.n_w_le_n
 
@@ -70,59 +71,105 @@ def relation :
     letI 𝕫 := 𝕫 stmt wit
     (matrix .A *ᵥ 𝕫) * (matrix .B *ᵥ 𝕫) = (matrix .C *ᵥ 𝕫)
 
-/-- Pad an R1CS instance (on the right) from `sz₁` to `sz₂` with zeros.
+/-- Pad the public coordinates independently of the witness coordinates. -/
+def embedStatement (sz₁ sz₂ : Size) (stmt : Statement R sz₁) : Statement R sz₂ :=
+  Fin.rightpad sz₂.n_x 0 stmt
 
-Note that this results in truncation if the second size is smaller than the first one. -/
-def pad (sz₁ sz₂ : Size)
-    (stmt : Statement R sz₁)
-    (matrices : MatrixIdx → Matrix (Fin sz₁.m) (Fin sz₁.n) R)
-    (wit : Witness R sz₁) :
-    Statement R sz₂ × (MatrixIdx → Matrix (Fin sz₂.m) (Fin sz₂.n) R) × Witness R sz₂ :=
-  (Fin.rightpad sz₂.n_x 0 stmt,
-    fun idx => Matrix.rightpad sz₂.m sz₂.n 0 (matrices idx),
-    Fin.rightpad sz₂.n_w 0 wit)
+/-- Pad the witness coordinates independently of the public coordinates. -/
+def embedWitness (sz₁ sz₂ : Size) (wit : Witness R sz₁) : Witness R sz₂ :=
+  Fin.rightpad sz₂.n_w 0 wit
 
-/-- Padding preserves the R1CS relation when `sz₁.m ≤ sz₂.m` (no row truncation),
-    `sz₁.n_w ≤ sz₂.n_w` (no witness truncation), and `sz₁.n_x = sz₂.n_x` (same number of
-    public variables). The last condition is essential: padding `stmt` and `wit` independently
-    can misalign the combined vector `𝕫` if `n_x` changes. -/
-theorem pad_preserves_relation (sz₁ sz₂ : Size)
-    (h : sz₁.m ≤ sz₂.m ∧ sz₁.n_w ≤ sz₂.n_w ∧ sz₁.n_x = sz₂.n_x)
-    (stmt : Statement R sz₁)
-    (matrices : MatrixIdx → Matrix (Fin sz₁.m) (Fin sz₁.n) R)
+/-- Recover the original witness coordinates from a witness for the enlarged instance. -/
+def pullbackWitness (sz₁ sz₂ : Size) (hw : sz₁.n_w ≤ sz₂.n_w)
+    (wit : Witness R sz₂) : Witness R sz₁ :=
+  fun j => wit (Fin.castLE hw j)
+
+/-- Enlarge a constraint matrix by padding its public and witness column blocks separately.
+The witness block starts after the enlarged public block. Extra rows and columns are zero. -/
+def embedMatrix (sz₁ sz₂ : Size) (M : Matrix (Fin sz₁.m) (Fin sz₁.n) R) :
+    Matrix (Fin sz₂.m) (Fin sz₂.n) R :=
+  fun i => if hi : i.val < sz₁.m then
+    Fin.append
+      (Fin.rightpad sz₂.n_x 0
+        (fun j : Fin sz₁.n_x => M ⟨i.val, hi⟩
+          (Fin.cast sz₁.n_eq_n_x_add_n_w.symm (Fin.castAdd sz₁.n_w j))))
+      (Fin.rightpad sz₂.n_w 0
+        (fun j : Fin sz₁.n_w => M ⟨i.val, hi⟩
+          (Fin.cast sz₁.n_eq_n_x_add_n_w.symm (Fin.natAdd sz₁.n_x j)))) ∘
+      Fin.cast sz₂.n_eq_n_x_add_n_w
+    else 0
+
+/-- Enlarge each of the three constraint matrices using the same column layout. -/
+def embedMatrices (sz₁ sz₂ : Size) (matrices : ∀ idx, OracleStatement R sz₁ idx) :
+    (∀ idx, OracleStatement R sz₂ idx) :=
+  fun idx => embedMatrix R sz₁ sz₂ (matrices idx)
+
+private theorem sum_mul_𝕫 (sz : Size) (v : Fin sz.n → R)
+    (stmt : Statement R sz) (wit : Witness R sz) :
+    (∑ j, v j * 𝕫 stmt wit j) =
+      (∑ j : Fin sz.n_x,
+        v (Fin.cast sz.n_eq_n_x_add_n_w.symm (Fin.castAdd sz.n_w j)) * stmt j) +
+      ∑ j : Fin sz.n_w,
+        v (Fin.cast sz.n_eq_n_x_add_n_w.symm (Fin.natAdd sz.n_x j)) * wit j := by
+  rw [← (finCongr sz.n_eq_n_x_add_n_w.symm).sum_comp]
+  simp [𝕫, Fin.sum_univ_add]
+
+/-- Matrix multiplication for the enlarged instance recovers the original multiplication on
+its original rows, including for arbitrary values of the unused witness coordinates. -/
+theorem embedMatrix_mulVec (sz₁ sz₂ : Size)
+    (hx : sz₁.n_x ≤ sz₂.n_x) (hw : sz₁.n_w ≤ sz₂.n_w)
+    (M : Matrix (Fin sz₁.m) (Fin sz₁.n) R)
+    (stmt : Statement R sz₁) (wit : Witness R sz₂) :
+    embedMatrix R sz₁ sz₂ M *ᵥ 𝕫 (embedStatement R sz₁ sz₂ stmt) wit =
+      Fin.rightpad sz₂.m 0 (M *ᵥ 𝕫 stmt (pullbackWitness R sz₁ sz₂ hw wit)) := by
+  ext i
+  simp only [mulVec, dotProduct]
+  rw [sum_mul_𝕫]
+  by_cases hi : i.val < sz₁.m
+  · simp only [embedMatrix, hi, ↓reduceDIte, Function.comp_apply, Fin.cast_cast,
+      Fin.cast_eq_self, Fin.append_left, Fin.append_right]
+    rw [Matrix.dotProduct_rightpad_left hw]
+    simp only [embedStatement]
+    rw [Matrix.dotProduct_rightpad hx]
+    rw [Fin.rightpad_apply_lt _ _ _ _ hi]
+    simp only [mulVec, dotProduct]
+    rw [sum_mul_𝕫]
+    rfl
+  · simp [embedMatrix, hi, Fin.rightpad]
+
+/-- Enlarging the public and witness blocks preserves and reflects satisfaction. Reflection
+uses the explicit witness pullback and holds for every witness of the enlarged instance. -/
+theorem relation_embed_iff (sz₁ sz₂ : Size) (hm : sz₁.m ≤ sz₂.m)
+    (hx : sz₁.n_x ≤ sz₂.n_x) (hw : sz₁.n_w ≤ sz₂.n_w)
+    (stmt : Statement R sz₁) (matrices : ∀ idx, OracleStatement R sz₁ idx)
+    (wit : Witness R sz₂) :
+    relation R sz₂ (embedStatement R sz₁ sz₂ stmt)
+      (embedMatrices R sz₁ sz₂ matrices) wit ↔
+      relation R sz₁ stmt matrices (pullbackWitness R sz₁ sz₂ hw wit) := by
+  simp only [relation, embedMatrices, embedMatrix_mulVec R sz₁ sz₂ hx hw]
+  constructor <;> intro h <;> funext i
+  · have hi := congr_fun h (Fin.castLE hm i)
+    simpa [Fin.rightpad, i.isLt, Pi.mul_apply] using hi
+  · by_cases hi : i.val < sz₁.m
+    · simpa [Fin.rightpad, hi, Pi.mul_apply] using congr_fun h ⟨i.val, hi⟩
+    · simp [Fin.rightpad, hi, Pi.mul_apply]
+
+/-- Pulling back a zero-padded witness recovers the original witness. -/
+@[simp]
+theorem pullbackWitness_embedWitness (sz₁ sz₂ : Size) (hw : sz₁.n_w ≤ sz₂.n_w)
     (wit : Witness R sz₁) :
-    relation R sz₁ stmt matrices wit =
-      let (stmt', matrices', wit') := pad R sz₁ sz₂ stmt matrices wit
-      relation R sz₂ stmt' matrices' wit' := by
-  obtain ⟨hm, hnw, hnx⟩ := h
-  have hnx1 : sz₁.n_x = sz₁.n - sz₁.n_w := rfl; have hnx2 : sz₂.n_x = sz₂.n - sz₂.n_w := rfl
-  have hn_w1 := sz₁.n_w_le_n; have hn_w2 := sz₂.n_w_le_n
-  have hn : sz₁.n ≤ sz₂.n := by omega
-  have z_eq : 𝕫 (Fin.rightpad sz₂.n_x 0 stmt) (Fin.rightpad sz₂.n_w 0 wit) =
-      Fin.rightpad sz₂.n 0 (𝕫 stmt wit) := by
-    ext ⟨j, hj⟩; by_cases hlt : j < sz₁.n
-    · conv_rhs => rw [Fin.rightpad_apply_lt _ _ _ _ hlt]
-      simp only [𝕫, Function.comp, Fin.cast_mk]; by_cases hx : j < sz₁.n_x
-      · rw [Fin.append_left_of_lt j _ (by omega), Fin.rightpad_apply_lt _ _ _ _ hx,
-            Fin.append_left_of_lt j _ hx]
-      · rw [Fin.append_right_of_not_lt j _ (by omega),
-            Fin.rightpad_apply_lt _ _ _ _ (show j - sz₂.n_x < sz₁.n_w by omega),
-            Fin.append_right_of_not_lt j _ hx]
-        exact congrArg wit (Fin.ext (show j - sz₂.n_x = j - sz₁.n_x by omega))
-    · push Not at hlt; conv_rhs => rw [Fin.rightpad_apply_ge _ _ _ _ hlt]
-      simp only [𝕫, Function.comp, Fin.cast_mk]
-      rw [Fin.append_right_of_not_lt j _ (by omega : ¬ j < sz₂.n_x),
-          Fin.rightpad_apply_ge _ _ _ _ (show sz₁.n_w ≤ j - sz₂.n_x by omega)]
-  have mv_eq : ∀ (M : Matrix (Fin sz₁.m) (Fin sz₁.n) R),
-      Matrix.rightpad sz₂.m sz₂.n 0 M *ᵥ Fin.rightpad sz₂.n 0 (𝕫 stmt wit) =
-      Fin.rightpad sz₂.m 0 (M *ᵥ 𝕫 stmt wit) := fun M => funext fun ⟨i, hi⟩ => by
-    simp only [mulVec, dotProduct, Matrix.rightpad, Fin.rightpad, Function.comp]
-    split_ifs with him
-    · exact dotProduct_rightpad hn (M ⟨i, him⟩) (𝕫 stmt wit)
-    · exact Finset.sum_eq_zero fun ⟨j, _⟩ _ => by ring
-  simp only [relation, pad, z_eq]; simp only [mv_eq]; apply propext
-  constructor <;> intro heq <;> funext ⟨i, hi⟩ <;> simp only [Pi.mul_apply, Fin.rightpad]
-  · split_ifs with him <;> [exact congr_fun heq ⟨i, him⟩; ring]
-  · simpa [show i < sz₁.m from hi] using congr_fun heq ⟨i, by omega⟩
+    pullbackWitness R sz₁ sz₂ hw (embedWitness R sz₁ sz₂ wit) = wit := by
+  funext i
+  simp [pullbackWitness, embedWitness, Fin.rightpad, i.isLt]
+
+/-- The zero-padded original witness satisfies the enlarged instance exactly when it satisfied
+its original instance. -/
+theorem embed_preserves_relation (sz₁ sz₂ : Size) (hm : sz₁.m ≤ sz₂.m)
+    (hx : sz₁.n_x ≤ sz₂.n_x) (hw : sz₁.n_w ≤ sz₂.n_w)
+    (stmt : Statement R sz₁) (matrices : ∀ idx, OracleStatement R sz₁ idx)
+    (wit : Witness R sz₁) :
+    relation R sz₂ (embedStatement R sz₁ sz₂ stmt) (embedMatrices R sz₁ sz₂ matrices)
+      (embedWitness R sz₁ sz₂ wit) ↔ relation R sz₁ stmt matrices wit := by
+  rw [relation_embed_iff R sz₁ sz₂ hm hx hw, pullbackWitness_embedWitness]
 
 end R1CS

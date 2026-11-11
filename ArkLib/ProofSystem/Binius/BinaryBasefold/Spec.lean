@@ -5,47 +5,48 @@ Authors: Chung Thai Nguyen, Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Binius.BinaryBasefold.Basic
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Relations
 
 /-!
-# ArkLib.ProofSystem.Binius.BinaryBasefold.Spec
+# Binary Basefold protocol specifications
 
-Definitions and results for this component of ArkLib.
+The protocol specifications of the fold, commit, relay and final sum-check steps, of the
+blocks, the core interaction and the query phase, with their oracle-interface and sampling
+instances.
 -/
 
 @[expose] public section
 
 namespace Binius.BinaryBasefold
 
-/-! ## Protocol Specs for Binary Basefold
-This module contains the protocol specs, oracle index bounds,
-instances of OracleInterface and SampleableType for the Binary Basefold protocol.
--/
+/-! ## Protocol components -/
 
 noncomputable section
 open OracleSpec OracleComp ProtocolSpec Finset Polynomial MvPolynomial AdditiveNTT
 open scoped NNReal
 
 variable {r : ℕ} [NeZero r]
-variable {L : Type} [Field L] [Fintype L] [DecidableEq L] [CharP L 2]
+variable {L : Type} [Field L] [Fintype L] [DecidableEq L]
   [SampleableType L]
 variable (𝔽q : Type) [Field 𝔽q] [Fintype 𝔽q] [DecidableEq 𝔽q]
-  [h_Fq_char_prime : Fact (Nat.Prime (ringChar 𝔽q))] [hF₂ : Fact (Fintype.card 𝔽q = 2)]
+  [hF₂ : Fact (Fintype.card 𝔽q = 2)]
+local instance instFactPrimeRingCharSpec [Finite 𝔽q] : Fact (Nat.Prime (ringChar 𝔽q)) :=
+  ⟨CharP.prime_ringChar 𝔽q⟩
 variable [Algebra 𝔽q L]
 variable (β : Fin r → L) [hβ_lin_indep : Fact (LinearIndependent 𝔽q β)]
   [h_β₀_eq_1 : Fact (β 0 = 1)]
-variable {ℓ 𝓡 ϑ : ℕ} (γ_repetitions : ℕ) [NeZero ℓ] [NeZero 𝓡] [NeZero ϑ] -- Should we allow ℓ = 0?
+variable {ℓ 𝓡 ϑ : ℕ} (γ_repetitions : ℕ) [NeZero ℓ] [NeZero 𝓡] [NeZero ϑ]
 variable {h_ℓ_add_R_rate : ℓ + 𝓡 < r} -- ℓ ∈ {1, ..., r-1}
 variable [hdiv : Fact (ϑ ∣ ℓ)]
 
 section IndexBounds
--- TODO: need a main lemma for bounds involving last bIdx = (ℓ / ϑ - 1)
+/-- Offsets through the final block lie before the state-count bound. -/
 @[simp]
-lemma lastBlockIdx_mul_ϑ_add_x_lt_ℓ_succ (x : ℕ) {hx : x ≤ ϑ} :
+lemma lastBlockIdx_mul_ϑ_add_x_lt_ℓ_succ (x : ℕ) (hx : x ≤ ϑ) :
     (ℓ / ϑ - 1) * ϑ + x < ℓ + 1 := by
   have h_div : ℓ = (ℓ / ϑ) * ϑ := (Nat.div_mul_cancel hdiv.out).symm
   have h_ge_one : 1 ≤ ℓ / ϑ := by
-    have h_le: ϑ ≤ ℓ := by apply Nat.le_of_dvd (by exact Nat.pos_of_neZero ℓ); exact hdiv.out
+    have h_le: ϑ ≤ ℓ := blockSize_le_rounds ℓ ϑ
     rw [Nat.one_le_div_iff (by exact Nat.pos_of_neZero ϑ)]; exact h_le
   -- We have (ℓ / ϑ - 1) * ϑ + x ≤ (ℓ / ϑ - 1) * ϑ + ϑ = ℓ - ϑ + ϑ = ℓ
   have h_le_ℓ : (ℓ / ϑ - 1) * ϑ + x ≤ ℓ := by
@@ -56,18 +57,18 @@ lemma lastBlockIdx_mul_ϑ_add_x_lt_ℓ_succ (x : ℕ) {hx : x ≤ ϑ} :
         rw [Nat.sub_add_cancel]
         have h_le: ϑ ≤ ℓ / ϑ * ϑ := by
           rw [Nat.div_mul_cancel hdiv.out]
-          apply Nat.le_of_dvd (by exact Nat.pos_of_neZero ℓ)
-          exact hdiv.out
+          exact blockSize_le_rounds ℓ ϑ
         exact h_le
       _ = ℓ := Nat.div_mul_cancel hdiv.out
   omega
 
+/-- Positions inside the final block lie before the final round. -/
 @[simp]
 lemma lastBlockIdx_mul_ϑ_add_fin_lt_ℓ (i : Fin ϑ) :
     (ℓ / ϑ - 1) * ϑ + ↑i < ℓ := by
   have h_div : ℓ = (ℓ / ϑ) * ϑ := (Nat.div_mul_cancel hdiv.out).symm
   have h_ge_one : 1 ≤ ℓ / ϑ := by
-    have h_le: ϑ ≤ ℓ := by apply Nat.le_of_dvd (by exact Nat.pos_of_neZero ℓ); exact hdiv.out
+    have h_le: ϑ ≤ ℓ := blockSize_le_rounds ℓ ϑ
     rw [Nat.one_le_div_iff (by exact Nat.pos_of_neZero ϑ)]; exact h_le
   -- Since i < ϑ, we have (ℓ/ϑ - 1) * ϑ + i < (ℓ/ϑ - 1) * ϑ + ϑ = ℓ - ϑ + ϑ = ℓ
   calc
@@ -84,17 +85,18 @@ lemma lastBlockIdx_mul_ϑ_add_fin_lt_ℓ (i : Fin ϑ) :
     _ = ℓ := Nat.div_mul_cancel hdiv.out
 
 omit [NeZero r] [NeZero 𝓡] in
-lemma isNeCommitmentRound (bIdx : Fin (ℓ / ϑ - 1)) (x : ℕ) {hx : x < ϑ - 1} :
-    ¬isCommitmentRound ℓ ϑ ⟨↑bIdx * ϑ + x, by
+/-- A position strictly before a nonfinal block endpoint is not a commitment round. -/
+lemma not_isCommitmentRound_of_offset_lt (bIdx : Fin (ℓ / ϑ - 1)) (x : ℕ) (hx : x < ϑ - 1) :
+    ¬IsCommitmentRound ℓ ϑ ⟨↑bIdx * ϑ + x, by
       conv_rhs => rw [←Nat.add_zero (n:=ℓ)]
       change bIdx.val * ϑ + (⟨x, by omega⟩: Fin ϑ).val < ℓ + 0
-      apply bIdx_mul_ϑ_add_i_lt_ℓ_succ (m:=0)
+      apply blockStart_add_offset_lt_rounds_add (m:=0)
     ⟩ := by
-  unfold isCommitmentRound
+  unfold IsCommitmentRound
   let fin_val : Fin ℓ := ⟨↑bIdx * ϑ + x, by
     conv_rhs => rw [←Nat.add_zero (n:=ℓ)]
     change bIdx.val * ϑ + (⟨x, by omega⟩: Fin ϑ).val < ℓ + 0
-    apply bIdx_mul_ϑ_add_i_lt_ℓ_succ (m:=0)
+    apply blockStart_add_offset_lt_rounds_add (m:=0)
   ⟩
   generalize hA : (fin_val.val + 1) = val
   set k := fin_val.val + 1 with hk
@@ -108,9 +110,10 @@ lemma isNeCommitmentRound (bIdx : Fin (ℓ / ϑ - 1)) (x : ℕ) {hx : x < ϑ - 1
     · use (bIdx.val)
   simp only [hNeDiv, ne_eq, false_and, not_false_eq_true]
 
-lemma lastBlockIdx_isNeCommitmentRound (i : Fin ϑ) :
-    ¬isCommitmentRound ℓ ϑ ⟨(ℓ / ϑ - 1) * ϑ + ↑i, lastBlockIdx_mul_ϑ_add_fin_lt_ℓ i⟩ := by
-  unfold isCommitmentRound
+/-- No position in the final block is a commitment round. -/
+lemma not_isCommitmentRound_lastBlock (i : Fin ϑ) :
+    ¬IsCommitmentRound ℓ ϑ ⟨(ℓ / ϑ - 1) * ϑ + ↑i, lastBlockIdx_mul_ϑ_add_fin_lt_ℓ i⟩ := by
+  unfold IsCommitmentRound
   let fin_val : Fin ℓ := ⟨(ℓ / ϑ - 1) * ϑ + ↑i, lastBlockIdx_mul_ϑ_add_fin_lt_ℓ i⟩
   generalize hA : (fin_val.val + 1) = val
   set k := fin_val.val + 1 with hk
@@ -149,6 +152,7 @@ lemma lastBlockIdx_isNeCommitmentRound (i : Fin ϑ) :
       rw [h_sub, Nat.sub_add_cancel (by omega)]; exact h_div_mul
     simp only [h_val_eq_ℓ, ne_eq, not_true_eq_false, and_false, not_false_eq_true]
 
+/-- Each block start lies before the state-count bound. -/
 @[simp]
 lemma blockIdx_mul_ϑ_lt_ℓ_succ (i : Fin (ℓ / ϑ - 1 + 1)) : ↑i * ϑ < ℓ + 1 := by
   have h_ge: ϑ ≤ ℓ := by
@@ -173,14 +177,15 @@ lemma blockIdx_mul_ϑ_lt_ℓ_succ (i : Fin (ℓ / ϑ - 1 + 1)) : ↑i * ϑ < ℓ
     _ < ℓ + 1 := by omega
 
 omit [NeZero r] [NeZero 𝓡] in
-lemma isCommitmentRoundOfNonLastBlock (bIdx : Fin (ℓ / ϑ - 1)) :
-    isCommitmentRound ℓ ϑ ⟨↑bIdx * ϑ + (ϑ - 1), by
+/-- Each nonfinal block endpoint is a commitment round. -/
+lemma isCommitmentRound_nonlastBlock (bIdx : Fin (ℓ / ϑ - 1)) :
+    IsCommitmentRound ℓ ϑ ⟨↑bIdx * ϑ + (ϑ - 1), by
       have hpos: ϑ > 0 := by exact Nat.pos_of_neZero ϑ
       conv_rhs => rw [←Nat.add_zero (n:=ℓ)]
       change bIdx.val * ϑ + (⟨ϑ - 1, by omega⟩: Fin ϑ).val < ℓ + 0
-      apply bIdx_mul_ϑ_add_i_lt_ℓ_succ (m:=0)
+      apply blockStart_add_offset_lt_rounds_add (m:=0)
     ⟩ := by
-  unfold isCommitmentRound
+  unfold IsCommitmentRound
   simp only [ne_eq] -- ⊢ ϑ ∣ ↑bIdx * ϑ + (ϑ - 1) + 1 ∧ ¬↑bIdx * ϑ + (ϑ - 1) + 1 = ℓ
   have h_eq: ↑bIdx * ϑ + (ϑ - 1) + 1 = (↑bIdx + 1) * ϑ := by
     rw [Nat.add_assoc, Nat.sub_add_cancel (by exact NeZero.one_le)];
@@ -196,143 +201,142 @@ lemma isCommitmentRoundOfNonLastBlock (bIdx : Fin (ℓ / ϑ - 1)) :
       _ = ℓ - ϑ := by
         have h_bound : 1 ≤ ℓ / ϑ := by
           have h_le: ϑ ≤ ℓ := by
-            apply Nat.le_of_dvd (by exact Nat.pos_of_neZero ℓ); exact hdiv.out
+            exact blockSize_le_rounds ℓ ϑ
           rw [Nat.one_le_div_iff (by exact Nat.pos_of_neZero ϑ)]; exact h_le
         rw [Nat.sub_mul, Nat.one_mul, Nat.div_mul_cancel (hdiv.out)]
-      _ < ℓ := by exact rounds_sub_steps_lt
+      _ < ℓ := by exact rounds_sub_blockSize_lt
   have h_ne_eq: ¬↑bIdx * ϑ + (ϑ - 1) + 1 = ℓ := by exact Nat.ne_of_lt h_lt
   exact Decidable.not_imp_iff_and_not.mp fun a ↦ h_ne_eq (a hdivLe)
 end IndexBounds
 
 section Pspec
 -- Step-level reductions
+/-- One round polynomial message followed by one scalar challenge. -/
 @[reducible]
 def pSpecFold (d : ℕ := 2) : ProtocolSpec 2 :=
   ⟨![Direction.P_to_V, Direction.V_to_P], ![L⦃≤ d⦄[X], L]⟩
 
 -- Conditional 1-message protocol (only for commitment rounds)
+/-- Commitment to the codeword obtained after the specified fold round. -/
 @[reducible]
 def pSpecCommit (i : Fin ℓ) : ProtocolSpec 1 :=
   ⟨![Direction.P_to_V],
    ![OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ⟨i.val + 1, by omega⟩]⟩
 
+/-- The empty protocol used to preserve an oracle frontier without a commitment. -/
 @[reducible]
 def pSpecRelay : ProtocolSpec 0 := ⟨![], ![]⟩ -- relOut relay step
 
+/-- The final scalar message declaring the fully folded constant. -/
 def pSpecFinalSumcheckStep : ProtocolSpec 1 := ⟨![Direction.P_to_V], ![L]⟩
 
 -- Round-level reductions
+/-- One fold round followed by a commitment to its output codeword. -/
 @[reducible]
 def pSpecFoldCommit (i : Fin ℓ) (d : ℕ := 2) : ProtocolSpec (3) :=
   pSpecFold (L:=L) (d := d) ++ₚ pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i
 
+/-- One fold round followed by an empty relay. -/
 @[reducible]
 def pSpecFoldRelay (d : ℕ := 2) : ProtocolSpec (2) :=
   pSpecFold (L:=L) (d := d) ++ₚ pSpecRelay
 
 -- Round-segment-level reductions
+/-- A sequence of fold rounds with no intermediate codeword commitments. -/
 @[implicit_reducible]
 def pSpecFoldRelaySequence (n : ℕ) (d : ℕ := 2) :=
   ProtocolSpec.seqCompose fun (_: Fin n) ↦ pSpecFoldRelay (L:=L) (d := d)
 -- Block-level reductions
 
 /-- A non-last block consists of `(ϑ-1)` fold-relay round and `1` fold-commit round -/
-def pSpecFullNonLastBlock (bIdx : Fin (ℓ / ϑ - 1)) (d : ℕ := 2) :=
-  (pSpecFoldRelaySequence (L:=L) (n:=ϑ - 1) (d := d) ++ₚ
+@[reducible]
+def pSpecFullNonLastBlock (bIdx : Fin (ℓ / ϑ - 1)) :=
+  (pSpecFoldRelaySequence (L:=L) (n:=ϑ - 1) ++ₚ
       pSpecFoldCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         ⟨↑bIdx * ϑ + (ϑ - 1), by
-          apply bIdx_mul_ϑ_add_i_lt_ℓ_succ bIdx (m:=0)
-            (i:=⟨ϑ - 1, by exact ϑ_sub_one_le_self⟩)⟩ (d := d))
+          apply blockStart_add_offset_lt_rounds_add bIdx (m:=0)
+            (i:=⟨ϑ - 1, by exact blockSize_sub_one_lt⟩)⟩)
 
 /-- The last block consists of `ϑ` fold-relay rounds -/
 @[implicit_reducible]
 def pSpecLastBlock (d : ℕ := 2) := pSpecFoldRelaySequence (L:=L) (n:=ϑ) (d := d)
 
 /-- A sequence of `(ℓ / ϑ - 1)` non-last blocks -/
-def pSpecNonLastBlocks (d : ℕ := 2) := seqCompose fun bIdx ↦
-  pSpecFullNonLastBlock 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) bIdx (d := d)
+@[reducible]
+def pSpecNonLastBlocks := seqCompose fun bIdx ↦
+  pSpecFullNonLastBlock 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) bIdx
 
 -- Protocol-level reductions
-/-- The final `CoreInteraction` consists of `(ℓ / ϑ - 1)` non-last blocks and `1` last block -/
-def pSpecSumcheckFold (d : ℕ := 2) :=
-  (pSpecNonLastBlocks 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (d := d)) ++ₚ
-  (pSpecLastBlock (L:=L) (ϑ:=ϑ) (d := d))
+/-- The fold-and-commit prefix consists of `(ℓ / ϑ - 1)` non-last blocks and `1` last block -/
+@[reducible]
+def pSpecSumcheckFold := (pSpecNonLastBlocks 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) ++ₚ
+  (pSpecLastBlock (L:=L) (ϑ:=ϑ))
 
 -- Complete protocol
-def pSpecCoreInteraction (d : ℕ := 2) :=
-  (pSpecSumcheckFold 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (d := d)) ++ₚ
+/-- The blockwise fold/commit prefix followed by the final constant message. -/
+@[reducible]
+def pSpecCoreInteraction := (pSpecSumcheckFold 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) ++ₚ
   (pSpecFinalSumcheckStep (L:=L))
 
 /-- The protocol specification for the query phase.
 V sends all γ challenges v₁, ..., v_γ ← B_{ℓ+R} to P. -/
+@[reducible]
 def pSpecQuery : ProtocolSpec 1 :=
   ⟨![Direction.V_to_P],
     ![Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0]⟩
-  -- Round 0: constant c, Round 1: all γ challenges
 
+/-- The core interaction followed by the vector of oracle-query challenges. -/
 @[reducible]
 def fullPSpec := (pSpecCoreInteraction 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) ++ₚ
     (pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
 
 /-! ## Oracle Interface instances for Messages-/
 
-instance {d : ℕ} : ∀ j, OracleInterface ((pSpecFold (L:=L) d).Message j)
-    -- this covers .Message and .Challenge
-  | ⟨0, h⟩ => by exact OracleInterface.instDefault -- h_i(X) polynomial
-  | ⟨1, _⟩ => by exact OracleInterface.instDefault -- challenge r'_i
+instance instOracleInterfaceMessagePSpecFold :
+  ∀ j, OracleInterface ((pSpecFold (L:=L)).Message j) :=
+  fun _ => OracleInterface.instDefault
 
 instance : ∀ j, OracleInterface ((pSpecRelay).Message j)
   | ⟨x, h⟩ => by exact x.elim0
 
-instance {i : Fin ℓ} :
+instance instOracleInterfaceMessagePSpecCommit {i : Fin ℓ} :
     ∀ j, OracleInterface ((pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Message j)
-  | ⟨0, _⟩ => by
-      -- A commitment message is itself an oracle function, so its canonical interface is
-      -- point evaluation. Using the generic default interface here would make the message and
-      -- the identical output codeword answer different query types.
-      exact OracleInterface.instFunction
+  | ⟨0, _⟩ => OracleInterface.instFunction
+      (α := sDomain 𝔽q β h_ℓ_add_R_rate ⟨i.val + 1, by omega⟩) (β := L)
 
-instance : ∀ j, OracleInterface ((pSpecRelay).Message j)
-  | ⟨x, hj⟩ => by exact x.elim0
-
-instance {i : Fin ℓ} {d : ℕ} :
-    ∀ j, OracleInterface ((pSpecFoldCommit 𝔽q β
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i (d := d)).Message j) :=
-  instOracleInterfaceMessageAppend (pSpec₁ := pSpecFold (L := L) (d := d))
+instance {i : Fin ℓ} :
+    ∀ j, OracleInterface ((pSpecFoldCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Message j) :=
+  instOracleInterfaceMessageAppend (pSpec₁ := pSpecFold (L := L))
     (pSpec₂ := pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
 
-instance {d : ℕ} : ∀ j, OracleInterface ((pSpecFoldRelay (L:=L) (d := d)).Message j) :=
+instance : ∀ j, OracleInterface ((pSpecFoldRelay (L:=L)).Message j) :=
   instOracleInterfaceMessageAppend
 
-instance {i : Fin ℓ} {d : ℕ} :
-    ∀ j, OracleInterface ((pSpecFoldCommit 𝔽q β
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i (d := d)).Message j) :=
+instance {n : ℕ} : ∀ j, OracleInterface ((pSpecFoldRelaySequence (L:=L) n).Message j) :=
+  instOracleInterfaceMessageSeqCompose
+
+instance {bIdx : Fin (ℓ / ϑ - 1)} : ∀ j, OracleInterface ((pSpecFullNonLastBlock 𝔽q β
+  (h_ℓ_add_R_rate := h_ℓ_add_R_rate) bIdx).Message j) :=
   instOracleInterfaceMessageAppend
 
-instance {n d : ℕ} :
-    ∀ j, OracleInterface ((pSpecFoldRelaySequence (L:=L) n (d := d)).Message j) :=
+instance : ∀ j, OracleInterface ((pSpecNonLastBlocks 𝔽q β (ϑ:=ϑ)
+  (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message j) := instOracleInterfaceMessageSeqCompose
+
+instance : ∀ j, OracleInterface ((pSpecLastBlock (L:=L) (ϑ:=ϑ)).Message j) :=
   instOracleInterfaceMessageSeqCompose
 
-instance {bIdx : Fin (ℓ / ϑ - 1)} {d : ℕ} : ∀ j, OracleInterface ((pSpecFullNonLastBlock 𝔽q β
-  (h_ℓ_add_R_rate := h_ℓ_add_R_rate) bIdx (d := d)).Message j) :=
-  instOracleInterfaceMessageAppend
+instance : ∀ j, OracleInterface ((pSpecSumcheckFold 𝔽q β (ϑ:=ϑ)
+  (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message j) := instOracleInterfaceMessageAppend
 
-instance {d : ℕ} : ∀ j, OracleInterface ((pSpecNonLastBlocks 𝔽q β (ϑ:=ϑ)
-  (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (d := d)).Message j) :=
-  instOracleInterfaceMessageSeqCompose
-
-instance {d : ℕ} : ∀ j, OracleInterface ((pSpecLastBlock (L:=L) (ϑ:=ϑ)
-    (d := d)).Message j) :=
-  instOracleInterfaceMessageSeqCompose
-
-instance {d : ℕ} : ∀ j, OracleInterface ((pSpecSumcheckFold 𝔽q β (ϑ:=ϑ)
-  (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (d := d)).Message j) := instOracleInterfaceMessageAppend
-
-instance : ∀ i, OracleInterface ((pSpecFinalSumcheckStep (L:=L)).Message i)
+instance instFinalSumcheckMessageInterfaces : ∀ i,
+    OracleInterface ((pSpecFinalSumcheckStep (L:=L)).Message i)
   | ⟨0, _⟩ => by exact OracleInterface.instDefault
 
-instance {d : ℕ} : ∀ i, OracleInterface ((pSpecCoreInteraction 𝔽q β (ϑ:=ϑ)
-  (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (d := d)).Message i) := instOracleInterfaceMessageAppend
+instance : ∀ j, OracleInterface ((pSpecFinalSumcheckStep (L:=L)).Challenge j) :=
+  ProtocolSpec.challengeOracleInterface
+
+instance : ∀ i, OracleInterface ((pSpecCoreInteraction 𝔽q β (ϑ:=ϑ)
+  (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message i) := instOracleInterfaceMessageAppend
 
 instance : ∀ i, OracleInterface ((pSpecQuery 𝔽q β γ_repetitions
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message i) := fun _ => OracleInterface.instDefault
@@ -345,7 +349,7 @@ instance instOracleStatementBinaryBasefold {i : Fin (ℓ + 1)} :
     ∀ j, OracleInterface (OracleStatement 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i j) :=
   fun j => {
     Query := (sDomain 𝔽q β h_ℓ_add_R_rate) ⟨j.val * ϑ, by
-      calc j.val * ϑ < ℓ := by exact toCodewordsCount_mul_ϑ_lt_ℓ ℓ ϑ i j
+      calc j.val * ϑ < ℓ := by exact oraclePosition_mul_blockSize_lt_rounds ℓ ϑ i j
       _ < r := by omega⟩
     toOC.spec := fun _ => L
     toOC.impl := fun queryPoint => do return (← read) queryPoint
@@ -357,65 +361,50 @@ instance {i : Fin ℓ} : ∀ j, SampleableType ((pSpecCommit 𝔽q β
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Challenge j)
   | ⟨0, hj⟩ => by nomatch hj
 
-instance {d : ℕ} : ∀ j, SampleableType ((pSpecFold (L:=L) d).Challenge j)
-  | ⟨j, hj⟩ => by
-    dsimp [pSpecFold, Challenge]
-    -- Only message 1 (index 1) has challenges, which are of type L
-    -- From pSpec definition: dir = ![Direction.P_to_V, Direction.V_to_P, Direction.P_to_V]
-    -- So only index 1 has Direction.V_to_P, which means i = 1
-    have h_i_eq_1 : j = 1 := by
-      -- Since i is in ChallengeIdx, we know pSpec.dir i = Direction.V_to_P
-      -- From the pSpec definition, only index 1 has Direction.V_to_P
-      have h_dir := hj
-      dsimp [pSpecFold] at h_dir
-      -- h_dir : ![Direction.P_to_V, Direction.V_to_P, Direction.P_to_V] i = Direction.V_to_P
-      -- This forces i = 1 since only index 1 has V_to_P direction
-      cases j using Fin.cases
-      case zero => simp at h_dir
-      case succ j1 =>
-        cases j1 using Fin.cases
-        case zero => rfl
-        case succ k => exact k.elim0 (α := k.succ.succ = 1)
-    rw [h_i_eq_1]
-    simp only [Fin.isValue, Matrix.cons_val_one, Matrix.cons_val_zero]
+/-- The commit step sends no challenge. -/
+instance {i : Fin ℓ} :
+    IsEmpty (pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).ChallengeIdx :=
+  ⟨fun ⟨0, h⟩ => nomatch h⟩
+
+/-- The final sum-check step sends no challenge. -/
+instance : IsEmpty (pSpecFinalSumcheckStep (L := L)).ChallengeIdx :=
+  ⟨fun ⟨0, h⟩ => nomatch h⟩
+
+instance : ∀ j, SampleableType ((pSpecFold (L:=L)).Challenge j)
+  | ⟨0, h0⟩ => by nomatch h0
+  | ⟨1, _⟩ => by
+    simp only [Challenge, Fin.isValue, Matrix.cons_val_one, Matrix.cons_val_fin_one]
     infer_instance
 
 instance : ∀ j, SampleableType ((pSpecRelay).Challenge j)
   | ⟨x, hj⟩ => by exact x.elim0
 
-instance {d : ℕ} : ∀ j, SampleableType ((pSpecFoldRelay (L:=L) (d := d)).Challenge j) :=
+instance : ∀ j, SampleableType ((pSpecFoldRelay (L:=L)).Challenge j) :=
   instSampleableTypeChallengeAppend
 
-instance {i : Fin ℓ} {d : ℕ} : ∀ j, SampleableType ((pSpecFoldCommit 𝔽q β
-  (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i (d := d)).Challenge j) :=
-  instSampleableTypeChallengeAppend
+instance {i : Fin ℓ} : ∀ j, SampleableType ((pSpecFoldCommit 𝔽q β
+  (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Challenge j) := instSampleableTypeChallengeAppend
 
-instance {n d : ℕ} : ∀ j, SampleableType ((pSpecFoldRelaySequence (L:=L) n
-    (d := d)).Challenge j) :=
+instance {n : ℕ} : ∀ j, SampleableType ((pSpecFoldRelaySequence (L:=L) n).Challenge j) :=
   instSampleableTypeChallengeSeqCompose
 
-instance {i : Fin (ℓ / ϑ - 1)} {d : ℕ} : ∀ j, SampleableType ((pSpecFullNonLastBlock
-  𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i (d := d)).Challenge j) :=
-  instSampleableTypeChallengeAppend
+instance {i : Fin (ℓ / ϑ - 1)} : ∀ j, SampleableType ((pSpecFullNonLastBlock 𝔽q β
+  (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Challenge j) := instSampleableTypeChallengeAppend
 
-instance {d : ℕ} : ∀ i, SampleableType ((pSpecNonLastBlocks 𝔽q β (ϑ:=ϑ)
-  (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (d := d)).Challenge i) :=
+instance : ∀ i, SampleableType ((pSpecNonLastBlocks 𝔽q β (ϑ:=ϑ)
+  (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i) := instSampleableTypeChallengeSeqCompose
+
+instance : ∀ i, SampleableType ((pSpecLastBlock (L:=L) (ϑ:=ϑ)).Challenge i) :=
   instSampleableTypeChallengeSeqCompose
 
-instance {d : ℕ} : ∀ i, SampleableType ((pSpecLastBlock (L:=L) (ϑ:=ϑ)
-    (d := d)).Challenge i) :=
-  instSampleableTypeChallengeSeqCompose
-
-instance {d : ℕ} : ∀ i, SampleableType ((pSpecSumcheckFold 𝔽q β (ϑ:=ϑ)
-  (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (d := d)).Challenge i) :=
-  instSampleableTypeChallengeAppend
+instance : ∀ i, SampleableType ((pSpecSumcheckFold 𝔽q β (ϑ:=ϑ)
+  (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i) := instSampleableTypeChallengeAppend
 
 instance : ∀ i, SampleableType ((pSpecFinalSumcheckStep (L:=L)).Challenge i)
-  | ⟨0, _⟩ => by (expose_names; exact inst_5)
+  | ⟨0, _⟩ => inferInstanceAs (SampleableType L)
 
-instance {d : ℕ} : ∀ i, SampleableType ((pSpecCoreInteraction 𝔽q β (ϑ:=ϑ)
-  (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (d := d)).Challenge i) :=
-  instSampleableTypeChallengeAppend
+instance : ∀ i, SampleableType ((pSpecCoreInteraction 𝔽q β (ϑ:=ϑ)
+  (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i) := instSampleableTypeChallengeAppend
 
 /-- SampleableType instance for sDomain, constructed via its equivalence with a Fin type. -/
 @[instance_reducible]
@@ -431,7 +420,7 @@ instance : ∀ i, SampleableType ((pSpecQuery 𝔽q β γ_repetitions
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i)
   | ⟨i, hi⟩ => by
     unfold ProtocolSpec.Challenge
-    simp only [pSpecQuery]
+    simp only
     have h_i: i = 0 := by omega
     rw [h_i]
     simp only [Fin.isValue, Matrix.cons_val_fin_one]

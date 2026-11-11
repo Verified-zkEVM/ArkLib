@@ -27,7 +27,7 @@ universe u v w k l
 
 section CoreResults
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-         {F : Type} [Field F] [Fintype F] [DecidableEq F]
+         {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
 omit [DecidableEq ι] in
 theorem RS_correlatedAgreement_affineLines_uniqueDecodingRegime {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
@@ -38,13 +38,14 @@ theorem RS_correlatedAgreement_affineLines_uniqueDecodingRegime {deg : ℕ} {dom
   unfold δ_ε_correlatedAgreementAffineLines
   intro u hprob
   have hprob' :
-      Pr_{let z ← $ᵖ F}[δᵣ(u 0 + z • u 1, ReedSolomon.code domain deg) ≤ δ]
+      Pr{let z ← $ᵗ F}[δᵣ(u 0 + z • u 1, ReedSolomon.code domain deg) ≤ δ]
         > (Fintype.card ι : ℝ≥0) / (Fintype.card F : ℝ≥0) := by
     simpa [errorBound_eq_n_div_q_of_le_relUDR (deg := deg) (domain := domain) (δ := δ) hδ] using
       hprob
   have hS : (RS_goodCoeffs (deg := deg) (domain := domain) u δ).card > Fintype.card ι :=
     card_RS_goodCoeffs_gt_of_prob_gt_n_div_q (deg := deg) (domain := domain) (δ := δ) u hprob'
-  exact RS_jointAgreement_of_goodCoeffs_card_gt (deg := deg) (domain := domain) (δ := δ) hδ u hS
+  exact RS_jointAgreement_of_goodCoeffs_card_gt (deg := deg) (domain := domain) (δ := δ) hδ u _
+    (fun _ hz => mem_RS_goodCoeffs.1 hz) hS
 
 end CoreResults
 

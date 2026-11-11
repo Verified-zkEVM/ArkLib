@@ -16,13 +16,13 @@ public import VCVio.CryptoFoundations.CommitmentScheme
   (correctness, hiding, binding, and trapdoor extractability).
 
   The core definitions are **not** redefined here. They are provided by the
-  [VCV-io](https://github.com/dtumad/VCV-io) library, in
+  [VCVio](https://github.com/Verified-zkEVM/VCVio) library, in
   `VCVio.CryptoFoundations.CommitmentScheme`:
 
   - `CommitmentScheme PP M C D` — the scheme bundle (`setup`, `commit`, `verify`).
   - `CommitmentScheme.PerfectlyCorrect` / `PerfectlyHiding` — perfect security notions.
-  - `CommitmentScheme.hidingExp` / `bindingExp` — game-based hiding and binding experiments.
-  - `TrapdoorExtractor` / `CommitmentScheme.extractExp` — trapdoor-based extraction.
+  - `CommitmentScheme.hidingGame` / `bindingExperiment` — game-based hiding and binding experiments.
+  - `TrapdoorExtractor` / `CommitmentScheme.extractExperiment` — trapdoor-based extraction.
 
   Concrete ordinary schemes (e.g. the simple Ajtai commitment under `Ajtai/`) instantiate
   `CommitmentScheme` directly. Importing this module re-exports those definitions, so

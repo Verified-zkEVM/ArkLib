@@ -6,7 +6,9 @@ Authors: Tobias Rothmann
 module
 
 public import ArkLib.Commitments.Functional.KZG.Basic
-public import ArkLib.ToVCVio.OracleComp.SimSemantics.SimulateQ
+public import VCVio.OracleComp.QueryTracking.RandomOracle.Simulation
+public import VCVio.OracleComp.SimSemantics.OptionT.Basic
+public import VCVio.OracleComp.SimSemantics.StateT.Basic
 -- `simp [coeff]` and `Raw.coeff`/`Raw.mk` need CompPoly's unexposed bodies.
 import all CompPoly.Univariate.Basic
 import all CompPoly.Univariate.Raw.Core
@@ -54,7 +56,7 @@ lemma to_poly_div_by_monic {p : ℕ} [Fact (Nat.Prime p)]
 
 omit [DecidableEq G₁] [Fact (0 < p)] in
 /-- Algebraic correctness of one KZG opening for a coefficient vector. -/
-theorem correctness (hpG1 : Nat.card G₁ = p) (n : ℕ) (a : ZMod p)
+theorem correctness (n : ℕ) (a : ZMod p)
     (coeffs : Fin (n + 1) → ZMod p) (z : ZMod p) :
   let poly : CPolynomial (ZMod p) :=
     ⟨(Raw.mk (Array.ofFn coeffs)).trim, Raw.Trim.isCanonical_trim _⟩
@@ -99,7 +101,7 @@ theorem correctness (hpG1 : Nat.card G₁ = p) (n : ℕ) (a : ZMod p)
     exact Polynomial.monic_X_sub_C z
   -- the proof
   -- restate the commitment as the evaluation of poly at a (C => g₁^poly(a))
-  simp_rw [hcoeffs, commit_eq_c_polynomial hpG1 poly hpdeg]
+  simp_rw [hcoeffs, commit_eq_c_polynomial poly hpdeg]
   -- define q(X) := (poly(X) - poly(z)) / (X-z)
   -- and restate the opening as the evaluation of q at a (opening => g₁^q(a))
   simp_rw [generateOpening, ←hcoeffs]
@@ -120,7 +122,7 @@ theorem correctness (hpG1 : Nat.card G₁ = p) (n : ℕ) (a : ZMod p)
     pairing (commit (Groups.PowerSrs.tower g₁ a n) (fun i : Fin (n + 1) => q.coeff i) : G₁)
       ((Groups.PowerSrs.tower g₂ a 1)[1] / g₂ ^ z.val)
   rw [hfun]
-  rw [commit_eq_c_polynomial hpG1 q hqdeg]
+  rw [commit_eq_c_polynomial q hqdeg]
   -- evaluate the pairing linearly.
   -- e (g₁^poly(a) / g₂^poly(z), g₂)= e (g₁^q(a), g₂^a / g₂^(z))
   -- => (poly(a) - poly(z)) • e (g₁,g₂) = (q(a) * (a-z)) • e (g₁,g₂)
@@ -164,14 +166,13 @@ section Correctness
 
 omit [Fact (0 < p)] [DecidableEq G₁] in
 /-- The KZG scheme satisfies perfect correctness as defined in `CommitmentScheme`. -/
-theorem correctness (hpG1 : Nat.card G₁ = p) {g₁ : G₁} {g₂ : G₂}
-    [SampleableType G₁] :
+theorem correctness {g₁ : G₁} {g₂ : G₂} :
     Commitment.perfectCorrectness (pure ∅) (randomOracle)
     (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)) := by
   intro data query
   simp only [ENNReal.coe_zero, tsub_zero]
-  rw [ge_iff_le, one_le_probEvent_iff]
-  refine OptionT.probEvent_eq_one_of_simulateQ_support _ _ ∅ _ ?_
+  refine ge_of_eq ?_
+  refine OptionT.prEvent_mk_simulateQ_run'_eq_one_of_support _ _ _ _ ?_
   intro x hx
   simp only [kzg] at hx
   rw [mem_support_bind_iff] at hx
@@ -200,8 +201,8 @@ theorem correctness (hpG1 : Nat.card G₁ = p) {g₁ : G₁} {g₂ : G₂}
       (generateOpening (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ).1 data query)
       query (OracleInterface.answer data query) := by
     change verifyOpening pairing _ _ _ query ((CPolynomial.ofFn data).eval query) = true
-    simpa only [CPolynomial.ofFn] using
-      KZG.correctness (pairing := pairing) (g₁ := g₁) (g₂ := g₂) hpG1 n τ data query
+    simpa only [CPolynomial.ofFn, CPolynomial.ofArray] using
+      KZG.correctness (pairing := pairing) (g₁ := g₁) (g₂ := g₂) n τ data query
   simp only [Option.elimM] at hx
   rw [mem_support_bind_iff] at hx
   obtain ⟨openingOpt, hopeningOpt, hx⟩ := hx

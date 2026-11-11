@@ -121,7 +121,7 @@ theorem numerators_map (f : A →+* B) (Rshift : Polynomial (Polynomial A)) (s :
       congr 2
       funext i
       by_cases hi : i ≤ t
-      · simp only [hi, if_true]
+      · simp only [hi, ite_true]
         exact ih i (by omega)
       · simp [hi]
 

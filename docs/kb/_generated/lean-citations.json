@@ -1,8 +1,8 @@
 {
   "counts": {
-    "files_with_citations": 228,
-    "keys_cited": 65,
-    "total_citation_edges": 371
+    "files_with_citations": 528,
+    "keys_cited": 77,
+    "total_citation_edges": 713
   },
   "files": {
     "ArkLib/AGM/Basic.lean": [
@@ -11,6 +11,18 @@
     ],
     "ArkLib/Commitments/Functional/Basic.lean": [
       "CGKY25"
+    ],
+    "ArkLib/Commitments/Functional/BitZ/ExponentLift.lean": [
+      "BGKLSW26"
+    ],
+    "ArkLib/Commitments/Functional/BitZ/OutOfDomain.lean": [
+      "BGKLSW26"
+    ],
+    "ArkLib/Commitments/Functional/BitZ/Round1.lean": [
+      "BGKLSW26"
+    ],
+    "ArkLib/Commitments/Functional/BitZ/Round2.lean": [
+      "BGKLSW26"
     ],
     "ArkLib/Commitments/Functional/Hachi/Basic.lean": [
       "NOZ26",
@@ -21,7 +33,6 @@
       "NS24"
     ],
     "ArkLib/Commitments/Functional/Hachi/Composition.lean": [
-      "FMN24",
       "HMZ25",
       "LS18",
       "NOZ26",
@@ -81,6 +92,10 @@
       "NOZ26",
       "NS24"
     ],
+    "ArkLib/Commitments/Functional/Hachi/Params.lean": [
+      "Mic07",
+      "NOZ26"
+    ],
     "ArkLib/Commitments/Functional/Hachi/QuadEval/Basic.lean": [
       "NOZ26",
       "NS24"
@@ -104,16 +119,6 @@
       "LS18",
       "NOZ26",
       "NS24"
-    ],
-    "ArkLib/Commitments/Functional/Hachi/Recursion/PartialEval.lean": [
-      "NOZ26"
-    ],
-    "ArkLib/Commitments/Functional/Hachi/Recursion/TraceHandoff.lean": [
-      "LNP22",
-      "NOZ26"
-    ],
-    "ArkLib/Commitments/Functional/Hachi/Recursion/ZBatchBridge.lean": [
-      "NOZ26"
     ],
     "ArkLib/Commitments/Functional/Hachi/RingSwitch/Basic.lean": [
       "HMZ25",
@@ -141,6 +146,7 @@
       "NOZ26"
     ],
     "ArkLib/Commitments/Functional/Hachi/Sumcheck/Basic.lean": [
+      "FMN24",
       "NOZ26"
     ],
     "ArkLib/Commitments/Functional/Hachi/Sumcheck/Bridge.lean": [
@@ -156,6 +162,24 @@
       "NOZ26"
     ],
     "ArkLib/Commitments/Functional/Hachi/Sumcheck/Rounds.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/TraceHead/Basic.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/TraceHead/Coefficients.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/TraceHead/Commitment.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/TraceHead/Completeness.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/TraceHead/Coordinates.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/TraceHead/Protocol.lean": [
       "NOZ26"
     ],
     "ArkLib/Commitments/Functional/Hachi/ZeroCheck/Basic.lean": [
@@ -223,6 +247,7 @@
       "BCHKS25",
       "BenSassonGKS20",
       "CS25",
+      "DKTZ26",
       "GCXK25"
     ],
     "ArkLib/Data/CodingTheory/Connections/ListDecodingAndCA/BCHKS25.lean": [
@@ -255,11 +280,320 @@
     "ArkLib/Data/CodingTheory/HammingBallVolume.lean": [
       "ABF26"
     ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Certificates.lean": [
+      "BCPZZ26",
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Counting.lean": [
+      "BCPZZ26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Dimension.lean": [
+      "BCPZZ26",
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/CurveCertificate.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/CurveHeightCounting.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/CurveRank.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/Dimension.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/HeightCounting.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/Interpolant.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/ListBound.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/Profile.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/RateCertificate.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/Space.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/Symbolic.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/SymbolicRank.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FreeOrderDimension.lean": [
+      "BCPZZ26",
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Global/Interpolation.lean": [
+      "BCPZZ26",
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Global/Multiplicity.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Index.lean": [
+      "BCPZZ26",
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Local/CertifiedRankBound.lean": [
+      "BCPZZ26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Local/ConstraintKernel.lean": [
+      "BCPZZ26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Local/ConstraintMap.lean": [
+      "BCPZZ26",
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Local/Contact.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Local/Coordinates.lean": [
+      "BCPZZ26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Local/Identity.lean": [
+      "BCPZZ26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Local/IntermediateSpace.lean": [
+      "BCPZZ26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Local/KernelSliceIndependence.lean": [
+      "BCPZZ26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Local/Rank.lean": [
+      "BCPZZ26",
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Local/RankBudget.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Local/Translation.lean": [
+      "BCPZZ26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Local/ZeroOrder.lean": [
+      "BCPZZ26",
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/Counting.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/CurveCertificate.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/Dimension.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/FiniteSurplus.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/FloorTransfer.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/LocalRank.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/MomentSource.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/RateBound.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/RateCertificate.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/SolutionEmbedding.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Space.lean": [
+      "BCPZZ26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/SpecializationDegree.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/ChallengeDegree.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/ColumnHeight.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/ConstraintMatrix.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/CurveCertificate.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/CurveHeight.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/CurveSupportCertificate.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/JohnsonCertificate.lean": [
+      "BCHKS25",
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/LocalRank.lean": [
+      "BCPZZ26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/PartitionRank.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/ReceivedCurve.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/Soundness.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/SourceColumn.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/WeightedJohnsonCertificate.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/WeightedSupport.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/WeightedSupportCertificate.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/WeightedSupport/Basic.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/WeightedSupport/Dimension.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/WeightedSupport/Estimate.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/WeightedSupport/Interpolation.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/WeightedSupport/LocalRank.lean": [
+      "BCPZZ26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/NormalizedSubstitution.lean": [
+      "BCPZZ26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/Basic.lean": [
+      "BCPZZ26",
+      "DKT26",
+      "Kop15"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/ExactCharacteristicBudget.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/AgreementCounting.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/AutomaticBounds.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/AutomaticParameters.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/DerivativeCappedCounting.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/FiniteRateParameters.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/HybridAgreementCounting.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/HybridConstants.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/HybridRateEnvelope.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/RoundedCounts.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/StageCharges.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/StageComparison.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/StageSum.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/Uniform.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/UniformMca.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FreeOrder.lean": [
+      "BCPZZ26",
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/Johnson/FiniteBounds.lean": [
+      "BCPZZ26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/Johnson/InterpolationBounds.lean": [
+      "BCHKS25"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/BlockLength.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/ClosedMultiplicity.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/FiniteRatio.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/FixedRateGate.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/Gate.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/MathematicalUniform.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/Moment.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/Recipe.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/UniformEnvelope.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/UniformGamma.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/UniformParameters.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/WeightedSupport/Capacity.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Substitution.lean": [
+      "BCPZZ26"
+    ],
+    "ArkLib/Data/CodingTheory/HiddenDerivative/Variables.lean": [
+      "BCPZZ26"
+    ],
     "ArkLib/Data/CodingTheory/InterleavedCode.lean": [
       "AHIV22",
       "BCGM25",
       "BCIKS20",
       "DG25"
+    ],
+    "ArkLib/Data/CodingTheory/InterleavedCode/ExactAgreement.lean": [
+      "Jo26"
+    ],
+    "ArkLib/Data/CodingTheory/InterleavedCode/Projection.lean": [
+      "Jo26"
     ],
     "ArkLib/Data/CodingTheory/JohnsonBound/Basic.lean": [
       "ABF26",
@@ -375,17 +709,14 @@
     "ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/AffineSpaces.lean": [
       "BCIKS20"
     ],
+    "ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/CurveBWMatrix.lean": [
+      "BCIKS20"
+    ],
     "ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/Curves.lean": [
       "BCIKS20"
     ],
     "ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/EpsCa.lean": [
       "BCHKS25",
-      "BCIKS20"
-    ],
-    "ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/ListDecoding/Agreement.lean": [
-      "BCIKS20"
-    ],
-    "ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/ListDecoding/Extraction.lean": [
       "BCIKS20"
     ],
     "ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/ListDecoding/Guruswami.lean": [
@@ -407,14 +738,18 @@
       "BenSassonGKS20",
       "CS25",
       "DG25dist",
+      "DKT26",
       "GaoKL24",
       "KKH26"
     ],
-    "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Entropy.lean": [
+    "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Entropy/Counting.lean": [
       "ABF26",
       "CS25"
     ],
     "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Frs.lean": [
+      "GG25"
+    ],
+    "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Frs/LineDecoding.lean": [
       "GG25"
     ],
     "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/JohnsonCa.lean": [
@@ -423,16 +758,28 @@
     "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/JohnsonLower.lean": [
       "BCHKS25"
     ],
+    "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/JohnsonLower/BinaryBasics.lean": [
+      "BCHKS25"
+    ],
     "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/JohnsonMca.lean": [
       "GaoKL24"
     ],
     "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Powers.lean": [
       "BCGM25"
     ],
+    "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Powers/Incidence.lean": [
+      "BCGM25"
+    ],
     "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Sampling.lean": [
       "DG25dist"
     ],
     "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Subfield.lean": [
+      "CS25"
+    ],
+    "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Subfield/Algebra.lean": [
+      "CS25"
+    ],
+    "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Subfield/Moments.lean": [
       "CS25"
     ],
     "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/UniqueDecoding.lean": [
@@ -459,11 +806,19 @@
       "ABF26"
     ],
     "ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges/CapacityBounds.lean": [
-      "BCHKS25"
+      "BCHKS25",
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges/ListDecoding.lean": [
+      "ABF26",
+      "BCHKS25",
+      "DKT26",
+      "Joh62"
     ],
     "ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges/UniqueDecoding.lean": [
       "BCHKS25",
-      "BCIKS20"
+      "BCIKS20",
+      "DKT26"
     ],
     "ArkLib/Data/CodingTheory/ProximityGap/InformationSetLowerBound.lean": [
       "ABF26"
@@ -480,9 +835,19 @@
       "BCGM25"
     ],
     "ArkLib/Data/CodingTheory/ProximityGenerator/Basic.lean": [
-      "BCGM25"
+      "BCGM25",
+      "BCHKS25"
+    ],
+    "ArkLib/Data/CodingTheory/ProximityGenerator/ExceptionalSet.lean": [
+      "BCHKS25"
+    ],
+    "ArkLib/Data/CodingTheory/ProximityGenerator/Interleaving.lean": [
+      "Jo26"
     ],
     "ArkLib/Data/CodingTheory/ProximityGenerator/MCAGenerator.lean": [
+      "BCGM25"
+    ],
+    "ArkLib/Data/CodingTheory/ProximityGenerator/MDSGenerator.lean": [
       "BCGM25"
     ],
     "ArkLib/Data/CodingTheory/ProximityGenerator/PolynomialGenerator.lean": [
@@ -494,15 +859,96 @@
     "ArkLib/Data/CodingTheory/ReedSolomon.lean": [
       "ACFY24"
     ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/Agreement.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/AgreementList.lean": [
+      "DKT26",
+      "Kop15"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/Constrained.lean": [
+      "ACFY24"
+    ],
     "ArkLib/Data/CodingTheory/ReedSolomon/Folded.lean": [
       "ABF26",
       "GR08"
     ],
     "ArkLib/Data/CodingTheory/ReedSolomon/Interleaved.lean": [
-      "ABF26"
+      "ABF26",
+      "ACFY24"
     ],
     "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability.lean": [
       "ACFY24"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/Basic.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/CodewordBound.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/CurveCertificate.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/ExactLists.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/FiniteField.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/FixedRateExplicitGate.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/GeometricBound.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/MathematicalUniformRate.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/QuarterGap.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/RatePartition.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/UniformRate.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/WeightedSupport.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/WeightedSupportInterpolant.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/DirectJetList.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/Bounds.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/FiniteLengthParameters.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/FiniteLengthSelectors.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/LowRateFiniteLength.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/LowRateFiniteLengthBounds.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/Profile.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/Uniform.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/HiddenDerivativeBound.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/PairwiseJohnson.lean": [
+      "DKT26",
+      "Joh62"
     ],
     "ArkLib/Data/CodingTheory/ReedSolomon/Multilinear.lean": [
       "ACFY24"
@@ -511,6 +957,229 @@
       "ABF26",
       "GW13",
       "KSY14"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/CertificateBound.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/FixedRateExplicitGate.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/MathematicalUniformRate.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/Parameters.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/PrescribedCurve.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/PrescribedLine.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/ProductBounds.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/ProductCounting.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/RatePartition.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/SharpCountingBound.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/UniformRate.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/ComponentDimension.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/EquationDescent.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/ExtensionDescent.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/AutomaticHybrid.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/AutomaticMcaError.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Branchwise.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/CurveAgreement.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/FiniteLengthMca.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/FiniteLengthRateBounds.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridCurveProfile.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridCurveRecovery.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridCurveTransfer.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridTransfer.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/LowRateSemantics.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/OrdinaryTail.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Profile.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/RateBounds.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Certificates.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/CurveMCA.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Factorwise.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/RetainedTail.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/SharpCurve.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/TailBound.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/UniformLineMca.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FrobeniusAdmissibility.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FrobeniusComponentRecognition.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FrobeniusIncidence.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FrobeniusRetainedFamily.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/GraphLineComponent.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Johnson/Agreement.lean": [
+      "BCHKS25",
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Johnson/Probability.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/BaseEquation.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Equation.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/FactorAssembly.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/FactorBudget.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/IrreducibleEquation.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedAdmissibility.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedCertificate.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedComponentAgreement.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedComponentRecognition.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedDerivativeImage.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedExceptionalChallenges.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedFrobeniusFamily.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedGeometricTransfer.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedGraphCounting.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedIncidence.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedPointRecognition.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedRegularEquation.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedSharpRegularAgreement.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerToLine.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerTupleCounting.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerTupleIncidence.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerTupleRegularBound.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerTupleSeparableBound.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/SingularTail.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/DerivativeTupleCounting.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/ExceptionalChallenges.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/Incidence.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PairCounting.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/RegularEquation.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/PowerAgreement.lean": [
+      "DKT26"
     ],
     "ArkLib/Data/CodingTheory/SubspaceDesign.lean": [
       "ABF26",
@@ -634,14 +1303,124 @@
     "ArkLib/Data/MvPolynomial/Multilinear.lean": [
       "NOZ26"
     ],
+    "ArkLib/Data/MvPolynomial/PrimeFingerprint.lean": [
+      "BGKLSW26",
+      "CHA24"
+    ],
+    "ArkLib/Data/MvPolynomial/PrimeFingerprintProbability.lean": [
+      "BGKLSW26"
+    ],
+    "ArkLib/Data/MvPolynomial/RadicalSplit/Separable.lean": [
+      "DKT26"
+    ],
     "ArkLib/Data/Polynomial/ClassicalWronskian.lean": [
       "GK16"
+    ],
+    "ArkLib/Data/Polynomial/CosetChunks.lean": [
+      "EthStark21",
+      "FRI1216",
+      "HK24"
+    ],
+    "ArkLib/Data/Polynomial/Differential/BaseChange.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/Polynomial/Differential/ChainWitness.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/Polynomial/Differential/DerivativeDescent.lean": [
+      "Kop15"
+    ],
+    "ArkLib/Data/Polynomial/Differential/DirectRegularLift.lean": [
+      "Kop15"
+    ],
+    "ArkLib/Data/Polynomial/Differential/FrobeniusEquation.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/Polynomial/Differential/FrobeniusTaylorWitness.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/Polynomial/Differential/OrderZeroPresentation.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/Polynomial/Differential/RationalTaylor.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/Polynomial/Differential/RationalTaylorAlgebra.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/Polynomial/Differential/RationalTaylorBidegree.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/Polynomial/Differential/RationalTaylorDerivativeDegree.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/Polynomial/Differential/RationalTaylorJointDegree.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/Polynomial/Differential/RecursiveCount.lean": [
+      "DKT26",
+      "Kop15"
+    ],
+    "ArkLib/Data/Polynomial/Differential/RegularIteration.lean": [
+      "Kop15"
+    ],
+    "ArkLib/Data/Polynomial/Differential/RegularLift.lean": [
+      "Kop15"
+    ],
+    "ArkLib/Data/Polynomial/Differential/RetainedCurve.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/Polynomial/Differential/RootPresentation.lean": [
+      "BCHKS25",
+      "DKT26"
+    ],
+    "ArkLib/Data/Polynomial/Differential/SeparantChain.lean": [
+      "Kop15"
+    ],
+    "ArkLib/Data/Polynomial/Differential/SingularRecursion.lean": [
+      "Kop15"
+    ],
+    "ArkLib/Data/Polynomial/Differential/TaylorChart.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/Polynomial/Differential/TaylorChartAlgebra.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/Polynomial/Differential/TaylorChartBaseChange.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/Polynomial/Differential/TaylorChartGeometry.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/Polynomial/Differential/TaylorChartIncidence.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/Polynomial/Differential/TaylorIndexWeight.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/Polynomial/Differential/TaylorResidual.lean": [
+      "DKT26"
+    ],
+    "ArkLib/Data/Polynomial/Differential/TotalJetDegreeCount.lean": [
+      "DKT26"
     ],
     "ArkLib/Data/Polynomial/FoldedWronskian.lean": [
       "GK16"
     ],
     "ArkLib/Data/Polynomial/FoldingPolynomial.lean": [
       "ACFY24"
+    ],
+    "ArkLib/Data/Polynomial/FractionFieldExpand.lean": [
+      "BCHKS25"
+    ],
+    "ArkLib/Data/Polynomial/FractionFieldFactorization.lean": [
+      "BCHKS25"
+    ],
+    "ArkLib/Data/Polynomial/FractionFieldResultant.lean": [
+      "BCHKS25"
+    ],
+    "ArkLib/Data/Polynomial/FractionFieldRoots.lean": [
+      "BCHKS25"
     ],
     "ArkLib/Data/Polynomial/Indicator.lean": [
       "ACFY24"
@@ -673,13 +1452,22 @@
     "ArkLib/Data/Polynomial/RationalFunctions/Weight.lean": [
       "BCIKS20"
     ],
+    "ArkLib/Data/Polynomial/ResultantDegree.lean": [
+      "BCHKS25"
+    ],
+    "ArkLib/Data/Polynomial/SymbolicInterpolationParameters.lean": [
+      "BCHKS25"
+    ],
+    "ArkLib/Data/Polynomial/SymbolicInterpolationSupport.lean": [
+      "BCHKS25"
+    ],
+    "ArkLib/Data/Polynomial/SymbolicInterpolationSurplus.lean": [
+      "BCHKS25"
+    ],
     "ArkLib/Data/Polynomial/Trivariate.lean": [
       "BCIKS20"
     ],
     "ArkLib/Data/Probability/Combinatorial.lean": [
-      "ABF26"
-    ],
-    "ArkLib/Data/Probability/Instances.lean": [
       "ABF26"
     ],
     "ArkLib/OracleReduction/Basic.lean": [
@@ -713,19 +1501,85 @@
       "NOZ26",
       "NS24"
     ],
+    "ArkLib/OracleReduction/Security/RoundByRound.lean": [
+      "ABF26",
+      "CCHLRRW19"
+    ],
     "ArkLib/OracleReduction/VectorIOR.lean": [
       "BCS16"
     ],
     "ArkLib/ProofSystem/BatchedFri/Security.lean": [
       "BCIKS20"
     ],
-    "ArkLib/ProofSystem/Binius/BinaryBasefold/Basic.lean": [
+    "ArkLib/ProofSystem/Binius/BinaryBasefold/Code.lean": [
+      "DP24"
+    ],
+    "ArkLib/ProofSystem/Binius/BinaryBasefold/Compliance.lean": [
+      "DP24"
+    ],
+    "ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean": [
+      "DP24"
+    ],
+    "ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase/Protocol.lean": [
       "DP24"
     ],
     "ArkLib/ProofSystem/Binius/BinaryBasefold/General.lean": [
+      "DP24",
+      "ZCF24"
+    ],
+    "ArkLib/ProofSystem/Binius/BinaryBasefold/Prelude.lean": [
       "DP24"
     ],
-    "ArkLib/ProofSystem/Binius/FRIBinius/General.lean": [
+    "ArkLib/ProofSystem/Binius/BinaryBasefold/Prelude/Fibers.lean": [
+      "DP24"
+    ],
+    "ArkLib/ProofSystem/Binius/BinaryBasefold/Prelude/Folding.lean": [
+      "DP24"
+    ],
+    "ArkLib/ProofSystem/Binius/BinaryBasefold/QueryPhase/Soundness.lean": [
+      "DP24"
+    ],
+    "ArkLib/ProofSystem/Binius/BinaryBasefold/ReductionLogic.lean": [
+      "DP24"
+    ],
+    "ArkLib/ProofSystem/Binius/BinaryBasefold/Relations.lean": [
+      "ZCF24"
+    ],
+    "ArkLib/ProofSystem/Binius/BinaryBasefold/Soundness/BadBlocks.lean": [
+      "DP24"
+    ],
+    "ArkLib/ProofSystem/Binius/BinaryBasefold/Soundness/FoldDistance.lean": [
+      "DP24"
+    ],
+    "ArkLib/ProofSystem/Binius/BinaryBasefold/Soundness/Incremental.lean": [
+      "DG25",
+      "DP24"
+    ],
+    "ArkLib/ProofSystem/Binius/BinaryBasefold/Soundness/Lift.lean": [
+      "DP24"
+    ],
+    "ArkLib/ProofSystem/Binius/BinaryBasefold/Soundness/QueryPhasePrelims.lean": [
+      "DP24"
+    ],
+    "ArkLib/ProofSystem/Binius/BinaryBasefold/Soundness/QueryPhaseSoundness.lean": [
+      "DP24"
+    ],
+    "ArkLib/ProofSystem/Binius/BinaryBasefold/Soundness/QueryRejection.lean": [
+      "DP24"
+    ],
+    "ArkLib/ProofSystem/Binius/BinaryBasefold/Steps/Commit.lean": [
+      "DP24"
+    ],
+    "ArkLib/ProofSystem/Binius/BinaryBasefold/Steps/FinalSumcheck.lean": [
+      "DP24"
+    ],
+    "ArkLib/ProofSystem/Binius/BinaryBasefold/Steps/Fold.lean": [
+      "DP24"
+    ],
+    "ArkLib/ProofSystem/Binius/BinaryBasefold/Steps/Fold/Protocol.lean": [
+      "DP24"
+    ],
+    "ArkLib/ProofSystem/Binius/BinaryBasefold/Steps/Relay.lean": [
       "DP24"
     ],
     "ArkLib/ProofSystem/Component/SendChallenge.lean": [
@@ -736,11 +1590,33 @@
       "NOZ26",
       "NS24"
     ],
+    "ArkLib/ProofSystem/Fri/ErrorBounds.lean": [
+      "BCGM25",
+      "GMW25"
+    ],
+    "ArkLib/ProofSystem/Fri/FoldingSoundness.lean": [
+      "GMW25"
+    ],
+    "ArkLib/ProofSystem/Fri/QuerySoundness.lean": [
+      "GMW25"
+    ],
+    "ArkLib/ProofSystem/Fri/Spec/Extraction/Program.lean": [
+      "GMW25"
+    ],
+    "ArkLib/ProofSystem/Fri/Spec/ExtractionCorrectness.lean": [
+      "GMW25"
+    ],
+    "ArkLib/ProofSystem/Fri/Spec/KnowledgeSoundness.lean": [
+      "GMW25"
+    ],
+    "ArkLib/ProofSystem/Fri/Spec/QuerySoundness.lean": [
+      "GMW25"
+    ],
     "ArkLib/ProofSystem/Fri/Spec/SingleRound.lean": [
       "FRI1216"
     ],
-    "ArkLib/ProofSystem/Plonk/Basic.lean": [
-      "GWZC19"
+    "ArkLib/ProofSystem/Fri/Spec/Soundness.lean": [
+      "GMW25"
     ],
     "ArkLib/ProofSystem/RingSwitching/Basic.lean": [
       "DP24",
@@ -760,14 +1636,30 @@
       "NOZ26"
     ],
     "ArkLib/ProofSystem/RingSwitching/Packing.lean": [
+      "BRW26",
       "DP24",
       "NOZ26"
     ],
-    "ArkLib/ProofSystem/RingSwitching/Packing/BatchingPhase.lean": [
+    "ArkLib/ProofSystem/RingSwitching/Packing/Algebra.lean": [
       "DP24"
     ],
-    "ArkLib/ProofSystem/RingSwitching/Packing/General.lean": [
+    "ArkLib/ProofSystem/RingSwitching/Packing/ClaimLayout.lean": [
+      "BRW26",
       "DP24"
+    ],
+    "ArkLib/ProofSystem/RingSwitching/Packing/ClaimLayout/Quirky.lean": [
+      "BRW26"
+    ],
+    "ArkLib/ProofSystem/RingSwitching/Packing/Coordinates.lean": [
+      "DP24"
+    ],
+    "ArkLib/ProofSystem/RingSwitching/Packing/DerivedBatching.lean": [
+      "BRW26",
+      "RSG"
+    ],
+    "ArkLib/ProofSystem/RingSwitching/Packing/Multiplier.lean": [
+      "BRW26",
+      "RSG"
     ],
     "ArkLib/ProofSystem/RingSwitching/Packing/Prelude.lean": [
       "DP24"
@@ -776,7 +1668,7 @@
       "DP24",
       "NOZ26"
     ],
-    "ArkLib/ProofSystem/RingSwitching/Packing/SumcheckPhase.lean": [
+    "ArkLib/ProofSystem/RingSwitching/Packing/TensorPrefix.lean": [
       "DP24"
     ],
     "ArkLib/ProofSystem/RingSwitching/RoundVerifiers.lean": [
@@ -795,6 +1687,9 @@
       "ACFY24stir",
       "BCIKS20"
     ],
+    "ArkLib/ProofSystem/Stir/Quotienting.lean": [
+      "ACFY24stir"
+    ],
     "ArkLib/ProofSystem/Sumcheck/Spec/General.lean": [
       "BBS24",
       "LFKN92"
@@ -809,7 +1704,13 @@
       "ABF26"
     ],
     "ArkLib/ProofSystem/ToyProblem/Impl/IRS.lean": [
-      "ABF26"
+      "ABF26",
+      "BCHKS25",
+      "DKT26"
+    ],
+    "ArkLib/ProofSystem/ToyProblem/Leaderboard.lean": [
+      "BCHKS25",
+      "DKT26"
     ],
     "ArkLib/ProofSystem/ToyProblem/SoundnessBounds.lean": [
       "ABF26"
@@ -821,7 +1722,9 @@
       "ABF26"
     ],
     "ArkLib/ProofSystem/ToyProblem/Spec/General.lean": [
-      "ABF26"
+      "ABF26",
+      "BCHKS25",
+      "DKT26"
     ],
     "ArkLib/ProofSystem/ToyProblem/Spec/KnowledgeSoundness.lean": [
       "ABF26"
@@ -831,6 +1734,45 @@
     ],
     "ArkLib/ToCompPoly/Multilinear/NestedEvaluationTree.lean": [
       "NOZ26"
+    ],
+    "ArkLib/ToMathlib/Analysis/SpecificLimits/GeometricBounds.lean": [
+      "DKT26"
+    ],
+    "ArkLib/ToMathlib/Combinatorics/Enumerative/IncidenceProduct.lean": [
+      "DKT26"
+    ],
+    "ArkLib/ToMathlib/LinearAlgebra/Matrix/Rank.lean": [
+      "DKT26"
+    ],
+    "ArkLib/ToMathlib/LinearAlgebra/PolynomialKernelHeight.lean": [
+      "DKT26"
+    ],
+    "ArkLib/ToMathlib/MeasureTheory/Integral/PositivePart.lean": [
+      "DKT26"
+    ],
+    "ArkLib/ToMathlib/MvPolynomial/CoeffBound.lean": [
+      "BGKLSW26"
+    ],
+    "ArkLib/ToMathlib/MvPolynomial/FirstOrderTaylor.lean": [
+      "Kop15"
+    ],
+    "ArkLib/ToMathlib/MvPolynomial/PowerMomentGeometry.lean": [
+      "DKT26"
+    ],
+    "ArkLib/ToMathlib/MvPolynomial/PowerMomentLift.lean": [
+      "DKT26"
+    ],
+    "ArkLib/ToMathlib/Polynomial/HasseTaylor/Lifting.lean": [
+      "Kop15"
+    ],
+    "ArkLib/ToMathlib/RingTheory/Nullstellensatz/BidegreeIncidence.lean": [
+      "BCPZZ26"
+    ],
+    "ArkLib/ToMathlib/RingTheory/Nullstellensatz/CappedBidegreeIncidence.lean": [
+      "DKT26"
+    ],
+    "ArkLib/ToMathlib/RingTheory/Nullstellensatz/CappedDegreeIncidence.lean": [
+      "DKT26"
     ]
   },
   "keys": {
@@ -853,9 +1795,10 @@
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds/SubspaceDesign.lean",
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean",
       "ArkLib/Data/CodingTheory/ListDecodability.lean",
-      "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Entropy.lean",
+      "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Entropy/Counting.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/Errors.lean",
+      "ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges/ListDecoding.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/InformationSetLowerBound.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/LineDecoding.lean",
@@ -865,7 +1808,7 @@
       "ArkLib/Data/CodingTheory/ReedSolomon/Multiplicity.lean",
       "ArkLib/Data/CodingTheory/SubspaceDesign.lean",
       "ArkLib/Data/Probability/Combinatorial.lean",
-      "ArkLib/Data/Probability/Instances.lean",
+      "ArkLib/OracleReduction/Security/RoundByRound.lean",
       "ArkLib/ProofSystem/ToyProblem/ConstrainedCode.lean",
       "ArkLib/ProofSystem/ToyProblem/Definitions.lean",
       "ArkLib/ProofSystem/ToyProblem/Impl/FRS.lean",
@@ -883,6 +1826,8 @@
       "ArkLib/Data/CodingTheory/ProximityGap/Folding/ListDecodability.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/Folding/Multilinear.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/Folding.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/Constrained.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/Interleaved.lean",
       "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability.lean",
       "ArkLib/Data/CodingTheory/ReedSolomon/Multilinear.lean",
       "ArkLib/Data/CodingTheory/ReedSolomon.lean",
@@ -897,7 +1842,8 @@
       "ArkLib/ProofSystem/Stir/Combine.lean",
       "ArkLib/ProofSystem/Stir/MainThm.lean",
       "ArkLib/ProofSystem/Stir/OutOfDomSmpl.lean",
-      "ArkLib/ProofSystem/Stir/ProximityGap.lean"
+      "ArkLib/ProofSystem/Stir/ProximityGap.lean",
+      "ArkLib/ProofSystem/Stir/Quotienting.lean"
     ],
     "ACFY25": [
       "ArkLib/Data/CodingTheory/ProximityGap/Errors.lean"
@@ -937,23 +1883,45 @@
     "BCGM25": [
       "ArkLib/Data/CodingTheory/Basic/LinearCode.lean",
       "ArkLib/Data/CodingTheory/InterleavedCode.lean",
+      "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Powers/Incidence.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Powers.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/Separation.lean",
       "ArkLib/Data/CodingTheory/ProximityGenerator/AffineGenerator.lean",
       "ArkLib/Data/CodingTheory/ProximityGenerator/Basic.lean",
       "ArkLib/Data/CodingTheory/ProximityGenerator/MCAGenerator.lean",
+      "ArkLib/Data/CodingTheory/ProximityGenerator/MDSGenerator.lean",
       "ArkLib/Data/CodingTheory/ProximityGenerator/PolynomialGenerator.lean",
-      "ArkLib/Data/CodingTheory/ProximityGenerator/TensorGenerator.lean"
+      "ArkLib/Data/CodingTheory/ProximityGenerator/TensorGenerator.lean",
+      "ArkLib/ProofSystem/Fri/ErrorBounds.lean"
     ],
     "BCHKS25": [
       "ArkLib/Data/CodingTheory/Connections/ListDecodingAndCA/BCHKS25.lean",
       "ArkLib/Data/CodingTheory/Connections/ListDecodingAndCA.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/JohnsonCertificate.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/Johnson/InterpolationBounds.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/EpsCa.lean",
+      "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/JohnsonLower/BinaryBasics.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/JohnsonLower.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/UniqueDecoding.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges/CapacityBounds.lean",
-      "ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges/UniqueDecoding.lean"
+      "ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges/ListDecoding.lean",
+      "ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges/UniqueDecoding.lean",
+      "ArkLib/Data/CodingTheory/ProximityGenerator/Basic.lean",
+      "ArkLib/Data/CodingTheory/ProximityGenerator/ExceptionalSet.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Johnson/Agreement.lean",
+      "ArkLib/Data/Polynomial/Differential/RootPresentation.lean",
+      "ArkLib/Data/Polynomial/FractionFieldExpand.lean",
+      "ArkLib/Data/Polynomial/FractionFieldFactorization.lean",
+      "ArkLib/Data/Polynomial/FractionFieldResultant.lean",
+      "ArkLib/Data/Polynomial/FractionFieldRoots.lean",
+      "ArkLib/Data/Polynomial/ResultantDegree.lean",
+      "ArkLib/Data/Polynomial/SymbolicInterpolationParameters.lean",
+      "ArkLib/Data/Polynomial/SymbolicInterpolationSupport.lean",
+      "ArkLib/Data/Polynomial/SymbolicInterpolationSurplus.lean",
+      "ArkLib/ProofSystem/ToyProblem/Impl/IRS.lean",
+      "ArkLib/ProofSystem/ToyProblem/Leaderboard.lean",
+      "ArkLib/ProofSystem/ToyProblem/Spec/General.lean"
     ],
     "BCIKS20": [
       "ArkLib/Data/CodingTheory/DivergenceOfSets.lean",
@@ -967,10 +1935,9 @@
       "ArkLib/Data/CodingTheory/Prelims.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/AffineLines/Main.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/AffineSpaces.lean",
+      "ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/CurveBWMatrix.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/Curves.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/EpsCa.lean",
-      "ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/ListDecoding/Agreement.lean",
-      "ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/ListDecoding/Extraction.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/ListDecoding/Guruswami.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/ReedSolomonGap.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/WeightedAgreement.lean",
@@ -989,6 +1956,34 @@
       "ArkLib/ProofSystem/BatchedFri/Security.lean",
       "ArkLib/ProofSystem/Stir/ProximityGap.lean"
     ],
+    "BCPZZ26": [
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Certificates.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Counting.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Dimension.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FreeOrderDimension.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Global/Interpolation.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Index.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Local/CertifiedRankBound.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Local/ConstraintKernel.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Local/ConstraintMap.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Local/Coordinates.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Local/Identity.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Local/IntermediateSpace.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Local/KernelSliceIndependence.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Local/Rank.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Local/Translation.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Local/ZeroOrder.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Space.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/LocalRank.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/WeightedSupport/LocalRank.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/NormalizedSubstitution.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/Basic.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FreeOrder.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/Johnson/FiniteBounds.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Substitution.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Variables.lean",
+      "ArkLib/ToMathlib/RingTheory/Nullstellensatz/BidegreeIncidence.lean"
+    ],
     "BCS16": [
       "ArkLib/OracleReduction/Basic.lean",
       "ArkLib/OracleReduction/VectorIOR.lean"
@@ -998,6 +1993,15 @@
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds/Linear.lean",
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean"
     ],
+    "BGKLSW26": [
+      "ArkLib/Commitments/Functional/BitZ/ExponentLift.lean",
+      "ArkLib/Commitments/Functional/BitZ/OutOfDomain.lean",
+      "ArkLib/Commitments/Functional/BitZ/Round1.lean",
+      "ArkLib/Commitments/Functional/BitZ/Round2.lean",
+      "ArkLib/Data/MvPolynomial/PrimeFingerprint.lean",
+      "ArkLib/Data/MvPolynomial/PrimeFingerprintProbability.lean",
+      "ArkLib/ToMathlib/MvPolynomial/CoeffBound.lean"
+    ],
     "BGM23": [
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon.lean",
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean"
@@ -1006,10 +2010,20 @@
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon.lean",
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean"
     ],
+    "BRW26": [
+      "ArkLib/ProofSystem/RingSwitching/Packing/ClaimLayout/Quirky.lean",
+      "ArkLib/ProofSystem/RingSwitching/Packing/ClaimLayout.lean",
+      "ArkLib/ProofSystem/RingSwitching/Packing/DerivedBatching.lean",
+      "ArkLib/ProofSystem/RingSwitching/Packing/Multiplier.lean",
+      "ArkLib/ProofSystem/RingSwitching/Packing.lean"
+    ],
     "BenSassonGKS20": [
       "ArkLib/Data/CodingTheory/Connections/ListDecodingAndCA.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/JohnsonCa.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds.lean"
+    ],
+    "CCHLRRW19": [
+      "ArkLib/OracleReduction/Security/RoundByRound.lean"
     ],
     "CGKY25": [
       "ArkLib/Commitments/Functional/Basic.lean",
@@ -1020,10 +2034,15 @@
       "ArkLib/Commitments/Functional/KZG/FunctionBinding/TauInQueries.lean",
       "ArkLib/Commitments/Functional/KZG/HardnessAssumptions.lean"
     ],
+    "CHA24": [
+      "ArkLib/Data/MvPolynomial/PrimeFingerprint.lean"
+    ],
     "CS25": [
       "ArkLib/Data/CodingTheory/Connections/ListDecodingAndCA/CS25.lean",
       "ArkLib/Data/CodingTheory/Connections/ListDecodingAndCA.lean",
-      "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Entropy.lean",
+      "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Entropy/Counting.lean",
+      "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Subfield/Algebra.lean",
+      "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Subfield/Moments.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Subfield.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds.lean"
     ],
@@ -1038,7 +2057,8 @@
     "DG25": [
       "ArkLib/Data/CodingTheory/InterleavedCode.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/Basic.lean",
-      "ArkLib/Data/CodingTheory/ProximityGap/DG25/Basic.lean"
+      "ArkLib/Data/CodingTheory/ProximityGap/DG25/Basic.lean",
+      "ArkLib/ProofSystem/Binius/BinaryBasefold/Soundness/Incremental.lean"
     ],
     "DG25dist": [
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds/Linear.lean",
@@ -1046,16 +2066,259 @@
       "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Sampling.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds.lean"
     ],
+    "DKT26": [
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Certificates.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Dimension.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/CurveCertificate.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/CurveHeightCounting.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/CurveRank.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/Dimension.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/HeightCounting.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/Interpolant.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/ListBound.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/Profile.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/RateCertificate.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/Space.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/Symbolic.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/SymbolicRank.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FreeOrderDimension.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Global/Interpolation.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Global/Multiplicity.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Index.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Local/ConstraintMap.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Local/Contact.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Local/Rank.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Local/RankBudget.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Local/ZeroOrder.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/Counting.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/CurveCertificate.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/Dimension.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/FiniteSurplus.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/FloorTransfer.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/LocalRank.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/MomentSource.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/RateBound.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/RateCertificate.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/SolutionEmbedding.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/SpecializationDegree.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/ChallengeDegree.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/ColumnHeight.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/ConstraintMatrix.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/CurveCertificate.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/CurveHeight.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/CurveSupportCertificate.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/JohnsonCertificate.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/PartitionRank.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/ReceivedCurve.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/Soundness.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/SourceColumn.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/WeightedJohnsonCertificate.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/WeightedSupport.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/WeightedSupportCertificate.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/WeightedSupport/Basic.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/WeightedSupport/Dimension.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/WeightedSupport/Estimate.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/WeightedSupport/Interpolation.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/Basic.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/ExactCharacteristicBudget.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/AgreementCounting.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/AutomaticBounds.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/AutomaticParameters.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/DerivativeCappedCounting.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/FiniteRateParameters.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/HybridAgreementCounting.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/HybridConstants.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/HybridRateEnvelope.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/RoundedCounts.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/StageCharges.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/StageComparison.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/StageSum.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/Uniform.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/UniformMca.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FreeOrder.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/BlockLength.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/ClosedMultiplicity.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/FiniteRatio.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/FixedRateGate.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/Gate.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/MathematicalUniform.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/Moment.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/Recipe.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/UniformEnvelope.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/UniformGamma.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/UniformParameters.lean",
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/WeightedSupport/Capacity.lean",
+      "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds.lean",
+      "ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges/CapacityBounds.lean",
+      "ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges/ListDecoding.lean",
+      "ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges/UniqueDecoding.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/Agreement.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/AgreementList.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/Basic.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/CodewordBound.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/CurveCertificate.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/ExactLists.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/FiniteField.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/FixedRateExplicitGate.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/GeometricBound.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/MathematicalUniformRate.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/QuarterGap.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/RatePartition.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/UniformRate.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/WeightedSupport.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/WeightedSupportInterpolant.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/DirectJetList.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/Bounds.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/FiniteLengthParameters.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/FiniteLengthSelectors.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/LowRateFiniteLength.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/LowRateFiniteLengthBounds.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/Profile.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/Uniform.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/HiddenDerivativeBound.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/PairwiseJohnson.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/CertificateBound.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/FixedRateExplicitGate.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/MathematicalUniformRate.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/Parameters.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/PrescribedCurve.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/PrescribedLine.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/ProductBounds.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/ProductCounting.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/RatePartition.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/SharpCountingBound.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/UniformRate.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/ComponentDimension.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/EquationDescent.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/ExtensionDescent.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/AutomaticHybrid.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/AutomaticMcaError.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Branchwise.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/CurveAgreement.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/FiniteLengthMca.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/FiniteLengthRateBounds.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridCurveProfile.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridCurveRecovery.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridCurveTransfer.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridTransfer.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/LowRateSemantics.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/OrdinaryTail.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Profile.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/RateBounds.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Certificates.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/CurveMCA.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Factorwise.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/RetainedTail.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/SharpCurve.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/TailBound.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/UniformLineMca.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FrobeniusAdmissibility.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FrobeniusComponentRecognition.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FrobeniusIncidence.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FrobeniusRetainedFamily.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/GraphLineComponent.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Johnson/Agreement.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Johnson/Probability.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/BaseEquation.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Equation.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/FactorAssembly.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/FactorBudget.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/IrreducibleEquation.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedAdmissibility.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedCertificate.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedComponentAgreement.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedComponentRecognition.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedDerivativeImage.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedExceptionalChallenges.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedFrobeniusFamily.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedGeometricTransfer.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedGraphCounting.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedIncidence.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedPointRecognition.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedRegularEquation.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedSharpRegularAgreement.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerToLine.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerTupleCounting.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerTupleIncidence.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerTupleRegularBound.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerTupleSeparableBound.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/SingularTail.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/DerivativeTupleCounting.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/ExceptionalChallenges.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/Incidence.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PairCounting.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/RegularEquation.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/PowerAgreement.lean",
+      "ArkLib/Data/MvPolynomial/RadicalSplit/Separable.lean",
+      "ArkLib/Data/Polynomial/Differential/BaseChange.lean",
+      "ArkLib/Data/Polynomial/Differential/ChainWitness.lean",
+      "ArkLib/Data/Polynomial/Differential/FrobeniusEquation.lean",
+      "ArkLib/Data/Polynomial/Differential/FrobeniusTaylorWitness.lean",
+      "ArkLib/Data/Polynomial/Differential/OrderZeroPresentation.lean",
+      "ArkLib/Data/Polynomial/Differential/RationalTaylor.lean",
+      "ArkLib/Data/Polynomial/Differential/RationalTaylorAlgebra.lean",
+      "ArkLib/Data/Polynomial/Differential/RationalTaylorBidegree.lean",
+      "ArkLib/Data/Polynomial/Differential/RationalTaylorDerivativeDegree.lean",
+      "ArkLib/Data/Polynomial/Differential/RationalTaylorJointDegree.lean",
+      "ArkLib/Data/Polynomial/Differential/RecursiveCount.lean",
+      "ArkLib/Data/Polynomial/Differential/RetainedCurve.lean",
+      "ArkLib/Data/Polynomial/Differential/RootPresentation.lean",
+      "ArkLib/Data/Polynomial/Differential/TaylorChart.lean",
+      "ArkLib/Data/Polynomial/Differential/TaylorChartAlgebra.lean",
+      "ArkLib/Data/Polynomial/Differential/TaylorChartBaseChange.lean",
+      "ArkLib/Data/Polynomial/Differential/TaylorChartGeometry.lean",
+      "ArkLib/Data/Polynomial/Differential/TaylorChartIncidence.lean",
+      "ArkLib/Data/Polynomial/Differential/TaylorIndexWeight.lean",
+      "ArkLib/Data/Polynomial/Differential/TaylorResidual.lean",
+      "ArkLib/Data/Polynomial/Differential/TotalJetDegreeCount.lean",
+      "ArkLib/ProofSystem/ToyProblem/Impl/IRS.lean",
+      "ArkLib/ProofSystem/ToyProblem/Leaderboard.lean",
+      "ArkLib/ProofSystem/ToyProblem/Spec/General.lean",
+      "ArkLib/ToMathlib/Analysis/SpecificLimits/GeometricBounds.lean",
+      "ArkLib/ToMathlib/Combinatorics/Enumerative/IncidenceProduct.lean",
+      "ArkLib/ToMathlib/LinearAlgebra/Matrix/Rank.lean",
+      "ArkLib/ToMathlib/LinearAlgebra/PolynomialKernelHeight.lean",
+      "ArkLib/ToMathlib/MeasureTheory/Integral/PositivePart.lean",
+      "ArkLib/ToMathlib/MvPolynomial/PowerMomentGeometry.lean",
+      "ArkLib/ToMathlib/MvPolynomial/PowerMomentLift.lean",
+      "ArkLib/ToMathlib/RingTheory/Nullstellensatz/CappedBidegreeIncidence.lean",
+      "ArkLib/ToMathlib/RingTheory/Nullstellensatz/CappedDegreeIncidence.lean"
+    ],
+    "DKTZ26": [
+      "ArkLib/Data/CodingTheory/Connections/ListDecodingAndCA.lean"
+    ],
     "DP24": [
-      "ArkLib/ProofSystem/Binius/BinaryBasefold/Basic.lean",
+      "ArkLib/ProofSystem/Binius/BinaryBasefold/Code.lean",
+      "ArkLib/ProofSystem/Binius/BinaryBasefold/Compliance.lean",
+      "ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase/Protocol.lean",
+      "ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean",
       "ArkLib/ProofSystem/Binius/BinaryBasefold/General.lean",
-      "ArkLib/ProofSystem/Binius/FRIBinius/General.lean",
+      "ArkLib/ProofSystem/Binius/BinaryBasefold/Prelude/Fibers.lean",
+      "ArkLib/ProofSystem/Binius/BinaryBasefold/Prelude/Folding.lean",
+      "ArkLib/ProofSystem/Binius/BinaryBasefold/Prelude.lean",
+      "ArkLib/ProofSystem/Binius/BinaryBasefold/QueryPhase/Soundness.lean",
+      "ArkLib/ProofSystem/Binius/BinaryBasefold/ReductionLogic.lean",
+      "ArkLib/ProofSystem/Binius/BinaryBasefold/Soundness/BadBlocks.lean",
+      "ArkLib/ProofSystem/Binius/BinaryBasefold/Soundness/FoldDistance.lean",
+      "ArkLib/ProofSystem/Binius/BinaryBasefold/Soundness/Incremental.lean",
+      "ArkLib/ProofSystem/Binius/BinaryBasefold/Soundness/Lift.lean",
+      "ArkLib/ProofSystem/Binius/BinaryBasefold/Soundness/QueryPhasePrelims.lean",
+      "ArkLib/ProofSystem/Binius/BinaryBasefold/Soundness/QueryPhaseSoundness.lean",
+      "ArkLib/ProofSystem/Binius/BinaryBasefold/Soundness/QueryRejection.lean",
+      "ArkLib/ProofSystem/Binius/BinaryBasefold/Steps/Commit.lean",
+      "ArkLib/ProofSystem/Binius/BinaryBasefold/Steps/FinalSumcheck.lean",
+      "ArkLib/ProofSystem/Binius/BinaryBasefold/Steps/Fold/Protocol.lean",
+      "ArkLib/ProofSystem/Binius/BinaryBasefold/Steps/Fold.lean",
+      "ArkLib/ProofSystem/Binius/BinaryBasefold/Steps/Relay.lean",
       "ArkLib/ProofSystem/RingSwitching/Basic.lean",
-      "ArkLib/ProofSystem/RingSwitching/Packing/BatchingPhase.lean",
-      "ArkLib/ProofSystem/RingSwitching/Packing/General.lean",
+      "ArkLib/ProofSystem/RingSwitching/Packing/Algebra.lean",
+      "ArkLib/ProofSystem/RingSwitching/Packing/ClaimLayout.lean",
+      "ArkLib/ProofSystem/RingSwitching/Packing/Coordinates.lean",
       "ArkLib/ProofSystem/RingSwitching/Packing/Prelude.lean",
       "ArkLib/ProofSystem/RingSwitching/Packing/Profile.lean",
-      "ArkLib/ProofSystem/RingSwitching/Packing/SumcheckPhase.lean",
+      "ArkLib/ProofSystem/RingSwitching/Packing/TensorPrefix.lean",
       "ArkLib/ProofSystem/RingSwitching/Packing.lean"
     ],
     "DP25": [
@@ -1065,13 +2328,17 @@
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds/Linear.lean",
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean"
     ],
+    "EthStark21": [
+      "ArkLib/Data/Polynomial/CosetChunks.lean"
+    ],
     "FMN24": [
-      "ArkLib/Commitments/Functional/Hachi/Composition.lean",
+      "ArkLib/Commitments/Functional/Hachi/Sumcheck/Basic.lean",
       "ArkLib/Commitments/Functional/Hachi/ZeroCheck/Reduction.lean",
       "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Basic.lean",
       "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness.lean"
     ],
     "FRI1216": [
+      "ArkLib/Data/Polynomial/CosetChunks.lean",
       "ArkLib/ProofSystem/Fri/Spec/SingleRound.lean"
     ],
     "GCXK25": [
@@ -1079,6 +2346,7 @@
       "ArkLib/Data/CodingTheory/Connections/ListDecodingAndCA.lean"
     ],
     "GG25": [
+      "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Frs/LineDecoding.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Frs.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/LineDecoding.lean",
       "ArkLib/Data/CodingTheory/SubspaceDesign.lean"
@@ -1099,15 +2367,22 @@
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds/Linear.lean",
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean"
     ],
+    "GMW25": [
+      "ArkLib/ProofSystem/Fri/ErrorBounds.lean",
+      "ArkLib/ProofSystem/Fri/FoldingSoundness.lean",
+      "ArkLib/ProofSystem/Fri/QuerySoundness.lean",
+      "ArkLib/ProofSystem/Fri/Spec/Extraction/Program.lean",
+      "ArkLib/ProofSystem/Fri/Spec/ExtractionCorrectness.lean",
+      "ArkLib/ProofSystem/Fri/Spec/KnowledgeSoundness.lean",
+      "ArkLib/ProofSystem/Fri/Spec/QuerySoundness.lean",
+      "ArkLib/ProofSystem/Fri/Spec/Soundness.lean"
+    ],
     "GR08": [
       "ArkLib/Data/CodingTheory/ReedSolomon/Folded.lean",
       "ArkLib/Data/CodingTheory/SubspaceDesign.lean"
     ],
     "GW13": [
       "ArkLib/Data/CodingTheory/ReedSolomon/Multiplicity.lean"
-    ],
-    "GWZC19": [
-      "ArkLib/ProofSystem/Plonk/Basic.lean"
     ],
     "GX13": [
       "ArkLib/Data/CodingTheory/SubspaceDesign.lean"
@@ -1119,6 +2394,9 @@
     "GaoKL24": [
       "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/JohnsonMca.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds.lean"
+    ],
+    "HK24": [
+      "ArkLib/Data/Polynomial/CosetChunks.lean"
     ],
     "HMZ25": [
       "ArkLib/Commitments/Functional/Hachi/Composition.lean",
@@ -1142,10 +2420,15 @@
       "ArkLib/AGM/Basic.lean"
     ],
     "Jo26": [
-      "ArkLib/Data/CodingTheory/ProximityGap/Errors.lean"
+      "ArkLib/Data/CodingTheory/InterleavedCode/ExactAgreement.lean",
+      "ArkLib/Data/CodingTheory/InterleavedCode/Projection.lean",
+      "ArkLib/Data/CodingTheory/ProximityGap/Errors.lean",
+      "ArkLib/Data/CodingTheory/ProximityGenerator/Interleaving.lean"
     ],
     "Joh62": [
-      "ArkLib/Data/CodingTheory/JohnsonBound/Family.lean"
+      "ArkLib/Data/CodingTheory/JohnsonBound/Family.lean",
+      "ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges/ListDecoding.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/PairwiseJohnson.lean"
     ],
     "KKH26": [
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds/KKH26.lean",
@@ -1163,11 +2446,23 @@
     "KZG10TR": [
       "ArkLib/Commitments/Functional/KZG/Binding.lean"
     ],
+    "Kop15": [
+      "ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/Basic.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/AgreementList.lean",
+      "ArkLib/Data/Polynomial/Differential/DerivativeDescent.lean",
+      "ArkLib/Data/Polynomial/Differential/DirectRegularLift.lean",
+      "ArkLib/Data/Polynomial/Differential/RecursiveCount.lean",
+      "ArkLib/Data/Polynomial/Differential/RegularIteration.lean",
+      "ArkLib/Data/Polynomial/Differential/RegularLift.lean",
+      "ArkLib/Data/Polynomial/Differential/SeparantChain.lean",
+      "ArkLib/Data/Polynomial/Differential/SingularRecursion.lean",
+      "ArkLib/ToMathlib/MvPolynomial/FirstOrderTaylor.lean",
+      "ArkLib/ToMathlib/Polynomial/HasseTaylor/Lifting.lean"
+    ],
     "LFKN92": [
       "ArkLib/ProofSystem/Sumcheck/Spec/General.lean"
     ],
     "LNP22": [
-      "ArkLib/Commitments/Functional/Hachi/Recursion/TraceHandoff.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/Core.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/Galois/Automorphism.lean"
     ],
@@ -1193,6 +2488,7 @@
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean"
     ],
     "Mic07": [
+      "ArkLib/Commitments/Functional/Hachi/Params.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/MicciancioYoung.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/NormBounds.lean"
     ],
@@ -1214,15 +2510,13 @@
       "ArkLib/Commitments/Functional/Hachi/InnerOuter/Correctness.lean",
       "ArkLib/Commitments/Functional/Hachi/InnerOuter/Scheme.lean",
       "ArkLib/Commitments/Functional/Hachi/InnerOuter/Security.lean",
+      "ArkLib/Commitments/Functional/Hachi/Params.lean",
       "ArkLib/Commitments/Functional/Hachi/QuadEval/Basic.lean",
       "ArkLib/Commitments/Functional/Hachi/QuadEval/Bridge.lean",
       "ArkLib/Commitments/Functional/Hachi/QuadEval/Completeness.lean",
       "ArkLib/Commitments/Functional/Hachi/QuadEval/Gadgets.lean",
       "ArkLib/Commitments/Functional/Hachi/QuadEval/Reduction.lean",
       "ArkLib/Commitments/Functional/Hachi/QuadEval/Soundness.lean",
-      "ArkLib/Commitments/Functional/Hachi/Recursion/PartialEval.lean",
-      "ArkLib/Commitments/Functional/Hachi/Recursion/TraceHandoff.lean",
-      "ArkLib/Commitments/Functional/Hachi/Recursion/ZBatchBridge.lean",
       "ArkLib/Commitments/Functional/Hachi/RingSwitch/Basic.lean",
       "ArkLib/Commitments/Functional/Hachi/RingSwitch/Completeness.lean",
       "ArkLib/Commitments/Functional/Hachi/RingSwitch/ComputableWitness.lean",
@@ -1236,6 +2530,12 @@
       "ArkLib/Commitments/Functional/Hachi/Sumcheck/FinalEval.lean",
       "ArkLib/Commitments/Functional/Hachi/Sumcheck/RoundPoly.lean",
       "ArkLib/Commitments/Functional/Hachi/Sumcheck/Rounds.lean",
+      "ArkLib/Commitments/Functional/Hachi/TraceHead/Basic.lean",
+      "ArkLib/Commitments/Functional/Hachi/TraceHead/Coefficients.lean",
+      "ArkLib/Commitments/Functional/Hachi/TraceHead/Commitment.lean",
+      "ArkLib/Commitments/Functional/Hachi/TraceHead/Completeness.lean",
+      "ArkLib/Commitments/Functional/Hachi/TraceHead/Coordinates.lean",
+      "ArkLib/Commitments/Functional/Hachi/TraceHead/Protocol.lean",
       "ArkLib/Commitments/Functional/Hachi/ZeroCheck/Basic.lean",
       "ArkLib/Commitments/Functional/Hachi/ZeroCheck/Batch.lean",
       "ArkLib/Commitments/Functional/Hachi/ZeroCheck/Constraints.lean",
@@ -1321,12 +2621,20 @@
     "Poseidon2": [
       "ArkLib/Data/Hash/Poseidon2.lean"
     ],
+    "RSG": [
+      "ArkLib/ProofSystem/RingSwitching/Packing/DerivedBatching.lean",
+      "ArkLib/ProofSystem/RingSwitching/Packing/Multiplier.lean"
+    ],
     "ST20": [
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds/Linear.lean",
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean"
     ],
     "Spi95": [
       "ArkLib/Data/CodingTheory/PolishchukSpielman/PolishchukSpielman.lean"
+    ],
+    "ZCF24": [
+      "ArkLib/ProofSystem/Binius/BinaryBasefold/General.lean",
+      "ArkLib/ProofSystem/Binius/BinaryBasefold/Relations.lean"
     ],
     "codingtheory": [
       "ArkLib/Data/CodingTheory/Erasure.lean",

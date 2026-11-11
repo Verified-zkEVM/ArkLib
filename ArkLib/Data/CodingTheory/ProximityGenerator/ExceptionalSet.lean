@@ -29,7 +29,7 @@ open LinearCode
 open scoped ProbabilityTheory
 
 variable {ι F ℓ S A : Type} [Fintype ι] [Field F] [Fintype ℓ]
-  [Nonempty S] [Fintype S] [AddCommMonoid A] [Module F A]
+  [Nonempty S] [Fintype S] [SampleableType S] [AddCommMonoid A] [Module F A]
 
 /-- An exceptional set of at most `B` seeds for each input family bounds the worst-case MCA
 error by `B / |S|`. A single exceptional set must cover all bad agreement sets for that family. -/
@@ -41,7 +41,7 @@ theorem mcaError_le_of_exists_exceptional_set
   classical
   refine iSup_le fun U => ?_
   obtain ⟨E, hE, hgood⟩ := h U
-  rw [Probability.prob_uniform_eq_ofReal]
+  rw [SampleableType.prEvent_uniformSample_eq_ofReal]
   apply ENNReal.ofReal_le_ofReal
   apply div_le_div_of_nonneg_right _ (Nat.cast_nonneg _)
   refine le_trans (Nat.cast_le.mpr (Finset.card_le_card ?_)) hE

@@ -58,10 +58,8 @@ theorem mem_restrictDegreeVar_iff_degreeOf_le {b : σ → ℕ} (p : MvPolynomial
 
 /-- `restrictDegreeVar` is monotone in the per-variable bound. -/
 theorem restrictDegreeVar_mono {b₁ b₂ : σ → ℕ} (h : ∀ i, b₁ i ≤ b₂ i) :
-    restrictDegreeVar σ R b₁ ≤ restrictDegreeVar σ R b₂ := by
-  intro p hp
-  rw [mem_restrictDegreeVar_iff_degreeOf_le] at hp ⊢
-  exact fun i => (hp i).trans (h i)
+    restrictDegreeVar σ R b₁ ≤ restrictDegreeVar σ R b₂ :=
+  restrictSupport_mono R (fun _ hn i => (hn i).trans (h i))
 
 /-- A prismalinear polynomial whose per-variable bound is everywhere `≤ m` lies in the uniform
 `restrictDegree σ R m` (i.e. `R⦃≤ m⦄[X σ]`). -/
@@ -91,11 +89,7 @@ lemma sumAlgEquiv_monomial_aux {R : Type*} [CommSemiring R]
       MvPolynomial.monomial (m.comapDomain Sum.inl Sum.inl_injective.injOn)
         (MvPolynomial.monomial (m.comapDomain Sum.inr Sum.inr_injective.injOn) c) := by
   ext s
-  simp [MvPolynomial.sumAlgEquiv, MvPolynomial.monomial, MvPolynomial.coeff,
-    Finsupp.comapDomain]
-
-@[deprecated sumAlgEquiv_monomial_aux (since := "2026-08-15")]
-alias sumToIter_monomial_aux := sumAlgEquiv_monomial_aux
+  simp [MvPolynomial.sumAlgEquiv, MvPolynomial.monomial, Finsupp.comapDomain]
 
 /-- Renaming by an equivalence `e : σ ≃ τ` transports a per-variable degree bound `b` to the
 pulled-back bound `b ∘ e.symm` on the target. -/

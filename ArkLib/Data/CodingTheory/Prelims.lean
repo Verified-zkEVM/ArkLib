@@ -28,6 +28,45 @@ def multilinearWeight {ϑ : ℕ} (r : Fin ϑ → F) (i : Fin (2 ^ ϑ)) : F :=
   ∏ j : Fin ϑ,
     if i.val.testBit j.val then (r j) else (1 - r j)
 
+omit [Fintype F] [DecidableEq F] in
+/-- For an index `i < 2 ^ n` in the lower half, the weight of `r : Fin (n + 1) → F` is the weight
+of `i` at `Fin.init r` times `1 - r (Fin.last n)`, since bit `n` of `i` is `0`. -/
+lemma multilinearWeight_succ_lower_half {n : ℕ} (r : Fin (n + 1) → F) (i : Fin (2 ^ (n + 1)))
+    (h_lt : i.val < 2 ^ n) :
+    multilinearWeight r i =
+      multilinearWeight (Fin.init r) ⟨i.val, h_lt⟩ * (1 - r (Fin.last n)) := by
+  simp only [multilinearWeight, Fin.prod_univ_castSucc, Fin.val_castSucc, Fin.val_last,
+    Nat.testBit_lt_two_pow h_lt, Bool.false_eq_true, ↓reduceIte, Fin.init]
+
+omit [Fintype F] [DecidableEq F] in
+/-- For an index `i = j + 2 ^ n` in the upper half, the weight of `r : Fin (n + 1) → F` is the
+weight of `j` at `Fin.init r` times `r (Fin.last n)`, since bit `n` of `i` is `1`. -/
+lemma multilinearWeight_succ_upper_half {n : ℕ} (r : Fin (n + 1) → F) (i : Fin (2 ^ (n + 1)))
+    (j : Fin (2 ^ n)) (h_eq : i.val = j.val + 2 ^ n) :
+    multilinearWeight r i = multilinearWeight (Fin.init r) j * r (Fin.last n) := by
+  have h_top : i.val.testBit n = true := by
+    rw [h_eq, Nat.add_comm, Nat.testBit_two_pow_add_eq, Nat.testBit_lt_two_pow j.isLt,
+      Bool.not_false]
+  have h_low : ∀ k : Fin n, i.val.testBit k.val = j.val.testBit k.val := fun k => by
+    rw [h_eq, Nat.add_comm, Nat.testBit_two_pow_add_gt k.isLt]
+  simp only [multilinearWeight, Fin.prod_univ_castSucc, Fin.val_castSucc, Fin.val_last, h_top,
+    ↓reduceIte, h_low, Fin.init]
+
+omit [Fintype F] [DecidableEq F] in
+/-- An even index selects the zero branch of the first multilinear weight factor. -/
+lemma multilinearWeight_two_mul {n : ℕ} (r : Fin (n + 1) → F) (i : Fin (2 ^ n)) :
+    multilinearWeight r ⟨2 * i, by omega⟩ =
+      multilinearWeight (fun j => r j.succ) i * (1 - r 0) := by
+  simp [multilinearWeight, Fin.prod_univ_succ, Nat.testBit_add_one, Nat.testBit_zero, mul_comm]
+
+omit [Fintype F] [DecidableEq F] in
+/-- An odd index selects the one branch of the first multilinear weight factor. -/
+lemma multilinearWeight_two_mul_add_one {n : ℕ} (r : Fin (n + 1) → F) (i : Fin (2 ^ n)) :
+    multilinearWeight r ⟨2 * i + 1, by omega⟩ =
+      multilinearWeight (fun j => r j.succ) i * r 0 := by
+  simp [multilinearWeight, Fin.prod_univ_succ, Nat.testBit_add_one, Nat.testBit_zero,
+    Nat.add_div, mul_comm]
+
 /-- Linear combination of the rows of `u` according to the tensor product of `r`:
 `[tensor_product r i] ·|u₀|`
                       `|u₁|`
@@ -91,18 +130,26 @@ def subLeftFull (U : Matrix (Fin m) (Fin n) F) (c_reindex : Fin m → Fin n) :
 variable [CommRing F] [Nontrivial F]
          {U : Matrix (Fin m) (Fin n) F}
 
+omit [Nontrivial F] in
 /-- An m×n matrix has full rank if the submatrix consisting of rows 1 through n has rank n. -/
 lemma rank_eq_if_subUpFull_eq (h : n ≤ m) :
     (subUpFull U (Fin.castLE h)).rank = n → U.rank = n  := by
+   rcases subsingleton_or_nontrivial F with hF | hF
+   · simp [Matrix.rank_subsingleton]
+   let := hF
    intro h_sub_mat_rank
    apply le_antisymm
    ·  exact Matrix.rank_le_width U
    ·  calc n = (subUpFull U (Fin.castLE h)).rank := by rw[h_sub_mat_rank]
            _ ≤ U.rank := by exact Matrix.rank_submatrix_le U (Fin.castLE h) (Equiv.refl (Fin n))
 
+omit [Nontrivial F] in
 /-- cRank and Rank agree for a finite matirx -/
 lemma cRank_rank_conversion :
     ↑(U.rank) = U.cRank := by
+  rcases subsingleton_or_nontrivial F with hF | hF
+  · simp [Matrix.rank_subsingleton, Matrix.cRank_subsingleton]
+  let := hF
   rw[
     Matrix.rank_eq_finrank_span_cols,
     ← Matrix.cRank_toNat_eq_finrank,
@@ -112,9 +159,13 @@ lemma cRank_rank_conversion :
          _ = ↑n := by rw[Fintype.card_fin]
   exact Cardinal.natCast_lt_aleph0
 
+omit [Nontrivial F] in
 /-- An m×n matrix has full rank if the submatrix consisting of columns 1 through m has rank m. -/
 lemma full_row_rank_via_rank_subLeftFull (h : m ≤ n) :
     (subLeftFull U (Fin.castLE h)).rank = m → U.rank = m := by
+   rcases subsingleton_or_nontrivial F with hF | hF
+   · simp [Matrix.rank_subsingleton]
+   let := hF
    intro h_sub_mat_rank
    rw[
     Matrix.rank_eq_finrank_span_cols,
@@ -154,7 +205,7 @@ lemma rank_eq_iff_det_ne_zero {U : Matrix (Fin n) (Fin n) F} :
   rw[
     ← isUnit_iff_ne_zero,
     ← Matrix.isUnit_iff_isUnit_det,
-    ←  Matrix.linearIndependent_cols_iff_isUnit,
+    ←  Matrix.linearIndependent_col_iff_isUnit,
     Matrix.rank_eq_finrank_span_cols,
     linearIndependent_iff_card_eq_finrank_span,
     Set.finrank

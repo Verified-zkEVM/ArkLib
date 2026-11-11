@@ -94,9 +94,9 @@ lemma filter_map_conflict_nodup
   simp only [Option.mem_def] at hb hb'
   -- Extract a < p from hb (outer dite must take the then-branch)
   have ha : a < p := by
-    by_contra h; push Not at h; rw [dif_neg (by omega)] at hb; simp at hb
+    by_contra h; push Not at h; rw [dite_eq_right (by omega)] at hb; simp at hb
   have ha' : a' < p := by
-    by_contra h; push Not at h; rw [dif_neg (by omega)] at hb'; simp at hb'
+    by_contra h; push Not at h; rw [dite_eq_right (by omega)] at hb'; simp at hb'
   -- Both branches must hit `some x`, giving `b = ↑↑⟨a, ha⟩` and `b = ↑↑⟨a', ha'⟩`.
   simp only [ha, ha', dite_true] at hb hb'
   split at hb <;> simp at hb
@@ -120,7 +120,8 @@ lemma filter_map_conflict_length (hp : p ≥ n + 2) (hn : 1 ≤ n)
   set arr := (Array.range p).filterMap fun i =>
     if h : i < p then
       let x : ZMod p := (⟨i, h⟩ : Fin p)
-      if srs.1[0] ^ x.val ≠ srs.1[1]'(Nat.lt_add_of_pos_left hn) ∧ x ≠ αᵢ then some x
+      if srs.1[0]'(Nat.succ_pos n) ^ x.val ≠ srs.1[1]'(Nat.lt_add_of_pos_left hn) ∧
+          x ≠ αᵢ then some x
       else none
     else none
   -- Convert Array.size to Finset.card via Nodup
@@ -134,17 +135,19 @@ lemma filter_map_conflict_length (hp : p ≥ n + 2) (hn : 1 ≤ n)
   -- The complement (univ \ S) contains only x where srs.1[0]^x.val = srs.1[1] ∨ x = αᵢ,
   -- i.e., at most 2 elements (≤ 1 discrete log solution + αᵢ).
   have hCompl : (Finset.univ \ S).card ≤ 2 := by
-    -- orderOf srs.1[0] = p (since srs.1[0] ≠ 1 in a group of prime order)
-    have hord : orderOf srs.1[0] = p := by
-      have hdvd : orderOf srs.1[0] ∣ p := by
-        have := orderOf_dvd_natCard (G := G₁) srs.1[0]
+    set g₀ := srs.1[0]'(Nat.succ_pos n) with hg₀
+    set h₁ := srs.1[1]'(Nat.lt_add_of_pos_left hn) with hh₁
+    -- orderOf g₀ = p (since g₀ ≠ 1 in a group of prime order)
+    have hord : orderOf g₀ = p := by
+      have hdvd : orderOf g₀ ∣ p := by
+        have := orderOf_dvd_natCard (G := G₁) g₀
         rwa [PrimeOrderWith.hCard] at this
       rcases (Nat.dvd_prime Fact.out).1 hdvd with h1 | hp'
       · exact absurd (orderOf_eq_one_iff.1 h1) hgen
       · exact hp'
     -- Injectivity of x ↦ g^x.val for x : ZMod p
     have hinj : ∀ a b : ZMod p,
-        srs.1[0] ^ a.val = srs.1[0] ^ b.val → a = b := by
+        g₀ ^ a.val = g₀ ^ b.val → a = b := by
       intro a b heq
       rw [pow_eq_pow_iff_modEq, hord] at heq
       have hval : a.val = b.val := by
@@ -155,18 +158,18 @@ lemma filter_map_conflict_length (hp : p ≥ n + 2) (hn : 1 ≤ n)
         _ = b := ZMod.natCast_zmod_val b
     -- Any x satisfying the condition is in S
     have hmem : ∀ x : ZMod p,
-        srs.1[0] ^ x.val ≠ srs.1[1]'(Nat.lt_add_of_pos_left hn) → x ≠ αᵢ → x ∈ S := by
+        g₀ ^ x.val ≠ h₁ → x ≠ αᵢ → x ∈ S := by
       intro x hpow hneα
       change x ∈ arr.toList.toFinset
       simp only [List.mem_toFinset, arr, Array.toList_filterMap, Array.toList_range,
         List.mem_filterMap, List.mem_range]
       exact ⟨x.val, ZMod.val_lt x, by
         simp only [ZMod.val_lt x, dite_true, ZMod.natCast_zmod_val]
-        exact if_pos ⟨hpow, hneα⟩⟩
+        exact ite_eq_left ⟨hpow, hneα⟩⟩
     -- The complement ⊆ {x | g^x.val = h} ∪ {αᵢ}
     have hsub : Finset.univ \ S ⊆
         Finset.univ.filter (fun x : ZMod p =>
-          srs.1[0] ^ x.val = srs.1[1]'(Nat.lt_add_of_pos_left hn)) ∪ {αᵢ} := by
+          g₀ ^ x.val = h₁) ∪ {αᵢ} := by
       intro x hx
       simp only [Finset.mem_sdiff, Finset.mem_univ, true_and] at hx
       simp only [Finset.mem_union, Finset.mem_filter, Finset.mem_univ, true_and,
@@ -175,17 +178,17 @@ lemma filter_map_conflict_length (hp : p ≥ n + 2) (hn : 1 ≤ n)
       exact hx (hmem x h.1 h.2)
     -- The filter set has ≤ 1 element (injectivity of g^·)
     have hfilt : (Finset.univ.filter (fun x : ZMod p =>
-        srs.1[0] ^ x.val = srs.1[1]'(Nat.lt_add_of_pos_left hn))).card ≤ 1 := by
+        g₀ ^ x.val = h₁)).card ≤ 1 := by
       rw [Finset.card_le_one]
       intro a ha b hb
       simp only [Finset.mem_filter, Finset.mem_univ, true_and] at ha hb
       exact hinj a b (ha ▸ hb ▸ rfl)
     calc (Finset.univ \ S).card
         ≤ (Finset.univ.filter (fun x : ZMod p =>
-            srs.1[0] ^ x.val = srs.1[1]'(Nat.lt_add_of_pos_left hn)) ∪ {αᵢ}).card :=
+            g₀ ^ x.val = h₁) ∪ {αᵢ}).card :=
           Finset.card_le_card hsub
       _ ≤ (Finset.univ.filter (fun x : ZMod p =>
-            srs.1[0] ^ x.val = srs.1[1]'(Nat.lt_add_of_pos_left hn))).card +
+            g₀ ^ x.val = h₁)).card +
           ({αᵢ} : Finset _).card := Finset.card_union_le _ _
       _ ≤ 2 := by simp only [Finset.card_singleton]; omega
   -- sdiff identity: (univ \ S).card + S.card = p
@@ -203,7 +206,8 @@ lemma choose_s_conflict_size (hp : p ≥ n + 2) (hn : 1 ≤ n)
   set arr := (Array.range p).filterMap fun i =>
     if h : i < p then
       let x : ZMod p := (⟨i, h⟩ : Fin p)
-      if srs.1[0] ^ x.val ≠ srs.1[1]'(Nat.lt_add_of_pos_left hn) ∧ x ≠ αᵢ then some x
+      if srs.1[0]'(Nat.succ_pos n) ^ x.val ≠ srs.1[1]'(Nat.lt_add_of_pos_left hn) ∧
+          x ≠ αᵢ then some x
       else none
     else none
   have hnodup : arr.toList.Nodup := filter_map_conflict_nodup αᵢ srs hn
@@ -226,7 +230,8 @@ lemma choose_s_conflict_alpha (hn : 1 ≤ n) (αᵢ : ZMod p)
   set arr := (Array.range p).filterMap fun i =>
     if h : i < p then
       let x : ZMod p := (⟨i, h⟩ : Fin p)
-      if srs.1[0] ^ x.val ≠ srs.1[1]'(Nat.lt_add_of_pos_left hn) ∧ x ≠ αᵢ then some x
+      if srs.1[0]'(Nat.succ_pos n) ^ x.val ≠ srs.1[1]'(Nat.lt_add_of_pos_left hn) ∧
+          x ≠ αᵢ then some x
       else none
     else none
   simp only [List.mem_toFinset]
@@ -265,7 +270,8 @@ lemma choose_s_conflict_tau (hn : 1 ≤ n) (αᵢ : ZMod p) (τ : ZMod p)
   set arr := (Array.range p).filterMap fun i =>
     if h : i < p then
       let x : ZMod p := (⟨i, h⟩ : Fin p)
-      if srs.1[0] ^ x.val ≠ srs.1[1]'(Nat.lt_add_of_pos_left hn) ∧ x ≠ αᵢ then some x
+      if srs.1[0]'(Nat.succ_pos n) ^ x.val ≠ srs.1[1]'(Nat.lt_add_of_pos_left hn) ∧
+          x ≠ αᵢ then some x
       else none
     else none
   simp only [List.mem_toFinset]
@@ -322,21 +328,25 @@ lemma deg_of_zs {S : Finset (ZMod p)} (hcardS : S.card = n) :
 omit [PrimeOrderWith G₂ p]
   [Module (ZMod p) (Additive G₁)] [Module (ZMod p) (Additive G₂)] in
 /-- The conflict-branch base commitment is nontrivial. -/
-lemma h1_ne_one (hp : p ≥ n + 2) (hpG1 : Nat.card G₁ = p) (hn : 1 ≤ n)
+lemma h1_ne_one (hn : 1 ≤ n)
     (αᵢ : ZMod p) (τ : ZMod p) (srs : Vector G₁ (n + 1) × Vector G₂ 2)
     (hsrs : srs = Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ)
     (hgen : srs.1[0] ≠ 1) :
     let S := chooseSConflict αᵢ srs hn
-    let Zₛ := ∏ s ∈ S, (X - C s)
+    let Zₛ : CPolynomial (ZMod p) := ∏ s ∈ S, (X - C s)
     let h₁ := KZG.commit srs.1 (Zₛ.coeff ∘ Fin.val)
     h₁ ≠ 1 := by
     intro S Zₛ h₁
-    have cardS : S.card = n := by exact choose_s_conflict_size hp hn αᵢ srs hgen
-    have Zₛ_deg : Zₛ.degree ≤ ↑n := deg_of_zs cardS
+    have cardS : S.card ≤ n := by
+      unfold S chooseSConflict
+      apply (List.toFinset_card_le _).trans
+      simp [Array.take]
+    have Zₛ_deg : Zₛ.degree ≤ ↑n :=
+      (deg_of_zs (n := S.card) rfl).trans (by exact_mod_cast cardS)
     have hh₁ : h₁ = g₁ ^ (Zₛ.eval τ).val := by
       unfold h₁
       simp_rw [hsrs, Groups.PowerSrs.generate]
-      simp_rw [commit_eq_c_polynomial hpG1 Zₛ Zₛ_deg]
+      simp_rw [commit_eq_c_polynomial Zₛ Zₛ_deg]
     have hτS : ¬ τ ∈ S := by
       unfold S
       exact choose_s_conflict_tau hn αᵢ τ srs hsrs
@@ -353,7 +363,7 @@ lemma h1_ne_one (hp : p ≥ n + 2) (hpG1 : Nat.card G₁ = p) (hn : 1 ≤ n)
 
 omit [DecidableEq G₁] in
 /-- A genuine evaluation conflict cannot occur at the hidden trapdoor point. -/
-lemma conflict_query_ne_tau (hpG1 : Nat.card G₁ = p) (hn : 1 ≤ n)
+lemma conflict_query_ne_tau
     (α₁ α₂ β₁ β₂ τ : ZMod p) (c pf₁ pf₂ : G₁) (hα : α₁ = α₂)
     (hβ : β₁ ≠ β₂) (srs : Vector G₁ (n + 1) × Vector G₂ 2)
     (hsrs : srs = Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ)
@@ -367,46 +377,46 @@ lemma conflict_query_ne_tau (hpG1 : Nat.card G₁ = p) (hn : 1 ≤ n)
   have hg₁ : g₁ ≠ 1 :=
     Groups.PowerSrs.generator_ne_one_of_generate (g₁ := g₁) (g₂ := g₂) hsrs hgen
   have hord : orderOf g₁ = p := Groups.orderOf_eq_prime_of_ne_one g₁ hg₁
-  obtain ⟨cm, hc⟩ := Groups.exists_zmod_power_of_generator hpG1 hg₁ hord c
-  obtain ⟨prf₁, hprf₁⟩ := Groups.exists_zmod_power_of_generator hpG1 hg₁ hord pf₁
-  obtain ⟨prf₂, hprf₂⟩ := Groups.exists_zmod_power_of_generator hpG1 hg₁ hord pf₂
-  have hfield_verify₁ : cm = prf₁ * (τ - α₁) + β₁ := by
-    grind [verify_opening_equation pairing α₁ β₁ τ cm prf₁ c pf₁ srs hsrs hpair
-      hc hprf₁ hverify₁]
-  have hfield_verify₂ : cm = prf₂ * (τ - α₁) + β₂ := by
-    rw [← hα] at hverify₂
-    grind [verify_opening_equation pairing α₁ β₂ τ cm prf₂ c pf₂ srs hsrs hpair
-      hc hprf₂ hverify₂]
-  have hfield_conflict : prf₁ * (τ - α₁) + β₁ = prf₂ * (τ - α₁) + β₂ := by
-    simp_all
+  obtain ⟨cm, hc⟩ := Groups.exists_zmod_power_of_generator hg₁ hord c
+  obtain ⟨prf₁, hprf₁⟩ := Groups.exists_zmod_power_of_generator hg₁ hord pf₁
+  obtain ⟨prf₂, hprf₂⟩ := Groups.exists_zmod_power_of_generator hg₁ hord pf₂
+  have hfield_verify₁ : cm = prf₁ * (τ - α₁) + β₁ := eq_add_of_sub_eq
+    (verify_opening_equation pairing α₁ β₁ τ cm prf₁ c pf₁ srs hsrs hpair hc hprf₁ hverify₁)
+  rw [← hα] at hverify₂
+  have hfield_verify₂ : cm = prf₂ * (τ - α₁) + β₂ := eq_add_of_sub_eq
+    (verify_opening_equation pairing α₁ β₂ τ cm prf₂ c pf₂ srs hsrs hpair hc hprf₂ hverify₂)
+  have hfield_conflict : prf₁ * (τ - α₁) + β₁ = prf₂ * (τ - α₁) + β₂ :=
+    hfield_verify₁.symm.trans hfield_verify₂
   apply hβ
-  have hzero : τ - α₁ = 0 := by simp [hατ]
-  simpa [hzero] using hfield_conflict
+  rwa [hατ, sub_self, MulZeroClass.mul_zero, MulZeroClass.mul_zero, _root_.zero_add,
+    _root_.zero_add] at hfield_conflict
 
 /-- The conflict-branch solution satisfies the ARSDH exponent equation. -/
-lemma h1_zs_eq_h2 (hp : p ≥ n + 2) (hpG1 : Nat.card G₁ = p) (hn : 1 ≤ n)
+lemma h1_zs_eq_h2 (hp : p ≥ n + 2) (hn : 1 ≤ n)
     (α₁ α₂ β₁ β₂ τ : ZMod p) (c pf₁ pf₂ : G₁) (hα : α₁ = α₂)
     (hβ : β₁ ≠ β₂) (srs : Vector G₁ (n + 1) × Vector G₂ 2)
     (hsrs : srs = Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ)
-    (hgen : srs.1[0] ≠ 1) (hpair : pairing g₁ g₂ ≠ 0)
+    (hpair : pairing g₁ g₂ ≠ 0)
     (hverify₁ : KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
       srs.2 c pf₁ α₁ β₁)
     (hverify₂ : KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
       srs.2 c pf₂ α₂ β₂) :
     let S := chooseSConflict α₁ srs hn
-    let Zₛ := ∏ s ∈ S, (X - C s)
+    let Zₛ : CPolynomial (ZMod p) := ∏ s ∈ S, (X - C s)
     let h₁ := KZG.commit srs.1 (Zₛ.coeff ∘ Fin.val)
     let h₂ : G₁ := (pf₁ / pf₂) ^ (1 / (β₂ - β₁)).val
-    let Zₛᵤₐ := ∏ s ∈ S ∪ {α₁} , (X - C s)
+    let Zₛᵤₐ : CPolynomial (ZMod p) := ∏ s ∈ S ∪ {α₁} , (X - C s)
     h₂ = h₁ ^ (1 / Zₛᵤₐ.eval τ).val := by
     intro S Zₛ h₁ h₂ Zₛᵤₐ
     -- Prove RHS: `h₁ ^ (1 / Zₛᵤₐ.eval τ) = g₁ ^ (1 / (τ - α₁))`.
-    have cardS : S.card = n := by exact choose_s_conflict_size hp hn α₁ srs hgen
+    have hg₁ : g₁ ≠ 1 := ne_one_of_pairing_ne_zero pairing hpair
+    have cardS : S.card = n := choose_s_conflict_size hp hn α₁ srs
+      (Groups.PowerSrs.generate_ne_one_of_generator_ne_one hsrs hg₁)
     have Zₛ_deg : Zₛ.degree ≤ ↑n := deg_of_zs cardS
     have hh₁ : h₁ = g₁ ^ (Zₛ.eval τ).val := by
       unfold h₁
       simp_rw [hsrs, Groups.PowerSrs.generate]
-      simp_rw [commit_eq_c_polynomial hpG1 Zₛ Zₛ_deg]
+      simp_rw [commit_eq_c_polynomial Zₛ Zₛ_deg]
     have hα₁S : α₁ ∉ S := choose_s_conflict_alpha hn α₁ srs
     have hτS : ¬ τ ∈ S := choose_s_conflict_tau hn α₁ τ srs hsrs
     have hZₛeval : Zₛ.eval τ ≠ 0 := by
@@ -420,8 +430,6 @@ lemma h1_zs_eq_h2 (hp : p ≥ n + 2) (hpG1 : Nat.card G₁ = p) (hn : 1 ≤ n)
         show (τ - α₁)⁻¹ * (Zₛ.eval τ)⁻¹ = (Zₛ.eval τ)⁻¹ * (τ - α₁)⁻¹ from
           _root_.mul_comm _ _,
         ← _root_.mul_assoc, mul_inv_cancel₀ hZₛeval, _root_.one_mul]
-    have hg₁ : g₁ ≠ 1 :=
-      Groups.PowerSrs.generator_ne_one_of_generate (g₁ := g₁) (g₂ := g₂) hsrs hgen
     have hord : orderOf g₁ = p := Groups.orderOf_eq_prime_of_ne_one g₁ hg₁
     have hrhs : h₁ ^ (1 / Zₛᵤₐ.eval τ).val = g₁ ^ (1 / (τ - α₁)).val := by
       rw [hh₁, ← pow_mul, pow_eq_pow_iff_modEq, hord]
@@ -435,18 +443,16 @@ lemma h1_zs_eq_h2 (hp : p ≥ n + 2) (hpG1 : Nat.card G₁ = p) (hn : 1 ≤ n)
       rw [ZMod.val_natCast] at this
       exact this
     -- Prove LHS: `h₂ = g₁ ^ (1 / (τ - α₁))`.
-    obtain ⟨cm, hc⟩ := Groups.exists_zmod_power_of_generator hpG1 hg₁ hord c
-    obtain ⟨prf₁, hprf₁⟩ := Groups.exists_zmod_power_of_generator hpG1 hg₁ hord pf₁
-    obtain ⟨prf₂, hprf₂⟩ := Groups.exists_zmod_power_of_generator hpG1 hg₁ hord pf₂
-    have hfield_verify₁ : cm = prf₁ * (τ - α₁) + β₁ := by
-      grind [verify_opening_equation pairing α₁ β₁ τ cm prf₁ c pf₁ srs hsrs hpair
-        hc hprf₁ hverify₁]
-    have hfield_verify₂ : cm = prf₂ * (τ - α₁) + β₂ := by
-      rw [← hα] at hverify₂
-      grind [verify_opening_equation pairing α₁ β₂ τ cm prf₂ c pf₂ srs hsrs hpair
-        hc hprf₂ hverify₂]
-    have hfield_conflict : prf₁ * (τ - α₁) + β₁ = prf₂ * (τ - α₁) + β₂ := by
-      simp_all
+    obtain ⟨cm, hc⟩ := Groups.exists_zmod_power_of_generator hg₁ hord c
+    obtain ⟨prf₁, hprf₁⟩ := Groups.exists_zmod_power_of_generator hg₁ hord pf₁
+    obtain ⟨prf₂, hprf₂⟩ := Groups.exists_zmod_power_of_generator hg₁ hord pf₂
+    have hfield_verify₁ : cm = prf₁ * (τ - α₁) + β₁ := eq_add_of_sub_eq
+      (verify_opening_equation pairing α₁ β₁ τ cm prf₁ c pf₁ srs hsrs hpair hc hprf₁ hverify₁)
+    rw [← hα] at hverify₂
+    have hfield_verify₂ : cm = prf₂ * (τ - α₁) + β₂ := eq_add_of_sub_eq
+      (verify_opening_equation pairing α₁ β₂ τ cm prf₂ c pf₂ srs hsrs hpair hc hprf₂ hverify₂)
+    have hfield_conflict : prf₁ * (τ - α₁) + β₁ = prf₂ * (τ - α₁) + β₂ :=
+      hfield_verify₁.symm.trans hfield_verify₂
     have hfield_solution : (prf₁ - prf₂)/(β₂ - β₁) = 1/(τ - α₁) := by
       have hβ_ne : β₂ - β₁ ≠ 0 := sub_ne_zero.mpr (Ne.symm hβ)
       have hτα : τ - α₁ ≠ 0 := by
@@ -471,14 +477,14 @@ lemma h1_zs_eq_h2 (hp : p ≥ n + 2) (hpG1 : Nat.card G₁ = p) (hn : 1 ≤ n)
       have := congr_arg ZMod.val hcast
       rw [ZMod.val_natCast] at this
       exact this
-    simp_all
+    exact hlhs.trans hrhs.symm
 
 /-- ARSDH output for the conflicting-evaluations branch of the reduction. -/
 def conflictingEvaluationsArsdhOutput {L : ℕ} (hn : 1 ≤ n)
     (tr : FunctionBindingExtTranscript (p := p) n L G₁ G₂) (i₁ i₂ : Fin L) :
     FunctionBindingArsdhOutput (p := p) G₁ :=
   let S := chooseSConflict (tr.queryOf i₁) tr.srs hn
-  let Zₛ := ∏ s ∈ S, (X - C s)
+  let Zₛ : CPolynomial (ZMod p) := ∏ s ∈ S, (X - C s)
   let h₁ := KZG.commit tr.srs.1 (Zₛ.coeff ∘ Fin.val)
   let h₂ : G₁ := (tr.proofs i₁ / tr.proofs i₂) ^
     (1 / (tr.responseOf i₂ - tr.responseOf i₁)).val
@@ -491,7 +497,6 @@ lemma function_binding_conflicting_evaluations_branch_maps_to_arsdh {n L : ℕ}
     {τ : ZMod p} {srs : Vector G₁ (n + 1) × Vector G₂ 2} {cm : G₁}
     {queryOf responseOf : Fin L → ZMod p} {accepts : Fin L → Bool} {proofs : Fin L → G₁}
     (hsrs : srs = Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ)
-    (hgen : srs.1[0] ≠ 1)
     (hverify_all : ∀ i : Fin L, accepts i = true →
       KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
         srs.2 cm (proofs i) (queryOf i) (responseOf i))
@@ -516,13 +521,15 @@ lemma function_binding_conflicting_evaluations_branch_maps_to_arsdh {n L : ℕ}
   have hverify₂ : KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
       srs.2 cm (proofs i₂) (queryOf i₂) (responseOf i₂) :=
     hverify_all i₂ hai₂
+  have hg₁ : g₁ ≠ 1 := ne_one_of_pairing_ne_zero pairing hpair
+  have hgen : srs.1[0] ≠ 1 := Groups.PowerSrs.generate_ne_one_of_generator_ne_one hsrs hg₁
   constructor
   · simpa [Finset.union_singleton] using
       choose_s_conflict_size_adjoined hp hn (queryOf i₁) srs hgen
   · constructor
     · have hα_ne_τ : queryOf i₁ ≠ τ :=
         conflict_query_ne_tau (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
-          PrimeOrderWith.hCard hn (queryOf i₁) (queryOf i₂)
+          (queryOf i₁) (queryOf i₂)
           (responseOf i₁) (responseOf i₂) τ cm (proofs i₁) (proofs i₂)
           hα hβ srs hsrs hgen hpair hverify₁ hverify₂
       change (∏ s ∈ insert (queryOf i₁) (chooseSConflict (queryOf i₁) srs hn),
@@ -530,12 +537,12 @@ lemma function_binding_conflicting_evaluations_branch_maps_to_arsdh {n L : ℕ}
       exact choose_s_conflict_insert_eval_ne_zero
         (g₁ := g₁) (g₂ := g₂) hn (queryOf i₁) τ srs hsrs hα_ne_τ
     · constructor
-      · exact h1_ne_one (g₁ := g₁) (g₂ := g₂) hp PrimeOrderWith.hCard hn
+      · exact h1_ne_one (g₁ := g₁) (g₂ := g₂) hn
           (queryOf i₁) τ srs hsrs hgen
       · have key := h1_zs_eq_h2 (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
-          hp PrimeOrderWith.hCard hn (queryOf i₁) (queryOf i₂)
+          hp hn (queryOf i₁) (queryOf i₂)
           (responseOf i₁) (responseOf i₂) τ cm (proofs i₁) (proofs i₂)
-          hα hβ srs hsrs hgen hpair hverify₁ hverify₂
+          hα hβ srs hsrs hpair hverify₁ hverify₂
         simpa [Finset.union_singleton, one_div] using key
 
 end FunctionBinding

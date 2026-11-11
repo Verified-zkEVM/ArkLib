@@ -6,7 +6,7 @@ Authors: Mirco Richter, Poulami Das (Least Authority)
 module
 
 public import Mathlib.Data.Finset.Basic
-public import Mathlib.Data.Real.Basic
+public import Mathlib.Basic.Real.Basic
 public import Mathlib.Analysis.Real.Sqrt
 
 /-!

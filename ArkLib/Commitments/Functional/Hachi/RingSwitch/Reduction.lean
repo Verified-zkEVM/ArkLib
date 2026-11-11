@@ -190,17 +190,17 @@ digits are `⌊b/2⌋`-bounded, so `RhoDigitsShort` holds at every `bound ≥ �
 This is the exact counterpart of `rhoShort_half` (`QuotientNorms.lean`), and the contrast is the
 parameter choice in one line: the raw quotient could only be bounded by `q/2`, its digits are
 bounded by `⌊b/2⌋ = O(b)`. -/
-theorem rhoDigitsShort_of_half_le {bound bDig : ℕ} (hb : 1 < bDig) (hbq : bDig ≤ q / 2)
+theorem rhoDigitsShort_of_half_le {bound bDig : ℕ} (hb : 1 < bDig)
     (hbound : bDig / 2 ≤ bound) (ρ : Fin n → CPolynomial (ZMod q)) :
     RhoDigitsShort Φ bound bDig ρ :=
-  fun i u k => le_trans (rhoDigits_valMinAbs_natAbs_le Φ hb hbq (ρ i) u.isLt k) hbound
+  fun i u k => le_trans (rhoDigits_valMinAbs_natAbs_le Φ hb (ρ i) u k) hbound
 
 omit [NeZero q] [IsCyclotomic Φ] in
 /-- `rhoDigitsShort_of_half_le` at a bundled admissible base — the form the links consume. -/
 theorem rhoDigitsShort_of_digitBaseOk {bound bDig : ℕ} (h : DigitBaseOk q bound bDig)
     (ρ : Fin n → CPolynomial (ZMod q)) :
     RhoDigitsShort Φ bound bDig ρ :=
-  rhoDigitsShort_of_half_le Φ h.one_lt h.le_half h.radius_le ρ
+  rhoDigitsShort_of_half_le Φ h.one_lt h.radius_le ρ
 
 /-- Hachi's norm-conditioned admissibility predicate for a lifted opening: a **single** bound on
 every entry of the committed vector `z ‖ digits(ρ)` — the paper's weak-opening condition
@@ -305,7 +305,7 @@ theorem lInftyNorm_rhoAsRq_le {bound : ℕ} (p : CPolynomial (ZMod q))
     Rq.lInftyNorm Φ (rhoAsRq Φ p) ≤ bound := by
   refine Finset.sup_le fun k hk => ?_
   rw [show (rhoAsRq Φ p).1.coeff k = _ from
-    Rq.ofFinCoeff_coeff Φ _ (Rq.phi_natDegree_le_degree Φ) k, if_pos (Finset.mem_range.mp hk)]
+    Rq.ofFinCoeff_coeff Φ _ (Rq.phi_natDegree_le_degree Φ) k, ite_eq_left (Finset.mem_range.mp hk)]
   exact h k
 
 omit [NeZero q] in
@@ -388,8 +388,8 @@ theorem liftMessage_injective {bDig : ℕ} (hb : 1 < bDig) (hd : 0 < Φ.φ.natDe
         simp only [liftMessage, Fin.append_right, rhoDigitAsRq, Equiv.symm_apply_apply] at hj
         have hc := congrArg (fun a : Rq Φ => a.1.coeff k) hj
         simpa only [rhoAsRq, Rq.ofFinCoeff_coeff Φ _ (Rq.phi_natDegree_le_degree Φ) k,
-          if_pos hk, rhoDigits_coeff] using hc
-      have hrec := balancedDigit_reconstruct (q := q) hb (Nat.le_pow_clog hb q)
+          ite_eq_left hk, rhoDigits_coeff] using hc
+      have hrec := balancedDigit_reconstruct (q := q) (Nat.le_pow_clog hb q)
       rw [← hrec ((ρ₁ i).coeff k), ← hrec ((ρ₂ i).coeff k)]
       exact Finset.sum_congr rfl fun u _ => by rw [hdig u]
     · rw [hzero ρ₁ hd₁ i k hk, hzero ρ₂ hd₂ i k hk]

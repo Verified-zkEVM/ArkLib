@@ -20,7 +20,7 @@ Coefficient norms for elements of the computable cyclotomic ring
 Norms are defined relative to a `CenteredCoeffView`, an integer-valued
 representative map on coefficients. The canonical instance for `R = ZMod q`
 is `zmodCenteredView`, which uses `ZMod.valMinAbs` to map each residue to the
-balanced range `[-(q-1)/2, (q-1)/2]`, matching the `mod± q` convention used in
+balanced representative `r` with `-q < 2 * r ≤ q`, matching the `mod± q` convention used in
 the literature.
 
 ## Main definitions
@@ -48,7 +48,7 @@ structure CenteredCoeffView (R : Type*) where
   repr : R → ℤ
 
 /-- The balanced representative for `ZMod q`, sending each residue to its unique
-representative in `[-(q-1)/2, (q-1)/2]` via `ZMod.valMinAbs`. -/
+representative `r` satisfying `-q < 2 * r ≤ q` via `ZMod.valMinAbs`. -/
 def zmodCenteredView (q : ℕ) [NeZero q] : CenteredCoeffView (ZMod q) where
   repr := ZMod.valMinAbs
 

@@ -16,6 +16,8 @@ public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Sampling
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Subfield
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.UniqueDecoding
 public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Johnson.Probability
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Johnson.FullCode
 public import ArkLib.Data.CodingTheory.Basic.Entropy
 public import ArkLib.Data.CodingTheory.HammingBallVolume
 public import ArkLib.Data.CodingTheory.SubspaceDesign
@@ -53,8 +55,10 @@ Real-valued bounds are embedded into `ENNReal` with `ENNReal.ofReal`.
   in the `δ_min/3`-to-Johnson regime.
 - `rs_epsCa_le_of_no_radius_level_crossing` — the derived small-proximity-loss form, under the
   necessary no-grid-crossing hypothesis.
-- `rs_mcaError_le_in_johnson_range` — source-native line case of [BCHKS25 Thm 4.6]:
-  explicit `ε_mca` bound for RS codes at every `0 < δ < 1 - √((k-1)/n)`.
+- `rs_mcaError_le_johnsonExceptionCount` — the sharper [DKT26] exception-count bound on any
+  finite coordinate type.
+- `rs_mcaError_le_in_johnson_range` — the printed line bound of [BCHKS25 Thm 4.6], proved
+  from [DKT26], for RS codes at every `0 ≤ δ < 1 - √((k-1)/n)`.
 
 ### Lower bounds near capacity
 
@@ -70,12 +74,12 @@ Real-valued bounds are embedded into `ENNReal` with `ENNReal.ofReal`.
 - `exists_rs_epsCa_large_at_johnson_radius` — ABF26 Theorem 4.18 [BCHKS25 Cor 1.7]: jump in
   `ε_ca` exactly at the Johnson bound, witnessed by characteristic-2 RS codes.
 - `linear_close_probability_le_epsCa` — ABF26 Lemma 4.19 [DG25dist Thm 2.5]: `ε_ca(C, δ)`
-  is bounded below by `((q-1)/q) · Pr_{u}[Δ(u, C) ≤ δ]`.
+  is bounded below by `((q-1)/q) · Pr{u}[Δ(u, C) ≤ δ]`.
 
 ### Subspace-design / FRS MCA up to capacity (§4.2.2)
 
 - `subspace_design_mcaError_le` — ABF26 T4.13 [GG25 Cor 4.9]: τ-subspace-design code
-  has explicit `ε_mca` bound at `1 - τ(t+1) - 3/(2t)`.
+  has explicit `ε_mca` bound at `1 - τ(2t) - 3/(2t)`.
 - `frs_mcaError_le` — ABF26 T4.14 [GG25 Cor 4.10]: folded RS up to capacity
   has the integer-native bound `ε_mca(C, 1 - ρ - 2/t) ≤ (nt+3t³)/|F|`.
 
@@ -86,6 +90,7 @@ Real-valued bounds are embedded into `ENNReal` with `ENNReal.ofReal`.
 - [GaoKL24] Theorem 3 in their paper.
 - [BenSassonGKS20] Lemma 3.2 in their paper.
 - [BCHKS25] Theorem 4.6 / Corollary 1.7 in their paper.
+- [DKT26] The characteristic-free Johnson-range Reed–Solomon agreement bound.
 - [KKH26] Krachun-Kazanin-Haböck (source of Theorem 4.16; proved the bound that
   [BCHKS25]/[KK25] had under a conjecture).
 - [CS25] Crites–Stewart, *On Reed–Solomon Proximity Gaps Conjectures*, ePrint 2025/2046.
@@ -108,7 +113,7 @@ open CoreDefinitions ProximityGap
 section ReedSolomon
 
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
 omit [DecidableEq ι] in
 /-- A small-proximity-loss corollary of `rs_epsCa_le_in_unique_decoding_range`. If shifting the
@@ -124,7 +129,7 @@ theorem rs_epsCa_le_of_no_radius_level_crossing
     (_h_ud : (δ_fld : ℝ) ≤ (1 - (k : ℝ) / Fintype.card ι) / 2 - 1 / Fintype.card ι)
     (_h_dmin : (Code.minDist ((ReedSolomon.code domain k : Set (ι → F))) : ℝ)
                 / Fintype.card ι / 3 ≤ δ_fld)
-    (_hγ_pos : 0 < γ) (_hγ_lt : (γ : ℝ) < 1)
+    (_hγ_pos : 0 < γ)
     (_h_no_cross :
         Nat.floor ((δ_fld + γ / (Fintype.card ι : ℝ≥0)) * (Fintype.card ι : ℝ≥0))
           = Nat.floor ((δ_fld : ℝ≥0) * (Fintype.card ι : ℝ≥0))) :
@@ -179,9 +184,40 @@ theorem rs_epsCa_le_of_no_radius_level_crossing
   have hγ_ne0R : (γ : ℝ) ≠ 0 := by exact_mod_cast _hγ_pos.ne'
   field_simp
 
-omit [DecidableEq ι] [DecidableEq F] in
+omit [Nonempty ι] [DecidableEq ι] [DecidableEq F] in
+open ReedSolomon.HiddenDerivative in
+/-- The [DKT26] Johnson affine-line MCA bound on any finite coordinate type, retaining the
+exception count and the cap at one. The degree bound is `k`, so the reduced rate is `(k-1)/n`.
+The full-rate case is covered separately by `ReedSolomon.mcaError_eq_zero_of_card_le`. -/
+theorem rs_mcaError_le_johnsonExceptionCount
+    (domain : ι ↪ F) (k : ℕ) (η : ℝ)
+    (hk : 1 < k) (hkn : k < Fintype.card ι) (hη : 0 < η) :
+    mcaError (AffineLineGenerator F) (ReedSolomon.code domain k)
+        (1 - (Real.sqrt (((k - 1 : ℕ) : ℝ) / Fintype.card ι) + η)) ≤
+      min 1 (ENNReal.ofReal
+        (johnsonExceptionCount (Fintype.card ι) (k - 1)
+          ⌈johnsonAgreement (Fintype.card ι) (k - 1) η * Fintype.card ι⌉₊ η /
+            (Fintype.card F : ℝ))) := by
+  classical
+  let e := (Fintype.equivFin ι).symm
+  let domain' := e.toEmbedding.trans domain
+  have hcode (w : ι → F) :
+      w ∘ e ∈ ReedSolomon.code domain' k ↔ w ∈ ReedSolomon.code domain k := by
+    simp only [ReedSolomon.mem_code_iff_eval]
+    constructor
+    · rintro ⟨P, hP, he⟩
+      exact ⟨P, hP, fun i ↦ by simpa [domain', Function.comp_def] using he (e.symm i)⟩
+    · rintro ⟨P, hP, he⟩
+      exact ⟨P, hP, fun i ↦ he (e i)⟩
+  rw [← mcaError_comp_equiv (AffineLineGenerator F) (ReedSolomon.code domain k)
+    (ReedSolomon.code domain' k) e hcode]
+  simpa only [johnsonAgreement, johnsonRhoMinus, show k - 1 + 1 = k by omega] using
+    ReedSolomon.mcaError_affineLine_johnson_le (D := k - 1) domain' (by omega) (by omega) hη
+
+omit [DecidableEq ι] [DecidableEq F] [Nonempty ι] in
+open ReedSolomon.HiddenDerivative in
 /-- An affine-line MCA bound for a Reed--Solomon code in the Johnson range. Set the reduced rate
-to `ρ := (k-1)/n` and, for `0 < δ < 1-√ρ`, let
+to `ρ := (k-1)/n` and, for `0 ≤ δ < 1-√ρ`, let
 
   `m := max(⌈√ρ/(1-√ρ-δ)⌉, 3)`.
 
@@ -192,17 +228,13 @@ Then
 
 The reduced rate `(k-1)/n` accounts for ArkLib's degree-`< k` convention.
 
-The multiplicity `m` is the source's printed, deliberately loose choice; the source's own proof
-(its §3.2 derivation of `D_X ≤ (1-δ)·m·n`) supports the tighter `m = ⌈√ρ/(2·(1-√ρ-δ))⌉`, a factor
-`2` smaller and hence `2⁵` smaller in the leading term. The admit stays pinned to the printed
-statement; a proof may establish the tighter constant as a separate result.
-
-This is the only theorem standing under every Johnson-range `McaLowerWitness` constructor
-(`McaLowerWitness.ofJohnsonRangeBound`); until it is proved, every Johnson-range Grand-MCA
-witness in the tree is admit-backed. -/
+The multiplicity `m` and the displayed constant are the printed choice of [BCHKS25, Theorem 4.6].
+The proof uses the sharper [DKT26] exception count in `rs_mcaError_le_johnsonExceptionCount`
+and its comparison estimate. This also proves the bound used by every Johnson-range
+`McaLowerWitness.ofJohnsonRangeBound` constructor. -/
 theorem rs_mcaError_le_in_johnson_range
     (domain : ι ↪ F) (k : ℕ) (δ : ℝ≥0)
-    (_hk : 1 < k) (_hδ_pos : 0 < δ)
+    (_hk : 1 < k)
     (_hδ :
         (δ : ℝ) <
           1 - ((((k - 1 : ℕ) : ℝ) / Fintype.card ι) ^ ((1 : ℝ) / 2))) :
@@ -216,7 +248,58 @@ theorem rs_mcaError_le_in_johnson_range
             / (3 * ρ ^ ((3 : ℝ) / 2)) * n
           + (m + 1/2) / ρ ^ ((1 : ℝ) / 2))
            / (Fintype.card F : ℝ)) := by
-  sorry -- ABF26-T4.12; external admit [BCHKS25 Thm 4.6].
+  classical
+  by_cases hfull : Fintype.card ι ≤ k
+  · rw [ReedSolomon.mcaError_eq_zero_of_card_le _ domain hfull]
+    exact bot_le
+  have hkn : k < Fintype.card ι := lt_of_not_ge hfull
+  -- Match the DKT26 agreement threshold to the requested radius.
+  let n := Fintype.card ι
+  let D := k - 1
+  let ρ : ℝ := (D : ℝ) / n
+  let η : ℝ := 1 - Real.sqrt ρ - δ
+  have hsqrt : Real.sqrt ρ = ρ ^ ((1 : ℝ) / 2) := Real.sqrt_eq_rpow _
+  have hη : 0 < η := by
+    dsimp [η]
+    rw [hsqrt]
+    exact sub_pos.mpr _hδ
+  have ha : johnsonAgreement n D η = 1 - δ := by
+    dsimp [johnsonAgreement,
+      johnsonRhoMinus, η, ρ]
+    ring
+  have ha_le : johnsonAgreement n D η ≤ 1 := by
+    rw [ha]
+    exact sub_le_self _ δ.coe_nonneg
+  have hradius : 1 - (Real.sqrt ρ + η) = (δ : ℝ) := by dsimp [η]; ring
+  have hbound := rs_mcaError_le_johnsonExceptionCount domain k η _hk hkn hη
+  change mcaError _ _ (1 - (Real.sqrt ρ + η)) ≤ _ at hbound
+  rw [hradius] at hbound
+  refine (hbound.trans (min_le_right _ _)).trans ?_
+  apply ENNReal.ofReal_le_ofReal
+  -- Compare the raw exception count with the printed constant.
+  have hcount := johnsonExceptionCount_le_comparisonEstimate
+    (n := n) (D := D) (by dsimp [D, n]; omega)
+    hη ha_le (Nat.le_ceil _)
+  refine (div_le_div_of_nonneg_right hcount (by positivity)).trans_eq ?_
+  -- Identify the natural ceiling and square-root notation with the statement.
+  have hceil : (⌈Real.sqrt ρ / η⌉₊ : ℝ) = (⌈Real.sqrt ρ / η⌉ : ℝ) :=
+    natCast_ceil_eq_intCast_ceil (by positivity)
+  have hshift : johnsonComparisonShift n D η =
+      max (⌈ρ ^ ((1 : ℝ) / 2) / (1 - ρ ^ ((1 : ℝ) / 2) - δ)⌉ : ℝ) 3 + 1 / 2 := by
+    change (max ⌈Real.sqrt ρ / η⌉₊ 3 : ℕ) + (1 / 2 : ℝ) = _
+    rw [Nat.cast_max, Nat.cast_ofNat, hceil, hsqrt]
+    simp only [η, hsqrt]
+  dsimp only
+  change johnsonComparisonEstimate n D η / _ = _
+  unfold johnsonComparisonEstimate
+  dsimp only
+  change ((2 * johnsonComparisonShift n D η ^ 5 +
+      3 * johnsonComparisonShift n D η *
+        johnsonGamma n D η * ρ) / (3 * Real.sqrt ρ ^ 3) * n +
+      johnsonComparisonShift n D η / Real.sqrt ρ) / _ = _
+  rw [hshift, sqrt_cube_eq_rpow_three_halves]
+  simp only [johnsonGamma, ha, sub_sub_cancel, hsqrt]
+  rfl
 
 /-- For every `c > 0` and `ρ ∈ (0,1/2)`, there are arbitrarily large smooth Reed--Solomon
 codes over prime fields whose rate is within `O(1/log n)` of `ρ` and for which
@@ -225,7 +308,10 @@ codes over prime fields whose rate is within `O(1/log n)` of `ρ` and for which
 
 The uniform constants record the `O(1/log₂ n)` rate control, `Θ(1/log₂ n)` capacity slack, and
 two-sided `|F| = Θ(n^β)` field growth. Quantifying over every lower length bound makes this a
-family statement rather than a single-instance asymptotic claim. -/
+family statement rather than a single-instance asymptotic claim.
+
+Solicited proof: see
+<https://github.com/Verified-zkEVM/ArkLib/issues/1352>. -/
 theorem exists_rs_epsCa_large_near_capacity
     (c : ℝ≥0) (_hc : 0 < c) (ρ : ℝ≥0) (_hρ_pos : 0 < ρ) (_hρ_lt : ρ < (1 / 2 : ℝ≥0)) :
     ∃ Kρ K₁ K₂ : ℝ, 0 < Kρ ∧ 0 < K₁ ∧ K₁ ≤ K₂ ∧
@@ -248,6 +334,7 @@ theorem exists_rs_epsCa_large_near_capacity
       -- slack pinned to `Θ(1/log₂ n)`:
       K₁ / Real.logb 2 (Fintype.card ιC) ≤ (slack : ℝ) ∧
       (slack : ℝ) ≤ K₂ / Real.logb 2 (Fintype.card ιC) ∧
+      let _ : SampleableType FC := SampleableType.ofFintype FC
       epsCa (F := FC) (A := FC) ((ReedSolomon.code domain k : Set (ιC → FC)))
           (1 - ρ - slack) (1 - ρ - slack) ≥
         ((Fintype.card ιC : ENNReal) ^ (c : ℝ)) / (Fintype.card FC : ENNReal) := by
@@ -255,26 +342,5 @@ theorem exists_rs_epsCa_large_near_capacity
 
 
 end ReedSolomon
-
-section SubspaceDesignFRS
-
-/-- An affine-line MCA bound for a `τ`-subspace-design code:
-
-  `ε_mca(C, 1 - τ(t+1) - 3/(2t)) ≤ (t·n + 4·t³) / |F|`
-
-The cubic term is the affine specialization of the source's general generator bound. -/
-theorem subspace_design_mcaError_le
-    {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [Fintype F]
-    (s : ℕ) (τ : ℕ → ℝ) (C : Submodule F (ι → Fin s → F))
-    (_h : IsSubspaceDesign s τ C)
-    (t : ℕ) (_ht : 0 < t) :
-    mcaError (AffineLineGenerator F) C
-        (1 - τ (t + 1) - 3 / (2 * t)) ≤
-      ENNReal.ofReal (((t : ℝ) * Fintype.card ι + 4 * t ^ 3) / Fintype.card F) := by
-  sorry -- ABF26-T4.13; external admit [GG25 Cor 4.9].
-
-
-end SubspaceDesignFRS
 
 end CodingTheory

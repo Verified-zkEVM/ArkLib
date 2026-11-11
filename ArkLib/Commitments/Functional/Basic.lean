@@ -7,7 +7,7 @@ module
 
 public import ArkLib.OracleReduction.Security.Basic
 public import ArkLib.Data.Fin.Fold
-public import ArkLib.ToVCVio.EvalDist.Instances.OptionT
+public import VCVio.EvalDist.Monad.Option
 
 /-!
   # Functional Commitment Schemes (with Oracle Openings)
@@ -77,8 +77,9 @@ open scoped NNReal ENNReal
 
 variable [DecidableEq ι]
   {oSpec : OracleSpec ι} {Data : Type} [O : OracleInterface Data]
-  {Commitment Decommitment ComKey VerifKey : Type} [oSpec.Fintype] {n : ℕ}
-  {pSpec : ProtocolSpec n} [[pSpec.Challenge]ₒ.Inhabited] [[pSpec.Challenge]ₒ.Fintype]
+  {Commitment Decommitment ComKey VerifKey : Type} [∀ t, Fintype (oSpec.Range t)] {n : ℕ}
+  {pSpec : ProtocolSpec n} [∀ t, Inhabited ([pSpec.Challenge]ₒ.Range t)]
+  [∀ t, Fintype ([pSpec.Challenge]ₒ.Range t)]
   [∀ i, VCVCompatible (pSpec.Challenge i)]
   [∀ i, SampleableType (pSpec.Challenge i)]
   {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
@@ -94,9 +95,7 @@ def correctness (correctnessError : ℝ≥0) : Prop :=
   ∀ query : O.Query,
   let pImpl : QueryImpl (oSpec + [pSpec.Challenge]ₒ) (StateT σ ProbComp) :=
     QueryImpl.addLift impl challengeQueryImpl
-  Pr[fun ⟨⟨_, (prvStmtOut, witOut)⟩, stmtOut⟩ ↦
-    (stmtOut, witOut) ∈ acceptRejectRel ∧ prvStmtOut = stmtOut
-  | OptionT.mk do
+  Pr{let result ← (OptionT.mk do
       (simulateQ pImpl (do
         let (ck, vk) ← liftComp scheme.keygen _
         let (cm, decomm) ← liftComp (scheme.commit ck data) _
@@ -105,17 +104,19 @@ def correctness (correctnessError : ℝ≥0) : Prop :=
           (cm, ⟨query, O.answer data query⟩)
         let wit : Data × Decommitment := (data, decomm)
         (proof.run stmt wit).run
-      )).run' (← init)] ≥ 1 - correctnessError
+      )).run' (← init))}[let ⟨⟨_, (prvStmtOut, witOut)⟩, stmtOut⟩ := result
+        (stmtOut, witOut) ∈ acceptRejectRel ∧ prvStmtOut = stmtOut] ≥ 1 - correctnessError
 
 /-- A commitment scheme satisfies **perfect correctness** if it satisfies correctness with no error.
 -/
 def perfectCorrectness : Prop :=
   correctness init impl scheme 0
 
-omit [DecidableEq ι] [oSpec.Fintype] [[pSpec.Challenge]ₒ.Inhabited] [[pSpec.Challenge]ₒ.Fintype]
+omit [DecidableEq ι] [∀ t, Fintype (oSpec.Range t)] [∀ t, Inhabited ([pSpec.Challenge]ₒ.Range t)]
+  [∀ t, Fintype ([pSpec.Challenge]ₒ.Range t)]
   [(i : pSpec.ChallengeIdx) → VCVCompatible (pSpec.Challenge i)] in
-/-- **Perfect correctness from perfect completeness of the opening.** If the honest keygen and
-commit phases never fail under the ambient implementation, every honest key/commitment pair puts
+/-- **Perfect correctness from perfect completeness of the opening.**
+If every honest key/commitment pair puts
 the claimed opening statement into a relation `rel`, and the opening protocol is perfectly
 complete for `rel` **from every post-setup state** (hence the `pure s` initialization — the
 opening runs in whatever oracle state key generation and commitment left behind), then the
@@ -123,14 +124,11 @@ scheme is perfectly correct.
 
 This is the generic bridge between the reduction-level completeness theory and the
 commitment-level correctness game: the game's setup prefix is peeled off support-element by
-support-element (`OptionT.probEvent_eq_one_bind`), and each leaf is exactly the completeness
+support-element (`OptionT.prEvent_mk_bind_eq_one_of_support`), and each leaf is the completeness
 game of the opening at the honest input. -/
 theorem perfectCorrectness_of_opening_perfectCompleteness
     (rel : ComKey → VerifKey →
       Set ((Commitment × (q : O.Query) × O.Response q) × (Data × Decommitment)))
-    (hInit : NeverFail init)
-    (hKeygen : ∀ s, NeverFail ((simulateQ impl scheme.keygen).run s))
-    (hCommit : ∀ data ck s, NeverFail ((simulateQ impl (scheme.commit ck data)).run s))
     (hRel : ∀ data query ck vk cm dc, (ck, vk) ∈ support scheme.keygen →
       (cm, dc) ∈ support (scheme.commit ck data) →
       ((cm, ⟨query, O.answer data query⟩), (data, dc)) ∈ rel ck vk)
@@ -139,17 +137,17 @@ theorem perfectCorrectness_of_opening_perfectCompleteness
     perfectCorrectness init impl scheme := by
   intro data query
   simp only [ENNReal.coe_zero, tsub_zero]
-  rw [ge_iff_le, one_le_probEvent_iff]
+  refine ge_of_eq ?_
   -- Normalize the game into nested `ProbComp` binds.
   simp only [simulateQ_bind, StateT.run'_eq, StateT.run_bind, QueryImpl.addLift_def,
     QueryImpl.simulateQ_add_liftComp_left, QueryImpl.liftTarget_self, map_bind]
   -- Peel off the setup prefix, support-element by support-element.
-  refine OptionT.probEvent_eq_one_bind hInit (fun s _ => ?_)
-  refine OptionT.probEvent_eq_one_bind (hKeygen s) (fun p hp => ?_)
+  refine OptionT.prEvent_mk_bind_eq_one_of_support _ (prEvent_true_eq_one _) _ _ (fun s _ => ?_)
+  refine OptionT.prEvent_mk_bind_eq_one_of_support _ (prEvent_true_eq_one _) _ _ (fun p hp => ?_)
   have hkg : p.1 ∈ support scheme.keygen :=
     support_simulateQ_run'_subset impl _ s
       (by rw [StateT.run'_eq, support_map]; exact ⟨p, hp, rfl⟩)
-  refine OptionT.probEvent_eq_one_bind (hCommit data p.1.1 p.2) (fun p₁ hp₁ => ?_)
+  refine OptionT.prEvent_mk_bind_eq_one_of_support _ (prEvent_true_eq_one _) _ _ (fun p₁ hp₁ => ?_)
   have hcm : p₁.1 ∈ support (scheme.commit p.1.1 data) :=
     support_simulateQ_run'_subset impl _ p.2
       (by rw [StateT.run'_eq, support_map]; exact ⟨p₁, hp₁, rfl⟩)
@@ -188,7 +186,7 @@ abbrev bindingGame (AuxState : Type)
     QueryImpl.addLift impl (challengeQueryImpl (pSpec := pSpec))
   OptionT.mk do
     let s ← init
-    let (ck, vk) ← (simulateQ impl scheme.keygen).run' s
+    let ((ck, vk), sAfterSetup) ← (simulateQ impl scheme.keygen).run s
     (simulateQ pImpl <| (show OracleComp _ _ from do
       let ⟨cm, query, resp₁, resp₂, st₁, st₂⟩ ← liftComp (adversary.claim ck) _
       let reduction := Reduction.mk (adversary.prover ck) (scheme.opening (ck, vk)).verifier
@@ -198,12 +196,13 @@ abbrev bindingGame (AuxState : Type)
         (cm, (⟨query, resp₂⟩ : (q : O.Query) × O.Response q)) st₂).run).getD false
       pure (some ((⟨query, resp₁, resp₂, accept₁, accept₂⟩ :
         (query : O.Query) × O.Response query × O.Response query × Bool × Bool)))
-    )).run' s
+    )).run' sAfterSetup
 
 /-- The probability of breaking evaluation binding for a specific adversary. -/
 def bindingExperiment (AuxState : Type)
     (adversary : BindingAdversary oSpec Data Commitment AuxState pSpec ComKey) : ℝ≥0∞ :=
-  Pr[bindingCondition (Data := Data) | bindingGame init impl scheme AuxState adversary]
+  Pr{let result ← bindingGame init impl scheme AuxState adversary}[
+    bindingCondition (Data := Data) result]
 
 /-- A commitment scheme satisfies **(evaluation) binding** with error `bindingError` if for all
     adversaries that output a commitment `cm`, query `q`, two responses `resp₁, resp₂`, and
@@ -228,11 +227,44 @@ abbrev StraightlineExtractor (oSpec : OracleSpec ι) (Data Commitment : Type) :=
   Commitment → QueryLog oSpec → Data
 
 /-- An adversary in the extractability game is an oracle computation that returns a commitment, a
-  query, a response value, and some auxiliary state (to be used in the opening procedure). -/
+  query, a response value, and some auxiliary state (to be used in the opening procedure), given
+  the commitment key. -/
 abbrev ExtractabilityAdversary (oSpec : OracleSpec ι) (Data Commitment AuxState : Type)
-    [O : OracleInterface Data] :=
-  OracleComp oSpec (Commitment × (q : O.Query) × O.Response q × AuxState)
+    [O : OracleInterface Data] (ComKey : Type) :=
+  ComKey → OracleComp oSpec (Commitment × (q : O.Query) × O.Response q × AuxState)
 
+
+/-- The extractability game logs the adversary's commitment phase and continues the opening
+  from the oracle state left by that phase. Failed openings count as rejection. -/
+abbrev extractabilityGame (extractor : StraightlineExtractor oSpec Data Commitment)
+    (AuxState : Type)
+    (adversary : ExtractabilityAdversary oSpec Data Commitment AuxState ComKey)
+    (prover : Prover oSpec (Commitment × (q : O.Query) × O.Response q) AuxState Bool Unit pSpec) :
+    OptionT ProbComp (Bool × Data × (q : O.Query) × O.Response q) :=
+  let pImpl : QueryImpl (oSpec + [pSpec.Challenge]ₒ) (StateT σ ProbComp) :=
+    QueryImpl.addLift impl (challengeQueryImpl (pSpec := pSpec))
+  OptionT.mk do
+    let s ← init
+    let ((ck, vk), sAfterSetup) ← (simulateQ impl scheme.keygen).run s
+    let ((⟨cm, query, response, st⟩, queryLog), sAfterCommit) ←
+      ((simulateQ impl.withLogging (adversary ck)).run).run sAfterSetup
+    (simulateQ pImpl <| (show OracleComp _ _ from do
+      let reduction := Reduction.mk prover (scheme.opening (ck, vk)).verifier
+      let accept := (← (reduction.verdict
+        (cm, (⟨query, response⟩ : (q : O.Query) × O.Response q)) st).run).getD false
+      pure (some (accept, extractor cm queryLog, ⟨query, response⟩))
+    )).run' sAfterCommit
+
+/-- The probability of an accepted opening inconsistent with the data extracted from the
+  commitment-phase query log. -/
+def extractabilityExperiment (extractor : StraightlineExtractor oSpec Data Commitment)
+    (AuxState : Type)
+    (adversary : ExtractabilityAdversary oSpec Data Commitment AuxState ComKey)
+    (prover : Prover oSpec (Commitment × (q : O.Query) × O.Response q) AuxState Bool Unit pSpec) :
+    ℝ≥0∞ :=
+  Pr{let result ← extractabilityGame init impl scheme extractor AuxState adversary prover}[
+    let ⟨accept, data, query, response⟩ := result
+    accept ∧ O.answer data query ≠ response]
 
 /-- A commitment scheme satisfies **extractability** with error `extractabilityError` if there
     exists a straightline extractor `E` such that for all adversaries that output a commitment `cm`,
@@ -247,20 +279,13 @@ abbrev ExtractabilityAdversary (oSpec : OracleSpec ι) (Data Commitment AuxState
   Informally, extractability says that if an adversary can convince the verifier to accept an
   opening, then the extractor must be able to recover some underlying data that is consistent with
   the evaluation query. -/
-def extractability (_extractabilityError : ℝ≥0) : Prop :=
-  ∃ _extractor : StraightlineExtractor oSpec Data Commitment,
+def extractability (extractabilityError : ℝ≥0) : Prop :=
+  ∃ extractor : StraightlineExtractor oSpec Data Commitment,
   ∀ AuxState : Type,
-  ∀ _adversary : ExtractabilityAdversary oSpec Data Commitment AuxState,
-  ∀ _prover : Prover oSpec (Commitment × (q : O.Query) × O.Response q) AuxState Bool Unit pSpec,
-    False
-    -- [ fun ⟨b, d, q, r⟩ ↦ b ∧ O.answer d q = r | do
-    --     let result ← liftM (simulate loggingOracle ∅ adversary)
-    --     let ⟨⟨cm, query, response, st⟩, queryLog⟩ := result
-    --     let proof : Proof pSpec oSpec (Commitment × O.Query × O.Response) AuxState :=
-    --       ⟨prover, scheme.opening.verifier⟩
-    --     let ⟨accept, _⟩ ← proof.run ⟨cm, query, response⟩ st
-    --     letI data := extractor cm queryLog
-    --     return (accept, data, query, response)] ≤ extractabilityError
+  ∀ adversary : ExtractabilityAdversary oSpec Data Commitment AuxState ComKey,
+  ∀ prover : Prover oSpec (Commitment × (q : O.Query) × O.Response q) AuxState Bool Unit pSpec,
+    extractabilityExperiment init impl scheme extractor AuxState adversary prover ≤
+      extractabilityError
 
 
 -- TODO: version where the query is chosen according to some public coin?
@@ -293,7 +318,6 @@ abbrev functionBindingCondition {L : ℕ} :
 /-- The function-binding game for a specific adversary. -/
 abbrev functionBindingGame {L : ℕ} (hn : n = 1)
     (AuxState : Type)
-    [∀ i, VCVCompatible ((hn ▸ pSpec).Challenge i)]
     [∀ i, SampleableType ((hn ▸ pSpec).Challenge i)]
     (scheme : Scheme oSpec Data Commitment Decommitment ComKey VerifKey (hn ▸ pSpec))
     (adversary :
@@ -305,7 +329,7 @@ abbrev functionBindingGame {L : ℕ} (hn : n = 1)
       QueryImpl.addLift impl (challengeQueryImpl (pSpec := hn ▸ pSpec))
     OptionT.mk do
       let s ← init
-      let (ck, vk) ← (simulateQ impl scheme.keygen).run' s
+      let ((ck, vk), sAfterSetup) ← (simulateQ impl scheme.keygen).run s
       (simulateQ pImpl <| (show OracleComp _ _ from do
         let ⟨cm, queryOf, responseOf, stateOf⟩ ← liftComp (adversary.claim ck) _
         let reduction := Reduction.mk (adversary.prover ck) (scheme.opening (ck, vk)).verifier
@@ -316,19 +340,18 @@ abbrev functionBindingGame {L : ℕ} (hn : n = 1)
         pure (accepts.map fun accepts ↦ (⟨queryOf, responseOf, accepts⟩ :
           (queryOf : Fin L → O.Query) ×
             ((i : Fin L) → O.Response (queryOf i)) × (Fin L → Bool)))
-      )).run' s
+      )).run' sAfterSetup
 
 /-- The probability of breaking function binding for a specific adversary. -/
 def functionBindingExperiment {L : ℕ} (hn : n = 1)
     (AuxState : Type)
-    [∀ i, VCVCompatible ((hn ▸ pSpec).Challenge i)]
     [∀ i, SampleableType ((hn ▸ pSpec).Challenge i)]
     (scheme : Scheme oSpec Data Commitment Decommitment ComKey VerifKey (hn ▸ pSpec))
     (adversary :
       FunctionBindingAdversary oSpec Data Commitment AuxState L (hn ▸ pSpec)
         ComKey) : ℝ≥0∞ :=
-    Pr[functionBindingCondition (Data := Data) |
-      functionBindingGame init impl hn AuxState scheme adversary]
+    Pr{let result ← functionBindingGame init impl hn AuxState scheme adversary}[
+      functionBindingCondition (Data := Data) result]
 
 /-- A commitment scheme satisfies **function binding** with error `functionBindingError` if for all
 adversaries that output a commitment `cm`, and a vector of length `L` of queries `q_i`, claimed
@@ -347,7 +370,6 @@ prover in the opening procedure), and for all malicious provers in the opening p
 
   Note: This is an adaptation of the function binding property introduced in [CGKY25]. -/
 def functionBinding {L : ℕ} (hn : n = 1)
-    [∀ i, VCVCompatible ((hn ▸ pSpec).Challenge i)]
     [∀ i, SampleableType ((hn ▸ pSpec).Challenge i)]
     (scheme : Scheme oSpec Data Commitment Decommitment ComKey VerifKey (hn ▸ pSpec))
     (functionBindingError : ℝ≥0) : Prop :=

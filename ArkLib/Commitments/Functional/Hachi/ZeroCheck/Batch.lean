@@ -80,7 +80,7 @@ Both conjuncts are the paper's polynomials, not stand-ins. `hAlpha`'s Boolean ta
 as the per-row `α`-defect in the ring representation, but `hAlpha_eq_zero_iff_alphaDefect` proves
 `hAlpha … = 0` equivalent to the vanishing of every row's Eq. (22) contraction
 `∑_{u,ℓ} M̃_α(i,u)·w̃(u,ℓ)·α̃(ℓ) − yᵢ(α)` of the public `M̃_α`/`α̃` against the committed table
-(arity pins `hd`, `(μ + n·δ)·deg φ ≤ 2^{m₀}`). So this relation may be read as Eqs. (22)–(23)
+(arity pin `(μ + n·δ)·deg φ ≤ 2^{m₀}`). So this relation may be read as Eqs. (22)–(23)
 themselves rather than as an abstract direct-defect variant of them. -/
 def relBatched (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F) (b : ℕ) :
@@ -94,7 +94,7 @@ def relBatched (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
 -- `[IsCyclotomic Φ]` is needed to synthesize the `Rq`/`wTable` instances inside the `hZero` term
 -- carried by `relBatched` and by `hZero_eq_zero_imp_liftShort`, but the linter's usage analysis
 -- misses instance-synth-only section vars.
-omit [BEq F] [LawfulBEq F] in
+omit [NeZero q] [BEq F] [LawfulBEq F] in
 /-- The batched identities imply the lift's per-row **and shortness** claims.
 
 The per-row equation is recovered from `H_α ≡ 0`: by `hAlpha_eq_zero_iff` every
@@ -122,7 +122,7 @@ theorem mem_relLift_of_relBatched (K : LiftCom (LiftedWitness Φ μ n) (liftShor
   -- base (`rhoDigitsShort_of_digitBaseOk`) — the committed quotient block is short by
   -- construction, which is the whole point of the gadget decomposition.
   have hshort : liftShort Φ bound bDig w :=
-    ⟨(hZero_eq_zero_imp_liftShort Φ m₀ φF b bound hd hμn hbound w hZeroZ).1,
+    ⟨(hZero_eq_zero_imp_liftShort Φ m₀ φF b bound hμn hbound w hZeroZ).1,
       rhoDigitsShort_of_digitBaseOk Φ hdig w.ρ⟩
   refine ⟨hcom, ⟨fun i => ?_, hbound'⟩, hshort⟩
   rw [hAlpha_eq_zero_iff] at hAlphaZ
@@ -158,14 +158,14 @@ theorem rangeProduct_eq_zero_of_valMinAbs_natAbs_le (φF : ZMod q →+* F) {b : 
   rw [hj] at h
   refine ⟨j, h, ?_⟩
   by_cases hval : c.val ≤ q / 2
-  · rw [if_pos hval] at hc
+  · rw [ite_eq_left hval] at hc
     exact Or.inl (by rw [← hc, map_natCast])
-  · rw [if_neg hval] at hc
+  · rw [ite_eq_right hval] at hc
     refine Or.inr ?_
     have hc' : c = -((j : ℕ) : ZMod q) := by rw [hc]; ring
     rw [hc', _root_.map_neg, map_natCast]
 
-omit [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
+omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
 /-- **Range side of the honest direction**: a short witness makes the range polynomial vanish
 identically. Every entry of `w̃` is either a `z`-coefficient — bounded by `bound`, hence by
 `b − 1`, hence a root of `P_b` — or a quotient **digit**, which is `⌊b/2⌋`-bounded for *any*
@@ -195,13 +195,8 @@ theorem hZero_eq_zero_of_liftShort (φF : ZMod q →+* F) (b : ℕ) (hd : 0 < Φ
         (Nat.mod_lt _ hd)) hbound)
   · -- The quotient rows of `w̃` are the base-`b` digits, and those are `⌊b/2⌋`-bounded for *any*
     -- quotient, hence inside the range box `[−(b−1), b−1]`. No hypothesis on `w` is used.
-    have hδ : 0 < rhoDigitCount q b := by
-      rcases Nat.eq_zero_or_pos (rhoDigitCount q b) with h0 | h0
-      · rw [h0, Nat.mul_zero] at hr; omega
-      · exact h0
     exact rangeProduct_eq_zero_of_valMinAbs_natAbs_le φF
-      (le_trans (rhoDigits_valMinAbs_natAbs_le Φ hbase.one_lt hbase.le_half _
-        (Nat.mod_lt _ hδ) _) hbase.radius_le)
+      (le_trans (rhoDigits_valMinAbs_natAbs_le Φ hbase.one_lt _ _ _) hbase.radius_le)
   · simp only [rangeProduct, zero_mul]
 
 omit [NeZero q] [BEq F] [LawfulBEq F] in
@@ -214,31 +209,38 @@ hypothesis, and no property of `α`: the identity holds at *every* evaluation po
 this link's completeness error is `0`. The three `evalAt`/`cEvalAt` bridges are the same ones
 `mem_relLift_of_relBatched` uses, run in the opposite direction. -/
 theorem hAlpha_eq_zero_of_rows (φF : ZMod q →+* F) (b : ℕ) (hb : 1 < b)
-    (hd : 0 < Φ.φ.natDegree) (s : RlinStatement Φ n μ) (α : F)
+    (s : RlinStatement Φ n μ) (α : F)
     (w : LiftedWitness Φ μ n)
     (hrows : ∀ i, evalAt φF α ((cyclotomicPresentation Φ).rowSum s.M w.z i)
       = evalAt φF α ((cyclotomicPresentation Φ).rep (s.yvec i)).toPoly
         + evalAt φF α (cyclotomicPresentation Φ).modulus.toPoly
           * evalAt φF α ((w.ρ i)).toPoly) :
     hAlpha Φ m₁ φF b s α w = 0 := by
-  rw [hAlpha_eq_zero_iff]
-  intro x
-  simp only [hAlphaEvals]
-  split_ifs with hlt
-  · have hi := hrows ⟨_, hlt⟩
-    have hrow : evalAt φF α ((cyclotomicPresentation Φ).rowSum s.M w.z ⟨_, hlt⟩)
-        = cEvalAt φF α (cRowSum Φ s w.z ⟨_, hlt⟩) := by
-      rw [cEvalAt_cRowSum_eq_evalAt, rowSum_eq_sum_toPoly]
-      simp only [Presentation.rowSum, cyclotomicPresentation]
-    have hy : evalAt φF α ((cyclotomicPresentation Φ).rep (s.yvec ⟨_, hlt⟩)).toPoly
-        = cEvalAt φF α (s.yvec ⟨_, hlt⟩).1 := (cEvalAt_eq_evalAt_toPoly _ _ _).symm
-    have hmod : evalAt φF α (cyclotomicPresentation Φ).modulus.toPoly
-        = cEvalAt φF α Φ.φ := (cEvalAt_eq_evalAt_toPoly _ _ _).symm
-    rw [hrow, hy, hmod, rhoDigits_evalAt Φ φF α hb hd (w.ρ ⟨_, hlt⟩) (w.hρ _)] at hi
-    linear_combination hi
-  · rfl
+  by_cases hd : 0 < Φ.φ.natDegree
+  · rw [hAlpha_eq_zero_iff]
+    intro x
+    simp only [hAlphaEvals]
+    split_ifs with hlt
+    · have hi := hrows ⟨_, hlt⟩
+      have hrow : evalAt φF α ((cyclotomicPresentation Φ).rowSum s.M w.z ⟨_, hlt⟩)
+          = cEvalAt φF α (cRowSum Φ s w.z ⟨_, hlt⟩) := by
+        rw [cEvalAt_cRowSum_eq_evalAt, rowSum_eq_sum_toPoly]
+        simp only [Presentation.rowSum, cyclotomicPresentation]
+      have hy : evalAt φF α ((cyclotomicPresentation Φ).rep (s.yvec ⟨_, hlt⟩)).toPoly
+          = cEvalAt φF α (s.yvec ⟨_, hlt⟩).1 := (cEvalAt_eq_evalAt_toPoly _ _ _).symm
+      have hmod : evalAt φF α (cyclotomicPresentation Φ).modulus.toPoly
+          = cEvalAt φF α Φ.φ := (cEvalAt_eq_evalAt_toPoly _ _ _).symm
+      rw [hrow, hy, hmod, rhoDigits_evalAt Φ φF α hb hd (w.ρ ⟨_, hlt⟩) (w.hρ _)] at hi
+      linear_combination hi
+    · rfl
+  · have hd0 : Φ.φ.natDegree = 0 := Nat.eq_zero_of_not_pos hd
+    rw [hAlpha_eq_zero_iff]
+    intro x
+    have hz := Rq.val_eq_zero_of_natDegree_eq_zero Φ hd0
+    have hr := rhoDigits_eq_zero_of_natDegree_eq_zero Φ hd0 b
+    simp [hAlphaEvals, cRowSum, hz, hr, cEvalAt, evalAt, CPolynomial.eval₂_toPoly]
 
-omit [BEq F] [LawfulBEq F] in
+omit [NeZero q] [BEq F] [LawfulBEq F] in
 /-- **The honest direction of the batching bridge** (converse of `mem_relLift_of_relBatched`): a
 lift-valid, short witness satisfies the two batched polynomial identities.
 
@@ -251,7 +253,7 @@ shared verbatim, the latter being the `sideCond` of `liftCheckAt`.
 
 This direction needs neither arity hypothesis (`hn`, `hμn`) — see the two lemmas above. -/
 theorem mem_relBatched_of_relLift (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
-    (φF : ZMod q →+* F) (b : ℕ) (hb : 1 < b) (hd : 0 < Φ.φ.natDegree)
+    (φF : ZMod q →+* F) (b : ℕ) (hd : 0 < Φ.φ.natDegree)
     (hbound : bound ≤ b - 1) (hbase : DigitBaseOk q (b - 1) b)
     (X : LiftStatement Φ K.TCom F n μ) (w : LiftedWitness Φ μ n)
     (h : (X, w) ∈ relLift Φ bound bDig K φF) :
@@ -259,7 +261,7 @@ theorem mem_relBatched_of_relLift (K : LiftCom (LiftedWitness Φ μ n) (liftShor
   obtain ⟨hcom, ⟨hrows, hside⟩, hshort⟩ := h
   exact ⟨hcom,
     hZero_eq_zero_of_liftShort Φ m₀ bound bDig φF b hd hbound hbase w hshort,
-    hAlpha_eq_zero_of_rows Φ m₁ φF b hb hd X.1 X.2.2 w hrows,
+    hAlpha_eq_zero_of_rows Φ m₁ φF b hbase.one_lt X.1 X.2.2 w hrows,
     hside⟩
 
 /-- **The batching bridge verifier's purity as data** (`Verifier.PureForm`): the statement map is

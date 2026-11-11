@@ -114,7 +114,7 @@ private lemma splitNthNoncomputable_coeff {n : ℕ} {f : 𝔽[X]} (i : Fin n) (m
       intro k hk
       have hdm : n * (k / n) + k % n = k := Nat.div_add_mod k n
       by_cases h : k % n = i.1
-      · simp only [h, if_true]
+      · simp only [h, ite_true]
         rw [Polynomial.coeff_C_mul, Polynomial.coeff_X_pow]
         by_cases hm : m = k / n <;> grind
       · aesop
@@ -158,9 +158,9 @@ lemma eq_sum_splitNth (n : ℕ) [inst : NeZero n] (f : 𝔽[X]) :
       Finset.sum_eq_single (⟨k % n, Nat.mod_lt k hn⟩ : Fin n)] <;> aesop
 
 /-- Lemma bounding degree of each `n`-split polynomial. -/
-lemma splitNth_degree_le {n : ℕ} {f : 𝔽[X]} [inst : NeZero n] {i : Fin n} :
+lemma splitNth_degree_le {n : ℕ} {f : 𝔽[X]} {i : Fin n} :
     (splitNth f n i).natDegree ≤ f.natDegree / n := by
-  have hn := inst.out
+  have hn : n ≠ 0 := i.pos.ne'
   rw [Polynomial.natDegree_le_iff_coeff_eq_zero]
   intro j hj
   have hjn : j * n - 1 < j * n := Nat.sub_one_lt (by aesop)
@@ -178,15 +178,12 @@ lemma folding_polynomial_eq_sum_splitNth {𝔽 : Type} [Field 𝔽] {f : Polynom
   FoldingPolynomial.foldingPolynomial (X ^ n) f =
     ∑ i, C (splitNth f n i) * (X ^ i.val) := by
   symm
-  apply FoldingPolynomial.folding_polynomial_is_unique'
+  apply FoldingPolynomial.folding_polynomial_is_unique
   · conv_rhs => rw [eq_sum_splitNth (f := f) (inst := inst)]
     rw [Polynomial.map_sum, Polynomial.eval_finsetSum]
     aesop
       (add simp [comp])
       (add safe (by ac_nf))
-  · aesop
-      (add simp [Bivariate.degreeX, splitNth_degree_le])
-      (add safe natDegree_sum_le_of_forall_le)
   · simp only [Bivariate.natDegreeY, natDegree_pow, natDegree_X, mul_one]
     exact Nat.lt_of_le_pred (by aesop (add unsafe Nat.zero_lt_of_ne_zero)) <| by
       exact Polynomial.natDegree_sum_le_of_forall_le _ _ <| fun i _ ↦
@@ -205,16 +202,16 @@ lemma polyFold_eq_sum_of_splitNth {𝔽 : Type} [Field 𝔽]
 /-- `splitNth` is the left inverse of the `n`-way recombination: splitting the polynomial
   `∑ j, X^j * (u j)(X^n)` recovers `u i` for each component `i`. -/
 @[simp]
-lemma splitNth_of_sum_comp {n : ℕ} [inst : NeZero n] (u : Fin n → 𝔽[X]) (i : Fin n) :
+lemma splitNth_of_sum_comp {n : ℕ} (u : Fin n → 𝔽[X]) (i : Fin n) :
     splitNth (∑ j : Fin n, X ^ (j : ℕ) * (u j).comp (X ^ n)) n i = u i := by
-  have hn : 0 < n := Nat.pos_of_ne_zero inst.out
+  have hn : 0 < n := i.pos
   ext e
   rw [splitNth_coeff, finsetSum_coeff, Finset.sum_eq_single i]
   · aesop (add unsafe (by rw [←expand_eq_comp_X_pow]))
   · intro j _ hj
     rw [coeff_X_pow_mul']
     by_cases hle : (j : ℕ) ≤ e * n + i
-    · rw [if_pos hle, ←expand_eq_comp_X_pow, coeff_expand hn, if_neg]
+    · rw [ite_eq_left hle, ←expand_eq_comp_X_pow, coeff_expand hn, ite_eq_right]
       intro hdvd
       have hmod := (Nat.modEq_iff_dvd' hle).mpr hdvd
       aesop
@@ -228,33 +225,71 @@ lemma splitNth_of_sum_comp {n : ℕ} [inst : NeZero n] (u : Fin n → 𝔽[X]) (
     components `u i`. -/
 @[simp high]
 theorem foldingPolynomial_sum {𝔽 : Type} [Field 𝔽]
-    {n : ℕ} {u : Fin n → 𝔽[X]} [inst : NeZero n] :
+    {n : ℕ} {u : Fin n → 𝔽[X]} :
   FoldingPolynomial.foldingPolynomial (X ^ n)
     (∑ i, Polynomial.X ^ i.val * (u i).comp (Polynomial.X ^ n)) =
       ∑ i, Polynomial.X ^ i.val * C (u i) := by
-  rw [folding_polynomial_eq_sum_splitNth]
-  simp only [splitNth_of_sum_comp, mul_comm]
+  cases n with
+  | zero => simp
+  | succ n =>
+    rw [folding_polynomial_eq_sum_splitNth]
+    simp only [splitNth_of_sum_comp, mul_comm]
 
 /-- `polyFold` of an `n`-way recombination `∑ i, X^i * (u i)(X^n)` is the
     polynomial `∑ i, r^i * u i`. -/
 @[simp high]
 theorem polyFold_sum {𝔽 : Type} [Field 𝔽] {r : 𝔽}
-    {n : ℕ} {u : Fin n → 𝔽[X]} [inst : NeZero n] :
+    {n : ℕ} {u : Fin n → 𝔽[X]} :
   FoldingPolynomial.polyFold
     (∑ i, Polynomial.X ^ i.val * (u i).comp (Polynomial.X ^ n)) n r =
       ∑ i, r ^ i.val • (u i) := by
-  rw [polyFold_eq_sum_of_splitNth]
-  simp only [splitNth_of_sum_comp, Polynomial.smul_eq_C_mul]
+  cases n with
+  | zero => simp [FoldingPolynomial.polyFold_zero_eq_zero]
+  | succ n =>
+    rw [polyFold_eq_sum_of_splitNth]
+    simp only [splitNth_of_sum_comp, Polynomial.smul_eq_C_mul]
 
 /--
 Lemma bridges the coefficient-level identity `eq_sum_splitNth` and
 evaluation-level reasoning about `splitNth` and `polyFold`.
 -/
-lemma splitNth_eval_comp_pow {n : ℕ} [NeZero n] (f : 𝔽[X]) (x : 𝔽) (i : Fin n) :
+lemma splitNth_eval_comp_pow {n : ℕ} (f : 𝔽[X]) (x : 𝔽) (i : Fin n) :
     (eval₂ C (X ^ n) (splitNth f n i)).eval x = (splitNth f n i).eval (x ^ n) := by
   rw [eval₂_eq_sum]
   unfold Polynomial.eval
   rw [Polynomial.eval₂_sum, eval₂_eq_sum]
   simp_all
+
+/-- Even/odd evaluation split for `n = 2`: `f(y) = f₀(y²) + y · f₁(y²)`. -/
+lemma splitNth_two_eval (f : 𝔽[X]) (y : 𝔽) :
+    f.eval y = (splitNth f 2 0).eval (y ^ 2) + y * (splitNth f 2 1).eval (y ^ 2) := by
+  conv_lhs => rw [eq_sum_splitNth 2 f]
+  rw [eval_finsetSum, Fin.sum_univ_two]
+  simp only [Fin.val_zero, Fin.val_one, pow_zero, pow_one, eval_mul, eval_X, one_mul,
+    splitNth_eval_comp_pow]
+
+/-- `f(x) + f(-x) = 2 · f₀(x²)`, isolating the even part. -/
+lemma splitNth_two_eval_add {𝔽 : Type} [CommRing 𝔽] (f : 𝔽[X]) (x : 𝔽) :
+    f.eval x + f.eval (-x) = 2 * (splitNth f 2 0).eval (x ^ 2) := by
+  rw [splitNth_two_eval f x, splitNth_two_eval f (-x), neg_sq]
+  ring
+
+/-- `f(x) - f(-x) = 2x · f₁(x²)`, isolating the odd part. -/
+lemma splitNth_two_eval_sub {𝔽 : Type} [CommRing 𝔽] (f : 𝔽[X]) (x : 𝔽) :
+    f.eval x - f.eval (-x) = 2 * x * (splitNth f 2 1).eval (x ^ 2) := by
+  rw [splitNth_two_eval f x, splitNth_two_eval f (-x), neg_sq]
+  ring
+
+/-- Arity-2 folding in evaluation form: the fold of `f` with challenge `β`, evaluated at `x²`, is
+  computed from the two evaluations `f(x)` and `f(-x)`. This is the formula FRI verifiers and
+  provers implement. -/
+lemma polyFold_two_eval {𝔽 : Type} [Field 𝔽] (f : 𝔽[X]) (x β : 𝔽) (hx : x ≠ 0)
+    (h2 : (2 : 𝔽) ≠ 0) :
+    (FoldingPolynomial.polyFold f 2 β).eval (x ^ 2) =
+      (f.eval x + f.eval (-x) + β * (f.eval x - f.eval (-x)) * x⁻¹) * (2 : 𝔽)⁻¹ := by
+  rw [polyFold_eq_sum_of_splitNth, eval_finsetSum, Fin.sum_univ_two]
+  simp only [Fin.val_zero, Fin.val_one, pow_zero, pow_one, eval_mul, eval_C, one_mul]
+  rw [splitNth_two_eval_add f x, splitNth_two_eval_sub f x]
+  field_simp
 
 end Polynomial

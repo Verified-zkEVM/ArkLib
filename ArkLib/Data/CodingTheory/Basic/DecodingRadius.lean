@@ -31,8 +31,10 @@ noncomputable def uniqueDecodingRadius {ι : Type*} [Fintype ι] {F : Type*} [De
 
 alias UDR := uniqueDecodingRadius
 
-/-- The relative unique decoding radius, obtained from the absolute radius by normalizing with the
-block length. This also works with `≤`. -/
+/-- The relative unique decoding radius `max(d - 1, 0) / (2 * n)`, with subtraction and
+division in `NNReal`, where `d` is the code distance and `n` is the block length. It induces
+the same closed decoding ball as the normalized integer absolute radius, although the radii
+need not be numerically equal. -/
 noncomputable def relativeUniqueDecodingRadius {ι : Type*} [Fintype ι] {F : Type*} [DecidableEq F]
     (C : Set (ι → F)) : NNReal :=
   (((‖C‖₀ : NNReal) - 1) / 2) / (Fintype.card ι : NNReal)
@@ -109,7 +111,7 @@ A word `u` is within the `uniqueDecodingRadius` of a code `C` if and only if
 there exists *exactly one* codeword `v` in `C` that is that close.
 -/
 theorem UDR_close_iff_exists_unique_close_codeword {ι : Type*} [Fintype ι] {F : Type*}
-    [DecidableEq F] (C : Set (ι → F)) [Nonempty C] (u : ι → F) :
+    [DecidableEq F] (C : Set (ι → F)) (u : ι → F) :
     Δ₀(u, C) ≤ Code.uniqueDecodingRadius C ↔ ∃! v ∈ C, Δ₀(u, v) ≤ Code.uniqueDecodingRadius C := by
   -- 1. Define t (radius) and d (distance) for brevity
   set t := Code.uniqueDecodingRadius C
@@ -118,15 +120,8 @@ theorem UDR_close_iff_exists_unique_close_codeword {ι : Type*} [Fintype ι] {F 
   · -- (→) Direction 1: "Close" implies "Uniquely Close"
     intro h_dist_le_t
     -- 2. First, prove *existence*
-    let v := pickClosestCodeword_of_Nonempty_Code (C := C) (u := u)
-    have h_close_to_v : Δ₀(u, v) ≤ t := by
-      rw [distFromPickClosestCodeword_of_Nonempty_Code (C := C) (u := u)] at h_dist_le_t
-      simp only [Nat.cast_le] at h_dist_le_t
-      exact h_dist_le_t
-    have h_exists : ∃ v, v ∈ C ∧ Δ₀(u, v) ≤ t := by
-      use v
-      simp only [Subtype.coe_prop, true_and]
-      exact h_close_to_v
+    have h_exists : ∃ v, v ∈ C ∧ Δ₀(u, v) ≤ t :=
+      (closeToCode_iff_closeToCodeword_of_minDist u t).mp h_dist_le_t
     -- 3. Second, prove *uniqueness*
     have h_uniq : ∀ (v₁ : ι → F) (v₂ : ι → F),
       v₁ ∈ C → v₂ ∈ C → Δ₀(u, v₁) ≤ t → Δ₀(u, v₂) ≤ t → v₁ = v₂ := by
@@ -220,6 +215,32 @@ theorem dist_le_UDR_iff_relDist_le_relUDR {ι : Type*} [Fintype ι] {F : Type*} 
     simp only [isUnit_iff_ne_zero, ne_eq, Nat.cast_eq_zero, Fintype.card_ne_zero, not_false_eq_true,
       IsUnit.div_mul_cancel]
     rw [Nat.le_floor_iff (ha := by simp only [zero_le])]
+
+/-- The chosen closest codeword equals any codeword within the unique-decoding radius. -/
+lemma pickClosestCodeword_eq_of_le_uniqueDecodingRadius
+    {ι F : Type*} [Fintype ι] [DecidableEq F] (C : Set (ι → F)) (u : ι → F) {v : ι → F}
+    (hv : v ∈ C)
+    (hvu : Δ₀(u, v) ≤ Code.uniqueDecodingRadius C) :
+    letI : Nonempty C := ⟨⟨v, hv⟩⟩
+    (Code.pickClosestCodeword_of_Nonempty_Code C u : C) = ⟨v, hv⟩ := by
+  let : Nonempty C := ⟨⟨v, hv⟩⟩
+  let w : C := Code.pickClosestCodeword_of_Nonempty_Code C u
+  have hwdist : Δ₀(u, (w : ι → F)) ≤ Code.uniqueDecodingRadius C := by
+    have hdist : Δ₀(u, C) ≤ Δ₀(u, v) := Code.distFromCode_le_dist_to_mem u v hv
+    have hdist' : Δ₀(u, C) = Δ₀(u, (w : ι → F)) :=
+      Code.distFromPickClosestCodeword_of_Nonempty_Code C u
+    have haux : Δ₀(u, C) ≤ (Code.uniqueDecodingRadius C : ℕ∞) := by
+      exact le_trans hdist (by exact_mod_cast hvu)
+    rw [hdist'] at haux
+    exact_mod_cast haux
+  have hw_mem : (w : ι → F) ∈ C := w.property
+  have h_eq : (w : ι → F) = v := by
+    apply Code.eq_of_le_uniqueDecodingRadius (C := C) (u := u)
+      (v := (w : ι → F)) (w := v)
+      (hv := hw_mem) (hw := hv)
+      (huv := hwdist) (huw := hvu)
+  apply Subtype.ext
+  exact h_eq
 
 end DecodingRadius
 

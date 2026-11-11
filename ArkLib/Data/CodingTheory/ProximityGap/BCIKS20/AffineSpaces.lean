@@ -46,13 +46,21 @@ private theorem exists_large_of_finset_cover' {α : Type}
       _ = L * B := by simp [Finset.sum_const]
   exact absurd hle (not_le.mpr hLB)
 
+private lemma real_card_ge_of_nnreal {s n : ℕ} {δ : ℝ≥0}
+    (h : (s : ℝ≥0) ≥ (1 - δ) * n) : (s : ℝ) ≥ ((1 : ℝ) - (δ : ℝ)) * (n : ℝ) := by
+  by_cases hδ_le : δ ≤ 1
+  · have h' : (((1 - δ) * (n : ℝ≥0) : ℝ≥0) : ℝ) ≤ (s : ℝ) := by exact_mod_cast h.le
+    rwa [NNReal.coe_mul, NNReal.coe_sub hδ_le, NNReal.coe_one, NNReal.coe_natCast] at h'
+  · have hδ_real : (1 : ℝ) ≤ (δ : ℝ) := by exact_mod_cast (not_le.1 hδ_le).le
+    exact (mul_nonpos_of_nonpos_of_nonneg (sub_nonpos.2 hδ_real) (Nat.cast_nonneg n)).trans
+      (Nat.cast_nonneg s)
 
 section Bucketing
 
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
-omit [DecidableEq ι] in
+omit [DecidableEq ι] [SampleableType F] in
 /-- BCIKS20 §6.3 bucketing: given an affine subspace U whose elements are all δ-close
 to a linear code V, there exist a codeword v₀ and agreement set D' of size ≥ (1-δ)|ι|
 such that the basepoint agrees with v₀ on D' and every generator direction agrees with
@@ -63,9 +71,6 @@ theorem bucket_exists_common_codeword
     (h_elem_ja : ∀ x ∈ (Affine.affineSubspaceAtOrigin (F := F) u₀ dirs : Set (ι → F)),
         jointAgreement (C := (V : Set (ι → F))) (δ := δ)
           (W := finMapTwoWords u₀ (x - u₀)))
-    (h_pair_ja : ∀ j : Fin k,
-        jointAgreement (C := (V : Set (ι → F))) (δ := δ)
-          (W := finMapTwoWords u₀ (dirs j)))
     (h_list_bound : ∀ (w : ι → F) (close : Finset (ι → F)),
         (∀ v ∈ close, v ∈ (V : Set (ι → F)) ∧ δᵣ(w, v) ≤ δ) →
         close.card < Fintype.card F)
@@ -78,7 +83,12 @@ theorem bucket_exists_common_codeword
         D' ⊆ Finset.filter (fun c => w_j c = dirs j c) Finset.univ := by
   classical
   -- Step A: Per-direction JA witnesses.
-  choose S_j hS_j v_pair hv_pair using fun j => h_pair_ja j
+  choose S_j hS_j v_pair hv_pair using fun j => by
+    have hmem : u₀ + dirs j ∈
+        (Affine.affineSubspaceAtOrigin (F := F) u₀ dirs : Set (ι → F)) :=
+      (Affine.mem_affineSubspaceFrom_iff (F := F) u₀ dirs _).mpr
+        ⟨Pi.single j 1, by simp⟩
+    simpa only [add_sub_cancel_left] using h_elem_ja (u₀ + dirs j) hmem
   set U_fin := affineFinset u₀ dirs
   have h_elem_fin : ∀ x ∈ U_fin, jointAgreement (C := (V : Set (ι → F))) (δ := δ)
       (W := finMapTwoWords u₀ (x - u₀)) := by
@@ -139,22 +149,7 @@ theorem bucket_exists_common_codeword
     calc (hammingDist u₀ (pickCW x hx) : ℝ)
         ≤ (Fintype.card ι : ℝ) - ((S_x x hx).card : ℝ) := by exact_mod_cast h_ham
       _ ≤ (δ : ℝ) * (Fintype.card ι : ℝ) := by
-          have h1 := h_agree_size
-          -- h1 : (|S_x| : ℝ≥0) ≥ (1 - δ) * |ι|
-          -- Lift to ℝ
-          have h2 : ((S_x x hx).card : ℝ) ≥ ((1 : ℝ) - (δ : ℝ)) * (Fintype.card ι : ℝ) := by
-            by_cases hδ_le : δ ≤ 1
-            · have h1' : ((1 - δ) * (Fintype.card ι : ℝ≥0) : ℝ≥0) ≤ ((S_x x hx).card : ℝ≥0) := h1.le
-              calc ((S_x x hx).card : ℝ)
-                  ≥ ((((1 - δ) * (Fintype.card ι : ℝ≥0) : ℝ≥0) : ℝ)) := by exact_mod_cast h1'
-                _ = ((1 : ℝ) - (δ : ℝ)) * (Fintype.card ι : ℝ) := by
-                    rw [NNReal.coe_mul, NNReal.coe_sub hδ_le, NNReal.coe_one, NNReal.coe_natCast]
-            · push Not at hδ_le
-              have hδ_real : (1 : ℝ) < (δ : ℝ) := by exact_mod_cast hδ_le
-              linarith only [Nat.cast_nonneg' (α := ℝ) (S_x x hx).card,
-                mul_nonpos_of_nonpos_of_nonneg
-                  (by linarith only [hδ_real] : (1 : ℝ) - ↑δ ≤ 0)
-                  (Nat.cast_nonneg' (α := ℝ) (Fintype.card ι))]
+          have h2 := real_card_ge_of_nnreal h_agree_size
           linarith only [h2]
   have h_cw_bound : closeWords.card < Fintype.card F := by
     apply h_list_bound u₀
@@ -285,39 +280,20 @@ theorem bucket_exists_common_codeword
             exact_mod_cast h_real
           -- Step 1: Extract ham = δ * |ι| in ℝ from hv₀_eq
           have hn_pos : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos
-          have h_ham_real : (hammingDist u₀ v₀ : ℝ) = (δ : ℝ) * (Fintype.card ι : ℝ) := by
+          have h_ham_real : (δ : ℝ) * (Fintype.card ι : ℝ) ≤ (hammingDist u₀ v₀ : ℝ) := by
             -- hv₀_eq : (δᵣ(u₀, v₀) : ℝ≥0) = δ, i.e. (ham/|ι| : ℚ≥0) cast to ℝ≥0 = δ
             -- Cast both sides to ℝ: (ham/|ι|) = δ in ℝ, multiply by |ι|.
-            have h_le : (hammingDist u₀ v₀ : ℝ) / (Fintype.card ι : ℝ) ≤ (δ : ℝ) := by
-              calc (hammingDist u₀ v₀ : ℝ) / (Fintype.card ι : ℝ)
-                  = ((hammingDist u₀ v₀ / Fintype.card ι : ℚ≥0) : ℝ) := by
-                    push_cast; norm_cast
-                _ ≤ (δ : ℝ) := by exact_mod_cast hv₀_close
             have h_ge : (δ : ℝ) ≤ (hammingDist u₀ v₀ : ℝ) / (Fintype.card ι : ℝ) := by
               calc (δ : ℝ)
                   ≤ ((δᵣ(u₀, v₀) : ℝ≥0) : ℝ) := by exact_mod_cast hv₀_far.le
                 _ = ((hammingDist u₀ v₀ / Fintype.card ι : ℚ≥0) : ℝ) := by rfl
                 _ = (hammingDist u₀ v₀ : ℝ) / (Fintype.card ι : ℝ) := by
                     push_cast; norm_cast
-            have h_eq : (hammingDist u₀ v₀ : ℝ) / (Fintype.card ι : ℝ) = (δ : ℝ) :=
-              le_antisymm h_le h_ge
-            rwa [div_eq_iff (ne_of_gt hn_pos)] at h_eq
+            exact (le_div_iff₀ hn_pos).1 h_ge
           -- Step 2: Extract |S_x| ≥ (1-δ)*|ι| in ℝ
-          have h_sx_real : ((S_x x hx).card : ℝ) ≥ ((1 : ℝ) - (δ : ℝ)) * (Fintype.card ι : ℝ) := by
-            have h1 := hS_x x hx  -- (|S_x| : ℝ≥0) ≥ (1 - δ) * |ι|
-            by_cases hδ_le : δ ≤ 1
-            · have h1' : ((1 - δ) * (Fintype.card ι : ℝ≥0) : ℝ≥0) ≤ ((S_x x hx).card : ℝ≥0) := h1.le
-              calc ((S_x x hx).card : ℝ)
-                  ≥ ((((1 - δ) * (Fintype.card ι : ℝ≥0) : ℝ≥0) : ℝ)) := by exact_mod_cast h1'
-                _ = ((1 : ℝ) - (δ : ℝ)) * (Fintype.card ι : ℝ) := by
-                    rw [NNReal.coe_mul, NNReal.coe_sub hδ_le, NNReal.coe_one, NNReal.coe_natCast]
-            · push Not at hδ_le
-              have hδ_real : (1 : ℝ) < (δ : ℝ) := by exact_mod_cast hδ_le
-              linarith [Nat.cast_nonneg' (α := ℝ) (S_x x hx).card,
-                        mul_nonpos_of_nonpos_of_nonneg (by linarith : (1 : ℝ) - ↑δ ≤ 0)
-                          (Nat.cast_nonneg' (α := ℝ) (Fintype.card ι))]
+          have h_sx_real := real_card_ge_of_nnreal (hS_x x hx)
           -- Step 3: Combine
-          linarith)
+          linarith only [h_sx_real, h_ham_real])
       -- D' ⊆ {c | v₀ c = u₀ c} = S_x, so D' ⊆ S_x
       have hD'_sub_Sx : D' ⊆ S_x x hx := hSx_eq_filter ▸ hD'_sub_filter
       intro c hc
@@ -328,10 +304,6 @@ theorem bucket_exists_common_codeword
         (Finset.mem_filter.mp ((hv_x x hx 1).2 hc_Sx)).2
       simp only [finMapTwoWords] at h1
       rw [hcD', h1, Pi.sub_apply]; ring
-    have h_Bv0_sub_U : ↑B_v₀ ⊆ (Affine.affineSubspaceAtOrigin (F := F) u₀ dirs : Set (ι → F)) := by
-      intro x hx
-      exact (affine_mem_iff_finset_mem u₀ dirs x).mpr
-        (Finset.mem_filter.mp (Finset.mem_coe.mp hx)).1
     -- B_v₀ is affine: it's {x ∈ U | x|_{D'} ∈ V|_{D'}}, preimage of linear sub under affine map.
     have h_Bv0_affine : B_v₀ ≠ U_fin →
         ∃ (m : ℕ) (u₀' : ι → F) (dirs' : Fin m → ι → F),
@@ -437,7 +409,7 @@ theorem bucket_exists_common_codeword
     have h_Bv0_eq_U : B_v₀ = U_fin := by
       by_contra h_ne
       obtain ⟨m, u₀', dirs', h_eq, h_proper⟩ := h_Bv0_affine h_ne
-      have := proper_affine_sub_card_le u₀ dirs B_v₀ h_Bv0_sub_U ⟨m, u₀', dirs', h_eq, h_proper⟩
+      have := proper_affine_sub_card_le dirs B_v₀ ⟨m, u₀', dirs', h_eq, h_proper⟩
       omega
     intro x hx
     have : x ∈ B_v₀ := h_Bv0_eq_U ▸ hx
@@ -461,7 +433,7 @@ end Bucketing
 section CoreResults
 
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
 /-- Pigeonhole for finite covers: if `U` is covered by `L` indexed subsets and
 `L * B < |U|`, then some subset has more than `B` elements. -/
@@ -497,7 +469,7 @@ theorem card_roots_finset_le_natDegree {R : Type} [CommRing R] [IsDomain R]
   intro a ha
   exact (Polynomial.mem_roots hQ).mpr (hroots a ha)
 
-omit [DecidableEq F] in
+omit [SampleableType F] [DecidableEq F] in
 /-- The Guruswami-Sudan list-decoding bound: given a nonzero polynomial `Q` over `F[X]`
 whose `Y`-degree is less than `|F|`, the number of distinct polynomials `P` such that
 `(Y - P(X)) | Q(X, Y)` is strictly less than `|F|`. This is the structural core of the
@@ -572,11 +544,20 @@ private lemma gs_degree_bound_le_inv_mu
     _ ≤ 1 / μ + 1 / (4 * μ) := add_le_add h5 h6
     _ = 5 / (4 * μ) := by ring
 
-omit [DecidableEq ι] [DecidableEq F] in
+private lemma div_two_mul_ceil_succ_lt {s η : ℝ} (hη : 0 < η) :
+    s / (2 * ((Nat.ceil (s / (2 * η)) + 1 : ℕ) : ℝ)) < η := by
+  have hm_pos : (0 : ℝ) < ((Nat.ceil (s / (2 * η)) + 1 : ℕ) : ℝ) :=
+    Nat.cast_pos.2 (Nat.succ_pos _)
+  have hm_gt : s / (2 * η) < ((Nat.ceil (s / (2 * η)) + 1 : ℕ) : ℝ) := by
+    rw [Nat.cast_add, Nat.cast_one]
+    exact (Nat.le_ceil _).trans_lt (lt_add_one _)
+  rw [div_lt_iff₀ (mul_pos two_pos hm_pos)]
+  exact ((div_lt_iff₀ (mul_pos two_pos hη)).mp hm_gt).trans_eq (by ring)
+
+omit [Nonempty ι] [DecidableEq ι] [DecidableEq F] [SampleableType F] in
 /-- Construct a GS multiplicity `m` satisfying both the Johnson radius bound and the degree
 bound. Witness: `m = ⌈√ρ/(2η)⌉ + 1` where `η = 1 - √ρ - δ`. -/
 lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
-    (hδ_pos : 0 < δ)
     (hδ : δ < 1 - ReedSolomon.sqrtRate deg domain)
     (hRS : deg + 1 ≤ Fintype.card ι)
     (hε : errorBound δ deg domain < 1)
@@ -584,6 +565,7 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
     ∃ m : ℕ, 1 ≤ m
       ∧ (δ : ℝ) < gs_johnson deg (Fintype.card ι) m
       ∧ gs_degree_bound deg (Fintype.card ι) m / (deg - 1) < Fintype.card F := by
+  have : Nonempty ι := Fintype.card_pos_iff.mp (by omega)
   have hn_le : Fintype.card ι ≤ Fintype.card F :=
     Fintype.card_le_of_injective domain domain.injective
   have hsqrt_le : ReedSolomon.sqrtRate deg domain ≤ 1 :=
@@ -602,8 +584,6 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
     set m := Nat.ceil (s / (2 * η)) + 1
     refine ⟨m, by omega, ?_, ?_⟩
     · -- Johnson bound: δ < gs_johnson deg n m
-      have hn_pos : (0 : ℝ) < Fintype.card ι := by positivity
-      have hm_pos : (0 : ℝ) < m := by positivity
       have hs_eq : s = Real.sqrt ((deg : ℝ) / Fintype.card ι) := by
         simp only [s, hs_def, ReedSolomon.sqrtRate]
         rw [Real.coe_sqrt]
@@ -620,27 +600,14 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
           push_cast; ring
         rw [this]
       rw [hgs_eq]
-      have hm_gt : s / (2 * η) < m := by
-        have h1 : s / (2 * η) ≤ ↑(Nat.ceil (s / (2 * η))) := Nat.le_ceil _
-        have h2 : (↑(Nat.ceil (s / (2 * η))) : ℝ) + 1 = (m : ℝ) := by
-          simp only [m, Nat.cast_add, Nat.cast_one]
-        linarith only [h1, h2]
-      have hs_nn : (0 : ℝ) ≤ s := by positivity
-      have hs_div_lt : s / (2 * ↑m) < η := by
-        rcases eq_or_lt_of_le hs_nn with hs0 | hs_pos
-        · rw [← hs0]; simp only [zero_div]; exact hη_pos
-        · have h2m_pos : (0 : ℝ) < 2 * ↑m := by positivity
-          rw [div_lt_iff₀ h2m_pos]
-          have h2η_pos : (0 : ℝ) < 2 * η := by positivity
-          have := (div_lt_iff₀ h2η_pos).mp hm_gt
-          linarith only [this]
+      have hs_div_lt : s / (2 * ↑m) < η := div_two_mul_ceil_succ_lt hη_pos
       linarith only [hs_div_lt]
     · -- Degree bound: gs_degree_bound deg n m / (deg - 1) < |F|
       have hn_pos : (0 : ℝ) < Fintype.card ι := by
         exact_mod_cast (show 0 < Fintype.card ι from Fintype.card_pos)
       have hdeg_pos : (0 : ℝ) < deg := by exact_mod_cast (show 0 < deg by omega)
       have hs_lt_one : s < 1 := by
-        linarith only [NNReal.coe_pos.mpr hδ_pos, hδ_real]
+        linarith only [NNReal.coe_nonneg δ, hδ_real]
       have hs_eq : s = Real.sqrt ((deg : ℝ) / Fintype.card ι) := by
         simp only [s, hs_def, ReedSolomon.sqrtRate]
         rw [Real.coe_sqrt]; congr 1
@@ -666,7 +633,9 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
           (↑m + 1/2) * s * (Fintype.card ι : ℝ) := by
         unfold gs_degree_bound; dsimp only
         have hnn : (0 : ℝ) ≤ (↑m + 1 / 2) * √↑(↑deg / ↑(Fintype.card ι) : ℚ) *
-          ↑(Fintype.card ι) := by positivity
+          ↑(Fintype.card ι) :=
+          mul_nonneg (mul_nonneg (add_nonneg (Nat.cast_nonneg _) (by norm_num))
+            (Real.sqrt_nonneg _)) (Nat.cast_nonneg _)
         have hcast : (↑(↑deg / ↑(Fintype.card ι) : ℚ) : ℝ) =
             (deg : ℝ) / Fintype.card ι := by push_cast; ring
         calc (↑⌊(↑m + 1 / 2) * √↑(↑deg / ↑(Fintype.card ι) : ℚ) *
@@ -681,15 +650,16 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
         rw [hdeg1_cast_eq]
         linarith only [show (2 : ℝ) ≤ deg from by exact_mod_cast hdeg]
       set μ : ℝ := min η (s / 20) with hμ_def
-      have hμ_pos : 0 < μ := lt_min hη_pos (by positivity)
+      have hμ_pos : 0 < μ := lt_min hη_pos (div_pos hs_pos (by norm_num))
       have hμ_le_η : μ ≤ η := min_le_left _ _
       have hμ_le_s20 : μ ≤ s / 20 := min_le_right _ _
-      have hμ_lt_one20 : μ < 1 / 20 := lt_of_le_of_lt hμ_le_s20 (by linarith)
+      have hμ_lt_one20 : μ < 1 / 20 :=
+        lt_of_le_of_lt hμ_le_s20 (div_lt_div_of_pos_right hs_lt_one (by norm_num))
       have hm_bound : (m : ℝ) + 1/2 ≤ s / (2 * η) + 5/2 := by
         have hm_eq : (m : ℝ) = ↑(Nat.ceil (s / (2 * η))) + 1 := by
           simp only [m, Nat.cast_add, Nat.cast_one]
         have hceil_le : (↑(Nat.ceil (s / (2 * η))) : ℝ) ≤ s / (2 * η) + 1 :=
-          le_of_lt (Nat.ceil_lt_add_one (by positivity : (0 : ℝ) ≤ s / (2 * η)))
+          le_of_lt (Nat.ceil_lt_add_one (div_nonneg hs_pos.le (mul_pos two_pos hη_pos).le))
         linarith only [hm_eq, hceil_le]
       have h_le_54μ : (↑m + 1/2) * s * (Fintype.card ι : ℝ) /
           (↑(deg - 1 : ℕ) : ℝ) ≤ 5 / (4 * μ) :=
@@ -707,8 +677,8 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
           _ < 4 := by norm_num
           _ ≤ (deg : ℝ) ^ 2 := h4
       have h_54_lt_deg2 : 5 / (4 * μ) < (deg : ℝ) ^ 2 / (128 * μ ^ 7) := by
-        rw [div_lt_div_iff₀ (by positivity) (by positivity)]
-        convert mul_lt_mul_of_pos_right h_160 (show (0 : ℝ) < 4 * μ by positivity) using 1
+        rw [div_lt_div_iff₀ (mul_pos four_pos hμ_pos) (mul_pos (by norm_num) (pow_pos hμ_pos 7))]
+        convert mul_lt_mul_of_pos_right h_160 (mul_pos four_pos hμ_pos) using 1
         all_goals ring
       -- Extract |F| bound from hε
       have h_field : (deg : ℝ) ^ 2 / (128 * μ ^ 7) < Fintype.card F := by
@@ -737,12 +707,13 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
             ((2 * min (1 - sqr_nn - δ) (sqr_nn / 20)) ^ 7 * ↑(Fintype.card F)) < 1 at hε
           exact_mod_cast hε
         rw [hmin_eq] at hε_real
-        have hd : (0 : ℝ) < (2 * μ) ^ 7 * ↑(Fintype.card F) := by positivity
+        have hd : (0 : ℝ) < (2 * μ) ^ 7 * ↑(Fintype.card F) :=
+          mul_pos (pow_pos (mul_pos two_pos hμ_pos) 7) (Nat.cast_pos.2 Fintype.card_pos)
         have hlt := (div_lt_one hd).mp hε_real
         rw [show (2 * μ) ^ 7 = 128 * μ ^ 7 from by ring] at hlt
         have hcast : (↑(↑deg ^ 2 : ℝ≥0) : ℝ) = (↑deg : ℝ) ^ 2 := by push_cast; ring
         rw [hcast] at hlt
-        rw [div_lt_iff₀ (by positivity : (0 : ℝ) < 128 * μ ^ 7)]
+        rw [div_lt_iff₀ (mul_pos (by norm_num) (pow_pos hμ_pos 7) : (0 : ℝ) < 128 * μ ^ 7)]
         linarith only [hlt]
       calc (gs_degree_bound deg (Fintype.card ι) m : ℝ) / ↑(deg - 1 : ℕ)
           ≤ (↑m + 1/2) * s * ↑(Fintype.card ι) / ↑(deg - 1 : ℕ) :=
@@ -777,19 +748,7 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
         congr 1 <;> [congr 1; congr 2] <;>
           rw [hs_eq, Real.sqrt_div (by positivity : (0:ℝ) ≤ 1), Real.sqrt_one, one_div]
       rw [hgs_eq]
-      have hm_gt : s / (2 * η) < m := by
-        have h1 : s / (2 * η) ≤ ↑(Nat.ceil (s / (2 * η))) := Nat.le_ceil _
-        linarith [show (↑(Nat.ceil (s / (2 * η))) : ℝ) + 1 = (m : ℝ) from by
-          simp only [m, Nat.cast_add, Nat.cast_one]]
-      have hs_nn : (0 : ℝ) ≤ s := by positivity
-      have hs_div_lt : s / (2 * ↑m) < η := by
-        rcases eq_or_lt_of_le hs_nn with hs0 | hs_pos
-        · rw [← hs0]; simp only [zero_div]; exact hη_pos
-        · have h2m_pos : (0 : ℝ) < 2 * ↑m := by positivity
-          rw [div_lt_iff₀ h2m_pos]
-          have h2η_pos : (0 : ℝ) < 2 * η := by positivity
-          have := (div_lt_iff₀ h2η_pos).mp hm_gt
-          linarith only [this]
+      have hs_div_lt : s / (2 * ↑m) < η := div_two_mul_ceil_succ_lt hη_pos
       linarith only [hs_div_lt]
     · -- deg = 0: gs_johnson 0 n m = 1 trivially > δ
       have hdeg0 : deg = 0 := by omega
@@ -803,16 +762,25 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
       rw [hgs0]
       linarith only [hδ_real, show (0 : ℝ) ≤ s from by positivity]
 
-omit [DecidableEq ι] in
+omit [DecidableEq ι] [SampleableType F] in
 theorem rs_listDecoding_card_lt_field {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
-    (hδ_pos : 0 < δ) (hδ : δ < 1 - ReedSolomon.sqrtRate deg domain)
-    (hRS : deg + 1 ≤ Fintype.card ι)
+    (hδ : δ < 1 - ReedSolomon.sqrtRate deg domain)
     (hε : errorBound δ deg domain < 1)
     (w : ι → F)
     (closeWords : Finset (ι → F))
     (hclose : ∀ v ∈ closeWords, v ∈ ReedSolomon.code domain deg ∧ δᵣ(w, v) ≤ δ) :
     closeWords.card < Fintype.card F := by
   classical
+  have hRS : deg + 1 ≤ Fintype.card ι := by
+    by_contra h
+    have hfull : Fintype.card ι ≤ deg := by omega
+    have hrate : LinearCode.rate (ReedSolomon.code domain deg) = 1 := by
+      rw [ReedSolomon.rateOfLinearCode_eq_min_div, min_eq_right hfull]
+      exact div_self (by exact_mod_cast Fintype.card_ne_zero (α := ι))
+    have hsone : ReedSolomon.sqrtRate deg domain = 1 := by
+      simp [ReedSolomon.sqrtRate, hrate]
+    rw [hsone, tsub_self] at hδ
+    exact not_lt_zero hδ
   -- Each codeword v is in (degreeLT F deg).map (evalOnPoints domain),
   -- so ∃ P ∈ degreeLT, evalOnPoints domain P = v.
   -- Choose a polynomial witness for each codeword.
@@ -1021,54 +989,25 @@ theorem rs_listDecoding_card_lt_field {deg : ℕ} {domain : ι ↪ F} {δ : ℝ�
             have hsqrt_le_inv : (ReedSolomon.sqrtRate 1 domain : ℝ) ≤
                 1 / Fintype.card ι := by
               have h : (Fintype.card ι - 1 : ℝ) / Fintype.card ι =
-                  1 - 1 / Fintype.card ι := by field_simp
+                  1 - 1 / Fintype.card ι := by rw [_root_.sub_div, div_self (ne_of_gt hn_pos)]
               linarith only [hrel_val, hrel_le_delta, h_add_real, h]
-            -- sqrtRate > 1/n: √rate > rate ≥ 1/n
-            have hrate_pos : (0 : ℝ≥0) <
-                (LinearCode.rate (ReedSolomon.code domain 1) : ℝ≥0) := by
-              exact_mod_cast @DivergenceOfSets.reedSolomon_rate_pos ι _ _ F _ _ _ Nat.one_pos
-            have hrate_lt_one :
-                (LinearCode.rate (ReedSolomon.code domain 1) : ℝ≥0) < 1 := by
-              have hdim_le := @DivergenceOfSets.reedSolomon_dim_le_deg ι _ F _ 1 domain
-              have hdlt : LinearCode.dim (ReedSolomon.code domain 1) <
-                  LinearCode.length (ReedSolomon.code domain 1) := by
-                simp only [LinearCode.length]; omega
-              exact_mod_cast show (LinearCode.rate (ReedSolomon.code domain 1) : ℚ≥0) < 1 from by
-                rw [LinearCode.rate]
-                exact (div_lt_one (by positivity : (0 : ℚ≥0) < _)).mpr (by exact_mod_cast hdlt)
-            have hrate_ge_inv : (1 : ℝ≥0) / (Fintype.card ι : ℝ≥0) ≤
-                (LinearCode.rate (ReedSolomon.code domain 1) : ℝ≥0) := by
-              have hdim_ge : 1 ≤ LinearCode.dim (ReedSolomon.code domain 1) := by
-                have hmul := @DivergenceOfSets.reedSolomon_rate_mul_card_eq_dim ι _ _ F _ 1 domain
-                have h0 : (0 : ℝ≥0) < (LinearCode.dim (ReedSolomon.code domain 1) : ℝ≥0) :=
-                  hmul ▸ mul_pos (by positivity) hrate_pos
-                have : 0 < LinearCode.dim (ReedSolomon.code domain 1) := by exact_mod_cast h0
-                omega
-              have hge : (1 : ℚ≥0) / (Fintype.card ι : ℚ≥0) ≤
-                  (LinearCode.rate (ReedSolomon.code domain 1) : ℚ≥0) := by
-                rw [LinearCode.rate]; simp only [LinearCode.length]
-                exact (div_le_div_iff_of_pos_right (by positivity : (0 : ℚ≥0) < _)).mpr
-                  (by exact_mod_cast hdim_ge)
-              calc (1 : ℝ≥0) / (Fintype.card ι : ℝ≥0)
-                  = ((1 : ℚ≥0) / (Fintype.card ι : ℚ≥0) : ℝ≥0) := by push_cast; ring
-                _ ≤ _ := by exact_mod_cast hge
-            have h_sqrt_gt : (LinearCode.rate (ReedSolomon.code domain 1) : ℝ≥0) <
-                NNReal.sqrt (LinearCode.rate (ReedSolomon.code domain 1) : ℝ≥0) := by
-              have h1 : (_ : ℝ≥0) * _ < _ * 1 :=
-                mul_lt_mul_of_pos_left hrate_lt_one hrate_pos
-              rw [mul_one] at h1
-              calc _ = NNReal.sqrt (_ * _) := (NNReal.sqrt_mul_self _).symm
-                _ < NNReal.sqrt _ := NNReal.sqrt_lt_sqrt.2 h1
+            -- sqrtRate = √(1/n) > 1/n since 0 < 1/n < 1.
+            have hs_eq : (ReedSolomon.sqrtRate 1 domain : ℝ) =
+                Real.sqrt ((1 : ℝ) / Fintype.card ι) := by
+              simp only [ReedSolomon.sqrtRate]; rw [Real.coe_sqrt]; congr 1
+              have : NeZero (1 : ℕ) := ⟨by omega⟩
+              have hdim := ReedSolomon.dim_eq_deg_of_le (α := domain) (n := 1)
+                (by omega : 1 ≤ Fintype.card ι)
+              rw [LinearCode.rate, hdim]; simp [LinearCode.length]
+            have hinv_pos : (0 : ℝ) < 1 / Fintype.card ι := one_div_pos.2 hn_pos
+            have hinv_lt_one : (1 : ℝ) / Fintype.card ι < 1 :=
+              (div_lt_one hn_pos).2 (by exact_mod_cast (show 1 < Fintype.card ι by omega))
             have hsqrt_gt_inv : 1 / (Fintype.card ι : ℝ) <
                 (ReedSolomon.sqrtRate 1 domain : ℝ) := by
-              have h1 : ((1 : ℝ≥0) / (Fintype.card ι : ℝ≥0) : ℝ) =
-                  1 / (Fintype.card ι : ℝ) := by push_cast; ring
-              rw [← h1]
-              exact_mod_cast show ((1 : ℝ≥0) / (Fintype.card ι : ℝ≥0)) <
-                  ReedSolomon.sqrtRate 1 domain from
-                calc (1 : ℝ≥0) / _ ≤ _ := hrate_ge_inv
-                  _ < NNReal.sqrt _ := h_sqrt_gt
-                  _ = ReedSolomon.sqrtRate 1 domain := by simp [ReedSolomon.sqrtRate]
+              rw [hs_eq]
+              refine (Real.lt_sqrt hinv_pos.le).2 ?_
+              rw [sq]
+              exact mul_lt_of_lt_one_left hinv_pos hinv_lt_one
             linarith only [hsqrt_le_inv, hsqrt_gt_inv]
         · -- range(w).card < |F|
           calc closeWords.card ≤ (Finset.image w Finset.univ).card := hcard_le_range
@@ -1136,16 +1075,15 @@ theorem rs_listDecoding_card_lt_field {deg : ℕ} {domain : ι ↪ F} {δ : ℝ�
     Fintype.card_le_of_injective domain domain.injective
   let ωs : Fin (Fintype.card ι) ↪ F := (Fintype.equivFin ι).symm.toEmbedding.trans domain
   let f : Fin (Fintype.card ι) → F := w ∘ (Fintype.equivFin ι).symm
-  have hn_ne : Fintype.card ι ≠ 0 := Fintype.card_ne_zero
   -- Choose multiplicity m satisfying both GS conditions:
   -- (A) gs_johnson(deg,n,m) > δ (hence > δᵣ for all close codewords)
   -- (B) gs_degree_bound(deg,n,m) / (deg-1) < |F| (degree bound for Q)
   -- Requires strict gap δ < 1-sqrtRate (from rationality of δᵣ).
   -- gs_johnson(k,n,m) = 1-√(k/n)·(1+1/(2m)) → 1-√(k/n) as m→∞.
   obtain ⟨m, hm, hm_johnson, hm_degree⟩ :=
-    exists_gs_multiplicity hδ_pos hδ hRS hε hJ
+    exists_gs_multiplicity hδ hRS hε hJ
   obtain ⟨Q, hQ⟩ := GuruswamiSudan.gs_existence
-    deg (Fintype.card ι) ωs f hdeg hn_ne hm
+    deg (Fintype.card ι) ωs f hdeg hm
   refine ⟨Q, hQ.Q_ne_0, ?_, ?_⟩
   · -- Q.natDegree < |F|
     have hb : 0 < deg - 1 := by omega
@@ -1202,23 +1140,17 @@ theorem rs_listDecoding_card_lt_field {deg : ℕ} {domain : ι ↪ F} {δ : ℝ�
       _ ≤ (δ : ℝ) := by exact_mod_cast hv_dist
       _ < gs_johnson deg (Fintype.card ι) m := hm_johnson
 
-/-- Theorem 1.7 (Correlated agreement over affine spaces) in [BCIKS20].
+/-- Theorem 1.6 (Correlated agreement over affine spaces) in [BCIKS20].
 
 Take a Reed-Solomon code of length `ι` and degree `deg`, a proximity-error parameter
-pair `(δ, ε)` and an affine space with origin `u₀` and affine generating set `u₁, ..., uκ`
-such that the probability a random point in the affine space is `δ`-close to the Reed-Solomon
-code is greater than `ε`. Then the words `u₀, ..., uκ` have correlated agreement.
-
-Note that we have `k + 2` vectors to form the affine space. This an intricacy needed us to be
-able to isolate the affine origin from the affine span and to form a generating set of the
-correct size. The reason for taking an extra vector is that after isolating the affine origin,
-the affine span is formed as the span of the difference of the rest of the vector set. -/
+pair `(δ, ε)` and an affine space `u₀ + span{u₁, ..., uₖ}` with origin `u₀` and `k` linear
+directions `u₁, ..., uₖ`. If the probability a random point in the affine space is `δ`-close
+to the Reed-Solomon code is greater than `ε`, then the `k + 1` words `u₀, ..., uₖ` have
+correlated agreement. -/
 theorem correlatedAgreement_affine_spaces {k : ℕ} [NeZero k]
     {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
     (hdeg : 0 < deg)
-    (_hδ_pos : 0 < δ)
     (hδ : δ < 1 - ReedSolomon.sqrtRate deg domain)
-    (hRS : deg + 1 ≤ Fintype.card ι)
     (_hε : errorBound δ deg domain < 1) :
     δ_ε_correlatedAgreementAffineSpaces (k := k) (A := F) (F := F) (ι := ι)
       (C := ReedSolomon.code domain deg) (δ := δ) (ε := errorBound δ deg domain) := by
@@ -1236,11 +1168,11 @@ theorem correlatedAgreement_affine_spaces {k : ℕ} [NeZero k]
   --    One D' for all words — no intersection, hence (1-δ) not (1-kδ).
   set V := ReedSolomon.code domain deg with hV_def
   set U := (Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u) : Set (ι → F))
-  have hPr_sub : Pr_{let y ← $ᵖ (Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u))}[
+  have hPr_sub : Pr{let y ← $ᵗ (Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u))}[
       δᵣ(↑y, (V : Set (ι → F))) ≤ δ] > errorBound δ deg domain := by
     convert hPr using 1
   have h_all_close : ∀ x ∈ U, δᵣ(x, (V : Set (ι → F))) ≤ δ :=
-    all_affine_elements_close u (le_of_lt hδ) hPr_sub
+    all_affine_elements_close u hdeg hδ hPr_sub
   have hu0_mem : u 0 ∈ U := by
     change u 0 ∈ Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u)
     rw [Affine.mem_affineSubspaceFrom_iff]; exact ⟨0, by simp⟩
@@ -1265,8 +1197,8 @@ theorem correlatedAgreement_affine_spaces {k : ℕ} [NeZero k]
     have h_close := h_all_close u_star hu_star_mem
     rw [relDistFromCode'_eq_relDistFromCode] at h_close
     exact_mod_cast h_close
-  have hδ_star_le_sqrt : δ_star ≤ 1 - ReedSolomon.sqrtRate deg domain :=
-    le_trans hδ_star_le (le_of_lt hδ)
+  have hδ_star_lt_sqrt : δ_star < 1 - ReedSolomon.sqrtRate deg domain :=
+    lt_of_le_of_lt hδ_star_le hδ
   -- The affine space with u* as origin equals U (same direction span).
   have hU_star_eq : (Affine.affineSubspaceAtOrigin (F := F) u_star (Fin.tail u) :
       Set (ι → F)) = U := by
@@ -1292,57 +1224,27 @@ theorem correlatedAgreement_affine_spaces {k : ℕ} [NeZero k]
   -- For any direction, line through u* has Pr[δ_star-close] = 1.
   have h_line_pr1_star : ∀ (dir : ι → F),
       (∀ z : F, u_star + z • dir ∈ U) →
-      Pr_{let z ← $ᵖ F}[δᵣ((finMapTwoWords u_star dir) 0
+      Pr{let z ← $ᵗ F}[δᵣ((finMapTwoWords u_star dir) 0
         + z • (finMapTwoWords u_star dir) 1,
         (V : Set (ι → F))) ≤ δ_star] = 1 := by
     intro dir h_line_in_U
-    rw [prob_uniform_eq_card_filter_div_card]
-    have : Finset.filter (fun z : F =>
-        δᵣ((finMapTwoWords u_star dir) 0
-          + z • (finMapTwoWords u_star dir) 1,
-          (V : Set (ι → F))) ≤ ↑δ_star) Finset.univ = Finset.univ := by
-      ext z; constructor
-      · exact fun _ => Finset.mem_univ _
-      · intro _
-        apply Finset.mem_filter.mpr
-        refine ⟨Finset.mem_univ z, ?_⟩
-        simp only [finMapTwoWords]
-        have hx_mem := h_line_in_U z
-        have hx_le_div := DivergenceOfSets.relDistFromCode'_le_divergence
-          (U := U) (V := (V : Set (ι → F))) _ hx_mem
-        have h_eq := relDistFromCode'_eq_relDistFromCode
-          (u_star + z • dir) (V : Set (ι → F))
-        rw [h_eq]
-        apply ENNReal.coe_le_coe.mpr
-        show (δᵣ'(u_star + z • dir, (V : Set (ι → F))) : ℝ≥0) ≤ δ_star
-        simp only [hδ_star_def]
-        exact_mod_cast hx_le_div
-    rw [this, Finset.card_univ]
-    exact_mod_cast div_self (Nat.cast_ne_zero.mpr Fintype.card_ne_zero)
-  -- ═══════════════════════════════════════════════════════════
-  -- Step 3: Direction generators through u* stay in U.
-  -- ═══════════════════════════════════════════════════════════
-  have h_dir_in_U_star : ∀ j : Fin k, ∀ z : F,
-      u_star + z • Fin.tail u j ∈ U := by
-    intro j z
-    rw [← hU_star_eq]
-    exact (Affine.mem_affineSubspaceFrom_iff (F := F) u_star (Fin.tail u) _).mpr
-      ⟨Pi.single j z, by simp⟩
-  -- ═══════════════════════════════════════════════════════════
-  -- Step 4: Apply Thm 1.4 with u* and δ_star.
-  -- ═══════════════════════════════════════════════════════════
+    apply (SampleableType.prEvent_uniformSample_eq_one_iff _).2
+    intro z
+    simp only [finMapTwoWords]
+    have hx_mem := h_line_in_U z
+    have hx_le_div := DivergenceOfSets.relDistFromCode'_le_divergence
+      (U := U) (V := (V : Set (ι → F))) _ hx_mem
+    have h_eq := relDistFromCode'_eq_relDistFromCode
+      (u_star + z • dir) (V : Set (ι → F))
+    rw [h_eq]
+    apply ENNReal.coe_le_coe.mpr
+    show (δᵣ'(u_star + z • dir, (V : Set (ι → F))) : ℝ≥0) ≤ δ_star
+    simp only [hδ_star_def]
+    exact_mod_cast hx_le_div
   have hε_star : errorBound δ_star deg domain < 1 :=
     lt_of_le_of_lt (DivergenceOfSets.errorBound_mono hdeg hδ_star_le hδ) _hε
   have hεδ_star_lt_one : (errorBound δ_star deg domain : ENNReal) < 1 := by
     exact_mod_cast hε_star
-  have h_pair_ja : ∀ j : Fin k,
-      jointAgreement (C := (V : Set (ι → F))) (δ := δ_star)
-        (W := finMapTwoWords u_star (Fin.tail u j)) := by
-    intro j
-    apply RS_correlatedAgreement_affineLines hδ_star_le_sqrt
-    rw [h_line_pr1_star _ (h_dir_in_U_star j)]
-    exact hεδ_star_lt_one
-  choose S_j hS_j v_pair hv_pair using fun j => h_pair_ja j
   -- Step 5: BCIKS20 §6.3 bucketing with u* and δ_star.
   have h_elem_ja : ∀ x ∈ (Affine.affineSubspaceAtOrigin (F := F) u_star (Fin.tail u) :
       Set (ι → F)),
@@ -1350,42 +1252,14 @@ theorem correlatedAgreement_affine_spaces {k : ℕ} [NeZero k]
         (W := finMapTwoWords u_star (x - u_star)) := by
     intro x hx
     have hx_U := (hU_star_eq ▸ hx : x ∈ U)
-    apply RS_correlatedAgreement_affineLines hδ_star_le_sqrt
+    apply RS_correlatedAgreement_affineLines hdeg hδ_star_lt_sqrt
     rw [h_line_pr1_star _ (fun z => h_line_in_U_star x hx_U z)]
     exact hεδ_star_lt_one
   have hδ_star_strict : δ_star < 1 - ReedSolomon.sqrtRate deg domain :=
     lt_of_le_of_lt hδ_star_le hδ
-  have h_bucket := bucket_exists_common_codeword V u_star (Fin.tail u) h_elem_ja h_pair_ja
-    (fun w close hclose => by
-      by_cases hδs_pos : (0 : ℝ≥0) < δ_star
-      · exact rs_listDecoding_card_lt_field hδs_pos hδ_star_strict hRS hε_star w close
-          (fun v hv => ⟨(hclose v hv).1, (hclose v hv).2⟩)
-      · -- δ_star = 0: only w itself can be at distance 0, so |closeWords| ≤ 1 < |F|
-        push Not at hδs_pos
-        have hδs_eq : δ_star = 0 := le_antisymm hδs_pos (zero_le)
-        have hclose_eq : ∀ v ∈ close, v = w := by
-          intro v hv
-          have hd := (hclose v hv).2
-          have hd0 : hammingDist w v = 0 := by
-            rw [hammingDist_eq_zero]
-            by_contra hne
-            have hpos : 0 < hammingDist w v := Nat.pos_of_ne_zero (hammingDist_ne_zero.mpr hne)
-            have hrel_pos : (0 : ℚ≥0) < δᵣ(w, v) := by
-              simp only [relHammingDist]
-              exact div_pos (Nat.cast_pos.mpr hpos) (by positivity)
-            have hrel_le : (δᵣ(w, v) : ℝ≥0) ≤ 0 := by
-              calc (δᵣ(w, v) : ℝ≥0) ≤ δ_star := hd
-                _ = 0 := hδs_eq
-            exact absurd (show (0 : ℝ≥0) < δᵣ(w, v) from by exact_mod_cast hrel_pos)
-              (not_lt.mpr hrel_le)
-          exact (hammingDist_eq_zero.mp hd0).symm
-        have hcard1 : close.card ≤ 1 := by
-          apply Finset.card_le_one.mpr
-          intro a ha b hb
-          exact (hclose_eq a ha).trans (hclose_eq b hb).symm
-        have hF_card : 1 < Fintype.card F :=
-          Fintype.one_lt_card_iff_nontrivial.mpr (Field.toNontrivial)
-        omega)
+  have h_bucket := bucket_exists_common_codeword V u_star (Fin.tail u) h_elem_ja
+    (fun w close hclose => rs_listDecoding_card_lt_field hδ_star_strict hε_star w close
+      (fun v hv => ⟨(hclose v hv).1, (hclose v hv).2⟩))
     (fun v hv hv_close => by
       -- hδ_exact: δᵣ(u*, v) ≥ δ_star. Since δ_star = δᵣ'(u*, V) = min_{v∈V} δᵣ(u*, v).
       rw [← hu_star_eq]

@@ -147,19 +147,27 @@ private theorem powers_noninjective_tuple_card_le
     intro p hp
     have hp2 : p.card = 2 := (Finset.mem_powersetCard.mp hp).2
     obtain ⟨i, j, hij, rfl⟩ := Finset.card_eq_two.mp hp2
-    simpa [collision, hij, ne_comm, eq_comm] using
+    refine (Finset.card_le_card fun xs hxs ↦ ?_).trans
       (powers_collision_tuple_card_le (S := S) t i j hij)
+    obtain ⟨a, ha, b, hb, hab, h⟩ := (Finset.mem_filter.mp hxs).2
+    rw [Finset.mem_insert, Finset.mem_singleton] at ha hb
+    refine Finset.mem_filter.mpr ⟨Finset.mem_univ _, ?_⟩
+    rcases ha with rfl | rfl <;> rcases hb with rfl | rfl
+    · exact (hab rfl).elim
+    · exact h
+    · exact h.symm
+    · exact (hab rfl).elim
   have hsubset :
       (Finset.univ.filter fun xs : Fin (t + 1) → S => ¬ Function.Injective xs) ⊆
         P.biUnion collision := by
     intro xs hxs
     have hbad := (Finset.mem_filter.mp hxs).2
     obtain ⟨i, j, heq, hij⟩ := Function.not_injective_iff.mp hbad
-    have hp : ({i, j} : Finset (Fin (t + 1))) ∈ P := by
-      simp [P, hij]
-    apply Finset.mem_biUnion.mpr
-    refine ⟨{i, j}, hp, ?_⟩
-    simp [collision, heq, hij]
+    have hp : ({i, j} : Finset (Fin (t + 1))) ∈ P :=
+      Finset.mem_powersetCard.mpr ⟨Finset.subset_univ _, Finset.card_pair hij⟩
+    exact Finset.mem_biUnion.mpr ⟨{i, j}, hp, Finset.mem_filter.mpr ⟨Finset.mem_univ _, i,
+      Finset.mem_insert_self _ _, j, Finset.mem_insert_of_mem (Finset.mem_singleton_self _), hij,
+      heq⟩⟩
   calc
     (Finset.univ.filter fun xs : Fin (t + 1) → S => ¬ Function.Injective xs).card ≤
         (P.biUnion collision).card := Finset.card_le_card hsubset
@@ -465,14 +473,14 @@ private theorem powers_compatible_tuple_card_lower
               ((powers_tuple_intersection (k + 2) T xs).card : ℝ) ≤
                 (Fintype.card ι : ℝ) := by exact_mod_cast hcard
           have hsub : 0 ≤ ((Fintype.card ι - D : ℕ) : ℝ) := by positivity
-          simp only [if_pos hgood]
+          simp only [ite_eq_left hgood]
           linarith
         · have hnot : ¬ (powers_tuple_intersection (k + 2) T xs).card >
               Fintype.card ι - D := by
             simpa only [Good, Finset.mem_filter, Finset.mem_univ, true_and] using hgood
           have hcard : (powers_tuple_intersection (k + 2) T xs).card ≤
               Fintype.card ι - D := Nat.le_of_not_lt hnot
-          simp only [if_neg hgood, add_zero]
+          simp only [ite_eq_right hgood, add_zero]
           exact_mod_cast hcard
       _ = (Fintype.card S : ℝ) ^ (k + 2) *
             ((Fintype.card ι - D : ℕ) : ℝ) +
@@ -565,7 +573,7 @@ private theorem powers_injective_compatible_tuple_card_lower
       (Fintype.card S : ℝ) ^ (k + 1) *
           (η * (Fintype.card S : ℝ) - (Nat.choose (k + 2) 2 : ℝ)) ≤
         (I.card : ℝ) := by
-    nlinarith
+    linarith
   simpa only [I] using hfinal
 
 open scoped BigOperators in
@@ -901,7 +909,7 @@ private theorem powers_bad_seed_finset_card_le
         ((Fintype.card ι - Code.minDist (C : Set (ι → A)) : ℕ) : ℝ) +
           (Fintype.card ι : ℝ) * (η : ℝ) := by
     simpa only [α, r] using
-      powers_alpha_pow_relation C k δmin η hδmin hη hηlt
+      powers_alpha_pow_relation C k δmin η hδmin
   let S := {x : F // x ∈ B}
   let e : S ↪ F := powers_bad_seed_embedding B
   have hBα : ∀ x : F, x ∈ B ↔
@@ -995,7 +1003,8 @@ private theorem powers_bad_seed_finset_card_le
     have hcommon :
         ((powers_common_domain k U cstar).card : ℝ) ≥
           (Fintype.card ι : ℝ) * (1 - (1 - β)) := by
-      nlinarith
+      rw [sub_sub_cancel]
+      exact hcommonStrict.le
     have hext : ∀ x ∈ Bgood,
         ∃ i, i ∈ (bw x).T ∧ i ∉ powers_common_domain k U cstar := by
       intro x _
@@ -1095,8 +1104,8 @@ private theorem univariate_powers_is_mds_generator
 /-- Bounds the MCA error of the univariate-powers generator below its generalized Johnson
 radius. The maximum on the right combines the two nontrivial branches of the source bound. -/
 theorem linear_mcaError_powers_le
-    {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [Fintype F]
+    {ι : Type} [Fintype ι]
+    {F : Type} [Field F] [Fintype F] [SampleableType F]
     {A : Type} [Finite A] [DecidableEq A] [AddCommGroup A] [Module F A]
     (C : ModuleCode ι F A) (k : ℕ) (δ_min η δ : ℝ≥0)
     (_hk : 1 ≤ k)
@@ -1117,6 +1126,11 @@ theorem linear_mcaError_powers_le
                   * Fintype.card F))
               (((k : ℝ) + 1) * ((k : ℝ) + 2) / ((η : ℝ) * Fintype.card F))) := by
   classical
+  have : Nonempty ι := by
+    by_contra hι
+    have : IsEmpty ι := not_nonempty_iff.mp hι
+    have hδzero : δ_min = 0 := by simpa using _h_δ_min
+    simp [hδzero] at _hη_lt_δ_min
   let := Fintype.ofFinite A
   refine le_trans
     (CoreDefinitions.mcaError_mono (univariatePowersGenerator F k) C _hδ) ?_
@@ -1129,9 +1143,7 @@ theorem linear_mcaError_powers_le
     _hk _hcard _h_δ_min _hη _hη_lt_δ_min
   change (Nat.card {x : F // P x} : ℝ) ≤ _ at hcard
   have hprob :
-      (do
-        let x ← PMF.uniformOfFintype F
-        pure (P x)) True ≤
+      Pr{let x ←$ᵗ F}[P x] ≤
         ENNReal.ofReal
           (((((Fintype.card ι : ℝ) *
                 (1 - (1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / (k + 1))) /
@@ -1143,7 +1155,7 @@ theorem linear_mcaError_powers_le
                      (1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / (k + 1)))))
                 (((k : ℝ) + 1) * ((k : ℝ) + 2) / (η : ℝ))) /
             (Fintype.card F : ℝ)) := by
-    rw [Probability.prob_uniform_eq_ofReal]
+    rw [SampleableType.prEvent_uniformSample_eq_ofReal]
     apply ENNReal.ofReal_le_ofReal
     have hcount : ((Finset.univ.filter P).card : ℝ) =
         (Nat.card {x : F // P x} : ℝ) := by
@@ -1151,9 +1163,7 @@ theorem linear_mcaError_powers_le
       rw [Nat.card_eq_fintype_card, Fintype.card_subtype]
     rw [hcount]
     exact div_le_div_of_nonneg_right hcard (by positivity)
-  change (do
-    let x ← PMF.uniformOfFintype F
-    pure (P x)) True ≤ _
+  change Pr{let x ←$ᵗ F}[P x] ≤ _
   refine le_trans hprob ?_
   apply ENNReal.ofReal_le_ofReal
   apply le_of_eq

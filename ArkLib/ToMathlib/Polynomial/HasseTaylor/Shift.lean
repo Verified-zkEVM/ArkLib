@@ -217,7 +217,7 @@ theorem coeff_backwardHasseSum {d n : ℕ} (q : R[X]) (hn : n ≠ 0) (hnd : n �
         (C ((-1 : R) ^ j) * (X ^ (j + 1) * hasseDeriv (j + 1) q)).coeff n =
           ((-1 : R) ^ j * (n.choose (j + 1) : R)) * q.coeff n := by
       intro j hj
-      rw [coeff_C_mul, coeff_X_pow_mul', if_pos]
+      rw [coeff_C_mul, coeff_X_pow_mul', ite_eq_left]
       · rw [hasseDeriv_coeff]
         have hsub : n - (j + 1) + (j + 1) = n := by
           have := Finset.mem_range.mp hj
@@ -229,7 +229,7 @@ theorem coeff_backwardHasseSum {d n : ℕ} (q : R[X]) (hn : n ≠ 0) (hnd : n �
     rw [Finset.sum_congr rfl hterm, ← Finset.sum_mul,
       alternating_sum_choose_succ hn, one_mul]
   · intro j hjd hjn
-    rw [coeff_C_mul, coeff_X_pow_mul', if_neg]
+    rw [coeff_C_mul, coeff_X_pow_mul', ite_eq_right]
     · simp
     · have hjd' := Finset.mem_range.mp hjd
       have hjn' : ¬j < n := by simpa using hjn
@@ -266,7 +266,7 @@ theorem natDegree_backwardHasseResidual_le (d : ℕ) (q : R[X]) :
   rw [natDegree_le_iff_coeff_eq_zero]
   intro n hn
   have hn0 : n ≠ 0 := by omega
-  rw [backwardHasseResidual, coeff_sub, coeff_sub, coeff_C, if_neg hn0,
+  rw [backwardHasseResidual, coeff_sub, coeff_sub, coeff_C, ite_eq_right hn0,
     coeff_eq_zero_of_natDegree_lt hn,
     coeff_backwardHasseSum_eq_zero_of_natDegree_lt q hn]
   simp
@@ -279,7 +279,7 @@ theorem X_pow_succ_dvd_backwardHasseResidual (d : ℕ) (q : R[X]) :
   by_cases hn0 : n = 0
   · subst n
     simp [backwardHasseResidual, backwardHasseSum]
-  · rw [backwardHasseResidual, coeff_sub, coeff_sub, coeff_C, if_neg hn0, sub_zero,
+  · rw [backwardHasseResidual, coeff_sub, coeff_sub, coeff_C, ite_eq_right hn0, sub_zero,
       coeff_backwardHasseSum q hn0 (by omega), sub_self]
 
 /-- Once `d` reaches the degree of `q`, the finite backward expansion is exact. -/
@@ -290,11 +290,11 @@ theorem backwardHasseResidual_eq_zero_of_natDegree_le (d : ℕ) (q : R[X])
   · by_cases hn0 : n = 0
     · subst n
       simp [backwardHasseResidual, backwardHasseSum]
-    · rw [backwardHasseResidual, coeff_sub, coeff_sub, coeff_C, if_neg hn0, sub_zero,
+    · rw [backwardHasseResidual, coeff_sub, coeff_sub, coeff_C, ite_eq_right hn0, sub_zero,
         coeff_backwardHasseSum q hn0 hn, sub_self, coeff_zero]
   · have hqn : q.natDegree < n := hdeg.trans_lt (Nat.lt_of_not_ge hn)
     have hn0 : n ≠ 0 := by omega
-    rw [backwardHasseResidual, coeff_sub, coeff_sub, coeff_C, if_neg hn0,
+    rw [backwardHasseResidual, coeff_sub, coeff_sub, coeff_C, ite_eq_right hn0,
       coeff_eq_zero_of_natDegree_lt hqn,
       coeff_backwardHasseSum_eq_zero_of_natDegree_lt q hqn, coeff_zero]
     simp
@@ -332,7 +332,7 @@ theorem map_movingHasseSum {S : Type*} [CommRing S] (f : R →+* S)
   rw [movingHasseSum, movingHasseSum, Polynomial.map_sum f]
   apply Finset.sum_congr rfl
   intro j _
-  simp [map_hasseDeriv, map_taylor]
+  simp [map_taylor]
 
 /-- Successive changes of origin add their centers in the moving-Hasse correction sum. -/
 theorem movingHasseSum_taylor (a b : R) (p : R[X]) (d : ℕ) :

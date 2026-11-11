@@ -30,3 +30,18 @@ theorem hammingDist_comp_equiv {ι ι' α : Type*} [Fintype ι] [Fintype ι'] [D
   · intro i hi; simpa using hi
   · intro i' hi'; simp
   · intro i hi; simp
+
+/-- Restricting to injectively selected coordinates cannot increase Hamming distance. -/
+theorem hammingDist_comp_le_of_injective {ι₁ ι₂ : Type*} [Fintype ι₁] [Fintype ι₂]
+    {β : ι₂ → Type*} [∀ i, DecidableEq (β i)]
+    (x y : ∀ i, β i) (g : ι₁ → ι₂) (hg : Function.Injective g) :
+    hammingDist (fun i => x (g i)) (fun i => y (g i)) ≤ hammingDist x y := by
+  classical
+  let D := Finset.filter (fun i => x i ≠ y i) Finset.univ
+  have hpre : Finset.filter (fun i => x (g i) ≠ y (g i)) Finset.univ =
+      D.preimage g hg.injOn := by
+    ext i
+    simp [D]
+  change (Finset.filter (fun i => x (g i) ≠ y (g i)) Finset.univ).card ≤ D.card
+  rw [hpre, Finset.card_preimage]
+  exact Finset.card_filter_le _ _

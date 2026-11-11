@@ -6,7 +6,7 @@ Authors: Katerina Hristova
 module
 
 public import ArkLib.Data.CodingTheory.Basic.LinearCode
-public import Mathlib.Data.Int.Star
+public import Mathlib.Algebra.Order.Star.Int
 
 /-!
  # Basics of MDS codes and MDS matrices

@@ -15,7 +15,7 @@ public import ArkLib.ToCompPoly.Univariate.Basic
 public import Mathlib.Algebra.Field.ZMod
 public import Mathlib.Algebra.Order.Star.Basic
 public import Mathlib.Algebra.Polynomial.FieldDivision
-public import VCVio.OracleComp.SimSemantics.QueryImpl.Constructions
+public import VCVio.OracleComp.SimSemantics.QueryImpl.Constructions.Core
 public import VCVio.OracleComp.QueryTracking.CachingOracle
 
 /-!
@@ -77,7 +77,7 @@ def verifyOpening (verifySrs : Vector G₂ 2) (commitment : G₁) (opening : G�
 omit [Module (ZMod p) (Additive G₁)] [DecidableEq G₁] [Fact (0 < p)] in
 /-- The commitment to a mathlib polynomial `poly` of maximum degree `n` is equal to
 `g₁ ^ (poly.1.eval a).val` -/
-theorem commit_eq {a : ZMod p} (hpG1 : Nat.card G₁ = p)
+theorem commit_eq {a : ZMod p}
     (poly : Polynomial.degreeLT (ZMod p) (n + 1)) :
     commit (Groups.PowerSrs.tower g₁ a n) (Polynomial.degreeLTEquiv _ _ poly)
       = g₁ ^ (poly.1.eval a).val := by
@@ -89,7 +89,9 @@ theorem commit_eq {a : ZMod p} (hpG1 : Nat.card G₁ = p)
       this,
       ←orderOf_dvd_sub_iff_zpow_eq_zpow]
   have hordg₁ : g₁ = 1 ∨ orderOf g₁ = p := by
-    have ord_g₁_dvd : orderOf g₁ ∣ p := by rw [← hpG1]; apply orderOf_dvd_natCard
+    have ord_g₁_dvd : orderOf g₁ ∣ p := by
+      rw [← PrimeOrderWith.hCard (G := G₁)]
+      apply orderOf_dvd_natCard
     rw [Nat.dvd_prime hp.out, orderOf_eq_one_iff] at ord_g₁_dvd
     exact ord_g₁_dvd
   rcases hordg₁ with ord1 | ordp
@@ -104,7 +106,7 @@ theorem commit_eq {a : ZMod p} (hpG1 : Nat.card G₁ = p)
 omit [Module (ZMod p) (Additive G₁)] [DecidableEq G₁] [Fact (0 < p)] in
 /-- The commitment to a computable polynomial (CPolynomial) `poly` of
 maximum degree `n` is equal to `g₁ ^ (poly.eval a).val`. -/
-theorem commit_eq_c_polynomial {a : ZMod p} (hpG1 : Nat.card G₁ = p)
+theorem commit_eq_c_polynomial {a : ZMod p}
     (poly : CPolynomial (ZMod p)) (hn : poly.degree ≤ n) :
     commit (Groups.PowerSrs.tower g₁ a n)
       ((coeff poly) ∘ Fin.val)
@@ -116,7 +118,15 @@ theorem commit_eq_c_polynomial {a : ZMod p} (hpG1 : Nat.card G₁ = p)
   rw [show ((coeff poly) ∘ Fin.val : Fin (n + 1) → ZMod p) =
       Polynomial.degreeLTEquiv (ZMod p) (n + 1) ⟨poly.toPoly, h_mem⟩ from by
     ext i; simp only [Function.comp_apply, Polynomial.degreeLTEquiv]; exact coeff_toPoly poly i]
-  exact commit_eq hpG1 ⟨poly.toPoly, h_mem⟩
+  exact commit_eq ⟨poly.toPoly, h_mem⟩
+
+omit [DecidableEq Gₜ] [DecidableEq G₁] [Fact (0 < p)] in
+/-- A nonzero pairing value forces its first argument to be nontrivial. -/
+lemma ne_one_of_pairing_ne_zero (hpair : pairing g₁ g₂ ≠ 0) : g₁ ≠ 1 := by
+  intro h
+  apply hpair
+  rw [h]
+  exact LinearMap.map_zero₂ pairing _
 
 omit [DecidableEq Gₜ] [DecidableEq G₁] [Fact (0 < p)] in
 /-- Linearity of the pairing in the first argument, written multiplicatively. -/

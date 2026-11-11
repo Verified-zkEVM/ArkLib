@@ -147,21 +147,18 @@ lemma card_foldingBlockAgreementAux_eq'
       (ω.subdomain k).toFinset :=
         complDisagreementSet_sub_subdomain.trans <| fun x hx ↦ by
           aesop (add safe (by grind))
-  aesop
-    (add simp foldingBlockAgreementAux)
-    (add safe [(by rw [card_pullback_eq_mul_card_pullback₂,
-                       card_pullback₂_eq, mul_comm]),
-               (by grind)])
+  rw [foldingBlockAgreementAux,
+    card_pullback_eq_mul_card_pullback₂ FoldingContextMiddle.k_le_n,
+    card_pullback₂_eq FoldingContextMiddle.k_ge_1 this, mul_comm]
 
 lemma card_foldingBlockAgreementAux_eq''
     [FoldingContextMiddle k n]
   {α : F} {u0 u1 v : Word F (Fin (2 ^ (n - 1)))} :
   Finset.card (foldingBlockAgreementAux k ω α u0 u1 v) =
     (2 ^ (n - k) - Δ𞁒(k - 1, ω.subdomain 1, u0 + α • u1, v)) * 2 ^ (k - 1) := by
-  aesop
-    (add simp [card_foldingBlockAgreementAux_eq',
-               card_complDisagreementSet,
-               FoldingContext.n_sub_1_sub_k_sub_1_eq_n_sub_k])
+  rw [card_foldingBlockAgreementAux_eq', card_complDisagreementSet]
+  simp only [card_toFinset, Fintype.card_fin, FoldingContext.n_sub_1_sub_k_sub_1_eq_n_sub_k]
+  rfl
 
 def foldingBlockAgreement
     (k : ℕ) (ω : SmoothCosetFftDomain n F)
@@ -183,25 +180,27 @@ lemma card_foldingBlockAgreement_ge [FoldingContextMiddle k n]
   (Finset.card (foldingBlockAgreement k ω α u0 u1 v) : ℝ≥0) ≥
     2 ^ (n - 1) * (1 - δ𞁒(k - 1, ω.subdomain 1, u0 + α • u1, v)) := by
   rw [card_foldingBlockAgreement, card_foldingBlockAgreementAux_eq'']
-  have : Δ𞁒(k - 1, CosetFftDomain.subdomain ω 1, u0 + α • u1, v) ≤ (2 : ℝ≥0) ^ (n - k) := by
-    norm_cast
-    grind [blockDistance_le]
-  have : k - 1 + (n - k) = n - 1 := by grind
-  simp [←NNReal.coe_le_coe]
-  aesop
-    (add simp [blockRelDistance])
-    (add safe [(by grind), (by field_simp), le_of_eq])
+  have hN : (2 : ℝ≥0) ^ (n - k) ≠ 0 := pow_ne_zero _ two_ne_zero
+  have hrel : ((δ𞁒(k - 1, CosetFftDomain.subdomain ω 1, u0 + α • u1, v) : ℚ≥0) : ℝ≥0) =
+      (Δ𞁒(k - 1, CosetFftDomain.subdomain ω 1, u0 + α • u1, v) : ℝ≥0) / 2 ^ (n - k) := by
+    simp only [blockRelDistance, card_toFinset, Fintype.card_fin,
+      FoldingContext.n_sub_1_sub_k_sub_1_eq_n_sub_k, NNRat.cast_div, NNRat.cast_natCast,
+      Nat.cast_pow, Nat.cast_ofNat, NNRat.cast_pow, NNRat.cast_ofNat]
+  have hpow : (2 : ℝ≥0) ^ (n - 1) = 2 ^ (k - 1) * 2 ^ (n - k) := by
+    rw [← pow_add, FoldingContext.k_sub_1_add_n_sub_k_eq_n_sub_1]
+  refine le_of_eq ?_
+  rw [hrel, hpow, mul_assoc, mul_tsub, mul_one, mul_div_cancel₀ _ hN, Nat.cast_mul,
+    Nat.cast_tsub, mul_comm]
+  norm_cast
 
 open FoldingContext in
-lemma foldingBlockAgreement_is_agreement [FoldingContextMiddle k n]
+lemma foldingBlockAgreement_is_agreement
     {α : F} {u0 u1 v : Word F (Fin (2 ^ (n - 1)))}
   {i : Fin (2 ^ (n - 1))} (hi : i ∈ foldingBlockAgreement k ω α u0 u1 v) :
   u0 i + α * u1 i = v i := by
-  aesop
-    (add safe (by grind [mem_pullback₁]))
-    (add simp [foldingBlockAgreement,
-               complDisagreementSet_def',
-               mem_blockIdx_iff_mem_block])
+  have hi' := mem_s_of_mem_pullback₁ hi
+  rw [complDisagreementSet_def', Finset.mem_filter] at hi'
+  simpa using hi'.2 i mem_blockIdx_self
 
 lemma agreement_on_z_of_u0_u1_polynomials [NeZero n]
     {u₀ u₁ : Polynomial F}
@@ -244,11 +243,11 @@ lemma mem_foldingBlockAgreementᵣ
   u ∈ foldingBlockAgreementᵣ k ω α u0 u1 v ↔
     ∀ j ∈ blockIdx (ω.subdomain 1) (k - 1) (ω.subdomain k u),
         u0 j + α * (u1 j) = v j := by
-  rw [foldingBlockAgreementᵣ, mem_pullback₂ (by grind) (by grind), complDisagreementSet_def']
+  rw [foldingBlockAgreementᵣ, mem_pullback₂ (by grind), complDisagreementSet_def']
   simp_all only [mem_blockIdx_iff_mem_block, mem_block, mem_self, true_and, Word, Pi.add_apply,
     Pi.smul_apply, smul_eq_mul, mem_filter, CosetFftDomainClass.mem_toFinset_iff_mem,
     and_iff_right_iff_imp]
-  rw [mem_subdomain_comp_iff_mem (by grind), show 1 + (k - 1) = k by grind]
+  rw [mem_subdomain_comp_iff_mem, show 1 + (k - 1) = k by grind]
   aesop (add safe (by grind))
 
 lemma mem_foldingBlockAgreementᵣ_of_mem_foldingBlockAgreement
@@ -258,14 +257,14 @@ lemma mem_foldingBlockAgreementᵣ_of_mem_foldingBlockAgreement
   ω j ^ 2 ∈ ω.subdomain 1 '' foldingBlockAgreement k ω α u0 u1 v ↔
     ω j ^ 2 ^ k ∈ ω.subdomain k '' foldingBlockAgreementᵣ k ω α u0 u1 v := by
   unfold foldingBlockAgreement foldingBlockAgreementᵣ
-  rw [mem_pullback₁_iff_mem_pullback₂_l_1] <;> grind
+  exact mem_pullback₁_iff_mem_pullback₂_l_1 (by grind)
 
 lemma card_foldingBlockAgreementᵣ'
     [FoldingContextMiddle k n]
   {α : F} {u0 u1 v : Word F (Fin (2 ^ (n - 1)))} :
   Finset.card (foldingBlockAgreementᵣ k ω α u0 u1 v) =
     Finset.card (complDisagreementSet (k - 1) (ω.subdomain 1) (u0 + α • u1) v) := by
-  rw [foldingBlockAgreementᵣ, card_pullback₂_eq (by grind) (by grind)]
+  rw [foldingBlockAgreementᵣ, card_pullback₂_eq (by grind)]
   intro x hx
   replace hx := complDisagreementSet_sub_subdomain hx
   aesop (add safe (by grind))
@@ -294,7 +293,7 @@ lemma card_foldingBlockAgreement_foldingBlockAgreementᵣ_le
           aesop (add safe [(by field_simp), (by grind), (by rw [←pow_add])])]
   aesop (add safe [(by field_simp), (by norm_cast)])
 
-lemma distance_of_u0_u1_polynomials [NeZero n]
+lemma distance_of_u0_u1_polynomials
     {u₀ u₁ : Polynomial F}
   (z : Finset (Fin (2 ^ (n - k))))
   (hz : ∀ j, ω j ^ 2 ^ k ∈ ω.subdomain k '' z →
@@ -316,9 +315,17 @@ lemma distance_of_u0_u1_polynomials [NeZero n]
       aesop (add simp [complDisagreementSet_def', mem_blockIdx_iff_mem_block, evalOnPoints]))
     (fun _ _ _ _ hab ↦ CosetFftDomainClass.injective _ hab)
 
+omit [DecidableEq F] in
+private lemma natDegree_lt_two_pow_of_degree_lt {u : Polynomial F} {m : ℕ}
+    (h : u.degree < 2 ^ m) : u.natDegree < 2 ^ m := by
+  by_cases hu : u = 0
+  · rw [hu, Polynomial.natDegree_zero]
+    exact Nat.two_pow_pos m
+  · exact (Polynomial.natDegree_lt_iff_degree_lt hu).2 (by exact_mod_cast h)
+
 open FoldingContext in
 lemma mem_ball_of_u0_u1_polynomials [FoldingContext k d n]
-    {δ : ℝ≥0} (hδ1 : δ < 1)
+    {δ : ℝ≥0}
   {u₀ u₁ : Polynomial F}
   (hu₀_deg : u₀.degree < 2 ^ (d - 1))
   (hu₁_deg : u₁.degree < 2 ^ (d - 1))
@@ -335,23 +342,17 @@ lemma mem_ball_of_u0_u1_polynomials [FoldingContext k d n]
       evalOnPoints_mem_code_of_natDegree_lt <| lt_of_le_of_lt (natDegree_add_le _ _) <| by
         simp only [natDegree_comp, natDegree_pow, natDegree_X, mul_one, sup_lt_iff]
         have hpow : 2 ^ d = 2 ^ (d - 1) * 2 := by
-          conv_rhs =>
-            rhs
-            rw [show 2 = 2 ^ 1 by simp]
-          rw [←pow_add]
-          grind
+          rw [← pow_succ, Nat.sub_add_cancel
+            (le_trans FoldingContextLeft.k_ge_1 FoldingContextLeft.k_le_d)]
+        have h₀ := natDegree_lt_two_pow_of_degree_lt hu₀_deg
+        have h₁ := natDegree_lt_two_pow_of_degree_lt hu₁_deg
         constructor
-        · rw [hpow, Nat.mul_lt_mul_right (by simp)]
-          by_cases hu₀ : u₀ = 0 <;>
-            aesop (add simp [Polynomial.natDegree_lt_iff_degree_lt])
+        · rw [hpow]
+          omega
         · exact lt_of_le_of_lt Polynomial.natDegree_mul_le <| by
             simp only [natDegree_X, natDegree_comp, natDegree_pow, mul_one]
-            have : 1 + u₁.natDegree * 2 ≠ 2 ^ d := by aesop (add safe (by grind))
-            apply swap lt_of_le_of_ne this
-            rw [Nat.le_iff_lt_add_one, add_comm, Nat.add_lt_add_iff_right,
-                hpow, Nat.mul_lt_mul_right (by simp)]
-            by_cases hu₁ : u₁ = 0 <;>
-              aesop (add simp [Polynomial.natDegree_lt_iff_degree_lt])
+            rw [hpow]
+            omega
   · apply le_trans (b := ((2 ^ (n - k) : ℝ≥0) - Finset.card z) / (2 ^ (n - k)))
     · simp only [blockRelDistance, _root_.map_add, evalOnPoints_mul, evalOnPoints_X,
       card_toFinset, Fintype.card_fin, Nat.cast_pow, Nat.cast_ofNat,
@@ -362,17 +363,20 @@ lemma mem_ball_of_u0_u1_polynomials [FoldingContext k d n]
       rw [blockDistance_symm]
       convert distance_of_u0_u1_polynomials z hz
       simp
-    · have hδ : 2 ^ (n - k) - Finset.card z ≤ 2 ^ (n - k) * δ := by
-        norm_num
-        rw [←NNReal.coe_le_coe]
-        rw [←NNReal.coe_le_coe,
-            NNReal.coe_mul, NNReal.coe_sub (by grind),
-            mul_sub] at hz_card
-        norm_num at hz_card
-        push_cast
-        grind
-      field_simp
-      exact le_trans hδ (by simp)
+    · by_cases hδ1 : δ ≤ 1
+      · have hδ : 2 ^ (n - k) - Finset.card z ≤ 2 ^ (n - k) * δ := by
+          norm_num
+          rw [←NNReal.coe_le_coe]
+          rw [←NNReal.coe_le_coe,
+              NNReal.coe_mul, NNReal.coe_sub (by grind),
+              mul_sub] at hz_card
+          norm_num at hz_card
+          push_cast
+          grind
+        field_simp
+        exact le_trans hδ (by simp)
+      · exact le_trans ((div_le_one (by positivity)).2 (tsub_le_self))
+          (le_of_not_ge hδ1)
 
 omit [DecidableEq F] in
 /-- The rate of the Reed-Solomon code of degree `2 ^ d` on the halved domain, in closed form. -/
@@ -400,7 +404,7 @@ lemma exists_poly_of_projectedWord_mem {ι : Type}
 omit [DecidableEq F] in
 /-- The rate of the degree-`2 ^ d` code on the halved domain accounts for at least `2 ^ (d-1)`
   positions. -/
-lemma two_pow_d_sub_one_le_rate_mul (hkd : 1 ≤ d) (hdn : d ≤ n) :
+lemma two_pow_d_sub_one_le_rate_mul (hdn : d ≤ n) :
     ((2 : ℝ≥0) ^ (d - 1)) ≤
     2 ^ (n - 1) *
       (LinearCode.rate (code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1))) : ℝ≥0) := by
@@ -411,19 +415,18 @@ lemma two_pow_d_sub_one_le_rate_mul (hkd : 1 ≤ d) (hdn : d ≤ n) :
 
 open CoreDefinitions unitInterval FoldingContext in
 /-- Claim 4.23 from [ACFY24]. -/
-private lemma folding_reflects_balls_aux [Fintype F] [FoldingContext k d n]
+private lemma folding_reflects_balls_aux [Fintype F] [SampleableType F] [FoldingContext k d n]
   {ε_mca : I → ℝ≥0}
   (hmca : IsMCAGenerator (univariatePowersGenerator F 1) ε_mca
     (ReedSolomon.code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1))))
   {δ : ℝ≥0}
-  (_δ_gt_0 : 0 < δ)
   (δ_lt : δ <
     (1 - (LinearCode.rate
       (ReedSolomon.code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1)))))) :
   let δ' : I := ⟨δ, by aesop, by {
               rw [show 1 = NNReal.toReal 1 by norm_cast, ←NNReal.toReal_le]
               exact le_trans (le_of_lt δ_lt) (by simp)}⟩
-  Pr_{ let α ←$ᵖ F}[
+  Pr{let α ←$ᵗ F}[
     ¬(Λ𞁒(code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1)),
              k - 1, ω.subdomain 1, foldWord ω f 1 α, δ)) ⊆
       Set.image
@@ -433,7 +436,6 @@ private lemma folding_reflects_balls_aux [Fintype F] [FoldingContext k d n]
   intro δ'
   have hδ1 : δ < 1 := lt_of_lt_of_le δ_lt (by simp)
   have hrate := two_pow_d_sub_one_le_rate_mul (ω := ω) (d := d) (by grind)
-    (by grind)
   have key : ∀ α : F,
       ¬ (blockRelDistanceBall (k - 1) (ω.subdomain 1) (foldWord ω f 1 α) δ
             (code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1)))) ⊆
@@ -487,7 +489,7 @@ private lemma folding_reflects_balls_aux [Fintype F] [FoldingContext k d n]
           (fun i hi => by simpa [hu1def, foldWordOdd, log_right_inverse'] using hp₁ i hi) hj
         simpa using hagr
       have huball := mem_ball_of_u0_u1_polynomials (ω := ω) (f := f) (k := k) (d := d)
-        hδ1 hp₀deg hp₁deg (foldingBlockAgreementᵣ k ω α u0 u1 v) hzcard hz
+        hp₀deg hp₁deg (foldingBlockAgreementᵣ k ω α u0 u1 v) hzcard hz
       set w := evalOnPoints (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (p₀ + α • p₁) with hwdef
       have hwcode : w ∈ code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1)) :=
         ReedSolomon.evalOnPoints_mem_code_of_degree_lt
@@ -515,7 +517,7 @@ private lemma folding_reflects_balls_aux [Fintype F] [FoldingContext k d n]
         rw [hwt]
         exact hTagree t ht
       exact hvimg ⟨_, huball, hfoldw.trans hwv⟩
-  exact le_trans (Probability.Pr_le_Pr_of_implies _ _ _ key)
+  exact le_trans (prEvent_mono _ _ _ key)
     (by simpa using hmca.prob_le _ δ')
 
 open CoreDefinitions unitInterval in
@@ -526,19 +528,18 @@ open CoreDefinitions unitInterval in
   `k`-wise block list of `f`. One containment holds for every `α`
   (`folding_preserves_block_balls`, Claim 4.22); the other except with probability
   `ε_mca δ` (Claim 4.23). -/
-theorem folding_reflects_balls [Fintype F] [FoldingContext k d n]
+theorem folding_reflects_balls [Fintype F] [SampleableType F] [FoldingContext k d n]
     {ε_mca : I → ℝ≥0}
   (hmca : IsMCAGenerator (univariatePowersGenerator F 1) ε_mca
     (ReedSolomon.code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1))))
   {δ : ℝ≥0}
-  (_δ_gt_0 : 0 < δ)
   (δ_lt : δ <
     (1 - (LinearCode.rate
       (ReedSolomon.code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1)))))) :
   let δ' : I := ⟨δ, by aesop, by {
               rw [show 1 = NNReal.toReal 1 by norm_cast, ←NNReal.toReal_le]
               exact le_trans (le_of_lt δ_lt) (by simp)}⟩
-  Pr_{ let α ←$ᵖ F}[
+  Pr{let α ←$ᵗ F}[
     (Λ𞁒(code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1)),
              k - 1, ω.subdomain 1, foldWord ω f 1 α, δ)) ≠
       Set.image
@@ -547,8 +548,8 @@ theorem folding_reflects_balls [Fintype F] [FoldingContext k d n]
           ENNReal.ofReal (ε_mca δ') := by
   extract_lets δ'
   refine le_trans'
-    (folding_reflects_balls_aux (f := f) hmca _δ_gt_0 δ_lt)
-    (Probability.Pr_le_Pr_of_implies _ _ _ ?_)
+    (folding_reflects_balls_aux (f := f) hmca δ_lt)
+    (prEvent_mono _ _ _ ?_)
   intro α hne hsub
   exact hne (Set.Subset.antisymm hsub folding_preserves_block_balls)
 
@@ -561,15 +562,15 @@ open CoreDefinitions unitInterval in
   probability is bounded by the mutual-correlated-agreement error `ε i` of the generator
   `Gen(2; α) = (1, α)` for the code `C^(i+1)`; the total failure probability is at most the sum
   of these errors. -/
-private theorem iterated_folding_reflects_balls_aux [Fintype F] (k : ℕ) :
+private theorem iterated_folding_reflects_balls_aux [Fintype F] [SampleableType F] (k : ℕ) :
     ∀ (n d b : ℕ) (ω : SmoothCosetFftDomain n F) (f : Word F (Fin (2 ^ n)))
       (ε : ℕ → I → ℝ≥0) (δ : ℝ≥0) (hδ1 : δ ≤ 1),
-      b + k ≤ d → d ≤ n → 0 < δ →
+      b + k ≤ d → d ≤ n →
       (∀ i, i < k → IsMCAGenerator (univariatePowersGenerator F 1) (ε i)
         (code (ω.subdomain (i + 1) : Fin (2 ^ (n - (i + 1))) ↪ F) (2 ^ (d - i - 1)))) →
       (∀ i, i < k → δ < 1 - (LinearCode.rate
         (code (ω.subdomain (i + 1) : Fin (2 ^ (n - (i + 1))) ↪ F) (2 ^ (d - i - 1))) : ℝ≥0)) →
-      Pr_{ let α ←$ᵖ (Fin k → F) }[
+      Pr{let α ←$ᵗ (Fin k → F) }[
         Λ𞁒(code (ω.subdomain k : Fin (2 ^ (n - k)) ↪ F) (2 ^ (d - k)), b, ω.subdomain k,
             iteratedFoldWord ω f k α, δ) ≠
           Set.image (fun u ↦ iteratedFoldWord ω u k α)
@@ -577,19 +578,19 @@ private theorem iterated_folding_reflects_balls_aux [Fintype F] (k : ℕ) :
         ∑ i ∈ Finset.range k, ENNReal.ofReal (ε i ⟨δ, δ.coe_nonneg, by exact_mod_cast hδ1⟩) := by
   induction k with
   | zero =>
-      intro n d b ω f ε δ hδ1 hbd hdn hδ0 _ _
-      refine le_of_eq (Probability.prob_eq_zero_of_forall_not _ _ fun α ↦ ?_)
+      intro n d b ω f ε δ hδ1 hbd hdn _ _
+      refine le_of_eq (prEvent_eq_zero_of_forall_not _ _ fun α ↦ ?_)
       aesop
   | succ k ih =>
-      intro n d b ω f ε δ hδ1 hbd hdn hδ0 hmca hrate
+      intro n d b ω f ε δ hδ1 hbd hdn hmca hrate
       classical
       set δ' : I := ⟨δ, δ.coe_nonneg, by exact_mod_cast hδ1⟩ with hδ'
       have hk1n : k + 1 ≤ n := by omega
       have hsub : (ω.subdomain k).subdomain 1 = ω.subdomain (k + 1) :=
-        subdomain_subdomain_one (by omega)
+        subdomain_subdomain_one
       -- the per-round bound for the last round, on the `k`-th subdomain
       have hlast : ∀ w : Word F (Fin (2 ^ (n - k))),
-          Pr_{ let x ←$ᵖ F }[
+          Pr{let x ←$ᵗ F }[
             Λ𞁒(code ((ω.subdomain k).subdomain 1 : Fin (2 ^ (n - k - 1)) ↪ F) (2 ^ (d - k - 1)),
                 b + 1 - 1, (ω.subdomain k).subdomain 1,
                 foldWord (ω.subdomain k) w 1 x, δ) ≠
@@ -603,46 +604,40 @@ private theorem iterated_folding_reflects_balls_aux [Fintype F] (k : ℕ) :
         have : FoldingContext (b + 1) (d - k) (n - k) := FoldingContext.mk'
           (by omega) (by omega) (by omega)
         exact folding_reflects_balls (ω := ω.subdomain k) (f := w) (k := b + 1)
-          (d := d - k) (n := n - k) hm hδ0 hr
-      rw [Probability.prob_fin_succ_split]
-      refine le_trans (Probability.tsum_prob_le_add _ _
-        (fun y => Λ𞁒(code (ω.subdomain k : Fin (2 ^ (n - k)) ↪ F) (2 ^ (d - k)), b + 1,
-            ω.subdomain k, iteratedFoldWord ω f k y, δ) ≠
-          Set.image (fun u ↦ iteratedFoldWord ω u k y)
-            (Λ𞁒(code (ω : Fin (2 ^ n) ↪ F) (2 ^ d), b + 1 + k, ω, f, δ)))
-        (ENNReal.ofReal (ε k δ')) ?_) ?_
-      · -- the conditional bound, for each value `y` of the first `k` rounds' randomness
-        intro y
-        by_cases hy : Λ𞁒(code (ω.subdomain k : Fin (2 ^ (n - k)) ↪ F) (2 ^ (d - k)), b + 1,
-            ω.subdomain k, iteratedFoldWord ω f k y, δ) ≠
-          Set.image (fun u ↦ iteratedFoldWord ω u k y)
-            (Λ𞁒(code (ω : Fin (2 ^ n) ↪ F) (2 ^ d), b + 1 + k, ω, f, δ))
-        · rw [if_pos hy]
-          exact le_trans (Probability.prob_le_one _ _) le_self_add
-        · rw [if_neg hy, zero_add]
-          rw [not_not] at hy
-          refine le_trans (Probability.Pr_le_Pr_of_implies _ _ _ ?_)
-            (hlast (iteratedFoldWord ω f k y))
-          intro x hx
-          have hfold : ∀ u : Word F (Fin (2 ^ n)),
-              iteratedFoldWord ω u (k + 1) (Fin.snoc y x) =
-                foldWord (ω.subdomain k) (iteratedFoldWord ω u k y) 1 x := by
-            intro u
-            rw [iteratedFoldWord_succ']
-            simp only [Fin.snoc_castSucc, Fin.snoc_last]
-          have himg : Set.image (fun u ↦ iteratedFoldWord ω u (k + 1) (Fin.snoc y x))
-              (Λ𞁒(code (ω : Fin (2 ^ n) ↪ F) (2 ^ d), b + (k + 1), ω, f, δ)) =
-              Set.image (fun u ↦ foldWord (ω.subdomain k) u 1 x)
-                (Set.image (fun u ↦ iteratedFoldWord ω u k y)
-                  (Λ𞁒(code (ω : Fin (2 ^ n) ↪ F) (2 ^ d), b + 1 + k, ω, f, δ))) := by
-            rw [← Set.image_comp, show b + (k + 1) = b + 1 + k by omega]
-            exact Set.image_congr' (fun u => hfold u)
-          intro hcon
-          apply hx
-          rw [himg, ← hy, ← hcon, hfold f, hsub]
-          rfl
+          (d := d - k) (n := n - k) hm hr
+      refine le_trans (SampleableType.prEvent_uniformSample_finSnoc_le_add _
+        (fun y =>
+          Λ𞁒(code (ω.subdomain k : Fin (2 ^ (n - k)) ↪ F) (2 ^ (d - k)), b + 1,
+              ω.subdomain k, iteratedFoldWord ω f k y, δ) ≠
+            Set.image (fun u ↦ iteratedFoldWord ω u k y)
+              (Λ𞁒(code (ω : Fin (2 ^ n) ↪ F) (2 ^ d), b + 1 + k, ω, f, δ)))
+        (ε := ENNReal.ofReal (ε k δ')) ?_) ?_
+      · -- the conditional bound, given that the first `k` rounds succeeded
+        intro y hy
+        change ¬ _ at hy
+        rw [not_not] at hy
+        refine le_trans (prEvent_mono _ _ _ ?_)
+          (hlast (iteratedFoldWord ω f k y))
+        intro x hx
+        have hfold : ∀ u : Word F (Fin (2 ^ n)),
+            iteratedFoldWord ω u (k + 1) (Fin.snoc y x) =
+              foldWord (ω.subdomain k) (iteratedFoldWord ω u k y) 1 x := by
+          intro u
+          rw [iteratedFoldWord_succ']
+          simp only [Fin.snoc_castSucc, Fin.snoc_last]
+        have himg : Set.image (fun u ↦ iteratedFoldWord ω u (k + 1) (Fin.snoc y x))
+            (Λ𞁒(code (ω : Fin (2 ^ n) ↪ F) (2 ^ d), b + (k + 1), ω, f, δ)) =
+            Set.image (fun u ↦ foldWord (ω.subdomain k) u 1 x)
+              (Set.image (fun u ↦ iteratedFoldWord ω u k y)
+                (Λ𞁒(code (ω : Fin (2 ^ n) ↪ F) (2 ^ d), b + 1 + k, ω, f, δ))) := by
+          rw [← Set.image_comp, show b + (k + 1) = b + 1 + k by omega]
+          exact Set.image_congr' (fun u => hfold u)
+        intro hcon
+        apply hx
+        rw [himg, ← hy, ← hcon, hfold f, hsub]
+        rfl
       · -- the union bound over the rounds
-        have hih := ih n d (b + 1) ω f ε δ hδ1 (by omega) hdn hδ0
+        have hih := ih n d (b + 1) ω f ε δ hδ1 (by omega) hdn
           (fun i hi => hmca i (by omega)) (fun i hi => hrate i (by omega))
         rw [Finset.sum_range_succ]
         gcongr
@@ -660,15 +655,15 @@ open CoreDefinitions unitInterval in
   error is total in `δ`, so only the rate bound `1 - rate(C⁽ⁱ⁾)` is needed to make the codewords
   explaining the folded agreement unique. Every regime proposed in the paper has
   `B⋆ ≥ rate` (with equality in the capacity regime), so the paper's range implies this one. -/
-theorem iterated_folding_reflects_balls [Fintype F]
+theorem iterated_folding_reflects_balls [Fintype F] [SampleableType F]
     [FoldingContext k d n]
     {ω : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))}
-    (ε : ℕ → I → ℝ≥0) {δ : ℝ≥0} (hδ1 : δ ≤ 1) (hδ0 : 0 < δ)
+    (ε : ℕ → I → ℝ≥0) {δ : ℝ≥0} (hδ1 : δ ≤ 1)
     (hmca : ∀ i, i < k → IsMCAGenerator (univariatePowersGenerator F 1) (ε i)
       (code (ω.subdomain (i + 1) : Fin (2 ^ (n - (i + 1))) ↪ F) (2 ^ (d - i - 1))))
     (hrate : ∀ i, i < k → δ < 1 - (LinearCode.rate
       (code (ω.subdomain (i + 1) : Fin (2 ^ (n - (i + 1))) ↪ F) (2 ^ (d - i - 1))) : ℝ≥0)) :
-    Pr_{ let α ←$ᵖ (Fin k → F) }[
+    Pr{let α ←$ᵗ (Fin k → F) }[
       Set.image (fun u ↦ iteratedFoldWord ω u k α)
           (Λ𞁒(code (ω : Fin (2 ^ n) ↪ F) (2 ^ d), k, ω, f, δ)) ≠
         {v | v ∈ (code (ω.subdomain k : Fin (2 ^ (n - k)) ↪ F) (2 ^ (d - k)) :
@@ -676,8 +671,8 @@ theorem iterated_folding_reflects_balls [Fintype F]
             ((δᵣ(iteratedFoldWord ω f k α, v) : ℚ≥0) : ℝ≥0) ≤ δ}] ≤
       ∑ i ∈ Finset.range k, ENNReal.ofReal (ε i ⟨δ, δ.coe_nonneg, by exact_mod_cast hδ1⟩) := by
   have h := iterated_folding_reflects_balls_aux (F := F) k n d 0 ω f ε δ hδ1
-    (by grind) (by grind) hδ0 hmca hrate
-  refine le_trans (Probability.Pr_le_Pr_of_implies _ _ _ ?_) h
+    (by grind) (by grind) hmca hrate
+  refine le_trans (prEvent_mono _ _ _ ?_) h
   aesop (add simp blockRelDistanceBall_zero)
 
 end ProximityGap

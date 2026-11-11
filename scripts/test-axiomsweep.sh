@@ -58,7 +58,7 @@ lake exe axiomsweep --root AxiomSweepTestFixtures.Unimported --out "$UNIMPORTED_
 # The sweep must be deterministic: same build, byte-identical report.
 cmp "$TAINTED_REPORT" "$TAINTED_REPORT_2"
 
-python3 - "$CLEAN_REPORT" "$TAINTED_REPORT" "$UNIMPORTED_REPORT" "$COVERING_BASELINE" <<'PY'
+uv run --no-project --python 3.12 python - "$CLEAN_REPORT" "$TAINTED_REPORT" "$UNIMPORTED_REPORT" "$COVERING_BASELINE" <<'PY'
 import json
 import sys
 
@@ -186,7 +186,7 @@ cp "$COVERING_BASELINE" "$FIXTURE_TMP/shrink.json"
 expect_status 0 shrink-baseline \
   lake exe axiomsweep --root AxiomSweepTestFixtures.Clean \
     --update-baseline --baseline "$FIXTURE_TMP/shrink.json"
-python3 -c "
+uv run --no-project --python 3.12 python -c "
 import json,sys
 b=json.load(open(sys.argv[1]))
 assert b['sorry'] == [] and b['nonstandard'] == [], b
@@ -199,5 +199,101 @@ expect_status 1 reject-native-trust-growth \
   lake exe axiomsweep --root AxiomSweepTestFixtures.Tainted \
     --update-baseline --baseline "$FIXTURE_TMP/growth.json"
 cmp "$FIXTURE_TMP/growth-before.json" "$FIXTURE_TMP/growth.json"
+
+# --- reviewed solicited proofs -----------------------------------------------------------
+
+uv run --no-project --python 3.12 python - "$FIXTURE_TMP" <<'PYBASE'
+import json
+import pathlib
+import sys
+root = pathlib.Path(sys.argv[1])
+prefix = "AxiomSweepTestFixtures.Solicited."
+issue = "https://github.com/Verified-zkEVM/ArkLib/issues/1352"
+entries = [{"name": prefix + n, "issue": issue} for n in ("second", "first")]
+for case in ("valid", "missing-link", "proved", "stale"):
+    listed = [dict(e) for e in entries]
+    if case == "missing-link":
+        listed[0]["issue"] = issue + "/missing"
+    elif case in ("proved", "stale"):
+        listed.append({"name": prefix + case, "issue": issue})
+    # Cover consumers to ensure failure comes from the leaf rule, not new taint.
+    baseline = {"sorry": ["AxiomSweepTestFixtures.SolicitedConsumer." + n
+                          for n in ("direct", "transitive")],
+                "nonstandard": [], "solicited": listed}
+    (root / ("solicited-" + case + ".json")).write_text(json.dumps(baseline))
+PYBASE
+
+SOLICITED_BASELINE="$FIXTURE_TMP/solicited-valid.json"
+expect_status 0 solicited-valid \
+  lake exe axiomsweep --root AxiomSweepTestFixtures.Solicited \
+    --check --baseline "$SOLICITED_BASELINE" --out "$FIXTURE_TMP/solicited-report.json"
+expect_status 1 solicited-consumer \
+  lake exe axiomsweep --root AxiomSweepTestFixtures.SolicitedConsumer \
+    --check --baseline "$SOLICITED_BASELINE"
+grep -q 'transitive: depends on solicited declaration' "$FIXTURE_TMP/solicited-consumer.log"
+grep -q 'direct: depends on solicited declaration' "$FIXTURE_TMP/solicited-consumer.log"
+grep -q 'hidden: depends on solicited declaration' "$FIXTURE_TMP/solicited-consumer.log"
+
+for case in missing-link proved stale; do
+  baseline="$FIXTURE_TMP/solicited-$case.json"
+  expect_status 1 "solicited-$case" \
+    lake exe axiomsweep --root AxiomSweepTestFixtures.Solicited \
+      --check --baseline "$baseline"
+  cp "$baseline" "$baseline.before"
+  expect_status 1 "solicited-update-$case" \
+    lake exe axiomsweep --root AxiomSweepTestFixtures.Solicited \
+      --update-baseline --baseline "$baseline"
+  cmp "$baseline.before" "$baseline"
+done
+grep -q 'second: docstring missing issue URL' "$FIXTURE_TMP/solicited-missing-link.log"
+grep -q 'proved: no sorryAx dependency' "$FIXTURE_TMP/solicited-proved.log"
+grep -q 'stale: stale entry' "$FIXTURE_TMP/solicited-stale.log"
+
+uv run --no-project --python 3.12 python - "$FIXTURE_TMP/solicited-nonstandard.json" <<'PYNONSTD'
+import json
+import sys
+name = "AxiomSweepTestFixtures.SolicitedNonstandard.bad"
+json.dump({"sorry": [], "nonstandard": [
+    {"name": name, "axioms": ["AxiomSweepTestFixtures.Tainted.typeIndex"]}],
+    "solicited": [{"name": name,
+                   "issue": "https://github.com/Verified-zkEVM/ArkLib/issues/1352"}]},
+          open(sys.argv[1], "w"))
+PYNONSTD
+cp "$FIXTURE_TMP/solicited-nonstandard.json" "$FIXTURE_TMP/solicited-nonstandard.before"
+for mode in check update-baseline; do
+  expect_status 1 "solicited-nonstandard-$mode" \
+    lake exe axiomsweep --root AxiomSweepTestFixtures.SolicitedNonstandard \
+      "--$mode" --baseline "$FIXTURE_TMP/solicited-nonstandard.json"
+  grep -q 'bad: non-standard axiom AxiomSweepTestFixtures.Tainted.typeIndex' \
+    "$FIXTURE_TMP/solicited-nonstandard-$mode.log"
+done
+cmp "$FIXTURE_TMP/solicited-nonstandard.before" "$FIXTURE_TMP/solicited-nonstandard.json"
+
+cp "$SOLICITED_BASELINE" "$SOLICITED_BASELINE.before"
+expect_status 1 solicited-update-consumer \
+  lake exe axiomsweep --root AxiomSweepTestFixtures.SolicitedConsumer \
+    --update-baseline --baseline "$SOLICITED_BASELINE"
+cmp "$SOLICITED_BASELINE.before" "$SOLICITED_BASELINE"
+expect_status 0 solicited-update \
+  lake exe axiomsweep --root AxiomSweepTestFixtures.Solicited \
+    --update-baseline --baseline "$SOLICITED_BASELINE"
+uv run --no-project --python 3.12 python - "$SOLICITED_BASELINE" "$FIXTURE_TMP/solicited-report.json" <<'PYASSERT'
+import json
+import sys
+path, report_path = sys.argv[1:]
+before = json.load(open(path + ".before"))
+after = json.load(open(path))
+assert after["solicited"] == before["solicited"]
+assert after["sorry"] == []
+report = json.load(open(report_path))
+entries = {e["name"]: e for e in report["declarations"]}
+for e in after["solicited"]:
+    assert entries[e["name"]]["axioms"] == ["sorryAx"]
+PYASSERT
+cp "$SOLICITED_BASELINE" "$SOLICITED_BASELINE.once"
+expect_status 0 solicited-update-deterministic \
+  lake exe axiomsweep --root AxiomSweepTestFixtures.Solicited \
+    --update-baseline --baseline "$SOLICITED_BASELINE"
+cmp "$SOLICITED_BASELINE.once" "$SOLICITED_BASELINE"
 
 echo "✓ Axiom sweep executable fixture matrix passed."

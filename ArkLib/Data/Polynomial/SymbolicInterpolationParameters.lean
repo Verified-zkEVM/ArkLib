@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import Mathlib.Data.Real.Basic
+public import Mathlib.Basic.Real.Basic
 public import Mathlib.Tactic.FieldSimp
 public import Mathlib.Tactic.Linarith
 public import Mathlib.Tactic.Positivity
@@ -53,10 +53,12 @@ theorem strict_surplus_of_coefficient_budget (m r z : ℝ) (hm : 1 ≤ m) (hr : 
   have hmono := mul_le_mul_of_nonneg_left hz hc.le
   linarith
 
-/-- The prescribed coefficient budget dominates the Y-degree budget in the paper's regime. -/
+/-- The prescribed coefficient budget dominates the Y-degree budget for `m ≥ 3` and `r ≤ 1`. -/
 theorem y_budget_le_coefficient_budget (m r : ℝ) (hm : 3 ≤ m)
-    (hr : 0 < r) (hr1 : r ≤ 1) :
+    (hr1 : r ≤ 1) :
     (m + 1 / 2) / r ≤ (m + 1 / 2) ^ 2 / (3 * r ^ 2) := by
+  rcases le_or_gt r 0 with hr | hr
+  · exact (div_nonpos_of_nonneg_of_nonpos (by linarith) hr).trans (by positivity)
   apply (div_le_div_iff₀ hr (by positivity : 0 < 3 * r ^ 2)).mpr
   have ht : 0 ≤ m + 1 / 2 := by linarith
   have htr : 3 * r ≤ m + 1 / 2 := by linarith

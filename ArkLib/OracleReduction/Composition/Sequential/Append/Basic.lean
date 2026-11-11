@@ -190,7 +190,7 @@ theorem append_output_pos (hn : n ≠ 0)
     (P₁.append P₂).output state = P₂.output state₂ := by
   conv_lhs => unfold Prover.append
   dsimp only
-  rw [dif_neg hn]
+  rw [dite_eq_right hn]
   exact congrArg P₂.output
     (eq_of_heq ((heq_dcast _ _).trans ((cast_heq _ _).trans hst)))
 
@@ -204,7 +204,7 @@ theorem append_output_zero (hn : n = 0)
             P₂.output (dcast (by simp [hn]) (P₂.input ctx))) := by
   conv_lhs => unfold Prover.append
   dsimp only
-  rw [dif_pos hn]
+  rw [dite_eq_left hn]
   congr 1
   exact congrArg P₁.output (eq_of_heq ((cast_heq _ _).trans hst))
 
@@ -628,7 +628,8 @@ def OracleVerifier.append (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ 
 
   outputOracle := .inr (appendOutputSimulation V₁ V₂)
 
-private theorem append_materializeOutput
+/-- Materialization of appended output oracles is the composition of the two materializations. -/
+theorem OracleVerifier.append_materializeOutput
     (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
     (V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂)
     (challenges : (pSpec₁ ++ₚ pSpec₂).Challenges) (oStmt : ∀ i, OStmt₁ i)

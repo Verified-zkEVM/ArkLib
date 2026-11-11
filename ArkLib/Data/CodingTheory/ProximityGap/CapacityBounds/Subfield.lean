@@ -286,8 +286,7 @@ omit [Nonempty ι] [DecidableEq F] in
 private theorem subfield_ca_second_moment_le_factor
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (δ : NNReal)
     (a : F) (ha : a ∉ B)
-    (hmin : (minpoly B a).natDegree = Module.finrank B F)
-    (hf : ⌊(δ : ℝ) * Fintype.card ι⌋₊ ≤ Fintype.card ι) :
+    (hmin : (minpoly B a).natDegree = Module.finrank B F) :
     let f := ⌊(δ : ℝ) * Fintype.card ι⌋₊
     let A := (Nat.choose (Fintype.card ι) f : ℝ) *
       (Nat.card B : ℝ) ^ (k + f)
@@ -308,7 +307,7 @@ private theorem subfield_ca_second_moment_le_factor
       A * subfieldCaFactor
         (((f : ℝ) * (Fintype.card ι - f : ℕ)) / Nat.card B)
   have hover := subfield_ca_overlap_sum_le_factor
-    (Fintype.card ι) f (Nat.card B) hf Nat.card_pos
+    (Fintype.card ι) f (Nat.card B)
   have hA : 0 ≤ A := by
     dsimp only [A]
     positivity
@@ -355,7 +354,6 @@ private theorem subfield_ca_support_density_lower_nat
   change 1 - (Fintype.card F : ℝ) *
         (Nat.card B : ℝ) ^ (Fintype.card ι - k - f) * G / (C : ℝ) ≤
     H / N
-  have hf_le : f ≤ Fintype.card ι := by omega
   have hkf_le : k + f ≤ Fintype.card ι := Nat.le_of_lt hkf
   have hb : 0 < Nat.card B := Nat.card_pos
   have hC : 0 < C := Nat.pos_of_ne_zero hchoose
@@ -379,7 +377,7 @@ private theorem subfield_ca_support_density_lower_nat
     exact subfield_ca_support_first_second B domainB k δ a hkf
   have hsecond : M ≤ A ^ 2 / N + A * G := by
     dsimp only [M, A, C, N, G, f]
-    exact subfield_ca_second_moment_le_factor B domainB k δ a ha hmin hf_le
+    exact subfield_ca_second_moment_le_factor B domainB k δ a ha hmin
   have halg : 1 - N * G / A ≤ H / N :=
     subfield_ca_support_algebra A N H M G hA hN hH hHN hG hfirst hsecond
   have hcancel : N * G / A =
@@ -388,7 +386,7 @@ private theorem subfield_ca_support_density_lower_nat
     dsimp only [A, N, C]
     exact subfield_ca_density_error_term_eq
       (Fintype.card ι) k f (Nat.card B) (Fintype.card F) C G
-      hkf_le hb hC
+      hkf_le hb
   calc
     1 - (Fintype.card F : ℝ) *
           (Nat.card B : ℝ) ^ (Fintype.card ι - k - f) * G / (C : ℝ) =
@@ -557,7 +555,7 @@ private theorem subfield_ca_exists_witness_data
   classical
   let := Fintype.ofFinite B
   let domainB : ι ↪ B := subfield_domain domain B hdom
-  obtain ⟨hδone, _hk, _hfpos, hkf, hchoose⟩ :=
+  obtain ⟨-, _hk, _hfpos, hkf, hchoose⟩ :=
     subfield_radius_parameter_facts (ι := ι) k δ hint hδpos hδlt
   obtain ⟨a, ha, hmin⟩ := subfield_ca_exists_primitive_center B hB
   obtain ⟨y, hy⟩ := subfield_ca_exists_good_center_nat
@@ -570,21 +568,20 @@ private theorem subfield_ca_exists_witness_data
         (ReedSolomon.code domain k : Set (ι → F)) ≤ δ) := by
     simpa only [u, G] using
       subfield_ca_good_scalars_subset_fold_close B domain domainB
-        k δ a y hint ha hdomB
+        k δ a y ha hdomB
   have hnot : ¬ Code.jointProximity
       (C := (ReedSolomon.code domain k : Set (ι → F)))
       (u := u) δ := by
     simpa only [u] using
       subfield_ca_reciprocal_stack_not_joint domain B k δ a y ha hdom
-        hint hδone hkf
-  have hn : 0 < Fintype.card ι := Fintype.card_pos
+        hint hkf
   have hkf_le : k + ⌊(δ : ℝ) * Fintype.card ι⌋₊ ≤ Fintype.card ι :=
     Nat.le_of_lt hkf
   have hf_le : ⌊(δ : ℝ) * Fintype.card ι⌋₊ ≤ Fintype.card ι := by
     omega
   have hpow := subfield_ca_natural_power_eq_rpow
     (Fintype.card ι) k ⌊(δ : ℝ) * Fintype.card ι⌋₊
-      (Nat.card B) δ hn hkf_le hint
+      (Nat.card B) δ hkf_le hint
   have harg := subfield_ca_overlap_argument_eq
     (Fintype.card ι) ⌊(δ : ℝ) * Fintype.card ι⌋₊
       (Nat.card B) δ hf_le hint
@@ -642,10 +639,11 @@ private theorem subfield_ca_exists_witness_data
       good_subset := hgood
       card_lower := hcard }⟩
 
-omit [DecidableEq ι] in
+omit [Nonempty ι] [DecidableEq ι] in
 /-- Lower-bounds Reed--Solomon CA error when the evaluation domain lies in a proper
 subfield. The analytic correction term is `subfieldCaFactor`. -/
 theorem subfield_epsCa_lower_bound
+    [SampleableType F]
     (domain : ι ↪ F) (k : ℕ) (δ : ℝ≥0) (B : Subfield F)
     (_hB_proper : B < ⊤)
     (_h_dom : ∀ i, domain i ∈ B)
@@ -661,6 +659,13 @@ theorem subfield_epsCa_lower_bound
             / (Nat.choose (Fintype.card ι) ⌊(δ : ℝ) * Fintype.card ι⌋₊)) ≤
       epsCa (F := F) (A := F) ((ReedSolomon.code domain k : Set (ι → F))) δ δ := by
   classical
+  rcases isEmpty_or_nonempty ι with hι | hι
+  · have := hι
+    have hq : (1 : ℝ) ≤ Fintype.card F := by exact_mod_cast Fintype.card_pos
+    have hzero : ENNReal.ofReal (1 - (Fintype.card F : ℝ)) = 0 :=
+      ENNReal.ofReal_of_nonpos (sub_nonpos.mpr hq)
+    simp [subfieldCaFactor, show (0 : ℝ) ≤ 3 / 2 by norm_num, hzero]
+  have := hι
   dsimp only
   obtain ⟨u, G, h⟩ := subfield_ca_exists_witness_data
     domain k δ B _hB_proper _h_dom _h_int _hδ_pos _hδ_lt

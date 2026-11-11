@@ -7,7 +7,8 @@ This directory contains various utility scripts for the ArkLib project.
 ### Build and Validation
 - **`validate.sh`** - Recommended convenience wrapper for routine local validation
 - **`build-project.sh`** - Compile-only helper (`lake build`)
-- **`build_timing_report.sh`** - CI timing/report helper for clean builds, warm rebuilds, the native build, and the validation wrapper
+- **`build_timing_report.sh`** - CI timing/report helper for the library build, the native build, and the validation wrapper
+- **`module_times.py`** - Per-module compile-time table that travels with the CI build cache
 - **`build_timing_metadata.py`** - Versioned attribution metadata writer/validator for timing artifacts
 - **`test-build-timing-report.sh`** - Deterministic report, metadata, and workflow-policy fixtures
 - **`update-lib.sh`** - Update ArkLib.lean with all imports from source files
@@ -24,18 +25,29 @@ This directory contains various utility scripts for the ArkLib project.
 - **`ToyProblemRuntime.lean`** (`lake exe toyproblem-runtime`) - Compiled small-parameter checks
   for KoalaBear sextic arithmetic, executable interleaved-RS extraction, and the C6.9 virtual
   output-oracle and exact-extractor paths
+- **`FriExtractorRuntime.lean`** (`lake exe fri-extractor-runtime`) - Compiled checks of the
+  measured FRI extractor, immutable-input guards, and exact arithmetic and word-read counts.
+- **`SumcheckRuntime.lean`** (`lake exe sumcheck-runtime`) - Compiled checks of CompPoly-backed
+  round messages and the honest multivariate prover in the shared interaction-layer Sumcheck
+  executor, including continuation effects, abort, original-oracle evaluation and zero remaining
+  rounds.
 - **`HachiRuntime.lean`** (`lake exe hachi-runtime`) - Compiled small-parameter checks that the
   nonrecursive Hachi honest-prover path executes: the balanced committer, the computable honest
   lift quotient, the concrete Ajtai lift commitment, and the terminal reveal-and-check. `--full`
   additionally runs the whole composed opening and checks the verifier accepts — it passes, in
   about six minutes, which is why it is not gated: the honest sumcheck prover dominates the cost
   of the entire chain. `--timing` reports per-check costs
-- **`check-docs-integrity.py`** - Check docs links and the `CLAUDE.md` symlink
+- **`check-docs-integrity.py`** - Check the canonical agent guide and local documentation links
 - **`LintStyle.lean`** and **`LintStyle/Checks.lean`** (`lake exe lint-style`) - Lean-native,
   exception-free source policy, including import discipline, whitespace, headers, line/file size,
-  and hazardous-Unicode checks. It verifies that every tracked Lean file under `ArkLib/` and `ArkLibTest/` file is in the
-  `ArkLib.lean` closure, and independently rejects forbidden option and `nolint`-attribute syntax
-  even if module code captures diagnostics or mutates Lean's in-process linter registry. This
+  hazardous-Unicode checks, and commented-out declarations (`ERR_COMMENT_DECL`). Delete commented
+  declaration code or restore it; keyword-led prose, strings, and block comments remain allowed.
+  The comment fixtures in `LintStyleFixtures/` run with `lake exe lint-style --self-test` and
+  `test-lint-plugin.sh`. It verifies that every tracked Lean file under `ArkLib/` and `ArkLibTest/`
+  is in the `ArkLib.lean` closure, and independently rejects forbidden option and `nolint`-attribute syntax
+  even if module code captures diagnostics or mutates Lean's in-process linter registry. The same
+  lexical pass rejects raised elaboration budgets (`set_option maxHeartbeats`, `maxRecDepth`, and
+  `synthInstance.*`, code `ERR_BUDGET`): make the proof cheaper instead. This
   lexical backstop is deliberately conservative across literal bodies (and across comments for
   forbidden options), and reserves policy-like quoted identifiers and syntax quotations;
   suppression examples belong in the out-of-scope fixtures
@@ -82,7 +94,7 @@ This directory contains various utility scripts for the ArkLib project.
 ### Generate Dependency Graphs
 ```bash
 cd scripts/dependency_analysis
-python generate_dependency_graph.py --root ../../ --output-dir ../../dependency_graphs
+uv run --no-project --python 3.12 python generate_dependency_graph.py --root ../../ --output-dir ../../dependency_graphs
 ```
 
 ### Compile Only
@@ -125,17 +137,17 @@ lake exe lint-style
 
 ### Check Docs Integrity
 ```bash
-python3 ./scripts/check-docs-integrity.py
+uv run --no-project --python 3.12 python ./scripts/check-docs-integrity.py
 ```
 
 ### Knowledge Base Indexes
 ```bash
-python3 ./scripts/kb/sync_from_bib.py
-python3 ./scripts/kb/extract_lean_citations.py
-python3 ./scripts/kb/regenerate.py
-python3 ./scripts/kb/check_generated.py
-python3 ./scripts/kb/lint.py
-python3 ./scripts/kb/review_context.py --files ArkLib/ProofSystem/Fri/Spec/SingleRound.lean
+uv run --no-project --python 3.12 python ./scripts/kb/sync_from_bib.py
+uv run --no-project --python 3.12 python ./scripts/kb/extract_lean_citations.py
+uv run --no-project --python 3.12 python ./scripts/kb/regenerate.py
+uv run --no-project --python 3.12 python ./scripts/kb/check_generated.py
+uv run --no-project --python 3.12 python ./scripts/kb/lint.py
+uv run --no-project --python 3.12 python ./scripts/kb/review_context.py --files ArkLib/ProofSystem/Fri/Spec/SingleRound.lean
 ```
 
 ### Axiom Sweep
@@ -154,29 +166,51 @@ git -C .lake/packages/VCVio submodule update --init --recursive
 ```
 
 ```bash
-# Summary: total declarations, sorryAx-tainted, non-standard-axiom-tainted
+# Summary: total declarations, sorryAx-tainted, solicited, non-standard-axiom-tainted
 lake exe axiomsweep
 
 # Full per-declaration report (name, module, kind, line, axioms)
 lake exe axiomsweep --out /tmp/axiom-report.json
 
-# Regression gate: fail iff current taint is not covered by the baseline
+# Regression gate: enforce taint and solicited-proof rules
 lake exe axiomsweep --check
 
-# Refresh the baseline (after intentionally adding a tagged sorry, or after
-# closing gaps); commit the resulting diff in the same PR
+# Refresh after verified closures or renames of existing debt;
+# commit the reviewed bookkeeping in the same PR
 lake exe axiomsweep --update-baseline
 ```
 
-The committed baseline makes the distinction the repo cares about mechanical. Pre-existing
-`sorry` gaps are allowed while recorded; additions fail `--check` until an intentional
-`lake exe axiomsweep --update-baseline` diff is reviewed and committed. Removed debt is
-reported without failing so cleanup is never discouraged; refresh the baseline in the same
-PR. The baseline is an allowlist for `sorryAx` debt only; native-compiler trust (`Lean.ofReduceBool`,
+The committed baseline records pre-existing `sorryAx` debt. New taint fails `--check`, while
+removed debt is reported without blocking cleanup. A PR may be opened with unfinished proofs,
+but no new proof admissions or additional admitted debt may merge into `main`; refreshing the
+baseline cannot authorize them. Review source admissions and baseline changes against the
+canonical base, and refresh only for verified closures or renames of existing debt.
+Native-compiler trust (`Lean.ofReduceBool`,
 `Lean.trustCompiler`, and the per-declaration `…._native.<tactic>.ax_<n>_<n>` axioms
 minted by `native_decide`-style tactics) is never allowlistable — `--check` fails on it
 regardless of the baseline, and `--update-baseline` refuses to write while it is present.
 CI and `./scripts/validate.sh --axioms` both run the check enforcing.
+
+A **solicited proof** is a true, faithfully stated external result whose research-sized proof
+is intentionally left open for contributors. Reviewed entries live in the baseline's
+`solicited` array as `{ "name": "...", "issue": "https://..." }`; a missing array means empty.
+Entries are added only after review, never to excuse false statements. They are excluded
+from the baseline's `sorry` list and counted separately in the summary. Their actual axioms
+remain visible in the per-declaration report.
+
+Both `--check` and `--update-baseline` enforce five conditions:
+
+1. Every listed declaration exists in the swept environment.
+2. It still depends on `sorryAx`; remove the entry in the same PR that proves it.
+3. It depends on no non-standard axiom other than `sorryAx`.
+4. Its docstring contains the entry's issue URL.
+5. No reportable declaration outside the solicited list depends on it, directly or
+   transitively. Solicited declarations may depend on one another.
+
+Thus solicited results remain leaves with respect to the rest of the library. The sweep
+uses its existing dependency closure, including cycle repair, to enforce this rule.
+`--update-baseline` preserves the hand-reviewed solicited list unchanged and refuses to
+write if any condition fails. The native-trust floor and new-taint checks still apply.
 
 The tool itself is certified by `./scripts/test-axiomsweep.sh`, which builds the isolated
 `AxiomSweepTestFixtures` library (deliberate synthetic taint of every shape the sweep
@@ -202,37 +236,52 @@ syntax quotations can mention a tactic without executing it. The kernel-level sw
 enforcing taint verdict and zero-native-trust floor.
 
 ```bash
-python3 scripts/test-source-trust-audit.py
-python3 scripts/source-trust-audit.py --base-ref origin/main --json /tmp/source-trust.json
+uv run --no-project --python 3.12 python scripts/test-source-trust-audit.py
+uv run --no-project --python 3.12 python scripts/source-trust-audit.py --base-ref origin/main --json /tmp/source-trust.json
 ```
 
 ### `build_timing_report.sh`
 
-Helper used by CI to measure and render build timings for clean builds, warm
-rebuilds, the native build, and the `./scripts/validate.sh` path. The CI workflow uploads
-timing-data artifacts so PR runs can compare against the successful push run for the PR's exact
-base SHA without rerunning that base in the same job. It never silently substitutes a previous PR
-update or a different `main` commit when the exact artifact is unavailable. Each artifact also
-records the measured checkout, PR head/base, dependency-manifest hash, cache provenance, and runner
-image; the report shows wall time beside `user + sys` CPU work. This supports
+Helper used by CI to measure and render build timings for the library build, the native build,
+and the `./scripts/validate.sh` path. The library build starts from the cached `main` build, so
+its wall time covers only what the change invalidated. The report therefore also lists the
+modules Lake rebuilt against their times in the module table restored with the cache (see
+`module_times.py` below). Each timing artifact records the measured checkout, PR head/base,
+dependency-manifest hash, cache provenance, and runner image, and carries the module tables
+before and after the run; the report shows wall time beside `user + sys` CPU work. This supports
 [`../.github/workflows/ci.yml`](../.github/workflows/ci.yml).
 
-The four measurements share one tree and run in order, so each leaves it warmer than the last.
+The three measurements share one tree and run in order, so each leaves it warmer than the last.
 `native_build` exists to hold the `.c.o` chain that the compiled executables link
-(`toyproblem-runtime` and `hachi-runtime`): that is the cost which swings on `.lake` cache state,
+(`toyproblem-runtime`, `hachi-runtime`, `sumcheck-runtime`, and `fri-extractor-runtime`): that is the
+cost which swings on `.lake` cache state,
 and billing it separately keeps the validation wrapper's row comparable across dependency bumps.
 Any new compiled executable run by `validate.sh` has to be added to that command as well. See
 [`../docs/wiki/quickstart.md`](../docs/wiki/quickstart.md) for how to read the rows.
 
-`./scripts/test-build-timing-report.sh` exercises metadata validation, exact-base/missing-base
-rendering, CPU deltas, native-command ownership, and the stale-run guard in the trusted reporter.
+`./scripts/test-build-timing-report.sh` exercises metadata validation, module-table updates,
+rendering with and without a restored build, native-command ownership, and the stale-run guard in
+the trusted reporter.
+
+### `module_times.py`
+
+Keeps `.lake/build/arklib-module-times.json`, the latest compile time of every ArkLib module.
+After each CI build, `update` overlays the `Built <module> (<time>)` lines from the build logs
+and drops modules whose source file is gone. Lake rebuilds a module whenever its source or an
+import changes, so each entry was measured against the inputs the module still has, and the
+table's sum estimates clean-build compile time. The table is saved with the build cache on
+`main`.
+
+```bash
+uv run --no-project --python 3.12 python scripts/module_times.py update .lake/build/arklib-module-times.json \
+  --commit "$(git rev-parse HEAD)" /tmp/build-timing/library_build.log
+```
 
 ## Requirements
 
-- Python 3.6+ (for Python scripts)
+- uv (selects Python 3.12 for Python scripts)
 - Lean 4 (for Lean scripts)
 - Graphviz (for dependency visualization)
-- Virtual environment (`.venv`) for Python dependencies
 
 ## Notes
 

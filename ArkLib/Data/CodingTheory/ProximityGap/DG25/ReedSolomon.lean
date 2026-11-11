@@ -34,14 +34,14 @@ section RSCode_Corollaries
 variable {n k : ℕ} {A : Type} [NeZero n] [NeZero k] (hk : k ≤ n)
   {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι] [DecidableEq F] {α : ι ↪ A}
     (h_deg_le_length : k ≤ Fintype.card ι)
-  {domain : (Fin n) ↪ A} [DecidableEq A] [Field A] [Fintype A]
+  {domain : (Fin n) ↪ A} [DecidableEq A] [Field A] [Fintype A] [SampleableType A]
 
 /-
 Theorem 2.2 (Ben-Sasson, et al. [Ben+23, Thm. 4.1]). For each `e ∈ {0, ..., ⌊(d-1)/2⌋}`,
 `RS_{F, S}[k, n]` exhibits proximity gaps for affine lines with respect to the
 proximity parameter `e` and the false witness bound `ε := n`.
 -/
-theorem ReedSolomon_ProximityGapAffineLines_UniqueDecoding [Nontrivial (ReedSolomon.code α k)]
+theorem ReedSolomon_ProximityGapAffineLines_UniqueDecoding
     (hk : k ≤ Fintype.card ι) :
     ∀ e ≤ (Code.uniqueDecodingRadius (C := (ReedSolomon.code α k : Set (ι → A)))),
       e_ε_correlatedAgreementAffineLinesNat (F := A) (A := A) (ι := ι)
@@ -73,9 +73,9 @@ theorem ReedSolomon_ProximityGapAffineLines_UniqueDecoding [Nontrivial (ReedSolo
     rw [div_mul]
     simp only [ne_eq, Nat.cast_eq_zero, Fintype.card_ne_zero, not_false_eq_true, div_self, div_one]
     exact he_le_NNReal
-  have h_rewrite_prob : Pr_{let z ← $ᵖ A}[Δ₀((1 - z) • u₀ + z • u₁, CRS) ≤ e]
-    = Pr_{let z ← $ᵖ A}[Δ₀(u₀ + z • (u₁ - u₀), CRS) ≤ e] := by
-    congr  -- Peel away the Pr_{...} wrapper
+  have h_rewrite_prob : Pr{let z ← $ᵗ A}[Δ₀((1 - z) • u₀ + z • u₁, CRS) ≤ e]
+    = Pr{let z ← $ᵗ A}[Δ₀(u₀ + z • (u₁ - u₀), CRS) ≤ e] := by
+    congr  -- Peel away the Pr{...} wrapper
     funext z
     congr! 1 -- Focus on the term inside Δ₀
     -- Apply the algebra derived above
@@ -105,10 +105,11 @@ theorem ReedSolomon_ProximityGapAffineLines_UniqueDecoding [Nontrivial (ReedSolo
   simp_rw [relDistFromCode_le_iff_distFromCode_le] at h_correlated_agreement
   let h_u₀_and_u₁_sub_u₀_CA := h_correlated_agreement uShifted (by
     rw [h_δ_mul_n_eq_e]
-    simp only [Fin.isValue, bind_pure_comp, ne_eq, Nat.cast_eq_zero, Fintype.card_ne_zero,
+    simp only [Fin.isValue, ne_eq, Nat.cast_eq_zero, Fintype.card_ne_zero,
       not_false_eq_true, ENNReal.coe_div, ENNReal.coe_natCast, gt_iff_lt]
     simp only [ENNReal.coe_natCast] at h_prob_affine_line_close_gt
-    exact h_prob_affine_line_close_gt
+    simpa only [bind_pure_comp, n, uShifted, CRS, finMapTwoWords, Fin.isValue,
+      Fin.reduceFinMk] using h_prob_affine_line_close_gt
   )
   rw [jointAgreement_iff_jointProximity] at h_u₀_and_u₁_sub_u₀_CA
   -- we have jointProximity₂ (u₀ := u₀) (u₁ := u₁ - u₀) (δ := δ) at h_u₀_and_u₁_sub_u₀_CA
@@ -124,7 +125,7 @@ theorem ReedSolomon_ProximityGapAffineLines_UniqueDecoding [Nontrivial (ReedSolo
 
 /-- **Corollary 3.7**: RS Codes have Tensor-Style Proximity Gaps (Unique Decoding)
 Example 4.1 shows that ε=n is tight for RS codes (Ben+23 Thm 4.1 is sharp). -/
-theorem reedSolomon_multilinearCorrelatedAgreement_Nat [Nontrivial (ReedSolomon.code α k)]
+theorem reedSolomon_multilinearCorrelatedAgreement_Nat
     {e : ℕ} (hk : k ≤ Fintype.card ι)
     (he : e ≤ (Code.uniqueDecodingRadius (C := (ReedSolomon.code α k : Set (ι → A))))) :
     ∀ (ϑ : ℕ), (hϑ_gt_0 : ϑ > 0) → δ_ε_multilinearCorrelatedAgreement_Nat (F := A) (A := A)
@@ -178,7 +179,7 @@ theorem reedSolomon_multilinearCorrelatedAgreement_Nat [Nontrivial (ReedSolomon.
       exact h_affine_gap_interleaved) h_affine_gap_base
     exact RS_tensor_gap ϑ hϑ_gt_0 u h_prob_tensor_gt
 
-omit [DecidableEq ι] in
+omit [DecidableEq ι] [NeZero k] in
 theorem reedSolomon_multilinearCorrelatedAgreement [Nontrivial (ReedSolomon.code α k)]
     (hk : k ≤ Fintype.card ι) {δ : ℝ≥0} (he : δ ≤ (Code.relativeUniqueDecodingRadius
       (C := (ReedSolomon.code α k : Set (ι → A))))) :
@@ -187,6 +188,13 @@ theorem reedSolomon_multilinearCorrelatedAgreement [Nontrivial (ReedSolomon.code
       (C := (ReedSolomon.code α k : Set (ι → A)))
       (ε := ((Fintype.card ι) : ℝ≥0) / (Fintype.card A)) := by
   classical
+  have hk_ne : k ≠ 0 := by
+    intro hk_zero
+    have hcode := Set.nontrivial_coe_sort.mp
+      (inferInstance : Nontrivial (ReedSolomon.code α k))
+    rw [hk_zero, ReedSolomon.code_zero] at hcode
+    exact hcode.not_subsingleton (by simp)
+  let : NeZero k := ⟨hk_ne⟩
   set n := Fintype.card ι
   intro ϑ hϑ_gt_0 u h_prob_u_close_gt
   let e : ℕ := Nat.floor (δ * n)

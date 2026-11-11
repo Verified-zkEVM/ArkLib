@@ -73,7 +73,6 @@ def projection (S : Finset n) (w : n → R) : S → R :=
 omit [Finite R] in
 theorem projection_injective
     (C : Set (n → R))
-    (nontriv : ‖C‖₀ ≥ 1)
     (S : Finset n)
     (hS : card S = card n - (‖C‖₀ - 1))
     (u v : n → R)
@@ -126,6 +125,7 @@ theorem projection_injective
   have hsizes: card D ≤ @card diff (ofFinite diff) := by
     exact @Set.card_le_card _ _ _ _ (ofFinite diff) hsub
   rw[hcard_compl, hD] at hsizes
+  have hpos : 0 < hammingDist u v := hammingDist_pos.mpr hne
   omega
 
 /-- **Singleton bound** for arbitrary codes -/
@@ -156,7 +156,7 @@ theorem singleton_bound (C : Set (n → R)) :
         (Set.imageFactorization (projection S) C)
       refine Set.imageFactorization_injective_iff.mpr ?_
       intro u hu v hv heq
-      apply projection_injective (nontriv := non_triv) (S := S) (u := u) (v := v) <;>
+      apply projection_injective (S := S) (u := u) (v := v) <;>
         assumption
     -- The size of Cproj itself is sufficiently bounded by its type
     have Cproj_le_type_card :
@@ -277,7 +277,7 @@ The **alphabet-normalized rate** of a code over the module alphabet `Fin s → F
 For a finite nontrivial field `F` and `s ≥ 1` this is `log_{|Σ|} |C| / n` for the alphabet
 `Σ = F^s`, the rate relative to the alphabet rather than to the base field. The formula is
 algebraically total: it assigns `0` when `s = 0` or the block length is zero. It agrees
-with `rate` exactly when `s = 1` (`alphabetRate_one_eq_rate`).
+with `rate` when `s = 1` (`alphabetRate_one_eq_rate`).
 -/
 noncomputable def alphabetRate [Semiring F] {s : ℕ}
     (MC : ModuleCode ι F (Fin s → F)) : ℚ≥0 :=
@@ -345,6 +345,92 @@ lemma projectedCode_linearCombination [Semiring F] [Module F A] (MC : ModuleCode
   exact ⟨w, hw.1, funext fun t => by
     change (∑ j, c j • U j t.1) = w t.1
     exact Eq.symm (hw.2 t t.2)⟩
+
+omit [Fintype ι] in
+/-- A coordinate set `T` is a **maximal agreement domain** between a word `u` and a module code
+`MC` if it is maximal for inclusion among the sets on which `u` projects into the code.
+Definition 6.3 [BCGM25]. -/
+def IsMaxAgreementDomain [Semiring F] [Module F A] (MC : ModuleCode ι F A) (u : ι → A)
+    (T : Finset ι) : Prop :=
+  Maximal (fun T' => projectedWord u T' ∈ projectedCodeSubmod MC T') T
+
+omit [Fintype ι] in
+/-- A coordinate set `T` is a **maximal correlated agreement (CA) domain** between a family of
+words `U` and a module code `MC` if it is maximal for inclusion among the sets on which every
+member of the family projects into the code. The interleaved membership
+`Mat(u₁, …, u_ℓ)|_T ∈ C^ℓ|_T` of the paper is stated row-wise, which is the form the mutual
+correlated agreement layer consumes (cf. `CoreDefinitions.IsMCA`).
+Definition 6.3 [BCGM25]. -/
+def IsMaxCADomain [Semiring F] [Module F A] {α : Type*} (MC : ModuleCode ι F A)
+    (U : α → (ι → A)) (T : Finset ι) : Prop :=
+  Maximal (fun T' => ∀ j, projectedWord (U j) T' ∈ projectedCodeSubmod MC T') T
+
+omit [Fintype ι] in
+/-- Every agreement set extends to a maximal agreement domain. -/
+lemma exists_subset_isMaxAgreementDomain [Finite ι] [Semiring F] [Module F A]
+    (MC : ModuleCode ι F A) {u : ι → A} {T : Finset ι}
+    (hT : projectedWord u T ∈ projectedCodeSubmod MC T) :
+    ∃ T', T ⊆ T' ∧ IsMaxAgreementDomain MC u T' :=
+  Finite.exists_le_maximal hT
+
+omit [Fintype ι] in
+/-- Every correlated agreement set extends to a maximal CA domain. -/
+lemma exists_subset_isMaxCADomain [Finite ι] [Semiring F] [Module F A] {α : Type*}
+    (MC : ModuleCode ι F A) {U : α → (ι → A)} {T : Finset ι}
+    (hT : ∀ j, projectedWord (U j) T ∈ projectedCodeSubmod MC T) :
+    ∃ T', T ⊆ T' ∧ IsMaxCADomain MC U T' :=
+  Finite.exists_le_maximal hT
+
+omit [Fintype ι] in
+/-- A maximal agreement domain between `u` and `MC` is the exact agreement set of `u` with some
+codeword: a codeword agrees with `u` on `T`, and every coordinate where it agrees with `u` lies
+in `T`. -/
+lemma IsMaxAgreementDomain.exists_codeword [Semiring F] [Module F A]
+    {MC : ModuleCode ι F A}
+    {u : ι → A} {T : Finset ι} (h : IsMaxAgreementDomain MC u T) :
+    ∃ c ∈ MC, (∀ i ∈ T, u i = c i) ∧ ∀ i, u i = c i → i ∈ T := by
+  classical
+  obtain ⟨c, hc, hcT⟩ := (mem_projectedCodeSubmod_iff MC T _).mp h.prop
+  have hagree : ∀ i ∈ T, u i = c i := fun i hi => congrFun hcT ⟨i, hi⟩
+  refine ⟨c, hc, hagree, fun i hic => ?_⟩
+  have hmem : projectedWord u (insert i T) ∈ projectedCodeSubmod MC (insert i T) := by
+    refine (mem_projectedCodeSubmod_iff MC (insert i T) _).mpr ⟨c, hc, ?_⟩
+    funext j
+    rcases Finset.mem_insert.mp j.property with hj | hj
+    · change u j.val = c j.val
+      rw [hj]
+      exact hic
+    · exact hagree j hj
+  exact Maximal.le_of_ge h hmem (Finset.subset_insert i T) (Finset.mem_insert_self i T)
+
+/-- **Distinct maximal CA domains overlap sparsely.** Two maximal CA domains of the same family
+whose intersection misses fewer than `d_C` positions are equal. Equivalently, distinct maximal CA
+domains `A₁ ≠ A₂` satisfy `|A₁ ∩ A₂| ≤ n - d_C`.
+
+The codewords extending the family on `A₁` and on `A₂` agree on the dense intersection, so they are
+equal; then the family extends to codewords on `A₁ ∪ A₂`, and the maximality of each domain forces
+it to be the whole union. This is the pairwise-intersection hypothesis of the Corrádi bound in
+Claim 6.7 [BCGM25]. -/
+lemma IsMaxCADomain.eq_of_card_compl_inter_lt_minDist [Semiring F] [Module F A] [DecidableEq A]
+    [DecidableEq ι] {α : Type*} {MC : ModuleCode ι F A} {U : α → (ι → A)} {A₁ A₂ : Finset ι}
+    (h₁ : IsMaxCADomain MC U A₁) (h₂ : IsMaxCADomain MC U A₂)
+    (hcard : ((A₁ ∩ A₂)ᶜ).card < Code.minDist MC.carrier) : A₁ = A₂ := by
+  choose c₁ hc₁ hc₁A using fun j => (mem_projectedCodeSubmod_iff MC A₁ _).mp (h₁.prop j)
+  choose c₂ hc₂ hc₂A using fun j => (mem_projectedCodeSubmod_iff MC A₂ _).mp (h₂.prop j)
+  have hU₁ : ∀ j, ∀ i ∈ A₁, U j i = c₁ j i := fun j i hi => congrFun (hc₁A j) ⟨i, hi⟩
+  have hU₂ : ∀ j, ∀ i ∈ A₂, U j i = c₂ j i := fun j i hi => congrFun (hc₂A j) ⟨i, hi⟩
+  have hc : ∀ j, c₁ j = c₂ j := fun j =>
+    Code.eq_of_disagreementCols_subset_of_card_lt_minDist (hc₁ j) (hc₂ j) _
+      (fun i hi => Finset.mem_compl.mpr fun hi' => Code.mem_disagreementCols.mp hi
+        ((hU₁ j i (Finset.mem_inter.mp hi').1).symm.trans (hU₂ j i (Finset.mem_inter.mp hi').2)))
+      hcard
+  have hunion : ∀ j, projectedWord (U j) (A₁ ∪ A₂) ∈ projectedCodeSubmod MC (A₁ ∪ A₂) := fun j =>
+    (mem_projectedCodeSubmod_iff MC _ _).mpr ⟨c₁ j, hc₁ j, funext fun i => by
+      rcases Finset.mem_union.mp i.2 with h | h
+      · exact hU₁ j i.1 h
+      · exact (hU₂ j i.1 h).trans (congrFun (hc j) i.1).symm⟩
+  exact (Maximal.eq_of_le h₁ hunion Finset.subset_union_left).trans
+    (Maximal.eq_of_le h₂ hunion Finset.subset_union_right).symm
 
 /-- A linear code is maximum distance separable (MDS) if its parameters meet the singleton bound. -/
 def IsMDS {ι : Type*} [Fintype ι] [CommRing F] [DecidableEq F] (LC : LinearCode ι F) : Prop :=
@@ -535,10 +621,15 @@ noncomputable def restrictLinear [Semiring F] [Module F A] (S : Finset ι) :
   map_add' := by intro f g; ext i; simp,
   map_smul' := by intro a f; ext i; simp }
 
-theorem singletonBound [CommRing F] [StrongRankCondition F]
+theorem singletonBound [CommRing F]
     (LC : LinearCode ι F) :
   dim LC ≤ length LC - Code.minDist (LC : Set (ι → F)) + 1 := by
   classical
+  by_cases hF : Subsingleton F
+  · have : Subsingleton F := hF
+    simp only [dim, Module.finrank_subsingleton]
+    omega
+  have : Nontrivial F := not_subsingleton_iff_nontrivial.mp hF
   -- abbreviations
   set d := Code.minDist (LC : Set (ι → F)) with hd
   -- trivial case when d = 0
@@ -642,7 +733,7 @@ theorem singletonBound [CommRing F] [StrongRankCondition F]
     simpa [dim, length, hd, Nat.add_comm] using hfin
 
 /-- **Singleton bound** for linear codes -/
-theorem singleton_bound_linear [CommRing F] [StrongRankCondition F]
+theorem singleton_bound_linear [CommRing F]
     (LC : LinearCode ι F) :
     Module.finrank F LC ≤ card ι - (Code.dist LC.carrier) + 1 := by
   classical
@@ -682,12 +773,15 @@ finite `F`-module, `dim_F C ≤ finrank F A * (n - (d - 1))` where `d = Code.dis
 At `A = F` this is the `dist` form of `singleton_bound_linear`; at `A = Fin s → F`, the
 block alphabet of interleaved and folded codes, the leading factor is `s`. The proof
 compares `|C| = |F| ^ dim C` with the alphabet-general `singleton_bound`. -/
-theorem singleton_bound_module {ι : Type*} [Fintype ι] {F : Type*} [Field F] [Finite F]
+theorem singleton_bound_module {ι : Type*} [Fintype ι] {F : Type*} [Field F]
     {A : Type*} [AddCommGroup A] [Module F A] [Finite A] [DecidableEq A]
     (C : Submodule F (ι → A)) :
     Module.finrank F C ≤
       Module.finrank F A * (card ι - (Code.dist (C : Set (ι → A)) - 1)) := by
   classical
+  nontriviality A
+  obtain ⟨a, ha⟩ := exists_ne (0 : A)
+  have : Finite F := Finite.of_injective (fun c : F => c • a) (smul_left_injective F ha)
   cases nonempty_fintype F
   cases nonempty_fintype A
   have hcardC : Nat.card C = Fintype.card F ^ Module.finrank F C := by
@@ -716,44 +810,57 @@ end Computable
 satisfies `δ_min / n = 1 - ρ + 1/n`, where `ρ = dim / n` is the rate.
 
 This is the real-valued reading of the defining `ℕ`-equation
-`Code.dist = length - dim + 1`. `[Nonempty ι]` is needed for `(Fintype.card ι : ℝ) ≠ 0`. -/
+`Code.dist = length - dim + 1`. For an empty coordinate type both characterizations are false. -/
 lemma IsMDS_iff_rate_distance
-    {ι : Type*} [Fintype ι] [Nonempty ι]
+    {ι : Type*} [Fintype ι]
     {F : Type*} [Field F] [DecidableEq F]
     (LC : LinearCode ι F) :
     IsMDS LC ↔
       (Code.minDist ((LC : Set (ι → F))) : ℝ) / Fintype.card ι =
         1 - (Module.finrank F LC : ℝ) / Fintype.card ι + 1 / Fintype.card ι := by
-  have hn_pos : (0 : ℝ) < (Fintype.card ι : ℝ) := by exact_mod_cast Fintype.card_pos
-  have hn_ne : (Fintype.card ι : ℝ) ≠ 0 := ne_of_gt hn_pos
-  have hk_le : Module.finrank F LC ≤ Fintype.card ι := by
-    have := Submodule.finrank_le (R := F) (M := ι → F) LC
-    simpa [Module.finrank_fintype_fun_eq_card] using this
-  unfold IsMDS
-  rw [Code.dist_eq_minDist]
-  constructor
-  · intro h
-    have h' : (Code.minDist ((LC : Set (ι → F))) : ℝ) =
-        (Fintype.card ι : ℝ) - (Module.finrank F LC : ℝ) + 1 := by
-      have h1 : (length LC - dim LC + 1 : ℕ) = (Fintype.card ι - Module.finrank F LC + 1 : ℕ) :=
-        rfl
-      rw [h1] at h
-      have : ((Code.minDist (LC : Set (ι → F)) : ℕ) : ℝ) =
-          ((Fintype.card ι - Module.finrank F LC + 1 : ℕ) : ℝ) := by exact_mod_cast h
-      rw [Nat.cast_add, Nat.cast_sub hk_le, Nat.cast_one] at this
+  cases isEmpty_or_nonempty ι with
+  | inl h =>
+    have hempty : {d : ℕ | ∃ u ∈ (LC : Set (ι → F)), ∃ v ∈ (LC : Set (ι → F)),
+        u ≠ v ∧ hammingDist u v = d} = ∅ := by
+      apply Set.eq_empty_iff_forall_notMem.mpr
+      rintro d ⟨u, hu, v, hv, hne, hd⟩
+      exact hne (Subsingleton.elim _ _)
+    have hdist : Code.minDist (LC : Set (ι → F)) = 0 := by
+      change sInf _ = 0
+      rw [hempty]
+      exact Nat.sInf_empty
+    simp [IsMDS, hdist, length]
+  | inr h =>
+    have hn_pos : (0 : ℝ) < (Fintype.card ι : ℝ) := by exact_mod_cast Fintype.card_pos
+    have hn_ne : (Fintype.card ι : ℝ) ≠ 0 := ne_of_gt hn_pos
+    have hk_le : Module.finrank F LC ≤ Fintype.card ι := by
+      have := Submodule.finrank_le (R := F) (M := ι → F) LC
+      simpa [Module.finrank_fintype_fun_eq_card] using this
+    unfold IsMDS
+    rw [Code.dist_eq_minDist]
+    constructor
+    · intro h
+      have h' : (Code.minDist ((LC : Set (ι → F))) : ℝ) =
+          (Fintype.card ι : ℝ) - (Module.finrank F LC : ℝ) + 1 := by
+        have h1 : (length LC - dim LC + 1 : ℕ) = (Fintype.card ι - Module.finrank F LC + 1 : ℕ) :=
+          rfl
+        rw [h1] at h
+        have : ((Code.minDist (LC : Set (ι → F)) : ℕ) : ℝ) =
+            ((Fintype.card ι - Module.finrank F LC + 1 : ℕ) : ℝ) := by exact_mod_cast h
+        rw [Nat.cast_add, Nat.cast_sub hk_le, Nat.cast_one] at this
+        linarith
+      field_simp
       linarith
-    field_simp
-    linarith
-  · intro h
-    have h' : (Code.minDist ((LC : Set (ι → F))) : ℝ) =
-        (Fintype.card ι : ℝ) - (Module.finrank F LC : ℝ) + 1 := by
-      have := (div_eq_iff hn_ne).mp h
-      field_simp at this; linarith
-    have : ((Code.minDist (LC : Set (ι → F)) : ℕ) : ℝ) =
-        ((Fintype.card ι - Module.finrank F LC + 1 : ℕ) : ℝ) := by
-      rw [Nat.cast_add, Nat.cast_sub hk_le, Nat.cast_one]
-      exact h'
-    exact_mod_cast this
+    · intro h
+      have h' : (Code.minDist ((LC : Set (ι → F))) : ℝ) =
+          (Fintype.card ι : ℝ) - (Module.finrank F LC : ℝ) + 1 := by
+        have := (div_eq_iff hn_ne).mp h
+        field_simp at this; linarith
+      have : ((Code.minDist (LC : Set (ι → F)) : ℕ) : ℝ) =
+          ((Fintype.card ι - Module.finrank F LC + 1 : ℕ) : ℝ) := by
+        rw [Nat.cast_add, Nat.cast_sub hk_le, Nat.cast_one]
+        exact h'
+      exact_mod_cast this
 
 end LinearCode
 

@@ -192,7 +192,7 @@ lemma monicize_monic (H : F[X][Y]) (hH : 0 < H.natDegree) :
     (monicize H).Monic := by
   classical
   have hdeg : H.natDegree ≠ 0 := Nat.ne_of_gt hH
-  rw [monicize, if_neg hdeg]
+  rw [monicize, ite_eq_right hdeg]
   exact Polynomial.monic_X_pow_add <| (Polynomial.degree_sum_le _ _).trans_lt <| by
     exact (Finset.sup_lt_iff (WithBot.bot_lt_coe H.natDegree)).2 <| by
       intro i hi
@@ -352,11 +352,12 @@ section IntegralIrreducibility
 
 variable {F : Type} [Field F]
 
-/-- The integral monicized polynomial `monicize` is irreducible whenever `H` is irreducible and has
-positive degree in `Y`. -/
-lemma irreducible_monicize {H : F[X][Y]} (hHdeg : 0 < H.natDegree)
-    (hH : Irreducible H) :
+/-- The integral monicized polynomial `monicize` is irreducible whenever `H` is irreducible. -/
+lemma irreducible_monicize {H : F[X][Y]} (hH : Irreducible H) :
     Irreducible (monicize H) := by
+  by_cases hdeg : H.natDegree = 0
+  · simpa [monicize, hdeg, ← Polynomial.eq_C_of_natDegree_eq_zero hdeg] using hH
+  have hHdeg : 0 < H.natDegree := Nat.pos_of_ne_zero hdeg
   have hmap : Irreducible ((monicize H).map (univPolyHom (F := F))) := by
     simpa [map_monicize_eq_monicizeRatFunc] using
       irreducible_monicizeRatFunc_of_natDegree_pos hHdeg hH
@@ -398,33 +399,8 @@ divides the image of `p`, then `monicize H` already divides `p`.  This is what m
 lemma monicize_dvd_of_map_dvd_monicizeRatFunc {H p : F[X][Y]} (hHdeg : 0 < H.natDegree)
     (hp : monicizeRatFunc H ∣ p.map (univPolyHom (F := F))) :
     monicize H ∣ p := by
-  let q : F[X][Y] := monicize H
-  have hqmonic : q.Monic := monicize_monic H hHdeg
-  rw [← Polynomial.modByMonic_eq_zero_iff_dvd hqmonic]
-  rw [← Polynomial.map_eq_zero_iff (univPolyHom_injective (F := F))]
-  have hqmap_dvd_p : q.map (univPolyHom (F := F)) ∣ p.map (univPolyHom (F := F)) := by
-    simpa [q, map_monicize_eq_monicizeRatFunc] using hp
-  have hqmap_dvd_rem :
-      q.map (univPolyHom (F := F)) ∣
-        (p %ₘ q).map (univPolyHom (F := F)) := by
-    have hrem :
-        (p %ₘ q).map (univPolyHom (F := F)) =
-          p.map (univPolyHom (F := F)) -
-            q.map (univPolyHom (F := F)) * (p /ₘ q).map (univPolyHom (F := F)) := by
-      have h := congrArg (fun r : F[X][Y] => r.map (univPolyHom (F := F)))
-        (Polynomial.modByMonic_add_div p q)
-      simp only [Polynomial.map_add, Polynomial.map_mul] at h
-      rw [← h]
-      ring
-    rw [hrem]
-    exact dvd_sub hqmap_dvd_p (dvd_mul_right _ _)
-  have hdegree :
-      ((p %ₘ q).map (univPolyHom (F := F))).degree <
-        (q.map (univPolyHom (F := F))).degree := by
-    rw [Polynomial.degree_map_eq_of_injective (univPolyHom_injective (F := F))]
-    rw [Polynomial.degree_map_eq_of_injective (univPolyHom_injective (F := F))]
-    exact Polynomial.degree_modByMonic_lt p hqmonic
-  exact Polynomial.eq_zero_of_dvd_of_degree_lt hqmap_dvd_rem hdegree
+  exact (Polynomial.map_dvd_map _ (univPolyHom_injective (F := F))
+    (monicize_monic H hHdeg)).mp (by simpa [map_monicize_eq_monicizeRatFunc] using hp)
 
 private lemma mem_span_monicize_of_bivPolyHom_mem_span_monicizeRatFunc {H p : F[X][Y]}
     (hHdeg : 0 < H.natDegree)
@@ -532,6 +508,35 @@ lemma regularElementsSet_prod {ι : Type} {H : F[X][Y]} (s : Finset ι) {f : ι 
 def rationalRoot (H : F[X][Y]) (z : F) : Type :=
   {t_z : F // evalEval z t_z H = 0}
 
+omit [IsDomain F] in
+/-- The `natDegree` of `monicize H` matches that of `H` when `0 < H.natDegree`. -/
+lemma natDegree_monicize {H : F[X][Y]} (hH : 0 < H.natDegree) :
+    (monicize H).natDegree = H.natDegree := by
+  classical
+  have : Nontrivial F[X] :=
+    Polynomial.Nontrivial.of_polynomial_ne (Polynomial.ne_zero_of_natDegree_gt hH)
+  rw [monicize, ite_eq_right (Nat.ne_of_gt hH)]
+  have hsum_deg :
+      (∑ i ∈ Finset.range H.natDegree,
+          Polynomial.C (H.coeff i * H.coeff H.natDegree ^ (H.natDegree - 1 - i)) *
+            Polynomial.X ^ i : F[X][Y]).degree < (H.natDegree : WithBot ℕ) :=
+    (Polynomial.degree_sum_le _ _).trans_lt <|
+      (Finset.sup_lt_iff (WithBot.bot_lt_coe _)).mpr <| by
+        intro i hi
+        exact (Polynomial.degree_C_mul_X_pow_le i _).trans_lt
+          (WithBot.coe_lt_coe.mpr (Finset.mem_range.mp hi))
+  rw [show (Polynomial.X ^ H.natDegree +
+        ∑ i ∈ Finset.range H.natDegree,
+          Polynomial.C (H.coeff i * H.coeff H.natDegree ^ (H.natDegree - 1 - i)) *
+            Polynomial.X ^ i : F[X][Y]) =
+      (∑ i ∈ Finset.range H.natDegree,
+          Polynomial.C (H.coeff i * H.coeff H.natDegree ^ (H.natDegree - 1 - i)) *
+            Polynomial.X ^ i) + Polynomial.X ^ H.natDegree by ring]
+  have hX_deg : (Polynomial.X ^ H.natDegree : F[X][Y]).degree = (H.natDegree : WithBot ℕ) :=
+    Polynomial.degree_X_pow _
+  apply Polynomial.natDegree_eq_of_degree_eq_some
+  rw [Polynomial.degree_add_eq_right_of_degree_lt (hsum_deg.trans_eq hX_deg.symm), hX_deg]
+
 /-- The substitution `Z ↦ z`, `T ↦ t_z` on the whole polynomial ring, before descending to the
 quotient. -/
 noncomputable def piZLift {H : F[X][Y]} (z : F) (root : rationalRoot (monicize H) z) :
@@ -557,9 +562,12 @@ noncomputable def canonicalRepOf𝒪 {H : F[X][Y]} (hH : 0 < H.natDegree) (β : 
   let _hHt := monicize_monic H hH
   Polynomial.modByMonic β.out (monicize H)
 
+omit [IsDomain F] in
 /-- The canonical representative has degree strictly smaller than the defining relation. -/
 lemma canonicalRepOf𝒪_degree_lt {H : F[X][Y]} (hH : 0 < H.natDegree) (β : 𝒪 H) :
     (canonicalRepOf𝒪 hH β).degree < (monicize H).degree := by
+  have : Nontrivial F[X] :=
+    Polynomial.Nontrivial.of_polynomial_ne (Polynomial.ne_zero_of_natDegree_gt hH)
   rw [canonicalRepOf𝒪]
   exact Polynomial.degree_modByMonic_lt _ (monicize_monic H hH)
 
@@ -609,10 +617,13 @@ lemma canonicalRepOf𝒪_zero {H : F[X][Y]} (hH : 0 < H.natDegree) :
     canonicalRepOf𝒪 hH (0 : 𝒪 H) = 0 := by
   simpa using (canonicalRepOf𝒪_mk (H := H) hH 0)
 
+omit [IsDomain F] in
 /-- A polynomial whose degree is already below the relation is its own canonical representative. -/
 lemma canonicalRepOf𝒪_mk_eq_self_of_degree_lt {H : F[X][Y]} (hH : 0 < H.natDegree)
     {p : F[X][Y]} (hp : p.degree < (monicize H).degree) :
     canonicalRepOf𝒪 hH (Ideal.Quotient.mk (Ideal.span {monicize H}) p : 𝒪 H) = p := by
+  have : Nontrivial F[X] :=
+    Polynomial.Nontrivial.of_polynomial_ne (Polynomial.ne_zero_of_natDegree_gt hH)
   rw [canonicalRepOf𝒪_mk]
   exact (Polynomial.modByMonic_eq_self_iff (monicize_monic H hH)).2 hp
 

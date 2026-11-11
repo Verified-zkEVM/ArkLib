@@ -30,8 +30,8 @@ open Probability
 /-- For a linear code `C` and a radius below its relative minimum distance, affine-line mutual
 correlated agreement is at least `min(⌊δ n⌋ / |F|, 1)`. -/
 theorem linear_mcaError_ge_information_set
-    {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {ι : Type} [Fintype ι]
+    {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
     (C : LinearCode ι F) (δ : ℝ≥0)
     (hδ : (δ : ℝ) * Fintype.card ι < (Code.dist (C : Set (ι → F)) : ℝ)) :
     (↑(min ((⌊δ * (Fintype.card ι : ℝ≥0)⌋₊ : ℝ≥0) /
@@ -43,7 +43,6 @@ theorem linear_mcaError_ge_information_set
   set d : ℕ := Code.dist (C : Set (ι → F)) with hd
   set m : ℕ := ⌊δ * (n : ℝ≥0)⌋₊ with hm
   set r : ℕ := min m (Fintype.card F) with hr
-  have hn_pos : 0 < n := Fintype.card_pos
   have hd_le_n : d ≤ n := Code.dist_le_card (C : Set (ι → F))
   have hm_le_real : (m : ℝ) ≤ (δ : ℝ) * n := by
     have h : (m : ℝ≥0) ≤ δ * (n : ℝ≥0) :=
@@ -54,8 +53,8 @@ theorem linear_mcaError_ge_information_set
   have hm_lt_d : m < d := by
     have : (m : ℝ) < (d : ℝ) := lt_of_le_of_lt hm_le_real hδ
     exact_mod_cast this
+  have hn_pos : 0 < n := by omega
   have hm_le_d1 : m ≤ d - 1 := by omega
-  have hd_pos : 1 ≤ d := by omega
   have hδ_lt_one : (δ : ℝ) < 1 := by
     have hn_pos_real : (0 : ℝ) < (n : ℝ) := by exact_mod_cast hn_pos
     have hdn : (δ : ℝ) * n < n := lt_of_lt_of_le hδ (by exact_mod_cast hd_le_n)
@@ -93,7 +92,7 @@ theorem linear_mcaError_ge_information_set
   have hchal_mem : ∀ {j : ι} (hj : j ∈ D), chal j = φ ⟨j, hj⟩ := by
     intro j hj
     simp only [hchal]
-    rw [dif_pos hj]
+    rw [dite_eq_left hj]
   have hchal_injOn : Set.InjOn chal (D : Set ι) := by
     intro a ha b hb hab
     rw [Finset.mem_coe] at ha hb
@@ -104,19 +103,19 @@ theorem linear_mcaError_ge_information_set
   have hf₂_mem : ∀ {j : ι}, j ∈ D → f₂ j = 1 := by
     intro j hj
     simp only [hf₂]
-    rw [if_pos hj]
+    rw [ite_eq_left hj]
   have hf₂_not : ∀ {j : ι}, j ∉ D → f₂ j = 0 := by
     intro j hj
     simp only [hf₂]
-    rw [if_neg hj]
+    rw [ite_eq_right hj]
   have hf₁_mem : ∀ {j : ι}, j ∈ D → f₁ j = -(chal j) := by
     intro j hj
     simp only [hf₁]
-    rw [if_pos hj]
+    rw [ite_eq_left hj]
   have hf₁_not : ∀ {j : ι}, j ∉ D → f₁ j = 0 := by
     intro j hj
     simp only [hf₁]
-    rw [if_neg hj]
+    rw [ite_eq_right hj]
   set G : Finset F := D.image chal with hG
   have hGcard : G.card = r := by
     rw [hG, Finset.card_image_of_injOn hchal_injOn, hDcard]
@@ -167,7 +166,7 @@ theorem linear_mcaError_ge_information_set
       rw [LinearCode.mem_projectedCodeSubmod_iff] at hf₂proj
       obtain ⟨v₁, hv₁, hproj⟩ := hf₂proj
       have hv₁_zero : v₁ = 0 := by
-        apply projection_injective (C : Set (ι → F)) hd_pos S₀ hS₀card' v₁ 0 hv₁ C.zero_mem
+        apply projection_injective (C : Set (ι → F)) S₀ hS₀card' v₁ 0 hv₁ C.zero_mem
         funext i
         have hiT : (i.val : ι) ∈ T :=
           Finset.mem_insert_of_mem (hS₀_sub_Dcompl i.property)
@@ -201,13 +200,14 @@ theorem linear_mcaError_ge_information_set
       rw [hrc, div_self hcardF_ne]
       exact min_eq_right ((one_le_div hcardF_pos).mpr (by exact_mod_cast h))
   have hPr : (↑(min ((m : ℝ≥0) / (Fintype.card F : ℝ≥0)) 1) : ℝ≥0∞) ≤
-      Pr_{let γ ←$ᵖ F}[IsMCA (AffineLineGenerator F) C γ U (δ : ℝ)] := by
-    rw [prob_uniform_eq_card_filter_div_card, ← ENNReal.coe_div hcardF_ne,
-      ENNReal.coe_le_coe, hmin_eq]
+      Pr{let γ ←$ᵗ F}[IsMCA (AffineLineGenerator F) C γ U (δ : ℝ)] := by
+    rw [SampleableType.prEvent_uniformSample]
+    simp only [← ENNReal.coe_natCast]
+    rw [← ENNReal.coe_div hcardF_ne, ENNReal.coe_le_coe, hmin_eq]
     gcongr
   refine le_trans hPr ?_
   unfold mcaError
   exact le_iSup (fun V : Fin 2 → (ι → F) =>
-    Pr_{let γ ←$ᵖ F}[IsMCA (AffineLineGenerator F) C γ V (δ : ℝ)]) U
+    Pr{let γ ←$ᵗ F}[IsMCA (AffineLineGenerator F) C γ V (δ : ℝ)]) U
 
 end ProximityGap

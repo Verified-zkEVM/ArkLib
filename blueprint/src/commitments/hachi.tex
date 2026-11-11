@@ -1,0 +1,90 @@
+% Copyright (c) 2026 ArkLib Contributors. All rights reserved.
+% Released under Apache 2.0 license as described in the file LICENSE.
+
+\section{Nonrecursive Hachi}\label{sec:hachi_nonrecursive}
+
+ArkLib formalizes a nonrecursive variant of the Hachi lattice-based multilinear polynomial
+commitment~\cite{NOZ26}, which builds on Greyhound~\cite{NS24}. The recursive opening of the
+paper, which carries each iteration's evaluation claim to the next ring instead of closing
+it, is not formalized. Section~\ref{sec:hachi_subfield} covers the extension-field packing
+that the scheme uses.
+
+Throughout, $R_q=\mathbb{Z}_q[X]/(X^{2^\alpha}+1)$. The committed data is a multilinear
+polynomial over $R_q$ in $r+m$ variables, and a query is an evaluation point. Honest range
+parameters consist of a balanced digit base $b$, a ball radius $\gamma$ and a zero-check
+digit base $b_0$, subject to
+\[
+  1<b\leq q/2,\qquad 1<b_0\leq q/2,\qquad
+  \lfloor b/2\rfloor\leq\gamma,\qquad \lfloor b_0/2\rfloor\leq\gamma\leq b_0-1.
+\]
+The remaining parameters are the challenge weight $\omega$, the digit count $\tau$ and
+bound $z_{\max}$ for the folded witness, a sumcheck dimension $M$, and a ring homomorphism
+$\mathbb{Z}_q\to\field$ into the field over which the sumcheck runs. Write
+$\delta_b=\lceil\log_b q\rceil$, and write $\mu_0$ and $n_0$ for the column and row counts
+of the linear relation that the ring-switching step produces.
+
+\begin{definition}[Nonrecursive Hachi]\label{def:hachi_nonrecursive}
+\lean{ArkLib.Lattices.Ajtai.InnerOuter.hachiNonrecursive,
+ArkLib.Lattices.Ajtai.InnerOuter.hachiNonrecursiveOpening,
+ArkLib.Lattices.Ajtai.InnerOuter.hachiNonrecursiveConcrete,
+ArkLib.Lattices.Ajtai.InnerOuter.nonrecursiveLiftCom}
+\leanok
+Key generation samples the public matrices of the inner-outer Ajtai commitment. The committer
+decomposes the coefficients in balanced base $b$ and commits with the inner and outer
+matrices. The opening proves an evaluation claim through the chain: input adapter, bridge,
+quadratic evaluation, ring switching to a linear relation, lift, batching, nested zero-check
+and sumcheck. A terminal step closes the chain: the prover sends the lifted witness in the
+clear and the verifier checks the reduced evaluation claim on it. The opening is therefore
+not succinct. The scheme is generic in the commitment used by the lift step. The concrete
+instance commits to the lifted witness with an Ajtai matrix of $\mu_0+n_0\lceil\log_{b_0}q\rceil$
+columns, whose quotient block is decomposed in base $b_0$.
+\end{definition}
+
+\begin{theorem}[Perfect correctness of nonrecursive Hachi]\label{thm:hachi_correctness}
+\lean{ArkLib.Lattices.Ajtai.InnerOuter.hachiNonrecursive_perfectCorrectness,
+ArkLib.Lattices.Ajtai.InnerOuter.hachiNonrecursiveConcrete_perfectCorrectness,
+ArkLib.Lattices.Ajtai.InnerOuter.hachiNonrecursiveOpening_perfectCompleteness}
+\leanok
+\uses{def:hachi_nonrecursive}
+Assume
+\begin{itemize}
+  \item $z_{\max}\leq(b-1-\lfloor b/2\rfloor)\sum_{e<\tau}b^{e}$, the positive capacity of
+    $\tau$ balanced base-$b$ digits;
+  \item $2^{r}\,\omega\,\lfloor b/2\rfloor\leq z_{\max}$ and $\tau>0$;
+  \item $\delta_b>0$, $2^\alpha>0$ and $b_0>0$;
+  \item $(\mu_0+n_0\lceil\log_{b_0}q\rceil)\cdot 2^{\alpha}\leq 2^{M+1}$;
+  \item $b_0-1\leq\gamma$.
+\end{itemize}
+Then, for every lift commitment, every initial oracle state and every implementation of the
+uniform oracle, the scheme is perfectly correct. The same holds for the concrete instance.
+The opening reduction alone is perfectly complete under these assumptions together with
+$\kappa\geq 1$ and a bound $\beta^2\geq 2^m\delta_b\,2^\alpha\lfloor b/2\rfloor^2$ on its
+auxiliary parameters $\kappa$ and $\beta^2$.
+\end{theorem}
+
+With the honest range constraint $\gamma\leq b_0-1$, the last assumption forces
+$\gamma=b_0-1$.
+
+\paragraph{Soundness.}
+The soundness side is formalized for the reduction chain, not for the scheme. Each
+subprotocol carries a coordinate-wise special soundness certificate whose extraction may
+instead output an escape event: a Module-SIS solution for the public matrices, or a
+collision in the lift commitment.
+
+\begin{theorem}[Special soundness of one Hachi iteration]\label{thm:hachi_iteration_cwss}
+\lean{ArkLib.Lattices.Ajtai.InnerOuter.iteration,
+ArkLib.Lattices.Ajtai.InnerOuter.hachi_iteration_coordinateWiseSpecialSoundWithEscape,
+ArkLib.Lattices.Ajtai.InnerOuter.evaluation}
+\leanok
+Assume $q\equiv 5\pmod 8$, $(2\omega)^2<q$, $\tau>0$, $2^\alpha>0$, $b-1\leq\gamma$,
+$1<b\leq q/2$, $\lfloor b/2\rfloor\leq\gamma$,
+$(\mu_0+n_0\lceil\log_b q\rceil)\cdot 2^{\alpha}\leq 2^{m_0}$ and $n_0\leq 2^{m_1}$. Then the
+verifier of one iteration, from the bridge through the final sumcheck evaluation, is
+coordinate-wise special sound with escape, from the polynomial-evaluation relation to the
+reduced evaluation claim on the committed table. Appending the terminal check gives the
+complete evaluation argument with the composed certificate.
+\end{theorem}
+
+Binding of the scheme and knowledge soundness of its opening, as commitment-scheme properties,
+are not formalized. The scheme's terminal verifier and the soundness-side terminal check use
+the same decision procedure.

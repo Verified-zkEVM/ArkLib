@@ -13,6 +13,12 @@ public import ArkLib.OracleReduction.Composition.Sequential.IsPure
 
 Each component has pure prover output and a deterministic verifier that can reject. The suffix
 receives its predecessor's actual oracle state; component completeness holds from every state.
+
+`Verifier.GuardedForm.seqCompose` composes guarded forms along a finite sequence. For oracle
+verifiers, `OracleVerifier.appendGuardedForm` and `OracleVerifier.seqComposeGuardedForm` give the
+guarded form of an appended or sequentially composed oracle verifier's induced verifier from the
+components' forms, moved along `OracleVerifier.append_toVerifier` and
+`OracleVerifier.seqCompose_toVerifier`.
 -/
 
 @[expose] public section
@@ -35,6 +41,39 @@ def GuardedForm.seqCompose {m : ℕ} (Stmt : Fin (m + 1) → Type)
     exact (G 0).append (ih (Stmt ∘ Fin.succ) (fun i => V i.succ) (fun i => G i.succ))
 
 end Verifier
+
+namespace OracleVerifier
+
+variable {ι : Type} {oSpec : OracleSpec ι}
+
+/-- The guarded form of an appended oracle verifier's induced verifier: `GuardedForm.append` of
+the two components' forms, moved along `OracleVerifier.append_toVerifier`. -/
+def appendGuardedForm {Stmt₁ Stmt₂ Stmt₃ : Type} {ι₁ ι₂ ι₃ : Type} {OStmt₁ : ι₁ → Type}
+    {OStmt₂ : ι₂ → Type} {OStmt₃ : ι₃ → Type} [∀ i, OracleInterface (OStmt₁ i)]
+    [∀ i, OracleInterface (OStmt₂ i)] [∀ i, OracleInterface (OStmt₃ i)] {m n : ℕ}
+    {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
+    [∀ i, OracleInterface (pSpec₁.Message i)] [∀ i, OracleInterface (pSpec₂.Message i)]
+    {V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁}
+    {V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂}
+    (G₁ : V₁.toVerifier.GuardedForm) (G₂ : V₂.toVerifier.GuardedForm) :
+    (V₁.append V₂).toVerifier.GuardedForm :=
+  .ofEq (append_toVerifier V₁ V₂).symm (G₁.append G₂)
+
+/-- The guarded form of a sequentially composed oracle verifier's induced verifier:
+`GuardedForm.seqCompose` of the components' forms, moved along
+`OracleVerifier.seqCompose_toVerifier`. -/
+def seqComposeGuardedForm {m : ℕ} (Stmt : Fin (m + 1) → Type) {ιₛ : Fin (m + 1) → Type}
+    (OStmt : (i : Fin (m + 1)) → ιₛ i → Type) [∀ i j, OracleInterface (OStmt i j)]
+    {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    [∀ i j, OracleInterface ((pSpec i).Message j)]
+    {V : ∀ i, OracleVerifier oSpec (Stmt i.castSucc) (OStmt i.castSucc) (Stmt i.succ)
+      (OStmt i.succ) (pSpec i)}
+    (G : ∀ i, (V i).toVerifier.GuardedForm) :
+    (seqCompose Stmt OStmt V).toVerifier.GuardedForm :=
+  .ofEq (seqCompose_toVerifier Stmt OStmt V).symm
+    (.seqCompose (fun i => Stmt i × ∀ j, OStmt i j) _ G)
+
+end OracleVerifier
 
 namespace Reduction
 

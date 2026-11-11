@@ -8,6 +8,7 @@ module
 public import ArkLib.ProofSystem.Sumcheck.Interaction.SingleRound
 public import ArkLib.Interaction.Oracle.CoreRun
 public import ArkLib.Interaction.Oracle.Resource
+public import VCVio.OracleComp.EvalDist.Measure
 
 /-! # Single-round Sumcheck through run-derived closing -/
 
@@ -96,7 +97,7 @@ theorem executeCore_honest [DecidableEq R] (p : Message R deg)
     (h : (domain.map (fun x => p.val.eval x)).sum = target) :
     executeCore (claimReduction R deg ambient domain r) (inputImpl R deg p) target p =
       pure (honestRun R deg p r) := by
-  simp only [executeCore, _root_.Interaction.Oracle.Reduction.execute, claimReduction,
+  simp only [executeCore_eq_execute, _root_.Interaction.Oracle.Reduction.execute, claimReduction,
     pure_bind]
   change ((simulateQ (Verifier.liftAccessImpl ambient (access R deg)
       (Access.extendImpl (inputSpec R).toPFunctor (polynomialInterface R deg)
@@ -109,7 +110,7 @@ theorem executeCore_honest [DecidableEq R] (p : Message R deg)
       fun result => pure (⟨result.1, inputImpl R deg p, result.2.1, result.2.2⟩ :
         CoreRun (protocol R deg) (inputSpec R).toPFunctor (fun _ => R × R)
           (fun _ => outputFamily R deg) (fun _ => R × R))) = _
-  rw [simulateQ_map, simulate_terminal, if_pos h]
+  rw [simulateQ_map, simulate_terminal, ite_eq_left h]
   rfl
 
 /-- The honest concrete claim used solely to express output realization. -/
@@ -214,13 +215,13 @@ theorem executeSampled_eq [DecidableEq R] (challenge : ProbComp R) (p : Message 
     (domain : List R) (target : R)
     (h : (domain.map (fun x => p.val.eval x)).sum = target) :
     executeSampled R deg challenge p domain target = honestRun R deg p <$> challenge := by
-  simp only [executeSampled, executeCore, _root_.Interaction.Oracle.Reduction.execute,
+  simp only [executeSampled, executeCore_eq_execute, _root_.Interaction.Oracle.Reduction.execute,
     sampledClaimReduction, pure_bind]
   simp only [executeStrategies, prover, sampledClaimVerifier, protocol,
     Protocol.oracleWith_tree, Protocol.oracleWith_roles, Protocol.oracleWith_oracles,
     Protocol.public_tree, Protocol.public_roles, Protocol.public_oracles,
     Protocol.done_tree, Protocol.done_roles, Protocol.done_oracles,
-    Verifier.toCounterpart,
+    Verifier.toCounterpart, Verifier.toCounterpartWith,
     TypeTree.toTypeTree_oracle, TypeTree.toTypeTree_public, TypeTree.toTypeTree_done,
     TypeTree.RoleDecoration.toTypeTreeRoles_oracle,
     TypeTree.RoleDecoration.toTypeTreeRoles_public,
@@ -233,7 +234,8 @@ theorem executeSampled_eq [DecidableEq R] (challenge : ProbComp R) (p : Message 
     _root_.Interaction.TwoParty.participantProfile,
     _root_.Interaction.TwoParty.collectParticipantOutputs]
   simp only [id_eq, simulateQ_bind, simulateQ_pure, simulate_challenge, bind_assoc, pure_bind,
-    simulateQ_map, simulate_terminal, if_pos h, map_pure]
+    simulateQ_map, TypeTree.accessAfter_oracle, TypeTree.accessAfter_public,
+    TypeTree.accessAfter_done, simulate_terminal, ite_eq_left h, map_pure]
   simp only [bind_pure_comp]
   rfl
 
@@ -250,39 +252,31 @@ theorem executeSampled_support [DecidableEq R] (challenge : ProbComp R) (p : Mes
   obtain ⟨r, _, rfl⟩ := hrun
   exact honestRun_closed_related R deg p r
 
-/-- A lossless challenge kernel gives perfect completeness in VCVio's probability semantics. -/
+/-- Perfect completeness of the actual randomized verifier: the closed output relation holds with
+probability one. Every possible run accepts, and probabilistic computations lose no mass, so no
+hypothesis on the challenge program is needed. -/
 theorem executeSampled_perfectCompleteness [DecidableEq R] (challenge : ProbComp R)
-    (hchallenge : Pr[⊥ | challenge] = 0) (p : Message R deg)
-    (domain : List R) (target : R)
+    (p : Message R deg) (domain : List R) (target : R)
     (h : (domain.map (fun x => p.val.eval x)).sum = target) :
-    Pr[fun run => run.closed.map (closedOutputRelation R deg) = some True |
-      executeSampled R deg challenge p domain target] = 1 := by
-  apply probEvent_eq_one_iff.mpr
-  constructor
-  · rw [executeSampled_eq R deg challenge p domain target h, probFailure_map]
-    exact hchallenge
-  · intro run hrun
-    exact executeSampled_support R deg challenge p domain target h run hrun
+    Pr{let run ← executeSampled R deg challenge p domain target}[
+      run.closed.map (closedOutputRelation R deg) = some True] = 1 :=
+  OracleComp.prEvent_eq_one_of_forall_mem_support _ _
+    (executeSampled_support R deg challenge p domain target h)
 
-/-- Primary measure-valued completeness for the actual randomized verifier.
-The challenge's total successful mass is one; no countability assumption on runs is needed. -/
+/-- `prEvent_eq_evalDist_map` at `OracleComp unifSpec`, stated so that the `Pr{...}` side uses
+the same `Bind`/`Pure` instances as `do` notation elaborated at this monad. -/
+private theorem prEvent_eq_evalDist_map_unifSpec {α : Type} (mx : OracleComp unifSpec α)
+    (p : α → Prop) : Pr{let x ← mx}[p x] = 𝒟[p <$> mx] {True} :=
+  prEvent_eq_evalDist_map mx p
+
+/-- Measure-valued perfect completeness for the actual randomized verifier. -/
 theorem executeSampled_measureCompleteness [DecidableEq R] (challenge : ProbComp R)
-    (hchallenge : discreteEvalDist challenge Set.univ = 1) (p : Message R deg)
-    (domain : List R) (target : R)
+    (p : Message R deg) (domain : List R) (target : R)
     (h : (domain.map (fun x => p.val.eval x)).sum = target) :
-    discreteEvalDist (executeSampled R deg challenge p domain target)
-      {run | run.closed.map (closedOutputRelation R deg) = some True} = 1 := by
-  let : MeasurableSpace R := ⊤
-  have hmass : Pr[fun _ => True | challenge] = 1 := by
-    rw [probEvent_eq_evalSPMF_toMeasure]
-    exact hchallenge
-  have hfailure : Pr[⊥ | challenge] = 0 := (probEvent_eq_one_iff.mp hmass).1
-  let : MeasurableSpace
-      (CoreRun (protocol R deg) (inputSpec R).toPFunctor (fun _ => R × R)
-        (fun _ => outputFamily R deg) (fun _ => R × R)) := ⊤
-  have hprob := executeSampled_perfectCompleteness R deg challenge hfailure p domain target h
-  rw [probEvent_eq_evalSPMF_toMeasure] at hprob
-  exact hprob
+    𝒟[(fun run => run.closed.map (closedOutputRelation R deg) = some True) <$>
+        executeSampled R deg challenge p domain target] {True} = 1 := by
+  rw [← prEvent_eq_evalDist_map_unifSpec]
+  exact executeSampled_perfectCompleteness R deg challenge p domain target h
 
 end
 end Sumcheck.Interaction.SingleRound

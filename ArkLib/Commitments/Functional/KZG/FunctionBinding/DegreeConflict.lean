@@ -71,7 +71,7 @@ lemma query_ne_tau_of_find_query_with_srs_power_none {L : ℕ}
     (queryOf : Fin L → ZMod p)
     (hsrs : srs = Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ)
     (hfs_none : List.findSome?
-        (fun i ↦ if srs.1[0] ^ (queryOf i).val
+        (fun i ↦ if srs.1[0]'(Nat.succ_pos n) ^ (queryOf i).val
                       = srs.1[1]'(Nat.lt_add_of_pos_left hn)
                   then some (queryOf i) else none)
         (List.finRange L) = none) :
@@ -79,13 +79,14 @@ lemma query_ne_tau_of_find_query_with_srs_power_none {L : ℕ}
   intro i hqτ
   have hall := List.findSome?_eq_none_iff.mp hfs_none
   have h_at_i := hall i (List.mem_finRange i)
-  have h_srs0 : srs.1[0] = g₁ := by
+  have h_srs0 : srs.1[0]'(Nat.succ_pos n) = g₁ := by
     rw [hsrs]
     simp [Groups.PowerSrs.generate, Groups.PowerSrs.tower]
   have h_srs1 : srs.1[1]'(Nat.lt_add_of_pos_left hn) = g₁ ^ τ.val := by
     rw [hsrs]
     simp [Groups.PowerSrs.generate, Groups.PowerSrs.tower]
-  have hpow : srs.1[0] ^ (queryOf i).val = srs.1[1]'(Nat.lt_add_of_pos_left hn) := by
+  have hpow : srs.1[0]'(Nat.succ_pos n) ^ (queryOf i).val =
+      srs.1[1]'(Nat.lt_add_of_pos_left hn) := by
     rw [h_srs0, h_srs1, hqτ]
   simp [hpow] at h_at_i
 
@@ -308,7 +309,7 @@ lemma interp_degree_le_of_card {L : ℕ} (s : Finset (Fin L))
 /-- If the interpolation over `U` has degree at least `n`, then `findA` succeeds. -/
 lemma find_a_successful {L : ℕ} (U : Finset (Fin L)) (n : ℕ)
     (query : Fin L → ZMod p) (response : Fin L → ZMod p)
-    (hUcard : n < U.card) (hqueryU : Set.InjOn query ↑U)
+    (hqueryU : Set.InjOn query ↑U)
     (hinterp : (CLagrange.interpolate U query response).degree ≥ n) :
     (findA U n query response).isSome := by
   by_contra h_not
@@ -325,10 +326,19 @@ lemma find_a_successful {L : ℕ} (U : Finset (Fin L)) (n : ℕ)
     exact lt_of_le_of_ne
       (interp_degree_le_of_card s query response (hqueryU.mono hsU) hs)
       (h_none s (finset_subset_mem_sublists_len_map s U hsU hs))
+  -- Derive n < U.card from hinterp and degree_interpolate_lt
+  have hinterp_poly : (Lagrange.interpolate U query response).degree ≥ ↑n := by
+    have h := hinterp
+    rw [degree_toPoly, CLagrange.cinterpolate_eq_interpolate] at h
+    exact h
+  have hScard_gt : n < U.card := by
+    have h2 : (Lagrange.interpolate U query response).degree < ↑U.card :=
+      Lagrange.degree_interpolate_lt response hqueryU
+    exact_mod_cast lt_of_le_of_lt hinterp_poly h2
   -- Core argument: construct a polynomial of degree < n agreeing with all L values
   -- Pick a subset T of size n
   obtain ⟨T, hTU, hTcard⟩ :=
-    Finset.exists_subset_card_eq (n := n) (s := U) (by omega)
+    Finset.exists_subset_card_eq (n := n) (s := U) hScard_gt.le
   -- Let Q_T be the Mathlib interpolation over T
   set Q_T := Lagrange.interpolate T query response with hQ_T_def
   have hQ_T_deg : Q_T.degree < ↑n := by
@@ -376,15 +386,6 @@ lemma find_a_successful {L : ℕ} (U : Finset (Fin L)) (n : ℕ)
       rw [heq]
       exact Lagrange.eval_interpolate_at_node response
         (hqueryU.mono hSiU) (Finset.mem_insert_self i T)
-  -- Derive n < U.card from hinterp and degree_interpolate_lt
-  have hinterp_poly : (Lagrange.interpolate U query response).degree ≥ ↑n := by
-    have h := hinterp
-    rw [degree_toPoly, CLagrange.cinterpolate_eq_interpolate] at h
-    exact h
-  have hScard_gt : n < U.card := by
-    have h2 : (Lagrange.interpolate U query response).degree < ↑U.card :=
-      Lagrange.degree_interpolate_lt response hqueryU
-    exact_mod_cast lt_of_le_of_lt hinterp_poly h2
   -- Q_T = interpolation over U, since Q_T has degree < U.card and agrees on U
   have hQ_T_deg_S : Q_T.degree < ↑U.card :=
     lt_trans hQ_T_deg (by exact_mod_cast hScard_gt)
@@ -409,7 +410,7 @@ def findS {L : ℕ} (n : ℕ) (A : Finset (Fin L)) (c : G₁)
 lemma find_s_existence {L : ℕ} (n : ℕ) (τ c : ZMod p) (A : Finset (Fin L))
     (query : Fin L → ZMod p) (response : Fin L → ZMod p)
     (hA : (CLagrange.interpolate A query response).degree = n + 1)
-    (hquery : Set.InjOn query ↑A) (hn : 1 ≤ n) :
+    (hquery : Set.InjOn query ↑A) :
     ∃ S ⊆ A, S.card = n + 1
       ∧ (CLagrange.interpolate S query response).eval τ ≠ c := by
   by_contra h_all
@@ -429,27 +430,28 @@ lemma find_s_existence {L : ℕ} (n : ℕ) (τ c : ZMod p) (A : Finset (Fin L))
     rw [hA_poly] at h; exact_mod_cast h
   -- Step B: Pick A' ⊆ A with |A'| = n + 2
   obtain ⟨A', hA'_sub, hA'_card⟩ :=
-    Finset.exists_subset_card_eq (show n + 2 ≤ A.card by omega)
+    Finset.exists_subset_card_eq (show n + 2 ≤ A.card from hn_lt)
   -- Step C: interpolate A = interpolate A' (by uniqueness, since deg < |A'| and agrees on A')
   have hA'_eq : Lagrange.interpolate A query response =
       Lagrange.interpolate A' query response :=
     Lagrange.eq_interpolate_of_eval_eq response
       (hquery.mono hA'_sub)
-      (by rw [hA_poly, hA'_card]; exact_mod_cast (show n + 1 < n + 2 by omega))
+      (by rw [hA_poly, hA'_card]; exact_mod_cast Nat.lt_succ_self (n + 1))
       (fun i hi => Lagrange.eval_interpolate_at_node response
         hquery (hA'_sub hi))
   -- Degree of interpolate A' equals n + 1
   have hA'_deg : (Lagrange.interpolate A' query response).degree = ↑(n + 1) := by
     rw [← hA'_eq]; exact hA_poly
   -- Step D: Pick two distinct elements `i`, `j ∈ A'` (possible since `|A'| = n + 2 ≥ 2`).
-  obtain ⟨i, j, hi, hj, hij⟩ := Finset.one_lt_card_iff.mp (show 1 < A'.card by omega)
+  obtain ⟨i, j, hi, hj, hij⟩ := Finset.one_lt_card_iff.mp
+    (show 1 < A'.card by omega)
   -- Erase subset/cardinality facts
   have hej_sub : A'.erase j ⊆ A := (Finset.erase_subset j A').trans hA'_sub
   have hei_sub : A'.erase i ⊆ A := (Finset.erase_subset i A').trans hA'_sub
   have hej_card : (A'.erase j).card = n + 1 := by
-    rw [Finset.card_erase_of_mem hj, hA'_card]; omega
+    rw [Finset.card_erase_of_mem hj, hA'_card]; rfl
   have hei_card : (A'.erase i).card = n + 1 := by
-    rw [Finset.card_erase_of_mem hi, hA'_card]; omega
+    rw [Finset.card_erase_of_mem hi, hA'_card]; rfl
   -- Step E: Show (interpolate A').eval τ = c via decomposition
   --   PA' = P_{A'\j} · basisDivisor(qi,qj) + P_{A'\i} · basisDivisor(qj,qi)
   --   Evaluating at τ and using h_poly gives c · (bd + bd') = c · 1 = c
@@ -475,14 +477,14 @@ lemma find_s_existence {L : ℕ} (n : ℕ) (τ c : ZMod p) (A : Finset (Fin L))
           (hquery (hA'_sub (Finset.mem_of_mem_erase hxe)) (hA'_sub hk)
             (hxq.trans hkq.symm))⟩
     · push Not at hτ
-      obtain ⟨k, hk⟩ := Finset.card_pos.mp (show 0 < A'.card by omega)
+      obtain ⟨k, hk⟩ := Finset.card_pos.mp (show 0 < A'.card from hA'_card ▸ Nat.succ_pos _)
       exact ⟨k, hk, by
         simp only [Finset.mem_image]
         rintro ⟨x, hxe, hxq⟩
         exact hτ x (Finset.mem_of_mem_erase hxe) hxq⟩
   -- Erase-k facts
   have hek_card : (A'.erase k).card = n + 1 := by
-    rw [Finset.card_erase_of_mem hk, hA'_card]; omega
+    rw [Finset.card_erase_of_mem hk, hA'_card]; rfl
   have hek_sub : A'.erase k ⊆ A := (Finset.erase_subset k A').trans hA'_sub
   -- Degree of interpolate (A'.erase k) < n + 1
   have h_deg_ek : (Lagrange.interpolate (A'.erase k) query response).degree < ↑(n + 1) := by
@@ -507,7 +509,7 @@ lemma find_s_existence {L : ℕ} (n : ℕ) (τ c : ZMod p) (A : Finset (Fin L))
                 (Lagrange.interpolate (A'.erase k) query response).degree :=
             Polynomial.degree_sub_le _ _
         _ ≤ ↑(n + 1) := max_le (le_of_eq hA'_deg) (le_of_lt h_deg_ek)
-        _ < ↑(n + 2) := by exact_mod_cast (show n + 1 < n + 2 by omega)
+        _ < ↑(n + 2) := by exact_mod_cast Nat.lt_succ_self (n + 1)
     · -- vanishes on T
       intro x hx
       simp only [Finset.mem_union, Finset.mem_image, Finset.mem_singleton] at hx
@@ -533,9 +535,9 @@ lemma find_s_successful {L : ℕ} (n : ℕ) (τ : ZMod p) (c : G₁) (A : Finset
     (query : Fin L → ZMod p) (response : Fin L → ZMod p)
     (srs : Vector G₁ (n + 1) × Vector G₂ 2)
     (hsrs : srs = Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ)
-    (hgen : srs.1[0] ≠ 1)
+    (hgen : srs.1[0]'(Nat.succ_pos n) ≠ 1)
     (hA : (CLagrange.interpolate A query response).degree = n + 1)
-    (hquery : Set.InjOn query ↑A) (hn : 1 ≤ n) :
+    (hquery : Set.InjOn query ↑A) :
     (findS n A c srs query response).isSome := by
   by_contra h_not
   have h_none : findS n A c srs query response = none := by
@@ -547,9 +549,8 @@ lemma find_s_successful {L : ℕ} (n : ℕ) (τ : ZMod p) (c : G₁) (A : Finset
   simp only [decide_eq_true_eq, not_not] at h_none
   have hg₁ : g₁ ≠ 1 :=
     Groups.PowerSrs.generator_ne_one_of_generate (g₁ := g₁) (g₂ := g₂) hsrs hgen
-  have hpG1 : Nat.card G₁ = p := PrimeOrderWith.hCard
   have hord : orderOf g₁ = p := Groups.orderOf_eq_prime_of_ne_one g₁ hg₁
-  obtain ⟨c', hc_eq⟩ := Groups.exists_zmod_power_of_generator hpG1 hg₁ hord c
+  obtain ⟨c', hc_eq⟩ := Groups.exists_zmod_power_of_generator hg₁ hord c
   -- For every candidate S, commit = c means eval τ = c'
   have h_all_eq : ∀ S ⊆ A, S.card = n + 1 →
       (CLagrange.interpolate S query response).eval τ = c' := by
@@ -565,7 +566,7 @@ lemma find_s_successful {L : ℕ} (n : ℕ) (τ : ZMod p) (c : G₁) (A : Finset
     have hcommit_rw : commit srs.1 ((CLagrange.interpolate S query response).val.coeff ∘ Fin.val)
         = g₁ ^ ((CLagrange.interpolate S query response).eval τ).val := by
       conv_lhs => rw [hsrs, Groups.PowerSrs.generate]
-      exact commit_eq_c_polynomial (g₁ := g₁) hpG1
+      exact commit_eq_c_polynomial (g₁ := g₁)
         (CLagrange.interpolate S query response) hdeg
     -- So g₁ ^ (eval τ ...).val = g₁ ^ c'.val
     rw [hcommit_rw, hc_eq] at hcommit_eq
@@ -580,7 +581,7 @@ lemma find_s_successful {L : ℕ} (n : ℕ) (τ : ZMod p) (c : G₁) (A : Finset
     exact ZMod.val_injective p hinj
   -- But find_s_existence gives an S with eval τ ≠ c'
   obtain ⟨S₀, hS₀_sub, hS₀_card, hS₀_ne⟩ :=
-    find_s_existence n τ c' A query response hA hquery hn
+    find_s_existence n τ c' A query response hA hquery
   exact hS₀_ne (h_all_eq S₀ hS₀_sub hS₀_card)
 
 omit [Group G₂] [PrimeOrderWith G₂ p]
@@ -647,7 +648,7 @@ lemma zs_to_poly_eq_nodal {L : ℕ} (S : Finset (Fin L))
 lemma div_by_monic_zs_to_poly_eq_nodal_erase {L : ℕ}
     (S : Finset (Fin L)) (query : Fin L → ZMod p)
     (hquery : Set.InjOn query ↑S) (i : Fin L) (hi : i ∈ S) :
-    let Zₛ := ∏ s ∈ S.image query, (X - C s)
+    let Zₛ : CPolynomial (ZMod p) := ∏ s ∈ S.image query, (X - C s)
     (Zₛ.divByMonic (X - C (query i))).toPoly
       = Lagrange.nodal (S.erase i) query := by
   intro Zₛ
@@ -664,7 +665,7 @@ lemma div_by_monic_zs_to_poly_eq_nodal_erase {L : ℕ}
 lemma lagrange_zs_conversion {L : ℕ} (τ : ZMod p) (S : Finset (Fin L))
     (query : Fin L → ZMod p) (response : Fin L → ZMod p)
     (hτ : ∀ i ∈ S, (query i) ≠ τ) (hquery : Set.InjOn query ↑S) :
-    let Zₛ := ∏ s ∈ S.image query, (X - C s)
+    let Zₛ : CPolynomial (ZMod p) := ∏ s ∈ S.image query, (X - C s)
     ((CLagrange.interpolate S query response).eval τ) / (Zₛ.eval τ)
       = ∑ x ∈ S, response x /
         (eval (query x) (Zₛ.divByMonic (X - C (query x))) * (τ - query x)) := by
@@ -706,15 +707,15 @@ omit [DecidableEq G₁] in
 /-- The interpolation-branch output satisfies the ARSDH exponent equation. -/
 lemma h1_zs_eq_h2_prime {L : ℕ} (n : ℕ) (τ : ZMod p) (cm : G₁) (S : Finset (Fin L))
     (query : Fin L → ZMod p) (response : Fin L → ZMod p) (proofs : Fin L → G₁)
-    (srs : Vector G₁ (n + 1) × Vector G₂ 2) (hn : 1 ≤ n)
+    (srs : Vector G₁ (n + 1) × Vector G₂ 2)
     (hsrs : srs = Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ)
     (hτ : ∀ i ∈ S, (query i) ≠ τ)
     (hVerify : ∀ i ∈ S, verifyOpening (pairing := pairing) (g₁ := g₁) (g₂ := g₂)
       srs.2 cm (proofs i) (query i) (response i))
-    (hgen : srs.1[0] ≠ 1) (hpair : pairing g₁ g₂ ≠ 0)
+    (hpair : pairing g₁ g₂ ≠ 0)
     (hS : (CLagrange.interpolate S query response).degree ≤ n) (hS_ne : S.Nonempty)
     (hquery : Set.InjOn query ↑S) :
-    let Zₛ := ∏ s ∈ S.image query, (X - C s)
+    let Zₛ : CPolynomial (ZMod p) := ∏ s ∈ S.image query, (X - C s)
     let c' : G₁ := commit srs.1 ((CLagrange.interpolate S query response).val.coeff ∘ Fin.val)
     let h₁ := cm / c'
     let d := fun α => 1 / eval α (divByMonic Zₛ (X - C α))
@@ -725,20 +726,18 @@ lemma h1_zs_eq_h2_prime {L : ℕ} (n : ℕ) (τ : ZMod p) (cm : G₁) (S : Finse
     intro Zₛ c' h₁ d h₂
     unfold h₁ h₂
     -- rewrite the equation to g₁^{*equation*} (expose the field values)
-    have hpG1 : Nat.card G₁ = p := PrimeOrderWith.hCard
     have hcommit_rw : c' = g₁ ^ ((CLagrange.interpolate S query response).eval τ).val := by
       unfold c'
       conv_lhs => rw [hsrs, Groups.PowerSrs.generate]
-      exact commit_eq_c_polynomial (g₁ := g₁) hpG1
+      exact commit_eq_c_polynomial (g₁ := g₁)
         (CLagrange.interpolate S query response) hS
     rw [hcommit_rw]
-    have hg₁ : g₁ ≠ 1 :=
-      Groups.PowerSrs.generator_ne_one_of_generate (g₁ := g₁) (g₂ := g₂) hsrs hgen
+    have hg₁ : g₁ ≠ 1 := ne_one_of_pairing_ne_zero pairing hpair
     have hord : orderOf g₁ = p := Groups.orderOf_eq_prime_of_ne_one g₁ hg₁
-    obtain ⟨cm', hcm⟩ := Groups.exists_zmod_power_of_generator hpG1 hg₁ hord cm
+    obtain ⟨cm', hcm⟩ := Groups.exists_zmod_power_of_generator hg₁ hord cm
     have hproofs_pow : ∀ i, ∃ prf : ZMod p, proofs i = g₁ ^ prf.val := by
       intro i
-      exact Groups.exists_zmod_power_of_generator hpG1 hg₁ hord (proofs i)
+      exact Groups.exists_zmod_power_of_generator hg₁ hord (proofs i)
     choose prf hprf using hproofs_pow
     rw [hcm]
     simp_rw [hprf]
@@ -753,37 +752,12 @@ lemma h1_zs_eq_h2_prime {L : ℕ} (n : ℕ) (τ : ZMod p) (cm : G₁) (S : Finse
     unfold d
     simp_rw [← pow_mul]
     rw [Finset.prod_pow_eq_pow_sum]
-    have hlhs_rw : g₁ ^ (∑ x ∈ S,
-        ((cm' - response x) / (τ - query x)).val *
-        (1 / eval (query x) (Zₛ.divByMonic (X - C (query x)))).val)
-      = g₁ ^ (∑ x ∈ S,
-        (cm' - response x) /
-        (eval (query x) (Zₛ.divByMonic (X - C (query x))) * (τ - query x))).val := by
-      conv_lhs => rw [← pow_mod_orderOf g₁, hord]
-      congr 1
-      have hcast : ((∑ x ∈ S,
-          ((cm' - response x) / (τ - query x)).val *
-          (1 / eval (query x) (Zₛ.divByMonic (X - C (query x)))).val : ℕ) : ZMod p)
-        = (∑ x ∈ S,
-          (cm' - response x) /
-          (eval (query x) (Zₛ.divByMonic (X - C (query x))) * (τ - query x))) := by
-        push_cast [ZMod.natCast_zmod_val]
-        congr 1; ext x
-        rw [div_mul_div_comm, _root_.mul_one, mul_comm (τ - query x)]
-      have := congr_arg ZMod.val hcast
-      rw [ZMod.val_natCast] at this
-      exact this
-    rw [hlhs_rw]
+    -- reduce the exponent modulo `p` and compute it in `ZMod p`
+    conv_lhs => rw [← pow_mod_orderOf g₁, hord, ← ZMod.val_natCast]
+    push_cast [ZMod.natCast_zmod_val]
+    simp only [div_mul_div_comm, _root_.mul_one, mul_comm (τ - _)]
     -- split sum: (cm' - response x) / ... = cm' / ... - response x / ...
-    have hsplit : (∑ x ∈ S,
-        (cm' - response x) /
-        (eval (query x) (Zₛ.divByMonic (X - C (query x))) * (τ - query x)))
-      = (∑ x ∈ S,
-        cm' / (eval (query x) (Zₛ.divByMonic (X - C (query x))) * (τ - query x)))
-      - (∑ x ∈ S,
-        response x / (eval (query x) (Zₛ.divByMonic (X - C (query x))) * (τ - query x))) := by
-      simp only [sub_div, Finset.sum_sub_distrib]
-    rw [hsplit]
+    simp only [sub_div, Finset.sum_sub_distrib]
     -- Rewrite the response sum using lagrange_zs_conversion
     rw [← lagrange_zs_conversion τ S query response hτ hquery]
     -- Factor cm' from the first sum and simplify to cm' / Zₛ.eval τ
@@ -802,8 +776,8 @@ lemma h1_zs_eq_h2_prime {L : ℕ} (n : ℕ) (τ : ZMod p) (cm : G₁) (S : Finse
       ring
     rw [hcm_sum]
     -- Abbreviate
-    set r := (CLagrange.interpolate S query response).eval τ
-    set z := Zₛ.eval τ
+    generalize (CLagrange.interpolate S query response).eval τ = r
+    generalize Zₛ.eval τ = z
     -- LHS: cm'/z - r/z = (cm' - r) * (1/z)
     conv_lhs => rw [show cm' / z - r / z = (cm' - r) * (1 / z) from by ring]
     -- RHS: use div_pow (CommGroup) and pow_mul
@@ -818,7 +792,7 @@ lemma h1_zs_eq_h2_prime {L : ℕ} (n : ℕ) (τ : ZMod p) (cm : G₁) (S : Finse
 def interpolationArsdhOutput {L : ℕ} (S : Finset (Fin L))
     (tr : FunctionBindingExtTranscript (p := p) n L G₁ G₂) :
     FunctionBindingArsdhOutput (p := p) G₁ :=
-  let Zₛ := ∏ s ∈ S.image tr.queryOf, (X - C s)
+  let Zₛ : CPolynomial (ZMod p) := ∏ s ∈ S.image tr.queryOf, (X - C s)
   let c' : G₁ :=
     commit tr.srs.1 ((CLagrange.interpolate S tr.queryOf tr.responseOf).val.coeff ∘ Fin.val)
   let h₁ := tr.cm / c'
@@ -834,7 +808,6 @@ lemma function_binding_interpolation_branch_maps_to_arsdh {n L : ℕ}
     {τ : ZMod p} {srs : Vector G₁ (n + 1) × Vector G₂ 2} {cm : G₁}
     {queryOf responseOf : Fin L → ZMod p} {accepts : Fin L → Bool} {proofs : Fin L → G₁}
     (hsrs : srs = Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ)
-    (hgen : srs.1[0] ≠ 1)
     (hverify_all : ∀ i : Fin L, accepts i = true →
       KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
         srs.2 cm (proofs i) (queryOf i) (responseOf i))
@@ -843,7 +816,8 @@ lemma function_binding_interpolation_branch_maps_to_arsdh {n L : ℕ}
     (hqueryS : Set.InjOn queryOf ↑S)
     (hresS : findS n A cm srs queryOf responseOf = some S)
     (hfs_none : List.findSome?
-        (fun i ↦ if srs.1[0] ^ (queryOf i).val = srs.1[1]'(Nat.lt_add_of_pos_left hn)
+        (fun i ↦ if srs.1[0]'(Nat.succ_pos n) ^ (queryOf i).val
+                      = srs.1[1]'(Nat.lt_add_of_pos_left hn)
                   then some (queryOf i) else none)
         (List.finRange L) = none) :
     Groups.arsdhCondition n
@@ -886,8 +860,8 @@ lemma function_binding_interpolation_branch_maps_to_arsdh {n L : ℕ}
       intro i _
       exact hverify_all i (hFBcond.1 i (Finset.mem_univ _))
     have key := h1_zs_eq_h2_prime (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
-      n τ cm S queryOf responseOf proofs srs hn hsrs hτneq hVer
-      hgen hpair hdeg hS_ne hqueryS
+      n τ cm S queryOf responseOf proofs srs hsrs hτneq hVer
+      hpair hdeg hS_ne hqueryS
     simpa only [one_div] using key
 
 end FunctionBinding

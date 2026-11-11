@@ -88,9 +88,9 @@ private lemma aeval_substFun_comp {k : ℕ} [NeZero (n - k)] (γ : Fin (k + 1) �
   funext i
   unfold substFun
   by_cases h1 : i.val < k
-  · rw [dif_pos h1, dif_pos (show i.val < k + 1 by omega)]
+  · rw [dite_eq_left h1, dite_eq_left (show i.val < k + 1 by omega)]
     simp
-  · rw [dif_neg h1]
+  · rw [dite_eq_right h1]
     by_cases h2 : i.val = k
       <;> aesop (add safe (by grind))
 
@@ -105,7 +105,7 @@ private lemma aeval_split_mem {n : ℕ} [NeZero n] {R : Type} [Field R]
     (by rw [MvPolynomial.C_mul']; exact Submodule.smul_mem _ _ (odd_pred p).2)
 
 omit [DecidableEq F] in
-private lemma aeval_substFun_mem [NeZero n] {gg : F⦃≤ 1⦄[X (Fin n)]}
+private lemma aeval_substFun_mem {gg : F⦃≤ 1⦄[X (Fin n)]}
   (hchar : ¬CharP F 2) :
   ∀ (m : ℕ), m ≤ n → ∀ (β : Fin m → F),
     MvPolynomial.aeval (substFun m β) gg.1 ∈ MvPolynomial.restrictDegree (Fin (n - m)) F 1 := by
@@ -167,6 +167,6 @@ theorem iteratedFoldWord_eq_evalOnPoints_powAlgHom [FoldingContext k d n]
     funext i
     simp only [evalOnPoints, LinearMap.coe_mk, AddHom.coe_mk]
     congr 1
-    exact subdomain_comp (ω := domain) (k := k) (j := 1) (by grind) rfl
+    exact subdomain_comp (ω := domain) (k := k) (j := 1) rfl
 
 end ProximityGap

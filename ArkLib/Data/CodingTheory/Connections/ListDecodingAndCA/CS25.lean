@@ -5,6 +5,7 @@ Authors: Alexander Hicks, Aleph
 -/
 module
 
+public import ArkLib.Data.CodingTheory.ReedSolomon
 public import ArkLib.Data.CodingTheory.ListDecodability
 public import ArkLib.Data.CodingTheory.ProximityGap.Errors
 
@@ -33,56 +34,57 @@ open Code CoreDefinitions ProximityGap
 section CAImpliesList
 
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
 open scoped NNReal in
-omit [Nonempty ι] [DecidableEq ι] in
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] in
 private theorem rs_eps_ca_ne_top (C : Set (ι → F)) (δ_fld δ_int : ℝ≥0) :
     ProximityGap.epsCa (F := F) (A := F) C δ_fld δ_int ≠ ⊤ := by
   classical
   refine ne_top_of_le_ne_top ENNReal.one_ne_top ?_
-  unfold ProximityGap.epsCa
+  simp only [ProximityGap.epsCa_eq]
   refine iSup_le fun u => ?_
   split_ifs
   · exact zero_le_one
-  · exact PMF.coe_le_one _ _
+  · exact prEvent_le_one _
 
 private def rs_reciprocal_stack (domain : ι ↪ F) (u : ι → F) (a : F) :
     Code.WordStack F (Fin 2) ι :=
   fun j i => Fin.cases (u i / (domain i - a)) (fun _ => -1 / (domain i - a)) j
 
-omit [Fintype ι] [Nonempty ι] [DecidableEq ι] [Fintype F] [DecidableEq F] in
+omit [Fintype ι] [Nonempty ι] [DecidableEq ι] [Fintype F] [SampleableType F]
+    [DecidableEq F] in
 private theorem rs_reciprocal_stack_one_apply (domain : ι ↪ F) (u : ι → F) (a : F) (i : ι) :
     rs_reciprocal_stack domain u a 1 i = -1 / (domain i - a) := by
   rfl
 
-omit [Fintype ι] [Nonempty ι] [DecidableEq ι] [Fintype F] [DecidableEq F] in
+omit [Fintype ι] [Nonempty ι] [DecidableEq ι] [Fintype F] [SampleableType F]
+    [DecidableEq F] in
 private theorem rs_reciprocal_stack_zero_apply (domain : ι ↪ F) (u : ι → F) (a : F) (i : ι) :
     rs_reciprocal_stack domain u a 0 i = u i / (domain i - a) := by
   rfl
 
 open scoped NNReal ProbabilityTheory in
-omit [Nonempty ι] [DecidableEq ι] in
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] in
 private theorem rs_fold_probability_le_eps_ca_of_not_joint
     (C : Set (ι → F)) (δ_fld δ_int : ℝ≥0) (v : Code.WordStack F (Fin 2) ι)
     (hnot : ¬ Code.jointProximity C (u := v) δ_int) :
-    Pr_{let γ ← $ᵖ F}[Code.relDistFromCode (v 0 + γ • v 1) C ≤ δ_fld] ≤
+    Pr{let γ ← $ᵗ F}[Code.relDistFromCode (v 0 + γ • v 1) C ≤ δ_fld] ≤
       ProximityGap.epsCa (F := F) (A := F) C δ_fld δ_int := by
   classical
-  unfold ProximityGap.epsCa
+  simp only [ProximityGap.epsCa_eq]
   have hle := le_iSup
     (fun w : Code.WordStack F (Fin 2) ι =>
       if Code.jointProximity C (u := w) δ_int then (0 : ENNReal)
-      else Pr_{let γ ← $ᵖ F}[Code.relDistFromCode (w 0 + γ • w 1) C ≤ δ_fld]) v
-  rw [if_neg hnot] at hle
+      else Pr{let γ ← $ᵗ F}[Code.relDistFromCode (w 0 + γ • w 1) C ≤ δ_fld]) v
+  rw [ite_eq_right hnot] at hle
   exact hle
 
-omit [DecidableEq ι] in
+omit [DecidableEq ι] [Nonempty ι] in
 /-- Bounds the list size of `RS(k + 1)` at radius `f / n` from the CA error of `RS(k)`
 at the same integral radius. -/
 theorem rs_Lambda_extended_le_of_epsCa_int_radius
     (domain : ι ↪ F) (k f : ℕ) (ε : ℝ)
-    (_hk_pos : 0 < k)
     (_hf_lt : f + k + 1 < Fintype.card ι)
     (_hε_lt : ε < ((Fintype.card F : ℝ) - Fintype.card ι) / (k * Fintype.card F))
     (_hε_ca :
@@ -94,6 +96,7 @@ theorem rs_Lambda_extended_le_of_epsCa_int_radius
         (ε * Fintype.card F * ((Fintype.card F : ℝ) - Fintype.card ι)
           / ((Fintype.card F : ℝ) - Fintype.card ι - k * ε * Fintype.card F)) : ℕ∞) := by
   classical
+  have : Nonempty ι := Fintype.card_pos_iff.mp (by omega)
   set n : ℕ := Fintype.card ι with hn
   set q : ℕ := Fintype.card F with hq
   set Ck : Set (ι → F) := (ReedSolomon.code domain k : Set (ι → F)) with hCk
@@ -102,6 +105,11 @@ theorem rs_Lambda_extended_le_of_epsCa_int_radius
   have hnpos : 0 < n := by simp [n]
   have hqpos : 0 < q := by simp [q]
   have hε0 : 0 ≤ ε := le_trans ENNReal.toReal_nonneg _hε_ca
+  have hkpos : 0 < k := by
+    by_contra hk
+    have hk0 : k = 0 := by omega
+    simp only [hk0, Nat.cast_zero, zero_mul, div_zero] at _hε_lt
+    exact (not_lt_of_ge hε0) _hε_lt
   have hnq : n ≤ q := by
     simpa [n, q] using Fintype.card_le_of_injective domain domain.injective
   have hnq_lt : n < q := by
@@ -115,12 +123,12 @@ theorem rs_Lambda_extended_le_of_epsCa_int_radius
   have hDpos : (0 : ℝ) < (q : ℝ) - n - k * ε * q := by
     have hmul := mul_lt_mul_of_pos_right _hε_lt hkqpos
     rw [div_mul_cancel₀ _ hkqpos.ne'] at hmul
-    nlinarith
+    linarith
   change Lambda Ckp ((f : ℝ) / n) ≤ (Nat.ceil B : ℕ∞)
   apply Lambda_le_of_forall_finset_card_le
   intro u T hT
   have hkpn : k + 1 < n := by omega
-  have : NeZero k := ⟨_hk_pos.ne'⟩
+  have : NeZero k := ⟨hkpos.ne'⟩
   have hTcode : ∀ c ∈ T, c ∈ Ckp := by
     intro c hc
     exact (mem_closeCodewordsRel_iff.mp (hT c hc)).1
@@ -356,13 +364,11 @@ theorem rs_Lambda_extended_le_of_epsCa_int_radius
     exact Finset.mem_filter.mpr ⟨Finset.mem_univ _, hgood c hc⟩
   have hprob : ((Good.card : ℝ≥0) / (q : ℝ≥0) : ENNReal) ≤
       epsCa (F := F) (A := F) Ck ((f : ℝ≥0) / n) ((f : ℝ≥0) / n) := by
-    unfold epsCa
-    refine le_trans ?_ (le_iSup (fun w : WordStack F (Fin 2) ι =>
-      if jointProximity (C := Ck) (u := w) ((f : ℝ≥0) / n) then 0 else
-        (((do
-          let x ← PMF.uniformOfFintype F
-          return δᵣ(w 0 + x • w 1, Ck) ≤ ((f : ℝ≥0) / n : ℝ≥0)) True) : ENNReal)) v)
-    rw [if_neg hvnot, Probability.prob_uniform_eq_card_filter_div_card]
+    simp only [epsCa_eq]
+    refine le_iSup_of_le v ?_
+    rw [ite_eq_right hvnot, SampleableType.prEvent_uniformSample]
+    simp only [Good, q]
+    rw [ENNReal.coe_natCast, ENNReal.coe_natCast]
   have hGoodR : (Good.card : ℝ) ≤ ε * q := by
     have htr := ENNReal.toReal_mono (rs_eps_ca_ne_top Ck _ _) hprob
     have hdiv : (Good.card : ℝ) / q ≤

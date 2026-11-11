@@ -7,9 +7,12 @@ formalization structure.
 
 - [`../../CONTRIBUTING.md`](../../CONTRIBUTING.md) is canonical for style, docstrings, naming,
   and citation policy.
-- `blueprint/src/` contains blueprint sources.
+- `blueprint/src/` contains blueprint sources; `leanblueprint web` refreshes `blueprint/lean_decls`.
 - `blueprint/web/` and `blueprint/print/` are outputs.
-- `BACKGROUND.md` is a lightweight reference list, not the detailed theory source.
+- [`../kb/README.md`](../kb/README.md) holds per-paper pages and formalization status.
+- [`../../BACKGROUND.md`](../../BACKGROUND.md) explains the underlying theory, compares ArkLib's
+  oracle reductions with the literature, and lists the standard references. Per-paper detail
+  belongs in the KB, not there.
 
 ## When To Reach For The Blueprint
 
@@ -22,8 +25,11 @@ For substantial contributions, discuss the blueprint-first workflow described in
 
 ## Citation Workflow
 
-1. Cite papers in Lean docstrings by citation key, for example `[BCIKS20]`.
-2. Give the Lean file a `## References` section in its module docstring.
+1. Cite papers by citation key, for example `[BCIKS20]`, only in the top-level Lean module
+   docstring. Keep URLs and paper-specific locators there too; declaration docstrings state the
+   mathematics and relevant hypotheses directly.
+2. Give the module docstring a `## References` section and brief provenance. Link to the KB
+   paper page or audit for paper-specific statement/version mappings, coverage and gaps.
 3. Add the matching BibTeX entry to `blueprint/src/references.bib`.
 4. For durable paper context, create or update `docs/kb/papers/KEY.md` for the same citation key.
    Leave stub-only paper pages and source metadata to the main-branch KB workflow.
@@ -31,6 +37,10 @@ For substantial contributions, discuss the blueprint-first workflow described in
    to private or local notes.
 
 ## Knowledge Base Mapping
+
+Lean declarations describe the mathematics independently of a source's numbering or revision.
+The same result can occur in several papers; the KB records those correspondences, and the
+wiki routes contributors to them.
 
 - `blueprint/src/references.bib` is the bibliographic source of truth.
 - `docs/kb/papers/KEY.md` is the preferred repository-local landing page for a cited paper key.
@@ -43,31 +53,46 @@ For substantial contributions, discuss the blueprint-first workflow described in
 For a local preview of the docs + blueprint website:
 
 ```bash
-DISABLE_EQUATIONS=1 lake build ArkLib:docs
-./scripts/build-web.sh
+DISABLE_EQUATIONS=1 ./scripts/build-web.sh
+```
+
+The nondefault `ArkLibBlueprint` library imports dependency declarations cited only by the
+blueprint, including the abstract binary tower. It keeps those references available to
+`checkdecls` without adding them to the production `ArkLib` import graph or default build.
+For a direct declaration check, run:
+
+```bash
+lake build ArkLib ArkLibBlueprint
+lake exe checkdecls blueprint/lean_decls
 ```
 
 If blueprint output matters and `leanblueprint` is missing:
 
 ```bash
-python3 -m pip install leanblueprint
+uv tool install --python 3.12 leanblueprint
 ```
 
 ### Continuous integration
 
-Publishing to GitHub Pages is handled by [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml),
-which delegates to the maintained [`leanprover-community/docgen-action`](https://github.com/leanprover-community/docgen-action)
-rather than a hand-rolled TeX/pygraphviz setup. The action runs after CI's Lean
-build on the same runner, so blueprint validation and documentation publishing
-reuse the existing `.lake` build instead of compiling the project again. It
-builds the API docs via doc-gen4 (in an isolated `docbuild` project, the layout
-recommended by [doc-gen4](https://github.com/leanprover/doc-gen4)), builds the
-blueprint with `leanblueprint pdf` + `leanblueprint web`, runs
-`lake exe checkdecls blueprint/lean_decls` to confirm every `\lean{...}`
-declaration exists, and deploys the static `home_page/` (with `docs/` and
-`blueprint/` copied in). Pull requests run a validation-only build (blueprint +
-`checkdecls`, no deploy), so LaTeX and declaration errors are caught before they
-reach `main`.
+[`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) renders the blueprint PDF and HTML
+on a separate read-only runner using the pinned TeXLive action. Its artifact contains only the
+rendered PDF, web directory and generated `blueprint/lean_decls`; it contains no Lean build
+cache. The required `build` job checks rendering success explicitly, then runs the normal Lean
+validation and `lake exe checkdecls blueprint/lean_decls` against its existing `ArkLibBlueprint`
+build. Rendering or declaration failures block the build check on PRs and merge groups too.
+The renderer installs `leanblueprint` with pip inside the TeX Live container, where the
+runner's uv is not available. It is the only CI step that does not run Python through uv.
+
+On trusted main pushes, the pinned
+[`leanprover-community/docgen-action`](https://github.com/leanprover-community/docgen-action)
+generates API documentation from that same Lean build in an isolated `docbuild` project.
+A following step adds `ArkLibBlueprint:docs`, since the action selects only default-target API
+facets. The local preview builds `ArkLib:docs` then `ArkLibBlueprint:docs` sequentially for the
+same coverage; both facets update shared indexes.
+
+The read-only build assembles the rendered blueprint and API pages under `home_page/` and
+uploads the site. A separate Pages-privileged job deploys it only after a successful main push.
+PR-head jobs receive neither Pages nor OIDC write permission.
 
 ### Blueprint LaTeX gotchas
 

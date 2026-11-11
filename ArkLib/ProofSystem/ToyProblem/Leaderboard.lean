@@ -18,13 +18,15 @@ winning-set/spot-check upper bound and the executable extractor's MCA-plus-list
 certificate.  It intentionally contains no score format, ranking direction,
 submission metadata, or chosen operating radius.
 
-**Verified vs. admitted.**  Both projections below are `sorry`-free and are *symbolic*:
+**Verified reduction and numeric bounds.** Both projections below are proved and *symbolic*:
 `certifiedExtractorError` unfolds to `ε_mca(C,δ) + |Λ(C^{≡2},δ)|/|F| `-shaped data, not to a
-numeral.  Instantiating a `FixedRadiusParameters` therefore asserts nothing numeric about a
+numeral. Instantiating a `FixedRadiusParameters` therefore asserts nothing numeric about a
 parameter point; obtaining a numeral additionally requires the MCA/CA capacity bounds under
-`Data/CodingTheory/ProximityGap/CapacityBounds` (several proven, the rest external admits),
-which are deliberately outside this file's import cone (see the "Verified vs. admitted"
-section of `Spec/General.lean` and the numeric-route notes in `Impl/IRS.lean`).
+`Data/CodingTheory/ProximityGap/CapacityBounds`. These include the Johnson-range bound proved
+via [DKT26], with the printed constant from [BCHKS25] Theorem 4.6, alongside other proved bounds
+and external assumptions. They are deliberately outside this file's import cone (see the
+"Verified reduction and numeric bounds" section of `Spec/General.lean` and the numeric-route
+notes in `Impl/IRS.lean`).
 -/
 
 @[expose] public section
@@ -82,6 +84,7 @@ noncomputable def FixedRadiusParameters.winningSetUpperBound
 
 /-- The MCA-plus-list/spot-check certificate used by the executable extractor. -/
 noncomputable def FixedRadiusParameters.certifiedExtractorError
+    [SampleableType F]
     (p : FixedRadiusParameters (ι := ι) (F := F) (A := A))
     (δ : ℝ≥0) : ℝ≥0 :=
   ToyProblem.certifiedExtractorError p.code δ p.t
@@ -90,7 +93,7 @@ omit [Fintype A] in
 /-- At every admissible radius, the winning-set/spot-check upper bound is
 bounded by the executable extractor certificate. -/
 theorem FixedRadiusParameters.winningSetUpperBound_le_certifiedExtractorError
-    [Finite A] [DecidableEq A] [Nonempty ι]
+    [SampleableType F] [Finite A] [DecidableEq A]
     (p : FixedRadiusParameters (ι := ι) (F := F) (A := A))
     (δ : ℝ≥0)
     (hδ : δ ∈ Set.Ioo (0 : ℝ≥0)
@@ -112,6 +115,7 @@ A **smaller** `bound` is the stronger statement.  Any downstream policy layer mu
 therefore compare the numerals in `bound` and must not treat "this parameter point has a
 `FixedRadiusCertificateBound`" as a security claim. -/
 structure FixedRadiusCertificateBound
+    [SampleableType F]
     (p : FixedRadiusParameters (ι := ι) (F := F) (A := A))
     (δ : ℝ≥0) where
   bound : ℝ≥0
@@ -120,6 +124,7 @@ structure FixedRadiusCertificateBound
 /-- The bound carrier is non-vacuous: the exact certificate always supplies a
 canonical inhabitant. -/
 noncomputable def FixedRadiusCertificateBound.self
+    [SampleableType F]
     (p : FixedRadiusParameters (ι := ι) (F := F) (A := A))
     (δ : ℝ≥0) : FixedRadiusCertificateBound p δ :=
   ⟨p.certifiedExtractorError δ, le_rfl⟩

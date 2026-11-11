@@ -9,7 +9,7 @@ import Lean.Elab.Command
 /-!
 # ArkLib build-time source-policy plugin
 
-This plugin rejects linter suppressions while Lean is elaborating each ArkLib module. Inspecting the
+This plugin rejects linter suppressions and retired probability notation in each ArkLib module. Inspecting the
 actual syntax tree is important: terms inside extensible interpolated strings are active syntax,
 while identical text in comments and ordinary strings is inert.
 -/
@@ -31,9 +31,18 @@ private def forbiddenOptionRoot? (name : Name) : Option Name :=
 private def isNoLintAttribute (stx : Syntax) : Bool :=
   stx.getKind == `Batteries.Tactic.Lint.nolint
 
+private def retiredProbabilityToken? : Syntax → Option String
+  | .atom _ token =>
+    if token == "$ᵖ" || token.startsWith "Pr_{" || token.startsWith "Pr[" ||
+        token.startsWith "𝒮[" then some token else none
+  | _ => none
+
 private partial def collectSuppressions (stx : Syntax) (acc : Array (Syntax × MessageData)) :
     Array (Syntax × MessageData) := Id.run do
   let mut result := acc
+  if let some token := retiredProbabilityToken? stx then
+    result := result.push (stx,
+      m!"Retired probability notation `{token}`; use native event probabilities, measures, and uniform sampling")
   if let some name := setOptionName? stx then
     if let some root := forbiddenOptionRoot? name then
       result := result.push (stx,

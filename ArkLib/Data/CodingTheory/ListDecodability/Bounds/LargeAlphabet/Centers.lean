@@ -33,13 +33,18 @@ namespace LargeAlphabetBarrier
 holds at most `B` codewords, then `C` has a `(d+1)`-separated subset `D` with `|C| ≤ B · |D|`. -/
 theorem greedy_separated_extraction :
     ∀ {ι A : Type} [Fintype ι] [DecidableEq A]
-      (C : Set (ι → A)) (d B : ℕ), C.Finite →
+      (C : Set (ι → A)) (d B : ℕ),
       (∀ c ∈ C,
         ({x : ι → A | x ∈ C ∧ hammingDist c x ≤ d} : Set (ι → A)).ncard ≤ B) →
       ∃ D : Set (ι → A), D ⊆ C ∧ D.Finite ∧ separated D (d + 1) ∧
         C.ncard ≤ B * D.ncard := by
   classical
-  intro ι A _ _ C d B hC hlocal
+  intro ι A _ _ C d B hlocal
+  by_cases hC : C.Finite
+  case neg =>
+    refine ⟨∅, Set.empty_subset C, Set.finite_empty, ?_, ?_⟩
+    · simp [separated]
+    · simp [Set.Infinite.ncard hC]
   let s := hC.toFinset
   have hsC : (s : Set (ι → A)) = C := hC.coe_toFinset
   have aux : ∀ s : Finset (ι → A), (s : Set (ι → A)) ⊆ C →
@@ -167,7 +172,7 @@ theorem hamming_center_from_disjoint_blocks
     intro j i hij
     have hiU : i ∈ U := by
       exact Finset.mem_biUnion.mpr ⟨j, Finset.mem_univ _, hij⟩
-    rw [show y i = v (owner ⟨i, hiU⟩) i by simp only [y, dif_pos hiU]]
+    rw [show y i = v (owner ⟨i, hiU⟩) i by simp only [y, dite_eq_left hiU]]
     rw [howner_eq ⟨i, hiU⟩ j hij]
   have hpair :
       ((Finset.univ : Finset (Fin ℓ)) : Set (Fin ℓ)).PairwiseDisjoint blocks := by
@@ -184,7 +189,7 @@ theorem hamming_center_from_disjoint_blocks
       intro i hi
       have hneq := (Finset.mem_filter.mp hi).2
       by_contra hiU
-      have hyc : y i = c i := by simp only [y, dif_neg hiU]
+      have hyc : y i = c i := by simp only [y, dite_eq_right hiU]
       exact hneq hyc.symm
     exact (Finset.card_le_card hsub).trans (hUcard ▸ hcenter)
   · intro j
@@ -203,7 +208,7 @@ theorem hamming_center_from_disjoint_blocks
         by_cases hiU : i ∈ U
         · exact (hcommon i (hblocks_sub (owner ⟨i, hiU⟩)
             (howner_mem ⟨i, hiU⟩)) j).symm
-        · have hyc : y i = c i := by simp only [y, dif_neg hiU]
+        · have hyc : y i = c i := by simp only [y, dite_eq_right hiU]
           exact fun heq => hneq (heq.trans hyc.symm)
       · intro hij
         exact hneq (hy_block j hij).symm
@@ -220,11 +225,12 @@ theorem hamming_center_from_disjoint_blocks
       _ ≤ r' - t := Nat.sub_le_sub_right hDle t
       _ ≤ r := hother
 
-/-- **Balanced centre from `ℓ` nearby codewords.** If `c` and `v 1, …, v ℓ` are pairwise within the
-boosted radius and they disagree with `c` on a large common set, then some single word `y` is within
-radius `p` of all of them — so the point list at `y` has `ℓ + 1` members. -/
+/-- **Balanced centre from `ℓ` words near a reference word.** If each `v j` is within the boosted
+radius of `c` and all `v j` disagree with `c` on a large common set, then, under the stated length
+bound, some single word `y` is within relative radius `p` of `c` and every `v j`. A point-list lower
+bound of `ℓ + 1` additionally requires these words to be distinct members of the code. -/
 theorem balanced_center_construction :
-    ∀ (ℓ : ℕ), 2 ≤ ℓ → ∀ (p : ℝ), 0 < p → p < 1 →
+    ∀ (ℓ : ℕ), ∀ (p : ℝ), 0 < p →
       ∀ {ι A : Type} [Fintype ι] [DecidableEq A]
         (c : ι → A) (v : Fin ℓ → ι → A),
         (∀ j, hammingDist c (v j) ≤
@@ -236,12 +242,18 @@ theorem balanced_center_construction :
           hammingDist c y ≤ Nat.floor (p * Fintype.card ι) ∧
           ∀ j, hammingDist (v j) y ≤ Nat.floor (p * Fintype.card ι) := by
   classical
-  intro ℓ hℓ p hp hp_lt ι A _ _ c v hdist hsize hcommonCard
+  intro ℓ p hp ι A _ _ c v hdist hsize hcommonCard
+  by_cases hp_lt : p < 1
+  case neg =>
+    have hcard : Fintype.card ι ≤ Nat.floor (p * Fintype.card ι) := by
+      apply Nat.le_floor
+      exact le_mul_of_one_le_left (Nat.cast_nonneg _) (le_of_not_gt hp_lt)
+    exact ⟨c, by simp, fun j => (hammingDist_le_card_fintype (x := v j) (y := c)).trans hcard⟩
   let n := Fintype.card ι
   let r := Nat.floor (p * n)
   let r' := Nat.floor (boostedRadius ℓ p * n)
   let t := r' - r
-  have harith := balanced_center_arithmetic ℓ p n hℓ hp hp_lt (by
+  have harith := balanced_center_arithmetic ℓ p n hp hp_lt (by
     simpa only [n] using hsize)
   rcases harith with ⟨hrle, hcancel, ht_center, ht_common⟩
   let S : Finset ι := Finset.univ.filter fun i => ∀ j, c i ≠ v j i
@@ -387,7 +399,7 @@ theorem barrier_center_from_blocks
     else if hiU : i ∈ U then u (owner ⟨i, hiU⟩) i else c₀ i
   have hyzero : ∀ (j : Fin ℓ) {i : ι}, i ∈ blocks.zero → y i = u j i := by
     intro j i hi
-    rw [show y i = common ⟨i, hi⟩ by simp only [y, dif_pos hi]]
+    rw [show y i = common ⟨i, hi⟩ by simp only [y, dite_eq_left hi]]
     exact (hzero j i hi).symm
   have hyother : ∀ (j : Fin ℓ) {i : ι},
       i ∈ blocks.other j → y i = u j i := by
@@ -398,7 +410,7 @@ theorem barrier_center_from_blocks
     have hiU : i ∈ U :=
       Finset.mem_biUnion.mpr ⟨j, Finset.mem_univ _, hi⟩
     rw [show y i = u (owner ⟨i, hiU⟩) i by
-      simp only [y, dif_neg hi0, dif_pos hiU]]
+      simp only [y, dite_eq_right hi0, dite_eq_left hiU]]
     rw [howner_eq ⟨i, hiU⟩ j hi]
   have hpair :
       ((Finset.univ : Finset (Fin ℓ)) : Set (Fin ℓ)).PairwiseDisjoint
@@ -428,7 +440,7 @@ theorem barrier_center_from_blocks
         hnot (Finset.mem_union_left U h)
       have hiU : i ∉ U := fun h =>
         hnot (Finset.mem_union_right blocks.zero h)
-      have hy : y i = c₀ i := by simp only [y, dif_neg hi0, dif_neg hiU]
+      have hy : y i = c₀ i := by simp only [y, dite_eq_right hi0, dite_eq_right hiU]
       exact hne hy.symm
     exact (Finset.card_le_card hsub).trans_eq husedCard
   · intro j
@@ -459,7 +471,7 @@ theorem barrier_center_from_blocks
           intro hi
           rcases Finset.mem_biUnion.mp hi with ⟨k, hk, hik⟩
           exact (Finset.disjoint_left.mp ((hdisjoint j).2 k)) hchosen hik
-        have hy : y i = c₀ i := by simp only [y, dif_neg hi0, dif_neg hiU]
+        have hy : y i = c₀ i := by simp only [y, dite_eq_right hi0, dite_eq_right hiU]
         exact (hagree j i hchosen).trans hy.symm
     have hd := hamming_dist_le_card_compl_of_agree (u j) y E hagreeE
     rw [hn, hEcard] at hd
@@ -468,15 +480,15 @@ theorem barrier_center_from_blocks
 /-- Double counting `ℓ`-subsets of set-indices against coordinates:
 `∑ᵢ C(incidence i, ℓ) = ∑_{|J| = ℓ} |{i : i ∈ S j for all j ∈ J}|`. -/
 theorem incidence_double_count :
-    ∀ {ι κ : Type} [Fintype ι] [Fintype κ] [DecidableEq ι] [DecidableEq κ]
+    ∀ {ι κ : Type} [Fintype ι] [Fintype κ] [DecidableEq ι]
       (ℓ : ℕ) (S : κ → Finset ι),
       let incidence : ι → ℕ := fun i => (Finset.univ.filter fun j => i ∈ S j).card
       let common : Finset κ → Finset ι := fun J =>
         Finset.univ.filter fun i => ∀ j ∈ J, i ∈ S j
       ∑ i, Nat.choose (incidence i) ℓ =
         ∑ J ∈ Finset.univ.powersetCard ℓ, (common J).card := by
+  intro ι κ _ _ _ ℓ S
   classical
-  intro ι κ _ _ _ _ ℓ S
   dsimp
   calc
     (∑ i, Nat.choose ((Finset.univ.filter fun j => i ∈ S j).card) ℓ) =
@@ -510,15 +522,27 @@ theorem incidence_double_count :
       intro i hi
       congr 1
       simp only [Finset.subset_iff, Finset.mem_filter, Finset.mem_univ, true_and]
+    _ = _ := by
+      apply Finset.sum_congr rfl
+      intro J hJ
+      congr 1
+      ext i
+      simp
 
 /-- The numeric slack the moment bound needs: `(3p^ℓ/4) · M^ℓ ≤ (p·M − (ℓ−1))^ℓ` once
 `M ≥ ⌈4ℓ²/p⌉`. -/
 theorem incidence_power_gap :
-    ∀ (ℓ M : ℕ) (p : ℝ), 2 ≤ ℓ → 0 < p →
+    ∀ (ℓ M : ℕ) (p : ℝ), 0 < p →
       Nat.ceil (4 * (ℓ : ℝ) ^ 2 / p) ≤ M →
       (3 * p ^ ℓ / 4) * (M : ℝ) ^ ℓ ≤
         (p * M - (ℓ - 1)) ^ ℓ := by
-  intro ℓ M p hℓ hp hM
+  intro ℓ M p hp hM
+  by_cases hℓ : 2 ≤ ℓ
+  swap
+  · interval_cases ℓ
+    · norm_num
+    · simp only [pow_one, Nat.cast_one, sub_self, sub_zero]
+      nlinarith [mul_nonneg hp.le (Nat.cast_nonneg M : (0 : ℝ) ≤ M)]
   have hℓR : (0 : ℝ) < ℓ := by
     exact_mod_cast (show 0 < ℓ by omega)
   have hℓtwo : (2 : ℝ) ≤ ℓ := by
@@ -599,16 +623,17 @@ theorem incidence_sum_double_count :
       simp only [Finset.mem_filter, Finset.mem_univ, true_and]
 
 theorem injective_family_of_ncard_diff
-    {α : Type} [Finite α]
+    {α : Type}
     (I B : Set α) (ℓ M : ℕ) (hIB : I ⊆ B)
     (hI : I.ncard ≤ ℓ) (hB : ℓ + M < B.ncard) :
     ∃ v : Fin M → α, Function.Injective v ∧ ∀ j, v j ∈ B \ I := by
   classical
+  have hBfin : B.Finite := Set.finite_of_ncard_pos (by omega)
   have hdiff : M ≤ (B \ I).ncard := by
-    have hcard := Set.ncard_sdiff_add_ncard_of_subset hIB (Set.toFinite B)
+    have hcard := Set.ncard_sdiff_add_ncard_of_subset hIB hBfin
     omega
   obtain ⟨T, hTsub, hTcard⟩ := Set.exists_subset_card_eq hdiff
-  have hTfin : T.Finite := Set.toFinite T
+  have hTfin : T.Finite := hBfin.subset (hTsub.trans Set.sdiff_subset)
   let t : Finset α := hTfin.toFinset
   have htcoe : (t : Set α) = T := hTfin.coe_toFinset
   have htcard : t.card = M := by
@@ -628,8 +653,8 @@ theorem injective_family_of_ncard_diff
 open _root_.Code in
 theorem lambda_contradiction_of_injective_center
     (ℓ : ℕ)
-    {ι A : Type} [Fintype ι] [Nonempty ι]
-      [Finite A] [DecidableEq A]
+    {ι A : Type} [Fintype ι]
+      [DecidableEq A]
     (C : Set (ι → A)) (p : ℝ) (hp : 0 ≤ p)
     (c : ι → A) (hc : c ∈ C)
     (u : Fin ℓ → ι → A) (huinj : Function.Injective u)
@@ -640,7 +665,14 @@ theorem lambda_contradiction_of_injective_center
     (hLambda : Lambda C p ≤ (ℓ : ℕ∞)) : False := by
   classical
   have hpoint := (Code.Lambda_le_iff_forall_ncard_le.mp hLambda) y
-  rw [closeCodewordsRel_eq_setOf C p hp y] at hpoint
+  have hpoint_eq : closeCodewordsRel C y p =
+      {x : ι → A | x ∈ C ∧
+        hammingDist x y ≤ Nat.floor (p * Fintype.card ι)} := by
+    rcases isEmpty_or_nonempty ι with hι | hι
+    · ext x
+      simp [Code.mem_closeCodewordsRel_iff, Code.relHammingDist, hammingDist, hp]
+    · exact closeCodewordsRel_eq_setOf C p hp y
+  rw [hpoint_eq] at hpoint
   let image : Finset (ι → A) := Finset.univ.image u
   have hcnot : c ∉ image := by
     intro hcimage
@@ -691,13 +723,13 @@ theorem large_fiber_of_image_bound
 /-- A large-union family can be reparametrised to nearby sizes `a₁ ≥ a₀`, `b₁ ≤ b₀`, at the cost
 of a factor `W` in the number of sets. -/
 theorem large_union_family_resize :
-    ∀ (W a₀ b₀ a₁ b₁ : ℕ), 0 < W → a₀ ≤ a₁ → a₁ < b₀ → b₁ ≤ b₀ →
+    ∀ (W a₀ b₀ a₁ b₁ : ℕ), a₀ ≤ a₁ → a₁ < b₀ → b₁ ≤ b₀ →
       ∀ {ι : Type} [Fintype ι] [DecidableEq ι], a₁ ≤ Fintype.card ι →
         ∀ source : LargeUnionFamily ι W a₀ b₀,
           ∃ target : LargeUnionFamily ι W a₁ b₁,
             source.sets.card ≤ W * target.sets.card := by
   classical
-  intro W a₀ b₀ a₁ b₁ hW ha hlt hb ι _ _ ha₁ source
+  intro W a₀ b₀ a₁ b₁ ha hlt hb ι _ _ ha₁ source
   have hext : ∀ A ∈ source.sets,
       ∃ E : Finset ι, A ⊆ E ∧ E.card = a₁ := by
     intro A hA
@@ -710,7 +742,7 @@ theorem large_union_family_resize :
       A ⊆ extend A ∧ (extend A).card = a₁ := by
     intro A hA
     dsimp only [extend]
-    rw [dif_pos hA]
+    rw [dite_eq_left hA]
     exact Classical.choose_spec (hext A hA)
   let targetSets : Finset (Finset ι) := source.sets.image extend
   have hcard_each : ∀ E ∈ targetSets, E.card = a₁ := by
@@ -754,7 +786,7 @@ theorem large_union_family_resize :
         pre E ∈ source.sets ∧ extend (pre E) = E := by
       intro E hE
       dsimp only [pre]
-      rw [dif_pos hE]
+      rw [dite_eq_left hE]
       exact Classical.choose_spec (hpre E hE)
     let U : Finset (Finset ι) := T.image pre
     have hUsub : U ⊆ source.sets := by
@@ -791,7 +823,7 @@ theorem large_union_family_resize :
 
 theorem nat_quotient_window
     (ℓ radius dZero n : ℕ) (hℓ : 0 < ℓ)
-    (hdZero : dZero ≤ radius) (hradius : radius ≤ n) :
+    (hdZero : dZero ≤ radius) :
     let dOne := (radius - dZero) / ℓ
     let used := dZero + ℓ * dOne
     let m := n - used
@@ -873,7 +905,7 @@ theorem relRadius_pos (ℓ : ℕ) (hℓ_pos : 0 < ℓ)
 
 theorem rate_loss_to_cardinality
     (q B a n N : ℕ) (R : ℝ)
-    (hq : 2 ≤ q) (hB : 0 < B) (hR : 0 ≤ R)
+    (hq : 2 ≤ q)
     (ha : a + (B + 1) ≤ Nat.floor (R * n))
     (hsize : (q : ℝ) ^ (R * n) ≤ (B : ℝ) * N) :
     2 * q ^ a ≤ N := by
@@ -895,7 +927,8 @@ theorem rate_loss_to_cardinality
         rw [← pow_add]
         congr 1
         omega
-  have hRn : 0 ≤ R * (n : ℝ) := mul_nonneg hR (by positivity)
+  have hRn : 0 ≤ R * (n : ℝ) :=
+    zero_le_one.trans (Nat.floor_pos.mp (show 0 < Nat.floor (R * n) by omega))
   have hexp : ((a + (B + 1) : ℕ) : ℝ) ≤ R * n := by
     calc
       ((a + (B + 1) : ℕ) : ℝ) ≤ Nat.floor (R * n) := by
@@ -917,8 +950,12 @@ theorem rate_loss_to_cardinality
           (q ^ (a + (B + 1)) : ℕ) := by exact_mod_cast hnat
       _ ≤ (q : ℝ) ^ (R * n) := hpow
       _ ≤ (B : ℝ) * N := hsize
+  have hBpos : (0 : ℝ) < B := by
+    have hqpos : (0 : ℝ) < q := by exact_mod_cast (show 0 < q by omega)
+    have hprod := (Real.rpow_pos_of_pos hqpos (R * n)).trans_le hsize
+    exact pos_of_mul_pos_left hprod (Nat.cast_nonneg N)
   have hcancel : ((2 * q ^ a : ℕ) : ℝ) ≤ (N : ℝ) :=
-    le_of_mul_le_mul_left hreal (by exact_mod_cast hB)
+    le_of_mul_le_mul_left hreal hBpos
   exact_mod_cast hcancel
 
 /-- The length threshold `⌈(B+1)/R⌉` at which the barrier's basic bounds hold. -/
@@ -947,9 +984,7 @@ noncomputable def roundedBarrierData
 theorem rounded_barrier_other_codeword_bound_core
     (ℓ : ℕ) (hℓ : 2 ≤ ℓ) (R η : ℝ) (B n : ℕ)
     (hone : 1 ≤ η * n)
-    (hrate : B + 1 ≤ Nat.floor (R * n))
-    (hdZero : Nat.ceil (barrierK ℓ B * η * n) ≤
-      Nat.floor (relRadius ℓ R η * n)) :
+    (hrate : B + 1 ≤ Nat.floor (R * n)) :
     let d := roundedBarrierData ℓ R η (barrierK ℓ B) B n
     n - d.dZero - d.dOne - d.aFamily ≤ d.radius := by
   dsimp only [roundedBarrierData]
@@ -960,7 +995,6 @@ theorem rounded_barrier_other_codeword_bound_core
   let o := (r - z) / ℓ
   let a := Nat.floor (R * n) - (B + 1)
   change n - z - o - a ≤ r
-  change z ≤ r at hdZero
   have hℓpos : 0 < ℓ := by omega
   have hℓR : (0 : ℝ) < ℓ := by exact_mod_cast hℓpos
   have hcoefPos : (0 : ℝ) < 1 + 1 / (ℓ : ℝ) := by positivity
@@ -992,11 +1026,13 @@ theorem rounded_barrier_other_codeword_bound_core
       _ = ℓ * (((r - z) / ℓ) + 1) := by
         rw [Nat.mul_add, Nat.mul_one, Nat.add_comm]
       _ = ℓ * (o + 1) := by rfl
-  have hquotReal :
-      ((r - z : ℕ) : ℝ) < ((ℓ * (o + 1) : ℕ) : ℝ) := by
-    exact_mod_cast hquotNat
-  norm_num only [Nat.cast_sub hdZero, Nat.cast_mul, Nat.cast_add,
-    Nat.cast_one] at hquotReal
+  have hquotReal : (r : ℝ) - z < (ℓ : ℝ) * (o + 1) := by
+    by_cases hzr : z ≤ r
+    · have hcast : ((r - z : ℕ) : ℝ) < ((ℓ * (o + 1) : ℕ) : ℝ) := by
+        exact_mod_cast hquotNat
+      simpa only [Nat.cast_sub hzr, Nat.cast_mul, Nat.cast_add, Nat.cast_one] using hcast
+    · have hzrR : (r : ℝ) < z := by exact_mod_cast (lt_of_not_ge hzr)
+      exact (sub_neg.mpr hzrR).trans_le (by positivity)
   have hquotDiv :
       ((r : ℝ) - z) / (ℓ : ℝ) < (o : ℝ) + 1 := by
     rw [div_lt_iff₀ hℓR]
@@ -1098,47 +1134,44 @@ theorem rounded_barrier_other_codeword_bound_core
 
 /-- The mean of the shifted incidences `aᵢ + 1 − ℓ` is at least `p·M − (ℓ−1)`. -/
 theorem shifted_incidence_mean_lower :
-    ∀ (ℓ M n : ℕ) (p : ℝ), 2 ≤ ℓ → 0 < n →
+    ∀ (ℓ M n : ℕ) (p : ℝ), 0 < n →
       ∀ a : Fin n → ℕ,
         p * M * n ≤ ∑ i, (a i : ℝ) →
         p * M - (ℓ - 1) ≤
           (∑ i, ((a i + 1 - ℓ : ℕ) : ℝ)) / n := by
-  intro ℓ M n p hℓ hn a hsum
+  intro ℓ M n p hn a hsum
   have hnR : (0 : ℝ) < n := by
     exact_mod_cast hn
   have hpoint : ∀ i : Fin n,
-      (a i : ℝ) ≤ ((a i + 1 - ℓ : ℕ) : ℝ) + (ℓ - 1 : ℕ) := by
+      (a i : ℝ) + 1 - ℓ ≤ ((a i + 1 - ℓ : ℕ) : ℝ) := by
     intro i
-    exact_mod_cast (show a i ≤ a i + 1 - ℓ + (ℓ - 1) by omega)
-  have hsum_le : (∑ i, (a i : ℝ)) ≤
-      ∑ i, (((a i + 1 - ℓ : ℕ) : ℝ) + (ℓ - 1 : ℕ)) := by
-    exact Finset.sum_le_sum fun i _ => hpoint i
-  rw [Finset.sum_add_distrib] at hsum_le
-  simp only [Finset.sum_const, Finset.card_univ, Fintype.card_fin,
-    nsmul_eq_mul] at hsum_le
-  have hcast : ((ℓ - 1 : ℕ) : ℝ) = (ℓ : ℝ) - 1 := by
-    rw [Nat.cast_sub (by omega)]
-    norm_num
-  rw [hcast] at hsum_le
+    by_cases hle : ℓ ≤ a i + 1
+    · simp [Nat.cast_sub hle]
+    · have hleR : (a i : ℝ) + 1 ≤ ℓ := by exact_mod_cast (le_of_not_ge hle)
+      rw [Nat.sub_eq_zero_of_le (le_of_not_ge hle), Nat.cast_zero]
+      linarith
+  have hsum_le := Finset.sum_le_sum (s := Finset.univ) (fun i _ => hpoint i)
+  simp only [Finset.sum_sub_distrib, Finset.sum_add_distrib, Finset.sum_const,
+    Finset.card_univ, Fintype.card_fin, nsmul_eq_mul, mul_one] at hsum_le
   rw [le_div_iff₀ hnR]
   nlinarith
 
 /-- From a bound on the *mean* incidence to a bound on its `ℓ`-th binomial moment:
 `p·M·n ≤ ∑ᵢ aᵢ` implies `(3p^ℓ/4) · C(M, ℓ) · n ≤ ∑ᵢ C(aᵢ, ℓ)`, by convexity once `M ≥ ⌈4ℓ²/p⌉`. -/
 theorem incidence_moment_lower :
-    ∀ (ℓ M n : ℕ) (p : ℝ), 2 ≤ ℓ → 0 < n → 0 < p → p < 1 →
+    ∀ (ℓ M n : ℕ) (p : ℝ), 2 ≤ ℓ → 0 < n → 0 < p →
       Nat.ceil (4 * (ℓ : ℝ) ^ 2 / p) ≤ M →
       ∀ a : Fin n → ℕ,
         p * M * n ≤ ∑ i, (a i : ℝ) →
         (3 * p ^ ℓ / 4) * Nat.choose M ℓ * n ≤
           ∑ i, (Nat.choose (a i) ℓ : ℝ) := by
-  intro ℓ M n p hℓ hn hp hp_lt hM a hsum
+  intro ℓ M n p hℓ hn hp hM a hsum
   have hnR : (0 : ℝ) < n := by
     exact_mod_cast hn
   let b : Fin n → ℝ := fun i => (a i + 1 - ℓ : ℕ)
   have hmean : p * M - (ℓ - 1) ≤ (∑ i, b i) / n := by
     simpa only [b] using
-      (shifted_incidence_mean_lower ℓ M n p hℓ hn a hsum)
+      (shifted_incidence_mean_lower ℓ M n p hn a hsum)
   have hℓR : (0 : ℝ) < ℓ := by
     exact_mod_cast (show 0 < ℓ by omega)
   have hsize : 4 * (ℓ : ℝ) ^ 2 / p ≤ (M : ℝ) :=
@@ -1198,7 +1231,7 @@ theorem incidence_moment_lower :
       (M : ℝ) ^ ℓ / Nat.factorial ℓ := by
     exact Nat.choose_le_pow_div ℓ M
   have hcoeff : 0 ≤ 3 * p ^ ℓ / 4 := by positivity
-  have hgap := incidence_power_gap ℓ M p hℓ hp hM
+  have hgap := incidence_power_gap ℓ M p hp hM
   have hfirst :
       (3 * p ^ ℓ / 4) * (Nat.choose M ℓ : ℝ) ≤
         (p * M - ((ℓ : ℝ) - 1)) ^ ℓ / Nat.factorial ℓ := by

@@ -172,15 +172,16 @@ Fixed design principles:
 6. compiler passes expose guarantee-transport and security-transfer obligations;
 7. existing PolyFun/VCVio semantics are extended, not shadowed by ArkLib-private copies.
 
-Still provisional until Lean clients elaborate:
+The core claim, source, and run types have Sumcheck acceptance clients. Broader protocol clients
+may still require revisions. The following questions remain open:
 
-- exact universes and field layouts of `OracleFamily`, `SourceCtx`, `ClaimWith`, and `CoreRun`;
-- the final `NamedContext` and stable-name representation;
+- whether the current claim, source, and named-resource interfaces cover the remaining protocols;
 - compiler plan and backend capability field names;
 - whether existing `TypeTree.Chain` is sufficient for n-ary reduction presentation.
 
-The prototype `ArkLib/Interaction` tree on this design branch is valuable evidence and a lemma
-bank. It is not proof that those APIs are current, stable, or mergeable wholesale.
+The archived prototype is a source of candidate definitions and proofs. Current implementation
+evidence belongs to [current status](00-current-status.md), and the order of future work belongs
+to [the roadmap](05-roadmap.md).
 
 ## 8. Success criteria
 
