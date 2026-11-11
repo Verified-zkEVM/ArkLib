@@ -1045,8 +1045,12 @@ theorem phase_intrinsic_owners : joinPhase.slot = .prover ∧ terminalPhase.slot
   constructor <;> kernel_rfl
 
 /-- The actual join includes into the actual terminal context. -/
-def producedInclusion : FullPrefix.Extends joinPhase.prefix terminalPhase.prefix :=
-  .cons (1 : Nat) (.here _)
+def producedInclusion : FullPrefix.Extends (s := twoOracles)
+    joinPhase.prefix terminalPhase.prefix := by
+  rw [joinPhase_prefix, terminalPhase_prefix]
+  exact FullPrefix.Extends.cons (a := .oracle Nat OracleInterface.instDefault)
+    (next := fun _ => .liftBind (.oracle Nat OracleInterface.instDefault) (fun _ => .pure ⟨⟩))
+    (1 : Nat) (.here _)
 
 /-- The old canonical name remains unchanged by the actual join-to-terminal inclusion. -/
 theorem joinPhase_name : terminalPhase.prefix.name
@@ -1071,7 +1075,8 @@ theorem terminalPhase_availability :
         terminalPhase.prefix.name (.inr (.inl ⟨⟩)) := by
   constructor
   · exact ⟨.inr (.inl ⟨⟩), rfl⟩
-  · exact Sum.noConfusion
+  · intro equal
+    cases equal
 
 /-- The phase artifact retains the exact old/old/fresh log, private result and closed verdict. -/
 theorem phase_source_log_contract :
@@ -1110,3 +1115,48 @@ example {ι : Type} {S : Type uS} {ambient : OracleSpec ι}
     (prover : Prover oracleSig ambient s Out) :
     OracleVerifier.AmbientTracedRun.observation <$> V.runWithAmbientTrace stmt data prover =
       V.run stmt data prover := V.runWithAmbientTrace_erase stmt data prover
+
+namespace Interaction.Core.LoggedExecutionTests
+
+/-- A small payload has genuinely larger query indices. -/
+@[reducible] def liftedQueries : OracleInterface.{0, 1} Nat where
+  Query := ULift.{1, 0} Unit
+  toOC.spec _ := Nat
+  toOC.impl _ := do return (← read)
+
+/-- Attach the larger query interface to an actual small-move oracle node. -/
+@[instance_reducible] def liftedNode : OracleProtocol.{0, 1} :=
+  .liftBind (.oracle Nat liftedQueries) (fun _ => .pure ⟨⟩)
+
+/-- The final decision queries the actual large-index oracle sent by the prover. -/
+def liftedVerifier : OracleVerifier ambient liftedNode Unit (fun _ => Nat) inputs
+    (fun _ => exported) where
+  decide _ p _ := by
+    rcases p with ⟨⟨⟩, ⟨⟩⟩
+    exact do
+      let sent : Nat ← liftM ((ambient + (pathResources inputs liftedNode ⟨⟨⟩, ⟨⟩⟩).spec).query
+        (.inr (.inr ⟨.inl ⟨⟩, ⟨()⟩⟩)))
+      pure sent
+  outputMap _ _ _ := OracleMap.fst _ _
+
+/-- No receiver node occurs in this larger-query protocol. -/
+def liftedDraw : QueryImpl (challengeSpec oracleSig liftedNode) Id
+  | ⟨.inl _, h⟩ => nomatch h
+  | ⟨.inr ⟨_, n⟩, _⟩ => n.elim
+
+/-- Ambient tracing runs a genuinely larger-query oracle node without returning resource indices. -/
+def liftedTrace : OracleVerifier.AmbientTracedRun liftedVerifier (fun _ => Nat) :=
+  simulateQ (show QueryImpl (ambient + challengeSpec oracleSig liftedNode) Id from
+    fun q => match q with | .inl n => n | .inr c => liftedDraw c)
+    (liftedVerifier.runWithAmbientTrace () seven (pure ⟨(17 : Nat), pure 23⟩))
+
+/-- The same larger-query execution returns its payload, private output and actual terminal
+prefix. -/
+theorem lifted_trace_contract : liftedTrace.observation.2.1 = 23 ∧
+    liftedTrace.observation.2.2.map (·.1) = some 17 ∧
+    liftedTrace.terminalPhase.prefix = (some ⟨(17 : Nat), none⟩ : FullPrefix liftedNode) := by
+  constructor
+  · kernel_rfl
+  · constructor <;> kernel_rfl
+
+end Interaction.Core.LoggedExecutionTests

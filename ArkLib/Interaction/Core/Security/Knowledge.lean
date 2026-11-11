@@ -480,8 +480,7 @@ theorem map_runWithLog_eq_runWithAmbientLog {ι : Type} {S : Type uS} {ambient :
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
     (prover : Prover oracleSig ambient s Out) :
     (fun z => (z.1, z.2.1, z.2.2.fst)) <$> V.runWithLog stmt data prover =
-      V.runWithAmbientLog stmt data prover :=
-by
+      V.runWithAmbientLog stmt data prover := by
   rw [runWithAmbientLog_eq]
   exact V.runWithLog_fst stmt data prover
 

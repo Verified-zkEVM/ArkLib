@@ -207,6 +207,8 @@ The pre-existing large-query full-log restriction remains recorded in implementa
 `runWithAmbientTrace` retains provenance at independent input-query and oracle-node-query
 universes, with erasure to `runWithAmbientLog` and the ordinary run.
 `runWithTrace_ambientView` equates its produced slots with the full trace at small universes.
+[largeTrace] executes an actual `Nat` oracle node with queries in `Type 1`, reads its sent
+payload in the decision, and checks the produced terminal prefix.
 
 Ports owned by the oracle-access tests:
 
@@ -242,7 +244,7 @@ Ports owned by the oracle-access tests:
 [bitInformed]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L737
 [bitSplit]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L755
 [audit]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L825
-[erasure]: ../../../ArkLib/Interaction/Core/Security/Knowledge.lean#L388
+[erasure]: ../../../ArkLib/Interaction/Core/Security/Knowledge.lean#L402
 [runtimeErasure]: ../../../ArkLib/Interaction/Core/Oracle/LoggedExecution.lean#L49
 [terminalAPI]: ../../../ArkLib/Interaction/Core/Oracle/LoggedExecution.lean#L73
 [rawHidden]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L83
@@ -259,16 +261,18 @@ Ports owned by the oracle-access tests:
 
 [trace]: ../../../ArkLib/Interaction/Core/Oracle/Provenance.lean
 [prefixResources]: ../../../ArkLib/Interaction/Core/Oracle/PrefixResources.lean
-[tracePhases]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L889
-[actualPrefixes]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L900
-[joinPrefix]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1024
-[terminalPrefix]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1028
-[joinMember]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1017
-[terminalMember]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1020
-[joinName]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1037
-[joinAvailable]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1042
-[terminalAvailable]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1053
-[phaseSource]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1062
-[movedQuery]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L971
+[tracePhases]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L893
+[actualPrefixes]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L911
+[joinPrefix]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1035
+[terminalPrefix]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1039
+[joinMember]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1028
+[terminalMember]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1031
+[joinName]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1056
+[joinAvailable]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1061
+[terminalAvailable]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1072
+[phaseSource]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1082
+[movedQuery]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L981
 
 [slots]: ../../../ArkLib/Interaction/Core/Oracle/SlotTrace.lean
+
+[largeTrace]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1155
