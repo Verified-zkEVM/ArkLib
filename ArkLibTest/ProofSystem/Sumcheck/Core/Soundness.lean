@@ -445,10 +445,10 @@ example {ι : Type} (amb : OracleSpec ι) (impl : QueryImpl amb ProbComp) :
   refine (simulateQ_indexedVerifier_decide ([0, 0] : List (ZMod 5)).get impl
     ⟨2, Fin.elim0⟩ (fun _ => oneInput) tr).trans ?_
   congr 1
-  simp [indexedVerdict, indexedNext, Interpreted.message, Interpreted.challenge, tr,
-    consTranscript, oneMessage, IndexedClaim.initial, IndexedClaim.next,
-    IndexedClaim.index,
-    IndexedClaim.finish]
+  rw [indexedVerdict_succ]
+  simp [indexedVerdict, intervalVerdict, Interpreted.verdict, indexedNext, Interpreted.message,
+    Interpreted.challenge, tr, consTranscript, oneMessage, IndexedClaim.initial,
+    IntervalClaim.next, IntervalClaim.index, IntervalClaim.finish]
 
 
 /-- Constant one over `[0, 0]` gives an accepting actual run with final target one. -/
@@ -477,8 +477,10 @@ theorem repeated_run {ι : Type} (amb : OracleSpec ι) :
   refine bind_congr fun r => ?_
   change ZMod 5 at r
   congr 2
-  simp [indexedVerdict, indexedNext, Interpreted.message, Interpreted.challenge, roundTranscript,
-    oneMessage, IndexedClaim.initial, IndexedClaim.next, IndexedClaim.index, IndexedClaim.finish]
+  rw [indexedVerdict_succ]
+  simp [indexedVerdict, intervalVerdict, Interpreted.verdict, indexedNext, Interpreted.message,
+    Interpreted.challenge, roundTranscript, oneMessage, IndexedClaim.initial,
+    IntervalClaim.next, IntervalClaim.index, IntervalClaim.finish]
 
 
 run_cmd

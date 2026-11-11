@@ -53,21 +53,25 @@ def consTranscript {M : Type} {eval : M → R → R} {n : ℕ} (msg : M) (chal :
     (tail : PathAlong oracleSig (Interpreted.protocol R M eval n)) :
     PathAlong oracleSig (Interpreted.protocol R M eval (n + 1)) := ⟨msg, ⟨chal, tail⟩⟩
 
+omit [CommSemiring R] in
 /-- The head message of a prepended round is its message. -/
 @[simp] theorem message_consTranscript {M : Type} {eval : M → R → R} {n : ℕ} (msg : M)
     (chal : R) (tail : PathAlong oracleSig (Interpreted.protocol R M eval n)) :
     Interpreted.message (consTranscript msg chal tail) = msg := rfl
 
+omit [CommSemiring R] in
 /-- The head challenge of a prepended round is its challenge. -/
 @[simp] theorem challenge_consTranscript {M : Type} {eval : M → R → R} {n : ℕ} (msg : M)
     (chal : R) (tail : PathAlong oracleSig (Interpreted.protocol R M eval n)) :
     Interpreted.challenge (consTranscript msg chal tail) = chal := rfl
 
+omit [CommSemiring R] in
 /-- The tail of a prepended round is the given transcript. -/
 @[simp] theorem tail_consTranscript {M : Type} {eval : M → R → R} {n : ℕ} (msg : M)
     (chal : R) (tail : PathAlong oracleSig (Interpreted.protocol R M eval n)) :
     Interpreted.tail (consTranscript msg chal tail) = tail := rfl
 
+omit [CommSemiring R] in
 /-- A transcript is determined by its first round and its tail. -/
 theorem consTranscript_eta {M : Type} {eval : M → R → R} {n : ℕ}
     (tr : PathAlong oracleSig (Interpreted.protocol R M eval (n + 1))) :

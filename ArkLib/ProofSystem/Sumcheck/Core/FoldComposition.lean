@@ -7,7 +7,7 @@ module
 
 public import ArkLib.ProofSystem.Sumcheck.Core.Interval
 
-/-! # Composition of native passive round checks
+/-! # Composition of interaction-layer passive round checks
 
 Appending the next round to the remaining checks gives the actual fold run, against every
 prover. All interactions run before the decisions, including after a rejected prefix.
@@ -65,7 +65,7 @@ theorem suffixRoute_foldHead (k : ℕ) (stmt : State (k + 1)) (data : ∀ i, A i
   · rfl
   · rfl
 
-/-- The appended decision agrees with the native fold on every completed transcript. -/
+/-- The appended decision agrees with the interaction-layer fold on every completed transcript. -/
 theorem decideWith_append_foldVerifier (k : ℕ) (stmt : State (k + 1)) (data : ∀ i, A i)
     (tr : PathAlong oracleSig (protocol R deg (k + 1))) :
     ((foldHeadVerifier (deg := deg) ambient inputs V k).append
@@ -89,7 +89,7 @@ theorem decideWith_append_foldVerifier (k : ℕ) (stmt : State (k + 1)) (data : 
   | some mid =>
     exact decideWith_foldVerifier ambient inputs V finish k mid data tail
 
-/-- Appending a round to the remaining checks gives the actual native fold run. -/
+/-- Appending a round to the remaining checks gives the actual interaction-layer fold run. -/
 theorem run_append_foldVerifier (k : ℕ) (stmt : State (k + 1)) (data : ∀ i, A i)
     {Out : PathAlong oracleSig (protocol R deg (k + 1)) → Type}
     (prover : Prover oracleSig ambient (protocol R deg (k + 1)) Out) :

@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.ProofSystem.Sumcheck.Core.IntervalCompleteness
+public import ArkLib.ProofSystem.Sumcheck.Core.Indexed
 
 /-! # Projected round oracles over indexed domains
 
@@ -67,14 +68,15 @@ theorem simulateQ_projectedQuery (i : Fin n) (c : Fin i.castSucc → R)
     simp only [projectedRoundPolynomial, Polynomial.eval_finsetSum, MvPolynomial.eval_evalExcept]
     rfl
 
-/-- The native projected oracle map, including its concrete realization and query implementation. -/
+/-- The interaction-layer projected oracle map, including its concrete realization and query
+implementation. -/
 noncomputable def projectedMap (i : Fin n) (c : Fin i.castSucc → R) :
     OracleMap (polyFamily R deg n) (roundFamily R deg) where
   f data _ := projectedRoundPolynomial D i c (data ())
   impl q := projectedQuery D i c q.2
   law data q := simulateQ_projectedQuery D i c data q.2
 
-/-- Concrete data exported by the projection is the native honest round polynomial. -/
+/-- Concrete data exported by the projection is the honest round polynomial. -/
 @[simp] theorem projectedMap_f (i : Fin n) (c : Fin i.castSucc → R)
     (data : ∀ j, PolynomialData R n deg j) (u : Unit) :
     (projectedMap (deg := deg) D i c).f data u =

@@ -9,7 +9,7 @@ public import ArkLib.ProofSystem.Sumcheck.Core.ComputableProjection
 public import ArkLib.ProofSystem.Sumcheck.Core.InterpretedExecution
 public import ArkLib.ProofSystem.Sumcheck.Core.IntervalCompleteness
 
-/-! # Computable honest interval provers and native execution -/
+/-! # Computable honest interval provers and interaction-layer execution -/
 
 @[expose] public section
 

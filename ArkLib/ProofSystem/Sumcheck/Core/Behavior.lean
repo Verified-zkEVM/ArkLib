@@ -73,8 +73,8 @@ def behaviorIntervalVerifier (D : Fin d → R) {ι : Type} (ambient : OracleSpec
       (intervalInitial start count bound stmt) p v
   outputMap _ _ _ := OracleMap.fst _ _
 
-/-- The arbitrary-behavior interval is the same native passive fold with its original data
-retained, without assuming that those answers have a polynomial realization. -/
+/-- The arbitrary-behavior interval is the same interaction-layer passive fold, with its original
+data retained, without assuming that those answers have a polynomial realization. -/
 theorem behaviorIntervalVerifier_run (D : Fin d → R) {ι : Type} (ambient : OracleSpec ι)
     (start count : ℕ) (bound : start + count ≤ n)
     (stmt : RoundStatement R n ⟨start, by omega⟩) (evaluate : (Fin n → R) → R)

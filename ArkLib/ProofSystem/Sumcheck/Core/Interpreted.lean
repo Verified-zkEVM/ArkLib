@@ -5,15 +5,14 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.Indexed
 public import ArkLib.ProofSystem.Sumcheck.Core.InterpretedPath
 public import ArkLib.ProofSystem.Sumcheck.Core.Protocol
 
 /-! # Passive Sumcheck with interpreted message carriers
 
-An evaluation interface allows arbitrary message representations. The native decision reads only
-that interface; its transcript verdict uses the same interpretation. Neither messages nor public
-challenges choose the subsequent shape.
+An evaluation interface allows arbitrary message representations. The interaction-layer decision
+reads only that interface; its transcript verdict uses the same interpretation. Neither messages
+nor public challenges choose the subsequent shape.
 -/
 
 @[expose] public section
@@ -40,7 +39,7 @@ def verdict {State : ℕ → Type} {T : Type} (evaluate : M → R → R)
   | k + 1, st, tr => (roundVerdict evaluate (checks k) st (message tr) (challenge tr)).bind
       fun mid => verdict evaluate checks finish k mid (tail tr)
 
-/-- The native final decision queries the declared interface of each message. -/
+/-- The interaction-layer final decision queries the declared interface of each message. -/
 def decision {State : ℕ → Type} {T : Type} (checks : RoundChecks R State)
     (finish : State 0 → T) : (k : ℕ) → State k → (p : Path (protocol R M evaluate k)) →
       View (protocol R M evaluate k) p →
@@ -52,7 +51,7 @@ def decision {State : ℕ → Type} {T : Type} (checks : RoundChecks R State)
       | none => return none
       | some mid => simulateQ (tailLift p) (decision checks finish k mid (tailPath p) (tailView v))
 
-/-- Answering the native decision computes the verdict for every interpreted carrier. -/
+/-- Answering the interaction-layer decision computes the verdict for every interpreted carrier. -/
 theorem simulate_decision {State : ℕ → Type} {T : Type} (checks : RoundChecks R State)
     (finish : State 0 → T) : ∀ (k : ℕ) (st : State k)
     (tr : PathAlong oracleSig (protocol R M evaluate k)),

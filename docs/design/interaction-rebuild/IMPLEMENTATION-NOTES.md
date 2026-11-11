@@ -348,7 +348,8 @@ semirings. The probabilistic bounds add `IsDomain`, finiteness and uniform sampl
 that constant one sums to two over `[0, 0]`, to one over `[0]`, and passes the native final
 decision with repeated points and target two. The native tests audit the theorem axioms.
 
-#1488 implements interval endpoints with `intervalVerifier` built from native `foldVerifier`.
+#1488 implements interval endpoints with `intervalVerifier`, built from the interaction-layer
+`foldVerifier`.
 The exact-row Sumcheck disposition gives interval execution, projection and append targets;
 their full-run corollaries preserve the parent statements. P1 and P2 explain changed abort and shape assertions.
 Behavior-guarantee assertions remain unresolved pending the corresponding parent interface.
@@ -372,33 +373,34 @@ soundness statements.
 **Plan.** The frozen assertions quantify over interval endpoints, projected input behavior and
 composition through exported oracles. This entry follows the parent's entries through 22.
 
-**Code.** `Sumcheck/Core/Fold.lean` implements passive native checks. `Interval` specializes
-those checks to every `start + count ≤ n`. `IntervalCompleteness` proves support, perfect and
-measure completeness for that full range. `IntervalAdaptive` supplies current-statement
-challenge callbacks through an actual shared-state handler. `IntervalSoundness` proves native
-round-by-round suffix soundness for exactly `start + count = n`, then applies the parent's
-uniform implication with `count` challenges and error `count * (deg / |R|)`. Lists retain all
-repetitions; embeddings specialize the same proofs. `intervalVerifier_full_run` identifies the
-zero-start full interval with the parent's native indexed verifier without changing its theorems.
+**Code.** `Sumcheck/Core/Fold.lean` implements passive interaction-layer checks. `Interval`
+specializes those checks to every `start + count ≤ n`. `IntervalCompleteness` proves support,
+perfect and measure completeness for that full range. `IntervalAdaptive` supplies current-statement
+challenge callbacks through an actual shared-state handler. `IntervalSoundness` proves
+interaction-layer round-by-round suffix soundness for exactly `start + count = n`, then applies the
+parent's uniform implication with `count` challenges and error `count * (deg / |R|)`. Lists retain
+all repetitions; embeddings specialize the same proofs. `intervalVerifier_full_run` identifies the
+zero-start full interval with the parent's interaction-layer indexed verifier without changing its
+theorems.
 
-`FoldComposition.run_append_public_intervalVerifier` compares actual public one-round and
-suffix interval verifier runs. It transports the midpoint and endpoint statements explicitly,
-retains the transcript, original polynomial and private output, and permits arbitrary effectful
-provers. `Projection` constructs the native projected oracle map and its derived query handler.
-`projectedExecute_closed` identifies returned behavior with that handler;
-`projectedExecute_related` proves its evaluation claim. `Behavior` handles arbitrary original
-input behavior at the empty interval and proves its final remaining-sum relation is evaluation.
-`BehaviorComposition.run_append_behaviorIntervalVerifier` extends the public append equation
-to arbitrary original evaluation behavior. `IntervalRoundSoundness` proves the actual one-round
+`FoldComposition.run_append_public_intervalVerifier` compares actual public one-round and suffix
+interval verifier runs. It transports the midpoint and endpoint statements explicitly, retains the
+transcript, original polynomial and private output, and permits arbitrary effectful provers.
+`Projection` constructs the interaction-layer projected oracle map and its derived query handler.
+`projectedExecute_closed` identifies returned behavior with that handler; `projectedExecute_related`
+proves its evaluation claim. `Behavior` handles arbitrary original input behavior at the empty
+interval and proves its final remaining-sum relation is evaluation.
+`BehaviorComposition.run_append_behaviorIntervalVerifier` extends the public append equation to
+arbitrary original evaluation behavior. `IntervalRoundSoundness` proves the actual one-round
 probability and measure bounds at every variable position, including intermediate endpoints.
 `ComputableProjection` computes indexed CompPoly projections, retaining repeated domain points.
 `ComputableInterval` constructs the honest computational strategy and proves its interpretation,
-actual execution equality and completeness. `ComputableSoundness` transfers the native suffix
-bound to every computational-message prover with shared ambient state.
-`Interpreted` and `InterpretedExecution` provide generic message interfaces and preserve both
-prover slots, each public draw and the terminal computation under evaluation-preserving message
-interpretation. Legacy `Spec` projections and honest prover comparisons are isolated in
-`LegacyProjection` and `LegacyProtocol`; native security does not depend on them.
+actual execution equality and completeness. `ComputableSoundness` transfers the interaction-layer
+suffix bound to every computational-message prover with shared ambient state. `Interpreted` and
+`InterpretedExecution` provide generic message interfaces and preserve both prover slots, each
+public draw and the terminal computation under evaluation-preserving message interpretation. Legacy
+`Spec` projections and honest prover comparisons are isolated in `LegacyProjection` and
+`LegacyProtocol`; interaction-layer security does not depend on them.
 
 The routing fixture uses `Nat`, with semiring-general polynomial export and routing laws.
 Explicit deterministic handlers produce query order `[1, 3, 2, 4]`, accepted claim `(10, 10)` and

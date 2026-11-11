@@ -188,8 +188,9 @@ theorem run_transport {m : Type → Type} [Monad m] [LawfulMonad m] {Out : Type}
     simp only [LawfulMonad.bind_pure_comp, Functor.map_map]
     rfl
 
-/-- Close an actual native prover-sampler execution by its final resource verdict. The original
-input may be arbitrary behavior; no polynomial realization is required by this executor. -/
+/-- Close an actual interaction-layer prover-sampler execution by its final resource verdict.
+The original input may be arbitrary behavior; no polynomial realization is required by this
+executor. -/
 def execute {m : Type → Type} [Monad m] {Out Data : Type} {State : ℕ → Type} {T : Type}
     (next : m R) (checks : RoundChecks R State) (finish : State 0 → T) (k : ℕ)
     (st : State k) (data : Data)
