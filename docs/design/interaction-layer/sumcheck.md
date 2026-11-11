@@ -475,7 +475,7 @@ The exact parent dispositions, including freshness and failure scope, are in
 
 ## Remaining work
 
-The parent's behavior-guarantee rows remain unresolved until the corresponding interfaces exist.
+The behavior-guarantee rows remain unresolved until the corresponding Core interfaces exist.
 `Interpreted` supplies a native passive verifier for arbitrary evaluated message carriers;
 `InterpretedExecution` preserves message slots, challenge-response slots and terminal outputs
 under interpretation. This generic interface does not make Mathlib polynomial projections
@@ -518,9 +518,9 @@ above rather than adding independent security claims.
 
 ## Departures
 
-These entries continue the numbering of [`departures.md`](departures.md).
+These are the two departures of entry 22 in [`departures.md`](departures.md).
 
-### 20. The transferred completeness is in its own module
+### The transferred completeness is in its own module
 
 **Plan.** The implementation plan puts completeness in `Completeness`.
 
@@ -533,12 +533,12 @@ These entries continue the numbering of [`departures.md`](departures.md).
 the transferred theorem uses the embedded legacy honest prover, uniform challenges and an
 output witness. Both statements remain available.
 
-### 21. Full-run and interval verifier interfaces
+### Full-run and interval verifier interfaces
 
 **Migration.** Several frozen assertions execute one round inside a multivariate statement or
 split an interval into a first round and a suffix.
 
-**Code.** The parent's `indexedVerifier` keeps its full-run interface. The interval verifier
+**Code.** `indexedVerifier` keeps its full-run interface. The interval verifier
 accepts every bounded pair `start`, `count`; its suffix security theorem assumes exactly
 `start + count = n`. `intervalVerifier_full_run` identifies the full native run with the
 zero-start interval. `run_append_public_intervalVerifier` compares actual public interval

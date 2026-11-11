@@ -35,7 +35,7 @@ The status is one of equivalent, premise-required or unresolved.
 | Entry | Departure | Status |
 | --- | --- | --- |
 | 18 | Run outputs and a prover's ambient index are tied to the monad universe `u`; every other component takes its own universe, including input and output oracle query types. Input oracle data stays in the response universe `Type u`; the full-log oracle runner `runWithLog` keeps the input index and query type in `Type`, while extraction runs on the general ambient-log runner. | Run-output coupling is premise-required: positions live one universe up and the runner is `m : Type u → Type u`. Input-data and full-log restrictions remain unresolved: `OracleInterface` ties data and responses through `ReaderM`, and the full log records input queries. |
-| 19 | Round-by-round soundness implies soundness for lawful distribution monads, with prefix-indexed freshness. | equivalent; see the soundness disposition record below |
+| 21 | Round-by-round soundness implies soundness for lawful distribution monads, with prefix-indexed freshness | equivalent; see the soundness disposition record below |
 
 ## Legacy embedding: entries 14–16
 
@@ -52,23 +52,23 @@ Entries 15 and 16 are the two hypotheses that a client of the round-by-round tra
 check. Entry 15 applies to the direction into the interaction layer, and entry 16 to the
 direction out of it.
 
-## Sumcheck: entries 20–21
+## Sumcheck: entry 22
 
-These entries continue the numbering for Sumcheck in the interaction layer. They are in
+Entry 22 covers Sumcheck in the interaction layer. Its two departures are described in
 [`sumcheck.md`](sumcheck.md#departures).
 
 | Entry | Departure |
 | --- | --- |
-| [20](sumcheck.md#20-the-transferred-completeness-is-in-its-own-module) | The transferred completeness is in its own module, `LegacyCompleteness`. |
-| [21](sumcheck.md#21-full-run-and-interval-verifier-interfaces) | The parent keeps its full-run verifier; #1488 adds arbitrary interval endpoints and public interval composition. |
+| [22](sumcheck.md#the-transferred-completeness-is-in-its-own-module) | The transferred completeness is in its own module, `LegacyCompleteness`. |
+| [22](sumcheck.md#full-run-and-interval-verifier-interfaces) | Full-run verifiers keep their interface; interval verifiers add arbitrary endpoints and public interval composition. |
 
-Entry 21 distinguishes the unchanged full-run interface from the arbitrary interval interface.
+The second departure distinguishes the unchanged full-run interface from the arbitrary interval interface.
 The [exact-row disposition](sumcheck.md#migration-disposition) now names native interval,
-projection and append targets. The parent's behavior-guarantee interface gaps remain unresolved.
-Both full-run and suffix soundness use the parent implication over indexed domains, including
-lists with repetitions.
+projection and append targets. The behavior-guarantee interface gaps remain unresolved.
+Both full-run and suffix soundness use the generic round-by-round-to-soundness implication over
+indexed domains, including lists with repetitions.
 
-Entry [19](../interaction-rebuild/IMPLEMENTATION-NOTES.md#19-round-by-round-soundness-implies-soundness-for-lawful-distribution-monads)
+Entry [21](../interaction-rebuild/IMPLEMENTATION-NOTES.md#21-round-by-round-soundness-implies-soundness-for-lawful-distribution-monads)
 records the generic soundness implication. The
 [soundness disposition record](soundness-implication-disposition.md) compares every ported frozen
 statement and test, explains prefix-indexed freshness, and links the classical specialization laws.
@@ -83,8 +83,6 @@ and prover outputs. P1 and P2 explain changed decision timing and public abort s
 | Entry | Departure |
 | --- | --- |
 | [23](../interaction-rebuild/IMPLEMENTATION-NOTES.md#23-sumcheck-ports) | Sumcheck ports: arbitrary interval completeness, native suffix soundness, public interval append, projected behavior, generic message interpretation and routing over `Nat`. |
-
-Entries 19–22 retain their parent numbering; the interval work uses entry 23.
 
 ## Computable Sumcheck: entry 24
 

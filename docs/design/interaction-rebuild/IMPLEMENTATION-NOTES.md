@@ -310,9 +310,7 @@ run extracts `w.val`.
 This keeps to record D7, whose problems already index witness types by the claim; D7 fixes no
 constant output witness type for either notion.
 
-## Migration commit D6
-
-### 19. Round-by-round soundness implies soundness for lawful distribution monads
+## 21. Round-by-round soundness implies soundness for lawful distribution monads
 
 `Security/Implications.lean` bounds actual flip events at full prefixes. Its passive sampler
 retains history-dependent challenge programs, and an exact equation identifies its execution
