@@ -18,6 +18,8 @@ appended logs. -/
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
   OracleComp OracleSpec
 
+universe wJ
+
 /-! ## The doubled export: `QueryBounds.lean`
 
 The prefix exports twice its message, reading the prefix slot twice; the suffix decision reads the
@@ -29,22 +31,23 @@ open Interaction.Core.QueryBoundsTests
 /-- Raw charges on the composed resources: 1 for the prefix slot, 3 for the suffix slot. -/
 def rawCost : CostModel (ambient + rawResources.spec) Nat := ⟨fun q => match q with
   | .inl _ => 1
-  | .inr ⟨.inl i, _⟩ => i.elim
-  | .inr ⟨.inr (.inl _), _⟩ => 1
-  | .inr ⟨.inr (.inr _), _⟩ => 3⟩
+  | .inr (.inl ⟨i, _⟩) => i.elim
+  | .inr (.inr ⟨.inl _, _⟩) => 1
+  | .inr (.inr ⟨.inr _, _⟩) => 3⟩
 
 /-- Source charges on the suffix resources: 2 for the export, 3 for the suffix's own slot. -/
 def sourceCost : CostModel (ambient + suffixResources.spec) Nat := ⟨fun q => match q with
   | .inl _ => 1
-  | .inr ⟨.inl _, _⟩ => 2
-  | .inr ⟨.inr _, _⟩ => 3⟩
+  | .inr (.inl _) => 2
+  | .inr (.inr _) => 3⟩
 
 -- QueryBounds 1, restated: the route is `suffixRoute` of `OracleVerifier.append`, with ambient
 -- queries kept. Each routed query costs at most its source charge: the export expands to two
 -- prefix-slot queries of cost 1, and the fresh query is the suffix-slot query of cost 3.
+/-- Routing each suffix query costs at most its assigned source charge. -/
 theorem route_cost (v : View combined combinedPath) (q : (ambient + suffixResources.spec).Domain) :
     WorstCaseCostBound (route v q) rawCost (sourceCost.queryCost q) := by
-  rcases q with n | ⟨⟨⟩ | ⟨⟩ | i, q⟩
+  rcases q with n | (⟨⟨⟩, q⟩ | ⟨⟨⟩ | i, q⟩)
   · exact worstCaseCostBound_query (.inl n) rawCost
   · cases q
     change WorstCaseCostBound (do
@@ -62,14 +65,16 @@ theorem route_cost (v : View combined combinedPath) (q : (ambient + suffixResour
 
 -- QueryBounds 2, restated: the suffix decision program, over the ambient oracle and the suffix
 -- resources, has weighted cost at most 5.
+/-- The suffix decision has weighted query cost at most five. -/
 theorem program_cost : WorstCaseCostBound suffixProgram sourceCost 5 := by
   refine WorstCaseCostBound.bind (A := 2) (B := 3)
-    (worstCaseCostBound_query (.inr ⟨.inl (), ()⟩) sourceCost) fun _ => ?_
+    (worstCaseCostBound_query (.inr (.inl ⟨(), ()⟩)) sourceCost) fun _ => ?_
   refine WorstCaseCostBound.bind (A := 3) (B := 0)
-    (worstCaseCostBound_query (.inr ⟨.inr (.inl ⟨⟩), ()⟩) sourceCost) fun _ => ?_
+    (worstCaseCostBound_query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)) sourceCost) fun _ => ?_
   exact (worstCaseCostBound_pure _ _ _).mpr le_rfl
 
 -- QueryBounds 3, restated: the routed suffix decision has raw cost at most 5.
+/-- The routed suffix decision has weighted query cost at most five. -/
 theorem routed_cost (v : View combined combinedPath) :
     WorstCaseCostBound (routedSuffix v) rawCost 5 :=
   program_cost.simulateQ (route v) (route_cost v)
@@ -83,14 +88,14 @@ example (v : View combined combinedPath) :
 
 /-- The routed export query reads the prefix slot twice. -/
 theorem route_export (v : View combined combinedPath) :
-    route v (.inr ⟨.inl (), ()⟩) = (do
+    route v (.inr (.inl ⟨(), ()⟩)) = (do
       let left : Nat ← liftM ((ambient + rawResources.spec).query (.inr prefixSlot))
       let right : Nat ← liftM ((ambient + rawResources.spec).query (.inr prefixSlot))
       pure (left + right)) := rfl
 
 /-- The routed fresh query is the suffix-slot query. -/
 theorem route_fresh (v : View combined combinedPath) :
-    route v (.inr ⟨.inr (.inl ⟨⟩), ()⟩) =
+    route v (.inr (.inr ⟨.inl ⟨⟩, ()⟩)) =
       (liftM ((ambient + rawResources.spec).query (.inr suffixSlot)) :
         OracleComp (ambient + rawResources.spec) Nat) := rfl
 
@@ -140,14 +145,14 @@ def importCost : CostModel coinSpec Nat := ⟨fun _ => 1⟩
 
 /-- Suffix charges: ambient charges, and 2 per export query. -/
 def suffixCost (p : Path bitSecond) :
-    CostModel (bitAmbient + (sumFamily bits (pathFamily bitSecond p)).spec) Nat :=
+    CostModel (bitAmbient + (pathResources bits bitSecond p).spec) Nat :=
   ⟨fun q => match q with
     | .inl request => ambientCost.queryCost request
     | .inr _ => 2⟩
 
 /-- Raw charges on the composed resources: ambient charges, and 2 per input query. -/
 def bitRawCost (p : Path bitCombined) :
-    CostModel (bitAmbient + (sumFamily bits (pathFamily bitCombined p)).spec) Nat :=
+    CostModel (bitAmbient + (pathResources bits bitCombined p).spec) Nat :=
   ⟨fun q => match q with
     | .inl request => ambientCost.queryCost request
     | .inr _ => 2⟩
@@ -156,35 +161,38 @@ def bitRawCost (p : Path bitCombined) :
 -- at most 2.
 example (v : View bitFirst firstPath) :
     WorstCaseCostBound ((exportMap v).impl ⟨(), ()⟩) inputCost 2 :=
-  worstCaseCostBound_query (spec := firstResources.spec) ⟨.inl (), ()⟩ inputCost
+  worstCaseCostBound_query (spec := firstResources.spec) (.inl ⟨(), ()⟩) inputCost
 
 -- RuntimeQueryBounds 6: on every suffix path and view, the suffix decision costs at most
 -- 5: the export query 2 and the reveal 3.
+/-- Every suffix decision has weighted query cost at most five. -/
 theorem suffix_budget (p : Path bitSecond) (v : View bitSecond p) :
     WorstCaseCostBound (bitSuffix.decide () p v).run (suffixCost p) 5 := by
   rcases p with ⟨guess, ⟨⟩⟩
   rw [suffix_decide]
   refine WorstCaseCostBound.bind (A := 2) (B := 3)
-    (worstCaseCostBound_query (.inr ⟨.inl (), ()⟩) (suffixCost _)) fun _ => ?_
+    (worstCaseCostBound_query (.inr (.inl ⟨(), ()⟩)) (suffixCost _)) fun _ => ?_
   refine WorstCaseCostBound.bind (A := 3) (B := 0)
     (worstCaseCostBound_query (.inl true) (suffixCost _)) fun _ => ?_
   exact (worstCaseCostBound_pure _ _ _).mpr le_rfl
 
 -- RuntimeQueryBounds 7, restated: the route is `suffixRoute … withAmbient`. On every composed
 -- path and view, the routed suffix decision costs at most 5.
+/-- Routing preserves the suffix decision's weighted cost bound of five. -/
 theorem routed_suffix_budget (p : Path bitCombined) (v : View bitCombined p) :
     WorstCaseCostBound (routedSuffix p v) (bitRawCost p) 5 := by
   rcases p with ⟨⟨⟩, guess, ⟨⟩⟩
   refine (suffix_budget _ _).simulateQ _ fun q => ?_
-  rcases q with request | ⟨i | i, q⟩
+  rcases q with request | (⟨i, q⟩ | ⟨i, q⟩)
   · exact worstCaseCostBound_query (.inl request) (bitRawCost _)
   · cases i
     cases q
     exact (routeSuffix_export guess v).symm ▸
-      worstCaseCostBound_query (.inr ⟨.inl (), ()⟩) (bitRawCost (combinedPath guess))
+      worstCaseCostBound_query (.inr (.inl ⟨(), ()⟩)) (bitRawCost (combinedPath guess))
   · exact i.elim
 
 -- RuntimeQueryBounds 11: the runtime setup samples the hidden bit once.
+/-- Runtime setup makes exactly one coin query and costs at most one. -/
 theorem setup_budget : WorstCaseCostBound bitRuntime.setup importCost 1 :=
   WorstCaseCostBound.bind (A := 1) (B := 0) (worstCaseCostBound_query () importCost)
     fun _ => (worstCaseCostBound_pure _ _ _).mpr le_rfl
@@ -204,6 +212,7 @@ theorem guess_history (guess : Bool) (secret : Nat) :
 -- RuntimeQueryBounds 15, restated: the whole runtime execution of the composed run makes one
 -- import query, for every guess and secret. The proof reflects the cost through the history
 -- observation, as in the frozen row.
+/-- The composed runtime execution makes at most one import query. -/
 theorem import_budget (guess : Bool) (secret : Nat) :
     WorstCaseCostBound (bitRuntime.run (bitVerifier.run () falseData (guessProver guess secret)))
       importCost 1 := by
@@ -219,20 +228,23 @@ end Interaction.Core.QueryCostTests
 namespace Interaction.Core.QueryCostTests
 open Interaction.Core.PhasedRunTests
 
-/-- The prover's ambient log of the logged run. -/
-def proverLog (payload hidden : Nat) (bit : Bool) : QueryLog PhasedRunTests.ambient :=
-  ((simulateQ (logger bit) ((verifier true).runWithLog () noData
+-- The full-log runner keeps input indices and input query types in `Type`; output query types
+-- remain independent. See implementation note 18 in the interaction rebuild design notes.
+/-- The prover's ambient log of the logged run, with arbitrary output query universe. -/
+def proverLog.{qJ} (payload hidden : Nat) (bit : Bool) : QueryLog PhasedRunTests.ambient :=
+  ((simulateQ (logger bit) ((verifier.{0, 0, 0, qJ} true).runWithLog () noData
     (prover payload hidden))).run []).1.2.1
 
--- PhasedRun 3, restated: phases are retired (D6), and the query profile is `QueryLog.countQ`. For
+-- PhasedRun 3, restated: phases are retired, and the query profile is `QueryLog.countQ`. For
 -- every payload, private output and challenge, the prover's ambient log is the two setup queries
 -- followed by the queries 1, 4 and 5, so query 9 counts twice: `2 + 0` over the two segments.
+/-- The prover log contains the two setup queries followed by its three interaction queries. -/
 theorem proverLog_eq (payload hidden : Nat) (bit : Bool) :
-    proverLog payload hidden bit = [⟨9, ()⟩, ⟨9, ()⟩] ++ [⟨1, ()⟩, ⟨4, ()⟩, ⟨5, ()⟩] := by
+    proverLog.{wJ} payload hidden bit = [⟨9, ()⟩, ⟨9, ()⟩] ++ [⟨1, ()⟩, ⟨4, ()⟩, ⟨5, ()⟩] := by
   kernel_rfl
 
 example (payload hidden : Nat) (bit : Bool) :
-    (proverLog payload hidden bit).countQ (· = 9) = 2 := by
+    (proverLog.{wJ} payload hidden bit).countQ (· = 9) = 2 := by
   rw [proverLog_eq, QueryLog.countQ_append]
   rfl
 

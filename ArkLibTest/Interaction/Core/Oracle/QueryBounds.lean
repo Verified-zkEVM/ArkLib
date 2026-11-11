@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Interaction.Core.Oracle.Routing
+import ArkLibTest.Interaction.Core.Support
 import VCVio.OracleComp.QueryTracking.QueryBound.Simulation
 
 /-! Routed oracle access in a composition. The prefix receives one oracle and exports a view that
@@ -15,6 +16,8 @@ never reaches the suffix slot. Both routed reads of the export name the same pre
 
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
   OracleComp OracleSpec
+
+universe uI uD wI wJ
 
 namespace Interaction.Core.QueryBoundsTests
 
@@ -46,27 +49,28 @@ abbrev combinedPath : Path combined := ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
   ⟨fun _ => OracleInterface.instDefault⟩
 
 /-- The prefix decision resources. -/
-abbrev prefixResources := sumFamily none' (pathFamily single singlePath)
+abbrev prefixResources := pathResources none' single singlePath
 
 /-- The suffix decision resources. -/
-abbrev suffixResources := sumFamily exported (pathFamily single singlePath)
+abbrev suffixResources := pathResources exported single singlePath
 
 /-- The resources of a decision on the composed path: the inputs and both sends. -/
-abbrev rawResources := sumFamily none' (pathFamily combined combinedPath)
+abbrev rawResources := pathResources none' combined combinedPath
 
 /-- Export twice the prefix message, reading the same prefix slot twice. -/
 def view : OracleMap prefixResources exported where
-  f x _ := (show Nat from x (.inr (.inl ⟨⟩))) + (show Nat from x (.inr (.inl ⟨⟩)))
+  f x _ := (show Nat from x.2 (.inl ⟨⟩)) + (show Nat from x.2 (.inl ⟨⟩))
   impl _ := do
-    let left : Nat ← liftM (prefixResources.spec.query ⟨.inr (.inl ⟨⟩), ()⟩)
-    let right : Nat ← liftM (prefixResources.spec.query ⟨.inr (.inl ⟨⟩), ()⟩)
+    let left : Nat ← liftM (prefixResources.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
+    let right : Nat ← liftM (prefixResources.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
     pure (left + right)
   law _ _ := by
     simp only [simulateQ_bind]
     rfl
 
 /-- The prefix decision accepts; its output map is `view`. -/
-def prefixVerifier : OracleVerifier ambient single Unit Unit none' exported where
+def prefixVerifier :
+    OracleVerifier ambient single Unit (fun _ => Unit) none' (fun _ => exported) where
   decide _ _ _ := pure ()
   outputMap _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
@@ -74,22 +78,23 @@ def prefixVerifier : OracleVerifier ambient single Unit Unit none' exported wher
 
 /-- The suffix decision program: read the export, then the suffix's own slot, and add. -/
 def suffixProgram : OracleComp (ambient + suffixResources.spec) Nat := do
-  let old : Nat ← liftM ((ambient + suffixResources.spec).query (.inr ⟨.inl (), ()⟩))
-  let fresh : Nat ← liftM ((ambient + suffixResources.spec).query (.inr ⟨.inr (.inl ⟨⟩), ()⟩))
+  let old : Nat ← liftM ((ambient + suffixResources.spec).query (.inr (.inl ⟨(), ()⟩)))
+  let fresh : Nat ← liftM ((ambient + suffixResources.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
   pure (old + fresh)
 
 /-- The empty output map. -/
-def noOutput {I : Type} {A : I → Type} (In : OracleFamily I A) : OracleMap In none' where
+def noOutput (In : Resources.{0, uI, uD}) : OracleMap In none' where
   f _ i := i.elim
   impl q := q.1.elim
   law _ q := q.1.elim
 
 /-- The suffix decision runs `suffixProgram`; it has no output oracles. -/
-def suffixVerifier : OracleVerifier ambient single Unit Nat exported none' where
+def suffixVerifier :
+    OracleVerifier ambient single Unit (fun _ => Nat) exported (fun _ => none') where
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact liftM suffixProgram
-  outputMap _ p _ := noOutput _
+  outputMap _ _ _ := noOutput _
 
 /-- No output oracles, so the composite output map is trivially compatible. -/
 def compatible : OracleVerifier.OutputCompatibility prefixVerifier (fun _ => suffixVerifier) where
@@ -110,11 +115,12 @@ def prover (a b : Nat) : Prover oracleSig ambient combined (fun _ => Nat) :=
       pure ⟨second, pure (first + second)⟩))
 
 /-- The prefix slot of the composed resources. -/
-abbrev prefixSlot : rawResources.spec.Domain := ⟨.inr (.inl ⟨⟩), ()⟩
+abbrev prefixSlot : rawResources.spec.Domain := (.inr ⟨.inl ⟨⟩, ()⟩)
 
 /-- The suffix slot of the composed resources. -/
-abbrev suffixSlot : rawResources.spec.Domain := ⟨.inr (.inr (.inl ⟨⟩)), ()⟩
+abbrev suffixSlot : rawResources.spec.Domain := (.inr ⟨.inr (.inl ⟨⟩), ()⟩)
 
+/-- The prefix and suffix queries name distinct sent oracles. -/
 theorem prefixSlot_ne_suffixSlot : prefixSlot ≠ suffixSlot := by
   intro h
   cases h
@@ -134,25 +140,16 @@ def routedSuffix (v : View combined combinedPath) :
 -- prefix slot of the composed resources; the suffix's own read queries the suffix slot, which is
 -- distinct.
 example (v : View combined combinedPath) :
-    (OracleVerifier.suffixRoute prefixVerifier () combinedPath v).impl ⟨.inl (), ()⟩ = (do
+    (OracleVerifier.suffixRoute prefixVerifier () combinedPath v).impl (.inl ⟨(), ()⟩) = (do
       let left : Nat ← liftM (rawResources.spec.query prefixSlot)
       let right : Nat ← liftM (rawResources.spec.query prefixSlot)
       pure (left + right)) := rfl
 
 example (v : View combined combinedPath) :
-    (OracleVerifier.suffixRoute prefixVerifier () combinedPath v).impl ⟨.inr (.inl ⟨⟩), ()⟩ =
+    (OracleVerifier.suffixRoute prefixVerifier () combinedPath v).impl (.inr ⟨.inl ⟨⟩, ()⟩) =
       (liftM (rawResources.spec.query suffixSlot) : OracleComp rawResources.spec Nat) := rfl
 
 example : prefixSlot ≠ suffixSlot := prefixSlot_ne_suffixSlot
-
-/-- Every program satisfies the trivial query predicate. -/
-theorem allQueriesSatisfy_true {ι α : Type} {spec : OracleSpec ι} (program : OracleComp spec α) :
-    AllQueriesSatisfy program fun _ => True := by
-  induction program using OracleComp.inductionOn with
-  | pure _ => exact allQueriesSatisfy_pure _ _
-  | query_bind _ _ ih =>
-    rw [allQueriesSatisfy_query_bind_iff]
-    exact ⟨trivial, ih⟩
 
 /-- The route of the prefix decision into the composed run. -/
 abbrev prefixRoute :=
@@ -168,13 +165,14 @@ example : (PEmpty ⊕ oracleIdx single (Path.split single (fun _ => single) comb
 
 example : True := by
   fail_if_success
-    have _ : prefixResources.spec.Domain := ⟨.inr (.inr (.inl ⟨⟩)), ()⟩
+    have _ : prefixResources.spec.Domain := (.inr ⟨.inr (.inl ⟨⟩), ()⟩)
   trivial
 
+/-- Routing any prefix decision excludes the suffix oracle query. -/
 theorem future_rejected {α : Type} (program : OracleComp (ambient + prefixResources.spec) α) :
     AllQueriesSatisfy (simulateQ prefixRoute program) (· ≠ .inr suffixSlot) := by
-  refine (allQueriesSatisfy_true program).simulateQ fun q _ => ?_
-  rcases q with q | ⟨i | ⟨⟩ | i, q⟩
+  refine (allQueriesSatisfy_of_forall (fun _ => True.intro) program).simulateQ fun q _ => ?_
+  rcases q with q | (⟨i, q⟩ | ⟨⟨⟩ | i, q⟩)
   · exact (allQueriesSatisfy_query_iff _ _).mpr Sum.inl_ne_inr
   · exact i.elim
   · cases q
@@ -197,19 +195,22 @@ def tagHandler : QueryImpl (ambient + challengeSpec oracleSig combined) Id
   | .inr ⟨.inr ⟨_, .inl _⟩, h⟩ => nomatch h
   | .inr ⟨.inr ⟨_, .inr ⟨_, n⟩⟩, _⟩ => n.elim
 
-/-- The composed run under `tagHandler`. -/
-def observed (a b : Nat) := simulateQ tagHandler (composed.run () noData (prover a b))
+/-- The composed run under `tagHandler`, with independent input index and query universes. -/
+def observed.{vI, qI, qJ} (a b : Nat) :=
+  simulateQ tagHandler (composed.{vI, 0, qI, qJ}.run () noData (prover a b))
 
--- QueryBounds 9 and 10, restated: phases are retired (D6). For all tags `a` and `b`, the composed
+-- QueryBounds 9 and 10, restated: phases are retired. For all tags `a` and `b`, the composed
 -- run sends `a` then `b`, keeps `a + b` and accepts `2a + b`. Its transcript is the append of the
 -- prefix transcript `⟨a⟩` and the suffix transcript `⟨b⟩`, and splitting its payloads gives the
 -- prefix payload `a` (row 9) and the suffix payload `b` (row 10).
-example (a b : Nat) : ((observed a b).1, (observed a b).2.1, (observed a b).2.2.map Prod.fst) =
+example (a b : Nat) :
+    ((observed.{uI, wI, wJ} a b).1, (observed.{uI, wI, wJ} a b).2.1,
+      (observed.{uI, wI, wJ} a b).2.2.map Prod.fst) =
     (PathAlong.append oracleSig single (fun _ => single) ⟨a, ⟨⟩⟩ ⟨b, ⟨⟩⟩, a + b,
       some (a + a + b)) := by
   unfold observed composed
   rw [OracleVerifier.run_append]
-  rfl
+  kernel_rfl
 
 example (a b : Nat) :=
   splitOracles_payloads single (fun _ => single) (⟨a, ⟨⟩⟩ : PathAlong oracleSig single)
