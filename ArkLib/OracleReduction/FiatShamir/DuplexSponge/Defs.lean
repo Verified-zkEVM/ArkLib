@@ -831,9 +831,15 @@ Prover's function for processing the next round, given the current result of the
 
 This is modified for Fiat-Shamir, where we only accumulate the messages and not the challenges.
 
-For a specification ending in a prover message, this absorbs that final message, unlike the
-`i < k` guard in CO25 Construction 4.3. Section 5 uses `NondegenerateRounds` specifications ending
-in a challenge; any future terminal-prover schedule must include this absorption in its query bound.
+Every round runs its sponge step, the last round included. CO25 Construction 4.3 guards the
+prover's Steps 4(b)–(e) with `i < k`, so the paper prover never absorbs `α̂_k` and never squeezes
+`ρ̂_k`; only the verifier does. On the `NondegenerateRounds` schedule of Section 5, which ends in a
+challenge, this prover absorbs `α̂_k` and squeezes `ρ̂_k` as well, after it has computed
+`α_k`. These steps are the verifier's last-round steps, so the prover's queries equal the
+verifier's queries and the prover receives the same `ρ_k`, which a reduction's output may use.
+Neither the proof string nor any earlier challenge changes. The only effect is extra prover work:
+the last round's absorb and squeeze queries, which the paper's prover-complexity count leaves out.
+On a specification that ends in a prover message, the prover also absorbs that final message.
 -/
 @[inline, specialize]
 def Prover.processRoundDSFS (j : Fin n)
