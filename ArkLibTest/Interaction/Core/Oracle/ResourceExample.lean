@@ -9,13 +9,16 @@ import Mathlib.Algebra.Polynomial.Degree.Operations
 import Mathlib.Algebra.Polynomial.Eval.Defs
 
 /-!
-# Oracle family indices: disjoint sums, aliases and renaming with dependent carriers
+# Named resources and oracle families with dependent carriers
 
 Oracle family indices name the oracles. A sum of families keeps two same-interface oracles with
 different carrier types apart. An embedding along a non-injective renaming makes two output
 indices share one realization; an embedding along `Bool.not` transports a carrier to the renamed
 index. Query and response types may vary with the index, and a carrier subtype states a degree
 bound that holds of every realization.
+
+Named resources keep response and realization universes independent. A view restricts the visible
+queries while retaining the whole context's data. Both forms are used directly as verifier inputs.
 
 The polynomial fixture is noncomputable because Mathlib's `Polynomial` is; it is used only for
 the evaluation and degree proofs.
@@ -254,13 +257,94 @@ example : (false : model.Index) ≠ true := by decide
 /-- The polynomial cannot have natural degree strictly below zero. -/
 example : ¬ linearRealization.val.natDegree < 0 := Nat.not_lt_zero _
 
+/-! ### R26 and R27 with independent realization and response universes -/
+
+section IndependentRealizations
+
+universe e
+
+variable {Name : Type i} {Query : Name → Type q} {Realization : Name → Type a}
+  {Response : (n : Name) → Query n → Type e}
+
+/-- A view queries selected named resources while retaining the whole context's data (R27). -/
+def viewResources (answer : ∀ n, Realization n → (q : Query n) → Response n q)
+    {Index : Type s} (name : Index → Name) {Visible : Type h} (select : Visible → Index) :
+    Resources.{e, max h q, max s a} where
+  Index := (x : Visible) × Query (name (select x))
+  spec query := Response (name (select query.1)) query.2
+  Data := (x : Index) → Realization (name x)
+  answer data query := answer _ (data (select query.1)) query.2
+
+/-- The whole named context is the identity view (R26). -/
+abbrev namedResources (answer : ∀ n, Realization n → (q : Query n) → Response n q)
+    {Index : Type s} (name : Index → Name) : Resources.{e, max s q, max s a} :=
+  viewResources answer name id
+
+/-- R26 retains its exact query and data carriers without identifying `a` with `e`. -/
+example (answer : ∀ n, Realization n → (q : Query n) → Response n q)
+    {Index : Type s} (name : Index → Name) :
+    (namedResources answer name).Index = ((x : Index) × Query (name x)) ∧
+      (namedResources answer name).Data = ((x : Index) → Realization (name x)) := ⟨rfl, rfl⟩
+
+/-- R27 retains the original context's data when the visible index has its own universe. -/
+example (answer : ∀ n, Realization n → (q : Query n) → Response n q)
+    {Index : Type s} (name : Index → Name) {Visible : Type h} (select : Visible → Index) :
+    (viewResources answer name select).Index = ((x : Visible) × Query (name (select x))) ∧
+      (viewResources answer name select).Data = ((x : Index) → Realization (name x)) :=
+  ⟨rfl, rfl⟩
+
+/-- No output oracles are needed to test the verifier's resource input boundary. -/
+def noOutputs : OracleFamily.{e, e, e} PEmpty (fun _ => PUnit) := ⟨fun x => x.elim⟩
+
+/-- A verifier consumes an R27-shaped view, with independent realization `a` and response `e`.
+Its decision reads the selected query from the whole context's unencoded data. -/
+def viewVerifier (answer : ∀ n, Realization n → (q : Query n) → Response n q)
+    {Index : Type s} (name : Index → Name) {Visible : Type h} (select : Visible → Index)
+    (x : Visible) (query : Query (name (select x))) :
+    OracleVerifier (PEmpty.{e + 1} →ₒ PUnit.{e + 1}) (.pure ⟨⟩ : OracleProtocol.{e, q})
+      PUnit.{e + 1} (fun _ => Response (name (select x)) query)
+      (viewResources answer name select) (fun _ => noOutputs) where
+  decide _ p _ := liftM
+    (((PEmpty.{e + 1} →ₒ PUnit.{e + 1}) +
+      (pathResources (viewResources answer name select)
+        (.pure ⟨⟩ : OracleProtocol.{e, q}) p).spec).query (.inr (.inl ⟨x, query⟩)))
+  outputMap _ _ _ :=
+    { f := fun _ x => x.elim
+      impl := fun query => query.1.elim
+      law := fun _ query => query.1.elim }
+
+/-- The R26 verifier is the identity-view specialization of the R27 verifier. -/
+abbrev namedVerifier (answer : ∀ n, Realization n → (q : Query n) → Response n q)
+    {Index : Type s} (name : Index → Name) (x : Index) (query : Query (name x)) :
+    OracleVerifier (PEmpty.{e + 1} →ₒ PUnit.{e + 1}) (.pure ⟨⟩ : OracleProtocol.{e, q})
+      PUnit.{e + 1} (fun _ => Response (name x) query) (namedResources answer name)
+      (fun _ => noOutputs) :=
+  viewVerifier answer name id x query
+
+/-- The run also accepts the unencoded realization family at the independent universe `a`. -/
+example (answer : ∀ n, Realization n → (q : Query n) → Response n q)
+    {Index : Type s} (name : Index → Name) (x : Index) (query : Query (name x))
+    (data : (x : Index) → Realization (name x)) :=
+  (namedVerifier answer name x query).run (Out := fun _ => PUnit.{e + 1}) ⟨⟩ data (pure ⟨⟩)
+
+/-- Both R26 and R27 are verifier inputs with the same original realization family. The view
+changes only which queries are visible, without encoding or restricting the backing data. -/
+example (answer : ∀ n, Realization n → (q : Query n) → Response n q)
+    {Index : Type s} (name : Index → Name) {Visible : Type h} (select : Visible → Index)
+    (x : Visible) (query : Query (name (select x)))
+    (data : (x : Index) → Realization (name x)) :=
+  ((namedVerifier answer name (select x) query).run
+      (Out := fun _ => PUnit.{e + 1}) ⟨⟩ data (pure ⟨⟩),
+    (viewVerifier answer name select x query).run
+      (Out := fun _ => PUnit.{e + 1}) ⟨⟩ data (pure ⟨⟩))
+
+end IndependentRealizations
+
 section Universes
 
 variable {Name : Type i} {Realization : Name → Type a} {Index : Type s} {View : Type h}
 
--- ResourceExample R26: names, context indices and queries keep universes i, s and q. The
--- realization universe a remains tied to the response universe, unlike the frozen independent e,
--- because OracleInterface uses ReaderM; see IMPLEMENTATION-NOTES.md, entry 18.
+-- OracleFamily specializes the independent resource contracts through Resources.ofFamily.
 /-- Selected oracle resources retain the independent context, query and data-index universes. -/
 example (C : OracleFamily.{i, a, q} Name Realization) (name : Index → Name) :
     Resources.{a, max s q, max s a} := Resources.ofFamily (C.reindex name)
@@ -275,9 +359,7 @@ example (C : OracleFamily.{i, a, q} Name Realization) (name : Index → Name) :
     (∀ x, Realization (name x)) → QueryImpl (C.reindex name).spec Id :=
   (C.reindex name).behaviorOfRealizations
 
--- ResourceExample R27: view indices have their own universe h, while backing data stays
--- indexed by the original context in universe s. Only a and the response universe remain tied
--- through OracleInterface's ReaderM, as recorded in IMPLEMENTATION-NOTES.md, entry 18.
+-- The family specialization retains the original context when routing through a view.
 /-- An arbitrary view changes query indices without changing the original context data. -/
 example (C : OracleFamily.{i, a, q} Name Realization) (name : Index → Name)
     (view : View → Index) (data : ∀ x, Realization (name x)) :

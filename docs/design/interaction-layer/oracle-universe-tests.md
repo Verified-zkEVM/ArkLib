@@ -8,7 +8,7 @@ inventory links the full disposition in the
 interaction-layer client. Added checks supplement these rows.
 
 **Retained** means the mathematical contract holds after the stated representation change.
-**Partial** preserves only the listed dimensions and does not close the original contract.
+**equivalent** preserves the exact frozen contract at the stated representation.
 **Retired** identifies a removed mechanism whose original contract has no corresponding API.
 **Logged-execution** marks a row ported by the logged-execution and routing tests. Its status there
 (equivalent or premise-required) and its exact target are in the linked section.
@@ -67,8 +67,8 @@ These statuses do not count a narrower test as equivalent to the frozen assertio
 | R23 [261][fr23] | Actual degree is below 2 | Retained carrier guarantee: [test][nr23] |
 | R24 [265][fr24] | Degree < 0 is false | Retained numerical false property: [test][nr24] |
 | R25 [269][fr25] | The symbol 0 is not promised | Retired: reified promise membership removed |
-| R26 [278][fr26] | Context universes | Partial: [test][nr26]; response universe unresolved |
-| R27 [284][fr27] | View universe contract | Partial: [test][nr27]; response universe unresolved |
+| R26 [278][fr26] | Context universes | equivalent: [namedResources][nr26] and [verifier inputs][resourceRuns] |
+| R27 [284][fr27] | View universe contract | equivalent: [viewResources][nr27] and [verifier inputs][resourceRuns] |
 
 ## RunSourcesExample
 
@@ -185,33 +185,31 @@ and close by `rfl`. Unwrapping the lifted answer gives `5`; rewrapping the origi
 `.down = 5`. The natural-number family retains its original backing data, and its query
 `⟨true, ()⟩` selects the frozen example's index `true`.
 
-**ResourceExample R26, partial.** Names, context indices and queries keep independent universes
-`i`, `s`
-and `q`. The selected resources have queries in `max s q` and data in `max s a`. Tests check the
-exact dependent query carrier and interpretation of arbitrary context data. The frozen response
-universe `e` stays equal to realization universe `a` because of the unresolved interface dependency
-in entry 18.
+**ResourceExample R26, equivalent.** `namedResources` has
+`Resources.{e, max s q, max s a}` with query carrier `((x : Index) × Query (name x))` and
+data carrier `((x : Index) → Realization (name x))`. Response universe `e` and realization
+universe `a` are independent. This is the identity-view specialization of `viewResources`.
 
-**ResourceExample R27, partial.** Every view map from universe `h` to context universe `s` is
-allowed.
-View queries have universe `max h q`; the input data stays indexed by the original context in
-universe `max s a`. `OracleMap.embedding` selects that data, and a universally quantified answer
-equality checks the selected index. Universes `i`, `s`, `h` and `q` stay independent. Only `e = a`
-remains tied, for the same interface dependency.
+**ResourceExample R27, equivalent.** `viewResources` has
+`Resources.{e, max h q, max s a}`. Its query carrier is
+`((x : Visible) × Query (name (select x)))`; its data carrier remains the whole original
+context `((x : Index) → Realization (name x))`. The view index universe `h` is independent
+of context universe `s`, query universe `q`, realization universe `a` and response universe `e`.
+The [shared client][resourceRuns] runs both resource forms as verifier inputs using the same
+unencoded context data. `namedVerifier` specializes `viewVerifier` at the identity selection.
+The definitions occur once in `ResourceExample.lean`, which `UniverseCanary.lean` imports.
+Neither P1 nor P2 retires any part of these contracts.
 
-## Interface restriction
+## Remaining interface restrictions
 
-[Implementation note 18](../interaction-rebuild/IMPLEMENTATION-NOTES.md)
-records that `OracleInterface` ties realization data and responses through `ReaderM`. This is the
-unresolved dimension of the partial resource canaries. The logged-runner restriction does not
-apply to these tests. The source sum, tensor, lifting and raw-routing canaries retain all their
+[Implementation note 18](../interaction-rebuild/IMPLEMENTATION-NOTES.md) states:
+“Its input query index and oracle-node query type must remain in `Type`.” This applies to
+`OracleVerifier.runWithLog`, whose returned full log records resource queries. It does not
+restrict R26/R27, which use general `Resources` as inputs to `OracleVerifier.run`.
+`Resources.ofFamily` retains the shared `OracleInterface` specialization, with its `ReaderM`
+coupling; that specialization no longer restricts general verifier inputs. The shared interface
+is unchanged. The source sum, tensor, lifting and raw-routing canaries also retain all their
 frozen universe instantiations.
-
-The concrete owner change for R26/R27 is to separate realization universe `a` and response
-universe `e` in `ArkLib/OracleReduction/OracleInterface.lean`. Its `toOC` must use a reader on
-`Type e`, such as `(α : Type e) → Message → α`, instead of the pinned `ReaderM Message` tied to
-`a`. `OracleFamily` in `ArkLib/Relation/Basic.lean`, and then `Resources.ofFamily`, must expose
-that separate response parameter. Until those owner changes land, R26/R27 remain partial.
 
 ## Unresolved cost universes
 
@@ -294,51 +292,51 @@ families use ordinary definition transparency as well. The exact retained attrib
 [fr2]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L56
 [fr3]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L66
 [fr4]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L91
-[nr4]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L70
+[nr4]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L73
 [fr5]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L93
 [fr6]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L105
-[nr6]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L83
+[nr6]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L86
 [fr7]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L108
-[nr7]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L88
+[nr7]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L91
 [fr8]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L109
-[nr8]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L93
+[nr8]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L96
 [fr9]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L112
-[nr9]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L231
+[nr9]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L234
 [fr10]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L117
-[nr10]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L236
+[nr10]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L239
 [fr11]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L122
-[nr11]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L239
+[nr11]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L242
 [fr12]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L130
-[nr12]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L247
+[nr12]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L250
 [fr13]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L133
-[nr13]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L251
+[nr13]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L254
 [fr14]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L134
 [fr15]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L137
 [fr16]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L166
-[nr16]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L106
+[nr16]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L109
 [fr17]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L175
-[nr17]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L117
+[nr17]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L120
 [fr18]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L179
-[nr18]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L126
+[nr18]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L129
 [fr19]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L184
-[nr19]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L134
+[nr19]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L137
 [fr20]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L198
-[nr20]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L161
+[nr20]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L164
 [fr21]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L227
-[nr21]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L188
+[nr21]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L191
 [fr22a]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L253
-[nr22a]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L209
+[nr22a]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L212
 [fr22b]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L257
-[nr22b]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L215
+[nr22b]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L218
 [fr23]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L261
-[nr23]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L227
+[nr23]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L230
 [fr24]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L265
-[nr24]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L255
+[nr24]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L258
 [fr25]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L269
 [fr26]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L278
-[nr26]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L265
+[nr26]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L279
 [fr27]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L284
-[nr27]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L282
+[nr27]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L270
 [frs1]: ../../../ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L49
 [nrs1]: ../../../ArkLibTest/Interaction/Core/Oracle/RunSourcesExample.lean#L61
 [frs2]: ../../../ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L53
@@ -387,3 +385,5 @@ families use ordinary definition transparency as well. The exact retained attrib
 [nv3]: ../../../ArkLibTest/Interaction/Core/Oracle/Virtual.lean#L98
 
 [legacy]: ../../../ArkLibTest/Interaction/Core/Legacy/OracleReduction.lean#L107
+
+[resourceRuns]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L330

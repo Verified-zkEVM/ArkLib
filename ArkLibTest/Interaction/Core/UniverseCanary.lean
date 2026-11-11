@@ -7,6 +7,7 @@ Authors: Quang Dao
 import ArkLib.Interaction.Core.Composition
 import ArkLib.Interaction.Core.Security.Knowledge
 import ArkLib.Interaction.Core.Security.RoundByRound
+import ArkLibTest.Interaction.Core.Oracle.ResourceExample
 
 /-!
 # Components that are not run outputs live in their own universes
@@ -293,69 +294,6 @@ def nodeHandler : QueryImpl (smallAmbient + challengeSpec oracleSig typeQueryPro
 /-- The decision reads the sent payload, independently of the input resource's value. -/
 example : (simulateQ nodeHandler (nodeQueryVerifier.run () (fun _ => 5) nodeProver)).2.2.map
     Prod.fst = some 17 := rfl
-
-/-! ### R26 and R27 with independent realization and response universes -/
-
-section IndependentRealizations
-
-universe i a e q s h
-
-variable {Name : Type i} {Query : Name → Type q} {Realization : Name → Type a}
-  {Response : (n : Name) → Query n → Type e}
-
-/-- A view queries selected named resources while retaining the whole context's data (R27). -/
-def viewResources (answer : ∀ n, Realization n → (q : Query n) → Response n q)
-    {Index : Type s} (name : Index → Name) {Visible : Type h} (select : Visible → Index) :
-    Resources.{e, max h q, max s a} where
-  Index := (x : Visible) × Query (name (select x))
-  spec query := Response (name (select query.1)) query.2
-  Data := (x : Index) → Realization (name x)
-  answer data query := answer _ (data (select query.1)) query.2
-
-/-- The whole named context is the identity view (R26). -/
-abbrev namedResources (answer : ∀ n, Realization n → (q : Query n) → Response n q)
-    {Index : Type s} (name : Index → Name) : Resources.{e, max s q, max s a} :=
-  viewResources answer name id
-
-/-- R26 retains its exact query and data carriers without identifying `a` with `e`. -/
-example (answer : ∀ n, Realization n → (q : Query n) → Response n q)
-    {Index : Type s} (name : Index → Name) :
-    (namedResources answer name).Index = ((x : Index) × Query (name x)) ∧
-      (namedResources answer name).Data = ((x : Index) → Realization (name x)) := ⟨rfl, rfl⟩
-
-/-- R27 retains the original context's data when the visible index has its own universe. -/
-example (answer : ∀ n, Realization n → (q : Query n) → Response n q)
-    {Index : Type s} (name : Index → Name) {Visible : Type h} (select : Visible → Index) :
-    (viewResources answer name select).Index = ((x : Visible) × Query (name (select x))) ∧
-      (viewResources answer name select).Data = ((x : Index) → Realization (name x)) :=
-  ⟨rfl, rfl⟩
-
-/-- No output oracles are needed to test the verifier's resource input boundary. -/
-def noOutputs : OracleFamily.{e, e, e} PEmpty (fun _ => PUnit) := ⟨fun x => x.elim⟩
-
-/-- A verifier consumes an R26-shaped input, with independent realization `a` and response `e`.
-Its decision returns one input answer, using no realization encoding. -/
-def namedVerifier (answer : ∀ n, Realization n → (q : Query n) → Response n q)
-    {Index : Type s} (name : Index → Name) (x : Index) (query : Query (name x)) :
-    OracleVerifier (PEmpty.{e + 1} →ₒ PUnit.{e + 1}) (.pure ⟨⟩ : OracleProtocol.{e, q})
-      PUnit.{e + 1} (fun _ => Response (name x) query) (namedResources answer name)
-      (fun _ => noOutputs) where
-  decide _ p _ := liftM
-    (((PEmpty.{e + 1} →ₒ PUnit.{e + 1}) +
-      (pathResources (namedResources answer name) (.pure ⟨⟩ : OracleProtocol.{e, q}) p).spec).query
-      (.inr (.inl ⟨x, query⟩)))
-  outputMap _ _ _ :=
-    { f := fun _ x => x.elim
-      impl := fun query => query.1.elim
-      law := fun _ query => query.1.elim }
-
-/-- The run also accepts the unencoded realization family at the independent universe `a`. -/
-example (answer : ∀ n, Realization n → (q : Query n) → Response n q)
-    {Index : Type s} (name : Index → Name) (x : Index) (query : Query (name x))
-    (data : (x : Index) → Realization (name x)) :=
-  (namedVerifier answer name x query).run (Out := fun _ => PUnit.{e + 1}) ⟨⟩ data (pure ⟨⟩)
-
-end IndependentRealizations
 
 /-! ### Security models with large inputs -/
 
