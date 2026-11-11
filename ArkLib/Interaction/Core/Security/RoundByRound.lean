@@ -20,7 +20,7 @@ prefix before drawing one fresh challenge; their indices contain only shape choi
 
 @[expose] public section
 
-universe uS uW uK uI wI wJ
+universe uS uW uK uI wI wJ uA dI q
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle MeasureTheory
@@ -29,7 +29,7 @@ open scoped ENNReal
 attribute [local implicit_reducible] projectPathAlong projectPathAlongLocalMap
   Displayed.LocalMap.toHom Displayed.LocalMap.toHomFun
 
-variable {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly)
+variable {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
 
 /-- Full runtime moves decorating a structural cursor, including erased payloads. -/
 @[implicit_reducible]
@@ -232,9 +232,9 @@ abbrev Verifier.rbrKnowledgeSoundness {ι σ : Type} {S : Type uS} {Win : Type u
     (fun stmt tr wit => V.validAcceptance impl stmt tr (fun t => relOut tr t wit)) draw ε
 
 namespace OracleVerifier
-variable {ι σ : Type} {I : Type uI} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol}
-  {T : Path s → Type} {A : I → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-  {inputs : OracleFamily.{uI, 0, wI} I A}
+variable {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol.{0, q}}
+  {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
+  {inputs : Resources.{0, uI, dI}}
   {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
 
 /-- Oracle acceptance from a possible terminal state, with actual input and path payloads. The
@@ -242,7 +242,7 @@ event is a predicate on the output statement and oracle data at the transcript's
 The input statement, the input index and the input query type may lie in any universe. -/
 def validAcceptance (V : OracleVerifier ambient s S T inputs outputs)
     (impl : QueryImpl ambient (StateT σ ProbComp))
-    (stmt : S × (∀ i, A i)) (tr : PathAlong oracleSig s)
+    (stmt : S × inputs.Data) (tr : PathAlong oracleSig s)
     (event : OracleVerifier.Output T B (projectPathAlong oracleSig s tr) → Prop) : Prop :=
   let p := projectPathAlong oracleSig s tr
   let view := toView s tr
@@ -258,7 +258,7 @@ def validAcceptance (V : OracleVerifier ambient s S T inputs outputs)
 output language is indexed by the shape path and judged at the transcript's path. -/
 abbrev rbrSoundness (V : OracleVerifier ambient s S T inputs outputs)
     (impl : QueryImpl ambient (StateT σ ProbComp))
-    (input : StatementProblem (S × (∀ i, A i)))
+    (input : StatementProblem (S × inputs.Data))
     (output : PathProblem s (OracleVerifier.Output T B))
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp)
     (ε : ChallengeNode oracleSig s → ℝ≥0∞) : Prop :=
@@ -272,12 +272,12 @@ transcript `tr`, and the output statement and oracle data have the types at its 
 abbrev rbrKnowledgeSoundness {Win : Type uW} {W : PathAlong oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs)
     (impl : QueryImpl ambient (StateT σ ProbComp))
-    (admissible : S × (∀ i, A i) → Prop) (relIn : (S × (∀ i, A i)) → Win → Prop)
+    (admissible : S × inputs.Data → Prop) (relIn : (S × inputs.Data) → Win → Prop)
     (relOut : (tr : PathAlong oracleSig s) →
       OracleVerifier.Output T B (projectPathAlong oracleSig s tr) → W tr → Prop)
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp)
     (ε : ChallengeNode oracleSig s → ℝ≥0∞) : Prop :=
-  Core.rbrKnowledgeSoundness.{max uS uI, uW, uK} oracleSig s admissible relIn
+  Core.rbrKnowledgeSoundness.{max uS dI, uW, uK} oracleSig s admissible relIn
     (fun stmt tr wit => V.validAcceptance impl stmt tr (fun t => relOut tr t wit)) draw ε
 
 end OracleVerifier
