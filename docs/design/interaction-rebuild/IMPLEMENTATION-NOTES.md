@@ -13,8 +13,8 @@ Records D1 and D4 left open where an oracle payload's query interface lives and 
 named. The code carries the interface in the oracle position (`OraclePos.oracle X interface` in
 `Signature.lean`) and indexes challenges by structural node occurrences (`Node`, `ChallengeNode`
 in `Protocol.lean`). This resolves the open choice without a separate decoration, and node
-occurrences name each challenge independently of any transcript. Positions stay one universe above
-moves and the monad, as D2 requires.
+occurrences name each challenge independently of any transcript. Position universes remain
+separate from moves and the monad; entry 18 records the independent oracle-query universe.
 
 ## 2. Observations retain the transcript and output on rejection
 
@@ -153,19 +153,21 @@ Entry 18 below is a later core entry; number 17 belonged to an entry that was re
 
 ## 18. Run outputs are tied to the monad universe
 
-**Status: premise-required for run outputs and a prover's ambient index; unresolved for input
-oracle data and for the full-log oracle runner.** Record D2's ledger puts moves and participant
+**Status: equivalent for independent input data and query universes; unresolved for the
+full-log oracle runner's large-query interface.** Record D2's ledger puts moves and participant
 outputs in `Type u` and leaves the other components of a verifier unstated. The code gives every
 component that is not a run output its own universe as far as the definitions allow: the ambient
-index of a verifier, the input oracle index `I`, the output oracle index `J p` of an oracle
-verifier, the query types of the input and output oracle interfaces, the input statement, the
+index of a verifier, the input resource index and data, the output oracle index `J p` of an
+oracle verifier, the query types of the input and output oracle interfaces, the input statement, the
 input witness and the intermediate witnesses of a knowledge state function.
 
-**Premise-required.** Run outputs stay in `Type u`: the output statement `StmtOut p`, the output
+**Retained runner contract.** Run outputs stay in `Type u`: the output statement `StmtOut p`, the output
 oracle data `B p j` returned by a run, the output index `J p` once a run returns `∀ j, B p j`,
 prover outputs, extracted witnesses and the state `σ` of a security experiment. Positions live one
-universe up (`PlainPos`, `OraclePos : Type (u+1)`), because a position names a type, so the moves
-and returned values of a run are in `Type u`, and the runner is `m : Type u → Type u`
+universe up for plain protocols (`PlainPos : Type (u+1)`) and in
+`Type (max (u+1) (q+1))` for oracle protocols, because an oracle position names both a payload
+type and a query type. Moves and returned values stay in `Type u`, and the runner is
+`m : Type u → Type u`
 (`OracleComp ambient` with responses in `Type u`). `simulateQ`, which answers the decision's
 resource queries in a run and in `decideWith`, also needs the value universe to equal the response
 universe. A run output in another universe would need a `ULift` adapter or a monad on a larger
@@ -173,34 +175,63 @@ universe, which record D2 rejects. A prover's ambient index is in `Type u` for t
 `OracleComp ambient : Type u → Type (max uι u)` is the prover's monad, so `Reduction`, `Prover`,
 both runs and the classical security models fix it.
 
+`OracleProtocol` takes the tree's actual leaf type as a parameter, defaulting to `PUnit`.
+All execution, path-resource and security APIs use those default trivial leaves, preserving their
+previous carriers by definitional equality. An explicit leaf type describes return values in the
+authored `FreeM` tree. The parameter is used by the tree representation and is not a phantom:
+the universe canary constructs and reads a natural-number leaf. Exposing that parameter also
+lets the pinned universe linter distinguish the move universe in the alias's type; the query
+universe remains independent, without a linter suppression or source-policy exception.
+
 **Query types are separated.** The decision no longer reads one homogeneous family
 `sumFamily inputs (pathFamily s p)`. It reads `pathResources inputs s p`, the disjoint sum of the
 input specification and the path's specification, with their data kept as a pair
 (`Resources.sum`). `OracleSpec` addition allows the two index types to lie in different universes,
-so the input queries (`OracleFamily.{uI, u, wI}`) and the output queries
-(`OracleFamily.{uJ, u, wJ}`) take their own universes through routing, append and `decideWith`.
+and the input queries (`Resources.{u, uI, dI}`), oracle-node queries (`OracleProtocol.{u, q}`)
+and output queries (`OracleFamily.{uJ, u, wJ}`) take their own universes through routing, append
+and `decideWith`. `splitFamily` was already generic in the polynomial position universe;
+`splitOutputs` and both path-routing directions now carry the independent node-query universe.
 The query types never become values of the runner: they are answered by `simulateQ`, which
 returns only responses.
 
-**Unresolved: input oracle data.** The data `A i` of an input oracle is still in `Type u`, the
-universe of the responses. This is not required by the runner: a realization `a : A` in a larger
-universe can answer small queries with small responses through a function
-`(a : A) → (q : Q) → Response q`, and a run never returns it. The coupling comes from
-`OracleInterface` (`ArkLib/OracleReduction/OracleInterface.lean:55`), which stores an
-`OracleContext Query (ReaderM Message)`. The pinned `ReaderM Message` is a monad
-`Type v → Type v` on the universe of `Message`, so an interface's responses lie in the universe of
-its data. Separating the data universe needs a generalization of `OracleInterface` to separate
-realization and response universes. That file is outside this slice, so the dependency is open.
-The same coupling ties the output oracle data `B p j` of an oracle verifier to `Type u` outside a
-run.
+**Equivalent: independent input data.** `OracleVerifier`, `pathResources`, `decideWith`, `run`,
+append, the ambient-log runner and the security wrappers accept general
+`Resources.{u, uI, dI}` inputs. Their data is `inputs.Data : Type dI`; only responses lie in
+`Type u`. The R26 and R27 canaries retain the exact named query and realization carriers with
+response universe `e` independent of realization universe `a`. No encoding or lift of a
+realization is needed. `Resources.ofFamily` remains the specialization for existing
+`OracleFamily` clients. Its `OracleInterface` uses `ReaderM`, which still ties that
+specialization's data and response universes together. This no longer restricts the verifier
+input API, and the shared interface is unchanged. Output families and oracle-node payload
+interfaces still use `OracleInterface`; a run returns their data in the move/response universe.
+
+**Equivalent: Agreement output and witness families (F7 and 3A).** `Security/Agreement.lean`
+now preserves path-dependent `T p`, `J p`, `B p j` and `outputs p` in every agreement and tree
+transport law. The output type is `OracleVerifier.Output T B`. Agreement itself and the decision
+and output-map cast laws retain independent ambient and output-index universes; the ordinary
+run laws retain the owner's general move/response universe. Probability laws keep only their
+owners' small returned-value constraints. General resource inputs keep data and query universes
+independent. The full-log law retains the parent's small resource-query indices.
+
+Round-by-round knowledge agreement and transport quantify over `Win stmt` and `W stmt tr`,
+with independent input, intermediate and output witness universes. The output relation receives
+the input statement, completed transcript, output and witness in that order. The owner definition
+in `Security/RoundByRound.lean` is unchanged. Prefix-dependent draws and local errors remain
+available; Sumcheck specializes them through `rbrKnowledgeSoundnessOfNodes`. The
+[Agreement inventory](../interaction-layer/sumcheck.md#agreement-universes-and-parent-limits)
+marks both reviewed contracts equivalent and records the ordinary-import universe clients.
+Neither P1 nor P2 retires an Agreement output or witness contract.
 
 **Unresolved: the full-log oracle runner.** `OracleVerifier.runWithLog` returns the decision's
-full query log, which records input queries, so its input index `I` and its input query type stay
-in `Type`. Only this full-log API keeps the restriction, for clients that need the resource
-queries. Extraction does not use it. `OracleVerifier.runWithAmbientLog` puts the logger on the
+full query log, which records resource queries. Its input query index and oracle-node query
+type must remain in `Type`. A large-query full-log API needs a parent logging interface whose
+log can be returned by the small computation monad. Input data has its independent universe
+even in this API, because the log never stores realizations. Only this full-log API keeps the
+restriction, for clients that need the resource queries. Extraction does not use it. `OracleVerifier.runWithAmbientLog` puts the logger on the
 ambient handler before adding the pure resource handler, so its result holds only two ambient
 logs, and it takes the input statement, the input index and the input and output query types in
-any universe. `map_runWithLog_eq_runWithAmbientLog` proves that, at small input universes, it is
+any universe, including input data and oracle-node queries.
+`map_runWithLog_eq_runWithAmbientLog` proves that, at small input universes, it is
 the full-log run with the decision log restricted to its ambient entries, and
 `map_fst_runWithAmbientLog` proves at the general signature that forgetting both logs gives
 `OracleVerifier.run`. The oracle extraction game, the classical oracle extraction models and their
@@ -209,7 +240,7 @@ marginal lemmas run on it at the general signature. `Extractor.OracleStraightlin
 parameter, so they never had the restriction.
 
 **Security wrappers.** The input statement `S`, the honest input witness `W` and the input oracle
-index `I` are arguments of a run, so the security wrappers take them in any universe:
+data and query index are arguments of a run, so the security wrappers take them in any universe:
 `Verifier.classicalModel`, `OracleVerifier.classicalModel` (statement and input index),
 `Reduction.completeness`, `Verifier.soundness`, `StateFunction`, `rbrSoundness`,
 `Verifier.validAcceptance`, `KnowledgeStateFunction`, `rbrKnowledgeSoundness`, the plain
@@ -227,9 +258,9 @@ the universe of the certificate that the legacy-to-interaction theorems construc
 universe of their conclusions: they lift that certificate and hold for every `uK`. The
 interaction-to-legacy theorems drop the witnesses and hold for every `uK` as well. Extracted
 witnesses returned by the extraction games are values of the runner and stay in `Type`. The
-restrictions that remain are the premise-required ones above (ambient index and experiment state
-in `Type`, output data, output index and extracted witnesses in `Type`) and the two unresolved
-ones (input oracle data in `Type`, and the full-log runner).
+restrictions that remain are the retained runner contracts above (ambient index and experiment state
+in `Type`, output data, output index and extracted witnesses in `Type`) and the unresolved
+large-query full-log interface. Neither P1 nor P2 retires any of these universe contracts; both premises concern scheduling and shape rather than universes.
 
 `ArkLibTest/Interaction/Core/UniverseCanary.lean` instantiates the independent universes against
 `Verifier`, `OracleVerifier`, `Reduction`, both appends, the routing law `append_decideWith`,
@@ -238,7 +269,11 @@ game and the classical extraction models with their marginal laws. One input int
 `OracleInterface.{0, 1} Nat` whose queries are types, and an append routes it through a middle
 family with queries in `Type 1` to an output family with queries in `Type 0`. A knowledge state
 function with intermediate witnesses in `Type 1` and the input witness `Unit` certifies
-round-by-round knowledge for the core definition and both verifier wrappers.
+round-by-round knowledge for the core definition and both verifier wrappers. The same module
+now constructs an actual oracle node carrying `OracleInterface.{0, 1} Nat`, runs a verifier
+that queries its payload, and checks the returned value by `rfl`. Its R26/R27 resource
+constructors quantify independently over `a` and `e`, and an R26 verifier and run consume
+the original realization family directly.
 
 ## Changes that keep to the records
 
@@ -309,7 +344,304 @@ run extracts `w.val`.
 This keeps to record D7, whose problems already index witness types by the claim; D7 fixes no
 constant output witness type for either notion.
 
+## 19. Produced per-slot provenance under the passive schedule
+
+**Status: equivalent for produced prefix, owner, query-group and log correspondence assertions;
+premise-required for intermediate verifier actions retired by P1.**
+`Oracle/SlotTrace.lean` instruments participant strategies with a list-valued writer layer;
+`TwoParty.Lens.run` remains the sole recursive executor. `OracleVerifier.executeWith` owns the
+interaction, terminal decision and output-closing sequence. The ordinary runner, full trace
+and ambient trace specialize this mechanism without narrowing the ordinary runner's universes.
+`Oracle/Provenance.lean` supplies erasure and interpretation laws. Each executed
+participant slot records the actual preceding moves and ordered query/answer log. Ownership is
+derived from the slot constructor. The final verifier decision is its own terminal phase;
+`runWithSetupTrace` also retains an explicitly separate prover setup action.
+
+`SlotInstrumentation.run_natural` supplies the general runner naturality law missing from the
+pinned PolyFun interface. It works for arbitrary polynomials, ownership lenses, environments
+and PolyFun's existing `MonadHom` morphisms. `observeInteraction_log` specializes it to concatenation of slot query
+logs in the writer layer. Erasure uses this general law and monad laws, without an independent
+recursive execution algorithm or a protocol-specific execution equivalence induction.
+`runWithLog` is the full-log projection of the trace runner.
+`runWithTrace_logView`, `runWithTrace_ambientLog` and `runWithTrace_erase` recover the existing
+full logged, ambient logged and ordinary executions exactly. `phases_queries` states ordered
+ambient-log concatenation, and `simulateQ_runWithTrace_logView` preserves the correspondence under
+lawful interpreters, including stateful runtimes. The existing full-log universe restriction in
+entry 18 applies to the full-log trace result. `runWithAmbientTrace` uses the same instrumented
+strategies and shared sequencing mechanism, returning only ambient decision queries and preserving
+independent input-data, input-query and
+oracle-node-query universes. `runWithAmbientLog` is its aggregate projection;
+`runWithAmbientTrace_erase` gives ordinary erasure. `runWithTrace_ambientView` identifies the
+full trace with this ambient view at small query universes, including every slot prefix and owner.
+
+`Oracle/PrefixResources.lean` defines available payload families at actual prefixes, intrinsic
+node names, prefix-resource inclusion and typed query inclusion. `includeQuery_name` and
+`familyInclusion_query` relate canonical naming to actual query routing;
+`pathResourcesInclusion_data` identifies completed-prefix data with the payloads used by the
+verifier. `runWithTrace_prefixes` certifies that each produced phase precedes the actual completed
+transcript, and `available_at_terminal` transports its availability certificate.
+`runWithAmbientTrace_prefixes` gives the same provenance certificate for independent query
+universes. A compile-time acceptance canary checks these universe parameters directly. `joinToTerminal_name` preserves names from an appended protocol's actual seam to its
+terminal prefix. The append route continues to use `prefixRoute_payload` and `splitOutputs`.
+
+The acceptance client keeps the aggregate tests and adds per-slot runtime observations, actual
+join and terminal membership, canonical availability and future-slot exclusion. Its distinguishing
+test moves one ambient request across a fixed public message: ordinary observations and aggregate
+logs remain equal, while the traced query prefixes differ. P1 retires intermediate effectful
+verifier actions and their former query groups; it does not retire prover slots or their prefixes.
+The disposition inventory records those qualifications separately.
+
+## 19. Knowledge composition and measured extraction
+
+The [assertion disposition record](../interaction-layer/knowledge-composition-disposition.md)
+compares this branch's frozen production laws and acceptance assertions with their exact targets.
+[Entry 18](#18-run-outputs-are-tied-to-the-monad-universe) describes inherited protocol, runner,
+output-family and oracle interfaces. The inventory below covers only this branch's additions.
+
+### Backward maps and composition
+
+`Security/KnowledgeComposition/Extraction.lean` owns full transcript cursors, backward extraction,
+certificate composition and the deterministic extraction-failure theorem. The public
+`Security/KnowledgeComposition.lean` imports it and supplies local-bound, relation-level and
+plain verifier composition theorems.
+
+| API | Change on this branch |
+| --- | --- |
+| `KnowledgeStateFunction` | `Win stmt`, `Witness stmt sp history` and `W stmt tr` retain the input statement. Statements, input witnesses, intermediate witnesses and terminal witnesses have independent universes `uS`, `uW`, `uK`, `uO`. |
+| `extractFrom`, `extractAlong`, `terminalWitness` | Pure backward maps accept large terminal witnesses directly. The root map returns `Win stmt`; no terminal or seam carrier is encoded into a small type. |
+| `child`, `withRootWitness`, `extractFromMaps` | Restrict to a first move, expose the actual root witness internally and factor extraction through its computational fields. These support recursion with an independently large input witness. |
+| `append` and its extraction/state laws | The prefix's terminal family `Wmid stmt tr₁ : Type uM` is the suffix's input family. The final family has its own universe `uO`; the seam states that the suffix root extractor returns a valid prefix witness. |
+| `guard`, `condition`, `comap` and their local bounds | Restrict states to admissible inputs, conjoin a statement predicate, or pull back statements and map dependent input/output witnesses. The source and target terminal families have independent universes. |
+| `BadChallengeFrom`, `BadChallengeAlong` | Follow the actual suffix extraction of the supplied terminal witness. `extraction_failure_implies_badChallengeAlong` identifies a receiver transition without choosing a different witness. |
+| `rbrKnowledgeSoundness` and both verifier wrappers | Pass the terminal universe through to the certificate. Both lift operations raise only `uK`, keeping the terminal and input carriers. Legacy wrappers specialize to their original small terminal families. |
+| `rbrKnowledgeSoundness_append`, `_of_mid` | Compose local errors and dependent middle relations on every prefix transcript, including false middle claims. `_of_mid` accepts explicit input and output witness maps. |
+| Plain/oracle `simulateQ_append_run`, `support_append`, `validAcceptance_append` | Decompose the two decisions with the same intermediate ambient state and, for oracle verifiers, actual routed suffix data. The support laws work in any lawful monad with lawful support. |
+| `Verifier.rbrKnowledgeSoundness_append`, `_of_pure` | Compose standalone plain verifier hypotheses. The supported prefix result must equal the named middle statement; `_of_pure` derives that law for a pure prefix decision. |
+
+The plain verifier proof conditions suffix states on possible prefix acceptance. The suffix has
+its own output relation. No theorem identifies two independently existential acceptance events
+with composite acceptance. `splitFiber_pair` and `Verifier.append_decide_pathAlong` expose the
+transports in the decision fold; heterogeneous equality identifies equal-path output fibers.
+
+The oracle fixture instead uses `rbrKnowledgeSoundness_append` and `_of_mid` with
+`composed_validAcceptance_iff` as an explicit relation-level bridge. It does not instantiate a
+generic standalone oracle verifier composition theorem. The plain `indexed_composed` client does
+instantiate the standalone plain verifier theorem. The disposition record keeps these claims
+separate.
+
+### Full-prefix distributions and local errors
+
+The shared `PrefixDraw` and `PrefixError` interfaces index draws and errors by the same receiver
+cursor and full history. The public `rbrKnowledgeSoundness` predicate and both verifier forms use
+these interfaces. `combinePrefixDraw` retains the first error before the seam. After the seam,
+it selects the second error family by the complete first transcript and evaluates it at the
+second prefix history. `appendPrefixSampler_eq_combinePrefixDraw` proves the matching sampler law.
+
+The `_prefix` composition theorems accept these families. The node-indexed predicates end in
+`OfNodes`; the established node composition theorems follow from the general laws by ignoring
+history. There is one local-bound and composition proof development. P1 removes challenge
+selection from oracle payloads and effectful receiver actions only. Earlier public challenges and
+prover messages may select later distributions and local errors. The fixed two-bit zero-error
+certificate in `ArkLibTest/Interaction/Core/Security/PrefixKnowledge.lean` checks this distinction
+without inserting a prover message. The inventory records the corrected schedule correspondences,
+including KC-065 as equivalent because its frozen schedule was already constant.
+
+### Measured extraction
+
+`Security/MeasuredResources.lean` names one VCVio `BudgetedProgram` for each root, step and leaf
+map. `programAlong` composes those programs using VCVio's `BudgetedProgram.comp` and `contramap`.
+`BudgetAtMost rootBound stepBound leafBound` gives
+`leafBound + (completeSpine l tr).length • stepBound + rootBound`.
+The frozen `length • bound` result is recovered by explicitly supplying zero root and leaf
+bounds to `programAlong_budget_le_nsmul` and `programAlong_costAtMost_nsmul`.
+The empty-protocol fixture quantifies all state functions and stage programs with those zero
+bounds. It does not assume an arbitrary root or leaf program has budget zero.
+
+The cursor induction counts full moves, including oracle messages. PolyFun's node-dependent
+charges do not directly replace it: the stage programs depend on the statement and full earlier
+moves, and the root and leaf budgets require separate accounting. Instruction budgets leave pure
+work, views, handlers, carrier identification and intermediate witness sizes uncharged. The zero
+program exists for every state function; the ordered and unbounded-depth tests use named charged
+programs to test actual instruction cost as well as budgets.
+
+The measured API retains these small carriers because of pinned VCVio declarations:
+
+| Restricted carrier | Forcing declaration at VCVio `fc54dd3d7691d6f5db7dc829e321a727f095bc2d` |
+| --- | --- |
+| Input witnesses `Win stmt : Type` and root-stage result | `OracleComp.BudgetedProgram {Input Result : Type}` in `VCVio/OracleComp/QueryTracking/MeasuredProgram.lean:156`; the root program realizes `extractRoot`. |
+| Intermediate witnesses and `StageInput : Type` | The same `BudgetedProgram` input/result binders force each step's dependent input pair and result to be small. |
+| Terminal witnesses `W stmt tr : Type` | The same `BudgetedProgram` input binder forces the leaf program's argument to be small. This restriction also applies to `programAlong` and `MeasuredKnowledgeStateFunction`. |
+| Cost type `ω : Type`, instruction names and views | `OracleComp.MeasuredProgram (Input Result ω : Type)` at line 66, with fields `View : Type` and `Op : Type`; `BudgetedProgram` bundles this program. |
+
+The statement universe remains arbitrary. The pure `PrefixMoves`, `KnowledgeStateFunction`,
+lifting, extraction, extraction failure, append and restriction laws accept
+`P : PFunctor.{uA, u}` and a lens to `rolePoly.{u}`, with leaves `PUnit.{u + 1}`.
+The move, statement and witness universes are independent; branches and leaves share the move
+universe. KC-318 and KC-322 now send the frozen `ULift.{1} Nat` oracle payload, retain
+`ULift.{2} (Fin (payload.down + 1))` witnesses and prove extraction returns six.
+
+Probability bounds use the small-move instance of this general certificate. Pinned VCVio's
+`ProbComp : Type → Type` (`VCVio/OracleComp/ProbComp/Basic.lean:31`) forces `sampleAt` to return
+a small move. `challengeSpec` (`Core/Protocol.lean:65–67`) returns `Move l`, whose universe is
+shared by challenges and public/oracle messages. The disposition record's PROB-031 names this
+remaining probabilistic limitation. It does not restrict pure backward maps or large terminal
+and seam witnesses in the verifier wrappers.
+
+### Acceptance evidence
+
+The composition fixture sends a public prover selector after the Boolean challenge. That selector
+chooses a public unit-message suffix or an oracle-message suffix under P2. Both challenge values
+remain available on each selected shape. Payload-dependent `Fin (n + 1)` carriers, extraction
+composition, terminal relations and the exported oracle from the same execution are checked on
+both shapes. The selector change is premise-required under P2, not missing parent support.
+
+The ordinary-import universe canary composes with `Type` itself as the terminal and seam carrier,
+both in `Type 1`, and tests both verifier wrappers and lifting with large terminal witnesses.
+Separate clients retain statement-indexed witnesses at unequal universes, empty carriers,
+standalone plain verifier composition and the actual shared ambient state at the seam.
+The axiom collectors check the new laws against `propext`, `Classical.choice` and `Quot.sound`.
+
+### Restoration under P2
+
+The frozen restoration fixture's `Out` chooses `Fin 8` or `Fin 9` from a Boolean challenge.
+Its replacement is **premise-required under P2**: challenges cannot select output shape.
+The child restoration branch (#1483) selects `Fin 8` versus `Fin 9` by a public prover message.
+It must retain the plain replay's payload return on both challenge values and keep oracle
+rejection separate. This branch corrects the disposition; the child owns the restoration fixture.
+No challenge-indexed parent output interface is required.
+
+### Validation
+
+The required targeted reverse-dependency build and guard commands are the acceptance checks for
+this branch. The disposition record gives their scope. No whole-library validation is requested.
+
+### `combineDraw` combines errors
+
+The composite error is `combineDraw (m := fun _ => ℝ≥0∞) l s₁ s₂ ε₁ ε₂`: the combinator that
+combines the prefix and suffix draws, at a constant result family. Prefix challenge nodes keep the
+prefix error, and suffix challenge nodes keep the error of the suffix at their prefix path. No
+separate error traversal is added.
+
+## 20. State restoration under P2: authored output selection
+
+Approved premise P2 says that challenges and oracle messages never select protocol shape.
+`Path s` therefore retains public prover messages and erases challenges. The frozen fixtures'
+challenge-selected `Fin 8`/`Fin 9` statement carriers are **premise-required and retired under P2**.
+They are not a missing parent dependency, as entry 19 also records.
+
+The replacement fixture prepends a prover-authored Boolean `b` to the original one- or two-round
+protocol. That public message selects the exact statement carriers `Fin 8` and `Fin 9`. The
+challenge remains independent and continues to control acceptance, rejection and knowledge-state
+transitions. The fixtures quantify over both selectors and every original challenge, statement,
+message and output witness. In particular the diagonal selectors reproduce the numerical frozen
+replays, while all four selector/challenge combinations are checked by universal theorems.
+The frozen output oracle stays `PUnit → Fin 8`, with the original interface and payload. A
+separate `varyingVerifier`/`varyingGame` fixture additionally checks genuinely path-dependent
+output oracle carriers and interfaces; it does not replace the frozen rows.
+
+### Games and execution
+
+`selectedPlainGame`, `selectedClosedGame` and the two-round `PublicSelection.game` restore the
+original adversary and evaluate the full verifier on the public-selector-prefixed transcript.
+Their output is dependent on that returned transcript. The public selector makes no restoration
+oracle query, so the original salted keys, adaptive repeated query, query counts and error
+charges are unchanged. The suffix verifier at each fixed selector is used to instantiate the
+generic soundness theorem. Observation equations and party-run correspondence identify its
+output with the full verifier's output; the game is not a manually predicted verdict.
+
+`plainScriptedRun_eq` and `replayResult_eq` return payload seven on every Boolean challenge, in
+both exact statement carriers. `selectedScriptedRun_eq` and `oracleReplayResult_eq` separately
+retain rejection on a false challenge. The one-round `selectedGame_eval_run` and two-round
+`PublicSelection.game_eval_run` connect restored games to actual `OracleVerifier.run` executions.
+The one-round `selected_fresh` checks the complete interaction's uniform challenge marginal,
+independently of input, authored selector and oracle payload.
+
+### Branch-specific interfaces
+
+The [disposition record](../interaction-layer/state-restoration-disposition.md) gives exact frozen
+and target declarations, endpoint correspondences and the P1/P2 classification for each port.
+This branch adds the following restoration interfaces on the parent's state functions:
+
+| Interface | Restoration-specific contract |
+| --- | --- |
+| `verificationGame`, `closedVerificationGame` | Complete the adaptive selection, then return the transcript and its path-indexed passive observation. |
+| `complete_support_matches`, `run_scriptedProver_of_mem_support` | Every supported open completion carries the selected messages and replays through the actual interpreted party runner. |
+| Uniform, private-coin and nonuniform knowledge bounds | Read the supplied adversary witness at the completed transcript; retain `(Q + rounds.length) * error` or `Q * max + sum`. |
+| `programAlong_budget_le_protocol`, `programAlong_budget_le_protocol_zero` | Count message/challenge stages per round, with explicit root/leaf terms and the frozen zero-endpoint specialization. |
+| Authored-selector fixtures | A public prover Boolean selects exact `Fin 8`/`Fin 9` statement carriers; challenges still control acceptance and knowledge transitions. |
+
+Unmeasured restoration retains independent input, intermediate and terminal witness universes.
+Probabilistic game outputs remain small; deterministic observations accept general move universes.
+The record explains these constraints and the change from arbitrary terminal results to optional
+passive decisions and explicit output-law implications.
+
+### Shared extraction laws and carrier constraints
+
+This branch adds root-failure localization and child restriction laws beside the parent's
+extraction definitions in `Security/KnowledgeComposition/Extraction.lean`. The keyed conclusion
+`BadChallengeOnCompletion F stmt messages table w key` retains the witness extracted from the
+actual suffix and supplied output witness. Only `BadChallengeOnCompletion.mem_badChallenge`
+forgets that witness for the probability bound. The [parent inventory](../interaction-layer/knowledge-composition-disposition.md)
+describes the shared certificate signatures; the [restoration record](../interaction-layer/state-restoration-disposition.md)
+identifies this branch's consumers and source assertions.
+
+The remaining small carriers follow these exact declarations at VCVio pin
+`fc54dd3d7691d6f5db7dc829e321a727f095bc2d`:
+
+- `SampleableType (β : Type)` in
+  `VCVio/OracleComp/Constructions/SampleableType/Basic.lean:51` forces
+  `Round.sampleChallenge` to sample small challenges. `protocol` uses `OraclePoly.{0}`,
+  whose messages and challenges share the move universe. Round-specific pure keyed laws
+  therefore remain on this small protocol; the shared extraction laws are general.
+- `ProbComp : Type → Type` in `VCVio/OracleComp/ProbComp/Basic.lean:31` keeps random
+  outputs small in the restoration games and bounds. It does not restrict `readOut`
+  or the certificate's input, intermediate or terminal witness universes.
+- `OracleComp.BudgetedProgram {Input Result : Type}` in
+  `VCVio/OracleComp/QueryTracking/MeasuredProgram.lean:156` fixes root results, step
+  inputs/results and leaf inputs to `Type`. `KnowledgeStateFunction.MeasuredStages`
+  (`Core/Security/MeasuredResources.lean:99`) applies this interface to the actual extraction
+  maps. Its restoration budget theorems and the packaged measured game theorem retain
+  small input, intermediate and terminal witnesses. `OracleComp.MeasuredProgram` at line 66
+  also fixes the cost carrier `ω` to `Type`.
+
+### Frozen-source dispositions
+
+The [state-restoration disposition record](../interaction-layer/state-restoration-disposition.md)
+contains one table per frozen production or test file. It covers 86 production declarations,
+all 53 frozen fixture assertions, and six proof-bearing measured fixture definitions. It replaces
+the one-round and two-round tables previously kept here, with exact file/line references and one
+status per row. The record distinguishes P1/P2 restrictions, retired adapters and equivalent laws;
+it includes the proved support-to-replay bridge and zero-endpoint budget specialization.
+
+### Validation
+
+On 2026-11-11, the ancestry check against `feat/interaction-migrate-core-3` passed, and both
+prescribed checks exited zero from this worktree:
+
+```sh
+~/claude-work/restack-1110/check.sh feat/interaction-migrate-core-3 build
+DOC_BASE=feat/interaction-migrate-core-3 ~/claude-work/restack-1110/check.sh \
+    feat/interaction-migrate-core-3 guards
+```
+
+The build includes both restoration test modules, their executable replay assertions, and the
+transitive axiom checks on the new game and replay theorems. The guards cover documentation,
+frozen paths, forbidden proof escapes, headers, imports and Lean source style. The parent's
+ancestry, build and guards were also rerun successfully from its worktree. Every changed Lean
+file has fewer than 1500 lines and no line exceeds 100 characters.
+
+Independent statement review checked the P2 dispositions, all original non-carrier quantifiers,
+actual party runs, keyed witnesses, nonuniform errors and measured costs. Blind read-back of the
+production declarations independently confirmed their dependent output types and witness
+universes.
+
 ## 21. Round-by-round soundness implies soundness for lawful distribution monads
+
+The probability-free escape theory is polymorphic in protocol positions and moves. Only the
+probability bounds require small moves. `Security/RoundByRound.lean` owns the shared full-prefix
+interface `PrefixDraw`, its oracle-program form `PrefixChallengePrograms`, `prefixSampleAt`,
+and `prefixSampler` with its execution laws. Node-indexed draws embed through
+`PrefixDraw.ofNodes`, which ignores history and agrees with `sampleAt`.
 
 `Security/Implications.lean` bounds actual flip events at full prefixes. Its passive sampler
 retains history-dependent challenge programs, and an exact equation identifies its execution
@@ -333,20 +665,22 @@ Inherited universe constraints remain in [entry 18](#18-run-outputs-are-tied-to-
 ### 22. Sumcheck domain multiplicity and routing laws
 
 
-`Sumcheck.Core.Soundness` now proves full-run soundness natively for every map
+`Sumcheck.Core.Soundness` now proves full-run soundness in the interaction layer for every map
 `D : Fin d → R`, with indexed sums that retain repeated points. `Indexed` proves the local
 false-to-true bound and constructs the round-by-round state function. It applies #1486's
 `OracleVerifier.soundness_of_rbrSoundness_uniform` and counts one challenge per round to obtain
 `n * (deg / |R|)` for the actual core run of every prover. `Soundness` derives arbitrary-list
 and injective corollaries, plus committed and possibly failing randomized one-round bounds in
-probability and measure form. No native security theorem imports or uses the legacy embedding.
+probability and measure form. These interaction layer security theorems do not use the legacy
+embedding.
 
-`Types`, `Tree` and `Domain` own the native statements, fixed protocol and indexed arithmetic.
+`Types`, `Tree` and `Domain` define the interaction layer statements, fixed protocol and
+indexed arithmetic.
 `DomainEquivalence` keeps the separate injective comparison with `Spec`; `LegacySoundness` keeps
 the previous transferred bound as a comparison check. The arithmetic holds for commutative
 semirings. The probabilistic bounds add `IsDomain`, finiteness and uniform sampling. Tests check
-that constant one sums to two over `[0, 0]`, to one over `[0]`, and passes the native final
-decision with repeated points and target two. The native tests audit the theorem axioms.
+that constant one sums to two over `[0, 0]`, to one over `[0]`, and passes the
+interaction layer final decision with repeated points and target two. The interaction layer tests audit the theorem axioms.
 
 #1488 implements interval endpoints with `intervalVerifier`, built from the interaction-layer
 `foldVerifier`.

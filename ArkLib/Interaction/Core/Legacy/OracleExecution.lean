@@ -660,7 +660,7 @@ theorem simulateQ_oracleVerifier_run
     (p : Core.Prover oracleSig oSpec (oracleProtocol pSpec) Out) :
     simulateQ (oracleChallengeReindex oSpec pSpec) (V.run stmt data p) =
       oracleObserveWith .focalFirst V stmt data p := by
-  rw [Core.OracleVerifier.run, oracleObserveWith, simulateQ_bind,
+  rw [Core.OracleVerifier.run_eq, oracleObserveWith, simulateQ_bind,
     simulateQ_oracleChallengeReindex_run]
   refine bind_congr fun r => ?_
   rcases r with ⟨tr, out, u⟩

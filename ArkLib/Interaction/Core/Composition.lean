@@ -21,7 +21,7 @@ may depend on ambient queries.
 
 @[expose] public section
 
-universe u uA v w uι uS uI uJ uK uV uX uY dX dY wI wJ wK
+universe u q dI uA v w uι uS uI uJ uK uV uX uY dX dY wI wJ wK
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
@@ -80,6 +80,20 @@ theorem splitFiber_val {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
   generalize Path.split s₁ s₂ (projectPathAlong l (s₁.append s₂) tr) = q
   rintro rfl
   exact ⟨rfl, HEq.rfl⟩
+
+/-- Splitting a view and its shape gives the two full transcripts with their shape certificates. -/
+theorem splitFiber_pair {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
+    (s₁ : FreeM P PUnit.{u + 1}) (s₂ : Path s₁ → FreeM P PUnit.{u + 1})
+    (p : Path (s₁.append s₂)) (v : Fiber l (s₁.append s₂) p) :
+    (⟨Path.split s₁ s₂ p, splitFiber l s₁ s₂ p v⟩ :
+      (ps : (p₁ : Path s₁) × Path (s₂ p₁)) × Fiber l s₁ ps.1 × Fiber l (s₂ ps.1) ps.2) =
+      let z := PathAlong.split l s₁ s₂ v.val
+      ⟨⟨projectPathAlong l s₁ z.1, projectPathAlong l _ z.2⟩, ⟨z.1, rfl⟩, ⟨z.2, rfl⟩⟩ := by
+  rcases v with ⟨tr, rfl⟩
+  dsimp only [splitFiber]
+  apply Sigma.ext (project_split l s₁ s₂ tr).symm
+  exact eqRec_heq (φ := fun ps : (p₁ : Path s₁) × Path (s₂ p₁) =>
+    Fiber l s₁ ps.1 × Fiber l (s₂ ps.1) ps.2) (project_split l s₁ s₂ tr) _
 
 /-- Splitting the transcript of an appended run, with its view, returns the prefix and suffix
 transcripts and their own views. -/
@@ -145,6 +159,77 @@ theorem Verifier.append_decide {ι : Type uι} {ambient : OracleSpec.{uι, u} ι
       let mid ← V₁.decide stmt (Path.split s₁ s₂ p).1 (PlainView.split s₁ s₂ p v).1
       (V₂ (Path.split s₁ s₂ p).1).decide mid (Path.split s₁ s₂ p).2
         (PlainView.split s₁ s₂ p v).2) := rfl
+
+/-- On an appended full transcript, plain decisions use exactly the two component transcripts. -/
+theorem Verifier.append_decide_pathAlong {ι : Type uι}
+    {ambient : OracleSpec.{uι, u} ι}
+    {s₁ : Protocol.{u}} {s₂ : Path s₁ → Protocol.{u}} {S : Type uS}
+    {T : Path s₁ → Type u} {U : (p : Path s₁) → Path (s₂ p) → Type u}
+    (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) (T p) (U p))
+    (stmt : S) (tr₁ : PathAlong plainSig s₁)
+    (tr₂ : PathAlong plainSig (s₂ (projectPathAlong plainSig s₁ tr₁))) :
+    (V₁.append V₂).decide stmt
+        (projectPathAlong plainSig _ (PathAlong.append plainSig s₁ s₂ tr₁ tr₂))
+        (toPlainView _ (PathAlong.append plainSig s₁ s₂ tr₁ tr₂)) ≍ (do
+      let mid ← V₁.decide stmt (projectPathAlong plainSig s₁ tr₁) (toPlainView s₁ tr₁)
+      (V₂ (projectPathAlong plainSig s₁ tr₁)).decide mid (projectPathAlong plainSig _ tr₂)
+        (toPlainView _ tr₂)) := by
+  let fold := fun z : (ps : (p₁ : Path s₁) × Path (s₂ p₁)) ×
+      Fiber plainSig s₁ ps.1 × Fiber plainSig (s₂ ps.1) ps.2 =>
+    (⟨z.1, (do
+    let mid ← V₁.decide stmt z.1.1 z.2.1
+    (V₂ z.1.1).decide mid z.1.2 z.2.2)⟩ :
+      (ps : (p₁ : Path s₁) × Path (s₂ p₁)) × OptionT (OracleComp ambient) (U ps.1 ps.2))
+  have h := splitFiber_pair plainSig s₁ s₂ _
+    (toPlainView _ (PathAlong.append plainSig s₁ s₂ tr₁ tr₂))
+  dsimp only [toPlainView] at h
+  rw [PathAlong.split_append] at h
+  exact (Sigma.mk.inj_iff.mp (congrArg fold h)).2
+
+/-- Simulating an appended decision threads the prefix's final state into the suffix. -/
+theorem Verifier.simulateQ_append_run {ι : Type uι} {σ : Type u} {ambient : OracleSpec.{uι, u} ι}
+    {m : Type u → Type v} [Monad m] [LawfulMonad m]
+    {s₁ : Protocol.{u}} {s₂ : Path s₁ → Protocol.{u}} {S : Type uS}
+    {T : Path s₁ → Type u} {U : (p : Path s₁) → Path (s₂ p) → Type u}
+    (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) (T p) (U p))
+    (impl : QueryImpl ambient (StateT σ m)) (stmt : S)
+    (p : Path (s₁.append s₂)) (v : PlainView (s₁.append s₂) p) (state : σ) :
+    (simulateQ impl ((V₁.append V₂).decide stmt p v).run).run state =
+      (simulateQ impl (V₁.decide stmt (Path.split s₁ s₂ p).1
+        (PlainView.split s₁ s₂ p v).1).run).run state >>= fun
+        | (none, state') => pure (none, state')
+        | (some mid, state') => (simulateQ impl
+            ((V₂ (Path.split s₁ s₂ p).1).decide mid (Path.split s₁ s₂ p).2
+              (PlainView.split s₁ s₂ p v).2).run).run state' := by
+  simp only [Verifier.append, OptionT.run_bind, Option.elimM, simulateQ_bind, StateT.run_bind]
+  congr 1
+  funext result
+  rcases result with ⟨_ | mid, state'⟩ <;> simp
+
+/-- An accepted composite result has a supported accepted middle result and one shared
+intermediate ambient state. -/
+theorem Verifier.support_append {ι : Type uι} {σ : Type u} {ambient : OracleSpec.{uι, u} ι}
+    {m : Type u → Type v} [Monad m] [LawfulMonad m] [MonadAttach m] [LawfulMonadAttach m]
+    {s₁ : Protocol.{u}} {s₂ : Path s₁ → Protocol.{u}} {S : Type uS}
+    {T : Path s₁ → Type u} {U : (p : Path s₁) → Path (s₂ p) → Type u}
+    (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) (T p) (U p))
+    (impl : QueryImpl ambient (StateT σ m)) (stmt : S)
+    (p : Path (s₁.append s₂)) (v : PlainView (s₁.append s₂) p) (state final : σ)
+    (out : splitFamily U p)
+    (h : (some out, final) ∈ MonadAttach.support
+      ((simulateQ impl ((V₁.append V₂).decide stmt p v).run).run state)) :
+    ∃ mid between,
+      (some mid, between) ∈ MonadAttach.support
+        ((simulateQ impl (V₁.decide stmt (Path.split s₁ s₂ p).1
+          (PlainView.split s₁ s₂ p v).1).run).run state) ∧
+      (some out, final) ∈ MonadAttach.support
+        ((simulateQ impl ((V₂ (Path.split s₁ s₂ p).1).decide mid
+          (Path.split s₁ s₂ p).2 (PlainView.split s₁ s₂ p v).2).run).run between) := by
+  rw [Verifier.simulateQ_append_run] at h
+  obtain ⟨⟨_ | mid, between⟩, hmid, hout⟩ := LawfulMonadAttach.canReturn_bind_imp' h
+  · have hn := LawfulMonadAttach.eq_of_canReturn_pure hout
+    cases congrArg Prod.fst hn
+  · exact ⟨mid, between, hmid, hout⟩
 
 /-- Provers compose using PolyFun's effectful suffix constructor in the leaf action. -/
 abbrev Prover.append := @Focal.compFlat
@@ -303,7 +388,7 @@ theorem appendSampler_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
 
 /-- Appending samplers equals sampling the appended tree with the combined implementation. -/
 theorem appendOracleSampler_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
-    (s₁ : OracleProtocol.{u}) (s₂ : Path s₁ → OracleProtocol.{u})
+    (s₁ : OracleProtocol.{u, q}) (s₂ : Path s₁ → OracleProtocol.{u, q})
     (draw₁ : (c : ChallengeNode oracleSig s₁) → m (challengeSpec oracleSig s₁ c))
     (draw₂ : (p : Path s₁) → (c : ChallengeNode oracleSig (s₂ p)) →
       m (challengeSpec oracleSig (s₂ p) c)) :
@@ -388,7 +473,7 @@ theorem run_splitSampler {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u
   run_appendFlat_splitPrefix p (samplerEnd l s₁ draw₁) _
 
 /-- Split the oracle resources of an arbitrary completed appended path. -/
-def splitOracles : (s₁ : OracleProtocol.{u}) → (s₂ : Path s₁ → OracleProtocol.{u}) →
+def splitOracles : (s₁ : OracleProtocol.{u, q}) → (s₂ : Path s₁ → OracleProtocol.{u, q}) →
     (p : Path (s₁.append s₂)) →
     OracleMap (pathFamily (s₁.append s₂) p)
       (sumFamily (pathFamily s₁ (Path.split s₁ s₂ p).1)
@@ -448,9 +533,9 @@ theorem OracleMap.simulate_withAmbient {ι : Type uι}
   OracleMap.simulate_withAmbient_addLift (QueryImpl.id' ambient) route x program
 
 namespace OracleVerifier
-variable {ι : Type uι} {I : Type uI} {ambient : OracleSpec.{uι, u} ι} {A : I → Type u}
-  {inputs : OracleFamily.{uI, u, wI} I A}
-  {s₁ : OracleProtocol.{u}} {s₂ : Path s₁ → OracleProtocol.{u}} {S : Type uS}
+variable {ι : Type uι} {ambient : OracleSpec.{uι, u} ι}
+  {inputs : Resources.{u, uI, dI}}
+  {s₁ : OracleProtocol.{u, q}} {s₂ : Path s₁ → OracleProtocol.{u, q}} {S : Type uS}
   {T : Path s₁ → Type u} {U : (p : Path s₁) → Path (s₂ p) → Type u}
   {J : Path s₁ → Type uJ} {B : (p : Path s₁) → J p → Type u}
   {middle : (p : Path s₁) → OracleFamily.{uJ, u, wJ} (J p) (B p)}
@@ -463,10 +548,10 @@ def resources (p : Path (s₁.append s₂)) :
     OracleMap (pathResources inputs (s₁.append s₂) p)
       (Resources.sum (pathResources inputs s₁ (Path.split s₁ s₂ p).1)
         (Resources.ofFamily (pathFamily _ (Path.split s₁ s₂ p).2))) :=
-  (OracleMap.reassoc (Resources.ofFamily inputs)
+  (OracleMap.reassoc inputs
     (Resources.ofFamily (pathFamily s₁ (Path.split s₁ s₂ p).1))
     (Resources.ofFamily (pathFamily _ (Path.split s₁ s₂ p).2))).comp
-    ((OracleMap.id (Resources.ofFamily inputs)).par
+    ((OracleMap.id inputs).par
       ((OracleMap.ofSumFamily _ _).comp (splitOracles s₁ s₂ p)))
 
 /-- Prefix decisions see the original inputs and only prefix messages. -/
@@ -572,6 +657,52 @@ theorem append_decideWith (V₁ : OracleVerifier ambient s₁ S T inputs middle)
     cases mid with
     | none => simp
     | some mid => exact OracleMap.simulate_withAmbient (suffixRoute V₁ stmt p v) data _
+
+/-- Oracle decision composition threads one ambient state through both routed decisions. -/
+theorem simulateQ_append_run {σ : Type u} {m : Type u → Type v} [Monad m] [LawfulMonad m]
+    (V₁ : OracleVerifier ambient s₁ S T inputs middle)
+    (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p))
+    (compatible : OutputCompatibility V₁ V₂) (impl : QueryImpl ambient (StateT σ m))
+    (stmt : S) (p : Path (s₁.append s₂)) (v : View (s₁.append s₂) p)
+    (data : (pathResources inputs (s₁.append s₂) p).Data) (state : σ) :
+    (simulateQ impl ((V₁.append V₂ compatible).decideWith stmt p v data)).run state =
+      (simulateQ impl (V₁.decideWith stmt (Path.split s₁ s₂ p).1
+        (View.split s₁ s₂ p v).1 ((prefixRoute (inputs := inputs) p).f data))).run state >>= fun
+        | (none, state') => pure (none, state')
+        | (some mid, state') => (simulateQ impl
+            ((V₂ (Path.split s₁ s₂ p).1).decideWith mid (Path.split s₁ s₂ p).2
+              (View.split s₁ s₂ p v).2 ((suffixRoute V₁ stmt p v).f data))).run state' := by
+  rw [append_decideWith]
+  simp only [simulateQ_bind, StateT.run_bind]
+  congr 1
+  funext result
+  rcases result with ⟨_ | mid, state'⟩ <;> simp
+
+/-- Accepted oracle composition decomposes into supported accepted decisions at the same
+intermediate ambient state and the routed suffix data. -/
+theorem support_append {σ : Type u} {m : Type u → Type v} [Monad m] [LawfulMonad m]
+    [MonadAttach m] [LawfulMonadAttach m]
+    (V₁ : OracleVerifier ambient s₁ S T inputs middle)
+    (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p))
+    (compatible : OutputCompatibility V₁ V₂) (impl : QueryImpl ambient (StateT σ m))
+    (stmt : S) (p : Path (s₁.append s₂)) (v : View (s₁.append s₂) p)
+    (data : (pathResources inputs (s₁.append s₂) p).Data)
+    (state final : σ) (out : splitFamily U p)
+    (h : (some out, final) ∈ MonadAttach.support
+      ((simulateQ impl ((V₁.append V₂ compatible).decideWith stmt p v data)).run state)) :
+    ∃ mid between,
+      (some mid, between) ∈ MonadAttach.support
+        ((simulateQ impl (V₁.decideWith stmt (Path.split s₁ s₂ p).1
+          (View.split s₁ s₂ p v).1 ((prefixRoute (inputs := inputs) p).f data))).run state) ∧
+      (some out, final) ∈ MonadAttach.support
+        ((simulateQ impl ((V₂ (Path.split s₁ s₂ p).1).decideWith mid
+          (Path.split s₁ s₂ p).2 (View.split s₁ s₂ p v).2
+          ((suffixRoute V₁ stmt p v).f data))).run between) := by
+  rw [simulateQ_append_run] at h
+  obtain ⟨⟨_ | mid, between⟩, hmid, hout⟩ := LawfulMonadAttach.canReturn_bind_imp' h
+  · have hn := LawfulMonadAttach.eq_of_canReturn_pure hout
+    cases congrArg Prod.fst hn
+  · exact ⟨mid, between, hmid, hout⟩
 
 end OracleVerifier
 end Interaction.Core

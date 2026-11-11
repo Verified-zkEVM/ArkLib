@@ -57,13 +57,31 @@ theorem legacyVerifier_soundness [Fintype R] [IsDomain R] :
   intro Out
   refine ((verifier_agrees R deg n D ambient).soundness_iff (mObs := ⊤) init impl _ _ _ _ _).mpr ?_
   revert Out
-  refine (OracleVerifier.soundness_cast _ _ _ _ _ _ _ _).mpr ?_
-  simpa only [OracleVerifier.langProblem_cast, polyFamily, family] using (oracleSoundness_iff init
-    impl (Spec.oracleVerifier R deg D n ambient) _ _ _).mpr
+  have hs := (oracleSoundness_iff init impl (Spec.oracleVerifier R deg D n ambient) _ _ _).mpr
     (OracleVerifier.soundness_of_rbrSoundness_of_guarded
       (Spec.oracleVerifierGuardedForm R deg D n ambient)
       (_root_.Verifier.rbrSoundness_of_rbrKnowledgeSoundness (init := init) (impl := impl)
         (Spec.oracleVerifier_rbrKnowledgeSoundness R deg D n ambient)))
+  have hc := OracleVerifier.soundness_cast
+    (T := fun _ => Spec.StatementRound R n (Fin.last n))
+    (inputs := family (Spec.OracleStatement R n deg))
+    (outputs := fun _ => family (Spec.OracleStatement R n deg)) (protocol_eq R deg n).symm
+    (embedOracleVerifier (Spec.oracleVerifier R deg D n ambient)) init impl
+    (oracleChallengeImpl ProtocolSpec.challengeQueryImpl)
+    (langProblem (Spec.relationRound R n deg D 0).language)
+    (langProblem (Spec.relationRound R n deg D (Fin.last n)).language)
+    ((∑ _ : (Spec.pSpec R deg n).ChallengeIdx, (deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞)
+  have hproblem := OracleVerifier.langProblem_cast (protocol_eq R deg n)
+    (Spec.relationRound R n deg D (Fin.last n)).language
+  rw [eqRec_eq_cast] at hproblem
+  have hsource := hc.mpr (by simpa only [hproblem] using hs)
+  have hcast := OracleVerifier.cast_const
+    (inputs := family (Spec.OracleStatement R n deg))
+    (outputs := family (Spec.OracleStatement R n deg)) (protocol_eq R deg n).symm
+    (embedOracleVerifier (Spec.oracleVerifier R deg D n ambient))
+  rw [hcast] at hsource
+  dsimp only [legacyVerifier]
+  convert hsource using 1; rfl
 
 omit [DecidableEq R] [SampleableType R] in
 /-- The legacy Sumcheck specification has one challenge per round. -/
