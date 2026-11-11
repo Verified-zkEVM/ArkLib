@@ -311,6 +311,12 @@ constant output witness type for either notion.
 
 ## 21. Round-by-round soundness implies soundness for lawful distribution monads
 
+The probability-free escape theory is polymorphic in protocol positions and moves. Only the
+probability bounds require small moves. `Security/RoundByRound.lean` owns the shared full-prefix
+interface `PrefixDraw`, its oracle-program form `PrefixChallengePrograms`, `prefixSampleAt`,
+and `prefixSampler` with its execution laws. Node-indexed draws embed through
+`PrefixDraw.ofNodes`, which ignores history and agrees with `sampleAt`.
+
 `Security/Implications.lean` bounds actual flip events at full prefixes. Its passive sampler
 retains history-dependent challenge programs, and an exact equation identifies its execution
 with the ordinary Core runner. Encoded event marginals transport prefix-indexed challenge models

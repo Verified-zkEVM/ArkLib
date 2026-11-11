@@ -84,7 +84,7 @@ can choose different public-coin programs. For example, after a Boolean challeng
 challenge can be deterministically `!x` without changing shape. The [adaptive execution test][adaptive]
 checks this case.
 
-The general interface therefore uses `PrefixChallengePrograms`, indexed by the structural spine
+The shared interface in `Security/RoundByRound.lean` therefore uses `PrefixChallengePrograms`, indexed by the structural spine
 **and the full history**, and retains every erased challenge and oracle payload in `PrefixMoves`.
 At a sender, the passive continuation observes the sent value. At a receiver, the draw at that
 history selects the move and hence its pure continuation. Recursing this construction yields
@@ -168,7 +168,7 @@ by this implication. This record adds no second inventory of those constraints.
 [state-local]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L307
 [prefix-bound]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L599
 [prefix-sound]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L674
-[prefix-run]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L574
+[prefix-run]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L163
 [escape-general]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L69
 [rank-sum]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L711
 [plain-local]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L746

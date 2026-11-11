@@ -26,7 +26,7 @@ on the input data and the run's payloads, with its output read through its outpu
 
 @[expose] public section
 
-universe v uS uI wI wJ uι uκ
+universe v uS uI wI wJ uι uκ uA u
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle MeasureTheory
@@ -34,10 +34,10 @@ open scoped ENNReal
 
 section Escape
 
-variable {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly)
+variable {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
 
 /-- The challenge nodes met along a shape path. -/
-def challengeNodesOn : (s : FreeM P PUnit) → Path s → Finset (ChallengeNode l s)
+def challengeNodesOn : (s : FreeM P PUnit.{u + 1}) → Path s → Finset (ChallengeNode l s)
   | .pure _, _ => ∅
   | .liftBind a next, ⟨b, p⟩ =>
     let rest := (challengeNodesOn (next b) p).map
@@ -54,8 +54,8 @@ def challengeNodesOn : (s : FreeM P PUnit) → Path s → Finset (ChallengeNode 
     | .sender => rest
 
 /-- Some receiver node on the transcript turns the state from false to true. -/
-def EscapeAlong : (s : FreeM P PUnit) →
-    (∀ {t : FreeM P PUnit}, (sp : Cursor.Spine s t) → PrefixMoves l sp → Prop) →
+def EscapeAlong : (s : FreeM P PUnit.{u + 1}) →
+    (∀ {t : FreeM P PUnit.{u + 1}}, (sp : Cursor.Spine s t) → PrefixMoves l sp → Prop) →
     PathAlong l s → Prop
   | .pure _, _, _ => False
   | .liftBind a next, G, ⟨x, tr⟩ =>
@@ -66,8 +66,8 @@ def EscapeAlong : (s : FreeM P PUnit) →
 
 /-- A family false at the root, kept false by sender moves and false only at rejected leaves,
 escapes along every accepted transcript. -/
-theorem escapeAlong_of_accepts (s : FreeM P PUnit) :
-    ∀ (G : ∀ {t : FreeM P PUnit}, (sp : Cursor.Spine s t) → PrefixMoves l sp → Prop)
+theorem escapeAlong_of_accepts (s : FreeM P PUnit.{u + 1}) :
+    ∀ (G : ∀ {t : FreeM P PUnit.{u + 1}}, (sp : Cursor.Spine s t) → PrefixMoves l sp → Prop)
       (accepts : PathAlong l s → Prop),
       (∀ {a next} (sp : Cursor.Spine s (.liftBind a next)) history, owner l a = .sender →
         ¬ G sp history → ∀ x,
@@ -97,7 +97,7 @@ theorem escapeAlong_of_accepts (s : FreeM P PUnit) :
 
 /-- On an accepted transcript of a false admissible statement, some challenge node on the path
 turns the state from false to true. -/
-theorem StateFunction.escapeAlong {s : FreeM P PUnit} {S : Type uS}
+theorem StateFunction.escapeAlong {s : FreeM P PUnit.{u + 1}} {S : Type uS}
     {admissible language : S → Prop} {accepts : S → PathAlong l s → Prop}
     (F : StateFunction l s S admissible language accepts) {stmt : S}
     (hadm : admissible stmt) (hlang : ¬ language stmt) {tr : PathAlong l s}
@@ -106,6 +106,34 @@ theorem StateFunction.escapeAlong {s : FreeM P PUnit} {S : Type uS}
   escapeAlong_of_accepts l s (fun sp history => F.toFun sp history stmt) (accepts stmt)
     (fun sp history hown hG x => F.send sp history stmt hown hG x)
     (fun sp history hG => F.leaf sp history stmt hG) (fun h => hlang (F.root stmt hadm h)) tr hacc
+
+/-- A receiver node reached by a structural cursor, with the full moves before it. -/
+structure ReceiverPrefix (s : FreeM P PUnit.{u + 1}) where
+  /-- The position at the node. -/
+  pos : P.A
+  /-- The subtrees after the node. -/
+  next : P.B pos → FreeM P PUnit.{u + 1}
+  /-- The structural cursor from the root to the node. -/
+  spine : Cursor.Spine s (.liftBind pos next)
+  /-- The receiver owns the node. -/
+  receiver : owner l pos = .receiver
+  /-- The full moves before the node, including erased payloads. -/
+  history : PrefixMoves l spine
+
+/-- The challenge node at which a receiver prefix ends. -/
+abbrev ReceiverPrefix.node {s : FreeM P PUnit.{u + 1}} (pfx : ReceiverPrefix l s) :
+    ChallengeNode l s :=
+  spineChallenge l pfx.spine pfx.receiver
+
+/-- A fresh move at the end of a receiver prefix turns the state from false to true. -/
+abbrev ReceiverPrefix.Flips {s : FreeM P PUnit.{u + 1}}
+    (G : ∀ {t : FreeM P PUnit.{u + 1}}, (sp : Cursor.Spine s t) → PrefixMoves l sp → Prop)
+    (pfx : ReceiverPrefix l s) (x : Move l pfx.pos) : Prop :=
+  ¬ G pfx.spine pfx.history ∧
+    G (pfx.spine.comp (.down (l.toFunB pfx.pos x) (.root _)))
+      (PrefixMoves.snoc l pfx.spine pfx.history x)
+
+variable {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly)
 
 /-- At a fixed receiver node, a flip averaged over a random full prefix before the node has
 probability at most any bound on the flip probability at each prefix. -/
@@ -127,31 +155,6 @@ theorem flip_random_history_le {α : Type} {s : FreeM P PUnit}
     rw [prEvent_map, prEvent_eq_evalDist (α := Move l a) _ _ measurable_from_top]
     exact hlocal (prefixOf y)
   rwa [id_map'] at bound
-
-/-- A receiver node reached by a structural cursor, with the full moves before it. -/
-structure ReceiverPrefix (s : FreeM P PUnit) where
-  /-- The position at the node. -/
-  pos : P.A
-  /-- The subtrees after the node. -/
-  next : P.B pos → FreeM P PUnit
-  /-- The structural cursor from the root to the node. -/
-  spine : Cursor.Spine s (.liftBind pos next)
-  /-- The receiver owns the node. -/
-  receiver : owner l pos = .receiver
-  /-- The full moves before the node, including erased payloads. -/
-  history : PrefixMoves l spine
-
-/-- The challenge node at which a receiver prefix ends. -/
-abbrev ReceiverPrefix.node {s : FreeM P PUnit} (pfx : ReceiverPrefix l s) : ChallengeNode l s :=
-  spineChallenge l pfx.spine pfx.receiver
-
-/-- A fresh move at the end of a receiver prefix turns the state from false to true. -/
-abbrev ReceiverPrefix.Flips {s : FreeM P PUnit}
-    (G : ∀ {t : FreeM P PUnit}, (sp : Cursor.Spine s t) → PrefixMoves l sp → Prop)
-    (pfx : ReceiverPrefix l s) (x : Move l pfx.pos) : Prop :=
-  ¬ G pfx.spine pfx.history ∧
-    G (pfx.spine.comp (.down (l.toFunB pfx.pos x) (.root _)))
-      (PrefixMoves.snoc l pfx.spine pfx.history x)
 
 /-- Encoded event marginals transport a full-prefix model's local bound to the actual move.
 The model's sample and encoding may both depend on the full prefix. -/
@@ -217,10 +220,10 @@ end Escape
 
 section Run
 
-variable {P : PFunctor.{1, 0}} {l : PFunctor.Lens P rolePoly}
+variable {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
 
 /-- The node errors along a path through a sender node are those of the subpath. -/
-private theorem sum_challengeNodesOn_sender {a : P.A} {next : P.B a → FreeM P PUnit}
+private theorem sum_challengeNodesOn_sender {a : P.A} {next : P.B a → FreeM P PUnit.{u + 1}}
     (h : owner l a = .sender) (ε : ChallengeNode l (.liftBind a next) → ℝ≥0∞) (b : P.B a)
     (path : Path (next b)) :
     ∑ c ∈ challengeNodesOn l (.liftBind a next) ⟨b, path⟩, ε c =
@@ -233,7 +236,7 @@ private theorem sum_challengeNodesOn_sender {a : P.A} {next : P.B a → FreeM P 
 
 /-- The node errors along a path through a receiver node are the node's error plus those of
 the subpath. -/
-private theorem sum_challengeNodesOn_receiver {a : P.A} {next : P.B a → FreeM P PUnit}
+private theorem sum_challengeNodesOn_receiver {a : P.A} {next : P.B a → FreeM P PUnit.{u + 1}}
     (h : owner l a = .receiver) (ε : ChallengeNode l (.liftBind a next) → ℝ≥0∞) (b : P.B a)
     (path : Path (next b)) :
     ∑ c ∈ challengeNodesOn l (.liftBind a next) ⟨b, path⟩, ε c =
@@ -244,6 +247,8 @@ private theorem sum_challengeNodesOn_receiver {a : P.A} {next : P.B a → FreeM 
     rfl
   · rename_i h'
     cases h.symm.trans h'
+
+variable {P : PFunctor.{1, 0}} {l : PFunctor.Lens P rolePoly}
 
 /-- Sampling at the root receiver node is the root draw. -/
 private theorem sampleAt_root {a : P.A} {next : P.B a → FreeM P PUnit}
@@ -516,84 +521,6 @@ section PrefixExecution
 
 variable {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly)
 
-/-- Challenge programs may depend on the entire full prefix, including erased challenges. -/
-abbrev PrefixChallengePrograms {ι : Type} (spec : OracleSpec ι) (s : FreeM P PUnit) :=
-  ∀ {a next}, (sp : Cursor.Spine s (.liftBind a next)) → owner l a = .receiver →
-    PrefixMoves l sp → OracleComp spec (Move l a)
-
-/-- The passive counterpart whose next draw can depend on the full prefix. -/
-def prefixSampler {ι : Type} {spec : OracleSpec ι} :
-    (s : FreeM P PUnit) → PrefixChallengePrograms l spec s →
-    Counterpart l (OracleComp spec) s (fun _ => PUnit)
-  | .pure _, _ => pure ⟨⟩
-  | .liftBind a next, d =>
-    samplerSlot (owner l a) (fun h => d (.root _) h ⟨⟩) (fun x =>
-      prefixSampler (next (l.toFunB a x))
-        (fun sp h history => d (.down (l.toFunB a x) sp) h ⟨⟨x, rfl⟩, history⟩))
-
-private theorem cast_prefixSampler {ι : Type} {spec : OracleSpec ι}
-    {a : P.A} {next : P.B a → FreeM P PUnit} {r : TwoParty.Role}
-    (h : owner l a = r) (d : PrefixChallengePrograms l spec (.liftBind a next)) :
-    cast (congrArg (fun r => OracleComp spec (Choice .counterpart r (Move l a)
-      (fun x => Counterpart l (OracleComp spec) (next (l.toFunB a x)) (fun _ => PUnit)))) h)
-      (prefixSampler l (.liftBind a next) d) =
-    samplerSlot r (fun hr => d (.root _) (h.trans hr) ⟨⟩) (fun x =>
-      prefixSampler l (next (l.toFunB a x))
-        (fun sp h history => d (.down (l.toFunB a x) sp) h ⟨⟨x, rfl⟩, history⟩)) := by
-  cases h
-  rfl
-
-/-- Execute a focal strategy with passive challenges selected from its full prefix. -/
-def runPrefixChallenges {ι : Type} {spec : OracleSpec ι} :
-    (s : FreeM P PUnit) → {Out : PathAlong l s → Type} →
-    Focal l (OracleComp spec) s Out → PrefixChallengePrograms l spec s →
-    OracleComp spec ((tr : PathAlong l s) × Out tr × PUnit)
-  | .pure _, _, p, _ => do
-    let out ← p
-    pure ⟨⟨⟩, out, ⟨⟩⟩
-  | .liftBind a next, Out, p, d =>
-    match h : owner l a with
-    | .sender => do
-      let v ← cast (congrArg (fun r => OracleComp spec (Choice .focal r (Move l a)
-        (fun x => Focal l (OracleComp spec) (next (l.toFunB a x))
-          (fun tr => Out ⟨x, tr⟩)))) h) p
-      let r ← runPrefixChallenges (next (l.toFunB a v.1)) v.2
-        (fun sp h history => d (.down (l.toFunB a v.1) sp) h ⟨⟨v.1, rfl⟩, history⟩)
-      pure ⟨⟨v.1, r.1⟩, r.2.1, r.2.2⟩
-    | .receiver => do
-      let f ← cast (congrArg (fun r => OracleComp spec (Choice .focal r (Move l a)
-        (fun x => Focal l (OracleComp spec) (next (l.toFunB a x))
-          (fun tr => Out ⟨x, tr⟩)))) h) p
-      let x ← d (.root _) h ⟨⟩
-      let r ← runPrefixChallenges (next (l.toFunB a x)) (f x)
-        (fun sp h history => d (.down (l.toFunB a x) sp) h ⟨⟨x, rfl⟩, history⟩)
-      pure ⟨⟨x, r.1⟩, r.2.1, r.2.2⟩
-
-/-- Prefix-dependent execution is the ordinary focal-first Core runner with its passive
-counterpart. It does not restart or replay the focal strategy. -/
-theorem runPrefixChallenges_eq_run {ι : Type} {spec : OracleSpec ι} (s : FreeM P PUnit) :
-    ∀ {Out : PathAlong l s → Type} (p : Focal l (OracleComp spec) s Out)
-      (d : PrefixChallengePrograms l spec s),
-      runPrefixChallenges l s p d = TwoParty.Lens.run s p (prefixSampler l s d) := by
-  induction s using FreeM.rec with
-  | pure u =>
-    cases u
-    intro Out p d
-    simpa only [runPrefixChallenges, prefixSampler, FreeM.pure_eq_pure,
-      LawfulMonad.pure_bind] using
-      (run_done (l := l) (OutC := fun _ => PUnit) p (pure ⟨⟩)).symm
-  | liftBind a next ih =>
-    intro Out p d
-    rw [runPrefixChallenges]
-    split <;> rename_i h
-    · rw [run_node, step_sender (owner l a) h, cast_prefixSampler l h]
-      simp only [samplerSlot, LawfulMonad.pure_bind]
-      exact bind_congr fun v => congrArg (fun x => x >>= _) (ih _ v.2 _)
-    · rw [run_node, step_receiver (owner l a) h, cast_prefixSampler l h]
-      simp only [samplerSlot, bind_map_left]
-      exact bind_congr fun f => bind_congr fun x =>
-        congrArg (fun y => y >>= _) (ih _ (f x) _)
-
 /-- Actual prefix-dependent flip bounds control the full passive execution in any lawful
 subprobability monad. Each draw is evaluated at its matching history. -/
 theorem prEvent_runPrefixChallenges_le {m : Type → Type v} [Monad m] [LawfulMonad m]
@@ -699,7 +626,8 @@ end PrefixExecution
 
 section PathBounds
 
-variable {P : PFunctor.{1, 0}} {l : PFunctor.Lens P rolePoly} {s : FreeM P PUnit}
+variable {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
+  {s : FreeM P PUnit.{u + 1}}
 
 /-- The path supremum of summed node errors is at most the sum of all node errors. -/
 theorem iSup_sum_challengeNodesOn_le_tsum (ε : ChallengeNode l s → ℝ≥0∞) :

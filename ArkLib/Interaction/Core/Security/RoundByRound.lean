@@ -20,7 +20,7 @@ prefix before drawing one fresh challenge; their indices contain only shape choi
 
 @[expose] public section
 
-universe uS uW uK uI wI wJ
+universe uS uW uK uI wI wJ uA u vDraw uι uQ
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle MeasureTheory
@@ -29,18 +29,18 @@ open scoped ENNReal
 attribute [local implicit_reducible] projectPathAlong projectPathAlongLocalMap
   Displayed.LocalMap.toHom Displayed.LocalMap.toHomFun
 
-variable {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly)
+variable {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
 
 /-- Full runtime moves decorating a structural cursor, including erased payloads. -/
 @[implicit_reducible]
-def PrefixMoves : {s t : FreeM P PUnit} → Cursor.Spine s t → Type
+def PrefixMoves : {s t : FreeM P PUnit.{u + 1}} → Cursor.Spine s t → Type u
   | _, _, .root _ => PUnit
   | _, _, .down (a := a) b tail =>
     {x : Move l a // l.toFunB a x = b} × PrefixMoves tail
 
 /-- Extend a full prefix by one move using cursor composition. -/
-def PrefixMoves.snoc {a : P.A} {next : P.B a → FreeM P PUnit} :
-    {s : FreeM P PUnit} → (sp : Cursor.Spine s (.liftBind a next)) →
+def PrefixMoves.snoc {a : P.A} {next : P.B a → FreeM P PUnit.{u + 1}} :
+    {s : FreeM P PUnit.{u + 1}} → (sp : Cursor.Spine s (.liftBind a next)) →
     PrefixMoves l sp → (x : Move l a) →
     PrefixMoves l (sp.comp (.down (l.toFunB a x) (.root _)))
   | _, .root _, _, x => ⟨⟨x, rfl⟩, ⟨⟩⟩
@@ -49,7 +49,7 @@ def PrefixMoves.snoc {a : P.A} {next : P.B a → FreeM P PUnit} :
     exact ⟨⟨y, h⟩, PrefixMoves.snoc tail rest x⟩
 
 /-- A terminal full prefix is a completed transcript. -/
-def PrefixMoves.complete : {s : FreeM P PUnit} →
+def PrefixMoves.complete : {s : FreeM P PUnit.{u + 1}} →
     (sp : Cursor.Spine s (.pure PUnit.unit)) → PrefixMoves l sp → PathAlong l s
   | _, .root _, _ => ⟨⟩
   | _, .down b tail, history => by
@@ -57,33 +57,136 @@ def PrefixMoves.complete : {s : FreeM P PUnit} →
     exact ⟨x, h.symm ▸ PrefixMoves.complete tail rest⟩
 
 /-- The structural node reached by a cursor ending at an interaction node. -/
-def spineNode {a : P.A} {next : P.B a → FreeM P PUnit} :
-    {s : FreeM P PUnit} → Cursor.Spine s (.liftBind a next) → Node s
+def spineNode {a : P.A} {next : P.B a → FreeM P PUnit.{u + 1}} :
+    {s : FreeM P PUnit.{u + 1}} → Cursor.Spine s (.liftBind a next) → Node s
   | _, .root _ => .inl ⟨⟩
   | _, .down b tail => .inr ⟨b, spineNode tail⟩
 
 /-- Node lookup preserves the position at the end of the cursor. -/
-theorem spineNode_position {a : P.A} {next : P.B a → FreeM P PUnit} :
-    {s : FreeM P PUnit} → (sp : Cursor.Spine s (.liftBind a next)) →
+theorem spineNode_position {a : P.A} {next : P.B a → FreeM P PUnit.{u + 1}} :
+    {s : FreeM P PUnit.{u + 1}} → (sp : Cursor.Spine s (.liftBind a next)) →
     Node.position _ (spineNode sp) = a
   | _, .root _ => rfl
   | _, .down _ tail => spineNode_position tail
 
 /-- A receiver cursor identifies its challenge without using any full runtime move. -/
-def spineChallenge {s : FreeM P PUnit} {a : P.A} {next : P.B a → FreeM P PUnit}
+def spineChallenge {s : FreeM P PUnit.{u + 1}} {a : P.A} {next : P.B a → FreeM P PUnit.{u + 1}}
     (sp : Cursor.Spine s (.liftBind a next)) (h : owner l a = .receiver) : ChallengeNode l s :=
   ⟨spineNode sp, (congrArg (owner l) (spineNode_position sp)).trans h⟩
 
 /-- Draw a fresh move at the receiver position selected by a structural prefix. -/
-def sampleAt {s : FreeM P PUnit} {a : P.A} {next : P.B a → FreeM P PUnit}
+def sampleAt {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly)
+    {s : FreeM P PUnit.{1}} {a : P.A} {next : P.B a → FreeM P PUnit.{1}}
     (draw : QueryImpl (challengeSpec l s) ProbComp)
     (sp : Cursor.Spine s (.liftBind a next)) (h : owner l a = .receiver) : ProbComp (Move l a) :=
   (fun x => Eq.mp (congrArg (Move l) (spineNode_position sp)) x) <$>
     draw (spineChallenge l sp h)
 
+/-- A challenge action at each receiver prefix, with access to all earlier moves. -/
+abbrev PrefixDraw (m : Type u → Type vDraw) (s : FreeM P PUnit.{u + 1}) :=
+  ∀ {a next}, (sp : Cursor.Spine s (.liftBind a next)) → owner l a = .receiver →
+    PrefixMoves l sp → m (Move l a)
+
+/-- Challenge programs may depend on the entire full prefix, including erased challenges. -/
+abbrev PrefixChallengePrograms {ι : Type uι} (spec : OracleSpec.{uι, uQ} ι)
+    (s : FreeM P PUnit.{u + 1}) := PrefixDraw l (OracleComp spec) s
+
+/-- Draw at one receiver prefix using its complete history. -/
+abbrev prefixSampleAt {m : Type u → Type vDraw} {s : FreeM P PUnit.{u + 1}}
+    (draw : PrefixDraw l m s) {a next} (sp : Cursor.Spine s (.liftBind a next))
+    (h : owner l a = .receiver) (history : PrefixMoves l sp) : m (Move l a) :=
+  draw sp h history
+
+/-- A node-indexed draw is the prefix draw that ignores the full history. -/
+def PrefixDraw.ofNodes {m : Type u → Type vDraw} [Functor m] {s : FreeM P PUnit.{u + 1}}
+    (draw : (c : ChallengeNode l s) → m (challengeSpec l s c)) : PrefixDraw l m s :=
+  fun sp h _ => (fun x => Eq.mp (congrArg (Move l) (spineNode_position sp)) x) <$>
+    draw (spineChallenge l sp h)
+
+/-- Ignoring history recovers node-indexed sampling at the same receiver cursor. -/
+theorem prefixSampleAt_ofNodes {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly)
+    {s : FreeM P PUnit.{1}} (draw : QueryImpl (challengeSpec l s) ProbComp)
+    {a next} (sp : Cursor.Spine s (.liftBind a next)) (h : owner l a = .receiver)
+    (history : PrefixMoves l sp) :
+    prefixSampleAt l (PrefixDraw.ofNodes l draw) sp h history = sampleAt l draw sp h := rfl
+
+/-- The passive counterpart whose next draw can depend on the full prefix. -/
+def prefixSampler {m : Type u → Type u} [Monad m] :
+    (s : FreeM P PUnit.{u + 1}) → PrefixDraw l m s →
+    Counterpart l m s (fun _ => PUnit.{u + 1})
+  | .pure _, _ => pure ⟨⟩
+  | .liftBind a next, d =>
+    samplerSlot (owner l a) (fun h => d (.root _) h ⟨⟩) (fun x =>
+      prefixSampler (next (l.toFunB a x))
+        (fun sp h history => d (.down (l.toFunB a x) sp) h ⟨⟨x, rfl⟩, history⟩))
+
+private theorem cast_prefixSampler {m : Type u → Type u} [Monad m]
+    {a : P.A} {next : P.B a → FreeM P PUnit.{u + 1}} {r : TwoParty.Role}
+    (h : owner l a = r) (d : PrefixDraw l m (.liftBind a next)) :
+    cast (congrArg (fun r => m (Choice .counterpart r (Move l a)
+      (fun x => Counterpart l m (next (l.toFunB a x)) (fun _ => PUnit.{u + 1})))) h)
+      (prefixSampler l (.liftBind a next) d) =
+    samplerSlot r (fun hr => d (.root _) (h.trans hr) ⟨⟩) (fun x =>
+      prefixSampler l (next (l.toFunB a x))
+        (fun sp h history => d (.down (l.toFunB a x) sp) h ⟨⟨x, rfl⟩, history⟩)) := by
+  cases h
+  rfl
+
+/-- Execute a focal strategy with passive challenges selected from its full prefix. -/
+def runPrefixChallenges {ι : Type u} {spec : OracleSpec.{u, u} ι} :
+    (s : FreeM P PUnit.{u + 1}) → {Out : PathAlong l s → Type u} →
+    Focal l (OracleComp spec) s Out → PrefixChallengePrograms l spec s →
+    OracleComp spec ((tr : PathAlong l s) × Out tr × PUnit.{u + 1})
+  | .pure _, _, p, _ => do
+    let out ← p
+    pure ⟨⟨⟩, out, ⟨⟩⟩
+  | .liftBind a next, Out, p, d =>
+    match h : owner l a with
+    | .sender => do
+      let v ← cast (congrArg (fun r => OracleComp spec (Choice .focal r (Move l a)
+        (fun x => Focal l (OracleComp spec) (next (l.toFunB a x))
+          (fun tr => Out ⟨x, tr⟩)))) h) p
+      let r ← runPrefixChallenges (next (l.toFunB a v.1)) v.2
+        (fun sp h history => d (.down (l.toFunB a v.1) sp) h ⟨⟨v.1, rfl⟩, history⟩)
+      pure ⟨⟨v.1, r.1⟩, r.2.1, r.2.2⟩
+    | .receiver => do
+      let f ← cast (congrArg (fun r => OracleComp spec (Choice .focal r (Move l a)
+        (fun x => Focal l (OracleComp spec) (next (l.toFunB a x))
+          (fun tr => Out ⟨x, tr⟩)))) h) p
+      let x ← d (.root _) h ⟨⟩
+      let r ← runPrefixChallenges (next (l.toFunB a x)) (f x)
+        (fun sp h history => d (.down (l.toFunB a x) sp) h ⟨⟨x, rfl⟩, history⟩)
+      pure ⟨⟨x, r.1⟩, r.2.1, r.2.2⟩
+
+/-- Prefix-dependent execution is the ordinary focal-first Core runner with its passive
+counterpart. It does not restart or replay the focal strategy. -/
+theorem runPrefixChallenges_eq_run {ι : Type u} {spec : OracleSpec.{u, u} ι}
+    (s : FreeM P PUnit.{u + 1}) :
+    ∀ {Out : PathAlong l s → Type u} (p : Focal l (OracleComp spec) s Out)
+      (d : PrefixChallengePrograms l spec s),
+      runPrefixChallenges l s p d = TwoParty.Lens.run s p (prefixSampler l s d) := by
+  induction s using FreeM.rec with
+  | pure u =>
+    cases u
+    intro Out p d
+    simpa only [runPrefixChallenges, prefixSampler, FreeM.pure_eq_pure,
+      LawfulMonad.pure_bind] using
+      (run_done (l := l) (OutC := fun _ => PUnit.{u + 1}) p (pure ⟨⟩)).symm
+  | liftBind a next ih =>
+    intro Out p d
+    rw [runPrefixChallenges]
+    split <;> rename_i h
+    · rw [run_node, step_sender (owner l a) h, cast_prefixSampler l h]
+      simp only [samplerSlot, LawfulMonad.pure_bind]
+      exact bind_congr fun v => congrArg (fun x => x >>= _) (ih _ v.2 _)
+    · rw [run_node, step_receiver (owner l a) h, cast_prefixSampler l h]
+      simp only [samplerSlot, bind_map_left]
+      exact bind_congr fun f => bind_congr fun x =>
+        congrArg (fun y => y >>= _) (ih _ (f x) _)
+
 /-- A state predicate on every full prefix, with root, sender and terminal obligations. The
 statement may lie in any universe. -/
-structure StateFunction (s : FreeM P PUnit) (S : Type uS)
+structure StateFunction (s : FreeM P PUnit.{u + 1}) (S : Type uS)
     (admissible language : S → Prop) (accepts : S → PathAlong l s → Prop) where
   toFun : ∀ {t}, (sp : Cursor.Spine s t) → PrefixMoves l sp → S → Prop
   root : ∀ stmt, admissible stmt → toFun (.root s) ⟨⟩ stmt → language stmt
@@ -93,6 +196,8 @@ structure StateFunction (s : FreeM P PUnit) (S : Type uS)
         (PrefixMoves.snoc l sp history x) stmt
   leaf : ∀ (sp : Cursor.Spine s (.pure ⟨⟩)) history stmt,
     ¬ toFun sp history stmt → ¬ accepts stmt (PrefixMoves.complete l sp history)
+
+variable {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly)
 
 /-- Worst-case-per-prefix round-by-round soundness; there is no adversary-model argument. -/
 def rbrSoundness {S : Type uS} (s : FreeM P PUnit)
