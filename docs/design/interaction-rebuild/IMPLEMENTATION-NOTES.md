@@ -225,10 +225,11 @@ by lifting each intermediate witness, and `rbrKnowledgeSoundness.lift` transport
 `uK` to `max uK v` at the same error. A legacy intermediate witness lies in `Type`, which fixes
 the universe of the certificate that the legacy-to-interaction theorems construct but not the
 universe of their conclusions: they lift that certificate and hold for every `uK`. The
-interaction-to-legacy theorems drop the witnesses and hold for every `uK` as well. Extracted witnesses returned by the extraction games are values of the
-runner and stay in `Type`. The restrictions that remain are the premise-required ones above
-(ambient index and experiment state in `Type`, output data, output index and extracted witnesses
-in `Type`) and the two unresolved ones (input oracle data in `Type`, and the full-log runner).
+interaction-to-legacy theorems drop the witnesses and hold for every `uK` as well. Extracted
+witnesses returned by the extraction games are values of the runner and stay in `Type`. The
+restrictions that remain are the premise-required ones above (ambient index and experiment state
+in `Type`, output data, output index and extracted witnesses in `Type`) and the two unresolved
+ones (input oracle data in `Type`, and the full-log runner).
 
 `ArkLibTest/Interaction/Core/UniverseCanary.lean` instantiates the independent universes against
 `Verifier`, `OracleVerifier`, `Reduction`, both appends, the routing law `append_decideWith`,
