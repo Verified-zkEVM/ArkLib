@@ -352,7 +352,8 @@ decision with repeated points and target two. The native tests audit the theorem
 #1488 implements interval endpoints with `intervalVerifier` built from native `foldVerifier`.
 The exact-row Sumcheck disposition gives interval execution, projection and append targets;
 their full-run corollaries preserve the parent statements. P1 and P2 explain changed abort and shape assertions.
-Behavior-guarantee assertions remain unresolved pending the corresponding parent interface.
+The generic `OracleModel.satisfies_guarantee` interface has no Core counterpart and is tracked as a
+separate gap.
 
 `Interaction.Core.Prover.simulate_joinSlot` belongs beside `Prover.simulate` in
 `Interaction/Core/Reduction.lean`. It now covers every protocol tree, lens, dependent prover
@@ -431,8 +432,8 @@ rows of `scripts/SumcheckRuntime.lean`. Rows 3, 4 and 6 are premise-required und
 
 - `run_eq_interpret` replaces `execute_eq_native`. It equates the runs only after the challenge
   queries are renamed (`renameQueries`): the challenge nodes of the protocol at two carriers are
-  different types. Challenge implementations move between the carriers by `transportDraw`, which
-  keeps uniform sampling.
+  different types. Challenge implementations move between the carriers by
+  `Interpreted.transportDraw`, which keeps uniform sampling.
 - The input oracle is a CompPoly multivariate polynomial with the individual degree bound,
   answered by direct evaluation, rather than an arbitrary behavior. The relations and languages
   are the legacy ones on the input read by `toOracleStatement`.

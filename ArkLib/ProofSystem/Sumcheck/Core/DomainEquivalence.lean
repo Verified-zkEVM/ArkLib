@@ -230,7 +230,8 @@ private theorem nativeHonestState_next (D : Fin d ↪ R)
 /-- Compatibility honest transcripts and terminal states are the native honest interval fold. -/
 theorem honestFold_native (D : Fin d ↪ R) :
     (k : ℕ) → (st : RoundState R deg n k) → (chals : Fin k → R) →
-    foldTranscript (honestMessage D) (nextState (honestMessage D)) k st chals =
+    foldTranscript (eval := fun (p : R⦃≤ deg⦄[X]) x => p.val.eval x) (honestMessage D)
+        (nextState (honestMessage D)) k st chals =
       foldTranscript (intervalMessage (⇑D) st.poly) (intervalNext (⇑D) st.poly) k
         (nativeHonestState st) chals ∧
     nativeHonestState (foldState (nextState (honestMessage D)) k st chals) =

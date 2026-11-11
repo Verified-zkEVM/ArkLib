@@ -126,6 +126,20 @@ example {ι : Type} (ambient : OracleSpec ι) (r : ℕ) :
     indexedExecute_univariate_complete ambient (QueryImpl.id' ambient) (pure r)
       [0, 0] natOne 2 (by simp [natOne])
 
+/-- The degree bound of a message follows from its carrier. -/
+example : natOne.val.degree ≤ (0 : ℕ) := message_degree natOne
+
+/-- The degree bound and honest closing hold together in an actual deterministic run. -/
+example {ι : Type} (ambient : OracleSpec ι) (r : ℕ) :
+    natOne.val.degree ≤ (0 : ℕ) ∧
+      (fun obs => obs.2.2.map
+        (fun out => (out.2 ()).val.eval out.1.challenges = out.1.target)) <$>
+        indexedExecute ([0, 0] : List ℕ).get ambient (QueryImpl.id' ambient) (pure r)
+          (fun _ => univariateData natOne) natOne 2 = pure (some True) := by
+  simpa only [LawfulApplicative.map_pure] using
+    indexedExecute_univariate_degree_complete ambient (QueryImpl.id' ambient) (pure r)
+      [0, 0] natOne 2 (by simp [natOne])
+
 /-- Rejection preserves challenge mass as a separate property of the actual run. -/
 example {ι : Type} (ambient : OracleSpec ι) (impl : QueryImpl ambient ProbComp)
     (challenge : ProbComp ℕ) :
@@ -151,6 +165,8 @@ run_cmd
       ``Sumcheck.Core.indexedRoundResult_true_iff, ``Sumcheck.Core.univariateData_eval,
       ``Sumcheck.Core.indexedExecute_univariate_honest_eq,
       ``Sumcheck.Core.indexedExecute_univariate_complete,
+      ``Sumcheck.Core.message_degree,
+      ``Sumcheck.Core.indexedExecute_univariate_degree_complete,
       ``Sumcheck.Core.indexedExecute_univariate_support,
       ``Sumcheck.Core.indexedExecute_univariate_perfectCompleteness,
       ``Sumcheck.Core.indexedExecute_univariate_measureCompleteness,

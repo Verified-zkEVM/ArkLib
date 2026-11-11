@@ -65,12 +65,14 @@ example (stmt : Sumcheck.Spec.StatementRound F 3 0) (data : ∀ _ : Unit, Input 
 
 /-- Transporting challenges to the polynomial carrier and back returns them. -/
 example (challenges : QueryImpl (challengeSpec oracleSig (protocol F 2 3)) ProbComp) :
-    Sumcheck.Core.transportDraw (M' := F⦃≤ 2⦄[X]) (eval' := fun p x => p.val.eval x) 3
-        (Sumcheck.Core.transportDraw 3 challenges) = challenges :=
-  Sumcheck.Core.transportDraw_transportDraw 3 challenges
+    Sumcheck.Core.Interpreted.transportDraw (N := F⦃≤ 2⦄[X])
+        (evaluateN := fun p x => p.val.eval x) 3
+        (Sumcheck.Core.Interpreted.transportDraw 3 challenges) = challenges :=
+  Sumcheck.Core.Interpreted.transportDraw_transportDraw 3 challenges
 
 /-- Uniform challenges at the polynomial carrier transport to uniform computable challenges. -/
-example : Sumcheck.Core.transportDraw (M' := F⦃≤ 2⦄[X]) (eval' := fun p x => p.val.eval x) 3
+example : Sumcheck.Core.Interpreted.transportDraw (N := F⦃≤ 2⦄[X])
+      (evaluateN := fun p x => p.val.eval x) 3
       (@challengeQueryImpl _ oracleSig (Sumcheck.Core.protocol F 2 3)
         (Sumcheck.Core.challengeSampleable F 2 3)) =
     @challengeQueryImpl _ oracleSig (protocol F 2 3)

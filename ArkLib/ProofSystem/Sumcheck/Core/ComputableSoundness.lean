@@ -116,7 +116,7 @@ theorem executeExperiment_eq_native [BEq R] [LawfulBEq R] (D : Fin d → R)
           (Interpreted.transportProver (Impl.Representation.toMessage R deg) count prover)) := by
   rw [interval_closed_execute]
   unfold executeExperiment
-  rw [Interpreted.simulate_transport]
+  rw [Interpreted.simulate_transportFocal]
   have h := Interpreted.execute_transport
     (evaluateN := fun (q : R⦃≤ deg⦄[X]) r => q.val.eval r)
     (liftM ($ᵗ R) : StateT σ ProbComp R) (intervalCheck D) IntervalClaim.finish

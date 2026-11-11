@@ -45,8 +45,19 @@ example :
       execute (pure 2 : Id ℕ) checks id 1 5 11 prover :=
   execute_transport (pure 2 : Id ℕ) checks id evaluate (fun _ _ => rfl) 1 5 11 prover
 
+/-- The constant-output transport is the dependent transport with identity output maps. -/
+example :
+    transportProver (evaluateN := fun (f : ℕ → ℕ) r => f r) evaluate 1 prover =
+      transportFocal evaluate 1 (fun _ => id) prover :=
+  rfl
+
 run_cmd
   for decl in [``Sumcheck.Core.Interpreted.run_transport,
+      ``Sumcheck.Core.Interpreted.run_transportFocal,
+      ``Sumcheck.Core.Interpreted.simulate_transportFocal,
+      ``Sumcheck.Core.Interpreted.transportFocal_foldRounds,
+      ``Sumcheck.Core.Interpreted.transportProver_transportFocal,
+      ``Sumcheck.Core.Interpreted.transportDraw_draw,
       ``Sumcheck.Core.Interpreted.execute_eq_verifier,
       ``Sumcheck.Core.Interpreted.execute_transport,
       ``Sumcheck.Core.Interpreted.verifier_run] do

@@ -59,10 +59,11 @@ theorem project_eq_protocolPath {n : ℕ} (tr : PathAlong oracleSig (protocol R 
     projectPathAlong oracleSig (protocol R deg n) tr = protocolPath R deg n :=
   protocolPath_eq R deg n _
 
-/-- Prepend one round to a transcript of the remaining rounds. -/
-def consTranscript {n : ℕ} (msg : R⦃≤ deg⦄[X]) (chal : R)
-    (tail : PathAlong oracleSig (protocol R deg n)) :
-    PathAlong oracleSig (protocol R deg (n + 1)) := ⟨msg, ⟨chal, tail⟩⟩
+omit [CommSemiring R] in
+/-- Prepend one round to a transcript of the remaining rounds, at any message carrier. -/
+def consTranscript {M : Type} {eval : M → R → R} {n : ℕ} (msg : M) (chal : R)
+    (tail : PathAlong oracleSig (Interpreted.protocol R M eval n)) :
+    PathAlong oracleSig (Interpreted.protocol R M eval (n + 1)) := ⟨msg, ⟨chal, tail⟩⟩
 
 /-- The round polynomial of the first round of a transcript. -/
 def headMessage {n : ℕ} (tr : PathAlong oracleSig (protocol R deg (n + 1))) : R⦃≤ deg⦄[X] :=

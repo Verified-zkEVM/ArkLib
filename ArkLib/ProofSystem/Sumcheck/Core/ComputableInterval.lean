@@ -9,7 +9,7 @@ public import ArkLib.ProofSystem.Sumcheck.Core.ComputableProjection
 public import ArkLib.ProofSystem.Sumcheck.Core.InterpretedExecution
 public import ArkLib.ProofSystem.Sumcheck.Core.IntervalCompleteness
 
-/-! # Computable honest interval provers and native execution -/
+/-! # Computable honest interval provers and their execution -/
 
 @[expose] public section
 
@@ -20,41 +20,35 @@ variable {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
   {n d deg : ℕ} (D : Fin d → R) (poly : CMvPolynomial n R)
   (hpoly : ∀ j, poly.degreeOf j ≤ deg) {stop : Fin (n + 1)}
 
-/-- Send computed projections and store each actual challenge in the continuation. -/
-def intervalHonestProver {m : Type → Type} [Monad m] : (k : ℕ) → IntervalClaim R n stop k →
-    Focal oracleSig m (Interpreted.protocol R (Impl.Representation.Message R deg)
-      (Impl.Representation.evaluate R deg) k) (fun _ => RoundStatement R n stop)
-  | 0, st => pure st.finish
-  | k + 1, st =>
-    let msg := projectedMessage D st.index st.statement.challenges poly hpoly
-    pure (⟨msg, pure fun r => intervalHonestProver k
-      (st.next (Impl.Representation.evaluate R deg msg r) r)⟩ :
-        ((_msg : Impl.Representation.Message R deg) × m (R →
-          Focal oracleSig m (Interpreted.protocol R (Impl.Representation.Message R deg)
-            (Impl.Representation.evaluate R deg) k) (fun _ => RoundStatement R n stop))))
+/-- The computed projection sent from an interval claim with one more round. -/
+def intervalHonestMessage (k : ℕ) (st : IntervalClaim R n stop (k + 1)) :
+    Impl.Representation.Message R deg :=
+  projectedMessage D st.index st.statement.challenges poly hpoly
 
-/-- Interpreting the whole computed honest prover gives exactly the native honest fold. -/
+/-- The computed successor stores the actual challenge and the computed message's value at it. -/
+def intervalHonestNext (k : ℕ) (st : IntervalClaim R n stop (k + 1)) (r : R) :
+    IntervalClaim R n stop k :=
+  st.next (Impl.Representation.evaluate R deg (intervalHonestMessage D poly hpoly k st) r) r
+
+/-- Send computed projections and store each actual challenge in the continuation. -/
+def intervalHonestProver {m : Type → Type} [Monad m] (k : ℕ) (st : IntervalClaim R n stop k) :
+    Focal oracleSig m (Interpreted.protocol R (Impl.Representation.Message R deg)
+      (Impl.Representation.evaluate R deg) k) (fun _ => RoundStatement R n stop) :=
+  foldRounds (intervalHonestMessage D poly hpoly) (intervalHonestNext D poly hpoly)
+    IntervalClaim.finish k st
+
+/-- Interpreting the whole computed honest prover gives exactly the honest polynomial fold. -/
 theorem interpret_intervalHonestProver {m : Type → Type} [Monad m] [LawfulMonad m]
     (k : ℕ) (st : IntervalClaim R n stop k) :
     Interpreted.transportProver (evaluateN := fun (q : R⦃≤ deg⦄[X]) r => q.val.eval r)
       (Impl.Representation.toMessage R deg) k (intervalHonestProver D poly hpoly k st) =
       intervalProver D (toPolynomial poly hpoly) (m := m) k st := by
-  induction k with
-  | zero => rfl
-  | succ k ih =>
-    simp only [intervalHonestProver, Interpreted.transportProver]
-    erw [LawfulMonad.pure_bind]
-    dsimp only
-    erw [LawfulMonad.pure_bind]
-    dsimp only [IntervalClaim.index]
-    rw [projectedMessage_toMessage]
-    dsimp only [intervalProver, foldRounds, consProver, intervalMessage]
-    refine congrArg pure (Sigma.ext rfl (heq_of_eq ?_))
-    change pure _ = pure _
-    congr 1
-    funext r
-    rw [projectedMessage_evaluate]
-    exact ih _
+  refine (Interpreted.transportFocal_foldRounds _ id _ _ _ k st).trans ?_
+  refine foldRounds_map (intervalMessage D (toPolynomial poly hpoly))
+    (intervalNext D (toPolynomial poly hpoly)) IntervalClaim.finish _ _ _ (fun _ st => st)
+    (fun k st => projectedMessage_toMessage D _ _ poly hpoly) (fun k st r => ?_)
+    (fun _ => rfl) k st
+  exact congrArg (fun v => st.next v r) (projectedMessage_evaluate D _ _ poly hpoly r)
 
 variable [DecidableEq R]
 
@@ -84,7 +78,8 @@ theorem execute_honest {m : Type → Type} [Monad m] [LawfulMonad m] {Data : Typ
       (fun chals =>
         let t := (foldState (intervalNext D (toPolynomial poly hpoly)) k st chals).finish
         (t, some (t, data))) <$>
-        drawChallenges k (Interpreted.draw (M := R⦃≤ deg⦄[X]) next k) := by
+        drawChallenges k
+          (Interpreted.draw (evaluate := fun (q : R⦃≤ deg⦄[X]) r => q.val.eval r) next k) := by
   rw [execute_honest_eq_native]
   unfold Interpreted.execute intervalProver
   rw [run_foldRounds]

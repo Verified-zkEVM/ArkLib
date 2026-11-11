@@ -11,6 +11,14 @@ public import ArkLib.ProofSystem.Sumcheck.Core.Interpreted
 
 Interpretation changes the message representation and retains every prover slot, public draw,
 and terminal private output.
+
+* `transportFocal` interprets the messages of a prover and maps its dependent output.
+  `transportProver` is its instance at a constant output type.
+* `transportDraw` moves a challenge implementation between message carriers. The challenge nodes
+  do not depend on the carrier, and every challenge is a ring element.
+* `simulate_transportFocal`, `run_transportFocal` and `transportFocal_foldRounds` state how the
+  interpretation commutes with ambient simulation, with the prover-sampler run and with folds of
+  pure rounds.
 -/
 
 @[expose] public section
@@ -27,6 +35,15 @@ def mapTranscript (interpret : M → N) : (k : ℕ) →
     PathAlong oracleSig (protocol R N evaluateN k)
   | 0, _ => PUnit.unit
   | k + 1, ⟨msg, r, rest⟩ => ⟨interpret msg, r, mapTranscript interpret k rest⟩
+
+/-- Mapping by the identity keeps a transcript. -/
+theorem mapTranscript_id : (k : ℕ) → (tr : PathAlong oracleSig (protocol R M evaluate k)) →
+    mapTranscript (evaluateN := evaluate) id k tr = tr
+  | 0, _ => rfl
+  | k + 1, ⟨x, ⟨c, tr⟩⟩ => by
+    change (⟨x, ⟨c, mapTranscript (evaluateN := evaluate) id k tr⟩⟩ :
+      PathAlong oracleSig (protocol R M evaluate (k + 1))) = ⟨x, ⟨c, tr⟩⟩
+    rw [mapTranscript_id k tr]
 
 /-- Equal message evaluation preserves every chronological transcript verdict. -/
 theorem verdict_transport {State : ℕ → Type} {T : Type} (checks : RoundChecks R State)
@@ -50,61 +67,7 @@ theorem verdict_transport {State : ℕ → Type} {T : Type} (checks : RoundCheck
     | none => rfl
     | some mid => exact ih mid rest
 
-/-- Interpret every message slot, challenge-response slot and terminal computation. -/
-def transportProver {m : Type → Type} [Monad m] {Out : Type} (interpret : M → N) :
-    (k : ℕ) → Focal oracleSig m (protocol R M evaluate k) (fun _ => Out) →
-      Focal oracleSig m (protocol R N evaluateN k) (fun _ => Out)
-  | 0, prover => prover
-  | k + 1, prover => do
-      let chosen ← (prover : m ((_msg : M) × m (R →
-        Focal oracleSig m (protocol R M evaluate k) (fun _ => Out))))
-      let response : m (R → Focal oracleSig m (protocol R N evaluateN k) (fun _ => Out)) := do
-        let respond ← chosen.2
-        pure fun r => transportProver interpret k (respond r)
-      pure (⟨interpret chosen.1, response⟩ : ((_msg : N) ×
-        m (R → Focal oracleSig m (protocol R N evaluateN k) (fun _ => Out))))
-
-/-- Ambient interpretation maps the message slot and the challenge-response slot separately. -/
-theorem simulate_step {ι : Type} {ambient : OracleSpec ι}
-    {m : Type → Type} [Monad m] (impl : QueryImpl ambient m) {Out : Type} (k : ℕ)
-    (prover : Prover oracleSig ambient (protocol R M evaluate (k + 1)) (fun _ => Out)) :
-    Prover.simulate impl prover =
-      (fun (chosen : ((_msg : M) × OracleComp ambient (R →
-          Focal oracleSig (OracleComp ambient) (protocol R M evaluate k) (fun _ => Out)))) =>
-        (⟨chosen.1, (fun respond r => Prover.simulate impl (respond r)) <$>
-          simulateQ impl chosen.2⟩ : ((_msg : M) × m (R →
-            Focal oracleSig m (protocol R M evaluate k) (fun _ => Out))))) <$>
-        simulateQ impl prover := rfl
-
-/-- Interpreting message carriers commutes with interpreting every ambient prover slot. -/
-theorem simulate_transport {ι : Type} {ambient : OracleSpec ι}
-    {m : Type → Type} [Monad m] [LawfulMonad m] {Out : Type}
-    (impl : QueryImpl ambient m) (interpret : M → N) (k : ℕ)
-    (prover : Prover oracleSig ambient (protocol R M evaluate k) (fun _ => Out)) :
-    Prover.simulate impl (transportProver (evaluateN := evaluateN) interpret k prover) =
-      transportProver interpret k (Prover.simulate impl prover) := by
-  induction k with
-  | zero => rfl
-  | succ k ih =>
-    rw [simulate_step, simulate_step]
-    dsimp only [transportProver]
-    erw [simulateQ_bind]
-    rw [_root_.map_bind]
-    erw [bind_map_left]
-    refine bind_congr (m := m) (fun (chosen : ((_msg : M) × OracleComp ambient (R →
-      Focal oracleSig (OracleComp ambient) (protocol R M evaluate k) (fun _ => Out)))) => ?_)
-    rcases chosen with ⟨msg, response⟩
-    dsimp only
-    erw [simulateQ_pure]
-    rw [LawfulApplicative.map_pure]
-    refine congrArg pure (Sigma.ext rfl (heq_of_eq ?_))
-    erw [simulateQ_bind]
-    rw [_root_.map_bind]
-    erw [bind_map_left]
-    refine bind_congr (m := m) fun respond => ?_
-    erw [simulateQ_pure]
-    rw [LawfulApplicative.map_pure]
-    exact congrArg pure (funext fun r => ih (respond r))
+/-! ## Challenge implementations at another carrier -/
 
 /-- Supply the same explicit draw at every public challenge node. -/
 def draw {m : Type → Type} (next : m R) : (k : ℕ) →
@@ -114,62 +77,212 @@ def draw {m : Type → Type} (next : m R) : (k : ℕ) →
   | _ + 1, ⟨.inr ⟨_, .inl _⟩, _⟩ => next
   | k + 1, ⟨.inr ⟨_, .inr ⟨_, node⟩⟩, h⟩ => draw next k ⟨node, h⟩
 
-/-- Actual execution of one more round retains both prover slots before drawing. -/
-theorem run_step {m : Type → Type} [Monad m] [LawfulMonad m] {Out : Type}
-    (next : m R) (k : ℕ)
-    (prover : Focal oracleSig m (protocol R M evaluate (k + 1)) (fun _ => Out)) :
-    Interaction.TwoParty.Lens.run _ prover (sampler oracleSig _ (draw next (k + 1))) = (do
-      let ⟨msg, response⟩ ← (prover : m ((_msg : M) × m (R →
-        Focal oracleSig m (protocol R M evaluate k) (fun _ => Out))))
-      let respond ← response
-      let r ← next
-      let ⟨rest, out, u⟩ ← Interaction.TwoParty.Lens.run _ (respond r)
-        (sampler oracleSig _ (draw next k))
-      pure ⟨⟨msg, r, rest⟩, out, u⟩) := by
-  rw [← bind_pure (Interaction.TwoParty.Lens.run _ prover
-    (sampler oracleSig _ (draw next (k + 1))))]
-  erw [run_sampler_sender rfl]
-  refine bind_congr fun chosen => ?_
-  erw [run_sampler_receiver rfl]
+/-- Move a challenge implementation between message carriers. The challenge nodes do not depend
+on the carrier, and every challenge is a ring element. -/
+def transportDraw {m : Type → Type} : (k : ℕ) →
+    ((c : ChallengeNode oracleSig (protocol R N evaluateN k)) →
+      m (challengeSpec oracleSig _ c)) →
+    (c : ChallengeNode oracleSig (protocol R M evaluate k)) → m (challengeSpec oracleSig _ c)
+  | 0, _, ⟨x, _⟩ => nomatch x
+  | _ + 1, _, ⟨.inl _, h⟩ => nomatch h
+  | k + 1, d, ⟨.inr ⟨_, .inl _⟩, _⟩ => d (headNode k)
+  | k + 1, d, ⟨.inr ⟨_, .inr ⟨_, c⟩⟩, h⟩ => transportDraw k (tailDraw d) ⟨c, h⟩
+
+/-- Transporting a challenge implementation there and back returns it. -/
+theorem transportDraw_transportDraw_apply {m : Type → Type} : (k : ℕ) →
+    (d : (c : ChallengeNode oracleSig (protocol R M evaluate k)) →
+      m (challengeSpec oracleSig _ c)) →
+    (c : ChallengeNode oracleSig (protocol R M evaluate k)) →
+    transportDraw (N := N) (evaluateN := evaluateN) k (transportDraw k d) c = d c
+  | 0, _, ⟨x, _⟩ => nomatch x
+  | _ + 1, _, ⟨.inl _, h⟩ => nomatch h
+  | _ + 1, _, ⟨.inr ⟨_, .inl _⟩, _⟩ => rfl
+  | k + 1, d, ⟨.inr ⟨_, .inr ⟨_, c⟩⟩, h⟩ =>
+    transportDraw_transportDraw_apply k (tailDraw d) ⟨c, h⟩
+
+/-- Transporting a challenge implementation there and back returns it. -/
+theorem transportDraw_transportDraw {m : Type → Type} (k : ℕ)
+    (d : (c : ChallengeNode oracleSig (protocol R M evaluate k)) →
+      m (challengeSpec oracleSig _ c)) :
+    transportDraw (N := N) (evaluateN := evaluateN) k (transportDraw k d) = d :=
+  funext (transportDraw_transportDraw_apply k d)
+
+/-- Transport commutes with a natural map applied to every draw. -/
+theorem transportDraw_natural {m n : Type → Type} (φ : (α : Type) → m α → n α) :
+    (k : ℕ) →
+    (d : (c : ChallengeNode oracleSig (protocol R N evaluateN k)) →
+      m (challengeSpec oracleSig (protocol R N evaluateN k) c)) →
+    (c : ChallengeNode oracleSig (protocol R M evaluate k)) →
+    transportDraw k (fun c => φ _ (d c)) c = φ _ (transportDraw k d c)
+  | 0, _, ⟨x, _⟩ => nomatch x
+  | _ + 1, _, ⟨.inl _, h⟩ => nomatch h
+  | _ + 1, _, ⟨.inr ⟨_, .inl _⟩, _⟩ => rfl
+  | k + 1, d, ⟨.inr ⟨_, .inr ⟨_, c⟩⟩, h⟩ => by
+    have e := transportDraw_natural φ k (tailDraw d) ⟨c, h⟩
+    exact e
+
+/-- Transporting the same explicit draw at every node gives that draw. -/
+theorem transportDraw_draw_apply {m : Type → Type} (next : m R) : (k : ℕ) →
+    (c : ChallengeNode oracleSig (protocol R M evaluate k)) →
+    transportDraw k (draw (M := N) (evaluate := evaluateN) next k) c = draw next k c
+  | 0, ⟨x, _⟩ => nomatch x
+  | _ + 1, ⟨.inl _, h⟩ => nomatch h
+  | _ + 1, ⟨.inr ⟨_, .inl _⟩, _⟩ => rfl
+  | k + 1, ⟨.inr ⟨_, .inr ⟨_, c⟩⟩, h⟩ => transportDraw_draw_apply next k ⟨c, h⟩
+
+/-- Transporting the same explicit draw at every node gives that draw. -/
+theorem transportDraw_draw {m : Type → Type} (next : m R) (k : ℕ) :
+    transportDraw k (draw (M := N) (evaluate := evaluateN) next k) =
+      draw (M := M) (evaluate := evaluate) next k :=
+  funext (transportDraw_draw_apply next k)
+
+/-! ## Provers at another carrier -/
+
+/-- Interpret a prover at another message carrier: every sent message is mapped by `interpret`,
+every slot keeps its effects, and the dependent output is mapped by `g`. -/
+def transportFocal {m : Type → Type} [Functor m] (interpret : M → N) : (k : ℕ) →
+    {Out : PathAlong oracleSig (protocol R M evaluate k) → Type} →
+    {Out' : PathAlong oracleSig (protocol R N evaluateN k) → Type} →
+    (∀ tr, Out tr → Out' (mapTranscript interpret k tr)) →
+    Focal oracleSig m (protocol R M evaluate k) Out →
+    Focal oracleSig m (protocol R N evaluateN k) Out'
+  | 0, _, _, g, prover => (g ⟨⟩ <$> prover : m _)
+  | k + 1, _, _, g, prover => (fun r => ⟨interpret r.1, (fun h chal => transportFocal interpret k
+      (fun tail => g ⟨r.1, ⟨chal, tail⟩⟩) (h chal)) <$> r.2⟩) <$> prover
+
+/-- Interpret every message slot and challenge-response slot of a prover with a constant output
+type, keeping that output. -/
+abbrev transportProver {m : Type → Type} [Functor m] {Out : Type} (interpret : M → N) (k : ℕ)
+    (prover : Focal oracleSig m (protocol R M evaluate k) (fun _ => Out)) :
+    Focal oracleSig m (protocol R N evaluateN k) (fun _ => Out) :=
+  transportFocal interpret k (fun _ => id) prover
+
+/-- Ambient interpretation maps the message slot and the challenge-response slot separately. -/
+theorem simulate_step {ι : Type} {ambient : OracleSpec ι}
+    {m : Type → Type} [Monad m] (impl : QueryImpl ambient m) (k : ℕ)
+    {Out : PathAlong oracleSig (protocol R M evaluate (k + 1)) → Type}
+    (prover : Prover oracleSig ambient (protocol R M evaluate (k + 1)) Out) :
+    Prover.simulate impl prover =
+      ((fun r => ⟨r.1, (fun h chal => Prover.simulate impl (h chal)) <$>
+        simulateQ impl r.2⟩) <$> simulateQ impl prover :
+        m ((x : M) × m ((chal : R) →
+          Focal oracleSig m (protocol R M evaluate k)
+            (fun tail => Out ⟨x, ⟨chal, tail⟩⟩)))) :=
   rfl
+
+/-- Interpreting message carriers commutes with interpreting every ambient prover slot. -/
+theorem simulate_transportFocal {ι : Type} {ambient : OracleSpec ι} {m : Type → Type} [Monad m]
+    [LawfulMonad m] (impl : QueryImpl ambient m) (interpret : M → N) : (k : ℕ) →
+    {Out : PathAlong oracleSig (protocol R M evaluate k) → Type} →
+    {Out' : PathAlong oracleSig (protocol R N evaluateN k) → Type} →
+    (g : ∀ tr, Out tr → Out' (mapTranscript interpret k tr)) →
+    (prover : Prover oracleSig ambient (protocol R M evaluate k) Out) →
+    Prover.simulate impl (transportFocal interpret k g prover) =
+      transportFocal interpret k g (Prover.simulate impl prover)
+  | 0, _, _, g, prover => by
+    change simulateQ impl (g ⟨⟩ <$> prover) = g ⟨⟩ <$> simulateQ impl prover
+    rw [simulateQ_map]
+  | k + 1, _, _, g, prover => by
+    rw [simulate_step, simulate_step]
+    change _ <$> simulateQ impl (_ <$> prover) = _ <$> (_ <$> simulateQ impl prover)
+    erw [simulateQ_map, Functor.map_map, Functor.map_map]
+    refine congrArg (· <$> simulateQ impl prover) (funext fun r => ?_)
+    refine congrArg (Sigma.mk (interpret r.1)) ?_
+    change _ <$> simulateQ impl (_ <$> r.2) = _ <$> (_ <$> simulateQ impl r.2)
+    erw [simulateQ_map, Functor.map_map, Functor.map_map]
+    exact congrArg (· <$> simulateQ impl r.2) (funext fun h => funext fun chal =>
+      simulate_transportFocal impl interpret k _ (h chal))
+
+/-- Running an interpreted prover against the sampler runs the original prover against the
+transported sampler, and maps its transcript and output. -/
+theorem run_transportFocal {m : Type → Type} [Monad m] [LawfulMonad m] (interpret : M → N) :
+    (k : ℕ) → {Out : PathAlong oracleSig (protocol R M evaluate k) → Type} →
+    {Out' : PathAlong oracleSig (protocol R N evaluateN k) → Type} →
+    (g : ∀ tr, Out tr → Out' (mapTranscript interpret k tr)) →
+    (prover : Focal oracleSig m (protocol R M evaluate k) Out) →
+    (d : (c : ChallengeNode oracleSig (protocol R N evaluateN k)) →
+      m (challengeSpec oracleSig _ c)) →
+    Interaction.TwoParty.Lens.run (protocol R N evaluateN k) (transportFocal interpret k g prover)
+        (sampler oracleSig (protocol R N evaluateN k) d) =
+      (fun x => ⟨mapTranscript interpret k x.1, g x.1 x.2.1, x.2.2⟩) <$>
+        Interaction.TwoParty.Lens.run (protocol R M evaluate k) prover
+          (sampler oracleSig (protocol R M evaluate k) (transportDraw k d))
+  | 0, Out, Out', g, prover, d => by
+    refine (run_done (l := oracleSig) (OutP := Out') (OutC := fun _ => PUnit)
+      (g ⟨⟩ <$> prover) (pure ⟨⟩)).trans ?_
+    refine Eq.trans ?_ (congrArg (_ <$> ·) (run_done (l := oracleSig) (OutP := Out)
+      (OutC := fun _ => PUnit) prover (pure ⟨⟩))).symm
+    simp only [bind_map_left, _root_.map_bind, LawfulMonad.pure_bind,
+      LawfulApplicative.map_pure]
+    rfl
+  | k + 1, Out, Out', g, prover, d => by
+    rw [run_succ, run_succ]
+    dsimp only [transportFocal]
+    erw [bind_map_left]
+    simp only [_root_.map_bind, LawfulApplicative.map_pure]
+    refine bind_congr (m := m) fun r => ?_
+    erw [bind_map_left]
+    refine bind_congr (m := m) fun h => bind_congr (m := m) fun chal => ?_
+    rw [run_transportFocal interpret k
+      (Out' := fun tail => Out' ⟨interpret r.1, ⟨chal, tail⟩⟩)
+      (fun tail => g ⟨r.1, ⟨chal, tail⟩⟩) (h chal) (tailDraw d)]
+    simp only [bind_map_left]
+    rfl
 
 /-- Actual prover-sampler execution commutes with representation interpretation, retaining
 arbitrary effects and private outputs. -/
 theorem run_transport {m : Type → Type} [Monad m] [LawfulMonad m] {Out : Type}
-    (next : m R) (interpret : M → N) : ∀ (k : ℕ)
-    (prover : Focal oracleSig m (protocol R M evaluate k) (fun _ => Out)),
+    (next : m R) (interpret : M → N) (k : ℕ)
+    (prover : Focal oracleSig m (protocol R M evaluate k) (fun _ => Out)) :
     Interaction.TwoParty.Lens.run _ (transportProver (evaluateN := evaluateN) interpret k prover)
       (sampler oracleSig _ (draw next k)) =
       (fun result => (⟨mapTranscript interpret k result.1, result.2.1, result.2.2⟩ :
         ((_tr : PathAlong oracleSig (protocol R N evaluateN k)) × Out × PUnit))) <$>
       Interaction.TwoParty.Lens.run _ prover (sampler oracleSig _ (draw next k)) := by
-  intro k
-  induction k with
-  | zero =>
-    intro prover
-    simp [protocol, transportProver, sampler, samplerEnd, PureEnd.toStrategy,
-      PureEnd.mapOutput, run_done, mapTranscript]
-  | succ k ih =>
-    intro prover
-    rw [run_step, run_step]
-    simp only [transportProver, LawfulMonad.bind_assoc, _root_.map_bind]
-    refine bind_congr fun chosen => ?_
-    rcases chosen with ⟨msg, response⟩
-    dsimp only
-    erw [LawfulMonad.pure_bind]
-    dsimp only
-    erw [LawfulMonad.bind_assoc]
-    rw [_root_.map_bind]
-    refine bind_congr (m := m) fun respond => ?_
-    erw [LawfulMonad.pure_bind]
-    simp only [_root_.map_bind, LawfulApplicative.map_pure]
-    refine bind_congr fun r => ?_
-    rw [ih]
-    simp only [LawfulMonad.bind_pure_comp, Functor.map_map]
-    rfl
+  rw [run_transportFocal, transportDraw_draw]
+  rfl
 
-/-- Close an actual native prover-sampler execution by its final resource verdict. The original
-input may be arbitrary behavior; no polynomial realization is required by this executor. -/
+/-- Interpreting a fold of pure rounds maps its messages and its output. -/
+theorem transportFocal_foldRounds {m : Type → Type} [Monad m] [LawfulMonad m]
+    {State : ℕ → Type} {Out Out' : Type} (interpret : M → N) (o : Out → Out')
+    (msg : (k : ℕ) → State (k + 1) → M)
+    (next : (k : ℕ) → State (k + 1) → R → State k) (finish : State 0 → Out) :
+    (k : ℕ) → (st : State k) →
+    transportFocal (evaluateN := evaluateN) interpret k (fun _ => o)
+        (foldRounds (m := m) (eval := evaluate) msg next finish k st) =
+      foldRounds (fun k st => interpret (msg k st)) next (fun st => o (finish st)) k st
+  | 0, st => LawfulApplicative.map_pure (f := m) o (finish st)
+  | k + 1, st => by
+    refine (LawfulApplicative.map_pure _ _).trans ?_
+    refine congrArg (pure (f := m)) (congrArg (Sigma.mk (interpret (msg k st))) ?_)
+    refine (LawfulApplicative.map_pure _ _).trans ?_
+    exact congrArg (pure (f := m)) (funext fun chal =>
+      transportFocal_foldRounds interpret o msg next finish k _)
+
+/-- Interpreting messages commutes with packing dependent private outputs into a fixed type. -/
+theorem transportProver_transportFocal {m : Type → Type} [Monad m] [LawfulMonad m]
+    {O : Type} (interpret : M → N) (k : ℕ)
+    {Out : PathAlong oracleSig (protocol R M evaluate k) → Type}
+    (g : ∀ tr, Out tr → O) (prover : Focal oracleSig m (protocol R M evaluate k) Out) :
+    transportProver (evaluateN := evaluateN) interpret k
+      (transportFocal (evaluateN := evaluate) id k g prover) =
+      transportFocal interpret k g prover := by
+  induction k with
+  | zero => exact id_map _
+  | succ k ih =>
+    dsimp only [transportProver, transportFocal]
+    erw [Functor.map_map]
+    congr 1
+    funext r
+    refine Sigma.ext rfl (heq_of_eq ?_)
+    dsimp only [Function.comp_apply]
+    erw [Functor.map_map]
+    congr 1
+    funext h chal
+    exact ih (fun tail => g ⟨r.1, ⟨chal, tail⟩⟩) (h chal)
+
+/-- Close an actual prover-sampler execution by its final resource verdict. The original input
+may be arbitrary behavior; no polynomial realization is required by this executor. -/
 def execute {m : Type → Type} [Monad m] {Out Data : Type} {State : ℕ → Type} {T : Type}
     (next : m R) (checks : RoundChecks R State) (finish : State 0 → T) (k : ℕ)
     (st : State k) (data : Data)
