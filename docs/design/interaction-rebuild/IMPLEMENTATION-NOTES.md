@@ -373,3 +373,22 @@ test moves one ambient request across a fixed public message: ordinary observati
 logs remain equal, while the traced query prefixes differ. P1 retires intermediate effectful
 verifier actions and their former query groups; it does not retire prover slots or their prefixes.
 The disposition inventory records those qualifications separately.
+
+
+### Oracle-access acceptance rows after the parent merge
+
+DecorationExample row 2 is equivalent. The frozen alias forms the oracle decoration of an
+arbitrary tree at independent message and query universes. Oracle positions carry their
+interfaces, so `UniverseOracleDecoration` reads the decoration of an arbitrary
+`OracleProtocol.{uProtocol, uQuery}` tree off the tree, as its path family. `universeNode`
+additionally attaches an arbitrary `OracleInterface.{0, 1} Nat` to an actual small protocol node,
+and the path-family assertion retains its query type.
+
+The [oracle-access ledger](../interaction-layer/oracle-access-tests.md) now links PhasedRun
+owners, setup and prefix groups and QueryBounds join/terminal membership, concrete prefixes,
+canonical names and phase/log correspondence directly to the parent's `LoggedExecutionTests`
+assertions. P1 retires intermediate verifier actions and their former group assignments.
+`QueryBoundsTests.routed_available` additionally certifies canonical resources at the terminal
+phase of the exact composed doubled-export execution; `QueryCostTests.routed_available_and_cost`
+combines that certificate with cost five for the same routed program. The payload-splitting
+checks remain. The parent large-query full-log limitation in entry 18 is unchanged.

@@ -78,7 +78,7 @@ decision is a distinct terminal phase. [tracePhases] checks the passive phase gr
 state; the original aggregate-log [phases] check remains. Explicit setup can be retained as its
 own slot by `runWithSetupTrace`; setup fused into a prover's first slot stays in that slot.
 
-| Source assertion | Status | Exact target or remaining obligation |
+| Source component | Status | Full disposition |
 | --- | --- | --- |
 | L84, produced phase owners cannot be replaced | equivalent | [slots] derives each phase owner from its slot constructor; no replacement role decoration is an argument. [tracePhases] checks the produced owners. |
 | L91, verifier effects 2 and 3 before challenge, effect 6 on receive | premise-required | P1 retires these non-passive verifier actions at those boundaries. It consequently retires the exact eight-region list and state `2102345678`. |
@@ -89,8 +89,8 @@ own slot by `runWithSetupTrace`; setup fused into a prover's first slot stays in
 | L178, input 7, accepted export 18, sent log and world order | equivalent | [closing] and [faults] retain all these observations together with arbitrary private output. |
 | L178, setup/send/reception/terminal phase groups | premise-required | P1 retires the separate effectful verifier reception group `[1]`; it now executes in the final decision with `[2]`. |
 | L178, phase artifact for the remaining allowed groups | equivalent | [trace] retains explicit setup, prover slots and the terminal decision, with full-log and ordinary erasure. P1's retired reception action is identified separately above. |
-| L194, explicit rejection | equivalent | [faults], third conjunct. |
-| L198, explicit fault 17 | equivalent | [faults], first conjunct; rejection is a different constructor. |
+| L194, explicit rejection | equivalent | [accessTerminal] retains the actual transcript, arbitrary private output, prover log, decision source log and world history with `.ok none`. |
+| L198, explicit fault 17 | equivalent | [accessTerminal] retains those same observations with `.error 17`, distinct from rejection. |
 | L201, phased closing audit | equivalent | `runWithTrace_erase` and `runWithTrace_logView` in [trace] retain the ordinary observation, including its closed optional verdict and output resources. |
 | L202, phased terminal closing audit | equivalent | [trace] preserves the same closed optional verdict under log projection; [optionalClosing] preserves the optional verdict through the labelled terminal presentation. |
 
@@ -133,12 +133,12 @@ use `splitOutputs`, to that prefix's inputs and payloads. [joinName], [joinAvail
 [terminalAvailable] exercise the canonical names on actual produced phases. Typed access and cost
 certificates remain in the oracle-access tests.
 
-| Source assertion | Status | Exact target or remaining obligation |
+| Source component | Status | Full disposition |
 | --- | --- | --- |
 | `route_cost`, L96 | equivalent | The exact double-read export/cost fixture and bound are ported in the oracle-access tests ([access]). |
 | `program_cost`, L117 | equivalent | The authored double-read suffix and its cost bound are ported in the oracle-access tests ([access]). |
 | L130, routed weighted cost at most 5 | equivalent | The exact routed cost-five bound is ported in the oracle-access tests ([access]). |
-| `routed_available`, L149 | equivalent | [prefixResources] provides canonical availability, `contextInclusion`, and `includeQuery_name`; the access tests supply the routed program certificate. |
+| `routed_available`, L149 | equivalent | [prefixResources] provides canonical availability, `contextInclusion`, and `includeQuery_name`; [routedAvailable] certifies the exact routed program at its produced terminal phase. |
 | L165, actual raw log old/old/fresh and claim 4 | equivalent | The exact composed logged execution, including the old/old/fresh log, closure and private output, is ported in the oracle-access tests ([access]). |
 | `future_rejected`, L184, typed future-slot exclusion | equivalent | Typed exclusion for every prefix program, without a budget restriction, is ported in the oracle-access tests ([access]). |
 | `future_rejected`, L184, canonical prefix-context certificate | equivalent | [prefixResources] defines availability using only already sent oracle occurrences. [joinAvailable] excludes the future slot at the actual join. |
@@ -148,7 +148,7 @@ certificates remain in the oracle-access tests.
 | L252, actual terminal-phase prefix | equivalent | [terminalPrefix] reads the complete actual payload prefix from the produced terminal decision. |
 | `joinPhase_mem`, L255 | equivalent | [joinMember] proves membership of the selected actual join phase; `TracedRun.phase_mem` in [slots] is the general selection law. |
 | `terminalPhase_mem`, L257 | equivalent | [terminalMember] and `TracedRun.terminalPhase_mem` in [slots] prove membership in the produced execution. |
-| L266, terminal prefix certifies availability and cost 5 | equivalent | [terminalAvailable] certifies the actual terminal resources. [prefixResources] supplies inclusion and routing; the access tests retain the cost-five certificate. |
+| L266, terminal prefix certifies availability and cost 5 | equivalent | [terminalAvailable] certifies the actual terminal resources; [availableCost] couples canonical availability to cost five for the exact doubled-export route. |
 | L277, old query name survives join-to-terminal inclusion | equivalent | [joinName] uses `includeIndex_name` for the actual produced prefixes. `joinToTerminal_name` and `contextInclusion_name` in [prefixResources] give the general laws. |
 | L286, no budget makes fresh slot available at actual join | equivalent | [joinAvailable] excludes the fresh occurrence independently of any cost budget; [terminalAvailable] identifies that occurrence at the terminal boundary. |
 | L300, phased raw log is old/old/fresh | equivalent | [phaseSource] retains the exact old/old/fresh log, private output 3 and verdict 4. [trace] proves full-log correspondence for every prover. |
@@ -156,12 +156,13 @@ certificates remain in the oracle-access tests.
 
 ## RuntimeQueryBounds.lean
 
-The trace equalities below retain actual answers and charges. The passive informed-prover trace
-has its reveal before the prefix decision's dummy query. The former dummy-before-reveal schedule
-requires a non-passive prefix verifier; this distinction is explicit rather than hidden by
-forgetting answers or summing costs.
+The [access ledger's runtime table][access-runtime] holds the complete dispositions and exact
+counterparts. Passivity excludes the old dummy-before-reveal prefix order; it does not exclude
+canonical prefix certificates. `FullPrefix.queryName` and `contextInclusion_name` supply
+canonical input naming and inclusion; the access ledger links those laws alongside the concrete
+permission and cost assertions.
 
-| Source assertion | Status | Exact target or remaining obligation |
+| Source component | Status | Full disposition |
 | --- | --- | --- |
 | `exported_certificate`, L47 | equivalent | [prefixResources] supplies the canonical prefix family and its availability predicate. The access tests supply export access and cost two. |
 | `source_name`, L57 | equivalent | `queryName`, `includeQuery_name` and `familyInclusion_query` in [prefixResources] name and route the same available occurrence without changing the query argument. |
@@ -215,21 +216,9 @@ universes, with erasure to `runWithAmbientLog` and the ordinary run.
 [largeTrace] executes an actual `Nat` oracle node with queries in `Type 1`, reads its sent
 payload in the decision, and checks the produced terminal prefix.
 
-Ports owned by the oracle-access tests:
-
-- The exact double-read export/cost fixture, source and routed cost-five bounds, inhabited
-  witness excluding bound four, and actual composed old/old/fresh log with closure and private
-  output cover QueryBounds `route_cost`, `program_cost`, L130, L165, L225 and L320. Typed routing,
-  distinct old/fresh slots and future-slot exclusion cover the expressible parts of
-  `routed_available`, `future_rejected`, L209, L266, L277, L286 and L300.
-- Exact decisions and output-map/data equations, typed source/routed access, export cost two,
-  suffix cost bounds, setup cost, import-cost reflection and charged passive runtime histories
-  cover the expressible parts of RuntimeQueryBounds `exported_certificate`, `source_name`,
-  `first_returns_exported`, `suffixAction_eq`, `suffix_access`, `suffix_budget`,
-  `routed_suffix_budget`, `routed_suffix_access`, `setup_budget`, `native_split_history` and
-  `native_import_budget`. The integrated expressible access/cost/history/half-bound conjunction
-  and charge-seven/success-one assertion cover the corresponding parts of
-  `fixed_native_resource_bounds` and `informed_cost_does_not_give_half`.
+The rows above link the access ledger for their full statements, exact targets and passivity
+qualifications. Canonical availability uses [prefixResources]; produced phase observations use
+[slots] and [trace]. Typed access and whole-run logs remain additional checks.
 
 [faults]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L220
 [closing]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L234
@@ -281,3 +270,10 @@ Ports owned by the oracle-access tests:
 [slots]: ../../../ArkLib/Interaction/Core/Oracle/SlotTrace.lean
 
 [largeTrace]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1163
+
+[accessTerminal]: ../../../ArkLibTest/Interaction/Core/Oracle/PhasedRun.lean#L133
+
+[routedAvailable]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryBounds.lean#L282
+[availableCost]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L83
+
+[access-runtime]: oracle-access-tests.md#runtimequerybounds-17-assertions
