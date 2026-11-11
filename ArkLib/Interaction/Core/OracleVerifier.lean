@@ -18,7 +18,7 @@ oracles are one map containing concrete data, query simulation and their agreeme
 
 @[expose] public section
 
-universe u
+universe u v
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
@@ -376,6 +376,28 @@ def OracleVerifier.decideWith {ι I J : Type u} {ambient : OracleSpec.{u, u} ι}
     OracleComp ambient (Option T) :=
   simulateQ (QueryImpl.addLift (QueryImpl.id' ambient)
     ((sumFamily inputs (pathFamily s p)).behaviorOfRealizations data)) (V.decide stmt p v).run
+
+/-- Interpreting ambient queries after closing resource queries agrees with closing them
+together under the ambient handler. -/
+theorem OracleVerifier.simulateQ_decideWith {ι I J : Type u}
+    {ambient : OracleSpec.{u, u} ι} {s : OracleProtocol.{u}} {S T : Type u}
+    {A : I → Type u} {B : J → Type u}
+    {inputs : OracleFamily.{u, u, u} I A} {outputs : OracleFamily.{u, u, u} J B}
+    {m : Type u → Type v} [Monad m] [LawfulMonad m]
+    (V : OracleVerifier ambient s S T inputs outputs) (impl : QueryImpl ambient m)
+    (stmt : S) (p : Path s) (v : View s p)
+    (data : ∀ i, (sumFamily inputs (pathFamily s p)).Realization i) :
+    simulateQ impl (V.decideWith stmt p v data) =
+      simulateQ (QueryImpl.addLift impl
+        ((sumFamily inputs (pathFamily s p)).behaviorOfRealizations data))
+        (V.decide stmt p v).run := by
+  unfold OracleVerifier.decideWith
+  refine QueryImpl.simulateQ_simulateQ_eq_of_apply (fun q => ?_) _
+  rcases q with q | q
+  · simp [QueryImpl.addLift_def]
+  · simp only [QueryImpl.addLift_def]
+    change simulateQ impl (pure _) = pure _
+    simp
 
 /-- Interpret the decision's resource queries using the input and the actual run's payloads. -/
 def OracleVerifier.run {ι I J : Type u} {ambient : OracleSpec.{u, u} ι}

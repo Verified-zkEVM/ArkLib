@@ -274,7 +274,7 @@ theorem embedOracleVerifier_rbrKnowledgeSoundness (init : ProbComp σ)
       KnowledgeTerminalCertificate K)
     (h : V.rbrKnowledgeSoundness init impl relIn relOut ε) :
     (embedOracleVerifier V).rbrKnowledgeSoundness impl (fun _ => True)
-      (fun stmt w => (stmt, w) ∈ relIn) (fun _ t w => (t, w) ∈ relOut)
+      (fun stmt w => (stmt, w) ∈ relIn) (fun _ _ t w => (t, w) ∈ relOut)
       (oracleChallengeImpl ProtocolSpec.challengeQueryImpl)
       (fun c => ε (oracleChallengeRound 0 n (Nat.zero_add n) c)) :=
   (oracleLayout pSpec).rbrKnowledgeSoundness_of_legacy (oracleAcceptanceAgrees impl V) relIn
@@ -289,7 +289,7 @@ theorem rbrKnowledgeSoundness_of_embedOracleVerifier [Nonempty WitIn] (init : Pr
     (relOut : Set ((StmtOut × (∀ i, OStmtOut i)) × WitOut))
     (ε : pSpec.ChallengeIdx → ℝ≥0)
     (h : (embedOracleVerifier V).rbrKnowledgeSoundness impl (fun _ => True)
-      (fun stmt w => (stmt, w) ∈ relIn) (fun _ t w => (t, w) ∈ relOut)
+      (fun stmt w => (stmt, w) ∈ relIn) (fun _ _ t w => (t, w) ∈ relOut)
       (oracleChallengeImpl ProtocolSpec.challengeQueryImpl)
       (fun c => ε (oracleChallengeRound 0 n (Nat.zero_add n) c))) :
     V.rbrKnowledgeSoundness init impl relIn relOut ε :=
