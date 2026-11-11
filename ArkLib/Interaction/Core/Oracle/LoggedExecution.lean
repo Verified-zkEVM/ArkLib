@@ -34,13 +34,6 @@ variable {ι I : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtoc
   {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
   {Out : PathAlong oracleSig s → Type}
 
-/-- Forgetting both logs gives the oracle verifier's run, including the statement and output
-oracle data indexed by the completed path. -/
-theorem runWithLog_erase (V : OracleVerifier ambient s S T inputs outputs) (stmt : S)
-    (data : ∀ i, A i) (prover : Prover oracleSig ambient s Out) :
-    Sigma.fst <$> V.runWithLog stmt data prover = V.run stmt data prover :=
-  map_fst_runWithLog V stmt data prover
-
 /-- Interpreting a logged run in any lawful monad commutes with erasing both logs. -/
 theorem simulateQ_runWithLog_erase {m : Type → Type v} [Monad m] [LawfulMonad m]
     (V : OracleVerifier ambient s S T inputs outputs)
@@ -48,11 +41,11 @@ theorem simulateQ_runWithLog_erase {m : Type → Type v} [Monad m] [LawfulMonad 
     (data : ∀ i, A i) (prover : Prover oracleSig ambient s Out) :
     Sigma.fst <$> simulateQ handler (V.runWithLog stmt data prover) =
       simulateQ handler (V.run stmt data prover) := by
-  rw [← simulateQ_map, runWithLog_erase]
+  rw [← simulateQ_map, map_fst_runWithLog]
 
 /-- Running the logged run in a persistent runtime and erasing the logs and the trace gives the
 ordinary stateful execution of the run. This composes VCVio's `runFrom_eraseTrace` with
-`runWithLog_erase`. -/
+`map_fst_runWithLog`. -/
 theorem runtime_runWithLog_erase {κ : Type} {Import : OracleSpec κ}
     (V : OracleVerifier ambient s S T inputs outputs)
     (runtime : OracleRuntime Import (ambient + challengeSpec oracleSig s)) (stmt : S)
@@ -65,13 +58,35 @@ theorem runtime_runWithLog_erase {κ : Type} {Import : OracleSpec κ}
   have erased := runtime.runFrom_eraseTrace state (V.runWithLog stmt data prover)
   have paired := congrArg (fun program =>
     (fun result => (result.1.1, result.2)) <$> program) erased
-  have logged := congrArg (runtime.handler.runState state) (V.runWithLog_erase stmt data prover)
+  have logged := congrArg (runtime.handler.runState state) (V.map_fst_runWithLog stmt data prover)
   calc
     _ = (fun result => (result.1.1, result.2)) <$>
         runtime.handler.runState state (V.runWithLog stmt data prover) := by
       simpa only [Functor.map_map] using paired
     _ = _ := by
       simpa [QueryImpl.Stateful.runState, monad_norm] using logged
+
+/-- Interpret a final decision in a monad with labelled failures, retaining every answered
+query before a failure. The failing query has no answer and contributes no log entry. The
+state transformer lies below the exception transformer, so rejection and failure remain distinct
+and both retain the completed query log. -/
+def decideWithFailureLog {ε : Type} {m : Type → Type v} [Monad m]
+    (V : OracleVerifier ambient s S T inputs outputs)
+    (handler : QueryImpl ambient (ExceptT ε m)) (stmt : S) (p : Path s)
+    (view : View s p) (data : (pathResources inputs s p).Data) :
+    m (Except ε (Option (T p)) × QueryLog (ambient + (pathResources inputs s p).spec)) :=
+  let spec := ambient + (pathResources inputs s p).spec
+  let answer : QueryImpl spec (ExceptT ε m) :=
+    QueryImpl.addLift handler ((pathResources inputs s p).answer data)
+  let logged : QueryImpl spec (ExceptT ε (StateT (QueryLog spec) m)) := fun q =>
+    ExceptT.mk do
+      let result ← liftM (answer q).run
+      match result with
+      | .error e => pure (.error e)
+      | .ok a =>
+        modify (· ++ [⟨q, a⟩])
+        pure (.ok a)
+  ((simulateQ logged (V.decide stmt p view).run).run).run []
 
 end OracleVerifier
 end Interaction.Core
