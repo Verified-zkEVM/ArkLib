@@ -362,7 +362,9 @@ directly.
 path-dependent output statements `T p`, oracle indices `J p`, carriers `B p j` and interfaces
 `outputs p`. Observations and output problems use `OracleVerifier.Output T B`. The decision and
 output-map cast laws retain the verifier owner's independent ambient and output-index universes;
-ordinary runs retain its move/response universe `u`. Classical probability interfaces specialize
+ordinary runs retain its move/response universe `u`. `cast_const` identifies the general
+transport with ordinary equality substitution for constant output families. Ordinary substitution
+keeps those output carriers fixed while changing the tree. Classical probability interfaces specialize
 the move and returned-value universe to zero, as their owners require.
 
 Agreement accepts general `Resources.{u, uI, dI}` inputs, with independent query and data

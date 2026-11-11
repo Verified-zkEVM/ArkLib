@@ -49,8 +49,16 @@ example {σ : Type} {Win : (S × (∀ i, A i)) → Type 6}
   h.rbrKnowledgeSoundness_iff impl adm relIn relOut draw ε
 
 -- These applications specialize the Cast APIs before any tree equality is supplied.
-#check OracleVerifier.soundness_cast (S := S) (inputs := inputs) (outputs := outputs)
-#check OracleVerifier.rbrKnowledgeSoundness_cast (S := S) (inputs := inputs) (outputs := outputs)
+#check OracleVerifier.soundness_cast (S := S) (T := T) (ambient := ambient)
+  (inputs := inputs) (outputs := outputs)
+
+section KnowledgeCast
+variable {Win : (S × (∀ i, A i)) → Type 6}
+  {W : (S × (∀ i, A i)) → PathAlong oracleSig s → Type 7}
+
+#check OracleVerifier.rbrKnowledgeSoundness_cast (S := S) (T := T) (ambient := ambient)
+  (inputs := inputs) (outputs := outputs) (Win := Win) (W := W)
+end KnowledgeCast
 section LegacyOutputs
 variable {J T : Type} {B : J → Type} {outputs : OracleFamily.{0, 0, 4} J B}
 
@@ -76,8 +84,10 @@ example
         (V'.outputMap stmt _ (toView s tr)).f (data, payloads s tr)) :
     Agrees V V' := Agrees.of_decide_eq hd ho
 
-#check OracleVerifier.outputMap_cast (S := S) (inputs := inputs) (outputs := outputs)
-#check OracleVerifier.simulateQ_decide_cast (S := S) (inputs := inputs) (outputs := outputs)
+#check OracleVerifier.outputMap_cast (S := S) (T := T) (ambient := ambient)
+  (inputs := inputs) (outputs := outputs)
+#check OracleVerifier.simulateQ_decide_cast (S := S) (T := T) (ambient := ambient)
+  (inputs := inputs) (outputs := outputs)
 
 -- Ordinary runs keep general moves and independent input data, node queries and output queries.
 example {ι : Type 1} {ambient : OracleSpec ι} {J : Path s → Type 1}

@@ -33,6 +33,8 @@ embedding's dropped ambient queries with `supportedAnswer`, an answer that `impl
 
 @[expose] public section
 
+universe uK
+
 namespace Sumcheck.Core
 open scoped ENNReal NNReal
 open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
@@ -46,7 +48,7 @@ include init in
 /-- Round-by-round knowledge soundness of the interaction-layer Sumcheck verifier, with error
 `deg / |R|` at every challenge node. -/
 theorem verifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
-    (verifier R deg n D ambient).rbrKnowledgeSoundnessOfNodes impl (fun _ => True)
+    (verifier R deg n D ambient).rbrKnowledgeSoundnessOfNodes.{0, 0, uK, 0} impl (fun _ => True)
       (fun stmt w => (stmt, w) ∈ Spec.relationRound R n deg D 0)
       (fun _ _ t w => (t, w) ∈ Spec.relationRound R n deg D (Fin.last n))
       (challengeQueryImpl oracleSig (protocol R deg n))
@@ -55,11 +57,32 @@ theorem verifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
   unfold OracleVerifier.rbrKnowledgeSoundnessOfNodes
   rw [challengeQueryImpl_eq_legacy, ← OracleVerifier.eqRec_const (protocol_eq R deg n).symm,
     (verifier_agrees R deg n D ambient).rbrKnowledgeSoundness_iff]
-  refine (OracleVerifier.rbrKnowledgeSoundness_cast _ _ _ _ _ _ _ _).mpr ?_
-  exact embedOracleVerifier_rbrKnowledgeSoundness init impl (Spec.oracleVerifier R deg D n ambient)
-    _ _ _ (fun _ _ K => KnowledgeTerminalCertificate.of_guarded
-      (Spec.oracleVerifierGuardedForm R deg D n ambient) K)
+  have hk := embedOracleVerifier_rbrKnowledgeSoundness.{uK} init impl
+    (Spec.oracleVerifier R deg D n ambient) _ _ _ (fun _ _ K =>
+      KnowledgeTerminalCertificate.of_guarded (Spec.oracleVerifierGuardedForm R deg D n ambient) K)
     (Spec.oracleVerifier_rbrKnowledgeSoundness R deg D n ambient)
+  unfold OracleVerifier.rbrKnowledgeSoundnessOfNodes at hk
+  have hc := OracleVerifier.rbrKnowledgeSoundness_cast
+    (T := fun _ => Spec.StatementRound R n (Fin.last n))
+    (inputs := family (Spec.OracleStatement R n deg))
+    (outputs := fun _ => family (Spec.OracleStatement R n deg))
+    (W := fun _ _ => Unit) (protocol_eq R deg n).symm
+    (embedOracleVerifier (Spec.oracleVerifier R deg D n ambient)) impl (fun _ => True)
+    (fun stmt w => (stmt, w) ∈ Spec.relationRound R n deg D 0)
+    (fun _ _ t w => (t, w) ∈ Spec.relationRound R n deg D (Fin.last n))
+    (PrefixDraw.ofNodes oracleSig (oracleChallengeImpl ProtocolSpec.challengeQueryImpl))
+    (PrefixError.ofNodes oracleSig
+      (fun _ => (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞)))
+  have hsource := hc.mpr (by simpa only [cast_eq] using hk)
+  have hcast := OracleVerifier.cast_const
+    (inputs := family (Spec.OracleStatement R n deg))
+    (outputs := family (Spec.OracleStatement R n deg)) (protocol_eq R deg n).symm
+    (embedOracleVerifier (Spec.oracleVerifier R deg D n ambient))
+  rw [hcast] at hsource
+  simp only [OracleVerifier.prefixDraw_ofNodes_cast,
+    OracleVerifier.prefixError_ofNodes_cast] at hsource
+  dsimp only [legacyVerifier]
+  convert hsource using 1 <;> rfl
 
 include init in
 /-- Round-by-round soundness of the interaction-layer Sumcheck verifier, with error `deg / |R|`
@@ -73,12 +96,31 @@ theorem verifier_rbrSoundness [Fintype R] [IsDomain R] :
   let : ∀ t, Inhabited (ambient.Range t) := fun t => ⟨supportedAnswer init impl t⟩
   rw [challengeQueryImpl_eq_legacy, ← OracleVerifier.eqRec_const (protocol_eq R deg n).symm,
     (verifier_agrees R deg n D ambient).rbrSoundness_iff]
-  refine (OracleVerifier.rbrSoundness_cast _ _ _ _ _ _ _).mpr ?_
-  simpa only [OracleVerifier.langProblem_cast, polyFamily, family] using
-    embedOracleVerifier_rbrSoundness init impl (Spec.oracleVerifier R deg D n ambient)
-    _ _ _ (fun S => StateTerminalCertificate.of_guarded
+  have hs := embedOracleVerifier_rbrSoundness init impl
+    (Spec.oracleVerifier R deg D n ambient) _ _ _
+    (fun S => StateTerminalCertificate.of_guarded
       (Spec.oracleVerifierGuardedForm R deg D n ambient) S)
     (_root_.Verifier.rbrSoundness_of_rbrKnowledgeSoundness (init := init) (impl := impl)
       (Spec.oracleVerifier_rbrKnowledgeSoundness R deg D n ambient))
+  have hc := OracleVerifier.rbrSoundness_cast
+    (T := fun _ => Spec.StatementRound R n (Fin.last n))
+    (inputs := family (Spec.OracleStatement R n deg))
+    (outputs := fun _ => family (Spec.OracleStatement R n deg)) (protocol_eq R deg n).symm
+    (embedOracleVerifier (Spec.oracleVerifier R deg D n ambient)) impl
+    (langProblem (Spec.relationRound R n deg D 0).language)
+    (langProblem (Spec.relationRound R n deg D (Fin.last n)).language)
+    (oracleChallengeImpl ProtocolSpec.challengeQueryImpl)
+    (fun _ => (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞))
+  have hproblem := OracleVerifier.langProblem_cast (protocol_eq R deg n)
+    (Spec.relationRound R n deg D (Fin.last n)).language
+  rw [eqRec_eq_cast] at hproblem
+  have hsource := hc.mpr (by simpa only [hproblem] using hs)
+  have hcast := OracleVerifier.cast_const
+    (inputs := family (Spec.OracleStatement R n deg))
+    (outputs := family (Spec.OracleStatement R n deg)) (protocol_eq R deg n).symm
+    (embedOracleVerifier (Spec.oracleVerifier R deg D n ambient))
+  rw [hcast] at hsource
+  dsimp only [legacyVerifier]
+  convert hsource using 1 <;> rfl
 
 end Sumcheck.Core

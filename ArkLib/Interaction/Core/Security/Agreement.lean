@@ -29,7 +29,7 @@ also gives equal decision logs (`runWithLog_eq_of_decide_eq`).
 
 @[expose] public section
 
-universe u q dI uι uJ uK uS uI uW uO wJ
+universe u vDraw q dI uι uJ uK uS uI uW uO wJ
 
 namespace Interaction.Core.OracleVerifier
 open scoped ENNReal
@@ -123,12 +123,11 @@ theorem runWithLog_eq_of_decide_eq {s : OracleProtocol.{0, 0}}
   rw [hd, ho]
 
 /-- Agreeing verifiers accept validly at the same statements and transcripts. -/
-theorem Agrees.validAcceptance_iff (h : Agrees V V') {σ : Type}
+theorem Agrees.validAcceptance_iff (h : Agrees V V')
     (impl : QueryImpl ambient (StateT σ ProbComp))
-    (langOut : (p : Path s) → OracleVerifier.Output T B p → Prop)
-    (stmt : S × inputs.Data) (tr : PathAlong oracleSig s) :
-    V.validAcceptance impl stmt tr (langOut (projectPathAlong oracleSig s tr)) ↔
-      V'.validAcceptance impl stmt tr (langOut (projectPathAlong oracleSig s tr)) := by
+    (stmt : S × inputs.Data) (tr : PathAlong oracleSig s)
+    (langOut : OracleVerifier.Output T B (projectPathAlong oracleSig s tr) → Prop) :
+    V.validAcceptance impl stmt tr langOut ↔ V'.validAcceptance impl stmt tr langOut := by
   obtain ⟨d, o⟩ := h stmt.1 stmt.2 tr
   simp only [OracleVerifier.validAcceptance, d, o]
 
@@ -205,12 +204,12 @@ theorem Agrees.completeness_iff (h : Agrees V V') {Out : PathAlong oracleSig s �
 /-- Agreeing verifiers have the same valid-acceptance predicate. -/
 theorem Agrees.validAcceptance_eq (h : Agrees V V')
     (impl : QueryImpl ambient (StateT σ ProbComp))
-    (langOut : (p : Path s) → OracleVerifier.Output T B p → Prop) :
-    (fun stmt tr => V.validAcceptance impl stmt tr (langOut (projectPathAlong oracleSig s tr))) =
-      (fun stmt tr =>
-        V'.validAcceptance impl stmt tr (langOut (projectPathAlong oracleSig s tr))) := by
+    (langOut : (stmt : S × inputs.Data) → (tr : PathAlong oracleSig s) →
+      OracleVerifier.Output T B (projectPathAlong oracleSig s tr) → Prop) :
+    (fun stmt tr => V.validAcceptance impl stmt tr (langOut stmt tr)) =
+      (fun stmt tr => V'.validAcceptance impl stmt tr (langOut stmt tr)) := by
   funext stmt tr
-  exact propext (h.validAcceptance_iff impl langOut stmt tr)
+  exact propext (h.validAcceptance_iff impl stmt tr _)
 
 /-- Agreeing verifiers are round-by-round sound together. -/
 theorem Agrees.rbrSoundness_iff (h : Agrees V V') (impl : QueryImpl ambient (StateT σ ProbComp))
@@ -224,7 +223,7 @@ theorem Agrees.rbrSoundness_iff (h : Agrees V V') (impl : QueryImpl ambient (Sta
       (fun stmt tr => V'.validAcceptance impl stmt tr
         (output.language (projectPathAlong oracleSig s tr))) :=
     funext fun stmt => funext fun tr =>
-      propext (h.validAcceptance_iff impl output.language stmt tr)
+      propext (h.validAcceptance_iff impl stmt tr _)
   unfold OracleVerifier.rbrSoundness
   rw [eq]
 
@@ -243,9 +242,8 @@ theorem Agrees.rbrKnowledgeSoundness_iff (h : Agrees V V')
       V'.rbrKnowledgeSoundness.{uS, uW, uK, uO} impl admissible relIn relOut draw ε := by
   have eq : (fun stmt tr wit => V.validAcceptance impl stmt tr (fun t => relOut stmt tr t wit)) =
       (fun stmt tr wit => V'.validAcceptance impl stmt tr (fun t => relOut stmt tr t wit)) :=
-    funext fun stmt => funext fun tr => funext fun _ => by
-      obtain ⟨d, o⟩ := h stmt.1 stmt.2 tr
-      simp only [OracleVerifier.validAcceptance, d, o]
+    funext fun stmt => funext fun tr => funext fun _ =>
+      propext (h.validAcceptance_iff impl stmt tr _)
   unfold OracleVerifier.rbrKnowledgeSoundness
   rw [eq]
 
@@ -266,6 +264,15 @@ def cast (e : s' = s)
     (V : OracleVerifier ambient s' S (fun p => T (e ▸ p)) inputs (fun p => outputs (e ▸ p))) :
     OracleVerifier ambient s S T inputs outputs :=
   _root_.cast (by subst e; rfl) V
+
+/-- With constant output families, verifier transport is ordinary equality substitution.
+The constant specialization is needed because ordinary substitution keeps the output carriers
+fixed while changing the tree. -/
+theorem cast_const {T : Type u} {J : Type uJ} {B : J → Type u}
+    {outputs : OracleFamily.{uJ, u, wJ} J B} (e : s' = s)
+    (V : OracleVerifier ambient s' S (fun _ => T) inputs (fun _ => outputs)) :
+    V.cast (T := fun _ => T) (outputs := fun _ => outputs) e = e ▸ V := by
+  subst e; rfl
 
 /-- Transporting a verifier along a tree equality does not change its decision on corresponding
 transcripts. -/
@@ -309,6 +316,21 @@ theorem eqRec_const (e : s' = s) (x : ℝ≥0∞) :
     (e ▸ fun _ : ChallengeNode oracleSig s' => x) = fun _ : ChallengeNode oracleSig s => x := by
   subst e; rfl
 
+/-- Lifting a node-indexed draw to full prefixes commutes with tree transport. -/
+theorem prefixDraw_ofNodes_cast {m : Type u → Type vDraw} [Functor m] (e : s' = s)
+    (draw : QueryImpl (challengeSpec oracleSig s') m) :
+    @Eq (PrefixDraw oracleSig m s)
+      (fun {a next} => e ▸ (@PrefixDraw.ofNodes _ oracleSig m _ s' draw a next))
+      (@PrefixDraw.ofNodes _ oracleSig m _ s (e ▸ draw)) := by
+  subst e; rfl
+
+/-- Lifting a node-indexed error to full prefixes commutes with tree transport. -/
+theorem prefixError_ofNodes_cast (e : s' = s) (ε : ChallengeNode oracleSig s' → ℝ≥0∞) :
+    @Eq (PrefixError oracleSig s)
+      (fun {a next} => e ▸ (@PrefixError.ofNodes _ oracleSig s' ε a next))
+      (@PrefixError.ofNodes _ oracleSig s (e ▸ ε)) := by
+  subst e; rfl
+
 end Cast
 
 section RunCast
@@ -328,12 +350,13 @@ theorem run_cast {κ X : Type u} {spec : OracleSpec κ} (e : s' = s)
     (f : Observation oracleSig s Out (OracleVerifier.Output T B) → X)
     (g : Observation oracleSig s' (fun tr => Out (e ▸ tr))
       (fun p => OracleVerifier.Output T B (e ▸ p)) → X)
-    (hfg : ∀ obs, f (_root_.cast (by subst e; rfl) obs) = g obs)
+    (hfg : ∀ tr out verdict,
+      f ⟨e ▸ tr, out, _root_.cast (by subst e; rfl) verdict⟩ = g ⟨tr, out, verdict⟩)
     (stmt : S) (data : inputs.Data) (p : Prover oracleSig ambient s Out) :
     simulateQ (e ▸ impl) (f <$> (V.cast e).run stmt data p) =
       simulateQ impl (g <$> V.run stmt data (_root_.cast (by subst e; rfl) p)) := by
   subst e
-  have : f = g := funext hfg
+  have : f = g := funext fun ⟨tr, out, verdict⟩ => hfg tr out verdict
   subst this; rfl
 
 end RunCast
@@ -404,7 +427,8 @@ theorem rbrKnowledgeSoundness_cast (e : s' = s)
         impl admissible relIn relOut (e ▸ draw) (e ▸ ε) ↔
       V.rbrKnowledgeSoundness.{uS, uW, uK, uO}
         impl admissible relIn (W := fun stmt tr => W stmt (e ▸ tr))
-        (_root_.cast (by subst e; rfl) relOut) draw ε := by
+        (fun stmt tr out wit =>
+          relOut stmt (e ▸ tr) (_root_.cast (by subst e; rfl) out) wit) draw ε := by
   subst e; rfl
 
 end ClassicalCast

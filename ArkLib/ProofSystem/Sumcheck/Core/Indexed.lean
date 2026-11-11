@@ -455,7 +455,7 @@ theorem indexedVerifier_run {ι : Type} (ambient : OracleSpec ι)
           liftM ((ambient + challengeSpec oracleSig (protocol R deg n)).query (.inr c))))
       pure ⟨tr, out, (indexedVerdict D n (some (IndexedClaim.initial stmt)) tr).map
         (fun t => (t, data))⟩) := by
-  unfold OracleVerifier.run
+  rw [OracleVerifier.run_eq]
   refine bind_congr fun result => ?_
   rcases result with ⟨tr, out, u⟩
   dsimp only
