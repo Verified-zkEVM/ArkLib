@@ -428,7 +428,7 @@ output witness. Both statements remain available.
 **Migration.** Several frozen assertions execute one round inside a multivariate statement or
 split an interval into a first round and a suffix.
 
-**Code.** The parent's `indexedVerifier` keeps its full-run interface. The interval verifier
+**Code.** `indexedVerifier` keeps its full-run interface. The interval verifier
 accepts every bounded pair `start`, `count`; its suffix security theorem assumes exactly
 `start + count = n`. `intervalVerifier_full_run` identifies the full native run with the
 zero-start interval. `run_append_public_intervalVerifier` compares actual public interval
