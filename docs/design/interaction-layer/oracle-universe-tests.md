@@ -1,12 +1,17 @@
 # Source and resource port dispositions
 
-This inventory accounts for all 74 assertions in the six frozen files ported by this branch.
-Each row links its frozen assertion by line. A retained contract links the exact interaction-layer
-client; parent-owned clients are identified below. Added checks supplement these rows.
+This inventory accounts for all 74 assertions in six frozen files. Each row links its frozen
+assertion by line. This branch ports four of the files. The logged-execution and routing tests
+port the 13 assertions of `SourceRoutingExample` and `TerminalRun/Examples`; for those rows this
+inventory links the full disposition in the
+[logged-execution inventory](logged-execution-disposition.md). A retained contract links the exact
+interaction-layer client. Added checks supplement these rows.
 
 **Retained** means the mathematical contract holds after the stated representation change.
 **Partial** preserves only the listed dimensions and does not close the original contract.
 **Retired** identifies a removed mechanism whose original contract has no corresponding API.
+**Logged-execution** marks a row ported by the logged-execution and routing tests. Its status there
+(equivalent or premise-required) and its exact target are in the linked section.
 These statuses do not count a narrower test as equivalent to the frozen assertion.
 
 ## SourceExample
@@ -86,24 +91,24 @@ These statuses do not count a narrower test as equivalent to the frozen assertio
 
 | Frozen test | Contract | Disposition |
 | --- | --- | --- |
-| SR1 [140][fsr1] | Composed result and ambient order | Partial passive replacement: [test][nsr1] |
-| SR2 [162][fsr2] | Exactly two raw queries; answer 18 | Retained: [test][nsr2] |
-| SR3 [167][fsr3] | The routing theorem accepts the client | Retained API acceptance: [test][nsr3] |
-| SR4 [174][fsr4] | Routing theorem trust dependencies | Retained: [test][nsr4] |
+| SR1 [140][fsr1] | Composed result and ambient order | Logged-execution: [disposition][lsr] |
+| SR2 [162][fsr2] | Exactly two raw queries; answer 18 | Logged-execution: [disposition][lsr] |
+| SR3 [167][fsr3] | The routing theorem accepts the client | Logged-execution: [disposition][lsr] |
+| SR4 [174][fsr4] | Routing theorem trust dependencies | Logged-execution: [disposition][lsr] |
 
 ## TerminalRun/Examples
 
 | Frozen test | Contract | Disposition |
 | --- | --- | --- |
-| TR1 [57][ftr1] | Effects survive failure | Partial: [test][ntr1]; fault outcome retired |
-| TR2 [60][ftr2] | Private output/query survive | Partial: [test][ntr2]; fault outcome retired |
-| TR3a [66][ftr3a] | Fault label 17 survives closing | Retired: no fault-label outcome |
-| TR3b [68][ftr3b] | Fault label 23 survives closing | Retired: no fault-label outcome |
-| TR4 [71][ftr4] | Rejection keeps the query answering 19 | Retained rejection/log: [test][ntr4] |
-| TR5a [77][ftr5a] | First run closes to 18 | Retained: [test][ntr5a] |
-| TR5b [82][ftr5b] | Second run closes to 32 | Retained: [test][ntr5b] |
-| TR6 [86][ftr6] | Erasure trust | Logging-erasure trust replacement: [test][ntr6] |
-| TR7 [87][ftr7] | Closure trust | Runner closure trust replacement: [test][ntr7] |
+| TR1 [57][ftr1] | Effects survive a fault | Logged-execution: [disposition][ltr] |
+| TR2 [60][ftr2] | Private output/query survive a fault | Logged-execution: [disposition][ltr] |
+| TR3a [66][ftr3a] | Fault label 17 survives closing | Logged-execution: [disposition][ltr] |
+| TR3b [68][ftr3b] | Fault label 23 survives closing | Logged-execution: [disposition][ltr] |
+| TR4 [71][ftr4] | Rejection keeps the query answering 19 | Logged-execution: [disposition][ltr] |
+| TR5a [77][ftr5a] | First run closes to 18 | Logged-execution: [disposition][ltr] |
+| TR5b [82][ftr5b] | Second run closes to 32 | Logged-execution: [disposition][ltr] |
+| TR6 [86][ftr6] | Erasure trust | Logged-execution: [disposition][ltr] |
+| TR7 [87][ftr7] | Closure trust | Logged-execution: [disposition][ltr] |
 
 ## Virtual
 
@@ -135,24 +140,18 @@ of either suffix root. Separate role decorations and their conversion casts are 
 interaction core's oracle signature still erases challenge answers from shape; the general
 signature clients do not claim an oracle-protocol receiver can select its next shape.
 
-The SR1 replacement is the parent-owned `RoutingTests` client, also used by SR3/SR4. Its result is
-`(secret + 23 + 50, some ((20, 23), 23), [1, 20, 50, 10, 30, 40, 60])`, rather than the frozen
-`(secret + 23 + 50, some (23, 23), [1, 10, 20, 30, 40, 50, 60])`. Decisions run after the prover,
-and the suffix challenge is sampled rather than computed from an export. This is a partial
-passive replacement. The active verifier's receive-time effects and export-dependent challenge
-are retired mechanisms; this row does not claim the original execution equality.
+The [logged-execution port][ltr] of `TerminalRun/Examples` interprets the final decision with
+labelled failures. Fault labels 17 and 23 remain distinct outcomes, each different from rejection,
+and each retains the private output, the history `[9, 0, 1, 2]` and the sent-oracle answer. No TR
+row is retired.
 
-TR1/TR2/TR4 and TR6 link parent-owned `LoggedExecutionTests`. TR1/TR2 preserve private output,
-query history `[9, 0, 1, 2]` and the sent-resource answer 11, while faults become rejection.
-TR3a/TR3b's distinct fault labels are retired; `Option` decisions do not distinguish them.
-TR4 retains rejection and the sent-resource answer 19. A source-only log is represented by the
-resource entries of the decision log, which also records ambient queries in order. TR6's separate
-terminal wrapper is gone; its replacement checks the logging-erasure declarations. TR7's
-`closed_of_ofOption` wrapper is gone; the new guard checks `OracleVerifier.run`, whose accepted
-result already materializes output data. These are trust-policy replacements, not claims that
-the old wrapper theorems still exist.
+This branch adds a cost check to the routing tests' export map in
+[`SourceRoutingExample`][nsrc]. The exported query's implementation has worst-case cost two at unit
+cost per resource query. Routing an exported query charged two units through the map then costs
+at most two unit-cost resource queries, by `OracleMap.withAmbient_worstCaseCost`. The cost check
+supplements SR2 and does not discharge a frozen row.
 
-V1 now quantifies over every pure input handler, as the frozen test does. `Resources.ofSpec`
+V1 quantifies over every pure input handler, as the frozen test does. `Resources.ofSpec`
 uses arbitrary handlers as backing data, and `OracleMap.ofQuery` supplies the simulated output
 behavior. The [parent legacy client][legacy] tests legacy materialized
 inputs under `simOracle2`; it is useful additional coverage but only a narrower specialization,
@@ -237,25 +236,21 @@ The owner changes belong in VCVio, pinned here at `fc54dd3d7691d6f5db7dc829e321a
 
 ## Definition-site fixture transparency
 
-The eight retained `@[reducible]` attributes are on interface definitions introduced by this
+The six retained `@[reducible]` attributes are on interface definitions introduced by this
 branch. Each constructs an `OracleInterface` class value; removing its attribute produces Lean's
 class-definition reducibility warning. These attributes set the definitions' own transparency.
 There are no added local/global `attribute [...]` commands changing another declaration, and no
 `respectTransparency` options. No declaration in the parent or a dependency is modified.
 
-The nineteen annotated family and protocol definitions now use ordinary definition transparency.
-All six clients elaborate without their former `@[instance_reducible]` attributes. Imports,
-signatures, proofs, runtime checks and trust checks are unchanged. The `functions` and
-`polynomials` families already use ordinary definition transparency. The exact retained
-attributes are:
+The thirteen family and protocol definitions in these clients use ordinary definition
+transparency and carry no `@[instance_reducible]` attribute. The `functions` and `polynomials`
+families use ordinary definition transparency as well. The exact retained attributes are:
 
 | File under `Core/Oracle/` | Attribute | Declarations |
 | --- | --- | --- |
 | `SourceExample` | `reducible` | `taggedInterface`, `pairInterface` |
 | `ResourceExample` | `reducible` | `countInterface`, `mixedInterface`, `evaluation` |
 | `RunSourcesExample` | `reducible` | `interface` |
-| `SourceRoutingExample` | `reducible` | `firstInterface` |
-| `TerminalRun/Examples` | `reducible` | `firstInterface` |
 
 ## Assertion links
 
@@ -369,29 +364,21 @@ attributes are:
 [frs11]: ../../../ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L221
 [nrs11]: ../../../ArkLibTest/Interaction/Core/Oracle/RunSourcesExample.lean#L248
 [fsr1]: ../../../ArkLibTest/Interaction/Oracle/SourceRoutingExample.lean#L140
-[nsr1]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L161
 [fsr2]: ../../../ArkLibTest/Interaction/Oracle/SourceRoutingExample.lean#L162
-[nsr2]: ../../../ArkLibTest/Interaction/Core/Oracle/SourceRoutingExample.lean#L73
 [fsr3]: ../../../ArkLibTest/Interaction/Oracle/SourceRoutingExample.lean#L167
-[nsr3]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L178
 [fsr4]: ../../../ArkLibTest/Interaction/Oracle/SourceRoutingExample.lean#L174
-[nsr4]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L215
+[lsr]: logged-execution-disposition.md#sourceroutingexamplelean
+[nsrc]: ../../../ArkLibTest/Interaction/Core/Oracle/SourceRoutingExample.lean#L33
 [ftr1]: ../../../ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean#L57
-[ntr1]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L178
 [ftr2]: ../../../ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean#L60
-[ntr2]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L178
 [ftr3a]: ../../../ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean#L66
 [ftr3b]: ../../../ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean#L68
 [ftr4]: ../../../ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean#L71
-[ntr4]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L166
 [ftr5a]: ../../../ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean#L77
-[ntr5a]: ../../../ArkLibTest/Interaction/Core/Oracle/TerminalRun/Examples.lean#L93
 [ftr5b]: ../../../ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean#L82
-[ntr5b]: ../../../ArkLibTest/Interaction/Core/Oracle/TerminalRun/Examples.lean#L95
 [ftr6]: ../../../ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean#L86
-[ntr6]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L662
 [ftr7]: ../../../ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean#L87
-[ntr7]: ../../../ArkLibTest/Interaction/Core/Oracle/TerminalRun/Examples.lean#L109
+[ltr]: logged-execution-disposition.md#terminalrunexampleslean
 [fv1]: ../../../ArkLibTest/Interaction/Oracle/Virtual.lean#L32
 [nv1]: ../../../ArkLibTest/Interaction/Core/Oracle/Virtual.lean#L37
 [fv2]: ../../../ArkLibTest/Interaction/Oracle/Virtual.lean#L62

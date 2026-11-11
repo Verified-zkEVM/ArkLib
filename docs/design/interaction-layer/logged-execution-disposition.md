@@ -59,6 +59,9 @@ It is never reconstructed from a constant or the fault label.
 | Former effectful reception boundary | premise-required | P1 retires effect 1 as a separate verifier reception phase; [faults] retains the chronological history with that effect in the final decision. |
 | L87, closing an optional terminal verdict | equivalent | [optionalClosing] proves that embedding any optional verdict with `Except.ok` and closing with the completed transcript's output map and resources equals closing first and then embedding, including `none` and every accepted statement. |
 
+The [source and resource inventory](oracle-universe-tests.md) numbers these rows TR1–TR7 and
+links them here.
+
 The old reception action 1 now belongs to the decision. Its execution between send and terminal
 is a **premise-required** retirement under P1; preservation of the chronological history above
 does not assert preservation of the former reception phase boundary.
@@ -105,6 +108,9 @@ claim that the old phase list is returned by this API.
 | L162, SR2, hidden slot never queried | equivalent | [notHidden] proves request label 1 absent from that same raw execution. The handler would record it even if its answer were discarded. |
 | L167, SR3, ordinary whole-prover theorem instantiation | equivalent | [routeWhole] instantiates [appendLaw] on the actual whole prover and input data. |
 | L174, composed routing audit | equivalent | [audit] and the axiom audit beside [routeWhole] include [appendLaw] and [substitution]. |
+
+The [source and resource inventory](oracle-universe-tests.md) numbers these rows SR1–SR4, links
+them here, and links an added worst-case cost check on the same export map.
 
 ## Persistent-runtime acceptance file
 
