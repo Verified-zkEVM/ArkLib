@@ -12,9 +12,11 @@ The two approved premises are:
 
 Each row has one of four statuses. An **equivalent** row preserves the stated mathematical
 observation. A **premise-required** row states exactly which assertion P1 or P2 retires. A
-**child-owned** row is fully expressible with the current interfaces and is ported in the
-oracle-access tests ([access]), not here. An **unresolved** row needs a parent interface that
-does not exist yet, and names it. Retiring an API name alone does not retire its mathematical
+**child-owned** row delegates its expressible contract to the exact row of the
+oracle-access ledger ([access]), which supplies the test or stronger owner theorem. The target
+may reuse a parent-owned law. For compound assertions the unresolved component is indexed
+separately; delegation never counts that component as ported. An **unresolved** row names the
+parent interface that is still missing. Retiring an API name alone does not retire its mathematical
 assertions.
 
 The files inventoried here are the eight frozen files cited by this branch's acceptance clients.
@@ -72,27 +74,36 @@ does not assert preservation of the former reception phase boundary.
 
 ## PhasedRun.lean
 
-The base's [erasure] theorem describes a log of the prover interaction and a log of the final
-decision. It does not return a list of per-slot phase artifacts. [phases] tests every available
-log, the completed prefix's public message/challenge/payload, private output, verdict and digit
-state together. It keeps duplicate setup requests. It is additional passive coverage, not a
-claim that the old phase list is returned by this API.
+The [access ledger's PhasedRun table][access-phases] is the authoritative disposition for the
+seven frozen assertions L84–L198. The index below separates expressible observations,
+passivity-required scheduling changes and unresolved phase artifacts; each entry links its
+full disposition and exact target. The base's two query logs are not a per-slot phase artifact.
 
-| Source assertion | Status | Exact target or remaining obligation |
+| Source component | Status | Full disposition |
 | --- | --- | --- |
-| L84, produced phase owners cannot be replaced | unresolved | Missing Core artifact with intrinsic per-slot owner and prefix fields; the base runner has two query logs but no `phases` field. [phases] does not fill that gap. |
-| L91, verifier effects 2 and 3 before challenge, effect 6 on receive | premise-required | P1 retires these non-passive verifier actions at those boundaries. It consequently retires the exact eight-region list and state `2102345678`. |
-| L91, setup/prover/decision effects and private output | equivalent | [phases] retains `[9, 9, 1, 4, 5]` and `[2, 3, 6, 7]`, payload 17, private output 23 and verdict 31. The passive order is witnessed by state `2102563478`. |
-| L91, remaining per-boundary prefix/owner information | unresolved | Missing Core phase artifact that associates each actual slot with its accumulated full prefix. [phases] only checks the two produced log regions and completed prefix. |
-| L114, setup query 9 has multiplicity two | equivalent | [phases] asserts the complete prover log, including both 9s. |
-| L121, final prefix has payload 17 | equivalent | [phases] reads 17 from the actual completed transcript. |
-| L178, input 7, accepted export 18, sent log and world order | equivalent | [closing] and [faults] retain all these observations together with arbitrary private output. |
-| L178, setup/send/reception/terminal phase groups | premise-required | P1 retires the separate effectful verifier reception group `[1]`; it now executes in the final decision with `[2]`. |
-| L178, phase artifact for the remaining allowed groups | unresolved | Missing the same produced-prefix phase interface; [terminalAPI] returns terminal query logs, not a per-slot artifact. |
-| L194, explicit rejection | equivalent | [faults], third conjunct. |
-| L198, explicit fault 17 | equivalent | [faults], first conjunct; rejection is a different constructor. |
-| L201, phased closing audit | unresolved | No phase-artifact closing correspondence exists in Core. [audit] checks the available log erasure laws, not that missing correspondence. |
-| L202, phased terminal closing audit | unresolved | Same missing phase-artifact terminal correspondence; [terminalAPI] supplies only the terminal failure/log interpreter. |
+| L84, intrinsic phase owners | unresolved | Produced owner/prefix artifact: [row 1][ap1]. |
+| L91, non-passive verifier placements | premise-required | [Row 2][ap2]. |
+| L91, passive effects and outputs | equivalent | [Row 2][ap2]. |
+| L91, allowed slot prefixes/owners | unresolved | Produced owner/prefix artifact: [row 2][ap2]. |
+| L114, duplicate setup queries | child-owned | [Row 3][ap3]. |
+| L114, separately selectable setup phase | unresolved | Produced phase artifact: [row 3][ap3]. |
+| L121, retained final payload | child-owned | [Row 4][ap4]. |
+| L178, closure and query histories | equivalent | [Row 5][ap5]. |
+| L178, former effectful reception group | premise-required | [Row 5][ap5]. |
+| L178, allowed phase groups | unresolved | Produced owner/prefix artifact: [row 5][ap5]. |
+| L194, explicit rejection | child-owned | [Row 6][ap6]. |
+| L198, fault 17 distinct from rejection | child-owned | [Row 7][ap7]. |
+
+The two diagnostic closing audits are outside the access ledger's seven assertion rows:
+
+| Source audit | Status | Remaining interface |
+| --- | --- | --- |
+| L201, phased closing audit | unresolved | Phase artifact and closing law. |
+| L202, phased terminal closing audit | unresolved | Phase artifact and terminal-closing law. |
+
+The existing [terminal interpreter][terminalAPI] preserves labelled faults and answered-query
+logs, while the linked child port additionally retains the actual transcript and prover log.
+It does not supply the unresolved per-slot phase artifact or its closing laws.
 
 ## SourceRoutingExample.lean
 
@@ -125,59 +136,69 @@ The frozen filename is `NativeRuntime.lean`; this heading describes its mathemat
 
 ## QueryBounds.lean
 
-Canonical prefix certificates identify available queries and their inclusion across accumulated
-contexts. The [payload] law supplies same-run routing evidence. Canonical query names and
-join-prefix availability certificates require the open Core interfaces listed below. Typed
-access, exact double-read fixtures and cost certificates are ported in the oracle-access tests.
+The [access ledger's QueryBounds table][access-queries] holds the complete dispositions,
+including every exact test/theorem target. This index records ownership and the missing
+interface for each unresolved component, without repeating that full account.
 
-| Source assertion | Status | Exact target or remaining obligation |
+| Source component | Status | Full disposition |
 | --- | --- | --- |
-| `route_cost`, L96 | child-owned | The exact double-read export/cost fixture and bound are ported in the oracle-access tests ([access]). |
-| `program_cost`, L117 | child-owned | The authored double-read suffix and its cost bound are ported in the oracle-access tests ([access]). |
-| L130, routed weighted cost at most 5 | child-owned | The exact routed cost-five bound is ported in the oracle-access tests ([access]). |
-| `routed_available`, L149 | unresolved | Missing Core canonical accumulated-prefix query names, availability and inclusion. The typed routing part is ported in the oracle-access tests. |
-| L165, actual raw log old/old/fresh and claim 4 | child-owned | The exact composed logged execution, including the old/old/fresh log, closure and private output, is ported in the oracle-access tests ([access]). |
-| `future_rejected`, L184, typed future-slot exclusion | child-owned | Typed exclusion for every prefix program, without a budget restriction, is ported in the oracle-access tests ([access]). |
-| `future_rejected`, L184, canonical prefix-context certificate | unresolved | Missing Core canonical prefix query names and context-availability certificates. |
-| L209, old canonical name stable, old distinct from fresh | unresolved | Missing Core canonical query names and accumulated-context inclusion. Distinct typed old/fresh slots and repeated use of the old slot are ported in the oracle-access tests. |
-| L225, closed execution retains old/old/fresh and private output | child-owned | The exact composed logged execution, closure and private output are ported in the oracle-access tests ([access]). |
-| L251, actual join-phase prefix | unresolved | Missing produced per-slot phase prefixes. |
-| L252, actual terminal-phase prefix | unresolved | Missing produced per-slot phase prefixes. |
-| `joinPhase_mem`, L255 | unresolved | Missing actual phase membership interface. |
-| `terminalPhase_mem`, L257 | unresolved | Missing actual phase membership interface. |
-| L266, terminal prefix certifies availability and cost 5 | unresolved | Missing Core canonical phase-prefix availability certificates. The cost-five part is ported in the oracle-access tests. |
-| L277, old query name survives join-to-terminal inclusion | unresolved | Missing Core canonical names under phase-prefix inclusion. Typed routing is ported in the oracle-access tests. |
-| L286, no budget makes fresh slot available at actual join | unresolved | Missing Core availability certificates at produced phase prefixes. Typed exclusion without a budget restriction is ported in the oracle-access tests. |
-| L300, phased raw log is old/old/fresh | unresolved | Missing Core phased/logged correspondence. The exact raw log part is ported in the oracle-access tests. |
-| L320, routed cost cannot be bounded by 4 | child-owned | The inhabited cost-five witness excluding a bound of four is ported in the oracle-access tests ([access]). |
+| L96, route_cost | child-owned | [Row 1][aq1]. |
+| L117, program_cost | child-owned | [Row 2][aq2]. |
+| L130, routed cost five | child-owned | [Row 3][aq3]. |
+| L149, typed routed access | child-owned | [Row 4][aq4]. |
+| L149, canonical availability | unresolved | Prefix names/availability/inclusion: [row 4][aq4]. |
+| L165, actual old/old/fresh log and claim | child-owned | [Row 5][aq5]. |
+| L184, typed future exclusion | child-owned | [Row 6][aq6]. |
+| L184, canonical prefix certificate | unresolved | Prefix names and availability: [row 6][aq6]. |
+| L209, typed old/fresh identity | child-owned | [Row 7][aq7]. |
+| L209, canonical old/fresh names | unresolved | Prefix names and inclusion: [row 7][aq7]. |
+| L225, closed output and repeated log | child-owned | [Row 8][aq8]. |
+| L251, actual join prefix | unresolved | Produced per-slot prefix artifact: [row 9][aq9]. |
+| L252, actual terminal prefix | unresolved | Produced per-slot prefix artifact: [row 10][aq10]. |
+| L255, joinPhase_mem | unresolved | Produced phase membership: [row 11][aq11]. |
+| L257, terminalPhase_mem | unresolved | Produced phase membership: [row 12][aq12]. |
+| L266, typed access and cost five | child-owned | [Row 13][aq13]. |
+| L266, actual terminal availability | unresolved | Phase-prefix availability: [row 13][aq13]. |
+| L277, typed old-slot routing | child-owned | [Row 14][aq14]. |
+| L277, canonical name under inclusion | unresolved | Prefix names/inclusion: [row 14][aq14]. |
+| L286, typed future exclusion | child-owned | [Row 15][aq15]. |
+| L286, actual join availability | unresolved | Produced prefix and availability: [row 15][aq15]. |
+| L300, exact raw log | child-owned | [Row 16][aq16]. |
+| L300, phased/logged equality | unresolved | Phase/log correspondence: [row 16][aq16]. |
+| L320, cost four impossible | child-owned | [Row 17][aq17]. |
 
 ## RuntimeQueryBounds.lean
 
-The trace equalities below retain actual answers and charges. The passive informed-prover trace
-has its reveal before the prefix decision's dummy query. The former dummy-before-reveal schedule
-requires a non-passive prefix verifier; this distinction is explicit rather than hidden by
-forgetting answers or summing costs.
+The [access ledger's runtime table][access-runtime] holds the complete dispositions and exact
+counterparts. Passivity excludes the old dummy-before-reveal prefix order; it does not exclude
+canonical prefix certificates. The latter components remain unresolved in both ledgers.
 
-| Source assertion | Status | Exact target or remaining obligation |
+| Source component | Status | Full disposition |
 | --- | --- | --- |
-| `exported_certificate`, L47 | unresolved | Missing Core canonical prefix availability. Export access and the cost-two certificate are ported in the oracle-access tests. |
-| `source_name`, L57 | unresolved | Missing Core canonical accumulated-prefix query names. The actual input index is ported in the oracle-access tests. |
-| `first_returns_exported`, L61 | child-owned | The exact decision and output-map/data equations are ported in the oracle-access tests ([access]). |
-| `suffixAction_eq`, L72 | child-owned | The exact suffix decision equation is ported in the oracle-access tests ([access]). |
-| `suffix_access`, L87 | unresolved | Missing Core canonical prefix availability. Typed source access is ported in the oracle-access tests. |
-| `suffix_budget`, L102 | child-owned | The suffix cost certificate is ported in the oracle-access tests ([access]). |
-| `routed_suffix_budget`, L124 | child-owned | The routed suffix cost certificate is ported in the oracle-access tests ([access]). |
-| `routed_suffix_access`, L145 | unresolved | Missing Core canonical prefix availability. Typed routed access is ported in the oracle-access tests. |
-| `actual_history`, L167 | equivalent | [bitPlain] retains the two ambient requests and charge 4; its full trace additionally retains the challenge. |
-| `informed_actual_history`, L182 | premise-required | P1 retires the prefix verifier's dummy request before the prover's reveal at the seam. [bitInformed] checks reveal/dummy/reveal and charge 7 as additional passive coverage. |
-| `setup_budget`, L197 | child-owned | The imported setup cost theorem is ported in the oracle-access tests ([access]). |
-| `native_split_history`, L207, passive schedule | child-owned | The all-prover charged runtime/history observation of [appendLaw] is ported in the oracle-access tests ([access]). |
-| `native_split_history`, L207, effectful prefix order | premise-required | P1 excludes the prefix verifier's dummy request before the prover's suffix interaction. |
-| `native_actual_history`, L227 | equivalent | [bitLog] retains the actual chronological ambient history, answers, final state and charge 4. |
-| `informed_native_history`, L235 | premise-required | Same retired dummy-before-reveal order under P1; [bitInformed] is additional coverage. |
-| `native_import_budget`, L244 | child-owned | Import-cost reflection is ported in the oracle-access tests ([access]). |
-| `fixed_native_resource_bounds`, L258 | unresolved | Missing Core canonical prefix availability. The integrated expressible access/cost/history/half-bound conjunction is ported in the oracle-access tests. |
-| `informed_cost_does_not_give_half`, L289 | child-owned | Charge seven and success one for the passive schedule are ported together in the oracle-access tests ([access]). |
+| L47, typed export access/cost | child-owned | [Row 1][ar1]. |
+| L47, canonical export availability | unresolved | Canonical prefix availability: [row 1][ar1]. |
+| L57, actual input query | child-owned | [Row 2][ar2]. |
+| L57, canonical source name | unresolved | Canonical prefix names: [row 2][ar2]. |
+| L61, decision and output-map equations | child-owned | [Row 3][ar3]. |
+| L72, suffix equation | child-owned | [Row 4][ar4]. |
+| L87, typed suffix permission | child-owned | [Row 5][ar5]. |
+| L87, canonical suffix availability | unresolved | Canonical prefix availability: [row 5][ar5]. |
+| L102, suffix cost | child-owned | [Row 6][ar6]. |
+| L124, routed suffix cost | child-owned | [Row 7][ar7]. |
+| L145, typed raw access | child-owned | [Row 8][ar8]. |
+| L145, canonical raw availability | unresolved | Canonical prefix availability: [row 8][ar8]. |
+| L167, actual guessing history | equivalent | [Row 9][ar9]. |
+| L182, old informed ordering | premise-required | [Row 10][ar10]. |
+| L197, setup cost | child-owned | [Row 11][ar11]. |
+| L207, all-prover passive split | child-owned | [Row 12][ar12]. |
+| L207, effectful prefix ordering | premise-required | [Row 12][ar12]. |
+| L227, logged guessing history | equivalent | [Row 13][ar13]. |
+| L235, old informed ordering | premise-required | [Row 14][ar14]. |
+| L244, import-cost reflection | child-owned | [Row 15][ar15]. |
+| L258, expressible joint half bound | child-owned | [Row 16][ar16]. |
+| L258, canonical joint availability | unresolved | Canonical prefix availability: [row 16][ar16]. |
+| L289, passive charge seven/success one | child-owned | [Row 17][ar17]. |
+| L289, old informed ordering | premise-required | [Row 17][ar17]. |
 
 ## Erasure, closing and open interface obligations
 
@@ -204,21 +225,10 @@ Open interface obligations:
   L209, L266, L277 and L286; and RuntimeQueryBounds `exported_certificate`, `source_name`,
   `suffix_access`, `routed_suffix_access` and `fixed_native_resource_bounds`.
 
-Ports owned by the oracle-access tests:
-
-- The exact double-read export/cost fixture, source and routed cost-five bounds, inhabited
-  witness excluding bound four, and actual composed old/old/fresh log with closure and private
-  output cover QueryBounds `route_cost`, `program_cost`, L130, L165, L225 and L320. Typed routing,
-  distinct old/fresh slots and future-slot exclusion cover the expressible parts of
-  `routed_available`, `future_rejected`, L209, L266, L277, L286 and L300.
-- Exact decisions and output-map/data equations, typed source/routed access, export cost two,
-  suffix cost bounds, setup cost, import-cost reflection and charged passive runtime histories
-  cover the expressible parts of RuntimeQueryBounds `exported_certificate`, `source_name`,
-  `first_returns_exported`, `suffixAction_eq`, `suffix_access`, `suffix_budget`,
-  `routed_suffix_budget`, `routed_suffix_access`, `setup_budget`, `native_split_history` and
-  `native_import_budget`. The integrated expressible access/cost/history/half-bound conjunction
-  and charge-seven/success-one assertion cover the corresponding parts of
-  `fixed_native_resource_bounds` and `informed_cost_does_not_give_half`.
+The delegated rows above link the access ledger for their full statements, exact targets,
+passivity qualifications and unresolved components. No typed-access test is counted as the
+missing canonical prefix-availability interface, and no whole-run log is counted as a produced
+per-slot phase artifact.
 
 [faults]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L218
 [closing]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L231
@@ -252,3 +262,48 @@ Ports owned by the oracle-access tests:
 [unitRuntime]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L288
 [optionalClosing]: ../../../ArkLib/Interaction/Core/Oracle/LoggedExecution.lean#L93
 [access]: oracle-access-tests.md
+
+[access-phases]: oracle-access-tests.md#phasedrun-7-assertions
+[access-queries]: oracle-access-tests.md#querybounds-17-assertions
+[access-runtime]: oracle-access-tests.md#runtimequerybounds-17-assertions
+[ap1]: oracle-access-tests.md#p1
+[ap2]: oracle-access-tests.md#p2
+[ap3]: oracle-access-tests.md#p3
+[ap4]: oracle-access-tests.md#p4
+[ap5]: oracle-access-tests.md#p5
+[ap6]: oracle-access-tests.md#p6
+[ap7]: oracle-access-tests.md#p7
+[aq1]: oracle-access-tests.md#q1
+[aq2]: oracle-access-tests.md#q2
+[aq3]: oracle-access-tests.md#q3
+[aq4]: oracle-access-tests.md#q4
+[aq5]: oracle-access-tests.md#q5
+[aq6]: oracle-access-tests.md#q6
+[aq7]: oracle-access-tests.md#q7
+[aq8]: oracle-access-tests.md#q8
+[aq9]: oracle-access-tests.md#q9
+[aq10]: oracle-access-tests.md#q10
+[aq11]: oracle-access-tests.md#q11
+[aq12]: oracle-access-tests.md#q12
+[aq13]: oracle-access-tests.md#q13
+[aq14]: oracle-access-tests.md#q14
+[aq15]: oracle-access-tests.md#q15
+[aq16]: oracle-access-tests.md#q16
+[aq17]: oracle-access-tests.md#q17
+[ar1]: oracle-access-tests.md#r1
+[ar2]: oracle-access-tests.md#r2
+[ar3]: oracle-access-tests.md#r3
+[ar4]: oracle-access-tests.md#r4
+[ar5]: oracle-access-tests.md#r5
+[ar6]: oracle-access-tests.md#r6
+[ar7]: oracle-access-tests.md#r7
+[ar8]: oracle-access-tests.md#r8
+[ar9]: oracle-access-tests.md#r9
+[ar10]: oracle-access-tests.md#r10
+[ar11]: oracle-access-tests.md#r11
+[ar12]: oracle-access-tests.md#r12
+[ar13]: oracle-access-tests.md#r13
+[ar14]: oracle-access-tests.md#r14
+[ar15]: oracle-access-tests.md#r15
+[ar16]: oracle-access-tests.md#r16
+[ar17]: oracle-access-tests.md#r17

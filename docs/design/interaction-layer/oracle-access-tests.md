@@ -6,9 +6,14 @@ from `QueryBounds`, `RuntimeQueryBounds` and `PhasedRun`, rather than porting an
 Row numbers follow frozen declaration order, including the universe canaries. Helper definitions
 and diagnostic axiom-print commands are not additional assertions.
 
+This document holds the full dispositions for the overlapping PhasedRun, QueryBounds and
+RuntimeQueryBounds rows. The [parent inventory][parent-inventory] links these rows rather than
+maintaining a second disposition. Its `child-owned` status identifies these delegated ports;
+it does not imply that unresolved parts of a compound frozen assertion have been discharged.
+
 Each row links the frozen assertion and the exact replacement test, theorem, or explicit
 retirement. **Preserved** means the indicated semantic contract and its quantifiers are retained.
-**Partial** names a retained part and a removed or unresolved dimension; it is not an equivalence.
+**Partial** names a retained part and any unresolved dimension; it is not an equivalence.
 **Changed** identifies a different behavior. **Retired** means the tested object or operation no
 longer exists. **Unresolved** names a restriction requiring an owner change. Parent-owned results
 are linked directly; they are not duplicated to increase a coverage count.
@@ -17,32 +22,44 @@ are linked directly; they are not duplicated to increase a coverage count.
 
 | Frozen row | Contract | Disposition and evidence |
 |---|---|---|
-| [1][fp1] | A run cannot be relabeled | Retired: no phase artifact or supplied role decoration. |
-| [2][fp2] | State, owners and chronology | Changed: [runtime check][parent-phase-runtime]. |
-| [3][fp3] | Setup query 9 counts twice | Partial: [count two][c-count]; phase grouping retired. |
-| [4][fp4] | The final prefix retains payload 17 | Preserved: [arbitrary payload][p-payload]. |
-| [5][fp5] | Input, closure, log and phases | Partial: [closure/log][parent-closed]. |
-| [6][fp6] | Explicit rejection | Preserved: [rejected run and retained log][parent-reject]. |
-| [7][fp7] | Fault 17 differs from rejection | Retired: the verdict has no fault constructor. |
+| <a id="p1"></a>[1][fp1] | Intrinsic phase owners | Unresolved: produced phase artifact. |
+| <a id="p2"></a>[2][fp2] | State, owners, order | Partial: [passive run][p-order]; see below. |
+| <a id="p3"></a>[3][fp3] | Setup count | Partial: [count][c-count]; unresolved phase artifact. |
+| <a id="p4"></a>[4][fp4] | Final payload | Preserved: [run][p-accept], [lookup][p-payload]. |
+| <a id="p5"></a>[5][fp5] | Closing, log, groups | Partial: [closure/log][p-close]; see below. |
+| <a id="p6"></a>[6][fp6] | Explicit rejection | Preserved: [terminal outcomes][p-terminal]. |
+| <a id="p7"></a>[7][fp7] | Fault 17, not rejection | Preserved: [terminal outcomes][p-terminal]. |
 
-The interaction layer obtains owners from the signature, and its runner produces a transcript,
-private output and verdict. There is no `PhasedRun.phases` list or role decoration to relabel.
-The two logs of `runWithLog` are prover ambient queries and decision queries, not participant
-phase groups. Thus rows 1 and the grouping parts of rows 2, 3 and 5 have no current operation to
-check. Row 3 still checks multiplicity in the [whole prover log][c-prover-log].
+Rows 1, 2, 3 and 5 still need a produced per-slot phase artifact with intrinsic owners,
+accumulated full prefixes and membership. The two logs of `runWithLog` do not supply that
+interface. This missing allowed-phase information is **unresolved**, not retired merely because
+the old `PhasedRun.phases` field is absent. Row 3 retains setup multiplicity in the
+[whole prover log][c-prover-log], but not an independently selectable setup-phase artifact.
 
-Row 2 also changes chronology: the frozen verifier's interleaved effects move to the passive end
-decision. Its ambient order `[9, 9, 1, 2, 3, 4, 5, 6, 7]` becomes
-`[9, 9, 1, 4, 5, 2, 3, 6, 7]`. The linked parent check tests the new runtime state and trace;
-it is not an equivalent execution of the frozen schedule. The local [accepting run][p-accept]
-quantifies the payload, private output and challenge independently.
+Passivity does require changing row 2's verifier chronology. Its ambient order
+`[9, 9, 1, 2, 3, 4, 5, 6, 7]` becomes `[9, 9, 1, 4, 5, 2, 3, 6, 7]` when the verifier effects
+move to the end decision. The [parent runtime check][p-order] retains every action tag, payload,
+private output and verdict and witnesses the changed order by its digit state. The local
+[accepting run][p-accept] independently quantifies payload, private output and challenge.
+The non-passive verifier placements are premise-required changes; the remaining per-boundary
+owner/prefix information is still unresolved.
 
-Row 5 retains the input argument 7, accepted target 11, materialized oracle answer 18, sent-answer
-log and ambient trace `[9, 0, 1, 2]`. It does not retain the four separate phase groups. Row 7's
-three-way terminal outcome was removed: `OracleVerifier.decide` uses `OptionT`, distinguishing
-acceptance from rejection only. A rejection test does not replace the lost fault distinction.
-Restoring faults would require a fault-bearing verdict in the verifier, runner and security
-observations, rather than encoding a fault as an accepted value.
+Row 5 retains input 7, accepted target 11, materialized oracle answer 18, the sent-answer log and
+ambient history `[9, 0, 1, 2]`. Passivity moves reception effect 1 into the final decision with
+effect 2. It excludes that former effectful reception boundary, but does not justify dropping
+phase artifacts for the remaining allowed slots. Their owner/prefix interface is unresolved.
+The frozen closing audits at L201/L202 are inventoried separately in the
+[parent's phase section][parent-phase-audits]; they need that phase artifact's closing laws.
+
+Rows 6–7 use the same actual closing prover and final decision interpreter. The new port first
+runs the prover and captures the completed transcript, private output and prover query log,
+then calls `OracleVerifier.decideWithFailureLog` on those actual payloads and input data.
+The ambient handler returns fault 17 as `Except.error 17`; rejection is `Except.ok none`, and
+acceptance is `Except.ok (some (message, old + message))`. All three outcomes retain the same
+transcript, arbitrary hidden private output, prover log, decision query-answer log and history
+`[9, 0, 1, 2]`. The unanswered failing request adds no query-answer entry. The sent answer is
+read before that failure, and acceptance closes with the same run's actual input and message.
+No fault is encoded as an accepted value, and `OracleVerifier.decide` is unchanged.
 
 ## Prefix: 8 assertions
 
@@ -58,12 +75,13 @@ observations, rather than encoding a fault as an accepted value.
 | [8][fx8] | The first hidden realization is true | Preserved: [full prefix payload][x-payload]. |
 
 Rows 3–4 used `ExecutionPrefix.Available`, a predicate on cursor occurrences and accumulated
-contexts. Those objects were removed. The replacement reads a crossed payload from full prefix
-moves and indexes resource queries by the completed shape of the decision's protocol.
+contexts. A corresponding canonical prefix-availability interface in Core remains unresolved.
+The replacement reads a crossed payload from full prefix moves and indexes resource queries
+by the completed shape of the decision's protocol.
 The [prefix append identity][x-prefix] identifies the actual stage ending immediately after the
 send. Its query is answered from that stage's own payload without choosing the future public
 message. The [completed-path lookup][x-sent] also checks the payload for every later choice. The
-partial tests do not claim a theorem about the removed predicate. The before/after query
+partial tests do not supply that unresolved prefix-availability interface. The before/after query
 rejection and acceptance clients in [AccessExample 3][a-unsent] and [4][a-sent] retain the
 corresponding typed-access boundary. No independent availability annotation can authorize an
 unsent slot.
@@ -72,101 +90,112 @@ unsent slot.
 
 | Frozen row | Contract | Disposition and evidence |
 |---|---|---|
-| [1][fq1] | Cost of each routed query | Preserved: [route_cost][c-route]. |
-| [2][fq2] | Source cost at most five | Preserved: [program_cost][c-program]. |
-| [3][fq3] | Routed cost at most five | Preserved: [routed_cost][c-routed]. |
-| [4][fq4] | Routed available slots | Partial: [typed program][q-route]; names retired. |
-| [5][fq5] | Integrated log repeats the old read | Preserved: [loggedSummary_eq][q-log]. |
-| [6][fq6] | Future slot at any cost | Partial: [exclusion][q-future], [ill-typed][q-untyped]. |
-| [7][fq7] | Old/fresh identities | Preserved: [repeat][q-repeat], [distinct][q-distinct]. |
-| [8][fq8] | Closing keeps output and repeated log | Preserved: [closed run log][q-log]. |
-| [9][fq9] | Join prefix | Partial: [run][q-run], [payload][q-prefix-payload]. |
-| [10][fq10] | Terminal prefix | Partial: [run][q-run], [split payloads][q-split]. |
-| [11][fq11] | The join belongs to the phase list | Retired: no phase list or phase membership. |
-| [12][fq12] | Terminal phase membership | Retired: no phase list or phase membership. |
-| [13][fq13] | Availability and cost on one route | Partial: [typed cost five][c-joint-cost]. |
-| [14][fq14] | Old name under inclusion | Partial: [prefix query][q-repeat]; names retired. |
-| [15][fq15] | Future slot at actual join | Partial: [exclusion][q-future]; phases retired. |
-| [16][fq16] | Phase adapter source log | Partial: [exact raw log][q-log]; adapter retired. |
-| [17][fq17] | Four is not a cost bound | Preserved: [inhabited cost-five path][c-lower]. |
+| <a id="q1"></a>[1][fq1] | Per-query cost | Preserved: [route_cost][c-route]. |
+| <a id="q2"></a>[2][fq2] | Source cost five | Preserved: [program_cost][c-program]. |
+| <a id="q3"></a>[3][fq3] | Routed cost five | Preserved: [routed_cost][c-routed]. |
+| <a id="q4"></a>[4][fq4] | Available queries | Partial: [typed route][q-route]; unresolved names. |
+| <a id="q5"></a>[5][fq5] | Old/old/fresh log | Preserved: [actual logged run][q-log]. |
+| <a id="q6"></a>[6][fq6] | Future exclusion | Partial: [exclusion][q-future]; unresolved names. |
+| <a id="q7"></a>[7][fq7] | Old/fresh identities | Partial: [typed identity][q-repeat]; see below. |
+| <a id="q8"></a>[8][fq8] | Closing keeps the log | Preserved: [closed run log][q-log]. |
+| <a id="q9"></a>[9][fq9] | Produced join prefix | Unresolved: per-slot prefix artifact. |
+| <a id="q10"></a>[10][fq10] | Terminal prefix | Unresolved: per-slot prefix artifact. |
+| <a id="q11"></a>[11][fq11] | Join membership | Unresolved: phase artifact membership. |
+| <a id="q12"></a>[12][fq12] | Terminal membership | Unresolved: phase artifact membership. |
+| <a id="q13"></a>[13][fq13] | Availability/cost | Partial: [typed cost five][c-joint-cost]. |
+| <a id="q14"></a>[14][fq14] | Name inclusion | Partial: [typed][q-repeat]; unresolved names. |
+| <a id="q15"></a>[15][fq15] | Join exclusion | Partial: [typed][q-future]; unresolved prefix. |
+| <a id="q16"></a>[16][fq16] | Phased log | Partial: [raw log][q-log]; unresolved phase API. |
+| <a id="q17"></a>[17][fq17] | Four is insufficient | Preserved: [cost-five path][c-lower]. |
 
-Rows 5 and 8 use the actual `composed.runWithLog`, not an isolated simulation of the export.
-For every `a` and `b`, one query to the doubled export records two raw prefix-slot entries with
-answer `a`, followed by the suffix-slot entry with answer `b`. The same assertion checks private
-output `a + b` and verdict `some (a + a + b)`. The [one/two specialization][q-concrete-log]
-recovers private output 3, accepted result 4 and the frozen three answers. The log is before
-resource queries are answered; it detects dropped or coalesced expansion entries. The parent's
-different single-export-read fixture is not counted as covering these rows.
+Rows 5 and 8 use the actual `composed.runWithLog`, not an isolated export simulation. For every
+`a` and `b`, a query to the doubled export records two prefix-slot entries with answer `a`, then
+the suffix-slot entry with answer `b`. The same assertion checks private output `a + b` and
+verdict `some (a + a + b)`. The [one/two specialization][q-concrete-log] recovers private output
+3, accepted result 4 and the frozen three answers. The log precedes answering the resource
+queries, detecting dropped or coalesced expansion entries. Row 8 needs no separate closing
+executor: `runWithLog` returns materialized output data; this fixture's output family is empty.
 
-Rows 4, 6, 13–15 used canonical cursor names, `availableContext` and context inclusion. These
-were replaced by typed input/message resource indices and `prefixRoute`/`suffixRoute`.
-[Fresh routing][q-fresh] uses the distinct suffix slot; both old reads use the literal same
-prefix slot. A prefix program cannot name the future suffix slot, regardless of a cost bound.
-These facts preserve resource separation but are not identities about the removed name encoding.
-The documentation therefore marks those compound rows partial.
+Rows 4, 6, 7, 13, 14 and 15 need canonical accumulated-prefix query names, availability and
+inclusion certificates. That mathematical interface is **unresolved**. Typed routing does not
+replace the missing certificates: [both old reads][q-repeat] use the literal same prefix slot,
+[fresh routing][q-fresh] uses the [distinct suffix slot][q-distinct], and the
+[negative client][q-untyped] rejects a suffix query in prefix resources. The exclusion theorem
+holds for every prefix program without a budget restriction. These are the expressible parts
+of rows 4, 6, 7, 13–15, not a proof of canonical naming at the produced join.
 
-Rows 9–12 and 16 also used an actual phase list. The current runner has structural splitting
-and transcript payloads, not a temporal phase collection. The tests retain the executed
-transcript, its [payload][q-prefix-payload] and [suffix payload][q-suffix-payload]. They do
-not establish membership in a nonexistent phase list or a correspondence with a removed phase
-adapter. Row 8 needs no separate closing executor: `runWithLog` already returns materialized
-output-oracle data; this fixture's output family is empty.
+Rows 9–12 and 16 need a produced per-slot phase artifact with accumulated full prefixes,
+intrinsic owners and membership, plus its logged-run correspondence. These interfaces remain
+**unresolved**. The existing [run transcript][q-run], [split payloads][q-split],
+[prefix payload][q-prefix-payload] and [suffix payload][q-suffix-payload] retain same-run data;
+they do not prove that a join or terminal prefix is a member of an actual phase collection.
+Row 13 retains the routed cost-five bound and typed access but still needs canonical phase-prefix
+availability. Row 14 retains typed identity under routing but still needs canonical names under
+join-to-terminal inclusion. Row 15 retains typed future exclusion but still needs availability
+at the actual produced join. Row 16 retains the exact raw log but still needs the phase/log law.
+All these missing components require the corresponding parent Core interfaces; changing an API
+name alone does not discharge them.
 
 ## RuntimeQueryBounds: 17 assertions
 
 | Frozen row | Contract | Disposition and evidence |
 |---|---|---|
-| [1][fr1] | Export access and cost two | Partial: [access][r-export], [cost][c-input-cost]. |
-| [2][fr2] | Canonical input source name | Partial: [input-slot query][r-input]; names retired. |
-| [3][fr3] | Dummy and export | Preserved: [decision][r-prefix-decision], [map][r-export-map]. |
-| [4][fr4] | Suffix queries and outputs | Preserved: [decision][r-decide], [data][r-output]. |
-| [5][fr5] | Suffix permissions | Partial: [suffix_access][r-access]; boundary names retired. |
-| [6][fr6] | Suffix cost five | Preserved: [suffix_budget][c-suffix]. |
-| [7][fr7] | Routed suffix cost five | Preserved: [routed_suffix_budget][c-suffix-routed]. |
-| [8][fr8] | Routed raw permissions | Partial: [raw access][r-raw-access]; names retired. |
-| [9][fr9] | Guessing split history | Preserved ambient: [history][c-history]. |
-| [10][fr10] | Informed split history | Changed: [split run][parent-informed-split]. |
-| [11][fr11] | Setup costs one import query | Preserved: [setup_budget][c-setup]. |
-| [12][fr12] | Generic runtime split | Changed: [general law][run-append]. |
-| [13][fr13] | Direct logged guessing history | Preserved ambient: [parent log][parent-guess-log]. |
-| [14][fr14] | Direct logged informed history | Changed: [parent log][parent-informed-log]. |
-| [15][fr15] | Whole-run import cost one | Preserved: [import_budget][c-import]. |
-| [16][fr16] | Joint half certificate | Partial: [joint theorem][c-joint]; names retired. |
-| [17][fr17] | Charge seven; success one | Partial: [joint theorem][c-informed]; order changed. |
+| <a id="r1"></a>[1][fr1] | Export access | Partial: [access][r-export], [cost][c-input-cost]. |
+| <a id="r2"></a>[2][fr2] | Source name | Unresolved names; [typed input query][r-input] retained. |
+| <a id="r3"></a>[3][fr3] | Dummy and export | Preserved: [decision][r-pre], [map][r-map]. |
+| <a id="r4"></a>[4][fr4] | Suffix equation | Preserved: [decision][r-decide], [data][r-output]. |
+| <a id="r5"></a>[5][fr5] | Suffix permissions | Partial: [typed][r-access]; unresolved names. |
+| <a id="r6"></a>[6][fr6] | Suffix cost five | Preserved: [suffix_budget][c-suffix]. |
+| <a id="r7"></a>[7][fr7] | Routed cost five | Preserved: [routed bound][c-suffix-routed]. |
+| <a id="r8"></a>[8][fr8] | Raw permissions | Partial: [typed][r-raw-access]; unresolved names. |
+| <a id="r9"></a>[9][fr9] | Guess history | Preserved ambient history: [charged run][c-history]. |
+| <a id="r10"></a>[10][fr10] | Informed order | P1 order: [split][p-informed-split]. |
+| <a id="r11"></a>[11][fr11] | Setup import cost | Preserved: [setup_budget][c-setup]. |
+| <a id="r12"></a>[12][fr12] | Generic runtime split | [All-prover law][run-append]; see below. |
+| <a id="r13"></a>[13][fr13] | Logged guess history | Preserved ambient: [log][p-guess-log]. |
+| <a id="r14"></a>[14][fr14] | Logged informed order | P1 order: [log][p-informed-log]. |
+| <a id="r15"></a>[15][fr15] | Run import cost | Preserved: [import_budget][c-import]. |
+| <a id="r16"></a>[16][fr16] | Joint half bound | Partial: [joint][c-joint]; unresolved names. |
+| <a id="r17"></a>[17][fr17] | Charge 7, success 1 | [Passive theorem][c-informed]; order changed. |
 
-Rows 1, 2, 5, 8 and 16 previously quantified an `ExportedBoundary` whose prefix supplied
-canonical resource names. The current access assertions quantify over every relevant path and
-view, use the exact input/export query indices and prove both the allowed queries and their
-costs. The prefix protocol has no sent oracle, so its export reads only its input. This retains
-the source-permission facts; it does not recreate the removed cursor-name/context API.
+Rows 1, 2, 5, 8 and 16 need canonical accumulated-prefix names, availability and inclusion.
+Those components remain **unresolved**, even though the typed permission and cost parts are
+ported. The current assertions quantify over every relevant path and view and identify exact
+input/export indices. The prefix has no sent oracle, so its export reads only its input. These
+facts do not supply the missing canonical prefix-context certificates.
 
-Row 3's verifier decision performs its dummy request and accepts the unit statement. Its
-separate output map is exactly the input projection. Row 4 checks the entire effectful decision
-and the output map on arbitrary resource data, rather than assuming the output is constant.
-The [routed export query][r-route] identifies the same input slot used in the cost proof.
+Row 3's decision performs the dummy request and accepts the unit statement; its output map is
+exactly the input projection. Row 4 checks the entire effectful decision and the output map on
+arbitrary resource data. The [routed export query][r-route] identifies the input slot used by
+the cost theorem. Thus the delegated exact-decision and output-map obligations have actual
+counterparts, independently of the unresolved canonical naming interface.
 
-For rows 9 and 13 the full-surface trace includes a challenge event; its `QueryLog.fst` is exactly
-`[false ↦ false, true ↦ hidden]`, with final state `(hidden, 2)` and ambient charge four.
-The [parent split check][parent-guess-split] and direct logged check retain this same ambient
-history. Row 12's replacement is the general, whole-prover `OracleVerifier.run_append`, with
-its [ordinary-import client][parent-general-split]; it is not restricted to the two example
-provers. Applying runtime execution and a history observation to that equality preserves the
-new scheduler's entire trace and state. It does not recover the frozen active-prefix scheduler.
+For rows 9 and 13, the full trace includes a challenge event. Its ambient projection is exactly
+`[false ↦ false, true ↦ hidden]`, final state is `(hidden, 2)` and charge is four. The
+[parent split check][p-guess-split] and direct logged check retain that same ambient history.
+Row 12's passive-schedule counterpart is the general whole-prover
+`OracleVerifier.run_append`, with its [ordinary-import client][p-general-split]. It quantifies
+over arbitrary whole provers, not just the guessing and informed examples. Applying runtime
+execution and the pure state/trace/charge observation to this open-program equality proves the
+charged runtime/history equality for every such prover. The exact target is the stronger
+[open-program split law][run-append]; no two-prover specialization is counted as the all-prover
+port. Its frozen effectful-prefix order is separately excluded by passivity.
 
-For rows 10, 14 and 17, the informed prover queries at the seam before the passive prefix
-decision. The ambient order is `[true ↦ hidden, false ↦ false, true ↦ hidden]`; the frozen order
+For rows 10, 14 and 17, the informed prover reveals at the seam before the passive prefix's
+dummy request. Ambient order is `[true ↦ hidden, false ↦ false, true ↦ hidden]`; frozen order
 was `[false ↦ false, true ↦ hidden, true ↦ hidden]`. Both have final state `(hidden, 3)` and
-charge seven, but they are different histories. Restoring the old chronology would require
-executing the prefix verifier's decision before the suffix interaction, a change to Core's
-passive-verifier execution/composition model. These rows are not equivalent ports.
+charge seven. The old dummy-before-reveal order requires a non-passive prefix verifier and is
+premise-required to change; it is not an unresolved allowed-phase interface. The additional
+passive history is not an equivalent assertion of the former order.
 
-The new row-16 conjunction includes the prefix decision and export, access and cost certificates,
-import budget, charged runtime history and the half bound for every fixed guess and secret.
-The [answer observation][r-guess-answers] uses the actual materialized output oracle and target;
-[guess_success][r-guess-success] proves probability exactly one half. The informed conjunction
-retains charge seven and [success exactly one][r-informed-success], with its different order
-stated explicitly. Its [answer observation][r-informed-answers] comes from the same actual run.
-Neither theorem claims security against arbitrary provers from access/cost certificates alone.
+The row-16 conjunction includes the exact prefix decision and export, typed access and cost
+certificates, import budget, charged history and the half bound for every fixed guess and
+secret. [Actual answers][r-guess-answers] retain the materialized output oracle and target;
+[guess_success][r-guess-success] proves probability exactly one half. This expressible
+conjunction does not supply the unresolved canonical availability certificates of the full row.
+The row-17 passive conjunction retains charge seven and [success one][r-informed-success],
+with its different order explicit and its [actual answer observation][r-informed-answers].
+Neither theorem derives arbitrary-prover security from access/cost certificates alone.
 
 ## AccessExample: 18 assertions
 
@@ -267,6 +296,20 @@ assertion checks the complete transcript, including the public branch and payloa
 The position canary does not establish independent oracle-query universes; that is the distinct
 unresolved DecorationExample row 2.
 
+## Shared unresolved parent interfaces
+
+A produced per-slot phase artifact must associate actual execution slots with intrinsic owners,
+accumulated full prefixes and membership, with closing and log-correspondence laws. Its owners
+are the interaction runner and `Observation` in `Core/Execution.lean` and logged execution in
+`Core/Security/Knowledge.lean`. The two existing query logs cannot serve as that artifact.
+
+Canonical accumulated-prefix query names need availability and inclusion certificates that
+identify the same source across a genuine join and its terminal context. This requires a prefix
+resource interface beside `PrefixMoves`/`pathResources` in `Core/Protocol.lean` and
+`Core/OracleVerifier.lean`, with the inclusion/routing laws in `Core/Composition.lean`.
+Typed resource indices do not supply these certificates. These gaps are shared with the
+[parent inventory][parent-inventory] and remain unresolved; they do not block the fault port.
+
 ## Unresolved universe restrictions and owner changes
 
 1. **Protocol oracle nodes couple message and query universes.**
@@ -286,7 +329,7 @@ unresolved DecorationExample row 2.
    they do not claim to remove it.
 3. **The full-log runner keeps input indices and query types in `Type`.**
    [OracleVerifier.runWithLog][logged-runner] returns logs containing those queries inside the
-   small runner monad. A small-result alternative would log only ambient queries while answering
+   small runner monad. The existing `runWithAmbientLog` logs only ambient queries while answering
    input/message queries without storing them. Preserving the complete heterogeneous log instead
    requires a runner/monad result universe large enough to return it. The owning changes are in
    `Core/Security/Knowledge.lean`, the log-erasure laws in `Core/Oracle/LoggedExecution.lean`,
@@ -450,9 +493,9 @@ or `set_option respectTransparency` remains.
 [x-length]: ../../../ArkLibTest/Interaction/Core/Oracle/Prefix.lean#L88
 [x-complete]: ../../../ArkLibTest/Interaction/Core/Oracle/Prefix.lean#L90
 [x-payload]: ../../../ArkLibTest/Interaction/Core/Oracle/Prefix.lean#L93
-[p-accept]: ../../../ArkLibTest/Interaction/Core/Oracle/PhasedRun.lean#L89
-[p-payload]: ../../../ArkLibTest/Interaction/Core/Oracle/PhasedRun.lean#L92
-[p-reject]: ../../../ArkLibTest/Interaction/Core/Oracle/PhasedRun.lean#L101
+[p-accept]: ../../../ArkLibTest/Interaction/Core/Oracle/PhasedRun.lean#L90
+[p-payload]: ../../../ArkLibTest/Interaction/Core/Oracle/PhasedRun.lean#L93
+[p-reject]: ../../../ArkLibTest/Interaction/Core/Oracle/PhasedRun.lean#L102
 [q-route]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryBounds.lean#L136
 [q-future]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryBounds.lean#L173
 [q-log]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryBounds.lean#L239
@@ -491,22 +534,22 @@ or `set_option respectTransparency` remains.
 [r-guess-success]: ../../../ArkLibTest/Interaction/Core/Oracle/RuntimeQueryBounds.lean#L165
 [r-informed-success]: ../../../ArkLibTest/Interaction/Core/Oracle/RuntimeQueryBounds.lean#L185
 [r-input]: ../../../ArkLibTest/Interaction/Core/Oracle/RuntimeQueryBounds.lean#L36
-[r-export-map]: ../../../ArkLibTest/Interaction/Core/Oracle/RuntimeQueryBounds.lean#L51
-[r-prefix-decision]: ../../../ArkLibTest/Interaction/Core/Oracle/RuntimeQueryBounds.lean#L54
+[r-map]: ../../../ArkLibTest/Interaction/Core/Oracle/RuntimeQueryBounds.lean#L51
+[r-pre]: ../../../ArkLibTest/Interaction/Core/Oracle/RuntimeQueryBounds.lean#L54
 [r-output]: ../../../ArkLibTest/Interaction/Core/Oracle/RuntimeQueryBounds.lean#L70
-[parent-phase-runtime]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L374
-[parent-closed]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L181
-[parent-reject]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L165
-[parent-guess-log]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L559
-[parent-informed-log]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L570
-[parent-guess-split]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L594
-[parent-informed-split]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L605
-[parent-general-split]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L257
+[p-order]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L510
+[p-close]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L218
+[p-parent-reject]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L218
+[p-guess-log]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L727
+[p-informed-log]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L737
+[p-guess-split]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L760
+[p-informed-split]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L771
+[p-general-split]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L354
 [run-append]: ../../../ArkLib/Interaction/Core/Oracle/Routing.lean#L119
 [oracle-position]: ../../../ArkLib/Interaction/Core/Signature.lean#L45
 [oracle-signature]: ../../../ArkLib/Interaction/Core/Signature.lean#L57
 [resource-sum]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L133
-[logged-runner]: ../../../ArkLib/Interaction/Core/Security/Knowledge.lean#L311
+[logged-runner]: ../../../ArkLib/Interaction/Core/Security/Knowledge.lean#L332
 
 [universes]:
     ../interaction-rebuild/IMPLEMENTATION-NOTES.md#18-run-outputs-are-tied-to-the-monad-universe
@@ -517,3 +560,8 @@ or `set_option respectTransparency` remains.
 
 [d-distinct]:
     ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L122
+
+[p-terminal]: ../../../ArkLibTest/Interaction/Core/Oracle/PhasedRun.lean#L133
+
+[parent-inventory]: logged-execution-disposition.md
+[parent-phase-audits]: logged-execution-disposition.md#phasedrunlean

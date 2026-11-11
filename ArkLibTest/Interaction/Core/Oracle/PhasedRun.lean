@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Interaction.Core.OracleVerifier
+import ArkLibTest.Interaction.Core.Oracle.LoggedExecution
 
 /-! One run of a public message, a challenge and a hidden oracle send. The full transcript of the
 run keeps the hidden payload, which the payload family returns and the verifier view erases. A
@@ -83,7 +84,7 @@ def summary.{vI, qI, qJ} (accept : Bool) (payload hidden : Nat) (bit : Bool) :
     (prover payload hidden))).run []
   (z.1.1, z.1.2.1, z.1.2.2.map Prod.fst, z.2)
 
--- PhasedRun 4, restated: phases are retired. For every payload, private output and challenge,
+-- PhasedRun 4: for every payload, private output and challenge,
 -- the run's full transcript is `⟨true, bit, payload⟩`; its payload family returns `payload` and its
 -- verifier view erases it. The decision reads the payload and accepts with it.
 example (payload hidden : Nat) (bit : Bool) : summary.{uI, wI, wJ} true payload hidden bit =
@@ -95,10 +96,53 @@ example (payload : Nat) (bit : Bool) :
 example (payload : Nat) (bit : Bool) :
     (toView phased ⟨true, bit, payload, ⟨⟩⟩).val = ⟨true, bit, ⟨⟩, ⟨⟩⟩ := rfl
 
--- PhasedRun 6, restated: phases are retired and the decision returns `none`, the terminal
+-- PhasedRun 6: the passive decision returns `none`, the terminal
 -- rejection. For every payload, private output and challenge, the run keeps the transcript, the
 -- private output and the full ambient history.
 example (payload hidden : Nat) (bit : Bool) : summary.{uI, wI, wJ} false payload hidden bit =
     (⟨true, bit, payload, ⟨⟩⟩, hidden, none, [9, 9, 1, 4, 5, 2, 3, 6, 7]) := rfl
 
 end Interaction.Core.PhasedRunTests
+
+namespace Interaction.Core.PhasedRunClosingTests
+
+open Interaction.Core.LoggedExecutionTests OracleSpec
+
+/-- Execute the actual closing prover before interpreting its final decision with labelled
+failure. Retain its transcript, private output, prover log, decision log and ambient history. -/
+def terminalObserved (mode old message hidden : Nat) :
+    (PathAlong oracleSig pairSend × Nat × Except Nat (Option (Nat × Nat)) ×
+      QueryLog ambient × List (String × Nat)) × List Nat :=
+  (do
+    let full := ambient + challengeSpec oracleSig pairSend
+    let ⟨⟨tr, out, _⟩, proveLog⟩ ← simulateQ (logger pairChallenges)
+      (OracleComp.withQueryLog (spec := full) (TwoParty.Lens.run pairSend
+        ((pairProver [9] message hidden).simulate (fun q => liftM (full.query (.inl q))))
+        (sampler oracleSig pairSend (fun c => liftM (full.query (.inr c))))))
+    let p := projectPathAlong oracleSig pairSend tr
+    let data : (pathResources inputs pairSend p).Data := (fun _ => old, payloads pairSend tr)
+    let (verdict, log) ← (terminalVerifier mode).decideWithFailureLog terminalHandler () p
+      (toView pairSend tr) data
+    pure (tr, out, verdict.map (Option.map fun t =>
+      (t, ((terminalVerifier mode).outputMap () p (toView pairSend tr)).f data ())),
+      proveLog.fst, describePair p log) : StateM (List Nat) _).run []
+
+/-- Fault 17, rejection and acceptance retain the same actual transcript, private output and
+answered-query logs. Failure is returned by the handler and is neither rejection nor acceptance.
+The failed request has no answer, so it adds no query-answer entry. -/
+theorem terminal_outcomes (old message hidden : Nat) :
+    terminalObserved 1 old message hidden =
+      ((⟨(message, hidden), ⟨⟩⟩, hidden, .error 17,
+        [⟨9, (9 : Nat)⟩, ⟨0, (0 : Nat)⟩],
+        [("tag", 1), ("tag", 2), ("sent", message)]), [9, 0, 1, 2]) ∧
+    terminalObserved 0 old message hidden =
+      ((⟨(message, hidden), ⟨⟩⟩, hidden, .ok none,
+        [⟨9, (9 : Nat)⟩, ⟨0, (0 : Nat)⟩],
+        [("tag", 1), ("tag", 2), ("sent", message)]), [9, 0, 1, 2]) ∧
+    terminalObserved 3 old message hidden =
+      ((⟨(message, hidden), ⟨⟩⟩, hidden, .ok (some (message, old + message)),
+        [⟨9, (9 : Nat)⟩, ⟨0, (0 : Nat)⟩],
+        [("tag", 1), ("tag", 2), ("sent", message)]), [9, 0, 1, 2]) := by
+  exact ⟨rfl, rfl, rfl⟩
+
+end Interaction.Core.PhasedRunClosingTests
