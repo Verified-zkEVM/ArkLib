@@ -220,41 +220,37 @@ error is at most `e` and every path meets at most `k` challenge nodes. One induc
 protocol tree, for any signature lens, serves both verifier forms. The proofs go through neither
 the legacy layer nor the frozen interaction layer.
 
-### 19. Round-by-round soundness implies soundness in the classical model
+### 19. Round-by-round soundness implies soundness for lawful distribution monads
 
-The frozen interaction layer proves `executeStrategies_soundness` and
-`executeStrategies_soundness_uniform` in `ArkLib/Interaction/Oracle/Security/Soundness.lean`, with
-the helpers `OrdinaryState.exists_verifier_escape` and `LocalSoundness.random_prefix`. The
-interaction-core forms cover the same plain and oracle trees and differ in four ways.
+`prEvent_run_le` bounds the actual interpreted run for every `m : Type → Type v` with
+`Monad`, `LawfulMonad`, `EvalDistSemantics` and `LawfulEvalDistSemantics`. It assumes the
+specified fresh event marginals at each receiver node and the local false-to-true bounds.
+No attachment or losslessness instance is required. Missing mass in the author's actions and
+terminal continuation contributes no accepting probability.
 
-- **Execution model.** The frozen theorems hold for any lawful monad `m` with a handler, a
-  `MonadAttach` instance and a `FreshVerifier` hypothesis, and allow failure through `OptionT`.
-  The interaction-core theorems are stated for `Verifier.soundness` and
-  `OracleVerifier.soundness`, which use the classical model: ambient queries run in
-  `StateT σ ProbComp` from a state drawn by `init`, and each challenge is a fresh draw from
-  `draw`. Freshness therefore holds by construction and is not a hypothesis.
-- **Node-indexed error.** The frozen error is indexed by a rank function, checked against a
-  `ChallengeSchedule` with a count, and summed as `∑ j ∈ Finset.range count, error j`. The
-  interaction-core error is indexed by challenge nodes, as in `rbrSoundness`, and the bound is
-  the supremum over paths of the node errors along the path. The uniform corollaries replace the
-  schedule by the hypothesis that every path meets at most `k` challenge nodes, and
-  `(count : ℝ≥0∞) * error` by `k • e`.
-- **Escape statement.** `OrdinaryState.exists_verifier_escape` concludes
-  `VerifierEscapeOnPath` from an `OrdinaryState` certificate. `StateFunction.escapeAlong`
-  concludes `EscapeAlong` from a `StateFunction`, an admissible false statement and an accepted
-  transcript. `EscapeAlong` says that some receiver node on the transcript turns the state from
-  false to true.
-- **Averaged-prefix selection.** `LocalSoundness.random_prefix` takes an `OptionT ProbComp`
-  author, a map from its output to a verifier prefix, and the hypothesis that every selected
-  prefix has the same rank. `flip_random_prefix_le` takes an `OptionT ProbComp` author and a map
-  from its output to a `ReceiverPrefix`, which packages a receiver node's cursor, its ownership
-  proof and the full moves before it. The common-rank hypothesis becomes the hypothesis that every
-  selected node has error at most `e`. The selected node may vary with the author's output, and
-  author failure contributes no mass. `flip_random_history_le` is the fixed-node case with a
-  `ProbComp` author, which the soundness induction uses.
+`FreshChallenges`, beside `Verifier.run` in `Core/Execution.lean`, names the event-marginal
+premise: every interpreted challenge action has the distribution specified by `draw`. The lawful
+bind semantics makes this distribution independent of the history. `FreshChallengesAt` states
+this property from every current ambient state, permitting the challenge to change that state.
+`freshChallengesAt_addLift` proves it for a separate challenge draw lifted beside a state handler.
 
-The tests in `ArkLibTest/Interaction/Core/Security/Implications.lean` restate the general
-statements for plain and oracle verifiers, apply `flip_random_prefix_le` to an author that chooses
-between two different challenge nodes, give soundness `1 / 2` for the one-challenge coin protocol
-from every initial counter distribution, and give soundness `2 • (1 / 4)` for a protocol with two
-uniform `Fin 4` challenges through the uniform corollary.
+`Verifier.soundnessWith_of_rbrSoundness` and `OracleVerifier.soundnessWith_of_rbrSoundness`
+apply the run bound to their actual decisions. The oracle form answers resource queries using
+the input data and the run's payloads, then reads the output through the output oracle map.
+The `soundnessWith` predicates in `Core/Security/Soundness.lean` quantify over the handler's
+monad. The existing classical `soundness` abbreviations and their implication theorem names
+remain available. They use the same run induction, `prEvent_run_state_le`, specialized to
+`ProbComp`, with freshness proved from every state. There is no second soundness induction.
+
+The path bound is the supremum over shape paths of the sum of the errors at the challenge nodes
+on that path. Both generic verifier forms and both classical forms have `_tsum` and `_uniform`
+corollaries. The former sums all node errors; the latter gives `k • e` when every node error is
+at most `e` and every shape path meets at most `k` challenge nodes.
+
+The frozen `FreshVerifier` also specifies event marginals of the actual receiver action and
+recurses through supported continuations. The Core sampler already supplies the structural
+continuations, and its challenge actions are indexed by the structural node. The generic run
+bound therefore requires only the fresh challenge marginals, with the local certificate checked
+at every full prefix. This restores the frozen monad quantifier, including optional computations.
+The tests instantiate the generic implication with an `OptionT ProbComp` ambient handler whose
+successful mass is one half and discharge the fresh challenge premise for its separate draw.

@@ -6,6 +6,8 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Interaction.Core.Reduction
+public import VCVio.EvalDist.ProbabilityNotation
+public import ToMathlib.Control.StateT
 
 /-!
 # Plain execution
@@ -17,7 +19,7 @@ oracle computation, distinct from a returned rejecting verdict.
 
 @[expose] public section
 
-universe u uA
+universe u uA v
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp
@@ -40,6 +42,38 @@ def Verifier.run {ι : Type u} {ambient : OracleSpec.{u, u} ι}
     (V.decide stmt (projectPathAlong plainSig s tr) (toPlainView s tr)).run
     (ambient + challengeSpec plainSig s)
   pure ⟨tr, out, verdict⟩
+
+/-- Every challenge action has the prescribed event marginals. By the lawful bind semantics,
+these marginals hold after every history, independently of the earlier actions. Missing mass in
+ambient actions is permitted; a challenge has exactly the mass of its specified draw. -/
+def FreshChallenges {m : Type → Type v} [Monad m] [EvalDistSemantics m]
+    {ι : Type} {ambient : OracleSpec ι} {P : PFunctor.{1, 0}}
+    {l : PFunctor.Lens P rolePoly} {s : FreeM P PUnit}
+    (handler : QueryImpl (ambient + challengeSpec l s) m)
+    (draw : QueryImpl (challengeSpec l s) ProbComp) : Prop :=
+  ∀ c (event : challengeSpec l s c → Prop),
+    Pr{let x ← handler (.inr c)}[event x] = Pr{let x ← draw c}[event x]
+
+/-- A stateful challenge has the prescribed event marginals from every current state.
+The challenge may change the state; only its move distribution is fixed. -/
+def FreshChallengesAt {m : Type → Type v} [Monad m] [EvalDistSemantics m]
+    {ι σ : Type} {ambient : OracleSpec ι} {P : PFunctor.{1, 0}}
+    {l : PFunctor.Lens P rolePoly} {s : FreeM P PUnit}
+    (handler : QueryImpl (ambient + challengeSpec l s) (StateT σ m))
+    (draw : QueryImpl (challengeSpec l s) ProbComp) : Prop :=
+  ∀ st c (event : challengeSpec l s c → Prop),
+    Pr{let x ← (handler (.inr c)).run' st}[event x] = Pr{let x ← draw c}[event x]
+
+/-- Lifting a separate challenge draw into the ambient state gives fresh challenge marginals. -/
+theorem freshChallengesAt_addLift {ι σ : Type} {ambient : OracleSpec ι}
+    {P : PFunctor.{1, 0}} {l : PFunctor.Lens P rolePoly} {s : FreeM P PUnit}
+    (impl : QueryImpl ambient (StateT σ ProbComp))
+    (draw : QueryImpl (challengeSpec l s) ProbComp) :
+    FreshChallengesAt
+      (impl.addLift draw : QueryImpl (ambient + challengeSpec l s) (StateT σ ProbComp)) draw := by
+  intro st c event
+  simp only [QueryImpl.addLift_def, QueryImpl.add_apply_inr, QueryImpl.liftTarget_apply,
+    StateT.liftM_def, StateT.run'_lift']
 
 /-- Every possible verdict of a run is a possible verdict of the decision on its transcript. -/
 theorem Verifier.verdict_mem_support_run {ι : Type u} {ambient : OracleSpec.{u, u} ι}

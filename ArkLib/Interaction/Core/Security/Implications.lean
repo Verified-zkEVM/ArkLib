@@ -19,11 +19,14 @@ the node together with its prefix. The union bound over the challenge nodes of a
 bounds soundness by the supremum, over shape paths, of the sum of the node errors along the path.
 
 One induction over the protocol tree, for any signature lens, gives this bound for plain and
-oracle verifiers in the classical model. An oracle verifier's acceptance is its decision on the
-input data and the run's payloads, with the output read through its output oracle map.
+oracle verifiers in any lawful monad with distribution semantics and fresh challenge marginals.
+The classical stateful wrappers use the same bound. An oracle verifier's acceptance is its decision
+on the input data and the run's payloads, with its output read through its output oracle map.
 -/
 
 @[expose] public section
+
+universe v
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle MeasureTheory
@@ -183,102 +186,6 @@ section Run
 
 variable {P : PFunctor.{1, 0}} {l : PFunctor.Lens P rolePoly}
 
-section Sampler
-
-variable {m : Type → Type} [Monad m] [LawfulMonad m]
-
-/-- A sender slot built by rewriting with an ownership equation is its pure payload. -/
-private theorem cast_map_pure_sender {X : Type} {B B' : X → Type} {r : TwoParty.Role}
-    (h : r = .sender) (e : Choice .counterpart r X B = ((x : X) → B x)) (G : (x : X) → B x)
-    (Φ : ∀ x, B x → B' x) :
-    cast (congrArg (fun r => m (Choice .counterpart r X B')) h)
-      (Choice.map .counterpart r Φ <$> (pure (Eq.mpr e G) : m _)) = pure fun x => Φ x (G x) := by
-  subst h
-  exact map_pure _ _
-
-/-- A receiver slot built by rewriting with an ownership equation maps its draw. -/
-private theorem cast_map_map_receiver {X : Type} {B B' : X → Type} {r : TwoParty.Role}
-    (h : r = .receiver) (e : Choice .counterpart r X B = ((x : X) × B x))
-    (G : X → (x : X) × B x) (mx : m X) (Φ : ∀ x, B x → B' x) :
-    cast (congrArg (fun r => m (Choice .counterpart r X B')) h)
-      (Choice.map .counterpart r Φ <$> ((fun x => Eq.mpr e (G x)) <$> mx)) =
-        (fun x => ⟨(G x).1, Φ _ (G x).2⟩) <$> mx := by
-  subst h
-  exact Functor.map_map _ _ _
-
-/-- The sampler passes over a sender node. -/
-private theorem sampler_sender {a : P.A} {next : P.B a → FreeM P PUnit} (h : owner l a = .sender)
-    (d : (c : ChallengeNode l (.liftBind a next)) → m (challengeSpec l (.liftBind a next) c)) :
-    cast (congrArg (fun r => m (Choice .counterpart r (Move l a)
-      (fun x => Counterpart l m (next (l.toFunB a x)) (fun _ => PUnit)))) h)
-      (sampler l (.liftBind a next) d) =
-    pure fun x => sampler l (next (l.toFunB a x))
-      fun c => d ⟨.inr ⟨l.toFunB a x, c.val⟩, c.property⟩ := by
-  simp only [sampler, PureEnd.toStrategy, PureEnd.mapOutput, samplerEnd]
-  split
-  · exact cast_map_pure_sender h _ _ _
-  · rename_i h'
-    cases h.symm.trans h'
-
-/-- The sampler draws at a receiver node, then samples the rest of the protocol. -/
-private theorem sampler_receiver {a : P.A} {next : P.B a → FreeM P PUnit}
-    (h : owner l a = .receiver)
-    (d : (c : ChallengeNode l (.liftBind a next)) → m (challengeSpec l (.liftBind a next) c)) :
-    cast (congrArg (fun r => m (Choice .counterpart r (Move l a)
-      (fun x => Counterpart l m (next (l.toFunB a x)) (fun _ => PUnit)))) h)
-      (sampler l (.liftBind a next) d) =
-    (fun x => ⟨x, sampler l (next (l.toFunB a x))
-      fun c => d ⟨.inr ⟨l.toFunB a x, c.val⟩, c.property⟩⟩) <$> d ⟨.inl ⟨⟩, h⟩ := by
-  simp only [sampler, PureEnd.toStrategy, PureEnd.mapOutput, samplerEnd]
-  split
-  · rename_i h'
-    cases h.symm.trans h'
-  · exact cast_map_map_receiver h _ (fun x => ⟨x, _⟩) _ _
-
-/-- At a sender node the prover sends a move, then the rest of the protocol runs. -/
-private theorem run_sampler_sender {β : Type} {a : P.A} {next : P.B a → FreeM P PUnit}
-    (h : owner l a = .sender) {Out : PathAlong l (.liftBind a next) → Type}
-    (p : Focal l m (.liftBind a next) Out)
-    (d : (c : ChallengeNode l (.liftBind a next)) → m (challengeSpec l (.liftBind a next) c))
-    (g : ((tr : PathAlong l (.liftBind a next)) × Out tr × PUnit) → m β) :
-    (TwoParty.Lens.run (.liftBind a next) p (sampler l _ d) >>= g) =
-      (cast (congrArg (fun r => m (Choice .focal r (Move l a)
-          (fun x => Focal l m (next (l.toFunB a x)) (fun tr => Out ⟨x, tr⟩)))) h) p >>= fun v =>
-        TwoParty.Lens.run (next (l.toFunB a v.1)) v.2
-          (sampler l _ fun c => d ⟨.inr ⟨l.toFunB a v.1, c.val⟩, c.property⟩) >>= fun r =>
-            g ⟨⟨v.1, r.1⟩, r.2.1, r.2.2⟩) := by
-  rw [run_node, step_bind]
-  refine (step_sender (owner l a) h _ _ _).trans ?_
-  refine bind_congr fun v => ?_
-  refine (congrArg (· >>= _) (sampler_sender h d)).trans ?_
-  simp only [bind_assoc]
-  exact (LawfulMonad.pure_bind (m := m) _ _).trans
-    (bind_congr fun _ => LawfulMonad.pure_bind (m := m) _ _)
-
-/-- At a receiver node the prover fixes a reply to each move, the move is drawn, then the rest of
-the protocol runs. -/
-private theorem run_sampler_receiver {β : Type} {a : P.A} {next : P.B a → FreeM P PUnit}
-    (h : owner l a = .receiver) {Out : PathAlong l (.liftBind a next) → Type}
-    (p : Focal l m (.liftBind a next) Out)
-    (d : (c : ChallengeNode l (.liftBind a next)) → m (challengeSpec l (.liftBind a next) c))
-    (g : ((tr : PathAlong l (.liftBind a next)) × Out tr × PUnit) → m β) :
-    (TwoParty.Lens.run (.liftBind a next) p (sampler l _ d) >>= g) =
-      (cast (congrArg (fun r => m (Choice .focal r (Move l a)
-          (fun x => Focal l m (next (l.toFunB a x)) (fun tr => Out ⟨x, tr⟩)))) h) p >>= fun f =>
-        (d ⟨.inl ⟨⟩, h⟩ : m (Move l a)) >>= fun x =>
-        TwoParty.Lens.run (next (l.toFunB a x)) (f x)
-          (sampler l _ fun c => d ⟨.inr ⟨l.toFunB a x, c.val⟩, c.property⟩) >>= fun r =>
-            g ⟨⟨x, r.1⟩, r.2.1, r.2.2⟩) := by
-  rw [run_node, step_bind]
-  refine (step_receiver (owner l a) h _ _ _).trans ?_
-  refine bind_congr fun f => ?_
-  refine (congrArg (· >>= _) (sampler_receiver h d)).trans ?_
-  simp only [bind_assoc]
-  exact (bind_map_left (m := m) _ _ _).trans
-    (bind_congr fun _ => bind_congr fun _ => LawfulMonad.pure_bind (m := m) _ _)
-
-end Sampler
-
 /-- The node errors along a path through a sender node are those of the subpath. -/
 private theorem sum_challengeNodesOn_sender {a : P.A} {next : P.B a → FreeM P PUnit}
     (h : owner l a = .sender) (ε : ChallengeNode l (.liftBind a next) → ℝ≥0∞) (b : P.B a)
@@ -305,25 +212,6 @@ private theorem sum_challengeNodesOn_receiver {a : P.A} {next : P.B a → FreeM 
   · rename_i h'
     cases h.symm.trans h'
 
-/-- Simulating a bind threads the handler state from the first part to the second. -/
-private theorem run'_simulateQ_bind {ι σ α β : Type} {spec : OracleSpec ι}
-    (H : QueryImpl spec (StateT σ ProbComp)) (A : OracleComp spec α)
-    (f : α → OracleComp spec β) (st : σ) :
-    (simulateQ H (A >>= f)).run' st =
-      (simulateQ H A).run st >>= fun z => (simulateQ H (f z.1)).run' z.2 := by
-  simp only [simulateQ_bind, StateT.run'_eq, StateT.run_bind, _root_.map_bind]
-
-/-- Union bound over a second draw: if the event has probability at most `e` after every draw
-outside `flip`, then it has probability at most the flip probability plus `e`. -/
-private theorem prEvent_bind_bind_le_add {α γ β : Type} (mx : ProbComp α) (my : ProbComp γ)
-    (F : α → γ → ProbComp β) (flip : γ → Prop) (ev : β → Prop) {e : ℝ≥0∞}
-    (h : ∀ z x, ¬ flip x → Pr{let y ← F z x}[ev y] ≤ e) :
-    Pr{let y ← mx >>= fun z => my >>= fun x => F z x}[ev y] ≤
-      Pr{let _z ← mx; let x ← my}[flip x] + e := by
-  have bound := prEvent_bind_le_prEvent_add (mx >>= fun z => (fun x => (z, x)) <$> my)
-    (fun w => F w.1 w.2) (fun w => flip w.2) ev fun w hw => h w.1 w.2 hw
-  simpa only [prEvent_norm] using bound
-
 /-- Sampling at the root receiver node is the root draw. -/
 private theorem sampleAt_root {a : P.A} {next : P.B a → FreeM P PUnit}
     (draw : QueryImpl (challengeSpec l (.liftBind a next)) ProbComp)
@@ -333,15 +221,19 @@ private theorem sampleAt_root {a : P.A} {next : P.B a → FreeM P PUnit}
 
 /-- A run whose continuation accepts only after an escape accepts with probability at most the
 supremum, over shape paths, of the summed node errors along the path. -/
-private theorem prEvent_run_le {ι σ β : Type} {spec : OracleSpec ι}
-    (H : QueryImpl spec (StateT σ ProbComp)) (ev : β → Prop) (t : FreeM P PUnit) :
+theorem prEvent_run_state_le {m : Type → Type v} [Monad m] [LawfulMonad m]
+    [EvalDistSemantics m] [LawfulEvalDistSemantics m]
+    {ι σ β : Type} {spec : OracleSpec ι}
+    (H : QueryImpl spec (StateT σ m)) (ev : β → Prop) (t : FreeM P PUnit) :
     ∀ {Out : PathAlong l t → Type}
       (G : ∀ {t' : FreeM P PUnit}, (sp : Cursor.Spine t t') → PrefixMoves l sp → Prop)
       (draw : QueryImpl (challengeSpec l t) ProbComp)
       (ε : ChallengeNode l t → ℝ≥0∞)
       (d : (c : ChallengeNode l t) → OracleComp spec (challengeSpec l t c))
       (k : (tr : PathAlong l t) → Out tr → OracleComp spec β),
-      (∀ c st, (simulateQ H (d c)).run st = (fun x => (x, st)) <$> draw c) →
+      (∀ c st (event : challengeSpec l t c → Prop),
+        Pr{let x ← (simulateQ H (d c)).run' st}[event x] =
+          Pr{let x ← draw c}[event x]) →
       (∀ (a : P.A) (next : P.B a → FreeM P PUnit)
         (sp : Cursor.Spine t (.liftBind a next)) (h : owner l a = .receiver)
         (history : PrefixMoves l sp),
@@ -367,7 +259,7 @@ private theorem prEvent_run_le {ι σ β : Type} {spec : OracleSpec ι}
         (sampler l (.pure ⟨⟩) d : OracleComp spec PUnit))).trans ?_
       refine (bind_assoc _ _ _).trans (bind_congr fun out => ?_)
       exact LawfulMonad.pure_bind _ _
-    rw [hrun, run'_simulateQ_bind]
+    rw [hrun, simulateQ_bind, StateT.run'_bind']
     exact prEvent_bind_le_of_forall_le _ _ _ fun z => (hk ⟨⟩ z.1 z.2 id).le
   | liftBind a next ih =>
     intro Out G draw ε d k hd hlocal hk p st
@@ -379,12 +271,12 @@ private theorem prEvent_run_le {ι σ β : Type} {spec : OracleSpec ι}
       (fun c => draw ⟨.inr ⟨l.toFunB a x, c.val⟩, c.property⟩)
       (fun c => ε ⟨.inr ⟨l.toFunB a x, c.val⟩, c.property⟩)
       (fun c => d ⟨.inr ⟨l.toFunB a x, c.val⟩, c.property⟩) (fun tr out => k ⟨x, tr⟩ out)
-      (fun c st => hd _ st)
+      (fun c st event => hd ⟨.inr ⟨l.toFunB a x, c.val⟩, c.property⟩ st event)
       (fun a' next' sp h history => hlocal a' next' (.down _ sp) h ⟨⟨x, rfl⟩, history⟩)
       hk' q st'
     rcases (show owner l a = .sender ∨ owner l a = .receiver by
       cases owner l a <;> simp) with hown | hown
-    · rw [run_sampler_sender hown, run'_simulateQ_bind]
+    · rw [run_sampler_sender hown, simulateQ_bind, StateT.run'_bind']
       refine prEvent_bind_le_of_forall_le _ _ _ fun z => ?_
       refine (hsub z.1.1 (fun tr out st hne => hk ⟨z.1.1, tr⟩ out st fun hesc =>
           hesc.elim (fun h => nomatch h.1.symm.trans hown) hne) z.1.2 z.2).trans ?_
@@ -395,37 +287,87 @@ private theorem prEvent_run_le {ι σ β : Type} {spec : OracleSpec ι}
           cast (congrArg (fun r => OracleComp spec (Choice .focal r (Move l a)
             (fun x => Focal l (OracleComp spec) (next (l.toFunB a x))
               (fun tr => Out ⟨x, tr⟩)))) hown) p = q := ⟨_, rfl⟩
-      rw [run_sampler_receiver hown, hq, run'_simulateQ_bind]
-      simp only [run'_simulateQ_bind H (d ⟨.inl ⟨⟩, hown⟩), hd, bind_map_left]
+      rw [run_sampler_receiver hown, hq, simulateQ_bind, StateT.run'_bind']
+      simp only [simulateQ_bind H (d ⟨.inl ⟨⟩, hown⟩),
+        StateT.run'_bind' (simulateQ H (d ⟨.inl ⟨⟩, hown⟩))]
       rcases isEmpty_or_nonempty (Path (FreeM.liftBind a next)) with hempty | hne
       · refine le_trans ?_ zero_le
         refine prEvent_bind_le_of_forall_le _ _ _ fun z =>
-          prEvent_bind_le_of_forall_le _ _ _ fun x => ?_
+          prEvent_bind_le_of_forall_le _ _ _ fun w => ?_
+        let x := w.1
         have : IsEmpty (PathAlong l (next (l.toFunB a x))) :=
           ⟨fun tr => hempty.false ⟨_, projectPathAlong l _ tr⟩⟩
-        refine (hsub x (fun tr => isEmptyElim tr) _ z.2).trans ?_
+        refine (hsub x (fun tr => isEmptyElim tr) _ w.2).trans ?_
         have : IsEmpty (Path (next (l.toFunB a x))) := ⟨fun path => hempty.false ⟨_, path⟩⟩
         rw [iSup_of_empty]
         exact bot_le
-      · refine (prEvent_bind_bind_le_add ((simulateQ H q).run st)
-          (draw ⟨.inl ⟨⟩, hown⟩ : ProbComp (Move l a))
-          (fun z (x : Move l a) => (simulateQ H (TwoParty.Lens.run (next (l.toFunB a x))
-            (z.1 x) (sampler l _ fun c => d ⟨.inr ⟨l.toFunB a x, c.val⟩, c.property⟩) >>=
-              fun r => k ⟨x, r.1⟩ r.2.1)).run' z.2)
-          (fun x : Move l a => ¬ G (.root _) ⟨⟩ ∧
-            G (.down (l.toFunB a x) (.root _)) ⟨⟨x, rfl⟩, ⟨⟩⟩) ev
-          (e := ⨆ path : Path (FreeM.liftBind a next), ∑ c ∈ challengeNodesOn l (next path.1)
-            path.2, ε ⟨.inr ⟨path.1, c.val⟩, c.property⟩)
-          fun z x hx => (hsub x (fun tr out st hne => hk ⟨x, tr⟩ out st fun hesc =>
-            hesc.elim (fun h => hx ⟨h.2.1, h.2.2⟩) hne) _ z.2).trans
-            (iSup_le fun path => le_iSup_of_le ⟨l.toFunB a x, path⟩ le_rfl)).trans ?_
-        have hflip := flip_random_history_le l G draw (.root _) hown
-          (fun history => hlocal _ _ (.root _) hown history) ((simulateQ H q).run st) fun _ => ⟨⟩
-        rw [sampleAt_root] at hflip
-        refine (add_le_add hflip le_rfl).trans ?_
+      · refine prEvent_bind_le_of_forall_le _ _ _ fun z => ?_
+        refine (prEvent_bind_le_prEvent_add
+          ((simulateQ H (d ⟨.inl ⟨⟩, hown⟩)).run z.2)
+          (fun w => (simulateQ H (TwoParty.Lens.run (next (l.toFunB a w.1))
+            (z.1 w.1) (sampler l _ fun c => d ⟨.inr ⟨l.toFunB a w.1, c.val⟩, c.property⟩) >>=
+              fun r => k ⟨w.1, r.1⟩ r.2.1)).run' w.2)
+          (fun w => ¬ G (.root _) ⟨⟩ ∧
+            G (.down (l.toFunB a w.1) (.root _)) ⟨⟨w.1, rfl⟩, ⟨⟩⟩) ev
+          (ε := ⨆ path : Path (FreeM.liftBind a next),
+            ∑ c ∈ challengeNodesOn l (next path.1) path.2,
+              ε ⟨.inr ⟨path.1, c.val⟩, c.property⟩)
+          fun w hx => (hsub w.1 (fun tr out st hne => hk ⟨w.1, tr⟩ out st fun hesc =>
+            hesc.elim (fun h => hx ⟨h.2.1, h.2.2⟩) hne) _ w.2).trans
+            (iSup_le fun path => le_iSup_of_le ⟨l.toFunB a w.1, path⟩ le_rfl)).trans ?_
+        let : MeasurableSpace (Move l a) := ⊤
+        let rootSample : ProbComp (Move l a) :=
+          sampleAt l draw (.root (.liftBind a next)) hown
+        let flip : Move l a → Prop := fun x => ¬ G (.root _) ⟨⟩ ∧
+          G (.down (l.toFunB a x) (.root _)) ⟨⟨x, rfl⟩, ⟨⟩⟩
+        have hflip : Pr{let x ← rootSample}[flip x] ≤
+            ε (spineChallenge l (.root (.liftBind a next)) hown) :=
+          (prEvent_eq_evalDist_of_discrete rootSample flip).le.trans
+            (hlocal a next (.root _) hown ⟨⟩)
+        have hdraw := congrArg (fun mx : ProbComp (Move l a) => Pr{let x ← mx}[flip x])
+          (sampleAt_root (l := l) (a := a) (next := next) draw hown)
+        have hfresh := (prEvent_map ((simulateQ H (d ⟨.inl ⟨⟩, hown⟩)).run z.2)
+          Prod.fst flip).symm.trans (hd ⟨.inl ⟨⟩, hown⟩ z.2 flip)
+        refine (add_le_add (hfresh.le.trans (hdraw.symm.le.trans hflip)) le_rfl).trans ?_
         rw [ENNReal.add_iSup]
         exact iSup_le fun path => le_iSup_of_le path
           (le_of_eq (sum_challengeNodesOn_receiver hown ε path.1 path.2).symm)
+
+/-- For any lawful monad with distribution semantics, fresh challenge marginals and local flip
+bounds bound acceptance by the supremum of the sums of node errors along shape paths.
+The author and terminal continuation may fail. No attachment or losslessness is required. -/
+theorem prEvent_run_le {m : Type → Type v} [Monad m] [LawfulMonad m]
+    [EvalDistSemantics m] [LawfulEvalDistSemantics m]
+    {ι β : Type} {spec : OracleSpec ι}
+    (H : QueryImpl spec m) (ev : β → Prop) (t : FreeM P PUnit)
+    {Out : PathAlong l t → Type}
+    (G : ∀ {t' : FreeM P PUnit}, (sp : Cursor.Spine t t') → PrefixMoves l sp → Prop)
+    (draw : QueryImpl (challengeSpec l t) ProbComp)
+    (ε : ChallengeNode l t → ℝ≥0∞)
+    (d : (c : ChallengeNode l t) → OracleComp spec (challengeSpec l t c))
+    (k : (tr : PathAlong l t) → Out tr → OracleComp spec β)
+    (hd : ∀ c (event : challengeSpec l t c → Prop),
+      Pr{let x ← simulateQ H (d c)}[event x] = Pr{let x ← draw c}[event x])
+    (hlocal : ∀ (a : P.A) (next : P.B a → FreeM P PUnit)
+      (sp : Cursor.Spine t (.liftBind a next)) (h : owner l a = .receiver)
+      (history : PrefixMoves l sp),
+      letI : MeasurableSpace (Move l a) := ⊤
+      𝒟[sampleAt l draw sp h] {x | ¬ G sp history ∧
+        G (sp.comp (.down (l.toFunB a x) (.root _)))
+          (PrefixMoves.snoc l sp history x)} ≤ ε (spineChallenge l sp h))
+    (hk : ∀ tr out, ¬ EscapeAlong l t G tr →
+      Pr{let y ← simulateQ H (k tr out)}[ev y] = 0)
+    (p : Focal l (OracleComp spec) t Out) :
+    Pr{let y ← simulateQ H (TwoParty.Lens.run t p (sampler l t d) >>=
+      fun r => k r.1 r.2.1)}[ev y] ≤
+        ⨆ path : Path t, ∑ c ∈ challengeNodesOn l t path, ε c := by
+  have hlift {α : Type} (program : OracleComp spec α) (st : Unit) :
+      (simulateQ (H.liftTarget (StateT Unit m)) program).run' st =
+        simulateQ H program := by
+    rw [simulateQ_liftTarget, StateT.liftM_def, StateT.run'_lift']
+  simpa only [hlift] using prEvent_run_state_le (H.liftTarget (StateT Unit m)) ev t G
+    draw ε d k (fun c st event => by rw [hlift]; exact hd c event) hlocal
+    (fun tr out st hne => by rw [hlift]; exact hk tr out hne) p ()
 
 end Run
 
@@ -434,18 +376,8 @@ section Experiment
 variable {ι κ ρ σ α : Type} {ambient : OracleSpec ι} {chal : OracleSpec κ}
   {resources : OracleSpec ρ}
 
-/-- A challenge query, interpreted beside the ambient handler, is a fresh draw that keeps the
-ambient state. -/
-private theorem run_simulateQ_addLift_challenge (impl : QueryImpl ambient (StateT σ ProbComp))
-    (draw : QueryImpl chal ProbComp) (c : κ) (st : σ) :
-    (simulateQ (impl.addLift draw : QueryImpl (ambient + chal) (StateT σ ProbComp))
-      (liftM ((ambient + chal).query (.inr c)))).run st = (fun x => (x, st)) <$> draw c := by
-  rw [QueryImpl.addLift_def, QueryImpl.simulateQ_add_query_right, QueryImpl.liftTarget_apply,
-    StateT.run_liftM]
-  exact LawfulMonad.bind_pure_comp _ _
-
-/-- Answering resource queries inside a program, then interpreting the program's ambient and
-challenge queries, is interpreting ambient queries beside the resource answers. -/
+/-- Interpreting deterministic resource answers beside the ambient state handler is unchanged
+by adjoining a separate challenge handler. -/
 theorem simulateQ_addLift_resources (impl : QueryImpl ambient (StateT σ ProbComp))
     (draw : QueryImpl chal ProbComp) (answer : QueryImpl resources Id)
     (program : OracleComp (ambient + resources) α) :
@@ -455,10 +387,8 @@ theorem simulateQ_addLift_resources (impl : QueryImpl ambient (StateT σ ProbCom
           QueryImpl ambient (OracleComp (ambient + chal))) answer) program) =
       simulateQ (impl.addLift answer : QueryImpl (ambient + resources) (StateT σ ProbComp))
         program := by
-  refine QueryImpl.simulateQ_simulateQ_eq_of_apply (fun q => ?_) program
-  rcases q with q | q
-  · simp
-  · exact simulateQ_pure _ _
+  simpa using simulateQ_resources
+    (impl.addLift draw : QueryImpl (ambient + chal) (StateT σ ProbComp)) answer program
 
 /-- An accepted output, read through a map, is an accepted result read through that map. -/
 private theorem exists_map_some_iff {T U : Type} (f : T → U) (L : U → Prop) (v : Option T) :
@@ -488,6 +418,83 @@ theorem iSup_sum_challengeNodesOn_le_nsmul {ε : ChallengeNode l s → ℝ≥0�
 end PathBounds
 
 section Plain
+
+/-- Fresh challenge marginals turn round-by-round soundness into soundness of the plain run
+in any lawful distribution monad, including monads with missing probability mass. -/
+theorem Verifier.soundnessWith_of_rbrSoundness {m : Type → Type v} [Monad m] [LawfulMonad m]
+    [EvalDistSemantics m] [LawfulEvalDistSemantics m]
+    {ι S T : Type} {ambient : OracleSpec ι} {s : Protocol} {V : Verifier ambient s S T}
+    {H : QueryImpl (ambient + challengeSpec plainSig s) m}
+    {input : StatementProblem S} {output : StatementProblem T}
+    {draw : QueryImpl (challengeSpec plainSig s) ProbComp}
+    {ε : ChallengeNode plainSig s → ℝ≥0∞}
+    (fresh : FreshChallenges H draw)
+    (h : Core.rbrSoundness plainSig s (input.admissible ()) (input.language ())
+      (V.validAcceptanceWith (fun q => H (.inl q)) (output.language ())) draw ε) :
+    V.soundnessWith H input output
+      (⨆ path : Path s, ∑ c ∈ challengeNodesOn plainSig s path, ε c) := by
+  obtain ⟨F, hF⟩ := h
+  intro Out stmt hadm hlang (p : Prover plainSig ambient s Out)
+  let k : (tr : PathAlong plainSig s) → Out tr →
+      OracleComp (ambient + challengeSpec plainSig s) (Observation plainSig s Out T) :=
+    fun tr out => (fun v => (⟨tr, out, v⟩ : Observation plainSig s Out T)) <$>
+      OracleComp.liftComp
+        (V.decide stmt (projectPathAlong plainSig s tr) (toPlainView s tr)).run
+        (ambient + challengeSpec plainSig s)
+  have hrun : V.run stmt p = TwoParty.Lens.run s
+      (Prover.simulate (fun q => liftM ((ambient + challengeSpec plainSig s).query (.inl q))) p)
+      (sampler plainSig s fun c => liftM ((ambient + challengeSpec plainSig s).query (.inr c)))
+        >>= fun r => k r.1 r.2.1 := by
+    unfold Verifier.run
+    refine bind_congr fun r => ?_
+    exact LawfulMonad.bind_pure_comp _ _
+  rw [hrun]
+  refine prEvent_run_le H _ s (fun sp history => F.toFun sp history stmt) draw ε
+    _ k ?_ (hF stmt hadm hlang) ?_ _
+  · intro c event
+    simpa only [simulateQ_spec_query] using fresh c event
+  · intro tr out hne
+    by_contra hpos
+    apply hne
+    apply StateFunction.escapeAlong plainSig F hadm hlang
+    apply pos_iff_ne_zero.2
+    have hdec := QueryImpl.simulateQ_liftComp_left_eq_of_apply H
+      (fun q => H (.inl q)) (fun _ => rfl)
+      (V.decide stmt (projectPathAlong plainSig s tr) (toPlainView s tr)).run
+    simpa only [k, simulateQ_map, hdec, prEvent_map] using hpos
+
+/-- Fresh round-by-round soundness bounds soundness by the sum of all node errors. -/
+theorem Verifier.soundnessWith_of_rbrSoundness_tsum {m : Type → Type v} [Monad m] [LawfulMonad m]
+    [EvalDistSemantics m] [LawfulEvalDistSemantics m]
+    {ι S T : Type} {ambient : OracleSpec ι} {s : Protocol} {V : Verifier ambient s S T}
+    {H : QueryImpl (ambient + challengeSpec plainSig s) m}
+    {input : StatementProblem S} {output : StatementProblem T}
+    {draw : QueryImpl (challengeSpec plainSig s) ProbComp}
+    {ε : ChallengeNode plainSig s → ℝ≥0∞}
+    (fresh : FreshChallenges H draw)
+    (h : Core.rbrSoundness plainSig s (input.admissible ()) (input.language ())
+      (V.validAcceptanceWith (fun q => H (.inl q)) (output.language ())) draw ε) :
+    V.soundnessWith H input output (∑' c, ε c) := fun Out stmt hadm hlang p =>
+  (soundnessWith_of_rbrSoundness fresh h Out stmt hadm hlang p).trans
+    (iSup_sum_challengeNodesOn_le_tsum ε)
+
+/-- Uniform local errors and a path length bound give soundness error `k • e`. -/
+theorem Verifier.soundnessWith_of_rbrSoundness_uniform {m : Type → Type v} [Monad m] [LawfulMonad m]
+    [EvalDistSemantics m] [LawfulEvalDistSemantics m]
+    {ι S T : Type} {ambient : OracleSpec ι} {s : Protocol} {V : Verifier ambient s S T}
+    {H : QueryImpl (ambient + challengeSpec plainSig s) m}
+    {input : StatementProblem S} {output : StatementProblem T}
+    {draw : QueryImpl (challengeSpec plainSig s) ProbComp}
+    {ε : ChallengeNode plainSig s → ℝ≥0∞}
+    {e : ℝ≥0∞} {k : ℕ}
+    (fresh : FreshChallenges H draw)
+    (h : Core.rbrSoundness plainSig s (input.admissible ()) (input.language ())
+      (V.validAcceptanceWith (fun q => H (.inl q)) (output.language ())) draw ε)
+    (hε : ∀ c, ε c ≤ e)
+    (hcount : ∀ path, (challengeNodesOn plainSig s path).card ≤ k) :
+    V.soundnessWith H input output (k • e) := fun Out stmt hadm hlang p =>
+  (soundnessWith_of_rbrSoundness fresh h Out stmt hadm hlang p).trans
+    (iSup_sum_challengeNodesOn_le_nsmul hε hcount)
 
 /-- Round-by-round soundness implies soundness for every initial state distribution. The error is
 the supremum, over shape paths, of the sum of the node errors along the path. -/
@@ -521,9 +528,10 @@ theorem Verifier.soundness_of_rbrSoundness {ι σ S T : Type} {ambient : OracleS
     refine bind_congr fun r => ?_
     exact LawfulMonad.bind_pure_comp _ _
   rw [hrun]
-  refine prEvent_run_le (impl.addLift draw) _ s (fun sp history => F.toFun sp history stmt) draw ε
-    _ k ?_ (hF stmt hadm hlang) ?_ _ st
-  · exact fun c => run_simulateQ_addLift_challenge impl draw c
+  refine prEvent_run_state_le (impl.addLift draw) _ s
+    (fun sp history => F.toFun sp history stmt) draw ε _ k ?_ (hF stmt hadm hlang) ?_ _ st
+  · intro c st event
+    simpa only [simulateQ_spec_query] using freshChallengesAt_addLift impl draw st c event
   · intro tr out st hne
     by_contra hpos
     refine hne (StateFunction.escapeAlong plainSig F hadm hlang (tr := tr) ⟨st, ?_⟩)
@@ -561,6 +569,95 @@ theorem Verifier.soundness_of_rbrSoundness_uniform {ι σ S T : Type} {ambient :
     (iSup_sum_challengeNodesOn_le_nsmul hε hcount)
 
 end Plain
+
+/-- Fresh challenge marginals turn round-by-round soundness into soundness of the oracle run
+in any lawful distribution monad, with its actual resource answers and output oracle map. -/
+theorem OracleVerifier.soundnessWith_of_rbrSoundness {m : Type → Type v}
+    [Monad m] [LawfulMonad m] [EvalDistSemantics m] [LawfulEvalDistSemantics m]
+    {ι I J S T : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
+    {A : I → Type} {B : J → Type} {inputs : OracleFamily I A} {outputs : OracleFamily J B}
+    {V : OracleVerifier ambient s S T inputs outputs}
+    {H : QueryImpl (ambient + challengeSpec oracleSig s) m}
+    {input : StatementProblem (S × (∀ i, A i))}
+    {output : StatementProblem (T × (∀ j, B j))}
+    {draw : QueryImpl (challengeSpec oracleSig s) ProbComp}
+    {ε : ChallengeNode oracleSig s → ℝ≥0∞}
+    (fresh : FreshChallenges H draw)
+    (h : Core.rbrSoundness oracleSig s (input.admissible ()) (input.language ())
+      (V.validAcceptanceWith (fun q => H (.inl q)) (output.language ())) draw ε) :
+    V.soundnessWith H input output
+      (⨆ path : Path s, ∑ c ∈ challengeNodesOn oracleSig s path, ε c) := by
+  obtain ⟨F, hF⟩ := h
+  intro Out stmt hadm hlang (p : Prover oracleSig ambient s Out)
+  let liftAmbient : QueryImpl ambient (OracleComp (ambient + challengeSpec oracleSig s)) :=
+    fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q))
+  let k : (tr : PathAlong oracleSig s) → Out tr →
+      OracleComp (ambient + challengeSpec oracleSig s)
+        (Observation oracleSig s Out (T × (∀ j, B j))) := fun tr out =>
+    (fun v => (⟨tr, out, v.map fun t => (t, (V.outputMap stmt.1 (projectPathAlong oracleSig s tr)
+        (toView s tr)).f (sumData stmt.2 (payloads s tr)))⟩ :
+        Observation oracleSig s Out (T × (∀ j, B j)))) <$>
+      simulateQ (QueryImpl.addLift liftAmbient ((sumFamily inputs
+        (pathFamily s (projectPathAlong oracleSig s tr))).behaviorOfRealizations
+          (sumData stmt.2 (payloads s tr))))
+        (V.decide stmt.1 (projectPathAlong oracleSig s tr) (toView s tr)).run
+  have hrun : V.run stmt.1 stmt.2 p = TwoParty.Lens.run s (Prover.simulate liftAmbient p)
+      (sampler oracleSig s fun c => liftM ((ambient + challengeSpec oracleSig s).query (.inr c)))
+        >>= fun r => k r.1 r.2.1 := by
+    unfold OracleVerifier.run
+    refine bind_congr fun r => ?_
+    exact LawfulMonad.bind_pure_comp _ _
+  rw [hrun]
+  refine prEvent_run_le H _ s (fun sp history => F.toFun sp history stmt) draw ε
+    _ k ?_ (hF stmt hadm hlang) ?_ _
+  · intro c event
+    simpa only [simulateQ_spec_query] using fresh c event
+  · intro tr out hne
+    by_contra hpos
+    apply hne
+    apply StateFunction.escapeAlong oracleSig F hadm hlang
+    apply pos_iff_ne_zero.2
+    simpa only [k, liftAmbient, simulateQ_map, simulateQ_resources, prEvent_map,
+      exists_map_some_iff] using hpos
+
+/-- Fresh round-by-round soundness bounds soundness by the sum of all node errors. -/
+theorem OracleVerifier.soundnessWith_of_rbrSoundness_tsum {m : Type → Type v}
+    [Monad m] [LawfulMonad m] [EvalDistSemantics m] [LawfulEvalDistSemantics m]
+    {ι I J S T : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
+    {A : I → Type} {B : J → Type} {inputs : OracleFamily I A} {outputs : OracleFamily J B}
+    {V : OracleVerifier ambient s S T inputs outputs}
+    {H : QueryImpl (ambient + challengeSpec oracleSig s) m}
+    {input : StatementProblem (S × (∀ i, A i))}
+    {output : StatementProblem (T × (∀ j, B j))}
+    {draw : QueryImpl (challengeSpec oracleSig s) ProbComp}
+    {ε : ChallengeNode oracleSig s → ℝ≥0∞}
+    (fresh : FreshChallenges H draw)
+    (h : Core.rbrSoundness oracleSig s (input.admissible ()) (input.language ())
+      (V.validAcceptanceWith (fun q => H (.inl q)) (output.language ())) draw ε) :
+    V.soundnessWith H input output (∑' c, ε c) := fun Out stmt hadm hlang p =>
+  (soundnessWith_of_rbrSoundness fresh h Out stmt hadm hlang p).trans
+    (iSup_sum_challengeNodesOn_le_tsum ε)
+
+/-- Uniform local errors and a path length bound give soundness error `k • e`. -/
+theorem OracleVerifier.soundnessWith_of_rbrSoundness_uniform {m : Type → Type v}
+    [Monad m] [LawfulMonad m] [EvalDistSemantics m] [LawfulEvalDistSemantics m]
+    {ι I J S T : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
+    {A : I → Type} {B : J → Type} {inputs : OracleFamily I A} {outputs : OracleFamily J B}
+    {V : OracleVerifier ambient s S T inputs outputs}
+    {H : QueryImpl (ambient + challengeSpec oracleSig s) m}
+    {input : StatementProblem (S × (∀ i, A i))}
+    {output : StatementProblem (T × (∀ j, B j))}
+    {draw : QueryImpl (challengeSpec oracleSig s) ProbComp}
+    {ε : ChallengeNode oracleSig s → ℝ≥0∞}
+    {e : ℝ≥0∞} {k : ℕ}
+    (fresh : FreshChallenges H draw)
+    (h : Core.rbrSoundness oracleSig s (input.admissible ()) (input.language ())
+      (V.validAcceptanceWith (fun q => H (.inl q)) (output.language ())) draw ε)
+    (hε : ∀ c, ε c ≤ e)
+    (hcount : ∀ path, (challengeNodesOn oracleSig s path).card ≤ k) :
+    V.soundnessWith H input output (k • e) := fun Out stmt hadm hlang p =>
+  (soundnessWith_of_rbrSoundness fresh h Out stmt hadm hlang p).trans
+    (iSup_sum_challengeNodesOn_le_nsmul hε hcount)
 
 section OracleVerifier
 
@@ -606,9 +703,10 @@ theorem OracleVerifier.soundness_of_rbrSoundness
     refine bind_congr fun r => ?_
     exact LawfulMonad.bind_pure_comp _ _
   rw [hrun]
-  refine prEvent_run_le (impl.addLift draw) _ s (fun sp history => F.toFun sp history stmt) draw ε
-    _ k ?_ (hF stmt hadm hlang) ?_ _ st
-  · exact fun c => run_simulateQ_addLift_challenge impl draw c
+  refine prEvent_run_state_le (impl.addLift draw) _ s
+    (fun sp history => F.toFun sp history stmt) draw ε _ k ?_ (hF stmt hadm hlang) ?_ _ st
+  · intro c st event
+    simpa only [simulateQ_spec_query] using freshChallengesAt_addLift impl draw st c event
   · intro tr out st hne
     by_contra hpos
     refine hne (StateFunction.escapeAlong oracleSig F hadm hlang (tr := tr) ⟨st, ?_⟩)

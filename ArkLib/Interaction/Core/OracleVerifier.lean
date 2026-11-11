@@ -20,6 +20,8 @@ oracles are one map containing concrete data, query simulation and their agreeme
 
 universe u
 
+universe v
+
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
 
@@ -400,5 +402,26 @@ def OracleVerifier.run {ι I J : Type u} {ambient : OracleSpec.{u, u} ι}
       ((sumFamily inputs (pathFamily s p)).behaviorOfRealizations resources))
     (V.decide stmt p view).run
   pure ⟨tr, out, verdict.map fun t => (t, (V.outputMap stmt p view).f resources)⟩
+
+section ResourceInterpretation
+
+variable {ι κ ρ α : Type} {ambient : OracleSpec ι} {chal : OracleSpec κ}
+  {resources : OracleSpec ρ}
+
+/-- Answering resource queries before interpretation agrees with interpreting them beside the
+restricted ambient handler, for any lawful target monad. -/
+theorem simulateQ_resources {m : Type → Type v} [Monad m] [LawfulMonad m]
+    (H : QueryImpl (ambient + chal) m) (answer : QueryImpl resources Id)
+    (program : OracleComp (ambient + resources) α) :
+    simulateQ H (simulateQ (QueryImpl.addLift
+      ((fun q => liftM ((ambient + chal).query (.inl q))) :
+        QueryImpl ambient (OracleComp (ambient + chal))) answer) program) =
+      simulateQ (QueryImpl.addLift (fun q => H (.inl q)) answer) program := by
+  refine QueryImpl.simulateQ_simulateQ_eq_of_apply (fun q => ?_) program
+  rcases q with q | q
+  · simp
+  · exact simulateQ_pure _ _
+
+end ResourceInterpretation
 
 end Interaction.Core

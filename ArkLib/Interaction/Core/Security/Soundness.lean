@@ -19,6 +19,8 @@ uses discrete observations, so every event is measurable.
 
 @[expose] public section
 
+universe v
+
 namespace Interaction.Core
 open PFunctor FreeM OracleComp Oracle
 open scoped ENNReal
@@ -30,6 +32,60 @@ def soundness {S Obs T : Type*} [MeasurableSpace Obs]
   ∀ stmt, input.admissible () stmt → ¬ input.language () stmt →
     ∀ adv : M.Adv stmt,
       M.outcome stmt adv {obs | ∃ t, verdict obs = some t ∧ output.language () t} ≤ ε
+
+/-- Soundness of a plain run interpreted in an arbitrary distribution monad.
+Ambient failure contributes no mass to the accepting event. -/
+abbrev Verifier.soundnessWith {m : Type → Type v} [Monad m] [EvalDistSemantics m]
+    {ι S T : Type} {ambient : OracleSpec ι} {s : Protocol}
+    (V : Verifier ambient s S T)
+    (handler : QueryImpl (ambient + challengeSpec plainSig s) m)
+    (input : StatementProblem S) (output : StatementProblem T) (ε : ℝ≥0∞) : Prop :=
+  ∀ (Out : PathAlong plainSig s → Type) stmt,
+    input.admissible () stmt → ¬ input.language () stmt →
+    ∀ p : Prover plainSig ambient s Out,
+      Pr{let obs ← simulateQ handler (V.run stmt p)}[
+        ∃ t, obs.2.2 = some t ∧ output.language () t] ≤ ε
+
+/-- A plain decision has positive probability of accepting an output in the language. -/
+def Verifier.validAcceptanceWith {m : Type → Type v} [Monad m] [EvalDistSemantics m]
+    {ι S T : Type} {ambient : OracleSpec ι} {s : Protocol}
+    (V : Verifier ambient s S T) (impl : QueryImpl ambient m) (langOut : T → Prop)
+    (stmt : S) (tr : PathAlong plainSig s) : Prop :=
+  0 < Pr{let v ← (simulateQ impl
+      (V.decide stmt (projectPathAlong plainSig s tr) (toPlainView s tr)).run)}[
+        ∃ t, v = some t ∧ langOut t]
+
+/-- Soundness of an oracle run interpreted in an arbitrary distribution monad, with the output
+oracle data read from the verifier's output map. -/
+abbrev OracleVerifier.soundnessWith {m : Type → Type v} [Monad m] [EvalDistSemantics m]
+    {ι I J S T : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
+    {A : I → Type} {B : J → Type} {inputs : OracleFamily I A} {outputs : OracleFamily J B}
+    (V : OracleVerifier ambient s S T inputs outputs)
+    (handler : QueryImpl (ambient + challengeSpec oracleSig s) m)
+    (input : StatementProblem (S × (∀ i, A i))) (output : StatementProblem (T × (∀ j, B j)))
+    (ε : ℝ≥0∞) : Prop :=
+  ∀ (Out : PathAlong oracleSig s → Type) stmt,
+    input.admissible () stmt → ¬ input.language () stmt →
+    ∀ p : Prover oracleSig ambient s Out,
+      Pr{let obs ← simulateQ handler (V.run stmt.1 stmt.2 p)}[
+        ∃ t, obs.2.2 = some t ∧ output.language () t] ≤ ε
+
+/-- An oracle decision has positive probability of accepting an output in the language,
+using the input data and the full transcript payloads to answer resource queries. -/
+def OracleVerifier.validAcceptanceWith {m : Type → Type v} [Monad m] [EvalDistSemantics m]
+    {ι I J S T : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
+    {A : I → Type} {B : J → Type} {inputs : OracleFamily I A} {outputs : OracleFamily J B}
+    (V : OracleVerifier ambient s S T inputs outputs) (impl : QueryImpl ambient m)
+    (langOut : T × (∀ j, B j) → Prop) (stmt : S × (∀ i, A i))
+    (tr : PathAlong oracleSig s) : Prop :=
+  let p := projectPathAlong oracleSig s tr
+  let view := toView s tr
+  let resources := sumData stmt.2 (payloads s tr)
+  let handler : QueryImpl (ambient + (sumFamily inputs (pathFamily s p)).spec) m :=
+    QueryImpl.addLift impl
+      ((sumFamily inputs (pathFamily s p)).behaviorOfRealizations resources)
+  0 < Pr{let v ← simulateQ handler (V.decide stmt.1 p view).run}[
+    ∃ t, v = some t ∧ langOut (t, (V.outputMap stmt.1 p view).f resources)]
 
 /-- Classical soundness uses the full class of focal strategies, including private continuations. -/
 abbrev Verifier.soundness {ι σ S T : Type} {ambient : OracleSpec ι}

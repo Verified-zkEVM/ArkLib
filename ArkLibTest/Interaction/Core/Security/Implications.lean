@@ -316,6 +316,103 @@ example (init : ProbComp Nat) :
     twoVerifier.soundness init tick drawTwo boolProblem anyOutput (2 • (1 / 4)) :=
   Verifier.soundness_of_rbrSoundness_uniform two_rbrSoundness (fun _ => le_rfl) two_card
 
+/-! ### A handler with missing probability mass -/
+
+/-- Each ambient call succeeds with probability one half, independently of the challenge. -/
+def optionalAmbient : QueryImpl counter (OptionT ProbComp) := fun _ =>
+  OptionT.mk do
+    let b ← ($ᵗ Bool : ProbComp Bool)
+    pure (if b then some 0 else none)
+
+/-- Generic implication keeps the target monad's result universe independent of run outputs. -/
+example {m : Type → Type 1} [Monad m] [LawfulMonad m] [EvalDistSemantics m]
+    [LawfulEvalDistSemantics m]
+    {ι S T : Type} {ambient : OracleSpec ι} {s : Protocol}
+    (V : Verifier ambient s S T) (H : QueryImpl (ambient + challengeSpec plainSig s) m)
+    (draw : QueryImpl (challengeSpec plainSig s) ProbComp)
+    (input : StatementProblem S) (output : StatementProblem T)
+    (ε : ChallengeNode plainSig s → ℝ≥0∞) (fresh : FreshChallenges H draw)
+    (h : rbrSoundness plainSig s (input.admissible ()) (input.language ())
+      (V.validAcceptanceWith (fun q => H (.inl q)) (output.language ())) draw ε) :
+    V.soundnessWith H input output (∑' c, ε c) :=
+  Verifier.soundnessWith_of_rbrSoundness_tsum fresh h
+
+/-- The optional handler keeps the challenge draw separate from ambient failure. -/
+def optionalHandler : QueryImpl (counter + challengeSpec plainSig coin) (OptionT ProbComp) :=
+  QueryImpl.addLift optionalAmbient draw
+
+/-- The optional challenge action has exactly the specified event marginals. -/
+theorem optionalHandler_fresh : FreshChallenges optionalHandler draw := by
+  intro c event
+  simp only [optionalHandler, QueryImpl.addLift_def, QueryImpl.add_apply_inr,
+    QueryImpl.liftTarget_apply, OptionT.prEvent_liftM]
+
+/-- This verifier accepts a true input or a true challenge. Its prover may use the failing
+ambient service even though its decision needs no ambient calls. -/
+def optionalVerifier : Verifier counter coin Bool Nat where
+  decide stmt _ view := OptionT.mk
+    (pure (if (stmt || view.val.1) = true then some 0 else none))
+
+/-- The optional verifier has the same acceptance condition as the counter verifier. -/
+theorem optionalAcceptance (stmt : Bool) (tr : PathAlong plainSig coin) :
+    optionalVerifier.validAcceptanceWith optionalAmbient (anyOutput.language ()) stmt tr ↔
+      coinVerifier.validAcceptance tick (anyOutput.language ()) stmt tr := by
+  classical
+  rw [validAcceptance_iff (fun _ => ⟨(), trivial⟩)]
+  rcases tr with ⟨x, ⟨⟩⟩
+  have key : simulateQ optionalAmbient (optionalVerifier.decide stmt _
+      (toPlainView coin ⟨x, ⟨⟩⟩)).run =
+        (pure (if (stmt || x) = true then some 0 else none) : OptionT ProbComp (Option Nat)) := rfl
+  rw [Verifier.validAcceptanceWith, key, prEvent_pure]
+  cases stmt <;> cases x <;> simp [Oracle.Problem.language, anyOutput]
+
+/-- The one-challenge certificate applies to the optional handler without a state encoding. -/
+theorem optional_rbrSoundness :
+    rbrSoundness plainSig coin (boolProblem.admissible ()) (boolProblem.language ())
+      (optionalVerifier.validAcceptanceWith optionalAmbient (anyOutput.language ())) draw
+      (fun _ => 1 / 2) := by
+  obtain ⟨F, hF⟩ := coin_rbrSoundness
+  refine ⟨{ toFun := F.toFun, root := F.root, send := F.send, leaf := ?_ }, hF⟩
+  intro sp history stmt hfalse hacc
+  exact F.leaf sp history stmt hfalse ((optionalAcceptance _ _).mp hacc)
+
+/-- Generic soundness applies in `OptionT ProbComp`, where ambient queries lose mass. -/
+theorem optional_soundness :
+    optionalVerifier.soundnessWith optionalHandler boolProblem anyOutput (1 / 2) := by
+  simpa only [one_nsmul] using
+    Verifier.soundnessWith_of_rbrSoundness_uniform optionalHandler_fresh optional_rbrSoundness
+      (fun _ => le_rfl) coin_card
+
+/-- The oracle implication also accepts a handler in the optional distribution monad.
+Its challenge premise is discharged by the separate lifted draw. -/
+example {ι I J S T : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
+    {A : I → Type} {B : J → Type} {inputs : OracleFamily I A} {outputs : OracleFamily J B}
+    (V : OracleVerifier ambient s S T inputs outputs)
+    (impl : QueryImpl ambient (OptionT ProbComp))
+    (draw : QueryImpl (challengeSpec oracleSig s) ProbComp)
+    (input : StatementProblem (S × (∀ i, A i))) (output : StatementProblem (T × (∀ j, B j)))
+    (ε : ChallengeNode oracleSig s → ℝ≥0∞)
+    (h : rbrSoundness oracleSig s (input.admissible ()) (input.language ())
+      (V.validAcceptanceWith impl (output.language ())) draw ε) :
+    V.soundnessWith
+      (impl.addLift draw : QueryImpl (ambient + challengeSpec oracleSig s) (OptionT ProbComp))
+      input output (∑' c, ε c) := by
+  apply OracleVerifier.soundnessWith_of_rbrSoundness_tsum (h := h)
+  intro c event
+  simp only [QueryImpl.addLift_def, QueryImpl.add_apply_inr, QueryImpl.liftTarget_apply,
+    OptionT.prEvent_liftM]
+
+/-- The ambient handler really loses half its mass; this is not a lossless transformer test. -/
+theorem optionalAmbient_mass : Pr{let _ ← optionalAmbient ()}[True] = 1 / 2 := by
+  rw [OptionT.prEvent_eq_run]
+  change Pr{let v ← (fun b => if b then some (0 : Nat) else none) <$>
+    ($ᵗ Bool : ProbComp Bool)}[v.elim False (fun _ => True)] = 1 / 2
+  rw [prEvent_map, prEvent_eq_evalDist_of_discrete]
+  convert uniform_true using 1
+  congr 1
+  ext b
+  cases b <;> simp
+
 end Interaction.Core.ImplicationsTests
 
 run_cmd do
@@ -325,6 +422,12 @@ run_cmd do
       ``Interaction.Core.OracleVerifier.soundness_of_rbrSoundness,
       ``Interaction.Core.OracleVerifier.soundness_of_rbrSoundness_tsum,
       ``Interaction.Core.OracleVerifier.soundness_of_rbrSoundness_uniform,
+      ``Interaction.Core.prEvent_run_le,
+      ``Interaction.Core.prEvent_run_state_le,
+      ``Interaction.Core.Verifier.soundnessWith_of_rbrSoundness,
+      ``Interaction.Core.OracleVerifier.soundnessWith_of_rbrSoundness,
+      ``Interaction.Core.ImplicationsTests.optional_soundness,
+      ``Interaction.Core.ImplicationsTests.optionalAmbient_mass,
       ``Interaction.Core.simulateQ_addLift_resources,
       ``Interaction.Core.StateFunction.escapeAlong,
       ``Interaction.Core.flip_random_prefix_le,
