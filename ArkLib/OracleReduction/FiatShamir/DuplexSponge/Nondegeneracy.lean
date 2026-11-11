@@ -16,9 +16,16 @@ verifier-challenge squeeze. Its Section-5 proof therefore uses the paired schedu
 at every claim. ArkLib's generic `ProtocolSpec` permits arbitrary directions and zero-length
 actions, so the assumptions implicit in the paper's model must be explicit in Lean.
 
-Without them, zero-length actions disappear from the sponge execution, consecutive challenges
-share one squeeze stream, and consecutive messages are not all reconstructed by BackTrack.
-The salt length remains unrestricted, including `δ = 0`.
+Without them the sponge execution changes shape:
+- a zero-length challenge (`squeeze sponge 0`) returns the sponge unchanged and queries nothing,
+  so it leaves no trace;
+- a zero-length message (`absorb sponge []`) queries nothing but sets `squeezePos := R`, so the
+  next squeeze starts a new permutation block, as after a nonempty absorb;
+- consecutive challenges share one squeeze stream;
+- consecutive messages are not all reconstructed by BackTrack.
+
+The salt length remains unrestricted, including `δ = 0`. `KeyLemma.Lemma5_1Statement` takes
+`NondegenerateRounds pSpec` as a hypothesis.
 -/
 
 @[expose] public section

@@ -27,7 +27,10 @@ instance-size bound is fixed by choosing this type, while `n` in this file is th
 count from `pSpec : ProtocolSpec n`. Likewise, `codec.decodingBias` abstracts the paper's
 `ε_cdc,i(λ,n)` values for the fixed ambient parameter instantiation.
 
-The paper-level claims and Lemmas 5.8/5.1 are intentionally deferred to a later proof-focused PR.
+The paper-level claims and Lemmas 5.8/5.1 are deferred to a later proof-focused PR. Lemma 5.1 is
+stated as the proposition `Lemma5_1Statement`, so that its hypotheses (`NondegenerateRounds`,
+`IsLemma5_1QueryBound`) and its bound (`ηStar`) have a consumer. Its "Moreover" clause (the
+`θ★` query bound of `D2SAlgo`) is part of that proposition.
 
 ## Reading guide (CO25 Section 5.8 hybrid chain)
 
@@ -926,6 +929,45 @@ abbrev IsD2SAlgoChallengeQueryBound
   exact OracleComp.IsQueryBoundP prover
     (isD2SAlgoChallengeQuery (oSpec := oSpec) (StmtIn := StmtIn) (U := U)
       (Salt := Salt) (pSpec := pSpec)) t
+
+/-! ### CO25 Lemma 5.1 as a proposition -/
+
+/-- CO25 Lemma 5.1, stated as a proposition (its proof is deferred). For a nondegenerate round
+schedule (`NondegenerateRounds`) and every `(t_h, t_p, t_{p⁻¹})`-query malicious prover `𝒫̃`
+(`IsLemma5_1QueryBound`):
+- the left experiment `Hyb_0` with the line-4 map `D2STrace` (`d2sTraceSalted`) and the right
+  experiment `Hyb_4` with `D2SAlgo` (`ProverTransform.d2sAlgo`) are `η★`-close, with `L`
+  instantiated by `L_totalRateBlocks δ pSpec` (see `ηStar`);
+- `D2SAlgo(𝒫̃)` makes at most `θ★(t_h, t_p, t_{p⁻¹})` challenge queries (the "Moreover" clause).
+
+The ambient handler `oSpecImpl` and the verifier `V` are parameters; the paper has no ambient
+oracle (take `oSpec` empty). The games compare `Option` outputs that discard `(𝕩, π, tr)` on
+rejection; see `BasicFiatShamirGameOutput`. -/
+def Lemma5_1Statement
+    [∀ i, DecidableEq (pSpec.Message i)]
+    (T_H T_P : Type) [LawfulTraceNablaImpl T_H T_P StmtIn U]
+    (oSpecImpl : QueryImpl oSpec ProbComp)
+    (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (tₕ tₚ tₚᵢ : ℕ) : Prop :=
+  NondegenerateRounds pSpec →
+    ∀ maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ,
+      IsLemma5_1QueryBound maliciousProver tₕ tₚ tₚᵢ →
+        tvDist
+            (hyb_0 (δ := δ) (Salt := Salt) (oSpec := oSpec) (StmtIn := StmtIn)
+              (StmtOut := StmtOut) (pSpec := pSpec) (U := U)
+              oSpecImpl V maliciousProver
+              (d2sTraceSalted (T_H := T_H) (T_P := T_P) (δ := δ) (Salt := Salt)
+                (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))
+            (hyb_4 (δ := δ) (Salt := Salt) (oSpec := oSpec) (StmtIn := StmtIn)
+              (StmtOut := StmtOut) (pSpec := pSpec) (U := U)
+              oSpecImpl V maliciousProver
+              (ProverTransform.d2sAlgo (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
+                (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))
+          ≤ ηStar U tₕ tₚ tₚᵢ (L_totalRateBlocks δ pSpec) codec.decodingBias
+        ∧ IsD2SAlgoChallengeQueryBound
+            (ProverTransform.d2sAlgo (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
+              (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) maliciousProver)
+            (θStar tₕ tₚ tₚᵢ)
 
 
 end KeyLemma
