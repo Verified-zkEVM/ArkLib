@@ -29,6 +29,8 @@ oracle notions are defined through the induced plain verifier `OracleVerifier.to
 
 @[expose] public section
 
+universe uK
+
 noncomputable section
 
 namespace Interaction.Core.Legacy
@@ -57,13 +59,12 @@ theorem oracleAcceptanceAgrees (impl : QueryImpl oSpec (StateT σ ProbComp))
   let : MeasurableSpace (Option StmtOut) := ⊤
   refine exists_congr fun st => ?_
   change 0 < 𝒟[StateT.run' (simulateQ (QueryImpl.addLift impl
-      ((sumFamily (family OStmtIn)
-        (pathFamily _ (projectPathAlong oracleSig _ tr))).behaviorOfRealizations
-          (sumData oStmt (payloads _ tr))))
+      ((pathResources (family OStmtIn) _ (projectPathAlong oracleSig _ tr)).answer
+        (oStmt, payloads _ tr)))
       ((embedOracleVerifier V).decide stmt (projectPathAlong oracleSig _ tr)
         (toView _ tr)).run) st]
       {v | ∃ t, v = some t ∧ p (t, ((embedOracleVerifier V).outputMap stmt
-        (projectPathAlong oracleSig _ tr) (toView _ tr)).f (sumData oStmt (payloads _ tr)))} ↔
+        (projectPathAlong oracleSig _ tr) (toView _ tr)).f (oStmt, payloads _ tr))} ↔
     ∃ t, some t ∈ support (StateT.run' (simulateQ impl
       (Option.map (fun s => (s, V.materializeOutput (oracleDecode pSpec tr).challenges oStmt
         (oracleDecode pSpec tr).messages)) <$>
@@ -265,7 +266,7 @@ theorem rbrSoundness_of_embedOracleVerifier (init : ProbComp σ)
 /-- **Round-by-round knowledge soundness of an oracle verifier, legacy to interaction layer.**
 The supplied extraction functions are kept, reindexed by legacy transcript prefixes. The
 hypothesis `hcert` gives every legacy knowledge state function of `V.toVerifier` an all-state
-terminal certificate. -/
+terminal certificate. The conclusion holds for intermediate witnesses in every universe `uK`. -/
 theorem embedOracleVerifier_rbrKnowledgeSoundness (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
     (V : _root_.OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec)
@@ -277,7 +278,8 @@ theorem embedOracleVerifier_rbrKnowledgeSoundness (init : ProbComp σ)
       (K : V.toVerifier.KnowledgeStateFunction init impl relIn relOut E),
       KnowledgeTerminalCertificate K)
     (h : V.rbrKnowledgeSoundness init impl relIn relOut ε) :
-    (embedOracleVerifier V).rbrKnowledgeSoundness impl (fun _ => True)
+    Core.OracleVerifier.rbrKnowledgeSoundness.{0, 0, uK, 0, 0, 0} (embedOracleVerifier V) impl
+      (fun _ => True)
       (fun stmt w => (stmt, w) ∈ relIn) (fun _ t w => (t, w) ∈ relOut)
       (oracleChallengeImpl ProtocolSpec.challengeQueryImpl)
       (fun c => ε (oracleChallengeRound 0 n (Nat.zero_add n) c)) :=

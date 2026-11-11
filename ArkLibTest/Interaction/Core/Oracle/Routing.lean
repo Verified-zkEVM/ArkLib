@@ -52,18 +52,45 @@ abbrev combined : OracleProtocol := firstProtocol.append (fun _ => secondProtoco
   ⟨fun _ => OracleInterface.instDefault⟩
 
 /-- The prefix resources on its only path. -/
-abbrev prefixResources := sumFamily inputs (pathFamily firstProtocol ⟨⟨⟩, ⟨⟩⟩)
+abbrev prefixResources := pathResources inputs firstProtocol ⟨⟨⟩, ⟨⟩⟩
 
 /-- Export input slot `false` plus the observable coordinate of the prefix message. -/
 def exportMap : OracleMap prefixResources exported where
-  f x _ := (show Nat from x (.inl false)) + (show Nat × Nat from x (.inr (.inl ⟨⟩))).1
+  f x _ := (show Nat from x.1 false) + (show Nat × Nat from x.2 (.inl ⟨⟩)).1
   impl _ := do
-    let a : Nat ← liftM (prefixResources.spec.query ⟨.inl false, ()⟩)
-    let b : Nat ← liftM (prefixResources.spec.query ⟨.inr (.inl ⟨⟩), ()⟩)
+    let a : Nat ← liftM (prefixResources.spec.query (.inl ⟨false, ()⟩))
+    let b : Nat ← liftM (prefixResources.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
     pure (a + b)
   law x q := by
     simp only [simulateQ_bind]
     rfl
+
+/-- Interpret the raw resource signature, recording visible input, hidden input and sent-slot
+requests distinctly. The hidden slot is present and would be recorded if it were queried. -/
+def exportTraceHandler (old hidden visible secret : Nat) :
+    QueryImpl prefixResources.spec (StateM (List Nat)) := fun q => do
+  let label := match q with
+    | .inl ⟨false, _⟩ => 0
+    | .inl ⟨true, _⟩ => 1
+    | .inr _ => 2
+  modify (· ++ [label])
+  pure (prefixResources.answer
+    ((fun b => if b then hidden else old), payloads firstProtocol ⟨(visible, secret), ⟨⟩⟩) q)
+
+/-- Every exported request reads the visible input followed by the sent oracle, exactly once.
+The complete trace omits label 1, so the hidden input is never queried, even and in particular
+when its value equals a visible answer. -/
+theorem exportMap_raw_trace (old hidden visible secret : Nat) :
+    (simulateQ (exportTraceHandler old hidden visible secret) (exportMap.impl ⟨⟨⟩, ()⟩)).run [] =
+      (old + visible, [0, 2]) := rfl
+
+/-- The hidden request is absent from the actual raw trace for every realization. -/
+theorem exportMap_hidden_not_queried (old hidden visible secret : Nat) :
+    1 ∉ ((simulateQ (exportTraceHandler old hidden visible secret)
+      (exportMap.impl ⟨⟨⟩, ()⟩)).run []).2 := by
+  rw [exportMap_raw_trace]
+  change 1 ∉ ([0, 2] : List Nat)
+  decide
 
 /-- The prefix decision records 10 and returns the observable coordinate of its message. -/
 def prefixVerifier :
@@ -72,14 +99,14 @@ def prefixVerifier :
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact do
       let _ ← liftM ((ambient + prefixResources.spec).query (.inl 10))
-      let n : Nat ← liftM ((ambient + prefixResources.spec).query (.inr ⟨.inr (.inl ⟨⟩), ()⟩))
+      let n : Nat ← liftM ((ambient + prefixResources.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
       pure n
   outputMap _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact exportMap
 
 /-- The suffix resources on its only shape path. -/
-abbrev suffixResources := sumFamily exported (pathFamily secondProtocol ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩)
+abbrev suffixResources := pathResources exported secondProtocol ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
 
 /-- The suffix records 30, reads the export and its own message, records 40 and 60, and accepts
 when the export and the message agree, claiming the prefix's returned value together with its own
@@ -90,13 +117,12 @@ def suffixVerifier : OracleVerifier ambient secondProtocol Nat (fun _ => Nat × 
     rcases p with ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
     exact OptionT.mk do
       let _ ← liftM ((ambient + suffixResources.spec).query (.inl 30))
-      let e : Nat ← liftM ((ambient + suffixResources.spec).query (.inr ⟨.inl ⟨⟩, ()⟩))
-      let m : Nat ← liftM ((ambient + suffixResources.spec).query (.inr ⟨.inr (.inl ⟨⟩), ()⟩))
+      let e : Nat ← liftM ((ambient + suffixResources.spec).query (.inr (.inl ⟨⟨⟩, ()⟩)))
+      let m : Nat ← liftM ((ambient + suffixResources.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
       let _ ← liftM ((ambient + suffixResources.spec).query (.inl 40))
       let _ ← liftM ((ambient + suffixResources.spec).query (.inl 60))
       pure (if e = m then some (stmt, m) else none)
-  outputMap _ p _ := OracleMap.embedding (sumFamily exported (pathFamily secondProtocol p))
-    (fun _ => .inl ⟨⟩)
+  outputMap _ p _ := OracleMap.fst _ _
 
 /-- The composite output map is the suffix output map after `suffixRoute`. -/
 def compatible : OracleVerifier.OutputCompatibility prefixVerifier (fun _ => suffixVerifier) where
@@ -145,23 +171,93 @@ def resultSummary (hidden secret : Nat) : Nat × Option ((Nat × Nat) × Nat) ×
   let result := observed hidden secret
   (result.1.2.1, result.1.2.2.map (fun z => (z.1, z.2 ⟨⟩)), result.2)
 
-/-! SourceRoutingExample SR1, restated: the composed oracle verifier is `OracleVerifier.append`
-with a prefix output map that exports `input false + sent.1` and hides input `true`. The verifier
-is passive, so the frozen verifier's effects 10, 30, 40 and 60 are made by the end decisions,
-after the prover's effects 1, 20 and 50. The suffix challenge is sampled (23) rather than computed
-from the export, and the frozen claim `(23, 23)` becomes `((20, 23), 23)`: the prefix's routed
-read of its own message, the suffix message, and the output data.
-
-QueryBounds 14, restated: the frozen row checks that an old query's join name survives inclusion
-into the terminal context. Names are retired, so the check is that the prefix decision's query to
-its message slot, routed by `prefixRoute` in the appended run, is answered from the prefix
-payload: the prefix returns `sent.1 = 20`, which the suffix claim carries.
-
-The statement holds for every hidden input and every secret; the proof rewrites with
-`OracleVerifier.run_append` and evaluates the two stages. -/
+/-! Additional passive composition coverage. Both verifier decisions follow the whole
+interaction. The challenge is sampled independently of resources. The disposition inventory
+records the retired export-derived message and its former schedule explicitly; it does not
+identify this example with that contract or with a produced-prefix availability certificate. -/
 example (hidden secret : Nat) : resultSummary hidden secret =
     (secret + 23 + 50, some ((20, 23), 23), [1, 20, 50, 10, 30, 40, 60]) := by
   unfold resultSummary observed composed
+  rw [OracleVerifier.run_append]
+  rfl
+
+/-- A fresh pair is sent before the suffix's public-coin challenge. -/
+@[instance_reducible] def closingSuffix : OracleProtocol :=
+  .liftBind (.oracle (Nat × Nat) firstInterface) (fun _ =>
+    .liftBind (.challenge Nat) (fun _ => .pure ⟨⟩))
+
+/-- The prefix send followed by the fresh send and challenge, in that order. -/
+abbrev closingProtocol := firstProtocol.append (fun _ => closingSuffix)
+
+/-- Resources after the fresh pair and challenge. -/
+abbrev closingResources := pathResources exported closingSuffix ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
+
+/-- The final export adds the prefix export to the fresh observable coordinate. -/
+def closingMap : OracleMap closingResources exported where
+  f x _ := x.1 ⟨⟩ + (show Nat × Nat from x.2 (.inl ⟨⟩)).1
+  impl _ := do
+    let old : Nat ← liftM (closingResources.spec.query (.inl ⟨⟨⟩, ()⟩))
+    let fresh : Nat ← liftM (closingResources.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
+    pure (old + fresh)
+  law _ _ := by
+    simp only [simulateQ_bind]
+    rfl
+
+/-- The suffix decides from its export and its fresh pair after the whole interaction. -/
+def closingVerifier : OracleVerifier ambient closingSuffix Nat (fun _ => Nat) exported
+    (fun _ => exported) where
+  decide _ p _ := by
+    rcases p with ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
+    exact do
+      let _ ← liftM ((ambient + closingResources.spec).query (.inl 30))
+      let old : Nat ← liftM ((ambient + closingResources.spec).query (.inr (.inl ⟨⟨⟩, ()⟩)))
+      let fresh : Nat ← liftM ((ambient + closingResources.spec).query
+        (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+      let _ ← liftM ((ambient + closingResources.spec).query (.inl 40))
+      let _ ← liftM ((ambient + closingResources.spec).query (.inl 60))
+      pure (old + fresh)
+  outputMap _ p _ := by
+    rcases p with ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
+    exact closingMap
+
+/-- The composite export is computed from the same prefix and suffix resources. -/
+def closingCompatible :
+    OracleVerifier.OutputCompatibility prefixVerifier (fun _ => closingVerifier) where
+  outputMap stmt p view :=
+    (closingVerifier.outputMap 0 (Path.split firstProtocol (fun _ => closingSuffix) p).2
+      (View.split firstProtocol (fun _ => closingSuffix) p view).2).comp
+        (OracleVerifier.suffixRoute prefixVerifier stmt p view)
+  agrees _ _ _ _ _ _ := rfl
+
+/-- Both concrete pairs are sent before the challenge is received; private memory survives. -/
+def closingProver (secret : Nat) : Prover oracleSig ambient closingProtocol (fun _ => Nat) :=
+  Prover.append (s₂ := fun _ => closingSuffix)
+    (do
+      let _ ← liftM (ambient.query 1)
+      pure ⟨(11, secret), pure secret⟩)
+    (fun _ memory => do
+      let _ ← liftM (ambient.query 20)
+      pure (pure ⟨(5, secret), pure fun challenge => do
+        let answer : Nat ← liftM (ambient.query 50)
+        pure (memory + (show Nat from challenge) + answer)⟩))
+
+/-- The challenge service answers 23 without querying the input or either sent pair. -/
+def closingHandler : QueryImpl (ambient + challengeSpec oracleSig closingProtocol)
+    (StateM (List Nat))
+  | .inl tag => do modify (· ++ [tag]); pure tag
+  | .inr ⟨.inl _, h⟩ => nomatch h
+  | .inr ⟨.inr ⟨_, .inl _⟩, h⟩ => nomatch h
+  | .inr ⟨.inr ⟨_, .inr ⟨_, .inl _⟩⟩, _⟩ => pure (23 : Nat)
+  | .inr ⟨.inr ⟨_, .inr ⟨_, .inr ⟨_, n⟩⟩⟩, _⟩ => n.elim
+
+/-- The final claim and export both use input 7, prefix message 11 and fresh message 5.
+The hidden input and both private coordinates remain arbitrary; no resource read selects a draw. -/
+theorem closing_source_contract (hidden secret : Nat) :
+    (fun z => (z.1.2.1, z.1.2.2.map (fun c => (c.1, c.2 ⟨⟩)), z.2))
+      ((simulateQ closingHandler
+        ((prefixVerifier.append (fun _ => closingVerifier) closingCompatible).run ()
+          (fun b => if b then hidden else 7) (closingProver secret))).run []) =
+      (secret + 23 + 50, some (23, 23), [1, 20, 50, 10, 30, 40, 60]) := by
   rw [OracleVerifier.run_append]
   rfl
 
@@ -180,7 +276,7 @@ example (hidden secret : Nat) :=
   OracleVerifier.run_append prefixVerifier (fun _ => suffixVerifier) compatible ()
     (inputData hidden) (prover secret)
 
-/-! QueryBounds 14, restated (statement level): on an appended transcript built from separate
+/-! Additional prefix-routing coverage: on an appended transcript built from separate
 prefix and suffix transcripts, the routed prefix data is the prefix transcript's own payload. -/
 
 /-- The prefix transcript with observable value 20 and a private second coordinate. -/
@@ -199,13 +295,13 @@ example (hidden secret : Nat) :
         (projectPathAlong oracleSig combined
           (PathAlong.append oracleSig firstProtocol (fun _ => secondProtocol)
             (prefixTranscript secret) suffixTranscript))).f
-        (sumData (inputData hidden) (payloads combined
+        (inputData hidden, payloads combined
           (PathAlong.append oracleSig firstProtocol (fun _ => secondProtocol)
-            (prefixTranscript secret) suffixTranscript)))⟩ :
+            (prefixTranscript secret) suffixTranscript))⟩ :
       (p : FreeM.Path firstProtocol) ×
-        (∀ i, (sumFamily inputs (pathFamily firstProtocol p)).Realization i)) =
+        (pathResources inputs firstProtocol p).Data) =
       ⟨projectPathAlong oracleSig firstProtocol (prefixTranscript secret),
-        sumData (inputData hidden) (payloads firstProtocol (prefixTranscript secret))⟩ :=
+        (inputData hidden, payloads firstProtocol (prefixTranscript secret))⟩ :=
   OracleVerifier.prefixRoute_payload (s₂ := fun _ => secondProtocol) (inputData hidden)
     (prefixTranscript secret) suffixTranscript
 
@@ -237,13 +333,13 @@ example : observed 7 = (false, 29, some (7, 7)) := by
 
 end Interaction.Core.DependentRoutingTests
 
-universe uι uI uJ v
+universe uι uI uJ v wI wJ wK
 
 /-- Ambient routing permits independent index universes and a larger lawful target monad. -/
 example {ι : Type uι} {I : Type uI} {J : Type uJ}
     {ambient : OracleSpec.{uι, 0} ι} {m : Type → Type v} [Monad m] [LawfulMonad m]
     {A : I → Type} {B : J → Type}
-    {inputs : OracleFamily.{uI, 0, 0} I A} {outputs : OracleFamily.{uJ, 0, 0} J B}
+    {inputs : OracleFamily.{uI, 0, wI} I A} {outputs : OracleFamily.{uJ, 0, wJ} J B}
     (handler : QueryImpl ambient m) (route : OracleMap inputs outputs) (data : ∀ i, A i)
     {α : Type} (program : OracleComp (ambient + outputs.spec) α) :
     simulateQ (QueryImpl.addLift handler (inputs.behaviorOfRealizations data) :
@@ -256,13 +352,13 @@ example {ι : Type uι} {I : Type uI} {J : Type uJ}
 /-- Split execution accepts large input statements and oracle indices while its final outputs
 remain in the run universe. Both output families may depend on their paths. -/
 example {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol}
-    {I : Type 1} {A : I → Type} {inputs : OracleFamily.{1, 0, 0} I A} {S : Type 3}
+    {I : Type 1} {A : I → Type} {inputs : OracleFamily.{1, 0, wI} I A} {S : Type 3}
     {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
     {J : Path s₁ → Type 2} {B : (p : Path s₁) → J p → Type}
-    {middle : (p : Path s₁) → OracleFamily.{2, 0, 0} (J p) (B p)}
+    {middle : (p : Path s₁) → OracleFamily.{2, 0, wJ} (J p) (B p)}
     {K : (p : Path s₁) → Path (s₂ p) → Type}
     {C : (p : Path s₁) → (q : Path (s₂ p)) → K p q → Type}
-    {outputs : (p : Path s₁) → (q : Path (s₂ p)) → OracleFamily.{0, 0, 0} (K p q) (C p q)}
+    {outputs : (p : Path s₁) → (q : Path (s₂ p)) → OracleFamily.{0, 0, wK} (K p q) (C p q)}
     {ambient : OracleSpec Nat}
     (V₁ : OracleVerifier ambient s₁ S T inputs middle)
     (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p))
@@ -270,3 +366,19 @@ example {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol}
     {Out : PathAlong oracleSig (s₁.append s₂) → Type}
     (prover : Prover oracleSig ambient (s₁.append s₂) Out) :=
   OracleVerifier.run_append V₁ V₂ compatible stmt data prover
+
+
+universe u uX uY dX dY
+
+/-- Ambient routing permits independent resource index and data universes. -/
+example {ι : Type uι} {ambient : OracleSpec.{uι, u} ι}
+    {m : Type u → Type v} [Monad m] [LawfulMonad m]
+    {inputs : Resources.{u, uX, dX}} {outputs : Resources.{u, uY, dY}}
+    (handler : QueryImpl ambient m) (route : OracleMap inputs outputs) (data : inputs.Data)
+    {α : Type u} (program : OracleComp (ambient + outputs.spec) α) :
+    simulateQ (QueryImpl.addLift handler (inputs.answer data) :
+        QueryImpl (ambient + inputs.spec) m)
+        (simulateQ (route.withAmbient ambient) program) =
+      simulateQ (QueryImpl.addLift handler (outputs.answer (route.f data)) :
+        QueryImpl (ambient + outputs.spec) m) program :=
+  OracleMap.simulate_withAmbient_addLift handler route data program

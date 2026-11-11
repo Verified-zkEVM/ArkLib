@@ -56,11 +56,11 @@ def queryDecision : OracleVerifier noAmbient tree Unit (fun _ => Nat) emptyFamil
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact do
       let n : Nat ← liftM (OracleSpec.query (spec :=
-        noAmbient + (sumFamily emptyFamily (pathFamily tree ⟨⟨⟩, ⟨⟩⟩)).spec)
-        (.inr ⟨.inr (.inl ⟨⟩), (3 : Nat)⟩))
+        noAmbient + (pathResources emptyFamily tree ⟨⟨⟩, ⟨⟩⟩).spec)
+        (.inr (.inr ⟨.inl ⟨⟩, (3 : Nat)⟩)))
       pure n
-  outputMap _ p _ := OracleMap.embedding (sumFamily emptyFamily (pathFamily tree p))
-    (fun _ => .inr (.inl ⟨⟩))
+  outputMap _ p _ :=
+    (OracleMap.embedding (pathFamily tree p) (fun _ => .inl ⟨⟩)).comp (OracleMap.snd _ _)
 
 example : payloadImpl tree first ⟨.inl ⟨⟩, (3 : Nat)⟩ = (8 : Nat) := rfl
 example : payloadImpl tree second ⟨.inl ⟨⟩, (3 : Nat)⟩ = (6 : Nat) := rfl
@@ -75,11 +75,11 @@ end Interaction.Core.OracleTests
 namespace Interaction.Core.OracleTests
 
 abbrev emptyTree : OracleProtocol := .pure ⟨⟩
-abbrev emptyResources := sumFamily emptyFamily (pathFamily emptyTree ⟨⟩)
+/-- The resources of the protocol with no rounds and no input oracles: both parts are empty. -/
+abbrev emptyResources := pathResources emptyFamily emptyTree ⟨⟩
 
-def emptyData : ∀ i, emptyResources.Realization i
-  | .inl i => i.elim
-  | .inr i => i.elim
+/-- The empty pair of input data and path payloads. -/
+def emptyData : emptyResources.Data := (fun i => i.elim, fun i => i.elim)
 
 /-- The prefix can return a statement obtained from an ambient query. -/
 def ambientPrefix : OracleVerifier (Unit →ₒ Bool) emptyTree Unit (fun _ => Bool)

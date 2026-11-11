@@ -44,7 +44,7 @@ def falseData : ∀ _ : Unit, Bool := fun _ => false
 abbrev bitCombined : OracleProtocol := bitFirst.append (fun _ => bitSecond)
 
 /-- The prefix decision resources. -/
-abbrev firstResources := sumFamily bits (pathFamily bitFirst ⟨⟨⟩, ⟨⟩⟩)
+abbrev firstResources := pathResources bits bitFirst ⟨⟨⟩, ⟨⟩⟩
 
 /-- The prefix decision makes the dummy request; the prefix exports its input. -/
 def bitPrefix : OracleVerifier bitAmbient bitFirst Unit (fun _ => Unit) bits (fun _ => bits) where
@@ -53,16 +53,16 @@ def bitPrefix : OracleVerifier bitAmbient bitFirst Unit (fun _ => Unit) bits (fu
     exact do
       let _ ← liftM ((bitAmbient + firstResources.spec).query (.inl false))
       pure ()
-  outputMap _ p _ := OracleMap.embedding (sumFamily bits (pathFamily bitFirst p)) .inl
+  outputMap _ p _ := OracleMap.fst _ _
 
 /-- The suffix decision resources after `guess`. -/
-abbrev secondResources (guess : Bool) := sumFamily bits (pathFamily bitSecond ⟨guess, ⟨⟩⟩)
+abbrev secondResources (guess : Bool) := pathResources bits bitSecond ⟨guess, ⟨⟩⟩
 
 /-- Export `guess ^^ pad`, reading the pad from the exported input. -/
 def xorMap (guess : Bool) : OracleMap (secondResources guess) bits where
-  f x _ := guess ^^ (show Bool from x (.inl ()))
+  f x _ := guess ^^ (show Bool from x.1 ())
   impl _ := do
-    let pad : Bool ← liftM ((secondResources guess).spec.query ⟨.inl (), ()⟩)
+    let pad : Bool ← liftM ((secondResources guess).spec.query (.inl ⟨(), ()⟩))
     pure (guess ^^ pad)
   law _ _ := by
     simp only [simulateQ_bind]
@@ -74,7 +74,7 @@ def bitSuffix : OracleVerifier bitAmbient bitSecond Unit (fun _ => Bool) bits (f
     rcases p with ⟨guess, ⟨⟩⟩
     exact do
       let pad : Bool ← liftM ((bitAmbient + (secondResources guess).spec).query
-        (.inr ⟨.inl (), ()⟩))
+        (.inr (.inl ⟨(), ()⟩)))
       let hidden : Bool ← liftM ((bitAmbient + (secondResources guess).spec).query (.inl true))
       pure (hidden ^^ pad)
   outputMap _ p _ := by
