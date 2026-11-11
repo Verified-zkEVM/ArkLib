@@ -5,7 +5,8 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Interaction.Core.Composition
-import ArkLib.Interaction.Core.Security.Soundness
+import ArkLib.Interaction.Core.Security.Knowledge
+import ArkLib.Interaction.Core.Security.RoundByRound
 
 /-!
 # Components that are not run outputs live in their own universes
@@ -16,11 +17,14 @@ below put an oracle index in `Type 1` with responses in `Type 0`, input oracle q
 `Type 1`, output oracle queries in `Type 2`, an input statement in `Type 2` and an input witness
 in `Type 1`, while moves, run outputs and oracle responses stay in `Type 0`. They typecheck
 against `Verifier`, `OracleVerifier`, `Reduction`, both appends, the oracle routing laws, oracle
-runs and the classical security models. A run returns the output oracle data `∀ j, B p j`, so
-the run's output index is in `Type 0`.
+runs, the classical security and extraction models and round-by-round knowledge state functions,
+whose intermediate witnesses lie in their own universe. A run returns the output oracle data
+`∀ j, B p j`, so the run's output index is in `Type 0`.
 -/
 
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle OracleComp MeasureTheory
+
+universe v
 
 namespace Interaction.Core.UniverseCanaryTests
 
@@ -310,5 +314,88 @@ example (input : StatementProblem (Type 1)) (witness : ∀ stmt, input.Witness (
 typechecks against the plain classical model. -/
 example (input : StatementProblem (Type 1)) : Prop :=
   reduction.verifier.soundness (pure ()) plainAmbientTrue noPlainChallenges input anyOutput 0
+
+/-! ### Extraction models with large input indices and large query types -/
+
+/-- An extractor that ignores its inputs and returns `7`. -/
+def sevenExtractor {S : Type v} :
+    Extractor.OracleStraightline smallAmbient oracleDone (fun _ : S => Nat) (fun _ => PUnit) :=
+  fun _ _ _ _ _ => pure 7
+
+/-- The extraction game of `runnable`, whose input index lies in `Type 1`, accepts on data `3` and
+extracts `7`; the ambient decision log is empty because the decision queries only its input. -/
+example :
+    (simulateQ handler (runnable.extractionGame (fun _ o => o) sevenExtractor
+      ((Type 0), fun _ => 3) idle)).2 = some 7 := rfl
+
+/-- The ambient-log run of `typeQueryVerifier`, whose input queries lie in `Type 1`, keeps the
+run's observation and two empty ambient logs. -/
+example :
+    (simulateQ handler (typeQueryVerifier.runWithAmbientLog () (fun _ => 5) idle)).2.2.isEmpty =
+      true := rfl
+
+/-- The classical straight-line extraction model of `runnable`. -/
+noncomputable def runnableExtraction :=
+  runnable.classicalStraightline (Out := fun _ => PUnit) (Wout := fun _ => PUnit)
+    (fun _ => Nat) (pure ()) ambientTrue noChallenges (fun _ o => o)
+
+/-- Straight-line extraction for `runnable` preserves the run's observation law. -/
+example (E : Extractor.OracleStraightline smallAmbient oracleDone
+      (fun _ : (Type 1) × (Type → Nat) => Nat) (fun _ => PUnit))
+    (stmt : (Type 1) × (Type → Nat)) (adv : Prover oracleSig smallAmbient oracleDone
+      (fun _ => PUnit)) :
+    (runnableExtraction.experiment E stmt adv).map Prod.fst = runnableModel.outcome stmt adv :=
+  runnable.classicalStraightline_marginal _ _ _ _ _ E stmt adv
+
+/-- The classical transcript-only extraction model of `typeQueryVerifier`, whose input queries
+lie in `Type 1` and whose output queries lie in `Type 2`. -/
+noncomputable def typeQueryExtraction :=
+  typeQueryVerifier.classicalTranscriptOnly (Out := fun _ => PUnit) (Wout := fun _ => PUnit)
+    (fun _ => Nat) (pure ()) ambientTrue noChallenges (fun _ o => o)
+
+/-- Transcript-only extraction for `typeQueryVerifier` preserves the run's observation law. -/
+example (E : Extractor.OracleTranscriptOnly smallAmbient oracleDone
+      (fun _ : Unit × (Unit → Nat) => Nat) (fun _ => PUnit))
+    (stmt : Unit × (Unit → Nat)) (adv : Prover oracleSig smallAmbient oracleDone
+      (fun _ => PUnit)) :
+    (typeQueryExtraction.experiment E stmt adv).map Prod.fst = typeQueryModel.outcome stmt adv :=
+  typeQueryVerifier.classicalTranscriptOnly_marginal _ _ _ _ _ E stmt adv
+
+/-! ### Knowledge state functions with large intermediate witnesses -/
+
+/-- A knowledge state function on a protocol with no rounds whose intermediate witnesses are
+types, in `Type 1`, while its input witness is the unit, in `Type 0`. The root extractor maps a
+type to the unit. -/
+def typeCertificate {P : PFunctor.{1, 0}} (l : PFunctor.Lens P TwoParty.Lens.rolePoly)
+    {S : Type v} (validOutput : S → PathAlong l (.pure ⟨⟩ : FreeM P PUnit) → Unit → Prop) :
+    KnowledgeStateFunction.{v, 0, 1} l (.pure ⟨⟩) S (fun _ => Unit) Unit (fun _ => True)
+      (fun _ _ => True) validOutput where
+  Witness _ _ := Type
+  toFun _ _ _ _ := True
+  extractRoot _ _ := ()
+  extractStep _ _ _ _ _ := Unit
+  extractLeaf _ _ _ _ := Unit
+  root _ _ _ _ := trivial
+  send sp _ _ _ := nomatch sp
+  leaf _ _ _ _ _ := trivial
+
+/-- Round-by-round knowledge with intermediate witnesses in `Type 1`, a small input witness and an
+input statement in `Type 2`. -/
+example : rbrKnowledgeSoundness.{2, 0, 1} plainSig done (fun (_ : Type 1) => True)
+    (fun _ (_ : Unit) => True) (fun _ _ (_ : Unit) => True) (fun c => c.val.elim) (fun _ => 0) :=
+  ⟨typeCertificate plainSig _, fun _ _ _ _ sp => nomatch sp⟩
+
+/-- The plain verifier wrapper at the same unequal universes. -/
+example : Verifier.rbrKnowledgeSoundness.{2, 0, 1} reduction.verifier plainAmbientTrue
+    (fun _ => True) (fun _ (_ : Unit) => True) (fun _ _ (_ : Unit) => True) noPlainChallenges
+    (fun _ => 0) :=
+  ⟨typeCertificate plainSig _, fun _ _ _ _ sp => nomatch sp⟩
+
+/-- The oracle verifier wrapper for `runnable`, with intermediate witnesses in `Type 1`, a small
+input witness, an input statement in `Type 2` and an input index in `Type 1`. -/
+example : OracleVerifier.rbrKnowledgeSoundness.{2, 0, 1, 1, 0, 0} runnable ambientTrue
+    (fun _ => True) (fun _ (_ : Unit) => True) (fun _ _ (_ : Unit) => True) noChallenges
+    (fun _ => 0) :=
+  ⟨typeCertificate oracleSig _, fun _ _ _ _ sp => nomatch sp⟩
 
 end Interaction.Core.UniverseCanaryTests

@@ -12,6 +12,8 @@ import ArkLibTest.Interaction.Core.Oracle
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle OracleComp MeasureTheory
 open scoped ENNReal
 
+universe v
+
 namespace Interaction.Core.SecurityTests
 
 @[instance_reducible] def problem : StatementProblem Bool where
@@ -191,9 +193,18 @@ def knowledgeState : KnowledgeStateFunction plainSig coin Bool (fun _ => Unit) U
   send _ _ _ _ _ _ h := h
   leaf _ _ _ _ h := h
 
-example : rbrKnowledgeSoundness plainSig coin (fun _ => True)
+example : rbrKnowledgeSoundness.{0, 0, 0} plainSig coin (fun _ => True)
     (fun stmt (_ : Unit) => stmt = true) (fun stmt _ (_ : Unit) => stmt = true)
     draw (fun _ => 0) := by
+  refine ⟨knowledgeState, ?_⟩
+  intro stmt _ a next sp h history
+  simp [knowledgeState]
+
+/-- The same bound holds with the intermediate witnesses lifted to any universe `v`. -/
+example : rbrKnowledgeSoundness.{0, 0, v} plainSig coin (fun _ => True)
+    (fun stmt (_ : Unit) => stmt = true) (fun stmt _ (_ : Unit) => stmt = true)
+    draw (fun _ => 0) := by
+  apply rbrKnowledgeSoundness.lift.{0, 0, 0, v}
   refine ⟨knowledgeState, ?_⟩
   intro stmt _ a next sp h history
   simp [knowledgeState]
@@ -212,7 +223,7 @@ def promisedState : KnowledgeStateFunction plainSig zero Bool (fun _ => Unit) Un
 
 /-- The promise excludes `false`, so its accepted runs need no witness. -/
 example (err : ChallengeNode plainSig zero → ℝ≥0∞) :
-    rbrKnowledgeSoundness plainSig zero (· = true) (fun b (_ : Unit) => b = true)
+    rbrKnowledgeSoundness.{0, 0, 0} plainSig zero (· = true) (fun b (_ : Unit) => b = true)
       (fun (_ : Bool) _ (_ : Unit) => True) (fun c => c.val.elim) err :=
   ⟨promisedState, fun _ _ _ _ sp => nomatch sp⟩
 
@@ -370,7 +381,8 @@ def coinKnowledge : KnowledgeStateFunction plainSig coin Bool (fun _ => Unit) Un
 
 /-- Backwards extraction fails exactly when a false statement meets a true challenge. -/
 theorem coin_rbrKnowledgeSoundness :
-    coinVerifier.rbrKnowledgeSoundness tick (fun _ => True) (fun b (_ : Unit) => b = true)
+    Verifier.rbrKnowledgeSoundness.{0, 0, 0} coinVerifier tick (fun _ => True)
+      (fun b (_ : Unit) => b = true)
       (fun _ (_ : Nat) (_ : Unit) => True) draw (fun _ => 1 / 2) := by
   refine ⟨coinKnowledge, ?_⟩
   intro stmt _ a next sp h history
@@ -500,7 +512,8 @@ example (w : Fin 8) :
 every challenge implementation. -/
 theorem payload_rbrKnowledgeSoundness
     (draw : QueryImpl (challengeSpec plainSig payloadMsg) ProbComp) :
-    payloadVerifier.rbrKnowledgeSoundness tick (fun _ => True) (fun stmt (w : Nat) => w ≤ stmt)
+    Verifier.rbrKnowledgeSoundness.{0, 0, 0} payloadVerifier tick (fun _ => True)
+      (fun stmt (w : Nat) => w ≤ stmt)
       (fun tr (_ : Nat) (_ : BoundedIndex tr) => True) draw (fun _ => 0) := by
   refine ⟨payloadKnowledge, ?_⟩
   intro _ _ a next sp h _
