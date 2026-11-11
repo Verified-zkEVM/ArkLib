@@ -20,7 +20,7 @@ Each row has exactly one status:
 - **retired:** the row names a removed mechanism. Retiring an adapter does not retire its
   mathematical observations; those have separate rows.
 - **unresolved:** the row names the exact missing parent interface and declaration. No such gap
-  prevents this branch's pure terminal/seam universe port.
+  prevents this branch's pure move, terminal or seam universe port.
 
 ## Scope and correspondence
 
@@ -37,8 +37,13 @@ imports a frozen interaction source.
 A Core certificate separates root, step and leaf backward maps. An explicit seam law relates the
 suffix root extraction to the prefix output relation. The maps and predicates retain the statement,
 full prefix payloads and supplied terminal witness. Pure maps allow independent statement, input,
-intermediate, seam and terminal universes. The ordinary-import canary uses `Type` itself as a
-`Type 1` seam and terminal carrier, without encoding either into a small type.
+intermediate, seam and terminal universes. `PrefixMoves`, the certificate, lifting, extraction,
+extraction failure, append and pure restriction laws are polymorphic in the move universe `u`,
+with `P : PFunctor.{uA, u}`, a lens to `rolePoly.{u}` and leaves `PUnit.{u + 1}`. Positions have
+their own universe `uA`; branches and leaves share the move universe as in the structural parents.
+The ordinary-import canary uses `Type` itself as a `Type 1` seam and terminal carrier, without
+encoding either into a small type. It also sends the frozen `ULift.{1} Nat` oracle payload and
+retains its dependent witness carrier (KC-318 and KC-322).
 
 The generic **plain standalone verifier** theorem is `Verifier.rbrKnowledgeSoundness_append`
 (and `_of_pure`). Its hypotheses are the components' own standalone verifier knowledge theorems.
@@ -84,54 +89,54 @@ backward maps. The VCVio pin is `fc54dd3d7691d6f5db7dc829e321a727f095bc2d`.
 
 | ID | Exact frozen assertion | Status | Exact target and correspondence |
 | --- | --- | --- | --- |
-| K-037 | [`ArkLib/Interaction/Oracle/Security/Knowledge.lean:37`][r1], `KnowledgeState` | equivalent | [`ArkLib/Interaction/Core/Security/RoundByRound.lean#L128`][r2], `KnowledgeStateFunction`. The predicate and carrier are fields indexed by statement and prefix. |
-| K-052 | [`ArkLib/Interaction/Oracle/Security/Knowledge.lean:52`][r3], `RoundExtractor` | premise-required (P2) | [`ArkLib/Interaction/Core/Security/RoundByRound.lean#L128`][r4], `KnowledgeStateFunction`. Receiver challenges no longer select subtrees. Pure terminal and seam witnesses retain arbitrary universes. |
+| K-037 | [`ArkLib/Interaction/Oracle/Security/Knowledge.lean:37`][r1], `KnowledgeState` | equivalent | [`ArkLib/Interaction/Core/Security/RoundByRound.lean#L133`][r2], `KnowledgeStateFunction`. The predicate and carrier are fields indexed by statement and prefix. |
+| K-052 | [`ArkLib/Interaction/Oracle/Security/Knowledge.lean:52`][r3], `RoundExtractor` | premise-required (P2) | [`ArkLib/Interaction/Core/Security/RoundByRound.lean#L133`][r4], `KnowledgeStateFunction`. Receiver challenges no longer select subtrees. Pure terminal and seam witnesses retain arbitrary universes. |
 | K-074 | [`ArkLib/Interaction/Oracle/Security/Knowledge.lean:74`][r5], `terminalState` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L168`][r6], `terminalWitness`. The complete cursor identifies the terminal carrier; the leaf map takes the supplied output witness into it. |
 | K-082 | [`ArkLib/Interaction/Oracle/Security/Knowledge.lean:82`][r7], `extractWitness` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L163`][r8], `extractAlong`. Backward extraction returns the input witness through its explicit root map. |
-| K-202 | [`ArkLib/Interaction/Oracle/Security/Knowledge.lean:202`][r9], `IsProverPreserving` | equivalent | [`ArkLib/Interaction/Core/Security/RoundByRound.lean#L128`][r10], `KnowledgeStateFunction`. The send field preserves the predicate through every sender backward map. |
+| K-202 | [`ArkLib/Interaction/Oracle/Security/Knowledge.lean:202`][r9], `IsProverPreserving` | equivalent | [`ArkLib/Interaction/Core/Security/RoundByRound.lean#L133`][r10], `KnowledgeStateFunction`. The send field preserves the predicate through every sender backward map. |
 | K-216 | [`ArkLib/Interaction/Oracle/Security/Knowledge.lean:216`][r11], `BadChallengeOnPath` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L188`][r12], `BadChallengeAlong`. Retains actual suffix extraction of the supplied witness. |
 | K-233 | [`ArkLib/Interaction/Oracle/Security/Knowledge.lean:233`][r13], `extraction_failure_implies_bad_challenge` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L214`][r14], `extraction_failure_implies_badChallengeAlong`. Invalid extracted input and valid output imply a receiver transition on that same witness. |
 | K-331 | [`ArkLib/Interaction/Oracle/Security/Knowledge.lean:331`][r15], `badChallenge` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L233`][r16], `badChallenge`. The eventual witness is existential inside the local challenge event. |
-| K-347 | [`ArkLib/Interaction/Oracle/Security/Knowledge.lean:347`][r17], `ChallengeSchedule` | premise-required (P1) | [`ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L183`][r18], `rbrKnowledgeSoundness_append`. Public-coin draws and node errors replace effectful receiver actions; combineDraw composes both families. |
-| K-359 | [`ArkLib/Interaction/Oracle/Security/Knowledge.lean:359`][r19], `IsLocallyBounded` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L249`][r20], `LocallyBounded`. Quantifies every admissible statement and full prefix, including unsupported histories. |
-| K-419 | [`ArkLib/Interaction/Oracle/Security/Knowledge.lean:419`][r21], `KnowledgeCertificate` | equivalent | [`ArkLib/Interaction/Core/Security/RoundByRound.lean#L154`][r22], `rbrKnowledgeSoundness`. Existence of a certificate with sender laws and local bounds; the root law is guarded by the input promise. |
-| K-433 | [`ArkLib/Interaction/Oracle/Security/Knowledge.lean:433`][r23], `TerminalRelation` | retired (bundled terminal witness equivalence) | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L1036`][r24], `toFun_terminalWitness_append`. Witness maps and relation identifications are explicit. The generic terminal composition law preserves any supplied suffix equivalence; KC-292 and KC-308 test both directions. |
+| K-347 | [`ArkLib/Interaction/Oracle/Security/Knowledge.lean:347`][r17], `ChallengeSchedule` | premise-required (P1) | [`ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L196`][r18], `rbrKnowledgeSoundness_append`. Public-coin draws and node errors replace effectful receiver actions; combineDraw composes both families. |
+| K-359 | [`ArkLib/Interaction/Oracle/Security/Knowledge.lean:359`][r19], `IsLocallyBounded` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L1057`][r20], `LocallyBounded`. Quantifies every admissible statement and full prefix, including unsupported histories. |
+| K-419 | [`ArkLib/Interaction/Oracle/Security/Knowledge.lean:419`][r21], `KnowledgeCertificate` | equivalent | [`ArkLib/Interaction/Core/Security/RoundByRound.lean#L159`][r22], `rbrKnowledgeSoundness`. Existence of a certificate with sender laws and local bounds; the root law is guarded by the input promise. |
+| K-433 | [`ArkLib/Interaction/Oracle/Security/Knowledge.lean:433`][r23], `TerminalRelation` | retired (bundled terminal witness equivalence) | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L1012`][r24], `toFun_terminalWitness_append`. Witness maps and relation identifications are explicit. The generic terminal composition law preserves any supplied suffix equivalence; KC-292 and KC-308 test both directions. |
 
 ## ArkLib/Interaction/Oracle/Security/KnowledgeAppend.lean
 
 | ID | Exact frozen assertion | Status | Exact target and correspondence |
 | --- | --- | --- | --- |
-| KA-033 | [`ArkLib/Interaction/Oracle/Security/KnowledgeAppend.lean:33`][r25], `append` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L729`][r26], `append`. An explicit seam permits separate input and output carriers. |
-| KA-048 | [`ArkLib/Interaction/Oracle/Security/KnowledgeAppend.lean:48`][r27], `terminalState_append` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L1036`][r28], `toFun_terminalWitness_append`. The composite terminal predicate equals the suffix terminal predicate on the supplied witness. |
-| KA-066 | [`ArkLib/Interaction/Oracle/Security/KnowledgeAppend.lean:66`][r29], `extractWitness_append` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L971`][r30], `extractAlong_append`. Suffix extraction precedes prefix extraction, without witness selection. |
-| KA-088 | [`ArkLib/Interaction/Oracle/Security/KnowledgeAppend.lean:88`][r31], `isProverPreserving_append` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L630`][r32], `appendToFun_send`. Every sender step preserves the composed predicate. |
-| KA-111 | [`ArkLib/Interaction/Oracle/Security/KnowledgeAppend.lean:111`][r33], `appendSchedule` | premise-required (P1) | [`ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L183`][r34], `rbrKnowledgeSoundness_append`. combineDraw combines public-coin draws and errors in the conclusion. |
-| KA-130 | [`ArkLib/Interaction/Oracle/Security/KnowledgeAppend.lean:130`][r35], `isLocallyBounded_append` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L141`][r36], `LocallyBounded.append`. Errors remain attached to their prefix or suffix challenge nodes. |
+| KA-033 | [`ArkLib/Interaction/Oracle/Security/KnowledgeAppend.lean:33`][r25], `append` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L704`][r26], `append`. An explicit seam permits separate input and output carriers. |
+| KA-048 | [`ArkLib/Interaction/Oracle/Security/KnowledgeAppend.lean:48`][r27], `terminalState_append` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L1012`][r28], `toFun_terminalWitness_append`. The composite terminal predicate equals the suffix terminal predicate on the supplied witness. |
+| KA-066 | [`ArkLib/Interaction/Oracle/Security/KnowledgeAppend.lean:66`][r29], `extractWitness_append` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L947`][r30], `extractAlong_append`. Suffix extraction precedes prefix extraction, without witness selection. |
+| KA-088 | [`ArkLib/Interaction/Oracle/Security/KnowledgeAppend.lean:88`][r31], `isProverPreserving_append` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L605`][r32], `appendToFun_send`. Every sender step preserves the composed predicate. |
+| KA-111 | [`ArkLib/Interaction/Oracle/Security/KnowledgeAppend.lean:111`][r33], `appendSchedule` | premise-required (P1) | [`ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L196`][r34], `rbrKnowledgeSoundness_append`. combineDraw combines public-coin draws and errors in the conclusion. |
+| KA-130 | [`ArkLib/Interaction/Oracle/Security/KnowledgeAppend.lean:130`][r35], `isLocallyBounded_append` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L152`][r36], `LocallyBounded.append`. Errors remain attached to their prefix or suffix challenge nodes. |
 
 ## ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean
 
 | ID | Exact frozen assertion | Status | Exact target and correspondence |
 | --- | --- | --- | --- |
-| KCO-036 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:36`][r37], `TerminalRelation.append` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L1036`][r38], `toFun_terminalWitness_append`. Preserves any supplied suffix terminal relation equivalence on the supplied witness. |
-| KCO-071 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:71`][r39], `withLeaf` | retired (verifier leaf attachment) | [`ArkLib/Interaction/Core/Security/RoundByRound.lean#L204`][r40], `Verifier.validAcceptance`. The verifier record already has its final decision; execution observations have separate rows. |
+| KCO-036 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:36`][r37], `TerminalRelation.append` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L1012`][r38], `toFun_terminalWitness_append`. Preserves any supplied suffix terminal relation equivalence on the supplied witness. |
+| KCO-071 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:71`][r39], `withLeaf` | retired (verifier leaf attachment) | [`ArkLib/Interaction/Core/Security/RoundByRound.lean#L211`][r40], `Verifier.validAcceptance`. The verifier record already has its final decision; execution observations have separate rows. |
 | KCO-081 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:81`][r41], `toCounterpartValue_withLeaf` | premise-required (P1) | [`ArkLib/Interaction/Core/Composition.lean#L120`][r42], `Verifier.append_decide_pathAlong`. Only a final decision remains; heterogeneous equality identifies the dependent output fibers. |
-| KCO-102 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:102`][r43], `run_withLeaf` | premise-required (P1) | [`ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L246`][r44], `Verifier.validAcceptance_append`. Both final decisions retain the actual intermediate ambient state. |
-| KCO-121 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:121`][r45], `withOutput` | retired (optional open-claim leaf adapter) | [`ArkLib/Interaction/Core/Security/RoundByRound.lean#L267`][r46], `OracleVerifier.validAcceptance`. Optional decisions and deterministic output maps are separate fields. |
-| KCO-131 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:131`][r47], `executeStrategies_withOutput` | premise-required (P1) | [`ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L429`][r48], `OracleVerifier.validAcceptance_append`. Acceptance uses actual final output resources. |
+| KCO-102 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:102`][r43], `run_withLeaf` | premise-required (P1) | [`ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L259`][r44], `Verifier.validAcceptance_append`. Both final decisions retain the actual intermediate ambient state. |
+| KCO-121 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:121`][r45], `withOutput` | retired (optional open-claim leaf adapter) | [`ArkLib/Interaction/Core/Security/RoundByRound.lean#L274`][r46], `OracleVerifier.validAcceptance`. Optional decisions and deterministic output maps are separate fields. |
+| KCO-131 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:131`][r47], `executeStrategies_withOutput` | premise-required (P1) | [`ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L442`][r48], `OracleVerifier.validAcceptance_append`. Acceptance uses actual final output resources. |
 | KCO-163 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:163`][r49], `toCounterpartWith_output` | premise-required (P1) | [`ArkLib/Interaction/Core/Composition.lean#L579`][r50], `OracleVerifier.simulateQ_append_run`. The passive decision fold preserves returned outputs and routed resources. |
 | KCO-191 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:191`][r51], `closedMiddle` | equivalent | [`ArkLibTest/Interaction/Core/Security/KnowledgeComposition.lean#L64`][r52], `firstVerifier`. The decision and output map return the claim and export together. |
 | KCO-202 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:202`][r53], `closedMiddle_oracles` | equivalent | [`ArkLib/Interaction/Core/OracleVerifier.lean#L166`][r54], `OracleMap.simulate_eq`. An output map’s simulation law identifies exported behavior with its pure data map. KC-093 specializes this to every prefix payload. |
 | KCO-216 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:216`][r55], `run_withLeaf_closedMiddle` | premise-required (P1) | [`ArkLib/Interaction/Core/Composition.lean#L579`][r56], `OracleVerifier.simulateQ_append_run`. Final decisions replace effectful verifier fragments. |
 | KCO-249 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:249`][r57], `executeStrategies_appendExported_withLeaf_close` | premise-required (P1) | [`ArkLib/Interaction/Core/Composition.lean#L579`][r58], `OracleVerifier.simulateQ_append_run`. Actual prefix output resources are routed before the suffix decision. |
-| KCO-342 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:342`][r59], `append` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L729`][r60], `append`. Certificate composition with an explicit seam. |
-| KCO-377 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:377`][r61], `sequentialSuffix` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L95`][r62], `comap`. Explicit input/output witness maps transport the middle relation. |
-| KCO-386 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:386`][r63], `sequential` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L183`][r64], `rbrKnowledgeSoundness_append`. The suffix covers every prefix transcript; no true middle witness is assumed. |
-| KCO-394 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:394`][r65], `extractWitness_sequential` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L971`][r66], `extractAlong_append`. The named witness maps are part of the suffix certificate; extraction then composes. |
-| KCO-426 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:426`][r67], `terminalKnowledge_sequential_iff` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L1036`][r68], `toFun_terminalWitness_append`. Composing this equivalence with the supplied suffix relation equivalence recovers the exact final relation, as in KC-292. |
+| KCO-342 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:342`][r59], `append` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L704`][r60], `append`. Certificate composition with an explicit seam. |
+| KCO-377 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:377`][r61], `sequentialSuffix` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L72`][r62], `comap`. Explicit input/output witness maps transport the middle relation. |
+| KCO-386 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:386`][r63], `sequential` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L196`][r64], `rbrKnowledgeSoundness_append`. The suffix covers every prefix transcript; no true middle witness is assumed. |
+| KCO-394 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:394`][r65], `extractWitness_sequential` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L947`][r66], `extractAlong_append`. The named witness maps are part of the suffix certificate; extraction then composes. |
+| KCO-426 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:426`][r67], `terminalKnowledge_sequential_iff` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L1012`][r68], `toFun_terminalWitness_append`. Composing this equivalence with the supplied suffix relation equivalence recovers the exact final relation, as in KC-292. |
 | KCO-460 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:460`][r69], `sequentialTerminalRelation` | equivalent | [`ArkLibTest/Interaction/Core/Security/KnowledgeComposition.lean#L511`][r70], `composite_terminal_iff`. Terminal assertions following KC-308 identify the actual final relation. |
-| KCO-489 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:489`][r71], `sequentialClosed` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L205`][r72], `rbrKnowledgeSoundness_append_of_mid`. Uses the deterministic middle statement and explicit witness maps; the oracle acceptance bridge remains a fixture proof. |
+| KCO-489 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:489`][r71], `sequentialClosed` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L218`][r72], `rbrKnowledgeSoundness_append_of_mid`. Uses the deterministic middle statement and explicit witness maps; the oracle acceptance bridge remains a fixture proof. |
 | KCO-514 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:514`][r73], `SamplesChallenges` | premise-required (P1) | [`ArkLibTest/Interaction/Core/Security/KnowledgeComposition.lean#L239`][r74], `appendSampler_eq_combineDraw`. A separate sampler uses public-coin draws; resource-dependent receiver strategies are excluded. |
-| KCO-548 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:548`][r75], `native_badChallenge_bound` | premise-required (P1) | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L241`][r76], `BoundedAt`. The local probability applies directly to sampleAt, with the witness existential inside its event. |
+| KCO-548 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:548`][r75], `native_badChallenge_bound` | premise-required (P1) | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L1049`][r76], `BoundedAt`. The local probability applies directly to sampleAt, with the witness existential inside its event. |
 | KCO-567 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:567`][r77], `samplesChallenges_mapOutput` | retired (effectful verifier-output freshness adapter) | [`ArkLibTest/Interaction/Core/Security/KnowledgeComposition.lean#L239`][r78], `appendSampler_eq_combineDraw`. Final outputs do not alter the sampler. |
 | KCO-625 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:625`][r79], `samplesChallenges_routeFragment` | retired (fragment freshness routing) | [`ArkLibTest/Interaction/Core/Security/KnowledgeComposition.lean#L239`][r80], `appendSampler_eq_combineDraw`. P1 confines resource routing to final decisions. |
 | KCO-683 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:683`][r81], `samplesChallenges_routeStrategy` | retired (strategy freshness routing) | [`ArkLibTest/Interaction/Core/Security/KnowledgeComposition.lean#L239`][r82], `appendSampler_eq_combineDraw`. The sampler is separate from final-decision resources. |
@@ -203,9 +208,9 @@ backward maps. The VCVio pin is `fc54dd3d7691d6f5db7dc829e321a727f095bc2d`.
 | KC-274 | [`ArkLibTest/Interaction/Oracle/Security/KnowledgeComposition.lean:274`][r173], `#eval truePath extraction` | equivalent | [`ArkLibTest/Interaction/Core/Security/KnowledgeComposition.lean#L476`][r174], `compositeState.extractAlong stmt₀ truePath (⟨⟨6, by decide⟩, ()⟩ : Fin 8 × Unit)`. Guarded executable result six. |
 | KC-276 | [`ArkLibTest/Interaction/Oracle/Security/KnowledgeComposition.lean:276`][r175], `#eval falsePath extraction` | equivalent | [`ArkLibTest/Interaction/Core/Security/KnowledgeComposition.lean#L481`][r176], `compositeState.extractAlong stmt₀ falsePath (⟨⟨6, by decide⟩, ()⟩ : Fin 8 × Unit)`. Guarded executable result six. |
 | KC-308 | [`ArkLibTest/Interaction/Oracle/Security/KnowledgeComposition.lean:308`][r177], `example: terminal witness value` | equivalent | [`ArkLibTest/Interaction/Core/Security/KnowledgeComposition.lean#L486`][r178], `example`. Following assertions identify the entire witness by HEq and per-shape equality, and prove exact terminal relation equivalence. |
-| KC-316 | [`ArkLibTest/Interaction/Oracle/Security/KnowledgeComposition.lean:316`][r179], `largeState` | equivalent | [`ArkLibTest/Interaction/Core/UniverseCanary.lean#L452`][r180], `largeTerminalCertificate`. Large input, intermediate, seam and terminal carriers are supported directly. The general API has independent witness universes. |
-| KC-318 | [`ArkLibTest/Interaction/Oracle/Security/KnowledgeComposition.lean:318`][r181], `largeExtractor: higher-universe oracle payload` | unresolved (Core small-move knowledge interface) | [`ArkLib/Interaction/Core/Security/RoundByRound.lean#L128`][r182], `KnowledgeStateFunction`. The inherited binder P : PFunctor.{1, 0} and lens to rolePoly.{0} fix moves to Type. OraclePos.oracle in Core/Signature.lean:48 accepts X : Type u; the knowledge API specializes u to zero. The missing parent interface is KnowledgeStateFunction over an independent move universe. The large witness part is retained by largeTerminalCertificate; this row does not claim the exact Type 1 oracle message is ported. |
-| KC-322 | [`ArkLibTest/Interaction/Oracle/Security/KnowledgeComposition.lean:322`][r183], `example: large oracle-message extraction` | unresolved (Core small-move knowledge interface) | [`ArkLibTest/Interaction/Core/UniverseCanary.lean#L452`][r184], `largeTerminalCertificate`. The pure large terminal/seam part composes without encoding, but the exact frozen run also sends a Type 1 payload. KnowledgeStateFunction in Core/Security/RoundByRound.lean fixes P : PFunctor.{1, 0}; an independently large move-universe interface is still needed for that payload. |
+| KC-316 | [`ArkLibTest/Interaction/Oracle/Security/KnowledgeComposition.lean:316`][r179], `largeState` | equivalent | [`ArkLibTest/Interaction/Core/UniverseCanary.lean#L454`][r180], `largeTerminalCertificate`. Large input, intermediate, seam and terminal carriers are supported directly. The general API has independent witness universes. |
+| KC-318 | [`ArkLibTest/Interaction/Oracle/Security/KnowledgeComposition.lean:318`][r181], `largeExtractor: higher-universe oracle payload` | equivalent | [`ArkLibTest/Interaction/Core/UniverseCanary.lean#L531`][r182], `largePayloadCertificate`. The general pure certificate receives ULift.{1} Nat in Type 1. Its terminal and post-message carriers are ULift.{2} (Fin (payload.down + 1)), retaining the full payload dependence; the backward map returns the finite witness value as ULift.{2} Nat. |
+| KC-322 | [`ArkLibTest/Interaction/Oracle/Security/KnowledgeComposition.lean:322`][r183], `example: large oracle-message extraction` | equivalent | [`ArkLibTest/Interaction/Core/UniverseCanary.lean#L554`][r184], `largePayload_extractAlong`. The ordinary-import client sends the Type 1 payload seven, supplies witness six in ULift.{2} (Fin 8), and proves that pure extraction returns six. |
 
 ## ArkLibTest/OracleReduction/MeasuredExtraction.lean
 
@@ -266,25 +271,32 @@ additional coverage, not a replacement for ME-086.
 The restoration disposition is premise-required under P2. Child branch #1483 selects `Fin 8`
 versus `Fin 9` by a public prover message, retains the plain replay's payload return on both
 challenges and keeps oracle rejection separate. No missing challenge-indexed parent output
-interface is asserted. KC-318 and KC-322 separately record the inherited small-move knowledge
-interface; they do not block large terminal or seam witnesses. No unresolved parent-interface row
-remains for those witness universes. Restoration games and the excluded multi-prefix/ordinary global APIs are outside
-the port claim above.
+interface is asserted. KC-318 and KC-322 are equivalent through the general pure move interface.
+Restoration games and the excluded multi-prefix/ordinary global APIs are outside the port claim
+above.
 
 The required checks are the targeted reverse-dependency build and guards relative to
 `feat/interaction-migrate-core`. They check Core consumers, source restrictions, frozen paths,
 imports and documentation. They do not claim a whole-library build or validation.
 
+## Remaining probabilistic move restriction
+
+This restriction affects sampling and probability bounds, not the frozen pure extraction assertions.
+
+| ID | Forcing parent declarations | Status | Exact target and limitation |
+| --- | --- | --- | --- |
+| PROB-031 | [`ProbComp : Type → Type`, pinned VCVio `Basic.lean:31`](https://github.com/Verified-zkEVM/VCVio/blob/fc54dd3d7691d6f5db7dc829e321a727f095bc2d/VCVio/OracleComp/ProbComp/Basic.lean#L31); [`ArkLib/Interaction/Core/Protocol.lean#L65`][r247], `challengeSpec` (`Core/Protocol.lean:65–67`) | unresolved (large-move probability: `ProbComp` and shared challenge/message universe) | [`ArkLib/Interaction/Core/Security/RoundByRound.lean#L89`][r248], `sampleAt`. `sampleAt`, `BoundedAt`, `LocallyBounded` and round-by-round probability bounds use the small-move instance of the general certificate. `challengeSpec` returns `Move l` in the same universe as oracle/public messages; `ProbComp` cannot sample these moves at `u > 0`. Measured specializations also require small stage inputs through `BudgetedProgram`, as recorded above. |
+
 [r1]: ../../../ArkLib/Interaction/Oracle/Security/Knowledge.lean#L37
-[r2]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L128
+[r2]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L133
 [r3]: ../../../ArkLib/Interaction/Oracle/Security/Knowledge.lean#L52
-[r4]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L128
+[r4]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L133
 [r5]: ../../../ArkLib/Interaction/Oracle/Security/Knowledge.lean#L74
 [r6]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L168
 [r7]: ../../../ArkLib/Interaction/Oracle/Security/Knowledge.lean#L82
 [r8]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L163
 [r9]: ../../../ArkLib/Interaction/Oracle/Security/Knowledge.lean#L202
-[r10]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L128
+[r10]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L133
 [r11]: ../../../ArkLib/Interaction/Oracle/Security/Knowledge.lean#L216
 [r12]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L188
 [r13]: ../../../ArkLib/Interaction/Oracle/Security/Knowledge.lean#L233
@@ -292,37 +304,37 @@ imports and documentation. They do not claim a whole-library build or validation
 [r15]: ../../../ArkLib/Interaction/Oracle/Security/Knowledge.lean#L331
 [r16]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L233
 [r17]: ../../../ArkLib/Interaction/Oracle/Security/Knowledge.lean#L347
-[r18]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L183
+[r18]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L196
 [r19]: ../../../ArkLib/Interaction/Oracle/Security/Knowledge.lean#L359
-[r20]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L249
+[r20]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L1057
 [r21]: ../../../ArkLib/Interaction/Oracle/Security/Knowledge.lean#L419
-[r22]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L154
+[r22]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L159
 [r23]: ../../../ArkLib/Interaction/Oracle/Security/Knowledge.lean#L433
-[r24]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L1036
+[r24]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L1012
 [r25]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeAppend.lean#L33
-[r26]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L729
+[r26]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L704
 [r27]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeAppend.lean#L48
-[r28]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L1036
+[r28]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L1012
 [r29]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeAppend.lean#L66
-[r30]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L971
+[r30]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L947
 [r31]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeAppend.lean#L88
-[r32]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L630
+[r32]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L605
 [r33]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeAppend.lean#L111
-[r34]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L183
+[r34]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L196
 [r35]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeAppend.lean#L130
-[r36]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L141
+[r36]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L152
 [r37]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean#L36
-[r38]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L1036
+[r38]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L1012
 [r39]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean#L71
-[r40]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L204
+[r40]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L211
 [r41]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean#L81
 [r42]: ../../../ArkLib/Interaction/Core/Composition.lean#L120
 [r43]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean#L102
-[r44]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L246
+[r44]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L259
 [r45]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean#L121
-[r46]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L267
+[r46]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L274
 [r47]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean#L131
-[r48]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L429
+[r48]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L442
 [r49]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean#L163
 [r50]: ../../../ArkLib/Interaction/Core/Composition.lean#L579
 [r51]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean#L191
@@ -334,23 +346,23 @@ imports and documentation. They do not claim a whole-library build or validation
 [r57]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean#L249
 [r58]: ../../../ArkLib/Interaction/Core/Composition.lean#L579
 [r59]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean#L342
-[r60]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L729
+[r60]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L704
 [r61]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean#L377
-[r62]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L95
+[r62]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L72
 [r63]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean#L386
-[r64]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L183
+[r64]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L196
 [r65]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean#L394
-[r66]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L971
+[r66]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L947
 [r67]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean#L426
-[r68]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L1036
+[r68]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L1012
 [r69]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean#L460
 [r70]: ../../../ArkLibTest/Interaction/Core/Security/KnowledgeComposition.lean#L511
 [r71]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean#L489
-[r72]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L205
+[r72]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L218
 [r73]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean#L514
 [r74]: ../../../ArkLibTest/Interaction/Core/Security/KnowledgeComposition.lean#L239
 [r75]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean#L548
-[r76]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L241
+[r76]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L1049
 [r77]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean#L567
 [r78]: ../../../ArkLibTest/Interaction/Core/Security/KnowledgeComposition.lean#L239
 [r79]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean#L625
@@ -454,11 +466,11 @@ imports and documentation. They do not claim a whole-library build or validation
 [r177]: ../../../ArkLibTest/Interaction/Oracle/Security/KnowledgeComposition.lean#L308
 [r178]: ../../../ArkLibTest/Interaction/Core/Security/KnowledgeComposition.lean#L486
 [r179]: ../../../ArkLibTest/Interaction/Oracle/Security/KnowledgeComposition.lean#L316
-[r180]: ../../../ArkLibTest/Interaction/Core/UniverseCanary.lean#L452
+[r180]: ../../../ArkLibTest/Interaction/Core/UniverseCanary.lean#L454
 [r181]: ../../../ArkLibTest/Interaction/Oracle/Security/KnowledgeComposition.lean#L318
-[r182]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L128
+[r182]: ../../../ArkLibTest/Interaction/Core/UniverseCanary.lean#L531
 [r183]: ../../../ArkLibTest/Interaction/Oracle/Security/KnowledgeComposition.lean#L322
-[r184]: ../../../ArkLibTest/Interaction/Core/UniverseCanary.lean#L452
+[r184]: ../../../ArkLibTest/Interaction/Core/UniverseCanary.lean#L554
 [r185]: ../../../ArkLibTest/OracleReduction/MeasuredExtraction.lean#L86
 [r186]: ../../../ArkLibTest/Interaction/Core/Security/MeasuredExtraction.lean#L74
 [r187]: ../../../ArkLibTest/OracleReduction/MeasuredExtraction.lean#L91
@@ -521,3 +533,5 @@ imports and documentation. They do not claim a whole-library build or validation
 [r244]: ../../../ArkLibTest/Interaction/Core/Security/MeasuredPathBudgets.lean#L341
 [r245]: ../../../ArkLibTest/Interaction/Oracle/Security/MeasuredPathBudgets.lean#L191
 [r246]: ../../../ArkLibTest/Interaction/Core/Security/MeasuredPathBudgets.lean#L327
+[r247]: ../../../ArkLib/Interaction/Core/Protocol.lean#L65
+[r248]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L89

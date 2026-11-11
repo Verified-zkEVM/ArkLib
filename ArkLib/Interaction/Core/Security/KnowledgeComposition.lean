@@ -16,13 +16,13 @@ claim. Plain and oracle acceptance decompositions retain the ambient state at th
 
 @[expose] public section
 
-universe uS uW uK uO uM uO₂ uS' uW' uT uI wI wJ wK uW₂
+universe uS uW uK uO uM uO₂ uS' uW' uT uI wI wJ wK uW₂ uA u
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle MeasureTheory
 open scoped ENNReal
 
-variable {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly)
+variable {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
 
 namespace KnowledgeStateFunction
 
@@ -30,7 +30,7 @@ variable {l} {S : Type uS}
 
 section restrict
 
-variable {s : FreeM P PUnit.{1}} {Win : S → Type uW} {W : S → PathAlong l s → Type uO}
+variable {s : FreeM P PUnit.{u + 1}} {Win : S → Type uW} {W : S → PathAlong l s → Type uO}
     {admissible : S →
     Prop}
   {relIn : (stmt : S) → Win stmt → Prop} {validOutput : (stmt : S) → (tr : PathAlong l s) → W stmt
@@ -48,16 +48,6 @@ def guard (F : KnowledgeStateFunction.{_, _, uK} l s S W Win admissible relIn va
   root stmt hadm w h := F.root stmt hadm w (h hadm)
   send sp history stmt ho x w h hadm := F.send sp history stmt ho x w (h hadm)
   leaf sp history stmt w h hadm := F.leaf sp history stmt w (h hadm)
-
-/-- Guarding keeps the bound at an admissible statement. -/
-theorem BoundedAt.guard {F : KnowledgeStateFunction.{_, _, uK} l s S W Win admissible relIn
-    validOutput}
-    {draw : QueryImpl (challengeSpec l s) ProbComp} {ε : ChallengeNode l s → ℝ≥0∞} {stmt : S}
-    (h : F.BoundedAt draw ε stmt) (hadm : admissible stmt) : F.guard.BoundedAt draw ε stmt :=
-  fun a next sp ho history => by
-    refine le_trans (measure_mono ?_) (h a next sp ho history)
-    rintro x ⟨wit, hbad, hgood⟩
-    exact ⟨wit, fun h' => hbad fun _ => h', hgood hadm⟩
 
 /-- Conjoin a statement predicate to all states and to the extracted input relation.
 The output obligation supplies the same predicate at every terminal cursor. -/
@@ -78,19 +68,6 @@ def condition (F : KnowledgeStateFunction.{_, _, uK} l s S W Win admissible relI
   leaf sp history stmt w h :=
     ⟨(hout stmt _ w h).1, F.leaf sp history stmt w (hout stmt _ w h).2⟩
 
-/-- Conjoining a statement predicate does not enlarge the local bad-challenge event. -/
-theorem BoundedAt.condition {F : KnowledgeStateFunction.{_, _, uK} l s S W Win admissible relIn
-    validOutput}
-    {gate : S → Prop}
-    {validOutput' : (stmt : S) → (tr : PathAlong l s) → W stmt tr → Prop}
-    {hout : ∀ stmt tr w, validOutput' stmt tr w → gate stmt ∧ validOutput stmt tr w}
-    {draw : QueryImpl (challengeSpec l s) ProbComp} {ε : ChallengeNode l s → ℝ≥0∞} {stmt : S}
-    (h : F.BoundedAt draw ε stmt) : (F.condition gate hout).BoundedAt draw ε stmt := by
-  intro a next sp ho history
-  refine le_trans (measure_mono ?_) (h a next sp ho history)
-  rintro x ⟨w, hbad, hgood⟩
-  exact ⟨w, fun h' => hbad ⟨hgood.1, h'⟩, hgood.2⟩
-
 /-- Pull back statements and output witnesses, and map the extracted input witnesses. -/
 def comap {S' : Type uS'} {Win' : S' → Type uW'} {W' : S' → PathAlong l s → Type uO₂}
     (f : S' → S) (F : KnowledgeStateFunction.{_, _, uK} l s S W Win admissible relIn validOutput)
@@ -110,6 +87,40 @@ def comap {S' : Type uS'} {Win' : S' → Type uW'} {W' : S' → PathAlong l s �
   send sp history stmt := F.send sp history (f stmt)
   leaf sp history stmt w h := F.leaf sp history (f stmt) _ (hout stmt _ w h)
 
+end restrict
+
+variable {P : PFunctor.{1, 0}} {l : PFunctor.Lens P rolePoly}
+
+section restrictBounds
+
+variable {s : FreeM P PUnit.{1}} {Win : S → Type uW}
+  {W : S → PathAlong l s → Type uO} {admissible : S → Prop}
+  {relIn : (stmt : S) → Win stmt → Prop}
+  {validOutput : (stmt : S) → (tr : PathAlong l s) → W stmt tr → Prop}
+
+/-- Guarding keeps the bound at an admissible statement. -/
+theorem BoundedAt.guard {F : KnowledgeStateFunction.{_, _, uK} l s S W Win admissible relIn
+    validOutput}
+    {draw : QueryImpl (challengeSpec l s) ProbComp} {ε : ChallengeNode l s → ℝ≥0∞} {stmt : S}
+    (h : F.BoundedAt draw ε stmt) (hadm : admissible stmt) : F.guard.BoundedAt draw ε stmt :=
+  fun a next sp ho history => by
+    refine le_trans (measure_mono ?_) (h a next sp ho history)
+    rintro x ⟨wit, hbad, hgood⟩
+    exact ⟨wit, fun h' => hbad fun _ => h', hgood hadm⟩
+
+/-- Conjoining a statement predicate does not enlarge the local bad-challenge event. -/
+theorem BoundedAt.condition {F : KnowledgeStateFunction.{_, _, uK} l s S W Win admissible relIn
+    validOutput}
+    {gate : S → Prop}
+    {validOutput' : (stmt : S) → (tr : PathAlong l s) → W stmt tr → Prop}
+    {hout : ∀ stmt tr w, validOutput' stmt tr w → gate stmt ∧ validOutput stmt tr w}
+    {draw : QueryImpl (challengeSpec l s) ProbComp} {ε : ChallengeNode l s → ℝ≥0∞} {stmt : S}
+    (h : F.BoundedAt draw ε stmt) : (F.condition gate hout).BoundedAt draw ε stmt := by
+  intro a next sp ho history
+  refine le_trans (measure_mono ?_) (h a next sp ho history)
+  rintro x ⟨w, hbad, hgood⟩
+  exact ⟨w, fun h' => hbad ⟨hgood.1, h'⟩, hgood.2⟩
+
 /-- Pulling back statements and witness maps keeps the original local bound. -/
 theorem BoundedAt.comap {S' : Type uS'} {Win' : S' → Type uW'} {W' : S' → PathAlong l s → Type uO₂}
     {f : S' → S} {F : KnowledgeStateFunction.{_, _, uK} l s S W Win admissible relIn validOutput}
@@ -122,7 +133,7 @@ theorem BoundedAt.comap {S' : Type uS'} {Win' : S' → Type uW'} {W' : S' → Pa
     (h : F.BoundedAt draw ε (f stmt)) :
     (F.comap f inputMap outputMap hout).BoundedAt draw ε stmt := h
 
-end restrict
+end restrictBounds
 
 section security
 
@@ -162,6 +173,8 @@ theorem LocallyBounded.append
 end security
 
 end KnowledgeStateFunction
+
+variable {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly)
 
 section security
 
