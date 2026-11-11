@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Interaction.Core.Oracle.LoggedExecution
+import ArkLib.Interaction.Core.Oracle.PrefixResources
 import ArkLib.Interaction.Core.Oracle.Routing
 import ArkLibTest.Interaction.Core.Oracle.DependentRouting
 import VCVio.OracleComp.Runtime
@@ -873,3 +874,211 @@ example {ι I : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtoco
     Sigma.fst <$> simulateQ handler (V.runWithLog stmt data prover) =
       simulateQ handler (V.run stmt data prover) :=
   OracleVerifier.simulateQ_runWithLog_erase V handler stmt data prover
+
+namespace Interaction.Core.LoggedExecutionTests
+
+/-- Read per-slot provenance from the same stateful scheduling fixture as the aggregate test. -/
+def tracedPhaseSummary :=
+  (fun result =>
+    (result.output.phases.map (fun phase =>
+      (phase.prefix.length, phase.party, phase.queries.map (·.1))),
+      result.output.observation.2.1, result.output.observation.2.2.map (·.1), result.state)) <$>
+    (digits phasedChallenges).run (phaseVerifier.runWithTrace () seven phaseProver)
+
+/-- The passive schedule retains every prover boundary and gives the decision its own phase. -/
+theorem phase_trace_contract : tracedPhaseSummary = pure
+    ([(0, .sender, [9, 9, 1]), (0, .receiver, []), (1, .sender, [4]), (1, .receiver, []),
+      (2, .sender, [5]), (2, .receiver, []), (3, .sender, []), (3, .receiver, []),
+      (3, .receiver, [2, 3, 6, 7])], 23, some 31, 2102563478) := by
+  kernel_rfl
+
+/-- The produced scheduling trace retains actual public challenges and hidden payloads. -/
+def actualPhaseTrace := simulateQ (QueryImpl.addLift (fun n => (n : Id Nat)) phasedChallenges)
+  (phaseVerifier.runWithTrace () seven phaseProver)
+
+/-- Reading actual prefixes observes the sampled bit and the concrete sent payload. -/
+theorem actual_phase_prefixes :
+    (actualPhaseTrace.phases[4]'(by decide)).prefix =
+      FullPrefix.cons true (FullPrefix.cons true .here) ∧
+    actualPhaseTrace.terminalPhase.prefix =
+      FullPrefix.cons true (FullPrefix.cons true (FullPrefix.cons (17 : Nat) .here)) := by
+  constructor <;> kernel_rfl
+
+/-- An explicit setup retains its own slot before the same sends and terminal output. -/
+def phaseSetup : OracleComp ambient (Prover oracleSig ambient phased (fun _ => Nat)) := do
+  let _ ← liftM (ambient.query 9)
+  let _ ← liftM (ambient.query 9)
+  pure (do
+    let _ ← liftM (ambient.query 1)
+    pure ⟨true, do
+      let _ ← liftM (ambient.query 4)
+      pure fun _ => do
+        let _ ← liftM (ambient.query 5)
+        pure ⟨(17 : Nat), pure 23⟩⟩)
+
+/-- Execute the explicitly separate setup and interaction in the same ambient world. -/
+def setupPhaseTrace := simulateQ
+  (QueryImpl.addLift (fun n => (n : Id Nat)) phasedChallenges)
+  (phaseVerifier.runWithSetupTrace () seven phaseSetup)
+
+/-- Setup and first-send query groups stay separate, at the same actual empty prefix. -/
+theorem setup_phase_trace_contract : setupPhaseTrace.phases.map (fun phase =>
+    (phase.prefix.length, phase.party, phase.queries.map (·.1))) =
+      [(0, .sender, [9, 9]), (0, .sender, [1]), (0, .receiver, []),
+        (1, .sender, [4]), (1, .receiver, []), (2, .sender, [5]), (2, .receiver, []),
+        (3, .sender, []), (3, .receiver, []), (3, .receiver, [2, 3, 6, 7])] := by
+  kernel_rfl
+
+/-- A fixed public announcement followed by a terminal prover slot. -/
+@[instance_reducible] def fixedMessage : OracleProtocol :=
+  .liftBind (.message Unit) (fun _ => .pure ⟨⟩)
+
+/-- Place the same ambient request either before the message or in the terminal prover slot. -/
+def moveQuery (early : Bool) : Prover oracleSig ambient fixedMessage (fun _ => Nat) := do
+  if early then let _ ← liftM (ambient.query 5)
+  pure ⟨(), do
+    if !early then let _ ← liftM (ambient.query 5)
+    pure 7⟩
+
+/-- The decision makes no queries and exports the unchanged input. -/
+def fixedVerifier :
+    OracleVerifier ambient fixedMessage Unit (fun _ => Nat) inputs (fun _ => exported) where
+  decide _ _ _ := pure 31
+  outputMap _ _ _ := OracleMap.fst _ _
+
+/-- Ordinary observations, including the whole transcript and private output, are identical. -/
+theorem moved_query_same_run :
+    fixedVerifier.run () seven (moveQuery true) = fixedVerifier.run () seven (moveQuery false) := by
+  kernel_rfl
+
+/-- Aggregate logs cannot distinguish which prefix contained the query. -/
+theorem moved_query_same_log :
+    fixedVerifier.runWithLog () seven (moveQuery true) =
+      fixedVerifier.runWithLog () seven (moveQuery false) := by
+  kernel_rfl
+
+/-- Interpret a trace using the tag as its answer; this protocol has no challenge nodes. -/
+def movedQueryTrace (early : Bool) := simulateQ
+  (QueryImpl.addLift (fun n => (n : Id Nat))
+    (fun c => by
+      rcases c with ⟨n, h⟩
+      rcases n with _ | ⟨_, n⟩
+      · cases h
+      · exact n.elim))
+  (fixedVerifier.runWithTrace () seven (moveQuery early))
+
+/-- The actual query prefixes differ even though all aggregate observations coincide. -/
+theorem moved_query_different_prefixes :
+    ((movedQueryTrace true).phases.filter (fun phase => !phase.queries.isEmpty)).map
+        (fun phase => phase.prefix.length) = [0] ∧
+    ((movedQueryTrace false).phases.filter (fun phase => !phase.queries.isEmpty)).map
+        (fun phase => phase.prefix.length) = [1] := by
+  constructor <;> kernel_rfl
+
+/-- Two oracle sends with a fixed shape provide actual join and terminal boundaries. -/
+@[instance_reducible] def twoOracles : OracleProtocol :=
+  .liftBind (.oracle Nat OracleInterface.instDefault) (fun _ =>
+    .liftBind (.oracle Nat OracleInterface.instDefault) (fun _ => .pure ⟨⟩))
+
+/-- The sent payloads and private result are distinct. -/
+def twoOracleProver : Prover oracleSig ambient twoOracles (fun _ => Nat) :=
+  pure ⟨1, pure ⟨2, pure 3⟩⟩
+
+/-- Read the old payload twice and then the fresh payload, retaining the full decision log. -/
+def twoOracleVerifier :
+    OracleVerifier ambient twoOracles Unit (fun _ => Nat) inputs (fun _ => exported) where
+  decide _ p _ := by
+    rcases p with ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
+    let spec := ambient + (pathResources inputs twoOracles ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩).spec
+    exact do
+      let a : Nat ← liftM (spec.query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+      let b : Nat ← liftM (spec.query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+      let c : Nat ← liftM (spec.query (.inr (.inr ⟨.inr (.inl ⟨⟩), ()⟩)))
+      pure (a + b + c)
+  outputMap _ _ _ := OracleMap.fst _ _
+
+/-- This fixed two-send protocol has no challenge draws. -/
+def twoOracleDraw : QueryImpl (challengeSpec oracleSig twoOracles) Id
+  | ⟨.inl _, h⟩ => nomatch h
+  | ⟨.inr ⟨_, .inl _⟩, h⟩ => nomatch h
+  | ⟨.inr ⟨_, .inr ⟨_, n⟩⟩, _⟩ => n.elim
+
+/-- Execute the strategies once to obtain the phase artifacts and their raw source log. -/
+def twoOracleTrace := simulateQ (QueryImpl.addLift (fun n => (n : Id Nat)) twoOracleDraw)
+  (twoOracleVerifier.runWithTrace () seven twoOracleProver)
+
+/-- The first suffix prover slot is the passive join phase. -/
+def joinPhase : SlotPhase ambient twoOracles := twoOracleTrace.phases[2]'(by decide)
+
+/-- The final decision is its own terminal phase under P1. -/
+def terminalPhase : SlotPhase ambient twoOracles := twoOracleTrace.terminalPhase
+
+/-- The selected join is an actual phase of the produced execution. -/
+theorem joinPhase_mem : joinPhase ∈ twoOracleTrace.phases := List.getElem_mem _
+
+/-- The final verifier phase belongs to the same produced execution. -/
+theorem terminalPhase_mem : terminalPhase ∈ twoOracleTrace.phases :=
+  twoOracleTrace.terminalPhase_mem
+
+/-- The actual join prefix contains the first sent payload and stops before the second. -/
+theorem joinPhase_prefix : joinPhase.prefix = FullPrefix.cons (1 : Nat) .here := by
+  kernel_rfl
+
+/-- The actual terminal prefix contains both concrete payloads. -/
+theorem terminalPhase_prefix : terminalPhase.prefix =
+    FullPrefix.cons (1 : Nat) (FullPrefix.cons (2 : Nat) .here) := by
+  kernel_rfl
+
+/-- The actual join includes into the actual terminal context. -/
+def producedInclusion : FullPrefix.Extends joinPhase.prefix terminalPhase.prefix :=
+  .cons (1 : Nat) (.here _)
+
+/-- The old canonical name remains unchanged by the actual join-to-terminal inclusion. -/
+theorem joinPhase_name : terminalPhase.prefix.name
+    (FullPrefix.includeIndex producedInclusion (.inl ⟨⟩)) =
+      joinPhase.prefix.name (.inl ⟨⟩) := FullPrefix.includeIndex_name _ _
+
+/-- The already sent oracle is available at the join, and the second oracle is still unavailable. -/
+theorem joinPhase_availability :
+    joinPhase.prefix.Available (.inl ⟨⟩) ∧
+      ¬ joinPhase.prefix.Available (.inr ⟨⟨⟩, .inl ⟨⟩⟩) := by
+  constructor
+  · exact ⟨.inl ⟨⟩, rfl⟩
+  · rintro ⟨i, hi⟩
+    rcases i with _ | impossible
+    · cases hi
+    · exact impossible.elim
+
+/-- The terminal context makes the newly sent oracle available under a distinct name. -/
+theorem terminalPhase_availability :
+    terminalPhase.prefix.Available (.inr ⟨⟨⟩, .inl ⟨⟩⟩) ∧
+      terminalPhase.prefix.name (.inl ⟨⟩) ≠
+        terminalPhase.prefix.name (.inr (.inl ⟨⟩)) := by
+  constructor
+  · exact ⟨.inr (.inl ⟨⟩), rfl⟩
+  · exact Sum.noConfusion
+
+/-- The phase artifact retains the exact old/old/fresh log, private result and closed verdict. -/
+theorem phase_source_log_contract :
+    twoOracleTrace.decisionQueries.snd =
+      [⟨.inr ⟨.inl ⟨⟩, ()⟩, (1 : Nat)⟩, ⟨.inr ⟨.inl ⟨⟩, ()⟩, (1 : Nat)⟩,
+        ⟨.inr ⟨.inr (.inl ⟨⟩), ()⟩, (2 : Nat)⟩] ∧
+    twoOracleTrace.observation.2.1 = 3 ∧
+      twoOracleTrace.observation.2.2.map (·.1) = some 4 := by
+  constructor
+  · kernel_rfl
+  · constructor <;> kernel_rfl
+
+/-- The phase projection is the existing logged execution, including its raw source queries. -/
+example : OracleVerifier.TracedRun.logView <$>
+    twoOracleVerifier.runWithTrace () seven twoOracleProver =
+    twoOracleVerifier.runWithLog () seven twoOracleProver :=
+  twoOracleVerifier.runWithTrace_logView () seven twoOracleProver
+
+#print axioms OracleVerifier.runWithTrace_erase
+#print axioms OracleVerifier.runWithTrace_logView
+#print axioms OracleVerifier.runWithTrace_prefixes
+#print axioms FullPrefix.familyInclusion_query
+#print axioms FullPrefix.contextInclusion_name
+
+end Interaction.Core.LoggedExecutionTests

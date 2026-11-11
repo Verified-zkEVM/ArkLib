@@ -318,3 +318,37 @@ run extracts `w.val`.
 
 This keeps to record D7, whose problems already index witness types by the claim; D7 fixes no
 constant output witness type for either notion.
+
+## 19. Produced per-slot provenance under the passive schedule
+
+**Status: equivalent for produced prefix, owner, query-group and log correspondence assertions;
+premise-required for intermediate verifier actions retired by P1.**
+`Oracle/SlotTrace.lean` defines `runSlotTrace` and `OracleVerifier.runWithTrace`;
+`Oracle/Provenance.lean` supplies their erasure and interpretation laws. Each executed
+participant slot records the actual preceding moves and ordered query/answer log. Ownership is
+derived from the slot constructor. The final verifier decision is its own terminal phase;
+`runWithSetupTrace` also retains an explicitly separate prover setup action.
+
+`runSlotTrace_log` concatenates slot logs to the existing interaction logger.
+`runWithLog` is the full-log projection of the trace runner.
+`runWithTrace_logView`, `runWithTrace_ambientLog` and `runWithTrace_erase` recover the existing
+full logged, ambient logged and ordinary executions exactly. `phases_queries` states ordered
+ambient-log concatenation, and `simulateQ_runWithTrace_logView` preserves the correspondence under
+lawful interpreters, including stateful runtimes. The existing full-log universe restriction in
+entry 18 applies to this full-log trace result as well; prefix resources themselves retain
+independent input-data, input-query and oracle-node-query universes.
+
+`Oracle/PrefixResources.lean` defines available payload families at actual prefixes, intrinsic
+node names, prefix-resource inclusion and typed query inclusion. `includeQuery_name` and
+`familyInclusion_query` relate canonical naming to actual query routing;
+`pathResourcesInclusion_data` identifies completed-prefix data with the payloads used by the
+verifier. `runWithTrace_prefixes` certifies that each produced phase precedes the actual completed
+transcript, and `available_at_terminal` transports its availability certificate. `joinToTerminal_name` preserves names from an appended protocol's actual seam to its
+terminal prefix. The append route continues to use `prefixRoute_payload` and `splitOutputs`.
+
+The acceptance client keeps the aggregate tests and adds per-slot runtime observations, actual
+join and terminal membership, canonical availability and future-slot exclusion. Its distinguishing
+test moves one ambient request across a fixed public message: ordinary observations and aggregate
+logs remain equal, while the traced query prefixes differ. P1 retires intermediate effectful
+verifier actions and their former query groups; it does not retire prover slots or their prefixes.
+The disposition inventory records those qualifications separately.

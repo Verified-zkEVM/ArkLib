@@ -34,6 +34,8 @@ The status is one of equivalent, premise-required, retired or unresolved.
 
 | Entry | Departure | Status |
 | --- | --- | --- |
+| 19 | Produced per-slot prefix, owner and query provenance with exact log erasure, in `Oracle/SlotTrace.lean`, `Oracle/Provenance.lean` and `Oracle/PrefixResources.lean` | equivalent |
+| 19 | P1 retires intermediate verifier queries and their former phase assignments; prover slots and their prefixes remain | premise-required |
 | 18 | Input data, input queries and oracle-node queries have independent universes; families specialize the general resource API | equivalent: `Resources` inputs remove the realization/response coupling, and `OracleProtocol.{u, q}` separates node queries from moves |
 | 18 | Run outputs and a prover's ambient index remain in the monad universe `u` | equivalent: the retained D2 runner contract is `m : Type u → Type u`; neither P1 nor P2 changes this contract |
 | 18 | The full-log runner returns only small resource-query logs; ambient-log execution supports arbitrary resource-query universes | unresolved: a parent logging interface that returns large query indices through the small computation monad is missing |
@@ -102,4 +104,5 @@ tree only. `Legacy/OracleKnowledge.lean` closes it, and the entry is removed.
 
 The [source-to-port inventory](logged-execution-disposition.md) lists each frozen acceptance
 assertion, its exact port or missing interface, and the assertions retired by the approved passive
-verifier and fixed-shape premises. Its unresolved rows remain migration obligations.
+verifier and fixed-shape premises. The produced provenance rows are equivalent under the passive schedule. Its premise-required
+rows identify the intermediate verifier actions and phase assignments retired by P1.
