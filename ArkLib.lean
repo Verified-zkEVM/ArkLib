@@ -716,6 +716,7 @@ public import ArkLib.Interaction.Core.Legacy.Verifier
 public import ArkLib.Interaction.Core.LegacyAppend
 public import ArkLib.Interaction.Core.Oracle.Cost
 public import ArkLib.Interaction.Core.Oracle.LoggedExecution
+public import ArkLib.Interaction.Core.Oracle.ResourceOps
 public import ArkLib.Interaction.Core.Oracle.Routing
 public import ArkLib.Interaction.Core.OracleVerifier
 public import ArkLib.Interaction.Core.Protocol
