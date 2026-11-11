@@ -108,4 +108,17 @@ verifier and fixed-shape premises. The produced provenance rows are equivalent u
 schedule. There is no separate recursive slot executor: instrumented strategies run through `TwoParty.Lens.run`, and ordinary,
 full-trace and ambient-trace APIs share `OracleVerifier.executeWith`. Erasure specializes a
 general runner naturality law and writer laws. The premise-required rows identify the intermediate
-verifier actions and phase assignments retired by P1.
+verifier actions and phase assignments retired by P1. Its unresolved rows remain migration obligations.
+
+## Stage composition and oracle execution acceptance clients
+
+The [stage and execution inventory](stage-execution-disposition.md) lists each frozen assertion of
+the claim, composition, core-run, execution and dependent-reduction clients and each replaced
+ordered-execution law, with its exact port, the premise that retires part of it, or the removed
+mechanism it belonged to. The frozen ordered execution decided each stage before the next one and
+skipped the later stages after a rejection; the port composes passive stages, runs every
+interaction before the decisions, and selects later stages by shape paths only. The inventory
+also records the universe placement of stage chains. Its one unresolved row, the split of a chain
+at an arbitrary stage, remains a migration obligation: protocol associativity exists in PolyFun,
+and the missing interface is a reassociation law for `OracleVerifier.append` with its path, view,
+routing and certificate transport.
