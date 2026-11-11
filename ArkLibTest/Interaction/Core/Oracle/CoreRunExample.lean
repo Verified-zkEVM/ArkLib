@@ -17,27 +17,16 @@ the same run. A stateful logger exposes the exact effect order.
 
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
   OracleComp
-open Interaction.Core.LoggedExecutionTests (inputs seven pairSend pairResources)
+open Interaction.Core.LoggedExecutionTests (inputs exported seven pairSend pairResources closeMap)
 
 namespace Interaction.Core.CoreRunExampleTests
 
 /-- Observable ambient events. -/
 abbrev ambient : OracleSpec Nat := Nat →ₒ Unit
 
-/-- The output data adds the input to the observable coordinate of the sent pair. -/
-def outputMap : OracleMap pairResources inputs where
-  f x _ := (show Nat from x.1 ()) + (show Nat × Nat from x.2 (.inl ⟨⟩)).1
-  impl _ := do
-    let old : Nat ← liftM (pairResources.spec.query (.inl ⟨(), ()⟩))
-    let sent : Nat ← liftM (pairResources.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
-    pure (old + sent)
-  law _ _ := by
-    simp only [simulateQ_bind]
-    rfl
-
 /-- The decision records 1, records 2, reads the sent oracle, and accepts with it or rejects. -/
 def verifier (accept : Bool) : OracleVerifier ambient pairSend Unit (fun _ => Nat) inputs
-    (fun _ => inputs) where
+    (fun _ => exported) where
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact OptionT.mk do
@@ -47,7 +36,7 @@ def verifier (accept : Bool) : OracleVerifier ambient pairSend Unit (fun _ => Na
       pure (if accept then some sent else none)
   outputMap _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
-    exact outputMap
+    exact closeMap
 
 /-- The prover makes the `setup` events and event 0, sends `(message, hidden)`, and keeps
 `hidden` as private output. -/

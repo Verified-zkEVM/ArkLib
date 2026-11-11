@@ -275,9 +275,10 @@ closed stages (`ExecutionInterface`, `ClosedStage`, `OrderedExecution.run` in
   (`foldStages_preserves_measure`). The frozen laws are stated for `OracleComp`; these hold in
   every monad the proofs allow.
 - `StageInterface` is a claim interface: a statement type, an oracle family with its data, and a
-  private type. Claims are concrete data, as record D6 fixes. The family's query and answer types
-  live in their own universe, and a closed stage may change that universe between `I` and `J`, as
-  the path-indexed resources of `OracleVerifier` allow.
+  private type. Claims are concrete data, as record D6 fixes. The family's query types have their
+  own universe, and a closed stage may change the query universe between `I` and `J`, as the
+  path-indexed resources of `OracleVerifier` allow. Answer types stay in the computation universe
+  `u` (entry 18).
 - `ClosedStage ambient I J` pairs a protocol, its challenge draws in `OracleComp ambient`, an
   honest prover and a passive oracle verifier from `I` to `J`. `ClosedStage.run` is the core run
   `OracleVerifier.run` with the challenges answered by the draws; it returns the accepted output

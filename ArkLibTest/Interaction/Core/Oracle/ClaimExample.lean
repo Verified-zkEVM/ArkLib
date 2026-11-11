@@ -25,11 +25,10 @@ namespace Interaction.Core.ClaimExampleTests
     { Query := Unit
       toOC := { spec := fun _ => Nat, impl := fun _ value => value.1 } }
 
--- ClaimExample 1, restated: the frozen row compares two closed claims. Claims are concrete data,
--- so the restated row compares the behavior of the two realizations: the unobservable tag
--- vanishes.
-example : tagged.behaviorOfRealizations (fun _ => (7, true)) =
-    tagged.behaviorOfRealizations (fun _ => (7, false)) := rfl
+-- ClaimExample 1, restated: the frozen row compares two closed claims. A closed claim is a
+-- statement with the behavior of the realizations: the unobservable tag vanishes.
+example : ((7 : Nat), tagged.behaviorOfRealizations (fun _ => (7, true))) =
+    ((7 : Nat), tagged.behaviorOfRealizations (fun _ => (7, false))) := rfl
 
 /-- Claims are a statement with concrete data for the tagged family. -/
 def claims : ClaimFamily Unit := ⟨fun _ => Nat × (∀ i, tagged.Realization i)⟩
@@ -49,6 +48,30 @@ def answerProblem : Problem claims where
 -- ClaimExample 2, restated: the claim-dependent witness relation holds on the concrete claim
 -- with statement 7 and tagged data `(7, true)`.
 example : answerProblem.language () (7, fun _ => (7, true)) :=
+  ⟨⟨7, by decide⟩, rfl, rfl⟩
+
+/-- Closed claims: a statement with arbitrary deterministic answers for the tagged family, which
+need not come from any realization. -/
+def closedClaims : ClaimFamily Unit := ⟨fun _ => Nat × tagged.Behavior⟩
+
+/-- The observable answer of a closed claim equals its statement. -/
+def observedClosed (c : Nat × tagged.Behavior) : Prop := c.2 ⟨(), ()⟩ = c.1
+
+/-- The same claim-dependent witness relation, over closed claims. -/
+def closedProblem : Problem closedClaims where
+  Witness := fun _ claim => Fin (claim.1 + 1)
+  admissible := fun _ claim => observedClosed claim
+  rel := fun _ claim wit => observedClosed claim ∧ wit.val = claim.1
+  rel_admissible := fun _ _ _ h => h.1
+
+-- The frozen relation reads closed claims; on concrete data it is the relation above.
+example (s : Nat) (x : ∀ i, tagged.Realization i) :
+    answerProblem.language () (s, x) ↔
+      closedProblem.language () (s, tagged.behaviorOfRealizations x) := Iff.rfl
+
+-- ClaimExample 2, at the frozen relation: the closed claim of statement 7 and tagged data
+-- `(7, true)` is in the language.
+example : closedProblem.language () (7, tagged.behaviorOfRealizations fun _ => (7, true)) :=
   ⟨⟨7, by decide⟩, rfl, rfl⟩
 
 /-- Language membership depends on the data only through its behavior. -/
@@ -111,5 +134,29 @@ example {I : Type} {A : I → Type} {In : OracleFamily I A} (a b : OracleMap In 
     (s : Nat) (x : ∀ i, A i) :
     answerProblem.language () (s, a.f x) ↔ answerProblem.language () (s, b.f x) := by
   exact language_congr s _ _ (funext fun q => (a.law x q).symm.trans ((ho x q).trans (b.law x q)))
+
+-- ClaimExample 4, at full strength: for an arbitrary source specification, an arbitrary virtual
+-- program `view` for the tagged queries and an arbitrary deterministic source handler, closing the
+-- claim with substituted programs equals closing the original programs with the evaluated view.
+example {I : Type} {spec : OracleSpec I} (view : QueryImpl tagged.spec (OracleComp spec))
+    (impl : QueryImpl spec Id) :
+    (((7 : Nat), QueryImpl.compose impl (QueryImpl.compose view repeated.impl)) :
+        Nat × tagged.Behavior) =
+      (7, QueryImpl.compose (QueryImpl.compose impl view) repeated.impl) := by
+  congr 1
+  funext q
+  exact (QueryImpl.simulateQ_compose impl view (repeated.impl q)).symm
+
+-- ClaimExample 5, at full strength: for an arbitrary source specification, two claims made of a
+-- statement and virtual programs, with equal statements and equal answers under every
+-- deterministic source handler, close under any handler to inputs with the same membership in
+-- the frozen closed-claim language.
+example {I : Type} {spec : OracleSpec I} (a b : Nat × QueryImpl tagged.spec (OracleComp spec))
+    (hs : a.1 = b.1)
+    (ho : ∀ impl : QueryImpl spec Id, QueryImpl.compose impl a.2 = QueryImpl.compose impl b.2)
+    (impl : QueryImpl spec Id) :
+    closedProblem.language () (a.1, QueryImpl.compose impl a.2) ↔
+      closedProblem.language () (b.1, QueryImpl.compose impl b.2) := by
+  rw [hs, ho impl]
 
 end Interaction.Core.ClaimExampleTests

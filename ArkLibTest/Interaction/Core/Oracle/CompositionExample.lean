@@ -192,9 +192,9 @@ example (mid : Bool) (value hidden : Nat) :
         some ((if decide (hidden > 0) then 100 else 200) + value, fun _ => value % 2 == 0)⟩) :=
   rfl
 
--- CompositionExample 3 to 5 are ported in `StagesExample`: the stage family resolves its indices
--- (`stages_zero`, `stages_one`), and the ordered run of the family runs each stage only after the
--- previous one accepts (`run_three`, for three stages extending the frozen two). The rows below
+-- CompositionExample 3 to 5 are ported in `StagesExample`: the two-stage family resolves its
+-- indices (`twoStages_zero`, `twoStages_one`), and its fold runs the second stage only after the
+-- first accepts (`run_two`; `run_three` extends this to three stages). The rows below
 -- are the companion for the binary composition of the same two stages, a different execution: it
 -- runs both interactions, then the prefix decision, then the suffix decision only after prefix
 -- acceptance. This is `OracleVerifier.run_append` at this fixture and the ordinary whole prover.

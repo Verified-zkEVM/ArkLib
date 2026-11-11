@@ -221,8 +221,8 @@ theorem foldStages_preserves_measure {ι : Type w} {spec : OracleSpec.{w, u} ι}
 end Fold
 
 /-- A boundary between stages: a public statement with a concrete oracle family, and a separate
-private prover state. The query and answer types of the oracle interfaces live in their own
-universe `uQ`. -/
+private prover state. The query types of the oracle interfaces have their own universe `uQ`;
+their answer types stay in the computation universe `u`. -/
 structure StageInterface where
   /-- Public statement type. -/
   Stmt : Type u

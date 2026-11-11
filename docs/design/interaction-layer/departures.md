@@ -99,3 +99,10 @@ tree only. `Legacy/OracleKnowledge.lean` closes it, and the entry is removed.
 The [source-to-port inventory](logged-execution-disposition.md) lists each frozen acceptance
 assertion, its exact port or missing interface, and the assertions retired by the approved passive
 verifier and fixed-shape premises. Its unresolved rows remain migration obligations.
+
+## Stage fold and oracle execution acceptance clients
+
+The [stage and execution inventory](stage-execution-disposition.md) lists each frozen assertion of
+the claim, composition, core-run, execution and dependent-reduction clients and each replaced
+ordered-execution law, with its exact port, the premise that retires part of it, or the removed
+mechanism it belonged to. It also records the universe placement of stage interfaces.

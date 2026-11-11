@@ -15,8 +15,10 @@ prover and verifier. The first stage reads the input oracle, decides its parity 
 input plus 11. The second stage takes the `Bool` statement, lets the prover choose a `Nat` or a
 `Bool` message, and exports the parity of what it read. The third stage takes the `Nat`
 statement and the `Bool` oracle, draws a challenge through an ambient event, checks the prover's
-response, and exports the negation of the `Bool` oracle. Each stage changes the statement type,
-the oracle data type and the private type.
+response, and exports the negation of the `Bool` oracle. The statement type changes at every
+stage: `Unit`, then `Bool`, then `Nat`, then `Bool × Nat`. The oracle data changes from `Nat` to
+`Bool` at the second stage. The private state changes from `Nat` to a pair at the second stage
+and to a triple at the third.
 
 A stateful logger detects reordered, duplicated or skipped effects. The fold decides each stage
 before the next one starts, so its history is `[0, 1, 2, 3, 4, 5, 6]`. The binary composition of
@@ -386,7 +388,8 @@ example : observedTwo false 7 40 = (none, [0, 1]) := rfl
 
 /-! ## Three heterogeneous stages
 
-The third stage samples a challenge and changes all three types again. -/
+The third stage samples a challenge. It changes the statement from `Nat` to `Bool × Nat` and the
+private state from a pair to a triple, and keeps the `Bool` oracle data. -/
 
 /-- The fold of the three stages. -/
 def run (accept : Bool) :=
