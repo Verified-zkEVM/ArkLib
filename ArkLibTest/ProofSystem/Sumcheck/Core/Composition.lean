@@ -111,7 +111,7 @@ theorem run_append_bilinear {Mid : PathAlong oracleSig (round K 1) → Type}
           tail))) :
     ((checkVerifier ambient (Spec.polynomialFamily K 2 1)
         (foldHead (roundCheck K 1 2 D₂ ambient)) fun _ p _ => inputSlot _ p).append
-        (fun _ => foldVerifier K 1 ambient (Spec.polynomialFamily K 2 1) 1
+        (fun _ => legacyFoldVerifier K 1 ambient (Spec.polynomialFamily K 2 1) 1
           (Spec.StatementRound K 2 ∘ Fin.succ) fun i => roundCheck K 1 2 D₂ ambient i.succ)
         (foldCompatibility K 1 ambient _ 1 _ _)).run ⟨1, Fin.elim0⟩ (fun _ => bilinear)
         (Interaction.Core.Prover.append (s₂ := fun _ => protocol K 1 1) (Out := Out) p f) =

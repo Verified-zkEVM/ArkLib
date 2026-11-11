@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.ProofSystem.Sumcheck.Core.SingleRound
+public import ArkLib.ProofSystem.Sumcheck.Core.MessageTree
 
 /-! # The fixed Sumcheck tree
 
@@ -23,10 +24,8 @@ variable (R : Type) [CommSemiring R] (deg : ℕ)
 
 /-- The `n`-round Sumcheck protocol: `n` copies of `round R deg`. -/
 @[reducible]
-def protocol : ℕ → OracleProtocol.{0}
-  | 0 => .pure ⟨⟩
-  | n + 1 => .liftBind (.oracle (R⦃≤ deg⦄[X]) inferInstance) fun _ =>
-      .liftBind (.challenge R) fun _ => protocol n
+def protocol (n : ℕ) : OracleProtocol.{0} :=
+  Interpreted.protocol R R⦃≤ deg⦄[X] (fun q r => q.val.eval r) n
 
 /-- One more round is one oracle node and one challenge node before the remaining rounds. -/
 theorem protocol_succ (n : ℕ) : protocol R deg (n + 1) =
@@ -46,6 +45,13 @@ theorem protocolPath_eq : ∀ (n : ℕ) (p : Path (protocol R deg n)), p = proto
     rfl
 
 variable {R deg}
+
+/-- Splitting one round from a replicated protocol recovers the remaining shape path. -/
+theorem split_protocol_succ_suffix {k : ℕ} (msg : R⦃≤ deg⦄[X]) (r : R)
+    (tail : PathAlong oracleSig (protocol R deg k)) :
+    (Path.split (protocol R deg 1) (fun _ => protocol R deg k)
+      (projectPathAlong oracleSig (protocol R deg (k + 1)) ⟨msg, r, tail⟩)).2 =
+        projectPathAlong oracleSig (protocol R deg k) tail := split_round_suffix msg r tail
 
 /-- Every full transcript projects to the unique shape path, whatever its messages and
 challenges. -/

@@ -350,9 +350,9 @@ semirings. The probabilistic bounds add `IsDomain`, finiteness and uniform sampl
 that constant one sums to two over `[0, 0]`, to one over `[0]`, and passes the native final
 decision with repeated points and target two. The native tests audit the theorem axioms.
 
-#1488 owns interval endpoints and builds `intervalVerifier` from `foldVerifier`. The exact-row
-Sumcheck disposition marks interval execution, projection and append clients as child-owned;
-full-run theorems do not close them. P1 and P2 explain changed abort and shape assertions.
+#1488 implements interval endpoints with `intervalVerifier` built from native `foldVerifier`.
+The exact-row Sumcheck disposition gives interval execution, projection and append targets;
+their full-run corollaries preserve the parent statements. P1 and P2 explain changed abort and shape assertions.
 Behavior-guarantee assertions remain unresolved pending the corresponding parent interface.
 
 `Interaction.Core.Prover.simulate_joinSlot` belongs beside `Prover.simulate` in
@@ -371,44 +371,51 @@ soundness statements.
 
 ## 23. Sumcheck ports
 
-**Plan.** The frozen Sumcheck assertions include interval execution, a univariate standalone
-round through a virtual projection, and two rounds through an exported oracle. Decisions OQ4,
-OQ11, OQ16 and OQ18 assign their ports to D7 after C2. Entries 19 and 21 belong to other D commits;
-D7 uses 20.
+**Plan.** The frozen assertions quantify over interval endpoints, projected input behavior and
+composition through exported oracles. This entry follows the parent's entries through 22.
 
-**Code.** `Sumcheck/Core/SingleRound.lean` supplies `projectionMap` with
-`projectedRoundPolynomial` as its data map, `simulateProjectedRoundPolynomial` as its query
-implementation, and `simulateProjectedRoundPolynomial_eq` as its law. There is no second
-univariate protocol. `Core/Composition.lean` supplies `projectedVerifier`, whose output map
-composes that projection with the input-slot embedding. Its statement retains the accumulated
-challenges; its output oracle is the univariate projected polynomial. The accepted verdict
-satisfies the simple evaluation relation, and with the original input it satisfies the next
-`Spec.relationRound`.
+**Code.** `Sumcheck/Core/Fold.lean` implements passive native checks. `Interval` specializes
+those checks to every `start + count ≤ n`. `IntervalCompleteness` proves support, perfect and
+measure completeness for that full range. `IntervalAdaptive` supplies current-statement
+challenge callbacks through an actual shared-state handler. `IntervalSoundness` proves native
+round-by-round suffix soundness for exactly `start + count = n`, then applies the parent's
+uniform implication with `count` challenges and error `count * (deg / |R|)`. Lists retain all
+repetitions; embeddings specialize the same proofs. `intervalVerifier_full_run` identifies the
+zero-start full interval with the parent's native indexed verifier without changing its theorems.
 
-`run_append_verifier` states Protocol #7 at full `n + 1`, including an effectful suffix constructor
-in `Prover.append` and the actual `OracleVerifier.append`. `foldVerifier` uses the existing legacy
-decision fold, allowing its suffix statement family to start at round 1. It adds no interval
-runner or soundness theorem.
+`FoldComposition.run_append_public_intervalVerifier` compares actual public one-round and
+suffix interval verifier runs. It transports the midpoint and endpoint statements explicitly,
+retains the transcript, original polynomial and private output, and permits arbitrary effectful
+provers. `Projection` constructs the native projected oracle map and its derived query handler.
+`projectedExecute_closed` identifies returned behavior with that handler;
+`projectedExecute_related` proves its evaluation claim. `Behavior` handles arbitrary original
+input behavior at the empty interval and proves its final remaining-sum relation is evaluation.
+`BehaviorComposition.run_append_behaviorIntervalVerifier` extends the public append equation
+to arbitrary original evaluation behavior. `IntervalRoundSoundness` proves the actual one-round
+probability and measure bounds at every variable position, including intermediate endpoints.
+`ComputableProjection` computes indexed CompPoly projections, retaining repeated domain points.
+`ComputableInterval` constructs the honest computational strategy and proves its interpretation,
+actual execution equality and completeness. `ComputableSoundness` transfers the native suffix
+bound to every computational-message prover with shared ambient state.
+`Interpreted` and `InterpretedExecution` provide generic message interfaces and preserve both
+prover slots, each public draw and the terminal computation under evaluation-preserving message
+interpretation. Legacy `Spec` projections and honest prover comparisons are isolated in
+`LegacyProjection` and `LegacyProtocol`; native security does not depend on them.
 
-The routing test uses `ZMod 17` polynomials, matching C's concrete fixtures, with natural-number
-ambient event answers and an arbitrary private `hidden : Nat`. It preserves the recorded query
-order `[1, 3, 2, 4]`, accepted claim `(10, 10)` and exact private output `hidden + 110`. Polynomial
-arithmetic is in the field; private output arithmetic does not wrap. As D5 requires, a prefix
-rejection still runs both interactions, then skips the suffix decision. The frozen early-abort
-trace `[3]` and private output `hidden + 50` are replaced by the full trace and `hidden + 110`.
-Suffix rejection retains the same full trace.
+The routing fixture uses `Nat`, with semiring-general polynomial export and routing laws.
+Explicit deterministic handlers produce query order `[1, 3, 2, 4]`, accepted claim `(10, 10)` and
+private output `hidden + 110`. A prefix rejection still runs both interactions under P1, then
+skips the suffix decision. It therefore retains the full trace and output rather than the
+frozen early-abort trace `[3]` and output `hidden + 50`. Suffix rejection also retains the full
+trace. Interval tests cover nonzero starts, zero counts, repeated domains and rejection.
 
-`Spec.polynomialFamily` replaces the former interaction namespace and C's duplicate `polyFamily`.
-The old interaction name is a documented plain alias for the untouched frozen layer and runtime
-script until D9. `Spec.relationRound_last_iff` is the production source of the final evaluation
-relation. The new tests keep standard-axiom guards and also check relations on the actual
-returned verdicts of the projected and embedded runs.
+**Premises.** P1 moves all resource queries to the final decision and restricts verifier moves
+to public coins. P2 prevents challenges and oracle messages from selecting shape. The
+[exact disposition table](../interaction-layer/sumcheck.md#migration-disposition) names these
+premises on changed abort and shape rows. It records the full endpoint ranges and exact targets;
+a full-run theorem does not replace an arbitrary interval theorem.
 
-**Why.** These restatements implement the approved passive decision boundary and the full-`n`
-execution choice. The projection construction and multivariate evaluation remain noncomputable
-mathematical views inherited from `Spec`; the generic executable carrier is D8's task under
-OQ17. No frozen assertion is silently retired. The
-[Sumcheck disposition table](../interaction-layer/sumcheck.md#migration-disposition) names each
-port and the existing B coverage. Generic routing, composition/runtime soundness and implications
-that are absent from this base wait on D1/D5/D6; they are listed separately there, without
-copying modules from those branches.
+The merged parent supplies generic routing and soundness implications. Constructor, projection
+and transport equations replace this branch's added transparency commands. Existing parent
+transparency settings remain unchanged. Mathematical polynomial projections remain
+noncomputable; the generic interface and deterministic execution use computable carriers.

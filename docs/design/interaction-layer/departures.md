@@ -60,13 +60,13 @@ These entries continue the numbering for Sumcheck in the interaction layer. They
 | Entry | Departure |
 | --- | --- |
 | [20](sumcheck.md#20-the-transferred-completeness-is-in-its-own-module) | The transferred completeness is in its own module, `LegacyCompleteness`. |
-| [21](sumcheck.md#21-the-verifier-has-no-interval-start) | Full-run verifiers have no interval start; #1488 owns interval endpoints and composition. |
+| [21](sumcheck.md#21-full-run-and-interval-verifier-interfaces) | The parent keeps its full-run verifier; #1488 adds arbitrary interval endpoints and public interval composition. |
 
-Entry 21 records full-run ownership here and interval ownership in #1488. The
-[exact-row disposition](sumcheck.md#migration-disposition) keeps interval execution, projection
-and append clients child-owned, and marks behavior-guarantee interfaces unresolved. Native
-full-run, committed and randomized soundness now use the parent implication directly over
-arbitrary indexed domains and lists with repetitions.
+Entry 21 distinguishes the unchanged full-run interface from the arbitrary interval interface.
+The [exact-row disposition](sumcheck.md#migration-disposition) now names native interval,
+projection and append targets. The parent's behavior-guarantee interface gaps remain unresolved.
+Both full-run and suffix soundness use the parent implication over indexed domains, including
+lists with repetitions.
 
 Entry [19](../interaction-rebuild/IMPLEMENTATION-NOTES.md#19-round-by-round-soundness-implies-soundness-for-lawful-distribution-monads)
 records the generic soundness implication. The
@@ -74,18 +74,17 @@ records the generic soundness implication. The
 statement and test, explains prefix-indexed freshness, and links the classical specialization laws.
 The implication applies to lawful distribution monads, including optional computations.
 
-Entry 18 restates interval assertions at full `n`. D7 now covers the projection map and its
-standalone execution, the appended program equality, exported-oracle routing, and the production
-final-relation lemma. [`sumcheck.md`](sumcheck.md#migration-disposition) gives the row-by-row
-accounting and identifies the generic rows that wait on D1/D5/D6.
+The interval implementation retains arbitrary `start` and `count` rather than replacing them
+with the full run. Its boundary, projection and composition equations preserve original behavior
+and prover outputs. P1 and P2 explain changed decision timing and public abort shape.
 
 ## Sumcheck ports: entry 23
 
 | Entry | Departure |
 | --- | --- |
-| [23](../interaction-rebuild/IMPLEMENTATION-NOTES.md#23-sumcheck-ports) | Sumcheck ports: full-`n` append, projected standalone output, passive rejection, field-valued polynomials with natural-number private state, and the neutral polynomial-family name. |
+| [23](../interaction-rebuild/IMPLEMENTATION-NOTES.md#23-sumcheck-ports) | Sumcheck ports: arbitrary interval completeness, native suffix soundness, public interval append, projected behavior, generic message interpretation and routing over `Nat`. |
 
-Entries 19 and 21 belong to other part-D commits.
+Entries 19–22 retain their parent numbering; the interval work uses entry 23.
 
 ## The oracle correspondence gap and its resolution
 

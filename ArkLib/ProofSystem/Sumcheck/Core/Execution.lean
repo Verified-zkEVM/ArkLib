@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.Protocol
+public import ArkLib.ProofSystem.Sumcheck.Core.LegacyProtocol
 public import ArkLib.ProofSystem.Sumcheck.Spec.General
 public import ArkLib.Interaction.Core.LegacyAppend
 public import ArkLib.ProofSystem.Sumcheck.Spec.PolynomialInterface

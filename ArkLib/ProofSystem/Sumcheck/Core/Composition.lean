@@ -17,10 +17,10 @@ legacy round check `roundCheck` and the projection map `projectionMap` as output
 standalone round `projectedVerifier`: its output oracle is the univariate round polynomial, read
 from the multivariate input through the projection.
 
-`foldVerifier` is the passive verifier of any number of rounds for a family of statement types
+`legacyFoldVerifier` is the passive verifier of any number of rounds for a family of statement types
 and per-round checks. The Sumcheck verifier is its instance at the legacy round checks
-(`verifier_eq_foldVerifier`). Its statement family need not start at round `0`, so the remaining
-rounds after the first are a `foldVerifier` from the round-`1` statement.
+(`verifier_eq_legacyFoldVerifier`). Its statement family need not start at round `0`. The remaining
+rounds after the first are a `legacyFoldVerifier` from the round-`1` statement.
 
 The main results are:
 
@@ -30,7 +30,8 @@ The main results are:
 * `run_append_checkVerifier`: the run of a single round appended to any verifier, which runs both
   interactions, then the round's check and, only after it accepts, the suffix decision on the
   round's output oracle and the suffix messages;
-* `run_append_foldVerifier` and `run_append_verifier`: one round appended to the remaining rounds
+* `run_append_legacyFoldVerifier` and `run_append_verifier`: append one round to the remaining
+  rounds
   runs as the verifier of all rounds, as programs, including against a prover composed by
   `Prover.append`.
 
@@ -176,14 +177,6 @@ section SplitView
 
 variable {R : Type} [CommSemiring R] {deg : ℕ} {s : OracleProtocol}
 
-/-- The view of a round followed by `s` splits into the round's view and the view of `s`. -/
-theorem split_toView_round (msg : R⦃≤ deg⦄[X]) (chal : R) (tail : PathAlong oracleSig s) :
-    View.split (round R deg) (fun _ => s) _
-        (toView ((round R deg).append fun _ => s) ⟨msg, ⟨chal, tail⟩⟩) =
-      (toView (round R deg) ⟨msg, ⟨chal, ⟨⟩⟩⟩, toView s tail) := by
-  have h := splitFiber_val viewSig (round R deg) (fun _ => s) _
-    (show Fiber viewSig _ _ from toView ((round R deg).append fun _ => s) ⟨msg, ⟨chal, tail⟩⟩)
-  exact Prod.ext (Subtype.ext h.1) (Subtype.ext (eq_of_heq h.2))
 
 end SplitView
 
@@ -196,29 +189,6 @@ variable {R : Type} [CommSemiring R] {deg : ℕ} {ι : Type} (ambient : OracleSp
   {s : OracleProtocol} {S T U : Type}
 
 
-/-- The first round of a transcript of a round followed by `s`. -/
-def appendHead (tr : PathAlong oracleSig ((round R deg).append fun _ => s)) :
-    PathAlong oracleSig (round R deg) :=
-  ⟨tr.1, ⟨tr.2.1, ⟨⟩⟩⟩
-
-/-- The transcript of `s` after the first round. -/
-def appendTail (tr : PathAlong oracleSig ((round R deg).append fun _ => s)) :
-    PathAlong oracleSig s :=
-  tr.2.2
-
-/-- The first round of a run of a round followed by `s` sees the inputs and its own message. -/
-theorem prefixRoute_round (x : ∀ i, A i) (msg : R⦃≤ deg⦄[X]) (chal : R)
-    (tail : PathAlong oracleSig s) :
-    (OracleVerifier.prefixRoute (inputs := inputs) (s₁ := round R deg) (s₂ := fun _ => s)
-        (projectPathAlong oracleSig _ ⟨msg, ⟨chal, tail⟩⟩)).f
-        ((x, payloads ((round R deg).append fun _ => s) ⟨msg, ⟨chal, tail⟩⟩)) =
-      (x, payloads (round R deg) ⟨msg, ⟨chal, ⟨⟩⟩⟩) := by
-  refine Prod.ext ?_ ?_
-  · rfl
-  · funext i
-    rcases i with i | i
-    · rfl
-    · exact i.elim
 
 variable (check : S → (Spec.SingleRound.pSpec R deg).Challenges →
       OptionT (OracleComp [(Spec.SingleRound.pSpec R deg).Message]ₒ) T)
@@ -316,7 +286,7 @@ def foldLift {s : OracleProtocol} (p : Path s) :
 /-- The passive verifier of `k` rounds with statement family `S` and round checks `V`: the legacy
 decision fold on the view's challenges, with every message query routed to its oracle node. The
 output oracle is the input. -/
-def foldVerifier (k : ℕ) (S : Fin (k + 1) → Type)
+def legacyFoldVerifier (k : ℕ) (S : Fin (k + 1) → Type)
     (V : (i : Fin k) → S i.castSucc → (Spec.SingleRound.pSpec R deg).Challenges →
       OptionT (OracleComp [(Spec.SingleRound.pSpec R deg).Message]ₒ) (S i.succ)) :
     OracleVerifier ambient (protocol R deg k) (S 0) (fun _ => S (Fin.last k)) inputs
@@ -326,9 +296,9 @@ def foldVerifier (k : ℕ) (S : Fin (k + 1) → Type)
   outputMap _ p _ := inputSlot inputs p
 
 /-- The Sumcheck verifier is the fold verifier of the legacy round checks. -/
-theorem verifier_eq_foldVerifier [DecidableEq R] [SampleableType R] (n : ℕ) {d : ℕ}
+theorem verifier_eq_legacyFoldVerifier [DecidableEq R] [SampleableType R] (n : ℕ) {d : ℕ}
     (D : Fin d ↪ R) :
-    verifier R deg n D ambient = foldVerifier R deg ambient (Spec.polynomialFamily R n deg) n
+    verifier R deg n D ambient = legacyFoldVerifier R deg ambient (Spec.polynomialFamily R n deg) n
       (Spec.StatementRound R n) (roundCheck R deg n D ambient) :=
   rfl
 
@@ -346,11 +316,11 @@ theorem simulateQ_foldLift {κ : Type} {spec' : OracleSpec κ}
 
 /-- On any completed run, the fold verifier returns the legacy fold's verdict on the decoded
 transcript, without ambient effects. -/
-theorem decideWith_foldVerifier (k : ℕ) (S : Fin (k + 1) → Type)
+theorem decideWith_legacyFoldVerifier (k : ℕ) (S : Fin (k + 1) → Type)
     (V : (i : Fin k) → S i.castSucc → (Spec.SingleRound.pSpec R deg).Challenges →
       OptionT (OracleComp [(Spec.SingleRound.pSpec R deg).Message]ₒ) (S i.succ))
     (stmt : S 0) (x : ∀ i, A i) (tr : PathAlong oracleSig (protocol R deg k)) :
-    (foldVerifier R deg ambient inputs k S V).decideWith stmt _ (toView _ tr)
+    (legacyFoldVerifier R deg ambient inputs k S V).decideWith stmt _ (toView _ tr)
         ((x, payloads _ tr)) =
       pure (simulateQ (OracleInterface.simOracle0 _ (decodeTranscript k tr).messages)
         (Spec.oracleVerifierProgram R deg S V stmt (decodeTranscript k tr).challenges)) := by
@@ -375,7 +345,7 @@ def foldCompatibility (k : ℕ) (S : Fin (k + 2) → Type)
       OptionT (OracleComp [(Spec.SingleRound.pSpec R deg).Message]ₒ) (S i.succ)) :
     OracleVerifier.OutputCompatibility
       (checkVerifier ambient inputs (foldHead V) fun _ p _ => inputSlot inputs p)
-      fun _ => foldVerifier R deg ambient inputs k (S ∘ Fin.succ) fun i => V i.succ where
+      fun _ => legacyFoldVerifier R deg ambient inputs k (S ∘ Fin.succ) fun i => V i.succ where
   outputMap _ p _ := inputSlot inputs p
   agrees _ _ _ _ _ _ := rfl
 
@@ -383,19 +353,19 @@ variable {R deg ambient inputs}
 
 /-- On any completed run, the first round appended to the remaining rounds decides as the fold
 verifier of all rounds. -/
-theorem decideWith_append_foldVerifier (k : ℕ) (S : Fin (k + 2) → Type)
+theorem decideWith_append_legacyFoldVerifier (k : ℕ) (S : Fin (k + 2) → Type)
     (V : (i : Fin (k + 1)) → S i.castSucc → (Spec.SingleRound.pSpec R deg).Challenges →
       OptionT (OracleComp [(Spec.SingleRound.pSpec R deg).Message]ₒ) (S i.succ))
     (stmt : S 0) (x : ∀ i, A i) (tr : PathAlong oracleSig (protocol R deg (k + 1))) :
     ((checkVerifier ambient inputs (foldHead V) fun _ p _ => inputSlot inputs p).append
-        (fun _ => foldVerifier R deg ambient inputs k (S ∘ Fin.succ) fun i => V i.succ)
+        (fun _ => legacyFoldVerifier R deg ambient inputs k (S ∘ Fin.succ) fun i => V i.succ)
         (foldCompatibility R deg ambient inputs k S V)).decideWith stmt _ (toView _ tr)
         ((x, payloads _ tr)) =
-      (foldVerifier R deg ambient inputs (k + 1) S V).decideWith stmt _ (toView _ tr)
+      (legacyFoldVerifier R deg ambient inputs (k + 1) S V).decideWith stmt _ (toView _ tr)
         ((x, payloads _ tr)) := by
   refine (decideWith_append_checkVerifier (s := protocol R deg k) ambient inputs (foldHead V)
     (fun _ p _ => inputSlot inputs p) _ (foldCompatibility R deg ambient inputs k S V) stmt x
-    tr).trans ((?_ : _ = _).trans (decideWith_foldVerifier (k + 1) S V stmt x tr).symm)
+    tr).trans ((?_ : _ = _).trans (decideWith_legacyFoldVerifier (k + 1) S V stmt x tr).symm)
   refine Eq.trans ?_ (congrArg pure (simulateQ_oracleVerifierProgram_succ k S V stmt
     (roundFullTranscript (roundMessage (appendHead tr)) (roundChallenge (appendHead tr)))
     (decodeTranscript k (appendTail tr)))).symm
@@ -403,25 +373,26 @@ theorem decideWith_append_foldVerifier (k : ℕ) (S : Fin (k + 2) → Type)
   cases checkVerdict (foldHead V) stmt (appendHead tr) with
   | none => rfl
   | some mid =>
-    exact decideWith_foldVerifier k (S ∘ Fin.succ) (fun i => V i.succ) mid x (appendTail tr)
+    exact decideWith_legacyFoldVerifier k (S ∘ Fin.succ) (fun i => V i.succ) mid x (appendTail tr)
 
 /-- **Append equivalence.** One round appended to the remaining rounds runs as the fold verifier
 of all rounds, as programs, against every prover. -/
-theorem run_append_foldVerifier (k : ℕ) (S : Fin (k + 2) → Type)
+theorem run_append_legacyFoldVerifier (k : ℕ) (S : Fin (k + 2) → Type)
     (V : (i : Fin (k + 1)) → S i.castSucc → (Spec.SingleRound.pSpec R deg).Challenges →
       OptionT (OracleComp [(Spec.SingleRound.pSpec R deg).Message]ₒ) (S i.succ))
     (stmt : S 0) (x : ∀ i, A i) {Out : PathAlong oracleSig (protocol R deg (k + 1)) → Type}
     (prover : Prover oracleSig ambient (protocol R deg (k + 1)) Out) :
     ((checkVerifier ambient inputs (foldHead V) fun _ p _ => inputSlot inputs p).append
-        (fun _ => foldVerifier R deg ambient inputs k (S ∘ Fin.succ) fun i => V i.succ)
+        (fun _ => legacyFoldVerifier R deg ambient inputs k (S ∘ Fin.succ) fun i => V i.succ)
         (foldCompatibility R deg ambient inputs k S V)).run stmt x prover =
-      (foldVerifier R deg ambient inputs (k + 1) S V).run stmt x prover := by
-  rw [OracleVerifier.run_eq_decideWith (foldVerifier R deg ambient inputs (k + 1) S V),
+      (legacyFoldVerifier R deg ambient inputs (k + 1) S V).run stmt x prover := by
+  rw [OracleVerifier.run_eq_decideWith (legacyFoldVerifier R deg ambient inputs (k + 1) S V),
     OracleVerifier.run_eq_decideWith]
   refine bind_congr fun y => ?_
   obtain ⟨tr, o, ⟨⟩⟩ := y
   dsimp only
-  exact congrArg (fun d => simulateQ _ d >>= _) (decideWith_append_foldVerifier k S V stmt x tr)
+  exact congrArg (fun d => simulateQ _ d >>= _)
+    (decideWith_append_legacyFoldVerifier k S V stmt x tr)
 
 /-- **Append equivalence for Sumcheck.** The round-`0` check appended to the remaining `k` rounds,
 run against a prover composed by `Prover.append` from a first-round strategy `p` and a suffix
@@ -437,14 +408,15 @@ theorem run_append_verifier [DecidableEq R] [SampleableType R] {d : ℕ} (D : Fi
           tail))) :
     ((checkVerifier ambient (Spec.polynomialFamily R (k + 1) deg)
         (foldHead (roundCheck R deg (k + 1) D ambient)) fun _ p _ => inputSlot _ p).append
-        (fun _ => foldVerifier R deg ambient (Spec.polynomialFamily R (k + 1) deg) k
+        (fun _ => legacyFoldVerifier R deg ambient (Spec.polynomialFamily R (k + 1) deg) k
           (Spec.StatementRound R (k + 1) ∘ Fin.succ)
           fun i => roundCheck R deg (k + 1) D ambient i.succ)
         (foldCompatibility R deg ambient _ k _ _)).run stmt x
         (Interaction.Core.Prover.append (s₂ := fun _ => protocol R deg k) (Out := Out) p f) =
       (verifier R deg (k + 1) D ambient).run stmt x
         (Interaction.Core.Prover.append (s₂ := fun _ => protocol R deg k) (Out := Out) p f) :=
-  run_append_foldVerifier k (Spec.StatementRound R (k + 1)) (roundCheck R deg (k + 1) D ambient)
+  run_append_legacyFoldVerifier k (Spec.StatementRound R (k + 1))
+    (roundCheck R deg (k + 1) D ambient)
     stmt x _
 
 end Fold

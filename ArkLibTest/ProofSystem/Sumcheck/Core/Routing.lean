@@ -10,15 +10,14 @@ import ArkLib.ProofSystem.Sumcheck.Core.Composition
 /-!
 # Two Sumcheck rounds through an exported oracle
 
-The first round checks a bivariate input `X₀ + X₁` over `ZMod 17` without querying it. It exports
+The first round checks a bivariate input `X₀ + X₁` over `Nat` without querying it. It exports
 a one-variable oracle: the input with its first variable fixed to the round challenge `r`, plus
 the round message at `r`. The second round is the one-round Sumcheck verifier over the exported
 oracle, so its final claim is a claim about the exported polynomial.
 
 The composite is `OracleVerifier.append` of the two. The prover sends `2 X + 1`, runs an ambient
 event, sends `X + 3 r + 1 + bump`, and runs another event; its private output is an arbitrary
-`hidden` natural number plus both answers, without reduction modulo the field
-characteristic. Both rounds always run, and the challenges come from the
+`hidden` natural number plus both answers. Both rounds always run. The challenges come from the
 challenge oracle.
 
 * With target `4` and `bump = 0` both checks pass, the claim summary is `(10, 10)` at the
@@ -36,7 +35,10 @@ open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Intera
 
 noncomputable section
 
-/-- Ambient events return natural numbers, independently of the polynomial field. -/
+/-- Natural-number coefficients and deterministic challenges. -/
+abbrev K := ℕ
+
+/-- Ambient events return natural numbers, independently of the polynomial coefficients. -/
 abbrev events : OracleSpec (Fin 4) := Fin 4 →ₒ ℕ
 
 /-- An ambient event. -/
@@ -61,6 +63,9 @@ theorem simulate_event (i : Fin 4) : simulateQ liftEvents (event i) = eventE i :
 
 /-- The domain `{0, 1}`. -/
 def D₂ : Fin 2 ↪ K := ⟨fun i => (i.val : K), by decide⟩
+
+section Algebra
+variable {K : Type} [CommSemiring K]
 
 /-- A univariate polynomial of degree at most `d` is a one-variable polynomial of individual
 degree at most `d`. -/
@@ -96,13 +101,18 @@ theorem eval_exportPoly (r : K) (p : Spec.OracleStatement K 2 1 ()) (msg : K⦃�
   rw [hpt]
 
 
+end Algebra
+
+section Routing
+variable {K : Type} [CommSemiring K]
+
 /-- The resources of the first round: the bivariate input and the round message. -/
 abbrev firstResources :=
   pathResources (Spec.polynomialFamily K 2 1) (round K 1) (roundPath K 1)
 
 /-- The export map at the challenge `r`: one input query at `(r, y)` and one message query at
 `r`. -/
-def exportMap (r : K) : OracleMap firstResources (Spec.polynomialFamily K 1 1) where
+def exportMap (r : K) : OracleMap (firstResources (K := K)) (Spec.polynomialFamily K 1 1) where
   f x _ := exportPoly r (x.1 ()) (x.2 (.inl ⟨⟩))
   impl q := do
     let old : K ← liftM (firstResources.spec.query (.inl ⟨(), ![r, q.2 0]⟩))
@@ -117,6 +127,8 @@ def exportOut : K → (p : Path (round K 1)) → View (round K 1) p →
     OracleMap (pathResources (Spec.polynomialFamily K 2 1) (round K 1) p)
       (Spec.polynomialFamily K 1 1)
   | _, ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩, v => exportMap (viewChallenge v)
+
+end Routing
 
 /-- A query to the round message at `x`. -/
 def messageAt (x : K) : OracleComp [(Spec.SingleRound.pSpec K 1).Message]ₒ K :=
@@ -138,11 +150,23 @@ def firstVerifier : OracleVerifier events (round K 1) K (fun _ => Spec.Statement
     (Spec.polynomialFamily K 2 1) (fun _ => Spec.polynomialFamily K 1 1) :=
   checkVerifier events _ firstCheck exportOut
 
+/-- The second check counts both domain points and extends the challenge prefix. -/
+def secondCheck (stmt : Spec.StatementRound K 1 0)
+    (chals : (Spec.SingleRound.pSpec K 1).Challenges) :
+    OptionT (OracleComp [(Spec.SingleRound.pSpec K 1).Message]ₒ)
+      (Spec.StatementRound K 1 (Fin.last 1)) := do
+  let a ← OptionT.lift (messageAt 0)
+  let b ← OptionT.lift (messageAt 1)
+  if a + b = stmt.target then
+    let v ← OptionT.lift (messageAt (chals default))
+    pure ⟨v, ![chals default]⟩
+  else failure
+
 /-- The second round: the Sumcheck verifier of one round over the exported oracle. -/
 def secondVerifier : OracleVerifier events (protocol K 1 1) (Spec.StatementRound K 1 0)
     (fun _ => Spec.StatementRound K 1 (Fin.last 1)) (Spec.polynomialFamily K 1 1)
     (fun _ => Spec.polynomialFamily K 1 1) :=
-  verifier K 1 1 D₂ events
+  checkVerifier events _ secondCheck (fun _ p _ => inputSlot _ p)
 
 /-- The composite keeps the exported oracle, whatever the intermediate statement. -/
 def compatible : OracleVerifier.OutputCompatibility firstVerifier fun _ => secondVerifier where
@@ -243,8 +267,8 @@ def routedVerdict (target bump : K) (x : ∀ i, Spec.OracleStatement K 2 1 i) (r
     Option (Spec.StatementRound K 1 (Fin.last 1) × ∀ i, Spec.OracleStatement K 1 1 i) :=
   (match checkVerdict firstCheck target (roundTranscript (affine 2 1) r) with
     | none => none
-    | some mid => legacyVerdict K 1 1 D₂ events mid
-        (decodeTranscript 1 (consTranscript (affine 1 (3 * r + 1 + bump)) s ⟨⟩))).map
+    | some mid => checkVerdict secondCheck mid
+        (roundTranscript (affine 1 (3 * r + 1 + bump)) s)).map
     fun t => (t, fun _ => exportPoly r (x ()) (affine 2 1))
 
 /-- The composite's output oracle is the exported polynomial at the first challenge. -/
@@ -294,7 +318,7 @@ theorem run_routed (target : K) (hidden : ℕ) (bump : K) (x : ∀ i, Spec.Oracl
   · rename_i mid
     rw [routedVerdict,
       show checkVerdict firstCheck target (roundTranscript (affine 2 1) r) = some mid from hc]
-    erw [decideWith_foldVerifier]
+    erw [decideWith_checkVerifier]
     erw [simulateQ_pure, LawfulMonad.pure_bind]
     erw [compatible_output]
     rfl
@@ -302,26 +326,31 @@ theorem run_routed (target : K) (hidden : ℕ) (bump : K) (x : ∀ i, Spec.Oracl
 /-- The Sumcheck verdict of the second round on the claim `t`: the message `X + c` sums to
 `2 c + 1` over `{0, 1}`; on a match the claim is the message at the challenge. -/
 theorem secondVerdict (t c s : K) :
-    legacyVerdict K 1 1 D₂ events ⟨t, Fin.elim0⟩
-        (decodeTranscript 1 (consTranscript (affine 1 c) s ⟨⟩)) =
+    checkVerdict secondCheck ⟨t, Fin.elim0⟩ (roundTranscript (affine 1 c) s) =
       if 2 * c + 1 = t then some ⟨s + c, ![s]⟩ else none := by
-  have hsum : ∑ y ∈ Finset.univ.map D₂, (affine 1 c).val.eval y = 2 * c + 1 := by
-    simp [D₂, eval_affine]
-    ring
-  refine (simulateQ_oracleVerifierProgram_succ 0 _ _ _ (roundFullTranscript (affine 1 c) s)
-    (legacyTranscript 0 Fin.elim0 Fin.elim0)).trans ?_
-  split <;> rename_i h
-  · erw [roundCheck_eq_some (R := K) (deg := 1) (n := 1) (D := D₂) (ambient := events) 0 _ _
-      (hsum.trans h)]
-    change some (⟨(affine 1 c).val.eval s, Fin.snoc (Fin.elim0 : Fin 0 → K) s⟩ :
-      Spec.StatementRound K 1 (Fin.last 1)) = _
-    have hvec : (Fin.snoc (Fin.elim0 : Fin 0 → K) s : Fin 1 → K) = ![s] :=
-      funext fun i => by fin_cases i; rfl
-    rw [hvec, eval_affine, one_mul]
-  · have hnone := roundCheck_eq_none (R := K) (deg := 1) (n := 1) (D := D₂)
-      (ambient := events) 0 ⟨t, Fin.elim0⟩ (roundFullTranscript (affine 1 c) s)
-      (fun e => h (hsum.symm.trans e))
-    erw [hnone]
+  unfold checkVerdict secondCheck
+  simp only [OptionT.run_bind, OptionT.run_lift, roundMessage_roundTranscript,
+    roundChallenge_roundTranscript, Option.elimM, simulateQ_bind, simulateQ_pure]
+  erw [simulate_messageAt, LawfulMonad.pure_bind]
+  dsimp only [Option.elim]
+  simp only [simulateQ_bind, simulateQ_pure]
+  erw [simulate_messageAt, LawfulMonad.pure_bind]
+  dsimp only [Option.elim]
+  have hsum : (affine 1 c).val.eval 0 + (affine 1 c).val.eval 1 = 2 * c + 1 := by
+    simp [eval_affine]; ring
+  change simulateQ _ (if (affine 1 c).val.eval 0 + (affine 1 c).val.eval 1 = t
+    then _ else _) = _
+  rw [hsum]
+  by_cases h : 2 * c + 1 = t
+  · simp only [h, ite_true]
+    change simulateQ _ (do
+      let v ← messageAt s
+      pure (some (⟨v, ![s]⟩ : Spec.StatementRound K 1 (Fin.last 1)))) = _
+    rw [simulateQ_bind]
+    erw [simulate_messageAt]
+    change some (⟨(affine 1 c).val.eval s, ![s]⟩ : Spec.StatementRound K 1 (Fin.last 1)) = _
+    simp [eval_affine]
+  · simp only [h, ite_false]
     rfl
 
 /-! ## Scenarios -/
@@ -331,7 +360,19 @@ theorem secondVerdict (t c s : K) :
 /-- The bivariate input `X₀ + X₁`, which sums to `4` over `{0, 1}²`. -/
 def input : Spec.OracleStatement K 2 1 () :=
   ⟨MvPolynomial.X 0 + MvPolynomial.X 1,
-    Submodule.add_mem _ (RoundsTest.X_mem 0) (RoundsTest.X_mem 1)⟩
+    Submodule.add_mem _ (by
+      rw [MvPolynomial.mem_restrictDegree]
+      intro s hs j
+      rw [MvPolynomial.support_X, Finset.mem_singleton] at hs
+      subst hs
+      rw [Finsupp.single_apply]
+      split_ifs <;> omega) (by
+      rw [MvPolynomial.mem_restrictDegree]
+      intro s hs j
+      rw [MvPolynomial.support_X, Finset.mem_singleton] at hs
+      subst hs
+      rw [Finsupp.single_apply]
+      split_ifs <;> omega)⟩
 
 /-- The input at `y` is `y 0 + y 1`. -/
 theorem eval_input (y : Fin 2 → K) : MvPolynomial.eval y input.val = y 0 + y 1 := by
@@ -362,7 +403,10 @@ theorem routedVerdict_suffix (r s : K) (x : ∀ i, Spec.OracleStatement K 2 1 i)
   rw [checkVerdict_first, ite_eq_left (by rw [eval_affine, eval_affine]; decide)]
   dsimp only
   rw [eval_affine, secondVerdict,
-    ite_eq_right fun h => absurd (by linear_combination h : (2 : K) = 0) (by decide)]
+    ite_eq_right (by
+      change ¬ (2 * (3 * r + 1 + 1) + 1 = 3 * (2 * r + 1))
+      dsimp only [K] at *
+      omega)]
   rfl
 
 /-- The target of a final claim and the output oracle at its challenges. -/
@@ -377,13 +421,29 @@ theorem claimSummary_accepted (r s : K) :
       (s + (3 * r + 1), r + s + (2 * r + 1)) := by
   simp [claimSummary, eval_exportPoly, eval_input, eval_affine]
 
+/-- Both challenge nodes range over the coefficient semiring. -/
+theorem range_eq (c : ChallengeNode oracleSig (protocol K 1 2)) :
+    challengeSpec oracleSig (protocol K 1 2) c = K := by
+  obtain ⟨n, h⟩ := c
+  rcases n with _ | ⟨_, _ | ⟨_, _ | ⟨_, _ | ⟨_, n⟩⟩⟩⟩
+  · cases h
+  · rfl
+  · cases h
+  · rfl
+  · cases n
+
+/-- The first and second challenge nodes are numbered in protocol order. -/
+def roundOf : ChallengeNode oracleSig (protocol K 1 2) → ℕ
+  | ⟨.inr ⟨_, .inl _⟩, _⟩ => 1
+  | _ => 2
+
 /-- A handler that records each query: the round of a challenge, and `i + 1` for event `i`. The
 challenges answer `2` and then `3`; events `2` and `3` answer `50` and `60`. -/
 def record : QueryImpl Q (StateM (List ℕ))
   | .inl i => do modify (· ++ [i.val + 1]); pure (if i = 2 then 50 else 60 : ℕ)
   | .inr c => do
-      modify (· ++ [RoundsTest.roundOf c])
-      pure (cast (range_eq c).symm (if RoundsTest.roundOf c = 1 then 2 else 3 : K))
+      modify (· ++ [roundOf c])
+      pure (cast (range_eq c).symm (if roundOf c = 1 then 2 else 3 : K))
 
 /-- The recorded run of the composite: the prover's output and the summary of the final claim,
 with the recorded queries. -/

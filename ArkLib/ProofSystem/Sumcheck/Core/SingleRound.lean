@@ -139,4 +139,45 @@ theorem run_roundProver {m : Type → Type} [Monad m] [LawfulMonad m]
 
 end Run
 
+section Routing
+variable {s : OracleProtocol}
+
+/-- The view of a round followed by `s` splits into the round's view and the view of `s`. -/
+theorem split_toView_round (msg : R⦃≤ deg⦄[X]) (chal : R) (tail : PathAlong oracleSig s) :
+    View.split (round R deg) (fun _ => s) _
+        (toView ((round R deg).append fun _ => s) ⟨msg, ⟨chal, tail⟩⟩) =
+      (toView (round R deg) ⟨msg, ⟨chal, ⟨⟩⟩⟩, toView s tail) := by
+  have h := splitFiber_val viewSig (round R deg) (fun _ => s) _
+    (show Fiber viewSig _ _ from toView ((round R deg).append fun _ => s) ⟨msg, ⟨chal, tail⟩⟩)
+  exact Prod.ext (Subtype.ext h.1) (Subtype.ext (eq_of_heq h.2))
+
+
+variable {I : Type} {A : I → Type} (inputs : Interaction.Oracle.OracleFamily I A)
+
+/-- The first round of a transcript of a round followed by `s`. -/
+def appendHead (tr : PathAlong oracleSig ((round R deg).append fun _ => s)) :
+    PathAlong oracleSig (round R deg) :=
+  ⟨tr.1, ⟨tr.2.1, ⟨⟩⟩⟩
+
+/-- The transcript of `s` after the first round. -/
+def appendTail (tr : PathAlong oracleSig ((round R deg).append fun _ => s)) :
+    PathAlong oracleSig s :=
+  tr.2.2
+
+/-- The first round of a run of a round followed by `s` sees the inputs and its own message. -/
+theorem prefixRoute_round (x : ∀ i, A i) (msg : R⦃≤ deg⦄[X]) (chal : R)
+    (tail : PathAlong oracleSig s) :
+    (OracleVerifier.prefixRoute (inputs := inputs) (s₁ := round R deg) (s₂ := fun _ => s)
+        (projectPathAlong oracleSig _ ⟨msg, ⟨chal, tail⟩⟩)).f
+        ((x, payloads ((round R deg).append fun _ => s) ⟨msg, ⟨chal, tail⟩⟩)) =
+      (x, payloads (round R deg) ⟨msg, ⟨chal, ⟨⟩⟩⟩) := by
+  refine Prod.ext ?_ ?_
+  · rfl
+  · funext i
+    rcases i with i | i
+    · rfl
+    · exact i.elim
+
+end Routing
+
 end Sumcheck.Core
