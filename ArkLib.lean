@@ -730,9 +730,11 @@ public import ArkLib.Interaction.Core.Legacy.Prover
 public import ArkLib.Interaction.Core.Legacy.Security
 public import ArkLib.Interaction.Core.Legacy.Verifier
 public import ArkLib.Interaction.Core.LegacyAppend
+public import ArkLib.Interaction.Core.Oracle.Cost
 public import ArkLib.Interaction.Core.Oracle.LoggedExecution
 public import ArkLib.Interaction.Core.Oracle.PrefixResources
 public import ArkLib.Interaction.Core.Oracle.Provenance
+public import ArkLib.Interaction.Core.Oracle.ResourceOps
 public import ArkLib.Interaction.Core.Oracle.Routing
 public import ArkLib.Interaction.Core.Oracle.SlotTrace
 public import ArkLib.Interaction.Core.OracleVerifier
