@@ -267,6 +267,7 @@ public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.RowO
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.SecondMoment
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.Types
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon.SubspaceWitness
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.SubspaceDesign
 public import ArkLib.Data.CodingTheory.ListDecodability.PairAgreementBound
 public import ArkLib.Data.CodingTheory.ListDecodability.SampleIncidence
@@ -542,6 +543,7 @@ public import ArkLib.Data.Domain.FftDomain.Subdomain
 public import ArkLib.Data.Domain.FftDomain.ToSubgroup
 public import ArkLib.Data.EllipticCurve.BN254
 public import ArkLib.Data.Equiv.FiberCycle
+public import ArkLib.Data.FieldTheory.BinaryAddSubgroup
 public import ArkLib.Data.FieldTheory.BinaryTrace
 public import ArkLib.Data.Fin.Basic
 public import ArkLib.Data.Fin.BigOperators
@@ -702,6 +704,7 @@ public import ArkLib.Data.Polynomial.ResultantDegree
 public import ArkLib.Data.Polynomial.ResultantSpecialization
 public import ArkLib.Data.Polynomial.SpecializationAvoidance
 public import ArkLib.Data.Polynomial.SplitFold
+public import ArkLib.Data.Polynomial.SubspacePolynomial
 public import ArkLib.Data.Polynomial.SymbolicInterpolationParameters
 public import ArkLib.Data.Polynomial.SymbolicInterpolationSupport
 public import ArkLib.Data.Polynomial.SymbolicInterpolationSurplus
