@@ -39,6 +39,17 @@ example (interface : OracleInterface.{0, 1} Nat) :
       ((pathFamily (universeNode Nat interface) ⟨⟨⟩, ⟨⟩⟩).interface (.inl ⟨⟩)) =
       interface.Query := rfl
 
+/-- The oracle interfaces that an arbitrary oracle tree carries along a path, with query universe
+independent of the message universe. Oracle positions carry their interfaces, so the
+interaction layer reads the decoration of a tree off the tree itself. -/
+abbrev UniverseOracleDecoration (tree : UniverseProtocol.{uProtocol, uQuery}) (p : Path tree) :=
+  pathFamily tree p
+
+/-- On an arbitrary small tree, the decoration along any path is the tree's own path family, with
+queries in the next universe. -/
+example (tree : OracleProtocol.{0, 1}) (p : Path tree) :
+    UniverseOracleDecoration.{0, 1} tree p = pathFamily tree p := rfl
+
 end UniverseCanary
 
 /-- The public future after the `Bool` oracle node. -/

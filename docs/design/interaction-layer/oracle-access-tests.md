@@ -228,7 +228,7 @@ resource extension; DecorationExample 2 separately checks interfaces inside prot
 | Frozen row | Contract | Disposition and evidence |
 |---|---|---|
 | [1][fd1] | Role decorations at arbitrary tree universe | retired: no authored role decoration. |
-| [2][fd2] | Raw oracle/query universes | equivalent: [independent universes][d-protocol], [actual unequal-universe node and path resources][d-node]. |
+| [2][fd2] | Raw oracle/query universes | equivalent: [arbitrary-tree decoration][d-decoration] at independent message and query universes; [actual unequal-universe node and path resources][d-node]. |
 | [3][fd3] | Protocol bundle at arbitrary universe | equivalent: [protocol canary][d-protocol]. |
 | [4][fd4] | Receiver-owned branching root | premise-required: P2 retires receiver-owned subtree selection; [sender root][d-root] makes the choice prover-authored. |
 | [5][fd5] | False future owner | equivalent: [position][d-false-pos], [owner][d-false-owner]. |
@@ -258,8 +258,12 @@ on the same tree. Interface restriction and runtime role-conversion identities h
 objects in Core. The linked cursor types also select the complete corresponding oracle subtree,
 including its future, but are not equations between removed decorations.
 
-Row 2 quantifies message and query universes independently through
-`UniverseProtocol.{uProtocol, uQuery}` and `universeNode`. The small-node canary attaches an
+Row 2 quantifies message and query universes independently. The frozen alias forms
+`tree.OracleDecoration.{uOracle, uQuery}` for an arbitrary tree. Oracle positions in the
+interaction layer carry their interfaces, so the decoration of an arbitrary tree is read off the
+tree: [UniverseOracleDecoration][d-decoration] takes any `tree : OracleProtocol.{uProtocol, uQuery}`
+and a path and returns the tree's path family, and its example instantiates it at `.{0, 1}` on an
+arbitrary tree. `UniverseProtocol.{uProtocol, uQuery}` and `universeNode` add a constructed node. The small-node canary attaches an
 arbitrary `OracleInterface.{0, 1} Nat` to a real oracle position and checks the query type of
 its path family. It does not merely install the interface as an input resource. The parent's
 [lifted_trace_contract][d-node-run] additionally executes such a node, queries its payload and
@@ -432,17 +436,18 @@ or `set_option respectTransparency` remains.
 [a-large-data]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/AccessExample.lean#L191
 [a-large-query]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/AccessExample.lean#L202
 [d-protocol]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L23
-[d-root]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L106
-[d-false-cursor]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L115
-[d-true-cursor]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L119
-[d-false-pos]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L123
-[d-true-pos]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L127
-[d-false-owner]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L130
-[d-true-owner]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L134
-[d-query]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L80
-[d-false-interface]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L87
-[d-true-interface]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L94
-[d-oracle-owner]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L101
+[d-decoration]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L45
+[d-root]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L117
+[d-false-cursor]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L126
+[d-true-cursor]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L130
+[d-false-pos]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L134
+[d-true-pos]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L138
+[d-false-owner]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L141
+[d-true-owner]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L145
+[d-query]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L91
+[d-false-interface]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L98
+[d-true-interface]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L105
+[d-oracle-owner]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L112
 [m-position]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/MixedExample.lean#L23
 [m-tree]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/MixedExample.lean#L27
 [m-branch]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/MixedExample.lean#L31
@@ -528,7 +533,7 @@ or `set_option respectTransparency` remains.
 
 [x-prefix]: ../../../ArkLibTest/Interaction/Core/Oracle/Prefix.lean#L100
 
-[d-distinct]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L138
+[d-distinct]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L149
 
 [p-terminal]: ../../../ArkLibTest/Interaction/Core/Oracle/PhasedRun.lean#L133
 

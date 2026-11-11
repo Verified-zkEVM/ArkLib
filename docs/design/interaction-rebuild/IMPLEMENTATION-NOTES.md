@@ -377,10 +377,12 @@ The disposition inventory records those qualifications separately.
 
 ### Oracle-access acceptance rows after the parent merge
 
-DecorationExample row 2 is equivalent: `UniverseProtocol` independently quantifies message and
-query universes, and `universeNode` attaches an arbitrary `OracleInterface.{0, 1} Nat` to an
-actual small protocol node. The path-family assertion retains its query type. This closes the
-frozen raw-decoration universe contract through the interaction layer's position representation.
+DecorationExample row 2 is equivalent. The frozen alias forms the oracle decoration of an
+arbitrary tree at independent message and query universes. Oracle positions carry their
+interfaces, so `UniverseOracleDecoration` reads the decoration of an arbitrary
+`OracleProtocol.{uProtocol, uQuery}` tree off the tree, as its path family. `universeNode`
+additionally attaches an arbitrary `OracleInterface.{0, 1} Nat` to an actual small protocol node,
+and the path-family assertion retains its query type.
 
 The [oracle-access ledger](../interaction-layer/oracle-access-tests.md) now links PhasedRun
 owners, setup and prefix groups and QueryBounds join/terminal membership, concrete prefixes,

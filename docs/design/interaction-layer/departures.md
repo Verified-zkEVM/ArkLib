@@ -112,7 +112,7 @@ verifier actions and phase assignments retired by P1.
 
 
 The [oracle-access ledger](oracle-access-tests.md) also closes DecorationExample row 2 with the
-independent-universe node and path-family canaries. Its PhasedRun and QueryBounds phase rows cite
+arbitrary-tree decoration canary and the independent-universe node and path-family canaries. Its PhasedRun and QueryBounds phase rows cite
 the parent's produced assertions directly, including join/terminal membership, canonical naming
 and phase/log correspondence. The doubled-export fixture adds terminal availability jointly with
 its cost-five bound. These are equivalent observations; P1 still retires intermediate verifier
