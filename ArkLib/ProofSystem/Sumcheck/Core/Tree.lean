@@ -80,17 +80,13 @@ theorem consTranscript_eta {M : Type} {eval : M → R → R} {n : ℕ}
 
 section Uniform
 
-/-- Every challenge of the protocol is a ring element, so it can be sampled uniformly. Oracle
-nodes are not challenge nodes, and each challenge node of one more round is the first round's
-challenge or a challenge of the remaining rounds. -/
+/-- Every challenge of the protocol is a ring element, so it can be sampled uniformly: the
+interpreted tree's construction at polynomial evaluation. -/
 @[instance_reducible]
-def challengeSampleable (R : Type) [CommSemiring R] [SampleableType R] (deg : ℕ) :
-    (k : ℕ) → (c : ChallengeNode oracleSig (protocol R deg k)) →
-      SampleableType (challengeSpec oracleSig (protocol R deg k) c)
-  | 0, ⟨n, _⟩ => nomatch n
-  | _ + 1, ⟨.inl _, h⟩ => nomatch h
-  | _ + 1, ⟨.inr ⟨_, .inl _⟩, _⟩ => inferInstanceAs (SampleableType R)
-  | k + 1, ⟨.inr ⟨_, .inr ⟨_, c⟩⟩, h⟩ => challengeSampleable R deg k ⟨c, h⟩
+def challengeSampleable (R : Type) [CommSemiring R] [SampleableType R] (deg k : ℕ) :
+    (c : ChallengeNode oracleSig (protocol R deg k)) →
+      SampleableType (challengeSpec oracleSig (protocol R deg k) c) :=
+  Interpreted.challengeSampleable R _ _ k
 
 /-- Uniform sampling at every challenge node of the fixed protocol. -/
 instance (R : Type) [CommSemiring R] [SampleableType R] (deg k : ℕ) :

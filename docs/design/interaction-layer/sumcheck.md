@@ -23,7 +23,7 @@ reached statement. The list and injective forms specialize the same indexed-doma
 | Module | Contents |
 |---|---|
 | `Types` | Interaction-layer round statements, polynomial oracle data and prefix/suffix coordinates. |
-| `SingleRound`, `MessageTree`, `Tree` | The oracle-message/public-challenge round, the fixed full-run tree, transcript prepending and sampling. Transcript access uses the `InterpretedPath` helpers. |
+| `SingleRound`, `MessageTree`, `Tree` | The oracle-message/public-challenge round, the fixed full-run tree at any message carrier with its uniform challenge sampler, and transcript prepending. `Tree.challengeSampleable` is the sampler at polynomial evaluation. Transcript access uses the `InterpretedPath` helpers. |
 | `Domain` | Indexed remaining sums, honest projected polynomials, the successor identity and final evaluation relation. |
 | `Indexed` | The interaction-layer indexed verifier, whose verdict and decision are the interval fold ending at the last round, its actual-run equation, the state function and interaction-layer local-to-global soundness proof. |
 | `Soundness` | Full-run, arbitrary-list and injective corollaries; actual-run committed and randomized bounds in probability and measure form. |
