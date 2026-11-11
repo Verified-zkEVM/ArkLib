@@ -22,7 +22,7 @@ directly as `runtime.run (V.runWithLog stmt data prover)`.
 
 @[expose] public section
 
-universe v uS wJ
+universe v u uι uI uJ uS wI wJ
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle OracleSpec
@@ -87,6 +87,21 @@ def decideWithFailureLog {ε : Type} {m : Type → Type v} [Monad m]
         modify (· ++ [⟨q, a⟩])
         pure (.ok a)
   ((simulateQ logged (V.decide stmt p view).run).run).run []
+
+/-- Embedding an optional verdict before closing with the completed transcript's resources
+agrees with closing first and then embedding. Absence remains rejection and creates no failure. -/
+theorem close_optional_ok {ε : Type v} {ι : Type uι} {I : Type uI} {S : Type uS}
+    {ambient : OracleSpec.{uι, u} ι} {s : OracleProtocol.{u}} {T : Path s → Type u}
+    {A : I → Type u} {J : Path s → Type uJ} {B : (p : Path s) → J p → Type u}
+    {inputs : OracleFamily.{uI, u, wI} I A}
+    {outputs : (p : Path s) → OracleFamily.{uJ, u, wJ} (J p) (B p)}
+    (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : ∀ i, A i)
+    (tr : PathAlong oracleSig s) (outcome : Option (T (projectPathAlong oracleSig s tr))) :
+    let p := projectPathAlong oracleSig s tr
+    let resources : (pathResources inputs s p).Data := (data, payloads s tr)
+    let close := fun t => (t, (V.outputMap stmt p (toView s tr)).f resources)
+    (Except.ok outcome : Except ε (Option (T p))).map (Option.map close) =
+      Except.ok (outcome.map close) := rfl
 
 end OracleVerifier
 end Interaction.Core

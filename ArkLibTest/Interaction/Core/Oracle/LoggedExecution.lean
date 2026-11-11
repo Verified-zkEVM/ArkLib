@@ -250,6 +250,55 @@ example (hidden : Nat) :
         ((pairVerifier true).runWithLog () (fun _ => 7) (pairProver [] 11 hidden)) =
     pure (hidden, 10, [⟨.inl 0, (8 : Nat)⟩, ⟨.inl 1, (9 : Nat)⟩, ⟨.inl 2, (10 : Nat)⟩]) := rfl
 
+/-- Tagged ambient requests with a unique unit response. -/
+abbrev unitAmbient : OracleSpec Nat := Nat →ₒ Unit
+
+/-- The prover makes request 0, sends the pair, and retains its arbitrary private output. -/
+def unitProver (hidden : Nat) : Prover oracleSig unitAmbient pairSend (fun _ => Nat) := do
+  let _ ← liftM (unitAmbient.query 0)
+  pure ⟨(11, hidden), pure hidden⟩
+
+/-- Both verifier effects occur in the final decision, which reads the actual sent oracle. -/
+def unitVerifier :
+    OracleVerifier unitAmbient pairSend Unit (fun _ => Nat) inputs (fun _ => exported) where
+  decide _ p _ := by
+    rcases p with ⟨⟨⟩, ⟨⟩⟩
+    exact do
+      let _ ← liftM ((unitAmbient + pairResources.spec).query (.inl 1))
+      let sent : Nat ← liftM ((unitAmbient + pairResources.spec).query
+        (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+      let _ ← liftM ((unitAmbient + pairResources.spec).query (.inl 2))
+      pure sent
+  outputMap _ p _ := by
+    rcases p with ⟨⟨⟩, ⟨⟩⟩
+    exact closeMap
+
+/-- A persistent counter starts at 7 and increments on each unit-response ambient request. -/
+abbrev unitCounter : OracleRuntime []ₒ (unitAmbient + challengeSpec oracleSig pairSend) where
+  State := Nat
+  setup := pure 7
+  handler
+    | .inl _ => do
+      modify (· + 1)
+      pure ()
+    | .inr c => pure (pairChallenges c)
+
+/-- One runtime execution retains the private output, final count 10 and all three unit answers
+in chronological order. -/
+theorem unit_runtime_trace (hidden : Nat) :
+    (fun result => (result.output.1.2.1, result.state, result.trace)) <$>
+      unitCounter.run (unitVerifier.runWithLog () seven (unitProver hidden)) =
+    pure (hidden, 10, [⟨.inl 0, ()⟩, ⟨.inl 1, ()⟩, ⟨.inl 2, ()⟩]) := rfl
+
+run_cmd do
+  for hidden in [0, 42] do
+    let result := runImport (unitCounter.run (unitVerifier.runWithLog () seven (unitProver hidden)))
+    unless result.output.1.2.1 == hidden && (show Nat from result.state) == 10 do
+      throwError "the unit-response runtime lost the private output or final state"
+    unless result.trace.fst.map (fun e => (e.1, show Unit from e.2)) ==
+        [(0, ()), (1, ()), (2, ())] do
+      throwError "the unit-response runtime changed its requests or answers"
+
 /-! ## Two scalar sends from counter answers -/
 
 /-- The prover sends two scalar oracles. -/
@@ -776,6 +825,7 @@ run_cmd do
   for decl in [``Interaction.Core.OracleVerifier.runWithLog_fst,
       ``Interaction.Core.OracleVerifier.map_fst_runWithLog,
       ``Interaction.Core.OracleVerifier.decideWithFailureLog,
+      ``Interaction.Core.OracleVerifier.close_optional_ok,
       ``Interaction.Core.OracleVerifier.runtime_runWithLog_erase,
       ``Interaction.Core.OracleVerifier.simulateQ_runWithLog_erase,
       ``OracleComp.withQueryLog_simulateQ] do
