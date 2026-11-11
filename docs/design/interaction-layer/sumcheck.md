@@ -408,9 +408,9 @@ above rather than adding independent security claims.
 
 ## Departures
 
-These entries continue the numbering of [`departures.md`](departures.md).
+These are the two departures of entry 22 in [`departures.md`](departures.md).
 
-### 20. The transferred completeness is in its own module
+### The transferred completeness is in its own module
 
 **Plan.** The implementation plan puts completeness in `Completeness`.
 
@@ -423,7 +423,7 @@ These entries continue the numbering of [`departures.md`](departures.md).
 the transferred theorem uses the embedded legacy honest prover, uniform challenges and an
 output witness. Both statements remain available.
 
-### 21. Full-run and interval verifier interfaces
+### Full-run and interval verifier interfaces
 
 **Migration.** Several frozen assertions execute one round inside a multivariate statement or
 split an interval into a first round and a suffix.
