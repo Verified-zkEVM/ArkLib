@@ -78,7 +78,9 @@ No closing `end` is needed; an unclosed outermost `public section` is expected. 
 `linter.privateModule`, part of the `mathlibStandardSet` this repository enables, is inert on
 classic files and fires the moment a file gains `module` if all its declarations are private. The
 warning budget in `scripts/validate.sh` treats that as a hard failure, and `set_option linter.*` is
-forbidden repository-wide, so a public section in every non-imports-only file is mandatory.
+forbidden for this linter, so a public section in every non-imports-only file is mandatory.
+The sole authorized linter-setting exception applies to the universe-only `OracleProtocol` alias,
+as documented in [the source-policy checks](quickstart.md#lean-source-policy-checks).
 
 `@[expose]` then keeps definition bodies unfoldable, which is what preserves the repository's `rfl`,
 `decide`, `simp` and `unfold` proofs. Theorem proofs stay private regardless, and that alone is

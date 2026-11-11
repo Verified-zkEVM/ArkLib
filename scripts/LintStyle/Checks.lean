@@ -5,12 +5,13 @@ Authors: Quang Dao
 -/
 
 import Lean.Elab.ParseImportsFast
+import LintStyle.OracleProtocolPolicy
 
 /-!
 # ArkLib source-style checks
 
 This module contains the pure part of ArkLib's text-based source linter. The policy is deliberately
-fail-closed and has no exception mechanism: a violation must be fixed in source.
+fail-closed, with one maintainer-authorized exception for the oracle protocol type alias.
 
 Unicode mathematical notation is unrestricted. Common mathematical variation selectors U+FE00–
 U+FE0F and U+E0100–U+E01EF remain valid; we reject ASCII/C1 controls, Unicode format controls,
@@ -654,10 +655,24 @@ private def rawNoLintAttributeLine? (lines : Array String) : Option Nat :=
     | _ => none
   noLintAttributeLine? tokens <|> quotationLine? tokens
 
-private def suppressionViolations (lines codeLines : Array String) : Array Violation := Id.run do
+/-- Mask only the exact authorized command at its source path and outside comments or literals.
+A second occurrence removes the exception, keeping all other option syntax subject to the gate. -/
+private def oracleProtocolPolicyLines (path : String) (lines codeLines : Array String) :
+    Array String := Id.run do
+  if path != oracleProtocolPath then return lines
+  let expectedCode := sanitizeLines oracleProtocolAliasLines
+  let positions := (Array.range lines.size).filter fun start =>
+    lines.extract start (start + oracleProtocolAliasLines.size) == oracleProtocolAliasLines &&
+      codeLines.extract start (start + oracleProtocolAliasLines.size) == expectedCode
+  if positions.size != 1 then return lines
+  let start := positions[0]!
+  return lines.mapIdx fun i line =>
+    if start ≤ i && i < start + oracleProtocolAliasLines.size then "" else line
+
+private def suppressionViolations (path : String) (lines codeLines : Array String) : Array Violation := Id.run do
   let code := "\n".intercalate codeLines.toList
   let tokens := sourceTokens code.toList [] [] 1
-  let mut result := rawOptionViolations lines
+  let mut result := rawOptionViolations (oracleProtocolPolicyLines path lines codeLines)
   if let some line := rawNoLintAttributeLine? lines <|> noLintAttributeLine? tokens then
     result := result.push <| violation "ERR_NOLINT" line
       "`@[nolint]` suppressions are forbidden; fix the declaration"
@@ -670,11 +685,11 @@ syntax-precise diagnostics (including extensible interpolations); this source pa
 ordinary suppression syntax still fails if code in the module tampers with Lean's mutable linter
 registry or captures elaborator diagnostics.
 -/
-def lintLines (lines : Array String) : Array Violation :=
+def lintLines (lines : Array String) (path : String := "") : Array Violation :=
   let codeLines := sanitizeLines lines
   unicodeViolations lines ++ lineViolations lines codeLines ++
     commentedDeclarationViolations lines ++
-    suppressionViolations lines codeLines ++
+    suppressionViolations path lines codeLines ++
     fileLengthViolations lines (isImportsOnly codeLines) ++
     headerViolations lines codeLines
 
@@ -742,6 +757,25 @@ def runSelfTests : IO Unit := do
     "comments and strings must be masked, including nested comments"
   let raw := sanitizeLines #["def ok := r###\"@[nolint]\"###"]
   assertSelfTest (!raw[0]!.contains "nolint") "raw strings must be masked"
+  let aliasLines := oracleProtocolAliasLines
+  let aliasOptions (path : String) (lines : Array String) :=
+    (lintLines lines path).filter (·.code == "ERR_OPT")
+  assertSelfTest ((aliasOptions oracleProtocolPath aliasLines).isEmpty)
+    "the exact authorized oracle protocol command must pass at its source path"
+  assertSelfTest (!(aliasOptions "ArkLib/Other.lean" aliasLines).isEmpty)
+    "the alias exception must not apply in another source file"
+  for lines in [aliasLines ++ aliasLines,
+      aliasLines.set! 0 "set_option linter.checkUnivs false",
+      aliasLines.set! 0 "set_option linter.unusedVariables false in",
+      aliasLines.set! 2 "abbrev AnotherProtocol := FreeM OraclePoly.{u, q} PUnit.{u + 1}",
+      aliasLines.set! 2 "abbrev OracleProtocol := Nat",
+      #["/-"] ++ aliasLines ++ #["-/"],
+      #["def quoted := r#\""] ++ aliasLines ++ #["\"#"]] do
+    assertSelfTest (!(aliasOptions oracleProtocolPath lines).isEmpty)
+      "duplicate, altered, global, commented or literal alias exceptions must be rejected"
+  assertSelfTest ((aliasOptions oracleProtocolPath
+    (aliasLines ++ #["set_option linter.checkUnivs false in", "def other := 0"])).size == 1)
+    "the authorized command must not hide any other suppression"
   for root in ["linter", "pp", "profiler", "trace"] do
     assertSelfTest (hasCode "ERR_OPT" #["#guard_msgs (drop error) in", "set_option",
       s!"  {root}.test false in", "def f := 1"])

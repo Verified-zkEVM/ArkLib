@@ -213,6 +213,16 @@ def reassoc (R₁ : Resources.{u, uX, dX}) (R₂ : Resources.{u, uY, dY})
     | .inr q => liftM ((R₁.spec + (R₂.spec + R₃.spec)).query (.inr (.inr q)))
   law x q := by rcases q with (q | q) | q <;> rfl
 
+/-- Regroup disjoint resources to the right without changing their data or answers. -/
+def unreassoc (R₁ : Resources.{u, uX, dX}) (R₂ : Resources.{u, uY, dY})
+    (R₃ : Resources.{u, uZ, dZ}) : OracleMap ((R₁.sum R₂).sum R₃) (R₁.sum (R₂.sum R₃)) where
+  f x := (x.1.1, (x.1.2, x.2))
+  impl
+    | .inl q => liftM (((R₁.spec + R₂.spec) + R₃.spec).query (.inl (.inl q)))
+    | .inr (.inl q) => liftM (((R₁.spec + R₂.spec) + R₃.spec).query (.inl (.inr q)))
+    | .inr (.inr q) => liftM (((R₁.spec + R₂.spec) + R₃.spec).query (.inr q))
+  law x q := by rcases q with q | (q | q) <;> rfl
+
 end Resources
 
 section Families
@@ -235,61 +245,53 @@ def ofSumFamily (a : OracleFamily.{uI, u, w} I A) (b : OracleFamily.{uJ, u, w} J
     | .inr q => liftM ((sumFamily a b).spec.query ⟨.inr q.1, q.2⟩)
   law x q := by rcases q with q | q <;> rfl
 
+/-- Combine disjoint resources into a family, the inverse representation of `ofSumFamily`. -/
+def toSumFamily (a : OracleFamily.{uI, u, w} I A) (b : OracleFamily.{uJ, u, w} J B) :
+    OracleMap (Resources.sum a b) (sumFamily a b) where
+  f x := sumData x.1 x.2
+  impl
+    | ⟨.inl i, q⟩ => liftM ((Resources.sum a b).spec.query (.inl ⟨i, q⟩))
+    | ⟨.inr j, q⟩ => liftM ((Resources.sum a b).spec.query (.inr ⟨j, q⟩))
+  law x q := by rcases q with ⟨i | j, q⟩ <;> rfl
+
+/-- Splitting and recombining a family recovers its concrete data. -/
+theorem toSumFamily_ofSumFamily (a : OracleFamily.{uI, u, w} I A)
+    (b : OracleFamily.{uJ, u, w} J B) (x : (Resources.ofFamily (sumFamily a b)).Data) :
+    (toSumFamily a b).f ((ofSumFamily a b).f x) = x := sumData_eta x
+
+/-- Combining and splitting disjoint resources recovers both data components. -/
+theorem ofSumFamily_toSumFamily (a : OracleFamily.{uI, u, w} I A)
+    (b : OracleFamily.{uJ, u, w} J B) (x : (Resources.sum a b).Data) :
+    (ofSumFamily a b).f ((toSumFamily a b).f x) = x := rfl
+
 variable {L : Type uL} {D : L → Type u} {In : OracleFamily.{uI, u, w} I A}
   {Mid : OracleFamily.{uJ, u, wJ} J B} {Out : OracleFamily.{uK, u, w} K C}
   {Other : OracleFamily.{uL, u, wJ} L D}
 
 /-- Apply two oracle maps to the two parts of a family of disjoint data. -/
 def sum (h : OracleMap In Mid) (g : OracleMap Out Other) :
-    OracleMap (sumFamily In Out) (sumFamily Mid Other) where
-  f x := sumData (h.f (fun i => x (.inl i))) (g.f (fun j => x (.inr j)))
-  impl
-    | ⟨.inl j, q⟩ => simulateQ
-      (fun r => liftM ((sumFamily In Out).spec.query ⟨.inl r.1, r.2⟩)) (h.impl ⟨j, q⟩)
-    | ⟨.inr j, q⟩ => simulateQ
-      (fun r => liftM ((sumFamily In Out).spec.query ⟨.inr r.1, r.2⟩)) (g.impl ⟨j, q⟩)
-  law x q := by
-    rcases q with ⟨j, q⟩
-    cases j with
-    | inl j =>
-      exact (QueryImpl.simulateQ_simulateQ_eq_of_apply
-        (impl := In.behaviorOfRealizations (fun i => x (.inl i)))
-        (fun _ => rfl) (h.impl ⟨j, q⟩)).trans
-        (h.law (fun i => x (.inl i)) ⟨j, q⟩)
-    | inr j =>
-      exact (QueryImpl.simulateQ_simulateQ_eq_of_apply
-        (impl := Out.behaviorOfRealizations (fun i => x (.inr i)))
-        (fun _ => rfl) (g.impl ⟨j, q⟩)).trans
-        (g.law (fun i => x (.inr i)) ⟨j, q⟩)
+    OracleMap (sumFamily In Out) (sumFamily Mid Other) :=
+  (toSumFamily Mid Other).comp ((h.par g).comp (ofSumFamily In Out))
 
-/-- Reassociate disjoint data without changing it or its answers. -/
+/-- Reassociate family data through the resource reassociation and representation bridges. -/
 def assoc (In : OracleFamily.{uI, u, w} I A) (Mid : OracleFamily.{uJ, u, w} J B)
     (Out : OracleFamily.{uK, u, w} K C) :
-    OracleMap (sumFamily (sumFamily In Mid) Out) (sumFamily In (sumFamily Mid Out)) where
-  f x := sumData (fun i => x (.inl (.inl i)))
-    (sumData (fun j => x (.inl (.inr j))) (fun k => x (.inr k)))
-  impl
-    | ⟨.inl i, q⟩ => liftM ((sumFamily (sumFamily In Mid) Out).spec.query ⟨.inl (.inl i), q⟩)
-    | ⟨.inr (.inl j), q⟩ =>
-      liftM ((sumFamily (sumFamily In Mid) Out).spec.query ⟨.inl (.inr j), q⟩)
-    | ⟨.inr (.inr k), q⟩ =>
-      liftM ((sumFamily (sumFamily In Mid) Out).spec.query ⟨.inr k, q⟩)
-  law x q := by rcases q with ⟨i | (j | k), q⟩ <;> rfl
+    OracleMap (sumFamily (sumFamily In Mid) Out) (sumFamily In (sumFamily Mid Out)) :=
+  (toSumFamily In (sumFamily Mid Out)).comp
+    (((OracleMap.id In).par (toSumFamily Mid Out)).comp
+      ((unreassoc In Mid Out).comp
+        (((ofSumFamily In Mid).par (OracleMap.id Out)).comp
+          (ofSumFamily (sumFamily In Mid) Out))))
 
-/-- The inverse reassociation of disjoint data. -/
+/-- Inverse family reassociation through the resource reassociation and representation bridges. -/
 def unassoc (In : OracleFamily.{uI, u, w} I A) (Mid : OracleFamily.{uJ, u, w} J B)
     (Out : OracleFamily.{uK, u, w} K C) :
-    OracleMap (sumFamily In (sumFamily Mid Out)) (sumFamily (sumFamily In Mid) Out) where
-  f x := sumData (sumData (fun i => x (.inl i)) (fun j => x (.inr (.inl j))))
-    (fun k => x (.inr (.inr k)))
-  impl
-    | ⟨.inl (.inl i), q⟩ =>
-      liftM ((sumFamily In (sumFamily Mid Out)).spec.query ⟨.inl i, q⟩)
-    | ⟨.inl (.inr j), q⟩ =>
-      liftM ((sumFamily In (sumFamily Mid Out)).spec.query ⟨.inr (.inl j), q⟩)
-    | ⟨.inr k, q⟩ =>
-      liftM ((sumFamily In (sumFamily Mid Out)).spec.query ⟨.inr (.inr k), q⟩)
-  law x q := by rcases q with ⟨(i | j) | k, q⟩ <;> rfl
+    OracleMap (sumFamily In (sumFamily Mid Out)) (sumFamily (sumFamily In Mid) Out) :=
+  (toSumFamily (sumFamily In Mid) Out).comp
+    (((toSumFamily In Mid).par (OracleMap.id Out)).comp
+      ((reassoc In Mid Out).comp
+        (((OracleMap.id In).par (ofSumFamily Mid Out)).comp
+          (ofSumFamily In (sumFamily Mid Out)))))
 
 end Families
 
