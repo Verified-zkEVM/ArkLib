@@ -858,7 +858,7 @@ def BacktrackSequence.absorbedUnits
   let mut units : List U := []
   for (b, w) in (List.range ws.length).zip ws do
     let sIn ← seq.inputState[b]?
-    let prev : List U ← if b = 0 then pure sIn.rateSegment.toList
+    let prev : List U ← if b = 0 then pure (List.replicate SpongeSize.R 0)
       else (seq.outputState[b - 1]?).map (·.rateSegment.toList)
     guard (sIn.rateSegment.toList.drop w = prev.drop w)
     units := units ++ sIn.rateSegment.toList.take w

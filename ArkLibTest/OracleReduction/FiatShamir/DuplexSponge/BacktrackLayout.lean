@@ -192,4 +192,32 @@ With `r = 2`, `δ = 1`, a printed-paper layout returns `none` for round 1 and la
 #guard_msgs in
 #eval (letI := sz3; honestGridOk)
 
+/-! ## Injectivity at challenge boundaries
+
+Every rate unit of every chain input is either returned as absorbed data or compared with the
+preceding state, including the units of the `Start` block that the absorbed data does not reach
+(`0^r`). So changing any unit of an honest boundary state never gives the honest tuple. -/
+
+/-- The three states of the review's distinguisher: `r = 2`, `δ = 0`, `ℓ_P = 1`, trace `[h() ↦ c]`.
+Only the honest state `(11, 0, c)`, whose `Start` rate tail is `0`, maps to round 1. -/
+def startTail [SpongeSize] (u : UInt8) : Option View :=
+  let pS := altSpec 1
+  letI : HasMessageSize pS := ⟨fun _ => 1⟩
+  letI : HasChallengeSize pS := ⟨fun _ => 1⟩
+  runBT pS 0 [] (Vector.ofFn fun k => if k.val = 0 then 11 else if k.val < SpongeSize.R then u
+    else cap0.toArray.getD (k.val - SpongeSize.R) 0)
+
+/-- info: [some (some (1, [], [[11]])), some none, some none] -/
+#guard_msgs in
+#eval (letI := sz2; [startTail 0, startTail 1, startTail 200])
+/-- info: true -/
+#guard_msgs in
+#eval (letI := sz1; injectiveGridOk)
+/-- info: true -/
+#guard_msgs in
+#eval (letI := sz2; injectiveGridOk)
+/-- info: true -/
+#guard_msgs in
+#eval (letI := sz3; injectiveGridOk)
+
 end BacktrackLayoutTest
