@@ -57,8 +57,7 @@ def indexedDecisionLift {ι : Type} (ambient : OracleSpec ι) (p : Path (protoco
     QueryImpl (oracles (protocol R deg n) p)
       (OracleComp (ambient +
         (pathResources (polynomialFamily R n deg) (protocol R deg n) p).spec)) :=
-  fun q => liftM ((ambient +
-    (pathResources (polynomialFamily R n deg) (protocol R deg n) p).spec).query (.inr (.inr q)))
+  pathLift ambient (polynomialFamily R n deg) p
 
 omit [DecidableEq R] in
 /-- Answering the lifted message queries is a pure computation of the transcript payloads. -/
@@ -70,14 +69,8 @@ theorem simulateQ_indexedDecisionLift_monad {ι : Type} {ambient : OracleSpec ι
     simulateQ (QueryImpl.addLift impl ((pathResources (polynomialFamily R n deg) (protocol R deg n)
       p).answer (data, pl))) (simulateQ (indexedDecisionLift ambient p) oa) =
       (pure (simulateQ ((pathFamily (protocol R deg n) p).behaviorOfRealizations pl) oa) :
-        m α) := by
-  refine (QueryImpl.simulateQ_simulateQ_eq_of_apply
-    (impl := ((pathFamily (protocol R deg n) p).behaviorOfRealizations pl).liftTarget m)
-    (fun t => ?_) oa).trans ?_
-  · simp only [QueryImpl.addLift_def]
-    exact QueryImpl.simulateQ_add_query_right _ _ _
-  · rw [simulateQ_liftTarget]
-    rfl
+        m α) :=
+  simulateQ_pathLift impl p data pl oa
 
 /-- The passive Sumcheck verifier counts all domain indices in its final decision. -/
 def indexedVerifier (R : Type) [CommSemiring R] [DecidableEq R] (deg n : ℕ)

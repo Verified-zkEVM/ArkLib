@@ -76,7 +76,7 @@ example : Sumcheck.Core.Interpreted.transportDraw (N := F⦃≤ 2⦄[X])
       (@challengeQueryImpl _ oracleSig (Sumcheck.Core.protocol F 2 3)
         (Sumcheck.Core.challengeSampleable F 2 3)) =
     @challengeQueryImpl _ oracleSig (protocol F 2 3)
-          (Sumcheck.Core.challengeSampleableOn F _ _ 3) :=
+          (Sumcheck.Core.Interpreted.challengeSampleable F _ _ 3) :=
   funext (Sumcheck.Core.transportDraw_challengeQueryImpl F 2 _ _ 3)
 
 /-- Perfect completeness of the computable Sumcheck with uniform challenges. -/
@@ -84,7 +84,7 @@ example :
     letI : MeasurableSpace (HonestObservation F 2 3) := ⊤
     completeness ((verifier F 2 3 D₂ ambient).classicalModel init impl
         (@challengeQueryImpl _ oracleSig (protocol F 2 3)
-          (Sumcheck.Core.challengeSampleableOn F _ _ 3)))
+          (Sumcheck.Core.Interpreted.challengeSampleable F _ _ 3)))
       (relationProblem F 2 3 D₂ 0) (relationProblem F 2 3 D₂ (Fin.last 3))
       (judgement F 2 3 D₂) (fun x _ => honestProver D₂ x.1 x.2) 0 :=
   perfectCompleteness D₂ ambient init impl _
@@ -104,7 +104,7 @@ example (Out : PathAlong oracleSig (protocol F 2 3) → Type) :
     letI : MeasurableSpace (Obs F 2 3 Out) := ⊤
     Interaction.Core.soundness ((verifier F 2 3 D₂ ambient).classicalModel (Out := Out) init impl
         (@challengeQueryImpl _ oracleSig (protocol F 2 3)
-          (Sumcheck.Core.challengeSampleableOn F _ _ 3)))
+          (Sumcheck.Core.Interpreted.challengeSampleable F _ _ 3)))
       (Legacy.langProblem (language F 2 3 D₂ 0))
       (Legacy.langProblem (language F 2 3 D₂ (Fin.last 3)))
       (fun obs => projectPathAlong oracleSig _ obs.1) (fun obs => obs.2.2)

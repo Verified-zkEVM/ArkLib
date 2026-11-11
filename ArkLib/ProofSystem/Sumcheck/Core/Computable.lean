@@ -243,24 +243,14 @@ end RunVerifierOn
 
 section Uniform
 
-
-/-- Every challenge of `protocolOn` is a ring element, so it can be sampled uniformly. -/
-@[instance_reducible]
-def challengeSampleableOn (R : Type) [SampleableType R] (M : Type) (eval : M → R → R) :
-    (k : ℕ) → (c : ChallengeNode oracleSig (protocolOn R M eval k)) →
-      SampleableType (challengeSpec oracleSig (protocolOn R M eval k) c)
-  | 0, ⟨n, _⟩ => nomatch n
-  | _ + 1, ⟨.inl _, h⟩ => nomatch h
-  | _ + 1, ⟨.inr ⟨_, .inl _⟩, _⟩ => inferInstanceAs (SampleableType R)
-  | k + 1, ⟨.inr ⟨_, .inr ⟨_, c⟩⟩, h⟩ => challengeSampleableOn R M eval k ⟨c, h⟩
-
 /-- Transporting uniform challenges of `protocol` gives uniform challenges of `protocolOn`. -/
 theorem transportDraw_challengeQueryImpl (R : Type) [CommSemiring R] [SampleableType R]
     (deg : ℕ) (M : Type) (eval : M → R → R) : (k : ℕ) →
     (c : ChallengeNode oracleSig (protocolOn R M eval k)) →
     Interpreted.transportDraw (N := R⦃≤ deg⦄[X]) (evaluateN := fun p x => p.val.eval x) k
         (challengeQueryImpl oracleSig (protocol R deg k)) c =
-      @challengeQueryImpl _ oracleSig (protocolOn R M eval k) (challengeSampleableOn R M eval k) c
+      @challengeQueryImpl _ oracleSig (protocolOn R M eval k)
+        (Interpreted.challengeSampleable R M eval k) c
   | 0, ⟨n, _⟩ => nomatch n
   | _ + 1, ⟨.inl _, h⟩ => nomatch h
   | _ + 1, ⟨.inr ⟨_, .inl _⟩, _⟩ => rfl
@@ -347,7 +337,7 @@ abbrev protocol : OracleProtocol.{0} := protocolOn R (Message R deg) (evaluate R
 /-- Every challenge of the computable protocol is a ring element, sampled uniformly. -/
 instance [SampleableType R] :
     ∀ c, SampleableType (challengeSpec oracleSig (protocol R deg n) c) :=
-  challengeSampleableOn R _ _ n
+  Interpreted.challengeSampleable R _ _ n
 
 /-- A computable input polynomial: a CompPoly multivariate polynomial whose individual degrees
 are at most `deg`. -/

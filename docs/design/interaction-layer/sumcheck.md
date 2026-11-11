@@ -22,7 +22,7 @@ reached statement. The list and injective forms specialize the same indexed-doma
 
 | Module | Contents |
 |---|---|
-| `SingleRound` | One round: an oracle node for the round message, then one challenge in `R`. `roundOn R M eval` is generic in the message carrier `M` and its evaluation `eval`; `round` is its instance at `R⦃≤ deg⦄[X]`. |
+| `SingleRound` | One round: an oracle node for the round message, then one challenge in `R`. `round` is the round at `R⦃≤ deg⦄[X]`; at any message carrier `M` with evaluation `eval` the round is `Interpreted.protocol R M eval 1`. |
 | `Protocol` | `protocolOn R M eval n` and its instance `protocol R deg n`, the `n`-fold replication of the round; the honest prover as a fold with `pure` slots. |
 | `Execution` | The verifier `verifierOn` over any message carrier, and its instance `verifier`: the legacy decision fold on the view's challenges, with message queries routed to oracle nodes. Closed forms of runs; the round check `roundCheck` and its accept and reject equations. |
 | `Completeness` | Perfect completeness of the interaction-layer honest prover, proved directly, for every challenge implementation. |
@@ -33,7 +33,7 @@ reached statement. The list and injective forms specialize the same indexed-doma
 | `RoundByRound` | Round-by-round soundness and knowledge soundness, transferred, with error `deg / |R|` at every challenge. |
 | `Computable` | The executable instance at CompPoly messages and inputs: protocol, verifier, verdict reader and honest prover. The run correspondence `run_eq_interpret`, perfect completeness and soundness, transported. |
 | `Types` | Interaction-layer round statements, polynomial oracle data and prefix/suffix coordinates. |
-| `SingleRound`, `MessageTree`, `Tree` | The oracle-message/public-challenge round, the fixed full-run tree, transcript prepending and sampling. Transcript access uses the `InterpretedPath` helpers. |
+| `SingleRound`, `MessageTree`, `Tree` | The oracle-message/public-challenge round, the fixed full-run tree at any message carrier with its uniform challenge sampler, and transcript prepending. `Tree.challengeSampleable` is the sampler at polynomial evaluation. Transcript access uses the `InterpretedPath` helpers. |
 | `Domain` | Indexed remaining sums, honest projected polynomials, the successor identity and final evaluation relation. |
 | `Indexed` | The interaction-layer indexed verifier, whose verdict and decision are the interval fold ending at the last round, its actual-run equation, the state function and interaction-layer local-to-global soundness proof. |
 | `Soundness` | Full-run, arbitrary-list and injective corollaries; actual-run committed and randomized bounds in probability and measure form. |

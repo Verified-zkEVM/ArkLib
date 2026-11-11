@@ -31,22 +31,6 @@ open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Intera
 
 variable (R : Type) [CommSemiring R] (deg : ℕ)
 
-omit [CommSemiring R] in
-/-- Evaluation queries at ring points on the message carrier `M`, answered by `eval`. -/
-@[reducible]
-def evalInterface (M : Type) (eval : M → R → R) : OracleInterface M where
-  Query := R
-  toOC.spec := R →ₒ R
-  toOC.impl point := do return eval (← read) point
-
-omit [CommSemiring R] in
-/-- One round over the message carrier `M`: an oracle for the round message with evaluation
-queries answered by `eval`, then one ring challenge. -/
-@[reducible]
-def roundOn (M : Type) (eval : M → R → R) : OracleProtocol.{0} :=
-  .liftBind (.oracle M (evalInterface R M eval)) fun _ =>
-    .liftBind (.challenge R) fun _ => .pure ⟨⟩
-
 /-- One round: an evaluation oracle for the round polynomial, then one ring challenge. -/
 @[implicit_reducible]
 def round : OracleProtocol.{0} :=
