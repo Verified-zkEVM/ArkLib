@@ -58,7 +58,7 @@ variable [DecidableEq StmtIn] [DecidableEq U]
 `gᵢ`-response consistency (paper Item 4(e)i) is **not** carried in this struct — it is
 provided by `D2SAlgo`'s `tr_i` memo at the bridge layer (`D2SAlgoMemo`, threaded through
 `d2sCodecBridgeImplMemo`). Keeping `tr_i` out of `D2SQuery` matches the paper's placement of
-the memo inside `D2SAlgo` (Item 3, lines 1066-1075), and keeps the §5.8 hybrid `D2SQuery`
+the memo inside `D2SAlgo` (D2SAlgo Items 1 and 3), and keeps the §5.8 hybrid `D2SQuery`
 analysis (`d2sQueryImpl`) independent of the bridge memo. -/
 structure D2SQueryState where
   -- `tr`: ordered `('h', 𝕩, s_C)` / `('p', s_in, s_out)` / `('p⁻¹', …)` pairs (§5.4 Item 1)
@@ -345,7 +345,7 @@ variable {T_H : Type} {T_P : Type}
 
 /-- CO25 §5.4 Item 2 — hash-oracle (`h`) branch of `D2SQuery`.
 
-Paper steps (lines 1039-1043): lookup `tr_∇.h.inlu(𝕩)`; on `⟂`, sample `s_{C,out} ← 𝒰(Σ^c)` and
+Paper Items 2(a)-(d): lookup `tr_∇.h.inlu(𝕩)`; on `⟂`, sample `s_{C,out} ← 𝒰(Σ^c)` and
 call `tr_∇.h.add(𝕩, s_{C,out})`; always append `('h', 𝕩, s_{C,out})` to `tr`. -/
 def d2sHandleHashQuery
     (stmt : StmtIn) :
@@ -380,7 +380,7 @@ def d2sHandleHashQuery
 
 /-- CO25 §5.4 Item 3 — inverse-permutation (`p⁻¹`) branch of `D2SQuery`.
 
-Paper steps (lines 1044-1046): lookup `tr_∇.p.outlu(s_out)`; on `⟂`, sample `s_in ← 𝒰(Σ^{r+c})`
+Paper Items 3(a)-(d): lookup `tr_∇.p.outlu(s_out)`; on `⟂`, sample `s_in ← 𝒰(Σ^{r+c})`
 and call `tr_∇.p.add(s_in, s_out)`; always append `('p⁻¹', s_out, s_in)` to `tr`. -/
 def d2sHandleInversePermQuery
     (stateOut : CanonicalSpongeState U) :
@@ -468,7 +468,7 @@ def d2sHandleBacktrackNoResult
           set { st with trace := trace', trΔ := trΔ', h_inv := h_inv' }
           return sampledOut
 
-/-- CO25 §5.4 Item 4(e)iii.B — synthesize `s_out` from the first rate block and chain the
+/-- CO25 §5.4 Items 4(e)iii.C–E — synthesize `s_out` from the first rate block and chain the
 remaining rate blocks into `Cache_p` extensions.
 
 Parses `ρ̂_i ‖ z` as exactly `L_V(i)` rate segments: the first becomes the rate half of the
@@ -484,6 +484,8 @@ def d2sSynthesizeStateFromRateBlocks
       (CanonicalSpongeState U × List (CanonicalSpongeState U × CanonicalSpongeState U)) := do
   let st ← get
   match rateBlocks with
+  -- `L_V(i) = 0` (a zero-length challenge) leaves no rate block to program, and the paper's
+  -- Item 4(e)iii is undefined there; Section 5 assumes `NondegenerateRounds.challengePos`.
   | [] => StateT.lift failure
   | _ =>
       -- Sample `s_C^{(k)} ←$ 𝒰(Σ^c)` for all `k = 0, …, L_V(i)-1` at once.
@@ -498,7 +500,7 @@ def d2sSynthesizeStateFromRateBlocks
       match allStates with
       | [] => StateT.lift failure -- Unreachable if length > 0
       | synthesized_s_out :: extraStates =>
-          -- Item 4(e)iii.E — extend `Cache_p` by chaining
+          -- Item 4(e)iii.D — extend `Cache_p` by chaining
           --   `(s_out, s^{(1)}), …, (s^{(L_V(i)-2)}, s^{(L_V(i)-1)})`.
           let extraPairs :=
             chainPairsFrom (U := U) synthesized_s_out extraStates
@@ -506,8 +508,8 @@ def d2sSynthesizeStateFromRateBlocks
 
 /-- CO25 §5.4 Items 4(d)/4(e) — `BackTrack` returned `some (i, 𝕩, τ̂, α̂_1, …, α̂_i)`.
 
-Splits on the codec-image predicate `∀ ι ∈ [i], α̂_ι ∈ Im(φ_ι)` (Item 4(d) vs 4(e), lines
-1056/1059) and dispatches in paper order.
+Splits on the codec-image predicate `∀ ι ∈ [i], α̂_ι ∈ Im(φ_ι)` (Item 4(d) vs 4(e)) and
+dispatches in paper order.
 
 Paper Item 4(e) (in-image branch):
 - (e)i  : `ρ̂_i := g_i(𝕩, τ̂, α̂_1, …, α̂_i)`  — issued **unconditionally**.
@@ -560,7 +562,7 @@ def d2sHandleBacktrackSome
         let (s_out, cache') ←
           d2sSynthesizeStateFromRateBlocks (δ := δ) (T_H := T_H) (T_P := T_P)
             (StmtIn := StmtIn) (pSpec := pSpec) (U := U) rateBlocks.toList
-        -- Paper Item 4(e)iii.F — `tr_∇.p.add(s_in, s_out)`
+        -- Paper Item 4(e)iii.E — `tr_∇.p.add(s_in, s_out)`
         let trace' := st.trace ++ [⟨dsPermQuery stateIn, s_out⟩]
         let trΔ' : TraceNabla T_H T_P StmtIn U :=
           { st.trΔ with p := TraceTableOps.insert st.trΔ.p stateIn s_out }
@@ -673,7 +675,7 @@ Single interface used by:
   `gImpl` varies per hybrid (`g`, `e`, `f`, …); `auxImpl` lifts to the same outer spec.
 - `lemma5_8SigmaTraceDist` (BadEvents): `m = OptionT ProbComp`, `auxImpl` resolves
   `(Unit →ₒ U) + unifSpec` directly via `d2sUnitSampleImpl + QueryImpl.id' unifSpec`. The
-  `OptionT`-abort halts the §5.8 experiment (paper line 1417); the partial trace at the moment
+  `OptionT`-abort halts the §5.8 experiment (Item 4(b)); the partial trace at the moment
   of abort is preserved by `BadEvents.lemma5_8ProjectedTraceDistAbortable`. -/
 def d2sQueryImpl
     {m : Type → Type} [AlternativeMonad m]
@@ -952,7 +954,7 @@ end D2FProverRaw
 
 /-! ## `D2FQueryProver` + `d2sAlgo` — paper Eq. 17 split
 
-Paper §5.4 D2SAlgo (lines 1121-1138) decomposes into two structurally distinct pieces:
+Paper §5.4 D2SAlgo decomposes into two structurally distinct pieces:
 
 - **Items 1-3** = the inner prover loop running `𝒜^{D2SQuery^{ψ⁻¹∘f∘φ⁻¹}}` (paper Eq. 17
   RHS). Output salt stays on the DS side (`Vector U δ`, paper `Σ^δ`). Mirrored in Lean by
@@ -989,7 +991,7 @@ variable {T_H : Type} {T_P : Type}
   {Salt : Type} [SaltCodec U δ Salt]
 
 /-- CO25 §5.4 Eq. 17 RHS — the inner prover surface `𝒜^{D2SQuery^{ψ⁻¹∘f∘φ⁻¹}}` (paper
-D2SAlgo Items 1-3, lines 1121-1135). Runs `𝒜` with its duplex-sponge `(h, p, p⁻¹)` queries
+D2SAlgo Items 1-3). Runs `𝒜` with its duplex-sponge `(h, p, p⁻¹)` queries
 answered by `D2SQuery` under the codec-bridged oracle `ψ⁻¹∘f∘φ⁻¹`, where `f` is the salted
 FS challenge oracle keyed at `(StmtIn × Salt)`. Salt is bridged via `SaltCodec.encode = bin`
 inside `d2sCodecBridgeImpl` at every `gᵢ`-query; the `tr_i` memo (Item 3) is threaded via
@@ -1011,7 +1013,7 @@ noncomputable def D2FQueryProver
         (Salt := Salt))
       𝒜 default)
 
-/-- CO25 §5.4 Eq. 17 LHS — full `D2SAlgo^f(𝒜)` (paper Items 1-6, lines 1121-1138). Thin
+/-- CO25 §5.4 Eq. 17 LHS — full `D2SAlgo^f(𝒜)` (paper Items 1-6). Thin
 wrapper over `D2FQueryProver` (Items 1-3) that applies the paper's Items 4-6 post-processing:
 parse the inner output `(τ, αᵢ)` with `τ ∈ Σ^δ`, set `τ̌ := bin(τ) = SaltCodec.encode τ`,
 and repackage as `(τ̌, αᵢ) : FSSaltedProof`.

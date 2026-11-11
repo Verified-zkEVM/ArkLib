@@ -33,7 +33,7 @@ variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type} [DecidableEq StmtIn
 
 noncomputable section
 
-/-- Key for `StdTrace` memoized `gᵢ`-style entries (CO25 §5.2 Step 4.D output; strict shape
+/-- Key for `StdTrace` memoized `gᵢ`-style entries (CO25 §5.5.1 Item 4(a)iv.D output; strict shape
 `BacktrackOutput`). -/
 abbrev StdTraceQuery :=
   Backtrack.BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
@@ -238,8 +238,9 @@ def stdTraceLookupOrLookAhead
           -- CO25 `err`: multiple lookahead chains found (unexpected after backtrack).
           failure
       | .noResult =>
-          -- CO25 §5.5.1 Item 4(a)ivB-D: once BackTrack returns a valid tuple for the
-          -- current `p` entry, LookAhead should find the matching successor in `tr`.
+          -- CO25 §5.5.1 Item 4(a)ivD: once BackTrack returns a valid tuple for the current
+          -- `p` entry, LookAhead finds its successor in `tr`, unless `L_V(i) = 0` (a zero-length
+          -- challenge, excluded by `NondegenerateRounds.challengePos`).
           failure
       | .some rhoHat_i =>
           -- Item 4(a)ivD — append `((i, 𝕩, τ, α̂_{<i}), ρ̂_i)` to `tr_std^LA` and `tr_std`.
@@ -317,13 +318,13 @@ noncomputable def hybEncodedMessagesBefore?
 /-! ## Salted FS variants (CO25 §5.5.1 Item 4(a)v)
 
 CO25's standard FS reduction `R_FS` keeps the public *pre-encoded* salt `τ̌ ∈ {0,1}^{δ★}` threaded
-through the augmented statement of the FS-standard oracle (paper line 1187-1192, Eq. 55-56).
+through the augmented statement of the FS-standard oracle (CO25 Construction 3.17 and Eq. 55).
 We model this as the abstract type `Salt`, bridged from the on-sponge `Vector U δ` salt via
 `SaltCodec.encode = bin`. The salted variants below feed into `KeyLemma`'s `Hyb₃`/`Hyb₄`. -/
 
 /-- Salted variant of `stdTraceEntryToFSQuery?` — projects the BackTrack salt
 `out.salt : Vector U δ` to the FS-standard side via `bin = SaltCodec.encode` before placing it
-in the augmented statement of the salted FS oracle query (paper line 1188). -/
+in the augmented statement of the salted FS oracle query (D2STrace Item 3). -/
 noncomputable def stdTraceEntryToFSQuerySalted?
     {Salt : Type} [SaltCodec U δ Salt]
     (entry : StdTraceEntry (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
@@ -479,7 +480,7 @@ section Line4Trace
 
 /-- Section 5.8 `Hyb₁` line-4 per-entry remap. Encoded prover-prefix + encoded verifier response
 ↦ decoded prover-prefix + decoded challenge. Salt is projected `Σ^δ → Salt` via
-`SaltCodec.encode = bin` (paper line 1188). `oSpec` entries are forwarded verbatim. -/
+`SaltCodec.encode = bin` (D2STrace Item 3). `oSpec` entries are forwarded verbatim. -/
 noncomputable def hyb1RemapEntry?
     {Salt : Type} [SaltCodec U δ Salt]
     (entry : Sigma (oSpec + gSpec (U := U) StmtIn pSpec δ)) :
@@ -518,7 +519,7 @@ noncomputable def hyb1Line4Trace
 
 /-- Section 5.8 `Hyb₂` line-4 per-entry remap. Encoded prover-prefix + decoded verifier response
 ↦ decoded prover-prefix + decoded challenge. Salt is projected `Σ^δ → Salt` via
-`SaltCodec.encode = bin` (paper line 1188). `oSpec` entries are forwarded verbatim. -/
+`SaltCodec.encode = bin` (D2STrace Item 3). `oSpec` entries are forwarded verbatim. -/
 noncomputable def hyb2RemapEntry?
     {Salt : Type} [SaltCodec U δ Salt]
     (entry : Sigma (oSpec + eSpec (U := U) StmtIn pSpec δ)) :
