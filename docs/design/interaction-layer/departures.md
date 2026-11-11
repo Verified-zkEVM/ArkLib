@@ -105,7 +105,7 @@ tree only. `Legacy/OracleKnowledge.lean` closes it, and the entry is removed.
 The [source-to-port inventory](logged-execution-disposition.md) lists each frozen acceptance
 assertion, its exact port or missing interface, and the assertions retired by the approved passive
 verifier and fixed-shape premises. The produced provenance rows are equivalent under the passive
-schedule. R1 removes the separate recursive slot executor: instrumented strategies run through `TwoParty.Lens.run`, and ordinary,
+schedule. There is no separate recursive slot executor: instrumented strategies run through `TwoParty.Lens.run`, and ordinary,
 full-trace and ambient-trace APIs share `OracleVerifier.executeWith`. Erasure specializes a
 general runner naturality law and writer laws. The premise-required rows identify the intermediate
 verifier actions and phase assignments retired by P1. Its unresolved rows remain migration obligations.
