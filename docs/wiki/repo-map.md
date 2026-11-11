@@ -601,7 +601,8 @@ home_page/            site assets and assembled website root
   `Bounds/LargeAlphabet/`: statements and family counting, centres and incidence counting, the local
   neighbourhood bound and pigeonhole barrier, then sparse large-union families and the assembly),
   `Bounds/Interleaved.lean` ([GGR11]'s interleaved-code list-size bound),
-  `Bounds/ReedSolomon.lean` (the Reed-Solomon separations and the random-evaluation-domain bound),
+  `Bounds/ReedSolomon.lean` (the Reed-Solomon separations and the random-evaluation-domain bound,
+  with the subspace-polynomial witnesses in `Bounds/ReedSolomon/SubspaceWitness.lean`),
   `Bounds/SubspaceDesign.lean` ([CZ25]'s upper bound and the folded-RS and multiplicity-code
   corollaries) over `Bounds/AgreementHypergraph.lean` (the geometric agreement machinery that proof
   needs, which mentions no list size and is reusable), and `Bounds/KKH26.lean` plus

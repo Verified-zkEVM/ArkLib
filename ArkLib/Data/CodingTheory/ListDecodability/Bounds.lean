@@ -81,9 +81,8 @@ This file is the umbrella; the statements are in `Bounds/`.
 
 ## External admits
 
-Three statements are admitted with a tagged `sorry`, never an `axiom`: the random-linear-code bound
-(`random_linear_lambda_lower`, [GLMRSW22]), the extension-field Reed-Solomon separation
-(`rs_lambda_superpoly_extension`, [BKR06]), and the random-evaluation-domain bound
+Two statements are admitted with a tagged `sorry`, never an `axiom`: the random-linear-code bound
+(`random_linear_lambda_lower`, [GLMRSW22]) and the random-evaluation-domain bound
 (`rs_random_domain_lambda_le`, [AGL24]). Source locators and formulation notes are recorded in the
 defining modules and knowledge-base pages.
 
@@ -95,8 +94,9 @@ bounds `lambda_ge_elias_volume` and `lambda_ge_entropy_volume` and their field s
 `linear_lambda_ge_elias_volume` and `linear_lambda_ge_entropy_volume`, both halves of the
 generalized Singleton bound (`linear_card_le_of_rate_radius`,
 `linear_card_le_generalized_singleton`), the prime-field Reed-Solomon separation
-`rs_lambda_large_prime`, the elementary `rs_codimension_one_list_size`, the [AGL23]
-large-alphabet barrier
+`rs_lambda_large_prime`, the extension-field Reed-Solomon separation
+`rs_lambda_superpoly_extension` ([BKR06]), the elementary `rs_codimension_one_list_size`,
+the [AGL23] large-alphabet barrier
 `large_alphabet_lambda_lower` with its `η = Θ(1/n)` consequence
 `large_alphabet_card_ge_exp_of_inv_length`, the number-theoretic KKH sum-set estimate
 `two_pow_mul_choose_le_card_sumSet` ([KKH26] Lemma 1, proved via a signed subset-sum
