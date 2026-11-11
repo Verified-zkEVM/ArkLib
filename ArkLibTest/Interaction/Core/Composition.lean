@@ -30,12 +30,12 @@ def composed : Prover plainSig ambient (done.append (fun _ => done)) (fun _ => P
     liftM (ambient.query 1)
     pure suffix)
 
-def reject : Verifier ambient done Unit Unit where
+def reject : Verifier ambient done Unit (fun _ => Unit) where
   decide _ _ _ := OptionT.mk do
     liftM (ambient.query 3)
     pure none
 
-def accept : Verifier ambient done Unit Unit where
+def accept : Verifier ambient done Unit (fun _ => Unit) where
   decide _ _ _ := do
     liftM (ambient.query 4)
     pure ()
@@ -57,7 +57,8 @@ run_cmd do
 open Interaction.Core.OracleTests
 
 /-- A suffix computes a virtual output from an embedded prefix oracle. -/
-def virtualSuffix : OracleVerifier OracleSpec.emptySpec emptyTree Nat Unit functions functions where
+def virtualSuffix : OracleVerifier OracleSpec.emptySpec emptyTree Nat (fun _ => Unit) functions
+    (fun _ => functions) where
   decide _ _ _ := pure ()
   outputMap _ p _ := doubled.comp
     (OracleMap.embedding (sumFamily functions (pathFamily emptyTree p))
@@ -107,7 +108,7 @@ def virtualOutput : PrefixOutput := fun p => doubled.comp (embeddedOutput p)
 
 /-- The prefix records label 10, then evaluates its message at 3. -/
 def routedPrefix (out : PrefixOutput) :
-    OracleVerifier labels tree Unit Nat emptyFamily functions where
+    OracleVerifier labels tree Unit (fun _ => Nat) emptyFamily (fun _ => functions) where
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact do
@@ -119,7 +120,8 @@ def routedPrefix (out : PrefixOutput) :
   outputMap _ p _ := out p
 
 /-- The suffix records 20, evaluates its input oracle and its own message at 1, then records 30. -/
-def routedSuffix : OracleVerifier labels tree Nat (Nat × Nat × Nat) functions functions where
+def routedSuffix :
+    OracleVerifier labels tree Nat (fun _ => Nat × Nat × Nat) functions (fun _ => functions) where
   decide mid p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact do
@@ -195,8 +197,8 @@ run_cmd checkRouting embeddedOutput 6
 run_cmd checkRouting virtualOutput 12
 
 /-- The prefix accepts only `false` and never consults the ambient oracle. -/
-def deterministicPrefix : OracleVerifier (Unit →ₒ Bool) emptyTree Unit Bool
-    emptyFamily emptyFamily where
+def deterministicPrefix : OracleVerifier (Unit →ₒ Bool) emptyTree Unit (fun _ => Bool)
+    emptyFamily (fun _ => emptyFamily) where
   decide _ _ _ := pure false
   outputMap := ambientPrefix.outputMap
 

@@ -364,8 +364,8 @@ def legacyOutputMap [∀ t, Inhabited (oSpec.Range t)]
 view, and outputs the legacy output oracles. -/
 def embedOracleVerifier [∀ t, Inhabited (oSpec.Range t)]
     (V : _root_.OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) :
-    Core.OracleVerifier oSpec (oracleProtocol pSpec) StmtIn StmtOut (family OStmtIn)
-      (family OStmtOut) where
+    Core.OracleVerifier oSpec (oracleProtocol pSpec) StmtIn (fun _ => StmtOut) (family OStmtIn)
+      (fun _ => family OStmtOut) where
   decide stmt p view :=
     OptionT.mk (simulateQ (decisionImpl p) (V.verify stmt (viewChallenges view.val)).run)
   outputMap _ p view := legacyOutputMap V (viewChallenges view.val) p

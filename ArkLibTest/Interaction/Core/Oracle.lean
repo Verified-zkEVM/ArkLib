@@ -44,7 +44,8 @@ example : projectPathAlong oracleSig tree first = projectPathAlong oracleSig tre
 example : (toView tree first).val = (toView tree second).val := rfl
 
 /-- The decision can name an evaluation query but receives no function payload. -/
-def queryDecision : OracleVerifier OracleSpec.emptySpec tree Unit Nat emptyFamily functions where
+def queryDecision : OracleVerifier OracleSpec.emptySpec tree Unit (fun _ => Nat) emptyFamily
+    (fun _ => functions) where
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact do
@@ -75,8 +76,8 @@ def emptyData : ∀ i, emptyResources.Realization i
   | .inr i => i.elim
 
 /-- The prefix can return a statement obtained from an ambient query. -/
-def ambientPrefix : OracleVerifier (Unit →ₒ Bool) emptyTree Unit Bool
-    emptyFamily emptyFamily where
+def ambientPrefix : OracleVerifier (Unit →ₒ Bool) emptyTree Unit (fun _ => Bool)
+    emptyFamily (fun _ => emptyFamily) where
   decide _ p _ := by
     cases p
     exact do
@@ -88,8 +89,8 @@ def ambientPrefix : OracleVerifier (Unit →ₒ Bool) emptyTree Unit Bool
       law := fun _ q => q.1.elim }
 
 /-- The suffix can lawfully expose its input statement as a constant oracle. -/
-def constantSuffix : OracleVerifier (Unit →ₒ Bool) emptyTree Bool Unit
-    emptyFamily functions where
+def constantSuffix : OracleVerifier (Unit →ₒ Bool) emptyTree Bool (fun _ => Unit)
+    emptyFamily (fun _ => functions) where
   decide _ _ _ := pure ()
   outputMap bit _ _ :=
     { f := fun _ _ _ => if bit then 1 else 0

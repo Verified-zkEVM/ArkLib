@@ -22,7 +22,8 @@ namespace Interaction.Core.SecurityTests
 
 instance : ∀ b, MeasurableSpace (problem.Witness () b) := fun _ => ⊤
 
-def judgement : OutputJudgement Bool Bool problem where
+def judgement : OutputJudgement Bool problem where
+  context _ := ()
   verdict b := some b
   proverStatement b := b
   witness _ _ _ := ()
@@ -40,7 +41,7 @@ example : completeness model problem problem judgement (fun _ _ => ()) 0 := by
   subst b
   simp [model, OutputJudgement.honest, judgement, problem]
 
-example : soundness model problem problem some 0 := by
+example : soundness model problem problem (fun _ => ()) some 0 := by
   intro b _ h a
   have hb : b ≠ true := by
     intro hb
@@ -89,7 +90,7 @@ def loggedProver : Prover plainSig service zero (fun _ => Nat) := do
   let _ ← liftM (service.query 5)
   pure 7
 
-def loggedVerifier : Verifier service zero Unit Nat where
+def loggedVerifier : Verifier service zero Unit (fun _ => Nat) where
   decide _ _ _ := do
     let n ← liftM (service.query 6)
     pure n
@@ -113,14 +114,14 @@ run_cmd do
     throwError "logged extraction lost the output witness or participant logs"
 
 /-- A terminal state changed by the prover must still be covered by the leaf obligation. -/
-def readState : Verifier service zero Unit Bool where
+def readState : Verifier service zero Unit (fun _ => Bool) where
   decide _ _ _ := do
     let n ← liftM (service.query 0)
     pure (n == 1)
 
 def stateImpl : QueryImpl service (StateT Nat ProbComp) := fun _ => get
 
-example : readState.validAcceptance stateImpl (· = true) () ⟨⟩ := by
+example : readState.validAcceptance stateImpl () ⟨⟩ (· = true) := by
   refine ⟨1, ?_⟩
   let : MeasurableSpace (Option Bool) := ⊤
   change 0 < 𝒟[(pure (some true) : ProbComp (Option Bool))] {v | ∃ t, v = some t ∧ t = true}
@@ -228,7 +229,7 @@ def tick : QueryImpl counter (StateT Nat ProbComp) := fun _ => do
   pure n
 
 /-- Reads the counter, then accepts a true statement or a true challenge with that reading. -/
-def coinVerifier : Verifier counter coin Bool Nat where
+def coinVerifier : Verifier counter coin Bool (fun _ => Nat) where
   decide stmt _ v := OptionT.mk do
     let n ← liftM (counter.query ())
     pure (if (stmt || v.val.1) = true then some n else none)
@@ -244,7 +245,7 @@ theorem decide_run' (stmt : Bool) (p) (v) (st : Nat) :
   rel _ b _ := b = true
   rel_admissible _ _ _ _ := trivial
 
-@[instance_reducible] def anyOutput : StatementProblem Nat where
+@[instance_reducible] def anyOutput : PathProblem coin (fun _ => Nat) where
   Witness _ _ := Unit
   admissible _ _ := True
   rel _ _ _ := True
@@ -252,7 +253,7 @@ theorem decide_run' (stmt : Bool) (p) (v) (st : Nat) :
 
 theorem validAcceptance_iff {langOut : Nat → Prop} (hl : ∀ t, langOut t) (stmt : Bool)
     (tr : PathAlong plainSig coin) :
-    coinVerifier.validAcceptance tick langOut stmt tr ↔
+    coinVerifier.validAcceptance tick stmt tr langOut ↔
       (stmt || (tr.1 : Bool)) = true := by
   rcases tr with ⟨x, ⟨⟩⟩
   have key : ∀ st, (simulateQ tick (coinVerifier.decide stmt _
@@ -264,7 +265,8 @@ theorem validAcceptance_iff {langOut : Nat → Prop} (hl : ∀ t, langOut t) (st
 
 /-- The state is true at the root of a true statement and at a leaf with a true challenge. -/
 def coinState : StateFunction plainSig coin Bool (boolProblem.admissible ())
-    (boolProblem.language ()) (coinVerifier.validAcceptance tick (anyOutput.language ())) where
+    (boolProblem.language ()) (fun stmt tr => coinVerifier.validAcceptance tick stmt tr
+      (anyOutput.language (projectPathAlong plainSig coin tr))) where
   toFun {_} sp history stmt := match sp, history with
     | .root _, _ => stmt = true
     | .down _ _, history => (stmt || (history.1.1 : Bool)) = true
@@ -335,7 +337,7 @@ theorem coin_not_rbrSoundness (ε : ChallengeNode plainSig coin → ℝ≥0∞)
 from the transcript. -/
 def coinKnowledge : KnowledgeStateFunction plainSig coin Bool (fun _ => Unit) Unit (fun _ => True)
     (fun b _ => b = true) (fun stmt tr (_ : Unit) =>
-      coinVerifier.validAcceptance tick (fun _ => True) stmt tr) where
+      coinVerifier.validAcceptance tick stmt tr (fun _ => True)) where
   Witness {_} sp history := match sp, history with
     | .root _, _ => Unit
     | .down _ _, history => {b : Bool // b = history.1.1}
@@ -421,13 +423,13 @@ def payloadOf (tr : PathAlong plainSig payloadMsg) : Nat := tr.1
 abbrev BoundedIndex (tr : PathAlong plainSig payloadMsg) : Type := Fin (payloadOf tr + 1)
 
 /-- Accepts when the payload equals the statement, and outputs the payload. -/
-def payloadVerifier : Verifier counter payloadMsg Nat Nat where
+def payloadVerifier : Verifier counter payloadMsg Nat (fun _ => Nat) where
   decide stmt _ v := OptionT.mk
     (pure (if payloadOf v.val = stmt then some (payloadOf v.val) else none))
 
 theorem payload_validAcceptance_iff {langOut : Nat → Prop} (stmt : Nat)
     (tr : PathAlong plainSig payloadMsg) :
-    payloadVerifier.validAcceptance tick langOut stmt tr ↔ payloadOf tr = stmt ∧ langOut stmt := by
+    payloadVerifier.validAcceptance tick stmt tr langOut ↔ payloadOf tr = stmt ∧ langOut stmt := by
   rcases tr with ⟨x, ⟨⟩⟩
   have key : ∀ st, (simulateQ tick (payloadVerifier.decide stmt _
       (toPlainView payloadMsg ⟨x, ⟨⟩⟩)).run).run' st =
@@ -440,7 +442,7 @@ theorem payload_validAcceptance_iff {langOut : Nat → Prop} (stmt : Nat)
 itself, so leaf extraction is the identity. -/
 def payloadKnowledge : KnowledgeStateFunction plainSig payloadMsg Nat BoundedIndex Nat
     (fun _ => True) (fun stmt w => w ≤ stmt) (fun stmt tr (_ : BoundedIndex tr) =>
-      payloadVerifier.validAcceptance tick (fun _ => True) stmt tr) where
+      payloadVerifier.validAcceptance tick stmt tr (fun _ => True)) where
   Witness {_} sp history := match sp, history with
     | .root _, _ => Nat
     | .down _ _, history => Fin ((show Nat from history.1.1) + 1)
@@ -539,7 +541,7 @@ def payloadHandler : QueryImpl (counter + challengeSpec plainSig payloadMsg) Id
 theorem payload_extractionGame (w : Fin 8) :
     simulateQ payloadHandler (extractionGame payloadVerifier (fun _ w => w) payloadExtractor 7
       (payloadProver 7 w)) = ((⟨⟨sendPayload 7, ⟨⟩⟩, w, some 7⟩, some w.val) :
-        Observation plainSig payloadMsg BoundedIndex Nat × Option Nat) :=
+        Observation plainSig payloadMsg BoundedIndex (fun _ => Nat) × Option Nat) :=
   rfl
 
 run_cmd do
@@ -554,7 +556,7 @@ def countingProver : Prover plainSig counter coin (fun _ => Nat) := do
   pure fun _ => liftM (counter.query ())
 
 /-- The observation of a run with challenge `b`. -/
-def coinObs (stmt b : Bool) : Observation plainSig coin (fun _ => Nat) Nat :=
+def coinObs (stmt b : Bool) : Observation plainSig coin (fun _ => Nat) (fun _ => Nat) :=
   ⟨⟨b, ⟨⟩⟩, 1, if (stmt || b) = true then some 2 else none⟩
 
 theorem experiment_counting (stmt : Bool) :
@@ -562,9 +564,9 @@ theorem experiment_counting (stmt : Bool) :
       (($ᵗ Bool : ProbComp Bool) >>= fun b => pure (coinObs stmt b)) := by
   rfl
 
-instance : MeasurableSpace (Observation plainSig coin (fun _ => Nat) Nat) := ⊤
+instance : MeasurableSpace (Observation plainSig coin (fun _ => Nat) (fun _ => Nat)) := ⊤
 
-instance : DiscreteMeasurableSpace (Observation plainSig coin (fun _ => Nat) Nat) :=
+instance : DiscreteMeasurableSpace (Observation plainSig coin (fun _ => Nat) (fun _ => Nat)) :=
   ⟨fun _ => MeasurableSpace.measurableSet_top⟩
 
 instance : Countable (PathAlong plainSig coin) :=
@@ -575,7 +577,8 @@ instance : Countable (PathAlong plainSig coin) :=
 noncomputable abbrev coinModel :=
   coinVerifier.classicalModel (Out := fun _ => Nat) (pure 0) tick draw
 
-theorem outcome_counting (stmt : Bool) (S : Set (Observation plainSig coin (fun _ => Nat) Nat)) :
+theorem outcome_counting (stmt : Bool)
+    (S : Set (Observation plainSig coin (fun _ => Nat) (fun _ => Nat))) :
     coinModel.outcome stmt countingProver S =
       𝒟[($ᵗ Bool : ProbComp Bool)] (coinObs stmt ⁻¹' S) := by
   change 𝒟[experiment (pure 0) tick draw (coinVerifier.run stmt countingProver)] S = _
@@ -625,7 +628,8 @@ instance : ∀ b, DiscreteMeasurableSpace (coinInput.Witness () b) :=
 instance : ∀ b, Countable (coinInput.Witness () b) := fun _ =>
   inferInstanceAs (Countable (Bool × Nat))
 
-def coinJudgement : OutputJudgement (Observation plainSig coin (fun _ => Nat) Nat) Nat anyOutput :=
+def coinJudgement :
+    OutputJudgement (Observation plainSig coin (fun _ => Nat) (fun _ => Nat)) anyOutput :=
   .ofObservation anyOutput (fun _ n => n) (fun _ _ _ => ())
 
 /-- Reads the challenge from the transcript and the sizes of both participant logs. -/
@@ -640,7 +644,7 @@ def coinTranscriptExtractor :
 
 theorem accepted_of_mem_support (stmt : Bool)
     (adv : Prover plainSig counter coin (fun _ => Nat))
-    {obs : Observation plainSig coin (fun _ => Nat) Nat}
+    {obs : Observation plainSig coin (fun _ => Nat) (fun _ => Nat)}
     (h : obs ∈ support (coinVerifier.run stmt adv))
     {t : Nat} (ht : obs.2.2 = some t) : (stmt || (obs.1.1 : Bool)) = true := by
   have hv := Verifier.verdict_mem_support_run coinVerifier stmt adv h

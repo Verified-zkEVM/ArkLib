@@ -20,6 +20,8 @@ output witness. The relation objects retain their explicit admissibility boundar
 
 @[expose] public section
 
+universe u uA v
+
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle MeasureTheory
 open scoped ENNReal
@@ -33,43 +35,56 @@ structure AdversaryModel (S Obs : Type*) [MeasurableSpace Obs] where
   outcome : (stmt : S) → Adv stmt → Measure Obs
   mass_le_one : ∀ stmt adv, outcome stmt adv Set.univ ≤ 1
 
+/-- A claim problem whose claim type is indexed by a protocol's shape path. -/
+abbrev PathProblem {P : PFunctor.{uA, u}} (s : FreeM P PUnit.{u + 1}) (T : Path s → Type v) :=
+  Problem (⟨T⟩ : ClaimFamily (Path s))
+
 /-- The accepted claim and witness used to judge a completed observation.
 
-The witness may depend on the accepted claim. A rejected observation need not supply one.
-The prover's claimed statement is retained separately to state honest output agreement.
+The claim type may depend on a public context read from the observation, such as the shape path
+of the run; a judgement with one claim type uses the context `Unit`. The witness may depend on the
+context and the accepted claim. A rejected observation need not supply one. The prover's claimed
+statement is retained separately to state honest output agreement.
 -/
-structure OutputJudgement (Obs T : Type*) (P : StatementProblem T) where
-  verdict : Obs → Option T
-  proverStatement : Obs → T
-  witness : ∀ obs stmt, verdict obs = some stmt → P.Witness () stmt
+structure OutputJudgement (Obs : Type*) {Ctx : Type*} {T : ClaimFamily Ctx} (P : Problem T) where
+  /-- The public context of an observation, which selects its claim type. -/
+  context : Obs → Ctx
+  /-- The verifier's verdict, a claim at the observation's context. -/
+  verdict : (obs : Obs) → Option (T.Claim (context obs))
+  /-- The prover's claimed statement at the observation's context. -/
+  proverStatement : (obs : Obs) → T.Claim (context obs)
+  /-- The witness judged against an accepted claim. -/
+  witness : ∀ obs stmt, verdict obs = some stmt → P.Witness (context obs) stmt
 
-/-- Judge an actual observation using its verifier verdict and decoded prover output. -/
+/-- Judge an actual observation using its verifier verdict and decoded prover output. The claim
+type is indexed by the shape path of the observation's transcript. -/
 def OutputJudgement.ofObservation {P : PFunctor.{1, 0}}
     {l : PFunctor.Lens P rolePoly} {s : FreeM P PUnit}
-    {Out : PathAlong l s → Type} {T : Type} (output : StatementProblem T)
-    (readStatement : ∀ tr, Out tr → T)
+    {Out : PathAlong l s → Type} {T : Path s → Type} (output : PathProblem s T)
+    (readStatement : ∀ tr, Out tr → T (projectPathAlong l s tr))
     (readWitness : ∀ obs : Observation l s Out T, ∀ t,
-      obs.2.2 = some t → output.Witness () t) :
-    OutputJudgement (Observation l s Out T) T output where
+      obs.2.2 = some t → output.Witness (projectPathAlong l s obs.1) t) :
+    OutputJudgement (Observation l s Out T) output where
+  context obs := projectPathAlong l s obs.1
   verdict obs := obs.2.2
   proverStatement obs := readStatement obs.1 obs.2.1
   witness := readWitness
 
 /-- Acceptance together with an output pair in the declared relation. -/
-def OutputJudgement.valid {Obs T : Type*} {P : StatementProblem T}
-    (J : OutputJudgement Obs T P) (obs : Obs) : Prop :=
-  ∃ stmt, ∃ h : J.verdict obs = some stmt, P.rel () stmt (J.witness obs stmt h)
+def OutputJudgement.valid {Obs Ctx : Type*} {T : ClaimFamily Ctx} {P : Problem T}
+    (J : OutputJudgement Obs P) (obs : Obs) : Prop :=
+  ∃ stmt, ∃ h : J.verdict obs = some stmt, P.rel (J.context obs) stmt (J.witness obs stmt h)
 
 /-- Honest acceptance also requires the two parties to agree on the output statement. -/
-def OutputJudgement.honest {Obs T : Type*} {P : StatementProblem T}
-    (J : OutputJudgement Obs T P) (obs : Obs) : Prop :=
+def OutputJudgement.honest {Obs Ctx : Type*} {T : ClaimFamily Ctx} {P : Problem T}
+    (J : OutputJudgement Obs P) (obs : Obs) : Prop :=
   ∃ stmt, ∃ h : J.verdict obs = some stmt,
-    J.proverStatement obs = stmt ∧ P.rel () stmt (J.witness obs stmt h)
+    J.proverStatement obs = stmt ∧ P.rel (J.context obs) stmt (J.witness obs stmt h)
 
 /-- Completeness is defined once over a model and an honest choice of its adversaries. -/
-def completeness {S Obs T : Type*} [MeasurableSpace Obs]
-    (M : AdversaryModel S Obs) (input : StatementProblem S) (output : StatementProblem T)
-    (J : OutputJudgement Obs T output)
+def completeness {S Obs Ctx : Type*} {T : ClaimFamily Ctx} [MeasurableSpace Obs]
+    (M : AdversaryModel S Obs) (input : StatementProblem S) (output : Problem T)
+    (J : OutputJudgement Obs output)
     (honest : ∀ stmt, input.Witness () stmt → M.Adv stmt) (ε : ℝ≥0∞) : Prop :=
   MeasurableSet {obs | J.honest obs} ∧
   ∀ stmt wit, input.rel () stmt wit →
@@ -101,7 +116,7 @@ def challengeQueryImpl {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly)
 
 /-- The default classical model contains every focal prover over the ambient oracle interface. -/
 noncomputable def Verifier.classicalModel {ι σ : Type} {ambient : OracleSpec ι}
-    {s : Protocol} {S T : Type} {Out : PathAlong plainSig s → Type}
+    {s : Protocol} {S : Type} {T : Path s → Type} {Out : PathAlong plainSig s → Type}
     [MeasurableSpace (Observation plainSig s Out T)]
     (V : Verifier ambient s S T) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
@@ -115,29 +130,32 @@ noncomputable def Verifier.classicalModel {ι σ : Type} {ambient : OracleSpec �
 
 The verifier itself obtains that data only through its declared query interface.
 -/
-noncomputable def OracleVerifier.classicalModel {ι I J σ : Type} {ambient : OracleSpec ι}
-    {s : OracleProtocol} {S T : Type} {A : I → Type} {B : J → Type}
-    {inputs : OracleFamily I A} {outputs : OracleFamily J B}
+noncomputable def OracleVerifier.classicalModel {ι I σ : Type} {ambient : OracleSpec ι}
+    {s : OracleProtocol} {S : Type} {T : Path s → Type} {A : I → Type}
+    {J : Path s → Type} {B : (p : Path s) → J p → Type}
+    {inputs : OracleFamily I A} {outputs : (p : Path s) → OracleFamily (J p) (B p)}
     {Out : PathAlong oracleSig s → Type}
-    [MeasurableSpace (Observation oracleSig s Out (T × (∀ j, B j)))]
+    [MeasurableSpace (Observation oracleSig s Out (OracleVerifier.Output T B))]
     (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (challenges : QueryImpl (challengeSpec oracleSig s) ProbComp) :
-    AdversaryModel (S × (∀ i, A i)) (Observation oracleSig s Out (T × (∀ j, B j))) where
+    AdversaryModel (S × (∀ i, A i))
+      (Observation oracleSig s Out (OracleVerifier.Output T B)) where
   Adv _ := Prover oracleSig ambient s Out
   outcome stmt adv := 𝒟[experiment init impl challenges (V.run stmt.1 stmt.2 adv)]
   mass_le_one _ _ := evalDist_apply_univ_le_one _
 
-/-- The ordinary reduction specializes model completeness without changing its experiment. -/
-abbrev Reduction.completeness {ι σ S W T : Type} {ambient : OracleSpec ι}
-    {s : Protocol} {Out : PathAlong plainSig s → Type}
+/-- The ordinary reduction specializes model completeness without changing its experiment. The
+output problem's claims are indexed by the shape path. -/
+abbrev Reduction.completeness {ι σ S W : Type} {ambient : OracleSpec ι}
+    {s : Protocol} {T : Path s → Type} {Out : PathAlong plainSig s → Type}
     (R : Reduction ambient s S W T Out) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (challenges : QueryImpl (challengeSpec plainSig s) ProbComp)
-    (input : StatementProblem S) (output : StatementProblem T)
-    (readStatement : ∀ tr, Out tr → T)
+    (input : StatementProblem S) (output : PathProblem s T)
+    (readStatement : ∀ tr, Out tr → T (projectPathAlong plainSig s tr))
     (readWitness : ∀ obs : Observation plainSig s Out T, ∀ t,
-      obs.2.2 = some t → output.Witness () t)
+      obs.2.2 = some t → output.Witness (projectPathAlong plainSig s obs.1) t)
     (witness : ∀ stmt, input.Witness () stmt → W) (ε : ℝ≥0∞) : Prop :=
   letI : MeasurableSpace (Observation plainSig s Out T) := ⊤
   Core.completeness (R.verifier.classicalModel init impl challenges) input output
