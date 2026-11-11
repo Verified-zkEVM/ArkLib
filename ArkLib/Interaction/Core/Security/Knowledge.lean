@@ -407,7 +407,7 @@ theorem map_fst_runWithLog {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {
     (stmt : S) (data : inputs.Data) (prover : Prover oracleSig ambient s Out) :
     Sigma.fst <$> V.runWithLog stmt data prover = V.run stmt data prover := by
   simp only [runWithLog_eq, _root_.map_bind, LawfulApplicative.map_pure]
-  rw [OracleVerifier.run]
+  rw [OracleVerifier.run_eq]
   conv_lhs =>
     arg 2
     intro a
@@ -492,7 +492,8 @@ theorem map_fst_runWithAmbientLog {ι : Type} {S : Type uS}
     {Out : PathAlong oracleSig s → Type} (V : OracleVerifier ambient s S T inputs outputs)
     (stmt : S) (data : inputs.Data) (prover : Prover oracleSig ambient s Out) :
     Prod.fst <$> V.runWithAmbientLog stmt data prover = V.run stmt data prover := by
-  simp only [runWithAmbientLog_eq, OracleVerifier.run, _root_.map_bind, LawfulApplicative.map_pure]
+  simp only [runWithAmbientLog_eq, OracleVerifier.run_eq, _root_.map_bind,
+    LawfulApplicative.map_pure]
   simp only [← map_fst_run_addLift_withLogging, bind_map_left]
   conv_rhs =>
     arg 1

@@ -154,7 +154,8 @@ example (hidden : Nat) : (observed true 7 11 hidden []).2 = [0, 1, 2] := rfl
 /-! For every hidden value, the decision log contains one oracle read. Computing the
 output data from this run's input and sent message adds no queries. -/
 example (hidden : Nat) : summary true 7 11 hidden [] =
-    (hidden, some (11, 18), [("tag", 1), ("sent", 11), ("tag", 2)], [0, 1, 2]) := rfl
+    (hidden, some (11, 18), [("tag", 1), ("sent", 11), ("tag", 2)], [0, 1, 2]) := by
+  kernel_rfl
 
 /-! A rejecting decision retains all earlier query answers, including the oracle answer 19. -/
 example (hidden : Nat) :
@@ -164,10 +165,12 @@ example (hidden : Nat) :
 /-! Additional passive accepting and rejecting executions with a setup query. Labelled terminal
 failures are tested separately below; rejection is never used as a substitute for failure. -/
 example (hidden : Nat) : summary false 7 11 hidden [9] =
-    (hidden, none, [("tag", 1), ("sent", 11), ("tag", 2)], [9, 0, 1, 2]) := rfl
+    (hidden, none, [("tag", 1), ("sent", 11), ("tag", 2)], [9, 0, 1, 2]) := by
+  kernel_rfl
 
 example (hidden : Nat) : summary true 7 11 hidden [9] =
-    (hidden, some (11, 18), [("tag", 1), ("sent", 11), ("tag", 2)], [9, 0, 1, 2]) := rfl
+    (hidden, some (11, 18), [("tag", 1), ("sent", 11), ("tag", 2)], [9, 0, 1, 2]) := by
+  kernel_rfl
 
 /-- A final decision reads the message before accepting, rejecting, or requesting a failure. -/
 def terminalVerifier (mode : Nat) :
@@ -857,7 +860,12 @@ example : loggedObserved 7 = (false, 29, some (7, 7)) := rfl
 example (input : Nat) : loggedObserved input = observed input := by
   have h := OracleVerifier.simulateQ_runWithLog_erase composite noQueries ()
     (fun _ => input) (prover input)
-  exact congrArg (fun obs => ((projectPathAlong oracleSig combined obs.1).1, obs.2.1,
+  change (simulateQ noQueries (composite.runWithLog () (fun _ => input) (prover input))).1 =
+    simulateQ noQueries (composite.run () (fun _ => input) (prover input)) at h
+  dsimp only [loggedObserved, observed]
+  exact congrArg (fun (obs : Observation oracleSig combined (fun _ => Nat)
+    (OracleVerifier.Output finalStmt finalData)) =>
+      ((projectPathAlong oracleSig combined obs.1).1, obs.2.1,
     obs.2.2.map (readClaim (projectPathAlong oracleSig combined obs.1)))) h
 
 end Interaction.Core.DependentRoutingTests

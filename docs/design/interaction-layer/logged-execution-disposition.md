@@ -201,8 +201,13 @@ Its input statement and output-query universes match the full-decision-log inter
 [optionalClosing] states the optional-closing correspondence for the output map and resources
 of any completed transcript, with independent input-index, input-query and output-query universes.
 
-The produced provenance obligations are equivalent under the passive schedule. [trace] supplies
-ordinary, full-log and ambient-log erasure, ordered per-slot concatenation and interpreter
+The produced provenance obligations are equivalent under the passive schedule. R1 replaces the
+separate slot executor with writer-instrumented strategies executed by `TwoParty.Lens.run`.
+`OracleVerifier.executeWith` supplies the single interaction/decision sequence for ordinary,
+full-trace and ambient-trace execution; both aggregate log APIs project these traces. The
+general `SlotInstrumentation.run_natural` law, added next to its use because pinned PolyFun
+lacks it, and writer/monad laws give erasure. No provenance disposition changes status.
+[trace] supplies ordinary, full-log and ambient-log erasure, ordered per-slot concatenation and interpreter
 correspondence. [prefixResources] supplies canonical availability and inclusion. [movedQuery]
 checks the distinguishing case: identical transcripts, outputs and aggregate logs, with a query
 at different actual prefixes. These facts do not restore verifier queries at intermediate
@@ -232,24 +237,24 @@ Ports owned by the oracle-access tests:
   and charge-seven/success-one assertion cover the corresponding parts of
   `fixed_native_resource_bounds` and `informed_cost_does_not_give_half`.
 
-[faults]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L218
-[closing]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L231
-[full]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L557
-[phases]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L510
-[source]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L367
+[faults]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L221
+[closing]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L234
+[full]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L560
+[phases]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L513
+[source]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L370
 [accepted]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L155
-[rejected]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L160
-[runtime]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L248
-[countSetup]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L398
-[countDirect]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L401
-[append]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L672
-[repeat]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L681
-[raw]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L713
-[bitLog]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L727
-[bitPlain]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L760
-[bitInformed]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L737
-[bitSplit]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L755
-[audit]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L825
+[rejected]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L163
+[runtime]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L251
+[countSetup]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L401
+[countDirect]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L404
+[append]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L675
+[repeat]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L684
+[raw]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L716
+[bitLog]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L730
+[bitPlain]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L763
+[bitInformed]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L740
+[bitSplit]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L758
+[audit]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L828
 [erasure]: ../../../ArkLib/Interaction/Core/Security/Knowledge.lean#L402
 [runtimeErasure]: ../../../ArkLib/Interaction/Core/Oracle/LoggedExecution.lean#L49
 [terminalAPI]: ../../../ArkLib/Interaction/Core/Oracle/LoggedExecution.lean#L73
@@ -261,24 +266,24 @@ Ports owned by the oracle-access tests:
 [appendLaw]: ../../../ArkLib/Interaction/Core/Oracle/Routing.lean#L119
 [substitution]: ../../../ArkLib/Interaction/Core/Composition.lean#L335
 [sourceClosing]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L255
-[unitRuntime]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L288
+[unitRuntime]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L291
 [optionalClosing]: ../../../ArkLib/Interaction/Core/Oracle/LoggedExecution.lean#L93
 [access]: oracle-access-tests.md
 
 [trace]: ../../../ArkLib/Interaction/Core/Oracle/Provenance.lean
 [prefixResources]: ../../../ArkLib/Interaction/Core/Oracle/PrefixResources.lean
-[tracePhases]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L893
-[actualPrefixes]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L911
-[joinPrefix]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1035
-[terminalPrefix]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1039
-[joinMember]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1028
-[terminalMember]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1031
-[joinName]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1056
-[joinAvailable]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1061
-[terminalAvailable]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1072
-[phaseSource]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1082
-[movedQuery]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L981
+[tracePhases]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L901
+[actualPrefixes]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L919
+[joinPrefix]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1043
+[terminalPrefix]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1047
+[joinMember]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1036
+[terminalMember]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1039
+[joinName]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1064
+[joinAvailable]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1069
+[terminalAvailable]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1080
+[phaseSource]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1090
+[movedQuery]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L989
 
 [slots]: ../../../ArkLib/Interaction/Core/Oracle/SlotTrace.lean
 
-[largeTrace]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1155
+[largeTrace]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1163

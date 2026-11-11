@@ -115,7 +115,7 @@ theorem runWithTrace_ambientView (V : OracleVerifier ambient s S T inputs output
     (data : inputs.Data) (prover : Prover oracleSig ambient s Out) :
     TracedRun.ambientView <$> V.runWithTrace stmt data prover =
       V.runWithAmbientTrace stmt data prover := by
-  simp only [runWithTrace, runWithAmbientTrace, _root_.map_bind]
+  simp only [runWithTrace, runWithAmbientTrace, executeWith, Functor.map_map, _root_.map_bind]
   refine bind_congr fun r => ?_
   rw [← map_run_withLogging_addLift_fst, bind_map_left]
   simp [TracedRun.ambientView]
