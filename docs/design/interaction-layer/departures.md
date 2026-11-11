@@ -35,7 +35,7 @@ The status is one of equivalent, premise-required or unresolved.
 | Entry | Departure | Status |
 | --- | --- | --- |
 | 18 | Run outputs and a prover's ambient index are tied to the monad universe `u`; every other component takes its own universe, including input and output oracle query types | premise-required: positions live one universe up and the runner is `m : Type u → Type u` |
-| 18 | Input oracle data stays in the response universe `Type u`; the logged oracle runner and the extraction wrappers built on it keep the input index and query type in `Type` | unresolved: `OracleInterface` ties data and responses through `ReaderM`, and the returned log records input queries |
+| 18 | Input oracle data stays in the response universe `Type u`; the full-log oracle runner `runWithLog` keeps the input index and query type in `Type`, while extraction runs on the general ambient-log runner | unresolved: `OracleInterface` ties data and responses through `ReaderM`, and the full log records input queries |
 
 ## Legacy embedding: entries 14–16
 
@@ -93,3 +93,9 @@ to the same witness.
 
 An earlier entry 17 recorded that straight-line knowledge soundness was transferred on the plain
 tree only. `Legacy/OracleKnowledge.lean` closes it, and the entry is removed.
+
+## Logged execution and routing acceptance clients
+
+The [source-to-port inventory](logged-execution-disposition.md) lists each frozen acceptance
+assertion, its exact port or missing interface, and the assertions retired by the approved passive
+verifier and fixed-shape premises. Its unresolved rows remain migration obligations.
