@@ -852,16 +852,6 @@ theorem Verifier.append_run_eq {s₁ : Protocol} {s₂ : Path s₁ → Protocol}
   refine bind_congr fun mid => ?_
   cases mid <;> rfl
 
-/-- A lifted ambient program keeps its ambient queries when the challenge queries are
-rerouted. -/
-theorem simulateQ_liftComp_inl {κ κ' : Type} {chal : OracleSpec κ} {chal' : OracleSpec κ'}
-    (G : QueryImpl chal (OracleComp (ambient + chal'))) {α : Type} (x : OracleComp ambient α) :
-    simulateQ (((fun q => liftM ((ambient + chal').query (.inl q))) :
-        QueryImpl ambient (OracleComp (ambient + chal'))) + G) (liftComp x (ambient + chal)) =
-      liftComp x (ambient + chal') := by
-  rw [QueryImpl.simulateQ_add_liftComp_left]
-  rfl
-
 /-- The boundary-decided run is the prefix interaction, the prefix decision, the suffix
 interaction against the returned continuation, and the suffix decision on its result. -/
 theorem Verifier.boundaryDecidedRun_eq {s₁ : Protocol} {s₂ : Path s₁ → Protocol} {S : Type uS}
@@ -889,7 +879,7 @@ theorem Verifier.boundaryDecidedRun_eq {s₁ : Protocol} {s₂ : Path s₁ → P
   simp only [Verifier.boundaryDecidedRun, Verifier.run, simulateQ_bind, simulateQ_pure, bind_assoc]
   rw [simulateQ_run_simulate_sampler]
   simp only [simulateQ_spec_query, prefixQueries, suffixQueries, QueryImpl.add_apply_inl,
-    QueryImpl.add_apply_inr, simulateQ_liftComp_inl]
+    QueryImpl.add_apply_inr, QueryImpl.simulateQ_add_liftComp_left]
   refine bind_congr fun o => ?_
   refine bind_congr fun mid => ?_
   erw [LawfulMonad.pure_bind]
