@@ -22,6 +22,7 @@ namespace Interaction.Core.SecurityTests
 
 instance : ∀ b, MeasurableSpace (problem.Witness () b) := fun _ => ⊤
 
+/-- A Boolean output is both the verdict and the prover's statement, with the unit witness. -/
 def judgement : OutputJudgement Bool problem where
   context _ := ()
   verdict b := some b
@@ -90,6 +91,7 @@ def loggedProver : Prover plainSig service zero (fun _ => Nat) := do
   let _ ← liftM (service.query 5)
   pure 7
 
+/-- A verifier that queries the service at `6` and accepts the answer. -/
 def loggedVerifier : Verifier service zero Unit (fun _ => Nat) where
   decide _ _ _ := do
     let n ← liftM (service.query 6)
@@ -133,7 +135,7 @@ def oracleProver : Prover oracleSig OracleSpec.emptySpec tree (fun _ => Nat) :=
   pure ⟨fun n => n + 5, pure 7⟩
 
 def oracleExtractor : Extractor.OracleStraightline OracleSpec.emptySpec tree
-    (fun _ : Unit × (∀ i, emptyFamily.{0, 0, 0}.Realization i) => Nat) (fun _ => Nat) :=
+    (fun _ : Unit × (∀ i, emptyFamily.Realization i) => Nat) (fun _ => Nat) :=
   fun _ _ out proveLog verifyLog => pure (out + proveLog.length + verifyLog.length)
 
 def oracleHandler : QueryImpl (OracleSpec.emptySpec + challengeSpec oracleSig tree) Id
@@ -564,8 +566,10 @@ theorem experiment_counting (stmt : Bool) :
       (($ᵗ Bool : ProbComp Bool) >>= fun b => pure (coinObs stmt b)) := by
   rfl
 
+/-- Every set of observations of the coin protocol is measurable. -/
 instance : MeasurableSpace (Observation plainSig coin (fun _ => Nat) (fun _ => Nat)) := ⊤
 
+/-- The observations of the coin protocol form a discrete measurable space. -/
 instance : DiscreteMeasurableSpace (Observation plainSig coin (fun _ => Nat) (fun _ => Nat)) :=
   ⟨fun _ => MeasurableSpace.measurableSet_top⟩
 
@@ -577,6 +581,7 @@ instance : Countable (PathAlong plainSig coin) :=
 noncomputable abbrev coinModel :=
   coinVerifier.classicalModel (Out := fun _ => Nat) (pure 0) tick draw
 
+/-- The outcome of the counting prover is the uniform challenge bit mapped through `coinObs`. -/
 theorem outcome_counting (stmt : Bool)
     (S : Set (Observation plainSig coin (fun _ => Nat) (fun _ => Nat))) :
     coinModel.outcome stmt countingProver S =
@@ -628,6 +633,8 @@ instance : ∀ b, DiscreteMeasurableSpace (coinInput.Witness () b) :=
 instance : ∀ b, Countable (coinInput.Witness () b) := fun _ =>
   inferInstanceAs (Countable (Bool × Nat))
 
+/-- Judge a coin observation against `anyOutput`: the prover's output is its claimed statement,
+and every accepted claim has the unit witness. -/
 def coinJudgement :
     OutputJudgement (Observation plainSig coin (fun _ => Nat) (fun _ => Nat)) anyOutput :=
   .ofObservation anyOutput (fun _ n => n) (fun _ _ _ => ())

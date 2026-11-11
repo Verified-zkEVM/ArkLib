@@ -30,11 +30,13 @@ def composed : Prover plainSig ambient (done.append (fun _ => done)) (fun _ => P
     liftM (ambient.query 1)
     pure suffix)
 
+/-- A verifier that queries the ambient oracle at `3` and then rejects. -/
 def reject : Verifier ambient done Unit (fun _ => Unit) where
   decide _ _ _ := OptionT.mk do
     liftM (ambient.query 3)
     pure none
 
+/-- A verifier that queries the ambient oracle at `4` and then accepts. -/
 def accept : Verifier ambient done Unit (fun _ => Unit) where
   decide _ _ _ := do
     liftM (ambient.query 4)
@@ -57,7 +59,7 @@ run_cmd do
 open Interaction.Core.OracleTests
 
 /-- A suffix computes a virtual output from an embedded prefix oracle. -/
-def virtualSuffix : OracleVerifier OracleSpec.emptySpec emptyTree Nat (fun _ => Unit) functions
+def virtualSuffix : OracleVerifier noAmbient emptyTree Nat (fun _ => Unit) functions
     (fun _ => functions) where
   decide _ _ _ := pure ()
   outputMap _ p _ := doubled.comp
@@ -73,12 +75,13 @@ def compatible : OracleVerifier.OutputCompatibility queryDecision (fun _ => virt
 
 def combined := queryDecision.append (fun _ => virtualSuffix) compatible
 
-def oracleProver : Prover oracleSig OracleSpec.emptySpec
+/-- The prover sends the function `n ↦ n + 5` and finishes. -/
+def oracleProver : Prover oracleSig noAmbient
     (tree.append (fun _ => emptyTree)) (fun _ => PUnit) :=
   pure ⟨fun n => n + 5, pure ⟨⟩⟩
 
 def oracleHandler : QueryImpl
-    (OracleSpec.emptySpec + challengeSpec oracleSig (tree.append (fun _ => emptyTree))) Id
+    (noAmbient + challengeSpec oracleSig (tree.append (fun _ => emptyTree))) Id
   | .inl i => i.elim
   | .inr ⟨.inl _, h⟩ => nomatch h
   | .inr ⟨.inr ⟨_, i⟩, _⟩ => i.elim

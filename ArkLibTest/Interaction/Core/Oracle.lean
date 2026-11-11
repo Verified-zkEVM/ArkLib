@@ -33,7 +33,13 @@ example : simulateQ (functions.behaviorOfRealizations (fun _ n => n + 5))
 example : simulateQ (functions.behaviorOfRealizations (fun _ n => n + 5))
     ((doubled.comp embedded).impl ⟨⟨⟩, (3 : Nat)⟩) = (16 : Nat) := rfl
 
-def emptyFamily : OracleFamily PEmpty (fun i => PEmpty.elim i) := ⟨fun i => i.elim⟩
+/-- No ambient oracles, with the index in `Type 0`. -/
+abbrev noAmbient : OracleSpec.{0, 0} PEmpty := OracleSpec.emptySpec
+
+/-- The empty input family, with its index in `Type 0`. -/
+def emptyFamily : OracleFamily.{0, 0, 0} PEmpty.{1} (fun i => PEmpty.elim i) :=
+  ⟨fun i => i.elim⟩
+
 @[instance_reducible] def tree : OracleProtocol :=
   .liftBind (.oracle (Nat → Nat) OracleInterface.instFunction) (fun _ => .pure ⟨⟩)
 
@@ -44,13 +50,13 @@ example : projectPathAlong oracleSig tree first = projectPathAlong oracleSig tre
 example : (toView tree first).val = (toView tree second).val := rfl
 
 /-- The decision can name an evaluation query but receives no function payload. -/
-def queryDecision : OracleVerifier OracleSpec.emptySpec tree Unit (fun _ => Nat) emptyFamily
+def queryDecision : OracleVerifier noAmbient tree Unit (fun _ => Nat) emptyFamily
     (fun _ => functions) where
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact do
       let n : Nat ← liftM (OracleSpec.query (spec :=
-        OracleSpec.emptySpec + (sumFamily emptyFamily (pathFamily tree ⟨⟨⟩, ⟨⟩⟩)).spec)
+        noAmbient + (sumFamily emptyFamily (pathFamily tree ⟨⟨⟩, ⟨⟩⟩)).spec)
         (.inr ⟨.inr (.inl ⟨⟩), (3 : Nat)⟩))
       pure n
   outputMap _ p _ := OracleMap.embedding (sumFamily emptyFamily (pathFamily tree p))
