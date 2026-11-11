@@ -20,7 +20,7 @@ prefix before drawing one fresh challenge; their indices contain only shape choi
 
 @[expose] public section
 
-universe uS uW uK uI wI wJ
+universe uS uW uK uO uI wI wJ
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle MeasureTheory
@@ -122,11 +122,11 @@ def rbrSoundness {S : Type uS} (s : FreeM P PUnit)
 
 Every witness carrier may depend on the input statement. Intermediate carriers may also read
 all earlier moves, including oracle payloads, and output carriers may read the complete
-transcript. Statements, input witnesses and intermediate witnesses lie in independent
-universes. The root extraction obligation applies within the input promise.
+transcript. Statements, input witnesses, intermediate witnesses and terminal witnesses lie in
+independent universes. The root extraction obligation applies within the input promise.
 -/
 structure KnowledgeStateFunction (s : FreeM P PUnit) (S : Type uS)
-    (W : S → PathAlong l s → Type) (Win : S → Type uW) (admissible : S → Prop)
+    (W : S → PathAlong l s → Type uO) (Win : S → Type uW) (admissible : S → Prop)
     (relIn : (stmt : S) → Win stmt → Prop)
     (validOutput : (stmt : S) → (tr : PathAlong l s) → W stmt tr → Prop) where
   Witness : ∀ (_stmt : S) {t} (sp : Cursor.Spine s t), PrefixMoves l sp → Type uK
@@ -152,11 +152,11 @@ structure KnowledgeStateFunction (s : FreeM P PUnit) (S : Type uS)
 
 /-- A fresh challenge rarely defeats backwards extraction, uniformly over later witnesses. -/
 def rbrKnowledgeSoundness {S : Type uS} {Win : S → Type uW} (s : FreeM P PUnit)
-    {W : S → PathAlong l s → Type} (admissible : S → Prop)
+    {W : S → PathAlong l s → Type uO} (admissible : S → Prop)
     (relIn : (stmt : S) → Win stmt → Prop)
     (validOutput : (stmt : S) → (tr : PathAlong l s) → W stmt tr → Prop)
     (draw : QueryImpl (challengeSpec l s) ProbComp) (ε : ChallengeNode l s → ℝ≥0∞) : Prop :=
-  ∃ F : KnowledgeStateFunction.{uS, uW, uK} l s S W Win admissible relIn validOutput,
+  ∃ F : KnowledgeStateFunction.{uS, uW, uK, uO} l s S W Win admissible relIn validOutput,
     ∀ stmt, admissible stmt →
     ∀ (a : P.A) (next : P.B a → FreeM P PUnit)
       (sp : Cursor.Spine s (.liftBind a next)) (h : owner l a = .receiver)
@@ -170,11 +170,12 @@ def rbrKnowledgeSoundness {S : Type uS} {Win : S → Type uW} (s : FreeM P PUnit
 /-- Move a knowledge state function to a larger universe of intermediate witnesses. Each new
 intermediate witness is an old one in a larger universe; the states, extractors and obligations
 are the old ones. -/
-def KnowledgeStateFunction.lift.{v} {s : FreeM P PUnit} {S : Type uS} {W : S → PathAlong l s → Type}
+def KnowledgeStateFunction.lift.{v} {s : FreeM P PUnit} {S : Type uS}
+    {W : S → PathAlong l s → Type uO}
     {Win : S → Type uW} {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
     {validOutput : (stmt : S) → (tr : PathAlong l s) → W stmt tr → Prop}
-    (F : KnowledgeStateFunction.{uS, uW, uK} l s S W Win admissible relIn validOutput) :
-    KnowledgeStateFunction.{uS, uW, max uK v} l s S W Win admissible relIn validOutput where
+    (F : KnowledgeStateFunction.{uS, uW, uK, uO} l s S W Win admissible relIn validOutput) :
+    KnowledgeStateFunction.{uS, uW, max uK v, uO} l s S W Win admissible relIn validOutput where
   Witness stmt {_} sp history := ULift.{v} (F.Witness stmt sp history)
   toFun stmt {_} sp history wit := F.toFun stmt sp history wit.down
   extractRoot stmt wit := F.extractRoot stmt wit.down
@@ -187,11 +188,11 @@ def KnowledgeStateFunction.lift.{v} {s : FreeM P PUnit} {S : Type uS} {W : S →
 /-- Round-by-round knowledge soundness with intermediate witnesses in a universe `uK` implies
 it with intermediate witnesses in any larger universe, at the same error. -/
 theorem rbrKnowledgeSoundness.lift.{v} {S : Type uS} {Win : S → Type uW} {s : FreeM P PUnit}
-    {W : S → PathAlong l s → Type} {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
+    {W : S → PathAlong l s → Type uO} {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
     {validOutput : (stmt : S) → (tr : PathAlong l s) → W stmt tr → Prop}
     {draw : QueryImpl (challengeSpec l s) ProbComp} {ε : ChallengeNode l s → ℝ≥0∞}
-    (h : rbrKnowledgeSoundness.{uS, uW, uK} l s admissible relIn validOutput draw ε) :
-    rbrKnowledgeSoundness.{uS, uW, max uK v} l s admissible relIn validOutput draw ε := by
+    (h : rbrKnowledgeSoundness.{uS, uW, uK, uO} l s admissible relIn validOutput draw ε) :
+    rbrKnowledgeSoundness.{uS, uW, max uK v, uO} l s admissible relIn validOutput draw ε := by
   obtain ⟨F, hF⟩ := h
   refine ⟨F.lift, fun stmt ha a next sp ho hist => ?_⟩
   simpa only [KnowledgeStateFunction.lift, ULift.exists] using hF stmt ha a next sp ho hist
@@ -244,14 +245,14 @@ abbrev Verifier.rbrSoundness {ι σ : Type} {S : Type uS} {ambient : OracleSpec 
 and the output relation are indexed by the input statement and completed transcript. -/
 abbrev Verifier.rbrKnowledgeSoundness {ι σ : Type} {S : Type uS} {Win : S → Type uW}
     {ambient : OracleSpec ι} {s : Protocol} {T : Path s → Type}
-    {W : S → PathAlong plainSig s → Type} (V : Verifier ambient s S T)
+    {W : S → PathAlong plainSig s → Type uO} (V : Verifier ambient s S T)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (admissible : S → Prop) (relIn : (stmt : S) → Win stmt → Prop)
     (relOut : (stmt : S) → (tr : PathAlong plainSig s) → T (projectPathAlong plainSig s tr) → W
     stmt tr → Prop)
     (draw : QueryImpl (challengeSpec plainSig s) ProbComp)
     (ε : ChallengeNode plainSig s → ℝ≥0∞) : Prop :=
-  Core.rbrKnowledgeSoundness.{uS, uW, uK} plainSig s admissible relIn
+  Core.rbrKnowledgeSoundness.{uS, uW, uK, uO} plainSig s admissible relIn
     (fun stmt tr wit => V.validAcceptance impl stmt tr (fun t => relOut stmt tr t wit)) draw ε
 
 namespace OracleVerifier
@@ -313,7 +314,7 @@ abbrev rbrSoundness (V : OracleVerifier ambient s S T inputs outputs)
 witness type `W stmt tr` and the output relation are indexed by the input statement, including
 its oracle data, and the completed transcript. -/
 abbrev rbrKnowledgeSoundness {Win : (S × (∀ i, A i)) → Type uW}
-    {W : (S × (∀ i, A i)) → PathAlong oracleSig s → Type}
+    {W : (S × (∀ i, A i)) → PathAlong oracleSig s → Type uO}
     (V : OracleVerifier ambient s S T inputs outputs)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (admissible : S × (∀ i, A i) → Prop) (relIn : (stmt : S × (∀ i, A i)) → Win stmt → Prop)
@@ -321,7 +322,7 @@ abbrev rbrKnowledgeSoundness {Win : (S × (∀ i, A i)) → Type uW}
       OracleVerifier.Output T B (projectPathAlong oracleSig s tr) → W stmt tr → Prop)
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp)
     (ε : ChallengeNode oracleSig s → ℝ≥0∞) : Prop :=
-  Core.rbrKnowledgeSoundness.{max uS uI, uW, uK} oracleSig s admissible relIn
+  Core.rbrKnowledgeSoundness.{max uS uI, uW, uK, uO} oracleSig s admissible relIn
     (fun stmt tr wit => V.validAcceptance impl stmt tr (fun t => relOut stmt tr t wit)) draw ε
 
 end OracleVerifier

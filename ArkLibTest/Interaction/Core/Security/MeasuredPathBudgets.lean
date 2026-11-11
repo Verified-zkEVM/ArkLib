@@ -20,6 +20,8 @@ counts two declared additions; it does not count all host-language arithmetic.
 
 open PFunctor PFunctor.FreeM Interaction.Core OracleComp AddProgramTest
 
+-- Disposition IDs refer to docs/design/interaction-layer/knowledge-composition-disposition.md.
+
 namespace Interaction.Core.MeasuredPathBudgetsTests
 
 /-- Runs a measured program with its handlers and records its additive cost. -/
@@ -27,7 +29,7 @@ def recorded {A B : Type} (program : MeasuredProgram A B Nat) (input : A) : B ×
   (simulateQ ((program.answer (program.view input)).withAddCost program.cost)
     (program.program (program.view input))).runAdd.run
 
--- MeasuredPathBudgets row 1 (`recorded_comp`): ported unchanged.
+-- Disposition MP-031.
 /-- Recording the additive cost commutes with composition. -/
 theorem recorded_comp {A B C : Type} (outer : MeasuredProgram B C Nat)
     (inner : MeasuredProgram A B Nat) (input : A) :
@@ -132,7 +134,7 @@ def chainPath : (n : Nat) → PathAlong plainSig (chain n)
 /-- The transcript of `deep` whose first message is `n`. -/
 def deepPath (n : Nat) : PathAlong plainSig deep := ⟨n, chainPath n⟩
 
--- MeasuredPathBudgets row 2 (`chainStages_budgetAtMost`), restated with root and leaf bounds zero.
+-- Disposition MP-063.
 /-- Every chain stage has budget at most one. -/
 theorem chainStages_budgetAtMost (n : Nat) : (chainStages n).BudgetAtMost 0 1 0 where
   root _ := le_rfl
@@ -152,7 +154,7 @@ theorem chain_budgetFrom (n : Nat) : (k : Nat) → (sp : Cursor.Spine (chain n) 
   | 0, _, _ => rfl
   | k + 1, _, _ => congrArg (· + 1) (chain_budgetFrom n k _ _)
 
--- MeasuredPathBudgets row 3 (`chain_budget`): the length is the number of chain messages.
+-- Disposition MP-071.
 /-- The budget along the chain transcript is its length. -/
 theorem chain_budget (n : Nat) : ((chainStages n).programAlong () (chainPath n)).budget = n :=
   chain_budgetFrom n n (.root _) ⟨⟩
@@ -168,12 +170,12 @@ theorem deep_budgetFrom : (k : Nat) → (sp : Cursor.Spine deep (chain k)) → i
     rw [hsp]
     exact congrArg (· + 1) (deep_budgetFrom k _ (isRoot_comp sp _ rfl) _)
 
--- MeasuredPathBudgets row 4 (`deep_budget`).
+-- Disposition MP-076.
 /-- The budget along the transcript of `deep` with first message `n` is `n`. -/
 theorem deep_budget (n : Nat) : (deepStages.programAlong () (deepPath n)).budget = n :=
   deep_budgetFrom n _ rfl _
 
--- MeasuredPathBudgets row 5 (`no_global_budget_of_stage_bound`).
+-- Disposition MP-081.
 /-- Locally unit-cost instruction programs can have no global composed budget. -/
 theorem no_global_budget_of_stage_bound :
     deepStages.BudgetAtMost 0 1 0 ∧ ∀ bound : Nat, ∃ tr : PathAlong plainSig deep,
@@ -191,7 +193,7 @@ theorem chain_recordedFrom (n : Nat) : (k : Nat) → (sp : Cursor.Spine (chain n
     refine (congrArg Prod.snd (recorded_comp _ _ w)).trans ?_
     exact congrArg (· + 1) (chain_recordedFrom n k _ _ w)
 
--- MeasuredPathBudgets row 6 (`chain_recorded_cost`), at every output witness.
+-- Disposition MP-090.
 /-- The recorded cost along the chain transcript is its length. -/
 theorem chain_recorded_cost (n w : Nat) :
     (recorded ((chainStages n).programAlong () (chainPath n)).program w).2 = n :=
@@ -212,7 +214,7 @@ theorem deep_recordedFrom : (k : Nat) → (sp : Cursor.Spine deep (chain k)) →
     rw [hsp]
     rfl
 
--- MeasuredPathBudgets row 7 (`deep_recorded_cost`), at every output witness.
+-- Disposition MP-107.
 /-- The recorded cost along the transcript of `deep` with first message `n` is `n`. -/
 theorem deep_recorded_cost (n w : Nat) :
     (recorded (deepStages.programAlong () (deepPath n)).program w).2 = n := by
@@ -221,7 +223,7 @@ theorem deep_recorded_cost (n w : Nat) :
     (Nat.add_zero n)
   exact (congrArg (· + 0) (deep_recordedFrom n _ rfl _ w)).trans (Nat.add_zero n)
 
--- MeasuredPathBudgets row 8 (`no_global_cost_bound_of_stage_bound`).
+-- Disposition MP-119.
 /-- No global bound controls actual instruction cost, despite local budget one. -/
 theorem no_global_cost_bound_of_stage_bound :
     deepStages.BudgetAtMost 0 1 0 ∧ ∀ bound : Nat, ∃ tr : PathAlong plainSig deep,
@@ -234,15 +236,14 @@ theorem no_global_cost_bound_of_stage_bound :
   rw [deep_recorded_cost] at cost_le
   exact Nat.not_succ_le_self bound cost_le
 
--- MeasuredPathBudgets row 9: the length is the number of moves of the transcript.
+-- Disposition MP-137.
 /-- The path-length bound applies without unfolding the chosen branch. -/
 example (tr : PathAlong plainSig deep) :
     (deepStages.programAlong () tr).program.CostAtMost
       ((completeSpine plainSig tr).length • (1 : Nat)) :=
   deepStages.programAlong_costAtMost_nsmul deepStages_budgetAtMost () tr
 
--- MeasuredPathBudgets row 10, restated for every state function on the empty protocol and every
--- stages with zero root and leaf bounds.
+-- Disposition MP-142.
 /-- On the empty protocol, stages with zero root and leaf bounds cost nothing. -/
 example {S : Type} {Win : S → Type} {W : S → PathAlong plainSig (.pure ⟨⟩ : Protocol.{0}) → Type}
     {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
@@ -255,12 +256,12 @@ example {S : Type} {Win : S → Type} {W : S → PathAlong plainSig (.pure ⟨�
     (stages.programAlong stmt tr).program.CostAtMost 0 := by
   simpa [completeSpine, Cursor.Spine.length] using stages.programAlong_costAtMost_nsmul h stmt tr
 
--- MeasuredPathBudgets row 11: the transcript of the empty protocol has no move.
+-- Disposition MP-149.
 /-- The empty transcript has length zero. -/
 example (tr : PathAlong plainSig (.pure ⟨⟩ : Protocol.{0})) :
     (completeSpine plainSig tr).length = 0 := rfl
 
--- MeasuredPathBudgets row 12: the ω-generic monoid is kept, with step bound `-1` over `Int`.
+-- Disposition MP-152.
 /-- With a negative weight, `length • stepBound` cannot be relaxed to a larger depth cap. -/
 example :
     let F := natState (.pure ⟨⟩) (fun _ w => w)
@@ -310,15 +311,15 @@ def orderedPath : PathAlong plainSig orderedProtocol := ⟨(), (), (), ⟨⟩⟩
 def orderedObservation (w : Nat) : Nat × Nat :=
   recorded (orderedStages.programAlong () orderedPath).program w
 
--- MeasuredPathBudgets row 13.
+-- Disposition MP-183.
 /-- Both charged programs execute, with the intervening uncharged map, on every input. -/
 example (w : Nat) : orderedObservation w = (w + w + 6, 2) := rfl
 
--- MeasuredPathBudgets row 14.
+-- Disposition MP-186.
 /-- Swapping the charged stages would give eighteen, rather than twelve. -/
 example : (orderedObservation 3).1 ≠ (3 + 1 + 5) + (3 + 1 + 5) := by decide
 
--- MeasuredPathBudgets row 15.
+-- Disposition MP-189.
 /-- Omitting the zero-charge middle map would give seven, rather than twelve. -/
 example : (orderedObservation 3).1 ≠ 3 + 3 + 1 := by decide
 
@@ -329,12 +330,12 @@ def checkOrderedObservation : IO Unit := do
       throw (IO.userError "Composed extraction changed stage order or omitted a stage")
   IO.println "Ordered extraction preserves both charged stages and the uncharged middle map."
 
--- MeasuredPathBudgets row 16.
+-- Disposition MP-198.
 /-- info: Ordered extraction preserves both charged stages and the uncharged middle map. -/
 #guard_msgs in
 #eval checkOrderedObservation
 
--- MeasuredPathBudgets row 17, at output witness 0.
+-- Disposition MP-202.
 /-- info: (4, 4) -/
 #guard_msgs in
 #eval recorded (deepStages.programAlong () (deepPath 4)).program 0

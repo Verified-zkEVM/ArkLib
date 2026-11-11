@@ -18,6 +18,8 @@ every state function has zero-instruction stages.
 
 open PFunctor PFunctor.FreeM Interaction.Core OracleComp AddProgramTest
 
+-- Disposition IDs refer to docs/design/interaction-layer/knowledge-composition-disposition.md.
+
 namespace Interaction.Core.MeasuredExtractionTests
 
 /-- One public message in `Fin 8`. -/
@@ -60,22 +62,21 @@ def addStages : addState.MeasuredStages Nat where
     | down _ tail => cases tail
   leaf _ _ _ := BudgetedProgram.ofFun _
 
--- MeasuredExtraction row 4, restated at the step stage, whose input carrier depends on the message.
+-- Disposition ME-086.
 /-- The step program returns the witness plus the message, in the carrier selected by the
 message. -/
 example (m : Fin 8) (w : Fin (m.val + 1)) :
     (addStages.step () (.root _) ⟨⟩).program.run ⟨m, w⟩ = w.val + m.val :=
   ((addStages.step () (.root _) ⟨⟩).realizes _).symm
 
--- MeasuredExtraction row 4, along the transcript from an output witness in the carrier selected
--- by the message.
+-- Disposition ME-086.
 /-- The composed program retains the witness carrier selected by the actual message. -/
 example (message : Fin 8) (witness : Fin (message.val + 1)) :
     (addStages.programAlong () ⟨message, ⟨⟩⟩).program.run witness =
       witness.val + message.val :=
   addStages.run_programAlong () ⟨message, ⟨⟩⟩ witness
 
--- MeasuredExtraction row 5.
+-- Disposition ME-091.
 /-- The budget along every transcript is one. -/
 example (m : Fin 8) : (addStages.programAlong () ⟨m, ⟨⟩⟩).budget = 1 := rfl
 
@@ -92,13 +93,13 @@ def emptyState : KnowledgeStateFunction plainSig (.pure ⟨⟩ : Protocol.{0}) U
   send sp _ _ _ _ _ _ := nomatch sp
   leaf _ _ _ w _ := w.elim
 
--- MeasuredExtraction row 6: the empty protocol with `Empty` witnesses.
+-- Disposition ME-094.
 /-- The empty protocol with no witnesses has a zero-budget extraction program. -/
 example (tr : PathAlong plainSig (.pure ⟨⟩ : Protocol.{0})) :
     ((KnowledgeStateFunction.MeasuredStages.zero emptyState (ω := Nat)).programAlong () tr).budget
       = 0 := rfl
 
--- MeasuredExtraction row 7.
+-- Disposition ME-103.
 /-- Measured state functions fix natural-number profiles, needing only `[Finite Kind]`. -/
 example (Kind : Type) [Finite Kind] : Type 1 :=
   MeasuredKnowledgeStateFunction Kind plainSig (.pure ⟨⟩ : Protocol.{0}) Unit (fun _ _ => Empty)
@@ -136,7 +137,7 @@ variable {s : Protocol.{0}} {S : Type} {Win : S → Type} {W : S → PathAlong p
   {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
   {validOutput : (stmt : S) → (tr : PathAlong plainSig s) → W stmt tr → Prop}
 
--- MeasuredExtraction row 8.
+-- Disposition ME-112.
 /-- Standard count stages extend a state function without supplying a cost model. -/
 example (F : KnowledgeStateFunction plainSig s S W Win admissible relIn validOutput)
     (stages : F.MeasuredStages (Unit → Nat)) :
@@ -162,7 +163,7 @@ section MaxWeights
 
 local instance : AddCommMonoid Nat := maxNatAddCommMonoid
 
--- MeasuredExtraction row 9.
+-- Disposition ME-138.
 /-- A max-additive profile is weighted accounting, not the fixed count arithmetic. -/
 example (F : KnowledgeStateFunction plainSig s S W Win admissible relIn validOutput)
     (_stages : F.MeasuredStages (Unit → Nat)) : True := by
@@ -178,7 +179,7 @@ section ReversedWeights
 
 local instance : Preorder (Unit → Nat) := inferInstanceAs (Preorder (OrderDual (Unit → Nat)))
 
--- MeasuredExtraction row 10.
+-- Disposition ME-153.
 /-- A reversed order cannot replace the standard order. -/
 example (F : KnowledgeStateFunction plainSig s S W Win admissible relIn validOutput)
     (_stages : F.MeasuredStages (Unit → Nat)) : True := by
@@ -190,7 +191,7 @@ example (F : KnowledgeStateFunction plainSig s S W Win admissible relIn validOut
 
 end ReversedWeights
 
--- MeasuredExtraction row 11.
+-- Disposition ME-166.
 /-- An infinite kind type cannot instantiate a measured state function. -/
 example : True := by
   fail_if_success
@@ -208,14 +209,13 @@ variable {s : Protocol.{0}} {S : Type} {Win : S → Type} {W : S → PathAlong p
   {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
   {validOutput : (stmt : S) → (tr : PathAlong plainSig s) → W stmt tr → Prop}
 
--- MeasuredExtraction row 12 (`zeroStages_budgetAtMost`), for every state function, with root,
--- step and leaf bounds zero.
+-- Disposition ME-186.
 /-- The zero-instruction stages of every state function have zero budgets. -/
 example (F : KnowledgeStateFunction plainSig s S W Win admissible relIn validOutput) :
     (KnowledgeStateFunction.MeasuredStages.zero F (ω := Unit → Nat)).BudgetAtMost 0 0 0 :=
   KnowledgeStateFunction.MeasuredStages.zero_budgetAtMost F
 
--- MeasuredExtraction row 13, for every state function.
+-- Disposition ME-194.
 /-- Every state function admits a zero-count measured state function, without bounding its pure
 work. -/
 example (F : KnowledgeStateFunction plainSig s S W Win admissible relIn validOutput) :

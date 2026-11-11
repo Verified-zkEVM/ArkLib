@@ -1248,7 +1248,7 @@ theorem rbrKnowledgeSoundness_of_legacyWith (hacc : L.AcceptanceAgrees impl V ac
       (fun stmt tr wit => acc (fun t => (t, wit) ∈ relOut) stmt tr)
       (L.challengeImpl ProtocolSpec.challengeQueryImpl)
       (fun c => ε (L.challengeRound 0 n (Nat.zero_add n) c)) := by
-  apply Core.rbrKnowledgeSoundness.lift.{0, 0, 0, uK}
+  apply Core.rbrKnowledgeSoundness.lift.{0, 0, 0, 0, uK}
   refine ⟨L.embedKnowledgeStateFunction hacc K hK, fun stmt _ a next sp hc hist => ?_⟩
   obtain ⟨j, rfl, tr, h1, h2, hch⟩ := L.prefixFrom_step 0 n _ default sp hist
   obtain ⟨hd, hcr, hmap⟩ := hch hc

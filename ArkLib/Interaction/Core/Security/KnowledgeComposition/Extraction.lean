@@ -45,7 +45,7 @@ function of the prefix statement and transcript.
 
 @[expose] public section
 
-universe uS uW uK uS' uW' uT uI wI wJ wK uW₂
+universe uS uW uK uO uM uO₂ uS' uW' uT uI wI wJ wK uW₂
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle MeasureTheory
@@ -110,7 +110,7 @@ def PrefixMoves.completeWith {s : FreeM P PUnit.{1}} : {t : FreeM P PUnit.{1}} �
 namespace KnowledgeStateFunction
 
 variable {l} {s : FreeM P PUnit.{1}} {S : Type uS} {Win : S → Type uW}
-    {W : S → PathAlong l s → Type}
+    {W : S → PathAlong l s → Type uO}
   {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
   {validOutput : (stmt : S) → (tr : PathAlong l s) → W stmt tr → Prop}
   (F : KnowledgeStateFunction.{_, _, uK} l s S W Win admissible relIn validOutput)
@@ -256,7 +256,7 @@ end KnowledgeStateFunction
 function. -/
 theorem rbrKnowledgeSoundness_iff_exists_locallyBounded {s : FreeM P PUnit.{1}} {S : Type uS}
     {Win : S → Type uW}
-    {W : S → PathAlong l s → Type} {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
+    {W : S → PathAlong l s → Type uO} {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
     {validOutput : (stmt : S) → (tr : PathAlong l s) → W stmt tr → Prop}
     {draw : QueryImpl (challengeSpec l s) ProbComp} {ε : ChallengeNode l s → ℝ≥0∞} :
     rbrKnowledgeSoundness.{_, _, uK} l s admissible relIn validOutput draw ε ↔
@@ -272,7 +272,7 @@ variable {l}
 /-- The state function below a first move. Its input witnesses are the witnesses after that
 move, so its root obligation is vacuous; every other field is the original one. -/
 def child {a : P.A} {next : P.B a → FreeM P PUnit.{1}} {S : Type uS} {Win : S → Type uW}
-    {W : S → PathAlong l (.liftBind a next) → Type} {admissible : S → Prop} {relIn : (stmt : S) →
+    {W : S → PathAlong l (.liftBind a next) → Type uO} {admissible : S → Prop} {relIn : (stmt : S) →
       Win stmt → Prop}
     {validOutput : (stmt : S) → (tr : PathAlong l (.liftBind a next)) → W stmt tr → Prop}
     (F : KnowledgeStateFunction.{_, _, uK} l (.liftBind a next) S W Win admissible relIn
@@ -293,11 +293,11 @@ def child {a : P.A} {next : P.B a → FreeM P PUnit.{1}} {S : Type uS} {Win : S 
 /-- Keep the same prefix witnesses and extraction maps, with the root witness itself as the
 input witness and a vacuous input relation. -/
 def withRootWitness {s : FreeM P PUnit.{1}} {S : Type uS} {Win : S → Type uW}
-    {W : S → PathAlong l s → Type} {admissible : S → Prop}
+    {W : S → PathAlong l s → Type uO} {admissible : S → Prop}
     {relIn : (stmt : S) → Win stmt → Prop}
     {validOutput : (stmt : S) → (tr : PathAlong l s) → W stmt tr → Prop}
-    (F : KnowledgeStateFunction.{uS, uW, uK} l s S W Win admissible relIn validOutput) :
-    KnowledgeStateFunction.{uS, uK, uK} l s S W
+    (F : KnowledgeStateFunction.{uS, uW, uK, uO} l s S W Win admissible relIn validOutput) :
+    KnowledgeStateFunction.{uS, uK, uK, uO} l s S W
       (fun stmt => F.Witness stmt (.root s) ⟨⟩) (fun _ => False) (fun _ _ => True)
       validOutput where
   Witness := F.Witness
@@ -334,7 +334,7 @@ def appendWitness : {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P
 the suffix state after it. -/
 def appendToFunAux :
     {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
-    {Wmid : S → PathAlong l s₁ → Type} → {W : S → PathAlong l (s₁.append s₂) → Type} →
+    {Wmid : S → PathAlong l s₁ → Type uM} → {W : S → PathAlong l (s₁.append s₂) → Type uO} →
     {Win : S → Type uK} →
     {admissible : S → Prop} → {relIn : (stmt : S) → Win stmt → Prop} →
     {validMid : (stmt : S) → (tr : PathAlong l s₁) → Wmid stmt tr → Prop} →
@@ -372,7 +372,7 @@ def appendToFunAux :
 /-- The same composition law with an independent input-witness universe. -/
 def appendToFun :
     {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
-    {Wmid : S → PathAlong l s₁ → Type} → {W : S → PathAlong l (s₁.append s₂) → Type} →
+    {Wmid : S → PathAlong l s₁ → Type uM} → {W : S → PathAlong l (s₁.append s₂) → Type uO} →
     {Win : S → Type uW} →
     {admissible : S → Prop} → {relIn : (stmt : S) → Win stmt → Prop} →
     {validMid : (stmt : S) → (tr : PathAlong l s₁) → Wmid stmt tr → Prop} →
@@ -394,7 +394,7 @@ def appendToFun :
 when the prefix is a leaf, and the prefix input extraction otherwise. -/
 def appendExtractRoot :
     {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
-    {Wmid : S → PathAlong l s₁ → Type} → {W : S → PathAlong l (s₁.append s₂) → Type} →
+    {Wmid : S → PathAlong l s₁ → Type uM} → {W : S → PathAlong l (s₁.append s₂) → Type uO} →
     {Win : S → Type uW} →
     {admissible : S → Prop} → {relIn : (stmt : S) → Win stmt → Prop} →
     {validMid : (stmt : S) → (tr : PathAlong l s₁) → Wmid stmt tr → Prop} →
@@ -417,7 +417,7 @@ def appendExtractRoot :
 `appendExtractRoot` where a move reaches the seam, and the suffix step after it. -/
 def appendExtractStepAux :
     {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
-    {Wmid : S → PathAlong l s₁ → Type} → {W : S → PathAlong l (s₁.append s₂) → Type} →
+    {Wmid : S → PathAlong l s₁ → Type uM} → {W : S → PathAlong l (s₁.append s₂) → Type uO} →
     {Win : S → Type uK} →
     {admissible : S → Prop} → {relIn : (stmt : S) → Win stmt → Prop} →
     {validMid : (stmt : S) → (tr : PathAlong l s₁) → Wmid stmt tr → Prop} →
@@ -472,7 +472,7 @@ def appendExtractStepAux :
 /-- The same composition law with an independent input-witness universe. -/
 def appendExtractStep :
     {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
-    {Wmid : S → PathAlong l s₁ → Type} → {W : S → PathAlong l (s₁.append s₂) → Type} →
+    {Wmid : S → PathAlong l s₁ → Type uM} → {W : S → PathAlong l (s₁.append s₂) → Type uO} →
     {Win : S → Type uW} →
     {admissible : S → Prop} → {relIn : (stmt : S) → Win stmt → Prop} →
     {validMid : (stmt : S) → (tr : PathAlong l s₁) → Wmid stmt tr → Prop} →
@@ -497,7 +497,7 @@ def appendExtractStep :
 /-- Leaf extraction of the composite, which is the suffix leaf extraction. -/
 def appendExtractLeafAux :
     {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
-    {Wmid : S → PathAlong l s₁ → Type} → {W : S → PathAlong l (s₁.append s₂) → Type} →
+    {Wmid : S → PathAlong l s₁ → Type uM} → {W : S → PathAlong l (s₁.append s₂) → Type uO} →
     {Win : S → Type uK} →
     {admissible : S → Prop} → {relIn : (stmt : S) → Win stmt → Prop} →
     {validMid : (stmt : S) → (tr : PathAlong l s₁) → Wmid stmt tr → Prop} →
@@ -533,7 +533,7 @@ def appendExtractLeafAux :
 /-- The same composition law with an independent input-witness universe. -/
 def appendExtractLeaf :
     {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
-    {Wmid : S → PathAlong l s₁ → Type} → {W : S → PathAlong l (s₁.append s₂) → Type} →
+    {Wmid : S → PathAlong l s₁ → Type uM} → {W : S → PathAlong l (s₁.append s₂) → Type uO} →
     {Win : S → Type uW} →
     {admissible : S → Prop} → {relIn : (stmt : S) → Win stmt → Prop} →
     {validMid : (stmt : S) → (tr : PathAlong l s₁) → Wmid stmt tr → Prop} →
@@ -556,7 +556,7 @@ def appendExtractLeaf :
 extraction. -/
 theorem appendToFun_root :
     {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
-    {Wmid : S → PathAlong l s₁ → Type} → {W : S → PathAlong l (s₁.append s₂) → Type} →
+    {Wmid : S → PathAlong l s₁ → Type uM} → {W : S → PathAlong l (s₁.append s₂) → Type uO} →
     {Win : S → Type uW} →
     {admissible : S → Prop} → {relIn : (stmt : S) → Win stmt → Prop} →
     {validMid : (stmt : S) → (tr : PathAlong l s₁) → Wmid stmt tr → Prop} →
@@ -581,7 +581,7 @@ theorem appendToFun_root :
 /-- The composite state is preserved backwards across sender moves. -/
 theorem appendToFun_sendAux :
     {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
-    {Wmid : S → PathAlong l s₁ → Type} → {W : S → PathAlong l (s₁.append s₂) → Type} →
+    {Wmid : S → PathAlong l s₁ → Type uM} → {W : S → PathAlong l (s₁.append s₂) → Type uO} →
     {Win : S → Type uK} →
     {admissible : S → Prop} → {relIn : (stmt : S) → Win stmt → Prop} →
     {validMid : (stmt : S) → (tr : PathAlong l s₁) → Wmid stmt tr → Prop} →
@@ -629,7 +629,7 @@ theorem appendToFun_sendAux :
 /-- The same composition law with an independent input-witness universe. -/
 theorem appendToFun_send :
     {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
-    {Wmid : S → PathAlong l s₁ → Type} → {W : S → PathAlong l (s₁.append s₂) → Type} →
+    {Wmid : S → PathAlong l s₁ → Type uM} → {W : S → PathAlong l (s₁.append s₂) → Type uO} →
     {Win : S → Type uW} →
     {admissible : S → Prop} → {relIn : (stmt : S) → Win stmt → Prop} →
     {validMid : (stmt : S) → (tr : PathAlong l s₁) → Wmid stmt tr → Prop} →
@@ -656,7 +656,7 @@ theorem appendToFun_send :
 /-- Accepted suffix outputs give the composite state at the leaf. -/
 theorem appendToFun_leafAux :
     {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
-    {Wmid : S → PathAlong l s₁ → Type} → {W : S → PathAlong l (s₁.append s₂) → Type} →
+    {Wmid : S → PathAlong l s₁ → Type uM} → {W : S → PathAlong l (s₁.append s₂) → Type uO} →
     {Win : S → Type uK} →
     {admissible : S → Prop} → {relIn : (stmt : S) → Win stmt → Prop} →
     {validMid : (stmt : S) → (tr : PathAlong l s₁) → Wmid stmt tr → Prop} →
@@ -689,7 +689,7 @@ theorem appendToFun_leafAux :
 /-- The same composition law with an independent input-witness universe. -/
 theorem appendToFun_leaf :
     {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
-    {Wmid : S → PathAlong l s₁ → Type} → {W : S → PathAlong l (s₁.append s₂) → Type} →
+    {Wmid : S → PathAlong l s₁ → Type uM} → {W : S → PathAlong l (s₁.append s₂) → Type uO} →
     {Win : S → Type uW} →
     {admissible : S → Prop} → {relIn : (stmt : S) → Win stmt → Prop} →
     {validMid : (stmt : S) → (tr : PathAlong l s₁) → Wmid stmt tr → Prop} →
@@ -714,7 +714,8 @@ theorem appendToFun_leaf :
 section append
 
 variable {s₁ : FreeM P PUnit.{1}} {s₂ : Path s₁ → FreeM P PUnit.{1}}
-  {Wmid : S → PathAlong l s₁ → Type} {W : S → PathAlong l (s₁.append s₂) → Type} {Win : S → Type uW}
+  {Wmid : S → PathAlong l s₁ → Type uM}
+    {W : S → PathAlong l (s₁.append s₂) → Type uO} {Win : S → Type uW}
   {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
   {validMid : (stmt : S) → (tr : PathAlong l s₁) → Wmid stmt tr → Prop}
   {admissible₂ : PathAlong l s₁ → S → Prop}
@@ -766,14 +767,14 @@ end append
 /-- Backward extraction below a first move is the extraction of the restricted state function.
 The output witness is transported to the completed transcript of either side. -/
 theorem extractFrom_child {a : P.A} {next : P.B a → FreeM P PUnit.{1}} {Win : S → Type uW}
-    {W : S → PathAlong l (.liftBind a next) → Type} {admissible : S → Prop} {relIn : (stmt : S) →
+    {W : S → PathAlong l (.liftBind a next) → Type uO} {admissible : S → Prop} {relIn : (stmt : S) →
       Win stmt → Prop}
     {validOutput : (stmt : S) → (tr : PathAlong l (.liftBind a next)) → W stmt tr → Prop}
     (F : KnowledgeStateFunction.{_, _, uK} l (.liftBind a next) S W Win admissible relIn
     validOutput)
     (stmt : S) (x : Move l a) : ∀ {t : FreeM P PUnit.{1}}
       (sp : Cursor.Spine (next (l.toFunB a x)) t) (history : PrefixMoves l sp)
-      (tr : PathAlong l t) {α : Type} (w : α)
+      (tr : PathAlong l t) {α : Type uO} (w : α)
       (e : α = W stmt (PrefixMoves.completeWith l (.down _ sp) ⟨⟨x, rfl⟩, history⟩ tr))
       (e' : α = W stmt ⟨x, PrefixMoves.completeWith l sp history tr⟩),
       F.extractFrom stmt (.down _ sp) ⟨⟨x, rfl⟩, history⟩ tr (cast e w) =
@@ -787,7 +788,7 @@ theorem extractFrom_child {a : P.A} {next : P.B a → FreeM P PUnit.{1}} {Win : 
 completed transcript is passed unchanged to the restricted extraction, and transported by
 `PrefixMoves.completeWith_down` on the left. -/
 theorem extractFrom_child_family {a : P.A} {next : P.B a → FreeM P PUnit.{1}} {Win : S → Type uW}
-    {W : S → PathAlong l (.liftBind a next) → Type} {admissible : S → Prop} {relIn : (stmt : S) →
+    {W : S → PathAlong l (.liftBind a next) → Type uO} {admissible : S → Prop} {relIn : (stmt : S) →
       Win stmt → Prop}
     {validOutput : (stmt : S) → (tr : PathAlong l (.liftBind a next)) → W stmt tr → Prop}
     (F : KnowledgeStateFunction.{_, _, uK} l (.liftBind a next) S W Win admissible relIn
@@ -803,8 +804,9 @@ theorem extractFrom_child_family {a : P.A} {next : P.B a → FreeM P PUnit.{1}} 
 /-- Over a leaf prefix, backward extraction of the composite is suffix extraction. -/
 theorem extractFrom_append_pure {u : PUnit.{1}}
     {s₂ : Path (FreeM.pure (P := P) u) → FreeM P PUnit.{1}}
-    {Wmid : S → PathAlong l (FreeM.pure u) → Type} {W : S → PathAlong l ((FreeM.pure u).append s₂) →
-      Type}
+    {Wmid : S → PathAlong l (FreeM.pure u) → Type uM}
+      {W : S → PathAlong l ((FreeM.pure u).append s₂) →
+      Type uO}
     {Win : S → Type uW} {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
     {validMid : (stmt : S) → (tr : PathAlong l (FreeM.pure u)) → Wmid stmt tr → Prop}
     {admissible₂ : PathAlong l (FreeM.pure u) → S → Prop}
@@ -834,8 +836,8 @@ composite of the restricted prefix state function with the matching suffix famil
 witness is transported to the completed transcript of either side. -/
 theorem extractFrom_append_down {a : P.A} {cont : P.B a → FreeM P PUnit.{1}}
     {s₂ : Path (FreeM.liftBind a cont) → FreeM P PUnit.{1}}
-    {Wmid : S → PathAlong l (FreeM.liftBind a cont) → Type}
-    {W : S → PathAlong l ((FreeM.liftBind a cont).append s₂) → Type} {Win : S → Type uW}
+    {Wmid : S → PathAlong l (FreeM.liftBind a cont) → Type uM}
+    {W : S → PathAlong l ((FreeM.liftBind a cont).append s₂) → Type uO} {Win : S → Type uW}
     {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
     {validMid : (stmt : S) → (tr : PathAlong l (FreeM.liftBind a cont)) → Wmid stmt tr → Prop}
     {admissible₂ : PathAlong l (FreeM.liftBind a cont) → S → Prop}
@@ -853,7 +855,7 @@ theorem extractFrom_append_down {a : P.A} {cont : P.B a → FreeM P PUnit.{1}}
       validMid stmt tr₁ ((F₂ tr₁).extractRoot stmt w))
     (stmt : S) (x : Move l a) : ∀ {t : FreeM P PUnit.{1}}
       (sp : Cursor.Spine ((cont (l.toFunB a x)).append (fun p => s₂ ⟨l.toFunB a x, p⟩)) t)
-      (history : PrefixMoves l sp) (tr : PathAlong l t) {α : Type} (w : α)
+      (history : PrefixMoves l sp) (tr : PathAlong l t) {α : Type uO} (w : α)
       (e : α = W stmt (PrefixMoves.completeWith l (.down _ sp) ⟨⟨x, rfl⟩, history⟩ tr))
       (e' : α = W stmt ⟨x, PrefixMoves.completeWith l sp history tr⟩),
       (append (s₂ := s₂) F₁ F₂ seam).extractFrom stmt (.down _ sp) ⟨⟨x, rfl⟩, history⟩ tr
@@ -882,8 +884,8 @@ completed transcript below the first move is passed unchanged to the restricted 
 extraction, and transported by `PrefixMoves.completeWith_down` on the left. -/
 theorem extractFrom_append_down_family {a : P.A} {cont : P.B a → FreeM P PUnit.{1}}
     {s₂ : Path (FreeM.liftBind a cont) → FreeM P PUnit.{1}}
-    {Wmid : S → PathAlong l (FreeM.liftBind a cont) → Type}
-    {W : S → PathAlong l ((FreeM.liftBind a cont).append s₂) → Type} {Win : S → Type uW}
+    {Wmid : S → PathAlong l (FreeM.liftBind a cont) → Type uM}
+    {W : S → PathAlong l ((FreeM.liftBind a cont).append s₂) → Type uO} {Win : S → Type uW}
     {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
     {validMid : (stmt : S) → (tr : PathAlong l (FreeM.liftBind a cont)) → Wmid stmt tr → Prop}
     {admissible₂ : PathAlong l (FreeM.liftBind a cont) → S → Prop}
@@ -919,7 +921,7 @@ theorem extractFrom_append_down_family {a : P.A} {cont : P.B a → FreeM P PUnit
 prefix extraction from its input witness. -/
 theorem extractAlong_appendAux :
     {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
-    {Wmid : S → PathAlong l s₁ → Type} → {W : S → PathAlong l (s₁.append s₂) → Type} →
+    {Wmid : S → PathAlong l s₁ → Type uM} → {W : S → PathAlong l (s₁.append s₂) → Type uO} →
     {Win : S → Type uK} →
     {admissible : S → Prop} → {relIn : (stmt : S) → Win stmt → Prop} →
     {validMid : (stmt : S) → (tr : PathAlong l s₁) → Wmid stmt tr → Prop} →
@@ -968,7 +970,7 @@ theorem extractAlong_appendAux :
 /-- The same composition law with an independent input-witness universe. -/
 theorem extractAlong_append :
     {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
-    {Wmid : S → PathAlong l s₁ → Type} → {W : S → PathAlong l (s₁.append s₂) → Type} →
+    {Wmid : S → PathAlong l s₁ → Type uM} → {W : S → PathAlong l (s₁.append s₂) → Type uO} →
     {Win : S → Type uW} →
     {admissible : S → Prop} → {relIn : (stmt : S) → Win stmt → Prop} →
     {validMid : (stmt : S) → (tr : PathAlong l s₁) → Wmid stmt tr → Prop} →
@@ -998,7 +1000,7 @@ theorem extractAlong_append :
 suffix state on its own terminal witness. -/
 theorem toFun_terminalWitness_appendAux :
     {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
-    {Wmid : S → PathAlong l s₁ → Type} → {W : S → PathAlong l (s₁.append s₂) → Type} →
+    {Wmid : S → PathAlong l s₁ → Type uM} → {W : S → PathAlong l (s₁.append s₂) → Type uO} →
     {Win : S → Type uK} →
     {admissible : S → Prop} → {relIn : (stmt : S) → Win stmt → Prop} →
     {validMid : (stmt : S) → (tr : PathAlong l s₁) → Wmid stmt tr → Prop} →
@@ -1033,7 +1035,7 @@ theorem toFun_terminalWitness_appendAux :
 /-- The same composition law with an independent input-witness universe. -/
 theorem toFun_terminalWitness_append :
     {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
-    {Wmid : S → PathAlong l s₁ → Type} → {W : S → PathAlong l (s₁.append s₂) → Type} →
+    {Wmid : S → PathAlong l s₁ → Type uM} → {W : S → PathAlong l (s₁.append s₂) → Type uO} →
     {Win : S → Type uW} →
     {admissible : S → Prop} → {relIn : (stmt : S) → Win stmt → Prop} →
     {validMid : (stmt : S) → (tr : PathAlong l s₁) → Wmid stmt tr → Prop} →
@@ -1061,7 +1063,7 @@ theorem toFun_terminalWitness_append :
 /-- A bound for a state function survives restriction below a first move, with the draws and
 errors restricted to the challenge nodes below it. -/
 theorem BoundedAt.child {a : P.A} {next : P.B a → FreeM P PUnit.{1}} {Win : S → Type uW}
-    {W : S → PathAlong l (.liftBind a next) → Type} {admissible : S → Prop} {relIn : (stmt : S) →
+    {W : S → PathAlong l (.liftBind a next) → Type uO} {admissible : S → Prop} {relIn : (stmt : S) →
       Win stmt → Prop}
     {validOutput : (stmt : S) → (tr : PathAlong l (.liftBind a next)) → W stmt tr → Prop}
     {F : KnowledgeStateFunction.{_, _, uK} l (.liftBind a next) S W Win admissible relIn
@@ -1077,7 +1079,7 @@ theorem BoundedAt.child {a : P.A} {next : P.B a → FreeM P PUnit.{1}} {Win : S 
 challenges keep the bound of the suffix state function at their prefix transcript. -/
 theorem BoundedAt.appendAux :
     {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
-    {Wmid : S → PathAlong l s₁ → Type} → {W : S → PathAlong l (s₁.append s₂) → Type} →
+    {Wmid : S → PathAlong l s₁ → Type uM} → {W : S → PathAlong l (s₁.append s₂) → Type uO} →
     {Win : S → Type uK} →
     {admissible : S → Prop} → {relIn : (stmt : S) → Win stmt → Prop} →
     {validMid : (stmt : S) → (tr : PathAlong l s₁) → Wmid stmt tr → Prop} →
@@ -1132,7 +1134,7 @@ theorem BoundedAt.appendAux :
 /-- The same composition law with an independent input-witness universe. -/
 theorem BoundedAt.append :
     {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
-    {Wmid : S → PathAlong l s₁ → Type} → {W : S → PathAlong l (s₁.append s₂) → Type} →
+    {Wmid : S → PathAlong l s₁ → Type uM} → {W : S → PathAlong l (s₁.append s₂) → Type uO} →
     {Win : S → Type uW} →
     {admissible : S → Prop} → {relIn : (stmt : S) → Win stmt → Prop} →
     {validMid : (stmt : S) → (tr : PathAlong l s₁) → Wmid stmt tr → Prop} →

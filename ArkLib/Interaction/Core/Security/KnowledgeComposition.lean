@@ -16,7 +16,7 @@ claim. Plain and oracle acceptance decompositions retain the ambient state at th
 
 @[expose] public section
 
-universe uS uW uK uS' uW' uT uI wI wJ wK uW₂
+universe uS uW uK uO uM uO₂ uS' uW' uT uI wI wJ wK uW₂
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle MeasureTheory
@@ -30,7 +30,7 @@ variable {l} {S : Type uS}
 
 section restrict
 
-variable {s : FreeM P PUnit.{1}} {Win : S → Type uW} {W : S → PathAlong l s → Type}
+variable {s : FreeM P PUnit.{1}} {Win : S → Type uW} {W : S → PathAlong l s → Type uO}
     {admissible : S →
     Prop}
   {relIn : (stmt : S) → Win stmt → Prop} {validOutput : (stmt : S) → (tr : PathAlong l s) → W stmt
@@ -92,7 +92,7 @@ theorem BoundedAt.condition {F : KnowledgeStateFunction.{_, _, uK} l s S W Win a
   exact ⟨w, fun h' => hbad ⟨hgood.1, h'⟩, hgood.2⟩
 
 /-- Pull back statements and output witnesses, and map the extracted input witnesses. -/
-def comap {S' : Type uS'} {Win' : S' → Type uW'} {W' : S' → PathAlong l s → Type}
+def comap {S' : Type uS'} {Win' : S' → Type uW'} {W' : S' → PathAlong l s → Type uO₂}
     (f : S' → S) (F : KnowledgeStateFunction.{_, _, uK} l s S W Win admissible relIn validOutput)
     (inputMap : ∀ stmt, Win (f stmt) → Win' stmt)
     (outputMap : ∀ stmt tr, W' stmt tr → W (f stmt) tr)
@@ -111,7 +111,7 @@ def comap {S' : Type uS'} {Win' : S' → Type uW'} {W' : S' → PathAlong l s �
   leaf sp history stmt w h := F.leaf sp history (f stmt) _ (hout stmt _ w h)
 
 /-- Pulling back statements and witness maps keeps the original local bound. -/
-theorem BoundedAt.comap {S' : Type uS'} {Win' : S' → Type uW'} {W' : S' → PathAlong l s → Type}
+theorem BoundedAt.comap {S' : Type uS'} {Win' : S' → Type uW'} {W' : S' → PathAlong l s → Type uO₂}
     {f : S' → S} {F : KnowledgeStateFunction.{_, _, uK} l s S W Win admissible relIn validOutput}
     {inputMap : ∀ stmt, Win (f stmt) → Win' stmt}
     {outputMap : ∀ stmt tr, W' stmt tr → W (f stmt) tr}
@@ -127,7 +127,8 @@ end restrict
 section security
 
 variable {s₁ : FreeM P PUnit.{1}} {s₂ : Path s₁ → FreeM P PUnit.{1}}
-  {Wmid : S → PathAlong l s₁ → Type} {W : S → PathAlong l (s₁.append s₂) → Type} {Win : S → Type uW}
+  {Wmid : S → PathAlong l s₁ → Type uM}
+    {W : S → PathAlong l (s₁.append s₂) → Type uO} {Win : S → Type uW}
   {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
   {validMid : (stmt : S) → (tr : PathAlong l s₁) → Wmid stmt tr → Prop}
   {admissible₂ : PathAlong l s₁ → S → Prop}
@@ -166,7 +167,7 @@ section security
 
 variable {s₁ : FreeM P PUnit.{1}} {s₂ : Path s₁ → FreeM P PUnit.{1}} {S : Type uS}
     {Win : S → Type uW}
-  {Wmid : S → PathAlong l s₁ → Type} {W : S → PathAlong l (s₁.append s₂) → Type}
+  {Wmid : S → PathAlong l s₁ → Type uM} {W : S → PathAlong l (s₁.append s₂) → Type uO}
   {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
   {validMid : (stmt : S) → (tr : PathAlong l s₁) → Wmid stmt tr → Prop}
   {validOutput : (stmt : S) → (tr : PathAlong l (s₁.append s₂)) → W stmt tr → Prop}
@@ -205,7 +206,7 @@ theorem rbrKnowledgeSoundness_append_of_mid {T : PathAlong l s₁ → Type uT} (
     (tr : PathAlong l s₁) → T tr)
     {Wmid₂ : (tr₁ : PathAlong l s₁) → T tr₁ → Type uW₂}
     {W₂ : (tr₁ : PathAlong l s₁) → T tr₁ →
-      PathAlong l (s₂ (projectPathAlong l s₁ tr₁)) → Type}
+      PathAlong l (s₂ (projectPathAlong l s₁ tr₁)) → Type uO₂}
     {admissible₂ : (tr₁ : PathAlong l s₁) → T tr₁ → Prop}
     {relMid : (tr₁ : PathAlong l s₁) → (t : T tr₁) → Wmid₂ tr₁ t → Prop}
     {validOutput₂ : (tr₁ : PathAlong l s₁) → (t : T tr₁) →
@@ -286,12 +287,12 @@ The suffix theorem is stated solely for the suffix verifier and its own output r
 theorem Verifier.rbrKnowledgeSoundness_append {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι}
     {s₁ : Protocol} {s₂ : Path s₁ → Protocol}
     {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
-    {Win : S → Type uW} {Wmid : S → PathAlong plainSig s₁ → Type}
+    {Win : S → Type uW} {Wmid : S → PathAlong plainSig s₁ → Type uM}
     {Win₂ : (tr₁ : PathAlong plainSig s₁) →
       T (projectPathAlong plainSig s₁ tr₁) → Type uW₂}
-    {W : S → PathAlong plainSig (s₁.append s₂) → Type}
+    {W : S → PathAlong plainSig (s₁.append s₂) → Type uO}
     {W₂ : (tr₁ : PathAlong plainSig s₁) → T (projectPathAlong plainSig s₁ tr₁) →
-      PathAlong plainSig (s₂ (projectPathAlong plainSig s₁ tr₁)) → Type}
+      PathAlong plainSig (s₂ (projectPathAlong plainSig s₁ tr₁)) → Type uO₂}
     (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) (T p) (U p))
     (impl : QueryImpl ambient (StateT σ ProbComp))
     {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
@@ -318,7 +319,7 @@ theorem Verifier.rbrKnowledgeSoundness_append {ι σ : Type} {S : Type uS} {ambi
     (midWitness : ∀ stmt tr₁, Win₂ tr₁ (mid stmt tr₁) → Wmid stmt tr₁)
     (outWitness : ∀ stmt tr₁ tr₂,
       W stmt (PathAlong.append plainSig s₁ s₂ tr₁ tr₂) → W₂ tr₁ (mid stmt tr₁) tr₂)
-    (h₁ : Verifier.rbrKnowledgeSoundness.{uS, uW, uK} V₁ impl admissible relIn relOut₁ draw₁ ε₁)
+    (h₁ : Verifier.rbrKnowledgeSoundness.{uS, uW, uK, uM} V₁ impl admissible relIn relOut₁ draw₁ ε₁)
     (h₂ : ∀ tr₁, Verifier.rbrKnowledgeSoundness.{0, uW₂, uK}
       (V₂ (projectPathAlong plainSig s₁ tr₁)) impl
       (admissible₂ tr₁) (relMid tr₁) (relOut₂ tr₁) (draw₂ (projectPathAlong plainSig s₁ tr₁))
@@ -329,7 +330,7 @@ theorem Verifier.rbrKnowledgeSoundness_append {ι σ : Type} {S : Type uS} {ambi
     (hout : ∀ stmt tr₁ tr₂ out original w, HEq out original →
       relOut stmt (PathAlong.append plainSig s₁ s₂ tr₁ tr₂) original w →
       relOut₂ tr₁ (mid stmt tr₁) tr₂ out (outWitness stmt tr₁ tr₂ w)) :
-    Verifier.rbrKnowledgeSoundness.{uS, uW, uK} (V₁.append V₂) impl admissible relIn relOut
+    Verifier.rbrKnowledgeSoundness.{uS, uW, uK, uO} (V₁.append V₂) impl admissible relIn relOut
       (combineDraw plainSig s₁ s₂ draw₁ draw₂)
       (combineDraw (m := fun _ => ℝ≥0∞) plainSig s₁ s₂ ε₁ ε₂) := by
   let valid := fun stmt tr w =>
@@ -370,12 +371,12 @@ theorem Verifier.rbrKnowledgeSoundness_append_of_pure {ι σ : Type} {S : Type u
     {ambient : OracleSpec ι}
     {s₁ : Protocol} {s₂ : Path s₁ → Protocol}
     {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
-    {Win : S → Type uW} {Wmid : S → PathAlong plainSig s₁ → Type}
+    {Win : S → Type uW} {Wmid : S → PathAlong plainSig s₁ → Type uM}
     {Win₂ : (tr₁ : PathAlong plainSig s₁) →
       T (projectPathAlong plainSig s₁ tr₁) → Type uW₂}
-    {W : S → PathAlong plainSig (s₁.append s₂) → Type}
+    {W : S → PathAlong plainSig (s₁.append s₂) → Type uO}
     {W₂ : (tr₁ : PathAlong plainSig s₁) → T (projectPathAlong plainSig s₁ tr₁) →
-      PathAlong plainSig (s₂ (projectPathAlong plainSig s₁ tr₁)) → Type}
+      PathAlong plainSig (s₂ (projectPathAlong plainSig s₁ tr₁)) → Type uO₂}
     (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) (T p) (U p))
     (impl : QueryImpl ambient (StateT σ ProbComp))
     {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
@@ -400,7 +401,7 @@ theorem Verifier.rbrKnowledgeSoundness_append_of_pure {ι σ : Type} {S : Type u
     (midWitness : ∀ stmt tr₁, Win₂ tr₁ (mid stmt tr₁) → Wmid stmt tr₁)
     (outWitness : ∀ stmt tr₁ tr₂,
       W stmt (PathAlong.append plainSig s₁ s₂ tr₁ tr₂) → W₂ tr₁ (mid stmt tr₁) tr₂)
-    (h₁ : Verifier.rbrKnowledgeSoundness.{uS, uW, uK} V₁ impl admissible relIn relOut₁ draw₁ ε₁)
+    (h₁ : Verifier.rbrKnowledgeSoundness.{uS, uW, uK, uM} V₁ impl admissible relIn relOut₁ draw₁ ε₁)
     (h₂ : ∀ tr₁, Verifier.rbrKnowledgeSoundness.{0, uW₂, uK}
       (V₂ (projectPathAlong plainSig s₁ tr₁)) impl
       (admissible₂ tr₁) (relMid tr₁) (relOut₂ tr₁) (draw₂ (projectPathAlong plainSig s₁ tr₁))
@@ -411,7 +412,7 @@ theorem Verifier.rbrKnowledgeSoundness_append_of_pure {ι σ : Type} {S : Type u
     (hout : ∀ stmt tr₁ tr₂ out original w, HEq out original →
       relOut stmt (PathAlong.append plainSig s₁ s₂ tr₁ tr₂) original w →
       relOut₂ tr₁ (mid stmt tr₁) tr₂ out (outWitness stmt tr₁ tr₂ w)) :
-    Verifier.rbrKnowledgeSoundness.{uS, uW, uK} (V₁.append V₂) impl admissible relIn relOut
+    Verifier.rbrKnowledgeSoundness.{uS, uW, uK, uO} (V₁.append V₂) impl admissible relIn relOut
       (combineDraw plainSig s₁ s₂ draw₁ draw₂)
       (combineDraw (m := fun _ => ℝ≥0∞) plainSig s₁ s₂ ε₁ ε₂) := by
   apply Verifier.rbrKnowledgeSoundness_append V₁ V₂ impl mid _ midWitness outWitness
