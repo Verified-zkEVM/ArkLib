@@ -101,7 +101,7 @@ theorem behaviorIntervalVerifier_run_one (D : Fin d → R) {ι : Type} (ambient 
               (∀ _ : Unit, (Fin n → R) → R)))) <$>
         (liftM ((ambient + challengeSpec oracleSig (protocol R deg 1)).query
           (.inr (roundChallengeNode (R := R) (deg := deg))))) := by
-  rw [behaviorIntervalVerifier_run, foldVerifier_run]
+  rw [behaviorIntervalVerifier_run, Interpreted.verifier_run]
   change (do
     let ⟨tr, out, _⟩ ← Interaction.TwoParty.Lens.run (round R deg)
       (roundProver msg finish) (sampler oracleSig (round R deg) (fun c =>
@@ -131,7 +131,7 @@ theorem behaviorIntervalVerifier_run_zero (D : Fin d → R) {ι : Type} (ambient
               (∀ _ : Unit, (Fin n → R) → R)))) <$>
         simulateQ (fun q => liftM
           ((ambient + challengeSpec oracleSig (protocol R deg 0)).query (.inl q))) prover := by
-  rw [behaviorIntervalVerifier_run, foldVerifier_run]
+  rw [behaviorIntervalVerifier_run, Interpreted.verifier_run]
   change (do
     let ⟨tr, out, _⟩ ← Interaction.TwoParty.Lens.run (OutP := fun _ => Out) (OutC := fun _ => PUnit)
       (.pure PUnit.unit) (simulateQ _ prover) (pure PUnit.unit)

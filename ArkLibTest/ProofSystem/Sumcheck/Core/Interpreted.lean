@@ -3,7 +3,7 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.ProofSystem.Sumcheck.Core.MessageEquivalence
+import ArkLib.ProofSystem.Sumcheck.Core.InterpretedExecution
 
 /-! # Executable interpreted messages and effect-preserving transport -/
 
@@ -49,7 +49,7 @@ run_cmd
   for decl in [``Sumcheck.Core.Interpreted.run_transport,
       ``Sumcheck.Core.Interpreted.execute_eq_verifier,
       ``Sumcheck.Core.Interpreted.execute_transport,
-      ``Sumcheck.Core.Interpreted.verifier_polynomial] do
+      ``Sumcheck.Core.Interpreted.verifier_run] do
     for ax in ← Lean.collectAxioms decl do
       unless ax == ``propext || ax == ``Classical.choice || ax == ``Quot.sound do
         throwError "unexpected axiom {ax} in {decl}"

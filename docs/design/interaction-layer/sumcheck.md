@@ -28,13 +28,13 @@ reached statement. The list and injective forms specialize the same indexed-doma
 | `Indexed` | The native indexed verifier, its actual-run equation, the state function and native local-to-global soundness proof. |
 | `Soundness` | Full-run, arbitrary-list and injective corollaries; actual-run committed and randomized bounds in probability and measure form. |
 | `DomainEquivalence` | Separate agreement checks with the injective legacy `Spec` representation. |
-| `Protocol`, `Fold` | Native prover folds and passive final checks, with actual-run and resource-interpretation equations. |
+| `Protocol`, `Fold` | Prover folds, and passive final checks that abbreviate the interpreted checks at polynomial evaluation and use their actual-run and resource-interpretation equations. |
 | `Interval`, `IntervalExecution` | Arbitrary endpoints, public midpoint transport, and one-round and empty-run equations. |
 | `IntervalCompleteness`, `IntervalAdaptive` | Support, perfect and measure completeness for every bounded interval and adaptive statement-dependent challenges. |
 | `IntervalSoundness`, `IntervalRoundSoundness` | Native suffix RBR soundness, implication bounds, list/injective forms, full-run identity and actual one-round bounds at every variable position. |
 | `FoldComposition`, `BehaviorComposition` | Append equations for generic folds and public intervals, preserving every prover effect, private output and arbitrary original behavior. |
 | `Projection`, `Behavior` | Derived projected handlers and closed execution; retained arbitrary original behavior and its final evaluation relation. |
-| `Interpreted`, `InterpretedExecution`, `MessageEquivalence` | Native passive verification for generic representations, effect-preserving execution interpretation, and exact specialization to the mathematical native fold. |
+| `Interpreted`, `InterpretedExecution` | Passive verification for generic message representations and effect-preserving execution interpretation. The polynomial fold in `Fold` abbreviates this verification at polynomial evaluation. |
 | `ComputableProjection`, `ComputableInterval`, `ComputableSoundness` | Indexed CompPoly projections, concrete honest interval folds, execution interpretation, completeness and native suffix soundness. |
 | `LegacyProtocol`, `Execution`, `Completeness` | Compatibility honest prover, decision, closed-form runs and direct completeness. |
 | `LegacyProjection`, `Composition` | Separate legacy projection and decision-fold comparisons. |
@@ -600,7 +600,7 @@ neither the old nor the new total-mass equation asserts a positive probability o
 
 | Exact source | Exact target | Status |
 |---|---|---|
-| `Sumcheck.Interaction.MultivariateRound.access`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateRound.lean:32` | C/Fold.lean: `Sumcheck.Core.foldDecision; simulateQ_foldDecision` | equivalent |
+| `Sumcheck.Interaction.MultivariateRound.access`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateRound.lean:32` | C/Fold.lean: `Sumcheck.Core.foldDecision; Interpreted.simulate_decision` | equivalent |
 | `Sumcheck.Interaction.MultivariateRound.outputOracle`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateRound.lean:36` | C/Behavior.lean: `Sumcheck.Core.behaviorIntervalVerifier` | equivalent |
 | `Sumcheck.Interaction.MultivariateRound.sumQueries`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateRound.lean:44` | C/Behavior.lean: `Sumcheck.Core.behaviorIntervalVerifier_run_one`; C/IntervalRoundSoundness.lean: `Sumcheck.Core.intervalVerdict_one`; C/Interval.lean: `Sumcheck.Core.roundVerdict_intervalCheck` | premise-required (P1) |
 | `Sumcheck.Interaction.MultivariateRound.terminal`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateRound.lean:53` | C/Behavior.lean: `Sumcheck.Core.behaviorIntervalVerifier_run_one`; C/IntervalRoundSoundness.lean: `Sumcheck.Core.intervalVerdict_one`; C/Interval.lean: `Sumcheck.Core.roundVerdict_intervalCheck` | premise-required (P1) |
@@ -608,7 +608,7 @@ neither the old nor the new total-mass equation asserts a positive probability o
 | `Sumcheck.Interaction.MultivariateRound.reduction`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateRound.lean:75` | C/Behavior.lean: `Sumcheck.Core.behaviorIntervalVerifier_run_one`; C/IntervalRoundSoundness.lean: `Sumcheck.Core.intervalVerdict_one`; C/Interval.lean: `Sumcheck.Core.roundVerdict_intervalCheck` | premise-required (P1) |
 | `Sumcheck.Interaction.MultivariateRound.acceptedRun`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateRound.lean:85` | C/Behavior.lean: `Sumcheck.Core.behaviorIntervalVerifier_run_one`; C/IntervalRoundSoundness.lean: `Sumcheck.Core.intervalVerdict_one`; C/Interval.lean: `Sumcheck.Core.roundVerdict_intervalCheck` | premise-required (P1) |
 | `Sumcheck.Interaction.MultivariateRound.simulate_sumQueries`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateRound.lean:96` | C/Interval.lean: `Sumcheck.Core.roundVerdict_intervalCheck` | equivalent |
-| `Sumcheck.Interaction.MultivariateRound.simulate_terminal`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateRound.lean:116` | C/Fold.lean: `Sumcheck.Core.foldDecision; simulateQ_foldDecision` | equivalent |
+| `Sumcheck.Interaction.MultivariateRound.simulate_terminal`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateRound.lean:116` | C/Fold.lean: `Sumcheck.Core.foldDecision; Interpreted.simulate_decision` | equivalent |
 | `Sumcheck.Interaction.MultivariateRound.executeCore_eq`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateRound.lean:132` | C/Behavior.lean: `Sumcheck.Core.behaviorIntervalVerifier_run_one`; C/IntervalRoundSoundness.lean: `Sumcheck.Core.intervalVerdict_one`; C/Interval.lean: `Sumcheck.Core.roundVerdict_intervalCheck` | premise-required (P1) |
 | `Sumcheck.Interaction.MultivariateRound.executeCore_accepted`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateRound.lean:158` | C/Behavior.lean: `Sumcheck.Core.behaviorIntervalVerifier_run_one`; C/IntervalRoundSoundness.lean: `Sumcheck.Core.intervalVerdict_one`; C/Interval.lean: `Sumcheck.Core.roundVerdict_intervalCheck` | premise-required (P1) |
 | `Sumcheck.Interaction.MultivariateRound.acceptedRun_closed`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateRound.lean:167` | C/Behavior.lean: `Sumcheck.Core.behaviorIntervalVerifier_run_one`; C/IntervalRoundSoundness.lean: `Sumcheck.Core.intervalVerdict_one`; C/Interval.lean: `Sumcheck.Core.roundVerdict_intervalCheck` | premise-required (P1) |

@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.ProofSystem.Sumcheck.Core.ComputableInterval
+public import ArkLib.ProofSystem.Sumcheck.Core.IntervalSoundness
 
 /-! # Native suffix soundness for computable message carriers -/
 
@@ -67,7 +68,6 @@ theorem interval_closed_execute [SampleableType R] (D : Fin d → R)
     (evaluate := fun (q : R⦃≤ deg⦄[X]) r => q.val.eval r) ambient (polyFamily R deg n) impl
     (liftM ($ᵗ R) : StateT σ ProbComp R) (intervalCheck D) IntervalClaim.finish count
     (intervalInitial start count bound stmt) data prover
-  rw [Interpreted.verifier_polynomial] at h
   simp only [simulateQ_map]
   have hh : QueryImpl.addLift (r := StateT σ ProbComp) impl
       (Interpreted.draw (evaluate := fun (q : R⦃≤ deg⦄[X]) r => q.val.eval r) ($ᵗ R) count) =

@@ -42,7 +42,7 @@ theorem decideWith_foldVerifier (k : ℕ) (stmt : State k) (data : ∀ i, A i)
     (tr : PathAlong oracleSig (protocol R deg k)) :
     (foldVerifier R deg ambient inputs V finish k).decideWith stmt _ (toView _ tr)
       (data, payloads _ tr) = pure (foldVerdict V finish k stmt tr) :=
-  simulateQ_foldVerifier_decide (QueryImpl.id' ambient) V finish k stmt data tr
+  Interpreted.simulate_verifier (QueryImpl.id' ambient) V finish k stmt data tr
 
 /-- The next round's decision computes exactly its local verdict. -/
 theorem decideWith_foldHeadVerifier (k : ℕ) (stmt : State (k + 1)) (data : ∀ i, A i)
@@ -51,7 +51,7 @@ theorem decideWith_foldHeadVerifier (k : ℕ) (stmt : State (k + 1)) (data : ∀
       (toView _ (roundTranscript msg r)) (data, payloads _ (roundTranscript msg r)) =
         pure (roundVerdict (V k) stmt msg r) := by
   erw [foldHeadVerifier, decideWith_foldVerifier]
-  simp only [foldVerdict, headMessage, headChallenge, id_eq, Option.bind_fun_some, roundTranscript]
+  simp only [foldVerdict, Interpreted.verdict, id_eq, Option.bind_fun_some, roundTranscript]
   rfl
 
 /-- The suffix receives the original input and precisely its own message payloads. -/
@@ -82,7 +82,8 @@ theorem decideWith_append_foldVerifier (k : ℕ) (stmt : State (k + 1)) (data : 
   refine (pure_bind _ _).trans ?_
   erw [suffixRoute_foldHead]
   rw [decideWith_foldVerifier]
-  simp only [foldVerdict, headMessage, headChallenge, tailTranscript]
+  rw [foldVerdict_succ]
+  simp only [headMessage, headChallenge, tailTranscript]
   cases h : roundVerdict (V k) stmt msg r with
   | none => rfl
   | some mid =>
@@ -194,7 +195,8 @@ theorem run_append_public_intervalVerifier (start count : ℕ) (bound : start + 
                 (fun _ => RoundStatement R n ⟨count + (1 + start), by omega⟩ ×
                   (∀ i, PolynomialData R n deg i)))) <$>
         (intervalVerifier R deg n D ambient start (count + 1) bound).run stmt data prover := by
-  rw [OracleVerifier.run_eq_decideWith, intervalVerifier_run, foldVerifier_run, _root_.map_bind]
+  rw [OracleVerifier.run_eq_decideWith, intervalVerifier_run, Interpreted.verifier_run,
+    _root_.map_bind]
   refine bind_congr fun result => ?_
   rcases result with ⟨tr, out, u⟩
   dsimp only

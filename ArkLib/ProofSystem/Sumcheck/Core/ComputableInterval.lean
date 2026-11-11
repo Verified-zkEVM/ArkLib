@@ -6,7 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.ProofSystem.Sumcheck.Core.ComputableProjection
-public import ArkLib.ProofSystem.Sumcheck.Core.MessageEquivalence
+public import ArkLib.ProofSystem.Sumcheck.Core.InterpretedExecution
 public import ArkLib.ProofSystem.Sumcheck.Core.IntervalCompleteness
 
 /-! # Computable honest interval provers and native execution -/
@@ -91,7 +91,6 @@ theorem execute_honest {m : Type → Type} [Monad m] [LawfulMonad m] {Data : Typ
   simp only [Functor.map_map]
   congr 1
   funext chals
-  rw [Interpreted.verdict_polynomial]
   change (_, (intervalVerdict D k st _).map _) = _
   rw [(intervalVerdict_honest D (toPolynomial poly hpoly) k st h chals).1]
   rfl

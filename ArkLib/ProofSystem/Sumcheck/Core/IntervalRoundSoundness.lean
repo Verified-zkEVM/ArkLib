@@ -28,7 +28,7 @@ theorem intervalVerdict_one (i : Fin n) (stmt : RoundStatement R n i.castSucc)
           RoundStatement R n ⟨1 + i.val, by omega⟩) else none := by
   unfold intervalVerdict
   dsimp only [roundTranscript]
-  rw [foldVerdict]
+  rw [foldVerdict_succ]
   dsimp only [headMessage, headChallenge]
   rw [roundVerdict_intervalCheck]
   dsimp only [intervalInitial]
