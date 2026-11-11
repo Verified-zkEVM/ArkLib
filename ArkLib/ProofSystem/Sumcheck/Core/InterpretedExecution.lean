@@ -64,6 +64,26 @@ def transportProver {m : Type → Type} [Monad m] {Out : Type} (interpret : M �
       pure (⟨interpret chosen.1, response⟩ : ((_msg : N) ×
         m (R → Focal oracleSig m (protocol R N evaluateN k) (fun _ => Out))))
 
+/-- Interpreting a fold of pure rounds interprets each message it sends and keeps its
+transitions and output. -/
+theorem transportProver_foldRounds {m : Type → Type} [Monad m] [LawfulMonad m]
+    {State : ℕ → Type} {Out : Type} (interpret : M → N)
+    (msg : (k : ℕ) → State (k + 1) → M)
+    (next : (k : ℕ) → State (k + 1) → R → State k) (finish : State 0 → Out) :
+    (k : ℕ) → (st : State k) →
+    transportProver (evaluateN := evaluateN) interpret k
+        (foldRounds (m := m) (eval := evaluate) msg next finish k st) =
+      foldRounds (fun k st => interpret (msg k st)) next finish k st
+  | 0, _ => rfl
+  | k + 1, st => by
+    unfold transportProver
+    erw [LawfulMonad.pure_bind]
+    dsimp only
+    erw [LawfulMonad.pure_bind]
+    exact congrArg (pure (f := m)) (congrArg (Sigma.mk (interpret (msg k st)))
+      (congrArg (pure (f := m)) (funext fun chal =>
+        transportProver_foldRounds interpret msg next finish k _)))
+
 /-- Ambient interpretation maps the message slot and the challenge-response slot separately. -/
 theorem simulate_step {ι : Type} {ambient : OracleSpec ι}
     {m : Type → Type} [Monad m] (impl : QueryImpl ambient m) {Out : Type} (k : ℕ)

@@ -67,8 +67,8 @@ theorem run_badFirstProver {d : ℕ} (D : Fin d ↪ F) (bad : F⦃≤ 1⦄[X])
 /-- The run records both rounds of the bad prover, with the drawn challenges in order. -/
 example {d : ℕ} (D : Fin d ↪ F) (bad : F⦃≤ 1⦄[X]) (stmt : Spec.StatementRound F 2 0)
     (oStmt : ∀ i, Spec.OracleStatement F 2 1 i) (chals : Fin 2 → F) :
-    let tr := foldTranscript (badFirst D bad) (nextState (badFirst D bad)) 2
-      (initState stmt oStmt) chals
+    let tr : PathAlong oracleSig (protocol F 1 2) :=
+      foldTranscript (badFirst D bad) (nextState (badFirst D bad)) 2 (initState stmt oStmt) chals
     Interpreted.message tr = bad ∧ Interpreted.challenge tr = chals 0 ∧
       Interpreted.message (Interpreted.tail tr) =
         honestMessage D 0 (nextState (badFirst D bad) 1 (initState stmt oStmt) (chals 0)) ∧
