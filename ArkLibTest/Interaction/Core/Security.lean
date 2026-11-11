@@ -191,7 +191,7 @@ def knowledgeState : KnowledgeStateFunction plainSig coin Bool (fun _ => Unit) U
   send _ _ _ _ _ _ h := h
   leaf _ _ _ _ h := h
 
-example : rbrKnowledgeSoundness plainSig coin (fun _ => True)
+example : rbrKnowledgeSoundness.{0, 0, 0} plainSig coin (fun _ => True)
     (fun stmt (_ : Unit) => stmt = true) (fun stmt _ (_ : Unit) => stmt = true)
     draw (fun _ => 0) := by
   refine ⟨knowledgeState, ?_⟩
@@ -212,7 +212,7 @@ def promisedState : KnowledgeStateFunction plainSig zero Bool (fun _ => Unit) Un
 
 /-- The promise excludes `false`, so its accepted runs need no witness. -/
 example (err : ChallengeNode plainSig zero → ℝ≥0∞) :
-    rbrKnowledgeSoundness plainSig zero (· = true) (fun b (_ : Unit) => b = true)
+    rbrKnowledgeSoundness.{0, 0, 0} plainSig zero (· = true) (fun b (_ : Unit) => b = true)
       (fun (_ : Bool) _ (_ : Unit) => True) (fun c => c.val.elim) err :=
   ⟨promisedState, fun _ _ _ _ sp => nomatch sp⟩
 
@@ -370,7 +370,8 @@ def coinKnowledge : KnowledgeStateFunction plainSig coin Bool (fun _ => Unit) Un
 
 /-- Backwards extraction fails exactly when a false statement meets a true challenge. -/
 theorem coin_rbrKnowledgeSoundness :
-    coinVerifier.rbrKnowledgeSoundness tick (fun _ => True) (fun b (_ : Unit) => b = true)
+    Verifier.rbrKnowledgeSoundness.{0, 0, 0} coinVerifier tick (fun _ => True)
+      (fun b (_ : Unit) => b = true)
       (fun _ (_ : Nat) (_ : Unit) => True) draw (fun _ => 1 / 2) := by
   refine ⟨coinKnowledge, ?_⟩
   intro stmt _ a next sp h history
@@ -500,7 +501,8 @@ example (w : Fin 8) :
 every challenge implementation. -/
 theorem payload_rbrKnowledgeSoundness
     (draw : QueryImpl (challengeSpec plainSig payloadMsg) ProbComp) :
-    payloadVerifier.rbrKnowledgeSoundness tick (fun _ => True) (fun stmt (w : Nat) => w ≤ stmt)
+    Verifier.rbrKnowledgeSoundness.{0, 0, 0} payloadVerifier tick (fun _ => True)
+      (fun stmt (w : Nat) => w ≤ stmt)
       (fun tr (_ : Nat) (_ : BoundedIndex tr) => True) draw (fun _ => 0) := by
   refine ⟨payloadKnowledge, ?_⟩
   intro _ _ a next sp h _

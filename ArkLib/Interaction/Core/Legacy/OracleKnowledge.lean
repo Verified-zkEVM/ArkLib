@@ -100,19 +100,18 @@ theorem oracleExtractionGame_embed
   have hF : (fun z => z.1.2.2.map fun t => ((stmt, oStmt), z.2, t, z.1.2.1.2)) <$>
         (embedOracleVerifier V).extractionGame (fun _ o => o.2) (liftOracleExtractor E)
           (stmt, oStmt) adv =
-      ((fun z => (z.1, z.2.1, z.2.2.fst)) <$>
-        (embedOracleVerifier V).runWithLog stmt oStmt adv) >>= fun y =>
+      (embedOracleVerifier V).runWithAmbientLog stmt oStmt adv >>= fun y =>
         match y.1.2.2 with
         | none => pure none
         | some t => (fun ex => some ((stmt, oStmt), ex, t, y.1.2.1.2)) <$>
             liftComp (E (stmt, oStmt) y.1.2.1.2 (oracleDecode pSpec y.1.1) y.2.1 y.2.2).run
               (oSpec + challengeSpec oracleSig (oracleProtocol pSpec)) := by
-    rw [bind_map_left, Core.OracleVerifier.extractionGame]
+    rw [Core.OracleVerifier.extractionGame]
     refine (_root_.map_bind _ _ _).trans (bind_congr fun x => ?_)
     rcases x with ⟨⟨tr, out, _ | v⟩, pl, vl⟩ <;> simp [liftOracleExtractor]
   have hlog := Core.OracleVerifier.runWithLog_fst (embedOracleVerifier V) stmt oStmt adv
   dsimp only at hlog
-  rw [hF, hlog]
+  rw [hF, ← Core.OracleVerifier.map_runWithLog_eq_runWithAmbientLog, hlog]
   simp only [ambientLogged, bind_map_left, bind_assoc]
   refine bind_congr fun x => ?_
   rw [simulateQ_embedOracleVerifier_decide, run_withLogging_inl, embedOracleVerifier_outputMap_f]

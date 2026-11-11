@@ -276,7 +276,8 @@ theorem embedOracleVerifier_rbrKnowledgeSoundness (init : ProbComp σ)
       (K : V.toVerifier.KnowledgeStateFunction init impl relIn relOut E),
       KnowledgeTerminalCertificate K)
     (h : V.rbrKnowledgeSoundness init impl relIn relOut ε) :
-    (embedOracleVerifier V).rbrKnowledgeSoundness impl (fun _ => True)
+    Core.OracleVerifier.rbrKnowledgeSoundness.{0, 0, 0, 0, 0, 0} (embedOracleVerifier V) impl
+      (fun _ => True)
       (fun stmt w => (stmt, w) ∈ relIn) (fun _ t w => (t, w) ∈ relOut)
       (oracleChallengeImpl ProtocolSpec.challengeQueryImpl)
       (fun c => ε (oracleChallengeRound 0 n (Nat.zero_add n) c)) :=

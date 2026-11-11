@@ -20,7 +20,7 @@ prefix before drawing one fresh challenge; their indices contain only shape choi
 
 @[expose] public section
 
-universe uS uW uI wI wJ
+universe uS uW uK uI wI wJ
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle MeasureTheory
@@ -113,15 +113,15 @@ def rbrSoundness {S : Type uS} (s : FreeM P PUnit)
 Witness types, states and extractors may all read the full prefix, including oracle payloads.
 The output witness type `W tr` is indexed by the completed transcript `tr`, and the leaf
 extractor receives a witness of the type at the transcript its prefix completes. The input
-witness type `Win` is fixed. The statement and the input witness may lie in any universe; the
-intermediate witnesses lie in the universe of the input witness, which the root extractor
-returns. As for soundness states, the root extraction obligation applies only within the input
-promise.
+witness type `Win` is fixed. The statement, the input witness and the intermediate witnesses
+each lie in their own universe: the extractors are plain functions, so the root extractor may
+map a large intermediate witness to a small input witness and back. As for soundness states,
+the root extraction obligation applies only within the input promise.
 -/
 structure KnowledgeStateFunction (s : FreeM P PUnit) (S : Type uS) (W : PathAlong l s → Type)
     (Win : Type uW) (admissible : S → Prop) (relIn : S → Win → Prop)
     (validOutput : (stmt : S) → (tr : PathAlong l s) → W tr → Prop) where
-  Witness : ∀ {t} (sp : Cursor.Spine s t), PrefixMoves l sp → Type uW
+  Witness : ∀ {t} (sp : Cursor.Spine s t), PrefixMoves l sp → Type uK
   toFun : ∀ {t} (sp : Cursor.Spine s t) (history : PrefixMoves l sp), S →
     Witness sp history → Prop
   extractRoot : S → Witness (.root s) ⟨⟩ → Win
@@ -143,13 +143,15 @@ structure KnowledgeStateFunction (s : FreeM P PUnit) (S : Type uS) (W : PathAlon
       toFun sp history stmt (extractLeaf sp history stmt wit)
 
 /-- Worst-case-per-prefix knowledge: a fresh challenge rarely defeats backwards extraction.
-The output witness type `W tr` is indexed by the completed transcript `tr`. -/
+The output witness type `W tr` is indexed by the completed transcript `tr`. The intermediate
+witnesses of the state function lie in the universe `uK`, which is a parameter of this
+definition. -/
 def rbrKnowledgeSoundness {S : Type uS} {Win : Type uW} (s : FreeM P PUnit)
     {W : PathAlong l s → Type}
     (admissible : S → Prop) (relIn : S → Win → Prop)
     (validOutput : (stmt : S) → (tr : PathAlong l s) → W tr → Prop)
     (draw : QueryImpl (challengeSpec l s) ProbComp) (ε : ChallengeNode l s → ℝ≥0∞) : Prop :=
-  ∃ F : KnowledgeStateFunction l s S W Win admissible relIn validOutput,
+  ∃ F : KnowledgeStateFunction.{uS, uW, uK} l s S W Win admissible relIn validOutput,
     ∀ stmt, admissible stmt →
     ∀ (a : P.A) (next : P.B a → FreeM P PUnit)
       (sp : Cursor.Spine s (.liftBind a next)) (h : owner l a = .receiver)
@@ -197,7 +199,7 @@ abbrev Verifier.rbrKnowledgeSoundness {ι σ : Type} {S : Type uS} {Win : Type u
     (relOut : (tr : PathAlong plainSig s) → T (projectPathAlong plainSig s tr) → W tr → Prop)
     (draw : QueryImpl (challengeSpec plainSig s) ProbComp)
     (ε : ChallengeNode plainSig s → ℝ≥0∞) : Prop :=
-  Core.rbrKnowledgeSoundness plainSig s admissible relIn
+  Core.rbrKnowledgeSoundness.{uS, uW, uK} plainSig s admissible relIn
     (fun stmt tr wit => V.validAcceptance impl stmt tr (fun t => relOut tr t wit)) draw ε
 
 namespace OracleVerifier
@@ -246,7 +248,7 @@ abbrev rbrKnowledgeSoundness {Win : Type uW} {W : PathAlong oracleSig s → Type
       OracleVerifier.Output T B (projectPathAlong oracleSig s tr) → W tr → Prop)
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp)
     (ε : ChallengeNode oracleSig s → ℝ≥0∞) : Prop :=
-  Core.rbrKnowledgeSoundness oracleSig s admissible relIn
+  Core.rbrKnowledgeSoundness.{max uS uI, uW, uK} oracleSig s admissible relIn
     (fun stmt tr wit => V.validAcceptance impl stmt tr (fun t => relOut tr t wit)) draw ε
 
 end OracleVerifier

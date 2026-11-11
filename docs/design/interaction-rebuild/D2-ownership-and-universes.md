@@ -59,7 +59,9 @@ interfaces, if record D1's open point puts them there) may remain in the generic
 | Input and output oracle query types | independent | Answered by `simulateQ`, never returned |
 | Input oracle data `A i` | `Type u` (unresolved) | `OracleInterface` ties data and responses through `ReaderM` |
 | Input statement `S`, honest input witness `W` and input oracle index `I` in the security wrappers | independent | Arguments of the run |
-| Input oracle index and query type of `OracleVerifier.runWithLog` | `Type` (unresolved) | The returned log records input queries |
+| Intermediate witnesses of a knowledge state function | independent | The extractors are plain functions, not runner computations |
+| Input oracle index and query types of the extraction games and models | independent | `runWithAmbientLog` returns only ambient logs |
+| Input oracle index and query type of the full-log `OracleVerifier.runWithLog` | `Type` (unresolved) | The returned log records input queries |
 
 ArkLib's polynomials therefore live in `PFunctor.{u+1, u}`, like `rolePoly`. The ambient monad is
 not enlarged because a position contains a type: positions are never values of the monad.
@@ -71,11 +73,13 @@ and only run outputs and oracle responses are tied to `u`. A prover's ambient in
 oracle data is in `Type u` because `OracleInterface` stores an
 `OracleContext Query (ReaderM Message)` (`ArkLib/OracleReduction/OracleInterface.lean:55`), and
 the pinned `ReaderM` puts the responses in the universe of the data; separating them needs a
-change to `OracleInterface`, outside this slice. `OracleVerifier.runWithLog` returns a log of the
-input queries, so its input index and query type stay in `Type`; the extraction wrappers built
-on it inherit that. The query types of input and output oracles are independent: the decision
-reads the disjoint sum of the input and path specifications (`pathResources`), with separately
-typed data. Implementation note 18 lists the remaining security-wrapper restrictions. The test
+change to `OracleInterface`, outside this slice. The full-log `OracleVerifier.runWithLog` returns
+a log of the input queries, so its input index and query type stay in `Type`. Extraction runs on
+`OracleVerifier.runWithAmbientLog` instead, which logs only ambient queries and is general. The
+intermediate witnesses of a knowledge state function take their own universe, because its
+extractors are plain functions. The query types of input and output oracles are independent: the
+decision reads the disjoint sum of the input and path specifications (`pathResources`), with
+separately typed data. Implementation note 18 lists the remaining security-wrapper restrictions. The test
 `ArkLibTest/Interaction/Core/UniverseCanary.lean` instantiates the independent universes.
 
 ## Why

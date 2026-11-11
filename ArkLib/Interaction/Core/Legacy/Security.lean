@@ -1237,7 +1237,8 @@ theorem rbrKnowledgeSoundness_of_legacyWith (hacc : L.AcceptanceAgrees impl V ac
     {E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid}
     {K : V.KnowledgeStateFunction init impl relIn relOut E} (hK : KnowledgeTerminalCertificate K)
     (h : V.rbrKnowledgeSoundnessWith init impl relIn relOut WitMid E K ε) :
-    Core.rbrKnowledgeSoundness L.l L.protocol (fun _ => True) (fun stmt w => (stmt, w) ∈ relIn)
+    Core.rbrKnowledgeSoundness.{0, 0, 0} L.l L.protocol (fun _ => True)
+      (fun stmt w => (stmt, w) ∈ relIn)
       (fun stmt tr wit => acc (fun t => (t, wit) ∈ relOut) stmt tr)
       (L.challengeImpl ProtocolSpec.challengeQueryImpl)
       (fun c => ε (L.challengeRound 0 n (Nat.zero_add n) c)) := by
@@ -1273,7 +1274,8 @@ theorem rbrKnowledgeSoundness_of_legacy (hacc : L.AcceptanceAgrees impl V acc)
       (E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec M)
       (K : V.KnowledgeStateFunction init impl relIn relOut E), KnowledgeTerminalCertificate K)
     (h : V.rbrKnowledgeSoundness init impl relIn relOut ε) :
-    Core.rbrKnowledgeSoundness L.l L.protocol (fun _ => True) (fun stmt w => (stmt, w) ∈ relIn)
+    Core.rbrKnowledgeSoundness.{0, 0, 0} L.l L.protocol (fun _ => True)
+      (fun stmt w => (stmt, w) ∈ relIn)
       (fun stmt tr wit => acc (fun t => (t, wit) ∈ relOut) stmt tr)
       (L.challengeImpl ProtocolSpec.challengeQueryImpl)
       (fun c => ε (L.challengeRound 0 n (Nat.zero_add n) c)) := by
@@ -1378,7 +1380,8 @@ theorem embedVerifier_rbrKnowledgeSoundness (init : ProbComp σ)
       (E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec M)
       (K : V.KnowledgeStateFunction init impl relIn relOut E), KnowledgeTerminalCertificate K)
     (h : V.rbrKnowledgeSoundness init impl relIn relOut ε) :
-    (embedVerifier V).rbrKnowledgeSoundness impl (fun _ => True) (fun stmt w => (stmt, w) ∈ relIn)
+    Core.Verifier.rbrKnowledgeSoundness.{0, 0, 0} (embedVerifier V) impl (fun _ => True)
+      (fun stmt w => (stmt, w) ∈ relIn)
       (fun _ t w => (t, w) ∈ relOut) (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
       (fun c => ε (challengeRound 0 n (Nat.zero_add n) c)) :=
   (plainLayout pSpec).rbrKnowledgeSoundness_of_legacy (validAcceptance_embed_iff V impl) relIn
@@ -1410,7 +1413,7 @@ theorem rbrKnowledgeSoundness_iff [Nonempty WitIn] (init : ProbComp σ)
     (hcert : ∀ (M : Fin (n + 1) → Type)
       (E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec M)
       (K : V.KnowledgeStateFunction init impl relIn relOut E), KnowledgeTerminalCertificate K) :
-    (embedVerifier V).rbrKnowledgeSoundness impl (fun _ => True)
+    Core.Verifier.rbrKnowledgeSoundness.{0, 0, 0} (embedVerifier V) impl (fun _ => True)
         (fun stmt w => (stmt, w) ∈ relIn) (fun _ t w => (t, w) ∈ relOut)
         (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
         (fun c => ε (challengeRound 0 n (Nat.zero_add n) c)) ↔
