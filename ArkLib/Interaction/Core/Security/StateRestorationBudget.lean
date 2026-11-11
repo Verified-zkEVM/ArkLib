@@ -178,7 +178,7 @@ theorem restoredExecution_knowledge_soundness_nonuniform [DecidableEq (Key S Sal
     (F : KnowledgeStateFunction.{0, uW, uK, uO, 1, 0} oracleSig (protocol rounds)
       S Wout Win admissible relIn validOutput)
     (errors : RoundErrors rounds)
-    (bounded : F.LocallyBounded (uniformDraw rounds) (roundEps errors))
+    (bounded : F.LocallyBoundedOfNodes (uniformDraw rounds) (roundEps errors))
     (readOut : (stmt : S) → (tr : PathAlong oracleSig (protocol rounds)) → W → Wout stmt tr)
     (adversary : OracleComp (oracleSpec S Salt rounds) (S × Messages Salt rounds × W))
     (Q : ℕ) (queryBound : IsTotalQueryBound adversary Q) :
@@ -223,7 +223,7 @@ theorem stateRestoration_knowledge_soundness_nonuniform
     (outputLaw : ∀ stmt tr t w, terminalObservation V stmt tr = some t → relOut stmt tr t w →
       validOutput stmt tr (readOut stmt tr w))
     (errors : RoundErrors rounds)
-    (bounded : F.LocallyBounded (uniformDraw rounds) (roundEps errors))
+    (bounded : F.LocallyBoundedOfNodes (uniformDraw rounds) (roundEps errors))
     (adversary : OracleComp (oracleSpec (S × (∀ i, A i)) Salt rounds)
       ((S × (∀ i, A i)) × Messages Salt rounds × W))
     (Q : ℕ) (queryBound : IsTotalQueryBound adversary Q) :
@@ -254,7 +254,7 @@ theorem stateRestoration_oracle_knowledge_soundness_nonuniform
     (outputLaw : ∀ stmt tr claim w, closedTerminalObservation V stmt tr = some claim →
       relOut stmt tr claim w → validOutput stmt tr (readOut stmt tr w))
     (errors : RoundErrors rounds)
-    (bounded : F.LocallyBounded (uniformDraw rounds) (roundEps errors))
+    (bounded : F.LocallyBoundedOfNodes (uniformDraw rounds) (roundEps errors))
     (adversary : OracleComp (oracleSpec (S × (∀ i, A i)) Salt rounds)
       ((S × (∀ i, A i)) × Messages Salt rounds × W))
     (Q : ℕ) (queryBound : IsTotalQueryBound adversary Q) :
@@ -389,7 +389,7 @@ theorem stateRestoration_oracle_knowledge_soundness_nonuniform
     (outputLaw : ∀ stmt tr claim w, closedTerminalObservation V stmt tr = some claim →
       relOut stmt tr claim w → validOutput stmt tr (readOut stmt tr w))
     (errors : RoundErrors rounds)
-    (bounded : M.LocallyBounded (uniformDraw rounds) (roundEps errors))
+    (bounded : M.LocallyBoundedOfNodes (uniformDraw rounds) (roundEps errors))
     (rootBound messageBound challengeBound leafBound : S × (∀ i, A i) → Kind → ℕ)
     (budget : ∀ z, admissible z → M.stages.ProtocolBudgetAtMost z (rootBound z)
       (messageBound z) (challengeBound z) (leafBound z))

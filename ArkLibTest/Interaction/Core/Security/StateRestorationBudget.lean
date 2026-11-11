@@ -322,7 +322,7 @@ theorem uniform_zero_sixteen : 𝒟[($ᵗ Fin 16 : ProbComp (Fin 16))] {0} = 1 /
 -- Row 2 (StateRestorationBudget L104, bounded).
 /-- The state function is locally bounded by the round errors, `1/8` at the first challenge and
 `1/16` at the second. -/
-theorem bounded : knowledge.LocallyBounded (uniformDraw rounds) (roundEps errors) := by
+theorem bounded : knowledge.LocallyBoundedOfNodes (uniformDraw rounds) (roundEps errors) := by
   intro z _ a next sp h history
   cases sp with
   | root => cases h

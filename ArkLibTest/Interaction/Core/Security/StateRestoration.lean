@@ -336,7 +336,8 @@ theorem uniform_true : 𝒟[($ᵗ Bool : ProbComp Bool)] {true} = 1 / 2 := by
 -- Row 5 (StateRestoration L113, bounded).
 /-- The state function is locally bounded by `1/2` at the uniform draw, hence round-by-round
 knowledge sound. -/
-theorem bounded : knowledge.LocallyBounded (uniformDraw rounds) (uniformEps rounds (1 / 2)) := by
+theorem bounded :
+    knowledge.LocallyBoundedOfNodes (uniformDraw rounds) (uniformEps rounds (1 / 2)) := by
   intro z _ a next sp h history
   cases sp with
   | root => cases h
@@ -357,8 +358,8 @@ theorem bounded : knowledge.LocallyBounded (uniformDraw rounds) (uniformEps roun
       exact half.le
     | down _ tail => cases tail
 
-example : rbrKnowledgeSoundness.{0, 0, 0, 0} oracleSig (protocol rounds) (fun _ => True) Rin valid
-    (uniformDraw rounds) (uniformEps rounds (1 / 2)) :=
+example : rbrKnowledgeSoundnessOfNodes.{0, 0, 0, 0} oracleSig (protocol rounds) (fun _ => True)
+    Rin valid (uniformDraw rounds) (uniformEps rounds (1 / 2)) :=
   ⟨knowledge, bounded⟩
 
 -- Row 6 (StateRestoration L146): extraction along the path from output witness 6 is `6 + 7`.
@@ -498,7 +499,7 @@ def knowledgeFin : KnowledgeStateFunction.{0, 0, 0, 0, 1, 0} oracleSig (protocol
 
 /-- `knowledgeFin` has the same bad challenges as `knowledge`, so the same local bound. -/
 theorem boundedFin :
-    knowledgeFin.LocallyBounded (uniformDraw rounds) (uniformEps rounds (1 / 2)) :=
+    knowledgeFin.LocallyBoundedOfNodes (uniformDraw rounds) (uniformEps rounds (1 / 2)) :=
   bounded
 
 /-- Reads a number as an index bounded by the sent message, clamping it to the message. -/
@@ -576,7 +577,7 @@ theorem indexedBadChallenge_eq (z : Stmt) {a : OraclePos}
 
 /-- Statement-indexed extraction has the same uniform local error. -/
 theorem indexedBounded :
-    indexedKnowledge.LocallyBounded (uniformDraw rounds) (uniformEps rounds (1 / 2)) := by
+    indexedKnowledge.LocallyBoundedOfNodes (uniformDraw rounds) (uniformEps rounds (1 / 2)) := by
   intro z hz a next sp h history
   simpa only [indexedBadChallenge_eq] using bounded z hz a next sp h history
 
@@ -773,14 +774,11 @@ abbrev SelectedRunResult := Observation oracleSig selectedProtocol (fun _ => PUn
 
 /-- The plain replay keeps the frozen payload and challenge values, with a real dependent output. -/
 def replayResult (b c : Bool) : OracleComp []ₒ (Nat × Bool × Nat) :=
-  let r : SelectedRunResult := evalWithAnswerFn (selectedAnswers c)
-    (plainVerifier.run 0 (stmt 0).2 (selectedProver b))
-  have accepted : r.2.2.isSome := by
-    dsimp only [r]
-    erw [plainScriptedRun_eq]
-    trivial
-  pure ((show Fin 8 from r.1.2.1).val, (show Bool from r.1.2.2.1),
-    selectedValue r.1.1 (r.2.2.get accepted).1)
+  let summarize (r : SelectedRunResult) : Nat × Bool × Nat :=
+    ((show Fin 8 from r.1.2.1).val, (show Bool from r.1.2.2.1),
+      (r.2.2.map fun claim => selectedValue r.1.1 claim.1).getD 0)
+  pure (summarize (evalWithAnswerFn (selectedAnswers c)
+    (plainVerifier.run 0 (stmt 0).2 (selectedProver b))))
 
 /-- Both independently selected carriers return payload seven on both challenges. -/
 theorem replayResult_eq (b c : Bool) : replayResult b c = pure (7, c, 7) := by

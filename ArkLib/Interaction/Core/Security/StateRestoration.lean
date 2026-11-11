@@ -542,7 +542,7 @@ theorem simulate_scriptedProver {ι κ : Type} {ambient : OracleSpec ι} {spec :
 
 /-- The runner at a challenge node: the focal observation slot, then the counterpart draw. -/
 private theorem run_challengeNode {m : Type → Type} [Monad m] [LawfulMonad m] (C : Type)
-    (rest : OraclePoly.B (OraclePos.challenge C) → OracleProtocol)
+    (rest : OraclePoly.{0, 0}.B (OraclePos.challenge C) → OracleProtocol.{0, 0})
     {OutP OutC : PathAlong oracleSig (.liftBind (OraclePos.challenge C) rest) → Type}
     (p : Focal oracleSig m (.liftBind (OraclePos.challenge C) rest) OutP)
     (c : Counterpart oracleSig m (.liftBind (OraclePos.challenge C) rest) OutC) :
@@ -574,7 +574,7 @@ private theorem evalWithAnswerFn_run_scriptedProver_cons {κ : Type} {spec : Ora
         (scriptedProver (ambient := spec) rounds messages)
         (sampler oracleSig (protocol rounds) (fun c =>
           draw ⟨.inr ⟨oracleSig.toFunB (.oracle round.Message round.interface) message,
-            .inr ⟨oracleSig.toFunB (.challenge round.Challenge) x, c.val⟩⟩, c.property⟩)))
+            .inr ⟨oracleSig.{0, 0}.toFunB (.challenge round.Challenge) x, c.val⟩⟩, c.property⟩)))
       ⟨⟨message, ⟨x, r.1⟩⟩, r.2⟩ := by
   refine (congrArg (evalWithAnswerFn answers)
     (run_node (l := oracleSig) (.oracle round.Message round.interface) _ _ _)).trans ?_
@@ -608,7 +608,7 @@ private theorem evalWithAnswerFn_run_scriptedProver_cons {κ : Type} {spec : Ora
         c.val⟩, c.property⟩) =
       (fun x => ⟨x, sampler oracleSig (protocol rounds) (fun c =>
         draw ⟨.inr ⟨oracleSig.toFunB (.oracle round.Message round.interface) message,
-          .inr ⟨oracleSig.toFunB (.challenge round.Challenge) x, c.val⟩⟩, c.property⟩)⟩) <$>
+          .inr ⟨oracleSig.{0, 0}.toFunB (.challenge round.Challenge) x, c.val⟩⟩, c.property⟩)⟩) <$>
         draw ⟨.inr ⟨oracleSig.toFunB (.oracle round.Message round.interface) message, .inl ⟨⟩⟩,
           rfl⟩ :=
     Functor.map_map _ _ _
@@ -907,7 +907,7 @@ theorem badKey_resample_bound [DecidableEq (Key S Salt rounds)]
     {F : KnowledgeStateFunction.{0, uW, uK, uO, 1, 0} oracleSig (protocol rounds)
       S Wout Win admissible relIn validOutput}
     {ε : ChallengeNode oracleSig (protocol rounds) → ENNReal}
-    (bounded : F.LocallyBounded (uniformDraw rounds) ε)
+    (bounded : F.LocallyBoundedOfNodes (uniformDraw rounds) ε)
     (key : Key S Salt rounds) (table : Table S Salt rounds) :
     Pr{let u ← $ᵗ key.Challenge}[badKey F key (Function.update table key u)] ≤
       ε (keyNode key) := by
@@ -922,7 +922,10 @@ theorem badKey_resample_bound [DecidableEq (Key S Salt rounds)]
   · simp only [hz, true_and]
     let : MeasurableSpace key.Challenge := ⊤
     rw [prEvent_eq_evalDist_of_discrete]
+    let : MeasurableSpace (Move oracleSig.{0, 0} (.challenge key.Challenge)) := ⊤
     have h := bounded key.input hz _ _ (keySpine key) rfl (keyHistory key table)
+    change 𝒟[(sampleAt oracleSig (uniformDraw rounds) (keySpine key) rfl : ProbComp key.Challenge)]
+      (F.badChallenge (keySpine key) (keyHistory key table) key.input) ≤ ε (keyNode key) at h
     rw [sampleAt_keySpine] at h
     exact h
   · simp [hz]
@@ -978,7 +981,8 @@ is valid and extraction fails is at most `(Q + rounds.length) * error`. -/
 theorem restoredExecution_knowledge_soundness [DecidableEq (Key S Salt rounds)]
     (F : KnowledgeStateFunction.{0, uW, uK, uO, 1, 0} oracleSig (protocol rounds)
       S Wout Win admissible relIn validOutput)
-    (error : ENNReal) (bounded : F.LocallyBounded (uniformDraw rounds) (uniformEps rounds error))
+    (error : ENNReal)
+    (bounded : F.LocallyBoundedOfNodes (uniformDraw rounds) (uniformEps rounds error))
     (readOut : (stmt : S) → (tr : PathAlong oracleSig (protocol rounds)) → W → Wout stmt tr)
     (adversary : OracleComp (oracleSpec S Salt rounds) (S × Messages Salt rounds × W))
     (Q : ℕ) (queryBound : IsTotalQueryBound adversary Q) :
@@ -1028,7 +1032,8 @@ theorem stateRestoration_knowledge_soundness [DecidableEq (Key (S × (∀ i, A i
       Wout stmt tr)
     (outputLaw : ∀ stmt tr t w, terminalObservation V stmt tr = some t → relOut stmt tr t w →
       validOutput stmt tr (readOut stmt tr w))
-    (error : ENNReal) (bounded : F.LocallyBounded (uniformDraw rounds) (uniformEps rounds error))
+    (error : ENNReal)
+    (bounded : F.LocallyBoundedOfNodes (uniformDraw rounds) (uniformEps rounds error))
     (adversary : OracleComp (oracleSpec (S × (∀ i, A i)) Salt rounds)
       ((S × (∀ i, A i)) × Messages Salt rounds × W))
     (Q : ℕ) (queryBound : IsTotalQueryBound adversary Q) :
@@ -1059,7 +1064,8 @@ theorem stateRestoration_oracle_knowledge_soundness
       Wout stmt tr)
     (outputLaw : ∀ stmt tr claim w, closedTerminalObservation V stmt tr = some claim →
       relOut stmt tr claim w → validOutput stmt tr (readOut stmt tr w))
-    (error : ENNReal) (bounded : F.LocallyBounded (uniformDraw rounds) (uniformEps rounds error))
+    (error : ENNReal)
+    (bounded : F.LocallyBoundedOfNodes (uniformDraw rounds) (uniformEps rounds error))
     (adversary : OracleComp (oracleSpec (S × (∀ i, A i)) Salt rounds)
       ((S × (∀ i, A i)) × Messages Salt rounds × W))
     (Q : ℕ) (queryBound : IsTotalQueryBound adversary Q) :
@@ -1089,7 +1095,8 @@ theorem stateRestoration_knowledge_soundness_privateCoins
       Wout stmt tr)
     (outputLaw : ∀ stmt tr t w, terminalObservation V stmt tr = some t → relOut stmt tr t w →
       validOutput stmt tr (readOut stmt tr w))
-    (error : ENNReal) (bounded : F.LocallyBounded (uniformDraw rounds) (uniformEps rounds error))
+    (error : ENNReal)
+    (bounded : F.LocallyBoundedOfNodes (uniformDraw rounds) (uniformEps rounds error))
     {Coins : Type} (coins : OptionT ProbComp Coins)
     (adversary : Coins → OracleComp (oracleSpec (S × (∀ i, A i)) Salt rounds)
       ((S × (∀ i, A i)) × Messages Salt rounds × W))
@@ -1121,7 +1128,8 @@ theorem stateRestoration_oracle_knowledge_soundness_privateCoins
       Wout stmt tr)
     (outputLaw : ∀ stmt tr claim w, closedTerminalObservation V stmt tr = some claim →
       relOut stmt tr claim w → validOutput stmt tr (readOut stmt tr w))
-    (error : ENNReal) (bounded : F.LocallyBounded (uniformDraw rounds) (uniformEps rounds error))
+    (error : ENNReal)
+    (bounded : F.LocallyBoundedOfNodes (uniformDraw rounds) (uniformEps rounds error))
     {Coins : Type} (coins : OptionT ProbComp Coins)
     (adversary : Coins → OracleComp (oracleSpec (S × (∀ i, A i)) Salt rounds)
       ((S × (∀ i, A i)) × Messages Salt rounds × W))
