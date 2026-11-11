@@ -42,13 +42,13 @@ def pairInterface : OracleInterface (Nat × Nat) where
 def inputFamily : OracleFamily Unit (fun _ => Nat) := ⟨fun _ => natInterface⟩
 
 /-- The prefix has no rounds. -/
-abbrev done : OracleProtocol := .pure ⟨⟩
+abbrev done : OracleProtocol.{0, 0} := .pure ⟨⟩
 
 /-- The suffix receives one public Boolean from the prover. -/
-abbrev suffix : OracleProtocol := .liftBind (.message Bool) (fun _ => .pure ⟨⟩)
+abbrev suffix : OracleProtocol.{0, 0} := .liftBind (.message Bool) (fun _ => .pure ⟨⟩)
 
 /-- The composed protocol. -/
-abbrev combined : OracleProtocol := done.append (fun _ => suffix)
+abbrev combined : OracleProtocol.{0, 0} := done.append (fun _ => suffix)
 
 /-- The final statement type: `Unit` after `true`, a natural number after `false`. -/
 def finalStmt : Path suffix → Type

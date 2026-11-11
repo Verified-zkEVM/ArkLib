@@ -302,7 +302,8 @@ example (hidden secret : Nat) :
         (pathResources inputs firstProtocol p).Data) =
       ⟨projectPathAlong oracleSig firstProtocol (prefixTranscript secret),
         (inputData hidden, payloads firstProtocol (prefixTranscript secret))⟩ :=
-  OracleVerifier.prefixRoute_payload (s₂ := fun _ => secondProtocol) (inputData hidden)
+  OracleVerifier.prefixRoute_payload (inputs := inputs) (s₂ := fun _ => secondProtocol)
+    (inputData hidden)
     (prefixTranscript secret) suffixTranscript
 
 end Interaction.Core.RoutingTests
