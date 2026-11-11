@@ -20,7 +20,7 @@ prefix before drawing one fresh challenge; their indices contain only shape choi
 
 @[expose] public section
 
-universe uS uW uK uO uI wI wJ
+universe uS uW uK uO uI wI wJ uA u
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle MeasureTheory
@@ -29,18 +29,18 @@ open scoped ENNReal
 attribute [local implicit_reducible] projectPathAlong projectPathAlongLocalMap
   Displayed.LocalMap.toHom Displayed.LocalMap.toHomFun
 
-variable {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly)
+variable {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
 
 /-- Full runtime moves decorating a structural cursor, including erased payloads. -/
 @[implicit_reducible]
-def PrefixMoves : {s t : FreeM P PUnit} → Cursor.Spine s t → Type
+def PrefixMoves : {s t : FreeM P PUnit.{u + 1}} → Cursor.Spine s t → Type u
   | _, _, .root _ => PUnit
   | _, _, .down (a := a) b tail =>
     {x : Move l a // l.toFunB a x = b} × PrefixMoves tail
 
 /-- Extend a full prefix by one move using cursor composition. -/
-def PrefixMoves.snoc {a : P.A} {next : P.B a → FreeM P PUnit} :
-    {s : FreeM P PUnit} → (sp : Cursor.Spine s (.liftBind a next)) →
+def PrefixMoves.snoc {a : P.A} {next : P.B a → FreeM P PUnit.{u + 1}} :
+    {s : FreeM P PUnit.{u + 1}} → (sp : Cursor.Spine s (.liftBind a next)) →
     PrefixMoves l sp → (x : Move l a) →
     PrefixMoves l (sp.comp (.down (l.toFunB a x) (.root _)))
   | _, .root _, _, x => ⟨⟨x, rfl⟩, ⟨⟩⟩
@@ -49,7 +49,7 @@ def PrefixMoves.snoc {a : P.A} {next : P.B a → FreeM P PUnit} :
     exact ⟨⟨y, h⟩, PrefixMoves.snoc tail rest x⟩
 
 /-- A terminal full prefix is a completed transcript. -/
-def PrefixMoves.complete : {s : FreeM P PUnit} →
+def PrefixMoves.complete : {s : FreeM P PUnit.{u + 1}} →
     (sp : Cursor.Spine s (.pure PUnit.unit)) → PrefixMoves l sp → PathAlong l s
   | _, .root _, _ => ⟨⟩
   | _, .down b tail, history => by
@@ -57,7 +57,8 @@ def PrefixMoves.complete : {s : FreeM P PUnit} →
     exact ⟨x, h.symm ▸ PrefixMoves.complete tail rest⟩
 
 /-- Case analysis of a nonempty full prefix at its first move. -/
-def PrefixMoves.downCases {a : P.A} {next : P.B a → FreeM P PUnit} {t : FreeM P PUnit}
+def PrefixMoves.downCases {a : P.A} {next : P.B a → FreeM P PUnit.{u + 1}}
+    {t : FreeM P PUnit.{u + 1}}
     {motive : (b : P.B a) → (tail : Cursor.Spine (next b) t) →
       PrefixMoves l (.down b tail) → Sort*}
     (h : ∀ x tail history, motive (l.toFunB a x) tail ⟨⟨x, rfl⟩, history⟩)
@@ -67,25 +68,26 @@ def PrefixMoves.downCases {a : P.A} {next : P.B a → FreeM P PUnit} {t : FreeM 
   exact h x tail history
 
 /-- The structural node reached by a cursor ending at an interaction node. -/
-def spineNode {a : P.A} {next : P.B a → FreeM P PUnit} :
-    {s : FreeM P PUnit} → Cursor.Spine s (.liftBind a next) → Node s
+def spineNode {a : P.A} {next : P.B a → FreeM P PUnit.{u + 1}} :
+    {s : FreeM P PUnit.{u + 1}} → Cursor.Spine s (.liftBind a next) → Node s
   | _, .root _ => .inl ⟨⟩
   | _, .down b tail => .inr ⟨b, spineNode tail⟩
 
 /-- Node lookup preserves the position at the end of the cursor. -/
-theorem spineNode_position {a : P.A} {next : P.B a → FreeM P PUnit} :
-    {s : FreeM P PUnit} → (sp : Cursor.Spine s (.liftBind a next)) →
+theorem spineNode_position {a : P.A} {next : P.B a → FreeM P PUnit.{u + 1}} :
+    {s : FreeM P PUnit.{u + 1}} → (sp : Cursor.Spine s (.liftBind a next)) →
     Node.position _ (spineNode sp) = a
   | _, .root _ => rfl
   | _, .down _ tail => spineNode_position tail
 
 /-- A receiver cursor identifies its challenge without using any full runtime move. -/
-def spineChallenge {s : FreeM P PUnit} {a : P.A} {next : P.B a → FreeM P PUnit}
+def spineChallenge {s : FreeM P PUnit.{u + 1}} {a : P.A} {next : P.B a → FreeM P PUnit.{u + 1}}
     (sp : Cursor.Spine s (.liftBind a next)) (h : owner l a = .receiver) : ChallengeNode l s :=
   ⟨spineNode sp, (congrArg (owner l) (spineNode_position sp)).trans h⟩
 
 /-- Draw a fresh move at the receiver position selected by a structural prefix. -/
-def sampleAt {s : FreeM P PUnit} {a : P.A} {next : P.B a → FreeM P PUnit}
+def sampleAt {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly)
+    {s : FreeM P PUnit.{1}} {a : P.A} {next : P.B a → FreeM P PUnit.{1}}
     (draw : QueryImpl (challengeSpec l s) ProbComp)
     (sp : Cursor.Spine s (.liftBind a next)) (h : owner l a = .receiver) : ProbComp (Move l a) :=
   (fun x => Eq.mp (congrArg (Move l) (spineNode_position sp)) x) <$>
@@ -93,7 +95,7 @@ def sampleAt {s : FreeM P PUnit} {a : P.A} {next : P.B a → FreeM P PUnit}
 
 /-- A state predicate on every full prefix, with root, sender and terminal obligations. The
 statement may lie in any universe. -/
-structure StateFunction (s : FreeM P PUnit) (S : Type uS)
+structure StateFunction (s : FreeM P PUnit.{u + 1}) (S : Type uS)
     (admissible language : S → Prop) (accepts : S → PathAlong l s → Prop) where
   toFun : ∀ {t}, (sp : Cursor.Spine s t) → PrefixMoves l sp → S → Prop
   root : ∀ stmt, admissible stmt → toFun (.root s) ⟨⟩ stmt → language stmt
@@ -105,12 +107,13 @@ structure StateFunction (s : FreeM P PUnit) (S : Type uS)
     ¬ toFun sp history stmt → ¬ accepts stmt (PrefixMoves.complete l sp history)
 
 /-- Worst-case-per-prefix round-by-round soundness; there is no adversary-model argument. -/
-def rbrSoundness {S : Type uS} (s : FreeM P PUnit)
+def rbrSoundness {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly)
+    {S : Type uS} (s : FreeM P PUnit.{1})
     (admissible language : S → Prop) (accepts : S → PathAlong l s → Prop)
     (draw : QueryImpl (challengeSpec l s) ProbComp) (ε : ChallengeNode l s → ℝ≥0∞) : Prop :=
   ∃ F : StateFunction l s S admissible language accepts,
     ∀ stmt, admissible stmt → ¬ language stmt →
-    ∀ (a : P.A) (next : P.B a → FreeM P PUnit)
+    ∀ (a : P.A) (next : P.B a → FreeM P PUnit.{1})
       (sp : Cursor.Spine s (.liftBind a next)) (h : owner l a = .receiver)
       (history : PrefixMoves l sp),
       letI : MeasurableSpace (Move l a) := ⊤
@@ -123,9 +126,11 @@ def rbrSoundness {S : Type uS} (s : FreeM P PUnit)
 Every witness carrier may depend on the input statement. Intermediate carriers may also read
 all earlier moves, including oracle payloads, and output carriers may read the complete
 transcript. Statements, input witnesses, intermediate witnesses and terminal witnesses lie in
-independent universes. The root extraction obligation applies within the input promise.
+independent universes. The move universe also determines the branch and leaf universes;
+protocol positions have their own universe. The root extraction obligation applies within the
+input promise.
 -/
-structure KnowledgeStateFunction (s : FreeM P PUnit) (S : Type uS)
+structure KnowledgeStateFunction (s : FreeM P PUnit.{u + 1}) (S : Type uS)
     (W : S → PathAlong l s → Type uO) (Win : S → Type uW) (admissible : S → Prop)
     (relIn : (stmt : S) → Win stmt → Prop)
     (validOutput : (stmt : S) → (tr : PathAlong l s) → W stmt tr → Prop) where
@@ -151,14 +156,15 @@ structure KnowledgeStateFunction (s : FreeM P PUnit) (S : Type uS)
       toFun stmt sp history (extractLeaf stmt sp history wit)
 
 /-- A fresh challenge rarely defeats backwards extraction, uniformly over later witnesses. -/
-def rbrKnowledgeSoundness {S : Type uS} {Win : S → Type uW} (s : FreeM P PUnit)
+def rbrKnowledgeSoundness {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly)
+    {S : Type uS} {Win : S → Type uW} (s : FreeM P PUnit.{1})
     {W : S → PathAlong l s → Type uO} (admissible : S → Prop)
     (relIn : (stmt : S) → Win stmt → Prop)
     (validOutput : (stmt : S) → (tr : PathAlong l s) → W stmt tr → Prop)
     (draw : QueryImpl (challengeSpec l s) ProbComp) (ε : ChallengeNode l s → ℝ≥0∞) : Prop :=
   ∃ F : KnowledgeStateFunction.{uS, uW, uK, uO} l s S W Win admissible relIn validOutput,
     ∀ stmt, admissible stmt →
-    ∀ (a : P.A) (next : P.B a → FreeM P PUnit)
+    ∀ (a : P.A) (next : P.B a → FreeM P PUnit.{1})
       (sp : Cursor.Spine s (.liftBind a next)) (h : owner l a = .receiver)
       (history : PrefixMoves l sp),
       letI : MeasurableSpace (Move l a) := ⊤
@@ -170,7 +176,7 @@ def rbrKnowledgeSoundness {S : Type uS} {Win : S → Type uW} (s : FreeM P PUnit
 /-- Move a knowledge state function to a larger universe of intermediate witnesses. Each new
 intermediate witness is an old one in a larger universe; the states, extractors and obligations
 are the old ones. -/
-def KnowledgeStateFunction.lift.{v} {s : FreeM P PUnit} {S : Type uS}
+def KnowledgeStateFunction.lift.{v} {s : FreeM P PUnit.{u + 1}} {S : Type uS}
     {W : S → PathAlong l s → Type uO}
     {Win : S → Type uW} {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
     {validOutput : (stmt : S) → (tr : PathAlong l s) → W stmt tr → Prop}
@@ -187,7 +193,8 @@ def KnowledgeStateFunction.lift.{v} {s : FreeM P PUnit} {S : Type uS}
 
 /-- Round-by-round knowledge soundness with intermediate witnesses in a universe `uK` implies
 it with intermediate witnesses in any larger universe, at the same error. -/
-theorem rbrKnowledgeSoundness.lift.{v} {S : Type uS} {Win : S → Type uW} {s : FreeM P PUnit}
+theorem rbrKnowledgeSoundness.lift.{v} {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly)
+    {S : Type uS} {Win : S → Type uW} {s : FreeM P PUnit.{1}}
     {W : S → PathAlong l s → Type uO} {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
     {validOutput : (stmt : S) → (tr : PathAlong l s) → W stmt tr → Prop}
     {draw : QueryImpl (challengeSpec l s) ProbComp} {ε : ChallengeNode l s → ℝ≥0∞}

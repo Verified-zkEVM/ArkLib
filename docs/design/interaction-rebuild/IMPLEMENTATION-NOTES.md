@@ -374,12 +374,19 @@ The measured API retains these small carriers because of pinned VCVio declaratio
 | Terminal witnesses `W stmt tr : Type` | The same `BudgetedProgram` input binder forces the leaf program's argument to be small. This restriction also applies to `programAlong` and `MeasuredKnowledgeStateFunction`. |
 | Cost type `ω : Type`, instruction names and views | `OracleComp.MeasuredProgram (Input Result ω : Type)` at line 66, with fields `View : Type` and `Op : Type`; `BudgetedProgram` bundles this program. |
 
-The statement universe remains arbitrary. These measured restrictions do not apply to the pure
-extraction, composition, failure or verifier-wrapper APIs. No parent interface prevents the large
-terminal or seam witness port. The record separately marks the frozen large oracle-message canary
-unresolved: the inherited `KnowledgeStateFunction` binder still fixes `P : PFunctor.{1, 0}`, so
-it cannot receive the frozen `Type 1` oracle payload. That is a move-universe restriction, not a
-terminal-witness restriction.
+The statement universe remains arbitrary. The pure `PrefixMoves`, `KnowledgeStateFunction`,
+lifting, extraction, extraction failure, append and restriction laws accept
+`P : PFunctor.{uA, u}` and a lens to `rolePoly.{u}`, with leaves `PUnit.{u + 1}`.
+The move, statement and witness universes are independent; branches and leaves share the move
+universe. KC-318 and KC-322 now send the frozen `ULift.{1} Nat` oracle payload, retain
+`ULift.{2} (Fin (payload.down + 1))` witnesses and prove extraction returns six.
+
+Probability bounds use the small-move instance of this general certificate. Pinned VCVio's
+`ProbComp : Type → Type` (`VCVio/OracleComp/ProbComp/Basic.lean:31`) forces `sampleAt` to return
+a small move. `challengeSpec` (`Core/Protocol.lean:65–67`) returns `Move l`, whose universe is
+shared by challenges and public/oracle messages. The disposition record's PROB-031 names this
+remaining probabilistic limitation. It does not restrict pure backward maps or large terminal
+and seam witnesses in the verifier wrappers.
 
 ### Acceptance evidence
 

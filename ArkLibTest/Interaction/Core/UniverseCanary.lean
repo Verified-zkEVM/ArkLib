@@ -15,11 +15,13 @@ Ambient oracle indices, input oracle indices, output oracle indices, input and o
 query types, input statements and input witnesses each take their own universe. The instances
 below put an oracle index in `Type 1` with responses in `Type 0`, input oracle queries in
 `Type 1`, output oracle queries in `Type 2`, an input statement in `Type 2` and an input witness
-in `Type 1`, while moves, run outputs and oracle responses stay in `Type 0`. They typecheck
-against `Verifier`, `OracleVerifier`, `Reduction`, both appends, the oracle routing laws, oracle
+in `Type 1`, while the initial examples keep moves, run outputs and oracle responses in `Type 0`.
+They typecheck against `Verifier`, `OracleVerifier`, `Reduction`, both appends, the oracle routing
+laws, oracle
 runs, the classical security and extraction models and round-by-round knowledge state functions,
 whose intermediate witnesses lie in their own universe. A run returns the output oracle data
-`∀ j, B p j`, so the run's output index is in `Type 0`.
+`∀ j, B p j`. The run's output index is in `Type 0`. The final pure extraction client sends
+a move in `Type 1` with a payload-dependent witness carrier in `Type 2`.
 -/
 
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle OracleComp MeasureTheory
@@ -438,7 +440,7 @@ example (stmt : Type 1 × Nat) (w : Fin (stmt.2 + 1)) :
 
 /-- Lifting preserves statement-dependent witnesses and the root extraction map. -/
 example (stmt : Type 1 × Nat) (w : Fin (stmt.2 + 1)) :
-    (indexedLargeCertificate.lift.{2, 2, 1, 0, 3}).extractRoot stmt ⟨⟨w⟩⟩ = ULift.up w := rfl
+    (indexedLargeCertificate.lift.{2, 2, 1, 0, 1, 0, 3}).extractRoot stmt ⟨⟨w⟩⟩ = ULift.up w := rfl
 
 /-- Lifting a bound retains the same dependent input and output carriers at a larger universe. -/
 example : rbrKnowledgeSoundness.{2, 2, 3} plainSig done
@@ -479,7 +481,7 @@ example (A : Type 1) :
 
 /-- Lifting intermediate witnesses keeps the large terminal and input carriers directly. -/
 example (A : Type) :
-    (largeTerminalCertificate.lift.{0, 1, 1, 1, 2}).extractAlong () ⟨⟩ A = A := rfl
+    (largeTerminalCertificate.lift.{0, 1, 1, 1, 1, 0, 2}).extractAlong () ⟨⟩ A = A := rfl
 
 /-- The terminal witness may be a type even when the extracted input witness is small. -/
 def largeOutputCertificate {P : PFunctor.{1, 0}} (l : PFunctor.Lens P TwoParty.Lens.rolePoly)
@@ -506,5 +508,56 @@ example : OracleVerifier.rbrKnowledgeSoundness.{2, 0, 1, 1, 1, 0, 0} runnable am
     (fun _ => True) (fun _ (_ : Unit) => True) (fun _ _ _ (_ : Type) => True)
     noChallenges (fun _ => 0) :=
   ⟨largeOutputCertificate oracleSig _, fun _ _ _ _ sp => nomatch sp⟩
+
+/-! ### Pure extraction after a large oracle payload -/
+
+/-- The oracle query and its answer are both in the payload's universe. -/
+@[instance_reducible]
+def largePayloadInterface : OracleInterface.{1, 1} (ULift.{1} Nat) where
+  Query := PUnit.{2}
+  toOC.spec := fun _ => ULift.{1} Nat
+  toOC.impl _ := read
+
+/-- A prover sends a natural-number payload in `Type 1`. -/
+def largePayloadProtocol : OracleProtocol.{1} :=
+  .liftBind (.oracle (ULift.{1} Nat) largePayloadInterface) (fun _ => .pure ⟨⟩)
+
+/-- The terminal carrier depends on the full oracle payload, which is erased from the shape. -/
+def largePayloadWitness (tr : PathAlong oracleSig largePayloadProtocol) : Type 2 :=
+  ULift.{2} (Fin (tr.1.down + 1))
+
+-- Disposition KC-318.
+/-- Extraction sends a payload-dependent finite witness back to a natural-number witness. -/
+def largePayloadCertificate : KnowledgeStateFunction.{0, 2, 2, 2} oracleSig largePayloadProtocol
+    Unit (fun _ => largePayloadWitness) (fun _ => ULift.{2} Nat)
+    (fun _ => True) (fun _ _ => True) (fun _ _ _ => True) where
+  Witness _ {_} sp history := match sp, history with
+    | .root _, _ => ULift.{2} Nat
+    | .down _ _, history => ULift.{2} (Fin (history.1.1.down + 1))
+  toFun _ {_} _ _ _ := True
+  extractRoot _ w := w
+  extractStep _ {_ _} sp _ _ w := by
+    cases sp with
+    | root => exact ⟨w.down.val⟩
+    | down _ tail => cases tail
+  extractLeaf _ sp history w := by
+    cases sp with
+    | down _ tail =>
+      cases tail
+      exact w
+  root _ _ _ _ := trivial
+  send _ _ _ _ _ _ _ := trivial
+  leaf _ _ _ _ _ := trivial
+
+-- Disposition KC-322.
+/-- The ordinary-import client extracts six after sending the large payload seven. -/
+theorem largePayload_extractAlong :
+    (largePayloadCertificate.extractAlong ()
+      ⟨(⟨7⟩ : ULift.{1} Nat), ⟨⟩⟩ (⟨⟨6, by decide⟩⟩ : ULift.{2} (Fin 8))).down = 6 := rfl
+
+/-- Lifting intermediate witnesses also accepts the large move through the public API. -/
+example :
+    ((largePayloadCertificate.lift.{0, 2, 2, 2, 2, 1, 3}).extractAlong ()
+      ⟨(⟨7⟩ : ULift.{1} Nat), ⟨⟩⟩ (⟨⟨6, by decide⟩⟩ : ULift.{2} (Fin 8))).down = 6 := rfl
 
 end Interaction.Core.UniverseCanaryTests
