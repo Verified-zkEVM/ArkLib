@@ -43,6 +43,7 @@ def inputData (hidden : Nat) : ∀ _ : Bool, Nat
   .liftBind (.challenge Nat) (fun _ =>
     .liftBind (.oracle Nat OracleInterface.instDefault) (fun _ => .pure ⟨⟩))
 
+/-- The prefix oracle send followed by the challenged suffix. -/
 abbrev combined : OracleProtocol := firstProtocol.append (fun _ => secondProtocol)
 
 /-- One exported scalar oracle. -/
@@ -102,6 +103,7 @@ def compatible : OracleVerifier.OutputCompatibility prefixVerifier (fun _ => suf
       (OracleVerifier.suffixRoute prefixVerifier stmt p v)
   agrees _ _ _ _ _ _ := rfl
 
+/-- Compose the prefix and suffix verifiers with the routed output map. -/
 def composed := prefixVerifier.append (fun _ => suffixVerifier) compatible
 
 /-- The prefix prover records 1, sends `(20, secret)`, and keeps `secret` as private memory. -/
@@ -131,6 +133,7 @@ def traceHandler : QueryImpl (ambient + challengeSpec oracleSig combined) (State
   | .inr ⟨.inr ⟨_, .inr ⟨_, .inl _⟩⟩, h⟩ => nomatch h
   | .inr ⟨.inr ⟨_, .inr ⟨_, .inr ⟨_, n⟩⟩⟩, _⟩ => n.elim
 
+/-- Run the composed verifier and retain the ambient query history. -/
 def observed (hidden secret : Nat) :=
   (simulateQ traceHandler (composed.run () (inputData hidden) (prover secret))).run []
 
@@ -177,8 +180,10 @@ example (hidden secret : Nat) :=
 /-! QueryBounds 14, restated (statement level): on an appended transcript built from separate
 prefix and suffix transcripts, the routed prefix data is the prefix transcript's own payload. -/
 
+/-- The prefix transcript with observable value 20 and a private second coordinate. -/
 def prefixTranscript (secret : Nat) : PathAlong oracleSig firstProtocol := ⟨(20, secret), ⟨⟩⟩
 
+/-- The suffix transcript with challenge 23 and scalar message 23. -/
 def suffixTranscript : PathAlong oracleSig secondProtocol :=
   ⟨(23 : Nat), ⟨(23 : Nat), ⟨⟩⟩⟩
 

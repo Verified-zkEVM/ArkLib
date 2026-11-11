@@ -246,10 +246,35 @@ example : ¬ Nonempty
   change (c.outputMap () p v).f emptyData PUnit.unit 0 = 1 at h₁
   exact Nat.zero_ne_one (h₀.symm.trans h₁)
 
+/-- Draw splitting recovers prefix draws without any monad structure, at unequal universes. -/
+example {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly) {m : Type → Type 1}
+    (s₁ : FreeM P PUnit) (s₂ : Path s₁ → FreeM P PUnit)
+    (draw₁ : (c : ChallengeNode l s₁) → m (challengeSpec l s₁ c))
+    (draw₂ : (p : Path s₁) → (c : ChallengeNode l (s₂ p)) → m (challengeSpec l (s₂ p) c)) :
+    prefixDraw l s₁ s₂ (combineDraw l s₁ s₂ draw₁ draw₂) = draw₁ :=
+  prefixDraw_combineDraw l s₁ s₂ draw₁ draw₂
+
+/-- Draw splitting recovers each path-dependent suffix at unequal universes. -/
+example {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly) {m : Type → Type 1}
+    (s₁ : FreeM P PUnit) (s₂ : Path s₁ → FreeM P PUnit)
+    (draw₁ : (c : ChallengeNode l s₁) → m (challengeSpec l s₁ c))
+    (draw₂ : (p : Path s₁) → (c : ChallengeNode l (s₂ p)) → m (challengeSpec l (s₂ p) c)) :
+    suffixDraw l s₁ s₂ (combineDraw l s₁ s₂ draw₁ draw₂) = draw₂ :=
+  suffixDraw_combineDraw l s₁ s₂ draw₁ draw₂
+
+/-- Combining split draws recovers the original family at unequal universes. -/
+example {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly) {m : Type → Type 1}
+    (s₁ : FreeM P PUnit) (s₂ : Path s₁ → FreeM P PUnit)
+    (draw : (c : ChallengeNode l (s₁.append s₂)) → m (challengeSpec l (s₁.append s₂) c)) :
+    combineDraw l s₁ s₂ (prefixDraw l s₁ s₂ draw) (suffixDraw l s₁ s₂ draw) = draw :=
+  combineDraw_prefixDraw_suffixDraw l s₁ s₂ draw
+
 end Interaction.Core.CompositionTests
 
 run_cmd do
   for decl in [``Interaction.Core.appendSampler_eq, ``Interaction.Core.appendOracleSampler_eq,
+      ``Interaction.Core.prefixDraw_combineDraw, ``Interaction.Core.suffixDraw_combineDraw,
+      ``Interaction.Core.combineDraw_prefixDraw_suffixDraw,
       ``Interaction.Core.run_appendSampler, ``Interaction.Core.run_splitSampler,
       ``Interaction.Core.OracleVerifier.append,
       ``Interaction.Core.OracleVerifier.append_decideWith,

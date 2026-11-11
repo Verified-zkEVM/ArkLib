@@ -28,56 +28,6 @@ universe u uA
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
 
-attribute [local implicit_reducible] projectPathAlong projectPathAlongLocalMap
-  Displayed.LocalMap.toHom Displayed.LocalMap.toHomFun owner Node Node.position challengeSpec
-
-/-- Restrict challenge draws of an appended protocol to the challenge nodes of its prefix. -/
-def prefixDraw {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
-    {m : Type u → Type u} :
-    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
-    ((c : ChallengeNode l (s₁.append s₂)) → m (challengeSpec l (s₁.append s₂) c)) →
-    (c : ChallengeNode l s₁) → m (challengeSpec l s₁ c)
-  | .pure _, _, _, c => c.val.elim
-  | .liftBind _ _, _, draw, ⟨.inl x, h⟩ => draw ⟨.inl x, h⟩
-  | .liftBind _ next, s₂, draw, ⟨.inr ⟨b, c⟩, h⟩ =>
-    prefixDraw l (next b) (fun p => s₂ ⟨b, p⟩)
-      (fun c => draw ⟨.inr ⟨b, c.val⟩, c.property⟩) ⟨c, h⟩
-
-/-- Restrict challenge draws of an appended protocol to the challenge nodes of the suffix at a
-completed prefix path. -/
-def suffixDraw {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
-    {m : Type u → Type u} :
-    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
-    ((c : ChallengeNode l (s₁.append s₂)) → m (challengeSpec l (s₁.append s₂) c)) →
-    (p : Path s₁) → (c : ChallengeNode l (s₂ p)) → m (challengeSpec l (s₂ p) c)
-  | .pure _, _, draw, ⟨⟩, c => draw c
-  | .liftBind _ next, s₂, draw, ⟨b, p⟩, c =>
-    suffixDraw l (next b) (fun p => s₂ ⟨b, p⟩)
-      (fun c => draw ⟨.inr ⟨b, c.val⟩, c.property⟩) p c
-
-/-- Combining the prefix and suffix restrictions of challenge draws recovers the draws. -/
-theorem combineDraw_prefixDraw_suffixDraw {P : PFunctor.{uA, u}}
-    (l : PFunctor.Lens P rolePoly.{u}) {m : Type u → Type u} :
-    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
-    (draw : (c : ChallengeNode l (s₁.append s₂)) → m (challengeSpec l (s₁.append s₂) c)) →
-    combineDraw l s₁ s₂ (prefixDraw l s₁ s₂ draw) (suffixDraw l s₁ s₂ draw) = draw
-  | .pure _, _, _ => rfl
-  | .liftBind _ next, s₂, draw => by
-    funext c
-    rcases c with ⟨x | ⟨b, c⟩, h⟩
-    · rfl
-    · exact congrFun (combineDraw_prefixDraw_suffixDraw l (next b) (fun p => s₂ ⟨b, p⟩)
-        (fun c => draw ⟨.inr ⟨b, c.val⟩, c.property⟩)) ⟨c, h⟩
-
-/-- The sampler of an appended oracle protocol is the append of its restricted samplers. -/
-theorem sampler_append_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
-    (s₁ : OracleProtocol.{u}) (s₂ : Path s₁ → OracleProtocol.{u})
-    (draw : (c : ChallengeNode oracleSig (s₁.append s₂)) →
-      m (challengeSpec oracleSig (s₁.append s₂) c)) :
-    sampler oracleSig (s₁.append s₂) draw = appendSampler s₁ s₂
-      (prefixDraw oracleSig s₁ s₂ draw) (suffixDraw oracleSig s₁ s₂ draw) := by
-  rw [appendOracleSampler_eq, combineDraw_prefixDraw_suffixDraw]
-
 /-- Routing through a map and answering from data agrees with answering from the mapped data,
 for any interpretation of the ambient queries. -/
 theorem OracleMap.simulate_withAmbient_addLift {ι κ I J : Type u}

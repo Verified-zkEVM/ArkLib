@@ -165,7 +165,8 @@ example (hidden : Nat) :
   rfl
 
 /-! TerminalRun TR1 and TR2, restated: the frozen rows run to a fault. The decisions have no fault
-outcome (OQ7), so the rows run to a rejection. The setup query 9 becomes the prover's first query,
+outcome, and these runs instead end in rejection. The setup query 9 becomes the prover's first
+query,
 and the frozen reception query 1 moves into the decision. For every hidden value the history keeps
 the prover and decision effects `[9, 0, 1, 2]`, and the result keeps the private output and the
 decision log, whose resource query answered the sent value 11.
@@ -210,12 +211,15 @@ abbrev twiceResources := sumFamily inputs (pathFamily sendTwice ⟨⟨⟩, ⟨�
 /-- Decision programs over the ambient and the resources of `sendTwice`. -/
 abbrev Decision := OptionT (OracleComp (ambient + twiceResources.spec)) (List Nat)
 
+/-- Read the scalar input oracle. -/
 def readInput : OracleComp (ambient + twiceResources.spec) Nat :=
   liftM ((ambient + twiceResources.spec).query (.inr ⟨.inl (), ()⟩))
 
+/-- Read the first scalar message oracle. -/
 def readFirst : OracleComp (ambient + twiceResources.spec) Nat :=
   liftM ((ambient + twiceResources.spec).query (.inr ⟨.inr (.inl ⟨⟩), ()⟩))
 
+/-- Read the second scalar message oracle. -/
 def readSecond : OracleComp (ambient + twiceResources.spec) Nat :=
   liftM ((ambient + twiceResources.spec).query (.inr ⟨.inr (.inr (.inl ⟨⟩)), ()⟩))
 
@@ -381,6 +385,7 @@ run_cmd do
 @[instance_reducible] def single : OracleProtocol :=
   .liftBind (.oracle Nat OracleInterface.instDefault) (fun _ => .pure ⟨⟩)
 
+/-- Two consecutive scalar oracle sends. -/
 abbrev pair : OracleProtocol := single.append (fun _ => single)
 
 /-- The prefix resources on the only path of `single`. -/
@@ -441,6 +446,7 @@ def compatible (V : OracleVerifier ambient single Unit Nat inputs exported) :
       (View.split single (fun _ => single) p v).2).comp (OracleVerifier.suffixRoute V stmt p v)
   agrees _ _ _ _ _ _ := rfl
 
+/-- Append the suffix verifier using its routed output map. -/
 def composed (V : OracleVerifier ambient single Unit Nat inputs exported) :=
   V.append (fun _ => suffixVerifier) (compatible V)
 
@@ -620,30 +626,24 @@ example (guess : Bool) (secret : Nat) :
 
 /-! ## Erasure under a runtime -/
 
-/-- Running the logged run in a persistent runtime and erasing the logs and the trace gives the
-ordinary stateful execution of the run. This composes VCVio's `runFrom_eraseTrace` with
-`runWithLog_erase`. -/
-theorem runtime_runWithLog_erase {ι I J S T κ : Type} {ambient : OracleSpec ι}
-    {s : OracleProtocol} {A : I → Type} {B : J → Type} {inputs : OracleFamily I A}
-    {outputs : OracleFamily J B} {Out : PathAlong oracleSig s → Type}
-    {Import : OracleSpec κ} (V : OracleVerifier ambient s S T inputs outputs)
-    (runtime : OracleRuntime Import (ambient + challengeSpec oracleSig s)) (stmt : S)
-    (data : ∀ i, A i) (prover : Prover oracleSig ambient s Out) :
+/-- Erasure commutes with handlers whose lawful target monad has a larger universe. -/
+example {m : Type → Type 1} [Monad m] [LawfulMonad m]
+    (handler : QueryImpl bitFull m) (guess : Bool) (secret : Nat) :
+    Sigma.fst <$> simulateQ handler
+        (bitVerifier.runWithLog () falseData (guessProver guess secret)) =
+      simulateQ handler (bitVerifier.run () falseData (guessProver guess secret)) :=
+  OracleVerifier.simulateQ_runWithLog_erase bitVerifier handler () falseData
+    (guessProver guess secret)
+
+/-- The hidden-bit runtime satisfies logged-run erasure for every guess and secret. -/
+example (guess : Bool) (secret : Nat) :
     (fun result => (result.output.1, result.state)) <$>
-        runtime.run (V.runWithLog stmt data prover) =
-      runtime.setup >>= fun state => runtime.handler.runState state (V.run stmt data prover) := by
-  rw [OracleRuntime.run_eq, _root_.map_bind]
-  refine bind_congr fun state => ?_
-  have erased := runtime.runFrom_eraseTrace state (V.runWithLog stmt data prover)
-  have paired := congrArg (fun program =>
-    (fun result => (result.1.1, result.2)) <$> program) erased
-  have logged := congrArg (runtime.handler.runState state) (V.runWithLog_erase stmt data prover)
-  calc
-    _ = (fun result => (result.1.1, result.2)) <$>
-        runtime.handler.runState state (V.runWithLog stmt data prover) := by
-      simpa only [Functor.map_map] using paired
-    _ = _ := by
-      simpa [QueryImpl.Stateful.runState, monad_norm] using logged
+        bitRuntime.run (bitVerifier.runWithLog () falseData (guessProver guess secret)) =
+      bitRuntime.setup >>= fun state =>
+        bitRuntime.handler.runState state
+          (bitVerifier.run () falseData (guessProver guess secret)) :=
+  OracleVerifier.runtime_runWithLog_erase bitVerifier bitRuntime () falseData
+    (guessProver guess secret)
 
 end Interaction.Core.LoggedExecutionTests
 
@@ -655,7 +655,8 @@ row guards the terminal erase law; the decisions have no terminal layer, so it g
 run_cmd do
   for decl in [``Interaction.Core.OracleVerifier.runWithLog_fst,
       ``Interaction.Core.OracleVerifier.runWithLog_erase,
-      ``Interaction.Core.LoggedExecutionTests.runtime_runWithLog_erase,
+      ``Interaction.Core.OracleVerifier.runtime_runWithLog_erase,
+      ``Interaction.Core.OracleVerifier.simulateQ_runWithLog_erase,
       ``OracleComp.withQueryLog_simulateQ] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do

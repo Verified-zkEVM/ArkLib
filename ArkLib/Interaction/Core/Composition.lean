@@ -21,7 +21,7 @@ may depend on ambient queries.
 
 @[expose] public section
 
-universe u uA
+universe u uA v
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
@@ -105,7 +105,7 @@ def appendSampler {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
 
 /-- Combine challenge implementations using only the canonical prefix path. -/
 def combineDraw {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
-    {m : Type u → Type u} :
+    {m : Type u → Type v} :
     (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
     ((c : ChallengeNode l s₁) → m (challengeSpec l s₁ c)) →
     ((p : Path s₁) → (c : ChallengeNode l (s₂ p)) → m (challengeSpec l (s₂ p) c)) →
@@ -116,6 +116,77 @@ def combineDraw {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
     combineDraw l (next b) (fun p => s₂ ⟨b, p⟩)
       (fun c => draw₁ ⟨.inr ⟨b, c.val⟩, c.property⟩)
       (fun p => draw₂ ⟨b, p⟩) ⟨c, h⟩
+
+/-- Restrict challenge draws of an appended protocol to the challenge nodes of its prefix. -/
+def prefixDraw {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
+    {m : Type u → Type v} :
+    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
+    ((c : ChallengeNode l (s₁.append s₂)) → m (challengeSpec l (s₁.append s₂) c)) →
+    (c : ChallengeNode l s₁) → m (challengeSpec l s₁ c)
+  | .pure _, _, _, c => c.val.elim
+  | .liftBind _ _, _, draw, ⟨.inl x, h⟩ => draw ⟨.inl x, h⟩
+  | .liftBind _ next, s₂, draw, ⟨.inr ⟨b, c⟩, h⟩ =>
+    prefixDraw l (next b) (fun p => s₂ ⟨b, p⟩)
+      (fun c => draw ⟨.inr ⟨b, c.val⟩, c.property⟩) ⟨c, h⟩
+
+/-- Restrict challenge draws of an appended protocol to the challenge nodes of the suffix at a
+completed prefix path. -/
+def suffixDraw {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
+    {m : Type u → Type v} :
+    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
+    ((c : ChallengeNode l (s₁.append s₂)) → m (challengeSpec l (s₁.append s₂) c)) →
+    (p : Path s₁) → (c : ChallengeNode l (s₂ p)) → m (challengeSpec l (s₂ p) c)
+  | .pure _, _, draw, ⟨⟩, c => draw c
+  | .liftBind _ next, s₂, draw, ⟨b, p⟩, c =>
+    suffixDraw l (next b) (fun p => s₂ ⟨b, p⟩)
+      (fun c => draw ⟨.inr ⟨b, c.val⟩, c.property⟩) p c
+
+/-- Combining the prefix and suffix restrictions of challenge draws recovers the draws. -/
+theorem combineDraw_prefixDraw_suffixDraw {P : PFunctor.{uA, u}}
+    (l : PFunctor.Lens P rolePoly.{u}) {m : Type u → Type v} :
+    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
+    (draw : (c : ChallengeNode l (s₁.append s₂)) → m (challengeSpec l (s₁.append s₂) c)) →
+    combineDraw l s₁ s₂ (prefixDraw l s₁ s₂ draw) (suffixDraw l s₁ s₂ draw) = draw
+  | .pure _, _, _ => rfl
+  | .liftBind _ next, s₂, draw => by
+    funext c
+    rcases c with ⟨x | ⟨b, c⟩, h⟩
+    · rfl
+    · exact congrFun (combineDraw_prefixDraw_suffixDraw l (next b) (fun p => s₂ ⟨b, p⟩)
+        (fun c => draw ⟨.inr ⟨b, c.val⟩, c.property⟩)) ⟨c, h⟩
+
+/-- Restricting combined challenge draws to the prefix recovers the prefix draws. -/
+@[simp] theorem prefixDraw_combineDraw {P : PFunctor.{uA, u}}
+    (l : PFunctor.Lens P rolePoly.{u}) {m : Type u → Type v} :
+    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
+    (draw₁ : (c : ChallengeNode l s₁) → m (challengeSpec l s₁ c)) →
+    (draw₂ : (p : Path s₁) → (c : ChallengeNode l (s₂ p)) →
+        m (challengeSpec l (s₂ p) c)) →
+    prefixDraw l s₁ s₂ (combineDraw l s₁ s₂ draw₁ draw₂) = draw₁
+  | .pure _, _, _, _ => by
+    funext c
+    exact c.val.elim
+  | .liftBind _ next, s₂, draw₁, draw₂ => by
+    funext c
+    rcases c with ⟨x | ⟨b, c⟩, h⟩
+    · rfl
+    · exact congrFun (prefixDraw_combineDraw l (next b) (fun p => s₂ ⟨b, p⟩)
+        (fun c => draw₁ ⟨.inr ⟨b, c.val⟩, c.property⟩) (fun p => draw₂ ⟨b, p⟩)) ⟨c, h⟩
+
+/-- Restricting combined challenge draws to each suffix recovers that suffix's draws. -/
+@[simp] theorem suffixDraw_combineDraw {P : PFunctor.{uA, u}}
+    (l : PFunctor.Lens P rolePoly.{u}) {m : Type u → Type v} :
+    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
+    (draw₁ : (c : ChallengeNode l s₁) → m (challengeSpec l s₁ c)) →
+    (draw₂ : (p : Path s₁) → (c : ChallengeNode l (s₂ p)) →
+        m (challengeSpec l (s₂ p) c)) →
+    suffixDraw l s₁ s₂ (combineDraw l s₁ s₂ draw₁ draw₂) = draw₂
+  | .pure _, _, _, _ => rfl
+  | .liftBind _ next, s₂, draw₁, draw₂ => by
+    funext ⟨b, p⟩ c
+    exact congrFun (congrFun
+      (suffixDraw_combineDraw l (next b) (fun p => s₂ ⟨b, p⟩)
+        (fun c => draw₁ ⟨.inr ⟨b, c.val⟩, c.property⟩) (fun p => draw₂ ⟨b, p⟩)) p) c
 
 /-- Appending samplers equals sampling the appended tree with the combined implementation. -/
 theorem appendSampler_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
@@ -177,6 +248,15 @@ theorem appendOracleSampler_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
       exact ih PUnit.unit (fun p => s₂ ⟨PUnit.unit, p⟩)
         (fun c => draw₁ ⟨.inr ⟨PUnit.unit, c.val⟩, c.property⟩)
         (fun p => draw₂ ⟨PUnit.unit, p⟩)
+
+/-- The sampler of an appended oracle protocol is the append of its restricted samplers. -/
+theorem sampler_append_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
+    (s₁ : OracleProtocol.{u}) (s₂ : Path s₁ → OracleProtocol.{u})
+    (draw : (c : ChallengeNode oracleSig (s₁.append s₂)) →
+      m (challengeSpec oracleSig (s₁.append s₂) c)) :
+    sampler oracleSig (s₁.append s₂) draw = appendSampler s₁ s₂
+      (prefixDraw oracleSig s₁ s₂ draw) (suffixDraw oracleSig s₁ s₂ draw) := by
+  rw [appendOracleSampler_eq, combineDraw_prefixDraw_suffixDraw]
 
 /-- Composed execution preserves seam effects in their actual order. -/
 theorem run_appendSampler {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
