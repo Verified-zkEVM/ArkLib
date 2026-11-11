@@ -21,7 +21,7 @@ may depend on ambient queries.
 
 @[expose] public section
 
-universe u uA
+universe u uA uι uS uI uJ uK uV
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
@@ -73,15 +73,15 @@ abbrev PlainView.split := splitFiber plainSig
 output at the split path. PolyFun's `Path.LiftAppend` is the same family by `liftAppend_split`;
 the split form lets a composed decision return the suffix's output without a transport. -/
 abbrev splitFamily {P : PFunctor.{uA, u}} {s₁ : FreeM P PUnit.{u + 1}}
-    {s₂ : Path s₁ → FreeM P PUnit.{u + 1}} (U : (p : Path s₁) → Path (s₂ p) → Type u)
-    (p : Path (s₁.append s₂)) : Type u :=
+    {s₂ : Path s₁ → FreeM P PUnit.{u + 1}} (U : (p : Path s₁) → Path (s₂ p) → Type uV)
+    (p : Path (s₁.append s₂)) : Type uV :=
   U (Path.split s₁ s₂ p).1 (Path.split s₁ s₂ p).2
 
 /-- Plain terminal decisions fold after both interactions have finished. The prefix's output type
 may depend on the prefix path, and the composite's output at an appended path is the suffix's
 output at the split path. -/
-def Verifier.append {ι : Type u} {ambient : OracleSpec.{u, u} ι}
-    {s₁ : Protocol.{u}} {s₂ : Path s₁ → Protocol.{u}} {S : Type u} {T : Path s₁ → Type u}
+def Verifier.append {ι : Type uι} {ambient : OracleSpec.{uι, u} ι}
+    {s₁ : Protocol.{u}} {s₂ : Path s₁ → Protocol.{u}} {S : Type uS} {T : Path s₁ → Type u}
     {U : (p : Path s₁) → Path (s₂ p) → Type u}
     (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) (T p) (U p)) :
     Verifier ambient (s₁.append s₂) S (splitFamily U) where
@@ -92,8 +92,8 @@ def Verifier.append {ι : Type u} {ambient : OracleSpec.{u, u} ι}
     (V₂ z.1).decide mid z.2 views.2
 
 /-- The exact end-decided fold, including skipping the second decision on rejection. -/
-theorem Verifier.append_decide {ι : Type u} {ambient : OracleSpec.{u, u} ι}
-    {s₁ : Protocol.{u}} {s₂ : Path s₁ → Protocol.{u}} {S : Type u} {T : Path s₁ → Type u}
+theorem Verifier.append_decide {ι : Type uι} {ambient : OracleSpec.{uι, u} ι}
+    {s₁ : Protocol.{u}} {s₂ : Path s₁ → Protocol.{u}} {S : Type uS} {T : Path s₁ → Type u}
     {U : (p : Path s₁) → Path (s₂ p) → Type u}
     (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) (T p) (U p))
     (stmt : S) (p : Path (s₁.append s₂)) (v : PlainView (s₁.append s₂) p) :
@@ -243,18 +243,18 @@ def splitOracles : (s₁ : OracleProtocol.{u}) → (s₂ : Path s₁ → OracleP
         (splitOracles (next x) (fun q => s₂ ⟨x, q⟩) p))
 
 /-- Preserve ambient queries while routing resource queries through an oracle map. -/
-def OracleMap.withAmbient {ι I J : Type u} (ambient : OracleSpec.{u, u} ι)
-    {A : I → Type u} {B : J → Type u}
-    {In : OracleFamily.{u, u, u} I A} {Out : OracleFamily.{u, u, u} J B}
+def OracleMap.withAmbient {ι : Type uι} {I : Type uI} {J : Type uJ}
+    (ambient : OracleSpec.{uι, u} ι) {A : I → Type u} {B : J → Type u}
+    {In : OracleFamily.{uI, u, u} I A} {Out : OracleFamily.{uJ, u, u} J B}
     (route : OracleMap In Out) : QueryImpl (ambient + Out.spec) (OracleComp (ambient + In.spec))
   | .inl q => liftM ((ambient + In.spec).query (.inl q))
   | .inr q => simulateQ
     (fun r => liftM ((ambient + In.spec).query (.inr r))) (route.impl q)
 
 /-- Routing through a map and answering from data agrees with answering from the mapped data. -/
-theorem OracleMap.simulate_withAmbient {ι I J : Type u} {ambient : OracleSpec.{u, u} ι}
-    {A : I → Type u} {B : J → Type u}
-    {In : OracleFamily.{u, u, u} I A} {Out : OracleFamily.{u, u, u} J B}
+theorem OracleMap.simulate_withAmbient {ι : Type uι} {I : Type uI} {J : Type uJ}
+    {ambient : OracleSpec.{uι, u} ι} {A : I → Type u} {B : J → Type u}
+    {In : OracleFamily.{uI, u, u} I A} {Out : OracleFamily.{uJ, u, u} J B}
     (route : OracleMap In Out) (x : ∀ i, A i) {α : Type u}
     (program : OracleComp (ambient + Out.spec) α) :
     simulateQ (QueryImpl.addLift (QueryImpl.id' ambient) (In.behaviorOfRealizations x) :
@@ -273,15 +273,15 @@ theorem OracleMap.simulate_withAmbient {ι I J : Type u} {ambient : OracleSpec.{
     rfl
 
 namespace OracleVerifier
-variable {ι I : Type u} {ambient : OracleSpec.{u, u} ι} {A : I → Type u}
-  {inputs : OracleFamily.{u, u, u} I A}
-  {s₁ : OracleProtocol.{u}} {s₂ : Path s₁ → OracleProtocol.{u}} {S : Type u}
+variable {ι : Type uι} {I : Type uI} {ambient : OracleSpec.{uι, u} ι} {A : I → Type u}
+  {inputs : OracleFamily.{uI, u, u} I A}
+  {s₁ : OracleProtocol.{u}} {s₂ : Path s₁ → OracleProtocol.{u}} {S : Type uS}
   {T : Path s₁ → Type u} {U : (p : Path s₁) → Path (s₂ p) → Type u}
-  {J : Path s₁ → Type u} {B : (p : Path s₁) → J p → Type u}
-  {middle : (p : Path s₁) → OracleFamily.{u, u, u} (J p) (B p)}
-  {K : (p : Path s₁) → Path (s₂ p) → Type u}
+  {J : Path s₁ → Type uJ} {B : (p : Path s₁) → J p → Type u}
+  {middle : (p : Path s₁) → OracleFamily.{uJ, u, u} (J p) (B p)}
+  {K : (p : Path s₁) → Path (s₂ p) → Type uK}
   {C : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → K p₁ p₂ → Type u}
-  {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → OracleFamily.{u, u, u} (K p₁ p₂) (C p₁ p₂)}
+  {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → OracleFamily.{uK, u, u} (K p₁ p₂) (C p₁ p₂)}
 
 /-- Reassociate inputs and both sets of messages into prefix resources and suffix messages. -/
 def resources (p : Path (s₁.append s₂)) :=
@@ -304,9 +304,9 @@ def suffixRoute (V₁ : OracleVerifier ambient s₁ S T inputs middle)
 /-- The output oracle family of an appended oracle protocol: at a path of the appended tree, the
 suffix's output family at the split path. -/
 abbrev splitOutputs
-    (outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → OracleFamily.{u, u, u} (K p₁ p₂) (C p₁ p₂))
+    (outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → OracleFamily.{uK, u, u} (K p₁ p₂) (C p₁ p₂))
     (p : Path (s₁.append s₂)) :
-    OracleFamily.{u, u, u} (splitFamily K p)
+    OracleFamily.{uK, u, u} (splitFamily K p)
       (C (Path.split s₁ s₂ p).1 (Path.split s₁ s₂ p).2) :=
   outputs (Path.split s₁ s₂ p).1 (Path.split s₁ s₂ p).2
 
