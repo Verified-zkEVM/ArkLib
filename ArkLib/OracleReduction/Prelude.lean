@@ -83,9 +83,6 @@ This is deliberately not an instance because `FinEnum` carries enumeration data.
     {α : Type*} {n : ℕ} [FinEnum α] : FinEnum (Vector α n) :=
   FinEnum.ofEquiv _ Equiv.rootVectorEquivFin
 
-/-- `Equiv.Perm α` is always nonempty (contains `Equiv.refl α`). -/
-instance instNonemptyEquivPerm {α : Type*} : Nonempty (Equiv.Perm α) := ⟨Equiv.refl _⟩
-
 /-- Explicit `VCVCompatible` to `SampleableType` bridge.
 This is deliberately not an instance because `SampleableType` carries sampler data. -/
 @[reducible] noncomputable def VCVCompatible.toSampleableType
