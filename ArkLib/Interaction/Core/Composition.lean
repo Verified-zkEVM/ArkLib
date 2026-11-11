@@ -63,6 +63,32 @@ def splitFiber {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
     Fiber l (s₂ (projectPathAlong l s₁ z.1)) (projectPathAlong l _ z.2) from
       (⟨z.1, rfl⟩, ⟨z.2, rfl⟩))
 
+/-- Splitting the transcript of an appended run, with its view, returns the prefix and suffix
+transcripts and their own views. -/
+theorem splitFiber_append {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
+    (s₁ : FreeM P PUnit.{u + 1}) (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) {X : Sort*}
+    (G : (p : Path s₁) → (q : Path (s₂ p)) → Fiber l s₁ p → Fiber l (s₂ p) q → X)
+    (tr₁ : PathAlong l s₁) (tr₂ : PathAlong l (s₂ (projectPathAlong l s₁ tr₁))) :
+    G (Path.split s₁ s₂ (projectPathAlong l _ (PathAlong.append l s₁ s₂ tr₁ tr₂))).1
+      (Path.split s₁ s₂ (projectPathAlong l _ (PathAlong.append l s₁ s₂ tr₁ tr₂))).2
+      (splitFiber l s₁ s₂ _ ⟨PathAlong.append l s₁ s₂ tr₁ tr₂, rfl⟩).1
+      (splitFiber l s₁ s₂ _ ⟨PathAlong.append l s₁ s₂ tr₁ tr₂, rfl⟩).2 =
+    G (projectPathAlong l s₁ tr₁) (projectPathAlong l _ tr₂) ⟨tr₁, rfl⟩ ⟨tr₂, rfl⟩ := by
+  have key : ∀ (tr : PathAlong l (s₁.append s₂)),
+      G (Path.split s₁ s₂ (projectPathAlong l _ tr)).1
+        (Path.split s₁ s₂ (projectPathAlong l _ tr)).2
+        (splitFiber l s₁ s₂ _ ⟨tr, rfl⟩).1 (splitFiber l s₁ s₂ _ ⟨tr, rfl⟩).2 =
+      G (projectPathAlong l s₁ (PathAlong.split l s₁ s₂ tr).1)
+        (projectPathAlong l _ (PathAlong.split l s₁ s₂ tr).2)
+        ⟨(PathAlong.split l s₁ s₂ tr).1, rfl⟩ ⟨(PathAlong.split l s₁ s₂ tr).2, rfl⟩ := by
+    intro tr
+    simp only [splitFiber]
+    generalize project_split l s₁ s₂ tr = h
+    generalize Path.split s₁ s₂ (projectPathAlong l (s₁.append s₂) tr) = w at h ⊢
+    subst h
+    rfl
+  rw [key, PathAlong.split_append]
+
 /-- Split the oracle verifier's public view. -/
 abbrev View.split := splitFiber viewSig
 
@@ -298,6 +324,15 @@ theorem sampler_append_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
     sampler oracleSig (s₁.append s₂) draw = appendSampler s₁ s₂
       (prefixDraw oracleSig s₁ s₂ draw) (suffixDraw oracleSig s₁ s₂ draw) := by
   rw [appendOracleSampler_eq, combineDraw_prefixDraw_suffixDraw]
+
+/-- The sampler of an appended plain protocol is the append of its restricted samplers. -/
+theorem plainSampler_append_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
+    (s₁ : Protocol.{u}) (s₂ : Path s₁ → Protocol.{u})
+    (draw : (c : ChallengeNode plainSig (s₁.append s₂)) →
+      m (challengeSpec plainSig (s₁.append s₂) c)) :
+    sampler plainSig (s₁.append s₂) draw = appendSampler s₁ s₂
+      (prefixDraw plainSig s₁ s₂ draw) (suffixDraw plainSig s₁ s₂ draw) := by
+  rw [appendSampler_eq, combineDraw_prefixDraw_suffixDraw]
 
 /-- Composed execution preserves seam effects in their actual order. -/
 theorem run_appendSampler {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}

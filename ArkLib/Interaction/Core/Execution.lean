@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Interaction.Core.Reduction
+public import PolyFun.Interaction.TwoParty.Lens.Compose
 public import VCVio.OracleComp.SimSemantics.QueryImpl.Compose
 
 /-!
@@ -173,5 +174,82 @@ theorem simulateQ_runWith_sampler {P : PFunctor.{uA, u}}
       rfl
 
 end Simulate
+
+section SplitSimulation
+
+variable {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
+  {ι κ : Type u} {ambient : OracleSpec.{u, u} ι} {spec : OracleSpec.{u, u} κ}
+  {n : Type u → Type u}
+  [Monad n] [LawfulMonad n]
+
+/-- Interpreting a run against a sampler interprets every prover slot and every draw. -/
+theorem simulateQ_run_simulate_sampler (h : QueryImpl spec n)
+    (ιm : QueryImpl ambient (OracleComp spec)) (s : FreeM P PUnit.{u + 1})
+    {Out : PathAlong l s → Type u} (k : Prover l ambient s Out)
+    (draw : (c : ChallengeNode l s) → OracleComp spec (challengeSpec l s c)) :
+    simulateQ h (TwoParty.Lens.run s (k.simulate ιm) (sampler l s draw)) =
+      TwoParty.Lens.run s (k.simulate fun q => simulateQ h (ιm q))
+        (sampler l s fun c => simulateQ h (draw c)) := by
+  rw [TwoParty.Lens.run, simulateQ_runWith_sampler, Prover.simulate_simulate]
+  rfl
+
+/-- Splitting the first slot of a simulated prover simulates the split slot and then the
+returned strategy. -/
+theorem splitSlot_simulate (ιm : QueryImpl ambient n) :
+    (s : FreeM P PUnit.{u + 1}) → {Out : PathAlong l s → Type u} →
+    (prover : Prover l ambient s Out) →
+    Strategy.splitSlot (prover.simulate ιm) =
+      (fun k => Prover.simulate ιm k) <$> simulateQ ιm (Strategy.splitSlot prover)
+  | .pure _, _, prover => by
+    simp only [Strategy.splitSlot, Prover.simulate_done, simulateQ_map, Functor.map_map]
+    rfl
+  | .liftBind a rest, _, prover => by
+    simp only [Strategy.splitSlot, Prover.simulate_node, simulateQ_map, Functor.map_map,
+      simulateQ_pure]
+    exact congrArg (· <$> _) (funext fun v => (LawfulApplicative.map_pure _ _).symm)
+
+/-- Splitting a simulated prover at the seam simulates the split prover and then each
+returned continuation. -/
+theorem splitPrefix_simulate (ιm : QueryImpl ambient n) :
+    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
+    {Out : PathAlong l (s₁.append s₂) → Type u} →
+    (prover : Prover l ambient (s₁.append s₂) Out) →
+    Focal.splitPrefix (prover.simulate ιm) =
+      Strategy.mapOutput (fun _ k => Prover.simulate ιm k)
+        (Prover.simulate ιm (Focal.splitPrefix prover))
+  | .pure ⟨⟩, s₂, _, prover => splitSlot_simulate ιm (s₂ ⟨⟩) prover
+  | .liftBind a next, s₂, _, prover => by
+    simp only [Focal.splitPrefix, Strategy.mapOutput, PureEnd.mapOutput, Prover.simulate_node,
+      simulateQ_map, Functor.map_map]
+    refine congrArg (· <$> _) (funext fun v => ?_)
+    refine (congrFun (Choice.map_comp _ _ _ _) v).trans ?_
+    refine Eq.trans ?_ (congrFun (Choice.map_comp _ _ _ _) _).symm
+    refine Eq.trans ?_ (congrFun (Choice.map_comp _ _ _ _) v).symm
+    exact congrArg (fun f => Choice.map .focal (owner l a) f v)
+      (funext fun x => funext fun r => splitPrefix_simulate ιm (next (l.toFunB a x))
+        (fun p => s₂ ⟨l.toFunB a x, p⟩) r)
+
+end SplitSimulation
+
+/-- On an accepted statement, the guarded run is the run. -/
+theorem Verifier.onAccept_run_some {ι : Type u} {ambient : OracleSpec.{u, u} ι}
+    {s : Protocol.{u}} {T : Type uS} {U : Path s → Type u}
+    {Out : PathAlong plainSig s → Type u}
+    (V : Verifier ambient s T U) (t : T) (prover : Prover plainSig ambient s Out) :
+    V.onAccept.run (some t) prover = V.run t prover := rfl
+
+/-- On a rejected statement, the guarded run interacts and rejects. -/
+theorem Verifier.onAccept_run_none {ι : Type u} {ambient : OracleSpec.{u, u} ι}
+    {s : Protocol.{u}} {T : Type uS} {U : Path s → Type u}
+    {Out : PathAlong plainSig s → Type u}
+    (V : Verifier ambient s T U) (prover : Prover plainSig ambient s Out) :
+    V.onAccept.run none prover =
+      (fun r => ⟨r.1, r.2.1, none⟩) <$> TwoParty.Lens.run s
+        (prover.simulate (fun q => liftM ((ambient + challengeSpec plainSig s).query (.inl q))))
+        (sampler plainSig s (fun c =>
+          liftM ((ambient + challengeSpec plainSig s).query (.inr c)))) := by
+  simp only [Verifier.run, Verifier.onAccept, map_eq_bind_pure_comp]
+  refine bind_congr fun r => ?_
+  simp
 
 end Interaction.Core

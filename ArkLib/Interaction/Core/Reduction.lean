@@ -265,4 +265,12 @@ structure Reduction {ι : Type u} (ambient : OracleSpec.{u, u} ι) (s : Protocol
   /-- Passive terminal decision. -/
   verifier : Verifier ambient s StmtIn StmtOut
 
+/-- Run a verifier only on an accepted statement; a rejected statement stays rejected. -/
+def Verifier.onAccept {ι : Type uι} {ambient : OracleSpec.{uι, u} ι}
+    {s : Protocol.{u}} {T : Type uS} {U : Path s → Type u} (V : Verifier ambient s T U) :
+    Verifier ambient s (Option T) U where
+  decide mid p v := match mid with
+    | none => failure
+    | some t => V.decide t p v
+
 end Interaction.Core

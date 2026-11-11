@@ -38,7 +38,7 @@ noncomputable section
 /-- A final claim: the claimed bit and the output data. -/
 abbrev Claim := Bool × (∀ _ : Unit, Bool)
 /-- The observation of a run of the composed hidden-bit verifier. -/
-abbrev Obs := Observation oracleSig bitCombined (fun _ => Nat) Claim
+abbrev Obs := Observation oracleSig bitCombined (fun _ => Nat) (fun _ => Claim)
 
 /-- A final claim is true when its output oracle answers its statement. -/
 def TruthFinal (claim : Claim) : Prop := claim.2 () = claim.1
@@ -351,16 +351,17 @@ def routedSuffix (p : FreeM.Path bitCombined) (v : View bitCombined p) :=
 /-- The routed suffix decision reads the pad from the input, then reveals the bit. -/
 theorem routedSuffix_eq (guess : Bool) (v : View bitCombined ⟨⟨⟩, guess, ⟨⟩⟩) :
     routedSuffix ⟨⟨⟩, guess, ⟨⟩⟩ v = (do
-      let pad : Bool ← liftM ((bitAmbient + (sumFamily bits (pathFamily bitCombined
-        ⟨⟨⟩, guess, ⟨⟩⟩)).spec).query (.inr ⟨.inl (), ()⟩))
-      let hidden : Bool ← liftM ((bitAmbient + (sumFamily bits (pathFamily bitCombined
-        ⟨⟨⟩, guess, ⟨⟩⟩)).spec).query (.inl true))
+      let pad : Bool ← liftM
+        ((bitAmbient + (pathResources bits bitCombined ⟨⟨⟩, guess, ⟨⟩⟩).spec).query
+          (.inr (.inl ⟨(), ()⟩)))
+      let hidden : Bool ← liftM
+        ((bitAmbient + (pathResources bits bitCombined ⟨⟨⟩, guess, ⟨⟩⟩).spec).query (.inl true))
       pure (some (hidden ^^ pad))) := by
   rfl
 
 /-- The decision resources of the combined protocol at a path. -/
 abbrev combinedResources (p : FreeM.Path bitCombined) :=
-  (sumFamily bits (pathFamily bitCombined p)).spec
+  (pathResources bits bitCombined p).spec
 
 /-- Every resource query costs 2. -/
 def resourceCost {I : Type} (spec : OracleSpec I) : CostModel spec Nat := ⟨fun _ => 2⟩
@@ -446,7 +447,7 @@ theorem split_history (prover : Prover oracleSig bitAmbient bitCombined (fun _ =
 /-- The prefix exports its input and its decision makes one dummy request. -/
 theorem prefix_returns_export :
     (∀ p v, bitPrefix.outputMap () p v =
-      OracleMap.embedding (sumFamily bits (pathFamily bitFirst p)) .inl) ∧
+      OracleMap.fst _ _) ∧
     ∀ v, bitPrefix.decide () ⟨⟨⟩, ⟨⟩⟩ v = (do
       let _ ← liftM ((bitAmbient + firstResources.spec).query (.inl false))
       pure () : OptionT (OracleComp (bitAmbient + firstResources.spec)) Unit) :=
@@ -460,7 +461,7 @@ theorem prefix_returns_export :
 suffix, the import budget, the charged history and the `1/2` bound hold together. -/
 theorem fixed_resource_bounds (guess : Bool) (secret : Nat) :
     ((∀ p v, bitPrefix.outputMap () p v =
-      OracleMap.embedding (sumFamily bits (pathFamily bitFirst p)) .inl) ∧
+      OracleMap.fst _ _) ∧
     ∀ v, bitPrefix.decide () ⟨⟨⟩, ⟨⟩⟩ v = (do
       let _ ← liftM ((bitAmbient + firstResources.spec).query (.inl false))
       pure () : OptionT (OracleComp (bitAmbient + firstResources.spec)) Unit)) ∧

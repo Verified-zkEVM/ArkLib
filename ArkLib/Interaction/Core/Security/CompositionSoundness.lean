@@ -40,7 +40,7 @@ unchanged. Inadmissible intermediate statements are charged `δ`, giving `ε₁ 
 
 @[expose] public section
 
-universe u uA
+universe u uA uS uI wI wJ
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle MeasureTheory
@@ -280,15 +280,6 @@ section runs
 
 variable {ι : Type u} {ambient : OracleSpec.{u, u} ι}
 
-/-- The sampler of an appended plain protocol is the append of its restricted samplers. -/
-theorem plainSampler_append_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
-    (s₁ : Protocol.{u}) (s₂ : Path s₁ → Protocol.{u})
-    (draw : (c : ChallengeNode plainSig (s₁.append s₂)) →
-      m (challengeSpec plainSig (s₁.append s₂) c)) :
-    sampler plainSig (s₁.append s₂) draw = appendSampler s₁ s₂
-      (prefixDraw plainSig s₁ s₂ draw) (suffixDraw plainSig s₁ s₂ draw) := by
-  rw [appendSampler_eq, combineDraw_prefixDraw_suffixDraw]
-
 /-- The append boundary of a run: the prefix transcript and the continuation the whole prover
 returns, over the full run interface of the appended protocol. -/
 abbrev RunBoundary {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
@@ -314,7 +305,8 @@ def appendPrefixRun {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
 
 /-- The rest of a plain run after the append boundary: the suffix interaction against the
 returned continuation, then the end decision on the whole transcript. -/
-def Verifier.suffixRun {s₁ : Protocol.{u}} {s₂ : Path s₁ → Protocol.{u}} {S T : Type u}
+def Verifier.suffixRun {s₁ : Protocol.{u}} {s₂ : Path s₁ → Protocol.{u}} {S : Type uS}
+    {T : Path (s₁.append s₂) → Type u}
     {Out : PathAlong plainSig (s₁.append s₂) → Type u}
     (V : Verifier ambient (s₁.append s₂) S T) (stmt : S)
     (b : RunBoundary plainSig ambient s₁ s₂ Out) :
@@ -332,7 +324,8 @@ def Verifier.suffixRun {s₁ : Protocol.{u}} {s₂ : Path s₁ → Protocol.{u}}
 
 /-- A run on an appended plain protocol is its prefix interaction followed by the rest of the
 run at the actual boundary. The verifier is arbitrary, so this covers `Verifier.append`. -/
-theorem Verifier.run_eq_bind {s₁ : Protocol.{u}} {s₂ : Path s₁ → Protocol.{u}} {S T : Type u}
+theorem Verifier.run_eq_bind {s₁ : Protocol.{u}} {s₂ : Path s₁ → Protocol.{u}} {S : Type uS}
+    {T : Path (s₁.append s₂) → Type u}
     {Out : PathAlong plainSig (s₁.append s₂) → Type u}
     (V : Verifier ambient (s₁.append s₂) S T) (stmt : S)
     (prover : Prover plainSig ambient (s₁.append s₂) Out) :
@@ -345,15 +338,18 @@ theorem Verifier.run_eq_bind {s₁ : Protocol.{u}} {s₂ : Path s₁ → Protoco
 /-- The rest of an oracle run after the append boundary: the suffix interaction against the
 returned continuation, then the end decision with resources answered from the input data and the
 payloads of the whole transcript. -/
-def OracleVerifier.suffixRun {I J : Type u} {A : I → Type u} {B : J → Type u}
-    {inputs : OracleFamily.{u, u, u} I A} {outputs : OracleFamily.{u, u, u} J B}
-    {s₁ : OracleProtocol.{u}} {s₂ : Path s₁ → OracleProtocol.{u}} {S T : Type u}
+def OracleVerifier.suffixRun {s₁ : OracleProtocol.{u}} {s₂ : Path s₁ → OracleProtocol.{u}}
+    {I : Type uI} {A : I → Type u} {J : Path (s₁.append s₂) → Type u}
+    {B : (p : Path (s₁.append s₂)) → J p → Type u}
+    {inputs : OracleFamily.{uI, u, wI} I A}
+    {outputs : (p : Path (s₁.append s₂)) → OracleFamily.{u, u, wJ} (J p) (B p)} {S : Type uS}
+    {T : Path (s₁.append s₂) → Type u}
     {Out : PathAlong oracleSig (s₁.append s₂) → Type u}
     (V : OracleVerifier ambient (s₁.append s₂) S T inputs outputs) (stmt : S)
     (data : ∀ i, A i)
     (b : RunBoundary oracleSig ambient s₁ s₂ Out) :
     OracleComp (ambient + challengeSpec oracleSig (s₁.append s₂))
-      (Observation oracleSig (s₁.append s₂) Out (T × (∀ j, B j))) := do
+      (Observation oracleSig (s₁.append s₂) Out (OracleVerifier.Output T B)) := do
   let ⟨tail, out, _⟩ ← TwoParty.Lens.run _ b.2.1
     (sampler oracleSig _ (suffixDraw oracleSig s₁ s₂
       (fun c => liftM ((ambient + challengeSpec oracleSig (s₁.append s₂)).query (.inr c)))
@@ -361,21 +357,24 @@ def OracleVerifier.suffixRun {I J : Type u} {A : I → Type u} {B : J → Type u
   let tr := PathAlong.append oracleSig s₁ s₂ b.1 tail
   let p := projectPathAlong oracleSig _ tr
   let view := toView _ tr
-  let resources := sumData data (payloads _ tr)
+  let resources := (data, payloads _ tr)
   let verdict ← simulateQ
     (QueryImpl.addLift
       ((fun q => liftM ((ambient + challengeSpec oracleSig (s₁.append s₂)).query (.inl q))) :
         QueryImpl ambient (OracleComp (ambient + challengeSpec oracleSig (s₁.append s₂))))
-      ((sumFamily inputs (pathFamily _ p)).behaviorOfRealizations resources))
+      ((pathResources inputs _ p).answer resources))
     (V.decide stmt p view).run
   pure ⟨tr, out, verdict.map fun t => (t, (V.outputMap stmt p view).f resources)⟩
 
 /-- An oracle run on an appended protocol is its prefix interaction followed by the rest of the
 run at the actual boundary. The verifier is arbitrary, so this covers `OracleVerifier.append`;
 `OracleVerifier.run_append` describes the rest of that run. -/
-theorem OracleVerifier.run_eq_bind {I J : Type u} {A : I → Type u} {B : J → Type u}
-    {inputs : OracleFamily.{u, u, u} I A} {outputs : OracleFamily.{u, u, u} J B}
-    {s₁ : OracleProtocol.{u}} {s₂ : Path s₁ → OracleProtocol.{u}} {S T : Type u}
+theorem OracleVerifier.run_eq_bind {s₁ : OracleProtocol.{u}} {s₂ : Path s₁ → OracleProtocol.{u}}
+    {I : Type uI} {A : I → Type u} {J : Path (s₁.append s₂) → Type u}
+    {B : (p : Path (s₁.append s₂)) → J p → Type u}
+    {inputs : OracleFamily.{uI, u, wI} I A}
+    {outputs : (p : Path (s₁.append s₂)) → OracleFamily.{u, u, wJ} (J p) (B p)} {S : Type uS}
+    {T : Path (s₁.append s₂) → Type u}
     {Out : PathAlong oracleSig (s₁.append s₂) → Type u}
     (V : OracleVerifier ambient (s₁.append s₂) S T inputs outputs) (stmt : S)
     (data : ∀ i, A i) (prover : Prover oracleSig ambient (s₁.append s₂) Out) :
@@ -484,7 +483,7 @@ boundary is the interaction result together with the ambient state, and the suff
 the run resumed from it, including the end decision. The premise only holds almost everywhere.
 The verifier is arbitrary, so this covers `Verifier.append`. -/
 theorem Verifier.append_soundness_weighted_ae {s₁ : Protocol} {s₂ : Path s₁ → Protocol}
-    {S T : Type} {Out : PathAlong plainSig (s₁.append s₂) → Type}
+    {S : Type uS} {T : Path (s₁.append s₂) → Type} {Out : PathAlong plainSig (s₁.append s₂) → Type}
     (V : Verifier ambient (s₁.append s₂) S T) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (challenges : QueryImpl (challengeSpec plainSig (s₁.append s₂)) ProbComp) (stmt : S)
@@ -512,7 +511,7 @@ theorem Verifier.append_soundness_weighted_ae {s₁ : Protocol} {s₂ : Path s�
 boundaries, and `ε₂` bounds the resumed run from almost every bad admissible boundary. The
 boundary is the interaction result together with the ambient state. -/
 theorem Verifier.append_soundness {s₁ : Protocol} {s₂ : Path s₁ → Protocol}
-    {S T : Type} {Out : PathAlong plainSig (s₁.append s₂) → Type}
+    {S : Type uS} {T : Path (s₁.append s₂) → Type} {Out : PathAlong plainSig (s₁.append s₂) → Type}
     (V : Verifier ambient (s₁.append s₂) S T) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (challenges : QueryImpl (challengeSpec plainSig (s₁.append s₂)) ProbComp) (stmt : S)
@@ -540,16 +539,20 @@ midpoints. Midpoint truth and admissibility are predicates on the boundary and t
 they may use the materialized prefix payloads. The suffix premise is over the run resumed from
 the boundary, including the end decision, and only holds almost everywhere. The verifier is
 arbitrary, so this covers `OracleVerifier.append`. -/
-theorem OracleVerifier.append_soundness_weighted_ae {I J : Type} {A : I → Type}
-    {B : J → Type} {inputs : OracleFamily I A} {outputs : OracleFamily J B}
-    {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol} {S T : Type}
+theorem OracleVerifier.append_soundness_weighted_ae {s₁ : OracleProtocol}
+    {s₂ : Path s₁ → OracleProtocol}
+    {I : Type uI} {A : I → Type} {J : Path (s₁.append s₂) → Type}
+    {B : (p : Path (s₁.append s₂)) → J p → Type}
+    {inputs : OracleFamily.{uI, 0, wI} I A}
+    {outputs : (p : Path (s₁.append s₂)) → OracleFamily.{0, 0, wJ} (J p) (B p)} {S : Type uS}
+    {T : Path (s₁.append s₂) → Type}
     {Out : PathAlong oracleSig (s₁.append s₂) → Type}
     (V : OracleVerifier ambient (s₁.append s₂) S T inputs outputs) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (challenges : QueryImpl (challengeSpec oracleSig (s₁.append s₂)) ProbComp) (stmt : S)
     (data : ∀ i, A i) (prover : Prover oracleSig ambient (s₁.append s₂) Out)
     (TruthMid Admissible : RunBoundary oracleSig ambient s₁ s₂ Out × σ → Prop)
-    (Success : Observation oracleSig (s₁.append s₂) Out (T × (∀ j, B j)) → Prop)
+    (Success : Observation oracleSig (s₁.append s₂) Out (OracleVerifier.Output T B) → Prop)
     (error : RunBoundary oracleSig ambient s₁ s₂ Out × σ → ℝ≥0∞) (εtruth εinvalid : ℝ≥0∞)
     (htruth : Pr{let b ← (experimentWithState init impl challenges
       (appendPrefixRun prover))}[TruthMid b] ≤ εtruth)
@@ -569,16 +572,19 @@ theorem OracleVerifier.append_soundness_weighted_ae {I J : Type} {A : I → Type
     htruth hinvalid hsuffix
 
 /-- A uniform suffix bound gives the sum of the truth, inadmissibility and suffix errors. -/
-theorem OracleVerifier.append_soundness_ae {I J : Type} {A : I → Type}
-    {B : J → Type} {inputs : OracleFamily I A} {outputs : OracleFamily J B}
-    {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol} {S T : Type}
+theorem OracleVerifier.append_soundness_ae {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol}
+    {I : Type uI} {A : I → Type} {J : Path (s₁.append s₂) → Type}
+    {B : (p : Path (s₁.append s₂)) → J p → Type}
+    {inputs : OracleFamily.{uI, 0, wI} I A}
+    {outputs : (p : Path (s₁.append s₂)) → OracleFamily.{0, 0, wJ} (J p) (B p)} {S : Type uS}
+    {T : Path (s₁.append s₂) → Type}
     {Out : PathAlong oracleSig (s₁.append s₂) → Type}
     (V : OracleVerifier ambient (s₁.append s₂) S T inputs outputs) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (challenges : QueryImpl (challengeSpec oracleSig (s₁.append s₂)) ProbComp) (stmt : S)
     (data : ∀ i, A i) (prover : Prover oracleSig ambient (s₁.append s₂) Out)
     (TruthMid Admissible : RunBoundary oracleSig ambient s₁ s₂ Out × σ → Prop)
-    (Success : Observation oracleSig (s₁.append s₂) Out (T × (∀ j, B j)) → Prop)
+    (Success : Observation oracleSig (s₁.append s₂) Out (OracleVerifier.Output T B) → Prop)
     (εtruth εinvalid ε : ℝ≥0∞)
     (htruth : Pr{let b ← (experimentWithState init impl challenges
       (appendPrefixRun prover))}[TruthMid b] ≤ εtruth)
@@ -597,16 +603,20 @@ theorem OracleVerifier.append_soundness_ae {I J : Type} {A : I → Type}
 
 /-- The same bound for the oracle run program itself, under any lawful distribution semantics
 of the full run interface. Midpoint predicates are on the boundary alone. -/
-theorem OracleVerifier.run_append_soundness_weighted_ae {I J : Type} {A : I → Type}
-    {B : J → Type} {inputs : OracleFamily I A} {outputs : OracleFamily J B}
-    {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol} {S T : Type}
+theorem OracleVerifier.run_append_soundness_weighted_ae {s₁ : OracleProtocol}
+    {s₂ : Path s₁ → OracleProtocol}
+    {I : Type uI} {A : I → Type} {J : Path (s₁.append s₂) → Type}
+    {B : (p : Path (s₁.append s₂)) → J p → Type}
+    {inputs : OracleFamily.{uI, 0, wI} I A}
+    {outputs : (p : Path (s₁.append s₂)) → OracleFamily.{0, 0, wJ} (J p) (B p)} {S : Type uS}
+    {T : Path (s₁.append s₂) → Type}
     {Out : PathAlong oracleSig (s₁.append s₂) → Type}
     [EvalDistSemantics (OracleComp (ambient + challengeSpec oracleSig (s₁.append s₂)))]
     [LawfulEvalDistSemantics (OracleComp (ambient + challengeSpec oracleSig (s₁.append s₂)))]
     (V : OracleVerifier ambient (s₁.append s₂) S T inputs outputs) (stmt : S)
     (data : ∀ i, A i) (prover : Prover oracleSig ambient (s₁.append s₂) Out)
     (TruthMid Admissible : RunBoundary oracleSig ambient s₁ s₂ Out → Prop)
-    (Success : Observation oracleSig (s₁.append s₂) Out (T × (∀ j, B j)) → Prop)
+    (Success : Observation oracleSig (s₁.append s₂) Out (OracleVerifier.Output T B) → Prop)
     (error : RunBoundary oracleSig ambient s₁ s₂ Out → ℝ≥0∞) (εtruth εinvalid : ℝ≥0∞)
     (htruth : Pr{let b ← appendPrefixRun prover}[TruthMid b] ≤ εtruth)
     (hinvalid : Pr{let b ← appendPrefixRun prover}[¬ TruthMid b ∧ ¬ Admissible b] ≤ εinvalid)
@@ -624,16 +634,20 @@ theorem OracleVerifier.run_append_soundness_weighted_ae {I J : Type} {A : I → 
 /-- Runtime form: run the oracle program in a runtime that keeps hidden state and an ordered
 trace. The boundary is the runtime's joint prefix result, and the premise is the resumed success
 averaged over the non-exceptional boundaries. The whole prover is fixed before setup. -/
-theorem OracleVerifier.append_soundness_runtime {I J : Type} {A : I → Type}
-    {B : J → Type} {inputs : OracleFamily I A} {outputs : OracleFamily J B}
-    {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol} {S T : Type}
+theorem OracleVerifier.append_soundness_runtime {s₁ : OracleProtocol}
+    {s₂ : Path s₁ → OracleProtocol}
+    {I : Type uI} {A : I → Type} {J : Path (s₁.append s₂) → Type}
+    {B : (p : Path (s₁.append s₂)) → J p → Type}
+    {inputs : OracleFamily.{uI, 0, wI} I A}
+    {outputs : (p : Path (s₁.append s₂)) → OracleFamily.{0, 0, wJ} (J p) (B p)} {S : Type uS}
+    {T : Path (s₁.append s₂) → Type}
     {Out : PathAlong oracleSig (s₁.append s₂) → Type} {κ : Type} {imports : OracleSpec κ}
     [EvalDistSemantics (OracleComp imports)] [LawfulEvalDistSemantics (OracleComp imports)]
     (runtime : OracleRuntime imports (ambient + challengeSpec oracleSig (s₁.append s₂)))
     (V : OracleVerifier ambient (s₁.append s₂) S T inputs outputs) (stmt : S)
     (data : ∀ i, A i) (prover : Prover oracleSig ambient (s₁.append s₂) Out)
     (Exceptional : RunResult runtime (RunBoundary oracleSig ambient s₁ s₂ Out) → Prop)
-    (Success : Observation oracleSig (s₁.append s₂) Out (T × (∀ j, B j)) → Prop)
+    (Success : Observation oracleSig (s₁.append s₂) Out (OracleVerifier.Output T B) → Prop)
     (error : RunResult runtime (RunBoundary oracleSig ambient s₁ s₂ Out) → ℝ≥0∞)
     (hsuffix : letI : MeasurableSpace (RunResult runtime
         (RunBoundary oracleSig ambient s₁ s₂ Out)) := ⊤
@@ -650,7 +664,8 @@ theorem OracleVerifier.append_soundness_runtime {I J : Type} {A : I → Type}
 
 /-- Runtime form for a plain run on an appended protocol. -/
 theorem Verifier.append_soundness_runtime {s₁ : Protocol} {s₂ : Path s₁ → Protocol}
-    {S T : Type} {Out : PathAlong plainSig (s₁.append s₂) → Type} {κ : Type}
+    {S : Type uS} {T : Path (s₁.append s₂) → Type}
+    {Out : PathAlong plainSig (s₁.append s₂) → Type} {κ : Type}
     {imports : OracleSpec κ}
     [EvalDistSemantics (OracleComp imports)] [LawfulEvalDistSemantics (OracleComp imports)]
     (runtime : OracleRuntime imports (ambient + challengeSpec plainSig (s₁.append s₂)))
@@ -683,94 +698,11 @@ holds when the prefix decision makes no ambient query and when the ambient imple
 stateless.
 -/
 
-/-- Splitting the transcript of an appended run, with its view, returns the prefix and suffix
-transcripts and their own views. -/
-theorem splitFiber_append {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
-    (s₁ : FreeM P PUnit.{u + 1}) (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) {X : Sort*}
-    (G : (p : Path s₁) → (q : Path (s₂ p)) → Fiber l s₁ p → Fiber l (s₂ p) q → X)
-    (tr₁ : PathAlong l s₁) (tr₂ : PathAlong l (s₂ (projectPathAlong l s₁ tr₁))) :
-    G (Path.split s₁ s₂ (projectPathAlong l _ (PathAlong.append l s₁ s₂ tr₁ tr₂))).1
-      (Path.split s₁ s₂ (projectPathAlong l _ (PathAlong.append l s₁ s₂ tr₁ tr₂))).2
-      (splitFiber l s₁ s₂ _ ⟨PathAlong.append l s₁ s₂ tr₁ tr₂, rfl⟩).1
-      (splitFiber l s₁ s₂ _ ⟨PathAlong.append l s₁ s₂ tr₁ tr₂, rfl⟩).2 =
-    G (projectPathAlong l s₁ tr₁) (projectPathAlong l _ tr₂) ⟨tr₁, rfl⟩ ⟨tr₂, rfl⟩ := by
-  have key : ∀ (tr : PathAlong l (s₁.append s₂)),
-      G (Path.split s₁ s₂ (projectPathAlong l _ tr)).1
-        (Path.split s₁ s₂ (projectPathAlong l _ tr)).2
-        (splitFiber l s₁ s₂ _ ⟨tr, rfl⟩).1 (splitFiber l s₁ s₂ _ ⟨tr, rfl⟩).2 =
-      G (projectPathAlong l s₁ (PathAlong.split l s₁ s₂ tr).1)
-        (projectPathAlong l _ (PathAlong.split l s₁ s₂ tr).2)
-        ⟨(PathAlong.split l s₁ s₂ tr).1, rfl⟩ ⟨(PathAlong.split l s₁ s₂ tr).2, rfl⟩ := by
-    intro tr
-    simp only [splitFiber]
-    generalize project_split l s₁ s₂ tr = h
-    generalize Path.split s₁ s₂ (projectPathAlong l (s₁.append s₂) tr) = w at h ⊢
-    subst h
-    rfl
-  rw [key, PathAlong.split_append]
 
-section simulate
-
-variable {ι κ : Type} {ambient : OracleSpec ι} {spec : OracleSpec κ} {n : Type → Type}
-  [Monad n] [LawfulMonad n]
-
-/-- Interpreting a plain run against a sampler interprets every prover slot and every draw. -/
-theorem simulateQ_run_simulate_sampler (h : QueryImpl spec n)
-    (ιm : QueryImpl ambient (OracleComp spec)) (s : Protocol.{0})
-    {Out : PathAlong plainSig s → Type} (k : Prover plainSig ambient s Out)
-    (draw : (c : ChallengeNode plainSig s) → OracleComp spec (challengeSpec plainSig s c)) :
-    simulateQ h (TwoParty.Lens.run s (k.simulate ιm) (sampler plainSig s draw)) =
-      TwoParty.Lens.run s (k.simulate fun q => simulateQ h (ιm q))
-        (sampler plainSig s fun c => simulateQ h (draw c)) := by
-  rw [TwoParty.Lens.run, simulateQ_runWith_sampler, Prover.simulate_simulate]
-  rfl
-
-/-- Splitting the first slot of a simulated prover simulates the split slot and then the
-returned strategy. -/
-theorem splitSlot_simulate (ιm : QueryImpl ambient n) :
-    (s : Protocol.{0}) → {Out : PathAlong plainSig s → Type} →
-    (P : Prover plainSig ambient s Out) →
-    Strategy.splitSlot (P.simulate ιm) =
-      (fun k => Prover.simulate ιm k) <$> simulateQ ιm (Strategy.splitSlot P)
-  | .pure _, _, P => by
-    simp only [Strategy.splitSlot, Prover.simulate_done, simulateQ_map, Functor.map_map]
-    rfl
-  | .liftBind a rest, _, P => by
-    simp only [Strategy.splitSlot, Prover.simulate_node, simulateQ_map, Functor.map_map,
-      simulateQ_pure]
-    exact congrArg (· <$> _) (funext fun v => (LawfulApplicative.map_pure _ _).symm)
-
-/-- Splitting a simulated prover at the seam simulates the split prover and then each
-returned continuation. -/
-theorem splitPrefix_simulate (ιm : QueryImpl ambient n) :
-    (s₁ : Protocol.{0}) → (s₂ : Path s₁ → Protocol.{0}) →
-    {Out : PathAlong plainSig (s₁.append s₂) → Type} →
-    (P : Prover plainSig ambient (s₁.append s₂) Out) →
-    Focal.splitPrefix (P.simulate ιm) =
-      Strategy.mapOutput (fun _ k => Prover.simulate ιm k)
-        (Prover.simulate ιm (Focal.splitPrefix P))
-  | .pure ⟨⟩, s₂, _, P => splitSlot_simulate ιm (s₂ ⟨⟩) P
-  | .liftBind a next, s₂, _, P => by
-    simp only [Focal.splitPrefix, Strategy.mapOutput, PureEnd.mapOutput, Prover.simulate_node,
-      simulateQ_map, Functor.map_map]
-    refine congrArg (· <$> _) (funext fun v => ?_)
-    refine (congrFun (Choice.map_comp _ _ _ _) v).trans ?_
-    refine Eq.trans ?_ (congrFun (Choice.map_comp _ _ _ _) _).symm
-    refine Eq.trans ?_ (congrFun (Choice.map_comp _ _ _ _) v).symm
-    exact congrArg (fun f => Choice.map .focal (owner plainSig a) f v)
-      (funext fun x => funext fun r => splitPrefix_simulate ιm (next (plainSig.toFunB a x))
-        (fun p => s₂ ⟨plainSig.toFunB a x, p⟩) r)
-
-end simulate
 
 section standalone
 
 variable {ι σ : Type} {ambient : OracleSpec ι}
-
-/-- Run a verifier only on an accepted statement; a rejected statement stays rejected. -/
-def Verifier.onAccept {s : Protocol} {T U : Type} (V : Verifier ambient s T U) :
-    Verifier ambient s (Option T) U where
-  decide mid p v := OptionT.mk (pure mid) >>= fun t => V.decide t p v
 
 /-- Answer the queries of a standalone prefix run from the run interface of the appended
 protocol. -/
@@ -796,12 +728,13 @@ def suffixQueries (s₁ : Protocol.{0}) (s₂ : Path s₁ → Protocol) (p : Pat
 run of `V₁` against the split prover, then the standalone run of `V₂` against the returned
 continuation, on the accepted intermediate statement. Queries go to the run interface of the
 appended protocol. -/
-def Verifier.boundaryDecidedRun {s₁ : Protocol} {s₂ : Path s₁ → Protocol} {S T U : Type}
+def Verifier.boundaryDecidedRun {s₁ : Protocol} {s₂ : Path s₁ → Protocol} {S : Type uS} {T U : Type}
     {Out : PathAlong plainSig (s₁.append s₂) → Type}
-    (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) T U)
+    (V₁ : Verifier ambient s₁ S (fun _ => T))
+    (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) T (fun _ => U))
     (stmt : S) (prover : Prover plainSig ambient (s₁.append s₂) Out) :
     OracleComp (ambient + challengeSpec plainSig (s₁.append s₂))
-      (Observation plainSig (s₁.append s₂) Out U) := do
+      (Observation plainSig (s₁.append s₂) Out (fun _ => U)) := do
   let o ← simulateQ (prefixQueries s₁ s₂) (V₁.run stmt (Focal.splitPrefix prover))
   let r ← simulateQ (suffixQueries s₁ s₂ (projectPathAlong plainSig s₁ o.1))
     ((V₂ _).onAccept.run o.2.2 o.2.1)
@@ -873,32 +806,12 @@ theorem simulateQ_suffixQueries {s₁ : Protocol} {s₂ : Path s₁ → Protocol
       QueryImpl.liftTarget_apply]
     exact suffixDraw_comp plainSig (fun x => liftM x) s₁ s₂ ch p c
 
-/-- On an accepted statement, the guarded run is the run. -/
-theorem Verifier.onAccept_run_some {s : Protocol} {T U : Type} {Out : PathAlong plainSig s → Type}
-    (V : Verifier ambient s T U) (t : T) (prover : Prover plainSig ambient s Out) :
-    V.onAccept.run (some t) prover = V.run t prover := by
-  simp only [Verifier.run, Verifier.onAccept, OptionT.run_bind, OptionT.run_mk,
-    Option.elimM]
-  rfl
-
-/-- On a rejected statement, the guarded run interacts and rejects. -/
-theorem Verifier.onAccept_run_none {s : Protocol} {T U : Type} {Out : PathAlong plainSig s → Type}
-    (V : Verifier ambient s T U) (prover : Prover plainSig ambient s Out) :
-    V.onAccept.run none prover =
-      (fun r => ⟨r.1, r.2.1, none⟩) <$> TwoParty.Lens.run s
-        (prover.simulate (fun q => liftM ((ambient + challengeSpec plainSig s).query (.inl q))))
-        (sampler plainSig s (fun c =>
-          liftM ((ambient + challengeSpec plainSig s).query (.inr c)))) := by
-  simp only [Verifier.run, Verifier.onAccept, OptionT.run_bind, OptionT.run_mk,
-    Option.elimM, map_eq_bind_pure_comp]
-  refine bind_congr fun r => ?_
-  simp
-
 /-- A run of `V₁.append V₂` is the prefix interaction, the suffix interaction against the
 returned continuation, the prefix decision, and the suffix decision on its result. -/
-theorem Verifier.append_run_eq {s₁ : Protocol} {s₂ : Path s₁ → Protocol} {S T U : Type}
+theorem Verifier.append_run_eq {s₁ : Protocol} {s₂ : Path s₁ → Protocol} {S : Type uS} {T U : Type}
     {Out : PathAlong plainSig (s₁.append s₂) → Type}
-    (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) T U)
+    (V₁ : Verifier ambient s₁ S (fun _ => T))
+    (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) T (fun _ => U))
     (stmt : S) (prover : Prover plainSig ambient (s₁.append s₂) Out) :
     let full := ambient + challengeSpec plainSig (s₁.append s₂)
     let toFull : QueryImpl ambient (OracleComp full) := fun q => liftM (full.query (.inl q))
@@ -935,10 +848,9 @@ theorem Verifier.append_run_eq {s₁ : Protocol} {s₂ : Path s₁ → Protocol}
       (fun p q v₁ v₂ => (V₁.decide stmt p v₁ >>= fun mid => (V₂ p).decide mid q v₂).run) tr₁ tail
   dsimp only
   rw [hd]
-  simp only [OptionT.run_bind, Verifier.onAccept, OptionT.run_mk, Option.elimM,
-    liftComp_bind, bind_assoc]
+  simp only [OptionT.run_bind, Verifier.onAccept, Option.elimM, liftComp_bind, bind_assoc]
   refine bind_congr fun mid => ?_
-  erw [LawfulMonad.pure_bind]
+  cases mid <;> rfl
 
 /-- A lifted ambient program keeps its ambient queries when the challenge queries are
 rerouted. -/
@@ -952,9 +864,11 @@ theorem simulateQ_liftComp_inl {κ κ' : Type} {chal : OracleSpec κ} {chal' : O
 
 /-- The boundary-decided run is the prefix interaction, the prefix decision, the suffix
 interaction against the returned continuation, and the suffix decision on its result. -/
-theorem Verifier.boundaryDecidedRun_eq {s₁ : Protocol} {s₂ : Path s₁ → Protocol} {S T U : Type}
+theorem Verifier.boundaryDecidedRun_eq {s₁ : Protocol} {s₂ : Path s₁ → Protocol} {S : Type uS}
+    {T U : Type}
     {Out : PathAlong plainSig (s₁.append s₂) → Type}
-    (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) T U)
+    (V₁ : Verifier ambient s₁ S (fun _ => T))
+    (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) T (fun _ => U))
     (stmt : S) (prover : Prover plainSig ambient (s₁.append s₂) Out) :
     let full := ambient + challengeSpec plainSig (s₁.append s₂)
     let toFull : QueryImpl ambient (OracleComp full) := fun q => liftM (full.query (.inl q))
@@ -988,8 +902,9 @@ theorem Verifier.boundaryDecidedRun_eq {s₁ : Protocol} {s₂ : Path s₁ → P
 /-- A prefix decision without ambient queries may be taken at the boundary: the two runs are
 equal. -/
 theorem Verifier.boundaryDecidedRun_eq_of_pure {s₁ : Protocol} {s₂ : Path s₁ → Protocol}
-    {S T U : Type} {Out : PathAlong plainSig (s₁.append s₂) → Type}
-    (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) T U)
+    {S : Type uS} {T U : Type} {Out : PathAlong plainSig (s₁.append s₂) → Type}
+    (V₁ : Verifier ambient s₁ S (fun _ => T))
+    (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) T (fun _ => U))
     (stmt : S) (prover : Prover plainSig ambient (s₁.append s₂) Out)
     (hpure : ∀ p v, ∃ r, (V₁.decide stmt p v).run = pure r) :
     (V₁.append V₂).run stmt prover = Verifier.boundaryDecidedRun V₁ V₂ stmt prover := by
@@ -1005,8 +920,9 @@ theorem Verifier.boundaryDecidedRun_eq_of_pure {s₁ : Protocol} {s₂ : Path s�
 the two experiments are equal in distribution. -/
 theorem Verifier.boundaryDecidedRun_evalDistEq_of_stateless
     {s₁ : Protocol} {s₂ : Path s₁ → Protocol}
-    {S T U : Type} {Out : PathAlong plainSig (s₁.append s₂) → Type}
-    (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) T U)
+    {S : Type uS} {T U : Type} {Out : PathAlong plainSig (s₁.append s₂) → Type}
+    (V₁ : Verifier ambient s₁ S (fun _ => T))
+    (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) T (fun _ => U))
     (stmt : S) (prover : Prover plainSig ambient (s₁.append s₂) Out)
     (init : ProbComp σ) (g : QueryImpl ambient ProbComp)
     (challenges : QueryImpl (challengeSpec plainSig (s₁.append s₂)) ProbComp) :
@@ -1039,8 +955,9 @@ bounds the standalone prefix run accepting a true intermediate statement, `δ` b
 accepting an inadmissible one, and every suffix verifier is sound with error `ε₂` from every
 ambient state. -/
 theorem Verifier.append_soundness_of_standalone {s₁ : Protocol} {s₂ : Path s₁ → Protocol}
-    {S T U : Type} {Out : PathAlong plainSig (s₁.append s₂) → Type}
-    (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) T U)
+    {S : Type uS} {T U : Type} {Out : PathAlong plainSig (s₁.append s₂) → Type}
+    (V₁ : Verifier ambient s₁ S (fun _ => T))
+    (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) T (fun _ => U))
     (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
     (challenges : QueryImpl (challengeSpec plainSig (s₁.append s₂)) ProbComp)
     (middle : StatementProblem T) (output : StatementProblem U) (stmt : S)
@@ -1054,8 +971,11 @@ theorem Verifier.append_soundness_of_standalone {s₁ : Protocol} {s₂ : Path s
     (hadmissible : Pr{let o ← (experiment init impl (prefixDraw plainSig s₁ s₂ challenges)
       (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t, o.2.2 = some t ∧
         ¬ middle.admissible () t] ≤ δ)
-    (hsuffix : ∀ p state, (V₂ p).soundness (pure state) impl
-      (suffixDraw plainSig s₁ s₂ challenges p) middle output ε₂) :
+    (hsuffix : ∀ p state (Out : PathAlong plainSig (s₂ p) → Type),
+      letI : MeasurableSpace (Observation plainSig (s₂ p) Out (fun _ => U)) := ⊤
+      Core.soundness ((V₂ p).classicalModel (Out := Out) (pure state) impl
+        (suffixDraw plainSig s₁ s₂ challenges p)) middle output
+        (fun _ => ()) (fun obs => obs.2.2) ε₂) :
     Pr{let obs ← (experiment init impl challenges ((V₁.append V₂).run stmt prover))}[
       ∃ u, obs.2.2 = some u ∧ output.language () u] ≤ ε₁ + δ + ε₂ := by
   have hfst : ∀ {α κ : Type} {chal : OracleSpec κ} (ch : QueryImpl chal ProbComp)
@@ -1098,15 +1018,17 @@ theorem Verifier.append_soundness_of_standalone {s₁ : Protocol} {s₂ : Path s
         (fun tail => Out (PathAlong.append plainSig s₁ s₂ tr₁ tail)) t (hadm t rfl)
         (fun hl => hnot ⟨t, rfl, hl⟩) next
       let : MeasurableSpace (Observation plainSig (s₂ (projectPathAlong plainSig s₁ tr₁))
-        (fun tail => Out (PathAlong.append plainSig s₁ s₂ tr₁ tail)) U) := ⊤
+        (fun tail => Out (PathAlong.append plainSig s₁ s₂ tr₁ tail)) (fun _ => U)) := ⊤
       rw [prEvent_eq_evalDist _ _ (measurable_from_top)]
       exact h
 
 /-- Composition soundness from standalone suffix soundness, when taking the prefix decision at
 the boundary leaves the law of the whole observation unchanged. -/
 theorem Verifier.append_soundness_of_standalone_of_evalDistEq {s₁ : Protocol}
-    {s₂ : Path s₁ → Protocol} {S T U : Type} {Out : PathAlong plainSig (s₁.append s₂) → Type}
-    (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) T U)
+    {s₂ : Path s₁ → Protocol} {S : Type uS} {T U : Type}
+    {Out : PathAlong plainSig (s₁.append s₂) → Type}
+    (V₁ : Verifier ambient s₁ S (fun _ => T))
+    (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) T (fun _ => U))
     (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
     (challenges : QueryImpl (challengeSpec plainSig (s₁.append s₂)) ProbComp)
     (middle : StatementProblem T) (output : StatementProblem U) (stmt : S)
@@ -1118,8 +1040,11 @@ theorem Verifier.append_soundness_of_standalone_of_evalDistEq {s₁ : Protocol}
     (hadmissible : Pr{let o ← (experiment init impl (prefixDraw plainSig s₁ s₂ challenges)
       (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t, o.2.2 = some t ∧
         ¬ middle.admissible () t] ≤ δ)
-    (hsuffix : ∀ p state, (V₂ p).soundness (pure state) impl
-      (suffixDraw plainSig s₁ s₂ challenges p) middle output ε₂) :
+    (hsuffix : ∀ p state (Out : PathAlong plainSig (s₂ p) → Type),
+      letI : MeasurableSpace (Observation plainSig (s₂ p) Out (fun _ => U)) := ⊤
+      Core.soundness ((V₂ p).classicalModel (Out := Out) (pure state) impl
+        (suffixDraw plainSig s₁ s₂ challenges p)) middle output
+        (fun _ => ()) (fun obs => obs.2.2) ε₂) :
     Pr{let obs ← (experiment init impl challenges ((V₁.append V₂).run stmt prover))}[
       ∃ u, obs.2.2 = some u ∧ output.language () u] ≤ ε₁ + δ + ε₂ :=
   Verifier.append_soundness_of_standalone V₁ V₂ init impl challenges middle output stmt prover
@@ -1128,8 +1053,10 @@ theorem Verifier.append_soundness_of_standalone_of_evalDistEq {s₁ : Protocol}
 /-- A prefix decision without ambient queries composes with a standalone-sound suffix at
 `ε₁ + δ + ε₂`. -/
 theorem Verifier.append_soundness_of_standalone_of_pure {s₁ : Protocol}
-    {s₂ : Path s₁ → Protocol} {S T U : Type} {Out : PathAlong plainSig (s₁.append s₂) → Type}
-    (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) T U)
+    {s₂ : Path s₁ → Protocol} {S : Type uS} {T U : Type}
+    {Out : PathAlong plainSig (s₁.append s₂) → Type}
+    (V₁ : Verifier ambient s₁ S (fun _ => T))
+    (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) T (fun _ => U))
     (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
     (challenges : QueryImpl (challengeSpec plainSig (s₁.append s₂)) ProbComp)
     (middle : StatementProblem T) (output : StatementProblem U) (stmt : S)
@@ -1140,8 +1067,11 @@ theorem Verifier.append_soundness_of_standalone_of_pure {s₁ : Protocol}
     (hadmissible : Pr{let o ← (experiment init impl (prefixDraw plainSig s₁ s₂ challenges)
       (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t, o.2.2 = some t ∧
         ¬ middle.admissible () t] ≤ δ)
-    (hsuffix : ∀ p state, (V₂ p).soundness (pure state) impl
-      (suffixDraw plainSig s₁ s₂ challenges p) middle output ε₂) :
+    (hsuffix : ∀ p state (Out : PathAlong plainSig (s₂ p) → Type),
+      letI : MeasurableSpace (Observation plainSig (s₂ p) Out (fun _ => U)) := ⊤
+      Core.soundness ((V₂ p).classicalModel (Out := Out) (pure state) impl
+        (suffixDraw plainSig s₁ s₂ challenges p)) middle output
+        (fun _ => ()) (fun obs => obs.2.2) ε₂) :
     Pr{let obs ← (experiment init impl challenges ((V₁.append V₂).run stmt prover))}[
       ∃ u, obs.2.2 = some u ∧ output.language () u] ≤ ε₁ + δ + ε₂ :=
   Verifier.append_soundness_of_standalone V₁ V₂ init impl challenges middle output stmt prover
@@ -1151,8 +1081,10 @@ theorem Verifier.append_soundness_of_standalone_of_pure {s₁ : Protocol}
 /-- Under a stateless ambient implementation any prefix verifier composes with a standalone-sound
 suffix at `ε₁ + δ + ε₂`. -/
 theorem Verifier.append_soundness_of_standalone_of_stateless {s₁ : Protocol}
-    {s₂ : Path s₁ → Protocol} {S T U : Type} {Out : PathAlong plainSig (s₁.append s₂) → Type}
-    (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) T U)
+    {s₂ : Path s₁ → Protocol} {S : Type uS} {T U : Type}
+    {Out : PathAlong plainSig (s₁.append s₂) → Type}
+    (V₁ : Verifier ambient s₁ S (fun _ => T))
+    (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) T (fun _ => U))
     (init : ProbComp σ) (g : QueryImpl ambient ProbComp)
     (challenges : QueryImpl (challengeSpec plainSig (s₁.append s₂)) ProbComp)
     (middle : StatementProblem T) (output : StatementProblem U) (stmt : S)
@@ -1163,8 +1095,12 @@ theorem Verifier.append_soundness_of_standalone_of_stateless {s₁ : Protocol}
     (hadmissible : Pr{let o ← (experiment init (g.liftTarget (StateT σ ProbComp))
       (prefixDraw plainSig s₁ s₂ challenges) (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t,
         o.2.2 = some t ∧ ¬ middle.admissible () t] ≤ δ)
-    (hsuffix : ∀ p state, (V₂ p).soundness (pure state) (g.liftTarget (StateT σ ProbComp))
-      (suffixDraw plainSig s₁ s₂ challenges p) middle output ε₂) :
+    (hsuffix : ∀ p state (Out : PathAlong plainSig (s₂ p) → Type),
+      letI : MeasurableSpace (Observation plainSig (s₂ p) Out (fun _ => U)) := ⊤
+      Core.soundness ((V₂ p).classicalModel (Out := Out) (pure state)
+        (g.liftTarget (StateT σ ProbComp))
+        (suffixDraw plainSig s₁ s₂ challenges p)) middle output
+        (fun _ => ()) (fun obs => obs.2.2) ε₂) :
     Pr{let obs ← (experiment init (g.liftTarget (StateT σ ProbComp)) challenges
       ((V₁.append V₂).run stmt prover))}[∃ u, obs.2.2 = some u ∧ output.language () u] ≤
         ε₁ + δ + ε₂ :=

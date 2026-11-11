@@ -442,30 +442,31 @@ def sampleOf {p : Path first} (v : View first p) : Fin 3 := v.1.1
 
 /-- The prefix exports its input value plus the sample, querying only the input. -/
 def exportMap (sample : Fin 3) (p : Path first) :
-    OracleMap (sumFamily nats (pathFamily first p)) nats where
-  f x _ := (show Nat from x (.inl ())) + sample.val
+    OracleMap (pathResources nats first p) nats where
+  f x _ := (show Nat from x.1 ()) + sample.val
   impl _ := do
-    let value : Nat ← liftM ((sumFamily nats (pathFamily first p)).spec.query ⟨.inl (), ()⟩)
+    let value : Nat ← liftM ((pathResources nats first p).spec.query (.inl ⟨(), ()⟩))
     pure (value + sample.val)
   law _ _ := by
     simp only [simulateQ_bind]
     rfl
 
 /-- The prefix decision returns the sample; its output is the derived export. -/
-def firstVerifier : OracleVerifier ambient first Unit (Fin 3) nats nats where
+def firstVerifier : OracleVerifier ambient first Unit (fun _ => Fin 3) nats (fun _ => nats) where
   decide _ _ v := pure (sampleOf v)
   outputMap _ p v := exportMap (sampleOf v) p
 
 /-- The suffix decision reads the export, makes a fresh ambient query, and accepts iff the export
 is `7` or the coin is `1`. It returns the export value and keeps the exported oracle. -/
-def secondVerifier (_ : Path first) : OracleVerifier ambient second (Fin 3) Nat nats nats where
+def secondVerifier (_ : Path first) : OracleVerifier ambient second (Fin 3)
+    (fun _ => Nat) nats (fun _ => nats) where
   decide _ p _ := OptionT.mk do
-    let value : Nat ← liftM ((ambient + (sumFamily nats (pathFamily second p)).spec).query
-      (.inr ⟨.inl (), ()⟩))
-    let coin : Fin 3 ← liftM ((ambient + (sumFamily nats (pathFamily second p)).spec).query
+    let value : Nat ← liftM ((ambient + (pathResources nats second p).spec).query
+      (.inr (.inl ⟨(), ()⟩)))
+    let coin : Fin 3 ← liftM ((ambient + (pathResources nats second p).spec).query
       (.inl ()))
     pure (if value = 7 ∨ coin = 1 then some value else none)
-  outputMap _ p _ := OracleMap.embedding (sumFamily nats (pathFamily second p)) .inl
+  outputMap _ _ _ := OracleMap.fst _ _
 
 /-- The composite output map is the suffix output map after `suffixRoute`. -/
 def compatible : OracleVerifier.OutputCompatibility firstVerifier secondVerifier where
@@ -541,7 +542,7 @@ def sampleAt (b : Boundary) : Fin 3 := b.1.1
 payloads, at the prefix view. -/
 def exported (b : Boundary) : Nat :=
   (firstVerifier.outputMap () (projectPathAlong oracleSig first b.1) (toView first b.1)).f
-    (sumData input (payloads first b.1)) ()
+    ((input, payloads first b.1)) ()
 
 /-- The midpoint is true when the export is `7`. -/
 def trueMid (b : Boundary) : Prop := exported b = 7
@@ -594,9 +595,9 @@ theorem prefix_inadmissible :
 theorem exported_behavior (sample : Fin 3) :
     (firstVerifier.outputMap () (projectPathAlong oracleSig first (boundary sample).1)
         (toView first (boundary sample).1)).f
-          (sumData input (payloads first (boundary sample).1)) = (fun _ => 7 + sample.val) ∧
-    ∀ q, simulateQ ((sumFamily nats (pathFamily first ⟨⟨⟩, ⟨⟩⟩)).behaviorOfRealizations
-        (sumData input (payloads first (boundary sample).1)))
+          ((input, payloads first (boundary sample).1)) = (fun _ => 7 + sample.val) ∧
+    ∀ q, simulateQ ((pathResources nats first ⟨⟨⟩, ⟨⟩⟩).answer
+        ((input, payloads first (boundary sample).1)))
       ((firstVerifier.outputMap () ⟨⟨⟩, ⟨⟩⟩ (toView first (boundary sample).1)).impl q) =
         (7 + sample.val : Nat) :=
   ⟨rfl, fun q => (OracleMap.law _ _ q).trans rfl⟩
@@ -608,7 +609,7 @@ abbrev Claim := Nat × (∀ _ : Unit, Nat)
 def finalTrue (claim : Claim) : Prop := claim.2 () = claim.1
 
 /-- The run returns a true final claim. -/
-def suffixTrue (obs : Observation oracleSig combined (fun _ => Unit) Claim) : Prop :=
+def suffixTrue (obs : Observation oracleSig combined (fun _ => Unit) (fun _ => Claim)) : Prop :=
   obs.2.2.map finalTrue = some True
 
 -- Oracle example row 9 (`suffix_execution`), restated: the rest of the run after the boundary,
@@ -705,7 +706,8 @@ variable {ι σ : Type} {ambient : OracleSpec ι} {s₁ : Protocol} {s₂ : Path
 /-- A prefix decision without ambient queries composes with a standalone-sound suffix at
 `ε₁ + δ + ε₂`. -/
 theorem append_soundness_of_pure_decide
-    (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) T U)
+    (V₁ : Verifier ambient s₁ S (fun _ => T))
+    (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) T (fun _ => U))
     (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
     (challenges : QueryImpl (challengeSpec plainSig (s₁.append s₂)) ProbComp)
     (middle : StatementProblem T) (output : StatementProblem U) (stmt : S)
@@ -716,8 +718,11 @@ theorem append_soundness_of_pure_decide
     (hadmissible : Pr{let o ← (experiment init impl (prefixDraw plainSig s₁ s₂ challenges)
       (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t, o.2.2 = some t ∧
         ¬ middle.admissible () t] ≤ δ)
-    (hsuffix : ∀ p state, (V₂ p).soundness (pure state) impl
-      (suffixDraw plainSig s₁ s₂ challenges p) middle output ε₂) :
+    (hsuffix : ∀ p state (Out : PathAlong plainSig (s₂ p) → Type),
+      letI : MeasurableSpace (Observation plainSig (s₂ p) Out (fun _ => U)) := ⊤
+      Core.soundness ((V₂ p).classicalModel (Out := Out) (pure state) impl
+        (suffixDraw plainSig s₁ s₂ challenges p)) middle output
+        (fun _ => ()) (fun obs => obs.2.2) ε₂) :
     Pr{let obs ← (experiment init impl challenges ((V₁.append V₂).run stmt prover))}[
       ∃ u, obs.2.2 = some u ∧ output.language () u] ≤ ε₁ + δ + ε₂ :=
   Verifier.append_soundness_of_standalone V₁ V₂ init impl challenges middle output stmt prover
@@ -727,7 +732,8 @@ theorem append_soundness_of_pure_decide
 /-- Under a stateless ambient implementation any prefix verifier composes with a standalone-sound
 suffix at `ε₁ + δ + ε₂`. -/
 theorem append_soundness_of_stateless
-    (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) T U)
+    (V₁ : Verifier ambient s₁ S (fun _ => T))
+    (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) T (fun _ => U))
     (init : ProbComp σ) (g : QueryImpl ambient ProbComp)
     (challenges : QueryImpl (challengeSpec plainSig (s₁.append s₂)) ProbComp)
     (middle : StatementProblem T) (output : StatementProblem U) (stmt : S)
@@ -738,8 +744,12 @@ theorem append_soundness_of_stateless
     (hadmissible : Pr{let o ← (experiment init (g.liftTarget (StateT σ ProbComp))
       (prefixDraw plainSig s₁ s₂ challenges) (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t,
         o.2.2 = some t ∧ ¬ middle.admissible () t] ≤ δ)
-    (hsuffix : ∀ p state, (V₂ p).soundness (pure state) (g.liftTarget (StateT σ ProbComp))
-      (suffixDraw plainSig s₁ s₂ challenges p) middle output ε₂) :
+    (hsuffix : ∀ p state (Out : PathAlong plainSig (s₂ p) → Type),
+      letI : MeasurableSpace (Observation plainSig (s₂ p) Out (fun _ => U)) := ⊤
+      Core.soundness ((V₂ p).classicalModel (Out := Out) (pure state)
+        (g.liftTarget (StateT σ ProbComp))
+        (suffixDraw plainSig s₁ s₂ challenges p)) middle output
+        (fun _ => ()) (fun obs => obs.2.2) ε₂) :
     Pr{let obs ← (experiment init (g.liftTarget (StateT σ ProbComp)) challenges
       ((V₁.append V₂).run stmt prover))}[∃ u, obs.2.2 = some u ∧ output.language () u] ≤
         ε₁ + δ + ε₂ :=
