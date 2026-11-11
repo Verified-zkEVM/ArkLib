@@ -42,6 +42,8 @@ whose evaluation queries are answered by Horner evaluation, and at CompPoly mult
 
 @[expose] public section
 
+universe uI wI wI'
+
 namespace Sumcheck.Core
 open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
   OracleComp OracleSpec ProtocolSpec MeasureTheory
@@ -474,8 +476,8 @@ end Decision
 section VerifierOn
 
 variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R] {deg n : ℕ} {d : ℕ}
-  (D : Fin d ↪ R) {ι : Type} {ambient : OracleSpec ι} {M : Type} {eval : M → R → R} {I : Type}
-  {A : I → Type} (inputs : OracleFamily I A)
+  (D : Fin d ↪ R) {ι : Type} {ambient : OracleSpec ι} {M : Type} {eval : M → R → R} {I : Type uI}
+  {A : I → Type} (inputs : OracleFamily.{uI, 0, wI} I A)
 
 
 
@@ -498,6 +500,17 @@ theorem simulateQ_decideOn {κ : Type} {spec' : OracleSpec κ}
   rw [simulateQ_pathLift, viewChallengesOn_toView f]
   congr 1
   exact QueryImpl.simulateQ_simulateQ_eq_of_apply (simulateQ_routeOn hf n tr) _
+
+end VerifierOn
+
+section RunVerifierOn
+
+variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R] {deg n d : ℕ}
+  (D : Fin d ↪ R) {ι : Type} {ambient : OracleSpec ι} {M : Type} {eval : M → R → R}
+  {I : Type} {A : I → Type} (inputs : OracleFamily.{0, 0, wI} I A)
+  {f : M → R⦃≤ deg⦄[X]} (hf : ∀ x r, eval x r = (f x).val.eval r)
+
+include hf
 
 /-- Closed form of the execution over the carrier `M` against any prover: run the prover against
 the sampler, then return the legacy verdict of the decoded transcript of the mapped run, with
@@ -525,7 +538,7 @@ theorem run_verifierOn (stmt : Spec.StatementRound R n 0) (data : ∀ i, A i)
 /-- A run over the carrier `M`, with its queries renamed and its observation mapped, is the run
 of the interpreted prover against the verifier at the polynomial carrier. Messages are mapped by
 `f`, the prover output by `g` and the output oracle data by `dmap`. -/
-theorem run_eq_interpret {A' : I → Type} (inputs' : OracleFamily I A')
+theorem run_eq_interpret {A' : I → Type} (inputs' : OracleFamily.{0, 0, wI'} I A')
     (dmap : (∀ i, A i) → ∀ i, A' i) (stmt : Spec.StatementRound R n 0) (data : ∀ i, A i)
     {Out : PathAlong oracleSig (protocolOn R M eval n) → Type}
     {Out' : PathAlong oracleSig (protocol R deg n) → Type}
@@ -559,7 +572,7 @@ theorem run_eq_interpret {A' : I → Type} (inputs' : OracleFamily I A')
   simp only [mapObservation, mapTranscript_id, Option.map_map]
   rfl
 
-end VerifierOn
+end RunVerifierOn
 
 /-! ## Uniform challenges at any carrier -/
 

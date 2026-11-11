@@ -132,6 +132,46 @@ theorem zero_prover_output :
 
 end ComputableSumcheckTest
 
+namespace SumcheckResourceUniverseTest
+
+open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
+  OracleComp OracleSpec Sumcheck.Core
+
+universe wI
+
+variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R]
+  {deg n d : ℕ} (D : Fin d ↪ R) {ι : Type} (ambient : OracleSpec ι)
+  {I : Type 1} {A : I → Type} (inputs : OracleFamily.{1, 0, wI} I A)
+  {M : Type} {eval : M → R → R}
+
+/-- Construction over a resource index in `Type 1` leaves the query universe independent. -/
+def verifierAtHigherIndex :
+    OracleVerifier ambient (protocolOn R M eval n) (Sumcheck.Spec.StatementRound R n 0)
+      (fun _ => Sumcheck.Spec.StatementRound R n (Fin.last n)) inputs (fun _ => inputs) :=
+  verifierOn R deg n D ambient M eval inputs
+
+/-- The final decision law accepts higher resource indices through an ordinary import. -/
+theorem simulate_decision {f : M → R⦃≤ deg⦄[X]}
+    (hf : ∀ x r, eval x r = (f x).val.eval r) {κ : Type} {target : OracleSpec κ}
+    (amb : QueryImpl ambient (OracleComp target)) (stmt : Sumcheck.Spec.StatementRound R n 0)
+    (data : ∀ i, A i) (tr : PathAlong oracleSig (protocolOn R M eval n)) :
+    simulateQ (QueryImpl.addLift amb ((pathResources inputs (protocolOn R M eval n)
+      (projectPathAlong oracleSig _ tr)).answer (data, payloads _ tr)))
+      ((verifierAtHigherIndex (deg := deg) D ambient inputs).decide stmt _ (toView _ tr)).run =
+      (pure (legacyVerdict R deg n D ambient stmt (decodeTranscript n (polyTranscript f n tr))) :
+        OracleComp target _) :=
+  simulateQ_decideOn D inputs hf amb stmt data tr
+
+/-- The review's constant-evaluation constructor also accepts a high resource-query universe. -/
+example (domain : Fin 1 ↪ R) {J : Type 1} {B : J → Type}
+    (resources : OracleFamily.{1, 0, 1} J B) :
+    OracleVerifier emptySpec (protocolOn R R (fun x _ => x) 1)
+      (Sumcheck.Spec.StatementRound R 1 0)
+      (fun _ => Sumcheck.Spec.StatementRound R 1 (Fin.last 1)) resources (fun _ => resources) :=
+  verifierOn R 1 1 domain emptySpec R (fun x _ => x) resources
+
+end SumcheckResourceUniverseTest
+
 /-! The executable definitions are computable, and the theorems use only the standard axioms. -/
 
 run_cmd do
