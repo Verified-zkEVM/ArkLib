@@ -352,40 +352,53 @@ theorem payloadImpl_append (s₁ : OracleProtocol.{u})
   refine Sigma.ext rfl (heq_of_eq ?_)
   exact (funext ((oracles_append s₁ s₂ _ _).law _)).symm
 
-/-- A passive oracle verifier with one fixed output oracle family. -/
-structure OracleVerifier {ι I J : Type u} (ambient : OracleSpec.{u, u} ι)
-    (s : OracleProtocol.{u}) (S T : Type u) {A : I → Type u} {B : J → Type u}
-    (inputs : OracleFamily.{u, u, u} I A) (outputs : OracleFamily.{u, u, u} J B) where
+/-- A passive oracle verifier. The output statement type `T p` and the output oracle family
+`outputs p` are indexed by the public shape path `p` of the run, so a public message may change
+both. A verifier with one output type and family uses constant families. -/
+structure OracleVerifier {ι I : Type u} (ambient : OracleSpec.{u, u} ι)
+    (s : OracleProtocol.{u}) (S : Type u) (T : Path s → Type u) {A : I → Type u}
+    {J : Path s → Type u} {B : (p : Path s) → J p → Type u}
+    (inputs : OracleFamily.{u, u, u} I A)
+    (outputs : (p : Path s) → OracleFamily.{u, u, u} (J p) (B p)) where
   /-- The decision has query access to inputs and path payloads, never their raw values. -/
   decide : S → (p : Path s) → View s p →
-    OptionT (OracleComp (ambient + (sumFamily inputs (pathFamily s p)).spec)) T
+    OptionT (OracleComp (ambient + (sumFamily inputs (pathFamily s p)).spec)) (T p)
   /-- The output interface may use the public statement and verifier view. -/
   outputMap : S → (p : Path s) → View s p →
-    OracleMap (sumFamily inputs (pathFamily s p)) outputs
+    OracleMap (sumFamily inputs (pathFamily s p)) (outputs p)
+
+/-- The output statement paired with the concrete output oracle data, at each shape path. -/
+abbrev OracleVerifier.Output {s : OracleProtocol.{u}} (T : Path s → Type u)
+    {J : Path s → Type u} (B : (p : Path s) → J p → Type u) (p : Path s) : Type u :=
+  T p × (∀ j, B p j)
 
 /-- The decision with resource queries answered from concrete data; ambient queries remain.
 
 Its possible results, with every ambient answer allowed, are the statements the decision can
 return on that data and view.
 -/
-def OracleVerifier.decideWith {ι I J : Type u} {ambient : OracleSpec.{u, u} ι}
-    {s : OracleProtocol.{u}} {S T : Type u} {A : I → Type u} {B : J → Type u}
-    {inputs : OracleFamily.{u, u, u} I A} {outputs : OracleFamily.{u, u, u} J B}
+def OracleVerifier.decideWith {ι I : Type u} {ambient : OracleSpec.{u, u} ι}
+    {s : OracleProtocol.{u}} {S : Type u} {T : Path s → Type u} {A : I → Type u}
+    {J : Path s → Type u} {B : (p : Path s) → J p → Type u}
+    {inputs : OracleFamily.{u, u, u} I A}
+    {outputs : (p : Path s) → OracleFamily.{u, u, u} (J p) (B p)}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (p : Path s) (v : View s p)
     (data : ∀ i, (sumFamily inputs (pathFamily s p)).Realization i) :
-    OracleComp ambient (Option T) :=
+    OracleComp ambient (Option (T p)) :=
   simulateQ (QueryImpl.addLift (QueryImpl.id' ambient)
     ((sumFamily inputs (pathFamily s p)).behaviorOfRealizations data)) (V.decide stmt p v).run
 
 /-- Interpret the decision's resource queries using the input and the actual run's payloads. -/
-def OracleVerifier.run {ι I J : Type u} {ambient : OracleSpec.{u, u} ι}
-    {s : OracleProtocol.{u}} {S T : Type u} {A : I → Type u} {B : J → Type u}
-    {inputs : OracleFamily.{u, u, u} I A} {outputs : OracleFamily.{u, u, u} J B}
+def OracleVerifier.run {ι I : Type u} {ambient : OracleSpec.{u, u} ι}
+    {s : OracleProtocol.{u}} {S : Type u} {T : Path s → Type u} {A : I → Type u}
+    {J : Path s → Type u} {B : (p : Path s) → J p → Type u}
+    {inputs : OracleFamily.{u, u, u} I A}
+    {outputs : (p : Path s) → OracleFamily.{u, u, u} (J p) (B p)}
     {Out : PathAlong oracleSig s → Type u}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : ∀ i, A i)
     (prover : Prover oracleSig ambient s Out) :
     OracleComp (ambient + challengeSpec oracleSig s)
-      (Observation oracleSig s Out (T × (∀ j, B j))) := do
+      (Observation oracleSig s Out (OracleVerifier.Output T B)) := do
   let ⟨tr, out, _⟩ ← TwoParty.Lens.run s
     (prover.simulate (fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q))))
     (sampler oracleSig s (fun c =>
