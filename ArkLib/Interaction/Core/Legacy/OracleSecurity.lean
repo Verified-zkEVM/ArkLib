@@ -52,18 +52,17 @@ verifier, run from that state on the decoded transcript. -/
 theorem oracleAcceptanceAgrees (impl : QueryImpl oSpec (StateT σ ProbComp))
     (V : _root_.OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) :
     (oracleLayout pSpec).AcceptanceAgrees impl V.toVerifier
-      (fun p => (embedOracleVerifier V).validAcceptance impl p) := by
+      (fun p stmt tr => (embedOracleVerifier V).validAcceptance impl stmt tr p) := by
   rintro p ⟨stmt, oStmt⟩ tr
   let : MeasurableSpace (Option StmtOut) := ⊤
   refine exists_congr fun st => ?_
   change 0 < 𝒟[StateT.run' (simulateQ (QueryImpl.addLift impl
-      ((sumFamily (family OStmtIn)
-        (pathFamily _ (projectPathAlong oracleSig _ tr))).behaviorOfRealizations
-          (sumData oStmt (payloads _ tr))))
+      ((pathResources (family OStmtIn) _ (projectPathAlong oracleSig _ tr)).answer
+        (oStmt, payloads _ tr)))
       ((embedOracleVerifier V).decide stmt (projectPathAlong oracleSig _ tr)
         (toView _ tr)).run) st]
       {v | ∃ t, v = some t ∧ p (t, ((embedOracleVerifier V).outputMap stmt
-        (projectPathAlong oracleSig _ tr) (toView _ tr)).f (sumData oStmt (payloads _ tr)))} ↔
+        (projectPathAlong oracleSig _ tr) (toView _ tr)).f (oStmt, payloads _ tr))} ↔
     ∃ t, some t ∈ support (StateT.run' (simulateQ impl
       (Option.map (fun s => (s, V.materializeOutput (oracleDecode pSpec tr).challenges oStmt
         (oracleDecode pSpec tr).messages)) <$>
@@ -93,20 +92,23 @@ theorem evalDist_experiment_embedOracleVerifier_run (init : ProbComp σ)
     (V : _root_.OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) (stmt : StmtIn)
     (oStmt : ∀ i, OStmtIn i) {Out : PathAlong oracleSig (oracleProtocol pSpec) → Type}
     (p : Core.Prover oracleSig oSpec (oracleProtocol pSpec) Out)
-    (E : Set (Observation oracleSig (oracleProtocol pSpec) Out (StmtOut × (∀ i, OStmtOut i)))) :
+    (E : Set (Observation oracleSig (oracleProtocol pSpec) Out
+      (fun _ => StmtOut × (∀ i, OStmtOut i)))) :
     letI : MeasurableSpace
-      (Observation oracleSig (oracleProtocol pSpec) Out (StmtOut × (∀ i, OStmtOut i))) := ⊤
+      (Observation oracleSig (oracleProtocol pSpec) Out (fun _ => StmtOut × (∀ i, OStmtOut i))) := ⊤
     letI : MeasurableSpace (Observation plainSig (protocol pSpec)
-      (fun tr => Out (toOraclePath 0 n (Nat.zero_add n) tr)) (StmtOut × (∀ i, OStmtOut i))) := ⊤
+      (fun tr => Out (toOraclePath 0 n (Nat.zero_add n) tr))
+      (fun _ => StmtOut × (∀ i, OStmtOut i))) := ⊤
     𝒟[experiment init impl (oracleChallengeImpl chImpl)
         ((embedOracleVerifier V).run stmt oStmt p)] E =
       𝒟[experiment init impl (plainChallengeImpl chImpl)
         ((embedVerifier V.toVerifier).run (stmt, oStmt)
           (toPlainFrom .focal 0 n (Nat.zero_add n) p))] (toOracleObservation ⁻¹' E) := by
   let : MeasurableSpace
-    (Observation oracleSig (oracleProtocol pSpec) Out (StmtOut × (∀ i, OStmtOut i))) := ⊤
+    (Observation oracleSig (oracleProtocol pSpec) Out (fun _ => StmtOut × (∀ i, OStmtOut i))) := ⊤
   let : MeasurableSpace (Observation plainSig (protocol pSpec)
-    (fun tr => Out (toOraclePath 0 n (Nat.zero_add n) tr)) (StmtOut × (∀ i, OStmtOut i))) := ⊤
+    (fun tr => Out (toOraclePath 0 n (Nat.zero_add n) tr))
+    (fun _ => StmtOut × (∀ i, OStmtOut i))) := ⊤
   have h := experiment_embedOracleVerifier_run init impl chImpl V stmt oStmt p id
   have h0 : id <$> (embedOracleVerifier V).run stmt oStmt p =
       (embedOracleVerifier V).run stmt oStmt p := LawfulFunctor.id_map _
@@ -130,7 +132,7 @@ theorem oracleCompleteness_iff (init : ProbComp σ) (impl : QueryImpl oSpec (Sta
     (relIn : Set ((StmtIn × (∀ i, OStmtIn i)) × WitIn))
     (relOut : Set ((StmtOut × (∀ i, OStmtOut i)) × WitOut)) (ε : ℝ≥0) :
     letI : MeasurableSpace (Observation oracleSig (oracleProtocol pSpec)
-      (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) (StmtOut × (∀ i, OStmtOut i))) := ⊤
+      (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) (fun _ => StmtOut × (∀ i, OStmtOut i))) := ⊤
     Core.completeness ((embedOracleVerifier R.verifier).classicalModel init impl
           (oracleChallengeImpl ProtocolSpec.challengeQueryImpl))
         (relProblem relIn) (relProblem relOut)
@@ -140,9 +142,9 @@ theorem oracleCompleteness_iff (init : ProbComp σ) (impl : QueryImpl oSpec (Sta
       R.completeness init impl relIn relOut ε := by
   refine Iff.trans ?_ (completeness_iff init impl R.toReduction relIn relOut ε)
   let : MeasurableSpace (Observation oracleSig (oracleProtocol pSpec)
-    (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) (StmtOut × (∀ i, OStmtOut i))) := ⊤
+    (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) (fun _ => StmtOut × (∀ i, OStmtOut i))) := ⊤
   let : MeasurableSpace (Observation plainSig (protocol pSpec)
-    (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) (StmtOut × (∀ i, OStmtOut i))) := ⊤
+    (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) (fun _ => StmtOut × (∀ i, OStmtOut i))) := ⊤
   have hout : ∀ (stmt : StmtIn × (∀ i, OStmtIn i)) (wit : WitIn),
       ((embedOracleVerifier R.verifier).classicalModel init impl
           (oracleChallengeImpl ProtocolSpec.challengeQueryImpl)).outcome stmt
@@ -187,10 +189,11 @@ theorem oracleSoundness_iff [∀ i, SampleableType (pSpec.Challenge i)] (init : 
     (ε : ℝ≥0) :
     (∀ Out : PathAlong oracleSig (oracleProtocol pSpec) → Type,
       letI : MeasurableSpace (Observation oracleSig (oracleProtocol pSpec) Out
-        (StmtOut × (∀ i, OStmtOut i))) := ⊤
+        (fun _ => StmtOut × (∀ i, OStmtOut i))) := ⊤
       Core.soundness ((embedOracleVerifier V).classicalModel (Out := Out) init impl
           (oracleChallengeImpl ProtocolSpec.challengeQueryImpl))
-        (langProblem langIn) (langProblem langOut) (fun obs => obs.2.2) ε) ↔
+        (langProblem langIn) (langProblem langOut)
+        (fun obs => projectPathAlong oracleSig _ obs.1) (fun obs => obs.2.2) ε) ↔
       V.soundness init impl langIn langOut ε := by
   constructor
   · intro h WitIn WitOut witIn P stmt hstmt
@@ -205,7 +208,7 @@ theorem oracleSoundness_iff [∀ i, SampleableType (pSpec.Challenge i)] (init : 
       _ _).symm
     rw [toPlainFrom_embedOracleProver]
     let : MeasurableSpace (Observation plainSig (protocol pSpec)
-      (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) (StmtOut × (∀ i, OStmtOut i))) := ⊤
+      (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) (fun _ => StmtOut × (∀ i, OStmtOut i))) := ⊤
     exact congrArg (fun S => 𝒟[experiment init impl
       (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
       ((embedVerifier V.toVerifier).run stmt (embedProver P stmt witIn))] S)
