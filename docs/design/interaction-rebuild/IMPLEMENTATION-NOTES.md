@@ -13,8 +13,8 @@ Records D1 and D4 left open where an oracle payload's query interface lives and 
 named. The code carries the interface in the oracle position (`OraclePos.oracle X interface` in
 `Signature.lean`) and indexes challenges by structural node occurrences (`Node`, `ChallengeNode`
 in `Protocol.lean`). This resolves the open choice without a separate decoration, and node
-occurrences name each challenge independently of any transcript. Positions stay one universe above
-moves and the monad, as D2 requires.
+occurrences name each challenge independently of any transcript. Position universes remain
+separate from moves and the monad; entry 18 records the independent oracle-query universe.
 
 ## 2. Observations retain the transcript and output on rejection
 
@@ -153,19 +153,21 @@ Entry 18 below is a later core entry; number 17 belonged to an entry that was re
 
 ## 18. Run outputs are tied to the monad universe
 
-**Status: premise-required for run outputs and a prover's ambient index; unresolved for input
-oracle data and for the full-log oracle runner.** Record D2's ledger puts moves and participant
+**Status: equivalent for independent input data and query universes; unresolved for the
+full-log oracle runner's large-query interface.** Record D2's ledger puts moves and participant
 outputs in `Type u` and leaves the other components of a verifier unstated. The code gives every
 component that is not a run output its own universe as far as the definitions allow: the ambient
-index of a verifier, the input oracle index `I`, the output oracle index `J p` of an oracle
-verifier, the query types of the input and output oracle interfaces, the input statement, the
+index of a verifier, the input resource index and data, the output oracle index `J p` of an
+oracle verifier, the query types of the input and output oracle interfaces, the input statement, the
 input witness and the intermediate witnesses of a knowledge state function.
 
-**Premise-required.** Run outputs stay in `Type u`: the output statement `StmtOut p`, the output
+**Retained runner contract.** Run outputs stay in `Type u`: the output statement `StmtOut p`, the output
 oracle data `B p j` returned by a run, the output index `J p` once a run returns `∀ j, B p j`,
 prover outputs, extracted witnesses and the state `σ` of a security experiment. Positions live one
-universe up (`PlainPos`, `OraclePos : Type (u+1)`), because a position names a type, so the moves
-and returned values of a run are in `Type u`, and the runner is `m : Type u → Type u`
+universe up for plain protocols (`PlainPos : Type (u+1)`) and in
+`Type (max (u+1) (q+1))` for oracle protocols, because an oracle position names both a payload
+type and a query type. Moves and returned values stay in `Type u`, and the runner is
+`m : Type u → Type u`
 (`OracleComp ambient` with responses in `Type u`). `simulateQ`, which answers the decision's
 resource queries in a run and in `decideWith`, also needs the value universe to equal the response
 universe. A run output in another universe would need a `ULift` adapter or a monad on a larger
@@ -173,34 +175,46 @@ universe, which record D2 rejects. A prover's ambient index is in `Type u` for t
 `OracleComp ambient : Type u → Type (max uι u)` is the prover's monad, so `Reduction`, `Prover`,
 both runs and the classical security models fix it.
 
+`OracleProtocol` takes the tree's actual leaf type as a parameter, defaulting to `PUnit`.
+All execution, path-resource and security APIs use those default trivial leaves, preserving their
+previous carriers by definitional equality. An explicit leaf type describes return values in the
+authored `FreeM` tree. The parameter is used by the tree representation and is not a phantom:
+the universe canary constructs and reads a natural-number leaf. Exposing that parameter also
+lets the pinned universe linter distinguish the move universe in the alias's type; the query
+universe remains independent, without a linter suppression or source-policy exception.
+
 **Query types are separated.** The decision no longer reads one homogeneous family
 `sumFamily inputs (pathFamily s p)`. It reads `pathResources inputs s p`, the disjoint sum of the
 input specification and the path's specification, with their data kept as a pair
 (`Resources.sum`). `OracleSpec` addition allows the two index types to lie in different universes,
-so the input queries (`OracleFamily.{uI, u, wI}`) and the output queries
-(`OracleFamily.{uJ, u, wJ}`) take their own universes through routing, append and `decideWith`.
+and the input queries (`Resources.{u, uI, dI}`), oracle-node queries (`OracleProtocol.{u, q}`)
+and output queries (`OracleFamily.{uJ, u, wJ}`) take their own universes through routing, append
+and `decideWith`. `splitFamily` was already generic in the polynomial position universe;
+`splitOutputs` and both path-routing directions now carry the independent node-query universe.
 The query types never become values of the runner: they are answered by `simulateQ`, which
 returns only responses.
 
-**Unresolved: input oracle data.** The data `A i` of an input oracle is still in `Type u`, the
-universe of the responses. This is not required by the runner: a realization `a : A` in a larger
-universe can answer small queries with small responses through a function
-`(a : A) → (q : Q) → Response q`, and a run never returns it. The coupling comes from
-`OracleInterface` (`ArkLib/OracleReduction/OracleInterface.lean:55`), which stores an
-`OracleContext Query (ReaderM Message)`. The pinned `ReaderM Message` is a monad
-`Type v → Type v` on the universe of `Message`, so an interface's responses lie in the universe of
-its data. Separating the data universe needs a generalization of `OracleInterface` to separate
-realization and response universes. That file is outside this slice, so the dependency is open.
-The same coupling ties the output oracle data `B p j` of an oracle verifier to `Type u` outside a
-run.
+**Equivalent: independent input data.** `OracleVerifier`, `pathResources`, `decideWith`, `run`,
+append, the ambient-log runner and the security wrappers accept general
+`Resources.{u, uI, dI}` inputs. Their data is `inputs.Data : Type dI`; only responses lie in
+`Type u`. The R26 and R27 canaries retain the exact named query and realization carriers with
+response universe `e` independent of realization universe `a`. No encoding or lift of a
+realization is needed. `Resources.ofFamily` remains the specialization for existing
+`OracleFamily` clients. Its `OracleInterface` uses `ReaderM`, which still ties that
+specialization's data and response universes together. This no longer restricts the verifier
+input API, and the shared interface is unchanged. Output families and oracle-node payload
+interfaces still use `OracleInterface`; a run returns their data in the move/response universe.
 
 **Unresolved: the full-log oracle runner.** `OracleVerifier.runWithLog` returns the decision's
-full query log, which records input queries, so its input index `I` and its input query type stay
-in `Type`. Only this full-log API keeps the restriction, for clients that need the resource
-queries. Extraction does not use it. `OracleVerifier.runWithAmbientLog` puts the logger on the
+full query log, which records resource queries. Its input query index and oracle-node query
+type must remain in `Type`. A large-query full-log API needs a parent logging interface whose
+log can be returned by the small computation monad. Input data has its independent universe
+even in this API, because the log never stores realizations. Only this full-log API keeps the
+restriction, for clients that need the resource queries. Extraction does not use it. `OracleVerifier.runWithAmbientLog` puts the logger on the
 ambient handler before adding the pure resource handler, so its result holds only two ambient
 logs, and it takes the input statement, the input index and the input and output query types in
-any universe. `map_runWithLog_eq_runWithAmbientLog` proves that, at small input universes, it is
+any universe, including input data and oracle-node queries.
+`map_runWithLog_eq_runWithAmbientLog` proves that, at small input universes, it is
 the full-log run with the decision log restricted to its ambient entries, and
 `map_fst_runWithAmbientLog` proves at the general signature that forgetting both logs gives
 `OracleVerifier.run`. The oracle extraction game, the classical oracle extraction models and their
@@ -209,7 +223,7 @@ marginal lemmas run on it at the general signature. `Extractor.OracleStraightlin
 parameter, so they never had the restriction.
 
 **Security wrappers.** The input statement `S`, the honest input witness `W` and the input oracle
-index `I` are arguments of a run, so the security wrappers take them in any universe:
+data and query index are arguments of a run, so the security wrappers take them in any universe:
 `Verifier.classicalModel`, `OracleVerifier.classicalModel` (statement and input index),
 `Reduction.completeness`, `Verifier.soundness`, `StateFunction`, `rbrSoundness`,
 `Verifier.validAcceptance`, `KnowledgeStateFunction`, `rbrKnowledgeSoundness`, the plain
@@ -227,9 +241,9 @@ the universe of the certificate that the legacy-to-interaction theorems construc
 universe of their conclusions: they lift that certificate and hold for every `uK`. The
 interaction-to-legacy theorems drop the witnesses and hold for every `uK` as well. Extracted
 witnesses returned by the extraction games are values of the runner and stay in `Type`. The
-restrictions that remain are the premise-required ones above (ambient index and experiment state
-in `Type`, output data, output index and extracted witnesses in `Type`) and the two unresolved
-ones (input oracle data in `Type`, and the full-log runner).
+restrictions that remain are the retained runner contracts above (ambient index and experiment state
+in `Type`, output data, output index and extracted witnesses in `Type`) and the unresolved
+large-query full-log interface. Neither P1 nor P2 retires any of these universe contracts; both premises concern scheduling and shape rather than universes.
 
 `ArkLibTest/Interaction/Core/UniverseCanary.lean` instantiates the independent universes against
 `Verifier`, `OracleVerifier`, `Reduction`, both appends, the routing law `append_decideWith`,
@@ -238,7 +252,11 @@ game and the classical extraction models with their marginal laws. One input int
 `OracleInterface.{0, 1} Nat` whose queries are types, and an append routes it through a middle
 family with queries in `Type 1` to an output family with queries in `Type 0`. A knowledge state
 function with intermediate witnesses in `Type 1` and the input witness `Unit` certifies
-round-by-round knowledge for the core definition and both verifier wrappers.
+round-by-round knowledge for the core definition and both verifier wrappers. The same module
+now constructs an actual oracle node carrying `OracleInterface.{0, 1} Nat`, runs a verifier
+that queries its payload, and checks the returned value by `rfl`. Its R26/R27 resource
+constructors quantify independently over `a` and `e`, and an R26 verifier and run consume
+the original realization family directly.
 
 ## Changes that keep to the records
 
@@ -308,3 +326,42 @@ run extracts `w.val`.
 
 This keeps to record D7, whose problems already index witness types by the claim; D7 fixes no
 constant output witness type for either notion.
+
+## 19. Produced per-slot provenance under the passive schedule
+
+**Status: equivalent for produced prefix, owner, query-group and log correspondence assertions;
+premise-required for intermediate verifier actions retired by P1.**
+`Oracle/SlotTrace.lean` defines `runSlotTrace` and `OracleVerifier.runWithTrace`;
+`Oracle/Provenance.lean` supplies their erasure and interpretation laws. Each executed
+participant slot records the actual preceding moves and ordered query/answer log. Ownership is
+derived from the slot constructor. The final verifier decision is its own terminal phase;
+`runWithSetupTrace` also retains an explicitly separate prover setup action.
+
+`runSlotTrace_log` concatenates slot logs to the existing interaction logger.
+`runWithLog` is the full-log projection of the trace runner.
+`runWithTrace_logView`, `runWithTrace_ambientLog` and `runWithTrace_erase` recover the existing
+full logged, ambient logged and ordinary executions exactly. `phases_queries` states ordered
+ambient-log concatenation, and `simulateQ_runWithTrace_logView` preserves the correspondence under
+lawful interpreters, including stateful runtimes. The existing full-log universe restriction in
+entry 18 applies to the full-log trace result. `runWithAmbientTrace` uses the same slot runner
+and returns only ambient decision queries, preserving independent input-data, input-query and
+oracle-node-query universes. `runWithAmbientLog` is its aggregate projection;
+`runWithAmbientTrace_erase` gives ordinary erasure. `runWithTrace_ambientView` identifies the
+full trace with this ambient view at small query universes, including every slot prefix and owner.
+
+`Oracle/PrefixResources.lean` defines available payload families at actual prefixes, intrinsic
+node names, prefix-resource inclusion and typed query inclusion. `includeQuery_name` and
+`familyInclusion_query` relate canonical naming to actual query routing;
+`pathResourcesInclusion_data` identifies completed-prefix data with the payloads used by the
+verifier. `runWithTrace_prefixes` certifies that each produced phase precedes the actual completed
+transcript, and `available_at_terminal` transports its availability certificate.
+`runWithAmbientTrace_prefixes` gives the same provenance certificate for independent query
+universes. A compile-time acceptance canary checks these universe parameters directly. `joinToTerminal_name` preserves names from an appended protocol's actual seam to its
+terminal prefix. The append route continues to use `prefixRoute_payload` and `splitOutputs`.
+
+The acceptance client keeps the aggregate tests and adds per-slot runtime observations, actual
+join and terminal membership, canonical availability and future-slot exclusion. Its distinguishing
+test moves one ambient request across a fixed public message: ordinary observations and aggregate
+logs remain equal, while the traced query prefixes differ. P1 retires intermediate effectful
+verifier actions and their former query groups; it does not retire prover slots or their prefixes.
+The disposition inventory records those qualifications separately.

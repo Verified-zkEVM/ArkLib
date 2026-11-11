@@ -74,7 +74,8 @@ end Interaction.Core.OracleTests
 
 namespace Interaction.Core.OracleTests
 
-abbrev emptyTree : OracleProtocol := .pure ⟨⟩
+/-- The small oracle protocol with no rounds. -/
+abbrev emptyTree : OracleProtocol.{0, 0} := .pure ⟨⟩
 /-- The resources of the protocol with no rounds and no input oracles: both parts are empty. -/
 abbrev emptyResources := pathResources emptyFamily emptyTree ⟨⟩
 
