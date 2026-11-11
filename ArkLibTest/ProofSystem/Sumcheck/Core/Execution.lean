@@ -69,10 +69,10 @@ example {d : ℕ} (D : Fin d ↪ F) (bad : F⦃≤ 1⦄[X]) (stmt : Spec.Stateme
     (oStmt : ∀ i, Spec.OracleStatement F 2 1 i) (chals : Fin 2 → F) :
     let tr := foldTranscript (badFirst D bad) (nextState (badFirst D bad)) 2
       (initState stmt oStmt) chals
-    headMessage tr = bad ∧ headChallenge tr = chals 0 ∧
-      headMessage (tailTranscript tr) =
+    Interpreted.message tr = bad ∧ Interpreted.challenge tr = chals 0 ∧
+      Interpreted.message (Interpreted.tail tr) =
         honestMessage D 0 (nextState (badFirst D bad) 1 (initState stmt oStmt) (chals 0)) ∧
-      headChallenge (tailTranscript tr) = chals 1 :=
+      Interpreted.challenge (Interpreted.tail tr) = chals 1 :=
   ⟨rfl, rfl, rfl, rfl⟩
 
 /-- The evaluation domain `{0, 1}`. -/

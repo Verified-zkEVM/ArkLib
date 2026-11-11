@@ -149,7 +149,7 @@ theorem intervalVerdict_succ_public (start count : ℕ) (bound : start + (count 
   rw [intervalVerdict_transport]
   unfold intervalVerdict
   rw [foldVerdict_succ, foldVerdict_succ, roundVerdict_intervalCheck, roundVerdict_intervalCheck]
-  dsimp only [headMessage, headChallenge, tailTranscript, IntervalClaim.transport,
+  dsimp only [Interpreted.message, Interpreted.challenge, Interpreted.tail, IntervalClaim.transport,
     intervalInitial, consTranscript, roundTranscript]
   by_cases h : (∑ a : Fin d, msg.val.eval (D a)) = stmt.target
   · simp only [h, ite_true, Option.bind_some]
@@ -216,7 +216,7 @@ theorem intervalVerdict_eq_indexed : ∀ (k : ℕ) (st : IntervalClaim R n (Fin.
     simp only [Option.bind_some]
     split
     · simp only [Option.bind_some]
-      exact ih _ (tailTranscript tr)
+      exact ih _ (Interpreted.tail tr)
     · simp only [Option.bind_none]
       exact (indexedVerdict_none D k _).symm
 

@@ -29,7 +29,7 @@ theorem intervalVerdict_one (i : Fin n) (stmt : RoundStatement R n i.castSucc)
   unfold intervalVerdict
   dsimp only [roundTranscript]
   rw [foldVerdict_succ]
-  dsimp only [headMessage, headChallenge]
+  dsimp only [Interpreted.message, Interpreted.challenge]
   rw [roundVerdict_intervalCheck]
   dsimp only [intervalInitial]
   split <;> rename_i h <;> simp only [h, ite_true, ite_false] <;> rfl

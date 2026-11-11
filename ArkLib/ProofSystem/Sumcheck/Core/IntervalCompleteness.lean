@@ -81,8 +81,8 @@ theorem intervalVerdict_honest : ∀ (k : ℕ) (st : IntervalClaim R n stop k)
     obtain ⟨haccept, hrel⟩ := ih _ hnext (Fin.tail chals)
     refine ⟨?_, hrel⟩
     unfold intervalVerdict
-    rw [foldTranscript, foldVerdict_succ, headMessage_consTranscript, headChallenge_consTranscript,
-      tailTranscript_consTranscript, hcheck]
+    rw [foldTranscript, foldVerdict_succ, message_consTranscript, challenge_consTranscript,
+      tail_consTranscript, hcheck]
     exact haccept
 
 /-- The actual honest run is a map of all challenge draws, retaining its prover output. -/

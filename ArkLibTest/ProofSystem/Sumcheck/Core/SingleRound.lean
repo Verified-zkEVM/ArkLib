@@ -36,7 +36,8 @@ def tr1 (q : R⦃≤ deg⦄[X]) (c : R) : PathAlong oracleSig (protocol R deg 1)
   foldTranscript (State := fun _ => R) (fun _ _ => q) (fun _ _ c => c) 1 c fun _ => c
 
 /-- The transcript records the message and the challenge. -/
-example (q : R⦃≤ deg⦄[X]) (c : R) : headMessage (tr1 q c) = q ∧ headChallenge (tr1 q c) = c :=
+example (q : R⦃≤ deg⦄[X]) (c : R) :
+    Interpreted.message (tr1 q c) = q ∧ Interpreted.challenge (tr1 q c) = c :=
   ⟨rfl, rfl⟩
 
 variable [DecidableEq R] [SampleableType R] {d : ℕ} (D : Fin d ↪ R)

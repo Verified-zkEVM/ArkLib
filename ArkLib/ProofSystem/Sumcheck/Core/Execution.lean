@@ -68,12 +68,12 @@ def legacyTranscript : (k : ℕ) → (Fin k → R⦃≤ deg⦄[X]) → (Fin k �
 def transcriptMessages :
     (k : ℕ) → PathAlong oracleSig (protocol R deg k) → Fin k → R⦃≤ deg⦄[X]
   | 0, _ => Fin.elim0
-  | k + 1, tr => Fin.cons (headMessage tr) (transcriptMessages k (tailTranscript tr))
+  | k + 1, tr => Fin.cons (Interpreted.message tr) (transcriptMessages k (Interpreted.tail tr))
 
 /-- The challenges of an interaction-layer transcript. -/
 def transcriptChallenges : (k : ℕ) → PathAlong oracleSig (protocol R deg k) → Fin k → R
   | 0, _ => Fin.elim0
-  | k + 1, tr => Fin.cons (headChallenge tr) (transcriptChallenges k (tailTranscript tr))
+  | k + 1, tr => Fin.cons (Interpreted.challenge tr) (transcriptChallenges k (Interpreted.tail tr))
 
 /-- Decode an interaction-layer transcript into the legacy full transcript. -/
 def decodeTranscript (k : ℕ) (tr : PathAlong oracleSig (protocol R deg k)) :
@@ -111,7 +111,8 @@ def route : (k : ℕ) → (p : Path (protocol R deg k)) →
     QueryImpl [(Spec.pSpec R deg k).Message]ₒ (OracleComp (oracles (protocol R deg k) p))
   | 0, _ => fun q => q.1.1.elim0
   | k + 1, ⟨⟨⟩, ⟨⟨⟩, p⟩⟩ => Legacy.appendRoute (roundRoute R deg k p)
-      (fun q => simulateQ (tailLift R deg k p) (route k p q))
+      (fun q => simulateQ
+        (Interpreted.tailLift (⟨⟨⟩, ⟨⟨⟩, p⟩⟩ : Path (protocol R deg (k + 1)))) (route k p q))
 
 end Route
 
@@ -129,7 +130,9 @@ theorem route_succ_sumEquiv (k : ℕ) (p : Path (protocol R deg k))
       ((Spec.SingleRound.pSpec R deg ++ₚ Spec.pSpec R deg k).Message (MessageIdx.sumEquiv s))) :
     route R deg (k + 1) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩ ⟨MessageIdx.sumEquiv s, q⟩ =
       Legacy.routePart (roundRoute R deg k p)
-        (fun q => simulateQ (tailLift R deg k p) (route R deg k p q))
+        (fun q => simulateQ
+          (Interpreted.tailLift (⟨⟨⟩, ⟨⟨⟩, p⟩⟩ : Path (protocol R deg (k + 1))))
+          (route R deg k p q))
         s q :=
   Legacy.appendRoute_sumEquiv _ _ s q
 

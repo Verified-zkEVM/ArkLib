@@ -43,8 +43,8 @@ theorem foldVerdict_succ {State : ℕ → Type} {T : Type} (V : RoundChecks R St
     (finish : State 0 → T) (k : ℕ) (st : State (k + 1))
     (tr : PathAlong oracleSig (protocol R deg (k + 1))) :
     foldVerdict V finish (k + 1) st tr =
-      (roundVerdict (V k) st (headMessage tr) (headChallenge tr)).bind fun mid =>
-        foldVerdict V finish k mid (tailTranscript tr) := rfl
+      (roundVerdict (V k) st (Interpreted.message tr) (Interpreted.challenge tr)).bind fun mid =>
+        foldVerdict V finish k mid (Interpreted.tail tr) := rfl
 
 /-- The final decision queries every round through its own payload slot. -/
 abbrev foldDecision {State : ℕ → Type} {T : Type}

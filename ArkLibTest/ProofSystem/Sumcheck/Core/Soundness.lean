@@ -445,7 +445,7 @@ example {ι : Type} (amb : OracleSpec ι) (impl : QueryImpl amb ProbComp) :
   refine (simulateQ_indexedVerifier_decide ([0, 0] : List (ZMod 5)).get impl
     ⟨2, Fin.elim0⟩ (fun _ => oneInput) tr).trans ?_
   congr 1
-  simp [indexedVerdict, indexedNext, headMessage, headChallenge, tr,
+  simp [indexedVerdict, indexedNext, Interpreted.message, Interpreted.challenge, tr,
     consTranscript, oneMessage, IndexedClaim.initial, IndexedClaim.next,
     IndexedClaim.index,
     IndexedClaim.finish]
@@ -477,7 +477,7 @@ theorem repeated_run {ι : Type} (amb : OracleSpec ι) :
   refine bind_congr fun r => ?_
   change ZMod 5 at r
   congr 2
-  simp [indexedVerdict, indexedNext, headMessage, headChallenge, roundTranscript,
+  simp [indexedVerdict, indexedNext, Interpreted.message, Interpreted.challenge, roundTranscript,
     oneMessage, IndexedClaim.initial, IndexedClaim.next, IndexedClaim.index, IndexedClaim.finish]
 
 

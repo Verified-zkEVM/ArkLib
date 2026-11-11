@@ -232,7 +232,9 @@ theorem route_heq_queryMsg : ∀ (n : ℕ) (p : FreeM.Path (protocol R deg n))
     · obtain ⟨q', hq, hk⟩ := queryAlongHEq_heq _ _
         (Fin.vappend_right A.«Type» B.«Type» i'.1)
         (message_interface_inr (pSpec₁ := A) i').symm
-        (fun q' => simulateQ (tailLift R deg n p) (route R deg n p ⟨i', q'⟩)) q
+        (fun q' => simulateQ
+          (Interpreted.tailLift (⟨⟨⟩, ⟨⟨⟩, p⟩⟩ : Path (protocol R deg (n + 1))))
+          (route R deg n p ⟨i', q'⟩)) q
       refine hk.trans (HEq.symm (queryMsgNode_heq_liftRight (P := A ++ₚ B) ⟨0, by omega⟩
         (oracleSuffix (A ++ₚ B) 1 (N + 1) (by omega)) _ _ rfl
         (Fin.vappend_left A.dir B.dir 0) ⟨b0, b1, p2⟩ _ (by simp [MessageIdx.inr]) _ q
