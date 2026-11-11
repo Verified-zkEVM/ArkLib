@@ -122,7 +122,7 @@ backward maps. The VCVio pin is `fc54dd3d7691d6f5db7dc829e321a727f095bc2d`.
 | K-082 | [`ArkLib/Interaction/Oracle/Security/Knowledge.lean:82`][r7], `extractWitness` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L262`][r8], `extractAlong`. Backward extraction returns the input witness through its explicit root map. |
 | K-202 | [`ArkLib/Interaction/Oracle/Security/Knowledge.lean:202`][r9], `IsProverPreserving` | equivalent | [`ArkLib/Interaction/Core/Security/RoundByRound.lean#L253`][r10], `KnowledgeStateFunction`. The send field preserves the predicate through every sender backward map. |
 | K-216 | [`ArkLib/Interaction/Oracle/Security/Knowledge.lean:216`][r11], `BadChallengeOnPath` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L287`][r12], `BadChallengeAlong`. Retains actual suffix extraction of the supplied witness. |
-| K-233 | [`ArkLib/Interaction/Oracle/Security/Knowledge.lean:233`][r13], `extraction_failure_implies_bad_challenge` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L313`][r14], `extraction_failure_implies_badChallengeAlong`. Invalid extracted input and valid output imply a receiver transition on that same witness. |
+| K-233 | [`ArkLib/Interaction/Oracle/Security/Knowledge.lean:233`][r13], `extraction_failure_implies_bad_challenge` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L351`][r14], `extraction_failure_implies_badChallengeAlong`. Invalid extracted input and valid output imply a receiver transition on that same witness. |
 | K-331 | [`ArkLib/Interaction/Oracle/Security/Knowledge.lean:331`][r15], `badChallenge` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L332`][r16], `badChallenge`. The eventual witness is existential inside the local challenge event. |
 | K-347 | [`ArkLib/Interaction/Oracle/Security/Knowledge.lean:347`][r17], `ChallengeSchedule` | premise-required (P1) | [`ArkLib/Interaction/Core/Security/RoundByRound.lean#L98`][r18], `PrefixDraw` and `PrefixError` in `RoundByRound.lean`, composed by `combinePrefixDraw`. P1 removes oracle-payload-dependent challenge selection; distributions and errors retain all earlier public messages and challenges. Pure schedule metadata is not an effectful receiver action. |
 | K-359 | [`ArkLib/Interaction/Oracle/Security/Knowledge.lean:359`][r19], `IsLocallyBounded` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L1156`][r20], `LocallyBounded` samples with `prefixSampleAt l draw sp h history` and bounds by `ε sp h history` at every admissible statement and full prefix, including unsupported histories. |
@@ -327,7 +327,7 @@ This restriction affects sampling and probability bounds, not the frozen pure ex
 [r11]: ../../../ArkLib/Interaction/Oracle/Security/Knowledge.lean#L216
 [r12]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L305
 [r13]: ../../../ArkLib/Interaction/Oracle/Security/Knowledge.lean#L233
-[r14]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L313
+[r14]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L351
 [r15]: ../../../ArkLib/Interaction/Oracle/Security/Knowledge.lean#L331
 [r16]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L361
 [r17]: ../../../ArkLib/Interaction/Oracle/Security/Knowledge.lean#L347

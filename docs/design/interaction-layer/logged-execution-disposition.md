@@ -233,8 +233,8 @@ Ports owned by the oracle-access tests:
 
 [faults]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L220
 [closing]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L234
-[full]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L563
-[phases]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L515
+[full]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L565
+[phases]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L518
 [source]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L370
 [accepted]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L156
 [rejected]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L167
@@ -248,7 +248,7 @@ Ports owned by the oracle-access tests:
 [bitPlain]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L763
 [bitInformed]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L745
 [bitSplit]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L761
-[audit]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L830
+[audit]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L832
 [erasure]: ../../../ArkLib/Interaction/Core/Security/Knowledge.lean#L402
 [runtimeErasure]: ../../../ArkLib/Interaction/Core/Oracle/LoggedExecution.lean#L49
 [terminalAPI]: ../../../ArkLib/Interaction/Core/Oracle/LoggedExecution.lean#L73
