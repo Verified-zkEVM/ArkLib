@@ -57,10 +57,10 @@ abbrev StartsWithProverMessage (pSpec : ProtocolSpec (n + 1)) : Prop :=
   pSpec.dir 0 = .P_to_V
 
 /-- A verifier message occurs strictly after this protocol step. -/
-def hasLaterVerifierMessage (p : ProtocolSpec n) (j : Fin n) : Prop :=
+def HasLaterVerifierMessage (p : ProtocolSpec n) (j : Fin n) : Prop :=
   ∃ k : Fin n, j < k ∧ p.dir k = .V_to_P
 
-instance (p : ProtocolSpec n) (j : Fin n) : Decidable (hasLaterVerifierMessage p j) :=
+instance (p : ProtocolSpec n) (j : Fin n) : Decidable (HasLaterVerifierMessage p j) :=
   inferInstanceAs (Decidable (∃ k : Fin n, j < k ∧ p.dir k = .V_to_P))
 
 /-- Subtype of `Fin n` for the indices corresponding to challenges in a protocol specification -/

@@ -13,8 +13,8 @@ public import ArkLib.OracleReduction.Execution
 A fixed deterministic oracle is VCVio's `QueryImpl spec Id`. Sample that table using
 `uniformSample`, then answer queries with `pure (table q)` under `simulateQ`.
 Samplers have type `ProbComp α`. This module provides finite function-table samplers, including
-the Fiat-Shamir challenge tables sampled by `D_IP.sample`. The bridges from `Fintype` are
-noncomputable because they choose enumerations of the finite query and answer types.
+the Fiat-Shamir challenge tables sampled by `sampleFiatShamirChallengeTable`. The bridges from
+`Fintype` are noncomputable because they choose enumerations of the finite query and answer types.
 -/
 
 @[expose] public section
@@ -41,31 +41,31 @@ function-specific sampling instances. -/
   letI : Nonempty (α → β) := ⟨fun _ => default⟩
   infer_instance
 
-/-! ## Paper-named samplers
+/-! ## Deterministic oracle-table samplers
 
-`D_ROM.sample` and `D_IP.sample` sample deterministic oracle tables uniformly. Repeated queries
-to the sampled table receive the same answer.
+`sampleRandomOracleTable` and `sampleFiatShamirChallengeTable` sample deterministic oracle tables
+uniformly. Repeated queries to the sampled table receive the same answer.
 -/
 
 section SamplingExamples
 
-/-! ### `D_ROM.sample` — random-function constructor. -/
+/-! ### Random-function sampler -/
 
-/-- Generic `D_ROM.sample` constructor for any random-function oracle spec:
-uniformly sample one deterministic table realization. -/
+/-- Uniformly sample one deterministic table for a random-function oracle spec
+(the distribution denoted by `D_ROM` in CO25). -/
 @[reducible]
-def D_ROM.sample {ι : Type} (spec : OracleSpec ι)
+def sampleRandomOracleTable {ι : Type} (spec : OracleSpec ι)
     [instSampleable : SampleableType (QueryImpl spec Id)] :
     ProbComp (QueryImpl spec Id) :=
   uniformSample _ (h := instSampleable)
 
-/-! ### `D_IP.sample` — ideal-protocol Fiat-Shamir challenger.
+/-! ### Ideal-protocol Fiat-Shamir challenge sampler
 
 The Fiat-Shamir challenge oracle (`fsChallengeOracle` / `srChallengeOracle`) answers
 `(i, x, α[<i])` with a value of type `pSpec.Challenge i`. Here `x : Statement` is the query
 context and `α[<i]` is the preceding prover-message tuple. In the single-salt setting,
 `Statement := StmtIn × Salt`, so the query context is `(𝕩, τ)`.
-`D_IP.sample` samples one table of answers for all such queries. -/
+`sampleFiatShamirChallengeTable` samples one table of answers for all such queries. -/
 
 /-- Construct a sampler for deterministic Fiat-Shamir challenge tables from the finite statement,
 message, and challenge types, with inhabited challenge types. Callers choose this sampler
@@ -101,15 +101,16 @@ noncomputable def sampleableTypeFSChallengeOracle
     ⟨fun q => (default : pSpec.Challenge q.1)⟩
   apply SampleableType.ofFintype
 
-/-- Uniformly sample a deterministic Fiat-Shamir challenge table. Each query contains a
-challenge index, a context of type `Statement`, and the preceding prover-message tuple. -/
+/-- Uniformly sample a deterministic Fiat-Shamir challenge table
+(the distribution denoted by `D_IP` in CO25). Each query contains a challenge index,
+a context of type `Statement`, and the preceding prover-message tuple. -/
 @[reducible]
-noncomputable def D_IP.sample {n : ℕ} (Statement : Type) (pSpec : ProtocolSpec n)
+noncomputable def sampleFiatShamirChallengeTable {n : ℕ} (Statement : Type) (pSpec : ProtocolSpec n)
     [Fintype Statement]
     [∀ i, Fintype (pSpec.Message i)]
     [∀ i, Fintype (pSpec.Challenge i)] [∀ i, Inhabited (pSpec.Challenge i)] :
     ProbComp (QueryImpl (ProtocolSpec.fsChallengeOracle Statement pSpec) Id) :=
-  D_ROM.sample (instSampleable := sampleableTypeFSChallengeOracle)
+  sampleRandomOracleTable (instSampleable := sampleableTypeFSChallengeOracle)
 
 end SamplingExamples
 
