@@ -6,6 +6,7 @@ Authors: Quang Dao
 
 import ArkLib.Interaction.Core.Oracle.LoggedExecution
 import ArkLib.Interaction.Core.Oracle.Routing
+import ArkLibTest.Interaction.Core.Oracle.DependentRouting
 import VCVio.OracleComp.Runtime
 import ArkLibTest.Interaction.Core.Support
 import ArkLibTest.Interaction.Core.Oracle.HiddenBitFixture
@@ -26,11 +27,11 @@ updated count. -/
 abbrev ambient : OracleSpec Nat := Nat →ₒ Nat
 
 /-- One scalar input slot. -/
-@[instance_reducible] def inputs : OracleFamily Unit (fun _ => Nat) :=
+@[instance_reducible] def inputs : OracleFamily.{0, 0, 0} Unit (fun _ => Nat) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
 /-- One exported scalar oracle. -/
-@[instance_reducible] def exported : OracleFamily Unit (fun _ => Nat) :=
+@[instance_reducible] def exported : OracleFamily.{0, 0, 0} Unit (fun _ => Nat) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
 /-- The input data: the single slot holds 7. -/
@@ -91,7 +92,8 @@ def closeMap : OracleMap pairResources exported where
     rfl
 
 /-- The decision records 1, reads the sent oracle, records 2, and accepts or rejects. -/
-def pairVerifier (accept : Bool) : OracleVerifier ambient pairSend Unit Nat inputs exported where
+def pairVerifier (accept : Bool) :
+    OracleVerifier ambient pairSend Unit (fun _ => Nat) inputs (fun _ => exported) where
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact OptionT.mk do
@@ -225,7 +227,7 @@ def readSecond : OracleComp (ambient + twiceResources.spec) Nat :=
 
 /-- A verifier on `sendTwice` running a fixed decision program; its outputs are its inputs. -/
 def twiceVerifier (program : Decision) :
-    OracleVerifier ambient sendTwice Unit (List Nat) inputs inputs where
+    OracleVerifier ambient sendTwice Unit (fun _ => List Nat) inputs (fun _ => inputs) where
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
     exact program
@@ -331,7 +333,8 @@ def phasedProver : Prover oracleSig ambient phased (fun _ => Nat) := do
       pure ⟨(if (show Bool from c) then 11 else 0 : Nat), pure 0⟩⟩
 
 /-- The decision records 2 and 3, reads the oracle, then records 6 and 7. -/
-def phasedVerifier : OracleVerifier ambient phased Unit (List Nat) inputs inputs where
+def phasedVerifier :
+    OracleVerifier ambient phased Unit (fun _ => List Nat) inputs (fun _ => inputs) where
   decide _ p _ := by
     rcases p with ⟨b, c, ⟨⟩, ⟨⟩⟩
     exact do
@@ -411,7 +414,7 @@ def messageExport : OracleMap prefixResources exported where
 /-- A prefix verifier with a fixed decision program and export. -/
 def prefixVerifier (program : OptionT (OracleComp (ambient + prefixResources.spec)) Nat)
     (exportMap : OracleMap prefixResources exported) :
-    OracleVerifier ambient single Unit Nat inputs exported where
+    OracleVerifier ambient single Unit (fun _ => Nat) inputs (fun _ => exported) where
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact program
@@ -428,7 +431,8 @@ abbrev suffixResources := sumFamily exported (pathFamily single ⟨⟨⟩, ⟨�
 
 /-- The suffix records 3, reads the export and its own message, and claims their sum plus the
 statement. -/
-def suffixVerifier : OracleVerifier ambient single Nat Nat exported exported where
+def suffixVerifier :
+    OracleVerifier ambient single Nat (fun _ => Nat) exported (fun _ => exported) where
   decide stmt p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact do
@@ -439,7 +443,7 @@ def suffixVerifier : OracleVerifier ambient single Nat Nat exported exported whe
   outputMap _ p _ := OracleMap.embedding (sumFamily exported (pathFamily single p)) .inl
 
 /-- The composite output map is the suffix output map after `suffixRoute`. -/
-def compatible (V : OracleVerifier ambient single Unit Nat inputs exported) :
+def compatible (V : OracleVerifier ambient single Unit (fun _ => Nat) inputs (fun _ => exported)) :
     OracleVerifier.OutputCompatibility V (fun _ => suffixVerifier) where
   outputMap stmt p v :=
     (suffixVerifier.outputMap 0 (Path.split single (fun _ => single) p).2
@@ -447,7 +451,7 @@ def compatible (V : OracleVerifier ambient single Unit Nat inputs exported) :
   agrees _ _ _ _ _ _ := rfl
 
 /-- Append the suffix verifier using its routed output map. -/
-def composed (V : OracleVerifier ambient single Unit Nat inputs exported) :=
+def composed (V : OracleVerifier ambient single Unit (fun _ => Nat) inputs (fun _ => exported)) :=
   V.append (fun _ => suffixVerifier) (compatible V)
 
 /-- The prover sends the counter's answers to queries 1 and 2, keeping `out` as private output. -/
@@ -477,7 +481,9 @@ def describeAppend (p : FreeM.Path pair) :
     | ⟨.inr ⟨.inr (.inr (.inr n)), _⟩, _⟩ => n.elim
 
 /-- Private output, claim with output data, decision log, final count and full trace. -/
-def appendSummary (V : OracleVerifier ambient single Unit Nat inputs exported) (out : Nat) :=
+def appendSummary
+    (V : OracleVerifier ambient single Unit (fun _ => Nat) inputs (fun _ => exported))
+    (out : Nat) :=
   (fun result => (result.output.1.2.1, result.output.1.2.2.map (fun r => (r.1, r.2 ())),
       describeAppend _ result.output.2.2, result.state, result.trace)) <$>
     (counter 0 appendChallenges).run ((composed V).runWithLog () seven (appendProver out))
@@ -661,3 +667,27 @@ run_cmd do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"
+
+namespace Interaction.Core.DependentRoutingTests
+
+/-- Observe the logged run with the statement and output oracle selected by its public Boolean.
+The dependent claim is read through that selected oracle interface. -/
+def loggedObserved (input : Nat) : Bool × Nat × Option (Nat × Nat) :=
+  let obs := (simulateQ noQueries (composite.runWithLog () (fun _ => input) (prover input))).1
+  ((projectPathAlong oracleSig combined obs.1).1, obs.2.1,
+    obs.2.2.map (readClaim (projectPathAlong oracleSig combined obs.1)))
+
+/-- Logging retains the unit statement and scalar realization of the zero branch. -/
+example : loggedObserved 0 = (true, 13, some (0, 0)) := rfl
+
+/-- Logging retains the natural statement and pair realization of the nonzero branch. -/
+example : loggedObserved 7 = (false, 29, some (7, 7)) := rfl
+
+/-- Erasing a logged run retains the dependent observation for every input. -/
+example (input : Nat) : loggedObserved input = observed input := by
+  have h := OracleVerifier.simulateQ_runWithLog_erase composite noQueries ()
+    (fun _ => input) (prover input)
+  exact congrArg (fun obs => ((projectPathAlong oracleSig combined obs.1).1, obs.2.1,
+    obs.2.2.map (readClaim (projectPathAlong oracleSig combined obs.1)))) h
+
+end Interaction.Core.DependentRoutingTests

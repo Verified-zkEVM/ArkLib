@@ -352,6 +352,28 @@ theorem OracleMap.simulate_withAmbient {ι : Type uι} {I : Type uI} {J : Type u
       (fun r => QueryImpl.simulateQ_add_query_right _ _ r), simulateQ_liftTarget, route.law]
     rfl
 
+/-- Routing through a map and answering from data agrees with answering from the mapped data,
+for any interpretation of the ambient queries. -/
+theorem OracleMap.simulate_withAmbient_addLift {ι : Type uι} {I : Type uI} {J : Type uJ}
+    {ambient : OracleSpec.{uι, u} ι} {m : Type u → Type v} [Monad m] [LawfulMonad m]
+    {A : I → Type u} {B : J → Type u}
+    {In : OracleFamily.{uI, u, u} I A} {Out : OracleFamily.{uJ, u, u} J B}
+    (lift : QueryImpl ambient m) (route : OracleMap In Out) (x : ∀ i, A i)
+    {α : Type u} (program : OracleComp (ambient + Out.spec) α) :
+    simulateQ (QueryImpl.addLift lift (In.behaviorOfRealizations x) :
+        QueryImpl (ambient + In.spec) m)
+        (simulateQ (route.withAmbient ambient) program) =
+      simulateQ (QueryImpl.addLift lift (Out.behaviorOfRealizations (route.f x)) :
+        QueryImpl (ambient + Out.spec) m) program := by
+  refine QueryImpl.simulateQ_simulateQ_eq_of_apply (fun q => ?_) program
+  rcases q with q | q
+  · simp [OracleMap.withAmbient]
+  · simp only [OracleMap.withAmbient, QueryImpl.addLift_def]
+    rw [QueryImpl.simulateQ_simulateQ_eq_of_apply
+      (impl := (In.behaviorOfRealizations x).liftTarget m)
+      (fun r => QueryImpl.simulateQ_add_query_right _ _ r), simulateQ_liftTarget, route.law]
+    rfl
+
 namespace OracleVerifier
 variable {ι : Type uι} {I : Type uI} {ambient : OracleSpec.{uι, u} ι} {A : I → Type u}
   {inputs : OracleFamily.{uI, u, u} I A}

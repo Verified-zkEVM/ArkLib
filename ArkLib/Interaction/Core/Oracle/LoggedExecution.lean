@@ -28,11 +28,14 @@ namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle OracleSpec
 
 namespace OracleVerifier
-variable {ι I J S T : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
-  {A : I → Type} {B : J → Type} {inputs : OracleFamily I A} {outputs : OracleFamily J B}
+variable {ι I S : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
+  {T : Path s → Type} {A : I → Type} {J : Path s → Type}
+  {B : (p : Path s) → J p → Type} {inputs : OracleFamily I A}
+  {outputs : (p : Path s) → OracleFamily (J p) (B p)}
   {Out : PathAlong oracleSig s → Type}
 
-/-- Forgetting both logs of the logged run gives the oracle verifier's run exactly. -/
+/-- Forgetting both logs gives the oracle verifier's run, including the statement and output
+oracle data indexed by the completed path. -/
 theorem runWithLog_erase (V : OracleVerifier ambient s S T inputs outputs) (stmt : S)
     (data : ∀ i, A i) (prover : Prover oracleSig ambient s Out) :
     Sigma.fst <$> V.runWithLog stmt data prover = V.run stmt data prover :=
@@ -50,10 +53,8 @@ theorem simulateQ_runWithLog_erase {m : Type → Type v} [Monad m] [LawfulMonad 
 /-- Running the logged run in a persistent runtime and erasing the logs and the trace gives the
 ordinary stateful execution of the run. This composes VCVio's `runFrom_eraseTrace` with
 `runWithLog_erase`. -/
-theorem runtime_runWithLog_erase {ι I J S T κ : Type} {ambient : OracleSpec ι}
-    {s : OracleProtocol} {A : I → Type} {B : J → Type} {inputs : OracleFamily I A}
-    {outputs : OracleFamily J B} {Out : PathAlong oracleSig s → Type}
-    {Import : OracleSpec κ} (V : OracleVerifier ambient s S T inputs outputs)
+theorem runtime_runWithLog_erase {κ : Type} {Import : OracleSpec κ}
+    (V : OracleVerifier ambient s S T inputs outputs)
     (runtime : OracleRuntime Import (ambient + challengeSpec oracleSig s)) (stmt : S)
     (data : ∀ i, A i) (prover : Prover oracleSig ambient s Out) :
     (fun result => (result.output.1, result.state)) <$>
