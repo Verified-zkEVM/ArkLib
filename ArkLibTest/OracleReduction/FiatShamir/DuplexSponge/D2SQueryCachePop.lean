@@ -167,8 +167,8 @@ local instance : SpongeSize := ⟨2, 1, by omega⟩
 
 /--
 info: some
-  [("h", [], [10]), ("p", [0, 10], [1, 11]), ("p", [1, 11], [2, 12]), ("h", [], [10]), ("p", [0, 10], [1, 11]),
-    ("p", [1, 11], [2, 12])]
+  [("h", [], [10]), ("p", [0, 10], [1, 11]), ("p", [1, 11], [2, 12]), ("h", [], [10]),
+    ("p", [0, 10], [1, 11]), ("p", [1, 11], [2, 12])]
 -/
 #guard_msgs (whitespace := lax) in
 #eval (run 1 2 0).map (·.trace)
@@ -347,7 +347,8 @@ end BadEvent
 end ArkLibTest.D2SQueryCachePop
 
 /--
-info: 'ArkLibTest.D2SQueryCachePop.honest_not_E' depends on axioms: [propext, Classical.choice, Quot.sound]
+info: 'ArkLibTest.D2SQueryCachePop.honest_not_E' depends on axioms:
+[propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms ArkLibTest.D2SQueryCachePop.honest_not_E
