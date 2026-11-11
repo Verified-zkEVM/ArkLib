@@ -422,9 +422,11 @@ section S_BT_BacktrackComputation
 
 /- Design note (CO25 §5.2): we deliberately provide **no executable enumeration** of the full
 backtrack-sequence family `S_BT(tr, s)` (Definition 5.3). The executable `backTrack` below uses
-the single-chain linear scan with scan-time fork detection — CO25's own "look for at most one
-element" optimization (line 1056). Downstream proofs (`BadEvents`, `AbortAnalysis`) quantify
-over `S_BT` as an explicit structure hypothesis and never need to compute the family.
+a single-chain linear scan that returns `err` at the first fork. CO25's "Time complexity"
+paragraph after BackTrack only notes that BackTrack can stop once `Outs` has two elements; the
+scan's `err` is a different condition (see `linearBackTrack`). Downstream proofs (`BadEvents`,
+`AbortAnalysis`) quantify over `S_BT` as an explicit structure hypothesis and never need to
+compute the family.
 
 The raw bidirectional `tr_∇.p` may contain an inverse-query-rooted decoy predecessor that
 branches the linear scan without defining a valid hash-anchored sequence. Because the scan
@@ -435,9 +437,9 @@ restricts candidates to mappings whose first raw occurrence was a forward `p` qu
 `(stateIn, stateOut)` pairs in `tr_∇.p` whose output capacity matches the next input capacity.
 The linear scan separately rejects self-loops and repeated input capacities as invalid candidates.
 
-Black-box over `[LawfulTraceTable T_P ...]` via `TraceTableOps.entries`; both forward and inverse
-permutation directions already collapse into the same bidirectional `tr_∇.p`
-(cf. `TraceNabla.ofQueryLog` dispatch). -/
+Black-box over `[LawfulTraceTable T_P ...]` via `TraceTableOps.entries`. In `D2SQuery`, both
+forward and inverse permutation queries insert into the same bidirectional `tr_∇.p`
+(`ProverTransform.d2sHandleInversePermQuery`). -/
 -- TODO: Replace this linear `entries` scan with a conflict-aware, logarithmic lookup by output
 -- capacity, as required by CO25 Eq. 13.
 def predecessorCandidates
@@ -448,12 +450,12 @@ def predecessorCandidates
     let stateOut := pair.2
     if stateOut.capacitySegment = nextInputCap then some pair else none).dedup
 
-/-! ### Linear-scan helpers (CO25 §5.2 BackTrack "look for at most one element" optimization)
+/-! ### Linear-scan helpers (single-chain BackTrack)
 
-The paper's Algorithm 1 enumerates all maximal sequences then post-filters. CO25 line 1056 notes
-the procedure can equivalently `look for at most one element` — i.e. abort on scan-time forks.
-This is faithful only once the candidate source is restricted to mappings from which a
-hash-anchored chain can be built; use `backTrackFwd` when modelling the simulator. -/
+The paper's BackTrack enumerates all maximal sequences, then post-filters, and returns `err` iff
+more than one tuple survives. The linear scan follows one chain and returns `err` at the first
+state with two candidates. `linearBackTrack` states how the two `err` conditions differ; use
+`backTrackFwd` when modelling the simulator. -/
 
 /-- Three-way classification of lookup results, used to detect scan-time forks. -/
 inductive LookupResult (α : Type _) where
@@ -467,8 +469,10 @@ def classifyLookup {α : Type _} (xs : List α) : LookupResult α :=
   | [a] => .unique a
   | _ :: _ :: _ => .conflict
 
-/-- Paper §5.2 Step 4 hash anchor lookup: collect distinct statements whose stored capacity
-matches the chain's initial capacity. Multiple distinct matches indicate `E_fork,h,p`. -/
+/-- Paper §5.2 Def 5.3(b) hash anchor lookup: collect distinct statements whose stored capacity
+matches the chain's initial capacity. Two distinct matches are two `h` answers with the same
+capacity, which `E_h` (Def 5.7) charges; the scan returns `err` on them. This is not the paper's
+`E_fork` (Def 5.13), which is a property of `S_BT`. -/
 def hashAnchorCandidates
     (trΔ : TraceNabla T_H T_P StmtIn U)
     (cap : Vector U SpongeSize.C) : List StmtIn := by
@@ -700,7 +704,7 @@ def linearScanBackwards
                 hash_unique_mem_entries trΔ currentState.capacitySegment stmt hClsHash
               exact h_trΔ.1 _ _ hMem
             .done (completeBacktrackSequence trace targetState currentState stmt acc hHash)
-        | .conflict => .forkErr -- `L_h` collision → `E_fork`
+        | .conflict => .forkErr -- two `h` answers with this capacity (charged by `E_h`)
     | .unique pred =>
         -- Found unique predecessor `p / p⁻¹` (CO25 §5.2 Step 2.b)
         let s_in := pred.1
@@ -724,7 +728,7 @@ def linearScanBackwards
             let acc' := prependPartialSequence trace targetState currentState
               s_in s_out acc hMatch hEntry hVisited
             linearScanBackwards trace trΔ h_trΔ fuel' s_in targetState acc'
-    | .conflict => .forkErr -- `L_p` collision → `E_fork`
+    | .conflict => .forkErr -- two candidate pairs with this output capacity; see `linearBackTrack`
 
 end S_BT_BacktrackComputation
 
@@ -888,9 +892,7 @@ def BacktrackSequence.extractCandidate
            encodedMessages := fun j => Vector.ofFn fun t =>
              units.getD (absorbedLengthBefore (pSpec := pSpec) (δ := δ) j.val.1.val + t.val) 0 }
 
-/-- CO25 §5.2 BackTrack with the line-1056 "look for at most one element" optimization.
-
-Performs a single backwards linear scan from `state` along `tr_∇.p`:
+/-- CO25 §5.2 BackTrack as a single backwards linear scan from `state` along `tr_∇.p`:
 - `predecessorCandidates` empty → terminate scan at the current state (chain start).
 - `predecessorCandidates` singleton → continue.
 - `predecessorCandidates` two or more → scan-time fork → return `err`.
@@ -898,8 +900,19 @@ Performs a single backwards linear scan from `state` along `tr_∇.p`:
 
 After the scan, `hashAnchorCandidates` is classified the same way over `tr_∇.h`. Finally
 `extractCandidate` checks the chain against the absorb layout; its `none` becomes `noResult`.
-Proving that the remaining scan-time conflict errors imply the corresponding paper fork events
-requires the canonical-completeness/refinement argument stated in Claim 5.19. -/
+
+**`err` is a scan-time fork, not `|Outs| > 1`.** The paper's BackTrack returns `err` iff more
+than one tuple survives (Step 5), and `E_fork` (Def 5.13) is `|S_BT| > 1`. The scan returns
+`err` at the first state with two candidates, even when one of them starts no valid chain. For
+example, take the trace `[(h, x, c₀), (p, s₀, s₁), (p, d, t)]` with `t ≠ s₁`,
+`t.capacitySegment = s₁.capacitySegment`, and `d.capacitySegment` neither `c₀` nor any answer
+capacity. For a state `s` with `s.capacitySegment = s₁.capacitySegment ≠ c₀`, the only valid
+sequence ending at `s` is `x, s₀, s₁, s`. So every family has `|S_BT| ≤ 1`, and
+`E_inv = E_prp = E_fork = 0`, but the scan returns `err` at `s`. CO25 Claim 5.19 therefore does
+not hold for this BackTrack. What does hold, and what Lemmas 5.17 and 5.18 need, is
+`¬E(tr) ⇒ backTrackFwd ≠ err` (argument, not yet formalized): two forward-first pairs with equal
+output capacity are two base-trace entries with equal answer capacity (`E_dup`), and two hash
+anchors with equal capacity give `E_h`. -/
 def linearBackTrack
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (trΔ : TraceNabla T_H T_P StmtIn U)
@@ -924,16 +937,16 @@ def linearBackTrack
 
 And returns one of the following:
 - `ExperimentOutput.noResult` — paper-`none` (no elements found in Outs)
-- `ExperimentOutput.err` — paper-`err` (multiple elements in Outs, ambiguous)
+- `ExperimentOutput.err` — a scan-time fork (see `linearBackTrack`; this is not `|Outs| > 1`)
 - `ExperimentOutput.some out` — paper-success (unique tuple `(i, 𝕩, τ, (α̂_1, …, α̂_i))` in Outs)
 
-Implementation: delegates to `linearBackTrack` (CO25 §5.2 line 1056 optimization). Downstream
+Implementation: delegates to the single-chain scan `linearBackTrack`. Downstream
 proofs (BadEvents, AbortAnalysis) quantify over the family structure `S_BT` as an explicit
 hypothesis — no family enumeration is computed (see the design note in
 `section S_BT_BacktrackComputation`).
 
 This is the unrestricted scan. It can branch on inverse-query-rooted decoy predecessors that
-CO25's hash-anchored family never contains; the simulator and StdTrace use `backTrackFwd`. -/
+start no hash-anchored chain; the simulator and StdTrace use `backTrackFwd`. -/
 def backTrack
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (trΔ : TraceNabla T_H T_P StmtIn U)
@@ -961,15 +974,22 @@ requires a **hash anchor** — condition (b), `(h, 𝕩, s_{in,0}.capacitySegmen
 reaches the `Outs` post-filter.  Def. 5.7's event `E` cannot absorb the difference either:
 `isDuplicatedPriorCapacity` charges the *answer* capacity of every query, whereas `t` — the
 **input** of the `p⁻¹` query — is adversary-chosen; strengthening `E` to charge it would
-falsify the proved `BadEventDS.lemma_5_8` bound.
+break the `Pr[E]` bound of CO25 Lemma 5.8.
 
 **The repair.**  Restrict Step 2(b) to the mappings whose first raw occurrence is a forward `p`
-query (`DSTraceStorage.buildForwardPermutationIndex`).  Those are exactly the mappings a
-hash-anchored chain built from the simulator's own forward queries can consist of, so the
-executable single-chain scan now branches only where the paper's family does.  The unrestricted
-`backTrack` is deliberately left intact: it is the object the audit counterexample is stated
-about, and it remains the right notion for a caller whose trace is `p⁻¹`-free — see
-`backTrackFwd_eq_backTrack_of_forwardOnly`.
+query (`DSTraceStorage.buildForwardPermutationIndex`).  This does not rest on inverse-first pairs
+never lying on an `S_BT` chain: Def. 5.3(c) admits `p⁻¹` entries, and `E_inv` (Def. 5.11) is the
+event that some `S_BT` chain has a `p⁻¹`-first step.  The argument is Lemma 5.12
+(`lemma_5_12`): under `¬E`, no `S_BT` chain uses an inverse-first pair, so removing those pairs
+leaves `S_BT` and `J_BT` unchanged.  The filter does not make the scan branch only where the
+family does: two forward-first pairs with the same output capacity still give `err` when one of
+them starts no valid chain (see `linearBackTrack`), and that case needs `E_dup`.
+
+The unrestricted `backTrack` is deliberately left intact: it is the object the audit
+counterexample is stated about.  The bridge lemmas below cover only tables whose every mapping is
+forward-first, such as a trace with no `p⁻¹` query
+(`backTrackFwd_eq_backTrack_of_hasNoInversePermQuery`).  For traces with `p⁻¹` queries, relating
+`backTrackFwd` to `S_BT` goes through Lemma 5.12; no such lemma is formalized yet.
 
 **Implementation staging.**  The current code reconstructs the forward-first index from the
 completed trace, keeping the corrected semantics explicit and proof-friendly.  Once the
@@ -1008,7 +1028,8 @@ lemma backTrack_congr_trΔ
   rfl
 
 /-- **FIX-BT bridge.**  When every mapping stored in `tr_∇.p` is forward-first in `trace`, the
-forward-first restriction drops nothing and `backTrackFwd` *is* `backTrack`. -/
+forward-first restriction drops nothing and `backTrackFwd` *is* `backTrack`.  This says nothing
+about a table with an inverse-first mapping. -/
 theorem backTrackFwd_eq_backTrack_of_forwardOnly
     {trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
     {trΔ : TraceNabla T_H T_P StmtIn U}

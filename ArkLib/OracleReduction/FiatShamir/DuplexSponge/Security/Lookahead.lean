@@ -221,9 +221,10 @@ lemma inputState_length_eq_pairs_length
 /- Design note (CO25 §5.3): we deliberately provide **no executable enumeration** of the full
 lookahead-sequence family `S_LA(tr_∇.p, s, i)` (Eq. 14, paper Algorithm 2 Step 1). The
 executable `lookAhead` below uses the single-chain forward linear scan with scan-time fork
-detection — CO25's own line-1107 optimization: whenever the scan would branch, the family has
-more than one maximal element and `lookAhead` must return `err` anyway. Proofs quantify over
-`S_LA` as an explicit structure hypothesis when needed. -/
+detection, following CO25's "Time complexity" paragraph after LookAhead ("the search stops if it
+encounters two conflicting chains"). The scan's `err` is not exactly `|S_LA| > 1`; see
+`linearScanForwards`. Proofs quantify over `S_LA` as an explicit structure hypothesis when
+needed. -/
 
 /-! ## §5.3 Step 2 — Final output dispatch on `|S_LA|`: `err` / `none` / sampled vector -/
 
@@ -357,11 +358,15 @@ lemma successor_singleton_mem_entries
       rw [hPairEq'] at hPairMem; exact hPairMem
   · contradiction
 
-/-! ### Linear-scan helpers (CO25 §5.3 Algorithm 2 line 1107 "search stops on conflicting chains")
+/-! ### Linear-scan helpers (single-chain LookAhead)
 
-The paper's Algorithm 2 enumerates the maximal family then post-filters. CO25 line 1107 states
-"the search stops if it encounters two conflicting chains" — i.e. scan-time fork → return `err`
-directly. This is paper-faithful: scan-time fork detection coincides with `E_fork,p`. -/
+The paper's LookAhead builds the maximal family `S_LA` and returns `err` iff `|S_LA| > 1`
+(Step 2(a)); its "Time complexity" paragraph says the search stops at two conflicting chains. The
+scan returns `err` at the first state with two distinct successors in `tr_∇.p`. The two
+conditions differ when one successor is a self-loop: Step 1(d) drops that branch, so `|S_LA|` can
+be `1` while the scan returns `err`. Both conditions need two `tr_∇.p` pairs with the same input
+state, which `E_prp` (Def 5.9) charges, so under `E_prp = 0` neither returns `err` (Claim 5.20).
+Neither condition is the BackTrack event `E_fork` (Def 5.13). -/
 
 
 /-- Output of linear forwards scan: either a fork was detected,
@@ -439,9 +444,9 @@ lemma linearScanForwards_seq_length_le
       · -- succs = _ :: _ :: _: .forkErr, contradiction
         simp at hScan
 
-/-- `linearLookAhead` uses the linear scan to return either a challenge vector or
-`err` directly (paper-faithful): a scan-time fork means `|S_LA| > 1`, which the paper's
-Step 2(a) maps to `err` anyway, so no family enumeration is needed. -/
+/-- `linearLookAhead` uses the linear scan to return either a challenge vector or `err`
+directly. A scan-time fork returns `err`; this matches Step 2(a) except when one successor is a
+self-loop (see the linear-scan note above), and both cases need `E_prp`. -/
 def linearLookAhead
     (trΔp : T_P) (state : CanonicalSpongeState U) (i : pSpec.ChallengeIdx) :
     OracleComp (Unit →ₒ U) (ExperimentOutput (Vector U (challengeSize i))) := do
@@ -473,9 +478,10 @@ Output: a probabilistic computation returning either
   `s_{R,out,m_1}, …, s_{R,out,L_V(i)-1}` are sampled uniformly from `Σ^r` and the prefix
   of length `ℓ_V(i)` is returned (paper Step 2(c)).
 
-Implementation: delegates to `linearLookAhead`, which performs CO25 line-1107's scan-time
-fork-detection optimization. Proofs quantify over the family structure `S_LA` as an explicit
-hypothesis when needed — no family enumeration is computed (design note above). -/
+Implementation: delegates to `linearLookAhead`, the single-chain scan with scan-time fork
+detection (see `linearScanForwards` for how its `err` differs from `|S_LA| > 1`). Proofs quantify
+over the family structure `S_LA` as an explicit hypothesis when needed — no family enumeration is
+computed (design note above). -/
 def lookAhead
     (trΔp : T_P)
     (state : CanonicalSpongeState U) (i : pSpec.ChallengeIdx) :

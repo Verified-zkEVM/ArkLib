@@ -22,8 +22,8 @@ The bad-event surface mirrors the paper definitions directly:
 - **Collision family (Def 5.9):** `collisionFwdFwd` / `collisionBwdBwd` / `collisionFwdBwd` /
   `collisionBwdFwd` / `collisionPerm`, with paper aliases `E_col_p` / `E_col_pinv` /
   `E_col_p_pinv` / `E_col_pinv_p` / `E_prp`.
-- **BackTrack-family events (Defs 5.11, 5.13, 5.15):** `E_inv`, `E_fork` (with subcases
-  `E_fork_h`, `E_fork_p`, `E_fork_h_p`), and `E_time` (with subcases `E_time_h`, `E_time_p`).
+- **BackTrack-family events (Defs 5.11, 5.13, 5.15):** `E_inv`, `E_fork`, and `E_time` (with
+  subcases `E_time_h`, `E_time_p`).
   These take `(S_BT : Backtrack.S_BT trace state)` as an explicit parameter and quantify over
   the family `S_BT.seqFamily` and the index-list family `Backtrack.J_BT S_BT` (CO25 Defs 5.3 &
   5.4).
@@ -1053,46 +1053,9 @@ end Def511_Lemma512
 /-! ## Lemma 5.14 -/
 section Def513_Lemma514
 
-/-- CO25 Definition 5.13 / Eq. 39 — `E_{fork,h}(tr, s)`: collision of two outputs of `h`.
-Two backtrack sequences in `𝒮_BT(tr, s)` have distinct input statements `𝕩^{(1)} ≠ 𝕩^{(2)}` but
-their first input states share the same capacity segment `s_{C,in,0}^{(1)} = s_{C,in,0}^{(2)}`. -/
-def E_fork_h (S_BT : Backtrack.S_BT trace state) : Prop :=
-  ∃ S₁ ∈ S_BT.seqFamily, ∃ S₂ ∈ S_BT.seqFamily,
-    S₁.stmt ≠ S₂.stmt ∧
-    (S₁.inputState[0]'(by
-      have := S₁.inputState_length_eq_outputState_length_succ; omega)).capacitySegment =
-    (S₂.inputState[0]'(by
-      have := S₂.inputState_length_eq_outputState_length_succ; omega)).capacitySegment
-
-/-- CO25 Definition 5.13 / Eq. 40 — `E_{fork,p}(tr, s)`: capacity-segment collision of two
-outputs of `p`.  There exist `S^{(1)}, S^{(2)} ∈ 𝒮_BT(tr, s)` and indices
-`ι_1 ∈ [0, m_1 - 1]`, `ι_2 ∈ [0, m_2 - 1]` with `s_{in,ι_1}^{(1)} ≠ s_{in,ι_2}^{(2)}` (full input
-states differ) and `s_{C,out,ι_1}^{(1)} = s_{C,out,ι_2}^{(2)}` (output capacity segments
-coincide). -/
-def E_fork_p (S_BT : Backtrack.S_BT trace state) : Prop :=
-  ∃ S₁ ∈ S_BT.seqFamily, ∃ S₂ ∈ S_BT.seqFamily,
-  ∃ ι₁ : Fin S₁.outputState.length, ∃ ι₂ : Fin S₂.outputState.length,
-    S₁.inputState[ι₁.val]'(by have := S₁.inputState_length_eq_outputState_length_succ; omega) ≠
-    S₂.inputState[ι₂.val]'(by have := S₂.inputState_length_eq_outputState_length_succ; omega) ∧
-    S₁.outputState[ι₁].capacitySegment = S₂.outputState[ι₂].capacitySegment
-
-/-- CO25 Definition 5.13 / Eq. 41 — `E_{fork,h,p}(tr, s)`: collision of `h` with the output
-capacity segment of a query to `p`.  There exist `S^{(1)}, S^{(2)} ∈ 𝒮_BT(tr, s)` and
-`ι ∈ [m_2 - 1]` (paper notation: `{1, …, m₂ - 1}`) with
-`s_{C,in,0}^{(1)} = s_{C,out,ι}^{(2)}`.
-
-Note: `ι ≥ 1` is required by the paper — the `ι = 0` case cannot arise in the
-exhaustiveness proof (Claim 5.19) because it would be handled by `E_fork_h` instead. -/
-def E_fork_h_p (S_BT : Backtrack.S_BT trace state) : Prop :=
-  ∃ S₁ ∈ S_BT.seqFamily, ∃ S₂ ∈ S_BT.seqFamily,
-  ∃ ι : Fin S₂.outputState.length,
-    0 < ι.val ∧ (S₁.inputState[0]'(by
-      have := S₁.inputState_length_eq_outputState_length_succ; omega)).capacitySegment =
-    S₂.outputState[ι].capacitySegment
-
 /-- CO25 Definition 5.13 — `E_fork(tr, s)`: the backtrack family has multiple sequences.
-`E_fork_h`, `E_fork_p`, and `E_fork_h_p` are the paper's unconsumed special cases
-(Eqs. 39–41); their exhaustiveness is not formalized here. -/
+The paper's special cases `E_{fork,h}`, `E_{fork,p}`, `E_{fork,h,p}` (Eqs. 39–41) are not
+formalized: no proof uses them, and Lemma 5.14 goes through `¬E_dup` directly. -/
 def E_fork (S_BT : Backtrack.S_BT trace state) : Prop :=
   S_BT.seqFamily.card > 1
 
