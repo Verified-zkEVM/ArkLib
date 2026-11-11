@@ -162,12 +162,11 @@ theorem honestVerifierZeroKnowledge_of_uniqueWitness [Inhabited WitIn]
   rw [dite_eq_left h, hUnique stmt _ _ h.choose_spec hMem, discreteTVDist.self]
 
 /-- **[CO25, Definition 7.3; snarg-book, Definition 13.1.7]** The size-dependent HVZK
-error envelope. For nonnegative errors, when the maximum exists this is the paper's
-maximum (with zero for no valid instances). Its use requires the displayed set to be
-bounded above. -/
+error envelope in the extended nonnegative reals. It is zero with no valid instances and
+`⊤` for unbounded errors. For nonnegative errors, an attained maximum agrees with the paper. -/
 def honestVerifierErrorEnvelope (relation : Set (StmtIn × WitIn)) (size : StmtIn → ℕ)
-    (error : StmtIn → ℝ) (n : ℕ) : ℝ :=
-  sSup ({0} ∪ {e | ∃ x w, (x, w) ∈ relation ∧ size x ≤ n ∧ e = error x})
+    (error : StmtIn → ℝ) (n : ℕ) : ENNReal :=
+  sSup {e | ∃ x w, (x, w) ∈ relation ∧ size x ≤ n ∧ e = ENNReal.ofReal (error x)}
 
 end Interactive
 
