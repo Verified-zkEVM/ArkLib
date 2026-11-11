@@ -25,10 +25,9 @@ open PFunctor FreeM TwoParty.Lens
 /-- A plain protocol is authored directly over the plain polynomial. -/
 abbrev Protocol := FreeM PlainPoly.{u} PUnit.{u + 1}
 
--- The linter sees only the sort; OraclePoly uses independent u and q separately.
-set_option linter.checkUnivs false in
-/-- An oracle protocol is authored directly over the oracle polynomial. -/
-abbrev OracleProtocol := FreeM OraclePoly.{u, q} PUnit.{u + 1}
+/-- An oracle tree with leaves of type `Result`. Protocols use the default `PUnit` leaves;
+explicit result types describe trees whose leaves retain authored return values. -/
+abbrev OracleProtocol (Result : Type u := PUnit.{u + 1}) := FreeM OraclePoly.{u, q} Result
 
 /-- The oracle verifier's observation, over a specified shape path. -/
 def View (s : OracleProtocol.{u, q}) (p : Path s) : Type u :=

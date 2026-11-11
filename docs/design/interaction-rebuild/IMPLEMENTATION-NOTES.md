@@ -175,6 +175,14 @@ universe, which record D2 rejects. A prover's ambient index is in `Type u` for t
 `OracleComp ambient : Type u → Type (max uι u)` is the prover's monad, so `Reduction`, `Prover`,
 both runs and the classical security models fix it.
 
+`OracleProtocol` takes the tree's actual leaf type as a parameter, defaulting to `PUnit`.
+All execution, path-resource and security APIs use those default trivial leaves, preserving their
+previous carriers by definitional equality. An explicit leaf type describes return values in the
+authored `FreeM` tree. The parameter is used by the tree representation and is not a phantom:
+the universe canary constructs and reads a natural-number leaf. Exposing that parameter also
+lets the pinned universe linter distinguish the move universe in the alias's type; the query
+universe remains independent, without a linter suppression or source-policy exception.
+
 **Query types are separated.** The decision no longer reads one homogeneous family
 `sumFamily inputs (pathFamily s p)`. It reads `pathResources inputs s p`, the disjoint sum of the
 input specification and the path's specification, with their data kept as a pair

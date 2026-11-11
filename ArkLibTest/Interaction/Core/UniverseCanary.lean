@@ -255,6 +255,15 @@ theorem typeQueryAppend_decideWith (stmt : Unit)
 
 /-! ### Independent oracle-node queries -/
 
+/-- The default leaves retain the original protocol carrier by definitional equality. -/
+example : OracleProtocol.{0, 1} = FreeM OraclePoly.{0, 1} PUnit.{1} := rfl
+
+/-- A nontrivial leaf type is an actual return type of the authored tree. -/
+def returningTree : OracleProtocol.{0, 1} Nat := .pure 23
+
+/-- The explicit leaf parameter stores a value that can be read from the tree. -/
+example : (match returningTree with | .pure n => n | .liftBind _ _ => 0) = 23 := rfl
+
 /-- A small payload with queries in `Type 1` is attached to an actual oracle node. -/
 def typeQueryProtocol : OracleProtocol.{0, 1} :=
   .liftBind (.oracle Nat typeQueries) (fun _ => .pure ⟨⟩)

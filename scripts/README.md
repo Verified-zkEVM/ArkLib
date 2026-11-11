@@ -55,11 +55,7 @@ This directory contains various utility scripts for the ArkLib project.
   pretty-printer, profiler, and trace changes and `@[nolint]` attributes, including suppressions
   nested in tactics, terms, extensible interpolated strings, and diagnostic-capturing commands.
   The plugin supplies precise syntax diagnostics; it is not presented as a sandbox against
-  arbitrary hostile Lean metaprogramming, so the independent source pass remains mandatory.
-  Both layers permit only the exact declaration-scoped universe-linter exception for
-  `Interaction.Core.OracleProtocol` in `ArkLib/Interaction/Core/Protocol.lean`.
-  `LintStyle/OracleProtocolPolicy.lean` fixes its authorized source spelling; the fixture tests
-  reject another module, declaration name, body or option scope
+  arbitrary hostile Lean metaprogramming, so the independent source pass remains mandatory
 
 ### Dependency Analysis
 - **`dependency_analysis/`** - Complete dependency analysis toolkit
