@@ -498,12 +498,16 @@ abbrev CodecBias :=
 ```
 η★ := numerator / (2 · |Σ|^c) + θ★ · max_i ε_{cdc,i} + ∑_i ε_{cdc,i}
 ```
-where `numerator = 7t² + 28(L+1)t + 14(L+1)² − 3t − 13(L+1)` with
+where `numerator = 7t² + 28(L+1)t + 14(L+1)² − 3t − 6(L+1)` with
 `t = t_h + t_p + t_{p⁻¹}` and `L` an upper bound on the verifier's forward-permutation queries.
 For the salted hybrids, callers instantiate `L` with
-`L_totalRateBlocks δ pSpec = L_δ + L_P + L_V`. Sums the four bounds from Claims 5.21
-(Hyb_0 → Hyb_1), 5.22 (Hyb_1 → Hyb_2), 5.23 = 0 (Hyb_2 → Hyb_3), and 5.24
-(Hyb_3 → Hyb_4). -/
+`L_totalRateBlocks δ pSpec = L_δ + L_P + L_V`. This is the sum of the four bounds from Claims
+5.21 (Hyb_0 → Hyb_1), 5.22 (Hyb_1 → Hyb_2), 5.23 = 0 (Hyb_2 → Hyb_3), and 5.24
+(Hyb_3 → Hyb_4); see `ηStar_eq_claimBounds`.
+
+The printed Eq. (5) ends in `− 13(L+1)`. That value inherits the closed form printed in Claim
+5.24, which is smaller than the claim's own sum (Eq. 56) by `7(L+1)/(2|Σ|^c)`; see
+`claim5_24Bound`. With the closed form of the sum, the numerator ends in `− 6(L+1)`. -/
 def ηStar (U : Type) [SpongeUnit U] [Fintype U]
     (tₕ tₚ tₚᵢ : ℕ) (L : ℕ) (εcodec : CodecBias (pSpec := pSpec)) : ℝ :=
   let tTotal : ℕ := (tₕ + tₚ + tₚᵢ)
@@ -514,7 +518,7 @@ def ηStar (U : Type) [SpongeUnit U] [Fintype U]
       + 28 * LplusOneR * tTotalR
       + 14 * LplusOneR ^ 2
       - 3 * tTotalR
-      - 13 * LplusOneR
+      - 6 * LplusOneR
   let firstTermDenominator : ℝ := 2 * ((Fintype.card U : ℕ) : ℝ) ^ SpongeSize.C
   let secondTerm : ℝ := (θStar tₕ tₚ tₚᵢ : ℝ) * iSup (fun i => (εcodec i : ℝ))
   let thirdTerm : ℝ := ∑ i, (εcodec i : ℝ)
@@ -558,13 +562,68 @@ def claim5_22Bound
   (θStar tₕ tₚ tₚᵢ : ℝ) * iSup (fun i => (εcodec i : ℝ))
     + ∑ i, (εcodec i : ℝ)
 
-/-- CO25 Claim 5.24. Statistical-distance bound for `Hyb_3` vs `Hyb_4` (Eq. 56):
-`(7·(L+1)·(2·t_h + 1 + 2·t_p + L + 2·t_{p⁻¹})) / (2·|Σ|^c) − 5·(L+1) / |Σ|^c`. -/
+/-- CO25 Claim 5.24. Statistical-distance bound for `Hyb_3` vs `Hyb_4`: the closed form of the
+sum in Eq. (56),
+```
+(7·(L+1)·(2t + 1 + L) − 3·(L+1)) / (2·|Σ|^c),   t = t_h + t_p + t_{p⁻¹}.
+```
+`claim5_24Bound_eq_sum` proves that this equals the Eq. (56) sum
+`∑_{j=t+1}^{t+1+L} (2(j−1) + (2j−1) + (2j−1) + (j−1)) / |Σ|^c`, and `claim5_24Bound_nonneg`
+proves that it is nonnegative.
+
+Paper discrepancy: the paper prints the closed form
+`7(L+1)(2t + 1 + L)/(2|Σ|^c) − 5(L+1)/|Σ|^c`. It is smaller than the Eq. (56) sum by
+`7(L+1)/(2|Σ|^c)` and is negative at `t = L = 0`. -/
 def claim5_24Bound (U : Type) [SpongeUnit U] [Fintype U]
     (tₕ tₚ tₚᵢ L : ℕ) : ℝ :=
+  let t : ℝ := (tₕ + tₚ + tₚᵢ : ℕ)
   let cardPow : ℝ := ((Fintype.card U : ℕ) : ℝ) ^ SpongeSize.C
-  (7 * (L + 1) * (2 * (tₕ : ℝ) + 1 + 2 * (tₚ : ℝ) + L + 2 * (tₚᵢ : ℝ))) / (2 * cardPow)
-    - (5 * (L + 1)) / cardPow
+  (7 * ((L : ℝ) + 1) * (2 * t + 1 + L) - 3 * ((L : ℝ) + 1)) / (2 * cardPow)
+
+/-- The Claim 5.24 bound is the closed form of the Eq. (56) sum over
+`j = t + 1, …, t + 1 + L`, where `t = t_h + t_p + t_{p⁻¹}`. The `j`-th summand is the
+Lemma 5.8 bound `2(j−1) + (2j−1) + (2j−1) + (j−1) = 7j − 5` over `|Σ|^c`. -/
+theorem claim5_24Bound_eq_sum (U : Type) [SpongeUnit U] [Fintype U]
+    (tₕ tₚ tₚᵢ L : ℕ) :
+    claim5_24Bound U tₕ tₚ tₚᵢ L =
+      ∑ j ∈ Finset.Icc (tₕ + tₚ + tₚᵢ + 1) (tₕ + tₚ + tₚᵢ + 1 + L),
+        (2 * ((j : ℝ) - 1) + (2 * (j : ℝ) - 1) + (2 * (j : ℝ) - 1) + ((j : ℝ) - 1)) /
+          ((Fintype.card U : ℕ) : ℝ) ^ SpongeSize.C := by
+  rw [← Finset.sum_div, claim5_24Bound]
+  set c : ℝ := ((Fintype.card U : ℕ) : ℝ) ^ SpongeSize.C
+  set t := tₕ + tₚ + tₚᵢ
+  have hsum : ∀ M : ℕ, ∑ j ∈ Finset.Icc (t + 1) (t + 1 + M),
+      (2 * ((j : ℝ) - 1) + (2 * (j : ℝ) - 1) + (2 * (j : ℝ) - 1) + ((j : ℝ) - 1)) =
+        (7 * ((M : ℝ) + 1) * (2 * (t : ℝ) + 1 + M) - 3 * ((M : ℝ) + 1)) / 2 := by
+    intro M
+    induction M with
+    | zero => simp; ring
+    | succ M ih =>
+      rw [← Nat.add_assoc, Finset.sum_Icc_succ_top (by omega), ih]
+      push_cast
+      ring
+  rw [hsum L, div_div]
+
+/-- The Claim 5.24 bound is nonnegative for every query budget and every `L`. -/
+theorem claim5_24Bound_nonneg (U : Type) [SpongeUnit U] [Fintype U]
+    (tₕ tₚ tₚᵢ L : ℕ) : 0 ≤ claim5_24Bound U tₕ tₚ tₚᵢ L := by
+  unfold claim5_24Bound
+  apply div_nonneg
+  · have hL : (0 : ℝ) ≤ L := Nat.cast_nonneg L
+    have ht : (0 : ℝ) ≤ ((tₕ + tₚ + tₚᵢ : ℕ) : ℝ) := Nat.cast_nonneg _
+    nlinarith
+  · positivity
+
+omit [∀ i, VCVCompatible (pSpec.Challenge i)] [∀ i, VCVCompatible (pSpec.Message i)] in
+/-- CO25 Eq. (5) is the sum of the per-claim bounds: Claims 5.21, 5.22, 5.23 (`= 0`) and 5.24. -/
+theorem ηStar_eq_claimBounds (U : Type) [SpongeUnit U] [Fintype U]
+    (tₕ tₚ tₚᵢ L : ℕ) (εcodec : CodecBias (pSpec := pSpec)) :
+    ηStar (pSpec := pSpec) U tₕ tₚ tₚᵢ L εcodec =
+      claim5_21Bound U tₕ tₚ tₚᵢ L + claim5_22Bound tₕ tₚ tₚᵢ εcodec +
+        claim5_24Bound U tₕ tₚ tₚᵢ L := by
+  unfold ηStar claim5_21Bound claim5_22Bound claim5_24Bound
+  push_cast
+  ring
 
 /-! ### Hybrid distributions `Hyb_0` … `Hyb_4` and per-step claims 5.21–5.24 (CO25 §5.8)
 
