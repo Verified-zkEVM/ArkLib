@@ -123,6 +123,8 @@ theorem quadratic_final_value : SumcheckRuntime.quadratic.eval ![4, 4] = 16 := b
 /-- The final-state empty interval returns the verifier's accepted value without queries. -/
 theorem zero_interval_verdict :
     SumcheckRuntime.quadraticZeroObserve = (some (16, 4, 4, 16), []) := by
+  unfold SumcheckRuntime.quadraticZeroObserve
+  rw [OracleVerifier.run_eq]
   change (some (16, 4, 4, SumcheckRuntime.quadratic.eval ![4, 4]), []) = _
   rw [quadratic_final_value]
 
