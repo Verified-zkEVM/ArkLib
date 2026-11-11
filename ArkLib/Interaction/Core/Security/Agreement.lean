@@ -134,8 +134,8 @@ theorem Agrees.knowledgeSoundness_iff (h : Agrees V V') {Out Wout : PathAlong or
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp) (readOut : ∀ tr, Out tr → Wout tr)
     (input : StatementProblem (S × (∀ i, A i))) (output : PathProblem s (fun _ => T × (∀ j, B j)))
     [mWit : ∀ stmt, MeasurableSpace (input.Witness () stmt)]
-    (J : OutputJudgement (Observation oracleSig s Out (fun _ => T × (∀ j, B j))) output) (ε : ℝ≥0∞)
-      :
+    (J : OutputJudgement (Observation oracleSig s Out (fun _ => T × (∀ j, B j))) output)
+    (ε : ℝ≥0∞) :
     knowledgeSoundness (V.classicalModel init impl draw) input output J
         (V.classicalStraightline (input.Witness ()) init impl draw readOut) ε ↔
       knowledgeSoundness (V'.classicalModel init impl draw) input output J
@@ -217,7 +217,7 @@ variable {ι I J S T σ : Type} {ambient : OracleSpec ι} {s s' : OracleProtocol
 /-- Transporting a verifier along a tree equality does not change its decision on corresponding
 transcripts. -/
 theorem decide_cast (e : s' = s) (V : OracleVerifier ambient s' S (fun _ => T) inputs (fun _ =>
-  outputs)) (stmt : S)
+    outputs)) (stmt : S)
     (tr : PathAlong oracleSig s) (tr' : PathAlong oracleSig s') (htr : HEq tr tr') :
     HEq ((e ▸ V : OracleVerifier ambient s S (fun _ => T) inputs (fun _ => outputs)).decide stmt _
       (toView s tr))
@@ -227,7 +227,7 @@ theorem decide_cast (e : s' = s) (V : OracleVerifier ambient s' S (fun _ => T) i
 /-- Transporting a verifier along a tree equality does not change its interpreted decision on
 corresponding transcripts. -/
 theorem simulateQ_decide_cast (e : s' = s) (V : OracleVerifier ambient s' S (fun _ => T) inputs
-  (fun _ => outputs))
+    (fun _ => outputs))
     (stmt : S) (data : ∀ i, A i) (tr : PathAlong oracleSig s) (tr' : PathAlong oracleSig s')
     (htr : HEq tr tr') (m : Type → Type) [Monad m] [LawfulMonad m] (amb : QueryImpl ambient m) :
     simulateQ (QueryImpl.addLift (r := m) amb ((pathResources inputs s (projectPathAlong oracleSig
@@ -244,7 +244,7 @@ theorem simulateQ_decide_cast (e : s' = s) (V : OracleVerifier ambient s' S (fun
 /-- Transporting a verifier along a tree equality does not change its output data on
 corresponding transcripts. -/
 theorem outputMap_cast (e : s' = s) (V : OracleVerifier ambient s' S (fun _ => T) inputs (fun _ =>
-  outputs)) (stmt : S)
+    outputs)) (stmt : S)
     (data : ∀ i, A i) (tr : PathAlong oracleSig s) (tr' : PathAlong oracleSig s')
     (htr : HEq tr tr') :
     ((e ▸ V : OracleVerifier ambient s S (fun _ => T) inputs (fun _ => outputs)).outputMap stmt _
@@ -267,7 +267,7 @@ theorem eqRec_const (e : s' = s) (x : ℝ≥0∞) :
 /-- Transporting a verifier and its challenge oracle along a tree equality preserves soundness,
 for every prover output family. -/
 theorem soundness_cast (e : s' = s) (V : OracleVerifier ambient s' S (fun _ => T) inputs (fun _ =>
-  outputs))
+    outputs))
     (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
     (draw : QueryImpl (challengeSpec oracleSig s') ProbComp)
     (input : StatementProblem (S × (∀ i, A i))) (output : PathProblem s (fun _ => T × (∀ j, B j)))
@@ -285,7 +285,7 @@ theorem soundness_cast (e : s' = s) (V : OracleVerifier ambient s' S (fun _ => T
 /-- Transporting a verifier, its challenge oracle and its error along a tree equality preserves
 round-by-round soundness. -/
 theorem rbrSoundness_cast (e : s' = s) (V : OracleVerifier ambient s' S (fun _ => T) inputs (fun _
-  => outputs))
+    => outputs))
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (input : StatementProblem (S × (∀ i, A i))) (output : PathProblem s (fun _ => T × (∀ j, B j)))
     (draw : QueryImpl (challengeSpec oracleSig s') ProbComp)
@@ -299,7 +299,7 @@ round-by-round knowledge soundness. The output witness family and the output rel
 by transcripts of the target tree, are read on the source tree through the transport of
 transcripts. -/
 theorem rbrKnowledgeSoundness_cast (e : s' = s) (V : OracleVerifier ambient s' S (fun _ => T)
-  inputs (fun _ => outputs))
+    inputs (fun _ => outputs))
     {Win : Type} {W : PathAlong oracleSig s → Type} (impl : QueryImpl ambient (StateT σ ProbComp))
     (admissible : S × (∀ i, A i) → Prop) (relIn : (S × (∀ i, A i)) → Win → Prop)
     (relOut : (tr : PathAlong oracleSig s) → (T × (∀ j, B j)) → W tr → Prop)

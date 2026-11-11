@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
+public import ArkLib.ProofSystem.Sumcheck.Core.Types
 
 /-! # Indexed evaluation domains for Sumcheck
 
@@ -55,17 +55,8 @@ noncomputable def roundSum (D : Fin d → R) (i : Fin (n + 1)) (c : Fin i → R)
 noncomputable def projectedRoundPolynomial (D : Fin d → R) (i : Fin n)
     (c : Fin i.castSucc → R) (p : R⦃≤ deg⦄[X Fin n]) : R⦃≤ deg⦄[X] :=
   ⟨∑ x : Fin (n - 1 - i) → Fin d,
-      p.val.evalExcept i (Spec.SingleRound.roundSuffix R n i c (D ∘ x)),
+      p.val.evalExcept i (roundSuffix i c (D ∘ x)),
     Submodule.sum_mem _ fun _ _ => MvPolynomial.evalExcept_mem_degreeLE i _ p.property⟩
-
-/-- For an injective domain the indexed honest polynomial is Spec's projected polynomial. -/
-theorem projectedRoundPolynomial_embedding (D : Fin d ↪ R) (i : Fin n)
-    (c : Fin i.castSucc → R) (p : R⦃≤ deg⦄[X Fin n]) :
-    projectedRoundPolynomial (⇑D) i c p =
-      Spec.SingleRound.projectedRoundPolynomial R n deg D i c p := by
-  apply Subtype.ext
-  exact sum_domain_embedding D _ (fun x =>
-    p.val.evalExcept i (Spec.SingleRound.roundSuffix R n i c x))
 
 /-- Splitting an indexed assignment into its first index and suffix preserves the sum. -/
 theorem sum_evalExcept_indices {l : ℕ} (D : Fin d → R) (i : Fin (n + 1))
@@ -123,7 +114,7 @@ theorem roundSum_succ (D : Fin d → R) (i : Fin n) (c : Fin i.castSucc → R)
   | zero => exact i.elim0
   | succ n =>
       simp only [roundSum, projectedRoundPolynomial, Polynomial.eval_finsetSum,
-        Spec.SingleRound.roundSuffix, MvPolynomial.eval_evalExcept_append]
+        roundSuffix, MvPolynomial.eval_evalExcept_append]
       have hs := Fin.sum_piFinset_cast (univ : Finset (Fin d))
         (show n + 1 - (i.val + 1) = n - i.val by omega)
         (fun x => p.val.eval (Fin.append (Fin.snoc c r) (D ∘ x) ∘ Fin.cast (by simp; omega)))
@@ -136,5 +127,27 @@ theorem roundSum_succ (D : Fin d → R) (i : Fin n) (c : Fin i.castSucc → R)
         Fin.cast (by simp only [Fin.val_castSucc]; omega)) = _
       rw [Fin.append_cast_right]
       rfl
+
+/-- The indexed relation for the current round counts every assignment of domain indices. -/
+def indexedRelation (D : Fin d → R) (i : Fin (n + 1))
+    (stmt : RoundStatement R n i) (p : R⦃≤ deg⦄[X Fin n]) : Prop :=
+  roundSum D i stmt.challenges p.val = stmt.target
+
+/-- The last indexed relation is the full evaluation claim, independent of the domain. -/
+theorem indexedRelation_last (D : Fin d → R)
+    (stmt : RoundStatement R n (Fin.last n)) (p : R⦃≤ deg⦄[X Fin n]) :
+    indexedRelation D (Fin.last n) stmt p ↔ p.val.eval stmt.challenges = stmt.target := by
+  let : Unique (Fin (n - (Fin.last n).val) → Fin d) := by
+    simpa using (show Unique (Fin 0 → Fin d) from
+      ⟨⟨Fin.elim0⟩, fun _ => funext fun j => j.elim0⟩)
+  unfold indexedRelation roundSum
+  rw [Fintype.sum_unique]
+  have h : Fin.append stmt.challenges (D ∘ (default : Fin (n - (Fin.last n).val) → Fin d)) ∘
+      Fin.cast (show n = n + (n - n) by omega) = stmt.challenges := by
+    funext j
+    change Fin.append stmt.challenges _ (Fin.cast _ j) = _
+    exact Fin.append_left_of_lt j.val (by omega) j.isLt
+  change _ = stmt.target ↔ _ = stmt.target
+  rw [h]
 
 end Sumcheck.Core

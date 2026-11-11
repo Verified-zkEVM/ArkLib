@@ -182,6 +182,7 @@ abbrev liftEvents : QueryImpl events (OracleComp Q) := fun q => liftM (Q.query (
 /-- An ambient event inside the execution is the same event query. -/
 theorem simulate_event (i : Fin 4) : simulateQ liftEvents (event i) = eventE i := by
   simp [event, eventE]
+  rfl
 
 /-- The terminal action runs event `3`. -/
 theorem run_finalEvent
@@ -192,7 +193,7 @@ theorem run_finalEvent
       (do let _ ← eventE 3; pure ⟨⟨⟩, (), ⟨⟩⟩) := by
   refine (run_done (l := oracleSig) (OutP := fun _ => Unit) (OutC := fun _ => PUnit)
     (simulateQ liftEvents (do let _ ← event 3; pure ())) (pure ⟨⟩)).trans ?_
-  simp [simulate_event]
+  simp
   rfl
 
 /-- The last round runs event `2`, draws its challenge, then runs event `3`. -/
@@ -210,7 +211,7 @@ theorem run_last (a r : K) :
   rw [lastProver, simulate_consProver, run_consProver]
   refine bind_congr fun s => ?_
   rw [run_finalEvent]
-  simp
+  simp only [LawfulMonad.bind_assoc, LawfulMonad.pure_bind]
 
 /-- Against the challenge sampler the prover runs event `0`, the first draw, event `2`, the
 second draw and event `3`, in this order. -/
@@ -332,8 +333,8 @@ theorem bad_first_rounds :
       let _ ← eventE 3
       pure (⟨consTranscript (affine a 1) r (consTranscript (affine (b + a) (a * r + 1)) s ⟨⟩),
         (), none⟩ : Observation oracleSig (protocol K 1 2) (fun _ => Unit)
-          (fun _ => Spec.StatementRound K 2 (Fin.last 2) × ∀ i, Spec.OracleStatement K 2 1 i))) :=
-            by
+          (fun _ => Spec.StatementRound K 2 (Fin.last 2) ×
+            ∀ i, Spec.OracleStatement K 2 1 i))) := by
   rw [run_verifier_eq]
   erw [run_adaptive]
   refine (_root_.map_bind _ _ _).trans (bind_congr fun a => ?_)
@@ -438,7 +439,11 @@ theorem decide_log_badFirst (amb : QueryImpl ambient (OracleComp full))
   obtain rfl : v = none := hsupp _ hz
   dsimp only
   rw [hcont]
-  simp
+  change (Prod.map id (fun x => w ++ x)) <$>
+    (pure (none, []) : OracleComp full _) = _
+  simp only [FreeM.liftBind_eq, FreeM.bind_eq_bind, map_pure, Prod.map_apply, id_eq,
+    Fin.succ_zero_eq_one, Function.comp_apply]
+  exact congrArg (fun log => (pure (none, log) : OracleComp full _)) (List.append_nil w)
 
 end DecisionLog
 
@@ -479,7 +484,7 @@ theorem runWithLog_wrong :
   erw [decide_log_badFirst D₀ liftEvents wrong (fun _ => original) (affine a 1) r tail (by
     change ∑ x ∈ Finset.univ.map D₀, (affine a 1).val.eval x ≠ 2
     simpa [affine] using (by decide : (1 : K) ≠ 2))]
-  simp
+  simp only [bind_map_left, Option.map_none]
 
 /-- Forgetting the logs, the logged execution on the false claim records the order
 `[0, 1, 2, 1, 3]`: both rounds still run. -/
@@ -518,7 +523,8 @@ theorem initial_false :
 example {σ : Type} (init : ProbComp σ) (impl : QueryImpl unifSpec (StateT σ ProbComp)) :
     letI : MeasurableSpace (Observation oracleSig (protocol K 1 2) (fun _ => Unit)
       (fun _ => Spec.StatementRound K 2 (Fin.last 2) × (∀ i, Spec.OracleStatement K 2 1 i))) := ⊤
-    𝒟[experiment init impl (challengeQueryImpl oracleSig (protocol K 1 2))
+    𝒟[experiment init impl (@challengeQueryImpl _ oracleSig (protocol K 1 2)
+      (challengeSampleable K 1 2))
         ((verifier K 1 2 D₀ unifSpec).run initial (fun _ => original) sampledAdaptive)]
         (accepted D₀) ≤ 2 / 17 := by
   refine (RoundByRoundTest.false_claim_bound K 2 1 D₀ unifSpec init impl sampledAdaptive initial

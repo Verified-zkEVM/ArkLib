@@ -105,13 +105,6 @@ def roundRoute (k : ℕ) (p : Path (protocol R deg k)) :
     exact liftM
       ((oracles (protocol R deg (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩).query ⟨.inl ⟨⟩, q⟩)
 
-/-- Lift the queries of the remaining rounds to a replicated protocol with one more round. -/
-def tailLift (k : ℕ) (p : Path (protocol R deg k)) :
-    QueryImpl (oracles (protocol R deg k) p)
-      (OracleComp (oracles (protocol R deg (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩)) :=
-  fun q => liftM
-    ((oracles (protocol R deg (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩).query ⟨.inr q.1, q.2⟩)
-
 /-- Route legacy message queries to the oracle nodes of a completed shape path. -/
 def route : (k : ℕ) → (p : Path (protocol R deg k)) →
     QueryImpl [(Spec.pSpec R deg k).Message]ₒ (OracleComp (oracles (protocol R deg k) p))
@@ -279,13 +272,6 @@ section Verifier
 variable (R : Type) [CommSemiring R] [DecidableEq R] [SampleableType R] (deg n : ℕ)
   {d : ℕ} (D : Fin d ↪ R) {ι : Type} (ambient : OracleSpec ι)
 
-/-- The input and output oracle: the multivariate polynomial with evaluation queries.
-
-It is noncomputable because the legacy evaluation interface of multivariate polynomials is. Only
-its types enter the verifier, which stays executable. -/
-noncomputable def polyFamily : OracleFamily Unit (Spec.OracleStatement R n deg) :=
-  ⟨fun _ => inferInstance⟩
-
 /-- The legacy check of round `i`, retyped to query only that round's message. -/
 def roundCheck (i : Fin n) (stmt : Spec.StatementRound R n i.castSucc)
     (chals : (Spec.SingleRound.pSpec R deg).Challenges) :
@@ -357,6 +343,27 @@ section Run
 
 variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R] {deg n : ℕ}
   {d : ℕ} (D : Fin d ↪ R) {ι : Type} {ambient : OracleSpec ι}
+
+omit [DecidableEq R] [SampleableType R] in
+/-- Lifted decision queries answered from the actual data, with ambient queries answered in any
+lawful monad, are a pure computation of the path oracles. -/
+theorem simulateQ_decisionLift_monad {m : Type → Type} [Monad m] [LawfulMonad m]
+    (amb : QueryImpl ambient m) (p : Path (protocol R deg n))
+    (data : ∀ i, Spec.OracleStatement R n deg i)
+    (pl : ∀ i, OracleData (protocol R deg n) p i) {α : Type}
+    (oa : OracleComp (oracles (protocol R deg n) p) α) :
+    simulateQ (QueryImpl.addLift amb ((pathResources (polyFamily R deg n) (protocol R deg n)
+      p).answer (data, pl)))
+      (simulateQ (decisionLift R deg n ambient p) oa) =
+      (pure (simulateQ ((pathFamily (protocol R deg n) p).behaviorOfRealizations pl) oa) :
+        m α) := by
+  refine (QueryImpl.simulateQ_simulateQ_eq_of_apply
+    (impl := ((pathFamily (protocol R deg n) p).behaviorOfRealizations pl).liftTarget m)
+    (fun t => ?_) oa).trans ?_
+  · simp only [QueryImpl.addLift_def]
+    exact QueryImpl.simulateQ_add_query_right _ _ _
+  · rw [simulateQ_liftTarget]
+    rfl
 
 omit [DecidableEq R] [SampleableType R] in
 /-- Lifted path-oracle queries are answered from the path payloads, without ambient effects. -/

@@ -161,27 +161,6 @@ section DecideM
 variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R] {deg n : ℕ}
   {d : ℕ} (D : Fin d ↪ R) {ι : Type} {ambient : OracleSpec ι}
 
-omit [DecidableEq R] [SampleableType R] in
-/-- Lifted decision queries answered from the actual data, with ambient queries answered in any
-lawful monad, are a pure computation of the path oracles. -/
-theorem simulateQ_decisionLift_monad {m : Type → Type} [Monad m] [LawfulMonad m]
-    (amb : QueryImpl ambient m) (p : Path (protocol R deg n))
-    (data : ∀ i, Spec.OracleStatement R n deg i)
-    (pl : ∀ i, OracleData (protocol R deg n) p i) {α : Type}
-    (oa : OracleComp (oracles (protocol R deg n) p) α) :
-    simulateQ (QueryImpl.addLift amb ((pathResources (polyFamily R deg n) (protocol R deg n)
-      p).answer (data, pl)))
-      (simulateQ (decisionLift R deg n ambient p) oa) =
-      (pure (simulateQ ((pathFamily (protocol R deg n) p).behaviorOfRealizations pl) oa) :
-        m α) := by
-  refine (QueryImpl.simulateQ_simulateQ_eq_of_apply
-    (impl := ((pathFamily (protocol R deg n) p).behaviorOfRealizations pl).liftTarget m)
-    (fun t => ?_) oa).trans ?_
-  · simp only [QueryImpl.addLift_def]
-    exact QueryImpl.simulateQ_add_query_right _ _ _
-  · rw [simulateQ_liftTarget]
-    rfl
-
 /-- On any completed run, the decision returns the legacy verdict of the decoded transcript, for
 ambient queries answered in any lawful monad. -/
 theorem simulateQ_decide_monad {m : Type → Type} [Monad m] [LawfulMonad m]

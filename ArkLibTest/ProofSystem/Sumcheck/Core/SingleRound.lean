@@ -212,6 +212,7 @@ example : obs1 ambient D₂ msgX (finishWith msgX) stmtX (fun _ => polyX) 3 =
     simp [msgX, D₂, stmtX, Fin.sum_univ_two])
   rw [obs1, h]
   simp [finishWith, msgX, stmtX]
+  rfl
 
 /-- The accepted claim lies in the final relation: `X₀` at the challenge is the target. -/
 example : (((⟨3, fun _ => 3⟩, fun _ => polyX), ()) ∈
@@ -226,6 +227,7 @@ example : obs1 ambient D₂ msgX (finishWith msgX) (claim 2) (fun _ => polyX) 3 
     simpa [msgX, D₂, claim, Fin.sum_univ_two] using (by decide : (1 : F) ≠ 2))
   rw [obs1, h]
   simp [finishWith, msgX]
+  rfl
 
 /-- A dishonest constant message one passes the false claim that the zero polynomial sums to one
 over `{0}`; the next target comes from the message, while the output oracle is the input
@@ -238,6 +240,7 @@ example (r : F) : obs1 ambient D₁ (msgOne 0) (fun c => c) (claim 1) (fun _ => 
   · have h := verdict_pass ambient D₁ (claim 1) (msgOne 0) r (by simp [msgOne, claim])
     rw [obs1, h]
     simp [msgOne, claim]
+    rfl
   · rw [relationLast_iff, eval_poly0]
     decide
 
@@ -254,6 +257,7 @@ example : obs1 ambient D₁ (msgOne 1) (fun c => c) (claim 1) (fun _ => polyX) 0
   · have h := verdict_pass ambient D₁ (claim 1) (msgOne 1) 0 (by simp [msgOne, claim])
     rw [obs1, h]
     simp [msgOne, claim]
+    rfl
   · rw [relationLast_iff, eval_X₀]
     decide
 
@@ -266,6 +270,7 @@ example : obs1 ambient D₁ (msgOne 1) (fun c => c) (claim 1) (fun _ => polyX) 1
   · have h := verdict_pass ambient D₁ (claim 1) (msgOne 1) 1 (by simp [msgOne, claim])
     rw [obs1, h]
     simp [msgOne, claim]
+    rfl
   · rw [relationLast_iff, eval_X₀]
 
 /-- Against target two the cheating message is rejected, even at the collision challenge. -/

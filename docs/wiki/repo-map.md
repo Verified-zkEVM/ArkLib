@@ -50,11 +50,15 @@ home_page/            site assets and assembled website root
   ([legacy embedding](../design/interaction-layer/legacy-embedding.md)), including the oracle
   tree of appended specifications (`Legacy/OracleAppend.lean`) and pure challenge slots
   (`Legacy/PureSlots.lean`). Its acceptance tests live in `ArkLibTest/Interaction/Core/`.
-- `ProofSystem/Sumcheck/Core/` is Sumcheck in the interaction layer: the replicated round, the
-  verifier as the legacy decision fold, the equivalence with the embedded legacy Sumcheck
-  (`LegacyEquivalence.lean`), and the transferred completeness, soundness, knowledge and
-  round-by-round results. [The Sumcheck design page](../design/interaction-layer/sumcheck.md)
-  describes them; the tests are in `ArkLibTest/ProofSystem/Sumcheck/Core/`.
+- `ProofSystem/Sumcheck/Core/` contains native Sumcheck statements and arithmetic (`Types`,
+  `Domain`), its fixed protocol (`Tree`), and its indexed verifier and round-by-round proof
+  (`Indexed`). `Soundness` derives full-run bounds over arbitrary maps and lists, including
+  repeated points, through the core soundness implication. `DomainEquivalence` and
+  `LegacyEquivalence` check legacy agreement separately; `LegacySoundness` retains the old
+  transferred bound for comparison. The compatibility honest prover, completeness and knowledge
+  transfers remain available. [The Sumcheck design page](../design/interaction-layer/sumcheck.md)
+  gives exact ownership and migration dispositions. Tests live in
+  `ArkLibTest/ProofSystem/Sumcheck/Core/`.
 - The descriptions below cover the frozen interaction modules outside `Core/`.
 - `ArkLib/Interaction/Oracle/` refines generic type trees with public/oracle positions, keeps
   structural `BranchPath` separate from concrete `ExecutionPath` messages, and adds position-typed

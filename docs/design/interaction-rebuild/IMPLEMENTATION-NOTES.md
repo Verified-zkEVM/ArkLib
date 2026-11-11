@@ -335,28 +335,25 @@ Inherited universe constraints remain in [entry 18](#18-run-outputs-are-tied-to-
 ### 22. Sumcheck domain multiplicity and routing laws
 
 
-The current `Sumcheck.Core.Soundness` transfer and the committed and randomized one-round bounds
-in the acceptance tests still require `D : Fin d ↪ R`. They bound acceptance into the final
-Sumcheck language for the actual core run, with error `deg / card R` per round. Arbitrary maps
-`Fin d → R`, arbitrary lists, and repeated-point honest runs remain open. The Sumcheck disposition
-table records these soundness rows as partial.
+`Sumcheck.Core.Soundness` now proves full-run soundness natively for every map
+`D : Fin d → R`, with indexed sums that retain repeated points. `Indexed` proves the local
+false-to-true bound and constructs the round-by-round state function. It applies #1486's
+`OracleVerifier.soundness_of_rbrSoundness_uniform` and counts one challenge per round to obtain
+`n * (deg / |R|)` for the actual core run of every prover. `Soundness` derives arbitrary-list
+and injective corollaries, plus committed and possibly failing randomized one-round bounds in
+probability and measure form. No native security theorem imports or uses the legacy embedding.
 
-`Core/Domain.lean` defines the remaining sum `roundSum` and honest projected polynomial for
-arbitrary maps `Fin d → R`. `sum_domain_embedding` and
-`projectedRoundPolynomial_embedding` prove agreement with the injective Spec representation.
-`sum_domain_list` identifies the indexed sum with the mapped list sum. The projection sum and
-successor-sum identities hold for every commutative semiring. The domain tests check that the
-constant polynomial one has indexed sum two over `[0, 0]`, and sum one after deduplication.
-The actual repeated-point honest run remains open.
+`Types`, `Tree` and `Domain` own the native statements, fixed protocol and indexed arithmetic.
+`DomainEquivalence` keeps the separate injective comparison with `Spec`; `LegacySoundness` keeps
+the previous transferred bound as a comparison check. The arithmetic holds for commutative
+semirings. The probabilistic bounds add `IsDomain`, finiteness and uniform sampling. Tests check
+that constant one sums to two over `[0, 0]`, to one over `[0]`, and passes the native final
+decision with repeated points and target two. The native tests audit the theorem axioms.
 
-The current base lacks a public generic Core implication from oracle round-by-round soundness
-to run-level soundness, and the corresponding knowledge implication. The alternative legacy
-composition proof needs the generic fold-to-sequential verifier bridge
-`oracleVerifierProgram_lift`, which is private in `Sumcheck/Spec/General.lean`. Its public wrapper
-`oracleVerifier_verify_eq_seqCompose` fixes Spec's injective-domain round family. The arbitrary-domain
-round family needed by the Core verifier cannot instantiate that wrapper. Completing the run-level security
-proofs needs either the Core security implications or a public generic fold bridge in the base.
-These generic laws belong in their owning modules and cannot be reproduced locally in Sumcheck.
+#1488 owns interval endpoints and builds `intervalVerifier` from `foldVerifier`. The exact-row
+Sumcheck disposition marks interval execution, projection and append clients as child-owned;
+full-run theorems do not close them. P1 and P2 explain changed abort and shape assertions.
+Behavior-guarantee assertions remain unresolved pending the corresponding parent interface.
 
 `Interaction.Core.Prover.simulate_joinSlot` belongs beside `Prover.simulate` in
 `Interaction/Core/Reduction.lean`. It now covers every protocol tree, lens, dependent prover

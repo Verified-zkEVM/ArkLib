@@ -34,8 +34,8 @@ The status is one of equivalent, premise-required or unresolved.
 
 | Entry | Departure | Status |
 | --- | --- | --- |
-| 18 | Run outputs and a prover's ambient index are tied to the monad universe `u`; every other component takes its own universe, including input and output oracle query types | premise-required: positions live one universe up and the runner is `m : Type u → Type u` |
-| 18 | Input oracle data stays in the response universe `Type u`; the full-log oracle runner `runWithLog` keeps the input index and query type in `Type`, while extraction runs on the general ambient-log runner | unresolved: `OracleInterface` ties data and responses through `ReaderM`, and the full log records input queries |
+| 18 | Run outputs and a prover's ambient index are tied to the monad universe `u`; every other component takes its own universe, including input and output oracle query types. Input oracle data stays in the response universe `Type u`; the full-log oracle runner `runWithLog` keeps the input index and query type in `Type`, while extraction runs on the general ambient-log runner. | Run-output coupling is premise-required: positions live one universe up and the runner is `m : Type u → Type u`. Input-data and full-log restrictions remain unresolved: `OracleInterface` ties data and responses through `ReaderM`, and the full log records input queries. |
+| 19 | Round-by-round soundness implies soundness for lawful distribution monads, with prefix-indexed freshness. | equivalent; see the soundness disposition record below |
 
 ## Legacy embedding: entries 14–16
 
@@ -60,21 +60,14 @@ These entries continue the numbering for Sumcheck in the interaction layer. They
 | Entry | Departure |
 | --- | --- |
 | [20](sumcheck.md#20-the-transferred-completeness-is-in-its-own-module) | The transferred completeness is in its own module, `LegacyCompleteness`. |
-| [21](sumcheck.md#21-the-verifier-has-no-interval-start) | The verifier has no interval start; first-round results are stated on the round-`0` check. |
+| [21](sumcheck.md#21-the-verifier-has-no-interval-start) | Full-run verifiers have no interval start; #1488 owns interval endpoints and composition. |
 
-Entry 21 restates the interval assertions for all `n` rounds. It does not retire the assertions
-that remain open. [`sumcheck.md`](sumcheck.md#migration-disposition) gives a disposition for every
-migration row:
+Entry 21 records full-run ownership here and interval ownership in #1488. The
+[exact-row disposition](sumcheck.md#migration-disposition) keeps interval execution, projection
+and append clients child-owned, and marks behavior-guarantee interfaces unresolved. Native
+full-run, committed and randomized soundness now use the parent implication directly over
+arbitrary indexed domains and lists with repetitions.
 
-- **Deferred to part D, commit 7.** The projection `OracleMap` of OQ16 and its answer law
-  (Projection #3). The execution through the projection map: the projected output of
-  Projection #7, and the standalone round of Projection #8 and ProjectionTransport #2. The append
-  equivalence (Protocol #7). The composition through an exported oracle (SourceRouting #4–#7).
-  The production lemma `relationRound_last_iff` (ArbitraryRounds #6).
-- **Deferred to part D, commit 6.** The four implication rows of
-  `ArkLibTest/Interaction/Oracle/Security/Soundness.lean`, #3–#6 (OQ3).
-- **Partly covered.** Projection #7, Projection #8 and ProjectionTransport #2 are covered on the
-  round-`0` check only. That check keeps the original input polynomial.
 Entry [19](../interaction-rebuild/IMPLEMENTATION-NOTES.md#19-round-by-round-soundness-implies-soundness-for-lawful-distribution-monads)
 records the generic soundness implication. The
 [soundness disposition record](soundness-implication-disposition.md) compares every ported frozen

@@ -332,7 +332,7 @@ abbrev knowledgeJudgementOn (s : OracleProtocol) (relOut : Set ((T × ∀ j, B j
 /-- Transporting a verifier and its challenge oracle along a tree equality preserves knowledge
 soundness for legacy relations. -/
 theorem knowledgeSoundness_cast (e : s' = s) (V : OracleVerifier ambient s' S (fun _ => T) inputs
-  (fun _ => outputs))
+    (fun _ => outputs))
     (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
     (draw : QueryImpl (challengeSpec oracleSig s') ProbComp)
     (relIn : Set ((S × ∀ i, A i) × WIn)) (relOut : Set ((T × ∀ j, B j) × WOut))
@@ -357,7 +357,7 @@ theorem knowledgeSoundness_cast (e : s' = s) (V : OracleVerifier ambient s' S (f
 /-- Transporting a verifier, its challenge oracle and its honest prover along a tree equality
 preserves completeness for legacy relations. -/
 theorem completeness_cast (e : s' = s) (V : OracleVerifier ambient s' S (fun _ => T) inputs (fun _
-  => outputs))
+    => outputs))
     (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
     (draw : QueryImpl (challengeSpec oracleSig s') ProbComp)
     (relIn : Set ((S × ∀ i, A i) × WIn)) (relOut : Set ((T × ∀ j, B j) × WOut))
