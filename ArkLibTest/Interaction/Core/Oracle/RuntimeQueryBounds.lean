@@ -133,7 +133,7 @@ theorem routed_suffix_access (p : Path bitCombined) (v : View bitCombined p) :
   · exact i.elim
 
 /-- The observation of the hidden-bit protocol, including the materialized output oracle. -/
-abbrev BitObservation := Observation oracleSig bitCombined (fun _ => Nat)
+abbrev BitObservation := Observation oracleSig bitCombined.{0} (fun _ => Nat)
   (OracleVerifier.Output (fun _ => Bool) (fun _ (_ : Unit) => Bool))
 
 /-- Compare the actual output-oracle answer with the accepted target bit. -/

@@ -22,15 +22,15 @@ directly as `runtime.run (V.runWithLog stmt data prover)`.
 
 @[expose] public section
 
-universe v u uι uI uJ uS wI wJ
+universe v u q dI uι uI uJ uS wI wJ
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle OracleSpec
 
 namespace OracleVerifier
-variable {ι I : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol}
-  {T : Path s → Type} {A : I → Type} {J : Path s → Type}
-  {B : (p : Path s) → J p → Type} {inputs : OracleFamily.{0, 0, 0} I A}
+variable {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol}
+  {T : Path s → Type} {J : Path s → Type}
+  {B : (p : Path s) → J p → Type} {inputs : Resources.{0, 0, dI}}
   {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
   {Out : PathAlong oracleSig s → Type}
 
@@ -38,7 +38,7 @@ variable {ι I : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtoc
 theorem simulateQ_runWithLog_erase {m : Type → Type v} [Monad m] [LawfulMonad m]
     (V : OracleVerifier ambient s S T inputs outputs)
     (handler : QueryImpl (ambient + challengeSpec oracleSig s) m) (stmt : S)
-    (data : ∀ i, A i) (prover : Prover oracleSig ambient s Out) :
+    (data : inputs.Data) (prover : Prover oracleSig ambient s Out) :
     Sigma.fst <$> simulateQ handler (V.runWithLog stmt data prover) =
       simulateQ handler (V.run stmt data prover) := by
   rw [← simulateQ_map, map_fst_runWithLog]
@@ -49,7 +49,7 @@ ordinary stateful execution of the run. This composes VCVio's `runFrom_eraseTrac
 theorem runtime_runWithLog_erase {κ : Type} {Import : OracleSpec κ}
     (V : OracleVerifier ambient s S T inputs outputs)
     (runtime : OracleRuntime Import (ambient + challengeSpec oracleSig s)) (stmt : S)
-    (data : ∀ i, A i) (prover : Prover oracleSig ambient s Out) :
+    (data : inputs.Data) (prover : Prover oracleSig ambient s Out) :
     (fun result => (result.output.1, result.state)) <$>
         runtime.run (V.runWithLog stmt data prover) =
       runtime.setup >>= fun state => runtime.handler.runState state (V.run stmt data prover) := by
@@ -90,12 +90,12 @@ def decideWithFailureLog {ε : Type} {m : Type → Type v} [Monad m]
 
 /-- Embedding an optional verdict before closing with the completed transcript's resources
 agrees with closing first and then embedding. Absence remains rejection and creates no failure. -/
-theorem close_optional_ok {ε : Type v} {ι : Type uι} {I : Type uI} {S : Type uS}
-    {ambient : OracleSpec.{uι, u} ι} {s : OracleProtocol.{u}} {T : Path s → Type u}
-    {A : I → Type u} {J : Path s → Type uJ} {B : (p : Path s) → J p → Type u}
-    {inputs : OracleFamily.{uI, u, wI} I A}
+theorem close_optional_ok {ε : Type v} {ι : Type uι} {S : Type uS}
+    {ambient : OracleSpec.{uι, u} ι} {s : OracleProtocol.{u, q}} {T : Path s → Type u}
+    {J : Path s → Type uJ} {B : (p : Path s) → J p → Type u}
+    {inputs : Resources.{u, uI, dI}}
     {outputs : (p : Path s) → OracleFamily.{uJ, u, wJ} (J p) (B p)}
-    (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : ∀ i, A i)
+    (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
     (tr : PathAlong oracleSig s) (outcome : Option (T (projectPathAlong oracleSig s tr))) :
     let p := projectPathAlong oracleSig s tr
     let resources : (pathResources inputs s p).Data := (data, payloads s tr)

@@ -79,8 +79,12 @@ theorem routed_cost (v : View combined combinedPath) :
     WorstCaseCostBound (routedSuffix v) rawCost 5 :=
   program_cost.simulateQ (route v) (route_cost v)
 
--- QueryBounds 13, restated: availability is the typing of the routed program over the composed
--- resources (`QueryBounds.lean`, row 4), and the cost part is row 3.
+/-- The routed program is available at the produced terminal phase and costs at most five. -/
+theorem routed_available_and_cost (a b : Nat) (v : View combined combinedPath) :
+    AllQueriesSatisfy (routedSuffix v) (terminalAllowed a b) ∧
+      WorstCaseCostBound (routedSuffix v) rawCost 5 :=
+  ⟨routed_available a b v, routed_cost v⟩
+
 example (v : View combined combinedPath) :
     ∃ program : OracleComp (ambient + rawResources.spec) Nat,
       program = routedSuffix v ∧ WorstCaseCostBound program rawCost 5 :=

@@ -20,11 +20,11 @@ universe uPosition uTree uBranch uExecution
 
 -- MixedExample 1, restated: oracle positions are `OraclePos`.
 /-- Oracle positions are not pinned to the default universe. -/
-abbrev UniversePosition := OraclePos.{uPosition}
+abbrev UniversePosition := OraclePos.{uPosition, uPosition}
 
 -- MixedExample 2, restated: oracle trees are `OracleProtocol`.
 /-- Oracle protocols are not pinned to the default universe. -/
-abbrev UniverseTypeTree := OracleProtocol.{uTree}
+abbrev UniverseTypeTree := OracleProtocol.{uTree, uTree}
 
 -- MixedExample 3, restated: structural branch paths are shape paths `Path s`.
 /-- Shape paths elaborate at any universe. -/

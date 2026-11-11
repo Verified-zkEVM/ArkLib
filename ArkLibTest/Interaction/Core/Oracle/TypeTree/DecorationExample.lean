@@ -17,11 +17,27 @@ namespace Interaction.Core.DecorationExampleTests
 
 section UniverseCanary
 
-universe uProtocol
+universe uProtocol uQuery
 
--- DecorationExample 3, restated: the decorated bundle is `OracleProtocol`.
-/-- Oracle protocols are not pinned to the default universe. -/
-abbrev UniverseProtocol := OracleProtocol.{uProtocol}
+/-- Oracle protocols quantify message and query universes independently. -/
+abbrev UniverseProtocol (Leaf : Type uProtocol := PUnit) :=
+  OracleProtocol.{uProtocol, uQuery} Leaf
+
+/-- An arbitrary interface attaches to an oracle node without identifying its universes. -/
+def universeNode (Message : Type uProtocol)
+    (interface : OracleInterface.{uProtocol, uQuery} Message) :
+    UniverseProtocol.{uProtocol, uQuery} :=
+  .liftBind (.oracle Message interface) (fun _ => .pure ⟨⟩)
+
+/-- A small protocol node accepts every interface whose queries lie in the next universe. -/
+example (interface : OracleInterface.{0, 1} Nat) :
+    Node.position (universeNode Nat interface) (.inl ⟨⟩) = .oracle Nat interface := rfl
+
+/-- The actual node's path resources retain the interface's larger query type. -/
+example (interface : OracleInterface.{0, 1} Nat) :
+    @OracleInterface.Query Nat
+      ((pathFamily (universeNode Nat interface) ⟨⟨⟩, ⟨⟩⟩).interface (.inl ⟨⟩)) =
+      interface.Query := rfl
 
 end UniverseCanary
 

@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Interaction.Core.Oracle.Routing
-import ArkLib.Interaction.Core.Oracle.LoggedExecution
+import ArkLib.Interaction.Core.Oracle.PrefixResources
 import ArkLibTest.Interaction.Core.Support
 import VCVio.OracleComp.QueryTracking.QueryBound.Simulation
 
@@ -198,9 +198,10 @@ def tagHandler : QueryImpl (ambient + challengeSpec oracleSig combined) Id
 
 /-- The composed run under `tagHandler`, with independent input index and query universes. -/
 def observed.{vI, qI, qJ} (a b : Nat) :=
-  simulateQ tagHandler (composed.{vI, 0, qI, qJ}.run () noData (prover a b))
+  simulateQ tagHandler (composed.{vI, qI, 0, qJ}.run () noData (prover a b))
 
--- QueryBounds 9 and 10, restated: phases are retired. For all tags `a` and `b`, the composed
+-- Additional payload checks beside the produced-prefix assertions in LoggedExecution.
+-- For all tags `a` and `b`, the composed
 -- run sends `a` then `b`, keeps `a + b` and accepts `2a + b`. Its transcript is the append of the
 -- prefix transcript `⟨a⟩` and the suffix transcript `⟨b⟩`, and splitting its payloads gives the
 -- prefix payload `a` (row 9) and the suffix payload `b` (row 10).
@@ -248,5 +249,42 @@ example : loggedSummary.{0} 1 2 =
       [⟨.inr prefixSlot, (1 : Nat)⟩, ⟨.inr prefixSlot, (1 : Nat)⟩,
         ⟨.inr suffixSlot, (2 : Nat)⟩]) :=
   loggedSummary_eq 1 2
+
+
+/-- The composed verifier's produced trace for the same tag-answering execution. -/
+def traced (a b : Nat) : OracleVerifier.TracedRun composed.{0, 0, 0, 0} (fun _ => Nat) :=
+  simulateQ tagHandler (composed.runWithTrace () noData (prover a b))
+
+/-- A raw query has its canonical name in the actual terminal phase's available context. -/
+def rawAvailable (a b : Nat) (q : rawResources.spec.Domain) : Prop :=
+  ∃ i : ((traced a b).terminalPhase.availableContext none').Index,
+    FullPrefix.queryName none' (traced a b).terminalPhase.prefix i =
+      FullPrefix.queryName none'
+        (FullPrefix.complete combined ⟨a, b, ⟨⟩⟩) q
+
+/-- Every raw query names a resource available at this execution's actual terminal prefix. -/
+theorem raw_available (a b : Nat) (q : rawResources.spec.Domain) : rawAvailable a b q := by
+  have terminal_prefix_eq : (traced a b).terminalPhase.prefix =
+      FullPrefix.complete combined ⟨a, b, ⟨⟩⟩ := by kernel_rfl
+  unfold rawAvailable
+  generalize phase_eq : (traced a b).terminalPhase = phase
+  rw [phase_eq] at terminal_prefix_eq
+  dsimp only [SlotPhase.availableContext]
+  rw [terminal_prefix_eq]
+  exact ⟨q, rfl⟩
+
+/-- Ambient queries are unrestricted; resource queries must name an available terminal resource. -/
+def terminalAllowed (a b : Nat) : (ambient + rawResources.spec).Domain → Prop
+  | .inl _ => True
+  | .inr q => rawAvailable a b q
+
+/-- The same routed program used by the cost bound has canonical terminal availability. -/
+theorem routed_available (a b : Nat) (v : View combined combinedPath) :
+    AllQueriesSatisfy (routedSuffix v) (terminalAllowed a b) := by
+  apply allQueriesSatisfy_of_forall
+  intro q
+  cases q with
+  | inl _ => trivial
+  | inr q => exact raw_available a b q
 
 end Interaction.Core.QueryBoundsTests
