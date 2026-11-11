@@ -890,7 +890,7 @@ theorem run_selectedProver (b : Bool) (z : Stmt) (ms : Messages Unit rounds)
       ⟨⟨b, tr⟩, ⟨⟩, closedTerminalObservation verifier z ⟨b, tr⟩⟩ := by
   have h := (congrArg (finishSelected z (selectedAnswers tr))
     (selectedInteraction_eq b ms tr carried)).trans (finishSelected_eq _ _ _)
-  simp only [OracleVerifier.run, evalWithAnswerFn_bind, evalWithAnswerFn_pure]
+  simp only [OracleVerifier.run_eq, evalWithAnswerFn_bind, evalWithAnswerFn_pure]
   dsimp only [finishSelected] at h
   exact h
 
