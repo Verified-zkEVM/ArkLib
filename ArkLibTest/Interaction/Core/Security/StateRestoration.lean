@@ -261,7 +261,7 @@ def valid (_ : Stmt) (tr : PathAlong oracleSig (protocol rounds)) (w : Nat) : Pr
 /-- Before any move a witness is at most the input; after the message no witness is known; after
 the challenge `c` a witness is known when `c` is `true` and it is at most the message. Extraction
 adds the message at the message step and copies the witness otherwise. -/
-def knowledge : KnowledgeStateFunction oracleSig (protocol rounds) Stmt
+def knowledge : KnowledgeStateFunction.{0, 0, 0, 0, 1, 0} oracleSig (protocol rounds) Stmt
     (fun _ _ => Nat) (fun _ => Nat) (fun _ => True) Rin valid where
   Witness _ {_} _ _ := Nat
   toFun z {_} sp history w := match sp, history with
@@ -357,7 +357,7 @@ theorem bounded : knowledge.LocallyBounded (uniformDraw rounds) (uniformEps roun
       exact half.le
     | down _ tail => cases tail
 
-example : rbrKnowledgeSoundness.{0, 0, 0} oracleSig (protocol rounds) (fun _ => True) Rin valid
+example : rbrKnowledgeSoundness.{0, 0, 0, 0} oracleSig (protocol rounds) (fun _ => True) Rin valid
     (uniformDraw rounds) (uniformEps rounds (1 / 2)) :=
   ⟨knowledge, bounded⟩
 
@@ -373,7 +373,8 @@ example (c : Bool) : knowledge.extractAlong (stmt 0) (path 7 c) 6 = 13 := rfl
 -- input 0, and the bad key is the selection's first-round key.
 example (table : Table Stmt Unit rounds) (htrue : table key = true) :
     ∃ k ∈ completionKeys rounds (stmt 0) messages,
-      BadChallengeOnCompletion knowledge (stmt 0) messages table 6 k := by
+      BadChallengeOnCompletion knowledge (stmt 0) messages
+        table 6 k := by
   apply exists_badChallenge_of_extraction_failure knowledge (stmt 0) messages table 6
   · exact ⟨htrue, show 6 ≤ 7 by omega⟩
   · change ¬ (6 + 7 ≤ 0)
@@ -483,7 +484,7 @@ def validFin (_ : Stmt) (tr : PathAlong oracleSig (protocol rounds)) (_ : FinOut
 
 /-- The state function `knowledge` with the indexed output witness; the leaf map forgets the
 bound. -/
-def knowledgeFin : KnowledgeStateFunction oracleSig (protocol rounds) Stmt
+def knowledgeFin : KnowledgeStateFunction.{0, 0, 0, 0, 1, 0} oracleSig (protocol rounds) Stmt
     (fun _ => FinOut) (fun _ => Nat) (fun _ => True) Rin validFin where
   Witness := knowledge.Witness
   toFun := knowledge.toFun
@@ -549,7 +550,7 @@ def indexedValid (z : Stmt) (tr : PathAlong oracleSig (protocol rounds))
     (w : IndexedWitness z) : Prop := valid z tr w.1
 
 /-- Backward extraction retains the statement-indexed component through every cursor. -/
-def indexedKnowledge : KnowledgeStateFunction oracleSig (protocol rounds) Stmt
+def indexedKnowledge : KnowledgeStateFunction.{0, 0, 0, 0, 1, 0} oracleSig (protocol rounds) Stmt
     (fun z _ => IndexedWitness z) IndexedWitness (fun _ => True) indexedRin indexedValid where
   Witness z {_} _ _ := IndexedWitness z
   toFun z {_} sp history w := knowledge.toFun z sp history w.1
@@ -605,12 +606,42 @@ example (z : Stmt) (c : Bool) (i : Fin (z.1 + 1)) :
 /-- Keyed failure localization keeps the supplied witness at a larger certificate universe. -/
 example (table : Table Stmt Unit rounds) (htrue : table key = true) :
     ∃ k ∈ completionKeys rounds (stmt 0) messages,
-      BadChallengeOnCompletion (knowledge.lift.{0, 0, 0, 1}) (stmt 0) messages table 6 k := by
-  apply exists_badChallenge_of_extraction_failure (knowledge.lift.{0, 0, 0, 1})
+      BadChallengeOnCompletion (knowledge.lift.{0, 0, 0, 0, 1, 0, 1}) (stmt 0) messages
+        table 6 k := by
+  apply exists_badChallenge_of_extraction_failure (knowledge.lift.{0, 0, 0, 0, 1, 0, 1})
     (stmt 0) messages table 6
   · exact ⟨htrue, show 6 ≤ 7 by omega⟩
   · change ¬ (6 + 7 ≤ 0)
     omega
+
+/-- A terminal carrier in `Type 1` stays independent of the small extraction stages. -/
+def largeTerminalKnowledge :
+    KnowledgeStateFunction.{0, 0, 0, 1, 1, 0} oracleSig (protocol rounds) Stmt
+      (fun _ _ => ULift.{1} Nat) (fun _ => Nat) (fun _ => True)
+      (fun z w => ∃ v, Rin z v ∧ v = w) (fun z tr w => valid z tr w.down) :=
+  knowledge.comap id (fun _ w => w) (fun _ _ (w : ULift.{1} Nat) => w.down)
+    (fun _ _ _ h => h)
+
+/-- Keyed localization accepts a large terminal witness and an independently lifted certificate. -/
+example (table : Table Stmt Unit rounds) (htrue : table key = true) :
+    ∃ k ∈ completionKeys rounds (stmt 0) messages,
+      BadChallengeOnCompletion (largeTerminalKnowledge.lift.{0, 0, 0, 1, 1, 0, 2})
+        (stmt 0) messages table ⟨6⟩ k := by
+  apply exists_badChallenge_of_extraction_failure
+    (largeTerminalKnowledge.lift.{0, 0, 0, 1, 1, 0, 2}) (stmt 0) messages table ⟨6⟩
+  · exact ⟨htrue, show 6 ≤ 7 by omega⟩
+  · change ¬ (6 + 7 ≤ 0)
+    omega
+
+/-- The uniform game bound accepts a large terminal carrier without enlarging its random output. -/
+example :
+    Pr{let r ← (simulateQ randomOracle (restoredExecution rounds adversary)).run' ∅}[
+      True ∧ valid r.1 r.2.1 r.2.2 ∧
+        ¬ (∃ v, Rin r.1 v ∧ v = largeTerminalKnowledge.extractAlong r.1 r.2.1 ⟨r.2.2⟩)] ≤
+      (0 + rounds.length) * (1 / 2) := by
+  simpa only [Nat.cast_zero] using
+    restoredExecution_knowledge_soundness largeTerminalKnowledge (1 / 2)
+      (fun z hz => bounded z hz) (fun _ _ w => ⟨w⟩) adversary 0 trivial
 
 /-! ### Public selection of dependent output carriers -/
 
@@ -1037,6 +1068,32 @@ example (b : Bool) (z : Stmt) (m : Fin 8)
   simp
 
 end Interaction.Core.StateRestorationTests
+
+section GeneralMoveUniverses
+
+universe uS uW uK uO uA u
+
+variable {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
+  {S : Type uS} {Win : S → Type uW} {a : P.A} {next : P.B a → FreeM P PUnit.{u + 1}}
+  {W : S → PathAlong l (.liftBind a next) → Type uO} {admissible : S → Prop}
+  {relIn : (stmt : S) → Win stmt → Prop}
+  {valid : (stmt : S) → (tr : PathAlong l (.liftBind a next)) → W stmt tr → Prop}
+
+/-- The shared first-move law keeps all six universes independent through an ordinary import. -/
+example (F : KnowledgeStateFunction.{uS, uW, uK, uO, uA, u} l (.liftBind a next)
+    S W Win admissible relIn valid) (stmt : S) (x : Move l a)
+    (tr : PathAlong l (next (l.toFunB a x))) (w : W stmt ⟨x, tr⟩) :
+    F.BadChallengeAlong stmt ⟨x, tr⟩ w ↔
+      (let after := (F.child x).extractFrom stmt (.root _) ⟨⟩ tr
+        (cast (congrArg (fun tr => W stmt ⟨x, tr⟩)
+          (PrefixMoves.completeWith_root l tr).symm) w)
+      owner l a = .receiver ∧
+        ¬ F.toFun stmt (.root _) ⟨⟩ (F.extractStep stmt (.root _) ⟨⟩ x after) ∧
+        (F.child x).toFun stmt (.root _) ⟨⟩ after) ∨
+      (F.child x).BadChallengeAlong stmt tr w :=
+  F.badChallengeAlong_liftBind stmt x tr w
+
+end GeneralMoveUniverses
 
 run_cmd do
   for decl in [``Interaction.Core.StateRestorationTests.plainScriptedRun_eq,

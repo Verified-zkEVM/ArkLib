@@ -461,27 +461,34 @@ independently of input, authored selector and oracle payload.
 
 | API | Before this restack | After this restack |
 | --- | --- | --- |
-| `terminalObservation` | Only `protocol rounds`, fixed `T`, small inputs | Any `s`, `S : Type uS`, input index `I : Type uI`, independent query universes; result `Option (T (projectPathAlong _ _ tr))` |
-| `closedTerminalObservation` | Fixed statement and output oracle carriers | Statement and oracle data at the transcript's path; output index may have its own universe outside a run |
+| `terminalObservation` | Only `protocol rounds`, fixed `T`, small inputs | Any `s : OracleProtocol.{u}`, `S : Type uS`, input index `I : Type uI`, independent query universes; result `Option (T (projectPathAlong _ _ tr))` in the move universe `u` |
+| `closedTerminalObservation` | Fixed statement and output oracle carriers | General move universe `u`; statement and oracle data at the transcript's path; output index may have its own universe outside a run |
 | `verificationGame`, `closedVerificationGame` and their equality/evaluation laws | Product of transcript and a fixed observation type | Input paired with a dependent pair of transcript and observation at that path, plus the unchanged adversary witness |
 | Uniform, private-coin, per-round and measured game relations | `relOut stmt tr out w` at a fixed output carrier | Same arguments, with `out : T (projectPathAlong _ _ tr)` or the closed path-indexed output |
 | `verificationGame_eval_run` | Separate path equality and output equality in a fixed carrier | Equality of the dependent pair containing the path and its correctly typed observation |
 | `run_scriptedProver` | Small statement and input-index types | Independent statement, input-index and query universes; run output constraints remain those of entry 18 |
-| Unmeasured keyed predicates and restoration bounds | `Win stmt` and intermediate witnesses in `Type` | Independent input-witness universe `uW` and certificate universe `uK`, retaining statement-indexed carriers and every original relation |
+| Unmeasured keyed predicates and restoration bounds | `Win stmt` and intermediate witnesses in `Type` | Independent input-witness, certificate and terminal-witness universes `uW`, `uK`, `uO`, including uniform, private-coin and per-round bounds; every original relation is retained |
 | Measured node-kind budgets and stage bounds | Small statement index | Independent statement universe; program input/result carriers retain pinned VCVio's small-universe scope |
 | Plain replay | Constant statement carrier | Prover-authored `b` selects `Fin 8`/`Fin 9`, with all original challenge quantifiers and returned values |
 
 The probabilistic restoration games return the selected input and oracle data; these are run
 outputs and remain small under entry 18. Input witnesses are not returned by the game and take
-universe `uW`. Intermediate certificate witnesses take universe `uK` independently. Deterministic
-observations and the scripted-run theorem have the larger argument universes listed above.
+universe `uW`. Intermediate certificate witnesses and terminal witnesses take independent
+universes `uK` and `uO`. `readOut` maps the small adversary witness to the terminal carrier at
+the completed transcript. Deterministic observations also accept moves in `Type u`; the
+scripted-run theorem has the larger argument universes listed above.
 
 ### Shared extraction laws and merge resolution
 
 The merge conflicted in `Security/KnowledgeComposition.lean` and this notes file. The parent's
 composition module and entries 1–19 were kept. The root-failure theorem and the two child
 restriction laws contributed by state restoration were moved beside the definitions in
-`Security/KnowledgeComposition/Extraction.lean`, retaining independent universes.
+`Security/KnowledgeComposition/Extraction.lean`, retaining independent universes. The later
+merge of parent commits `38045be5ce` and `a943e51dd5` conflicted in `Extraction.lean`. It keeps
+the parent's generalization and every declaration from both merge parents. The shared
+`badChallengeFromMaps`, root-failure theorem, `badChallengeFrom_child` and
+`badChallengeAlong_liftBind` accept independent move and terminal-witness universes, with
+`P : PFunctor.{uA, u}`, a lens to `rolePoly.{u}` and leaves `PUnit.{u + 1}`.
 `badChallengeFromMaps` factors the same bad-transition recursion through the certificate's actual
 states and extraction maps, so unused root obligations do not affect it. Keyed recursive helpers
 use `withRootWitness` internally, as the parent composition does; their public signatures retain
@@ -491,7 +498,32 @@ the original input carrier.
 `BadChallengeOnCompletion F stmt messages table w key`. Every transition keeps the witness
 extracted from the actual remaining transcript and the supplied `w`. Only the explicitly named
 `BadChallengeOnCompletion.mem_badChallenge` forgets that witness for the probability bound.
-The larger-certificate canary checks keyed localization after lifting the certificate to `Type 1`.
+The full certificate universe list is `KnowledgeStateFunction.{uS, uW, uK, uO, uA, u}`.
+Restoration uses `.{0, uW, uK, uO, 1, 0}`; the measured stage-budget theorems use
+`.{uS, 0, 0, 0, 1, 0}` explicitly. `KnowledgeStateFunction.lift` appends its target universe
+after those six parameters and raises only the intermediate carrier. The original keyed
+localization canary still lifts that carrier to `Type 1`. Added canaries combine terminal
+witnesses in `Type 1` with intermediate witnesses in `Type 2`, exercise uniform and per-round
+bounds with large terminal carriers, and check the first-move law at arbitrary move universes.
+
+The remaining small carriers follow these exact declarations at VCVio pin
+`fc54dd3d7691d6f5db7dc829e321a727f095bc2d`:
+
+- `SampleableType (β : Type)` in
+  `VCVio/OracleComp/Constructions/SampleableType/Basic.lean:51` forces
+  `Round.sampleChallenge` to sample small challenges. `protocol` uses `OraclePoly.{0}`,
+  whose messages and challenges share the move universe. Round-specific pure keyed laws
+  therefore remain on this small protocol; the shared extraction laws are general.
+- `ProbComp : Type → Type` in `VCVio/OracleComp/ProbComp/Basic.lean:31` keeps random
+  outputs small in the restoration games and bounds. It does not restrict `readOut`
+  or the certificate's input, intermediate or terminal witness universes.
+- `OracleComp.BudgetedProgram {Input Result : Type}` in
+  `VCVio/OracleComp/QueryTracking/MeasuredProgram.lean:156` fixes root results, step
+  inputs/results and leaf inputs to `Type`. `KnowledgeStateFunction.MeasuredStages`
+  (`Core/Security/MeasuredResources.lean:99`) applies this interface to the actual extraction
+  maps. Its three restoration budget theorems and the packaged measured game theorem retain
+  small input, intermediate and terminal witnesses. `OracleComp.MeasuredProgram` at line 66
+  also fixes the cost carrier `ω` to `Type`.
 
 ### Frozen one-round rows
 

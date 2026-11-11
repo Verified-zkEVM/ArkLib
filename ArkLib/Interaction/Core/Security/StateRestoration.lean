@@ -34,7 +34,7 @@ not change that prefix (`keyHistory_update`).
 
 @[expose] public section
 
-universe uK uW wI wJ uS uI uJ
+universe uK uW uO u wI wJ uS uI uJ
 
 namespace Interaction.Core.StateRestoration
 open PFunctor FreeM TwoParty.Lens OracleComp OracleSpec Oracle
@@ -342,11 +342,11 @@ theorem sampleAt_keySpine : {rounds : List Round} → (key : Key Input Salt roun
 
 section Observation
 
-variable {s : OracleProtocol} {I : Type uI} {S : Type uS} {A : I → Type}
-  {T : Path s → Type} {J : Path s → Type uJ}
-  {B : (p : Path s) → J p → Type}
-  {inputs : OracleFamily.{uI, 0, wI} I A}
-  {outputs : (p : Path s) → OracleFamily.{uJ, 0, wJ} (J p) (B p)}
+variable {s : OracleProtocol.{u}} {I : Type uI} {S : Type uS} {A : I → Type u}
+  {T : Path s → Type u} {J : Path s → Type uJ}
+  {B : (p : Path s) → J p → Type u}
+  {inputs : OracleFamily.{uI, u, wI} I A}
+  {outputs : (p : Path s) → OracleFamily.{uJ, u, wJ} (J p) (B p)}
 
 /-- The decision of a verifier with no ambient oracle on a completed transcript. Resource queries
 are answered from the input data and the transcript's oracle payloads. -/
@@ -708,13 +708,13 @@ variable {S W : Type} {Win : S → Type uW} {admissible : S → Prop}
 actual remaining transcript and the supplied output witness. Later keys restrict the same state
 function below the earlier recorded moves, preserving the suffix extraction. -/
 def badChallengeOnCompletionAux {Salt : Type} :
-    {rounds : List Round} → {Wout : S → PathAlong oracleSig (protocol rounds) → Type} →
+    {rounds : List Round} → {Wout : S → PathAlong oracleSig (protocol rounds) → Type uO} →
     {Win : S → Type uK} → {admissible : S → Prop} →
     {relIn : (stmt : S) → Win stmt → Prop} →
     {validOutput : (stmt : S) → (tr : PathAlong oracleSig (protocol rounds)) →
       Wout stmt tr → Prop} →
-    (F : KnowledgeStateFunction.{0, uK, uK} oracleSig (protocol rounds) S Wout Win admissible relIn
-      validOutput) →
+    (F : KnowledgeStateFunction.{0, uK, uK, uO, 1, 0} oracleSig (protocol rounds)
+      S Wout Win admissible relIn validOutput) →
     (z : S) → (messages : Messages Salt rounds) → (table : Table S Salt rounds) →
     Wout z (completedPath rounds z messages table) → Key S Salt rounds → Prop
   | [], _, _, _, _, _, _, _, _, _, _, key => key.elim
@@ -735,13 +735,13 @@ def badChallengeOnCompletionAux {Salt : Type} :
 
 /-- The witness-preserving completion law at an independent input-witness universe. -/
 def BadChallengeOnCompletion {Salt : Type} :
-    {rounds : List Round} → {Wout : S → PathAlong oracleSig (protocol rounds) → Type} →
+    {rounds : List Round} → {Wout : S → PathAlong oracleSig (protocol rounds) → Type uO} →
     {Win : S → Type uW} → {admissible : S → Prop} →
     {relIn : (stmt : S) → Win stmt → Prop} →
     {validOutput : (stmt : S) → (tr : PathAlong oracleSig (protocol rounds)) →
       Wout stmt tr → Prop} →
-    (F : KnowledgeStateFunction.{0, uW, uK} oracleSig (protocol rounds) S Wout Win admissible relIn
-      validOutput) →
+    (F : KnowledgeStateFunction.{0, uW, uK, uO, 1, 0} oracleSig (protocol rounds)
+      S Wout Win admissible relIn validOutput) →
     (z : S) → (messages : Messages Salt rounds) → (table : Table S Salt rounds) →
     Wout z (completedPath rounds z messages table) → Key S Salt rounds → Prop := by
   intro rounds Wout Win admissible relIn validOutput F
@@ -750,13 +750,13 @@ def BadChallengeOnCompletion {Salt : Type} :
 /-- A witness-preserving bad transition on a completed transcript belongs to one of the actual
 completion keys. This only locates the generic bad transition; it does not repeat extraction. -/
 theorem badChallengeAlong_completionAux {Salt : Type} :
-    {rounds : List Round} → {Wout : S → PathAlong oracleSig (protocol rounds) → Type} →
+    {rounds : List Round} → {Wout : S → PathAlong oracleSig (protocol rounds) → Type uO} →
     {Win : S → Type uK} → {admissible : S → Prop} →
     {relIn : (stmt : S) → Win stmt → Prop} →
     {validOutput : (stmt : S) → (tr : PathAlong oracleSig (protocol rounds)) →
       Wout stmt tr → Prop} →
-    (F : KnowledgeStateFunction.{0, uK, uK} oracleSig (protocol rounds) S Wout Win admissible relIn
-      validOutput) →
+    (F : KnowledgeStateFunction.{0, uK, uK, uO, 1, 0} oracleSig (protocol rounds)
+      S Wout Win admissible relIn validOutput) →
     (z : S) → (messages : Messages Salt rounds) → (table : Table S Salt rounds) →
     (w : Wout z (completedPath rounds z messages table)) →
     F.BadChallengeAlong z (completedPath rounds z messages table) w →
@@ -776,13 +776,13 @@ theorem badChallengeAlong_completionAux {Salt : Type} :
 
 /-- The witness-preserving completion law at an independent input-witness universe. -/
 theorem badChallengeAlong_completion {Salt : Type} :
-    {rounds : List Round} → {Wout : S → PathAlong oracleSig (protocol rounds) → Type} →
+    {rounds : List Round} → {Wout : S → PathAlong oracleSig (protocol rounds) → Type uO} →
     {Win : S → Type uW} → {admissible : S → Prop} →
     {relIn : (stmt : S) → Win stmt → Prop} →
     {validOutput : (stmt : S) → (tr : PathAlong oracleSig (protocol rounds)) →
       Wout stmt tr → Prop} →
-    (F : KnowledgeStateFunction.{0, uW, uK} oracleSig (protocol rounds) S Wout Win admissible relIn
-      validOutput) →
+    (F : KnowledgeStateFunction.{0, uW, uK, uO, 1, 0} oracleSig (protocol rounds)
+      S Wout Win admissible relIn validOutput) →
     (z : S) → (messages : Messages Salt rounds) → (table : Table S Salt rounds) →
     (w : Wout z (completedPath rounds z messages table)) →
     F.BadChallengeAlong z (completedPath rounds z messages table) w →
@@ -795,11 +795,11 @@ theorem badChallengeAlong_completion {Salt : Type} :
 the failing transition on the actual suffix-extracted witness. The arbitrary-protocol extraction
 result is `KnowledgeStateFunction.extraction_failure_implies_badChallengeAlong`. -/
 theorem exists_badChallenge_of_extraction_failure {Salt : Type} {rounds : List Round}
-    {Wout : S → PathAlong oracleSig (protocol rounds) → Type}
+    {Wout : S → PathAlong oracleSig (protocol rounds) → Type uO}
     {validOutput : (stmt : S) → (tr : PathAlong oracleSig (protocol rounds)) →
       Wout stmt tr → Prop}
-    (F : KnowledgeStateFunction.{0, uW, uK} oracleSig (protocol rounds) S Wout Win admissible
-    relIn validOutput)
+    (F : KnowledgeStateFunction.{0, uW, uK, uO, 1, 0} oracleSig (protocol rounds)
+      S Wout Win admissible relIn validOutput)
     (z : S) (messages : Messages Salt rounds) (table : Table S Salt rounds)
     (w : Wout z (completedPath rounds z messages table))
     (valid : validOutput z (completedPath rounds z messages table) w)
@@ -815,13 +815,13 @@ theorem exists_badChallenge_of_extraction_failure {Salt : Type} {rounds : List R
 /-- Forgetting the named suffix witness of a bad completion key gives the bad-challenge event
 used by the local probability bound. -/
 theorem BadChallengeOnCompletion.mem_badChallengeAux {Salt : Type} :
-    {rounds : List Round} → {Wout : S → PathAlong oracleSig (protocol rounds) → Type} →
+    {rounds : List Round} → {Wout : S → PathAlong oracleSig (protocol rounds) → Type uO} →
     {Win : S → Type uK} → {admissible : S → Prop} →
     {relIn : (stmt : S) → Win stmt → Prop} →
     {validOutput : (stmt : S) → (tr : PathAlong oracleSig (protocol rounds)) →
       Wout stmt tr → Prop} →
-    (F : KnowledgeStateFunction.{0, uK, uK} oracleSig (protocol rounds) S Wout Win admissible relIn
-      validOutput) →
+    (F : KnowledgeStateFunction.{0, uK, uK, uO, 1, 0} oracleSig (protocol rounds)
+      S Wout Win admissible relIn validOutput) →
     (z : S) → (messages : Messages Salt rounds) → (table : Table S Salt rounds) →
     (w : Wout z (completedPath rounds z messages table)) → (key : Key S Salt rounds) →
     key ∈ completionKeys rounds z messages → BadChallengeOnCompletion F z messages table w key →
@@ -845,19 +845,19 @@ theorem BadChallengeOnCompletion.mem_badChallengeAux {Salt : Type} :
     exact ih
 
 variable {Salt : Type} {rounds : List Round}
-  {Wout : S → PathAlong oracleSig (protocol rounds) → Type}
+  {Wout : S → PathAlong oracleSig (protocol rounds) → Type uO}
   {validOutput : (stmt : S) → (tr : PathAlong oracleSig (protocol rounds)) →
     Wout stmt tr → Prop}
 
 /-- The witness-preserving completion law at an independent input-witness universe. -/
 theorem BadChallengeOnCompletion.mem_badChallenge {Salt : Type} :
-    {rounds : List Round} → {Wout : S → PathAlong oracleSig (protocol rounds) → Type} →
+    {rounds : List Round} → {Wout : S → PathAlong oracleSig (protocol rounds) → Type uO} →
     {Win : S → Type uW} → {admissible : S → Prop} →
     {relIn : (stmt : S) → Win stmt → Prop} →
     {validOutput : (stmt : S) → (tr : PathAlong oracleSig (protocol rounds)) →
       Wout stmt tr → Prop} →
-    (F : KnowledgeStateFunction.{0, uW, uK} oracleSig (protocol rounds) S Wout Win admissible relIn
-      validOutput) →
+    (F : KnowledgeStateFunction.{0, uW, uK, uO, 1, 0} oracleSig (protocol rounds)
+      S Wout Win admissible relIn validOutput) →
     (z : S) → (messages : Messages Salt rounds) → (table : Table S Salt rounds) →
     (w : Wout z (completedPath rounds z messages table)) → (key : Key S Salt rounds) →
     key ∈ completionKeys rounds z messages → BadChallengeOnCompletion F z messages table w key →
@@ -867,16 +867,16 @@ theorem BadChallengeOnCompletion.mem_badChallenge {Salt : Type} :
 
 /-- An admissible key whose answer is a bad challenge at the key's prefix. -/
 def badKey
-    (F : KnowledgeStateFunction.{0, uW, uK} oracleSig (protocol rounds) S Wout Win admissible
-    relIn validOutput)
+    (F : KnowledgeStateFunction.{0, uW, uK, uO, 1, 0} oracleSig (protocol rounds)
+      S Wout Win admissible relIn validOutput)
     (key : Key S Salt rounds) (table : Table S Salt rounds) : Prop :=
   admissible key.input ∧ table key ∈ F.badChallenge (keySpine key) (keyHistory key table) key.input
 
 /-- Resampling the answer at a key makes it bad with probability at most the error of the key's
 challenge node, for every background table. -/
 theorem badKey_resample_bound [DecidableEq (Key S Salt rounds)]
-    {F : KnowledgeStateFunction.{0, uW, uK} oracleSig (protocol rounds) S Wout Win admissible
-    relIn validOutput}
+    {F : KnowledgeStateFunction.{0, uW, uK, uO, 1, 0} oracleSig (protocol rounds)
+      S Wout Win admissible relIn validOutput}
     {ε : ChallengeNode oracleSig (protocol rounds) → ENNReal}
     (bounded : F.LocallyBounded (uniformDraw rounds) ε)
     (key : Key S Salt rounds) (table : Table S Salt rounds) :
@@ -902,8 +902,8 @@ theorem badKey_resample_bound [DecidableEq (Key S Salt rounds)]
 extraction fails queries a bad key. The adversary's witness is read at the completed transcript by
 `readOut`. -/
 theorem restored_bad_trace
-    (F : KnowledgeStateFunction.{0, uW, uK} oracleSig (protocol rounds) S Wout Win admissible
-    relIn validOutput)
+    (F : KnowledgeStateFunction.{0, uW, uK, uO, 1, 0} oracleSig (protocol rounds)
+      S Wout Win admissible relIn validOutput)
     (readOut : (stmt : S) → (tr : PathAlong oracleSig (protocol rounds)) → W → Wout stmt tr)
     (adversary : OracleComp (oracleSpec S Salt rounds) (S × Messages Salt rounds × W))
     (table : Table S Salt rounds)
@@ -947,8 +947,8 @@ theorem restored_bad_trace
 the probability that the selected input is admissible, the output read at the completed transcript
 is valid and extraction fails is at most `(Q + rounds.length) * error`. -/
 theorem restoredExecution_knowledge_soundness [DecidableEq (Key S Salt rounds)]
-    (F : KnowledgeStateFunction.{0, uW, uK} oracleSig (protocol rounds) S Wout Win admissible
-    relIn validOutput)
+    (F : KnowledgeStateFunction.{0, uW, uK, uO, 1, 0} oracleSig (protocol rounds)
+      S Wout Win admissible relIn validOutput)
     (error : ENNReal) (bounded : F.LocallyBounded (uniformDraw rounds) (uniformEps rounds error))
     (readOut : (stmt : S) → (tr : PathAlong oracleSig (protocol rounds)) → W → Wout stmt tr)
     (adversary : OracleComp (oracleSpec S Salt rounds) (S × Messages Salt rounds × W))
@@ -977,7 +977,7 @@ variable {rounds : List Round} {I S Salt W : Type} {A : I → Type}
   {inputs : OracleFamily.{0, 0, wI} I A}
   {outputs : (p : Path (protocol rounds)) → OracleFamily.{0, 0, wJ} (J p) (B p)}
   {admissible : S × (∀ i, A i) → Prop} {relIn : (stmt : S × (∀ i, A i)) → Win stmt → Prop}
-  {Wout : (S × (∀ i, A i)) → PathAlong oracleSig (protocol rounds) → Type}
+  {Wout : (S × (∀ i, A i)) → PathAlong oracleSig (protocol rounds) → Type uO}
   {validOutput : (stmt : S × (∀ i, A i)) → (tr : PathAlong oracleSig (protocol rounds)) →
     Wout stmt tr → Prop}
 
@@ -992,7 +992,7 @@ theorem stateRestoration_knowledge_soundness [DecidableEq (Key (S × (∀ i, A i
     (V : OracleVerifier []ₒ (protocol rounds) S T inputs outputs)
     (relOut : S × (∀ i, A i) → (tr : PathAlong oracleSig (protocol rounds)) →
       T (projectPathAlong oracleSig _ tr) → W → Prop)
-    (F : KnowledgeStateFunction.{0, uW, uK} oracleSig (protocol rounds)
+    (F : KnowledgeStateFunction.{0, uW, uK, uO, 1, 0} oracleSig (protocol rounds)
     (S × (∀ i, A i)) Wout Win admissible
       relIn validOutput)
     (readOut : (stmt : S × (∀ i, A i)) → (tr : PathAlong oracleSig (protocol rounds)) → W →
@@ -1023,7 +1023,7 @@ theorem stateRestoration_oracle_knowledge_soundness
     (V : OracleVerifier []ₒ (protocol rounds) S T inputs outputs)
     (relOut : S × (∀ i, A i) → (tr : PathAlong oracleSig (protocol rounds)) →
       OracleVerifier.Output T B (projectPathAlong oracleSig _ tr) → W → Prop)
-    (F : KnowledgeStateFunction.{0, uW, uK} oracleSig (protocol rounds)
+    (F : KnowledgeStateFunction.{0, uW, uK, uO, 1, 0} oracleSig (protocol rounds)
     (S × (∀ i, A i)) Wout Win admissible
       relIn validOutput)
     (readOut : (stmt : S × (∀ i, A i)) → (tr : PathAlong oracleSig (protocol rounds)) → W →
@@ -1053,7 +1053,7 @@ theorem stateRestoration_knowledge_soundness_privateCoins
     (V : OracleVerifier []ₒ (protocol rounds) S T inputs outputs)
     (relOut : S × (∀ i, A i) → (tr : PathAlong oracleSig (protocol rounds)) →
       T (projectPathAlong oracleSig _ tr) → W → Prop)
-    (F : KnowledgeStateFunction.{0, uW, uK} oracleSig (protocol rounds)
+    (F : KnowledgeStateFunction.{0, uW, uK, uO, 1, 0} oracleSig (protocol rounds)
     (S × (∀ i, A i)) Wout Win admissible
       relIn validOutput)
     (readOut : (stmt : S × (∀ i, A i)) → (tr : PathAlong oracleSig (protocol rounds)) → W →
@@ -1085,7 +1085,7 @@ theorem stateRestoration_oracle_knowledge_soundness_privateCoins
     (V : OracleVerifier []ₒ (protocol rounds) S T inputs outputs)
     (relOut : S × (∀ i, A i) → (tr : PathAlong oracleSig (protocol rounds)) →
       OracleVerifier.Output T B (projectPathAlong oracleSig _ tr) → W → Prop)
-    (F : KnowledgeStateFunction.{0, uW, uK} oracleSig (protocol rounds)
+    (F : KnowledgeStateFunction.{0, uW, uK, uO, 1, 0} oracleSig (protocol rounds)
     (S × (∀ i, A i)) Wout Win admissible
       relIn validOutput)
     (readOut : (stmt : S × (∀ i, A i)) → (tr : PathAlong oracleSig (protocol rounds)) → W →
