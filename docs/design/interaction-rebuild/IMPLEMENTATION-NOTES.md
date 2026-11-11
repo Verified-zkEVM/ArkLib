@@ -205,6 +205,23 @@ specialization's data and response universes together. This no longer restricts 
 input API, and the shared interface is unchanged. Output families and oracle-node payload
 interfaces still use `OracleInterface`; a run returns their data in the move/response universe.
 
+**Equivalent: Agreement output and witness families (F7 and 3A).** `Security/Agreement.lean`
+now preserves path-dependent `T p`, `J p`, `B p j` and `outputs p` in every agreement and tree
+transport law. The output type is `OracleVerifier.Output T B`. Agreement itself and the decision
+and output-map cast laws retain independent ambient and output-index universes; the ordinary
+run laws retain the owner's general move/response universe. Probability laws keep only their
+owners' small returned-value constraints. General resource inputs keep data and query universes
+independent. The full-log law retains the parent's small resource-query indices.
+
+Round-by-round knowledge agreement and transport quantify over `Win stmt` and `W stmt tr`,
+with independent input, intermediate and output witness universes. The output relation receives
+the input statement, completed transcript, output and witness in that order. The owner definition
+in `Security/RoundByRound.lean` is unchanged. Prefix-dependent draws and local errors remain
+available; Sumcheck specializes them through `rbrKnowledgeSoundnessOfNodes`. The
+[Agreement inventory](../interaction-layer/sumcheck.md#agreement-universes-and-parent-limits)
+marks both reviewed contracts equivalent and records the ordinary-import universe clients.
+Neither P1 nor P2 retires an Agreement output or witness contract.
+
 **Unresolved: the full-log oracle runner.** `OracleVerifier.runWithLog` returns the decision's
 full query log, which records resource queries. Its input query index and oracle-node query
 type must remain in `Type`. A large-query full-log API needs a parent logging interface whose
@@ -648,20 +665,22 @@ Inherited universe constraints remain in [entry 18](#18-run-outputs-are-tied-to-
 ### 22. Sumcheck domain multiplicity and routing laws
 
 
-`Sumcheck.Core.Soundness` now proves full-run soundness natively for every map
+`Sumcheck.Core.Soundness` now proves full-run soundness in the interaction layer for every map
 `D : Fin d → R`, with indexed sums that retain repeated points. `Indexed` proves the local
 false-to-true bound and constructs the round-by-round state function. It applies #1486's
 `OracleVerifier.soundness_of_rbrSoundness_uniform` and counts one challenge per round to obtain
 `n * (deg / |R|)` for the actual core run of every prover. `Soundness` derives arbitrary-list
 and injective corollaries, plus committed and possibly failing randomized one-round bounds in
-probability and measure form. No native security theorem imports or uses the legacy embedding.
+probability and measure form. These interaction layer security theorems do not use the legacy
+embedding.
 
-`Types`, `Tree` and `Domain` own the native statements, fixed protocol and indexed arithmetic.
+`Types`, `Tree` and `Domain` define the interaction layer statements, fixed protocol and
+indexed arithmetic.
 `DomainEquivalence` keeps the separate injective comparison with `Spec`; `LegacySoundness` keeps
 the previous transferred bound as a comparison check. The arithmetic holds for commutative
 semirings. The probabilistic bounds add `IsDomain`, finiteness and uniform sampling. Tests check
-that constant one sums to two over `[0, 0]`, to one over `[0]`, and passes the native final
-decision with repeated points and target two. The native tests audit the theorem axioms.
+that constant one sums to two over `[0, 0]`, to one over `[0]`, and passes the
+interaction layer final decision with repeated points and target two. The interaction layer tests audit the theorem axioms.
 
 #1488 owns interval endpoints and builds `intervalVerifier` from `foldVerifier`. The exact-row
 Sumcheck disposition marks interval execution, projection and append clients as child-owned;

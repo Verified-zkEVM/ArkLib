@@ -1,7 +1,7 @@
 # Sumcheck in the interaction layer
 
-`Sumcheck.Core.Soundness` proves full-run soundness natively over an arbitrary finite indexed
-domain `D : Fin d → R`. The verifier sums over indices. In particular, the constant polynomial
+`Sumcheck.Core.Soundness` proves full-run soundness in the interaction layer over an arbitrary
+finite indexed domain `D : Fin d → R`. The verifier sums over indices. In particular, the constant polynomial
 one has sum two over `[0, 0]`; neither the verifier nor its proof deduplicates the list.
 
 The proof first bounds a false-to-true transition of the remaining-sum relation at each fresh
@@ -16,22 +16,22 @@ commutative semiring with `IsDomain`; the domain map need not be injective or no
 
 | Module | Contents |
 |---|---|
-| `Types` | Native round statements, polynomial oracle data and prefix/suffix coordinates. |
+| `Types` | Interaction layer round statements, polynomial oracle data and prefix/suffix coordinates. |
 | `SingleRound`, `Tree` | The oracle-message/public-challenge round, the fixed full-run tree, transcript access and sampling. |
 | `Domain` | Indexed remaining sums, honest projected polynomials, the successor identity and final evaluation relation. |
-| `Indexed` | The native indexed verifier, its actual-run equation, the state function and native local-to-global soundness proof. |
+| `Indexed` | The interaction layer indexed verifier, its actual-run equation, the state function and interaction layer local-to-global soundness proof. |
 | `Soundness` | Full-run, arbitrary-list and injective corollaries; actual-run committed and randomized bounds in probability and measure form. |
 | `DomainEquivalence` | Separate agreement checks with the injective legacy `Spec` representation. |
 | `Protocol`, `Execution`, `Completeness` | Compatibility honest prover and decision, closed-form runs and direct completeness. |
 | `LegacyEquivalence`, `LegacySoundness`, `LegacyCompleteness` | Separate execution and security comparisons with embedded legacy Sumcheck. |
 | `Knowledge`, `RoundByRound` | Compatibility knowledge and round-by-round transfers. |
 
-The native import graph is `Soundness → Indexed → Domain / Tree → Types`. It does not import
-`Sumcheck.Spec`, the compatibility execution or a legacy security transfer. `DomainEquivalence`
+The interaction layer import graph is `Soundness → Indexed → Domain / Tree → Types`. It does
+not import `Sumcheck.Spec`, the compatibility execution or a legacy security transfer. `DomainEquivalence`
 and `LegacyEquivalence` check agreement separately. The compatibility `verifier` keeps its old
-name; the native verifier is `indexedVerifier`.
+name; the interaction layer verifier is `indexedVerifier`.
 
-## The native verifier and its bound
+## The interaction layer verifier and its bound
 
 `protocol R deg n` has exactly `n` rounds. Each sends a degree-bounded polynomial and draws a
 public challenge in `R`. Neither the oracle message nor the challenge selects shape (P2).
@@ -45,13 +45,13 @@ full challenge vector. If a false current relation passes the message's indexed 
 the honest and sent round polynomials differ. A successor relation can hold only at one of
 their agreement points, whose uniform mass is at most `deg / |R|`.
 
-| Native theorem | Exact scope |
+| Interaction layer theorem | Exact scope |
 |---|---|
 | `indexed_round_soundness` | One false-to-true indexed round, including the sum check. |
 | `indexedVerifier_rbrSoundness` | Every full execution prefix, with local error `deg / |R|`. |
 | `verifier_soundness`, `verifier_soundness_rounds` | The actual full run, for every prover, with `n` times that error. |
 | `verifier_soundness_list` | `D = domain.get` for any list, retaining repetitions. |
-| `verifier_soundness_injective` | The same native bound for an embedding. |
+| `verifier_soundness_injective` | The same interaction layer bound for an embedding. |
 | `verifier_run_soundness` | Probability that the actual run returns a verdict satisfying the final evaluation relation. |
 | `committed_soundness`, `committed_measureSoundness` | An arbitrary polynomial committed before the one-round challenge. |
 | `randomized_soundness`, `randomized_measureSoundness` | An ambient, possibly failing commitment before the fresh challenge, including shared state. |
@@ -103,9 +103,9 @@ The compatibility knowledge theorems retain the legacy relations and injective d
 `verifier_knowledgeSoundness` quantifies over legacy-compatible output statements and witnesses;
 `verifier_rbrKnowledgeSoundness` quantifies over all provers with `Unit` witnesses.
 `verifier_rbrSoundness` is the separate compatibility round-by-round transfer.
-The native round-by-round theorem is `indexedVerifier_rbrSoundness`.
+The interaction layer round-by-round theorem is `indexedVerifier_rbrSoundness`.
 `legacyVerifier_soundness` in `LegacySoundness` and its rounds form preserve the old transfer as a
-comparison check. The native security statements do not use them.
+comparison check. The interaction layer security statements do not use them.
 
 `perfectCompleteness` proves completeness directly for the compatibility honest prover and
 every challenge implementation. `legacyProver_perfectCompleteness` concerns the embedded legacy
@@ -118,8 +118,8 @@ The knowledge transfers extract the constant `Unit` output witness from the prov
 
 The files under `ArkLibTest/ProofSystem/Sumcheck/Core/` retain the existing acceptance, rejection,
 exact-probability, adaptive-message, effect-order, routing and axiom checks. Compatibility tests
-import the comparison modules explicitly. Native tests add arbitrary maps and lists, committed
-and randomized actual runs, and an actual final decision with constant message one and target
+import the comparison modules explicitly. Interaction layer tests add arbitrary maps and lists,
+committed and randomized actual runs, and an actual final decision with constant message one and target
 two over `[0, 0]`. `NativeSoundnessTest.repeated_run` checks the complete accepting program
 on that repeated domain, including the transcript and retained input oracle. `Domain` also checks the repeated-point sum, its deduplicated contrast and a
 two-coordinate indexed sum. Axiom checks permit only `propext`, `Classical.choice` and `Quot.sound`.
@@ -151,8 +151,8 @@ Each row has exactly one status:
 - **unresolved**: the row names a missing parent interface. A carrier fact cannot close a
   behavior-guarantee assertion.
 
-Compatibility comparisons do not close native soundness rows. The native full-run bounds above
-close those rows; interval completeness and projection executions remain with #1488.
+Compatibility comparisons do not close interaction layer soundness rows. The full-run bounds
+above close those rows; interval completeness and projection executions remain with #1488.
 
 ### ArbitraryCompleteness
 
@@ -225,9 +225,9 @@ close those rows; interval completeness and projection executions remain with #1
 | `Protocol.lean` #3, L101 `abort_response` | T/Effects.lean: `EffectsTest.bad_first_rounds`, `EffectsTest.runWithLog_wrong` | premise-required (P1) |
 | `Protocol.lean` #4, L107 example | T/Effects.lean: `EffectsTest.bad_first_rounds`, `EffectsTest.runWithLog_wrong` | premise-required (P1) |
 | `Protocol.lean` #5, L113 example | T/Effects.lean: `EffectsTest.target_seven_not_final` | equivalent |
-| `Protocol.lean` #6, L144 example | C/Soundness.lean: `verifier_run_soundness`, `verifier_soundness_rounds`; native axiom checks | premise-required (P2) |
+| `Protocol.lean` #6, L144 example | C/Soundness.lean: `verifier_run_soundness`, `verifier_soundness_rounds`; interaction layer axiom checks | premise-required (P2) |
 | `Protocol.lean` #7, L171 example | #1488: `Sumcheck.Core.intervalVerifier`, appended first-round and remaining intervals | child-owned (#1488) |
-| `Protocol.lean` #8, L196 `#print axioms execute_soundness` | C/Soundness.lean: `verifier_run_soundness`, `verifier_soundness_rounds`; native axiom checks | premise-required (P2) |
+| `Protocol.lean` #8, L196 `#print axioms execute_soundness` | C/Soundness.lean: `verifier_run_soundness`, `verifier_soundness_rounds`; interaction layer axiom checks | premise-required (P2) |
 | `Protocol.lean` #9, L197 `#print axioms execute_support_completeness` | C/Completeness.lean: `perfectCompleteness`; T/Completeness.lean: axiom checks | premise-required (P2) |
 | `Protocol.lean` #10, L198 `#print axioms execute_perfectCompleteness` | C/Completeness.lean: `perfectCompleteness`; T/Completeness.lean: axiom checks | premise-required (P2) |
 
@@ -265,7 +265,7 @@ close those rows; interval completeness and projection executions remain with #1
 |---|---|---|
 | `Soundness.lean` #1, L29 example | T/SingleRound.lean:253, collision-zero example | equivalent |
 | `Soundness.lean` #2, L35 example | T/SingleRound.lean:266, collision-one example | equivalent |
-| `Soundness.lean` #3, L41 example | C/Soundness.lean: `committed_soundness`; T/Soundness.lean: native arbitrary-list client and axiom check | equivalent |
+| `Soundness.lean` #3, L41 example | C/Soundness.lean: `committed_soundness`; T/Soundness.lean: interaction layer arbitrary-list client and axiom check | equivalent |
 | `Soundness.lean` #4, L49 example | T/SingleRound.lean:277, rejection at the collision challenge | equivalent |
 | `Soundness.lean` #5, L66 `rejection_probability` | T/Soundness.lean: `SoundnessTest.rejection_probability` | equivalent |
 | `Soundness.lean` #6, L77 `exact_repair_probability` | T/Soundness.lean: `SoundnessTest.exact_repair_probability` | equivalent |
@@ -287,10 +287,10 @@ close those rows; interval completeness and projection executions remain with #1
 | `Soundness.lean` #22, L164 `#print axioms fresh_bound_lt_one` | T/Soundness.lean: `SoundnessTest.fresh_bound_lt_one` axiom check | equivalent |
 | `Soundness.lean` #23, L165 `#print axioms empty_domain_rejection` | T/Soundness.lean: `SoundnessTest.empty_domain_rejection` axiom check | equivalent |
 | `Soundness.lean` #24, L169 `#print axioms executeCommitted_eq` | T/SingleRound.lean: `SingleRoundTest.run_oneRound`; C/Indexed.lean: `indexedVerifier_run` | equivalent |
-| `Soundness.lean` #25, L170 `#print axioms executeCommitted_soundness` | C/Soundness.lean: `committed_soundness`; T/Soundness.lean: native arbitrary-list client and axiom check | equivalent |
-| `Soundness.lean` #26, L171 `#print axioms executeRandomCommitment_soundness` | C/Soundness.lean: `randomized_soundness`; T/Soundness.lean: native arbitrary-list client and axiom check | equivalent |
-| `Soundness.lean` #27, L172 `#print axioms executeCommitted_measureSoundness` | C/Soundness.lean: `committed_measureSoundness`; native axiom check | equivalent |
-| `Soundness.lean` #28, L173 `#print axioms executeRandomCommitment_measureSoundness` | C/Soundness.lean: `randomized_measureSoundness`; native axiom check | equivalent |
+| `Soundness.lean` #25, L170 `#print axioms executeCommitted_soundness` | C/Soundness.lean: `committed_soundness`; T/Soundness.lean: interaction layer arbitrary-list client and axiom check | equivalent |
+| `Soundness.lean` #26, L171 `#print axioms executeRandomCommitment_soundness` | C/Soundness.lean: `randomized_soundness`; T/Soundness.lean: interaction layer arbitrary-list client and axiom check | equivalent |
+| `Soundness.lean` #27, L172 `#print axioms executeCommitted_measureSoundness` | C/Soundness.lean: `committed_measureSoundness`; interaction layer axiom check | equivalent |
+| `Soundness.lean` #28, L173 `#print axioms executeRandomCommitment_measureSoundness` | C/Soundness.lean: `randomized_measureSoundness`; interaction layer axiom check | equivalent |
 
 ### SourceRouting
 
@@ -322,7 +322,7 @@ The exact parent dispositions, including freshness and failure scope, are in
 #1488 owns interval verifiers and their endpoint-dependent composition and projection clients.
 The behavior-guarantee rows remain unresolved until the parent exposes the corresponding
 interface. The fixed protocol is not generic in its message carrier; the computable-carrier
-sharing question OQ17 remains open. The native full-run soundness proof needs neither an
+sharing question OQ17 remains open. The interaction layer full-run soundness proof needs neither an
 interval verifier nor a legacy fold-to-sequential bridge.
 
 ## Departures
@@ -353,24 +353,44 @@ retaining the input polynomial. It does not execute the projected output oracle 
 
 **Intervals.** #1488 builds `intervalVerifier` from its `foldVerifier` and adds `start`, `count`
 and `start + count = n`. The interval rows above remain unresolved by the full-run results. The
-native full-run soundness proof uses the generic soundness implication from #1486 directly.
+interaction layer full-run soundness proof uses the generic soundness implication from #1486
+directly.
 
 ## Agreement universes and parent limits
 
-`Interaction.Core.OracleVerifier.Agrees`, its ordinary-run, extraction, classical-security and
-Cast lemmas, and `Interaction.Core.Legacy.knowledgeSoundness_cast` / `completeness_cast` preserve
-independent input statement (`uS`), input index (`uI`), input query (`wI`) and output query (`wJ`)
-universes. They match `OracleVerifier` in `ArkLib/Interaction/Core/OracleVerifier.lean:471`.
-`ArkLibTest/Interaction/Core/AgreementUniverses.lean` uses ordinary imports with these four
-universes set to 2, 1, 3 and 4.
+`Interaction.Core.OracleVerifier.Agrees` and every law in `Security/Agreement.lean` accept
+path-dependent output statements `T p`, oracle indices `J p`, carriers `B p j` and interfaces
+`outputs p`. Observations and output problems use `OracleVerifier.Output T B`. The decision and
+output-map cast laws retain the verifier owner's independent ambient and output-index universes;
+ordinary runs retain its move/response universe `u`. Classical probability interfaces specialize
+the move and returned-value universe to zero, as their owners require.
 
-The remaining restrictions come from these exact parent interfaces:
+Agreement accepts general `Resources.{u, uI, dI}` inputs, with independent query and data
+universes. Family-shaped inputs specialize this API through `Resources.ofFamily`.
+Round-by-round knowledge agreement and transport retain `Win stmt`, `W stmt tr`, and relations
+`relOut stmt tr output witness`, with independent witness universes. They also preserve the
+parent's full-prefix challenge distributions and local errors. Sumcheck's compatibility theorem
+uses `rbrKnowledgeSoundnessOfNodes`, the parent specialization that ignores prefix history.
+
+| Reviewed contract | Status | Evidence |
+|---|---|---|
+| F7: path-dependent outputs throughout Agreement | equivalent | `Agrees`, all agreement consequences and every `*_cast` law reindex the statement and oracle families together. No constant-output replacement remains. |
+| 3A: statement-dependent knowledge witnesses and relations | equivalent | `Agrees.rbrKnowledgeSoundness_iff` and `rbrKnowledgeSoundness_cast` use the unchanged owner's argument shapes. Sumcheck passes `fun _ _ t w => (t, w) ∈ Spec.relationRound R n deg D (Fin.last n)`. |
+
+`ArkLibTest/Interaction/Core/AgreementUniverses.lean` imports the public API with statement,
+input-index, input-query, output-query and oracle-node-query universes 2, 1, 3, 4 and 5. Its
+knowledge client uses statement-dependent input witnesses in `Type 6` and
+statement-and-transcript-dependent output witnesses in `Type 7`. Output families depend on the
+shape path. Further clients exercise general move, ambient-index and output-index universes.
+
+The remaining restrictions come from these parent interfaces:
 
 | New API | Parent interface | Required restriction |
 |---|---|---|
-| `OracleVerifier.runWithLog_eq_of_decide_eq` | `OracleVerifier.runWithLog`, `ArkLib/Interaction/Core/Security/Knowledge.lean:332` | Input indices and input queries are in `Type 0`; the full resource log is a small run output. Input statements and output queries remain independent. |
-| Ordinary `Agrees` run, extraction and classical security lemmas | `OracleVerifier.run`, `ArkLib/Interaction/Core/OracleVerifier.lean:505`; `classicalModel`, `Security/Completeness.lean:136`; `extractionGame`, `Security/Knowledge.lean:514`; `classicalStraightline`, `Security/Knowledge.lean:530` | Protocol moves, responses, ambient indices, output statements and output indices are small in these probability/run interfaces. These limits do not restrict `uS`, `uI`, `wI` or `wJ`. |
-| Legacy tree relation adapter `treeRelationProblem` | `Legacy.relProblem`, `ArkLib/Interaction/Core/Legacy/Security.lean:72` | The parent convenience adapter fixes claims to `Type 0`; the new adapter removes that incidental restriction. The underlying `Problem` and classical security interfaces already accept larger claims. |
+| `OracleVerifier.runWithLog_eq_of_decide_eq` | `OracleVerifier.runWithLog` in `Security/Knowledge.lean` | Resource-query indices and oracle-node queries are small because the full log is a small run output. Input data and output queries remain independent. |
+| `Agrees.run_eq` and `run_cast` | `OracleVerifier.run` in `Core/OracleVerifier.lean` | Ambient and output indices share the move/response universe `u`. Output statements and oracle data are values in `Type u`; node and output queries remain independent. |
+| Extraction and classical security laws | `classicalModel`, `extractionGame`, `classicalStraightline`, `validAcceptance` and the RBR wrappers | Probability computations return small values, including output statements, output indices and extracted witnesses. Input data and queries remain independent. Pure RBR witness carriers retain the owner's independent universes. |
+| Legacy tree relation adapter `treeRelationProblem` | `Legacy.relProblem` in `Core/Legacy/Security.lean` | The parent convenience adapter fixes claims to `Type 0`; the tree adapter accepts larger claims. The underlying `Problem` and classical security interfaces already accept larger claims. |
 
 ## Production declaration inventory
 
@@ -387,9 +407,9 @@ effects as well as endpoints. Restricting those rows to this branch’s mathemat
 carrier would not close them.
 
 The one-round execution targets below use arbitrary maps or `domain.get`, without a sampling
-assumption. `univariateData` embeds the original univariate input into the native one-variable
+assumption. `univariateData` embeds the original univariate input into the interaction layer one-variable
 polynomial resource and `univariateData_eval` identifies every evaluation. The execution equations
-retain that original data independently of the sent message. The native total-mass equation and
+retain that original data independently of the sent message. The interaction layer total-mass equation and
 explicit rejection are separate contracts. `ProbComp` is lossless in the pinned VCVio model;
 neither the old nor the new total-mass equation asserts a positive probability of failure.
 

@@ -362,7 +362,8 @@ theorem decide_eq_legacy (stmt : Spec.StatementRound R n 0)
   have htr : HEq tr (cast (congrArg (PathAlong oracleSig) (protocol_eq R deg n)) tr) :=
     (cast_heq _ _).symm
   exact eq_of_heq ((decide_heq_embed stmt tr _ htr).trans
-    (OracleVerifier.decide_cast (inputs := polyFamily R deg n) (outputs := polyFamily R deg n)
+    (OracleVerifier.decide_cast (inputs := polyFamily R deg n)
+      (outputs := fun _ => polyFamily R deg n)
       (protocol_eq R deg n).symm (embedOracleVerifier (Spec.oracleVerifier R deg D n ambient))
       stmt tr _ htr).symm)
 
@@ -377,9 +378,9 @@ theorem outputMap_eq_legacy (stmt : Spec.StatementRound R n 0)
   have htr : HEq tr (cast (congrArg (PathAlong oracleSig) (protocol_eq R deg n)) tr) :=
     (cast_heq _ _).symm
   refine Eq.trans ?_
-    (OracleVerifier.outputMap_cast (inputs := polyFamily R deg n)
-      (outputs := polyFamily R deg n) (protocol_eq R deg n).symm
-      (embedOracleVerifier (Spec.oracleVerifier R deg D n ambient)) stmt data _ _ htr).symm
+    (eq_of_heq (OracleVerifier.outputMap_cast (inputs := polyFamily R deg n)
+      (outputs := fun _ => polyFamily R deg n) (protocol_eq R deg n).symm
+      (embedOracleVerifier (Spec.oracleVerifier R deg D n ambient)) stmt data _ _ htr)).symm
   exact (embedOracleVerifier_outputMap_f (Spec.oracleVerifier R deg D n ambient) stmt data _).symm
 
 variable (R deg n D ambient)
@@ -499,7 +500,7 @@ theorem run_eq_legacy {WitOut : Type} (stmt : Spec.StatementRound R n 0)
           stmt oStmt ((protocol_eq R deg n) ▸ p)) := by
   rw [(verifier_agrees R deg n D ambient).run_eq]
   exact OracleVerifier.run_cast (protocol_eq R deg n).symm _ _ finalize oracleFinalize
-    (fun tr out v => by
+    (fun ⟨tr, out, v⟩ => by
       simp only [finalize, oracleFinalize]
       rw [← oracleDecode_eq_decodeTranscript n _ tr (eqRec_heq _ _)]) stmt oStmt p
 
@@ -662,8 +663,8 @@ theorem simpleLegacyProver_run {ι : Type} (ambient : OracleSpec ι)
   simp only [Spec.SingleRound.Simple.prover, LawfulMonad.pure_bind, monadLift_pure, simulateQ_pure]
   erw [ht]
 
-/-- The Simple legacy verifier has the same scalar verdict as the native arbitrary-message run,
-including rejection and retention of the original input polynomial. -/
+/-- The Simple legacy verifier has the same scalar verdict as the arbitrary-message run in the
+interaction layer, including rejection and retention of the original input polynomial. -/
 theorem simpleLegacyVerifier_correspondence [DecidableEq R]
     {ι : Type} (ambient : OracleSpec ι) {m : ℕ} (D : Fin m ↪ R)
     (p q : R⦃≤ deg⦄[X]) (target r : R) :

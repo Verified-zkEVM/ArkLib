@@ -46,12 +46,13 @@ include init in
 /-- Round-by-round knowledge soundness of the interaction-layer Sumcheck verifier, with error
 `deg / |R|` at every challenge node. -/
 theorem verifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
-    (verifier R deg n D ambient).rbrKnowledgeSoundness impl (fun _ => True)
+    (verifier R deg n D ambient).rbrKnowledgeSoundnessOfNodes impl (fun _ => True)
       (fun stmt w => (stmt, w) ∈ Spec.relationRound R n deg D 0)
-      (fun _ t w => (t, w) ∈ Spec.relationRound R n deg D (Fin.last n))
+      (fun _ _ t w => (t, w) ∈ Spec.relationRound R n deg D (Fin.last n))
       (challengeQueryImpl oracleSig (protocol R deg n))
       (fun _ => (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞)) := by
   let : ∀ t, Inhabited (ambient.Range t) := fun t => ⟨supportedAnswer init impl t⟩
+  unfold OracleVerifier.rbrKnowledgeSoundnessOfNodes
   rw [challengeQueryImpl_eq_legacy, ← OracleVerifier.eqRec_const (protocol_eq R deg n).symm,
     (verifier_agrees R deg n D ambient).rbrKnowledgeSoundness_iff]
   refine (OracleVerifier.rbrKnowledgeSoundness_cast _ _ _ _ _ _ _ _).mpr ?_
