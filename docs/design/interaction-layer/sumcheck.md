@@ -132,10 +132,12 @@ probability, the challenge-first attack, empty-domain rejection and the degree-c
 
 ## Migration disposition
 
-Each source below identifies a frozen test file, migration-list row and source line. `T/` means
+The test inventory below identifies each frozen test file, migration-list row and source line.
+The production inventory that follows lists every source declaration separately. `T/` means
 `ArkLibTest/ProofSystem/Sumcheck/Core/`; `C/` means `ArkLib/ProofSystem/Sumcheck/Core/`.
 Unqualified target declarations are in `Sumcheck.Core`; test namespaces follow their file names.
-The source prefix for the Sumcheck tables is `ArkLibTest/ProofSystem/Sumcheck/Interaction/`.
+The source prefix for the test tables is `ArkLibTest/ProofSystem/Sumcheck/Interaction/`.
+Production rows use their complete source paths.
 Each row has exactly one status:
 
 - **equivalent**: the target preserves the source assertion's scope.
@@ -170,28 +172,28 @@ close those rows; interval completeness and projection executions remain with #1
 | `ArbitraryRounds.lean` #3, L85 example (record) | T/Rounds.lean: `RoundsTest.run_three` and recording example | premise-required (P2) |
 | `ArbitraryRounds.lean` #4, L93 example (rejection) | T/Rounds.lean: `RoundsTest.run_three_wrong`; T/Effects.lean: `EffectsTest.decide_log_badFirst` | premise-required (P1) |
 | `ArbitraryRounds.lean` #5, L105 `#print axioms executeRounds_honest` | #1488: `Sumcheck.Core.intervalVerifier`, zero-count and honest interval execution | child-owned (#1488) |
-| `ArbitraryRounds.lean` #6, L106 `#print axioms closedRelation_last_iff` | C/Domain.lean: `indexedRelation_last`; T/Rounds.lean: `RoundsTest.relationLast_iff_eval` | equivalent |
+| `ArbitraryRounds.lean` #6, L106 `#print axioms closedRelation_last_iff` | #1488: `Sumcheck.Core.intervalVerifier`, arbitrary original behavior at `start = n`, `count = 0` | child-owned (#1488) |
 
 ### Closing
 
 | Exact source | Exact target | Status |
 |---|---|---|
 | `Closing.lean` #1, L17 example | Parent counterpart of `OracleModel.satisfies_guarantee`; degree subtype alone is narrower | unresolved (missing parent behavior-guarantee interface) |
-| `Closing.lean` #2, L20 example | T/SingleRound.lean:209, honest output; `SingleRoundTest.run_oneRound` | equivalent |
-| `Closing.lean` #3, L28 example | T/SingleRound.lean:218, honest final relation | equivalent |
-| `Closing.lean` #4, L36 example | C/Completeness.lean: `perfectCompleteness_uniform`; T/Completeness.lean: uniform clients | equivalent |
+| `Closing.lean` #2, L20 example | C/Indexed.lean: `Sumcheck.Core.indexedExecuteAt_univariate_honest`; T/Domain.lean: execution clients and axiom checks | equivalent |
+| `Closing.lean` #3, L28 example | C/Indexed.lean: `Sumcheck.Core.indexedExecute_univariate_complete` (challenge `pure r`); T/Domain.lean: execution clients and axiom checks | equivalent |
+| `Closing.lean` #4, L36 example | C/Indexed.lean: `Sumcheck.Core.indexedExecute_univariate_perfectCompleteness` (arbitrary challenge); T/Domain.lean: execution clients and axiom checks | equivalent |
 | `Closing.lean` #5, L43 example | T/SingleRound.lean:235, dishonest output retaining input zero | equivalent |
-| `Closing.lean` #6, L80 `#print axioms executeCore_closed` | T/SingleRound.lean: `SingleRoundTest.run_oneRound`, honest output and axiom checks | equivalent |
+| `Closing.lean` #6, L80 `#print axioms executeCore_closed` | C/Indexed.lean: `Sumcheck.Core.indexedExecuteAt_univariate_honest`; T/Domain.lean: execution clients and axiom checks | equivalent |
 | `Closing.lean` #7, L81 `#print axioms executeCore_degree_complete` | Parent counterpart of `OracleModel.satisfies_guarantee` plus completeness | unresolved (missing parent behavior-guarantee interface) |
-| `Closing.lean` #8, L82 `#print axioms executeSampled_eq` | T/SingleRound.lean: `SingleRoundTest.run_oneRound`, honest output and axiom checks | equivalent |
-| `Closing.lean` #9, L83 `#print axioms executeSampled_perfectCompleteness` | C/Completeness.lean: `perfectCompleteness_uniform`; T/Completeness.lean: uniform clients | equivalent |
+| `Closing.lean` #8, L82 `#print axioms executeSampled_eq` | C/Indexed.lean: `Sumcheck.Core.indexedExecute_univariate_honest_eq` (arbitrary challenge); T/Domain.lean: execution clients and axiom checks | equivalent |
+| `Closing.lean` #9, L83 `#print axioms executeSampled_perfectCompleteness` | C/Indexed.lean: `Sumcheck.Core.indexedExecute_univariate_perfectCompleteness` (arbitrary challenge); T/Domain.lean: execution clients and axiom checks | equivalent |
 
 ### Legacy
 
 | Exact source | Exact target | Status |
 |---|---|---|
-| `Legacy.lean` #1, L29 `prover_generates_transcript` | T/LegacyEquivalence.lean: `LegacyEquivalenceTest.legacy_prover_run`, `LegacyEquivalenceTest.embedded_prover_generates` and wrong-target client | equivalent |
-| `Legacy.lean` #2, L41 example | T/LegacyEquivalence.lean: `LegacyEquivalenceTest.legacy_prover_run`, `LegacyEquivalenceTest.embedded_prover_generates` and wrong-target client | equivalent |
+| `Legacy.lean` #1, L29 `prover_generates_transcript` | C/LegacyEquivalence.lean: `Sumcheck.Core.simpleLegacyProver_run`; T/Soundness.lean: axiom check | equivalent |
+| `Legacy.lean` #2, L41 example | C/LegacyEquivalence.lean: `Sumcheck.Core.simpleLegacyProver_run`; T/Soundness.lean: axiom check | equivalent |
 
 ### Projection
 
@@ -254,8 +256,8 @@ close those rows; interval completeness and projection executions remain with #1
 | `SingleRound.lean` #2, L27 example | T/SingleRound.lean:209; `SingleRoundTest.run_oneRound` | equivalent |
 | `SingleRound.lean` #3, L34 example | T/SingleRound.lean:224; `SingleRoundTest.verdict_fail` | equivalent |
 | `SingleRound.lean` #4, L52 example | T/SingleRound.lean:235, dishonest constant-message output | equivalent |
-| `SingleRound.lean` #5, L58 `#print axioms executeAt_eq` | T/SingleRound.lean: `SingleRoundTest.run_oneRound`, verdict/output examples and axiom checks | equivalent |
-| `SingleRound.lean` #6, L59 `#print axioms executeAt_honest` | T/SingleRound.lean: `SingleRoundTest.run_oneRound`, verdict/output examples and axiom checks | equivalent |
+| `SingleRound.lean` #5, L58 `#print axioms executeAt_eq` | C/Indexed.lean: `Sumcheck.Core.indexedExecuteAt_list_eq`; T/Domain.lean: arbitrary-list and `[0, 0]` clients and axiom checks | equivalent |
+| `SingleRound.lean` #6, L59 `#print axioms executeAt_honest` | C/Indexed.lean: `Sumcheck.Core.indexedExecuteAt_univariate_honest`; T/Domain.lean: arbitrary-list and `[0, 0]` clients and axiom checks | equivalent |
 
 ### Soundness
 
@@ -386,3 +388,372 @@ retaining the input polynomial. It does not execute the projected output oracle 
 **Ownership.** #1488 builds `intervalVerifier` from its `foldVerifier` and owns `start`, `count`
 and `start + count = n`. Its rows above remain child-owned. Full-run results do not close them.
 The native full-run soundness proof uses the parent #1486 implication directly.
+
+## Agreement universes and parent limits
+
+`Interaction.Core.OracleVerifier.Agrees`, its ordinary-run, extraction, classical-security and
+Cast lemmas, and `Interaction.Core.Legacy.knowledgeSoundness_cast` / `completeness_cast` preserve
+independent input statement (`uS`), input index (`uI`), input query (`wI`) and output query (`wJ`)
+universes. They match `OracleVerifier` in `ArkLib/Interaction/Core/OracleVerifier.lean:471`.
+`ArkLibTest/Interaction/Core/AgreementUniverses.lean` uses ordinary imports with these four
+universes set to 2, 1, 3 and 4.
+
+The remaining restrictions come from these exact parent interfaces:
+
+| New API | Parent interface | Required restriction |
+|---|---|---|
+| `OracleVerifier.runWithLog_eq_of_decide_eq` | `OracleVerifier.runWithLog`, `ArkLib/Interaction/Core/Security/Knowledge.lean:332` | Input indices and input queries are in `Type 0`; the full resource log is a small run output. Input statements and output queries remain independent. |
+| Ordinary `Agrees` run, extraction and classical security lemmas | `OracleVerifier.run`, `ArkLib/Interaction/Core/OracleVerifier.lean:505`; `classicalModel`, `Security/Completeness.lean:136`; `extractionGame`, `Security/Knowledge.lean:514`; `classicalStraightline`, `Security/Knowledge.lean:530` | Protocol moves, responses, ambient indices, output statements and output indices are small in these probability/run interfaces. These limits do not restrict `uS`, `uI`, `wI` or `wJ`. |
+| Legacy tree relation adapter `treeRelationProblem` | `Legacy.relProblem`, `ArkLib/Interaction/Core/Legacy/Security.lean:72` | The parent convenience adapter fixes claims to `Type 0`; the new adapter removes that incidental restriction. The underlying `Problem` and classical security interfaces already accept larger claims. |
+
+## Production declaration inventory
+
+This inventory covers all 19 production modules in
+`ArkLib/ProofSystem/Sumcheck/Interaction/`, including private source declarations and explicit
+structure fields. The named sources below are fully qualified. The one anonymous local instance
+has no user-facing declaration name; its row identifies its namespace and exact source location.
+Compiler-generated recursors, constructors and equation lemmas are not separate source declarations.
+`C/` retains the Core source prefix defined above. A target qualified by #1488 is a child interface,
+not a claim that this branch implements its interval contract. Each such row retains the source
+`start`/`count` scope, including arbitrary prefixes and the full endpoint `start + count = n`.
+For generic and computable carriers, the child must preserve message interpretation and ambient
+effects as well as endpoints. Restricting those rows to this branch’s mathematical polynomial
+carrier would not close them.
+
+The one-round execution targets below use arbitrary maps or `domain.get`, without a sampling
+assumption. `univariateData` embeds the original univariate input into the native one-variable
+polynomial resource and `univariateData_eval` identifies every evaluation. The execution equations
+retain that original data independently of the sent message. The native total-mass equation and
+explicit rejection are separate contracts. `ProbComp` is lossless in the pinned VCVio model;
+neither the old nor the new total-mass equation asserts a positive probability of failure.
+
+### Production: ArbitraryCompleteness
+
+| Exact source | Exact target | Status |
+|---|---|---|
+| `Sumcheck.Interaction.MultivariateRound.executeRoundsSampled_support_completeness`, `ArkLib/ProofSystem/Sumcheck/Interaction/ArbitraryCompleteness.lean:35` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.executeRoundsSampled_perfectCompleteness`, `ArkLib/ProofSystem/Sumcheck/Interaction/ArbitraryCompleteness.lean:87` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.executeRoundsSampled_measureCompleteness`, `ArkLib/ProofSystem/Sumcheck/Interaction/ArbitraryCompleteness.lean:102` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.executeRounds_uniform_perfectCompleteness`, `ArkLib/ProofSystem/Sumcheck/Interaction/ArbitraryCompleteness.lean:118` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.executeRounds_uniform_measureCompleteness`, `ArkLib/ProofSystem/Sumcheck/Interaction/ArbitraryCompleteness.lean:131` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+
+### Production: ArbitraryRounds
+
+| Exact source | Exact target | Status |
+|---|---|---|
+| `Sumcheck.Interaction.MultivariateRound.roundInterfaces`, `ArkLib/ProofSystem/Sumcheck/Interaction/ArbitraryRounds.lean:33` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.roundStages`, `ArkLib/ProofSystem/Sumcheck/Interaction/ArbitraryRounds.lean:44` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.roundStages_run`, `ArkLib/ProofSystem/Sumcheck/Interaction/ArbitraryRounds.lean:60` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.executeRoundsSampled`, `ArkLib/ProofSystem/Sumcheck/Interaction/ArbitraryRounds.lean:83` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.executeRounds`, `ArkLib/ProofSystem/Sumcheck/Interaction/ArbitraryRounds.lean:95` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.executeRoundsSampled_zero`, `ArkLib/ProofSystem/Sumcheck/Interaction/ArbitraryRounds.lean:108` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.executeRoundsSampled_one`, `ArkLib/ProofSystem/Sumcheck/Interaction/ArbitraryRounds.lean:118` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.executeRoundsSampled_two`, `ArkLib/ProofSystem/Sumcheck/Interaction/ArbitraryRounds.lean:134` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.executeRounds_two`, `ArkLib/ProofSystem/Sumcheck/Interaction/ArbitraryRounds.lean:158` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.honestMessages`, `ArkLib/ProofSystem/Sumcheck/Interaction/ArbitraryRounds.lean:178` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.roundStages_honest`, `ArkLib/ProofSystem/Sumcheck/Interaction/ArbitraryRounds.lean:184` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.executeRounds_honest`, `ArkLib/ProofSystem/Sumcheck/Interaction/ArbitraryRounds.lean:205` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.executeRounds_evaluation`, `ArkLib/ProofSystem/Sumcheck/Interaction/ArbitraryRounds.lean:262` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+
+### Production: Closing
+
+| Exact source | Exact target | Status |
+|---|---|---|
+| `Sumcheck.Interaction.SingleRound.outputFamily`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:27` | C/Indexed.lean: `Sumcheck.Core.indexedVerifier` (`outputMap := OracleMap.fst`; retained original data) | equivalent |
+| `Sumcheck.Interaction.SingleRound.outputOracle`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:31` | C/Indexed.lean: `Sumcheck.Core.indexedVerifier` (`outputMap := OracleMap.fst`; retained original data) | equivalent |
+| `Sumcheck.Interaction.SingleRound.outputClaim`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:35` | C/Indexed.lean: `Sumcheck.Core.indexedVerifier` (`outputMap := OracleMap.fst`; retained original data) | equivalent |
+| `Sumcheck.Interaction.SingleRound.degreeModel`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:40` | `Interaction.Core` counterpart of `OracleModel.satisfies_guarantee` | unresolved (missing parent `OracleModel.satisfies_guarantee` behavior-guarantee interface) |
+| `Sumcheck.Interaction.SingleRound.degreeGuarantee`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:53` | `Interaction.Core` counterpart of `OracleModel.satisfies_guarantee` | unresolved (missing parent `OracleModel.satisfies_guarantee` behavior-guarantee interface) |
+| `Sumcheck.Interaction.SingleRound.message_degree`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:56` | `Interaction.Core` counterpart of `OracleModel.satisfies_guarantee` | unresolved (missing parent `OracleModel.satisfies_guarantee` behavior-guarantee interface) |
+| `Sumcheck.Interaction.SingleRound.claimVerifier`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:62` | C/Indexed.lean: `Sumcheck.Core.indexedVerifier`; C/Indexed.lean: `Sumcheck.Core.indexedExecute` | premise-required (P1) |
+| `Sumcheck.Interaction.SingleRound.claimReduction`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:76` | C/Indexed.lean: `Sumcheck.Core.indexedVerifier`; C/Indexed.lean: `Sumcheck.Core.indexedExecute` | premise-required (P1) |
+| `Sumcheck.Interaction.SingleRound.honestRun`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:86` | C/Indexed.lean: `Sumcheck.Core.indexedRoundResult` (`data := fun _ => univariateData p`, `msg := p`) | equivalent |
+| `Sumcheck.Interaction.SingleRound.executeCore_honest`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:95` | C/Indexed.lean: `Sumcheck.Core.indexedExecuteAt_univariate_honest` (including unchanged original data) | equivalent |
+| `Sumcheck.Interaction.SingleRound.honestClaim`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:117` | C/Indexed.lean: `Sumcheck.Core.indexedRoundResult` (`data := fun _ => univariateData p`, `msg := p`) | equivalent |
+| `Sumcheck.Interaction.SingleRound.honestRun_closed`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:121` | C/Indexed.lean: `Sumcheck.Core.indexedRoundResult`; C/Indexed.lean: `Sumcheck.Core.univariateData_eval` | equivalent |
+| `Sumcheck.Interaction.SingleRound.executeCore_closed`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:126` | C/Indexed.lean: `Sumcheck.Core.indexedExecuteAt_univariate_honest` (including unchanged original data) | equivalent |
+| `Sumcheck.Interaction.SingleRound.closedOutputRelation`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:136` | C/Domain.lean: `Sumcheck.Core.behaviorOutputRelation` (`point := r`, arbitrary evaluation behavior) | equivalent |
+| `Sumcheck.Interaction.SingleRound.closedInputRelation`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:140` | C/Domain.lean: `Sumcheck.Core.behaviorInputRelation` (arbitrary evaluation behavior) | equivalent |
+| `Sumcheck.Interaction.SingleRound.honestRun_closed_related`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:145` | C/Indexed.lean: `Sumcheck.Core.indexedRoundResult_univariate_honest` | equivalent |
+| `Sumcheck.Interaction.SingleRound.executeCore_complete`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:151` | C/Indexed.lean: `Sumcheck.Core.indexedExecute_univariate_complete` (monad `OracleComp ambient`, challenge `pure r`) | equivalent |
+| `Sumcheck.Interaction.SingleRound.executeCore_degree_complete`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:161` | Parent behavior-guarantee interface plus C/Indexed.lean: `Sumcheck.Core.indexedExecute_univariate_complete` | unresolved (missing parent `OracleModel.satisfies_guarantee` behavior-guarantee interface) |
+| `Sumcheck.Interaction.SingleRound.sampledClaimVerifier`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:171` | C/Indexed.lean: `Sumcheck.Core.indexedVerifier`; C/Indexed.lean: `Sumcheck.Core.indexedExecute` | premise-required (P1) |
+| `Sumcheck.Interaction.SingleRound.sampledClaimReduction`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:187` | C/Indexed.lean: `Sumcheck.Core.indexedVerifier`; C/Indexed.lean: `Sumcheck.Core.indexedExecute` | premise-required (P1) |
+| `Sumcheck.Interaction.SingleRound.simulate_challenge`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:197` | C/Indexed.lean: `Sumcheck.Core.indexedExecute_eq` (arbitrary lawful monad and challenge computation) | equivalent |
+| `Sumcheck.Interaction.SingleRound.executeSampled`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:207` | C/Indexed.lean: `Sumcheck.Core.indexedExecute` (`data := fun _ => univariateData p`, `msg := p`) | equivalent |
+| `Sumcheck.Interaction.SingleRound.executeSampled_eq`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:214` | C/Indexed.lean: `Sumcheck.Core.indexedExecute_univariate_honest_eq` | equivalent |
+| `Sumcheck.Interaction.SingleRound.executeSampled_support`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:243` | C/Indexed.lean: `Sumcheck.Core.indexedExecute_univariate_support` | equivalent |
+| `Sumcheck.Interaction.SingleRound.executeSampled_perfectCompleteness`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:258` | C/Indexed.lean: `Sumcheck.Core.indexedExecute_univariate_perfectCompleteness` | equivalent |
+| `Sumcheck.Interaction.SingleRound.prEvent_eq_evalDist_map_unifSpec` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:268` | `prEvent_eq_evalDist_map` | retired (monad-specific probability wrapper) |
+| `Sumcheck.Interaction.SingleRound.executeSampled_measureCompleteness`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:273` | C/Indexed.lean: `Sumcheck.Core.indexedExecute_univariate_measureCompleteness` | equivalent |
+
+### Production: Composition
+
+| Exact source | Exact target | Status |
+|---|---|---|
+| `Interaction.Oracle.executeStrategiesCore_closed_eq_run` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/Composition.lean:27` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.midpointStatement`, `ArkLib/ProofSystem/Sumcheck/Interaction/Composition.lean:58` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.firstRoundFragment`, `ArkLib/ProofSystem/Sumcheck/Interaction/Composition.lean:65` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.remainingVerifier`, `ArkLib/ProofSystem/Sumcheck/Interaction/Composition.lean:91` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.composedVerifier`, `ArkLib/ProofSystem/Sumcheck/Interaction/Composition.lean:107` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.firstRound_closingImpl`, `ArkLib/ProofSystem/Sumcheck/Interaction/Composition.lean:123` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.firstRound_closingImpl_literal` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/Composition.lean:131` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.onAppendedRuntime_native` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/Composition.lean:142` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.splitPrefix_native` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/Composition.lean:151` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.exportedPrefixRun_firstRound`, `ArkLib/ProofSystem/Sumcheck/Interaction/Composition.lean:179` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.execute_appendExported_succ`, `ArkLib/ProofSystem/Sumcheck/Interaction/Composition.lean:232` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.execute_eq_appendExported`, `ArkLib/ProofSystem/Sumcheck/Interaction/Composition.lean:337` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.exportedSuffixRun_some`, `ArkLib/ProofSystem/Sumcheck/Interaction/Composition.lean:369` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.exportedSuffixRun_none`, `ArkLib/ProofSystem/Sumcheck/Interaction/Composition.lean:398` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+
+### Production: Computable
+
+| Exact source | Exact target | Status |
+|---|---|---|
+| `Sumcheck.Interaction.Computable.FinalStatement`, `ArkLib/ProofSystem/Sumcheck/Interaction/Computable.lean:29` | C/Types.lean: `Sumcheck.Core.RoundStatement` at `Fin.last n` | equivalent |
+| `Sumcheck.Interaction.Computable.outputRelation`, `ArkLib/ProofSystem/Sumcheck/Interaction/Computable.lean:31` | C/Domain.lean: `Sumcheck.Core.behaviorOutputRelation` (arbitrary original evaluation behavior) | equivalent |
+| `Sumcheck.Interaction.Computable.protocol`, `ArkLib/ProofSystem/Sumcheck/Interaction/Computable.lean:34` | #1488: `Sumcheck.Core.foldVerifier` / `Sumcheck.Core.intervalVerifier` with interpreted computable messages | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Computable.verifier`, `ArkLib/ProofSystem/Sumcheck/Interaction/Computable.lean:39` | #1488: `Sumcheck.Core.foldVerifier` / `Sumcheck.Core.intervalVerifier` with interpreted computable messages | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Computable.execute`, `ArkLib/ProofSystem/Sumcheck/Interaction/Computable.lean:42` | #1488: `Sumcheck.Core.foldVerifier` / `Sumcheck.Core.intervalVerifier` with interpreted computable messages | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Computable.interpretProver`, `ArkLib/ProofSystem/Sumcheck/Interaction/Computable.lean:48` | #1488: `Sumcheck.Core.foldVerifier` / `Sumcheck.Core.intervalVerifier` with interpreted computable messages | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Computable.execute_eq_native`, `ArkLib/ProofSystem/Sumcheck/Interaction/Computable.lean:54` | #1488: `Sumcheck.Core.foldVerifier` / `Sumcheck.Core.intervalVerifier` with interpreted computable messages | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+
+### Production: ComputableCompleteness
+
+| Exact source | Exact target | Status |
+|---|---|---|
+| `Sumcheck.Interaction.Computable.honestProver`, `ArkLib/ProofSystem/Sumcheck/Interaction/ComputableCompleteness.lean:37` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Computable.interpretProver_honestProver`, `ArkLib/ProofSystem/Sumcheck/Interaction/ComputableCompleteness.lean:51` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Computable.execute_honestProver_eq_native`, `ArkLib/ProofSystem/Sumcheck/Interaction/ComputableCompleteness.lean:81` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Computable.execute_support_completeness`, `ArkLib/ProofSystem/Sumcheck/Interaction/ComputableCompleteness.lean:95` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Computable.execute_perfectCompleteness`, `ArkLib/ProofSystem/Sumcheck/Interaction/ComputableCompleteness.lean:116` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+
+### Production: ComputableSoundness
+
+| Exact source | Exact target | Status |
+|---|---|---|
+| `Sumcheck.Interaction.Computable.execute_soundness`, `ArkLib/ProofSystem/Sumcheck/Interaction/ComputableSoundness.lean:31` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+
+### Production: Legacy
+
+| Exact source | Exact target | Status |
+|---|---|---|
+| `Sumcheck.Interaction.SingleRound.<anonymous-instance>`, `ArkLib/ProofSystem/Sumcheck/Interaction/Legacy.lean:31` | `Interaction.Core.Legacy.oracleChallengeImpl` | retired (local legacy challenge-interface override) |
+| `Sumcheck.Interaction.SingleRound.legacy_output_iff`, `ArkLib/ProofSystem/Sumcheck/Interaction/Legacy.lean:35` | C/Indexed.lean: `Sumcheck.Core.univariateData_eval` | equivalent |
+| `Sumcheck.Interaction.SingleRound.legacy_input_iff`, `ArkLib/ProofSystem/Sumcheck/Interaction/Legacy.lean:43` | C/Domain.lean: `Sumcheck.Core.sum_domain_embedding`; C/Indexed.lean: `Sumcheck.Core.univariateData_eval` | equivalent |
+| `Sumcheck.Interaction.SingleRound.legacyTranscript`, `ArkLib/ProofSystem/Sumcheck/Interaction/Legacy.lean:53` | C/LegacyEquivalence.lean: `Sumcheck.Core.simpleLegacyTranscript` | equivalent |
+| `Sumcheck.Interaction.SingleRound.legacyTranscript_message`, `ArkLib/ProofSystem/Sumcheck/Interaction/Legacy.lean:58` | C/LegacyEquivalence.lean: `Sumcheck.Core.simpleLegacyTranscript_message` | equivalent |
+| `Sumcheck.Interaction.SingleRound.legacyTranscript_challenge`, `ArkLib/ProofSystem/Sumcheck/Interaction/Legacy.lean:62` | C/LegacyEquivalence.lean: `Sumcheck.Core.simpleLegacyTranscript_challenge` | equivalent |
+| `Sumcheck.Interaction.SingleRound.legacy_prover_run`, `ArkLib/ProofSystem/Sumcheck/Interaction/Legacy.lean:66` | C/LegacyEquivalence.lean: `Sumcheck.Core.simpleLegacyProver_run` (separate Simple-protocol compatibility check) | equivalent |
+| `Sumcheck.Interaction.SingleRound.legacy_verifier_correspondence`, `ArkLib/ProofSystem/Sumcheck/Interaction/Legacy.lean:109` | C/LegacyEquivalence.lean: `Sumcheck.Core.simpleLegacyVerifier_correspondence` (separate Simple-protocol compatibility check) | equivalent |
+
+### Production: MultivariateRound
+
+| Exact source | Exact target | Status |
+|---|---|---|
+| `Sumcheck.Interaction.MultivariateRound.access`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateRound.lean:32` | #1488: `Sumcheck.Core.intervalVerifier`, one round starting at `i` (`start = i`, `count = 1`), with projected input behavior | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.outputOracle`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateRound.lean:36` | #1488: `Sumcheck.Core.intervalVerifier`, one round starting at `i` (`start = i`, `count = 1`), with projected input behavior | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.sumQueries`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateRound.lean:44` | #1488: `Sumcheck.Core.intervalVerifier`, one round starting at `i` (`start = i`, `count = 1`), with projected input behavior | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.terminal`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateRound.lean:53` | #1488: `Sumcheck.Core.intervalVerifier`, one round starting at `i` (`start = i`, `count = 1`), with projected input behavior | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.verifier`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateRound.lean:66` | #1488: `Sumcheck.Core.intervalVerifier`, one round starting at `i` (`start = i`, `count = 1`), with projected input behavior | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.reduction`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateRound.lean:75` | #1488: `Sumcheck.Core.intervalVerifier`, one round starting at `i` (`start = i`, `count = 1`), with projected input behavior | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.acceptedRun`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateRound.lean:85` | #1488: `Sumcheck.Core.intervalVerifier`, one round starting at `i` (`start = i`, `count = 1`), with projected input behavior | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.simulate_sumQueries`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateRound.lean:96` | #1488: `Sumcheck.Core.intervalVerifier`, one round starting at `i` (`start = i`, `count = 1`), with projected input behavior | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.simulate_terminal`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateRound.lean:116` | #1488: `Sumcheck.Core.intervalVerifier`, one round starting at `i` (`start = i`, `count = 1`), with projected input behavior | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.executeCore_eq`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateRound.lean:132` | #1488: `Sumcheck.Core.intervalVerifier`, one round starting at `i` (`start = i`, `count = 1`), with projected input behavior | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.executeCore_accepted`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateRound.lean:158` | #1488: `Sumcheck.Core.intervalVerifier`, one round starting at `i` (`start = i`, `count = 1`), with projected input behavior | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.acceptedRun_closed`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateRound.lean:167` | #1488: `Sumcheck.Core.intervalVerifier`, one round starting at `i` (`start = i`, `count = 1`), with projected input behavior | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.executeCore_closed`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateRound.lean:174` | #1488: `Sumcheck.Core.intervalVerifier`, one round starting at `i` (`start = i`, `count = 1`), with projected input behavior | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.sampledVerifier`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateRound.lean:185` | #1488: `Sumcheck.Core.intervalVerifier`, one round starting at `i` (`start = i`, `count = 1`), with projected input behavior | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.sampledReduction`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateRound.lean:197` | #1488: `Sumcheck.Core.intervalVerifier`, one round starting at `i` (`start = i`, `count = 1`), with projected input behavior | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.simulate_challenge`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateRound.lean:208` | #1488: `Sumcheck.Core.intervalVerifier`, one round starting at `i` (`start = i`, `count = 1`), with projected input behavior | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.executeCore_sampled_eq`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateRound.lean:220` | #1488: `Sumcheck.Core.intervalVerifier`, one round starting at `i` (`start = i`, `count = 1`), with projected input behavior | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.closedRelation`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateRound.lean:248` | #1488: `Sumcheck.Core.intervalVerifier`, one round starting at `i` (`start = i`, `count = 1`), with projected input behavior | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.honestNext`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateRound.lean:255` | #1488: `Sumcheck.Core.intervalVerifier`, one round starting at `i` (`start = i`, `count = 1`), with projected input behavior | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.executeCore_honest`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateRound.lean:262` | #1488: `Sumcheck.Core.intervalVerifier`, one round starting at `i` (`start = i`, `count = 1`), with projected input behavior | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.honestNext_related`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateRound.lean:276` | #1488: `Sumcheck.Core.intervalVerifier`, one round starting at `i` (`start = i`, `count = 1`), with projected input behavior | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.closedRelation_last_iff`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateRound.lean:285` | #1488: `Sumcheck.Core.intervalVerifier` boundary `start = n`, `count = 0`, for arbitrary original oracle behavior | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+
+### Production: MultivariateSoundness
+
+| Exact source | Exact target | Status |
+|---|---|---|
+| `Sumcheck.Interaction.MultivariateRound.executeCore_sampled_closed_eq`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateSoundness.lean:36` | #1488: `Sumcheck.Core.intervalVerifier`, one round starting at `i` (`start = i`, `count = 1`), with projected input behavior | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.acceptedRun_closedRelation_iff`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateSoundness.lean:54` | #1488: `Sumcheck.Core.intervalVerifier`, one round starting at `i` (`start = i`, `count = 1`), with projected input behavior | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.projected_sum_iff_closedRelation`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateSoundness.lean:65` | C/Domain.lean: `Sumcheck.Core.sum_projectedRoundPolynomial`; C/DomainEquivalence.lean: `Sumcheck.Core.indexedRelation_embedding` | equivalent |
+| `Sumcheck.Interaction.MultivariateRound.executeCore_sampled_soundness`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateSoundness.lean:77` | #1488: `Sumcheck.Core.intervalVerifier`, one round starting at `i` (`start = i`, `count = 1`), with projected input behavior | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.prEvent_eq_evalDist_map_unifSpec` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateSoundness.lean:104` | `prEvent_eq_evalDist_map` | retired (monad-specific probability wrapper) |
+| `Sumcheck.Interaction.MultivariateRound.executeCore_sampled_measureSoundness`, `ArkLib/ProofSystem/Sumcheck/Interaction/MultivariateSoundness.lean:109` | #1488: `Sumcheck.Core.intervalVerifier`, one round starting at `i` (`start = i`, `count = 1`), with projected input behavior | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+
+### Production: Projection
+
+| Exact source | Exact target | Status |
+|---|---|---|
+| `Sumcheck.Interaction.SingleRound.projectionOracle`, `ArkLib/ProofSystem/Sumcheck/Interaction/Projection.lean:25` | #1488: `Sumcheck.Core.intervalVerifier`, one round starting at `i` (`start = i`, `count = 1`), with projected input behavior | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.SingleRound.projectionOracle_eval`, `ArkLib/ProofSystem/Sumcheck/Interaction/Projection.lean:30` | #1488: `Sumcheck.Core.intervalVerifier`, one round starting at `i` (`start = i`, `count = 1`), with projected input behavior | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.SingleRound.projectedInput`, `ArkLib/ProofSystem/Sumcheck/Interaction/Projection.lean:38` | #1488: `Sumcheck.Core.intervalVerifier`, one round starting at `i` (`start = i`, `count = 1`), with projected input behavior | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.SingleRound.projectedInput_eq`, `ArkLib/ProofSystem/Sumcheck/Interaction/Projection.lean:44` | #1488: `Sumcheck.Core.intervalVerifier`, one round starting at `i` (`start = i`, `count = 1`), with projected input behavior | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.SingleRound.executeCore_projected_closed`, `ArkLib/ProofSystem/Sumcheck/Interaction/Projection.lean:52` | #1488: `Sumcheck.Core.intervalVerifier`, one round starting at `i` (`start = i`, `count = 1`), with projected input behavior | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.SingleRound.executeCore_projected`, `ArkLib/ProofSystem/Sumcheck/Interaction/Projection.lean:67` | #1488: `Sumcheck.Core.intervalVerifier`, one round starting at `i` (`start = i`, `count = 1`), with projected input behavior | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+
+### Production: ProjectionTransport
+
+| Exact source | Exact target | Status |
+|---|---|---|
+| `Sumcheck.Interaction.SingleRound.executeCore_projected_of_relationRound`, `ArkLib/ProofSystem/Sumcheck/Interaction/ProjectionTransport.lean:27` | #1488: `Sumcheck.Core.intervalVerifier`, one round starting at `i` (`start = i`, `count = 1`), with projected input behavior | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+
+### Production: Protocol
+
+| Exact source | Exact target | Status |
+|---|---|---|
+| `Sumcheck.Interaction.Native.Core.messageInterface`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:35` | #1488: `Sumcheck.Core.foldVerifier` and `Sumcheck.Core.intervalVerifier`, including generic message interpretation | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.Core.protocol`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:41` | #1488: `Sumcheck.Core.foldVerifier` and `Sumcheck.Core.intervalVerifier`, including generic message interpretation | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.Core.firstRoundProtocol`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:50` | #1488: `Sumcheck.Core.foldVerifier` and `Sumcheck.Core.intervalVerifier`, including generic message interpretation | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.Core.remainingProtocol`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:54` | #1488: `Sumcheck.Core.foldVerifier` and `Sumcheck.Core.intervalVerifier`, including generic message interpretation | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.Core.protocol_succ_eq_append`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:61` | #1488: `Sumcheck.Core.foldVerifier` and `Sumcheck.Core.intervalVerifier`, including generic message interpretation | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.Core.FinalStatement`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:74` | C/Types.lean: `Sumcheck.Core.RoundStatement` at `Fin.last n` | equivalent |
+| `Sumcheck.Interaction.Native.Core.latest`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:79` | #1488: `Sumcheck.Core.foldVerifier` and `Sumcheck.Core.intervalVerifier`, including generic message interpretation | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.Core.latestSum`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:86` | #1488: `Sumcheck.Core.foldVerifier` and `Sumcheck.Core.intervalVerifier`, including generic message interpretation | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.Core.verifier`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:98` | #1488: `Sumcheck.Core.foldVerifier` and `Sumcheck.Core.intervalVerifier`, including generic message interpretation | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.Core.execute`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:123` | #1488: `Sumcheck.Core.foldVerifier` and `Sumcheck.Core.intervalVerifier`, including generic message interpretation | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.Core.outputRelation`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:137` | C/Domain.lean: `Sumcheck.Core.behaviorOutputRelation` (arbitrary original evaluation behavior) | equivalent |
+| `Sumcheck.Interaction.Native.Core.simulate_latest`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:142` | #1488: `Sumcheck.Core.foldVerifier` and `Sumcheck.Core.intervalVerifier`, including generic message interpretation | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.Core.simulate_latestSum`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:152` | #1488: `Sumcheck.Core.foldVerifier` and `Sumcheck.Core.intervalVerifier`, including generic message interpretation | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.Core.execute_zero`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:165` | #1488: `Sumcheck.Core.foldVerifier` and `Sumcheck.Core.intervalVerifier`, including generic message interpretation | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.Core.execute_succ`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:181` | #1488: `Sumcheck.Core.foldVerifier` and `Sumcheck.Core.intervalVerifier`, including generic message interpretation | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.Core.execute_eq_of_originalOracle_eq`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:235` | #1488: `Sumcheck.Core.foldVerifier` and `Sumcheck.Core.intervalVerifier`, including generic message interpretation | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.Core.transportProver`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:271` | #1488: `Sumcheck.Core.foldVerifier` and `Sumcheck.Core.intervalVerifier`, including generic message interpretation | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.Core.execute_transport`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:290` | #1488: `Sumcheck.Core.foldVerifier` and `Sumcheck.Core.intervalVerifier`, including generic message interpretation | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.protocol`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:333` | #1488: `Sumcheck.Core.foldVerifier` and `Sumcheck.Core.intervalVerifier`, including generic message interpretation | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.firstRoundProtocol`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:335` | #1488: `Sumcheck.Core.foldVerifier` and `Sumcheck.Core.intervalVerifier`, including generic message interpretation | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.remainingProtocol`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:337` | #1488: `Sumcheck.Core.foldVerifier` and `Sumcheck.Core.intervalVerifier`, including generic message interpretation | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.FinalStatement`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:339` | C/Types.lean: `Sumcheck.Core.RoundStatement` at `Fin.last n` | equivalent |
+| `Sumcheck.Interaction.Native.latest`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:344` | #1488: `Sumcheck.Core.foldVerifier` and `Sumcheck.Core.intervalVerifier`, including generic message interpretation | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.latestSum`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:346` | #1488: `Sumcheck.Core.foldVerifier` and `Sumcheck.Core.intervalVerifier`, including generic message interpretation | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.verifier`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:348` | #1488: `Sumcheck.Core.foldVerifier` and `Sumcheck.Core.intervalVerifier`, including generic message interpretation | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.execute`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:351` | #1488: `Sumcheck.Core.foldVerifier` and `Sumcheck.Core.intervalVerifier`, including generic message interpretation | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.outputRelation`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:354` | C/Domain.lean: `Sumcheck.Core.behaviorOutputRelation` (arbitrary original evaluation behavior) | equivalent |
+| `Sumcheck.Interaction.Native.protocol_succ_eq_append`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:358` | #1488: `Sumcheck.Core.foldVerifier` and `Sumcheck.Core.intervalVerifier`, including generic message interpretation | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.simulate_latest`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:369` | #1488: `Sumcheck.Core.foldVerifier` and `Sumcheck.Core.intervalVerifier`, including generic message interpretation | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.simulate_latestSum`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:378` | #1488: `Sumcheck.Core.foldVerifier` and `Sumcheck.Core.intervalVerifier`, including generic message interpretation | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.execute_zero`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:387` | #1488: `Sumcheck.Core.foldVerifier` and `Sumcheck.Core.intervalVerifier`, including generic message interpretation | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.execute_succ`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:401` | #1488: `Sumcheck.Core.foldVerifier` and `Sumcheck.Core.intervalVerifier`, including generic message interpretation | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.execute_eq_of_originalOracle_eq`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:427` | #1488: `Sumcheck.Core.foldVerifier` and `Sumcheck.Core.intervalVerifier`, including generic message interpretation | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+
+### Production: ProtocolCompleteness
+
+| Exact source | Exact target | Status |
+|---|---|---|
+| `Sumcheck.Interaction.Native.honestProver`, `ArkLib/ProofSystem/Sumcheck/Interaction/ProtocolCompleteness.lean:36` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.execute_support_completeness`, `ArkLib/ProofSystem/Sumcheck/Interaction/ProtocolCompleteness.lean:52` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.execute_perfectCompleteness`, `ArkLib/ProofSystem/Sumcheck/Interaction/ProtocolCompleteness.lean:110` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+
+### Production: ProtocolSoundness
+
+| Exact source | Exact target | Status |
+|---|---|---|
+| `Sumcheck.Interaction.MultivariateRound.uniform_successor_soundness`, `ArkLib/ProofSystem/Sumcheck/Interaction/ProtocolSoundness.lean:40` | C/Indexed.lean: `Sumcheck.Core.indexed_round_soundness` | equivalent |
+| `Sumcheck.Interaction.Native.midpointRelation`, `ArkLib/ProofSystem/Sumcheck/Interaction/ProtocolSoundness.lean:71` | #1488: `Sumcheck.Core.intervalVerifier` prefix/export and interval soundness | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.midpointOracleRealized`, `ArkLib/ProofSystem/Sumcheck/Interaction/ProtocolSoundness.lean:81` | #1488: `Sumcheck.Core.intervalVerifier` prefix/export and interval soundness | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.exportedPrefixRun_soundness`, `ArkLib/ProofSystem/Sumcheck/Interaction/ProtocolSoundness.lean:89` | #1488: `Sumcheck.Core.intervalVerifier` prefix/export and interval soundness | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.exportedPrefixRun_admissibility`, `ArkLib/ProofSystem/Sumcheck/Interaction/ProtocolSoundness.lean:145` | #1488: `Sumcheck.Core.intervalVerifier` prefix/export and interval soundness | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.execute_soundness`, `ArkLib/ProofSystem/Sumcheck/Interaction/ProtocolSoundness.lean:201` | #1488: `Sumcheck.Core.intervalVerifier` prefix/export and interval soundness | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+
+### Production: RoundByRound
+
+| Exact source | Exact target | Status |
+|---|---|---|
+| `Sumcheck.Interaction.Native.CurrentClaim` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:38` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.PendingMessage` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:41` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.PrefixData` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:44` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.PrefixData.claim` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:45` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree transcript-observer record fields) |
+| `Sumcheck.Interaction.Native.PrefixData.pending` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:46` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree transcript-observer record fields) |
+| `Sumcheck.Interaction.Native.PrefixData.rank` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:47` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree transcript-observer record fields) |
+| `Sumcheck.Interaction.Native.PrefixData.step` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:48` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree transcript-observer record fields) |
+| `Sumcheck.Interaction.Native.TranscriptObserver` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:50` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.rootData` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:57` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.restrictObserver` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:62` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.prefixData` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:71` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.prefixData_root` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:75` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.prefixData_public` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:78` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.prefixData_oracle` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:85` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.restrictObserver_comp` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:92` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.prefixData_comp` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:109` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.transcriptObserver` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:117` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.observer_root_rank` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:132` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.observer_root_claim` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:137` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.nextChallenge`, `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:146` | #1488: `Sumcheck.Core.intervalVerifier` round-by-round implication with `count` challenges | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.samplePending` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:151` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.modelOf` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:157` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.stateOf` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:164` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.rankOf` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:172` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.nextChallenge_local_soundness`, `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:176` | #1488: `Sumcheck.Core.intervalVerifier` round-by-round implication with `count` challenges | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.Native.transcriptObserver_prover` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:198` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.transcriptObserver_schedule` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:224` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.rootBound` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:257` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.LocalCertificate` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:264` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.localCertificate_restrict` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:273` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.localCertificate_root` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:289` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.localCertificate_bound` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:299` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.transcriptObserver_local` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:319` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.fresh_prependPublic` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:360` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.fresh_prependOracle` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:392` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.transcriptObserver_fresh` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:425` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.executeStrategies_succ` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:495` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.closeExecution` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:549` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.executeStrategies_terminal` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:559` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.execute_eq_closeExecution` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:635` | C/Indexed.lean: `Sumcheck.Core.foldPrefix`; `Interaction.Core.StateFunction` | retired (TypeTree runtime, transcript observer and run-closing proof scaffolding) |
+| `Sumcheck.Interaction.Native.roundByRound_soundness`, `ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean:659` | #1488: `Sumcheck.Core.intervalVerifier` round-by-round implication with `count` challenges | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+
+### Production: Sequential
+
+| Exact source | Exact target | Status |
+|---|---|---|
+| `Sumcheck.Interaction.MultivariateRound.executeTwo`, `ArkLib/ProofSystem/Sumcheck/Interaction/Sequential.lean:31` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.executeTwo_accepted`, `ArkLib/ProofSystem/Sumcheck/Interaction/Sequential.lean:47` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.executeTwo_rejected`, `ArkLib/ProofSystem/Sumcheck/Interaction/Sequential.lean:67` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.executeTwo_second_rejected`, `ArkLib/ProofSystem/Sumcheck/Interaction/Sequential.lean:78` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.executeTwoSampled`, `ArkLib/ProofSystem/Sumcheck/Interaction/Sequential.lean:96` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.executeTwoSampled_accepted`, `ArkLib/ProofSystem/Sumcheck/Interaction/Sequential.lean:114` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.executeTwoSampled_rejected`, `ArkLib/ProofSystem/Sumcheck/Interaction/Sequential.lean:144` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.executeTwo_honest`, `ArkLib/ProofSystem/Sumcheck/Interaction/Sequential.lean:161` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+| `Sumcheck.Interaction.MultivariateRound.executeTwo_complete`, `ArkLib/ProofSystem/Sumcheck/Interaction/Sequential.lean:181` | #1488: `Sumcheck.Core.intervalVerifier` and its interval execution/completeness/soundness equations | child-owned (#1488: `start`, `count`; endpoint `start + count ≤ n`, full endpoint `start + count = n`) |
+
+### Production: SingleRound
+
+| Exact source | Exact target | Status |
+|---|---|---|
+| `Sumcheck.Interaction.SingleRound.Message`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:32` | `Polynomial.degreeLE` (the same message subtype) | equivalent |
+| `Sumcheck.Interaction.SingleRound.polynomialInterface`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:36` | `inferInstance : OracleInterface R⦃≤ deg⦄[X]`, used by C/SingleRound.lean: `Sumcheck.Core.round` | equivalent |
+| `Sumcheck.Interaction.SingleRound.inputSpec`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:42` | C/Indexed.lean: `Sumcheck.Core.univariateData_eval`; C/Types.lean: `Sumcheck.Core.polyFamily` | equivalent |
+| `Sumcheck.Interaction.SingleRound.protocol`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:45` | C/SingleRound.lean: `Sumcheck.Core.round` | premise-required (P2) |
+| `Sumcheck.Interaction.SingleRound.access`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:50` | `Interaction.Core.pathResources` (input family and sent-message resources) | equivalent |
+| `Sumcheck.Interaction.SingleRound.sumQueries`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:56` | C/Indexed.lean: `Sumcheck.Core.indexedDecision` | premise-required (P1) |
+| `Sumcheck.Interaction.SingleRound.terminal`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:65` | C/Indexed.lean: `Sumcheck.Core.indexedVerifier` | premise-required (P1) |
+| `Sumcheck.Interaction.SingleRound.verifier`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:75` | C/Indexed.lean: `Sumcheck.Core.indexedVerifier` | premise-required (P1) |
+| `Sumcheck.Interaction.SingleRound.prover`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:88` | C/Indexed.lean: `Sumcheck.Core.committedProver` | equivalent |
+| `Sumcheck.Interaction.SingleRound.inputImpl`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:93` | C/Indexed.lean: `Sumcheck.Core.univariateData_eval`; C/Types.lean: `Sumcheck.Core.polyFamily` | equivalent |
+| `Sumcheck.Interaction.SingleRound.simulate_sumQueries`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:96` | C/Indexed.lean: `Sumcheck.Core.simulateQ_indexedSumQueries_monad` (no `DecidableEq` or sampler) | equivalent |
+| `Sumcheck.Interaction.SingleRound.simulate_terminal`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:114` | C/Indexed.lean: `Sumcheck.Core.indexedRoundResult`; C/Indexed.lean: `Sumcheck.Core.indexedVerifier_run_one` | equivalent |
+| `Sumcheck.Interaction.SingleRound.executeAt`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:128` | C/Indexed.lean: `Sumcheck.Core.indexedExecute` (challenge `pure r`; data `univariateData p`) | equivalent |
+| `Sumcheck.Interaction.SingleRound.executeAt_eq`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:134` | C/Indexed.lean: `Sumcheck.Core.indexedExecuteAt_list_eq` (arbitrary original input, arbitrary sent message) | equivalent |
+| `Sumcheck.Interaction.SingleRound.executeAt_honest`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:149` | C/Indexed.lean: `Sumcheck.Core.indexedExecuteAt_univariate_honest` | equivalent |
+| `Sumcheck.Interaction.SingleRound.honest_outputRelation`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:157` | C/Indexed.lean: `Sumcheck.Core.univariateData_eval` | equivalent |
+| `Sumcheck.Interaction.SingleRound.legacy_input_sum`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:162` | C/Domain.lean: `Sumcheck.Core.sum_domain_embedding`; C/Domain.lean: `Sumcheck.Core.sum_domain_list` | equivalent |
+
+### Production: Soundness
+
+| Exact source | Exact target | Status |
+|---|---|---|
+| `Sumcheck.Interaction.SingleRound.committedRun`, `ArkLib/ProofSystem/Sumcheck/Interaction/Soundness.lean:35` | C/Indexed.lean: `Sumcheck.Core.indexedRoundResult` (`data := fun _ => univariateData p`, `msg := q`) | equivalent |
+| `Sumcheck.Interaction.SingleRound.executeCommitted`, `ArkLib/ProofSystem/Sumcheck/Interaction/Soundness.lean:45` | C/Indexed.lean: `Sumcheck.Core.indexedExecute` (arbitrary challenge; original `p`, sent `q`) | equivalent |
+| `Sumcheck.Interaction.SingleRound.executeCommitted_eq`, `ArkLib/ProofSystem/Sumcheck/Interaction/Soundness.lean:52` | C/Indexed.lean: `Sumcheck.Core.indexedExecute_eq` | equivalent |
+| `Sumcheck.Interaction.SingleRound.committedRun_true_iff`, `ArkLib/ProofSystem/Sumcheck/Interaction/Soundness.lean:91` | C/Indexed.lean: `Sumcheck.Core.indexedRoundResult_true_iff`; C/Indexed.lean: `Sumcheck.Core.univariateData_eval` | equivalent |
+| `Sumcheck.Interaction.SingleRound.executeCommitted_failure`, `ArkLib/ProofSystem/Sumcheck/Interaction/Soundness.lean:103` | C/Indexed.lean: `Sumcheck.Core.indexedExecute_failure` (specialize `D := domain.get`) | equivalent |
+| `Sumcheck.Interaction.SingleRound.committedRun_rejects`, `ArkLib/ProofSystem/Sumcheck/Interaction/Soundness.lean:110` | C/Indexed.lean: `Sumcheck.Core.indexedRoundResult_rejects`; C/Domain.lean: `Sumcheck.Core.sum_domain_list` | equivalent |
+| `Sumcheck.Interaction.SingleRound.prEvent_eq_evalDist_map_unifSpec` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/Soundness.lean:118` | `prEvent_eq_evalDist_map` | retired (monad-specific probability wrapper) |
+| `Sumcheck.Interaction.SingleRound.prEvent_bind_le_of_forall_le_unifSpec` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/Soundness.lean:123` | `prEvent_bind_le_of_forall_le` | retired (monad-specific probability wrapper) |
+| `Sumcheck.Interaction.SingleRound.executeCommitted_soundness`, `ArkLib/ProofSystem/Sumcheck/Interaction/Soundness.lean:131` | C/Soundness.lean: `Sumcheck.Core.committed_soundness`; C/Domain.lean: `Sumcheck.Core.sum_domain_list` | equivalent |
+| `Sumcheck.Interaction.SingleRound.executeRandomCommitment_soundness`, `ArkLib/ProofSystem/Sumcheck/Interaction/Soundness.lean:158` | C/Soundness.lean: `Sumcheck.Core.randomized_soundness`; C/Domain.lean: `Sumcheck.Core.sum_domain_list` | equivalent |
+| `Sumcheck.Interaction.SingleRound.executeCommitted_measureSoundness`, `ArkLib/ProofSystem/Sumcheck/Interaction/Soundness.lean:169` | C/Soundness.lean: `Sumcheck.Core.committed_measureSoundness` | equivalent |
+| `Sumcheck.Interaction.SingleRound.executeRandomCommitment_measureSoundness`, `ArkLib/ProofSystem/Sumcheck/Interaction/Soundness.lean:179` | C/Soundness.lean: `Sumcheck.Core.randomized_measureSoundness` | equivalent |

@@ -75,12 +75,6 @@ theorem verifier_run_soundness
     (by simpa [indexedInputProblem, Problem.language] using hfalse) prover
   simpa [indexedOutputProblem, Problem.language] using bound
 
-/-- Commit a polynomial before drawing the one-round challenge. -/
-def committedProver {ι : Type} (ambient : OracleSpec ι) {R : Type} [CommSemiring R]
-    {deg : ℕ} {Out : Type} (msg : R⦃≤ deg⦄[X]) (finish : R → Out) :
-    Prover oracleSig ambient (protocol R deg 1) (fun _ => Out) :=
-  pure ⟨msg, pure fun r => pure (finish r)⟩
-
 /-- Sample a possibly failing commitment before the fresh receiver challenge. -/
 def randomizedProver {ι : Type} (ambient : OracleSpec ι) {R : Type} [CommSemiring R]
     {deg : ℕ} {Out : Type} (commit : OracleComp ambient (R⦃≤ deg⦄[X]))

@@ -496,3 +496,11 @@ run_cmd
         throwError "unexpected axiom {ax} in {decl}"
 
 end Sumcheck.Core.NativeSoundnessTest
+
+-- The separate Simple-protocol checks do not require finite or sampleable semirings.
+run_cmd
+  for decl in [``Sumcheck.Core.simpleLegacyProver_run,
+      ``Sumcheck.Core.simpleLegacyVerifier_correspondence] do
+    for ax in ← Lean.collectAxioms decl do
+      unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
+        throwError "unexpected axiom {ax} in {decl}"

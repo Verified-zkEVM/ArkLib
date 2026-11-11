@@ -150,4 +150,12 @@ theorem indexedRelation_last (D : Fin d → R)
   change _ = stmt.target ↔ _ = stmt.target
   rw [h]
 
+/-- The input sum predicate for arbitrary evaluation behavior, without a polynomial realization. -/
+def behaviorInputRelation (domain : List R) (target : R) (evaluate : R → R) : Prop :=
+  (domain.map evaluate).sum = target
+
+/-- The output evaluation predicate for arbitrary behavior, without a polynomial realization. -/
+def behaviorOutputRelation {X : Type} (target : R) (point : X) (evaluate : X → R) : Prop :=
+  evaluate point = target
+
 end Sumcheck.Core
