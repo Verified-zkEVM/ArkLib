@@ -351,9 +351,9 @@ split an interval into a first round and a suffix.
 run from zero to `n`. `firstRound_relation` in the `Rounds` test checks relation transport while
 retaining the input polynomial. It does not execute the projected output oracle or an interval.
 
-**Ownership.** #1488 builds `intervalVerifier` from its `foldVerifier` and owns `start`, `count`
-and `start + count = n`. Its rows above remain child-owned. Full-run results do not close them.
-The native full-run soundness proof uses the parent #1486 implication directly.
+**Intervals.** #1488 builds `intervalVerifier` from its `foldVerifier` and adds `start`, `count`
+and `start + count = n`. The interval rows above remain unresolved by the full-run results. The
+native full-run soundness proof uses the generic soundness implication from #1486 directly.
 
 ## Agreement universes and parent limits
 

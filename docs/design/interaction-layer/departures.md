@@ -62,11 +62,12 @@ Entry 22 covers Sumcheck in the interaction layer. Its two departures are descri
 | [22](sumcheck.md#the-transferred-completeness-is-in-its-own-module) | The transferred completeness is in its own module, `LegacyCompleteness`. |
 | [22](sumcheck.md#the-verifier-has-no-interval-start) | Full-run verifiers have no interval start; #1488 owns interval endpoints and composition. |
 
-Entry 22 records full-run ownership here and interval ownership in #1488. The
-[exact-row disposition](sumcheck.md#migration-disposition) keeps interval execution, projection
-and append clients child-owned, and marks behavior-guarantee interfaces unresolved. Native
-full-run, committed and randomized soundness now use the parent implication directly over
-arbitrary indexed domains and lists with repetitions.
+Entry 22 records the full-run verifier interface; #1488 covers interval endpoints and
+composition. The [exact-row disposition](sumcheck.md#migration-disposition) records interval
+execution, projection and append clients as remaining work, and marks behavior-guarantee
+interfaces unresolved. Native full-run, committed and randomized soundness use the generic
+round-by-round-to-soundness implication directly over arbitrary indexed domains and lists with
+repetitions.
 
 Entry [21](../interaction-rebuild/IMPLEMENTATION-NOTES.md#21-round-by-round-soundness-implies-soundness-for-lawful-distribution-monads)
 records the generic soundness implication. The
