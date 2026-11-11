@@ -136,9 +136,9 @@ example {ι : Type} (ambient : OracleSpec ι) (r : ℕ) :
         (fun out => (out.2 ()).val.eval out.1.challenges = out.1.target)) <$>
         indexedExecute ([0, 0] : List ℕ).get ambient (QueryImpl.id' ambient) (pure r)
           (fun _ => univariateData natOne) natOne 2 = pure (some True) := by
-  simpa only [LawfulApplicative.map_pure] using
-    indexedExecute_univariate_degree_complete ambient (QueryImpl.id' ambient) (pure r)
-      [0, 0] natOne 2 (by simp [natOne])
+  have h := indexedExecute_univariate_degree_complete ambient (QueryImpl.id' ambient) (pure r)
+    [0, 0] natOne 2 (by simp [natOne])
+  exact ⟨h.1, by simpa only [LawfulApplicative.map_pure] using h.2⟩
 
 /-- Rejection preserves challenge mass as a separate property of the actual run. -/
 example {ι : Type} (ambient : OracleSpec ι) (impl : QueryImpl ambient ProbComp)
