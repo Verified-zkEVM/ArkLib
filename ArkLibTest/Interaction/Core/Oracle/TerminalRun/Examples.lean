@@ -42,26 +42,26 @@ abbrev ambient : OracleSpec Nat := Nat →ₒ Nat
   .liftBind (.oracle (Nat × Nat) firstInterface) (fun _ => .pure ⟨⟩)
 
 /-- The decision resources on the only path of `protocol`. -/
-abbrev resources := sumFamily inputs (pathFamily protocol ⟨⟨⟩, ⟨⟩⟩)
+abbrev resources := pathResources inputs protocol ⟨⟨⟩, ⟨⟩⟩
 
 /-- Output data: the input plus the observable coordinate of the sent pair. -/
 def outputOracle : OracleMap resources output where
-  f x _ := (show Nat from x (.inl ())) + (show Nat × Nat from x (.inr (.inl ⟨⟩))).1
+  f x _ := x.1 () + (x.2 (.inl ⟨⟩)).1
   impl _ := do
-    let a : Nat ← liftM (resources.spec.query ⟨.inl (), ()⟩)
-    let b : Nat ← liftM (resources.spec.query ⟨.inr (.inl ⟨⟩), ()⟩)
+    let a : Nat ← liftM (resources.spec.query (.inl ⟨(), ()⟩))
+    let b : Nat ← liftM (resources.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
     pure (a + b)
   law _ _ := by
     simp only [simulateQ_bind]
     rfl
 
 /-- The decision records 1, reads the sent oracle, records 2, and accepts with the sent value. -/
-def verifier : OracleVerifier ambient protocol Unit Nat inputs output where
+def verifier : OracleVerifier ambient protocol Unit (fun _ => Nat) inputs (fun _ => output) where
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact do
       let _ ← liftM ((ambient + resources.spec).query (.inl 1))
-      let sent : Nat ← liftM ((ambient + resources.spec).query (.inr ⟨.inr (.inl ⟨⟩), ()⟩))
+      let sent : Nat ← liftM ((ambient + resources.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
       let _ ← liftM ((ambient + resources.spec).query (.inl 2))
       pure sent
   outputMap _ p _ := by

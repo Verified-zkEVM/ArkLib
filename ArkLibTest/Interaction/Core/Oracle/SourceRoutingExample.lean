@@ -93,9 +93,15 @@ example : WorstCaseCostBound
     (simulateQ (exportMap.withAmbient OracleSpec.emptySpec)
       (liftM ((OracleSpec.emptySpec + exported.spec).query (.inr ⟨⟨⟩, ()⟩)) :
         OracleComp (OracleSpec.emptySpec + exported.spec) Nat))
-    (unitCost _) 2 :=
-  exportMap.withAmbient_worstCaseCost (worstCaseCostBound_query (.inr ⟨⟨⟩, ()⟩) exportCost)
-    (fun q => q.elim) exportMap_cost
+    (unitCost _) 2 := by
+  have hquery : WorstCaseCostBound
+      (liftM ((OracleSpec.emptySpec + exported.spec).query (.inr ⟨⟨⟩, ()⟩)) :
+        OracleComp (OracleSpec.emptySpec + exported.spec) Nat) exportCost 2 :=
+    worstCaseCostBound_query (.inr ⟨⟨⟩, ()⟩) exportCost
+  exact OracleMap.withAmbient_worstCaseCost
+    (In := Resources.ofFamily prefixResources) (Out := Resources.ofFamily exported)
+    (ambient := OracleSpec.emptySpec) (sourceCost := exportCost) (targetCost := unitCost _)
+    exportMap hquery (fun q => q.elim) exportMap_cost
 
 end Interaction.Core.SourceRoutingExampleTests
 

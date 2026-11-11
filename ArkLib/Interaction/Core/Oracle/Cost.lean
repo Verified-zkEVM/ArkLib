@@ -12,7 +12,7 @@ public import VCVio.OracleComp.QueryTracking.CostModel.Simulation
 # Weighted cost of routed oracle programs
 
 Routing a decision through an oracle map with `OracleMap.withAmbient` keeps every ambient query
-and replaces every resource query by the map's implementing program over the input family. A
+and replaces every resource query by the map's implementing program over the input resources. A
 weighted bound on the routed program follows from a bound on the original program when each
 ambient query costs no more after routing and each implementing program fits the charge of the
 resource query it implements. This is VCVio's `WorstCaseCostBound.simulateQ` for the handler
@@ -24,15 +24,17 @@ over appended logs (`QueryLog.countQ_append`).
 
 @[expose] public section
 
+universe dX dY
+
 namespace Interaction.Core
 open OracleComp OracleSpec Oracle
 
-/-- A weighted bound on a decision over the output family transfers to the same decision routed
+/-- A weighted bound on a decision over the output resources transfers to the same decision routed
 through an oracle map. Ambient queries are charged at most their original cost, and the program
 implementing each output query, charged at the target cost of the input queries it makes, fits
 the original charge of that output query. -/
-theorem OracleMap.withAmbient_worstCaseCost {ι I J α ω : Type} {ambient : OracleSpec ι}
-    {A : I → Type} {B : J → Type} {In : OracleFamily I A} {Out : OracleFamily J B}
+theorem OracleMap.withAmbient_worstCaseCost {ι α ω : Type} {ambient : OracleSpec ι}
+    {In : Resources.{0, 0, dX}} {Out : Resources.{0, 0, dY}}
     [AddCommMonoid ω] [Preorder ω] [IsOrderedAddMonoid ω]
     (route : OracleMap In Out) {program : OracleComp (ambient + Out.spec) α}
     {sourceCost : CostModel (ambient + Out.spec) ω}

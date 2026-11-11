@@ -19,6 +19,8 @@ open Interaction.Core Interaction.Oracle OracleComp
 
 namespace Interaction.Core.SourceExampleTests
 
+universe u v w u' w'
+
 /-- The carrier of the `false` index is `Bool`; the carrier of the `true` index is `Fin 3`. -/
 abbrev Carrier : Bool → Type
   | false => Bool
@@ -138,9 +140,8 @@ example : simulateQ (numbers.behaviorOfRealizations answers)
 example : simulateQ (numbers.behaviorOfRealizations answers)
     (simulateQ (double.comp shift).impl twoQueries) = (16, 10) := rfl
 example : simulateQ (numbers.behaviorOfRealizations ((shift.comp double).f answers))
-    twoQueries = (13, 7) := by
-  rw [← OracleMap.simulate_eq]
-  rfl
+    twoQueries = (13, 7) :=
+  (OracleMap.simulate_eq (shift.comp double) answers twoQueries).symm.trans rfl
 
 /-- Data for two copies of `numbers`: the left copy holds `answers`, the right copy holds 29. -/
 def pairData : ∀ k, (sumFamily numbers numbers).Realization k :=
@@ -195,5 +196,27 @@ example : simulateQ (both.behaviorOfRealizations (sumData (env true 2) answers))
 -- oracles; the query `⟨true, false⟩` is answered by the data at index `true`. Not weaker.
 example : functions.behaviorOfRealizations
     (fun | false => fun b => answers b | true => fun _ => 29) ⟨true, false⟩ = (29 : Nat) := rfl
+
+section Universes
+
+-- SourceExample S10: response universe v is shared, while query universes u and u' and data
+-- universes w and w' are independent, exactly as for the disjoint sum of reader sources.
+/-- Disjoint resources preserve the independent query and data universes of both sources. -/
+example (S : Resources.{v, u, w}) (T : Resources.{v, u', w'}) :
+    Resources.{v, max u u', max w w'} := S.sum T
+
+/-- Disjoint queries retain their original index carriers. -/
+example (S : Resources.{v, u, w}) (T : Resources.{v, u', w'}) :
+    OracleSpec.{max u u', v} (S.Index ⊕ T.Index) := (S.sum T).spec
+
+/-- Disjoint data remains a pair of the original carriers. -/
+example (S : Resources.{v, u, w}) (T : Resources.{v, u', w'}) :
+    (S.sum T).Data = (S.Data × T.Data) := rfl
+
+/-- Each query is answered from its own component of the pair. -/
+example (S : Resources.{v, u, w}) (T : Resources.{v, u', w'})
+    (x : S.Data × T.Data) : (S.sum T).answer x = S.answer x.1 + T.answer x.2 := rfl
+
+end Universes
 
 end Interaction.Core.SourceExampleTests

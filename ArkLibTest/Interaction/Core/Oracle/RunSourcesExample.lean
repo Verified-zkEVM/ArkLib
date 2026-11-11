@@ -168,6 +168,7 @@ def readSplit (branch : Bool) (hidden : Nat) :
 -- RunSourcesExample RS9, restated: the frozen prefix-then-suffix closing becomes the component
 -- resources `sumFamily inputs (sumFamily (pathFamily …) (pathFamily …))` with the payloads of the
 -- two component runs. Both suffix shapes answer each slot. Holds for every hidden value.
+/-- Closing the two component runs answers each queried slot in the selected suffix shape. -/
 theorem readSplit_split (branch : Bool) (hidden : Nat) :
     simulateQ ((splitResources branch hidden).behaviorOfRealizations (splitData branch hidden))
       (readSplit branch hidden) = if branch then [7, 11, 19] else [7, 11, 23, 29] := by

@@ -25,6 +25,8 @@ open Interaction.Core Interaction.Oracle OracleComp
 
 namespace Interaction.Core.ResourceExampleTests
 
+universe i q a s h
+
 /-- The carrier at index `r`: three values for `false`, five for `true`. -/
 abbrev Carrier (r : Bool) : Type := Fin (if r then 5 else 3)
 
@@ -116,9 +118,8 @@ example : simulateQ (model.behaviorOfRealizations bothEnv)
     (simulateQ inclusion.impl readRenamed) = (4, 3) := rfl
 
 example : simulateQ ((model.reindex Bool.not).behaviorOfRealizations (inclusion.f bothEnv))
-    readRenamed = (4, 3) := by
-  rw [← OracleMap.simulate_eq]
-  rfl
+    readRenamed = (4, 3) :=
+  (OracleMap.simulate_eq inclusion bothEnv readRenamed).symm.trans rfl
 
 -- ResourceExample R18, restated: data for the empty family exists without a realization of any
 -- model index.
@@ -217,12 +218,59 @@ example :
   change (Polynomial.X : Polynomial Nat).eval 7 = 7
   simp
 
--- ResourceExample R23, restated (OQ5): the frozen reified guarantee becomes the carrier subtype.
+-- ResourceExample R23, restated: the frozen reified guarantee becomes the carrier subtype.
 -- The degree bound holds of every realization of the family, in particular of
 -- `linearRealization`.
 example (x : ∀ i, polynomials.Realization i) (i : Unit) : (x i).val.natDegree < 2 :=
   (x i).property
 
 example : linearRealization.val.natDegree < 2 := linearRealization.property
+
+section Universes
+
+variable {Name : Type i} {Realization : Name → Type a} {Index : Type s} {View : Type h}
+
+-- ResourceExample R26: names, context indices and queries keep universes i, s and q. The
+-- realization universe a remains tied to the response universe, unlike the frozen independent e,
+-- because OracleInterface uses ReaderM; see IMPLEMENTATION-NOTES.md, entry 18.
+/-- Selected oracle resources retain the independent context, query and data-index universes. -/
+example (C : OracleFamily.{i, a, q} Name Realization) (name : Index → Name) :
+    Resources.{a, max s q, max s a} := Resources.ofFamily (C.reindex name)
+
+/-- Selecting interfaces preserves the context's query indices and their query universe. -/
+example (C : OracleFamily.{i, a, q} Name Realization) (name : Index → Name) :
+    OracleSpec.{max s q, a} ((x : Index) × (C.interface (name x)).Query) :=
+  (C.reindex name).spec
+
+/-- Context data answers all selected queries without restricting the context index universe. -/
+example (C : OracleFamily.{i, a, q} Name Realization) (name : Index → Name) :
+    (∀ x, Realization (name x)) → QueryImpl (C.reindex name).spec Id :=
+  (C.reindex name).behaviorOfRealizations
+
+-- ResourceExample R27: view indices have their own universe h, while backing data stays
+-- indexed by the original context in universe s. Only a and the response universe remain tied
+-- through OracleInterface's ReaderM, as recorded in IMPLEMENTATION-NOTES.md, entry 18.
+/-- An arbitrary view changes query indices without changing the original context data. -/
+example (C : OracleFamily.{i, a, q} Name Realization) (name : Index → Name)
+    (view : View → Index) (data : ∀ x, Realization (name x)) :
+    QueryImpl (C.reindex (name ∘ view)).spec Id :=
+  (C.reindex (name ∘ view)).behaviorOfRealizations
+    ((OracleMap.embedding (C.reindex name) view).f data)
+
+/-- View queries retain the selected name's dependent query carrier at the independent universe. -/
+example (C : OracleFamily.{i, a, q} Name Realization) (name : Index → Name)
+    (view : View → Index) :
+    OracleSpec.{max h q, a} ((x : View) × (C.interface (name (view x))).Query) :=
+  (C.reindex (name ∘ view)).spec
+
+/-- Routing through a view answers from the original context at the selected index. -/
+example (C : OracleFamily.{i, a, q} Name Realization) (name : Index → Name)
+    (view : View → Index) (data : ∀ x, Realization (name x))
+    (x : View) (query : (C.interface (name (view x))).Query) :
+    (C.reindex (name ∘ view)).behaviorOfRealizations
+        ((OracleMap.embedding (C.reindex name) view).f data) ⟨x, query⟩ =
+      (C.reindex name).behaviorOfRealizations data ⟨view x, query⟩ := rfl
+
+end Universes
 
 end Interaction.Core.ResourceExampleTests
