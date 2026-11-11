@@ -231,24 +231,24 @@ Ports owned by the oracle-access tests:
   and charge-seven/success-one assertion cover the corresponding parts of
   `fixed_native_resource_bounds` and `informed_cost_does_not_give_half`.
 
-[faults]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L221
+[faults]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L220
 [closing]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L234
-[full]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L560
-[phases]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L513
+[full]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L563
+[phases]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L515
 [source]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L370
-[accepted]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L155
-[rejected]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L163
+[accepted]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L156
+[rejected]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L167
 [runtime]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L251
-[countSetup]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L401
+[countSetup]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L406
 [countDirect]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L404
-[append]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L675
-[repeat]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L684
-[raw]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L716
-[bitLog]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L730
+[append]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L680
+[repeat]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L689
+[raw]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L721
+[bitLog]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L735
 [bitPlain]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L763
-[bitInformed]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L740
-[bitSplit]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L758
-[audit]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L828
+[bitInformed]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L745
+[bitSplit]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L761
+[audit]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L830
 [erasure]: ../../../ArkLib/Interaction/Core/Security/Knowledge.lean#L402
 [runtimeErasure]: ../../../ArkLib/Interaction/Core/Oracle/LoggedExecution.lean#L49
 [terminalAPI]: ../../../ArkLib/Interaction/Core/Oracle/LoggedExecution.lean#L73
@@ -258,9 +258,9 @@ Ports owned by the oracle-access tests:
 [routeWhole]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L275
 [payload]: ../../../ArkLib/Interaction/Core/Oracle/Routing.lean#L97
 [appendLaw]: ../../../ArkLib/Interaction/Core/Oracle/Routing.lean#L119
-[substitution]: ../../../ArkLib/Interaction/Core/Composition.lean#L420
+[substitution]: ../../../ArkLib/Interaction/Core/Composition.lean#L485
 [sourceClosing]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L255
-[unitRuntime]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L291
+[unitRuntime]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L292
 [optionalClosing]: ../../../ArkLib/Interaction/Core/Oracle/LoggedExecution.lean#L93
 [access]: oracle-access-tests.md
 
