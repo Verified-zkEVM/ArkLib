@@ -48,14 +48,14 @@ def event (i : Fin 4) : OracleComp events ℕ := liftM (events.query i)
 abbrev Q := events + challengeSpec oracleSig (protocol K 1 2)
 
 /-- Lift an ambient event into the run's oracle. -/
-abbrev eventE (i : Fin 4) : OracleComp Q ℕ := liftM (Q.query (.inl i))
+abbrev eventE (i : Fin 4) : OracleComp Q ℕ := (QueryImpl.id' Q).restrictLeft i
 
 /-- The challenge requests of the two-round run. -/
 abbrev drawE := fun c : ChallengeNode oracleSig (protocol K 1 2) =>
-  (liftM (Q.query (.inr c)) : OracleComp Q _)
+  (QueryImpl.id' Q).restrictRight c
 
 /-- Preserve ambient queries when simulating the prover in the run. -/
-abbrev liftEvents : QueryImpl events (OracleComp Q) := fun q => liftM (Q.query (.inl q))
+abbrev liftEvents : QueryImpl events (OracleComp Q) := (QueryImpl.id' Q).restrictLeft
 
 /-- Simulating an event sends it to the ambient part of the run's oracle. -/
 theorem simulate_event (i : Fin 4) : simulateQ liftEvents (event i) = eventE i :=
@@ -115,8 +115,10 @@ abbrev firstResources :=
 def exportMap (r : K) : OracleMap (firstResources (K := K)) (Spec.polynomialFamily K 1 1) where
   f x _ := exportPoly r (x.1 ()) (x.2 (.inl ⟨⟩))
   impl q := do
-    let old : K ← liftM (firstResources.spec.query (.inl ⟨(), ![r, q.2 0]⟩))
-    let sent : K ← liftM (firstResources.spec.query (.inr ⟨.inl ⟨⟩, r⟩))
+    let old : K ← (OracleMap.fst (Spec.polynomialFamily K 2 1)
+      (pathFamily (round K 1) (roundPath K 1))).impl ⟨(), ![r, q.2 0]⟩
+    let sent : K ← (OracleMap.snd (Spec.polynomialFamily K 2 1)
+      (pathFamily (round K 1) (roundPath K 1))).impl ⟨.inl ⟨⟩, r⟩
     pure (old + sent)
   law x q := by
     rcases q with ⟨⟨⟩, y⟩
@@ -218,7 +220,7 @@ theorem run_wholeProver (hidden : ℕ) (bump : K) :
   rw [wholeProver, simulate_consProver, run_consProver]
   refine bind_congr fun r => ?_
   rw [Prover.simulate_joinSlot, run_joinSlot]
-  simp only [simulateQ_map, Functor.map_map, bind_map_left, simulate_event, bind_assoc]
+  simp only [simulateQ_map, Functor.map_map, bind_map_left, bind_assoc]
   refine bind_congr fun tag => ?_
   rw [simulate_consProver, run_consProver]
   simp only [bind_assoc]
