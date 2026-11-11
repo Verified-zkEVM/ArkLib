@@ -237,32 +237,25 @@ The owner changes belong in VCVio, pinned here at `fc54dd3d7691d6f5db7dc829e321a
 
 ## Definition-site fixture transparency
 
-All 27 retained attributes set the transparency of declarations introduced by this branch.
+The eight retained `@[reducible]` attributes are on interface definitions introduced by this
+branch. Each constructs an `OracleInterface` class value; removing its attribute produces Lean's
+class-definition reducibility warning. These attributes set the definitions' own transparency.
 There are no added local/global `attribute [...]` commands changing another declaration, and no
 `respectTransparency` options. No declaration in the parent or a dependency is modified.
 
-The eight `@[reducible]` interface fixtures expose their query and dependent response carriers
-while elaborating explicitly typed queries. The thirteen `@[instance_reducible]` family fixtures
-expose selected interfaces while resolving query, answer and arithmetic instances. The six
-`@[instance_reducible]` protocol fixtures expose constructor shapes for transcript, payload,
-challenge and view types. These are definition-site choices, like `abbrev`, under the corrected
-review rule. The `functions` and `polynomials` families use ordinary definition transparency;
-their previous attributes were unnecessary. The exact retained declarations are:
+The nineteen annotated family and protocol definitions now use ordinary definition transparency.
+All six clients elaborate without their former `@[instance_reducible]` attributes. Imports,
+signatures, proofs, runtime checks and trust checks are unchanged. The `functions` and
+`polynomials` families already use ordinary definition transparency. The exact retained
+attributes are:
 
 | File under `Core/Oracle/` | Attribute | Declarations |
 | --- | --- | --- |
 | `SourceExample` | `reducible` | `taggedInterface`, `pairInterface` |
-| `SourceExample` | `instance_reducible` | `dependent`, `tagged`, `numbers` |
 | `ResourceExample` | `reducible` | `countInterface`, `mixedInterface`, `evaluation` |
-| `ResourceExample` | `instance_reducible` | `model`, `mixedModel` |
 | `RunSourcesExample` | `reducible` | `interface` |
-| `RunSourcesExample` | `instance_reducible` | `inputs`, `tree`, `impossible` |
-| `RunSourcesExample` | `instance_reducible` | `firstTree`, `secondTree` |
 | `SourceRoutingExample` | `reducible` | `firstInterface` |
-| `SourceRoutingExample` | `instance_reducible` | `inputs`, `firstProtocol`, `exported` |
 | `TerminalRun/Examples` | `reducible` | `firstInterface` |
-| `TerminalRun/Examples` | `instance_reducible` | `inputs`, `output`, `protocol` |
-| `Virtual` | `instance_reducible` | `scalarFamily`, `source`, `suffix` |
 
 ## Assertion links
 

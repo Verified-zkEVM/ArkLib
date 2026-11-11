@@ -46,15 +46,15 @@ example (challenges : (ToyProblem.SimplifiedIOR.pSpec (F := F)).Challenges)
 end ToyProblem
 
 /-- A scalar interface whose only query reveals its natural-number realization. -/
-@[instance_reducible] def scalarFamily : OracleFamily Unit (fun _ => Nat) :=
+def scalarFamily : OracleFamily Unit (fun _ => Nat) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
 /-- Two scalar source slots. -/
-@[instance_reducible] def source : OracleFamily Bool (fun _ => Nat) :=
+def source : OracleFamily Bool (fun _ => Nat) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
 /-- The separate suffix oracle. -/
-@[instance_reducible] def suffix : OracleFamily Unit (fun _ => Nat) :=
+def suffix : OracleFamily Unit (fun _ => Nat) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
 /-- Both source queries matter, with different coefficients. -/

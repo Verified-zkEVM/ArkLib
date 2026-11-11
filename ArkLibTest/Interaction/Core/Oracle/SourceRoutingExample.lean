@@ -19,7 +19,7 @@ open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle OracleComp
 namespace Interaction.Core.SourceRoutingExampleTests
 
 /-- Two scalar input slots; slot 1 is never exported. -/
-@[instance_reducible] def inputs : OracleFamily (Fin 2) (fun _ => Nat) :=
+def inputs : OracleFamily (Fin 2) (fun _ => Nat) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
 /-- Slot 0 holds 7; slot 1 holds the hidden value. -/
@@ -32,11 +32,11 @@ def inputData (hidden : Nat) : ∀ _ : Fin 2, Nat := fun i => if i = 0 then 7 el
   toOC.impl _ := do return (← read).1
 
 /-- The prefix sends one pair oracle. -/
-@[instance_reducible] def firstProtocol : OracleProtocol :=
+def firstProtocol : OracleProtocol :=
   .liftBind (.oracle (Nat × Nat) firstInterface) (fun _ => .pure ⟨⟩)
 
 /-- One exported scalar oracle. -/
-@[instance_reducible] def exported : OracleFamily PUnit (fun _ => Nat) :=
+def exported : OracleFamily PUnit (fun _ => Nat) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
 /-- The prefix resources on its only path. -/

@@ -37,7 +37,7 @@ abbrev Carrier (r : Bool) : Type := Fin (if r then 5 else 3)
   toOC.impl query := do return (← read).val + (if query then 1 else 0)
 
 /-- Both indices have the same query interface and different carrier types. -/
-@[instance_reducible] def model : OracleFamily Bool Carrier := ⟨countInterface⟩
+def model : OracleFamily Bool Carrier := ⟨countInterface⟩
 
 /-- The family holding only index `false`. -/
 abbrev left := model.reindex (fun _ : PUnit => false)
@@ -174,7 +174,7 @@ and answers a `Bool`. -/
       toOC.impl query := do return decide (query.val < (← read).val) }
 
 /-- Query and response types vary with the index. -/
-@[instance_reducible] def mixedModel : OracleFamily Bool Carrier := ⟨mixedInterface⟩
+def mixedModel : OracleFamily Bool Carrier := ⟨mixedInterface⟩
 
 /-- After renaming, output index `false` takes a `Fin 2` query and answers a `Bool`. -/
 def readMixed : OracleComp (mixedModel.reindex Bool.not).spec (Bool × Nat) := do

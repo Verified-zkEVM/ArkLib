@@ -28,14 +28,14 @@ namespace Interaction.Core.RunSourcesExampleTests
   toOC.impl _ := do return (← read).1
 
 /-- One scalar input slot. -/
-@[instance_reducible] def inputs : OracleFamily PUnit (fun _ => Nat) :=
+def inputs : OracleFamily PUnit (fun _ => Nat) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
 /-- The input slot holds 7. -/
 def inputData : ∀ i, inputs.Realization i := fun _ => 7
 
 /-- A prover message `Bool`, then two oracle sends of equal signature. -/
-@[instance_reducible] def tree : OracleProtocol :=
+def tree : OracleProtocol :=
   .liftBind (.message Bool) fun _ =>
     .liftBind (.oracle (Nat × Nat) interface) fun _ =>
       .liftBind (.oracle (Nat × Nat) interface) fun _ => .pure ⟨⟩
@@ -78,7 +78,7 @@ example (hidden₁ hidden₂ : Nat) :
   · exact i.elim
 
 /-- An oracle node whose carrier is uninhabited. -/
-@[instance_reducible] def impossible : OracleProtocol :=
+def impossible : OracleProtocol :=
   .liftBind (.oracle Empty OracleInterface.instDefault) fun _ => .pure ⟨⟩
 
 -- RunSourcesExample RS3, restated: the shape path through an `Empty` oracle node exists, its
@@ -96,12 +96,12 @@ A prover message `Bool` selects the suffix shape: one oracle send, or a `Unit` m
 two sends. The messages keep private coordinates, and all same-signature slots stay distinct. -/
 
 /-- A prover message `Bool`, then one oracle send. -/
-@[instance_reducible] def firstTree : OracleProtocol :=
+def firstTree : OracleProtocol :=
   .liftBind (.message Bool) fun _ =>
     .liftBind (.oracle (Nat × Nat) interface) fun _ => .pure ⟨⟩
 
 /-- The suffix shape selected by the prefix message. -/
-@[instance_reducible] def secondTree : Path firstTree → OracleProtocol
+def secondTree : Path firstTree → OracleProtocol
   | ⟨true, _⟩ => .liftBind (.oracle (Nat × Nat) interface) fun _ => .pure ⟨⟩
   | ⟨false, _⟩ => .liftBind (.message Unit) fun _ =>
       .liftBind (.oracle (Nat × Nat) interface) fun _ =>

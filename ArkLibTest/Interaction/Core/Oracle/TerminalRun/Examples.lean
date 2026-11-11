@@ -24,11 +24,11 @@ namespace Interaction.Core.TerminalRunTests
 abbrev ambient : OracleSpec Nat := Nat →ₒ Nat
 
 /-- One scalar input slot. -/
-@[instance_reducible] def inputs : OracleFamily Unit (fun _ => Nat) :=
+def inputs : OracleFamily Unit (fun _ => Nat) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
 /-- One scalar output oracle. -/
-@[instance_reducible] def output : OracleFamily Unit (fun _ => Nat) :=
+def output : OracleFamily Unit (fun _ => Nat) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
 /-- Only the first coordinate of a sent pair is observable. -/
@@ -38,7 +38,7 @@ abbrev ambient : OracleSpec Nat := Nat →ₒ Nat
   toOC.impl _ := do return (← read).1
 
 /-- The prover sends one pair oracle. -/
-@[instance_reducible] def protocol : OracleProtocol :=
+def protocol : OracleProtocol :=
   .liftBind (.oracle (Nat × Nat) firstInterface) (fun _ => .pure ⟨⟩)
 
 /-- The decision resources on the only path of `protocol`. -/

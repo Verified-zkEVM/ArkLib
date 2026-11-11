@@ -27,7 +27,7 @@ abbrev Carrier : Bool → Type
   | true => Fin 3
 
 /-- Each index reveals its whole realization. -/
-@[instance_reducible] def dependent : OracleFamily Bool Carrier :=
+def dependent : OracleFamily Bool Carrier :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
 /-- Data for `dependent` from a bit and a `Fin 3` value. -/
@@ -82,7 +82,7 @@ example : dependent.behaviorOfRealizations (twist.f (env true 2)) ⟨false, ()�
   toOC.impl _ := do return (← read).1
 
 /-- Realizations carry a private tag. -/
-@[instance_reducible] def tagged : OracleFamily Bool (fun b => Carrier b × Nat) :=
+def tagged : OracleFamily Bool (fun b => Carrier b × Nat) :=
   ⟨taggedInterface⟩
 
 -- SourceExample S3, restated: the frozen `comapEnv Prod.fst` becomes realizations with an
@@ -101,7 +101,7 @@ example (x : ∀ b, Carrier b) :
   norm_num at htag
 
 /-- Two scalar slots, each revealing its value. -/
-@[instance_reducible] def numbers : OracleFamily Bool (fun _ => Nat) :=
+def numbers : OracleFamily Bool (fun _ => Nat) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
 /-- Read the other slot and add three. -/
