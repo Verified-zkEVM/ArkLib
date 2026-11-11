@@ -347,6 +347,23 @@ generic standalone oracle verifier composition theorem. The plain `indexed_compo
 instantiate the standalone plain verifier theorem. The disposition record keeps these claims
 separate.
 
+### Full-prefix distributions and local errors
+
+The shared `PrefixDraw` and `PrefixError` interfaces index draws and errors by the same receiver
+cursor and full history. The public `rbrKnowledgeSoundness` predicate and both verifier forms use
+these interfaces. `combinePrefixDraw` retains the first error before the seam. After the seam,
+it selects the second error family by the complete first transcript and evaluates it at the
+second prefix history. `appendPrefixSampler_eq_combinePrefixDraw` proves the matching sampler law.
+
+The `_prefix` composition theorems accept these families. The node-indexed predicates end in
+`OfNodes`; the established node composition theorems follow from the general laws by ignoring
+history. There is one local-bound and composition proof development. P1 removes challenge
+selection from oracle payloads and effectful receiver actions only. Earlier public challenges and
+prover messages may select later distributions and local errors. The fixed two-bit zero-error
+certificate in `ArkLibTest/Interaction/Core/Security/PrefixKnowledge.lean` checks this distinction
+without inserting a prover message. The inventory records the corrected schedule correspondences,
+including KC-065 as equivalent because its frozen schedule was already constant.
+
 ### Measured extraction
 
 `Security/MeasuredResources.lean` names one VCVio `BudgetedProgram` for each root, step and leaf

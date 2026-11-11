@@ -15,7 +15,8 @@ Full moves decorate PolyFun cursor spines, so states and extractors can inspect 
 payloads as well as public messages and challenges. Soundness states are false at false roots,
 remain false across sender moves and rule out valid acceptance at a false leaf. Knowledge states
 carry intermediate witnesses and extract them backwards. Both error bounds quantify each fixed
-prefix before drawing one fresh challenge; their indices contain only shape choices.
+prefix before drawing one fresh challenge. Knowledge draws and their local errors may depend
+on the entire earlier history; node-indexed draws and errors are specializations.
 -/
 
 @[expose] public section
@@ -97,6 +98,14 @@ def sampleAt {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly)
 abbrev PrefixDraw (m : Type u → Type vDraw) (s : FreeM P PUnit.{u + 1}) :=
   ∀ {a next}, (sp : Cursor.Spine s (.liftBind a next)) → owner l a = .receiver →
     PrefixMoves l sp → m (Move l a)
+
+/-- A local error at the same receiver prefix and history as its draw. -/
+abbrev PrefixError (s : FreeM P PUnit.{u + 1}) := PrefixDraw l (fun _ => ℝ≥0∞) s
+
+/-- Errors indexed only by structural nodes ignore the full prefix history. -/
+def PrefixError.ofNodes {s : FreeM P PUnit.{u + 1}}
+    (ε : ChallengeNode l s → ℝ≥0∞) : PrefixError l s :=
+  fun sp h _ => ε (spineChallenge l sp h)
 
 /-- Challenge programs may depend on the entire full prefix, including erased challenges. -/
 abbrev PrefixChallengePrograms {ι : Type uι} (spec : OracleSpec.{uι, uQ} ι)
@@ -257,23 +266,34 @@ structure KnowledgeStateFunction (s : FreeM P PUnit.{u + 1}) (S : Type uS)
     validOutput stmt (PrefixMoves.complete l sp history) wit →
       toFun stmt sp history (extractLeaf stmt sp history wit)
 
-/-- A fresh challenge rarely defeats backwards extraction, uniformly over later witnesses. -/
+/-- At each receiver prefix, the history-selected challenge defeats backwards extraction with
+probability at most that prefix's error, uniformly over later witnesses. -/
 def rbrKnowledgeSoundness {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly)
     {S : Type uS} {Win : S → Type uW} (s : FreeM P PUnit.{1})
     {W : S → PathAlong l s → Type uO} (admissible : S → Prop)
     (relIn : (stmt : S) → Win stmt → Prop)
     (validOutput : (stmt : S) → (tr : PathAlong l s) → W stmt tr → Prop)
-    (draw : QueryImpl (challengeSpec l s) ProbComp) (ε : ChallengeNode l s → ℝ≥0∞) : Prop :=
+    (draw : PrefixDraw l ProbComp s) (ε : PrefixError l s) : Prop :=
   ∃ F : KnowledgeStateFunction.{uS, uW, uK, uO} l s S W Win admissible relIn validOutput,
     ∀ stmt, admissible stmt →
     ∀ (a : P.A) (next : P.B a → FreeM P PUnit.{1})
       (sp : Cursor.Spine s (.liftBind a next)) (h : owner l a = .receiver)
       (history : PrefixMoves l sp),
       letI : MeasurableSpace (Move l a) := ⊤
-      𝒟[sampleAt l draw sp h] {x | ∃ wit,
+      𝒟[prefixSampleAt l draw sp h history] {x | ∃ wit,
         ¬ F.toFun stmt sp history (F.extractStep stmt sp history x wit) ∧
         F.toFun stmt (sp.comp (.down (l.toFunB a x) (.root _)))
-          (PrefixMoves.snoc l sp history x) wit} ≤ ε (spineChallenge l sp h)
+          (PrefixMoves.snoc l sp history x) wit} ≤ ε sp h history
+
+/-- Knowledge soundness for node-indexed draws and errors, as a prefix specialization. -/
+abbrev rbrKnowledgeSoundnessOfNodes {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly)
+    {S : Type uS} {Win : S → Type uW} (s : FreeM P PUnit.{1})
+    {W : S → PathAlong l s → Type uO} (admissible : S → Prop)
+    (relIn : (stmt : S) → Win stmt → Prop)
+    (validOutput : (stmt : S) → (tr : PathAlong l s) → W stmt tr → Prop)
+    (draw : QueryImpl (challengeSpec l s) ProbComp) (ε : ChallengeNode l s → ℝ≥0∞) : Prop :=
+  rbrKnowledgeSoundness.{uS, uW, uK, uO} l s admissible relIn validOutput
+    (PrefixDraw.ofNodes l draw) (PrefixError.ofNodes l ε)
 
 /-- Move a knowledge state function to a larger universe of intermediate witnesses. Each new
 intermediate witness is an old one in a larger universe; the states, extractors and obligations
@@ -299,7 +319,7 @@ theorem rbrKnowledgeSoundness.lift.{v} {P : PFunctor.{1, 0}} (l : PFunctor.Lens 
     {S : Type uS} {Win : S → Type uW} {s : FreeM P PUnit.{1}}
     {W : S → PathAlong l s → Type uO} {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
     {validOutput : (stmt : S) → (tr : PathAlong l s) → W stmt tr → Prop}
-    {draw : QueryImpl (challengeSpec l s) ProbComp} {ε : ChallengeNode l s → ℝ≥0∞}
+    {draw : PrefixDraw l ProbComp s} {ε : PrefixError l s}
     (h : rbrKnowledgeSoundness.{uS, uW, uK, uO} l s admissible relIn validOutput draw ε) :
     rbrKnowledgeSoundness.{uS, uW, max uK v, uO} l s admissible relIn validOutput draw ε := by
   obtain ⟨F, hF⟩ := h
@@ -375,10 +395,23 @@ abbrev Verifier.rbrKnowledgeSoundness {ι σ : Type} {S : Type uS} {Win : S → 
     (admissible : S → Prop) (relIn : (stmt : S) → Win stmt → Prop)
     (relOut : (stmt : S) → (tr : PathAlong plainSig s) → T (projectPathAlong plainSig s tr) → W
     stmt tr → Prop)
-    (draw : QueryImpl (challengeSpec plainSig s) ProbComp)
-    (ε : ChallengeNode plainSig s → ℝ≥0∞) : Prop :=
+    (draw : PrefixDraw plainSig ProbComp s)
+    (ε : PrefixError plainSig s) : Prop :=
   Core.rbrKnowledgeSoundness.{uS, uW, uK, uO} plainSig s admissible relIn
     (fun stmt tr wit => V.validAcceptance impl stmt tr (fun t => relOut stmt tr t wit)) draw ε
+
+/-- Node-indexed knowledge soundness is the shared prefix predicate ignoring history. -/
+abbrev Verifier.rbrKnowledgeSoundnessOfNodes {ι σ : Type} {S : Type uS} {Win : S → Type uW}
+    {ambient : OracleSpec ι} {s : Protocol} {T : Path s → Type}
+    {W : S → PathAlong plainSig s → Type uO} (V : Verifier ambient s S T)
+    (impl : QueryImpl ambient (StateT σ ProbComp))
+    (admissible : S → Prop) (relIn : (stmt : S) → Win stmt → Prop)
+    (relOut : (stmt : S) → (tr : PathAlong plainSig s) → T (projectPathAlong plainSig s tr) → W
+    stmt tr → Prop)
+    (draw : QueryImpl (challengeSpec plainSig s) ProbComp)
+    (ε : ChallengeNode plainSig s → ℝ≥0∞) : Prop :=
+  Verifier.rbrKnowledgeSoundness.{uS, uW, uK, uO} V impl admissible relIn relOut
+    (PrefixDraw.ofNodes plainSig draw) (PrefixError.ofNodes plainSig ε)
 
 namespace OracleVerifier
 variable {ι σ : Type} {I : Type uI} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol}
@@ -460,10 +493,23 @@ abbrev rbrKnowledgeSoundness {Win : (S × (∀ i, A i)) → Type uW}
     (admissible : S × (∀ i, A i) → Prop) (relIn : (stmt : S × (∀ i, A i)) → Win stmt → Prop)
     (relOut : (stmt : S × (∀ i, A i)) → (tr : PathAlong oracleSig s) →
       OracleVerifier.Output T B (projectPathAlong oracleSig s tr) → W stmt tr → Prop)
-    (draw : QueryImpl (challengeSpec oracleSig s) ProbComp)
-    (ε : ChallengeNode oracleSig s → ℝ≥0∞) : Prop :=
+    (draw : PrefixDraw oracleSig ProbComp s)
+    (ε : PrefixError oracleSig s) : Prop :=
   Core.rbrKnowledgeSoundness.{max uS uI, uW, uK, uO} oracleSig s admissible relIn
     (fun stmt tr wit => V.validAcceptance impl stmt tr (fun t => relOut stmt tr t wit)) draw ε
+
+/-- Node-indexed knowledge soundness is the shared prefix predicate ignoring history. -/
+abbrev rbrKnowledgeSoundnessOfNodes {Win : (S × (∀ i, A i)) → Type uW}
+    {W : (S × (∀ i, A i)) → PathAlong oracleSig s → Type uO}
+    (V : OracleVerifier ambient s S T inputs outputs)
+    (impl : QueryImpl ambient (StateT σ ProbComp))
+    (admissible : S × (∀ i, A i) → Prop) (relIn : (stmt : S × (∀ i, A i)) → Win stmt → Prop)
+    (relOut : (stmt : S × (∀ i, A i)) → (tr : PathAlong oracleSig s) →
+      OracleVerifier.Output T B (projectPathAlong oracleSig s tr) → W stmt tr → Prop)
+    (draw : QueryImpl (challengeSpec oracleSig s) ProbComp)
+    (ε : ChallengeNode oracleSig s → ℝ≥0∞) : Prop :=
+  rbrKnowledgeSoundness.{uS, uW, uK, uO, uI, wI, wJ} V impl admissible relIn relOut
+    (PrefixDraw.ofNodes oracleSig draw) (PrefixError.ofNodes oracleSig ε)
 
 end OracleVerifier
 

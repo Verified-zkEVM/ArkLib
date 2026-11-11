@@ -384,19 +384,19 @@ def typeCertificate {P : PFunctor.{1, 0}} (l : PFunctor.Lens P TwoParty.Lens.rol
 
 /-- Round-by-round knowledge with intermediate witnesses in `Type 1`, a small input witness and an
 input statement in `Type 2`. -/
-example : rbrKnowledgeSoundness.{2, 0, 1} plainSig done (fun (_ : Type 1) => True)
+example : rbrKnowledgeSoundnessOfNodes.{2, 0, 1} plainSig done (fun (_ : Type 1) => True)
     (fun _ (_ : Unit) => True) (fun _ _ (_ : Unit) => True) (fun c => c.val.elim) (fun _ => 0) :=
   ⟨typeCertificate plainSig _, fun _ _ _ _ sp => nomatch sp⟩
 
 /-- The plain verifier wrapper at the same unequal universes. -/
-example : Verifier.rbrKnowledgeSoundness.{2, 0, 1} reduction.verifier plainAmbientTrue
+example : Verifier.rbrKnowledgeSoundnessOfNodes.{2, 0, 1} reduction.verifier plainAmbientTrue
     (fun _ => True) (fun _ (_ : Unit) => True) (fun _ _ _ (_ : Unit) => True) noPlainChallenges
     (fun _ => 0) :=
   ⟨typeCertificate plainSig _, fun _ _ _ _ sp => nomatch sp⟩
 
 /-- The oracle verifier wrapper for `runnable`, with intermediate witnesses in `Type 1`, a small
 input witness, an input statement in `Type 2` and an input index in `Type 1`. -/
-example : OracleVerifier.rbrKnowledgeSoundness.{2, 0, 1, 0, 1, 0, 0} runnable ambientTrue
+example : OracleVerifier.rbrKnowledgeSoundnessOfNodes.{2, 0, 1, 0, 1, 0, 0} runnable ambientTrue
     (fun _ => True) (fun _ (_ : Unit) => True) (fun _ _ _ (_ : Unit) => True) noChallenges
     (fun _ => 0) :=
   ⟨typeCertificate oracleSig _, fun _ _ _ _ sp => nomatch sp⟩
@@ -443,7 +443,7 @@ example (stmt : Type 1 × Nat) (w : Fin (stmt.2 + 1)) :
     (indexedLargeCertificate.lift.{2, 2, 1, 0, 1, 0, 3}).extractRoot stmt ⟨⟨w⟩⟩ = ULift.up w := rfl
 
 /-- Lifting a bound retains the same dependent input and output carriers at a larger universe. -/
-example : rbrKnowledgeSoundness.{2, 2, 3} plainSig done
+example : rbrKnowledgeSoundnessOfNodes.{2, 2, 3} plainSig done
     (fun (_ : Type 1 × Nat) => True)
     (fun stmt (_ : ULift.{2} (Fin (stmt.2 + 1))) => True)
     (fun stmt _ (_ : Fin (stmt.2 + 1)) => True) noPlainChallenges (fun _ => 0) :=
@@ -498,13 +498,13 @@ def largeOutputCertificate {P : PFunctor.{1, 0}} (l : PFunctor.Lens P TwoParty.L
   leaf _ _ _ _ _ := trivial
 
 /-- The plain wrapper accepts large terminal witnesses independently of its run output. -/
-example : Verifier.rbrKnowledgeSoundness.{2, 0, 1, 1} reduction.verifier plainAmbientTrue
+example : Verifier.rbrKnowledgeSoundnessOfNodes.{2, 0, 1, 1} reduction.verifier plainAmbientTrue
     (fun _ => True) (fun _ (_ : Unit) => True) (fun _ _ _ (_ : Type) => True)
     noPlainChallenges (fun _ => 0) :=
   ⟨largeOutputCertificate plainSig _, fun _ _ _ _ sp => nomatch sp⟩
 
 /-- The oracle wrapper also accepts large terminal witnesses independently of its run output. -/
-example : OracleVerifier.rbrKnowledgeSoundness.{2, 0, 1, 1, 1, 0, 0} runnable ambientTrue
+example : OracleVerifier.rbrKnowledgeSoundnessOfNodes.{2, 0, 1, 1, 1, 0, 0} runnable ambientTrue
     (fun _ => True) (fun _ (_ : Unit) => True) (fun _ _ _ (_ : Type) => True)
     noChallenges (fun _ => 0) :=
   ⟨largeOutputCertificate oracleSig _, fun _ _ _ _ sp => nomatch sp⟩

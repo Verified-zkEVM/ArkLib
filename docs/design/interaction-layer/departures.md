@@ -36,6 +36,7 @@ The status is one of equivalent, premise-required or unresolved.
 | --- | --- | --- |
 | 18 | Run outputs and a prover's ambient index are tied to the monad universe `u`; every other component takes its own universe, including input and output oracle query types | premise-required: positions live one universe up and the runner is `m : Type u → Type u` |
 | 18 | Input oracle data stays in the response universe `Type u`; the full-log oracle runner `runWithLog` keeps the input index and query type in `Type`, while extraction runs on the general ambient-log runner | unresolved: `OracleInterface` ties data and responses through `ReaderM`, and the full log records input queries |
+| 19 | Full-prefix knowledge composition with independent witness carriers and measured root, step and leaf maps | equivalent; node-indexed bounds specialize full-prefix bounds, see the knowledge inventory below |
 | 21 | Round-by-round soundness implies soundness for lawful distribution monads, with prefix-indexed freshness | equivalent; see the soundness disposition record below |
 
 ## Legacy embedding: entries 14–16
@@ -113,4 +114,7 @@ The [assertion disposition record](knowledge-composition-disposition.md) maps th
 production laws and acceptance assertions to the composition and measured-extraction port. It
 records the public prover selector required by P2, the explicit zero root and leaf budgets that
 recover the frozen bound, and VCVio's small-carrier restriction on measured programs. Pure
-backward maps accept large terminal and seam witnesses directly.
+backward maps accept large terminal and seam witnesses directly. The shared full-prefix sampler
+retains earlier public challenges and prover messages in both distributions and local errors.
+P1 retires oracle-payload-dependent challenge selection and effectful receiver actions only.
+The inventory marks the already constant KC-065 schedule equivalent.

@@ -559,7 +559,8 @@ example (n : Move oracleSig (.oracle Nat OracleInterface.instDefault))
 -- Disposition KC-068.
 /-- The prefix verifier is round-by-round knowledge sound with error one. -/
 theorem first_rbrKnowledgeSoundness :
-    OracleVerifier.rbrKnowledgeSoundness.{0, 0, 0, 0, 0, 0, 0} firstVerifier impl (fun _ => True)
+    OracleVerifier.rbrKnowledgeSoundnessOfNodes.{0, 0, 0, 0, 0, 0, 0} firstVerifier impl
+    (fun _ => True)
     (fun _ (_ : Nat) => False)
       (fun _ tr z (_ : MidWitness tr) => z.1 = true) firstDraw (fun _ => 1) :=
   ⟨firstState, fun _ _ a _ _ _ _ => by
@@ -569,7 +570,8 @@ theorem first_rbrKnowledgeSoundness :
 -- Disposition KC-120, KC-131.
 /-- Every suffix state function is locally bounded with error one. -/
 theorem second_rbrKnowledgeSoundness (tr₁ : PathAlong oracleSig firstProtocol) :
-    rbrKnowledgeSoundness.{0, 0, 0} oracleSig (suffix (projectPathAlong oracleSig firstProtocol
+    rbrKnowledgeSoundnessOfNodes.{0, 0, 0} oracleSig (suffix
+    (projectPathAlong oracleSig firstProtocol
     tr₁))
       (fun _ => True) (relMid tr₁)
       (fun stmt tr₂ w => validOutput stmt (PathAlong.append oracleSig firstProtocol suffix tr₁ tr₂)
@@ -581,11 +583,11 @@ theorem second_rbrKnowledgeSoundness (tr₁ : PathAlong oracleSig firstProtocol)
 
 -- Disposition KC-135.
 /-- The composite state function is locally bounded by the combined errors. -/
-example : compositeState.LocallyBounded
+example : compositeState.LocallyBoundedOfNodes
     (combineDraw oracleSig firstProtocol suffix firstDraw secondDraw)
     (combineDraw (m := fun _ => ℝ≥0∞) oracleSig firstProtocol suffix (fun _ => 1)
       (fun _ _ => 1)) :=
-  KnowledgeStateFunction.LocallyBounded.append seam
+  KnowledgeStateFunction.LocallyBoundedOfNodes.append seam
     (fun _ _ a _ _ _ _ => by
       let : MeasurableSpace (Move oracleSig a) := ⊤
       exact evalDist_apply_le_one _ _)
@@ -597,7 +599,8 @@ example : compositeState.LocallyBounded
 -- Disposition KC-135, KC-303.
 /-- The appended verifier is round-by-round knowledge sound with the combined errors. -/
 theorem composed_rbrKnowledgeSoundness :
-    OracleVerifier.rbrKnowledgeSoundness.{0, 0, 0, 0, 0, 0, 0} composed impl (fun _ => True) (fun
+    OracleVerifier.rbrKnowledgeSoundnessOfNodes.{0, 0, 0, 0, 0, 0, 0} composed impl
+    (fun _ => True) (fun
     _ (_ : Nat) => False)
       (fun _ tr z (_ : OutWitness tr) => z.1 = true)
       (combineDraw oracleSig firstProtocol suffix firstDraw secondDraw)
@@ -656,7 +659,8 @@ def suffixState (tr₁ : PathAlong oracleSig firstProtocol) :
 -- Disposition KC-135.
 /-- The appended verifier is knowledge sound from a suffix stated over its own statement. -/
 example :
-    OracleVerifier.rbrKnowledgeSoundness.{0, 0, 0, 0, 0, 0, 0} composed impl (fun _ => True) (fun
+    OracleVerifier.rbrKnowledgeSoundnessOfNodes.{0, 0, 0, 0, 0, 0, 0} composed impl
+    (fun _ => True) (fun
     _ (_ : Nat) => False)
       (fun _ tr z (_ : OutWitness tr) => z.1 = true)
       (combineDraw oracleSig firstProtocol suffix firstDraw secondDraw)
@@ -698,7 +702,8 @@ def indexedCertificate : KnowledgeStateFunction plainSig indexedProtocol Nat
   leaf _ _ _ _ _ := trivial
 
 /-- The standalone verifier theorem quantifies statement-indexed input and output witnesses. -/
-theorem indexed_standalone : Verifier.rbrKnowledgeSoundness.{0, 0, 0} indexedVerifier impl (fun
+theorem indexed_standalone : Verifier.rbrKnowledgeSoundnessOfNodes.{0, 0, 0} indexedVerifier impl
+    (fun
     _ => True)
     (fun n (_ : Fin (n + 1)) => True) (fun n _ _ (w : Fin (n + 1)) => w.val ≤ n)
     indexedDraw (fun _ => 0) :=
@@ -707,7 +712,7 @@ theorem indexed_standalone : Verifier.rbrKnowledgeSoundness.{0, 0, 0} indexedVer
 /-- Verifier composition uses the suffix's standalone theorem at its own statement and witness
 family. Both witness maps are identities in the carrier selected by the statement. -/
 theorem indexed_composed :
-    Verifier.rbrKnowledgeSoundness.{0, 0, 0}
+    Verifier.rbrKnowledgeSoundnessOfNodes.{0, 0, 0}
       (indexedVerifier.append (fun _ => indexedVerifier)) impl
     (fun _ => True) (fun n (_ : Fin (n + 1)) => True)
     (fun n _ _ (w : Fin (n + 1)) => w.val ≤ n)
