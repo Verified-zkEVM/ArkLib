@@ -288,10 +288,12 @@ input polynomial and the path's oracles. -/
 private abbrev decisionSpec (x : Σ s : OracleProtocol.{0}, Path s) :=
   ambient + (pathResources (Spec.polynomialFamily R n deg) x.1 x.2).spec
 
-/-- Lift path-oracle queries into the decision's query interface, on any oracle tree. -/
+/-- Lift path-oracle queries into the decision's query interface, on any oracle tree: the shared
+`Interaction.Core.pathLift` at the polynomial input family, packaged over a sigma so that the
+transport proof below can move along the tree. -/
 private def pathLift (x : Σ s : OracleProtocol.{0}, Path s) :
     QueryImpl (pathFamily x.1 x.2).spec (OracleComp (decisionSpec R deg n ambient x)) :=
-  fun q => liftM ((decisionSpec R deg n ambient x).query (.inr (.inr q)))
+  Interaction.Core.pathLift ambient (polyFamily R deg n) x.2
 
 variable {R deg n ambient}
 
@@ -305,7 +307,7 @@ private theorem decisionImpl_message (p : Path (oracleProtocol (Spec.pSpec R deg
         (queryMsg (pSpec := Spec.pSpec R deg n) 0 _ _ p q.1 (Nat.zero_le _) q.2) := by
   change simulateQ _ (simulateQ _ _) = _
   refine QueryImpl.simulateQ_simulateQ_eq_of_apply (fun t => ?_) _
-  simp [pathLift]
+  simp [pathLift, Interaction.Core.pathLift]
   rfl
 
 variable (R deg n ambient) [∀ t, Inhabited (ambient.Range t)]
