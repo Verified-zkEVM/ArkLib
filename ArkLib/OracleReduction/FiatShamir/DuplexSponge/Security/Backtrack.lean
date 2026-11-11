@@ -739,34 +739,6 @@ def messageIdxList : List pSpec.MessageIdx :=
 def messageIdxListBefore (i : pSpec.ChallengeIdx) : List pSpec.MessageIdx :=
   messageIdxList.filter fun j => decide (j.1 < i.1)
 
-def challengeIdxListBefore (i : pSpec.ChallengeIdx) : List pSpec.ChallengeIdx :=
-  challengeIdxList.filter fun j => decide (j.1 < i.1)
-
-def lastMessageBefore? (i : pSpec.ChallengeIdx) : Option pSpec.MessageIdx :=
-  (messageIdxListBefore (pSpec := pSpec) i).getLast?
-
-/-- Sum the prover-message blocks from rounds strictly before the round ending at challenge `i`.
-
-`messageIdxListBefore i` also contains the current round's message because its flat protocol-step
-index precedes `i`; `dropLast` excludes that message from the paper's `ι < i` sum. This
-interpretation is used under `NondegenerateRounds pSpec` by the Section-5 correctness theorems. -/
-def sumMessageBlocksBeforeExclLast (i : pSpec.ChallengeIdx) : Nat :=
-  ((messageIdxListBefore (pSpec := pSpec) i).dropLast).foldl
-    (fun acc j => acc + pSpec.Lₚᵢ j) 0
-
-def sumChallengeBlocksBefore (i : pSpec.ChallengeIdx) : Nat :=
-  (challengeIdxListBefore (pSpec := pSpec) i).foldl (fun acc j => acc + pSpec.Lᵥᵢ j) 0
-
-/-- BackTrack §5.2 Step 1: initialize the input-state list for a candidate chain. -/
-def backtrackStep1Init
-    (state : CanonicalSpongeState U)
-    (steps : List (CanonicalSpongeState U × CanonicalSpongeState U)) :
-    List (CanonicalSpongeState U) :=
-  (steps.map Prod.fst) ++ [state]
-
-def guardH (P : Prop) [Decidable P] : Option (PLift P) :=
-  if h : P then some ⟨h⟩ else none
-
 /-- Try to assemble exactly `len` elements from `xs` into a `Vector U len`. Returns
 `some ⟨v, hLen⟩` carrying a proof that `xs` actually had at least `len` elements, so callers
 can use `do`-notation while still recovering the length bound. -/
@@ -783,273 +755,138 @@ def vectorOfListExact
   else
     exact none
 
-/-- `rateUnitsOf xs` — concatenation of every rate-segment in a list of sponge states.
-For a `BacktrackSequence`, applied to `inputState`, this is the full sequence
-`s_{R,in,0} ‖ s_{R,in,1} ‖ ⋯ ‖ s_{R,in,m_k}` of all sponge rate units (CO25 §5.2 Step 3). -/
-def rateUnitsOf (xs : List (CanonicalSpongeState U)) : List U :=
-  xs.foldl (fun acc s => acc ++ s.rateSegment.toList) []
+/-! ### Absorb layout of the duplex sponge (BackTrack §5.2 Steps 3–4)
 
-/-- The concatenated rate units of a `BacktrackSequence`'s `inputState` chain
-(CO25 §5.2 Step 3 salt source). -/
-def BacktrackSequence.rateUnits
+BackTrack must decide whether the last input state `s_{in,m}` of a chain is the input of the
+first permutation call of some challenge squeeze, and if so read back the absorbed salt and
+messages. Which rate units of which chain input hold absorbed data is fixed by the protocol
+schedule and by the duplex sponge of Construction 3.3 (`DuplexSponge.absorb`/`squeeze`). Two
+properties of that sponge decide the layout:
+
+- `Absorb` does not reset the absorbing index, so the salt `τ` and `α̂_1` are one absorbed
+  stream `τ ‖ α̂_1`, packed into `⌈(δ + ℓ_P(1)) / r⌉` rate blocks;
+- `Squeeze` resets the absorbing index without a permutation call, so the first block of
+  `α̂_{i+1}` overwrites the last squeeze output of round `i`: a round costs
+  `L_P(i) + L_V(i) - 1` permutation calls after the first.
+
+`SpongeLayout` replays the schedule symbolically: it records only *how many leading rate units*
+`w_b` of each permutation input `s_{in,b}` were overwritten by absorbed data. Every other rate
+unit of `s_{in,b}` is inherited, from `s_{out,b-1}` for `b ≥ 1` and from the `Start` state
+`(0^r, s_C)` for `b = 0`, and BackTrack checks it. Every rate unit of every chain input is
+therefore either returned as data or compared, so the output tuple determines the chain.
+
+**Paper discrepancy (CO25 §5.2 Steps 3–4).** The printed pointer
+`L_ptr(i) := L_δ + Σ_{ι<i} (L_P(ι) + L_V(ι))` and the windows of Step 3 and Steps 4(a)iii.A–E
+place `τ` and `α̂_1` in separate blocks and charge `L_P(i) + L_V(i)` calls per round. Neither
+holds for Construction 3.3. Under the nondegenerate schedule the challenge-`i` squeeze input is
+`s_{in,j_i}` with `j_1 = ⌈(δ + ℓ_P(1)) / r⌉ - 1` and `j_{i+1} = j_i + L_V(i) + L_P(i+1) - 1`. -/
+
+/-- Symbolic position of the duplex sponge of Construction 3.3 that tracks where absorbed data
+lands, not the data itself. -/
+structure SpongeLayout where
+  /-- `w_b` for every permutation input `s_{in,b}` issued so far: the number of leading rate
+  units of `s_{in,b}` that absorbed data overwrote since the previous permutation call. -/
+  written : List Nat
+  /-- The number of leading rate units of the current, not yet permuted, state that absorbed
+  data overwrote. -/
+  cur : Nat
+  /-- The absorbing index `i_A` of the sponge. -/
+  absorbPos : Nat
+  /-- The squeezing index `i_S` of the sponge. -/
+  squeezePos : Nat
+
+/-- `DS.Start`: no permutation input yet, `i_A = 0`, `i_S = r`. -/
+def SpongeLayout.start : SpongeLayout := ⟨[], 0, 0, SpongeSize.R⟩
+
+/-- One permutation call on the current state. -/
+def SpongeLayout.permute (c : SpongeLayout) : SpongeLayout :=
+  { c with written := c.written ++ [c.cur], cur := 0 }
+
+/-- `DuplexSponge.absorb` of `ℓ` units: a full rate (`i_A = r`) is permuted before the next unit
+is written at `i_A`. -/
+def SpongeLayout.absorb : SpongeLayout → Nat → SpongeLayout
+  | c, 0 => { c with squeezePos := SpongeSize.R }
+  | c, ℓ + 1 =>
+    let c := if c.absorbPos = SpongeSize.R then { c.permute with absorbPos := 0 } else c
+    SpongeLayout.absorb
+      { c with cur := c.absorbPos + 1, absorbPos := c.absorbPos + 1,
+               squeezePos := SpongeSize.R } ℓ
+
+/-- `DuplexSponge.squeeze` of `ℓ` units: each unit resets `i_A`, and an exhausted rate
+(`i_S = r`) is permuted before the unit is read. -/
+def SpongeLayout.squeeze : SpongeLayout → Nat → SpongeLayout
+  | c, 0 => c
+  | c, ℓ + 1 =>
+    let c := { c with absorbPos := 0 }
+    let c := if c.squeezePos = SpongeSize.R then { c.permute with squeezePos := 0 } else c
+    SpongeLayout.squeeze { c with squeezePos := c.squeezePos + 1 } ℓ
+
+/-- The layout after `Start`, `Absorb(τ)` and the protocol steps with flat index below `k`, in
+the order of `Messages.deriveTranscriptDSFSSalted`. -/
+def layoutBefore (k : Nat) : SpongeLayout :=
+  (List.finRange n).foldl (fun c j =>
+    if j.val < k then
+      if h : pSpec.dir j = .P_to_V then
+        c.absorb (messageSize (⟨j, h⟩ : pSpec.MessageIdx))
+      else
+        c.squeeze (challengeSize (⟨j, by cases hd : pSpec.dir j <;> simp_all⟩ :
+          pSpec.ChallengeIdx))
+    else c) (SpongeLayout.start.absorb δ)
+
+/-- The overwritten-prefix lengths `(w_0, …, w_j)` of the permutation inputs up to and including
+`s_{in,j}`, the input of the first permutation call of the challenge-`i` squeeze. It is `none`
+when that squeeze does not start with a permutation call, which a `NondegenerateRounds`
+schedule excludes. -/
+def challengeSqueezeLayout (i : pSpec.ChallengeIdx) : Option (List Nat) :=
+  let c := layoutBefore (pSpec := pSpec) (δ := δ) i.1.val
+  if 0 < challengeSize i ∧ c.squeezePos = SpongeSize.R then some (c.written ++ [c.cur])
+  else none
+
+/-- The number of units absorbed before protocol step `k`: the salt and every earlier message. -/
+def absorbedLengthBefore (k : Nat) : Nat :=
+  ((messageIdxList (pSpec := pSpec)).filter fun j => decide (j.1.val < k)).foldl
+    (fun acc j => acc + messageSize j) δ
+
+/-- `∀ b ≤ m`, the rate units of `s_{in,b}` past its overwritten prefix `w_b` equal those of
+the preceding state: `s_{R,out,b-1}` for `b ≥ 1`, and `0^r` (from `Start`) for `b = 0`. On
+success, returns the absorbed stream `s_{R,in,0}[0 : w_0] ‖ ⋯ ‖ s_{R,in,m}[0 : w_m]`. -/
+def BacktrackSequence.absorbedUnits
     {trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
     {state : CanonicalSpongeState U}
-    (seq : BacktrackSequence trace state) : List U :=
-  rateUnitsOf seq.inputState
+    (seq : BacktrackSequence trace state) (ws : List Nat) : Option (List U) := do
+  guard (ws.length = seq.inputState.length)
+  let mut units : List U := []
+  for (b, w) in (List.range ws.length).zip ws do
+    let sIn ← seq.inputState[b]?
+    let prev : List U ← if b = 0 then pure sIn.rateSegment.toList
+      else (seq.outputState[b - 1]?).map (·.rateSegment.toList)
+    guard (sIn.rateSegment.toList.drop w = prev.drop w)
+    units := units ++ sIn.rateSegment.toList.take w
+  return units
 
-omit [DecidableEq U] in
-/-- Generalized form: rate-segment concatenation over any state list with any accumulator. -/
-lemma rateConcat_length_aux
-    (xs : List (CanonicalSpongeState U)) (acc : List U) :
-    (xs.foldl (fun acc s => acc ++ s.rateSegment.toList) acc).length =
-      acc.length + xs.length * SpongeSize.R := by
-  induction xs generalizing acc with
-  | nil => simp
-  | cons x ys ih =>
-    rw [List.foldl_cons, ih (acc ++ x.rateSegment.toList)]
-    have hRate : x.rateSegment.toList.length = SpongeSize.R := by
-      simp [Vector.length_toList]
-    rw [List.length_append, hRate, List.length_cons]
-    ring
+/-- BackTrack §5.2 Steps 3–4 for one chain, against the absorb layout of Construction 3.3.
 
-omit [DecidableEq U] in
-/-- `|rateUnitsOf xs| = |xs| · R` — reusable helper for `Lδ` block-count bounds. -/
-lemma rateUnitsOf_length (xs : List (CanonicalSpongeState U)) :
-    (rateUnitsOf (U := U) xs).length = xs.length * SpongeSize.R := by
-  unfold rateUnitsOf
-  have := rateConcat_length_aux (U := U) xs []
-  rw [List.length_nil, Nat.zero_add] at this
-  exact this
-
-omit [DecidableEq StmtIn] [DecidableEq U] in
-/-- `|seq.rateUnits| = |seq.inputState| · R`. -/
-lemma BacktrackSequence.rateUnits_length
-    {trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
-    {state : CanonicalSpongeState U}
-    (seq : BacktrackSequence trace state) :
-    seq.rateUnits.length = seq.inputState.length * SpongeSize.R := by
-  unfold BacktrackSequence.rateUnits
-  exact rateUnitsOf_length _
-
-/-- CO25 Eq. 7 — `δ > R ⟹ Lδ ≥ 2`. -/
-lemma Lδ_ge_two_of_gt_R (h : SpongeSize.R < δ) : 2 ≤ Lδ (δ := δ) := by
-  unfold Lδ
-  have hR_pos : (0 : ℚ) < (SpongeSize.R : ℚ) := by
-    have : 0 < SpongeSize.R := Nat.pos_of_neZero _
-    exact_mod_cast this
-  have hδ_gt : (1 : ℚ) < (δ : ℚ) / (SpongeSize.R : ℚ) := by
-    rw [lt_div_iff₀ hR_pos]
-    have : (SpongeSize.R : ℚ) < (δ : ℚ) := by exact_mod_cast h
-    linarith
-  -- `⌈x⌉ ≥ 2` when `x > 1`.
-  exact Nat.add_one_le_iff.mpr (Nat.lt_ceil.mpr (by exact_mod_cast hδ_gt))
-
-omit [DecidableEq StmtIn] [DecidableEq U] in
-/-- From `δ ≤ |seq.rateUnits|`, the rate-block count of an `inputState`
-chain satisfies `Lδ ≤ |inputState|`. -/
-lemma Lδ_le_inputState_length
-    {trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
-    {state : CanonicalSpongeState U}
-    (seq : BacktrackSequence trace state)
-    (h : δ ≤ seq.rateUnits.length) :
-    Lδ (δ := δ) ≤ seq.inputState.length := by
-  rw [BacktrackSequence.rateUnits_length] at h
-  -- Now `h : δ ≤ |inputState| * R`. Show `⌈δ/R⌉ ≤ |inputState|`.
-  unfold Lδ
-  have hR_pos : (0 : ℚ) < (SpongeSize.R : ℚ) := by
-    have : 0 < SpongeSize.R := Nat.pos_of_neZero _
-    exact_mod_cast this
-  refine Nat.ceil_le.mpr ?_
-  rw [div_le_iff₀ hR_pos]
-  have : (δ : ℚ) ≤ (seq.inputState.length : ℚ) * (SpongeSize.R : ℚ) := by
-    have := h
-    exact_mod_cast this
-  exact this
-
-/-- BackTrack §5.2 Step 4(a).iii.A — assemble the encoded i-th prover message:
-  `α̂_i^(k) := concat_rate_segs(s_{R,in,L_ptr(i)}, …, s_{R,in,L_ptr(i)+L_P(i)-1})[0 : ℓ_P(i)]
-              ∈ Σ^{ℓ_P(i)}`  (CO25 Eq. 12).
-
-Char-based view: take the rate chars from `L_P(i)` consecutive input states (each
-contributing `r` chars), then keep the first `ℓ_P(i)` chars of the concatenation. -/
-def BacktrackSequence.assembleEncodedMessage
-    {trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
-    {state : CanonicalSpongeState U}
-    (seq : BacktrackSequence trace state)
-    (L_ptr L_P_i : Nat) (msgIdx : pSpec.MessageIdx) :
-    Option (Vector U (messageSize msgIdx)) := do
-  let blockUnits :=
-    ((seq.inputState.drop L_ptr).take L_P_i).foldl
-      (fun acc s => acc ++ s.rateSegment.toList) []
-  let ⟨v, _⟩ ← vectorOfListExact (U := U) (messageSize msgIdx) blockUnits
-  return v
-
-/-- BackTrack §5.2 Step 4(a).iii.E — verifier squeeze window check.
-
-Char-based view: for a verifier squeeze starting at block `squeezeStart` of length
-`lvCur` blocks (= `lvCur · r` chars), consecutive squeeze blocks must agree on their
-rate segments — i.e. for each `k' ∈ [lvCur)`,
-  `s_{R,out, squeezeStart+k'}  =  s_{R,in, squeezeStart+k'+1}`. -/
-def BacktrackSequence.checkSqueezeWindow
-    {trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
-    {state : CanonicalSpongeState U}
-    (seq : BacktrackSequence trace state)
-    (squeezeStart lvCur : Nat) : Bool := Id.run do
-  let mut ok : Bool := true
-  for k' in List.range lvCur do
-    let outIdx := squeezeStart + k'
-    let inIdx := squeezeStart + 1 + k'
-    match seq.outputState[outIdx]?, seq.inputState[inIdx]? with
-    | some sOut, some sIn =>
-      if sOut.rateSegment ≠ sIn.rateSegment then ok := false
-    | _, _ => ok := false
-  return ok
-
-/-- BackTrack §5.2 Step 3 (per-sequence): extract candidate salt `∈ U^δ` and validate
-the rate-suffix consistency of the last absorb block.
-
-- Concatenates the rate segments of all input states `[s_{in,0}, …, s_{in,m_k}]` and
-  slices off exactly `δ` elements.  Returns `none` if length is insufficient.
-- When `δ > r`, additionally checks `s_{R,in,L_δ-1}[δ mod r : r] = s_{R,out,L_δ-2}[δ mod r : r]`
-  (CO25 Step 3 remainder condition).  Returns `none` if the check fails. -/
-def BacktrackSequence.constructCandidateSalt
-    {trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
-    {state : CanonicalSpongeState U}
-    (seq : BacktrackSequence trace state) :
-    Option (Vector U δ) := do
-  -- 1. Assemble all sponge-rate units across input blocks; `vectorOfListExact` returns the
-  --    salt together with the proof `δ ≤ |seq.rateUnits|`.
-  let ⟨saltₖ, hLen⟩ ← vectorOfListExact (U := U) δ seq.rateUnits
-  -- 2. From the length bound, derive `Lδ ≤ |inputState|`.
-  have hLδ_le : Lδ (δ := δ) ≤ seq.inputState.length :=
-    Lδ_le_inputState_length (δ := δ) seq hLen
-  -- 3. CO25 Step 3 salt remainder check: case-split on `δ ≤ R`.
-  if hδR : δ ≤ SpongeSize.R then
-    -- No remainder to check; just return the salt.
-    return saltₖ
-  else if δ % SpongeSize.R = 0 then
-    -- Exact-block salt (`R ∣ δ`): the final salt block overwrites the entire rate, leaving no
-    -- inherited remainder — the check window `[δ mod r : r)` is empty. Without this guard,
-    -- `drop 0` degenerates to a spurious full-rate comparison that rejects honest traces.
-    return saltₖ
-  else
-    -- `δ > R` ⟹ `Lδ ≥ 2`, so `Lδ - 1` and `Lδ - 2` are valid indices.
-    have hLδ_ge2 : 2 ≤ Lδ (δ := δ) := Lδ_ge_two_of_gt_R (Nat.lt_of_not_le hδR)
-    have h_in_bound : Lδ (δ := δ) - 1 < seq.inputState.length := by omega
-    have h_out_bound : Lδ (δ := δ) - 2 < seq.outputState.length := by
-      rw [seq.inputState_length_eq_outputState_length_succ] at hLδ_le
-      omega
-    --- Check `non-overwritten rate suffix consistency` of the last pair
-    let sIn := seq.inputState.get ⟨Lδ (δ := δ) - 1, h_in_bound⟩
-    let sOut := seq.outputState.get ⟨Lδ (δ := δ) - 2, h_out_bound⟩
-    if h_cons : sIn.rateSegment.toList.drop (δ % SpongeSize.R) =
-          sOut.rateSegment.toList.drop (δ % SpongeSize.R) then
-      return saltₖ
-    else
-      none
-
-/-- BackTrack §5.2 Step 4: Parse the protocol rounds to extract and validate messages. -/
+The chain `s_{in,0}, …, s_{in,m}` is accepted for challenge `i` exactly when `s_{in,m}` is the
+input of the first permutation call of the challenge-`i` squeeze (`challengeSqueezeLayout`)
+and every rate unit that the absorbed data did not overwrite is inherited
+(`BacktrackSequence.absorbedUnits`). The absorbed stream is then split into `τ` and
+`α̂_1, …, α̂_i`. A state that starts no challenge squeeze, including an absorb input or a later
+squeeze input, gives `none`. -/
 def BacktrackSequence.extractCandidate
     (state : CanonicalSpongeState U)
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
-    (seq : BacktrackSequence (trace := trace) (state := state))
-    (salt : Vector U δ) :
-    Option (BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) := Id.run do
-  -- `m_k + 1 = |inputState^(k)|` — number of permutation calls reconstructed for this sequence.
-  let m_k_plus_1 := seq.inputState.length
-  -- Accumulator `(α̂_1^(k), …, α̂_{i-1}^(k))` built across the loop iterations.
-  -- Each entry `⟨msgIdx, v⟩` carries the encoded message `α̂_{msgIdx} ∈ Σ^{ℓ_P(msgIdx)}`.
-  let mut alphaHat_acc : List
-      (Sigma fun msgIdx : pSpec.MessageIdx => Vector U (messageSize msgIdx)) := []
-  -- Step 4(a): For every i ∈ [k] = {1, …, k}.
-  for i in challengeIdxList (pSpec := pSpec) do
-    let L_P_before := sumMessageBlocksBeforeExclLast (pSpec := pSpec) i
-    let L_V_before := sumChallengeBlocksBefore (pSpec := pSpec) i
-    -- Step 4(a).i — block pointer at round `i`:
-    --   `L_ptr(i) := L_δ + Σ_{j<i} L_P(j) + Σ_{j<i} L_V(j)`  (CO25 Eq. 7/8).
-    let L_ptr := Lδ (δ := δ) + L_P_before + L_V_before
-    let msgIdx? := lastMessageBefore? (pSpec := pSpec) i
-    -- `L_P(i) := ⌈ℓ_P(i) / r⌉` — permutation blocks needed for the i-th prover message.
-    let L_P_i := msgIdx?.elim 0 (fun msgIdx => pSpec.Lₚᵢ msgIdx)
-    -- `ℓ_P(i) := messageSize msgIdx` — char-length of the i-th prover message in `Σ`.
-    let ℓ_P_i := msgIdx?.elim 0 (fun msgIdx => messageSize msgIdx)
-    -- Step 4(a).ii — guard `L_ptr(i) + L_P(i) ≤ m_k + 1`.
-    -- (Otherwise the chain is too short to host this message window.)
-    if L_ptr + L_P_i > m_k_plus_1 then
-      return none -- not enough rate blocks to host the i-th message ⇒ remove from S_BT
-    -- Step 4(a).iii.A — assemble `α̂_i^(k) ∈ Σ^{ℓ_P(i)}` via `assembleEncodedMessage`
-    -- (CO25 Eq. 12). Returns `none` if the rate-block window has fewer than `ℓ_P(i)` chars.
-    match msgIdx? with
-    | some msgIdx =>
-      match seq.assembleEncodedMessage L_ptr L_P_i msgIdx with
-      | some v => alphaHat_acc := alphaHat_acc ++ [⟨msgIdx, v⟩]
-      | none => return none -- not enough units in this block window ⇒ remove from S_BT
-    | none => pure ()
-    -- Step 4(a).iii.B — define the message-remainder rate suffix:
-    --   `z_i^(k) := s_{R,in,L_ptr(i)+L_P(i)-1}[ℓ_P(i) mod r : r]  ∈ Σ^{r − (ℓ_P(i) mod r)}`.
-    -- Char-based view: the `r − (ℓ_P(i) mod r)` chars of the last absorbed input-rate block
-    -- that did NOT contribute to `α̂_i^(k)`.
-    --
-    -- Step 4(a).iii.C — check that `z_i^(k)` equals the corresponding suffix of the
-    -- **previous** output-rate block:
-    --   `z_i^(k)  ?=  s_{R,out,L_ptr(i)+L_P(i)-2}[ℓ_P(i) mod r : r]`.
-    -- Lazy-permute absorb (`DuplexSponge.absorb`) overwrites the last (partial) message chunk
-    -- onto the previous permutation output, so the untouched suffix is inherited from
-    -- `s_out,msgEndBlock−1`. NOTE: CO25's printed Step C subscript is `L_ptr(i)+L_P(i)−1`
-    -- (same index as the input side) — an erratum: the paper's own Step E pairing
-    -- (`in[j+1] = out[j]`), its "previous output" prose, and its Step 3 salt check all use the
-    -- shifted pairing, and the printed index does not exist in the exact-fit case (Def 5.3
-    -- Eq. 9: the chain ends on an input state, so `s_out,m_k` is not in the sequence).
-    --
-    -- The check applies only when the final block is partial (`ℓ_P(i) mod r ≠ 0`): a full
-    -- final block overwrites the entire rate, leaving no inherited remainder.
-    if 0 < L_P_i ∧ ℓ_P_i % SpongeSize.R ≠ 0 then
-      let msgEndBlock := L_ptr + L_P_i - 1
-      if h_bounds : msgEndBlock < m_k_plus_1 ∧ 0 < msgEndBlock ∧
-          msgEndBlock - 1 < seq.outputState.length then
-        let z_i := (seq.inputState.get ⟨msgEndBlock, h_bounds.1⟩).rateSegment.toList.drop
-          (ℓ_P_i % SpongeSize.R)
-        let outSuffix := (seq.outputState.get
-            ⟨msgEndBlock - 1, h_bounds.2.2⟩).rateSegment.toList.drop
-          (ℓ_P_i % SpongeSize.R)
-        if z_i ≠ outSuffix then
-          return none -- B/C remainder check failed ⇒ remove from S_BT
-      else
-        -- `msgEndBlock = 0` (no salt blocks, first block of the first message): the remainder
-        -- is inherited from the post-`Start` state, which the chain does not carry. Skip the
-        -- check — removal from `S_BT` happens only on a *failed* check, never on a missing
-        -- comparand (this was the Step-D-unreachable bug: rejecting here killed every
-        -- exact-fit candidate, since `s_out,m_k` never exists).
-        pure ()
-    -- Step 4(a).iii.D — exact fit: `L_ptr(i) + L_P(i) = m_k + 1`.
-    -- Char-based view: the chain ends exactly after the i-th message is absorbed; no
-    -- challenge squeeze follows. Store the output tuple
-    --   `(i, 𝕩^(k), τ^(k), (α̂_1^(k), …, α̂_i^(k)))` in `Outs`.
-    if L_ptr + L_P_i == m_k_plus_1 then
-      let acc := alphaHat_acc
-      let findMsg : (j : pSpec.MessageIdxBefore i.1.castSucc) →
-          Option (Vector U (messageSize j.val)) := fun ⟨j, _⟩ =>
-        acc.findSome? fun p =>
-          if h : p.1 = j then some (h ▸ p.2 : Vector U (messageSize j)) else none
-      if hMsgs : ∀ j, (findMsg j).isSome then
-        let msgs : pSpec.EncodedMessagesBefore U i.1.castSucc :=
-          fun j => (findMsg j).get (hMsgs j)
-        return some { roundIdx := i, stmt := seq.stmt, salt := salt, encodedMessages := msgs }
-      else
-        return none -- an unassembled prefix message makes this candidate invalid
-    -- Step 4(a).iii.E — verifier squeeze window check via `checkSqueezeWindow`
-    -- on the range `[L_ptr(i)+L_P(i), L_ptr(i)+L_P(i)+L_V(i))` (CO25 Step 4(a).iii.E).
-    let L_V_i := pSpec.Lᵥᵢ i
-    if L_ptr + L_P_i + L_V_i < m_k_plus_1 then
-      if not (seq.checkSqueezeWindow (L_ptr + L_P_i) L_V_i) then
-        return none -- E squeeze window check failed ⇒ remove from S_BT
-    else
-      -- Step 4(a).iii.F — neither D (exact fit) nor E (squeeze fits) applies.
-      -- Char-based view: `L_ptr(i) + L_P(i) < m_k + 1 < L_ptr(i) + L_P(i) + L_V(i) + 1`,
-      -- so the chain is mid-squeeze with not enough blocks remaining ⇒ invalid.
-      return none
-  -- Exhausted all rounds without hitting Step D — sequence is invalid.
-  return none
+    (seq : BacktrackSequence (trace := trace) (state := state)) :
+    Option (BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) := do
+  let (i, ws) ← (challengeIdxList (pSpec := pSpec)).findSome? fun i =>
+    match challengeSqueezeLayout (pSpec := pSpec) (δ := δ) i with
+    | some ws => if ws.length = seq.inputState.length then some (i, ws) else none
+    | none => none
+  let units ← seq.absorbedUnits ws
+  guard (units.length = absorbedLengthBefore (pSpec := pSpec) (δ := δ) i.1.val)
+  let ⟨salt, _⟩ ← vectorOfListExact (U := U) δ units
+  return { roundIdx := i, stmt := seq.stmt, salt := salt,
+           encodedMessages := fun j => Vector.ofFn fun t =>
+             units.getD (absorbedLengthBefore (pSpec := pSpec) (δ := δ) j.val.1.val + t.val) 0 }
 
 /-- CO25 §5.2 BackTrack with the line-1056 "look for at most one element" optimization.
 
@@ -1059,10 +896,10 @@ Performs a single backwards linear scan from `state` along `tr_∇.p`:
 - `predecessorCandidates` two or more → scan-time fork → return `err`.
 - A singleton that repeats an input capacity → invalid candidate → return `noResult`.
 
-After the scan, `hashAnchorCandidates` is classified the same way over `tr_∇.h`. Finally the
-existing `constructCandidateSalt` + `extractCandidate` extractors are run; their `none` becomes
-`noResult`. Proving that the remaining scan-time conflict errors imply the corresponding paper
-fork events requires the canonical-completeness/refinement argument stated in Claim 5.19. -/
+After the scan, `hashAnchorCandidates` is classified the same way over `tr_∇.h`. Finally
+`extractCandidate` checks the chain against the absorb layout; its `none` becomes `noResult`.
+Proving that the remaining scan-time conflict errors imply the corresponding paper fork events
+requires the canonical-completeness/refinement argument stated in Claim 5.19. -/
 def linearBackTrack
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (trΔ : TraceNabla T_H T_P StmtIn U)
@@ -1076,13 +913,10 @@ def linearBackTrack
     | .forkErr => ExperimentOutput.err
     | .noResult => ExperimentOutput.noResult
     | .done seq =>
-        match seq.constructCandidateSalt (δ := δ) with
+        match seq.extractCandidate (pSpec := pSpec) (δ := δ) (StmtIn := StmtIn) (U := U)
+            (state := state) (trace := trace) with
         | none => ExperimentOutput.noResult
-        | some salt =>
-          match seq.extractCandidate (pSpec := pSpec) (δ := δ) (StmtIn := StmtIn) (U := U)
-              (state := state) (trace := trace) (salt := salt) with
-          | none => ExperimentOutput.noResult
-          | some out => ExperimentOutput.some out
+        | some out => ExperimentOutput.some out
 
 /-- The backtracking procedure in Section 5.2, which takes in:
 - the query-answer trace for the oracle `(h, p, p⁻¹)`
