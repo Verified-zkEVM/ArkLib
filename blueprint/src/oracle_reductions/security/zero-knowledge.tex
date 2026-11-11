@@ -19,7 +19,7 @@ The prover is probabilistic and uses private randomness independent of the verif
 
 \begin{definition}[Honest-verifier zero knowledge (public-coin case) {\cite[Definition~7.3]{CO25}~\cite[Definition~13.1.7]{snarg-book}}]
   \label{def:hvzk}
-  Let \(\IPProver\) be the prover of an ordinary public-coin IP for relation \(\Relation\), with honest-verifier view \(\IPHonestVerifierView(\IPProver,\Instance,\WitnessValue)\) as in \Cref{def:ip_verifier_view}. Write \(\mathsf{Tr}\) for the space of complete protocol transcripts. A supplied probabilistic simulator \(\IPHVZKSimulator\), taking only \(\Instance\in\InstanceSpace\) as input and returning a view in \(\InstanceSpace\times\mathsf{Tr}\), has \emph{statistical honest-verifier zero-knowledge error} \(\IPHVZKError:\InstanceSpace\to\mathbb R\) if
+  Let \(\IPProver\) be the prover of an ordinary public-coin IP for relation \(\Relation\), with honest-verifier view \(\IPHonestVerifierView(\IPProver,\Instance,\WitnessValue)\) as in \Cref{def:ip_verifier_view}. Write \(\mathsf{Tr}\) for the space of complete protocol transcripts. The protocol has \emph{statistical honest-verifier zero-knowledge error} \(\IPHVZKError:\InstanceSpace\to\mathbb R\) if there exists a probabilistic simulator \(\IPHVZKSimulator\), taking only \(\Instance\in\InstanceSpace\) as input and returning a view in \(\InstanceSpace\times\mathsf{Tr}\), such that
   \begin{equation*}
     \forall(\Instance,\WitnessValue)\in\Relation,\qquad
     \Delta\bigl(
@@ -34,16 +34,7 @@ The prover is probabilistic and uses private randomness independent of the verif
         \exists\WitnessValue,\ (\Instance,\WitnessValue)\in\Relation,
         \ \InstanceSizeOf{\Instance}\le\InstanceSizeBound\}\Bigr),
   \]
-  where the supremum is in the extended nonnegative reals. It is zero when there are no valid
-  instances and infinite for unbounded errors. Any nonnegative upper bound for these errors
-  also suffices in the theorems below. The same simulator has error at most
-  \(\IPHVZKError(\InstanceSizeBound)\) on every valid pair of size at most
-  \(\InstanceSizeBound\). Ordinary IP honest-verifier zero knowledge has no oracle-query
-  parameter.
-  The existential form holds if some simulator meets this bound. For a relation with unique
-  witnesses and an inhabited witness type, a simulator can use classical choice to recover
-  the witness and run the honest prover, giving error zero for any prover. The distance bound
-  for a supplied simulator and its efficiency are separate properties.
+  whenever this set is bounded above. This is the maximum used in the cited definitions when it is attained, with value zero when there are no valid instances. Any nonnegative upper bound for these errors also suffices in the theorems below. The same simulator then has error at most \(\IPHVZKError(\InstanceSizeBound)\) on every valid pair of size at most \(\InstanceSizeBound\). Ordinary IP honest-verifier zero knowledge has no oracle-query parameter. No running-time requirement is imposed on the simulator.
   \lean{Reduction.HonestVerifierSimulator, Reduction.honestVerifierZeroKnowledgeWithSimulator,
     Reduction.honestVerifierZeroKnowledge, Reduction.honestVerifierZeroKnowledge_of_uniqueWitness,
     Reduction.honestVerifierErrorEnvelope}
@@ -54,7 +45,7 @@ The prover is probabilistic and uses private randomness independent of the verif
   \label{def:adaptive_zk}
   Let \(\Relation\subseteq\InstanceSpace\times\WitnessSpace\) be a relation with instance-size function \(\InstanceSizeOf{\cdot}:\InstanceSpace\to\mathbb N\). Let \(\OracleDistribution(\secpar,\InstanceSizeBound)\) be the oracle distribution for security parameter \(\secpar\) and instance-size bound \(\InstanceSizeBound\), as in~\cite[Section~9.1]{snarg-book}. Let \(\NARGProver^{\OracleFamily}(\Instance,\WitnessValue)\) be the honest argument prover.
 
-  A supplied probabilistic simulator family \(\NARGZKSimulator\) has \emph{adaptive statistical zero-knowledge error} \(\NARGAdaptiveZKError:\mathbb N^3\to\mathbb R\) if, for every security parameter \(\secpar\in\mathbb N\), instance-size bound \(\InstanceSizeBound\in\mathbb N\), query budget \(\PublicOracleQueryBound\in\mathbb N\), and probabilistic \(\PublicOracleQueryBound\)-query adversary \(\adv\) whose output \((\Instance,\WitnessValue,\mathsf{aux})\) always satisfies \((\Instance,\WitnessValue)\in\Relation\) and \(\InstanceSizeOf{\Instance}\le\InstanceSizeBound\), the following two distributions are \(\NARGAdaptiveZKError(\secpar,\InstanceSizeBound,\PublicOracleQueryBound)\)-close in statistical distance:
+  A NARG has \emph{adaptive statistical zero-knowledge error} \(\NARGAdaptiveZKError:\mathbb N^3\to\mathbb R\) if there exists a probabilistic simulator \(\NARGZKSimulator\) such that, for every security parameter \(\secpar\in\mathbb N\), instance-size bound \(\InstanceSizeBound\in\mathbb N\), query budget \(\PublicOracleQueryBound\in\mathbb N\), and probabilistic \(\PublicOracleQueryBound\)-query adversary \(\adv\) whose output \((\Instance,\WitnessValue,\mathsf{aux})\) always satisfies \((\Instance,\WitnessValue)\in\Relation\) and \(\InstanceSizeOf{\Instance}\le\InstanceSizeBound\), the following two distributions are \(\NARGAdaptiveZKError(\secpar,\InstanceSizeBound,\PublicOracleQueryBound)\)-close in statistical distance:
   \begin{equation*}
   \begin{aligned}
     \Distribution_{\mathrm{real}}(\adv)&:=
@@ -75,11 +66,6 @@ The prover is probabilistic and uses private randomness independent of the verif
   \end{equation*}
 
   Besides the public parameters \((\secpar,\InstanceSizeBound)\), the simulator receives only \(\Instance\) and query access to the original \(\OracleFamily\). It returns a NARG string \(\NARGString\) and programming data \(\OracleProgramming\). The notation \(\OracleFamily[\OracleProgramming]\) denotes the public oracles obtained by applying the model's specified programming operation. The query budget counts the adversary's public queries across both stages, for every supplied NARG string and every sequence of oracle replies and private choices, including a separate bound on the first stage (\Cref{def:counted_queries}). One simulator family, depending on \((\secpar,\InstanceSizeBound)\), works for all budgets and adversaries. No running-time requirement is imposed.
-
-  The existential form holds if some simulator family meets these bounds. If witnesses are
-  unique, the witness type is inhabited, and programming admits a no-op, classical choice
-  gives error zero even for a prover whose NARG string reveals the witness. The simulator
-  recovers the witness, runs the honest prover, and returns the no-op program.
 
   \lean{Reduction.adaptiveNARGZeroKnowledgeWithSimulator, Reduction.adaptiveNARGZeroKnowledge,
     Reduction.adaptiveNARGZeroKnowledge_of_uniqueWitness,
