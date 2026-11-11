@@ -18,7 +18,7 @@ separate terminal phase. Logging each slot preserves the order and multiplicity 
 
 @[expose] public section
 
-universe u q uS uI dI wJ
+universe u q uA vC uS uI dI wJ
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle OracleSpec
@@ -91,78 +91,136 @@ end SlotPhase
 def slotQueries {ι : Type} {spec : OracleSpec ι} {s : OracleProtocol.{0, q}}
     (phases : List (SlotPhase spec s)) : QueryLog spec := phases.flatMap (·.queries)
 
-/-- Execute a focal-first exchange, logging the two participant slots separately. -/
-def loggedStep {ι : Type} {spec : OracleSpec ι} {X : Type} {A B : X → Type} {R : Type}
-    (role : TwoParty.Role) (p : OracleComp spec (Choice .focal role X A))
-    (c : OracleComp spec (Choice .counterpart role X B))
-    (k : ∀ x, A x → B x → QueryLog spec → QueryLog spec → OracleComp spec R) :
-    OracleComp spec R :=
-  match role with
-  | .sender => do
-    let (v, lp) ← p.withQueryLog
-    let (f, lc) ← c.withQueryLog
-    k v.1 v.2 (f v.1) lp lc
-  | .receiver => do
-    let (f, lp) ← p.withQueryLog
-    let (v, lc) ← c.withQueryLog
-    k v.1 (f v.1) v.2 lp lc
+namespace SlotInstrumentation
 
-/-- Mapping the result of a logged exchange maps its continuation. -/
-theorem map_loggedStep {ι : Type} {spec : OracleSpec ι} {X : Type} {A B : X → Type}
-    {R R' : Type} (role : TwoParty.Role) (p : OracleComp spec (Choice .focal role X A))
-    (c : OracleComp spec (Choice .counterpart role X B)) (f : R → R')
-    (k : ∀ x, A x → B x → QueryLog spec → QueryLog spec → OracleComp spec R) :
-    f <$> loggedStep role p c k =
-      loggedStep role p c (fun x pn cn lp lc => f <$> k x pn cn lp lc) := by
-  cases role <;> simp [loggedStep, _root_.map_bind]
+/-- Interpret PolyFun's exchange law through any monad morphism. -/
+theorem map_step {m n : Type u → Type u} [Monad m] [Monad n]
+    (F : m →ᵐ n) {X R : Type u} {A B : X → Type u} (role : TwoParty.Role)
+    (p : m (Choice .focal role X A)) (c : m (Choice .counterpart role X B))
+    (k : ∀ x, A x → B x → m R) :
+    F.toFun R (step role .focalFirst p c k) =
+      step role .focalFirst (F.toFun _ p) (F.toFun _ c)
+        (fun x a b => F.toFun R (k x a b)) := by
+  cases role <;> simp only [step, Schedule.seq, F.toFun_bind']
 
-/-- Erasing the boundary between two slots concatenates their logs. -/
-theorem loggedStep_log {ι : Type} {spec : OracleSpec ι} {X : Type} {A B : X → Type}
-    {R : Type} (role : TwoParty.Role) (p : OracleComp spec (Choice .focal role X A))
-    (c : OracleComp spec (Choice .counterpart role X B))
-    (k : ∀ x, A x → B x → OracleComp spec R) :
-    loggedStep role p c (fun x pn cn lp lc =>
-      (fun r => (r.1, lp ++ lc ++ r.2)) <$> (k x pn cn).withQueryLog) =
-      (step role .focalFirst p c k).withQueryLog := by
-  cases role <;>
-    simp only [loggedStep, step, Schedule.seq, withQueryLog_bind, _root_.map_bind,
-      Functor.map_map]
-  all_goals
-    refine bind_congr fun v => ?_
-    refine bind_congr fun w => ?_
+section Strategies
+variable {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
+  {m n k : Type u → Type u} [Monad m] [Monad n] [Monad k]
+  {C : FreeM P PUnit.{u + 1} → Type vC}
+
+/-- Wrap participant actions and translate their continuations. This transforms strategies;
+move exchange and execution remain exclusively in `TwoParty.Lens.run`. -/
+def transform
+    (action : {s : FreeM P PUnit.{u + 1}} → {A : Type u} →
+      C s → Participant.{u} → m A → n A)
+    (descend : (a : P.A) → (next : P.B a → FreeM P PUnit.{u + 1}) →
+      (x : Move l a) → C (.liftBind a next) → C (next (l.toFunB a x))) :
+    {s : FreeM P PUnit.{u + 1}} → {Out : PathAlong l s → Type u} →
+    C s → (agent : Participant.{u}) → Strategy l m agent s Out → Strategy l n agent s Out
+  | .pure _, _, env, agent, p => action env agent p
+  | .liftBind a next, _, env, agent, p =>
+    Choice.map agent (owner l a)
+      (fun x child => transform (@action) descend (descend a next x env) agent child) <$>
+        action env agent p
+
+/-- Naturality of the authoritative runner for labelled action instrumentation. Local action
+interpretations suffice; the polynomial, lens, environment and all three monads are arbitrary.
+This supplies the missing general PolyFun law without introducing an executor. -/
+theorem run_natural [LawfulMonad m] [LawfulMonad n] [LawfulMonad k]
+    (F : n →ᵐ k) (G : m →ᵐ k)
+    (action : {s : FreeM P PUnit.{u + 1}} → {A : Type u} →
+      C s → Participant.{u} → m A → n A)
+    (descend : (a : P.A) → (next : P.B a → FreeM P PUnit.{u + 1}) →
+      (x : Move l a) → C (.liftBind a next) → C (next (l.toFunB a x)))
+    (comm : ∀ {s A} (env : C s) agent (p : m A), F.toFun A (action env agent p) = G.toFun A p) :
+    (s : FreeM P PUnit.{u + 1}) → {OutP OutC : PathAlong l s → Type u} →
+    (env : C s) → (p : Focal l m s OutP) → (c : Counterpart l m s OutC) →
+    F.toFun _ (TwoParty.Lens.run s (transform (C := C) (@action) descend env .focal p)
+      (transform (C := C) (@action) descend env .counterpart c)) =
+      G.toFun _ (TwoParty.Lens.run s p c)
+  | .pure leaf, _, _, env, p, c => by
+    cases leaf
+    simp only [transform, FreeM.pure_eq_pure, run_done, F.toFun_bind', G.toFun_bind',
+      F.toFun_pure', G.toFun_pure', comm]
+  | .liftBind a next, _, _, env, p, c => by
+    rw [run_node, run_node]
+    simp only [transform, step_map_left, step_map_right]
+    rw [map_step F, map_step G]
+    simp only [comm]
+    congr 1
+    funext x pn cn
+    simp only [F.toFun_bind', G.toFun_bind', F.toFun_pure', G.toFun_pure']
+    rw [run_natural F G (@action) descend comm]
+
+end Strategies
+
+/-- Map a list-valued writer through a monoid map given by list concatenation. -/
+def writerMap {m : Type u → Type u} [Monad m] [LawfulMonad m] {A B : Type u}
+    (f : A → List B) : WriterT (List A) m →ᵐ WriterT (List B) m where
+  toFun _ p := WriterT.mk ((fun r => (r.1, r.2.flatMap f)) <$> p.run)
+  toFun_pure' _ := by
+    apply WriterT.ext
+    simp [WriterT.run_mk]
+  toFun_bind' p k := by
+    apply WriterT.ext
+    simp only [WriterT.run_mk, WriterT.run_bind, _root_.map_bind,
+      Functor.map_map, bind_map_left]
     congr 1
     funext r
-    change (r.1, (v.2 ++ w.2) ++ r.2) = (r.1, v.2 ++ (w.2 ++ r.2))
-    rw [List.append_assoc]
+    congr 1
+    funext t
+    simp only [List.flatMap_append]
 
-/-- Any result of a logged exchange comes from one of its actual continuation calls. -/
-theorem mem_support_loggedStep {ι : Type} {spec : OracleSpec ι} {X : Type} {A B : X → Type}
-    {R : Type} (role : TwoParty.Role) (p : OracleComp spec (Choice .focal role X A))
-    (c : OracleComp spec (Choice .counterpart role X B))
-    (k : ∀ x, A x → B x → QueryLog spec → QueryLog spec → OracleComp spec R)
-    {r : R} (h : r ∈ support (loggedStep role p c k)) :
-    ∃ x pn cn lp lc, r ∈ support (k x pn cn lp lc) := by
-  cases role <;> simp only [loggedStep, mem_support_bind_iff] at h
-  · obtain ⟨v, _, w, _, h⟩ := h
-    exact ⟨v.1.1, v.1.2, w.1 v.1.1, v.2, w.2, h⟩
-  · obtain ⟨v, _, w, _, h⟩ := h
-    exact ⟨w.1.1, v.1 w.1.1, w.1.2, v.2, w.2, h⟩
+end SlotInstrumentation
 
-/-- The interaction runner with one phase for each executed participant slot. -/
-def runSlotTrace {ι : Type} {spec : OracleSpec ι} :
-    (s : OracleProtocol.{0, q}) → {OutP OutC : PathAlong oracleSig s → Type} →
-    Focal oracleSig (OracleComp spec) s OutP → Counterpart oracleSig (OracleComp spec) s OutC →
+/-- Instrument a slot with its actual prefix, intrinsic participant and successful queries. -/
+def observeSlot {ι : Type} {spec : OracleSpec ι} {root s : OracleProtocol.{0, q}} {A : Type}
+    (embed : FullPrefix s → FullPrefix root) (agent : Participant)
+    (p : OracleComp spec A) : WriterT (List (SlotPhase spec root)) (OracleComp spec) A :=
+  WriterT.mk ((fun r => (r.1, [⟨embed .here,
+    match agent with | .focal => .prover | .counterpart => .sampler, r.2⟩])) <$> p.withQueryLog)
+
+/-- Extend the instrumentation environment by the move delivered by the authoritative runner. -/
+def descendPrefix {root : OracleProtocol.{0, q}} (a : OraclePos.{0, q})
+    (next : OraclePoly.B a → OracleProtocol) (x : Move oracleSig a)
+    (embed : FullPrefix (.liftBind a next) → FullPrefix root) :
+    FullPrefix (next (oracleSig.toFunB a x)) → FullPrefix root :=
+  fun tail => embed (.cons x tail)
+
+/-- Run PolyFun itself in the writer layer on instrumented participant strategies. -/
+def observeInteraction {ι : Type} {spec : OracleSpec ι} (s : OracleProtocol.{0, q})
+    {OutP OutC : PathAlong oracleSig s → Type}
+    (p : Focal oracleSig (OracleComp spec) s OutP)
+    (c : Counterpart oracleSig (OracleComp spec) s OutC) :
     OracleComp spec (((tr : PathAlong oracleSig s) × OutP tr × OutC tr) ×
-      List (SlotPhase spec s))
-  | .pure _, _, _, p, c => do
-    let (op, lp) ← p.withQueryLog
-    let (oc, lc) ← c.withQueryLog
-    pure (⟨⟨⟩, op, oc⟩, [⟨.here, .prover, lp⟩, ⟨.here, .sampler, lc⟩])
-  | .liftBind a next, _, _, p, c =>
-    loggedStep (owner oracleSig a) p c fun x pn cn lp lc => do
-      let (result, phases) ← runSlotTrace (next (oracleSig.toFunB a x)) pn cn
-      pure (⟨⟨x, result.1⟩, result.2⟩,
-        ⟨.here, .prover, lp⟩ :: ⟨.here, .sampler, lc⟩ :: phases.map (SlotPhase.cons x))
+      List (SlotPhase spec s)) :=
+  (TwoParty.Lens.run s
+    (SlotInstrumentation.transform (C := fun t => FullPrefix t → FullPrefix s)
+      (@observeSlot ι spec s) (@descendPrefix s) id .focal p)
+    (SlotInstrumentation.transform (C := fun t => FullPrefix t → FullPrefix s)
+      (@observeSlot ι spec s) (@descendPrefix s) id .counterpart c)).run
+
+/-- Concatenating slot logs erases the writer's boundaries by runner naturality. -/
+theorem observeInteraction_log {ι : Type} {spec : OracleSpec ι} (s : OracleProtocol.{0, q})
+    {OutP OutC : PathAlong oracleSig s → Type}
+    (p : Focal oracleSig (OracleComp spec) s OutP)
+    (c : Counterpart oracleSig (OracleComp spec) s OutC) :
+    (fun r => (r.1, slotQueries r.2)) <$> observeInteraction s p c =
+      (TwoParty.Lens.run s p c).withQueryLog := by
+  have comm {t A} (env : FullPrefix t → FullPrefix s) agent (program : OracleComp spec A) :
+      (SlotInstrumentation.writerMap (fun phase : SlotPhase spec s => phase.queries))
+        (observeSlot env agent program) = simulateQ spec.loggingOracle program := by
+    apply WriterT.ext
+    simp only [SlotInstrumentation.writerMap, observeSlot, WriterT.run_mk, Functor.map_map]
+    simp only [List.flatMap_cons, List.flatMap_nil, List.append_nil]
+    change (fun a => (a.1, a.2)) <$> program.withQueryLog = program.withQueryLog
+    exact LawfulFunctor.id_map _
+  have natural := SlotInstrumentation.run_natural
+    (SlotInstrumentation.writerMap (fun phase : SlotPhase spec s => phase.queries))
+    (simulateQ' spec.loggingOracle) (@observeSlot ι spec s)
+    (@descendPrefix s)
+    (fun env agent program => comm env agent program) s id p c
+  exact congrArg WriterT.run natural
 
 /-- Concatenation ignores the prefix extension of child phases. -/
 theorem slotQueries_cons {ι : Type} {spec : OracleSpec ι} {a : OraclePos.{0, q}}
@@ -174,36 +232,6 @@ theorem slotQueries_cons {ι : Type} {spec : OracleSpec ι} {a : OraclePos.{0, q
   | cons phase phases ih =>
     simpa only [slotQueries, List.map_cons, List.flatMap_cons, SlotPhase.cons] using
       congrArg (phase.queries ++ ·) ih
-
-/-- Forgetting slot boundaries gives exactly the ordinary query logger on the interaction. -/
-theorem runSlotTrace_log {ι : Type} {spec : OracleSpec ι} :
-    (s : OracleProtocol.{0, q}) → {OutP OutC : PathAlong oracleSig s → Type} →
-    (p : Focal oracleSig (OracleComp spec) s OutP) →
-    (c : Counterpart oracleSig (OracleComp spec) s OutC) →
-    (fun r => (r.1, slotQueries r.2)) <$> runSlotTrace s p c =
-      (TwoParty.Lens.run s p c).withQueryLog
-  | .pure leaf, _, _, p, c => by
-    cases leaf
-    simp [runSlotTrace, run_done, withQueryLog_bind, slotQueries, monad_norm]
-  | .liftBind a next, _, _, p, c => by
-    rw [runSlotTrace, run_node, map_loggedStep]
-    trans loggedStep (owner oracleSig a) p c (fun x pn cn lp lc =>
-      (fun r => (r.1, lp ++ lc ++ r.2)) <$>
-        (TwoParty.Lens.run (next (oracleSig.toFunB a x)) pn cn >>= fun r =>
-          pure ⟨⟨x, r.1⟩, r.2⟩).withQueryLog)
-    · congr 1
-      funext x pn cn lp lc
-      simp only [_root_.map_bind, LawfulApplicative.map_pure, withQueryLog_bind,
-        withQueryLog_pure]
-      rw [← runSlotTrace_log]
-      simp only [bind_map_left]
-      congr 1
-      funext r
-      change pure (_, lp ++ (lc ++ slotQueries (r.2.map (SlotPhase.cons x)))) =
-        pure (_, (lp ++ lc) ++ (slotQueries r.2 ++ []))
-      rw [slotQueries_cons, List.append_nil, List.append_assoc]
-      rfl
-    · exact loggedStep_log _ _ _ _
 
 /-- Projecting each slot to ambient queries commutes with chronological concatenation. -/
 theorem slotQueries_fst {ι κ : Type} {a : OracleSpec ι} {b : OracleSpec κ}
@@ -303,19 +331,22 @@ end TracedRun
 verifier decision. Both resource queries and ambient queries of the decision remain available. -/
 def runWithTrace (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
     (prover : Prover oracleSig ambient s Out) :
-    OracleComp (ambient + challengeSpec oracleSig s) (TracedRun V Out) := do
+    OracleComp (ambient + challengeSpec oracleSig s) (TracedRun V Out) :=
   let full := ambient + challengeSpec oracleSig s
-  let ⟨⟨tr, out, _⟩, phases⟩ ← runSlotTrace s
-    (prover.simulate (fun q => liftM (full.query (.inl q))))
-    (sampler oracleSig s (fun c => liftM (full.query (.inr c))))
-  let p := projectPathAlong oracleSig s tr
-  let view := toView s tr
-  let resources : (pathResources inputs s p).Data := (data, payloads s tr)
-  let handler : QueryImpl (ambient + (pathResources inputs s p).spec) (OracleComp full) :=
-    QueryImpl.addLift ((fun q => liftM (full.query (.inl q))) : QueryImpl ambient (OracleComp full))
-      ((pathResources inputs s p).answer resources)
-  let (verdict, queries) ← (simulateQ handler.withLogging (V.decide stmt p view).run).run
-  pure ⟨⟨tr, out, verdict.map fun t => (t, (V.outputMap stmt p view).f resources)⟩, phases, queries⟩
+  (fun r => ⟨r.1, r.2.1, r.2.2⟩) <$> V.executeWith stmt data
+    (ITrace := List (SlotPhase full s))
+    (DTrace := fun p => QueryLog (ambient + (pathResources inputs s p).spec))
+    (fun action => action.run)
+    (SlotInstrumentation.transform (C := fun t => FullPrefix t → FullPrefix s)
+      (@observeSlot _ full s) (@descendPrefix s) id .focal
+      (prover.simulate (fun q => liftM (full.query (.inl q)))))
+    (SlotInstrumentation.transform (C := fun t => FullPrefix t → FullPrefix s)
+      (@observeSlot _ full s) (@descendPrefix s) id .counterpart
+      (sampler oracleSig s (fun c => liftM (full.query (.inr c)))))
+    (fun p view resources => (simulateQ (QueryImpl.addLift
+      ((fun q => liftM (full.query (.inl q))) : QueryImpl ambient (OracleComp full))
+      ((pathResources inputs s p).answer resources)).withLogging
+      (V.decide stmt p view).run).run)
 
 /-- Concatenating slot queries gives the full logger on the ordinary interaction and decision. -/
 theorem runWithTrace_log (V : OracleVerifier ambient s S T inputs outputs) (stmt : S)
@@ -336,11 +367,11 @@ theorem runWithTrace_log (V : OracleVerifier ambient s S T inputs outputs) (stmt
   let ⟨verdict, verifyLog⟩ ← (simulateQ handler.withLogging (V.decide stmt p view).run).run
   pure ⟨⟨tr, out, verdict.map fun t => (t, (V.outputMap stmt p view).f resources)⟩,
     proveLog.fst, verifyLog⟩) := by
-  simp only [runWithTrace, _root_.map_bind]
+  simp only [runWithTrace, executeWith, Functor.map_map, _root_.map_bind]
   have id_logging {α : Type} (p : OracleComp (ambient + challengeSpec oracleSig s) α) :
       (simulateQ (QueryImpl.id' (ambient + challengeSpec oracleSig s)).withLogging p).run =
         p.withQueryLog := rfl
-  rw [id_logging, ← runSlotTrace_log, bind_map_left]
+  rw [id_logging, ← observeInteraction_log, bind_map_left]
   refine bind_congr fun r => ?_
   simp [TracedRun.logView]
 
@@ -402,19 +433,21 @@ end AmbientTracedRun
 Resource indices and input data retain their independent universes. -/
 def runWithAmbientTrace (V : OracleVerifier ambient s S T inputs outputs) (stmt : S)
     (data : inputs.Data) (prover : Prover oracleSig ambient s Out) :
-    OracleComp (ambient + challengeSpec oracleSig s) (AmbientTracedRun V Out) := do
+    OracleComp (ambient + challengeSpec oracleSig s) (AmbientTracedRun V Out) :=
   let full := ambient + challengeSpec oracleSig s
   let toFull : QueryImpl ambient (OracleComp full) := fun r => liftM (full.query (.inl r))
-  let ⟨⟨tr, out, _⟩, phases⟩ ← runSlotTrace s (prover.simulate toFull)
-    (sampler oracleSig s (fun c => liftM (full.query (.inr c))))
-  let p := projectPathAlong oracleSig s tr
-  let view := toView s tr
-  let resources : (pathResources inputs s p).Data := (data, payloads s tr)
-  let (verdict, queries) ← (simulateQ
-    (QueryImpl.addLift toFull.withLogging ((pathResources inputs s p).answer resources) :
-      QueryImpl _ (WriterT (QueryLog ambient) (OracleComp full)))
-    (V.decide stmt p view).run).run
-  pure ⟨⟨tr, out, verdict.map fun t => (t, (V.outputMap stmt p view).f resources)⟩, phases, queries⟩
+  (fun r => ⟨r.1, r.2.1, r.2.2⟩) <$> V.executeWith stmt data
+    (ITrace := List (SlotPhase full s)) (DTrace := fun _ => QueryLog ambient)
+    (fun action => action.run)
+    (SlotInstrumentation.transform (C := fun t => FullPrefix t → FullPrefix s)
+      (@observeSlot _ full s) (@descendPrefix s) id .focal (prover.simulate toFull))
+    (SlotInstrumentation.transform (C := fun t => FullPrefix t → FullPrefix s)
+      (@observeSlot _ full s) (@descendPrefix s) id .counterpart
+      (sampler oracleSig s (fun c => liftM (full.query (.inr c)))))
+    (fun p view resources => (simulateQ
+      (QueryImpl.addLift toFull.withLogging ((pathResources inputs s p).answer resources) :
+        QueryImpl _ (WriterT (QueryLog ambient) (OracleComp full)))
+      (V.decide stmt p view).run).run)
 
 /-- Erasing ambient slot boundaries gives the original ambient logging equation. -/
 theorem runWithAmbientTrace_log (V : OracleVerifier ambient s S T inputs outputs) (stmt : S)
@@ -433,11 +466,12 @@ let full := ambient + challengeSpec oracleSig s
     (V.decide stmt p (toView s tr)).run).run >>= fun y =>
   pure (⟨tr, x.1.2.1, y.1.map fun t => (t, (V.outputMap stmt p (toView s tr)).f resources)⟩,
     x.2.fst, y.2)) := by
-  simp only [runWithAmbientTrace, _root_.map_bind]
+  simp only [runWithAmbientTrace, executeWith, Functor.map_map,
+    _root_.map_bind]
   have id_logging {α : Type} (p : OracleComp (ambient + challengeSpec oracleSig s) α) :
       (simulateQ (QueryImpl.id' (ambient + challengeSpec oracleSig s)).withLogging p).run =
         p.withQueryLog := rfl
-  rw [id_logging, ← runSlotTrace_log, bind_map_left]
+  rw [id_logging, ← observeInteraction_log, bind_map_left]
   refine bind_congr fun r => ?_
   simp [AmbientTracedRun.logView]
 

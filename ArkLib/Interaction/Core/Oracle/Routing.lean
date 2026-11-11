@@ -150,7 +150,7 @@ theorem run_append (V₁ : OracleVerifier ambient s₁ S T inputs middle)
             (View.split s₁ s₂ p v).2).run
         pure ⟨tr, out, verdict.map fun u => (u, (compatible.outputMap stmt p v).f resources)⟩) := by
   intro full toFull draw
-  simp only [OracleVerifier.run]
+  simp only [OracleVerifier.run_eq]
   rw [sampler_append_eq, run_splitSampler]
   simp only [bind_assoc]
   refine bind_congr fun x => ?_

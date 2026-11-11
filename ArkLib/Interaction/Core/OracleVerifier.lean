@@ -521,7 +521,33 @@ def OracleVerifier.decideWith {ι : Type uι} {ambient : OracleSpec.{uι, u} ι}
   simulateQ (QueryImpl.addLift (QueryImpl.id' ambient)
     ((pathResources inputs s p).answer data)) (V.decide stmt p v).run
 
-/-- Interpret the decision's resource queries using the input and the actual run's payloads. -/
+/-- The shared execution mechanism: run PolyFun's interaction once through the supplied monad
+layer, then interpret one terminal decision and close its output from the same transcript. -/
+def OracleVerifier.executeWith {ι : Type u} {ambient : OracleSpec.{u, u} ι}
+    {s : OracleProtocol.{u, q}} {S : Type uS} {T : Path s → Type u}
+    {J : Path s → Type u} {B : (p : Path s) → J p → Type u}
+    {inputs : Resources.{u, uI, dI}}
+    {outputs : (p : Path s) → OracleFamily.{u, u, wJ} (J p) (B p)}
+    {Out : PathAlong oracleSig s → Type u} {m : Type u → Type u} [Monad m]
+    {ITrace : Type u} {DTrace : Path s → Type u}
+    (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
+    (interpret : {A : Type u} → m A →
+      OracleComp (ambient + challengeSpec oracleSig s) (A × ITrace))
+    (prover : Focal oracleSig m s Out) (coins : Counterpart oracleSig m s (fun _ => PUnit))
+    (decision : (p : Path s) → View s p → (pathResources inputs s p).Data →
+      OracleComp (ambient + challengeSpec oracleSig s) (Option (T p) × DTrace p)) :
+    OracleComp (ambient + challengeSpec oracleSig s)
+      ((obs : Observation oracleSig s Out (OracleVerifier.Output T B)) ×
+        ITrace × DTrace (projectPathAlong oracleSig s obs.1)) := do
+  let ⟨⟨tr, out, _⟩, trace⟩ ← interpret (TwoParty.Lens.run s prover coins)
+  let p := projectPathAlong oracleSig s tr
+  let view := toView s tr
+  let resources : (pathResources inputs s p).Data := (data, payloads s tr)
+  let (verdict, decisionTrace) ← decision p view resources
+  pure ⟨⟨tr, out, verdict.map fun t => (t, (V.outputMap stmt p view).f resources)⟩,
+    trace, decisionTrace⟩
+
+/-- Interpret the decision's resource queries using the input and actual run payloads. -/
 def OracleVerifier.run {ι : Type u} {ambient : OracleSpec.{u, u} ι}
     {s : OracleProtocol.{u, q}} {S : Type uS} {T : Path s → Type u}
     {J : Path s → Type u} {B : (p : Path s) → J p → Type u}
@@ -531,7 +557,30 @@ def OracleVerifier.run {ι : Type u} {ambient : OracleSpec.{u, u} ι}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
     (prover : Prover oracleSig ambient s Out) :
     OracleComp (ambient + challengeSpec oracleSig s)
-      (Observation oracleSig s Out (OracleVerifier.Output T B)) := do
+      (Observation oracleSig s Out (OracleVerifier.Output T B)) :=
+  Sigma.fst <$> V.executeWith stmt data
+    (ITrace := PUnit) (DTrace := fun _ => PUnit)
+    (fun action => (fun result => (result, PUnit.unit)) <$> action)
+    (prover.simulate (fun r => liftM ((ambient + challengeSpec oracleSig s).query (.inl r))))
+    (sampler oracleSig s (fun c =>
+      liftM ((ambient + challengeSpec oracleSig s).query (.inr c))))
+    (fun p view resources => (fun verdict => (verdict, PUnit.unit)) <$>
+      simulateQ (QueryImpl.addLift
+        ((fun r => liftM ((ambient + challengeSpec oracleSig s).query (.inl r))) :
+          QueryImpl ambient (OracleComp (ambient + challengeSpec oracleSig s)))
+        ((pathResources inputs s p).answer resources)) (V.decide stmt p view).run)
+
+/-- The ordinary specialization exposes the familiar unlogged execution equation using only
+functor and monad laws of the shared mechanism. -/
+theorem OracleVerifier.run_eq {ι : Type u} {ambient : OracleSpec.{u, u} ι}
+    {s : OracleProtocol.{u, q}} {S : Type uS} {T : Path s → Type u}
+    {J : Path s → Type u} {B : (p : Path s) → J p → Type u}
+    {inputs : Resources.{u, uI, dI}}
+    {outputs : (p : Path s) → OracleFamily.{u, u, wJ} (J p) (B p)}
+    {Out : PathAlong oracleSig s → Type u}
+    (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
+    (prover : Prover oracleSig ambient s Out) :
+    V.run stmt data prover = (do
   let ⟨tr, out, _⟩ ← TwoParty.Lens.run s
     (prover.simulate (fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q))))
     (sampler oracleSig s (fun c =>
@@ -546,5 +595,7 @@ def OracleVerifier.run {ι : Type u} {ambient : OracleSpec.{u, u} ι}
       ((pathResources inputs s p).answer resources))
     (V.decide stmt p view).run
   pure ⟨tr, out, verdict.map fun t => (t, (V.outputMap stmt p view).f resources)⟩
+) := by
+  simp [OracleVerifier.run, OracleVerifier.executeWith, _root_.map_bind, bind_map_left]
 
 end Interaction.Core

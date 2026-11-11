@@ -331,20 +331,28 @@ constant output witness type for either notion.
 
 **Status: equivalent for produced prefix, owner, query-group and log correspondence assertions;
 premise-required for intermediate verifier actions retired by P1.**
-`Oracle/SlotTrace.lean` defines `runSlotTrace` and `OracleVerifier.runWithTrace`;
-`Oracle/Provenance.lean` supplies their erasure and interpretation laws. Each executed
+`Oracle/SlotTrace.lean` instruments participant strategies with a list-valued writer layer;
+`TwoParty.Lens.run` remains the sole recursive executor. `OracleVerifier.executeWith` owns the
+interaction, terminal decision and output-closing sequence. The ordinary runner, full trace
+and ambient trace specialize this mechanism without narrowing the ordinary runner's universes.
+`Oracle/Provenance.lean` supplies erasure and interpretation laws. Each executed
 participant slot records the actual preceding moves and ordered query/answer log. Ownership is
 derived from the slot constructor. The final verifier decision is its own terminal phase;
 `runWithSetupTrace` also retains an explicitly separate prover setup action.
 
-`runSlotTrace_log` concatenates slot logs to the existing interaction logger.
+`SlotInstrumentation.run_natural` supplies the general runner naturality law missing from the
+pinned PolyFun interface. It works for arbitrary polynomials, ownership lenses, environments
+and PolyFun's existing `MonadHom` morphisms. `observeInteraction_log` specializes it to concatenation of slot query
+logs in the writer layer. Erasure uses this general law and monad laws, without an independent
+recursive execution algorithm or a protocol-specific execution equivalence induction.
 `runWithLog` is the full-log projection of the trace runner.
 `runWithTrace_logView`, `runWithTrace_ambientLog` and `runWithTrace_erase` recover the existing
 full logged, ambient logged and ordinary executions exactly. `phases_queries` states ordered
 ambient-log concatenation, and `simulateQ_runWithTrace_logView` preserves the correspondence under
 lawful interpreters, including stateful runtimes. The existing full-log universe restriction in
-entry 18 applies to the full-log trace result. `runWithAmbientTrace` uses the same slot runner
-and returns only ambient decision queries, preserving independent input-data, input-query and
+entry 18 applies to the full-log trace result. `runWithAmbientTrace` uses the same instrumented
+strategies and shared sequencing mechanism, returning only ambient decision queries and preserving
+independent input-data, input-query and
 oracle-node-query universes. `runWithAmbientLog` is its aggregate projection;
 `runWithAmbientTrace_erase` gives ordinary erasure. `runWithTrace_ambientView` identifies the
 full trace with this ambient view at small query universes, including every slot prefix and owner.

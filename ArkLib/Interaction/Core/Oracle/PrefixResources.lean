@@ -305,33 +305,85 @@ theorem joinToTerminal_name (s₁ : OracleProtocol.{u, q})
         (includeIndex (joinToTerminal s₁ s₂ tr₁ tr₂) i) =
       (joinPrefix s₁ s₂ tr₁).name i := includeIndex_name _ _
 
-/-- Every phase returned by the slot runner occurs at a prefix of its actual transcript. -/
-theorem runSlotTrace_prefixes {ι : Type} {spec : OracleSpec ι} :
+/-- Support of an instrumented exchange contains exactly its two slot labels before the
+continuation's labels. This is a writer-layer property of PolyFun's exchange operation. -/
+theorem mem_support_observedStep {ι : Type} {spec : OracleSpec ι}
+    {root s : OracleProtocol.{0, q}} {X R : Type} {A B : X → Type}
+    (env : FullPrefix s → FullPrefix root) (role : TwoParty.Role)
+    (p : OracleComp spec (Choice .focal role X A))
+    (c : OracleComp spec (Choice .counterpart role X B))
+    (k : ∀ x, A x → B x → WriterT (List (SlotPhase spec root)) (OracleComp spec) R)
+    {r : R × List (SlotPhase spec root)}
+    (hr : r ∈ support ((step role .focalFirst
+      (observeSlot env .focal p) (observeSlot env .counterpart c) k).run)) :
+    ∃ x pn cn lp lc child, child ∈ support ((k x pn cn).run) ∧
+      r = (child.1, ⟨env .here, .prover, lp⟩ :: ⟨env .here, .sampler, lc⟩ :: child.2) := by
+  cases role <;>
+    simp only [step, Schedule.seq, observeSlot, WriterT.run_bind, WriterT.run_mk,
+      bind_map_left, _root_.map_bind, Functor.map_map, mem_support_bind_iff] at hr
+  · obtain ⟨vp, _, vc, _, h⟩ := hr
+    obtain ⟨child, hc, heq⟩ := mem_support_map_peel _ _ h
+    exact ⟨vp.1.1, vp.1.2, vc.1 vp.1.1, vp.2, vc.2, child, hc, heq⟩
+  · obtain ⟨vp, _, vc, _, h⟩ := hr
+    obtain ⟨child, hc, heq⟩ := mem_support_map_peel _ _ h
+    exact ⟨vc.1.1, vp.1 vc.1.1, vc.1.2, vp.2, vc.2, child, hc, heq⟩
+
+/-- Every writer label produced by the authoritative runner is an actual transcript prefix.
+The environment embeds the current suffix's prefixes in the original execution. -/
+theorem instrumented_prefixes {ι : Type} {spec : OracleSpec ι}
+    {root : OracleProtocol.{0, q}} :
     (s : OracleProtocol.{0, q}) → {OutP OutC : PathAlong oracleSig s → Type} →
+    (env : FullPrefix s → FullPrefix root) →
+    (preserves : ∀ h k, Extends h k → Nonempty (Extends (env h) (env k))) →
     (p : Focal oracleSig (OracleComp spec) s OutP) →
     (c : Counterpart oracleSig (OracleComp spec) s OutC) →
-    {r : ((tr : PathAlong oracleSig s) × OutP tr × OutC tr) × List (SlotPhase spec s)} →
-    r ∈ support (runSlotTrace s p c) → (phase : SlotPhase spec s) → phase ∈ r.2 →
-      Nonempty (Extends phase.prefix (complete s r.1.1))
-  | .pure _, _, _, p, c, runResult, hr, phase, hp => by
-    simp only [runSlotTrace, mem_support_bind_iff, mem_support_pure_iff] at hr
-    obtain ⟨op, _, oc, _, heq⟩ := hr
-    subst runResult
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hp
-    rcases hp with rfl | rfl <;> exact ⟨.here _⟩
-  | .liftBind a next, _, _, p, c, runResult, hr, phase, hp => by
-    obtain ⟨x, pn, cn, lp, lc, hcontinuation⟩ := mem_support_loggedStep _ _ _ _ hr
-    simp only [mem_support_bind_iff, mem_support_pure_iff] at hcontinuation
-    obtain ⟨result, hresult, heq⟩ := hcontinuation
-    subst runResult
+    {r : ((tr : PathAlong oracleSig s) × OutP tr × OutC tr) ×
+      List (SlotPhase spec root)} →
+    r ∈ support ((TwoParty.Lens.run s
+      (SlotInstrumentation.transform (C := fun t => FullPrefix t → FullPrefix root)
+        (@observeSlot ι spec root) (@descendPrefix root) env .focal p)
+      (SlotInstrumentation.transform (C := fun t => FullPrefix t → FullPrefix root)
+        (@observeSlot ι spec root) (@descendPrefix root) env .counterpart c)).run) →
+    (phase : SlotPhase spec root) → phase ∈ r.2 →
+      Nonempty (Extends phase.prefix (env (complete s r.1.1)))
+  | .pure leaf, _, _, env, preserves, p, c, r, hr, phase, hp => by
+    cases leaf
+    simp only [SlotInstrumentation.transform, FreeM.pure_eq_pure, run_done,
+      observeSlot, WriterT.run_bind, WriterT.run_mk, WriterT.run_pure,
+      bind_map_left, _root_.map_bind, Functor.map_map,
+      mem_support_bind_iff] at hr
+    obtain ⟨vp, _, vc, _, heq⟩ := hr
+    subst r
+    simp only [List.empty_eq, List.cons_append, List.nil_append, List.mem_cons,
+      List.not_mem_nil, or_false] at hp
+    rcases hp with rfl | rfl <;> exact preserves _ _ (.here _)
+  | .liftBind a next, _, _, env, preserves, p, c, r, hr, phase, hp => by
+    rw [run_node] at hr
+    simp only [SlotInstrumentation.transform, step_map_left, step_map_right] at hr
+    obtain ⟨x, pn, cn, lp, lc, child, hc, heq⟩ := mem_support_observedStep env _ _ _ _ hr
+    simp only [WriterT.run_bind, WriterT.run_pure, LawfulApplicative.map_pure,
+      mem_support_bind_iff, mem_support_pure_iff, List.empty_eq, List.append_nil] at hc
+    obtain ⟨result, hresult, hchild⟩ := hc
+    subst child
+    subst r
     simp only [List.mem_cons] at hp
     rcases hp with rfl | rfl | hp
-    · exact ⟨.here _⟩
-    · exact ⟨.here _⟩
-    · obtain ⟨child, hchild, heq⟩ := List.mem_map.mp hp
-      subst phase
-      obtain ⟨e⟩ := runSlotTrace_prefixes (next (oracleSig.toFunB a x)) pn cn hresult child hchild
-      exact ⟨.cons x e⟩
+    · exact preserves _ _ (.here _)
+    · exact preserves _ _ (.here _)
+    · exact instrumented_prefixes (next (oracleSig.toFunB a x))
+        (descendPrefix a next x env) (fun h k e => preserves _ _ (.cons x e))
+        pn cn hresult phase hp
+
+/-- Root instrumentation starts at the empty actual prefix. -/
+theorem observeInteraction_prefixes {ι : Type} {spec : OracleSpec ι}
+    (s : OracleProtocol.{0, q}) {OutP OutC : PathAlong oracleSig s → Type}
+    (p : Focal oracleSig (OracleComp spec) s OutP)
+    (c : Counterpart oracleSig (OracleComp spec) s OutC)
+    {r : ((tr : PathAlong oracleSig s) × OutP tr × OutC tr) × List (SlotPhase spec s)}
+    (hr : r ∈ support (observeInteraction s p c))
+    (phase : SlotPhase spec s) (hp : phase ∈ r.2) :
+    Nonempty (Extends phase.prefix (complete s r.1.1)) :=
+  instrumented_prefixes s id (fun _ _ e => ⟨e⟩) p c hr phase hp
 
 end FullPrefix
 namespace SlotPhase
@@ -368,14 +420,15 @@ theorem runWithTrace_prefixes {ι : Type} {S : Type u} {ambient : OracleSpec ι}
     (hr : r ∈ support (V.runWithTrace stmt input prover))
     (phase : SlotPhase ambient s) (hp : phase ∈ r.phases) :
     Nonempty (FullPrefix.Extends phase.prefix (FullPrefix.complete s r.observation.1)) := by
-  simp only [runWithTrace, mem_support_bind_iff, mem_support_pure_iff] at hr
+  simp only [runWithTrace, executeWith, _root_.map_bind, LawfulApplicative.map_pure,
+    mem_support_bind_iff, mem_support_pure_iff] at hr
   obtain ⟨interaction, hi, decision, _, heq⟩ := hr
   subst r
   simp only [TracedRun.phases, List.mem_append, List.mem_singleton] at hp
   rcases hp with hp | rfl
   · obtain ⟨raw, hraw, heq⟩ := List.mem_map.mp hp
     subst phase
-    exact FullPrefix.runSlotTrace_prefixes s _ _ hi raw hraw
+    exact FullPrefix.observeInteraction_prefixes s _ _ hi raw hraw
   · exact ⟨FullPrefix.Extends.refl _⟩
 
 /-- Every oracle available at a produced phase remains available at the terminal prefix. -/
@@ -403,14 +456,15 @@ theorem runWithAmbientTrace_prefixes {ι : Type} {S : Type u} {ambient : OracleS
     (hr : r ∈ support (V.runWithAmbientTrace stmt input prover))
     (phase : SlotPhase ambient s) (hp : phase ∈ r.phases) :
     Nonempty (FullPrefix.Extends phase.prefix (FullPrefix.complete s r.observation.1)) := by
-  simp only [runWithAmbientTrace, mem_support_bind_iff, mem_support_pure_iff] at hr
+  simp only [runWithAmbientTrace, executeWith, _root_.map_bind, LawfulApplicative.map_pure,
+    mem_support_bind_iff, mem_support_pure_iff] at hr
   obtain ⟨interaction, hi, decision, _, heq⟩ := hr
   subst r
   simp only [AmbientTracedRun.phases, List.mem_append, List.mem_singleton] at hp
   rcases hp with hp | rfl
   · obtain ⟨raw, hraw, heq⟩ := List.mem_map.mp hp
     subst phase
-    exact FullPrefix.runSlotTrace_prefixes s _ _ hi raw hraw
+    exact FullPrefix.observeInteraction_prefixes s _ _ hi raw hraw
   · exact ⟨FullPrefix.Extends.refl _⟩
 
 end OracleVerifier
