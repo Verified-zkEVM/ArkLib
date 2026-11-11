@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Interaction.Core.Security.Knowledge
+public import VCVio.OracleComp.Runtime
 
 /-!
 # Logged execution of passive oracle verifiers
@@ -21,33 +22,56 @@ directly as `runtime.run (V.runWithLog stmt data prover)`.
 
 @[expose] public section
 
+universe v uS wJ
+
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle OracleSpec
 
 namespace OracleVerifier
-variable {ι I J S T : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
-  {A : I → Type} {B : J → Type} {inputs : OracleFamily I A} {outputs : OracleFamily J B}
+variable {ι I : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol}
+  {T : Path s → Type} {A : I → Type} {J : Path s → Type}
+  {B : (p : Path s) → J p → Type} {inputs : OracleFamily.{0, 0, 0} I A}
+  {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
   {Out : PathAlong oracleSig s → Type}
 
-private theorem bind_run_withLogging {κ α β : Type} {spec : OracleSpec κ}
-    {m : Type → Type} [Monad m] [LawfulMonad m] (impl : QueryImpl spec m)
-    (program : OracleComp spec α) (next : α → m β) :
-    simulateQ impl program >>= next =
-      (simulateQ impl.withLogging program).run >>= fun z => next z.1 := by
-  rw [← QueryImpl.fst_map_run_withLogging, bind_map_left]
-
-/-- Forgetting both logs of the logged run gives the oracle verifier's run exactly. -/
+/-- Forgetting both logs gives the oracle verifier's run, including the statement and output
+oracle data indexed by the completed path. -/
 theorem runWithLog_erase (V : OracleVerifier ambient s S T inputs outputs) (stmt : S)
     (data : ∀ i, A i) (prover : Prover oracleSig ambient s Out) :
-    Sigma.fst <$> V.runWithLog stmt data prover = V.run stmt data prover := by
-  simp only [runWithLog, run, _root_.map_bind]
-  conv_rhs => rw [← simulateQ_id' (TwoParty.Lens.run s _ _),
-    bind_run_withLogging (QueryImpl.id' (ambient + challengeSpec oracleSig s))]
-  refine bind_congr fun x => ?_
-  obtain ⟨⟨tr, out, _⟩, proveLog⟩ := x
-  rw [bind_run_withLogging (QueryImpl.addLift _ _)]
-  refine bind_congr fun y => ?_
-  simp
+    Sigma.fst <$> V.runWithLog stmt data prover = V.run stmt data prover :=
+  map_fst_runWithLog V stmt data prover
+
+/-- Interpreting a logged run in any lawful monad commutes with erasing both logs. -/
+theorem simulateQ_runWithLog_erase {m : Type → Type v} [Monad m] [LawfulMonad m]
+    (V : OracleVerifier ambient s S T inputs outputs)
+    (handler : QueryImpl (ambient + challengeSpec oracleSig s) m) (stmt : S)
+    (data : ∀ i, A i) (prover : Prover oracleSig ambient s Out) :
+    Sigma.fst <$> simulateQ handler (V.runWithLog stmt data prover) =
+      simulateQ handler (V.run stmt data prover) := by
+  rw [← simulateQ_map, runWithLog_erase]
+
+/-- Running the logged run in a persistent runtime and erasing the logs and the trace gives the
+ordinary stateful execution of the run. This composes VCVio's `runFrom_eraseTrace` with
+`runWithLog_erase`. -/
+theorem runtime_runWithLog_erase {κ : Type} {Import : OracleSpec κ}
+    (V : OracleVerifier ambient s S T inputs outputs)
+    (runtime : OracleRuntime Import (ambient + challengeSpec oracleSig s)) (stmt : S)
+    (data : ∀ i, A i) (prover : Prover oracleSig ambient s Out) :
+    (fun result => (result.output.1, result.state)) <$>
+        runtime.run (V.runWithLog stmt data prover) =
+      runtime.setup >>= fun state => runtime.handler.runState state (V.run stmt data prover) := by
+  rw [OracleRuntime.run_eq, _root_.map_bind]
+  refine bind_congr fun state => ?_
+  have erased := runtime.runFrom_eraseTrace state (V.runWithLog stmt data prover)
+  have paired := congrArg (fun program =>
+    (fun result => (result.1.1, result.2)) <$> program) erased
+  have logged := congrArg (runtime.handler.runState state) (V.runWithLog_erase stmt data prover)
+  calc
+    _ = (fun result => (result.1.1, result.2)) <$>
+        runtime.handler.runState state (V.runWithLog stmt data prover) := by
+      simpa only [Functor.map_map] using paired
+    _ = _ := by
+      simpa [QueryImpl.Stateful.runState, monad_norm] using logged
 
 end OracleVerifier
 end Interaction.Core

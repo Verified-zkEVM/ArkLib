@@ -26,7 +26,7 @@ namespace Interaction.Core.HiddenBitFixture
 abbrev bitAmbient : OracleSpec Bool := Bool →ₒ Bool
 
 /-- One bit-valued oracle slot, used for the input and the exports. -/
-@[instance_reducible] def bits : OracleFamily Unit (fun _ => Bool) :=
+@[instance_reducible] def bits : OracleFamily.{0, 0, 0} Unit (fun _ => Bool) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
 /-- The input slot holds `false`. -/
@@ -44,37 +44,37 @@ def falseData : ∀ _ : Unit, Bool := fun _ => false
 abbrev bitCombined : OracleProtocol := bitFirst.append (fun _ => bitSecond)
 
 /-- The prefix decision resources. -/
-abbrev firstResources := sumFamily bits (pathFamily bitFirst ⟨⟨⟩, ⟨⟩⟩)
+abbrev firstResources := pathResources bits bitFirst ⟨⟨⟩, ⟨⟩⟩
 
 /-- The prefix decision makes the dummy request; the prefix exports its input. -/
-def bitPrefix : OracleVerifier bitAmbient bitFirst Unit Unit bits bits where
+def bitPrefix : OracleVerifier bitAmbient bitFirst Unit (fun _ => Unit) bits (fun _ => bits) where
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact do
       let _ ← liftM ((bitAmbient + firstResources.spec).query (.inl false))
       pure ()
-  outputMap _ p _ := OracleMap.embedding (sumFamily bits (pathFamily bitFirst p)) .inl
+  outputMap _ p _ := OracleMap.fst _ _
 
 /-- The suffix decision resources after `guess`. -/
-abbrev secondResources (guess : Bool) := sumFamily bits (pathFamily bitSecond ⟨guess, ⟨⟩⟩)
+abbrev secondResources (guess : Bool) := pathResources bits bitSecond ⟨guess, ⟨⟩⟩
 
 /-- Export `guess ^^ pad`, reading the pad from the exported input. -/
 def xorMap (guess : Bool) : OracleMap (secondResources guess) bits where
-  f x _ := guess ^^ (show Bool from x (.inl ()))
+  f x _ := guess ^^ (show Bool from x.1 ())
   impl _ := do
-    let pad : Bool ← liftM ((secondResources guess).spec.query ⟨.inl (), ()⟩)
+    let pad : Bool ← liftM ((secondResources guess).spec.query (.inl ⟨(), ()⟩))
     pure (guess ^^ pad)
   law _ _ := by
     simp only [simulateQ_bind]
     rfl
 
 /-- The suffix decision reads the pad, reveals the hidden bit and claims `hidden ^^ pad`. -/
-def bitSuffix : OracleVerifier bitAmbient bitSecond Unit Bool bits bits where
+def bitSuffix : OracleVerifier bitAmbient bitSecond Unit (fun _ => Bool) bits (fun _ => bits) where
   decide _ p _ := by
     rcases p with ⟨guess, ⟨⟩⟩
     exact do
       let pad : Bool ← liftM ((bitAmbient + (secondResources guess).spec).query
-        (.inr ⟨.inl (), ()⟩))
+        (.inr (.inl ⟨(), ()⟩)))
       let hidden : Bool ← liftM ((bitAmbient + (secondResources guess).spec).query (.inl true))
       pure (hidden ^^ pad)
   outputMap _ p _ := by

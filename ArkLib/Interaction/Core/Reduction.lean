@@ -20,7 +20,7 @@ verifier with an honest prover.
 
 @[expose] public section
 
-universe u uA
+universe u uA uι uS uW
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp
@@ -60,6 +60,46 @@ theorem Prover.simulate_node {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePol
       Choice.map .focal (owner l a) (fun _ next => Prover.simulate impl next) <$>
         simulateQ impl p := rfl
 
+/-- Restrict a node-indexed draw family to a child subtree. -/
+def childDraw {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
+    {m : Type u → Type u} (a : P.A) (next : P.B a → FreeM P PUnit.{u + 1})
+    (draw : (c : ChallengeNode l (.liftBind a next)) →
+      m (challengeSpec l (.liftBind a next) c)) (b : P.B a)
+    (c : ChallengeNode l (next b)) : m (challengeSpec l (next b) c) :=
+  draw ⟨.inr ⟨b, c.val⟩, c.property⟩
+
+/-- Draw the move at a receiver root. -/
+def rootDraw {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
+    {m : Type u → Type u} (a : P.A) (next : P.B a → FreeM P PUnit.{u + 1})
+    (draw : (c : ChallengeNode l (.liftBind a next)) →
+      m (challengeSpec l (.liftBind a next) c)) (h : owner l a = .receiver) :
+    m (Move l a) := draw ⟨.inl ⟨⟩, h⟩
+
+/-- A public-coin slot observes sender moves and draws receiver moves. -/
+def samplerSlot {m : Type u → Type u} [Applicative m] {X : Type u} {A : X → Type u} :
+    (role : TwoParty.Role) → (role = .receiver → m X) →
+    ((x : X) → A x) → m (Choice .counterpart role X A)
+  | .sender, _, next => pure next
+  | .receiver, draw, next => (fun x => ⟨x, next x⟩) <$> draw rfl
+
+/-- Mapping a public-coin slot maps only its continuations. -/
+theorem samplerSlot_map {m : Type u → Type u} [Applicative m] [LawfulApplicative m]
+    {X : Type u} {A B : X → Type u} (role : TwoParty.Role)
+    (draw : role = .receiver → m X) (next : (x : X) → A x) (f : ∀ x, A x → B x) :
+    Choice.map .counterpart role f <$> samplerSlot role draw next =
+      samplerSlot role draw (fun x => f x (next x)) := by
+  cases role <;> simp only [samplerSlot, Choice.map, LawfulApplicative.map_pure,
+    Functor.map_map]
+
+/-- Simulation interprets the draw of a public-coin slot. -/
+theorem simulateQ_samplerSlot {ι : Type u} {spec : OracleSpec.{u, u} ι}
+    {n : Type u → Type u} [Monad n] [LawfulMonad n] {X : Type u} {A : X → Type u}
+    (F : QueryImpl spec n) (role : TwoParty.Role)
+    (draw : role = .receiver → OracleComp spec X) (next : ∀ x, A x) :
+    simulateQ F (samplerSlot role draw next) =
+      samplerSlot role (fun h => simulateQ F (draw h)) next := by
+  cases role <;> simp only [samplerSlot, simulateQ_pure, simulateQ_map]
+
 /-- A sampler with a pure terminal payload. Its draws depend only on the indexed source node. -/
 def samplerEnd {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
     {m : Type u → Type u} [Monad m] :
@@ -68,26 +108,27 @@ def samplerEnd {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
     PureEnd l m .counterpart s (fun _ => PUnit.{u + 1})
   | .pure _, _ => ⟨⟩
   | .liftBind a next, draw =>
-    match h : owner l a with
-    | .sender => by
-      exact pure (show Choice .counterpart (owner l a) (Move l a)
-        (fun x => PureEnd l m .counterpart (next (l.toFunB a x)) (fun _ => PUnit)) from by
-        rw [h]
-        exact fun x => samplerEnd l (next (l.toFunB a x))
-          (fun c => draw ⟨.inr ⟨l.toFunB a x, c.val⟩, c.property⟩))
-    | .receiver => by
-      exact (fun x => show Choice .counterpart (owner l a) (Move l a)
-        (fun x => PureEnd l m .counterpart (next (l.toFunB a x)) (fun _ => PUnit)) from by
-          rw [h]
-          exact ⟨x, samplerEnd l (next (l.toFunB a x))
-            (fun c => draw ⟨.inr ⟨l.toFunB a x, c.val⟩, c.property⟩)⟩) <$>
-        draw ⟨.inl ⟨⟩, h⟩
+    samplerSlot (owner l a) (rootDraw l a next draw) (fun x =>
+      samplerEnd l (next (l.toFunB a x)) (childDraw l a next draw (l.toFunB a x)))
 
 /-- Public-coin counterpart obtained by giving the sampler a pure leaf action. -/
 def sampler {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
     {m : Type u → Type u} [Monad m] (s : FreeM P PUnit.{u + 1})
     (draw : (c : ChallengeNode l s) → m (challengeSpec l s c)) :
     Counterpart l m s (fun _ => PUnit.{u + 1}) := (samplerEnd l s draw).toStrategy
+
+/-- At a node, the sampler attaches each child sampler to its public-coin slot. -/
+theorem sampler_node {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
+    {m : Type u → Type u} [Monad m] [LawfulMonad m]
+    (a : P.A) (next : P.B a → FreeM P PUnit.{u + 1})
+    (draw : (c : ChallengeNode l (.liftBind a next)) →
+      m (challengeSpec l (.liftBind a next) c)) :
+    sampler l (.liftBind a next) draw =
+      Choice.map .counterpart (owner l a) (fun x (_ : PUnit.{u + 1}) =>
+        sampler l (next (l.toFunB a x)) (childDraw l a next draw (l.toFunB a x))) <$>
+          samplerSlot (owner l a) (rootDraw l a next draw) (fun _ => PUnit.unit) := by
+  simp only [sampler, PureEnd.toStrategy, PureEnd.mapOutput, samplerEnd, samplerSlot_map]
+  rfl
 
 section SamplerLaws
 
@@ -306,18 +347,32 @@ theorem replay_publicCoinOracleSampler {m : Type u → Type u} [Monad m] [Lawful
     | challenge C => exact ih ⟨⟩ _ tr
     | oracle X I => exact (LawfulMonad.pure_bind _ _).trans (ih ⟨⟩ _ tr)
 
-/-- A plain verifier's only operation is its terminal decision. -/
-structure Verifier {ι : Type u} (ambient : OracleSpec.{u, u} ι)
-    (s : Protocol.{u}) (StmtIn StmtOut : Type u) where
-  /-- Decide from the public transcript after every interaction slot has run. -/
-  decide : StmtIn → (p : Path s) → PlainView s p → OptionT (OracleComp ambient) StmtOut
+/-- A plain verifier's only operation is its terminal decision.
 
-/-- An honest reduction with separately retained prover and verifier outputs. -/
+The output statement type `StmtOut p` may depend on the public shape path `p` of the run. A
+verifier with one output type `T` uses the constant family `fun _ => T`.
+-/
+structure Verifier {ι : Type uι} (ambient : OracleSpec.{uι, u} ι)
+    (s : Protocol.{u}) (StmtIn : Type uS) (StmtOut : Path s → Type u) where
+  /-- Decide from the public transcript after every interaction slot has run. -/
+  decide : StmtIn → (p : Path s) → PlainView s p → OptionT (OracleComp ambient) (StmtOut p)
+
+/-- An honest reduction with separately retained prover and verifier outputs. The verifier's
+output statement type is indexed by the shape path. -/
 structure Reduction {ι : Type u} (ambient : OracleSpec.{u, u} ι) (s : Protocol.{u})
-    (StmtIn WitIn StmtOut : Type u) (Out : PathAlong plainSig s → Type u) where
+    (StmtIn : Type uS) (WitIn : Type uW) (StmtOut : Path s → Type u)
+    (Out : PathAlong plainSig s → Type u) where
   /-- Honest focal strategy, including its terminal action. -/
   prover : StmtIn → WitIn → Prover plainSig ambient s Out
   /-- Passive terminal decision. -/
   verifier : Verifier ambient s StmtIn StmtOut
+
+/-- Run a verifier only on an accepted statement; a rejected statement stays rejected. -/
+def Verifier.onAccept {ι : Type uι} {ambient : OracleSpec.{uι, u} ι}
+    {s : Protocol.{u}} {T : Type uS} {U : Path s → Type u} (V : Verifier ambient s T U) :
+    Verifier ambient s (Option T) U where
+  decide mid p v := match mid with
+    | none => failure
+    | some t => V.decide t p v
 
 end Interaction.Core

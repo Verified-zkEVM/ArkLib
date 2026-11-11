@@ -6,6 +6,7 @@ Authors: Quang Dao
 
 import ArkLib.Interaction.Core.Oracle.LoggedExecution
 import ArkLib.Interaction.Core.Oracle.Routing
+import ArkLibTest.Interaction.Core.Oracle.DependentRouting
 import VCVio.OracleComp.Runtime
 import ArkLibTest.Interaction.Core.Support
 import ArkLibTest.Interaction.Core.Oracle.HiddenBitFixture
@@ -26,11 +27,11 @@ updated count. -/
 abbrev ambient : OracleSpec Nat := Nat →ₒ Nat
 
 /-- One scalar input slot. -/
-@[instance_reducible] def inputs : OracleFamily Unit (fun _ => Nat) :=
+@[instance_reducible] def inputs : OracleFamily.{0, 0, 0} Unit (fun _ => Nat) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
 /-- One exported scalar oracle. -/
-@[instance_reducible] def exported : OracleFamily Unit (fun _ => Nat) :=
+@[instance_reducible] def exported : OracleFamily.{0, 0, 0} Unit (fun _ => Nat) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
 /-- The input data: the single slot holds 7. -/
@@ -77,26 +78,27 @@ with the sent value or rejects. The output data closes to `input + sent.1`. -/
   .liftBind (.oracle (Nat × Nat) firstInterface) (fun _ => .pure ⟨⟩)
 
 /-- The decision resources on the only path of `pairSend`. -/
-abbrev pairResources := sumFamily inputs (pathFamily pairSend ⟨⟨⟩, ⟨⟩⟩)
+abbrev pairResources := pathResources inputs pairSend ⟨⟨⟩, ⟨⟩⟩
 
 /-- Close to the input plus the observable coordinate of the sent pair. -/
 def closeMap : OracleMap pairResources exported where
-  f x _ := (show Nat from x (.inl ())) + (show Nat × Nat from x (.inr (.inl ⟨⟩))).1
+  f x _ := (show Nat from x.1 ()) + (show Nat × Nat from x.2 (.inl ⟨⟩)).1
   impl _ := do
-    let a : Nat ← liftM (pairResources.spec.query ⟨.inl (), ()⟩)
-    let b : Nat ← liftM (pairResources.spec.query ⟨.inr (.inl ⟨⟩), ()⟩)
+    let a : Nat ← liftM (pairResources.spec.query (.inl ⟨(), ()⟩))
+    let b : Nat ← liftM (pairResources.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
     pure (a + b)
   law _ _ := by
     simp only [simulateQ_bind]
     rfl
 
 /-- The decision records 1, reads the sent oracle, records 2, and accepts or rejects. -/
-def pairVerifier (accept : Bool) : OracleVerifier ambient pairSend Unit Nat inputs exported where
+def pairVerifier (accept : Bool) :
+    OracleVerifier ambient pairSend Unit (fun _ => Nat) inputs (fun _ => exported) where
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact OptionT.mk do
       let _ ← liftM ((ambient + pairResources.spec).query (.inl 1))
-      let sent : Nat ← liftM ((ambient + pairResources.spec).query (.inr ⟨.inr (.inl ⟨⟩), ()⟩))
+      let sent : Nat ← liftM ((ambient + pairResources.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
       let _ ← liftM ((ambient + pairResources.spec).query (.inl 2))
       pure (if accept then some sent else none)
   outputMap _ p _ := by
@@ -117,14 +119,14 @@ def pairChallenges : QueryImpl (challengeSpec oracleSig pairSend) Id
 
 /-- Name and answer of each decision log entry on `pairSend`. -/
 def describePair (p : FreeM.Path pairSend) :
-    QueryLog (ambient + (sumFamily inputs (pathFamily pairSend p)).spec) →
+    QueryLog (ambient + (pathResources inputs pairSend p).spec) →
       List (String × Nat) := by
   rcases p with ⟨⟨⟩, ⟨⟩⟩
   exact List.map fun
     | ⟨.inl n, _⟩ => ("tag", n)
-    | ⟨.inr ⟨.inl _, _⟩, a⟩ => ("input", show Nat from a)
-    | ⟨.inr ⟨.inr (.inl _), _⟩, a⟩ => ("sent", show Nat from a)
-    | ⟨.inr ⟨.inr (.inr n), _⟩, _⟩ => n.elim
+    | ⟨.inr (.inl ⟨_, _⟩), a⟩ => ("input", show Nat from a)
+    | ⟨.inr (.inr ⟨.inl _, _⟩), a⟩ => ("sent", show Nat from a)
+    | ⟨.inr (.inr ⟨.inr n, _⟩), _⟩ => n.elim
 
 /-- The logged run under the tag logger. -/
 def observed (accept : Bool) (old message hidden : Nat) (setup : List Nat) :=
@@ -165,7 +167,8 @@ example (hidden : Nat) :
   rfl
 
 /-! TerminalRun TR1 and TR2, restated: the frozen rows run to a fault. The decisions have no fault
-outcome (OQ7), so the rows run to a rejection. The setup query 9 becomes the prover's first query,
+outcome, and these runs instead end in rejection. The setup query 9 becomes the prover's first
+query,
 and the frozen reception query 1 moves into the decision. For every hidden value the history keeps
 the prover and decision effects `[9, 0, 1, 2]`, and the result keeps the private output and the
 decision log, whose resource query answered the sent value 11.
@@ -205,27 +208,30 @@ example (hidden : Nat) :
     .liftBind (.oracle Nat OracleInterface.instDefault) (fun _ => .pure ⟨⟩))
 
 /-- The decision resources on the only path of `sendTwice`. -/
-abbrev twiceResources := sumFamily inputs (pathFamily sendTwice ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩)
+abbrev twiceResources := pathResources inputs sendTwice ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
 
 /-- Decision programs over the ambient and the resources of `sendTwice`. -/
 abbrev Decision := OptionT (OracleComp (ambient + twiceResources.spec)) (List Nat)
 
+/-- Read the scalar input oracle. -/
 def readInput : OracleComp (ambient + twiceResources.spec) Nat :=
-  liftM ((ambient + twiceResources.spec).query (.inr ⟨.inl (), ()⟩))
+  liftM ((ambient + twiceResources.spec).query (.inr (.inl ⟨(), ()⟩)))
 
+/-- Read the first scalar message oracle. -/
 def readFirst : OracleComp (ambient + twiceResources.spec) Nat :=
-  liftM ((ambient + twiceResources.spec).query (.inr ⟨.inr (.inl ⟨⟩), ()⟩))
+  liftM ((ambient + twiceResources.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
 
+/-- Read the second scalar message oracle. -/
 def readSecond : OracleComp (ambient + twiceResources.spec) Nat :=
-  liftM ((ambient + twiceResources.spec).query (.inr ⟨.inr (.inr (.inl ⟨⟩)), ()⟩))
+  liftM ((ambient + twiceResources.spec).query (.inr (.inr ⟨.inr (.inl ⟨⟩), ()⟩)))
 
 /-- A verifier on `sendTwice` running a fixed decision program; its outputs are its inputs. -/
 def twiceVerifier (program : Decision) :
-    OracleVerifier ambient sendTwice Unit (List Nat) inputs inputs where
+    OracleVerifier ambient sendTwice Unit (fun _ => List Nat) inputs (fun _ => inputs) where
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
     exact program
-  outputMap _ p _ := OracleMap.embedding (sumFamily inputs (pathFamily sendTwice p)) .inl
+  outputMap _ p _ := OracleMap.fst _ _
 
 /-- `sendTwice` has no challenges. -/
 def twiceChallenges : QueryImpl (challengeSpec oracleSig sendTwice) Id
@@ -235,15 +241,15 @@ def twiceChallenges : QueryImpl (challengeSpec oracleSig sendTwice) Id
 
 /-- Name and answer of each decision log entry on `sendTwice`. -/
 def describeTwice (p : FreeM.Path sendTwice) :
-    QueryLog (ambient + (sumFamily inputs (pathFamily sendTwice p)).spec) →
+    QueryLog (ambient + (pathResources inputs sendTwice p).spec) →
       List (String × Nat) := by
   rcases p with ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
   exact List.map fun
     | ⟨.inl n, _⟩ => ("tag", n)
-    | ⟨.inr ⟨.inl _, _⟩, a⟩ => ("input", show Nat from a)
-    | ⟨.inr ⟨.inr (.inl _), _⟩, a⟩ => ("first", show Nat from a)
-    | ⟨.inr ⟨.inr (.inr (.inl _)), _⟩, a⟩ => ("second", show Nat from a)
-    | ⟨.inr ⟨.inr (.inr (.inr n)), _⟩, _⟩ => n.elim
+    | ⟨.inr (.inl ⟨_, _⟩), a⟩ => ("input", show Nat from a)
+    | ⟨.inr (.inr ⟨.inl _, _⟩), a⟩ => ("first", show Nat from a)
+    | ⟨.inr (.inr ⟨.inr (.inl _), _⟩), a⟩ => ("second", show Nat from a)
+    | ⟨.inr (.inr ⟨.inr (.inr n), _⟩), _⟩ => n.elim
 
 /-- The decision reads the first message, the input, then the second message twice. -/
 def readAll : Decision := do
@@ -327,21 +333,22 @@ def phasedProver : Prover oracleSig ambient phased (fun _ => Nat) := do
       pure ⟨(if (show Bool from c) then 11 else 0 : Nat), pure 0⟩⟩
 
 /-- The decision records 2 and 3, reads the oracle, then records 6 and 7. -/
-def phasedVerifier : OracleVerifier ambient phased Unit (List Nat) inputs inputs where
+def phasedVerifier :
+    OracleVerifier ambient phased Unit (fun _ => List Nat) inputs (fun _ => inputs) where
   decide _ p _ := by
     rcases p with ⟨b, c, ⟨⟩, ⟨⟩⟩
     exact do
       for t in [2, 3] do
         let _ ← liftM (OracleSpec.query (spec :=
-          ambient + (sumFamily inputs (pathFamily phased ⟨b, c, ⟨⟩, ⟨⟩⟩)).spec) (.inl t))
+          ambient + (pathResources inputs phased ⟨b, c, ⟨⟩, ⟨⟩⟩).spec) (.inl t))
       let sent : Nat ← liftM (OracleSpec.query (spec :=
-        ambient + (sumFamily inputs (pathFamily phased ⟨b, c, ⟨⟩, ⟨⟩⟩)).spec)
-        (.inr ⟨.inr (.inl ⟨⟩), ()⟩))
+        ambient + (pathResources inputs phased ⟨b, c, ⟨⟩, ⟨⟩⟩).spec)
+        (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
       for t in [6, 7] do
         let _ ← liftM (OracleSpec.query (spec :=
-          ambient + (sumFamily inputs (pathFamily phased ⟨b, c, ⟨⟩, ⟨⟩⟩)).spec) (.inl t))
+          ambient + (pathResources inputs phased ⟨b, c, ⟨⟩, ⟨⟩⟩).spec) (.inl t))
       pure [sent]
-  outputMap _ p _ := OracleMap.embedding (sumFamily inputs (pathFamily phased p)) .inl
+  outputMap _ p _ := OracleMap.fst _ _
 
 /-- The challenge bit is `true`. -/
 def phasedChallenges : QueryImpl (challengeSpec oracleSig phased) Id
@@ -381,17 +388,18 @@ run_cmd do
 @[instance_reducible] def single : OracleProtocol :=
   .liftBind (.oracle Nat OracleInterface.instDefault) (fun _ => .pure ⟨⟩)
 
+/-- Two consecutive scalar oracle sends. -/
 abbrev pair : OracleProtocol := single.append (fun _ => single)
 
 /-- The prefix resources on the only path of `single`. -/
-abbrev prefixResources := sumFamily inputs (pathFamily single ⟨⟨⟩, ⟨⟩⟩)
+abbrev prefixResources := pathResources inputs single ⟨⟨⟩, ⟨⟩⟩
 
 /-- Export the input plus the prefix message. -/
 def sumExport : OracleMap prefixResources exported where
-  f x _ := (show Nat from x (.inl ())) + (show Nat from x (.inr (.inl ⟨⟩)))
+  f x _ := (show Nat from x.1 ()) + (show Nat from x.2 (.inl ⟨⟩))
   impl _ := do
-    let a : Nat ← liftM (prefixResources.spec.query ⟨.inl (), ()⟩)
-    let b : Nat ← liftM (prefixResources.spec.query ⟨.inr (.inl ⟨⟩), ()⟩)
+    let a : Nat ← liftM (prefixResources.spec.query (.inl ⟨(), ()⟩))
+    let b : Nat ← liftM (prefixResources.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
     pure (a + b)
   law _ _ := by
     simp only [simulateQ_bind]
@@ -399,14 +407,14 @@ def sumExport : OracleMap prefixResources exported where
 
 /-- Export the prefix message. -/
 def messageExport : OracleMap prefixResources exported where
-  f x _ := show Nat from x (.inr (.inl ⟨⟩))
-  impl _ := liftM (prefixResources.spec.query ⟨.inr (.inl ⟨⟩), ()⟩)
+  f x _ := show Nat from x.2 (.inl ⟨⟩)
+  impl _ := liftM (prefixResources.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
   law _ _ := rfl
 
 /-- A prefix verifier with a fixed decision program and export. -/
 def prefixVerifier (program : OptionT (OracleComp (ambient + prefixResources.spec)) Nat)
     (exportMap : OracleMap prefixResources exported) :
-    OracleVerifier ambient single Unit Nat inputs exported where
+    OracleVerifier ambient single Unit (fun _ => Nat) inputs (fun _ => exported) where
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact program
@@ -416,32 +424,34 @@ def prefixVerifier (program : OptionT (OracleComp (ambient + prefixResources.spe
 
 /-- The prefix decision reads its message. -/
 def readPrefix : OptionT (OracleComp (ambient + prefixResources.spec)) Nat :=
-  liftM ((ambient + prefixResources.spec).query (.inr ⟨.inr (.inl ⟨⟩), ()⟩))
+  liftM ((ambient + prefixResources.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
 
 /-- The suffix resources on the only path of `single`. -/
-abbrev suffixResources := sumFamily exported (pathFamily single ⟨⟨⟩, ⟨⟩⟩)
+abbrev suffixResources := pathResources exported single ⟨⟨⟩, ⟨⟩⟩
 
 /-- The suffix records 3, reads the export and its own message, and claims their sum plus the
 statement. -/
-def suffixVerifier : OracleVerifier ambient single Nat Nat exported exported where
+def suffixVerifier :
+    OracleVerifier ambient single Nat (fun _ => Nat) exported (fun _ => exported) where
   decide stmt p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact do
       let _ ← liftM ((ambient + suffixResources.spec).query (.inl 3))
-      let e : Nat ← liftM ((ambient + suffixResources.spec).query (.inr ⟨.inl (), ()⟩))
-      let m : Nat ← liftM ((ambient + suffixResources.spec).query (.inr ⟨.inr (.inl ⟨⟩), ()⟩))
+      let e : Nat ← liftM ((ambient + suffixResources.spec).query (.inr (.inl ⟨(), ()⟩)))
+      let m : Nat ← liftM ((ambient + suffixResources.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
       pure (stmt + e + m)
-  outputMap _ p _ := OracleMap.embedding (sumFamily exported (pathFamily single p)) .inl
+  outputMap _ p _ := OracleMap.fst _ _
 
 /-- The composite output map is the suffix output map after `suffixRoute`. -/
-def compatible (V : OracleVerifier ambient single Unit Nat inputs exported) :
+def compatible (V : OracleVerifier ambient single Unit (fun _ => Nat) inputs (fun _ => exported)) :
     OracleVerifier.OutputCompatibility V (fun _ => suffixVerifier) where
   outputMap stmt p v :=
     (suffixVerifier.outputMap 0 (Path.split single (fun _ => single) p).2
       (View.split single (fun _ => single) p v).2).comp (OracleVerifier.suffixRoute V stmt p v)
   agrees _ _ _ _ _ _ := rfl
 
-def composed (V : OracleVerifier ambient single Unit Nat inputs exported) :=
+/-- Append the suffix verifier using its routed output map. -/
+def composed (V : OracleVerifier ambient single Unit (fun _ => Nat) inputs (fun _ => exported)) :=
   V.append (fun _ => suffixVerifier) (compatible V)
 
 /-- The prover sends the counter's answers to queries 1 and 2, keeping `out` as private output. -/
@@ -460,18 +470,20 @@ def appendChallenges : QueryImpl (challengeSpec oracleSig pair) Id
 
 /-- Name and answer of each composite decision log entry. -/
 def describeAppend (p : FreeM.Path pair) :
-    QueryLog (ambient + (sumFamily inputs (pathFamily pair p)).spec) →
+    QueryLog (ambient + (pathResources inputs pair p).spec) →
       List (String × Nat) := by
   rcases p with ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
   exact List.map fun
     | ⟨.inl n, _⟩ => ("tag", n)
-    | ⟨.inr ⟨.inl _, _⟩, a⟩ => ("input", show Nat from a)
-    | ⟨.inr ⟨.inr (.inl _), _⟩, a⟩ => ("prefix", show Nat from a)
-    | ⟨.inr ⟨.inr (.inr (.inl _)), _⟩, a⟩ => ("suffix", show Nat from a)
-    | ⟨.inr ⟨.inr (.inr (.inr n)), _⟩, _⟩ => n.elim
+    | ⟨.inr (.inl ⟨_, _⟩), a⟩ => ("input", show Nat from a)
+    | ⟨.inr (.inr ⟨.inl _, _⟩), a⟩ => ("prefix", show Nat from a)
+    | ⟨.inr (.inr ⟨.inr (.inl _), _⟩), a⟩ => ("suffix", show Nat from a)
+    | ⟨.inr (.inr ⟨.inr (.inr n), _⟩), _⟩ => n.elim
 
 /-- Private output, claim with output data, decision log, final count and full trace. -/
-def appendSummary (V : OracleVerifier ambient single Unit Nat inputs exported) (out : Nat) :=
+def appendSummary
+    (V : OracleVerifier ambient single Unit (fun _ => Nat) inputs (fun _ => exported))
+    (out : Nat) :=
   (fun result => (result.output.1.2.1, result.output.1.2.2.map (fun r => (r.1, r.2 ())),
       describeAppend _ result.output.2.2, result.state, result.trace)) <$>
     (counter 0 appendChallenges).run ((composed V).runWithLog () seven (appendProver out))
@@ -509,22 +521,22 @@ run_cmd do
       throwError "the composed counter execution is wrong: {log}"
 
 /-- Realizations of the prefix resources: input 7 and message 1. -/
-def prefixData : ∀ i, prefixResources.Realization i :=
-  sumData seven (payloads single ⟨(1 : Nat), ⟨⟩⟩)
+def prefixData : prefixResources.Data :=
+  (seven, payloads single ⟨(1 : Nat), ⟨⟩⟩)
 
 /-- One query to the export, routed by the export's `impl`. -/
 def exportQuery : OracleComp exported.spec Nat := liftM (exported.spec.query ⟨(), ()⟩)
 
 /-- Answer prefix resource queries from `prefixData`. -/
 def answerPrefix : QueryImpl prefixResources.spec Id :=
-  fun q => pure (prefixResources.behaviorOfRealizations prefixData q)
+  fun q => pure (prefixResources.answer prefixData q)
 
 /-- Name and answer of a prefix resource log entry. -/
 def nameEntry : (z : (i : prefixResources.spec.Domain) × prefixResources.spec.Range i) →
     String × Nat
-  | ⟨⟨.inl _, _⟩, a⟩ => ("input", show Nat from a)
-  | ⟨⟨.inr (.inl _), _⟩, a⟩ => ("prefix", show Nat from a)
-  | ⟨⟨.inr (.inr n), _⟩, _⟩ => n.elim
+  | ⟨.inl ⟨_, _⟩, a⟩ => ("input", show Nat from a)
+  | ⟨.inr ⟨.inl _, _⟩, a⟩ => ("prefix", show Nat from a)
+  | ⟨.inr ⟨.inr n, _⟩, _⟩ => n.elim
 
 /-! `NativeRuntime.lean` example 5, restated: the route is the `impl` of the exported
 `OracleMap`, answered by the prefix realizations. The logging handler of `withQueryLog_simulateQ`
@@ -620,30 +632,24 @@ example (guess : Bool) (secret : Nat) :
 
 /-! ## Erasure under a runtime -/
 
-/-- Running the logged run in a persistent runtime and erasing the logs and the trace gives the
-ordinary stateful execution of the run. This composes VCVio's `runFrom_eraseTrace` with
-`runWithLog_erase`. -/
-theorem runtime_runWithLog_erase {ι I J S T κ : Type} {ambient : OracleSpec ι}
-    {s : OracleProtocol} {A : I → Type} {B : J → Type} {inputs : OracleFamily I A}
-    {outputs : OracleFamily J B} {Out : PathAlong oracleSig s → Type}
-    {Import : OracleSpec κ} (V : OracleVerifier ambient s S T inputs outputs)
-    (runtime : OracleRuntime Import (ambient + challengeSpec oracleSig s)) (stmt : S)
-    (data : ∀ i, A i) (prover : Prover oracleSig ambient s Out) :
+/-- Erasure commutes with handlers whose lawful target monad has a larger universe. -/
+example {m : Type → Type 1} [Monad m] [LawfulMonad m]
+    (handler : QueryImpl bitFull m) (guess : Bool) (secret : Nat) :
+    Sigma.fst <$> simulateQ handler
+        (bitVerifier.runWithLog () falseData (guessProver guess secret)) =
+      simulateQ handler (bitVerifier.run () falseData (guessProver guess secret)) :=
+  OracleVerifier.simulateQ_runWithLog_erase bitVerifier handler () falseData
+    (guessProver guess secret)
+
+/-- The hidden-bit runtime satisfies logged-run erasure for every guess and secret. -/
+example (guess : Bool) (secret : Nat) :
     (fun result => (result.output.1, result.state)) <$>
-        runtime.run (V.runWithLog stmt data prover) =
-      runtime.setup >>= fun state => runtime.handler.runState state (V.run stmt data prover) := by
-  rw [OracleRuntime.run_eq, _root_.map_bind]
-  refine bind_congr fun state => ?_
-  have erased := runtime.runFrom_eraseTrace state (V.runWithLog stmt data prover)
-  have paired := congrArg (fun program =>
-    (fun result => (result.1.1, result.2)) <$> program) erased
-  have logged := congrArg (runtime.handler.runState state) (V.runWithLog_erase stmt data prover)
-  calc
-    _ = (fun result => (result.1.1, result.2)) <$>
-        runtime.handler.runState state (V.runWithLog stmt data prover) := by
-      simpa only [Functor.map_map] using paired
-    _ = _ := by
-      simpa [QueryImpl.Stateful.runState, monad_norm] using logged
+        bitRuntime.run (bitVerifier.runWithLog () falseData (guessProver guess secret)) =
+      bitRuntime.setup >>= fun state =>
+        bitRuntime.handler.runState state
+          (bitVerifier.run () falseData (guessProver guess secret)) :=
+  OracleVerifier.runtime_runWithLog_erase bitVerifier bitRuntime () falseData
+    (guessProver guess secret)
 
 end Interaction.Core.LoggedExecutionTests
 
@@ -655,8 +661,50 @@ row guards the terminal erase law; the decisions have no terminal layer, so it g
 run_cmd do
   for decl in [``Interaction.Core.OracleVerifier.runWithLog_fst,
       ``Interaction.Core.OracleVerifier.runWithLog_erase,
-      ``Interaction.Core.LoggedExecutionTests.runtime_runWithLog_erase,
+      ``Interaction.Core.OracleVerifier.runtime_runWithLog_erase,
+      ``Interaction.Core.OracleVerifier.simulateQ_runWithLog_erase,
       ``OracleComp.withQueryLog_simulateQ] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"
+
+namespace Interaction.Core.DependentRoutingTests
+
+/-- Observe the logged run with the statement and output oracle selected by its public Boolean.
+The dependent claim is read through that selected oracle interface. -/
+def loggedObserved (input : Nat) : Bool × Nat × Option (Nat × Nat) :=
+  let obs := (simulateQ noQueries (composite.runWithLog () (fun _ => input) (prover input))).1
+  ((projectPathAlong oracleSig combined obs.1).1, obs.2.1,
+    obs.2.2.map (readClaim (projectPathAlong oracleSig combined obs.1)))
+
+/-- Logging retains the unit statement and scalar realization of the zero branch. -/
+example : loggedObserved 0 = (true, 13, some (0, 0)) := rfl
+
+/-- Logging retains the natural statement and pair realization of the nonzero branch. -/
+example : loggedObserved 7 = (false, 29, some (7, 7)) := rfl
+
+/-- Erasing a logged run retains the dependent observation for every input. -/
+example (input : Nat) : loggedObserved input = observed input := by
+  have h := OracleVerifier.simulateQ_runWithLog_erase composite noQueries ()
+    (fun _ => input) (prover input)
+  exact congrArg (fun obs => ((projectPathAlong oracleSig combined obs.1).1, obs.2.1,
+    obs.2.2.map (readClaim (projectPathAlong oracleSig combined obs.1)))) h
+
+end Interaction.Core.DependentRoutingTests
+
+
+universe uS wJ v
+
+/-- Log erasure permits large input statements and output query types in a lawful target monad.
+The input queries stay small because the decision log returns them. -/
+example {ι I : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol}
+    {T : FreeM.Path s → Type} {A : I → Type} {J : FreeM.Path s → Type}
+    {B : (p : FreeM.Path s) → J p → Type} {inputs : OracleFamily.{0, 0, 0} I A}
+    {outputs : (p : FreeM.Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+    {Out : PathAlong oracleSig s → Type} {m : Type → Type v} [Monad m] [LawfulMonad m]
+    (V : OracleVerifier ambient s S T inputs outputs)
+    (handler : QueryImpl (ambient + challengeSpec oracleSig s) m) (stmt : S)
+    (data : ∀ i, A i) (prover : Prover oracleSig ambient s Out) :
+    Sigma.fst <$> simulateQ handler (V.runWithLog stmt data prover) =
+      simulateQ handler (V.run stmt data prover) :=
+  OracleVerifier.simulateQ_runWithLog_erase V handler stmt data prover

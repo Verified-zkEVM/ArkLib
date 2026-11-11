@@ -146,11 +146,96 @@ oracle extraction game passes that projection.
 
 ## Continuation
 
-Entries 14 onwards record the departures of the legacy embedding. They are in
+Entries 14–16 record the departures of the legacy embedding. They are in
 [`legacy-embedding.md`](../interaction-layer/legacy-embedding.md#departures), and
-[`departures.md`](../interaction-layer/departures.md) indexes every entry, including 1–13.
+[`departures.md`](../interaction-layer/departures.md) indexes every entry, including 1–13 and 18.
+Entry 18 below is a later core entry; number 17 belonged to an entry that was removed.
+
+## 18. Run outputs are tied to the monad universe
+
+**Status: premise-required for run outputs and a prover's ambient index; unresolved for input
+oracle data and for the logged oracle runner.** Record D2's ledger puts moves and participant
+outputs in `Type u` and leaves the other components of a verifier unstated. The code gives every
+component that is not a run output its own universe as far as the definitions allow: the ambient
+index of a verifier, the input oracle index `I`, the output oracle index `J p` of an oracle
+verifier, the query types of the input and output oracle interfaces, the input statement and the
+input witness.
+
+**Premise-required.** Run outputs stay in `Type u`: the output statement `StmtOut p`, the output
+oracle data `B p j` returned by a run, the output index `J p` once a run returns `∀ j, B p j`,
+prover outputs, extracted witnesses and the state `σ` of a security experiment. Positions live one
+universe up (`PlainPos`, `OraclePos : Type (u+1)`), because a position names a type, so the moves
+and returned values of a run are in `Type u`, and the runner is `m : Type u → Type u`
+(`OracleComp ambient` with responses in `Type u`). `simulateQ`, which answers the decision's
+resource queries in a run and in `decideWith`, also needs the value universe to equal the response
+universe. A run output in another universe would need a `ULift` adapter or a monad on a larger
+universe, which record D2 rejects. A prover's ambient index is in `Type u` for the same reason:
+`OracleComp ambient : Type u → Type (max uι u)` is the prover's monad, so `Reduction`, `Prover`,
+both runs and the classical security models fix it.
+
+**Query types are separated.** The decision no longer reads one homogeneous family
+`sumFamily inputs (pathFamily s p)`. It reads `pathResources inputs s p`, the disjoint sum of the
+input specification and the path's specification, with their data kept as a pair
+(`Resources.sum`). `OracleSpec` addition allows the two index types to lie in different universes,
+so the input queries (`OracleFamily.{uI, u, wI}`) and the output queries
+(`OracleFamily.{uJ, u, wJ}`) take their own universes through routing, append and `decideWith`.
+The query types never become values of the runner: they are answered by `simulateQ`, which
+returns only responses.
+
+**Unresolved: input oracle data.** The data `A i` of an input oracle is still in `Type u`, the
+universe of the responses. This is not required by the runner: a realization `a : A` in a larger
+universe can answer small queries with small responses through a function
+`(a : A) → (q : Q) → Response q`, and a run never returns it. The coupling comes from
+`OracleInterface` (`ArkLib/OracleReduction/OracleInterface.lean:55`), which stores an
+`OracleContext Query (ReaderM Message)`. The pinned `ReaderM Message` is a monad
+`Type v → Type v` on the universe of `Message`, so an interface's responses lie in the universe of
+its data. Separating the data universe needs a generalization of `OracleInterface` to separate
+realization and response universes. That file is outside this slice, so the dependency is open.
+The same coupling ties the output oracle data `B p j` of an oracle verifier to `Type u` outside a
+run.
+
+**Unresolved: the logged oracle runner.** `OracleVerifier.runWithLog` returns the decision's query
+log, which records input queries, so its input index `I` and its input query type stay in `Type`.
+The oracle extraction game, `Extractor.OracleStraightline`, `Extractor.OracleTranscriptOnly`, the
+classical oracle extraction models and their marginal lemmas inherit this restriction through the
+runner. Extractors receive only the ambient part of the log (record D7), so a runner that logs
+only ambient queries might lift the restriction; this slice does not analyze that change.
+
+**Security wrappers.** The input statement `S`, the honest input witness `W` and the input oracle
+index `I` are arguments of a run, so the security wrappers take them in any universe:
+`Verifier.classicalModel`, `OracleVerifier.classicalModel` (statement and input index),
+`Reduction.completeness`, `Verifier.soundness`, `StateFunction`, `rbrSoundness`,
+`Verifier.validAcceptance`, `KnowledgeStateFunction`, `rbrKnowledgeSoundness` and the plain
+straight-line and transcript-only extractors and extraction game. The intermediate witnesses of a
+`KnowledgeStateFunction` lie in the universe of the input witness, which the root extractor
+returns. The restrictions that remain are the premise-required ones above (ambient index and
+experiment state in `Type`, output data, output index and extracted witnesses in `Type`) and the
+two unresolved ones (input oracle data in `Type`, and the logged oracle runner).
+
+`ArkLibTest/Interaction/Core/UniverseCanary.lean` instantiates the independent universes against
+`Verifier`, `OracleVerifier`, `Reduction`, both appends, the routing law `append_decideWith`,
+`OracleMap.simulate_eq`, two oracle runs and the classical security models. One input interface
+is an `OracleInterface.{0, 1} Nat` whose queries are types, and an append routes it through a
+middle family with queries in `Type 1` to an output family with queries in `Type 0`.
 
 ## Changes that keep to the records
+
+### Verifier outputs are indexed by the shape path
+
+Record D6 fixed the output family for the first milestone. Both verifiers now index their outputs
+by the public shape path: `Verifier ambient s StmtIn StmtOut` takes `StmtOut : Path s → Type u`,
+and `OracleVerifier ambient s S T inputs outputs` takes `T : Path s → Type u` and
+`outputs : (p : Path s) → OracleFamily (J p) (B p)`. The decision returns `T p` and the output map
+targets `outputs p`; `OracleVerifier.Output T B p := T p × ∀ j, B p j` is the accepted claim of a
+run. In an append the composite's output at a path of `s₁.append s₂` is the suffix's output at the
+split path (`splitFamily`, `OracleVerifier.splitOutputs`), so composed decisions return the
+suffix's output without a cast. `Observation` takes the indexed family, and the security
+definitions take output problems over the path context (`PathProblem s T`), with acceptance
+predicates typed at the transcript's path (`validAcceptance impl stmt tr (event : T p → Prop)`).
+Constant families `fun _ => T` recover every earlier user; the legacy embedding and the sumcheck
+core use them, so their statements are unchanged. Record D6 is updated accordingly, and
+`ArkLibTest/Interaction/Core/Oracle/DependentRouting.lean` ports the frozen layer's dependent
+routing example.
 
 ### Output witnesses are indexed by the transcript
 

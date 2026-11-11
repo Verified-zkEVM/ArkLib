@@ -519,32 +519,32 @@ concrete data is legacy `simOracle2` on the input data and the path's messages. 
 queries go to any implementation `amb`: plain, stateful or logging. -/
 theorem simulateQ_decisionImpl {m : Type → Type} [Monad m] [LawfulMonad m]
     (amb : QueryImpl oSpec m) (p : Path (oracleProtocol pSpec))
-    (r : ∀ o, Sum.elim OStmtIn (OracleData (oracleProtocol pSpec) p) o) {α : Type}
+    (r : (pathResources (family OStmtIn) (oracleProtocol pSpec) p).Data) {α : Type}
     (x : OracleComp (oSpec + ([OStmtIn]ₒ + [pSpec.Message]ₒ)) α) :
     simulateQ (QueryImpl.addLift amb
-        ((sumFamily (family OStmtIn) (pathFamily _ p)).behaviorOfRealizations r))
+        ((pathResources (family OStmtIn) (oracleProtocol pSpec) p).answer r))
         (simulateQ (decisionImpl p) x) =
       simulateQ amb (simulateQ (OracleInterface.simOracle2 (T₁ := OStmtIn) (T₂ := pSpec.Message)
-        oSpec (fun i => r (.inl i)) (pathMessages p (fun o => r (.inr o)))) x) := by
+        oSpec r.1 (pathMessages p r.2)) x) := by
   have key : ∀ t, simulateQ (QueryImpl.addLift amb
-      ((sumFamily (family OStmtIn) (pathFamily _ p)).behaviorOfRealizations r))
+        ((pathResources (family OStmtIn) (oracleProtocol pSpec) p).answer r))
         (decisionImpl p t) =
       simulateQ amb (OracleInterface.simOracle2 (T₁ := OStmtIn) (T₂ := pSpec.Message)
-        oSpec (fun i => r (.inl i)) (pathMessages p (fun o => r (.inr o))) t) := by
+        oSpec r.1 (pathMessages p r.2) t) := by
     rintro (q | q)
     · simp only [decisionImpl, QueryImpl.addLift_def, QueryImpl.add_apply_inl,
         OracleInterface.simOracle2, QueryImpl.liftTarget_apply, QueryImpl.id_apply,
         QueryImpl.liftTarget_self]
       refine (QueryImpl.simulateQ_add_query_left amb (QueryImpl.liftTarget m
-        ((sumFamily (family OStmtIn) (pathFamily _ p)).behaviorOfRealizations r)) q).trans ?_
+        ((pathResources (family OStmtIn) (oracleProtocol pSpec) p).answer r)) q).trans ?_
       rw [simulateQ_spec_query]
     · simp only [QueryImpl.addLift_def, OracleInterface.simOracle2, QueryImpl.liftTarget_self]
-      change simulateQ _ (simulateQ (fun t => liftM ((oSpec +
-        (sumFamily (family OStmtIn) (pathFamily (oracleProtocol pSpec) p)).spec).query
-          (.inr t))) (resourceImpl p q)) = _
+      change simulateQ _ (simulateQ (fun t => liftM
+          ((oSpec + (pathResources (family OStmtIn) (oracleProtocol pSpec) p).spec).query
+            (.inr t))) (resourceImpl p q)) = _
       rw [QueryImpl.simulateQ_simulateQ_eq_of_apply
-        (impl := ((sumFamily (family OStmtIn) (pathFamily _ p)).behaviorOfRealizations r).liftTarget
-          m) (fun t => QueryImpl.simulateQ_add_query_right _ _ t),
+        (impl := ((pathResources (family OStmtIn) (oracleProtocol pSpec) p).answer r).liftTarget m)
+          (fun t => QueryImpl.simulateQ_add_query_right _ _ t),
         simulateQ_liftTarget, resourceImpl_law]
       change pure _ = simulateQ amb (pure _)
       rw [simulateQ_pure]
@@ -574,8 +574,9 @@ abbrev oracleChallengeImpl (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp) :
 
 /-- Read an observation of the plain tree as an observation of the oracle tree. -/
 def toOracleObservation {Out : PathAlong oracleSig (oracleProtocol pSpec) → Type} {T : Type}
-    (r : Observation plainSig (protocol pSpec) (fun tr => Out (toOraclePath 0 n _ tr)) T) :
-    Observation oracleSig (oracleProtocol pSpec) Out T :=
+    (r : Observation plainSig (protocol pSpec) (fun tr => Out (toOraclePath 0 n _ tr))
+      (fun _ => T)) :
+    Observation oracleSig (oracleProtocol pSpec) Out (fun _ => T) :=
   ⟨toOraclePath 0 n (Nat.zero_add n) r.1, r.2.1, r.2.2⟩
 
 /-- **A run of the oracle tree is a run of the plain tree.** Against the legacy sampler, the
@@ -619,12 +620,14 @@ theorem simulateQ_oracleChallengeReindex_run
     erw [QueryImpl.simulateQ_add_liftM_query_right]
     exact map_oracleLegacyDraw _ 0 n _ c
   rw [TwoParty.Lens.run, runWith_toPlainFrom, simulateQ_map, toPlainFrom_simulate,
-    toPlainFrom_sampler, simulateQ_runWith, simulate_simulate, hl, hr,
+    toPlainFrom_sampler, simulateQ_runWith, Prover.simulate_simulate, hl, hr,
     runWith_oracleLegacySampler]
   rfl
 
-variable {I J S T : Type} {A : I → Type} {B : J → Type} {inputs : OracleFamily I A}
-  {outputs : OracleFamily J B}
+variable {I S : Type} {T : Path (oracleProtocol pSpec) → Type} {A : I → Type}
+  {J : Path (oracleProtocol pSpec) → Type} {B : (p : Path (oracleProtocol pSpec)) → J p → Type}
+  {inputs : OracleFamily I A}
+  {outputs : (p : Path (oracleProtocol pSpec)) → OracleFamily (J p) (B p)}
 
 /-- Run an oracle verifier on the oracle tree of a legacy protocol under `order`, in the legacy
 query monad. The prover runs against the legacy sampler; the decision and the output map read
@@ -634,14 +637,15 @@ def oracleObserveWith (order : Schedule)
     (data : ∀ i, A i) {Out : PathAlong oracleSig (oracleProtocol pSpec) → Type}
     (p : Core.Prover oracleSig oSpec (oracleProtocol pSpec) Out) :
     OracleComp (oSpec + [pSpec.Challenge]ₒ)
-      (Observation oracleSig (oracleProtocol pSpec) Out (T × (∀ j, B j))) := do
+      (Observation oracleSig (oracleProtocol pSpec) Out (Core.OracleVerifier.Output T B)) := do
   let r ← runWith order (oracleProtocol pSpec) (p.simulate (liftShared oSpec pSpec))
     (oracleLegacySampler pSpec (challengeOracle oSpec pSpec))
   let pp := projectPathAlong oracleSig (oracleProtocol pSpec) r.1
   let view := toView (oracleProtocol pSpec) r.1
-  let resources := sumData data (payloads (oracleProtocol pSpec) r.1)
+  let resources : (pathResources inputs (oracleProtocol pSpec) pp).Data :=
+    (data, payloads (oracleProtocol pSpec) r.1)
   let verdict ← simulateQ (QueryImpl.addLift (liftShared oSpec pSpec)
-    ((sumFamily inputs (pathFamily _ pp)).behaviorOfRealizations resources))
+    ((pathResources inputs (oracleProtocol pSpec) pp).answer resources))
     (V.decide stmt pp view).run
   pure ⟨r.1, r.2.1, verdict.map fun t => (t, (V.outputMap stmt pp view).f resources)⟩
 
@@ -696,14 +700,14 @@ accepted one. The result keeps the prover's output statement, output oracle data
 the verifier's output statement and output oracle data. -/
 def oracleFinalize
     (r : Observation oracleSig (oracleProtocol pSpec)
-      (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) (StmtOut × (∀ i, OStmtOut i))) :
+      (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) (fun _ => StmtOut × (∀ i, OStmtOut i))) :
     LegacyResult pSpec (StmtOut × (∀ i, OStmtOut i)) WitOut :=
   r.2.2.map fun t => ((oracleDecode pSpec r.1, r.2.1), t)
 
 omit [∀ t, Inhabited (oSpec.Range t)] Oₛₒ in
 theorem oracleFinalize_toOracleObservation
     (r : Observation plainSig (protocol pSpec)
-      (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) (StmtOut × (∀ i, OStmtOut i))) :
+      (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) (fun _ => StmtOut × (∀ i, OStmtOut i))) :
     oracleFinalize (toOracleObservation (Out := fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut)
       r) = finalize r := by
   simp only [oracleFinalize, toOracleObservation, finalize, oracleDecode_toOraclePath]
@@ -716,15 +720,14 @@ theorem simulateQ_embedOracleVerifier_decide {m : Type → Type} [Monad m] [Lawf
     (V : _root_.OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) (stmt : StmtIn)
     (oStmt : ∀ i, OStmtIn i) (tr : PathAlong oracleSig (oracleProtocol pSpec)) :
     simulateQ (QueryImpl.addLift amb
-        ((sumFamily (family OStmtIn)
-          (pathFamily _ (projectPathAlong oracleSig _ tr))).behaviorOfRealizations
-            (sumData oStmt (payloads _ tr))))
+        ((pathResources (family OStmtIn) _ (projectPathAlong oracleSig _ tr)).answer
+          (oStmt, payloads _ tr)))
         ((embedOracleVerifier V).decide stmt (projectPathAlong oracleSig _ tr)
           (toView _ tr)).run =
       simulateQ amb
         (simulateQ (OracleInterface.simOracle2 oSpec oStmt (oracleDecode pSpec tr).messages)
           (V.verify stmt (oracleDecode pSpec tr).challenges).run) := by
-  refine (simulateQ_decisionImpl amb _ (sumData oStmt (payloads _ tr)) _).trans ?_
+  refine (simulateQ_decisionImpl amb _ (oStmt, payloads _ tr) _).trans ?_
   rw [viewChallenges_toView]
   exact congrArg (fun m => simulateQ amb
     (simulateQ (OracleInterface.simOracle2 oSpec oStmt m)
@@ -736,7 +739,7 @@ theorem embedOracleVerifier_outputMap_f
     (V : _root_.OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) (stmt : StmtIn)
     (oStmt : ∀ i, OStmtIn i) (tr : PathAlong oracleSig (oracleProtocol pSpec)) :
     ((embedOracleVerifier V).outputMap stmt (projectPathAlong oracleSig _ tr) (toView _ tr)).f
-        (sumData oStmt (payloads _ tr)) =
+        (oStmt, payloads _ tr) =
       V.materializeOutput (oracleDecode pSpec tr).challenges oStmt
         (oracleDecode pSpec tr).messages := by
   change V.materializeOutput (viewChallenges (toView _ tr).val) oStmt
@@ -759,7 +762,8 @@ theorem oracleObserveWith_embed (order : Schedule)
   refine bind_congr fun r => ?_
   dsimp only
   erw [simulateQ_embedOracleVerifier_decide]
-  simp only [embedOracleVerifier_outputMap_f, oracleDecode_toOraclePath, embedVerifier_decide]
+  rw [embedOracleVerifier_outputMap_f]
+  simp only [oracleDecode_toOraclePath, embedVerifier_decide]
   change _ = toOracleObservation <$> (liftComp (Option.map _ <$> simulateQ _ _) _ >>= _)
   rw [liftComp_eq_simulateQ_liftShared, simulateQ_map]
   exact (map_bind_map_pure (m := OracleComp (oSpec + [pSpec.Challenge]ₒ))
@@ -768,7 +772,9 @@ theorem oracleObserveWith_embed (order : Schedule)
         (V.verify stmt (decode pSpec r.1).challenges).run))
     (Option.map fun s => (s, V.materializeOutput (decode pSpec r.1).challenges oStmt
       (decode pSpec r.1).messages))
-    (fun v => (⟨r.1, r.2.1, v⟩ : Observation plainSig (protocol pSpec) _ _))
+    (fun v => (⟨r.1, r.2.1, v⟩ : Observation plainSig (protocol pSpec)
+      (fun tr => Out (toOraclePath 0 n (Nat.zero_add n) tr))
+      (fun _ => StmtOut × (∀ i, OStmtOut i))))
     toOracleObservation).symm
 
 omit [∀ t, Inhabited (oSpec.Range t)] Oₛᵢ Oₛₒ in
@@ -854,7 +860,8 @@ theorem experiment_embedOracleVerifier_run (init : ProbComp σ)
     (V : _root_.OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) (stmt : StmtIn)
     (oStmt : ∀ i, OStmtIn i) {Out : PathAlong oracleSig (oracleProtocol pSpec) → Type}
     (p : Core.Prover oracleSig oSpec (oracleProtocol pSpec) Out) {β : Type}
-    (f : Observation oracleSig (oracleProtocol pSpec) Out (StmtOut × (∀ i, OStmtOut i)) → β) :
+    (f : Observation oracleSig (oracleProtocol pSpec) Out
+      (fun _ => StmtOut × (∀ i, OStmtOut i)) → β) :
     experiment init impl (oracleChallengeImpl chImpl)
         (f <$> (embedOracleVerifier V).run stmt oStmt p) =
       experiment init impl (plainChallengeImpl chImpl)
@@ -887,7 +894,8 @@ theorem experiment_oracleVerifier_run_evalDistEq (init : ProbComp σ)
     (V : _root_.OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) (stmt : StmtIn)
     (oStmt : ∀ i, OStmtIn i) {Out : PathAlong oracleSig (oracleProtocol pSpec) → Type}
     (p : Core.Prover oracleSig oSpec (oracleProtocol pSpec) Out) {β : Type}
-    (f : Observation oracleSig (oracleProtocol pSpec) Out (StmtOut × (∀ i, OStmtOut i)) → β) :
+    (f : Observation oracleSig (oracleProtocol pSpec) Out
+      (fun _ => StmtOut × (∀ i, OStmtOut i)) → β) :
     experiment init impl (oracleChallengeImpl chImpl)
         (f <$> (embedOracleVerifier V).run stmt oStmt p) =ᵈ
       experiment init impl chImpl
