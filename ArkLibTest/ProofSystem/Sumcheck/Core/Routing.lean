@@ -95,28 +95,26 @@ theorem eval_exportPoly (r : K) (p : Spec.OracleStatement K 2 1 ()) (msg : K⦃�
     funext fun i => by fin_cases i <;> rfl
   rw [hpt]
 
-attribute [local implicit_reducible] projectPathAlong projectPathAlongLocalMap
-  Displayed.LocalMap.toHom Displayed.LocalMap.toHomFun
 
 /-- The resources of the first round: the bivariate input and the round message. -/
 abbrev firstResources :=
-  sumFamily (Spec.polynomialFamily K 2 1) (pathFamily (round K 1) (roundPath K 1))
+  pathResources (Spec.polynomialFamily K 2 1) (round K 1) (roundPath K 1)
 
 /-- The export map at the challenge `r`: one input query at `(r, y)` and one message query at
 `r`. -/
 def exportMap (r : K) : OracleMap firstResources (Spec.polynomialFamily K 1 1) where
-  f x _ := exportPoly r (x (.inl ())) (x (.inr (.inl ⟨⟩)))
+  f x _ := exportPoly r (x.1 ()) (x.2 (.inl ⟨⟩))
   impl q := do
-    let old : K ← liftM (firstResources.spec.query ⟨.inl (), ![r, q.2 0]⟩)
-    let sent : K ← liftM (firstResources.spec.query ⟨.inr (.inl ⟨⟩), r⟩)
+    let old : K ← liftM (firstResources.spec.query (.inl ⟨(), ![r, q.2 0]⟩))
+    let sent : K ← liftM (firstResources.spec.query (.inr ⟨.inl ⟨⟩, r⟩))
     pure (old + sent)
   law x q := by
     rcases q with ⟨⟨⟩, y⟩
-    exact (eval_exportPoly r (x (.inl ())) (x (.inr (.inl ⟨⟩))) y).symm
+    exact (eval_exportPoly r (x.1 ()) (x.2 (.inl ⟨⟩)) y).symm
 
 /-- The output map of the first round: the export map at the round's challenge. -/
 def exportOut : K → (p : Path (round K 1)) → View (round K 1) p →
-    OracleMap (sumFamily (Spec.polynomialFamily K 2 1) (pathFamily (round K 1) p))
+    OracleMap (pathResources (Spec.polynomialFamily K 2 1) (round K 1) p)
       (Spec.polynomialFamily K 1 1)
   | _, ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩, v => exportMap (viewChallenge v)
 
@@ -136,14 +134,14 @@ def firstCheck (target : K) (chals : (Spec.SingleRound.pSpec K 1).Challenges) :
   else failure
 
 /-- The first round: the sum check, exporting the input at the challenge plus the message. -/
-def firstVerifier : OracleVerifier events (round K 1) K (Spec.StatementRound K 1 0)
-    (Spec.polynomialFamily K 2 1) (Spec.polynomialFamily K 1 1) :=
+def firstVerifier : OracleVerifier events (round K 1) K (fun _ => Spec.StatementRound K 1 0)
+    (Spec.polynomialFamily K 2 1) (fun _ => Spec.polynomialFamily K 1 1) :=
   checkVerifier events _ firstCheck exportOut
 
 /-- The second round: the Sumcheck verifier of one round over the exported oracle. -/
 def secondVerifier : OracleVerifier events (protocol K 1 1) (Spec.StatementRound K 1 0)
-    (Spec.StatementRound K 1 (Fin.last 1)) (Spec.polynomialFamily K 1 1)
-    (Spec.polynomialFamily K 1 1) :=
+    (fun _ => Spec.StatementRound K 1 (Fin.last 1)) (Spec.polynomialFamily K 1 1)
+    (fun _ => Spec.polynomialFamily K 1 1) :=
   verifier K 1 1 D₂ events
 
 /-- The composite keeps the exported oracle, whatever the intermediate statement. -/
@@ -177,7 +175,7 @@ theorem run_finish (hidden tag : ℕ)
       (do let fin ← eventE 3; pure ⟨⟨⟩, hidden + tag + fin, ⟨⟩⟩) := by
   refine (run_done (l := oracleSig) (OutP := fun _ => ℕ) (OutC := fun _ => PUnit)
     (simulateQ liftEvents ((fun fin => hidden + tag + fin) <$> event 3)) (pure ⟨⟩)).trans ?_
-  simp [simulate_event]
+  simp
   rfl
 
 /-- Against the challenge sampler the prover draws the first challenge, runs event `2`, draws
@@ -195,14 +193,15 @@ theorem run_wholeProver (hidden : ℕ) (bump : K) :
           (_ : PathAlong oracleSig (protocol K 1 2)) × ℕ × PUnit)) := by
   rw [wholeProver, simulate_consProver, run_consProver]
   refine bind_congr fun r => ?_
-  rw [simulate_joinSlot, run_joinSlot]
+  rw [Prover.simulate_joinSlot, run_joinSlot]
   simp only [simulateQ_map, Functor.map_map, bind_map_left, simulate_event, bind_assoc]
   refine bind_congr fun tag => ?_
   rw [simulate_consProver, run_consProver]
   simp only [bind_assoc]
   refine bind_congr fun s => ?_
   erw [run_finish]
-  simp
+  simp only [bind_assoc]
+  rfl
 
 /-- A message query is answered by evaluating the message. -/
 theorem simulate_messageAt (msg : K⦃≤ 1⦄[X]) (chal x : K) :
@@ -253,14 +252,15 @@ theorem compatible_output (target r : K) (msg : K⦃≤ 1⦄[X])
     (tail : PathAlong oracleSig (protocol K 1 1)) (x : ∀ i, Spec.OracleStatement K 2 1 i) :
     (compatible.outputMap target _
         (toView ((round K 1).append fun _ => protocol K 1 1) ⟨msg, ⟨r, tail⟩⟩)).f
-      (sumData x (payloads ((round K 1).append fun _ => protocol K 1 1) ⟨msg, ⟨r, tail⟩⟩)) =
+      ((x, (payloads ((round K 1).append fun _ => protocol K 1 1) ⟨msg, ⟨r, tail⟩⟩))) =
       fun _ => exportPoly r (x ()) msg := by
   funext u
-  change (OracleVerifier.suffixRoute firstVerifier target _
+  change ((OracleVerifier.suffixRoute firstVerifier target _
     (toView ((round K 1).append fun _ => protocol K 1 1) ⟨msg, ⟨r, tail⟩⟩)).f
-      (sumData x (payloads ((round K 1).append fun _ => protocol K 1 1) ⟨msg, ⟨r, tail⟩⟩))
-      (.inl u) = _
-  exact congrFun (suffixRoute_round events _ firstCheck exportOut target x msg r tail) (.inl u)
+      ((x, (payloads ((round K 1).append fun _ => protocol K 1 1) ⟨msg, ⟨r, tail⟩⟩)))
+      ).1 u = _
+  exact congrFun (congrArg Prod.fst
+    (suffixRoute_round events _ firstCheck exportOut target x msg r tail)) u
 
 /-- The composite run of the whole prover: the two draws and the two events in protocol order,
 then the composite verdict. -/
@@ -272,7 +272,8 @@ theorem run_routed (target : K) (hidden : ℕ) (bump : K) (x : ∀ i, Spec.Oracl
       let fin ← eventE 3
       pure (⟨wholeTranscript bump r s, hidden + tag + fin, routedVerdict target bump x r s⟩ :
         Observation oracleSig (protocol K 1 2) (fun _ => ℕ)
-          (Spec.StatementRound K 1 (Fin.last 1) × ∀ i, Spec.OracleStatement K 1 1 i))) := by
+          (fun _ => Spec.StatementRound K 1 (Fin.last 1) ×
+            ∀ i, Spec.OracleStatement K 1 1 i))) := by
   refine (run_append_checkVerifier (s := protocol K 1 1) _ _ _ _ _ _ _ _ _).trans ?_
   erw [run_wholeProver]
   erw [LawfulMonad.bind_assoc]

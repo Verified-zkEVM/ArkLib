@@ -135,20 +135,6 @@ theorem samplerFrom_zero {M : Type → Type} [Monad M]
     (src : (i : pSpec.ChallengeIdx) → M (pSpec.Challenge i)) (k : ℕ) (h : k + 0 = n) :
     samplerFrom src k 0 h = (pure ⟨⟩ : M PUnit) := rfl
 
-/-- The node equation of `runWith`, as one local exchange. -/
-theorem runWith_liftBind {P : PFunctor.{1, 0}} {l : PFunctor.Lens P rolePoly.{0}}
-    {M : Type → Type} [Monad M] [LawfulMonad M] (order : Schedule)
-    (a : P.A) (rest : P.B a → FreeM P PUnit.{1})
-    {OutP OutC : PathAlong l (.liftBind a rest) → Type}
-    (p : Focal l M (.liftBind a rest) OutP)
-    (c : Counterpart l M (.liftBind a rest) OutC) :
-    runWith (l := l) (m := M) order (.liftBind a rest) p c =
-      step (owner l a) order p c (fun x pn cn =>
-        runWith (l := l) (m := M) order (rest (l.toFunB a x)) pn cn >>= fun r =>
-          pure (⟨⟨x, r.1⟩, r.2.1, r.2.2⟩ :
-            (t : PathAlong l (.liftBind a rest)) × OutP t × OutC t)) :=
-  runWith_node (l := l) (m := M) order a rest p c
-
 /-- A counterpart-first run whose first node is round `j`, with the embedded slot and a sampler
 whose draw at this node is the legacy challenge, is `processRound j` followed by the rest. -/
 theorem runWith_roundSlot {β Out : Type}
@@ -177,7 +163,9 @@ theorem runWith_roundSlot {β Out : Type}
           (Choice.map .focal _ q <$> roundSlot P j D hD st))
         (sampler plainSig _ draw) >>= G) =
       P.processRound j (pure (pre, st)) >>= F := by
-  rw [runWith_liftBind, step_bind, Prover.simulate_node, step_map_left, simulateQ_map,
+  rw [TwoParty.Lens.runWith_node]
+  simp only [interaction]
+  rw [step_bind, Prover.simulate_node, step_map_left, simulateQ_map,
     step_map_left]
   refine step_counterpartFirst_roundSlot P j D hD rest draw hdraw st pre F _ fun x st' => ?_
   simp only [bind_assoc, LawfulMonad.pure_bind]
@@ -218,14 +206,15 @@ end Node
 section Observation
 
 variable {StmtIn WitIn StmtOut WitOut : Type}
+  {StmtOutAt : Path (protocol pSpec) → Type}
 
 /-- Run an embedded interaction under `order`, in the legacy query monad, against a prover on the
 plain tree, then decide. The challenge oracle is the legacy `[pSpec.Challenge]ₒ`. -/
-def observeWith (order : Schedule) (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOut)
+def observeWith (order : Schedule) (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOutAt)
     (stmt : StmtIn) {Out : PathAlong plainSig (protocol pSpec) → Type}
     (p : Core.Prover plainSig oSpec (protocol pSpec) Out) :
     OracleComp (oSpec + [pSpec.Challenge]ₒ)
-      (Observation plainSig (protocol pSpec) Out StmtOut) := do
+      (Observation plainSig (protocol pSpec) Out StmtOutAt) := do
   let r ← runWith order (protocol pSpec) (p.simulate (liftShared oSpec pSpec))
     (legacySampler pSpec (challengeOracle oSpec pSpec))
   let verdict ← liftComp (V.decide stmt (projectPathAlong plainSig _ r.1)
@@ -238,7 +227,8 @@ abbrev LegacyResult (pSpec : ProtocolSpec n) (StmtOut WitOut : Type) :=
   Option ((FullTranscript pSpec × StmtOut × WitOut) × StmtOut)
 
 /-- Forget the rejected run and decode the transcript of an accepted one. -/
-def finalize (r : Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) StmtOut) :
+def finalize
+    (r : Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) (fun _ => StmtOut)) :
     LegacyResult pSpec StmtOut WitOut :=
   r.2.2.map fun t => ((decode pSpec r.1, r.2.1), t)
 
@@ -349,27 +339,6 @@ theorem stateless_query_inr (impl : QueryImpl ambient (StateT σ ProbComp))
     rw [expHandler, QueryImpl.addLift_def, QueryImpl.simulateQ_add_liftM_query_right]
     simp [map_eq_bind_pure_comp]⟩
 
-theorem sampler_message {M : Type → Type} [Monad M] [LawfulMonad M] (X : Type)
-    (rest : X → Protocol.{0})
-    (draw : (c : ChallengeNode plainSig (.liftBind (PlainPos.message X) rest)) →
-      M (challengeSpec plainSig (.liftBind (PlainPos.message X) rest) c)) :
-    sampler plainSig (.liftBind (PlainPos.message X) rest) draw =
-      pure (fun x => sampler plainSig (rest x) (fun c => draw ⟨.inr ⟨x, c.val⟩, c.property⟩)) := by
-  change Choice.map .counterpart .sender _ <$> pure _ = _
-  erw [LawfulApplicative.map_pure]
-  rfl
-
-theorem sampler_challenge {M : Type → Type} [Monad M] [LawfulMonad M] (C : Type)
-    (rest : PUnit → Protocol.{0})
-    (draw : (c : ChallengeNode plainSig (.liftBind (PlainPos.challenge C) rest)) →
-      M (challengeSpec plainSig (.liftBind (PlainPos.challenge C) rest) c)) :
-    sampler plainSig (.liftBind (PlainPos.challenge C) rest) draw =
-      (fun x => ⟨x, sampler plainSig (rest ⟨⟩)
-        (fun c => draw ⟨.inr ⟨⟨⟩, c.val⟩, c.property⟩)⟩) <$> draw ⟨.inl ⟨⟩, rfl⟩ := by
-  change Choice.map .counterpart .receiver _ <$> (_ <$> _) = _
-  erw [Functor.map_map]
-  rfl
-
 /-- **Exchange in distribution.** On any plain tree, when every challenge draw is stateless,
 the two schedules give the same distribution of output and final state, for every prover. -/
 theorem distEqFrom_runWith (impl : QueryImpl ambient (StateT σ ProbComp))
@@ -390,14 +359,14 @@ theorem distEqFrom_runWith (impl : QueryImpl ambient (StateT σ ProbComp))
     refine bind_congr fun a => ?_
     erw [LawfulMonad.pure_bind]
   | .liftBind (.message X) rest, _, p, draw, hdraw => by
-    rw [runWith_liftBind, runWith_liftBind, sampler_message]
-    simp only [step, Schedule.seq, owner_plain_message, LawfulMonad.pure_bind]
+    rw [TwoParty.Lens.runWith_node, TwoParty.Lens.runWith_node, sampler_message]
+    simp only [interaction, step, Schedule.seq, owner_plain_message, LawfulMonad.pure_bind]
     refine DistEqFrom.bind (DistEqFrom.refl _) fun v => DistEqFrom.bind ?_ fun _ =>
       DistEqFrom.refl _
     exact distEqFrom_runWith impl chImpl (rest v.1) v.2 _ fun c => hdraw _
   | .liftBind (.challenge C) rest, _, p, draw, hdraw => by
-    rw [runWith_liftBind, runWith_liftBind, sampler_challenge]
-    simp only [step, Schedule.seq, owner_plain_challenge, bind_map_left]
+    rw [TwoParty.Lens.runWith_node, TwoParty.Lens.runWith_node, sampler_challenge]
+    simp only [interaction, step, Schedule.seq, owner_plain_challenge, bind_map_left]
     refine DistEqFrom.trans (DistEqFrom.bind (DistEqFrom.refl _) fun f =>
       DistEqFrom.bind (DistEqFrom.refl _) fun x => DistEqFrom.bind
         (distEqFrom_runWith impl chImpl (rest ⟨⟩) (f x) _ fun c => hdraw _)
@@ -406,88 +375,12 @@ theorem distEqFrom_runWith (impl : QueryImpl ambient (StateT σ ProbComp))
 
 end Exchange
 
-/-! ### Simulating a run -/
-
-section Simulate
-
-variable {κ κ' : Type} {spec : OracleSpec κ} {spec' : OracleSpec κ'}
-
-/-- Simulating a simulated prover composes the two handlers. -/
-theorem simulate_simulate {P : PFunctor.{1, 0}} {l : PFunctor.Lens P rolePoly.{0}}
-    {κ'' : Type} {spec'' : OracleSpec κ''}
-    (F : QueryImpl spec' (OracleComp spec'')) (G : QueryImpl spec (OracleComp spec')) :
-    (s : FreeM P PUnit.{1}) → {Out : PathAlong l s → Type} →
-    (p : Core.Prover l spec s Out) →
-    Prover.simulate F (Prover.simulate G p) = Prover.simulate (fun q => simulateQ F (G q)) p
-  | .pure _, _, p => by
-    rw [Prover.simulate_done, Prover.simulate_done, Prover.simulate_done]
-    exact QueryImpl.simulateQ_simulateQ_eq_of_apply (fun _ => rfl) p
-  | .liftBind a rest, _, p => by
-    rw [Prover.simulate_node, Prover.simulate_node, Prover.simulate_node, simulateQ_map,
-      Functor.map_map, QueryImpl.simulateQ_simulateQ_eq_of_apply (fun _ => rfl) p]
-    refine congrArg (· <$> _) (funext fun v => ?_)
-    refine (congrFun (Choice.map_comp _ _ _ _) v).trans ?_
-    exact congrArg (fun f => Choice.map .focal (owner l a) f v)
-      (funext fun x => funext fun r => simulate_simulate F G _ r)
-
-/-- Simulating a run against a public-coin sampler simulates every prover slot and every draw. -/
-theorem simulateQ_runWith (F : QueryImpl spec (OracleComp spec')) (order : Schedule) :
-    (s : Protocol.{0}) → {Out : PathAlong plainSig s → Type} →
-    (p : Focal plainSig (OracleComp spec) s Out) →
-    (draw : (c : ChallengeNode plainSig s) → OracleComp spec (challengeSpec plainSig s c)) →
-    simulateQ F (runWith order s p (sampler plainSig s draw)) =
-      runWith order s (Prover.simulate F p)
-        (sampler plainSig s (fun c => simulateQ F (draw c)))
-  | .pure ⟨⟩, _, p, _ => by
-    erw [runWith_done, runWith_done]
-    cases order <;> simp only [Schedule.seq, simulateQ_bind, simulateQ_pure] <;> rfl
-  | .liftBind (.message X) rest, _, p, draw => by
-    rw [runWith_liftBind, runWith_liftBind, sampler_message, sampler_message]
-    rw [Prover.simulate_node]
-    cases order
-    · simp only [step, Schedule.seq, owner_plain_message]
-      erw [simulateQ_bind, bind_map_left]
-      refine bind_congr fun v => ?_
-      erw [LawfulMonad.pure_bind, LawfulMonad.pure_bind, simulateQ_bind,
-        simulateQ_runWith F .focalFirst (rest v.1) v.2]
-      refine bind_congr fun r => ?_
-      erw [simulateQ_pure]
-      rfl
-    · simp only [step, Schedule.seq, owner_plain_message]
-      erw [LawfulMonad.pure_bind, LawfulMonad.pure_bind, simulateQ_bind, bind_map_left]
-      refine bind_congr fun v => ?_
-      erw [simulateQ_bind, simulateQ_runWith F .counterpartFirst (rest v.1) v.2]
-      refine bind_congr fun r => ?_
-      erw [simulateQ_pure]
-      rfl
-  | .liftBind (.challenge C) rest, _, p, draw => by
-    rw [runWith_liftBind, runWith_liftBind, sampler_challenge, sampler_challenge]
-    rw [Prover.simulate_node]
-    cases order
-    · simp only [step, Schedule.seq, owner_plain_challenge, bind_map_left]
-      erw [simulateQ_bind]
-      refine bind_congr fun f => ?_
-      erw [simulateQ_bind]
-      refine bind_congr fun x => ?_
-      erw [simulateQ_bind, simulateQ_runWith F .focalFirst (rest ⟨⟩) (f x)]
-      refine bind_congr fun r => ?_
-      erw [simulateQ_pure]
-    · simp only [step, Schedule.seq, owner_plain_challenge, bind_map_left]
-      erw [simulateQ_bind]
-      refine bind_congr fun x => ?_
-      erw [simulateQ_bind]
-      refine bind_congr fun f => ?_
-      erw [simulateQ_bind, simulateQ_runWith F .counterpartFirst (rest ⟨⟩) (f x)]
-      refine bind_congr fun r => ?_
-      erw [simulateQ_pure]
-
-end Simulate
-
 /-! ### The default schedule -/
 
 section Bridge
 
 variable {StmtIn WitIn StmtOut WitOut : Type}
+  {StmtOutAt : Path (protocol pSpec) → Type}
 
 /-- Answer the challenge queries of a layout's tree with the legacy challenge oracle. -/
 def Layout.challengeReindex (L : Layout pSpec) (oSpec : OracleSpec ι) :
@@ -520,12 +413,12 @@ theorem simulateQ_challengeReindex_run {Out : PathAlong plainSig (protocol pSpec
       (liftM ((oSpec + challengeSpec plainSig (protocol pSpec)).query (.inr c)))) =
       legacyDraw (challengeOracle oSpec pSpec) 0 n (Nat.zero_add n) :=
     funext fun c => QueryImpl.simulateQ_add_liftM_query_right _ _ c
-  rw [TwoParty.Lens.run, simulateQ_runWith, simulate_simulate, hl, hr]
+  rw [TwoParty.Lens.run, simulateQ_runWith_sampler, Prover.simulate_simulate, hl, hr]
   rfl
 
 /-- The run of the interaction layer, with its challenges answered by the legacy challenge
 oracle, is the focal-first observation. -/
-theorem simulateQ_verifier_run (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOut)
+theorem simulateQ_verifier_run (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOutAt)
     (stmt : StmtIn) {Out : PathAlong plainSig (protocol pSpec) → Type}
     (p : Core.Prover plainSig oSpec (protocol pSpec) Out) :
     simulateQ (challengeReindex oSpec pSpec) (V.run stmt p) = observeWith .focalFirst V stmt p := by
@@ -623,6 +516,7 @@ end Bridge
 section Distribution
 
 variable {StmtIn WitIn StmtOut WitOut σ : Type}
+  {StmtOutAt : Path (protocol pSpec) → Type}
 
 theorem DistEqFrom.map {κ : Type} {ambient : OracleSpec ι} {chal : OracleSpec κ}
     {impl : QueryImpl ambient (StateT σ ProbComp)} {chImpl : QueryImpl chal ProbComp}
@@ -646,7 +540,7 @@ theorem experiment_evalDistEq {κ : Type} {ambient : OracleSpec ι} {chal : Orac
 /-- The two schedules of the legacy observation agree in distribution, for every prover. -/
 theorem distEqFrom_observeWith (impl : QueryImpl oSpec (StateT σ ProbComp))
     (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp)
-    (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOut) (stmt : StmtIn)
+    (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOutAt) (stmt : StmtIn)
     {Out : PathAlong plainSig (protocol pSpec) → Type}
     (p : Core.Prover plainSig oSpec (protocol pSpec) Out) :
     DistEqFrom impl chImpl (observeWith .focalFirst V stmt p)
@@ -659,10 +553,10 @@ reindexed challenge implementation has the distribution of the legacy-indexed ob
 the counterpart-first schedule. -/
 theorem experiment_verifier_run_evalDistEq (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp)) (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp)
-    (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOut) (stmt : StmtIn)
+    (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOutAt) (stmt : StmtIn)
     {Out : PathAlong plainSig (protocol pSpec) → Type}
     (p : Core.Prover plainSig oSpec (protocol pSpec) Out) {β : Type}
-    (f : Observation plainSig (protocol pSpec) Out StmtOut → β) :
+    (f : Observation plainSig (protocol pSpec) Out StmtOutAt → β) :
     experiment init impl (plainChallengeImpl chImpl) (f <$> V.run stmt p) =ᵈ
       experiment init impl chImpl (f <$> observeWith .counterpartFirst V stmt p) := by
   rw [experiment_challengeReindex, simulateQ_map, simulateQ_verifier_run]
@@ -701,6 +595,7 @@ end Distribution
 section PureSlots
 
 variable {StmtIn WitIn StmtOut WitOut : Type}
+  {StmtOutAt : Path (protocol pSpec) → Type}
 
 /-- A legacy prover whose `receiveChallenge` has no effect before the challenge arrives. -/
 def PureChallengeSlots (P : _root_.Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) : Prop :=
@@ -775,7 +670,7 @@ theorem pureObservers_embedFrom (P : _root_.Prover oSpec StmtIn WitIn StmtOut Wi
 pure, the default and counterpart-first schedules of the embedded execution are the same
 program. -/
 theorem observeWith_focalFirst_eq (P : _root_.Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
-    (hP : PureChallengeSlots P) (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOut)
+    (hP : PureChallengeSlots P) (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOutAt)
     (stmt : StmtIn) (wit : WitIn) :
     observeWith .focalFirst V stmt (embedProver P stmt wit) =
       observeWith .counterpartFirst V stmt (embedProver P stmt wit) := by

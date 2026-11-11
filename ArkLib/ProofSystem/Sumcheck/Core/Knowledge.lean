@@ -35,7 +35,8 @@ Sumcheck: `deg / |R|` for each challenge. -/
 theorem verifier_knowledgeSoundness [Fintype R] [IsDomain R] :
     letI : MeasurableSpace (Observation oracleSig (protocol R deg n)
       (fun _ => (Spec.StatementRound R n (Fin.last n) × (∀ i, Spec.OracleStatement R n deg i)) ×
-        Unit) (Spec.StatementRound R n (Fin.last n) × (∀ i, Spec.OracleStatement R n deg i))) := ⊤
+        Unit) (fun _ => Spec.StatementRound R n (Fin.last n) × (∀ i, Spec.OracleStatement R n deg
+          i))) := ⊤
     letI : MeasurableSpace Unit := ⊤
     knowledgeSoundness ((verifier R deg n D ambient).classicalModel init impl
         (challengeQueryImpl oracleSig (protocol R deg n)))

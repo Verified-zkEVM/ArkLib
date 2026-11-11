@@ -6,7 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Interaction.Core.Composition
-public import ArkLib.ProofSystem.Sumcheck.Spec.PolynomialInterface
+public import ArkLib.ProofSystem.Sumcheck.Core.Types
 
 /-!
 # One Sumcheck round in the interaction layer
@@ -19,11 +19,6 @@ the remaining protocol.
 The honest round strategy has a `pure` slot at the challenge node and a `pure` leaf. It reacts to
 the challenge only by choosing its pure continuation, as the legacy `receiveChallenge` does.
 
-A round of a multivariate statement sees the multivariate input through `projectionMap`, the
-oracle map from the multivariate polynomial to the univariate round polynomial. Its data map is
-the legacy `Spec.SingleRound.projectedRoundPolynomial`, and its query implementation is the legacy
-`Spec.SingleRound.simulateProjectedRoundPolynomial`, which answers a univariate evaluation query
-with one multivariate query per point of the remaining domain.
 -/
 
 @[expose] public section
@@ -98,50 +93,24 @@ def roundProver {m : Type → Type} [Monad m] {Out : PathAlong oracleSig (round 
     Focal oracleSig m (round R deg) Out :=
   pure ⟨msg, pure fun chal => pure (next chal)⟩
 
-/-! ## The projection map -/
-
-section Projection
-
-variable (R deg) (n : ℕ) {d : ℕ} (D : Fin d ↪ R)
-
-/-- The univariate round polynomial with evaluation queries. -/
-noncomputable def messageFamily : OracleFamily Unit (Spec.SingleRound.Simple.OStmtIn R deg) :=
-  ⟨fun _ => inferInstance⟩
-
-/-- The projection of the multivariate input to the univariate polynomial of round `i`: the sum of
-the input over the remaining domain, with the earlier variables fixed to the statement's
-challenges. A univariate evaluation query makes one multivariate query per remaining point. -/
-noncomputable def projectionMap (i : Fin n) (stmt : Spec.StatementRound R n i.castSucc) :
-    OracleMap (Spec.polynomialFamily R n deg) (messageFamily R deg) where
-  f x _ := Spec.SingleRound.projectedRoundPolynomial R n deg D i stmt.challenges (x ())
-  impl := Spec.SingleRound.simulateProjectedRoundPolynomial R n deg D i stmt
-  law x q := Spec.SingleRound.simulateProjectedRoundPolynomial_eq R n deg D i stmt x q
-
-variable {R deg n D}
-
-/-- The projected data is the legacy projected round polynomial. -/
-@[simp] theorem projectionMap_f (i : Fin n) (stmt : Spec.StatementRound R n i.castSucc)
-    (x : ∀ j, Spec.OracleStatement R n deg j) (u : Unit) :
-    (projectionMap R deg n D i stmt).f x u =
-      Spec.SingleRound.projectedRoundPolynomial R n deg D i stmt.challenges (x ()) := rfl
-
-/-- Answering a projected query from the multivariate input evaluates the projected round
-polynomial at the query point. -/
-theorem simulateQ_projectionMap (i : Fin n) (stmt : Spec.StatementRound R n i.castSucc)
-    (x : ∀ j, Spec.OracleStatement R n deg j) (r : R) :
-    simulateQ ((Spec.polynomialFamily R n deg).behaviorOfRealizations x)
-        ((projectionMap R deg n D i stmt).impl ⟨(), r⟩) =
-      (Spec.SingleRound.projectedRoundPolynomial R n deg D i stmt.challenges (x ())).val.eval
-        r :=
-  (projectionMap R deg n D i stmt).law x ⟨(), r⟩
-
-end Projection
+/-- Projection of a round followed by a suffix erases the round's two private branches. -/
+@[simp] theorem project_append_round {s : OracleProtocol} (msg : R⦃≤ deg⦄[X]) (chal : R)
+    (tail : PathAlong oracleSig s) :
+    projectPathAlong oracleSig ((round R deg).append fun _ => s) ⟨msg, ⟨chal, tail⟩⟩ =
+      ⟨⟨⟩, ⟨⟨⟩, projectPathAlong oracleSig s tail⟩⟩ := rfl
 
 section Run
 
 attribute [local implicit_reducible] projectPathAlong projectPathAlongLocalMap
   Displayed.LocalMap.toHom Displayed.LocalMap.toHomFun owner Node Node.position challengeSpec
   roundTranscript
+
+/-- Splitting the shape of a round followed by a suffix recovers the suffix shape. -/
+theorem split_round_suffix {s : OracleProtocol} (msg : R⦃≤ deg⦄[X]) (chal : R)
+    (tail : PathAlong oracleSig s) :
+    (Path.split (round R deg) (fun _ => s)
+      (projectPathAlong oracleSig _ ⟨msg, ⟨chal, tail⟩⟩)).2 =
+        projectPathAlong oracleSig s tail := rfl
 
 /-- The sampler of a round has a pure slot at the message node and draws at the challenge node. -/
 theorem samplerEnd_round {m : Type → Type} [Monad m]

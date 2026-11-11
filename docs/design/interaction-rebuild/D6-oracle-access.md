@@ -29,7 +29,7 @@ theorem payloadImpl_append : payloadImpl (append tr₁ tr₂) ≅ payloadImpl tr
 The index set depends on the path, because public messages select the suffix, but only through
 the shape path `p`, which the verifier sees (record D3). The decision is typed
 `StmtIn → (p : Path s) → View s p → OptionT (OracleComp (oSpec + [OStmtIn]ₒ + oracles s p))
-StmtOut`; in a run `p` is `projectPathAlong oracleSig s tr`, so `payloadImpl s tr` answers its
+(StmtOut p)`; in a run `p` is `projectPathAlong oracleSig s tr`, so `payloadImpl s tr` answers its
 queries from the same run without a cast (record D4). Round-by-round state functions and extractors read
 prefix payloads as transcript data, not through queries (record D7).
 
@@ -45,12 +45,14 @@ structure OracleMap (In : ιᵢ → Type) [∀ i, OracleInterface (In i)]
   law  : ∀ x q, simulateQ (answers x) (impl q) = pure (answer (f x) q)
 
 -- the output interface of an oracle reduction on tree `s`
-outputMap : StmtIn → (p : Path s) → View s p → OracleMap (OStmtIn + oracles s p) OStmtOut
+outputMap : StmtIn → (p : Path s) → View s p → OracleMap (OStmtIn + oracles s p) (OStmtOut p)
 ```
 
 The output map may read the input statement and the verifier view (challenges and public
-messages). `Out` is a fixed family `OStmtOut`. `impl` queries only the input oracle statements
-and the oracle messages on `p`, never the ambient oracles `oSpec`.
+messages). The output statement type `StmtOut p` and the output family `OStmtOut p` are indexed
+by the shape path `p`, so a public message may change both (see the open points below). `impl`
+queries only the input oracle statements and the oracle messages on `p`, never the ambient oracles
+`oSpec`.
 
 - An *embedding* (every output is an input oracle or an oracle message, renamed) is a smart
   constructor that ignores the statement and the view: `impl` asks one renamed query and `f`
@@ -150,5 +152,17 @@ same run; `oracles_append` on a composed oracle protocol.
 
 - **Open: where `OracleInterface` instances live** (record D1), which fixes how `oracles` reads
   interfaces from positions or from `Γ`.
-- **Fixed for the first milestone, not open:** the output family `OStmtOut` is fixed, as in the
-  legacy layer; a path-dependent output family is out of scope.
+- **Path-indexed outputs, not open.** The output statement type and the output oracle family are
+  indexed by the shape path: `StmtOut : Path s → Type u`, `J : Path s → Type uJ`,
+  `B : (p : Path s) → J p → Type u` and `outputs : (p : Path s) → OracleFamily (J p) (B p)`
+  (`OracleVerifier` in `OracleVerifier.lean`; the plain `Verifier` in `Reduction.lean` likewise).
+  The decision returns `StmtOut p` and the output map targets `outputs p`, so a public message may
+  change both, as in the frozen layer's `SourceRoutingDependentExample`. The shape path is public
+  and fixed before the decision, so no cast is needed in a run. In an append the composite's
+  output at a path of `s₁.append s₂` is the suffix's output at the split path (`splitFamily`,
+  `OracleVerifier.splitOutputs` in `Composition.lean`); PolyFun's `Path.LiftAppend` is the same
+  family by `liftAppend_split`. Security definitions index output languages and relations by the
+  path through `PathProblem`. A verifier with one output type and family uses the constant
+  families `fun _ => T` and `fun _ => OStmtOut`; the legacy embedding does so. The test
+  `ArkLibTest/Interaction/Core/Oracle/DependentRouting.lean` ports the frozen example, with the
+  Boolean sent by the prover because a passive verifier sends no messages.

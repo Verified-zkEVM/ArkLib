@@ -121,11 +121,6 @@ theorem numLeaves_eq_pow (tree : NestedEvaluationTree F k n) : tree.numLeaves = 
       simp only [numLeaves, ih, Finset.sum_const, Finset.card_univ, Fintype.card_fin,
         smul_eq_mul, pow_succ, mul_comm]
 
-/-- An index whose value is a successor is the `Fin.succ` of the corresponding index. -/
-private theorem eq_succ_of_val_eq_succ {n : ℕ} {i : Fin (n + 1)} {j : Fin n}
-    (h : i.val = j.val + 1) : i = j.succ :=
-  Fin.ext (by simpa using h)
-
 section ZeroTest
 
 variable [CommRing F] [IsDomain F]

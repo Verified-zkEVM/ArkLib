@@ -29,6 +29,8 @@ also gives equal decision logs (`runWithLog_eq_of_decide_eq`).
 
 @[expose] public section
 
+universe uK
+
 namespace Interaction.Core.OracleVerifier
 open scoped ENNReal
 open PFunctor FreeM TwoParty.Lens Oracle OracleComp OracleSpec
@@ -37,26 +39,26 @@ open PFunctor FreeM TwoParty.Lens Oracle OracleComp OracleSpec
 
 section Agree
 variable {ι I J S T : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
-  {A : I → Type} {B : J → Type} {inputs : OracleFamily I A} {outputs : OracleFamily J B}
+  {A : I → Type} {B : J → Type} {inputs : OracleFamily.{0, 0, 0} I A} {outputs : OracleFamily J B}
 
 /-- Two oracle verifiers on the same tree agree on every completed run: their decisions, with the
 input and path oracles answered from the actual data and ambient queries answered in any lawful
 monad, are the same program, and their output data agree. -/
-def Agrees (V V' : OracleVerifier ambient s S T inputs outputs) : Prop :=
+def Agrees (V V' : OracleVerifier ambient s S (fun _ => T) inputs (fun _ => outputs)) : Prop :=
   ∀ (stmt : S) (data : ∀ i, A i) (tr : PathAlong oracleSig s),
     (∀ (m : Type → Type) [Monad m] [LawfulMonad m] (amb : QueryImpl ambient m),
-      simulateQ (QueryImpl.addLift (r := m) amb ((sumFamily inputs
-          (pathFamily s (projectPathAlong oracleSig s tr))).behaviorOfRealizations
-            (sumData data (payloads s tr))))
+      simulateQ (QueryImpl.addLift (r := m) amb ((pathResources inputs s (projectPathAlong
+        oracleSig s tr)).answer
+          (data, payloads s tr)))
           (V.decide stmt _ (toView s tr)).run =
-        simulateQ (QueryImpl.addLift (r := m) amb ((sumFamily inputs
-          (pathFamily s (projectPathAlong oracleSig s tr))).behaviorOfRealizations
-            (sumData data (payloads s tr))))
+        simulateQ (QueryImpl.addLift (r := m) amb ((pathResources inputs s (projectPathAlong
+          oracleSig s tr)).answer
+          (data, payloads s tr)))
           (V'.decide stmt _ (toView s tr)).run) ∧
-    (V.outputMap stmt _ (toView s tr)).f (sumData data (payloads s tr)) =
-      (V'.outputMap stmt _ (toView s tr)).f (sumData data (payloads s tr))
+    (V.outputMap stmt _ (toView s tr)).f (data, payloads s tr) =
+      (V'.outputMap stmt _ (toView s tr)).f (data, payloads s tr)
 
-variable {V V' : OracleVerifier ambient s S T inputs outputs}
+variable {V V' : OracleVerifier ambient s S (fun _ => T) inputs (fun _ => outputs)}
 
 /-- Verifiers whose decisions on every completed run are the same program, and whose output data
 agree, agree. -/
@@ -64,8 +66,8 @@ theorem Agrees.of_decide_eq
     (hd : ∀ (stmt : S) (tr : PathAlong oracleSig s),
       V.decide stmt _ (toView s tr) = V'.decide stmt _ (toView s tr))
     (ho : ∀ (stmt : S) (data : ∀ i, A i) (tr : PathAlong oracleSig s),
-      (V.outputMap stmt _ (toView s tr)).f (sumData data (payloads s tr)) =
-        (V'.outputMap stmt _ (toView s tr)).f (sumData data (payloads s tr))) :
+      (V.outputMap stmt _ (toView s tr)).f (data, payloads s tr) =
+        (V'.outputMap stmt _ (toView s tr)).f (data, payloads s tr)) :
     Agrees V V' := fun stmt data tr =>
   ⟨fun _ _ _ _ => by rw [hd], ho stmt data tr⟩
 
@@ -85,8 +87,8 @@ theorem runWithLog_eq_of_decide_eq
     (hd : ∀ (stmt : S) (tr : PathAlong oracleSig s),
       V.decide stmt _ (toView s tr) = V'.decide stmt _ (toView s tr))
     (ho : ∀ (stmt : S) (data : ∀ i, A i) (tr : PathAlong oracleSig s),
-      (V.outputMap stmt _ (toView s tr)).f (sumData data (payloads s tr)) =
-        (V'.outputMap stmt _ (toView s tr)).f (sumData data (payloads s tr)))
+      (V.outputMap stmt _ (toView s tr)).f (data, payloads s tr) =
+        (V'.outputMap stmt _ (toView s tr)).f (data, payloads s tr))
     (stmt : S) (data : ∀ i, A i) {Out : PathAlong oracleSig s → Type}
     (p : Prover oracleSig ambient s Out) :
     V.runWithLog stmt data p = V'.runWithLog stmt data p := by
@@ -98,7 +100,7 @@ theorem runWithLog_eq_of_decide_eq
 theorem Agrees.validAcceptance_iff (h : Agrees V V') {σ : Type}
     (impl : QueryImpl ambient (StateT σ ProbComp)) (langOut : T × (∀ j, B j) → Prop)
     (stmt : S × (∀ i, A i)) (tr : PathAlong oracleSig s) :
-    V.validAcceptance impl langOut stmt tr ↔ V'.validAcceptance impl langOut stmt tr := by
+    V.validAcceptance impl stmt tr langOut ↔ V'.validAcceptance impl stmt tr langOut := by
   obtain ⟨d, o⟩ := h stmt.1 stmt.2 tr
   simp only [OracleVerifier.validAcceptance, d, o]
 
@@ -109,32 +111,16 @@ theorem Agrees.extractionGame_eq (h : Agrees V V') {Out Wout : PathAlong oracleS
     (E : Extractor.OracleStraightline ambient s Witness Wout)
     (stmt : S × (∀ i, A i)) (p : Prover oracleSig ambient s Out) :
     V.extractionGame readOut E stmt p = V'.extractionGame readOut E stmt p := by
-  have key : ∀ W : OracleVerifier ambient s S T inputs outputs,
-      W.extractionGame readOut E stmt p =
-        (((fun z => (z.1, z.2.1, z.2.2.fst)) <$> W.runWithLog stmt.1 stmt.2 p) >>= fun y =>
-          match y.1.2.2 with
-          | none => pure (y.1, none)
-          | some _ => (fun ex => (y.1, ex)) <$> OracleComp.liftComp
-              (E stmt y.1.1 (readOut y.1.1 y.1.2.1) y.2.1 y.2.2).run
-              (ambient + challengeSpec oracleSig s) :
-          OracleComp (ambient + challengeSpec oracleSig s)
-            (Observation oracleSig s Out (T × (∀ j, B j)) × Option (Witness stmt))) := by
-    intro W
-    rw [bind_map_left, OracleVerifier.extractionGame]
-    refine bind_congr fun x => ?_
-    rcases x with ⟨⟨tr, out, _ | v⟩, pl, vl⟩ <;> simp
-  rw [key, key, OracleVerifier.runWithLog_fst, OracleVerifier.runWithLog_fst, bind_assoc,
-    bind_assoc]
+  simp only [OracleVerifier.extractionGame, runWithAmbientLog, bind_assoc]
   refine bind_congr (m := OracleComp (ambient + challengeSpec oracleSig s)) fun x => ?_
   obtain ⟨d, o⟩ := h stmt.1 stmt.2 x.1.1
-  dsimp only
   rw [d, o]
 
 variable {σ : Type}
 
 /-- Agreeing verifiers have the same classical model. -/
 theorem Agrees.classicalModel_eq (h : Agrees V V') {Out : PathAlong oracleSig s → Type}
-    [MeasurableSpace (Observation oracleSig s Out (T × (∀ j, B j)))] (init : ProbComp σ)
+    [MeasurableSpace (Observation oracleSig s Out (fun _ => T × (∀ j, B j)))] (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp) :
     V.classicalModel (Out := Out) init impl draw = V'.classicalModel init impl draw := by
@@ -143,12 +129,13 @@ theorem Agrees.classicalModel_eq (h : Agrees V V') {Out : PathAlong oracleSig s 
 /-- Agreeing verifiers are knowledge sound together in the classical straight-line interface, for
 every family of output witnesses. -/
 theorem Agrees.knowledgeSoundness_iff (h : Agrees V V') {Out Wout : PathAlong oracleSig s → Type}
-    [mObs : MeasurableSpace (Observation oracleSig s Out (T × (∀ j, B j)))]
+    [mObs : MeasurableSpace (Observation oracleSig s Out (fun _ => T × (∀ j, B j)))]
     (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp) (readOut : ∀ tr, Out tr → Wout tr)
-    (input : StatementProblem (S × (∀ i, A i))) (output : StatementProblem (T × (∀ j, B j)))
+    (input : StatementProblem (S × (∀ i, A i))) (output : PathProblem s (fun _ => T × (∀ j, B j)))
     [mWit : ∀ stmt, MeasurableSpace (input.Witness () stmt)]
-    (J : OutputJudgement (Observation oracleSig s Out (T × (∀ j, B j))) _ output) (ε : ℝ≥0∞) :
+    (J : OutputJudgement (Observation oracleSig s Out (fun _ => T × (∀ j, B j))) output)
+    (ε : ℝ≥0∞) :
     knowledgeSoundness (V.classicalModel init impl draw) input output J
         (V.classicalStraightline (input.Witness ()) init impl draw readOut) ε ↔
       knowledgeSoundness (V'.classicalModel init impl draw) input output J
@@ -158,23 +145,25 @@ theorem Agrees.knowledgeSoundness_iff (h : Agrees V V') {Out Wout : PathAlong or
 
 /-- Agreeing verifiers are sound together. -/
 theorem Agrees.soundness_iff (h : Agrees V V') {Out : PathAlong oracleSig s → Type}
-    [mObs : MeasurableSpace (Observation oracleSig s Out (T × (∀ j, B j)))]
+    [mObs : MeasurableSpace (Observation oracleSig s Out (fun _ => T × (∀ j, B j)))]
     (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp)
-    (input : StatementProblem (S × (∀ i, A i))) (output : StatementProblem (T × (∀ j, B j)))
-    (verdict : Observation oracleSig s Out (T × (∀ j, B j)) → Option (T × (∀ j, B j)))
+    (input : StatementProblem (S × (∀ i, A i))) (output : PathProblem s (fun _ => T × (∀ j, B j)))
+    (verdict : Observation oracleSig s Out (fun _ => T × (∀ j, B j)) → Option (T × (∀ j, B j)))
     (ε : ℝ≥0∞) :
-    soundness (V.classicalModel init impl draw) input output verdict ε ↔
-      soundness (V'.classicalModel init impl draw) input output verdict ε := by
+    Core.soundness (V.classicalModel init impl draw) input output
+        (fun obs => projectPathAlong oracleSig s obs.1) verdict ε ↔
+      Core.soundness (V'.classicalModel init impl draw) input output
+        (fun obs => projectPathAlong oracleSig s obs.1) verdict ε := by
   rw [h.classicalModel_eq]
 
 /-- Agreeing verifiers are complete together, for the same honest prover. -/
 theorem Agrees.completeness_iff (h : Agrees V V') {Out : PathAlong oracleSig s → Type}
-    [mObs : MeasurableSpace (Observation oracleSig s Out (T × (∀ j, B j)))]
+    [mObs : MeasurableSpace (Observation oracleSig s Out (fun _ => T × (∀ j, B j)))]
     (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp)
-    (input : StatementProblem (S × (∀ i, A i))) (output : StatementProblem (T × (∀ j, B j)))
-    (J : OutputJudgement (Observation oracleSig s Out (T × (∀ j, B j))) _ output)
+    (input : StatementProblem (S × (∀ i, A i))) (output : PathProblem s (fun _ => T × (∀ j, B j)))
+    (J : OutputJudgement (Observation oracleSig s Out (fun _ => T × (∀ j, B j))) output)
     (honest : ∀ stmt, input.Witness () stmt → Prover oracleSig ambient s Out) (ε : ℝ≥0∞) :
     completeness (V.classicalModel init impl draw) input output J honest ε ↔
       completeness (V'.classicalModel init impl draw) input output J honest ε := by
@@ -183,16 +172,23 @@ theorem Agrees.completeness_iff (h : Agrees V V') {Out : PathAlong oracleSig s �
 /-- Agreeing verifiers have the same valid-acceptance predicate. -/
 theorem Agrees.validAcceptance_eq (h : Agrees V V')
     (impl : QueryImpl ambient (StateT σ ProbComp)) (langOut : T × (∀ j, B j) → Prop) :
-    V.validAcceptance impl langOut = V'.validAcceptance impl langOut := by
+    (fun stmt tr => V.validAcceptance impl stmt tr langOut) =
+      (fun stmt tr => V'.validAcceptance impl stmt tr langOut) := by
   funext stmt tr
   exact propext (h.validAcceptance_iff impl langOut stmt tr)
 
 /-- Agreeing verifiers are round-by-round sound together. -/
 theorem Agrees.rbrSoundness_iff (h : Agrees V V') (impl : QueryImpl ambient (StateT σ ProbComp))
-    (input : StatementProblem (S × (∀ i, A i))) (output : StatementProblem (T × (∀ j, B j)))
+    (input : StatementProblem (S × (∀ i, A i))) (output : PathProblem s (fun _ => T × (∀ j, B j)))
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp) (ε : ChallengeNode oracleSig s → ℝ≥0∞) :
     V.rbrSoundness impl input output draw ε ↔ V'.rbrSoundness impl input output draw ε := by
-  simp only [OracleVerifier.rbrSoundness, h.validAcceptance_eq]
+  have eq : (fun stmt tr => V.validAcceptance impl stmt tr
+      (output.language (projectPathAlong oracleSig s tr))) =
+      (fun stmt tr => V'.validAcceptance impl stmt tr
+        (output.language (projectPathAlong oracleSig s tr))) :=
+    funext fun stmt => funext fun tr => propext (h.validAcceptance_iff impl _ stmt tr)
+  unfold OracleVerifier.rbrSoundness
+  rw [eq]
 
 /-- Agreeing verifiers are round-by-round knowledge sound together, for every family of output
 witnesses and every transcript-indexed output relation. -/
@@ -201,9 +197,14 @@ theorem Agrees.rbrKnowledgeSoundness_iff (h : Agrees V V') {Win : Type}
     (admissible : S × (∀ i, A i) → Prop) (relIn : (S × (∀ i, A i)) → Win → Prop)
     (relOut : (tr : PathAlong oracleSig s) → (T × (∀ j, B j)) → W tr → Prop)
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp) (ε : ChallengeNode oracleSig s → ℝ≥0∞) :
-    V.rbrKnowledgeSoundness impl admissible relIn relOut draw ε ↔
-      V'.rbrKnowledgeSoundness impl admissible relIn relOut draw ε := by
-  simp only [OracleVerifier.rbrKnowledgeSoundness, h.validAcceptance_eq]
+    V.rbrKnowledgeSoundness.{0, 0, uK} impl admissible relIn relOut draw ε ↔
+      V'.rbrKnowledgeSoundness.{0, 0, uK} impl admissible relIn relOut draw ε := by
+  have eq : (fun stmt tr wit => V.validAcceptance impl stmt tr (fun t => relOut tr t wit)) =
+      (fun stmt tr wit => V'.validAcceptance impl stmt tr (fun t => relOut tr t wit)) :=
+    funext fun stmt => funext fun tr => funext fun _ =>
+      propext (h.validAcceptance_iff impl _ stmt tr)
+  unfold OracleVerifier.rbrKnowledgeSoundness
+  rw [eq]
 
 end Agree
 
@@ -211,39 +212,45 @@ end Agree
 
 section Cast
 variable {ι I J S T σ : Type} {ambient : OracleSpec ι} {s s' : OracleProtocol}
-  {A : I → Type} {B : J → Type} {inputs : OracleFamily I A} {outputs : OracleFamily J B}
+  {A : I → Type} {B : J → Type} {inputs : OracleFamily.{0, 0, 0} I A} {outputs : OracleFamily J B}
 
 /-- Transporting a verifier along a tree equality does not change its decision on corresponding
 transcripts. -/
-theorem decide_cast (e : s' = s) (V : OracleVerifier ambient s' S T inputs outputs) (stmt : S)
+theorem decide_cast (e : s' = s) (V : OracleVerifier ambient s' S (fun _ => T) inputs (fun _ =>
+    outputs)) (stmt : S)
     (tr : PathAlong oracleSig s) (tr' : PathAlong oracleSig s') (htr : HEq tr tr') :
-    HEq ((e ▸ V : OracleVerifier ambient s S T inputs outputs).decide stmt _ (toView s tr))
+    HEq ((e ▸ V : OracleVerifier ambient s S (fun _ => T) inputs (fun _ => outputs)).decide stmt _
+      (toView s tr))
       (V.decide stmt _ (toView s' tr')) := by
   subst e; cases eq_of_heq htr; rfl
 
 /-- Transporting a verifier along a tree equality does not change its interpreted decision on
 corresponding transcripts. -/
-theorem simulateQ_decide_cast (e : s' = s) (V : OracleVerifier ambient s' S T inputs outputs)
+theorem simulateQ_decide_cast (e : s' = s) (V : OracleVerifier ambient s' S (fun _ => T) inputs
+    (fun _ => outputs))
     (stmt : S) (data : ∀ i, A i) (tr : PathAlong oracleSig s) (tr' : PathAlong oracleSig s')
     (htr : HEq tr tr') (m : Type → Type) [Monad m] [LawfulMonad m] (amb : QueryImpl ambient m) :
-    simulateQ (QueryImpl.addLift (r := m) amb ((sumFamily inputs
-        (pathFamily s (projectPathAlong oracleSig s tr))).behaviorOfRealizations
-          (sumData data (payloads s tr))))
-        ((e ▸ V : OracleVerifier ambient s S T inputs outputs).decide stmt _ (toView s tr)).run =
-      simulateQ (QueryImpl.addLift (r := m) amb ((sumFamily inputs
-        (pathFamily s' (projectPathAlong oracleSig s' tr'))).behaviorOfRealizations
-          (sumData data (payloads s' tr'))))
+    simulateQ (QueryImpl.addLift (r := m) amb ((pathResources inputs s (projectPathAlong oracleSig
+      s tr)).answer
+          (data, payloads s tr)))
+        ((e ▸ V : OracleVerifier ambient s S (fun _ => T) inputs (fun _ => outputs)).decide stmt _
+          (toView s tr)).run =
+      simulateQ (QueryImpl.addLift (r := m) amb ((pathResources inputs s' (projectPathAlong
+        oracleSig s' tr')).answer
+          (data, payloads s' tr')))
         (V.decide stmt _ (toView s' tr')).run := by
   subst e; cases eq_of_heq htr; rfl
 
 /-- Transporting a verifier along a tree equality does not change its output data on
 corresponding transcripts. -/
-theorem outputMap_cast (e : s' = s) (V : OracleVerifier ambient s' S T inputs outputs) (stmt : S)
+theorem outputMap_cast (e : s' = s) (V : OracleVerifier ambient s' S (fun _ => T) inputs (fun _ =>
+    outputs)) (stmt : S)
     (data : ∀ i, A i) (tr : PathAlong oracleSig s) (tr' : PathAlong oracleSig s')
     (htr : HEq tr tr') :
-    ((e ▸ V : OracleVerifier ambient s S T inputs outputs).outputMap stmt _ (toView s tr)).f
-        (sumData data (payloads s tr)) =
-      (V.outputMap stmt _ (toView s' tr')).f (sumData data (payloads s' tr')) := by
+    ((e ▸ V : OracleVerifier ambient s S (fun _ => T) inputs (fun _ => outputs)).outputMap stmt _
+      (toView s tr)).f
+        (data, payloads s tr) =
+      (V.outputMap stmt _ (toView s' tr')).f (data, payloads s' tr') := by
   subst e; cases eq_of_heq htr; rfl
 
 /-- Challenge oracles on equal trees are equal when they agree on corresponding nodes. -/
@@ -259,54 +266,58 @@ theorem eqRec_const (e : s' = s) (x : ℝ≥0∞) :
 
 /-- Transporting a verifier and its challenge oracle along a tree equality preserves soundness,
 for every prover output family. -/
-theorem soundness_cast (e : s' = s) (V : OracleVerifier ambient s' S T inputs outputs)
+theorem soundness_cast (e : s' = s) (V : OracleVerifier ambient s' S (fun _ => T) inputs (fun _ =>
+    outputs))
     (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
     (draw : QueryImpl (challengeSpec oracleSig s') ProbComp)
-    (input : StatementProblem (S × (∀ i, A i))) (output : StatementProblem (T × (∀ j, B j)))
+    (input : StatementProblem (S × (∀ i, A i))) (output : PathProblem s (fun _ => T × (∀ j, B j)))
     (ε : ℝ≥0∞) :
     (∀ Out : PathAlong oracleSig s → Type,
-      letI : MeasurableSpace (Observation oracleSig s Out (T × (∀ j, B j))) := ⊤
-      soundness ((e ▸ V).classicalModel (Out := Out) init impl (e ▸ draw)) input output
-        (fun obs => obs.2.2) ε) ↔
+      letI : MeasurableSpace (Observation oracleSig s Out (fun _ => T × (∀ j, B j))) := ⊤
+      Core.soundness ((e ▸ V).classicalModel (Out := Out) init impl (e ▸ draw)) input output
+        (fun obs => projectPathAlong oracleSig _ obs.1) (fun obs => obs.2.2) ε) ↔
     (∀ Out : PathAlong oracleSig s' → Type,
-      letI : MeasurableSpace (Observation oracleSig s' Out (T × (∀ j, B j))) := ⊤
-      soundness (V.classicalModel (Out := Out) init impl draw) input output
-        (fun obs => obs.2.2) ε) := by
+      letI : MeasurableSpace (Observation oracleSig s' Out (fun _ => T × (∀ j, B j))) := ⊤
+      Core.soundness (V.classicalModel (Out := Out) init impl draw) input (e.symm ▸ output)
+        (fun obs => projectPathAlong oracleSig _ obs.1) (fun obs => obs.2.2) ε) := by
   subst e; exact Iff.rfl
 
 /-- Transporting a verifier, its challenge oracle and its error along a tree equality preserves
 round-by-round soundness. -/
-theorem rbrSoundness_cast (e : s' = s) (V : OracleVerifier ambient s' S T inputs outputs)
+theorem rbrSoundness_cast (e : s' = s) (V : OracleVerifier ambient s' S (fun _ => T) inputs (fun _
+    => outputs))
     (impl : QueryImpl ambient (StateT σ ProbComp))
-    (input : StatementProblem (S × (∀ i, A i))) (output : StatementProblem (T × (∀ j, B j)))
+    (input : StatementProblem (S × (∀ i, A i))) (output : PathProblem s (fun _ => T × (∀ j, B j)))
     (draw : QueryImpl (challengeSpec oracleSig s') ProbComp)
     (ε : ChallengeNode oracleSig s' → ℝ≥0∞) :
     (e ▸ V).rbrSoundness impl input output (e ▸ draw) (e ▸ ε) ↔
-      V.rbrSoundness impl input output draw ε := by
+      V.rbrSoundness impl input (e.symm ▸ output) draw ε := by
   subst e; exact Iff.rfl
 
 /-- Transporting a verifier, its challenge oracle and its error along a tree equality preserves
 round-by-round knowledge soundness. The output witness family and the output relation, indexed
 by transcripts of the target tree, are read on the source tree through the transport of
 transcripts. -/
-theorem rbrKnowledgeSoundness_cast (e : s' = s) (V : OracleVerifier ambient s' S T inputs outputs)
+theorem rbrKnowledgeSoundness_cast (e : s' = s) (V : OracleVerifier ambient s' S (fun _ => T)
+    inputs (fun _ => outputs))
     {Win : Type} {W : PathAlong oracleSig s → Type} (impl : QueryImpl ambient (StateT σ ProbComp))
     (admissible : S × (∀ i, A i) → Prop) (relIn : (S × (∀ i, A i)) → Win → Prop)
     (relOut : (tr : PathAlong oracleSig s) → (T × (∀ j, B j)) → W tr → Prop)
     (draw : QueryImpl (challengeSpec oracleSig s') ProbComp)
     (ε : ChallengeNode oracleSig s' → ℝ≥0∞) :
-    (e ▸ V).rbrKnowledgeSoundness impl admissible relIn relOut (e ▸ draw) (e ▸ ε) ↔
-      V.rbrKnowledgeSoundness impl admissible relIn (W := fun tr => W (e ▸ tr))
+    (e ▸ V).rbrKnowledgeSoundness.{0, 0, uK} impl admissible relIn relOut (e ▸ draw) (e ▸ ε) ↔
+      V.rbrKnowledgeSoundness.{0, 0, uK} impl admissible relIn (W := fun tr => W (e ▸ tr))
         (fun tr => relOut (e ▸ tr)) draw ε := by
-  subst e; exact Iff.rfl
+  subst e
+  rfl
 
 /-- Transporting a verifier and a challenge reindexing along a tree equality, and the prover back,
 gives the same finalized program when the two finalizations agree on corresponding transcripts. -/
 theorem run_cast {X κ Y : Type} {spec : OracleSpec κ} (e : s' = s)
-    (V : OracleVerifier ambient s' S T inputs outputs)
+    (V : OracleVerifier ambient s' S (fun _ => T) inputs (fun _ => outputs))
     (impl : QueryImpl (ambient + challengeSpec oracleSig s') (OracleComp spec))
-    (f : Observation oracleSig s (fun _ => X) (T × (∀ j, B j)) → Y)
-    (g : Observation oracleSig s' (fun _ => X) (T × (∀ j, B j)) → Y)
+    (f : Observation oracleSig s (fun _ => X) (fun _ => T × (∀ j, B j)) → Y)
+    (g : Observation oracleSig s' (fun _ => X) (fun _ => T × (∀ j, B j)) → Y)
     (hfg : ∀ tr out v, f ⟨e ▸ tr, out, v⟩ = g ⟨tr, out, v⟩)
     (stmt : S) (data : ∀ i, A i) (p : Prover oracleSig ambient s (fun _ => X)) :
     simulateQ (e ▸ impl) (f <$> (e ▸ V).run stmt data p) =

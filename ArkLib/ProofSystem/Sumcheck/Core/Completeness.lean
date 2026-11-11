@@ -146,27 +146,7 @@ end Honest
 
 /-! ## Uniform challenges -/
 
-section Uniform
 
-attribute [local implicit_reducible] FreeM.replicate Node.position challengeSpec
-
-/-- Every challenge of the protocol is a ring element, so it can be sampled uniformly. Oracle
-nodes are not challenge nodes, and each challenge node of one more round is the first round's
-challenge or a challenge of the remaining rounds. -/
-@[instance_reducible]
-def challengeSampleable (R : Type) [CommSemiring R] [SampleableType R] (deg : ℕ) :
-    (k : ℕ) → (c : ChallengeNode oracleSig (protocol R deg k)) →
-      SampleableType (challengeSpec oracleSig (protocol R deg k) c)
-  | 0, ⟨n, _⟩ => nomatch n
-  | _ + 1, ⟨.inl _, h⟩ => nomatch h
-  | _ + 1, ⟨.inr ⟨_, .inl _⟩, _⟩ => inferInstanceAs (SampleableType R)
-  | k + 1, ⟨.inr ⟨_, .inr ⟨_, c⟩⟩, h⟩ => challengeSampleable R deg k ⟨c, h⟩
-
-instance (R : Type) [CommSemiring R] [SampleableType R] (deg k : ℕ) :
-    ∀ c, SampleableType (challengeSpec oracleSig (protocol R deg k) c) :=
-  challengeSampleable R deg k
-
-end Uniform
 
 /-! ## Completeness -/
 
@@ -174,9 +154,11 @@ section Completeness
 
 variable (R : Type) [CommSemiring R] (deg n : ℕ) {d : ℕ} (D : Fin d ↪ R)
 
-/-- The Sumcheck relation at round `i` as a statement problem with unit witness and no promise. -/
-def relationProblem (i : Fin (n + 1)) :
-    StatementProblem (Spec.StatementRound R n i × ∀ j, Spec.OracleStatement R n deg j) where
+/-- The Sumcheck relation at round `i` as a problem with unit witness and no promise, with the
+same statement type in every public context. -/
+def relationProblem {Ctx : Type} (i : Fin (n + 1)) :
+    Problem (⟨fun _ : Ctx => Spec.StatementRound R n i × ∀ j, Spec.OracleStatement R n deg j⟩ :
+      ClaimFamily Ctx) where
   Witness _ _ := Unit
   admissible _ _ := True
   rel _ x _ := (x, ()) ∈ Spec.relationRound R n deg D i
@@ -185,13 +167,12 @@ def relationProblem (i : Fin (n + 1)) :
 /-- The observation of a Sumcheck run with the honest prover's output type. -/
 abbrev HonestObservation :=
   Observation oracleSig (protocol R deg n) (fun _ => HonestOutput R deg n)
-    (Spec.StatementRound R n (Fin.last n) × ∀ i, Spec.OracleStatement R n deg i)
+    (fun _ => Spec.StatementRound R n (Fin.last n) × ∀ i, Spec.OracleStatement R n deg i)
 
 /-- Judge a Sumcheck run by the verifier verdict and the statement in the prover output. -/
 def judgement :
     OutputJudgement (HonestObservation R deg n)
-      (Spec.StatementRound R n (Fin.last n) × ∀ i, Spec.OracleStatement R n deg i)
-      (relationProblem R deg n D (Fin.last n)) :=
+      (relationProblem (Ctx := Path (protocol R deg n)) R deg n D (Fin.last n)) :=
   OutputJudgement.ofObservation _ (fun _ out => out.1) fun _ _ _ => ()
 
 variable {R deg n} [DecidableEq R] [SampleableType R] {ι : Type} (ambient : OracleSpec ι)

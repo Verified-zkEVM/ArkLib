@@ -3,6 +3,7 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+import ArkLib.ProofSystem.Sumcheck.Core.LegacySoundness
 import ArkLibTest.ProofSystem.Sumcheck.Core.SingleRound
 import Mathlib.Algebra.Field.ZMod
 
@@ -26,16 +27,17 @@ noncomputable section
 def accepted {R : Type} [CommSemiring R] {deg n : ℕ} {d : ℕ} (D : Fin d ↪ R)
     {Out : FreeM.PathAlong oracleSig (protocol R deg n) → Type} :
     Set (Observation oracleSig (protocol R deg n) Out
-      (Spec.StatementRound R n (Fin.last n) × (∀ i, Spec.OracleStatement R n deg i))) :=
+      (fun _ => Spec.StatementRound R n (Fin.last n) × (∀ i, Spec.OracleStatement R n deg i))) :=
   {obs | ∃ t, obs.2.2 = some t ∧ t ∈ (Spec.relationRound R n deg D (Fin.last n)).language}
 
 /-- The soundness event of the Sumcheck languages is the acceptance event. -/
 theorem soundnessEvent_eq {R : Type} [CommSemiring R] {deg n : ℕ} {d : ℕ} (D : Fin d ↪ R)
     {Out : FreeM.PathAlong oracleSig (protocol R deg n) → Type} :
     {obs : Observation oracleSig (protocol R deg n) Out
-        (Spec.StatementRound R n (Fin.last n) × (∀ i, Spec.OracleStatement R n deg i)) |
+        (fun _ => Spec.StatementRound R n (Fin.last n) × (∀ i, Spec.OracleStatement R n deg i)) |
       ∃ t, obs.2.2 = some t ∧
-        (langProblem (Spec.relationRound R n deg D (Fin.last n)).language).language () t} =
+        (langProblem (Spec.relationRound R n deg D (Fin.last n)).language).language
+          (FreeM.projectPathAlong oracleSig _ obs.1) t} =
       accepted D := by
   ext obs
   exact exists_congr fun t => and_congr_right fun _ => langProblem_language _ t
@@ -87,13 +89,14 @@ theorem oneRound_soundness {Out : FreeM.PathAlong oracleSig (protocol R deg 1) �
     (stmt : Spec.StatementRound R 1 0) (oStmt : ∀ i, Spec.OracleStatement R 1 deg i)
     (hfalse : (stmt, oStmt) ∉ (Spec.relationRound R 1 deg D 0).language) :
     letI : MeasurableSpace (Observation oracleSig (protocol R deg 1) Out
-      (Spec.StatementRound R 1 (Fin.last 1) × (∀ i, Spec.OracleStatement R 1 deg i))) := ⊤
-    𝒟[experiment init impl (challengeQueryImpl oracleSig (protocol R deg 1))
+      (fun _ => Spec.StatementRound R 1 (Fin.last 1) × (∀ i, Spec.OracleStatement R 1 deg i))) := ⊤
+    𝒟[experiment init impl (@challengeQueryImpl _ oracleSig (protocol R deg 1)
+      (challengeSampleable R deg 1))
         ((verifier R deg 1 D amb).run stmt oStmt P)] (accepted D) ≤
       (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞) := by
   let : MeasurableSpace (Observation oracleSig (protocol R deg 1) Out
-      (Spec.StatementRound R 1 (Fin.last 1) × (∀ i, Spec.OracleStatement R 1 deg i))) := ⊤
-  have h := verifier_soundness_rounds R deg 1 D amb init impl Out (stmt, oStmt) trivial
+      (fun _ => Spec.StatementRound R 1 (Fin.last 1) × (∀ i, Spec.OracleStatement R 1 deg i))) := ⊤
+  have h := legacyVerifier_soundness_rounds R deg 1 D amb init impl Out (stmt, oStmt) trivial
     (by simpa only [langProblem_language] using hfalse) P
   rw [Nat.cast_one, one_mul] at h
   rw [← soundnessEvent_eq]
@@ -104,7 +107,8 @@ theorem committed_soundness {Out : Type} (q : R⦃≤ deg⦄[X]) (finish : R →
     (stmt : Spec.StatementRound R 1 0) (oStmt : ∀ i, Spec.OracleStatement R 1 deg i)
     (hfalse : (stmt, oStmt) ∉ (Spec.relationRound R 1 deg D 0).language) :
     letI : MeasurableSpace (Obs1 (R := R) (deg := deg) Out) := ⊤
-    𝒟[experiment init impl (challengeQueryImpl oracleSig (protocol R deg 1))
+    𝒟[experiment init impl (@challengeQueryImpl _ oracleSig (protocol R deg 1)
+      (challengeSampleable R deg 1))
         ((verifier R deg 1 D amb).run stmt oStmt (oneRound amb q finish c₀))] (accepted D) ≤
       (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞) :=
   oneRound_soundness D amb init impl _ stmt oStmt hfalse
@@ -121,7 +125,8 @@ theorem randomCommitment_soundness {Out : Type} (commit : OracleComp amb (R⦃�
     (stmt : Spec.StatementRound R 1 0) (oStmt : ∀ i, Spec.OracleStatement R 1 deg i)
     (hfalse : (stmt, oStmt) ∉ (Spec.relationRound R 1 deg D 0).language) :
     letI : MeasurableSpace (Obs1 (R := R) (deg := deg) Out) := ⊤
-    𝒟[experiment init impl (challengeQueryImpl oracleSig (protocol R deg 1))
+    𝒟[experiment init impl (@challengeQueryImpl _ oracleSig (protocol R deg 1)
+      (challengeSampleable R deg 1))
         ((verifier R deg 1 D amb).run stmt oStmt
           (randomCommitted amb commit finish c₀))] (accepted D) ≤
       (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞) :=
@@ -133,6 +138,7 @@ end Universal
 
 -- Migration row: Sumcheck Interaction/Soundness #3.
 
+/-- Seventeen is prime. -/
 instance : Fact (Nat.Prime 17) := ⟨by decide⟩
 
 /-- The field with seventeen elements. -/
@@ -168,7 +174,8 @@ probability at most `1/17`. -/
 example {σ Out : Type} (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
     (finish : K → Out) (c₀ : K) :
     letI : MeasurableSpace (Obs1 (R := K) (deg := 1) Out) := ⊤
-    𝒟[experiment init impl (challengeQueryImpl oracleSig (protocol K 1 1))
+    𝒟[experiment init impl (@challengeQueryImpl _ oracleSig (protocol K 1 1)
+      (challengeSampleable K 1 1))
         ((verifier K 1 1 D₀₁₇ ambient).run ⟨1, Fin.elim0⟩ (fun _ => polyXK)
           (oneRound ambient cheating finish c₀))] (accepted D₀₁₇) ≤ 1 / 17 := by
   refine (committed_soundness D₀₁₇ ambient init impl cheating finish c₀ _ _ claim_false).trans ?_
@@ -181,6 +188,7 @@ section Exact
 
 open Sumcheck.Core.CompletenessTest
 
+/-- Five is prime. -/
 instance : Fact (Nat.Prime 5) := ⟨by decide⟩
 
 variable {Out : Type} (finish : F → Out) (c₀ : F)
@@ -195,10 +203,12 @@ the zero polynomial sums to one over `{0, 1}`. -/
 theorem rejection_probability {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp)) :
     letI : MeasurableSpace (Obs1 (R := F) (deg := 1) Out) := ⊤
-    𝒟[experiment init impl (challengeQueryImpl oracleSig (protocol F 1 1))
+    𝒟[experiment init impl (@challengeQueryImpl _ oracleSig (protocol F 1 1)
+      (challengeSampleable F 1 1))
         ((verifier F 1 1 D₂ ambient).run (claim 1) (fun _ => poly0 1)
           (oneRound ambient (msgZero 1) finish c₀))] {obs | obs.2.2 = none} = 1 :=
-  rejection_one D₂ ambient init impl (challengeQueryImpl oracleSig (protocol F 1 1)) (msgZero 1)
+  rejection_one D₂ ambient init impl (@challengeQueryImpl _ oracleSig (protocol F 1 1)
+    (challengeSampleable F 1 1)) (msgZero 1)
     finish c₀ (claim 1) (fun _ => poly0 1) (by
     simp [msgZero, claim])
 
@@ -208,7 +218,8 @@ theorem rejection_probability {σ : Type} (init : ProbComp σ)
 `{0, 1}` with the message `X`: the final language is reached with probability exactly `1/5`. -/
 theorem exact_repair_probability (impl : QueryImpl ambient (StateT Unit ProbComp)) :
     letI : MeasurableSpace (Obs1 (R := F) (deg := 1) Out) := ⊤
-    𝒟[experiment (pure ()) impl (challengeQueryImpl oracleSig (protocol F 1 1))
+    𝒟[experiment (pure ()) impl (@challengeQueryImpl _ oracleSig (protocol F 1 1)
+      (challengeSampleable F 1 1))
         ((verifier F 1 1 D₂ ambient).run (claim 1) (fun _ => poly0 1)
           (oneRound ambient msgX finish c₀))] (accepted D₂) = 1 / 5 := by
   let : MeasurableSpace F := ⊤
@@ -246,10 +257,12 @@ theorem empty_domain_rejection {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp)) (p : Spec.OracleStatement F 1 1 ())
     (q : F⦃≤ 1⦄[X]) :
     letI : MeasurableSpace (Obs1 (R := F) (deg := 1) Out) := ⊤
-    𝒟[experiment init impl (challengeQueryImpl oracleSig (protocol F 1 1))
+    𝒟[experiment init impl (@challengeQueryImpl _ oracleSig (protocol F 1 1)
+      (challengeSampleable F 1 1))
         ((verifier F 1 1 D₀ ambient).run (claim 1) (fun _ => p)
           (oneRound ambient q finish c₀))] {obs | obs.2.2 = none} = 1 :=
-  rejection_one D₀ ambient init impl (challengeQueryImpl oracleSig (protocol F 1 1)) q finish c₀
+  rejection_one D₀ ambient init impl (@challengeQueryImpl _ oracleSig (protocol F 1 1)
+    (challengeSampleable F 1 1)) q finish c₀
     (claim 1) (fun _ => p) (by
     rw [Finset.univ_eq_empty, Finset.map_empty, Finset.sum_empty]
     exact (by decide : (0 : F) ≠ 1))
@@ -277,12 +290,14 @@ def adaptive (r : F) : F⦃≤ 2⦄[X] :=
     apply (Polynomial.natDegree_mul_le).trans
     simp)⟩
 
+/-- The adaptive polynomial has endpoint sum one. -/
 theorem adaptive_endpoints (r : F) :
     (adaptive r).val.eval 0 + (adaptive r).val.eval 1 = 1 := by
   by_cases h : r = 1
   · simp [adaptive, h]
   · simp [adaptive, h, sub_ne_zero.mpr (Ne.symm h)]
 
+/-- The adaptive polynomial vanishes at the selected challenge. -/
 theorem adaptive_hits (r : F) : (adaptive r).val.eval r = 0 := by
   by_cases h : r = 1 <;> simp [adaptive, h]
 
@@ -291,7 +306,7 @@ open Classical in
 def fixedAt (r : F) : QueryImpl (challengeSpec oracleSig (protocol F 2 1)) ProbComp := fun c =>
   if h : c = headNode 0 then
     h ▸ (pure r : ProbComp ((challengeSpec oracleSig (protocol F 2 1)).Range (headNode 0)))
-  else $ᵗ _
+  else @challengeQueryImpl _ oracleSig (protocol F 2 1) (challengeSampleable F 2 1) c
 
 /-- If the challenge is sampled before the message, the adaptive message reaches the final
 language with probability one: the order of sampling matters. -/
@@ -357,8 +372,127 @@ run_cmd do
       ``Sumcheck.Core.SoundnessTest.adaptive, ``Sumcheck.Core.SoundnessTest.adaptive_endpoints,
       ``Sumcheck.Core.SoundnessTest.adaptive_hits, ``Sumcheck.Core.SingleRoundTest.poly0,
       ``Sumcheck.Core.CompletenessTest.polyX, ``Sumcheck.Core.SoundnessTest.polyXK,
-      ``Sumcheck.Core.verifier_soundness, ``Sumcheck.Core.verifier_soundness_rounds,
+      ``Sumcheck.Core.legacyVerifier_soundness, ``Sumcheck.Core.legacyVerifier_soundness_rounds,
       ``Sumcheck.Core.card_challengeIdx] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"
+
+namespace Sumcheck.Core.NativeSoundnessTest
+open Polynomial MvPolynomial PFunctor FreeM Interaction.Core Interaction.Oracle
+  OracleComp OracleSpec
+open scoped ENNReal NNReal
+
+variable {R : Type} [CommSemiring R] [DecidableEq R] [Fintype R] [SampleableType R]
+  [IsDomain R] {n deg d : ℕ} {ι σ : Type} (ambient : OracleSpec ι)
+  (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
+
+/-- The native headline includes every prover over an arbitrary indexed domain. -/
+example (D : Fin d → R) :
+    (indexedVerifier R deg n D ambient).soundness init impl (indexedDraw (R := R) (deg := deg) n)
+      (indexedInputProblem D) (indexedOutputProblem (R := R) (deg := deg) (n := n))
+      ((n : ℝ≥0∞) * (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞)) :=
+  verifier_soundness_rounds D ambient init impl
+
+/-- List domains, including repeated points, use the actual native run's soundness theorem. -/
+example (domain : List R) :
+    (indexedVerifier R deg n domain.get ambient).soundness init impl
+      (indexedDraw (R := R) (deg := deg) n) (indexedInputProblem domain.get)
+      (indexedOutputProblem (R := R) (deg := deg) (n := n))
+      ((n : ℝ≥0∞) * (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞)) :=
+  verifier_soundness_list ambient init impl domain
+
+/-- A committed message is bounded on the actual native run over any list, with repetitions. -/
+example (domain : List R) (msg : R⦃≤ deg⦄[X]) (stmt : RoundStatement R 1 0)
+    (data : ∀ i, PolynomialData R 1 deg i)
+    (hfalse : ¬ indexedRelation domain.get 0 stmt (data ())) :
+    Pr{let obs ← (experiment init impl (indexedDraw (R := R) (deg := deg) 1)
+      ((indexedVerifier R deg 1 domain.get ambient).run stmt data
+        (committedProver ambient msg (fun r => r))))}[
+      ∃ t, obs.2.2 = some t ∧ (t.2 ()).val.eval t.1.challenges = t.1.target] ≤
+      (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞) :=
+  Sumcheck.Core.committed_soundness domain.get ambient init impl msg (fun r => r) stmt data hfalse
+
+/-- An ambient randomized commitment is also bounded before the receiver samples its challenge. -/
+example (domain : List R) (commit : OracleComp ambient (R⦃≤ deg⦄[X]))
+    (stmt : RoundStatement R 1 0) (data : ∀ i, PolynomialData R 1 deg i)
+    (hfalse : ¬ indexedRelation domain.get 0 stmt (data ())) :
+    Pr{let obs ← (experiment init impl (indexedDraw (R := R) (deg := deg) 1)
+      ((indexedVerifier R deg 1 domain.get ambient).run stmt data
+        (randomizedProver ambient commit (fun r => r))))}[
+      ∃ t, obs.2.2 = some t ∧ (t.2 ()).val.eval t.1.challenges = t.1.target] ≤
+      (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞) :=
+  randomized_soundness domain.get ambient init impl commit (fun r => r) stmt data hfalse
+
+/-- The constant round message one has degree zero. -/
+noncomputable def oneMessage : (ZMod 5)⦃≤ 0⦄[X] := ⟨1, Polynomial.mem_degreeLE.mpr (by simp)⟩
+
+/-- The constant multivariate polynomial one also has individual degree zero. -/
+noncomputable def oneInput : (ZMod 5)⦃≤ 0⦄[X Fin 1] :=
+  ⟨1, by rw [MvPolynomial.mem_restrictDegree_iff_degreeOf_le]; intro i; simp⟩
+
+/-- The actual final decision accepts target two on `[0, 0]` when the sent message is one. -/
+example {ι : Type} (amb : OracleSpec ι) (impl : QueryImpl amb ProbComp) :
+    let tr := consTranscript (n := 0) oneMessage (0 : ZMod 5) ⟨⟩
+    simulateQ (QueryImpl.addLift impl ((pathResources (polyFamily (ZMod 5) 0 1)
+      (protocol (ZMod 5) 0 1) (projectPathAlong oracleSig _ tr)).answer
+        ((fun _ => oneInput), payloads _ tr)))
+      ((indexedVerifier (ZMod 5) 0 1 ([0, 0] : List (ZMod 5)).get amb).decide
+        ⟨2, Fin.elim0⟩ _ (toView _ tr)).run =
+      (pure (some ⟨1, Fin.snoc Fin.elim0 0⟩) :
+        ProbComp (Option (RoundStatement (ZMod 5) 1 (Fin.last 1)))) := by
+  intro tr
+  refine (simulateQ_indexedVerifier_decide ([0, 0] : List (ZMod 5)).get impl
+    ⟨2, Fin.elim0⟩ (fun _ => oneInput) tr).trans ?_
+  congr 1
+  simp [indexedVerdict, indexedNext, headMessage, headChallenge, tr,
+    consTranscript, oneMessage, IndexedClaim.initial, IndexedClaim.next,
+    IndexedClaim.index,
+    IndexedClaim.finish]
+
+
+/-- Constant one over `[0, 0]` gives an accepting actual run with final target one. -/
+theorem repeated_run {ι : Type} (amb : OracleSpec ι) :
+    (indexedVerifier (ZMod 5) 0 1 ([0, 0] : List (ZMod 5)).get amb).run
+      ⟨2, Fin.elim0⟩ (fun _ => oneInput) (committedProver amb oneMessage id) =
+      (fun r => ⟨consTranscript (n := 0) oneMessage r ⟨⟩, r,
+        some (⟨1, Fin.snoc Fin.elim0 r⟩, fun _ => oneInput)⟩) <$>
+        (liftM ((amb + challengeSpec oracleSig (protocol (ZMod 5) 0 1)).query
+          (.inr (roundChallengeNode (R := ZMod 5) (deg := 0))))) := by
+  rw [indexedVerifier_run]
+  change (do
+    let ⟨tr, out, _⟩ ← Interaction.TwoParty.Lens.run (round (ZMod 5) 0)
+      (roundProver (Out := fun _ => ZMod 5) oneMessage (fun r => r))
+      (sampler oracleSig (round (ZMod 5) 0) (fun c =>
+        liftM ((amb + challengeSpec oracleSig (protocol (ZMod 5) 0 1)).query (.inr c))))
+    pure (⟨tr, out, (indexedVerdict ([0, 0] : List (ZMod 5)).get 1
+      (some (IndexedClaim.initial ⟨2, Fin.elim0⟩)) tr).map
+        (fun t => (t, fun _ => oneInput))⟩ :
+      Observation oracleSig (protocol (ZMod 5) 0 1) (fun _ => ZMod 5)
+        (fun _ => RoundStatement (ZMod 5) 1 (Fin.last 1) ×
+          (∀ i, PolynomialData (ZMod 5) 1 0 i)))) = _
+  rw [run_roundProver]
+  simp only [bind_map_left, LawfulMonad.pure_bind]
+  rw [map_eq_bind_pure_comp]
+  refine bind_congr fun r => ?_
+  change ZMod 5 at r
+  congr 2
+  simp [indexedVerdict, indexedNext, headMessage, headChallenge, roundTranscript,
+    oneMessage, IndexedClaim.initial, IndexedClaim.next, IndexedClaim.index, IndexedClaim.finish]
+
+
+run_cmd
+  for decl in [``Sumcheck.Core.indexed_round_soundness,
+      ``Sumcheck.Core.indexedVerifier_rbrSoundness,
+      ``Sumcheck.Core.indexedVerifier_soundness, ``Sumcheck.Core.verifier_soundness,
+      ``Sumcheck.Core.verifier_soundness_rounds, ``Sumcheck.Core.verifier_soundness_list,
+      ``Sumcheck.Core.verifier_soundness_injective, ``Sumcheck.Core.verifier_run_soundness,
+      ``Sumcheck.Core.committed_soundness, ``Sumcheck.Core.randomized_soundness,
+      ``Sumcheck.Core.indexedVerifier_run, ``Sumcheck.Core.NativeSoundnessTest.repeated_run,
+      ``Sumcheck.Core.committed_measureSoundness,
+      ``Sumcheck.Core.randomized_measureSoundness] do
+    for ax in ← Lean.collectAxioms decl do
+      unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
+        throwError "unexpected axiom {ax} in {decl}"
+
+end Sumcheck.Core.NativeSoundnessTest

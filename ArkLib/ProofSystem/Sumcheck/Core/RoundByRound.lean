@@ -73,7 +73,8 @@ theorem verifier_rbrSoundness [Fintype R] [IsDomain R] :
   rw [challengeQueryImpl_eq_legacy, ← OracleVerifier.eqRec_const (protocol_eq R deg n).symm,
     (verifier_agrees R deg n D ambient).rbrSoundness_iff]
   refine (OracleVerifier.rbrSoundness_cast _ _ _ _ _ _ _).mpr ?_
-  exact embedOracleVerifier_rbrSoundness init impl (Spec.oracleVerifier R deg D n ambient)
+  simpa only [OracleVerifier.langProblem_cast, polyFamily, family] using
+    embedOracleVerifier_rbrSoundness init impl (Spec.oracleVerifier R deg D n ambient)
     _ _ _ (fun S => StateTerminalCertificate.of_guarded
       (Spec.oracleVerifierGuardedForm R deg D n ambient) S)
     (_root_.Verifier.rbrSoundness_of_rbrKnowledgeSoundness (init := init) (impl := impl)

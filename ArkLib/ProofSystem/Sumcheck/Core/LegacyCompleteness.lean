@@ -39,7 +39,8 @@ interaction-layer Sumcheck verifier, with uniformly sampled challenges. -/
 theorem legacyProver_perfectCompleteness :
     letI : MeasurableSpace (Observation oracleSig (protocol R deg n)
       (fun _ => (Spec.StatementRound R n (Fin.last n) × (∀ i, Spec.OracleStatement R n deg i)) ×
-        Unit) (Spec.StatementRound R n (Fin.last n) × (∀ i, Spec.OracleStatement R n deg i))) := ⊤
+        Unit) (fun _ => Spec.StatementRound R n (Fin.last n) × (∀ i, Spec.OracleStatement R n deg
+          i))) := ⊤
     completeness ((verifier R deg n D ambient).classicalModel init impl
         (challengeQueryImpl oracleSig (protocol R deg n)))
       (relProblem (Spec.relationRound R n deg D 0))

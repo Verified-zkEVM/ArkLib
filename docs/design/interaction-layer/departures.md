@@ -26,6 +26,17 @@ These entries are in
 | 12 | Path-fiber splitting stays in ArkLib |
 | 13 | The oracle decision log is recorded in the core |
 
+## Interaction core: later entries
+
+These entries are also in
+[`interaction-rebuild/IMPLEMENTATION-NOTES.md`](../interaction-rebuild/IMPLEMENTATION-NOTES.md).
+The status is one of equivalent, premise-required or unresolved.
+
+| Entry | Departure | Status |
+| --- | --- | --- |
+| 18 | Run outputs and a prover's ambient index are tied to the monad universe `u`; every other component takes its own universe, including input and output oracle query types. Input oracle data stays in the response universe `Type u`; the full-log oracle runner `runWithLog` keeps the input index and query type in `Type`, while extraction runs on the general ambient-log runner. | Run-output coupling is premise-required: positions live one universe up and the runner is `m : Type u → Type u`. Input-data and full-log restrictions remain unresolved: `OracleInterface` ties data and responses through `ReaderM`, and the full log records input queries. |
+| 19 | Round-by-round soundness implies soundness for lawful distribution monads, with prefix-indexed freshness. | equivalent; see the soundness disposition record below |
+
 ## Legacy embedding: entries 14–16
 
 These entries continue the numbering for the security transfers of the legacy embedding. They
@@ -41,26 +52,38 @@ Entries 15 and 16 are the two hypotheses that a client of the round-by-round tra
 check. Entry 15 applies to the direction into the interaction layer, and entry 16 to the
 direction out of it.
 
-## Sumcheck: entries 17–18
+## Sumcheck: entries 20–21
 
 These entries continue the numbering for Sumcheck in the interaction layer. They are in
 [`sumcheck.md`](sumcheck.md#departures).
 
 | Entry | Departure |
 | --- | --- |
-| [17](sumcheck.md#17-the-transferred-completeness-is-in-its-own-module) | The transferred completeness is in its own module, `LegacyCompleteness`. |
-| [18](sumcheck.md#18-the-verifier-has-no-interval-start) | The verifier has no interval start; first-round results are stated on the round-`0` check. |
+| [20](sumcheck.md#20-the-transferred-completeness-is-in-its-own-module) | The transferred completeness is in its own module, `LegacyCompleteness`. |
+| [21](sumcheck.md#21-the-verifier-has-no-interval-start) | Full-run verifiers have no interval start; #1488 owns interval endpoints and composition. |
+
+Entry 21 records full-run ownership here and interval ownership in #1488. The
+[exact-row disposition](sumcheck.md#migration-disposition) keeps interval execution, projection
+and append clients child-owned, and marks behavior-guarantee interfaces unresolved. Native
+full-run, committed and randomized soundness now use the parent implication directly over
+arbitrary indexed domains and lists with repetitions.
+
+Entry [19](../interaction-rebuild/IMPLEMENTATION-NOTES.md#19-round-by-round-soundness-implies-soundness-for-lawful-distribution-monads)
+records the generic soundness implication. The
+[soundness disposition record](soundness-implication-disposition.md) compares every ported frozen
+statement and test, explains prefix-indexed freshness, and links the classical specialization laws.
+The implication applies to lawful distribution monads, including optional computations.
 
 Entry 18 restates interval assertions at full `n`. D7 now covers the projection map and its
 standalone execution, the appended program equality, exported-oracle routing, and the production
 final-relation lemma. [`sumcheck.md`](sumcheck.md#migration-disposition) gives the row-by-row
 accounting and identifies the generic rows that wait on D1/D5/D6.
 
-## Sumcheck ports: entry 20
+## Sumcheck ports: entry 23
 
 | Entry | Departure |
 | --- | --- |
-| [20](../interaction-rebuild/IMPLEMENTATION-NOTES.md#20-sumcheck-ports) | Sumcheck ports: full-`n` append, projected standalone output, passive rejection, field-valued polynomials with natural-number private state, and the neutral polynomial-family name. |
+| [23](../interaction-rebuild/IMPLEMENTATION-NOTES.md#23-sumcheck-ports) | Sumcheck ports: full-`n` append, projected standalone output, passive rejection, field-valued polynomials with natural-number private state, and the neutral polynomial-family name. |
 
 Entries 19 and 21 belong to other part-D commits.
 
@@ -105,3 +128,9 @@ to the same witness.
 
 An earlier entry 17 recorded that straight-line knowledge soundness was transferred on the plain
 tree only. `Legacy/OracleKnowledge.lean` closes it, and the entry is removed.
+
+## Logged execution and routing acceptance clients
+
+The [source-to-port inventory](logged-execution-disposition.md) lists each frozen acceptance
+assertion, its exact port or missing interface, and the assertions retired by the approved passive
+verifier and fixed-shape premises. Its unresolved rows remain migration obligations.

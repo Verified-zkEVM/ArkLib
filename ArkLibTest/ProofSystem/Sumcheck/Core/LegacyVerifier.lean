@@ -29,10 +29,10 @@ abbrev F := ZMod 5
 /-- Answer a verifier's decision from its input and the completed round's message. -/
 def answered {deg : ℕ}
     (V : OracleVerifier ambient (protocol F deg 1) (Spec.StatementRound F 1 0)
-      (Spec.StatementRound F 1 (Fin.last 1)) (Spec.polynomialFamily F 1 deg)
-      (Spec.polynomialFamily F 1 deg)) (target : F) (msg : F⦃≤ deg⦄[X]) (r : F) :=
+      (fun _ => Spec.StatementRound F 1 (Fin.last 1)) (Spec.polynomialFamily F 1 deg)
+      (fun _ => Spec.polynomialFamily F 1 deg)) (target : F) (msg : F⦃≤ deg⦄[X]) (r : F) :=
   V.decideWith (claim target) _ (toView _ (tr1 msg r))
-    (sumData (fun _ => poly0 deg) (payloads _ (tr1 msg r)))
+    (((fun _ => poly0 deg), (payloads _ (tr1 msg r))))
 
 /-- Both decisions give the legacy fold's verdict on this completed round, as open ambient
 programs. This exercises the public bridge on the actual message and input resources. -/

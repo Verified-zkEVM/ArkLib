@@ -3,6 +3,7 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+import ArkLib.ProofSystem.Sumcheck.Core.LegacySoundness
 import ArkLibTest.ProofSystem.Sumcheck.Core.Soundness
 import ArkLib.ProofSystem.Sumcheck.Core.RoundByRound
 import ArkLib.ProofSystem.Sumcheck.Core.Knowledge
@@ -37,7 +38,7 @@ variable (F : Type) [Field F] [Fintype F] [DecidableEq F] [SampleableType F] (n 
 example : (verifier F deg n D amb).rbrSoundness impl
     (langProblem (Spec.relationRound F n deg D 0).language)
     (langProblem (Spec.relationRound F n deg D (Fin.last n)).language)
-    (challengeQueryImpl oracleSig (protocol F deg n))
+    (@challengeQueryImpl _ oracleSig (protocol F deg n) (challengeSampleable F deg n))
     (fun _ => (((deg : ℝ≥0) / Fintype.card F : ℝ≥0) : ℝ≥0∞)) :=
   verifier_rbrSoundness F deg n D amb init impl
 
@@ -48,13 +49,14 @@ theorem false_claim_bound {Out : FreeM.PathAlong oracleSig (protocol F deg n) �
     (stmt : Spec.StatementRound F n 0) (oStmt : ∀ i, Spec.OracleStatement F n deg i)
     (hfalse : (stmt, oStmt) ∉ (Spec.relationRound F n deg D 0).language) :
     letI : MeasurableSpace (Observation oracleSig (protocol F deg n) Out
-      (Spec.StatementRound F n (Fin.last n) × (∀ i, Spec.OracleStatement F n deg i))) := ⊤
-    𝒟[experiment init impl (challengeQueryImpl oracleSig (protocol F deg n))
+      (fun _ => Spec.StatementRound F n (Fin.last n) × (∀ i, Spec.OracleStatement F n deg i))) := ⊤
+    𝒟[experiment init impl (@challengeQueryImpl _ oracleSig (protocol F deg n)
+      (challengeSampleable F deg n))
         ((verifier F deg n D amb).run stmt oStmt P)] (accepted D) ≤
       (n : ℝ≥0∞) * deg / Fintype.card F := by
   let : MeasurableSpace (Observation oracleSig (protocol F deg n) Out
-      (Spec.StatementRound F n (Fin.last n) × (∀ i, Spec.OracleStatement F n deg i))) := ⊤
-  have h := verifier_soundness_rounds F deg n D amb init impl Out (stmt, oStmt) trivial
+      (fun _ => Spec.StatementRound F n (Fin.last n) × (∀ i, Spec.OracleStatement F n deg i))) := ⊤
+  have h := legacyVerifier_soundness_rounds F deg n D amb init impl Out (stmt, oStmt) trivial
     (by simpa only [langProblem_language] using hfalse) P
   rw [soundnessEvent_eq] at h
   refine h.trans (le_of_eq ?_)
@@ -69,6 +71,7 @@ section Concrete
 
 open Sumcheck.Core.CompletenessTest Sumcheck.Core.SingleRoundTest
 
+/-- Five is prime. -/
 instance : Fact (Nat.Prime 5) := ⟨by decide⟩
 
 variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
@@ -77,15 +80,16 @@ variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ P
 example :
     letI : MeasurableSpace (Observation oracleSig (protocol F 1 2)
       (fun _ => (Spec.StatementRound F 2 (Fin.last 2) × (∀ i, Spec.OracleStatement F 2 1 i)) ×
-        Unit) (Spec.StatementRound F 2 (Fin.last 2) × (∀ i, Spec.OracleStatement F 2 1 i))) := ⊤
+        Unit) (fun _ => Spec.StatementRound F 2 (Fin.last 2) × (∀ i, Spec.OracleStatement F 2 1
+          i))) := ⊤
     letI : MeasurableSpace Unit := ⊤
     knowledgeSoundness ((verifier F 1 2 D₂ ambient).classicalModel init impl
-        (challengeQueryImpl oracleSig (protocol F 1 2)))
+        (@challengeQueryImpl _ oracleSig (protocol F 1 2) (challengeSampleable F 1 2)))
       (relProblem (Spec.relationRound F 2 1 D₂ 0))
       (relProblem (Spec.relationRound F 2 1 D₂ (Fin.last 2)))
       (knowledgeJudgementOn (protocol F 1 2) (Spec.relationRound F 2 1 D₂ (Fin.last 2)))
       ((verifier F 1 2 D₂ ambient).classicalStraightline (fun _ => Unit) init impl
-        (challengeQueryImpl oracleSig (protocol F 1 2))
+        (@challengeQueryImpl _ oracleSig (protocol F 1 2) (challengeSampleable F 1 2))
         (fun _ (o : (Spec.StatementRound F 2 (Fin.last 2) ×
           (∀ i, Spec.OracleStatement F 2 1 i)) × Unit) => o.2))
       (2 / 5) := by
@@ -98,9 +102,10 @@ example :
 example :
     letI : MeasurableSpace (Observation oracleSig (protocol F 2 3)
       (fun _ => (Spec.StatementRound F 3 (Fin.last 3) × (∀ i, Spec.OracleStatement F 3 2 i)) ×
-        Unit) (Spec.StatementRound F 3 (Fin.last 3) × (∀ i, Spec.OracleStatement F 3 2 i))) := ⊤
+        Unit) (fun _ => Spec.StatementRound F 3 (Fin.last 3) × (∀ i, Spec.OracleStatement F 3 2
+          i))) := ⊤
     completeness ((verifier F 2 3 D₂ ambient).classicalModel init impl
-        (challengeQueryImpl oracleSig (protocol F 2 3)))
+        (@challengeQueryImpl _ oracleSig (protocol F 2 3) (challengeSampleable F 2 3)))
       (relProblem (Spec.relationRound F 3 2 D₂ 0))
       (relProblem (Spec.relationRound F 3 2 D₂ (Fin.last 3)))
       (knowledgeJudgementOn (protocol F 2 3) (Spec.relationRound F 3 2 D₂ (Fin.last 3)))
