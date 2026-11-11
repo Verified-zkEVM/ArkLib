@@ -212,7 +212,6 @@ public import ArkLib.Data.Fin.Tuple.Notation
 public import ArkLib.Data.Fin.Tuple.TakeDrop
 public import ArkLib.Data.Finset.PickSubset
 public import ArkLib.Data.GroupTheory.PrimeOrder
-public import ArkLib.Data.Hash.DomainSep
 public import ArkLib.Data.Hash.DuplexSponge
 public import ArkLib.Data.Hash.Poseidon2
 public import ArkLib.Data.Lattices.CyclotomicRing.Core
@@ -352,7 +351,6 @@ public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.ProverTran
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Soundness
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.TraceDataStructures
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.TraceTransform
-public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.State
 public import ArkLib.OracleReduction.FiatShamir.SingleSalt
 public import ArkLib.OracleReduction.LiftContext.Lens
 public import ArkLib.OracleReduction.LiftContext.OracleReduction
