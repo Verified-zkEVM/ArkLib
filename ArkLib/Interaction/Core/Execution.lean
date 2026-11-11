@@ -25,7 +25,7 @@ composes the two handlers (`Prover.simulate_simulate`).
 
 @[expose] public section
 
-universe u uA v uS uW
+universe u uA v uS uW uι
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp
@@ -54,7 +54,7 @@ def Verifier.run {ι : Type u} {ambient : OracleSpec.{u, u} ι}
 these marginals hold after every history, independently of the earlier actions. Missing mass in
 ambient actions is permitted; a challenge has exactly the mass of its specified draw. -/
 def FreshChallenges {m : Type → Type v} [Monad m] [EvalDistSemantics m]
-    {ι : Type} {ambient : OracleSpec ι} {P : PFunctor.{1, 0}}
+    {ι : Type uι} {ambient : OracleSpec.{uι, 0} ι} {P : PFunctor.{uA, 0}}
     {l : PFunctor.Lens P rolePoly} {s : FreeM P PUnit}
     (handler : QueryImpl (ambient + challengeSpec l s) m)
     (draw : QueryImpl (challengeSpec l s) ProbComp) : Prop :=
@@ -64,7 +64,8 @@ def FreshChallenges {m : Type → Type v} [Monad m] [EvalDistSemantics m]
 /-- A stateful challenge has the prescribed event marginals from every current state.
 The challenge may change the state; only its move distribution is fixed. -/
 def FreshChallengesAt {m : Type → Type v} [Monad m] [EvalDistSemantics m]
-    {ι σ : Type} {ambient : OracleSpec ι} {P : PFunctor.{1, 0}}
+    {ι : Type uι} {σ : Type} {ambient : OracleSpec.{uι, 0} ι}
+    {P : PFunctor.{uA, 0}}
     {l : PFunctor.Lens P rolePoly} {s : FreeM P PUnit}
     (handler : QueryImpl (ambient + challengeSpec l s) (StateT σ m))
     (draw : QueryImpl (challengeSpec l s) ProbComp) : Prop :=
@@ -72,8 +73,9 @@ def FreshChallengesAt {m : Type → Type v} [Monad m] [EvalDistSemantics m]
     Pr{let x ← (handler (.inr c)).run' st}[event x] = Pr{let x ← draw c}[event x]
 
 /-- Lifting a separate challenge draw into the ambient state gives fresh challenge marginals. -/
-theorem freshChallengesAt_addLift {ι σ : Type} {ambient : OracleSpec ι}
-    {P : PFunctor.{1, 0}} {l : PFunctor.Lens P rolePoly} {s : FreeM P PUnit}
+theorem freshChallengesAt_addLift {ι : Type uι} {σ : Type}
+    {ambient : OracleSpec.{uι, 0} ι} {P : PFunctor.{uA, 0}}
+    {l : PFunctor.Lens P rolePoly} {s : FreeM P PUnit}
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (draw : QueryImpl (challengeSpec l s) ProbComp) :
     FreshChallengesAt
@@ -129,29 +131,6 @@ theorem runWith_liftBind {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u
           pure (⟨⟨x, r.1⟩, r.2.1, r.2.2⟩ :
             (t : PathAlong l (.liftBind a rest)) × OutP t × OutC t)) :=
   runWith_node (l := l) (m := M) order a rest p c
-
-/-- At a message node, the sampler draws nothing and continues on the sent message. -/
-theorem sampler_message {M : Type u → Type u} [Monad M] [LawfulMonad M] (X : Type u)
-    (rest : X → Protocol.{u})
-    (draw : (c : ChallengeNode plainSig (.liftBind (PlainPos.message X) rest)) →
-      M (challengeSpec plainSig (.liftBind (PlainPos.message X) rest) c)) :
-    sampler plainSig (.liftBind (PlainPos.message X) rest) draw =
-      pure (fun x => sampler plainSig (rest x) (fun c => draw ⟨.inr ⟨x, c.val⟩, c.property⟩)) := by
-  change Choice.map .counterpart .sender _ <$> pure _ = _
-  erw [LawfulApplicative.map_pure]
-  rfl
-
-/-- At a challenge node, the sampler draws the challenge and continues on it. -/
-theorem sampler_challenge {M : Type u → Type u} [Monad M] [LawfulMonad M] (C : Type u)
-    (rest : PUnit → Protocol.{u})
-    (draw : (c : ChallengeNode plainSig (.liftBind (PlainPos.challenge C) rest)) →
-      M (challengeSpec plainSig (.liftBind (PlainPos.challenge C) rest) c)) :
-    sampler plainSig (.liftBind (PlainPos.challenge C) rest) draw =
-      (fun x => ⟨x, sampler plainSig (rest ⟨⟩)
-        (fun c => draw ⟨.inr ⟨⟨⟩, c.val⟩, c.property⟩)⟩) <$> draw ⟨.inl ⟨⟩, rfl⟩ := by
-  change Choice.map .counterpart .receiver _ <$> (_ <$> _) = _
-  erw [Functor.map_map]
-  rfl
 
 variable {κ κ' : Type u} {spec : OracleSpec.{u, u} κ} {spec' : OracleSpec.{u, u} κ'}
   {n : Type u → Type u} [Monad n] [LawfulMonad n]

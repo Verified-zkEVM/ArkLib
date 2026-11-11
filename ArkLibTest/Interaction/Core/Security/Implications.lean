@@ -17,6 +17,8 @@ open PFunctor PFunctor.FreeM Interaction.Core Interaction.TwoParty.Lens OracleCo
 open Interaction.Oracle
 open scoped ENNReal
 
+universe uS uI wI wJ
+
 namespace Interaction.Core.ImplicationsTests
 
 open Interaction.Core.SecurityTests
@@ -24,10 +26,11 @@ open Interaction.Core.SecurityTests
 /-! ### The general statements -/
 
 -- Row #3: frozen `Interaction.Oracle.Security.executeStrategies_soundness`.
-example {ι σ S T : Type} {ambient : OracleSpec ι} {s : Protocol}
+example {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι} {s : Protocol}
+    {T : Path s → Type}
     (V : Verifier ambient s S T) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
-    (input : StatementProblem S) (output : StatementProblem T)
+    (input : StatementProblem S) (output : PathProblem s T)
     (draw : QueryImpl (challengeSpec plainSig s) ProbComp)
     (ε : ChallengeNode plainSig s → ℝ≥0∞)
     (h : V.rbrSoundness impl input output draw ε) :
@@ -37,10 +40,11 @@ example {ι σ S T : Type} {ambient : OracleSpec ι} {s : Protocol}
   ⟨Verifier.soundness_of_rbrSoundness h, Verifier.soundness_of_rbrSoundness_tsum h⟩
 
 -- Row #4: frozen `Interaction.Oracle.Security.executeStrategies_soundness_uniform`.
-example {ι σ S T : Type} {ambient : OracleSpec ι} {s : Protocol}
+example {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι} {s : Protocol}
+    {T : Path s → Type}
     (V : Verifier ambient s S T) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
-    (input : StatementProblem S) (output : StatementProblem T)
+    (input : StatementProblem S) (output : PathProblem s T)
     (draw : QueryImpl (challengeSpec plainSig s) ProbComp) (e : ℝ≥0∞) (k : ℕ)
     (hcount : ∀ path, (challengeNodesOn plainSig s path).card ≤ k)
     (h : V.rbrSoundness impl input output draw fun _ => e) :
@@ -48,11 +52,14 @@ example {ι σ S T : Type} {ambient : OracleSpec ι} {s : Protocol}
   Verifier.soundness_of_rbrSoundness_uniform h (fun _ => le_rfl) hcount
 
 -- Row #3, oracle verifiers: frozen `Interaction.Oracle.Security.executeStrategies_soundness`.
-example {ι I J σ S T : Type} {ambient : OracleSpec ι} {s : OracleProtocol} {A : I → Type}
-    {B : J → Type} {inputs : OracleFamily I A} {outputs : OracleFamily J B}
+example {ι σ : Type} {I : Type uI} {S : Type uS}
+    {ambient : OracleSpec ι} {s : OracleProtocol} {T : Path s → Type} {A : I → Type}
+    {J : Path s → Type} {B : (p : Path s) → J p → Type}
+    {inputs : OracleFamily.{uI, 0, wI} I A}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
     (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
-    (input : StatementProblem (S × (∀ i, A i))) (output : StatementProblem (T × (∀ j, B j)))
+    (input : StatementProblem (S × (∀ i, A i))) (output : PathProblem s (OracleVerifier.Output T B))
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp)
     (ε : ChallengeNode oracleSig s → ℝ≥0∞)
     (h : V.rbrSoundness impl input output draw ε) :
@@ -63,11 +70,14 @@ example {ι I J σ S T : Type} {ambient : OracleSpec ι} {s : OracleProtocol} {A
 
 -- Row #4, oracle verifiers:
 -- frozen `Interaction.Oracle.Security.executeStrategies_soundness_uniform`.
-example {ι I J σ S T : Type} {ambient : OracleSpec ι} {s : OracleProtocol} {A : I → Type}
-    {B : J → Type} {inputs : OracleFamily I A} {outputs : OracleFamily J B}
+example {ι σ : Type} {I : Type uI} {S : Type uS}
+    {ambient : OracleSpec ι} {s : OracleProtocol} {T : Path s → Type} {A : I → Type}
+    {J : Path s → Type} {B : (p : Path s) → J p → Type}
+    {inputs : OracleFamily.{uI, 0, wI} I A}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
     (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
-    (input : StatementProblem (S × (∀ i, A i))) (output : StatementProblem (T × (∀ j, B j)))
+    (input : StatementProblem (S × (∀ i, A i))) (output : PathProblem s (OracleVerifier.Output T B))
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp) (e : ℝ≥0∞) (k : ℕ)
     (hcount : ∀ path, (challengeNodesOn oracleSig s path).card ≤ k)
     (h : V.rbrSoundness impl input output draw fun _ => e) :
@@ -76,21 +86,24 @@ example {ι I J σ S T : Type} {ambient : OracleSpec ι} {s : OracleProtocol} {A
 
 -- The oracle conclusion is the model soundness of the classical oracle model, with acceptance read
 -- from the verdict and the output oracle data of the observation.
-example {ι I J σ S T : Type} {ambient : OracleSpec ι} {s : OracleProtocol} {A : I → Type}
-    {B : J → Type} {inputs : OracleFamily I A} {outputs : OracleFamily J B}
+example {ι σ : Type} {I : Type uI} {S : Type uS}
+    {ambient : OracleSpec ι} {s : OracleProtocol} {T : Path s → Type} {A : I → Type}
+    {J : Path s → Type} {B : (p : Path s) → J p → Type}
+    {inputs : OracleFamily.{uI, 0, wI} I A}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
     (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
-    (input : StatementProblem (S × (∀ i, A i))) (output : StatementProblem (T × (∀ j, B j)))
+    (input : StatementProblem (S × (∀ i, A i))) (output : PathProblem s (OracleVerifier.Output T B))
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp) (ε : ℝ≥0∞) :
     V.soundness init impl draw input output ε ↔
       ∀ Out : PathAlong oracleSig s → Type,
-        letI : MeasurableSpace (Observation oracleSig s Out (T × (∀ j, B j))) := ⊤
+        letI : MeasurableSpace (Observation oracleSig s Out (OracleVerifier.Output T B)) := ⊤
         soundness (V.classicalModel (Out := Out) init impl draw) input output
-          (fun obs => obs.2.2) ε :=
+          (fun obs => projectPathAlong oracleSig s obs.1) (fun obs => obs.2.2) ε :=
   Iff.rfl
 
 -- Row #5: frozen `Interaction.Oracle.Security.OrdinaryState.exists_verifier_escape`.
-example {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly) {s : FreeM P PUnit} {S : Type}
+example {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly) {s : FreeM P PUnit} {S : Type uS}
     {admissible language : S → Prop} {accepts : S → PathAlong l s → Prop}
     (F : StateFunction l s S admissible language accepts) (stmt : S)
     (hadm : admissible stmt) (hlang : ¬ language stmt) (tr : PathAlong l s)
@@ -99,7 +112,7 @@ example {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly) {s : FreeM P PUnit}
   F.escapeAlong l hadm hlang hacc
 
 -- Row #6: frozen `Interaction.Oracle.Security.LocalSoundness.random_prefix`.
-example {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly) {s : FreeM P PUnit} {S : Type}
+example {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly) {s : FreeM P PUnit} {S : Type uS}
     {admissible language : S → Prop} {accepts : S → PathAlong l s → Prop}
     (draw : QueryImpl (challengeSpec l s) ProbComp) (ε : ChallengeNode l s → ℝ≥0∞)
     (F : StateFunction l s S admissible language accepts) (stmt : S)
@@ -119,7 +132,7 @@ example {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly) {s : FreeM P PUnit}
     hselect
 
 -- Row #6 at a fixed receiver node, with a nonfailing author of the prefix.
-example {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly) {s : FreeM P PUnit} {S : Type}
+example {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly) {s : FreeM P PUnit} {S : Type uS}
     {admissible language : S → Prop} {accepts : S → PathAlong l s → Prop}
     (draw : QueryImpl (challengeSpec l s) ProbComp) (ε : ChallengeNode l s → ℝ≥0∞)
     (F : StateFunction l s S admissible language accepts) (stmt : S)
@@ -224,14 +237,22 @@ def drawTwo : QueryImpl (challengeSpec plainSig twoChallenges) ProbComp
   | ⟨.inr ⟨_, .inr ⟨_, i⟩⟩, _⟩ => i.elim
 
 /-- Accepts a true statement or a zero challenge, with the counter reading. -/
-def twoVerifier : Verifier counter twoChallenges Bool Nat where
+def twoVerifier : Verifier counter twoChallenges Bool (fun _ => Nat) where
   decide stmt _ v := OptionT.mk do
     let n ← liftM (counter.query ())
     pure (if (stmt || isZero v.val.1 || isZero v.val.2.1) = true then some n else none)
 
+/-- Every natural-number claim at a two-challenge path is valid, with a unit witness. -/
+@[instance_reducible] def twoOutput : PathProblem twoChallenges (fun _ => Nat) where
+  Witness _ _ := Unit
+  admissible _ _ := True
+  rel _ _ _ := True
+  rel_admissible _ _ _ _ := trivial
+
 /-- The two-challenge verifier accepts exactly a true statement or a zero challenge. -/
 theorem twoVerifier_validAcceptance_iff (stmt : Bool) (tr : PathAlong plainSig twoChallenges) :
-    twoVerifier.validAcceptance tick (anyOutput.language ()) stmt tr ↔
+    twoVerifier.validAcceptance tick stmt tr
+      (twoOutput.language (projectPathAlong plainSig twoChallenges tr)) ↔
       (stmt || isZero tr.1 || isZero tr.2.1) = true := by
   rcases tr with ⟨x, y, ⟨⟩⟩
   have key : ∀ st, (simulateQ tick (twoVerifier.decide stmt _
@@ -240,13 +261,14 @@ theorem twoVerifier_validAcceptance_iff (stmt : Bool) (tr : PathAlong plainSig t
     fun _ => rfl
   simp only [Verifier.validAcceptance, key, evalDist_pure]
   by_cases hb : (stmt || isZero x || isZero y) = true
-  · simp [hb, Oracle.Problem.language, anyOutput]
+  · simp [hb, Oracle.Problem.language, twoOutput]
   · simp [hb]
 
 /-- The state records whether the statement or a challenge drawn so far makes acceptance
 certain. -/
 def twoState : StateFunction plainSig twoChallenges Bool (boolProblem.admissible ())
-    (boolProblem.language ()) (twoVerifier.validAcceptance tick (anyOutput.language ())) where
+    (boolProblem.language ()) (fun stmt tr => twoVerifier.validAcceptance tick stmt tr
+      (twoOutput.language (projectPathAlong plainSig twoChallenges tr))) where
   toFun {_} sp history stmt := match sp, history with
     | .root _, _ => stmt = true
     | .down _ (.root _), history => (stmt || isZero history.1.1) = true
@@ -277,7 +299,7 @@ theorem uniform_zero : 𝒟[($ᵗ Fin 4 : ProbComp (Fin 4))] {0} = 1 / 4 := by
 
 /-- The two-challenge verifier is round-by-round sound with error one quarter at each node. -/
 theorem two_rbrSoundness :
-    twoVerifier.rbrSoundness tick boolProblem anyOutput drawTwo (fun _ => 1 / 4) := by
+    twoVerifier.rbrSoundness tick boolProblem twoOutput drawTwo (fun _ => 1 / 4) := by
   refine ⟨twoState, ?_⟩
   intro stmt _ _ a next sp h history
   cases sp with
@@ -313,7 +335,7 @@ theorem two_card (path : Path twoChallenges) :
   rfl
 
 example (init : ProbComp Nat) :
-    twoVerifier.soundness init tick drawTwo boolProblem anyOutput (2 • (1 / 4)) :=
+    twoVerifier.soundness init tick drawTwo boolProblem twoOutput (2 • (1 / 4)) :=
   Verifier.soundness_of_rbrSoundness_uniform two_rbrSoundness (fun _ => le_rfl) two_card
 
 /-! ### A handler with missing probability mass -/
@@ -327,13 +349,14 @@ def optionalAmbient : QueryImpl counter (OptionT ProbComp) := fun _ =>
 /-- Generic implication keeps the target monad's result universe independent of run outputs. -/
 example {m : Type → Type 1} [Monad m] [LawfulMonad m] [EvalDistSemantics m]
     [LawfulEvalDistSemantics m]
-    {ι S T : Type} {ambient : OracleSpec ι} {s : Protocol}
+    {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : Protocol}
+    {T : Path s → Type}
     (V : Verifier ambient s S T) (H : QueryImpl (ambient + challengeSpec plainSig s) m)
     (draw : QueryImpl (challengeSpec plainSig s) ProbComp)
-    (input : StatementProblem S) (output : StatementProblem T)
+    (input : StatementProblem S) (output : PathProblem s T)
     (ε : ChallengeNode plainSig s → ℝ≥0∞) (fresh : FreshChallenges H draw)
     (h : rbrSoundness plainSig s (input.admissible ()) (input.language ())
-      (V.validAcceptanceWith (fun q => H (.inl q)) (output.language ())) draw ε) :
+      (V.validAcceptanceWith (fun q => H (.inl q)) (output.language)) draw ε) :
     V.soundnessWith H input output (∑' c, ε c) :=
   Verifier.soundnessWith_of_rbrSoundness_tsum fresh h
 
@@ -349,14 +372,15 @@ theorem optionalHandler_fresh : FreshChallenges optionalHandler draw := by
 
 /-- This verifier accepts a true input or a true challenge. Its prover may use the failing
 ambient service even though its decision needs no ambient calls. -/
-def optionalVerifier : Verifier counter coin Bool Nat where
+def optionalVerifier : Verifier counter coin Bool (fun _ => Nat) where
   decide stmt _ view := OptionT.mk
     (pure (if (stmt || view.val.1) = true then some 0 else none))
 
 /-- The optional verifier has the same acceptance condition as the counter verifier. -/
 theorem optionalAcceptance (stmt : Bool) (tr : PathAlong plainSig coin) :
-    optionalVerifier.validAcceptanceWith optionalAmbient (anyOutput.language ()) stmt tr ↔
-      coinVerifier.validAcceptance tick (anyOutput.language ()) stmt tr := by
+    optionalVerifier.validAcceptanceWith optionalAmbient anyOutput.language stmt tr ↔
+      coinVerifier.validAcceptance tick stmt tr
+        (anyOutput.language (projectPathAlong plainSig coin tr)) := by
   classical
   rw [validAcceptance_iff (fun _ => ⟨(), trivial⟩)]
   rcases tr with ⟨x, ⟨⟩⟩
@@ -369,7 +393,7 @@ theorem optionalAcceptance (stmt : Bool) (tr : PathAlong plainSig coin) :
 /-- The one-challenge certificate applies to the optional handler without a state encoding. -/
 theorem optional_rbrSoundness :
     rbrSoundness plainSig coin (boolProblem.admissible ()) (boolProblem.language ())
-      (optionalVerifier.validAcceptanceWith optionalAmbient (anyOutput.language ())) draw
+      (optionalVerifier.validAcceptanceWith optionalAmbient anyOutput.language) draw
       (fun _ => 1 / 2) := by
   obtain ⟨F, hF⟩ := coin_rbrSoundness
   refine ⟨{ toFun := F.toFun, root := F.root, send := F.send, leaf := ?_ }, hF⟩
@@ -385,15 +409,18 @@ theorem optional_soundness :
 
 /-- The oracle implication also accepts a handler in the optional distribution monad.
 Its challenge premise is discharged by the separate lifted draw. -/
-example {ι I J S T : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
-    {A : I → Type} {B : J → Type} {inputs : OracleFamily I A} {outputs : OracleFamily J B}
+example {ι : Type} {I : Type uI} {S : Type uS}
+    {ambient : OracleSpec ι} {s : OracleProtocol} {T : Path s → Type}
+    {A : I → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
+    {inputs : OracleFamily.{uI, 0, wI} I A}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
     (V : OracleVerifier ambient s S T inputs outputs)
     (impl : QueryImpl ambient (OptionT ProbComp))
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp)
-    (input : StatementProblem (S × (∀ i, A i))) (output : StatementProblem (T × (∀ j, B j)))
+    (input : StatementProblem (S × (∀ i, A i))) (output : PathProblem s (OracleVerifier.Output T B))
     (ε : ChallengeNode oracleSig s → ℝ≥0∞)
     (h : rbrSoundness oracleSig s (input.admissible ()) (input.language ())
-      (V.validAcceptanceWith impl (output.language ())) draw ε) :
+      (V.validAcceptanceWith impl (output.language)) draw ε) :
     V.soundnessWith
       (impl.addLift draw : QueryImpl (ambient + challengeSpec oracleSig s) (OptionT ProbComp))
       input output (∑' c, ε c) := by

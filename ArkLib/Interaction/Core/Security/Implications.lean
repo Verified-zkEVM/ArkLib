@@ -26,7 +26,7 @@ on the input data and the run's payloads, with its output read through its outpu
 
 @[expose] public section
 
-universe v
+universe v uS uI wI wJ
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle MeasureTheory
@@ -97,7 +97,7 @@ theorem escapeAlong_of_accepts (s : FreeM P PUnit) :
 
 /-- On an accepted transcript of a false admissible statement, some challenge node on the path
 turns the state from false to true. -/
-theorem StateFunction.escapeAlong {s : FreeM P PUnit} {S : Type}
+theorem StateFunction.escapeAlong {s : FreeM P PUnit} {S : Type uS}
     {admissible language : S → Prop} {accepts : S → PathAlong l s → Prop}
     (F : StateFunction l s S admissible language accepts) {stmt : S}
     (hadm : admissible stmt) (hlang : ¬ language stmt) {tr : PathAlong l s}
@@ -373,23 +373,6 @@ end Run
 
 section Experiment
 
-variable {ι κ ρ σ α : Type} {ambient : OracleSpec ι} {chal : OracleSpec κ}
-  {resources : OracleSpec ρ}
-
-/-- Interpreting deterministic resource answers beside the ambient state handler is unchanged
-by adjoining a separate challenge handler. -/
-theorem simulateQ_addLift_resources (impl : QueryImpl ambient (StateT σ ProbComp))
-    (draw : QueryImpl chal ProbComp) (answer : QueryImpl resources Id)
-    (program : OracleComp (ambient + resources) α) :
-    simulateQ (impl.addLift draw : QueryImpl (ambient + chal) (StateT σ ProbComp))
-      (simulateQ (QueryImpl.addLift
-        ((fun q => liftM ((ambient + chal).query (.inl q))) :
-          QueryImpl ambient (OracleComp (ambient + chal))) answer) program) =
-      simulateQ (impl.addLift answer : QueryImpl (ambient + resources) (StateT σ ProbComp))
-        program := by
-  simpa using simulateQ_resources
-    (impl.addLift draw : QueryImpl (ambient + chal) (StateT σ ProbComp)) answer program
-
 /-- An accepted output, read through a map, is an accepted result read through that map. -/
 private theorem exists_map_some_iff {T U : Type} (f : T → U) (L : U → Prop) (v : Option T) :
     (∃ u, v.map f = some u ∧ L u) ↔ ∃ t, v = some t ∧ L (f t) := by
@@ -423,14 +406,15 @@ section Plain
 in any lawful distribution monad, including monads with missing probability mass. -/
 theorem Verifier.soundnessWith_of_rbrSoundness {m : Type → Type v} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m]
-    {ι S T : Type} {ambient : OracleSpec ι} {s : Protocol} {V : Verifier ambient s S T}
+    {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : Protocol}
+    {T : Path s → Type} {V : Verifier ambient s S T}
     {H : QueryImpl (ambient + challengeSpec plainSig s) m}
-    {input : StatementProblem S} {output : StatementProblem T}
+    {input : StatementProblem S} {output : PathProblem s T}
     {draw : QueryImpl (challengeSpec plainSig s) ProbComp}
     {ε : ChallengeNode plainSig s → ℝ≥0∞}
     (fresh : FreshChallenges H draw)
     (h : Core.rbrSoundness plainSig s (input.admissible ()) (input.language ())
-      (V.validAcceptanceWith (fun q => H (.inl q)) (output.language ())) draw ε) :
+      (V.validAcceptanceWith (fun q => H (.inl q)) (output.language)) draw ε) :
     V.soundnessWith H input output
       (⨆ path : Path s, ∑ c ∈ challengeNodesOn plainSig s path, ε c) := by
   obtain ⟨F, hF⟩ := h
@@ -466,14 +450,15 @@ theorem Verifier.soundnessWith_of_rbrSoundness {m : Type → Type v} [Monad m] [
 /-- Fresh round-by-round soundness bounds soundness by the sum of all node errors. -/
 theorem Verifier.soundnessWith_of_rbrSoundness_tsum {m : Type → Type v} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m]
-    {ι S T : Type} {ambient : OracleSpec ι} {s : Protocol} {V : Verifier ambient s S T}
+    {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : Protocol}
+    {T : Path s → Type} {V : Verifier ambient s S T}
     {H : QueryImpl (ambient + challengeSpec plainSig s) m}
-    {input : StatementProblem S} {output : StatementProblem T}
+    {input : StatementProblem S} {output : PathProblem s T}
     {draw : QueryImpl (challengeSpec plainSig s) ProbComp}
     {ε : ChallengeNode plainSig s → ℝ≥0∞}
     (fresh : FreshChallenges H draw)
     (h : Core.rbrSoundness plainSig s (input.admissible ()) (input.language ())
-      (V.validAcceptanceWith (fun q => H (.inl q)) (output.language ())) draw ε) :
+      (V.validAcceptanceWith (fun q => H (.inl q)) (output.language)) draw ε) :
     V.soundnessWith H input output (∑' c, ε c) := fun Out stmt hadm hlang p =>
   (soundnessWith_of_rbrSoundness fresh h Out stmt hadm hlang p).trans
     (iSup_sum_challengeNodesOn_le_tsum ε)
@@ -481,15 +466,16 @@ theorem Verifier.soundnessWith_of_rbrSoundness_tsum {m : Type → Type v} [Monad
 /-- Uniform local errors and a path length bound give soundness error `k • e`. -/
 theorem Verifier.soundnessWith_of_rbrSoundness_uniform {m : Type → Type v} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m]
-    {ι S T : Type} {ambient : OracleSpec ι} {s : Protocol} {V : Verifier ambient s S T}
+    {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : Protocol}
+    {T : Path s → Type} {V : Verifier ambient s S T}
     {H : QueryImpl (ambient + challengeSpec plainSig s) m}
-    {input : StatementProblem S} {output : StatementProblem T}
+    {input : StatementProblem S} {output : PathProblem s T}
     {draw : QueryImpl (challengeSpec plainSig s) ProbComp}
     {ε : ChallengeNode plainSig s → ℝ≥0∞}
     {e : ℝ≥0∞} {k : ℕ}
     (fresh : FreshChallenges H draw)
     (h : Core.rbrSoundness plainSig s (input.admissible ()) (input.language ())
-      (V.validAcceptanceWith (fun q => H (.inl q)) (output.language ())) draw ε)
+      (V.validAcceptanceWith (fun q => H (.inl q)) (output.language)) draw ε)
     (hε : ∀ c, ε c ≤ e)
     (hcount : ∀ path, (challengeNodesOn plainSig s path).card ≤ k) :
     V.soundnessWith H input output (k • e) := fun Out stmt hadm hlang p =>
@@ -498,10 +484,10 @@ theorem Verifier.soundnessWith_of_rbrSoundness_uniform {m : Type → Type v} [Mo
 
 /-- Round-by-round soundness implies soundness for every initial state distribution. The error is
 the supremum, over shape paths, of the sum of the node errors along the path. -/
-theorem Verifier.soundness_of_rbrSoundness {ι σ S T : Type} {ambient : OracleSpec ι}
-    {s : Protocol} {V : Verifier ambient s S T} {init : ProbComp σ}
+theorem Verifier.soundness_of_rbrSoundness {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι}
+    {s : Protocol} {T : Path s → Type} {V : Verifier ambient s S T} {init : ProbComp σ}
     {impl : QueryImpl ambient (StateT σ ProbComp)}
-    {input : StatementProblem S} {output : StatementProblem T}
+    {input : StatementProblem S} {output : PathProblem s T}
     {draw : QueryImpl (challengeSpec plainSig s) ProbComp}
     {ε : ChallengeNode plainSig s → ℝ≥0∞}
     (h : V.rbrSoundness impl input output draw ε) :
@@ -535,7 +521,7 @@ theorem Verifier.soundness_of_rbrSoundness {ι σ S T : Type} {ambient : OracleS
   · intro tr out st hne
     by_contra hpos
     refine hne (StateFunction.escapeAlong plainSig F hadm hlang (tr := tr) ⟨st, ?_⟩)
-    let : MeasurableSpace (Option T) := ⊤
+    let : MeasurableSpace (Option (T (projectPathAlong plainSig s tr))) := ⊤
     rw [← prEvent_eq_evalDist _ _ measurable_from_top]
     simp only [k, QueryImpl.addLift_def, simulateQ_map, QueryImpl.simulateQ_add_liftComp_left,
       QueryImpl.liftTarget_self, StateT.run'_eq, StateT.run_map, Functor.map_map] at hpos
@@ -543,10 +529,10 @@ theorem Verifier.soundness_of_rbrSoundness {ι σ S T : Type} {ambient : OracleS
     exact pos_iff_ne_zero.2 hpos
 
 /-- Round-by-round soundness implies soundness with the sum of all node errors. -/
-theorem Verifier.soundness_of_rbrSoundness_tsum {ι σ S T : Type} {ambient : OracleSpec ι}
-    {s : Protocol} {V : Verifier ambient s S T} {init : ProbComp σ}
+theorem Verifier.soundness_of_rbrSoundness_tsum {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι}
+    {s : Protocol} {T : Path s → Type} {V : Verifier ambient s S T} {init : ProbComp σ}
     {impl : QueryImpl ambient (StateT σ ProbComp)}
-    {input : StatementProblem S} {output : StatementProblem T}
+    {input : StatementProblem S} {output : PathProblem s T}
     {draw : QueryImpl (challengeSpec plainSig s) ProbComp}
     {ε : ChallengeNode plainSig s → ℝ≥0∞}
     (h : V.rbrSoundness impl input output draw ε) :
@@ -556,10 +542,11 @@ theorem Verifier.soundness_of_rbrSoundness_tsum {ι σ S T : Type} {ambient : Or
 
 /-- If every node error is at most `e` and every shape path meets at most `k` challenge nodes,
 round-by-round soundness implies soundness with error `k • e`. -/
-theorem Verifier.soundness_of_rbrSoundness_uniform {ι σ S T : Type} {ambient : OracleSpec ι}
-    {s : Protocol} {V : Verifier ambient s S T} {init : ProbComp σ}
+theorem Verifier.soundness_of_rbrSoundness_uniform {ι σ : Type} {S : Type uS}
+    {ambient : OracleSpec ι}
+    {s : Protocol} {T : Path s → Type} {V : Verifier ambient s S T} {init : ProbComp σ}
     {impl : QueryImpl ambient (StateT σ ProbComp)}
-    {input : StatementProblem S} {output : StatementProblem T}
+    {input : StatementProblem S} {output : PathProblem s T}
     {draw : QueryImpl (challengeSpec plainSig s) ProbComp}
     {ε : ChallengeNode plainSig s → ℝ≥0∞} {e : ℝ≥0∞} {k : ℕ}
     (h : V.rbrSoundness impl input output draw ε) (hε : ∀ c, ε c ≤ e)
@@ -574,17 +561,19 @@ end Plain
 in any lawful distribution monad, with its actual resource answers and output oracle map. -/
 theorem OracleVerifier.soundnessWith_of_rbrSoundness {m : Type → Type v}
     [Monad m] [LawfulMonad m] [EvalDistSemantics m] [LawfulEvalDistSemantics m]
-    {ι I J S T : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
-    {A : I → Type} {B : J → Type} {inputs : OracleFamily I A} {outputs : OracleFamily J B}
+    {ι : Type} {I : Type uI} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol}
+    {T : Path s → Type} {A : I → Type} {J : Path s → Type}
+    {B : (p : Path s) → J p → Type} {inputs : OracleFamily.{uI, 0, wI} I A}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
     {V : OracleVerifier ambient s S T inputs outputs}
     {H : QueryImpl (ambient + challengeSpec oracleSig s) m}
     {input : StatementProblem (S × (∀ i, A i))}
-    {output : StatementProblem (T × (∀ j, B j))}
+    {output : PathProblem s (OracleVerifier.Output T B)}
     {draw : QueryImpl (challengeSpec oracleSig s) ProbComp}
     {ε : ChallengeNode oracleSig s → ℝ≥0∞}
     (fresh : FreshChallenges H draw)
     (h : Core.rbrSoundness oracleSig s (input.admissible ()) (input.language ())
-      (V.validAcceptanceWith (fun q => H (.inl q)) (output.language ())) draw ε) :
+      (V.validAcceptanceWith (fun q => H (.inl q)) (output.language)) draw ε) :
     V.soundnessWith H input output
       (⨆ path : Path s, ∑ c ∈ challengeNodesOn oracleSig s path, ε c) := by
   obtain ⟨F, hF⟩ := h
@@ -593,13 +582,13 @@ theorem OracleVerifier.soundnessWith_of_rbrSoundness {m : Type → Type v}
     fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q))
   let k : (tr : PathAlong oracleSig s) → Out tr →
       OracleComp (ambient + challengeSpec oracleSig s)
-        (Observation oracleSig s Out (T × (∀ j, B j))) := fun tr out =>
+        (Observation oracleSig s Out (OracleVerifier.Output T B)) := fun tr out =>
     (fun v => (⟨tr, out, v.map fun t => (t, (V.outputMap stmt.1 (projectPathAlong oracleSig s tr)
-        (toView s tr)).f (sumData stmt.2 (payloads s tr)))⟩ :
-        Observation oracleSig s Out (T × (∀ j, B j)))) <$>
-      simulateQ (QueryImpl.addLift liftAmbient ((sumFamily inputs
-        (pathFamily s (projectPathAlong oracleSig s tr))).behaviorOfRealizations
-          (sumData stmt.2 (payloads s tr))))
+        (toView s tr)).f (stmt.2, payloads s tr))⟩ :
+        Observation oracleSig s Out (OracleVerifier.Output T B))) <$>
+      simulateQ (QueryImpl.addLift liftAmbient
+        ((pathResources inputs s (projectPathAlong oracleSig s tr)).answer
+          (stmt.2, payloads s tr)))
         (V.decide stmt.1 (projectPathAlong oracleSig s tr) (toView s tr)).run
   have hrun : V.run stmt.1 stmt.2 p = TwoParty.Lens.run s (Prover.simulate liftAmbient p)
       (sampler oracleSig s fun c => liftM ((ambient + challengeSpec oracleSig s).query (.inr c)))
@@ -623,17 +612,19 @@ theorem OracleVerifier.soundnessWith_of_rbrSoundness {m : Type → Type v}
 /-- Fresh round-by-round soundness bounds soundness by the sum of all node errors. -/
 theorem OracleVerifier.soundnessWith_of_rbrSoundness_tsum {m : Type → Type v}
     [Monad m] [LawfulMonad m] [EvalDistSemantics m] [LawfulEvalDistSemantics m]
-    {ι I J S T : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
-    {A : I → Type} {B : J → Type} {inputs : OracleFamily I A} {outputs : OracleFamily J B}
+    {ι : Type} {I : Type uI} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol}
+    {T : Path s → Type} {A : I → Type} {J : Path s → Type}
+    {B : (p : Path s) → J p → Type} {inputs : OracleFamily.{uI, 0, wI} I A}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
     {V : OracleVerifier ambient s S T inputs outputs}
     {H : QueryImpl (ambient + challengeSpec oracleSig s) m}
     {input : StatementProblem (S × (∀ i, A i))}
-    {output : StatementProblem (T × (∀ j, B j))}
+    {output : PathProblem s (OracleVerifier.Output T B)}
     {draw : QueryImpl (challengeSpec oracleSig s) ProbComp}
     {ε : ChallengeNode oracleSig s → ℝ≥0∞}
     (fresh : FreshChallenges H draw)
     (h : Core.rbrSoundness oracleSig s (input.admissible ()) (input.language ())
-      (V.validAcceptanceWith (fun q => H (.inl q)) (output.language ())) draw ε) :
+      (V.validAcceptanceWith (fun q => H (.inl q)) (output.language)) draw ε) :
     V.soundnessWith H input output (∑' c, ε c) := fun Out stmt hadm hlang p =>
   (soundnessWith_of_rbrSoundness fresh h Out stmt hadm hlang p).trans
     (iSup_sum_challengeNodesOn_le_tsum ε)
@@ -641,18 +632,20 @@ theorem OracleVerifier.soundnessWith_of_rbrSoundness_tsum {m : Type → Type v}
 /-- Uniform local errors and a path length bound give soundness error `k • e`. -/
 theorem OracleVerifier.soundnessWith_of_rbrSoundness_uniform {m : Type → Type v}
     [Monad m] [LawfulMonad m] [EvalDistSemantics m] [LawfulEvalDistSemantics m]
-    {ι I J S T : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
-    {A : I → Type} {B : J → Type} {inputs : OracleFamily I A} {outputs : OracleFamily J B}
+    {ι : Type} {I : Type uI} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol}
+    {T : Path s → Type} {A : I → Type} {J : Path s → Type}
+    {B : (p : Path s) → J p → Type} {inputs : OracleFamily.{uI, 0, wI} I A}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
     {V : OracleVerifier ambient s S T inputs outputs}
     {H : QueryImpl (ambient + challengeSpec oracleSig s) m}
     {input : StatementProblem (S × (∀ i, A i))}
-    {output : StatementProblem (T × (∀ j, B j))}
+    {output : PathProblem s (OracleVerifier.Output T B)}
     {draw : QueryImpl (challengeSpec oracleSig s) ProbComp}
     {ε : ChallengeNode oracleSig s → ℝ≥0∞}
     {e : ℝ≥0∞} {k : ℕ}
     (fresh : FreshChallenges H draw)
     (h : Core.rbrSoundness oracleSig s (input.admissible ()) (input.language ())
-      (V.validAcceptanceWith (fun q => H (.inl q)) (output.language ())) draw ε)
+      (V.validAcceptanceWith (fun q => H (.inl q)) (output.language)) draw ε)
     (hε : ∀ c, ε c ≤ e)
     (hcount : ∀ path, (challengeNodesOn oracleSig s path).card ≤ k) :
     V.soundnessWith H input output (k • e) := fun Out stmt hadm hlang p =>
@@ -661,11 +654,13 @@ theorem OracleVerifier.soundnessWith_of_rbrSoundness_uniform {m : Type → Type 
 
 section OracleVerifier
 
-variable {ι I J σ S T : Type} {ambient : OracleSpec ι} {s : OracleProtocol} {A : I → Type}
-  {B : J → Type} {inputs : OracleFamily I A} {outputs : OracleFamily J B}
+variable {ι σ : Type} {I : Type uI} {S : Type uS} {ambient : OracleSpec ι}
+  {s : OracleProtocol} {T : Path s → Type} {A : I → Type} {J : Path s → Type}
+  {B : (p : Path s) → J p → Type} {inputs : OracleFamily.{uI, 0, wI} I A}
+  {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
   {V : OracleVerifier ambient s S T inputs outputs} {init : ProbComp σ}
   {impl : QueryImpl ambient (StateT σ ProbComp)}
-  {input : StatementProblem (S × (∀ i, A i))} {output : StatementProblem (T × (∀ j, B j))}
+  {input : StatementProblem (S × (∀ i, A i))} {output : PathProblem s (OracleVerifier.Output T B)}
   {draw : QueryImpl (challengeSpec oracleSig s) ProbComp}
   {ε : ChallengeNode oracleSig s → ℝ≥0∞}
 
@@ -679,7 +674,7 @@ theorem OracleVerifier.soundness_of_rbrSoundness
       (⨆ path : Path s, ∑ c ∈ challengeNodesOn oracleSig s path, ε c) := by
   obtain ⟨F, hF⟩ := h
   intro Out stmt hadm hlang (p : Prover oracleSig ambient s Out)
-  let : MeasurableSpace (Observation oracleSig s Out (T × (∀ j, B j))) := ⊤
+  let : MeasurableSpace (Observation oracleSig s Out (OracleVerifier.Output T B)) := ⊤
   change 𝒟[experiment init impl draw (V.run stmt.1 stmt.2 p)] _ ≤ _
   rw [← prEvent_eq_evalDist _ _ measurable_from_top]
   unfold experiment
@@ -688,13 +683,13 @@ theorem OracleVerifier.soundness_of_rbrSoundness
     fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q))
   let k : (tr : PathAlong oracleSig s) → Out tr →
       OracleComp (ambient + challengeSpec oracleSig s)
-        (Observation oracleSig s Out (T × (∀ j, B j))) := fun tr out =>
+        (Observation oracleSig s Out (OracleVerifier.Output T B)) := fun tr out =>
     (fun v => (⟨tr, out, v.map fun t => (t, (V.outputMap stmt.1 (projectPathAlong oracleSig s tr)
-        (toView s tr)).f (sumData stmt.2 (payloads s tr)))⟩ :
-        Observation oracleSig s Out (T × (∀ j, B j)))) <$>
-      simulateQ (QueryImpl.addLift liftAmbient ((sumFamily inputs
-        (pathFamily s (projectPathAlong oracleSig s tr))).behaviorOfRealizations
-          (sumData stmt.2 (payloads s tr))))
+        (toView s tr)).f (stmt.2, payloads s tr))⟩ :
+        Observation oracleSig s Out (OracleVerifier.Output T B))) <$>
+      simulateQ (QueryImpl.addLift liftAmbient
+        ((pathResources inputs s (projectPathAlong oracleSig s tr)).answer
+          (stmt.2, payloads s tr)))
         (V.decide stmt.1 (projectPathAlong oracleSig s tr) (toView s tr)).run
   have hrun : V.run stmt.1 stmt.2 p = TwoParty.Lens.run s (Prover.simulate liftAmbient p)
       (sampler oracleSig s fun c => liftM ((ambient + challengeSpec oracleSig s).query (.inr c)))
@@ -710,7 +705,7 @@ theorem OracleVerifier.soundness_of_rbrSoundness
   · intro tr out st hne
     by_contra hpos
     refine hne (StateFunction.escapeAlong oracleSig F hadm hlang (tr := tr) ⟨st, ?_⟩)
-    let : MeasurableSpace (Option T) := ⊤
+    let : MeasurableSpace (Option (T (projectPathAlong oracleSig s tr))) := ⊤
     rw [← prEvent_eq_evalDist _ _ measurable_from_top]
     simp only [k, liftAmbient, simulateQ_map, simulateQ_addLift_resources, StateT.run'_eq,
       StateT.run_map, Functor.map_map, exists_map_some_iff] at hpos

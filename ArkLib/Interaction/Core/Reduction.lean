@@ -130,68 +130,89 @@ theorem sampler_node {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
   simp only [sampler, PureEnd.toStrategy, PureEnd.mapOutput, samplerEnd, samplerSlot_map]
   rfl
 
+/-- At a message node, the sampler draws nothing and continues on the sent message. -/
+theorem sampler_message {M : Type u → Type u} [Monad M] [LawfulMonad M] (X : Type u)
+    (rest : X → Protocol.{u})
+    (draw : (c : ChallengeNode plainSig (.liftBind (PlainPos.message X) rest)) →
+      M (challengeSpec plainSig (.liftBind (PlainPos.message X) rest) c)) :
+    sampler plainSig (.liftBind (PlainPos.message X) rest) draw =
+      pure (fun x => sampler plainSig (rest x) (fun c => draw ⟨.inr ⟨x, c.val⟩, c.property⟩)) := by
+  change Choice.map .counterpart .sender _ <$> pure _ = _
+  erw [LawfulApplicative.map_pure]
+  rfl
+
+/-- At a challenge node, the sampler draws the challenge and continues on it. -/
+theorem sampler_challenge {M : Type u → Type u} [Monad M] [LawfulMonad M] (C : Type u)
+    (rest : PUnit → Protocol.{u})
+    (draw : (c : ChallengeNode plainSig (.liftBind (PlainPos.challenge C) rest)) →
+      M (challengeSpec plainSig (.liftBind (PlainPos.challenge C) rest) c)) :
+    sampler plainSig (.liftBind (PlainPos.challenge C) rest) draw =
+      (fun x => ⟨x, sampler plainSig (rest ⟨⟩)
+        (fun c => draw ⟨.inr ⟨⟨⟩, c.val⟩, c.property⟩)⟩) <$> draw ⟨.inl ⟨⟩, rfl⟩ := by
+  change Choice.map .counterpart .receiver _ <$> (_ <$> _) = _
+  erw [Functor.map_map]
+  rfl
+
 section SamplerLaws
 
-variable {P : PFunctor.{1, 0}} {l : PFunctor.Lens P rolePoly}
+variable {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
+
+section Slots
+
+variable {m : Type u → Type u} [Applicative m]
+
+/-- A sampler slot at a sender is its pure continuation. -/
+private theorem cast_samplerSlot_sender {X : Type u} {B : X → Type u} {r : TwoParty.Role}
+    (h : r = .sender) (draw : r = .receiver → m X) (next : ∀ x, B x) :
+    cast (congrArg (fun r => m (Choice .counterpart r X B)) h)
+      (samplerSlot r draw next) = pure next := by
+  subst h
+  rfl
+
+/-- A sampler slot at a receiver maps the root draw to its continuation. -/
+private theorem cast_samplerSlot_receiver {X : Type u} {B : X → Type u} {r : TwoParty.Role}
+    (h : r = .receiver) (draw : r = .receiver → m X) (next : ∀ x, B x) :
+    cast (congrArg (fun r => m (Choice .counterpart r X B)) h)
+      (samplerSlot r draw next) = (fun x => ⟨x, next x⟩) <$> draw h := by
+  subst h
+  rfl
+
+end Slots
 
 section Sampler
 
-variable {m : Type → Type} [Monad m] [LawfulMonad m]
-
-/-- A sender slot built by rewriting with an ownership equation is its pure payload. -/
-private theorem cast_map_pure_sender {X : Type} {B B' : X → Type} {r : TwoParty.Role}
-    (h : r = .sender) (e : Choice .counterpart r X B = ((x : X) → B x)) (G : (x : X) → B x)
-    (Φ : ∀ x, B x → B' x) :
-    cast (congrArg (fun r => m (Choice .counterpart r X B')) h)
-      (Choice.map .counterpart r Φ <$> (pure (Eq.mpr e G) : m _)) = pure fun x => Φ x (G x) := by
-  subst h
-  exact map_pure _ _
-
-/-- A receiver slot built by rewriting with an ownership equation maps its draw. -/
-private theorem cast_map_map_receiver {X : Type} {B B' : X → Type} {r : TwoParty.Role}
-    (h : r = .receiver) (e : Choice .counterpart r X B = ((x : X) × B x))
-    (G : X → (x : X) × B x) (mx : m X) (Φ : ∀ x, B x → B' x) :
-    cast (congrArg (fun r => m (Choice .counterpart r X B')) h)
-      (Choice.map .counterpart r Φ <$> ((fun x => Eq.mpr e (G x)) <$> mx)) =
-        (fun x => ⟨(G x).1, Φ _ (G x).2⟩) <$> mx := by
-  subst h
-  exact Functor.map_map _ _ _
+variable {m : Type u → Type u} [Monad m] [LawfulMonad m]
 
 /-- The sampler passes over a sender node. -/
-private theorem sampler_sender {a : P.A} {next : P.B a → FreeM P PUnit} (h : owner l a = .sender)
+private theorem sampler_sender {a : P.A} {next : P.B a → FreeM P PUnit.{u + 1}}
+    (h : owner l a = .sender)
     (d : (c : ChallengeNode l (.liftBind a next)) → m (challengeSpec l (.liftBind a next) c)) :
     cast (congrArg (fun r => m (Choice .counterpart r (Move l a)
-      (fun x => Counterpart l m (next (l.toFunB a x)) (fun _ => PUnit)))) h)
+      (fun x => Counterpart l m (next (l.toFunB a x)) (fun _ => PUnit.{u + 1})))) h)
       (sampler l (.liftBind a next) d) =
     pure fun x => sampler l (next (l.toFunB a x))
       fun c => d ⟨.inr ⟨l.toFunB a x, c.val⟩, c.property⟩ := by
-  simp only [sampler, PureEnd.toStrategy, PureEnd.mapOutput, samplerEnd]
-  split
-  · exact cast_map_pure_sender h _ _ _
-  · rename_i h'
-    cases h.symm.trans h'
+  rw [sampler_node, samplerSlot_map]
+  exact cast_samplerSlot_sender h _ _
 
 /-- The sampler draws at a receiver node, then samples the rest of the protocol. -/
-private theorem sampler_receiver {a : P.A} {next : P.B a → FreeM P PUnit}
+private theorem sampler_receiver {a : P.A} {next : P.B a → FreeM P PUnit.{u + 1}}
     (h : owner l a = .receiver)
     (d : (c : ChallengeNode l (.liftBind a next)) → m (challengeSpec l (.liftBind a next) c)) :
     cast (congrArg (fun r => m (Choice .counterpart r (Move l a)
-      (fun x => Counterpart l m (next (l.toFunB a x)) (fun _ => PUnit)))) h)
+      (fun x => Counterpart l m (next (l.toFunB a x)) (fun _ => PUnit.{u + 1})))) h)
       (sampler l (.liftBind a next) d) =
     (fun x => ⟨x, sampler l (next (l.toFunB a x))
       fun c => d ⟨.inr ⟨l.toFunB a x, c.val⟩, c.property⟩⟩) <$> d ⟨.inl ⟨⟩, h⟩ := by
-  simp only [sampler, PureEnd.toStrategy, PureEnd.mapOutput, samplerEnd]
-  split
-  · rename_i h'
-    cases h.symm.trans h'
-  · exact cast_map_map_receiver h _ (fun x => ⟨x, _⟩) _ _
+  rw [sampler_node, samplerSlot_map]
+  exact cast_samplerSlot_receiver h _ _
 
 /-- At a sender node the prover sends a move, then the rest of the protocol runs. -/
-theorem run_sampler_sender {β : Type} {a : P.A} {next : P.B a → FreeM P PUnit}
-    (h : owner l a = .sender) {Out : PathAlong l (.liftBind a next) → Type}
+theorem run_sampler_sender {β : Type u} {a : P.A} {next : P.B a → FreeM P PUnit.{u + 1}}
+    (h : owner l a = .sender) {Out : PathAlong l (.liftBind a next) → Type u}
     (p : Focal l m (.liftBind a next) Out)
     (d : (c : ChallengeNode l (.liftBind a next)) → m (challengeSpec l (.liftBind a next) c))
-    (g : ((tr : PathAlong l (.liftBind a next)) × Out tr × PUnit) → m β) :
+    (g : ((tr : PathAlong l (.liftBind a next)) × Out tr × PUnit.{u + 1}) → m β) :
     (TwoParty.Lens.run (.liftBind a next) p (sampler l _ d) >>= g) =
       (cast (congrArg (fun r => m (Choice .focal r (Move l a)
           (fun x => Focal l m (next (l.toFunB a x)) (fun tr => Out ⟨x, tr⟩)))) h) p >>= fun v =>
@@ -208,11 +229,11 @@ theorem run_sampler_sender {β : Type} {a : P.A} {next : P.B a → FreeM P PUnit
 
 /-- At a receiver node the prover fixes a reply to each move, the move is drawn, then the rest of
 the protocol runs. -/
-theorem run_sampler_receiver {β : Type} {a : P.A} {next : P.B a → FreeM P PUnit}
-    (h : owner l a = .receiver) {Out : PathAlong l (.liftBind a next) → Type}
+theorem run_sampler_receiver {β : Type u} {a : P.A} {next : P.B a → FreeM P PUnit.{u + 1}}
+    (h : owner l a = .receiver) {Out : PathAlong l (.liftBind a next) → Type u}
     (p : Focal l m (.liftBind a next) Out)
     (d : (c : ChallengeNode l (.liftBind a next)) → m (challengeSpec l (.liftBind a next) c))
-    (g : ((tr : PathAlong l (.liftBind a next)) × Out tr × PUnit) → m β) :
+    (g : ((tr : PathAlong l (.liftBind a next)) × Out tr × PUnit.{u + 1}) → m β) :
     (TwoParty.Lens.run (.liftBind a next) p (sampler l _ d) >>= g) =
       (cast (congrArg (fun r => m (Choice .focal r (Move l a)
           (fun x => Focal l m (next (l.toFunB a x)) (fun tr => Out ⟨x, tr⟩)))) h) p >>= fun f =>

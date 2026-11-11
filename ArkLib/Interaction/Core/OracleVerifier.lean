@@ -20,7 +20,7 @@ oracles are one map containing concrete data, query simulation and their agreeme
 
 universe u uι uS uI uJ uK uL uX uY uZ uW dX dY dZ dW w wI wJ
 
-universe v
+universe v v' uκ uρ
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
@@ -529,12 +529,13 @@ def OracleVerifier.run {ι : Type u} {I : Type uI} {ambient : OracleSpec.{u, u} 
 
 section ResourceInterpretation
 
-variable {ι κ ρ α : Type} {ambient : OracleSpec ι} {chal : OracleSpec κ}
-  {resources : OracleSpec ρ}
+variable {ι : Type uι} {κ : Type uκ} {ρ : Type uρ} {α : Type u}
+  {ambient : OracleSpec.{uι, u} ι} {chal : OracleSpec.{uκ, u} κ}
+  {resources : OracleSpec.{uρ, u} ρ}
 
 /-- Answering resource queries before interpretation agrees with interpreting them beside the
 restricted ambient handler, for any lawful target monad. -/
-theorem simulateQ_resources {m : Type → Type v} [Monad m] [LawfulMonad m]
+theorem simulateQ_resources {m : Type u → Type v} [Monad m] [LawfulMonad m]
     (H : QueryImpl (ambient + chal) m) (answer : QueryImpl resources Id)
     (program : OracleComp (ambient + resources) α) :
     simulateQ H (simulateQ (QueryImpl.addLift
@@ -545,6 +546,19 @@ theorem simulateQ_resources {m : Type → Type v} [Monad m] [LawfulMonad m]
   rcases q with q | q
   · simp
   · exact simulateQ_pure _ _
+
+/-- Deterministic resource answers commute with adjoining any lifted challenge handler. -/
+theorem simulateQ_addLift_resources {m : Type u → Type v} [Monad m] [LawfulMonad m]
+    {n : Type u → Type v'} [MonadLiftT n m]
+    (impl : QueryImpl ambient m) (draw : QueryImpl chal n) (answer : QueryImpl resources Id)
+    (program : OracleComp (ambient + resources) α) :
+    simulateQ (impl.addLift draw : QueryImpl (ambient + chal) m)
+      (simulateQ (QueryImpl.addLift
+        ((fun q => liftM ((ambient + chal).query (.inl q))) :
+          QueryImpl ambient (OracleComp (ambient + chal))) answer) program) =
+      simulateQ (impl.addLift answer : QueryImpl (ambient + resources) m) program := by
+  simpa using simulateQ_resources (impl.addLift draw : QueryImpl (ambient + chal) m)
+    answer program
 
 end ResourceInterpretation
 
