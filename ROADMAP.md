@@ -166,8 +166,8 @@ entry says so, the specification is not claimed to be executable.
 
 ## In progress
 
-- **Solicited proofs.** Four coding-theory declarations, covering a correlated-agreement lower
-  bound, two list-size lower bounds and a random-domain list-size upper bound, are stated faithfully and left open for contributors. They are the only admitted statements in the library, and nothing
+- **Solicited proofs.** Two coding-theory declarations, covering a correlated-agreement lower
+  bound and a random-domain list-size upper bound, are stated faithfully and left open for contributors. They are the only admitted statements in the library, and nothing
   else depends on them
   ([#1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352)).
 - **Rewinding knowledge soundness.** A shared rewinding engine with legacy-layer and
