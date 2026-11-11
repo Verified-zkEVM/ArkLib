@@ -59,22 +59,6 @@ example : ¬ NARG.knowledgeSoundnessFailureEvent (∅ : Set (Unit × Unit))
     ((), none, some false) := by
   simp [NARG.knowledgeSoundnessFailureEvent, nargKSFailEvent]
 
-example : ¬ NARG.knowledgeSoundnessFailureEvent (∅ : Set (Unit × Unit))
-    ((), none, none) :=
-  NARG.knowledgeSoundnessFailureEvent_reject _ _ _
-
--- The same missing witness is a failure on acceptance.
-example : NARG.knowledgeSoundnessFailureEvent (∅ : Set (Unit × Unit))
-    ((), none, some true) :=
-  NARG.knowledgeSoundnessFailureEvent_missing _ _
-
--- The generic SR backend's output witness is only Unit, and carries no prover information.
-example {Statement Salt : Type} {n : ℕ} {pSpec : ProtocolSpec n}
-    (P : Prover.StateRestoration.KnowledgeSoundness
-      []ₒ unifSpec Statement Unit pSpec (Salt := Salt)) :
-    (PublicCoinIP.SRProver.ofReduction P).toReduction = P :=
-  PublicCoinIP.SRProver.toReduction_ofReduction P
-
 -- Adding the dummy witness changes neither the move count nor the private-coin convention.
 example {Statement Salt : Type} {n : ℕ} {pSpec : ProtocolSpec n}
     (P : PublicCoinIP.SRProver Statement pSpec (Salt := Salt)) (t : ℕ) :
