@@ -8,6 +8,7 @@ module
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon.SubspaceWitness
 public import ArkLib.Data.CodingTheory.ReedSolomon
+import ArkLib.Data.FieldTheory.BinaryAddSubgroup
 public import ArkLib.Data.Probability.Uniform
 import Mathlib.Algebra.CharP.CharAndCard
 public import Mathlib.Analysis.SpecialFunctions.Pow.Real

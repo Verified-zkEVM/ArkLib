@@ -15,7 +15,8 @@ public import ArkLib.Data.Polynomial.SubspacePolynomial
 Over a finite field `F` with `q = 2 ^ m` elements, let `a ≤ v ≤ m` and let `V` range over the
 additive subgroups of `F` of size `2 ^ v`. The proof outline for superpolynomial lists is:
 1. There are at least `2 ^ (v * (m - v))` such subgroups
-   (`FiniteField.two_pow_le_card_addSubgroup`).
+   (`FiniteField.two_pow_le_card_addSubgroup` in
+   `ArkLib/Data/FieldTheory/BinaryAddSubgroup.lean`).
 2. The subspace polynomial `P_V` of `V` is monic, `2`-linearized and of degree `2 ^ v`. Its
    coefficients at `X ^ (2 ^ a), …, X ^ (2 ^ (v - 1))` take at most `q ^ (v - a)` values. By
    pigeonhole, some value `b` is shared by at least `2 ^ (v * (m - v)) / q ^ (v - a)` subgroups.
