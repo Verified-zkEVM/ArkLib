@@ -1,12 +1,11 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao, Chung Thai Nguyen
+Authors: Quang Dao
 -/
 module
 
 public import ArkLib.OracleReduction.Security.Basic
-public import ArkLib.OracleReduction.Security.OracleSampling
 
 /-!
   # The Basic Fiat-Shamir Transformation
@@ -60,7 +59,7 @@ instance : MonadLift (StateT τ m) (StateT (σ × τ) m) where
 
 end find_home
 
-open ProtocolSpec OracleComp OracleSpec OracleReduction
+open ProtocolSpec OracleComp OracleSpec
 
 open scoped BigOperators
 
@@ -161,20 +160,16 @@ open scoped NNReal
 variable [∀ i, SampleableType (pSpec.Challenge i)]
   {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
 
-/-- Completeness statement for basic Fiat-Shamir with one uniformly sampled challenge table.
-The proof is intentionally deferred. -/
-theorem fiatShamir_completeness
-    [SampleableType (QueryImpl (srChallengeOracle StmtIn pSpec) Id)]
-    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+theorem fiatShamir_completeness (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (completenessError : ℝ≥0) (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) :
   R.completeness init impl relIn relOut completenessError →
-    R.fiatShamir.completeness (init := do
-        let f ← (uniformSample (QueryImpl (srChallengeOracle StmtIn pSpec) Id))
-        let challengeImpl : QueryImpl (srChallengeOracle StmtIn pSpec) Id := fun q => f q
+    R.fiatShamir.completeness (do
+        let challengeImpl : QueryImpl (srChallengeOracle StmtIn pSpec) Id :=
+          fun ⟨i, _⟩ => (default : pSpec.Challenge i)
         return (← init, challengeImpl))
-      (impl := (impl.addLift fsChallengeQueryImpl' :
+      (impl.addLift fsChallengeQueryImpl' :
         QueryImpl (oSpec + srChallengeOracle StmtIn pSpec)
-          (StateT (σ × QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp)))
+          (StateT (σ × QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp))
         relIn relOut completenessError := sorry
 
 -- TODO: state-restoration (knowledge) soundness implies (knowledge) soundness after Fiat-Shamir
