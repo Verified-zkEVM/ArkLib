@@ -869,11 +869,11 @@ home_page/            site assets and assembled website root
   steps, `QueryPhase/` implements proximity queries and `General` composes the full protocol.
   The sum-check-and-fold loop takes the multiplier polynomial of a context; the final sum-check
   step, core interaction and full protocol take a `Sumcheck.Structured.Multiplier`, whose evaluator
-  the final check uses. `ProductClaim` opens a product claim: the canonical initial witness, a
-  zero-message front end and full Binary Basefold, secure for any input relation into which a
-  relaxed round-`0` witness extracts. `Commitment` owns the first-oracle interface, and `Opening`
-  is the evaluation-claim instance at `openingMultiplier`, with exact-encoding completeness and
-  unique-radius round-by-round security.
+  the final check uses. `ProductClaim` opens a product claim: the claim reduction
+  `ReduceClaim.oracleReduction` as front end, then full Binary Basefold, secure for any input
+  relation containing `ProductClaim.inputRelation`. `Commitment` owns the first-oracle interface,
+  and `Opening` is the evaluation-claim instance at `evalMultiplier` (`Opening.inputRelation_eq`),
+  with exact-encoding completeness and unique-radius round-by-round security.
   `FRIBinius/Prelude` instantiates the tensor profile; `FRIBinius/RingSwitch` composes the shared
   prefix reduction with Binary Basefold opening. `FRIBinius/Unrolled/` is DP24 Construction 5.1:
   the tensor batching head (`TensorPrefix.headVerifier`) followed by `ProductClaim.openingVerifier`

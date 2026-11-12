@@ -118,6 +118,12 @@ product sum-check instead of the shared one. -/
 def headVerifier := Head.verifier (PackingData.ofBasis P.basis) ℓ' (layout P h_l)
   (messageEquiv P) (BatchingRule.eqFold L κ) (commitment a)
 
+open scoped Classical in
+/-- The batching head's guard: the original carrier check, then the product claim. -/
+def headGuardedForm : (headVerifier P h_l a).toVerifier.GuardedForm :=
+  Head.guardedForm (PackingData.ofBasis P.basis) ℓ' (layout P h_l) (messageEquiv P)
+    (BatchingRule.eqFold L κ) (commitment a)
+
 /-- The honest prover and verifier of the tensor batching head. -/
 def headReduction := Head.reduction (PackingData.ofBasis P.basis) ℓ' (layout P h_l)
   (messageEquiv P) (BatchingRule.eqFold L κ) (commitment a)
@@ -285,15 +291,30 @@ theorem rbrKnowledgeSoundness (h : a.Functional) {σ : Type} (init : ProbComp σ
     (fun _ _ h => h) init impl
 
 /-- The tensor batching head is round-by-round knowledge sound from the original claim to the
+product claim at the head's extractor and knowledge-state function, with the batching loss
+`κ/|L|` on its one challenge. -/
+theorem headVerifier_rbrKnowledgeSoundnessWith (h : a.Functional) {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    Verifier.rbrKnowledgeSoundnessWith init impl (relIn P h_l a) (headRelOut P h_l a)
+      (headVerifier P h_l a).toVerifier
+      (Head.WitMid (PackingData.ofBasis P.basis) ℓ' (layout P h_l))
+      (Head.extractor (M := P.A) (PackingData.ofBasis P.basis) ℓ' (layout P h_l)
+        (BatchingRule.eqFold L κ) (commitment a))
+      (Head.knowledgeStateFunction (PackingData.ofBasis P.basis) ℓ' (layout P h_l)
+        (messageEquiv P) (BatchingRule.eqFold L κ) (commitment a) init impl)
+      (headRbrError P) :=
+  Head.rbrKnowledgeSoundnessWith (PackingData.ofBasis P.basis) ℓ' (layout P h_l)
+    (messageEquiv P) (BatchingStrategy.eqFold L κ) (commitment a) (commitment_functional a h)
+    (fun _ _ h => h) init impl
+
+/-- The tensor batching head is round-by-round knowledge sound from the original claim to the
 product claim, with the batching loss `κ/|L|` on its one challenge. -/
 theorem headVerifier_rbrKnowledgeSoundness (h : a.Functional) {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (headVerifier P h_l a).toVerifier.rbrKnowledgeSoundness init impl (relIn P h_l a)
       (headRelOut P h_l a) (headRbrError P) :=
   (Verifier.rbrKnowledgeSoundness_iff_exists_with init impl _ _ _ _).mpr
-    ⟨_, _, _, Head.rbrKnowledgeSoundnessWith (PackingData.ofBasis P.basis) ℓ' (layout P h_l)
-      (messageEquiv P) (BatchingStrategy.eqFold L κ) (commitment a) (commitment_functional a h)
-      (fun _ _ h => h) init impl⟩
+    ⟨_, _, _, headVerifier_rbrKnowledgeSoundnessWith P h_l a h init impl⟩
 
 /-- The challenge-index sum is `κ/|L| + 2ℓ'/|L|`. -/
 theorem rbrError_sum : ∑ i, rbrError (ℓ' := ℓ') P i =

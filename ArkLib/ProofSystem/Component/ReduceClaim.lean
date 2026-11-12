@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.OracleReduction.Security.RoundByRound
+public import ArkLib.OracleReduction.Security.GuardedRoundByRound
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
 
@@ -350,20 +351,27 @@ def oracleKnowledgeStateFunction (hRel : ∀ stmtIn oStmtIn witOut,
     cases (Option.some.inj hxc)
     exact hRel stmtIn oStmtIn witOut hrel
 
-/-- The `ReduceClaim` oracle reduction satisfies perfect round-by-round
-knowledge soundness.
+/-- The `ReduceClaim` oracle verifier is round-by-round knowledge sound at the extractor
+`extractor mapWitInv` and the knowledge-state function `oracleKnowledgeStateFunction`, with no
+error: there is no challenge, so the content is the knowledge-state function. -/
+theorem oracleVerifier_rbrKnowledgeSoundnessWith (hRel : ∀ stmtIn oStmtIn witOut,
+    ((mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn), witOut) ∈ relOut →
+    ((stmtIn, oStmtIn), mapWitInv (stmtIn, oStmtIn) witOut) ∈ relIn) :
+    (oracleVerifier oSpec mapStmt embedIdx hEq hInterface).toVerifier.rbrKnowledgeSoundnessWith
+      init impl relIn relOut (fun _ => WitIn) (extractor mapWitInv)
+      (oracleKnowledgeStateFunction relIn relOut hRel) 0 :=
+  Verifier.rbrKnowledgeSoundnessWith_of_isEmpty_challengeIdx _ _
 
-Note that since there is no challenge round, all the work is done in the definition of the
-knowledge state function. -/
+/-- The `ReduceClaim` oracle reduction satisfies perfect round-by-round
+knowledge soundness: the existential form of `oracleVerifier_rbrKnowledgeSoundnessWith`. -/
 @[simp]
 theorem oracleVerifier_rbrKnowledgeSoundness (hRel : ∀ stmtIn oStmtIn witOut,
     ((mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn), witOut) ∈ relOut →
     ((stmtIn, oStmtIn), mapWitInv (stmtIn, oStmtIn) witOut) ∈ relIn) :
     (oracleVerifier oSpec mapStmt embedIdx hEq hInterface).rbrKnowledgeSoundness
-      init impl relIn relOut 0 := by
-  refine ⟨_, _, oracleKnowledgeStateFunction relIn relOut hRel, ?_⟩
-  intro stmtIn i
-  exact Fin.elim0 i.1
+      init impl relIn relOut 0 :=
+  (Verifier.rbrKnowledgeSoundness_iff_exists_with init impl _ _ _ _).mpr
+    ⟨_, _, _, oracleVerifier_rbrKnowledgeSoundnessWith relIn relOut hRel⟩
 
 /-- The `ReduceClaim` oracle verifier's underlying non-oracle verifier deterministically returns the
 mapped statement together with the reshaped oracle statements (`mapOStmt`). -/
@@ -374,12 +382,25 @@ theorem oracleVerifier_toVerifier_run {stmt : StmtIn} {oStmt : ∀ i, OStmtIn i}
   simp only [Verifier.run, OracleVerifier.toVerifier, oracleVerifier]
   rfl
 
+variable (oSpec mapStmt embedIdx hEq hInterface) in
+/-- The `ReduceClaim` oracle verifier's verdict as data: the mapped statement and the reshaped
+oracle statements. -/
+def oracleVerifierPureForm :
+    (oracleVerifier oSpec mapStmt embedIdx hEq hInterface).toVerifier.PureForm where
+  verify p _ := (mapStmt p.1, mapOStmt embedIdx hEq p.2)
+  verify_eq := fun ⟨_, _⟩ _ => oracleVerifier_toVerifier_run (oSpec := oSpec)
+
+variable (oSpec mapStmt embedIdx hEq hInterface) in
+/-- The `ReduceClaim` oracle verifier is guarded by the trivially-true check. -/
+def oracleVerifierGuardedForm :
+    (oracleVerifier oSpec mapStmt embedIdx hEq hInterface).toVerifier.GuardedForm :=
+  (oracleVerifierPureForm oSpec mapStmt embedIdx hEq hInterface).toGuardedForm
+
 /-- The `ReduceClaim` oracle verifier is pure, discharging the deterministic-left hypothesis of the
 CWSS binary append. -/
 instance instIsPureOracle :
     (oracleVerifier oSpec mapStmt embedIdx hEq hInterface).toVerifier.IsPure :=
-  ⟨fun p _ => ⟨mapStmt p.1, mapOStmt embedIdx hEq p.2⟩,
-   fun ⟨_, _⟩ _ => oracleVerifier_toVerifier_run (oSpec := oSpec)⟩
+  (oracleVerifierPureForm oSpec mapStmt embedIdx hEq hInterface).isPure
 
 /-- **The `ReduceClaim` oracle tree extractor**, witness-only: as in the non-oracle case, pull the
 single leaf's output witness back along `mapWitInv`. Computable and `Classical.choice`-free.

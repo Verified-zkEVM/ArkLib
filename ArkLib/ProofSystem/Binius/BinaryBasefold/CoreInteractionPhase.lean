@@ -26,7 +26,7 @@ sends the constant `c := f⁽ˡ⁾(0, …, 0)` and the verifier checks `s_ℓ = 
 
 * `coreInteractionOracleVerifier`, `coreInteractionOracleReduction`: the sum-check-and-fold rounds
   (`sumcheckFoldOracleVerifier`) followed by the final sum-check step, for a `Multiplier` over an
-  arbitrary context. `Opening` instantiates it with `openingMultiplier`; the unrolled FRI-Binius
+  arbitrary context. `Opening` instantiates it with `evalMultiplier`; the unrolled FRI-Binius
   protocol with the ring-switching multiplier.
 * `coreInteractionOracleReduction_perfectCompleteness`: perfect completeness from the strict round
   relation at round `0` to the strict final sum-check output relation.

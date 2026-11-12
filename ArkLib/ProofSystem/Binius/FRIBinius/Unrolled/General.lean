@@ -46,6 +46,7 @@ The field `K` has two elements, so DP24's degree `r` of `L` over `𝔽₂` is th
 Construction 5.1 allows any binary `K` and asks for `r ≥ ℓ + R`; the rate condition here is
 `ℓ' + R < 2^κ`. It uses `ℓ'` because only the packed polynomial is encoded, and it is strict as
 in all Binary Basefold statements (`docs/kb/papers/DP24.md`, known divergences).
+The same basis `β`, with `β 0 = 1`, packs the source polynomial and defines the additive NTT.
 
 ## Computability
 
@@ -121,44 +122,33 @@ theorem fullReduction_verifier (γ : ℕ) :
 ### The head's product claim -/
 
 omit [DecidableEq K] [Fact (β 0 = 1)] [NeZero R] in
-/-- The head's output relation contains every product claim whose polynomial is unique-radius
-compatible with the first oracle. -/
-theorem mem_headRelOut_of_sum_eq
-    (s : ProductSumcheck.Statement ((Fin ℓ → L) × (Fin κ → L)) L (m := ℓ') 0)
-    (ost : ∀ j, OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0 j)
-    (p : MultilinearPoly L ℓ')
-    (hsum : s.claim.2 = ∑ y : Fin ℓ' → Fin 2,
-      ((TensorPrefix.multiplier (biniusProfile κ L K β) h_l) s.claim.1).val.eval
-        (y : Fin ℓ' → L) * p.val.eval (y : Fin ℓ' → L))
-    (hfirst : FirstOracleWitnessConsistent K β p (getFirstOracle K β ost)) :
-    ((s, ost), (Equiv.refl _).symm p) ∈
-      TensorPrefix.headRelOut (biniusProfile κ L K β) h_l
-        (binaryBasefoldInput κ L K β ℓ' R ϑ h_rate) := by
-  refine (ProductSumcheck.rel_zero (TensorPrefix.multiplier (biniusProfile κ L K β) h_l)
-    (TensorPrefix.commitment (binaryBasefoldInput κ L K β ℓ' R ϑ h_rate)) s ost p).mpr
-    ⟨?_, hfirst⟩
+/-- The head's output relation is the product-claim relation of Binary Basefold at the
+ring-switching multiplier. -/
+theorem headRelOut_eq :
+    TensorPrefix.headRelOut (biniusProfile κ L K β) h_l
+        (binaryBasefoldInput κ L K β ℓ' R ϑ h_rate) =
+      ProductClaim.inputRelation K β (TensorPrefix.multiplier (biniusProfile κ L K β) h_l)
+        (ProductSumcheck.Statement.claim (m := ℓ')) (Equiv.refl _) (ϑ := ϑ)
+        (h_rate := h_rate) := by
+  ext ⟨⟨s, ost⟩, p⟩
+  rw [ProductSumcheck.rel_zero]
   simp only [MvPolynomial.aeval_def]
-  exact hsum
+  rfl
 
 omit [DecidableEq K] [Fact (β 0 = 1)] [NeZero R] in
-/-- A member of the head's strict output relation is a product claim with an exact first
-encoding. -/
-theorem sum_eq_and_getFirstOracle_eq_of_mem_headRelOut
-    (s : ProductSumcheck.Statement ((Fin ℓ → L) × (Fin κ → L)) L (m := ℓ') 0)
-    (ost : ∀ j, OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0 j)
-    (p : MultilinearPoly L ℓ')
-    (h : ((s, ost), p) ∈ TensorPrefix.headRelOut (biniusProfile κ L K β) h_l
-      (binaryBasefoldInput κ L K β ℓ' R ϑ h_rate).strictView) :
-    s.claim.2 = ∑ y : Fin ℓ' → Fin 2,
-        ((TensorPrefix.multiplier (biniusProfile κ L K β) h_l) s.claim.1).val.eval
-          (y : Fin ℓ' → L) * (Equiv.refl _ p).val.eval (y : Fin ℓ' → L) ∧
-      getFirstOracle K β ost = firstOracleEncoding K β (Equiv.refl _ p) := by
-  obtain ⟨hsum, hencoding⟩ := (ProductSumcheck.rel_zero
-    (TensorPrefix.multiplier (biniusProfile κ L K β) h_l)
-    (TensorPrefix.commitment (binaryBasefoldInput κ L K β ℓ' R ϑ h_rate).strictView)
-    s ost p).mp h
-  simp only [MvPolynomial.aeval_def] at hsum
-  exact ⟨hsum, hencoding⟩
+/-- The head's strict output relation is the strict product-claim relation of Binary Basefold
+at the ring-switching multiplier. -/
+theorem headRelOut_strictView_eq :
+    TensorPrefix.headRelOut (biniusProfile κ L K β) h_l
+        (binaryBasefoldInput κ L K β ℓ' R ϑ h_rate).strictView =
+      ProductClaim.strictInputRelation K β
+        (TensorPrefix.multiplier (biniusProfile κ L K β) h_l)
+        (ProductSumcheck.Statement.claim (m := ℓ')) (Equiv.refl _) (ϑ := ϑ)
+        (h_rate := h_rate) := by
+  ext ⟨⟨s, ost⟩, p⟩
+  rw [ProductSumcheck.rel_zero]
+  simp only [MvPolynomial.aeval_def]
+  rfl
 
 /-! ### Round-by-round knowledge soundness -/
 
@@ -174,7 +164,7 @@ theorem tailVerifier_rbrKnowledgeSoundness (γ : ℕ) {σ : Type}
   ProductClaim.openingVerifier_rbrKnowledgeSoundness K β
     (TensorPrefix.multiplier (biniusProfile κ L K β) h_l)
     (ProductSumcheck.Statement.claim (m := ℓ')) (Equiv.refl _) _ γ init impl
-    (mem_headRelOut_of_sum_eq κ K β h_rate h_l)
+    (headRelOut_eq κ K β h_rate h_l).ge
 
 /-- Round-by-round knowledge soundness of unrolled FRI-Binius, with error `fullError`. -/
 theorem fullVerifier_rbrKnowledgeSoundness (γ : ℕ) {σ : Type}
@@ -186,10 +176,8 @@ theorem fullVerifier_rbrKnowledgeSoundness (γ : ℕ) {σ : Type}
       acceptRejectOracleRel (fullError κ K β (ϑ := ϑ) h_rate γ) :=
   OracleVerifier.append_rbrKnowledgeSoundness_of_guarded_first
     (Oₛ₃ := fun i : Empty => nomatch i) _ _
-    (Head.guardedForm (PackingData.ofBasis (biniusProfile κ L K β).basis) ℓ'
-      (TensorPrefix.layout (biniusProfile κ L K β) h_l)
-      (TensorPrefix.messageEquiv (biniusProfile κ L K β)) (BatchingRule.eqFold L κ)
-      (TensorPrefix.commitment (binaryBasefoldInput κ L K β ℓ' R ϑ h_rate)))
+    (TensorPrefix.headGuardedForm (biniusProfile κ L K β) h_l
+      (binaryBasefoldInput κ L K β ℓ' R ϑ h_rate))
     (TensorPrefix.headVerifier_rbrKnowledgeSoundness (biniusProfile κ L K β) h_l _
       (binaryBasefold_initialCompatibility_functional κ L K β ℓ' R ϑ h_rate) init impl)
     (tailVerifier_rbrKnowledgeSoundness κ K β (ϑ := ϑ) h_rate h_l γ init impl)
@@ -218,14 +206,13 @@ theorem fullVerifier_soundness (γ : ℕ) {σ : Type}
       (Oₛₒ := fun i : Empty => nomatch i)).soundness init impl
       (TensorPrefix.relIn (biniusProfile κ L K β) h_l
         (binaryBasefoldInput κ L K β ℓ' R ϑ h_rate)).language
-      acceptRejectOracleRel.language (concreteError κ (L := L) (ℓ' := ℓ') (R := R) γ) := by
-  have hS := Verifier.GuardedForm.soundness_of_rbrSoundness
-    (Verifier.GuardedForm.ofEmpty _ (fun _ => (false, fun i => nomatch i)))
-    (Verifier.rbrSoundness_of_rbrKnowledgeSoundness
-      (fullVerifier_rbrKnowledgeSoundness κ K β (ϑ := ϑ) h_rate h_l γ init impl))
-  intro Aux Out aux P stmt hstmt
-  exact (hS Aux Out aux P stmt hstmt).trans (by
-    exact_mod_cast fullError_sum_le_concrete κ K β (ϑ := ϑ) h_rate γ)
+      acceptRejectOracleRel.language (concreteError κ (L := L) (ℓ' := ℓ') (R := R) γ) :=
+  Verifier.soundness_error_mono init impl
+    (by exact_mod_cast fullError_sum_le_concrete κ K β (ϑ := ϑ) h_rate γ)
+    (Verifier.GuardedForm.soundness_of_rbrSoundness
+      (Verifier.GuardedForm.ofEmpty _ (fun _ => (false, fun i => nomatch i)))
+      (Verifier.rbrSoundness_of_rbrKnowledgeSoundness
+        (fullVerifier_rbrKnowledgeSoundness κ K β (ϑ := ϑ) h_rate h_l γ init impl)))
 
 /-! ### Perfect completeness -/
 
@@ -245,17 +232,15 @@ theorem fullReduction_perfectCompleteness (γ : ℕ) {σ : Type}
     (TensorPrefix.headReduction (biniusProfile κ L K β) h_l
       (binaryBasefoldInput κ L K β ℓ' R ϑ h_rate))
     (tailReduction κ K β (ϑ := ϑ) h_rate h_l γ)
-    (Head.guardedForm (PackingData.ofBasis (biniusProfile κ L K β).basis) ℓ'
-      (TensorPrefix.layout (biniusProfile κ L K β) h_l)
-      (TensorPrefix.messageEquiv (biniusProfile κ L K β)) (BatchingRule.eqFold L κ)
-      (TensorPrefix.commitment (binaryBasefoldInput κ L K β ℓ' R ϑ h_rate)))
+    (TensorPrefix.headGuardedForm (biniusProfile κ L K β) h_l
+      (binaryBasefoldInput κ L K β ℓ' R ϑ h_rate))
     (Verifier.GuardedForm.ofEmpty _ (fun _ => (false, fun i => nomatch i)))
     (fun _ => Or.inl inferInstance) hhead
   intro s
   exact ProductClaim.openingReduction_perfectCompleteness K β
     (TensorPrefix.multiplier (biniusProfile κ L K β) h_l)
     (ProductSumcheck.Statement.claim (m := ℓ')) (Equiv.refl _) _ γ (pure s) impl
-    (sum_eq_and_getFirstOracle_eq_of_mem_headRelOut κ K β h_rate h_l)
+    (headRelOut_strictView_eq κ K β h_rate h_l).le
 
 /-- Unrolled FRI-Binius is perfectly complete for exact packed encodings and knowledge sound
 at `concreteError` for unique-radius compatibility. -/

@@ -58,14 +58,14 @@ variable [Fintype 𝔽q] [DecidableEq 𝔽q]
 variable [Algebra 𝔽q L]
 variable (β : Fin r → L) [hβ_lin_indep : Fact (LinearIndependent 𝔽q β)]
   [h_β₀_eq_1 : Fact (β 0 = 1)]
-variable {ℓ 𝓡 ϑ : ℕ} (γ_repetitions : ℕ) [NeZero ℓ] [NeZero 𝓡] [NeZero ϑ]
+variable {ℓ 𝓡 ϑ : ℕ}
+variable {Context : Type} (multiplier : Multiplier Context L ℓ)
+variable (γ_repetitions : ℕ) [NeZero ℓ] [NeZero 𝓡] [NeZero ϑ]
 variable {h_ℓ_add_R_rate : ℓ + 𝓡 < r} -- ℓ ∈ {1, ..., r-1}
 variable [hdiv : Fact (ϑ ∣ ℓ)]
 variable {𝓑 : Fin 2 ↪ L}
 
 open CoreInteraction QueryPhase
-
-variable {Context : Type} (multiplier : Multiplier Context L ℓ)
 
 /-- The oracle verifier for the full Binary Basefold protocol -/
 @[reducible]
@@ -164,7 +164,7 @@ theorem strictRoundRelation_subset_roundRelation_zero {multpoly : Context → Mu
 -/
 theorem fullOracleReduction_perfectCompleteness :
     OracleProof.perfectCompleteness
-      (oracleProof := fullOracleReduction 𝔽q β γ_repetitions multiplier (ϑ:=ϑ)
+      (oracleProof := fullOracleReduction 𝔽q β multiplier γ_repetitions (ϑ:=ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
       (relation := strictRoundRelation (multpoly := multiplier.polynomial) 𝔽q β (ϑ:=ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
@@ -204,7 +204,7 @@ variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ Pro
 
 /-- Round-by-round knowledge soundness for the core-and-query protocol. -/
 theorem fullOracleVerifier_rbrKnowledgeSoundness :
-    ((fullOracleVerifier 𝔽q β γ_repetitions multiplier (ϑ := ϑ)
+    ((fullOracleVerifier 𝔽q β multiplier γ_repetitions (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).toVerifier
       (Oₛₒ := fun i : Empty => nomatch i)).rbrKnowledgeSoundness
       init impl
@@ -313,19 +313,19 @@ theorem fullOracleVerifier_knowledgeSoundness :
     OracleProof.knowledgeSoundness init impl
       (roundRelation (multpoly := multiplier.polynomial) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
-      (fullOracleVerifier 𝔽q β γ_repetitions multiplier (ϑ := ϑ)
+      (fullOracleVerifier 𝔽q β multiplier γ_repetitions (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
       (∑ i, fullRbrKnowledgeError 𝔽q β γ_repetitions (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :=
   Verifier.GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundness
     (Verifier.GuardedForm.ofEmpty _ (fun _ => (false, fun i : Empty => nomatch i)))
-    (fullOracleVerifier_rbrKnowledgeSoundness 𝔽q β γ_repetitions multiplier)
+    (fullOracleVerifier_rbrKnowledgeSoundness 𝔽q β multiplier γ_repetitions)
 
 /-- Full Binary Basefold is perfectly complete on exact encodings and ordinarily
 knowledge sound for unique-radius compatibility, with the concrete core-and-query error. -/
 theorem fullOracleReduction_perfectCompleteness_and_knowledgeSoundness :
     OracleProof.perfectCompleteness
-      (oracleProof := fullOracleReduction 𝔽q β γ_repetitions multiplier (ϑ := ϑ)
+      (oracleProof := fullOracleReduction 𝔽q β multiplier γ_repetitions (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
       (relation := strictRoundRelation (multpoly := multiplier.polynomial) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
@@ -333,12 +333,12 @@ theorem fullOracleReduction_perfectCompleteness_and_knowledgeSoundness :
     OracleProof.knowledgeSoundness init impl
       (roundRelation (multpoly := multiplier.polynomial) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
-      (fullOracleVerifier 𝔽q β γ_repetitions multiplier (ϑ := ϑ)
+      (fullOracleVerifier 𝔽q β multiplier γ_repetitions (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
       (concreteBinaryBasefoldKnowledgeError L ℓ 𝓡 γ_repetitions) :=
-  ⟨fullOracleReduction_perfectCompleteness 𝔽q β γ_repetitions multiplier,
+  ⟨fullOracleReduction_perfectCompleteness 𝔽q β multiplier γ_repetitions,
     Verifier.knowledgeSoundness_error_mono init impl
       (fullRbrKnowledgeError_sum_le_concrete 𝔽q β γ_repetitions)
-      (fullOracleVerifier_knowledgeSoundness 𝔽q β γ_repetitions multiplier)⟩
+      (fullOracleVerifier_knowledgeSoundness 𝔽q β multiplier γ_repetitions)⟩
 
 end Binius.BinaryBasefold.FullBinaryBasefold

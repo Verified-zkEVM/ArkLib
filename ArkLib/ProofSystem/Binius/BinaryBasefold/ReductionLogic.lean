@@ -31,7 +31,7 @@ on the transcript rebuilt from the answer has a guarded form through
   The prover sends its folded word `f⁽ⁱ⁺¹⁾` as a new oracle.
 * `finalSumcheckStepLogic`, `finalSumcheckStepLogic_isStronglyComplete`: the final sum-check
   step for a `Multiplier` `A`. The prover sends the constant `c` of `f⁽ˡ⁾`; the verifier checks
-  `s_ℓ = A(r') · c` with the multiplier's evaluator, which for `openingMultiplier` is
+  `s_ℓ = A(r') · c` with the multiplier's evaluator, which for `evalMultiplier` is
   `eq̃(r, r')`.
 
 The oracle reductions built from these steps are in `Steps/`.
@@ -490,7 +490,7 @@ variable (multiplier : Multiplier Context L ℓ)
 /-- The logic of the final sum-check step for a multiplier `A` with evaluator `Â`. The prover
 sends the constant `c` of its fully folded word; the verifier checks the closing sum-check
 equation `s_ℓ = Â(ctx, r') · c` and outputs the target, the challenges and `c`. The oracle
-statements pass through. For an evaluation claim (`openingMultiplier`),
+statements pass through. For an evaluation claim (`evalMultiplier`),
 `Â(ctx, r') = eq̃(r, r')`. -/
 def finalSumcheckStepLogic :
     OracleReduction.DeterministicLogicStep []ₒ

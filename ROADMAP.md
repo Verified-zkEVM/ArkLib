@@ -96,7 +96,7 @@ entry says so, the specification is not claimed to be executable.
   perfect completeness on exact encodings and ordinary knowledge soundness, obtained from
   round-by-round knowledge soundness through the proved guarded bridge
   `Verifier.GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundness`. The unrolled protocol of
-  DP24 Construction 5.1, in which the Binary Basefold sum-check is the ring-switching sum-check,
+  DP24 Construction 5.1 for `K = GF(2)`, in which the Binary Basefold sum-check is the ring-switching sum-check,
   is `Binius.FRIBinius.Unrolled.fullReduction_perfectCompleteness_and_knowledgeSoundness`, with
   error bound DP24 equation (43). The
   [consumer guide](docs/wiki/ring-switching-consumers.md) records the interfaces.

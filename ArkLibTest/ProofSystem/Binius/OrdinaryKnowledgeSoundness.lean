@@ -76,16 +76,16 @@ local instance [Finite K] : Fact (Nat.Prime (ringChar K)) := ⟨CharP.prime_ring
 example (γ : ℕ) {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     OracleProof.perfectCompleteness
-        (oracleProof := fullOracleReduction K β γ openingMultiplier (ϑ := ϑ)
+        (oracleProof := fullOracleReduction K β evalMultiplier γ (ϑ := ϑ)
           (h_ℓ_add_R_rate := h_rate) (𝓑 := 𝓑))
-        (relation := strictRoundRelation (multpoly := openingMultiplier.polynomial) K β (ϑ := ϑ)
+        (relation := strictRoundRelation (multpoly := evalMultiplier.polynomial) K β (ϑ := ϑ)
           (h_ℓ_add_R_rate := h_rate) (𝓑 := 𝓑) 0) (init := init) (impl := impl) ∧
       OracleProof.knowledgeSoundness init impl
-        (roundRelation (multpoly := openingMultiplier.polynomial) K β (ϑ := ϑ)
+        (roundRelation (multpoly := evalMultiplier.polynomial) K β (ϑ := ϑ)
           (h_ℓ_add_R_rate := h_rate) (𝓑 := 𝓑) 0)
-        (fullOracleVerifier K β γ openingMultiplier (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) (𝓑 := 𝓑))
+        (fullOracleVerifier K β evalMultiplier γ (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) (𝓑 := 𝓑))
         (concreteBinaryBasefoldKnowledgeError L ℓ R γ) :=
-  fullOracleReduction_perfectCompleteness_and_knowledgeSoundness K β γ openingMultiplier
+  fullOracleReduction_perfectCompleteness_and_knowledgeSoundness K β evalMultiplier γ
 end FullBasefold
 
 section FullFRIBinius

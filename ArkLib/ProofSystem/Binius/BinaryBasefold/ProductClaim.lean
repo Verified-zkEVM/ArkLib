@@ -8,8 +8,8 @@ module
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Commitment
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.General
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Relations.Initial
-public import ArkLib.OracleReduction.LogicStep
 public import ArkLib.OracleReduction.Security.GuardedBridges
+public import ArkLib.ProofSystem.Component.ReduceClaim
 -- The strict initial relation exposes dependent fold-index proof terms.
 import all ArkLib.ProofSystem.Binius.BinaryBasefold.Relations
 -- The initial-fold identity unfolds the dependent fold implementation.
@@ -30,18 +30,19 @@ This file gives the canonical round-`0` witness of such a claim (its statement i
   give the strict round-`0` relation used for perfect completeness.
 
 `ProductClaim.openingVerifier` and `ProductClaim.openingReduction` then open such a claim: a
-zero-message front end maps the input statement to its context and target and builds the
-canonical witness, and the full Binary Basefold protocol runs at the multiplier. The input
-relation is supplied by the caller, with two facts about it: it contains every product claim
-whose polynomial is unique-radius compatible with the first oracle
-(`openingVerifier_rbrKnowledgeSoundness`), and its members are product claims with an exact
-first encoding (`openingReduction_perfectCompleteness`).
+zero-message front end, the claim reduction `ReduceClaim.oracleReduction`, maps the input
+statement to its context and target and builds the canonical witness, and the full Binary
+Basefold protocol runs at the multiplier. The security theorems hold for any input relation
+containing `ProductClaim.inputRelation` (round-by-round knowledge soundness) or contained in
+`ProductClaim.strictInputRelation` (perfect completeness): the product claim with unique-radius
+compatibility or with the exact encoding.
 
 An evaluation claim `s = t(r)` is the product claim at `A = eq̃(r, ·)` (`Opening`); the unrolled
 FRI-Binius protocol uses the ring-switching multiplier.
 
-The front-end prover is noncomputable because the canonical witness uses the codeword encoding;
-the opening is noncomputable because the Binary Basefold phases are.
+The front-end reduction is noncomputable because the canonical witness is: prefix fixing of the
+residual polynomial and the folded codewords are noncomputable. The opening is noncomputable
+because the Binary Basefold phases are.
 -/
 
 @[expose] public section
@@ -161,51 +162,52 @@ variable {Context : Type} (multiplier : Multiplier Context L ℓ)
 variable {StmtIn WitIn : Type} (toClaim : StmtIn → Context × L)
   (witnessEquiv : WitIn ≃ MultilinearPoly L ℓ)
 
+/-! ## Relations -/
+
+/-- The product claim of a statement for the polynomial of a witness, with that polynomial
+unique-radius compatible with the first oracle. -/
+def inputRelation : Set ((StmtIn × (∀ j, OracleStatement K β (ϑ := ϑ)
+    (h_ℓ_add_R_rate := h_rate) 0 j)) × WitIn) :=
+  { ⟨⟨s, ost⟩, w⟩ |
+    (toClaim s).2 = ∑ y : Fin ℓ → Fin 2,
+        (multiplier (toClaim s).1).val.eval (y : Fin ℓ → L) *
+          (witnessEquiv w).val.eval (y : Fin ℓ → L) ∧
+      FirstOracleWitnessConsistent K β (witnessEquiv w) (getFirstOracle K β ost) }
+
+/-- The product claim of a statement for the polynomial of a witness, with the first oracle its
+exact encoding. -/
+def strictInputRelation : Set ((StmtIn × (∀ j, OracleStatement K β (ϑ := ϑ)
+    (h_ℓ_add_R_rate := h_rate) 0 j)) × WitIn) :=
+  { ⟨⟨s, ost⟩, w⟩ |
+    (toClaim s).2 = ∑ y : Fin ℓ → Fin 2,
+        (multiplier (toClaim s).1).val.eval (y : Fin ℓ → L) *
+          (witnessEquiv w).val.eval (y : Fin ℓ → L) ∧
+      getFirstOracle K β ost = firstOracleEncoding K β (witnessEquiv w) }
+
 /-! ## Protocol definitions -/
 
-/-- The front-end verifier sends and samples nothing; it outputs the initial statement of the
-claim `toClaim` and forwards every oracle. -/
-def frontVerifier : OracleVerifier []ₒ StmtIn
-    (OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0)
-    (Statement (L := L) (ℓ := ℓ) Context 0)
-    (OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0) !p[] where
-  verify s _ := pure (initialStatement (toClaim s).1 (toClaim s).2)
-  outputOracle := .inl {
-    embed := Function.Embedding.inl
-    hEq := fun _ => rfl
-    outputInterface_heq := fun _ => HEq.rfl }
+/-- The front end is the zero-message claim reduction (`ReduceClaim.oracleReduction`): it maps a
+statement to the initial statement of its claim and a witness to the canonical initial witness of
+its polynomial, and leaves the oracles unchanged. -/
+noncomputable def frontReduction := ReduceClaim.oracleReduction []ₒ
+  (OStmtIn := OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0)
+  (OStmtOut := OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0)
+  (fun s : StmtIn => initialStatement (L := L) (ℓ := ℓ) (toClaim s).1 (toClaim s).2)
+  (fun s w => initialWitness K β multiplier.polynomial (h_rate := h_rate) (toClaim s).1
+    (witnessEquiv w))
+  (Function.Embedding.refl _) (fun _ => rfl) (fun _ => HEq.rfl)
 
-/-- The front-end verifier always accepts and leaves the oracles unchanged. -/
+/-- The front-end verifier: it outputs the initial statement of the claim. -/
+def frontVerifier := ReduceClaim.oracleVerifier []ₒ
+  (OStmtIn := OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0)
+  (OStmtOut := OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0)
+  (fun s : StmtIn => initialStatement (L := L) (ℓ := ℓ) (toClaim s).1 (toClaim s).2)
+  (Function.Embedding.refl _) (fun _ => rfl) (fun _ => HEq.rfl)
+
+/-- The front-end verifier always accepts. -/
 def frontGuard :
-    (frontVerifier K β toClaim (ϑ := ϑ) (h_rate := h_rate)).toVerifier.GuardedForm where
-  check _ _ := true
-  out s _ := (initialStatement (toClaim s.1).1 (toClaim s.1).2, s.2)
-  verify_eq _ _ := rfl
-
-/-- The front-end prover builds the canonical initial witness of its polynomial. -/
-noncomputable def frontProver : OracleProver []ₒ StmtIn
-    (OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0) WitIn
-    (Statement (L := L) (ℓ := ℓ) Context 0)
-    (OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0)
-    (Witness K β (h_ℓ_add_R_rate := h_rate) (ℓ := ℓ) 0) !p[] where
-  PrvState _ := (StmtIn ×
-    (∀ j, OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0 j)) × WitIn
-  input := id
-  sendMessage j := nomatch j
-  receiveChallenge j := nomatch j
-  output st := pure ((initialStatement (toClaim st.1.1).1 (toClaim st.1.1).2, st.1.2),
-    initialWitness K β multiplier.polynomial (toClaim st.1.1).1 (witnessEquiv st.2))
-
-/-- The honest front-end prover and the front-end verifier. -/
-noncomputable def frontReduction := OracleReduction.mk
-  (frontProver K β multiplier toClaim witnessEquiv (ϑ := ϑ) (h_rate := h_rate))
-  (frontVerifier K β toClaim)
-
-instance : (frontProver K β multiplier toClaim witnessEquiv (ϑ := ϑ)
-    (h_rate := h_rate)).OutputIsPure where
-  output_is_pure := ⟨fun st => ((initialStatement (toClaim st.1.1).1 (toClaim st.1.1).2, st.1.2),
-    initialWitness K β multiplier.polynomial (toClaim st.1.1).1 (witnessEquiv st.2)),
-    fun _ => rfl⟩
+    (frontVerifier K β toClaim (ϑ := ϑ) (h_rate := h_rate)).toVerifier.GuardedForm :=
+  ReduceClaim.oracleVerifierGuardedForm []ₒ _ _ _ _
 
 instance instMessageInterface (γ : ℕ) : ∀ j, OracleInterface
     (((!p[] : ProtocolSpec 0) ++ₚ fullPSpec K β γ (ϑ := ϑ)
@@ -222,7 +224,7 @@ noncomputable def openingVerifier (γ : ℕ) := OracleVerifier.append
   (Stmt₃ := Bool) (OStmt₃ := fun _ : Empty => Unit)
   (Oₛ₃ := fun i : Empty => nomatch i)
   (frontVerifier K β toClaim (ϑ := ϑ) (h_rate := h_rate))
-  (FullBinaryBasefold.fullOracleVerifier K β γ multiplier (ϑ := ϑ)
+  (FullBinaryBasefold.fullOracleVerifier K β multiplier γ (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_rate) (𝓑 := boolEmbedding L))
 
 /-- The honest front end followed by the full Binary Basefold reduction at `multiplier`. -/
@@ -230,7 +232,7 @@ noncomputable def openingReduction (γ : ℕ) := OracleReduction.append
   (Stmt₃ := Bool) (Wit₃ := Unit) (OStmt₃ := fun _ : Empty => Unit)
   (Oₛ₃ := fun i : Empty => nomatch i)
   (frontReduction K β multiplier toClaim witnessEquiv (ϑ := ϑ) (h_rate := h_rate))
-  (FullBinaryBasefold.fullOracleReduction K β γ multiplier (ϑ := ϑ)
+  (FullBinaryBasefold.fullOracleReduction K β multiplier γ (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_rate) (𝓑 := boolEmbedding L))
 
 /-- The Binary Basefold challenge errors, with no error for the front end. -/
@@ -259,71 +261,51 @@ theorem openingError_sum_le_concrete (γ : ℕ) :
   simp only [f, Sum.elim_inl, Sum.elim_inr, Finset.sum_const_zero, zero_add]
   exact FullBinaryBasefold.fullRbrKnowledgeError_sum_le_concrete K β γ
 
-variable (relIn : Set ((StmtIn ×
-    (∀ j, OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0 j)) × WitIn))
+variable (relIn : Set ((StmtIn × (∀ j, OracleStatement K β (ϑ := ϑ)
+    (h_ℓ_add_R_rate := h_rate) 0 j)) × WitIn))
 
 /-! ### Round-by-round knowledge soundness -/
 
-/-- The extracted input witness is the initial witness's committed polynomial. -/
-def frontExtractor : Extractor.RoundByRound []ₒ
-    (StmtIn := StmtIn × (∀ j, OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0 j))
-    (WitIn := WitIn) (WitOut := Witness K β (h_ℓ_add_R_rate := h_rate) (ℓ := ℓ) 0)
-    (pSpec := !p[]) (WitMid := fun _ => WitIn) where
-  extractIn _ w := w
-  extractMid j := nomatch j
-  extractOut _ _ w := witnessEquiv.symm w.t
-
-/-- The knowledge state is the input relation. `hextract` states that the relation contains every
-product claim whose polynomial is unique-radius compatible with the first oracle. -/
-noncomputable def frontKnowledgeStateFunction {σ : Type} (init : ProbComp σ)
-    (impl : QueryImpl []ₒ (StateT σ ProbComp))
-    (hextract : ∀ s ost (t : MultilinearPoly L ℓ),
-      (toClaim s).2 = ∑ y : Fin ℓ → Fin 2,
-          (multiplier (toClaim s).1).val.eval (y : Fin ℓ → L) * t.val.eval (y : Fin ℓ → L) →
-      FirstOracleWitnessConsistent K β t (getFirstOracle K β ost) →
-      ((s, ost), witnessEquiv.symm t) ∈ relIn) :
-    (frontVerifier K β toClaim (ϑ := ϑ) (h_rate := h_rate)).KnowledgeStateFunction init impl
-      relIn (roundRelation (multpoly := multiplier.polynomial) K β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_rate) (𝓑 := boolEmbedding L) 0)
-      (frontExtractor K β witnessEquiv (ϑ := ϑ) (h_rate := h_rate)) where
-  toFun _ x _ w := (x, w) ∈ relIn
-  toFun_empty _ _ h := h
-  toFun_next j := nomatch j
-  toFun_full x _ w h := by
-    obtain ⟨hsum, hfirst⟩ := sum_eq_and_firstOracleWitnessConsistent_of_mem_roundRelation_zero K β
-      multiplier.polynomial (toClaim x.1).1 (toClaim x.1).2 x.2 w
-      ((frontGuard K β toClaim).check_and_of_prEvent_pos h).2
-    exact hextract x.1 x.2 w.t hsum hfirst
+omit [SampleableType L] [DecidableEq K] in
+/-- A relaxed round-`0` witness for the claim of `s` yields a witness of any relation containing
+`inputRelation`. -/
+theorem mem_of_mem_roundRelation_zero
+    (hrel : inputRelation K β multiplier toClaim witnessEquiv (ϑ := ϑ) (h_rate := h_rate) ⊆ relIn)
+    (s : StmtIn) (ost : (∀ j, OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0 j))
+    (w : Witness K β (h_ℓ_add_R_rate := h_rate) (ℓ := ℓ) 0)
+    (h : ((initialStatement (toClaim s).1 (toClaim s).2, ost), w) ∈
+      roundRelation (multpoly := multiplier.polynomial) K β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_rate) (𝓑 := boolEmbedding L) 0) :
+    ((s, ost), witnessEquiv.symm w.t) ∈ relIn := by
+  obtain ⟨hsum, hfirst⟩ := sum_eq_and_firstOracleWitnessConsistent_of_mem_roundRelation_zero K β
+    multiplier.polynomial (toClaim s).1 (toClaim s).2 ost w h
+  apply hrel
+  change _ = _ ∧ _
+  rw [Equiv.apply_symm_apply]
+  exact ⟨hsum, hfirst⟩
 
 omit [SampleableType L] [DecidableEq K] in
-/-- The front end is round-by-round knowledge sound at `frontExtractor` and
-`frontKnowledgeStateFunction`; it samples no challenge, so its error is zero. -/
+/-- The front end is round-by-round knowledge sound, with no error, at the claim reduction's
+extractor and knowledge-state function, for any input relation containing `inputRelation`. -/
 theorem frontVerifier_rbrKnowledgeSoundnessWith {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
-    (hextract : ∀ s ost (t : MultilinearPoly L ℓ),
-      (toClaim s).2 = ∑ y : Fin ℓ → Fin 2,
-          (multiplier (toClaim s).1).val.eval (y : Fin ℓ → L) * t.val.eval (y : Fin ℓ → L) →
-      FirstOracleWitnessConsistent K β t (getFirstOracle K β ost) →
-      ((s, ost), witnessEquiv.symm t) ∈ relIn) :
-    Verifier.rbrKnowledgeSoundnessWith init impl relIn
+    (hrel : inputRelation K β multiplier toClaim witnessEquiv (ϑ := ϑ) (h_rate := h_rate) ⊆
+      relIn) :
+    (frontVerifier K β toClaim (ϑ := ϑ) (h_rate := h_rate)).toVerifier.rbrKnowledgeSoundnessWith
+      init impl relIn
       (roundRelation (multpoly := multiplier.polynomial) K β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_rate) (𝓑 := boolEmbedding L) 0)
-      (frontVerifier K β toClaim (ϑ := ϑ) (h_rate := h_rate)).toVerifier
-      (fun _ => WitIn) (frontExtractor K β witnessEquiv)
-      (frontKnowledgeStateFunction K β multiplier toClaim witnessEquiv relIn init impl hextract)
-      (fun _ => 0) :=
-  fun _ j => Fin.elim0 j.1
+      (fun _ => WitIn) (ReduceClaim.extractor (fun _ w => witnessEquiv.symm w.t))
+      (ReduceClaim.oracleKnowledgeStateFunction relIn _
+        (mem_of_mem_roundRelation_zero K β multiplier toClaim witnessEquiv relIn hrel)) 0 :=
+  ReduceClaim.oracleVerifier_rbrKnowledgeSoundnessWith relIn _ _
 
 /-- The opening is round-by-round knowledge sound, with the errors `openingError`, for any input
-relation containing every product claim whose polynomial is unique-radius compatible with the
-first oracle. -/
+relation containing `inputRelation`. -/
 theorem openingVerifier_rbrKnowledgeSoundness (γ : ℕ) {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
-    (hextract : ∀ s ost (t : MultilinearPoly L ℓ),
-      (toClaim s).2 = ∑ y : Fin ℓ → Fin 2,
-          (multiplier (toClaim s).1).val.eval (y : Fin ℓ → L) * t.val.eval (y : Fin ℓ → L) →
-      FirstOracleWitnessConsistent K β t (getFirstOracle K β ost) →
-      ((s, ost), witnessEquiv.symm t) ∈ relIn) :
+    (hrel : inputRelation K β multiplier toClaim witnessEquiv (ϑ := ϑ) (h_rate := h_rate) ⊆
+      relIn) :
     Verifier.rbrKnowledgeSoundness init impl relIn acceptRejectOracleRel
       ((openingVerifier K β multiplier toClaim γ (ϑ := ϑ) (h_rate := h_rate)).toVerifier
         (Oₛₒ := fun i : Empty => nomatch i))
@@ -333,18 +315,16 @@ theorem openingVerifier_rbrKnowledgeSoundness (γ : ℕ) {σ : Type} (init : Pro
     (frontGuard K β toClaim)
     ((Verifier.rbrKnowledgeSoundness_iff_exists_with init impl _ _ _ _).mpr
       ⟨_, _, _, frontVerifier_rbrKnowledgeSoundnessWith K β multiplier toClaim witnessEquiv relIn
-        init impl hextract⟩)
-    (FullBinaryBasefold.fullOracleVerifier_rbrKnowledgeSoundness K β γ multiplier
+        init impl hrel⟩)
+    (FullBinaryBasefold.fullOracleVerifier_rbrKnowledgeSoundness K β multiplier γ
       (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) (𝓑 := boolEmbedding L))
 
-/-- The opening is knowledge sound at the Binary Basefold bound, with an unbounded extractor. -/
+/-- The opening is knowledge sound at the Binary Basefold bound, with an unbounded extractor, for
+any input relation containing `inputRelation`. -/
 theorem openingVerifier_knowledgeSoundness (γ : ℕ) {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
-    (hextract : ∀ s ost (t : MultilinearPoly L ℓ),
-      (toClaim s).2 = ∑ y : Fin ℓ → Fin 2,
-          (multiplier (toClaim s).1).val.eval (y : Fin ℓ → L) * t.val.eval (y : Fin ℓ → L) →
-      FirstOracleWitnessConsistent K β t (getFirstOracle K β ost) →
-      ((s, ost), witnessEquiv.symm t) ∈ relIn) :
+    (hrel : inputRelation K β multiplier toClaim witnessEquiv (ϑ := ϑ) (h_rate := h_rate) ⊆
+      relIn) :
     OracleProof.knowledgeSoundness init impl relIn
       (openingVerifier K β multiplier toClaim γ (ϑ := ϑ) (h_rate := h_rate))
       (FullBinaryBasefold.concreteBinaryBasefoldKnowledgeError L ℓ R γ) := by
@@ -353,47 +333,32 @@ theorem openingVerifier_knowledgeSoundness (γ : ℕ) {σ : Type} (init : ProbCo
   exact Verifier.GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundness
     (Verifier.GuardedForm.ofEmpty _ (fun _ => (false, fun i : Empty => nomatch i)))
     (openingVerifier_rbrKnowledgeSoundness K β multiplier toClaim witnessEquiv relIn γ init impl
-      hextract)
+      hrel)
 
 /-! ### Perfect completeness -/
 
 omit [SampleableType L] [DecidableEq K] [Fact (β 0 = 1)] in
-/-- The front end is perfectly complete for any input relation whose members are product claims
-with an exact first encoding. -/
+/-- The front end is perfectly complete for any input relation contained in
+`strictInputRelation`. -/
 theorem frontReduction_perfectCompleteness {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
-    (hhonest : ∀ s ost w, ((s, ost), w) ∈ relIn →
-      (toClaim s).2 = ∑ y : Fin ℓ → Fin 2,
-        (multiplier (toClaim s).1).val.eval (y : Fin ℓ → L) *
-          (witnessEquiv w).val.eval (y : Fin ℓ → L) ∧
-      getFirstOracle K β ost = firstOracleEncoding K β (witnessEquiv w)) :
+    (hrel : relIn ⊆
+      strictInputRelation K β multiplier toClaim witnessEquiv (ϑ := ϑ) (h_rate := h_rate)) :
     (frontReduction K β multiplier toClaim witnessEquiv (ϑ := ϑ)
       (h_rate := h_rate)).perfectCompleteness init impl relIn
       (strictRoundRelation (multpoly := multiplier.polynomial) K β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_rate) (𝓑 := boolEmbedding L) 0) := by
-  apply Reduction.perfectCompleteness_of_guarded_prover_support _ (frontGuard K β toClaim)
-  intro ⟨s, ost⟩ w hin q hq
-  obtain ⟨hs, ho⟩ := hhonest s ost w hin
-  have hp : (frontProver K β multiplier toClaim witnessEquiv (ϑ := ϑ) (h_rate := h_rate)).run
-      (s, ost) w = pure (default, ((initialStatement (toClaim s).1 (toClaim s).2, ost),
-        initialWitness K β multiplier.polynomial (toClaim s).1 (witnessEquiv w))) := by
-    simp [Prover.run, Prover.runToRound, frontProver]
-    rfl
-  change q ∈ support ((frontProver K β multiplier toClaim witnessEquiv).run (s, ost) w) at hq
-  rw [hp] at hq
-  obtain rfl := OracleComp.eq_of_mem_support_pure _ hq
-  exact ⟨rfl, mem_strictRoundRelation_zero_initialWitness K β multiplier.polynomial
-    (toClaim s).1 (toClaim s).2 (witnessEquiv w) ost hs ho, rfl⟩
+        (h_ℓ_add_R_rate := h_rate) (𝓑 := boolEmbedding L) 0) :=
+  ReduceClaim.oracleReduction_completeness relIn _ fun s ost w hin => by
+    obtain ⟨hs, ho⟩ := hrel hin
+    exact mem_strictRoundRelation_zero_initialWitness K β multiplier.polynomial
+      (toClaim s).1 (toClaim s).2 (witnessEquiv w) ost hs ho
 
-/-- The opening is perfectly complete for any input relation whose members are product claims
-with an exact first encoding. -/
+/-- The opening is perfectly complete for any input relation contained in
+`strictInputRelation`. -/
 theorem openingReduction_perfectCompleteness (γ : ℕ) {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
-    (hhonest : ∀ s ost w, ((s, ost), w) ∈ relIn →
-      (toClaim s).2 = ∑ y : Fin ℓ → Fin 2,
-        (multiplier (toClaim s).1).val.eval (y : Fin ℓ → L) *
-          (witnessEquiv w).val.eval (y : Fin ℓ → L) ∧
-      getFirstOracle K β ost = firstOracleEncoding K β (witnessEquiv w)) :
+    (hrel : relIn ⊆
+      strictInputRelation K β multiplier toClaim witnessEquiv (ϑ := ϑ) (h_rate := h_rate)) :
     OracleProof.perfectCompleteness
       (oracleProof := openingReduction K β multiplier toClaim witnessEquiv γ (ϑ := ϑ)
         (h_rate := h_rate))
@@ -403,9 +368,8 @@ theorem openingReduction_perfectCompleteness (γ : ℕ) {σ : Type} (init : Prob
     (frontGuard K β toClaim)
     (Verifier.GuardedForm.ofEmpty _ (fun _ => (false, fun i => nomatch i)))
     (fun _ => Or.inl inferInstance)
-    (frontReduction_perfectCompleteness K β multiplier toClaim witnessEquiv relIn init impl
-      hhonest)
-    (fun st => FullBinaryBasefold.fullOracleReduction_perfectCompleteness K β γ multiplier
+    (frontReduction_perfectCompleteness K β multiplier toClaim witnessEquiv relIn init impl hrel)
+    (fun st => FullBinaryBasefold.fullOracleReduction_perfectCompleteness K β multiplier γ
       (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) (𝓑 := boolEmbedding L)
       (init := pure st) (impl := impl))
 

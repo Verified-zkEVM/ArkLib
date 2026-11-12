@@ -17,7 +17,7 @@ After the last fold, the prover sends the constant `c := f⁽ˡ⁾(0, …, 0)` o
 For a public multiplier `A` with evaluator `Â`, the verifier checks the closing sum-check equation
 `s_ℓ = Â(ctx, r') · c` and outputs the target, the challenges and `c`. The step sends no
 challenge. With a zero multiplier value the check requires a zero target. The evaluation-claim
-opening uses `openingMultiplier`, for which `Â(ctx, r') = eq̃(r, r')`; the unrolled FRI-Binius
+opening uses `evalMultiplier`, for which `Â(ctx, r') = eq̃(r, r')`; the unrolled FRI-Binius
 protocol uses the ring-switching multiplier.
 
 ## Main definitions and statements

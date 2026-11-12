@@ -20,8 +20,8 @@ a query `q`, an opening point `x(q)` and reconstruction weights `wᵢ(q)`. Its c
 family `α : ιP → E` determines its transpose `ιE → P`. For challenge weights `vᵤ(c)`, the verifier
 computes `derivedTarget α v = ∑ᵤ vᵤ(c) · transpose(α)ᵤ`. If `α` is honest, this equals the Boolean
 hypercube sum of the same packed polynomial times the public multiplier `A(q,c)`.
-`Multiplier` evaluates that polynomial using a read-once matrix program; the terminal
-verifier executes this evaluator. The equality certificate links it to the sumcheck polynomial.
+`Head.multiplier`, a `Sumcheck.Structured.Multiplier`, evaluates that polynomial using a
+read-once matrix program; the terminal verifier executes this evaluator. The equality certificate links it to the sumcheck polynomial.
 
 `ClaimLayout` includes prefix and suffix packing. `ClaimLayout/Quirky` gives the skipped/extra-bit
 Lagrange layout with an explicit injective node map. Hachi's monomial-coefficient layout lives
@@ -99,6 +99,11 @@ round-by-round security. `fullError_sum_le` transports the full challenge sum
 to the frontend loss plus the backend's closed-form upper bound. The concrete nonconstant
 `GF(16)/GF(2)` acceptance fixture instantiates both and bounds that sum strictly below one.
 
+`Binius/FRIBinius/Unrolled` is DP24 Construction 5.1: the batching head alone
+(`TensorPrefix.headVerifier`) hands its product claim to Binary Basefold, whose sum-check runs at
+the ring-switching multiplier (`BinaryBasefold.ProductClaim.openingVerifier`). There is one
+sum-check instead of two, and the bound is lower by `2ℓ'/|L|` (`Unrolled.concreteError_add_eq`).
+
 `OpeningAdapter` converts a standard `MLIOPCS` to a contextual opening by a zero-round
 projection, with completeness and round-by-round security transport from its
 `rbrKnowledgeSoundness` field. Conversion to ordinary knowledge soundness remains admitted.
@@ -173,8 +178,9 @@ For implementation steps and a worked example, see
   `Relations.lean`, `Multiplier.lean`, `ClaimLayout.lean`, `ClaimLayout/Quirky.lean`.
 - Operational and certified batching: `Packing/Batching.lean`, `DerivedBatching.lean`.
 - Shared protocol: `Packing/Head.lean`, `ProductSumcheck/`, `RingSwitch.lean`.
-- Tensor-prefix and Binius consumer: `Packing/TensorPrefix.lean`,
-  `Binius/FRIBinius/RingSwitch.lean`, `Binius/BinaryBasefold/Opening.lean`.
+- Tensor-prefix and Binius consumers: `Packing/TensorPrefix.lean`,
+  `Binius/FRIBinius/RingSwitch.lean`, `Binius/BinaryBasefold/Opening.lean`,
+  `Binius/FRIBinius/Unrolled/`, `Binius/BinaryBasefold/ProductClaim.lean`.
 - Deterministic trace: `Commitments/Functional/Hachi/TraceHead/`.
 - Quotient lifting: `ProofSystem/RingSwitching/Lift/`.
 

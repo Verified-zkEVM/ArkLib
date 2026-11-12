@@ -45,21 +45,21 @@ variable {ℓ R ϑ : ℕ} [NeZero ℓ] [NeZero R] [NeZero ϑ]
   {h_rate : ℓ + R < r} [Fact (ϑ ∣ ℓ)]
 
 /-- An evaluation claim `t(r) = s` as the product claim `∑_y eq̃(r, y) · t(y) = s` for
-`openingMultiplier`: the context carries `r` and `s`, and the target is `s`. -/
-def productClaim (s : MLPEvalStatement L ℓ) : SumcheckBaseContext L ℓ × L :=
+`evalMultiplier`: the context carries `r` and `s`, and the target is `s`. -/
+def toProductClaim (s : MLPEvalStatement L ℓ) : SumcheckBaseContext L ℓ × L :=
   (⟨s.t_eval_point, s.original_claim⟩, s.original_claim)
 
 /-- The evaluation claim as an initial Binary Basefold statement. -/
 def statement (s : MLPEvalStatement L ℓ) :
     Statement (L := L) (ℓ := ℓ) (SumcheckBaseContext L ℓ) 0 :=
-  initialStatement (productClaim s).1 (productClaim s).2
+  initialStatement (toProductClaim s).1 (toProductClaim s).2
 
 omit [Fintype L] [DecidableEq L] [SampleableType L] [NeZero ℓ] in
 /-- The opening multiplier's product claim is the evaluation claim:
 `∑_{y ∈ {0,1}^ℓ} eq(r, y) · t(y) = t(r)` for multilinear `t`. -/
-theorem sum_openingMultiplier_mul_eq_eval (ctx : SumcheckBaseContext L ℓ)
+theorem sum_evalMultiplier_mul_eq_eval (ctx : SumcheckBaseContext L ℓ)
     (t : MultilinearPoly L ℓ) :
-    ∑ y : Fin ℓ → Fin 2, (openingMultiplier.polynomial ctx).val.eval (y : Fin ℓ → L) *
+    ∑ y : Fin ℓ → Fin 2, (evalMultiplier.polynomial ctx).val.eval (y : Fin ℓ → L) *
       t.val.eval (y : Fin ℓ → L) = t.val.eval ctx.t_eval_point := by
   have ht : MLE (fun y : Fin ℓ → Fin 2 => t.val.eval (y : Fin ℓ → L)) = t.val :=
     (is_multilinear_iff_eq_evals_zeroOne (p := t.val)).mp t.property
@@ -69,7 +69,7 @@ theorem sum_openingMultiplier_mul_eq_eval (ctx : SumcheckBaseContext L ℓ)
   have heq (y : Fin ℓ → Fin 2) :
       eval (y : Fin ℓ → L) (eqPolynomial ctx.t_eval_point) =
         eqTilde (y : Fin ℓ → L) ctx.t_eval_point := eqPolynomial_symm _ _
-  simp only [openingMultiplier, eqMultiplier, heq]
+  simp only [evalMultiplier, eqMultiplier, heq]
   rw [← hsum]
 
 variable {StmtIn WitIn : Type}
@@ -89,13 +89,13 @@ theorem eval_eq_and_firstOracleWitnessConsistent_of_mem_roundRelation_zero
     (s : MLPEvalStatement L ℓ)
     (ost : ∀ j, OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0 j)
     (w : Witness K β (h_ℓ_add_R_rate := h_rate) (ℓ := ℓ) 0)
-    (h : ((statement s, ost), w) ∈ roundRelation (multpoly := openingMultiplier.polynomial) K β
+    (h : ((statement s, ost), w) ∈ roundRelation (multpoly := evalMultiplier.polynomial) K β
       (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) (𝓑 := boolEmbedding L) 0) :
     s.original_claim = w.t.val.eval s.t_eval_point ∧
       FirstOracleWitnessConsistent K β w.t (getFirstOracle K β ost) := by
   obtain ⟨hsum, hfirst⟩ := sum_eq_and_firstOracleWitnessConsistent_of_mem_roundRelation_zero K β
-    openingMultiplier.polynomial _ _ ost w h
-  exact ⟨hsum.trans (sum_openingMultiplier_mul_eq_eval _ w.t), hfirst⟩
+    evalMultiplier.polynomial _ _ ost w h
+  exact ⟨hsum.trans (sum_evalMultiplier_mul_eq_eval _ w.t), hfirst⟩
 
 /-- Evaluation and exact first-codeword encoding for honest completeness. -/
 def strictInputRelation : Set ((StmtIn ×
@@ -105,47 +105,35 @@ def strictInputRelation : Set ((StmtIn ×
     getFirstOracle K β x.1.2 = firstOracleEncoding K β (witnessEquiv x.2)}
 
 omit [SampleableType L] [DecidableEq K] [Fact (β 0 = 1)] [NeZero R] in
-/-- The evaluation relation contains every product claim for `openingMultiplier` whose polynomial
-is unique-radius compatible with the first oracle. -/
-theorem mem_inputRelation_of_sum_eq (s : StmtIn)
-    (ost : ∀ j, OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0 j)
-    (t : MultilinearPoly L ℓ)
-    (hsum : (productClaim (evalQuery s)).2 = ∑ y : Fin ℓ → Fin 2,
-      (openingMultiplier (productClaim (evalQuery s)).1).val.eval (y : Fin ℓ → L) *
-        t.val.eval (y : Fin ℓ → L))
-    (hfirst : FirstOracleWitnessConsistent K β t (getFirstOracle K β ost)) :
-    ((s, ost), witnessEquiv.symm t) ∈
-      inputRelation K β evalQuery witnessEquiv (ϑ := ϑ) (h_rate := h_rate) := by
-  rw [sum_openingMultiplier_mul_eq_eval] at hsum
-  change (evalQuery s).original_claim =
-      (witnessEquiv (witnessEquiv.symm t)).val.eval (evalQuery s).t_eval_point ∧ _
-  rw [Equiv.apply_symm_apply]
-  exact ⟨hsum, hfirst⟩
+/-- The evaluation relation is the product-claim relation at `evalMultiplier`. -/
+theorem inputRelation_eq :
+    inputRelation K β evalQuery witnessEquiv (ϑ := ϑ) (h_rate := h_rate) =
+      ProductClaim.inputRelation K β evalMultiplier (toProductClaim ∘ evalQuery) witnessEquiv
+        (ϑ := ϑ) (h_rate := h_rate) := by
+  ext ⟨⟨s, ost⟩, w⟩
+  change _ ∧ _ ↔ _ ∧ _
+  rw [Function.comp_apply, sum_evalMultiplier_mul_eq_eval]
+  rfl
 
 omit [SampleableType L] [DecidableEq K] [Fact (β 0 = 1)] [NeZero R] in
-/-- A member of the strict evaluation relation is a product claim with an exact first
-encoding. -/
-theorem sum_eq_and_getFirstOracle_eq_of_mem_strictInputRelation (s : StmtIn)
-    (ost : ∀ j, OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0 j) (w : WitIn)
-    (h : ((s, ost), w) ∈
-      strictInputRelation K β evalQuery witnessEquiv (ϑ := ϑ) (h_rate := h_rate)) :
-    (productClaim (evalQuery s)).2 = ∑ y : Fin ℓ → Fin 2,
-        (openingMultiplier (productClaim (evalQuery s)).1).val.eval (y : Fin ℓ → L) *
-          (witnessEquiv w).val.eval (y : Fin ℓ → L) ∧
-      getFirstOracle K β ost = firstOracleEncoding K β (witnessEquiv w) := by
-  obtain ⟨hclaim, hencoding⟩ := h
-  refine ⟨?_, hencoding⟩
-  rw [sum_openingMultiplier_mul_eq_eval]
-  exact hclaim
+/-- The strict evaluation relation is the strict product-claim relation at `evalMultiplier`. -/
+theorem strictInputRelation_eq :
+    strictInputRelation K β evalQuery witnessEquiv (ϑ := ϑ) (h_rate := h_rate) =
+      ProductClaim.strictInputRelation K β evalMultiplier (toProductClaim ∘ evalQuery)
+        witnessEquiv (ϑ := ϑ) (h_rate := h_rate) := by
+  ext ⟨⟨s, ost⟩, w⟩
+  change _ ∧ _ ↔ _ ∧ _
+  rw [Function.comp_apply, sum_evalMultiplier_mul_eq_eval]
+  rfl
 
-/-- The evaluation-claim opening: Binary Basefold at `openingMultiplier`. -/
-noncomputable def openingVerifier (γ : ℕ) :=
-  ProductClaim.openingVerifier K β openingMultiplier (productClaim ∘ evalQuery) γ (ϑ := ϑ)
+/-- The evaluation-claim opening: Binary Basefold at `evalMultiplier`. -/
+def openingVerifier (γ : ℕ) :=
+  ProductClaim.openingVerifier K β evalMultiplier (toProductClaim ∘ evalQuery) γ (ϑ := ϑ)
     (h_rate := h_rate)
 
 /-- The honest evaluation-claim opening. -/
-noncomputable def openingReduction (γ : ℕ) :=
-  ProductClaim.openingReduction K β openingMultiplier (productClaim ∘ evalQuery) witnessEquiv γ
+def openingReduction (γ : ℕ) :=
+  ProductClaim.openingReduction K β evalMultiplier (toProductClaim ∘ evalQuery) witnessEquiv γ
     (ϑ := ϑ) (h_rate := h_rate)
 
 /-- Round-by-round knowledge soundness of the evaluation-claim opening. -/
@@ -156,9 +144,9 @@ theorem openingVerifier_rbrKnowledgeSoundness (γ : ℕ) {σ : Type} (init : Pro
       ((openingVerifier K β evalQuery γ (ϑ := ϑ) (h_rate := h_rate)).toVerifier
         (Oₛₒ := fun i : Empty => nomatch i))
       (ProductClaim.openingError K β γ (ϑ := ϑ) (h_rate := h_rate)) :=
-  ProductClaim.openingVerifier_rbrKnowledgeSoundness K β openingMultiplier
-    (productClaim ∘ evalQuery) witnessEquiv _ γ init impl
-    (mem_inputRelation_of_sum_eq K β evalQuery witnessEquiv)
+  ProductClaim.openingVerifier_rbrKnowledgeSoundness K β evalMultiplier
+    (toProductClaim ∘ evalQuery) witnessEquiv _ γ init impl
+    (inputRelation_eq K β evalQuery witnessEquiv).ge
 
 /-- Perfect completeness of the evaluation-claim opening on exact first encodings. -/
 theorem openingReduction_perfectCompleteness (γ : ℕ) {σ : Type} (init : ProbComp σ)
@@ -167,10 +155,9 @@ theorem openingReduction_perfectCompleteness (γ : ℕ) {σ : Type} (init : Prob
       (oracleProof := openingReduction K β evalQuery witnessEquiv γ (ϑ := ϑ) (h_rate := h_rate))
       (relation := strictInputRelation K β evalQuery witnessEquiv (ϑ := ϑ) (h_rate := h_rate))
       (init := init) (impl := impl) :=
-  ProductClaim.openingReduction_perfectCompleteness K β openingMultiplier
-    (productClaim ∘ evalQuery)
-    witnessEquiv _ γ init impl
-    (sum_eq_and_getFirstOracle_eq_of_mem_strictInputRelation K β evalQuery witnessEquiv)
+  ProductClaim.openingReduction_perfectCompleteness K β evalMultiplier
+    (toProductClaim ∘ evalQuery) witnessEquiv _ γ init impl
+    (strictInputRelation_eq K β evalQuery witnessEquiv).le
 
 /-- The shared first-oracle interface used by the opening protocol. -/
 def abstractInput : AbstractOStmtIn L ℓ :=
@@ -267,9 +254,9 @@ theorem openingVerifier_knowledgeSoundness (γ : ℕ) {σ : Type} (init : ProbCo
       (inputRelation K β evalQuery witnessEquiv (ϑ := ϑ) (h_rate := h_rate))
       (openingVerifier K β evalQuery γ (ϑ := ϑ) (h_rate := h_rate))
       (FullBinaryBasefold.concreteBinaryBasefoldKnowledgeError L ℓ R γ) :=
-  ProductClaim.openingVerifier_knowledgeSoundness K β openingMultiplier (productClaim ∘ evalQuery)
-    witnessEquiv _ γ init impl
-    (mem_inputRelation_of_sum_eq K β evalQuery witnessEquiv)
+  ProductClaim.openingVerifier_knowledgeSoundness K β evalMultiplier
+    (toProductClaim ∘ evalQuery) witnessEquiv _ γ init impl
+    (inputRelation_eq K β evalQuery witnessEquiv).ge
 
 /-- Evaluation opening is perfectly complete on exact encodings and ordinarily knowledge sound
 for unique-radius compatibility at the concrete Binary Basefold error. -/

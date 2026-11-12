@@ -17,7 +17,7 @@ variables, one retained variable, the nonconstant source `X₀ + X₂` and its h
 * The honest source is accepted with probability one.
 * The unrolled bound is the separate-sum-check bound minus `2ℓ'/|L|`, and is below one.
 * The Binary Basefold final check multiplies by the multiplier value: with a zero multiplier it
-  still requires a zero target, and at `openingMultiplier` it is the `eq̃` check.
+  still requires a zero target, and at `evalMultiplier` it is the `eq̃` check.
 -/
 
 open OracleComp OracleSpec ProtocolSpec Module MvPolynomial
@@ -120,16 +120,16 @@ example (h0 : ∀ r', mult.evaluate () r' = 0)
   rw [CoreInteraction.finalSumcheckVerifierGuardedForm_check, h0]
   exact decide_eq_decide.mpr ⟨fun h => h.trans (zero_mul _), fun h => h.trans (zero_mul _).symm⟩
 
-/-- At `openingMultiplier`, the final check is the evaluation-claim check `s = eq̃(r, r') · c`. -/
+/-- At `evalMultiplier`, the final check is the evaluation-claim check `s = eq̃(r, r') · c`. -/
 example (s : Statement (L := Gf16) (SumcheckBaseContext Gf16 1) (Fin.last 1) ×
       ∀ j, OracleStatement (ZMod 2) basis
         (h_ℓ_add_R_rate := one_add_one_lt_two_pow_two) 1 (Fin.last 1) j)
     (tr : (pSpecFinalSumcheckStep (L := Gf16)).FullTranscript) :
-    (CoreInteraction.finalSumcheckVerifierGuardedForm (ZMod 2) basis openingMultiplier (ϑ := 1)
+    (CoreInteraction.finalSumcheckVerifierGuardedForm (ZMod 2) basis evalMultiplier (ϑ := 1)
       (h_ℓ_add_R_rate := one_add_one_lt_two_pow_two) (𝓑 := boolEmbedding Gf16)).check s tr =
       decide (s.1.sumcheck_target =
         eqTilde s.1.ctx.t_eval_point s.1.challenges * (show Gf16 from tr.messages ⟨0, rfl⟩)) :=
-  CoreInteraction.finalSumcheckVerifierGuardedForm_check (ZMod 2) basis openingMultiplier s tr
+  CoreInteraction.finalSumcheckVerifierGuardedForm_check (ZMod 2) basis evalMultiplier s tr
 
 end FinalCheck
 
