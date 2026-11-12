@@ -248,5 +248,69 @@ def checkRuntime : IO Unit := do
 
 end PrivateCoinsTest
 
+namespace SRSpecializationTest
+
+abbrev pSpec : ProtocolSpec 1 := ⟨!v[.V_to_P], !v[Fin 7]⟩
+abbrev ambient := Unit →ₒ ℕ
+abbrev publicSpec := ambient + srChallengeOracle (Unit × Bool) pSpec
+
+local instance : ∀ i, DecidableEq (pSpec.Message i) := fun i => isEmptyElim i
+
+local instance : ∀ i, Inhabited (pSpec.Challenge i) := fun i => by
+  have hi : i = ⟨0, rfl⟩ := Subtype.ext (Fin.eq_zero _)
+  subst i
+  exact inferInstanceAs (Inhabited (Fin 7))
+
+-- The final salt changes the reconstructed challenge. It is not passed to the IP verifier.
+def table : QueryImpl (srChallengeOracle (Unit × Bool) pSpec) Id := fun q => by
+  obtain ⟨i, x, messages⟩ := q
+  have hi : i = ⟨0, rfl⟩ := Subtype.ext (Fin.eq_zero _)
+  subst i
+  change Fin 7
+  exact if x.2 then 5 else 2
+
+def impl : QueryImpl ambient (StateT (QueryImpl (srChallengeOracle (Unit × Bool) pSpec) Id)
+    ProbComp) := fun _ => pure 9
+
+def verifier : Verifier ambient Unit ℕ pSpec where
+  verify _ tr := do
+    let value ← liftM (ambient.query ())
+    let challenge : Fin 7 := tr 0
+    if challenge == 5 then pure value else failure
+
+def prover : Prover.StateRestoration.KnowledgeSoundness ambient unifSpec Unit ℕ pSpec
+    (Salt := Bool) := do
+  let _ ← samplePrivateUniform (publicSpec := publicSpec) (Fin 7)
+  return (((), true), fun i => isEmptyElim i, 11)
+
+-- The reconstruction challenge must be visible in the transcript, but absent from both logs.
+-- The extractor is also allowed to query the original ambient oracle.
+def extractor : Extractor.StateRestoration ambient Unit ℕ ℕ pSpec (Salt := Bool) :=
+  fun _ salt w tr logP logV => do
+    let value ← liftM ((ambient + unifSpec).query (.inl ()))
+    let challenge : Fin 7 := tr 0
+    if salt && w == 11 && challenge == 5 && logP.isEmpty && logV.length == 1 then
+      pure value
+    else failure
+
+/-- Check reconstruction, salt, output witnesses, private-log hiding, and extractor access. -/
+def checkRuntime : IO Unit := do
+  let (_, originalWitness, originalOut, outputWitness) ← OracleComp.runIO <|
+    Verifier.StateRestoration.knowledgeSoundnessExperiment (pure table) impl
+      (QueryImpl.id' unifSpec) extractor verifier prover
+  let (statement, witness, out) ← OracleComp.runIO <|
+    adaptiveNARGKnowledgeSoundnessExp (pure table)
+      (impl + srChallengeQueryImpl' (Statement := Unit × Bool) (pSpec := pSpec))
+      (QueryImpl.id' unifSpec) (impl.addLift (QueryImpl.id' unifSpec))
+      (Verifier.StateRestoration.toNARGKnowledgeVerifier verifier)
+      (Verifier.StateRestoration.toNARGExtractor extractor) prover
+  unless originalWitness == some 9 && originalOut == some 9 && outputWitness == 11 &&
+      statement == ((), true) && witness == some 9 && out == some (9, 11) do
+    throw (IO.userError "SR specialization changed reconstruction, logs, or extractor permissions")
+
+end SRSpecializationTest
+
 /-- Run with `lake env lean --run ArkLibTest/OracleReduction/PrivateCoins.lean`. -/
-def main : IO Unit := PrivateCoinsTest.checkRuntime
+def main : IO Unit := do
+  PrivateCoinsTest.checkRuntime
+  SRSpecializationTest.checkRuntime

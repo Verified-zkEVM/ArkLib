@@ -7,6 +7,7 @@ module
 
 public import ArkLib.OracleReduction.Security.Basic
 public import VCVio.OracleComp.QueryTracking.QueryBound.Simulation
+public import VCVio.OracleComp.QueryTracking.QueryLog
 
 /-!
 # Adaptive public-coin interactive security
@@ -399,5 +400,271 @@ theorem knowledgeSoundnessWith_iff_adaptiveKnowledgeSoundnessWithExtractor_fixed
   · intro h Aux stmt aux P
     exact (adaptiveKnowledgeSoundness_fixed_probability V init impl relIn relOut extract
       stmt aux P).ge.trans (h _ ⟨Aux, stmt, aux, P, rfl⟩)
+
+end Verifier
+
+/-! ## One-message specializations -/
+
+private theorem withQueryLog_map {ι α β : Type} {spec : OracleSpec ι}
+    (f : α → β) (p : OracleComp spec α) :
+    (f <$> p).withQueryLog = (fun a => (f a.1, a.2)) <$> p.withQueryLog := by
+  simp [withQueryLog, simulateQ_map, WriterT.run_map]
+
+namespace AdaptiveProver
+variable {ι Stmt Proof Out WitOut : Type} {spec : OracleSpec ι}
+
+local instance : ∀ i, OracleInterface
+    ((⟨!v[.P_to_V], !v[Proof]⟩ : ProtocolSpec 1).Challenge i) := challengeOracleInterface
+
+/-- Eliminate the empty challenge interface of a one-message protocol. -/
+def eraseChallenges :
+    QueryImpl (spec + [(⟨!v[.P_to_V], !v[Proof]⟩ : ProtocolSpec 1).Challenge]ₒ)
+      (OracleComp spec)
+  | .inl q => query q
+  | .inr q => isEmptyElim q.1
+
+private theorem lift_eraseChallenges {α : Type}
+    (p : OracleComp (spec + [(⟨!v[.P_to_V], !v[Proof]⟩ : ProtocolSpec 1).Challenge]ₒ) α) :
+    liftComp (simulateQ eraseChallenges p) _ = p := by
+  induction p using OracleComp.inductionOn with
+  | pure x => simp
+  | query_bind q next ih =>
+    rcases q with q | q
+    · simp only [simulateQ_bind, simulateQ_spec_query, eraseChallenges, liftComp_bind]
+      let target := spec + [(⟨!v[.P_to_V], !v[Proof]⟩ : ProtocolSpec 1).Challenge]ₒ
+      change (liftM (target.query (.inl q)) >>= _) = _
+      simp only [ih]
+    · exact isEmptyElim q.1
+
+/-- Flatten a one-message interactive adversary, retaining all chooser and prover queries. -/
+def toNARG (P : AdaptiveProver spec Stmt Out WitOut
+    (⟨!v[.P_to_V], !v[Proof]⟩ : ProtocolSpec 1)) : OracleComp spec (Stmt × Proof) :=
+  (fun a => (a.1, a.2.1 0)) <$> simulateQ eraseChallenges P.run
+
+/-- Flattening followed by the oracle lift only forgets the trivial interaction structure. -/
+theorem lift_toNARG (P : AdaptiveProver spec Stmt Out WitOut
+    (⟨!v[.P_to_V], !v[Proof]⟩ : ProtocolSpec 1)) :
+    liftComp P.toNARG _ = (fun a => (a.1, a.2.1 0)) <$> P.run := by
+  rw [toNARG, liftComp_map, lift_eraseChallenges]
+
+private theorem lift_toNARG_withQueryLog
+    (P : AdaptiveProver spec Stmt Out WitOut
+      (⟨!v[.P_to_V], !v[Proof]⟩ : ProtocolSpec 1)) :
+    liftComp P.toNARG.withQueryLog _ =
+      (fun a => ((a.1.1, a.1.2.1 0), a.2.fst)) <$> P.run.withQueryLog := by
+  have h := congrArg (fun p => (fun a => (a.1, a.2.fst)) <$> p.withQueryLog)
+    (lift_toNARG P)
+  simpa only [withQueryLog_liftComp_left, withQueryLog_map, Functor.map_map,
+    QueryLog.fst_inl, id_map'] using h
+
+/-- Flattening keeps the public-query budget of the entire interactive adversary. -/
+theorem isQueryBound_toNARG (P : AdaptiveProver spec Stmt Out WitOut
+    (⟨!v[.P_to_V], !v[Proof]⟩ : ProtocolSpec 1))
+    (counts : ι → Prop) [DecidablePred counts] (t : ℕ)
+    (h : P.IsQueryBound counts t) : P.toNARG.IsQueryBoundP counts t := by
+  rw [toNARG, isQueryBoundP_map_iff]
+  apply h.simulateQ_of_step
+  · intro q hq
+    rcases q with q | q
+    · simp [eraseChallenges, isQueryBoundP_query_iff, publicQuerySelector] at hq ⊢
+    · exact isEmptyElim q.1
+  · intro q hq
+    rcases q with q | q
+    · simpa [eraseChallenges, isQueryBoundP_query_iff, publicQuerySelector] using hq
+    · exact isEmptyElim q.1
+end AdaptiveProver
+
+namespace Verifier
+variable {ι κ σ Stmt Proof Out WitOut : Type} {oSpec : OracleSpec ι}
+  {privateSpec : OracleSpec κ}
+  (V : NonInteractiveVerifier Proof oSpec Stmt Out)
+  (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+  (privateImpl : QueryImpl privateSpec ProbComp)
+
+/-- Flattening a one-message adversary leaves the soundness experiment unchanged. -/
+theorem adaptiveSoundnessExp_toNARG
+    (P : AdaptiveProver (oSpec + privateSpec) Stmt Out WitOut
+      (⟨!v[.P_to_V], !v[Proof]⟩ : ProtocolSpec 1)) :
+    adaptiveNARGSoundnessExp init impl privateImpl V P.toNARG =
+      V.adaptiveSoundnessExp init (impl.addLift privateImpl) P := by
+  have h := AdaptiveProver.lift_toNARG P
+  have heq (tr : FullTranscript (⟨!v[.P_to_V], !v[Proof]⟩ : ProtocolSpec 1)) :
+      Fin.cons (tr 0) (fun i => i.elim0) = tr := by
+    funext i
+    have hi := Fin.eq_zero i
+    subst i
+    rfl
+  unfold adaptiveNARGSoundnessExp adaptiveSoundnessExp AdaptiveGame.run
+  congr 1
+  funext s
+  rw [← QueryImpl.simulateQ_add_liftComp_left (impl.addLift privateImpl)
+    (QueryImpl.liftTarget (StateT σ ProbComp) (challengeQueryImpl (pSpec :=
+      (⟨!v[.P_to_V], !v[Proof]⟩ : ProtocolSpec 1))))]
+  simp only [liftComp_bind, liftComp_pure]
+  rw [h]
+  simp only [bind_map_left, heq]
+  rfl
+end Verifier
+
+namespace Verifier
+variable {ι κ κE σ Stmt Proof Out Wit : Type} {oSpec : OracleSpec ι}
+  {privateSpec : OracleSpec κ} {extractorSpec : OracleSpec κE} [Inhabited Out]
+  (V : NonInteractiveVerifier Proof oSpec Stmt Out)
+  (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+
+/-- A one-message interactive protocol has exactly the adaptive NARG soundness contract. -/
+theorem adaptiveSoundnessQueryBounded_iff_adaptiveNARGSoundnessQueryBounded
+    (langIn : Set Stmt) (langOut : Set Out)
+    (counts : ι → Prop) [DecidablePred counts] (t : ℕ) (error : ENNReal) :
+    V.adaptiveSoundnessQueryBounded init (impl.addLift (QueryImpl.id' unifSpec))
+      langIn langOut (publicQuerySelector counts) t error ↔
+    V.adaptiveNARGSoundnessQueryBounded init impl langIn langOut counts t error := by
+  refine ⟨adaptiveNARGSoundnessQueryBounded_of_adaptiveSoundnessQueryBounded V init impl
+    langIn langOut counts t error, ?_⟩
+  intro h WitOut P hP
+  have hRun := h P.toNARG (P.isQueryBound_toNARG _ _ hP)
+  simpa only [adaptiveSoundnessExp_toNARG] using hRun
+
+/-- Use a NARG extractor on the single proof message, ignoring the trivial output witness. -/
+def AdaptiveExtractor.ofNARG
+    (E : Stmt → Proof → QueryLog oSpec → QueryLog oSpec →
+      OptionT (OracleComp extractorSpec) Wit) :
+    AdaptiveExtractor oSpec extractorSpec Stmt Wit Unit
+      (⟨!v[.P_to_V], !v[Proof]⟩ : ProtocolSpec 1) :=
+  fun x _ tr => E x (tr 0)
+
+/-- The embedded NARG experiment has the same logs and extraction result, with a unit witness. -/
+theorem adaptiveKnowledgeSoundnessExp_ofNARG
+    (privateImpl : QueryImpl privateSpec ProbComp)
+    (extractorImpl : QueryImpl extractorSpec (StateT σ ProbComp))
+    (E : Stmt → Proof → QueryLog oSpec → QueryLog oSpec →
+      OptionT (OracleComp extractorSpec) Wit)
+    (P : OracleComp (oSpec + privateSpec) (Stmt × Proof)) :
+    V.adaptiveKnowledgeSoundnessExp init (impl.addLift privateImpl) extractorImpl
+      QueryLog.fst (AdaptiveExtractor.ofNARG E) (AdaptiveProver.ofNARG P) =
+      (fun a => (a.1, a.2.1, a.2.2, ())) <$>
+        adaptiveNARGKnowledgeSoundnessExp init impl privateImpl extractorImpl V E P := by
+  simp only [adaptiveKnowledgeSoundnessExp, AdaptiveProver.run_ofNARG,
+    withQueryLog_map, withQueryLog_liftComp_left, AdaptiveGame.runWithExtractor,
+    AdaptiveGame.execute, adaptiveNARGKnowledgeSoundnessExp,
+    map_bind, bind_map_left, simulateQ_bind, simulateQ_pure, pure_bind, bind_assoc,
+    Functor.map_map, StateT.run'_bind', StateT.run'_pure']
+  simp only [QueryImpl.addLift_def, QueryImpl.liftTarget_self,
+    QueryImpl.simulateQ_add_liftComp_left,
+    AdaptiveExtractor.ofNARG, QueryLog.fst_inl, Fin.cons_zero, Verifier.run]
+  simp [runVerifierWithLog, QueryImpl.simulateQ_add_liftM_left, QueryLog.publicQueries]
+end Verifier
+
+namespace Verifier
+variable {ι κ κE σ Stmt Proof Out Wit : Type} {oSpec : OracleSpec ι}
+  {privateSpec : OracleSpec κ} {extractorSpec : OracleSpec κE}
+  (V : NonInteractiveVerifier Proof oSpec Stmt Out)
+  (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+
+/-- Flattening preserves the one-message knowledge experiment for the supplied extractor. -/
+theorem adaptiveKnowledgeSoundnessExp_toNARG
+    (privateImpl : QueryImpl privateSpec ProbComp)
+    (extractorImpl : QueryImpl extractorSpec (StateT σ ProbComp))
+    (E : Stmt → Proof → QueryLog oSpec → QueryLog oSpec →
+      OptionT (OracleComp extractorSpec) Wit)
+    (P : AdaptiveProver (oSpec + privateSpec) Stmt Out Unit
+      (⟨!v[.P_to_V], !v[Proof]⟩ : ProtocolSpec 1)) :
+    V.adaptiveKnowledgeSoundnessExp init (impl.addLift privateImpl) extractorImpl
+      QueryLog.fst (AdaptiveExtractor.ofNARG E) P =
+      (fun a => (a.1, a.2.1, a.2.2, ())) <$>
+        adaptiveNARGKnowledgeSoundnessExp init impl privateImpl extractorImpl V E P.toNARG := by
+  have heq (tr : FullTranscript (⟨!v[.P_to_V], !v[Proof]⟩ : ProtocolSpec 1)) :
+      Fin.cons (tr 0) (fun i => i.elim0) = tr := by
+    funext i
+    have hi := Fin.eq_zero i
+    subst i
+    rfl
+  simp only [adaptiveKnowledgeSoundnessExp, adaptiveNARGKnowledgeSoundnessExp,
+    AdaptiveGame.runWithExtractor, AdaptiveGame.execute, simulateQ_bind, simulateQ_pure,
+    pure_bind, bind_assoc, map_bind]
+  rw [← QueryImpl.simulateQ_add_liftComp_left (impl.addLift privateImpl)
+    (QueryImpl.liftTarget (StateT σ ProbComp) (challengeQueryImpl (pSpec :=
+      (⟨!v[.P_to_V], !v[Proof]⟩ : ProtocolSpec 1)))) P.toNARG.withQueryLog]
+  rw [AdaptiveProver.lift_toNARG_withQueryLog]
+  simp [simulateQ_map, bind_map_left, runVerifierWithLog, heq, AdaptiveExtractor.ofNARG,
+    Verifier.run, QueryImpl.addLift_def, QueryImpl.simulateQ_add_liftM_left,
+    StateT.run'_eq, map_bind, QueryLog.publicQueries]
+end Verifier
+
+/-- With a trivial output witness, the relation-valued failure event is the NARG event. -/
+theorem relationKSFailEvent_unit {Stmt Wit Out : Type}
+    (relIn : Set (Stmt × Wit)) (langOut : Set Out) (a : Stmt × Option Wit × Option Out) :
+    relationKSFailEvent relIn (langOut ×ˢ Set.univ) (a.1, a.2.1, a.2.2, ()) =
+      nargKSFailEvent relIn langOut a := by
+  rcases a with ⟨x, w, y⟩
+  cases w <;> cases y <;> simp [relationKSFailEvent, nargKSFailEvent]
+
+namespace Verifier
+variable {ι κE σ Stmt Proof Out Wit : Type} {oSpec : OracleSpec ι}
+  {extractorSpec : OracleSpec κE} [Inhabited Out]
+  (V : NonInteractiveVerifier Proof oSpec Stmt Out)
+  (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+  (extractorImpl : QueryImpl extractorSpec (StateT σ ProbComp))
+
+/-- The one-message knowledge contract preserves the named extractor, both public logs,
+its oracle permissions, and the adversary's query budget. -/
+theorem adaptiveKnowledgeSoundnessWithPrivateCoins_iff_adaptiveNARGKnowledgeSoundness
+    (relIn : Set (Stmt × Wit)) (langOut : Set Out)
+    (E : Stmt → Proof → QueryLog oSpec → QueryLog oSpec →
+      OptionT (OracleComp extractorSpec) Wit)
+    (counts : ι → Prop) [DecidablePred counts] (t : ℕ) (error : ENNReal) :
+    V.adaptiveKnowledgeSoundnessWithPrivateCoins init impl (QueryImpl.id' unifSpec)
+      extractorImpl relIn (langOut ×ˢ Set.univ) (AdaptiveExtractor.ofNARG E) counts t error ↔
+    V.adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor init impl extractorImpl
+      relIn langOut E counts t error := by
+  constructor
+  · intro h P hP
+    have hRun := h (AdaptiveProver.ofNARG P) (AdaptiveProver.isQueryBound_ofNARG P _ _ hP)
+    simpa only [adaptiveKnowledgeSoundnessExp_ofNARG, prEvent_map, relationKSFailEvent_unit]
+      using hRun
+  · intro h P hP
+    have hRun := h P.toNARG (P.isQueryBound_toNARG _ _ hP)
+    simpa only [adaptiveKnowledgeSoundnessExp_toNARG, prEvent_map, relationKSFailEvent_unit]
+      using hRun
+
+/-- The same one-message identification holds without a finite query-bound assumption. -/
+theorem adaptiveKnowledgeSoundness_iff_adaptiveNARGKnowledgeSoundness
+    (relIn : Set (Stmt × Wit)) (langOut : Set Out)
+    (E : Stmt → Proof → QueryLog oSpec → QueryLog oSpec →
+      OptionT (OracleComp extractorSpec) Wit) (error : ENNReal) :
+    V.adaptiveKnowledgeSoundnessWithExtractor init (impl.addLift (QueryImpl.id' unifSpec))
+      extractorImpl QueryLog.fst relIn (langOut ×ˢ Set.univ) (AdaptiveExtractor.ofNARG E)
+      (fun _ => True) error ↔
+    V.adaptiveNARGKnowledgeSoundnessWithExtractor init impl extractorImpl
+      relIn langOut E error := by
+  constructor
+  · intro h P
+    have hRun := h (AdaptiveProver.ofNARG P) True.intro
+    simpa only [adaptiveKnowledgeSoundnessExp_ofNARG, prEvent_map, relationKSFailEvent_unit]
+      using hRun
+  · intro h P _
+    have hRun := h P.toNARG
+    simpa only [adaptiveKnowledgeSoundnessExp_toNARG, prEvent_map, relationKSFailEvent_unit]
+      using hRun
+end Verifier
+
+namespace Verifier
+
+/-- The one-message soundness equivalence also covers adversaries without any finite budget. -/
+theorem adaptiveSoundness_iff_adaptiveNARGSoundness
+    {ι σ Stmt Proof Out : Type} {oSpec : OracleSpec ι} [Inhabited Out]
+    (V : NonInteractiveVerifier Proof oSpec Stmt Out)
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (langIn : Set Stmt) (langOut : Set Out) (error : ENNReal) :
+    V.adaptiveSoundness init (impl.addLift (QueryImpl.id' unifSpec))
+      langIn langOut (fun _ _ => True) error ↔
+    V.adaptiveNARGSoundness init impl langIn langOut error := by
+  constructor
+  · intro h P
+    have hRun := h Unit (AdaptiveProver.ofNARG P) True.intro
+    simpa only [adaptiveSoundnessExp_ofNARG] using hRun
+  · intro h WitOut P _
+    have hRun := h P.toNARG
+    simpa only [adaptiveSoundnessExp_toNARG] using hRun
 
 end Verifier

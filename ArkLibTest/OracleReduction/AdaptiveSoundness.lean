@@ -168,3 +168,39 @@ theorem constant_chooser_bound :
   simpa using h
 
 end AdaptiveSoundnessTest
+
+namespace OneMessageSpecializationTest
+
+abbrev spec := Unit →ₒ ℕ
+abbrev pSpec : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[ℕ]⟩
+
+-- Queries in the chooser, message phase, and final output phase must all survive flattening.
+def adversary : AdaptiveProver spec ℕ Unit Unit pSpec where
+  Aux := Unit
+  choose := do return (← liftM (spec.query ()), ())
+  prover :=
+    { PrvState := fun _ => Unit
+      input := fun _ => ()
+      sendMessage := fun i _ => by
+        have hi : i = ⟨0, rfl⟩ := Subtype.ext (Fin.eq_zero _)
+        subst i
+        exact do return (← liftM (spec.query ()), ())
+      receiveChallenge := fun i => isEmptyElim i
+      output := fun _ => do
+        let _ ← liftM (spec.query ())
+        return ((), ()) }
+
+/-- Flattening retains every phase and the chronological public log. -/
+def checkRuntime : IO Unit := do
+  let impl : QueryImpl spec (StateT ℕ IO) := fun _ => do
+    let state ← get
+    modify (· + 1)
+    return state
+  let ((result, log), state) ← (simulateQ impl adversary.toNARG.withQueryLog).run 0
+  unless result == (0, 1) && state == 3 && log.length == 3 do
+    throw (IO.userError "one-message flattening lost a chooser, message, or output query")
+
+end OneMessageSpecializationTest
+
+/-- Execute the one-message adapter regression. -/
+def main : IO Unit := OneMessageSpecializationTest.checkRuntime
