@@ -450,12 +450,6 @@ theorem bad_event_le_of_fixed_candidates
 /-- The single fresh challenge incurs exactly the strategy's separation bound. -/
 def rbrError (_i : (pSpec (M := M) data bat.toBatchingRule).ChallengeIdx) : ℝ≥0 := bat.error
 
-omit [Algebra B C] [Algebra data.P C] [IsScalarTower B data.P C] in
-/-- The head's only challenge carries the strategy's separation bound. -/
-theorem rbrError_sum : ∑ i, rbrError (M := M) data bat i = bat.error := by
-  change ∑ _i : (pSpec (M := M) data bat.toBatchingRule).ChallengeIdx, bat.error = bat.error
-  rw [Finset.sum_const, Finset.card_univ, card_challengeIdx, one_smul]
-
 /-- Round-by-round knowledge soundness for the head requires only equal
 component evaluations among compatible polynomials at each fixed query and oracle statement. -/
 theorem rbrKnowledgeSoundnessWith_of_partials_eq

@@ -489,8 +489,7 @@ variable (multiplier : Multiplier Context L ℓ)
 
 /-- The logic of the final sum-check step for a multiplier `A` with evaluator `Â`. The prover
 sends the constant `c` of its fully folded word; the verifier checks the closing sum-check
-equation `s_ℓ = Â(ctx, r') · c` and outputs the target, the challenges and `c`. The equation is
-not divided by `Â(ctx, r')`, so it remains a check when that value is zero. The oracle
+equation `s_ℓ = Â(ctx, r') · c` and outputs the target, the challenges and `c`. The oracle
 statements pass through. For an evaluation claim (`openingMultiplier`),
 `Â(ctx, r') = eq̃(r, r')`. -/
 def finalSumcheckStepLogic :

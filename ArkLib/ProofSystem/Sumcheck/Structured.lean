@@ -131,9 +131,10 @@ theorem coe_computeInitialSumcheckPoly (t m : MultilinearPoly L ℓ) :
 
 /-- A public multilinear multiplier together with the verifier's point evaluator.
 `evaluate_eq` states that the evaluator computes the multiplier polynomial; a protocol verifier
-may therefore use a succinct evaluator while its relations use the polynomial. -/
+may therefore use a succinct evaluator while its relations use the polynomial. Unlike
+`SumcheckMultiplierParam`, it has no combinator and is multilinear in every variable. -/
 structure Multiplier (Context C : Type) [CommSemiring C] (m : ℕ) where
-  /-- The polynomial used to define the product-sumcheck relation. -/
+  /-- The multiplier polynomial of each context. -/
   polynomial : Context → MultilinearPoly C m
   /-- The verifier's point evaluator. -/
   evaluate : Context → (Fin m → C) → C
@@ -182,6 +183,11 @@ structure Statement (Context : Type) (i : Fin (ℓ + 1)) where
   sumcheck_target : L              -- s_i (current sumcheck target for round i)
   challenges : Fin i → L           -- R'_i = (r'_0, ..., r'_{i-1}) from previous rounds
   ctx : Context -- external context for composition from the outer protocol
+
+/-- The statement of a claim before any round: its target and context, with no challenges. -/
+def initialStatement {Context : Type} (ctx : Context) (target : L) :
+    Statement (L := L) (ℓ := ℓ) Context 0 :=
+  ⟨target, Fin.elim0, ctx⟩
 
 end ContextAndStatement
 

@@ -122,9 +122,9 @@ perfect completeness on exact encodings (the strict view of the input interface)
 relation. The knowledge error is `κ/|L| + ℓ' * (2/|L|)` plus the concrete Binary Basefold knowledge error
 `BinaryBasefold.FullBinaryBasefold.concreteBinaryBasefoldKnowledgeError L ℓ' R γ`.
 A backend whose own sum-check accepts a product claim can instead take the head's output
-directly. The [unrolled Binius protocol][unrolled] composes `TensorPrefix.headVerifier` with a
-zero-message frontier and full Binary Basefold at `TensorPrefix.multiplier`, so the ring-switching
-product sum-check is the Binary Basefold loop. It is stated for the same input relation as the
+directly. The [unrolled Binius protocol][unrolled] composes `TensorPrefix.headVerifier` with the
+Binary Basefold product-claim opening at `TensorPrefix.multiplier`, so the ring-switching product
+sum-check is the Binary Basefold loop. It is stated for the same input relation as the
 separate-sum-check composition; its bound
 `Binius.FRIBinius.Unrolled.concreteError` is lower by one sum-check term
 (`Binius.FRIBinius.Unrolled.concreteError_add_eq`).

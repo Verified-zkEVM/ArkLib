@@ -15,10 +15,10 @@ public import ArkLib.OracleReduction.Security.GuardedRoundByRound
 
 After the last fold, the prover sends the constant `c := f⁽ˡ⁾(0, …, 0)` of its fully folded word.
 For a public multiplier `A` with evaluator `Â`, the verifier checks the closing sum-check equation
-`s_ℓ = Â(ctx, r') · c` and outputs the target, the challenges and `c`. The step sends no challenge.
-The equation is a multiplication, not a division, so a zero multiplier value still constrains the
-target. The evaluation-claim opening uses `openingMultiplier`, for which `Â(ctx, r') = eq̃(r, r')`;
-the unrolled FRI-Binius protocol uses the ring-switching multiplier.
+`s_ℓ = Â(ctx, r') · c` and outputs the target, the challenges and `c`. The step sends no
+challenge. With a zero multiplier value the check requires a zero target. The evaluation-claim
+opening uses `openingMultiplier`, for which `Â(ctx, r') = eq̃(r, r')`; the unrolled FRI-Binius
+protocol uses the ring-switching multiplier.
 
 ## Main definitions and statements
 
@@ -30,7 +30,7 @@ the unrolled FRI-Binius protocol uses the ring-switching multiplier.
 * `finalSumcheckKnowledgeStateFunction`: before the message, the round relation at `ℓ`; after it,
   the closing equation and the final folding state. Its backward step decodes the multilinear
   polynomial from the first oracle (`Steps/FinalSumcheck/Extraction.lean`) and recovers the product
-  claim `s_ℓ = A(ctx)(r') · t(r')` without dividing by the multiplier.
+  claim `s_ℓ = A(ctx)(r') · t(r')`.
 * `finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWith`: round-by-round
   knowledge soundness at `finalSumcheckRbrExtractor` and `finalSumcheckKnowledgeStateFunction`, with
   an existential form.
@@ -235,7 +235,7 @@ theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type}
 
 omit [SampleableType L] in
 /-- A passing closing equation and consistent decoded folds recover the product claim
-`s_ℓ = A(ctx)(r') · t(r')` for the decoded polynomial `t`, without dividing by the multiplier. -/
+`s_ℓ = A(ctx)(r') · t(r')` for the decoded polynomial `t`. -/
 theorem sumcheck_target_eq_of_finalSumcheckOracleConsistent
     (stmtIn : Statement (L := L) Context (Fin.last ℓ)) (c : L)
     (oStmtIn : ∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ) j)
@@ -277,8 +277,7 @@ theorem finalSumcheckDecodedWitness_sumcheckConsistency
   simp [finalSumcheckDecodedWitness]
 
 omit [SampleableType L] [DecidableEq 𝔽q] h_β₀_eq_1 [NeZero ℓ] in
-/-- The recovered product claim makes the rebuilt witness structurally honest. No nonzero
-assumption on either factor is required. -/
+/-- The recovered product claim makes the rebuilt witness structurally honest. -/
 theorem finalSumcheckDecodedWitness_structural
     (stmtIn : Statement (L := L) Context (Fin.last ℓ)) (tpoly : MultilinearPoly L ℓ)
     (h : stmtIn.sumcheck_target =

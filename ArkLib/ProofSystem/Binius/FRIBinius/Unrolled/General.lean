@@ -5,10 +5,8 @@ Authors: Chung Thai Nguyen, Quang Dao, Alexander Hicks
 -/
 module
 
-public import ArkLib.ProofSystem.Binius.FRIBinius.Unrolled.Frontier
 public import ArkLib.ProofSystem.Binius.FRIBinius.Unrolled.Spec
 public import ArkLib.OracleReduction.Security.GuardedBridges
-public import ArkLib.ProofSystem.Binius.BinaryBasefold.Opening
 
 /-!
 # Unrolled FRI-Binius
@@ -20,10 +18,10 @@ sum-check inside the Binary Basefold sum-check-and-fold loop:
    original claim, samples the batching challenge, and outputs a product claim
    `s₀ = ∑_y A(y) · t'(y)` for the packed polynomial `t'` with the ring-switching multiplier
    `A = TensorPrefix.multiplier`;
-2. a zero-message frontier (`Frontier`) passes that claim to Binary Basefold;
-3. the Binary Basefold core and query protocol (`FullBinaryBasefold.fullOracleVerifier`) runs
-   at the same multiplier: its final check is `s_ℓ' = A(r') · c`, evaluated by
-   `compute_final_eq_value` (`TensorPrefix.multiplier_evaluate_eq_compute_final_eq_value`).
+2. the Binary Basefold opening of that product claim (`ProductClaim.openingVerifier`) runs the
+   sum-check-and-fold loop and the query phase at the same multiplier. Its final check is
+   `s_ℓ' = A(r') · c`, where the verifier's value of `A(r')` equals `compute_final_eq_value`
+   (`TensorPrefix.multiplier_evaluate_eq_compute_final_eq_value`).
 
 The input relation is the one of the composition with a separate ring-switching sum-check,
 `TensorPrefix.relIn (biniusProfile κ L K β) h_l (binaryBasefoldInput …)`: the claimed evaluation of
@@ -33,15 +31,18 @@ exact encoding.
 
 ## What the security statements assert
 
-* `fullVerifier_rbrKnowledgeSoundness` is legacy round-by-round knowledge soundness, with error
-  `fullError`. Its extractors may be inefficient; since the source type is inhabited, it is
+* `fullVerifier_rbrKnowledgeSoundness` is `Verifier.rbrKnowledgeSoundness`, with per-challenge
+  error `fullError`. Its extractors may be inefficient; since the source type is inhabited, it is
   equivalent to round-by-round soundness of the languages
   (`Verifier.rbrSoundness_iff_rbrKnowledgeSoundness`).
 * `fullVerifier_knowledgeSoundness` is terminal knowledge soundness with an unbounded extractor,
   hence equivalent to relation soundness (`Verifier.knowledgeSoundness_iff_relationSoundness`).
 * `fullVerifier_soundness` is soundness for the language of the input relation.
 
-All three use the bound `concreteError`. No efficient-extraction or running-time claim is made.
+Knowledge soundness and soundness use `concreteError`, which bounds the sum of `fullError`
+(`fullError_sum_le_concrete`). No efficient-extraction or running-time claim is made.
+
+The field `K` has two elements, so `[L : K] = 2^κ`; Construction 5.1 allows any binary `K`.
 
 ## Computability
 
@@ -81,24 +82,16 @@ noncomputable instance (γ : ℕ) : ∀ i, SampleableType
     ((pSpec κ K β (ϑ := ϑ) h_rate γ).Challenge i) :=
   instSampleableTypeChallengeAppend
 
-/-- The frontier followed by the Binary Basefold core and query verifier at the ring-switching
-multiplier. -/
+/-- The Binary Basefold opening of the head's product claim at the ring-switching multiplier. -/
 noncomputable def tailVerifier (γ : ℕ) :=
-  OracleVerifier.append (Oₛ₃ := fun i : Empty => nomatch i)
-    (Frontier.verifier K β (ϑ := ϑ) (h_rate := h_rate)
-      (Context := (Fin ℓ → L) × (Fin κ → L)))
-    (FullBinaryBasefold.fullOracleVerifier K β γ
-      (TensorPrefix.multiplier (biniusProfile κ L K β) h_l) (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_rate) (𝓑 := boolEmbedding L))
+  ProductClaim.openingVerifier K β (TensorPrefix.multiplier (biniusProfile κ L K β) h_l)
+    (ProductSumcheck.Statement.claim (m := ℓ') (i := 0)) γ (ϑ := ϑ) (h_rate := h_rate)
 
-/-- The honest frontier followed by the honest Binary Basefold core and query reduction. -/
+/-- The honest Binary Basefold opening of the head's product claim. -/
 noncomputable def tailReduction (γ : ℕ) :=
-  OracleReduction.append (Oₛ₃ := fun i : Empty => nomatch i)
-    (Frontier.reduction K β (TensorPrefix.multiplier (biniusProfile κ L K β) h_l)
-      (ϑ := ϑ) (h_rate := h_rate))
-    (FullBinaryBasefold.fullOracleReduction K β γ
-      (TensorPrefix.multiplier (biniusProfile κ L K β) h_l) (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_rate) (𝓑 := boolEmbedding L))
+  ProductClaim.openingReduction K β (TensorPrefix.multiplier (biniusProfile κ L K β) h_l)
+    (ProductSumcheck.Statement.claim (m := ℓ') (i := 0)) (Equiv.refl _) γ (ϑ := ϑ)
+    (h_rate := h_rate)
 
 /-- The unrolled FRI-Binius verifier: the tensor batching head, then `tailVerifier`. -/
 noncomputable def fullVerifier (γ : ℕ) :=
@@ -122,27 +115,64 @@ theorem fullReduction_verifier (γ : ℕ) :
 
 /-! ## Security
 
-### Round-by-round knowledge soundness -/
+### The head's product claim -/
 
-/-- The frontier and Binary Basefold are round-by-round knowledge sound from the head's product
-claim to acceptance. -/
+omit [DecidableEq K] in
+/-- A relaxed round-`0` witness for the head's product claim is a witness of the head's output
+relation. -/
+theorem mem_headRelOut_of_mem_roundRelation_zero
+    (s : ProductSumcheck.Statement ((Fin ℓ → L) × (Fin κ → L)) L (m := ℓ') 0)
+    (ost : ∀ j, OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0 j)
+    (w : Witness K β (h_ℓ_add_R_rate := h_rate) (ℓ := ℓ') 0)
+    (h : ((initialStatement s.claim.1 s.claim.2, ost), w) ∈
+      roundRelation (multpoly := (TensorPrefix.multiplier (biniusProfile κ L K β) h_l).polynomial)
+        K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) (𝓑 := boolEmbedding L) 0) :
+    ((s, ost), (Equiv.refl _).symm w.t) ∈
+      TensorPrefix.headRelOut (biniusProfile κ L K β) h_l
+        (binaryBasefoldInput κ L K β ℓ' R ϑ h_rate) := by
+  obtain ⟨hsum, hfirst⟩ := sum_eq_and_firstOracleWitnessConsistent_of_mem_roundRelation_zero K β
+    _ s.ctx s.target ost w h
+  refine (ProductSumcheck.rel_zero (TensorPrefix.multiplier (biniusProfile κ L K β) h_l)
+    (TensorPrefix.commitment (binaryBasefoldInput κ L K β ℓ' R ϑ h_rate)) s ost w.t).mpr
+    ⟨?_, hfirst⟩
+  simp only [MvPolynomial.aeval_def]
+  exact hsum
+
+omit [DecidableEq K] [Fact (β 0 = 1)] [NeZero R] in
+/-- A member of the head's strict output relation is a product claim with an exact first
+encoding. -/
+theorem sum_eq_and_getFirstOracle_eq_of_mem_headRelOut
+    (s : ProductSumcheck.Statement ((Fin ℓ → L) × (Fin κ → L)) L (m := ℓ') 0)
+    (ost : ∀ j, OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0 j)
+    (p : MultilinearPoly L ℓ')
+    (h : ((s, ost), p) ∈ TensorPrefix.headRelOut (biniusProfile κ L K β) h_l
+      (binaryBasefoldInput κ L K β ℓ' R ϑ h_rate).strictView) :
+    s.claim.2 = ∑ y : Fin ℓ' → Fin 2,
+        ((TensorPrefix.multiplier (biniusProfile κ L K β) h_l) s.claim.1).val.eval
+          (y : Fin ℓ' → L) * (Equiv.refl _ p).val.eval (y : Fin ℓ' → L) ∧
+      getFirstOracle K β ost = firstOracleEncoding K β (Equiv.refl _ p) := by
+  obtain ⟨hsum, hencoding⟩ := (ProductSumcheck.rel_zero
+    (TensorPrefix.multiplier (biniusProfile κ L K β) h_l)
+    (TensorPrefix.commitment (binaryBasefoldInput κ L K β ℓ' R ϑ h_rate).strictView)
+    s ost p).mp h
+  simp only [MvPolynomial.aeval_def] at hsum
+  exact ⟨hsum, hencoding⟩
+
+/-! ### Round-by-round knowledge soundness -/
+
+/-- The Binary Basefold opening is round-by-round knowledge sound from the head's product claim
+to acceptance. -/
 theorem tailVerifier_rbrKnowledgeSoundness (γ : ℕ) {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     ((tailVerifier κ K β (ϑ := ϑ) h_rate h_l γ).toVerifier
       (Oₛₒ := fun i : Empty => nomatch i)).rbrKnowledgeSoundness init impl
       (TensorPrefix.headRelOut (biniusProfile κ L K β) h_l
         (binaryBasefoldInput κ L K β ℓ' R ϑ h_rate))
-      acceptRejectOracleRel
-      (Sum.elim (fun _ => 0)
-        (FullBinaryBasefold.fullRbrKnowledgeError K β γ (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)) ∘
-        ChallengeIdx.sumEquiv.symm) :=
-  OracleVerifier.append_rbrKnowledgeSoundness_of_guarded_first
-    (Oₛ₃ := fun i : Empty => nomatch i) _ _
-    (Frontier.guardedForm K β)
-    (Frontier.rbrKnowledgeSoundness K β (TensorPrefix.multiplier (biniusProfile κ L K β) h_l)
-      init impl)
-    (FullBinaryBasefold.fullOracleVerifier_rbrKnowledgeSoundness K β γ
-      (TensorPrefix.multiplier (biniusProfile κ L K β) h_l) (init := init) (impl := impl))
+      acceptRejectOracleRel (ProductClaim.openingError K β γ (ϑ := ϑ) (h_rate := h_rate)) :=
+  ProductClaim.openingVerifier_rbrKnowledgeSoundness K β
+    (TensorPrefix.multiplier (biniusProfile κ L K β) h_l)
+    (ProductSumcheck.Statement.claim (m := ℓ') (i := 0)) (Equiv.refl _) _ γ init impl
+    (mem_headRelOut_of_mem_roundRelation_zero κ K β h_rate h_l)
 
 /-- Round-by-round knowledge soundness of unrolled FRI-Binius, with error `fullError`. -/
 theorem fullVerifier_rbrKnowledgeSoundness (γ : ℕ) {σ : Type}
@@ -158,7 +188,7 @@ theorem fullVerifier_rbrKnowledgeSoundness (γ : ℕ) {σ : Type}
       (TensorPrefix.layout (biniusProfile κ L K β) h_l)
       (TensorPrefix.messageEquiv (biniusProfile κ L K β)) (BatchingRule.eqFold L κ)
       (TensorPrefix.commitment (binaryBasefoldInput κ L K β ℓ' R ϑ h_rate)))
-    (TensorPrefix.head_rbrKnowledgeSoundness (biniusProfile κ L K β) h_l _
+    (TensorPrefix.headVerifier_rbrKnowledgeSoundness (biniusProfile κ L K β) h_l _
       (binaryBasefold_initialCompatibility_functional κ L K β ℓ' R ϑ h_rate) init impl)
     (tailVerifier_rbrKnowledgeSoundness κ K β (ϑ := ϑ) h_rate h_l γ init impl)
 
@@ -205,7 +235,7 @@ theorem fullReduction_perfectCompleteness (γ : ℕ) {σ : Type}
       (TensorPrefix.relIn (biniusProfile κ L K β) h_l
         (binaryBasefoldInput κ L K β ℓ' R ϑ h_rate).strictView)
       acceptRejectOracleRel := by
-  have hhead := TensorPrefix.head_perfectCompleteness (biniusProfile κ L K β) h_l
+  have hhead := TensorPrefix.headReduction_perfectCompleteness (biniusProfile κ L K β) h_l
     (binaryBasefoldInput κ L K β ℓ' R ϑ h_rate).strictView init impl
   rw [TensorPrefix.headReduction_strictView_eq] at hhead
   apply OracleReduction.append_perfectCompleteness_of_guarded_verifiers
@@ -220,20 +250,10 @@ theorem fullReduction_perfectCompleteness (γ : ℕ) {σ : Type}
     (Verifier.GuardedForm.ofEmpty _ (fun _ => (false, fun i => nomatch i)))
     (fun _ => Or.inl inferInstance) hhead
   intro s
-  exact OracleReduction.append_perfectCompleteness_of_guarded_verifiers
-    (Oₛ₃ := fun i : Empty => nomatch i)
-    (Frontier.reduction K β (TensorPrefix.multiplier (biniusProfile κ L K β) h_l)
-      (ϑ := ϑ) (h_rate := h_rate))
-    (FullBinaryBasefold.fullOracleReduction K β γ
-      (TensorPrefix.multiplier (biniusProfile κ L K β) h_l) (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_rate) (𝓑 := boolEmbedding L))
-    (Frontier.guardedForm K β)
-    (Verifier.GuardedForm.ofEmpty _ (fun _ => (false, fun i => nomatch i)))
-    (fun _ => Or.inl inferInstance)
-    (Frontier.perfectCompleteness K β (TensorPrefix.multiplier (biniusProfile κ L K β) h_l)
-      (pure s) impl)
-    (fun s' => FullBinaryBasefold.fullOracleReduction_perfectCompleteness K β γ
-      (TensorPrefix.multiplier (biniusProfile κ L K β) h_l) (init := pure s') (impl := impl))
+  exact ProductClaim.openingReduction_perfectCompleteness K β
+    (TensorPrefix.multiplier (biniusProfile κ L K β) h_l)
+    (ProductSumcheck.Statement.claim (m := ℓ') (i := 0)) (Equiv.refl _) _ γ (pure s) impl
+    (sum_eq_and_getFirstOracle_eq_of_mem_headRelOut κ K β h_rate h_l)
 
 /-- Unrolled FRI-Binius is perfectly complete for exact packed encodings and knowledge sound
 at `concreteError` for unique-radius compatibility. -/

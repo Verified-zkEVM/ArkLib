@@ -867,16 +867,17 @@ home_page/            site assets and assembled website root
   `Soundness/` proves incremental folding and repeated-query bounds. `ReductionLogic` and
   `Steps/` connect those statements to oracle reductions; `CoreInteractionPhase/` composes the
   steps, `QueryPhase/` implements proximity queries and `General` composes the full protocol.
-  The sum-check-and-fold loop, final sum-check step, core interaction and full protocol take a
-  `Sumcheck.Structured.Multiplier` over an arbitrary context; `ProductClaim` gives the initial
-  statement and witness of a product claim and its round-`0` extraction and strict-relation facts.
-  `Commitment` owns the first-oracle interface, and `Opening` supplies multilinear opening with
-  exact-encoding completeness and unique-radius round-by-round security, at `openingMultiplier`.
+  The sum-check-and-fold loop takes the multiplier polynomial of a context; the final sum-check
+  step, core interaction and full protocol take a `Sumcheck.Structured.Multiplier`, whose evaluator
+  the final check uses. `ProductClaim` opens a product claim: the canonical initial witness, a
+  zero-message front end and full Binary Basefold, secure for any input relation into which a
+  relaxed round-`0` witness extracts. `Commitment` owns the first-oracle interface, and `Opening`
+  is the evaluation-claim instance at `openingMultiplier`, with exact-encoding completeness and
+  unique-radius round-by-round security.
   `FRIBinius/Prelude` instantiates the tensor profile; `FRIBinius/RingSwitch` composes the shared
   prefix reduction with Binary Basefold opening. `FRIBinius/Unrolled/` is DP24 Construction 5.1:
-  the tensor batching head (`TensorPrefix.headVerifier`), a zero-message `Frontier`, and full
-  Binary Basefold at the ring-switching multiplier, so a single sum-check serves both ring
-  switching and folding. `Spec` bounds its challenge errors by DP24 equation (43).
+  the tensor batching head (`TensorPrefix.headVerifier`) followed by `ProductClaim.openingVerifier`
+  at the ring-switching multiplier, so a single sum-check serves both ring switching and folding. `Spec` bounds its challenge errors by DP24 equation (43).
   See the [consumer guide](ring-switching-consumers.md).
 
 - The ABF26 Section 6 toy IOP lives under `ProofSystem/ToyProblem/`. `Spec/` contains the

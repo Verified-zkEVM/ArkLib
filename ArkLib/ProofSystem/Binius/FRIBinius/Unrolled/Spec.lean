@@ -7,20 +7,21 @@ module
 
 public import ArkLib.ProofSystem.Binius.FRIBinius.Prelude
 public import ArkLib.ProofSystem.RingSwitching.Packing.TensorPrefix
-public import ArkLib.ProofSystem.Binius.BinaryBasefold.General
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.ProductClaim
 
 /-!
 # Unrolled FRI-Binius: communication and error budget
 
-The tensor batching head is followed by a zero-message frontier and the Binary Basefold core
-and query protocol, whose sum-check-and-fold loop runs the ring-switching product sum-check
-itself. No separate ring-switching sum-check precedes it.
+The tensor batching head is followed by the Binary Basefold opening of its product claim, whose
+sum-check-and-fold loop runs the ring-switching product sum-check itself. No separate
+ring-switching sum-check precedes it.
 
-`fullError` assigns the batching loss to the head's challenge and the Binary Basefold errors to
-the remaining challenges. `fullError_sum_le_concrete` bounds its sum by `concreteError`,
-`(κ + 2ℓ')/|L| + 2^(ℓ' + R)/|L| + (1/2 + 1/(2 · 2^R))^γ`. `concreteError_add_eq` shows that
-this is the separate-sum-check bound of `FRIBinius.RingSwitch.fullError_sum_le` minus one
-sum-check term `2ℓ'/|L|`. These are bounds on challenge-error sums, not on running time.
+`fullError` assigns the batching loss to the head's challenge and the opening's errors
+(`ProductClaim.openingError`) to the remaining challenges. `fullError_sum_le_concrete` bounds
+its sum by `concreteError`, `(κ + 2ℓ')/|L| + 2^(ℓ' + R)/|L| + (1/2 + 1/(2 · 2^R))^γ`.
+`concreteError_add_eq` shows that this is the separate-sum-check bound of
+`FRIBinius.RingSwitch.fullError_sum_le` minus one sum-check term `2ℓ'/|L|`. These are bounds on
+challenge-error sums, not on running time.
 
 ## References
 
@@ -43,19 +44,17 @@ variable (β : Basis (Fin (2 ^ κ)) K L)
 variable {ℓ' R ϑ : ℕ} [NeZero ℓ'] [NeZero R] [NeZero ϑ] [Fact (ϑ ∣ ℓ')]
 variable (h_rate : ℓ' + R < 2 ^ κ)
 
-/-- The batching head, a zero-message frontier, and the Binary Basefold core and query wire. -/
+/-- The batching head followed by the Binary Basefold opening wire. -/
 noncomputable abbrev pSpec (γ : ℕ) :=
   TensorPrefix.headPSpec (biniusProfile κ L K β) ++ₚ
     ((!p[] : ProtocolSpec 0) ++ₚ BinaryBasefold.fullPSpec K β γ
       (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate))
 
-/-- The batching loss on the head's challenge, then the Binary Basefold challenge errors. -/
+/-- The batching loss on the head's challenge, then the errors of the Binary Basefold opening. -/
 noncomputable def fullError (γ : ℕ) :
     (pSpec κ K β (ϑ := ϑ) h_rate γ).ChallengeIdx → ℝ≥0 :=
   Sum.elim (fun _ => (κ : ℝ≥0) / Fintype.card L)
-    (Sum.elim (fun _ => 0)
-      (BinaryBasefold.FullBinaryBasefold.fullRbrKnowledgeError K β γ
-        (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)) ∘ ChallengeIdx.sumEquiv.symm) ∘
+    (BinaryBasefold.ProductClaim.openingError K β γ (ϑ := ϑ) (h_rate := h_rate)) ∘
     ChallengeIdx.sumEquiv.symm
 
 /-- The closed-form bound with one sum-check term `2ℓ'/|L|`. -/
@@ -85,21 +84,16 @@ theorem concreteError_add_eq (γ : ℕ) :
   ring
 
 omit [DecidableEq K] [Fact (Fintype.card K = 2)] [NeZero R] in
-/-- The frontier adds no error, so the challenge-error sum is the batching loss plus the Binary
-Basefold sum. -/
+/-- The challenge-error sum is the batching loss plus the opening's sum. -/
 theorem fullError_sum (γ : ℕ) :
     (∑ i, fullError κ K β (ϑ := ϑ) h_rate γ i) =
       (κ : ℝ≥0) / Fintype.card L +
-        ∑ i, BinaryBasefold.FullBinaryBasefold.fullRbrKnowledgeError K β γ
-          (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) i := by
+        ∑ i, BinaryBasefold.ProductClaim.openingError K β γ (ϑ := ϑ) (h_rate := h_rate) i := by
   unfold fullError
   refine (Equiv.sum_comp ChallengeIdx.sumEquiv.symm (Sum.elim _ _)).trans ?_
   rw [Fintype.sum_sum_type]
   simp only [Sum.elim_inl, Sum.elim_inr, Finset.sum_const, Finset.card_univ,
     Head.card_challengeIdx, one_smul]
-  congr 1
-  refine (Equiv.sum_comp ChallengeIdx.sumEquiv.symm (Sum.elim _ _)).trans ?_
-  simp [Fintype.sum_sum_type]
 
 omit [DecidableEq K] in
 /-- The challenge-error sum is at most `concreteError`. -/
@@ -108,7 +102,7 @@ theorem fullError_sum_le_concrete (γ : ℕ) :
       concreteError κ (L := L) (ℓ' := ℓ') (R := R) γ := by
   rw [fullError_sum, concreteError_eq]
   exact add_le_add_right
-    (BinaryBasefold.FullBinaryBasefold.fullRbrKnowledgeError_sum_le_concrete K β γ
-      (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)) _
+    (BinaryBasefold.ProductClaim.openingError_sum_le_concrete K β γ
+      (ϑ := ϑ) (h_rate := h_rate)) _
 
 end Binius.FRIBinius.Unrolled

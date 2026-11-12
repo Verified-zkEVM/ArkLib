@@ -70,7 +70,7 @@ abbrev relIn (a : AbstractOStmtIn L ℓ') :=
 section Program
 variable [SampleableType L]
 
-/-- The public multiplier of the batched product claim. Its evaluator computes the original
+/-- The public multiplier of the batched product claim. Its evaluator computes
 `compute_final_eq_value` (`multiplier_evaluate_eq_compute_final_eq_value`). -/
 abbrev multiplier :=
   Head.multiplier (PackingData.ofBasis P.basis) ℓ' (layout P h_l) (BatchingRule.eqFold L κ)
@@ -127,7 +127,7 @@ theorem headReduction_strictView_eq : headReduction P h_l a.strictView = headRed
   rfl
 
 /-- The head is perfectly complete from every valid original claim to the product claim. -/
-theorem head_perfectCompleteness {σ : Type} (init : ProbComp σ)
+theorem headReduction_perfectCompleteness {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (headReduction P h_l a).perfectCompleteness init impl (relIn P h_l a) (headRelOut P h_l a) :=
   Head.perfectCompleteness (PackingData.ofBasis P.basis) ℓ' (layout P h_l)
@@ -154,7 +154,7 @@ theorem derivedTarget_messageEquiv_eq_compute_s0 (z : P.A) (c : Fin κ → L) :
 
 open scoped Classical in
 /-- The shared head executes the original carrier check and row target. -/
-theorem head_verifier_eq :
+theorem headVerifier_eq :
     headVerifier P h_l a =
       scalarRoundOracleVerifier (oSpec := []ₒ) (OStmt := (commitment a).OStmt)
         (fun stmt z => performCheckOriginalEvaluation κ L K P ℓ ℓ' h_l stmt.2 stmt.1 z = true)
@@ -277,7 +277,7 @@ theorem rbrKnowledgeSoundness (h : a.Functional) {σ : Type} (init : ProbComp σ
 
 /-- The tensor batching head is round-by-round knowledge sound from the original claim to the
 product claim, with the batching loss `κ/|L|` on its one challenge. -/
-theorem head_rbrKnowledgeSoundness (h : a.Functional) {σ : Type} (init : ProbComp σ)
+theorem headVerifier_rbrKnowledgeSoundness (h : a.Functional) {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (headVerifier P h_l a).toVerifier.rbrKnowledgeSoundness init impl (relIn P h_l a)
       (headRelOut P h_l a)

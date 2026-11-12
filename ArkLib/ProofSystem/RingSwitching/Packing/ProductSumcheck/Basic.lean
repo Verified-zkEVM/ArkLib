@@ -48,6 +48,10 @@ structure Statement (Context C : Type) {m : ℕ} (i : Fin (m + 1)) where
   challenges : Fin i → C
   target : C
 
+/-- The context and target of a statement, the data of a product claim. -/
+def Statement.claim {i : Fin (m + 1)} (s : Statement Context C i) : Context × C :=
+  (s.ctx, s.target)
+
 /-- The exact residual-sum relation at a fixed challenge prefix. -/
 def rel (multiplier : Multiplier Context C m) (pc : PackedCommitment P m)
     (i : Fin (m + 1)) :
@@ -57,12 +61,14 @@ def rel (multiplier : Multiplier Context C m) (pc : PackedCommitment P m)
 
 /-- The initial relation is the Boolean cube sum of the challenge-algebra product. -/
 theorem rel_zero (multiplier : Multiplier Context C m) (pc : PackedCommitment P m)
-    (ctx : Context) (target : C) (oStmt : ∀ j, pc.OStmt j)
+    (s : Statement Context C (0 : Fin (m + 1))) (oStmt : ∀ j, pc.OStmt j)
     (p : P⦃≤ 1⦄[X Fin m]) :
-    ((⟨ctx, Fin.elim0, target⟩, oStmt), p) ∈ rel multiplier pc 0 ↔
-      target = ∑ y : Fin m → Fin 2,
-        (multiplier ctx).val.eval (y : Fin m → C) *
+    ((s, oStmt), p) ∈ rel multiplier pc 0 ↔
+      s.target = ∑ y : Fin m → Fin 2,
+        (multiplier s.ctx).val.eval (y : Fin m → C) *
           aeval (y : Fin m → C) p.val ∧ pc.commitsTo oStmt p := by
+  obtain ⟨ctx, challenges, target⟩ := s
+  obtain rfl : challenges = Fin.elim0 := funext fun i => Fin.elim0 i
   change (target = hypercubeSum m (productPoly (multiplier ctx) p).val 0 Fin.elim0) ∧ _ ↔ _
   rw [hypercubeSum_zero]
   simp only [productPoly_eval]
