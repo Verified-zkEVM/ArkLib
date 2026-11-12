@@ -546,7 +546,8 @@ noncomputable def indexedExecute {ι : Type} (ambient : OracleSpec ι) {m : Type
     ((indexedVerifier R deg 1 D ambient).run ⟨target, Fin.elim0⟩ data
       (committedProver ambient msg (fun r => (msg.val.eval r, r))))
 
-/-- Execution transports the supplied challenge computation to complete native observations. -/
+/-- Execution transports the supplied challenge computation to complete observations in the
+interaction layer. -/
 theorem indexedExecute_eq {ι : Type} (ambient : OracleSpec ι)
     {m : Type → Type} [Monad m] [LawfulMonad m]
     (impl : QueryImpl ambient m) (challenge : m R)
@@ -705,7 +706,8 @@ theorem message_degree {R : Type} [CommSemiring R] {deg : ℕ} (p : R⦃≤ deg�
     p.val.degree ≤ deg :=
   Polynomial.mem_degreeLE.mp p.property
 
-/-- Embed a degree-bounded univariate input into the native one-variable polynomial resource. -/
+/-- Embed a degree-bounded univariate input into the interaction layer's one-variable polynomial
+resource. -/
 noncomputable def univariateData {R : Type} [CommSemiring R] {deg : ℕ} (p : R⦃≤ deg⦄[X]) :
     R⦃≤ deg⦄[X Fin 1] :=
   ⟨(MvPolynomial.uniqueAlgEquiv R (Fin 1)).symm p.val, by

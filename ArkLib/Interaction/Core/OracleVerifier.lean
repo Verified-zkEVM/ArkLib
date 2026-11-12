@@ -26,18 +26,16 @@ namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
 
 
-/-- The oracle nodes on a completed shape path. Reduction exposes the concrete index and response
-families in dependent query types. -/
-@[reducible]
+/-- The oracle nodes on a completed shape path. -/
+@[implicit_reducible]
 def oracleIdx : (s : OracleProtocol.{u, q}) → Path s → Type u
   | .pure _, _ => PEmpty
   | .liftBind (.message _) next, ⟨x, p⟩ => oracleIdx (next x) p
   | .liftBind (.challenge _) next, ⟨x, p⟩ => oracleIdx (next x) p
   | .liftBind (.oracle _ _) next, ⟨x, p⟩ => PUnit ⊕ oracleIdx (next x) p
 
-/-- Concrete data carriers of the oracle nodes on a completed path. Reduction exposes the concrete
-index and response families in dependent query types. -/
-@[reducible]
+/-- Concrete data carriers of the oracle nodes on a completed path. -/
+@[implicit_reducible]
 def OracleData : (s : OracleProtocol.{u, q}) → (p : Path s) → oracleIdx s p → Type u
   | .pure _, _ => fun i => i.elim
   | .liftBind (.message _) next, ⟨x, p⟩ => OracleData (next x) p
@@ -45,23 +43,20 @@ def OracleData : (s : OracleProtocol.{u, q}) → (p : Path s) → oracleIdx s p 
   | .liftBind (.oracle X _) next, ⟨x, p⟩ =>
     Sum.elim (fun _ => X) (OracleData (next x) p)
 
-/-- Independent families of concrete data, with disjoint query access. Reduction exposes the
-concrete index and response families in dependent query types. -/
-@[reducible]
+/-- Independent families of concrete data, with disjoint query access. -/
+@[implicit_reducible]
 def sumFamily {I : Type uI} {J : Type uJ} {A : I → Type u} {B : J → Type u}
     (a : OracleFamily.{uI, u, w} I A) (b : OracleFamily.{uJ, u, w} J B) :
     OracleFamily (I ⊕ J) (Sum.elim A B) :=
   ⟨fun | .inl i => a.interface i | .inr j => b.interface j⟩
 
-/-- The family consisting of one oracle payload. Reduction exposes the concrete index and response
-families in dependent query types. -/
-@[reducible]
+/-- The family consisting of one oracle payload. -/
+@[implicit_reducible]
 def singletonFamily {X : Type u} (I : OracleInterface.{u, q} X) :
     OracleFamily.{u, u, q} PUnit (fun _ => X) := ⟨fun _ => I⟩
 
-/-- The concrete oracle family at a completed path. Reduction exposes the concrete index and
-response families in dependent query types. -/
-@[reducible]
+/-- The concrete oracle family at a completed path. -/
+@[implicit_reducible]
 def pathFamily : (s : OracleProtocol.{u, q}) → (p : Path s) →
     OracleFamily (oracleIdx s p) (OracleData s p)
   | .pure _, _ => ⟨fun i => i.elim⟩

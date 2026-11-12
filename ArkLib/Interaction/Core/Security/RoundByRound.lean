@@ -30,9 +30,8 @@ open scoped ENNReal
 
 variable {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
 
-/-- Full runtime moves decorating a structural cursor, including erased payloads. Reduction
-exposes the history type when extending a concrete cursor. -/
-@[reducible]
+/-- Full runtime moves decorating a structural cursor, including erased payloads. -/
+@[implicit_reducible]
 def PrefixMoves : {s t : FreeM P PUnit.{u + 1}} → Cursor.Spine s t → Type u
   | _, _, .root _ => PUnit
   | _, _, .down (a := a) b tail =>

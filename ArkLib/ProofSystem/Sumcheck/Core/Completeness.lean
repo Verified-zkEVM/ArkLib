@@ -208,7 +208,8 @@ theorem perfectCompleteness_uniform {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp)) :
     letI : MeasurableSpace (HonestObservation R deg n) := ⊤
     completeness ((verifier R deg n D ambient).classicalModel init impl
-        (challengeQueryImpl oracleSig (protocol R deg n)))
+        (@Interaction.Core.challengeQueryImpl _ oracleSig (protocol R deg n)
+          (challengeSampleable R deg n)))
       (relationProblem R deg n D 0) (relationProblem R deg n D (Fin.last n))
       (judgement R deg n D) (fun x _ => honestProver D x.1 x.2) 0 :=
   perfectCompleteness D ambient init impl _

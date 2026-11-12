@@ -60,8 +60,7 @@ def verifier : OracleVerifier.{0, 0, 0, 0, 0, 0, 0} []ₒ (protocol rounds) Nat 
   decide _ p v := by
     rcases p with ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
     exact if (show Bool from v.1.2.1) then
-      liftM (([]ₒ + (pathResources emptyFamily (protocol rounds) ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩).spec).query
-    (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+      pathLift []ₒ emptyFamily (s := protocol rounds) ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ ⟨.inl ⟨⟩, ()⟩
     else failure
   outputMap _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
@@ -177,8 +176,8 @@ def constantPlainVerifier : OracleVerifier.{0, 0, 0, 0, 0, 0, 0} []ₒ (protocol
     (fun _ => outputFamily) where
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
-    exact liftM (([]ₒ + (pathResources emptyFamily (protocol rounds) ⟨⟨⟩, ⟨⟨⟩,
-    ⟨⟩⟩⟩).spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+    exact liftM (pathLift []ₒ emptyFamily (s := protocol rounds)
+      ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ ⟨.inl ⟨⟩, ()⟩)
   outputMap := verifier.outputMap
 
 /-- Replaying the plain terminal returns its payload for every challenge. -/
@@ -689,8 +688,8 @@ def readSelected (b : Bool) (p : Path (protocol rounds)) :
       (SelectedValue b) := by
   rcases p with ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
   exact do
-    let m ← liftM (([]ₒ + (pathResources emptyFamily (protocol rounds)
-      ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩).spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+    let m ← pathLift []ₒ emptyFamily (s := protocol rounds)
+      ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ ⟨.inl ⟨⟩, ()⟩
     pure (selectedPayload b m)
 
 /-- The selected output oracle answers from the actual sent payload. -/
@@ -701,8 +700,8 @@ def varyingMap (b : Bool) (p : Path (protocol rounds)) :
   · exact
       { f := fun x _ => selectedPayload false (x.2 (.inl ⟨⟩))
         impl := fun _ => do
-          let m ← liftM ((pathResources emptyFamily (protocol rounds)
-            ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩).spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
+          let m ← (OracleMap.snd emptyFamily (pathFamily (protocol rounds)
+            ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩)).impl ⟨.inl ⟨⟩, ()⟩
           pure (selectedPayload false m)
         law := fun _ _ => rfl }
   · exact (OracleMap.embedding (pathFamily (protocol rounds)

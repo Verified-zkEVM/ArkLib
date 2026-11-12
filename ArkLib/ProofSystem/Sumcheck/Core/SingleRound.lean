@@ -31,9 +31,8 @@ open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Intera
 
 variable (R : Type) [CommSemiring R] (deg : ℕ)
 
-/-- One round: an evaluation oracle for the round polynomial, then one ring challenge. Reduction
-exposes the node constructors when elaborating dependent paths. -/
-@[reducible]
+/-- One round: an evaluation oracle for the round polynomial, then one ring challenge. -/
+@[implicit_reducible]
 def round : OracleProtocol.{0} :=
   .liftBind (.oracle (R⦃≤ deg⦄[X]) inferInstance) fun _ =>
     .liftBind (.challenge R) fun _ => .pure ⟨⟩

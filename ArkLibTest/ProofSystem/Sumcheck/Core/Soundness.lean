@@ -387,14 +387,15 @@ variable {R : Type} [CommSemiring R] [DecidableEq R] [Fintype R] [SampleableType
   [IsDomain R] {n deg d : ℕ} {ι σ : Type} (ambient : OracleSpec ι)
   (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
 
-/-- The native headline includes every prover over an arbitrary indexed domain. -/
+/-- The interaction layer's headline includes every prover over an arbitrary indexed domain. -/
 example (D : Fin d → R) :
     (indexedVerifier R deg n D ambient).soundness init impl (indexedDraw (R := R) (deg := deg) n)
       (indexedInputProblem D) (indexedOutputProblem (R := R) (deg := deg) (n := n))
       ((n : ℝ≥0∞) * (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞)) :=
   verifier_soundness_rounds D ambient init impl
 
-/-- List domains, including repeated points, use the actual native run's soundness theorem. -/
+/-- List domains, including repeated points, use the soundness theorem for the actual run in the
+interaction layer. -/
 example (domain : List R) :
     (indexedVerifier R deg n domain.get ambient).soundness init impl
       (indexedDraw (R := R) (deg := deg) n) (indexedInputProblem domain.get)
@@ -402,7 +403,8 @@ example (domain : List R) :
       ((n : ℝ≥0∞) * (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞)) :=
   verifier_soundness_list ambient init impl domain
 
-/-- A committed message is bounded on the actual native run over any list, with repetitions. -/
+/-- A committed message is bounded on the actual run in the interaction layer over any list, with
+repetitions. -/
 example (domain : List R) (msg : R⦃≤ deg⦄[X]) (stmt : RoundStatement R 1 0)
     (data : ∀ i, PolynomialData R 1 deg i)
     (hfalse : ¬ indexedRelation domain.get 0 stmt (data ())) :

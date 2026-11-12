@@ -99,7 +99,8 @@ example {R : Type} [CommSemiring R] [DecidableEq R] {deg : ℕ} {ι : Type}
 /-- A degree-zero natural-number message, where there is no finite uniform sampler. -/
 noncomputable def natOne : ℕ⦃≤ 0⦄[X] := ⟨1, Polynomial.mem_degreeLE.mpr (by simp)⟩
 
-/-- The actual deterministic native run over two zeroes accepts target two at every challenge. -/
+/-- The actual deterministic run in the interaction layer over two zeroes accepts target two at
+every challenge. -/
 example {ι : Type} (ambient : OracleSpec ι) (r : ℕ) :
     indexedExecute ([0, 0] : List ℕ).get ambient (QueryImpl.id' ambient) (pure r)
       (fun _ => univariateData natOne) natOne 2 =

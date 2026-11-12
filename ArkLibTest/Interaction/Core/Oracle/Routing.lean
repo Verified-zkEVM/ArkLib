@@ -58,11 +58,10 @@ abbrev prefixResources := pathResources inputs firstProtocol ⟨⟨⟩, ⟨⟩�
 def exportMap : OracleMap prefixResources exported where
   f x _ := (show Nat from x.1 false) + (show Nat × Nat from x.2 (.inl ⟨⟩)).1
   impl _ := do
-    let a : Nat ← liftM (prefixResources.spec.query (.inl ⟨false, ()⟩))
-    let b : Nat ← liftM (prefixResources.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
+    let a : Nat ← (OracleMap.fst inputs (pathFamily firstProtocol ⟨⟨⟩, ⟨⟩⟩)).impl ⟨false, ()⟩
+    let b : Nat ← (OracleMap.snd inputs (pathFamily firstProtocol ⟨⟨⟩, ⟨⟩⟩)).impl ⟨.inl ⟨⟩, ()⟩
     pure (a + b)
   law x q := by
-    simp only [simulateQ_bind]
     rfl
 
 /-- Interpret the raw resource signature, recording visible input, hidden input and sent-slot
@@ -99,7 +98,7 @@ def prefixVerifier :
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact do
       let _ ← liftM ((ambient + prefixResources.spec).query (.inl 10))
-      let n : Nat ← liftM ((ambient + prefixResources.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+      let n : Nat ← pathLift ambient inputs (s := firstProtocol) ⟨⟨⟩, ⟨⟩⟩ ⟨.inl ⟨⟩, ()⟩
       pure n
   outputMap _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
@@ -118,7 +117,7 @@ def suffixVerifier : OracleVerifier ambient secondProtocol Nat (fun _ => Nat × 
     exact OptionT.mk do
       let _ ← liftM ((ambient + suffixResources.spec).query (.inl 30))
       let e : Nat ← liftM ((ambient + suffixResources.spec).query (.inr (.inl ⟨⟨⟩, ()⟩)))
-      let m : Nat ← liftM ((ambient + suffixResources.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+      let m : Nat ← pathLift ambient exported (s := secondProtocol) ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ ⟨.inl ⟨⟩, ()⟩
       let _ ← liftM ((ambient + suffixResources.spec).query (.inl 40))
       let _ ← liftM ((ambient + suffixResources.spec).query (.inl 60))
       pure (if e = m then some (stmt, m) else none)
@@ -196,11 +195,11 @@ abbrev closingResources := pathResources exported closingSuffix ⟨⟨⟩, ⟨�
 def closingMap : OracleMap closingResources exported where
   f x _ := x.1 ⟨⟩ + (show Nat × Nat from x.2 (.inl ⟨⟩)).1
   impl _ := do
-    let old : Nat ← liftM (closingResources.spec.query (.inl ⟨⟨⟩, ()⟩))
-    let fresh : Nat ← liftM (closingResources.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
+    let old : Nat ← (OracleMap.fst exported (pathFamily closingSuffix ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩)).impl ⟨⟨⟩, ()⟩
+    let fresh : Nat ← (OracleMap.snd exported
+      (pathFamily closingSuffix ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩)).impl ⟨.inl ⟨⟩, ()⟩
     pure (old + fresh)
   law _ _ := by
-    simp only [simulateQ_bind]
     rfl
 
 /-- The suffix decides from its export and its fresh pair after the whole interaction. -/
@@ -211,8 +210,8 @@ def closingVerifier : OracleVerifier ambient closingSuffix Nat (fun _ => Nat) ex
     exact do
       let _ ← liftM ((ambient + closingResources.spec).query (.inl 30))
       let old : Nat ← liftM ((ambient + closingResources.spec).query (.inr (.inl ⟨⟨⟩, ()⟩)))
-      let fresh : Nat ← liftM ((ambient + closingResources.spec).query
-        (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+      let fresh : Nat ← pathLift ambient exported (s := closingSuffix)
+        ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ ⟨.inl ⟨⟩, ()⟩
       let _ ← liftM ((ambient + closingResources.spec).query (.inl 40))
       let _ ← liftM ((ambient + closingResources.spec).query (.inl 60))
       pure (old + fresh)

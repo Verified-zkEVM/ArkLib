@@ -86,8 +86,7 @@ def verifier : OracleVerifier.{0, 0, 0, 0, 0, 0, 0} []ₒ (protocol rounds) Nat 
     (fun _ => outputFamily) where
   decide _ p v :=
     if (show Fin 8 from v.1.2.1) = 0 ∨ (show Fin 16 from v.1.2.2.2.1) = 0 then
-      liftM (([]ₒ + (pathResources emptyFamily (protocol rounds) p).spec).query
-        (.inr (.inr ⟨.inr (.inl ⟨⟩), ()⟩)))
+      pathLift []ₒ emptyFamily (s := protocol rounds) p ⟨.inr (.inl ⟨⟩), ()⟩
     else failure
   outputMap _ p _ :=
     (OracleMap.embedding (pathFamily (protocol rounds) p)
@@ -121,17 +120,18 @@ output oracle when a challenge is `0`, and rejects otherwise. -/
 theorem observation (z : Stmt) (m₁ c₁ m₂ : Fin 8) (c₂ : Fin 16) :
     closedTerminalObservation verifier z (transcript m₁ c₁ m₂ c₂) =
       if c₁ = 0 ∨ c₂ = 0 then some (m₂, fun _ => m₂) else none := by
+  have view_condition :
+      ((show Fin 8 from (toView (protocol rounds) (transcript m₁ c₁ m₂ c₂)).1.2.1) = 0 ∨
+        (show Fin 16 from (toView (protocol rounds) (transcript m₁ c₁ m₂ c₂)).1.2.2.2.1) = 0) ↔
+        (c₁ = 0 ∨ c₂ = 0) := Iff.rfl
   simp only [closedTerminalObservation, terminalObservation, OracleVerifier.decideWith, verifier,
-    transcript]
+    view_condition]
+  unfold OptionT.run
   by_cases accepted : c₁ = 0 ∨ c₂ = 0
-  · rw [ite_eq_left_of_eq_true _ _ (eq_true accepted)]
-    split
-    · rfl
-    · contradiction
-  · rw [ite_eq_right_of_eq_false _ _ (eq_false accepted)]
-    split
-    · contradiction
-    · rfl
+  · erw [ite_eq_left accepted, ite_eq_left accepted]
+    rfl
+  · erw [ite_eq_right accepted, ite_eq_right accepted]
+    rfl
 
 -- Row 13 (StateRestorationBudget L305): the observation values on an accepting and a rejecting
 -- path.
@@ -714,8 +714,7 @@ abbrev selectedProtocol : OracleProtocol := .liftBind (.message Bool) fun _ => p
 def readSelected (b : Bool) (p : Path (protocol rounds)) :
     OptionT (OracleComp ([]ₒ + (pathResources emptyFamily (protocol rounds) p).spec))
       (SelectedValue b) := do
-  let m ← liftM (([]ₒ + (pathResources emptyFamily (protocol rounds) p).spec).query
-    (.inr (.inr ⟨.inr (.inl ⟨⟩), ()⟩)))
+  let m ← pathLift []ₒ emptyFamily (s := protocol rounds) p ⟨.inr (.inl ⟨⟩), ()⟩
   pure (selectedPayload b m)
 
 /-- The frozen output-oracle family routes the second payload without changing its carrier. -/
@@ -865,7 +864,7 @@ def finishSelected (z : Stmt)
     (z.2, payloads selectedProtocol r.1)
   let verdict := evalWithAnswerFn answers (simulateQ
     (QueryImpl.addLift
-      ((fun q => liftM (([]ₒ + challengeSpec oracleSig selectedProtocol).query (.inl q))) :
+      (((QueryImpl.id' ([]ₒ + challengeSpec oracleSig selectedProtocol)).restrictLeft) :
         QueryImpl []ₒ (OracleComp ([]ₒ + challengeSpec oracleSig selectedProtocol)))
       ((pathResources emptyFamily selectedProtocol p).answer resources))
     (verifier.decide z.1 p view).run)
