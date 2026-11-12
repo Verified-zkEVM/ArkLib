@@ -12,7 +12,7 @@ State-restoration (SR) security allows a prover to explore several continuations
   \end{enumerate}
   The prover repeats these steps until it decides to stop, then outputs \((\Instance,\SaltString,(\IPProverMessage_1,\ldots,\IPProverMessage_{\IPRoundComplexity}))\). We say that the prover is \emph{\(\SRMoveBound\)-move} if it stops after at most \(\SRMoveBound\) moves (\Cref{def:counted_queries}). The same prover interface is used for soundness and knowledge soundness. The implementation supports arbitrary protocol schedules; the displays use alternating rounds for readability.
 
-  \lean{PublicCoinIP.SRProver}
+  \lean{IP.SRProver}
   \uses{def:public_coin_ip_structure, def:transcript}
   \leanok
 \end{definition}
@@ -38,7 +38,7 @@ State-restoration (SR) security allows a prover to explore several continuations
   \end{gathered}
   \]
   The vectors \(\IPProverMessages\) and \(\IPVerifierMessages\) specify the full transcript \((\IPProverMessage_1,\IPVerifierMessage_1,\ldots,\IPProverMessage_{\IPRoundComplexity},\IPVerifierMessage_{\IPRoundComplexity})\). The move--response trace \(\QueryLog^{\mathrm{sr}}\) is the ordered list of pairs \(\bigl((\RoundIndex,\Instance',\SaltString',\IPProverMessage'_1,\ldots,\IPProverMessage'_{\RoundIndex}),\IPVerifierMessage'\bigr)\) from Step~1. A \emph{\(\SRMoveBound\)-move} prover performs at most \(\SRMoveBound\) iterations of Step~1, under the counting convention of \Cref{def:counted_queries}.
-  \lean{PublicCoinIP.srGame}
+  \lean{IP.srGame}
   \uses{def:sr_prover, def:transcript, def:counted_queries}
   \leanok
 \end{definition}
@@ -57,7 +57,7 @@ State-restoration (SR) security allows a prover to explore several continuations
     \end{array}\right]\le\IPSRSoundnessError(s,\InstanceSizeBound,\SRMoveBound).
   \end{equation*}
   The size test restricts the failure event; it neither conditions the sampling nor changes the game.
-  \lean{PublicCoinIP.srSoundness}
+  \lean{IP.srSoundness}
   \uses{def:ip_state_restoration_game, def:counted_queries}
   \leanok
 \end{definition}
@@ -80,8 +80,8 @@ State-restoration (SR) security allows a prover to explore several continuations
   The extractor receives the original statement \(\Instance\), the chosen salt \(\SaltString\) separately, all prover messages \(\IPProverMessages\), all verifier messages \(\IPVerifierMessages\), and the prover's move--response trace \(\QueryLog^{\mathrm{sr}}\) from \Cref{def:ip_state_restoration_game}. It returns a witness for \(\Instance\) or \(\bot\), and may use fresh private randomness; by convention, \((\Instance,\bot)\notin\Relation\).
 
   One extractor family is chosen before all \(s,\InstanceSizeBound,\SRMoveBound\) and adversaries. It may use the public salt-size and instance-size parameters, but not the move budget. The size restriction applies to the entire failure event, including missing witnesses. This is the information-theoretic straightline definition with the book's full-transcript extractor interface; no polynomial-time requirement is imposed. The single-salt game specializes the paper's vector of per-round salts to a salt supplied from the first round, with no fresh later salts.
-  \lean{PublicCoinIP.SRExtractor, PublicCoinIP.srKnowledgeSoundnessFailureProb,
-    PublicCoinIP.srKnowledgeSoundness, PublicCoinIP.srKnowledgeSoundnessWithExtractor}
+  \lean{IP.SRExtractor, IP.srKnowledgeSoundnessFailureProb,
+    IP.srKnowledgeSoundness, IP.srKnowledgeSoundnessWithExtractor}
   \uses{def:ip_state_restoration_game, def:counted_queries, def:oracle_run}
   \leanok
 \end{definition}

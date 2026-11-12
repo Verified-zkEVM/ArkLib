@@ -94,6 +94,11 @@ Around the core:
 - [`ArkLib/OracleReduction/`](ArkLib/OracleReduction/) and [`ArkLib/Interaction/`](ArkLib/Interaction/)
   hold the [two layers](#two-layers).
 - [`ArkLib/ProofSystem/`](ArkLib/ProofSystem/) holds protocols and reusable protocol components.
+- [`ArkLib/InteractiveProof/`](ArkLib/InteractiveProof/) holds public-coin interactive-proof
+  security, currently using the legacy protocol representation.
+- [`ArkLib/NonInteractiveArgument/`](ArkLib/NonInteractiveArgument/) holds protocol-independent NARG interfaces and security games;
+  its `Legacy.lean` module connects them to legacy non-interactive reductions.
+- [`ArkLib/Security/`](ArkLib/Security/) holds shared game execution and private-coin operations that depend on neither interaction layer.
 - [`ArkLib/Commitments/`](ArkLib/Commitments/) holds commitment schemes and opening arguments.
 - [`ArkLib/Data/`](ArkLib/Data/) holds supporting mathematics: coding theory, proximity gaps,
   polynomials and probability.

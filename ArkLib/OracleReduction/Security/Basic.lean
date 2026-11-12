@@ -6,7 +6,8 @@ Authors: Quang Dao, Chung Thai Nguyen, Yuxi Zheng, Michele Orrù
 module
 
 public import ArkLib.OracleReduction.Execution
-public import ArkLib.OracleReduction.Security.AdaptiveGame
+public import ArkLib.Security.Game
+public import ArkLib.NonInteractiveArgument.NARG
 public import VCVio.OracleComp.QueryTracking.QueryBound.Basic
 
 /-!
@@ -447,6 +448,14 @@ class Extractor.Straightline.IsMonotone
 
 end Verifier
 
+/-- Extraction-failure event for ArkLib's relation-valued reduction and state-restoration
+interfaces. Unlike the paper's NARG event, these interfaces genuinely carry an output witness. -/
+def relationKSFailEvent {StmtIn WitIn StmtOut WitOut : Type}
+    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut)) :
+    StmtIn × Option WitIn × Option StmtOut × WitOut → Prop
+  | (x, some witIn, some stmtOut, witOut) => (stmtOut, witOut) ∈ relOut ∧ (x, witIn) ∉ relIn
+  | (_, none, some stmtOut, witOut) => (stmtOut, witOut) ∈ relOut
+  | _ => False
 /-! ## Adaptive NARG security
 
 The prover chooses a statement and NARG string, using public oracles and private randomness.
@@ -461,42 +470,12 @@ extractor nor its handler receives a prover handle. No running-time bound is imp
 -/
 section AdaptiveNARG
 
-/-- **[CO25, Definition 3.5]** False-acceptance event on the NARG soundness experiment output
-`Option (StmtIn × StmtOut)`: the prover output a false statement (`x ∉ langIn`) the verifier
-accepted into `stmtOut ∈ langOut`. The unbounded and query-bounded predicates use the
-same event. -/
-def nargSoundFailEvent {StmtIn StmtOut : Type} (langIn : Set StmtIn) (langOut : Set StmtOut) :
-    Option (StmtIn × StmtOut) → Prop
-  | some (x, stmtOut) => x ∉ langIn ∧ stmtOut ∈ langOut
-  | none => False
-
 /-- Run a non-interactive verifier and record its base-oracle queries, including on rejection. -/
 abbrev runVerifierWithLog {ι : Type} {oSpec : OracleSpec ι}
     {StmtIn Proof StmtOut : Type}
     (verifier : NonInteractiveVerifier Proof oSpec StmtIn StmtOut)
     (x : StmtIn) (π : Proof) : OracleComp oSpec (Option StmtOut × QueryLog oSpec) :=
   withQueryLog (verifier.verify x (Fin.cons π (fun i => i.elim0))).run
-
-/-- **[CO25, Definition 3.6]** Extraction-failure event on the NARG-KS experiment output
-`StmtIn × Option WitIn × Option StmtOut`: the verifier accepted into `langOut` yet the extracted
-input witness misses `relIn` (or none was produced). No output witness is supplied by the malicious
-NARG prover: Definition 3.6 quantifies over the same adversaries producing only a statement and
-NARG string `(x, π)` as Definition 3.5. -/
-def nargKSFailEvent {StmtIn WitIn StmtOut : Type}
-    (relIn : Set (StmtIn × WitIn)) (langOut : Set StmtOut) :
-    StmtIn × Option WitIn × Option StmtOut → Prop
-  | (x, some witIn, some stmtOut) => stmtOut ∈ langOut ∧ (x, witIn) ∉ relIn
-  | (_, none, some stmtOut) => stmtOut ∈ langOut
-  | _ => False
-
-/-- Extraction-failure event for ArkLib's relation-valued reduction and state-restoration
-interfaces. Unlike the paper's NARG event, these interfaces genuinely carry an output witness. -/
-def relationKSFailEvent {StmtIn WitIn StmtOut WitOut : Type}
-    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut)) :
-    StmtIn × Option WitIn × Option StmtOut × WitOut → Prop
-  | (x, some witIn, some stmtOut, witOut) => (stmtOut, witOut) ∈ relOut ∧ (x, witIn) ∉ relIn
-  | (_, none, some stmtOut, witOut) => (stmtOut, witOut) ∈ relOut
-  | _ => False
 
 /-- **[CO25, Definition 3.5]** Run the adaptive prover and verifier in one public-oracle state.
 The private sampler serves only the prover. An absent verifier output produces `none`. The sampler
@@ -665,7 +644,8 @@ structure Simulator (oSpec : OracleSpec ι) (StmtIn : Type) {n : ℕ} (pSpec : P
   proverSim : StmtIn → StateT SimState (OracleComp oSpec) pSpec.FullTranscript
 
 /- Public-coin honest-verifier and adaptive NARG zero-knowledge are defined in
-`ArkLib.OracleReduction.Security.ZeroKnowledge`. -/
+`ArkLib.InteractiveProof.ZeroKnowledge` and `ArkLib.NonInteractiveArgument.ZeroKnowledge`,
+respectively. -/
 
 end ZeroKnowledge
 

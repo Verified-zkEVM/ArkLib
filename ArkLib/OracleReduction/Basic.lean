@@ -7,7 +7,7 @@ module
 
 public import ArkLib.OracleReduction.ProtocolSpec.SeqCompose
 public import VCVio.OracleComp.SimSemantics.Append
-public import VCVio.OracleComp.QueryTracking.LoggingOracle.Core
+public import ArkLib.Security.PrivateCoins
 
 /-!
 # Interactive (Oracle) Reductions
@@ -82,83 +82,6 @@ verifier).
 @[expose] public section
 
 open OracleComp OracleSpec SubSpec ProtocolSpec
-
-/-! ## Private sampling and public query interfaces
-
-The security games append `unifSpec` for private samples. The helpers below select that slot,
-exclude it from public budgets and logs, and compile custom samplers to uniform draws.
-Preservation proofs live in `Security/PrivateCoins.lean`.
--/
-
-/-- Sample uniformly using the ambient monad's sampling capability. -/
-def sampleUniform (α : Type) [SampleableType α] {m : Type → Type} [Monad m]
-    [HasQuery unifSpec m] : m α :=
-  simulateQ HasQuery.toQueryImpl ($ᵗ α)
-
-namespace QueryImpl
-
-/-- Exchange two oracle slots without changing their queries or answers. -/
-def swapOracles {ι κ : Type} {a : OracleSpec ι} {b : OracleSpec κ} :
-    QueryImpl (a + b) (OracleComp (b + a))
-  | .inl q => query (spec := b + a) (.inr q)
-  | .inr q => query (spec := b + a) (.inl q)
-
-end QueryImpl
-
-namespace OracleComp
-
-variable {ι κ α σ : Type} {publicSpec : OracleSpec ι} {privateSpec : OracleSpec κ}
-
-/-- Reorder two oracle slots at a public/private interface boundary. -/
-def swapOracles (p : OracleComp (publicSpec + privateSpec) α) :
-    OracleComp (privateSpec + publicSpec) α :=
-  simulateQ QueryImpl.swapOracles p
-
-/-- Embed public queries into the left summand. This fixes the injection even when the
-public oracle specification is itself a sum. -/
-def liftCompLeft {κ' : Type} {extraSpec : OracleSpec κ'}
-    (p : OracleComp publicSpec α) : OracleComp (publicSpec + extraSpec) α :=
-  liftComp p (publicSpec + extraSpec)
-
-/-- Sample privately even when the public oracle specification also contains `unifSpec`.
-The explicit routing here prevents a structural `HasQuery` instance from choosing that public
-slot. -/
-def samplePrivateUniform (α : Type) [SampleableType α] :
-    OracleComp (publicSpec + unifSpec) α :=
-  simulateQ (fun q => liftM ((publicSpec + unifSpec).query (.inr q))) ($ᵗ α)
-
-/-- Compile private requests to their samplers; forward every public query unchanged. -/
-def privateCoinsImpl (sampler : QueryImpl privateSpec ProbComp) :
-    QueryImpl (publicSpec + privateSpec) (OracleComp (publicSpec + unifSpec))
-  | .inl q => liftM ((publicSpec + unifSpec).query (.inl q))
-  | .inr q => liftComp (sampler q) _
-
-/-- Express a computation using standard private coins instead of a custom sampling interface. -/
-def normalizePrivateCoins (sampler : QueryImpl privateSpec ProbComp)
-    (p : OracleComp (publicSpec + privateSpec) α) :
-    OracleComp (publicSpec + unifSpec) α :=
-  simulateQ (privateCoinsImpl sampler) p
-
-/-- Select public queries for a budget; private samples never count. -/
-def publicQuerySelector (counts : ι → Prop) : ι ⊕ κ → Prop
-  | .inl q => counts q
-  | .inr _ => False
-
-instance (counts : ι → Prop) [DecidablePred counts] :
-    DecidablePred (publicQuerySelector (κ := κ) counts) := fun q =>
-  match q with
-  | .inl q => inferInstanceAs (Decidable (counts q))
-  | .inr _ => isFalse id
-
-end OracleComp
-
-namespace OracleSpec.QueryLog
-
-/-- The public-query transcript of a computation with private coins. -/
-abbrev publicQueries {ι κ : Type} {publicSpec : OracleSpec ι} {privateSpec : OracleSpec κ}
-    (log : QueryLog (publicSpec + privateSpec)) : QueryLog publicSpec := log.fst
-
-end OracleSpec.QueryLog
 
 -- Add an indexer?
 structure Indexer {ι : Type} (oSpec : OracleSpec ι) {n : ℕ} (pSpec : ProtocolSpec n) (Index : Type)
@@ -1138,3 +1061,12 @@ theorem Verifier.PureForm.isPure {V : Verifier oSpec StmtIn StmtOut pSpec} (P : 
 end IsPure
 
 end Classes
+
+namespace Verifier
+variable {ι : Type} {spec : OracleSpec ι} {Statement : Type} {rounds : ℕ}
+  {pSpec : ProtocolSpec rounds}
+/-- Guard the final Boolean decision by the statement-size bound, after the same execution. -/
+def restrictSize (V : Verifier spec Statement Bool pSpec) (size : Statement → ℕ)
+    (bound : ℕ) : Verifier spec Statement Bool pSpec where
+  verify x tr := (fun b => decide (size x ≤ bound) && b) <$> V.verify x tr
+end Verifier

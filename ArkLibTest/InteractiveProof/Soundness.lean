@@ -3,7 +3,7 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Yuxi Zheng, Chung Thai Nguyen, Michele Orrù
 -/
-import ArkLib.OracleReduction.Security.Adaptive
+import ArkLib.InteractiveProof.Soundness
 
 /-!
 # Adaptive interactive soundness separation

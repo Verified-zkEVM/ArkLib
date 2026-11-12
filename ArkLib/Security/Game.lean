@@ -8,7 +8,7 @@ module
 public import VCVio.OracleComp.SimSemantics.StateT.Measure
 
 /-!
-# Shared adaptive security games
+# Shared security-game execution
 
 An experiment runs an adversarial computation, passes its output to the verifier phase, and
 interprets both in a single oracle state. The knowledge game adds a final extraction phase with

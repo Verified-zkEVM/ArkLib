@@ -12,6 +12,9 @@ public import VCVio.OracleComp.QueryTracking.QueryLog
 /-!
 # Adaptive public-coin interactive security
 
+This module uses the legacy `ProtocolSpec`, `Prover`, and `Verifier` representation.
+Shared game execution is independent of that representation and lives in `ArkLib.Security`.
+
 After the shared oracle is initialized, the adversary chooses a statement and private state,
 then continues as an interactive prover. Verifier messages come from a separate challenge
 interface. Admissibility may constrain the total selected queries of both adversary phases,

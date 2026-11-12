@@ -12,6 +12,9 @@ ArkLib/
     Core/             rebuilt interaction core on PolyFun trees (staged migration)
   Relation/           claims, witness relations, and oracle data families
   OracleReduction/    core IOR abstractions and security theory
+  InteractiveProof/   public-coin interactive-proof security (legacy protocol representation)
+  NonInteractiveArgument/  protocol-independent NARG games and legacy adapters
+  Security/           shared game execution and private-coin operations
   Commitments/        commitments and opening arguments
   AGM/                algebraic group model representations
   ProofSystem/        protocol families and higher-level proofs
@@ -79,9 +82,24 @@ home_page/            site assets and assembled website root
   Core transcript operations live in `ProtocolSpec/Basic.lean`. Message and challenge prefix
   lemmas live in `ProtocolSpec/PrefixLemmas.lean`;
   round and optional-run factorization lemmas live in `Execution.lean`.
-  `Security/Ordinary.lean` contains the ordinary public-coin IP and NARG security definitions
-  and the equivalences connecting ordinary NARG soundness and knowledge soundness to the generic
-  adaptive predicates, including the statement-size restriction lemmas.
+- `ArkLib/InteractiveProof/` owns the `IP` contracts (`IP.lean`), adaptive interactive security
+  (`Soundness.lean`), state-restoration security and its private-coin preservation lemmas
+  (`StateRestorationSoundness.lean`), and honest-verifier zero knowledge. These modules still use
+  the legacy `ProtocolSpec`, `Prover`, and `Verifier` types; moving their ownership does not
+  port their execution to the interaction layer.
+- `ArkLib/NonInteractiveArgument/NARG.lean` defines a verifier on a statement and proof string directly,
+  adaptive soundness, knowledge soundness, and statement-size restrictions. `ZeroKnowledge.lean`
+  defines the two-stage adaptive simulation games. Neither core module imports either
+  interaction layer. `Legacy.lean` converts legacy one-message verifiers/provers and
+  proves the experiment and predicate equivalences, and transports the legacy NARG experiments
+  across private-sampling adapters.
+- `ArkLib/Security/` contains only shared security machinery: `Game.lean` initializes
+  and executes a shared oracle, and `PrivateCoins.lean` separates private samples from
+  public-query budgets and logs.
+  These modules import neither interaction layer. The `NARG.lean` and `ZeroKnowledge.lean` tests
+  in `ArkLibTest/NonInteractiveArgument/` exercise this boundary; `Legacy.lean` tests its adapters.
+  Shared private-coin tests live in `ArkLibTest/Security/PrivateCoins.lean`, and interactive-proof
+  clients, including SR sampling tests, live in `ArkLibTest/InteractiveProof/`.
 - `ArkLib/Relation/Basic.lean` is the neutral owner of claims, witness relations with an
   admissibility boundary, and oracle data families; it depends on no protocol tree. Likewise
   `ProofSystem/Sumcheck/Spec/PolynomialInterface.lean` owns the sum-check polynomial's

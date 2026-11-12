@@ -3,21 +3,23 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Yuxi Zheng, Chung Thai Nguyen, Michele Orrù
 -/
-import ArkLib.OracleReduction.Security.Ordinary
+import ArkLib.NonInteractiveArgument.NARG
 import VCVio.OracleComp.RunIO
 
 /-!
-# Ordinary security boundaries
+# NARG security boundaries
 
 A verifier can draw private coins despite an empty public oracle interface. Neither its draws
 nor the prover's private draws enter the extractor's logs. Rejection and missing extraction
 remain distinct outcomes.
 -/
 
-open OracleComp OracleSpec ProtocolSpec
+open OracleComp OracleSpec
 open scoped NNReal ProbabilityTheory
 
-namespace OrdinarySecurityTest
+namespace NARGSecurityTest
+
+def emptyImpl {σ : Type} : QueryImpl []ₒ (StateT σ ProbComp) := fun q => nomatch q
 
 def coinProver : NARG.Prover []ₒ Unit Unit :=
   (do
@@ -34,7 +36,7 @@ def checkHiddenCoins : NARG.Extractor []ₒ Unit Unit Unit := fun _ _ logP logV 
 
 -- Both parties sample a real private coin; the extractor still receives two empty logs.
 example :
-    NARG.knowledgeSoundnessExperiment (pure ()) PublicCoinIP.emptyImpl
+    NARG.knowledgeSoundnessExperiment (pure ()) emptyImpl
       coinVerifier checkHiddenCoins coinProver = (do
         let _ ← sampleUniform Bool
         let accepted ← sampleUniform Bool
@@ -59,28 +61,17 @@ example : ¬ NARG.knowledgeSoundnessFailureEvent (∅ : Set (Unit × Unit))
     ((), none, some false) := by
   simp [NARG.knowledgeSoundnessFailureEvent, nargKSFailEvent]
 
--- Adding the dummy witness changes neither the move count nor the private-coin convention.
-example {Statement Salt : Type} {n : ℕ} {pSpec : ProtocolSpec n}
-    (P : PublicCoinIP.SRProver Statement pSpec (Salt := Salt)) (t : ℕ) :
-    P.toReduction.IsQueryBoundP
-      (publicQuerySelector (Verifier.StateRestoration.isSrChallengeMove (Salt := Salt)
-        (oSpec := []ₒ))) t ↔
-    P.IsQueryBoundP
-      (publicQuerySelector (Verifier.StateRestoration.isSrChallengeMove (Salt := Salt)
-        (oSpec := []ₒ))) t := by
-  simp [PublicCoinIP.SRProver.toReduction]
-
 /-- Execute both parties' private sampling and check that extraction sees neither coin log. -/
 def checkRuntime : IO Unit := do
   let (_, witness, accepted) ← OracleComp.runIO <|
-    NARG.knowledgeSoundnessExperiment (pure ()) PublicCoinIP.emptyImpl
+    NARG.knowledgeSoundnessExperiment (pure ()) emptyImpl
       coinVerifier checkHiddenCoins coinProver
   unless witness == some () && accepted.isSome do
-    throw (IO.userError "ordinary NARG execution exposed private draws or lost the verifier result")
+    throw (IO.userError "NARG execution exposed private draws or lost the verifier result")
 
-end OrdinarySecurityTest
+end NARGSecurityTest
 
-namespace OrdinaryParameterizedSecurityTest
+namespace NARGParameterizedSecurityTest
 
 -- The upper boundary is included, whereas the immediately larger false statement is excluded.
 example : NARG.soundnessFailureEventSizeBounded id 3 (∅ : Set ℕ) (some (3, true)) := by
@@ -163,7 +154,7 @@ example (relation : Set (ℕ × Unit)) (error : ℕ → ℕ → ℕ → ENNReal)
   intro sec n t P hP
   exact (prEvent_mono _ _ _ fun _ hout => hout.2).trans (h sec n t P hP)
 
-end OrdinaryParameterizedSecurityTest
+end NARGParameterizedSecurityTest
 
-/-- Run with `lake env lean --run ArkLibTest/OracleReduction/Ordinary.lean`. -/
-def main : IO Unit := OrdinarySecurityTest.checkRuntime
+/-- Run with `lake env lean --run ArkLibTest/NonInteractiveArgument/NARG.lean`. -/
+def main : IO Unit := NARGSecurityTest.checkRuntime
