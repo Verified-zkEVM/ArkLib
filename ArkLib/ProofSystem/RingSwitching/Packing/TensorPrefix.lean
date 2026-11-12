@@ -262,6 +262,15 @@ theorem pr_exists_target_collision_le_of_embedded_eval_eq
       (messageEquiv P (embedded_MLP_eval κ L K P ℓ ℓ' h_l p r)) p
       (columns_embedded_MLP_eval P h_l p r)
 
+/-- The batching loss on the head's one challenge. -/
+abbrev headRbrError : (headPSpec P).ChallengeIdx → ℝ≥0 :=
+  Head.rbrError (M := P.A) (PackingData.ofBasis P.basis) (BatchingStrategy.eqFold L κ)
+
+/-- The head's challenge-error sum is the batching loss `κ/|L|`. -/
+theorem headRbrError_sum : ∑ i, headRbrError P i = (κ : ℝ≥0) / Fintype.card L := by
+  change ∑ _i : (headPSpec P).ChallengeIdx, (κ : ℝ≥0) / Fintype.card L = _
+  rw [Finset.sum_const, Finset.card_univ, Head.card_challengeIdx, one_smul]
+
 /-- The shared strategy assigns the original batching loss to the carrier wire. -/
 abbrev rbrError := RingSwitch.rbrError (M := P.A) (PackingData.ofBasis P.basis) ℓ'
   (BatchingStrategy.eqFold L κ)
@@ -280,8 +289,7 @@ product claim, with the batching loss `κ/|L|` on its one challenge. -/
 theorem headVerifier_rbrKnowledgeSoundness (h : a.Functional) {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (headVerifier P h_l a).toVerifier.rbrKnowledgeSoundness init impl (relIn P h_l a)
-      (headRelOut P h_l a)
-      (Head.rbrError (M := P.A) (PackingData.ofBasis P.basis) (BatchingStrategy.eqFold L κ)) :=
+      (headRelOut P h_l a) (headRbrError P) :=
   (Verifier.rbrKnowledgeSoundness_iff_exists_with init impl _ _ _ _).mpr
     ⟨_, _, _, Head.rbrKnowledgeSoundnessWith (PackingData.ofBasis P.basis) ℓ' (layout P h_l)
       (messageEquiv P) (BatchingStrategy.eqFold L κ) (commitment a) (commitment_functional a h)

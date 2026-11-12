@@ -295,6 +295,25 @@ noncomputable def frontKnowledgeStateFunction {σ : Type} (init : ProbComp σ)
       ((frontGuard K β toClaim).check_and_of_prEvent_pos h).2
     exact hextract x.1 x.2 w.t hsum hfirst
 
+omit [SampleableType L] [DecidableEq K] in
+/-- The front end is round-by-round knowledge sound at `frontExtractor` and
+`frontKnowledgeStateFunction`; it samples no challenge, so its error is zero. -/
+theorem frontVerifier_rbrKnowledgeSoundnessWith {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp))
+    (hextract : ∀ s ost (t : MultilinearPoly L ℓ),
+      (toClaim s).2 = ∑ y : Fin ℓ → Fin 2,
+          (multiplier (toClaim s).1).val.eval (y : Fin ℓ → L) * t.val.eval (y : Fin ℓ → L) →
+      FirstOracleWitnessConsistent K β t (getFirstOracle K β ost) →
+      ((s, ost), witnessEquiv.symm t) ∈ relIn) :
+    Verifier.rbrKnowledgeSoundnessWith init impl relIn
+      (roundRelation (multpoly := multiplier.polynomial) K β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_rate) (𝓑 := boolEmbedding L) 0)
+      (frontVerifier K β toClaim (ϑ := ϑ) (h_rate := h_rate)).toVerifier
+      (fun _ => WitIn) (frontExtractor K β witnessEquiv)
+      (frontKnowledgeStateFunction K β multiplier toClaim witnessEquiv relIn init impl hextract)
+      (fun _ => 0) :=
+  fun _ j => Fin.elim0 j.1
+
 /-- The opening is round-by-round knowledge sound, with the errors `openingError`, for any input
 relation containing every product claim whose polynomial is unique-radius compatible with the
 first oracle. -/
@@ -312,9 +331,9 @@ theorem openingVerifier_rbrKnowledgeSoundness (γ : ℕ) {σ : Type} (init : Pro
   OracleVerifier.append_rbrKnowledgeSoundness_of_guarded_first
     (Oₛ₃ := fun i : Empty => nomatch i) _ _
     (frontGuard K β toClaim)
-    ⟨_, frontExtractor K β witnessEquiv,
-      frontKnowledgeStateFunction K β multiplier toClaim witnessEquiv relIn init impl hextract,
-      fun _ j => Fin.elim0 j.1⟩
+    ((Verifier.rbrKnowledgeSoundness_iff_exists_with init impl _ _ _ _).mpr
+      ⟨_, _, _, frontVerifier_rbrKnowledgeSoundnessWith K β multiplier toClaim witnessEquiv relIn
+        init impl hextract⟩)
     (FullBinaryBasefold.fullOracleVerifier_rbrKnowledgeSoundness K β γ multiplier
       (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) (𝓑 := boolEmbedding L))
 

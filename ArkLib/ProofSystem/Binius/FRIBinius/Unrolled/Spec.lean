@@ -53,7 +53,7 @@ noncomputable abbrev pSpec (γ : ℕ) :=
 /-- The batching loss on the head's challenge, then the errors of the Binary Basefold opening. -/
 noncomputable def fullError (γ : ℕ) :
     (pSpec κ K β (ϑ := ϑ) h_rate γ).ChallengeIdx → ℝ≥0 :=
-  Sum.elim (fun _ => (κ : ℝ≥0) / Fintype.card L)
+  Sum.elim (TensorPrefix.headRbrError (biniusProfile κ L K β))
     (BinaryBasefold.ProductClaim.openingError K β γ (ϑ := ϑ) (h_rate := h_rate)) ∘
     ChallengeIdx.sumEquiv.symm
 
@@ -92,8 +92,8 @@ theorem fullError_sum (γ : ℕ) :
   unfold fullError
   refine (Equiv.sum_comp ChallengeIdx.sumEquiv.symm (Sum.elim _ _)).trans ?_
   rw [Fintype.sum_sum_type]
-  simp only [Sum.elim_inl, Sum.elim_inr, Finset.sum_const, Finset.card_univ,
-    Head.card_challengeIdx, one_smul]
+  simp only [Sum.elim_inl, Sum.elim_inr]
+  rw [TensorPrefix.headRbrError_sum]
 
 omit [DecidableEq K] in
 /-- The challenge-error sum is at most `concreteError`. -/

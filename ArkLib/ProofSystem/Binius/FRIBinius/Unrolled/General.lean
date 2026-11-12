@@ -42,9 +42,10 @@ exact encoding.
 Knowledge soundness and soundness use `concreteError`, which bounds the sum of `fullError`
 (`fullError_sum_le_concrete`). No efficient-extraction or running-time claim is made.
 
-The field `K` has two elements, so DP24's degree `r` of `L` over `𝔽₂` is the basis size `2^κ`, and
-the rate condition `ℓ' + R < 2^κ` corresponds to Construction 5.1's `r ≥ ℓ + R`. Construction 5.1
-allows any binary `K`.
+The field `K` has two elements, so DP24's degree `r` of `L` over `𝔽₂` is the basis size `2^κ`.
+Construction 5.1 allows any binary `K` and asks for `r ≥ ℓ + R`; the rate condition here is
+`ℓ' + R < 2^κ`. It uses `ℓ'` because only the packed polynomial is encoded, and it is strict as
+in all Binary Basefold statements (`docs/kb/papers/DP24.md`, known divergences).
 
 ## Computability
 

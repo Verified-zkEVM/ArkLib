@@ -107,15 +107,15 @@ theorem concreteError_lt :
 section FinalCheck
 variable (mult : Multiplier Unit Gf16 1)
 
-theorem rate : 1 + 1 < 2 ^ 2 := by decide
+private theorem one_add_one_lt_two_pow_two : 1 + 1 < 2 ^ 2 := by decide
 
 /-- A zero multiplier value does not make the final check vacuous: it requires a zero target. -/
 example (h0 : ∀ r', mult.evaluate () r' = 0)
     (s : Statement (L := Gf16) Unit (Fin.last 1) × ∀ j, OracleStatement (ZMod 2) basis
-      (h_ℓ_add_R_rate := rate) 1 (Fin.last 1) j)
+      (h_ℓ_add_R_rate := one_add_one_lt_two_pow_two) 1 (Fin.last 1) j)
     (tr : (pSpecFinalSumcheckStep (L := Gf16)).FullTranscript) :
     (CoreInteraction.finalSumcheckVerifierGuardedForm (ZMod 2) basis mult (ϑ := 1)
-      (h_ℓ_add_R_rate := rate) (𝓑 := boolEmbedding Gf16)).check s tr =
+      (h_ℓ_add_R_rate := one_add_one_lt_two_pow_two) (𝓑 := boolEmbedding Gf16)).check s tr =
       decide (s.1.sumcheck_target = 0) := by
   rw [CoreInteraction.finalSumcheckVerifierGuardedForm_check, h0]
   exact decide_eq_decide.mpr ⟨fun h => h.trans (zero_mul _), fun h => h.trans (zero_mul _).symm⟩
@@ -123,10 +123,10 @@ example (h0 : ∀ r', mult.evaluate () r' = 0)
 /-- At `openingMultiplier`, the final check is the evaluation-claim check `s = eq̃(r, r') · c`. -/
 example (s : Statement (L := Gf16) (SumcheckBaseContext Gf16 1) (Fin.last 1) ×
       ∀ j, OracleStatement (ZMod 2) basis
-        (h_ℓ_add_R_rate := rate) 1 (Fin.last 1) j)
+        (h_ℓ_add_R_rate := one_add_one_lt_two_pow_two) 1 (Fin.last 1) j)
     (tr : (pSpecFinalSumcheckStep (L := Gf16)).FullTranscript) :
     (CoreInteraction.finalSumcheckVerifierGuardedForm (ZMod 2) basis openingMultiplier (ϑ := 1)
-      (h_ℓ_add_R_rate := rate) (𝓑 := boolEmbedding Gf16)).check s tr =
+      (h_ℓ_add_R_rate := one_add_one_lt_two_pow_two) (𝓑 := boolEmbedding Gf16)).check s tr =
       decide (s.1.sumcheck_target =
         eqTilde s.1.ctx.t_eval_point s.1.challenges * (show Gf16 from tr.messages ⟨0, rfl⟩)) :=
   CoreInteraction.finalSumcheckVerifierGuardedForm_check (ZMod 2) basis openingMultiplier s tr
