@@ -112,10 +112,13 @@ def OracleFoldingConsistent (i : Fin (ℓ + 1)) (challenges : Fin i → L)
 def eqMultiplier (r : Fin ℓ → L) : MultilinearPoly L ℓ :=
   ⟨MvPolynomial.eqPolynomial r, by simp only [eqPolynomial_mem_restrictDegree]⟩
 
-/-- The Binary Basefold multiplier: `eq(r, X)` at the evaluation point `r` of the context, so that
-the sum-check round polynomial is `eq(r, X) · t`. -/
-def multiplier (ctx : SumcheckBaseContext L ℓ) : MultilinearPoly L ℓ :=
-  eqMultiplier ctx.t_eval_point
+/-- The multiplier of a multilinear evaluation claim: `eq(r, X)` at the evaluation point `r` of
+the context, evaluated by `eqTilde r`. Its product sum-check proves `t(r)`, since
+`∑_{y ∈ {0,1}^ℓ} eq(r, y) t(y) = t(r)`. -/
+def openingMultiplier : Multiplier (SumcheckBaseContext L ℓ) L ℓ where
+  polynomial ctx := eqMultiplier ctx.t_eval_point
+  evaluate ctx r' := eqTilde ctx.t_eval_point r'
+  evaluate_eq _ _ := rfl
 
 /-- Fold the encoded witness polynomial through all challenges of the current round. -/
 def getMidCodewords {i : Fin (ℓ + 1)} (t : L⦃≤ 1⦄[X Fin ℓ])

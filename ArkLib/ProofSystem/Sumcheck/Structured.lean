@@ -38,6 +38,7 @@ modes carry independent proofs.
 - `MultilinearPoly`, `MultiquadraticPoly` — degree-1 / degree-2 `MvPolynomial` abbreviations.
 - `SumcheckMultiplierParam` — the multiplier and combinator, with per-variable degree bounds.
 - `computeInitialSumcheckPoly` — `H := m · t` with the degree-2 proof.
+- `Multiplier` — a multilinear multiplier family with a certified verifier-side evaluator.
 - `MvPolynomial.fixPrefix`, `projectToNextSumcheckPoly` — partial evaluation of `H` at
   the verifier's previous challenges.
 - `SumcheckBaseContext` — `(t_eval_point, original_claim)` shared input.
@@ -127,6 +128,28 @@ def computeInitialSumcheckPoly (t m : MultilinearPoly L ℓ) : MultiquadraticPol
 theorem coe_computeInitialSumcheckPoly (t m : MultilinearPoly L ℓ) :
     (computeInitialSumcheckPoly ℓ t m).val = m.val * t.val := by
   simp [computeInitialSumcheckPoly, computeRoundPoly]
+
+/-- A public multilinear multiplier together with the verifier's point evaluator.
+`evaluate_eq` states that the evaluator computes the multiplier polynomial; a protocol verifier
+may therefore use a succinct evaluator while its relations use the polynomial. -/
+structure Multiplier (Context C : Type) [CommSemiring C] (m : ℕ) where
+  /-- The polynomial used to define the product-sumcheck relation. -/
+  polynomial : Context → MultilinearPoly C m
+  /-- The verifier's point evaluator. -/
+  evaluate : Context → (Fin m → C) → C
+  /-- The evaluator computes the multiplier polynomial. -/
+  evaluate_eq : ∀ ctx r, evaluate ctx r = (polynomial ctx).val.eval r
+
+instance {Context C : Type} [CommSemiring C] {m : ℕ} :
+    CoeFun (Multiplier Context C m) (fun _ => Context → MultilinearPoly C m) :=
+  ⟨Multiplier.polynomial⟩
+
+/-- Polynomial evaluation supplies a multiplier evaluator. -/
+def Multiplier.ofPolynomial {Context C : Type} [CommSemiring C] {m : ℕ}
+    (A : Context → MultilinearPoly C m) : Multiplier Context C m where
+  polynomial := A
+  evaluate ctx r := (A ctx).val.eval r
+  evaluate_eq _ _ := rfl
 
 /-- Fix the next coordinate of a uniformly degree-bounded residual polynomial. The renaming
 handles the round-index equation once; prefix fixing itself is `MvPolynomial.fixPrefix`. -/

@@ -7,6 +7,7 @@ module
 
 public import ArkLib.Data.MvPolynomial.Hypercube
 public import ArkLib.ProofSystem.RingSwitching.Packing.PackedCommitment
+public import ArkLib.ProofSystem.Sumcheck.Structured
 
 /-!
 # The same-commitment product-sumcheck relation
@@ -23,25 +24,8 @@ packed polynomial; the public multiplier is determined by the retained query con
 noncomputable section
 namespace RingSwitching.Packing.ProductSumcheck
 open Polynomial MvPolynomial
+open Sumcheck.Structured (Multiplier)
 variable {P C Context : Type} [CommRing P] [CommRing C] [Algebra P C] {m : ℕ}
-
-/-- A public multilinear multiplier with a certified point evaluator. -/
-structure Multiplier (Context C : Type) [CommRing C] (m : ℕ) where
-  /-- The polynomial used to define the product-sumcheck relation. -/
-  polynomial : Context → C⦃≤ 1⦄[X Fin m]
-  /-- The verifier's point evaluator. -/
-  evaluate : Context → (Fin m → C) → C
-  /-- The evaluator computes the multiplier polynomial. -/
-  evaluate_eq : ∀ ctx r, evaluate ctx r = (polynomial ctx).val.eval r
-
-instance : CoeFun (Multiplier Context C m) (fun _ => Context → C⦃≤ 1⦄[X Fin m]) :=
-  ⟨Multiplier.polynomial⟩
-
-/-- Polynomial evaluation supplies a multiplier evaluator. -/
-def Multiplier.ofPolynomial (A : Context → C⦃≤ 1⦄[X Fin m]) : Multiplier Context C m where
-  polynomial := A
-  evaluate ctx r := (A ctx).val.eval r
-  evaluate_eq _ _ := rfl
 
 /-- The challenge-algebra product of the multiplier and coefficient-mapped packed polynomial. -/
 def productPoly (A : C⦃≤ 1⦄[X Fin m]) (p : P⦃≤ 1⦄[X Fin m]) : C⦃≤ 2⦄[X Fin m] :=

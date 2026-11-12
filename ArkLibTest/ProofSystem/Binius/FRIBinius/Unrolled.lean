@@ -1,161 +1,164 @@
 /-
 Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Chung Thai Nguyen
+Authors: Chung Thai Nguyen, Alexander Hicks
 -/
 
+import ArkLibTest.ProofSystem.RingSwitching.Conformance.BiniusComposition
 import ArkLib.ProofSystem.Binius.FRIBinius.Unrolled.General
-import Mathlib.FieldTheory.Finite.GaloisField
 
 /-!
-# Fused FRI-Binius trust-boundary regression checks
+# Unrolled FRI-Binius regression checks
 
-The complete security and completeness proofs, and their scalar error bound, must remain
-independent of admissions in other imported framework declarations.
+The checks use the `GF(16)/GF(2)` instance of the separate-sum-check composition test: two packed
+variables, one retained variable, the nonconstant source `X₀ + X₂` and its honest first oracle.
+
+* Both compositions are stated for the same input relation.
+* The honest source is accepted with probability one.
+* The unrolled bound is the separate-sum-check bound minus `2ℓ'/|L|`, and is below one.
+* The Binary Basefold final check multiplies by the multiplier value: with a zero multiplier it
+  still requires a zero target, and at `openingMultiplier` it is the `eq̃` check.
 -/
 
-open Binius.FRIBinius.Unrolled
-
-namespace Binius.FRIBinius.UnrolledTests
-
-local instance : Fact (Nat.Prime 17) := ⟨by decide⟩
-
-private def terminalStatement (target : ZMod 17) :
-    Binius.BinaryBasefold.Statement (L := ZMod 17) Unit (Fin.last 1) :=
-  ⟨target, fun _ => 3, ()⟩
-
-local instance (f : Unit → (Fin 1 → ZMod 17) → ZMod 17)
-    (s : Binius.BinaryBasefold.Statement (L := ZMod 17) Unit (Fin.last 1)) (c : ZMod 17) :
-    Decidable (Terminal.check f s c) := by
-  unfold Terminal.check
-  infer_instance
-
--- Execute the guard, rather than prove it using a native-evaluation axiom.
-/-- info: true -/
-#guard_msgs in
-#eval decide (Terminal.check (fun _ _ => (4 : ZMod 17)) (terminalStatement 12) 3)
-/-- info: false -/
-#guard_msgs in
-#eval decide (Terminal.check (fun _ _ => (4 : ZMod 17)) (terminalStatement 12) 2)
-/-- info: true -/
-#guard_msgs in
-#eval decide (Terminal.check (fun _ _ => (0 : ZMod 17)) (terminalStatement 0) 9)
-/-- info: false -/
-#guard_msgs in
-#eval decide (Terminal.check (fun _ _ => (0 : ZMod 17)) (terminalStatement 1) 9)
-
-end Binius.FRIBinius.UnrolledTests
-
-namespace Binius.FRIBinius.UnrolledGf16
-
-open Module OracleSpec OracleComp MvPolynomial Sumcheck.Structured
+open OracleComp OracleSpec ProtocolSpec Module MvPolynomial
+open RingSwitching RingSwitching.Packing Sumcheck.Structured Binius.BinaryBasefold
 open scoped NNReal
 noncomputable section
+namespace ArkLibTest.FRIBinius.Unrolled
 
+open ArkLibTest.RingSwitchingConformance.BiniusComposition BbfGf16Parameters
 local instance : Fact (Nat.Prime 2) := ⟨by decide⟩
-abbrev L := GaloisField 2 4
-local instance : Fintype L := Fintype.ofFinite L
-local instance : DecidableEq L := Classical.decEq L
-local instance : SampleableType L := SampleableType.ofFintype L
+local instance : Fintype Gf16 := Fintype.ofFinite Gf16
+local instance : DecidableEq Gf16 := Classical.decEq Gf16
+local instance : SampleableType Gf16 := SampleableType.ofFintype Gf16
 local instance : Fact (Fintype.card (ZMod 2) = 2) := ⟨by simp⟩
 local instance : Fact ((1 : ℕ) ∣ 1) := ⟨by decide⟩
+local instance : Fact (basis 0 = 1) := ⟨betaBasis_zero⟩
+local instance : Fact (Nat.Prime (ringChar (ZMod 2))) :=
+  ⟨CharP.prime_ringChar (ZMod 2)⟩
 
-private def rawBasis : Basis (Fin 4) (ZMod 2) L :=
-  Module.finBasisOfFinrankEq (ZMod 2) L (GaloisField.finrank 2 (by decide))
-
-private def beta : Basis (Fin (2 ^ 2)) (ZMod 2) L :=
-  rawBasis.map ((Units.mk0 (rawBasis 0) (rawBasis.ne_zero 0)).mulLeftLinearEquiv
-    (ZMod 2) L).symm
-
-local instance : Fact (beta 0 = 1) := ⟨by
-  change ((Units.mk0 (rawBasis 0) (rawBasis.ne_zero 0)).mulLeftLinearEquiv
-    (ZMod 2) L).symm (rawBasis 0) = 1
-  rw [Units.symm_mulLeftLinearEquiv_apply]
-  simp [rawBasis.ne_zero]⟩
-
-private def source : MultilinearPoly (ZMod 2) 3 :=
-  ⟨MvPolynomial.X 2,
-    (mem_restrictDegree_iff_degreeOf_le _ _).mpr (fun i => degreeOf_X_le i 2)⟩
-
--- Exercise a nonconstant source in the unpacked suffix, not merely a constant packed word.
-example : source.val.eval (fun _ => 0) = 0 ∧ source.val.eval (fun _ => 1) = 1 := by
-  simp [source]
-
--- All field, rate, block-size and basis hypotheses have concrete witnesses here.
-example := honest_input 2 (ZMod 2) beta (ϑ := 1) (R := 1) (ℓ' := 1)
-  (by decide) rfl (fun _ => 1) source
-
--- The query phase ignores this metadata; preserve the original query's unpacked suffix.
-private def queryContext (ctx : (Fin 3 → L) × (Fin 2 → L)) : SumcheckBaseContext L 1 :=
-  ⟨fun i => ctx.1 ⟨2 + i.val, by omega⟩, 0⟩
+/-- The unrolled composition is secure for the input relation of the separate-sum-check
+composition. -/
+example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    ((Binius.FRIBinius.Unrolled.fullVerifier 2 (ZMod 2) basis
+      (ℓ' := 1) (R := 1) (ϑ := 1) (by decide) (ℓ := 3) rfl 8).toVerifier
+      (Oₛₒ := fun i : Empty => nomatch i)).rbrKnowledgeSoundness init impl
+      (TensorPrefix.relIn profile rfl interface) acceptRejectOracleRel
+      (Binius.FRIBinius.Unrolled.fullError 2 (ZMod 2) basis (ϑ := 1) (by decide) 8) :=
+  Binius.FRIBinius.Unrolled.fullVerifier_rbrKnowledgeSoundness 2 (ZMod 2) basis
+    (ℓ' := 1) (R := 1) (ϑ := 1) (by decide) (ℓ := 3) rfl 8 init impl
 
 example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :=
-  fullReduction_perfectCompleteness 2 (ZMod 2) beta (ϑ := 1) (R := 1) (ℓ' := 1)
-    (by decide) rfl queryContext 8 init impl
+  Binius.FRIBinius.Unrolled.fullReduction_perfectCompleteness_and_knowledgeSoundness 2 (ZMod 2)
+    basis (ℓ' := 1) (R := 1) (ϑ := 1) (by decide) (ℓ := 3) rfl 8 init impl
 
 example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :=
-  fullVerifier_rbrKnowledgeSoundness 2 (ZMod 2) beta (ϑ := 1) (R := 1) (ℓ' := 1)
-    (by decide) rfl queryContext 8 init impl
+  Binius.FRIBinius.Unrolled.fullVerifier_soundness 2 (ZMod 2) basis
+    (ℓ' := 1) (R := 1) (ϑ := 1) (by decide) (ℓ := 3) rfl 8 init impl
 
-example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :=
-  fullVerifier_knowledgeSoundness 2 (ZMod 2) beta (ϑ := 1) (R := 1) (ℓ' := 1)
-    (by decide) rfl queryContext 8 init impl
+/-- The unrolled composite accepts the nonconstant honest source with probability one. -/
+theorem honest_probability {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    let R := OracleReduction.toReduction (Oₛₒ := fun i : Empty => nomatch i)
+      (Binius.FRIBinius.Unrolled.fullReduction 2 (ZMod 2) basis
+        (ℓ' := 1) (R := 1) (ϑ := 1) (by decide) (ℓ := 3) rfl 8)
+    let pSpec := Binius.FRIBinius.Unrolled.pSpec 2 (ZMod 2) basis
+      (ℓ' := 1) (R := 1) (ϑ := 1) (by decide) 8
+    let pImpl : QueryImpl ([]ₒ + [pSpec.Challenge]ₒ'challengeOracleInterface)
+      (StateT σ ProbComp) := QueryImpl.addLift impl challengeQueryImpl
+    Pr{let out ← OptionT.mk do
+      let st ← init
+      (simulateQ pImpl (R.run ((point, aeval point source.val), honestOracle) source).run).run' st}[
+        (out.2, out.1.2.2) ∈ acceptRejectOracleRel ∧ out.1.2.1 = out.2] = 1 := by
+  have h := Binius.FRIBinius.Unrolled.fullReduction_perfectCompleteness 2 (ZMod 2) basis
+    (ℓ' := 1) (R := 1) (ϑ := 1) (by decide) (ℓ := 3) rfl 8 init impl
+  change Reduction.perfectCompleteness init impl
+    (TensorPrefix.relIn profile rfl interface.strictView)
+    acceptRejectOracleRel (OracleReduction.toReduction (Oₛₒ := fun i : Empty => nomatch i)
+      (Binius.FRIBinius.Unrolled.fullReduction 2 (ZMod 2) basis
+        (ℓ' := 1) (R := 1) (ϑ := 1) (by decide) (ℓ := 3) rfl 8)) at h
+  rw [Reduction.perfectCompleteness_eq_prob_one] at h
+  exact h ((point, aeval point source.val), honestOracle) source honest_input_actual
 
-example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :=
-  fullVerifier_soundness 2 (ZMod 2) beta (ϑ := 1) (R := 1) (ℓ' := 1)
-    (by decide) rfl queryContext 8 init impl
+/-- The bound is `8/16 + (3/4)^8 < 1`, and one sum-check term `2/16` below the separate-sum-check
+bound. -/
+theorem concreteError_lt :
+    Binius.FRIBinius.Unrolled.concreteError 2 (L := Gf16) (ℓ' := 1) (R := 1) 8 =
+        8 / 16 + (3 / 4 : ℝ≥0) ^ 8 ∧
+      Binius.FRIBinius.Unrolled.concreteError 2 (L := Gf16) (ℓ' := 1) (R := 1) 8 < 1 ∧
+      Binius.FRIBinius.Unrolled.concreteError 2 (L := Gf16) (ℓ' := 1) (R := 1) 8 <
+        (2 : ℝ≥0) / Fintype.card Gf16 + (1 : ℝ≥0) * (2 / Fintype.card Gf16) +
+          Binius.BinaryBasefold.FullBinaryBasefold.concreteBinaryBasefoldKnowledgeError
+            Gf16 1 1 8 := by
+  have hadd := Binius.FRIBinius.Unrolled.concreteError_add_eq 2 (L := Gf16) (ℓ' := 1) (R := 1) 8
+  refine ⟨?_, ?_, ?_⟩
+  · norm_num [Binius.FRIBinius.Unrolled.concreteError, card_gf16]
+  · norm_num [Binius.FRIBinius.Unrolled.concreteError, card_gf16]
+  · have hpos : 0 < ((1 : ℕ) : ℝ≥0) * (2 / Fintype.card Gf16) := by
+      rw [card_gf16]
+      norm_num
+    have h := lt_add_of_pos_right
+      (Binius.FRIBinius.Unrolled.concreteError 2 (L := Gf16) (ℓ' := 1) (R := 1) 8) hpos
+    rw [hadd] at h
+    exact_mod_cast h
 
-private theorem card_field : Fintype.card L = 16 := by
-  rw [← Nat.card_eq_fintype_card]
-  exact GaloisField.card 2 4 (by decide)
+/-! ### The Binary Basefold final check -/
 
--- One fused loop charges 2ℓ', not the unfused 4ℓ'. The bound is nontrivial.
-example : concreteError 2 (L := L) (ℓ' := 1) (R := 1) 8 =
-    (8 / 16 + (3 / 4 : ℝ≥0) ^ 8) ∧
-    concreteError 2 (L := L) (ℓ' := 1) (R := 1) 8 < 1 := by
-  norm_num [concreteError, card_field]
+section FinalCheck
+variable (mult : Multiplier Unit Gf16 1)
 
-end
-end Binius.FRIBinius.UnrolledGf16
+theorem rate : 1 + 1 < 2 ^ 2 := by decide
+
+/-- A zero multiplier value does not make the final check vacuous: it requires a zero target. -/
+example (h0 : ∀ r', mult.evaluate () r' = 0)
+    (s : Statement (L := Gf16) Unit (Fin.last 1) × ∀ j, OracleStatement (ZMod 2) basis
+      (h_ℓ_add_R_rate := rate) 1 (Fin.last 1) j)
+    (tr : (pSpecFinalSumcheckStep (L := Gf16)).FullTranscript) :
+    (CoreInteraction.finalSumcheckVerifierGuardedForm (ZMod 2) basis mult (ϑ := 1)
+      (h_ℓ_add_R_rate := rate) (𝓑 := boolEmbedding Gf16)).check s tr =
+      decide (s.1.sumcheck_target = 0) := by
+  rw [CoreInteraction.finalSumcheckVerifierGuardedForm_check, h0]
+  exact decide_eq_decide.mpr ⟨fun h => h.trans (zero_mul _), fun h => h.trans (zero_mul _).symm⟩
+
+/-- At `openingMultiplier`, the final check is the evaluation-claim check `s = eq̃(r, r') · c`. -/
+example (s : Statement (L := Gf16) (SumcheckBaseContext Gf16 1) (Fin.last 1) ×
+      ∀ j, OracleStatement (ZMod 2) basis
+        (h_ℓ_add_R_rate := rate) 1 (Fin.last 1) j)
+    (tr : (pSpecFinalSumcheckStep (L := Gf16)).FullTranscript) :
+    (CoreInteraction.finalSumcheckVerifierGuardedForm (ZMod 2) basis openingMultiplier (ϑ := 1)
+      (h_ℓ_add_R_rate := rate) (𝓑 := boolEmbedding Gf16)).check s tr =
+      decide (s.1.sumcheck_target =
+        eqTilde s.1.ctx.t_eval_point s.1.challenges * (show Gf16 from tr.messages ⟨0, rfl⟩)) :=
+  CoreInteraction.finalSumcheckVerifierGuardedForm_check (ZMod 2) basis openingMultiplier s tr
+
+end FinalCheck
+
+end ArkLibTest.FRIBinius.Unrolled
 
 /--
-info: 'Binius.FRIBinius.Unrolled.fullVerifier_rbrKnowledgeSoundness'
+info: 'Binius.FRIBinius.Unrolled.fullVerifier_rbrKnowledgeSoundness' depends on axioms:
+[propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Binius.FRIBinius.Unrolled.fullVerifier_rbrKnowledgeSoundness
+
+/--
+info: 'Binius.FRIBinius.Unrolled.fullReduction_perfectCompleteness_and_knowledgeSoundness'
 depends on axioms: [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms fullVerifier_rbrKnowledgeSoundness
+#print axioms Binius.FRIBinius.Unrolled.fullReduction_perfectCompleteness_and_knowledgeSoundness
 
 /--
-info: 'Binius.FRIBinius.Unrolled.fullReduction_perfectCompleteness'
-depends on axioms: [propext, Classical.choice, Quot.sound]
+info: 'Binius.FRIBinius.Unrolled.fullVerifier_soundness' depends on axioms:
+[propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms fullReduction_perfectCompleteness
+#print axioms Binius.FRIBinius.Unrolled.fullVerifier_soundness
 
 /--
-info: 'Binius.FRIBinius.Unrolled.fullError_sum_le_concrete'
-depends on axioms: [propext, Classical.choice, Quot.sound]
+info: 'Binius.FRIBinius.Unrolled.fullError_sum_le_concrete' depends on axioms:
+[propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms fullError_sum_le_concrete
-
-/--
-info: 'Binius.FRIBinius.Unrolled.strictInputRelation_subset_inputRelation'
-depends on axioms: [propext, Classical.choice, Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms strictInputRelation_subset_inputRelation
-
-/--
-info: 'Binius.FRIBinius.Unrolled.fullVerifier_knowledgeSoundness'
-depends on axioms: [propext, Classical.choice, Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms fullVerifier_knowledgeSoundness
-
-/--
-info: 'Binius.FRIBinius.Unrolled.fullVerifier_soundness'
-depends on axioms: [propext, Classical.choice, Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms fullVerifier_soundness
+#print axioms Binius.FRIBinius.Unrolled.fullError_sum_le_concrete

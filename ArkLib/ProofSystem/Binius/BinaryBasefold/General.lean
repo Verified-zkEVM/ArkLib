@@ -65,15 +65,17 @@ variable {𝓑 : Fin 2 ↪ L}
 
 open CoreInteraction QueryPhase
 
+variable {Context : Type} (multiplier : Multiplier Context L ℓ)
+
 /-- The oracle verifier for the full Binary Basefold protocol -/
 @[reducible]
 noncomputable def fullOracleVerifier :
   OracleProofVerifier (oSpec:=[]ₒ)
-    (Statement := Statement (L := L) (ℓ:=ℓ) (SumcheckBaseContext L ℓ) 0)
+    (Statement := Statement (L := L) (ℓ:=ℓ) Context 0)
     (OStatement:= OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
     (pSpec := fullPSpec 𝔽q β γ_repetitions (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
   OracleVerifier.append (oSpec:=[]ₒ)
-    (Stmt₁ := Statement (L := L) (SumcheckBaseContext L ℓ) 0)
+    (Stmt₁ := Statement (L := L) Context 0)
     (Stmt₂ := FinalSumcheckStatementOut (L:=L) (ℓ:=ℓ))
     (Stmt₃ := Bool)
     (OStmt₁ := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
@@ -82,7 +84,7 @@ noncomputable def fullOracleVerifier :
     (pSpec₁ := pSpecCoreInteraction 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (pSpec₂ := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (Oₛ₃ := fun i : Empty => nomatch i)
-    (V₁ := CoreInteraction.coreInteractionOracleVerifier 𝔽q β
+    (V₁ := CoreInteraction.coreInteractionOracleVerifier 𝔽q β multiplier
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ) (𝓑 := 𝓑))
     (V₂ := QueryPhase.queryOracleVerifier 𝔽q β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ))
@@ -91,12 +93,12 @@ noncomputable def fullOracleVerifier :
 @[reducible]
 noncomputable def fullOracleReduction :
   OracleProof (oSpec:=[]ₒ)
-    (Statement := Statement (L := L) (ℓ:=ℓ) (SumcheckBaseContext L ℓ) 0)
+    (Statement := Statement (L := L) (ℓ:=ℓ) Context 0)
     (OStatement:= OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
     (Witness := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ:=ℓ) 0)
     (pSpec := fullPSpec 𝔽q β γ_repetitions (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
   OracleReduction.append (oSpec:=[]ₒ)
-    (Stmt₁ := Statement (L := L) (ℓ:=ℓ) (SumcheckBaseContext L ℓ) 0)
+    (Stmt₁ := Statement (L := L) (ℓ:=ℓ) Context 0)
     (Stmt₂ := FinalSumcheckStatementOut (L:=L) (ℓ:=ℓ))
     (Stmt₃ := Bool)
     (Wit₁ := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ:=ℓ) 0)
@@ -108,7 +110,7 @@ noncomputable def fullOracleReduction :
     (pSpec₁ := pSpecCoreInteraction 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (pSpec₂ := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (Oₛ₃ := fun i : Empty => nomatch i)
-    (R₁ := CoreInteraction.coreInteractionOracleReduction 𝔽q β
+    (R₁ := CoreInteraction.coreInteractionOracleReduction 𝔽q β multiplier
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ) (𝓑 := 𝓑))
     (R₂ := QueryPhase.queryOracleReduction 𝔽q β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ))
@@ -124,10 +126,10 @@ set_option backward.isDefEq.respectTransparency false in
 omit [SampleableType L] [DecidableEq 𝔽q] in
 /-- At the initial frontier, strict completeness inputs satisfy the relaxed relation used by
 round-by-round knowledge soundness. -/
-theorem strictRoundRelation_subset_roundRelation_zero :
-    strictRoundRelation (multpoly := multiplier) 𝔽q β (ϑ := ϑ)
+theorem strictRoundRelation_subset_roundRelation_zero {multpoly : Context → MultilinearPoly L ℓ} :
+    strictRoundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0
-      ⊆ roundRelation (multpoly := multiplier) 𝔽q β (ϑ := ϑ)
+      ⊆ roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0 := by
   rintro ⟨⟨stmt, oStmt⟩, wit⟩ h_strict
   simp only [strictRoundRelation, StrictRoundRelated, Set.mem_ofPred_eq,
@@ -162,27 +164,27 @@ theorem strictRoundRelation_subset_roundRelation_zero :
 -/
 theorem fullOracleReduction_perfectCompleteness :
     OracleProof.perfectCompleteness
-      (oracleProof := fullOracleReduction 𝔽q β γ_repetitions (ϑ:=ϑ)
+      (oracleProof := fullOracleReduction 𝔽q β γ_repetitions multiplier (ϑ:=ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
-      (relation := strictRoundRelation (multpoly := multiplier) 𝔽q β (ϑ:=ϑ)
+      (relation := strictRoundRelation (multpoly := multiplier.polynomial) 𝔽q β (ϑ:=ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
       (init := init)
       (impl := impl) :=
   OracleReduction.append_perfectCompleteness_of_guarded_verifiers
-    (R₁ := CoreInteraction.coreInteractionOracleReduction 𝔽q β
+    (R₁ := CoreInteraction.coreInteractionOracleReduction 𝔽q β multiplier
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ) )
     (R₂ := QueryPhase.queryOracleReduction 𝔽q β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ))
     (Oₛ₃ := fun i : Empty => nomatch i)
-      (rel₁ := strictRoundRelation (multpoly := multiplier) 𝔽q β (ϑ:=ϑ)
+      (rel₁ := strictRoundRelation (multpoly := multiplier.polynomial) 𝔽q β (ϑ:=ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
     (rel₂ := strictFinalSumcheckRelOut 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (rel₃ := acceptRejectOracleRel)
-    (V₁ := Verifier.GuardedForm.ofEmpty _ (fun input =>
-      (⟨⟨0, fun _ => 0, input.1.ctx⟩, 0⟩, fun _ _ => 0)))
+    (V₁ := Verifier.GuardedForm.ofEmpty _ (fun _ =>
+      (⟨0, fun _ => 0, 0⟩, fun _ _ => 0)))
     (V₂ := Verifier.GuardedForm.ofEmpty _ (fun _ => (false, fun i => nomatch i)))
     (hSeam := fun _ => Or.inl inferInstance)
-    (h₁ := CoreInteraction.coreInteractionOracleReduction_perfectCompleteness 𝔽q β
+    (h₁ := CoreInteraction.coreInteractionOracleReduction_perfectCompleteness 𝔽q β multiplier
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)
       (init := init) (impl := impl))
     (h₂ := fun s => QueryPhase.queryOracleReduction_perfectCompleteness 𝔽q β γ_repetitions
@@ -202,11 +204,11 @@ variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ Pro
 
 /-- Round-by-round knowledge soundness for the core-and-query protocol. -/
 theorem fullOracleVerifier_rbrKnowledgeSoundness :
-    ((fullOracleVerifier 𝔽q β γ_repetitions (ϑ := ϑ)
+    ((fullOracleVerifier 𝔽q β γ_repetitions multiplier (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).toVerifier
       (Oₛₒ := fun i : Empty => nomatch i)).rbrKnowledgeSoundness
       init impl
-      (relIn := roundRelation (multpoly := multiplier) 𝔽q β (ϑ := ϑ)
+      (relIn := roundRelation (multpoly := multiplier.polynomial) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
       (relOut := acceptRejectOracleRel)
       (rbrKnowledgeError := fullRbrKnowledgeError 𝔽q β γ_repetitions (ϑ := ϑ)
@@ -214,9 +216,9 @@ theorem fullOracleVerifier_rbrKnowledgeSoundness :
   unfold fullOracleVerifier fullRbrKnowledgeError fullPSpec
   exact OracleVerifier.append_rbrKnowledgeSoundness_of_guarded_first
     (Oₛ₃ := fun i : Empty => nomatch i) _ _
-    (Verifier.GuardedForm.ofEmpty _ (fun input =>
-      (⟨⟨0, fun _ => 0, input.1.ctx⟩, 0⟩, fun _ _ => 0)))
-    (CoreInteraction.coreInteractionOracleVerifier_rbrKnowledgeSoundness 𝔽q β)
+    (Verifier.GuardedForm.ofEmpty _ (fun _ =>
+      (⟨0, fun _ => 0, 0⟩, fun _ _ => 0)))
+    (CoreInteraction.coreInteractionOracleVerifier_rbrKnowledgeSoundness 𝔽q β multiplier)
     (QueryPhase.queryOracleVerifier_rbrKnowledgeSoundness 𝔽q β γ_repetitions init impl)
 
 /-- Upper bound `2ℓ/|L| + 2^(ℓ+𝓡)/|L| + (1/2 + 1/(2·2^𝓡))^γ_rep` for the core-and-query
@@ -309,34 +311,34 @@ theorem fullRbrKnowledgeError_sum_le_concrete :
 /-- Ordinary knowledge soundness of full Binary Basefold, with the sum of its challenge errors. -/
 theorem fullOracleVerifier_knowledgeSoundness :
     OracleProof.knowledgeSoundness init impl
-      (roundRelation (multpoly := multiplier) 𝔽q β (ϑ := ϑ)
+      (roundRelation (multpoly := multiplier.polynomial) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
-      (fullOracleVerifier 𝔽q β γ_repetitions (ϑ := ϑ)
+      (fullOracleVerifier 𝔽q β γ_repetitions multiplier (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
       (∑ i, fullRbrKnowledgeError 𝔽q β γ_repetitions (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :=
   Verifier.GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundness
     (Verifier.GuardedForm.ofEmpty _ (fun _ => (false, fun i : Empty => nomatch i)))
-    (fullOracleVerifier_rbrKnowledgeSoundness 𝔽q β γ_repetitions)
+    (fullOracleVerifier_rbrKnowledgeSoundness 𝔽q β γ_repetitions multiplier)
 
 /-- Full Binary Basefold is perfectly complete on exact encodings and ordinarily
 knowledge sound for unique-radius compatibility, with the concrete core-and-query error. -/
 theorem fullOracleReduction_perfectCompleteness_and_knowledgeSoundness :
     OracleProof.perfectCompleteness
-      (oracleProof := fullOracleReduction 𝔽q β γ_repetitions (ϑ := ϑ)
+      (oracleProof := fullOracleReduction 𝔽q β γ_repetitions multiplier (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
-      (relation := strictRoundRelation (multpoly := multiplier) 𝔽q β (ϑ := ϑ)
+      (relation := strictRoundRelation (multpoly := multiplier.polynomial) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
       (init := init) (impl := impl) ∧
     OracleProof.knowledgeSoundness init impl
-      (roundRelation (multpoly := multiplier) 𝔽q β (ϑ := ϑ)
+      (roundRelation (multpoly := multiplier.polynomial) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
-      (fullOracleVerifier 𝔽q β γ_repetitions (ϑ := ϑ)
+      (fullOracleVerifier 𝔽q β γ_repetitions multiplier (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
       (concreteBinaryBasefoldKnowledgeError L ℓ 𝓡 γ_repetitions) :=
-  ⟨fullOracleReduction_perfectCompleteness 𝔽q β γ_repetitions,
+  ⟨fullOracleReduction_perfectCompleteness 𝔽q β γ_repetitions multiplier,
     Verifier.knowledgeSoundness_error_mono init impl
       (fullRbrKnowledgeError_sum_le_concrete 𝔽q β γ_repetitions)
-      (fullOracleVerifier_knowledgeSoundness 𝔽q β γ_repetitions)⟩
+      (fullOracleVerifier_knowledgeSoundness 𝔽q β γ_repetitions multiplier)⟩
 
 end Binius.BinaryBasefold.FullBinaryBasefold

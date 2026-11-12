@@ -31,12 +31,6 @@ noncomputable section
 namespace RingSwitching.Packing.RingSwitch
 open OracleSpec OracleComp ProtocolSpec MvPolynomial CoordinateWise.ScalarRound
 open scoped NNReal
-private theorem card_head {B C : Type} [CommRing B] (data : PackingData B)
-    {M : Type} (rule : BatchingRule C data.ιE) : Fintype.card (Head.pSpec (M := M) data
-      rule).ChallengeIdx = 1 := by
-  change Fintype.card (pSpecScalar Unit Unit).ChallengeIdx = 1
-  decide
-
 private theorem card_round (C : Type) [CommRing C] :
     Fintype.card (ProductSumcheck.Round.pSpec C).ChallengeIdx = 1 := by
   change Fintype.card (pSpecScalar Unit Unit).ChallengeIdx = 1
@@ -206,7 +200,7 @@ theorem rbrError_sum [Fintype C] : ∑ i, rbrError (M := M) data m bat i =
     _ = _ := by
       rw [Fintype.sum_sum_type]
       simp only [Sum.elim_inl, Sum.elim_inr, Finset.sum_const, Finset.card_univ,
-        card_head, card_tail, one_smul, nsmul_eq_mul]
+        Head.card_challengeIdx, card_tail, one_smul, nsmul_eq_mul]
 
 omit [Algebra B C] [Algebra data.P C] [IsScalarTower B data.P C] in
 /-- Appending an opening adds its challenge-error sum to the batching and sumcheck losses. -/

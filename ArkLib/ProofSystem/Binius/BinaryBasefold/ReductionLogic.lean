@@ -30,7 +30,9 @@ on the transcript rebuilt from the answer has a guarded form through
 * `commitStepLogic`, `commitStepLogic_isStronglyComplete`: the commit step at a commitment round.
   The prover sends its folded word `f⁽ⁱ⁺¹⁾` as a new oracle.
 * `finalSumcheckStepLogic`, `finalSumcheckStepLogic_isStronglyComplete`: the final sum-check
-  step. The prover sends the constant `c` of `f⁽ˡ⁾`; the verifier checks `s_ℓ = eq̃(r, r') · c`.
+  step for a `Multiplier` `A`. The prover sends the constant `c` of `f⁽ˡ⁾`; the verifier checks
+  `s_ℓ = A(r') · c` with the multiplier's evaluator, which for `openingMultiplier` is
+  `eq̃(r, r')`.
 
 The oracle reductions built from these steps are in `Steps/`.
 
@@ -483,13 +485,17 @@ lemma commitStepLogic_isStronglyComplete (i : Fin ℓ) (hCR : IsCommitmentRound 
 end CommitStep
 
 section FinalSumcheckStep
+variable (multiplier : Multiplier Context L ℓ)
 
-/-- The logic of the final sum-check step. The prover sends the constant `c` of its fully folded
-word; the verifier checks the closing sum-check equation `s_ℓ = eq̃(r, r') · c` and outputs the
-statement extended by `c`. The oracle statements pass through. -/
+/-- The logic of the final sum-check step for a multiplier `A` with evaluator `Â`. The prover
+sends the constant `c` of its fully folded word; the verifier checks the closing sum-check
+equation `s_ℓ = Â(ctx, r') · c` and outputs the target, the challenges and `c`. The equation is
+not divided by `Â(ctx, r')`, so it remains a check when that value is zero. The oracle
+statements pass through. For an evaluation claim (`openingMultiplier`),
+`Â(ctx, r') = eq̃(r, r')`. -/
 def finalSumcheckStepLogic :
     OracleReduction.DeterministicLogicStep []ₒ
-      (Statement (L := L) (SumcheckBaseContext L ℓ) (Fin.last ℓ))
+      (Statement (L := L) Context (Fin.last ℓ))
       (Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ))
       (OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ))
       (OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ))
@@ -499,7 +505,7 @@ def finalSumcheckStepLogic :
       where
   completeness_relIn := fun ((stmt, oStmt), wit) =>
     ((stmt, oStmt), wit) ∈ strictRoundRelation 𝔽q β (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (multpoly := multiplier)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (multpoly := multiplier.polynomial)
       (Fin.last ℓ)
   completeness_relOut := fun ((stmtOut, oStmtOut), witOut) =>
     -- For strict relations, we need t from the input witness
@@ -508,12 +514,10 @@ def finalSumcheckStepLogic :
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
   verifierCheck := fun stmtIn transcript =>
     let c : L := transcript.messages ⟨0, rfl⟩
-    let eq_tilde_eval := eqTilde (r := stmtIn.ctx.t_eval_point) (r' := stmtIn.challenges)
-    stmtIn.sumcheck_target = eq_tilde_eval * c
+    stmtIn.sumcheck_target = multiplier.evaluate stmtIn.ctx stmtIn.challenges * c
   verifierOut := fun stmtIn transcript =>
     let c : L := transcript.messages ⟨0, rfl⟩
     {
-      ctx := stmtIn.ctx,
       sumcheck_target := stmtIn.sumcheck_target,
       challenges := stmtIn.challenges,
       finalConstant := c
@@ -525,7 +529,6 @@ def finalSumcheckStepLogic :
   proverOut := fun stmtIn witIn oStmtIn transcript =>
     let c : L := transcript.messages ⟨0, rfl⟩
     let stmtOut : FinalSumcheckStatementOut (L := L) (ℓ := ℓ) := {
-      ctx := stmtIn.ctx,
       sumcheck_target := stmtIn.sumcheck_target,
       challenges := stmtIn.challenges,
       finalConstant := c
@@ -663,25 +666,27 @@ omit [SampleableType L] [DecidableEq 𝔽q] in
 /-- Under sum-check consistency and the strict oracle-witness consistency at round `ℓ`, the honest
 final constant passes the closing sum-check equation. -/
 lemma finalSumcheckStepLogic_verifierCheck_honest
-    (stmtIn : Statement (SumcheckBaseContext L ℓ) (Fin.last ℓ))
+    (stmtIn : Statement (L := L) Context (Fin.last ℓ))
     (witIn : Witness 𝔽q β (Fin.last ℓ))
     (oStmtIn : ∀ j, OracleStatement 𝔽q β ϑ (Fin.last ℓ) j)
     (challenges : (pSpecFinalSumcheckStep (L := L)).Challenges)
     (h_sumcheck_cons : sumcheckConsistencyProp (SumcheckDomain.uniform 𝓑 _) stmtIn.sumcheck_target
         witIn.H)
     (h_strictOracleWitConsistency_In : StrictOracleWitnessConsistent 𝔽q β
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Context := SumcheckBaseContext L ℓ)
-      (multpoly := multiplier) (stmtIdx := Fin.last ℓ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Context := Context)
+      (multpoly := multiplier.polynomial) (stmtIdx := Fin.last ℓ)
       (oracleIdx := OracleFrontierIndex.mkFromStmtIdx (Fin.last ℓ)) (stmt := stmtIn)
       (wit := witIn) (oStmt := oStmtIn)) :
-    let step := finalSumcheckStepLogic 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+    let step := finalSumcheckStepLogic 𝔽q β multiplier (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
     let transcript := step.honestProverTranscript stmtIn witIn oStmtIn challenges
     step.verifierCheck stmtIn transcript := by
   classical
-  let step := finalSumcheckStepLogic 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+  let step := finalSumcheckStepLogic 𝔽q β multiplier (ϑ := ϑ)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
   let transcript := step.honestProverTranscript stmtIn witIn oStmtIn challenges
   -- Simplify the verifier check to the equality we need to prove
-  change (finalSumcheckStepLogic 𝔽q β).verifierCheck stmtIn transcript
+  change (finalSumcheckStepLogic 𝔽q β multiplier).verifierCheck stmtIn transcript
   simp only [finalSumcheckStepLogic]
   dsimp only [sumcheckConsistencyProp] at h_sumcheck_cons
   simp only [Fin.val_last] at h_sumcheck_cons
@@ -705,16 +710,17 @@ lemma finalSumcheckStepLogic_verifierCheck_honest
       (t := witIn.t) (destIdx := ⟨Fin.last ℓ, by omega⟩)
       (h_destIdx := by simp only [Fin.val_last]) (challenges := stmtIn.challenges)
     exact congr_fun (h := h_eval) ⟨0, by simp only [Fin.val_last, zero_mem]⟩
-  -- Apply `eval_fixPrefix_initial_last` to connect H.eval with eqTilde * f(0)
+  -- Apply `eval_fixPrefix_initial_last` to connect H.eval with the multiplier times f(0)
   have h_H_eval_at_zero_eq_mul : witIn.H.val.eval (fun _ => (0 : L)) =
-      eqTilde stmtIn.ctx.t_eval_point stmtIn.challenges *
+      multiplier.evaluate stmtIn.ctx stmtIn.challenges *
       (witIn.f ⟨0, by simp only [zero_mem]⟩) := by
+    rw [multiplier.evaluate_eq]
     rw [h_wit_structural_invariant.1]
     rw [Sumcheck.Structured.eval_fixPrefix_initial_last]
     -- ↑witIn.t = witIn.f ⟨0, ⋯⟩
-    rw [h_witIn_f_0_eq_c, h_c_eq]; rfl
+    rw [h_witIn_f_0_eq_c, h_c_eq]
   -- Combine to finish the proof
-  change stmtIn.sumcheck_target = eqTilde stmtIn.ctx.t_eval_point stmtIn.challenges *
+  change stmtIn.sumcheck_target = multiplier.evaluate stmtIn.ctx stmtIn.challenges *
     witIn.f ⟨0, by simp only [Fin.val_last, zero_mem]⟩
   rw [←h_H_eval_at_zero_eq_mul]
   exact h_sumcheck_cons
@@ -724,10 +730,10 @@ omit [DecidableEq 𝔽q] [SampleableType L] in
 honest constant passes the check and the output lies in the strict final sum-check output
 relation. -/
 lemma finalSumcheckStepLogic_isStronglyComplete :
-    (finalSumcheckStepLogic 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (finalSumcheckStepLogic 𝔽q β multiplier (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑 := 𝓑)).IsStronglyComplete := by
   intro stmtIn witIn oStmtIn challenges h_relIn
-  let step := (finalSumcheckStepLogic 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+  let step := (finalSumcheckStepLogic 𝔽q β multiplier (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (𝓑 := 𝓑))
   let transcript := step.honestProverTranscript stmtIn witIn oStmtIn challenges
   let verifierStmtOut := step.verifierOut stmtIn transcript

@@ -60,12 +60,18 @@ Basic structures and definitions used throughout the Binary Basefold protocol.
 
 -- `SumcheckBaseContext` and `Statement` are the structured sum-check's
 -- (`ArkLib.ProofSystem.Sumcheck.Structured`), re-exported under `Binius.BinaryBasefold`.
-export Sumcheck.Structured (SumcheckBaseContext Statement)
+export Sumcheck.Structured (SumcheckBaseContext Statement Multiplier)
 
-/-- Statement for the final sumcheck step - includes the final constant c -/
-structure FinalSumcheckStatementOut extends
-  Statement (L := L) (Context := SumcheckBaseContext L ℓ) (Fin.last ℓ) where
-  finalConstant : L               -- c = f^(ℓ)(0, ..., 0)
+/-- The statement after the final sum-check step: the last sum-check target, the folding
+challenges `r'`, and the final constant `c = f⁽ˡ⁾(0, …, 0)` sent by the prover. The query phase
+reads only the challenges and the constant, so no outer context is retained. -/
+structure FinalSumcheckStatementOut where
+  /-- The sum-check target after the last round. -/
+  sumcheck_target : L
+  /-- The folding challenges `r'`. -/
+  challenges : Fin (Fin.last ℓ) → L
+  /-- The constant of the fully folded word. -/
+  finalConstant : L
 
 /-- The committed codeword oracles available at state `i`, indexed by their frontier positions. -/
 @[reducible]

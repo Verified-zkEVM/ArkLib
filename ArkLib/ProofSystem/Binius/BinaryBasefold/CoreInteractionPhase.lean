@@ -14,17 +14,20 @@ public import ArkLib.OracleReduction.Security.GuardedBridges
 
 The core interaction of the Binary Basefold evaluation IOP. Both parties hold the oracle `[f]`,
 the claimed sum `s` and the evaluation point `r = (r₀, …, r_{ℓ-1})`; the prover also holds the
-multilinear `t` with `f` its encoding, and writes `h(X) := eq̃(r, X) · t(X)`. Starting from
+multilinear `t` with `f` its encoding. For a public multilinear multiplier `A` from the context,
+the prover writes `h(X) := A(X) · t(X)`; an evaluation claim uses `A(X) = eq̃(r, X)`. Starting from
 `f⁽⁰⁾ := f` and `s₀ := s`, for each `i < ℓ` the prover sends the round polynomial `hᵢ(X)`, the
 verifier checks `sᵢ = hᵢ(0) + hᵢ(1)`, samples `r'ᵢ` and sets `sᵢ₊₁ := hᵢ(r'ᵢ)`, and the prover
 folds `f⁽ⁱ⁾` along `r'ᵢ`, committing the folded word whenever `ϑ ∣ i + 1 < ℓ`. Finally the prover
-sends the constant `c := f⁽ˡ⁾(0, …, 0)` and the verifier checks `s_ℓ = eq̃(r, r') · c`.
+sends the constant `c := f⁽ˡ⁾(0, …, 0)` and the verifier checks `s_ℓ = A(r') · c`, computing
+`A(r')` with the multiplier's evaluator.
 
 ## Main definitions and statements
 
 * `coreInteractionOracleVerifier`, `coreInteractionOracleReduction`: the sum-check-and-fold rounds
-  (`sumcheckFoldOracleVerifier`) followed by the final sum-check step, at the Binary Basefold
-  multiplier `multiplier`.
+  (`sumcheckFoldOracleVerifier`) followed by the final sum-check step, for a `Multiplier` over an
+  arbitrary context. `Opening` instantiates it with `openingMultiplier`; the unrolled FRI-Binius
+  protocol with the ring-switching multiplier.
 * `coreInteractionOracleReduction_perfectCompleteness`: perfect completeness from the strict round
   relation at round `0` to the strict final sum-check output relation.
 * `coreInteractionOracleVerifier_rbrKnowledgeSoundness`: round-by-round
@@ -70,27 +73,29 @@ variable {𝓑 : Fin 2 ↪ L}
 variable [hdiv : Fact (ϑ ∣ ℓ)]
 
 section CoreInteractionPhaseReduction
+variable {Context : Type} (multiplier : Multiplier Context L ℓ)
 
 /-- The oracle verifier of the core interaction: the sum-check-and-fold rounds, then the final
 sum-check step. -/
 @[reducible]
 def coreInteractionOracleVerifier :
     OracleVerifier []ₒ
-      (Statement (L := L) (ℓ := ℓ) (SumcheckBaseContext L ℓ) 0)
+      (Statement (L := L) (ℓ := ℓ) Context 0)
       (OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 0)
       (FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
       (OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ))
       (pSpecCoreInteraction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
   OracleVerifier.append
     (sumcheckFoldOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-      (multpoly := multiplier))
-    (finalSumcheckVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
+      (multpoly := multiplier.polynomial))
+    (finalSumcheckVerifier 𝔽q β multiplier (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (𝓑 := 𝓑))
 
 /-- The oracle reduction of the core interaction. -/
 @[reducible]
 def coreInteractionOracleReduction :
     OracleReduction []ₒ
-      (Statement (L := L) (ℓ := ℓ) (SumcheckBaseContext L ℓ) 0)
+      (Statement (L := L) (ℓ := ℓ) Context 0)
       (OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 0)
       (Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) 0)
       (FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
@@ -99,8 +104,9 @@ def coreInteractionOracleReduction :
       (pSpecCoreInteraction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
   OracleReduction.append
     (sumcheckFoldOracleReduction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-      (multpoly := multiplier))
-    (finalSumcheckOracleReduction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
+      (multpoly := multiplier.polynomial))
+    (finalSumcheckOracleReduction 𝔽q β multiplier (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (𝓑 := 𝓑))
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
@@ -110,19 +116,20 @@ the strict final sum-check output relation. -/
 theorem coreInteractionOracleReduction_perfectCompleteness :
     OracleReduction.perfectCompleteness
       (pSpec := pSpecCoreInteraction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-      (relIn := strictRoundRelation (multpoly := multiplier) 𝔽q β (ϑ := ϑ)
+      (relIn := strictRoundRelation (multpoly := multiplier.polynomial) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
       (relOut := strictFinalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-      (oracleReduction := coreInteractionOracleReduction 𝔽q β (ϑ := ϑ)
+      (oracleReduction := coreInteractionOracleReduction 𝔽q β multiplier (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
       (init := init) (impl := impl) :=
   OracleReduction.append_perfectCompleteness_of_guarded_verifiers _ _
     (sumcheckFoldOracleVerifierGuardedForm 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (𝓑 := 𝓑) (multpoly := multiplier))
-    (finalSumcheckVerifierGuardedForm 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
+      (𝓑 := 𝓑) (multpoly := multiplier.polynomial))
+    (finalSumcheckVerifierGuardedForm 𝔽q β multiplier (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
     (fun _ => Or.inl inferInstance)
     (sumcheckFoldOracleReduction_perfectCompleteness 𝔽q β)
-    (fun s => finalSumcheckOracleReduction_perfectCompleteness 𝔽q β (pure s) impl)
+    (fun s => finalSumcheckOracleReduction_perfectCompleteness 𝔽q β multiplier (pure s) impl)
 
 /-- The round-by-round knowledge error of the core interaction: that of the sum-check-and-fold
 rounds. The final sum-check step has no challenge. -/
@@ -137,18 +144,18 @@ omit [DecidableEq 𝔽q] in
 at round `0` to the final sum-check output relation, with error
 `coreInteractionOracleRbrKnowledgeError`. -/
 theorem coreInteractionOracleVerifier_rbrKnowledgeSoundness :
-    (coreInteractionOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (coreInteractionOracleVerifier 𝔽q β multiplier (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑 := 𝓑)).toVerifier.rbrKnowledgeSoundness init impl
-      (roundRelation (multpoly := multiplier) 𝔽q β (ϑ := ϑ)
+      (roundRelation (multpoly := multiplier.polynomial) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
       (finalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
       (coreInteractionOracleRbrKnowledgeError 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
   OracleVerifier.append_rbrKnowledgeSoundness_of_guarded_first _ _
     (sumcheckFoldOracleVerifierGuardedForm 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (𝓑 := 𝓑) (multpoly := multiplier))
+      (𝓑 := 𝓑) (multpoly := multiplier.polynomial))
     (sumcheckFoldOracleVerifier_rbrKnowledgeSoundness 𝔽q β)
-    (finalSumcheckOracleVerifier_rbrKnowledgeSoundness 𝔽q β init impl)
+    (finalSumcheckOracleVerifier_rbrKnowledgeSoundness 𝔽q β multiplier init impl)
 
 /-! ### The total round-by-round knowledge error of the sum-check-and-fold rounds -/
 
@@ -330,38 +337,38 @@ theorem sumcheckFoldKnowledgeError_le :
 omit [DecidableEq 𝔽q] in
 /-- Ordinary knowledge soundness of the core interaction, with the sum of its challenge errors. -/
 theorem coreInteractionOracleVerifier_knowledgeSoundness :
-    (coreInteractionOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (coreInteractionOracleVerifier 𝔽q β multiplier (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑 := 𝓑)).knowledgeSoundness init impl
-      (roundRelation (multpoly := multiplier) 𝔽q β (ϑ := ϑ)
+      (roundRelation (multpoly := multiplier.polynomial) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
       (finalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
       (∑ i, coreInteractionOracleRbrKnowledgeError 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :=
   OracleVerifier.knowledgeSoundness_of_rbrKnowledgeSoundness_of_guarded
-    (Verifier.GuardedForm.ofEmpty _ (fun input =>
-      (⟨⟨0, fun _ => 0, input.1.ctx⟩, 0⟩, fun _ _ => 0)))
-    (coreInteractionOracleVerifier_rbrKnowledgeSoundness 𝔽q β)
+    (Verifier.GuardedForm.ofEmpty _ (fun _ =>
+      (⟨0, fun _ => 0, 0⟩, fun _ _ => 0)))
+    (coreInteractionOracleVerifier_rbrKnowledgeSoundness 𝔽q β multiplier)
 
 omit [DecidableEq 𝔽q] in
 /-- The core interaction is perfectly complete on exact encodings and ordinarily
 knowledge sound for unique-radius compatibility. -/
 theorem coreInteractionOracleReduction_perfectCompleteness_and_knowledgeSoundness :
     OracleReduction.perfectCompleteness
-      (oracleReduction := coreInteractionOracleReduction 𝔽q β (ϑ := ϑ)
+      (oracleReduction := coreInteractionOracleReduction 𝔽q β multiplier (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
-      (relIn := strictRoundRelation (multpoly := multiplier) 𝔽q β (ϑ := ϑ)
+      (relIn := strictRoundRelation (multpoly := multiplier.polynomial) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
       (relOut := strictFinalSumcheckRelOut 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) (init := init) (impl := impl) ∧
-    (coreInteractionOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (coreInteractionOracleVerifier 𝔽q β multiplier (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑 := 𝓑)).knowledgeSoundness init impl
-      (roundRelation (multpoly := multiplier) 𝔽q β (ϑ := ϑ)
+      (roundRelation (multpoly := multiplier.polynomial) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
       (finalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
       (∑ i, coreInteractionOracleRbrKnowledgeError 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :=
-  ⟨coreInteractionOracleReduction_perfectCompleteness 𝔽q β,
-    coreInteractionOracleVerifier_knowledgeSoundness 𝔽q β⟩
+  ⟨coreInteractionOracleReduction_perfectCompleteness 𝔽q β multiplier,
+    coreInteractionOracleVerifier_knowledgeSoundness 𝔽q β multiplier⟩
 
 end CoreInteractionPhaseReduction
 

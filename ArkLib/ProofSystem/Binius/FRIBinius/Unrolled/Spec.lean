@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Chung Thai Nguyen, Quang Dao
+Authors: Chung Thai Nguyen, Quang Dao, Alexander Hicks
 -/
 module
 
@@ -10,22 +10,22 @@ public import ArkLib.ProofSystem.RingSwitching.Packing.TensorPrefix
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.General
 
 /-!
-# Fused FRI-Binius communication and error budget
+# Unrolled FRI-Binius: communication and error budget
 
-The tensor batching head is followed by one interleaved sumcheck/folding loop and the repeated
-query check. Unlike the unfused ring-switching composition, no standalone ring-switching
-sumcheck precedes the folding loop. The empty frontier only reformats the head's output.
+The tensor batching head is followed by a zero-message frontier and the Binary Basefold core
+and query protocol, whose sum-check-and-fold loop runs the ring-switching product sum-check
+itself. No separate ring-switching sum-check precedes it.
 
-The error family records the batching error and the existing fold/query errors.
-`fullVerifier_rbrKnowledgeSoundness` in `General.lean` certifies this family for
-the fused verifier. The scalar bound here aggregates those component budgets arithmetically.
-The wire types use the existing mathematical tensor profile; the real-valued budgets are
-noncomputable mathematical quantities, not verifier computations.
+`fullError` assigns the batching loss to the head's challenge and the Binary Basefold errors to
+the remaining challenges. `fullError_sum_le_concrete` bounds its sum by `concreteError`,
+`(κ + 2ℓ')/|L| + 2^(ℓ' + R)/|L| + (1/2 + 1/(2 · 2^R))^γ`. `concreteError_add_eq` shows that
+this is the separate-sum-check bound of `FRIBinius.RingSwitch.fullError_sum_le` minus one
+sum-check term `2ℓ'/|L|`. These are bounds on challenge-error sums, not on running time.
 
 ## References
 
 * [Diamond, B. E., and Posen, J., *Polylogarithmic Proofs for Multilinears over Binary
-  Towers*][DP24]
+  Towers*][DP24], §5.2, equation (43).
 -/
 
 @[expose] public section
@@ -43,16 +43,13 @@ variable (β : Basis (Fin (2 ^ κ)) K L)
 variable {ℓ' R ϑ : ℕ} [NeZero ℓ'] [NeZero R] [NeZero ϑ] [Fact (ϑ ∣ ℓ')]
 variable (h_rate : ℓ' + R < 2 ^ κ)
 
-/-- The original tensor-carrier message followed by the vector batching challenge. -/
-noncomputable abbrev headSpec := Head.pSpec (M := (biniusProfile κ L K β).A)
-  (PackingData.ofBasis (biniusProfile κ L K β).basis) (BatchingRule.eqFold L κ)
+/-- The batching head, a zero-message frontier, and the Binary Basefold core and query wire. -/
+noncomputable abbrev pSpec (γ : ℕ) :=
+  TensorPrefix.headPSpec (biniusProfile κ L K β) ++ₚ
+    ((!p[] : ProtocolSpec 0) ++ₚ BinaryBasefold.fullPSpec K β γ
+      (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate))
 
-/-- Batching, a zero-message frontier, and one fold-and-query wire. -/
-noncomputable abbrev pSpec (γ : ℕ) := headSpec κ K β ++ₚ
-  ((!p[] : ProtocolSpec 0) ++ₚ BinaryBasefold.fullPSpec K β γ
-    (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate))
-
-/-- The batching error plus the existing per-challenge fold and query errors. -/
+/-- The batching loss on the head's challenge, then the Binary Basefold challenge errors. -/
 noncomputable def fullError (γ : ℕ) :
     (pSpec κ K β (ϑ := ϑ) h_rate γ).ChallengeIdx → ℝ≥0 :=
   Sum.elim (fun _ => (κ : ℝ≥0) / Fintype.card L)
@@ -61,14 +58,14 @@ noncomputable def fullError (γ : ℕ) :
         (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)) ∘ ChallengeIdx.sumEquiv.symm) ∘
     ChallengeIdx.sumEquiv.symm
 
-/-- The fused scalar budget contains only one sumcheck loss of `2ℓ'/|L|`. -/
+/-- The closed-form bound with one sum-check term `2ℓ'/|L|`. -/
 noncomputable def concreteError (γ : ℕ) : ℝ≥0 :=
   ((κ : ℝ≥0) + 2 * ℓ') / Fintype.card L +
     (2 ^ (ℓ' + R) : ℝ≥0) / Fintype.card L +
     ((1 / 2 : ℝ≥0) + 1 / (2 * 2 ^ R)) ^ γ
 
 omit [Field L] [DecidableEq L] [SampleableType L] [NeZero ℓ'] [NeZero R] in
-/-- The closed-form fused budget is batching plus one Binary Basefold budget. -/
+/-- The closed-form bound is the batching loss plus the Binary Basefold bound. -/
 theorem concreteError_eq (γ : ℕ) :
     concreteError κ (L := L) (ℓ' := ℓ') (R := R) γ =
       (κ : ℝ≥0) / Fintype.card L +
@@ -77,27 +74,35 @@ theorem concreteError_eq (γ : ℕ) :
     add_div]
   ring
 
+omit [Field L] [DecidableEq L] [SampleableType L] [NeZero ℓ'] [NeZero R] in
+/-- Adding one sum-check term `2ℓ'/|L|` to `concreteError` gives the bound of the composition
+with a separate ring-switching sum-check (`FRIBinius.RingSwitch.fullError_sum_le`). -/
+theorem concreteError_add_eq (γ : ℕ) :
+    concreteError κ (L := L) (ℓ' := ℓ') (R := R) γ + (ℓ' : ℝ≥0) * (2 / Fintype.card L) =
+      (κ : ℝ≥0) / Fintype.card L + (ℓ' : ℝ≥0) * (2 / Fintype.card L) +
+        BinaryBasefold.FullBinaryBasefold.concreteBinaryBasefoldKnowledgeError L ℓ' R γ := by
+  rw [concreteError_eq]
+  ring
+
 omit [DecidableEq K] [Fact (Fintype.card K = 2)] [NeZero R] in
-/-- The empty frontier adds no error; the batching vector is one challenge message. -/
+/-- The frontier adds no error, so the challenge-error sum is the batching loss plus the Binary
+Basefold sum. -/
 theorem fullError_sum (γ : ℕ) :
     (∑ i, fullError κ K β (ϑ := ϑ) h_rate γ i) =
       (κ : ℝ≥0) / Fintype.card L +
         ∑ i, BinaryBasefold.FullBinaryBasefold.fullRbrKnowledgeError K β γ
           (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) i := by
-  classical
-  have hcard : Fintype.card (headSpec κ K β).ChallengeIdx = 1 := by
-    change Fintype.card
-      (CoordinateWise.ScalarRound.pSpecScalar Unit Unit).ChallengeIdx = 1
-    decide
   unfold fullError
-  simp only [Function.comp_def]
-  rw [Equiv.sum_comp ChallengeIdx.sumEquiv.symm, Fintype.sum_sum_type]
-  simp only [Sum.elim_inl, Sum.elim_inr]
-  rw [Equiv.sum_comp ChallengeIdx.sumEquiv.symm, Fintype.sum_sum_type]
-  simp [hcard]
+  refine (Equiv.sum_comp ChallengeIdx.sumEquiv.symm (Sum.elim _ _)).trans ?_
+  rw [Fintype.sum_sum_type]
+  simp only [Sum.elim_inl, Sum.elim_inr, Finset.sum_const, Finset.card_univ,
+    Head.card_challengeIdx, one_smul]
+  congr 1
+  refine (Equiv.sum_comp ChallengeIdx.sumEquiv.symm (Sum.elim _ _)).trans ?_
+  simp [Fintype.sum_sum_type]
 
 omit [DecidableEq K] in
-/-- Aggregating the component budgets gives the fused, not the unfused, bound. -/
+/-- The challenge-error sum is at most `concreteError`. -/
 theorem fullError_sum_le_concrete (γ : ℕ) :
     (∑ i, fullError κ K β (ϑ := ϑ) h_rate γ i) ≤
       concreteError κ (L := L) (ℓ' := ℓ') (R := R) γ := by
