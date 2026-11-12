@@ -48,7 +48,7 @@ example :
       | cons entry _ => nomatch entry.1
       | nil => rfl
   rw [hE]
-  simp only [NARG.knowledgeSoundnessExperiment, coinProver, coinVerifier]
+  simp only [NARG.knowledgeSoundnessExperiment_eq, coinProver, coinVerifier]
   simp only [QueryImpl.addLift_def, QueryImpl.liftTarget_self, OptionT.liftM_def,
     OptionT.run_lift, simulateQ_bind, simulateQ_pure, OptionT.run_pure, bind_assoc, pure_bind,
     StateT.run'_bind', StateT.run'_pure']

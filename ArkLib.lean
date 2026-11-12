@@ -808,6 +808,8 @@ public import ArkLib.OracleReduction.ProtocolSpec.SeqCompose
 public import ArkLib.OracleReduction.Salt
 public import ArkLib.OracleReduction.Security.Acceptance
 public import ArkLib.OracleReduction.Security.Accumulation
+public import ArkLib.OracleReduction.Security.Adaptive
+public import ArkLib.OracleReduction.Security.AdaptiveGame
 public import ArkLib.OracleReduction.Security.BadEvents
 public import ArkLib.OracleReduction.Security.Basic
 public import ArkLib.OracleReduction.Security.ChallengePresampling
@@ -829,6 +831,7 @@ public import ArkLib.OracleReduction.Security.Implications
 public import ArkLib.OracleReduction.Security.KnowledgeSoundnessRun
 public import ArkLib.OracleReduction.Security.OracleSampling
 public import ArkLib.OracleReduction.Security.Ordinary
+public import ArkLib.OracleReduction.Security.OrdinaryBridges
 public import ArkLib.OracleReduction.Security.PrivateCoins
 public import ArkLib.OracleReduction.Security.RbrGame
 public import ArkLib.OracleReduction.Security.Resources

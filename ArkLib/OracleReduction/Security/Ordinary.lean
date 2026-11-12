@@ -258,19 +258,41 @@ variable {ι : Type} {publicSpec : OracleSpec ι} {σ Statement Witness NARGStri
 /-- Run the probabilistic prover and verifier with the same public-oracle state and independent
 private draws. Their use of the same sampling interface shares no sampled values. -/
 def soundnessExperiment (V : Verifier publicSpec Statement NARGString)
-    (P : Prover publicSpec Statement NARGString) : ProbComp (Option (Statement × Bool)) := do
+    (P : Prover publicSpec Statement NARGString) : ProbComp (Option (Statement × Bool)) :=
+  AdaptiveGame.run init (impl.addLift (QueryImpl.id' unifSpec)) P
+    (fun a => (V.verify a.1 (Fin.cons a.2 (fun i => i.elim0))).run)
+    (fun a out => out.map (a.1, ·))
+
+/-- Read the NARG soundness experiment as a single optional computation. -/
+theorem soundnessExperiment_eq (V : Verifier publicSpec Statement NARGString)
+    (P : Prover publicSpec Statement NARGString) :
+    soundnessExperiment init impl V P = (do
   (simulateQ (impl.addLift (QueryImpl.id' unifSpec) : QueryImpl _ (StateT σ ProbComp)) (do
     let ⟨x, π⟩ ← P
     let accepted ← V.verify x (Fin.cons π (fun i => i.elim0))
     return (x, accepted) : OptionT (OracleComp (publicSpec + unifSpec))
-      (Statement × Bool))).run' (← init)
+      (Statement × Bool))).run' (← init)) := by
+  unfold soundnessExperiment
+  rw [AdaptiveGame.run_eq_runOption]
+  rfl
 
 /-- Run the prover and verifier, then `E(𝕩, π, tr_P, tr_V)` with private randomness.
 Both parties' private sampling requests are removed from the logs passed to the extractor. -/
 def knowledgeSoundnessExperiment (V : Verifier publicSpec Statement NARGString)
     (E : Extractor publicSpec Statement Witness NARGString)
     (P : Prover publicSpec Statement NARGString) :
-    ProbComp (Statement × Option Witness × Option Bool) := do
+    ProbComp (Statement × Option Witness × Option Bool) :=
+  AdaptiveGame.runWithExtractor init (impl.addLift (QueryImpl.id' unifSpec))
+    privateExtractorImpl P.withQueryLog
+    (fun a => (V.verify a.1.1 (Fin.cons a.1.2 (fun i => i.elim0))).run.withQueryLog)
+    (fun a v => E a.1.1 a.1.2 a.2.publicQueries v.2.publicQueries)
+    (fun a v w => (a.1.1, w, v.1))
+
+/-- Read the knowledge experiment in terms of the two public logs and a standalone extractor. -/
+theorem knowledgeSoundnessExperiment_eq (V : Verifier publicSpec Statement NARGString)
+    (E : Extractor publicSpec Statement Witness NARGString)
+    (P : Prover publicSpec Statement NARGString) :
+    knowledgeSoundnessExperiment init impl V E P = (do
   StateT.run' (do
     let ⟨x, π, logP, accepted, logV⟩ ←
       simulateQ (impl.addLift (QueryImpl.id' unifSpec)) (do
@@ -279,14 +301,23 @@ def knowledgeSoundnessExperiment (V : Verifier publicSpec Statement NARGString)
           (V.verify x (Fin.cons π (fun i => i.elim0))).run.withQueryLog
         return (x, π, logP.publicQueries, accepted, logV.publicQueries))
     let w ← StateT.lift (E x π logP logV).run
-    return (x, w, accepted)) (← init)
+    return (x, w, accepted)) (← init)) := by
+  have hprivate (p : ProbComp (Option Witness)) :
+      simulateQ (privateExtractorImpl (σ := σ)) p = StateT.lift p := by
+    change simulateQ ((QueryImpl.id' unifSpec).liftTarget (StateT σ ProbComp)) p = _
+    rw [simulateQ_liftTarget, simulateQ_id']
+    rfl
+  simp only [knowledgeSoundnessExperiment, AdaptiveGame.runWithExtractor, AdaptiveGame.execute,
+    simulateQ_bind, simulateQ_pure, bind_assoc, pure_bind, hprivate]
 
 /-- Embedding a public-only verifier preserves its soundness experiment exactly. -/
 theorem soundnessExperiment_ofPublic
     (V : NonInteractiveVerifier NARGString publicSpec Statement Bool)
     (P : Prover publicSpec Statement NARGString) :
     soundnessExperiment init impl (Verifier.ofPublic V) P =
-      adaptiveNARGSoundnessExp init impl (QueryImpl.id' unifSpec) V P := rfl
+      adaptiveNARGSoundnessExp init impl (QueryImpl.id' unifSpec) V P := by
+  rw [soundnessExperiment_eq, adaptiveNARGSoundnessExp_eq_option]
+  rfl
 
 /-- Embedding a public-only verifier preserves the knowledge-soundness experiment with a
 standalone extractor, including both public-query logs. -/
@@ -297,7 +328,7 @@ theorem knowledgeSoundnessExperiment_ofPublic
     knowledgeSoundnessExperiment init impl (Verifier.ofPublic V) E P =
       adaptiveNARGKnowledgeSoundnessExp init impl (QueryImpl.id' unifSpec)
         privateExtractorImpl V E P := by
-  unfold knowledgeSoundnessExperiment adaptiveNARGKnowledgeSoundnessExp
+  simp only [knowledgeSoundnessExperiment_eq, adaptiveNARGKnowledgeSoundnessExp_eq]
   simp only [Verifier.ofPublic, _root_.Verifier.liftOracles, OptionT.run_mk]
   have hlog (x : Statement) (π : NARGString) :=
     withQueryLog_liftComp_left_of_query (oSpec := publicSpec) (spec₂ := unifSpec) (fun _ => rfl)
@@ -346,14 +377,12 @@ variable {ι State NARGString : ℕ → ℕ → Type} {Statement Witness : Type}
 security parameter and instance-size bound. The error also depends on the public-query budget. -/
 def adaptiveSoundness (language : Set Statement) (size : Statement → ℕ)
     (error : ℕ → ℕ → ℕ → ENNReal) : Prop :=
-  ∀ securityParam instanceBound t
-      (P : Prover (publicSpec securityParam instanceBound) Statement
-        (NARGString securityParam instanceBound)),
-    P.IsQueryBoundP (publicQuerySelector fun _ => True) t →
-    Pr{let out ← (soundnessExperiment (init securityParam instanceBound)
-      (impl securityParam instanceBound) (V securityParam instanceBound) P)}[
-        soundnessFailureEventSizeBounded size instanceBound language out] ≤
-      error securityParam instanceBound t
+  ∀ securityParam instanceBound t, AdaptiveGame.Bounded
+    (fun P => P.IsQueryBoundP (publicQuerySelector (fun _ => True)) t)
+    (soundnessExperiment (init securityParam instanceBound)
+      (impl securityParam instanceBound) (V securityParam instanceBound))
+    (soundnessFailureEventSizeBounded size instanceBound language)
+    (error securityParam instanceBound t)
 
 /-- The adaptive NARG bound for a supplied extractor family, for all public parameters,
 query budgets, and adversaries. The family may use the security parameter and instance-size
@@ -364,15 +393,13 @@ def adaptiveKnowledgeSoundnessWithExtractor
       Extractor (publicSpec securityParam instanceBound) Statement Witness
         (NARGString securityParam instanceBound))
     (error : ℕ → ℕ → ℕ → ENNReal) : Prop :=
-  ∀ securityParam instanceBound t
-      (P : Prover (publicSpec securityParam instanceBound) Statement
-        (NARGString securityParam instanceBound)),
-    P.IsQueryBoundP (publicQuerySelector fun _ => True) t →
-    Pr{let out ← (knowledgeSoundnessExperiment (init securityParam instanceBound)
+  ∀ securityParam instanceBound t, AdaptiveGame.Bounded
+    (fun P => P.IsQueryBoundP (publicQuerySelector fun _ => True) t)
+    (knowledgeSoundnessExperiment (init securityParam instanceBound)
       (impl securityParam instanceBound) (V securityParam instanceBound)
-      (E securityParam instanceBound) P)}[
-        knowledgeSoundnessFailureEventSizeBounded size instanceBound relation out] ≤
-      error securityParam instanceBound t
+      (E securityParam instanceBound))
+    (knowledgeSoundnessFailureEventSizeBounded size instanceBound relation)
+    (error securityParam instanceBound t)
 
 /-- **[snarg-book, Section 9.1]** One extractor family satisfies
 `adaptiveKnowledgeSoundnessWithExtractor`. With no resource bound on the extractor,

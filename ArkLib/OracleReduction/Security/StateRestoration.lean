@@ -107,17 +107,47 @@ namespace Verifier
 
 namespace StateRestoration
 
+/-- Run the prover, reconstruct its selected transcript, and evaluate the verifier. The
+initial oracle table is drawn from `init`. The prover uses `privateImpl` for private samples. -/
+def soundnessExperiment {κ : Type} {privateSpec : OracleSpec κ}
+    (privateImpl : QueryImpl privateSpec ProbComp)
+    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
+    (srProver : Prover.StateRestoration.Soundness oSpec privateSpec StmtIn pSpec (Salt := Salt)) :
+    ProbComp (StmtIn × Option StmtOut) :=
+  AdaptiveGame.run init
+    ((impl + srChallengeQueryImpl' (Statement := StmtIn × Salt) (pSpec := pSpec)).addLift
+      privateImpl) srProver
+    (fun ((x, salt), messages) => do
+      let transcript ← liftComp (messages.deriveTranscriptSR (oSpec := oSpec) (x, salt)) _
+      liftComp (verifier.run x transcript) _)
+    (fun result stmtOut => (result.1.1, stmtOut))
+
+/-- False acceptance requires a false input statement and an accepted verifier output. -/
+def soundnessFailureEvent (langIn : Set StmtIn) (langOut : Set StmtOut) :
+    StmtIn × Option StmtOut → Prop
+  | (stmtIn, some stmtOut) => stmtOut ∈ langOut ∧ stmtIn ∉ langIn
+  | _ => False
+
 /-- The SR false-acceptance probability for a fixed prover:
-`Pr[𝕩 ∉ langIn ∧ y ≠ ⊥ ∧ y ∈ langOut]`.
-Run the prover, reconstruct its selected transcript `T`, and evaluate `y ← verifier(𝕩, T)`.
-The verifier uses `oSpec`; the prover additionally uses the verifier-message oracles and
-`privateSpec`, whose sampler is `privateImpl`. The initial oracle table is drawn from `init`. -/
+`Pr[𝕩 ∉ langIn ∧ y ≠ ⊥ ∧ y ∈ langOut]`. -/
 def soundnessFailureProb {κ : Type} {privateSpec : OracleSpec κ}
     (privateImpl : QueryImpl privateSpec ProbComp)
     (langIn : Set StmtIn) (langOut : Set StmtOut)
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (srProver : Prover.StateRestoration.Soundness oSpec privateSpec StmtIn pSpec (Salt := Salt)) :
-      ENNReal :=
+    ENNReal :=
+  Pr{let result ← soundnessExperiment init impl privateImpl verifier srProver}[
+    soundnessFailureEvent langIn langOut result]
+
+omit [DecidableEq StmtIn] [∀ i, DecidableEq (pSpec.Message i)]
+    [∀ i, DecidableEq (pSpec.Challenge i)] in
+/-- The shared adaptive soundness experiment runs the original SR game and verifier. -/
+theorem soundnessFailureProb_eq {κ : Type} {privateSpec : OracleSpec κ}
+    (privateImpl : QueryImpl privateSpec ProbComp)
+    (langIn : Set StmtIn) (langOut : Set StmtOut)
+    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
+    (srProver : Prover.StateRestoration.Soundness oSpec privateSpec StmtIn pSpec (Salt := Salt)) :
+      soundnessFailureProb init impl privateImpl langIn langOut verifier srProver =
   let experiment : ProbComp (StmtIn × Option StmtOut) := do
     StateT.run' (simulateQ
       (QueryImpl.addLift
@@ -129,7 +159,23 @@ def soundnessFailureProb {κ : Type} {privateSpec : OracleSpec κ}
   Pr{let result ← experiment}[
     match result with
     | ⟨stmtIn, some stmtOut⟩ => stmtOut ∈ langOut ∧ stmtIn ∉ langIn
-    | _ => False]
+    | _ => False] := by
+  simp only [soundnessFailureProb, soundnessExperiment, AdaptiveGame.run, srSoundnessGame,
+    bind_assoc, pure_bind]
+  rfl
+
+omit [∀ i, SampleableType (pSpec.Challenge i)] [DecidableEq StmtIn]
+    [∀ i, DecidableEq (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Challenge i)] in
+/-- Reconstruct the transcript, then log the verifier's ambient queries. Reconstruction
+uses the same challenge table as the prover and takes place outside the log. -/
+def reconstructAndVerifyWithLog {κ : Type} {privateSpec : OracleSpec κ}
+    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
+    (input : StmtIn × Salt) (messages : pSpec.Messages) :
+    OracleComp ((oSpec + srChallengeOracle (StmtIn × Salt) pSpec) + privateSpec)
+      (pSpec.FullTranscript × Option StmtOut × QueryLog oSpec) := do
+  let transcript ← liftComp (messages.deriveTranscriptSR (oSpec := oSpec) input) _
+  let (stmtOut, logV) ← liftComp (verifier.run input.1 transcript).run.withQueryLog _
+  return (transcript, stmtOut, logV)
 
 omit [∀ i, SampleableType (pSpec.Challenge i)] [DecidableEq StmtIn]
     [∀ i, DecidableEq (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Challenge i)] in
@@ -153,12 +199,28 @@ def knowledgeSoundnessProverVerifierExp {κ : Type} {privateSpec : OracleSpec κ
     liftComp (simulateQ loggingOracle (verifier.run stmtIn transcript).run).run _
   return ((stmtIn, salt), witOut, transcript, tr, stmtOut, tr_V)
 
+/-- After the prover and verifier run, compute `w_in ← E(𝕩, τ, w_out, T, tr_P, tr_V)`.
+The prover samples through `privateSpec` with handler `privateImpl`, and the extractor samples
+through `unifSpec`. The extractor's public handler exposes only the ambient oracles. -/
+def knowledgeSoundnessExperiment {κ : Type} {privateSpec : OracleSpec κ}
+    (privateImpl : QueryImpl privateSpec ProbComp)
+    (srExtractor : Extractor.StateRestoration oSpec StmtIn WitIn WitOut pSpec (Salt := Salt))
+    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
+    (srProver : Prover.StateRestoration.KnowledgeSoundness
+      oSpec privateSpec StmtIn WitOut pSpec (Salt := Salt)) :
+    ProbComp (StmtIn × Option WitIn × Option StmtOut × WitOut) :=
+  AdaptiveGame.runWithExtractor init
+    ((impl + srChallengeQueryImpl' (Statement := StmtIn × Salt) (pSpec := pSpec)).addLift
+      privateImpl)
+    (impl.addLift (QueryImpl.id' unifSpec))
+    srProver.withQueryLog
+    (fun ((input, messages, _), _) => reconstructAndVerifyWithLog verifier input messages)
+    (fun (((x, salt), _, witOut), logP) (transcript, _, logV) =>
+      srExtractor x salt witOut transcript logP.publicQueries logV)
+    (fun ((input, _, witOut), _) (_, stmtOut, _) witIn => (input.1, witIn, stmtOut, witOut))
+
 /-- The SR extraction-failure probability for a fixed prover and extractor:
-`Pr[y ≠ ⊥ ∧ (y, w_out) ∈ relOut ∧ (w_in = ⊥ ∨ (𝕩, w_in) ∉ relIn)]`.
-After the prover and verifier run, compute `w_in ← E(𝕩, τ, w_out, T, tr_P, tr_V)`.
-The prover samples through `privateSpec` with handler `privateImpl`; the extractor samples
-through `unifSpec`. Both may query `oSpec`, but only the prover and transcript reconstruction
-directly query the verifier-message oracles. -/
+`Pr[y ≠ ⊥ ∧ (y, w_out) ∈ relOut ∧ (w_in = ⊥ ∨ (𝕩, w_in) ∉ relIn)]`. -/
 def knowledgeSoundnessFailureProb {κ : Type} {privateSpec : OracleSpec κ}
     (privateImpl : QueryImpl privateSpec ProbComp)
     (srExtractor : Extractor.StateRestoration oSpec StmtIn WitIn WitOut pSpec (Salt := Salt))
@@ -166,6 +228,21 @@ def knowledgeSoundnessFailureProb {κ : Type} {privateSpec : OracleSpec κ}
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (srProver : Prover.StateRestoration.KnowledgeSoundness
       oSpec privateSpec StmtIn WitOut pSpec (Salt := Salt)) : ENNReal :=
+  Pr{let result ← knowledgeSoundnessExperiment init impl privateImpl srExtractor verifier srProver}[
+    relationKSFailEvent relIn relOut result]
+
+omit [DecidableEq StmtIn] [∀ i, DecidableEq (pSpec.Message i)]
+    [∀ i, DecidableEq (pSpec.Challenge i)] in
+/-- The shared adaptive extraction experiment exposes the original SR verifier and logs. -/
+theorem knowledgeSoundnessFailureProb_eq {κ : Type} {privateSpec : OracleSpec κ}
+    (privateImpl : QueryImpl privateSpec ProbComp)
+    (srExtractor : Extractor.StateRestoration oSpec StmtIn WitIn WitOut pSpec (Salt := Salt))
+    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
+    (srProver : Prover.StateRestoration.KnowledgeSoundness
+      oSpec privateSpec StmtIn WitOut pSpec (Salt := Salt)) :
+    knowledgeSoundnessFailureProb init impl privateImpl srExtractor relIn relOut verifier
+      srProver =
   let experiment : ProbComp (StmtIn × Option WitIn × Option StmtOut × WitOut) := do
     StateT.run' (do
       let ⟨(x, salt), witOut, transcript, tr, stmtOut, trV⟩ ←
@@ -176,7 +253,12 @@ def knowledgeSoundnessFailureProb {κ : Type} {privateSpec : OracleSpec κ}
       let witIn ← simulateQ (impl.addLift (QueryImpl.id' unifSpec))
         (srExtractor x salt witOut transcript tr trV).run
       pure (x, witIn, stmtOut, witOut)) (← init)
-  Pr{let result ← experiment}[relationKSFailEvent relIn relOut result]
+  Pr{let result ← experiment}[relationKSFailEvent relIn relOut result] := by
+  simp only [knowledgeSoundnessFailureProb, knowledgeSoundnessExperiment,
+    AdaptiveGame.runWithExtractor, AdaptiveGame.execute,
+    reconstructAndVerifyWithLog, knowledgeSoundnessProverVerifierExp, withQueryLog,
+    simulateQ_bind, simulateQ_pure, bind_assoc, pure_bind]
+  rfl
 
 /-- Select SR moves: `isSrChallengeMove (.inr (i, q)) = True`, while ambient queries
 `.inl q` give `False`. The security predicates use `publicQuerySelector` to exclude
@@ -218,10 +300,10 @@ def soundnessQueryBounded
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (queryBoundSelector : (oSpec + srChallengeOracle (StmtIn × Salt) pSpec).Domain → Prop)
     [DecidablePred queryBoundSelector] (t : ℕ) (error : ENNReal) : Prop :=
-  ∀ P : Prover.StateRestoration.Soundness oSpec unifSpec StmtIn pSpec (Salt := Salt),
-    P.IsQueryBoundP (publicQuerySelector queryBoundSelector) t →
-      soundnessFailureProb (Salt := Salt) init impl (QueryImpl.id' unifSpec) langIn langOut
-        verifier P ≤ error
+  AdaptiveGame.Bounded
+    (fun P => P.IsQueryBoundP (publicQuerySelector queryBoundSelector) t)
+    (soundnessExperiment (Salt := Salt) init impl (QueryImpl.id' unifSpec) verifier)
+    (soundnessFailureEvent langIn langOut) error
 
 /-- For the fixed extractor `E`, every SR prover satisfies
 `Pr[valid verifier output ∧ extraction failure] ≤ error`, with no query bound.
@@ -261,12 +343,11 @@ def knowledgeSoundnessQueryBoundedWithExtractor
     (extractor : Extractor.StateRestoration oSpec StmtIn WitIn WitOut pSpec (Salt := Salt))
     (queryBoundSelector : (oSpec + srChallengeOracle (StmtIn × Salt) pSpec).Domain → Prop)
     [DecidablePred queryBoundSelector] (t : ℕ) (error : ENNReal) : Prop :=
-  ∀ P : Prover.StateRestoration.KnowledgeSoundness
-    oSpec unifSpec StmtIn WitOut pSpec (Salt := Salt),
-    P.IsQueryBoundP (publicQuerySelector queryBoundSelector) t →
-      knowledgeSoundnessFailureProb (Salt := Salt) init impl (QueryImpl.id' unifSpec) extractor
-      relIn relOut verifier P
-        ≤ error
+  AdaptiveGame.Bounded
+    (fun P => P.IsQueryBoundP (publicQuerySelector queryBoundSelector) t)
+    (knowledgeSoundnessExperiment (Salt := Salt) init impl (QueryImpl.id' unifSpec)
+      extractor verifier)
+    (relationKSFailEvent relIn relOut) error
 
 /-- One non-rewinding extractor for all query budgets:
 `∃ E, ∀ t, ∀ P with ≤ t selected queries, Pr[valid output ∧ extraction failure] ≤ error t`.

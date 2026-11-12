@@ -139,25 +139,8 @@ theorem adaptiveNARGSoundnessExp_eq
         let ⟨x, π⟩ ← simulateQ (impl.addLift privateImpl : QueryImpl _ (StateT σ ProbComp)) P
         let output ← simulateQ impl (verifier.verify x (Fin.cons π (fun i => i.elim0))).run
         return output.map (x, ·)).run' (← init)) := by
-  unfold adaptiveNARGSoundnessExp
-  change (do (simulateQ (impl.addLift privateImpl : QueryImpl _ (StateT σ ProbComp))
-    (do
-      let ⟨x, π⟩ ← P
-      let output ← OptionT.mk (liftComp
-        (verifier.verify x (Fin.cons π (fun i => i.elim0))).run (oSpec + privateSpec))
-      return (x, output) : OptionT (OracleComp (oSpec + privateSpec))
-        (StmtIn × StmtOut)).run).run' (← init)) = _
-  simp only [QueryImpl.addLift_def, QueryImpl.liftTarget_self, OptionT.liftM_def,
-    OptionT.run_bind, Option.elimM, OptionT.run_lift, OptionT.run_mk, OptionT.run_pure,
-    bind_assoc, pure_bind, Option.elim_some, simulateQ_bind,
-    QueryImpl.simulateQ_add_liftComp_left, StateT.run'_bind', StateT.run'_pure']
-  apply bind_congr
-  intro state
-  apply bind_congr
-  intro proverResult
-  apply bind_congr
-  intro verifierResult
-  cases verifierResult.1 <;> simp
+  simp only [adaptiveNARGSoundnessExp, AdaptiveGame.run, simulateQ_bind, simulateQ_pure,
+    QueryImpl.addLift_def, QueryImpl.liftTarget_self, QueryImpl.simulateQ_add_liftComp_left]
 
 /-- A standalone extractor can run after the public-oracle state is discarded. -/
 theorem adaptiveNARGKnowledgeSoundnessExp_liftTarget
@@ -179,7 +162,7 @@ theorem adaptiveNARGKnowledgeSoundnessExp_liftTarget
           return (x, π, tr, stmtOut, trV))).run' (← init)
       let witIn ← simulateQ extractorImpl (extractor x π tr.publicQueries trV).run
       return (x, witIn, stmtOut)) := by
-  simp only [adaptiveNARGKnowledgeSoundnessExp, simulateQ_liftTarget,
+  simp only [adaptiveNARGKnowledgeSoundnessExp_eq, simulateQ_liftTarget,
     StateT.run'_bind', StateT.run'_pure']
   simp [StateT.run'_eq, bind_map_left, map_bind]
 
@@ -298,7 +281,7 @@ theorem soundnessFailureProb_normalizePrivateCoins (langIn : Set StmtIn) (langOu
     soundnessFailureProb (Salt := Salt) init impl (QueryImpl.id' unifSpec) langIn langOut V
       (normalizePrivateCoins sampler P) =
     soundnessFailureProb (Salt := Salt) init impl sampler langIn langOut V P := by
-  unfold soundnessFailureProb srSoundnessGame
+  simp only [soundnessFailureProb_eq, srSoundnessGame]
   simp only [simulateQ_bind, simulateQ_pure, bind_assoc, pure_bind]
   simp only [simulateQ_normalizePrivateCoins]
   simp only [QueryImpl.addLift_def, QueryImpl.liftTarget_self, simulateQ_add_liftComp_sum_left,
@@ -314,7 +297,7 @@ theorem knowledgeSoundnessFailureProb_normalizePrivateCoins
     knowledgeSoundnessFailureProb (Salt := Salt) init impl (QueryImpl.id' unifSpec) E relIn relOut V
       (normalizePrivateCoins sampler P) =
     knowledgeSoundnessFailureProb (Salt := Salt) init impl sampler E relIn relOut V P := by
-  unfold knowledgeSoundnessFailureProb
+  simp only [knowledgeSoundnessFailureProb_eq]
   rw [knowledgeSoundnessProverVerifierExp_eq_publicLog (Salt := Salt),
     knowledgeSoundnessProverVerifierExp_eq_publicLog (Salt := Salt)]
   rw [publicQueries_withQueryLog_normalizePrivateCoins]
@@ -391,7 +374,7 @@ theorem soundnessFailureProb_mergePrivateCoins
         (StateT (QueryImpl (srChallengeOracle (StmtIn × Salt) pSpec) Id) ProbComp)) + challenge)
       (impl + challenge) (fun _ => rfl) x messages
   have hmerge := simulateQ_mergeRight impl challenge ((QueryImpl.id' unifSpec).liftTarget _) P
-  unfold soundnessFailureProb srSoundnessGame
+  simp only [soundnessFailureProb_eq, srSoundnessGame]
   simp only [simulateQ_bind, simulateQ_pure, bind_assoc, pure_bind,
     QueryImpl.addLift_def, QueryImpl.liftTarget_self,
     simulateQ_add_liftComp_sum_left, simulateQ_add_add_liftComp_left]
@@ -415,6 +398,7 @@ theorem soundnessQueryBounded_addPrivateCoins
     soundnessQueryBounded (Salt := Salt) init (impl.addLift (QueryImpl.id' unifSpec)) langIn langOut
       (V.liftOracles (targetSpec := oSpec + unifSpec)) (isSrChallengeMove (Salt := Salt)) t ε := by
   intro P hP
+  change soundnessFailureProb init _ _ langIn langOut _ P ≤ ε
   rw [soundnessFailureProb_mergePrivateCoins (Salt := Salt)]
   apply hSR P.mergeRight
   apply hP.simulateQ_of_step <;> intro q hq <;>
@@ -458,7 +442,7 @@ theorem knowledgeSoundnessFailureProb_mergePrivateCoins
           pure (z.1, QueryLog.inl z.2) :=
     withQueryLog_liftComp_left_of_query (oSpec := oSpec) (spec₂ := unifSpec) (fun _ => rfl)
       (V.run x tr).run
-  unfold knowledgeSoundnessFailureProb
+  simp only [knowledgeSoundnessFailureProb_eq]
   rw [knowledgeSoundnessProverVerifierExp_eq_publicLog (Salt := Salt) V,
     fst_withQueryLog_mergeRight]
   unfold knowledgeSoundnessProverVerifierExp
@@ -488,6 +472,7 @@ theorem knowledgeSoundnessQueryBoundedWithExtractor_addPrivateCoins
       relIn relOut (V.liftOracles (targetSpec := oSpec + unifSpec))
       (addPrivateCoinsExtractor (Salt := Salt) E) (isSrChallengeMove (Salt := Salt)) t ε := by
   intro P hP
+  change knowledgeSoundnessFailureProb init _ _ _ relIn relOut _ P ≤ ε
   rw [knowledgeSoundnessFailureProb_mergePrivateCoins (Salt := Salt)]
   apply hSR P.mergeRight
   apply hP.simulateQ_of_step <;> intro q hq <;>
