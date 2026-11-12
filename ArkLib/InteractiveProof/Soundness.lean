@@ -154,7 +154,11 @@ def adaptiveKnowledgeSoundnessQueryBoundedWithExtractor
   V.adaptiveKnowledgeSoundnessWithExtractor init impl privateImpl extractorImpl
     relIn relOut extract (fun P => P.IsQueryBound (publicQuerySelector counts) t) error
 
-/-- One extractor for all query budgets, chosen before the budget and adversary. -/
+/-- One extractor for all query budgets, chosen before the budget and adversary.
+The query bound constrains the adversary, not the extractor; no computability or efficiency
+requirement is imposed on extraction. Classical witness selection can therefore recover an
+input witness whenever one exists. See `Verifier.knowledgeSoundness_iff_relationSoundness`
+for the analogous collapse to relation soundness in the ordinary interactive game. -/
 def adaptiveKnowledgeSoundnessQueryBounded
     (extractorImpl : QueryImpl extractorSpec (StateT σ ProbComp))
     (relIn : Set (Stmt × Wit)) (relOut : Set (Out × WitOut))
