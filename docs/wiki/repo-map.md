@@ -79,6 +79,9 @@ home_page/            site assets and assembled website root
   Core transcript operations live in `ProtocolSpec/Basic.lean`. Message and challenge prefix
   lemmas live in `ProtocolSpec/PrefixLemmas.lean`;
   round and optional-run factorization lemmas live in `Execution.lean`.
+  `Security/Ordinary.lean` contains the ordinary public-coin IP and NARG security definitions
+  and the equivalences connecting ordinary NARG soundness and knowledge soundness to the generic
+  adaptive predicates, including the statement-size restriction lemmas.
 - `ArkLib/Relation/Basic.lean` is the neutral owner of claims, witness relations with an
   admissibility boundary, and oracle data families; it depends on no protocol tree. Likewise
   `ProofSystem/Sumcheck/Spec/PolynomialInterface.lean` owns the sum-check polynomial's
