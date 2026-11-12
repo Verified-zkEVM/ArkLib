@@ -95,8 +95,10 @@ entry says so, the specification is not claimed to be executable.
   `Binius.FRIBinius.RingSwitch.fullReduction_perfectCompleteness_and_knowledgeSoundness` proves
   perfect completeness on exact encodings and ordinary knowledge soundness, obtained from
   round-by-round knowledge soundness through the proved guarded bridge
-  `Verifier.GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundness`. The fused FRI-Binius
-  protocol is not yet formalized. The
+  `Verifier.GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundness`. The unrolled protocol of
+  DP24 Construction 5.1, in which the Binary Basefold sum-check is the ring-switching sum-check,
+  is `Binius.FRIBinius.Unrolled.fullReduction_perfectCompleteness_and_knowledgeSoundness`, with
+  error bound DP24 equation (43). The
   [consumer guide](docs/wiki/ring-switching-consumers.md) records the interfaces.
 - **Spartan** ([`ProofSystem/Spartan/`](ArkLib/ProofSystem/Spartan/)): a seven-stage oracle
   reduction for R1CS. `Spartan.perfectCompleteness`; `Spartan.knowledgeSoundness`, with error

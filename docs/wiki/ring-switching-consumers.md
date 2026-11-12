@@ -121,6 +121,13 @@ perfect completeness on exact encodings (the strict view of the input interface)
 `Binius.FRIBinius.RingSwitch.fullVerifier_knowledgeSoundness` on the relaxed compatibility
 relation. The knowledge error is `κ/|L| + ℓ' * (2/|L|)` plus the concrete Binary Basefold knowledge error
 `BinaryBasefold.FullBinaryBasefold.concreteBinaryBasefoldKnowledgeError L ℓ' R γ`.
+A backend whose own sum-check accepts a product claim can instead take the head's output
+directly. The [unrolled Binius protocol][unrolled] composes `TensorPrefix.headVerifier` with a
+zero-message frontier and full Binary Basefold at `TensorPrefix.multiplier`, so the ring-switching
+product sum-check is the Binary Basefold loop. It is stated for the same input relation as the
+separate-sum-check composition; its bound
+`Binius.FRIBinius.Unrolled.concreteError` is lower by one sum-check term
+(`Binius.FRIBinius.Unrolled.concreteError_add_eq`).
 For the generic packing ring switch,
 `RingSwitching.Packing.RingSwitch.perfectCompleteness_and_knowledgeSoundness` gives ordinary
 knowledge error `bat.error + m * (2/|C|)` through
@@ -171,6 +178,7 @@ The owning trackers record progress; this guide does not duplicate PR status or 
 [coordinate]: ../../ArkLibTest/ProofSystem/RingSwitching/Packing/RingSwitch/CoordinateSample.lean
 [zero]: ../../ArkLibTest/ProofSystem/RingSwitching/Packing/RingSwitch/ZeroVariables.lean
 [binius]: ../../ArkLib/ProofSystem/Binius/FRIBinius/RingSwitch.lean
+[unrolled]: ../../ArkLib/ProofSystem/Binius/FRIBinius/Unrolled/General.lean
 [composite]: ../../ArkLibTest/ProofSystem/RingSwitching/Conformance/BiniusComposition.lean
 [hachi]: ../../ArkLib/Commitments/Functional/Hachi/TraceHead/Conformance.lean
 
