@@ -37,6 +37,38 @@ def sampleUniform (α : Type) [SampleableType α] {m : Type → Type} [Monad m]
 
 namespace QueryImpl
 
+universe u v w
+
+/-- With `open scoped QueryImpl`, append handlers by lifting the right handler to the left
+handler's monad. The existing same-monad instance takes precedence. -/
+scoped instance (priority := low) instHAddLiftRight
+    {ι κ : Type*} {a : OracleSpec.{_, u} ι} {b : OracleSpec.{_, u} κ}
+    {m : Type u → Type v} {n : Type u → Type w} [MonadLiftT n m] :
+    HAdd (QueryImpl a m) (QueryImpl b n) (QueryImpl (a + b) m) where
+  hAdd left right := left + right.liftTarget m
+
+/-- Otherwise, append handlers by lifting the left handler to the right handler's monad.
+If lifts exist in both directions, `instHAddLiftRight` takes precedence. -/
+scoped instance (priority := low - 1) instHAddLiftLeft
+    {ι κ : Type*} {a : OracleSpec.{_, u} ι} {b : OracleSpec.{_, u} κ}
+    {m : Type u → Type v} {n : Type u → Type w} [MonadLiftT m n] :
+    HAdd (QueryImpl a m) (QueryImpl b n) (QueryImpl (a + b) n) where
+  hAdd left right := left.liftTarget n + right
+
+/-- Normalize automatic lifting on the right to the existing same-monad sum. -/
+@[simp] theorem add_lift_right
+    {ι κ : Type*} {a : OracleSpec.{_, u} ι} {b : OracleSpec.{_, u} κ}
+    {m : Type u → Type v} {n : Type u → Type w} [MonadLiftT n m]
+    (left : QueryImpl a m) (right : QueryImpl b n) :
+    left + right = left + right.liftTarget m := rfl
+
+/-- Normalize automatic lifting on the left to the existing same-monad sum. -/
+@[simp] theorem add_lift_left
+    {ι κ : Type*} {a : OracleSpec.{_, u} ι} {b : OracleSpec.{_, u} κ}
+    {m : Type u → Type v} {n : Type u → Type w} [MonadLiftT m n]
+    (left : QueryImpl a m) (right : QueryImpl b n) :
+    left + right = left.liftTarget n + right := rfl
+
 /-- Exchange two oracle slots without changing their queries or answers. -/
 def swapOracles {ι κ : Type} {a : OracleSpec ι} {b : OracleSpec κ} :
     QueryImpl (a + b) (OracleComp (b + a))

@@ -11,22 +11,41 @@ import VCVio.OracleComp.RunIO
 -/
 
 open OracleComp OracleSpec
+open scoped QueryImpl
 
 namespace PrivateCoinsTest
 -- Nested lifts normalize without protocol-specific lemmas, preserving the stateful handler.
 example {ι κ ν α σ : Type} {a : OracleSpec ι} {b : OracleSpec κ} {c : OracleSpec ν}
     (ha : QueryImpl a (StateT σ ProbComp)) (hb : QueryImpl b ProbComp)
     (hc : QueryImpl c ProbComp) (p : OracleComp a α) :
-    simulateQ ((ha.addLift hb : QueryImpl _ (StateT σ ProbComp)).addLift hc :
-      QueryImpl _ (StateT σ ProbComp)) (liftComp p ((a + b) + c)) = simulateQ ha p := by
-  simp only [QueryImpl.addLift_def, QueryImpl.liftTarget_self, simulateQ_add_add_liftComp_left]
+    simulateQ (ha + hb + hc) (liftComp p ((a + b) + c)) = simulateQ ha p := by
+  simp only [QueryImpl.add_lift_right, simulateQ_add_add_liftComp_left]
 
 example {ι κ ν α σ : Type} {a : OracleSpec ι} {b : OracleSpec κ} {c : OracleSpec ν}
     (hab : QueryImpl (a + b) (StateT σ ProbComp)) (hc : QueryImpl c ProbComp)
     (p : OracleComp (a + b) α) :
-    simulateQ (hab.addLift hc : QueryImpl _ (StateT σ ProbComp))
+    simulateQ (hab + hc)
       (liftComp p ((a + b) + c)) = simulateQ hab p := by
-  simp only [QueryImpl.addLift_def, QueryImpl.liftTarget_self, simulateQ_add_liftComp_sum_left]
+  simp only [QueryImpl.add_lift_right, simulateQ_add_liftComp_sum_left]
+
+-- Infer the target from the right handler, even through a nested monad transformer.
+example {ι κ σ : Type} {a : OracleSpec ι} {b : OracleSpec κ}
+    (ha : QueryImpl a ProbComp) (hb : QueryImpl b (OptionT (StateT σ ProbComp)))
+    (q : b.Domain) : (ha + hb) (.inr q) = hb q := rfl
+
+-- Infer successive target lifts without annotations: ProbComp → StateT → OptionT.
+example {ι κ ν α σ : Type} {a : OracleSpec ι} {b : OracleSpec κ} {c : OracleSpec ν}
+    (ha : QueryImpl a ProbComp) (hb : QueryImpl b (StateT σ ProbComp))
+    (hc : QueryImpl c (OptionT (StateT σ ProbComp))) (p : OracleComp c α) :
+    simulateQ (ha + hb + hc) (liftComp p ((a + b) + c)) = simulateQ hc p := by
+  simp only [QueryImpl.add_lift_left, QueryImpl.simulateQ_add_liftComp_right]
+
+-- When both lift directions exist, target inference deterministically chooses the left monad.
+example {ι κ : Type} {a : OracleSpec ι} {b : OracleSpec κ}
+    {m n : Type → Type} [MonadLiftT m n] [MonadLiftT n m]
+    (ha : QueryImpl a m) (hb : QueryImpl b n) : QueryImpl (a + b) m :=
+  let combined := ha + hb
+  combined
 
 -- Identical slot types must not make the normalizer identify distinct handlers.
 example {ι α : Type} {spec : OracleSpec ι}

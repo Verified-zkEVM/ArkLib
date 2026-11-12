@@ -95,7 +95,11 @@ home_page/            site assets and assembled website root
   across private-sampling adapters.
 - `ArkLib/Security/` contains only shared security machinery: `Game.lean` initializes
   and executes a shared oracle, and `PrivateCoins.lean` separates private samples from
-  public-query budgets and logs.
+  public-query budgets and logs. With `open scoped QueryImpl`, `left + right` also combines
+  handlers in different monads when one lifts into the other. Same-monad sums keep their existing
+  meaning; otherwise the left monad is preferred, then the right. Use `addLift` with an explicit
+  target when both handlers need lifting into a third monad. The lemmas `QueryImpl.add_lift_right`
+  and `QueryImpl.add_lift_left` normalize the inferred lifts for existing sum lemmas.
   These modules import neither interaction layer. The `NARG.lean` and `ZeroKnowledge.lean` tests
   in `ArkLibTest/NonInteractiveArgument/` exercise this boundary; `Legacy.lean` tests its adapters.
   Shared private-coin tests live in `ArkLibTest/Security/PrivateCoins.lean`, and interactive-proof

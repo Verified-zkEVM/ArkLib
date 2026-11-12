@@ -14,7 +14,7 @@ can select an accepting statement with certainty.
 -/
 
 open OracleComp OracleSpec ProtocolSpec
-open scoped NNReal ProbabilityTheory
+open scoped NNReal ProbabilityTheory QueryImpl
 
 namespace AdaptiveSoundnessTest
 
@@ -52,7 +52,8 @@ def adaptiveBadEvent (out : Option (Bool × Bool)) : Prop :=
   nargSoundFailEvent (∅ : Set Bool) {true} out
 
 def adaptiveExperiment : ProbComp (Option (Bool × Bool)) :=
-  bitVerifier.adaptiveSoundnessExp bitInit bitImpl adaptiveBitProver
+  bitVerifier.adaptiveSoundnessExp (WitOut := Bool) bitInit bitImpl
+    (QueryImpl.id' unifSpec) adaptiveBitProver
 
 abbrev oneMessage : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[Bool]⟩
 
@@ -72,15 +73,12 @@ run_cmd do
 theorem nonadaptive_bound :
     bitVerifier.soundness bitInit bitImpl (∅ : Set Bool) {true} (1 / 2) := by
   intro WitIn WitOut witIn prover x _hx
-  let pImpl : QueryImpl _ (StateT Bool ProbComp) :=
-    bitImpl.addLift (challengeQueryImpl (pSpec := (!p[] : ProtocolSpec 0)))
-  have hInv : ∀ b : Bool, QueryImpl.PreservesInv
-      (bitImpl + QueryImpl.liftTarget (StateT Bool ProbComp)
-        (challengeQueryImpl (pSpec := (!p[] : ProtocolSpec 0)))) (· = b) := by
+  let pImpl := bitImpl + challengeQueryImpl (pSpec := (!p[] : ProtocolSpec 0))
+  have hInv : ∀ b : Bool, QueryImpl.PreservesInv pImpl (· = b) := by
     intro b q
     rcases q with _ | ⟨i, _⟩
     · intro σ₀ hσ z hz
-      simp_all [bitImpl]
+      simp_all [pImpl, bitImpl]
     · exact i.1.elim0
   have key : ∀ {T : Type} (Y : Bool → ProbComp (T × Bool)),
       (∀ a, ∀ p ∈ support (Y a), p.2 = a) →
@@ -130,10 +128,10 @@ theorem nonadaptive_bound :
 theorem adaptive_attack :
     Pr{let out ← adaptiveExperiment}[adaptiveBadEvent out] = 1 := by
   simp [adaptiveExperiment, adaptiveBadEvent, Verifier.adaptiveSoundnessExp,
-    AdaptiveGame.run, AdaptiveProver.run,
+    AdaptiveGame.run, AdaptiveProver.run, liftCompLeft,
     bitInit, bitImpl, bitVerifier, adaptiveBitProver, coin, Prover.id, Prover.run,
-    Verifier.run, OptionT.run_map, OptionT.run_lift, QueryImpl.addLift_def,
-    liftComp_eq_liftM, QueryImpl.simulateQ_add_liftM_left, nargSoundFailEvent]
+    Verifier.run, OptionT.run_map, OptionT.run_lift, liftComp_eq_liftM,
+    QueryImpl.simulateQ_add_liftM_left, nargSoundFailEvent]
 
 private theorem twoQueryAdversary_bound_iff (budget : ℕ) :
     twoQueryAdversary.IsQueryBound (fun _ => True) budget ↔ 2 ≤ budget := by
@@ -157,15 +155,49 @@ example : twoQueryAdversary.IsQueryBound (fun _ => True) 2 := by
 example : ¬ twoQueryAdversary.IsQueryBound (fun _ => True) 1 := by
   simp [twoQueryAdversary_bound_iff]
 
+-- Both slots use the same spec. The verifier reads the changed public state and the
+-- extractor sees only public queries.
+private abbrev mixedSpec := coinSpec + coinSpec
+
+private def mixedProver : AdaptiveProver mixedSpec Bool Bool Bool (!p[]) where
+  Aux := Bool
+  choose := do
+    let x ← query (spec := mixedSpec) (.inl ())
+    let w ← query (spec := mixedSpec) (.inr ())
+    return (x, w)
+  prover := Prover.id
+
+private def togglingOracle : QueryImpl coinSpec (StateT Bool ProbComp) := fun _ => do
+  let bit ← get
+  set !bit
+  return bit
+
+private def privateSampler : QueryImpl coinSpec ProbComp := fun _ => pure false
+
+private def checkPublicLogs : Verifier.AdaptiveExtractor coinSpec coinSpec Bool Bool Bool (!p[]) :=
+  fun _ _ _ trP trV => pure (trP.map (·.2) == [false] && trV.map (·.2) == [true])
+
+example : bitVerifier.adaptiveKnowledgeSoundnessExp (pure false) togglingOracle privateSampler
+    bitImpl checkPublicLogs mixedProver = pure (false, some true, some false, false) := rfl
+
+example : mixedProver.IsQueryBound (publicQuerySelector (fun _ => True)) 1 := by
+  let spec := mixedSpec + [(!p[] : ProtocolSpec 0).Challenge]ₒ
+  change IsQueryBoundP (spec := spec)
+    (do
+      let x ← liftM (spec.query (.inl (.inl ())))
+      let w ← liftM (spec.query (.inl (.inr ())))
+      pure (x, (default : (!p[] : ProtocolSpec 0).FullTranscript), w))
+    (publicQuerySelector (publicQuerySelector (fun _ => True))) 1
+  simp [isQueryBoundP_query_bind_iff, publicQuerySelector]
+
 -- The usual fixed-statement error bound also holds for all constant adaptive choosers.
 theorem constant_chooser_bound :
-    bitVerifier.adaptiveSoundness bitInit bitImpl (∅ : Set Bool) {true}
-      (fun _ A => ∃ (Aux : Type) (stmt : Bool) (aux : Aux)
-        (P : Prover coinSpec Bool Aux Bool _ (!p[])),
+    bitVerifier.adaptiveSoundness bitInit bitImpl (QueryImpl.id' unifSpec) (∅ : Set Bool) {true}
+      (fun WitOut A => ∃ (Aux : Type) (stmt : Bool) (aux : Aux)
+        (P : Prover coinSpec Bool Aux Bool WitOut (!p[])),
         A = AdaptiveProver.fixed stmt aux P) (1 / 2) := by
-  have h := (bitVerifier.soundness_iff_adaptiveSoundness_fixed bitInit bitImpl
-    (∅ : Set Bool) {true} (1 / 2)).mp nonadaptive_bound
-  simpa using h
+  simpa using (bitVerifier.soundness_iff_adaptiveSoundness_fixed bitInit bitImpl
+    (QueryImpl.id' unifSpec) (∅ : Set Bool) {true} (1 / 2)).mp nonadaptive_bound
 
 end AdaptiveSoundnessTest
 
