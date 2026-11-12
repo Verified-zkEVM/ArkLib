@@ -315,7 +315,7 @@ RingSwitching.Packing.RingSwitch.append_perfectCompleteness
 RingSwitching.Packing.RingSwitch.append_rbrError_sum
 RingSwitching.Packing.RingSwitch.append_rbrKnowledgeSoundness
 RingSwitching.Packing.RingSwitch.knowledgeSoundness
-RingSwitching.Packing.TensorPrefix.head_verifier_eq
+RingSwitching.Packing.TensorPrefix.headVerifier_eq
 RingSwitching.Packing.TensorPrefix.knowledgeSoundness
 RingSwitching.Packing.TensorPrefix.rbrError_sum
 RingSwitching.Packing.TensorPrefix.rbrKnowledgeSoundness

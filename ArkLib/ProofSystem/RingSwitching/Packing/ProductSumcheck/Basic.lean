@@ -48,8 +48,8 @@ structure Statement (Context C : Type) {m : ℕ} (i : Fin (m + 1)) where
   challenges : Fin i → C
   target : C
 
-/-- The context and target of a statement, the data of a product claim. -/
-def Statement.claim {i : Fin (m + 1)} (s : Statement Context C i) : Context × C :=
+/-- The context and target of a round-`0` statement: the data of its product claim. -/
+def Statement.claim (s : Statement Context C (0 : Fin (m + 1))) : Context × C :=
   (s.ctx, s.target)
 
 /-- The exact residual-sum relation at a fixed challenge prefix. -/

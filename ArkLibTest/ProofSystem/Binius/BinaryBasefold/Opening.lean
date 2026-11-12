@@ -104,10 +104,10 @@ theorem error_backend (γ : ℕ)
 example (Context : Type) (ctx : Context) (point : Fin ℓ → L) (claim : L)
     (ost : ∀ j, OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0 j)
     (tr : (!p[] : ProtocolSpec 0).FullTranscript) :
-    (ProductClaim.frontVerifier K β (evalClaim (contextualQuery (L := L) (ℓ := ℓ) Context))
+    (ProductClaim.frontVerifier K β (productClaim ∘ contextualQuery (L := L) (ℓ := ℓ) Context)
       (ϑ := ϑ) (h_rate := h_rate)).toVerifier.verify ((ctx, (point, claim)), ost) tr =
         pure (statement (⟨point, claim⟩ : MLPEvalStatement L ℓ), ost) :=
-  (ProductClaim.frontGuard K β (evalClaim (contextualQuery Context))).verify_eq _ _
+  (ProductClaim.frontGuard K β (productClaim ∘ contextualQuery Context)).verify_eq _ _
 
 -- The contextual contract uses the displayed evaluation point and the same packed source.
 example (Context : Type) (ctx : Context) (point : Fin ℓ → L) (claim : L)

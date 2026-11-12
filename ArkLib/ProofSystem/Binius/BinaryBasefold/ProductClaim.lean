@@ -20,8 +20,8 @@ import all ArkLib.ProofSystem.Binius.BinaryBasefold.Prelude.Folding
 
 The sum-check-and-fold loop starts from a product claim `s = ∑_{y ∈ {0,1}^ℓ} A(y) · t(y)`, for a
 public multilinear multiplier `A` determined by the context and a committed multilinear `t`.
-This file gives the canonical round-`0` statement and witness of such a claim and the two facts
-that every front end needs:
+This file gives the canonical round-`0` witness of such a claim (its statement is
+`Sumcheck.Structured.initialStatement`) and two facts about it:
 
 * `sum_eq_and_firstOracleWitnessConsistent_of_mem_roundRelation_zero`: a relaxed round-`0` witness
   certifies the product claim for its own polynomial, together with unique-radius compatibility
@@ -32,15 +32,16 @@ that every front end needs:
 `ProductClaim.openingVerifier` and `ProductClaim.openingReduction` then open such a claim: a
 zero-message front end maps the input statement to its context and target and builds the
 canonical witness, and the full Binary Basefold protocol runs at the multiplier. The input
-relation is supplied by the caller, with two facts about it: extraction from a relaxed round-`0`
-witness lands in it (`openingVerifier_rbrKnowledgeSoundness`), and its members are product
-claims with an exact first encoding (`openingReduction_perfectCompleteness`).
+relation is supplied by the caller, with two facts about it: it contains every product claim
+whose polynomial is unique-radius compatible with the first oracle
+(`openingVerifier_rbrKnowledgeSoundness`), and its members are product claims with an exact
+first encoding (`openingReduction_perfectCompleteness`).
 
 An evaluation claim `s = t(r)` is the product claim at `A = eq̃(r, ·)` (`Opening`); the unrolled
 FRI-Binius protocol uses the ring-switching multiplier.
 
-The front end and opening are noncomputable because the canonical witness uses the codeword
-encoding and the Binary Basefold phases are noncomputable.
+The front-end prover is noncomputable because the canonical witness uses the codeword encoding;
+the opening is noncomputable because the Binary Basefold phases are.
 -/
 
 @[expose] public section
@@ -272,15 +273,15 @@ def frontExtractor : Extractor.RoundByRound []ₒ
   extractMid j := nomatch j
   extractOut _ _ w := witnessEquiv.symm w.t
 
-/-- The knowledge state is the input relation. `hextract` states that a relaxed round-`0` witness
-for the claim of `s` yields an input witness for `s`. -/
+/-- The knowledge state is the input relation. `hextract` states that the relation contains every
+product claim whose polynomial is unique-radius compatible with the first oracle. -/
 noncomputable def frontKnowledgeStateFunction {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
-    (hextract : ∀ s ost (w : Witness K β (h_ℓ_add_R_rate := h_rate) (ℓ := ℓ) 0),
-      ((initialStatement (toClaim s).1 (toClaim s).2, ost), w) ∈
-        roundRelation (multpoly := multiplier.polynomial) K β (ϑ := ϑ)
-          (h_ℓ_add_R_rate := h_rate) (𝓑 := boolEmbedding L) 0 →
-      ((s, ost), witnessEquiv.symm w.t) ∈ relIn) :
+    (hextract : ∀ s ost (t : MultilinearPoly L ℓ),
+      (toClaim s).2 = ∑ y : Fin ℓ → Fin 2,
+          (multiplier (toClaim s).1).val.eval (y : Fin ℓ → L) * t.val.eval (y : Fin ℓ → L) →
+      FirstOracleWitnessConsistent K β t (getFirstOracle K β ost) →
+      ((s, ost), witnessEquiv.symm t) ∈ relIn) :
     (frontVerifier K β toClaim (ϑ := ϑ) (h_rate := h_rate)).KnowledgeStateFunction init impl
       relIn (roundRelation (multpoly := multiplier.polynomial) K β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_rate) (𝓑 := boolEmbedding L) 0)
@@ -288,18 +289,22 @@ noncomputable def frontKnowledgeStateFunction {σ : Type} (init : ProbComp σ)
   toFun _ x _ w := (x, w) ∈ relIn
   toFun_empty _ _ h := h
   toFun_next j := nomatch j
-  toFun_full x _ w h :=
-    hextract x.1 x.2 w ((frontGuard K β toClaim).check_and_of_prEvent_pos h).2
+  toFun_full x _ w h := by
+    obtain ⟨hsum, hfirst⟩ := sum_eq_and_firstOracleWitnessConsistent_of_mem_roundRelation_zero K β
+      multiplier.polynomial (toClaim x.1).1 (toClaim x.1).2 x.2 w
+      ((frontGuard K β toClaim).check_and_of_prEvent_pos h).2
+    exact hextract x.1 x.2 w.t hsum hfirst
 
-/-- The opening is round-by-round knowledge sound for any input relation into which a relaxed
-round-`0` witness extracts, with the errors `openingError`. -/
+/-- The opening is round-by-round knowledge sound, with the errors `openingError`, for any input
+relation containing every product claim whose polynomial is unique-radius compatible with the
+first oracle. -/
 theorem openingVerifier_rbrKnowledgeSoundness (γ : ℕ) {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
-    (hextract : ∀ s ost (w : Witness K β (h_ℓ_add_R_rate := h_rate) (ℓ := ℓ) 0),
-      ((initialStatement (toClaim s).1 (toClaim s).2, ost), w) ∈
-        roundRelation (multpoly := multiplier.polynomial) K β (ϑ := ϑ)
-          (h_ℓ_add_R_rate := h_rate) (𝓑 := boolEmbedding L) 0 →
-      ((s, ost), witnessEquiv.symm w.t) ∈ relIn) :
+    (hextract : ∀ s ost (t : MultilinearPoly L ℓ),
+      (toClaim s).2 = ∑ y : Fin ℓ → Fin 2,
+          (multiplier (toClaim s).1).val.eval (y : Fin ℓ → L) * t.val.eval (y : Fin ℓ → L) →
+      FirstOracleWitnessConsistent K β t (getFirstOracle K β ost) →
+      ((s, ost), witnessEquiv.symm t) ∈ relIn) :
     Verifier.rbrKnowledgeSoundness init impl relIn acceptRejectOracleRel
       ((openingVerifier K β multiplier toClaim γ (ϑ := ϑ) (h_rate := h_rate)).toVerifier
         (Oₛₒ := fun i : Empty => nomatch i))
@@ -316,11 +321,11 @@ theorem openingVerifier_rbrKnowledgeSoundness (γ : ℕ) {σ : Type} (init : Pro
 /-- The opening is knowledge sound at the Binary Basefold bound, with an unbounded extractor. -/
 theorem openingVerifier_knowledgeSoundness (γ : ℕ) {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
-    (hextract : ∀ s ost (w : Witness K β (h_ℓ_add_R_rate := h_rate) (ℓ := ℓ) 0),
-      ((initialStatement (toClaim s).1 (toClaim s).2, ost), w) ∈
-        roundRelation (multpoly := multiplier.polynomial) K β (ϑ := ϑ)
-          (h_ℓ_add_R_rate := h_rate) (𝓑 := boolEmbedding L) 0 →
-      ((s, ost), witnessEquiv.symm w.t) ∈ relIn) :
+    (hextract : ∀ s ost (t : MultilinearPoly L ℓ),
+      (toClaim s).2 = ∑ y : Fin ℓ → Fin 2,
+          (multiplier (toClaim s).1).val.eval (y : Fin ℓ → L) * t.val.eval (y : Fin ℓ → L) →
+      FirstOracleWitnessConsistent K β t (getFirstOracle K β ost) →
+      ((s, ost), witnessEquiv.symm t) ∈ relIn) :
     OracleProof.knowledgeSoundness init impl relIn
       (openingVerifier K β multiplier toClaim γ (ϑ := ϑ) (h_rate := h_rate))
       (FullBinaryBasefold.concreteBinaryBasefoldKnowledgeError L ℓ R γ) := by

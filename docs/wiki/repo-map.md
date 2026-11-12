@@ -877,8 +877,9 @@ home_page/            site assets and assembled website root
   `FRIBinius/Prelude` instantiates the tensor profile; `FRIBinius/RingSwitch` composes the shared
   prefix reduction with Binary Basefold opening. `FRIBinius/Unrolled/` is DP24 Construction 5.1:
   the tensor batching head (`TensorPrefix.headVerifier`) followed by `ProductClaim.openingVerifier`
-  at the ring-switching multiplier, so a single sum-check serves both ring switching and folding. `Spec` bounds its challenge errors by DP24 equation (43).
-  See the [consumer guide](ring-switching-consumers.md).
+  at the ring-switching multiplier, so a single sum-check serves both ring switching and folding.
+  `Spec` bounds its challenge errors by DP24 equation (43). See the
+  [consumer guide](ring-switching-consumers.md).
 
 - The ABF26 Section 6 toy IOP lives under `ProofSystem/ToyProblem/`. `Spec/` contains the
   domain-generic protocol and extraction theorems, `Impl/IRS.lean` supplies the computable
