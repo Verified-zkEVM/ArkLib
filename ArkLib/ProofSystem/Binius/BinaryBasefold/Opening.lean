@@ -79,9 +79,10 @@ variable (witnessEquiv : WitIn ≃ MultilinearPoly L ℓ)
 /-- Evaluation and unique-radius compatibility with the supplied first oracle. -/
 def inputRelation : Set ((StmtIn ×
     (∀ j, OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0 j)) × WitIn) :=
-  {x | (evalQuery x.1.1).original_claim =
-      (witnessEquiv x.2).val.eval (evalQuery x.1.1).t_eval_point ∧
-    FirstOracleWitnessConsistent K β (witnessEquiv x.2) (getFirstOracle K β x.1.2)}
+  { ⟨⟨stmtIn, oStmtIn⟩, witIn⟩ |
+    (evalQuery stmtIn).original_claim =
+      (witnessEquiv witIn).val.eval (evalQuery stmtIn).t_eval_point ∧
+    FirstOracleWitnessConsistent K β (witnessEquiv witIn) (getFirstOracle K β oStmtIn) }
 
 omit [SampleableType L] [DecidableEq K] in
 /-- An initial relaxed witness certifies the evaluation of its own source polynomial. -/
@@ -100,9 +101,10 @@ theorem eval_eq_and_firstOracleWitnessConsistent_of_mem_roundRelation_zero
 /-- Evaluation and exact first-codeword encoding for honest completeness. -/
 def strictInputRelation : Set ((StmtIn ×
     (∀ j, OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0 j)) × WitIn) :=
-  {x | (evalQuery x.1.1).original_claim =
-      (witnessEquiv x.2).val.eval (evalQuery x.1.1).t_eval_point ∧
-    getFirstOracle K β x.1.2 = firstOracleEncoding K β (witnessEquiv x.2)}
+  { ⟨⟨stmtIn, oStmtIn⟩, witIn⟩ |
+    (evalQuery stmtIn).original_claim =
+      (witnessEquiv witIn).val.eval (evalQuery stmtIn).t_eval_point ∧
+    getFirstOracle K β oStmtIn = firstOracleEncoding K β (witnessEquiv witIn) }
 
 omit [SampleableType L] [DecidableEq K] [Fact (β 0 = 1)] [NeZero R] in
 /-- The evaluation relation is the product-claim relation at `evalMultiplier`. -/
@@ -112,8 +114,8 @@ theorem inputRelation_eq :
         (ϑ := ϑ) (h_rate := h_rate) := by
   ext ⟨⟨s, ost⟩, w⟩
   change _ ∧ _ ↔ _ ∧ _
-  rw [Function.comp_apply, sum_evalMultiplier_mul_eq_eval]
-  rfl
+  apply and_congr_left'
+  rw [sum_evalMultiplier_mul_eq_eval]
 
 omit [SampleableType L] [DecidableEq K] [Fact (β 0 = 1)] [NeZero R] in
 /-- The strict evaluation relation is the strict product-claim relation at `evalMultiplier`. -/
@@ -123,8 +125,8 @@ theorem strictInputRelation_eq :
         witnessEquiv (ϑ := ϑ) (h_rate := h_rate) := by
   ext ⟨⟨s, ost⟩, w⟩
   change _ ∧ _ ↔ _ ∧ _
-  rw [Function.comp_apply, sum_evalMultiplier_mul_eq_eval]
-  rfl
+  apply and_congr_left'
+  rw [sum_evalMultiplier_mul_eq_eval]
 
 /-- The evaluation-claim opening: Binary Basefold at `evalMultiplier`. -/
 def openingVerifier (γ : ℕ) :=

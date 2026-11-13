@@ -168,21 +168,23 @@ variable {StmtIn WitIn : Type} (toClaim : StmtIn → Context × L)
 unique-radius compatible with the first oracle. -/
 def inputRelation : Set ((StmtIn × (∀ j, OracleStatement K β (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_rate) 0 j)) × WitIn) :=
-  { ⟨⟨s, ost⟩, w⟩ |
-    (toClaim s).2 = ∑ y : Fin ℓ → Fin 2,
-        (multiplier (toClaim s).1).val.eval (y : Fin ℓ → L) *
-          (witnessEquiv w).val.eval (y : Fin ℓ → L) ∧
-      FirstOracleWitnessConsistent K β (witnessEquiv w) (getFirstOracle K β ost) }
+  { ⟨⟨stmtIn, oStmtIn⟩, witIn⟩ |
+    let ⟨ctx, claimedValue⟩ := toClaim stmtIn
+    claimedValue = ∑ y : Fin ℓ → Fin 2,
+        (multiplier ctx).val.eval (y : Fin ℓ → L) *
+          (witnessEquiv witIn).val.eval (y : Fin ℓ → L) ∧
+      FirstOracleWitnessConsistent K β (witnessEquiv witIn) (getFirstOracle K β oStmtIn) }
 
 /-- The product claim of a statement for the polynomial of a witness, with the first oracle its
 exact encoding. -/
 def strictInputRelation : Set ((StmtIn × (∀ j, OracleStatement K β (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_rate) 0 j)) × WitIn) :=
-  { ⟨⟨s, ost⟩, w⟩ |
-    (toClaim s).2 = ∑ y : Fin ℓ → Fin 2,
-        (multiplier (toClaim s).1).val.eval (y : Fin ℓ → L) *
-          (witnessEquiv w).val.eval (y : Fin ℓ → L) ∧
-      getFirstOracle K β ost = firstOracleEncoding K β (witnessEquiv w) }
+  { ⟨⟨stmtIn, oStmtIn⟩, witIn⟩ |
+    let ⟨ctx, claimedValue⟩ := toClaim stmtIn
+    claimedValue = ∑ y : Fin ℓ → Fin 2,
+        (multiplier ctx).val.eval (y : Fin ℓ → L) *
+          (witnessEquiv witIn).val.eval (y : Fin ℓ → L) ∧
+      getFirstOracle K β oStmtIn = firstOracleEncoding K β (witnessEquiv witIn) }
 
 /-! ## Protocol definitions -/
 

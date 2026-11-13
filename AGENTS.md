@@ -66,6 +66,8 @@ Start with [`README.md`](README.md) for the project overview.
 - No backward-compatibility guarantees: rename or remove a declaration by updating every caller in
   the same PR. `@[deprecated]` aliases are discouraged; add one only with a concrete reason. See
   [`CONTRIBUTING.md`](CONTRIBUTING.md#compatibility-policy).
+- Name tuple components when nested projections obscure their mathematical roles; see
+  [Readable Components](CONTRIBUTING.md#readable-components).
 - Make definitions computable wherever possible. Protocols and program/value-computing APIs must
   be executable, with code-generation and runtime evidence. Document concrete blockers for purely
   mathematical noncomputable views; see [`CONTRIBUTING.md`](CONTRIBUTING.md#computability) and
