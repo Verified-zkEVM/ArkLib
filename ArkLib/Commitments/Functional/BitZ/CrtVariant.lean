@@ -80,37 +80,28 @@ theorem sum_mul_eq_of_prod_bitFactor_eq_pow_of_coprime_orderOf {x : A} (γ b : �
     (hgp' : ∏ i, ((x ^ (γ i % Fintype.card ι) - 1) * (b i : A) + 1) =
       x ^ (μ % Fintype.card ι + a * Fintype.card ι)) :
     ∑ i, γ i * b i = μ := by
-  set ℓ₁ := Fintype.card ι with hℓ₁
-  set N := orderOf x with hN
+  set ℓ₁ := Fintype.card ι
   have hℓpos : 0 < ℓ₁ := Nat.zero_lt_of_lt ha
-  have hNpos : 0 < N := Nat.zero_lt_of_lt hℓ
-  have hsum : ∀ δ : ι → ℕ, ∀ M, (∀ i, δ i ≤ M) → ∑ i, δ i * b i ≤ ℓ₁ * M := fun δ M hδ => by
-    simpa [hℓ₁] using sum_le_card_nsmul univ (fun i => δ i * b i) M fun i _ =>
-      (Nat.mul_le_mul_left _ (hb i)).trans (by simpa using hδ i)
-  -- modulo `N`
-  have h1 : ∑ i, γ i * b i ≡ μ [MOD N] := by
+  have hNpos : 0 < orderOf x := Nat.zero_lt_of_lt hℓ
+  -- modulo `orderOf x`
+  have h1 : ∑ i, γ i * b i ≡ μ [MOD orderOf x] := by
     rw [prod_bitFactor_eq_pow x γ b hb] at hgp
     exact (orderOf_pos_iff.1 hNpos).pow_eq_pow_iff_modEq.1 hgp
   -- modulo `ℓ₁`: the second grand product has no overflow
-  have h2 : ∑ i, (γ i % ℓ₁) * b i = μ % ℓ₁ + a * ℓ₁ := by
-    rw [prod_bitFactor_eq_pow x (fun i => γ i % ℓ₁) b hb] at hgp'
-    have hlt1 : ∑ i, (γ i % ℓ₁) * b i < N :=
-      lt_of_le_of_lt (hsum _ ℓ₁ fun i => (Nat.mod_lt _ hℓpos).le) (by rw [← pow_two]; exact hℓ)
-    have hlt2 : μ % ℓ₁ + a * ℓ₁ < N := by
-      have := Nat.mod_lt μ hℓpos
-      nlinarith
-    exact pow_injOn_Iio_orderOf hlt1 hlt2 hgp'
+  have h2 := (prod_bitFactor_eq_pow_iff_of_lt_orderOf (qMax := ℓ₁) (fun i => γ i % ℓ₁) b
+    (fun i => (Nat.mod_lt _ hℓpos).le) hb
+    (by nlinarith [Nat.mod_lt μ hℓpos]) (by simpa [sq] using hℓ)).1 hgp'
   have h3 : ∑ i, γ i * b i ≡ μ [MOD ℓ₁] := by
     refine (Nat.ModEq.sum fun i _ => ((Nat.mod_modEq (γ i) ℓ₁).symm.mul_right (b i))).trans ?_
     rw [h2]
-    unfold Nat.ModEq
-    rw [Nat.add_mul_mod_self_right, Nat.mod_mod]
-  have h4 := (Nat.modEq_and_modEq_iff_modEq_mul hcop).1 ⟨h3, h1⟩
-  have hlt : ℓ₁ * (N - 1) < ℓ₁ * N := Nat.mul_lt_mul_of_pos_left (by omega) hℓpos
-  have hA : ∑ i, γ i * b i < ℓ₁ * N :=
-    lt_of_le_of_lt (hsum γ (N - 1) fun i => by have := hγ i; omega) hlt
-  unfold Nat.ModEq at h4
-  rwa [Nat.mod_eq_of_lt hA, Nat.mod_eq_of_lt hμ] at h4
+    simp [Nat.ModEq, Nat.add_mul_mod_self_right]
+  refine ((Nat.modEq_and_modEq_iff_modEq_mul hcop).1 ⟨h3, h1⟩).eq_of_lt_of_lt ?_ hμ
+  calc ∑ i, γ i * b i ≤ ∑ _i : ι, (orderOf x - 1) :=
+        sum_le_sum fun i _ =>
+          (Nat.mul_le_mul_left _ (hb i)).trans (by have := hγ i; rw [mul_one]; omega)
+    _ < ℓ₁ * orderOf x := by
+        simp only [sum_const, card_univ, smul_eq_mul]
+        exact Nat.mul_lt_mul_of_pos_left (by omega) hℓpos
 
 end General
 
