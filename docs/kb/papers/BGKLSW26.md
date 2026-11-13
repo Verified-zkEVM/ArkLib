@@ -82,9 +82,9 @@ Writing `M = 2 · T · ℓ · N²`, the native Round 1 probability bound is
 
 Acceptance clients under
 [`ArkLibTest/Commitments/Functional/BitZ/`](../../../ArkLibTest/Commitments/Functional/BitZ/)
-exercise the range hypotheses and their failure at the overflow boundary, the necessity of each
-hypothesis of the CRT variant, round bounds, semiring injectivity, and the OOD theorem applied to
-CompPoly evaluation tables. The separate
+exercise the range hypotheses and their failure at the overflow boundary, the necessity of the CRT
+variant's range check, second grand product, coprimality and bounds, round bounds, semiring
+injectivity, and the OOD theorem applied to CompPoly evaluation tables. The separate
 [sampler regression](../../../ArkLibTest/Data/MvPolynomial/PrimeFingerprintProbability.lean)
 distinguishes the intended distribution from uniform sampling over all prime/point pairs.
 The clients pin headline theorem dependencies to `propext`, `Classical.choice` and `Quot.sound`.
