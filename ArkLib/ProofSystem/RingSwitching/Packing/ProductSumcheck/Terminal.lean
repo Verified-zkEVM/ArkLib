@@ -205,7 +205,7 @@ def extractor :
       (StmtIn := Statement Context C (Fin.last m) × (∀ j, pc.OStmt j))
       (WitIn := P⦃≤ 1⦄[X Fin m]) (WitOut := P⦃≤ 1⦄[X Fin m])
       (pSpec := pSpec C) (WitMid := WitMid (P := P) (m := m)) where
-  eqIn := rfl
+  extractIn := fun _ w => w
   extractMid _ _ _ p := p
   extractOut _ _ p := p
 
@@ -219,17 +219,18 @@ def knowledgeStateFunction {σ : Type} (init : ProbComp σ)
     | ⟨0, _⟩ => fun stmt _ p => (stmt, p) ∈ rel multiplier pc (Fin.last m)
     | ⟨1, _⟩ => fun stmt tr p => check multiplier stmt.1 (tr 0) ∧
       ((nextStatement stmt.1 (tr 0), stmt.2), p) ∈ (pc.evalRelWithContext Context)
-  toFun_empty _ _ := Iff.rfl
+  toFun_empty _ _ h := h
   toFun_next
     | ⟨0, _⟩ => fun _ stmt _tr v p h => mem_rel_last_of_check multiplier pc stmt.1 stmt.2 v p h.1
       h.2
   toFun_full stmt tr p h := check_and_mem_of_prEvent_pos multiplier pc init impl stmt.1 stmt.2 tr
     p h
 
-/-- Exact worst-case knowledge with no challenge error, including when m is zero. -/
-theorem rbrKnowledgeSoundnessWorstCaseWith {σ : Type} (init : ProbComp σ)
+/-- Exact round-by-round knowledge soundness with no challenge error, including when
+m is zero. -/
+theorem rbrKnowledgeSoundnessWith {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    Verifier.rbrKnowledgeSoundnessWorstCaseWith init impl
+    Verifier.rbrKnowledgeSoundnessWith init impl
       (rel multiplier pc (Fin.last m)) (pc.evalRelWithContext Context) (verifier multiplier
         pc).toVerifier
       (WitMid (P := P) (m := m)) (extractor (Context := Context) pc)

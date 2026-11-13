@@ -31,10 +31,13 @@ theorem schwartz_zippel_counting
     {s : ℕ}
     (f : MvPolynomial (Fin s) F) (hf : f ≠ 0)
     (S : Fin s → Finset F)
-    (d m : ℕ) (hd : f.totalDegree ≤ d) (hm_pos : 0 < m)
+    (d m : ℕ) (hd : f.totalDegree ≤ d)
     (hm : ∀ i, m ≤ (S i).card) :
     (Finset.filter (fun x => MvPolynomial.eval x f = 0) (Fintype.piFinset S)).card * m
     ≤ d * ∏ i, (S i).card := by
+  by_cases hm_zero : m = 0
+  · simp [hm_zero]
+  have hm_pos : 0 < m := Nat.pos_of_ne_zero hm_zero
   have h_schwartz_zippel : (Finset.card (Finset.filter (fun x => (MvPolynomial.eval x) f = 0)
       (Fintype.piFinset S))) / (∏ i, (S i).card : ℝ≥0∞) ≤ d / (m : ℝ≥0∞) := by
     convert MvPolynomial.schwartz_zippel_sup_sum hf S |> le_trans <| ?_ using 1
@@ -95,10 +98,14 @@ lemma card_filter_eval_subtype_eq_piFinset
     true_and, exists_prop, and_imp]
     exact fun b hb hb' => ⟨fun i => ⟨b i, hb i⟩, hb', rfl⟩
 
-/- If `k * m ≤ d * n` with `m > 0` and `n > 0`, then `k / n ≤ d / m` in `ℝ≥0∞`. -/
+/- If `k * m ≤ d * n` with `m > 0`, then `k / n ≤ d / m` in `ℝ≥0∞`. -/
 lemma ENNReal.div_le_div_of_mul_le {k n d m : ℕ}
-    (hm_pos : 0 < m) (hn_pos : 0 < n) (h : k * m ≤ d * n) :
+    (hm_pos : 0 < m) (h : k * m ≤ d * n) :
     (k : ℝ≥0∞) / n ≤ d / m := by
+  by_cases hn_zero : n = 0
+  · have hk_zero : k = 0 := by nlinarith
+    simp [hk_zero]
+  have hn_pos : 0 < n := Nat.pos_of_ne_zero hn_zero
   rw [ENNReal.div_le_iff_le_mul] <;> norm_cast
   · rw [← ENNReal.toReal_le_toReal] <;> norm_num
     · rw [div_mul_eq_mul_div, le_div_iff₀] <;> norm_cast
@@ -114,10 +121,10 @@ of each factor. This bridges `schwartz_zippel_counting` with the probability for
 lemma prob_eval_zero_le_div
     {F : Type} [Field F]
   {s : ℕ}
-  {S : Fin s → Set F} [∀ i, Fintype ↥(S i)] [∀ i, Nonempty ↥(S i)]
+  {S : Fin s → Set F} [∀ i, Fintype ↥(S i)]
   [SampleableType (∀ i, ↥(S i))]
   (f : MvPolynomial (Fin s) F) (hf : f ≠ 0)
-  (d m : ℕ) (hd : f.totalDegree ≤ d) (hm_pos : 0 < m)
+  (d m : ℕ) (hd : f.totalDegree ≤ d)
   (hm : ∀ i, m ≤ (S i).toFinset.card) :
   Pr{let x ← $ᵗ (∀ i, ↥(S i))}[MvPolynomial.eval (fun i => (↑(x i) : F)) f = 0] ≤
     (d : ℝ≥0∞) / m := by
@@ -125,10 +132,23 @@ lemma prob_eval_zero_le_div
   rw [@SampleableType.prEvent_uniformSample _ _ _
     (fun x : ∀ i, ↥(S i) => MvPolynomial.eval (fun i => (↑(x i) : F)) f = 0)
     (fun _ => Classical.propDecidable _)]
-  refine ENNReal.div_le_div_of_mul_le hm_pos
-    (Fintype.card_pos_iff.mpr ⟨fun _ => Classical.arbitrary _⟩) ?_
+  by_cases hm_zero : m = 0
+  · subst m
+    by_cases hd_zero : d = 0
+    · subst d
+      have hc := MvPolynomial.totalDegree_eq_zero_iff_eq_C.mp (Nat.eq_zero_of_le_zero hd)
+      have hc_ne : f.coeff 0 ≠ 0 := by
+        intro hz
+        exact hf (by simpa [hz] using hc)
+      rw [hc]
+      simp [hc_ne]
+    · have htop : (d : ℝ≥0∞) / 0 = ⊤ := by simp [ENNReal.div_eq_top, hd_zero]
+      rw [Nat.cast_zero, htop]
+      exact le_top
+  have hm_pos : 0 < m := Nat.pos_of_ne_zero hm_zero
+  refine ENNReal.div_le_div_of_mul_le hm_pos ?_
   convert @schwartz_zippel_counting F _ (Classical.decEq F) s f hf
-      (fun i => (S i).toFinset) d m hd hm_pos hm using 1
+      (fun i => (S i).toFinset) d m hd hm using 1
   · convert congr_arg₂ (· * ·)
       (@card_filter_eval_subtype_eq_piFinset F _ (Classical.decEq F) s S _ f) rfl
   · rw [Fintype.card_pi]
@@ -144,11 +164,11 @@ lemma prob_eval_zero_univ_le_div
   rw [@SampleableType.prEvent_uniformSample _ _ _
     (fun x : Fin s → F => MvPolynomial.eval x f = 0)
     (fun _ => Classical.propDecidable _)]
-  refine ENNReal.div_le_div_of_mul_le Fintype.card_pos Fintype.card_pos ?_
+  refine ENNReal.div_le_div_of_mul_le Fintype.card_pos ?_
   simpa only [Fintype.piFinset_univ, Finset.card_univ, Finset.prod_const,
     Fintype.card_fin, Fintype.card_fun] using
       @schwartz_zippel_counting F _ (Classical.decEq F) s f hf
-        (fun _ => Finset.univ) d (Fintype.card F) hd Fintype.card_pos (fun _ => le_rfl)
+        (fun _ => Finset.univ) d (Fintype.card F) hd (fun _ => le_rfl)
 
 section ZeroCount
 
@@ -162,7 +182,7 @@ theorem MvPolynomial.card_zeros_le_of_totalDegree_le_fin
     #{x : Fin s → F | MvPolynomial.eval x f = 0} ≤ D * Fintype.card F ^ (s - 1) := by
   classical
   have hq : 0 < Fintype.card F := Fintype.card_pos
-  have key := schwartz_zippel_counting f hf (fun _ => Finset.univ) D (Fintype.card F) hd hq
+  have key := schwartz_zippel_counting f hf (fun _ => Finset.univ) D (Fintype.card F) hd
     (fun i => by simp)
   simp only [Fintype.piFinset_univ, Finset.card_univ, Finset.prod_const] at key
   match s with

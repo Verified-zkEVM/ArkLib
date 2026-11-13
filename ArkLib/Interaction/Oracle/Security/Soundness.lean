@@ -13,8 +13,8 @@ public import VCVio.EvalDist.Monad.Option
 /-!
 # Round-by-round soundness implies ordinary soundness
 
-The soundness theorem bounds the actual interpreted native executor by the sum of the local
-challenge errors. The prover is an arbitrary native strategy, including probabilistic private
+The soundness theorem bounds the actual interpreted executor by the sum of the local
+challenge errors. The prover is an arbitrary strategy, including probabilistic private
 continuations and interpreted effects that fail to return. The ambient interpreter uses VCVio's
 existing lawful subprobability semantics; no normalization is assumed.
 
@@ -33,11 +33,11 @@ namespace Interaction.Oracle.Security
 universe v
 
 set_option backward.isDefEq.respectTransparency false in
-/-- The actual interpreted native executor can reach a true terminal state from a false current
+/-- The actual interpreted executor can reach a true terminal state from a false current
 state with probability at most the sum of its remaining challenge errors.
 
 The embedding retains the concrete authored prefix when restricting to a continuation.
-Prover and verifier node effects are the existing native actions; failures remove mass.
+Prover and verifier node effects are the existing actions; failures remove mass.
 The verifier challenge marginal is charged once, and the false successor is bounded by induction.
 -/
 theorem executeStrategies_state_bound {ι : Type} (ambient : OracleSpec ι)
@@ -153,7 +153,7 @@ theorem executeStrategies_state_bound {ι : Type} (ambient : OracleSpec ι)
     simpa only [prEvent_norm,
       ExecutionPrefix.ofExecutionPath_oracle, hschedule.1 chosen.1] using bound
 
-/-- Round-by-round local soundness bounds ordinary soundness of actual native execution. -/
+/-- Round-by-round local soundness bounds ordinary soundness of actual execution. -/
 theorem executeStrategies_soundness {ι : Type} (ambient : OracleSpec ι)
     {m : Type → Type v} [Monad m] [LawfulMonad m] [EvalDistSemantics m]
     [LawfulEvalDistSemantics m] [MonadAttach m] [WeaklyLawfulMonadAttach m]

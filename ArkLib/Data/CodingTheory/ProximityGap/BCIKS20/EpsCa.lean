@@ -58,7 +58,7 @@ section UniqueDecodingRegime
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
-omit [DecidableEq ι] in
+omit [Nonempty ι] [DecidableEq ι] in
 /-- **[BCIKS20] correlated agreement, stated on `epsCa`.** For a Reed-Solomon code and a fold
 radius `δ_fld` at most the relative unique-decoding radius,
 
@@ -85,6 +85,20 @@ theorem rs_epsCa_le_of_le_relUDR {deg : ℕ} {domain : ι ↪ F} {δ_fld δ_int 
     epsCa (F := F) (A := F) ((ReedSolomon.code domain deg : Set (ι → F))) δ_fld δ_int
       ≤ ((Fintype.card ι / Fintype.card F : ℝ≥0) : ENNReal) := by
   classical
+  rcases isEmpty_or_nonempty ι with hι | hι
+  · rw [epsCa_eq]
+    apply iSup_le
+    intro u
+    have hmem : (⋈|u) ∈ interleavedCodeSet (ReedSolomon.code domain deg : Set (ι → F)) := by
+      intro j
+      rw [Subsingleton.elim (Matrix.transpose (⋈|u) j) 0]
+      exact (ReedSolomon.code domain deg).zero_mem
+    have hclose := relDistFromCode_le_relDist_to_mem (⋈|u) (⋈|u) hmem
+    have hjoint : jointProximity (ReedSolomon.code domain deg : Set (ι → F)) u δ_int := by
+      apply hclose.trans
+      norm_num [relHammingDist, Fintype.card_eq_zero, ENNReal.coe_NNRat_coe_NNReal]
+    rw [ite_eq_left hjoint]
+    exact zero_le
   -- [BCIKS20]'s unique-decoding-regime correlated agreement, in predicate form.
   have hCA := RS_correlatedAgreement_affineLines_uniqueDecodingRegime
       (deg := deg) (domain := domain) (δ := δ_fld) hδ
@@ -104,7 +118,7 @@ theorem rs_epsCa_le_of_le_relUDR {deg : ℕ} {domain : ι ↪ F} {δ_fld δ_int 
       ((ReedSolomon.code domain deg : Set (ι → F))) δ_fld hle)
     hEq
 
-omit [Field F] [Fintype F] [SampleableType F] [DecidableEq ι] in
+omit [Nonempty ι] [Field F] [Fintype F] [SampleableType F] [DecidableEq ι] in
 /-- A positive radius at most the relative unique-decoding radius satisfies the strict form
 `2·δ·n < d` that the MCA/CA comparison lemmas take as their hypothesis.
 
@@ -116,7 +130,12 @@ lemma two_mul_lt_dist_of_le_relUDR {C : Set (ι → F)} {δ : ℝ≥0}
     (hδ_pos : 0 < δ) (hδ : δ ≤ relativeUniqueDecodingRadius C) :
     2 * (δ : ℝ) * Fintype.card ι < Code.dist C := by
   have hn_pos : (0 : ℝ≥0) < (Fintype.card ι : ℝ≥0) := by
-    exact_mod_cast (Fintype.card_pos (α := ι))
+    have hn : 0 < Fintype.card ι := by
+      by_contra hn
+      have hn0 : Fintype.card ι = 0 := Nat.eq_zero_of_not_pos hn
+      rw [relativeUniqueDecodingRadius, hn0, Nat.cast_zero, div_zero] at hδ
+      exact (not_le.mpr hδ_pos) hδ
+    exact_mod_cast hn
   rw [relativeUniqueDecodingRadius] at hδ
   -- `δ · n ≤ (d - 1) / 2`, then `2 · δ · n ≤ d - 1`, all in `ℝ≥0`.
   have h1 : δ * (Fintype.card ι : ℝ≥0) ≤ ((Code.dist C : ℝ≥0) - 1) / 2 :=
@@ -145,14 +164,14 @@ lemma two_mul_lt_dist_of_le_relUDR {C : Set (ι → F)} {δ : ℝ≥0}
     exact tsub_lt_self hdR one_pos
   exact_mod_cast h3
 
-omit [DecidableEq ι] in
+omit [Nonempty ι] [DecidableEq ι] in
 /-- **[BCIKS20] affine-line MCA for Reed-Solomon codes in the unique-decoding range.** For a
 positive fold radius at most the relative unique-decoding radius,
 
   `ε_mca(C, δ) ≤ n / |F|` .
 
 Below half the minimum distance, affine-line MCA and correlated agreement agree
-(`mcaError_eq_epsCa_of_pos_of_two_mul_lt_dist`), so `rs_epsCa_le_of_le_relUDR` transfers directly.
+(`mcaError_eq_epsCa_of_two_mul_lt_dist`), so `rs_epsCa_le_of_le_relUDR` transfers directly.
 
 This is the MCA-side companion of `rs_epsCa_le_of_le_relUDR`, and it is what
 `ProximityGap.GrandChallenges` consumes: `McaLowerWitness` is stated on `mcaError`, not on
@@ -164,7 +183,7 @@ theorem rs_mcaError_le_of_le_relUDR {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥
     mcaError (AffineLineGenerator F) (ReedSolomon.code domain deg) (δ : ℝ)
       ≤ ((Fintype.card ι / Fintype.card F : ℝ≥0) : ENNReal) :=
   le_trans
-    (mcaError_le_epsCa_of_pos_of_two_mul_lt_dist (ReedSolomon.code domain deg) δ hδ_pos
+    (mcaError_le_epsCa_of_two_mul_lt_dist (ReedSolomon.code domain deg) δ
       (two_mul_lt_dist_of_le_relUDR hδ_pos hδ))
     (rs_epsCa_le_of_le_relUDR hδ le_rfl)
 

@@ -45,7 +45,7 @@ the difference of the global degrees.
 open Polynomial.Bivariate Polynomial Matrix
 open scoped BigOperators
 
-theorem polishchuk_spielman {F : Type} [Field F]
+theorem polishchuk_spielman {F : Type*} [Field F]
     (a_x a_y b_x b_y : ℕ) (n_x n_y : ℕ+)
     (h_bx_ge_ax : b_x ≥ a_x) (h_by_ge_ay : b_y ≥ a_y)
     (A B : F[X][Y])
@@ -54,7 +54,7 @@ theorem polishchuk_spielman {F : Type} [Field F]
     (h_g_degX : b_x ≥ Polynomial.Bivariate.degreeX B)
     (h_f_degY : a_y ≥ Polynomial.Bivariate.natDegreeY A)
     (h_g_degY : b_y ≥ Polynomial.Bivariate.natDegreeY B)
-    (P_x P_y : Finset F) [Nonempty P_x] [Nonempty P_y]
+    (P_x P_y : Finset F)
     (quot_x : F → F[X]) (quot_y : F → F[X])
     (h_card_Px : n_x ≤ P_x.card) (h_card_Py : n_y ≤ P_y.card)
     (h_quot_x : ∀ y ∈ P_y,
@@ -80,8 +80,8 @@ theorem polishchuk_spielman {F : Type} [Field F]
   -- 2. degree bounds for P
   have hdeg : Polynomial.Bivariate.degreeX P ≤ b_x - a_x ∧
       Polynomial.Bivariate.natDegreeY P ≤ b_y - a_y :=
-    ps_degree_bounds_of_mul (F := F) a_x a_y b_x b_y n_x n_y h_bx_ge_ax h_by_ge_ay
-      (A := A) (B := B) (P := P) hA0 hBA h_f_degX h_f_degY h_g_degY P_x P_y
+    ps_degree_bounds_of_mul (F := F) a_x a_y b_x b_y n_x n_y h_bx_ge_ax
+      (A := A) (B := B) (P := P) hA0 hBA h_f_degX h_g_degY P_x P_y
       quot_x quot_y h_card_Px h_card_Py h_quot_x h_quot_y h_le_1
   -- 3. cancellation in X gives Q_x
   have h_quot_y_eq :

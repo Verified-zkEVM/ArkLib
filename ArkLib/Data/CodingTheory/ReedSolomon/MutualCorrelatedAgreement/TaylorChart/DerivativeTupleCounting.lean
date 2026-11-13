@@ -49,7 +49,7 @@ theorem admissibleChartTuples_card_le_derivativeCapped_of_exponent
     (domain : Fin n ↪ F) (w : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
     (center : E) (Q : DifferentialPolynomial E[X] 1) (K k L v u τ : ℕ)
     (hτ : TaylorExponentSufficient 1 K τ) (hτpos : 0 < τ)
-    (hK : 1 < K) (hkK : k ≤ K) (hkL : k ≤ L) (hLn : L ≤ n)
+    (hK : 1 < K) (hkK : k ≤ K) (hkL : k ≤ L)
     (hu : 0 < u) (huv : u ≤ v)
     (hjet : Q.weightedTotalDegree (fun i ↦ i.elim 0 (fun _ ↦ 1)) ≤ v)
     (hderiv : Q.degreeOf (some 1) ≤ u)
@@ -63,6 +63,9 @@ theorem admissibleChartTuples_card_le_derivativeCapped_of_exponent
   · subst tuples
     simp only [Finset.card_empty, Nat.cast_zero]
     positivity
+  obtain ⟨P, hP⟩ := Finset.nonempty_iff_ne_empty.mpr hempty
+  have hLn : L ≤ n := (htuples P hP).common.trans (by
+    simpa using Finset.card_le_univ (commonCurveAgreementSet domain w P))
   obtain ⟨z, jets, _, _, _, hcard, hS, hA⟩ :=
     exists_regularHighCutJetImage_of_admissibleChartTuples
     domain w iota center Q K k L τ hτ hkK tuples htuples
@@ -100,7 +103,7 @@ theorem admissibleChartTupleFamilyAtExponent_card_le_derivativeCapped
     (domain : Fin n ↪ F) (w : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
     (center : E) (Q : DifferentialPolynomial E[X] 1) (K k L v u τ : ℕ)
     (hτ : TaylorExponentSufficient 1 K τ) (hτpos : 0 < τ)
-    (hK : 1 < K) (hkK : k ≤ K) (hkL : k ≤ L) (hLn : L ≤ n)
+    (hK : 1 < K) (hkK : k ≤ K) (hkL : k ≤ L)
     (hu : 0 < u) (huv : u ≤ v)
     (hjet : Q.weightedTotalDegree (fun i ↦ i.elim 0 (fun _ ↦ 1)) ≤ v)
     (hderiv : Q.degreeOf (some 1) ≤ u) :
@@ -108,7 +111,7 @@ theorem admissibleChartTupleFamilyAtExponent_card_le_derivativeCapped
       firstOrderCurveFiberStageOne K v u τ *
         (((n - k + 1 : ℕ) : ℚ) / ((L - k + 1 : ℕ) : ℚ)) := by
   apply admissibleChartTuples_card_le_derivativeCapped_of_exponent
-    domain w iota center Q K k L v u τ hτ hτpos hK hkK hkL hLn hu huv hjet hderiv
+    domain w iota center Q K k L v u τ hτ hτpos hK hkK hkL hu huv hjet hderiv
   intro P hP
   exact (mem_admissibleChartTupleFamilyAtExponent_iff
     domain w iota center Q K k L τ hkL P).mp hP

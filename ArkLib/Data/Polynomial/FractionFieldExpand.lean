@@ -31,11 +31,14 @@ variable {R K : Type*} [CommRing R] [Field K]
 /-- Separating a fraction-field irreducible by Frobenius contraction does not introduce
 denominators into its coefficients. The expansion identity and degree equality hold over `R`.
 The irreducibility premise deliberately applies after mapping, excluding pure content factors. -/
-theorem exists_fractionField_separable_expand (p : ℕ) [CharP K p] (hp : p ≠ 0)
+theorem exists_fractionField_separable_expand (p : ℕ) [CharP K p]
     {f : R[X]} (hf : Irreducible (f.map (algebraMap R K))) :
     ∃ (n : ℕ) (g : R[X]), Irreducible (g.map (algebraMap R K)) ∧
       (g.map (algebraMap R K)).Separable ∧
       expand R (p ^ n) g = f ∧ g.natDegree * p ^ n = f.natDegree := by
+  rcases eq_or_ne p 0 with rfl | hp
+  · have : CharZero K := CharP.charP_to_charZero K
+    exact ⟨0, f, hf, hf.separable, by simp, by simp⟩
   obtain ⟨n, g, hg, hgf⟩ := exists_separable_of_irreducible p hf hp
   have hpow : p ^ n ≠ 0 := pow_ne_zero n hp
   have hmap : (contract (p ^ n) f).map (algebraMap R K) = g := by

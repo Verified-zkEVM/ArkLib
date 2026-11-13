@@ -134,7 +134,7 @@ def stateFunctionOfBadEvents
         (simulateQ impl (verifier.run stmt tr)).run' (← init)}[result ∈ langOut] = 0) :
     verifier.StateFunction init impl langIn langOut where
   toFun := badEventState langIn bad
-  toFun_empty := fun stmt ↦ (badEventState_zero langIn bad stmt default).symm
+  toFun_empty := fun stmt ↦ (badEventState_zero langIn bad stmt default).mp
   toFun_next := badEventState_prover_next langIn bad
   toFun_full := by
     intro stmt tr h
@@ -145,8 +145,7 @@ def stateFunctionOfBadEvents
 
 variable [∀ i, SampleableType (pSpec.Challenge i)]
 
-/-- Conditional bounds on fresh bad events imply actual round-by-round soundness,
-including against arbitrary adaptive provers via ArkLib's existing worst-case bridge. -/
+/-- Conditional bounds on fresh bad events give round-by-round soundness. -/
 theorem rbrSoundness_of_badEvents
     (hterminal : ∀ stmt (tr : pSpec.FullTranscript), stmt ∉ langIn →
       (∀ i : pSpec.ChallengeIdx, ¬ bad i stmt
@@ -160,7 +159,6 @@ theorem rbrSoundness_of_badEvents
       ¬ badEventState langIn bad i.val.castSucc stmt tr →
       Pr{let c ← $ᵗ (pSpec.Challenge i)}[bad i stmt (tr.concat c)] ≤ ε i) :
     verifier.rbrSoundness init impl langIn langOut ε := by
-  apply rbrSoundnessWorstCase_implies_rbrSoundness
   refine ⟨stateFunctionOfBadEvents langIn bad init impl langOut verifier hterminal, ?_⟩
   intro stmt hstmt i tr
   change Pr{let c ← $ᵗ (pSpec.Challenge i)}[¬ badEventState langIn bad i.val.castSucc stmt tr ∧

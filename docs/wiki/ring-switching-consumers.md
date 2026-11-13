@@ -4,7 +4,7 @@ Use the shared packing kernel to define the consumer's coordinates, then instant
 checked protocol. This guide owns that workflow; the
 [ring-switching tracker](https://github.com/Verified-zkEVM/ArkLib/issues/1286) owns reviewed
 revisions, validation and landing status. The [concept page](../kb/concepts/ring-switching.md)
-owns the mathematical overview. The [native Flock section](#native-flock-and-acceptance) records
+owns the mathematical overview. The [Flock section](#flock-in-the-interaction-layer-and-acceptance) records
 the remaining stage, residual-relation and extraction obligations.
 
 ## Choose the algebra and wire
@@ -47,7 +47,7 @@ commitment scheme rather than restricting `commitsTo` to make a proof easier.
 
 `RingSwitch.perfectCompleteness` works over the stated commutative-ring/algebra structures.
 A collision certificate is unnecessary for that theorem. Its security theorem
-`RingSwitch.rbrKnowledgeSoundnessWorstCase` additionally uses a certified strategy,
+`RingSwitch.rbrKnowledgeSoundness` additionally uses a certified strategy,
 `pc.Functional`, injective coefficient transport `P → C`, and a finite sampled challenge ring
 `C` with no zero divisors. There is no separate `IsDomain P` premise, although injectivity into
 `C` already implies that `P` has no zero divisors. No such condition is required of `E`. The challenge-index error sum is exactly
@@ -96,55 +96,66 @@ and batching challenge accompany an evaluation claim against the same committed 
 Retaining those values does not prove an additional invariant about them. A consumer must
 transport its own inherited relation on that context and witness.
 
-`RingSwitch.append_perfectCompleteness` and `append_rbrKnowledgeSoundnessWorstCase` consume an
+`RingSwitch.append_perfectCompleteness` and `append_rbrKnowledgeSoundness` consume an
 opening whose input already matches this contextual relation. `OpeningAdapter` converts a general
 `MLIOPCS` to this relation through a zero-round context projection and witness wrapper, transporting
-completeness and worst-case soundness.
+completeness and round-by-round knowledge soundness from its `rbrKnowledgeSoundness` field.
 Completeness must hold for every
-fixed initial state; worst-case RBR must cover all inputs in the stated contextual evaluation
+fixed initial state; RBR must cover all inputs in the stated contextual evaluation
 relation, not only a selected honest encoding or context. Match the commitment, oracle
 interfaces, prover, verifier, witness and extraction transport. Keep strict honest encoding for
 completeness distinct from relaxed compatibility used by security.
 
 The [Binius ring switch][binius] instantiates `TensorPrefix` and appends the Binary Basefold
 contextual opening. Its bundled
-`fullReduction_perfectCompleteness_and_rbrKnowledgeSoundnessWorstCase` theorem includes
-completeness, worst-case round-by-round knowledge soundness and the total-error bound.
+`fullReduction_perfectCompleteness_and_rbrKnowledgeSoundness` theorem includes
+completeness, round-by-round knowledge soundness and the total-error bound.
 The maintained [composite fixture][composite] uses a nonconstant `GF(16)/GF(2)` source and its
 honest codeword encoding. It checks sampled acceptance and a full challenge-error
 sum bounded below one. A direct-polynomial opening example alone would not certify this backend.
-These exports prove round-by-round guarantees, with no ordinary knowledge-soundness claim.
-The repository's conversion from RBR to ordinary knowledge soundness remains admitted.
+The same file also exports ordinary knowledge soundness, derived from the round-by-round result
+through the proved guarded bridge `Verifier.GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundness`
+in `ArkLib/OracleReduction/Security/GuardedBridges.lean`.
+`Binius.FRIBinius.RingSwitch.fullReduction_perfectCompleteness_and_knowledgeSoundness` pairs
+perfect completeness on exact encodings (the strict view of the input interface) with
+`Binius.FRIBinius.RingSwitch.fullVerifier_knowledgeSoundness` on the relaxed compatibility
+relation. The knowledge error is `κ/|L| + ℓ' * (2/|L|)` plus the concrete Binary Basefold knowledge error
+`BinaryBasefold.FullBinaryBasefold.concreteBinaryBasefoldKnowledgeError L ℓ' R γ`.
+For the generic packing ring switch,
+`RingSwitching.Packing.RingSwitch.perfectCompleteness_and_knowledgeSoundness` gives ordinary
+knowledge error `bat.error + m * (2/|C|)` through
+`OracleVerifier.knowledgeSoundness_of_rbrKnowledgeSoundness_of_guarded`.
 
 Hachi §3.1 remains a deterministic trace-head consumer of the coordinate and relation layers,
 with its [own conformance theorem][hachi]. Its CWSS and weak-opening contract are separate from
 this randomized product-sumcheck route.
 
-## Native Flock and acceptance
+## Flock in the interaction layer and acceptance
 
 The [ring-switching tracker](https://github.com/Verified-zkEVM/ArkLib/issues/1286) records delivery
-status. The early residual-conformance milestone is separate from full native security.
+status. The early residual-conformance milestone is separate from full Flock security.
 
-### Early residual conformance (F0/F1)
+### Early residual conformance
 
-- Prove the source-pinned correspondence between the native polynomial, variable order, bases and
-  shared layout, and reconstruction through the native head.
+- Prove the source-pinned correspondence between Flock's interaction-layer polynomial, variable
+  order and bases and the shared layout, and reconstruction through its interaction-layer head.
 - Prove honest completeness on the derived wire, with honest commitment coverage and explicit
   preservation of the inherited residual relation `R(ctx, p)`.
 - Apply shared fixed-list separation to that residual relation under an explicit prechallenge
   covering-list hypothesis: the fixed list covers every compatible packed polynomial satisfying
   the inherited relation. End at the same-source packed-opening relation `pc.evalRel`.
 
-This milestone is conditional on the stated inherited-relation and covering-list premises. It
-establishes neither full native round-by-round security nor ordinary knowledge soundness.
-The quirky fixture proves shared-layout properties; it does not establish native conformance.
+This milestone is conditional on the stated inherited-relation and covering-list premises. For
+Flock it establishes neither full round-by-round security nor ordinary knowledge soundness;
+the ordinary knowledge-soundness exports above concern the Binius and packing ring switches.
+The quirky fixture proves shared-layout properties; it does not establish Flock conformance.
 
-### Later native security and PCS integration
+### Later Flock security and PCS integration
 
-Prove that the native zerocheck and lincheck stages produce the required residual relation,
+Prove that the interaction-layer zerocheck and lincheck stages produce the required residual relation,
 then establish adaptive list transport and joint-list security through subsequent stages.
 Joint extraction and a compatible opening protocol with its security theorem are further
-obligations. These proofs discharge the early result's premises and connect it to full native
+obligations. These proofs discharge the early result's premises and connect it to full Flock
 security and PCS integration. The staged Frobenius construction has its own maps, challenge
 schedule and endpoint.
 

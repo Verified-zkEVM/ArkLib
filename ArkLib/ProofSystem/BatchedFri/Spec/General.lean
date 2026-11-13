@@ -12,7 +12,17 @@ public import ArkLib.ProofSystem.Fri.Spec.General
 /-!
 # ArkLib.ProofSystem.BatchedFri.Spec.General
 
-Definitions and results for this component of ArkLib.
+The batching round parameterized by a proximity generator `G`, followed by the FRI reduction.
+Independent coefficients, powers, and multilinear monomials differ only in their generator
+and correlated-agreement error; the relations and FRI stage are shared.
+
+## Status
+
+`BatchedFri.Spec.batchedFRI_soundness` in `BatchedFri/EndToEnd.lean` proves the
+composite ordinary soundness bound by sequential composition, and
+`BatchedFri.Spec.batchedFRI_perfectCompleteness` proves perfect completeness at radius zero.
+Composite knowledge soundness is out of scope
+because the batching round has no extractor.
 -/
 
 @[expose] public section
@@ -35,26 +45,25 @@ open OracleSpec OracleComp ProtocolSpec NNReal BatchingRound Domain
    - `domain_size_cond`, a proof that the initial evaluation domain is large enough to test
       for proximity of a polynomial of appropriate degree.
   - `l`, the number of round consistency checks to be run by the query round.
-  - `m`, number of batched polynomials.
+  - `m`, one less than the number of batched input polynomials.
 -/
 variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
 variable {n : ℕ}
 variable (k : ℕ) (s : Fin (k + 1) → ℕ+) (d : ℕ+)
 variable (dom_size_cond : (2 ^ (∑ i, (s i).1)) * d ≤ 2 ^ n)
 variable (l m : ℕ)
+variable {S : Type} [Fintype S] [Nonempty S]
+variable (G : CoreDefinitions.Generator S (Fin (m + 1)) F)
 variable {ω : SmoothCosetFftDomain n F}
 
--- /- Input/Output relations for the Batched FRI protocol. -/
-def inputRelation (δ : ℝ≥0) :
-    Set
-      (
-        Unit × (∀ j, OracleStatement m ω j) × (Witness F s d m)
-      ) := sorry
+/-- The composite protocol starts with the batching round's correlated-agreement relation. -/
+abbrev inputRelation (δ : ℝ≥0) :=
+  BatchingRound.inputRelation (ω := ω) s d m δ
 
 
 instance instBatchFRIreductionMessageOI : ∀ j,
   OracleInterface
-    ((batchSpec F m ++ₚ
+    ((batchSpec S ++ₚ
       (
         Fri.Spec.pSpecFold k (ω := ω) s ++ₚ
         Fri.Spec.FinalFoldPhase.pSpec F ++ₚ
@@ -65,7 +74,7 @@ instance instBatchFRIreductionMessageOI : ∀ j,
 
 instance instBatchFRIreductionChallengeOI : ∀ j,
   OracleInterface
-    ((batchSpec F m ++ₚ
+    ((batchSpec S ++ₚ
       (
         Fri.Spec.pSpecFold k (ω := ω) s ++ₚ
         Fri.Spec.FinalFoldPhase.pSpec F ++ₚ
@@ -78,7 +87,7 @@ instance instBatchFRIreductionChallengeOI : ∀ j,
 @[reducible]
 def batchedFRIreduction :=
   OracleReduction.append
-    (BatchingRound.batchOracleReduction s d m)
+    (BatchingRound.batchOracleReduction s d m G)
     (Fri.Spec.reduction (ω := ω) k s d dom_size_cond l)
 
 end Spec

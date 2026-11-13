@@ -169,7 +169,7 @@ example : ∃ cert : SymbolicReceivedCurve.Certificate 2 1 1 3 1 35 twoPointEmbe
   obtain ⟨cert⟩ := exists_weightedSupport_certificate_of_fixed_margin
     (F := ℚ) (D := 1) (d := 1)
     (W := 0) (m := 2) (A := 2) (k := 1) (g₀ := 1) Nat.one_pos (by norm_num)
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) twoPointEmbedding
+    (by norm_num) (by norm_num) twoPointEmbedding
     (fun _ => 0) (fun _ => 0) (by
       have hmargin := twoPointFixedMargin (F := ℚ)
       have hcut : ((1 : ℕ) : ℝ) * 2 * (1 + (1 : ℝ)) = 4 := by norm_num
@@ -185,8 +185,8 @@ example : Nonempty (SymbolicReceivedCurve.Certificate 2 1 2 3 1 71 twoPointEmbed
   rw [← hcut] at hmargin
   exact SymbolicReceivedCurve.exists_certificate_of_fixed_margin
     (F := ℚ) (d := 1) (D := 1) (m := 2) (W := 0) (A := 2) (k := 1) (ℓ := 2)
-    (g₀ := 1) Nat.one_pos (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num) twoPointEmbedding (fun _ => Polynomial.X ^ 2 + 1)
+    (g₀ := 1) Nat.one_pos (by norm_num) (by norm_num) (by norm_num) twoPointEmbedding
+    (fun _ => Polynomial.X ^ 2 + 1)
     (by intro i; norm_num) hmargin
 
 private def curveTestEmbedding (n : ℕ) : Fin n ↪ ℚ where
@@ -232,10 +232,6 @@ example : Nonempty (SymbolicReceivedCurve.Certificate curveTestLength 0 2
     (curveTestEmbedding curveTestLength) (quadraticReceivedCurve curveTestLength)) := by
   let D := 4 * curveTestMultiplicity
   have hm : 0 < curveTestMultiplicity := curveTestMultiplicity_pos
-  have hn : 0 < curveTestLength := by
-    dsimp [curveTestLength]
-    omega
-  have hD : 0 < D := by omega
   have hρ : (D : ℝ) / curveTestLength = 1 / 2 := by
     dsimp [D, curveTestLength]
     push_cast
@@ -264,8 +260,8 @@ example : Nonempty (SymbolicReceivedCurve.Certificate curveTestLength 0 2
     (F := ℚ) (δ := 1 / 8) (n := curveTestLength) (D := D)
     (A := curveTestLength) (k := 0) (ℓ := 2)
     (curveTestEmbedding curveTestLength) (quadraticReceivedCurve curveTestLength)
-    (by intro i; norm_num [quadraticReceivedCurve]) (by omega) (by norm_num) (by norm_num)
-    hn hD hρlo hρhi (by omega) hslack
+    (by intro i; norm_num [quadraticReceivedCurve]) (by norm_num) (by norm_num)
+    hρlo hρhi (by omega) hslack
   simpa [curveTestOrder, curveTestHarmonic, curveTestMultiplicity, D] using hcert
 
 /-- The prescribed block constructor applies to a quadratic received curve. -/
@@ -285,7 +281,7 @@ example : Nonempty (SymbolicReceivedCurve.Certificate
   have hcert := SymbolicReceivedCurve.exists_prescribed_certificate
     (F := ℚ) (δ := 1 / 8) (n := curveTestLength) (k := 0) (ℓ := 2)
     (curveTestEmbedding curveTestLength) (quadraticReceivedCurve curveTestLength)
-    (by intro i; norm_num [quadraticReceivedCurve]) (by omega) (by norm_num) (by norm_num)
+    (by intro i; norm_num [quadraticReceivedCurve]) (by norm_num) (by norm_num)
     (by
       dsimp only
       rw [hx]
@@ -319,7 +315,7 @@ example : ∀ u, ((SourceColumn.interpolant sourceColumns
   have hbound : ∀ u, ((SourceColumn.interpolant sourceColumns
       ![(Polynomial.X : ℚ[X]), 1]).coeff u).natDegree ≤ 2 - 1 :=
     SourceColumn.coeff_interpolant_natDegree_le (h := 2 - 1) sourceColumns
-      sourceColumnsInjective ![(Polynomial.X : ℚ[X]), 1]
+      ![(Polynomial.X : ℚ[X]), 1]
       (by intro j; fin_cases j <;> norm_num [sourceColumns])
   intro u
   have h := hbound u
@@ -343,7 +339,7 @@ example :
   have hdegree : ∀ j, totalJetDegree (twoPointWeightedColumns j).exponent ≤ 1 := by
     intro j
     have h := totalJetDegree_le_pred_of_weightedSupportEligible (D := 1) (d := 1)
-      (W := 0) (t := 2) Nat.one_pos (by norm_num) (hband j)
+      (W := 0) (t := 2) (by norm_num) (hband j)
     simpa using h
   exact ⟨SourceColumn.interpolant_totalJetDegree_le twoPointWeightedColumns hdegree
       (fun _ => 1),
@@ -617,7 +613,7 @@ example : differentialSpecialization
     (0 : ℚ[X]) = 0 := by
   exact differentialSpecialization_curve_interpolant_eq_zero_of_agreements
     (F := ℚ) (E := ℚ) (d := 0) (D := 1) (m := 1) (A := 2) (W := 0) (L := 2)
-    Nat.one_pos (by norm_num) (by norm_num) twoPointEmbedding (fun _ => 0)
+    (by norm_num) twoPointEmbedding (fun _ => 0)
     agreementSoundnessColumns agreementSoundnessColumn_eligible (fun _ => 1)
     agreementSoundnessLocalConstraints (RingHom.id ℚ) 0 Finset.univ 0 (by norm_num)
     twoPointEmbedding.injective.injOn (by norm_num) (by intro i hi; simp)
@@ -629,7 +625,7 @@ example : differentialSpecialization
     (0 : ℚ[X]) = 0 := by
   exact differentialSpecialization_map_interpolant_eq_zero_of_agreements
     (F := ℚ) (E := ℚ) (d := 0) (D := 1) (m := 1) (A := 2) (W := 0) (L := 2)
-    Nat.one_pos (by norm_num) (by norm_num) twoPointEmbedding (fun _ => 0) (fun _ => 0)
+    (by norm_num) twoPointEmbedding (fun _ => 0) (fun _ => 0)
     agreementSoundnessColumns agreementSoundnessColumn_eligible (fun _ => 1)
     (by simpa [receivedLine] using agreementSoundnessLocalConstraints)
     (RingHom.id ℚ) 0 Finset.univ 0 (by norm_num) twoPointEmbedding.injective.injOn
@@ -642,7 +638,7 @@ example : differentialSpecialization
     (0 : ℚ[X]) = 0 := by
   exact differentialSpecialization_map_interpolant_eq_zero_of_degree_lt
     (F := ℚ) (E := ℚ) (d := 0) (D := 1) (m := 1) (A := 2) (W := 0) (L := 2) (k := 1)
-    Nat.one_pos (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num)
     twoPointEmbedding (fun _ => 0) (fun _ => 0)
     agreementSoundnessColumns agreementSoundnessColumn_eligible (fun _ => 1)
     (by simpa [receivedLine] using agreementSoundnessLocalConstraints)
@@ -678,7 +674,6 @@ private def onePointEmbedding : Fin 1 ↪ ℚ where
 example : Nonempty (JohnsonSymbolicCertificate (F := ℚ) 1 2 2 1 1 0 4
     onePointEmbedding (fun _ => 0) (fun _ => 0)) := by
   apply exists_weighted_johnson_symbolic_certificate
-  · norm_num
   · norm_num
   · norm_num
   · norm_num [johnsonSourceSlotCount]

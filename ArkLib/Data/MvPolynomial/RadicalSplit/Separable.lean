@@ -60,6 +60,7 @@ variable {L : Type*} [IsDomain R] [Field L] [Algebra (MvPolynomial σ R) L]
 
 open Polynomial
 
+omit [IsDomain R] in
 /-- The product of the distinct positive-`none`-degree factors of `Q` is separable over the
 fraction field of the coefficient polynomials when the characteristic is zero or exceeds the
 `none`-degree of `Q`. -/
@@ -69,6 +70,9 @@ theorem radicalPrimPart_map_optionEquivLeft_fractionRing_separable
     ((optionEquivLeft R σ (radicalPrimPart none Q)).map
       (algebraMap (MvPolynomial σ R) L)).Separable := by
   classical
+  have : Nontrivial (MvPolynomial σ R) := (algebraMap (MvPolynomial σ R) L).domain_nontrivial
+  have : Nontrivial R := (C : R →+* MvPolynomial σ R).domain_nontrivial
+  have : IsDomain R := {}
   let s := positiveDegreeFactorClasses none Q
   let A : Associates (MvPolynomial (Option σ) R) → Polynomial (MvPolynomial σ R) :=
     fun a ↦ optionEquivLeft R σ a.rep
@@ -136,6 +140,7 @@ theorem radicalPrimPart_map_optionEquivLeft_fractionRing_separable
   rw [hmap]
   simpa only [f] using hsep
 
+omit [IsDomain R] in
 /-- The ordinary-root polynomial is separable over the fraction field when the characteristic is
 zero or exceeds the degree of its defining polynomial in `X none`. -/
 theorem ordinaryRootPolynomial_map_fractionRing_separable

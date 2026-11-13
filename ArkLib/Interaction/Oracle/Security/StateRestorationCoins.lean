@@ -11,10 +11,10 @@ public import VCVio.EvalDist.Monad.Option
 /-!
 # State-restoration knowledge soundness with pre-sampled private coins
 
-Both actual native restoration games satisfy the same `(Q + rounds.length) * error` bound
+Both actual restoration games satisfy the same `(Q + rounds.length) * error` bound
 when the adversary's private coins are sampled before the fresh cached game.
 The possibly failing coin author runs independently before a fresh empty cached game.
-For each returned coin, the deterministic native adversary adapts to all oracle answers
+For each returned coin, the deterministic adversary adapts to all oracle answers
 and obeys an all-branch query bound. This is a random-tape-family theorem: it does not
 assert equivalence with arbitrary interleaved coin/oracle effects.
 -/
@@ -30,7 +30,7 @@ universe w
 
 variable {Input Salt W : Type} {rounds : List Round}
 
-/-- Average actual native restoration soundness over independent, possibly failing private coins.
+/-- Average actual restoration soundness over independent, possibly failing private coins.
 Every fixed-coin adversary may adapt to all oracle responses and has the same all-branch bound. -/
 theorem stateRestoration_knowledge_soundness_privateCoins
     [DecidableEq Input] [DecidableEq Salt]

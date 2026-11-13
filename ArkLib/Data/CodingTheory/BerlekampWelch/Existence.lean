@@ -136,24 +136,26 @@ lemma Q'_div_E'_eq_p
   (hk_n : k ≤ n)
   (h_ham : (Δ₀(f, p.eval ∘ ωs) : ℕ) ≤ e)
   (h_diff : Function.Injective ωs)
-  (h_Q' : Q' ≠ 0)
-  (hp : p ≠ 0)
   (h_cond : BerlekampWelchCondition e k ωs f E' Q') :
   E' ∣ Q' ∧ Q' / E' = p := by
-  have h_eq := E_and_Q_unique he hk_n (Q_ne_zero hp) h_Q' h_diff
+  have h_eq := E_and_Q_unique he hk_n h_diff
     (E_and_Q_BerlekampWelch_condition hp_deg h_ham)
     h_cond
   have : Q' = E' * p := by
     simp only [Q] at h_eq
     rw [←mul_assoc, mul_comm (E' * _)] at h_eq; simp_all
+  have := BerlekampWelch_E_ne_zero h_cond
   simp_all
 
 /-- If only up to `e` errors happened `linsolve` cannot fail to find a solution. -/
 lemma linsolve_always_some_berlekamp_welch
-    [NeZero n]
-  (hp_deg : p.natDegree < k)
+    (hp_deg : p.natDegree < k)
   (h_ham : (Δ₀(f, p.eval ∘ ωs) : ℕ) ≤ e) :
   linsolve (BerlekampWelchMatrix e k ωs f) (Rhs e ωs f) ≠ none := fun contr ↦ by
+    by_cases hn : n = 0
+    · subst n
+      exact linsolve_none contr ⟨0, Subsingleton.elim _ _⟩
+    have : NeZero n := ⟨hn⟩
     refine linsolve_none contr ⟨E_and_Q_to_a_solution e (E ωs f p e) (Q ωs f p e), ?p₁⟩
     rw [←IsBerlekampWelchSolution_def]
     simp [

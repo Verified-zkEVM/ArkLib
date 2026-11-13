@@ -7,6 +7,7 @@ Authors: Alexander Hicks
 module
 
 public import ArkLib.OracleReduction.Security.Accumulation
+public import ArkLib.OracleReduction.Security.Guarded
 public import VCVio.EvalDist.Monad.Option
 
 /-!
@@ -14,8 +15,10 @@ public import VCVio.EvalDist.Monad.Option
 
 Bounds on the actual prover transcript imply ordinary and knowledge soundness when the
 verifier rejects outside the bounded event. Deterministic transcript extractors retain their
-optional result as a value, so an absent witness counts as extraction failure. The bounds
-retain the shared oracle state throughout the actual execution.
+optional result as a value, so an absent witness counts as extraction failure. For guarded
+verifiers, extraction may also depend on the actual output witness, and accepted failed
+extractions need only certify the bounded event. The bounds retain the shared oracle state
+throughout the actual execution.
 -/
 
 @[expose] public section
@@ -25,24 +28,6 @@ open scoped NNReal
 
 variable {ι : Type} {oSpec : OracleSpec ι}
 variable {StmtIn WitIn StmtOut WitOut : Type} {n : ℕ} {pSpec : ProtocolSpec n}
-
-/-- Expose the prover/verifier boundary in the optional reduction execution. -/
-theorem Reduction.run_run_eq_bind
-    (reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
-    (stmt : StmtIn) (wit : WitIn) :
-    (reduction.run stmt wit).run = (do
-      let pr ← reduction.prover.run stmt wit
-      let out ← liftComp (reduction.verifier.run stmt pr.1).run
-        (oSpec + [pSpec.Challenge]ₒ)
-      pure (out.map (fun v ↦ (pr, v)))) := by
-  simp only [Reduction.run, OptionT.run_bind, ← monadLift_liftM_OptionT,
-    OptionT.run_monadLift, Option.elimM,
-    bind_map_left, Option.elim_some, liftComp_eq_liftM]
-  congr 1
-  funext pr
-  congr 1
-  funext out
-  cases out <;> rfl
 
 namespace Verifier
 
@@ -86,10 +71,12 @@ def Extractor.Straightline.ofTranscript (e : StmtIn → pSpec.FullTranscript →
     Extractor.Straightline oSpec StmtIn WitIn WitOut pSpec :=
   fun stmt _ tr _ _ ↦ OptionT.mk (pure (e stmt tr))
 
-private theorem Reduction.ofTranscript_game_eq_map
-    (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
+/-- A deterministic extractor reading only the statement and transcript can discard both query
+logs. -/
+theorem Reduction.ofTranscript_game_eq_map
+    {Aux : Type} (R : Reduction oSpec StmtIn Aux StmtOut WitOut pSpec)
     (e : StmtIn → pSpec.FullTranscript → Option WitIn)
-    (stmt : StmtIn) (wit : WitIn) :
+    (stmt : StmtIn) (wit : Aux) :
     (do
       let ⟨⟨pr, out⟩, plog, vlog⟩ ← R.runWithLog stmt wit
       let extracted ← liftM
@@ -113,12 +100,12 @@ theorem Verifier.knowledgeSoundnessWith_of_transcript_event
     (ε : NNReal) (E : StmtIn → pSpec.FullTranscript → Prop)
     (hreject : ∀ stmt tr, (∀ p ∈ e stmt tr, (stmt, p) ∉ relIn) → ¬ E stmt tr →
       (V.run stmt tr).run = pure none)
-    (hbound : ∀ (stmt : StmtIn) (wit : WitIn)
-      (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) (os : σ),
+    (hbound : ∀ (Aux : Type) (stmt : StmtIn) (wit : Aux)
+      (P : Prover oSpec StmtIn Aux StmtOut WitOut pSpec) (os : σ),
       Pr{let x ← (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
         (P.run stmt wit)).run os}[E stmt x.1.1] ≤ ε) :
     V.knowledgeSoundnessWith init impl relIn relOut (Extractor.Straightline.ofTranscript e) ε := by
-  intro stmt wit P
+  intro Aux stmt wit P
   change Pr{let result ← OptionT.mk do
     (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
       (do
@@ -133,7 +120,7 @@ theorem Verifier.knowledgeSoundnessWith_of_transcript_event
   intro os _
   rw [StateT.run'_eq, prEvent_map, Reduction.run_run_eq_bind,
     simulateQ_bind, StateT.run_map, prEvent_map, StateT.run_bind]
-  refine le_trans ?_ (hbound stmt wit P os)
+  refine le_trans ?_ (hbound Aux stmt wit P os)
   refine prEvent_bind_le_prEvent_of_support
     ((simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
       (P.run stmt wit)).run os)
@@ -147,3 +134,82 @@ theorem Verifier.knowledgeSoundnessWith_of_transcript_event
     apply prEvent_eq_zero_of_forall_mem_support
     intro a _
     cases a.1 <;> simp [Option.mem_def, hfail]
+
+
+/-- Make a pure straightline extractor from the actual output witness and transcript.
+An absent result is retained as an extraction failure, rather than aborting the security game. -/
+def Extractor.Straightline.ofTranscriptAndOutput
+    (e : StmtIn → WitOut → pSpec.FullTranscript → Option WitIn) :
+    Extractor.Straightline oSpec StmtIn WitIn WitOut pSpec :=
+  fun stmt wit tr _ _ ↦ OptionT.mk (pure (e stmt wit tr))
+
+/-- A deterministic extractor using the actual output witness can discard both query logs. -/
+theorem Reduction.ofTranscriptAndOutput_game_eq_map
+    {Aux : Type} (R : Reduction oSpec StmtIn Aux StmtOut WitOut pSpec)
+    (e : StmtIn → WitOut → pSpec.FullTranscript → Option WitIn)
+    (stmt : StmtIn) (wit : Aux) :
+    (do
+      let ⟨⟨pr, out⟩, plog, vlog⟩ ← R.runWithLog stmt wit
+      let extracted ← liftM
+        ((Extractor.Straightline.ofTranscriptAndOutput e) stmt pr.2.2 pr.1 plog.fst vlog).run
+      pure (stmt, extracted, out, pr.2.2)) =
+    (fun result ↦ (stmt, e stmt result.1.2.2 result.1.1, result.2, result.1.2.2)) <$>
+      R.run stmt wit := by
+  simp only [Extractor.Straightline.ofTranscriptAndOutput, OptionT.run_mk,
+    liftM_pure, bind_pure_comp]
+  rw [← Reduction.runWithLog_discard_logs_eq_run]
+  simp only [Functor.map_map]
+  rfl
+
+/-- An actual-transcript event bound implies guarded knowledge soundness when every accepted
+output witness whose deterministic extraction fails certifies that event. Both the prover's
+auxiliary input type and the shared oracle state are arbitrary. -/
+theorem Verifier.GuardedForm.knowledgeSoundnessWith_of_output_transcript_event
+    [∀ i, SampleableType (pSpec.Challenge i)] {σ : Type}
+    {V : Verifier oSpec StmtIn StmtOut pSpec} (G : V.GuardedForm)
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+    (e : StmtIn → WitOut → pSpec.FullTranscript → Option WitIn)
+    (ε : NNReal) (E : StmtIn → pSpec.FullTranscript → Prop)
+    (hterminal : ∀ stmt tr wit, G.check stmt tr = true →
+      (G.out stmt tr, wit) ∈ relOut →
+      (∀ p ∈ e stmt wit tr, (stmt, p) ∉ relIn) → E stmt tr)
+    (hbound : ∀ (Aux : Type) (stmt : StmtIn) (wit : Aux)
+      (P : Prover oSpec StmtIn Aux StmtOut WitOut pSpec) (os : σ),
+      Pr{let x ← (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
+        (P.run stmt wit)).run os}[E stmt x.1.1] ≤ ε) :
+    V.knowledgeSoundnessWith init impl relIn relOut
+      (Extractor.Straightline.ofTranscriptAndOutput e) ε := by
+  intro Aux stmt wit P
+  change Pr{let result ← OptionT.mk do
+    (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
+      (do
+        let ⟨⟨pr, out⟩, plog, vlog⟩ ← (Reduction.mk P V).runWithLog stmt wit
+        let extracted ← liftM
+          ((Extractor.Straightline.ofTranscriptAndOutput e) stmt pr.2.2 pr.1 plog.fst vlog).run
+        pure (stmt, extracted, out, pr.2.2)).run).run' (← init)}[
+      (∀ p ∈ result.2.1, (result.1, p) ∉ relIn) ∧ (result.2.2.1, result.2.2.2) ∈ relOut] ≤ ε
+  rw [Reduction.ofTranscriptAndOutput_game_eq_map, OptionT.run_map, simulateQ_map]
+  rw [OptionT.prEvent_eq_run]
+  apply prEvent_bind_le_of_forall_le_of_support _ _ _
+  intro os _
+  rw [StateT.run'_eq, prEvent_map, Reduction.run_run_eq_bind,
+    simulateQ_bind, StateT.run_map, prEvent_map, StateT.run_bind]
+  refine le_trans ?_ (hbound Aux stmt wit P os)
+  refine prEvent_bind_le_prEvent_of_support
+    ((simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
+      (P.run stmt wit)).run os)
+    _ (fun x ↦ E stmt x.1.1) _ ?_
+  intro x _ hE
+  have hrun : (V.run stmt x.1.1).run =
+      if G.check stmt x.1.1 then pure (some (G.out stmt x.1.1)) else pure none := by
+    simp only [Verifier.run, G.verify_eq stmt x.1.1]
+    split <;> rfl
+  by_cases hc : G.check stmt x.1.1 = true
+  · have hnot : ¬ ((∀ p ∈ e stmt x.1.2.2 x.1.1, (stmt, p) ∉ relIn) ∧
+        (G.out stmt x.1.1, x.1.2.2) ∈ relOut) := by
+      intro h
+      exact hE (hterminal stmt x.1.1 x.1.2.2 hc h.2 h.1)
+    simp only [Option.mem_def] at hnot
+    simp [hrun, hc, simulateQ_pure, StateT.run_pure, hnot]
+  · simp [hrun, hc, simulateQ_pure, StateT.run_pure]

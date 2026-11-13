@@ -13,7 +13,7 @@ an ordinary public-send suffix or an oracle-send suffix. The actual exported mid
 the first concrete payload, so the witness carrier is `Fin (payload + 1)`. Suffix witnesses have
 an additional unit component, which the named backward extractor removes. Both middle branches
 are certified, including the false branch, and the final relation uses the actual closed suffix
-claim. These clients use ordinary public imports and execute both the native run and extractor.
+claim. These clients use ordinary public imports and execute both the run and extractor.
 -/
 
 open Interaction.Oracle Interaction.Oracle.Security Interaction.Oracle.TypeTree
@@ -186,7 +186,7 @@ def nativeProver : Prover.Strategy emptySpec combined.tree combined.roles (fun _
   · exact pure (pure ⟨(99 : Nat), (73 : Nat)⟩)
   · exact pure (pure ⟨(), (41 : Nat)⟩)
 
-/-- Close only the claim returned by the same native execution. -/
+/-- Close only the claim returned by the same execution. -/
 def closedExecution : OracleComp emptySpec
     ((_path : combined.tree.ExecutionPath) × Nat × Option (ClosedClaim Bool exportFamily)) :=
   (fun result => ⟨result.1, result.2.1, result.2.2.map (fun claim => claim.closeWith

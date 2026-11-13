@@ -107,12 +107,21 @@ theorem query_acceptance_probability (tr : FoldTrace domain d) (t : ℕ)
   simpa using Probability.prob_uniform_pi_mem_finset_eq tr.accepting t
 
 /-- A lower bound on repeated-query acceptance implies the corresponding density bound.
-The positive repetition count is essential; no safety assumption is needed here. -/
+The positive repetition count is essential; safety and final-code assumptions are unnecessary. -/
 theorem accepting_card_ge_of_query_probability (tr : FoldTrace domain d)
-    (θ : ℝ) {t : ℕ} (ht : 0 < t) (hfinal : tr.FinalInCode)
+    (θ : ℝ) {t : ℕ} (ht : 0 < t)
     (hprob : ENNReal.ofReal (1 - θ) ^ t ≤ Pr{
       let xs ← $ᵗ (Fin t → Fin (2 ^ n))}[tr.Accepts xs]) :
     (2 ^ n : ℝ) * (1 - θ) ≤ tr.accepting.card := by
+  classical
+  by_cases hfinal : tr.FinalInCode
+  swap
+  · rw [prEvent_congr _ _ (fun _ ↦ False)
+      (fun xs ↦ by simp only [Accepts, hfinal, false_and]),
+      prEvent_const_of_not _ not_false] at hprob
+    have hzero := (pow_eq_zero_iff ht.ne').mp (le_antisymm hprob zero_le)
+    have hnonpos := ENNReal.ofReal_eq_zero.mp hzero
+    exact (mul_nonpos_of_nonneg_of_nonpos (by positivity) hnonpos).trans (by positivity)
   rw [tr.query_acceptance_probability t hfinal] at hprob
   have hbase := (ENNReal.pow_le_pow_left_iff ht.ne').mp hprob
   have hreal : 1 - θ ≤ (tr.accepting.card : ℝ) / 2 ^ n := by
@@ -142,7 +151,7 @@ theorem exists_codeword_agree_on (tr : FoldTrace domain d) (θ : ℝ)
       exact (Finset.mem_filter.mp (hS hi)).2.2
     have hTlarge : (2 ^ (n - k) : ℝ) * (1 - θ) ≤ T.card := by
       have hc : (S.card : ℝ) ≤ 2 ^ k * (T.card : ℝ) := by
-        exact_mod_cast card_le_mul_card_sqFoldMapGen_image domain k S
+        exact_mod_cast card_le_mul_card_sqFoldMapGen_image k S
       have hn : (2 : ℝ) ^ n = 2 ^ k * 2 ^ (n - k) := by
         rw [← pow_add, Nat.add_sub_of_le hk]
       rw [hn] at hlarge
@@ -238,7 +247,7 @@ theorem exists_unique_codeword_agree_of_query_probability (tr : FoldTrace domain
     (hprob : ENNReal.ofReal (1 - δ) ^ t ≤ Pr{
       let xs ← $ᵗ (Fin t → Fin (2 ^ n))}[tr.Accepts xs]) :
     ∃! u, u ∈ code domain d ∧ ∀ i ∈ tr.accepting, u i = tr.initial i := by
-  have hcard := tr.accepting_card_ge_of_query_probability δ ht hfinal hprob
+  have hcard := tr.accepting_card_ge_of_query_probability δ ht hprob
   have hlarge : (2 ^ n : ℝ) * (1 - θ) ≤ tr.accepting.card :=
     (mul_le_mul_of_nonneg_left (sub_le_sub_left hδθ 1) (by positivity)).trans hcard
   have hdegree : (d : ℝ) ≤ (2 ^ n : ℝ) * (1 - δ) := by
@@ -313,7 +322,7 @@ theorem exists_codeword_of_query_probability (tr : FoldTrace domain d)
     exact (not_le_of_gt hpos) hprob
   obtain ⟨u, hu, huniq⟩ := tr.exists_unique_codeword_agree_of_query_probability
     θ δ ht hsafe hfinal hδθ hrate hprob
-  have hcard := tr.accepting_card_ge_of_query_probability δ ht hfinal hprob
+  have hcard := tr.accepting_card_ge_of_query_probability δ ht hprob
   have hlarge : (2 ^ n : ℝ) * (1 - θ) ≤ tr.accepting.card :=
     (mul_le_mul_of_nonneg_left (sub_le_sub_left hδθ 1) hn.le).trans hcard
   have hagree : tr.accepting.card ≤ Code.agree u tr.initial := by

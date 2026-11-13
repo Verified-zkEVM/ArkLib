@@ -754,7 +754,7 @@ theorem mem_decodeWithParams_iff_mem_decoder_of_degree_lt
       he hdeg hspec.2
   · intro hp
     have hdist := dist_le_of_mem_decoder (n := n) (k := k) (r := r) (D := D)
-      (e := e) he hp
+      (e := e) hp
     have hpdegree : p.degree < (k : WithBot Nat) :=
       lt_of_le_of_lt degree_le_natDegree (by exact_mod_cast hdeg)
     exact (mem_decodeWithParams_iff_degree_and_distance
@@ -787,7 +787,7 @@ theorem mem_decode_iff_mem_decoder_of_degree_lt
       he hdeg hspec.2
   · intro hp
     have hdist := dist_le_of_mem_decoder (n := n) (k := k) (r := r) (D := D)
-      (e := e) he hp
+      (e := e) hp
     have hpdegree : p.degree < (k : WithBot Nat) :=
       lt_of_le_of_lt degree_le_natDegree (by exact_mod_cast hdeg)
     exact (mem_decode_iff_spec

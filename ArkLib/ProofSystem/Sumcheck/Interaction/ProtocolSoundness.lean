@@ -11,9 +11,9 @@ public import ArkLib.ProofSystem.Sumcheck.Interaction.Composition
 public import VCVio.EvalDist.ProbabilityBounds
 
 /-!
-# Soundness against native Sumcheck prover strategies
+# Soundness against interaction-layer Sumcheck prover strategies
 
-The soundness bound concerns the actual full protocol executor and quantifies over its native
+The soundness bound concerns the actual full protocol executor and quantifies over its
 prover strategy. The prover may retain arbitrary continuation memory and perform effects after
 each public challenge. The proof follows execution order and reuses the single-round projection
 bound: a false-to-true transition costs at most `deg / |F|`, while false successors are handled
@@ -189,11 +189,11 @@ theorem exportedPrefixRun_admissibility {m : ℕ} (D : Fin m ↪ F)
     simp only [not_true_eq_false, prEvent_false, le_refl]
 
 set_option backward.isDefEq.respectTransparency false in
-/-- Full native Sumcheck is sound against every ordinary prover strategy. From a false initial
-claim over a polynomial-realized original oracle, the probability that the actual closed output
-satisfies its original-oracle evaluation relation is at most `count * deg / |F|`.
+/-- Full interaction-layer Sumcheck is sound against every ordinary prover strategy. From a false
+initial claim over a polynomial-realized original oracle, the probability that the actual closed
+output satisfies its original-oracle evaluation relation is at most `count * deg / |F|`.
 
-The prover's response to each challenge is an arbitrary effectful native continuation. Its
+The prover's response to each challenge is an arbitrary effectful continuation. Its
 effects execute after that challenge; no external private-state or message-kernel representation
 is assumed. All accumulated source slots remain available, while `originalOracle` identifies the
 original oracle view. The final relation is a predicate on the actual output behavior and does not

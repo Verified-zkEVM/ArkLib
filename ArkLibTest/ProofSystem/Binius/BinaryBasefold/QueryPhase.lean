@@ -217,14 +217,6 @@ info: 'Binius.BinaryBasefold.QueryPhase.queryOracleReduction_perfectCompleteness
 #print axioms Binius.BinaryBasefold.QueryPhase.queryOracleReduction_perfectCompleteness
 
 /--
-info: 'Binius.BinaryBasefold.QueryPhase.queryOracleVerifier_rbrKnowledgeSoundnessWorstCase'
-depends on axioms:
-[propext, Classical.choice, Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Binius.BinaryBasefold.QueryPhase.queryOracleVerifier_rbrKnowledgeSoundnessWorstCase
-
-/--
 info: 'Binius.BinaryBasefold.QueryPhase.queryOracleVerifier_rbrKnowledgeSoundness'
 depends on axioms:
 [propext, Classical.choice, Quot.sound]

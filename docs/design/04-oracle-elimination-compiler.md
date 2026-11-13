@@ -78,7 +78,7 @@ MultiConfigurationExtractability,     -- per-configuration projection of one glo
 RootHiding, SelectiveOpeningPrivacy (local-view simulator), Equivocation
 ```
 
-with explicit tree-shape/padding/encoding data (leaf-vs-internal query classification requires disjoint encodings — an *injectivity proof*, not a `domainSep` tag) and salt parameters. The current `Commitments/Functional/Basic.lean` placeholder (`extractability` ending in `False`, single-commitment binding) must never be cited by a compiler theorem.
+with explicit tree-shape/padding/encoding data (leaf-vs-internal query classification requires disjoint encodings — an *injectivity proof*, not a `domainSep` tag) and salt parameters. `Commitments/Functional/Basic.lean` defines single-commitment extractability by bounding accepted openings inconsistent with data extracted from the commitment-phase query log.
 
 `BCSPublicView` (commitments + challenges + clear messages) is distinct from the erased `SharedTranscript` skeleton; query functions read the former.
 
@@ -88,11 +88,11 @@ Consumes: public-coin replayable structure, exact serialization/absorption order
 
 ## 6. Nova (the algebraic conformance case)
 
-Kept as in the round-3 document (archive §6.10.6), now with D1 phrasing: the ideal relaxed-R1CS fold is an L3 reduction whose output slots are `linComb` plans; W/E slots carry no guarantee beyond shape (relaxed R1CS has no proximity promise — GuaranteeTransport is trivial there, which is *why* no consistency sampling appears); Pedersen's `commitWithOpening` linearity is the `CommitAction`; security = three-branch language-special-soundness tree + binding across forks → relational extraction for `Com[R_rel]`; the FRI contrast (Merkle roots admit no fold action → fresh word + sampled consistency + proximity guarantee restoration) is the two modes side by side.
+The ideal relaxed-R1CS fold is an L3 reduction whose output slots are `linComb` plans; W/E slots carry no guarantee beyond shape (relaxed R1CS has no proximity promise — GuaranteeTransport is trivial there, which is *why* no consistency sampling appears); Pedersen's `commitWithOpening` linearity is the `CommitAction`; security = three-branch language-special-soundness tree + binding across forks → relational extraction for `Com[R_rel]`; the FRI contrast (Merkle roots admit no fold action → fresh word + sampled consistency + proximity guarantee restoration) is the two modes side by side.
 
 ## 7. Theorem matrix and schedule
 
-The pass × property matrix (normative; reproduced from round 3 so this document has no hidden archive dependency):
+The normative pass-by-property matrix is:
 
 | Pass | Functional correctness | Ordinary soundness | Knowledge/extraction | Zero knowledge |
 |---|---|---|---|---|
@@ -101,7 +101,7 @@ The pass × property matrix (normative; reproduced from round 3 so this document
 | fixed-consumer inline | composed evaluator equals lowered consumer | inherited after access lowering | inherited only with the preceding extraction theorem | leakage of the concrete consumer trace is charged |
 | seal-and-link boundary | materialization + link correctness | sound link argument + target-handle coherence | extractable link or RBRTE-compatible witness relation | simulatable link argument |
 | `CommitAction` boundary | representation commuting square | action correctness + required binding across forks | leaf openings/witnesses + relational tree bridge | action leakage + simulator compatibility |
-| batching (own transform) | batch verifier equals individual obligations | native batch soundness or proved reduction | native multi-instance extraction | batch-proof simulation |
+| batching (own transform) | batch verifier equals individual obligations | direct batch soundness or proved reduction | direct multi-instance extraction | batch-proof simulation |
 | `FiatShamir` | transcript/challenge agreement | state-restoration soundness in the chosen RO model | state-restoration function binding/extraction or RBRTE theorem | programmable-RO/QROM simulator as applicable |
 
 Recursive compilation of opening protocols needs a well-founded measure (unrepresented oracle nodes, then depth). Errors and times remain explicit functions (substitution mode for KS: `ε_NARG-KS = ε_IOP-SRKS(λ+s_FS, N, Q, δ_A + ε_MT + ε_chain) + …`). Cost and resource transport reuse VCVio's existing carriers; advantage errors remain explicit until the first compiler client establishes the reusable error-bearing reduction package. Compilation fixes a topological schedule (key binding → absorption → challenges → queries → openings → decision) recorded in `ResourceMeta`; budget splits (`Q_MT + Q_FS ≤ Q`) are `ResourceProfile` feasibility constraints, and bounds like `ε_rbr + Q·ε_bind` are corollaries only when the conditional union bound is proved.

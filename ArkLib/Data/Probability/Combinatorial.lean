@@ -19,8 +19,8 @@ image.
 ## Main statements
 
 * `Probability.exists_large_image_of_pairwise_collision_bound` — if every pair of distinct
-  points of a finite `S` collides with probability at most `ε` under a probability measure on
-  functions, then some positive-mass function in its countable carrier has large image.
+  points of a finite `S` collides with measure at most `ε`, then some positive-mass
+  function in a countable set of measure one has large image.
 
 ## References
 
@@ -161,16 +161,17 @@ private lemma cauchy_schwarz_fiber (φ : S → T) :
 end CollidingPairs
 
 open Classical in
-/-- Let `μ` be a probability measure on functions `S → T`, concentrated on the countable set
-`A`. If every pair of distinct points of the finite type `S` collides with probability at most
-`ε`, then some positive-mass function in `A` has image of cardinality at least
+/-- Let `μ` be a measure on functions `S → T` with `μ A = 1` for a countable set `A`.
+If every pair of distinct points of the finite type `S` collides with measure at most `ε`,
+then some positive-mass function in `A` has image of cardinality at least
 `|S| / (1 + (|S| - 1) * ε)`.
 
 The explicit countable carrier is the measure-native analogue of the support of a probability mass
 function. It preserves the positive-atom conclusion while allowing `S` and `T` in arbitrary
 universes.
 
-Writing `N = |S|`, the proof uses linearity of the Lebesgue integral and a strict averaging
+The proof first restricts `μ` to `A`, obtaining a probability measure. For this restricted
+measure, writing `N = |S|`, it uses linearity of the Lebesgue integral and a strict averaging
 argument.
 
 * Pointwise, `cauchy_schwarz_fiber` gives `N ^ 2 ≤ |image φ| * (N + numCollsOrdered φ)`.
@@ -181,7 +182,7 @@ argument.
 theorem exists_large_image_of_pairwise_collision_bound
     {S T : Type*} [Fintype S]
     [MeasurableSpace (S → T)] [DiscreteMeasurableSpace (S → T)]
-    (μ : Measure (S → T)) [IsProbabilityMeasure μ]
+    (μ : Measure (S → T))
     (A : Set (S → T)) (hA_countable : A.Countable) (hμA : μ A = 1)
     (ε : ENNReal)
     (hμ : ∀ x y : S, x ≠ y → μ {φ | φ x = φ y} ≤ ε) :
@@ -189,6 +190,14 @@ theorem exists_large_image_of_pairwise_collision_bound
       (Fintype.card S : ENNReal) / (1 + (Fintype.card S - 1) * ε) ≤
         ((@Finset.image S T (Classical.decEq T) φ Finset.univ).card : ENNReal) := by
   classical
+  wlog hprob : IsProbabilityMeasure μ generalizing μ with h
+  · have hrestrict : (μ.restrict A) A = 1 := by simp [hμA]
+    have hcoll : ∀ x y : S, x ≠ y → (μ.restrict A) {φ | φ x = φ y} ≤ ε := by
+      intro x y hxy
+      exact (Measure.restrict_apply_le _ _).trans (hμ x y hxy)
+    have hprobRestrict : IsProbabilityMeasure (μ.restrict A) := ⟨by simp [hμA]⟩
+    obtain ⟨φ, hφ, hpos, hcard⟩ := h (μ.restrict A) hrestrict hcoll hprobRestrict
+    exact ⟨φ, hφ, hpos.trans_le (Measure.restrict_apply_le _ _), hcard⟩
   set N : ℕ := Fintype.card S with hN_def
   set P : Finset (S × S) := Finset.univ.filter (fun p : S × S ↦ p.1 ≠ p.2) with hP_def
   have hP_card : P.card = N * (N - 1) := by

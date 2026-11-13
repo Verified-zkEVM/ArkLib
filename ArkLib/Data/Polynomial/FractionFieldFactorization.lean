@@ -33,7 +33,7 @@ variable {R K : Type*} [CommRing R] [IsDomain R] [UniqueFactorizationMonoid R]
 positive-degree factors that are irreducible and separable over the fraction field.
 Repeated list entries encode multiplicity independently of their Frobenius exponents. -/
 theorem exists_content_mul_fractionField_separable_factors (p : ℕ) [CharP K p]
-    (hp : p ≠ 0) (f : R[X]) (hf : f ≠ 0) :
+    (f : R[X]) (hf : f ≠ 0) :
     ∃ (c : R) (s : List (R[X] × ℕ)), c ≠ 0 ∧
       (∀ t ∈ s, 0 < t.1.natDegree ∧ Irreducible t.1 ∧
         Irreducible (t.1.map (algebraMap R K)) ∧
@@ -60,9 +60,13 @@ theorem exists_content_mul_fractionField_separable_factors (p : ℕ) [CharP K p]
     · have hprim := hi.isPrimitive hdeg
       have hmap := (hprim.irreducible_iff_irreducible_map_fraction_map (K := K)).mp hi
       obtain ⟨n, g, hgi, hgs, hgi_eq, hdegree⟩ :=
-        exists_fractionField_separable_expand p hp hmap
+        exists_fractionField_separable_expand p hmap
+      have hpow : p ^ n ≠ 0 := by
+        intro h
+        rw [h, mul_zero] at hdegree
+        exact hdeg hdegree.symm
       have hgiR : Irreducible g := by
-        let := isLocalHom_expand R (Nat.pos_of_ne_zero (pow_ne_zero n hp))
+        let := isLocalHom_expand R (Nat.pos_of_ne_zero hpow)
         exact Irreducible.of_map (by rwa [hgi_eq])
       have hgpos : 0 < g.natDegree := by
         by_contra h

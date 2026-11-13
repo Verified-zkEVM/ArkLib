@@ -5,14 +5,16 @@ Authors: aryaethn
 -/
 
 import ArkLib.Commitments.Functional.BitZ.BitifiedClaim
-import ArkLibTest.Commitments.Functional.BitZ.RoundsSoundness
+import ArkLibTest.Commitments.Functional.BitZ.FixedWitnessError
 
 /-!
 # BitZ bitified claim: instances and axiom boundaries
 
 Over `S = ℤ` and `R = ZMod 5`, the original claim `⟨v₁ ⊗ v₂, ψ(L g)⟩` is computed on both sides of
-the correspondence for a vector of bits. The soundness bound is instantiated with `S = R = ℤ`, the
-primes `{11, 13}` and the generator `g17` of `(ZMod 17)ˣ`, with the nontrivial error `2 / 11`.
+the correspondence for a vector of bits. The fixed-witness error is instantiated with `S = R = ℤ`,
+the primes `{11, 13}` and the generator `g17` of `(ZMod 17)ˣ`, with the nontrivial error `2 / 11`,
+for one vector of bits and for every vector of bits when the original claim has no solution in
+`boundedCombos`.
 -/
 
 open BitZ MvPolynomial Matrix Finset
@@ -72,11 +74,12 @@ example :
   ⟨by decide +kernel, dotProduct_tensor_map_bitMatrix_mulVec (RingHom.id ℕ)
     (fun _ : Unit => (1 : ℕ)) 2 ![1, 2] ![3] (fun x => ![![1, 1], ![0, 1]] x.1.1 x.2.1)⟩
 
-/-- The soundness bound for a bitified claim, with the nontrivial error `2 / 11`. Take `S = R = ℤ`,
-`ψ = id`, `γ = (1)`, `B = 1`, `v₁ = v₂ = (1)`, the bit `0`, so `⟨v, ψ(L · 0)⟩ = 0 ≠ 1 = μ`, the
-lifts `a = X₀`, `b = 1` and `μ' = 1`, which `π_canon = eval (1, …)` sends to `1`. -/
+/-- The fixed-witness error for a bitified claim, with the nontrivial error `2 / 11`. Take
+`S = R = ℤ`, `ψ = id`, `γ = (1)`, `B = 1`, `v₁ = v₂ = (1)`, the bit `0`, so
+`⟨v, ψ(L · 0)⟩ = 0 ≠ 1 = μ`, the lifts `a = X₀`, `b = 1` and `μ' = 1`, which
+`π_canon = eval (1, …)` sends to `1`. -/
 example : Pr{let q ← $ᵗ ↥({11, 13} : Finset ℕ); let α ← modPointSample primes_eleven_thirteen q}[
-    Round2Accepts g17 (fun _ : Fin 1 => (X 0 : MvPolynomial (Fin 1) ℤ))
+    Round2Satisfiable g17 (fun _ : Fin 1 => (X 0 : MvPolynomial (Fin 1) ℤ))
       (fun _ : Fin 1 × Fin 1 × Unit => (C 1 : MvPolynomial (Fin 1) ℤ))
       (fun p : Fin 1 × Fin 1 × Fin 1 × Unit => ((fun _ => 0 : (Fin 1 × Fin 1) × Fin 1 × Unit → ℕ)
         ((p.1, p.2.1), p.2.2))) (1 : MvPolynomial (Fin 1) ℤ) q.val α] ≤
@@ -89,7 +92,7 @@ example : Pr{let q ← $ᵗ ↥({11, 13} : Finset ℕ); let α ← modPointSampl
     intro s
     rw [coeff_C]
     split_ifs <;> simp
-  have h := prEvent_round2Accepts_le_bitified (F := ZMod 17) (g := g17) g17_generates
+  have h := prEvent_round2Satisfiable_le_bitified (F := ZMod 17) (g := g17) g17_generates
     (eval fun _ => 1) (RingHom.id ℤ) (fun _ : Unit => (1 : ℤ)) 1
     (a := fun _ : Fin 1 => X 0) (b := fun _ : Fin 1 × Fin 1 × Unit => C 1)
     (v₁ := fun _ => 1) (v₂ := fun _ => 1) (fun _ => by simp)
@@ -98,6 +101,49 @@ example : Pr{let q ← $ᵗ ↥({11, 13} : Finset ℕ); let α ← modPointSampl
     (fun _ => (totalDegree_X _).le) (fun _ => (totalDegree_C _).le.trans (Nat.zero_le _))
     (fun _ s => hX s) (fun _ s => hC s) (by simp) (fun s => by
       rw [coeff_one]
+      split_ifs <;> simp)
+    primes_eleven_thirteen (qmin := 11) (by norm_num)
+    (fun q hq => by simp only [mem_insert, mem_singleton] at hq; omega)
+    (fun q hq => by
+      simp only [mem_insert, mem_singleton] at hq
+      rcases hq with rfl | rfl <;> simp [ZMod.card])
+  have hlog : Nat.log 11 4 = 0 := by decide
+  convert h using 1
+  norm_num [hlog]
+
+/-- The error without a bounded solution. For `γ = (1)` and `B = 1` the bounded set is `{0, 1}`, so
+with `v = (1)` the claim `μ = 2` has no solution in it, and the error is `2 / 11` for every vector
+of bits, here the bit `1`. -/
+example : Pr{let q ← $ᵗ ↥({11, 13} : Finset ℕ); let α ← modPointSample primes_eleven_thirteen q}[
+    Round2Satisfiable g17 (fun _ : Fin 1 => (X 0 : MvPolynomial (Fin 1) ℤ))
+      (fun _ : Fin 1 × Fin 1 × Unit => (C 1 : MvPolynomial (Fin 1) ℤ))
+      (fun p : Fin 1 × Fin 1 × Fin 1 × Unit => ((fun _ => 1 : (Fin 1 × Fin 1) × Fin 1 × Unit → ℕ)
+        ((p.1, p.2.1), p.2.2))) (C 2 : MvPolynomial (Fin 1) ℤ) q.val α] ≤
+      ENNReal.ofReal (2 / 11 : ℝ) := by
+  have hX : ∀ s, ((X 0 : MvPolynomial (Fin 1) ℤ).coeff s).natAbs ≤ 1 := by
+    intro s
+    rw [coeff_X]
+    split_ifs <;> simp
+  have hC : ∀ s, ((C 1 : MvPolynomial (Fin 1) ℤ).coeff s).natAbs ≤ 1 := by
+    intro s
+    rw [coeff_C]
+    split_ifs <;> simp
+  have h := prEvent_round2Satisfiable_le_bitified_of_forall_mem_boundedCombos (F := ZMod 17)
+    (g := g17) g17_generates (eval fun _ => 1) (RingHom.id ℤ) (fun _ : Unit => (1 : ℤ)) 1
+    (a := fun _ : Fin 1 => X 0) (b := fun _ : Fin 1 × Fin 1 × Unit => C 1)
+    (v₁ := fun _ => 1) (v₂ := fun _ => 1) (fun _ => by simp)
+    (fun j => by simp [bitWeights]) (μ := 2)
+    (fun f hf => by
+      obtain ⟨h, hlt, hs⟩ := hf (0, 0)
+      have := hlt default
+      simp only [Finset.univ_unique, Finset.sum_singleton, mul_one] at hs
+      simp only [dotProduct, Fintype.sum_prod_type, Finset.univ_unique, Fin.default_eq_zero,
+        RingHom.id_apply, one_mul, Finset.sum_singleton, hs]
+      omega)
+    (bits := fun _ => 1) (fun _ => le_rfl) (μ' := C 2) (by simp) (D := 1) (N := 1)
+    (fun _ => (totalDegree_X _).le) (fun _ => (totalDegree_C _).le.trans (Nat.zero_le _))
+    (fun _ s => hX s) (fun _ s => hC s) ((totalDegree_C _).le.trans (Nat.zero_le _)) (fun s => by
+      rw [coeff_C]
       split_ifs <;> simp)
     primes_eleven_thirteen (qmin := 11) (by norm_num)
     (fun q hq => by simp only [mem_insert, mem_singleton] at hq; omega)
@@ -118,8 +164,15 @@ info: 'BitZ.dotProduct_tensor_map_bitMatrix_mulVec' depends on axioms:
 #print axioms BitZ.dotProduct_tensor_map_bitMatrix_mulVec
 
 /--
-info: 'BitZ.prEvent_round2Accepts_le_bitified' depends on axioms:
+info: 'BitZ.prEvent_round2Satisfiable_le_bitified' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms BitZ.prEvent_round2Accepts_le_bitified
+#print axioms BitZ.prEvent_round2Satisfiable_le_bitified
+
+/--
+info: 'BitZ.prEvent_round2Satisfiable_le_bitified_of_forall_mem_boundedCombos' depends on axioms:
+[propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms BitZ.prEvent_round2Satisfiable_le_bitified_of_forall_mem_boundedCombos

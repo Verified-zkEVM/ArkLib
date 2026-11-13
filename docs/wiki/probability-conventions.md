@@ -27,9 +27,9 @@ and then `α` uniformly from `Fin k → ZMod q` gives every prime equal weight. 
 the dependent type of all pairs instead weights `q` by `q^k`. The reusable bridge and bounds live
 in `ArkLib/Data/MvPolynomial/PrimeFingerprintProbability.lean`; its test distinguishes the laws
 using primes `{2, 3}` and one variable. Keep the counting input in `PrimeFingerprint` independent
-of sampler assumptions. To compare two events of this sampler, use
-`MvPolynomial.prEvent_modPointSample_mono`: the two-stage notation unfolds to a bind of maps, so
-`prEvent_mono` does not apply to it directly.
+of sampler assumptions. To compare two events of this sampler, use VCVio's
+`prEvent_bind_mono_of_forall_le` with `prEvent_map_le_map`: the two-stage notation elaborates to a
+bind of maps.
 
 Use `ProtocolSpec.instSampleableTypeChallengeSeqCompose` and
 `ProtocolSpec.instSampleableTypeChallengeAppend` when exposing challenge samplers for composed
@@ -48,7 +48,15 @@ belong upstream in VCVio before their ArkLib consumers are integrated.
 `ArkLib/Data/Probability/Instances.lean` retains specialized mathematical facts about
 Schwartz–Zippel, dot products, and coordinate membership. `Combinatorial.lean` contains the
 collision-to-image-size argument for probability measures on a countable full-mass carrier.
-These mathematical helpers live in `namespace Probability`.
+These mathematical helpers live in `namespace Probability`. `FiniteEntropy.lean` and
+`FiniteChernoff.lean` work with real weights on finite types (`IsProbWeight`, `weightLaw`,
+`prodLaw`): base-`q` Shannon entropy with data processing, submodularity and a Fano-type bound, and
+Chernoff tails for counts under product weights. Mathlib and VCVio have no Shannon entropy for these
+weights. To average the error of a second computation over the actual output distribution of the
+first, charging exceptional outputs separately and needing no losslessness assumption, use VCVio's
+`prEvent_bind_le_prEvent_add_lintegral_ae` (`VCVio.EvalDist.Monad.Disagreement.Measure`), or
+`OracleRuntime.run_bind_success_le` and its variants for resumed runtime runs. `KoalaBear.lean` gives the sextic extension
+`KoalaBear.Ext6` a computable `SampleableType` instance that samples six base-field limbs.
 
 `VCVio.EvalDist.ProbabilityBounds` also supplies
 `prEvent_exists_finset_le_card_mul` for a fixed finite candidate set and

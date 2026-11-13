@@ -112,7 +112,7 @@ theorem card_constraints_lt_monomials (n k m : ℕ) (r : ℝ)
   let z : ℝ := ((m : ℝ) + 1 / 2) ^ 2 / (3 * r ^ 2)
   have hmR : (3 : ℝ) ≤ m := by exact_mod_cast hm
   have hy : 0 ≤ y := by dsimp [y]; positivity
-  have hyz : y ≤ z := y_budget_le_coefficient_budget m r hmR hr hr1
+  have hyz : y ≤ z := y_budget_le_coefficient_budget m r hmR hr1
   have hmy : (m : ℝ) ≤ y := by
     apply (le_div_iff₀ hr).mpr
     have := mul_le_mul_of_nonneg_left hr1 (Nat.cast_nonneg m : (0 : ℝ) ≤ m)

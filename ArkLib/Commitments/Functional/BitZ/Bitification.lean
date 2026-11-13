@@ -20,17 +20,21 @@ matrix `L = I ⊗ (1, 2, …, 2^{B-1}) ⊗ γ`, independently of any commitment 
 
 ## Main statements
 
-* `BitZ.boundedCombos γ B` is the set of sums `∑ⱼ hⱼ · γⱼ` with integer coefficients `0 ≤ hⱼ < 2^B`
-  ([BGKLSW26, §3.1]).
+* `BitZ.boundedCombos γ B` is the set of sums `∑ⱼ hⱼ · γⱼ` with integer coefficients `0 ≤ hⱼ < 2^B`.
+  For `γ` the monomials of total degree `< D` in the generators of `S`, it is the set `S^{<D}_{≤B}`
+  of [BGKLSW26]. Indexing `γ` by exponent tuples gives the definition of [BGKLSW26, §3.1], and
+  indexing it by the distinct monomials gives the one recalled in [BGKLSW26, §4.5]. The two can
+  differ when two tuples give the same element of `S`.
 * `BitZ.bitMatrix γ B` is the standard bitification matrix, `BitZ.bitWeights ψ γ B v` is the weight
   vector `v ⊗ (1, …, 2^{B-1}) ⊗ ψ(γ)` of [BGKLSW26, (47)], and
   `BitZ.bitMatrix_map_transpose_mulVec` shows that it is `ψ(L)ᵀ v`.
-* `BitZ.bitMatrix_mulVec_mem` is the closure property [BGKLSW26, (14)]: `L · g` has entries in
-  `boundedCombos γ B` for every vector of bits `g`.
+* `BitZ.bitMatrix_mulVec_mem` is the closure property of [BGKLSW26, Definition 4.9]: `L · g` has
+  entries in `boundedCombos γ B` for every vector of bits `g`.
 * `BitZ.exists_bitification` shows that every vector with entries in `boundedCombos γ B` is
   `L · g` for a vector of bits `g`. The bits are computed by `BitZ.coeffBits` from the
   coefficients (`BitZ.bitMatrix_mulVec_coeffBits`).
-* `Matrix.dotProduct_map_mulVec` gives `⟨ψ(L x), v⟩ = ⟨ψ(x), ψ(L)ᵀ v⟩` (Lemma 4.12), and
+* `Matrix.dotProduct_map_mulVec` gives `⟨ψ(L x), v⟩ = ⟨ψ(x), ψ(L)ᵀ v⟩` for any matrix `L`, and
+  `BitZ.dotProduct_map_bitMatrix_mulVec` is its form for the standard matrix (Lemma 4.12 with (47)).
   `BitZ.exists_witness_iff_exists_bits` states that bitification preserves satisfiability.
 
 `bitMatrix`, `bitWeights` and `coeffBits` are executable. `boundedCombos` is a `Set` in an arbitrary
@@ -151,6 +155,11 @@ theorem bitMatrix_map_transpose_mulVec (γ : M → S) (B : ℕ) (v : ι → R) :
 
 variable [Fintype M]
 
+/-- For the standard bitification matrix `L`, `⟨v, ψ(L x)⟩ = ⟨ψ(x), v ⊗ (1, …, 2^{B-1}) ⊗ ψ(γ)⟩`. -/
+theorem dotProduct_map_bitMatrix_mulVec (γ : M → S) (B : ℕ) (x : ι × Fin B × M → S) (v : ι → R) :
+    v ⬝ᵥ (fun i => ψ ((bitMatrix γ B *ᵥ x) i)) = (fun p => ψ (x p)) ⬝ᵥ bitWeights ψ γ B v := by
+  rw [dotProduct_map_mulVec, bitMatrix_map_transpose_mulVec]
+
 omit [DecidableEq ι] in
 /-- **Bitification preserves satisfiability.** The original claim has a witness `f` with entries
 in `boundedCombos γ B` and `⟨v, ψ(f)⟩ = μ` if and only if the bitified claim `⟨g, u⟩ = μ`, with
@@ -164,8 +173,7 @@ theorem exists_witness_iff_exists_bits (γ : M → S) (B : ℕ) (v : ι → R) (
   have key : ∀ g : ι × Fin B × M → ℕ,
       v ⬝ᵥ (fun i => ψ ((bitMatrix γ B *ᵥ fun x => (g x : S)) i)) =
         (fun p => (g p : R)) ⬝ᵥ bitWeights ψ γ B v := fun g => by
-    simpa [bitMatrix_map_transpose_mulVec] using
-      dotProduct_map_mulVec ψ (bitMatrix γ B) (fun x => (g x : S)) v
+    simpa using dotProduct_map_bitMatrix_mulVec ψ γ B (fun x => (g x : S)) v
   constructor
   · rintro ⟨f, hf, hfv⟩
     obtain ⟨g, hg, rfl⟩ := exists_bitification γ B f hf

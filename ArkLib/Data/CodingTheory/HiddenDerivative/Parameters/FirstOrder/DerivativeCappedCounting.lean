@@ -64,12 +64,6 @@ theorem finite_regularHighCutJets_card_le_derivativeCapped_of_exponent [IsAlgClo
     change Q.weightedTotalDegree jetDegreeWeight ≤ j
     rw [← hw]
     exact hjet
-  have hb : 0 < b := by simp [b, firstOrderTaylorTotalCap]
-  have hc : 0 < c := by
-    simp only [c, firstOrderTaylorDerivativeCap]
-    apply lt_min hb
-    have : 0 < K - 1 := by omega
-    omega
   have hjb : j ≤ b := by
     simp only [b, firstOrderTaylorTotalCap]
     calc
@@ -87,7 +81,7 @@ theorem finite_regularHighCutJets_card_le_derivativeCapped_of_exponent [IsAlgClo
         _ = τ * (r - 1) + (K - 1) := by omega
   have hchart : 1 + τ * (j - 1) ≤ b := by simp [b, firstOrderTaylorTotalCap]
   have hbound := card_le_of_firstOrderHighTaylorCuts_of_agreement_capped
-    center Q hτ hK hb hc hjb hrc hchart hr hjet'
+    center Q hτ hK hjb hrc hchart hr hjet'
     hderiv domain (received := received) hkA hAn S hS hA
   simpa [firstOrderCurveFiberStageOne, firstOrderTaylorDerivativeCap,
     firstOrderTaylorTotalCap, b, c] using hbound

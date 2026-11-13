@@ -52,8 +52,8 @@ values of `x` for each. For `L ≤ 0` the sum is empty. -/
 def count (D : ℕ) (L : ℝ) : ℕ :=
   ∑ s ∈ Finset.range ⌈L⌉₊, (s + 1) * ⌈(D : ℝ) * (L - s)⌉₊
 
-/-- A slot is a total degree `s < ⌈L⌉₊`, a first exponent `b₀ ≤ s`, and a weighted exponent
-`x < ⌈D * (L - s)⌉₊`. The second exponent is `s - b₀`. -/
+/-- A slot is a total degree `s < ⌈L⌉₊`, a first weight-`D` exponent `b₀ ≤ s`, and a weight-one
+exponent `x < ⌈D * (L - s)⌉₊`. The second weight-`D` exponent is `s - b₀`. -/
 def Slot (D : ℕ) (L : ℝ) :=
   Σ s : Fin ⌈L⌉₊, Fin (s.val + 1) × Fin ⌈(D : ℝ) * (L - s.val)⌉₊
 

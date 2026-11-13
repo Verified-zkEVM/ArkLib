@@ -69,9 +69,9 @@ example :
   have hheight := johnsonH_lt (n := 4) (D := 1) (eta := 1 / 4) hD (by norm_num)
   have hgap := johnson_half_gap 4 1 (eta := 1 / 4) heta
   have hdegree := johnson_degree_succ_le_agreement (n := 4) (D := 1) (A := 3)
-    (by norm_num) (by norm_num) heta threshold_4_1
+    (by norm_num) heta threshold_4_1
   have htheta := johnsonTheta_le_sqrt_envelope (n := 4) (D := 1) (A := 3)
-    (by norm_num) (by norm_num) heta threshold_4_1
+    (by norm_num) heta threshold_4_1
   have hclosed := johnsonExceptionCount_lt_closed (n := 4) (D := 1) (A := 3)
     hD hDn heta threshold_4_1
   have hratio := johnsonExceptionCount_div_comparisonEstimate_lt hD hDn heta ha threshold_4_1
@@ -110,7 +110,7 @@ example :
   have hthreshold := threshold_4_1
   have hmuAdd := johnsonMu_add_one (n := 4) (D := 1) (eta := 1 / 4) hD hDn
   have hheightAdd := johnsonH_add_one (n := 4) (D := 1) (eta := 1 / 4) hD hDn
-  have hmuH := johnsonMu_le_H (n := 4) (D := 1) (eta := 1 / 4) hD hDn
+  have hmuH := johnsonMu_le_H (n := 4) (D := 1) (eta := 1 / 4) hDn
   have hMHeight := johnsonM_le_H_add_one (n := 4) (D := 1) (eta := 1 / 4) hD hDn
   have hcutoff := johnson_D_mul_mu_lt_XCutoff (n := 4) (D := 1) (eta := 1 / 4) hD hDn
   have hbudget := johnsonXCutoff_le_mul_agreement (n := 4) (D := 1) (A := 3) heta hthreshold

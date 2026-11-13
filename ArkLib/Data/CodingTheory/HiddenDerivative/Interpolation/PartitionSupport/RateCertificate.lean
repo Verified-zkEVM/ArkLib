@@ -47,8 +47,7 @@ namespace ReedSolomon.HiddenDerivative
 by `ℓ * marginHeight ν γ`. -/
 theorem exists_partitionSupport_curve_certificate_of_finiteRatio {F : Type*} [Field F]
     {rate agreement γ : ℝ} {D d m n k A ℓ ν : ℕ}
-    (hD : 0 < D) (hd : 500 ≤ d) (hm : 0 < m) (hrate : 0 < rate)
-    (hagreement : 0 < agreement)
+    (hD : 0 < D) (hd : 500 ≤ d)
     (hbudget : 0 < RatePartition.partitionWeightBudget rate agreement d m)
     (hkD : k ≤ D + 1) (hupper : (D : ℝ) ≤ rate * n)
     (hagreementUpper : agreement * n ≤ A)
@@ -64,22 +63,16 @@ theorem exists_partitionSupport_curve_certificate_of_finiteRatio {F : Type*} [Fi
   let W := RatePartition.partitionWeightBudget rate agreement d m
   let r := n * localDerivativeCoordinateBudget d m W
   let N := (partitionSupportExponents D d W (m * A : ℕ) hD).card
-  have hn : 0 < n := by
-    by_contra h
-    have hn0 : n = 0 := Nat.eq_zero_of_not_pos h
-    subst n
-    have hDreal : (0 : ℝ) < D := Nat.cast_pos.mpr hD
-    exact (not_le_of_gt hDreal) (by simpa using hupper)
-  have hAreal : (0 : ℝ) < A :=
-    (mul_pos hagreement (Nat.cast_pos.mpr hn)).trans_le hagreementUpper
-  have hA : 0 < A := Nat.cast_pos.mp hAreal
   have hlevel : (m : ℝ) * agreement * n ≤ ((m * A : ℕ) : ℝ) := by
     have h := mul_le_mul_of_nonneg_left hagreementUpper
       (Nat.cast_nonneg m : (0 : ℝ) ≤ m)
     push_cast at h ⊢
     nlinarith
-  have hsurplus := partitionSupport_largeOrder_finiteRatio_surplus F hD hd hm
-    hrate hagreement hbudget hupper hlevel
+  have hsurplus := partitionSupport_largeOrder_finiteRatio_surplus F hD hd
+    (by
+      by_contra hm
+      have hm0 : m = 0 := by omega
+      simp [hm0, RatePartition.partitionWeightBudget] at hbudget) hbudget hupper hlevel
   have hdimension : RatePartition.partitionFiniteRatio rate agreement d m * (r : ℝ) < N := by
     simpa only [r, N, W, Nat.cast_mul, mul_assoc,
       finrank_partitionSupportSpace_eq_card] using hsurplus
@@ -96,7 +89,7 @@ theorem exists_partitionSupport_curve_certificate_of_finiteRatio {F : Type*} [Fi
   obtain ⟨cert⟩ := exists_partitionSupport_curve_certificate (D := D) (d := d) (m := m)
     (W := W) (n := n) (A := A) (k := k) (ℓ := ℓ) (ν := ν)
     (L := ((m * A : ℕ) : ℝ))
-    hD le_rfl (mul_pos hm hA) hkD centers received hreceived
+    hD le_rfl hkD centers received hreceived
     (by simpa only [W] using hdegree) hsurplusNat'
   have hheight := RatePartition.kernel_height_le_marginHeight (ℓ := ℓ) (ν := ν) hγ hmargin
   have hheight' : n * localDerivativeCoordinateBudget d m W * (ℓ * ν) /
@@ -109,7 +102,7 @@ theorem exists_partitionSupport_curve_certificate_of_finiteRatio {F : Type*} [Fi
 private theorem exists_partitionSupport_curve_certificate_of_rateBlockGuards {F : Type*}
     [Field F] {rate agreement : ℝ} {d n k A ℓ : ℕ}
     (parameters : RatePartition.PartitionFiniteParameters rate agreement d)
-    (hrate : 0 < rate) (hagreement : 0 < agreement) (hd : 500 ≤ d)
+    (hrate : 0 < rate) (hd : 500 ≤ d)
     (hD : 0 < ⌊rate * n⌋₊)
     (hDlower : rate * n / 2 ≤ ⌊rate * n⌋₊)
     (hkD : k ≤ ⌊rate * n⌋₊)
@@ -129,9 +122,9 @@ private theorem exists_partitionSupport_curve_certificate_of_rateBlockGuards {F 
     intro u hu
     exact RatePartition.partitionSupport_totalJetDegree_le_rateJetCap
       (d := d) (W := RatePartition.partitionWeightBudget rate agreement d parameters.multiplicity)
-      (m := parameters.multiplicity) (A := A) hD hrate hDlower hAn hu
+      (m := parameters.multiplicity) (A := A) hrate hDlower hAn hu
   exact exists_partitionSupport_curve_certificate_of_finiteRatio hD hd
-    parameters.multiplicity_pos hrate hagreement parameters.weightBudget_pos
+    parameters.weightBudget_pos
     (hkD.trans (Nat.le_succ _)) hDn hagreementUpper centers received hreceived hdegree
     parameters.one_lt_finiteRatio le_rfl
 
@@ -140,7 +133,7 @@ finite ratio of the selected multiplicity. -/
 theorem exists_partitionSupport_curve_certificate_of_paddedRateBlockThreshold {F : Type*}
     [Field F] {rate agreement : ℝ} {d n k A ℓ : ℕ}
     (parameters : RatePartition.PartitionFiniteParameters rate agreement d)
-    (hrate : 0 < rate) (hrateOne : rate < 1) (hagreement : 0 < agreement)
+    (hrate : 0 < rate)
     (hd : 500 ≤ d)
     (hn : RatePartition.paddedRateBlockThreshold rate d parameters.multiplicity ≤ n)
     (hk : (k : ℝ) ≤ rate * n) (hagreementUpper : agreement * n ≤ A) (hAn : A ≤ n)
@@ -151,10 +144,21 @@ theorem exists_partitionSupport_curve_certificate_of_paddedRateBlockThreshold {F
       (ℓ * RatePartition.marginHeight (RatePartition.rateJetCap rate parameters.multiplicity)
         (RatePartition.partitionFiniteRatio rate agreement d parameters.multiplicity))
       centers received) := by
-  obtain ⟨hdD, hDlower, hkD, -, -, -, -, -⟩ :=
-    RatePartition.paddedRateBlockThreshold_guards hrate hrateOne hn hk hagreementUpper
-  have hD : 0 < ⌊rate * n⌋₊ := by omega
-  exact exists_partitionSupport_curve_certificate_of_rateBlockGuards parameters hrate hagreement
+  have hbound := (Nat.le_ceil _).trans (show
+      (RatePartition.paddedRateBlockThreshold rate d parameters.multiplicity : ℝ) ≤ n by
+        exact_mod_cast hn)
+  have horderBound : 2 * ((d : ℝ) + 2) / rate ≤ n :=
+    (le_max_left _ _).trans hbound
+  have hscaled : 2 * ((d : ℝ) + 2) ≤ rate * n := by
+    simpa [mul_comm] using (div_le_iff₀ hrate).mp horderBound
+  have hfloor := Nat.lt_floor_add_one (rate * (n : ℝ))
+  have hD : 0 < ⌊rate * n⌋₊ := by
+    exact_mod_cast (show (0 : ℝ) < ⌊rate * n⌋₊ by
+      linarith [Nat.cast_nonneg d (α := ℝ)])
+  have hDlower : rate * n / 2 ≤ ⌊rate * n⌋₊ := by
+    linarith [Nat.cast_nonneg d (α := ℝ)]
+  have hkD : k ≤ ⌊rate * n⌋₊ := Nat.le_floor hk
+  exact exists_partitionSupport_curve_certificate_of_rateBlockGuards parameters hrate
     hd hD hDlower hkD hagreementUpper hAn centers received hreceived
 
 /-- A mathematical rate block-length threshold gives a symbolic received-curve certificate using
@@ -162,7 +166,7 @@ the finite ratio of the selected multiplicity. -/
 theorem exists_partitionSupport_curve_certificate_of_rateBlockThreshold {F : Type*} [Field F]
     {rate agreement : ℝ} {d n k A ℓ : ℕ}
     (parameters : RatePartition.PartitionFiniteParameters rate agreement d)
-    (hrate : 0 < rate) (hrateOne : rate < 1) (hagreement : 0 < agreement)
+    (hrate : 0 < rate) (hrateOne : rate < 1)
     (hd : 500 ≤ d)
     (hn : RatePartition.rateBlockThreshold rate d parameters.multiplicity ≤ n)
     (hk : (k : ℝ) ≤ rate * n) (hagreementUpper : agreement * n ≤ A) (hAn : A ≤ n)
@@ -176,7 +180,7 @@ theorem exists_partitionSupport_curve_certificate_of_rateBlockThreshold {F : Typ
   obtain ⟨hdD, hDlower, hkD, -, -, -, -, -⟩ :=
     RatePartition.rateBlockThreshold_guards hrate hrateOne hn hk hagreementUpper
   have hD : 0 < ⌊rate * n⌋₊ := by omega
-  exact exists_partitionSupport_curve_certificate_of_rateBlockGuards parameters hrate hagreement
+  exact exists_partitionSupport_curve_certificate_of_rateBlockGuards parameters hrate
     hd hD hDlower hkD hagreementUpper hAn centers received hreceived
 
 namespace RatePartition
@@ -186,7 +190,7 @@ namespace RatePartition
 theorem RatePartitionEnvelope.exists_curve_certificate {F : Type*} [Field F]
     {δ scale : ℝ} {n k A ℓ : ℕ}
     (e : RatePartitionEnvelope δ (closedMultiplicity scale (uniformDerivativeOrder δ)) n k A)
-    (hδ : 0 < δ) (hδone : δ < 1) (hd : 500 ≤ uniformDerivativeOrder δ)
+    (hd : 500 ≤ uniformDerivativeOrder δ)
     (hscale : 1 < scale * (uniformDerivativeOrder δ : ℝ) ^ 3)
     (hAn : A ≤ n) (centers : Fin n ↪ F) (received : Fin n → F[X])
     (hreceived : ∀ i, (received i).natDegree ≤ ℓ) :
@@ -195,6 +199,12 @@ theorem RatePartitionEnvelope.exists_curve_certificate {F : Type*} [Field F]
       (uniformDerivativeOrder δ)
       (ℓ * (150 * (⌈(closedMultiplicity scale (uniformDerivativeOrder δ) : ℝ) /
         δ ^ 2⌉₊ - 1))) centers received) := by
+  have hδ : 0 < δ := by
+    by_contra hδ
+    have hexp : Real.exp ((3 / 2 : ℝ) / δ) ≤ 1 := Real.exp_le_one_iff.mpr
+      (div_nonpos_of_nonneg_of_nonpos (by norm_num) (le_of_not_gt hδ))
+    have horder : uniformDerivativeOrder δ ≤ 1 := Nat.ceil_le.mpr (by simpa using hexp)
+    omega
   let d := uniformDerivativeOrder δ
   let m := closedMultiplicity scale d
   let ν := ⌈(m : ℝ) / δ ^ 2⌉₊ - 1
@@ -211,7 +221,10 @@ theorem RatePartitionEnvelope.exists_curve_certificate {F : Type*} [Field F]
     exact mul_pos (mul_pos hscale_pos (by positivity)) hlog
   have hνpos : 0 < ν := by
     have hδ2 : 0 < δ ^ 2 := sq_pos_of_pos hδ
-    have hδ2one : δ ^ 2 < 1 := by nlinarith [hδone]
+    have hδ2one : δ ^ 2 < 1 := by
+      have hDn : (e.ambientDegree : ℝ) + 1 ≤ n := by exact_mod_cast e.ambient_le
+      have hn : (0 : ℝ) < n := by linarith [Nat.cast_nonneg e.ambientDegree (α := ℝ)]
+      exact lt_of_mul_lt_mul_right (by nlinarith [e.ambient_lower]) hn.le
     have hmreal : (1 : ℝ) ≤ m := by exact_mod_cast (show 1 ≤ m by omega)
     have hratio : 1 < (m : ℝ) / δ ^ 2 := (lt_div_iff₀ hδ2).2 (by linarith)
     have hratio' : (↑(1 : ℕ) : ℝ) < (m : ℝ) / δ ^ 2 := by simpa using hratio
@@ -228,10 +241,10 @@ theorem RatePartitionEnvelope.exists_curve_certificate {F : Type*} [Field F]
       (partitionWeightBudget e.rate e.agreement d m) (m * A : ℕ) u →
       totalJetDegree u ≤ ν := by
     intro u hu
-    exact partitionSupport_totalJetDegree_le_of_ambient_lower_bound hD hδ
+    exact partitionSupport_totalJetDegree_le_of_ambient_lower_bound hδ
       e.ambient_lower hAn hu
   obtain ⟨cert⟩ := exists_partitionSupport_curve_certificate_of_finiteRatio hD hd
-    hmpos e.rate_pos (e.rate_pos.trans e.rate_lt_agreement) hW e.message_le
+    hW e.message_le
     e.rate_upper e.agreement_lower centers received hreceived hdegree
     (by norm_num : (1 : ℝ) < 151 / 150) e.ratio_gt.le
   have hγeq : (151 / 150 : ℝ) = 1 + 1 / (150 : ℝ) := by norm_num

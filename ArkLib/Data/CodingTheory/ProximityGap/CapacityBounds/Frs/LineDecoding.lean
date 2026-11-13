@@ -30,15 +30,15 @@ open CoreDefinitions ProximityGap
 
 private noncomputable def affineLineCollisionSeeds
     {ι : Type} [Fintype ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
-    {A : Type} [Fintype A] [DecidableEq A] [AddCommGroup A] [Module F A]
+    {F : Type} [Field F] [Fintype F]
+    {A : Type} [DecidableEq A] [AddCommGroup A] [Module F A]
     (u₀ u₁ v₀ v₁ : ι → A) : Finset F :=
   Finset.univ.filter (fun γ => u₀ + γ • u₁ = v₀ + γ • v₁)
 
 private theorem affineLineCollisionSeeds_card_le_one
     {ι : Type} [Fintype ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
-    {A : Type} [Fintype A] [DecidableEq A] [AddCommGroup A] [Module F A]
+    {F : Type} [Field F] [Fintype F]
+    {A : Type} [DecidableEq A] [AddCommGroup A] [Module F A]
     (u₀ u₁ v₀ v₁ : ι → A)
     (hne : u₀ ≠ v₀ ∨ u₁ ≠ v₁) :
     (affineLineCollisionSeeds (F := F) u₀ u₁ v₀ v₁).card ≤ 1 := by
@@ -76,12 +76,24 @@ private theorem affineLineCollisionSeeds_card_le_one
     · exact (hs (sub_eq_zero.mp hv)).elim
 
 theorem boosted_frs_radius_le_list_radius
-    (s t : ℕ) (R : ℝ) (ht : 3 ≤ t)
+    (s t : ℕ) (R : ℝ)
     (hs : 4 * t ^ 2 < s) (hR0 : 0 ≤ R) :
     (1 - R - 2 / (t : ℝ)) * (((2 * t : ℕ) : ℝ)) /
         (((2 * t - 1 : ℕ) : ℝ)) ≤
       (t : ℝ) / (t + 1) *
         (1 - (s : ℝ) * R / ((s : ℝ) - t + 1)) := by
+  obtain hsmall | ht := lt_or_ge t 3
+  · interval_cases t
+    · norm_num
+    · have hsR : (4 : ℝ) < s := by exact_mod_cast hs
+      norm_num
+      field_simp
+      nlinarith
+    · have hsR : (16 : ℝ) < s := by exact_mod_cast hs
+      norm_num
+      suffices h : (s : ℝ) * R / (s - 2 + 1) ≤ 1 + 2 * R by linarith
+      rw [div_le_iff₀ (by linarith : (0 : ℝ) < s - 2 + 1)]
+      nlinarith only [mul_nonneg hR0 (show (0 : ℝ) ≤ s - 2 by linarith), hsR]
   have hsub : 1 ≤ 2 * t := by omega
   simp only [Nat.cast_mul, Nat.cast_ofNat, Nat.cast_sub hsub, Nat.cast_one]
   have htR3 : (3 : ℝ) ≤ t := by exact_mod_cast ht
@@ -213,7 +225,7 @@ private noncomputable def globallyCloseAffinePairs
 
 open scoped NNReal in
 private theorem globallyCloseAffinePairs_card_le
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s L : ℕ} (C : Set (ι → Fin s → F))
     (hclosed : ∀ u₀ ∈ C, ∀ u₁ ∈ C, ∀ γ : F, u₀ + γ • u₁ ∈ C)
@@ -252,7 +264,7 @@ private theorem globallyCloseAffinePairs_card_le
   omega
 
 noncomputable def lineAgreementSeeds
-    {ι : Type} [Fintype ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s : ℕ}
     (f₀ f₁ : ι → Fin s → F) (U : F → ι → Fin s → F)
@@ -260,7 +272,7 @@ noncomputable def lineAgreementSeeds
   T.filter (fun γ => U γ i = f₀ i + γ • f₁ i)
 
 private theorem lineAgreementSeeds_card_le_one_of_ne_at
-    {ι : Type} [Fintype ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s : ℕ} (f₀ f₁ u₀ u₁ : ι → Fin s → F)
     (T : Finset F) (i : ι) (γ : F)
@@ -305,7 +317,7 @@ private theorem lineAgreementSeeds_card_le_one_of_ne_at
     · exact (hs (sub_eq_zero.mp hv)).elim
 
 private theorem lineAgreement_span_finrank_le_two
-    {ι : Type} [Fintype ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s : ℕ}
     (f₀ f₁ : ι → Fin s → F) (U : F → ι → Fin s → F)
@@ -353,7 +365,7 @@ private theorem lineAgreement_span_finrank_le_two
     _ ≤ 2 := Finset.card_le_two
 
 private theorem lineAgreementSeeds_card_le_kernel_finrank_add_two
-    {ι : Type} [Fintype ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s : ℕ}
     (f₀ f₁ : ι → Fin s → F) (U : F → ι → Fin s → F)
@@ -439,7 +451,7 @@ private theorem lineAgreementSeeds_card_le_kernel_finrank_add_two
 
 open scoped NNReal in
 noncomputable def lineCloseSeeds
-    {ι : Type} [Fintype ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s : ℕ}
     (f₀ f₁ : ι → Fin s → F) (U : F → ι → Fin s → F) (δ : ℝ) : Finset F :=
@@ -524,7 +536,7 @@ theorem lineCloseSpan_le_code
 
 open scoped NNReal in
 theorem lineClose_sum_agreement_lower
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s : ℕ}
     (f₀ f₁ : ι → Fin s → F) (U : F → ι → Fin s → F)
@@ -724,14 +736,13 @@ theorem linePinnedSeedsOn_insert_card_le
 open _root_.CoreDefinitions in
 open _root_.ProximityGap in
 theorem mcaError_affineLine_zero_le_inv_card
-    {ι : Type} [Fintype ι] [Nonempty ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Fintype F] [SampleableType F]
-    {A : Type} [Finite A] [AddCommGroup A] [Module F A]
+    {A : Type} [AddCommGroup A] [Module F A]
     (C : ModuleCode ι F A) :
     mcaError (AffineLineGenerator F) C 0 ≤
       ENNReal.ofReal (1 / (Fintype.card F : ℝ)) := by
   classical
-  let _ := Fintype.ofFinite A
   have mem_of_proj_univ (w : ι → A)
       (h : LinearCode.projectedWord w Finset.univ ∈
         LinearCode.projectedCodeSubmod C Finset.univ) : w ∈ C := by
@@ -803,7 +814,7 @@ theorem mcaError_affineLine_zero_le_inv_card
   · positivity
 
 theorem mcaError_eq_zero_of_neg_radius
-    {ι : Type} [Fintype ι] [Nonempty ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Field F]
     {ℓ : Type} [Fintype ℓ]
     {S : Type} [Fintype S] [Nonempty S] [SampleableType S]
@@ -812,24 +823,40 @@ theorem mcaError_eq_zero_of_neg_radius
     {δ : ℝ} (hδ : δ < 0) :
     mcaError G C δ = 0 := by
   classical
-  unfold mcaError
-  apply le_antisymm
-  · refine iSup_le fun U => ?_
-    rw [SampleableType.prEvent_uniformSample_eq_ofReal]
-    have hempty : Finset.univ.filter (fun x : S => IsMCA G C x U δ) = ∅ := by
-      rw [Finset.filter_eq_empty_iff]
-      intro x _ hx
-      rcases hx with ⟨T, hT, -⟩
-      have hcard : (T.card : ℝ) ≤ Fintype.card ι := by
-        exact_mod_cast Finset.card_le_univ T
-      have hlarge : (Fintype.card ι : ℝ) < Fintype.card ι * (1 - δ) := by
-        have hone : (1 : ℝ) < 1 - δ := by linarith
-        have hn : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos
-        nlinarith
-      linarith
-    rw [hempty]
-    norm_num
-  · exact bot_le
+  cases isEmpty_or_nonempty ι with
+  | inl hι =>
+    let := hι
+    unfold mcaError
+    apply le_antisymm
+    · refine iSup_le fun U => ?_
+      apply le_of_eq
+      apply prEvent_eq_zero_of_forall_not
+      intro x hbad
+      obtain ⟨T, _, _, j, hj⟩ := hbad
+      exact hj (by
+        rw [Subsingleton.elim (LinearCode.projectedWord (U j) T) 0]
+        exact Submodule.zero_mem _)
+    · exact bot_le
+  | inr hι =>
+    let := hι
+    unfold mcaError
+    apply le_antisymm
+    · refine iSup_le fun U => ?_
+      rw [SampleableType.prEvent_uniformSample_eq_ofReal]
+      have hempty : Finset.univ.filter (fun x : S => IsMCA G C x U δ) = ∅ := by
+        rw [Finset.filter_eq_empty_iff]
+        intro x _ hx
+        rcases hx with ⟨T, hT, -⟩
+        have hcard : (T.card : ℝ) ≤ Fintype.card ι := by
+          exact_mod_cast Finset.card_le_univ T
+        have hlarge : (Fintype.card ι : ℝ) < Fintype.card ι * (1 - δ) := by
+          have hone : (1 : ℝ) < 1 - δ := by linarith
+          have hn : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos
+          nlinarith
+        linarith
+      rw [hempty]
+      norm_num
+    · exact bot_le
 
 theorem pinning_potential_compose
     (A B C d d' ε : ℝ) (hd : 0 ≤ d) (hd' : 0 ≤ d') (hε : 0 < ε)
@@ -853,9 +880,7 @@ theorem isSubspaceDesign_frsCode_sharpProfile
     {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Field F] [Fintype F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
-    (hFn : Fintype.card ι < Fintype.card F)
     (hadm : ReedSolomon.Folded.Admissible (Finset.univ.map domain) s ω)
-    (hω : ω ≠ 0)
     (hωgen : orderOf ω = Fintype.card F - 1)
     (hk : k ≤ s * Fintype.card ι) :
     IsSubspaceDesign s
@@ -866,8 +891,13 @@ theorem isSubspaceDesign_frsCode_sharpProfile
   have hrate : (LinearCode.alphabetRate
       (ReedSolomon.Folded.frsCode domain k s ω) : ℝ) =
       (k : ℝ) / (s * Fintype.card ι) := by
-    rw [ReedSolomon.Folded.alphabetRate_frsCode domain k s ω hadm hω hk]
-  have hdesign := isSubspaceDesign_frsCode_sub_one domain k s ω hFn hadm hωgen
+    rw [ReedSolomon.Folded.alphabetRate_frsCode domain k s ω hadm
+      (by
+        intro hzero
+        rw [hzero, orderOf_zero] at hωgen
+        have hcard := Fintype.one_lt_card (α := F)
+        omega) hk]
+  have hdesign := isSubspaceDesign_frsCode_sub_one domain k s ω hadm hωgen
   rw [hrate] at hdesign
   refine hdesign.mono_tau fun r => ?_
   rw [sharpSubspaceProfile]
@@ -883,7 +913,7 @@ theorem sharpSubspaceProfile_two_mul_le_rate_add
     {ι : Type} [Fintype ι] [Nonempty ι]
     (s t : ℕ) (R : ℝ)
     (ht : 0 < t) (hs : 4 * t ^ 2 < s)
-    (_hR0 : 0 ≤ R) (hR1 : R ≤ 1) :
+    (hR1 : R ≤ 1) :
     sharpSubspaceProfile (ι := ι) s R (2 * t) ≤
       R + 1 / (2 * (t : ℝ)) := by
   have htR : (0 : ℝ) < t := by exact_mod_cast ht
@@ -914,10 +944,15 @@ theorem sharpSubspaceProfile_two_mul_le_rate_add
 open scoped NNReal in
 open scoped BigOperators in
 open Code in
+/-- **Boosting strong line decodability.** If `C` is `(δ, a, b)`-strongly-line-decodable with
+`b > 1`, has at most `L` codewords in every ball of radius `δ b/(b - 1)`, and `(L + 1)² < |F|`,
+then `C` is `(δ, (b' - 1) · L + a, b')`-strongly-line-decodable for every `b'`. Removing the at
+most `L` globally close pairs, each aligning fewer than `b'` seeds, costs at most `(b' - 1) · L`
+seeds. -/
 theorem strongLineDecodable_boost_of_lambda_le
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
-    {s a b L : ℕ} {δ : NNReal}
+    {s a b L b' : ℕ} {δ : NNReal}
     (C : Submodule F (ι → Fin s → F))
     (hweak : StrongLineDecodable (C : Set (ι → Fin s → F)) δ a b)
     (hb : 1 < b)
@@ -925,7 +960,7 @@ theorem strongLineDecodable_boost_of_lambda_le
       ((δ : ℝ) * (b : ℝ) / ((b : ℝ) - 1)) ≤ (L : ℕ∞))
     (hfield : (L + 1) ^ 2 < Fintype.card F) :
     StrongLineDecodable (C : Set (ι → Fin s → F)) δ
-      (Fintype.card ι * L + a) (Fintype.card ι + 1) := by
+      ((b' - 1) * L + a) b' := by
   classical
   intro f₀ f₁ U hU T hTclose hTcard
   let δ' : ℝ := (δ : ℝ) * (b : ℝ) / ((b : ℝ) - 1)
@@ -942,7 +977,7 @@ theorem strongLineDecodable_boost_of_lambda_le
     dsimp only [P, δ']
     exact globallyCloseAffinePairs_card_le C hclosed f₀ f₁
       ((δ : ℝ) * (b : ℝ) / ((b : ℝ) - 1)) hLambda hfield
-  by_cases hlarge : ∃ p ∈ P, Fintype.card ι + 1 ≤ (K p).card
+  by_cases hlarge : ∃ p ∈ P, b' ≤ (K p).card
   · obtain ⟨p, hpP, hpK⟩ := hlarge
     have hpdata : p.1 ∈ (C : Set (ι → Fin s → F)) ∧
         p.2 ∈ (C : Set (ι → Fin s → F)) ∧
@@ -953,7 +988,7 @@ theorem strongLineDecodable_boost_of_lambda_le
     refine ⟨p.1, hpdata.1, p.2, hpdata.2.1, ?_⟩
     simpa only [K] using hpK
   · push Not at hlarge
-    have hKcard : ∀ p ∈ P, (K p).card ≤ Fintype.card ι := by
+    have hKcard : ∀ p ∈ P, (K p).card ≤ b' - 1 := by
       intro p hpP
       have hnot := hlarge p hpP
       omega
@@ -961,7 +996,7 @@ theorem strongLineDecodable_boost_of_lambda_le
     let R : Finset F := T \ B
     have haR : a ≤ R.card := by
       dsimp only [R, B]
-      exact finset_card_sdiff_biUnion_ge P T K (Fintype.card ι) L a
+      exact finset_card_sdiff_biUnion_ge P T K (b' - 1) L a
         (by
           intro p hpP
           exact Finset.filter_subset _ _)
@@ -1015,7 +1050,7 @@ theorem strongLineDecodable_boost_of_lambda_le
 open scoped NNReal in
 open scoped ProbabilityTheory in
 theorem strongLineDecodable_to_isLineDecodable
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
     {s a b : ℕ} (C : Set (ι → Fin s → F)) (δ : NNReal)
     (hstrong : StrongLineDecodable C δ a b) :
@@ -1062,7 +1097,7 @@ theorem strongLineDecodable_to_isLineDecodable
 open scoped BigOperators in
 open scoped NNReal in
 theorem subspaceDesign_lineCloseSpan_finrank_lt
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s : ℕ} (τ : ℕ → ℝ) (C : Submodule F (ι → Fin s → F))
     (hdesign : IsSubspaceDesign s τ C)
@@ -1072,96 +1107,102 @@ theorem subspaceDesign_lineCloseSpan_finrank_lt
     (hε : 2 / (r : ℝ) < ε) :
     Module.finrank F (lineCloseSpan f₀ f₁ U δ) < r := by
   classical
-  by_contra hnot
-  have hrle : r ≤ Module.finrank F (lineCloseSpan f₀ f₁ U δ) := by omega
-  obtain ⟨T, hTclose, hTcard, hlinT⟩ :=
-    exists_lineCloseSeeds_linearIndepOn_card_eq f₀ f₁ U δ hrle
-  let A : Submodule F (ι → Fin s → F) :=
-    Submodule.span F (U '' (↑T : Set F))
-  have himage : U '' (↑T : Set F) =
-      (↑(T.image U) : Set (ι → Fin s → F)) := by
-    ext x
-    simp only [Finset.coe_image, Set.mem_image]
-  have hdimA : Module.finrank F A = r := by
-    change Module.finrank F (Submodule.span F (U '' (↑T : Set F))) = r
-    rw [himage]
-    calc
-      Module.finrank F (Submodule.span F
-          (↑(T.image U) : Set (ι → Fin s → F))) = (T.image U).card := by
-        apply finrank_span_finset_eq_card
-        simpa only [← himage] using hlinT.id_image
-      _ = T.card := Finset.card_image_of_injOn hlinT.injOn
-      _ = r := hTcard
-  have hAC : A ≤ C := by
-    change Submodule.span F (U '' (↑T : Set F)) ≤ C
-    rw [Submodule.span_le]
-    rintro x ⟨γ, _hγ, rfl⟩
-    exact hU γ
-  have hdes := hdesign r A hAC (by rw [hdimA])
-  have hclose : ∀ γ ∈ T,
-      (Code.relHammingDist (f₀ + γ • f₁) (U γ) : ℝ) ≤ δ := by
-    intro γ hγ
-    have hc := hTclose hγ
-    have hm : γ ∈ (Finset.univ : Finset F) ∧
+  cases isEmpty_or_nonempty ι with
+  | inl hι =>
+    let := hι
+    simpa only [Module.finrank_zero_of_subsingleton] using hr
+  | inr hι =>
+    let := hι
+    by_contra hnot
+    have hrle : r ≤ Module.finrank F (lineCloseSpan f₀ f₁ U δ) := by omega
+    obtain ⟨T, hTclose, hTcard, hlinT⟩ :=
+      exists_lineCloseSeeds_linearIndepOn_card_eq f₀ f₁ U δ hrle
+    let A : Submodule F (ι → Fin s → F) :=
+      Submodule.span F (U '' (↑T : Set F))
+    have himage : U '' (↑T : Set F) =
+        (↑(T.image U) : Set (ι → Fin s → F)) := by
+      ext x
+      simp only [Finset.coe_image, Set.mem_image]
+    have hdimA : Module.finrank F A = r := by
+      change Module.finrank F (Submodule.span F (U '' (↑T : Set F))) = r
+      rw [himage]
+      calc
+        Module.finrank F (Submodule.span F
+            (↑(T.image U) : Set (ι → Fin s → F))) = (T.image U).card := by
+          apply finrank_span_finset_eq_card
+          simpa only [← himage] using hlinT.id_image
+        _ = T.card := Finset.card_image_of_injOn hlinT.injOn
+        _ = r := hTcard
+    have hAC : A ≤ C := by
+      change Submodule.span F (U '' (↑T : Set F)) ≤ C
+      rw [Submodule.span_le]
+      rintro x ⟨γ, _hγ, rfl⟩
+      exact hU γ
+    have hdes := hdesign r A hAC (by rw [hdimA])
+    have hclose : ∀ γ ∈ T,
         (Code.relHammingDist (f₀ + γ • f₁) (U γ) : ℝ) ≤ δ := by
-      simpa only [lineCloseSeeds, Finset.mem_filter] using hc
-    exact hm.2
-  have hlower := lineClose_sum_agreement_lower f₀ f₁ U δ T hclose
-  rw [hTcard] at hlower
-  let d : ι → ℕ := fun i => Module.finrank F
-    ↥(A ⊓ LinearMap.ker
-      (LinearMap.proj (R := F) (φ := fun _ : ι ↦ Fin s → F) i))
-  have hlocal : ∀ i : ι,
-      (lineAgreementSeeds f₀ f₁ U T i).card ≤ d i + 2 := by
-    intro i
-    simpa only [d, A] using
-      lineAgreementSeeds_card_le_kernel_finrank_add_two f₀ f₁ U T hlinT i
-  have hupper : (∑ i : ι,
-      ((lineAgreementSeeds f₀ f₁ U T i).card : ℝ)) ≤
-      (∑ i : ι, (d i : ℝ)) + 2 * Fintype.card ι := by
-    calc
-      (∑ i : ι, ((lineAgreementSeeds f₀ f₁ U T i).card : ℝ)) ≤
-          ∑ i : ι, ((d i + 2 : ℕ) : ℝ) := by
-        exact Finset.sum_le_sum fun i _ => by exact_mod_cast hlocal i
-      _ = (∑ i : ι, (d i : ℝ)) + 2 * Fintype.card ι := by
-        push_cast
-        rw [Finset.sum_add_distrib]
-        simp only [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
-        ring
-  have hdes' : (∑ i : ι, (d i : ℝ)) / Fintype.card ι ≤
-      (r : ℝ) * τ r := by
-    rw [hdimA] at hdes
-    simpa only [d, A] using hdes
-  have hn : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos
-  have hksum : (∑ i : ι, (d i : ℝ)) ≤
-      (Fintype.card ι : ℝ) * (r : ℝ) * τ r := by
-    rw [div_le_iff₀ hn] at hdes'
-    simpa only [mul_assoc, mul_comm, mul_left_comm] using hdes'
-  have htotal : (r : ℝ) * Fintype.card ι * (1 - δ) ≤
-      (Fintype.card ι : ℝ) * (r : ℝ) * τ r +
-        2 * Fintype.card ι := by
-    exact hlower.trans (hupper.trans (add_le_add hksum le_rfl))
-  have hrR : (0 : ℝ) < r := by exact_mod_cast hr
-  have hreps : (2 : ℝ) < (r : ℝ) * ε := by
-    rw [div_lt_iff₀ hrR] at hε
-    simpa only [mul_comm] using hε
-  have hδ' : τ r + ε ≤ 1 - δ := by linarith
-  have hn0 : (0 : ℝ) < Fintype.card ι := hn
-  have hscaled := mul_le_mul_of_nonneg_left hδ' (mul_nonneg hrR.le hn0.le)
-  have heps_scaled : 2 * Fintype.card ι <
-      (Fintype.card ι : ℝ) * ((r : ℝ) * ε) := by
-    simpa only [mul_comm] using mul_lt_mul_of_pos_left hreps hn0
-  have hcontra : (Fintype.card ι : ℝ) * (r : ℝ) * τ r +
-      2 * Fintype.card ι < (r : ℝ) * Fintype.card ι * (1 - δ) := by
-    calc
-      (Fintype.card ι : ℝ) * (r : ℝ) * τ r + 2 * Fintype.card ι <
-          (Fintype.card ι : ℝ) * (r : ℝ) * τ r +
-            Fintype.card ι * ((r : ℝ) * ε) := by
-              simpa only [add_comm] using
-                add_lt_add_left heps_scaled ((Fintype.card ι : ℝ) * r * τ r)
-      _ = ((r : ℝ) * Fintype.card ι) * (τ r + ε) := by ring
-      _ ≤ ((r : ℝ) * Fintype.card ι) * (1 - δ) := hscaled
-  exact (not_lt_of_ge htotal) hcontra
+      intro γ hγ
+      have hc := hTclose hγ
+      have hm : γ ∈ (Finset.univ : Finset F) ∧
+          (Code.relHammingDist (f₀ + γ • f₁) (U γ) : ℝ) ≤ δ := by
+        simpa only [lineCloseSeeds, Finset.mem_filter] using hc
+      exact hm.2
+    have hlower := lineClose_sum_agreement_lower f₀ f₁ U δ T hclose
+    rw [hTcard] at hlower
+    let d : ι → ℕ := fun i => Module.finrank F
+      ↥(A ⊓ LinearMap.ker
+        (LinearMap.proj (R := F) (φ := fun _ : ι ↦ Fin s → F) i))
+    have hlocal : ∀ i : ι,
+        (lineAgreementSeeds f₀ f₁ U T i).card ≤ d i + 2 := by
+      intro i
+      simpa only [d, A] using
+        lineAgreementSeeds_card_le_kernel_finrank_add_two f₀ f₁ U T hlinT i
+    have hupper : (∑ i : ι,
+        ((lineAgreementSeeds f₀ f₁ U T i).card : ℝ)) ≤
+        (∑ i : ι, (d i : ℝ)) + 2 * Fintype.card ι := by
+      calc
+        (∑ i : ι, ((lineAgreementSeeds f₀ f₁ U T i).card : ℝ)) ≤
+            ∑ i : ι, ((d i + 2 : ℕ) : ℝ) := by
+          exact Finset.sum_le_sum fun i _ => by exact_mod_cast hlocal i
+        _ = (∑ i : ι, (d i : ℝ)) + 2 * Fintype.card ι := by
+          push_cast
+          rw [Finset.sum_add_distrib]
+          simp only [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
+          ring
+    have hdes' : (∑ i : ι, (d i : ℝ)) / Fintype.card ι ≤
+        (r : ℝ) * τ r := by
+      rw [hdimA] at hdes
+      simpa only [d, A] using hdes
+    have hn : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos
+    have hksum : (∑ i : ι, (d i : ℝ)) ≤
+        (Fintype.card ι : ℝ) * (r : ℝ) * τ r := by
+      rw [div_le_iff₀ hn] at hdes'
+      simpa only [mul_assoc, mul_comm, mul_left_comm] using hdes'
+    have htotal : (r : ℝ) * Fintype.card ι * (1 - δ) ≤
+        (Fintype.card ι : ℝ) * (r : ℝ) * τ r +
+          2 * Fintype.card ι := by
+      exact hlower.trans (hupper.trans (add_le_add hksum le_rfl))
+    have hrR : (0 : ℝ) < r := by exact_mod_cast hr
+    have hreps : (2 : ℝ) < (r : ℝ) * ε := by
+      rw [div_lt_iff₀ hrR] at hε
+      simpa only [mul_comm] using hε
+    have hδ' : τ r + ε ≤ 1 - δ := by linarith
+    have hn0 : (0 : ℝ) < Fintype.card ι := hn
+    have hscaled := mul_le_mul_of_nonneg_left hδ' (mul_nonneg hrR.le hn0.le)
+    have heps_scaled : 2 * Fintype.card ι <
+        (Fintype.card ι : ℝ) * ((r : ℝ) * ε) := by
+      simpa only [mul_comm] using mul_lt_mul_of_pos_left hreps hn0
+    have hcontra : (Fintype.card ι : ℝ) * (r : ℝ) * τ r +
+        2 * Fintype.card ι < (r : ℝ) * Fintype.card ι * (1 - δ) := by
+      calc
+        (Fintype.card ι : ℝ) * (r : ℝ) * τ r + 2 * Fintype.card ι <
+            (Fintype.card ι : ℝ) * (r : ℝ) * τ r +
+              Fintype.card ι * ((r : ℝ) * ε) := by
+                simpa only [add_comm] using
+                  add_lt_add_left heps_scaled ((Fintype.card ι : ℝ) * r * τ r)
+        _ = ((r : ℝ) * Fintype.card ι) * (τ r + ε) := by ring
+        _ ≤ ((r : ℝ) * Fintype.card ι) * (1 - δ) := hscaled
+    exact (not_lt_of_ge htotal) hcontra
 
 noncomputable def vanishOnCoordinates
     {ι : Type} {F : Type} [Field F] {s : ℕ} (S : Finset ι) :

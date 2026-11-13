@@ -58,8 +58,9 @@ By contrast, **Packing** groups a basis-sized block of small-field coefficients 
   (`Polynomial.coeff_divByMonic_X_pow_add_one`), so the quotient bound is a row-sum coefficient
   bound: `μ · 2d · βM · βz` from explicit matrix/witness bounds, with **no wraparound hypothesis**
   (centered representatives are minimal among integer representatives). Also the unconditional
-  fallback `rhoShort_half` (`RhoShort (q/2)` always), which is what the Hachi chain uses — see its
-  docstring for why nothing sharper is available when the `R^lin` matrix carries the Ajtai key.
+  auxiliary raw-quotient bound `rhoShort_half` (`RhoShort (q/2)` always). The Hachi chain's
+  quotient-digit admissibility instead follows from `rhoDigitsShort_of_half_le`;
+  `rhoDigitsShort_of_digitBaseOk` packages it for the chain's admissible digit base.
 * `RingSwitch/Completeness.lean` — the **honest direction of both links**:
   `rlinReduction_perfectCompleteness_image` (into the honest seam `relRlinImage`, unconditional)
   with `rlinReduction_perfectCompleteness` as its coarsening to `relRlin`, and

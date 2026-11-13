@@ -125,10 +125,11 @@ def foldCompletenessRelation (δ : ℝ≥0) :
     (Code.relHammingDist f (fun x ↦ p₀.val.eval x.val) : ℝ≥0) ≤ δ ∧
     sw = ((α, honestHistory s d f p₀ α), honestPolynomial s d p₀ α (Fin.last (k + 1)))}
 
-omit [Fintype F] in
+omit [DecidableEq F] [Fintype F] in
 /-- Every polynomial witness satisfies its executable natural-degree bound. -/
 theorem witness_natDegree_lt (i : Fin (k + 2)) (p : Witness F s d i) :
     p.val.natDegree < foldingDegree s d i := by
+  classical
   rw [CompPoly.CPolynomial.natDegree_toPoly]
   by_cases hp : p.val.toPoly = 0
   · simpa [hp] using foldingDegree_pos s d i

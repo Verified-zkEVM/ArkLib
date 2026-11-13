@@ -5,6 +5,7 @@ Authors: Alexander Hicks
 -/
 module
 
+public import ArkLib.Data.Fin.BigOperators
 public import Mathlib.Data.Fintype.Pi
 public import Mathlib.Data.Fintype.BigOperators
 public import Mathlib.Data.Fin.VecNotation
@@ -147,22 +148,6 @@ def drop (D : SumcheckDomain R k) (j : ℕ) : SumcheckDomain R (k - j) where
 the Schwartz–Zippel soundness bound `d / ∏ᵢ (size i)`. -/
 @[simp] lemma card_cube (D : SumcheckDomain R k) : D.cube.card = ∏ i, D.size i := by
   simp only [cube, Fintype.card_piFinset, card_points]
-
-/-- Telescoping identity (the core sum-check completeness step): summing over the `(k+1)`-coordinate
-cube equals summing coordinate `0` over its domain, then the rest over the tail cube. This is the
-`piFinset` "cons decomposition" `𝔻^{k+1} ↔ 𝔻₀ × 𝔻^k`. -/
-theorem sum_cube_succ {M : Type*} [AddCommMonoid M] (D : SumcheckDomain R (k + 1))
-    (f : (Fin (k + 1) → R) → M) :
-    ∑ x ∈ D.cube, f x = ∑ b ∈ D.points 0, ∑ y ∈ D.tail.cube, f (Fin.cons b y) := by
-  rw [← Finset.sum_product']
-  have htail : D.tail.cube = Fintype.piFinset (Fin.tail D.points) := rfl
-  have hcube : D.cube
-      = (D.points 0 ×ˢ D.tail.cube).map (Fin.consEquiv (fun _ : Fin (k + 1) => R)).toEmbedding := by
-    rw [htail]
-    simpa [cube] using
-      Finset.filter_piFinset_eq_map_consEquiv (S := D.points) (fun _ => True)
-  rw [hcube, Finset.sum_map]
-  rfl
 
 end SumcheckDomain
 

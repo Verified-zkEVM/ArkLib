@@ -100,7 +100,7 @@ theorem exists_graphLine_pair_of_symbolic_sample_of_exponent
       simpa [φ, powerBatchedCoordinate, Fin.sum_univ_two] using hc
     obtain ⟨hpoly, hjet, hcoeff⟩ := hrecognize z jet hS' hhigh' hcuts'
     refine ⟨?_, ?_, ?_⟩
-    · simpa [powerBatchedPolynomial, Fin.sum_univ_two, Polynomial.smul_eq_C_mul]
+    · simpa [Polynomial.powerBatch, Fin.sum_univ_two, Polynomial.smul_eq_C_mul]
         using hpoly
     · simpa [powerBatchedJetGraph, powerBatchedCoordinate_eval, Fin.sum_univ_two]
         using hjet
@@ -117,7 +117,7 @@ theorem exists_graphLine_pair_of_symbolic_sample_of_exponent
         rw [← hφ, map_initialJetSeparant]
         simp [φ]
       rw [hNmap, hSmap]
-      simpa [powerBatchedPolynomial, Fin.sum_univ_two,
+      simpa [Polynomial.powerBatch, Fin.sum_univ_two,
         Polynomial.smul_eq_C_mul] using hc
 
 

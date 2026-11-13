@@ -17,15 +17,13 @@ itself (`oStmtIn`), so this is a transparent specification fixture rather than a
 The opening has no rounds: the verifier reads the polynomial from its
 oracle and accepts exactly when the claimed evaluation is its value at the claimed point.
 
-* `verifier_rbrKnowledgeSoundnessWorstCase`: the verifier is worst-case round-by-round knowledge
+* `verifier_rbrKnowledgeSoundness`: the verifier is round-by-round knowledge
   sound at `oStmtIn.toRelInput`, at every error. The extractor reads the witness off the oracle
   statement.
 * `oracleProof_perfectCompleteness`: the honest prover, which sends nothing, is accepted on every
   input with an honest oracle statement.
-* `mliopcs`: the opening as an `MLIOPCS`. Its averaged knowledge-soundness field is filled from the
-  worst-case proof by
-  `OracleProof.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness`, and
-  `mliopcs_rbrKnowledgeSoundWorstCase` is its worst-case hypothesis.
+* `mliopcs`: the opening as an `MLIOPCS`, with its knowledge-soundness field filled by
+  `verifier_rbrKnowledgeSoundness`.
 -/
 
 open OracleSpec OracleComp ProtocolSpec RingSwitching
@@ -65,19 +63,19 @@ theorem guardedForm_out_fst
     ((guardedForm (L := L) (ℓ' := ℓ')).out s tr).1 =
       decide (s.1.original_claim = MvPolynomial.eval s.1.t_eval_point (s.2 ()).val) := rfl
 
-/-- The opening verifier is worst-case round-by-round knowledge sound at every error: it has no
+/-- The opening verifier is round-by-round knowledge sound at every error: it has no
 challenges, and on acceptance the polynomial held by the oracle is a witness for the claim. -/
-theorem verifier_rbrKnowledgeSoundnessWorstCase {σ : Type} (init : ProbComp σ)
+theorem verifier_rbrKnowledgeSoundness {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
     (err : (!p[] : ProtocolSpec 0).ChallengeIdx → ℝ≥0) :
-    OracleProof.rbrKnowledgeSoundnessWorstCase init impl
+    OracleProof.rbrKnowledgeSoundness init impl
       (oStmtIn (L := L) (ℓ' := ℓ')).toRelInput verifier err := by
   refine ⟨fun _ => WitMLP L ℓ',
-    { eqIn := rfl
+    { extractIn := fun _ w => w
       extractMid := fun i => Fin.elim0 i
       extractOut := fun s _ _ => ⟨s.2 ()⟩ },
     { toFun := fun _ s _ w => (s, w) ∈ (oStmtIn (L := L) (ℓ' := ℓ')).toRelInput
-      toFun_empty := fun _ _ => Iff.rfl
+      toFun_empty := fun _ _ h => h
       toFun_next := fun m => Fin.elim0 m
       toFun_full := fun s tr _ h => ?_ },
     fun _ i => Fin.elim0 i.1⟩
@@ -134,8 +132,7 @@ theorem oracleProof_perfectCompleteness {σ : Type} {init : ProbComp σ}
   rw [hout]
   rfl
 
-/-- The direct opening as an `MLIOPCS`, at error `0`. Its averaged round-by-round knowledge
-soundness field is filled from the worst-case proof. -/
+/-- The direct opening as an `MLIOPCS`, at error `0`. -/
 noncomputable def mliopcs : MLIOPCS L ℓ' where
   toAbstractOStmtIn := oStmtIn
   numRounds := 0
@@ -145,14 +142,7 @@ noncomputable def mliopcs : MLIOPCS L ℓ' where
   oracleReduction := oracleProof
   perfectCompleteness := oracleProof_perfectCompleteness
   rbrKnowledgeError := fun _ => 0
-  rbrKnowledgeSoundness :=
-    OracleProof.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness
-      (verifier_rbrKnowledgeSoundnessWorstCase _ _ _)
-
-/-- The direct opening satisfies the worst-case hypothesis of the full ring-switching composite. -/
-theorem mliopcs_rbrKnowledgeSoundWorstCase :
-    (mliopcs (L := L) (ℓ' := ℓ')).RbrKnowledgeSoundWorstCase :=
-  verifier_rbrKnowledgeSoundnessWorstCase _ _ _
+  rbrKnowledgeSoundness := verifier_rbrKnowledgeSoundness _ _ _
 
 /-- A general opening obtains contextual completeness without another security premise. -/
 example (Context : Type) {σ : Type} (init : ProbComp σ)
@@ -164,16 +154,15 @@ example (Context : Type) {σ : Type} (init : ProbComp σ)
       (init := init) (impl := impl) :=
   Packing.OpeningAdapter.perfectCompleteness _ Context init impl
 
-/-- The same adapter transports the general opening's worst-case certificate. -/
+/-- The same adapter transports the general opening's certificate. -/
 example (Context : Type) {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    OracleProof.rbrKnowledgeSoundnessWorstCase init impl
+    OracleProof.rbrKnowledgeSoundness init impl
       ((mliopcs (L := L) (ℓ' := ℓ')).toAbstractOStmtIn.toPackedCommitment
         |>.evalRelWithContext (C := L) Context)
       (Packing.OpeningAdapter.reduction (mliopcs (L := L) (ℓ' := ℓ')) Context).toOracleVerifier
       (Sum.elim (fun _ => 0) (mliopcs (L := L) (ℓ' := ℓ')).rbrKnowledgeError ∘
         ProtocolSpec.ChallengeIdx.sumEquiv.symm) :=
-  Packing.OpeningAdapter.rbrKnowledgeSoundnessWorstCase _ Context
-    mliopcs_rbrKnowledgeSoundWorstCase init impl
+  Packing.OpeningAdapter.rbrKnowledgeSoundness _ Context init impl
 
 end ArkLibTest.RingSwitchingConformance.DirectOpening

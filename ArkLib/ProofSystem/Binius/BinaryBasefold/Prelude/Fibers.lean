@@ -385,7 +385,7 @@ def finTwoCast (𝔽q : Type*) [Ring 𝔽q] (k : Fin 2) : 𝔽q :=
 
 /-- Helper for the fiber coefficients used in `quotientFiber`.
 It computes the coefficient of the `j`-th basis vector for a point (indexed by `elementIdx`)
-in the fiber list of `y ∈ S^{i+steps-1}`.
+in the fiber list of `y ∈ S^{i+steps}`.
 - If `j < steps`, the coefficient comes from the binary expansion of `elementIdx`.
 - If `j ≥ steps`, the coefficient comes from `y_coeffs` (coefficients of the target point `y`). -/
 noncomputable def fiberCoeff

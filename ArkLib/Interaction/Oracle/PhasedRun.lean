@@ -351,7 +351,7 @@ def executePhasedWithRuntime {ι κ : Type} {Import : OracleSpec ι} {Surface : 
     (impl : QueryImpl (OracleSpec.ofPFunctor initial) Id) (stmt : StatementIn) (wit : WitnessIn) :=
   runtime.run (executePhased reduction impl stmt wit)
 
-/-- Execute already prepared native strategies with their local phases in one shared runtime. -/
+/-- Execute already prepared strategies with their local phases in one shared runtime. -/
 def executeStrategiesPhasedWithRuntime {ι κ : Type}
     {Import : OracleSpec ι} {Surface : OracleSpec κ} (runtime : OracleRuntime Import Surface)
     {protocol : Oracle.Protocol} {initial : PFunctor}
@@ -363,7 +363,7 @@ def executeStrategiesPhasedWithRuntime {ι κ : Type}
   runtime.run (executePhases Surface protocol.tree protocol.roles protocol.oracles initial impl
     (pure prover) verifier)
 
-/-- Direct native phase observations agree with the logged program before runtime interpretation. -/
+/-- Direct phase observations agree with the logged program before runtime interpretation. -/
 theorem executeStrategiesPhases_logView {ι : Type} {ambient : OracleSpec ι}
     {protocol : Oracle.Protocol} {initial : PFunctor}
     {Stmt : protocol.tree.BranchPath → Type} {Idx : protocol.tree.BranchPath → Type}
@@ -383,7 +383,7 @@ theorem executeStrategiesPhases_logView {ι : Type} {ambient : OracleSpec ι}
   simp [executeStrategiesLoggedRun, OracleComp.withQueryLog_bind, LoggedRun.observation,
     LoggedResult.observe, monad_norm]
 
-/-- Native phased and logged runtime entry points retain the same paired source/world observations
+/-- Phased and logged runtime entry points retain the same paired source/world observations
 and actual final state. The world trace on the left comes from the execution's local phases. -/
 theorem executeStrategiesPhasedWithRuntime_logView {ι κ : Type}
     {Import : OracleSpec ι} {Surface : OracleSpec κ} (runtime : OracleRuntime Import Surface)

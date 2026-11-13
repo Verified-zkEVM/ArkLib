@@ -12,7 +12,7 @@ public import VCVio.CryptoFoundations.RoundByRound
 /-!
 # Witness-indexed round-by-round knowledge certificates
 
-Named witness maps transport candidate witnesses backward on the existing native concrete
+Named witness maps transport candidate witnesses backward on the existing concrete
 prefixes and execution paths. Prover messages preserve knowledge after applying those maps.
 If a terminal witness is known but its extracted input witness is unknown, an actual verifier
 challenge on the same path violates knowledge preservation, using the witness computed from its
@@ -44,10 +44,11 @@ theorem KnowledgeState.holds_cast {first second : KnowledgeState.{w}} (same : fi
   cases same
   rfl
 
-/-- Total backward witness maps on actual native messages, supplied independently of knowledge.
+/-- Total backward witness maps on actual messages, supplied independently of knowledge.
 Each child retains its own witness type and predicate. At oracle nodes that type may depend on
 the concrete payload even though the structural branch is `PUnit`. Maps from an inhabited later
-carrier to an empty earlier carrier cannot be supplied; that is an explicit extraction premise. -/
+carrier to an empty earlier carrier cannot be supplied; that is an explicit extraction premise.
+The maps are Lean functions with no cost bound, and need not be computable. -/
 def RoundExtractor : (tree : Oracle.TypeTree.{u}) → KnowledgeState.{w} → Type (max (u+1) (w+1))
   | .done, _ => PUnit
   | .public Moves next, state =>
@@ -59,7 +60,7 @@ def RoundExtractor : (tree : Oracle.TypeTree.{u}) → KnowledgeState.{w} → Typ
 
 namespace RoundExtractor
 
-/-- Knowledge state after a typed native cursor spine with its concrete oracle messages. -/
+/-- Knowledge state after a typed cursor spine with its concrete oracle messages. -/
 def stateAt : {tree residual : Oracle.TypeTree.{u}} → {state : KnowledgeState.{w}} →
     RoundExtractor tree state → (spine : Cursor.Spine tree residual) →
     PrefixMessages.Along spine → KnowledgeState.{w}
@@ -69,14 +70,14 @@ def stateAt : {tree residual : Oracle.TypeTree.{u}} → {state : KnowledgeState.
   | .oracle _ _, _, _, extractor, .down _ tail, messages =>
       stateAt (extractor messages.1).2.2 tail messages.2
 
-/-- The witness carrier and predicate at the terminal prefix of this actual native path. -/
+/-- The witness carrier and predicate at the terminal prefix of this actual path. -/
 def terminalState : {tree : Oracle.TypeTree.{u}} → {state : KnowledgeState.{w}} →
     RoundExtractor tree state → tree.ExecutionPath → KnowledgeState.{w}
   | .done, state, _, _ => state
   | .public _ _, _, extractor, path => terminalState (extractor path.1).2.2 path.2
   | .oracle _ _, _, extractor, path => terminalState (extractor path.1).2.2 path.2
 
-/-- Execute the named backward extractor on the supplied complete native path and terminal witness.
+/-- Execute the named backward extractor on the supplied complete path and terminal witness.
 The algorithm applies the supplied maps and neither decides knowledge nor selects a witness. -/
 def extractWitness : {tree : Oracle.TypeTree.{u}} → {state : KnowledgeState.{w}} →
     (extractor : RoundExtractor tree state) → (path : tree.ExecutionPath) →
@@ -87,7 +88,7 @@ def extractWitness : {tree : Oracle.TypeTree.{u}} → {state : KnowledgeState.{w
   | .oracle _ _, _, extractor, path, witness =>
       (extractor path.1).2.1 (extractWitness (extractor path.1).2.2 path.2 witness)
 
-/-- Restrict witness maps to the residual selected by the native concrete prefix. -/
+/-- Restrict witness maps to the residual selected by the concrete prefix. -/
 def restrict : {tree residual : Oracle.TypeTree.{u}} → {state : KnowledgeState.{w}} →
     (extractor : RoundExtractor tree state) → (spine : Cursor.Spine tree residual) →
     (messages : PrefixMessages.Along spine) →
@@ -98,7 +99,7 @@ def restrict : {tree residual : Oracle.TypeTree.{u}} → {state : KnowledgeState
   | .oracle _ _, _, _, extractor, .down _ tail, messages =>
       restrict (extractor messages.1).2.2 tail messages.2
 
-/-- Execute backward extraction through a native typed spine and its retained messages. -/
+/-- Execute backward extraction through a typed spine and its retained messages. -/
 def extractPrefix : {tree residual : Oracle.TypeTree.{u}} → {state : KnowledgeState.{w}} →
     (extractor : RoundExtractor tree state) → (spine : Cursor.Spine tree residual) →
     (messages : PrefixMessages.Along spine) →
@@ -110,7 +111,7 @@ def extractPrefix : {tree residual : Oracle.TypeTree.{u}} → {state : Knowledge
       (extractor messages.1).2.1
         (extractPrefix (extractor messages.1).2.2 tail messages.2 witness)
 
-/-- Native spine composition preserves the exact dependent knowledge state. -/
+/-- Spine composition preserves the exact dependent knowledge state. -/
 theorem stateAt_comp {tree middle residual : Oracle.TypeTree.{u}}
     {state : KnowledgeState.{w}} (extractor : RoundExtractor tree state)
     (first : Cursor.Spine tree middle) (second : Cursor.Spine middle residual)
@@ -126,7 +127,7 @@ theorem stateAt_comp {tree middle residual : Oracle.TypeTree.{u}}
           cases answer
           exact ih (extractor left.1).2.2 second left.2 right
 
-/-- Backward extraction respects native spine composition with explicit witness transport. -/
+/-- Backward extraction respects spine composition with explicit witness transport. -/
 theorem extractPrefix_comp {tree middle residual : Oracle.TypeTree.{u}}
     {state : KnowledgeState.{w}} (extractor : RoundExtractor tree state)
     (first : Cursor.Spine tree middle) (second : Cursor.Spine middle residual)
@@ -159,13 +160,13 @@ def remainingExtractor {tree : Oracle.TypeTree.{u}} {state : KnowledgeState.{w}}
     RoundExtractor pfx.cursor.residual (knowledgeState extractor pfx) :=
   restrict extractor pfx.cursor.spine pfx.messages
 
-/-- Extract a prefix's candidate input witness by following exactly its native messages backward. -/
+/-- Extract a prefix's candidate input witness by following exactly its messages backward. -/
 def extractPrefixWitness {tree : Oracle.TypeTree.{u}} {state : KnowledgeState.{w}}
     (extractor : RoundExtractor tree state) (pfx : ExecutionPrefix tree)
     (witness : (knowledgeState extractor pfx).Witness) : state.Witness :=
   extractPrefix extractor pfx.cursor.spine pfx.messages witness
 
-/-- Native prefix composition identifies the later witness carrier with the residual extractor. -/
+/-- Prefix composition identifies the later witness carrier with the residual extractor. -/
 theorem knowledgeState_comp {tree : Oracle.TypeTree.{u}} {state : KnowledgeState.{w}}
     (extractor : RoundExtractor tree state) (first : ExecutionPrefix tree)
     (second : ExecutionPrefix first.cursor.residual) :
@@ -173,7 +174,7 @@ theorem knowledgeState_comp {tree : Oracle.TypeTree.{u}} {state : KnowledgeState
       knowledgeState (remainingExtractor extractor first) second :=
   stateAt_comp extractor first.cursor.spine second.cursor.spine first.messages second.messages
 
-/-- Backward extraction on native prefix composition is the composition of the named extractors.
+/-- Backward extraction on prefix composition is the composition of the named extractors.
 The explicit equality transport identifies the actual dependent witness types. -/
 theorem extractPrefixWitness_comp {tree : Oracle.TypeTree.{u}} {state : KnowledgeState.{w}}
     (extractor : RoundExtractor tree state) (first : ExecutionPrefix tree)
@@ -186,7 +187,7 @@ theorem extractPrefixWitness_comp {tree : Oracle.TypeTree.{u}} {state : Knowledg
   extractPrefix_comp extractor first.cursor.spine second.cursor.spine first.messages
     second.messages witness
 
-/-- The complete-path endpoint is the knowledge state at its actual terminal native pfx. -/
+/-- The complete-path endpoint is the knowledge state at its actual terminal pfx. -/
 theorem terminalState_eq_knowledgeState : {tree : Oracle.TypeTree.{u}} →
     {state : KnowledgeState.{w}} → (extractor : RoundExtractor tree state) →
     (path : tree.ExecutionPath) →
@@ -210,7 +211,7 @@ def IsProverPreserving : {tree : Oracle.TypeTree.{u}} → {state : KnowledgeStat
         state.holds ((extractor message).2.1 witness)) ∧
       ∀ message, IsProverPreserving (extractor message).2.2 (roles.2 PUnit.unit)
 
-/-- A bad verifier challenge on this actual native path, using the witness extracted from its
+/-- A bad verifier challenge on this actual path, using the witness extracted from its
 actual suffix. No existential witness is selected from a knowledge-state proof. -/
 def BadChallengeOnPath : {tree : Oracle.TypeTree.{u}} → {state : KnowledgeState.{w}} →
     (extractor : RoundExtractor tree state) → tree.RoleDecoration →
@@ -410,12 +411,14 @@ def KnowledgeState.ofProblem {Context : Type u} {family : ClaimFamily.{u, u} Con
     KnowledgeState.{w} :=
   ⟨problem.Witness context claim, problem.rel context claim⟩
 
-/-- Local witness-indexed knowledge security for a native tree, with named extractors.
+/-- Local witness-indexed knowledge security for a tree, with named extractors.
 The certificate supplies prover preservation and bounds at every authored verifier prefix.
-Its fresh challenge programs require a separate native-verifier correspondence where used. -/
+Its fresh challenge programs require a separate correspondence with the actual verifier where used.
+It bounds no extraction cost: knowledge soundness in the cryptographic sense also needs a cost
+bound for each named witness map, which is not part of this certificate. -/
 structure KnowledgeCertificate (tree : Oracle.TypeTree.{0}) (roles : tree.RoleDecoration)
     (state : KnowledgeState.{w}) where
-  /-- Total, named backward witness maps on the actual native messages. -/
+  /-- Total, named backward witness maps on the actual messages. -/
   extractor : RoundExtractor tree state
   /-- Fresh challenge programs and local errors at each authored verifier prefix. -/
   challenges : RoundExtractor.ChallengeSchedule tree roles

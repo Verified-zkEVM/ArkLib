@@ -22,7 +22,7 @@ cardinality at most `D`, satisfies
 
 `|T| * (A² - nD) ≤ n * (A - D)`
 
-when the ambient type has `n` elements and the denominator is positive. The proof is the
+when the ambient type has `n` elements, with subtraction truncated in `ℕ`. The proof is the
 elementary Cauchy--Schwarz count extracted from the Reed--Solomon weighted Johnson development at
 commit `a5aa2677fee4e3a79d6bb05136631cce4a08587d`. It has no field, polynomial, or geometric
 hypotheses.
@@ -36,21 +36,28 @@ namespace Finset
 
 `T` is the finite family of indices and `S x` is the set attached to `x`. The ambient type `ι`
 has cardinality `n = Fintype.card ι`. Every family member has at least `A` elements, while two
-members with distinct indices intersect in at most `D` elements. The hypotheses `D ≤ A` and
-`n * D < A²` make the agreement gap nonnegative and the Johnson denominator positive. -/
+members with distinct indices intersect in at most `D` elements. Both differences use natural
+subtraction, so the bound also holds when the agreement gap or denominator truncates to zero. -/
 theorem card_mul_sq_sub_card_mul_le_of_inter_card_le
     -- The ambient finite type and the type indexing the family need not carry other structure.
     {κ ι : Type*} [Fintype ι] [DecidableEq ι]
     -- `T` chooses the family members and `S` assigns their finite subsets of the ambient type.
     (T : Finset κ) (S : κ → Finset ι) (A D : ℕ)
-    -- The integral gap and denominator are in their natural mathematical range.
-    (hDA : D ≤ A) (hpositive : Fintype.card ι * D < A * A)
     -- Each member is large, while distinct indexed members have small pairwise intersection.
     (hclose : ∀ x ∈ T, A ≤ (S x).card)
     (hpair : ∀ x ∈ T, ∀ y ∈ T, x ≠ y → ((S x) ∩ (S y)).card ≤ D) :
     -- This exact integral inequality is the division-free Johnson counting conclusion.
     T.card * (A * A - Fintype.card ι * D) ≤ Fintype.card ι * (A - D) := by
   classical
+  by_cases hden : A * A ≤ Fintype.card ι * D
+  · simp [Nat.sub_eq_zero_of_le hden]
+  rcases T.eq_empty_or_nonempty with rfl | ⟨x, hx⟩
+  · simp
+  have hDA : D ≤ A := by
+    have hAn : A ≤ Fintype.card ι := (hclose x hx).trans (Finset.card_le_univ _)
+    by_contra h
+    exact hden ((Nat.mul_le_mul_left A (Nat.le_of_lt (Nat.lt_of_not_ge h))).trans
+      (Nat.mul_le_mul_right D hAn))
   let L : ℝ := T.card
   let n : ℝ := Fintype.card ι
   let a : ℝ := A
@@ -205,7 +212,7 @@ theorem card_mul_sq_sub_card_mul_le_of_inter_card_le
       exact le_of_mul_le_mul_left hmulgoal hLpos
   have hcastDen :
       ((A * A - Fintype.card ι * D : ℕ) : ℝ) = a ^ 2 - n * d := by
-    rw [Nat.cast_sub hpositive.le]
+    rw [Nat.cast_sub (Nat.le_of_lt (Nat.lt_of_not_ge hden))]
     simp [a, n, d, pow_two]
   have hcastGap : ((A - D : ℕ) : ℝ) = a - d := by
     rw [Nat.cast_sub hDA]

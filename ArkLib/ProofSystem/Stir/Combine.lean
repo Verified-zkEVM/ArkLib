@@ -107,18 +107,6 @@ private def block_start (dstar : ℕ) (degs : Fin m → ℕ) (i : Fin m) :=
   ∑ j ∈ univ.filter (· < i), block_size dstar degs j
 private def total_terms (dstar : ℕ) (degs : Fin m → ℕ) := ∑ i, block_size dstar degs i
 
-private lemma block_start_monotone
-  {dstar : ℕ} {degs : Fin m → ℕ} {i j : Fin m} (h : i ≤ j) :
-  block_start dstar degs i ≤ block_start dstar degs j := by
-  have h_subset :
-    Finset.filter (· < i) Finset.univ ⊆ Finset.filter (· < j) Finset.univ := by
-      grind
-  exact Finset.sum_le_sum_of_subset h_subset
-
-private lemma block_start_zero
-  {dstar : ℕ} {degs : Fin m.succ → ℕ} :
-  block_start dstar degs 0 = 0 := by simp [block_start]
-
 private lemma block_end_le_block_start
   {dstar : ℕ} {degs : Fin m → ℕ} {i j : Fin m} (hij : i < j) :
   block_start dstar degs i + block_size dstar degs i ≤ block_start dstar degs j := by
@@ -377,8 +365,6 @@ private lemma combine_eq_flat_final
       rw [h]
       rfl
 
--- def DegCor
-
 /-- Definition 4.12.1
     DegCor(d*, r, f, degree)(x) := f(x) * ( sum_{ l < d* - d + 1 } (r * φ(x))^l ) -/
 def degCor
@@ -429,7 +415,7 @@ open LinearCode ProbabilityTheory ReedSolomon STIR in
 lemma master_lemma
     [Nonempty ι]
   {φ : ι ↪ F} {dstar m : ℕ}
-  {fs : Fin m → ι → F} {degs : Fin m → ℕ} (hdegs : ∀ i, degs i ≤ dstar)
+  {fs : Fin m → ι → F} {degs : Fin m → ℕ}
   {δ : ℝ≥0}
   (hδLt : δ < (min (1 - (ReedSolomon.sqrtRate dstar φ))
     (1 - (rate (code φ dstar)) - 1 / Fintype.card ι)))
@@ -441,6 +427,11 @@ lemma master_lemma
   (i : Fin m)
   (j : Fin (block_size dstar degs i)) :
   (v i j).degree < degs i + j := by
+  by_cases hdeg : degs i ≤ dstar
+  swap
+  · apply (hv_deg i j).trans_le
+    change WithBot.some dstar ≤ WithBot.some (degs i) + WithBot.some j.val
+    exact WithBot.coe_le_coe.mpr (show dstar ≤ degs i + j.val by omega)
   classical
   have hlt : dstar < Fintype.card ι := by
     by_contra contra
@@ -461,7 +452,7 @@ lemma master_lemma
     rw [←WithBot.coe_natCast,
         show WithBot.some (dstar - degs i) = Nat.cast (dstar - degs i) by rfl,
         ←WithBot.coe_natCast, ←WithBot.coe_add, ←Nat.cast_add,
-        Nat.add_sub_of_le (hdegs _)]
+        Nat.add_sub_of_le hdeg]
     exact hv_deg i ⟨j, hj⟩
   | succ j' ih =>
     intro j hj hj'
@@ -516,16 +507,19 @@ lemma master_lemma
     exact (WithBot.add_lt_add_iff_right (by simp)).mp ih
 
 open LinearCode Classical ProbabilityTheory ReedSolomon STIR in
-/-- Lemma 4.13
-  Let `dstar` be the target degree, `f₁,...,f_{m-1} : ι → F`,
-  `0 < degs₁,...,degs_{m-1} < dstar` be degrees and
-  `δ ∈ (0, min{(1-BStar(ρ)), (1-ρ-1/|ι|)})` be a distance parameter, then
-      Pr{let r ← F}[δᵣ(Combine(dstar,r,(f₁,degs₁),...,(fₘ,degsₘ)))]
-                   > err' (dstar, ρ, δ, m * (dstar + 1) - ∑ i degsᵢ) -/
+/-- Lemma 4.13. Let the target degree `dstar` be positive and let each component
+bound `degs i` be at most `dstar`. If the probability that the combined word is within distance
+`δ` of the target Reed–Solomon code exceeds the curve error bound, all component words agree
+with codewords of their respective degrees on a common set of at least `(1 - δ) * |ι|` positions.
+
+The positive target degree is essential for this error bound. At degree zero,
+its Johnson branch vanishes, although a random linear combination can have
+zero coordinates when its coefficient words have no common zero. -/
 theorem combine_theorem
     [SampleableType F] {φ : ι ↪ F} {dstar m : ℕ}
   (fs : Fin m → ι → F) (degs : Fin m → ℕ) (hdegs : ∀ i, degs i ≤ dstar)
-  (δ : ℝ≥0) (hδPos : δ > 0)
+  (hdeg_pos : 0 < dstar)
+  (δ : ℝ≥0)
   (hδLt : δ < (min (1 - (ReedSolomon.sqrtRate dstar φ))
                    (1 - (rate (code φ dstar)) - 1 / Fintype.card ι)))
   (hProb : Pr{let r ← $ᵗ F}[δᵣ((combine φ dstar r fs degs), (code φ dstar)) ≤ δ] >
@@ -556,7 +550,7 @@ theorem combine_theorem
       · simp [total_terms, block_size] at htotal
     · have proximity_gap :=
         @ProximityGap.correlatedAgreement_affine_curves ι _ _ F _ _ _ _
-          (total_terms dstar degs - 1) dstar φ δ hδPos (lt_min_iff.mp hδLt).1
+          (total_terms dstar degs - 1) dstar φ δ hdeg_pos (lt_min_iff.mp hδLt).1
       simp only [ProximityGap.δ_ε_correlatedAgreementCurves] at proximity_gap
       specialize proximity_gap
           (fun l (x : ι) ↦ (
@@ -660,7 +654,7 @@ theorem combine_theorem
       rcases proximity_gap with ⟨S, ⟨hS_card, ⟨v, hv⟩⟩⟩
       have master_lemma :=
         @master_lemma _ _ _ _ hempty
-          _ _ _ _ hdegs _
+          _ _ _ _ _
           hδLt _ hS_card (v := v) (fs := fs)
           (fun i j => (hv i j).1)
           (fun i j x hx => (hv i j).2 x hx)

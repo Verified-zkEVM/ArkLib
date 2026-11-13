@@ -201,13 +201,13 @@ theorem weightedJohnsonFinMatrix_eq_zero_of_grade_lt {F : Type*} [Field F] {n : 
         ((Fintype.equivFin (WeightedJohnsonRowIndex n m B)).symm i).2) j
   simpa [weightedJohnsonFinRowWeight] using hgrade
 
-/-- Under `1 ≤ D`, `D * B < m * A`, `k ≤ D + 1`, and a strict finite slot surplus, this theorem
+/-- Under `1 ≤ D`, `k ≤ D + 1`, and a strict finite slot surplus, this theorem
 constructs a primitive symbolic certificate. It retains every agreement subset of size at least
 `A`, remains nonzero after every field extension and challenge specialization, and has the full
 agreement-set recovery shape packaged by `JohnsonSymbolicCertificate`. -/
 theorem exists_weighted_johnson_symbolic_certificate
     {F : Type*} [Field F] {n D A m B k h : ℕ}
-    (hD : 1 ≤ D) (hcut : D * B < m * A) (hkD : k ≤ D + 1)
+    (hD : 1 ≤ D) (hkD : k ≤ D + 1)
     (hsurplus :
       n * ∑ b ∈ Finset.range (min B (m - 1) + 1),
           (m - b) * (h + 1 - b) <
@@ -217,9 +217,8 @@ theorem exists_weighted_johnson_symbolic_certificate
       centers f g) := by
   let columns := johnsonColumns (m * A) D B
   let w : Fin n → F[X] := fun i ↦ receivedLine (f i) (g i)
-  have hbudget : 0 < m * A := lt_of_le_of_lt (Nat.zero_le (D * B)) hcut
   exact exists_johnson_symbolic_certificate_of_shifted_surplus hD (Nat.le_refl (m * A))
-    hbudget hkD centers f g (weightedJohnsonFinMatrix (m * A) D B m (fun i ↦ centers i) w)
+    hkD centers f g (weightedJohnsonFinMatrix (m * A) D B m (fun i ↦ centers i) w)
     (weightedJohnsonFinRowWeight m B)
     (fun v hv ↦
       (weightedJohnsonFinMatrix_kernel_iff (m * A) D B m (fun i ↦ centers i) w v).mp hv)
@@ -247,7 +246,7 @@ theorem IsJohnsonWeightedCertificate.exists_symbolic
     (centers : Fin n ↪ F) (f g : Fin n → F) :
     Nonempty (JohnsonSymbolicCertificate (F := F) D A m B k H (m * A)
       centers f g) := by
-  apply exists_weighted_johnson_symbolic_certificate hD hcert.2.2.1 hkD
+  apply exists_weighted_johnson_symbolic_certificate hD hkD
   simpa only [johnsonWeightedRowSlots, johnsonWeightedU,
     johnsonWeightedSourceSlots, johnsonSourceSlotCount] using
       hcert.rowSlots_lt_sourceSlots

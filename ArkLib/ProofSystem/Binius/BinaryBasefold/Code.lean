@@ -437,9 +437,7 @@ lemma uniqueDecodingClose_iff_dist_le_uniqueDecodingRadius (i : Fin r) (h_i : i 
     lt_rounds_add_rate_of_le_rounds (by omega))
   conv_rhs =>
     unfold code;
-    rw [ReedSolomon.uniqueDecodingRadius_RS_eq (h := by
-      rw [card_Sᵢ, hF₂.out]; apply Nat.pow_le_pow_right (hx := by omega); omega
-    )];
+    rw [ReedSolomon.uniqueDecodingRadius_RS_eq];
   simp_rw [card_Sᵢ, hF₂.out,
     codeDistance_eq 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (h_i := by omega)]
   simp only [cast_add, ENat.natCast_sub, cast_pow, cast_ofNat, cast_one]

@@ -5,8 +5,8 @@ Authors: Alexander Hicks
 -/
 module
 
-public import ArkLib.ToCompPoly.Univariate.Raw.Size
 public import CompPoly.Univariate.Basic
+public import CompPoly.Univariate.Raw.Size
 
 import all CompPoly.Univariate.Basic
 import all CompPoly.Univariate.Raw.Core
@@ -31,7 +31,7 @@ theorem size_sub_le {R : Type} [Ring R] [BEq R] [LawfulBEq R]
     (p q : CPolynomial R) : (p - q).val.size ≤ max p.val.size q.val.size := by
   change (Raw.addRaw p.val (Raw.neg q.val)).trim.size ≤ _
   refine (Raw.Trim.size_le_size _).trans ?_
-  rw [Raw.add_size]
+  rw [Raw.size_addRaw]
   simp only [Raw.neg, Array.size_map, le_refl]
 
 /-- The variable polynomial stores its zero constant and unit linear coefficient. -/

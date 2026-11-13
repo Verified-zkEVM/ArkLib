@@ -6,10 +6,10 @@ Authors: ArkLib Contributors
 module
 
 public import ArkLib.ProofSystem.RingSwitching.Packing.ProductSumcheck.RoundExecution
-public import ArkLib.ProofSystem.Sumcheck.Structured.RoundLemmas
+public import ArkLib.Data.Probability.Instances
 
 /-!
-# Fixed-prefix knowledge security of a product-sumcheck round
+# Knowledge security of a product-sumcheck round
 
 The pre-challenge state requires the sent polynomial to be the residual sum polynomial.
 The post-challenge state requires only the accepted guard and equality at the sampled point.
@@ -26,14 +26,6 @@ open OracleSpec OracleComp ProtocolSpec Polynomial MvPolynomial Probability Prob
 open scoped NNReal ENNReal
 variable {P C Context : Type} [CommRing P] [CommRing C] [Algebra P C] {m : ℕ}
   (multiplier : Multiplier Context C m) (pc : PackedCommitment P m) (i : Fin m)
-
-/-- Distinct degree-two messages agree at a uniform challenge with probability at most
-`2 / card C`. -/
-theorem message_collision_le [NoZeroDivisors C] [Fintype C] [SampleableType C]
-    (g h : C⦃≤ 2⦄[X]) (hne : g ≠ h) :
-    Pr{let c ← $ᵗ C}[g.val.eval c = h.val.eval c] ≤
-      (((2 : ℝ≥0) / Fintype.card C : ℝ≥0) : ℝ≥0∞) := by
-  exact_mod_cast Sumcheck.Structured.prob_eval_eq_le hne
 
 /--
 Before sampling, the received polynomial equals the residual polynomial of the committed
@@ -68,7 +60,7 @@ theorem bad_event_le [NoZeroDivisors C] [Fintype C] [SampleableType C] (hfunctio
       g ≠ honestMessage multiplier i stmt p₀
   · obtain ⟨p₀, hcommit, _, hne⟩ := hlive
     refine (prEvent_mono _ _ _ ?_).trans
-      (message_collision_le g (honestMessage multiplier i stmt p₀) hne)
+      (Probability.prob_degreeLE_eval_eq_le hne)
     rintro c ⟨p, _, _, hsum, hcommit'⟩
     obtain rfl : p = p₀ := hfunctional hcommit' hcommit
     exact hsum.trans (roundMessage_eval i (productPoly (multiplier stmt.ctx) p)
@@ -86,7 +78,7 @@ def extractor :
     Extractor.RoundByRound []ₒ (StmtIn := Statement Context C i.castSucc × (∀ j, pc.OStmt j))
       (WitIn := P⦃≤ 1⦄[X Fin m]) (WitOut := P⦃≤ 1⦄[X Fin m])
       (pSpec := pSpec C) (WitMid := WitMid (P := P) (m := m)) where
-  eqIn := rfl
+  extractIn := fun _ w => w
   extractMid _ _ _ p := p
   extractOut _ _ p := p
 
@@ -100,7 +92,7 @@ def knowledgeStateFunction {σ : Type} (init : ProbComp σ)
     | ⟨0, _⟩ => fun stmt _ p => (stmt, p) ∈ rel multiplier pc i.castSucc
     | ⟨1, _⟩ => fun stmt tr p => beforeChallenge multiplier pc i stmt.1 stmt.2 (tr 0) p
     | ⟨2, _⟩ => fun stmt tr p => afterChallenge multiplier pc i stmt.1 stmt.2 (tr 0) (tr 1) p
-  toFun_empty _ _ := Iff.rfl
+  toFun_empty _ _ h := h
   toFun_next
     | ⟨0, _⟩ => fun _ stmt _tr g p h => mem_rel_of_beforeChallenge multiplier pc i stmt.1 stmt.2
       g p h
@@ -112,16 +104,17 @@ def knowledgeStateFunction {σ : Type} (init : ProbComp σ)
 def rbrError [Fintype C] (_j : (pSpec C).ChallengeIdx) : ℝ≥0 :=
   2 / Fintype.card C
 
-/-- Worst-case knowledge soundness at every fixed transcript prefix, with the round extractor. -/
-theorem rbrKnowledgeSoundnessWorstCaseWith [NoZeroDivisors C] [Fintype C] [SampleableType C]
+/-- Round-by-round knowledge soundness at every fixed transcript prefix, with the round
+extractor. -/
+theorem rbrKnowledgeSoundnessWith [NoZeroDivisors C] [Fintype C] [SampleableType C]
     (hfunctional : pc.Functional) {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    Verifier.rbrKnowledgeSoundnessWorstCaseWith init impl
+    Verifier.rbrKnowledgeSoundnessWith init impl
       (rel multiplier pc i.castSucc) (rel multiplier pc i.succ) (verifier pc i).toVerifier
       (WitMid (P := P) (m := m)) (extractor (C := C) (Context := Context) pc i)
       (knowledgeStateFunction multiplier pc i init impl) (rbrError (C := C)) := by
   classical
-  refine Verifier.rbrKnowledgeSoundnessWorstCaseWith_of_two_message rfl rfl _ _
+  refine Verifier.rbrKnowledgeSoundnessWith_of_two_message rfl rfl _ _
     fun stmt tr => ?_
   exact bad_event_le multiplier pc i hfunctional stmt.1 stmt.2
     (tr ⟨0, by change 0 < 1; decide⟩)

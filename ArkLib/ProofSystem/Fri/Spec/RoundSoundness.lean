@@ -75,7 +75,7 @@ theorem foldingBad_prob_le [SampleableType F] (f : (ω.subdomain 0).toFinset →
       (s i).val (foldingDegree s d i.succ) θ)).le.trans ?_
   unfold foldingError
   rw [ENNReal.coe_toNNReal (mcaError_ne_top _ _ _)]
-  exact foldingAgreementFailure_prob_le_powers _ _ (foldingDegree_pos s d i.succ) θ
+  exact foldingAgreementFailure_prob_le_powers _ _ θ
 
 @[simp]
 theorem initialWord_queryHistory (f : (ω.subdomain 0).toFinset → F)

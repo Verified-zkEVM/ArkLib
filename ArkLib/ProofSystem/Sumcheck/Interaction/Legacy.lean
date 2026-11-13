@@ -8,12 +8,13 @@ module
 public import ArkLib.ProofSystem.Sumcheck.Interaction.Closing
 
 /-!
-# Single-round legacy relation and honest-execution correspondence
+# Single-round legacy relation and verifier-execution correspondence
 
 The input and output relation theorems are bidirectional for arbitrary concrete claims. The
-verifier-execution theorem is restricted to the honest case: the legacy verifier reads the original
-input polynomial for the next target, while the typed verifier reads the polynomial actually sent.
-They agree when the same polynomial supplies both roles.
+verifier-execution theorem compares scalar outputs for arbitrary sent polynomials and fixed
+challenges, including rejection: both verifiers take the sent polynomial at the challenge as the
+next target and keep the input polynomial as the output oracle. It does not relate the
+legacy-layer and interaction-layer security games.
 -/
 
 @[expose] public section
@@ -104,22 +105,18 @@ theorem legacy_prover_run {ι : Type} (ambient : OracleSpec ι)
   simp only [Spec.SingleRound.Simple.prover, pure_bind, monadLift_pure, simulateQ_pure]
   erw [ht]
 
-/-- Honest legacy verifier execution agrees with the typed executor's scalar output. -/
-theorem legacy_honest_verifier_correspondence [DecidableEq R] [SampleableType R]
+/-- Legacy verifier execution agrees with the typed scalar output for any round message. -/
+theorem legacy_verifier_correspondence [DecidableEq R]
     {ι : Type} (ambient : OracleSpec ι) {m : ℕ} (D : Fin m ↪ R)
-    (p : Message R deg) (target r : R)
-    (h : ((target, (fun _ : Unit => p)), ()) ∈
-      Spec.SingleRound.Simple.inputRelation R deg D) :
+    (p q : Message R deg) (target r : R) :
     (Option.map Prod.fst) <$>
       ((Spec.SingleRound.Simple.oracleVerifier R deg D ambient).toVerifier.verify
-        (target, fun _ => p) (legacyTranscript R deg p r)).run =
-      (fun result => result.2.2) <$>
-        executeAt R deg ambient p p (Finset.univ.map D).toList target r := by
-  rw [executeAt_honest R deg ambient p _ target r (legacy_input_sum R deg D p target h)]
-  rw [Spec.SingleRound.Simple.oracleVerifier_eq_verifier]
-  have hs : (∑ x, p.val.eval (D x)) = target := by
-    simpa [Spec.SingleRound.Simple.inputRelation] using h
-  simp [Spec.SingleRound.Simple.verifier, hs]
+        (target, fun _ ↦ p) (legacyTranscript R deg q r)).run =
+      (fun result ↦ result.2.2) <$>
+        executeAt R deg ambient p q (Finset.univ.map D).toList target r := by
+  rw [Spec.SingleRound.Simple.oracleVerifier_eq_verifier, executeAt_eq]
+  by_cases h : (∑ x, q.val.eval (D x)) = target <;>
+    simp [Spec.SingleRound.Simple.verifier, Finset.sum_map_toList, h]
 
 
 end

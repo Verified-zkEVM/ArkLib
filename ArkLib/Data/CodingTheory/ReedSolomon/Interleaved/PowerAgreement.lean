@@ -102,7 +102,7 @@ array are exactly the columns where all `P t j` agree with `values t`. -/
 def HasExactInterleavedPowerAgreement (domain : ι ↪ F) (values : Fin (ℓ + 1) → ι → κ → F)
     (k : ℕ) (z : F) (Q : κ → F[X]) : Prop :=
   ∃ P : Fin (ℓ + 1) → κ → F[X], (∀ t j, (P t j).degree < k) ∧
-    (∀ j, Q j = powerBatchedPolynomial (fun t ↦ P t j) z) ∧
+    (∀ j, Q j = Polynomial.powerBatch (fun t ↦ P t j) z) ∧
     interleavedPolynomialAgreementSet domain (interleavedPowerBatchedWord values z) Q =
       interleavedCommonPowerAgreementSet domain values P
 
@@ -191,7 +191,7 @@ set of `Q` with the nested batched word is the set of coordinates where every `P
 def HasExactNestedPowerAgreement {m : ℕ} (domain : ι ↪ F) (ℓ : Fin (m + 1) → ℕ)
     (w : (g : Fin (m + 1)) → Fin (ℓ g + 1) → ι → F) (k : ℕ) (u v : F) (Q : F[X]) : Prop :=
   ∃ P : (g : Fin (m + 1)) → Fin (ℓ g + 1) → F[X], (∀ g t, (P g t).degree < k) ∧
-    Q = powerBatchedPolynomial (fun g ↦ powerBatchedPolynomial (P g) u) v ∧
+    Q = Polynomial.powerBatch (fun g ↦ Polynomial.powerBatch (P g) u) v ∧
     polynomialAgreementSet domain (powerBatchedWord (fun g ↦ powerBatchedWord (w g) u) v) Q =
       Finset.univ.filter fun i ↦ ∀ g t, (P g t).eval (domain i) = w g t i
 
@@ -286,9 +286,9 @@ theorem exactNestedPowerAgreement_of_interleaved {m maxDegree k L : ℕ} (domain
     simp [padded, paddedPowerValues, padFin, ht]
   let P : (g : Fin (m + 1)) → Fin (degree g + 1) → F[X] :=
     fun g t ↦ Ppad ⟨t.val, Nat.lt_succ_iff.mpr ((Nat.le_of_lt_succ t.isLt).trans (hdegree g))⟩ g
-  have hReq' (g) : R g = powerBatchedPolynomial (P g) u := by
+  have hReq' (g) : R g = Polynomial.powerBatch (P g) u := by
     rw [hReq g]
-    unfold powerBatchedPolynomial
+    unfold Polynomial.powerBatch Polynomial.generatorBatch
     rw [← sum_padFin (Nat.add_le_add_right (hdegree g) 1)
       (fun t : Fin (degree g + 1) ↦ u ^ t.val • P g t)]
     refine Finset.sum_congr rfl fun t _ ↦ ?_

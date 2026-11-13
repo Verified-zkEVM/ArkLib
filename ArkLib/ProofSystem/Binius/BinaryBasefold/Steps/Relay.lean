@@ -24,9 +24,9 @@ a commit step does. It is a formalization device and has no counterpart in [DP24
   relation to the strict round relation at `i + 1`.
 * `relayKnowledgeStateFunction`: the round relation at `i + 1` on the reindexed oracle statements;
   that it is the fold-step output relation is the content of the step's knowledge soundness.
-* `relayOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith`: worst-case round-by-round knowledge
-  soundness at `relayRbrExtractor` and `relayKnowledgeStateFunction`, with existential and averaged
-  forms.
+* `relayOracleVerifier_rbrKnowledgeSoundnessWith`: round-by-round knowledge
+  soundness at `relayRbrExtractor` and `relayKnowledgeStateFunction`, with an existential
+  form.
 
 ## References
 
@@ -282,7 +282,7 @@ noncomputable def relayRbrExtractor (i : Fin ℓ) :
     (pSpec := pSpecRelay)
     (WitMid := fun _messageIdx => Witness (L := L) 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ) where
-  eqIn := rfl
+  extractIn := fun _ w => w
   extractMid := fun _ _ _ witMidSucc => witMidSucc
   extractOut := fun _ _ witOut => witOut
 
@@ -315,17 +315,16 @@ def relayKnowledgeStateFunction (i : Fin ℓ) (hNCR : ¬ IsCommitmentRound ℓ �
   toFun := fun m ⟨stmtIn, oStmtIn⟩ tr witMid =>
     RelayKnowledgeState 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (multpoly := multpoly) (𝓑 := 𝓑)
       i hNCR stmtIn witMid oStmtIn
-  toFun_empty := fun ⟨stmtIn, oStmtIn⟩ witIn => by
-    rw [cast_eq]
-    simp only [foldStepRelOut, FoldStepRelated, Set.mem_ofPred_eq, RelayKnowledgeState]
-    unfold KnowledgeInvariant
-    simp only [Fin.val_succ]
-    exact or_congr
+  toFun_empty := fun ⟨stmtIn, oStmtIn⟩ witIn h => by
+    simp only [foldStepRelOut, FoldStepRelated, Set.mem_ofPred_eq, RelayKnowledgeState] at h ⊢
+    unfold KnowledgeInvariant at h ⊢
+    simp only [Fin.val_succ] at h ⊢
+    exact (or_congr
       (incrementalBadEventExists_relay_iff 𝔽q β
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR oStmtIn stmtIn.challenges)
       (and_congr Iff.rfl (and_congr Iff.rfl (and_congr Iff.rfl
         (oracleFoldingConsistent_relay_iff 𝔽q β
-          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR stmtIn.challenges oStmtIn))))
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR stmtIn.challenges oStmtIn))))).mpr h
   toFun_next := fun m hDir (stmtIn, oStmtIn) tr msg witMid => Fin.elim0 m
   toFun_full := fun s tr witOut h => by
     have hrel := ((relayOracleVerifierGuardedForm (Context := Context) 𝔽q β
@@ -333,14 +332,14 @@ def relayKnowledgeStateFunction (i : Fin ℓ) (hNCR : ¬ IsCommitmentRound ℓ �
     rwa [relayOracleVerifierGuardedForm_out 𝔽q β i hNCR s tr] at hrel
 
 omit [SampleableType L] [DecidableEq 𝔽q] in
-/-- Worst-case round-by-round knowledge soundness of the relay step, at the extractor
+/-- Round-by-round knowledge soundness of the relay step, at the extractor
 `relayRbrExtractor`, the knowledge-state function `relayKnowledgeStateFunction` and the error
 `relayKnowledgeError`. The step has no rounds, so there is no extraction-failure event to bound;
 the content is the knowledge-state function's obligations. -/
-theorem relayOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith (i : Fin ℓ)
+theorem relayOracleVerifier_rbrKnowledgeSoundnessWith (i : Fin ℓ)
     (hNCR : ¬ IsCommitmentRound ℓ ϑ i) :
     (relayOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      i hNCR).toVerifier.rbrKnowledgeSoundnessWorstCaseWith init impl
+      i hNCR).toVerifier.rbrKnowledgeSoundnessWith init impl
       (foldStepRelOut (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) i)
       (roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -350,39 +349,23 @@ theorem relayOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith (i : Fin ℓ)
       (relayKnowledgeStateFunction (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i hNCR)
       relayKnowledgeError :=
-  Verifier.rbrKnowledgeSoundnessWorstCaseWith_of_isEmpty_challengeIdx _ _
+  Verifier.rbrKnowledgeSoundnessWith_of_isEmpty_challengeIdx _ _
 
 omit [SampleableType L] [DecidableEq 𝔽q] in
-/-- Worst-case round-by-round knowledge soundness of the relay step: the existential form of
-`relayOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith`. -/
-theorem relayOracleVerifier_rbrKnowledgeSoundnessWorstCase (i : Fin ℓ)
+/-- Round-by-round knowledge soundness of the relay step: the existential form of
+`relayOracleVerifier_rbrKnowledgeSoundnessWith`. -/
+theorem relayOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
     (hNCR : ¬ IsCommitmentRound ℓ ϑ i) :
     (relayOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      i hNCR).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+      i hNCR).toVerifier.rbrKnowledgeSoundness init impl
       (foldStepRelOut (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) i)
       (roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) i.succ)
       relayKnowledgeError :=
-  (Verifier.rbrKnowledgeSoundnessWorstCase_iff_exists_with init impl _ _ _ _).mpr
-    ⟨_, _, _, relayOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith (multpoly := multpoly)
+  (Verifier.rbrKnowledgeSoundness_iff_exists_with init impl _ _ _ _).mpr
+    ⟨_, _, _, relayOracleVerifier_rbrKnowledgeSoundnessWith (multpoly := multpoly)
       (𝓑 := 𝓑) 𝔽q β i hNCR⟩
-
-omit [SampleableType L] [DecidableEq 𝔽q] in
-/-- Round-by-round knowledge soundness of the relay step: the averaged form of
-`relayOracleVerifier_rbrKnowledgeSoundnessWorstCase`. -/
-theorem relayOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
-    (hNCR : ¬ IsCommitmentRound ℓ ϑ i) :
-    (relayOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        i hNCR).rbrKnowledgeSoundness init impl
-      (relIn := foldStepRelOut (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i)
-      (relOut := roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i.succ)
-      relayKnowledgeError :=
-  Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness init impl
-    (relayOracleVerifier_rbrKnowledgeSoundnessWorstCase (multpoly := multpoly) (𝓑 := 𝓑)
-      𝔽q β i hNCR)
 
 end RelayStep
 end SingleIteratedSteps
