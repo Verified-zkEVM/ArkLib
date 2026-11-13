@@ -6,6 +6,7 @@ Authors: Quang Dao
 
 import ArkLib.ToMathlib.LinearAlgebra.Matrix.Determinant
 import ArkLib.ToMathlib.LinearAlgebra.Matrix.InvertibleCombination
+import ArkLib.ToMathlib.LinearAlgebra.Matrix.Pivot
 import ArkLib.ToMathlib.LinearAlgebra.Matrix.PrimitiveKernel
 import ArkLib.ToMathlib.LinearAlgebra.Matrix.Rank
 import ArkLib.ToMathlib.LinearAlgebra.Matrix.RowBasis
@@ -166,3 +167,9 @@ example : 2 ∣ determinantMatrix.det := by
     fin_cases i <;> norm_num [determinantMatrix]
   have hdiv := Matrix.pow_dvd_det_of_forall_mem_col_dvd determinantMatrix 2 {0} hcol
   simpa using hdiv
+
+/-- The `1 × 2` matrix `[0 1]` has a pivot column whose entry becomes `1`. -/
+example : ∃ (S : Fin 1 ↪ Fin 2) (B : Matrix (Fin 1) (Fin 1) ℚ), IsUnit B.det ∧
+    ∀ r r', (B * (!![0, 1] : Matrix (Fin 1) (Fin 2) ℚ)) r (S r') = if r = r' then 1 else 0 :=
+  Matrix.exists_mul_eq_pivot _ (linearIndependent_unique_iff.2 fun h => by
+    simpa using congrFun h 1)

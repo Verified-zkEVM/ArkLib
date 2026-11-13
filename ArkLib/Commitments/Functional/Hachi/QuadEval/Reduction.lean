@@ -173,6 +173,7 @@ omit [NeZero q] [IsCyclotomic Φ] in
 /-- The subtype bound: every challenge is `ℓ₁`-short. -/
 theorem l1Norm_le (c : ShortChallenge Φ ω) : ‖c.val‖₁ ≤ ω := Subtype.prop c
 
+omit [NeZero q] in
 /-- Coordinate difference of two short challenges is `ℓ₁`-bounded by `2ω` — the extractor's
 `hshort` for the slack `c̄ⱼ = c_{j,j} - c_{0,j}` (Hachi Lemma 8), for free from the subtype. -/
 theorem l1Norm_val_sub_le (c c' : ShortChallenge Φ ω) : ‖c.val - c'.val‖₁ ≤ 2 * ω :=

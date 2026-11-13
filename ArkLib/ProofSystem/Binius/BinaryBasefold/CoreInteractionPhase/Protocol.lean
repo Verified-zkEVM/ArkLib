@@ -22,9 +22,9 @@ fold-commit round, and the last block is `ϑ` fold-relay rounds.
 ## Main definitions and statements
 
 * `foldRelayOracleVerifier`, `foldCommitOracleVerifier` and their reductions: one round. Their
-  worst-case round-by-round knowledge soundness (`…_rbrKnowledgeSoundnessWorstCase`) comes from
-  the steps' theorems by `OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first`,
-  guarded by the fold step's check; the averaged forms and perfect completeness are included. The
+  round-by-round knowledge soundness (`…_rbrKnowledgeSoundness`) comes from
+  the steps' theorems by `OracleVerifier.append_rbrKnowledgeSoundness_of_guarded_first`,
+  guarded by the fold step's check; perfect completeness is included. The
   error is the fold step's on its challenge, `foldRelayKnowledgeError` and
   `foldCommitKnowledgeError`.
 * `nonLastSingleBlockOracleVerifier`, `nonLastBlocksOracleVerifier`, `lastBlockOracleVerifier`,
@@ -148,38 +148,22 @@ def foldRelayKnowledgeError (i : Fin ℓ) : (pSpecFoldRelay (L := L)).ChallengeI
     relayKnowledgeError ∘ ChallengeIdx.sumEquiv.symm
 
 omit [DecidableEq 𝔽q] in
-/-- Worst-case round-by-round knowledge soundness of the fold-relay round, from the round
+/-- Round-by-round knowledge soundness of the fold-relay round, from the round
 relation at `i` to the round relation at `i + 1`, with error `foldRelayKnowledgeError`. -/
-theorem foldRelayOracleVerifier_rbrKnowledgeSoundnessWorstCase (i : Fin ℓ)
+theorem foldRelayOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
     (hNCR : ¬ IsCommitmentRound ℓ ϑ i) :
     (foldRelayOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-      (multpoly := multpoly) i hNCR).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+      (multpoly := multpoly) i hNCR).toVerifier.rbrKnowledgeSoundness init impl
       (roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) i.castSucc)
       (roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) i.succ)
       (foldRelayKnowledgeError 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :=
-  OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first _ _
+  OracleVerifier.append_rbrKnowledgeSoundness_of_guarded_first _ _
     (foldOracleVerifierGuardedForm 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (multpoly := multpoly) i)
-    (foldOracleVerifier_rbrKnowledgeSoundnessWorstCase 𝔽q β i)
-    (relayOracleVerifier_rbrKnowledgeSoundnessWorstCase 𝔽q β i hNCR)
-
-omit [DecidableEq 𝔽q] in
-/-- Round-by-round knowledge soundness of the fold-relay round: the averaged form of
-`foldRelayOracleVerifier_rbrKnowledgeSoundnessWorstCase`. -/
-theorem foldRelayOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
-    (hNCR : ¬ IsCommitmentRound ℓ ϑ i) :
-    (foldRelayOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-      (multpoly := multpoly) i hNCR).rbrKnowledgeSoundness init impl
-      (relIn := roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i.castSucc)
-      (relOut := roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i.succ)
-      (rbrKnowledgeError := foldRelayKnowledgeError 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :=
-  Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness init impl
-    (foldRelayOracleVerifier_rbrKnowledgeSoundnessWorstCase 𝔽q β i hNCR)
+    (foldOracleVerifier_rbrKnowledgeSoundness 𝔽q β i)
+    (relayOracleVerifier_rbrKnowledgeSoundness 𝔽q β i hNCR)
 
 end FoldRelayRound
 
@@ -257,38 +241,22 @@ def foldCommitKnowledgeError (i : Fin ℓ) :
     (commitKnowledgeError 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) ∘ ChallengeIdx.sumEquiv.symm
 
 omit [DecidableEq 𝔽q] in
-/-- Worst-case round-by-round knowledge soundness of the fold-commit round, from the round
+/-- Round-by-round knowledge soundness of the fold-commit round, from the round
 relation at `i` to the round relation at `i + 1`, with error `foldCommitKnowledgeError`. -/
-theorem foldCommitOracleVerifier_rbrKnowledgeSoundnessWorstCase (i : Fin ℓ)
+theorem foldCommitOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
     (hCR : IsCommitmentRound ℓ ϑ i) :
     (foldCommitOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-      (multpoly := multpoly) i hCR).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+      (multpoly := multpoly) i hCR).toVerifier.rbrKnowledgeSoundness init impl
       (roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) i.castSucc)
       (roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) i.succ)
       (foldCommitKnowledgeError 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :=
-  OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first _ _
+  OracleVerifier.append_rbrKnowledgeSoundness_of_guarded_first _ _
     (foldOracleVerifierGuardedForm 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (multpoly := multpoly) i)
-    (foldOracleVerifier_rbrKnowledgeSoundnessWorstCase 𝔽q β i)
-    (commitOracleVerifier_rbrKnowledgeSoundnessWorstCase 𝔽q β i hCR)
-
-omit [DecidableEq 𝔽q] in
-/-- Round-by-round knowledge soundness of the fold-commit round: the averaged form of
-`foldCommitOracleVerifier_rbrKnowledgeSoundnessWorstCase`. -/
-theorem foldCommitOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
-    (hCR : IsCommitmentRound ℓ ϑ i) :
-    (foldCommitOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-      (multpoly := multpoly) i hCR).rbrKnowledgeSoundness init impl
-      (relIn := roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i.castSucc)
-      (relOut := roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i.succ)
-      (rbrKnowledgeError := foldCommitKnowledgeError 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :=
-  Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness init impl
-    (foldCommitOracleVerifier_rbrKnowledgeSoundnessWorstCase 𝔽q β i hCR)
+    (foldOracleVerifier_rbrKnowledgeSoundness 𝔽q β i)
+    (commitOracleVerifier_rbrKnowledgeSoundness 𝔽q β i hCR)
 
 end FoldCommitRound
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --no-project --python 3.12 python
 """Inventory source constructs that an environment-level axiom sweep cannot always see.
 
 The scanner is deliberately lexical rather than a grep: it removes nested Lean comments,

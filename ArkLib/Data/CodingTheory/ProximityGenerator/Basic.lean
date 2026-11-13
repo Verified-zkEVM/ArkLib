@@ -193,6 +193,85 @@ noncomputable def mcaError {S : Type} [Nonempty S] [Fintype S] [SampleableType S
     (G : Generator S ℓ F) (MC : ModuleCode ι F A) : ℝ → ENNReal :=
   fun δ => ⨆ U : ℓ → (ι → A), Pr{let x ←$ᵗ S}[IsMCA G MC x U δ]
 
+/-- Coordinate equivalences preserve the MCA event when they transport code membership. -/
+theorem isMCA_comp_equiv {κ : Type} [Fintype κ]
+    {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A] [Module F A]
+    (G : Generator S ℓ F) (MC : ModuleCode ι F A) (MC' : ModuleCode κ F A)
+    (e : κ ≃ ι) (hcode : ∀ w : ι → A, w ∘ e ∈ MC' ↔ w ∈ MC)
+    (x : S) (U : ℓ → ι → A) (δ : ℝ) :
+    IsMCA G MC' x (fun j => U j ∘ e) δ ↔ IsMCA G MC x U δ := by
+  classical
+  have hmem (T : Finset κ) (v : ι → A) :
+      projectedWord (v ∘ e) T ∈ projectedCodeSubmod MC' T ↔
+        projectedWord v (T.map e.toEmbedding) ∈ projectedCodeSubmod MC (T.map e.toEmbedding) := by
+    simp only [mem_projectedCodeSubmod_iff, projectedCode, Set.mem_ofPred_eq]
+    constructor
+    · rintro ⟨w, hw, heq⟩
+      refine ⟨w ∘ e.symm, (hcode _).mp ?_, ?_⟩
+      · simpa [Function.comp_def] using hw
+      · funext i
+        obtain ⟨j, hj, hij⟩ := Finset.mem_map.mp i.property
+        change v i = w (e.symm i)
+        rw [← hij]
+        simpa [projectedWord, Function.comp_def] using congrFun heq ⟨j, hj⟩
+    · rintro ⟨w, hw, heq⟩
+      refine ⟨w ∘ e, (hcode _).mpr hw, ?_⟩
+      funext i
+      exact congrFun heq ⟨e i, Finset.mem_map.mpr ⟨i, i.property, rfl⟩⟩
+  have hcard : Fintype.card κ = Fintype.card ι := Fintype.card_congr e
+  constructor
+  · rintro ⟨T, hT, hv, j, hj⟩
+    refine ⟨T.map e.toEmbedding, ?_, (hmem _ _).mp hv, j, ?_⟩
+    · simpa [hcard] using hT
+    · exact fun h => hj ((hmem _ _).mpr h)
+  · rintro ⟨T, hT, hv, j, hj⟩
+    let T' := T.map e.symm.toEmbedding
+    have hT' : T'.map e.toEmbedding = T := by
+      ext i
+      simp [T']
+    refine ⟨T', ?_, ?_, j, ?_⟩
+    · simpa [T', hcard] using hT
+    · apply (hmem T' (fun k => ∑ j, G x j • U j k)).mpr
+      rw [hT']
+      exact hv
+    · intro h
+      apply hj
+      have hh := (hmem T' (U j)).mp h
+      rw [hT'] at hh
+      exact hh
+
+/-- Coordinate equivalences preserve the worst-case MCA error. -/
+theorem mcaError_comp_equiv {κ : Type} [Fintype κ]
+    {S : Type} [Nonempty S] [Fintype S] [SampleableType S]
+    {A : Type} [AddCommMonoid A] [Module F A]
+    (G : Generator S ℓ F) (MC : ModuleCode ι F A) (MC' : ModuleCode κ F A)
+    (e : κ ≃ ι) (hcode : ∀ w : ι → A, w ∘ e ∈ MC' ↔ w ∈ MC) (δ : ℝ) :
+    mcaError G MC' δ = mcaError G MC δ := by
+  classical
+  have hprob (U : ℓ → ι → A) :
+      Pr{let x ←$ᵗ S}[IsMCA G MC' x (fun j => U j ∘ e) δ] =
+        Pr{let x ←$ᵗ S}[IsMCA G MC x U δ] := by
+    have hp : (fun x => IsMCA G MC' x (fun j => U j ∘ e) δ) =
+        (fun x => IsMCA G MC x U δ) := by
+      funext x
+      exact propext (isMCA_comp_equiv G MC MC' e hcode x U δ)
+    rw [hp]
+  unfold mcaError
+  apply le_antisymm
+  · apply iSup_le
+    intro U
+    let V : ℓ → ι → A := fun j => U j ∘ e.symm
+    have hU : (fun j => V j ∘ e) = U := by
+      funext j i
+      simp [V, Function.comp_def]
+    rw [← hU, hprob]
+    exact le_iSup (fun V : ℓ → ι → A => Pr{let x ←$ᵗ S}[IsMCA G MC x V δ]) V
+  · apply iSup_le
+    intro U
+    rw [← hprob]
+    exact le_iSup (fun V : ℓ → κ → A => Pr{let x ←$ᵗ S}[IsMCA G MC' x V δ])
+      (fun j => U j ∘ e)
+
 /-- A generator has mutual correlated agreement (MCA) with error `ε_mca` if the probability that
 the generator satisfies the MCA condition is bounded above by `ε_mca`.
 
@@ -313,15 +392,15 @@ lemma vecMul_tensorGenerator_explicit {ℓ' : Type} [Fintype ℓ'] {S S' : Type}
 /-- The canonical linear isomorphism between the tensor product of function spaces
 and the function space on the product type. -/
 noncomputable def tensorProductPiFunEquiv (F : Type) [Field F] (ℓ ℓ' : Type)
-    [Fintype ℓ] [DecidableEq ℓ] [Fintype ℓ'] [DecidableEq ℓ'] :
+    [Fintype ℓ] [Fintype ℓ'] :
     TensorProduct F (ℓ → F) (ℓ' → F) ≃ₗ[F] (ℓ × ℓ' → F) :=
   ((Pi.basisFun F ℓ).tensorProduct (Pi.basisFun F ℓ')).equivFun
 
 /-- The tensor product generator `TensorGenerator` and the explicit componentwise generator
 `TensorGenerator_Explicit` agree under the canonical isomorphism between `F^ℓ ⊗ F^ℓ′` and
 `(ℓ × ℓ') → F`. -/
-theorem TensorGenerator_eq_TensorGenerator_Explicit {ℓ' : Type} [Fintype ℓ'] [DecidableEq ℓ]
-    [DecidableEq ℓ'] {S S' : Type} (G : Generator S ℓ F) (G' : Generator S' ℓ' F) (p : S × S') :
+theorem TensorGenerator_eq_TensorGenerator_Explicit {ℓ' : Type} [Fintype ℓ']
+    {S S' : Type} (G : Generator S ℓ F) (G' : Generator S' ℓ' F) (p : S × S') :
     tensorProductPiFunEquiv F ℓ ℓ' (TensorGenerator G G' p) = TensorGenerator_Explicit G G' p := by
   unfold tensorProductPiFunEquiv TensorGenerator TensorGenerator_Explicit
   convert (Pi.basisFun F ℓ).tensorProduct (Pi.basisFun F ℓ') |> fun b =>
@@ -372,12 +451,10 @@ open NNReal ENNReal unitInterval MvPolynomial LinearCombination CoreDefinitions
 open scoped ProbabilityTheory ENNReal NNReal BigOperators
 
 /-- Auxiliary lemma to prove that an error is in the unit interval. -/
-lemma error_in_unit_interval (d : ℕ) (m : ℕ) (hm_pos : 0 < m) (hdm : d ≤ m) : (d / m : ℝ) ∈ I := by
+lemma error_in_unit_interval (d : ℕ) (m : ℕ) (hdm : d ≤ m) : (d / m : ℝ) ∈ I := by
   constructor
-  · exact div_nonneg (Nat.cast_nonneg d) (le_of_lt (Nat.cast_pos.mpr hm_pos))
-  · have hdm' : (d : ℝ) ≤ m := by exact_mod_cast hdm
-    have hm_pos' : (0 : ℝ) < m := by exact_mod_cast hm_pos
-    exact (div_le_one hm_pos').mpr hdm'
+  · exact div_nonneg (Nat.cast_nonneg d) (Nat.cast_nonneg m)
+  · exact div_le_one_of_le₀ (by exact_mod_cast hdm) (Nat.cast_nonneg m)
 
 /-- The minimum of the cardinality of a family of nonempty sets, indexed by a possibly empty set.
 Returns `1` if the indexing set is empty. -/
@@ -404,16 +481,16 @@ lemma minSeedCard_pos {F : Type} {s : ℕ} (S : Fin s → Set F)
 /-- The minimum of the cardinality of a family of nonempty sets is smaller than the cardinality of
 each set in the family. -/
 lemma minSeedCard_le {F : Type} {s : ℕ} (S : Fin s → Set F)
-    [∀ i, Fintype ↥(S i)] (hs : 0 < s) (i : Fin s) :
+    [∀ i, Fintype ↥(S i)] (i : Fin s) :
     minSeedCard S ≤ (S i).toFinset.card := by
   unfold minSeedCard
-  split_ifs
-  aesop
+  rw [dite_eq_left (Fin.pos i), Set.toFinset_card]
+  exact Finset.inf'_le (f := fun j => Fintype.card ↥(S j)) (Finset.mem_univ i)
 
-noncomputable local instance {F : Type} [Fintype F] [SampleableType F] {S : Set F} :
+noncomputable local instance {F : Type} [Fintype F] {S : Set F} :
     Fintype S := Fintype.ofFinite ↑S
 
-noncomputable local instance {F : Type} {s : ℕ} [Fintype F] [SampleableType F]
+noncomputable local instance {F : Type} {s : ℕ} [Fintype F]
     {S : Fin s → Set F} [∀ i, Nonempty ↥(S i)] : SampleableType (∀ i, ↥(S i)) :=
   SampleableType.piOfFintype _
 
@@ -424,7 +501,7 @@ This is the total-degree reading. An individual-degree reading of the same fact 
 the reasoning is the same and only the version of Schwartz–Zippel used for the upper bound
 differs. -/
 theorem poly_gen_is_zero_evading
-    {F : Type} [Field F] [Fintype F] [SampleableType F]
+    {F : Type} [Field F] [Fintype F]
   {ℓ : Type} [Fintype ℓ]
   {s : ℕ}
   {S : Fin s → Set F} [∀ i, Nonempty ↥(S i)]
@@ -432,7 +509,7 @@ theorem poly_gen_is_zero_evading
   {G : Generator (∀ i, ↥(S i)) ℓ F} (hG : IsPolynomialGeneratorOf S G P)
   (hdm : MvPolynomial.maxTotalDegree P ≤ minSeedCard S) :
     IsZeroEvadingGenerator G ⟨(maxTotalDegree P : ℝ) / minSeedCard S,
-    error_in_unit_interval (maxTotalDegree P) (minSeedCard S) (minSeedCard_pos S) hdm⟩ := by
+    error_in_unit_interval (maxTotalDegree P) (minSeedCard S) hdm⟩ := by
   classical
   unfold IsZeroEvadingGenerator
   simp only [ne_eq, sSup_le_iff, Set.mem_ofPred_eq, forall_exists_index, and_imp]
@@ -447,8 +524,7 @@ theorem poly_gen_is_zero_evading
     (maxTotalDegree P) (minSeedCard S)
     (MvPolynomial.totalDegree_linearCombination_le _ _ _ fun j =>
       Finset.le_sup (f := fun j => (P j |> MvPolynomial.totalDegree)) (Finset.mem_univ j))
-    (minSeedCard_pos S)
-    (fun i => minSeedCard_le S (Fin.pos_iff_nonempty.mpr ⟨i⟩) i)).trans_eq ?_
+    (fun i => minSeedCard_le S i)).trans_eq ?_
   rw [ENNReal.ofReal_div_of_pos] <;> norm_cast
   exact minSeedCard_pos S
 

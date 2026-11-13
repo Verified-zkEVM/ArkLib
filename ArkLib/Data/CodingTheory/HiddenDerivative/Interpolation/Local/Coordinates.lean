@@ -317,7 +317,7 @@ theorem mem_localResidualExponents_of_bounds (hd : 0 < d) {m W B : ℕ} {e : Loc
     (hcontact : localContactOrder d e < m) (htotal : e.weight (localJetDegreeWeight d) < B) :
     e ∈ localResidualExponents hd m W B := by
   rw [localContactOrder_eq] at hcontact
-  rw [weight_localHigherJetWeight hd] at hweight
+  rw [weight_localHigherJetWeight] at hweight
   rw [weight_localJetDegreeWeight hd] at htotal
   refine mem_image.mpr ⟨⟨e (localT d) - e (localE d), e (localE d),
     fun i => e (localY ⟨i.val + 1, by omega⟩), e (localY ⟨0, hd⟩)⟩, ?_, ?_⟩

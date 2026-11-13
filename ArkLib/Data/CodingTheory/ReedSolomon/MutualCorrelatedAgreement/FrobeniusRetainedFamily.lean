@@ -73,15 +73,29 @@ theorem mem_frobeniusRetainedPairFamily_iff
       ⟨(hagree i hi).2.1, (hagree i hi).2.2.1⟩
 
 /-- If `E` is infinite, `ExpChar E p` holds, `0 < K`, `K ≤ p ^ e * k`,
-`TaylorExponentSufficient 0 K τ` holds, and the initial equation is nonzero, then the retained
-family with `s = p ^ e` has cardinality at most its degree in the graph coordinate. -/
+and `TaylorExponentSufficient 0 K τ` holds, then the retained family with `s = p ^ e` has
+cardinality at most its degree in the graph coordinate. -/
 theorem frobeniusRetainedPairFamily_card_le
     [Infinite E] (domain : ι ↪ F) (f g : ι → F) (φ : F →+* E) (roots : ι → E)
     (center : E) (Q : DifferentialPolynomial E[X] 0) (p e τ : ℕ) [ExpChar E p]
-    (hK : 0 < K) (hKk : K ≤ p ^ e * k) (hτ : TaylorExponentSufficient 0 K τ)
-    (hinit : jointInitialJetEquation center Q ≠ 0) :
+    (hK : 0 < K) (hKk : K ≤ p ^ e * k) (hτ : TaylorExponentSufficient 0 K τ) :
     (frobeniusRetainedPairFamily domain f g φ roots center Q K k τ (p ^ e)).card ≤
       (jointInitialJetEquation center Q).degreeOf (some 0) := by
+  classical
+  rcases (frobeniusRetainedPairFamily domain f g φ roots center Q K k τ
+      (p ^ e)).eq_empty_or_nonempty with hempty | ⟨P, hP⟩
+  · simp only [hempty, Finset.card_empty, Nat.zero_le]
+  have hregular :=
+    ((mem_frobeniusRetainedPairFamily_iff domain f g φ roots center Q K k τ (p ^ e) P).mp
+      hP).regular
+  have hsep : initialJetSeparant (Polynomial.C center) Q ≠ 0 := by
+    intro hzero
+    exact hregular (by simp [jointInitialJetSeparant, hzero])
+  have hinit : jointInitialJetEquation center Q ≠ 0 := by
+    intro hzero
+    apply initialJetEquation_ne_zero_of_initialJetSeparant_ne_zero (Polynomial.C center) Q hsep
+    apply (MvPolynomial.optionEquivRight E (Fin 1)).symm.injective
+    simpa only [jointInitialJetEquation, map_zero] using hzero
   apply admissibleFrobeniusPairs_card_le_degreeOf domain f g φ roots center Q p e τ
     hK hKk hτ hinit
   intro P hP

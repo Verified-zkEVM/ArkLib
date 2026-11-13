@@ -63,13 +63,12 @@ variable {m : ℕ}
 noncomputable def zeroCountMod (h : MvPolynomial (Fin m) ℤ) (q : ℕ) : ℕ :=
   Nat.card {α : Fin m → ZMod q // eval α (map (Int.castRingHom (ZMod q)) h) = 0}
 
-/-- For `q ≠ 0`, if every coefficient of `h` vanishes modulo `q`, all `q^m` points are zeros. -/
-theorem zeroCountMod_eq_of_map_eq_zero {h : MvPolynomial (Fin m) ℤ} {q : ℕ} (hq : q ≠ 0)
+/-- If every coefficient of `h` vanishes modulo `q`, the zero count equals `q^m`. -/
+theorem zeroCountMod_eq_of_map_eq_zero {h : MvPolynomial (Fin m) ℤ} {q : ℕ}
     (h0 : map (Int.castRingHom (ZMod q)) h = 0) : zeroCountMod h q = q ^ m := by
-  have : NeZero q := ⟨hq⟩
   unfold zeroCountMod
   rw [h0]
-  simp [Nat.card_eq_fintype_card]
+  simp [Nat.card_fun]
 
 /-- **Schwartz–Zippel modulo a prime.** If `h mod q ≠ 0` for a prime `q` and `h` has total degree
 `≤ d`, the fraction of points of `𝔽_qᵐ` that are zeros of `h mod q` is at most `d / q`. -/
@@ -144,7 +143,7 @@ theorem avg_zeroCountMod_div_le {h : MvPolynomial (Fin m) ℤ} (hh : h ≠ 0) {d
       gcongr
       exact_mod_cast hqmin q hq
     by_cases hqB : q ∈ B
-    · rw [zeroCountMod_eq_of_map_eq_zero (hP q hq).ne_zero (mem_filter.1 hqB).2]
+    · rw [zeroCountMod_eq_of_map_eq_zero (mem_filter.1 hqB).2]
       simp only [hqB, ↓reduceIte]
       push_cast
       rw [div_self (pow_ne_zero _ hq0)]

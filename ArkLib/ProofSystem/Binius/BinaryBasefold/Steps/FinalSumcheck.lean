@@ -27,9 +27,9 @@ statement extended by `c`. The step sends no challenge.
 * `finalSumcheckKnowledgeStateFunction`: before the message, the round relation at `ℓ`; after it,
   the closing equation and the final folding state. Its backward step decodes the multilinear
   polynomial from the first oracle (`Steps/FinalSumcheck/Extraction.lean`).
-* `finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith`: worst-case round-by-round
+* `finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWith`: round-by-round
   knowledge soundness at `finalSumcheckRbrExtractor` and `finalSumcheckKnowledgeStateFunction`, with
-  existential and averaged forms.
+  an existential form.
 
 ## References
 
@@ -251,7 +251,7 @@ noncomputable def finalSumcheckRbrExtractor :
     (WitOut := Unit)
     (pSpec := pSpecFinalSumcheckStep (L := L))
     (WitMid := FinalSumcheckWit (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ)) where
-  eqIn := rfl
+  extractIn := fun _ w => w
   extractMid := fun m ⟨stmtMid, oStmtMid⟩ trSucc witMidSucc => by
     have hm : m = 0 := by omega
     subst hm
@@ -329,8 +329,7 @@ noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbCo
   toFun := fun m ⟨stmtIn, oStmtIn⟩ tr witMid =>
     FinalSumcheckKnowledgeState 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (tr := tr) (stmtIn := stmtIn) (witMid := witMid) (oStmtIn := oStmtIn)
-  toFun_empty := fun ⟨stmtIn, oStmtIn⟩ witMid => by
-    rfl
+  toFun_empty := fun ⟨stmtIn, oStmtIn⟩ witMid h => h
   toFun_next := fun m hDir (stmtIn, oStmtIn) tr msg witMid => by
     have h_m_eq_0 : m = 0 := by
       cases m using Fin.cases with
@@ -381,7 +380,7 @@ noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbCo
         unfold finalSumcheckRbrExtractor WitnessStructuralInvariant
         simp only [Fin.val_last, Fin.mk_zero', h_extractMLP, Fin.coe_ofNat_eq_mod, and_true]
         refine SetLike.coe_eq_coe.mp ?_
-        rw [Sumcheck.Structured.coe_projectToMidSumcheckPoly_last ℓ tpoly
+        rw [Sumcheck.Structured.coe_fixPrefix_initial_last ℓ tpoly
           (multiplier stmtIn.ctx) stmtIn.challenges]
         have h_sumcheck_target_eq : stmtIn.sumcheck_target =
           (MvPolynomial.eval stmtIn.challenges
@@ -418,14 +417,14 @@ noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbCo
       (𝓑 := 𝓑) s tr] at hcheck
     exact ⟨of_decide_eq_true hcheck, hrel⟩
 
-/-- Worst-case round-by-round knowledge soundness of the final sum-check step, at the extractor
+/-- Round-by-round knowledge soundness of the final sum-check step, at the extractor
 `finalSumcheckRbrExtractor`, the knowledge-state function `finalSumcheckKnowledgeStateFunction` and
 the error `finalSumcheckKnowledgeError`. The step sends no challenge, so there is no
 extraction-failure event to bound; the content is the knowledge-state function's obligations. -/
-theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith {σ : Type}
+theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWith {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (finalSumcheckVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (𝓑 := 𝓑)).toVerifier.rbrKnowledgeSoundnessWorstCaseWith init impl
+      (𝓑 := 𝓑)).toVerifier.rbrKnowledgeSoundnessWith init impl
       (roundRelation 𝔽q β (ϑ := ϑ) (𝓑 := 𝓑) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (multpoly := multiplier) (Fin.last ℓ))
       (finalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
@@ -434,36 +433,22 @@ theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith {σ : Typ
       (finalSumcheckKnowledgeStateFunction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) init impl)
       finalSumcheckKnowledgeError :=
-  Verifier.rbrKnowledgeSoundnessWorstCaseWith_of_isEmpty_challengeIdx _ _
+  Verifier.rbrKnowledgeSoundnessWith_of_isEmpty_challengeIdx _ _
 
 omit [DecidableEq 𝔽q] in
-/-- Worst-case round-by-round knowledge soundness of the final sum-check step: the existential
-form of `finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith`. -/
-theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCase {σ : Type}
+/-- Round-by-round knowledge soundness of the final sum-check step: the existential
+form of `finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWith`. -/
+theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundness {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (finalSumcheckVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (𝓑 := 𝓑)).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+      (𝓑 := 𝓑)).toVerifier.rbrKnowledgeSoundness init impl
       (roundRelation 𝔽q β (ϑ := ϑ) (𝓑 := 𝓑) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (multpoly := multiplier) (Fin.last ℓ))
       (finalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
       finalSumcheckKnowledgeError := by
   classical
-  exact (Verifier.rbrKnowledgeSoundnessWorstCase_iff_exists_with init impl _ _ _ _).mpr
-    ⟨_, _, _, finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith 𝔽q β init impl⟩
-
-omit [DecidableEq 𝔽q] in
-/-- Round-by-round knowledge soundness of the final sum-check step: the averaged form of
-`finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCase`. -/
-theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundness {σ : Type}
-    (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (finalSumcheckVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (𝓑 := 𝓑)).rbrKnowledgeSoundness init impl
-      (relIn := roundRelation 𝔽q β (ϑ := ϑ) (𝓑 := 𝓑) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        (multpoly := multiplier) (Fin.last ℓ))
-      (relOut := finalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-      (rbrKnowledgeError := finalSumcheckKnowledgeError) :=
-  Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness init impl
-    (finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCase 𝔽q β init impl)
+  exact (Verifier.rbrKnowledgeSoundness_iff_exists_with init impl _ _ _ _).mpr
+    ⟨_, _, _, finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWith 𝔽q β init impl⟩
 
 end FinalSumcheckStep
 end SingleIteratedSteps

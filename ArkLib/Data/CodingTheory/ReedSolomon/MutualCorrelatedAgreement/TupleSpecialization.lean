@@ -44,15 +44,15 @@ variable {F E : Type*} [Field F] [Field E] {ℓ : ℕ}
 are equal. -/
 theorem polynomialTuple_eq_of_infinite_specializations (φ : F →+* E)
     (P Q : Fin (ℓ + 1) → F[X])
-    (h : {z : E | powerBatchedPolynomial (fun t ↦ (P t).map φ) z =
-      powerBatchedPolynomial (fun t ↦ (Q t).map φ) z}.Infinite) : P = Q := by
+    (h : {z : E | Polynomial.powerBatch (fun t ↦ (P t).map φ) z =
+      Polynomial.powerBatch (fun t ↦ (Q t).map φ) z}.Infinite) : P = Q := by
   funext t
   ext j
   have hab : powerBatchedCoordinate (fun t ↦ φ ((P t).coeff j)) =
       powerBatchedCoordinate (fun t ↦ φ ((Q t).coeff j)) := by
     refine eq_of_infinite_eval_eq _ _ (h.mono fun z hz ↦ ?_)
     have hc := congrArg (fun p : E[X] ↦ p.coeff j) hz
-    simpa only [Set.mem_ofPred_eq, powerBatchedCoordinate_eval, powerBatchedPolynomial,
+    simpa only [Set.mem_ofPred_eq, powerBatchedCoordinate_eval, Polynomial.powerBatch,
       finsetSum_coeff, coeff_smul, smul_eq_mul, coeff_map] using hc
   exact φ.injective (congrFun (powerBatchedCoordinate_injective hab) t)
 
@@ -60,8 +60,8 @@ theorem polynomialTuple_eq_of_infinite_specializations (φ : F →+* E)
 challenges. -/
 theorem finite_polynomialTuple_collisions (φ : F →+* E) {P Q : Fin (ℓ + 1) → F[X]}
     (hne : P ≠ Q) :
-    {z : E | powerBatchedPolynomial (fun t ↦ (P t).map φ) z =
-      powerBatchedPolynomial (fun t ↦ (Q t).map φ) z}.Finite :=
+    {z : E | Polynomial.powerBatch (fun t ↦ (P t).map φ) z =
+      Polynomial.powerBatch (fun t ↦ (Q t).map φ) z}.Finite :=
   Set.not_infinite.mp fun h ↦ hne (polynomialTuple_eq_of_infinite_specializations φ P Q h)
 
 /-- A finite family of tuples fails to specialize injectively along `φ` at only finitely many
@@ -69,11 +69,11 @@ challenges. -/
 theorem finite_polynomialTuple_noninjective_challenges (φ : F →+* E)
     (family : Finset (Fin (ℓ + 1) → F[X])) :
     {z : E | ¬ Set.InjOn (fun P : Fin (ℓ + 1) → F[X] ↦
-      powerBatchedPolynomial (fun t ↦ (P t).map φ) z) family}.Finite := by
+      Polynomial.powerBatch (fun t ↦ (P t).map φ) z) family}.Finite := by
   have hfinite : (⋃ P ∈ (family : Set (Fin (ℓ + 1) → F[X])),
       ⋃ Q ∈ (family : Set (Fin (ℓ + 1) → F[X])),
-      {z : E | P ≠ Q ∧ powerBatchedPolynomial (fun t ↦ (P t).map φ) z =
-        powerBatchedPolynomial (fun t ↦ (Q t).map φ) z}).Finite := by
+      {z : E | P ≠ Q ∧ Polynomial.powerBatch (fun t ↦ (P t).map φ) z =
+        Polynomial.powerBatch (fun t ↦ (Q t).map φ) z}).Finite := by
     refine family.finite_toSet.biUnion fun P _ ↦ family.finite_toSet.biUnion fun Q _ ↦ ?_
     by_cases heq : P = Q
     · simp [heq]
@@ -92,7 +92,7 @@ theorem exists_polynomialTuple_specialization_injective_avoiding_roots [Infinite
     (auxiliary : Finset E[X]) (hne : ∀ R ∈ auxiliary, R ≠ 0) :
     ∃ z : E, z ∉ avoid ∧
       Set.InjOn (fun P : Fin (ℓ + 1) → F[X] ↦
-        powerBatchedPolynomial (fun t ↦ (P t).map φ) z) family ∧
+        Polynomial.powerBatch (fun t ↦ (P t).map φ) z) family ∧
       ∀ R ∈ auxiliary, R.eval z ≠ 0 := by
   classical
   let roots := auxiliary.biUnion fun R ↦ R.roots.toFinset

@@ -40,8 +40,8 @@ comes from the quadratic staircase bound, and no part of the simplex is discarde
 ## References
 
 * [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient Decoding
-  and Smaller Cryptographic Proofs*][DKT26], Section 6.2, (73), and Appendix D.2, in the proof of
-  Lemma 6.2
+  and Smaller Cryptographic Proofs*][DKT26], Section 8.2, (59), and Appendix D.2, in the proof of
+  Lemma 8.3
 -/
 
 @[expose] public section

@@ -6,6 +6,8 @@ Authors: Chung Thai Nguyen, Quang Dao
 module
 
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.CoreInteractionPhase.Security
+public import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
+public import ArkLib.OracleReduction.Security.GuardedBridges
 
 /-!
 # Binary Basefold: the core interaction
@@ -25,11 +27,10 @@ sends the constant `c := f⁽ˡ⁾(0, …, 0)` and the verifier checks `s_ℓ = 
   multiplier `multiplier`.
 * `coreInteractionOracleReduction_perfectCompleteness`: perfect completeness from the strict round
   relation at round `0` to the strict final sum-check output relation.
-* `coreInteractionOracleVerifier_rbrKnowledgeSoundnessWorstCase`: worst-case round-by-round
+* `coreInteractionOracleVerifier_rbrKnowledgeSoundness`: round-by-round
   knowledge soundness from the round relation at round `0` to the final sum-check output
   relation, with error `coreInteractionOracleRbrKnowledgeError`; guarded by the checks of the
-  sum-check-and-fold rounds (`sumcheckFoldOracleVerifierGuardedForm`). Its averaged form is
-  `coreInteractionOracleVerifier_rbrKnowledgeSoundness`.
+  sum-check-and-fold rounds (`sumcheckFoldOracleVerifierGuardedForm`).
 * `sumcheckFoldKnowledgeError_le`: the per-challenge errors of the sum-check-and-fold rounds sum
   to at most `2ℓ / |L| + 2^(ℓ + 𝓡) / |L|`. Each challenge carries the Schwartz–Zippel term
   `2 / |L|` and the fold bad-event term `|S⁽ᵏ⁾| / |L|` of its round, `k` the end of its block; the
@@ -132,37 +133,22 @@ def coreInteractionOracleRbrKnowledgeError :
     (finalSumcheckKnowledgeError (L := L)) ∘ ChallengeIdx.sumEquiv.symm
 
 omit [DecidableEq 𝔽q] in
-/-- Worst-case round-by-round knowledge soundness of the core interaction, from the round relation
+/-- Round-by-round knowledge soundness of the core interaction, from the round relation
 at round `0` to the final sum-check output relation, with error
 `coreInteractionOracleRbrKnowledgeError`. -/
-theorem coreInteractionOracleVerifier_rbrKnowledgeSoundnessWorstCase :
+theorem coreInteractionOracleVerifier_rbrKnowledgeSoundness :
     (coreInteractionOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (𝓑 := 𝓑)).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+      (𝓑 := 𝓑)).toVerifier.rbrKnowledgeSoundness init impl
       (roundRelation (multpoly := multiplier) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
       (finalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
       (coreInteractionOracleRbrKnowledgeError 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
-  OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first _ _
+  OracleVerifier.append_rbrKnowledgeSoundness_of_guarded_first _ _
     (sumcheckFoldOracleVerifierGuardedForm 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑 := 𝓑) (multpoly := multiplier))
-    (sumcheckFoldOracleVerifier_rbrKnowledgeSoundnessWorstCase 𝔽q β)
-    (finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCase 𝔽q β init impl)
-
-omit [DecidableEq 𝔽q] in
-/-- Round-by-round knowledge soundness of the core interaction: the averaged form of
-`coreInteractionOracleVerifier_rbrKnowledgeSoundnessWorstCase`. -/
-theorem coreInteractionOracleVerifier_rbrKnowledgeSoundness :
-    (coreInteractionOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (𝓑 := 𝓑)).rbrKnowledgeSoundness init impl
-      (pSpec := pSpecCoreInteraction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-      (relIn := roundRelation (multpoly := multiplier) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
-      (relOut := finalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-      (rbrKnowledgeError := coreInteractionOracleRbrKnowledgeError 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
-  Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness init impl
-    (coreInteractionOracleVerifier_rbrKnowledgeSoundnessWorstCase 𝔽q β)
+    (sumcheckFoldOracleVerifier_rbrKnowledgeSoundness 𝔽q β)
+    (finalSumcheckOracleVerifier_rbrKnowledgeSoundness 𝔽q β init impl)
 
 /-! ### The total round-by-round knowledge error of the sum-check-and-fold rounds -/
 
@@ -340,6 +326,42 @@ theorem sumcheckFoldKnowledgeError_le :
   rw [hnum, ← add_div]
   gcongr
   exact_mod_cast hbound
+
+omit [DecidableEq 𝔽q] in
+/-- Ordinary knowledge soundness of the core interaction, with the sum of its challenge errors. -/
+theorem coreInteractionOracleVerifier_knowledgeSoundness :
+    (coreInteractionOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (𝓑 := 𝓑)).knowledgeSoundness init impl
+      (roundRelation (multpoly := multiplier) 𝔽q β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
+      (finalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+      (∑ i, coreInteractionOracleRbrKnowledgeError 𝔽q β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :=
+  OracleVerifier.knowledgeSoundness_of_rbrKnowledgeSoundness_of_guarded
+    (Verifier.GuardedForm.ofEmpty _ (fun input =>
+      (⟨⟨0, fun _ => 0, input.1.ctx⟩, 0⟩, fun _ _ => 0)))
+    (coreInteractionOracleVerifier_rbrKnowledgeSoundness 𝔽q β)
+
+omit [DecidableEq 𝔽q] in
+/-- The core interaction is perfectly complete on exact encodings and ordinarily
+knowledge sound for unique-radius compatibility. -/
+theorem coreInteractionOracleReduction_perfectCompleteness_and_knowledgeSoundness :
+    OracleReduction.perfectCompleteness
+      (oracleReduction := coreInteractionOracleReduction 𝔽q β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
+      (relIn := strictRoundRelation (multpoly := multiplier) 𝔽q β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
+      (relOut := strictFinalSumcheckRelOut 𝔽q β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) (init := init) (impl := impl) ∧
+    (coreInteractionOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (𝓑 := 𝓑)).knowledgeSoundness init impl
+      (roundRelation (multpoly := multiplier) 𝔽q β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
+      (finalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+      (∑ i, coreInteractionOracleRbrKnowledgeError 𝔽q β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :=
+  ⟨coreInteractionOracleReduction_perfectCompleteness 𝔽q β,
+    coreInteractionOracleVerifier_knowledgeSoundness 𝔽q β⟩
 
 end CoreInteractionPhaseReduction
 

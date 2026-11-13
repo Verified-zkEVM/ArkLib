@@ -415,7 +415,8 @@ theorem logicalProximityChecksSpec_of_mem_support_verifier_run
 open scoped NNReal
 
 /-- The round-by-round extractor for the query phase.
-Since f^(0) is always available, we can invoke the extractMlp function directly. -/
+It transports `Unit` witnesses; the remaining folding checks are carried by
+`QueryKnowledgeState`. -/
 noncomputable def queryRbrExtractor :
   Extractor.RoundByRound []ₒ
     (StmtIn := (FinalSumcheckStatementOut (L:=L) (ℓ:=ℓ))
@@ -424,7 +425,7 @@ noncomputable def queryRbrExtractor :
     Unit
     (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (fun _ => Unit) where
-  eqIn := rfl
+  extractIn := fun _ w => w
   extractMid := fun _ _ _ witMidSucc => witMidSucc
   extractOut := fun _ _ _ => ()
 
@@ -461,7 +462,7 @@ noncomputable def queryKnowledgeStateFunction {σ : Type} (init : ProbComp σ)
     QueryKnowledgeState 𝔽q β (ϑ:=ϑ) (γ_repetitions:=γ_repetitions)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (m:=m) (tr:=tr) (stmtIn:=stmtIn) (witMid:=witMid) (oStmtIn:=oStmtIn)
-  toFun_empty := fun ⟨stmtIn, oStmtIn⟩ witMid => by rfl
+  toFun_empty := fun ⟨stmtIn, oStmtIn⟩ witMid h => h
   toFun_next := fun m hDir ⟨stmtMid, oStmtMid⟩ tr msg witMid => by
     simp only [ne_eq, reduceCtorEq, not_false_eq_true, Matrix.cons_val_fin_one,
       Direction.not_V_to_P_eq_P_to_V] at hDir
@@ -587,12 +588,12 @@ lemma prEvent_rbrExtractionFailureEvent_le_queryRbrKnowledgeError {σ : Type} (i
           simpa only [SampleableType.prEvent_uniformSample] using h_single
       _ = ↑(queryRbrKnowledgeErrorSingleRepetition (𝓡 := 𝓡) ^ γ_repetitions) := by
           rw [ENNReal.coe_pow]
-/-- Worst-case round-by-round knowledge soundness for the oracle-query verifier.
+/-- Round-by-round knowledge soundness for the oracle-query verifier.
 The fixed input and empty prefix precede its fresh family of query points. -/
-theorem queryOracleVerifier_rbrKnowledgeSoundnessWorstCase {σ : Type} (init : ProbComp σ)
+theorem queryOracleVerifier_rbrKnowledgeSoundness {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (OracleVerifier.toVerifier (Oₛₒ := fun i : Empty => nomatch i)
-      (queryOracleVerifier 𝔽q β (ϑ := ϑ) γ_repetitions)).rbrKnowledgeSoundnessWorstCase
+      (queryOracleVerifier 𝔽q β (ϑ := ϑ) γ_repetitions)).rbrKnowledgeSoundness
       init impl
       (relIn := finalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
       (relOut := acceptRejectOracleRel)
@@ -609,18 +610,6 @@ theorem queryOracleVerifier_rbrKnowledgeSoundnessWorstCase {σ : Type} (init : P
     (ϑ := ϑ) (γ_repetitions := γ_repetitions) (init := init) (impl := impl)
     (stmtIn_oStmtIn := stmt) (transcript := tr)
   exact (SampleableType.prEvent_uniformSample_inst_irrel _ _ _).le.trans h
-
-/-- The averaged guarantee follows from the fixed-input, fresh-challenge theorem. -/
-theorem queryOracleVerifier_rbrKnowledgeSoundness {σ : Type} (init : ProbComp σ)
-    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (queryOracleVerifier 𝔽q β (ϑ := ϑ) γ_repetitions).rbrKnowledgeSoundness init impl
-      (Oₛₒ := fun i : Empty => nomatch i)
-      (relIn := finalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-      (relOut := acceptRejectOracleRel)
-      (rbrKnowledgeError := queryRbrKnowledgeError 𝔽q β γ_repetitions
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
-  Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness init impl
-    (queryOracleVerifier_rbrKnowledgeSoundnessWorstCase 𝔽q β γ_repetitions init impl)
 
 end FinalQueryRoundIOR
 end

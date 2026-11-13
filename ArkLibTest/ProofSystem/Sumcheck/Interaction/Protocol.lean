@@ -7,7 +7,7 @@ import ArkLib.ProofSystem.Sumcheck.Interaction.ProtocolSoundness
 import ArkLib.ProofSystem.Sumcheck.Interaction.ProtocolCompleteness
 import Mathlib.Algebra.Field.ZMod
 
-/-! # Native continuation and abort regressions
+/-! # Continuation and abort regressions
 
 The first prover continuation remembers its sampled coefficient, receives the verifier challenge,
 and performs another effect before constructing the second message. A noncommutative interpreter
@@ -33,7 +33,7 @@ abbrev events : OracleSpec (Fin 4) := Fin 4 →ₒ ZMod 17
 
 def event (i : Fin 4) : OracleComp events (ZMod 17) := liftM (events.query i)
 
-/-- The last native response retains a terminal effect on both possible public branches. -/
+/-- The last response retains a terminal effect on both possible public branches. -/
 def lastProver (a b r : ZMod 17) : Prover.Strategy events (protocol (ZMod 17) 1 1).tree
     (protocol (ZMod 17) 1 1).roles (fun _ => Unit) := by
   refine pure ⟨affine (b + a) (a * r + 1), ?_⟩
@@ -42,7 +42,7 @@ def lastProver (a b r : ZMod 17) : Prover.Strategy events (protocol (ZMod 17) 1 
     let _ ← event 3
     return ()
 
-/-- This is an ordinary native strategy; private memory is captured by its continuations. -/
+/-- This is an ordinary strategy; private memory is captured by its continuations. -/
 def adaptive : Prover.Strategy events (protocol (ZMod 17) 1 2).tree
     (protocol (ZMod 17) 1 2).roles (fun _ => Unit) := by
   refine do
@@ -65,7 +65,7 @@ def record : QueryImpl events (StateM (List (Fin 4))) := fun i => do
   modify (fun seen => seen ++ [i])
   return ![7, 3, 5, 11] i
 
-/-- Run the native strategy directly, without packaging it as a reduction witness. -/
+/-- Run the strategy directly, without packaging it as a reduction witness. -/
 def run (domain : List (ZMod 17)) :=
   execute (ZMod 17) 2 1 events (event 1) domain 2 0 (by decide)
     (polynomialFamily (ZMod 17) 2 1).spec.toPFunctor
@@ -73,7 +73,8 @@ def run (domain : List (ZMod 17)) :=
     initial original adaptive
 
 set_option backward.isDefEq.respectTransparency false in
-/-- The post-challenge prover effects occur at their native positions, including at termination. -/
+/-- The post-challenge prover effects occur where the strategy places them, including at
+termination. -/
 theorem two_rounds : run [0] = (do
     let a ← event 0
     let r ← event 1
@@ -113,7 +114,7 @@ example : ¬ outputRelation (ZMod 17) 2 1 ⟨⟨7, ![3, 3]⟩, original⟩ := by
   change (0 : ZMod 17) ≠ 7
   decide
 
-/-- The terminal native response samples again, including after rejection. -/
+/-- The terminal response samples again, including after rejection. -/
 def sampledLast (a b r : ZMod 17) :
     Prover.Strategy unifSpec (protocol (ZMod 17) 1 1).tree
       (protocol (ZMod 17) 1 1).roles (fun _ => Unit) := by
@@ -138,7 +139,7 @@ def sampledAdaptive : Prover.Strategy unifSpec (protocol (ZMod 17) 1 2).tree
       let b ← ($ᵗ (ZMod 17))
       return sampledLast a b r
 
-/-- Two actual native rounds, with sampled private memory and response effects, satisfy the
+/-- Two actual rounds, with sampled private memory and response effects, satisfy the
 nonvacuous composition-derived bound on the original closed output relation. -/
 example : Pr{let result ← (execute (ZMod 17) 2 1 unifSpec ($ᵗ (ZMod 17)) [0]
     2 0 (by decide) (polynomialFamily (ZMod 17) 2 1).spec.toPFunctor

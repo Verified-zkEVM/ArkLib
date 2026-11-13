@@ -41,7 +41,7 @@ private theorem Y_zero_sub_mem_exact (r : ZMod 5) :
 /-- The characteristic form of the root-count hypotheses for an exact interpolant. -/
 private theorem listBound_of_below_characteristic
     {F index : Type*} [Field F] [Finite F] [DecidableEq F] [Fintype index]
-    {messageDim K A d m M W : ℕ} (hK : 0 < K) (hmessageDim : messageDim ≤ K)
+    {messageDim K A d m M W : ℕ} (hmessageDim : messageDim ≤ K)
     (hdK : d < K - 1)
     (domain : index ↪ F) (received : index → F) {Q : DifferentialPolynomial F d}
     (hQ : Q ≠ 0) (hQspace : Q ∈ exactInterpolationSpace F (K - 1) A d m M W hdK)
@@ -50,13 +50,13 @@ private theorem listBound_of_below_characteristic
     (hfield : m * A ≤ Nat.card F ^ 2) :
     (agreeingPolynomials domain messageDim A received).encard ≤
       (2 * (d + 1) * Nat.card F ^ (3 * d + 2) : ℕ∞) := by
-  apply agreeingPolynomials_encard_le_two_mul_pow_of_exactInterpolant hK hmessageDim hdK
+  apply agreeingPolynomials_encard_le_two_mul_pow_of_exactInterpolant hmessageDim hdK
     domain received hQ hQspace hconstraints
   · intro j
     exact jetDegreeCastsNeZero_of_ringChar (Or.inr (hjetChar j))
   · intro k s hk hks
     exact PolynomialDifferential.natCast_choose_ne_zero_of_ringChar
-      (Or.inr hDchar) k hk hks
+      (Or.inr hDchar) k hks
   · exact hfield
 
 /-- The agreeing-polynomial embedding preserves the polynomial over `ZMod 5`. -/
@@ -93,7 +93,7 @@ example (r : ZMod 5) :
       (2 * (0 + 1) * Nat.card (ZMod 5) ^ (3 * 0 + 2) : ℕ∞) := by
   apply listBound_of_below_characteristic (F := ZMod 5) (index := Fin 2)
     (messageDim := 2) (K := 2) (A := 2) (d := 0) (m := 1) (M := 0) (W := 0)
-    (by decide) (by decide) (by decide) CertificatesTest.zmodDomain
+    (by decide) (by decide) CertificatesTest.zmodDomain
     (fun _ ↦ r) (CertificatesTest.YZeroSubNeZero r) (Y_zero_sub_mem_exact r)
     (fun i ↦ CertificatesTest.satisfiesLocalConstraintsOneYZeroSub
       (CertificatesTest.zmodDomain i) r)

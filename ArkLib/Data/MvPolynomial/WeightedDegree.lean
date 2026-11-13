@@ -23,10 +23,11 @@ zero.
 The bound is additive under multiplication.  Consequently, the weight-zero piece is also closed
 under multiplication, while a positive fixed bound is not in general.
 
-The finiteness and finrank results below require every variable weight to be nonzero.  This
-hypothesis is load-bearing: if a variable has weight zero, all of its powers remain in every
-bounded piece.  In particular, a downstream interpolation weight with untracked, weight-zero
-variables must add separate degree caps before using a finite-dimensional count.
+The finiteness results below require every variable weight to be nonzero: if a variable has
+weight zero, all of its powers remain in every bounded piece. The finrank formula also covers
+infinite-dimensional pieces, where both sides are zero. A downstream interpolation weight with
+untracked, weight-zero variables must add separate degree caps to obtain a finite-dimensional
+count.
 
 ## Main declarations
 
@@ -43,7 +44,7 @@ variables must add separate degree caps before using a finite-dimensional count.
   the weighted total degree, with the weight of `i` being (a bound on) `natDegree (f i)`.
 * `basisRestrictWeightedDegree` and `restrictWeightedDegreeCoeff`: its monomial basis and
   coefficient projections.
-* `finrank_restrictWeightedDegree`: the finite positive-weight dimension formula.
+* `finrank_restrictWeightedDegree`: the weighted-degree dimension formula.
 
 ## References
 
@@ -479,22 +480,13 @@ theorem restrictWeightedDegree_fg [Finite σ] (w : σ → ℕ) (hw : ∀ i, w i 
     {m : σ →₀ ℕ // m.weight w ≤ d} _ _ _ finiteExponents
     (basisRestrictWeightedDegree (R := R) w d)
 
-/-- Over a field and with every variable assigned nonzero weight, the dimension of a bounded
-weighted-degree submodule is the number of allowed monomials.  The nonzero-weight hypothesis is
-essential; see `X_pow_mem_restrictWeightedDegree_zero`. -/
-theorem finrank_restrictWeightedDegree {K : Type*} [Field K] [Finite σ]
-    (w : σ → ℕ) (hw : ∀ i, w i ≠ 0) (d : ℕ) :
+/-- Over a field, the finrank of a bounded weighted-degree submodule is the number of allowed
+monomials. Both sides are zero when the allowed monomial set is infinite. -/
+theorem finrank_restrictWeightedDegree {K : Type*} [Field K]
+    (w : σ → ℕ) (d : ℕ) :
     Module.finrank K (restrictWeightedDegree (R := K) w d) =
       Set.ncard {m : σ →₀ ℕ | m.weight w ≤ d} := by
-  let _ : Finite {m : σ →₀ ℕ // m.weight w ≤ d} :=
-    (weightedDegreeSupport_finite w hw d).to_subtype
-  let b := basisRestrictWeightedDegree (R := K) w d
-  let _ : FiniteDimensional K (restrictWeightedDegree (R := K) w d) :=
-    b.finiteDimensional_of_finite
-  have h := congrArg Cardinal.toNat (Module.finrank_eq_card_basis' b)
-  have hcard : Module.finrank K (restrictWeightedDegree (R := K) w d) =
-      Nat.card {m : σ →₀ ℕ // m.weight w ≤ d} := by
-    simpa [Nat.card] using h
-  exact hcard.trans (Nat.card_coe_set_eq _)
+  exact (Module.finrank_eq_nat_card_basis
+    (basisRestrictWeightedDegree (R := K) w d)).trans (Nat.card_coe_set_eq _)
 
 end MvPolynomial

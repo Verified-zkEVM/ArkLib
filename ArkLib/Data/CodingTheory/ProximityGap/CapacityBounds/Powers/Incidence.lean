@@ -79,7 +79,7 @@ private theorem module_code_eq_of_eq_on_large_finset
   exact heq i hi
 
 private theorem normalized_module_code_min_dist_le_one
-    {ι : Type} [Fintype ι] [Nonempty ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Semiring F]
     {A : Type} [AddCommMonoid A] [Module F A] [DecidableEq A]
     (C : ModuleCode ι F A) (δmin : NNReal)
@@ -87,6 +87,8 @@ private theorem normalized_module_code_min_dist_le_one
       (Code.minDist (C : Set (ι → A)) : ℝ) / Fintype.card ι) :
     (δmin : ℝ) ≤ 1 := by
   rw [hδmin]
+  rcases isEmpty_or_nonempty ι with hι | hι
+  · simp
   apply (div_le_one (by exact_mod_cast Fintype.card_pos)).2
   exact_mod_cast (show Code.minDist (C : Set (ι → A)) ≤ Fintype.card ι by
     rw [← Code.dist_eq_minDist]
@@ -224,7 +226,7 @@ private theorem powers_radius_base_mem_ioo (δmin η : NNReal)
     linarith
 
 theorem powers_radius_base_mem_ioo_of_module_code
-    {ι : Type} [Fintype ι] [Nonempty ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Semiring F]
     {A : Type} [AddCommMonoid A] [Module F A] [DecidableEq A]
     (C : ModuleCode ι F A) (δmin η : NNReal)
@@ -254,14 +256,16 @@ theorem powers_alpha_pow_relation
     {A : Type} [AddCommMonoid A] [Module F A] [DecidableEq A]
     (C : ModuleCode ι F A) (k : ℕ) (δmin η : NNReal)
     (hδmin : (δmin : ℝ) =
-      (Code.minDist (C : Set (ι → A)) : ℝ) / Fintype.card ι)
-    (hη : 0 < η) (hηlt : η < δmin) :
+      (Code.minDist (C : Set (ι → A)) : ℝ) / Fintype.card ι) :
     (Fintype.card ι : ℝ) *
         (powers_radius_base (δmin : ℝ) (η : ℝ) ^
           ((1 : ℝ) / (k + 2))) ^ (k + 2) =
       ((Fintype.card ι - Code.minDist (C : Set (ι → A)) : ℕ) : ℝ) +
         (Fintype.card ι : ℝ) * (η : ℝ) := by
-  have hr := powers_radius_base_mem_ioo_of_module_code C δmin η hδmin hη hηlt
+  have hr : 0 ≤ powers_radius_base (δmin : ℝ) (η : ℝ) := by
+    have hδle := normalized_module_code_min_dist_le_one C δmin hδmin
+    unfold powers_radius_base
+    linarith [η.coe_nonneg]
   have hD : Code.minDist (C : Set (ι → A)) ≤ Fintype.card ι := by
     rw [← Code.dist_eq_minDist]
     exact Code.dist_le_card _
@@ -273,7 +277,7 @@ theorem powers_alpha_pow_relation
         ((1 : ℝ) / (k + 2))) ^ (k + 2) =
         powers_radius_base (δmin : ℝ) (η : ℝ) := by
     rw [one_div]
-    convert Real.rpow_inv_natCast_pow (n := k + 2) hr.1.le (by omega) using 1
+    convert Real.rpow_inv_natCast_pow (n := k + 2) hr (by omega) using 1
     all_goals norm_num
   have hδmul : (δmin : ℝ) * (Fintype.card ι : ℝ) =
       (Code.minDist (C : Set (ι → A)) : ℝ) := by
@@ -482,11 +486,11 @@ theorem powers_large_branch_arithmetic
 
 open scoped BigOperators in
 private theorem powers_module_zero_set_card_le
-    {F : Type} [Field F] [Fintype F]
-    {A : Type} [DecidableEq A] [AddCommGroup A] [Module F A]
-    (k : ℕ) (v : Fin (k + 1) → A) (hv : v ≠ 0) :
-    (Finset.univ.filter fun x : F =>
-      ∑ j : Fin (k + 1), (x ^ (j : ℕ)) • v j = 0).card ≤ k := by
+    {F : Type} [Field F]
+    {A : Type} [AddCommGroup A] [Module F A]
+    (k : ℕ) (v : Fin (k + 1) → A) (hv : v ≠ 0) (X : Finset F)
+    (hX : ∀ x ∈ X, ∑ j : Fin (k + 1), (x ^ (j : ℕ)) • v j = 0) :
+    X.card ≤ k := by
   classical
   obtain ⟨j0, hj0⟩ : ∃ j, v j ≠ 0 := by
     by_contra h
@@ -521,13 +525,9 @@ private theorem powers_module_zero_set_card_le
     have hlt : p.natDegree < k + 1 :=
       (Polynomial.natDegree_lt_iff_degree_lt hp).2 hdeg
     omega
-  apply le_trans (Polynomial.card_le_degree_of_subset_roots (p := p) (Z :=
-    Finset.univ.filter fun x : F =>
-      ∑ j : Fin (k + 1), (x ^ (j : ℕ)) • v j = 0) ?_) hnat
+  apply le_trans (Polynomial.card_le_degree_of_subset_roots (p := p) (Z := X) ?_) hnat
   intro x hx
-  have hx' : x ∈ Finset.univ.filter (fun x : F =>
-      ∑ j : Fin (k + 1), (x ^ (j : ℕ)) • v j = 0) := by simpa using hx
-  have hsum := (Finset.mem_filter.mp hx').2
+  have hsum := hX x (by simpa using hx)
   have hmap : φ (∑ j : Fin (k + 1), (x ^ (j : ℕ)) • v j) = 0 := by
     rw [hsum, map_zero]
   have hmap' : (∑ j : Fin (k + 1), (x ^ (j : ℕ)) * φ (v j)) = 0 := by
@@ -555,7 +555,7 @@ private theorem powers_module_zero_set_card_le
 open scoped BigOperators in
 private theorem powers_coefficients_eq_of_agree_on_distinct_seeds
     {ι : Type}
-    {F : Type} [Field F] [Finite F]
+    {F : Type} [Field F]
     {A : Type} [AddCommGroup A] [Module F A]
     (k : ℕ) (xs : Fin (k + 1) → F) (hxs : Function.Injective xs)
     (U cstar : Fin (k + 1) → ι → A) (i : ι)
@@ -564,17 +564,14 @@ private theorem powers_coefficients_eq_of_agree_on_distinct_seeds
         ∑ j : Fin (k + 1), (xs s ^ (j : ℕ)) • cstar j i) :
     ∀ j : Fin (k + 1), U j i = cstar j i := by
   classical
-  let := Fintype.ofFinite F
   let v : Fin (k + 1) → A := fun j => U j i - cstar j i
   have hvzero : v = 0 := by
     by_contra hv
-    have hroot := powers_module_zero_set_card_le (F := F) (A := A) k v hv
     let X : Finset F := Finset.univ.image xs
-    have hsubset : X ⊆ Finset.univ.filter (fun x : F =>
-        ∑ j : Fin (k + 1), (x ^ (j : ℕ)) • v j = 0) := by
+    have hroot : X.card ≤ k := by
+      apply powers_module_zero_set_card_le (F := F) k v hv X
       intro x hx
       obtain ⟨s, -, rfl⟩ := Finset.mem_image.mp hx
-      simp only [Finset.mem_filter, Finset.mem_univ, true_and]
       dsimp [v]
       simp_rw [smul_sub]
       rw [Finset.sum_sub_distrib, hagree s, sub_self]
@@ -582,12 +579,7 @@ private theorem powers_coefficients_eq_of_agree_on_distinct_seeds
       dsimp [X]
       rw [Finset.card_image_of_injective Finset.univ hxs]
       simp
-    have hbad : k + 1 ≤ k := calc
-      k + 1 = X.card := hcardX.symm
-      _ ≤ (Finset.univ.filter (fun x : F =>
-          ∑ j : Fin (k + 1), (x ^ (j : ℕ)) • v j = 0)).card :=
-        Finset.card_le_card hsubset
-      _ ≤ k := hroot
+    have hbad : k + 1 ≤ k := hcardX ▸ hroot
     omega
   intro j
   have hj := congrFun hvzero j
@@ -597,7 +589,7 @@ private theorem powers_coefficients_eq_of_agree_on_distinct_seeds
 open scoped BigOperators in
 theorem powers_coefficients_eq_on_anchor_intersection
     {ι : Type} [Fintype ι]
-    {F : Type} [Field F] [Finite F]
+    {F : Type} [Field F]
     {A : Type} [AddCommGroup A] [Module F A]
     (C : ModuleCode ι F A) (k : ℕ)
     (U : Fin (k + 1) → ι → A) (δ : ℝ)
@@ -609,7 +601,6 @@ theorem powers_coefficients_eq_on_anchor_intersection
     (i : ι) (hi : ∀ s : Fin (k + 1), i ∈ (bw s).T) :
     ∀ j : Fin (k + 1), U j i = cstar j i := by
   classical
-  let := Fintype.ofFinite F
   apply powers_coefficients_eq_of_agree_on_distinct_seeds (F := F) k xs hxs U cstar i
   intro s
   calc
@@ -631,7 +622,6 @@ theorem powers_coordinate_agreement_seeds_card_le
   classical
   let v : Fin (k + 1) → A := fun j => U j i - cstar j i
   have hv : v ≠ 0 := powers_common_domain_difference_ne k U cstar i hi
-  have hroot := powers_module_zero_set_card_le (F := F) (A := A) k v hv
   have hfilter :
       (Finset.univ.filter fun x : F =>
         (∑ j : Fin (k + 1), (x ^ (j : ℕ)) • U j i) =
@@ -651,7 +641,8 @@ theorem powers_coordinate_agreement_seeds_card_le
       rw [Finset.sum_sub_distrib] at h
       exact sub_eq_zero.mp h
   rw [hfilter]
-  exact hroot
+  exact powers_module_zero_set_card_le (F := F) k v hv _
+    (fun x hx => (Finset.mem_filter.mp hx).2)
 
 open scoped BigOperators in
 private theorem powers_middle_good_seeds_card_le
@@ -725,7 +716,7 @@ private theorem powers_middle_good_seeds_real_card_le
 open scoped BigOperators in
 theorem powers_middle_good_seeds_real_card_le_embedding
     {ι S : Type} [Fintype ι]
-    {F : Type} [Field F] [Finite F]
+    {F : Type} [Field F]
     {A : Type} [DecidableEq A] [AddCommGroup A] [Module F A]
     (e : S ↪ F) (k : ℕ) (U cstar : Fin (k + 1) → ι → A)
     (γ : ℝ) (Bgood : Finset S) (Bx : S → Finset ι)
@@ -739,7 +730,6 @@ theorem powers_middle_good_seeds_real_card_le_embedding
     (Bgood.card : ℝ) ≤
       (Fintype.card ι : ℝ) * γ * (k : ℝ) := by
   classical
-  let := Fintype.ofFinite F
   let T : Finset ι := Finset.univ \ powers_common_domain k U cstar
   let R : S → ι → Prop := fun x i => i ∈ Bx x
   have hleft : ∀ x ∈ Bgood, 1 ≤ (T.bipartiteAbove R x).card := by
@@ -753,24 +743,17 @@ theorem powers_middle_good_seeds_real_card_le_embedding
   have hright : ∀ i ∈ T, (Bgood.bipartiteBelow R i).card ≤ k := by
     intro i hi
     have hiout : i ∉ powers_common_domain k U cstar := (Finset.mem_sdiff.mp hi).2
-    let Roots : Finset F := Finset.univ.filter fun y : F =>
-      (∑ j : Fin (k + 1), (y ^ (j : ℕ)) • U j i) =
-        ∑ j : Fin (k + 1), (y ^ (j : ℕ)) • cstar j i
-    calc
-      (Bgood.bipartiteBelow R i).card =
-          ((Bgood.bipartiteBelow R i).map e).card :=
-        (Finset.card_map e).symm
-      _ ≤ Roots.card := by
-        apply Finset.card_le_card
-        intro y hy
-        obtain ⟨x, hx, rfl⟩ := Finset.mem_map.mp hy
-        have hxdata : x ∈ Bgood ∧ i ∈ Bx x := by
-          simpa only [Finset.mem_bipartiteBelow, R] using hx
-        simp only [Roots, Finset.mem_filter, Finset.mem_univ, true_and]
-        exact heq x hxdata.1 i hxdata.2
-      _ ≤ k := by
-        simpa only [Roots] using
-          powers_coordinate_agreement_seeds_card_le (F := F) k U cstar i hiout
+    let v : Fin (k + 1) → A := fun j => U j i - cstar j i
+    rw [← Finset.card_map e]
+    apply powers_module_zero_set_card_le (F := F) k v
+      (powers_common_domain_difference_ne k U cstar i hiout)
+    intro y hy
+    obtain ⟨x, hx, rfl⟩ := Finset.mem_map.mp hy
+    have hxdata : x ∈ Bgood ∧ i ∈ Bx x := by
+      simpa only [Finset.mem_bipartiteBelow, R] using hx
+    dsimp [v]
+    simp_rw [smul_sub]
+    rw [Finset.sum_sub_distrib, heq x hxdata.1 i hxdata.2, sub_self]
   have hnat : Bgood.card ≤
       (Finset.univ \ powers_common_domain k U cstar).card * k := by
     have hcount := Finset.card_mul_le_card_mul R hleft hright

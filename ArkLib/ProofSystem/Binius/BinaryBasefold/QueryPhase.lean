@@ -12,7 +12,7 @@ public import ArkLib.ProofSystem.Binius.BinaryBasefold.QueryPhase.Soundness
 # Binary Basefold query phase
 
 The oracle-query verifier and honest prover, strict-input perfect completeness, and
-worst-case round-by-round knowledge soundness. Pure query mathematics is owned by `Soundness/`.
+round-by-round knowledge soundness. Pure query mathematics is owned by `Soundness/`.
 -/
 
 @[expose] public section

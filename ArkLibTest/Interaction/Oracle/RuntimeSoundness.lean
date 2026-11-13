@@ -9,8 +9,8 @@ import VCVio.OracleComp.EvalDist.AnswerMeasure
 /-!
 # Guessing a hidden runtime bit
 
-The source input is deterministic and independent of runtime state. A native prover commits to a
-bit before the verifier reveals the hidden bit. The actual native prefix continuation and runtime
+The source input is deterministic and independent of runtime state. A prover commits to a
+bit before the verifier reveals the hidden bit. The actual prefix continuation and runtime
 history remain correlated in the theorem's joint boundary distribution.
 -/
 
@@ -223,7 +223,7 @@ lemma guess_integrated (guess : Bool) (secret : Nat) :
   rw [← average_success, guess_success, lintegral_const,
     OracleComp.evalDist_apply_univ_eq_one, mul_one]
 
-/-- Apply the main native theorem to the actual exported continuation, with no exceptional event. -/
+/-- Apply the main theorem to the actual exported continuation, with no exceptional event. -/
 lemma guess_bound (guess : Bool) (secret : Nat) :
     Pr{let result ← (executeStrategiesWithRuntime runtime inputImpl
       (prover guess secret) verifier)}[
@@ -277,7 +277,7 @@ lemma run_informed_answers (secret : Nat) :
   simp_rw [runFrom_informed_answers]
   rfl
 
-/-- A fixed whole native prover can learn through an oracle query before its commitment. -/
+/-- A fixed whole prover can learn through an oracle query before its commitment. -/
 lemma informed_success (secret : Nat) :
     Pr{let result ← (executeStrategiesWithRuntime runtime inputImpl
       (informedProver secret) verifier)}[
@@ -387,7 +387,7 @@ example (secret : Nat) :
       (coinSpec.query () : OracleComp coinSpec Bool) :=
   run_history _ _ (fun hidden => informed_final_history hidden secret)
 
-/-- This analytic fixed-state experiment changes only initialization, never the native prover. -/
+/-- This analytic fixed-state experiment changes only initialization, never the prover. -/
 private abbrev fixedRuntime (hidden : Bool) : OracleRuntime coinSpec ambient :=
   { runtime with setup := pure (hidden, 0) }
 

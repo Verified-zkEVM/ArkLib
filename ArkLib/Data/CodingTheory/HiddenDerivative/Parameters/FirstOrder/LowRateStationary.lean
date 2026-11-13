@@ -194,21 +194,28 @@ theorem firstOrderLowRateStationaryU_pos {rho : ℝ} (hrho : 0 < rho) :
   rw [firstOrderLowRateStationaryU, dite_eq_left_of_eq_true (eq_true hrho)]
   exact (Classical.choose_spec (exists_firstOrderStationaryRoot hrho)).1
 
-/-- The stationary root solves `u² (u + 3) = t` for `ρ > 0`. -/
-theorem firstOrderLowRateStationaryU_cubic {rho : ℝ} (hrho : 0 < rho) :
+/-- The stationary root solves `u² (u + 3) = t` for every `ρ`. -/
+theorem firstOrderLowRateStationaryU_cubic {rho : ℝ} :
     firstOrderStationaryCubic (firstOrderLowRateStationaryU rho) =
       firstOrderLowRateScale rho := by
-  rw [firstOrderLowRateStationaryU, dite_eq_left_of_eq_true (eq_true hrho)]
-  exact (Classical.choose_spec (exists_firstOrderStationaryRoot hrho)).2
+  by_cases hrho : 0 < rho
+  · rw [firstOrderLowRateStationaryU, dite_eq_left_of_eq_true (eq_true hrho)]
+    exact (Classical.choose_spec (exists_firstOrderStationaryRoot hrho)).2
+  · have hscale : firstOrderLowRateScale rho = 0 :=
+      Real.sqrt_eq_zero'.2 (by linarith)
+    simp [firstOrderLowRateStationaryU, hrho, firstOrderStationaryCubic, hscale]
 
 /-- Every nonnegative solution of `u² (u + 3) = t` is the stationary root. -/
 theorem firstOrderLowRateStationaryU_unique {rho u : ℝ}
-    (hrho : 0 < rho) (hu : 0 ≤ u)
+    (hu : 0 ≤ u)
     (hcubic : firstOrderStationaryCubic u = firstOrderLowRateScale rho) :
     u = firstOrderLowRateStationaryU rho := by
-  apply firstOrderStationaryCubic_strictMonoOn.injOn hu
-    (firstOrderLowRateStationaryU_pos hrho).le
-  rw [hcubic, firstOrderLowRateStationaryU_cubic hrho]
+  have hu0 : 0 ≤ firstOrderLowRateStationaryU rho := by
+    by_cases hrho : 0 < rho
+    · exact (firstOrderLowRateStationaryU_pos hrho).le
+    · simp [firstOrderLowRateStationaryU, hrho]
+  apply firstOrderStationaryCubic_strictMonoOn.injOn hu hu0
+  rw [hcubic, firstOrderLowRateStationaryU_cubic]
 
 /-- The stationary derivative-degree ratio `β = u / (2t)`. -/
 def firstOrderLowRateBeta (rho : ℝ) : ℝ :=
@@ -228,7 +235,7 @@ theorem firstOrderLowRateStationaryU_gt_scale {rho : ℝ}
   have ht : 0 < t := firstOrderLowRateScale_pos hrho
   have hu : 0 < u := firstOrderLowRateStationaryU_pos hrho
   have hcubic : firstOrderStationaryCubic u = t := by
-    simpa only [u, t] using firstOrderLowRateStationaryU_cubic hrho
+    simpa only [u, t] using firstOrderLowRateStationaryU_cubic
   have htt : firstOrderStationaryCubic t < t := by
     dsimp only [FirstOrderLowRateRegime, t] at hlow
     have hmul := mul_lt_mul_of_pos_left hlow ht
@@ -257,10 +264,15 @@ theorem half_lt_firstOrderLowRateBeta {rho : ℝ}
   rw [lt_div_iff₀ (mul_pos (by norm_num) ht)]
   nlinarith
 
-/-- `a* = t (1 + u)` for `ρ > 0`. -/
-theorem firstOrderLowRateThreshold_eq_scale_mul_one_add {rho : ℝ} (hrho : 0 < rho) :
+/-- `a* = t (1 + u)` for every `ρ`. -/
+theorem firstOrderLowRateThreshold_eq_scale_mul_one_add {rho : ℝ} :
     firstOrderLowRateThreshold rho = firstOrderLowRateScale rho *
       (1 + firstOrderLowRateStationaryU rho) := by
+  by_cases hrho : 0 < rho
+  swap
+  · have hscale : firstOrderLowRateScale rho = 0 :=
+      Real.sqrt_eq_zero'.2 (by linarith)
+    simp [firstOrderLowRateThreshold, firstOrderLowRateBeta, hscale]
   let t := firstOrderLowRateScale rho
   let u := firstOrderLowRateStationaryU rho
   have ht : 0 < t := firstOrderLowRateScale_pos hrho
@@ -285,7 +297,7 @@ theorem rate_lt_firstOrderLowRateThreshold {rho : ℝ}
   have hu : t < u := by
     simpa only [t, u] using firstOrderLowRateStationaryU_gt_scale hrho hlow
   have ha : firstOrderLowRateThreshold rho = t * (1 + u) := by
-    simpa only [t, u] using firstOrderLowRateThreshold_eq_scale_mul_one_add hrho
+    simpa only [t, u] using firstOrderLowRateThreshold_eq_scale_mul_one_add
   rw [ha]
   nlinarith [mul_pos ht (sub_pos.mpr hu)]
 
@@ -299,10 +311,14 @@ theorem firstOrderLowRateBeta_lt_threshold_div_rate {rho : ℝ} (hrho : 0 < rho)
 
 /-- On the branch, the source density at the threshold equals the exact rank density at `β`. -/
 theorem firstOrderLowRate_margin_eq_zero {rho : ℝ}
-    (hrho : 0 < rho) (hlow : FirstOrderLowRateRegime rho) :
+    (hlow : FirstOrderLowRateRegime rho) :
     firstOrderSourceDensity rho (firstOrderLowRateThreshold rho)
         (firstOrderLowRateBeta rho) -
       firstOrderRankDensity (firstOrderLowRateBeta rho) = 0 := by
+  by_cases hrho : 0 < rho
+  swap
+  · simp [firstOrderLowRateBeta, firstOrderLowRateStationaryU, hrho,
+      firstOrderLowRateThreshold, firstOrderSourceDensity, firstOrderRankDensity]
   let t := firstOrderLowRateScale rho
   let u := firstOrderLowRateStationaryU rho
   let beta := firstOrderLowRateBeta rho
@@ -311,11 +327,11 @@ theorem firstOrderLowRate_margin_eq_zero {rho : ℝ}
   have hrhoEq : rho = 2 * t ^ 2 := by nlinarith [htSq]
   have huEq : u ^ 2 * (u + 3) = t := by
     simpa only [firstOrderStationaryCubic, u, t] using
-      firstOrderLowRateStationaryU_cubic hrho
+      firstOrderLowRateStationaryU_cubic
   have hbeta : beta = u / (2 * t) := rfl
   have hbeta' : firstOrderLowRateBeta rho = u / (2 * t) := hbeta
   have ha : firstOrderLowRateThreshold rho = t * (1 + u) := by
-    simpa only [t, u] using firstOrderLowRateThreshold_eq_scale_mul_one_add hrho
+    simpa only [t, u] using firstOrderLowRateThreshold_eq_scale_mul_one_add
   have hhalf : ¬ beta ≤ 1 / 2 := not_le.mpr (by
     simpa only [beta] using half_lt_firstOrderLowRateBeta hrho hlow)
   have hsource :
@@ -340,14 +356,18 @@ theorem firstOrderLowRate_margin_eq_zero {rho : ℝ}
 
 /-- On the branch, the margin at agreement `a` factors as `(β/2)(a - a*)((a + a*)/ρ - β)`. -/
 theorem firstOrderLowRate_margin_factor {rho a : ℝ}
-    (hrho : 0 < rho) (hlow : FirstOrderLowRateRegime rho) :
+    (hlow : FirstOrderLowRateRegime rho) :
     firstOrderSourceDensity rho a (firstOrderLowRateBeta rho) -
         firstOrderRankDensity (firstOrderLowRateBeta rho) =
       firstOrderLowRateBeta rho / 2 *
         (a - firstOrderLowRateThreshold rho) *
         ((a + firstOrderLowRateThreshold rho) / rho -
           firstOrderLowRateBeta rho) := by
-  have hzero := firstOrderLowRate_margin_eq_zero hrho hlow
+  by_cases hrho : 0 < rho
+  swap
+  · simp [firstOrderLowRateBeta, firstOrderLowRateStationaryU, hrho,
+      firstOrderSourceDensity, firstOrderRankDensity]
+  have hzero := firstOrderLowRate_margin_eq_zero hlow
   rw [firstOrderSourceDensity] at hzero ⊢
   field_simp [ne_of_gt hrho] at hzero ⊢
   nlinarith
@@ -359,7 +379,7 @@ theorem firstOrderLowRate_margin_pos {rho a : ℝ}
     (ha : firstOrderLowRateThreshold rho < a) :
     0 < firstOrderSourceDensity rho a (firstOrderLowRateBeta rho) -
       firstOrderRankDensity (firstOrderLowRateBeta rho) := by
-  rw [firstOrderLowRate_margin_factor hrho hlow]
+  rw [firstOrderLowRate_margin_factor hlow]
   have hbeta := firstOrderLowRateBeta_pos hrho
   have hratio := firstOrderLowRateBeta_lt_threshold_div_rate hrho
   have hbracket : 0 < (a + firstOrderLowRateThreshold rho) / rho -

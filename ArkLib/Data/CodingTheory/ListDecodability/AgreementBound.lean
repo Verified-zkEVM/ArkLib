@@ -26,6 +26,7 @@ open Finset
 
 variable {ι : Type*} [Fintype ι] [Nonempty ι] {A : Type*} [DecidableEq A]
 
+omit [Nonempty ι] in
 /-- **Johnson-type counting bound.** If distinct codewords of `C` agree in at most `s² · |ι|`
 positions, then any finite set of codewords within relative distance `1 - s - η` of a word `y`
 has at most `1 / (2ηs)` elements. -/
@@ -35,6 +36,17 @@ theorem card_le_of_pairwise_agree_le {C : Set (ι → A)} {s η : ℝ} (hs : 0 <
     (hT : ∀ c ∈ T, c ∈ closeCodewordsRel C y (1 - s - η)) :
     (T.card : ℝ) ≤ 1 / (2 * η * s) := by
   classical
+  rcases isEmpty_or_nonempty ι with hι | hι
+  · rcases T.eq_empty_or_nonempty with rfl | ⟨c, hc⟩
+    · simp only [Finset.card_empty, Nat.cast_zero]
+      positivity
+    have hcard : (T.card : ℝ) ≤ 1 := by
+      exact_mod_cast Finset.card_le_one_of_subsingleton T
+    have hball := (mem_closeCodewordsRel_iff.mp (hT c hc)).2
+    have hdist : (0 : ℝ) ≤ (δᵣ(y, c) : ℝ) := by positivity
+    have hsum : s + η ≤ 1 := by linarith
+    refine hcard.trans ((le_div_iff₀ (by positivity : (0 : ℝ) < 2 * η * s)).2 ?_)
+    nlinarith [sq_nonneg (s - η), sq_nonneg (s + η)]
   set n : ℝ := (Fintype.card ι : ℝ) with hn
   have hnpos : 0 < n := by rw [hn]; exact_mod_cast Fintype.card_pos
   set L : ℝ := (T.card : ℝ) with hL

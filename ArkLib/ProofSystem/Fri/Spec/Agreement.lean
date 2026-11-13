@@ -99,7 +99,7 @@ theorem exists_polynomial_agree_on_schedule
           domain z ^ (2 ^ foldingPrefix s i.succ) := by
       rw [foldingPrefix_succ, pow_add, pow_mul]
     obtain ⟨q, hq, hqagree⟩ := exists_polynomial_agree_on_projection domain hi
-      (foldingDegree_pos s d i.succ) _ (α i) θ (hsafe i) S hlarge p' hp'
+      _ (α i) θ (hsafe i) S hlarge p' hp'
       (fun z hz ↦ by rw [hpow]; exact (hcheck z hz i).trans (hagree z hz).symm)
     refine ⟨q, by rwa [foldingDegree_castSucc], fun z hz ↦ ?_⟩
     simpa only [CosetFftDomainClass.pow_eq_subdomain_sqFoldMapGen] using hqagree z hz

@@ -35,7 +35,7 @@ def compare_text(name: str, expected: str, actual_path: Path) -> list[str]:
         return []
     return [
         f"{actual_path.relative_to(REPO_ROOT)} is out of date; regenerate it with "
-        f"`python3 ./scripts/kb/{name}`."
+        f"`uv run --no-project --python 3.12 python ./scripts/kb/{name}`."
     ]
 
 
@@ -55,7 +55,7 @@ def compare_payload(name: str, expected: dict[str, object], actual_path: Path) -
         return []
     return [
         f"{actual_path.relative_to(REPO_ROOT)} is out of date; regenerate it with "
-        f"`python3 ./scripts/kb/{name}`."
+        f"`uv run --no-project --python 3.12 python ./scripts/kb/{name}`."
     ]
 
 

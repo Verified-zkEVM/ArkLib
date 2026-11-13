@@ -29,7 +29,7 @@ agreement points then forces the specialization to vanish.
 ## References
 
 * [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 3.4, (12)
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Appendix A.1, (86)
 -/
 
 @[expose] public section

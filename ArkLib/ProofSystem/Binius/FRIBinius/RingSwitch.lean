@@ -18,11 +18,11 @@ The same packed polynomial and its first oracle then enter the Binary Basefold
 opening. That opening's zero-round frontier discards the retained query context while
 formatting the evaluation claim; no additional formatting phase is inserted.
 
-Completeness uses exact first-codeword encodings. Worst-case round-by-round knowledge soundness
+Completeness uses exact first-codeword encodings. Round-by-round knowledge soundness
 uses unique-radius compatibility, whose functionality follows from encoding injectivity and code
 distance. The challenge
 errors are the frontend's exact `κ/|L| + 2ℓ'/|L|` and the opening's error function.
-`fullReduction_perfectCompleteness_and_rbrKnowledgeSoundnessWorstCase` combines both guarantees
+`fullReduction_perfectCompleteness_and_rbrKnowledgeSoundness` combines both guarantees
 with the total-error bound.
 -/
 
@@ -148,36 +148,36 @@ theorem fullError_sum_le (γ : ℕ) :
       (ϑ := ϑ) (h_rate := h_rate))
 
 omit [DecidableEq K] [Fact (β 0 = 1)] [NeZero R] in
-/-- The frontend is worst-case round-by-round knowledge sound for first-oracle compatibility. -/
-theorem verifier_rbrKnowledgeSoundnessWorstCase {σ : Type} (init : ProbComp σ)
+/-- The frontend is round-by-round knowledge sound for first-oracle compatibility. -/
+theorem verifier_rbrKnowledgeSoundness {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (verifier κ K β h_rate h_dim).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+    (verifier κ K β h_rate h_dim).toVerifier.rbrKnowledgeSoundness init impl
       (TensorPrefix.relIn (biniusProfile κ L K β) h_dim (inputInterface κ K β (ϑ := ϑ) h_rate))
       ((TensorPrefix.commitment (inputInterface κ K β (ϑ := ϑ) h_rate)).evalRelWithContext
         (Context κ (L := L) (ℓ := ℓ)))
       (TensorPrefix.rbrError (biniusProfile κ L K β)) := by
-  apply TensorPrefix.rbrKnowledgeSoundnessWorstCase
+  apply TensorPrefix.rbrKnowledgeSoundness
   change (BinaryBasefold.Opening.abstractInput K β (ϑ := ϑ) (h_rate := h_rate)).Functional
   exact BinaryBasefold.Opening.abstractInput_functional K β
 
-/-- The full verifier is worst-case round-by-round knowledge sound. -/
-theorem fullVerifier_rbrKnowledgeSoundnessWorstCase {σ : Type} (γ : ℕ) (init : ProbComp σ)
+/-- The full verifier is round-by-round knowledge sound. -/
+theorem fullVerifier_rbrKnowledgeSoundness {σ : Type} (γ : ℕ) (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     ((fullVerifier κ K β h_rate h_dim γ).toVerifier
-        (Oₛₒ := fun i : Empty => nomatch i)).rbrKnowledgeSoundnessWorstCase init impl
+        (Oₛₒ := fun i : Empty => nomatch i)).rbrKnowledgeSoundness init impl
       (TensorPrefix.relIn (biniusProfile κ L K β) h_dim (inputInterface κ K β (ϑ := ϑ) h_rate))
       acceptRejectOracleRel (fullError κ K β (ϑ := ϑ) h_rate γ) := by
   unfold fullVerifier
   erw [OracleVerifier.append_toVerifier (Oₛ₃ := fun i : Empty => nomatch i)]
-  apply Verifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first _ _
+  apply Verifier.append_rbrKnowledgeSoundness_of_guarded_first _ _
     (RingSwitching.Packing.RingSwitch.guardedForm
       (PackingData.ofBasis (biniusProfile κ L K β).basis) ℓ'
       (TensorPrefix.layout (biniusProfile κ L K β) h_dim)
       (TensorPrefix.messageEquiv (biniusProfile κ L K β)) (BatchingRule.eqFold L κ)
       (TensorPrefix.commitment (inputInterface κ K β (ϑ := ϑ) h_rate)))
-  · exact verifier_rbrKnowledgeSoundnessWorstCase κ K β h_rate h_dim init impl
+  · exact verifier_rbrKnowledgeSoundness κ K β h_rate h_dim init impl
   · rw [opening_input_eq]
-    exact BinaryBasefold.Opening.contextualVerifier_rbrKnowledgeSoundnessWorstCase K β
+    exact BinaryBasefold.Opening.contextualVerifier_rbrKnowledgeSoundness K β
       (Context κ (L := L) (ℓ := ℓ)) γ init impl
 
 /-- Exact first-codeword encodings give perfect completeness of the full protocol. -/
@@ -224,15 +224,15 @@ theorem fullReduction_perfectCompleteness {σ : Type} (γ : ℕ) (init : ProbCom
       (pure state) impl
 
 /-- The prefix reduction followed by Binary Basefold is perfectly complete on exact encodings
-and worst-case round-by-round knowledge sound at the sum of the frontend and opening errors. -/
-theorem fullReduction_perfectCompleteness_and_rbrKnowledgeSoundnessWorstCase
+and round-by-round knowledge sound at the sum of the frontend and opening errors. -/
+theorem fullReduction_perfectCompleteness_and_rbrKnowledgeSoundness
     {σ : Type} (γ : ℕ) (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     OracleProof.perfectCompleteness
         (oracleProof := fullReduction κ K β h_rate h_dim γ)
         (relation := TensorPrefix.relIn (biniusProfile κ L K β) h_dim
           (inputInterface κ K β (ϑ := ϑ) h_rate).strictView) (init := init) (impl := impl) ∧
       ((fullVerifier κ K β h_rate h_dim γ).toVerifier
-          (Oₛₒ := fun i : Empty => nomatch i)).rbrKnowledgeSoundnessWorstCase init impl
+          (Oₛₒ := fun i : Empty => nomatch i)).rbrKnowledgeSoundness init impl
         (TensorPrefix.relIn (biniusProfile κ L K β) h_dim
           (inputInterface κ K β (ϑ := ϑ) h_rate))
         acceptRejectOracleRel (fullError κ K β (ϑ := ϑ) h_rate γ) ∧
@@ -240,7 +240,53 @@ theorem fullReduction_perfectCompleteness_and_rbrKnowledgeSoundnessWorstCase
         (κ : ℝ≥0) / Fintype.card L + (ℓ' : ℝ≥0) * (2 / Fintype.card L) +
           BinaryBasefold.FullBinaryBasefold.concreteBinaryBasefoldKnowledgeError L ℓ' R γ :=
   ⟨fullReduction_perfectCompleteness κ K β h_rate h_dim γ init impl,
-    fullVerifier_rbrKnowledgeSoundnessWorstCase κ K β h_rate h_dim γ init impl,
+    fullVerifier_rbrKnowledgeSoundness κ K β h_rate h_dim γ init impl,
     fullError_sum_le κ K β h_rate γ⟩
+
+omit [DecidableEq K] [Fact (β 0 = 1)] [NeZero R] in
+/-- The frontend is ordinarily knowledge sound for first-oracle compatibility. -/
+theorem verifier_knowledgeSoundness {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    (verifier κ K β h_rate h_dim).knowledgeSoundness init impl
+      (TensorPrefix.relIn (biniusProfile κ L K β) h_dim
+        (inputInterface κ K β (ϑ := ϑ) h_rate))
+      ((TensorPrefix.commitment (inputInterface κ K β (ϑ := ϑ) h_rate)).evalRelWithContext
+        (Context κ (L := L) (ℓ := ℓ)))
+      ((κ : ℝ≥0) / Fintype.card L + (ℓ' : ℝ≥0) * (2 / Fintype.card L)) := by
+  apply TensorPrefix.knowledgeSoundness
+  change (BinaryBasefold.Opening.abstractInput K β (ϑ := ϑ) (h_rate := h_rate)).Functional
+  exact BinaryBasefold.Opening.abstractInput_functional K β
+
+/-- The full verifier is ordinarily knowledge sound at the frontend and Binary Basefold errors. -/
+theorem fullVerifier_knowledgeSoundness {σ : Type} (γ : ℕ) (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    OracleProof.knowledgeSoundness init impl
+      (TensorPrefix.relIn (biniusProfile κ L K β) h_dim
+        (inputInterface κ K β (ϑ := ϑ) h_rate))
+      (fullVerifier κ K β h_rate h_dim γ)
+      ((κ : ℝ≥0) / Fintype.card L + (ℓ' : ℝ≥0) * (2 / Fintype.card L) +
+        BinaryBasefold.FullBinaryBasefold.concreteBinaryBasefoldKnowledgeError L ℓ' R γ) := by
+  apply Verifier.knowledgeSoundness_error_mono init impl
+    (fullError_sum_le κ K β (ϑ := ϑ) h_rate γ)
+  exact Verifier.GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundness
+    (Verifier.GuardedForm.ofEmpty _ (fun _ => (false, fun i : Empty => nomatch i)))
+    (fullVerifier_rbrKnowledgeSoundness κ K β h_rate h_dim γ init impl)
+
+/-- The prefix followed by Binary Basefold is perfectly complete on exact encodings and
+ordinarily knowledge sound at the frontend loss plus the concrete Binary Basefold error. -/
+theorem fullReduction_perfectCompleteness_and_knowledgeSoundness {σ : Type} (γ : ℕ)
+    (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    OracleProof.perfectCompleteness
+        (oracleProof := fullReduction κ K β h_rate h_dim γ)
+        (relation := TensorPrefix.relIn (biniusProfile κ L K β) h_dim
+          (inputInterface κ K β (ϑ := ϑ) h_rate).strictView) (init := init) (impl := impl) ∧
+      OracleProof.knowledgeSoundness init impl
+        (TensorPrefix.relIn (biniusProfile κ L K β) h_dim
+          (inputInterface κ K β (ϑ := ϑ) h_rate))
+        (fullVerifier κ K β h_rate h_dim γ)
+        ((κ : ℝ≥0) / Fintype.card L + (ℓ' : ℝ≥0) * (2 / Fintype.card L) +
+          BinaryBasefold.FullBinaryBasefold.concreteBinaryBasefoldKnowledgeError L ℓ' R γ) :=
+  ⟨fullReduction_perfectCompleteness κ K β h_rate h_dim γ init impl,
+    fullVerifier_knowledgeSoundness κ K β h_rate h_dim γ init impl⟩
 
 end Binius.FRIBinius.RingSwitch

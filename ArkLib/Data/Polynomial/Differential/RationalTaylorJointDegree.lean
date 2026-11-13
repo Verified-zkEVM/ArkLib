@@ -299,7 +299,7 @@ theorem coeffNatDegreeLE_commonTaylorNumeratorOver_le (center : F)
 `(2(l - r) - 1) * (v - 1) + 1` in the jet variables. -/
 theorem totalDegree_rationalTaylorNumeratorOver_le_of_jet (center : Polynomial F)
     (Q : DifferentialPolynomial (Polynomial F) r) (v : ℕ)
-    (hv : 0 < v) (hjet : jetTotalDegree Q ≤ v) (l : ℕ) :
+    (hjet : jetTotalDegree Q ≤ v) (l : ℕ) :
     (rationalTaylorNumeratorOver F center Q l).totalDegree ≤
       (2 * (l - r) - 1) * (v - 1) + 1 := by
   induction l using Nat.strong_induction_on with
@@ -333,17 +333,18 @@ theorem totalDegree_rationalTaylorNumeratorOver_le_of_jet (center : Polynomial F
       have he : 2 * (l - r) - 1 = (2 * (l - r) - 2) + 1 := by omega
       rw [he]
       have hbound := hm.trans hd
-      have hvsub := Nat.sub_add_cancel (Nat.succ_le_of_lt hv)
-      nlinarith [hbound, hvsub]
+      cases v with
+      | zero => exact hbound.trans (by simp)
+      | succ v => simp only [Nat.add_sub_cancel] at *; nlinarith [hbound]
 
 /-- For a sufficient exponent, the common Taylor numerator has total degree at most
 `1 + τ * (v - 1)` in the jet variables. -/
 theorem totalDegree_commonTaylorNumeratorOver_le_of_jet_and_exponent
     (center : Polynomial F) (Q : DifferentialPolynomial (Polynomial F) r)
-    (v K τ : ℕ) (hv : 0 < v) (hτ : TaylorExponentSufficient r K τ)
+    (v K τ : ℕ) (hτ : TaylorExponentSufficient r K τ)
     (hjet : jetTotalDegree Q ≤ v) (l : Fin K) :
     (commonTaylorNumeratorOver F center Q τ l.val).totalDegree ≤ 1 + τ * (v - 1) := by
-  have hd := totalDegree_rationalTaylorNumeratorOver_le_of_jet center Q v hv hjet l.val
+  have hd := totalDegree_rationalTaylorNumeratorOver_le_of_jet center Q v hjet l.val
   have hs := (totalDegree_initialJetSeparant_le center Q).trans
     (Nat.sub_le_sub_right hjet 1)
   have hp := (totalDegree_pow (initialJetSeparant center Q)

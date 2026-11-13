@@ -328,7 +328,7 @@ lemma deg_of_zs {S : Finset (ZMod p)} (hcardS : S.card = n) :
 omit [PrimeOrderWith G₂ p]
   [Module (ZMod p) (Additive G₁)] [Module (ZMod p) (Additive G₂)] in
 /-- The conflict-branch base commitment is nontrivial. -/
-lemma h1_ne_one (hp : p ≥ n + 2) (hpG1 : Nat.card G₁ = p) (hn : 1 ≤ n)
+lemma h1_ne_one (hn : 1 ≤ n)
     (αᵢ : ZMod p) (τ : ZMod p) (srs : Vector G₁ (n + 1) × Vector G₂ 2)
     (hsrs : srs = Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ)
     (hgen : srs.1[0] ≠ 1) :
@@ -337,12 +337,16 @@ lemma h1_ne_one (hp : p ≥ n + 2) (hpG1 : Nat.card G₁ = p) (hn : 1 ≤ n)
     let h₁ := KZG.commit srs.1 (Zₛ.coeff ∘ Fin.val)
     h₁ ≠ 1 := by
     intro S Zₛ h₁
-    have cardS : S.card = n := by exact choose_s_conflict_size hp hn αᵢ srs hgen
-    have Zₛ_deg : Zₛ.degree ≤ ↑n := deg_of_zs cardS
+    have cardS : S.card ≤ n := by
+      unfold S chooseSConflict
+      apply (List.toFinset_card_le _).trans
+      simp [Array.take]
+    have Zₛ_deg : Zₛ.degree ≤ ↑n :=
+      (deg_of_zs (n := S.card) rfl).trans (by exact_mod_cast cardS)
     have hh₁ : h₁ = g₁ ^ (Zₛ.eval τ).val := by
       unfold h₁
       simp_rw [hsrs, Groups.PowerSrs.generate]
-      simp_rw [commit_eq_c_polynomial hpG1 Zₛ Zₛ_deg]
+      simp_rw [commit_eq_c_polynomial Zₛ Zₛ_deg]
     have hτS : ¬ τ ∈ S := by
       unfold S
       exact choose_s_conflict_tau hn αᵢ τ srs hsrs
@@ -359,7 +363,7 @@ lemma h1_ne_one (hp : p ≥ n + 2) (hpG1 : Nat.card G₁ = p) (hn : 1 ≤ n)
 
 omit [DecidableEq G₁] in
 /-- A genuine evaluation conflict cannot occur at the hidden trapdoor point. -/
-lemma conflict_query_ne_tau (hpG1 : Nat.card G₁ = p) (hn : 1 ≤ n)
+lemma conflict_query_ne_tau
     (α₁ α₂ β₁ β₂ τ : ZMod p) (c pf₁ pf₂ : G₁) (hα : α₁ = α₂)
     (hβ : β₁ ≠ β₂) (srs : Vector G₁ (n + 1) × Vector G₂ 2)
     (hsrs : srs = Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ)
@@ -373,9 +377,9 @@ lemma conflict_query_ne_tau (hpG1 : Nat.card G₁ = p) (hn : 1 ≤ n)
   have hg₁ : g₁ ≠ 1 :=
     Groups.PowerSrs.generator_ne_one_of_generate (g₁ := g₁) (g₂ := g₂) hsrs hgen
   have hord : orderOf g₁ = p := Groups.orderOf_eq_prime_of_ne_one g₁ hg₁
-  obtain ⟨cm, hc⟩ := Groups.exists_zmod_power_of_generator hpG1 hg₁ hord c
-  obtain ⟨prf₁, hprf₁⟩ := Groups.exists_zmod_power_of_generator hpG1 hg₁ hord pf₁
-  obtain ⟨prf₂, hprf₂⟩ := Groups.exists_zmod_power_of_generator hpG1 hg₁ hord pf₂
+  obtain ⟨cm, hc⟩ := Groups.exists_zmod_power_of_generator hg₁ hord c
+  obtain ⟨prf₁, hprf₁⟩ := Groups.exists_zmod_power_of_generator hg₁ hord pf₁
+  obtain ⟨prf₂, hprf₂⟩ := Groups.exists_zmod_power_of_generator hg₁ hord pf₂
   have hfield_verify₁ : cm = prf₁ * (τ - α₁) + β₁ := eq_add_of_sub_eq
     (verify_opening_equation pairing α₁ β₁ τ cm prf₁ c pf₁ srs hsrs hpair hc hprf₁ hverify₁)
   rw [← hα] at hverify₂
@@ -388,11 +392,11 @@ lemma conflict_query_ne_tau (hpG1 : Nat.card G₁ = p) (hn : 1 ≤ n)
     _root_.zero_add] at hfield_conflict
 
 /-- The conflict-branch solution satisfies the ARSDH exponent equation. -/
-lemma h1_zs_eq_h2 (hp : p ≥ n + 2) (hpG1 : Nat.card G₁ = p) (hn : 1 ≤ n)
+lemma h1_zs_eq_h2 (hp : p ≥ n + 2) (hn : 1 ≤ n)
     (α₁ α₂ β₁ β₂ τ : ZMod p) (c pf₁ pf₂ : G₁) (hα : α₁ = α₂)
     (hβ : β₁ ≠ β₂) (srs : Vector G₁ (n + 1) × Vector G₂ 2)
     (hsrs : srs = Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ)
-    (hgen : srs.1[0] ≠ 1) (hpair : pairing g₁ g₂ ≠ 0)
+    (hpair : pairing g₁ g₂ ≠ 0)
     (hverify₁ : KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
       srs.2 c pf₁ α₁ β₁)
     (hverify₂ : KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
@@ -405,12 +409,14 @@ lemma h1_zs_eq_h2 (hp : p ≥ n + 2) (hpG1 : Nat.card G₁ = p) (hn : 1 ≤ n)
     h₂ = h₁ ^ (1 / Zₛᵤₐ.eval τ).val := by
     intro S Zₛ h₁ h₂ Zₛᵤₐ
     -- Prove RHS: `h₁ ^ (1 / Zₛᵤₐ.eval τ) = g₁ ^ (1 / (τ - α₁))`.
-    have cardS : S.card = n := by exact choose_s_conflict_size hp hn α₁ srs hgen
+    have hg₁ : g₁ ≠ 1 := ne_one_of_pairing_ne_zero pairing hpair
+    have cardS : S.card = n := choose_s_conflict_size hp hn α₁ srs
+      (Groups.PowerSrs.generate_ne_one_of_generator_ne_one hsrs hg₁)
     have Zₛ_deg : Zₛ.degree ≤ ↑n := deg_of_zs cardS
     have hh₁ : h₁ = g₁ ^ (Zₛ.eval τ).val := by
       unfold h₁
       simp_rw [hsrs, Groups.PowerSrs.generate]
-      simp_rw [commit_eq_c_polynomial hpG1 Zₛ Zₛ_deg]
+      simp_rw [commit_eq_c_polynomial Zₛ Zₛ_deg]
     have hα₁S : α₁ ∉ S := choose_s_conflict_alpha hn α₁ srs
     have hτS : ¬ τ ∈ S := choose_s_conflict_tau hn α₁ τ srs hsrs
     have hZₛeval : Zₛ.eval τ ≠ 0 := by
@@ -424,8 +430,6 @@ lemma h1_zs_eq_h2 (hp : p ≥ n + 2) (hpG1 : Nat.card G₁ = p) (hn : 1 ≤ n)
         show (τ - α₁)⁻¹ * (Zₛ.eval τ)⁻¹ = (Zₛ.eval τ)⁻¹ * (τ - α₁)⁻¹ from
           _root_.mul_comm _ _,
         ← _root_.mul_assoc, mul_inv_cancel₀ hZₛeval, _root_.one_mul]
-    have hg₁ : g₁ ≠ 1 :=
-      Groups.PowerSrs.generator_ne_one_of_generate (g₁ := g₁) (g₂ := g₂) hsrs hgen
     have hord : orderOf g₁ = p := Groups.orderOf_eq_prime_of_ne_one g₁ hg₁
     have hrhs : h₁ ^ (1 / Zₛᵤₐ.eval τ).val = g₁ ^ (1 / (τ - α₁)).val := by
       rw [hh₁, ← pow_mul, pow_eq_pow_iff_modEq, hord]
@@ -439,9 +443,9 @@ lemma h1_zs_eq_h2 (hp : p ≥ n + 2) (hpG1 : Nat.card G₁ = p) (hn : 1 ≤ n)
       rw [ZMod.val_natCast] at this
       exact this
     -- Prove LHS: `h₂ = g₁ ^ (1 / (τ - α₁))`.
-    obtain ⟨cm, hc⟩ := Groups.exists_zmod_power_of_generator hpG1 hg₁ hord c
-    obtain ⟨prf₁, hprf₁⟩ := Groups.exists_zmod_power_of_generator hpG1 hg₁ hord pf₁
-    obtain ⟨prf₂, hprf₂⟩ := Groups.exists_zmod_power_of_generator hpG1 hg₁ hord pf₂
+    obtain ⟨cm, hc⟩ := Groups.exists_zmod_power_of_generator hg₁ hord c
+    obtain ⟨prf₁, hprf₁⟩ := Groups.exists_zmod_power_of_generator hg₁ hord pf₁
+    obtain ⟨prf₂, hprf₂⟩ := Groups.exists_zmod_power_of_generator hg₁ hord pf₂
     have hfield_verify₁ : cm = prf₁ * (τ - α₁) + β₁ := eq_add_of_sub_eq
       (verify_opening_equation pairing α₁ β₁ τ cm prf₁ c pf₁ srs hsrs hpair hc hprf₁ hverify₁)
     rw [← hα] at hverify₂
@@ -493,7 +497,6 @@ lemma function_binding_conflicting_evaluations_branch_maps_to_arsdh {n L : ℕ}
     {τ : ZMod p} {srs : Vector G₁ (n + 1) × Vector G₂ 2} {cm : G₁}
     {queryOf responseOf : Fin L → ZMod p} {accepts : Fin L → Bool} {proofs : Fin L → G₁}
     (hsrs : srs = Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ)
-    (hgen : srs.1[0] ≠ 1)
     (hverify_all : ∀ i : Fin L, accepts i = true →
       KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
         srs.2 cm (proofs i) (queryOf i) (responseOf i))
@@ -518,13 +521,15 @@ lemma function_binding_conflicting_evaluations_branch_maps_to_arsdh {n L : ℕ}
   have hverify₂ : KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
       srs.2 cm (proofs i₂) (queryOf i₂) (responseOf i₂) :=
     hverify_all i₂ hai₂
+  have hg₁ : g₁ ≠ 1 := ne_one_of_pairing_ne_zero pairing hpair
+  have hgen : srs.1[0] ≠ 1 := Groups.PowerSrs.generate_ne_one_of_generator_ne_one hsrs hg₁
   constructor
   · simpa [Finset.union_singleton] using
       choose_s_conflict_size_adjoined hp hn (queryOf i₁) srs hgen
   · constructor
     · have hα_ne_τ : queryOf i₁ ≠ τ :=
         conflict_query_ne_tau (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
-          PrimeOrderWith.hCard hn (queryOf i₁) (queryOf i₂)
+          (queryOf i₁) (queryOf i₂)
           (responseOf i₁) (responseOf i₂) τ cm (proofs i₁) (proofs i₂)
           hα hβ srs hsrs hgen hpair hverify₁ hverify₂
       change (∏ s ∈ insert (queryOf i₁) (chooseSConflict (queryOf i₁) srs hn),
@@ -532,12 +537,12 @@ lemma function_binding_conflicting_evaluations_branch_maps_to_arsdh {n L : ℕ}
       exact choose_s_conflict_insert_eval_ne_zero
         (g₁ := g₁) (g₂ := g₂) hn (queryOf i₁) τ srs hsrs hα_ne_τ
     · constructor
-      · exact h1_ne_one (g₁ := g₁) (g₂ := g₂) hp PrimeOrderWith.hCard hn
+      · exact h1_ne_one (g₁ := g₁) (g₂ := g₂) hn
           (queryOf i₁) τ srs hsrs hgen
       · have key := h1_zs_eq_h2 (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
-          hp PrimeOrderWith.hCard hn (queryOf i₁) (queryOf i₂)
+          hp hn (queryOf i₁) (queryOf i₂)
           (responseOf i₁) (responseOf i₂) τ cm (proofs i₁) (proofs i₂)
-          hα hβ srs hsrs hgen hpair hverify₁ hverify₂
+          hα hβ srs hsrs hpair hverify₁ hverify₂
         simpa [Finset.union_singleton, one_div] using key
 
 end FunctionBinding

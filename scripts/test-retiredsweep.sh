@@ -10,7 +10,7 @@ if lake exe retiredsweep --root RetiredProbabilityTestFixtures.Retired --require
   echo "ERROR: retired probability gate accepted PMF fixtures" >&2
   exit 1
 fi
-python3 - "$fixture_tmp/retired.json" "$fixture_tmp/covering.json" <<'PYTHON'
+uv run --no-project --python 3.12 python - "$fixture_tmp/retired.json" "$fixture_tmp/covering.json" <<'PYTHON'
 import json
 import sys
 report = json.load(open(sys.argv[1]))

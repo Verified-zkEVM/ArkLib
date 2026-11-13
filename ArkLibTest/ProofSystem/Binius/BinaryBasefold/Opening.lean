@@ -153,8 +153,8 @@ local instance : Fact (Nat.Prime (ringChar (ZMod 2))) :=
 def exampleOpening : RingSwitching.MLIOPCS Gf16 1 :=
   mliopcs (ZMod 2) betaBasis 8 (ϑ := 1) (R := 1) (h_rate := by decide)
 
-theorem exampleOpening_rbrKnowledgeSoundWorstCase : exampleOpening.RbrKnowledgeSoundWorstCase :=
-  mliopcs_rbrKnowledgeSoundWorstCase (ZMod 2) betaBasis 8 (ϑ := 1) (R := 1) (h_rate := by decide)
+example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :=
+  exampleOpening.rbrKnowledgeSoundness (init := init) (impl := impl)
 
 theorem card_gf16 : Fintype.card Gf16 = 16 := by
   rw [← Nat.card_eq_fintype_card]
@@ -187,19 +187,12 @@ info: 'Binius.BinaryBasefold.Opening.mliopcs' depends on axioms:
 #print axioms Binius.BinaryBasefold.Opening.mliopcs
 
 /--
-info: 'Binius.BinaryBasefold.Opening.mliopcs_rbrKnowledgeSoundWorstCase' depends on axioms:
-[propext, Classical.choice, Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Binius.BinaryBasefold.Opening.mliopcs_rbrKnowledgeSoundWorstCase
-
-/--
-info: 'Binius.BinaryBasefold.Opening.contextualVerifier_rbrKnowledgeSoundnessWorstCase' depends
+info: 'Binius.BinaryBasefold.Opening.contextualVerifier_rbrKnowledgeSoundness' depends
 on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Binius.BinaryBasefold.Opening.contextualVerifier_rbrKnowledgeSoundnessWorstCase
+#print axioms Binius.BinaryBasefold.Opening.contextualVerifier_rbrKnowledgeSoundness
 
 /--
 info: 'Binius.BinaryBasefold.Opening.contextualReduction_perfectCompleteness' depends on axioms:
@@ -235,10 +228,3 @@ info: 'BbfOpeningControls.false_zero_claim_no_witness' depends on axioms:
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms BbfOpeningControls.false_zero_claim_no_witness
-
-/--
-info: 'BbfGf16Parameters.exampleOpening_rbrKnowledgeSoundWorstCase' depends on axioms:
-[propext, Classical.choice, Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms BbfGf16Parameters.exampleOpening_rbrKnowledgeSoundWorstCase

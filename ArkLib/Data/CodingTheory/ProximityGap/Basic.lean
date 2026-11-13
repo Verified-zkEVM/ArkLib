@@ -126,7 +126,8 @@ variable {F : Type} [CommRing F] [Fintype F] [SampleableType F]
 with respect to the proximity parameter `δ` and the error bound `ε`, folding degree `ϑ > 0` if:
 ∀ word stack `u` of size `2^ϑ`, if the probability that
   (a random multilinear combination of the word stack `u` with randomness `r` is `δ`-close to `C`)
-  exceeds `ε`, then the word stack `u` has correlated agreement with `C ^⋈ (2^ϑ)`. -/
+  exceeds `ϑ * ε`, then the word stack `u` has correlated agreement with `C ^⋈ (2^ϑ)`.
+Here `ε` is the normalized false-witness bound `E / |F|` from [DG25]. -/
 def δ_ε_multilinearCorrelatedAgreement [Module F A]
     (C : Set (ι → A)) (ϑ : ℕ) (δ ε : ℝ≥0) : Prop :=
   ∀ (u : WordStack A (Fin (2^ϑ)) ι),

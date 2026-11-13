@@ -21,6 +21,6 @@ example (f : Polynomial (Polynomial (Polynomial (ZMod 2)))) (hf : f ≠ 0) :
       f = C c * (s.map (fun t ↦ expand _ (2 ^ t.2) t.1)).prod ∧
       f.natDegree = (s.map (fun t ↦ t.1.natDegree * 2 ^ t.2)).sum := by
   exact exists_content_mul_fractionField_separable_factors
-    (K := FractionRing (Polynomial (Polynomial (ZMod 2)))) 2 (by decide) f hf
+    (K := FractionRing (Polynomial (Polynomial (ZMod 2)))) 2 f hf
 
 #print axioms Polynomial.exists_content_mul_fractionField_separable_factors

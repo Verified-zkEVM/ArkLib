@@ -129,6 +129,9 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
     seam as integrated into the escape-threaded opening chain.
 - [`audits/noz26-trace-head-section-3-1.md`](audits/noz26-trace-head-section-3-1.md)
   - NOZ26 §3.1 trace head: correspondence, departures and security shape.
+- [`audits/noz26-recursion-z-packing.md`](audits/noz26-recursion-z-packing.md)
+  - Hachi §4.5 recursion: why the `Z`-packing step does not support extraction of the partial
+    evaluations, with a counterexample and candidate repairs.
 - [`audits/bciks20-appendix-a-rational-functions.md`](audits/bciks20-appendix-a-rational-functions.md)
   - status matrix for the rational-function and Hensel-lifting layer used by `BCIKS20`.
 - [`audits/bcgm25-mca-generators.md`](audits/bcgm25-mca-generators.md)

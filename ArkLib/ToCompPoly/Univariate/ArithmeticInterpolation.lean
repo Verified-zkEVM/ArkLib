@@ -38,12 +38,6 @@ def basisDivisor (xi xj : F) :
       dInv.property, d.property]
     rfl⟩
 
-omit [Field F] [DecidableEq F] in
-private theorem finRange_val (m : ℕ) :
-    (Finset.univ : Finset (Fin m)).val = (List.finRange m : Multiset (Fin m)) := by
-  have h : (List.finRange m).toFinset = Finset.univ := by ext i; simp
-  rw [← h, List.toFinset_val, List.dedup_eq_self.mpr (List.nodup_finRange m)]
-
 /-- Multiply an explicit list of Lagrange divisors without intermediate trimming. -/
 def basisListRaw (nodes : Array F) {m : ℕ} (i : Fin m) (l : List (Fin m)) :
     OracleComp (ArithmeticSpec F) {p : CPolynomial.Raw F // p =
@@ -71,7 +65,7 @@ def basis (nodes : Array F) {m : ℕ} (i : Fin m) :
   pure ⟨q.val, by
     rw [q.property, p.property]
     unfold CPolynomial.CLagrange.basis
-    rw [Finset.erase_val, finRange_val, Multiset.coe_erase]
+    rw [Finset.erase_val, Finset.val_univ_fin, Multiset.coe_erase]
     rfl⟩
 
 /-- Interpolate explicit cached nodes and values in their finite index order. -/
@@ -97,6 +91,6 @@ def interpolate (nodes values : Array F) (m : ℕ) :
     change _ = CPolynomial.CLagrange.interpolateRaw (Finset.univ : Finset (Fin m))
       (fun i ↦ nodes[i.val]?.getD 0) (fun i ↦ values[i.val]?.getD 0)
     unfold CPolynomial.CLagrange.interpolateRaw
-    rw [finRange_val]
+    rw [Finset.val_univ_fin]
     rfl⟩
 end CompPoly.Arithmetic

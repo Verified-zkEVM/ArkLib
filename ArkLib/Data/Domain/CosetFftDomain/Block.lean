@@ -163,11 +163,14 @@ lemma card_blockIdx :
     rw [CosetFftDomainClass.mem_def] at hy
     exact hy.1
 
+omit [AddCommGroup ι] [CosetFftDomainClass D ι F] in
 /-- The sets of indices of blocks corresponding to different points are disjoint. -/
 theorem disjoint_blockIdx {x y : F} (hxy : x ≠ y) :
     Disjoint (blockIdx ω k x) (blockIdx ω k y) := by
-  aesop (add simp [disjoint_iff_ne, mem_blockIdx_iff_mem_block])
+  exact Finset.disjoint_left.2 fun i hx hy =>
+    hxy ((mem_blockIdx.1 hx).symm.trans (mem_blockIdx.1 hy))
 
+omit [AddCommGroup ι] [CosetFftDomainClass D ι F] in
 @[simp]
 theorem pairwise_disjoint_blockIdx {s : Set F} :
     s.PairwiseDisjoint (blockIdx ω k) := fun _ _ _ _ _ ↦ by

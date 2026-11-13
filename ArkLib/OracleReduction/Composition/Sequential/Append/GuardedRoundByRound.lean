@@ -9,10 +9,10 @@ public import ArkLib.OracleReduction.Composition.Sequential.Append.StateFunction
 public import ArkLib.OracleReduction.Security.GuardedRoundByRound
 
 /-!
-# Worst-case round-by-round knowledge soundness of a guarded sequential composition
+# Round-by-round knowledge soundness of a guarded sequential composition
 
 If the first verifier is **guarded** (`Verifier.GuardedForm`: it returns a deterministic verdict
-when its check passes and aborts otherwise) and both components are worst-case round-by-round
+when its check passes and aborts otherwise) and both components are round-by-round
 knowledge sound, then so is their sequential composition, with each challenge's error inherited
 from its component. The components share only the intermediate relation.
 
@@ -30,11 +30,10 @@ function's `toFun_full` then applies.
 
 ## Main results
 
-* `Verifier.append_rbrKnowledgeSoundnessWorstCaseWith_of_guarded_first`: the composition theorem
+* `Verifier.append_rbrKnowledgeSoundnessWith_of_guarded_first`: the composition theorem
   with the extractor and knowledge state function named, so that it iterates.
-* `Verifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first` and
-  `Verifier.append_rbrKnowledgeSoundness_of_worst_case_of_guarded_first`: the existential and
-  averaged corollaries, with `OracleVerifier` wrappers.
+* `Verifier.append_rbrKnowledgeSoundness_of_guarded_first`: the existential corollary,
+  with `OracleVerifier` wrappers.
 
 ## Supporting API
 
@@ -49,7 +48,7 @@ function's `toFun_full` then applies.
   `Verifier.GuardedForm.prEvent_pos_of_check` (`Security/Guarded.lean`) and
   `Verifier.KnowledgeStateFunction.toFun_congr` (`Security/RoundByRound.lean`).
 
-The `n`-ary form is `Verifier.seqCompose_rbrKnowledgeSoundnessWorstCase_of_guarded` in
+The `n`-ary form is `Verifier.seqCompose_rbrKnowledgeSoundness_of_guarded` in
 `Composition/Sequential/GuardedRoundByRound.lean`.
 -/
 
@@ -184,11 +183,12 @@ theorem append_extractMid_seam (hn : 0 < n) (stmt : Stmt₁)
     (tr : (pSpec₁ ++ₚ pSpec₂).Transcript (Fin.natAdd m (⟨0, hn⟩ : Fin n)).succ) (w) :
     HEq ((E₁.append E₂ verify).extractMid (Fin.natAdd m ⟨0, hn⟩) stmt tr w)
       (E₁.extractOut stmt (tr.fstUpTo (Fin.last m) (by simp))
-        (_root_.cast ((congrArg WitMid₂ (Fin.ext (by simp))).trans E₂.eqIn)
+        (E₂.extractIn (verify stmt (tr.fstUpTo (Fin.last m) (by simp)))
+          (_root_.cast (congrArg WitMid₂ (Fin.ext (by simp)))
           (E₂.extractMid ⟨0, hn⟩ (verify stmt (tr.fstUpTo (Fin.last m) (by simp)))
             (tr.sndUpTo (⟨0, hn⟩ : Fin n).succ (by simp))
             (_root_.cast (wit_mid_append_right (WitMid₁ := WitMid₁) _ (⟨0, hn⟩ : Fin n).succ
-              (by simp) (by simp)) w)))) := by
+              (by simp) (by simp)) w))))) := by
   simp only [Extractor.RoundByRound.append]
   rw [dite_eq_right (show ¬ (Fin.natAdd m (⟨0, hn⟩ : Fin n)).val < m by simp),
     dite_eq_left (show (Fin.natAdd m (⟨0, hn⟩ : Fin n)).val = m by simp)]
@@ -230,9 +230,9 @@ extractor's output to the first extractor's. -/
 theorem append_extractOut_of_eq_zero (hn : n = 0) (stmt : Stmt₁)
     (tr : (pSpec₁ ++ₚ pSpec₂).FullTranscript) (w : Wit₃) :
     HEq ((E₁.append E₂ verify).extractOut stmt tr w)
-      (E₁.extractOut stmt tr.fst (_root_.cast
-        ((congrArg WitMid₂ (Fin.ext (by simp [hn]))).trans E₂.eqIn)
-        (E₂.extractOut (verify stmt tr.fst) tr.snd w))) := by
+      (E₁.extractOut stmt tr.fst (E₂.extractIn (verify stmt tr.fst) (_root_.cast
+        (congrArg WitMid₂ (Fin.ext (by simp [hn])))
+        (E₂.extractOut (verify stmt tr.fst) tr.snd w)))) := by
   simp only [Extractor.RoundByRound.append]
   rw [dite_eq_right (show ¬ 0 < n by omega)]
   exact cast_heq _ _
@@ -346,12 +346,12 @@ theorem KnowledgeStateFunction.appendGuarded_seam (hn : 0 < n) (stmt : Stmt₁)
     (T₂ : pSpec₂.Transcript (⟨0, hn⟩ : Fin n).castSucc) (w₂ : WitMid₂ (⟨0, hn⟩ : Fin n).castSucc)
     (h : K₂.toFun (⟨0, hn⟩ : Fin n).castSucc (G₁.out stmt tr₁) T₂ w₂) :
     K₁.toFun (Fin.last m) stmt tr₁ (E₁.extractOut stmt tr₁
-      (_root_.cast ((congrArg WitMid₂ (Fin.ext (by simp))).trans E₂.eqIn) w₂)) := by
+      (E₂.extractIn (G₁.out stmt tr₁)
+        (_root_.cast (congrArg WitMid₂ (Fin.ext (by simp))) w₂))) := by
   have h0 : (⟨0, hn⟩ : Fin n).castSucc = 0 := Fin.ext (by simp)
-  have hmem := (K₂.toFun_empty (G₁.out stmt tr₁) (_root_.cast (congrArg WitMid₂ h0) w₂)).mpr
+  have hmem := (K₂.toFun_empty (G₁.out stmt tr₁) (_root_.cast (congrArg WitMid₂ h0) w₂))
     ((K₂.toFun_congr h0 _ (Transcript.heq_ext (congrArg Fin.val h0) fun i hi _ => by simp at hi)
       (cast_heq _ _).symm).mp h)
-  rw [cast_cast] at hmem
   exact K₁.toFun_full stmt tr₁ _ (G₁.prEvent_pos_of_check hc hmem)
 
 /-- After a first-protocol move, the composed knowledge state is the first one on the extended
@@ -467,10 +467,9 @@ theorem KnowledgeStateFunction.appendGuardedToFun_full (stmt : Stmt₁)
   rcases Nat.eq_zero_or_pos n with hn | hn
   · have hl : Fin.last n = 0 := Fin.ext (by simp [hn])
     have hmem := (K₂.toFun_empty _ (_root_.cast (congrArg WitMid₂ hl)
-      (E₂.extractOut (G₁.out stmt tr.fst) tr.snd witOut))).mpr ((K₂.toFun_congr hl _
+      (E₂.extractOut (G₁.out stmt tr.fst) tr.snd witOut))) ((K₂.toFun_congr hl _
         (Transcript.heq_ext (congrArg Fin.val hl) fun i hi _ => by simp [hn] at hi)
         (cast_heq _ _).symm).mp h₂)
-    rw [cast_cast] at hmem
     have h₁ := K₁.toFun_full stmt tr.fst _ (G₁.prEvent_pos_of_check hc hmem)
     refine (appendGuardedToFun_of_le G₁ K₁ K₂ (Fin.last (m + n)) (Fin.last m) (by simp [hn])
       stmt tr _).mpr ?_
@@ -494,10 +493,12 @@ compatibility it needs between the two components is the shared intermediate rel
 def KnowledgeStateFunction.appendGuarded :
     (V₁.append V₂).KnowledgeStateFunction init impl rel₁ rel₃ (E₁.append E₂ G₁.out) where
   toFun := appendGuardedToFun G₁ K₁ K₂
-  toFun_empty stmt w := by
-    rw [appendGuardedToFun_of_le G₁ K₁ K₂ 0 0 (by simp),
-      show Transcript.fstUpTo (default : (pSpec₁ ++ₚ pSpec₂).Transcript 0) 0 (by simp) = default
-        from Subsingleton.elim _ _, ← K₁.toFun_empty, cast_cast]
+  toFun_empty stmt w h := by
+    apply K₁.toFun_empty stmt
+    simpa only [show Transcript.fstUpTo
+      (default : (pSpec₁ ++ₚ pSpec₂).Transcript 0) 0 (by simp) = default
+        from Subsingleton.elim _ _] using
+      (appendGuardedToFun_of_le G₁ K₁ K₂ 0 0 (by simp) stmt default w).mp h
   toFun_next j hDir stmt tr msg w h := appendGuardedToFun_next G₁ K₁ K₂ j hDir stmt tr msg w h
   toFun_full stmt tr witOut h := appendGuardedToFun_full G₁ K₁ K₂ stmt tr witOut h
 
@@ -506,7 +507,7 @@ variable [∀ i, SampleableType (pSpec₁.Challenge i)] [∀ i, SampleableType (
 /-- A first-protocol challenge of the composition: the composed extraction-failure event projects
 to the first component's, so its probability is bounded by the first component's error. -/
 theorem KnowledgeStateFunction.appendGuarded_extractionFailure_inl {ε₁ : pSpec₁.ChallengeIdx → ℝ≥0}
-    (h₁ : V₁.rbrKnowledgeSoundnessWorstCaseWith init impl rel₁ rel₂ WitMid₁ E₁ K₁ ε₁)
+    (h₁ : V₁.rbrKnowledgeSoundnessWith init impl rel₁ rel₂ WitMid₁ E₁ K₁ ε₁)
     (i : pSpec₁.ChallengeIdx) (stmt : Stmt₁)
     (tr : (pSpec₁ ++ₚ pSpec₂).Transcript (ChallengeIdx.inl i).1.castSucc) :
     Pr{let c ← $ᵗ ((pSpec₁ ++ₚ pSpec₂).Challenge (ChallengeIdx.inl i))}[
@@ -529,7 +530,7 @@ empty when the first guard fails, and otherwise implies the second component's e
 first verifier's verdict, so its probability is bounded by the second component's error. At the
 seam challenge the implication goes through `appendGuarded_seam`. -/
 theorem KnowledgeStateFunction.appendGuarded_extractionFailure_inr {ε₂ : pSpec₂.ChallengeIdx → ℝ≥0}
-    (h₂ : V₂.rbrKnowledgeSoundnessWorstCaseWith init impl rel₂ rel₃ WitMid₂ E₂ K₂ ε₂)
+    (h₂ : V₂.rbrKnowledgeSoundnessWith init impl rel₂ rel₃ WitMid₂ E₂ K₂ ε₂)
     (i : pSpec₂.ChallengeIdx) (stmt : Stmt₁)
     (tr : (pSpec₁ ++ₚ pSpec₂).Transcript (ChallengeIdx.inr i).1.castSucc) :
     Pr{let c ← $ᵗ ((pSpec₁ ++ₚ pSpec₂).Challenge (ChallengeIdx.inr i))}[
@@ -563,13 +564,13 @@ variable {ι : Type} {oSpec : OracleSpec ι} {Stmt₁ Wit₁ Stmt₂ Wit₂ Stmt
   {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
   {rel₁ : Set (Stmt₁ × Wit₁)} {rel₂ : Set (Stmt₂ × Wit₂)} {rel₃ : Set (Stmt₃ × Wit₃)}
 
-/-- **Worst-case round-by-round knowledge soundness composes when the first verifier is
+/-- **Round-by-round knowledge soundness composes when the first verifier is
 guarded.** The composed extractor is `Extractor.RoundByRound.append` at the first verifier's
 verdict map, and the composed knowledge state function is
 `KnowledgeStateFunction.appendGuarded`. The challenge error at each round is inherited from the
 corresponding component. The two components share only the intermediate relation `rel₂`; no
 assumption on an honest prover or on the shared oracle's state is needed. -/
-theorem append_rbrKnowledgeSoundnessWorstCaseWith_of_guarded_first
+theorem append_rbrKnowledgeSoundnessWith_of_guarded_first
     (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁) (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
     (G₁ : V₁.GuardedForm)
     {WitMid₁ : Fin (m + 1) → Type} {WitMid₂ : Fin (n + 1) → Type}
@@ -578,9 +579,9 @@ theorem append_rbrKnowledgeSoundnessWorstCaseWith_of_guarded_first
     {K₁ : V₁.KnowledgeStateFunction init impl rel₁ rel₂ E₁}
     {K₂ : V₂.KnowledgeStateFunction init impl rel₂ rel₃ E₂}
     {ε₁ : pSpec₁.ChallengeIdx → ℝ≥0} {ε₂ : pSpec₂.ChallengeIdx → ℝ≥0}
-    (h₁ : V₁.rbrKnowledgeSoundnessWorstCaseWith init impl rel₁ rel₂ WitMid₁ E₁ K₁ ε₁)
-    (h₂ : V₂.rbrKnowledgeSoundnessWorstCaseWith init impl rel₂ rel₃ WitMid₂ E₂ K₂ ε₂) :
-    (V₁.append V₂).rbrKnowledgeSoundnessWorstCaseWith init impl rel₁ rel₃ _
+    (h₁ : V₁.rbrKnowledgeSoundnessWith init impl rel₁ rel₂ WitMid₁ E₁ K₁ ε₁)
+    (h₂ : V₂.rbrKnowledgeSoundnessWith init impl rel₂ rel₃ WitMid₂ E₂ K₂ ε₂) :
+    (V₁.append V₂).rbrKnowledgeSoundnessWith init impl rel₁ rel₃ _
       (E₁.append E₂ G₁.out) (K₁.appendGuarded G₁ K₂)
       (Sum.elim ε₁ ε₂ ∘ ChallengeIdx.sumEquiv.symm) := by
   intro stmt i tr
@@ -591,32 +592,19 @@ theorem append_rbrKnowledgeSoundnessWorstCaseWith_of_guarded_first
   · exact (KnowledgeStateFunction.appendGuarded_extractionFailure_inr G₁ K₁ K₂ h₂ i stmt
       tr).trans_eq (by simp only [Function.comp_apply, Equiv.symm_apply_apply, Sum.elim_inr])
 
-/-- Existential form of `append_rbrKnowledgeSoundnessWorstCaseWith_of_guarded_first`. -/
-theorem append_rbrKnowledgeSoundnessWorstCase_of_guarded_first
+/-- Existential form of `append_rbrKnowledgeSoundnessWith_of_guarded_first`. -/
+theorem append_rbrKnowledgeSoundness_of_guarded_first
     (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁) (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
     (G₁ : V₁.GuardedForm)
     {ε₁ : pSpec₁.ChallengeIdx → ℝ≥0} {ε₂ : pSpec₂.ChallengeIdx → ℝ≥0}
-    (h₁ : V₁.rbrKnowledgeSoundnessWorstCase init impl rel₁ rel₂ ε₁)
-    (h₂ : V₂.rbrKnowledgeSoundnessWorstCase init impl rel₂ rel₃ ε₂) :
-    (V₁.append V₂).rbrKnowledgeSoundnessWorstCase init impl rel₁ rel₃
-      (Sum.elim ε₁ ε₂ ∘ ChallengeIdx.sumEquiv.symm) := by
-  obtain ⟨_, _, _, h₁⟩ := (rbrKnowledgeSoundnessWorstCase_iff_exists_with init impl _ _ _ _).mp h₁
-  obtain ⟨_, _, _, h₂⟩ := (rbrKnowledgeSoundnessWorstCase_iff_exists_with init impl _ _ _ _).mp h₂
-  exact (rbrKnowledgeSoundnessWorstCase_iff_exists_with init impl _ _ _ _).mpr
-    ⟨_, _, _, append_rbrKnowledgeSoundnessWorstCaseWith_of_guarded_first V₁ V₂ G₁ h₁ h₂⟩
-
-/-- The guarded composition theorem also supplies the prover-averaged round-by-round knowledge
-soundness contract, with the same per-round errors. -/
-theorem append_rbrKnowledgeSoundness_of_worst_case_of_guarded_first
-    (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁) (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
-    (G₁ : V₁.GuardedForm)
-    {ε₁ : pSpec₁.ChallengeIdx → ℝ≥0} {ε₂ : pSpec₂.ChallengeIdx → ℝ≥0}
-    (h₁ : V₁.rbrKnowledgeSoundnessWorstCase init impl rel₁ rel₂ ε₁)
-    (h₂ : V₂.rbrKnowledgeSoundnessWorstCase init impl rel₂ rel₃ ε₂) :
+    (h₁ : V₁.rbrKnowledgeSoundness init impl rel₁ rel₂ ε₁)
+    (h₂ : V₂.rbrKnowledgeSoundness init impl rel₂ rel₃ ε₂) :
     (V₁.append V₂).rbrKnowledgeSoundness init impl rel₁ rel₃
-      (Sum.elim ε₁ ε₂ ∘ ChallengeIdx.sumEquiv.symm) :=
-  rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness init impl
-    (append_rbrKnowledgeSoundnessWorstCase_of_guarded_first V₁ V₂ G₁ h₁ h₂)
+      (Sum.elim ε₁ ε₂ ∘ ChallengeIdx.sumEquiv.symm) := by
+  obtain ⟨_, _, _, h₁⟩ := (rbrKnowledgeSoundness_iff_exists_with init impl _ _ _ _).mp h₁
+  obtain ⟨_, _, _, h₂⟩ := (rbrKnowledgeSoundness_iff_exists_with init impl _ _ _ _).mp h₂
+  exact (rbrKnowledgeSoundness_iff_exists_with init impl _ _ _ _).mpr
+    ⟨_, _, _, append_rbrKnowledgeSoundnessWith_of_guarded_first V₁ V₂ G₁ h₁ h₂⟩
 
 end Verifier
 
@@ -634,31 +622,18 @@ variable {ι : Type} {oSpec : OracleSpec ι}
   {rel₁ : Set ((Stmt₁ × ∀ i, OStmt₁ i) × Wit₁)} {rel₂ : Set ((Stmt₂ × ∀ i, OStmt₂ i) × Wit₂)}
   {rel₃ : Set ((Stmt₃ × ∀ i, OStmt₃ i) × Wit₃)}
 
-/-- Oracle verifiers inherit the guarded worst-case composition theorem through their ordinary
+/-- Oracle verifiers inherit the guarded composition theorem through their ordinary
 verifier semantics. The guard and the component hypotheses concern the converted verifiers. -/
-theorem append_rbrKnowledgeSoundnessWorstCase_of_guarded_first
+theorem append_rbrKnowledgeSoundness_of_guarded_first
     (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
     (V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂)
     (G₁ : V₁.toVerifier.GuardedForm)
     {ε₁ : pSpec₁.ChallengeIdx → ℝ≥0} {ε₂ : pSpec₂.ChallengeIdx → ℝ≥0}
-    (h₁ : V₁.toVerifier.rbrKnowledgeSoundnessWorstCase init impl rel₁ rel₂ ε₁)
-    (h₂ : V₂.toVerifier.rbrKnowledgeSoundnessWorstCase init impl rel₂ rel₃ ε₂) :
-    (V₁.append V₂).toVerifier.rbrKnowledgeSoundnessWorstCase init impl rel₁ rel₃
+    (h₁ : V₁.toVerifier.rbrKnowledgeSoundness init impl rel₁ rel₂ ε₁)
+    (h₂ : V₂.toVerifier.rbrKnowledgeSoundness init impl rel₂ rel₃ ε₂) :
+    (V₁.append V₂).toVerifier.rbrKnowledgeSoundness init impl rel₁ rel₃
       (Sum.elim ε₁ ε₂ ∘ ChallengeIdx.sumEquiv.symm) := by
   rw [append_toVerifier]
-  exact Verifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first _ _ G₁ h₁ h₂
-
-/-- Averaged form of `OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first`. -/
-theorem append_rbrKnowledgeSoundness_of_worst_case_of_guarded_first
-    (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
-    (V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂)
-    (G₁ : V₁.toVerifier.GuardedForm)
-    {ε₁ : pSpec₁.ChallengeIdx → ℝ≥0} {ε₂ : pSpec₂.ChallengeIdx → ℝ≥0}
-    (h₁ : V₁.toVerifier.rbrKnowledgeSoundnessWorstCase init impl rel₁ rel₂ ε₁)
-    (h₂ : V₂.toVerifier.rbrKnowledgeSoundnessWorstCase init impl rel₂ rel₃ ε₂) :
-    (V₁.append V₂).rbrKnowledgeSoundness init impl rel₁ rel₃
-      (Sum.elim ε₁ ε₂ ∘ ChallengeIdx.sumEquiv.symm) :=
-  Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness init impl
-    (append_rbrKnowledgeSoundnessWorstCase_of_guarded_first V₁ V₂ G₁ h₁ h₂)
+  exact Verifier.append_rbrKnowledgeSoundness_of_guarded_first _ _ G₁ h₁ h₂
 
 end OracleVerifier

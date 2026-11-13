@@ -223,15 +223,6 @@ theorem dflatten_two_eq_append {n : Fin 2 → ℕ} {motive : (k : Fin (vsum n)) 
     {v : (i : Fin 2) → (j : Fin (n i)) → motive (embedSum i j)} :
     dflatten (motive := motive) v = dappend (v 0) (v 1) := rfl
 
--- theorem dflatten_eq_append_last {m : ℕ} {n : Fin (m + 1) → ℕ}
---     {motive : (k : Fin (vsum n)) → Sort*}
---     {v : (i : Fin (m + 1)) → (j : Fin (n i)) → motive (embedSum i j)} (k : Fin (vsum n)) :
---     dflatten (motive := motive) v k =
---       dappend (dflatten (motive := sorry) (fun i => v i.castSucc)) (v (last _)) := by
---   induction m with
---   | zero => exact Fin.elim0 k
---   | succ m ih => sorry
-
 @[simp]
 theorem dflatten_embedSum {m : ℕ} {n : Fin m → ℕ} {motive : (k : Fin (vsum n)) → Sort*}
     (v : (i : Fin m) → (j : Fin (n i)) → motive (embedSum i j)) (i : Fin m) (j : Fin (n i)) :
@@ -521,7 +512,7 @@ def ranges {n : ℕ} (a : Fin n → ℕ) : (i : Fin n) → Fin (a i) → ℕ :=
       simp only [tail, pred, subNat_one_succ] at rest
       exact fun j => rest j + a 0
 
-/-- Find the first index `i` such that `k` is smaller than `∑ j < i, a j`, and return `none`
+/-- Find the first index `i` such that `k` is smaller than `∑ j ≤ i, n j`, and return `none`
   otherwise.
 
   This is the dependent version of `Fin.divNat`.

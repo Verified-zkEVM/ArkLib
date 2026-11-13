@@ -25,10 +25,9 @@ unique witness consistent with the first oracle, but agrees with it at the chall
   polynomial, the extraction failure probability over the challenge alone is at most
   `foldKnowledgeError`, the Schwartz–Zippel term `2 / |L|` plus the bound of
   `prob_incrementalFoldingBadEvent_fresh_le` on the fresh incremental folding bad event.
-* `foldOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith`: worst-case round-by-round knowledge
+* `foldOracleVerifier_rbrKnowledgeSoundnessWith`: round-by-round knowledge
   soundness at `foldRbrExtractor`, `foldKnowledgeStateFunction` and `foldKnowledgeError`;
-  `foldOracleVerifier_rbrKnowledgeSoundnessWorstCase` and
-  `foldOracleVerifier_rbrKnowledgeSoundness` are its existential and averaged forms.
+  the existential form is `foldOracleVerifier_rbrKnowledgeSoundness`.
 
 ## References
 
@@ -112,9 +111,9 @@ def foldStepWitBeforeFromWitMid (i : Fin ℓ)
     (witMid : Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ) :
     Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc where
   t := witMid.t
-  H := projectToMidSumcheckPoly (L := L) (ℓ := ℓ)
-    (t := witMid.t) (m := multpoly stmtIn.ctx)
-    (i := i.castSucc) (challenges := stmtIn.challenges)
+  H := MvPolynomial.fixPrefix ℓ i.castSucc
+    (computeInitialSumcheckPoly ℓ witMid.t (multpoly stmtIn.ctx))
+    (challenges := stmtIn.challenges)
   f := getMidCodewords 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) witMid.t
     (challenges := stmtIn.challenges)
 
@@ -130,7 +129,7 @@ noncomputable def foldRbrExtractor (i : Fin ℓ) :
     (WitOut := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ)
     (pSpec := pSpecFold (L := L))
     (WitMid := FoldIntermediateWitness 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) where
-  eqIn := rfl
+  extractIn := fun _ w => w
   extractMid := fun m ⟨stmtIn, _oStmtIn⟩ _tr witMidSucc =>
     match m with
     | ⟨0, _⟩ => witMidSucc  -- WitMid 1 → WitMid 0, both are Witness i.castSucc
@@ -210,7 +209,7 @@ def foldKnowledgeStateFunction (i : Fin ℓ) :
     FoldKnowledgeState (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑 := 𝓑)
       (i := i) (m := m) (tr := tr) (stmtMid := stmtMid) (witMid := witMid) (oStmtMid := oStmtMid)
-  toFun_empty := fun _ _ => by rfl
+  toFun_empty := fun _ _ h => h
   toFun_next := fun m hDir ⟨stmtMid, oStmtMid⟩ tr msg witMid => by
     -- For pSpecFold, the only P_to_V message is at index 0
     -- So m = 0, m.succ = 1, m.castSucc = 0
@@ -679,13 +678,13 @@ lemma foldStepFreshBadEvent_or_of_rbrExtractionFailureEvent (i : Fin ℓ)
           (foldStepHStarFromWitMid (multpoly := multpoly) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
             (𝓑 := 𝓑) i stmtOStmtIn.1 witMid) := by
       have h_wit_struct_after :
-          witMid.H = projectToMidSumcheckPoly (L := L) (ℓ := ℓ) (t := witMid.t)
-            (m := multpoly stmtOStmtIn.1.ctx) (i := i.succ)
+          witMid.H = MvPolynomial.fixPrefix ℓ i.succ
+            (computeInitialSumcheckPoly ℓ witMid.t (multpoly stmtOStmtIn.1.ctx))
             (challenges := Fin.snoc stmtOStmtIn.1.challenges r_i') := by
         exact h_consistency.1.1
       let H_before : L⦃≤ 2⦄[X Fin (ℓ - i.castSucc)] :=
-        projectToMidSumcheckPoly (L := L) (ℓ := ℓ) (t := witMid.t)
-          (m := multpoly stmtOStmtIn.1.ctx) (i := i.castSucc)
+        MvPolynomial.fixPrefix ℓ i.castSucc
+          (computeInitialSumcheckPoly ℓ witMid.t (multpoly stmtOStmtIn.1.ctx))
           (challenges := stmtOStmtIn.1.challenges)
       let h_star_extracted : L⦃≤ 2⦄[X] := getSumcheckRoundPoly ℓ (SumcheckDomain.uniform 𝓑 ℓ)
           (i := i) (h := H_before)
@@ -693,7 +692,7 @@ lemma foldStepFreshBadEvent_or_of_rbrExtractionFailureEvent (i : Fin ℓ)
           Polynomial.eval r_i' h_i.val = Polynomial.eval r_i' h_star_extracted.val := by
         unfold sumcheckConsistencyProp at h_sumcheck_after
         rw [h_wit_struct_after] at h_sumcheck_after
-        rw [Sumcheck.Structured.projectToMidSumcheckPoly_succ ℓ witMid.t
+        rw [Sumcheck.Structured.fixPrefix_initial_succ ℓ witMid.t
           (multpoly stmtOStmtIn.1.ctx) i stmtOStmtIn.1.challenges r_i'] at h_sumcheck_after
         exact h_sumcheck_after.trans
           (Sumcheck.Structured.sum_projectToNextSumcheckPoly_uniform ℓ 𝓑 i H_before r_i')
@@ -744,7 +743,7 @@ lemma foldStepFreshBadEvent_or_of_rbrExtractionFailureEvent (i : Fin ℓ)
 omit [DecidableEq 𝔽q] in
 /-- For every input statement and every sent round polynomial, the probability over the challenge
 alone of an extraction failure at the fold step is at most `foldKnowledgeError`: a union bound
-over the bad sum-check event (Schwartz–Zippel, `Sumcheck.Structured.prob_eval_eq_le`) and the
+over the bad sum-check event (Schwartz–Zippel, `Probability.prob_degreeLE_eval_eq_le`) and the
 fresh incremental folding bad event (`prob_incrementalFoldingBadEvent_fresh_le`). -/
 lemma prob_foldStep_rbrExtractionFailureEvent_le (i : Fin ℓ)
     (stmtOStmtIn : (Statement (L := L) Context i.castSucc) × (∀ j,
@@ -848,15 +847,15 @@ lemma prob_foldStep_rbrExtractionFailureEvent_le (i : Fin ℓ)
   · dsimp only [sumcheckBadEvent]
     -- Strategy: ignore the `FoldStepFreshBadEvent`; `firstOracleWitnessConsistency_unique`
     -- makes the witness consistent with the first oracle unique, so the bound is
-    -- `Sumcheck.Structured.prob_eval_eq_le` at that witness's honest round polynomial.
+    -- `Probability.prob_degreeLE_eval_eq_le` at that witness's honest round polynomial.
     let compatPred : MultilinearPoly L ℓ → Prop := fun t =>
       FirstOracleWitnessConsistent 𝔽q β t (getFirstOracle 𝔽q β stmtOStmtIn.2)
     by_cases hCompat : ∃ t : MultilinearPoly L ℓ, compatPred t
     · rcases hCompat with ⟨t_fixed, h_t_fixed_compat⟩
       let H_fixed : L⦃≤ 2⦄[X Fin (ℓ - i.castSucc)] :=
-        projectToMidSumcheckPoly (L := L) (ℓ := ℓ) (t := t_fixed)
-          (m := multpoly stmtOStmtIn.1.ctx)
-          (i := i.castSucc) (challenges := stmtOStmtIn.1.challenges)
+        MvPolynomial.fixPrefix ℓ i.castSucc
+          (computeInitialSumcheckPoly ℓ t_fixed (multpoly stmtOStmtIn.1.ctx))
+          (challenges := stmtOStmtIn.1.challenges)
       let h_star_fixed : L⦃≤ 2⦄[X] := getSumcheckRoundPoly ℓ (SumcheckDomain.uniform 𝓑 ℓ) (i := i)
           (h := H_fixed)
       have h_prob_mono_sum := prEvent_mono ($ᵗ L)
@@ -878,7 +877,7 @@ lemma prob_foldStep_rbrExtractionFailureEvent_le (i : Fin ℓ)
       · rw [prEvent_eq_zero_of_forall_not _ _ fun _ h => h.1 hne]
         exact _root_.zero_le
       · refine (prEvent_mono _ _ _ fun _ h => h.2).trans ?_
-        have h_sz := Sumcheck.Structured.prob_eval_eq_le (L := L) hne
+        have h_sz := Probability.prob_degreeLE_eval_eq_le (R := L) hne
         rw [ENNReal.coe_div (by simp)] at h_sz ⊢
         simpa using h_sz
     · have h_prob_mono_false := prEvent_mono ($ᵗ L)
@@ -893,14 +892,14 @@ lemma prob_foldStep_rbrExtractionFailureEvent_le (i : Fin ℓ)
       simp
 
 omit [DecidableEq 𝔽q] in
-/-- Worst-case round-by-round knowledge soundness of the fold step, at the extractor
+/-- Round-by-round knowledge soundness of the fold step, at the extractor
 `foldRbrExtractor`, the knowledge-state function `foldKnowledgeStateFunction` and the error
 `foldKnowledgeError`: for every input statement and every sent round polynomial, the extraction
 failure probability over the challenge alone is at most the Schwartz–Zippel term plus the fresh
 incremental folding bad-event term. -/
-theorem foldOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith (i : Fin ℓ) :
+theorem foldOracleVerifier_rbrKnowledgeSoundnessWith (i : Fin ℓ) :
     (foldOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-      (multpoly := multpoly) i).toVerifier.rbrKnowledgeSoundnessWorstCaseWith init impl
+      (multpoly := multpoly) i).toVerifier.rbrKnowledgeSoundnessWith init impl
       (roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) i.castSucc)
       (foldStepRelOut (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -909,7 +908,7 @@ theorem foldOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith (i : Fin ℓ) :
       (foldKnowledgeStateFunction (multpoly := multpoly) (𝓡 := 𝓡) (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (init := init) (impl := impl) 𝔽q β i)
       (foldKnowledgeError 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) := by
-  refine Verifier.rbrKnowledgeSoundnessWorstCaseWith_of_two_message rfl rfl _ _ ?_
+  refine Verifier.rbrKnowledgeSoundnessWith_of_two_message rfl rfl _ _ ?_
   intro stmtIn transcript
   have htr : transcript = FullTranscript.mk1 (transcript ⟨0, by change 0 < 1; omega⟩) := by
     funext k
@@ -921,33 +920,19 @@ theorem foldOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith (i : Fin ℓ) :
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
 
 omit [DecidableEq 𝔽q] in
-/-- Worst-case round-by-round knowledge soundness of the fold step, with error
+/-- Round-by-round knowledge soundness of the fold step, with error
 `foldKnowledgeError`: the existential form of
-`foldOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith`. -/
-theorem foldOracleVerifier_rbrKnowledgeSoundnessWorstCase (i : Fin ℓ) :
+`foldOracleVerifier_rbrKnowledgeSoundnessWith`. -/
+theorem foldOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ) :
     (foldOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-      (multpoly := multpoly) i).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+      (multpoly := multpoly) i).toVerifier.rbrKnowledgeSoundness init impl
       (roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) i.castSucc)
       (foldStepRelOut (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) i)
       (foldKnowledgeError 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :=
-  (Verifier.rbrKnowledgeSoundnessWorstCase_iff_exists_with init impl _ _ _ _).mpr
-    ⟨_, _, _, foldOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith 𝔽q β i⟩
-
-omit [DecidableEq 𝔽q] in
-/-- Round-by-round knowledge soundness of the fold step, with error `foldKnowledgeError`: the
-averaged form of `foldOracleVerifier_rbrKnowledgeSoundnessWorstCase`. -/
-theorem foldOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ) :
-    (foldOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-      (multpoly := multpoly) i).rbrKnowledgeSoundness init impl
-      (relIn := roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i.castSucc)
-      (relOut := foldStepRelOut (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i)
-      (foldKnowledgeError 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :=
-  Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness init impl
-    (foldOracleVerifier_rbrKnowledgeSoundnessWorstCase 𝔽q β i)
+  (Verifier.rbrKnowledgeSoundness_iff_exists_with init impl _ _ _ _).mpr
+    ⟨_, _, _, foldOracleVerifier_rbrKnowledgeSoundnessWith 𝔽q β i⟩
 
 end FoldStep
 end SingleIteratedSteps

@@ -19,8 +19,9 @@ the sum of the powers-generator MCA errors, plus `Real.toNNReal (1 - min θ δ) 
 
 `soundness_proximity` bounds any acceptance for inputs at relative distance at least `δ`.
 `soundness` uses the specification's closed-ball input relation, and `rbr_soundness` gives
-the per-challenge guarantee. All bounds concern arbitrary adaptive provers in the actual
-execution, including private prover state and shared oracle state.
+the per-challenge guarantee at every fixed transcript prefix. The soundness bounds concern
+arbitrary adaptive provers in the actual execution, including private prover state and shared
+oracle state.
 
 The real parameters are unrestricted; useful numerical bounds require the hypotheses of
 the chosen MCA estimate. At `l = 0`, the query term is one and the total bound is vacuous.

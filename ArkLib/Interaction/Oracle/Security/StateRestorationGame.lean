@@ -11,9 +11,9 @@ public import ArkLib.Interaction.Oracle.Security.StateRestorationReplay
 # State-restoration knowledge soundness
 
 The actual restoration game lets an adversary choose the input, all messages and salts, and an
-output witness after adaptive cached-oracle queries. Completion uses the same oracle. The native
+output witness after adaptive cached-oracle queries. Completion uses the same oracle. The
 verifier then runs on those completed challenges and queries its actual accumulated source access.
-Its execution equation is proved from the native runner, without a table available to the game.
+Its execution equation is proved from the runner, without a table available to the game.
 
 The principal theorem converts all-authored-prefix round-by-round knowledge certificates into the
 relation-level `(Q + k) * error` bound. A named terminal witness equivalence and endpoint iff laws
@@ -43,7 +43,7 @@ def terminalObservation (initial : PFunctor)
   evalWithAnswerFn (path.closingImpl (protocol rounds).oracles initial (impl z))
     (terminal z path.toBranchPath)
 
-/-- The actual native restoration game: complete with the same oracle, then execute the native
+/-- The actual restoration game: complete with the same oracle, then execute the
 prover/verifier on the completed challenges. Replay sees only the completed path, not a table. -/
 def verificationGame (initial : PFunctor)
     (impl : Input → QueryImpl (ofPFunctor initial) Id)
@@ -64,7 +64,7 @@ def verificationGame (initial : PFunctor)
       (pathPrograms (oracleSpec Input Salt rounds) rounds path) (Out z) (terminal z))
   pure ⟨z, result.1, result.2.2, witness⟩
 
-/-- Actual native verification is exactly the observation of the completed native path. -/
+/-- Actual verification is exactly the observation of the completed path. -/
 theorem verificationGame_eq (initial : PFunctor)
     (impl : Input → QueryImpl (ofPFunctor initial) Id)
     (Out : Input → (protocol rounds).tree.BranchPath → Type)
@@ -88,7 +88,7 @@ theorem verificationGame_eq (initial : PFunctor)
   rfl
 
 /-- The supplied output witness is transported by a named equivalence and extracted backwards
-through the actual completed native path. No valid intermediate witness is selected. -/
+through the actual completed path. No valid intermediate witness is selected. -/
 def extractInputWitness (state : Input → KnowledgeState.{w})
     (extractor : (z : Input) → RoundExtractor (protocol rounds).tree (state z))
     (terminalWitness : (z : Input) → (path : (protocol rounds).tree.ExecutionPath) →
@@ -97,7 +97,7 @@ def extractInputWitness (state : Input → KnowledgeState.{w})
   (extractor z).extractWitness path (terminalWitness z path witness)
 
 /-- Round-by-round knowledge bounds imply state-restoration knowledge soundness for the actual
-native verifier. The adversary chooses the input adaptively and supplies the terminal witness;
+verifier. The adversary chooses the input adaptively and supplies the terminal witness;
 the named backwards extractor fails on a valid output with probability at most `(Q+k)*error`. -/
 theorem stateRestoration_knowledge_soundness
     [DecidableEq Input] [DecidableEq Salt]

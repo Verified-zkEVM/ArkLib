@@ -50,7 +50,7 @@ The coordinate description and the dimension lower bound are in `WeightedSupport
 ## References
 
 * [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 6.1, the support (70).
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 8.2, the related support (56).
 -/
 
 @[expose] public section
@@ -147,13 +147,13 @@ theorem totalJetDegree_lt_of_weightedSupportEligible (hD : 0 < D) {u : JetVariab
 
 /-- If `L ≤ D * t`, an eligible exponent has total jet degree at most `t - 1`: the strict cutoff
 survives the passage to natural numbers. In the capacity construction `t = 2 * m`. -/
-theorem totalJetDegree_le_pred_of_weightedSupportEligible (hD : 0 < D) {t : ℕ}
+theorem totalJetDegree_le_pred_of_weightedSupportEligible {t : ℕ}
     (hL : L ≤ (D : ℝ) * t) {u : JetVariable d →₀ ℕ} (hu : WeightedSupportEligible D d W L u) :
     totalJetDegree u ≤ t - 1 := by
-  have ht := totalJetDegree_lt_of_weightedSupportEligible hD hu
-  have hquot : L / D ≤ t :=
-    (div_le_iff₀ (by exact_mod_cast hD : (0 : ℝ) < D)).mpr (by linarith)
-  have : totalJetDegree u < t := by exact_mod_cast ht.trans_le hquot
+  have hweight : u none + D * totalJetDegree u < D * t := by
+    exact_mod_cast hu.2.trans_le hL
+  have htotal : totalJetDegree u < t :=
+    Nat.lt_of_mul_lt_mul_left ((Nat.le_add_left _ _).trans_lt hweight)
   omega
 
 /-- If `L ≤ B`, an eligible exponent has specialization weight below `B`, since the
@@ -196,7 +196,7 @@ theorem jetTotalDegree_lt_of_mem_weightedSupportSpace [CommSemiring F] {t : ℕ}
     (ht : 0 < t) (hL : L ≤ (D : ℝ) * t) {Q : DifferentialPolynomial F d}
     (hQ : Q ∈ weightedSupportSpace F D d W L hD) : jetTotalDegree Q < t := by
   have hb : jetTotalDegree Q ≤ t - 1 := (jetTotalDegree_le_iff Q _).mpr fun u hu =>
-    totalJetDegree_le_pred_of_weightedSupportEligible hD hL
+    totalJetDegree_le_pred_of_weightedSupportEligible hL
       (mem_weightedSupportSpace_iff.mp hQ u hu)
   omega
 

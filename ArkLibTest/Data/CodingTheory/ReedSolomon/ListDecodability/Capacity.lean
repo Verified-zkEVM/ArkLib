@@ -139,8 +139,7 @@ private theorem prescribedSampleSetup :
     @ReedSolomon.exists_prescribed_weightedSupport_construction
     sampleDelta sampleN sampleMessageDim q ⟨hqPrime⟩ domain (fun _ => 0)
     (by norm_num [sampleDelta]) (by norm_num [sampleDelta])
-    (by dsimp [sampleMessageDim]; omega)
-    (by rfl) hnq hA
+    (by rfl) hA
   exact ⟨q, hqPrime, hnq, hfield, hlarge, domain, construction, hK, htotal,
     hblock, hmessageDim_pos, hmessageDim_le_n, hA, hm⟩
 
@@ -335,10 +334,10 @@ example :
         4 * (m : ℝ) ^ 2 * (4 * m / sampleDelta) ^ d * sampleN ^ d ∧
       (0 : Polynomial ℚ) ∈ closePolynomialSet geometricSampleDomain (fun _ ↦ 0)
         sampleMessageDim (capacityAgreementThreshold sampleDelta sampleN sampleMessageDim) := by
-  obtain ⟨hk, hA, hblock⟩ := prescribedGeometricSampleData
+  obtain ⟨-, hA, hblock⟩ := prescribedGeometricSampleData
   have hbound := prescribed_geometric_finite_list_bound sampleDelta sampleN sampleMessageDim
     geometricSampleDomain (fun _ ↦ 0) (by norm_num [sampleDelta])
-    (by norm_num [sampleDelta]) hk hblock hA
+    (by norm_num [sampleDelta]) hblock hA
     (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
     ({(0 : Polynomial ℚ)} : Finset (Polynomial ℚ))
     (by
@@ -359,10 +358,10 @@ example :
         ((closePolynomialSet geometricSampleDomain (fun _ ↦ 0) sampleMessageDim
           (capacityAgreementThreshold sampleDelta sampleN sampleMessageDim)).ncard : ℝ) ≤
           4 * (m : ℝ) ^ 2 * (4 * m / sampleDelta) ^ d * sampleN ^ d := by
-  obtain ⟨hk, hA, hblock⟩ := prescribedGeometricSampleData
+  obtain ⟨-, -, hblock⟩ := prescribedGeometricSampleData
   have hbound := prescribed_geometric_close_list_bound sampleDelta sampleN sampleMessageDim
     geometricSampleDomain (fun _ ↦ 0) (by norm_num [sampleDelta])
-    (by norm_num [sampleDelta]) hk hblock hA
+    (by norm_num [sampleDelta]) hblock
     (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
   exact ⟨geometricSampleZero_mem, hbound.1, hbound.2⟩
 
@@ -403,10 +402,10 @@ example :
     Code.Lambda (ReedSolomon.code geometricSampleDomain sampleMessageDim :
       Set (Fin sampleN → ℚ)) (capacityRadius sampleDelta sampleN sampleMessageDim) ≤
       (Nat.ceil (4 * (m : ℝ) ^ 2 * (4 * m / sampleDelta) ^ d * sampleN ^ d) : ℕ∞) := by
-  obtain ⟨hk, hA, hblock⟩ := prescribedGeometricSampleData
+  obtain ⟨-, hA, hblock⟩ := prescribedGeometricSampleData
   exact prescribed_geometric_lambda_bound sampleDelta sampleN sampleMessageDim
     geometricSampleDomain (by norm_num [sampleDelta]) (by norm_num [sampleDelta])
-    hk hblock hA (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+    hblock hA (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
 
 private def curveCertificateCenters : Fin 2 ↪ ℚ where
   toFun i := i.val
@@ -426,7 +425,7 @@ private noncomputable def curveCertificate :
     simpa [curveCertificateWord] using
       exists_partitionSupport_curve_certificate
         (D := 1) (d := 0) (m := 1) (W := 0) (n := 2) (A := 2) (k := 2) (ℓ := 0)
-        (ν := 1) (L := 2) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+        (ν := 1) (L := 2) (by norm_num) (by norm_num) (by norm_num)
         curveCertificateCenters curveCertificateWord
         (by intro i; simp [curveCertificateWord])
         (by
@@ -455,7 +454,7 @@ example :
   obtain ⟨stages, terminal, list, hchain, hlist, _, hbound⟩ :=
     exists_closePolynomial_list_of_curve_certificate_actualStages
       curveCertificateCenters curveCertificateReceived curveCertificate
-      (by norm_num) (by norm_num)
+      (by norm_num)
       (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
   exact ⟨stages, terminal, list, hchain, hlist, hbound⟩
 
@@ -465,7 +464,7 @@ example :
         1 := by
   simpa using close_list_bound_of_curve_certificate_directJetCoarse
     curveCertificateCenters curveCertificateReceived curveCertificate
-    (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num)
     (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
 
 private noncomputable def curveCertificateDegreeOne :
@@ -492,7 +491,7 @@ example :
     (δ := 1 / 2) (K := 1) (d := 0) (ν := 1) (H := 0)
     curveCertificateCenters curveCertificateReceived curveCertificateDegreeOne
     (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num)
     (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
 
 end
@@ -512,8 +511,8 @@ example :
     ∃ list : Finset (Polynomial (ZMod 3)),
       (0 : Polynomial (ZMod 3)) ∈ list ∧ list.card ≤ 1 := by
   have h := exists_field_bounded_capacity_list (1 / 2 : ℝ) (by norm_num)
-  have hinstance := h 2 1 3 2 (by norm_num) (by norm_num) (by norm_num)
-    (by decide) (by norm_num) (by norm_num)
+  have hinstance := h 2 1 3 2 (by norm_num) (by norm_num)
+    (by decide) (by norm_num)
     finiteFieldCapacityDomain (fun _ => 0)
   obtain ⟨list, hexact, -, hhalf, -, -⟩ := hinstance
   have hagreement :
@@ -590,11 +589,11 @@ example :
       ((1 : ℕ) : ℝ) ≤ (⌊sampleRate * n⌋₊ : ℝ) := by exact_mod_cast hfloor
       _ ≤ sampleRate * n := Nat.floor_le (by positivity)
   refine ⟨p, n, rfl, ?_⟩
-  have hSelector := hbound ℚ n 1 n hn (by norm_num) (by simpa using hkR) hAn (by rfl)
+  have hSelector := hbound ℚ n 1 n hn (by simpa using hkR) hAn
     (ratePartitionSampleDomain n) (fun _ => 0)
     (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
   have hDirect := ReedSolomon.ratePartition_close_list_bound (F := ℚ) (p := p) (n := n)
-    (k := 1) (A := n) hR hRa haone hd hn (by norm_num) (by simpa using hkR) hAn (by rfl)
+    (k := 1) (A := n) hR hRa haone hd hn (by simpa using hkR) hAn (by rfl)
     (ratePartitionSampleDomain n) (fun _ => 0)
     (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
   simpa only [sampleAgreement, add_sub_cancel_left] using ⟨hDirect.1, hSelector.2⟩
@@ -644,8 +643,8 @@ example :
   have hbound := ReedSolomon.fixedRatePartitionOrder_list_bound_selected
     hR hδ haone
   dsimp only at hbound
-  exact hbound ℚ fixedRateSampleLength 1 fixedRateSampleLength hn (by norm_num)
-    (by simpa using hkR) hAn (by rfl) (ratePartitionSampleDomain fixedRateSampleLength)
+  exact hbound ℚ fixedRateSampleLength 1 fixedRateSampleLength hn
+    (by simpa using hkR) hAn (ratePartitionSampleDomain fixedRateSampleLength)
     (fun _ => 0) (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
 
 private noncomputable def uniformSampleDelta : ℝ := 1 / 5
@@ -696,23 +695,20 @@ example :
   have hExpanded := uniformRatePartition_close_list_bound
     (δ := uniformSampleDelta) (n := uniformSampleLength) (k := 1) (A := uniformSampleLength)
     (by norm_num [uniformSampleDelta]) (by norm_num [uniformSampleDelta]) (by rfl)
-    (by norm_num) uniformSampleGap (by rfl) (ratePartitionSampleDomain uniformSampleLength)
+    (by norm_num) uniformSampleGap (ratePartitionSampleDomain uniformSampleLength)
     (fun _ => 0) hchar
   exact ⟨hExpanded.1, hExpanded.2, uniform_capacity_list_bound uniformSampleDelta
     (by norm_num [uniformSampleDelta]) (by norm_num [uniformSampleDelta])
     uniformSampleLength 1 uniformSampleLength (by rfl) (by norm_num) uniformSampleGap
-    (by rfl) (ratePartitionSampleDomain uniformSampleLength) (fun _ => 0) hchar⟩
+    (ratePartitionSampleDomain uniformSampleLength) (fun _ => 0) hchar⟩
 
 private noncomputable def mathSampleDelta : ℝ := 1 / 5
 private noncomputable def mathSampleLength : ℕ := uniformMathematicalCapacityLength mathSampleDelta
 
 private theorem mathSampleGap :
     ((1 : ℕ) : ℝ) + mathSampleDelta * mathSampleLength ≤ mathSampleLength := by
-  have hm : 0 < uniformMathematicalMultiplicity mathSampleDelta :=
-    lt_of_lt_of_le (by omega) (add_two_le_closedMultiplicity (by norm_num)
-      (by have := uniformDerivativeOrder_pos mathSampleDelta; omega))
   obtain ⟨-, -, hν, hνn⟩ := uniformMathematical_integer_guards (n := mathSampleLength)
-    (by norm_num [mathSampleDelta]) (by norm_num [mathSampleDelta]) hm (le_max_left _ _)
+    (by norm_num [mathSampleDelta]) (by norm_num [mathSampleDelta]) (le_max_left _ _)
   have hn : (2 : ℝ) ≤ mathSampleLength := by exact_mod_cast (show 2 ≤ mathSampleLength by omega)
   norm_num [mathSampleDelta]
   linarith
@@ -729,7 +725,7 @@ example :
           mathSampleLength ^ uniformDerivativeOrder mathSampleDelta :=
   mathematicalUniform_capacity_list_bound mathSampleDelta (by norm_num [mathSampleDelta])
     (by norm_num [mathSampleDelta]) mathSampleLength 1 mathSampleLength le_rfl (by norm_num)
-    mathSampleGap le_rfl (ratePartitionSampleDomain mathSampleLength) (fun _ => 0)
+    mathSampleGap (ratePartitionSampleDomain mathSampleLength) (fun _ => 0)
     (Or.inl ringChar.eq_zero)
 
 end RatePartitionAcceptance

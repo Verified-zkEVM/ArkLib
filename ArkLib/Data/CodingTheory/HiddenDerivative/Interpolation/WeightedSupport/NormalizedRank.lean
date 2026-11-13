@@ -60,9 +60,9 @@ namespace ReedSolomon.HiddenDerivative
   g m E · W ^ (d - 1) / ((d - 1)!) ^ 2 · exp (x (m + d.choose 2)) (1 / (d x ^ 2) + 1 / x)` with
 `x = (d - 1) / W`. The mean gap is the hypothesis of the residual integral bound
 `weighted_residual_sum_le_volume_mul_harmonic_variance`. The hypothesis `2 ≤ d` makes `x`
-positive, and `0 ≤ g`, `0 ≤ E` keep the fiber bound nonnegative. -/
+positive; the fiber inequalities force the fiber bound to be nonnegative. -/
 theorem localResidualCoordinateBudget_le_weighted_integral_geometric
-    (d m W : ℕ) (T g Ee : ℝ) (hd : 2 ≤ d) (hW : 0 < W) (hg : 0 ≤ g) (hEe : 0 ≤ Ee)
+    (d m W : ℕ) (T g Ee : ℝ) (hd : 2 ≤ d) (hW : 0 < W)
     (hgap : ∀ r ∈ range m,
       (((W + r : ℕ) : ℝ) + (d.choose 2 : ℕ)) * harmonic (d - 1) / d < T + (d - 1 : ℕ))
     (herror : ∀ r ∈ range m,
@@ -81,7 +81,21 @@ theorem localResidualCoordinateBudget_le_weighted_integral_geometric
   have hx : 0 < x :=
     div_pos (by exact_mod_cast (by omega : 0 < d - 1)) (by exact_mod_cast hW)
   have hV : 0 ≤ V := by positivity
-  have hB : 0 ≤ g * m * Ee := by positivity
+  have hB : 0 ≤ g * m * Ee := by
+    rcases Nat.eq_zero_or_pos m with rfl | hm
+    · simp
+    have hmem : 0 ∈ range m := mem_range.mpr hm
+    have hgap0 := hgap 0 hmem
+    have herror0 := herror 0 hmem
+    have hterm : 0 ≤
+        ((((W + 0 : ℕ) : ℝ) + (d.choose 2 : ℕ)) ^ 2 *
+            (∑ i : Fin (d - 1), 1 / ((i : ℝ) + 1) ^ 2) / ((d : ℝ) * (d + 1))) /
+          (4 * (T + (d - 1 : ℕ) -
+            (((W + 0 : ℕ) : ℝ) + (d.choose 2 : ℕ)) * harmonic (d - 1) / d)) := by
+      apply div_nonneg
+      · positivity
+      · linarith
+    linarith
   refine localResidualCoordinateBudget_le_geometric d m W T (g * m * Ee) V x
     (d.choose 2 : ℕ) (by omega) hx hB hV fun r hr => ?_
   obtain ⟨n, rfl⟩ : ∃ n, d = n + 1 := ⟨d - 1, by omega⟩
@@ -108,11 +122,10 @@ theorem localResidualCoordinateBudget_le_weighted_integral_geometric
 /-- The bound of `localResidualCoordinateBudget_le_weighted_integral_geometric` divided by the
 baseline volume `V = W ^ (d - 1) / ((d - 1)!) ^ 2` and by `m ^ 3`: with `κ = (d - 1) m / W`,
 `localResidualCoordinateBudget d m W ⌈T⌉₊ / (V m ^ 3) ≤
-  g E exp (κ (1 + d.choose 2 / m)) (1 / (d κ ^ 2) + 1 / (m κ))`. The hypothesis `0 < m` is used
-to cancel the factor `m` of the fiber bound `g m E`. -/
+  g E exp (κ (1 + d.choose 2 / m)) (1 / (d κ ^ 2) + 1 / (m κ))`.
+The cases `m = 0` and `W = 0` give zero on both sides; otherwise the factors cancel. -/
 theorem localResidualCoordinateBudget_div_volume_mul_cube_le
-    (d m W : ℕ) (T g Ee : ℝ) (hd : 2 ≤ d) (hm : 0 < m) (hW : 0 < W)
-    (hg : 0 ≤ g) (hEe : 0 ≤ Ee)
+    (d m W : ℕ) (T g Ee : ℝ) (hd : 2 ≤ d)
     (hgap : ∀ r ∈ range m,
       (((W + r : ℕ) : ℝ) + (d.choose 2 : ℕ)) * harmonic (d - 1) / d < T + (d - 1 : ℕ))
     (herror : ∀ r ∈ range m,
@@ -127,9 +140,13 @@ theorem localResidualCoordinateBudget_div_volume_mul_cube_le
     (localResidualCoordinateBudget d m W ⌈T⌉₊ : ℝ) / (V * m ^ 3) ≤
       g * Ee * Real.exp (κ * (1 + (d.choose 2 : ℝ) / m)) *
         (1 / ((d : ℝ) * κ ^ 2) + 1 / ((m : ℝ) * κ)) := by
+  rcases Nat.eq_zero_or_pos m with rfl | hm
+  · simp
+  rcases Nat.eq_zero_or_pos W with rfl | hW
+  · simp [show d - 1 ≠ 0 by omega]
   intro V κ
   have h := localResidualCoordinateBudget_le_weighted_integral_geometric
-    d m W T g Ee hd hW hg hEe hgap herror
+    d m W T g Ee hd hW hgap herror
   have hmR : (m : ℝ) ≠ 0 := by positivity
   have hWR : (W : ℝ) ≠ 0 := by positivity
   have hdR : (d : ℝ) ≠ 0 := by positivity
@@ -144,7 +161,7 @@ bound of `localResidualCoordinateBudget_div_volume_mul_cube_le` at the cutoff `T
 `finrank_weightedSupportLocalConstraint_le`. The hypothesis `0 < D` is needed to define the map. -/
 theorem finrank_weightedSupportLocalConstraint_div_volume_mul_cube_le
     {F : Type*} [Field F] (d D m W : ℕ) (L g Ee : ℝ)
-    (hd : 2 ≤ d) (hD : 0 < D) (hm : 0 < m) (hW : 0 < W) (hg : 0 ≤ g) (hEe : 0 ≤ Ee)
+    (hd : 2 ≤ d) (hD : 0 < D)
     (hgap : ∀ r ∈ range m,
       (((W + r : ℕ) : ℝ) + (d.choose 2 : ℕ)) * harmonic (d - 1) / d < L / D + (d - 1 : ℕ))
     (herror : ∀ r ∈ range m,
@@ -171,11 +188,11 @@ theorem finrank_weightedSupportLocalConstraint_div_volume_mul_cube_le
     exact_mod_cast hrank
   exact (div_le_div_of_nonneg_right hcast (by positivity)).trans
     (localResidualCoordinateBudget_div_volume_mul_cube_le
-      d m W (L / D) g Ee hd hm hW hg hEe hgap herror)
+      d m W (L / D) g Ee hd hgap herror)
 
 /-- The scalar conversion of the normalized geometric bound into a closed form. Let `R` be at most
 `g E exp X (1 / (d κ ^ 2) + 1 / (m κ))` with `d, m, κ > 0`. Suppose `E ≤ c`, the harmonic bound
-`H ≤ log d + b` with `H > 0` and `b ≥ 0`, the exponent bound `X ≤ H / a + e` with `a ≥ 1`, the
+`H ≤ log d + b` with `b ≥ 0`, the exponent bound `X ≤ H / a + e` with `a ≥ 1`, the
 reciprocal bound `1 / κ ^ 2 + d / (m κ) ≤ ρ (1 / (H / a) ^ 2)`, and `exp (b + e) < K`. Then
 `R < g c ρ K a ^ 2 / H ^ 2 · d ^ (1 / a) / d`.
 The exponential is converted by `Real.exp_le_exp_add_mul_rpow_of_le_log_add`, which needs `a ≥ 1`
@@ -184,7 +201,7 @@ condition on `E` is needed. -/
 theorem normalized_rank_lt_of_rounding_bounds
     (R g Ee c a b e ρ K H X κ d m : ℝ)
     (hg : 0 < g) (hc : 0 < c) (hEe : Ee ≤ c)
-    (ha : 1 ≤ a) (hb : 0 ≤ b) (hH : 0 < H) (hd : 0 < d) (hm : 0 < m) (hκ : 0 < κ)
+    (ha : 1 ≤ a) (hb : 0 ≤ b) (hd : 0 < d) (hm : 0 < m) (hκ : 0 < κ)
     (hHlog : H ≤ Real.log d + b) (hX : X ≤ H / a + e) (hK : Real.exp (b + e) < K)
     (hrec : 1 / κ ^ 2 + d / (m * κ) ≤ ρ * (1 / (H / a) ^ 2))
     (hR : R ≤ g * Ee * Real.exp X * (1 / (d * κ ^ 2) + 1 / (m * κ))) :
@@ -195,7 +212,7 @@ theorem normalized_rank_lt_of_rounding_bounds
     field_simp
   have hrec' : 1 / κ ^ 2 + d / (m * κ) ≤ ρ * (a ^ 2 / H ^ 2) := by
     calc _ ≤ ρ * (1 / (H / a) ^ 2) := hrec
-      _ = ρ * (a ^ 2 / H ^ 2) := by field_simp
+      _ = ρ * (a ^ 2 / H ^ 2) := by rw [div_pow, one_div_div]
   have hρ : 0 < ρ * (a ^ 2 / H ^ 2) := hrec0.trans_le hrec'
   have hexp : Real.exp X < K * d ^ (1 / a) :=
     (Real.exp_le_exp_add_mul_rpow_of_le_log_add ha hb hd hHlog hX).trans_lt
@@ -212,12 +229,12 @@ for every contact residual `r < m` the mean gap and the per-fiber error bound `�
 `finrank_weightedSupportLocalConstraint_div_volume_mul_cube_le` hold at `T = L / D`, and suppose
 `H ≤ log d + b`, `κ (1 + d.choose 2 / m) ≤ H / a + e`,
 `1 / κ ^ 2 + d / (m κ) ≤ ρ (1 / (H / a) ^ 2)` and `exp (b + e) < K`. Then
-`rank / (V m ^ 3) < g c ρ K a ^ 2 / H ^ 2 · d ^ (1 / a) / d`. The constraints on `a`, `b`, `c`,
-`g` and `H` are those of `normalized_rank_lt_of_rounding_bounds`. -/
+`rank / (V m ^ 3) < g c ρ K a ^ 2 / H ^ 2 · d ^ (1 / a) / d`. Positivity of `g * c`
+is forced by the fiber inequalities; the constraints on `a` and `b` are scalar inputs. -/
 theorem finrank_weightedSupportLocalConstraint_lt_of_harmonic_error_and_rounding
     {F : Type*} [Field F] (d D m W : ℕ) (L g c a b e ρ K H : ℝ)
     (hd : 2 ≤ d) (hD : 0 < D) (hm : 0 < m) (hW : 0 < W)
-    (hg : 0 < g) (hc : 0 < c) (ha : 1 ≤ a) (hb : 0 ≤ b) (hH : 0 < H)
+    (ha : 1 ≤ a) (hb : 0 ≤ b)
     (hHlog : H ≤ Real.log d + b) (hK : Real.exp (b + e) < K)
     (hgap : ∀ r ∈ range m,
       (((W + r : ℕ) : ℝ) + (d.choose 2 : ℕ)) * harmonic (d - 1) / d < L / D + (d - 1 : ℕ))
@@ -238,13 +255,32 @@ theorem finrank_weightedSupportLocalConstraint_lt_of_harmonic_error_and_rounding
         m hD center received)) : ℝ) / (V * m ^ 3) <
       g * c * ρ * K * a ^ 2 / H ^ 2 * (d : ℝ) ^ (1 / a) / d := by
   intro V
+  have hgc : 0 < g * c := by
+    have hmem : 0 ∈ range m := mem_range.mpr hm
+    have hgap0 := hgap 0 hmem
+    have herror0 := herror 0 hmem
+    have hterm : 0 ≤
+        ((((W + 0 : ℕ) : ℝ) + (d.choose 2 : ℕ)) ^ 2 *
+            (∑ i : Fin (d - 1), 1 / ((i : ℝ) + 1) ^ 2) / ((d : ℝ) * (d + 1))) /
+          (4 * (L / D + (d - 1 : ℕ) -
+            (((W + 0 : ℕ) : ℝ) + (d.choose 2 : ℕ)) * harmonic (d - 1) / d)) := by
+      apply div_nonneg
+      · positivity
+      · linarith
+    have hprod : 0 < g * m * c := by linarith
+    have : 0 < (g * c) * m := by nlinarith only [hprod]
+    exact (mul_pos_iff_of_pos_right (Nat.cast_pos.mpr hm)).mp this
   have hκ : 0 < ((d - 1 : ℕ) : ℝ) * m / W :=
     div_pos (mul_pos (by exact_mod_cast (by omega : 0 < d - 1)) (by exact_mod_cast hm))
       (by exact_mod_cast hW)
   have hbase := finrank_weightedSupportLocalConstraint_div_volume_mul_cube_le
-    d D m W L g c hd hD hm hW hg.le hc.le hgap herror center received
-  exact normalized_rank_lt_of_rounding_bounds _ g c c a b e ρ K H _ _ d m hg hc le_rfl ha hb hH
-    (by exact_mod_cast (by omega : 0 < d)) (by exact_mod_cast hm) hκ hHlog hκexp hK hκrec hbase
+    d D m W L (g * c) 1 hd hD hgap (by
+      intro r hr
+      simpa only [mul_one, mul_right_comm g c (m : ℝ)] using herror r hr) center received
+  simpa only [mul_one] using
+    normalized_rank_lt_of_rounding_bounds _ (g * c) 1 1 a b e ρ K H _ _ d m
+      hgc one_pos le_rfl ha hb (by exact_mod_cast (by omega : 0 < d))
+      (by exact_mod_cast hm) hκ hHlog hκexp hK hκrec hbase
 
 /-- The strict normalized rank bound at the prescribed multiplicity `m = ⌈100 d ^ 2 H⌉₊` and
 weighted radius `W = ⌊a d m / H⌋₊`. For `d ≥ 1000`, `a ≥ 1` and `H > 0`,
@@ -255,7 +291,7 @@ inequalities at `T = L / D`, the harmonic bound `H ≤ log d + b` with `b ≥ 0`
 `rank / (V m ^ 3) < g c (101 / 100) K a ^ 2 / H ^ 2 · d ^ (1 / a) / d`. -/
 theorem finrank_weightedSupportLocalConstraint_lt_prescribed_rounding_of_harmonic_error
     {F : Type*} [Field F] (d D : ℕ) (L g c a b K H : ℝ)
-    (hd : 1000 ≤ d) (hD : 0 < D) (hg : 0 < g) (hc : 0 < c) (ha : 1 ≤ a) (hb : 0 ≤ b)
+    (hd : 1000 ≤ d) (hD : 0 < D) (ha : 1 ≤ a) (hb : 0 ≤ b)
     (hH : 0 < H) (hHlog : H ≤ Real.log d + b) (hK : Real.exp (b + 1 / 100) < K)
     (hgap : ∀ r ∈ range ⌈100 * (d : ℝ) ^ 2 * H⌉₊,
       (((⌊a * d * ⌈100 * (d : ℝ) ^ 2 * H⌉₊ / H⌋₊ + r : ℕ) : ℝ) + (d.choose 2 : ℕ)) *
@@ -282,7 +318,7 @@ theorem finrank_weightedSupportLocalConstraint_lt_prescribed_rounding_of_harmoni
   obtain ⟨hm, hW, _, _, _, hκexp, _, hκrec⟩ :=
     InterpolationRounding.prescribed_kappa_bounds a H d ha hH hd
   exact finrank_weightedSupportLocalConstraint_lt_of_harmonic_error_and_rounding
-    d D m W L g c a b (1 / 100) (101 / 100) K H (by omega) hD hm hW hg hc ha hb hH hHlog hK
+    d D m W L g c a b (1 / 100) (101 / 100) K H (by omega) hD hm hW ha hb hHlog hK
       hgap herror hκexp hκrec center received
 
 end ReedSolomon.HiddenDerivative

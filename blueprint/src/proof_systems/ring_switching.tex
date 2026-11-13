@@ -12,7 +12,8 @@ ArkLib defines the DP24 prefix instance through a shared checked head and produc
 Its \emph{packing profile} specifies the tensor carrier and coordinates; the binary-tower
 (Binius) construction supplies one instance. The coordinate layer also supports Hachi's separate
 trace head and reference-Flock packing algebra. New scalar consumers instantiate the shared
-protocol, while native Flock source, residual-relation and extraction transport remain separate
+protocol, while the interaction-layer Flock source, residual-relation and extraction transport
+remain separate
 obligations.
 
 \subsection{The packing profile}
@@ -21,6 +22,7 @@ The data and algebraic laws of the DP24 tensor presentation are collected into a
 
 \begin{definition}[Ring-switching profile]
   \lean{RingSwitching.RingSwitchingProfile}
+  \leanok
   \label{def:ring_switching_profile}
   Fix commutative rings $B$ (small) and $L$ (large) with $L$ a $B$-algebra, and $\kappa \in
   \mathbb{N}$. A \emph{ring-switching profile} consists of:
@@ -68,6 +70,7 @@ The laws do not by themselves establish a valid protocol instance or a security 
 
 \begin{definition}[Tensor-product profile]
   \lean{RingSwitching.tensorProductProfile}
+  \leanok
   \uses{def:ring_switching_profile}
   \label{def:tensor_product_profile}
   For commutative rings $B$ and $L$, with $L$ a $B$-algebra and a chosen rank-$2^\kappa$
@@ -101,6 +104,7 @@ special soundness into the ring-level evaluation relation).
 
 \begin{definition}[Multilinear packing]
   \lean{RingSwitching.packMLE}
+  \leanok
   \uses{def:ring_switching_profile}
   \label{def:pack_mle}
   With $\ell = \ell' + \kappa$, a small-field multilinear $t$ in $\ell$ variables is packed into a
@@ -119,16 +123,22 @@ An opening must accept that contextual evaluation relation to close the protocol
 instance uses packing, opening and challenge algebras all equal to $L$, with prefix packing in
 the profile basis; its first message keeps the original carrier $A$.
 
+\begin{definition}[Stages of the ring-switching reduction]
+  \label{def:ring_switching_stages}
+  \lean{RingSwitching.Packing.Head.reduction, RingSwitching.Packing.TensorPrefix.head_verifier_eq,
+    RingSwitching.Packing.ProductSumcheck.reduction}
+  \leanok
+  \uses{def:ring_switching_profile, def:pack_mle}
+  The reduction runs the following stages.
 \begin{enumerate}
-  \item \textbf{Batching} (\lean{RingSwitching.Packing.Head.reduction,
-    RingSwitching.Packing.TensorPrefix.head_verifier_eq}). The prover sends the folded element
+  \item \textbf{Batching}. The prover sends the folded element
     $\hat s \in A$. The verifier checks the original claim against its column decomposition,
     $s = \sum_v \tilde{\mathrm{eq}}(v, r_{0..\kappa-1})\cdot
     \mathrm{decomposeColumns}(\hat s)_v$, then samples a batching challenge $r'' \in L^\kappa$,
     producing the target $s_0 = \sum_u \tilde{\mathrm{eq}}(u, r'')\cdot
     \mathrm{decomposeRows}(\hat s)_u$. Its certified batching loss is
     $\kappa/\lvert L\rvert$.
-  \item \textbf{Sum-check} (\lean{RingSwitching.Packing.ProductSumcheck.reduction}). A degree-$2$
+  \item \textbf{Sum-check}. A degree-$2$
     sum-check on the product of the public multilinear multiplier and $t'$ runs for $\ell'$
     challenges, followed by a terminal message and check. Each challenge contributes
     $2/\lvert L\rvert$; the terminal check sends no challenge. Its accepted output is the
@@ -137,6 +147,7 @@ the profile basis; its first message keeps the original carrier $A$.
     opening. Its existing zero-message frontier formats the evaluation claim and may discard the
     query context; it does not insert another wire phase or change the committed polynomial.
 \end{enumerate}
+\end{definition}
 
 For the concrete Binius construction, specialize the base to a finite field $K$ of cardinality
 $2$ and let $L$ be a finite extension field with a $K$-basis $\beta$ indexed by
@@ -147,6 +158,7 @@ $\gamma\in\mathbb{N}$. Challenges in $L$ use the uniform sampler.
 
 \begin{definition}[Full Binius ring-switching reduction]
   \lean{Binius.FRIBinius.RingSwitch.fullReduction}
+  \leanok
   \uses{def:ring_switching_profile, def:pack_mle}
   \label{def:full_ring_switching}
   In the concrete setup above, compose the shared DP24 prefix protocol with the Binary
@@ -166,6 +178,7 @@ decoding radius.
 \begin{theorem}[Perfect completeness]
   \lean{Binius.FRIBinius.RingSwitch.fullReduction_perfectCompleteness,
     RingSwitching.Packing.RingSwitch.append_perfectCompleteness}
+  \leanok
   \uses{def:full_ring_switching}
   \label{thm:ring_switching_completeness}
   The full Binius reduction is perfectly complete for its input relation with an exact first
@@ -178,9 +191,10 @@ decoding radius.
 \end{theorem}
 
 \begin{theorem}[Round-by-round knowledge soundness of the prefix protocol]
-  \lean{RingSwitching.Packing.ProductSumcheck.rbrKnowledgeSoundnessWorstCase,
-    RingSwitching.Packing.TensorPrefix.rbrKnowledgeSoundnessWorstCase,
+  \lean{RingSwitching.Packing.ProductSumcheck.rbrKnowledgeSoundness,
+    RingSwitching.Packing.TensorPrefix.rbrKnowledgeSoundness,
     RingSwitching.Packing.TensorPrefix.rbrError_sum}
+  \leanok
   \uses{def:ring_switching_profile, def:pack_mle, thm:rbr_knowledge_soundness_append_guarded,
     thm:rbr_knowledge_soundness_compose_guarded}
   \label{thm:ring_switching_core_soundness}
@@ -197,8 +211,9 @@ decoding radius.
 \end{theorem}
 
 \begin{theorem}[Closing a contextual opening]
-  \lean{RingSwitching.Packing.RingSwitch.append_rbrKnowledgeSoundnessWorstCase,
+  \lean{RingSwitching.Packing.RingSwitch.append_rbrKnowledgeSoundness,
     RingSwitching.Packing.RingSwitch.append_rbrError_sum}
+  \leanok
   \uses{thm:ring_switching_core_soundness, thm:rbr_knowledge_soundness_append_guarded}
   \label{thm:ring_switching_soundness}
   For the shared protocol, let $P$ and $E$ be the packing and opening algebras of packing data
@@ -222,12 +237,12 @@ decoding radius.
 \end{theorem}
 
 \begin{theorem}[Binius with Binary Basefold]
-  \lean{Binius.FRIBinius.RingSwitch.fullReduction_perfectCompleteness_and_rbrKnowledgeSoundnessWorstCase,
-    Binius.FRIBinius.RingSwitch.fullError_sum_le,
-    Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness}
+  \lean{Binius.FRIBinius.RingSwitch.fullReduction_perfectCompleteness_and_rbrKnowledgeSoundness,
+    Binius.FRIBinius.RingSwitch.fullError_sum_le}
+  \leanok
   \uses{def:full_ring_switching, thm:ring_switching_soundness}
   \label{thm:binius_ring_switching_soundness}
-  In the concrete setup above, the full Binius verifier is worst-case round-by-round
+  In the concrete setup above, the full Binius verifier is round-by-round
   knowledge sound for its
   relaxed, unique-decoding-radius input relation. Decoder functionality discharges commitment
   binding. Its challenge-index error sum is bounded by
@@ -237,11 +252,35 @@ decoding radius.
   \]
   where $\varepsilon_{\mathrm{BBF}}$ is the concrete Binary Basefold opening's closed-form upper
   bound. Exact codeword encodings give the separate completeness relation in
-  Theorem~\ref{thm:ring_switching_completeness}. Worst-case round-by-round knowledge soundness
-  also implies the prover-averaged form with the same error.
+  Theorem~\ref{thm:ring_switching_completeness}.
 \end{theorem}
 
-Every checking verifier aborts on a failed check. The prefix and full-composition results above
-prove round-by-round guarantees; they do not derive a worst-case contract from an opening
-hypothesis that is only averaged over provers. Ordinary knowledge soundness is not asserted here:
-the framework conversion from round-by-round to ordinary knowledge soundness remains admitted.
+Every checking verifier aborts on a failed check, so each verifier above has a guarded form and
+the round-by-round guarantees imply ordinary knowledge soundness at the summed error.
+
+\begin{theorem}[Knowledge soundness]
+  \lean{RingSwitching.Packing.RingSwitch.knowledgeSoundness,
+    RingSwitching.Packing.TensorPrefix.knowledgeSoundness,
+    Binius.FRIBinius.RingSwitch.verifier_knowledgeSoundness,
+    Binius.FRIBinius.RingSwitch.fullVerifier_knowledgeSoundness,
+    Binius.FRIBinius.RingSwitch.fullReduction_perfectCompleteness_and_knowledgeSoundness}
+  \leanok
+  \uses{thm:ring_switching_core_soundness, thm:binius_ring_switching_soundness,
+    thm:rbr_knowledge_soundness_implies_knowledge_soundness}
+  \label{thm:ring_switching_knowledge_soundness}
+  Under the hypotheses of Theorem~\ref{thm:ring_switching_soundness} on $C$, the batching rule
+  and oracle compatibility, the shared protocol is knowledge sound, from its input relation to
+  the contextual evaluation relation, with error
+  $\varepsilon_{\mathrm{batch}} + 2m/\lvert C\rvert$. If oracle compatibility is functional, the
+  DP24 prefix protocol is knowledge sound with error
+  \[
+    \frac{\kappa}{\lvert L\rvert} + \frac{2\ell'}{\lvert L\rvert},
+  \]
+  and so is the Binius frontend in the concrete setup above. The full Binius verifier is knowledge
+  sound for its relaxed input relation with error
+  \[
+    \frac{\kappa}{\lvert L\rvert} + \frac{2\ell'}{\lvert L\rvert}
+      + \varepsilon_{\mathrm{BBF}},
+  \]
+  and the full reduction is also perfectly complete for exact encodings.
+\end{theorem}

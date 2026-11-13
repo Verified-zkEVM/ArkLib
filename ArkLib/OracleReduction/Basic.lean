@@ -343,12 +343,6 @@ structure OracleVerifier {ι : Type} (oSpec : OracleSpec ι)
     OracleOutputEmbedding OStmtIn pSpec.Message OStmtOut ⊕
       OracleOutputSimulation oSpec OStmtIn OStmtOut pSpec
 
--- Cannot find synthesization order...
--- instance {ιₛᵢ ιₘ ιₛₒ : Type} {OStmtIn : ιₛᵢ → Type} [Oₛᵢ : ∀ i, OracleInterface (OStmtIn i)]
---     {Message : ιₘ → Type} [Oₘ : ∀ i, OracleInterface (Message i)]
---     (OStmtOut : ιₛₒ → Type) (embed : ιₛₒ ↪ ιₛᵢ ⊕ ιₘ) :
---     ∀ i, OStmtOut i := fun i => by sorry
-
 namespace OracleVerifier
 
 variable {ι : Type} {oSpec : OracleSpec ι}
@@ -524,17 +518,6 @@ theorem toVerifier_verify_of_query_guard (q : [pSpec.Message]ₒ.Domain)
   erw [OracleInterface.simulateQ_simOracle2_liftM_query_snd, map_pure, pure_bind,
     Option.elim_some]
   split_ifs <;> rfl
-
-/-- The number of queries made to the oracle statements and the prover's messages, for a given input
-    statement and challenges.
-
-  This is given as an oracle computation itself, since the oracle verifier may be adaptive and has
-  different number of queries depending on the prior responses.
-
-  TODO: define once `numQueries` is defined in `OracleComp` -/
-def numQueries (stmt : StmtIn) (challenges : ∀ i, pSpec.Challenge i)
-    (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) :
-  OracleComp (oSpec + ([OStmtIn]ₒ + [pSpec.Message]ₒ)) ℕ := sorry
 
 /-- A **non-adaptive** oracle verifier is an oracle verifier that makes a **fixed** list of queries
     to the input oracle statements and the prover's messages. These queries can depend on the input

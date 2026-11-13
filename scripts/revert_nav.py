@@ -85,7 +85,7 @@ def revert_nav(directory):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python3 revert_nav.py <target_directory>")
+        print("Usage: uv run --no-project --python 3.12 python revert_nav.py <target_directory>")
         sys.exit(1)
         
     target_dir = sys.argv[1]

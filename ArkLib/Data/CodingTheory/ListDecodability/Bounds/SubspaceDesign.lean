@@ -38,6 +38,81 @@ open Code
 
 section SubspaceDesignUpperBounds
 
+/-- A `τ`-subspace-design code has list size at most `L` at every radius strictly below
+`L/(L+1) · (1 − τ(r))`, provided `L ≤ r`. -/
+theorem subspaceDesign_lambda_le_of_radius_lt
+    {ι : Type} [Fintype ι]
+    {F : Type} [Field F]
+    {s : ℕ} {τ : ℕ → ℝ} {C : Submodule F (ι → Fin s → F)}
+    (hdesign : IsSubspaceDesign s τ C)
+    {r L : ℕ} (hLr : L ≤ r)
+    {δ : ℝ} (hδ : δ < (L : ℝ) / (L + 1) * (1 - τ r)) :
+    Lambda (C : Set (ι → Fin s → F)) δ ≤ (L : ℕ∞) := by
+  classical
+  rcases Nat.eq_zero_or_pos L with rfl | hL
+  · have hδneg : δ < 0 := by simpa using hδ
+    apply Lambda_le_of_forall_finset_card_le
+    intro y T hT
+    have hTempty : T = ∅ := by
+      apply Finset.eq_empty_iff_forall_notMem.mpr
+      intro c hc
+      have hclose := (Code.mem_closeCodewordsRel_iff.mp (hT c hc)).2
+      exact (not_lt_of_ge (by positivity)) (hclose.trans_lt hδneg)
+    simp [hTempty]
+  rcases isEmpty_or_nonempty ι with hι | hι
+  · apply Lambda_le_of_forall_finset_card_le
+    intro y T hT
+    exact (Finset.card_le_one_of_subsingleton T).trans hL
+  let : DecidableEq (Fin s → F) := Classical.decEq _
+  let u : ℝ := (((L : ℝ) + 1) * (1 - δ) - 1) / L
+  have hLR : (0 : ℝ) < L := by exact_mod_cast hL
+  have hτu : τ r < u := by
+    rw [div_mul_eq_mul_div, lt_div_iff₀ (by positivity)] at hδ
+    dsimp [u]
+    rw [lt_div_iff₀ hLR]
+    nlinarith only [hδ]
+  have hdesign' : IsSubspaceDesign s (fun q => if q ≤ r then τ r else τ q) C := by
+    intro q A hAC hAq
+    dsimp only
+    split_ifs with hqr
+    · exact hdesign r A hAC (hAq.trans hqr)
+    · exact hdesign q A hAC hAq
+  apply Lambda_le_of_forall_finset_card_le
+  intro y T hT
+  by_contra hTL
+  have hbig : L + 1 ≤ T.card := by omega
+  obtain ⟨U, hUT, hUcard⟩ := Finset.exists_subset_card_eq hbig
+  have hUC : ∀ c ∈ U, c ∈ C := fun c hc => (hT c (hUT hc)).1
+  have hupper0 := agreementWeight_lt_of_subspaceDesign hdesign' L u
+    (fun q _ hq => by simpa only [ite_eq_left (hq.trans hLr)] using hτu)
+    y U (by omega) (by omega) hUC
+  have hupper : (agreementWeight y U : ℝ) <
+      (Fintype.card ι : ℝ) * (U.card - 1) * u := by
+    convert hupper0 using 1
+    congr
+  have hn : (0 : ℝ) < Fintype.card ι := by
+    exact_mod_cast Fintype.card_pos
+  have hdist : ∀ c ∈ U,
+      (hammingDist c y : ℝ) ≤ δ * Fintype.card ι := by
+    intro c hc
+    have hclose : (Code.relHammingDist y c : ℝ) ≤ δ := by
+      simpa only [Code.relHammingBall, Set.mem_ofPred_eq] using (hT c (hUT hc)).2
+    unfold Code.relHammingDist at hclose
+    simp only [NNRat.cast_div, NNRat.cast_natCast] at hclose
+    rw [div_le_iff₀ hn] at hclose
+    rw [hammingDist_comm]
+    exact hclose
+  have hlower := agreementWeight_ge_of_hammingDist_le δ y U hdist
+  rw [hUcard] at hupper hlower
+  have heq : ((L + 1 : ℕ) : ℝ) * Fintype.card ι * (1 - δ) - Fintype.card ι =
+      (Fintype.card ι : ℝ) * (((L + 1 : ℕ) : ℝ) - 1) * u := by
+    dsimp [u]
+    push_cast
+    field_simp
+    ring
+  rw [heq] at hlower
+  exact (not_lt_of_ge hlower) hupper
+
 /-- **Subspace-design codes are list-decodable up to capacity** — [CZ25, Theorem B.5], the
 one-integer-parameter form at [CZ25]'s `(k−1)`-level design premise. This is the engine behind
 [ABF26] Theorem 3.4 and Corollary 3.5, but it is **not** [ABF26] Theorem 3.4 as printed; see the
@@ -106,8 +181,8 @@ of [CZ25] which [CZ25] does not prove, and it is *not* refuted by either counter
 `η`. It remains an open generalization. `subspaceDesign_lambda_le_of_eta` is its shape at the pinned
 profile. -/
 theorem subspaceDesign_lambda_le
-    {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [Finite F]
+    {ι : Type} [Fintype ι]
+    {F : Type} [Field F]
     (s : ℕ) (R : ℝ) (C : Submodule F (ι → Fin s → F))
     (_hR : (LinearCode.alphabetRate C : ℝ) = R)
     (_h : IsSubspaceDesign s
@@ -117,6 +192,10 @@ theorem subspaceDesign_lambda_le
     Lambda ((C : Set (ι → Fin s → F)))
         ((L : ℝ) / (L + 1) * (1 - s * R / (s - L + 1))) ≤ (L : ℕ∞) := by
   classical
+  rcases isEmpty_or_nonempty ι with hι | hι
+  · apply Lambda_le_of_forall_finset_card_le
+    intro y T hT
+    exact (Finset.card_le_one_of_subsingleton T).trans _hL_pos
   let : DecidableEq (Fin s → F) := Classical.decEq _
   apply Lambda_le_of_forall_finset_card_le
   intro y T hT
@@ -178,7 +257,7 @@ Note this is generic in the *dominating value* `t`, not in the profile: the prof
 for the reason spelled out on `subspaceDesign_lambda_le`. -/
 theorem subspaceDesign_lambda_le_of_profile_le
     {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [Finite F]
+    {F : Type} [Field F]
     (s : ℕ) (R : ℝ) (C : Submodule F (ι → Fin s → F))
     (hR : (LinearCode.alphabetRate C : ℝ) = R)
     (h : IsSubspaceDesign s
@@ -256,7 +335,7 @@ Non-negativity of `R` is *proved* rather than hypothesised (`LinearCode.alphabet
 the abstract statement omits and its only instantiation carries as `1/η < s`. -/
 theorem subspaceDesign_lambda_le_of_eta
     {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [Finite F]
+    {F : Type} [Field F]
     (s : ℕ) (R : ℝ) (C : Submodule F (ι → Fin s → F))
     (hR : (LinearCode.alphabetRate C : ℝ) = R)
     (h : IsSubspaceDesign s
@@ -316,7 +395,6 @@ theorem frs_lambda_le_capacity
     {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Field F] [Fintype F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
-    (_hs_pos : 0 < s)
     (_hFn : Fintype.card ι < Fintype.card F)
     (_hk_le : k ≤ s * Fintype.card ι)
     (_hadm : ReedSolomon.Folded.Admissible (Finset.univ.map domain) s ω)
@@ -331,7 +409,8 @@ theorem frs_lambda_le_capacity
       ENNReal.ofReal bound := by
   intro n ρ δ bound
   have hn_pos : (0 : ℝ) < n := Nat.cast_pos.mpr Fintype.card_pos
-  have hs_posR : (0 : ℝ) < (s : ℝ) := Nat.cast_pos.mpr _hs_pos
+  have hs_posR : (0 : ℝ) < (s : ℝ) :=
+    lt_trans (one_div_pos.mpr _hη_pos) _hη_lt_s
   have hdenom_pos : (0 : ℝ) < (s : ℝ) - 1 / η + 1 := by linarith
   -- `ω ≠ 0`, from the generator hypothesis: `|F| ≥ 2` makes `orderOf ω ≠ 0`.
   have hω0 : ω ≠ 0 := by
@@ -340,7 +419,7 @@ theorem frs_lambda_le_capacity
     have hn1 : 1 ≤ Fintype.card ι := Fintype.card_pos
     omega
   -- FRS carries the rate-derived design profile.
-  have hdesign := isSubspaceDesign_frsCode_sub_one domain k s ω _hFn _hadm _hω_gen
+  have hdesign := isSubspaceDesign_frsCode_sub_one domain k s ω _hadm _hω_gen
   -- Below saturation, `alphabetRate = k/(s·n) = ρ`.
   have hrate : (LinearCode.alphabetRate
       (ReedSolomon.Folded.frsCode domain k s ω) : ℝ) = ρ := by
@@ -407,9 +486,8 @@ must be a unit for `d < k`) and which the disjunction with `ringChar F = 0` keep
 hypothesis, multiplicity codes needing neither. -/
 theorem um_lambda_le_capacity
     {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [Finite F]
+    {F : Type} [Field F]
     (domain : ι ↪ F) (k s : ℕ)
-    (_hs_pos : 0 < s)
     (_hchar : ringChar F = 0 ∨ k ≤ ringChar F)
     (_hk_le : k ≤ s * Fintype.card ι)
     (η : ℝ) (_hη_pos : 0 < η) (_hη_lt_s : 1 / η < s) :
@@ -421,7 +499,8 @@ theorem um_lambda_le_capacity
       ENNReal.ofReal bound := by
   intro n ρ δ bound
   have hn_pos : (0 : ℝ) < n := Nat.cast_pos.mpr Fintype.card_pos
-  have hs_posR : (0 : ℝ) < (s : ℝ) := Nat.cast_pos.mpr _hs_pos
+  have hs_posR : (0 : ℝ) < (s : ℝ) :=
+    lt_trans (one_div_pos.mpr _hη_pos) _hη_lt_s
   have hdenom_pos : (0 : ℝ) < (s : ℝ) - 1 / η + 1 := by linarith
   -- Multiplicity codes carry the `(k-1)`-level design profile.
   have hdesign := isSubspaceDesign_umCode_sub_one domain k s _hchar

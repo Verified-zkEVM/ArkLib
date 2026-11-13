@@ -50,7 +50,7 @@ example : ∃ exceptional : Finset ℚ,
     ∃ z ∉ exceptional, HasExactCorrelatedPair (natDomain 4) 0 0 (RingHom.id ℚ) 2 z 0 := by
   obtain ⟨exceptional, hcard, hgood⟩ := exists_johnson_line_exactCorrelatedPair
     (n := 4) (D := 1) (A := 3) (eta := 1 / 4) (natDomain 4) 0 0 le_rfl (by norm_num)
-    (by norm_num) (by rw [johnsonAgreement_four_one]; norm_num) (by norm_num)
+    (by norm_num) (by rw [johnsonAgreement_four_one]; norm_num)
   obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
   refine ⟨exceptional, hcard, z, hz, ?_⟩
   convert hgood z hz 0 (by rw [degree_zero]; exact WithBot.bot_lt_coe _) ?_
@@ -63,7 +63,7 @@ example : ∃ exceptional : Finset ℚ,
     ∃ z ∉ exceptional, HasExactCorrelatedPair (natDomain 16) 0 0 (RingHom.id ℚ) 2 z 0 := by
   obtain ⟨exceptional, hcard, hgood⟩ := exists_johnson_line_exactCorrelatedPair_of_gap
     (n := 16) (k := 2) (A := 10) (δ := 1 / 2) (natDomain 16) 0 0
-    (by norm_num) le_rfl (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) le_rfl (by norm_num) (by norm_num)
   obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
   refine ⟨exceptional, by simpa using hcard, z, hz, ?_⟩
   convert hgood z hz 0 (by rw [degree_zero]; exact WithBot.bot_lt_coe _) ?_
@@ -79,7 +79,6 @@ example : mcaError (AffineLineGenerator (ZMod 5)) (code johnsonFiniteDomain 2) (
     min 1 (ENNReal.ofReal (johnsonExceptionCount 4 1 3 (1 / 4) / 5)) := by
   have h := mcaError_affineLine_johnson_le (n := 4) (D := 1) (eta := 1 / 4)
     johnsonFiniteDomain le_rfl (by norm_num) (by norm_num)
-    (by rw [johnsonAgreement_four_one]; norm_num)
   rw [johnsonAgreement_four_one, show ⌈(3 / 4 : ℝ) * ((4 : ℕ) : ℝ)⌉₊ = 3 by norm_num,
     ZMod.card] at h
   norm_num at h ⊢
@@ -97,7 +96,7 @@ example : ∃ exceptional : Finset ℚ,
     (exceptional.card : ℚ) ≤ 5 ∧
     ∃ z ∉ exceptional, HasExactCorrelatedPair (natDomain 3) 0 0 (RingHom.id ℚ) 2 z 0 := by
   obtain ⟨exceptional, hcard, hgood⟩ := exists_weightedJohnson_line_exactCorrelatedPair
-    (natDomain 3) 0 0 weightedJohnsonCertificate_three le_rfl (by norm_num) le_rfl (by norm_num)
+    (natDomain 3) 0 0 weightedJohnsonCertificate_three le_rfl (by norm_num) (by norm_num)
   obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
   refine ⟨exceptional, hcard.trans (by norm_num [johnsonWeightedRefinedExceptionCount]), z, hz,
     ?_⟩
@@ -113,7 +112,7 @@ affine-line MCA error at radius `0` by `5 / 7`. -/
 example : mcaError (AffineLineGenerator (ZMod 7)) (code weightedJohnsonFiniteDomain 2) 0 ≤
     ENNReal.ofReal (5 / 7) := by
   have h := mcaError_affineLine_weightedJohnson_le weightedJohnsonFiniteDomain
-    weightedJohnsonCertificate_three le_rfl (by norm_num) le_rfl (by norm_num) 0 (by norm_num)
+    weightedJohnsonCertificate_three le_rfl (by norm_num) (by norm_num) 0 (by norm_num)
   rw [ZMod.card] at h
   norm_num [johnsonWeightedRefinedExceptionCount] at h
   exact h

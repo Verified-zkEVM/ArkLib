@@ -53,26 +53,32 @@ def squarefreeSharpOptimizedCurveEnvelope (p : LineProfile) (split : ℕ) : ℝ 
     p.agreement p.totalJetCap p.firstDerivativeCap p.height
 
 /-- Minimizing the ordinary threshold is no worse than fixing it at `D + 1`. -/
-theorem squarefreeSharpOptimizedCurveEnvelope_le_fixed (p : LineProfile) (split : ℕ)
-    (hDA : p.candidateDegree < p.agreement) :
-    squarefreeSharpOptimizedCurveEnvelope p split ≤ squarefreeSharpCurveEnvelope p split :=
-  retainedSquarefreeCurveSharpOptimizedCharge_le_chargeAt (Nat.lt_succ_self _) hDA
+theorem squarefreeSharpOptimizedCurveEnvelope_le_fixed (p : LineProfile) (split : ℕ) :
+    squarefreeSharpOptimizedCurveEnvelope p split ≤ squarefreeSharpCurveEnvelope p split := by
+  by_cases hDA : p.candidateDegree < p.agreement
+  · exact retainedSquarefreeCurveSharpOptimizedCharge_le_chargeAt (Nat.lt_succ_self _) hDA
+  · unfold squarefreeSharpOptimizedCurveEnvelope squarefreeSharpCurveEnvelope
+      retainedSquarefreeCurveSharpOptimizedCharge retainedSquarefreeCurveSharpChargeAt
+      curveRetentionMinimum
+    rw [dite_eq_right hDA]
+    refine add_le_add ?_ le_rfl
+    unfold retainedSquarefreeOrdinaryCurveChargeAt
+      ordinaryUnifiedPowerFactorAt ordinaryUnifiedPowerFactorRawAt
+    positivity
 
 universe u
 
-/-- A curve-verified profile (so `2 ≤ k`) with positive batching degree, derivative cap
+/-- A curve-verified profile (so `2 ≤ k`) with derivative cap
 `1 ≤ M ≤ B` and regular threshold `k ≤ split ≤ A ≤ n` has, for every received curve over `F`,
 one base-field exceptional set of size at most `squarefreeSharpOptimizedCurveEnvelope p split`.
 Outside it, every candidate of degree `< k` with at least `A` agreements has exact power
-agreement. `E` is an auxiliary algebraically closed field into which `iota` embeds `F`. -/
+agreement. -/
 theorem exists_exceptional_exactPowerAgreement_squarefreeSharpOptimized
-    {F E : Type u} [Field F] [Field E] [DecidableEq F] [IsAlgClosed E]
+    {F : Type u} [Field F] [DecidableEq F]
     {p : LineProfile} (hp : p.CurveVerification) (split : ℕ)
     (hsplit : p.k ≤ split ∧ split ≤ p.agreement ∧ p.agreement ≤ p.n)
-    (hell : 0 < p.batchingDegree)
     (hM : 1 ≤ p.firstDerivativeCap) (hMB : p.firstDerivativeCap ≤ p.totalJetCap)
     (domain : Fin p.n ↪ F) (values : Fin (p.batchingDegree + 1) → Fin p.n → F)
-    (iota : F →+* E)
     (hchar : ringChar F = 0 ∨ max (p.k - 1) p.firstDerivativeCap < ringChar F) :
     ∃ exceptional : Finset F,
       (exceptional.card : ℝ) ≤ squarefreeSharpOptimizedCurveEnvelope p split ∧
@@ -83,11 +89,32 @@ theorem exists_exceptional_exactPowerAgreement_squarefreeSharpOptimized
     have := hp.1
     unfold LineProfile.candidateDegree at this
     omega
+  classical
+  by_cases hell : p.batchingDegree = 0
+  · refine ⟨∅, ?_, ?_⟩
+    · simp only [Finset.card_empty, Nat.cast_zero]
+      unfold squarefreeSharpOptimizedCurveEnvelope retainedSquarefreeCurveSharpOptimizedCharge
+      obtain ⟨L, hDL, hLA, hL⟩ := exists_curveRetentionMinimum
+        (D := p.candidateDegree) (A := p.agreement)
+        (retainedSquarefreeOrdinaryCurveChargeAt p.n p.candidateDegree p.batchingDegree
+          · p.agreement p.totalJetCap p.firstDerivativeCap p.height)
+        (by unfold LineProfile.candidateDegree; omega)
+      rw [← hL]
+      unfold retainedSquarefreeOrdinaryCurveChargeAt ordinaryUnifiedPowerFactorAt
+        ordinaryUnifiedPowerFactorRawAt regularPowerBatchedDerivativeCappedBoundTwo
+      push_cast
+      positivity
+    · generalize he : p.batchingDegree = ell at values ⊢
+      have hellZero : ell = 0 := he.symm.trans hell
+      cases hellZero
+      intro z hz P hdegree hagree
+      apply hasExactPowerAgreement_singleton domain values (RingHom.id F) p.k z P hdegree
+      simpa using hsplit.1.trans (hsplit.2.1.trans hagree)
   obtain ⟨cert⟩ := hp.exists_certificate domain
     (fun i ↦ powerBatchedCoordinate fun t ↦ values t i)
     (fun i ↦ powerBatchedCoordinate_natDegree_le fun t ↦ values t i)
   exact exists_baseExceptional_retainedSquarefreeCurveAgreement_sharpOptimized_of_certificate
-    domain values iota p.columns cert hk hsplit.1 hsplit.2.1 hsplit.2.2 hell hM hMB hchar
+    domain values p.columns cert hk hsplit.1 hsplit.2.1 (by omega) hM hMB hchar
 
 end
 

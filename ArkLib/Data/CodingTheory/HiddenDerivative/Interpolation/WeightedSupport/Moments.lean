@@ -146,17 +146,26 @@ theorem cubic_contribution_numeric (s v₂ v₃ : ℝ) (hs : s ≤ 10 / 27)
   nlinarith
 
 /-- The cubic contribution for a mean-zero variable: for a probability measure `P` and `z` with
-`∫ z ∂P = 0` such that `z` and `z ^ 3` are integrable, if `s ≤ 10 / 27`,
+`∫ z ∂P = 0` such that `z ^ 3` is integrable, if `s ≤ 10 / 27`,
 `3 / 2 * s ^ 2 ≤ ∫ z ^ 2 ∂P` and `∫ z ^ 3 ∂P ≤ 241 / 100 * s ^ 3`, then
 `(5 / 8) ^ 3 + (4147 / 2160) * s ^ 2 ≤ ∫ (max (5 / 8 - z) 0) ^ 3 ∂P`.
 The hypotheses are those of `cubic_contribution_numeric` and
 `MeasureTheory.le_integral_max_sub_zero_pow_three`. -/
 theorem contribution_integral_lower {X : Type*} [MeasurableSpace X] (P : Measure X)
-    [IsProbabilityMeasure P] (z : X → ℝ) (s : ℝ) (hz : Integrable z P)
+    [IsProbabilityMeasure P] (z : X → ℝ) (s : ℝ)
     (h3 : Integrable (fun x ↦ z x ^ 3) P) (hm : ∫ x, z x ∂P = 0) (hs : s ≤ 10 / 27)
     (hv₂ : 3 / 2 * s ^ 2 ≤ ∫ x, z x ^ 2 ∂P) (hv₃ : ∫ x, z x ^ 3 ∂P ≤ 241 / 100 * s ^ 3) :
-    (5 / 8 : ℝ) ^ 3 + (4147 / 2160) * s ^ 2 ≤ ∫ x, (max (5 / 8 - z x) 0) ^ 3 ∂P :=
-  (cubic_contribution_numeric s _ _ hs hv₂ hv₃).trans
+    (5 / 8 : ℝ) ^ 3 + (4147 / 2160) * s ^ 2 ≤ ∫ x, (max (5 / 8 - z x) 0) ^ 3 ∂P := by
+  have hmeas : AEStronglyMeasurable z P :=
+    ((show Topology.IsEmbedding (fun x : ℝ ↦ x ^ 3) from
+      (show Odd (3 : ℕ) by decide).strictMono_pow.isEmbedding_of_ordConnected
+        (isPreconnected_range (continuous_pow 3)).ordConnected).aestronglyMeasurable_comp_iff).mp
+      h3.aestronglyMeasurable
+  have hnorm : Integrable (fun x ↦ ‖z x‖ ^ 3) P := by
+    simpa only [norm_pow] using h3.norm
+  have hz : Integrable z P := (integrable_norm_iff hmeas).mp (by
+    simpa only [pow_one] using integrable_norm_pow_of_le hmeas (by decide : 1 ≤ 3) hnorm)
+  exact (cubic_contribution_numeric s _ _ hs hv₂ hv₃).trans
     (le_integral_max_sub_zero_pow_three P z (5 / 8) hz h3 hm)
 
 /-- The integral against the conditional measure `μ[|s]` is the set average over `s`. -/
@@ -222,7 +231,7 @@ theorem normalizedRadius_contribution_lower (n : ℕ) {W t : ℝ} (hW : 0 < W) (
   have hH₃0 : (0 : ℝ) ≤ ∑ i : Fin n, 1 / ((i : ℝ) + 1) ^ 3 := sum_nonneg fun i _ ↦ by positivity
   have hs0 : 0 ≤ W / ((n + 1) * t) := by positivity
   rw [← integral_cond_eq_setAverage]
-  refine contribution_integral_lower _ _ _ (hI _ hc) (hI _ (hc.pow 3)) ?_ hs ?_ ?_
+  refine contribution_integral_lower _ _ _ (hI _ (hc.pow 3)) ?_ hs ?_ ?_
   · rw [integral_cond_eq_setAverage, setAverage_normalizedRadius]
   · rw [integral_cond_eq_setAverage, setAverage_normalizedRadius_sq n hW.le]
     have hv := weightedSupport_variance_factor_gt (d := (n : ℝ) + 1)
@@ -231,7 +240,7 @@ theorem normalizedRadius_contribution_lower (n : ℕ) {W t : ℝ} (hW : 0 < W) (
     convert hh using 1 <;> ring
   · rw [integral_cond_eq_setAverage, setAverage_normalizedRadius_cube n hW.le]
     have ha := weightedSupport_third_factor_le (d := (n : ℝ) + 1) (by positivity) hH hH₂0 hH₃0
-    have hb := weightedSupport_third_factor_numeric (d := (n : ℝ) + 1) (by linarith) hH hHsq hH₃
+    have hb := weightedSupport_third_factor_numeric (d := (n : ℝ) + 1) (by linarith) hHsq hH₃
     have hh := mul_le_mul_of_nonneg_left (ha.trans hb) (pow_nonneg hs0 3)
     convert hh using 1 <;> ring
 

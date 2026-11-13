@@ -28,8 +28,8 @@ open scoped BigOperators LinearCode
 universe u v w k l
 
 section CoreResults
-variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-         {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {ι : Type*} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+         {F : Type u} [Field F] [DecidableEq F]
 
 open scoped BigOperators in
 open scoped Polynomial.Bivariate in
@@ -43,7 +43,8 @@ theorem RS_exists_bivariate_AB_of_goodCoeffs_card_gt
     (hδ : δ ≤ relativeUniqueDecodingRadius (ι := ι) (F := F)
       (C := ReedSolomon.code domain deg))
     (u : WordStack F (Fin 2) ι)
-    (hS : (RS_goodCoeffs (deg := deg) (domain := domain) u δ).card > Fintype.card ι) :
+    (S : Finset F) (hgood : ∀ z ∈ S, δᵣ(u 0 + z • u 1, ReedSolomon.code domain deg) ≤ δ)
+    (hS : S.card > Fintype.card ι) :
     ∃ A B : F[X][Y],
       A ≠ 0 ∧
       Polynomial.Bivariate.degreeX A ≤ Nat.floor (δ * Fintype.card ι) ∧
@@ -69,7 +70,7 @@ theorem RS_exists_bivariate_AB_of_goodCoeffs_card_gt
                     (Fin.append a b) = 0 := by
     simpa [e] using
       (RS_exists_kernelVec_BW_homMatrix_of_goodCoeffs_card_gt (deg := deg) (domain := domain)
-        (δ := δ) u hdeg hδ hS)
+        (δ := δ) u hdeg hδ S hgood hS)
   rcases hker with ⟨a, b, ha_ne, ha_deg, hb_deg, hMul⟩
   let A0 : F[X][Y] := ∑ t : Fin (e + 1), Polynomial.monomial t.1 (a t)
   let B0 : F[X][Y] := ∑ s : Fin (e + deg), Polynomial.monomial s.1 (b s)
@@ -247,12 +248,13 @@ theorem RS_jointAgreement_of_goodCoeffs_card_gt {deg : ℕ} {domain : ι ↪ F} 
     (hδ : δ ≤ relativeUniqueDecodingRadius (ι := ι) (F := F)
       (C := ReedSolomon.code domain deg))
     (u : WordStack F (Fin 2) ι)
-    (hS : (RS_goodCoeffs (deg := deg) (domain := domain) u δ).card > Fintype.card ι) :
+    (S : Finset F) (hgood : ∀ z ∈ S, δᵣ(u 0 + z • u 1, ReedSolomon.code domain deg) ≤ δ)
+    (hS : S.card > Fintype.card ι) :
     jointAgreement (C := ReedSolomon.code domain deg) (δ := δ) (W := u) := by
   classical
   set n : ℕ := Fintype.card ι
   set e : ℕ := Nat.floor (δ * n)
-  set good : Finset F := RS_goodCoeffs (deg := deg) (domain := domain) u δ
+  set good : Finset F := S
   have hn_pos : 0 < n := by
     simp [n]
   have hgood_card : good.card > n := by
@@ -267,7 +269,7 @@ theorem RS_jointAgreement_of_goodCoeffs_card_gt {deg : ℕ} {domain : ι ↪ F} 
           n - e ≤ (Finset.univ.filter (fun i : ι => u 0 i + z * u 1 i = 0)).card := by
       intro z hz
       have hz_rel : δᵣ(u 0 + z • u 1, ReedSolomon.code domain 0) ≤ δ :=
-        (Finset.mem_filter.mp hz).2
+        hgood z hz
       have hz_zero : δᵣ(u 0 + z • u 1, (0 : ι → F)) ≤ δ := by
         rw [Code.relCloseToCode_iff_relCloseToCodeword_of_minDist] at hz_rel
         rcases hz_rel with ⟨w, hwmem, hwdist⟩
@@ -449,11 +451,11 @@ theorem RS_jointAgreement_of_goodCoeffs_card_gt {deg : ℕ} {domain : ι ↪ F} 
                 simp [Polynomial.Bivariate.evalY]
       obtain ⟨A, B, hA0, hA_degX, hA_degY, hB_degX, hB_degY, hAB⟩ :=
         RS_exists_bivariate_AB_of_goodCoeffs_card_gt
-          (deg := deg) (domain := domain) (δ := δ) hdeg_le hδ u hS
+          (deg := deg) (domain := domain) (δ := δ) hdeg_le hδ u S hgood hS
       let quot_x : F → F[X] := fun z =>
         if hz : z ∈ good then
-          Classical.choose (RS_exists_Pz_of_mem_goodCoeffs
-            (deg := deg) (domain := domain) (δ := δ) u (z := z) hz)
+          Classical.choose (RS_exists_Pz_of_relDist_le
+            (deg := deg) (domain := domain) (δ := δ) u (z := z) (hgood z hz))
         else 0
       let quot_y : F → F[X] := fun x =>
         Polynomial.C (u 0 (Function.invFun domain x)) +
@@ -469,14 +471,14 @@ theorem RS_jointAgreement_of_goodCoeffs_card_gt {deg : ℕ} {domain : ι ↪ F} 
         intro z hz
         have hz_good : z ∈ good := by simpa [P_y] using hz
         let Pz : F[X] := Classical.choose
-          (RS_exists_Pz_of_mem_goodCoeffs (deg := deg)
-            (domain := domain) (δ := δ) u (z := z) hz_good)
+          (RS_exists_Pz_of_relDist_le (deg := deg)
+            (domain := domain) (δ := δ) u (z := z) (hgood z hz_good))
         have hPz :
             Pz.natDegree < deg ∧
               Δ₀(u 0 + z • u 1, Pz.eval ∘ domain) ≤ e :=
           Classical.choose_spec
-            (RS_exists_Pz_of_mem_goodCoeffs
-              (deg := deg) (domain := domain) (δ := δ) u (z := z) hz_good)
+            (RS_exists_Pz_of_relDist_le
+              (deg := deg) (domain := domain) (δ := δ) u (z := z) (hgood z hz_good))
         have hquot_def : quot_x z = Pz := by
           simp [quot_x, hz_good, Pz]
         refine ⟨?_, ?_⟩

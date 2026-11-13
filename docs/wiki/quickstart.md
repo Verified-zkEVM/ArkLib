@@ -3,6 +3,15 @@
 This page is the recommended agent playbook for commands and validation.
 Use it as the main guide for routine local checks.
 
+## Python tooling
+
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/) for
+all repository Python entry points, including validation scripts and CI.
+CI uses uv 0.13.6. The uv commands below select Python
+3.12; uv downloads it if needed. Run them from the repository root.
+These checks use only the standard library. `--no-project` runs them without
+installing a Python package or creating a project environment.
+
 ## Dependency versions
 
 Before a large contribution or a forward-port, fetch the intended upstream remote and
@@ -12,32 +21,59 @@ Review intervening API additions before writing replacement infrastructure. If t
 checkout contains unrelated work, use a separate worktree for the forward-port and
 leave that work intact.
 
-The Lean 4.35 upgrade uses Lean, Mathlib, and doc-gen4 `v4.35.0`.
-`lakefile.toml` pins CompPoly and VCVio to their `v4.35.0` releases; `lake-manifest.json`
-records the exact resolved revisions, including the PolyFun revision selected by VCVio.
-Keep that PolyFun pin when updating this stack: a newer PolyFun revision must also be
-validated against VCVio before ArkLib can adopt it.
-The VCVio pin includes the native probability prerequisites and
-[the supporting bound lemmas](https://github.com/Verified-zkEVM/VCVio/pull/769); it is an exact
-reviewable revision rather than a moving branch. ArkLib uses native measures throughout its
-probability statements; the [migration ledger](../design/native-measure-ledger.md) records the
-conversion and upstream API map.
-Validate the combined dependency set with `./scripts/validate.sh --axioms` before merging.
+`lean-toolchain` names the Lean release. `lakefile.toml` declares the direct dependency
+revisions; Mathlib and PolyFun arrive through those packages. `lake-manifest.json` records the
+exact resolved revision of every package, so read it, not this page, for the current versions.
+Dependency updates normally use CompPoly and doc-gen4 release/patch tags matching ArkLib's Lean
+toolchain, and an exact VCVio commit reachable from upstream `main`. An unreleased CompPoly fix may
+use a documented exception in the dependency PR body: state why the matching release is
+insufficient, link the upstream change, and identify the actual merged commit used. Preserve this
+rationale when rebasing or rewriting that PR; the manifest alone does not explain it. Do not invent
+a release tag or assume a PR head will be its eventual merge revision.
 
-Keep each check on a coherent source and artifact graph with the same toolchain and dependency
-manifest. With parallel worktrees or artifact overlays, verify that every imported module resolves
-to its intended source revision, including transitive dependencies. Freeze those artifacts while a
-check runs; replacing imported output during elaboration invalidates its evidence. After changing
-a dependency revision, rebuild its dependents before checking clients. Use the normal isolated
-`lake build` and full validation as the final authority for scratch or overlay checks.
+A side-branch dependency pin is for a **draft integration PR only**, with the upstream PR and a
+repin-before-merge obligation recorded. After upstream merge, use the actual post-squash/rebase
+commit or published tag, update the manifest normally, rebuild and run full validation, and rebase
+and revalidate dependent PRs. A draft's successful check against a side-branch SHA does not waive
+this merge condition.
+
+## Dependency validation
+
+The dependency-upgrade PR author records the upstream change, resolved revision and any release
+exception in the PR body. A maintainer verifies the actual pins, rebased dependents and fresh
+validation before merging. After upstream merge, edit `lakefile.toml` to the verified merged
+revisions or matching tags, then resolve and validate normally:
+
+```bash
+lake update VCVio CompPoly
+lake exe cache get
+./scripts/validate.sh --axioms
+```
+
+`lake update` intentionally resolves dependency refs again. To reproduce an existing lock, run
+`lake build` to materialize its recorded commits; do not update just to load that graph.
+Review current-API references when changing dependencies. Prefer owning module names for library
+routing; preserve immutable paper/source snapshots only as explicitly labelled provenance.
+
+A newer PolyFun revision must be validated against VCVio
+before ArkLib can adopt it, so a VCVio bump and its PolyFun revision move together.
+ArkLib uses native measures throughout its probability statements; the
+[migration ledger](../design/native-measure-ledger.md) records the conversion and upstream API map.
+Validate a changed dependency set with `./scripts/validate.sh --axioms` before merging.
+
+## Build artifacts and focused checks
+
+Run each check on a coherent source and dependency graph with the intended toolchain and
+`lake-manifest.json`. Verify that every imported module, including transitive dependencies,
+resolves to its intended source revision. Let Lake rebuild dependencies in order for that graph;
+do not switch revisions or replace imported outputs through unrelated concurrent work while checks
+run. After changing source or dependency revisions, run `lake build` and the required validation
+on that graph; cached artifacts from another revision do not validate it.
 
 For focused checks, prefer `lake build ArkLib.Path.To.Module`. A direct `lake env lean` invocation
 does not inherit the package's Lean options or build-time source-policy plugin. In particular,
 a probe using default `autoImplicit` can accept an undeclared parameter that the project rejects.
 Treat such a probe as provisional until the source passes the project build.
-
-The September 4 baseline in `docs/design/00-current-status.md` records the original typed
-interaction implementation train, not the current package versions.
 
 ## Recommended Validation
 
@@ -85,7 +121,8 @@ test warnings, including admissions. Stage new tests so source linting and the t
 include them. Production modules must not import tests.
 
 Typed Interaction PRs also have a focused hosted check, including when stacked on a feature
-branch. It compiles all tracked `ArkLib/Interaction/` and `ArkLibTest/Interaction/` modules with
+branch. It compiles all tracked modules under `ArkLib/Interaction/`, `ArkLibTest/Interaction/`,
+`ArkLib/ProofSystem/Sumcheck/Interaction/` and `ArkLibTest/ProofSystem/Sumcheck/Interaction/` with
 the existing build-time source-policy plugin and rejects every warning in those modules,
 including admissions. This is early feedback, not a replacement for `lake test` or the full
 validation/axiom gate before merging to `main`. The semantic acceptance requirements live in
@@ -135,7 +172,16 @@ existing debt, and commit that reviewed bookkeeping in the same PR:
 lake exe axiomsweep --update-baseline
 ```
 
-The baseline records existing `sorryAx` debt only. Native-compiler trust
+The baseline's `sorry` and `nonstandard` lists are empty. Its `solicited` list holds the only
+admitted statements: true external results, each with a tracking issue linked from its docstring,
+whose proofs are left open for contributors
+([issue #1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352)). The sweep rejects a
+solicited entry that no longer depends on `sorryAx`, depends on another nonstandard axiom, lacks
+its issue link, or has a dependent outside the solicited list, and `--update-baseline` preserves
+the list. Adding an entry needs maintainer review; see
+[`scripts/README.md`](../../scripts/README.md) for the exact rules.
+
+Native-compiler trust
 (`Lean.ofReduceBool`, `Lean.trustCompiler`, and the per-declaration
 `…._native.<tactic>.ax_<n>_<n>` axioms that `native_decide`-style tactics mint) is held to
 a zero-debt rule: no baseline edit can green it, and `--update-baseline` refuses to write
@@ -147,7 +193,7 @@ That deterministic, comment/string-aware inventory reports source-only construct
 environment sweep cannot see reliably: admissions in examples or defaults/autoparams and
 constructs in files outside the imported roots. Compare this inventory with the PR base when
 checking for new admissions, for example with
-`python3 scripts/source-trust-audit.py --base-ref origin/main` after fetching the canonical base.
+`uv run --no-project --python 3.12 python scripts/source-trust-audit.py --base-ref origin/main` after fetching the canonical base.
 The inventory complements the kernel sweep; neither a net count nor a refreshed baseline
 substitutes for reviewing new source admissions. Working branches may still contain unfinished
 proofs while their PR is under review.
@@ -176,19 +222,21 @@ For website or blueprint output, run:
 is not installed. If blueprint output matters, install it first:
 
 ```bash
-python3 -m pip install leanblueprint
+uv tool install --python 3.12 leanblueprint
 ```
 
 ## Important Notes
 
 - `./scripts/validate.sh` is the recommended convenience wrapper for routine local validation.
-- By default it runs `lake build`, rejects non-`sorry` warnings anywhere under `ArkLib/`, runs the
-  Lean-native source-policy gate, runs the compiled `toyproblem-runtime`, `hachi-runtime`,
-  `sumcheck-runtime`, and `fri-extractor-runtime` checks, checks generated imports and documentation
-  integrity, and lints knowledge-base inputs.
+  `./scripts/validate.sh --help` lists its default and optional checks.
+- By default it runs `lake build` and `lake test`, rejects non-`sorry` warnings under `ArkLib/` and
+  every warning under `ArkLibTest/`, runs the Lean-native source-policy gate and its plugin tests,
+  runs the retired-API sweep, runs the compiled `toyproblem-runtime`, `hachi-runtime`,
+  `sumcheck-runtime`, and `fri-extractor-runtime` checks, checks generated imports, tests the
+  build-timing report, checks documentation integrity, and lints knowledge-base inputs.
 - The lower-level scripts remain valid when you only want one specific check.
-- `docs/kb/_generated/**` freshness is handled by generated-files PRs from the main-branch KB
-  workflow, not by ordinary PR validation.
+- `docs/kb/_generated/**` freshness is handled by the KB workflow's rolling generated-files PR,
+  not by ordinary PR validation (see [generated files](generated-files.md)).
 - `scripts/build-project.sh` is a compile-only helper, not the convenience wrapper.
 - `scripts/README.md` is the inventory of helper scripts.
 - Only run docs and site builds when those surfaces are relevant; they are slower and more
@@ -199,7 +247,7 @@ python3 -m pip install leanblueprint
 
 New declarations may depend only on a subset of `{propext, Classical.choice, Quot.sound}`.
 Custom axioms, new admissions, and native-compiler trust dependencies must not merge (see
-[`../skills/prove-milestone.md`](../skills/prove-milestone.md) invariant 6). Two traps make a
+[Review and Merge Readiness](../../CONTRIBUTING.md#review-and-merge-readiness)). Two traps make a
 naive check report success on something that should fail:
 
 - **`#print axioms` is only meaningful for declarations that elaborated cleanly.**
@@ -259,8 +307,8 @@ lake exe hachi-runtime
 lake exe sumcheck-runtime
 lake exe fri-extractor-runtime
 ./scripts/check-imports.sh
-python3 ./scripts/check-docs-integrity.py
-python3 ./scripts/kb/lint.py
+uv run --no-project --python 3.12 python ./scripts/check-docs-integrity.py
+uv run --no-project --python 3.12 python ./scripts/kb/lint.py
 ./scripts/test-axiomsweep.sh
 lake exe axiomsweep --check
 ```
@@ -274,7 +322,7 @@ If you specifically need to regenerate `ArkLib.lean`, use:
 If blueprint output matters and `leanblueprint` is missing:
 
 ```bash
-python3 -m pip install leanblueprint
+uv tool install --python 3.12 leanblueprint
 ```
 
 ## CI Mapping
@@ -285,8 +333,10 @@ python3 -m pip install leanblueprint
   [Build Cache](#build-cache)), times the library build, the native build, and the
   `./scripts/validate.sh` path, runs the
   source trust inventory plus axiom-sweep fixture matrix and library regression baseline
-  (all axiom verdicts enforcing), and reuses that build for blueprint/declaration
-  validation and API-documentation generation. The PR-head job has read-only contents
+  (all axiom verdicts enforcing). A separate read-only job renders the blueprint without Lean
+  caches. The required build explicitly checks rendering success and validates the generated
+  declarations against its existing `ArkLibBlueprint` build, then reuses the Lean build for
+  API-documentation generation on main pushes. The PR-head jobs have read-only contents
   permission; on pushes, a separate job deploys its generated static-site artifact with
   Pages/OIDC permission. It uploads timing artifacts consumed by the trusted
   [`../../.github/workflows/build-timing-report.yml`](../../.github/workflows/build-timing-report.yml)
@@ -301,7 +351,17 @@ python3 -m pip install leanblueprint
 - [`../../.github/workflows/docs-integrity.yml`](../../.github/workflows/docs-integrity.yml)
   checks that `AGENTS.md` exists and local markdown links resolve.
 - [`../../.github/workflows/kb-generated.yml`](../../.github/workflows/kb-generated.yml)
-  opens generated-files PRs for KB indexes and missing cited-paper stubs after pushes to `main`.
+  regenerates KB indexes and missing cited-paper stubs nightly and after pushes to `main` that
+  change the bibliography, KB papers or sources, or the KB scripts. It updates one rolling PR from
+  the `automation/kb-generated` branch and enables auto-merge on it.
+- [`../../.github/workflows/summary.yml`](../../.github/workflows/summary.yml) posts an automated
+  summary on each opened or updated PR, and
+  [`../../.github/workflows/review.yml`](../../.github/workflows/review.yml) runs an automated
+  review when a maintainer comments `/review` on a PR.
+- [`../../.github/workflows/update.yml`](../../.github/workflows/update.yml) checks for new Lean
+  and Mathlib releases every seven days and opens an update PR or issue for each, and
+  [`../../.github/workflows/release-tag.yml`](../../.github/workflows/release-tag.yml) tags a
+  release when `lean-toolchain` changes on `main`.
 
 To validate a stacked PR while it targets a feature branch, dispatch the existing CI, import,
 and docs-integrity workflows on its published head branch:

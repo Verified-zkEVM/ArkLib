@@ -118,6 +118,20 @@ theorem Set.not_mem_language_iff {α β} (rel : Set (α × β)) (stmt : α) :
     stmt ∉ rel.language ↔ ∀ wit, (stmt, wit) ∉ rel := by
   simp [language]
 
+/-- The classical witness selector for a relation: some witness of `stmt` when one exists, and
+`none` otherwise. -/
+noncomputable def Set.chooseWitness {α β} (rel : Set (α × β)) (stmt : α) : Option β :=
+  open Classical in if h : ∃ wit, (stmt, wit) ∈ rel then some h.choose else none
+
+/-- The selected witness is invalid exactly when the statement is outside the language. -/
+theorem Set.forall_mem_chooseWitness_notMem_iff {α β} (rel : Set (α × β)) (stmt : α) :
+    (∀ wit ∈ rel.chooseWitness stmt, (stmt, wit) ∉ rel) ↔ stmt ∉ rel.language := by
+  unfold Set.chooseWitness
+  split_ifs with h
+  · simp only [Option.mem_def, Option.some.injEq, forall_eq', Set.not_mem_language_iff]
+    exact iff_of_false (· h.choose_spec) (· _ h.choose_spec)
+  · simpa using h
+
 /-- The trivial relation on Boolean statement and unit witness, which outputs the Boolean (i.e.
   accepts or rejects). -/
 def acceptRejectRel : Set (Bool × Unit) :=

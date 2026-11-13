@@ -42,8 +42,8 @@ interpolant. The partition support space is such a space.
 ## References
 
 * [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient Decoding
-  and Smaller Cryptographic Proofs*][DKT26], Section 3.5, Definition 3.7 and Lemma 3.8, and Section
-  6.1, (70)–(72)
+  and Smaller Cryptographic Proofs*][DKT26], Section 3.2, Definition 3.6 and Lemma 3.7, and Section
+  8.2, (56)–(58)
 -/
 
 @[expose] public section

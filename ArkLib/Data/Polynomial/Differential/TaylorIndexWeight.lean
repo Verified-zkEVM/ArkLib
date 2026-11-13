@@ -35,7 +35,7 @@ derivative variable `Y_1`.
 ## References
 
 * [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26], Appendix A.6.
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Appendix A.2, Lemma A.3, (93).
 -/
 
 @[expose] public section

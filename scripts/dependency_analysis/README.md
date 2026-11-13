@@ -61,7 +61,7 @@ include:
 ## Key Insights
 
 ### Most Dependent Modules
-- Run `python3 scripts/dependency_analysis/explore_dependencies.py
+- Run `uv run --no-project --python 3.12 python scripts/dependency_analysis/explore_dependencies.py
   dependency_graphs/arklib_dependencies.json --top 10` after regenerating the graph to see the
   current ranking.
 
@@ -77,21 +77,21 @@ include:
 ```bash
 # From the ArkLib root directory
 # Generate all dependency graphs
-python3 scripts/dependency_analysis/generate_dependency_graph.py --root . --output-dir dependency_graphs
+uv run --no-project --python 3.12 python scripts/dependency_analysis/generate_dependency_graph.py --root . --output-dir dependency_graphs
 
 # Generate only top-level graph
-python3 scripts/dependency_analysis/generate_top_level_graph.py dependency_graphs/arklib_dependencies.json dependency_graphs/arklib_top_level.dot
+uv run --no-project --python 3.12 python scripts/dependency_analysis/generate_top_level_graph.py dependency_graphs/arklib_dependencies.json dependency_graphs/arklib_top_level.dot
 ```
 
 ### Explore Dependencies Interactively
 ```bash
 # Interactive mode
-python3 scripts/dependency_analysis/explore_dependencies.py dependency_graphs/arklib_dependencies.json --interactive
+uv run --no-project --python 3.12 python scripts/dependency_analysis/explore_dependencies.py dependency_graphs/arklib_dependencies.json --interactive
 
 # Quick queries
-python3 scripts/dependency_analysis/explore_dependencies.py dependency_graphs/arklib_dependencies.json --info "Data.CodingTheory.Basic"
-python3 scripts/dependency_analysis/explore_dependencies.py dependency_graphs/arklib_dependencies.json --category "Data"
-python3 scripts/dependency_analysis/explore_dependencies.py dependency_graphs/arklib_dependencies.json --top 10
+uv run --no-project --python 3.12 python scripts/dependency_analysis/explore_dependencies.py dependency_graphs/arklib_dependencies.json --info "Data.CodingTheory.Basic"
+uv run --no-project --python 3.12 python scripts/dependency_analysis/explore_dependencies.py dependency_graphs/arklib_dependencies.json --category "Data"
+uv run --no-project --python 3.12 python scripts/dependency_analysis/explore_dependencies.py dependency_graphs/arklib_dependencies.json --top 10
 ```
 
 ### Visualize Graphs
@@ -107,7 +107,7 @@ dot -Tsvg dependency_graphs/arklib_top_level.dot -o dependency_graphs/arklib_top
 
 ## Dependencies Required
 
-- **Python 3.6+** with standard library
+- **uv**, which selects Python 3.12 with its standard library
 - **Graphviz** for optional visualization (`brew install graphviz` on macOS)
 
 ## Notes
@@ -128,7 +128,7 @@ You can modify the scripts to:
 
 ## Quick Start
 
-1. **Generate graphs**: `python3 scripts/dependency_analysis/generate_dependency_graph.py --root . --output-dir dependency_graphs`
+1. **Generate graphs**: `uv run --no-project --python 3.12 python scripts/dependency_analysis/generate_dependency_graph.py --root . --output-dir dependency_graphs`
 2. **View top-level**: Open `dependency_graphs/arklib_top_level.png`
-3. **Explore interactively**: `python3 scripts/dependency_analysis/explore_dependencies.py dependency_graphs/arklib_dependencies.json --interactive`
+3. **Explore interactively**: `uv run --no-project --python 3.12 python scripts/dependency_analysis/explore_dependencies.py dependency_graphs/arklib_dependencies.json --interactive`
 4. **Custom analysis**: Use the JSON output for your own tools

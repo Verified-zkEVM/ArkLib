@@ -575,16 +575,10 @@ private theorem incidenceHeight : CoeffNatDegreeLE incidenceEquation 1 := by
 /-- The total-degree incidence bound applies to a concrete nonempty set of chart points. -/
 example : incidencePoints.Nonempty ∧ (incidencePoints.card : ℚ) ≤ 6 := by
   refine ⟨by simp [incidencePoints], ?_⟩
-  have hinit : jointInitialJetEquation 0 incidenceEquation ≠ 0 := by
-    intro h
-    have heval := congrArg
-      (MvPolynomial.aeval (fun j : Option (Fin 1) ↦
-        if j = none then (1 : PairCountingField) else 0)) h
-    norm_num [jointInitialJetEquation, initialJetEquation, incidenceEquation] at heval
   have hbound := finite_regularJointTaylorChartPoints_off_admissiblePairGraphs_card_le
     (K := 1) (k := 0) (L := 0) (A := 0) (initialDegree := 2) (cutDegree := 3)
     pointDomain (fun _ ↦ 0) (fun _ ↦ 0) pairCountingIota 0 incidenceEquation
-    (by omega) (by omega) (by omega) (by omega) hinit
+    (by omega) (by omega) (by omega) (by omega)
     (by
       simpa [jointInitialJetEquation, jointTotalDegree] using
         jointTotalDegree_initialJetEquation_le_of_coeffNatDegreeLE
@@ -611,16 +605,10 @@ example : incidencePoints.Nonempty ∧ (incidencePoints.card : ℚ) ≤ 6 := by
 /-- The jet-degree incidence bound applies to the same concrete nonempty chart-point set. -/
 example : incidencePoints.Nonempty ∧ (incidencePoints.card : ℚ) ≤ 6 := by
   refine ⟨by simp [incidencePoints], ?_⟩
-  have hinit : jointInitialJetEquation 0 incidenceEquation ≠ 0 := by
-    intro h
-    have heval := congrArg
-      (MvPolynomial.aeval (fun j : Option (Fin 1) ↦
-        if j = none then (1 : PairCountingField) else 0)) h
-    norm_num [jointInitialJetEquation, initialJetEquation, incidenceEquation] at heval
   have hbound := finite_regularJointTaylorChartPoints_off_admissiblePairGraphs_card_le_of_jetDegree
     (K := 1) (k := 0) (L := 0) (A := 0) (v := 1) (h := 1)
     pointDomain (fun _ ↦ 0) (fun _ ↦ 0) pairCountingIota 0 incidenceEquation
-    (by omega) (by omega) (by omega) (by omega) hinit incidenceJetDegree incidenceHeight
+    (by omega) (by omega) (by omega) (by omega) incidenceJetDegree incidenceHeight
     incidencePoints incidencePoint_conditions (by
       intro x hx
       exact Nat.zero_le _)
@@ -641,7 +629,7 @@ example : pairCountingPair ∈ pairCountingPairs ∧ (pairCountingPairs.card : �
   · simp [pairCountingPairs]
   · have hbound := admissibleChartPairs_card_le pointDomain (fun _ ↦ 0) (fun _ ↦ 0)
       pairCountingIota (0 : PairCountingField) pairCountingEquation 1 1 1 1
-      (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num) (by norm_num) (by norm_num)
       (by simp [pairCountingEquation, MvPolynomial.weightedTotalDegree,
         MvPolynomial.support_X])
       pairCountingPairs (by
@@ -663,7 +651,7 @@ example :
       pairCountingPair).2 pairCountingAdmissible
   · have hbound := admissibleChartPairFamily_card_le pointDomain (fun _ ↦ 0) (fun _ ↦ 0)
       pairCountingIota (0 : PairCountingField) pairCountingEquation 1 1 1 1
-      (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num) (by norm_num) (by norm_num)
       (by simp [pairCountingEquation, MvPolynomial.weightedTotalDegree,
         MvPolynomial.support_X])
     simpa using hbound
@@ -674,7 +662,7 @@ example : pairCountingPair ∈ pairCountingPairs ∧ (pairCountingPairs.card : �
   · simp [pairCountingPairs]
   · have hbound := admissibleChartPairs_card_le_sharp pointDomain (fun _ ↦ 0) (fun _ ↦ 0)
       pairCountingIota (0 : PairCountingField) pairCountingEquation 1 1 1 1
-      (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num) (by norm_num) (by norm_num)
       (by simp [pairCountingEquation, MvPolynomial.weightedTotalDegree,
         MvPolynomial.support_X]) pairCountingPairs (by
         intro pair hp
@@ -695,7 +683,7 @@ example : pairCountingPair ∈ admissibleChartPairFamily pointDomain (fun _ ↦ 
   · have hbound := admissibleChartPairFamily_card_le_sharp pointDomain
       (fun _ ↦ 0) (fun _ ↦ 0) pairCountingIota (0 : PairCountingField)
       pairCountingEquation 1 1 1 1
-      (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num) (by norm_num)
       (by simp [pairCountingEquation, MvPolynomial.weightedTotalDegree,
         MvPolynomial.support_X])
     simpa using hbound
@@ -858,7 +846,7 @@ example : challengeBoundChallenges.Nonempty ∧
   have hbound := finite_symbolicTaylorChart_badChallenges_card_le
     (F := ℚ) (E := PairCountingField) (n := 4) (r := 1) challengeBoundDomain
     challengeBoundFirstWord challengeBoundSecondWord pairCountingIota 0 challengeBoundEquation
-    2 2 2 3 1 0 (by omega) (by omega) (by omega) (by omega) (by omega) (by omega)
+    2 2 2 3 1 0 (by omega) (by omega) (by omega) (by omega) (by omega)
     hjet hheight challengeBoundChallenges (fun _ ↦ 0) (fun _ ↦ challengeBoundJet)
     hchart hagree hbad
   refine ⟨by simp [challengeBoundChallenges], ?_⟩
@@ -899,7 +887,7 @@ example :
     norm_num [regularEquationSample, MvPolynomial.weightedTotalDegree, MvPolynomial.support_X]
   exact exists_exceptional_regularSymbolicCorrelatedAgreement regularEquationDomain
     (fun _ ↦ 0) (fun _ ↦ 0) iota regularEquationSample 1 1 1 1 1 0
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
     hjet hheight (by
       intro i hi hiK
       omega)
@@ -1022,7 +1010,7 @@ example :
   have hbound := finite_regularSymbolicBadChallenges_card_le regularBadDomain regularBadFirstWord
     regularBadSecondWord (algebraMap ℚ AlgebraicClosureField) regularBadEquation
     1 1 1 2 1 0 (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num) regularBadEquation_weightedDegree regularBadEquation_height regularBadBinomial
+    regularBadEquation_weightedDegree regularBadEquation_height regularBadBinomial
     {regularBadChallenge} hsubset
   refine ⟨by simp, ?_⟩
   norm_num [regularSymbolicAgreementBound] at hbound ⊢
@@ -1037,8 +1025,7 @@ example :
   · exact regularBadChallenge_mem
   · exact regularSymbolicBadChallenges_finite regularBadDomain regularBadFirstWord
       regularBadSecondWord (algebraMap ℚ AlgebraicClosureField) regularBadEquation
-      1 1 1 2 1 0 (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-      (by norm_num) regularBadEquation_weightedDegree regularBadEquation_height regularBadBinomial
+      1 1 1 2 (by norm_num) (by norm_num) (by norm_num) (by norm_num) regularBadBinomial
 
 private abbrev derivativeTupleEquation :
     DifferentialPolynomial (Polynomial PairCountingField) 1 :=
@@ -1121,13 +1108,13 @@ example :
   · have h := admissibleChartTuples_card_le_derivativeCapped_of_exponent
       pointDomain derivativeTupleWords (algebraMap ℚ PairCountingField) 0
       derivativeTupleEquation 2 1 1 1 1 1 hτ (by norm_num) (by norm_num) (by norm_num)
-      (by norm_num) (by norm_num) (by norm_num) (by norm_num) hjet hderiv {derivativeTuple}
+      (by norm_num) (by norm_num) (by norm_num) hjet hderiv {derivativeTuple}
       (by simpa using derivativeTupleAdmissible)
     simpa using h
   · simpa using admissibleChartTupleFamilyAtExponent_card_le_derivativeCapped
       pointDomain derivativeTupleWords (algebraMap ℚ PairCountingField) 0
       derivativeTupleEquation 2 1 1 1 1 1 hτ (by norm_num) (by norm_num) (by norm_num)
-      (by norm_num) (by norm_num) (by norm_num) (by norm_num) hjet hderiv
+      (by norm_num) (by norm_num) (by norm_num) hjet hderiv
 
 end
 

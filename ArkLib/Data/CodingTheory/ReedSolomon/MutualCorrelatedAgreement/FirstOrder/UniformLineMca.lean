@@ -47,14 +47,14 @@ namespace ReedSolomon
 
 open HiddenDerivative
 
-/-- For `2 ≤ k`, `2 ≤ n` and `k + 6 n / 25 ≤ A ≤ n`, every received line over a field of
+/-- For `2 ≤ k` and `k + 6 n / 25 ≤ A`, every received line over a field of
 characteristic zero or larger than `max (k - 1) 4` has one set of at most `1325775 n²` exceptional
 challenges. Outside it, every polynomial of degree below `k` agreeing with the line in at least
 `A` places has an exact correlated pair. -/
 theorem exists_uniformFirstOrder_lineMca_of_two_le
     {F : Type*} [Field F] [DecidableEq F]
     (n k A : ℕ) (domain : Fin n ↪ F) (f g : Fin n → F)
-    (hn : 2 ≤ n) (hk : 2 ≤ k) (hAn : A ≤ n)
+    (hk : 2 ≤ k)
     (hgap : (k : ℝ) + (6 / 25 : ℝ) * n ≤ A)
     (hchar : ringChar F = 0 ∨ max (k - 1) 4 < ringChar F) :
     ∃ exceptional : Finset F,
@@ -62,16 +62,26 @@ theorem exists_uniformFirstOrder_lineMca_of_two_le
       ∀ z ∉ exceptional, ∀ P : F[X], P.degree < k →
         A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
         HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
+  by_cases hAn : A ≤ n
+  swap
+  · refine ⟨∅, ?_, ?_⟩
+    · simp only [Finset.card_empty, Nat.cast_zero]
+      positivity
+    · intro z hz P hdegree hagree
+      have hcard := Finset.card_le_univ
+        (s := polynomialAgreementSet domain (fun i ↦ f i + z * g i) P)
+      simp only [Fintype.card_fin] at hcard
+      omega
   have hgapNat : 25 * k + 6 * n ≤ 25 * A := by
     have hgapReal : (25 : ℝ) * k + 6 * n ≤ 25 * A := by linarith
     exact_mod_cast hgapReal
-  obtain ⟨hDpos, hbudget, hkD, hheight⟩ := uniformFirstOrderMca_parameters n k A hk hgapNat
+  obtain ⟨hDpos, -, hkD, hheight⟩ := uniformFirstOrderMca_parameters n k A hk hgapNat
   obtain ⟨cert⟩ := exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount (F := F)
-    (k := k) hDpos hbudget hkD domain f g hheight
+    (k := k) hDpos hkD domain f g hheight
   obtain ⟨exceptional, hraw, -, -, hgood⟩ := cert.exists_exceptional_hybrid (D := k - 1)
-    (by omega) (by omega) (by omega) hAn (by norm_num) hchar
+    (by omega) (by omega) (by omega) hchar
   exact ⟨exceptional, hraw.trans (uniformFirstOrderMca_optimizedExceptionCharge_le_ceiling
-    hn (by omega) (by omega) hAn (by omega)), hgood⟩
+    (by omega) (by omega) hAn (by omega)), hgood⟩
 
 /-- If `k - 1 < char F ≤ 4`, then the characteristic is two or three, so `k ≤ 3`. -/
 private theorem le_three_of_ringChar_le_four {F : Type*} [Field F] {k : ℕ}
@@ -85,14 +95,14 @@ private theorem le_three_of_ringChar_le_four {F : Type*} [Field F] {k : ℕ}
     exact absurd hpPrime (by decide)
   omega
 
-/-- For `0 < k`, `2 ≤ n` and `k + 6 n / 25 ≤ A ≤ n`, every received line over a field of
+/-- For `0 < k` and `k + 6 n / 25 ≤ A ≤ n`, every received line over a field of
 characteristic zero or larger than `k - 1` has one set of at most `1325775 n²` exceptional
 challenges. Outside it, every polynomial of degree below `k` agreeing with the line in at least
 `A` places has an exact correlated pair. -/
 theorem exists_uniformFirstOrder_lineMca
     {F : Type*} [Field F] [decF : DecidableEq F]
     (n k A : ℕ) (domain : Fin n ↪ F) (f g : Fin n → F)
-    (hn : 2 ≤ n) (hk : 0 < k) (hAn : A ≤ n)
+    (hk : 0 < k) (hAn : A ≤ n)
     (hgap : (k : ℝ) + (6 / 25 : ℝ) * n ≤ A)
     (hchar : ringChar F = 0 ∨ k - 1 < ringChar F) :
     ∃ exceptional : Finset F,
@@ -116,7 +126,7 @@ theorem exists_uniformFirstOrder_lineMca
     linarith
   have hkTwo : 2 ≤ k := by omega
   by_cases hsupport : ringChar F = 0 ∨ max (k - 1) 4 < ringChar F
-  · exact exists_uniformFirstOrder_lineMca_of_two_le n k A domain f g hn hkTwo hAn hgap hsupport
+  · exact exists_uniformFirstOrder_lineMca_of_two_le n k A domain f g hkTwo hgap hsupport
   have hdegreeChar := hchar.resolve_left fun hzero ↦ hsupport (Or.inl hzero)
   have hkThree : k ≤ 3 := le_three_of_ringChar_le_four hdegreeChar
     (not_lt.mp fun hfour ↦ hsupport (Or.inr (max_lt hdegreeChar hfour)))
@@ -128,7 +138,7 @@ theorem exists_uniformFirstOrder_lineMca
     have hdec : (fun a b : F ↦ Classical.propDecidable (a = b)) = decF := Subsingleton.elim _ _
     cases hdec
     obtain ⟨exceptional, hcard, hgood⟩ := exists_johnson_line_exactCorrelatedPair_of_gap
-      domain f g (by norm_num) hkTwo hscale hgap hAn
+      domain f g (by norm_num) hkTwo hscale hgap
     exact ⟨exceptional, hcard.le.trans (by linarith), hgood⟩
   · apply exists_line_exactCorrelatedPair_of_powerAgreement
     obtain ⟨exceptional, hcard, hgood⟩ :=
