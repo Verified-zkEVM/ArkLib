@@ -130,12 +130,8 @@ example : ∑ i : Fin 2, (![4, 3] : Fin 2 → ℕ) i * ones 2 i = 7 := by
     _ _ ?_ (fun _ => le_rfl) ?_ ?_ ?_ ?_ ?_ ?_ <;>
     (try simp only [hord, Fintype.card_fin]) <;> decide
 
-/-- `GaloisField` is a splitting field, so its finiteness is not executable data; the instance is
-only used to state the cardinality in the example below. -/
-noncomputable instance : Fintype (GaloisField 2 3) := Fintype.ofFinite _
-
 /-- `|F| - 1` is coprime to every power of two in characteristic `2`, here for `F = 𝔽₈`. -/
-example : (2 ^ 5).Coprime (Fintype.card (GaloisField 2 3) - 1) :=
+example [Fintype (GaloisField 2 3)] : (2 ^ 5).Coprime (Fintype.card (GaloisField 2 3) - 1) :=
   coprime_two_pow_card_sub_one 5
 
 /-! ### Axiom boundaries -/
