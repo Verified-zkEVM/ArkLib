@@ -23,9 +23,11 @@ prove the congruence also modulo `ℓ₁`, which is coprime to `|𝔽| - 1` when
 `𝔽` has characteristic `2`. By the Chinese remainder theorem the two sides then agree modulo
 `ℓ₁ · (|𝔽| - 1)`, hence are equal.
 
-The congruence modulo `ℓ₁` is proved by a second grand product: the prover sends `a ∈ [0 .. ℓ₁ - 1]`
-and the verifier is convinced of the integer equality `⟨γ mod ℓ₁, b⟩ = (μ mod ℓ₁) + a · ℓ₁`, where
-both sides are below `ℓ₁² < |𝔽| - 1`, so no overflow occurs. The statements are per column of the
+The congruence modulo `ℓ₁` is proved by a second grand product: the prover sends
+`a ∈ [0 .. ℓ₁ - 1]`, which the verifier range-checks, and proves the integer equality
+`⟨γ mod ℓ₁, b⟩ = (μ mod ℓ₁) + a · ℓ₁`, where both sides are below `ℓ₁² < |𝔽| - 1`, so no overflow
+occurs. The range check is what makes the second product binding: `ℓ₁` is invertible modulo `ord g`,
+so without it some `a` always satisfies the second product. The statements are per column of the
 witness (the vector `f_{*j}` of the paper).
 
 ## Main statements
