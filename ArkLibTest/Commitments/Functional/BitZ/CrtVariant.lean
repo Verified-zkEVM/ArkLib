@@ -16,9 +16,9 @@ below `10` but `ℓ₁ · max γ = 27 > 10`, so the overflow bound of `prod_bitF
 apply, and the second grand product modulo `ℓ₁` is what rules out wrap-around. A second instance in
 `ZMod 15`, which is not a field, applies the version with `orderOf`.
 
-Each hypothesis is also necessary: dropping the second grand product, the coprimality of `ℓ₁` and
-the order, the bound `ℓ₁² < ord x` or the bound `μ < ℓ₁ · ord x` leaves every other hypothesis true
-and both grand products valid, yet `⟨γ, b⟩ ≠ μ`.
+Dropping the range check `a < ℓ₁`, the second grand product, the coprimality of `ℓ₁` and the order,
+the bound `ℓ₁² < ord x` or the bound `μ < ℓ₁ · ord x` leaves every other hypothesis true and the
+remaining grand products valid, yet `⟨γ, b⟩ ≠ μ`.
 -/
 
 open BitZ Finset
