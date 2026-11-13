@@ -254,9 +254,9 @@ home_page/            site assets and assembled website root
   BitZ: `ExponentLift` for the bit inner product in an exponent, `Round1` for the honest-message
   coefficient bound and fixed-witness fingerprinting error, `Round2` for the deterministic
   tensor implication, `OutOfDomain` for the multilinear-list collision bound, and `Bitification`
-  for the bit decomposition of a witness over a finitely generated ring, `RoundsSoundness` for
-  passing Rounds 1 and 2 with a false claim, and `BitifiedClaim` for the same bound on a bitified
-  claim. There is no
+  for the bit decomposition of a witness over a finitely generated ring, `FixedWitnessError` for
+  the fixed-witness error of Rounds 1 and 2, and `BitifiedClaim` for the bitified weights, the
+  identification of the two claims and the same bound for the bitified claim. There is no
   `Commitment.Scheme` instance or composed protocol security theorem yet. The
   [BitZ paper page](../kb/papers/BGKLSW26.md) maps statements to the paper and records the remaining
   protocol obligations.
