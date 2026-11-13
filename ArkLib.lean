@@ -4,9 +4,9 @@ public import ArkLib.AGM.Basic
 public import ArkLib.Commitments.Functional.Basic
 public import ArkLib.Commitments.Functional.BitZ.Bitification
 public import ArkLib.Commitments.Functional.BitZ.BitifiedClaim
-public import ArkLib.Commitments.Functional.BitZ.Completeness
 public import ArkLib.Commitments.Functional.BitZ.ExponentLift
 public import ArkLib.Commitments.Functional.BitZ.FixedWitnessError
+public import ArkLib.Commitments.Functional.BitZ.HonestMessages
 public import ArkLib.Commitments.Functional.BitZ.OutOfDomain
 public import ArkLib.Commitments.Functional.BitZ.Round1
 public import ArkLib.Commitments.Functional.BitZ.Round2

@@ -30,10 +30,12 @@ knowledge-state function are not formalized here.
 
 ## Main statements
 
-* `BitZ.claimPoly` is the polynomial `h`;
+* `BitZ.honestMessage` is the honest first message `µ' = ⟨a ⊗ b, f⟩`, `BitZ.map_honestMessage`
+  computes its image under a ring homomorphism, `BitZ.totalDegree_honestMessage_le` bounds its
+  degree and `BitZ.natAbs_coeff_honestMessage_le` is the norm bound `T · ℓ · N²` on the honest
+  prover's `µ'`, the quantity the verifier checks;
+* `BitZ.claimPoly` is the polynomial `h`, the honest message minus the prover's message;
 * `BitZ.totalDegree_claimPoly_le` and `BitZ.natAbs_coeff_claimPoly_le` bound its degree and norm;
-* `BitZ.natAbs_coeff_honestMessage_le` is the norm bound `T · ℓ · N²` on the honest prover's `µ'`,
-  the quantity the verifier checks;
 * `BitZ.claimPoly_ne_zero` shows `h ≠ 0` when the claim over `R` is false;
 * `BitZ.zeroCountMod_claimPoly` identifies solutions of the reduced claim with zeros of `h`;
 * `BitZ.avg_card_claim_le` bounds the fraction of points satisfying the reduced claim, averaged
@@ -63,27 +65,38 @@ namespace BitZ
 
 variable {k : ℕ} {ι₁ ι₂ : Type*} [Fintype ι₁] [Fintype ι₂]
 
+/-- The tensor polynomial `⟨a ⊗ b, f⟩ = ∑ₚ a(p₁) * b(p₂) * f(p)` that an honest prover sends as its
+first message. -/
+noncomputable def honestMessage (a : ι₁ → MvPolynomial (Fin k) ℤ)
+    (b : ι₂ → MvPolynomial (Fin k) ℤ) (f : ι₁ × ι₂ → ℕ) : MvPolynomial (Fin k) ℤ :=
+  ∑ p : ι₁ × ι₂, a p.1 * b p.2 * (f p : MvPolynomial (Fin k) ℤ)
+
+/-- A ring homomorphism out of `ℤ[X₁, …, X_k]` carries the honest message to
+`⟨φ(a) ⊗ φ(b), f⟩`. -/
+theorem map_honestMessage {K : Type*} [CommSemiring K] (φ : MvPolynomial (Fin k) ℤ →+* K)
+    (a : ι₁ → MvPolynomial (Fin k) ℤ) (b : ι₂ → MvPolynomial (Fin k) ℤ) (f : ι₁ × ι₂ → ℕ) :
+    φ (honestMessage a b f) = ∑ p : ι₁ × ι₂, φ (a p.1) * φ (b p.2) * (f p : K) := by
+  simp only [honestMessage, map_sum, map_mul, map_natCast]
+
 /-- The difference `⟨a ⊗ b, f⟩ - µ'` between the tensor claim on the lifts and the prover's
 polynomial message. -/
 noncomputable def claimPoly (a : ι₁ → MvPolynomial (Fin k) ℤ) (b : ι₂ → MvPolynomial (Fin k) ℤ)
     (f : ι₁ × ι₂ → ℕ) (μ' : MvPolynomial (Fin k) ℤ) : MvPolynomial (Fin k) ℤ :=
-  ∑ p : ι₁ × ι₂, a p.1 * b p.2 * (f p : MvPolynomial (Fin k) ℤ) - μ'
+  honestMessage a b f - μ'
 
 /-- A ring homomorphism carries `claimPoly a b f µ'` to `⟨φ(a) ⊗ φ(b), f⟩ - φ(µ')`. -/
 theorem map_claimPoly {K : Type*} [CommRing K] (φ : MvPolynomial (Fin k) ℤ →+* K)
     (a : ι₁ → MvPolynomial (Fin k) ℤ) (b : ι₂ → MvPolynomial (Fin k) ℤ) (f : ι₁ × ι₂ → ℕ)
     (μ' : MvPolynomial (Fin k) ℤ) :
     φ (claimPoly a b f μ') = ∑ p : ι₁ × ι₂, φ (a p.1) * φ (b p.2) * (f p : K) - φ μ' := by
-  simp [claimPoly, map_sum]
+  rw [claimPoly, map_sub, map_honestMessage]
 
-/-- The total degree of `claimPoly a b f µ'` is at most `2D` when both lift families have degree
-`≤ D` and the message has degree `≤ 2D`. -/
-theorem totalDegree_claimPoly_le {a : ι₁ → MvPolynomial (Fin k) ℤ}
-    {b : ι₂ → MvPolynomial (Fin k) ℤ} {f : ι₁ × ι₂ → ℕ} {μ' : MvPolynomial (Fin k) ℤ} {D : ℕ}
-    (ha : ∀ i, (a i).totalDegree ≤ D) (hb : ∀ j, (b j).totalDegree ≤ D)
-    (hμ : μ'.totalDegree ≤ 2 * D) : (claimPoly a b f μ').totalDegree ≤ 2 * D := by
-  unfold claimPoly
-  refine (totalDegree_sub _ _).trans (max_le ?_ hμ)
+/-- The honest message has total degree at most `2D` when the lifts have total degree at most
+`D`. -/
+theorem totalDegree_honestMessage_le {a : ι₁ → MvPolynomial (Fin k) ℤ}
+    {b : ι₂ → MvPolynomial (Fin k) ℤ} {f : ι₁ × ι₂ → ℕ} {D : ℕ} (ha : ∀ i, (a i).totalDegree ≤ D)
+    (hb : ∀ j, (b j).totalDegree ≤ D) : (honestMessage a b f).totalDegree ≤ 2 * D := by
+  unfold honestMessage
   refine (totalDegree_finsetSum _ _).trans (Finset.sup_le fun p _ => ?_)
   have hf : (f p : MvPolynomial (Fin k) ℤ).totalDegree = 0 := by
     rw [← map_natCast (C : ℤ →+* MvPolynomial (Fin k) ℤ)]
@@ -93,6 +106,14 @@ theorem totalDegree_claimPoly_le {a : ι₁ → MvPolynomial (Fin k) ℤ}
   have hab := (totalDegree_mul (a p.1) (b p.2)).trans (Nat.add_le_add (ha p.1) (hb p.2))
   omega
 
+/-- The total degree of `claimPoly a b f µ'` is at most `2D` when both lift families have degree
+`≤ D` and the message has degree `≤ 2D`. -/
+theorem totalDegree_claimPoly_le {a : ι₁ → MvPolynomial (Fin k) ℤ}
+    {b : ι₂ → MvPolynomial (Fin k) ℤ} {f : ι₁ × ι₂ → ℕ} {μ' : MvPolynomial (Fin k) ℤ} {D : ℕ}
+    (ha : ∀ i, (a i).totalDegree ≤ D) (hb : ∀ j, (b j).totalDegree ≤ D)
+    (hμ : μ'.totalDegree ≤ 2 * D) : (claimPoly a b f μ').totalDegree ≤ 2 * D :=
+  (totalDegree_sub _ _).trans (max_le (totalDegree_honestMessage_le ha hb) hμ)
+
 /-- For bits `f` and lifts with coefficients bounded by `N`, the coefficients of the honest
 tensor polynomial `⟨a ⊗ b, f⟩` are bounded by `TℓN²`, where `T = C(D + k, k)` and
 `ℓ = |ι₁| · |ι₂|`. Only the `a i` need total degree `≤ D`; no degree bound on `b j` is needed. -/
@@ -100,10 +121,10 @@ theorem natAbs_coeff_honestMessage_le {a : ι₁ → MvPolynomial (Fin k) ℤ}
     {b : ι₂ → MvPolynomial (Fin k) ℤ} {f : ι₁ × ι₂ → ℕ} {D N : ℕ} (hf : ∀ p, f p ≤ 1)
     (ha : ∀ i, (a i).totalDegree ≤ D) (haN : ∀ i s, ((a i).coeff s).natAbs ≤ N)
     (hbN : ∀ j s, ((b j).coeff s).natAbs ≤ N) (s : Fin k →₀ ℕ) :
-    ((∑ p : ι₁ × ι₂, a p.1 * b p.2 * (f p : MvPolynomial (Fin k) ℤ)).coeff s).natAbs ≤
+    ((honestMessage a b f).coeff s).natAbs ≤
       (D + k).choose k * Fintype.card (ι₁ × ι₂) * N ^ 2 := by
   classical
-  rw [coeff_sum]
+  rw [honestMessage, coeff_sum]
   refine (Int.natAbs_sum_le _ _).trans ?_
   calc
     ∑ p : ι₁ × ι₂, ((a p.1 * b p.2 * (f p : MvPolynomial (Fin k) ℤ)).coeff s).natAbs
