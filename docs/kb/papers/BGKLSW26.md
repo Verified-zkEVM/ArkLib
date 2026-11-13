@@ -163,8 +163,6 @@ ordinary callers outside `noncomputable section`, and records these results (rat
 | `MvPolynomial.zeroCountMod` | Architectural / 9 | `Nat.card` of roots permits `q = 0` and an infinite integer domain. Finite enumeration would need a positive modulus and a separate computational API. |
 | `BitZ.collisionSet` | No gap | Its existing finite filter generates code from the supplied field, finite enumeration and decidable equality. |
 
-`CrtVariant.lean` adds only theorems, so it contributes no rows.
-
 Runtime checks live in the existing Round 1/2 and fingerprint-probability acceptance modules.
 The future protocol implementation must use executable representations (including the existing
 CompPoly MLE APIs where appropriate), carry sampler data explicitly, and prove agreement with
