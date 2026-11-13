@@ -98,9 +98,11 @@ The clients pin headline theorem dependencies to `propext`, `Classical.choice` a
   bound using `ℓ₁ · max P`. The inequality must be strict.
 - The CRT variant is stated for one column over any commutative ring, with `orderOf` in place of
   `|F| - 1`. It needs `ℓ₁` coprime to the order (automatic for a power of two in characteristic
-  `2`), `ℓ₁² < ord`, and a target below `ℓ₁ · ord`, which every honest target satisfies because
-  `⟨γ, b⟩ ≤ ℓ₁ · (|F| - 2)`. Acceptance examples show that neither these three conditions nor the
-  second grand product can be dropped.
+  `2`), `ℓ₁² < ord`, a target below `ℓ₁ · ord`, and the quotient `a < ℓ₁` that the verifier
+  range-checks. The target bound follows from the Round 2 range check `μⱼ ≤ ℓ₁ · (q - 1)` with
+  `q - 1 ≤ |F| - 2`, which `max P < |F| - 1` and the relaxed conditions for skipping Round 1
+  give. Acceptance examples show that each of these four conditions and the second grand product
+  is needed, the bound `ℓ₁² < ord` already at `ord = ℓ₁² - 1`.
 - The `Nat.log` fingerprint bound is an integer floor and is stronger than the paper's real-log
   expression. The `_logb` counting variants expose the paper's `κ₀` expression. Empty prime sets
   are permitted by counting; sampling requires a nonempty sample type.
