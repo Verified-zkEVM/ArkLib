@@ -91,14 +91,14 @@ private theorem verifier_run_loggingOracle_eq
 
 omit [Fintype ι] [DecidableEq ι] [Field F] [Fintype F] [DecidableEq F]
   [AddCommGroup A] [Module F A] [Fintype A] [DecidableEq A] in
-private theorem prover_run_map_eq {k t : ℕ} {β : Type}
+private theorem prover_run_map_eq {k t : ℕ} {Aux β : Type}
     (prover : Prover []ₒ
       (Statement (F := F) k × (∀ i, OracleStatement ι A i))
-      (Witness (F := F) k)
+      Aux
       (OutputStatement × ∀ i, OutputOracleStatement i) OutputWitness
       (pSpec (ι := ι) (F := F) k t))
     (stmt : Statement (F := F) k × (∀ i, OracleStatement ι A i))
-    (witIn : Witness (F := F) k)
+    (witIn : Aux)
     (post : F → (Fin k → F) → (Fin t → ι) →
       ((OutputStatement × ∀ i, OutputOracleStatement i) × OutputWitness) → β) :
     (fun r ↦ post (r.1.challenges ⟨0, rfl⟩)
@@ -144,7 +144,7 @@ omit [DecidableEq ι] [Fintype F] [Fintype A] in
 straightline extractor.  The combination-round premise is composed with the
 spot-check tail by the sharp convex/union expression. -/
 theorem oracleVerifier_knowledgeSoundnessWith_of_transition_failure_prob_le
-    {k t : ℕ} [SampleableType F] [SampleableType ι] [Nonempty ι]
+    {k t : ℕ} [SampleableType F] [SampleableType ι]
     {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
     (δ gammaError : ℝ≥0) (encode : (Fin k → F) →ₗ[F] (ι → A))
@@ -173,7 +173,7 @@ theorem oracleVerifier_knowledgeSoundnessWith_of_transition_failure_prob_le
   subst extractor
   classical
   unfold OracleVerifier.knowledgeSoundnessWith Verifier.knowledgeSoundnessWith
-  rintro ⟨stmt, oStmt⟩ witIn prover
+  rintro Aux ⟨stmt, oStmt⟩ witIn prover
   rw [ENNReal.coe_add, ENNReal.coe_mul, ENNReal.coe_sub, ENNReal.coe_one]
   refine ProtocolSpec.prEvent_optionT_simulateQ_addLift_getChallenge_first_bind_le_convex
     (ε₂ := (((1 - δ) ^ t : ℝ≥0) : ENNReal))
@@ -396,7 +396,7 @@ probability at most `winningSetDensity encode δ`.  It does not assert the
 separate optimal-adversary/lower-coupling result that would identify this
 quantity as the minimal achievable game error. -/
 theorem simplifiedOracleVerifier_knowledgeSoundnessWith_choiceTransition
-    {k : ℕ} [SampleableType F] [Finite A]
+    {k : ℕ} [SampleableType F]
     {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
     (encode : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥0) :
@@ -410,7 +410,6 @@ theorem simplifiedOracleVerifier_knowledgeSoundnessWith_choiceTransition
       (SimplifiedIOR.transitionStraightlineExtractor k
         (choiceTransition (encode : (Fin k → F) → (ι → A)) δ))
       (winningSetDensity encode δ) := by
-  let _ := Fintype.ofFinite A
   apply SimplifiedIOR.knowledgeSoundnessWith_of_transition_failure_prob_le
   exact choiceTransition_failure_sample_le encode δ
 
@@ -419,7 +418,7 @@ omit [DecidableEq ι] [Fintype A] in
 type names the classical `choiceStraightlineExtractor`; executable IRS clients
 should use the certified theorem in `Impl.IRS` instead. -/
 theorem oracleVerifier_knowledgeSoundnessWith_choiceStraightlineExtractor
-    {k t : ℕ} [SampleableType F] [SampleableType ι] [Nonempty ι]
+    {k t : ℕ} [SampleableType F] [SampleableType ι]
     {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
     (encode : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥0) :
@@ -441,7 +440,9 @@ theorem oracleVerifier_knowledgeSoundnessWith_choiceStraightlineExtractor
 
 omit [DecidableEq ι] [Fintype A] in
 /-- Existential knowledge soundness for the winning-set/spot-check upper bound, retained as
-a corollary of the theorem naming the classical extractor.
+a corollary of the theorem naming the classical extractor. Like every existential
+knowledge-soundness statement, it has the content of relation soundness
+(`Verifier.knowledgeSoundness_iff_relationSoundness`).
 
 **Consumer note on `δ`.**  No hypothesis constrains `δ` here, and that is sound: the error
 `winningSetUpperBound encode δ t` is the winning-set/spot-check expression at
@@ -453,7 +454,7 @@ exactly `δ ∈ Set.Ioo 0 (minRelHammingDistCode …)`; the executable IRS contr
 `Impl/IRS.lean`
 carry it as an explicit argument. -/
 theorem oracleVerifier_knowledgeSoundness_winningSetUpperBound {k t : ℕ}
-    [SampleableType F] [SampleableType ι] [Nonempty ι]
+    [SampleableType F] [SampleableType ι]
     {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
     (encode : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥0) :

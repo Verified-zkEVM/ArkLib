@@ -5,29 +5,51 @@ This section contains facts about polynomials that are used in the rest of the l
 \begin{definition}[Multilinear Extension]
     \label{def:multilinear_extension}
     \lean{MvPolynomial.MLE}
+    \leanok
+    For a commutative ring $R$ and a function $v:\{0,1\}^{\sigma}\to R$, the multilinear extension
+    of $v$ is $\widetilde{v}:=\sum_{x\in\{0,1\}^{\sigma}}\mathsf{eq}(x,X)\cdot v(x)$, where
+    $\mathsf{eq}(x,X)=\prod_{i}\bigl((1-x_i)(1-X_i)+x_iX_i\bigr)$.
 \end{definition}
 
 \begin{theorem}[Multilinear Extension is Unique]
     \label{thm:multilinear_extension_unique}
-    % \lean{MLE-??}
+    \lean{MvPolynomial.eq_MLE_of_degreeOf_le_one_of_eval_zeroOne_eq}
+    \leanok
+    \uses{def:multilinear_extension}
+    Let $R$ be a commutative ring and $v:\{0,1\}^n\to R$. If $p\in R[X_1,\ldots,X_n]$ has degree at
+    most one in each variable and $p(x)=v(x)$ for every $x\in\{0,1\}^n$, then $p=\widetilde{v}$.
 \end{theorem}
 
 We note that the Schwartz-Zippel Lemma is already in Mathlib.
 
 \begin{theorem}[Schwartz-Zippel Lemma]
     \label{thm:schwartz_zippel}
-    % TODO: fill in theorem statement
     \lean{MvPolynomial.schwartz_zippel_sum_degreeOf}
+    \leanok
+    Let $R$ be an integral domain, let $p\in R[X_1,\ldots,X_n]$ be nonzero, and let
+    $S_1,\ldots,S_n\subseteq R$ be finite sets. Then
+    \[
+      \frac{\bigl|\{x\in S_1\times\cdots\times S_n : p(x)=0\}\bigr|}{\prod_{i}|S_i|}
+      \le\sum_{i=1}^{n}\frac{\deg_{X_i}p}{|S_i|}.
+    \]
 \end{theorem}
 
-We also define the type of computable univariate \& multilinear polynomials using arrays to represent their coefficients (or dually, their evaluations at given points).
+Computable univariate and multilinear polynomials come from the CompPoly library. They are represented
+by arrays of coefficients, or, for multilinear polynomials, dually by their evaluations on the
+Boolean hypercube.
 
 \begin{definition}[Computable Univariate Polynomials]
     \label{def:computable_univariate_polynomials}
-    % \lean{UniPoly}  % TODO: no longer in ArkLib (was ArkLib.Data.UniPoly); relink when a computable univariate type lands
+    \lean{CompPoly.CPolynomial}
+    \leanok
+    A computable univariate polynomial is an array of coefficients in canonical form: the last
+    stored coefficient is nonzero whenever the array is nonempty.
 \end{definition}
 
 \begin{definition}[Computable Multilinear Polynomials]
     \label{def:computable_multilinear_polynomials}
-    % \lean{MlPoly}  % TODO: no longer in ArkLib (was ArkLib.Data.MlPoly); relink when a computable multilinear type lands
+    \lean{CompPoly.CMlPolynomial, CompPoly.CMlPolynomialEval}
+    \leanok
+    A computable multilinear polynomial in $n$ variables is a vector of length $2^n$, holding either
+    its monomial coefficients or its evaluations on $\{0,1\}^n$, indexed little-endian.
 \end{definition}

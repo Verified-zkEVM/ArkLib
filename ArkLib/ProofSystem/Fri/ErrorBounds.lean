@@ -39,7 +39,7 @@ Johnson radius. All field-size, distance, slack, and radius hypotheses of the ex
 are retained explicitly. Here `δmin` is the relative minimum distance of the next code. -/
 theorem foldingAgreementFailure_prob_le_generalizedJohnson
     {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F] {n k d : ℕ}
-    (domain : SmoothCosetFftDomain n F) (f : Fin (2 ^ n) → F) (hd : 0 < d)
+    (domain : SmoothCosetFftDomain n F) (f : Fin (2 ^ n) → F)
     (δmin η θ : ℝ≥0) (hk : 0 < k) (hcard : 2 ^ k ≤ Fintype.card F)
     (hmin : (δmin : ℝ) =
       (Code.minDist (code (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) d :
@@ -59,7 +59,7 @@ theorem foldingAgreementFailure_prob_le_generalizedJohnson
                 * Fintype.card F))
             (((m : ℝ) + 1) * ((m : ℝ) + 2) / ((η : ℝ) * Fintype.card F))) := by
   have hpow : 2 ≤ 2 ^ k := Nat.le_pow (by omega)
-  refine (foldingAgreementFailure_prob_le_powers domain f hd θ).trans ?_
+  refine (foldingAgreementFailure_prob_le_powers domain f θ).trans ?_
   simpa only [Fintype.card_fin, Nat.cast_pow, Nat.cast_ofNat] using
     CodingTheory.linear_mcaError_powers_le
       (code (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) d)

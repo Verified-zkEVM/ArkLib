@@ -59,7 +59,7 @@ theorem acceptedRun_closedRelation_iff {m : ℕ} (D : Fin m ↪ R) (i : Fin n)
         (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p)⟩ ↔
       (Spec.SingleRound.projectedRoundPolynomial R n deg D i stmt.challenges p).val.eval r =
         q.val.eval r :=
-  relationRound_output_iff R n deg D i stmt p r (q.val.eval r)
+  Spec.SingleRound.relationRound_output_iff R n deg D i stmt p r (q.val.eval r)
 
 /-- False current relation gives the exact false univariate projected input claim. -/
 theorem projected_sum_iff_closedRelation {m : ℕ} (D : Fin m ↪ R) (i : Fin n)
@@ -68,7 +68,7 @@ theorem projected_sum_iff_closedRelation {m : ℕ} (D : Fin m ↪ R) (i : Fin n)
       (Spec.SingleRound.projectedRoundPolynomial R n deg D i stmt.challenges p).val.eval x)).sum =
         stmt.target ↔ closedRelation R n deg D i.castSucc
           ⟨stmt, (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p)⟩ :=
-  projected_sum_iff_relationRound R n deg D i stmt p
+  Spec.SingleRound.projected_sum_iff_relationRound R n deg D i stmt p
 
 variable (F : Type) [Field F] [Fintype F] [DecidableEq F] [SampleableType F]
 

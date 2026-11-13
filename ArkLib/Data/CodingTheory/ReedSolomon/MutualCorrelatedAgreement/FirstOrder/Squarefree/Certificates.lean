@@ -46,7 +46,7 @@ theorem firstOrder_finite_agreement_solutions_card_le_squarefree
     (columns : Fin N → SourceColumn 1)
     (cert : FirstOrderSymbolicCertificate.{u, u} (F := F) D A m M μ k h domain received
       (fun _ ↦ 0) columns)
-    (hk : 2 ≤ k) (hkA : k ≤ A) (hAn : A ≤ n) (hMμ : M ≤ μ)
+    (hk : 2 ≤ k) (hkA : k ≤ A) (hMμ : M ≤ μ)
     (hchar : ringChar F = 0 ∨ max (k - 1) M < ringChar F)
     (S : Finset F[X])
     (hS : ∀ P ∈ S, P.degree < k ∧
@@ -55,6 +55,15 @@ theorem firstOrder_finite_agreement_solutions_card_le_squarefree
       (firstOrderCurveFiberStageOne k μ M (regularTaylorExponent (k - 1)) : ℝ) *
           ((n - k + 1 : ℕ) : ℝ) / (A - k + 1 : ℕ) +
         ordinaryDegreeEnvelope μ M := by
+  by_cases hkn : k ≤ n
+  swap
+  · have hempty : S = ∅ := Finset.eq_empty_of_forall_notMem fun P hP ↦ by
+      have hcard := hkA.trans ((hS P hP).2.trans (Finset.card_filter_le _ _))
+      simp only [Finset.card_univ, Fintype.card_fin] at hcard
+      exact hkn hcard
+    rw [hempty]
+    simp only [Finset.card_empty, Nat.cast_zero]
+    positivity
   obtain ⟨Q, hQ, hdegreeQ, hfirstQ, hsound⟩ :=
     firstOrderSymbolicCertificate_specialization_at_zero domain received columns cert
   have hsol : ∀ P ∈ S, differentialSpecialization Q P = 0 := by
@@ -72,7 +81,7 @@ theorem firstOrder_finite_agreement_solutions_card_le_squarefree
     exact hsound P (hS P hP).1 hagreementCount
   have hsquarefree := finite_squarefree_agreement_solutions_card_le
     domain received Q hQ (D := k - 1) (A := A) (B := μ) (M := M)
-      (by omega) (by omega) hAn hMμ hdegreeQ hfirstQ hchar S hsol
+      (by omega) (by omega) hMμ hdegreeQ hfirstQ hchar S hsol
       (fun P hP ↦ by
         have hkdegree : (↑(k - 1) : WithBot ℕ) + 1 = k := by
           exact_mod_cast (Nat.sub_add_cancel (show 1 ≤ k by omega))

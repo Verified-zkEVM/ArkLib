@@ -5,10 +5,13 @@ This page explains the prover, verifier and oracle interfaces in
 Read it when following a protocol written using `ProtocolSpec`, `Prover`,
 `OracleVerifier` or `OracleReduction`.
 
-The newer framework lives in `ArkLib/Interaction/`. Its protocols use trees and
-native prover continuations. The [interaction design guide](../../design/README.md)
-explains that framework. The two APIs coexist; a security theorem for one does not
-by itself prove a theorem about the other.
+This API is the legacy layer. The interaction layer in `ArkLib/Interaction/` is meant
+to replace it; its protocols are interaction trees, and its provers are strategies
+whose continuations keep their private memory. The
+[README](../../../README.md#two-layers) explains the two layers and the migration
+plan, and the [interaction design guide](../../design/README.md) explains the
+interaction layer. The two APIs coexist; a security theorem for one does not by
+itself prove a theorem about the other.
 
 ## What a reduction produces
 
@@ -191,11 +194,10 @@ instead specifies an extractor and what input witness it must recover from a
 successful output. None of these properties follows just from constructing a
 `Reduction` or `OracleReduction`.
 
-Some legacy composition, extraction and context-transport theorems still contain
-admissions. [Issue #676](https://github.com/Verified-zkEVM/ArkLib/issues/676) tracks
-that work. Check a theorem's dependencies before treating it as proved. The
-[native framework status](../../design/00-current-status.md) records the separate
-results under `ArkLib/Interaction/`.
+The legacy layer is sorry-free. Its composition and lifting theorems carry explicit
+hypotheses, such as a guarded first verifier; read them before relying on a result.
+The [interaction-layer status](../../design/00-current-status.md) records the
+separate results under `ArkLib/Interaction/`.
 
 ## Further reading
 

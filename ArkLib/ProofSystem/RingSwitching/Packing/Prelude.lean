@@ -17,8 +17,7 @@ public import Mathlib.Data.Matrix.Basic
 `MLPEvalStatement` and `WitMLP` describe multilinear evaluation claims and witnesses.
 `AbstractOStmtIn` equips a commitment oracle family with a relation for knowledge soundness
 and an honest subrelation for completeness. `MLIOPCS` bundles an opening protocol, perfect
-completeness and averaged round-by-round knowledge soundness; its worst-case strengthening
-is `MLIOPCS.RbrKnowledgeSoundWorstCase`.
+completeness and round-by-round knowledge soundness.
 
 ## References
 
@@ -97,7 +96,7 @@ def AbstractOStmtIn.toRelInput (aOStmtIn : AbstractOStmtIn L ℓ') :
 def AbstractOStmtIn.toStrictRelInput (aOStmtIn : AbstractOStmtIn L ℓ') :=
   aOStmtIn.strictView.toRelInput
 
-/-- A multilinear opening protocol with completeness and round-by-round security. -/
+/-- A multilinear opening protocol with completeness and round-by-round knowledge soundness. -/
 structure MLIOPCS extends (AbstractOStmtIn L ℓ') where
   /-- Protocol specification -/
   numRounds : ℕ
@@ -119,8 +118,8 @@ structure MLIOPCS extends (AbstractOStmtIn L ℓ') where
   -- RBR knowledge error function for the MLIOPCS
   rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0
   -- RBR knowledge soundness property
-  rbrKnowledgeSoundness : ∀ {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)
-  },
+  rbrKnowledgeSoundness : ∀ {σ : Type} {init : ProbComp σ}
+    {impl : QueryImpl []ₒ (StateT σ ProbComp)},
     OracleProof.rbrKnowledgeSoundness
       (verifier := oracleReduction.toOracleVerifier)
       (init := init)
@@ -137,20 +136,6 @@ instance instOstmtMLIOPCS : ∀ (i : aOStmtIn.ιₛᵢ), OracleInterface (aOStmt
   fun i => aOStmtIn.Oₛᵢ i
 
 end OStmt
-
-section WorstCase
-
-attribute [local instance] MLIOPCS.Oₘ MLIOPCS.O_challenges
-
-variable {L ℓ'} in
-/-- For every shared-oracle initialization, the opening is round-by-round knowledge sound at
-every fixed transcript prefix, with its declared input relation and challenge-error function. -/
-def MLIOPCS.RbrKnowledgeSoundWorstCase (M : MLIOPCS L ℓ') : Prop :=
-  ∀ {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)},
-    OracleProof.rbrKnowledgeSoundnessWorstCase init impl M.toRelInput
-      M.oracleReduction.toOracleVerifier M.rbrKnowledgeError
-
-end WorstCase
 
 end ProtocolTypes
 end Preliminaries

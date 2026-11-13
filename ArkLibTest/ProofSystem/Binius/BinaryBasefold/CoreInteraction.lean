@@ -10,7 +10,7 @@ import ArkLib.ProofSystem.Binius.BinaryBasefold.CoreInteractionPhase
 /-!
 # Binary Basefold core interaction: axioms of the composite theorems
 
-The worst-case round-by-round knowledge soundness, its averaged form and the perfect completeness
+The round-by-round knowledge soundness and the perfect completeness
 of every composite of the Binary Basefold core interaction (the fold-relay and fold-commit
 rounds, the non-last and last blocks, the non-last blocks in sequence, the sum-check-and-fold
 rounds and the core interaction) depend only on the standard axioms, as does the bound
@@ -26,13 +26,6 @@ open Lean Elab Command
 run_cmd do
   let allowed := #[``propext, ``Classical.choice, ``Quot.sound]
   for n in #[
-      ``foldRelayOracleVerifier_rbrKnowledgeSoundnessWorstCase,
-      ``foldCommitOracleVerifier_rbrKnowledgeSoundnessWorstCase,
-      ``nonLastSingleBlockOracleVerifier_rbrKnowledgeSoundnessWorstCase,
-      ``nonLastBlocksOracleVerifier_rbrKnowledgeSoundnessWorstCase,
-      ``lastBlockOracleVerifier_rbrKnowledgeSoundnessWorstCase,
-      ``sumcheckFoldOracleVerifier_rbrKnowledgeSoundnessWorstCase,
-      ``coreInteractionOracleVerifier_rbrKnowledgeSoundnessWorstCase,
       ``foldRelayOracleVerifier_rbrKnowledgeSoundness,
       ``foldCommitOracleVerifier_rbrKnowledgeSoundness,
       ``nonLastSingleBlockOracleVerifier_rbrKnowledgeSoundness,

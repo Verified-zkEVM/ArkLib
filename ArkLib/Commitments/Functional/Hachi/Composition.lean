@@ -73,8 +73,9 @@ determine a multilinear polynomial. No prover message separates those rounds, so
 protocol is unchanged; only the tree shape the extractor is handed changes. See
 `ZeroCheck/Reduction.lean` and `docs/kb/audits/noz26-zero-check-lemma10.md`.
 
-The `Recursion/` adapters that would carry an iteration's evaluation claim to the next ring are
-not composed here; see `Recursion/Basic.lean`.
+The recursive opening of [NOZ26] §4.5, which would carry an iteration's evaluation claim to the
+next ring instead of closing it with `endPiece`, is not formalized; see
+`docs/kb/audits/noz26-recursion-z-packing.md`.
 
 ## References
 
@@ -140,6 +141,7 @@ Takes a sampler for the fold challenges (`ShortChallenge`) as a hypothesis. -/
           (h₁ := instSampleableTypeChallengePSpecNestedZeroCheck)
             (h₂ := ProtocolSpec.instSampleableTypeChallengeEmpty)))))
 
+omit [NeZero q] in
 /-- **Escape-threaded CWSS of the `Rq`-level polynomial-evaluation step** (Hachi
 [NOZ26, §4.2, Figure 3]): rows 1–2, the polynomial-level bridge followed by `QuadEval`, along a
 single relation seam. The bridge is escape-free and `QuadEval` escape-aware, so `▷` lifts the
@@ -155,7 +157,7 @@ two factors. Pinned to `𝓜(q, α)` with the [LS18] hypotheses of
 `quadEval_coordinateWiseSpecialSoundWithEscape`. -/
 theorem eval_coordinateWiseSpecialSoundWithEscape (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp)) (hq5 : q % 8 = 5) {b ω γ : ℕ}
-    (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
+    (hκ : (2 * ω) ^ 2 < q)
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r)
       innerDigits dRows) :
     Verifier.coordinateWiseSpecialSoundWithEscape init impl
@@ -164,7 +166,7 @@ theorem eval_coordinateWiseSpecialSoundWithEscape (init : ProbComp σ)
           (C := ShortChallenge 𝓜(q, α) ω) (r := r)))
       ((bridgePackage (oSpec := oSpec) 𝓜(q, α) init impl pp (b : ZMod q)
             (quadEvalBetaSq γ b zDigits ((𝓜(q, α)).φ.natDegree) m messageDigits) γ (2 * ω) ▷
-          quadEvalPackage init impl hq5 hκ hτ pp).esc)
+          quadEvalPackage init impl hq5 hκ pp).esc)
       (relPolyEval 𝓜(q, α) pp (b : ZMod q)
         (quadEvalBetaSq γ b zDigits ((𝓜(q, α)).φ.natDegree) m messageDigits) γ (2 * ω))
       (relOut (zDigits := zDigits) 𝓜(q, α) pp (b : ZMod q) ω γ)
@@ -174,10 +176,10 @@ theorem eval_coordinateWiseSpecialSoundWithEscape (init : ProbComp σ)
         (verifier (oSpec := oSpec) (ω := ω) 𝓜(q, α)))
       ((bridgePackage (oSpec := oSpec) 𝓜(q, α) init impl pp (b : ZMod q)
             (quadEvalBetaSq γ b zDigits ((𝓜(q, α)).φ.natDegree) m messageDigits) γ (2 * ω) ▷
-          quadEvalPackage init impl hq5 hκ hτ pp).extractor) :=
+          quadEvalPackage init impl hq5 hκ pp).extractor) :=
   (bridgePackage (oSpec := oSpec) 𝓜(q, α) init impl pp (b : ZMod q)
         (quadEvalBetaSq γ b zDigits ((𝓜(q, α)).φ.natDegree) m messageDigits) γ (2 * ω) ▷
-      quadEvalPackage init impl hq5 hκ hτ pp).isCWSS
+      quadEvalPackage init impl hq5 hκ pp).isCWSS
 
 /-- **One Hachi evaluation iteration** (rows 1–9): the subprotocols in one line of `▷`s — bridge ▷
 `QuadEval` ▷ `R^lin` adapter ▷ HMZ25 lift ▷ batching bridge ▷ zero-check ▷ sumcheck bridge (pure
@@ -195,7 +197,7 @@ Every factor carries its verdict/guard maps as data (`Verifier.PureForm` /
 `Verifier.GuardedForm`), so the composed extractor `(iteration …).extractor` is executable — no
 `Classical.choice` at any seam. -/
 def iteration (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (hq5 : q % 8 = 5) {b ω γ m₀ m₁ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
+    (hq5 : q % 8 = 5) {b ω γ m₀ m₁ : ℕ} (hκ : (2 * ω) ^ 2 < q)
     [SampleableType (ShortChallenge 𝓜(q, α) ω)]
     (K : LiftCom (LiftedWitness 𝓜(q, α) μ₀ n₀) (liftShort 𝓜(q, α) γ b))
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r)
@@ -227,17 +229,16 @@ def iteration (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     ProtocolSpec.instSampleableTypeChallengeAppend (h₁ := i₀)
       (h₂ := roundsSpecSampleable F b m₀)
   have hb1 : 1 < b := hdig.one_lt
-  have hbpos : 0 < b := Nat.zero_lt_one.trans hb1
   let bridge := bridgePackage (oSpec := oSpec) 𝓜(q, α) init impl pp (b : ZMod q)
     (quadEvalBetaSq γ b zDigits ((𝓜(q, α)).φ.natDegree) m messageDigits) γ (2 * ω)
-  let quadEval := quadEvalPackage init impl hq5 hκ hτ pp
+  let quadEval := quadEvalPackage init impl hq5 hκ pp
   let rlin := rlinPackage (zDigits := zDigits) 𝓜(q, α) init impl pp (b : ZMod q) ω γ
   let lift := liftPackage 𝓜(q, α) γ b K φF init impl hd
   let batch := batchPackage 𝓜(q, α) m₀ m₁ γ b init impl K φF b hb1 hn hd hcov hb hdig
   let zeroCheck := nestedZeroCheckPackage 𝓜(q, α) m₀ m₁ γ b init impl K φF b
   let sumcheckBridge :=
     nestedSumcheckBridgePackage 𝓜(q, α) m₀ m₁ γ b init impl K φF b hb1 hd hcov
-  let rounds := roundsChain 𝓜(q, α) m₀ m₁ γ b b init impl K φF hbpos m₀ le_rfl
+  let rounds := roundsChain 𝓜(q, α) m₀ m₁ γ b b init impl K φF m₀ le_rfl
   let finalEval := finalEvalPackage 𝓜(q, α) m₀ m₁ γ b b init impl K φF
   let core : EscapeCWSSPackage init impl
       (PolyEvalStatement 𝓜(q, α) innerRows messageDigits outerRows innerDigits dRows m r)
@@ -248,13 +249,14 @@ def iteration (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (bridge ▷ quadEval) ▷ rlin ▷ lift ▷ batch ▷ zeroCheck ▷ sumcheckBridge
   (core ▷ rounds) ▷ finalEval
 
+omit [NeZero q] in
 /-- **Escape-threaded coordinate-wise special soundness of one Hachi evaluation iteration.** The
 composed verifier of rows 1–9 is CWSS over the endpoint relations `relPolyEval` and
 `relWEvalClaim`, at the composed extraction algorithm `(iteration …).extractor`, with
 `(iteration …).esc` as the certificate's escape disjunct. -/
 theorem hachi_iteration_coordinateWiseSpecialSoundWithEscape (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (hq5 : q % 8 = 5) {b ω γ m₀ m₁ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
+    (hq5 : q % 8 = 5) {b ω γ m₀ m₁ : ℕ} (hκ : (2 * ω) ^ 2 < q)
     [SampleableType (ShortChallenge 𝓜(q, α) ω)]
     (K : LiftCom (LiftedWitness 𝓜(q, α) μ₀ n₀) (liftShort 𝓜(q, α) γ b))
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r)
@@ -265,18 +267,18 @@ theorem hachi_iteration_coordinateWiseSpecialSoundWithEscape (init : ProbComp σ
     (hcov : (μ₀ + n₀ * rhoDigitCount q b) * (𝓜(q, α)).φ.natDegree ≤ 2 ^ m₀)
     (hn : n₀ ≤ 2 ^ m₁) :
     Verifier.coordinateWiseSpecialSoundWithEscape init impl
-      (iteration (zDigits := zDigits) (ω := ω) (m₀ := m₀) (m₁ := m₁) init impl hq5 hκ hτ
+      (iteration (zDigits := zDigits) (ω := ω) (m₀ := m₀) (m₁ := m₁) init impl hq5 hκ
         K pp φF hd hb hdig hcov hn).struct
       (iteration (b := b) (zDigits := zDigits) (ω := ω) (m₀ := m₀) (m₁ := m₁) init impl
-        hq5 hκ hτ K pp φF hd hb hdig hcov hn).esc
+        hq5 hκ K pp φF hd hb hdig hcov hn).esc
       (relPolyEval 𝓜(q, α) pp (b : ZMod q)
         (quadEvalBetaSq γ b zDigits ((𝓜(q, α)).φ.natDegree) m messageDigits) γ (2 * ω))
       (relWEvalClaim 𝓜(q, α) m₀ γ b b K φF)
       (iteration (zDigits := zDigits) (ω := ω) (m₀ := m₀) (m₁ := m₁) init impl hq5 hκ
-        hτ K pp φF hd hb hdig hcov hn).verifier
+        K pp φF hd hb hdig hcov hn).verifier
       (iteration (b := b) (zDigits := zDigits) (ω := ω) (m₀ := m₀) (m₁ := m₁) init impl
-        hq5 hκ hτ K pp φF hd hb hdig hcov hn).extractor :=
-  (iteration (zDigits := zDigits) (ω := ω) (m₀ := m₀) (m₁ := m₁) init impl hq5 hκ hτ
+        hq5 hκ K pp φF hd hb hdig hcov hn).extractor :=
+  (iteration (zDigits := zDigits) (ω := ω) (m₀ := m₀) (m₁ := m₁) init impl hq5 hκ
     K pp φF hd hb hdig hcov hn).isCWSS
 
 /-- **The complete Hachi evaluation** (the opening argument of the commitment scheme): one
@@ -285,7 +287,7 @@ theorem hachi_iteration_coordinateWiseSpecialSoundWithEscape (init : ProbComp σ
 reduced witness against the reduced claim itself, so nothing is left to reduce. The certificate is
 `(evaluation …).isCWSS`; the end-piece factor is escape-free, so it adds no disjunct. -/
 def evaluation (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (hq5 : q % 8 = 5) {b ω γ m₀ m₁ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
+    (hq5 : q % 8 = 5) {b ω γ m₀ m₁ : ℕ} (hκ : (2 * ω) ^ 2 < q)
     [SampleableType (ShortChallenge 𝓜(q, α) ω)]
     (K : LiftCom (LiftedWitness 𝓜(q, α) μ₀ n₀) (liftShort 𝓜(q, α) γ b))
     [BEq K.TCom] [LawfulBEq K.TCom]
@@ -318,7 +320,7 @@ def evaluation (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)
     ProtocolSpec.instSampleableTypeChallengeAppend (h₁ := i₁)
       (h₂ := instSampleableTypeChallengePSpecFinalEval)
   let iter := iteration (b := b) (zDigits := zDigits) (ω := ω) (m₀ := m₀) (m₁ := m₁) init impl
-    hq5 hκ hτ K pp φF hd hb hdig hcov hn
+    hq5 hκ K pp φF hd hb hdig hcov hn
   let closing := endPiece 𝓜(q, α) m₀ γ b b init impl K φF
   iter ▷ closing
 

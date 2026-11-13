@@ -93,9 +93,13 @@ def partitionSupportAreaSlotExponent {D d W : ℕ} {L : ℝ}
 
 /-- Every area slot gives an exponent eligible for the partition support at cutoff `L`. -/
 theorem partitionSupportAreaSlotExponent_eligible {D d W : ℕ} {L : ℝ}
-    (hD : 0 < D) (p : PartitionSupportAreaSlot D d W L) :
+    (p : PartitionSupportAreaSlot D d W L) :
     PartitionSupportEligible D d W L (partitionSupportAreaSlotExponent p) := by
-  have hD0 : (D : ℝ) ≠ 0 := by positivity
+  by_cases hD : D = 0
+  · have hslot := QuadraticStaircase.Slot.weighted_degree_lt p.2
+    simp only [hD, Nat.cast_zero, zero_mul, add_zero] at hslot
+    exact (Nat.cast_nonneg _).not_gt hslot |>.elim
+  have hD0 : (D : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hD
   have hcancel : (D : ℝ) * (L / D - ((∑ i, p.1.val i : ℕ) : ℝ)) =
       L - D * ((∑ i, p.1.val i : ℕ) : ℝ) := by field_simp
   have hslot := QuadraticStaircase.Slot.weighted_degree_lt p.2

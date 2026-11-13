@@ -61,7 +61,7 @@ theorem powerAgreement_one_of_exactCorrelatedPair
   refine ⟨P, ?_, ?_, ?_⟩
   · intro t
     fin_cases t <;> assumption
-  · simpa [P, powerBatchedPolynomial, correlatedPairSpecialization,
+  · simpa [P, Polynomial.powerBatch, correlatedPairSpecialization,
       Fin.sum_univ_two, Polynomial.smul_eq_C_mul] using hQ
   · rw [powerBatchedWord_pair_eq f g ι z]
     simpa [P, commonCurveAgreementSet, commonPolynomialAgreementSet,
@@ -74,7 +74,7 @@ theorem exactCorrelatedPair_of_powerAgreement_one
     HasExactCorrelatedPair domain (w 0) (w 1) ι k z Q := by
   obtain ⟨P, hdeg, hQ, hagree⟩ := h
   refine ⟨(P 0, P 1), hdeg 0, hdeg 1, ?_, ?_⟩
-  · simpa [powerBatchedPolynomial, correlatedPairSpecialization, Fin.sum_univ_two,
+  · simpa [Polynomial.powerBatch, correlatedPairSpecialization, Fin.sum_univ_two,
       Polynomial.smul_eq_C_mul] using hQ
   · have hw : powerBatchedWord (fun t i ↦ ι (w t i)) z =
         (fun i ↦ ι (w 0 i) + z * ι (w 1 i)) := by

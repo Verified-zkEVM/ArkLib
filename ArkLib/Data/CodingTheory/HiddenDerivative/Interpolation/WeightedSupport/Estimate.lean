@@ -42,7 +42,7 @@ bounds of `ArkLib.ToMathlib.NumberTheory.Harmonic.Bounds` discharge the hypothes
 ## References
 
 * [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 6.1, the coefficient count (71).
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 8.2, the related count (57).
 -/
 
 @[expose] public section
@@ -60,17 +60,16 @@ variable {d D W : ℕ}
 `μ ≤ (1 + 3 * g / 8) * m`, then `D / 6` times the integral over `T` of
 `(g * m) ^ 3 * (max (5 / 8 - z u) 0) ^ 3` is at most the dimension.
 
-The hypotheses on `μ`, `z` and integrability are those of `weighted_floor_integral`; `0 < d` and
+The hypotheses on `μ` and `z` are those of `weighted_floor_integral`; `0 < d` and
 `0 < D` are those of `weightedSupport_dimension_ge_cubic_sum`. -/
 theorem weighted_dimension_integral (F : Type*) [Field F] (hd : 0 < d) (hD : 0 < D)
     (g m μ : ℝ) {T : Set (Fin (d - 1) → ℝ)} (hT : MeasurableSet T)
     (hTW : T ⊆ weightedSimplex (fun i : Fin (d - 1) ↦ ((i.val + 1 : ℕ) : ℝ)) W)
     (z : (Fin (d - 1) → ℝ) → ℝ) (hμ : μ ≤ (1 + 3 * g / 8) * m)
-    (hZ : ∀ u ∈ T, ∑ i, u i - μ = z u * (g * m))
-    (hint : IntegrableOn (fun u ↦ (g * m) ^ 3 * (max (5 / 8 - z u) 0) ^ 3) T) :
+    (hZ : ∀ u ∈ T, ∑ i, u i - μ = z u * (g * m)) :
     (D : ℝ) / 6 * ∫ u in T, (g * m) ^ 3 * (max (5 / 8 - z u) 0) ^ 3 ≤
       Module.finrank F (weightedSupportSpace F D d W (m * D * (1 + g)) hD) := by
-  have hf := weighted_floor_integral (d - 1) W g m μ hT hTW z hμ hZ hint
+  have hf := weighted_floor_integral (d - 1) W g m μ hT hTW z hμ hZ
   have hdim := weightedSupport_dimension_ge_cubic_sum F (W := W) (L := m * D * (1 + g)) hd hD
   have hD0 : (D : ℝ) ≠ 0 := by exact_mod_cast hD.ne'
   have he : m * D * (1 + g) / D = m * (1 + g) := by field_simp
@@ -101,16 +100,12 @@ theorem weighted_dimension_probability (F : Type*) [Field F] (hd : 0 < d) (hD : 
   have hn : ((d - 1 : ℕ) : ℝ) + 1 = d := by exact_mod_cast Nat.sub_add_cancel hd
   have hSw : weightedSimplex (fun i : Fin (d - 1) ↦ ((i.val + 1 : ℕ) : ℝ)) W = S := by
     simp only [S, Nat.cast_add, Nat.cast_one]
-  have hint : IntegrableOn (fun u ↦ (g * m) ^ 3 * f u) S :=
-    (continuous_const.mul (((continuous_const.sub
-      (continuous_normalizedRadius (d - 1) W (g * m))).max continuous_const).pow 3)).continuousOn
-      |>.integrableOn_weightedSimplex fun i => by positivity
   have hμ' : (W : ℝ) * (harmonic (d - 1) : ℝ) / (((d - 1 : ℕ) : ℝ) + 1) ≤
       (1 + 3 * g / 8) * m := by
     rwa [hn]
   have hdim := weighted_dimension_integral F (W := W) (T := S) hd hD g m _
     (measurableSet_weightedSimplex _ _) hSw.ge (normalizedRadius W (g * m)) hμ'
-    (fun u _ => by rw [normalizedRadius, div_mul_cancel₀ _ hgm]) hint
+    (fun u _ => by rw [normalizedRadius, div_mul_cancel₀ _ hgm])
   rw [integral_const_mul] at hdim
   rw [← volume_real_weightedSimplex_succ (d - 1) (Nat.cast_nonneg W), ← hS, setAverage_eq,
     smul_eq_mul]

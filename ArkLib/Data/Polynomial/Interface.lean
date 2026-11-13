@@ -47,7 +47,7 @@ lemma degree_polynomialOfCoeffs_deg_lt_deg :
   aesop (add simp [polynomialOfCoeffs, degree_lt_iff_coeff_zero])
 
 @[simp]
-lemma polynomialOfCoeffs_mem_degreeLT [NeZero deg] :
+lemma polynomialOfCoeffs_mem_degreeLT :
     polynomialOfCoeffs coeffs ∈ degreeLT F deg := by
   aesop (add simp Polynomial.mem_degreeLT)
 
@@ -97,7 +97,7 @@ lemma support_polynomialOfCoeffs : (polynomialOfCoeffs coeffs).support =
     Finset.map ⟨Fin.val, Fin.val_injective⟩ {i | coeffs i ≠ 0} := rfl
 
 @[simp]
-lemma eval_polynomialsOfCoeffs [NeZero deg] {α : F} :
+lemma eval_polynomialsOfCoeffs {α : F} :
     (polynomialOfCoeffs coeffs).eval α = ∑ x ∈ {i | coeffs i ≠ 0}, coeffs x * α ^ x.1 := by
   simp [eval_eq_sum, sum_def, Fin.liftF]
 

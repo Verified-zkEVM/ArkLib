@@ -24,10 +24,10 @@ weighted simplex therefore reduces to one over the standard simplex, with the fa
 `(∏ i, w i)⁻¹`. With `n = Fintype.card ι` and `0 ≤ W`, this gives the volume
 `W ^ n / (n! * ∏ i, w i)` and the weighted Dirichlet integral.
 
-Positivity of the weights is needed. A zero weight leaves its coordinate unbounded, so the set is
-not compact and, for `0 < W`, has infinite measure. A negative weight also makes the set
-unbounded, and the volume formula would then be negative. The closedness and measurability
-statements hold for all weights.
+Positivity of the weights is needed. In a nonempty weighted simplex, a zero or negative weight
+leaves its coordinate unbounded, so the set is not compact. For `0 < W`, a zero weight gives
+infinite measure. The positive-weight volume formula need not hold for negative weights. The
+closedness and measurability statements hold for all weights.
 
 ## Main statements
 
@@ -60,9 +60,9 @@ namespace Set
 
 variable {ι : Type*} [Fintype ι]
 
-/-- The weighted simplex of nonnegative vectors `u : ι → ℝ` with `∑ i, w i * u i ≤ W`. It is
-bounded only when every weight is positive; a zero or negative weight leaves its coordinate
-unbounded. -/
+/-- The weighted simplex of nonnegative vectors `u : ι → ℝ` with `∑ i, w i * u i ≤ W`. If it is
+nonempty, it is bounded only when every weight is positive; a zero or negative weight leaves its
+coordinate unbounded. -/
 def weightedSimplex (w : ι → ℝ) (W : ℝ) : Set (ι → ℝ) :=
   {u | (∀ i, 0 ≤ u i) ∧ ∑ i, w i * u i ≤ W}
 
@@ -118,7 +118,7 @@ theorem measurableSet_weightedSimplex (w : ι → ℝ) (W : ℝ) :
   (isClosed_weightedSimplex w W).measurableSet
 
 /-- For positive weights the weighted simplex is compact, as a continuous image of the standard
-simplex. A zero or negative weight makes it unbounded. -/
+simplex. A zero or negative weight makes a nonempty weighted simplex unbounded. -/
 theorem isCompact_weightedSimplex {w : ι → ℝ} (hw : ∀ i, 0 < w i) (W : ℝ) :
     IsCompact (weightedSimplex w W) := by
   rw [weightedSimplex_eq_image hw]

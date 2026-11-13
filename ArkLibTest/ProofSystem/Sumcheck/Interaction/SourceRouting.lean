@@ -9,7 +9,7 @@ import ArkLib.ProofSystem.Sumcheck.Interaction.Protocol
 /-! # Two Sumcheck rounds through an exported interface
 
 The first round exports the slice of its original bivariate oracle plus the evaluation of its
-actual first message. The prefix has the native optional challenge and abort shape; the second
+actual first message. The prefix has the optional challenge and abort shape; the second
 round uses the existing sampled multivariate verifier over the exported univariate interface.
 Its final relation observes that transformed oracle, including both actual prefix resources.
 -/
@@ -44,7 +44,7 @@ abbrev firstProtocol := Interaction.Oracle.Protocol.oracleWith (SingleRound.Mess
   (polynomialInterface Nat 1)
   (Interaction.Oracle.Protocol.public .receiver (Option Nat) fun _ => .done)
 
-/-- The prefix has the full native verifier's one-round public abort shape. -/
+/-- The prefix has the full verifier's one-round public abort shape. -/
 example : protocol Nat 1 1 = firstProtocol := by
   unfold protocol Core.protocol
   congr 2
@@ -281,7 +281,7 @@ theorem suffix_rejected (hidden : Nat) : observed 4 hidden 1 =
       simulateQ_bind, StateT.run_bind, StateT.run_pure]
     rfl)
 
-/-- Every claim actually returned on success satisfies the existing native final relation. -/
+/-- Every claim actually returned on success satisfies the existing final relation. -/
 theorem accepted_relation (hidden : Nat) (claim : ClosedClaim (FinalStatement Nat 1) exported)
     (hclaim : ((simulateQ record (closed 4 hidden)).run []).1.2 = some claim) :
     outputRelation Nat 1 1 claim := by

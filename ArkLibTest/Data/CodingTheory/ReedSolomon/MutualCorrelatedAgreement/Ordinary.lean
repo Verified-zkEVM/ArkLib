@@ -210,7 +210,7 @@ example : ∃ exceptional : Finset ℂ, (exceptional.card : ℚ) ≤ 1 ∧
   classical
   obtain ⟨exceptional, hcard, hgood⟩ := exists_exceptional_irreducibleOrdinaryEquation
     ordinaryEquationDomain (fun _ ↦ 0) (fun _ ↦ 0) (RingHom.id ℂ) ordinaryEquation
-    1 0 2 (by norm_num) (by norm_num) (by norm_num)
+    1 0 2 (by norm_num) (by norm_num)
     (coeffNatDegreeLE_X (some (0 : Fin 1))) MvPolynomial.X_prime.irreducible (by simp)
   have hcard' : (exceptional.card : ℚ) ≤ 1 := by
     simpa [ordinaryEquation, ordinaryFactorRaw] using hcard
@@ -238,7 +238,7 @@ example : ∃ exceptional : Finset ℂ, (exceptional.card : ℚ) ≤ 2 ∧
     simp [squareEquation, ordinaryEquation]
   obtain ⟨exceptional, hcard, hgood⟩ := exists_exceptional_ordinaryEquation
     ordinaryEquationDomain (fun _ ↦ 0) (fun _ ↦ 0) (RingHom.id ℂ) squareEquation
-    1 0 2 2 hQ (by norm_num) (by norm_num) (by norm_num) (by norm_num) hheight hdegree
+    1 0 2 2 hQ (by norm_num) (by norm_num) hheight hdegree
   have hcard' : (exceptional.card : ℚ) ≤ 2 := by
     simpa [ordinaryFactorRaw] using hcard
   have hcardNat : exceptional.card ≤ 2 := by exact_mod_cast hcard'
@@ -256,7 +256,7 @@ example : ∃ exceptional : Finset ℂ, (exceptional.card : ℚ) ≤ 1 ∧
   classical
   obtain ⟨exceptional, hcard, hgood⟩ := exists_exceptional_irreducibleOrdinaryPowerEquation
     (ℓ := 1) ordinaryEquationDomain (fun _ _ ↦ 0) (RingHom.id ℂ) ordinaryEquation
-    1 0 2 (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    1 0 2 (by norm_num) (by norm_num)
     (coeffNatDegreeLE_X (some (0 : Fin 1))) MvPolynomial.X_prime.irreducible (by simp)
   have hcard' : (exceptional.card : ℚ) ≤ 1 := by
     simpa [ordinaryEquation, ordinaryCurveFactorRaw] using hcard
@@ -376,7 +376,7 @@ example : ∃ exceptional : Finset ℚ, (exceptional.card : ℚ) ≤ 2 ∧ ∃ z
       (CoeffNatDegreeLE.pow (coeffNatDegreeLE_X (some (0 : Fin 1))) 2)
   obtain ⟨exceptional, hcard, hgood⟩ := exists_baseExceptional_ordinaryPowerEquation
     (ℓ := 1) threePointDomain (fun _ _ ↦ 0) squareEquation 1 0 2 3 3
-    (pow_ne_zero 2 (MvPolynomial.X_ne_zero _)) (by norm_num) (by norm_num) (by norm_num)
+    (pow_ne_zero 2 (MvPolynomial.X_ne_zero _)) (by norm_num) (by norm_num)
     (by norm_num) hheight (by simp [squareEquation])
   have hcard' : (exceptional.card : ℚ) ≤ 2 := by
     simpa [ordinaryUnifiedPowerFactorAtOrHeight, ordinaryUnifiedPowerFactorAt,
@@ -409,7 +409,7 @@ example : ∃ exceptional : Finset ℚ, (exceptional.card : ℚ) ≤ 2 ∧
     simp [squareEquation]
   obtain ⟨exceptional, hcard, hgood⟩ := exists_exceptional_ordinaryEquation_base
     rationalEquationDomain (fun _ ↦ 0) (fun _ ↦ 0) squareEquation
-    1 0 2 2 hQ (by norm_num) (by norm_num) (by norm_num) (by norm_num) hheight hdegree
+    1 0 2 2 hQ (by norm_num) (by norm_num) (by norm_num) hheight hdegree
   have hcard' : (exceptional.card : ℚ) ≤ 2 := by
     simpa [ordinaryFactorRaw] using hcard
   have hcardNat : exceptional.card ≤ 2 := by exact_mod_cast hcard'

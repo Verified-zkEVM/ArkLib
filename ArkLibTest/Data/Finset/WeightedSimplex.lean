@@ -95,7 +95,6 @@ example :
   simpa using setIntegral_le_sum_natWeightedSimplex (w := fun _ : Unit ↦ 1) (W := (1 : ℝ))
     (T := MeasureTheory.natFloorCell (fun _ ↦ 0)) (f := fun _ ↦ (1 : ℝ)) (g := fun _ ↦ 1)
     (fun _ ↦ one_ne_zero) (MeasureTheory.measurableSet_natFloorCell _) (by simpa using hTW)
-    (integrableOn_const (by rw [MeasureTheory.volume_natFloorCell]; simp))
     (by intro c hc; norm_num) (by intro x hx; norm_num)
 
 /-- The two budget-one lattice points contribute inside the enlarged one-dimensional simplex. -/

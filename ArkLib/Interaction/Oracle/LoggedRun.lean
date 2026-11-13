@@ -10,7 +10,7 @@ public import ArkLib.Interaction.Oracle.LoggedExecution
 /-!
 # Paired logged executions
 
-`executeStrategiesLoggedRun` pairs native strategy execution with its ordered source observations.
+`executeStrategiesLoggedRun` pairs strategy execution with its ordered source observations.
 `executeLogged` prepares a reduction's prover in the same ambient program, then uses this runner.
 Both entry points retain outputs and traces from one execution. Membership in a runner distribution
 remains the provenance criterion.
@@ -62,7 +62,7 @@ def closed (run : LoggedRun protocol initial Stmt Out OutP) := run.core.closed
 
 end LoggedRun
 
-/-- Execute native strategies once, retaining their paired core result and source observations. -/
+/-- Execute strategies once, retaining their paired core result and source observations. -/
 @[no_expose]
 def executeStrategiesLoggedRun {ι : Type u} {ambient : OracleSpec.{u, u} ι}
     {protocol : Oracle.Protocol.{u}} {initial : PFunctor.{u, u}}
@@ -80,7 +80,7 @@ def executeStrategiesLoggedRun {ι : Type u} {ambient : OracleSpec.{u, u} ι}
     initial impl prover verifier
   return ⟨⟨result.path, impl, result.proverOut, result.verifierOut⟩, result.sourceLog⟩
 
-/-- Erasing native source instrumentation recovers the same ordinary core execution. -/
+/-- Erasing source instrumentation recovers the same ordinary core execution. -/
 theorem executeStrategiesLoggedRun_erase {ι : Type u} {ambient : OracleSpec.{u, u} ι}
     {protocol : Oracle.Protocol.{u}} {initial : PFunctor.{u, u}}
     {Stmt : protocol.tree.BranchPath → Type u}

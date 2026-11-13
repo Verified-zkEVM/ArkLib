@@ -89,7 +89,7 @@ Most friction in this subtree comes from picking the wrong numeric type, so chec
 | Real-valued bounds | `ℝ`, then wrapped | right-hand sides of capacity bounds, `JohnsonBound.Jqℓ`, `Jcap` |
 | ε-errors (`ε_pg`, `ε_ca`, `ε_mca`) — value | `ENNReal` | it is a supremum of probabilities |
 | ε-errors — *bound*, compared with `↑` not `ENNReal.ofReal` | `I → ℝ≥0` | `IsMCAGenerator`'s `ε_mca` |
-| Probabilities | `ENNReal` | the `Pr_{...}[...]` notation |
+| Probabilities | `ENNReal` | the `Pr{let x ← mx}[p x]` notation ([probability conventions](probability-conventions.md)) |
 | List sizes | `ℕ∞`, cast to `ENNReal` for real-valued bounds | `Lambda`, built from `closeCodewordsRel`'s `.encard` |
 | List-size *bounds* in a predicate | `ℝ≥0` | `Code.IsListDecodable`'s `ℓ` — see below for why, and why it is not `ℕ∞` |
 | Polynomial degree bound | `Polynomial.degreeLT F k : Submodule F F[X]` | `ReedSolomon.code`, `Folded.frsCode` |
@@ -98,10 +98,20 @@ Most friction in this subtree comes from picking the wrong numeric type, so chec
 
 **The two rates are different, and the difference is load-bearing.** `LinearCode.rate` is the
 base-field-dimension rate `dim/n`. Over a module alphabet `F^s` the alphabet-normalized rate is
-`dim/(s·n)`, which is `LinearCode.alphabetRate`. They agree only at `s = 1`
+`dim/(s·n)`, which is `LinearCode.alphabetRate`. They agree when `s = 1`
 (`alphabetRate_one_eq_rate`). The subspace-design and MDS statements use the alphabet-normalized
 one; substituting `rate` there gives false statements. Both formulas are total and yield `0` in
 the zero-denominator cases.
+
+**Guruswami–Sudan degree and radius boundaries.** For messages of degree `< k`,
+`gs_degree_bound k n m` is `⌊D_X⌋₊` at rate `k/n`, and `Conditions.Q_deg` is inclusive.
+Accordingly, `gs_divisibility` assumes distance strictly below `gs_johnson k n m`.
+The paper-facing pair `gs_existence_strict` and `gs_divisibility_of_degree_lt` uses
+weighted degree strictly below real `D_X` and distance at most that radius, including
+integral `D_X`. The BCIKS20 Lemma 5.3 wrappers translate degree `≤ k` into message
+length `k + 1` and use rate `(k + 1)/n`. The older `proximity_gap_degree_bound` and
+`proximity_gap_johnson` helpers add one to their input, so they take input `k` in
+those wrappers. Passing `k + 1` to these helpers instead gives rate `(k + 2)/n`.
 
 **Where the closed interval `[0,1]` does and does not bind.** It binds on the *error bound*:
 BCGM25 Def 3.14 types `ϵMCA : [0,1] → [0,1]` and quantifies `γ ∈ [0,1]`, and both ABF26 Grand
@@ -287,5 +297,11 @@ Each such `sorry` should correspond to a row in
 [`../kb/audits/open-problems-list-decoding-and-correlated-agreement.md`](../kb/audits/open-problems-list-decoding-and-correlated-agreement.md);
 if an admit decomposes into sub-goals, record the decomposition there.
 
-`ArkLib/Data/CodingTheory/` contains a baselined set of admitted external results. New or changed
-admissions must use this comment form and pass the exhaustive axiom sweep.
+The axiom baseline's `sorry` list is empty. The remaining admitted external results in
+`ArkLib/Data/CodingTheory/` are *solicited proofs*: true, faithfully stated results listed in the
+`solicited` array of `scripts/axiom_baseline.json`, currently all tied to
+[issue #1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352). A solicited declaration's
+docstring must contain its issue URL, it must still depend on `sorryAx`, and no declaration outside
+the solicited list may depend on it; [`scripts/README.md`](../../scripts/README.md) states the full
+rules. New or changed admissions must use this comment form, be reviewed into that list, and pass
+the exhaustive axiom sweep.

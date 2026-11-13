@@ -109,8 +109,8 @@ theorem resultant_derivative_ne_zero_of_separable_map_fractionField (f : R[X])
   rw [hdeg, derivative_map, resultant_map_map] at hne
   exact fun hz => hne (by rw [hz, map_zero])
 
-/-- Over a GCD domain `R` with fraction field `K`, an irreducible polynomial `f : R[X]` with
-nonzero derivative becomes separable over `K`.
+/-- Over a GCD ring `R` with fraction field `K`, an irreducible polynomial `f : R[X]` with
+nonzero derivative becomes separable over `K`. The embedding into `K` makes `R` a domain.
 
 A nonzero derivative forces `0 < f.natDegree`, so `f` is primitive (`Irreducible.isPrimitive`),
 and Gauss's lemma (`IsPrimitive.irreducible_iff_irreducible_map_fraction_map`) makes `f`
@@ -118,9 +118,10 @@ irreducible over `K`. An irreducible polynomial over a field is separable exactl
 derivative is nonzero. The hypothesis `hder` is needed: over `𝔽₂[t]`, `Y ^ 2 - t` is
 irreducible and has derivative `0`. `IsGCDMonoid R` is the hypothesis of Mathlib's Gauss lemma
 for primitive, not necessarily monic, polynomials. -/
-theorem separable_map_of_irreducible_of_derivative_ne_zero [IsDomain R] [IsGCDMonoid R]
+theorem separable_map_of_irreducible_of_derivative_ne_zero [IsGCDMonoid R]
     (f : R[X]) (hirr : Irreducible f) (hder : f.derivative ≠ 0) :
     (f.map (algebraMap R K)).Separable := by
+  have : IsDomain R := (IsFractionRing.injective R K).isDomain (algebraMap R K)
   have hdeg : f.natDegree ≠ 0 := fun h ↦ hder (by
     rw [eq_C_of_natDegree_eq_zero h, derivative_C])
   have hmap : Irreducible (f.map (algebraMap R K)) :=

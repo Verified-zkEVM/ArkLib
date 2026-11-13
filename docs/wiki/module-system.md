@@ -10,50 +10,33 @@ to say what crosses the boundary. The upstream reference is
 `ArkLibTest/` is deliberately classic, and so are the `lean_exe` roots under `scripts/`.
 
 If you are writing or fixing a file today, go to [the canonical file shape](#the-canonical-file-shape)
-and [when a build breaks](#when-a-build-breaks), which lists every error the port actually produced
-and its fix. The rest of the page records what the boundary buys, how it is enforced, and the
-handful of places where ArkLib had to give ground.
+and [when a build breaks](#when-a-build-breaks), which lists the errors the module system produces
+in practice and their fixes. The rest of the page records what the boundary buys, how it is
+enforced, and the handful of places where ArkLib had to give ground.
 
 ## What is enforced, and by what
 
 | Rule | Enforced by |
 | --- | --- |
 | A `module` file may only import `module` files | Lean, at header elaboration (`cannot import non-`module` X from `module``) |
-| Every file under `ArkLib/` is a module | the generated root `ArkLib.lean` is a module and `public import`s all 464 files, so a classic file fails the build the moment it is added |
+| Every file under `ArkLib/` is a module | the generated root `ArkLib.lean` is a module and `public import`s every file, so a classic file fails the build the moment it is added |
 | The `ArkLib` library uses the module system | `requiresModuleSystem = true` on the `ArkLib` `lean_lib` in `lakefile.toml` |
 | `ArkLibTest/` may stay classic | `allowNonModules = true` on the `ArkLibTest` `lean_lib` |
 | The header's shape | `lake exe lint-style` (see below) |
 
 There is no separate migration checker to run: `lake build` is the gate.
 
-## What adoption is worth, measured
+## What the module system buys
 
-Measured on 2026-09-09 against a 36-file downward-closed subset of the
-`ArkLib/Data/CodingTheory/ListDecodability` closure, editing one proof in
-`ArkLib/Data/Fin/Basic.lean`, which 17 files in that set transitively import.
+Theorem proofs are private to their module. Ordinary module imports load the public artifact
+without private proof bodies. Imports using `import all`, and classic clients, can load private
+information. Because ArkLib is proof-heavy, the exported part is a small fraction of the build
+output, which keeps the memory of ordinary importers low.
 
-| Tree | Proof edit | Modules rebuilt | Wall time |
-| --- | --- | --- | --- |
-| classic Lean | in place, no line shift | 18 | 39.5 s |
-| module system | in place, no line shift | **1** | **2.6 s** |
-| module system | inserts a line | 18 | 34.3 s |
-
-Olean split for those same 36 ported modules:
-
-| Part | Size |
-| --- | --- |
-| `.olean` (exported, what an importer loads) | 3.43 MB |
-| `.olean.private` (proofs and unexposed bodies) | 19.66 MB |
-
-**Only 14.9% of the bytes are what an importer loads.** ArkLib is far more proof-heavy than
-mathlib, whose corresponding split is about 34% exported, so the memory benefit here is larger than
-upstream's headline figure.
-
-**The caveat that matters.** The rebuild win only materialises when an edit does not shift the
-source positions of later declarations. Declaration ranges are exported metadata, so inserting or
-deleting a line invalidates every downstream module exactly as today — the third row above. Editing
-a tactic in place, or editing the last declaration in a file, gets the full benefit. Adoption is
-therefore a large win on some edits and a no-op on others; it is never worse than the status quo.
+A proof-only edit that leaves the public artifact unchanged need not rebuild dependents that
+consume only that artifact. Declaration ranges are exported metadata, so inserting or deleting a
+line invalidates every downstream module as it would without the module system. Editing a tactic
+in place, or editing the last declaration in a file, gets the full benefit.
 
 ## The canonical file shape
 
@@ -82,14 +65,13 @@ public import Mathlib.Bar
 No closing `end` is needed; an unclosed outermost `public section` is expected. Two cases differ:
 
 - **Imports-only re-export files** get `module` and `public import` and **no section**. Adding one
-  would cost them the copyright, docstring and file-length exemptions they rely on. Three files are
-  of this shape: `ArkLib/Data/CodingTheory/{GuruswamiSudan,PolishchukSpielman}.lean` and
-  `ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/Prelude.lean`.
-- **Metaprograms** — delaborators, unexpanders, elaborators and their helpers — are marked `meta`
-  on the declaration (`meta def fooUnexpander : Lean.PrettyPrinter.Unexpander`). ArkLib has ten,
-  in `ArkLib/Data/Fin/Tuple/Notation.lean`, `ArkLib/Data/Classes/Slice.lean` and
-  `ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Escape.lean`. `macro`, `elab`,
-  `notation` and `syntax` commands are already meta and need no annotation.
+  would cost them the copyright, docstring and file-length exemptions they rely on. List the
+  current ones with
+  `git ls-files 'ArkLib/*.lean' | xargs grep -L 'public section'`.
+- **Metaprograms** (delaborators, unexpanders, elaborators and their helpers) are marked `meta`
+  on the declaration (`meta def fooUnexpander : Lean.PrettyPrinter.Unexpander`);
+  `ArkLib/Data/Fin/Tuple/Notation.lean` and `ArkLib/Data/Classes/Slice.lean` have examples.
+  `macro`, `elab`, `notation` and `syntax` commands are already meta and need no annotation.
 
 ### Why `@[expose] public section`, and never a per-declaration `@[expose]`
 
@@ -100,7 +82,7 @@ forbidden repository-wide, so a public section in every non-imports-only file is
 
 `@[expose]` then keeps definition bodies unfoldable, which is what preserves the repository's `rfl`,
 `decide`, `simp` and `unfold` proofs. Theorem proofs stay private regardless, and that alone is
-where the measured win above comes from.
+where the rebuild win above comes from.
 
 A per-declaration `@[expose]` *inside* a blanket exposed section is a warning
 (`Redundant [expose] attribute`, `@[expose] has no effect ...`), and therefore a CI failure. Tighten
@@ -132,15 +114,14 @@ executors demonstrate this pattern while their classic acceptance clients still 
 | `@[expose] public section` | Everything below is public and its definition bodies stay unfoldable. Theorem proofs stay private regardless, which is where the build win comes from. |
 
 `import all` is what makes a proof that unfolds an unexposed upstream definition keep working, and
-it is the reason the port needed no upstream changes. ArkLib uses it 24 times across 16 files,
-against `CompPoly.Univariate.*`, `Mathlib.Algebra.Polynomial.Basic`,
-`Mathlib.Analysis.SpecialFunctions.BinaryEntropy` and `Init.Data.Vector.FinRange`. Each site
-carries a one-line comment saying which definition it is unfolding, because the line looks
-redundant next to the `public import` of the same tree and is easy to "clean up" by mistake.
+it is the reason the port needed no upstream changes. Most uses target `CompPoly.Univariate.*`;
+`git grep -n '^import all' -- ArkLib` lists them all. When adding `import all`, include a short
+comment naming the definition whose private body is needed, so the import is not mistaken for a
+redundant public import.
 
 ### When a build breaks
 
-Every row below is an error seen while porting real ArkLib files.
+Every row below is an error seen in real ArkLib files.
 
 | Error | Cause | Fix |
 | --- | --- | --- |
@@ -149,36 +130,28 @@ Every row below is an error seen while porting real ArkLib files.
 | `Note: The following definitions were not unfolded because their definition is not exposed` alongside a failing `change`, `rfl`, `decide` or `simp` | the definition's body is not exposed | if it is ours, check the import is `public`. If it belongs to a dependency, add `import all M` naming the module that **declares** it — not an umbrella that re-exports it. Failing that, rewrite the proof against the public API |
 | `Invalid rewrite argument: ... is a value of type ...` from `rw [SomeDef]` | same cause: you cannot unfold an unexposed definition by name | `import all` its defining module, or use the dependency's `_def`/API lemma |
 | ``A private declaration `X` ... would need to be public to access here`` | a `private` declaration is named in a public signature | drop the `private`, or make the referring declaration `private` too. Lean names the declaration, so this is mechanical |
-| `tactic execution is stuck, goal contains metavariables` | a `by` block in an exposed *definition* is delayed until the surrounding type is solved, and it never is | hoist it: bind the proof with `have h : T := by …` before the term that needs it, and pass `h`. Only if the definition's inferred type itself embeds the proof is [`backward.proofsInPublic`](#backwardproofsinpublic) warranted |
-| `Unknown constant _private.….foo._proof_3` | a proof inside a non-exposed definition was abstracted into a private auxiliary theorem that the public signature then mentions | same fix, same last resort |
+| `tactic execution is stuck, goal contains metavariables` | a `by` block in an exposed *definition* is delayed until the surrounding type is solved, and it never is | hoist it: bind the proof with `have h : T := by …` before the term that needs it, and pass `h`, or give the definition an explicit result type (see [inferred types that embed proofs](#inferred-types-that-embed-proofs)) |
+| `Unknown constant _private.….foo._proof_3` | a proof inside a non-exposed definition was abstracted into a private auxiliary theorem that the public signature then mentions | same fix |
 | `Invalid match expression: The type of pattern variable … contains metavariables` | the same delayed-`by`, seen through a `match` | same fix |
 | ``may not access declaration `X` imported as `meta` `` | metaprogram code outside a meta scope | mark the declaration `meta` |
 | ``cannot use `all` with `public import` `` | `public import all M` | split into `public import M` and `import all M` on separate lines |
 | `Redundant [expose] attribute` / `@[expose] has no effect` | a per-declaration `@[expose]` inside the blanket section | delete it. Warnings are CI failures here |
 
-### `backward.proofsInPublic`
-
-Binary Basefold's composed bundles use explicit result types and named index equalities,
-so they elaborate under the default settings.
+### Inferred types that embed proofs
 
 A composed verifier or reduction written as `def foo := <let-chain>` without a type ascription
 can have an *inferred* type that embeds the inline `Fin` bounds proofs from its body. That
-shape has no good outcome under the default: exposed, every `by` is delayed until the still-unknown
-result type is solved and none ever is; not exposed, each proof is abstracted into a private
-auxiliary theorem that the public signature may not mention. The option restores the classic
-elaboration those definitions were written against, and each site must carry a comment saying so.
-
-This is a compatibility flag, not a suppression — it silences no diagnostic and the zero-warning
-budget still applies to any file that sets it. Do not reach for it before trying the hoist above,
-and never reach for `backward.privateInPublic`, which logs a warning at every access site.
-
-Writing these definitions with explicit result types retires the option, as the Binary Basefold
-core interaction shows.
+shape has no good outcome: exposed, every `by` is delayed until the still-unknown result type is
+solved and none ever is; not exposed, each proof is abstracted into a private auxiliary theorem
+that the public signature may not mention. Give such definitions explicit result types and name
+the index equalities they need, as Binary Basefold's composed bundles do. No ArkLib file needs
+the compatibility option `backward.proofsInPublic`; try both fixes before reaching for it, and
+never use `backward.privateInPublic`, which logs a warning at every access site.
 
 ### Why `ArkLibTest/` stays classic
 
 A classic file imports at `.private` level and sees everything, including proof bodies. That matters
-because `ArkLibTest/` holds around 40 `#guard_msgs` assertions wrapped around `#print axioms`, and
+because `ArkLibTest/` holds many `#guard_msgs` assertions wrapped around `#print axioms`, and
 `#print axioms` walks proof bodies, which are private to a module importer. Migrating the test tree
 would change that output and break every one of those guards. mathlib leaves `Archive` classic for
 the same reason. `allowNonModules = true` on the `ArkLibTest` library records the decision.
@@ -186,25 +159,6 @@ the same reason. `allowNonModules = true` on the `ArkLibTest` library records th
 `scripts/AxiomSweep.lean` is unaffected for the same reason: it calls `importModules` at the default
 `.private` level, and at that level `importAll` is forced true for every module transitively, so the
 census still sees every proof body.
-
-## What the port changed, beyond headers
-
-Of 464 files, all but a few needed nothing but the header rewrite. The exceptions:
-
-- **70 `private` markers dropped**, where a private declaration was named by a public signature.
-  Lean names the declaration in its own error, so this was mechanical.
-- **Missing imports made explicit.** `ArkLib/Data/Fin/Basic.lean` failed with
-  `Unknown constant List.le_sum_of_mem`, a `to_additive`-generated mathlib lemma it had only ever
-  received transitively; `ArkLib/Data/CodingTheory/ListDecodability/Bounds/KKH26.lean` needed
-  `Mathlib.RingTheory.MvPolynomial.Symmetric.Defs` and `Mathlib.RingTheory.Polynomial.Vieta`. The
-  module system turns implicit transitive dependencies into declared ones, which is a real bug class
-  it finds for free.
-- **A handful of proofs rewritten** where a delayed `by` could not survive in an exposed position:
-  term proofs in place of `by simp` (`ArkLib/OracleReduction/Execution.lean`,
-  `ArkLib/ProofSystem/Component/RandomQuery.lean`), a hoisted arity lemma
-  (`Prover.append_state_arity` in
-  `ArkLib/OracleReduction/Composition/Sequential/Append/Basic.lean`), and hoisted `have`s in
-  `ArkLib/ProofSystem/Binius/BinaryBasefold/Prelude.lean`.
 
 ## Where the remaining win is
 

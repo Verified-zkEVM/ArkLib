@@ -44,29 +44,33 @@ open MvPolynomial
 variable {F : Type*} {r : ℕ}
 
 /-- The initial separant has degree at most one less in the highest jet variable. -/
-theorem degreeOf_initialJetSeparant_le [CommSemiring F] [Nontrivial F]
+theorem degreeOf_initialJetSeparant_le [CommSemiring F]
     (center : F) (Q : DifferentialPolynomial F r) :
     (initialJetSeparant center Q).degreeOf (Fin.last r) ≤
       Q.degreeOf (some (Fin.last r)) - 1 := by
-  rw [← weightedTotalDegree_piSingle]
-  apply le_trans (weightedTotalDegree_aeval_le_of_le
-    (Pi.single (some (Fin.last r)) 1) (Pi.single (Fin.last r) 1) _ _ ?_)
-  · simpa [initialJetSeparant, separant] using weightedTotalDegree_pderiv_le_sub
-      (Pi.single (some (Fin.last r)) 1) (some (Fin.last r)) Q
-  · intro i
-    cases i with
-    | none => simp
-    | some j =>
-      by_cases hj : j = Fin.last r
-      · subst j
-        simp [weightedTotalDegree_piSingle]
-      · simp [weightedTotalDegree_piSingle, degreeOf_X, Ne.symm hj]
+  rcases subsingleton_or_nontrivial F with hF | hF
+  · have hz : initialJetSeparant center Q = 0 := Subsingleton.elim _ _
+    rw [hz, degreeOf_zero]
+    exact Nat.zero_le _
+  · rw [← weightedTotalDegree_piSingle]
+    apply le_trans (weightedTotalDegree_aeval_le_of_le
+      (Pi.single (some (Fin.last r)) 1) (Pi.single (Fin.last r) 1) _ _ ?_)
+    · simpa [initialJetSeparant, separant] using weightedTotalDegree_pderiv_le_sub
+        (Pi.single (some (Fin.last r)) 1) (some (Fin.last r)) Q
+    · intro i
+      cases i with
+      | none => simp
+      | some j =>
+        by_cases hj : j = Fin.last r
+        · subst j
+          simp [weightedTotalDegree_piSingle]
+        · simp [weightedTotalDegree_piSingle, degreeOf_X, Ne.symm hj]
 
 /-- If the Taylor index-weight degree of `Q` is at most `v`, its rational Taylor numerator has
 degree at most `(2(l - r) - 1) * (v - 1) + l` in the highest jet variable. -/
 theorem degreeOf_rationalTaylorNumeratorOver_le
     [Field F] (center : Polynomial F) (Q : DifferentialPolynomial (Polynomial F) r) (v : ℕ)
-    (hr : 0 < r) (hv : 0 < v)
+    (hr : 0 < r)
     (hQ : Q.weightedTotalDegree (indexWeight (r + 1)) ≤ v) (l : ℕ) :
     (rationalTaylorNumeratorOver F center Q l).degreeOf (Fin.last r) ≤
       (2 * (l - r) - 1) * (v - 1) + l := by
@@ -127,31 +131,33 @@ theorem degreeOf_rationalTaylorNumeratorOver_le
             (universalTaylorResidual l center Q)).coeff (l - r)))
       simp only [degreeOf_neg, degreeOf_C, zero_add] at hm
       have he : 2 * (l - r) - 1 = (2 * (l - r) - 2) + 1 := by omega
-      have hvsub := Nat.sub_add_cancel (Nat.succ_le_of_lt hv)
       have hlr : r + (l - r) = l := by omega
       rw [he]
-      exact hm.trans (hd.trans (by nlinarith [hlr, hr, hvsub]))
+      apply hm.trans (hd.trans ?_)
+      cases v with
+      | zero => simp
+      | succ v => simp only [Nat.add_sub_cancel]; nlinarith [hlr]
 
 /-- In first order, a degree bound on `Y₁` gives the rational Taylor numerator bound. -/
 theorem degreeOf_rationalTaylorNumeratorOver_firstOrder
     [Field F] (center : Polynomial F) (Q : DifferentialPolynomial (Polynomial F) 1) (v : ℕ)
-    (hv : 0 < v) (hjet : Q.degreeOf (some 1) ≤ v) (l : ℕ) :
+    (hjet : Q.degreeOf (some 1) ≤ v) (l : ℕ) :
     (rationalTaylorNumeratorOver F center Q l).degreeOf 1 ≤
       (2 * (l - 1) - 1) * (v - 1) + l := by
   have hQ : Q.weightedTotalDegree (indexWeight 2) ≤ v := by
     rw [weightedTotalDegree_indexWeight_eq_jetDegree_one, jetDegree]
     exact hjet
-  simpa using degreeOf_rationalTaylorNumeratorOver_le center Q v (by omega) hv hQ l
+  simpa using degreeOf_rationalTaylorNumeratorOver_le center Q v (by omega) hQ l
 
 /-- If `τ` is sufficient for the chart, every padded Taylor numerator has degree at most
 `τ * (v - 1) + l` in the highest jet variable. -/
 theorem degreeOf_commonTaylorNumeratorOver_le
     [Field F] (center : Polynomial F) (Q : DifferentialPolynomial (Polynomial F) r)
-    (v K τ : ℕ) (hτ : TaylorExponentSufficient r K τ) (hr : 0 < r) (hv : 0 < v)
+    (v K τ : ℕ) (hτ : TaylorExponentSufficient r K τ) (hr : 0 < r)
     (hQ : Q.weightedTotalDegree (indexWeight (r + 1)) ≤ v) (l : Fin K) :
     (commonTaylorNumeratorOver F center Q τ l).degreeOf (Fin.last r) ≤
       τ * (v - 1) + l.val := by
-  have hd := degreeOf_rationalTaylorNumeratorOver_le center Q v hr hv hQ l.val
+  have hd := degreeOf_rationalTaylorNumeratorOver_le center Q v hr hQ l.val
   have hjet : Q.degreeOf (some (Fin.last r)) ≤ v :=
     (degreeOf_le_weightedTotalDegree _ _ (by simp [indexWeight]; omega) Q).trans hQ
   have hs := (degreeOf_initialJetSeparant_le center Q).trans
@@ -168,19 +174,19 @@ theorem degreeOf_commonTaylorNumeratorOver_le
 /-- In first order, a degree bound on `Y₁` gives the common Taylor numerator bound. -/
 theorem degreeOf_commonTaylorNumeratorOver_firstOrder
     [Field F] (center : Polynomial F) (Q : DifferentialPolynomial (Polynomial F) 1)
-    (v K τ : ℕ) (hτ : TaylorExponentSufficient 1 K τ) (hv : 0 < v)
+    (v K τ : ℕ) (hτ : TaylorExponentSufficient 1 K τ)
     (hjet : Q.degreeOf (some 1) ≤ v) (l : Fin K) :
     (commonTaylorNumeratorOver F center Q τ l).degreeOf 1 ≤ τ * (v - 1) + l.val := by
   have hQ : Q.weightedTotalDegree (indexWeight 2) ≤ v := by
     rw [weightedTotalDegree_indexWeight_eq_jetDegree_one, jetDegree]
     exact hjet
-  simpa using degreeOf_commonTaylorNumeratorOver_le center Q v K τ hτ (by omega) hv hQ l
+  simpa using degreeOf_commonTaylorNumeratorOver_le center Q v K τ hτ (by omega) hQ l
 
 /-- If the highest jet variable of a first-order differential polynomial has degree at most `v`,
 the padded Taylor numerator has degree at most `τ * (v - 1) + l` in that variable. -/
 theorem degreeOf_commonTaylorNumerator_firstOrder_le [Field F] (center : F)
     (Q : DifferentialPolynomial F 1) (v K τ : ℕ)
-    (hτ : TaylorExponentSufficient 1 K τ) (hv : 0 < v)
+    (hτ : TaylorExponentSufficient 1 K τ)
     (hjet : Q.degreeOf (some 1) ≤ v) (l : Fin K) :
     (commonTaylorNumerator center Q τ l.val).degreeOf 1 ≤ τ * (v - 1) + l.val := by
   let Qover : DifferentialPolynomial (Polynomial F) 1 := MvPolynomial.map Polynomial.C Q
@@ -192,7 +198,7 @@ theorem degreeOf_commonTaylorNumerator_firstOrder_le [Field F] (center : F)
     exact (Multiset.count_le_of_le (some 1)
       (MvPolynomial.degrees_map_le (p := Q) (f := Polynomial.C))).trans hjet'
   have hover := degreeOf_commonTaylorNumeratorOver_firstOrder
-    (Polynomial.C center) Qover v K τ hτ hv hQover l
+    (Polynomial.C center) Qover v K τ hτ hQover l
   have hmap :
       (MvPolynomial.map (Polynomial.aeval (0 : F)).toRingHom
         (commonTaylorNumeratorOver (F := F) (Polynomial.C center) Qover τ l.val)).degreeOf 1 ≤

@@ -28,11 +28,12 @@ At a natural number `N` with `h ≤ a N` and `v ≤ b N` it evaluates to
 the number of exponent vectors in the product of an interval of length `a N + 1` with the
 `s`-variable simplex of size `b N`, minus the number in its translate by `(h, v)`.
 
-Although both products have natural degree `s + 1`, their top terms cancel: the rectangle difference
-has natural degree at most `s`, and its coefficient in degree `s` is
+Both products have natural degree at most `s + 1`, and their degree-`(s + 1)` terms cancel: the
+rectangle difference has natural degree at most `s`, and its coefficient in degree `s` is
 `(h * b ^ s + s * v * a * b ^ (s - 1)) / s!`. The proof writes the difference as
 `(a X + 1) * D(b X) + h * q(b X - v)`, where `D = q(X) - q(X - v)` is the backward difference of
-`q` with step `v`, of natural degree `s - 1` and top coefficient `v * s / s!`.
+`q` with step `v`, of natural degree at most `s - 1` and coefficient `v * s / s!` in degree
+`s - 1`.
 
 ## Main statements
 

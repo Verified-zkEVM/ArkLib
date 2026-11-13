@@ -114,7 +114,7 @@ theorem closed_eq_concrete_iff (run : CoreRun protocol initial Stmt Out OutP)
 
 end CoreRun
 
-/-- Execute native strategies and retain their actual outputs together with the input behavior
+/-- Execute strategies and retain their actual outputs together with the input behavior
 used by the same run. The ordinary strategy executor runs the terminal verifier action once. -/
 @[macro_inline]
 def executeStrategiesCore {ι : Type u} {ambient : OracleSpec.{u, u} ι}
@@ -133,7 +133,7 @@ def executeStrategiesCore {ι : Type u} {ambient : OracleSpec.{u, u} ι}
     impl prover verifier
   return ⟨result.1, impl, result.2.1, result.2.2⟩
 
-/-- Native core execution adds only the paired-resource record to the existing executor.
+/-- Core execution adds only the paired-resource record to the existing executor.
 This is an equality of open programs, before any ambient oracle interpretation. -/
 theorem executeStrategiesCore_eq_executeStrategies
     {ι : Type u} {ambient : OracleSpec.{u, u} ι}
@@ -152,7 +152,7 @@ theorem executeStrategiesCore_eq_executeStrategies
         impl prover verifier
       return ⟨result.1, impl, result.2.1, result.2.2⟩) := rfl
 
-/-- Construct a reduction's prover strategy, then use the common native core executor. -/
+/-- Construct a reduction's prover strategy, then use the common core executor. -/
 def executeCore {ι : Type u} {ambient : OracleSpec.{u, u} ι}
     {protocol : Oracle.Protocol.{u}} {initial : PFunctor.{u, u}}
     {StatementIn : Type v} {WitnessIn : Type w}
@@ -168,7 +168,7 @@ def executeCore {ι : Type u} {ambient : OracleSpec.{u, u} ι}
   let prover ← reduction.prover stmt wit
   executeStrategiesCore impl prover (reduction.verifier stmt)
 
-/-- Reduction setup is followed by the same native strategy entry point, with no extra execution
+/-- Reduction setup is followed by the same strategy entry point, with no extra execution
 or replacement of the input resources. -/
 theorem executeCore_eq_executeStrategiesCore
     {ι : Type u} {ambient : OracleSpec.{u, u} ι}

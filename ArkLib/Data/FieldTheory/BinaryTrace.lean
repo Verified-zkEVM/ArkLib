@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.Polynomial.BinaryTrace
+public import Mathlib.Algebra.CharP.CharAndCard
 public import Mathlib.Algebra.CharP.Two
 public import Mathlib.FieldTheory.Finite.Trace
 
@@ -20,7 +21,7 @@ embedding of the two-element field and keeps polynomial evaluation identities li
 
 * `binaryTrace_eq_algebraMap_trace` identifies the sum with the canonical algebraic trace.
 * `binaryTrace_eq_zero_or_one` identifies the image with the prime subfield.
-* `exists_binaryTrace_eq_one` supplies a trace-one parameter when `m > 0`.
+* `exists_binaryTrace_eq_one` supplies a trace-one parameter.
 * `binaryTraceFiber_card` counts either trace fiber: each has exactly `|F| / 2` points.
 * `quadratic_ne_zero_of_binaryTrace_eq_one` excludes `τ z² + z + 1 = 0`
   when the trace of `τ` is one.
@@ -120,21 +121,31 @@ lemma binaryTrace_eq_algebraMap_trace [Algebra (ZMod 2) F] {m : ℕ}
   rw [FiniteField.algebraMap_trace_eq_sum_pow, hdim]
   simp [binaryTrace]
 
+omit [CharP F 2] in
 /-- On a field of size `2^m`, the Frobenius sum is fixed by squaring. -/
 lemma binaryTrace_sq_eq_self {m : ℕ} (hcard : Fintype.card F = 2 ^ m) (x : F) :
     binaryTrace m x ^ 2 = binaryTrace m x := by
+  have : CharP F 2 := charP_of_card_eq_prime_pow hcard
   rw [binaryTrace_sq, ← hcard, FiniteField.pow_card]
   simpa only [add_assoc, add_zero] using
     congrArg (fun y : F ↦ binaryTrace m x + y) (CharTwo.add_self_eq_zero x)
 
+omit [CharP F 2] in
 /-- The intrinsic trace of a binary field takes values in its two-element prime subfield. -/
 lemma binaryTrace_eq_zero_or_one {m : ℕ} (hcard : Fintype.card F = 2 ^ m) (x : F) :
     binaryTrace m x = 0 ∨ binaryTrace m x = 1 := by
   exact eq_zero_or_one_of_sq_eq_self (binaryTrace_sq_eq_self hcard x)
 
+omit [CharP F 2] in
 /-- There is an element of absolute trace one. -/
-lemma exists_binaryTrace_eq_one {m : ℕ} (hm : 0 < m)
-    (hcard : Fintype.card F = 2 ^ m) : ∃ τ : F, binaryTrace m τ = 1 := by
+lemma exists_binaryTrace_eq_one {m : ℕ} (hcard : Fintype.card F = 2 ^ m) :
+    ∃ τ : F, binaryTrace m τ = 1 := by
+  -- The cardinality of a field excludes the empty Frobenius sum.
+  have hm : 0 < m := by
+    by_contra h
+    have hm0 : m = 0 := by omega
+    have hnontrivial := Fintype.one_lt_card (α := F)
+    simp [hm0, hcard] at hnontrivial
   -- A nonzero trace polynomial has fewer roots than there are field elements.
   have hdegree : (binaryTracePoly (R := F) m).natDegree < Fintype.card F := by
     rw [natDegree_binaryTracePoly (F := F) hm, hcard]
@@ -176,6 +187,7 @@ private lemma binaryTraceFiber_zero_card_eq_one_card {m : ℕ} {τ : F}
       exact CharTwo.add_self_eq_zero 1
     · rw [add_assoc, CharTwo.add_self_eq_zero, add_zero]
 
+omit [CharP F 2] in
 private lemma binaryTraceFiber_not_zero_eq_one {m : ℕ}
     (hcard : Fintype.card F = 2 ^ m) :
     Finset.univ.filter (fun x : F ↦ ¬binaryTrace m x = 0) = binaryTraceFiber m 1 := by
@@ -190,12 +202,11 @@ private lemma binaryTraceFiber_not_zero_eq_one {m : ℕ}
     exact zero_ne_one hx
 
 /-- Each of the two trace fibers contains exactly half of the field. -/
-lemma binaryTraceFiber_card {m : ℕ} (hm : 0 < m)
-    (hcard : Fintype.card F = 2 ^ m) (b : F) (hb : b = 0 ∨ b = 1) :
+lemma binaryTraceFiber_card {m : ℕ} (hcard : Fintype.card F = 2 ^ m) (b : F) (hb : b = 0 ∨ b = 1) :
     (binaryTraceFiber m b).card = Fintype.card F / 2 := by
   classical
   -- Translation by a trace-one element pairs the two fibers.
-  obtain ⟨τ, hτ⟩ := exists_binaryTrace_eq_one (F := F) hm hcard
+  obtain ⟨τ, hτ⟩ := exists_binaryTrace_eq_one (F := F) hcard
   have heq := binaryTraceFiber_zero_card_eq_one_card (F := F) hτ
   have hsum := Finset.card_filter_add_card_filter_not
     (s := (Finset.univ : Finset F)) (p := fun x : F ↦ binaryTrace m x = 0)
@@ -211,15 +222,17 @@ lemma binaryTraceFiber_card {m : ℕ} (hm : 0 < m)
   · rw [← heq]
     exact hzero
 
-lemma binaryTraceFiber_zero_card {m : ℕ} (hm : 0 < m)
-    (hcard : Fintype.card F = 2 ^ m) :
-    (binaryTraceFiber m (0 : F)).card = Fintype.card F / 2 :=
-  binaryTraceFiber_card hm hcard 0 (Or.inl rfl)
+omit [CharP F 2] in
+lemma binaryTraceFiber_zero_card {m : ℕ} (hcard : Fintype.card F = 2 ^ m) :
+    (binaryTraceFiber m (0 : F)).card = Fintype.card F / 2 := by
+  have : CharP F 2 := charP_of_card_eq_prime_pow hcard
+  exact binaryTraceFiber_card hcard 0 (Or.inl rfl)
 
-lemma binaryTraceFiber_one_card {m : ℕ} (hm : 0 < m)
-    (hcard : Fintype.card F = 2 ^ m) :
-    (binaryTraceFiber m (1 : F)).card = Fintype.card F / 2 :=
-  binaryTraceFiber_card hm hcard 1 (Or.inr rfl)
+omit [CharP F 2] in
+lemma binaryTraceFiber_one_card {m : ℕ} (hcard : Fintype.card F = 2 ^ m) :
+    (binaryTraceFiber m (1 : F)).card = Fintype.card F / 2 := by
+  have : CharP F 2 := charP_of_card_eq_prime_pow hcard
+  exact binaryTraceFiber_card hcard 1 (Or.inr rfl)
 
 omit [DecidableEq F] in
 /-- An element of trace one cannot satisfy `τ z² + z + 1 = 0`. -/

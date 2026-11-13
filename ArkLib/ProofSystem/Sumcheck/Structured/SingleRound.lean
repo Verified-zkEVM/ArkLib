@@ -51,51 +51,14 @@ section RoundPoly
 
 variable {L : Type} [CommRing L] (ℓ : ℕ) [NeZero ℓ] (D : SumcheckDomain L ℓ)
 
-/-- Degree bound for the prover's round polynomial over an **arbitrary** summation set `S`.
-This is the heterogeneous generalisation of `Spec.SingleRound.sumcheck_roundPoly_degreeLE`, which
-fixes `S` to a uniform cube `(univ.map D) ^ᶠ (n - i)`. The per-round / hyperprism sumcheck sums over
-heterogeneous cubes `(SumcheckDomain.drop …).cube`, so the degree bound must not depend on the shape
-of `S` — and indeed it doesn't: each summand has degree `≤ deg` in the free variable, and a finite
-sum preserves that. -/
-theorem roundPoly_degreeLE_finset {R : Type*} [CommSemiring R] {n deg : ℕ} (i : Fin (n + 1))
-    {challenges : Fin i.castSucc → R} {poly : R[X Fin (n + 1)]}
-    (hp : poly ∈ R⦃≤ deg⦄[X Fin (n + 1)]) (S : Finset (Fin (n - i) → R)) :
-    ∑ x ∈ S, poly ⸨X ⦃i⦄, challenges, x⸩' (by simp; omega) ∈ R⦃≤ deg⦄[X] := by
-  refine mem_degreeLE.mpr ((degree_sum_le S _).trans (Finset.sup_le fun x _ => ?_))
-  refine degree_map_le.trans (natDegree_le_iff_degree_le.mp ?_)
-  rw [natDegree_finSuccEquivNth]
-  exact degreeOf_le_iff.mpr fun m a ↦ hp a i
-
 /- `H_i(X_i, ..., X_{ℓ-1})` -> `g_i(X)` derivation. Degree-generic: the round polynomial
 `h` and the resulting univariate `g_i` share the degree bound `d` (inferred from `h`). -/
 def getSumcheckRoundPoly {d : ℕ} (i : Fin ℓ)
-    (h : ↥L⦃≤ d⦄[X Fin (ℓ - ↑i.castSucc)]) : L⦃≤ d⦄[X] := by
-  have h_i_lt_ℓ : ℓ - ↑i.castSucc > 0 := by
-    have hi := i.2
-    exact Nat.zero_lt_sub_of_lt hi
-  have h_count_eq : ℓ - ↑i.castSucc - 1 + 1 = ℓ - ↑i.castSucc := by
-    omega
-  let challenges : Fin 0 → L := fun (j : Fin 0) => j.elim0
-  let curH_cast : L[X Fin ((ℓ - ↑i.castSucc - 1) + 1)] := by
-    convert h.val
-  let g := ∑ x ∈ (D.drop (↑i.castSucc + 1)).cube, curH_cast ⸨X ⦃0⦄, challenges, x⸩' (by omega)
-  exact ⟨g, by
-    have h_deg_le_d : g ∈ L⦃≤ d⦄[X] := by
-      simp only [g]
-      let hDegIn := roundPoly_degreeLE_finset
-        (R := L) (n := ℓ - ↑i.castSucc - 1) (deg := d) (i := ⟨0, by omega⟩)
-        (challenges := fun j => j.elim0) (poly := curH_cast)
-        (S := (D.drop (↑i.castSucc + 1)).cube)
-      have h_in_degLE : curH_cast ∈ L⦃≤ d⦄[X Fin (ℓ - ↑i.castSucc - 1 + 1)] := by
-        rw! (castMode := .all) [h_count_eq]
-        dsimp only [Fin.val_castSucc, eq_mpr_eq_cast, curH_cast]
-        rw [eqRec_eq_cast, cast_cast, cast_eq]
-        exact h.property
-      let res := hDegIn h_in_degLE
-      exact res
-    rw [mem_degreeLE] at h_deg_le_d ⊢
-    exact h_deg_le_d
-  ⟩
+    (h : ↥L⦃≤ d⦄[X Fin (ℓ - ↑i.castSucc)]) : L⦃≤ d⦄[X] :=
+  ⟨∑ x ∈ (D.drop (i + 1)).cube,
+      h.val.evalExcept ⟨0, by have := i.isLt; simp only [Fin.val_castSucc]; omega⟩
+        (x ∘ Fin.cast (by simp only [Fin.val_castSucc]; omega)),
+    Submodule.sum_mem _ fun _ _ => MvPolynomial.evalExcept_mem_degreeLE _ _ h.property⟩
 
 end RoundPoly
 
@@ -183,24 +146,9 @@ def getRoundProverFinalOutput (i : Fin ℓ)
     sumcheck_target := newSumcheckTarget,
     challenges := Fin.snoc stmtIn.challenges r_i'
   }
-  let challenges : Fin 1 → L := fun _ => r_i'
-  let witOut : SumcheckWitness L ℓ i.succ d := by
-    let hvars : ℓ - i - 1 = ℓ - i.succ := by
-      have hi : i.succ.val = i.val + 1 := rfl
-      omega
-    let rawProjectedH := fixFirstVariablesOfMQP (ℓ := ℓ - i) (v := ⟨1, by omega⟩)
-      (H := witIn.H.val) (challenges := challenges)
-    let projectedH : L[X Fin (ℓ - i.succ)] := cast (by rw [hvars]) rawProjectedH
-    exact {
-      t' := witIn.t',
-      H := ⟨projectedH, by
-        have hp := witIn.H.property
-        dsimp only [projectedH]
-        cases hvars
-        exact fixFirstVariablesOfMQP_degreeLE (L := L) (ℓ := ℓ - i) (v := ⟨1, by omega⟩)
-          (poly := witIn.H.val) (challenges := challenges) (deg := d) hp
-      ⟩
-    }
+  let witOut : SumcheckWitness L ℓ i.succ d :=
+    { t' := witIn.t'
+      H := projectToNextSumcheckPoly ℓ i witIn.H r_i' }
   exact ⟨⟨stmtOut, oStmtIn⟩, witOut⟩
 
 /-- The prover for the `i`-th round of the structured sumcheck.

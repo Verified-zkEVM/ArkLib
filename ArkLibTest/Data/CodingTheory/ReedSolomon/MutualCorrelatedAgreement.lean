@@ -105,13 +105,13 @@ private theorem tuples_ne : tupleOne ≠ tupleChallenge := fun h ↦ by
   simpa [tupleOne, tupleChallenge] using congrFun h 0
 
 example :
-    {z : ℚ | powerBatchedPolynomial (fun t ↦ (tupleOne t).map (RingHom.id ℚ)) z =
-      powerBatchedPolynomial (fun t ↦ (tupleChallenge t).map (RingHom.id ℚ)) z}.Finite :=
+    {z : ℚ | Polynomial.powerBatch (fun t ↦ (tupleOne t).map (RingHom.id ℚ)) z =
+      Polynomial.powerBatch (fun t ↦ (tupleChallenge t).map (RingHom.id ℚ)) z}.Finite :=
   finite_polynomialTuple_collisions (RingHom.id ℚ) tuples_ne
 
 example : ∃ z : ℚ, z ≠ 1 ∧ z ≠ 0 ∧
-    powerBatchedPolynomial (fun t ↦ (tupleOne t).map (RingHom.id ℚ)) z ≠
-      powerBatchedPolynomial (fun t ↦ (tupleChallenge t).map (RingHom.id ℚ)) z := by
+    Polynomial.powerBatch (fun t ↦ (tupleOne t).map (RingHom.id ℚ)) z ≠
+      Polynomial.powerBatch (fun t ↦ (tupleChallenge t).map (RingHom.id ℚ)) z := by
   classical
   obtain ⟨z, hz, hinj, hroot⟩ := exists_polynomialTuple_specialization_injective_avoiding_roots
     (RingHom.id ℚ) {tupleOne, tupleChallenge} {1} {X} (by simp [X_ne_zero])
@@ -371,7 +371,7 @@ private def recognitionJet : Fin 1 → ZMod 3 := fun _ ↦ 0
 example : ∃ P : Fin 2 → Polynomial (ZMod 3), (∀ t, (P t).degree < 1) ∧
     (∀ i ∈ ({0} : Finset (Fin 1)), ∀ t, (P t).eval (recognitionDomain i) = recognitionWords t i) ∧
     rationalTaylorPolynomial (0 : ZMod 3) recognitionChartAt 2 recognitionJet =
-      powerBatchedPolynomial (fun t ↦ (P t).map (RingHom.id _)) 1 ∧
+      Polynomial.powerBatch (fun t ↦ (P t).map (RingHom.id _)) 1 ∧
     (recognitionJet = fun j ↦ Polynomial.eval 1
       (powerBatchedJetGraph (r := 0) (0 : ZMod 3) (fun t ↦ (P t).map (RingHom.id _)) j)) ∧
     ∀ l : Fin 2, MvPolynomial.aeval recognitionJet
@@ -379,7 +379,7 @@ example : ∃ P : Fin 2 → Polynomial (ZMod 3), (∀ t, (P t).degree < 1) ∧
       MvPolynomial.aeval recognitionJet
           (initialJetSeparant (0 : ZMod 3) recognitionChartAt) ^ 4 *
         (Polynomial.taylor 0
-          (powerBatchedPolynomial (fun t ↦ (P t).map (RingHom.id _)) 1)).coeff l.val := by
+          (Polynomial.powerBatch (fun t ↦ (P t).map (RingHom.id _)) 1)).coeff l.val := by
   obtain ⟨P, hP, hs, hrecognize⟩ :=
     exists_polynomialGraph_of_symbolic_sample_of_exponent (k := 1) (K := 2) (r := 0)
       recognitionDomain recognitionWords {0} (by simp) (RingHom.id _) 0 recognitionChart
@@ -556,7 +556,7 @@ example : (positiveChallenges.card : ℚ) ≤ positiveDerivativeBound ∧
   have hbound := finite_powerBatchedBadChallenges_card_le_derivativeCapped_of_exponent
     positiveChallengeDomain regularBoundValues (RingHom.id _) 0 badChallengeEquation
     2 1 1 1 1 1 1 2 badChallengeExponent (by omega) (by omega) (by omega)
-    (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega)
+    (by omega) (by omega) (by omega) (by omega) (by omega) (by omega)
     hjet hheight
     (by simp [badChallengeEquation]) positiveChallenges positiveChallengeWitness
     positiveChallengeJet hchart hagree hbad
@@ -564,7 +564,7 @@ example : (positiveChallenges.card : ℚ) ≤ positiveDerivativeBound ∧
     exists_exceptional_regularPowerBatchedAgreement_derivativeCapped_of_exponent
       positiveChallengeDomain regularBoundValues (RingHom.id _) badChallengeEquation
       2 1 1 1 1 1 1 2 badChallengeExponent (by omega) (by omega) (by omega)
-      (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega)
+      (by omega) (by omega) (by omega) (by omega) (by omega) (by omega)
       hjet hheight
       (by simp [badChallengeEquation]) (by omega)
   have hzero : (0 : MCAField) ∈ exceptional := by
@@ -583,7 +583,7 @@ example : (positiveChallenges.card : ℚ) ≤ positiveDerivativeBound ∧
       componentEquation 1 0 1 0 1 2 (by simp)
       (by norm_num) (by norm_num)
       ((taylorExponentSufficient_two_mul_sub_three 0 1).mono (by omega))
-      (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num)
       (by norm_num) (by norm_num) (coeffNatDegreeLE_X (some (0 : Fin 1)))
       componentEquation_jetDegree (MvPolynomial.X_prime).irreducible
       (by simp [componentEquation, MvPolynomial.pderiv_X])
@@ -609,7 +609,7 @@ example : (positiveChallenges.card : ℚ) ≤ positiveDerivativeBound ∧
     exists_exceptional_frobeniusPowerFactorSolutions (n := 2) (ℓ := 1)
       positiveChallengeDomain regularBoundConstantValues (RingHom.id _)
       componentEquation 1 0 1 0 1 2
-      (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num) (by norm_num)
       (coeffNatDegreeLE_X (some (0 : Fin 1))) componentEquation_jetDegree
       MvPolynomial.X_prime.irreducible (by simp [componentEquation])
       (by simp [componentEquation])
@@ -653,7 +653,7 @@ example : ∃ exceptional : Finset MCAField,
       (p := 1) (e := 0) (τ := 2) (h := 0) (b := 1) (A := 2)
       (by intro i; simp [positiveChallengeDomain])
       (by norm_num) (by norm_num) (taylorExponentSufficient_two_mul 0 1)
-      (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num) (by norm_num)
       (coeffNatDegreeLE_X (some (0 : Fin 1))) componentEquation_jetDegree
   have hcard' : (exceptional.card : ℚ) ≤ 2 := by
     norm_num at hcard
@@ -678,11 +678,8 @@ example : positiveChallenges.Nonempty ∧ (positiveChallenges.card : ℚ) ≤ 2 
     (roots := positiveChallengeDomain) (center := 0) (Q := componentEquation)
     (p := 1) (e := 0) (τ := 2) (h := 0) (b := 1) (A := 2) (by simp)
     (by norm_num) (by norm_num) (taylorExponentSufficient_two_mul 0 1)
-    (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num)
     (coeffNatDegreeLE_X (some (0 : Fin 1))) componentEquation_jetDegree
-    (by simp [jointInitialJetEquation, initialJetEquation, componentEquation])
-    (by simpa [jointInitialJetEquation, initialJetEquation, componentEquation,
-      componentIdeal, componentVariable] using componentIdeal_prime.ne_top)
     positiveChallenges positiveChallengeWitness
     (by simp [positiveChallenges, positiveChallengeWitness])
     (by simp [positiveChallenges, positiveChallengeWitness, componentEquation,
@@ -706,7 +703,7 @@ example : positiveChallenges.Nonempty ∧ (positiveChallenges.card : ℚ) ≤ 2 
     (roots := positiveChallengeDomain) (Q := componentEquation)
     (p := 1) (e := 0) (τ := 2) (h := 0) (b := 1) (A := 2) (by simp)
     (by norm_num) (by norm_num) (taylorExponentSufficient_two_mul 0 1)
-    (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num)
     (coeffNatDegreeLE_X (some (0 : Fin 1))) componentEquation_jetDegree
     positiveChallenges positiveChallengeWitness
     (by simp [positiveChallenges, positiveChallengeWitness])
@@ -840,13 +837,13 @@ example := (capacity_lineAgreement (δ := 1 / 2) (by norm_num)).affineAgreement 
 
 /-- The line and affine-space MCA errors at gap `1/2` over `ZMod 5`, with `n = 4` and `k = 1`. -/
 example := (capacity_lineAgreement (δ := 1 / 2) (by norm_num)).mcaError_le (k := 1)
-  capacityLineLength_half one_pos (by norm_num) (Or.inr (by rw [ZMod.ringChar_zmod_n]; norm_num))
+  capacityLineLength_half one_pos (Or.inr (by rw [ZMod.ringChar_zmod_n]; norm_num))
   capacityFiniteDomain
 
 /-- Power batching at gap `1/2` over `ℚ` at the length threshold, with `ℓ = 1`, `k = 1` and
 `A = n`. -/
 example := capacity_powerBatchingAgreement (δ := 1 / 2) (by norm_num) 1
-  (capacityPowerLength (1 / 2)) 1 (capacityPowerLength (1 / 2)) one_pos le_rfl one_pos
+  (capacityPowerLength (1 / 2)) 1 (capacityPowerLength (1 / 2)) le_rfl one_pos
   (by
     have : (4 : ℝ) ≤ capacityPowerLength (1 / 2) := by
       exact_mod_cast four_le_capacityPowerLength (1 / 2)

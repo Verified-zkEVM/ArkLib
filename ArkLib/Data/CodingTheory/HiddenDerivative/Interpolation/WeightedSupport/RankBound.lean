@@ -54,24 +54,46 @@ theorem localResidualCoordinateBudget_le_positivePart_sum (d m W : ℕ) (T : ℝ
   refine mul_le_mul_of_nonneg_left (sum_le_sum fun z _ => ?_) (Nat.cast_nonneg _)
   exact Nat.cast_ceil_sub_le_max_sub_add_one T _
 
-/-- For `0 < d` and `0 < D`, the rank of the local constraint map on the weighted support space
+/-- For `0 < D`, the rank of the local constraint map on the weighted support space
 `weightedSupportSpace F D d W L hD` is at most the positive-part sum of
-`localResidualCoordinateBudget_le_positivePart_sum` at `T = L / D`. The hypotheses are those of
-`finrank_weightedSupportLocalConstraint_le`. -/
+`localResidualCoordinateBudget_le_positivePart_sum` at `T = L / D`. At derivative order zero,
+the derivative-weight budget gives the bound. -/
 theorem finrank_weightedSupportLocalConstraint_le_positivePart_sum
     {F : Type*} [Field F] {d D m W : ℕ} {L : ℝ}
-    (hd : 0 < d) (hD : 0 < D) (center received : F) :
+    (hD : 0 < D) (center received : F) :
     (Module.finrank F (LinearMap.range
       (weightedSupportLocalConstraint (d := d) (W := W) (L := L)
         m hD center received)) : ℝ) ≤
       ∑ r ∈ range m, (contactThreshold (d + 1) m r : ℝ) *
         ∑ z ∈ natWeightedSimplex (fun i : Fin (d - 1) => i.val + 1) (W + r),
           (max (L / D - ((∑ i, z i : ℕ) : ℝ)) 0 + 1) := by
-  have h := finrank_weightedSupportLocalConstraint_le
-    (d := d) (m := m) (W := W) (L := L) hd hD center received
-  exact (show (Module.finrank F _ : ℝ) ≤
-    (localResidualCoordinateBudget d m W ⌈L / D⌉₊ : ℝ) by exact_mod_cast h).trans
-      (localResidualCoordinateBudget_le_positivePart_sum d m W (L / D))
+  rcases Nat.eq_zero_or_pos d with rfl | hd
+  · have hweight : jetDerivativeWeight (d := 0) = 0 := by
+      funext j
+      cases j with
+      | none => rfl
+      | some j => simp [jetDerivativeWeight, Fin.eq_zero j]
+    have h := finrank_range_localConstraintAt_domRestrict_le_of_derivative_weight
+      (d := 0) m W center received (weightedSupportSpace F D 0 W L hD) (by
+        intro Q hQ u hu
+        simp [fullDerivativeJetWeight, hweight, Finsupp.weight_apply])
+    have hbudget : (localDerivativeCoordinateBudget 0 m W : ℝ) ≤
+        ∑ r ∈ range m, (contactThreshold 1 m r : ℝ) *
+          ∑ z ∈ natWeightedSimplex (fun i : Fin 0 => i.val + 1) (W + r),
+            (max (L / D - ((∑ i, z i : ℕ) : ℝ)) 0 + 1) := by
+      simp only [localDerivativeCoordinateBudget, Nat.cast_sum,
+        weightedHigherJetCount_of_le_one le_rfl, mul_one]
+      refine sum_le_sum fun r hr => ?_
+      simp [natWeightedSimplex]
+      nlinarith [show (0 : ℝ) ≤ contactThreshold 1 m r from Nat.cast_nonneg _,
+        le_max_right (L / D) 0]
+    exact (show (Module.finrank F _ : ℝ) ≤
+      (localDerivativeCoordinateBudget 0 m W : ℝ) by exact_mod_cast h).trans hbudget
+  · have h := finrank_weightedSupportLocalConstraint_le
+      (d := d) (m := m) (W := W) (L := L) hd hD center received
+    exact (show (Module.finrank F _ : ℝ) ≤
+      (localResidualCoordinateBudget d m W ⌈L / D⌉₊ : ℝ) by exact_mod_cast h).trans
+        (localResidualCoordinateBudget_le_positivePart_sum d m W (L / D))
 
 /-- If the inner positive-part sum of every contact residual `r < m` is at most
 `B V exp (x (r + offset))`, then

@@ -507,7 +507,7 @@ private theorem map_close_cast_branch {ι I : Type u} (ambient : OracleSpec.{u, 
   rfl
 
 set_option backward.isDefEq.respectTransparency false in
-/-- Execute an exported-interface composition using the actual native prefix and returned prover
+/-- Execute an exported-interface composition using the actual prefix and returned prover
 continuation. The suffix queries the prefix export; its final claim closes against the source
 resources of these same paths. Ambient effects retain their order and the final action runs once. -/
 theorem executeStrategies_appendExported_close {ι I J : Type u} (ambient : OracleSpec.{u, u} ι)

@@ -38,7 +38,7 @@ theorem exists_exceptional_ordinaryEquation_base
     {F : Type*} [Field F] [DecidableEq F] {n : ℕ}
     (domain : Fin n ↪ F) (f g : Fin n → F)
     (Q : DifferentialPolynomial F[X] 0) (D h mu A : ℕ)
-    (hQ : Q ≠ 0) (hD : 0 < D) (hmu : 1 ≤ mu) (hDA : D + 1 ≤ A) (hAn : A ≤ n)
+    (hQ : Q ≠ 0) (hD : 0 < D) (hDA : D + 1 ≤ A) (hAn : A ≤ n)
     (hheight : CoeffNatDegreeLE Q h) (hdegree : Q.degreeOf (some 0) ≤ mu) :
     ∃ exceptional : Finset F,
       (exceptional.card : ℚ) ≤ ordinaryFactorRaw
@@ -48,16 +48,26 @@ theorem exists_exceptional_ordinaryEquation_base
         A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
         HasExactCorrelatedPair domain f g (RingHom.id F) (D + 1) z P := by
   obtain ⟨exceptional, hcard, hgood⟩ := exists_baseExceptional_ordinaryPowerEquation
-    (ℓ := 1) domain ![f, g] Q D h mu (D + 1) A hQ hD (by omega) (by omega) hDA hheight hdegree
-  rw [ordinaryUnifiedPowerFactorAtOrHeight_of_pos n D 1 mu h A (D + 1) hmu,
-    ordinaryUnifiedPowerFactorAt_succ_eq n D 1 mu h A hDA hAn] at hcard
+    (ℓ := 1) domain ![f, g] Q D h mu (D + 1) A hQ hD (by omega) hDA hheight hdegree
   have hcharge : ordinaryCurveFactorRaw (((n - D : ℕ) : ℚ) / ((A - D : ℕ) : ℚ)) n D 1 mu h =
       ordinaryFactorRaw (((n - D : ℕ) : ℚ) / ((A - D : ℕ) : ℚ)) n D mu h := by
     simp [ordinaryCurveFactorRaw, ordinaryFactorRaw]
   have hword (z : F) : powerBatchedWord ![f, g] z = fun i ↦ f i + z * g i := by
     exact powerBatchedWord_pair_eq f g (RingHom.id F) z
-  refine ⟨exceptional, hcard.trans ((ordinaryUnifiedPowerFactorRaw_le_ordinaryCurveFactorRaw
-    n 1 mu h (by positivity) hD).trans_eq hcharge), ?_⟩
+  have hbound : (exceptional.card : ℚ) ≤ ordinaryFactorRaw
+      (((n - D : ℕ) : ℚ) / ((A - D : ℕ) : ℚ)) n D mu h := by
+    rcases Nat.eq_zero_or_pos mu with rfl | hmu
+    · simp only [ordinaryUnifiedPowerFactorAtOrHeight_zero] at hcard
+      have hratio : (1 : ℚ) ≤ ((n - D : ℕ) : ℚ) / ((A - D : ℕ) : ℚ) :=
+        (one_le_div (by exact_mod_cast (show 0 < A - D by omega))).mpr
+          (by exact_mod_cast (show A - D ≤ n - D by omega))
+      simpa [ordinaryFactorRaw] using hcard.trans
+        (le_mul_of_one_le_left (by positivity) hratio)
+    · rw [ordinaryUnifiedPowerFactorAtOrHeight_of_pos n D 1 mu h A (D + 1) hmu,
+        ordinaryUnifiedPowerFactorAt_succ_eq n D 1 mu h A hDA hAn] at hcard
+      exact hcard.trans ((ordinaryUnifiedPowerFactorRaw_le_ordinaryCurveFactorRaw
+        n 1 mu h (by positivity) hD).trans_eq hcharge)
+  refine ⟨exceptional, hbound, ?_⟩
   intro z hz P hP hroot hagree
   exact exactCorrelatedPair_of_powerAgreement_one domain ![f, g] (RingHom.id F) z P
     (hgood z hz P hP hroot (by rwa [hword]))

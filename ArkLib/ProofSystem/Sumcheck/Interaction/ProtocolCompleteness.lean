@@ -9,12 +9,12 @@ public import ArkLib.ProofSystem.Sumcheck.Interaction.Composition
 public import VCVio.OracleComp.EvalDist.Measure
 
 /-!
-# Completeness of native Sumcheck
+# Completeness of interaction-layer Sumcheck
 
 The honest ordinary prover sends the existing projected round polynomial and uses the actual
 public challenge to select its recursive continuation. From one true initial claim and an
 original oracle view realized by a polynomial of individual degree at most `deg`, every supported
-native execution returns an accepted true original-oracle evaluation claim. The verifier's
+execution returns an accepted true original-oracle evaluation claim. The verifier's
 challenge program is arbitrary; no intermediate relation premise is supplied by the caller.
 -/
 
@@ -32,7 +32,7 @@ noncomputable section
 variable (R : Type) [CommSemiring R] (n deg : ℕ) {m : ℕ} (D : Fin m ↪ R)
 variable {ι : Type} (ambient : OracleSpec ι)
 
-/-- Honest messages use the actual public prefix; memory lives in ordinary native continuations. -/
+/-- Honest messages use the actual public prefix; memory lives in ordinary continuations. -/
 def honestProver : (count start : ℕ) → (finish : start + count = n) →
     Spec.StatementRound R n ⟨start, by omega⟩ → Spec.OracleStatement R n deg () →
     Prover.Strategy ambient (protocol R deg count).tree
@@ -48,7 +48,7 @@ def honestProver : (count start : ℕ) → (finish : start + count = n) →
 
 variable [DecidableEq R]
 
-/-- Every supported native honest execution accepts a true original-oracle evaluation claim. -/
+/-- Every supported honest execution accepts a true original-oracle evaluation claim. -/
 theorem execute_support_completeness (challenge : OracleComp ambient R)
     (count start : ℕ) (finish : start + count = n) (A : PFunctor)
     (originalOracle : VirtualOracle (OracleSpec.ofPFunctor A) (polynomialFamily R n deg))
@@ -85,7 +85,7 @@ theorem execute_support_completeness (challenge : OracleComp ambient R)
       rw [horiginal] at hcurrent
       exact hcurrent
     have hcheck : ((Finset.univ.map D).toList.map (fun x => q.val.eval x)).sum = stmt.target :=
-      projected_sum_of_relationRound R n deg D i stmt p hconcrete
+      Spec.SingleRound.projected_sum_of_relationRound R n deg D i stmt p hconcrete
     rw [execute_eq_appendExported, execute_appendExported_succ]
     simp only [honestProver, pure_bind]
     dsimp only [q, i] at hcheck
@@ -99,10 +99,10 @@ theorem execute_support_completeness (challenge : OracleComp ambient R)
     · rw [VirtualOracle.eval_id]
       exact horiginal
     · rw [VirtualOracle.eval_id, horiginal]
-      exact relationRound_projected_output R n deg D i stmt p r
+      exact Spec.SingleRound.relationRound_projected_output R n deg D i stmt p r
     · exact hnext
 
-/-- Actual native honest execution has probability-one completeness for any `ProbComp` challenge.
+/-- Actual honest execution has probability-one completeness for any `ProbComp` challenge.
 
 `ProbComp` uses a normalized oracle specification, so the challenge and the whole finite honest
 execution have total mass one. For an arbitrary ambient challenge computation, the support theorem

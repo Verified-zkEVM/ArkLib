@@ -33,7 +33,7 @@ section Sampling
 
 open scoped ProbabilityTheory
 
-variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+variable {ι : Type} [Fintype ι] [Nonempty ι]
 variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
 /-- Lower-bounds linear-code CA error by the probability that a uniformly sampled ambient
@@ -41,7 +41,7 @@ word is within radius `δ`, provided `δ` is below the relative covering radius.
 theorem linear_close_probability_le_epsCa
     (C : LinearCode ι F) (δ δ' : ℝ≥0)
     (_h_δ' : (δ' : ENNReal) = ⨆ u : ι → F, δᵣ(u, (C : Set (ι → F))))
-    (_hδ_pos : 0 < δ) (_hδ_lt : δ < δ') :
+    (_hδ_lt : δ < δ') :
     ((Fintype.card F - 1 : ℝ≥0) / Fintype.card F : ENNReal)
         * Pr{let u ← $ᵗ (ι → F)}[δᵣ(u, (C : Set (ι → F))) ≤ δ] ≤
       epsCa (F := F) (A := F) ((C : Set (ι → F))) δ δ := by
@@ -134,7 +134,7 @@ theorem linear_close_probability_le_epsCa
   have hline :
       Pr{let r ← $ᵗ F}[Good (z + r • d)] ≤
         epsCa (F := F) (A := F) (C : Set (ι → F)) δ δ := by
-    unfold epsCa
+    simp only [epsCa_eq]
     refine le_iSup_of_le u (le_of_eq ?_)
     rw [ite_eq_right hnotjoint]
     simp [u, Good]

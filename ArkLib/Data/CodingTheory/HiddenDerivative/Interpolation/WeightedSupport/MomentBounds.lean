@@ -87,14 +87,20 @@ theorem weightedSupport_third_factor_le {d H H₂ H₃ : ℝ}
     _ = (2 * (H₃ + 2 * H ^ 3 / d ^ 2)) * d ^ 2 := he
     _ ≤ (2 * (H₃ + 2 * H ^ 3 / d ^ 2)) * ((d + 1) * (d + 2)) := hp
 
-/-- The bound `2 * (H₃ + 2 * H ^ 3 / d ^ 2)` is at most `241 / 100` when `1 ≤ d`, `0 ≤ H`,
+/-- The bound `2 * (H₃ + 2 * H ^ 3 / d ^ 2)` is at most `241 / 100` when `1 ≤ d`,
 `H ^ 2 ≤ d / 100` and `H₃ ≤ 12021 / 10000`. For `1 ≤ d` the second hypothesis gives
 `H ≤ d / 10`, hence `H ^ 3 ≤ d ^ 2 / 1000`, and the total is at most
 `2 * (12021 / 10000 + 2 / 1000) < 241 / 100`. Some lower bound on `d` is needed: at
 `d = H = 1 / 100` and `H₃ = 12021 / 10000` the left side is `24442 / 10000`. -/
 theorem weightedSupport_third_factor_numeric {d H H₃ : ℝ}
-    (hd : 1 ≤ d) (hH : 0 ≤ H) (hHsq : H ^ 2 ≤ d / 100) (h₃ : H₃ ≤ 12021 / 10000) :
+    (hd : 1 ≤ d) (hHsq : H ^ 2 ≤ d / 100) (h₃ : H₃ ≤ 12021 / 10000) :
     2 * (H₃ + 2 * H ^ 3 / d ^ 2) ≤ (241 / 100 : ℝ) := by
+  by_cases hH : 0 ≤ H
+  swap
+  · have hcube : H ^ 3 / d ^ 2 ≤ 0 :=
+      div_nonpos_of_nonpos_of_nonneg (by nlinarith [sq_nonneg H]) (sq_nonneg d)
+    rw [mul_div_assoc]
+    linarith
   have hd0 : 0 < d := by linarith
   have hdSq : d ≤ d ^ 2 := by
     calc

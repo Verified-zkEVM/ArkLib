@@ -153,8 +153,10 @@ theorem johnsonH_add_one {n D : ℕ} {eta : ℝ}
 /-- The challenge cutoff dominates the candidate cutoff, `μ ≤ h`. In real terms
 `t / √ρ₋ ≤ t² / (3ρ₋)` because `t ≥ 7/2 > 3 > 3√ρ₋`; the ceilings preserve the order. -/
 theorem johnsonMu_le_H {n D : ℕ} {eta : ℝ}
-    (hD : 1 ≤ D) (hDn : D < n) :
+    (hDn : D < n) :
     johnsonMu n D eta ≤ johnsonH n D eta := by
+  rcases Nat.eq_zero_or_pos D with rfl | hD
+  · simp [johnsonMu, johnsonH, johnsonRhoMinus]
   let x := √(johnsonRhoMinus n D)
   let t := johnsonT n D eta
   have hx := johnsonSqrt_mem_Ioo hD hDn
@@ -196,7 +198,7 @@ theorem johnsonM_le_H_add_one {n D : ℕ} {eta : ℝ}
       Nat.lt_ceil.mpr hreal
     rw [← johnsonMu_add_one hD hDn] at hceil
     omega
-  exact hmμ.trans (johnsonMu_le_H hD hDn |>.trans (Nat.le_add_right _ 1))
+  exact hmμ.trans (johnsonMu_le_H hDn |>.trans (Nat.le_add_right _ 1))
 
 /-- The largest `y`-slice remains strictly inside the weighted-degree cutoff: `D μ < X`, since
 `μ < t / √ρ₋` and `D = n ρ₋`. -/
@@ -317,7 +319,7 @@ theorem johnson_interpolation_slot_surplus {n D : ℕ} {eta : ℝ}
     rw [hx2]
     unfold johnsonRhoMinus
     field_simp
-  have hμh : μ ≤ h := johnsonMu_le_H hD hDn
+  have hμh : μ ≤ h := johnsonMu_le_H hDn
   have hmz : m ≤ z := by exact johnsonM_le_H_add_one hD hDn
   have hDX : D * μ < Xc := johnson_D_mul_mu_lt_XCutoff hD hDn
   have hsource := sourceSlotCount_cast hDX hμh

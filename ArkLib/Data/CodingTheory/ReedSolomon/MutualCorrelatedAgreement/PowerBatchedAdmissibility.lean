@@ -70,9 +70,9 @@ theorem powerBatchedTaylorCoefficient_eval (iota : F →+* E) (center z : E)
     (P : Fin (ℓ + 1) → F[X]) (l : ℕ) :
     (powerBatchedTaylorCoefficient iota center P l).eval z =
       (Polynomial.taylor center
-        (powerBatchedPolynomial (fun t ↦ (P t).map iota) z)).coeff l := by
+        (Polynomial.powerBatch (fun t ↦ (P t).map iota) z)).coeff l := by
   rw [powerBatchedTaylorCoefficient, powerBatchedCoordinate_eval]
-  simp only [powerBatchedPolynomial, map_sum, map_smul, Polynomial.finsetSum_coeff,
+  simp only [Polynomial.powerBatch, map_sum, map_smul, Polynomial.finsetSum_coeff,
     Polynomial.coeff_smul, smul_eq_mul]
 
 /-- Admissibility at an explicit common Taylor exponent. All high equations and reconstruction
@@ -132,7 +132,7 @@ theorem IsAdmissibleChartTupleAtExponent.specialize [DecidableEq F]
       (∀ l : Fin K, k ≤ l.val →
         aeval jet (commonTaylorNumerator center Qz τ l.val) = 0) ∧
       rationalTaylorPolynomial center Qz K jet =
-        powerBatchedPolynomial (fun t ↦ (P t).map iota) z := by
+        Polynomial.powerBatch (fun t ↦ (P t).map iota) z := by
   let Qz := MvPolynomial.map (Polynomial.evalRingHom z) Q
   let jet : Fin (r + 1) → E := chartTupleJet iota center z P
   let φ : E[X] →ₐ[E] E := Polynomial.aeval z
@@ -172,7 +172,7 @@ theorem IsAdmissibleChartTupleAtExponent.specialize [DecidableEq F]
     have h : aeval jet (commonTaylorNumerator center Qz τ l) =
         aeval jet (initialJetSeparant center Qz) ^ τ *
           (Polynomial.taylor center
-            (powerBatchedPolynomial (fun t ↦ (P t).map iota) z)).coeff l := by
+            (Polynomial.powerBatch (fun t ↦ (P t).map iota) z)).coeff l := by
       simpa only [jet, Qz, ← hφ, AlgHom.toRingHom_eq_coe,
         AlgHom.coe_toRingHom, hcenter] using h'
     have hsepφ : aeval jet
@@ -205,12 +205,12 @@ theorem IsAdmissibleChartTupleAtExponent.specialize [DecidableEq F]
       rw [map_commonTaylorNumeratorOver_eq]
       simpa only [jet, Qz, ← hφ, AlgHom.toRingHom_eq_coe,
         AlgHom.coe_toRingHom, hcenter] using hhigh l hl
-    have hleft := degree_rationalTaylorPolynomial_lt_of_symbolic_high_cuts_and_exponent
-      φ (Polynomial.C center) Q K k τ hτ jet hsepφ hhighφ
+    have hleft := degree_rationalTaylorPolynomial_lt_of_symbolic_high_cuts
+      φ (Polynomial.C center) Q K k τ jet hsepφ hhighφ
     have hleft' : (rationalTaylorPolynomial center Qz K jet).degree < k := by
       simpa only [jet, Qz, ← hφ, AlgHom.toRingHom_eq_coe,
         AlgHom.coe_toRingHom, hcenter] using hleft
-    have hright := powerBatchedPolynomial_degree_lt
+    have hright := Polynomial.degree_powerBatch_lt
       (fun t ↦ (P t).map iota) z k
       (fun t ↦ Polynomial.degree_map_le.trans_lt (hP.degree t))
     have hkl : (k : WithBot ℕ) ≤ l := by
@@ -286,7 +286,7 @@ theorem exists_admissibleChartTuple_of_primeTaylorComponent_agreements
     change aeval x (jointCommonTaylorNumerator center Q τ l) =
       aeval x (jointInitialJetSeparant center Q) ^ τ *
       (Polynomial.taylor center
-        (powerBatchedPolynomial (fun t ↦ (P t).map iota) (x none))).coeff l.val
+        (Polynomial.powerBatch (fun t ↦ (P t).map iota) (x none))).coeff l.val
     let φ : E[X] →ₐ[E] E := Polynomial.aeval (x none)
     have hφ : φ.toRingHom = Polynomial.evalRingHom (x none) := by
       ext a <;> simp [φ]

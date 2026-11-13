@@ -12,9 +12,20 @@ public import ArkLib.Data.CodingTheory.GuruswamiSudan.GuruswamiSudan
 public import ArkLib.Data.Polynomial.Trivariate
 
 /-!
-# ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ListDecoding.Guruswami
+# Guruswami–Sudan interpolation for BCIKS20
 
-Definitions and results for this component of ArkLib.
+This module proves the existence and divisibility statements of BCIKS20 Lemma 5.3
+with rate `(k + 1)/n` for messages of degree at most `k`, weighted degree strictly
+below real `D_X(m)`, and relative distance at most `δ₀`. These boundary conventions
+differ from the floored, non-strict degree cutoff and strict distance used by the
+conservative Guruswami–Sudan API.
+
+It also proves the modified trivariate interpolation construction of Claim 5.4.
+The construction supplies a nonzero polynomial satisfying the degree and
+multiplicity bounds in `ModifiedGuruswami`.
+
+The affine-line correlated-agreement theorem in `BCIKS20.AffineLines.Main` uses the proved
+Johnson bound independently of this construction.
 -/
 
 @[expose] public section
@@ -40,31 +51,37 @@ open GuruswamiSudan Polynomial.Bivariate RatFunc Trivariate
 noncomputable def D_X (rho : ℚ) (n m : ℕ) : ℝ := (m + 1/2) * (Real.sqrt rho) * n
 
 omit [DecidableEq (RatFunc F)] in
-/-- The first part of Lemma 5.3 from [BCIKS20].
-Given `D_X` (`proximity_gap_degree_bound`) and `δ₀` (`proximity_gap_johnson`), a solution to
-Guruswami-Sudan system exists. -/
+/-- The first part of BCIKS20 Lemma 5.3: for messages of degree at most `k`, a
+nonzero multiplicity-`m` interpolation polynomial exists with `(1, k)`-weighted
+degree strictly below real `D_X(m)` at rate `(k + 1)/n`. -/
 lemma guruswami_sudan_for_proximity_gap_existence {k m : ℕ} {ωs : Fin n ↪ F} {f : Fin n → F}
-    (hm : 1 ≤ m) :
-    ∃ Q, Conditions (k + 1) m (_root_.proximity_gap_degree_bound (k + 1) n m) ωs f Q :=
-    GuruswamiSudan.proximity_gap_existence (k + 1) n ωs f hm
+    (hn : n ≠ 0) (hm : 1 ≤ m) :
+    ∃ Q, Conditions (k + 1) m (_root_.proximity_gap_degree_bound k n m) ωs f Q ∧
+      (natWeightedDegree Q 1 k : ℝ) < D_X ((k + 1) / (n : ℚ)) n m := by
+  simpa only [gs_degree_bound, _root_.proximity_gap_degree_bound, D_X,
+    Nat.cast_add, Nat.cast_one, Nat.add_sub_cancel] using
+    GuruswamiSudan.gs_existence_strict (k + 1) n ωs f (by omega) hn hm
 
 omit [DecidableEq (RatFunc F)] in
 open Polynomial in
-/-- The second part of Lemma 5.3 from [BCIKS20].
-For any solution `Q` of the Guruswami-Sudan system, and for any polynomial `P ∈ RS[n, k, rho]`
-such that `δᵣ(w, P) ≤ δ₀(rho, m)`, we have that `Y - P(X)` divides `Q(X, Y)` in the polynomial ring
-`F[X][Y]`. Note that in `F[X][Y]`, the term `X` actually refers to the outer variable, `Y`.
--/
+/-- The second part of BCIKS20 Lemma 5.3: for messages of degree at most `k`,
+weighted degree strictly below real `D_X(m)` and distance at most `δ₀` imply
+`Y - P(X) ∣ Q(X, Y)`, using rate `(k + 1)/n`. In `F[X][Y]`, `X` denotes the outer
+variable `Y` and `C` embeds the inner polynomial `P(X)`. -/
 lemma guruswami_sudan_for_proximity_gap_property {k m : ℕ} {ωs : Fin n ↪ F}
     {w : Fin n → F}
     {Q : F[X][Y]}
-    (hk : k + 2 ≤ n) (hm : 1 ≤ m)
-    (cond : Conditions (k + 1) m (_root_.proximity_gap_degree_bound (k + 1) n m) ωs w Q)
+    (hm : 1 ≤ m)
+    (cond : Conditions (k + 1) m (_root_.proximity_gap_degree_bound k n m) ωs w Q)
+    (hdeg : (natWeightedDegree Q 1 k : ℝ) < D_X ((k + 1) / (n : ℚ)) n m)
     {p : ReedSolomon.code ωs (k + 1)}
-    (h : (↑Δ₀(w, fun i ↦ Polynomial.eval (ωs i) (ReedSolomon.toPolynomial p)) : ℝ) / ↑n <
-         _root_.proximity_gap_johnson (k + 1) n m) :
-    (Polynomial.X - Polynomial.C (ReedSolomon.toPolynomial p)) ∣ Q :=
-  GuruswamiSudan.proximity_gap_divisibility hk hm p cond h
+    (h : (↑Δ₀(w, fun i ↦ Polynomial.eval (ωs i) (ReedSolomon.toPolynomial p)) : ℝ) / ↑n ≤
+         _root_.proximity_gap_johnson k n m) :
+    (Polynomial.X - Polynomial.C (ReedSolomon.toPolynomial p)) ∣ Q := by
+  apply GuruswamiSudan.gs_divisibility_of_degree_lt hm p
+    (by simpa only [Nat.add_sub_cancel, Nat.cast_add, Nat.cast_one, D_X] using hdeg)
+    cond.Q_multiplicity
+  simpa only [gs_johnson, _root_.proximity_gap_johnson, Nat.cast_add, Nat.cast_one] using h
 
 /-- The Guruswami-Sudan condition as it is stated in [BCIKS20]. -/
 structure ModifiedGuruswami
@@ -168,12 +185,12 @@ private theorem symbolicModifiedGSCap_pos {n k m : ℕ}
     mul_le_mul_of_nonneg_left hy1' (by positivity)
   exact hfac.trans (by simpa only [mul_one] using hmul)
 
-private theorem symbolicModifiedGSCap_sq_gt {n k m : ℕ} (hn : 0 < n) :
+private theorem symbolicModifiedGSCap_sq_gt {n k m : ℕ} :
     ((symbolicModifiedGSCap n k m : ℝ) + 1) ^ 2 >
       (m + 1 / 2) ^ 2 * (k + 1) * n := by
   unfold symbolicModifiedGSCap
   exact GuruswamiSudan.proximity_gap_degree_bound_sq_gt
-    (k := k) (n := n) (m := m) (ne_of_gt hn)
+    (k := k) (n := n) (m := m)
 
 private theorem symbolicOuterAffine_map {F : Type} [Field F]
     (x y₀ y₁ : F) :
@@ -620,7 +637,7 @@ private theorem symbolicUpperTriangleCandidates_ySum_nat_bound {n k m : ℕ}
   rw [symbolicUpperTriangleCandidates_ySum_eq_base,
     symbolicUpperTriangleBase_ySum]
   have h := GuruswamiSudan.sum_snd_weightBoundIndices_le
-    (k := k + 2) (D := symbolicModifiedGSCap n k m - 1) (by omega : 1 < k + 2)
+    (k := k + 2) (D := symbolicModifiedGSCap n k m - 1)
   have hLpos := symbolicModifiedGSCap_pos hn hk hm
   simpa only [show k + 2 - 1 = k + 1 by omega,
     Nat.sub_add_cancel (by omega : 1 ≤ symbolicModifiedGSCap n k m)] using h
@@ -735,7 +752,7 @@ private theorem symbolicUpperTriangleBase_card_ge_k_one_n_one {m : ℕ} (hm : 1 
   rw [← hcard] at hbound
   have hTone : T - 1 + 1 = T := by omega
   rw [hTone] at hbound
-  have hsq := symbolicModifiedGSCap_sq_gt (n := 1) (k := 1) (m := m) (by omega)
+  have hsq := symbolicModifiedGSCap_sq_gt (n := 1) (k := 1) (m := m)
   have hident : ((m : ℝ) + 1 / 2) ^ 2 =
       (m : ℝ) * (m + 1) + 1 / 4 := by ring
   rw [hident] at hsq
@@ -769,7 +786,7 @@ private theorem symbolicUpperTriangleBase_card_gt_k_one_of_two_le_n {n m : ℕ}
   rw [← hcard] at hbound
   have hTone : T - 1 + 1 = T := by omega
   rw [hTone] at hbound
-  have hsq := symbolicModifiedGSCap_sq_gt (n := n) (k := 1) (m := m) hnpos
+  have hsq := symbolicModifiedGSCap_sq_gt (n := n) (k := 1) (m := m)
   have hident : ((m : ℝ) + 1 / 2) ^ 2 =
       (m : ℝ) * (m + 1) + 1 / 4 := by ring
   rw [hident] at hsq
@@ -800,7 +817,7 @@ private theorem symbolicUpperTriangleBase_card_gt_of_two_le_k {n k m : ℕ}
   rw [← hcard] at hbound
   have hTone : T - 1 + 1 = T := by omega
   rw [hTone] at hbound
-  have hsq := symbolicModifiedGSCap_sq_gt (n := n) (k := k) (m := m) hn
+  have hsq := symbolicModifiedGSCap_sq_gt (n := n) (k := k) (m := m)
   have hident : ((m : ℝ) + 1 / 2) ^ 2 =
       (m : ℝ) * (m + 1) + 1 / 4 := by ring
   rw [hident] at hsq
@@ -1098,76 +1115,6 @@ lemma modified_guruswami_has_a_solution {m n k : ℕ}
   modified_guruswami_has_a_solution_core hn hk hm
 
 end
-
-variable {m : ℕ} (k : ℕ) {δ : ℚ} {x₀ : F} {u₀ u₁ : Fin n → F} {Q : F[Z][X][Y]} {ωs : Fin n ↪ F}
-         [Finite F]
-
-noncomputable instance {α : Type} (s : Set α) [inst : Finite s] : Fintype s := Fintype.ofFinite _
-
-/-- The set `S` (equation 5.2 of [BCIKS20]). -/
-noncomputable def coeffs_of_close_proximity (ωs : Fin n ↪ F) (δ : ℚ)
-    (u₀ u₁ : Fin n → F) : Finset F :=
-  Set.toFinset { z | ∃ v : ReedSolomon.code ωs (k + 1), δᵣ(u₀ + z • u₁, v) ≤ δ }
-
-open Polynomial
-
-omit [DecidableEq (RatFunc F)] in
-/-- There exists a `δ`-close polynomial `P_z` for each `z` from the set `S`. -/
-lemma exists_Pz_of_coeffs_of_close_proximity
-    {k : ℕ}
-  {z : F}
-  (hS : z ∈ coeffs_of_close_proximity (k := k) ωs δ u₀ u₁) :
-  ∃ Pz : F[X], Pz.natDegree ≤ k ∧ δᵣ(u₀ + z • u₁, Pz.eval ∘ ωs) ≤ δ := by
-    unfold coeffs_of_close_proximity at hS
-    obtain ⟨w, hS, dist⟩ : ∃ a ∈ ReedSolomon.code ωs (k + 1), ↑δᵣ(u₀ + z • u₁, a) ≤ δ := by
-      simpa using hS
-    obtain ⟨p, hS⟩ : ∃ y ∈ degreeLT F (k + 1), (ReedSolomon.evalOnPoints ωs) y = w := by
-      change ∃ y ∈ degreeLT F (k + 1), (ReedSolomon.evalOnPoints ωs) y = w at hS
-      exact hS
-    exact ⟨p, ⟨
-      by if h : p = 0
-         then simp [h]
-         else rw [mem_degreeLT, degree_eq_natDegree h, Nat.cast_lt] at hS; grind,
-      by convert dist; rw [←hS.2]; rfl
-    ⟩⟩
-
-/-- The `δ`-close polynomial `Pz` for each `z` from the set `S` (`coeffs_of_close_proximity`). -/
-noncomputable def Pz {k : ℕ} {z : F} (hS : z ∈ coeffs_of_close_proximity k ωs δ u₀ u₁) : F[X] :=
-  (exists_Pz_of_coeffs_of_close_proximity (n := n) (k := k) hS).choose
-
-open Trivariate
-omit [DecidableEq (RatFunc F)] in
-/-- Proposition 5.5 from [BCIKS20].
-There exists a subset `S'` of the set `S` and a bivariate polynomial `P(X, Z)` that matches `Pz` on
-that set, with `degX P ≤ k` and `degZ P ≤ 1`.
-
-The three conjuncts are (5.9), (5.10) and (5.11) of [BCIKS20]. Note that (5.11) is *not* under the
-`∀ z ∈ S'` binder in the paper, and that (5.9) is a division of reals; both are reflected here.
-
-Still missing relative to the paper: the standing hypothesis on `#S` from Theorem 5.1 (eq. 5.3).
-Without it the statement is false whenever `coeffs_of_close_proximity = ∅` — then `S' ⊆ ∅` forces
-`#S' = 0`, while (5.9) demands `#S' > 0`. Separately, `ModifiedGuruswami` permits `D_Y Q = 0`, and
-there `2 * D_Y Q = 0` makes the right-hand side of (5.9) zero rather than the paper's `+∞`. -/
-lemma exists_a_set_and_a_matching_polynomial
-    (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
-    ∃ S', ∃ (h_sub : S' ⊆ coeffs_of_close_proximity k ωs δ u₀ u₁), ∃ P : F[Z][X],
-     (#S' : ℝ) > #(coeffs_of_close_proximity k ωs δ u₀ u₁) / (2 * D_Y Q) ∧
-     (∀ z : S', Pz (h_sub z.2) = P.map (Polynomial.evalRingHom z.1)) ∧
-     P.natDegree ≤ k ∧
-     Bivariate.degreeX P ≤ 1 := by
-    sorry
-
-/-- The subset `S'` extracted from Proprosition 5.5 [BCIKS20]. -/
-noncomputable def matching_set (ωs : Fin n ↪ F) (δ : ℚ) (u₀ u₁ : Fin n → F)
-  (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) : Finset F :=
-  (exists_a_set_and_a_matching_polynomial k h_gs (δ := δ)).choose
-
-omit [DecidableEq (RatFunc F)] in
-/-- `S'` is indeed a subset of `S` -/
-lemma matching_set_is_a_sub_of_coeffs_of_close_proximity
-    (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
-    matching_set k ωs δ u₀ u₁ h_gs ⊆ coeffs_of_close_proximity k ωs δ u₀ u₁ :=
-  (exists_a_set_and_a_matching_polynomial k h_gs (δ := δ)).choose_spec.choose
 
 end BCIKS20ProximityGapSection5
 

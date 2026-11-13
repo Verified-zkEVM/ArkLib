@@ -173,7 +173,6 @@ theorem agreeingPolynomials_encard_lt_blockLength_of_quarter
   have hn : 0 < n := lt_of_lt_of_le hMessageDim hMessageDimLe
   have hNonempty : Nonempty ι := Fintype.card_pos_iff.mp hn
   have hA : messageDim ≤ A := by simp [A, capacityAgreementThreshold]
-  have hDA : D ≤ A := (Nat.sub_le _ _).trans hA
   have hThreshold := capacityAgreementThreshold_quarter_gap hdelta n messageDim
   have hArithmetic := pairwiseJohnsonListBound_quarter_gap_arithmetic
     hn hMessageDim hMessageDimLe hA hThreshold
@@ -183,7 +182,7 @@ theorem agreeingPolynomials_encard_lt_blockLength_of_quarter
   have hList := agreeingPolynomials_encard_le_Lambda (minAgreement := A)
     domain hMessageDimLe received
   have hJohnson := @Code.Lambda_le_pairwiseJohnson ι F inferInstance hNonempty inferInstance
-    C D A hDA hArithmetic.1 hpair
+    C D A hArithmetic.1 hpair
   have hListJohnson := by simpa only [n, D, A, C] using hList.trans hJohnson
   have hJohnsonStrict :
       (Code.pairwiseJohnsonListBound (Fintype.card ι) (messageDim - 1)
@@ -197,10 +196,26 @@ degree-bounded polynomial. -/
 theorem agreeingPolynomials_encard_le_one_of_half
     {ι F : Type*} [Field F] [DecidableEq F] [Fintype ι]
     {delta : ℝ} (hdelta : (1 / 2 : ℝ) ≤ delta) {messageDim : ℕ}
-    (domain : ι ↪ F) (hMessageDim : 0 < messageDim)
-    (hMessageDimLe : messageDim ≤ Fintype.card ι) (received : ι → F) :
+    (domain : ι ↪ F)
+    (received : ι → F) :
     (agreeingPolynomials domain messageDim
       (capacityAgreementThreshold delta (Fintype.card ι) messageDim) received).encard ≤ 1 := by
+  rcases Nat.eq_zero_or_pos messageDim with rfl | hMessageDim
+  · apply Set.encard_le_one_iff.mpr
+    intro p q _ _
+    have hzero (p : MessagePolynomial F 0) : (p : Polynomial F) = 0 := by
+      simpa only [Polynomial.degreeLT_zero, Submodule.mem_bot] using p.property
+    exact Subtype.ext ((hzero p).trans (hzero q).symm)
+  by_cases hMessageDimLe : messageDim ≤ Fintype.card ι
+  swap
+  · have hempty : agreeingPolynomials domain messageDim
+        (capacityAgreementThreshold delta (Fintype.card ι) messageDim) received = ∅ := by
+      apply Set.eq_empty_of_forall_notMem
+      intro p hp
+      have hcard := Code.agree_le_card (u := ReedSolomon.evalOnPoints domain p) (v := received)
+      change capacityAgreementThreshold delta (Fintype.card ι) messageDim ≤ _ at hp
+      exact hMessageDimLe ((Nat.le_add_right _ _).trans (hp.trans hcard))
+    simp [hempty]
   let C : Set (ι → F) := ReedSolomon.code domain messageDim
   have hNeZero : NeZero messageDim := ⟨Nat.ne_of_gt hMessageDim⟩
   have hn : 0 < Fintype.card ι := lt_of_lt_of_le hMessageDim hMessageDimLe
@@ -276,8 +291,8 @@ theorem quarter_gap_list_bound : QuarterGapListBound := by
     intro received
     by_cases hhalf : (1 / 2 : ℝ) ≤ delta
     · simp only [listBound, ite_eq_left hhalf]
-      have hEnc := agreeingPolynomials_encard_le_one_of_half hhalf domain hMessageDim
-        (by simpa only [Fintype.card_fin] using hMessageDimLe) received
+      have hEnc := agreeingPolynomials_encard_le_one_of_half hhalf (messageDim := messageDim)
+        domain received
       have hCard : (exactAgreementDecoder (messageDim := messageDim)
           (minAgreement := minAgreement) domain received).card ≤ 1 := by
         have hCardEnc :

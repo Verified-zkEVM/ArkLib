@@ -95,7 +95,7 @@ theorem finite_factorwise_agreement_solutions_card_le_actual_of_regular_equation
     {F : Type u} [Field F] {n D A B M : ℕ}
     (domain : Fin n ↪ F) (received : Fin n → F)
     (Q R : DifferentialPolynomial F 1)
-    (hD : 1 ≤ D) (hkA : D + 1 ≤ A) (hAn : A ≤ n)
+    (hD : 1 ≤ D) (hkA : D + 1 ≤ A)
     (hchar : ringChar F = 0 ∨ max D M < ringChar F)
     (tail : FixedWordRegularTail Q R B M)
     (S : Finset F[X])
@@ -108,6 +108,15 @@ theorem finite_factorwise_agreement_solutions_card_le_actual_of_regular_equation
           (jetDegree R 1)
           (regularTaylorExponent D) : ℝ) *
           ((n - D : ℕ) : ℝ) / (A - D : ℕ) + ordinaryDegreeEnvelope B M := by
+  by_cases hAn : A ≤ n
+  swap
+  · have hempty : S = ∅ := Finset.eq_empty_of_forall_notMem fun P hP ↦ by
+      have hcard := (haccept P hP).2.trans (Finset.card_filter_le _ _)
+      simp only [Finset.card_univ, Fintype.card_fin] at hcard
+      exact hAn hcard
+    rw [hempty]
+    simp only [Finset.card_empty, Nat.cast_zero]
+    positivity
   let regularRoots := S.filter fun P ↦
     differentialSpecialization R P = 0 ∧
       differentialSpecialization
@@ -204,7 +213,7 @@ theorem finite_factorwise_agreement_solutions_card_le_actual
     {F : Type u} [Field F] {n D A B M : ℕ}
     (domain : Fin n ↪ F) (received : Fin n → F)
     (Q : DifferentialPolynomial F 1)
-    (hD : 1 ≤ D) (hkA : D + 1 ≤ A) (hAn : A ≤ n)
+    (hD : 1 ≤ D) (hkA : D + 1 ≤ A)
     (hchar : ringChar F = 0 ∨ max D M < ringChar F)
     (tail : FixedWordSingularTail Q B M)
     (S : Finset F[X])
@@ -228,7 +237,7 @@ theorem finite_factorwise_agreement_solutions_card_le_actual
     routes_nonregular := tail.routes_nonregular
   }
   simpa only [R] using finite_factorwise_agreement_solutions_card_le_actual_of_regular_equation
-    domain received Q R hD hkA hAn hchar genericTail S hsol haccept
+    domain received Q R hD hkA hchar genericTail S hsol haccept
 
 open Classical in
 /-- Replacing the actual degrees of a chosen regular equation by declared caps gives a closed
@@ -237,8 +246,8 @@ theorem finite_factorwise_agreement_solutions_card_le_of_regular_equation
     {F : Type u} [Field F] {n D A B M : ℕ}
     (domain : Fin n ↪ F) (received : Fin n → F)
     (Q R : DifferentialPolynomial F 1)
-    (hD : 1 ≤ D) (hkA : D + 1 ≤ A) (hAn : A ≤ n)
-    (hMB : M ≤ B) (hRjet : jetTotalDegree R ≤ B) (hRderiv : jetDegree R 1 ≤ M)
+    (hD : 1 ≤ D) (hkA : D + 1 ≤ A)
+    (hRjet : jetTotalDegree R ≤ B) (hRderiv : jetDegree R 1 ≤ M)
     (hchar : ringChar F = 0 ∨ max D M < ringChar F)
     (tail : FixedWordRegularTail Q R B M)
     (S : Finset F[X])
@@ -254,11 +263,22 @@ theorem finite_factorwise_agreement_solutions_card_le_of_regular_equation
   have hjB : j ≤ B := hRjet
   have hrM : r ≤ M := hRderiv
   have hstage : firstOrderCurveFiberStageOne (D + 1) j r (regularTaylorExponent D) ≤
-      firstOrderCurveFiberStageOne (D + 1) B M (regularTaylorExponent D) :=
-    (firstOrderCurveFiberStageOne_mono_total hjB).trans
-      (firstOrderCurveFiberStageOne_mono_derivative hrM hMB)
+      firstOrderCurveFiberStageOne (D + 1) B M (regularTaylorExponent D) := by
+    apply (firstOrderCurveFiberStageOne_mono_total hjB).trans
+    by_cases hMB : M ≤ B
+    · exact firstOrderCurveFiberStageOne_mono_derivative hrM hMB
+    · have hBM : B ≤ M := by omega
+      apply (firstOrderCurveFiberStageOne_le_mul_totalCap (hrj.trans hjB)).trans
+      unfold firstOrderCurveFiberStageOne cappedDegreeMixedVolume
+      calc
+        B * firstOrderTaylorTotalCap B (regularTaylorExponent D) =
+            B * firstOrderTaylorDerivativeCap (D + 1) B M (regularTaylorExponent D) +
+              B * (firstOrderTaylorTotalCap B (regularTaylorExponent D) -
+                firstOrderTaylorDerivativeCap (D + 1) B M (regularTaylorExponent D)) := by
+          rw [← Nat.mul_add, Nat.add_sub_of_le (firstOrderTaylorDerivativeCap_le_totalCap ..)]
+        _ ≤ _ := Nat.add_le_add_left (Nat.mul_le_mul_right _ hBM) _
   have hactual := finite_factorwise_agreement_solutions_card_le_actual_of_regular_equation
-    domain received Q R hD hkA hAn hchar tail S hsol haccept
+    domain received Q R hD hkA hchar tail S hsol haccept
   calc
     (S.card : ℝ) ≤
         (firstOrderCurveFiberStageOne (D + 1) j r (regularTaylorExponent D) : ℝ) *
@@ -272,9 +292,9 @@ open Classical in
 theorem finite_factorwise_agreement_solutions_card_le
     {F : Type u} [Field F] {n D A B M : ℕ}
     (domain : Fin n ↪ F) (received : Fin n → F)
-    (Q : DifferentialPolynomial F 1) (hQ : Q ≠ 0)
-    (hD : 1 ≤ D) (hkA : D + 1 ≤ A) (hAn : A ≤ n)
-    (hMB : M ≤ B) (hjet : jetTotalDegree Q ≤ B) (hderiv : jetDegree Q 1 ≤ M)
+    (Q : DifferentialPolynomial F 1)
+    (hD : 1 ≤ D) (hkA : D + 1 ≤ A)
+    (hjet : jetTotalDegree Q ≤ B) (hderiv : jetDegree Q 1 ≤ M)
     (hchar : ringChar F = 0 ∨ max D M < ringChar F)
     (tail : FixedWordSingularTail Q B M)
     (S : Finset F[X])
@@ -286,11 +306,13 @@ theorem finite_factorwise_agreement_solutions_card_le
           ((n - D : ℕ) : ℝ) / (A - D : ℕ) + ordinaryDegreeEnvelope B M := by
   let R := radicalPrimPart (some (1 : Fin 2)) Q
   have hRjet : jetTotalDegree R ≤ B := by
-    have hdvd : R ∣ Q := radicalPrimPart_dvd_self (some (1 : Fin 2)) Q
-    have hdegree : jetTotalDegree R ≤ jetTotalDegree Q := by
-      unfold jetTotalDegree
-      exact weightedTotalDegree_le_of_dvd jetDegreeWeight hdvd hQ
-    exact hdegree.trans hjet
+    by_cases hQ : Q = 0
+    · simp [R, hQ, radicalPrimPart, jetTotalDegree, weightedTotalDegree]
+    · have hdvd : R ∣ Q := radicalPrimPart_dvd_self (some (1 : Fin 2)) Q
+      have hdegree : jetTotalDegree R ≤ jetTotalDegree Q := by
+        unfold jetTotalDegree
+        exact weightedTotalDegree_le_of_dvd jetDegreeWeight hdvd hQ
+      exact hdegree.trans hjet
   have hRderiv : jetDegree R 1 ≤ M := by
     have hdegree : jetDegree R 1 ≤ jetDegree Q 1 := by
       simpa [jetDegree] using
@@ -306,7 +328,7 @@ theorem finite_factorwise_agreement_solutions_card_le
     routes_nonregular := tail.routes_nonregular
   }
   exact finite_factorwise_agreement_solutions_card_le_of_regular_equation
-    domain received Q R hD hkA hAn hMB hRjet hRderiv hchar regularTail S hsol haccept
+    domain received Q R hD hkA hRjet hRderiv hchar regularTail S hsol haccept
 
 end
 

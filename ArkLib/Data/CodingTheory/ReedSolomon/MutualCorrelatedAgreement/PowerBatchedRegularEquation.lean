@@ -75,7 +75,7 @@ theorem finite_regularPowerBatchedBadChallenges_card_le [IsAlgClosed E]
     (domain : Fin n ↪ F) (w : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
     (Q : DifferentialPolynomial E[X] r) (K k L A v h : ℕ)
     (hK : r < K) (hkK : k ≤ K) (hk : 0 < k) (hkL : k ≤ L)
-    (hLA : L ≤ A) (hAn : A ≤ n) (hD : 0 < ℓ + h) (hv : 0 < v)
+    (hLA : L ≤ A) (hAn : A ≤ n)
     (hjet : jetTotalDegree Q ≤ v) (hheight : CoeffNatDegreeLE Q h)
     (hbin : ∀ i, r < i → i < K → (i.choose r : E) ≠ 0)
     (S : Finset E)
@@ -96,7 +96,7 @@ theorem finite_regularPowerBatchedBadChallenges_card_le [IsAlgClosed E]
     (fun z ↦ separant (challengeSpecialization Q z) (Fin.last r)) witness hsep
   let jet (z : E) : Fin (r + 1) → E := polynomialJet center (witness z)
   apply finite_powerBatchedChart_badChallenges_card_le
-    domain w iota center Q K k L A v h hK hkK hk hkL hLA hAn hD hv hjet hheight S witness jet
+    domain w iota center Q K k L A v h hK hkK hk hkL hLA hAn hjet hheight S witness jet
   · intro z hz
     let Qz : DifferentialPolynomial E r :=
       MvPolynomial.map (Polynomial.evalRingHom z) Q
@@ -125,13 +125,13 @@ theorem regularPowerBatchedBadChallenges_finite [IsAlgClosed E]
     (domain : Fin n ↪ F) (w : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
     (Q : DifferentialPolynomial E[X] r) (K k L A v h : ℕ)
     (hK : r < K) (hkK : k ≤ K) (hk : 0 < k) (hkL : k ≤ L)
-    (hLA : L ≤ A) (hAn : A ≤ n) (hD : 0 < ℓ + h) (hv : 0 < v)
+    (hLA : L ≤ A) (hAn : A ≤ n)
     (hjet : jetTotalDegree Q ≤ v) (hheight : CoeffNatDegreeLE Q h)
     (hbin : ∀ i, r < i → i < K → (i.choose r : E) ≠ 0) :
     (regularPowerBatchedBadChallenges domain w iota Q k A).Finite := by
   exact Set.finite_of_forall_finset_card_le (R := ℚ) fun S hS ↦
     finite_regularPowerBatchedBadChallenges_card_le
-      domain w iota Q K k L A v h hK hkK hk hkL hLA hAn hD hv hjet hheight hbin S hS
+      domain w iota Q K k L A v h hK hkK hk hkL hLA hAn hjet hheight hbin S hS
 
 open Classical in
 /-- One bounded exceptional set works for every close regular solution of the symbolic equation;
@@ -140,7 +140,7 @@ theorem exists_exceptional_regularPowerBatchedAgreement [IsAlgClosed E]
     (domain : Fin n ↪ F) (w : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
     (Q : DifferentialPolynomial E[X] r) (K k L A v h : ℕ)
     (hK : r < K) (hkK : k ≤ K) (hk : 0 < k) (hkL : k ≤ L)
-    (hLA : L ≤ A) (hAn : A ≤ n) (hD : 0 < ℓ + h) (hv : 0 < v)
+    (hLA : L ≤ A)
     (hjet : jetTotalDegree Q ≤ v) (hheight : CoeffNatDegreeLE Q h)
     (hbin : ∀ i, r < i → i < K → (i.choose r : E) ≠ 0) :
     ∃ exceptional : Finset E,
@@ -153,16 +153,26 @@ theorem exists_exceptional_regularPowerBatchedAgreement [IsAlgClosed E]
           (separant (challengeSpecialization Q z) (Fin.last r)) P ≠ 0 →
         HasExactPowerAgreement domain w iota k z P := by
   classical
-  have hfinite := regularPowerBatchedBadChallenges_finite
-    domain w iota Q K k L A v h hK hkK hk hkL hLA hAn hD hv hjet hheight hbin
-  refine ⟨hfinite.toFinset, ?_, ?_⟩
-  · apply finite_regularPowerBatchedBadChallenges_card_le
-      domain w iota Q K k L A v h hK hkK hk hkL hLA hAn hD hv hjet hheight hbin
-    exact fun z hz ↦ hfinite.mem_toFinset.mp hz
-  · intro z hz P hdegree hagree hsol hseparant
-    by_contra hbad
-    apply hz
-    exact hfinite.mem_toFinset.mpr ⟨P, hdegree, hagree, hsol, hseparant, hbad⟩
+  by_cases hAn : A ≤ n
+  · have hfinite := regularPowerBatchedBadChallenges_finite
+      domain w iota Q K k L A v h hK hkK hk hkL hLA hAn hjet hheight hbin
+    refine ⟨hfinite.toFinset, ?_, ?_⟩
+    · apply finite_regularPowerBatchedBadChallenges_card_le
+        domain w iota Q K k L A v h hK hkK hk hkL hLA hAn hjet hheight hbin
+      exact fun z hz ↦ hfinite.mem_toFinset.mp hz
+    · intro z hz P hdegree hagree hsol hseparant
+      by_contra hbad
+      exact hz (hfinite.mem_toFinset.mpr ⟨P, hdegree, hagree, hsol, hseparant, hbad⟩)
+  refine ⟨∅, ?_, ?_⟩
+  · simp only [Finset.card_empty, Nat.cast_zero]
+    unfold regularPowerBatchedAgreementBound
+    positivity
+  · intro z hz P hdegree hagree
+    have hcard := Finset.card_le_univ (polynomialAgreementSet
+      (domain.trans ⟨iota, iota.injective⟩)
+      (powerBatchedWord (fun t i ↦ iota (w t i)) z) P)
+    simp only [Fintype.card_fin] at hcard
+    omega
 
 end
 
