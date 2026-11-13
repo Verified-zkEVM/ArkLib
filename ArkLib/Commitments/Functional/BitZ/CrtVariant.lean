@@ -34,6 +34,9 @@ witness (the vector `f_{*j}` of the paper).
 
 * `BitZ.sum_mul_eq_of_prod_bitFactor_eq_pow_of_coprime_orderOf`: the implication in any commutative
   ring, with `ord x` in place of `|𝔽| - 1`.
+* `BitZ.exists_prod_bitFactor_mod_eq_pow`: the honest quotient `a < ℓ₁` of the second grand product.
+* `BitZ.prod_bitFactor_eq_pow_and_exists_iff_of_coprime_orderOf`: the two grand products, with
+  `∃ a < ℓ₁`, hold if and only if the integer inner product equals the target.
 * `BitZ.sum_mul_eq_of_prod_bitFactor_eq_pow_of_coprime`: the same in a finite field with a
   generator `g` of the units.
 * `BitZ.coprime_two_pow_card_sub_one`: `|𝔽| - 1` is coprime to every power of two when `𝔽` has
@@ -102,6 +105,46 @@ theorem sum_mul_eq_of_prod_bitFactor_eq_pow_of_coprime_orderOf {x : A} (γ b : �
     _ < ℓ₁ * orderOf x := by
         simp only [sum_const, card_univ, smul_eq_mul]
         exact Nat.mul_lt_mul_of_pos_left (by omega) hℓpos
+
+/-- **The honest quotient of the second grand product.** For a vector of bits `b` of length
+`ℓ₁ = |ι| > 0` and any weights `γ`, there is `a < ℓ₁` with
+`∏ᵢ ((x ^ (γᵢ mod ℓ₁) - 1) · bᵢ + 1) = x ^ ((⟨γ, b⟩ mod ℓ₁) + a · ℓ₁)`, namely
+`a = ⟨γ mod ℓ₁, b⟩ / ℓ₁`. -/
+theorem exists_prod_bitFactor_mod_eq_pow (x : A) (γ b : ι → ℕ) (hb : ∀ i, b i ≤ 1)
+    (hℓpos : 0 < Fintype.card ι) :
+    ∃ a < Fintype.card ι, ∏ i, ((x ^ (γ i % Fintype.card ι) - 1) * (b i : A) + 1) =
+      x ^ ((∑ i, γ i * b i) % Fintype.card ι + a * Fintype.card ι) := by
+  set ℓ₁ := Fintype.card ι
+  set s := ∑ i, (γ i % ℓ₁) * b i
+  have hs : s < ℓ₁ * ℓ₁ := by
+    calc s ≤ ∑ _i : ι, (ℓ₁ - 1) :=
+          sum_le_sum fun i _ => (Nat.mul_le_mul_left _ (hb i)).trans
+            (by have := Nat.mod_lt (γ i) hℓpos; rw [mul_one]; omega)
+      _ < ℓ₁ * ℓ₁ := by
+          simp only [sum_const, card_univ, smul_eq_mul]
+          exact Nat.mul_lt_mul_of_pos_left (by omega) hℓpos
+  have hmod : s % ℓ₁ = (∑ i, γ i * b i) % ℓ₁ :=
+    Nat.ModEq.sum fun i _ => (Nat.mod_modEq (γ i) ℓ₁).mul_right (b i)
+  refine ⟨s / ℓ₁, (Nat.div_lt_iff_lt_mul hℓpos).2 hs, ?_⟩
+  rw [prod_bitFactor_eq_pow x (fun i => γ i % ℓ₁) b hb, ← hmod, Nat.mod_add_div' s ℓ₁]
+
+/-- **The CRT exponent lift as an iff.** Let `x` be an element of a commutative ring with
+`N := orderOf x`, let `γᵢ < N` and let `b` be a vector of bits of length `ℓ₁ = |ι| > 0`, with `ℓ₁`
+coprime to `N`, `ℓ₁² < N` and `μ < ℓ₁ · N`. Then `∏ᵢ ((x ^ γᵢ - 1) · bᵢ + 1) = x ^ μ` and
+`∏ᵢ ((x ^ (γᵢ mod ℓ₁) - 1) · bᵢ + 1) = x ^ ((μ mod ℓ₁) + a · ℓ₁)` for some `a < ℓ₁` if and only if
+`∑ᵢ γᵢ · bᵢ = μ` over `ℕ`. -/
+theorem prod_bitFactor_eq_pow_and_exists_iff_of_coprime_orderOf {x : A} (γ b : ι → ℕ)
+    (hγ : ∀ i, γ i < orderOf x) (hb : ∀ i, b i ≤ 1) {μ : ℕ}
+    (hμ : μ < Fintype.card ι * orderOf x) (hℓpos : 0 < Fintype.card ι)
+    (hcop : (Fintype.card ι).Coprime (orderOf x)) (hℓ : Fintype.card ι ^ 2 < orderOf x) :
+    (∏ i, ((x ^ γ i - 1) * (b i : A) + 1) = x ^ μ ∧
+      ∃ a < Fintype.card ι, ∏ i, ((x ^ (γ i % Fintype.card ι) - 1) * (b i : A) + 1) =
+        x ^ (μ % Fintype.card ι + a * Fintype.card ι)) ↔ ∑ i, γ i * b i = μ := by
+  refine ⟨fun ⟨hgp, a, ha, hgp'⟩ =>
+    sum_mul_eq_of_prod_bitFactor_eq_pow_of_coprime_orderOf γ b hγ hb hμ ha hcop hℓ hgp hgp',
+    fun h => ⟨by rw [prod_bitFactor_eq_pow x γ b hb, h], ?_⟩⟩
+  subst h
+  exact exists_prod_bitFactor_mod_eq_pow x γ b hb hℓpos
 
 end General
 
