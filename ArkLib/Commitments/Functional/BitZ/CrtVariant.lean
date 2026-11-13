@@ -40,8 +40,10 @@ witness (the vector `f_{*j}` of the paper).
   characteristic `2`.
 
 The general statement only needs `ℓ₁` coprime to `ord x`, not a power of two, and it needs `μ` only
-below `ℓ₁ · ord x`, which every honest target satisfies because `⟨γ, b⟩ ≤ ℓ₁ · (|𝔽| - 2)`. This file
-contains only theorems, so there are no definitions to make executable.
+below `ℓ₁ · ord x`. In the protocol `μ` is the prover's message, and the bound follows from the
+verifier's Round 2 range check `μ ≤ ℓ₁ · (q - 1)` together with `q - 1 ≤ |𝔽| - 2`, which holds
+under `max P < |𝔽| - 1` and the relaxed conditions for skipping Round 1. This file contains only
+theorems, so there are no definitions to make executable.
 
 Paper-specific correspondence and remaining formalization work are recorded in the
 [BitZ KB](https://github.com/Verified-zkEVM/ArkLib/blob/main/docs/kb/papers/BGKLSW26.md).
