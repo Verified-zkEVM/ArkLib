@@ -16,7 +16,7 @@ public import Mathlib.FieldTheory.Finite.Basic
 Theorem 4.7 to `max P < |𝔽_{2^ν}| - 1`, which removes the dependence of the prime set `P` on the
 witness size, at the price of an additional batch of grand products. The grand product
 `∏ᵢ ((g ^ γᵢ - 1) · bᵢ + 1) = g ^ μ` only proves `⟨γ, b⟩ ≡ μ (mod ord g)`, where `ord g = |𝔽| - 1`,
-and that is an equality over `ℕ` only if both sides are below `ord g`, which is what
+and that gives equality over `ℕ` if both sides are below `ord g`, which is what
 `ℓ₁ · max P < |𝔽| - 1` guarantees. If the entries of `γ` are only below `|𝔽| - 1`, the two sides can
 differ by a multiple of `|𝔽| - 1`, but they are both below `ℓ₁ · (|𝔽| - 1)`. So it is enough to
 prove the congruence also modulo `ℓ₁`, which is coprime to `|𝔽| - 1` when `ℓ₁` is a power of two and
