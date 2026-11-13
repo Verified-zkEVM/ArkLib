@@ -7,8 +7,8 @@ Authors: Quang Dao
 import ArkLib.ProofSystem.Sumcheck.Interaction.RoundByRound
 
 /-!
-An ordinary-import invocation of the local-to-global theorem on full native Sumcheck.
-The prover is an arbitrary whole native strategy; the final event observes its actual output.
+An ordinary-import invocation of the local-to-global theorem on full interaction-layer Sumcheck.
+The prover is an arbitrary whole strategy; the final event observes its actual output.
 -/
 
 open Interaction.Oracle Interaction.TwoParty OracleComp OracleSpec

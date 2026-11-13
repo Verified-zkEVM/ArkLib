@@ -11,7 +11,6 @@ public import Mathlib.LinearAlgebra.Dimension.Free
 public import ArkLib.Data.CodingTheory.GuruswamiSudan
 public import ArkLib.Data.CodingTheory.ProximityGap.Basic
 public import ArkLib.Data.CodingTheory.DivergenceOfSets
-public import ArkLib.Data.Polynomial.RationalFunctions
 public import ArkLib.Data.CodingTheory.ReedSolomon
 public import ArkLib.Data.Polynomial.Trivariate
 public import ArkLib.Data.CodingTheory.Basic.DecodingRadius
@@ -122,7 +121,7 @@ theorem jointAgreement_implies_linSpan_proximity {ι : Type} [Fintype ι] [Nonem
       (u := ∑ i, c i • W i) (C := (C : Set (ι → F))) (δ := δ)).2
       ⟨v', hv'_mem, hdist⟩
 
-theorem prob_uniform_shift_invariant {ι : Type} [Fintype ι] [Nonempty ι]
+theorem prob_uniform_shift_invariant {ι : Type} [Fintype ι]
     {F : Type} [Field F] [DecidableEq F]
     {U : Finset (ι → F)} [Nonempty U]
     (dir : ι → F)
@@ -151,7 +150,7 @@ theorem prob_uniform_shift_invariant {ι : Type} [Fintype ι] [Nonempty ι]
       (α := (U : Type)) (β := (U : Type)) (e := shiftEquiv)
       (p := fun a : (U : Type) => δᵣ(a.1, V) ≤ δ))
 
-theorem exists_basepoint_with_large_line_prob_aux {ι : Type} [Fintype ι] [Nonempty ι]
+theorem exists_basepoint_with_large_line_prob_aux {ι : Type} [Fintype ι]
     {F : Type} [Field F] [SampleableType F] [DecidableEq F]
     {U : Finset (ι → F)} [Nonempty U]
     (dir : ι → F)
@@ -219,7 +218,7 @@ theorem exists_basepoint_with_large_line_prob_aux {ι : Type} [Fintype ι] [None
         rw [lintegral_const, OracleComp.evalDist_apply_univ_eq_one, mul_one]
   exact (not_lt_of_ge h_integral_le) h_integral_gt
 
-theorem exists_basepoint_with_large_line_prob {ι : Type} [Fintype ι] [Nonempty ι]
+theorem exists_basepoint_with_large_line_prob {ι : Type} [Fintype ι]
     {F : Type} [Field F] [SampleableType F] [DecidableEq F]
     {U'_sub : Submodule F (ι → F)} {u0 dir : ι → F} (hdir : dir ∈ U'_sub)
     {V : Set (ι → F)} {δ ε : ℝ≥0} :
@@ -291,8 +290,6 @@ theorem average_proximity_implies_proximity_of_linear_subspace
       u' ∈ (Submodule.span F (Finset.univ.image (Fin.tail u) : Set (ι → F)) :
         Submodule F (ι → F)) := by
     simpa [Set.mem_toFinset] using hu'
-  have hδ_le : δ ≤ 1 - ReedSolomon.sqrtRate (k + 1) domain :=
-    le_of_lt hδ.2
   rcases
       (exists_basepoint_with_large_line_prob
         (ι := ι) (F := F)
@@ -309,7 +306,7 @@ theorem average_proximity_implies_proximity_of_linear_subspace
         (C := ReedSolomon.code domain (k + 1)) (δ := δ)
         (ε := ProximityGap.errorBound δ (k + 1) domain) :=
     RS_correlatedAgreement_affineLines (ι := ι) (F := F) (deg := k + 1) (domain := domain)
-      (δ := δ) hδ_le
+      (δ := δ) (by omega) hδ.2
   have hJA :
       jointAgreement (C := ReedSolomon.code domain (k + 1)) (δ := δ)
         (W := Code.finMapTwoWords a.1 u') := by
@@ -379,7 +376,7 @@ omit [Nonempty ι] in
 /-- The coefficient-parameterised probability equals the subtype probability.
 The map `r ↦ u₀ + ∑ rᵢ • dᵢ` has constant-cardinality fibers (cosets of the
 kernel of the linear part), so pushforward of uniform gives uniform. -/
-theorem prob_coeff_eq_prob_affine {k : ℕ} [NeZero k]
+theorem prob_coeff_eq_prob_affine {k : ℕ}
     (u0 : ι → F) (dirs : Fin k → ι → F)
     (P : (ι → F) → Prop) :
     Pr{let r ← $ᵗ (Fin k → F)}[P (u0 + ∑ i : Fin k, r i • dirs i)] =
@@ -483,7 +480,7 @@ theorem prob_coeff_eq_prob_affine {k : ℕ} [NeZero k]
   exact ENNReal.mul_div_mul_left _ _ (by exact_mod_cast hK_pos.ne') (ENNReal.natCast_ne_top K)
 
 omit [Nonempty ι] [SampleableType F] in
-theorem affine_prob_eq_finset_prob {k : ℕ} [NeZero k]
+theorem affine_prob_eq_finset_prob {k : ℕ}
     (u0 : ι → F) (dirs : Fin k → ι → F)
     (P : (ι → F) → Prop)
     [Nonempty (affineFinset u0 dirs)] :
@@ -508,8 +505,7 @@ theorem affine_prob_eq_finset_prob {k : ℕ} [NeZero k]
 
 omit [Nonempty ι] [DecidableEq ι] [SampleableType F] in
 theorem proper_affine_sub_card_le {k : ℕ}
-    (u0 : ι → F) (dirs : Fin k → ι → F)
-    (S : Finset (ι → F)) (hS : ↑S ⊆ (Affine.affineSubspaceAtOrigin (F := F) u0 dirs : Set (ι → F)))
+    (dirs : Fin k → ι → F) (S : Finset (ι → F))
     (hS_aff : ∃ (m : ℕ) (u0' : ι → F) (dirs' : Fin m → ι → F),
       S = affineFinset u0' dirs' ∧
       (Submodule.span F (Finset.univ.image dirs' : Set (ι → F)) :
@@ -635,9 +631,10 @@ Proof strategy:
    Pr_Ū ≥ 1/|F| + (1-1/|F|)·Pr_U > ε since ε < 1.
 4. Apply Lemma 6.3 to span(U) → all elements of span(U) are close.
    Since U ⊆ span(U), all elements of U are close. -/
-theorem all_affine_elements_close {k : ℕ} [NeZero k]
+theorem all_affine_elements_close {k : ℕ}
     (u : Fin (k + 1) → ι → F) {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
-    (hδ : δ ≤ 1 - ReedSolomon.sqrtRate deg domain)
+    (hdeg : 0 < deg)
+    (hδ : δ < 1 - ReedSolomon.sqrtRate deg domain)
     (hPr : Pr{let y ← $ᵗ (Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u))}[δᵣ(↑y,
         (ReedSolomon.code domain deg : Set (ι → F))) ≤ δ] >
       ProximityGap.errorBound δ deg domain) :
@@ -667,7 +664,7 @@ theorem all_affine_elements_close {k : ℕ} [NeZero k]
       hPr_fin with ⟨a, hline⟩
     have hJA : Code.jointAgreement (C := (V : Set (ι → F))) (δ := δ)
         (W := Code.finMapTwoWords a.1 dir) := by
-      apply RS_correlatedAgreement_affineLines hδ
+      apply RS_correlatedAgreement_affineLines hdeg hδ
       change Pr{let z ← $ᵗ F}[δᵣ(a.1 + z • dir, (V : Set (ι → F))) ≤ δ] > _
       exact hline
     exact jointAgreement_implies_second_proximity
@@ -871,7 +868,7 @@ theorem all_affine_elements_close {k : ℕ} [NeZero k]
       (ε := ProximityGap.errorBound δ deg domain) hPr_span with ⟨a, hline⟩
     have hJA : Code.jointAgreement (C := (V : Set (ι → F))) (δ := δ)
         (W := Code.finMapTwoWords a.1 x) := by
-      apply RS_correlatedAgreement_affineLines hδ
+      apply RS_correlatedAgreement_affineLines hdeg hδ
       change Pr{let z ← $ᵗ F}[δᵣ(a.1 + z • x, (V : Set (ι → F))) ≤ δ] > _
       exact hline
     exact jointAgreement_implies_second_proximity

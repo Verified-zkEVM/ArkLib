@@ -388,13 +388,18 @@ lemma bIdx_mul_ϑ_add_i_cast_lt_ℓ_succ (bIdx : Fin (ℓ / ϑ - 1)) (i : Fin (�
       apply blockStart_add_offset_le_rounds_sub_blockSize bIdx (x:=i.val) (hx:=by omega)
     _ < ℓ + 1 := by omega
 
+omit [NeZero ℓ] [NeZero ϑ] hdiv in
 /-- An offset before the last position in a nonfinal block lies before the final round. -/
 @[simp]
 lemma bIdx_mul_ϑ_add_i_fin_ℓ_pred_lt_ℓ (bIdx : Fin (ℓ / ϑ - 1)) (i : Fin (ϑ - 1)) :
     ↑bIdx * ϑ + ↑i < ℓ := by
   calc
-    _ ≤ ℓ - ϑ := by apply blockStart_add_offset_le_rounds_sub_blockSize bIdx i.val (hx:=by omega)
-    _ < ℓ := by exact rounds_sub_blockSize_lt
+    ↑bIdx * ϑ + ↑i < (↑bIdx + 1) * ϑ := by
+      have := i.isLt
+      rw [Nat.add_mul, Nat.one_mul]
+      omega
+    _ ≤ (ℓ / ϑ) * ϑ := Nat.mul_le_mul_right _ (by have := bIdx.isLt; omega)
+    _ ≤ ℓ := Nat.div_mul_le_self _ _
 
 end IndexBounds
 
@@ -447,8 +452,7 @@ end OracleFrontierIndex
 -- (`ArkLib.ProofSystem.Sumcheck.Structured`). Binary Basefold is the `P · t` sum-check: its
 -- relations take the multiplier `P` as a function `Context → MultilinearPoly L ℓ` (the type of
 -- `SumcheckMultiplierParam.multpoly`) and use the identity-combinator projections.
-export Sumcheck.Structured (computeInitialSumcheckPoly projectToMidSumcheckPoly
-  projectToNextSumcheckPoly)
+export Sumcheck.Structured (computeInitialSumcheckPoly projectToNextSumcheckPoly)
 
 
 end Binius.BinaryBasefold

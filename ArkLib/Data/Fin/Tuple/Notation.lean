@@ -497,15 +497,25 @@ macro_rules
 
 section Examples
 
+/-!
+Some tuple notation forms still need explicit type or length information:
+- Chained heterogeneous concat with placeholder type vectors does not elaborate.
+- A numeral in a dependent tuple with a let-bound motive needs a type annotation.
+- Dependent append with an empty tuple needs explicit lengths.
+- Chained or mixed-type dependent appends need intermediate motive annotations.
+- Nested tuple constructions without an expected dependent type do not elaborate.
+- Appending tuples over let-bound type vectors needs explicit transported motives.
+-/
+
 -- Basic homogeneous vectors work fine
 example : !v[1, 2, 3] = Fin.vcons 1 (Fin.vcons 2 (Fin.vcons 3 Fin.vempty)) := rfl
 
 -- Homogeneous vectors with type ascription
 example : !v⟨ℕ⟩[1, 2, 3] = (!v[1, 2, 3] : Fin 3 → ℕ) := rfl
 
--- Heterogeneous tuples with type vector ascription (commented out due to type inference issues)
--- example : !h⟨!v[ℕ, Bool, String]⟩[(1 : ℕ), true, "hello"] =
---   !h[(1 : ℕ), (true : Bool), ("hello" : String)] := rfl
+-- Heterogeneous tuples with type vector ascription
+example : !h⟨!v[ℕ, Bool, String]⟩[(1 : ℕ), true, "hello"] =
+  !h[(1 : ℕ), (true : Bool), ("hello" : String)] := rfl
 
 -- Dependent tuples with explicit motive work
 def Mymotive : Fin 3 → Type := !v[ℕ, Bool, String]
@@ -622,10 +632,6 @@ section FinTupleConcatTests
 example : !h[(1 : ℕ), (true : Bool)] :+ʰ⟨ !v[ℕ, Bool]; String⟩ ("hello" : String) =
           !h⟨ !v[ℕ, Bool, String] ⟩[(1 : ℕ), (true : Bool), ("hello" : String)] := rfl
 
--- Chaining different types (left associative)
--- example : !h[(1 : ℕ)] :+ʰ⟨ _; _⟩ (true ) :+ʰ⟨ !v[Bool]; _⟩ ("hello" : String) =
---           !h[(1 : ℕ), (true : Bool), ("hello" : String)] := rfl
-
 -- Mixing concat and bracket notation
 example : !h[(1 : ℕ), (true : Bool)] :+ʰ⟨ !v[ℕ, Bool]; String⟩ ("test" : String) =
           !h⟨!v[ℕ, Bool, String]⟩[(1 : ℕ), (true : Bool), ("test" : String)] := rfl
@@ -696,10 +702,6 @@ example : let _types := ℕ ::ᵛ Bool ::ᵛ !v[]
           let values := 1 ::ʰ true ::ʰ !d[]
           values = (!d⟨_types⟩[(1 : ℕ), true] : (i : Fin 2) → _types i) := rfl
 
--- FinVec used as motive for dependent tuples (commented due to type inference)
--- example : let motive := ℕ ::ᵛ Bool ::ᵛ !v[]
---           !d⟨motive⟩[1, true] = !d[(1 : ℕ), (true : Bool)] := rfl
-
 -- Comparing different notations for the same structure
 example : let motive := !v[ℕ, Bool, String]
           (!d⟨motive⟩[(1 : ℕ), true, "hello"] : (i : Fin 3) → motive i) =
@@ -724,9 +726,6 @@ example : !v[true, false] ++ᵛ !v[true] = !v[true, false, true] := rfl
 
 -- end FinVecAppendTests
 
--- Test FinTuple.append (heterogeneous ++ᵈ)
--- section FinTupleAppendTests
-
 -- Basic heterogeneous append
 example : !d[(1 : ℕ)] ++ᵈ⟨!v[ℕ, Bool]⟩ !d[true] = !d⟨!v[ℕ, Bool]⟩[(1 : ℕ), true] := rfl
 
@@ -735,37 +734,9 @@ example : !d[(1 : ℕ), (true : Bool)] ++ᵈ⟨!v[ℕ, Bool] ++ᵛ !v[String, Fl
             !d[("hello" : String), (3.14 : Float)] =
           !d[(1 : ℕ), (true : Bool), ("hello" : String), (3.14 : Float)] := rfl
 
--- -- Append with empty tuple
--- example : Fin.dappend (motive := !v[ℕ, Bool]) !d⟨!v[ℕ, Bool]⟩[(1 : ℕ), (true : Bool)] !d[] =
---           !d[(1 : ℕ), (true : Bool)] := rfl
-
--- example : !d[] ++ᵈ⟨!v[ℕ, Bool]⟩ !d⟨!v[ℕ, Bool]⟩[(1 : ℕ), (true : Bool)] =
---           !d[(1 : ℕ), (true : Bool)] := rfl
-
--- -- Chaining heterogeneous appends
--- example : !d[(1 : ℕ)] ++ᵈ⟨!v[ℕ, Bool, String]⟩ !d[(true : Bool)] ++ᵈ⟨!v[ℕ, Bool, String]⟩
---           !d[("test" : String)] =
---           !d[(1 : ℕ), (true : Bool), ("test" : String)] := rfl
-
--- -- Mixed with cons notation - simple case works
--- example : !d[(1 : ℕ)] ++ᵈ⟨!v[ℕ, Bool]⟩ !d[(true : Bool)] =
---           !d[(1 : ℕ), (true : Bool)] := rfl
-
--- -- Combining different tuple constructions
--- example : !d[(1 : ℕ), (2 : ℕ)] ++ᵈ⟨!v[ℕ, ℕ, Bool, String]⟩
---           !d[(true : Bool), ("hello" : String)] =
---           !d[(1 : ℕ), (2 : ℕ), (true : Bool), ("hello" : String)] := rfl
-
--- Note: More complex append examples may require explicit type annotations
--- due to type inference limitations with heterogeneous tuples
-
--- Complex nested example with multiple operations
--- example : let base := !d[(0 : ℕ)]
---           let middle := (true : Bool) ::ʰ !d[]
---           let final := !d[("final" : String)]
---           (base ++ᵈ middle) ++ᵈ final = !d[(0 : ℕ), (true : Bool), ("final" : String)] := rfl
-
--- end FinTupleAppendTests
+-- Mixed with cons notation
+example : !d[(1 : ℕ)] ++ᵈ⟨!v[ℕ, Bool]⟩ !d[(true : Bool)] =
+          !d[(1 : ℕ), (true : Bool)] := rfl
 
 -- Basic dependent append using explicit dappend
 example : let motive := !v[ℕ, Bool]
@@ -785,24 +756,6 @@ example : let motive := !v[ℕ, Bool]
           let d1 : (i : Fin 2) → motive (Fin.castAdd 0 i) := !d[(1 : ℕ), (true : Bool)]
           let d2 : (i : Fin 0) → motive (Fin.natAdd 2 i) := !d[]
           Fin.dappend (n := 0) d1 d2 = !d⟨motive⟩[(1 : ℕ), (true : Bool)] := rfl
-
--- end FinDependentAppendTests
-
--- Test interaction between all append types
--- section MixedAppendTests
-
--- Using FinVec append to build type vectors for FinTuple
--- example : let types1 : Fin 2 → Type := !v[ℕ, Bool]
---           let types2 : Fin 2 → Type := !v[String, Float]
---   let combined_types : Fin 4 → Type := types1 ++ᵛ types2
---           let t1 : (i : Fin 2) → types1 i := !d⟨types1⟩[(1 : ℕ), (true : Bool)]
---           let t2 : (i : Fin 2) → types2 i := !d⟨types2⟩[("hello" : String), (3.14 : Float)]
---   let result : (i : Fin 4) → combined_types i := t1 ++ᵈ⟨!v[ℕ, Bool] ++ᵛ !v[String, Float]⟩ t2
---   result =
---     (let rhs : (i : Fin 4) → combined_types i :=
---        !d[(1 : ℕ), (true : Bool), ("hello" : String), (3.14 : Float)]
---      rhs) := by
---     ext i; fin_cases i <;> rfl
 
 -- Using FinVec append to build motives for dependent tuples
 example : let motive1 : Fin 2 → Type := !v[ℕ, Bool]

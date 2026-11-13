@@ -15,6 +15,9 @@ Word addresses carry their actual field points. Their handlers read the retained
 domain evaluation occurs only at separately charged domain instructions. Arithmetic instructions
 remain explicit. Profiles count these accesses and designated metadata operations, without
 asserting machine runtime bounds for arbitrary committed-word or domain functions.
+
+A profile is the output and the PolyFun path charge of the one completed path that the
+deterministic instruction handler selects (`profile_eq_charge`).
 -/
 
 @[expose] public section
@@ -37,6 +40,10 @@ inductive AccessOp {F : Type} [Field F] [DecidableEq F] {n k : ℕ}
 inductive AccessCostKind
   | wordRead | domainRead | challengeRead | finalPolynomialRead
   deriving DecidableEq, Repr
+
+instance : Fintype AccessCostKind where
+  elems := {.wordRead, .domainRead, .challengeRead, .finalPolynomialRead}
+  complete kind := by cases kind <;> simp
 
 /-- Arithmetic and immutable-input access coordinates. -/
 abbrev CostKind := ArithmeticCostKind ⊕ AccessCostKind
@@ -90,23 +97,43 @@ def instructionAnswer (o : ∀ j, FinalOracleStatement s ω j) (α : FinalStatem
   | .inl op => arithmeticAnswer op
   | .inr op => accessAnswer s o α op
 
+/-- Every certified instruction response is the handler's answer. -/
+theorem eq_instructionAnswer (o : ∀ j, FinalOracleStatement s ω j) (α : FinalStatement F k)
+    (op : ArithmeticOp F ⊕ AccessOp s ω) (u : (InstructionSpec s o α).Range op) :
+    u = instructionAnswer s o α op := by
+  rcases op with op | op
+  · exact eq_arithmeticAnswer op u
+  · cases op <;> exact Subtype.ext u.property
+
 /-- Execute the instruction backend while recording every requested operation. -/
 def measuredAnswer (o : ∀ j, FinalOracleStatement s ω j) (α : FinalStatement F k) :
     QueryImpl (InstructionSpec s o α) (AddWriterT Cost Id) :=
-  (instructionAnswer s o α).withCost
-    (fun op ↦ Multiplicative.ofAdd (instructionCost s op))
+  (instructionAnswer s o α).withAddCost (instructionCost s)
 
 /-- The exact result and cost vector of an extractor instruction program. -/
 def profile {A : Type} (o : ∀ j, FinalOracleStatement s ω j) (α : FinalStatement F k)
     (program : OracleComp (InstructionSpec s o α) A) : A × Cost :=
   (simulateQ (measuredAnswer s o α) program).runAdd
 
+/-- A profile is the output and the charge of the completed path selected by the handler. -/
+theorem profile_eq_charge {A : Type} (o : ∀ j, FinalOracleStatement s ω j)
+    (α : FinalStatement F k) (program : OracleComp (InstructionSpec s o α) A) :
+    profile s o α program =
+      (PFunctor.FreeM.output program
+          (PFunctor.FreeM.Path.ofHandler (fun op ↦ (instructionAnswer s o α op).run) program),
+        PFunctor.FreeM.Path.charge (instructionCost s) program
+          (PFunctor.FreeM.Path.ofHandler (fun op ↦ (instructionAnswer s o α op).run) program)) := by
+  change Prod.map id Multiplicative.toAdd
+    (simulateQ ((instructionAnswer s o α).withAddCost (instructionCost s)) program).run = _
+  rw [QueryImpl.run_simulateQ_withAddCost_id]
+  rfl
+
 /-- Erasing the measured execution preserves the same instruction program's result. -/
 theorem profile_fst {A : Type} (o : ∀ j, FinalOracleStatement s ω j)
     (α : FinalStatement F k) (program : OracleComp (InstructionSpec s o α) A) :
-    (profile s o α program).1 = simulateQ (instructionAnswer s o α) program := by
-  exact QueryImpl.fst_map_run_withCost (instructionAnswer s o α)
-    (fun op ↦ Multiplicative.ofAdd (instructionCost s op)) program
+    (profile s o α program).1 = simulateQ (instructionAnswer s o α) program :=
+  QueryImpl.fst_map_run_simulateQ_withAddCost (instructionAnswer s o α) (instructionCost s)
+    program
 
 end Fri.Spec.Extractor
 
@@ -122,7 +149,7 @@ variable (α : FinalStatement F k)
 /-- Pure programs request no backend operations. -/
 @[simp]
 theorem profile_pure {A : Type} (a : A) : profile s o α (pure a) = (a, 0) := by
-  simp only [profile, simulateQ_pure, AddWriterT.runAdd_pure]
+  rw [profile_eq_charge]
   rfl
 
 /-- Sequential execution adds the complete cost vectors. -/
@@ -132,17 +159,21 @@ theorem profile_bind {A B : Type} (p : OracleComp (InstructionSpec s o α) A)
       let a := profile s o α p
       let b := profile s o α (f a.1)
       (b.1, a.2 + b.2) := by
-  simp only [profile, simulateQ_bind, AddWriterT.runAdd_bind]
-  rfl
+  simp only [profile_eq_charge]
+  change (PFunctor.FreeM.output (PFunctor.FreeM.bind p f)
+      (PFunctor.FreeM.Path.ofHandler _ (PFunctor.FreeM.bind p f)),
+    PFunctor.FreeM.Path.charge _ (PFunctor.FreeM.bind p f)
+      (PFunctor.FreeM.Path.ofHandler _ (PFunctor.FreeM.bind p f))) = _
+  rw [PFunctor.FreeM.Path.ofHandler_bind, PFunctor.FreeM.Path.output_joinBind,
+    PFunctor.FreeM.Path.charge_joinBind]
 
 /-- A backend instruction executes once and contributes its designated unit cost. -/
 @[simp]
 theorem profile_query (op : ArithmeticOp F ⊕ AccessOp s ω) :
     profile s o α (liftM (OracleSpec.query (spec := InstructionSpec s o α) op)) =
       (instructionAnswer s o α op, instructionCost s op) := by
-  simp [profile, simulateQ_query, OracleSpec.query_def, measuredAnswer,
-    QueryImpl.withCost_apply, AddWriterT.runAdd]
-  rfl
+  rw [profile_eq_charge]
+  exact Prod.ext rfl (add_zero _)
 
 /-- Mapping a result leaves every operation count unchanged. -/
 @[simp]

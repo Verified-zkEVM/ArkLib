@@ -112,9 +112,12 @@ theorem stageStaircase_nonneg (μ M : ℕ) : 0 ≤ stageStaircase μ M := by
   unfold stageStaircase
   positivity
 
-/-- The staircase is at most `3 μ^3` when `1 ≤ μ` and `M ≤ μ`. -/
-theorem stageStaircase_le_three_mul_cube {μ M : ℕ} (hμ : 1 ≤ μ) (hM : M ≤ μ) :
+/-- The staircase is at most `3 μ^3` when `M ≤ μ`. -/
+theorem stageStaircase_le_three_mul_cube {μ M : ℕ} (hM : M ≤ μ) :
     stageStaircase μ M ≤ 3 * (μ : ℝ) ^ 3 := by
+  rcases Nat.eq_zero_or_pos μ with rfl | hμ
+  · rw [Nat.le_zero.mp hM]
+    simp [stageStaircase]
   have hμ0 : (0 : ℝ) ≤ μ := by positivity
   have hμ1 : (1 : ℝ) ≤ μ := by exact_mod_cast hμ
   have hM0 : (0 : ℝ) ≤ M := by positivity
@@ -172,10 +175,13 @@ theorem firstOrderTaylorTotalCap_le_two_mul {D j : ℕ} (hD : 1 ≤ D) (hj : 1 �
   zify [(by omega : 3 ≤ 2 * D), hj]
   nlinarith
 
-/-- For `1 ≤ D` and `1 ≤ q`, the first-derivative cap at the regular exponent is at most
+/-- For `1 ≤ q`, the first-derivative cap at the regular exponent is at most
 `2 D q`. -/
-theorem firstOrderTaylorDerivativeCap_le_two_mul {D j q : ℕ} (hD : 1 ≤ D) (hq : 1 ≤ q) :
+theorem firstOrderTaylorDerivativeCap_le_two_mul {D j q : ℕ} (hq : 1 ≤ q) :
     firstOrderTaylorDerivativeCap (D + 1) j q (regularTaylorExponent D) ≤ 2 * D * q := by
+  by_cases hDzero : D = 0
+  · subst D
+    simp [firstOrderTaylorDerivativeCap, regularTaylorExponent]
   by_cases hDone : D = 1
   · subst D
     simp [firstOrderTaylorDerivativeCap, regularTaylorExponent]
@@ -198,7 +204,7 @@ theorem firstOrderCurveFiberStageOne_regularTaylorExponent_le {D j q : ℕ} (hD 
       MvPolynomial.cappedDegreeMixedVolume_mono_right hqj
         (firstOrderTaylorDerivativeCap_le_totalCap ..) hCB
         (firstOrderTaylorTotalCap_le_two_mul hD (hq.trans hqj))
-        (firstOrderTaylorDerivativeCap_le_two_mul hD hq)
+        (firstOrderTaylorDerivativeCap_le_two_mul hq)
     _ = 2 * D * q * (2 * j - q) := by
       rw [MvPolynomial.cappedDegreeMixedVolume_eq hqj hCB]
       zify [hqj, (by omega : q ≤ 2 * j)]
@@ -218,45 +224,76 @@ theorem firstOrderCurveJointStageOne_regularTaylorExponent_le {D h j q : ℕ} (h
       MvPolynomial.cappedBidegreeMixedVolume_mono_right hqj
         (firstOrderTaylorDerivativeCap_le_totalCap ..) hCB ha
         (firstOrderTaylorTotalCap_le_two_mul hD (hq.trans hqj))
-        (firstOrderTaylorDerivativeCap_le_two_mul hD hq)
+        (firstOrderTaylorDerivativeCap_le_two_mul hq)
     _ = (12 * D ^ 2 * h + 4 * D) * (q * (2 * j - q)) := by
       rw [MvPolynomial.cappedBidegreeMixedVolume_eq hCB]
       zify [hqj, hCB, (by omega : q ≤ 2 * j),
         hCB.trans (Nat.le_mul_of_pos_left (2 * D * j) two_pos)]
       ring
 
-/-- For `1 ≤ D` and `e ≤ μ`, the fiber stage sum is at most `2 D` times the staircase. -/
-theorem regularFiberStageSum_le {D μ e : ℕ} (hD : 1 ≤ D) (heμ : e ≤ μ) :
+/-- For `1 ≤ D`, the fiber stage sum is at most `2 D` times the staircase. -/
+theorem regularFiberStageSum_le {D μ e : ℕ} (hD : 1 ≤ D) :
     regularFiberStageSum D μ e ≤ 2 * D * stageStaircaseSum μ e := by
-  rw [regularFiberStageSum, stageStaircaseSum_eq_sum_stages heμ, Finset.mul_sum]
-  refine Finset.sum_le_sum fun i hi ↦ ?_
-  have hie : i < e := Finset.mem_range.mp hi
-  simpa only [mul_assoc] using
-    firstOrderCurveFiberStageOne_regularTaylorExponent_le hD (show 1 ≤ e - i by omega)
-      (show e - i ≤ μ - i by omega)
+  have hbounded : ∀ μ, e ≤ μ → regularFiberStageSum D μ e ≤
+      2 * D * stageStaircaseSum μ e := by
+    intro μ heμ
+    rw [regularFiberStageSum, stageStaircaseSum_eq_sum_stages heμ, Finset.mul_sum]
+    refine Finset.sum_le_sum fun i hi ↦ ?_
+    have hie : i < e := Finset.mem_range.mp hi
+    simpa only [mul_assoc] using
+      firstOrderCurveFiberStageOne_regularTaylorExponent_le hD (show 1 ≤ e - i by omega)
+        (show e - i ≤ μ - i by omega)
+  by_cases heμ : e ≤ μ
+  · exact hbounded μ heμ
+  · have hmono : regularFiberStageSum D μ e ≤
+        regularFiberStageSum D e e := by
+      apply Finset.sum_le_sum
+      intro i _
+      exact firstOrderCurveFiberStageOne_mono_total (Nat.sub_le_sub_right (by omega) i)
+    have hstair : stageStaircaseSum e e = stageStaircaseSum μ e := by
+      simp [stageStaircaseSum, Nat.sub_eq_zero_of_le (by omega : μ ≤ e)]
+    exact hmono.trans (hstair ▸ hbounded e le_rfl)
 
-/-- For `1 ≤ D` and `e ≤ μ`, the joint stage sum is at most `12 D² h + 4 D` times the
+/-- For `1 ≤ D`, the joint stage sum is at most `12 D² h + 4 D` times the
 staircase. -/
-theorem regularJointStageSum_le {D h μ e : ℕ} (hD : 1 ≤ D) (heμ : e ≤ μ) :
+theorem regularJointStageSum_le {D h μ e : ℕ} (hD : 1 ≤ D) :
     regularJointStageSum D h μ e ≤ (12 * D ^ 2 * h + 4 * D) * stageStaircaseSum μ e := by
-  rw [regularJointStageSum, stageStaircaseSum_eq_sum_stages heμ, Finset.mul_sum]
-  exact Finset.sum_le_sum fun i hi ↦
-    firstOrderCurveJointStageOne_regularTaylorExponent_le hD
-      (show 1 ≤ e - i by have := Finset.mem_range.mp hi; omega) (show e - i ≤ μ - i by omega)
+  have hbounded : ∀ μ, e ≤ μ → regularJointStageSum D h μ e ≤
+      (12 * D ^ 2 * h + 4 * D) * stageStaircaseSum μ e := by
+    intro μ heμ
+    rw [regularJointStageSum, stageStaircaseSum_eq_sum_stages heμ, Finset.mul_sum]
+    exact Finset.sum_le_sum fun i hi ↦
+      firstOrderCurveJointStageOne_regularTaylorExponent_le hD
+        (show 1 ≤ e - i by have := Finset.mem_range.mp hi; omega) (show e - i ≤ μ - i by omega)
+  by_cases heμ : e ≤ μ
+  · exact hbounded μ heμ
+  · have hmono : regularJointStageSum D h μ e ≤
+        regularJointStageSum D h e e := by
+      apply Finset.sum_le_sum
+      intro i _
+      exact firstOrderCurveJointStageOne_mono_total (Nat.sub_le_sub_right (by omega) i)
+    have hstair : stageStaircaseSum e e = stageStaircaseSum μ e := by
+      simp [stageStaircaseSum, Nat.sub_eq_zero_of_le (by omega : μ ≤ e)]
+    exact hmono.trans (hstair ▸ hbounded e le_rfl)
 
-/-- For `1 ≤ D` and `e < μ`, one more order-one stage increases the fiber stage sum by at least
+/-- For `e < μ`, one more order-one stage increases the fiber stage sum by at least
 one. -/
-theorem regularFiberStageSum_add_one_le_succ {D μ e : ℕ} (hD : 1 ≤ D) (heμ : e + 1 ≤ μ) :
+theorem regularFiberStageSum_add_one_le_succ {D μ e : ℕ} (heμ : e + 1 ≤ μ) :
     regularFiberStageSum D μ e + 1 ≤ regularFiberStageSum D μ (e + 1) := by
   unfold regularFiberStageSum
   rw [Finset.sum_range_succ]
   refine Nat.add_le_add (Finset.sum_le_sum fun i hi ↦ ?_) ?_
   · have hie : i < e := Finset.mem_range.mp hi
     exact firstOrderCurveFiberStageOne_mono_derivative (by omega) (by omega)
-  · exact (show 1 ≤ μ - e by omega).trans (le_firstOrderCurveFiberStageOne (by omega))
+  · by_cases hDzero : D = 0
+    · subst D
+      simp [firstOrderCurveFiberStageOne, firstOrderTaylorTotalCap,
+        firstOrderTaylorDerivativeCap, regularTaylorExponent,
+        MvPolynomial.cappedDegreeMixedVolume]
+    · exact (show 1 ≤ μ - e by omega).trans (le_firstOrderCurveFiberStageOne (by omega))
 
 /-- The regular fiber stage sum is monotone in the actual derivative degree. -/
-theorem regularFiberStageSum_mono {D μ e M : ℕ} (hD : 1 ≤ D)
+theorem regularFiberStageSum_mono {D μ e M : ℕ}
     (heM : e ≤ M) (hMμ : M ≤ μ) :
     regularFiberStageSum D μ e ≤ regularFiberStageSum D μ M := by
   induction M generalizing e with
@@ -269,7 +306,7 @@ theorem regularFiberStageSum_mono {D μ e M : ℕ} (hD : 1 ≤ D)
       · subst e
         exact le_rfl
       · exact (ih (by omega) (by omega)).trans
-          ((regularFiberStageSum_add_one_le_succ hD (by omega)).trans' (Nat.le_add_right _ _))
+          ((regularFiberStageSum_add_one_le_succ (by omega)).trans' (Nat.le_add_right _ _))
 
 /-- The regular joint stage sum is monotone in the actual derivative degree. -/
 theorem regularJointStageSum_mono {D h μ e M : ℕ} (heM : e ≤ M) (hMμ : M ≤ μ) :
@@ -298,49 +335,53 @@ theorem regularJointStageSum_mono {D h μ e M : ℕ} (heM : e ≤ M) (hMμ : M �
           exact firstOrderCurveJointStageOne_mono_derivative (by omega) (by omega)
         exact hsum.trans (Nat.le_add_right _ _)
 
-/-- For `e ≤ M ≤ μ`, the closed staircase at `e` is at most the one at `M`. -/
-theorem stageStaircase_mono {μ e M : ℕ} (heM : e ≤ M) (hMμ : M ≤ μ) :
+/-- For `e ≤ M`, the closed staircase at `e` is at most the one at `M`. -/
+theorem stageStaircase_mono {μ e M : ℕ} (heM : e ≤ M) :
     stageStaircase μ e ≤ stageStaircase μ M := by
   induction M, heM using Nat.le_induction with
   | base => exact le_rfl
   | succ M heM ih =>
-    refine (ih (by omega)).trans ?_
-    have hstep : stageStaircase μ (M + 1) =
-        stageStaircase μ M + ((M : ℝ) + 1) * (2 * (μ : ℝ) - 2 * M - 1) := by
-      unfold stageStaircase
-      rw [Nat.cast_sub (by omega : M ≤ μ), Nat.cast_sub hMμ]
-      push_cast
-      ring
-    have hfactor : (0 : ℝ) ≤ 2 * (μ : ℝ) - 2 * M - 1 := by
-      have : ((2 * M + 1 : ℕ) : ℝ) ≤ (2 * μ : ℕ) := by exact_mod_cast (by omega)
-      push_cast at this
-      linarith
-    rw [hstep]
-    nlinarith
+    refine ih.trans ?_
+    by_cases hMμ : M + 1 ≤ μ
+    · have hstep : stageStaircase μ (M + 1) =
+          stageStaircase μ M + ((M : ℝ) + 1) * (2 * (μ : ℝ) - 2 * M - 1) := by
+        unfold stageStaircase
+        rw [Nat.cast_sub (by omega : M ≤ μ), Nat.cast_sub hMμ]
+        push_cast
+        ring
+      have hfactor : (0 : ℝ) ≤ 2 * (μ : ℝ) - 2 * M - 1 := by
+        have : ((2 * M + 1 : ℕ) : ℝ) ≤ (2 * μ : ℕ) := by exact_mod_cast (by omega)
+        push_cast at this
+        linarith
+      rw [hstep]
+      nlinarith
+    · have hμM : μ ≤ M := by omega
+      simp only [stageStaircase, Nat.sub_eq_zero_of_le hμM,
+        Nat.sub_eq_zero_of_le (hμM.trans (Nat.le_succ M)), Nat.cast_zero, zero_mul, zero_add]
+      gcongr <;> norm_num
 
-/-- For `1 ≤ D` and `e ≤ M ≤ μ`, the fiber stage sum at `e` is at most `2 D T` for the staircase
+/-- For `1 ≤ D` and `e ≤ M`, the fiber stage sum at `e` is at most `2 D T` for the staircase
 `T` at `M`. -/
-theorem regularFiberStageSum_cast_le {D μ M e : ℕ} (hD : 1 ≤ D) (heM : e ≤ M) (hMμ : M ≤ μ) :
+theorem regularFiberStageSum_cast_le {D μ M e : ℕ} (hD : 1 ≤ D) (heM : e ≤ M) :
     (regularFiberStageSum D μ e : ℝ) ≤ 2 * D * stageStaircase μ M := by
   calc
     (regularFiberStageSum D μ e : ℝ) ≤ (2 * D * stageStaircaseSum μ e : ℕ) := by
-      exact_mod_cast regularFiberStageSum_le hD (heM.trans hMμ)
+      exact_mod_cast regularFiberStageSum_le hD
     _ = 2 * D * stageStaircase μ e := by push_cast; rw [cast_stageStaircaseSum]
-    _ ≤ 2 * D * stageStaircase μ M := by gcongr; exact stageStaircase_mono heM hMμ
+    _ ≤ 2 * D * stageStaircase μ M := by gcongr; exact stageStaircase_mono heM
 
-/-- For `1 ≤ D` and `e ≤ M ≤ μ`, the joint stage sum at `e` is at most `(12 D² h + 4 D) T` for
+/-- For `1 ≤ D` and `e ≤ M`, the joint stage sum at `e` is at most `(12 D² h + 4 D) T` for
 the staircase `T` at `M`. -/
-theorem regularJointStageSum_cast_le {D h μ M e : ℕ} (hD : 1 ≤ D) (heM : e ≤ M)
-    (hMμ : M ≤ μ) :
+theorem regularJointStageSum_cast_le {D h μ M e : ℕ} (hD : 1 ≤ D) (heM : e ≤ M) :
     (regularJointStageSum D h μ e : ℝ) ≤ (12 * D ^ 2 * h + 4 * D) * stageStaircase μ M := by
   calc
     (regularJointStageSum D h μ e : ℝ) ≤
         ((12 * D ^ 2 * h + 4 * D) * stageStaircaseSum μ e : ℕ) := by
-      exact_mod_cast regularJointStageSum_le hD (heM.trans hMμ)
+      exact_mod_cast regularJointStageSum_le hD
     _ = (12 * D ^ 2 * h + 4 * D) * stageStaircase μ e := by
       push_cast; rw [cast_stageStaircaseSum]
     _ ≤ (12 * D ^ 2 * h + 4 * D) * stageStaircase μ M := by
-      gcongr; exact stageStaircase_mono heM hMμ
+      gcongr; exact stageStaircase_mono heM
 
 /-! ### The list constant -/
 
@@ -353,33 +394,45 @@ def firstOrderListCharge (θ : ℝ) (D μ e : ℕ) : ℝ :=
 def firstOrderListConstant (θ : ℝ) (D μ M : ℕ) : ℝ :=
   2 * D * θ * stageStaircase μ M + (μ - M : ℕ)
 
-/-- For `1 ≤ θ`, `1 ≤ D` and `e < μ`, the list charge increases from `e` to `e + 1`. -/
-theorem firstOrderListCharge_le_succ {θ : ℝ} {D μ e : ℕ} (hθ : 1 ≤ θ) (hD : 1 ≤ D)
+/-- For `1 ≤ θ` and `e < μ`, the list charge increases from `e` to `e + 1`. -/
+theorem firstOrderListCharge_le_succ {θ : ℝ} {D μ e : ℕ} (hθ : 1 ≤ θ)
     (heμ : e + 1 ≤ μ) :
     firstOrderListCharge θ D μ e ≤ firstOrderListCharge θ D μ (e + 1) := by
   have hB : (regularFiberStageSum D μ e : ℝ) + 1 ≤ regularFiberStageSum D μ (e + 1) := by
-    exact_mod_cast regularFiberStageSum_add_one_le_succ hD heμ
+    exact_mod_cast regularFiberStageSum_add_one_le_succ heμ
   unfold firstOrderListCharge
   rw [Nat.cast_sub (by omega : e ≤ μ), Nat.cast_sub heμ]
   push_cast
   nlinarith [mul_le_mul_of_nonneg_left hB (show 0 ≤ θ by linarith)]
 
-/-- For `1 ≤ θ`, `1 ≤ D` and `e ≤ M ≤ μ`, the list charge at `e` is at most the one at `M`. -/
-theorem firstOrderListCharge_mono {θ : ℝ} {D μ e M : ℕ} (hθ : 1 ≤ θ) (hD : 1 ≤ D)
+/-- For `1 ≤ θ` and `e ≤ M ≤ μ`, the list charge at `e` is at most the one at `M`. -/
+theorem firstOrderListCharge_mono {θ : ℝ} {D μ e M : ℕ} (hθ : 1 ≤ θ)
     (heM : e ≤ M) (hMμ : M ≤ μ) :
     firstOrderListCharge θ D μ e ≤ firstOrderListCharge θ D μ M := by
   induction M, heM using Nat.le_induction with
   | base => exact le_rfl
-  | succ M _ ih => exact (ih (by omega)).trans (firstOrderListCharge_le_succ hθ hD hMμ)
+  | succ M _ ih => exact (ih (by omega)).trans (firstOrderListCharge_le_succ hθ hMμ)
 
-/-- For `1 ≤ θ`, `1 ≤ D` and `e ≤ M ≤ μ`, the list charge at `e` is at most `Λ`. -/
+/-- For `1 ≤ θ`, `1 ≤ D` and `e ≤ M`, the list charge at `e` is at most `Λ`. -/
 theorem firstOrderListCharge_le_firstOrderListConstant {θ : ℝ} {D μ e M : ℕ} (hθ : 1 ≤ θ)
-    (hD : 1 ≤ D) (heM : e ≤ M) (hMμ : M ≤ μ) :
+    (hD : 1 ≤ D) (heM : e ≤ M) :
     firstOrderListCharge θ D μ e ≤ firstOrderListConstant θ D μ M := by
-  refine (firstOrderListCharge_mono hθ hD heM hMμ).trans ?_
-  unfold firstOrderListCharge firstOrderListConstant
-  have hB := regularFiberStageSum_cast_le hD le_rfl hMμ
-  nlinarith [mul_le_mul_of_nonneg_left hB (show 0 ≤ θ by linarith)]
+  by_cases hMμ : M ≤ μ
+  · refine (firstOrderListCharge_mono hθ heM hMμ).trans ?_
+    unfold firstOrderListCharge firstOrderListConstant
+    have hB := regularFiberStageSum_cast_le (μ := μ) (M := M) hD le_rfl
+    nlinarith [mul_le_mul_of_nonneg_left hB (show 0 ≤ θ by linarith)]
+  · by_cases heμ : e ≤ μ
+    · refine (firstOrderListCharge_mono hθ heμ le_rfl).trans ?_
+      have hB := regularFiberStageSum_cast_le (D := D) (μ := μ) (M := M) hD (by omega : μ ≤ M)
+      simp only [firstOrderListCharge, firstOrderListConstant, Nat.sub_self,
+        Nat.sub_eq_zero_of_le (by omega : μ ≤ M), Nat.cast_zero, add_zero]
+      nlinarith [mul_le_mul_of_nonneg_left hB (show 0 ≤ θ by linarith)]
+    · have hB := regularFiberStageSum_cast_le (D := D) (μ := μ) (e := e) hD heM
+      simp only [firstOrderListCharge, firstOrderListConstant,
+        Nat.sub_eq_zero_of_le (by omega : μ ≤ e),
+        Nat.sub_eq_zero_of_le (by omega : μ ≤ M), Nat.cast_zero, add_zero]
+      nlinarith [mul_le_mul_of_nonneg_left hB (show 0 ≤ θ by linarith)]
 
 /-! ### Coordinate ratios and the balanced split -/
 
@@ -502,21 +555,33 @@ def firstOrderExceptionConstant (θ : ℝ) (n D h μ M : ℕ) : ℝ :=
   ordinaryTailCharge θ n D h μ + (24 * D ^ 2 * h + 8 * D) * θ ^ 2 * stageStaircase μ M +
     4 * D * (n - D - 1 : ℕ) * θ * stageStaircase μ M
 
-/-- For `1 ≤ D`, `D < A ≤ n` and `e ≤ M ≤ μ`, the exception charge at the balanced split and
+/-- For `1 ≤ D` and `e ≤ M`, the exception charge at the balanced split and
 `θ = (n - D) / (A - D)` is at most the closed exception constant. -/
 theorem firstOrderExceptionCharge_balancedSplit_le {n D A h μ M e : ℕ} (hD : 1 ≤ D)
-    (hDA : D < A) (hAn : A ≤ n) (heM : e ≤ M) (hMμ : M ≤ μ) :
+    (heM : e ≤ M) :
     firstOrderExceptionCharge (agreementIncidenceRatio n D A) n D A h μ e (balancedSplit D A) ≤
       firstOrderExceptionConstant (agreementIncidenceRatio n D A) n D h μ M := by
+  by_cases hDA : D < A
+  swap
+  · simpa [firstOrderExceptionCharge, firstOrderExceptionConstant, agreementIncidenceRatio,
+      balancedSplit, fixedCoordinateRatio, Nat.sub_eq_zero_of_le (le_of_not_gt hDA)] using
+      ordinaryTailCharge_le (n := n) (D := D) (h := h) (θ := 0) (by norm_num) (Nat.sub_le μ e)
+  by_cases hDn : D < n
+  swap
+  · have hnD : n ≤ D := le_of_not_gt hDn
+    have hnL : n ≤ balancedSplit D A := hnD.trans (by unfold balancedSplit; omega)
+    simpa [firstOrderExceptionCharge, firstOrderExceptionConstant, agreementIncidenceRatio,
+      Nat.sub_eq_zero_of_le hnD, Nat.sub_eq_zero_of_le hnL] using
+      ordinaryTailCharge_le (n := n) (D := D) (h := h) (θ := 0) (by norm_num) (Nat.sub_le μ e)
   set θ := agreementIncidenceRatio n D A
   set L := balancedSplit D A
-  have hθ : 0 ≤ θ := zero_le_one.trans (one_le_agreementIncidenceRatio hDA hAn)
+  have hθ : 0 ≤ θ := by unfold θ agreementIncidenceRatio; positivity
   have hl₁ : retainedCoordinateRatio n A L ≤ 2 * θ :=
-    retainedCoordinateRatio_balancedSplit_le hDA (hDA.trans_le hAn)
+    retainedCoordinateRatio_balancedSplit_le hDA hDn
   have hl₂ : fixedCoordinateRatio n D L ≤ 2 * θ := fixedCoordinateRatio_balancedSplit_le n D A
   have htail : ((n - L : ℕ) : ℝ) ≤ (n - D - 1 : ℕ) := by exact_mod_cast sub_balancedSplit_le hDA
-  have hJ := regularJointStageSum_cast_le (h := h) hD heM hMμ
-  have hB := regularFiberStageSum_cast_le hD heM hMμ
+  have hJ := regularJointStageSum_cast_le (h := h) (μ := μ) hD heM
+  have hB := regularFiberStageSum_cast_le (μ := μ) hD heM
   have hl₁0 : 0 ≤ retainedCoordinateRatio n A L := by unfold retainedCoordinateRatio; positivity
   have hl₂0 : 0 ≤ fixedCoordinateRatio n D L := by unfold fixedCoordinateRatio; positivity
   have hT := stageStaircase_nonneg μ M
@@ -571,16 +636,16 @@ theorem firstOrderListCharge_le_max {θ : ℝ} {D μ e M : ℕ} (heM : e ≤ M) 
   convert Finset.le_max' _ _
     (Finset.mem_image_of_mem _ (Finset.mem_range.mpr (by omega : e < M + 1)))
 
-/-- For `1 ≤ θ`, `1 ≤ D` and `M ≤ μ`, the optimized list charge is at most `Λ`. -/
+/-- For `1 ≤ θ` and `1 ≤ D`, the optimized list charge is at most `Λ`. -/
 theorem maxFirstOrderListCharge_le_firstOrderListConstant {θ : ℝ} {D μ M : ℕ} (hθ : 1 ≤ θ)
-    (hD : 1 ≤ D) (hMμ : M ≤ μ) :
+    (hD : 1 ≤ D) :
     maxFirstOrderListCharge θ D μ M ≤ firstOrderListConstant θ D μ M := by
   classical
   unfold maxFirstOrderListCharge
   convert Finset.max'_le _ _ _ fun x hx ↦ ?_
   obtain ⟨e, he, rfl⟩ := Finset.mem_image.mp hx
   exact firstOrderListCharge_le_firstOrderListConstant hθ hD
-    (Nat.lt_succ_iff.mp (Finset.mem_range.mp he)) hMμ
+    (Nat.lt_succ_iff.mp (Finset.mem_range.mp he))
 
 /-- For `D < L ≤ A`, the minimum over splits is at most the exception charge at `L`. -/
 theorem minFirstOrderExceptionCharge_le {θ : ℝ} {n D A h μ e L : ℕ} (hDL : D < L)
@@ -599,19 +664,29 @@ theorem minFirstOrderExceptionCharge_le_maxMin {θ : ℝ} {n D A h μ e M : ℕ}
   convert Finset.le_max' _ _
     (Finset.mem_image_of_mem _ (Finset.mem_range.mpr (by omega : e < M + 1)))
 
-/-- For `1 ≤ D`, `D < A ≤ n` and `M ≤ μ`, the optimized exception charge at
+/-- For `1 ≤ D`, the optimized exception charge at
 `θ = (n - D) / (A - D)` is at most the closed exception constant. -/
 theorem maxMinFirstOrderExceptionCharge_le_firstOrderExceptionConstant {n D A h μ M : ℕ}
-    (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n) (hMμ : M ≤ μ) :
+    (hD : 1 ≤ D) :
     maxMinFirstOrderExceptionCharge (agreementIncidenceRatio n D A) n D A h μ M ≤
       firstOrderExceptionConstant (agreementIncidenceRatio n D A) n D h μ M := by
   classical
   unfold maxMinFirstOrderExceptionCharge
   convert Finset.max'_le _ _ _ fun x hx ↦ ?_
   obtain ⟨e, he, rfl⟩ := Finset.mem_image.mp hx
+  by_cases hDA : D < A
+  swap
+  · have hθzero : agreementIncidenceRatio n D A = 0 := by
+      simp [agreementIncidenceRatio, Nat.sub_eq_zero_of_le (le_of_not_gt hDA)]
+    simp only [minFirstOrderExceptionCharge, hDA, ↓reduceDIte]
+    rw [hθzero]
+    unfold firstOrderExceptionConstant
+    simp only [mul_zero, zero_mul, zero_pow two_ne_zero, add_zero]
+    unfold ordinaryTailCharge
+    split_ifs <;> positivity
   exact (minFirstOrderExceptionCharge_le (lt_balancedSplit hDA) (balancedSplit_le hDA.le)).trans
-    (firstOrderExceptionCharge_balancedSplit_le hD hDA hAn
-      (Nat.lt_succ_iff.mp (Finset.mem_range.mp he)) hMμ)
+    (firstOrderExceptionCharge_balancedSplit_le hD
+      (Nat.lt_succ_iff.mp (Finset.mem_range.mp he)))
 
 /-! ### Monotonicity in the challenge degree -/
 

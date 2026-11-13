@@ -6,7 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.ProofSystem.Sumcheck.Interaction.Closing
-public import Mathlib.Algebra.Polynomial.Roots
+public import ArkLib.Data.Probability.Instances
 
 /-! # One-round soundness for the actual closed Sumcheck execution
 
@@ -135,24 +135,15 @@ theorem executeCommitted_soundness (p q : Message F deg) (domain : List F) (targ
         (deg : ENNReal) / Fintype.card F := by
   rw [executeCommitted_eq, prEvent_map]
   by_cases hsum : (domain.map (fun x => q.val.eval x)).sum = target
-  · have hne : p.val - q.val ≠ 0 := by
-      intro h
-      have hpq := sub_eq_zero.mp h
-      exact hfalse (hpq ▸ hsum)
-    have hcard : (Finset.univ.filter (fun r => p.val.eval r = q.val.eval r)).card ≤ deg := by
-      apply (Polynomial.card_le_degree_of_subset_roots (p := p.val - q.val) ?_).trans
-      · exact natDegree_le_of_degree_le
-          ((degree_sub_le _ _).trans (max_le (message_degree F deg p) (message_degree F deg q)))
-      · intro r hr
-        apply (mem_roots hne).mpr
-        simpa only [IsRoot, eval_sub, sub_eq_zero] using (Finset.mem_filter.mp hr).2
+  · have hne : p.val ≠ q.val := fun h => hfalse (h ▸ hsum)
     have hevent : (fun r => (committedRun F deg p q domain target r).closed.map
         (closedOutputRelation F deg) = some True) = (fun r => p.val.eval r = q.val.eval r) := by
       funext r
       exact propext ((committedRun_true_iff F deg p q domain target r).trans (and_iff_right hsum))
-    rw [prEvent_congr ($ᵗ F) _ _ (fun r => iff_of_eq (congrFun hevent r)),
-      SampleableType.prEvent_uniformSample]
-    gcongr
+    rw [prEvent_congr ($ᵗ F) _ _ (fun r => iff_of_eq (congrFun hevent r))]
+    exact Probability.prob_polynomial_eval_eq_le hne
+      (natDegree_le_of_degree_le (message_degree F deg p))
+      (natDegree_le_of_degree_le (message_degree F deg q))
   · have hevent : (fun r => (committedRun F deg p q domain target r).closed.map
         (closedOutputRelation F deg) = some True) = (fun _ => False) := by
       funext r

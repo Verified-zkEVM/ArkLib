@@ -507,14 +507,6 @@ instance : Unique (Transcript 0 pSpec) where
   default := fun i => Fin.elim0 i
   uniq := fun T => by ext i; exact Fin.elim0 i
 
--- Potential natural re-indexing of messages and challenges.
--- Not needed for now, but could be useful.
-
--- instance instFinEnumMessageIdx : FinEnum pSpec.MessageIdx :=
---   FinEnum.Subtype.finEnum fun x ↦ pSpec.dir x = Direction.P_to_V
--- instance instFinEnumChallengeIdx : FinEnum pSpec.ChallengeIdx :=
---   FinEnum.Subtype.finEnum fun x ↦ pSpec.dir x = Direction.V_to_P
-
 /-- Concatenate a message to the end of a partial transcript. This is definitionally equivalent to
     `Fin.snoc`. -/
 @[inline]
@@ -620,8 +612,7 @@ def equivMessagesChallenges :
       simp [ofMessagesChallenges, toMessagesChallenges, toChallengesUpTo]
       split <;> aesop
 
--- TODO: state theorem that `Transcript.concat` is equivalent to `MessagesUpTo.{concat/extend}` with
--- `ChallengesUpTo.{extend/concat}`, depending on the direction of the round
+-- Message projection equations for `Transcript.concat` appear below with reconstruction helpers.
 
 end Transcript
 
@@ -919,6 +910,25 @@ def deriveTranscriptSRAux {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
       | .P_to_V => return prevTranscript.concat (messages ⟨i, hDir⟩))
     j
 
+/-- Reconstruction starts with the empty transcript. -/
+lemma deriveTranscriptSRAux_zero {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
+    (stmt : StmtIn) (k : Fin (n + 1)) (messages : pSpec.MessagesUpTo k) :
+    messages.deriveTranscriptSRAux (oSpec := oSpec) stmt k 0 = pure (fun i => i.elim0) :=
+  Fin.induction_zero _ _
+
+/-- Reconstruction appends a message or the next oracle answer. -/
+lemma deriveTranscriptSRAux_succ {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
+    (stmt : StmtIn) (k : Fin (n + 1)) (messages : pSpec.MessagesUpTo k) (j : Fin k) :
+    messages.deriveTranscriptSRAux (oSpec := oSpec) stmt k j.succ = (do
+      let prev ← messages.deriveTranscriptSRAux (oSpec := oSpec) stmt k j.castSucc
+      match h : pSpec.dir (j.castLE (by omega)) with
+      | .V_to_P => do
+        let c ← query (spec := fsChallengeOracle StmtIn pSpec)
+          ⟨⟨j.castLE (by omega), h⟩, stmt, messages.take j.castSucc⟩
+        pure (prev.concat c)
+      | .P_to_V => pure (prev.concat (messages ⟨j, h⟩))) :=
+  Fin.induction_succ _ _ _
+
 /-- Derive the transcript up to round `k` from the (full) messages, via querying the
     state-restoration / Fiat-Shamir oracle for the challenges. -/
 def deriveTranscriptSR {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
@@ -943,13 +953,174 @@ alias deriveTranscriptFS := deriveTranscriptSR
 
 end Messages
 
+section TableReconstruction
+
+variable {StmtIn : Type}
+
+/-- The message prefix before a specified round of a longer transcript. -/
+def Transcript.messagesBefore {k : Fin (n + 1)}
+    (tr : pSpec.Transcript k) (j : Fin n) (h : j.val ≤ k.val) :
+    pSpec.MessagesUpTo j.castSucc :=
+  tr.toMessagesUpTo.take ⟨j.val, by omega⟩
+
+/-- Earlier message prefixes are unchanged by appending a round. -/
+lemma Transcript.messagesBefore_concat {j : Fin n}
+    (tr : pSpec.Transcript j.castSucc) (x : pSpec.Type j) (i : Fin n)
+    (h : i.val ≤ j.val) :
+    (tr.concat x).messagesBefore i (Nat.le_trans h (Nat.le_succ _)) =
+      tr.messagesBefore i h := by
+  funext q
+  unfold messagesBefore
+  change tr.concat x (Fin.castSucc
+    (⟨q.1.val, Nat.lt_of_lt_of_le q.1.isLt h⟩ : Fin j)) = _
+  rw [Transcript.concat_castSucc]
+  rfl
+
+/-- A transcript's message projection appends a prover message. -/
+lemma Transcript.toMessagesUpTo_concat_message {j : Fin n}
+    (tr : pSpec.Transcript j.castSucc) (h : pSpec.dir j = .P_to_V)
+    (x : pSpec.Message ⟨j, h⟩) :
+    (tr.concat x).toMessagesUpTo = tr.toMessagesUpTo.concat h x := by
+  funext q
+  rcases q with ⟨i, hi⟩
+  unfold Transcript.toMessagesUpTo
+  refine Fin.lastCases ?_ (fun i => ?_) i hi
+  · intro hi
+    dsimp only
+    rw [Transcript.concat_last]
+    unfold MessagesUpTo.concat MessagesUpTo.concat'
+    dsimp only
+    erw [Fin.dconcat_last]
+  · intro hi
+    unfold MessagesUpTo.concat MessagesUpTo.concat'
+    dsimp only
+    erw [Fin.dconcat_castSucc]
+    exact Fin.snoc_castSucc ..
+
+/-- A challenge round does not add a prover message. -/
+lemma Transcript.toMessagesUpTo_concat_challenge {j : Fin n}
+    (tr : pSpec.Transcript j.castSucc) (h : pSpec.dir j = .V_to_P)
+    (x : pSpec.Challenge ⟨j, h⟩) :
+    (tr.concat x).toMessagesUpTo = tr.toMessagesUpTo.extend h := by
+  funext q
+  rcases q with ⟨i, hi⟩
+  unfold Transcript.toMessagesUpTo
+  refine Fin.lastCases ?_ (fun i => ?_) i hi
+  · intro hi
+    exact absurd (hi.symm.trans h) (by decide)
+  · intro hi
+    unfold MessagesUpTo.extend MessagesUpTo.concat'
+    dsimp only
+    erw [Fin.dconcat_castSucc]
+    exact Fin.snoc_castSucc ..
+
+/-- Reconstruct a transcript from messages and a fixed challenge table. -/
+def MessagesUpTo.transcriptOfTable {k : Fin (n + 1)}
+    (messages : pSpec.MessagesUpTo k) (stmt : StmtIn)
+    (f : QueryImpl (srChallengeOracle StmtIn pSpec) Id) : pSpec.Transcript k :=
+  Transcript.ofMessagesChallenges messages fun ⟨j, h⟩ =>
+    f ⟨⟨j.castLE (by omega), h⟩, stmt,
+      messages.take ⟨j.val, by omega⟩⟩
+
+/-- At a message round, reconstruction returns the supplied message. -/
+lemma MessagesUpTo.transcriptOfTable_message {k : Fin (n + 1)}
+    (messages : pSpec.MessagesUpTo k) (stmt : StmtIn)
+    (f : QueryImpl (srChallengeOracle StmtIn pSpec) Id) (i : Fin k)
+    (h : pSpec.dir (i.castLE (by omega)) = .P_to_V) :
+    messages.transcriptOfTable stmt f i = messages ⟨i, h⟩ := by
+  unfold transcriptOfTable Transcript.ofMessagesChallenges
+  split <;> rename_i hd
+  · rfl
+  · exact absurd (h.symm.trans hd) (by decide)
+
+/-- At a challenge round, reconstruction reads the table at the preceding message prefix. -/
+lemma MessagesUpTo.transcriptOfTable_challenge {k : Fin (n + 1)}
+    (messages : pSpec.MessagesUpTo k) (stmt : StmtIn)
+    (f : QueryImpl (srChallengeOracle StmtIn pSpec) Id) (i : Fin k)
+    (h : pSpec.dir (i.castLE (by omega)) = .V_to_P) :
+    messages.transcriptOfTable stmt f i =
+      f ⟨⟨i.castLE (by omega), h⟩, stmt,
+        fun q => messages ⟨q.1.castLE (by simp), q.2⟩⟩ := by
+  unfold transcriptOfTable Transcript.ofMessagesChallenges
+  split <;> rename_i hd
+  · exact absurd (h.symm.trans hd) (by decide)
+  · rfl
+
+/-- Appending a message preserves table-derived earlier challenges. -/
+lemma MessagesUpTo.transcriptOfTable_concat {j : Fin n}
+    (messages : pSpec.MessagesUpTo j.castSucc) (h : pSpec.dir j = .P_to_V)
+    (msg : pSpec.Message ⟨j, h⟩) (stmt : StmtIn)
+    (f : QueryImpl (srChallengeOracle StmtIn pSpec) Id) :
+    (messages.concat h msg).transcriptOfTable stmt f =
+      (messages.transcriptOfTable stmt f).concat msg := by
+  funext i
+  refine Fin.lastCases ?_ (fun i => ?_) i
+  · rw [MessagesUpTo.transcriptOfTable_message _ _ _ _ h, Transcript.concat_last]
+    unfold MessagesUpTo.concat MessagesUpTo.concat'
+    dsimp only
+    erw [Fin.dconcat_last]
+  · rw [Transcript.concat_castSucc]
+    cases hd : pSpec.dir (i.castLE (Nat.le_of_lt j.isLt)) with
+    | P_to_V =>
+      rw [MessagesUpTo.transcriptOfTable_message _ _ _ _ hd,
+        MessagesUpTo.transcriptOfTable_message _ _ _ _ hd]
+      unfold MessagesUpTo.concat MessagesUpTo.concat'
+      dsimp only
+      erw [Fin.dconcat_castSucc]
+    | V_to_P =>
+      rw [MessagesUpTo.transcriptOfTable_challenge _ _ _ _ hd,
+        MessagesUpTo.transcriptOfTable_challenge _ _ _ _ hd]
+      congr 3
+      funext q
+      unfold MessagesUpTo.concat MessagesUpTo.concat'
+      dsimp only
+      erw [Fin.dconcat_castSucc (i :=
+        (⟨q.1.val, Nat.lt_trans (show q.1.val < i.val from q.1.isLt) i.isLt⟩ : Fin j))]
+      rfl
+
+/-- A challenge round appends precisely the answer stored at its current prefix. -/
+lemma MessagesUpTo.transcriptOfTable_extend {j : Fin n}
+    (messages : pSpec.MessagesUpTo j.castSucc) (h : pSpec.dir j = .V_to_P)
+    (stmt : StmtIn) (f : QueryImpl (srChallengeOracle StmtIn pSpec) Id) :
+    (messages.extend h).transcriptOfTable stmt f =
+      (messages.transcriptOfTable stmt f).concat (f ⟨⟨j, h⟩, stmt, messages⟩) := by
+  funext i
+  refine Fin.lastCases ?_ (fun i => ?_) i
+  · erw [MessagesUpTo.transcriptOfTable_challenge _ _ _ _ h, Transcript.concat_last]
+    congr 3
+    funext q
+    unfold MessagesUpTo.extend MessagesUpTo.concat'
+    dsimp only
+    erw [Fin.dconcat_castSucc]
+    rfl
+  · erw [Transcript.concat_castSucc]
+    cases hd : pSpec.dir (i.castLE (Nat.le_of_lt j.isLt)) with
+    | P_to_V =>
+      rw [MessagesUpTo.transcriptOfTable_message _ _ _ _ hd,
+        MessagesUpTo.transcriptOfTable_message _ _ _ _ hd]
+      unfold MessagesUpTo.extend MessagesUpTo.concat'
+      dsimp only
+      erw [Fin.dconcat_castSucc]
+    | V_to_P =>
+      rw [MessagesUpTo.transcriptOfTable_challenge _ _ _ _ hd,
+        MessagesUpTo.transcriptOfTable_challenge _ _ _ _ hd]
+      congr 3
+      funext q
+      unfold MessagesUpTo.extend MessagesUpTo.concat'
+      dsimp only
+      erw [Fin.dconcat_castSucc (i :=
+        (⟨q.1.val, Nat.lt_trans (show q.1.val < i.val from q.1.isLt) i.isLt⟩ : Fin j))]
+      rfl
+
+/-- Regard a complete message prefix as the full message function. -/
+def MessagesUpTo.toMessages
+    (messages : pSpec.MessagesUpTo (Fin.last n)) : pSpec.Messages := messages
+
+/-- Reconstruct a full transcript from a fixed table and all the prover messages. -/
+def Messages.transcriptOfTable (messages : pSpec.Messages) (stmt : StmtIn)
+    (f : QueryImpl (srChallengeOracle StmtIn pSpec) Id) : pSpec.FullTranscript :=
+  MessagesUpTo.transcriptOfTable (k := Fin.last n) messages stmt f
+
+end TableReconstruction
+
 end ProtocolSpec
-
--- -- Notation for the type signature of an interactive protocol
--- notation "𝒫——⟦" term "⟧⟶𝒱" => (Direction.P_to_V, term)
--- notation "𝒫⟵⟦" term "⟧——𝒱" => (Direction.V_to_P, term)
-
--- -- Test notation
--- def pSpecNotationTest : ProtocolSpec 2 :=
---   ![ 𝒫——⟦ Polynomial (ZMod 101) ⟧⟶𝒱,
---      𝒫⟵⟦ ZMod 101 ⟧——𝒱]

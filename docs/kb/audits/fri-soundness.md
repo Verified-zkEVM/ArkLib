@@ -30,8 +30,9 @@ author credit are recorded on the paper page.
 | Dense returned-witness recovery | `Fri.Spec.Extractor.extractHistory_eq_some_of_density` | Inclusive rate boundary; agreement within the stated distance |
 | Literal measured extractor | `Fri.Spec.Extractor.extractHistory_eq_profile` | Public result is the first projection of the measured program |
 | End-to-end knowledge soundness with named extractor | `Fri.Spec.knowledge_soundness_with` | Every input statement; actual logged knowledge game; extraction failure includes `none` |
-| End-to-end existential knowledge soundness | `Fri.Spec.knowledge_soundness` | The same specific straightline extractor witnesses existence |
-| End-to-end round-by-round soundness | `Fri.Spec.rbr_soundness` | Existing `OracleVerifier.rbrSoundness` and original input/output relations |
+| Named knowledge game with operation profile | `Fri.Spec.knowledgeSoundnessWithResources_extract` | Same extractor and `extractorProfileBound`; excludes input-view preparation, handler evaluation and uncharged local computation |
+| End-to-end existential knowledge soundness | `Fri.Spec.knowledge_soundness` | Forgets the named extractor and its costs; equivalent to relation soundness for this game |
+| End-to-end round-by-round soundness | `Fri.Spec.rbr_soundness` | Fixed-prefix `OracleVerifier.rbrSoundness` and original input/output relations |
 
 ## Parameters and conclusions
 
@@ -78,7 +79,7 @@ hypotheses hold, and in particular covers the paper's full parameter range.
    a bad challenge has occurred. Prover messages preserve a false state because they cannot
    alter earlier challenge prefixes.
 3. `Spec/RoundSoundness` and `BadEvents` bound each fresh bad event conditional on no earlier
-   one. The query event includes the final degree guard. The worst-case-prefix interface
+   one. The query event includes the final degree guard. The fixed-prefix interface
    supplies round-by-round soundness.
 4. `OracleReduction/Security/Accumulation` sums conditional errors along `Prover.runToRound`,
    retaining private prover state and shared oracle state. Its terminal bound covers
@@ -93,7 +94,7 @@ of the powers-MCA bound. Probability statements use native `Pr{...}[...]` semant
 challenge-type transport uses the uniform-sampling equivalence. Pure agreement and verifier
 execution lemmas do not require a field sampler.
 
-## Certified extraction
+## Extraction correctness and operation profile
 
 `Fri.Spec.Extractor.extract` is a deterministic straightline extractor for the actual reduction.
 It reconstructs only the retained prefix before query sampling, including every arbitrary
@@ -127,14 +128,18 @@ soundness theorem to valid inputs. The generic bridge
 `Verifier.knowledgeSoundnessWith_of_transcript_event` preserves prover and shared oracle state
 and lifts the optional extraction result as a value, so `none` is counted as failure.
 
-The public extractor is literally the result projection of its measured program. Primitive
+The retained-history extractor `extractHistory` is literally the result projection of its
+measured program. The public `extract` first reconstructs that history from its inputs. Primitive
 responses carry erased equality certificates; their handlers perform the requested operation.
 The profiles count repeated immutable word, domain, challenge, coefficient, and cache accesses,
 field additions/subtractions/multiplications/equality tests, unit-cost inversions, and designated
-metadata/control ticks. They exclude receipt or deserialization of retained functions, the cost
-of evaluating those functions, allocation, machine index arithmetic, and field bit complexity.
-In particular, metadata is an explicit source-instruction counter, not a count of all runtime
-operations. The selected cache is bounded by `D`, but complete index enumeration exists and no
+metadata/control ticks. The [accounting-boundary table](../../design/03a-extractor-efficiency.md#proof-and-accounting-boundary)
+states the common exclusions. In FRI, view preparation specifically reconstructs the retained
+history and folding challenges from the statement/transcript; receiving or deserializing the
+retained functions is also outside the instruction program.
+Metadata ticks count selected source instructions. Uninstrumented allocation, index arithmetic
+and control work remain within the shared exclusions; the ticks do not measure all runtime work.
+The selected cache is bounded by `D`, but complete index enumeration exists and no
 total `O(D)` workspace theorem is asserted.
 
 For `r = k + 1` folds, write `N = 2^n`, `b_i = 2^(s_i)`, and `D = (∏ b_i) d`. Let
@@ -145,7 +150,8 @@ G = 2(n+2) + Σ_i (4b_i+8)(n+1)
 B = N [G + Σ_i (I(b_i) + E(b_i) + 1) + E(d)] + I(D) + Init.
 ```
 
-The complete-program theorems require only the schedule bound `Σ_i s_i ≤ n`, not a safe
+The complete-instruction-program theorems (not complete-runtime theorems) require only the schedule
+bound `Σ_i s_i ≤ n`, not a safe
 history, an honest word, a distance parameter, or the reduction's additional `D ≤ N` constraint.
 They apply to early rejection as well as successful recovery, independently of the actual final
 polynomial's coefficient count.
@@ -167,6 +173,21 @@ only at the final round. `profile_extractProgram_apply_le` separately bounds eve
 node-cache, value-cache, and metadata coordinate by the explicit `extractorProfileBound` vector.
 Its transparent definition composes initialization, the complete scan, and final interpolation.
 
+`Fri.Spec.knowledgeSoundnessWithResources_extract` combines the knowledge game for the same
+extractor with the `extractorProfileBound` vector as its budget, through
+`Verifier.knowledgeSoundnessWithResources`. The closed forms in the table, including the tighter
+retained-word bound, remain separate theorems about the same program. Its measured program
+`Extractor.measuredProgram` takes the retained history and folding challenges as its view;
+reconstructing them from the input statement and transcript prefix is outside the charged program.
+The theorem proves that `extract` is the execution of `extractProgram` on that view, and bounds
+every path of the instruction program over all responses. Because every instruction response is
+a certified singleton, the program has one path, whose cost is the recorded profile. The
+scope table linked above applies unchanged. Its charged `Arithmetic.evalRaw` is the power-sum
+instruction program; ordinary CompPoly compiled evaluation dispatches to Horner. No source
+rewrite has been shown to replace FRI's measured program with that separate evaluator. The
+[algorithm map](../../design/03a-extractor-efficiency.md#polynomial-algorithm-accounting) records
+this distinction; semantic equality alone cannot transfer costs.
+
 Under the reduction's `D ≤ N` constraint these envelopes are polynomial in `N`, rather than in
 `log N`. They do not imply a cryptographic polynomial-time or bit-runtime bound. The compiled
 fixtures include rejection of a canonical polynomial with 4097 coefficients before other input
@@ -175,8 +196,10 @@ accesses, and a total rejecting execution with `D > N`.
 ## Scope and trust boundary
 
 The development establishes information-theoretic ordinary soundness, round-by-round soundness,
-and straightline knowledge soundness for powers-of-two folding domains, together with
+and a named straightline knowledge game for powers-of-two folding domains, together with
 deterministic extraction correctness and instruction profiles for the same named program.
+The existential knowledge game alone is equivalent to relation soundness; the named algorithm
+and its operation profile retain the additional extraction evidence. Complete execution bounds,
 Fiat–Shamir and commitment security remain separate obligations. Numerical MCA estimates
 retain their own hypotheses.
 

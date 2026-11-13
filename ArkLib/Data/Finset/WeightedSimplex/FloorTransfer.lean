@@ -99,13 +99,18 @@ depends only on the coordinatewise floor of the point. The cells of the lattice 
 and have volume one.
 
 Positive weights are needed for the cover (`natFloor_mem_natWeightedSimplex`). The bound `g c`
-must be nonnegative because `T` may meet a cell in a set of volume less than one. -/
+must be nonnegative because `T` may meet a cell in a set of volume less than one. If the
+integrand is not integrable on `T`, its Bochner integral is zero and the bound still holds. -/
 theorem setIntegral_le_sum_natWeightedSimplex (hw : ∀ i, w i ≠ 0) {W : ℝ} {T : Set (σ → ℝ)}
     (hT : MeasurableSet T) (hTW : T ⊆ Set.weightedSimplex (fun i ↦ (w i : ℝ)) W)
-    {f : (σ → ℝ) → ℝ} {g : (σ → ℕ) → ℝ} (hf : IntegrableOn f T)
+    {f : (σ → ℝ) → ℝ} {g : (σ → ℕ) → ℝ}
     (hg : ∀ c ∈ natWeightedSimplex w ⌊W⌋₊, 0 ≤ g c)
     (hfg : ∀ x ∈ T, f x ≤ g fun i ↦ ⌊x i⌋₊) :
     ∫ x in T, f x ≤ ∑ c ∈ natWeightedSimplex w ⌊W⌋₊, g c := by
+  by_cases hf : IntegrableOn f T
+  swap
+  · rw [integral_undef hf]
+    exact sum_nonneg hg
   set s := natWeightedSimplex w ⌊W⌋₊
   have hcover : T = ⋃ c ∈ s, T ∩ natFloorCell c := by
     ext x

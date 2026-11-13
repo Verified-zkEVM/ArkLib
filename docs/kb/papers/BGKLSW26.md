@@ -48,7 +48,7 @@ sampling.
 | Round 2; Theorem 4.7 proof, equation (45); Remark 4.5 | `BitZ.sum_prod_mul_mul_eq_of_prod_bitFactor_eq_pow` | Range checks, grand products and the verifier's weighted-sum check imply the tensor claim over any commutative target ring. |
 | Lemma B.2 | `BitZ.card_collisionSet_le`, `BitZ.prob_not_injOn_eval_le` | A fixed list of multilinear polynomials has collision probability at most `choose(Lδ, 2) · (2^r - 1) / |F|` at the structured OOD point. |
 | Definition 4.9 (standard bitification matrix, closure); equation (46) | `BitZ.boundedCombos`, `BitZ.bitMatrix`, `BitZ.bitMatrix_mulVec_mem`, `BitZ.exists_bitification`, `BitZ.coeffBits`, `BitZ.bitMatrix_mulVec_coeffBits` | For every vector of bits, `L · g` has entries in the bounded set of sums `∑ⱼ hⱼ · γⱼ` with `hⱼ < 2^B`; every vector with entries in that set is `L · g` for the bits `coeffBits` of its coefficients. The family `γ` need not be injective. |
-| Lemma 4.12; equation (47) | `Matrix.dotProduct_map_mulVec`, `BitZ.bitWeights`, `BitZ.bitMatrix_map_transpose_mulVec`, `BitZ.exists_witness_iff_exists_bits` | A ring homomorphism moves `L` across the inner product, the weights of the bitified claim are `v ⊗ (1, …, 2^{B-1}) ⊗ ψ(γ)`, and bitification preserves satisfiability of the claim. |
+| Lemma 4.12; equation (47); Construction 4.13, Step 1 | `Matrix.dotProduct_map_mulVec`, `BitZ.dotProduct_map_bitMatrix_mulVec`, `BitZ.bitWeights`, `BitZ.bitMatrix_map_transpose_mulVec`, `BitZ.exists_witness_iff_exists_bits` | A ring homomorphism moves `L` across the inner product, the weights of the bitified claim are `v ⊗ (1, …, 2^{B-1}) ⊗ ψ(γ)`, and bitification preserves satisfiability of the claim. |
 | Theorem 4.7 proof, Rounds 1 and 2 together | `BitZ.Round2Check`, `BitZ.Round2Accepts`, `BitZ.sum_prod_mul_mul_eq_of_round2Accepts`, `BitZ.prEvent_round2Accepts_le` | The verifier's checks of Round 2 on a message, the event that some message passes, and the bound that a prover with a false fixed claim passes Round 2 with at most the error of Round 1. The overflow hypothesis `ℓ₁ · (q - 1) < \|F\| - 1` is necessary. |
 | Remark 4.14; equation (65) | `BitZ.bitWeights_tensor`, `BitZ.dotProduct_bitWeights_tensor`, `BitZ.dotProduct_tensor_map_bitMatrix_mulVec`, `BitZ.prEvent_round2Accepts_le_bitified` | A tensor decomposition of the weights gives one of the bitified weights; for bits the original claim is the bitified claim; a false original claim passes Round 2 with at most the error of Round 1 for the bitified length. An eq vector is a tensor of eq vectors by `CompPoly.CMlPolynomialEval.eqTilde_append`. |
 
@@ -125,6 +125,10 @@ The clients pin headline theorem dependencies to `propext`, `Classical.choice` a
 - The bitification matrix has columns indexed by `(i, k, j)`, as `bits(f)` in equation (46). The
   digits of a coefficient `h` determine it only below `2^B`, which is the range of the bounded set.
   The algebra needs no subtraction, so it holds over commutative semirings.
+- The family `γ` plays the role of the monomials of total degree `< D`. Indexing it by exponent
+  tuples gives the bounded set of §3.1; indexing it by the distinct monomials gives the set
+  recalled in §4.5. The two can differ when two tuples give the same element, since listing an
+  element twice can enlarge the set.
 - `Round2Accepts` quantifies over all prover messages, so it is a mathematical event; the decidable
   `Round2Check` is what a verifier evaluates, and its lifts must be executable polynomials.
 
@@ -170,9 +174,9 @@ ordinary callers outside `noncomputable section`, and records these results (rat
 | `BitZ.claimPoly` | Architectural / 8 | Mathematical error polynomial uses noncomputable polynomial ring operations; it is a proof object, not the prover implementation. |
 | `MvPolynomial.zeroCountMod` | Architectural / 9 | `Nat.card` of roots permits `q = 0` and an infinite integer domain. Finite enumeration would need a positive modulus and a separate computational API. |
 | `BitZ.collisionSet` | No gap | Its existing finite filter generates code from the supplied field, finite enumeration and decidable equality. |
-| `BitZ.bitMatrix`, `BitZ.bitWeights` | Leaf / 1 | Executable (`Matrix.of` with a decidable index test, and pointwise products). The test runs them on concrete data: `L` applied to the digits of coefficients `((5, 3), (7, 0))` with `γ = (1, 10)` evaluates to `(35, 7)`, and a weight over `ZMod 5` evaluates to `2`. |
-| `BitZ.coeffBits` | Leaf / 1 | Executable through CompPoly's `Nat.getBit`; the digits of `5` and `3` run as `[1, 0, 1]` and `[1, 1, 0]`. At the boundary `h = 2^B` the digits vanish, so the agreement theorem requires `h < 2^B`. |
-| `BitZ.boundedCombos` | Architectural / 8 | A `Set` of an arbitrary ring `S`: membership has no decision procedure without a representation of `S`. A member carries its coefficient vector as data, which is what `coeffBits` consumes. |
+| `BitZ.bitMatrix`, `BitZ.bitWeights` | No gap | Executable (`Matrix.of` with a decidable index test, and pointwise products). The test runs them on concrete data: `L` applied to the digits of coefficients `((5, 3), (7, 0))` with `γ = (1, 10)` evaluates to `(35, 7)`, and a weight over `ZMod 5` evaluates to `2`. |
+| `BitZ.coeffBits` | No gap | Executable through CompPoly's `Nat.getBit`; the digits of `5` and `3` run as `[1, 0, 1]` and `[1, 1, 0]`. At the boundary `h = 2^B` the digits vanish, so the agreement theorem requires `h < 2^B`. |
+| `BitZ.boundedCombos` | No gap (specification) | A `Set` of an arbitrary ring `S`: membership has no decision procedure without a representation of `S`. A member carries its coefficient vector as data, which is what `coeffBits` consumes. |
 | `BitZ.Round2Check` | Leaf / 1 | Decidable through an instance for a field with decidable equality; with explicit constant polynomials as lifts it runs, accepting the message `0` and rejecting `1` (grand product), `13` (range) and a wrong `μ'` (weighted sum). |
 | `BitZ.Round2Accepts` | Architectural / 8 | An existential over all prover messages, so a mathematical event; the executable verifier check is `Round2Check`. |
 

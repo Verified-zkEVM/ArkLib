@@ -32,9 +32,15 @@ example : (8 : ℤ) ∉ boundedCombos oneFam 3 := by
   simp only [oneFam, Finset.univ_unique, Finset.sum_singleton, mul_one] at hs
   omega
 
-/-- A family that lists the same monomial twice is allowed, and gives the same set. -/
-example : (6 : ℤ) ∈ boundedCombos (fun _ : Fin 2 => (1 : ℤ)) 2 :=
-  ⟨![3, 3], by decide, by simp [Fin.sum_univ_two]⟩
+/-- Listing a monomial twice can enlarge the set: `6 = 3 + 3` is a combination of `(1, 1)` with
+coefficients below `2 ^ 2`, but not of `(1)`. -/
+example : (6 : ℤ) ∈ boundedCombos (fun _ : Fin 2 => (1 : ℤ)) 2 ∧
+    (6 : ℤ) ∉ boundedCombos oneFam 2 :=
+  ⟨⟨![3, 3], by decide, by simp [Fin.sum_univ_two]⟩, by
+    rintro ⟨h, hlt, hs⟩
+    have := hlt default
+    simp only [oneFam, Finset.univ_unique, Finset.sum_singleton, mul_one] at hs
+    omega⟩
 
 /-- Closure on a bit vector: the bits `(1, 1, 0)` are the value `3 < 2 ^ 3`. -/
 example : (bitMatrix oneFam 3 *ᵥ fun x : Unit × Fin 3 × Unit => ((![1, 1, 0] x.2.1 : ℕ) : ℤ)) () ∈
@@ -99,6 +105,22 @@ example :
   rw [bitMatrix_map_transpose_mulVec]
   decide
 
+/-- Lemma 4.12 for the standard matrix, applied to the digits of the coefficients `h₂`. -/
+example : ![(2 : ZMod 5), 3] ⬝ᵥ
+      (fun i => ψ₅ ((bitMatrix γ₂ 3 *ᵥ fun x => (coeffBits 3 h₂ x : ℤ)) i)) =
+    (fun p => ψ₅ ((coeffBits 3 h₂ p : ℤ))) ⬝ᵥ bitWeights ψ₅ γ₂ 3 ![(2 : ZMod 5), 3] :=
+  dotProduct_map_bitMatrix_mulVec ψ₅ γ₂ 3 _ _
+
+-- Both sides of the identity evaluate to `1` in `ZMod 5`. On the left, `L · digits = (35, 7)`
+-- reduces to `(0, 2)`, and `2 · 0 + 3 · 2 = 6 ≡ 1`. On the right, only `j = 0` contributes, since
+-- `ψ(10) = 0`: row `0` gives `2 · (1 + 4) = 10 ≡ 0` for the digits `1, 0, 1` of `5`, and row `1`
+-- gives `3 · (1 + 2 + 4) = 21 ≡ 1` for the digits `1, 1, 1` of `7`.
+/-- info: [1, 1] -/
+#guard_msgs in
+#eval [((![(2 : ZMod 5), 3]) ⬝ᵥ
+    (fun i => ψ₅ ((bitMatrix γ₂ 3 *ᵥ fun x => (coeffBits 3 h₂ x : ℤ)) i))).val,
+  ((fun p => ψ₅ ((coeffBits 3 h₂ p : ℤ))) ⬝ᵥ bitWeights ψ₅ γ₂ 3 ![(2 : ZMod 5), 3]).val]
+
 /-! ### The satisfiability equivalence is instantiated -/
 
 /-- The claim `⟨(1, 1), ψ(f)⟩ = 2` over `ZMod 5` has the witness `f = (5, 2)`, so the bitified claim
@@ -159,6 +181,13 @@ info: 'BitZ.bitMatrix_mulVec_coeffBits' depends on axioms: [propext, Classical.c
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms BitZ.bitMatrix_mulVec_coeffBits
+
+/--
+info: 'BitZ.dotProduct_map_bitMatrix_mulVec' depends on axioms:
+[propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms BitZ.dotProduct_map_bitMatrix_mulVec
 
 /--
 info: 'BitZ.exists_witness_iff_exists_bits' depends on axioms:

@@ -7,79 +7,14 @@ module
 
 public import ArkLib.Interaction.Oracle.CompositionSoundness
 public import ArkLib.Interaction.Oracle.PhasedRun
-public import ArkLib.Data.Probability.Sequential
+public import VCVio.OracleComp.Runtime
 
-/-! # Native composition soundness in a persistent runtime -/
+/-! # Composition soundness in a persistent runtime -/
 
 @[expose] public section
 
 open OracleComp OracleSpec MeasureTheory
 open scoped ENNReal
-
-namespace OracleRuntime
-variable {ι κ B X : Type} {imports : OracleSpec ι} {surface : OracleSpec κ}
-  [EvalDistSemantics (OracleComp imports)] [LawfulEvalDistSemantics (OracleComp imports)]
-
-/-- Average actual resumed success over the joint prefix result. The fixed authored continuation
-receives only `B`; the runtime retains state and history internally. Analytic exceptional and error
-predicates may inspect the full joint result. No independence or normalization is assumed. -/
-theorem run_bind_success_le (runtime : OracleRuntime imports surface)
-    (first : OracleComp surface B) (next : B → OracleComp surface X)
-    (Exceptional : RunResult runtime B → Prop) (Success : X → Prop)
-    (error : RunResult runtime B → ENNReal)
-    (hsuffix : letI : MeasurableSpace (RunResult runtime B) := ⊤
-      (∫⁻ b in {b | ¬ Exceptional b},
-        Pr{let result ← runtime.resume b next}[Success result.output] ∂𝒟[runtime.run first]) ≤
-      ∫⁻ b in {b | ¬ Exceptional b}, error b ∂𝒟[runtime.run first]) :
-    let : MeasurableSpace (RunResult runtime B) := ⊤
-    Pr{let result ← runtime.run (first >>= next)}[Success result.output] ≤
-      Pr{let b ← runtime.run first}[Exceptional b] +
-        ∫⁻ b in {b | ¬ Exceptional b}, error b ∂𝒟[runtime.run first] := by
-  let : MeasurableSpace (RunResult runtime B) := ⊤
-  rw [runtime.run_bind]
-  exact (prEvent_bind_le_prEvent_add_lintegral_ae (runtime.run first)
-    (fun b => runtime.resume b next) Exceptional (fun result => Success result.output)
-    (fun b => Pr{let result ← runtime.resume b next}[Success result.output])
-    (Filter.Eventually.of_forall (fun _ _ => le_rfl))).trans (add_le_add le_rfl hsuffix)
-/-- A stronger pointwise almost-everywhere premise implies the joint average bound. -/
-theorem run_bind_success_le_ae (runtime : OracleRuntime imports surface)
-    (first : OracleComp surface B) (next : B → OracleComp surface X)
-    (Exceptional : RunResult runtime B → Prop) (Success : X → Prop)
-    (error : RunResult runtime B → ENNReal)
-    (hsuffix : letI : MeasurableSpace (RunResult runtime B) := ⊤
-      ∀ᵐ b ∂𝒟[runtime.run first], ¬ Exceptional b →
-        Pr{let result ← runtime.resume b next}[Success result.output] ≤ error b) :
-    let : MeasurableSpace (RunResult runtime B) := ⊤
-    Pr{let result ← runtime.run (first >>= next)}[Success result.output] ≤
-      Pr{let b ← runtime.run first}[Exceptional b] +
-        ∫⁻ b in {b | ¬ Exceptional b}, error b ∂𝒟[runtime.run first] := by
-  let : MeasurableSpace (RunResult runtime B) := ⊤
-  rw [runtime.run_bind]
-  exact prEvent_bind_le_prEvent_add_lintegral_ae (runtime.run first)
-    (fun b => runtime.resume b next) Exceptional (fun result => Success result.output) error hsuffix
-
-/-- A uniform actual-resume bound yields a uniform error term, even with missing mass. -/
-theorem run_bind_success_le_uniform (runtime : OracleRuntime imports surface)
-    (first : OracleComp surface B) (next : B → OracleComp surface X)
-    (Exceptional : RunResult runtime B → Prop) (Success : X → Prop) (error : ENNReal)
-    (hsuffix : letI : MeasurableSpace (RunResult runtime B) := ⊤
-      ∀ᵐ b ∂𝒟[runtime.run first], ¬ Exceptional b →
-        Pr{let result ← runtime.resume b next}[Success result.output] ≤ error) :
-    Pr{let result ← runtime.run (first >>= next)}[Success result.output] ≤
-      Pr{let b ← runtime.run first}[Exceptional b] + error := by
-  let : MeasurableSpace (RunResult runtime B) := ⊤
-  apply (runtime.run_bind_success_le_ae first next Exceptional Success (fun _ => error)
-    hsuffix).trans
-  apply add_le_add le_rfl
-  calc
-    _ ≤ ∫⁻ _, error ∂𝒟[runtime.run first] := by
-      simpa only [Measure.restrict_univ] using
-        (lintegral_mono_set (f := fun _ => error)
-          (μ := 𝒟[runtime.run first]) (Set.subset_univ {b | ¬ Exceptional b}))
-    _ = error * 𝒟[runtime.run first] Set.univ := lintegral_const error
-    _ ≤ error := mul_le_of_le_one_right' (evalDist_apply_univ_le_one (runtime.run first))
-
-end OracleRuntime
 
 namespace Interaction.Oracle
 
@@ -168,7 +103,7 @@ private theorem pair_closed_cast
   cases h
   rfl
 
-/-- The closed-output observation of a whole native prover splits at its actual continuation.
+/-- The closed-output observation of a whole prover splits at its actual continuation.
 The claim is closed with the same execution's resources; this observation projects away private
 output and concrete oracle payloads only after the existing executor has paired them. -/
 theorem executeStrategies_appendExported_closedResult :
@@ -212,7 +147,7 @@ theorem executeStrategies_appendExported_closedResult :
   simpa only [map_eq_pure_bind] using
     pair_closed_cast ambient tree suffix FinalStmt FinalData Final
       (runtimeBranch_append tree suffix path rest).symm action
-/-- The native closed-output split preserves the actual final runtime state and ordered ambient
+/-- The closed-output split preserves the actual final runtime state and ordered ambient
 history. The complete core instrumentation is retained by `executeStrategiesWithRuntime_core`;
 this theorem projects to the branch-dependent closed outcome used by security events. -/
 theorem executeStrategiesWithRuntime_appendExported_closedResult
@@ -265,7 +200,7 @@ theorem executeStrategiesWithRuntime_appendExported_closedResult
         congrArg (fun program =>
           (fun result => (result.output, result.state, result.trace)) <$> program) closed
 
-/-- A final closed-claim event has the same mass in the native runtime and its actual split.
+/-- A final closed-claim event has the same mass in the runtime and its actual split.
 This projects the paired closed-output/state/history equality while preserving its oracle relation.
 -/
 theorem executeStrategiesWithRuntime_appendExported_prEvent
@@ -298,9 +233,9 @@ theorem executeStrategiesWithRuntime_appendExported_prEvent
     result.1.2.map (TruthFinal result.1.1) = some True]) observed
   simpa only [prEvent_map] using same
 
-/-- Bound the actual native runtime experiment by an exceptional joint boundary event and the
+/-- Bound the actual runtime experiment by an exceptional joint boundary event and the
 average suffix error on its complement. The main premise is already averaged over the runtime's
-actual state, native continuation, intermediate claim, and history distribution. It makes no
+actual state, continuation, intermediate claim, and history distribution. It makes no
 pointwise security requirement at each hidden state. The whole prover is fixed before setup;
 only `runtime.resume` handles hidden state. Rejection is outside the accepted-claim event and
 missing mass is left unnormalized. This theorem does not transfer security to arbitrary runtimes. -/

@@ -49,9 +49,8 @@ open Classical in
 `rho - 1/n` and derivative ratio selected at `rho`. -/
 theorem exists_lowRateFiniteLengthFirstOrder_symbolicCertificate
     {F : Type u} [Field F] {rho eta : ℝ} {n k A : ℕ}
-    (hrho : 0 < rho) (heta : 0 < eta)
+    (heta : 0 < eta)
     (haOne : firstOrderLowRateThreshold rho + eta < 1)
-    (hn : (2 : ℝ) ≤ rho * n)
     (hlow : rho < firstOrderRateSwitch)
     (hk : 2 ≤ k) (hkRate : (k : ℝ) ≤ rho * n)
     (hA : (firstOrderLowRateThreshold rho + eta) * n ≤ A)
@@ -65,6 +64,10 @@ theorem exists_lowRateFiniteLengthFirstOrder_symbolicCertificate
         (m := lowRateFiniteLengthMultiplicity rho eta n)
         (M := lowRateFiniteLengthDerivativeCap rho eta n)
         (μ := lowRateFiniteLengthJetDegree rho eta n))) := by
+  have hn : (2 : ℝ) ≤ rho * n :=
+    (show (2 : ℝ) ≤ k by exact_mod_cast hk).trans hkRate
+  have hrho : 0 < rho :=
+    pos_of_mul_pos_left (lt_of_lt_of_le (by norm_num) hn) (Nat.cast_nonneg n)
   let R := finiteLengthRate rho n
   let a := lowRateFiniteLengthCertifiedAgreement rho eta
   let D := k - 1
@@ -78,7 +81,7 @@ theorem exists_lowRateFiniteLengthFirstOrder_symbolicCertificate
   let r := n * rlocal
   have hnPos : 0 < n := length_pos_of_two_le_rate_mul_length hn
   have hmPos : 0 < m := lowRateFiniteLengthMultiplicity_pos
-    hrho hlow heta haOne hn
+    hlow heta haOne hn
   have hDPos : 0 < D := by dsimp only [D]; omega
   have hN : N = firstOrderDimensionCount D A m M mu :=
     card_firstOrderExponents hDPos
@@ -102,8 +105,8 @@ theorem exists_lowRateFiniteLengthFirstOrder_symbolicCertificate
     simpa only [R, a, m, M, mu, Nzero, lowRateFiniteLengthSourceCount] using hlower
   have hsurplus : (rlocal : ℝ) < Nzero := by
     have hdelta := lowRateFiniteLengthDensityMargin_pos
-      hrho hlow heta haOne hn
-    have hgap := lowRateFiniteLength_count_gap hrho hlow heta haOne hn
+      hlow heta haOne hn
+    have hgap := lowRateFiniteLength_count_gap hlow heta haOne hn
     have hpositive : 0 < 3 * (m : ℝ) ^ 3 * lowRateFiniteLengthDensityMargin rho eta n / 4 := by
       positivity
     dsimp only [m, rlocal, Nzero]
@@ -123,15 +126,8 @@ theorem exists_lowRateFiniteLengthFirstOrder_symbolicCertificate
     exact hkernel.trans (by
       simpa only [h, mu, rlocal, Nzero, lowRateFiniteLengthChallengeHeight] using
         (Nat.le_max_right 1 ⌊(rlocal : ℝ) * mu / (Nzero - rlocal)⌋₊))
-  have hbudget : 0 < m * A :=
-    Nat.mul_pos hmPos (by
-      have haPos : 0 < firstOrderLowRateThreshold rho + eta :=
-        (hrho.trans (rate_lt_firstOrderLowRateThreshold hrho
-          ((firstOrderLowRateRegime_iff_lt_rateSwitch rho).2 hlow))).trans
-          (lt_add_of_pos_right _ heta)
-      exact_mod_cast (mul_pos haPos (by exact_mod_cast hnPos) |>.trans_le hA))
   exact exists_firstOrder_symbolicCertificate_of_rank_and_height
-    hbudget (by omega : k ≤ D + 1)
+    (by omega : k ≤ D + 1)
     (by simpa only [r, N, rlocal, lowRateFiniteLengthRankCount, m, M, mu] using hrN)
     (by simpa only [r, N, rlocal, lowRateFiniteLengthRankCount, m, M, mu] using hheight)
     centers f g
@@ -153,29 +149,38 @@ theorem one_le_lowRateFiniteLengthMcaParameterConstant (rho : ℝ) :
 theorem lowRate_agreementIncidenceRatio_le_parameterConstant
     {rho eta : ℝ} {n D A : ℕ}
     (hrho : 0 < rho) (hlow : rho < firstOrderRateSwitch)
-    (heta : 0 < eta) (hDn : D ≤ n) (hDA : D < A)
+    (heta : 0 < eta)
     (hDrate : (D : ℝ) ≤ rho * n)
     (hA : (firstOrderLowRateThreshold rho + eta) * n ≤ A) :
     agreementIncidenceRatio n D A ≤ lowRateFiniteLengthMcaParameterConstant rho := by
-  have hregime := (firstOrderLowRateRegime_iff_lt_rateSwitch rho).2 hlow
-  have hthreshold := rate_lt_firstOrderLowRateThreshold hrho hregime
-  have hthetaRate := agreementIncidenceRatio_le_one_div_sub hDn hDA hDrate hA
-    (hthreshold.trans (lt_add_of_pos_right _ heta))
-  calc
-    agreementIncidenceRatio n D A ≤ 1 / (firstOrderLowRateThreshold rho + eta - rho) := hthetaRate
-    _ ≤ 1 / (firstOrderLowRateThreshold rho - rho) := by
-      exact div_le_div_of_nonneg_left zero_le_one (sub_pos.mpr hthreshold) (by linarith)
-    _ ≤ lowRateHybridEnvelopeConstant rho := le_max_right _ _
-    _ ≤ lowRateFiniteLengthMcaParameterConstant rho := le_max_right _ _
+  by_cases hDn : D ≤ n
+  · by_cases hDA : D < A
+    · have hregime := (firstOrderLowRateRegime_iff_lt_rateSwitch rho).2 hlow
+      have hthreshold := rate_lt_firstOrderLowRateThreshold hrho hregime
+      have hthetaRate := agreementIncidenceRatio_le_one_div_sub hDrate hA
+        (hthreshold.trans (lt_add_of_pos_right _ heta))
+      calc
+        agreementIncidenceRatio n D A ≤
+            1 / (firstOrderLowRateThreshold rho + eta - rho) := hthetaRate
+        _ ≤ 1 / (firstOrderLowRateThreshold rho - rho) := by
+          exact div_le_div_of_nonneg_left zero_le_one (sub_pos.mpr hthreshold) (by linarith)
+        _ ≤ lowRateHybridEnvelopeConstant rho := le_max_right _ _
+        _ ≤ lowRateFiniteLengthMcaParameterConstant rho := le_max_right _ _
+    · simp only [agreementIncidenceRatio, Nat.sub_eq_zero_of_le (by omega : A ≤ D),
+        Nat.cast_zero, div_zero]
+      exact zero_le_one.trans (one_le_lowRateFiniteLengthMcaParameterConstant rho)
+  · simp only [agreementIncidenceRatio, Nat.sub_eq_zero_of_le (by omega : n ≤ D),
+      Nat.cast_zero, zero_div]
+    exact zero_le_one.trans (one_le_lowRateFiniteLengthMcaParameterConstant rho)
 
 open Classical in
 /-- Assumption-free complete-list semantics for the exact low-rate selectors in dimension at
 least two.  The symbolic certificate is constructed internally from the literal count gap. -/
 theorem lowRate_closePolynomialSet_finite_and_card_le_finiteLength
     {F : Type u} [Field F] {rho eta : ℝ} {n k A : ℕ}
-    (hrho : 0 < rho) (hlow : rho < firstOrderRateSwitch)
+    (hlow : rho < firstOrderRateSwitch)
     (heta : 0 < eta) (haOne : firstOrderLowRateThreshold rho + eta < 1)
-    (hn : (2 : ℝ) ≤ rho * n) (hk : 2 ≤ k) (hkRate : (k : ℝ) ≤ rho * n)
+    (hk : 2 ≤ k) (hkRate : (k : ℝ) ≤ rho * n)
     (hA : (firstOrderLowRateThreshold rho + eta) * n ≤ A) (hAn : A ≤ n)
     (domain : Fin n ↪ F) (received : Fin n → F)
     (hchar : ringChar F = 0 ∨
@@ -184,6 +189,10 @@ theorem lowRate_closePolynomialSet_finite_and_card_le_finiteLength
       ((closePolynomialSet domain received k A).ncard : ℝ) ≤
         7 * lowRateFiniteLengthMcaParameterConstant rho ^ 3 * n /
           finiteLengthSlack eta n ^ 2 := by
+  have hn : (2 : ℝ) ≤ rho * n :=
+    (show (2 : ℝ) ≤ k by exact_mod_cast hk).trans hkRate
+  have hrho : 0 < rho :=
+    pos_of_mul_pos_left (lt_of_lt_of_le (by norm_num) hn) (Nat.cast_nonneg n)
   let C := lowRateFiniteLengthMcaParameterConstant rho
   let m := lowRateFiniteLengthMultiplicity rho eta n
   let M := lowRateFiniteLengthDerivativeCap rho eta n
@@ -198,31 +207,29 @@ theorem lowRate_closePolynomialSet_finite_and_card_le_finiteLength
       exact_mod_cast (hkRate.trans_lt <| (mul_lt_mul_of_pos_right
         (hthreshold.trans (lt_add_of_pos_right _ heta)) hnReal).trans_le hA)
     exact hkAlt.le
-  have hkn : k ≤ n := hkA.trans hAn
-  have hnTwo : 2 ≤ n := hk.trans hkn
   have hDrate : ((k - 1 : ℕ) : ℝ) ≤ rho * n := by
     exact (show ((k - 1 : ℕ) : ℝ) ≤ k by exact_mod_cast (Nat.sub_le k 1)).trans hkRate
   obtain ⟨cert⟩ := exists_lowRateFiniteLengthFirstOrder_symbolicCertificate
-    hrho heta haOne hn hlow hk hkRate hA domain received (fun _ ↦ 0)
+    heta haOne hlow hk hkRate hA domain received (fun _ ↦ 0)
   have hMB : M ≤ B := by
     dsimp only [M, B]
-    exact lowRateFiniteLengthDerivativeCap_le_jetDegree hrho heta haOne hn
-  have hsOne := (lowRateFiniteLengthSlack_lt_one hrho hlow haOne hn).le
+    exact lowRateFiniteLengthDerivativeCap_le_jetDegree heta haOne hn
+  have hsOne := (lowRateFiniteLengthSlack_lt_one hlow haOne hn).le
   have hC : 1 ≤ C := one_le_lowRateFiniteLengthMcaParameterConstant rho
   have hs := finiteLengthSlack_pos (n := n) heta
   obtain ⟨_hm, _hM, hBsel, _hH⟩ :=
-    lowRateFiniteLength_parameter_bounds hrho hlow heta haOne hn
+    lowRateFiniteLength_parameter_bounds hlow heta haOne hn
   have hB : (B : ℝ) ≤ C / finiteLengthSlack eta n := by
     exact hBsel.trans (div_le_div_of_nonneg_right (le_max_left _ _) hs.le)
   have htheta := lowRate_agreementIncidenceRatio_le_parameterConstant hrho hlow heta
-    (show k - 1 ≤ n by omega) (show k - 1 < A by omega) hDrate hA
+    hDrate hA
   have hlambda : ((n - k + 1 : ℕ) : ℝ) / (A - k + 1 : ℕ) ≤ C := by
     simpa only [C, agreementIncidenceRatio, show n - k + 1 = n - (k - 1) by omega,
       show A - k + 1 = A - (k - 1) by omega] using htheta
   exact closePolynomialSet_finite_and_card_le_finiteLength_of_bounded_certificate
     domain received
       (firstOrderColumns (D := k - 1) (A := A) (m := m) (M := M) (μ := B))
-      cert hnTwo hk hkA hAn hMB hchar hC heta hsOne hlambda hB
+      cert hk hkA hAn hMB hchar hC heta hsOne hlambda hB
 
 open Classical in
 /-- The simpler inverse-`eta` complete-list consequence on the low-rate branch. -/
@@ -230,7 +237,7 @@ theorem lowRate_closePolynomialSet_finite_and_card_le_inv_eta
     {F : Type u} [Field F] {rho eta : ℝ} {n k A : ℕ}
     (hrho : 0 < rho) (hlow : rho < firstOrderRateSwitch)
     (heta : 0 < eta) (haOne : firstOrderLowRateThreshold rho + eta < 1)
-    (hn : (2 : ℝ) ≤ rho * n) (hk : 2 ≤ k) (hkRate : (k : ℝ) ≤ rho * n)
+    (hn : (2 : ℝ) ≤ rho * n) (hkRate : (k : ℝ) ≤ rho * n)
     (hA : (firstOrderLowRateThreshold rho + eta) * n ≤ A) (hAn : A ≤ n)
     (domain : Fin n ↪ F) (received : Fin n → F)
     (hchar : ringChar F = 0 ∨
@@ -238,8 +245,25 @@ theorem lowRate_closePolynomialSet_finite_and_card_le_inv_eta
     (closePolynomialSet domain received k A).Finite ∧
       ((closePolynomialSet domain received k A).ncard : ℝ) ≤
         7 * lowRateFiniteLengthMcaParameterConstant rho ^ 3 * n / eta ^ 2 := by
-  obtain ⟨hfinite, hcard⟩ := lowRate_closePolynomialSet_finite_and_card_le_finiteLength
-    hrho hlow heta haOne hn hk hkRate hA hAn domain received hchar
+  have hlist : (closePolynomialSet domain received k A).Finite ∧
+      ((closePolynomialSet domain received k A).ncard : ℝ) ≤
+        7 * lowRateFiniteLengthMcaParameterConstant rho ^ 3 * n /
+          finiteLengthSlack eta n ^ 2 := by
+    by_cases hk : 2 ≤ k
+    · exact lowRate_closePolynomialSet_finite_and_card_le_finiteLength
+        hlow heta haOne hk hkRate hA hAn domain received hchar
+    · have hthreshold := rate_lt_firstOrderLowRateThreshold hrho
+        ((firstOrderLowRateRegime_iff_lt_rateSwitch rho).2 hlow)
+      have hkA : k ≤ A := by
+        exact_mod_cast hkRate.trans ((mul_le_mul_of_nonneg_right
+          (hthreshold.le.trans (le_add_of_nonneg_right heta.le))
+          (Nat.cast_nonneg n)).trans hA)
+      exact closePolynomialSet_finite_and_card_le_finiteLength_of_dimension_le_one
+        domain received (length_pos_of_two_le_rate_mul_length hn) (by omega) hkA
+        (one_le_lowRateFiniteLengthMcaParameterConstant rho) heta
+        (lowRateFiniteLengthSlack_lt_one_of_one_le_rate_mul_length
+          hlow haOne (by linarith)).le
+  obtain ⟨hfinite, hcard⟩ := hlist
   refine ⟨hfinite, hcard.trans ?_⟩
   exact div_finiteLengthSlack_sq_le_div_eta_sq
     (mul_nonneg
@@ -257,22 +281,22 @@ theorem lowRateFiniteLengthJetDegree_pos
     0 < lowRateFiniteLengthJetDegree rho eta n := by
   unfold lowRateFiniteLengthJetDegree
   apply Nat.ceil_pos.mpr
-  have hm := lowRateFiniteLengthMultiplicity_pos hrho hlow heta haOne hn
+  have hm := lowRateFiniteLengthMultiplicity_pos hlow heta haOne hn
   have ha := lowRateFiniteLengthCertifiedAgreement_pos hrho heta.le
-  have hrate := finiteLengthRate_pos hrho hn
+  have hrate := finiteLengthRate_pos hn
   positivity
 
 open Classical in
 /-- Assumption-free retained squarefree line MCA for the exact low-rate selectors in dimension
 at least two.  The exceptional set precedes both challenge and candidate quantifiers. -/
 theorem exists_exceptional_lowRateFiniteLengthMca
-    {F E : Type u} [Field F] [Field E] [IsAlgClosed E]
+    {F : Type u} [Field F]
     {rho eta : ℝ} {n k A : ℕ}
-    (hrho : 0 < rho) (hlow : rho < firstOrderRateSwitch)
+    (hlow : rho < firstOrderRateSwitch)
     (heta : 0 < eta) (haOne : firstOrderLowRateThreshold rho + eta < 1)
-    (hn : (2 : ℝ) ≤ rho * n) (hk : 2 ≤ k) (hkRate : (k : ℝ) ≤ rho * n)
+    (hk : 2 ≤ k) (hkRate : (k : ℝ) ≤ rho * n)
     (hA : (firstOrderLowRateThreshold rho + eta) * n ≤ A) (hAn : A ≤ n)
-    (domain : Fin n ↪ F) (f g : Fin n → F) (iota : F →+* E)
+    (domain : Fin n ↪ F) (f g : Fin n → F)
     (hchar : ringChar F = 0 ∨
       max (k - 1) (lowRateFiniteLengthDerivativeCap rho eta n) < ringChar F) :
     ∃ exceptional : Finset F,
@@ -282,6 +306,10 @@ theorem exists_exceptional_lowRateFiniteLengthMca
       ∀ z ∉ exceptional, ∀ P : F[X], P.degree < k →
         A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
         HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
+  have hn : (2 : ℝ) ≤ rho * n :=
+    (show (2 : ℝ) ≤ k by exact_mod_cast hk).trans hkRate
+  have hrho : 0 < rho :=
+    pos_of_mul_pos_left (lt_of_lt_of_le (by norm_num) hn) (Nat.cast_nonneg n)
   let C := lowRateFiniteLengthMcaParameterConstant rho
   let m := lowRateFiniteLengthMultiplicity rho eta n
   let M := lowRateFiniteLengthDerivativeCap rho eta n
@@ -296,22 +324,21 @@ theorem exists_exceptional_lowRateFiniteLengthMca
       exact_mod_cast (hkRate.trans_lt <| (mul_lt_mul_of_pos_right
         (hthreshold.trans (lt_add_of_pos_right _ heta)) hnReal).trans_le hA)
     exact hkAlt.le
-  have hkn : k ≤ n := hkA.trans hAn
   have hDrate : ((k - 1 : ℕ) : ℝ) ≤ rho * n := by
     exact (show ((k - 1 : ℕ) : ℝ) ≤ k by exact_mod_cast (Nat.sub_le k 1)).trans hkRate
   obtain ⟨cert⟩ := exists_lowRateFiniteLengthFirstOrder_symbolicCertificate
-    hrho heta haOne hn hlow hk hkRate hA domain f g
+    heta haOne hlow hk hkRate hA domain f g
   have hMB : M ≤ B := by
     dsimp only [M, B]
-    exact lowRateFiniteLengthDerivativeCap_le_jetDegree hrho heta haOne hn
+    exact lowRateFiniteLengthDerivativeCap_le_jetDegree heta haOne hn
   have hBpos : 1 ≤ B := by
     dsimp only [B]
     exact lowRateFiniteLengthJetDegree_pos hrho hlow heta haOne hn
-  have hsOne := (lowRateFiniteLengthSlack_lt_one hrho hlow haOne hn).le
+  have hsOne := (lowRateFiniteLengthSlack_lt_one hlow haOne hn).le
   have hC : 1 ≤ C := one_le_lowRateFiniteLengthMcaParameterConstant rho
   have hs := finiteLengthSlack_pos (n := n) heta
   obtain ⟨_hm, hMsel, hBsel, hHsel⟩ :=
-    lowRateFiniteLength_parameter_bounds hrho hlow heta haOne hn
+    lowRateFiniteLength_parameter_bounds hlow heta haOne hn
   have hM : (M : ℝ) ≤ C / finiteLengthSlack eta n :=
     hMsel.trans (div_le_div_of_nonneg_right (le_max_left _ _) hs.le)
   have hB : (B : ℝ) ≤ C / finiteLengthSlack eta n :=
@@ -319,23 +346,23 @@ theorem exists_exceptional_lowRateFiniteLengthMca
   have hH : (H : ℝ) ≤ C / finiteLengthSlack eta n ^ 2 :=
     hHsel.trans (div_le_div_of_nonneg_right (le_max_left _ _) (sq_nonneg _))
   have htheta := lowRate_agreementIncidenceRatio_le_parameterConstant hrho hlow heta
-    (show k - 1 ≤ n by omega) (show k - 1 < A by omega) hDrate hA
+    hDrate hA
   exact exists_exceptional_firstOrderMca_of_bounded_certificate
-    domain f g iota
+    domain f g
       (firstOrderColumns (D := k - 1) (A := A) (m := m) (M := M) (μ := B)) cert
-      (by omega) hk hkA hAn hBpos hMB hchar hC heta hsOne
-      (by omega) htheta hB hM hH
+      hk hkA hAn hBpos hMB hchar hC heta hsOne
+      htheta hB hM hH
 
 open Classical in
 /-- The inverse-`eta` low-rate MCA consequence. -/
 theorem exists_exceptional_lowRateFiniteLengthMca_inv_eta
-    {F E : Type u} [Field F] [Field E] [IsAlgClosed E]
+    {F : Type u} [Field F]
     {rho eta : ℝ} {n k A : ℕ}
-    (hrho : 0 < rho) (hlow : rho < firstOrderRateSwitch)
+    (hlow : rho < firstOrderRateSwitch)
     (heta : 0 < eta) (haOne : firstOrderLowRateThreshold rho + eta < 1)
-    (hn : (2 : ℝ) ≤ rho * n) (hk : 2 ≤ k) (hkRate : (k : ℝ) ≤ rho * n)
-    (hA : (firstOrderLowRateThreshold rho + eta) * n ≤ A) (hAn : A ≤ n)
-    (domain : Fin n ↪ F) (f g : Fin n → F) (iota : F →+* E)
+    (hk : 2 ≤ k) (hkRate : (k : ℝ) ≤ rho * n)
+    (hA : (firstOrderLowRateThreshold rho + eta) * n ≤ A)
+    (domain : Fin n ↪ F) (f g : Fin n → F)
     (hchar : ringChar F = 0 ∨
       max (k - 1) (lowRateFiniteLengthDerivativeCap rho eta n) < ringChar F) :
     ∃ exceptional : Finset F,
@@ -344,27 +371,35 @@ theorem exists_exceptional_lowRateFiniteLengthMca_inv_eta
       ∀ z ∉ exceptional, ∀ P : F[X], P.degree < k →
         A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
         HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
-  obtain ⟨exceptional, hcard, hgood⟩ := exists_exceptional_lowRateFiniteLengthMca
-    hrho hlow heta haOne hn hk hkRate hA hAn domain f g iota hchar
-  refine ⟨exceptional, hcard.trans ?_, hgood⟩
-  exact div_finiteLengthSlack_four_le_div_eta_four
-    (mul_nonneg
-      (mul_nonneg (by norm_num)
-        (pow_nonneg (zero_le_one.trans (one_le_lowRateFiniteLengthMcaParameterConstant rho)) _))
-      (sq_nonneg (n : ℝ))) heta
+  by_cases hAn : A ≤ n
+  · obtain ⟨exceptional, hcard, hgood⟩ := exists_exceptional_lowRateFiniteLengthMca
+      hlow heta haOne hk hkRate hA hAn domain f g hchar
+    refine ⟨exceptional, hcard.trans ?_, hgood⟩
+    exact div_finiteLengthSlack_four_le_div_eta_four
+      (mul_nonneg
+        (mul_nonneg (by norm_num)
+          (pow_nonneg (zero_le_one.trans (one_le_lowRateFiniteLengthMcaParameterConstant rho)) _))
+        (sq_nonneg (n : ℝ))) heta
+  · refine ⟨∅, ?_, ?_⟩
+    · simp only [Finset.card_empty, Nat.cast_zero]
+      positivity
+    · intro z hz P hP hagree
+      have hcard : (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card ≤ n :=
+        (Finset.card_le_univ _).trans_eq (Fintype.card_fin n)
+      exact (hAn (hagree.trans hcard)).elim
 
 open Classical in
 /-- One assumption-free low-rate semantic family: an independently constructed complete-list
 certificate gives the inverse-square bound and an independently constructed line certificate
 gives one inverse-fourth exceptional set with exact full agreement sets. -/
 theorem lowRate_finiteLength_completeList_and_exceptionalMca
-    {F E : Type u} [Field F] [Field E] [IsAlgClosed E]
+    {F : Type u} [Field F]
     {rho eta : ℝ} {n k A : ℕ}
-    (hrho : 0 < rho) (hlow : rho < firstOrderRateSwitch)
+    (hlow : rho < firstOrderRateSwitch)
     (heta : 0 < eta) (haOne : firstOrderLowRateThreshold rho + eta < 1)
-    (hn : (2 : ℝ) ≤ rho * n) (hk : 2 ≤ k) (hkRate : (k : ℝ) ≤ rho * n)
+    (hk : 2 ≤ k) (hkRate : (k : ℝ) ≤ rho * n)
     (hA : (firstOrderLowRateThreshold rho + eta) * n ≤ A) (hAn : A ≤ n)
-    (domain : Fin n ↪ F) (f g : Fin n → F) (iota : F →+* E)
+    (domain : Fin n ↪ F) (f g : Fin n → F)
     (hchar : ringChar F = 0 ∨
       max (k - 1) (lowRateFiniteLengthDerivativeCap rho eta n) < ringChar F) :
     ((closePolynomialSet domain f k A).Finite ∧
@@ -379,21 +414,21 @@ theorem lowRate_finiteLength_completeList_and_exceptionalMca
           A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
           HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
   refine ⟨lowRate_closePolynomialSet_finite_and_card_le_finiteLength
-    hrho hlow heta haOne hn hk hkRate hA hAn domain f hchar, ?_⟩
+    hlow heta haOne hk hkRate hA hAn domain f hchar, ?_⟩
   exact exists_exceptional_lowRateFiniteLengthMca
-    hrho hlow heta haOne hn hk hkRate hA hAn domain f g iota hchar
+    hlow heta haOne hk hkRate hA hAn domain f g hchar
 
 open Classical in
 /-- Eta-only consequence of the low-rate semantic family, derived after the exact
 `eta + 1/n` bounds. -/
 theorem lowRate_finiteLength_completeList_and_exceptionalMca_inv_eta
-    {F E : Type u} [Field F] [Field E] [IsAlgClosed E]
+    {F : Type u} [Field F]
     {rho eta : ℝ} {n k A : ℕ}
     (hrho : 0 < rho) (hlow : rho < firstOrderRateSwitch)
     (heta : 0 < eta) (haOne : firstOrderLowRateThreshold rho + eta < 1)
     (hn : (2 : ℝ) ≤ rho * n) (hk : 2 ≤ k) (hkRate : (k : ℝ) ≤ rho * n)
     (hA : (firstOrderLowRateThreshold rho + eta) * n ≤ A) (hAn : A ≤ n)
-    (domain : Fin n ↪ F) (f g : Fin n → F) (iota : F →+* E)
+    (domain : Fin n ↪ F) (f g : Fin n → F)
     (hchar : ringChar F = 0 ∨
       max (k - 1) (lowRateFiniteLengthDerivativeCap rho eta n) < ringChar F) :
     ((closePolynomialSet domain f k A).Finite ∧
@@ -406,21 +441,21 @@ theorem lowRate_finiteLength_completeList_and_exceptionalMca_inv_eta
           A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
           HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
   refine ⟨lowRate_closePolynomialSet_finite_and_card_le_inv_eta
-    hrho hlow heta haOne hn hk hkRate hA hAn domain f hchar, ?_⟩
+    hrho hlow heta haOne hn hkRate hA hAn domain f hchar, ?_⟩
   exact exists_exceptional_lowRateFiniteLengthMca_inv_eta
-    hrho hlow heta haOne hn hk hkRate hA hAn domain f g iota hchar
+    hlow heta haOne hk hkRate hA domain f g hchar
 
 open Classical in
 /-- Unified low-rate finite-length rate facade for every positive code dimension.  The `k = 1`
 branch needs only `1 ≤ rho*n`; the selector/count-gap branch is entered only when `2 ≤ k`. -/
 theorem lowRate_finiteLength_rate_bounds
-    {F E : Type u} [Field F] [Field E] [IsAlgClosed E]
+    {F : Type u} [Field F]
     {rho eta : ℝ} {n k A : ℕ}
     (hrho : 0 < rho) (hlow : rho < firstOrderRateSwitch)
     (heta : 0 < eta) (haOne : firstOrderLowRateThreshold rho + eta < 1)
     (hk : 0 < k) (hkRate : (k : ℝ) ≤ rho * n)
     (hA : (firstOrderLowRateThreshold rho + eta) * n ≤ A) (hAn : A ≤ n)
-    (domain : Fin n ↪ F) (iota : F →+* E)
+    (domain : Fin n ↪ F)
     (hchar : k = 1 ∨ ringChar F = 0 ∨
       max (k - 1) (lowRateFiniteLengthDerivativeCap rho eta n) < ringChar F) :
     (∀ received : Fin n → F,
@@ -442,24 +477,22 @@ theorem lowRate_finiteLength_rate_bounds
     have hnReal : (0 : ℝ) < n := by nlinarith [hrho]
     exact_mod_cast hnReal
   by_cases hkTwo : 2 ≤ k
-  · have hnRate : (2 : ℝ) ≤ rho * n := by
-      exact (show (2 : ℝ) ≤ k by exact_mod_cast hkTwo).trans hkRate
-    have hcharTwo : ringChar F = 0 ∨
+  · have hcharTwo : ringChar F = 0 ∨
         max (k - 1) (lowRateFiniteLengthDerivativeCap rho eta n) < ringChar F :=
       hchar.resolve_left (by omega)
     constructor
     · intro received
       exact lowRate_closePolynomialSet_finite_and_card_le_finiteLength
-        hrho hlow heta haOne hnRate hkTwo hkRate hA hAn domain received hcharTwo
+        hlow heta haOne hkTwo hkRate hA hAn domain received hcharTwo
     · intro f g
       exact exists_exceptional_lowRateFiniteLengthMca
-        hrho hlow heta haOne hnRate hkTwo hkRate hA hAn domain f g iota hcharTwo
+        hlow heta haOne hkTwo hkRate hA hAn domain f g hcharTwo
   · have hkOne : k = 1 := by omega
     subst k
     have hkRateOne : (1 : ℝ) ≤ rho * (n : ℝ) := by simpa using hkRate
     have hsOne : finiteLengthSlack eta n ≤ 1 :=
       (lowRateFiniteLengthSlack_lt_one_of_one_le_rate_mul_length
-        (rho := rho) (eta := eta) (n := n) hrho hlow haOne hkRateOne).le
+        (rho := rho) (eta := eta) (n := n) hlow haOne hkRateOne).le
     have hC : 1 ≤ lowRateFiniteLengthMcaParameterConstant rho :=
       one_le_lowRateFiniteLengthMcaParameterConstant rho
     have hregime := (firstOrderLowRateRegime_iff_lt_rateSwitch rho).2 hlow
@@ -474,7 +507,7 @@ theorem lowRate_finiteLength_rate_bounds
         domain received (by omega) (by omega) (by omega) hC heta hsOne
     · intro f g
       obtain ⟨exceptional, hcard, hgood⟩ :=
-        exists_exceptional_exactLineMca_one n A domain f g hAPos
+        exists_exceptional_exactLineMca_one n A domain f g
       refine ⟨exceptional, hcard.trans ?_, hgood⟩
       exact square_le_finiteLengthMcaExceptionBudget hC heta hsOne
 
@@ -483,7 +516,7 @@ open Classical in
 exceptional-set theorem by division by `|F|` and capping at one. -/
 theorem lowRate_finiteLength_mcaError_le
     (rho eta : ℝ) (n k : ℕ)
-    (hrho : 0 < rho) (hlow : rho < firstOrderRateSwitch)
+    (hlow : rho < firstOrderRateSwitch)
     (heta : 0 < eta) (haOne : firstOrderLowRateThreshold rho + eta < 1)
     (hk : 0 < k) (hkRate : (k : ℝ) ≤ rho * n)
     {F : Type} [Field F] [Fintype F] [SampleableType F] (domain : Fin n ↪ F)
@@ -494,6 +527,9 @@ theorem lowRate_finiteLength_mcaError_le
       min 1 (ENNReal.ofReal
         ((140 * lowRateFiniteLengthMcaParameterConstant rho ^ 6 * n ^ 2 / eta ^ 4) /
           (Fintype.card F : ℝ))) := by
+  have hrho : 0 < rho :=
+    pos_of_mul_pos_left ((show (0 : ℝ) < k by exact_mod_cast hk).trans_le hkRate)
+      (Nat.cast_nonneg n)
   let a := firstOrderLowRateThreshold rho + eta
   let A := Nat.ceil (a * n)
   have hA : a * (n : ℝ) ≤ A := Nat.le_ceil _
@@ -503,14 +539,13 @@ theorem lowRate_finiteLength_mcaError_le
       a * (n : ℝ) ≤ 1 * n :=
         mul_le_mul_of_nonneg_right haOne.le (Nat.cast_nonneg n)
       _ = n := one_mul _
-  let E := AlgebraicClosure F
   have hline : LineExactAgreementBound domain k A
       (140 * lowRateFiniteLengthMcaParameterConstant rho ^ 6 * n ^ 2 / eta ^ 4) := by
     intro f g
     obtain ⟨exceptional, hcard, hgood⟩ :=
       (lowRate_finiteLength_rate_bounds
-        (F := F) (E := E) hrho hlow heta haOne hk hkRate hA hAn
-          domain (algebraMap F E) hchar).2 f g
+        (F := F) hrho hlow heta haOne hk hkRate hA hAn
+          domain hchar).2 f g
     refine ⟨exceptional, hcard.trans ?_, ?_⟩
     · exact div_finiteLengthSlack_four_le_div_eta_four
         (mul_nonneg

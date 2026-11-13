@@ -1,0 +1,84 @@
+% Copyright (c) 2026 ArkLib Contributors. All rights reserved.
+% Released under Apache 2.0 license as described in the file LICENSE.
+
+\section{KZG}\label{sec:kzg}
+
+ArkLib formalizes the KZG polynomial commitment scheme~\cite{KZG10} and its evaluation
+binding proof from the extended version~\cite{KZG10TR}. Fix a prime $p$, groups
+$G_1,G_2,G_T$ of order $p$ with generators $g_1\in G_1$ and $g_2\in G_2$, and a
+$\mathbb{Z}_p$-bilinear pairing $e:G_1\times G_2\to G_T$. Fix a maximal degree $n$. The
+committed data is a coefficient vector $(a_0,\ldots,a_n)\in\mathbb{Z}_p^{n+1}$, that is,
+a polynomial $f$ of degree at most $n$; a query is a point $z\in\mathbb{Z}_p$ and its
+response is $f(z)$.
+
+\begin{definition}[KZG commitment scheme]\label{def:kzg}
+\lean{KZG.CommitmentScheme.kzg, KZG.commit, KZG.generateOpening, KZG.verifyOpening}
+\leanok
+\begin{itemize}
+  \item \textbf{Key generation.} Sample a uniform nonzero $\tau\in\mathbb{Z}_p$. Both keys
+    are the reference string $\bigl((g_1^{\tau^i})_{i\leq n},(g_2,g_2^{\tau})\bigr)$.
+  \item \textbf{Commitment.} $C=\prod_{i\leq n}(g_1^{\tau^i})^{a_i}=g_1^{f(\tau)}$.
+  \item \textbf{Opening.} To open at $z$ with value $v$, the prover sends one element
+    $\pi\in G_1$, the commitment to the quotient $(f(X)-f(z))/(X-z)$.
+  \item \textbf{Verification.} Accept when $e(C\cdot g_1^{-v},g_2)=e(\pi,g_2^{\tau}\cdot g_2^{-z})$.
+\end{itemize}
+\end{definition}
+
+\begin{theorem}[KZG correctness]\label{thm:kzg_correctness}
+\lean{KZG.CommitmentScheme.correctness}
+\leanok
+\uses{def:kzg}
+If $|G_1|=p$, the KZG scheme is perfectly correct, with the random oracle started from an
+empty cache.
+\end{theorem}
+
+\begin{definition}[$t$-SDH]\label{def:tsdh}
+\lean{Groups.tSdhCondition, Groups.tSdhExperiment, Groups.tSdhAssumption}
+\leanok
+A $t$-SDH adversary receives the reference string for $t=n$ and a uniform nonzero $\tau$,
+and outputs $(c,h)\in\mathbb{Z}_p\times G_1$. It wins when $\tau+c\neq 0$ and
+$h=g_1^{1/(\tau+c)}$. For a set $\mathcal{A}$ of adversaries and $\varepsilon\geq 0$, the
+$t$-SDH assumption over $\mathcal{A}$ with error $\varepsilon$ states that every adversary in
+$\mathcal{A}$ wins with probability at most $\varepsilon$.
+\end{definition}
+
+\begin{lemma}[The assumption needs a restricted class]\label{lem:tsdh_not_univ}
+\lean{Groups.not_tSdhAssumption_univ}
+\leanok
+\uses{def:tsdh}
+If $g_2\neq 1$ and $\varepsilon<1$, the $t$-SDH assumption fails over the class of all
+adversaries: a classical inverse of $a\mapsto g_2^{a}$ recovers $\tau$ from the reference
+string. A meaningful instance restricts $\mathcal{A}$, for example to generic, algebraic or
+resource-bounded adversaries.
+\end{lemma}
+
+\begin{theorem}[KZG evaluation binding]\label{thm:kzg_binding}
+\lean{KZG.CommitmentScheme.bindingReduction,
+KZG.CommitmentScheme.binding_reduces_to_tSdh, KZG.CommitmentScheme.binding}
+\leanok
+\uses{def:kzg,def:tsdh}
+Assume $g_1\neq 1$ and $e(g_1,g_2)\neq 1_{G_T}$. A binding adversary outputs a commitment,
+a point $z$, two values $v_1,v_2$ and two prover states, and then runs the opening prover
+from each state. It wins when $v_1\neq v_2$ and both openings are accepted. Uniform queries
+are forwarded to private sampling, from an empty cache. For every binding adversary
+$\mathcal{B}$, the probability that $\mathcal{B}$ wins is at most the probability that the
+explicit reduction $R(\mathcal{B})$ wins the $t$-SDH game. Consequently, if the $t$-SDH
+assumption holds over $\mathcal{A}$ with error $\varepsilon$ and $R(\mathcal{B})\in\mathcal{A}$,
+then $\mathcal{B}$ wins with probability at most $\varepsilon$.
+\end{theorem}
+
+\begin{theorem}[KZG function binding]\label{thm:kzg_function_binding}
+\lean{Groups.arsdhCondition, Groups.arsdhAssumption,
+KZG.CommitmentScheme.function_binding_reduces_to_arsdh, KZG.CommitmentScheme.function_binding}
+\leanok
+\uses{def:kzg}
+An ARSDH adversary receives the same reference string and outputs a set
+$S\subseteq\mathbb{Z}_p$ and $h_1,h_2\in G_1$. With $Z_S(X)=\prod_{s\in S}(X-s)$, it wins when
+$|S|=n+1$, $Z_S(\tau)\neq 0$, $h_1\neq 1$ and $h_2=h_1^{1/Z_S(\tau)}$. A function-binding
+adversary outputs a commitment and $L$ query-value pairs, and wins when every opening is
+accepted but no polynomial of degree at most $n$ takes all $L$ values. Assume $n\geq 1$,
+$p\geq n+2$, $g_1\neq 1$ and $e(g_1,g_2)\neq 1_{G_T}$. Then every function-binding adversary
+wins with probability at most the ARSDH success probability of an explicit reduction, and at
+most $\varepsilon$ when ARSDH holds with error $\varepsilon$ over a class containing that
+reduction.
+\end{theorem}

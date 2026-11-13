@@ -16,7 +16,7 @@ import Mathlib.Algebra.Field.ZMod
 The packing algebra has rank two and the opening algebra rank three over `ZMod 4`.
 A scalar query sums the two component evaluations; batching samples one of the three opening
 coordinates, with certified error `2/3`. The generic protocol and its completeness and
-worst-case round-by-round knowledge theorem are instantiated, including an exact functional
+round-by-round knowledge theorem are instantiated, including an exact functional
 commitment,
 nonconstant source, nonzero honest message and rejecting transcript.
 -/
@@ -71,16 +71,16 @@ example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ Prob
       (Head.relIn data 1 layout pc) (Head.relOut data 1 layout bat.toBatchingRule pc) :=
   Head.perfectCompleteness data 1 layout codec bat.toBatchingRule pc init impl
 
-/-- The concrete extractor has worst-case error `2/3` without a domain assumption. -/
+/-- The concrete extractor has round-by-round error `2/3` without a domain assumption. -/
 example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    Verifier.rbrKnowledgeSoundnessWorstCaseWith init impl
+    Verifier.rbrKnowledgeSoundnessWith init impl
       (Head.relIn data 1 layout pc) (Head.relOut data 1 layout bat.toBatchingRule pc)
       (Head.verifier data 1 layout codec bat.toBatchingRule pc).toVerifier
       (Head.WitMid data 1 layout)
       (Head.extractor (M := data.ιP → data.E) data 1 layout bat.toBatchingRule pc)
       (Head.knowledgeStateFunction data 1 layout codec bat.toBatchingRule pc init impl)
       (Head.rbrError (M := data.ιP → data.E) data bat) :=
-  Head.rbrKnowledgeSoundnessWorstCaseWith data 1 layout codec bat pc
+  Head.rbrKnowledgeSoundnessWith data 1 layout codec bat pc
     pc_functional (fun _ _ h => h) init impl
 
 /-- Both components are the nonconstant polynomial `X`. -/
@@ -252,9 +252,9 @@ example : ((((), (0 : data.E)), (fun _ => ())), (fun _ => coordinatePoly)) ∈
     intro i
     simp [coordinatePoly]
 
-/-- The head has certified worst-case error `2/3` with this nonfunctional commitment. -/
+/-- The head has certified round-by-round error `2/3` with this nonfunctional commitment. -/
 example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    Verifier.rbrKnowledgeSoundnessWorstCaseWith init impl
+    Verifier.rbrKnowledgeSoundnessWith init impl
       (Head.relIn data 1 pointLayout pointBound)
       (Head.relOut data 1 pointLayout bat.toBatchingRule pointBound)
       (Head.verifier data 1 pointLayout codec bat.toBatchingRule pointBound).toVerifier
@@ -262,7 +262,7 @@ example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ Prob
       (Head.extractor (M := data.ιP → data.E) data 1 pointLayout bat.toBatchingRule pointBound)
       (Head.knowledgeStateFunction data 1 pointLayout codec bat.toBatchingRule pointBound init impl)
       (Head.rbrError (M := data.ιP → data.E) data bat) :=
-  Head.rbrKnowledgeSoundnessWorstCaseWith_of_partials_eq data 1 pointLayout codec bat pointBound
+  Head.rbrKnowledgeSoundnessWith_of_partials_eq data 1 pointLayout codec bat pointBound
     (fun _ _ _ _ hp hp' i => (hp i).trans (hp' i).symm) (fun _ _ h => h) init impl
 
 /-- info: 'RingSwitching.Packing.Head.pr_exists_derivedTarget_le_of_partials_eq' depends on axioms:
@@ -270,9 +270,9 @@ example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ Prob
 #guard_msgs (whitespace := lax) in
 #print axioms Head.pr_exists_derivedTarget_le_of_partials_eq
 
-/-- info: 'RingSwitching.Packing.Head.rbrKnowledgeSoundnessWorstCaseWith_of_partials_eq'
+/-- info: 'RingSwitching.Packing.Head.rbrKnowledgeSoundnessWith_of_partials_eq'
 depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
-#print axioms Head.rbrKnowledgeSoundnessWorstCaseWith_of_partials_eq
+#print axioms Head.rbrKnowledgeSoundnessWith_of_partials_eq
 
 end RingSwitching.Packing.Tests.Head

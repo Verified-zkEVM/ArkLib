@@ -35,7 +35,7 @@ for module in ArkLib/Fast ArkLib/Slow ArkLib/New ArkLib/Kept ArkLibTest/Check; d
   : > "$source_root/$module.lean"
 done
 
-python3 - "$current_dir" <<'PY'
+uv run --no-project --python 3.12 python - "$current_dir" <<'PY'
 import json
 import pathlib
 import sys
@@ -102,11 +102,11 @@ rows = [
 PY
 
 cp "$current_dir/module-times-base.json" "$current_dir/module-times.json"
-update_output="$(python3 scripts/module_times.py update "$current_dir/module-times.json" \
+update_output="$(uv run --no-project --python 3.12 python scripts/module_times.py update "$current_dir/module-times.json" \
   --commit "$(printf 'b%.0s' {1..40})" --root "$source_root" \
   "$current_dir/library_build.log" "$current_dir/test_path.log")"
 [ "$update_output" = 'Recorded 4 rebuilt modules; table covers 5 modules, 48s of compile time.' ]
-python3 - "$current_dir/module-times.json" <<'PY'
+uv run --no-project --python 3.12 python - "$current_dir/module-times.json" <<'PY'
 import pathlib
 import sys
 
@@ -127,13 +127,13 @@ PY
 
 # A missing or foreign-schema table starts afresh instead of failing the build.
 fresh_table="$fixture_tmp/fresh/module-times.json"
-python3 scripts/module_times.py update "$fresh_table" --root "$source_root" \
+uv run --no-project --python 3.12 python scripts/module_times.py update "$fresh_table" --root "$source_root" \
   "$current_dir/library_build.log" > /dev/null
 printf '{"schema_version": 99, "modules": {"ArkLib.Kept": {"seconds": 1, "decimals": 0}}}' \
   > "$fixture_tmp/foreign.json"
-python3 scripts/module_times.py update "$fixture_tmp/foreign.json" --root "$source_root" \
+uv run --no-project --python 3.12 python scripts/module_times.py update "$fixture_tmp/foreign.json" --root "$source_root" \
   "$current_dir/library_build.log" > /dev/null
-python3 - "$fresh_table" "$fixture_tmp/foreign.json" <<'PY'
+uv run --no-project --python 3.12 python - "$fresh_table" "$fixture_tmp/foreign.json" <<'PY'
 import json
 import pathlib
 import sys
@@ -189,7 +189,7 @@ BUILD_TIMING_LOG_DIR="$up_to_date_dir" \
   > "$fixture_tmp/up-to-date.md"
 grep -Fq -- 'No module was rebuilt' "$fixture_tmp/up-to-date.md"
 
-python3 - "$current_dir/metadata.json" <<'PY'
+uv run --no-project --python 3.12 python - "$current_dir/metadata.json" <<'PY'
 import json
 import pathlib
 import sys
@@ -203,7 +203,7 @@ BUILD_TIMING_LOG_DIR="$current_dir" \
 grep -Fq -- 'unsupported timing metadata schema 99; expected 1' \
   "$fixture_tmp/wrong-schema.md"
 
-python3 - "$current_dir/metadata.json" <<'PY'
+uv run --no-project --python 3.12 python - "$current_dir/metadata.json" <<'PY'
 import pathlib
 import sys
 
@@ -230,8 +230,8 @@ RUNNER_OS=Linux \
 RUNNER_ARCH=X64 \
 ImageOS=ubuntu24 \
 ImageVersion=20260820.1 \
-  python3 scripts/build_timing_metadata.py "$written_metadata"
-python3 - "$written_metadata" <<'PY'
+  uv run --no-project --python 3.12 python scripts/build_timing_metadata.py "$written_metadata"
+uv run --no-project --python 3.12 python - "$written_metadata" <<'PY'
 import pathlib
 import sys
 

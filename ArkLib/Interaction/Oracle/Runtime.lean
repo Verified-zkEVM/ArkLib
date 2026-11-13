@@ -9,9 +9,9 @@ public import ArkLib.Interaction.Oracle.LoggedRun
 public import VCVio.OracleComp.Runtime
 
 /-!
-# Executing native strategies in a persistent runtime
+# Executing strategies in a persistent runtime
 
-The runtime runs one source-logged native strategy program and returns its output, final state,
+The runtime runs one source-logged strategy program and returns its output, final state,
 and ordered ambient query log together. Reduction setup remains inside that same runtime run.
 Source queries stay in `LoggedRun.sourceLog`; ambient queries stay
 in the runtime's query log. Closing is derived from the returned core's own resources.
@@ -33,7 +33,7 @@ variable {ι κ : Type} {imports : OracleSpec ι} {ambient : OracleSpec κ}
     {Out : (path : protocol.tree.BranchPath) → OracleFamily (Idx path) (Obj path)}
     {OutP : protocol.tree.ExecutionPath → Type}
 
-/-- Run native strategies in one initialized runtime, retaining source and ambient observations. -/
+/-- Run strategies in one initialized runtime, retaining source and ambient observations. -/
 def executeStrategiesWithRuntime (runtime : OracleRuntime imports ambient)
     (impl : QueryImpl (OracleSpec.ofPFunctor initial) Id)
     (prover : Prover.Strategy ambient protocol.tree protocol.roles OutP)
@@ -42,7 +42,7 @@ def executeStrategiesWithRuntime (runtime : OracleRuntime imports ambient)
     OracleComp imports (RunResult runtime (LoggedRun protocol initial Stmt Out OutP)) :=
   runtime.run (executeStrategiesLoggedRun impl prover verifier)
 
-/-- Native runtime execution uses the same source-logged strategy program. -/
+/-- Runtime execution uses the same source-logged strategy program. -/
 theorem executeStrategiesWithRuntime_eq (runtime : OracleRuntime imports ambient)
     (impl : QueryImpl (OracleSpec.ofPFunctor initial) Id)
     (prover : Prover.Strategy ambient protocol.tree protocol.roles OutP)

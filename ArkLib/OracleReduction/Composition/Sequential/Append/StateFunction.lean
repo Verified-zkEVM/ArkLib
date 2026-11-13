@@ -79,11 +79,8 @@ def RoundByRound.append
     (verify : Stmt₁ → pSpec₁.FullTranscript → Stmt₂) :
       Extractor.RoundByRound oSpec Stmt₁ Wit₁ Wit₃ (pSpec₁ ++ₚ pSpec₂)
         (Fin.append (m := m + 1) WitMid₁ (Fin.tail WitMid₂) ∘ Fin.cast (by omega)) where
-  eqIn := by
-    simp only [Fin.append, Function.comp_apply, Fin.addCases, Fin.cast_zero,
-      Fin.coe_ofNat_eq_mod, Nat.zero_mod, lt_add_iff_pos_left,
-      Order.lt_add_one_iff, zero_le, ↓reduceDIte, Fin.castLT, Fin.zero_eta]
-    exact E₁.eqIn
+  extractIn := fun stmt w => E₁.extractIn stmt
+    (cast (wit_mid_append_left (WitMid₂ := WitMid₂) 0 0 rfl) w)
   extractMid := fun idx stmt₁ tr h => by
     have hidx := idx.isLt
     -- Re-expose the transcript with a transparent round bound, so that `omega` can discharge
@@ -107,15 +104,15 @@ def RoundByRound.append
         exact cast (wit_mid_append_left (WitMid₂ := WitMid₂) idx.castSucc (Fin.last m)
             (by simp [heq])).symm
           (E₁.extractOut stmt₁ tr₁
-            (cast (show WitMid₂ (⟨0, hn⟩ : Fin n).castSucc = Wit₂ by
-                rw [show ((⟨0, hn⟩ : Fin n).castSucc) = 0 from by ext; simp]; exact E₂.eqIn)
+            (E₂.extractIn (verify stmt₁ tr₁)
+              (cast (congrArg WitMid₂ (show (⟨0, hn⟩ : Fin n).castSucc = 0 by ext; simp))
               (E₂.extractMid ⟨0, hn⟩ (verify stmt₁ tr₁)
                 (show pSpec₂.Transcript ⟨1, by omega⟩ from fun i =>
                   cast (ProtocolSpec.append_Type_natAdd (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂)
                     ⟨i.val, by have : i.val < 1 := i.isLt; omega⟩)
                     (tr' ⟨m + i.val, by have : i.val < 1 := i.isLt; omega⟩))
                 (cast (wit_mid_append_right (WitMid₁ := WitMid₁) idx.succ (⟨0, hn⟩ : Fin n).succ
-                  (by simp [heq]) (by simp)) h))))
+                  (by simp [heq]) (by simp)) h)))))
       · have hk : idx.val - m < n := by omega
         exact cast (wit_mid_append_right (WitMid₁ := WitMid₁) idx.castSucc
             (⟨idx.val - m, hk⟩ : Fin n).castSucc (by simp; omega) (by simp; omega)).symm
@@ -134,9 +131,9 @@ def RoundByRound.append
     · exact cast (wit_mid_append_left (WitMid₂ := WitMid₂) (Fin.last (m + n)) (Fin.last m)
           (by simp; omega)).symm
         (E₁.extractOut stmt₁ tr.fst
-          (cast (show WitMid₂ (Fin.last n) = Wit₂ by
-              rw [show (Fin.last n) = 0 from by ext; simp; omega]; exact E₂.eqIn)
-            (E₂.extractOut (verify stmt₁ tr.fst) tr.snd wit₃)))
+          (E₂.extractIn (verify stmt₁ tr.fst)
+            (cast (congrArg WitMid₂ (show Fin.last n = 0 by ext; simp; omega))
+              (E₂.extractOut (verify stmt₁ tr.fst) tr.snd wit₃))))
 
 end Extractor
 
@@ -304,22 +301,14 @@ def StateFunction.append
       S₂ ⟨roundIdx - m, by omega⟩ (verify stmt₁ transcript₁)
         (by simpa [h] using transcript.snd)
   toFun_empty := by
-    intro stmt
-    split
-    · constructor <;> intro h
-      · have h' := (S₁.toFun_empty stmt).mp h
-        convert h' using 2
-        · rfl
-        · apply heq_of_eq
-          funext i
-          exact Fin.elim0 i
-      · exact (S₁.toFun_empty stmt).mpr
-          (by
-            convert h using 2
-            · rfl
-            · apply heq_of_eq
-              funext i
-              exact Fin.elim0 i)
+    intro stmt h
+    split at h
+    · apply S₁.toFun_empty stmt
+      convert h using 2
+      · rfl
+      · apply heq_of_eq
+        funext i
+        exact Fin.elim0 i
     · exact absurd (Nat.zero_le m) ‹_›
   toFun_next := by
     intro j hDir stmt tr hnot msg
@@ -419,7 +408,7 @@ def StateFunction.append
           (fun i => Fin.elim0 i) := by
         intro hc
         exact verify_notMem_of_not_toFun S₁ hVerify stmt _ hS₁
-          ((S₂.toFun_empty _).mpr (stateFunction_toFun_heq S₂ (Fin.ext (by simp)) rfl
+          (S₂.toFun_empty _ (stateFunction_toFun_heq S₂ (Fin.ext (by simp)) rfl
             (heq_of_eq (funext fun i => Fin.elim0 i)) hc))
       -- The second protocol's half of the new transcript is exactly its single new message.
       have hSnd : HEq ((Transcript.concat msg tr).snd)
@@ -510,7 +499,7 @@ def StateFunction.append
           ((transcript_fst_heq_full tr).symm.trans (cast_heq _ _).symm) hc)
       refine S₂.toFun_full _ _ fun hc => ?_
       exact verify_notMem_of_not_toFun S₁ hVerify stmt (FullTranscript.fst tr) hS₁
-        ((S₂.toFun_empty _).mpr (stateFunction_toFun_heq S₂ (Fin.ext (by simp)) rfl
+        (S₂.toFun_empty _ (stateFunction_toFun_heq S₂ (Fin.ext (by simp)) rfl
           (heq_of_eq (funext fun i => Fin.elim0 i)) hc))
     · -- `pSpec₂` is non-empty, so the appended protocol's last round lies in the `else` branch and
       -- `hnot` is literally the hypothesis of `S₂`'s own `toFun_full`.
@@ -637,7 +626,7 @@ theorem StateFunction.append_transition_right
   have hnot₂ : ¬ S₂.toFun j.castSucc (verify stmt T₁) T₂ := by
     intro hc
     by_cases heq : j.val = 0
-    · exact hmem ((S₂.toFun_empty _).mpr (stateFunction_toFun_heq S₂
+    · exact hmem (S₂.toFun_empty _ (stateFunction_toFun_heq S₂
         (Fin.ext (by simp; omega)) rfl
         (Transcript.heq_ext (k := j.castSucc) (k' := 0) (by simp; omega)
           (fun i hi _ => by have : i < j.val := hi; omega)) hc))

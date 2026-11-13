@@ -137,23 +137,6 @@ end Degrees
 
 section DegreeOf
 
--- TODO we can prove equality here if R is a domain
--- theorem degreeOf_mul_eq' [IsDomain R] (i : σ) (f g : MvPolynomial σ R) :
---     degreeOf i (f * g) = degreeOf i f + degreeOf i g := by
---   classical
---   repeat' rw [degreeOf]
---   simp [degreeOf]
-
--- TODO in the following we have equality iff f ≠ 0
--- theorem degreeOf_mul_X_eq' (j : σ) (f : MvPolynomial σ R) (h : f ≠ 0) :
---     degreeOf j (f * X j) = degreeOf j f + 1 := by
---   classical
---   repeat' rw [degreeOf]
---   apply (Multiset.count_add j (degrees_mul f (X j))).trans
---   simp only [Multiset.count_add, add_le_add_iff_left]
---   convert Multiset.count_le_of_le j (degrees_X' (R := R) j)
---   rw [Multiset.count_singleton_self]
-
 /-- Variant of `degreeOf_X` with no `DecidableEq` on `σ` or `Nontrivial` condition on `R` -/
 theorem degreeOf_X_le (i j : σ) : degreeOf i (X (R := R) j) ≤ 1 := by
   classical
@@ -165,24 +148,6 @@ theorem degreeOf_linear_le {a b : R} : degreeOf n (C a + C b * p) ≤ degreeOf n
   apply le_trans (degreeOf_add_le _ _ _) _
   rw [max_def]
   split_ifs <;> simp [degreeOf_C_mul_le]
-
--- theorem degreeOf_pow_le (i : σ) (n : ℕ) (p : MvPolynomial σ R) :
---     degreeOf i (p ^ n) ≤ n * degreeOf i p := by
---   classical
---   repeat' rw [degreeOf]
---   convert Multiset.count_le_of_le i (degrees_pow p n)
---   rw [Multiset.count_nsmul]
-
--- theorem degreeOf_sum_le (n : σ) (s : Finset ι) (f : ι → MvPolynomial σ R) :
---     degreeOf n (∑ i in s, f i) ≤ s.sup fun i => degreeOf n (f i) := by
---   simp_rw [degreeOf_eq_sup]
---   exact supDegree_sum_le
-
--- theorem degreeOf_prod_le (n : σ) (s : Finset ι) (f : ι → MvPolynomial σ R) :
---     degreeOf n (∏ i in s, f i) ≤ ∑ i in s, (f i).degreeOf n := by
---   simp_rw [degreeOf_eq_sup]
---   exact supDegree_prod_le (by simp only [coe_zero, Pi.zero_apply])
---     (fun _ _ => by simp only [coe_add, Pi.add_apply])
 
 theorem mem_restrictDegree_iff_degreeOf_le (p : MvPolynomial σ R) (n : ℕ) :
     p ∈ restrictDegree σ R n ↔ ∀ i, p.degreeOf i ≤ n := by
@@ -203,6 +168,13 @@ theorem totalDegree_le_card_mul_of_mem_restrictDegree [Fintype σ] (p : MvPolyno
         rw [Finsupp.sum_fintype]; intro i; rfl
     _ ≤ ∑ _i : σ, n := Finset.sum_le_sum (fun i _ => hp s hs i)
     _ = Fintype.card σ * n := by simp [Finset.sum_const, mul_comm]
+
+/-- A polynomial in finitely many variables of degree at most one in each variable has total
+degree at most the number of variables. -/
+theorem totalDegree_le_card_of_degreeOf_le_one [Fintype σ] (p : MvPolynomial σ R)
+    (hp : ∀ i, p.degreeOf i ≤ 1) : p.totalDegree ≤ Fintype.card σ := by
+  simpa using totalDegree_le_card_mul_of_mem_restrictDegree p 1
+    ((mem_restrictDegree_iff_degreeOf_le p 1).mpr hp)
 
 /-- If every variable's degree in `P` is strictly less than `d`, the total degree is at most
 `m * (d - 1)` for `m` variables. Strict-inequality corollary of
@@ -288,32 +260,21 @@ attribute [aesop unsafe 50%] degreeOf_add_le degreeOf_mul_le degreeOf_sum_le deg
 
 variable [CommSemiring R]
 
--- theorem degreeOf_add_le' {n : σ} {d : ℕ} {f g : MvPolynomial σ R}
---     (hf : degreeOf n f ≤ d) (hg : degreeOf n g ≤ d) : degreeOf n (f + g) ≤ d :=
---   le_trans (degreeOf_add_le _ _ _) (max_le hf hg)
+/-- A common bound on two individual degrees also bounds their sum. -/
+theorem degreeOf_add_le' {n : σ} {d : ℕ} {f g : MvPolynomial σ R}
+    (hf : degreeOf n f ≤ d) (hg : degreeOf n g ≤ d) : degreeOf n (f + g) ≤ d :=
+  le_trans (degreeOf_add_le _ _ _) (max_le hf hg)
 
--- theorem degreeOf_mul_le' {n : σ} {d : ℕ} {f g : MvPolynomial σ R}
---     (h : degreeOf n f + degreeOf n g ≤ d) : degreeOf n (f * g) ≤ d :=
---   le_trans (degreeOf_mul_le _ _ _) h
+/-- A bound on the sum of individual degrees bounds the degree of the product. -/
+theorem degreeOf_mul_le' {n : σ} {d : ℕ} {f g : MvPolynomial σ R}
+    (h : degreeOf n f + degreeOf n g ≤ d) : degreeOf n (f * g) ≤ d :=
+  le_trans (degreeOf_mul_le _ _ _) h
 
--- theorem degreeOf_sum_le' {n : σ} {d : ℕ} {f : ι → MvPolynomial σ R}
---     (h : ∀ i, degreeOf n (f i) ≤ d) :
---     degreeOf n (∑ i, f i) ≤ d :=
---   le_trans (degreeOf_sum_le _ _ _) (Finset.sup_le h)
-
--- theorem degreeOf_prod_le' {n : σ} {d : ℕ} {f : ι → MvPolynomial σ R}
---     (h : ∀ i, degreeOf n (f i) ≤ d) :
---     degreeOf n (∏ i, f i) ≤ d :=
---   le_trans (degreeOf_prod_le _ _ _) (Finset.sum_le_sum h)
-
--- attribute [aesop unsafe 80%] degreeOf_add_le' degreeOf_mul_le' degreeOf_X_le add_le_add
--- degreeOf_sum_le' degreeOf_prod_le'
-  -- degreeOf_X_le
-
--- theorem test [CommSemiring R] [Nontrivial R] :
---     degreeOf (R := R) (σ := Fin 3) 0 (X 0 * X 1) ≤ 1 := by
---   exact le_trans (le_trans (degreeOf_mul_le _ _ _)
---         (add_le_add (le_of_eq (degreeOf_X _ _)) (le_of_eq (degreeOf_X _ _)))) (by norm_num)
+/-- A uniform individual-degree bound is preserved by a finite sum. -/
+theorem degreeOf_sum_le' [Fintype ι] {n : σ} {d : ℕ} {f : ι → MvPolynomial σ R}
+    (h : ∀ i, degreeOf n (f i) ≤ d) :
+    degreeOf n (∑ i, f i) ≤ d :=
+  le_trans (degreeOf_sum_le _ _ _) (Finset.sup_le fun i _ => h i)
 
 end Aesop
 

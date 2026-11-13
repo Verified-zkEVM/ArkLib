@@ -317,11 +317,6 @@ section Vector
 
 variable {n : ℕ} {α : Type*}
 
-/- Vectors of the form `Fin n → α` can be accessed via queries on their indices. We no longer have
-   this instance separately since it can be inferred from the instance for `Function`. -/
--- instance instOracleInterfaceForallFin :
---     OracleInterface (Fin n → α) := OracleInterface.instFunction
-
 /-- Vectors of the form `List.Vector α n` can be accessed via queries on their indices. -/
 instance instListVector : OracleInterface (List.Vector α n) where
   Query := (Fin n)

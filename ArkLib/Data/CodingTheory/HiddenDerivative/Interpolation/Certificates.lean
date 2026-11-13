@@ -160,14 +160,21 @@ namespace HiddenDerivativeInterpolationCertificate
 
 variable {n q k A d m : ℕ} {domain : Fin n ↪ ZMod q} {received : Fin n → ZMod q}
 
-/-- For prime `q`, the ambient degree and every jet degree of the certificate are strictly below
+/-- The ambient degree and every jet degree of the certificate are strictly below
 `q = ringChar (ZMod q)`. The first half uses `ambientDim ≤ n ≤ q`, where `n ≤ q` holds because
 `domain` is injective; the second half applies the cast hypothesis at `q`, which is `0` in
 `ZMod q`. -/
-theorem below_characteristic [Fact q.Prime]
+theorem below_characteristic
     (c : HiddenDerivativeInterpolationCertificate (k := k) (A := A) d m domain received) :
     c.ambientDim - 1 < q ∧ ∀ j, jetDegree c.interpolant j < q := by
-  have hq := (Fact.out : q.Prime).pos
+  have hq : 0 < q := by
+    by_contra hq
+    have hdegree := c.weighted_degree_lt
+    have hbudget := c.contact_budget_le
+    have hzero : q = 0 := by omega
+    simp only [hzero, zero_pow (by decide : 2 ≠ 0)] at hbudget
+    omega
+  have : NeZero q := ⟨by omega⟩
   refine ⟨?_, fun j ↦ ?_⟩
   · have hnq : n ≤ q := by
       simpa using Fintype.card_le_of_embedding domain

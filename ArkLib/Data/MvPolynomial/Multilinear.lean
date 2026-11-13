@@ -72,13 +72,6 @@ theorem singleEqPolynomial_zeroOne_C (r : Fin 2) (x : Fin 2) :
     (singleEqPolynomial (r : R) (C x) : MvPolynomial σ R) = if x = r then 1 else 0 := by
   fin_cases r <;> fin_cases x <;> simp
 
--- @[simp]
--- theorem singleEqPolynomial_eval_zeroOne (x : Fin n → Fin 2) (r : Fin n → Fin 2) (i : Fin n) :
---     (eval fun i => ↑↑(x i))
---     (match r i with
---     | 0 => 1 - X i
---     | 1 => X i) = 1 := by
-
 variable [Fintype σ]
 
 abbrev eqPolynomial' : R[X (σ ⊕ σ)] :=
@@ -177,6 +170,15 @@ theorem MLE_eval (x : σ → R) (evals : (σ → Fin 2) → R) :
     eval x (MLE evals) =
       ∑ b : σ → Fin 2, eqTilde (b : σ → R) x * evals b := by
   simp only [MLE, eval_sum, eval_mul, eval_C, eqTilde]
+
+/-- Evaluation of an integer-indexed Boolean table in the equality-kernel basis. -/
+theorem MLE'_eval {n : ℕ} (r : Fin n → R) (v : Fin (2 ^ n) → R) :
+    eval r (MLE' v) = ∑ j : Fin (2 ^ n),
+      eqTilde (finFunctionFinEquiv.symm j : Fin n → R) r * v j := by
+  rw [MLE', MLE_eval]
+  simpa only [Equiv.symm_apply_apply, Function.comp_apply] using
+    (finFunctionFinEquiv.sum_comp (fun j : Fin (2 ^ n) =>
+      eqTilde (finFunctionFinEquiv.symm j : Fin n → R) r * v j))
 
 @[simp]
 theorem MLE_eval_zeroOne (x : σ → Fin 2) (evals : (σ → Fin 2) → R) :

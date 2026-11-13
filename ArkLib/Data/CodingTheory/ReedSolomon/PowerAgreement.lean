@@ -9,6 +9,7 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
 public import ArkLib.Data.CodingTheory.InterleavedCode.ExactAgreement
 public import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
 public import ArkLib.Data.Polynomial.SpecializationAvoidance
+public import ArkLib.Data.Polynomial.GeneratorBatch
 public import Mathlib.Algebra.Polynomial.Expand
 public import Mathlib.Algebra.Polynomial.OfFn
 public import Mathlib.LinearAlgebra.Lagrange
@@ -45,7 +46,7 @@ interleaved statements are in `ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.
 
 ## Main definitions
 
-* `ReedSolomon.powerBatchedWord`, `ReedSolomon.powerBatchedPolynomial`: batching of received
+* `ReedSolomon.powerBatchedWord`, `Polynomial.powerBatch`: batching of received
   words and of message polynomials.
 * `ReedSolomon.commonCurveAgreementSet`: coordinates where every `P t` agrees with `w t`.
 * `ReedSolomon.polynomialTupleFamily`: the interpolant tuples on `k`-element samples.
@@ -117,21 +118,6 @@ variable {F ι : Type*} [Field F] {ℓ : ℕ}
 challenge: `i ↦ ∑ t, z ^ t * w t i`. -/
 def powerBatchedWord (w : Fin (ℓ + 1) → ι → F) (z : F) : ι → F :=
   fun i ↦ ∑ t, z ^ t.val * w t i
-
-/-- The combination `∑ t, z ^ t • P t` of message polynomials. -/
-def powerBatchedPolynomial (P : Fin (ℓ + 1) → F[X]) (z : F) : F[X] :=
-  ∑ t, z ^ t.val • P t
-
-/-- Batching preserves the degree bound `degree < k`, including for `k = 0`. -/
-theorem powerBatchedPolynomial_degree_lt (P : Fin (ℓ + 1) → F[X]) (z : F) (k : ℕ)
-    (hP : ∀ t, (P t).degree < k) : (powerBatchedPolynomial P z).degree < k := by
-  rw [← mem_degreeLT]
-  exact Submodule.sum_mem _ fun t _ ↦ Submodule.smul_mem _ _ (mem_degreeLT.mpr (hP t))
-
-/-- Evaluation commutes with batching. -/
-theorem powerBatchedPolynomial_eval (P : Fin (ℓ + 1) → F[X]) (z x : F) :
-    (powerBatchedPolynomial P z).eval x = ∑ t, z ^ t.val * (P t).eval x := by
-  simp [powerBatchedPolynomial, eval_finsetSum]
 
 /-- The coordinates where every polynomial `P t` agrees with its received word `w t`. -/
 def commonCurveAgreementSet [DecidableEq F] [Fintype ι] (domain : ι ↪ F)
@@ -253,8 +239,8 @@ word at coordinate `i`. -/
 theorem curveDiscrepancy_eval (domain : ι ↪ F) (w : Fin (ℓ + 1) → ι → F)
     (P : Fin (ℓ + 1) → F[X]) (i : ι) (z : F) :
     (curveDiscrepancy domain w P i).eval z =
-      (powerBatchedPolynomial P z).eval (domain i) - powerBatchedWord w z i := by
-  simp [curveDiscrepancy, powerBatchedCoordinate_eval, powerBatchedPolynomial_eval,
+      (Polynomial.powerBatch P z).eval (domain i) - powerBatchedWord w z i := by
+  simp [curveDiscrepancy, powerBatchedCoordinate_eval, Polynomial.powerBatch_eval,
     powerBatchedWord, mul_sub, Finset.sum_sub_distrib]
 
 /-- The discrepancy at `i` is the zero polynomial exactly when every `P t` agrees with `w t`
@@ -277,7 +263,7 @@ theorem exists_exceptional_powerBatched_agreement (domain : ι ↪ F) (w : Fin (
     (P : Fin (ℓ + 1) → F[X]) (L : ℕ) (hcommon : L ≤ (commonCurveAgreementSet domain w P).card) :
     ∃ exceptional : Finset F, exceptional.card ≤ ℓ * (Fintype.card ι - L) ∧
       ∀ z ∉ exceptional,
-        polynomialAgreementSet domain (powerBatchedWord w z) (powerBatchedPolynomial P z) =
+        polynomialAgreementSet domain (powerBatchedWord w z) (Polynomial.powerBatch P z) =
           commonCurveAgreementSet domain w P := by
   classical
   obtain ⟨exceptional, hcard, hgood⟩ := exists_card_le_forall_eval_eq_zero_iff
@@ -299,7 +285,7 @@ theorem exists_exceptional_powerBatched_family (domain : ι ↪ F) (w : Fin (ℓ
     (hcommon : ∀ P ∈ family, L ≤ (commonCurveAgreementSet domain w P).card) :
     ∃ exceptional : Finset F, exceptional.card ≤ family.card * (ℓ * (Fintype.card ι - L)) ∧
       ∀ P ∈ family, ∀ z ∉ exceptional,
-        polynomialAgreementSet domain (powerBatchedWord w z) (powerBatchedPolynomial P z) =
+        polynomialAgreementSet domain (powerBatchedWord w z) (Polynomial.powerBatch P z) =
           commonCurveAgreementSet domain w P := by
   classical
   choose! ex hcard hgood using fun P hP ↦
@@ -411,15 +397,15 @@ theorem exists_polynomialGraph_of_sample (domain : ι ↪ F) (w : Fin (ℓ + 1) 
       (∀ i ∈ samples, ∀ t, (P t).eval (domain i) = w t i) ∧
       ∀ {E : Type*} [Field E] (φ : F →+* E) (z : E) (Q : E[X]), Q.degree < k →
         (∀ i ∈ samples, Q.eval (φ (domain i)) = ∑ t, z ^ t.val * φ (w t i)) →
-        Q = powerBatchedPolynomial (fun t ↦ (P t).map φ) z := by
+        Q = Polynomial.powerBatch (fun t ↦ (P t).map φ) z := by
   obtain ⟨P, hP, hs⟩ := exists_polynomialTuple_interpolating domain w samples hcard.le
   refine ⟨P, hP, hs, fun φ z Q hQ hQs ↦ ?_⟩
   subst hcard
   refine eq_of_degrees_lt_of_eval_index_eq samples
     (fun _ _ _ _ h ↦ domain.injective (φ.injective h)) hQ
-    (powerBatchedPolynomial_degree_lt _ z _ fun t ↦ degree_map_le.trans_lt (hP t))
+    (Polynomial.degree_powerBatch_lt _ z _ fun t ↦ degree_map_le.trans_lt (hP t))
     fun i hi ↦ ?_
-  rw [powerBatchedPolynomial_eval, hQs i hi]
+  rw [Polynomial.powerBatch_eval, hQs i hi]
   simp [eval_map, eval₂_at_apply, hs i hi]
 
 end Interpolation
@@ -433,12 +419,6 @@ theorem powerBatchedWord_map (w : Fin (ℓ + 1) → ι → F) (φ : F →+* E) (
     powerBatchedWord (fun t i ↦ φ (w t i)) (φ z) = fun i ↦ φ (powerBatchedWord w z i) := by
   funext i
   simp [powerBatchedWord]
-
-/-- Mapping the batched polynomial along `φ : F →+* E` batches the mapped polynomials at `φ z`. -/
-theorem powerBatchedPolynomial_map (P : Fin (ℓ + 1) → F[X]) (φ : F →+* E) (z : F) :
-    (powerBatchedPolynomial P z).map φ =
-      powerBatchedPolynomial (fun t ↦ (P t).map φ) (φ z) := by
-  simp [powerBatchedPolynomial, smul_eq_C_mul, Polynomial.map_sum]
 
 end ScalarExtension
 
@@ -457,7 +437,7 @@ in this file use `φ = RingHom.id F`. -/
 def HasExactPowerAgreement (domain : ι ↪ F) (w : Fin (ℓ + 1) → ι → F) (φ : F →+* E) (k : ℕ)
     (z : E) (Q : E[X]) : Prop :=
   ∃ P : Fin (ℓ + 1) → F[X], (∀ t, (P t).degree < k) ∧
-    Q = powerBatchedPolynomial (fun t ↦ (P t).map φ) z ∧
+    Q = Polynomial.powerBatch (fun t ↦ (P t).map φ) z ∧
     polynomialAgreementSet (domain.trans ⟨φ, φ.injective⟩)
         (powerBatchedWord (fun t i ↦ φ (w t i)) z) Q =
       commonCurveAgreementSet domain w P
@@ -479,7 +459,7 @@ of the `P t`. -/
 theorem hasExactPowerAgreement_id_iff (domain : ι ↪ F) (w : Fin (ℓ + 1) → ι → F) (k : ℕ) (z : F)
     (Q : F[X]) :
     HasExactPowerAgreement domain w (RingHom.id F) k z Q ↔
-      ∃ P : Fin (ℓ + 1) → F[X], (∀ t, (P t).degree < k) ∧ Q = powerBatchedPolynomial P z ∧
+      ∃ P : Fin (ℓ + 1) → F[X], (∀ t, (P t).degree < k) ∧ Q = Polynomial.powerBatch P z ∧
         polynomialAgreementSet domain (powerBatchedWord w z) Q =
           commonCurveAgreementSet domain w P := by
   have hdomain : domain.trans ⟨RingHom.id F, (RingHom.id F).injective⟩ = domain :=
@@ -497,7 +477,7 @@ theorem hasExactPowerAgreement_singleton (domain : ι ↪ F) (w : Fin 1 → ι �
   obtain ⟨sample, hsample, hcard⟩ := Finset.exists_subset_card_eq hagree
   obtain ⟨P, hPdegree, _hPsample, hrecognize⟩ :=
     exists_polynomialGraph_of_sample domain w sample hcard
-  have hQ : Q = powerBatchedPolynomial (fun t ↦ (P t).map iota) z := by
+  have hQ : Q = Polynomial.powerBatch (fun t ↦ (P t).map iota) z := by
     apply hrecognize iota z Q hdegree
     intro i hi
     have hi' := (Finset.mem_filter.mp (hsample hi)).2
@@ -507,7 +487,7 @@ theorem hasExactPowerAgreement_singleton (domain : ι ↪ F) (w : Fin 1 → ι �
   ext i
   simp only [polynomialAgreementSet, commonCurveAgreementSet, Finset.mem_filter,
     Finset.mem_univ, true_and]
-  rw [hQ, powerBatchedPolynomial_eval]
+  rw [hQ, Polynomial.powerBatch_eval]
   simp [powerBatchedWord, Polynomial.eval_map, Polynomial.eval₂_at_apply,
     iota.injective.eq_iff]
 
@@ -517,13 +497,13 @@ theorem uniformExactPowerAgreement_singleton (domain : ι ↪ F) (w : Fin 1 → 
     UniformExactPowerAgreement domain w k L 0 := by
   refine ⟨∅, by simp, fun z _ Q hQ _ ↦ ?_⟩
   refine (hasExactPowerAgreement_id_iff _ _ _ _ _).mpr ⟨fun _ ↦ Q, fun _ ↦ hQ, ?_, ?_⟩
-  · simp [powerBatchedPolynomial]
+  · simp [Polynomial.powerBatch]
   · ext i
     simp [powerBatchedWord]
 
-/-- At full message dimension, one tuple of interpolants explains every candidate that agrees
-with the batched word on all coordinates, and its agreement set is the tuple's common agreement
-set. -/
+/-- At full message dimension, polynomial tuples of degree `< |ι|` exist, and every candidate
+of degree `< |ι|` that agrees with the batched word on all coordinates admits a tuple witnessing
+exact power agreement. Its witness may depend on the challenge and candidate. -/
 theorem exists_exactPower_fullDimension (domain : ι ↪ F) (w : Fin (ℓ + 1) → ι → F) :
     ∃ P : Fin (ℓ + 1) → F[X], (∀ t, (P t).degree < Fintype.card ι) ∧
       ∀ z (Q : F[X]), Q.degree < Fintype.card ι →
@@ -585,7 +565,7 @@ theorem HasExactPowerAgreement.descend {domain : ι ↪ F} {w : Fin (ℓ + 1) �
     HasExactPowerAgreement domain w (RingHom.id F) k z Q := by
   obtain ⟨P, hP, heq, hagree⟩ := h
   refine (hasExactPowerAgreement_id_iff domain w k z Q).mpr ⟨P, hP, ?_, ?_⟩
-  · exact map_injective φ φ.injective (heq.trans (powerBatchedPolynomial_map P φ z).symm)
+  · exact map_injective φ φ.injective (heq.trans (Polynomial.powerBatch_map P φ z).symm)
   · rwa [powerBatchedWord_map, polynomialAgreementSet_map] at hagree
 
 /-- **Descent of uniform exact power agreement.** Suppose a set `exceptional` of challenges in
@@ -653,7 +633,7 @@ theorem uniformExactPowerAgreement_of_all_samples (domain : ι ↪ F)
         Q.eval (domain i) = ∑ t, z ^ t.val * w t i := by
       intro i hi
       exact (Finset.mem_filter.mp (hsampleSubset hi)).2
-    have hQidentity : Q = powerBatchedPolynomial P z := by
+    have hQidentity : Q = Polynomial.powerBatch P z := by
       simpa only [Polynomial.map_id] using
         hPidentity (RingHom.id F) z Q hQdegree hQsample
     refine (hasExactPowerAgreement_id_iff domain w k z Q).mpr
@@ -697,13 +677,13 @@ theorem exists_powerBatchedPolynomial_eq (domain : ι ↪ F) {k : ℕ} {z : F} {
     (hQ : Q.degree < k) {c' : Fin (ℓ + 1) → ι → F} (hc' : ∀ t, c' t ∈ code domain k)
     (hsum : ∀ i, Q.eval (domain i) = ∑ t, z ^ t.val * c' t i) :
     ∃ P : Fin (ℓ + 1) → F[X], (∀ t, (P t).degree < k) ∧
-      (∀ t i, (P t).eval (domain i) = c' t i) ∧ Q = powerBatchedPolynomial P z := by
+      (∀ t i, (P t).eval (domain i) = c' t i) ∧ Q = Polynomial.powerBatch P z := by
   choose P₀ hP₀ hP₀c using fun t ↦ mem_code_iff_eval.mp (hc' t)
-  set D := Q - powerBatchedPolynomial P₀ z with hD
+  set D := Q - Polynomial.powerBatch P₀ z with hD
   have hDdeg : D ∈ degreeLT F k := Submodule.sub_mem _ (mem_degreeLT.mpr hQ)
-    (mem_degreeLT.mpr (powerBatchedPolynomial_degree_lt P₀ z k hP₀))
+    (mem_degreeLT.mpr (Polynomial.degree_powerBatch_lt P₀ z k hP₀))
   have hDeval (i : ι) : D.eval (domain i) = 0 := by
-    rw [hD, eval_sub, powerBatchedPolynomial_eval, hsum]
+    rw [hD, eval_sub, Polynomial.powerBatch_eval, hsum]
     simp [hP₀c]
   refine ⟨fun t ↦ P₀ t + if t = 0 then D else 0, fun t ↦ ?_, fun t i ↦ ?_, ?_⟩
   · rw [← mem_degreeLT]
@@ -713,9 +693,10 @@ theorem exists_powerBatchedPolynomial_eq (domain : ι ↪ F) {k : ℕ} {z : F} {
     · exact Submodule.zero_mem _
   · dsimp only
     split_ifs <;> simp [hP₀c, hDeval]
-  · simp only [powerBatchedPolynomial, smul_add, Finset.sum_add_distrib, smul_ite, smul_zero,
-      Finset.sum_ite_eq', Finset.mem_univ, ite_true, Fin.val_zero, pow_zero, one_smul]
-    change Q = powerBatchedPolynomial P₀ z + D
+  · simp only [Polynomial.powerBatch, Polynomial.generatorBatch, smul_add,
+      Finset.sum_add_distrib, smul_ite, smul_zero, Finset.sum_ite_eq', Finset.mem_univ,
+      ite_true, Fin.val_zero, pow_zero, one_smul]
+    change Q = Polynomial.powerBatch P₀ z + D
     rw [hD]
     ring
 
@@ -740,7 +721,7 @@ theorem hasExactPowerAgreement_id_iff_hasExactAgreement (domain : ι ↪ F)
     refine ⟨fun t ↦ evalOnPoints domain (P t), fun t ↦
       evalOnPoints_mem_code_of_degree_lt (hP t), ?_, fun i ↦ ?_⟩
     · funext i
-      simp [evalOnPoints, hQP, powerBatchedPolynomial_eval]
+      simp [evalOnPoints, hQP, Polynomial.powerBatch_eval]
     · have := congrArg (i ∈ ·) hset
       simpa [evalOnPoints, powerBatchedWord] using this
   · rintro ⟨c', hc', hcsum, hiff⟩

@@ -48,6 +48,7 @@ namespace ArkLib.Lattices.CyclotomicModulus
 
 variable (q : ℕ) [Fact (Nat.Prime q)] [NeZero q] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
 
+omit [NeZero q] in
 /-- **Vanishing outside the matching residue classes.** If `j`'s index does not match `p`'s
 residue class mod `d/2k`, the `p`-th coefficient of the `j`-th packed summand `a_j · X^{packExp j}`
 is `0`. Combined with `packExp_mod_eq` and the support of fixed elements
@@ -63,13 +64,13 @@ theorem psi_summand_coeff_eq_zero_of_ne_mod (α κ : ℕ) (h2 : (2 : ZMod q) ≠
   rw [Xpow_mul_coeff α (packExp α (2 ^ κ) (j : ℕ)) (packExp_lt α κ hk j)
     (a j : Rq (powTwoCyclotomic (R := ZMod q) α)) hp]
   split_ifs with hle
-  · apply fixedSubring_coeff_eq_zero q α κ h2 hk (a j) (by omega)
+  · apply fixedSubring_coeff_eq_zero q α κ h2 hk (a j)
     intro hdvd
     apply hne
     have hmeq : packExp α (2 ^ κ) (j : ℕ) % 2 ^ (α - κ - 1) = p % 2 ^ (α - κ - 1) :=
       (Nat.modEq_iff_dvd' hle).mpr hdvd
-    rw [packExp_mod_eq α κ hk j] at hmeq; omega
-  · rw [fixedSubring_coeff_eq_zero q α κ h2 hk (a j) (by omega) (by
+    rw [packExp_mod_eq α κ j] at hmeq; omega
+  · rw [fixedSubring_coeff_eq_zero q α κ h2 hk (a j) (by
       intro hdvd
       apply hne
       have hle2 : packExp α (2 ^ κ) (j : ℕ) ≤ p + 2 ^ α := by
@@ -79,7 +80,7 @@ theorem psi_summand_coeff_eq_zero_of_ne_mod (α κ : ℕ) (h2 : (2 : ZMod q) ≠
       have h2z : (2 : ℕ) ^ α % 2 ^ (α - κ - 1) = 0 := by
         rw [show (2 : ℕ) ^ α = 2 ^ (α - κ - 1) * 2 ^ (κ + 1) from by
           rw [← pow_add]; congr 1; omega, Nat.mul_mod_right]
-      rw [packExp_mod_eq α κ hk j, Nat.add_mod, h2z, Nat.add_zero, Nat.mod_mod] at hmeq
+      rw [packExp_mod_eq α κ j, Nat.add_mod, h2z, Nat.add_zero, Nat.mod_mod] at hmeq
       omega),
       neg_zero]
 
@@ -88,77 +89,83 @@ theorem psi_summand_coeff_eq_zero_of_ne_mod (α κ : ℕ) (h2 : (2 : ZMod q) ≠
 entries of `a` whose index matches `p`'s residue class mod `d/2k` (`j₁ := p mod d/2k` from the
 first half, `j₂ := d/2k + p mod d/2k` from the second); all other summands vanish
 (`psi_summand_coeff_eq_zero_of_ne_mod`). The bound then follows from the balanced-representative
-triangle inequality (`ZMod.natAbs_valMinAbs_add_le` / `_neg`). -/
+triangle inequality (`ZMod.natAbs_valMinAbs_add_le` / `_neg`). For `d ≤ p`, the
+coefficient is zero because `ψ(a)` is reduced. -/
 theorem coeff_psi_abs_le_two_vecCInfNorm (α κ : ℕ) (h2 : (2 : ZMod q) ≠ 0)
     (hk : 2 * 2 ^ κ ∣ 2 ^ α) {β : ℕ}
     (a : Fin (2 ^ α / 2 ^ κ) → fixedSubring (R := ZMod q) α (2 ^ κ))
     (ha : (zmodCenteredView q).vecCInfNorm
       (fun i => ((a i : Rq (powTwoCyclotomic (R := ZMod q) α))).1) ≤ β)
-    {p : ℕ} (hp : p < 2 ^ α) :
+    {p : ℕ} :
     (ZMod.valMinAbs ((psi α (2 ^ κ) a).1.coeff p)).natAbs ≤ 2 * β := by
-  have hM0 : 0 < 2 ^ (α - κ - 1) := by positivity
-  have hκ : κ + 1 ≤ α := succ_le_of_two_mul_two_pow_dvd hk
-  have hN : 2 ^ α / 2 ^ κ = 2 * 2 ^ (α - κ - 1) := by
-    have hfac : (2 : ℕ) ^ κ * (2 * 2 ^ (α - κ - 1)) = 2 ^ α := by
-      rw [← Nat.mul_assoc, show (2 : ℕ) ^ κ * 2 = 2 ^ (κ + 1) from by rw [pow_succ], ← pow_add]
-      congr 1; omega
-    rw [← hfac, Nat.mul_div_cancel_left _ (by positivity : 0 < 2 ^ κ)]
-  have hbound : ∀ (i : Fin (2 ^ α / 2 ^ κ)) (pos : ℕ),
-      (ZMod.valMinAbs ((a i : Rq (powTwoCyclotomic (R := ZMod q) α)).1.coeff pos)).natAbs ≤ β := by
-    intro i pos
-    have hv := ha
-    rw [CenteredCoeffView.vecCInfNorm] at hv
-    have hi : (Finset.range ((a i : Rq (powTwoCyclotomic (R := ZMod q) α)).1).size).sup
-        ((zmodCenteredView q).absCoeff (a i : Rq (powTwoCyclotomic (R := ZMod q) α)).1) ≤ β := by
-      rw [← CenteredCoeffView.cInfNorm]
-      exact le_trans (Finset.le_sup (f := fun i => (zmodCenteredView q).cInfNorm
-        ((a i : Rq (powTwoCyclotomic (R := ZMod q) α)).1)) (Finset.mem_univ i)) hv
-    by_cases hpos : pos < ((a i : Rq (powTwoCyclotomic (R := ZMod q) α)).1).size
-    · exact le_trans (Finset.le_sup (f := (zmodCenteredView q).absCoeff
-        (a i : Rq (powTwoCyclotomic (R := ZMod q) α)).1) (Finset.mem_range.mpr hpos)) hi
-    · rw [CompPoly.CPolynomial.coeff_eq_zero_of_size_le _ (Nat.le_of_not_gt hpos),
-        ZMod.valMinAbs_zero]
-      exact Nat.zero_le _
-  have hr : p % 2 ^ (α - κ - 1) < 2 ^ (α - κ - 1) := Nat.mod_lt _ hM0
-  set j₁ : Fin (2 ^ α / 2 ^ κ) := ⟨p % 2 ^ (α - κ - 1), by omega⟩ with hj1
-  set j₂ : Fin (2 ^ α / 2 ^ κ) := ⟨2 ^ (α - κ - 1) + p % 2 ^ (α - κ - 1), by omega⟩ with hj2
-  set t : Fin (2 ^ α / 2 ^ κ) → ZMod q := fun j =>
-    ((a j : Rq (powTwoCyclotomic (R := ZMod q) α))
-      * Xpow (powTwoCyclotomic α) (packExp α (2 ^ κ) (j : ℕ))).1.coeff p with ht_def
-  have hsum : (psi α (2 ^ κ) a).1.coeff p = ∑ j, t j := by
-    unfold psi; rw [← Rq.coeffHom_apply, map_sum]; simp only [ht_def, Rq.coeffHom_apply]
-  have hjne : j₁ ≠ j₂ := by simp only [hj1, hj2, Ne, Fin.mk.injEq]; omega
-  have hwit : ∀ j : Fin (2 ^ α / 2 ^ κ),
-      p % 2 ^ (α - κ - 1) = (j : ℕ) % 2 ^ (α - κ - 1) → j = j₁ ∨ j = j₂ := by
-    intro j heq
-    rcases eq_or_eq_of_mod_eq α κ hk j heq.symm with h | h
-    · left; exact Fin.ext h
-    · right; exact Fin.ext h
-  have hzero : ∀ j : Fin (2 ^ α / 2 ^ κ), j ∉ ({j₁, j₂} : Finset _) → t j = 0 := by
-    intro j hj
-    have hnotwit : p % 2 ^ (α - κ - 1) ≠ (j : ℕ) % 2 ^ (α - κ - 1) := by
-      intro heq
-      rcases hwit j heq with h | h <;> exact hj (by rw [h]; simp)
-    simp only [ht_def]
-    exact psi_summand_coeff_eq_zero_of_ne_mod q α κ h2 hk a hp j hnotwit
-  have ht_bound : ∀ j, (ZMod.valMinAbs (t j)).natAbs ≤ β := by
-    intro j
-    simp only [ht_def]
-    rw [Xpow_mul_coeff α (packExp α (2 ^ κ) (j : ℕ)) (packExp_lt α κ hk j)
-      (a j : Rq (powTwoCyclotomic (R := ZMod q) α)) hp]
-    split_ifs
-    · exact hbound j _
-    · rw [ZMod.natAbs_valMinAbs_neg]; exact hbound j _
-  have hpair : (psi α (2 ^ κ) a).1.coeff p = t j₁ + t j₂ := by
-    rw [hsum, ← Finset.sum_subset (Finset.subset_univ {j₁, j₂}) (fun j _ hj => hzero j hj),
-      Finset.sum_pair hjne]
-  rw [hpair]
-  calc (ZMod.valMinAbs (t j₁ + t j₂)).natAbs
-      ≤ (ZMod.valMinAbs (t j₁) + ZMod.valMinAbs (t j₂)).natAbs :=
-        ZMod.natAbs_valMinAbs_add_le _ _
-    _ ≤ (ZMod.valMinAbs (t j₁)).natAbs + (ZMod.valMinAbs (t j₂)).natAbs := Int.natAbs_add_le _ _
-    _ ≤ β + β := Nat.add_le_add (ht_bound j₁) (ht_bound j₂)
-    _ = 2 * β := by ring
+  by_cases hp : p < 2 ^ α
+  · have hM0 : 0 < 2 ^ (α - κ - 1) := by positivity
+    have hκ : κ + 1 ≤ α := succ_le_of_two_mul_two_pow_dvd hk
+    have hN : 2 ^ α / 2 ^ κ = 2 * 2 ^ (α - κ - 1) := by
+      have hfac : (2 : ℕ) ^ κ * (2 * 2 ^ (α - κ - 1)) = 2 ^ α := by
+        rw [← Nat.mul_assoc, show (2 : ℕ) ^ κ * 2 = 2 ^ (κ + 1) from by rw [pow_succ], ← pow_add]
+        congr 1; omega
+      rw [← hfac, Nat.mul_div_cancel_left _ (by positivity : 0 < 2 ^ κ)]
+    have hbound : ∀ (i : Fin (2 ^ α / 2 ^ κ)) (pos : ℕ),
+        (ZMod.valMinAbs
+          ((a i : Rq (powTwoCyclotomic (R := ZMod q) α)).1.coeff pos)).natAbs ≤ β := by
+      intro i pos
+      have hv := ha
+      rw [CenteredCoeffView.vecCInfNorm] at hv
+      have hi : (Finset.range ((a i : Rq (powTwoCyclotomic (R := ZMod q) α)).1).size).sup
+          ((zmodCenteredView q).absCoeff (a i : Rq (powTwoCyclotomic (R := ZMod q) α)).1) ≤ β := by
+        rw [← CenteredCoeffView.cInfNorm]
+        exact le_trans (Finset.le_sup (f := fun i => (zmodCenteredView q).cInfNorm
+          ((a i : Rq (powTwoCyclotomic (R := ZMod q) α)).1)) (Finset.mem_univ i)) hv
+      by_cases hpos : pos < ((a i : Rq (powTwoCyclotomic (R := ZMod q) α)).1).size
+      · exact le_trans (Finset.le_sup (f := (zmodCenteredView q).absCoeff
+          (a i : Rq (powTwoCyclotomic (R := ZMod q) α)).1) (Finset.mem_range.mpr hpos)) hi
+      · rw [CompPoly.CPolynomial.coeff_eq_zero_of_size_le _ (Nat.le_of_not_gt hpos),
+          ZMod.valMinAbs_zero]
+        exact Nat.zero_le _
+    have hr : p % 2 ^ (α - κ - 1) < 2 ^ (α - κ - 1) := Nat.mod_lt _ hM0
+    set j₁ : Fin (2 ^ α / 2 ^ κ) := ⟨p % 2 ^ (α - κ - 1), by omega⟩ with hj1
+    set j₂ : Fin (2 ^ α / 2 ^ κ) := ⟨2 ^ (α - κ - 1) + p % 2 ^ (α - κ - 1), by omega⟩ with hj2
+    set t : Fin (2 ^ α / 2 ^ κ) → ZMod q := fun j =>
+      ((a j : Rq (powTwoCyclotomic (R := ZMod q) α))
+        * Xpow (powTwoCyclotomic α) (packExp α (2 ^ κ) (j : ℕ))).1.coeff p with ht_def
+    have hsum : (psi α (2 ^ κ) a).1.coeff p = ∑ j, t j := by
+      unfold psi; rw [← Rq.coeffHom_apply, map_sum]; simp only [ht_def, Rq.coeffHom_apply]
+    have hjne : j₁ ≠ j₂ := by simp only [hj1, hj2, Ne, Fin.mk.injEq]; omega
+    have hwit : ∀ j : Fin (2 ^ α / 2 ^ κ),
+        p % 2 ^ (α - κ - 1) = (j : ℕ) % 2 ^ (α - κ - 1) → j = j₁ ∨ j = j₂ := by
+      intro j heq
+      rcases eq_or_eq_of_mod_eq α κ j heq.symm with h | h
+      · left; exact Fin.ext h
+      · right; exact Fin.ext h
+    have hzero : ∀ j : Fin (2 ^ α / 2 ^ κ), j ∉ ({j₁, j₂} : Finset _) → t j = 0 := by
+      intro j hj
+      have hnotwit : p % 2 ^ (α - κ - 1) ≠ (j : ℕ) % 2 ^ (α - κ - 1) := by
+        intro heq
+        rcases hwit j heq with h | h <;> exact hj (by rw [h]; simp)
+      simp only [ht_def]
+      exact psi_summand_coeff_eq_zero_of_ne_mod q α κ h2 hk a hp j hnotwit
+    have ht_bound : ∀ j, (ZMod.valMinAbs (t j)).natAbs ≤ β := by
+      intro j
+      simp only [ht_def]
+      rw [Xpow_mul_coeff α (packExp α (2 ^ κ) (j : ℕ)) (packExp_lt α κ hk j)
+        (a j : Rq (powTwoCyclotomic (R := ZMod q) α)) hp]
+      split_ifs
+      · exact hbound j _
+      · rw [ZMod.natAbs_valMinAbs_neg]; exact hbound j _
+    have hpair : (psi α (2 ^ κ) a).1.coeff p = t j₁ + t j₂ := by
+      rw [hsum, ← Finset.sum_subset (Finset.subset_univ {j₁, j₂}) (fun j _ hj => hzero j hj),
+        Finset.sum_pair hjne]
+    rw [hpair]
+    calc (ZMod.valMinAbs (t j₁ + t j₂)).natAbs
+        ≤ (ZMod.valMinAbs (t j₁) + ZMod.valMinAbs (t j₂)).natAbs :=
+          ZMod.natAbs_valMinAbs_add_le _ _
+      _ ≤ (ZMod.valMinAbs (t j₁)).natAbs + (ZMod.valMinAbs (t j₂)).natAbs := Int.natAbs_add_le _ _
+      _ ≤ β + β := Nat.add_le_add (ht_bound j₁) (ht_bound j₂)
+      _ = 2 * β := by ring
+  · rw [coeff_eq_zero_of_le α (psi α (2 ^ κ) a) (Nat.le_of_not_gt hp),
+      ZMod.valMinAbs_zero]
+    exact Nat.zero_le _
 
 /-- **Hachi [NOZ26, §3, Lemma 6]: `‖ψ(a)‖∞ ≤ 2β`.** If every entry of the vector
 `a : (R_q^H)^{d/k}` has centered coefficient `ℓ∞`-norm at most `β` (i.e. `‖a‖∞ ≤ β` in the
@@ -177,9 +184,6 @@ theorem cInfNorm_psi_le (α κ : ℕ) (h2 : (2 : ZMod q) ≠ 0) (hk : 2 * 2 ^ κ
   apply Finset.sup_le
   intro p _
   change (ZMod.valMinAbs ((psi α (2 ^ κ) a).1.coeff p)).natAbs ≤ 2 * β
-  by_cases hp : p < 2 ^ α
-  · exact coeff_psi_abs_le_two_vecCInfNorm q α κ h2 hk a ha hp
-  · rw [coeff_eq_zero_of_le α (psi α (2 ^ κ) a) (by omega), ZMod.valMinAbs_zero]
-    exact Nat.zero_le _
+  exact coeff_psi_abs_le_two_vecCInfNorm q α κ h2 hk a ha
 
 end ArkLib.Lattices.CyclotomicModulus

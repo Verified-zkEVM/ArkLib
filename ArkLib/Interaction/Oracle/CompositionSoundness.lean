@@ -51,7 +51,7 @@ variable {ι I J : Type} (ambient : OracleSpec ι)
         (FinalStmt (PFunctor.FreeM.Path.append tree suffix p q))
         (Final (PFunctor.FreeM.Path.append tree suffix p q)))))
 
-/-- The existing native append boundary retains its actual prefix path, private continuation,
+/-- The existing append boundary retains its actual prefix path, private continuation,
 and returned export claim. -/
 abbrev ExportedBoundary := Interaction.TwoParty.AppendBoundary
   (m := OracleComp ambient) (s₁ := tree.toTypeTree)
@@ -75,7 +75,7 @@ abbrev exportedPrefixRun := Interaction.TwoParty.run tree.toTypeTree
 
 
 /-- Continue the actual remaining prover using the exported oracle, then run the final verifier
-action and close its claim. This abbreviates the same native run and shared interpreter. -/
+action and close its claim. This abbreviates the same run and shared interpreter. -/
 abbrev exportedSuffixRun
     (b : ExportedBoundary ambient tree suffix secondRoles firstOracles initial Stmt Data Export
       OutP) :

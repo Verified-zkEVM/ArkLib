@@ -69,7 +69,7 @@ public import ArkLib.ToCompPoly.Multilinear.Basic
   `relNestedZeroCheck` carries the commitment's shortness index `liftShort`, which `relBatched`
   does *not* assume. It is derived here exactly as on the soundness side
   (`mem_relLift_of_relBatched`): from the range identity `H₀ ≡ 0` via
-  `hZero_eq_zero_imp_liftShort`, which is what the arithmetic hypotheses `hd`, `hμn`, `hbound`,
+  `hZero_eq_zero_imp_liftShort`, which is what the arithmetic hypotheses `hμn`, `hbound`,
   the digit-base admissibility pay for.
 -/
 
@@ -88,7 +88,7 @@ variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
 -- `[IsCyclotomic Φ]` is needed only to synthesize the `Rq`/`wTable` instances inside the `hZero`
 -- term carried by the relations, which the linter's usage analysis misses.
-omit [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
+omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
 /-- **The relation-preservation step of the zero-check.** An honest witness for the batched
 identities satisfies the point relation at *every* pair of evaluation points, so no property of
 the challenges is used.
@@ -103,7 +103,7 @@ execution-level proof can instantiate it at whatever the challenges assemble. -/
 theorem mem_relNestedZeroCheck_of_relBatched
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F) (b : ℕ)
-    (hd : 0 < Φ.φ.natDegree) (hμn : (μ + n * rhoDigitCount q b) * Φ.φ.natDegree ≤ 2 ^ m₀)
+    (hμn : (μ + n * rhoDigitCount q b) * Φ.φ.natDegree ≤ 2 ^ m₀)
     (hbound : b - 1 ≤ bound) (hdig : DigitBaseOk q bound bDig)
     (X : LiftStatement Φ K.TCom F n μ) (w : LiftedWitness Φ μ n)
     (h : (X, w) ∈ relBatched Φ m₀ m₁ bound bDig K φF b)
@@ -113,7 +113,7 @@ theorem mem_relNestedZeroCheck_of_relBatched
   simp only [relBatched, Set.mem_ofPred_eq] at h
   obtain ⟨hcom, hZeroZ, hAlphaZ, hbound'⟩ := h
   refine ⟨hcom, ?_, ?_, ?_, hbound'⟩
-  · exact ⟨(hZero_eq_zero_imp_liftShort Φ m₀ φF b bound hd hμn hbound w hZeroZ).1,
+  · exact ⟨(hZero_eq_zero_imp_liftShort Φ m₀ φF b bound hμn hbound w hZeroZ).1,
       rhoDigitsShort_of_digitBaseOk Φ hdig w.ρ⟩
   · rw [hZeroZ, CMlPolynomialEval.eval_zero]
   · simp only [nestedZcMapStmt]
@@ -134,7 +134,7 @@ transcript, since `Transcript.concat` is by definition the `Fin.snoc` the prover
 This is the bookkeeping half of the `perfectCompleteness` proof: it is what forces the prover's
 output statement to coincide with the verifier's, both being `nestedZcMapStmt` applied to the same
 `Fin.castAdd`/`Fin.natAdd` split of the same transcript. -/
-lemma nestedZeroCheckProver_state_eq_of_mem_support {TCom Wit : Type} [SampleableType F]
+lemma nestedZeroCheckProver_state_eq_of_mem_support {TCom Wit : Type}
     (stmt : LiftStatement Φ TCom F n μ) (wit : Wit) (i : Fin (m₀ + m₁ + 1)) :
     ∀ x ∈ support ((nestedZeroCheckProver (oSpec := oSpec) (TCom := TCom) (Wit := Wit)
         Φ m₀ m₁).runToRound i stmt wit),
@@ -173,7 +173,7 @@ produced transcript that `nestedZeroCheckVerifier` performs.
 
 This is the state invariant `nestedZeroCheckProver_state_eq_of_mem_support` read at the last round
 and pushed through `Prover.output`. -/
-lemma nestedZeroCheckProver_output_of_mem_support {TCom Wit : Type} [SampleableType F]
+lemma nestedZeroCheckProver_output_of_mem_support {TCom Wit : Type}
     (stmt : LiftStatement Φ TCom F n μ) (wit : Wit) :
     ∀ x ∈ support ((nestedZeroCheckProver (oSpec := oSpec) (TCom := TCom) (Wit := Wit)
         Φ m₀ m₁).run stmt wit),
@@ -200,7 +200,7 @@ witness is transported unchanged, and prover and verifier both output
 This is the whole execution content of completeness. Failure is impossible because the only
 `OptionT` layer in `Reduction.run` comes from the verifier, and `nestedZeroCheckVerifier` is a
 `pure` map with no acceptance test to fail. -/
-lemma nestedZeroCheckReduction_run_support {TCom Wit : Type} [SampleableType F]
+lemma nestedZeroCheckReduction_run_support {TCom Wit : Type}
     (X : LiftStatement Φ TCom F n μ) (w : Wit) :
     ∀ x ∈ support ((nestedZeroCheckReduction (oSpec := oSpec) (TCom := TCom) (Wit := Wit)
         Φ m₀ m₁).run X w).run,
@@ -234,7 +234,7 @@ lemma nestedZeroCheckReduction_run_support {TCom Wit : Type} [SampleableType F]
   have hout := nestedZeroCheckProver_output_of_mem_support Φ m₀ m₁ X w pr hpr
   exact ⟨pr.1, by rw [hx, ← hout]⟩
 
-omit [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
+omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
 /-- **Perfect completeness of the zero-check (Hachi Figure 5).** An honest prover holding a witness
 for the batched identities `H₀ ≡ 0 ∧ H_α ≡ 0` is accepted with probability one, and the pair it
 hands on lies in `relNestedZeroCheck`, with the prover's and the verifier's output statements
@@ -249,7 +249,7 @@ theorem nestedZeroCheckReduction_perfectCompleteness [SampleableType F]
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F) (b : ℕ)
-    (hd : 0 < Φ.φ.natDegree) (hμn : (μ + n * rhoDigitCount q b) * Φ.φ.natDegree ≤ 2 ^ m₀)
+    (hμn : (μ + n * rhoDigitCount q b) * Φ.φ.natDegree ≤ 2 ^ m₀)
     (hbound : b - 1 ≤ bound) (hdig : DigitBaseOk q bound bDig) :
     (nestedZeroCheckReduction (oSpec := oSpec) (TCom := K.TCom)
         (Wit := LiftedWitness Φ μ n) Φ m₀ m₁).perfectCompleteness init impl
@@ -259,7 +259,7 @@ theorem nestedZeroCheckReduction_perfectCompleteness [SampleableType F]
   intro X w hBatched x hx
   obtain ⟨tr, rfl⟩ := nestedZeroCheckReduction_run_support Φ m₀ m₁ X w x hx
   exact ⟨_, rfl,
-    mem_relNestedZeroCheck_of_relBatched Φ m₀ m₁ bound bDig K φF b hd hμn hbound hdig
+    mem_relNestedZeroCheck_of_relBatched Φ m₀ m₁ bound bDig K φF b hμn hbound hdig
       X w hBatched _ _, rfl⟩
 
 /-! ## The batching bridge: the honest direction, closed
@@ -283,7 +283,7 @@ def batchReduction (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig
       (!p[] : ProtocolSpec 0) :=
   ReduceClaim.reduction oSpec id (fun _ w => w)
 
-omit [BEq F] [LawfulBEq F] in
+omit [NeZero q] [BEq F] [LawfulBEq F] in
 /-- The bridge's protocol object and its soundness certificate share a verifier. Holds by `rfl`. -/
 @[simp] theorem batchReduction_verifier
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
@@ -295,7 +295,7 @@ omit [BEq F] [LawfulBEq F] in
       = (batchPackage Φ m₀ m₁ bound bDig init impl K φF b hb hn hd hμn hbound hdig).verifier :=
   rfl
 
-omit [BEq F] [LawfulBEq F] in
+omit [NeZero q] [BEq F] [LawfulBEq F] in
 /-- **Perfect completeness of the batching bridge** (Hachi Eqs. (22)–(23)), at error exactly `0`.
 
 An honest prover holding a lift-valid short witness is accepted with probability one and the very
@@ -313,12 +313,12 @@ leaves `bound` free below `b − 1`. See `HonestChain.lean`. -/
 theorem batchReduction_perfectCompleteness
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
-    (φF : ZMod q →+* F) (b : ℕ) (hb : 1 < b) (hd : 0 < Φ.φ.natDegree)
+    (φF : ZMod q →+* F) (b : ℕ) (hd : 0 < Φ.φ.natDegree)
     (hbound : bound ≤ b - 1) (hbase : DigitBaseOk q (b - 1) b) :
     (batchReduction (oSpec := oSpec) Φ bound bDig K).perfectCompleteness init impl
       (relLift Φ bound bDig K φF) (relBatched Φ m₀ m₁ bound bDig K φF b) :=
   ReduceClaim.reduction_completeness_of_imp
     (relLift Φ bound bDig K φF) (relBatched Φ m₀ m₁ bound bDig K φF b)
-    (fun X w h => mem_relBatched_of_relLift Φ m₀ m₁ bound bDig K φF b hb hd hbound hbase X w h)
+    (fun X w h => mem_relBatched_of_relLift Φ m₀ m₁ bound bDig K φF b hd hbound hbase X w h)
 
 end ArkLib.Lattices.Ajtai.InnerOuter

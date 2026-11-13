@@ -151,7 +151,7 @@ def interleavedCodeSet {A : Type*} {κ ι : Type*}
 /-- If C is finite and membership is decidable, then interleavedCodeSet C is finite. -/
 @[simp]
 noncomputable instance interleavedCodeSet_fintype {A : Type*} {κ ι : Type*}
-    [Fintype κ] [Fintype ι] [Fintype A] [DecidableEq A]
+    [Fintype κ] [Fintype ι] [Fintype A]
     (C : Set (ι → A)) :
     Fintype (interleavedCodeSet (κ := κ) (ι := ι) C) := by
   exact Fintype.ofFinite (interleavedCodeSet C)

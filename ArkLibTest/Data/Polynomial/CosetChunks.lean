@@ -25,10 +25,10 @@ namespace ArkLibTest.CosetChunks
 
 -- The public theorem supplies the verifier's evaluation identity at any point.
 example {K : Type*} [Field K] {s w : K} {c m : ℕ}
-    (hw : IsPrimitiveRoot w (c * m)) (hs : s ≠ 0) (hc : 0 < c) (hm : 0 < m)
+    (hw : IsPrimitiveRoot w (c * m)) (hs : s ≠ 0)
     (Q : K[X]) (hQ : Q.degree < (c * m : ℕ)) (z : K) :
     ∑ i ∈ range c, (chunkL s w c m i).eval z * (chunkInterp s w c m Q i).eval z = Q.eval z := by
-  have h := congrArg (eval z) (sum_chunkL_mul_chunkInterp hw hs hc hm Q hQ)
+  have h := congrArg (eval z) (sum_chunkL_mul_chunkInterp hw hs Q hQ)
   simpa [eval_finsetSum, eval_mul] using h
 
 instance : Fact (Nat.Prime 5) := ⟨by decide⟩
@@ -49,8 +49,8 @@ private noncomputable def cubic : (ZMod 5)[X] := X ^ 3 + X ^ 2 + 1
 
 private lemma interp_degree (i : ℕ) (hi : i < 2) :
     (chunkInterp (3 : ZMod 5) 2 2 2 cubic i).degree < 2 := by
-  have h := natDegree_chunkInterp_le primitive_root_two_zmod_five (by decide : (3 : ZMod 5) ≠ 0)
-    (by decide : 0 < 2) (by decide : 0 < 2) cubic hi
+  have h := natDegree_chunkInterp_le (m := 2) primitive_root_two_zmod_five
+    (by decide : (3 : ZMod 5) ≠ 0) cubic hi
   apply degree_le_natDegree.trans_lt
   exact_mod_cast (show (chunkInterp (3 : ZMod 5) 2 2 2 cubic i).natDegree < 2 by omega)
 
@@ -58,34 +58,34 @@ private lemma interp_zero : chunkInterp (3 : ZMod 5) 2 2 2 cubic 0 = C 4 * X := 
   refine eq_of_degrees_lt_of_eval_index_eq (s := (univ : Finset (Fin 2)))
     (v := fun t : Fin 2 => point (3 : ZMod 5) 2 2 0 t)
     (point_injective (s := (3 : ZMod 5)) (c := 2) (m := 2) primitive_root_two_zmod_five
-      (by decide) (by decide) (by decide : 0 < 2)).injOn
+      (by decide) (by decide : 0 < 2)).injOn
     (by simpa using interp_degree 0 (by decide))
     (by rw [degree_mul, degree_C (by decide : (4 : ZMod 5) ≠ 0), degree_X]; norm_num) ?_
   intro t _
   unfold chunkInterp
   rw [Lagrange.eval_interpolate_at_node _
     (point_injective (s := (3 : ZMod 5)) (c := 2) (m := 2) primitive_root_two_zmod_five
-      (by decide) (by decide) (by decide : 0 < 2)).injOn (mem_univ _)]
+      (by decide) (by decide : 0 < 2)).injOn (mem_univ _)]
   fin_cases t <;> norm_num [cubic, point] <;> decide
 
 private lemma interp_one : chunkInterp (3 : ZMod 5) 2 2 2 cubic 1 = X + C 2 := by
   refine eq_of_degrees_lt_of_eval_index_eq (s := (univ : Finset (Fin 2)))
     (v := fun t : Fin 2 => point (3 : ZMod 5) 2 2 1 t)
     (point_injective (s := (3 : ZMod 5)) (c := 2) (m := 2) primitive_root_two_zmod_five
-      (by decide) (by decide) (by decide : 1 < 2)).injOn
+      (by decide) (by decide : 1 < 2)).injOn
     (by simpa using interp_degree 1 (by decide)) (by simp) ?_
   intro t _
   unfold chunkInterp
   rw [Lagrange.eval_interpolate_at_node _
     (point_injective (s := (3 : ZMod 5)) (c := 2) (m := 2) primitive_root_two_zmod_five
-      (by decide) (by decide) (by decide : 1 < 2)).injOn (mem_univ _)]
+      (by decide) (by decide : 1 < 2)).injOn (mem_univ _)]
   fin_cases t <;> norm_num [cubic, point] <;> decide
 
 -- The two low-degree interpolants reconstruct the cubic as a polynomial identity.
 example : chunkL (3 : ZMod 5) 2 2 2 0 * (C 4 * X) +
     chunkL (3 : ZMod 5) 2 2 2 1 * (X + C 2) = cubic := by
-  have h := sum_chunkL_mul_chunkInterp primitive_root_two_zmod_five (by decide : (3 : ZMod 5) ≠ 0)
-    (by decide : 0 < 2) (by decide : 0 < 2) cubic (by unfold cubic; compute_degree; norm_num)
+  have h := sum_chunkL_mul_chunkInterp (c := 2) (m := 2) primitive_root_two_zmod_five
+    (by decide : (3 : ZMod 5) ≠ 0) cubic (by unfold cubic; compute_degree; norm_num)
   simpa [sum_range_succ, interp_zero, interp_one] using h
 
 -- The last mask has the correct sign and includes all earlier chunks.
@@ -105,10 +105,10 @@ example :
     ∑ i ∈ range 3, chunkL (2 : ZMod 13) 4 3 2 i *
       (C (i : ZMod 13) + chunkZ 2 4 2 i * mask 2 4 3 2 (fun j => X ^ (j + 1)) i) =
     ∑ i ∈ range 3, chunkL (2 : ZMod 13) 4 3 2 i * C (i : ZMod 13) := by
-  exact sum_chunkL_mul_masked primitive_root_four_zmod_thirteen (by decide : (2 : ZMod 13) ≠ 0)
-    (by decide : 0 < 3) (by decide : 0 < 2) (fun i => C (i : ZMod 13)) (fun j => X ^ (j + 1))
+  exact sum_chunkL_mul_masked primitive_root_four_zmod_thirteen
+    (fun i => C (i : ZMod 13)) (fun j => X ^ (j + 1))
 
--- m = 0 degenerates to the zero polynomial; positivity belongs in the overview assumptions.
+-- At m = 0, the chunk polynomial vanishes, as used by the mask identity.
 example {K : Type*} [Field K] (s w : K) (i : ℕ) : chunkZ s w 0 i = 0 := by simp [chunkZ]
 
 -- c = 1 has one interpolant and a zero final mask.
@@ -119,7 +119,7 @@ example {K : Type*} [Field K] (s w : K) (m : ℕ) (t : ℕ → K[X]) :
 example : chunkInterp (3 : ZMod 5) (-1) 1 2 (X + 1) 0 = X + 1 := by
   have hw : IsPrimitiveRoot (-1 : ZMod 5) (1 * 2) := IsPrimitiveRoot.neg_one 5 (by decide)
   have h := sum_chunkL_mul_chunkInterp (c := 1) (m := 2) hw
-    (by decide : (3 : ZMod 5) ≠ 0) (by decide) (by decide) (X + 1)
+    (by decide : (3 : ZMod 5) ≠ 0) (X + 1)
     (by compute_degree; norm_num)
   simpa [sum_range_succ, chunkL] using h
 

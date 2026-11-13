@@ -34,7 +34,7 @@ example : 2 ≤ correlatedProductCutoff 2 2 7 ∧ correlatedProductCutoff 2 2 7 
 /-- At the original threshold the factor is `9 / 6 ≤ 2` for `δ = 1 / 2`. -/
 example : ((10 - 2 + 0 + 1 : ℕ) : ℝ) / (7 - 2 + 0 + 1 : ℕ) ≤ 1 / (1 / 2 : ℝ) :=
   evaluation_incidence_factor_le (1 / 2) 10 2 7 0
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num)
 
 /-- The Reed–Solomon factor form follows from the shifted-ratio bound. -/
 example (δ : ℝ) (n k A j : ℕ) (hδ : 0 < δ) (hδone : δ ≤ 1) (hkA : k ≤ A)
@@ -50,7 +50,7 @@ example (δ : ℝ) (n k A j : ℕ) (hδ : 0 < δ) (hδone : δ ≤ 1) (hkA : k �
 example :
     (dimensionSensitiveIncidenceProduct 10 7 2 1 2 : ℝ) ≤ (1 / (1 / 2 : ℝ)) ^ 2 :=
   evaluation_incidence_product_le (1 / 2) 10 2 7 2
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num)
 
 /-- The cutoff joint factor is `2 ≤ 6` for `d = 2` and `δ = 1 / 2`. -/
 example :
@@ -58,7 +58,7 @@ example :
     ((10 - L + 1 : ℕ) : ℝ) / (7 - L + 1 : ℕ) ≤
       ((2 : ℝ) + 1) / (1 / 2 : ℝ) := by
   simpa using correlatedProductCutoff_jointRatio_le (1 / 2) 10 2 7 2
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
 
 /-- The intermediate factor is at most `3` for `d = 2`, `j = 0`, and `δ = 1 / 2`. -/
 example :
@@ -66,24 +66,21 @@ example :
     ((10 - 2 + 0 + 1 : ℕ) : ℝ) / (L - 2 + 0 + 1 : ℕ) ≤
       (1 + 1 / (2 : ℝ)) / (1 / 2 : ℝ) := by
   simpa using correlatedProductCutoff_fiberFactor_le (1 / 2) 10 2 7 2 0
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
 
 /-- Through dimension two the intermediate-cutoff product is at most `9`. -/
 example :
     (dimensionSensitiveIncidenceProduct 10 (correlatedProductCutoff 2 2 7) 2 1 2 : ℝ) ≤
       ((1 + 1 / (2 : ℝ)) / (1 / 2 : ℝ)) ^ 2 :=
   correlatedProductCutoff_fiberProduct_le (1 / 2) 10 2 7 2 2
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
 
 /-- Since `r = d = 2`, the intermediate-cutoff product is less than `12`. -/
 example :
     (dimensionSensitiveIncidenceProduct 10 (correlatedProductCutoff 2 2 7) 2 1 2 : ℝ) <
       3 * (1 / (1 / 2 : ℝ)) ^ 2 :=
   correlatedProductCutoff_fiberProduct_lt_three (1 / 2) 10 2 7 2 2
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
 
 /-! ### The hypotheses are needed -/
 

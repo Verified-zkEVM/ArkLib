@@ -62,13 +62,15 @@ theorem zero_initial_strict :
     exact (MvPolynomial.eval x).map_zero
   · apply Subtype.ext
     change (0 : MvPolynomial (Fin ℓ) L) = fixFirstVariablesOfMQP ℓ 0
-      ((multiplier (zeroStmt (L := L) (ℓ := ℓ)).ctx).val * 0)
+      (computeInitialSumcheckPoly ℓ 0 (multiplier (zeroStmt (L := L) (ℓ := ℓ)).ctx)).val
       (zeroStmt (L := L) (ℓ := ℓ)).challenges
+    rw [Sumcheck.Structured.coe_computeInitialSumcheckPoly]
     have hch : (zeroStmt (L := L) (ℓ := ℓ)).challenges = (Fin.elim0 : Fin 0 → L) := by
       funext i
       have hi := i.isLt
       simp at hi
-    rw [hch, MvPolynomial.fixFirstVariablesOfMQP_zero, mul_zero]
+    rw [hch, MvPolynomial.fixFirstVariablesOfMQP_zero]
+    simp only [ZeroMemClass.coe_zero, mul_zero]
   · dsimp only [StrictOracleFoldingConsistent]
     intro j
     have hp : (polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
@@ -188,14 +190,6 @@ depends on axioms: [propext,
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms fullOracleReduction_perfectCompleteness
-/--
-info: 'Binius.BinaryBasefold.FullBinaryBasefold.fullOracleVerifier_rbrKnowledgeSoundnessWorstCase'
-depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms fullOracleVerifier_rbrKnowledgeSoundnessWorstCase
 /--
 info: 'Binius.BinaryBasefold.FullBinaryBasefold.fullOracleVerifier_rbrKnowledgeSoundness'
 depends on axioms: [propext,

@@ -6,18 +6,18 @@ Authors: Quang Dao
 module
 
 public import ArkLib.OracleReduction.Security.RoundByRound
-public import ArkLib.OracleReduction.Security.StateRestoration
-public import ArkLib.OracleReduction.Salt
 public import ArkLib.OracleReduction.Security.SpecialSoundness
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness
 
 /-!
 # Implications between security notions
 
-This file collects the implications between the various security notions.
-
-For now, we only state the theorems. It's likely that we will split this file into multiple files in
-a single `Implication` folder in the future, each file for the proof of a single implication.
+This file identifies round-by-round knowledge soundness with soundness of the induced languages,
+and characterizes exactly when this holds without input witnesses. It also proves the equivalence
+between special soundness and its canonical coordinate-wise form. State-restoration security is
+developed natively in `Interaction.Oracle.Security.StateRestoration`. The guarded bridges from
+round-by-round security to ordinary security live in `Security.GuardedSoundness` and
+`Security.GuardedBridges`.
 -/
 
 @[expose] public section
@@ -34,257 +34,145 @@ namespace Verifier
 
 section Implications
 
-/- TODO: add the following results
-- `knowledgeSoundness` implies `soundness`
-- `rbrSoundness` implies `soundness`
-- `rbrKnowledgeSoundness` implies `rbrSoundness`
-- `rbrKnowledgeSoundness` implies `knowledgeSoundness`
-
-In other words, we have a lattice of security notions, with `knowledge` and `roundByRound` being
-two strengthenings of soundness.
--/
-
-/-- Knowledge soundness with knowledge error `knowledgeError < 1` implies soundness with the same
-soundness error `knowledgeError`, and for the corresponding input and output languages. -/
-theorem knowledgeSoundness_implies_soundness
-    (relIn : Set (StmtIn × WitIn))
-    (relOut : Set (StmtOut × WitOut))
-    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (knowledgeError : ℝ≥0) (hLt : knowledgeError < 1) :
-      knowledgeSoundness init impl relIn relOut verifier knowledgeError →
-        soundness init impl relIn.language relOut.language verifier knowledgeError := by
-  simp only [knowledgeSoundness, ChallengeIdx, Challenge, QueryImpl.addLift_def,
-    PFunctor.Handler.liftTarget_self, bind_pure_comp, OptionT.run_bind,
-    OptionT.run_map, simulateQ_option_elimM, simulateQ_pure, simulateQ_map,
-    StateT.run'_eq, OptionT.mk_bind, Option.mem_def, Prod.mk.eta, soundness,
-    Set.language, Set.mem_image, Prod.exists, exists_and_right, exists_eq_right,
-    not_exists, forall_exists_index]
-  intro extractor hKS WitIn' WitOut' witIn' prover stmtIn hStmtIn
-  sorry
-  -- have hKS' := hKS stmtIn witIn' prover
-  -- clear hKS
-  -- contrapose! hKS'
-  -- constructor
-  -- · convert hKS'; rename_i result
-  --   obtain ⟨transcript, queryLog, stmtOut, witOut⟩ := result
-  --   simp
-  --   sorry
-  -- · simp only [Set.language, Set.mem_setOf_eq, not_exists] at hStmtIn
-  --   simp only [Functor.map, Seq.seq, PMF.bind_bind, Function.comp_apply, PMF.pure_bind, hStmtIn,
-  --     PMF.bind_const, PMF.pure_apply, eq_iff_iff, iff_false, not_true_eq_false, ↓reduceIte,
-  --     zero_add, ℝ≥0.coe_lt_one_iff, hLt]
-
-/-- Round-by-round soundness with error `rbrSoundnessError` implies soundness with error
-`∑ i, rbrSoundnessError i`, where the sum is over all rounds `i`. -/
-theorem rbrSoundness_implies_soundness (langIn : Set StmtIn) (langOut : Set StmtOut)
-    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (rbrSoundnessError : pSpec.ChallengeIdx → ℝ≥0) :
-      rbrSoundness init impl langIn langOut verifier rbrSoundnessError →
-        soundness init impl langIn langOut verifier (∑ i, rbrSoundnessError i) := by sorry
-
-/-- Round-by-round knowledge soundness with error `rbrKnowledgeError` implies round-by-round
-soundness with the same error `rbrKnowledgeError`. -/
+/-- Round-by-round knowledge soundness implies soundness of the induced languages,
+with the same error at every fixed transcript prefix. -/
 theorem rbrKnowledgeSoundness_implies_rbrSoundness
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
-    {rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0}
-    (h : verifier.rbrKnowledgeSoundness init impl relIn relOut rbrKnowledgeError) :
-    verifier.rbrSoundness init impl relIn.language relOut.language rbrKnowledgeError := by
-  classical
-  unfold rbrKnowledgeSoundness at h
-  obtain ⟨WitMid, extractor, kSF, hkSF⟩ := h
-  by_cases hWout : Nonempty WitOut
-  · unfold rbrSoundness
-    refine ⟨kSF.toStateFunction init impl, ?_⟩
-    intro stmtIn hStmtIn WitIn' WitOut' witIn' prover i
-    by_cases hWin : Nonempty WitIn
-    · let prover' : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec :=
-        { PrvState := prover.PrvState
-          input := fun _ => prover.input (stmtIn, witIn')
-          sendMessage := prover.sendMessage
-          receiveChallenge := prover.receiveChallenge
-          output := fun st => do
-            let out ← prover.output st
-            return (out.1, Classical.choice hWout) }
-      have hrun : prover'.runToRound i.1.castSucc stmtIn (Classical.choice hWin) =
-          prover.runToRound i.1.castSucc stmtIn witIn' := by rfl
-      have hrunlog : prover'.runWithLogToRound i.1.castSucc stmtIn (Classical.choice hWin) =
-          prover.runWithLogToRound i.1.castSucc stmtIn witIn' := by
-        unfold Prover.runWithLogToRound
-        rw [hrun]
-      let logGame := do
-        let s ← init
-        (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-          (do
-            let ⟨⟨transcript, _⟩, proveQueryLog⟩ ←
-              prover'.runWithLogToRound i.1.castSucc stmtIn (Classical.choice hWin)
-            let challenge ← liftComp (pSpec.getChallenge i) _
-            return (transcript, challenge, proveQueryLog))).run' s
-      let plainGame := do
-        let s ← init
-        (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-          (do
-            let ⟨transcript, _⟩ ← prover.runToRound i.1.castSucc stmtIn witIn'
-            let challenge ← liftComp (pSpec.getChallenge i) _
-            return (transcript, challenge))).run' s
-      have hmap : (fun x => (x.1, x.2.1)) <$> logGame = plainGame := by
-        simp [logGame, plainGame, ← Prover.runWithLogToRound_discard_log_eq_runToRound, hrunlog]
-        rfl
-      have hk := hkSF stmtIn (Classical.choice hWin) prover' i
-      change Pr{let x ← plainGame}[
-        ¬ (∃ w, kSF i.1.castSucc stmtIn x.1 w) ∧
-          ∃ w, kSF i.1.succ stmtIn (x.1.concat x.2) w] ≤ _
-      change Pr{let x ← logGame}[∃ w,
-        ¬ kSF i.1.castSucc stmtIn x.1
-            (extractor.extractMid i.1 stmtIn (x.1.concat x.2.1) w) ∧
-          kSF i.1.succ stmtIn (x.1.concat x.2.1) w] ≤ _ at hk
-      calc
-        _ = Pr{let x ← logGame}[
-            ¬ (∃ w, kSF i.1.castSucc stmtIn x.1 w) ∧
-              ∃ w, kSF i.1.succ stmtIn (x.1.concat x.2.1) w] := by
-              rw [← hmap, prEvent_map]
-        _ ≤ Pr{let x ← logGame}[∃ w,
-            ¬ kSF i.1.castSucc stmtIn x.1
-                (extractor.extractMid i.1 stmtIn (x.1.concat x.2.1) w) ∧
-              kSF i.1.succ stmtIn (x.1.concat x.2.1) w] := by
-              apply prEvent_mono
-              intro x hbad
-              obtain ⟨hprev, w, hnext⟩ := hbad
-              exact ⟨w, fun hw => hprev ⟨_, hw⟩, hnext⟩
-        _ ≤ _ := hk
-    · let extractToInput : (m : Fin (n + 1)) → Transcript m pSpec → WitMid m → WitIn :=
-        Fin.induction
-          (fun tr w => cast extractor.eqIn w)
-          (fun m ih tr w =>
-            ih (Fin.init tr) (extractor.extractMid m stmtIn tr w))
-      refine (prEvent_eq_zero_of_forall_not _ _ fun x hbad ↦ ?_).trans_le zero_le
-      obtain ⟨-, w, hnext⟩ := hbad
-      exact hWin ⟨extractToInput i.1.succ (x.1.concat x.2) w⟩
-  · have hLangOut : relOut.language = ∅ := by
-      ext stmtOut
-      simp only [Set.language, Set.mem_image, Prod.exists, exists_and_right,
-        exists_eq_right, Set.mem_empty_iff_false, iff_false]
-      intro hex
-      exact hWout ⟨hex.choose⟩
-    let sF : verifier.StateFunction init impl relIn.language relOut.language :=
-      { toFun := fun m stmtIn _ => m = 0 ∧ stmtIn ∈ relIn.language
-        toFun_empty := by
-          intro stmtIn
-          simp only [true_and]
-        toFun_next := by
-          intro m hdir stmtIn tr hfalse msg htrue
-          exact Fin.succ_ne_zero m htrue.1
-        toFun_full := by
-          intro stmtIn tr hfalse
-          rw [hLangOut]
-          exact prEvent_eq_zero_of_forall_not _ _ fun _ ↦ by simp }
-    unfold rbrSoundness
-    refine ⟨sF, ?_⟩
-    intro stmtIn hStmtIn WitIn' WitOut' witIn' prover i
-    exact (prEvent_eq_zero_of_forall_not _ _ fun _ hbad ↦
-      Fin.succ_ne_zero i.1 hbad.2.1).trans_le zero_le
+    {ε : pSpec.ChallengeIdx → ℝ≥0}
+    (h : verifier.rbrKnowledgeSoundness init impl relIn relOut ε) :
+    verifier.rbrSoundness init impl relIn.language relOut.language ε := by
+  obtain ⟨WitMid, extractor, K, hK⟩ := h
+  refine ⟨K.toStateFunction init impl, ?_⟩
+  intro stmt _ i tr
+  refine le_trans (prEvent_mono _ _ _ ?_) (hK stmt i tr)
+  rintro challenge ⟨hprev, w, hnext⟩
+  exact ⟨w, fun hw => hprev ⟨_, hw⟩, hnext⟩
 
-/-- Round-by-round knowledge soundness with error `rbrKnowledgeError` implies knowledge soundness
-with error `∑ i, rbrKnowledgeError i`, where the sum is over all rounds `i`. -/
-theorem rbrKnowledgeSoundness_implies_knowledgeSoundness
-    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
-    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0) :
-      rbrKnowledgeSoundness init impl relIn relOut verifier rbrKnowledgeError →
-        knowledgeSoundness init impl relIn relOut verifier (∑ i, rbrKnowledgeError i) := by sorry
+/-- Round-by-round soundness implies knowledge soundness with an unbounded extractor.
+Without input witnesses the implication holds for all relations and errors exactly when no input
+statement, full transcript and output witness exist together
+(`forall_rbrSoundness_iff_rbrKnowledgeSoundness_iff`). -/
+theorem rbrSoundness_implies_rbrKnowledgeSoundness [Nonempty WitIn]
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec}
+    {ε : pSpec.ChallengeIdx → ℝ≥0}
+    (h : verifier.rbrSoundness init impl relIn.language relOut.language ε) :
+    verifier.rbrKnowledgeSoundness init impl relIn relOut ε := by
+  obtain ⟨S, hS⟩ := h
+  refine ⟨_, _, S.toKnowledgeStateFunctionOfRel init impl, ?_⟩
+  intro stmt i tr
+  by_cases hstmt : stmt ∈ relIn.language
+  · refine (prEvent_eq_zero_of_forall_not _ _ fun challenge hbad => ?_).trans_le zero_le
+    exact (S.toKnowledgeStateFunctionOfRel_failure init impl i stmt tr challenge hbad).1 hstmt
+  · refine le_trans (prEvent_mono _ _ _ ?_) (hS stmt hstmt i tr)
+    exact fun challenge hbad =>
+      (S.toKnowledgeStateFunctionOfRel_failure init impl i stmt tr challenge hbad).2
 
--- /-- Round-by-round soundness for a protocol implies state-restoration soundness for the same
--- protocol with arbitrary added non-empty salts. -/
--- theorem rbrSoundness_implies_srSoundness_addSalt
---     {init : ProbComp (QueryImpl (srChallengeOracle StmtIn pSpec) Id)}
---     {impl : QueryImpl oSpec (StateT (QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp)}
---     (langIn : Set StmtIn) (langOut : Set StmtOut)
---     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
---     (rbrSoundnessError : pSpec.ChallengeIdx → ℝ≥0)
---     (Salt : pSpec.MessageIdx → Type) [∀ i, Nonempty (Salt i)] [∀ i, Fintype (Salt i)] :
---       rbrSoundness init impl langIn langOut verifier rbrSoundnessError →
---         Verifier.StateRestoration.soundness init impl langIn langOut (verifier.addSalt Salt)
---           (∑ i, (rbrSoundnessError i)) := by sorry
+/-- With no efficiency or access restriction on extraction, round-by-round knowledge
+soundness coincides with soundness of the induced languages for nonempty input witnesses.
+`rbrSoundness_iff_rbrKnowledgeSoundness_of_nonempty_or_isEmpty` also covers the
+remaining case in which the two coincide. -/
+theorem rbrSoundness_iff_rbrKnowledgeSoundness [Nonempty WitIn]
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec}
+    {ε : pSpec.ChallengeIdx → ℝ≥0} :
+    verifier.rbrSoundness init impl relIn.language relOut.language ε ↔
+      verifier.rbrKnowledgeSoundness init impl relIn relOut ε :=
+  ⟨rbrSoundness_implies_rbrKnowledgeSoundness init impl,
+    rbrKnowledgeSoundness_implies_rbrSoundness init impl⟩
 
--- /-- Round-by-round knowledge soundness for a protocol implies state-restoration
--- knowledge soundness for the same protocol with arbitrary added non-empty salts. -/
--- theorem rbrKnowledgeSoundness_implies_srKnowledgeSoundness_addSalt
---     {init : ProbComp (QueryImpl (srChallengeOracle StmtIn pSpec) Id)}
---     {impl : QueryImpl oSpec (StateT (QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp)}
---     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
---     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
---     (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0)
---     (Salt : pSpec.MessageIdx → Type) [∀ i, Nonempty (Salt i)] [∀ i, Fintype (Salt i)] :
---       rbrKnowledgeSoundness init impl relIn relOut verifier rbrKnowledgeError →
---         Verifier.StateRestoration.knowledgeSoundness init impl relIn relOut
---           (verifier.addSalt Salt) (∑ i, rbrKnowledgeError i) := by sorry
+/-- Round-by-round soundness is knowledge soundness specialized to `Unit` witnesses. -/
+theorem rbrSoundness_iff_rbrKnowledgeSoundness_unit
+    {langIn : Set StmtIn} {langOut : Set StmtOut}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec}
+    {ε : pSpec.ChallengeIdx → ℝ≥0} :
+    verifier.rbrSoundness init impl langIn langOut ε ↔
+      verifier.rbrKnowledgeSoundness init impl (langIn ×ˢ (Set.univ : Set Unit))
+        (langOut ×ˢ (Set.univ : Set Unit)) ε := by
+  simpa only [Set.language, Set.fst_image_prod _ Set.univ_nonempty] using
+    (rbrSoundness_iff_rbrKnowledgeSoundness init impl
+      (verifier := verifier) (ε := ε)
+      (relIn := langIn ×ˢ (Set.univ : Set Unit)) (relOut := langOut ×ˢ (Set.univ : Set Unit)))
 
-/-- State-restoration soundness for a protocol with added salts implies state-restoration
-soundness for the original protocol (with improved parameters?)
--/
-theorem srSoundness_addSalt_implies_srSoundness_original
-    (langIn : Set StmtIn) (langOut : Set StmtOut)
-    (Salt : pSpec.MessageIdx → Type) [∀ i, Nonempty (Salt i)] [∀ i, Fintype (Salt i)]
-    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (srInit : ProbComp (QueryImpl (srChallengeOracle StmtIn (pSpec.addSalt Salt)) Id))
-    (srImpl : QueryImpl oSpec
-      (StateT (QueryImpl (srChallengeOracle StmtIn (pSpec.addSalt Salt)) Id) ProbComp))
-    (srSoundnessError : ℝ≥0) :
-      Verifier.StateRestoration.soundness srInit srImpl langIn langOut
-        (verifier.addSalt Salt) srSoundnessError →
-        Verifier.StateRestoration.soundness sorry sorry langIn langOut
-          verifier srSoundnessError := by sorry
+/-! ### Inhabitation of witness types
 
-/-- State-restoration knowledge soundness for a protocol with added salts implies state-restoration
-knowledge soundness for the original protocol with improved parameters. -/
-theorem srKnowledgeSoundness_addSalt_implies_srKnowledgeSoundness_original
-    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
-    (Salt : pSpec.MessageIdx → Type) [∀ i, Nonempty (Salt i)] [∀ i, Fintype (Salt i)]
-    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (srInit : ProbComp (QueryImpl (srChallengeOracle StmtIn (pSpec.addSalt Salt)) Id))
-    (srImpl : QueryImpl oSpec
-      (StateT (QueryImpl (srChallengeOracle StmtIn (pSpec.addSalt Salt)) Id) ProbComp))
-    (srKnowledgeError : ℝ≥0) :
-      Verifier.StateRestoration.knowledgeSoundness srInit srImpl relIn relOut
-        (verifier.addSalt Salt) srKnowledgeError →
-        Verifier.StateRestoration.knowledgeSoundness sorry sorry relIn relOut
-          verifier srKnowledgeError := by sorry
+The equivalences above assume `[Nonempty WitIn]`. Without input witnesses they hold for all
+relations and errors exactly when no input statement, full transcript and output witness exist
+together. Otherwise no round-by-round extractor exists
+(`Extractor.RoundByRound.exists_nonempty_iff`): extraction is total, so it must also map rejected
+transcripts and unrelated output witnesses. The separation is therefore a consequence of extractor
+totality rather than a gap in soundness: knowledge soundness fails for every pair of relations,
+while soundness holds whenever the verifier never outputs a statement of the output language, for
+instance when it always rejects. -/
 
-/-- State-restoration soundness implies basic (straightline) soundness.
+/-- Round-by-round soundness holds with any error for a verifier that never outputs a statement of
+the output language. -/
+theorem rbrSoundness_of_forall_prEvent_eq_zero {langIn : Set StmtIn}
+    {langOut : Set StmtOut} {verifier : Verifier oSpec StmtIn StmtOut pSpec}
+    (h : ∀ stmt tr, Pr{let stmtOut ← (OptionT.mk do
+      (simulateQ impl (verifier.run stmt tr)).run' (← init))}[stmtOut ∈ langOut] = 0)
+    (ε : pSpec.ChallengeIdx → ℝ≥0) :
+    verifier.rbrSoundness init impl langIn langOut ε :=
+  ⟨{ toFun := fun _ _ _ => False
+     toFun_empty := fun _ h => h.elim
+     toFun_next := fun _ _ _ _ _ _ h => h
+     toFun_full := fun stmt tr _ => h stmt tr },
+   fun _ _ _ _ => (prEvent_eq_zero_of_forall_not _ _ fun _ h ↦ h.2).trans_le zero_le⟩
 
-This theorem shows that state-restoration security is a strengthening of basic soundness.
-The error is preserved in the implication. -/
-theorem srSoundness_implies_soundness
-    (langIn : Set StmtIn) (langOut : Set StmtOut)
-    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (srInit : ProbComp (QueryImpl (srChallengeOracle StmtIn pSpec) Id))
-    (srImpl : QueryImpl oSpec (StateT (QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp))
-    (srSoundnessError : ℝ≥0) :
-      Verifier.StateRestoration.soundness srInit srImpl langIn langOut verifier srSoundnessError →
-        soundness init impl langIn langOut verifier srSoundnessError := by
-  sorry
+/-- If no input statement, full transcript and output witness exist together, round-by-round
+knowledge soundness holds for every pair of relations, with any error. -/
+theorem rbrKnowledgeSoundness_of_isEmpty
+    [IsEmpty (StmtIn × FullTranscript pSpec × WitOut)]
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec} (ε : pSpec.ChallengeIdx → ℝ≥0) :
+    verifier.rbrKnowledgeSoundness init impl relIn relOut ε :=
+  ⟨_, _, KnowledgeStateFunction.ofIsEmpty init impl, fun _ _ _ =>
+    (prEvent_eq_zero_of_forall_not _ _ fun _ ⟨w, _⟩ ↦ w.elim).trans_le zero_le⟩
 
-/-- State-restoration knowledge soundness implies basic (straightline) knowledge soundness.
+/-- With no input witnesses, an input statement, full transcript and output witness preclude
+round-by-round knowledge soundness, whatever the relations and error. -/
+theorem not_rbrKnowledgeSoundness_of_isEmpty [IsEmpty WitIn] (stmtIn : StmtIn)
+    (tr : FullTranscript pSpec) (witOut : WitOut)
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec} {ε : pSpec.ChallengeIdx → ℝ≥0} :
+    ¬ verifier.rbrKnowledgeSoundness init impl relIn relOut ε := fun ⟨_, E, _⟩ =>
+  (Extractor.RoundByRound.isEmpty_of_isEmpty_witIn stmtIn tr witOut).false E
 
-This theorem shows that state-restoration knowledge soundness is a strengthening of basic
-knowledge soundness. The error is preserved in the implication. -/
-theorem srKnowledgeSoundness_implies_knowledgeSoundness
-    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
-    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (srInit : ProbComp (QueryImpl (srChallengeOracle StmtIn pSpec) Id))
-    (srImpl : QueryImpl oSpec (StateT (QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp))
-    (srKnowledgeError : ℝ≥0) :
-      Verifier.StateRestoration.knowledgeSoundness srInit srImpl relIn relOut
-        verifier srKnowledgeError →
-      knowledgeSoundness init impl relIn relOut verifier srKnowledgeError := by sorry
+/-- Round-by-round soundness of the induced languages is knowledge soundness when
+input witnesses exist, or when no input statement, full transcript and output witness exist
+together. -/
+theorem rbrSoundness_iff_rbrKnowledgeSoundness_of_nonempty_or_isEmpty
+    (h : Nonempty WitIn ∨ IsEmpty (StmtIn × FullTranscript pSpec × WitOut))
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec} {ε : pSpec.ChallengeIdx → ℝ≥0} :
+    verifier.rbrSoundness init impl relIn.language relOut.language ε ↔
+      verifier.rbrKnowledgeSoundness init impl relIn relOut ε := by
+  rcases h with h | h
+  · exact rbrSoundness_iff_rbrKnowledgeSoundness init impl
+  · exact ⟨fun _ => rbrKnowledgeSoundness_of_isEmpty init impl ε,
+      rbrKnowledgeSoundness_implies_rbrSoundness init impl⟩
 
--- TODO: state that round-by-round security implies state-restoration security for protocol with
--- arbitrary added (non-empty?) salts
-
--- TODO: state that state-restoration security for added salts imply state-restoration security for
--- the original protocol (with some better parameters)
-
--- TODO: state that state-restoration security implies basic security
+/-- Round-by-round soundness of the induced languages coincides with round-by-round
+knowledge soundness for all relations and errors exactly when input witnesses exist, or no input
+statement, full transcript and output witness exist together. The condition does not depend on
+the verifier, `init`, `impl` or the error. -/
+theorem forall_rbrSoundness_iff_rbrKnowledgeSoundness_iff
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec} :
+    (∀ (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+        (ε : pSpec.ChallengeIdx → ℝ≥0),
+      verifier.rbrSoundness init impl relIn.language relOut.language ε ↔
+        verifier.rbrKnowledgeSoundness init impl relIn relOut ε) ↔
+      Nonempty WitIn ∨ IsEmpty (StmtIn × FullTranscript pSpec × WitOut) := by
+  refine ⟨fun h => ?_, fun h _ _ _ =>
+    rbrSoundness_iff_rbrKnowledgeSoundness_of_nonempty_or_isEmpty init impl h⟩
+  by_contra hne
+  rw [not_or, not_nonempty_iff, not_isEmpty_iff] at hne
+  obtain ⟨_, ⟨stmtIn, tr, witOut⟩⟩ := hne
+  refine not_rbrKnowledgeSoundness_of_isEmpty init impl stmtIn tr witOut
+    ((h ∅ ∅ 0).1 ?_)
+  exact rbrSoundness_of_forall_prEvent_eq_zero init impl
+    (fun _ _ => prEvent_eq_zero_of_forall_not _ _ fun _ ↦ by simp [Set.language]) 0
 
 end Implications
 

@@ -82,7 +82,7 @@ private def curveCertificate :
       (firstOrderColumns (D := 1) (A := 1) (m := 2) (M := 1) (μ := 1)) := by
   exact Classical.choice <| exists_finite_firstOrder_curve_certificate_of_heightSlotCount
     (D := 1) (A := 1) (m := 2) (M := 1) (μ := 1) (k := 1) (h := 1) (n := 1)
-    0 (by norm_num) (by norm_num) (by norm_num) curveDomain
+    0 (by norm_num) (by norm_num) curveDomain
     (fun i ↦ powerBatchedCoordinate (fun t ↦ curveValues t i))
     (by intro i; norm_num [powerBatchedCoordinate, curveValues]) curveHeightSurplus
 
@@ -103,10 +103,10 @@ example : ∃ z : ℚ, ∃ P : ℚ[X], P.degree < 1 ∧
       (F := ℚ) (E := AlgebraicClosure ℚ) (D := 1) (A := 1) (m := 2) (M := 1)
       (μ := 1) (k := 1) (h := 1) (n := 1) (K := 2) (L := 1) (ell := 0)
       curveDomain curveValues (algebraMap ℚ (AlgebraicClosure ℚ))
-      (by norm_num) (by norm_num) (by norm_num) curveHeightSurplus
+      (by norm_num) (by norm_num) curveHeightSurplus
       (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
       (by norm_num) 1 (taylorExponentSufficient_two_mul_sub_three 0 2)
-      (taylorExponentSufficient_two_mul_sub_three 1 2) (by norm_num) (by simp)
+      (by simp)
   obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
   refine ⟨z, 0, by simp, ?_, ?_⟩
   · have hset : polynomialAgreementSet curveDomain (powerBatchedWord curveValues z)
@@ -130,7 +130,7 @@ example : ∃ z : ℚ, ∃ P : ℚ[X], P.degree < 1 ∧
       (algebraMap ℚ (AlgebraicClosure ℚ)) _ curveCertificate
       (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
       (by norm_num) 1 (taylorExponentSufficient_two_mul_sub_three 0 2)
-      (taylorExponentSufficient_two_mul_sub_three 1 2) (by norm_num) (by simp)
+      (by simp)
   obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
   refine ⟨z, 0, by simp, ?_, ?_⟩
   · have hset : polynomialAgreementSet curveDomain (powerBatchedWord curveValues z)
@@ -161,10 +161,10 @@ example : ∃ z : AlgebraicClosure ℚ, ∃ P : (AlgebraicClosure ℚ)[X], P.deg
       (F := ℚ) (E := AlgebraicClosure ℚ) (D := 1) (A := 1) (m := 2) (M := 1)
       (μ := 1) (k := 1) (h := 1) (n := 1) (K := 2) (L := 1) (ell := 0)
       curveDomain curveValues iota
-      (by norm_num) (by norm_num) (by norm_num) curveHeightSurplus
-      (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num) (by norm_num) curveHeightSurplus
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num)
       (by norm_num) 1 (taylorExponentSufficient_two_mul_sub_three 0 2)
-      (taylorExponentSufficient_two_mul_sub_three 1 2) (by norm_num) (by simp)
+      (by norm_num) (by simp)
   obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
   have hset : polynomialAgreementSet extensionDomain (powerBatchedWord extensionValues z)
       (0 : (AlgebraicClosure ℚ)[X]) = Finset.univ := by
@@ -199,7 +199,7 @@ example : ∃ z : AlgebraicClosure ℚ, ∃ P : (AlgebraicClosure ℚ)[X], P.deg
       (K := 2) (L := 1) (ell := 0) curveDomain curveValues iota _ curveCertificate
       (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
       (by norm_num) 1 (taylorExponentSufficient_two_mul_sub_three 0 2)
-      (taylorExponentSufficient_two_mul_sub_three 1 2) (by norm_num) (by simp)
+      (by norm_num) (by simp)
   obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
   have hset : polynomialAgreementSet extensionDomain (powerBatchedWord extensionValues z)
       (0 : (AlgebraicClosure ℚ)[X]) = Finset.univ := by
@@ -288,20 +288,20 @@ private theorem exceptionOrdinaryTailTransfer :
       (e := exceptionDescent.actualDegree) exceptionDomain (exceptionValues 0)
       (exceptionValues 1) exceptionEmbedding exceptionDescent.tail.equation :=
   exceptionDescent.hasOrdinaryTailTransfer exceptionDomain (exceptionValues 0)
-    (exceptionValues 1) exceptionEmbedding (by norm_num) (by norm_num) (by norm_num)
+    (exceptionValues 1) exceptionEmbedding (by norm_num) (by norm_num)
 
 example := exists_exceptional_firstOrder_hybrid_raw_of_tail
   (n := 2) (D := 1) (A := 2) (L := 2) (mu := 1) (M := 1)
   exceptionDomain (exceptionValues 0) (exceptionValues 1) exceptionEmbedding
   exceptionEquation exceptionDescent
-  (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  (by norm_num) (by norm_num) (by norm_num)
   (Or.inl (ringChar.eq_zero : ringChar ℂ = 0)) exceptionOrdinaryTailTransfer
 
 example := exists_exceptional_firstOrder_hybrid_optimized_of_tail
   (n := 2) (D := 1) (A := 2) (mu := 1) (M := 1)
   exceptionDomain (exceptionValues 0) (exceptionValues 1) exceptionEmbedding
   exceptionEquation exceptionDescent
-  (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  (by norm_num) (by norm_num)
   (Or.inl (ringChar.eq_zero : ringChar ℂ = 0)) exceptionOrdinaryTailTransfer
 
 example :
@@ -331,7 +331,7 @@ example :
     (n := 2) (D := 1) (A := 2) (L := 2) (mu := 1) (M := 1) (ell := 1)
     exceptionDomain exceptionValues exceptionEmbedding exceptionEquation exceptionDescent
     (coeffNatDegreeLE_coeffNatDegree _)
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
     (Or.inl (ringChar.eq_zero : ringChar ℂ = 0))
 
 example :
@@ -352,7 +352,7 @@ example :
     (n := 2) (D := 1) (A := 2) (L := 2) (mu := 1) (M := 1) (ell := 1)
     exceptionDomain exceptionValues exceptionEmbedding exceptionEquation exceptionDescent
     (coeffNatDegreeLE_coeffNatDegree _)
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
     (Or.inl (ringChar.eq_zero : ringChar ℂ = 0)) 0 (by
         refine ⟨∅, by norm_num, ?_⟩
         intro z hz P hdegree hagree hroot
@@ -375,7 +375,7 @@ example :
   exact exists_exceptional_firstOrder_hybridCurve_optimized_of_tail
     (n := 2) (D := 1) (A := 2) (mu := 1) (M := 1) (ell := 1)
     exceptionDomain exceptionValues exceptionEmbedding exceptionEquation exceptionDescent
-    (coeffNatDegreeLE_coeffNatDegree _) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (coeffNatDegreeLE_coeffNatDegree _) (by norm_num) (by norm_num)
     (Or.inl (ringChar.eq_zero : ringChar ℂ = 0)) (by
         intro L₀ hDL₀ hL₀A
         have hL₀ : L₀ = 2 := by omega
@@ -396,7 +396,7 @@ example := exists_exceptional_firstOrder_hybrid
   exceptionDomain (exceptionValues 0) (exceptionValues 1) exceptionEmbedding exceptionEquation
   (by simp [exceptionEquation]) exceptionEquation_totalDegree.le
   (by simp [jetDegree, exceptionEquation, MvPolynomial.degreeOf_X_self])
-  (MvPolynomial.coeffNatDegreeLE_X _) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  (MvPolynomial.coeffNatDegreeLE_X _) (by norm_num) (by norm_num)
   (Or.inl (ringChar.eq_zero : ringChar ℂ = 0))
 
 /-- The base-field hybrid transfer applies to the same equation, with `ℂ` as the base field. -/
@@ -405,7 +405,7 @@ example := exists_exceptional_firstOrder_hybrid_base
   exceptionDomain (exceptionValues 0) (exceptionValues 1) exceptionEquation
   (by simp [exceptionEquation]) exceptionEquation_totalDegree.le
   (by simp [jetDegree, exceptionEquation, MvPolynomial.degreeOf_X_self])
-  (MvPolynomial.coeffNatDegreeLE_X _) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  (MvPolynomial.coeffNatDegreeLE_X _) (by norm_num) (by norm_num)
   (Or.inl (ringChar.eq_zero : ringChar ℂ = 0))
 
 private theorem halfRate_threshold_lt_three_quarters :
@@ -423,21 +423,21 @@ private def rationalDomain : Fin 4 ↪ ℚ := ⟨![0, 1, 2, 3], by decide⟩
 /-- The automatic recipe at rate `1/2` and agreement `3/4` gives the extension-field transfer. -/
 example := exists_automaticFirstOrder_hybridEquation (rho := 1 / 2) (a := 3 / 4)
   (n := 4) (D := 1) (A := 3) (k := 2) (by norm_num) (by norm_num)
-  halfRate_threshold_lt_three_quarters (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-  (by norm_num) (by norm_num) (by norm_num) (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+  halfRate_threshold_lt_three_quarters (by norm_num) (by norm_num) (by norm_num)
+  (by norm_num) (by norm_num) (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
   rationalDomain (fun _ ↦ 0) (fun _ ↦ 1) (algebraMap ℚ ℂ)
 
 /-- The automatic recipe at rate `1/2` and agreement `3/4` gives the base-field transfer. -/
 example := exists_automaticFirstOrder_hybridEquation_base (rho := 1 / 2) (a := 3 / 4)
-  (n := 4) (D := 1) (A := 3) (k := 2) (by norm_num) (by norm_num)
-  halfRate_threshold_lt_three_quarters (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-  (by norm_num) (by norm_num) (by norm_num) (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+  (n := 4) (D := 1) (A := 3) (k := 2) (by norm_num)
+  halfRate_threshold_lt_three_quarters (by norm_num) (by norm_num)
+  (by norm_num) (by norm_num) (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
   rationalDomain (fun _ ↦ 0) (fun _ ↦ 1)
 
 /-- The closed exceptional-set bound along a rational received line. -/
-example := automatic_first_order_line_agreement (1 / 2) (3 / 4) (by norm_num) (by norm_num)
-  halfRate_threshold_lt_three_quarters (by norm_num) 4 2 3 (by norm_num) (by norm_num)
-  (by norm_num) (by norm_num) (by norm_num) rationalDomain
+example := automatic_first_order_line_agreement (1 / 2) (3 / 4) (by norm_num)
+  halfRate_threshold_lt_three_quarters 4 2 3 (by norm_num)
+  (by norm_num) (by norm_num) rationalDomain
   (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)) (fun _ ↦ 0) (fun _ ↦ 1)
 
 private theorem halfRate_slack_lt_one : firstOrderRateThreshold (1 / 2 : ℝ) + 1 / 8 < 1 := by
@@ -458,9 +458,9 @@ private theorem halfRate_finiteLengthDerivativeRatio_le_half :
   linarith
 
 /-- The rate-slack list and line-agreement envelopes over `ℚ` at slack `1/8`. -/
-example := automaticFirstOrder_rate_bounds (1 / 2) (1 / 8) 4 2 4 (by norm_num) (by norm_num)
-  (by norm_num) halfRate_slack_lt_one (by norm_num) (by norm_num) (by norm_num)
-  (by linarith [halfRate_threshold_lt_three_quarters]) (by norm_num) rationalDomain
+example := automaticFirstOrder_rate_bounds (1 / 2) (1 / 8) 4 2 4 (by norm_num)
+  (by norm_num) halfRate_slack_lt_one (by norm_num) (by norm_num)
+  (by linarith [halfRate_threshold_lt_three_quarters]) rationalDomain
   (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
 
 local instance : Fact (Nat.Prime 2749) := ⟨by norm_num⟩
@@ -490,20 +490,20 @@ private theorem finiteField_charGuard :
 
 /-- The finite-field line MCA error bounds over `ZMod 2749`. -/
 example := automaticFirstOrder_hybrid_mcaError_le (rho := 1 / 2)
-  (a := firstOrderRateThreshold (1 / 2) + 1 / 8) (n := 4) (k := 2) (by norm_num) (by norm_num)
-  (by linarith) halfRate_slack_lt_one (by norm_num) (by norm_num) (by norm_num) finiteDomain
+  (a := firstOrderRateThreshold (1 / 2) + 1 / 8) (n := 4) (k := 2) (by norm_num)
+  (by linarith) (by norm_num) (by norm_num) finiteDomain
   finiteField_charGuard
 
 /-- The quintic slack envelope bounds the line MCA error over `ZMod 2749`. -/
-example := automaticFirstOrder_rate_mcaError_le (1 / 2) (1 / 8) 4 2 (by norm_num) (by norm_num)
-  (by norm_num) halfRate_slack_lt_one (by norm_num) (by norm_num) (by norm_num) finiteDomain
+example := automaticFirstOrder_rate_mcaError_le (1 / 2) (1 / 8) 4 2 (by norm_num)
+  (by norm_num) halfRate_slack_lt_one (by norm_num) (by norm_num) finiteDomain
   finiteField_charGuard
 
 private def uniformLineDomain : Fin 3 ↪ ℚ := ⟨![0, 1, 2], by decide⟩
 
 /-- The uniform line-agreement bound applies at `n = 3`, `k = 2` and `A = 3` over `ℚ`. -/
 example := exists_uniformFirstOrder_lineMca_of_two_le 3 2 3 uniformLineDomain (fun _ ↦ 0)
-  (fun _ ↦ 1) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  (fun _ ↦ 1) (by norm_num) (by norm_num)
   (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
 
 /-- Optimized curve recovery over `ℂ` applies to the equation `Y₁`. -/
@@ -513,7 +513,7 @@ example := exists_exceptional_firstOrder_hybridCurve_optimized
   (by simp [exceptionEquation]) exceptionEquation_totalDegree.le
   (by simp [jetDegree, exceptionEquation, MvPolynomial.degreeOf_X_self])
   (coeffNatDegreeLE_X _)
-  (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  (by norm_num) (by norm_num) (by norm_num)
   (Or.inl (ringChar.eq_zero : ringChar ℂ = 0))
 
 /-- The base-field form applies to the same equation, with the algebraic closure internal. -/
@@ -523,7 +523,7 @@ example := exists_baseExceptional_firstOrder_hybridCurve_optimized
   (by simp [exceptionEquation]) exceptionEquation_totalDegree.le
   (by simp [jetDegree, exceptionEquation, MvPolynomial.degreeOf_X_self])
   (coeffNatDegreeLE_X _)
-  (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  (by norm_num) (by norm_num) (by norm_num)
   (Or.inl (ringChar.eq_zero : ringChar ℂ = 0))
 
 private def recoveryDomain : Fin 3 ↪ ℚ where
@@ -550,7 +550,7 @@ example : ∃ z : ℚ, ∃ P : ℚ[X], P.degree < 2 ∧
   obtain ⟨exceptional, _, hgood⟩ :=
     exists_baseExceptional_firstOrderCurve_of_heightSlotCount_optimized
       (D := 1) (A := 3) (m := 1) (M := 0) (mu := 1) (h := 1) recoveryDomain recoveryValues
-      le_rfl (by norm_num) recoveryHeightSurplus (by norm_num) (by norm_num) le_rfl
+      le_rfl recoveryHeightSurplus (by norm_num) (by norm_num)
       (Or.inr (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)))
   obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
   have hagree : 3 ≤ (polynomialAgreementSet recoveryDomain
@@ -571,7 +571,7 @@ private def ternaryLineDomain : Fin 3 ↪ ZMod 3 := ⟨![0, 1, 2], by decide⟩
 /-- The uniform line-agreement bound applies over `ZMod 3` at `k = 2`, where the characteristic is
 below the first-order derivative cap. -/
 example := exists_uniformFirstOrder_lineMca 3 2 3 ternaryLineDomain (fun _ ↦ 0) (fun _ ↦ 1)
-  (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  (by norm_num) (by norm_num) (by norm_num)
   (Or.inr (by rw [ZMod.ringChar_zmod_n]; norm_num))
 
 /-! ### Sharp squarefree profile bound -/
@@ -604,9 +604,9 @@ example : ∃ z : ℚ, HasExactPowerAgreement sharpProfileDomain sharpProfileVal
     (RingHom.id ℚ) 2 z 0 := by
   obtain ⟨exceptional, -, hgood⟩ :=
     exists_exceptional_exactPowerAgreement_squarefreeSharpOptimized
-      (E := AlgebraicClosure ℚ) (p := sharpSquarefreeProfile) (by decide) 2
-      ⟨le_rfl, le_rfl, le_rfl⟩ Nat.one_pos le_rfl le_rfl sharpProfileDomain
-      sharpProfileValues (algebraMap ℚ (AlgebraicClosure ℚ))
+      (p := sharpSquarefreeProfile) (by decide) 2
+      ⟨le_rfl, le_rfl, le_rfl⟩ le_rfl le_rfl sharpProfileDomain
+      sharpProfileValues
       (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
   obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
   exact ⟨z, hgood z hz 0 (WithBot.bot_lt_coe 2) (by
@@ -623,10 +623,10 @@ example :
       (RingHom.id ℚ) 2 z 0 := by
   obtain ⟨exceptional, hcard, hgood⟩ :=
     exists_exceptional_exactPowerAgreement_bestOptimized
-      (E := AlgebraicClosure ℚ) (p := sharpSquarefreeProfile) (by decide) 2
+      (p := sharpSquarefreeProfile) (by decide) 2
       ⟨le_rfl, le_rfl, le_rfl⟩ (by norm_num [sharpSquarefreeProfile]) le_rfl le_rfl
       sharpProfileDomain
-      sharpProfileValues (algebraMap ℚ (AlgebraicClosure ℚ))
+      sharpProfileValues
       (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
   obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
   exact ⟨exceptional, hcard, z, hz, hgood z hz 0 (WithBot.bot_lt_coe 2) (by
@@ -643,7 +643,7 @@ example : ∃ exceptional : Finset ℚ,
       (RingHom.id ℚ) 2 z 0 := by
   obtain ⟨exceptional, hcard, hgood⟩ :=
     exists_exceptional_exactPowerAgreement_hybridOptimized
-      (p := sharpSquarefreeProfile) (by decide) le_rfl le_rfl
+      (p := sharpSquarefreeProfile) (by decide) le_rfl
       (by norm_num [sharpSquarefreeProfile]) sharpProfileDomain sharpProfileValues
       (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
   obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
@@ -669,7 +669,7 @@ private theorem rationalFiniteLengthZeroCertificate :
         (μ := finiteLengthJetDegree (1 / 2) (1 / 8) 4))) := by
   exact exists_finiteLengthFirstOrder_symbolicCertificate
     (rho := 1 / 2) (eta := 1 / 8) (n := 4) (k := 2) (A := 4)
-    (by norm_num) (by norm_num) (by norm_num) halfRate_slack_lt_one (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num)
     halfRate_finiteLengthDerivativeRatio_le_half (by norm_num) (by norm_num)
     (by nlinarith [halfRate_slack_lt_one]) rationalDomain (fun _ ↦ 0) (fun _ ↦ 0)
 
@@ -688,7 +688,7 @@ example :
       (rho := 1 / 2) (eta := 1 / 8) (n := 4) (k := 2) (A := 4)
       (by norm_num) (by norm_num) (by norm_num) halfRate_slack_lt_one
       (by norm_num) halfRate_finiteLengthDerivativeRatio_le_half
-      (by norm_num) (by nlinarith [halfRate_slack_lt_one]) (by norm_num)
+      (by norm_num) (by nlinarith [halfRate_slack_lt_one])
       rationalDomain (fun _ ↦ 0)
       (firstOrderColumns (D := 1) (A := 4)
         (m := finiteLengthMultiplicity (1 / 2) (1 / 8) 4)
@@ -714,13 +714,12 @@ example : ∃ exceptional : Finset ℚ,
         (RingHom.id ℚ) 2 z 0 := by
   obtain ⟨exceptional, hcard, hgood⟩ :=
     exists_exceptional_finiteLengthMca_of_selector_certificate
-      (E := AlgebraicClosure ℚ) (rho := 1 / 2) (eta := 1 / 8)
+      (rho := 1 / 2) (eta := 1 / 8)
       (n := 4) (k := 2) (A := 4)
       (by norm_num) (by norm_num) (by norm_num) halfRate_slack_lt_one
       (by norm_num) halfRate_finiteLengthDerivativeRatio_le_half
       (by norm_num) (by norm_num) (by nlinarith [halfRate_slack_lt_one])
       (by norm_num) rationalDomain (fun _ ↦ 0) (fun _ ↦ 0)
-      (algebraMap ℚ (AlgebraicClosure ℚ))
       (firstOrderColumns (D := 1) (A := 4)
         (m := finiteLengthMultiplicity (1 / 2) (1 / 8) 4)
         (M := finiteLengthDerivativeCap (1 / 2) (1 / 8) 4)
@@ -748,13 +747,12 @@ example :
           (RingHom.id ℚ) 2 z 0 := by
   obtain ⟨hlist, exceptional, hcard, hgood⟩ :=
     finiteLength_completeList_and_exceptionalMca_of_selector_certificates
-      (E := AlgebraicClosure ℚ) (rho := 1 / 2) (eta := 1 / 8)
+      (rho := 1 / 2) (eta := 1 / 8)
       (n := 4) (k := 2) (A := 4)
       (by norm_num) (by norm_num) (by norm_num) halfRate_slack_lt_one
       (by norm_num) halfRate_finiteLengthDerivativeRatio_le_half
       (by norm_num) (by norm_num) (by nlinarith [halfRate_slack_lt_one])
       (by norm_num) rationalDomain (fun _ ↦ 0) (fun _ ↦ 0)
-      (algebraMap ℚ (AlgebraicClosure ℚ))
       (firstOrderColumns (D := 1) (A := 4)
         (m := finiteLengthMultiplicity (1 / 2) (1 / 8) 4)
         (M := finiteLengthDerivativeCap (1 / 2) (1 / 8) 4)
@@ -785,7 +783,7 @@ example :
         HasExactCorrelatedPair rationalDomain (fun _ ↦ 0) (fun _ ↦ 0)
           (RingHom.id ℚ) 2 z 0 := by
   obtain ⟨hlist, hline⟩ := automaticFirstOrder_finiteLength_finiteSlack_bounds
-    (1 / 2) (1 / 8) 4 2 4 (by norm_num) (by norm_num) (by norm_num)
+    (1 / 2) (1 / 8) 4 2 4 (by norm_num) (by norm_num)
     halfRate_slack_lt_one halfRate_finiteLengthDerivativeRatio_le_half
     (by norm_num) (by norm_num) (by nlinarith [halfRate_slack_lt_one])
     (by norm_num) rationalDomain
@@ -809,10 +807,10 @@ example :
         HasExactCorrelatedPair rationalDomain (fun _ ↦ 0) (fun _ ↦ 0)
           (RingHom.id ℚ) 2 z 0 := by
   obtain ⟨hlist, hline⟩ := automaticFirstOrder_finiteLength_rate_bounds
-    (1 / 2) (1 / 8) 4 2 4 (by norm_num) (by norm_num) (by norm_num)
+    (1 / 2) (1 / 8) 4 2 4 (by norm_num) (by norm_num)
     halfRate_slack_lt_one halfRate_finiteLengthDerivativeRatio_le_half
     (by norm_num) (by norm_num) (by nlinarith [halfRate_slack_lt_one])
-    (by norm_num) rationalDomain
+    rationalDomain
     (Or.inr (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)))
   obtain ⟨exceptional, hcard, hgood⟩ := hline (fun _ ↦ 0) (fun _ ↦ 0)
   obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
@@ -829,7 +827,7 @@ example :
         ((140 * finiteLengthMcaParameterConstant (1 / 2) ^ 6 * 4 ^ 2 /
           (1 / 8) ^ 4) / (Fintype.card (ZMod 2749) : ℝ))) := by
   exact automaticFirstOrder_finiteLength_mcaError_le
-    (1 / 2) (1 / 8) 4 1 (by norm_num) (by norm_num) (by norm_num)
+    (1 / 2) (1 / 8) 4 1 (by norm_num) (by norm_num)
     halfRate_slack_lt_one halfRate_finiteLengthDerivativeRatio_le_half
     (by norm_num) (by norm_num) finiteDomain (Or.inl rfl)
 
@@ -854,7 +852,7 @@ private theorem sixteenth_lowRate_conditions :
   have huPos : 0 < u := firstOrderLowRateStationaryU_pos (by norm_num)
   have huCubic : u ^ 2 * (u + 3) = t := by
     simpa only [firstOrderStationaryCubic, u, t] using
-      firstOrderLowRateStationaryU_cubic (by norm_num : (0 : ℝ) < 1 / 16)
+      firstOrderLowRateStationaryU_cubic
   have huLt : u < 1 := by
     by_contra hu
     have huOne : 1 ≤ u := le_of_not_gt hu
@@ -869,7 +867,6 @@ private theorem sixteenth_lowRate_conditions :
   have hthresholdEq : firstOrderLowRateThreshold (1 / 16 : ℝ) = t * (1 + u) := by
     simpa only [t, u] using
       firstOrderLowRateThreshold_eq_scale_mul_one_add
-        (by norm_num : (0 : ℝ) < 1 / 16)
   have hthresholdLt : t * (1 + u) < 1 / 2 := by
     calc
       t * (1 + u) < 1 / 4 * (1 + u) :=
@@ -884,7 +881,7 @@ private theorem sixteenth_lowRate_conditions :
 /-- At rate `1/16`, the sixty-four-point zero line admits a symbolic certificate. -/
 example := exists_lowRateFiniteLengthFirstOrder_symbolicCertificate
   (F := ℚ) (rho := 1 / 16) (eta := 1 / 8) (n := 64) (k := 2) (A := 64)
-  (by norm_num) (by norm_num) sixteenth_lowRate_conditions.2 (by norm_num)
+  (by norm_num) sixteenth_lowRate_conditions.2
   sixteenth_lowRate_conditions.1 (by norm_num) (by norm_num)
   (by nlinarith [sixteenth_lowRate_conditions.2])
   lowRateDomain (fun _ ↦ 0) (fun _ ↦ 0)
@@ -900,7 +897,7 @@ private def lowRateFiniteDomain : Fin 64 ↪ ZMod 2749 where
 
 /-- The low-rate finite-field bound controls MCA error for a sixty-four-point constant code. -/
 example := lowRate_finiteLength_mcaError_le
-  (1 / 16) (1 / 8) 64 1 (by norm_num) sixteenth_lowRate_conditions.1
+  (1 / 16) (1 / 8) 64 1 sixteenth_lowRate_conditions.1
   (by norm_num) sixteenth_lowRate_conditions.2 (by norm_num) (by norm_num)
   lowRateFiniteDomain (Or.inl rfl)
 
@@ -917,13 +914,13 @@ example :
         HasExactCorrelatedPair lowRateDomain (fun _ ↦ 0) (fun _ ↦ 0)
           (RingHom.id ℚ) 2 z 0 := by
   obtain ⟨hlist, hline⟩ := lowRate_finiteLength_rate_bounds
-    (F := ℚ) (E := AlgebraicClosure ℚ) (rho := 1 / 16) (eta := 1 / 8)
+    (F := ℚ) (rho := 1 / 16) (eta := 1 / 8)
     (n := 64) (k := 2) (A := 64)
     (by norm_num) sixteenth_lowRate_conditions.1
     (by norm_num) sixteenth_lowRate_conditions.2
     (by norm_num) (by norm_num)
     (by nlinarith [sixteenth_lowRate_conditions.2]) (by norm_num)
-    lowRateDomain (algebraMap ℚ (AlgebraicClosure ℚ))
+    lowRateDomain
     (Or.inr (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)))
   obtain ⟨exceptional, hcard, hgood⟩ := hline (fun _ ↦ 0) (fun _ ↦ 0)
   obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
@@ -950,14 +947,14 @@ private theorem halfRate_branch_slack_lt_one :
 /-- The branch selector gives finite-slack list and line bounds at rate `1/2`. -/
 example := firstOrderBranch_finiteLength_finiteSlack_bounds
   (1 / 2) (1 / 8) 4 1 4
-  (by norm_num) (by norm_num) (by norm_num) halfRate_branch_slack_lt_one
+  (by norm_num) (by norm_num) halfRate_branch_slack_lt_one
   (by norm_num) (by norm_num) (by nlinarith [halfRate_branch_slack_lt_one])
-  (by norm_num) rationalDomain (Or.inl rfl)
+  rationalDomain (Or.inl rfl)
 
 /-- The branchwise finite-field bound controls MCA error for a four-point constant code. -/
 example := firstOrderBranch_finiteLength_mcaError_le
   (1 / 2) (1 / 8) 4 1
-  (by norm_num) (by norm_num) (by norm_num) halfRate_branch_slack_lt_one
+  (by norm_num) (by norm_num) halfRate_branch_slack_lt_one
   (by norm_num) (by norm_num) finiteDomain (Or.inl rfl)
 
 /-- Above the rate switch, the four-point zero word has a finite constant-code list and exact
@@ -976,8 +973,8 @@ example :
     exact halfRate_branch_slack_lt_one
   obtain ⟨hlist, hline⟩ := firstOrderBranch_finiteLength_rate_bounds
     (1 / 2) (1 / 8) 4 1 4
-    (by norm_num) (by norm_num) (by norm_num) haOne
-    (by norm_num) (by norm_num) (by nlinarith [haOne]) (by norm_num)
+    (by norm_num) (by norm_num) haOne
+    (by norm_num) (by norm_num) (by nlinarith [haOne])
     rationalDomain (Or.inl rfl)
   obtain ⟨exceptional, hcard, hgood⟩ := hline (fun _ ↦ 0) (fun _ ↦ 0)
   obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional

@@ -24,8 +24,7 @@ qualified names to repeated `_root_` qualifiers when possible.
 
 Review wording together with the theorem: identify the quantified prover, what is random, the
 winning event, which intermediate inputs need a bound, and whether effects may be reordered.
-Plain language must preserve these conditions. The [roadmap](../design/05-roadmap.md)
-uses this convention for the next PRs.
+Plain language must preserve these conditions.
 
 ## Sources and their morphisms
 
@@ -183,9 +182,16 @@ bounds accepted true outputs for a false input sum under a fresh uniform finite-
 before that challenge. Neither theorem states multi-round or knowledge soundness.
 
 `legacy_input_iff` and `legacy_output_iff` give both directions of relation correspondence for
-arbitrary concrete claims. `legacy_honest_verifier_correspondence` is narrower: it compares honest
-executions. The legacy verifier reads the input polynomial for its next target, while the typed
-verifier reads the sent polynomial. Their arbitrary-message executions are not identified.
+arbitrary concrete claims. `legacy_verifier_correspondence` identifies single-round scalar outputs
+for arbitrary sent polynomials and fixed challenges, including rejection: both verifiers take the
+sent polynomial at the challenge as the next target and keep the input polynomial as the output
+oracle. It does not relate the legacy-layer and interaction-layer security games.
+
+The legacy round-by-round knowledge-soundness statements in `Sumcheck/Spec/` require
+`[IsDomain R]` on top of `[Fintype R]`; without it the error `deg / |R|` fails over rings with zero
+divisors. A finite commutative semiring with `IsDomain` is a finite field or the Boolean semiring,
+and two degree-`deg` polynomials that differ somewhere agree on at most `deg` points in both cases.
+Verifier execution and completeness keep the commutative-semiring generality.
 
 ## Consecutive multivariate rounds
 
@@ -337,7 +343,6 @@ unchanged. For named contexts and their views, replace old `tensor` uses by `dis
 | `executeRoundsSampled_measure_complete` | `executeRoundsSampled_measureCompleteness` |
 | `executeRounds_uniform_measure_complete` | `executeRounds_uniform_measureCompleteness` |
 | Soundness `*_measure_soundness` | `*_measureSoundness` |
-| `legacy_verifier_correspondence` | `legacy_honest_verifier_correspondence` |
 | `TypeTree.FullPrefix` | `TypeTree.ExecutionPrefix` |
 | Prefix `resources`, `resourceInclusion` | `availableContext`, `contextInclusion` |
 | Prefix `no_future` | `available_length_le` |

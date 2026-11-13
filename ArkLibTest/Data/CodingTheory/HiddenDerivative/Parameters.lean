@@ -80,7 +80,7 @@ example :
           (higherJetDegreeBudget (1 / 2) 4 + 3 * interpolationBoxWidth (1 / 2) 4) ≤
         ReedSolomon.HiddenDerivative.multiplicity 4 * agreementThreshold (1 / 2) 64 := by
   exact freeGlobalDimensionSlacks (ε := 1 / 2) (θ := 1 / 2) (d := 4) (n := 64)
-    (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num)
     (by norm_num [ambientDimension])
 
 /-- Concrete large-order thresholds at fixed positive free-order parameters. -/
@@ -108,7 +108,7 @@ example :
     (by norm_num) (by norm_num) (by norm_num)
   refine ⟨d₀, hd₀ d₀ le_rfl, ?_⟩
   exact freeOrder_rank_comparison (ε := 1 / 2) (θ := 1 / 2) (d := d₀) (n := 12)
-    (by norm_num) (by norm_num [ambientDimension]) (hd₀ d₀ le_rfl)
+    (by norm_num [ambientDimension]) (hd₀ d₀ le_rfl)
 
 /-- At the same block length, the rounded rate is at least half the source rate. -/
 example :
@@ -123,10 +123,8 @@ example :
     let κ := ((2 - 1 : ℕ) : ℝ) * 4 / Nat.floor R
     1 / 2 ≤ κ ∧ κ ≤ (1 : ℝ) / 1 * (1 - 1 / 2) * (1 + 2 / R) ∧
       (1 - 1 / 2) * ((1 : ℝ) / 1) ≤ κ ∧ κ ≤ (1 : ℝ) / 1 := by
-  have hfloor := kappa_floor_bounds 1 1 2 4 (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num)
-  have hinterval := kappa_interval 1 1 2 4 (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num)
+  have hfloor := kappa_floor_bounds 1 1 2 4 (by norm_num)
+  have hinterval := kappa_interval 1 1 2 4 (by norm_num) (by norm_num)
   norm_num at hfloor hinterval ⊢
 
 /-- Positive concrete multiplicity exercises the binomial, rank, and reciprocal error bounds. -/
@@ -135,11 +133,11 @@ example :
       (2 : ℝ) * 1 / 4 ≤ 1 / (1 * 2) ∧
       1 / (1 : ℝ) ^ 2 + 2 / (4 * 1) ≤ (1 + 1 / 2) / 1 ^ 2 * (1 / 1 ^ 2) := by
   refine ⟨?_, ?_, ?_⟩
-  · simpa using kappa_exponent_le 1 1 1 1 2 4 (by norm_num) (by norm_num) (by norm_num)
-      (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-  · simpa using kappa_multiplicity_error_le 1 1 1 2 4 (by norm_num) (by norm_num) (by norm_num)
+  · simpa using kappa_exponent_le 1 1 1 1 2 4 (by norm_num) (by norm_num)
       (by norm_num) (by norm_num)
-  · simpa using kappa_reciprocal_factor_le 1 1 2 4 1 (1 / 2) (by norm_num) (by norm_num)
+  · simpa using kappa_multiplicity_error_le 1 1 1 2 4 (by norm_num)
+      (by norm_num) (by norm_num)
+  · simpa using kappa_reciprocal_factor_le 1 1 2 4 1 (1 / 2) (by norm_num)
       (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
 
 /-- The prescribed multiplicity and rounded rank at `a = H = 1`, `d = 1000`. -/

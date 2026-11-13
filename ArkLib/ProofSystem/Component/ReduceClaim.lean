@@ -131,7 +131,7 @@ theorem reduction_completeness --(h : init.neverFails)
   `mapWitInv` from the output witness to the input witness. -/
 def extractor (mapWitInv : StmtIn → WitOut → WitIn) :
     Extractor.RoundByRound oSpec StmtIn WitIn WitOut !p[] (fun _ => WitIn) where
-  eqIn := rfl
+  extractIn := fun _ w => w
   extractMid := fun i => Fin.elim0 i
   extractOut := fun stmtIn _ witOut => mapWitInv stmtIn witOut
 
@@ -143,7 +143,7 @@ def knowledgeStateFunction (hRel : ∀ stmtIn witOut,
     (verifier oSpec mapStmt).KnowledgeStateFunction
       init impl relIn relOut (extractor mapWitInv) where
   toFun | ⟨0, _⟩ => fun stmtIn _ witIn => ⟨stmtIn, witIn⟩ ∈ relIn
-  toFun_empty := fun stmtIn witIn => by simp
+  toFun_empty := fun stmtIn witIn h => h
   toFun_next := fun m => Fin.elim0 m
   toFun_full := fun stmtIn _ witOut h => by
     -- Verifier deterministically returns `mapStmt stmtIn`; from positive probability we extract
@@ -166,7 +166,8 @@ def knowledgeStateFunction (hRel : ∀ stmtIn witOut,
     cases (Option.some.inj hx)
     exact hRel stmtIn witOut hrel
 
-/-- The `ReduceClaim` oracle reduction satisfies perfect round-by-round knowledge soundness.
+/-- The `ReduceClaim` oracle reduction satisfies perfect round-by-round
+knowledge soundness.
 
 Note that since there is no challenge round, all the work is done in the definition of the
 knowledge state function. -/
@@ -176,7 +177,7 @@ theorem verifier_rbrKnowledgeSoundness (hRel : ∀ stmtIn witOut,
     (verifier oSpec mapStmt).rbrKnowledgeSoundness init impl relIn relOut 0 := by
   refine ⟨_, _, knowledgeStateFunction relIn relOut hRel, ?_⟩
   simp only [ProtocolSpec.ChallengeIdx]
-  exact fun _ _ _ i => Fin.elim0 i.1
+  exact fun _ i => Fin.elim0 i.1
 
 /-- The `ReduceClaim` verifier is pure: it deterministically returns `mapStmt stmt`. This discharges
 the deterministic-left hypothesis of the CWSS binary append. -/
@@ -325,7 +326,7 @@ def oracleKnowledgeStateFunction (hRel : ∀ stmtIn oStmtIn witOut,
     (oracleVerifier oSpec mapStmt embedIdx hEq hInterface).KnowledgeStateFunction
       init impl relIn relOut (extractor mapWitInv) where
   toFun | ⟨0, _⟩ => fun ⟨stmtIn, oStmtIn⟩ _ witIn => ⟨⟨stmtIn, oStmtIn⟩, witIn⟩ ∈ relIn
-  toFun_empty := fun stmtIn witIn => by simp
+  toFun_empty := fun stmtIn witIn h => h
   toFun_next := fun m => Fin.elim0 m
   toFun_full := fun ⟨stmtIn, oStmtIn⟩ _ witOut => by
     intro h
@@ -349,7 +350,8 @@ def oracleKnowledgeStateFunction (hRel : ∀ stmtIn oStmtIn witOut,
     cases (Option.some.inj hxc)
     exact hRel stmtIn oStmtIn witOut hrel
 
-/-- The `ReduceClaim` oracle reduction satisfies perfect round-by-round knowledge soundness.
+/-- The `ReduceClaim` oracle reduction satisfies perfect round-by-round
+knowledge soundness.
 
 Note that since there is no challenge round, all the work is done in the definition of the
 knowledge state function. -/
@@ -360,7 +362,7 @@ theorem oracleVerifier_rbrKnowledgeSoundness (hRel : ∀ stmtIn oStmtIn witOut,
     (oracleVerifier oSpec mapStmt embedIdx hEq hInterface).rbrKnowledgeSoundness
       init impl relIn relOut 0 := by
   refine ⟨_, _, oracleKnowledgeStateFunction relIn relOut hRel, ?_⟩
-  intro stmtIn witIn prover i
+  intro stmtIn i
   exact Fin.elim0 i.1
 
 /-- The `ReduceClaim` oracle verifier's underlying non-oracle verifier deterministically returns the

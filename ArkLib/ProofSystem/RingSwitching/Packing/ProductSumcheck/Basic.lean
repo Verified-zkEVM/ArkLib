@@ -95,26 +95,22 @@ theorem rel_last (multiplier : Multiplier Context C m) (pc : PackedCommitment P 
 
 /-- The degree-two honest message for any round, without an arity typeclass. -/
 def roundMessage (i : Fin m) (H : C⦃≤ 2⦄[X Fin m]) (r : Fin i → C) : C⦃≤ 2⦄[X] :=
-  match m with
-  | 0 => i.elim0
-  | _ + 1 => ⟨roundPoly H.val i r,
-      Polynomial.mem_degreeLE.mpr (roundPoly_degree_le H.val i r
-        (fun j => degreeOf_le_iff.mpr fun _ h => H.property h j))⟩
+  ⟨∑ x : Fin (m - (i + 1)) → Fin 2, H.val.evalExcept i (hypercubeSuffix i r x),
+    Submodule.sum_mem _ fun _ _ => evalExcept_mem_degreeLE i _ H.property⟩
 
 /-- The honest round message evaluates to the next remaining cube sum. -/
 theorem roundMessage_eval (i : Fin m) (H : C⦃≤ 2⦄[X Fin m]) (r : Fin i → C) (c : C) :
     (roundMessage i H r).val.eval c = hypercubeSum m H.val (i + 1) (Fin.snoc r c) := by
   cases m with
   | zero => exact i.elim0
-  | succ n => exact roundPoly_eval H.val i r c
+  | succ n => exact eval_sum_evalExcept_hypercube H.val i r c
 
 /-- The two Boolean values of the honest message add to the previous cube sum. -/
 theorem roundMessage_sum (i : Fin m) (H : C⦃≤ 2⦄[X Fin m]) (r : Fin i → C) :
     (roundMessage i H r).val.eval 0 + (roundMessage i H r).val.eval 1 =
       hypercubeSum m H.val i r := by
-  rw [roundMessage_eval, roundMessage_eval]
   cases m with
   | zero => exact i.elim0
-  | succ n => exact (hypercubeSum_succ H.val i r).symm
+  | succ n => exact sum_eval_sum_evalExcept_hypercube H.val i r
 
 end RingSwitching.Packing.ProductSumcheck

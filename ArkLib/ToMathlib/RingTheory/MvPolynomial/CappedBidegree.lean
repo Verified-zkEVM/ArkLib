@@ -241,8 +241,7 @@ instance restrictCappedBidegree.moduleFinite [Finite σ] :
 
 /-- The capped polynomials form a free module of rank `(a + 1)` times the number of capped
 exponents in `cappedDegreeExponents σ i b c`. -/
-theorem finrank_restrictCappedBidegree {R : Type*} [CommRing R] [StrongRankCondition R]
-    [Finite σ] :
+theorem finrank_restrictCappedBidegree {R : Type*} [CommRing R] [StrongRankCondition R] :
     Module.finrank R (restrictCappedBidegree σ R i a b c) =
       (a + 1) * (cappedDegreeExponents σ i b c).ncard := by
   rw [restrictCappedBidegree, Module.finrank_eq_nat_card_basis (basisRestrictSupport R _),

@@ -113,7 +113,7 @@ theorem exists_exceptional_retainedSquarefreeCurveAgreement_of_singularTail
     (domain : Fin n ↪ F) (values : Fin (ell + 1) → Fin n → F)
     (iota : F →+* E)
     (Q : DifferentialPolynomial E[X] 1) (hQ : Q ≠ 0)
-    (hD : 1 ≤ D) (hDL : D + 1 ≤ L) (hLA : L ≤ A) (hAn : A ≤ n)
+    (hD : 1 ≤ D) (hDL : D + 1 ≤ L) (hLA : L ≤ A)
     (hellH : 0 < ell + H)
     (hM : 1 ≤ M) (hMB : M ≤ B)
     (hjet : jetTotalDegree Q ≤ B) (hderiv : Q.degreeOf (some 1) ≤ M)
@@ -134,6 +134,16 @@ theorem exists_exceptional_retainedSquarefreeCurveAgreement_of_singularTail
           (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
         differentialSpecialization (challengeSpecialization Q z) P = 0 →
     HasExactPowerAgreement domain values iota (D + 1) z P := by
+  by_cases hAn : A ≤ n
+  swap
+  · obtain ⟨tailExceptional, htailCard, _⟩ := htail
+    have htailNonneg : 0 ≤ tailBound := (Nat.cast_nonneg tailExceptional.card).trans htailCard
+    refine ⟨∅, ?_, fun z _ P _ hagree _ ↦ ?_⟩
+    · simp only [Finset.card_empty, Nat.cast_zero]
+      unfold regularPowerBatchedDerivativeCappedBoundTwo
+      push_cast
+      positivity
+    · exact (hAn (by simpa using hagree.trans (Finset.card_le_univ _))).elim
   have hdecF : instF = (fun a b : F ↦ Classical.propDecidable (a = b)) :=
     Subsingleton.elim _ _
   have hdecE : instE = (fun a b : E ↦ Classical.propDecidable (a = b)) :=
@@ -178,8 +188,8 @@ theorem exists_exceptional_retainedSquarefreeCurveAgreement_of_singularTail
     · subst D
       have hresult :=
         exists_exceptional_regularPowerBatchedAgreement_identityPair
-          domain values iota (positiveCurveEquation Q) L A B M H hDL hLA hAn
-          (by omega) hpositiveJet hpositiveHeight
+          domain values iota (positiveCurveEquation Q) L A B M H hDL hLA
+          hpositiveJet hpositiveHeight
       rw [← hdecF, ← hdecE] at hresult
       convert hresult using 1
       norm_num [regularTaylorExponent]
@@ -188,7 +198,7 @@ theorem exists_exceptional_retainedSquarefreeCurveAgreement_of_singularTail
           domain values iota (positiveCurveEquation Q)
           (D + 1) (D + 1) L A B M H (regularTaylorExponent D)
           htaylor (by unfold regularTaylorExponent; omega) (by omega) le_rfl hDL
-          hLA hAn hellH (by omega) hM hMB hpositiveJet hpositiveHeight
+          hLA hellH (by omega) hM hMB hpositiveJet hpositiveHeight
           hpositiveDerivative hbin
       rw [← hdecF, ← hdecE] at hresult
       simpa only [Nat.cast_add, Nat.cast_one] using hresult
@@ -228,7 +238,7 @@ theorem exists_exceptional_retainedSquarefreeCurveAgreement_of_tail
     (domain : Fin n ↪ F) (values : Fin (ell + 1) → Fin n → F)
     (iota : F →+* E)
     (Q : DifferentialPolynomial E[X] 1) (hQ : Q ≠ 0)
-    (hD : 1 ≤ D) (hDL : D + 1 ≤ L) (hLA : L ≤ A) (hAn : A ≤ n)
+    (hD : 1 ≤ D) (hDL : D + 1 ≤ L) (hLA : L ≤ A)
     (hellH : 0 < ell + H)
     (hM : 1 ≤ M) (hMB : M ≤ B)
     (hjet : jetTotalDegree Q ≤ B) (hderiv : Q.degreeOf (some 1) ≤ M)
@@ -245,10 +255,10 @@ theorem exists_exceptional_retainedSquarefreeCurveAgreement_of_tail
         differentialSpecialization (challengeSpecialization Q z) P = 0 →
     HasExactPowerAgreement domain values iota (D + 1) z P :=
   exists_exceptional_retainedSquarefreeCurveAgreement_of_singularTail domain values iota Q hQ
-    hD hDL hLA hAn hellH hM hMB hjet hderiv hheight hchar _ htail
+    hD hDL hLA hellH hM hMB hjet hderiv hheight hchar _ htail
 
 open Classical in
-/-- For `1 ≤ D`, `0 < ell`, `D + 1 ≤ A ≤ n` and `1 ≤ M ≤ B`, the singular tail of a first-order
+/-- For `1 ≤ D`, `D + 1 ≤ A` and `1 ≤ M ≤ B`, the singular tail of a first-order
 equation with jet degree at most `B`, `Y₁` degree at most `M` and coefficient height at most `H`
 satisfies the retained ordinary transfer, provided `M` is below a positive characteristic. -/
 theorem hasRetainedOrdinaryCurveAgreementTransfer_singularCurveEquation
@@ -256,7 +266,7 @@ theorem hasRetainedOrdinaryCurveAgreementTransfer_singularCurveEquation
     [IsAlgClosed E] {n D ell A B M H : ℕ}
     (domain : Fin n ↪ F) (values : Fin (ell + 1) → Fin n → F) (iota : F →+* E)
     (Q : DifferentialPolynomial E[X] 1)
-    (hD : 1 ≤ D) (hell : 0 < ell) (hDA : D + 1 ≤ A) (hAn : A ≤ n)
+    (hD : 1 ≤ D) (hDA : D + 1 ≤ A)
     (hM : 1 ≤ M) (hMB : M ≤ B)
     (hjet : jetTotalDegree Q ≤ B) (hderiv : Q.degreeOf (some 1) ≤ M)
     (hheight : CoeffNatDegreeLE Q H)
@@ -268,6 +278,13 @@ theorem hasRetainedOrdinaryCurveAgreementTransfer_singularCurveEquation
   have hdecE : instE = (fun a b : E ↦ Classical.propDecidable (a = b)) :=
     Subsingleton.elim _ _
   subst hdecF hdecE
+  by_cases hAn : A ≤ n
+  swap
+  · refine ⟨∅, ?_, fun z _ P _ hagree _ ↦ ?_⟩
+    · simp only [Finset.card_empty, Nat.cast_zero]
+      unfold retainedOrdinaryCurveAgreementCharge HiddenDerivative.agreementIncidenceRatio
+      positivity
+    · exact (hAn (by simpa using hagree.trans (Finset.card_le_univ _))).elim
   let b := B * (2 * M + 1)
   let h := H * (2 * M + 1)
   have hcharE : ringChar E = 0 ∨ M < ringChar E := by
@@ -275,7 +292,6 @@ theorem hasRetainedOrdinaryCurveAgreementTransfer_singularCurveEquation
       let _ : CharP E (ringChar F) := charP_of_injective_ringHom iota.injective (ringChar F)
       exact ringChar.eq E (ringChar F)
     rwa [heq]
-  have hb : 1 ≤ b := Nat.mul_pos (hM.trans hMB) (by omega)
   have htailDegree : (singularCurveEquation Q).degreeOf (some 0) ≤ b :=
     (singularCurveEquation_degree_le Q hjet hderiv hMB).trans
       ((ordinaryDegreeEnvelope_le B M).trans (by dsimp only [b]; nlinarith))
@@ -284,7 +300,7 @@ theorem hasRetainedOrdinaryCurveAgreementTransfer_singularCurveEquation
       ((resultantChallengeEnvelope_le H M).trans (by dsimp only [h]; nlinarith))
   obtain ⟨exceptional, hcard, hgood⟩ := exists_exceptional_ordinaryPowerEquation
     domain values iota (singularCurveEquation Q) D h b A
-    (singularCurveEquation_ne_zero Q hderiv hcharE) hD hell hb hDA hAn htailHeight htailDegree
+    (singularCurveEquation_ne_zero Q hderiv hcharE) hD hDA htailHeight htailDegree
   refine ⟨exceptional, ?_, fun z hz P hdegree hagree hroot ↦ hgood z hz P hdegree hroot hagree⟩
   have hcardReal : (exceptional.card : ℝ) ≤ (ordinaryCurveFactorRaw
       (((n - D : ℕ) : ℚ) / ((A - D : ℕ) : ℚ)) n D ell b h : ℚ) := by
@@ -301,7 +317,7 @@ theorem exists_exceptional_retainedSquarefreeCurveAgreement
     [IsAlgClosed E] {n D ell L A B M H : ℕ}
     (domain : Fin n ↪ F) (values : Fin (ell + 1) → Fin n → F) (iota : F →+* E)
     (Q : DifferentialPolynomial E[X] 1) (hQ : Q ≠ 0)
-    (hD : 1 ≤ D) (hDL : D + 1 ≤ L) (hLA : L ≤ A) (hAn : A ≤ n) (hell : 0 < ell)
+    (hD : 1 ≤ D) (hDL : D + 1 ≤ L) (hLA : L ≤ A)
     (hM : 1 ≤ M) (hMB : M ≤ B)
     (hjet : jetTotalDegree Q ≤ B) (hderiv : Q.degreeOf (some 1) ≤ M)
     (hheight : CoeffNatDegreeLE Q H)
@@ -313,11 +329,22 @@ theorem exists_exceptional_retainedSquarefreeCurveAgreement
         A ≤ (polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
           (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
         differentialSpecialization (challengeSpecialization Q z) P = 0 →
-        HasExactPowerAgreement domain values iota (D + 1) z P :=
-  exists_exceptional_retainedSquarefreeCurveAgreement_of_tail domain values iota Q hQ
-    hD hDL hLA hAn (by omega) hM hMB hjet hderiv hheight hchar
-    (hasRetainedOrdinaryCurveAgreementTransfer_singularCurveEquation domain values iota Q hD hell
-      (by omega) hAn hM hMB hjet hderiv hheight
+        HasExactPowerAgreement domain values iota (D + 1) z P := by
+  by_cases hell : ell = 0
+  · subst ell
+    refine ⟨∅, ?_, fun z _ P hdegree hagree _ ↦ ?_⟩
+    · simp only [Finset.card_empty, Nat.cast_zero]
+      unfold retainedSquarefreeCurveAgreementCharge retainedOrdinaryCurveAgreementCharge
+        HiddenDerivative.agreementIncidenceRatio regularPowerBatchedDerivativeCappedBoundTwo
+      push_cast
+      positivity
+    · apply hasExactPowerAgreement_singleton domain values iota (D + 1) z P
+      · simpa only [Nat.cast_add, Nat.cast_one] using hdegree
+      · omega
+  exact exists_exceptional_retainedSquarefreeCurveAgreement_of_tail domain values iota Q hQ
+    hD hDL hLA (by omega) hM hMB hjet hderiv hheight hchar
+    (hasRetainedOrdinaryCurveAgreementTransfer_singularCurveEquation domain values iota Q hD
+      (by omega) hM hMB hjet hderiv hheight
       (hchar.imp_right fun hmax ↦ (Nat.le_max_right D M).trans_lt hmax))
 
 universe u
@@ -385,8 +412,8 @@ theorem exists_extensionExceptional_retainedSquarefreeCurveAgreement_of_certific
     (columns : Fin N → SourceColumn 1)
     (cert : FirstOrderCurveCertificate.{u, u} Dcert A m M B k H domain
       (fun i ↦ powerBatchedCoordinate fun t ↦ values t i) columns)
-    (hk : 2 ≤ k) (hkL : k ≤ L) (hLA : L ≤ A) (hAn : A ≤ n)
-    (hell : 0 < ell) (hM : 1 ≤ M) (hMB : M ≤ B)
+    (hk : 2 ≤ k) (hkL : k ≤ L) (hLA : L ≤ A)
+    (hM : 1 ≤ M) (hMB : M ≤ B)
     (hchar : ringChar F = 0 ∨ max (k - 1) M < ringChar F) :
     ∃ exceptional : Finset E,
       (exceptional.card : ℝ) ≤ retainedSquarefreeCurveAgreementCharge
@@ -396,7 +423,7 @@ theorem exists_extensionExceptional_retainedSquarefreeCurveAgreement_of_certific
           (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
         HasExactPowerAgreement domain values iota k z P := by
   obtain ⟨exceptional, hcard, hgood⟩ := exists_exceptional_retainedSquarefreeCurveAgreement
-    domain values iota _ (cert.map_Q_ne_zero iota) (by omega) (by omega) hLA hAn hell hM hMB
+    domain values iota _ (cert.map_Q_ne_zero iota) (by omega) (by omega) hLA hM hMB
     (cert.jetTotalDegree_map_Q_le iota) (cert.degreeOf_map_Q_le iota)
     (CoeffNatDegreeLE.map_coefficients iota cert.Q cert.challengeDegree_le) hchar
   exact ⟨exceptional, hcard, cert.exactPowerAgreement_of_map_Q iota (by omega) hgood⟩
@@ -411,8 +438,8 @@ theorem exists_baseExceptional_retainedSquarefreeCurveAgreement_of_certificate
     (columns : Fin N → SourceColumn 1)
     (cert : FirstOrderCurveCertificate.{u, u} Dcert A m M B k H domain
       (fun i ↦ powerBatchedCoordinate fun t ↦ values t i) columns)
-    (hk : 2 ≤ k) (hkL : k ≤ L) (hLA : L ≤ A) (hAn : A ≤ n)
-    (hell : 0 < ell) (hM : 1 ≤ M) (hMB : M ≤ B)
+    (hk : 2 ≤ k) (hkL : k ≤ L) (hLA : L ≤ A)
+    (hM : 1 ≤ M) (hMB : M ≤ B)
     (hchar : ringChar F = 0 ∨ max (k - 1) M < ringChar F) :
     ∃ exceptional : Finset F,
       (exceptional.card : ℝ) ≤ retainedSquarefreeCurveAgreementCharge
@@ -423,7 +450,7 @@ theorem exists_baseExceptional_retainedSquarefreeCurveAgreement_of_certificate
   classical
   obtain ⟨extensionExceptional, hcard, hgood⟩ :=
     exists_extensionExceptional_retainedSquarefreeCurveAgreement_of_certificate
-      domain values iota columns cert hk hkL hLA hAn hell hM hMB hchar
+      domain values iota columns cert hk hkL hLA hM hMB hchar
   obtain ⟨exceptional, hcardBase, hgoodBase⟩ :=
     uniformExactPowerAgreement_of_extension domain values iota k A extensionExceptional hgood
   exact ⟨exceptional, (show (exceptional.card : ℝ) ≤ extensionExceptional.card by
@@ -547,8 +574,8 @@ theorem exists_extensionExceptional_retainedSquarefreeLineAgreement_of_certifica
     Nat.le_of_pred_lt (lt_balancedSplit (D := k - 1) (by omega))
   obtain ⟨exceptional, hcard, hgood⟩ :=
     exists_extensionExceptional_retainedSquarefreeCurveAgreement_of_certificate
-      (ell := 1) domain ![f, g] iota columns curveCert hk hkL (balancedSplit_le (by omega)) hAn
-      one_pos hM hMB hchar
+      (ell := 1) domain ![f, g] iota columns curveCert hk hkL (balancedSplit_le (by omega))
+      hM hMB hchar
   refine ⟨exceptional, hcard.trans (retainedSquarefreeCurveAgreementCharge_balancedSplit_le
     (by omega) (by omega) hAn hM hMB), fun z hz P hdegree hagree ↦ ?_⟩
   exact exactCorrelatedPair_of_powerAgreement_one domain ![f, g] iota z P
@@ -558,9 +585,9 @@ theorem exists_extensionExceptional_retainedSquarefreeLineAgreement_of_certifica
 `exists_extensionExceptional_retainedSquarefreeLineAgreement_of_certificate` over the base field:
 the exceptional set lies in the base field, and the exact correlated pair is found there. -/
 theorem exists_baseExceptional_retainedSquarefreeLineAgreement_of_certificate
-    {F E : Type u} [Field F] [Field E] [DecidableEq F] [IsAlgClosed E]
+    {F : Type u} [Field F] [DecidableEq F]
     {n N Dcert A m M B k H : ℕ}
-    (domain : Fin n ↪ F) (f g : Fin n → F) (iota : F →+* E)
+    (domain : Fin n ↪ F) (f g : Fin n → F)
     (columns : Fin N → SourceColumn 1)
     (cert : FirstOrderSymbolicCertificate.{u, u} Dcert A m M B k H domain f g columns)
     (hk : 2 ≤ k) (hkA : k ≤ A) (hAn : A ≤ n) (hM : 1 ≤ M) (hMB : M ≤ B)
@@ -571,6 +598,8 @@ theorem exists_baseExceptional_retainedSquarefreeLineAgreement_of_certificate
       ∀ z ∉ exceptional, ∀ P : F[X], P.degree < k →
         A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
         HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
+  classical
+  let iota := algebraMap F (AlgebraicClosure F)
   obtain ⟨curveCert⟩ := nonempty_lineCurveCertificate cert
   have hkL : k ≤ balancedSplit (k - 1) A :=
     Nat.le_of_pred_lt (lt_balancedSplit (D := k - 1) (by omega))
@@ -578,8 +607,8 @@ theorem exists_baseExceptional_retainedSquarefreeLineAgreement_of_certificate
     powerBatchedWord_pair_eq f g (RingHom.id F) z
   obtain ⟨exceptional, hcard, hgood⟩ :=
     exists_baseExceptional_retainedSquarefreeCurveAgreement_of_certificate
-      (ell := 1) domain ![f, g] iota columns curveCert hk hkL (balancedSplit_le (by omega)) hAn
-      one_pos hM hMB hchar
+      (ell := 1) domain ![f, g] iota columns curveCert hk hkL (balancedSplit_le (by omega))
+      hM hMB hchar
   refine ⟨exceptional, hcard.trans (retainedSquarefreeCurveAgreementCharge_balancedSplit_le
     (by omega) (by omega) hAn hM hMB), fun z hz P hdegree hagree ↦ ?_⟩
   exact exactCorrelatedPair_of_powerAgreement_one domain ![f, g] (RingHom.id F) z P

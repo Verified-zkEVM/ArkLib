@@ -56,7 +56,7 @@ def w := committedOpening 2 hb pp (packCoefficients (coefficientEquiv 5 3 1 h2 h
 
 /-- The honest committer's opening satisfies the scalar relation with its norm bounds. -/
 theorem source_valid : (s, w) ∈ relScalarEvalMsgShort 3 1 hk h2 pp 2 24 1 1 1 :=
-  committedStatement_mem_relScalarEvalMsgShort 2 hb pp hk h2 (by decide) (by decide)
+  committedStatement_mem_relScalarEvalMsgShort 2 hb pp hk h2 (by decide)
     (by rw [powTwoCyclotomic_natDegree]; decide) (by decide) f #v[2] #v[] #v[3, 4]
 
 /-- The honest message passes the check and its forwarded value opens validly. -/

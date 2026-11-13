@@ -102,16 +102,11 @@ omit [Fact (Nat.Prime q)] in
 /-- The 2-adic valuation of `q^(2^k) - 1` is `k + 2`. -/
 theorem emultiplicity_two_q_pow_sub_one (hq5 : q % 8 = 5) (k : ℕ) :
     emultiplicity (2 : ℤ) ((q : ℤ) ^ (2 ^ k) - 1) = (k : ℕ∞) + 2 := by
-  have hxy : (4 : ℤ) ∣ ((q : ℤ) - 1) := four_dvd_q_sub_one hq5
-  have hx : ¬ (2 : ℤ) ∣ (q : ℤ) := not_two_dvd_q hq5
-  have key := Int.two_pow_sub_pow' (x := (q : ℤ)) (y := 1) (2 ^ k) (by simpa using hxy)
-    (by simpa using hx)
-  rw [one_pow] at key
-  rw [key, emultiplicity_two_q_sub_one hq5]
-  have h2 : emultiplicity (2 : ℤ) ((2 ^ k : ℕ) : ℤ) = (k : ℕ∞) := by
-    have hc : ((2 ^ k : ℕ) : ℤ) = (2 : ℤ) ^ k := by push_cast; ring
-    rw [hc, emultiplicity_pow_self_of_prime (Int.prime_two) k]
-  rw [h2, add_comm]
+  have key : emultiplicity (2 : ℤ) ((q : ℤ) ^ (2 ^ k) - 1) =
+      emultiplicity (2 : ℤ) ((q : ℤ) - 1) + k := by
+    simpa using Int.two_pow_two_pow_sub_pow_two_pow (x := (q : ℤ)) (y := 1) k
+      (by simpa using four_dvd_q_sub_one hq5) (not_two_dvd_q hq5)
+  rw [key, emultiplicity_two_q_sub_one hq5, add_comm]
 
 omit [Fact (Nat.Prime q)] in
 /-- `2^(k+2) ∣ q^(2^k) - 1`. -/
@@ -153,8 +148,14 @@ theorem unit_pow_eq_one_iff (hq5 : q % 8 = 5) (α : ℕ) (m : ℕ) :
 omit [Fact (Nat.Prime q)] in
 /-- The multiplicative order of `q` modulo `2^(α+1)` is `2^(α-1)`, phrased to match
 `ZMod.irreducible_of_dvd_cyclotomic_of_natDegree` (`K = ZMod q`, `n = 2^(α+1)`). -/
-theorem orderOf_q_mod_two_pow (hq5 : q % 8 = 5) (α : ℕ) (hα : 1 ≤ α) :
+theorem orderOf_q_mod_two_pow (hq5 : q % 8 = 5) (α : ℕ) :
     orderOf (ZMod.unitOfCoprime q (coprime_q_two_pow hq5 (α + 1))) = 2 ^ (α - 1) := by
+  by_cases hα0 : α = 0
+  · subst hα0
+    simp only [Nat.zero_sub, pow_zero]
+    rw [orderOf_eq_one_iff, ← pow_one (ZMod.unitOfCoprime q _), unit_pow_eq_one_iff hq5 0 1]
+    norm_num
+    omega
   rcases Nat.lt_or_ge α 2 with hlt | hge
   · have hα1 : α = 1 := by omega
     subst hα1
@@ -204,8 +205,9 @@ theorem dvd_cyclotomic_factor (R : Type*) [Field R] (r : R) (hr : r ^ 2 = -1) (h
 given the order
 fact `horder` (supplied by `orderOf_q_mod_two_pow`). Uses
 `ZMod.irreducible_of_dvd_cyclotomic_of_natDegree`: the factor divides
-`cyclotomic 2^{α+1} = X^{2^α}+1` and has degree `2^{α-1} = orderOf (q mod 2^{α+1})`. -/
-theorem irreducible_X_pow_sub_C_r (hq8 : q % 8 = 5) (hα : 1 ≤ α) (r : ZMod q) (hr : r ^ 2 = -1)
+`cyclotomic 2^{α+1} = X^{2^α}+1` and has degree `2^{α-1} = orderOf (q mod 2^{α+1})`
+when `α ≥ 1`. For `α = 0`, the factor is the irreducible linear polynomial `X - C r`. -/
+theorem irreducible_X_pow_sub_C_r (hq8 : q % 8 = 5) (r : ZMod q) (hr : r ^ 2 = -1)
     (horder : orderOf
         (ZMod.unitOfCoprime q (n := 2 ^ (α + 1))
           ((Fact.out (p := Nat.Prime q)).coprime_iff_not_dvd.mpr
@@ -217,6 +219,9 @@ theorem irreducible_X_pow_sub_C_r (hq8 : q % 8 = 5) (hα : 1 ≤ α) (r : ZMod q
               omega)))
       = 2 ^ (α - 1)) :
     Irreducible (X ^ (2 ^ (α - 1)) - C r : (ZMod q)[X]) := by
+  by_cases hα0 : α = 0
+  · subst hα0
+    simpa using irreducible_X_sub_C r
   have hqodd : ¬ q ∣ 2 ^ (α + 1) := by
     intro h
     have hq2 : q = 2 :=
@@ -224,7 +229,8 @@ theorem irreducible_X_pow_sub_C_r (hq8 : q % 8 = 5) (hα : 1 ≤ α) (r : ZMod q
         ((Fact.out (p := Nat.Prime q)).dvd_of_dvd_pow h)
     omega
   apply ZMod.irreducible_of_dvd_cyclotomic_of_natDegree (p := q) (n := 2 ^ (α + 1)) hqodd
-  · rw [cyclotomic_two_pow_eq]; exact dvd_cyclotomic_factor α (ZMod q) r hr hα
+  · rw [cyclotomic_two_pow_eq]
+    exact dvd_cyclotomic_factor α (ZMod q) r hr (Nat.one_le_iff_ne_zero.mpr hα0)
   · rw [natDegree_X_pow_sub_C]; exact horder.symm
 
 end Irred

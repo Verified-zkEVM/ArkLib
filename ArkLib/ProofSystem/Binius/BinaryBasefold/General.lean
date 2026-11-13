@@ -24,7 +24,7 @@ The core-and-query challenge sum is bounded by
 `2ℓ/|L| + 2^(ℓ+𝓡)/|L| + (1/2 + 1/(2·2^𝓡))^γ`; it excludes ring-switching batching.
 This is the corresponding part of DP24 §5.2, equation (43). The middle term bounds the folding
 loss and the final term bounds repeated query acceptance. The exports prove perfect completeness
-on exact encodings and worst-case and averaged round-by-round knowledge soundness for
+on exact encodings and round-by-round knowledge soundness for
 unique-decoding-radius compatibility.
 
 ## References
@@ -200,11 +200,11 @@ noncomputable def fullRbrKnowledgeError (i : (fullPSpec 𝔽q β γ_repetitions 
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
-/-- Worst-case round-by-round knowledge soundness for the core-and-query protocol. -/
-theorem fullOracleVerifier_rbrKnowledgeSoundnessWorstCase :
+/-- Round-by-round knowledge soundness for the core-and-query protocol. -/
+theorem fullOracleVerifier_rbrKnowledgeSoundness :
     ((fullOracleVerifier 𝔽q β γ_repetitions (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).toVerifier
-      (Oₛₒ := fun i : Empty => nomatch i)).rbrKnowledgeSoundnessWorstCase
+      (Oₛₒ := fun i : Empty => nomatch i)).rbrKnowledgeSoundness
       init impl
       (relIn := roundRelation (multpoly := multiplier) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
@@ -212,24 +212,12 @@ theorem fullOracleVerifier_rbrKnowledgeSoundnessWorstCase :
       (rbrKnowledgeError := fullRbrKnowledgeError 𝔽q β γ_repetitions (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) := by
   unfold fullOracleVerifier fullRbrKnowledgeError fullPSpec
-  exact OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first
+  exact OracleVerifier.append_rbrKnowledgeSoundness_of_guarded_first
     (Oₛ₃ := fun i : Empty => nomatch i) _ _
     (Verifier.GuardedForm.ofEmpty _ (fun input =>
       (⟨⟨0, fun _ => 0, input.1.ctx⟩, 0⟩, fun _ _ => 0)))
-    (CoreInteraction.coreInteractionOracleVerifier_rbrKnowledgeSoundnessWorstCase 𝔽q β)
-    (QueryPhase.queryOracleVerifier_rbrKnowledgeSoundnessWorstCase 𝔽q β γ_repetitions init impl)
-
-/-- The averaged RBR guarantee follows from worst-case-per-prefix knowledge soundness. -/
-theorem fullOracleVerifier_rbrKnowledgeSoundness :
-    OracleProof.rbrKnowledgeSoundness init impl
-      (verifier := fullOracleVerifier 𝔽q β γ_repetitions (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
-      (relIn := roundRelation (multpoly := multiplier) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
-      (rbrKnowledgeError := fullRbrKnowledgeError 𝔽q β γ_repetitions (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
-  Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness init impl
-    (fullOracleVerifier_rbrKnowledgeSoundnessWorstCase 𝔽q β γ_repetitions)
+    (CoreInteraction.coreInteractionOracleVerifier_rbrKnowledgeSoundness 𝔽q β)
+    (QueryPhase.queryOracleVerifier_rbrKnowledgeSoundness 𝔽q β γ_repetitions init impl)
 
 /-- Upper bound `2ℓ/|L| + 2^(ℓ+𝓡)/|L| + (1/2 + 1/(2·2^𝓡))^γ_rep` for the core-and-query
 RBR error sum, excluding batching. -/
@@ -317,5 +305,38 @@ theorem fullRbrKnowledgeError_sum_le_concrete :
     rw [concreteBinaryBasefoldKnowledgeError, ← h_query]
     exact add_le_add h_core_le (le_refl _)
   exact h_mid
+
+/-- Ordinary knowledge soundness of full Binary Basefold, with the sum of its challenge errors. -/
+theorem fullOracleVerifier_knowledgeSoundness :
+    OracleProof.knowledgeSoundness init impl
+      (roundRelation (multpoly := multiplier) 𝔽q β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
+      (fullOracleVerifier 𝔽q β γ_repetitions (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
+      (∑ i, fullRbrKnowledgeError 𝔽q β γ_repetitions (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :=
+  Verifier.GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundness
+    (Verifier.GuardedForm.ofEmpty _ (fun _ => (false, fun i : Empty => nomatch i)))
+    (fullOracleVerifier_rbrKnowledgeSoundness 𝔽q β γ_repetitions)
+
+/-- Full Binary Basefold is perfectly complete on exact encodings and ordinarily
+knowledge sound for unique-radius compatibility, with the concrete core-and-query error. -/
+theorem fullOracleReduction_perfectCompleteness_and_knowledgeSoundness :
+    OracleProof.perfectCompleteness
+      (oracleProof := fullOracleReduction 𝔽q β γ_repetitions (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
+      (relation := strictRoundRelation (multpoly := multiplier) 𝔽q β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
+      (init := init) (impl := impl) ∧
+    OracleProof.knowledgeSoundness init impl
+      (roundRelation (multpoly := multiplier) 𝔽q β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
+      (fullOracleVerifier 𝔽q β γ_repetitions (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
+      (concreteBinaryBasefoldKnowledgeError L ℓ 𝓡 γ_repetitions) :=
+  ⟨fullOracleReduction_perfectCompleteness 𝔽q β γ_repetitions,
+    Verifier.knowledgeSoundness_error_mono init impl
+      (fullRbrKnowledgeError_sum_le_concrete 𝔽q β γ_repetitions)
+      (fullOracleVerifier_knowledgeSoundness 𝔽q β γ_repetitions)⟩
 
 end Binius.BinaryBasefold.FullBinaryBasefold

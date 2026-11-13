@@ -12,10 +12,11 @@ public import Mathlib.Algebra.Module.Submodule.Union
 /-!
 # Row projection for interleaved module codes
 
-A linear combination of rows preserves projected membership in a module code. For a family of
+A linear combination of rows preserves projected membership in a module code, and it commutes
+with linear combinations of words (`rowCombination_sum_smul`). For a family of
 interleaved words, the row functionals preserving every projected membership form a submodule.
 If at most `|F|` projected failures are given over a field `F`, one row functional detects all of
-them. The first two facts hold over a semiring; the avoidance step uses a field.
+them. The facts before the avoidance step hold over a semiring; the avoidance step uses a field.
 
 ## References
 
@@ -54,6 +55,17 @@ theorem projectedWord_rowCombination_mem (C : ModuleCode ι F A) (w : ι → κ 
   have hrows := (projectedCodeSubmod_moduleInterleavedCode_iff F A κ ι C w T).mp h
   rw [projectedWord_rowCombination_eq]
   exact Submodule.sum_mem _ fun r _ ↦ Submodule.smul_mem _ _ (hrows r)
+
+/-- **Row combinations commute with linear combinations of words.** The row combination by
+`l : κ → F` of the word `i ↦ ∑ j, c j • U j i` is the linear combination with coefficients `c` of
+the row combinations `i ↦ ∑ r, l r • U j i r`. -/
+theorem rowCombination_sum_smul [Fintype ℓ] [SMulCommClass F F A] (c : ℓ → F)
+    (U : ℓ → ι → κ → A) (l : κ → F) :
+    (fun i ↦ ∑ r, l r • (∑ j, c j • U j i) r) = fun i ↦ ∑ j, c j • ∑ r, l r • U j i r := by
+  funext i
+  simp only [Finset.sum_apply, Pi.smul_apply, Finset.smul_sum]
+  rw [Finset.sum_comm]
+  exact Finset.sum_congr rfl fun j _ ↦ Finset.sum_congr rfl fun r _ ↦ smul_comm _ _ _
 
 /-- The row functionals that keep a family of interleaved words inside `C` on `T`.
 

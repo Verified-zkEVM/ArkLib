@@ -214,11 +214,11 @@ def standardDegreeLEEquiv (hm : ∀ a b : σ →₀ ℕ, a ≼[m] b → a.degree
         rw [← hpx]
         exact (Ideal.Quotient.eq.mpr hpq).symm⟩
 
-/-- For a graded monomial order and finitely many variables, the affine Hilbert function counts
+/-- For a graded monomial order, the affine Hilbert function counts
 the standard exponents of degree at most `N`. The graded hypothesis is necessary: for the lex
 order with `X 0 > X 1` and `I = span {X 0 - X 1 ^ 2}`, the class of `X 0` lies in the degree-one
 piece but its standard representative `X 1 ^ 2` has degree two. -/
-theorem affineHilbertFunction_eq_ncard_standardExponents [Finite σ]
+theorem affineHilbertFunction_eq_ncard_standardExponents
     (hm : ∀ a b : σ →₀ ℕ, a ≼[m] b → a.degree ≤ b.degree) (I : Ideal (MvPolynomial σ k))
     (N : ℕ) :
     affineHilbertFunction I N =
@@ -256,7 +256,7 @@ theorem degree_le_degree_of_degLex_le [LinearOrder σ] [WellFoundedGT σ] {a b :
   Finsupp.DegLex.monotone_degree h
 
 /-- The affine Hilbert function counts the `degLex`-standard exponents of degree at most `N`. -/
-theorem affineHilbertFunction_eq_standard_count [LinearOrder σ] [WellFoundedGT σ] [Finite σ]
+theorem affineHilbertFunction_eq_standard_count [LinearOrder σ] [WellFoundedGT σ]
     (I : Ideal (MvPolynomial σ k)) (N : ℕ) :
     affineHilbertFunction I N =
       {e : σ →₀ ℕ | e ∈ MonomialOrder.degLex.standardExponents I ∧ e.degree ≤ N}.ncard :=

@@ -53,7 +53,7 @@ theorem exists_exceptional_exactPowerAgreement_with_prescribed_stageBounds
     [IsAlgClosed E]
     (δ : ℝ) (n k ℓ : ℕ) (domain : Fin n ↪ F)
     (values : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
-    (hδ : 0 < δ) (hδ' : δ < 1 / 4) (hk : 0 < k) (hℓ : 0 < ℓ)
+    (hδ : 0 < δ) (hδ' : δ < 1 / 4)
     (hblock : 8 * Nat.ceil
       (100 * (Nat.ceil (Real.exp (xi / δ)) : ℝ) ^ 2 *
         harmonic (Nat.ceil (Real.exp (xi / δ)) - 1)) ≤ n)
@@ -101,18 +101,18 @@ theorem exists_exceptional_exactPowerAgreement_with_prescribed_stageBounds
     HiddenDerivative.SymbolicReceivedCurve.exists_prescribed_certificate δ n k ℓ domain
       (fun i ↦ powerBatchedCoordinate fun t ↦ values t i)
       (fun i ↦ powerBatchedCoordinate_natDegree_le fun t ↦ values t i)
-      hℓ hδ hδ' hblock hA
+      hδ hδ' hblock hA
   obtain ⟨stages, terminal, hc, exceptional, hcard, hexact⟩ :=
     cert.exists_exceptional_powerBatchedAgreement_sharp_of_exponent iota K L (2 * K - 3)
       (fun r _ ↦ taylorExponentSufficient_two_mul_sub_three r K) (by
         have hdpos : 0 < d := Nat.ceil_pos.mpr (Real.exp_pos _)
         omega) hdK hkK
       (correlatedProductCutoff_bounds d k A _hkA).1
-      (correlatedProductCutoff_bounds d k A _hkA).2 hA hℓ
+      (correlatedProductCutoff_bounds d k A _hkA).2
       hcharWeight (by
         intro r hr i hri hiK
         have hchoose := PolynomialDifferential.natCast_choose_ne_zero_of_ringChar
-          (F := F) (D := K - 1) (s := r) hcharCut (i - r) (by omega) (by omega)
+          (F := F) (D := K - 1) (s := r) hcharCut (i - r) (by omega)
         simpa only [Nat.sub_add_cancel hri.le] using hchoose)
   refine ⟨stages, exceptional, hcard, ?_, (fun stage _ ↦ Fin.is_le stage.2), ?_, hexact⟩
   · exact (List.toFinset_card_le stages).trans (hc.length_le.trans cert.jetTotalDegree_le)
@@ -129,7 +129,7 @@ theorem exists_exceptional_exactPowerAgreement_of_prescribedCurve {F E : Type u}
     [IsAlgClosed E]
     (δ : ℝ) (n k ℓ : ℕ) (domain : Fin n ↪ F)
     (values : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
-    (hδ : 0 < δ) (hδ' : δ < 1 / 4) (hk : 0 < k) (hℓ : 0 < ℓ)
+    (hδ : 0 < δ) (hδ' : δ < 1 / 4) (hk : 0 < k)
     (hblock : 8 * Nat.ceil
       (100 * (Nat.ceil (Real.exp (xi / δ)) : ℝ) ^ 2 *
         harmonic (Nat.ceil (Real.exp (xi / δ)) - 1)) ≤ n)
@@ -160,7 +160,7 @@ theorem exists_exceptional_exactPowerAgreement_of_prescribedCurve {F E : Type u}
     prescribed_geometric_parameters δ n k hδ hδ' hblock hA
   obtain ⟨stages, exceptional, hcard, hstages, horders, hweights, hexact⟩ :=
     exists_exceptional_exactPowerAgreement_with_prescribed_stageBounds δ n k ℓ domain values
-      iota hδ hδ' hk hℓ
+      iota hδ hδ'
       hblock hA hchar
   refine ⟨exceptional, ?_, hexact⟩
   have hcardR : (exceptional.card : ℝ) ≤ (H : ℝ) +
@@ -194,7 +194,7 @@ theorem exists_exceptional_exactPowerAgreement_of_prescribedCurve {F E : Type u}
         (regularPowerBatchedAgreementSharp_product_finiteStage_le stages.toFinset
           (fun stage ↦ stage.2.val) (fun stage ↦ jetTotalDegree stage.1) (fun _ ↦ H)
           δ n K k A ℓ ν (12 * ν) d (2 * K - 3) hδ hδone
-          (Nat.ceil_pos.mpr (Real.exp_pos _)) hn hk hν hh hKn hgap hA
+          hn hk hh hKn hgap hA
           (Nat.sub_le _ _) hstages
           (fun stage hs ↦ horders stage (List.mem_toFinset.mp hs))
           (fun stage hs ↦ (hweights stage (List.mem_toFinset.mp hs)).1)

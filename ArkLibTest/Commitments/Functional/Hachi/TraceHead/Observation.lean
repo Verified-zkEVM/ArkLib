@@ -77,7 +77,7 @@ def w := committedOpening 2 hb pp F
 
 /-- The balanced-gadget committer gives the original, norm-conditioned weak opening. -/
 theorem source_valid : (s, w) ∈ relScalarEvalMsgShort 1 0 hk h2 pp 2 6 1 1 1 :=
-  committedStatement_mem_relScalarEvalMsgShort 2 hb pp hk h2 (by decide)
+  committedStatement_mem_relScalarEvalMsgShort 2 hb pp hk h2
     (by decide) (by rw [powTwoCyclotomic_natDegree]; decide) (by decide) f #v[2] #v[] #v[3]
 
 /-- The protocol checks the asymmetric source, forwarding the same weak opening. -/
