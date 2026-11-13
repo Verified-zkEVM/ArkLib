@@ -2,6 +2,7 @@ module
 
 public import ArkLib.AGM.Basic
 public import ArkLib.Commitments.Functional.Basic
+public import ArkLib.Commitments.Functional.BitZ.CrtVariant
 public import ArkLib.Commitments.Functional.BitZ.ExponentLift
 public import ArkLib.Commitments.Functional.BitZ.OutOfDomain
 public import ArkLib.Commitments.Functional.BitZ.Round1

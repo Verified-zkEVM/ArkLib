@@ -186,9 +186,9 @@ entry says so, the specification is not claimed to be executable.
 - **STIR protocol.** Construction 5.2 and its round-by-round soundness (Lemma 5.4, Theorem 5.1),
   tied to a concrete prover and verifier
   ([#1292](https://github.com/Verified-zkEVM/ArkLib/issues/1292)).
-- **BitZ.** The general relation over a finitely generated ring and a relaxed overflow bound
-  ([#1331](https://github.com/Verified-zkEVM/ArkLib/issues/1331),
-  [#1307](https://github.com/Verified-zkEVM/ArkLib/issues/1307)).
+- **BitZ.** The general relation over a finitely generated ring
+  ([#1331](https://github.com/Verified-zkEVM/ArkLib/issues/1331)) and the use of the CRT overflow
+  bound in Round 2.
 - **Group models.** ArkLib's side of the generic and algebraic group model consolidation in VCVio
   ([#1310](https://github.com/Verified-zkEVM/ArkLib/issues/1310)).
 
