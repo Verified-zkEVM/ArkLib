@@ -119,23 +119,16 @@ example :
   rw [orderOf_two_zmod11]
   decide +kernel
 
-/-- The version with `orderOf` needs no field: `2 ∈ ZMod 15` has order `4`; with `ℓ₁ = 1`,
-`γ = (3)`, `b = (1)`, `μ = 3` and `a = 0` the two products give `⟨γ, b⟩ = 3`. -/
-example : ∑ i : Fin 1, (fun _ => 3 : Fin 1 → ℕ) i * ones 1 i = 3 := by
-  have hord : orderOf (2 : ZMod 15) = 4 := by
+/-- The version with `orderOf` needs no field: `3 ∈ ZMod 22` has order `5`; with `ℓ₁ = 2`,
+`γ = (4, 3)`, `b = (1, 1)`, `μ = 7` and `a = 0` the two products give `⟨γ, b⟩ = 7`. Here
+`ℓ₁ · max γ = 8 > 5`, so the plain overflow bound does not apply. -/
+example : ∑ i : Fin 2, (![4, 3] : Fin 2 → ℕ) i * ones 2 i = 7 := by
+  have hord : orderOf (3 : ZMod 22) = 5 := by
     rw [orderOf_eq_iff (by norm_num)]
     decide
-  refine sum_mul_eq_of_prod_bitFactor_eq_pow_of_coprime_orderOf (x := (2 : ZMod 15)) (a := 0)
-    _ _ ?_ (fun _ => le_rfl) ?_ ?_ ?_ ?_ ?_ ?_
-  · intro i
-    rw [hord]
-    decide
-  · simp [hord]
-  · simp
-  · simp [hord]
-  · simp [hord]
-  · decide
-  · decide
+  refine sum_mul_eq_of_prod_bitFactor_eq_pow_of_coprime_orderOf (x := (3 : ZMod 22)) (a := 0)
+    _ _ ?_ (fun _ => le_rfl) ?_ ?_ ?_ ?_ ?_ ?_ <;>
+    (try simp only [hord, Fintype.card_fin]) <;> decide
 
 /-- `GaloisField` is a splitting field, so its finiteness is not executable data; the instance is
 only used to state the cardinality in the example below. -/
