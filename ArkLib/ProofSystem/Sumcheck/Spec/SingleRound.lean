@@ -147,6 +147,19 @@ def relationRound (i : Fin (n + 1)) :
   { ⟨⟨⟨target, challenges⟩, polyOracle⟩, _⟩ |
     ∑ x ∈ (univ.map D) ^ᶠ (n - i), (polyOracle ()).val ⸨challenges, x⸩ = target }
 
+/-- At the last round there is no variable left to sum over: the final relation says that the
+polynomial evaluates to the target at the challenges. -/
+theorem relationRound_last_iff (stmt : StatementRound R n (Fin.last n))
+    (oStmt : ∀ i, OracleStatement R n deg i) :
+    ((stmt, oStmt), ()) ∈ relationRound R n deg D (Fin.last n) ↔
+      MvPolynomial.eval stmt.challenges (oStmt ()).val = stmt.target := by
+  have : IsEmpty (Fin (n - (Fin.last n : ℕ))) := ⟨fun i => by have := i.2; simp at this⟩
+  have hch : ∀ x : Fin (n - (Fin.last n : ℕ)) → R,
+      (Fin.append stmt.challenges x ∘ Fin.cast (by simp)) = stmt.challenges := fun x => by
+    funext i
+    simp [Fin.append, Fin.addCases, Fin.cast]
+  simp [relationRound, hch]
+
 namespace SingleRound
 
 /-- The protocol specification for a single round of sum-check.

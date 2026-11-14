@@ -31,13 +31,8 @@ variable {R : Type} [CommSemiring R] {deg n : ℕ} {d : ℕ} (D : Fin d ↪ R)
 /-- The final relation says that the input polynomial at the challenges is the target. -/
 theorem relationLast_iff_eval (p : Spec.OracleStatement R n deg ()) (t : R) (ch : Fin n → R) :
     (((⟨t, ch⟩, fun _ => p), ()) ∈ Spec.relationRound R n deg D (Fin.last n)) ↔
-      MvPolynomial.eval ch p.val = t := by
-  have : IsEmpty (Fin (n - (Fin.last n : ℕ))) := ⟨fun i => by have := i.2; simp at this⟩
-  have hch : ∀ x : Fin (n - (Fin.last n : ℕ)) → R,
-      (Fin.append ch x ∘ Fin.cast (by simp)) = ch := fun x => by
-    funext i
-    simp [Fin.append, Fin.addCases, Fin.cast]
-  simp [Spec.relationRound, hch]
+      MvPolynomial.eval ch p.val = t :=
+  Spec.relationRound_last_iff R n deg D ⟨t, ch⟩ fun _ => p
 
 /-- Drawing two challenges queries the two challenge nodes in round order. -/
 theorem drawChallenges_two {m : Type → Type} [Monad m] [LawfulMonad m]

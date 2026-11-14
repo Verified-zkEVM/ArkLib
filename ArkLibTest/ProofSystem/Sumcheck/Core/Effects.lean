@@ -151,6 +151,7 @@ def adaptive : Prover oracleSig events (protocol K 1 2) (fun _ => Unit) :=
 /-- The domain `{0}`. -/
 def D₀ : Fin 1 ↪ K := ⟨fun _ => 0, fun _ _ _ => Subsingleton.elim _ _⟩
 
+/-- Every point of the domain `{0}` is `0`. -/
 @[simp] theorem D₀_apply (i : Fin 1) : D₀ i = 0 := rfl
 
 /-- The initial claim with target `1`; the first message `a * X + 1` sums to `1` over `{0}`. -/

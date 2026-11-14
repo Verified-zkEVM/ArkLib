@@ -69,20 +69,29 @@ Entry 22 covers Sumcheck in the interaction layer. Its two departures are descri
 | Entry | Departure |
 | --- | --- |
 | [22](sumcheck.md#the-transferred-completeness-is-in-its-own-module) | The transferred completeness is in its own module, `LegacyCompleteness`. |
-| [22](sumcheck.md#the-verifier-has-no-interval-start) | Full-run verifiers have no interval start; #1488 owns interval endpoints and composition. |
+| [22](sumcheck.md#full-run-and-interval-verifier-interfaces) | Full-run verifiers keep their interface; interval verifiers add arbitrary endpoints and public interval composition. |
 
-Entry 22 records the full-run verifier interface; #1488 covers interval endpoints and
-composition. The [exact-row disposition](sumcheck.md#migration-disposition) records interval
-execution, projection and append clients as remaining work, and marks behavior-guarantee
-interfaces unresolved. Full-run, committed and randomized soundness in the interaction layer use
-the generic round-by-round-to-soundness implication directly over arbitrary indexed domains and lists with
-repetitions.
+The second departure distinguishes the unchanged full-run interface from the arbitrary interval
+interface. The [exact-row disposition](sumcheck.md#migration-disposition) now names
+interaction-layer interval, projection and append targets. The behavior-guarantee interface gaps
+remain unresolved. Both full-run and suffix soundness use the generic round-by-round-to-soundness
+implication over indexed domains, including lists with repetitions.
 
 Entry [21](../interaction-rebuild/IMPLEMENTATION-NOTES.md#21-round-by-round-soundness-implies-soundness-for-lawful-distribution-monads)
 records the generic soundness implication. The
 [soundness disposition record](soundness-implication-disposition.md) compares every ported frozen
 statement and test, explains prefix-indexed freshness, and links the classical specialization laws.
 The implication applies to lawful distribution monads, including optional computations.
+
+The interval implementation retains arbitrary `start` and `count` rather than replacing them
+with the full run. Its boundary, projection and composition equations preserve original behavior
+and prover outputs. P1 and P2 explain changed decision timing and public abort shape.
+
+## Sumcheck ports: entry 23
+
+| Entry | Departure |
+| --- | --- |
+| [23](../interaction-rebuild/IMPLEMENTATION-NOTES.md#23-sumcheck-ports) | Sumcheck ports: arbitrary interval completeness, interaction-layer suffix soundness, public interval append, projected behavior, generic message interpretation and routing over `Nat`. |
 
 ## Interaction-layer migration: entry 20
 
