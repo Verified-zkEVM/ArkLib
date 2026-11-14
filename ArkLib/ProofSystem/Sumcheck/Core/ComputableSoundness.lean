@@ -65,7 +65,7 @@ theorem interval_closed_execute [SampleableType R] (D : Fin d → R)
   unfold experiment
   rw [indexedDraw_eq_interpreted]
   have h := Interpreted.execute_eq_verifier
-    (evaluate := fun (q : R⦃≤ deg⦄[X]) r => q.val.eval r) ambient (polyFamily R deg n) impl
+    (evaluate := fun (q : R⦃≤ deg⦄[X]) r => q.val.eval r) ambient (polynomialFamily R n deg) impl
     (liftM ($ᵗ R) : StateT σ ProbComp R) (intervalCheck D) IntervalClaim.finish count
     (intervalInitial start count bound stmt) data prover
   simp only [simulateQ_map]
@@ -116,7 +116,7 @@ theorem executeExperiment_eq_native [BEq R] [LawfulBEq R] (D : Fin d → R)
           (Interpreted.transportProver (Impl.Representation.toMessage R deg) count prover)) := by
   rw [interval_closed_execute]
   unfold executeExperiment
-  rw [Interpreted.simulate_transport]
+  rw [Interpreted.simulate_transportFocal]
   have h := Interpreted.execute_transport
     (evaluateN := fun (q : R⦃≤ deg⦄[X]) r => q.val.eval r)
     (liftM ($ᵗ R) : StateT σ ProbComp R) (intervalCheck D) IntervalClaim.finish

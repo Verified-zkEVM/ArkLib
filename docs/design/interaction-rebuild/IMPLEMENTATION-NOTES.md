@@ -275,6 +275,7 @@ that queries its payload, and checks the returned value by `rfl`. Its R26/R27 re
 constructors quantify independently over `a` and `e`, and an R26 verifier and run consume
 the original realization family directly.
 
+
 ## Changes that keep to the records
 
 ### Verifier outputs are indexed by the shape path
@@ -686,7 +687,8 @@ interaction layer final decision with repeated points and target two. The intera
 `foldVerifier`.
 The exact-row Sumcheck disposition gives interval execution, projection and append targets;
 their full-run corollaries preserve the parent statements. P1 and P2 explain changed abort and shape assertions.
-Behavior-guarantee assertions remain unresolved pending the corresponding parent interface.
+The generic `OracleModel.satisfies_guarantee` interface has no Core counterpart and is tracked as a
+separate gap.
 
 `Interaction.Core.Prover.simulate_joinSlot` belongs beside `Prover.simulate` in
 `Interaction/Core/Reduction.lean`. It now covers every protocol tree, lens, dependent prover
@@ -753,3 +755,42 @@ The merged parent supplies generic routing and soundness implications. Construct
 and transport equations replace this branch's added transparency commands. Existing parent
 transparency settings remain unchanged. Mathematical polynomial projections remain
 noncomputable; the generic interface and deterministic execution use computable carriers.
+
+## 24. Computable Sumcheck runtime
+
+**Migration.** The migration list ports the frozen computable Sumcheck to the interaction core:
+`execute_eq_native`, the frozen `ComputableCompleteness` and `ComputableSoundness`, and the seven
+rows of `scripts/SumcheckRuntime.lean`. Rows 3, 4 and 6 are premise-required under P1/P2; row 7 now checks the verifier.
+
+**Code.** `Sumcheck.Core.Computable` instantiates the carrier-generic protocol and verifier of
+`Sumcheck.Core` (open question OQ17) at CompPoly messages and CompPoly multivariate inputs; see
+[`sumcheck.md`](../interaction-layer/sumcheck.md#the-computable-instance).
+
+- `run_eq_interpret` replaces `execute_eq_native`. It equates the runs only after the challenge
+  queries are renamed (`renameQueries`): the challenge nodes of the protocol at two carriers are
+  different types. Challenge implementations move between the carriers by
+  `Interpreted.transportDraw`, which keeps uniform sampling.
+- The input oracle is a CompPoly multivariate polynomial with the individual degree bound,
+  answered by direct evaluation, rather than an arbitrary behavior. The relations and languages
+  are the legacy ones on the input read by `toOracleStatement`.
+- `verifierOn` and the Core `pathLift` are `@[macro_inline]`, so the verifier at the noncomputable
+  Mathlib input family stays executable, and the computable verifier shares its decision.
+- `support_completeness` keeps the frozen supported-run guarantee without a probability or
+  normalization assumption. `perfectCompleteness` follows for every challenge implementation,
+  and `soundness` keeps the mathematical core error for every prover. The indexed CompPoly
+  interval results cover every bounded endpoint; suffix soundness has the interval verifier's
+  `count * (deg / |R|)` bound.
+- Runtime rows. The challenges are drawn from the challenge oracle, not from a prover event, and
+  the log records each draw.
+  - Row 3 expects the log `[p0, c0, p2, c1, p3]` instead of `[0, 1, 2, 1, 3]`.
+  - Row 4 had a public abort that stopped before the challenge, with the log `[0, 2]`. The
+    verifier is passive, so a failed first check still runs every round: rejection with the log
+    `[p0, c0, p2, c1, p3]`.
+  - Row 6 expects the log `[c0, c1]` instead of `[1, 1]`.
+  - Row 7 runs the zero-round interval verifier from the final round state. Its optional verdict
+    is `some (16, 4, 4, 16)` and its trace is empty. The prover-only observation is an additional
+    check.
+
+**Why.** The interaction core has one protocol per message carrier and a passive verifier, and
+names challenges by node occurrences. The restated rows check the same values and effect order
+under those rules.

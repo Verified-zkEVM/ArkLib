@@ -1073,6 +1073,7 @@ public import ArkLib.ProofSystem.Sumcheck.Core.Behavior
 public import ArkLib.ProofSystem.Sumcheck.Core.BehaviorComposition
 public import ArkLib.ProofSystem.Sumcheck.Core.Completeness
 public import ArkLib.ProofSystem.Sumcheck.Core.Composition
+public import ArkLib.ProofSystem.Sumcheck.Core.Computable
 public import ArkLib.ProofSystem.Sumcheck.Core.ComputableInterval
 public import ArkLib.ProofSystem.Sumcheck.Core.ComputableProjection
 public import ArkLib.ProofSystem.Sumcheck.Core.ComputableSoundness

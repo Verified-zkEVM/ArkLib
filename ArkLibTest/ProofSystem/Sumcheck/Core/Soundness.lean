@@ -434,7 +434,7 @@ noncomputable def oneInput : (ZMod 5)⦃≤ 0⦄[X Fin 1] :=
 /-- The actual final decision accepts target two on `[0, 0]` when the sent message is one. -/
 example {ι : Type} (amb : OracleSpec ι) (impl : QueryImpl amb ProbComp) :
     let tr := consTranscript (n := 0) oneMessage (0 : ZMod 5) ⟨⟩
-    simulateQ (QueryImpl.addLift impl ((pathResources (polyFamily (ZMod 5) 0 1)
+    simulateQ (QueryImpl.addLift impl ((pathResources (polynomialFamily (ZMod 5) 1 0)
       (protocol (ZMod 5) 0 1) (projectPathAlong oracleSig _ tr)).answer
         ((fun _ => oneInput), payloads _ tr)))
       ((indexedVerifier (ZMod 5) 0 1 ([0, 0] : List (ZMod 5)).get amb).decide

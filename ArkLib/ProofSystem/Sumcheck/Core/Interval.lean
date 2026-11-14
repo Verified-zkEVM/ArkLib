@@ -169,9 +169,9 @@ noncomputable def intervalVerifier (R : Type) [CommSemiring R] [DecidableEq R] (
     {d : ℕ} (D : Fin d → R) {ι : Type} (ambient : OracleSpec ι)
     (start count : ℕ) (bound : start + count ≤ n) :
     OracleVerifier ambient (protocol R deg count) (RoundStatement R n ⟨start, by omega⟩)
-      (fun _ => RoundStatement R n ⟨count + start, by omega⟩) (polyFamily R deg n)
-      (fun _ => polyFamily R deg n) where
-  decide stmt := (foldVerifier R deg ambient (polyFamily R deg n) (intervalCheck D)
+      (fun _ => RoundStatement R n ⟨count + start, by omega⟩) (polynomialFamily R n deg)
+      (fun _ => polynomialFamily R n deg) where
+  decide stmt := (foldVerifier R deg ambient (polynomialFamily R n deg) (intervalCheck D)
     IntervalClaim.finish count).decide (intervalInitial start count bound stmt)
   outputMap _ _ _ := OracleMap.fst _ _
 
@@ -181,7 +181,7 @@ theorem simulateQ_intervalVerifier_decide {ι : Type} {ambient : OracleSpec ι}
     (start count : ℕ) (bound : start + count ≤ n)
     (stmt : RoundStatement R n ⟨start, by omega⟩) (data : ∀ i, PolynomialData R n deg i)
     (tr : PathAlong oracleSig (protocol R deg count)) :
-    simulateQ (QueryImpl.addLift impl ((pathResources (polyFamily R deg n)
+    simulateQ (QueryImpl.addLift impl ((pathResources (polynomialFamily R n deg)
       (protocol R deg count) (projectPathAlong oracleSig _ tr)).answer (data, payloads _ tr)))
       ((intervalVerifier R deg n D ambient start count bound).decide stmt _ (toView _ tr)).run =
       (pure (intervalVerdict D count (intervalInitial start count bound stmt) tr) : m _) :=
@@ -194,7 +194,7 @@ theorem intervalVerifier_run {ι : Type} (ambient : OracleSpec ι)
     {Out : PathAlong oracleSig (protocol R deg count) → Type}
     (prover : Prover oracleSig ambient (protocol R deg count) Out) :
     (intervalVerifier R deg n D ambient start count bound).run stmt data prover =
-      (foldVerifier R deg ambient (polyFamily R deg n) (intervalCheck D)
+      (foldVerifier R deg ambient (polynomialFamily R n deg) (intervalCheck D)
         IntervalClaim.finish count).run (intervalInitial start count bound stmt) data prover := rfl
 
 end Sumcheck.Core

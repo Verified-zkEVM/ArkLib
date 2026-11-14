@@ -73,9 +73,10 @@ Entry 22 covers Sumcheck in the interaction layer. Its two departures are descri
 
 The second departure distinguishes the unchanged full-run interface from the arbitrary interval
 interface. The [exact-row disposition](sumcheck.md#migration-disposition) now names
-interaction-layer interval, projection and append targets. The behavior-guarantee interface gaps
-remain unresolved. Both full-run and suffix soundness use the generic round-by-round-to-soundness
-implication over indexed domains, including lists with repetitions.
+interaction-layer interval, projection and append targets. The generic
+`OracleModel.satisfies_guarantee` interface has no Core counterpart and is tracked as a separate
+gap. Both full-run and suffix soundness use the generic round-by-round-to-soundness implication
+over indexed domains, including lists with repetitions.
 
 Entry [21](../interaction-rebuild/IMPLEMENTATION-NOTES.md#21-round-by-round-soundness-implies-soundness-for-lawful-distribution-monads)
 records the generic soundness implication. The
@@ -92,6 +93,15 @@ and prover outputs. P1 and P2 explain changed decision timing and public abort s
 | Entry | Departure |
 | --- | --- |
 | [23](../interaction-rebuild/IMPLEMENTATION-NOTES.md#23-sumcheck-ports) | Sumcheck ports: arbitrary interval completeness, interaction-layer suffix soundness, public interval append, projected behavior, generic message interpretation and routing over `Nat`. |
+
+## Computable Sumcheck: entry 24
+
+This entry is in
+[`interaction-rebuild/IMPLEMENTATION-NOTES.md`](../interaction-rebuild/IMPLEMENTATION-NOTES.md#24-computable-sumcheck-runtime).
+
+| Entry | Departure |
+| --- | --- |
+| [24](../interaction-rebuild/IMPLEMENTATION-NOTES.md#24-computable-sumcheck-runtime) | Computable Sumcheck runtime: the run correspondence renames challenge queries, inputs are CompPoly polynomials, and runtime rows 3, 4 and 6 require P1/P2; row 7 checks the zero-round interval verifier. |
 
 ## Interaction-layer migration: entry 20
 
