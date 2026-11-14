@@ -27,8 +27,6 @@ namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle MeasureTheory
 open scoped ENNReal
 
-attribute [local implicit_reducible] projectPathAlong projectPathAlongLocalMap
-  Displayed.LocalMap.toHom Displayed.LocalMap.toHomFun
 
 variable {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
 

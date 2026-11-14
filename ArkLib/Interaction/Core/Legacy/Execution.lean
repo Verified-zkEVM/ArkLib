@@ -28,7 +28,7 @@ variable {ι : Type} {oSpec : OracleSpec ι} {n : ℕ} {pSpec : ProtocolSpec n}
 /-- Send shared-oracle queries to the left summand of the legacy ambient spec. -/
 def liftShared (oSpec : OracleSpec ι) (pSpec : ProtocolSpec n) :
     QueryImpl oSpec (OracleComp (oSpec + [pSpec.Challenge]ₒ)) :=
-  fun q => liftM ((oSpec + [pSpec.Challenge]ₒ).query (.inl q))
+  (QueryImpl.id' (oSpec + [pSpec.Challenge]ₒ)).restrictLeft
 
 theorem simulateQ_liftShared {α : Type} (x : OracleComp oSpec α) :
     simulateQ (liftShared oSpec pSpec) x = (liftM x : OracleComp (oSpec + [pSpec.Challenge]ₒ) α) :=
@@ -422,7 +422,8 @@ theorem simulateQ_verifier_run (V : Core.Verifier oSpec (protocol pSpec) StmtIn 
     (stmt : StmtIn) {Out : PathAlong plainSig (protocol pSpec) → Type}
     (p : Core.Prover plainSig oSpec (protocol pSpec) Out) :
     simulateQ (challengeReindex oSpec pSpec) (V.run stmt p) = observeWith .focalFirst V stmt p := by
-  rw [Core.Verifier.run, observeWith, simulateQ_bind, simulateQ_challengeReindex_run]
+  rw [Core.Verifier.run, observeWith, simulateQ_bind]
+  erw [simulateQ_challengeReindex_run]
   refine bind_congr fun r => ?_
   rcases r with ⟨tr, out, u⟩
   rw [simulateQ_bind]
@@ -432,7 +433,8 @@ theorem simulateQ_verifier_run (V : Core.Verifier oSpec (protocol pSpec) StmtIn 
   refine QueryImpl.simulateQ_simulateQ_eq_of_apply (fun t => ?_) _
   rw [OracleComp.liftM_eq_liftM_liftM, OracleQuery.liftM_add_left_query]
   refine (QueryImpl.simulateQ_add_liftM_query_left _ _ t).trans ?_
-  rw [liftShared, OracleComp.liftM_eq_liftM_liftM (spec := oSpec)]
+  simp only [liftShared, QueryImpl.restrictLeft, QueryImpl.id'_apply]
+  rw [OracleComp.liftM_eq_liftM_liftM (spec := oSpec)]
   rfl
 
 /-- The challenge implementation of a layout's tree induced by a legacy challenge

@@ -54,7 +54,6 @@ section Decode
 
 variable {R : Type} [CommSemiring R] {deg : ℕ}
 
-attribute [local implicit_reducible] FreeM.replicate
 
 /-- The legacy full transcript of one round. -/
 def roundFullTranscript (msg : R⦃≤ deg⦄[X]) (chal : R) :
@@ -100,7 +99,6 @@ section Route
 
 variable (R : Type) [CommSemiring R] (deg : ℕ)
 
-attribute [local implicit_reducible] FreeM.replicate
 
 variable (M : Type) (eval : M → R → R)
 
@@ -111,8 +109,7 @@ def roundRouteOn (k : ℕ) (p : Path (protocolOn R M eval k)) :
       (OracleComp (oracles (protocolOn R M eval (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩)) :=
   fun ⟨i, q⟩ => by
     obtain rfl := Unique.eq_default i
-    exact liftM
-      ((oracles (protocolOn R M eval (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩).query ⟨.inl ⟨⟩, q⟩)
+    exact Interpreted.headQuery ⟨⟨⟩, ⟨⟨⟩, p⟩⟩ q
 
 /-- Route legacy message queries to the oracle nodes of a completed shape path, over the message
 carrier `M`. The legacy and node queries are both evaluation points in `R`. -/
@@ -141,8 +138,6 @@ section RouteAnswer
 
 variable {R : Type} [CommSemiring R] {deg : ℕ}
 
-attribute [local implicit_reducible] FreeM.replicate projectPathAlong projectPathAlongLocalMap
-  Displayed.LocalMap.toHom Displayed.LocalMap.toHomFun
 
 variable {M : Type} {eval : M → R → R}
 
@@ -231,8 +226,6 @@ section View
 
 variable {R : Type} [CommSemiring R] {deg : ℕ}
 
-attribute [local implicit_reducible] FreeM.replicate projectPathAlong projectPathAlongLocalMap
-  Displayed.LocalMap.toHom Displayed.LocalMap.toHomFun
 
 variable {M : Type} {eval : M → R → R}
 
@@ -404,10 +397,7 @@ def verifierOn : OracleVerifier ambient (protocolOn R M eval n) (Spec.StatementR
   decide stmt p v := OptionT.mk (simulateQ (pathLift ambient inputs p)
     (simulateQ (routeOn R deg M eval n p)
       (legacyProgram R deg n D ambient stmt (viewChallengesOn v))))
-  outputMap _ p _ :=
-    { f := fun x => x.1
-      impl := fun q => liftM ((pathResources inputs (protocolOn R M eval n) p).spec.query (.inl q))
-      law := fun _ _ => rfl }
+  outputMap _ _ _ := OracleMap.fst _ _
 
 end On
 

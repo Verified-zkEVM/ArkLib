@@ -185,8 +185,7 @@ theorem eval_p2 : MvPolynomial.eval ![3, 5] p2.val = 14 := by
 /-- The challenge requests of a run: one query to the challenge oracle per challenge node. -/
 abbrev drawOf (n : ℕ) :=
   fun c : ChallengeNode oracleSig (protocol K 1 n) =>
-    (liftM ((ambient + challengeSpec oracleSig (protocol K 1 n)).query (.inr c)) :
-      OracleComp (ambient + challengeSpec oracleSig (protocol K 1 n)) _)
+    (QueryImpl.id' (ambient + challengeSpec oracleSig (protocol K 1 n))).restrictRight c
 
 /-- The observation of a three-round run on the claim `t` about `p3`. -/
 abbrev Obs (n : ℕ) :=
@@ -213,6 +212,7 @@ theorem run_three :
   rw [run_honest_eval D₂ ambient _ p3 relation_p3 fun chals => funext fun i => by
     fin_cases i <;> rfl]
   rw [drawChallenges_three]
+  rfl
 
 /-- At the challenges `3, 5, 7` the verdict is the claim `⟨7, ![3, 5, 7]⟩` with output oracle
 `p3`, and it lies in the final relation. -/
@@ -273,6 +273,7 @@ theorem run_two :
   rw [run_honest_eval D₂ ambient _ p2 relation_p2 fun chals => funext fun i => by
     fin_cases i <;> rfl]
   rw [drawChallenges_two]
+  rfl
 
 /-- At the challenges `3, 5` the verdict is the claim `⟨14, ![3, 5]⟩` with output oracle `p2`. -/
 example : (some (⟨MvPolynomial.eval ![3, 5] p2.val, ![3, 5]⟩, fun _ => p2) :
@@ -414,6 +415,7 @@ theorem run_two_bilinear :
   rw [run_honest_eval D₂ ambient _ bilinear bilinear_relation fun chals => funext fun i => by
     fin_cases i <;> rfl]
   rw [drawChallenges_two]
+  rfl
 
 /-- Every challenge of the two-round protocol ranges over `K`. -/
 theorem range_eq (c : ChallengeNode oracleSig (protocol K 1 2)) :

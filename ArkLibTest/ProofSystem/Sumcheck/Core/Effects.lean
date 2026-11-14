@@ -168,13 +168,13 @@ abbrev Q := events + challengeSpec oracleSig (protocol K 1 2)
 
 /-- The challenge query at a challenge node. -/
 abbrev drawE := fun c : ChallengeNode oracleSig (protocol K 1 2) =>
-  (liftM (Q.query (.inr c)) : OracleComp Q _)
+  (QueryImpl.id' Q).restrictRight c
 
 /-- The ambient event `i` inside the execution. -/
-abbrev eventE (i : Fin 4) : OracleComp Q K := liftM (Q.query (.inl i))
+abbrev eventE (i : Fin 4) : OracleComp Q K := (QueryImpl.id' Q).restrictLeft i
 
 /-- The execution's embedding of ambient queries. -/
-abbrev liftEvents : QueryImpl events (OracleComp Q) := fun q => liftM (Q.query (.inl q))
+abbrev liftEvents : QueryImpl events (OracleComp Q) := (QueryImpl.id' Q).restrictLeft
 
 /-! ## The execution runs every effect in protocol order -/
 
@@ -207,7 +207,7 @@ theorem run_last (a r : K) :
       let _ ← eventE 3
       pure ⟨consTranscript (affine (b + a) (a * r + 1)) s ⟨⟩, (), ⟨⟩⟩) := by
   rw [Prover.simulate_joinSlot, run_joinSlot]
-  simp only [simulateQ_map, Functor.map_map, bind_map_left, simulate_event]
+  simp only [simulateQ_map, Functor.map_map, bind_map_left]
   refine bind_congr fun b => ?_
   rw [lastProver, simulate_consProver, run_consProver]
   refine bind_congr fun s => ?_
@@ -227,7 +227,7 @@ theorem run_adaptive :
       pure ⟨consTranscript (affine a 1) r (consTranscript (affine (b + a) (a * r + 1)) s ⟨⟩),
         (), ⟨⟩⟩) := by
   rw [adaptive, Prover.simulate_joinSlot, run_joinSlot]
-  simp only [simulateQ_map, Functor.map_map, bind_map_left, simulate_event]
+  simp only [simulateQ_map, Functor.map_map, bind_map_left]
   refine bind_congr fun a => ?_
   rw [simulate_consProver, run_consProver]
   refine bind_congr fun r => ?_
