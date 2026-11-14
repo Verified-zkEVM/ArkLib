@@ -61,9 +61,9 @@ example : Round2Check 3 (fun _ : Fin 1 => (C 1 : MvPolynomial (Fin 0) ℤ)) 0 5 
     nsmul_eq_mul, Nat.cast_ofNat, ZMod.card, Nat.reduceLT, not_false_eq_true, and_true]
   decide +kernel
 
-/-- In `ZMod 17`, where `ℓ₁ · (q - 1) = 12 < 16 = |F| - 1`, a message passing the check of Round 2
-and the grand-product claim for the honest `μ = 12` and `μ' = 12` gives the reduced claim `12 = 12`
-in `𝔽₅`. -/
+/-- In `ZMod 17`, where `ℓ₁ · (q - 1) = 12 < 16 = |F| - 1`, the message `μ = 12` passes the check of
+Round 2 against `μ' = 12` and satisfies the grand-product claim, and this gives the reduced claim
+`12 = 12` in `𝔽₅`. -/
 example : ∑ p : Fin 3 × Fin 1, reduceAt 5 (fun i : Fin 0 => i.elim0)
       (C 4 : MvPolynomial (Fin 0) ℤ) * reduceAt 5 (fun i : Fin 0 => i.elim0)
         (C 1 : MvPolynomial (Fin 0) ℤ) * (((fun _ => 1 : Fin 3 × Fin 1 → ℕ) p : ℕ) : ZMod 5) =
@@ -74,9 +74,8 @@ example : ∑ p : Fin 3 × Fin 1, reduceAt 5 (fun i : Fin 0 => i.elim0)
     (b := fun _ : Fin 1 => (C 1 : MvPolynomial (Fin 0) ℤ)) (f := fun _ => 1)
     (fun _ => le_rfl) (by simp [ZMod.card]) ⟨fun _ => 12, ?_⟩
   simp only [Round2Check, GrandProductClaim, Fintype.card_fin, Nat.add_one_sub_one, Nat.reduceMul,
-    Std.le_refl,
-    implies_true, univ_unique, Fin.default_eq_zero, Fin.isValue, Nat.cast_ofNat, eq_intCast,
-    reduceAt_apply, map_one, mul_one, sum_const, card_singleton, one_smul,
+    Std.le_refl, implies_true, univ_unique, Fin.default_eq_zero, Fin.isValue, Nat.cast_ofNat,
+    eq_intCast, reduceAt_apply, map_one, mul_one, sum_const, card_singleton, one_smul,
     Int.cast_ofNat, MvPolynomial.map_ofNat, eval_ofNat, Nat.cast_one, sub_add_cancel, prod_const,
     card_univ, forall_const, true_and]
   decide +kernel
@@ -120,9 +119,9 @@ example (q : ℕ) (α : Fin 1 → ZMod q) :
 
 /-! ### The probability bound with a nontrivial error -/
 
-/-- The fixed-witness error is at most `2 / 11`: with
-`a = X₀`, `b = 1`, `f = (1)`, `μ = 0` and `μ' = 0`, the claim `⟨1 ⊗ 1, 1⟩ = 1 ≠ 0` is false, and
-`ℓ₁ · (q - 1) ≤ 12 < 16 = |𝔽₁₇| - 1` for the primes `{11, 13}`. -/
+/-- The fixed-witness error is at most `2 / 11`: with `a = X₀`, `b = 1`, `f = (1)`, `μ = 0` and
+`μ' = 0`, the claim `⟨1 ⊗ 1, 1⟩ = 1 ≠ 0` is false, and `ℓ₁ · (q - 1) ≤ 12 < 16 = |𝔽₁₇| - 1` for the
+primes `{11, 13}`. -/
 example : Pr{let q ← $ᵗ ↥({11, 13} : Finset ℕ); let α ← modPointSample primes_eleven_thirteen q}[
     Round2Satisfiable g17 (fun _ : Fin 1 => (X 0 : MvPolynomial (Fin 1) ℤ))
       (fun _ : Fin 1 => (C 1 : MvPolynomial (Fin 1) ℤ)) (fun _ : Fin 1 × Fin 1 => 1) 0 q.val α] ≤
