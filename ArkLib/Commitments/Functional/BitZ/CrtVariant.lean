@@ -67,6 +67,17 @@ section General
 
 variable {A : Type*} [CommRing A] {ι : Type*} [Fintype ι]
 
+/-- A bit inner product with weights below `M` is below `|ι| · M`. -/
+theorem sum_mul_lt_card_mul {M : ℕ} (γ b : ι → ℕ) (hγ : ∀ i, γ i < M) (hb : ∀ i, b i ≤ 1)
+    (hpos : 0 < Fintype.card ι) : ∑ i, γ i * b i < Fintype.card ι * M := by
+  calc ∑ i, γ i * b i ≤ ∑ _i : ι, (M - 1) :=
+        sum_le_sum fun i _ =>
+          (Nat.mul_le_mul_left _ (hb i)).trans (by have := hγ i; rw [mul_one]; omega)
+    _ < Fintype.card ι * M := by
+        simp only [sum_const, card_univ, smul_eq_mul]
+        obtain ⟨i⟩ := Fintype.card_pos_iff.1 hpos
+        exact Nat.mul_lt_mul_of_pos_left (by have := hγ i; omega) hpos
+
 /-- **The integer inner product from two grand products.** Let `x` be an element of a commutative
 ring with `N := orderOf x`, let `γᵢ < N` and let `b` be a vector of bits of length `ℓ₁ = |ι|`, with
 `ℓ₁` coprime to `N`, `ℓ₁² < N`, `μ < ℓ₁ · N` and `a < ℓ₁`. If
@@ -98,16 +109,11 @@ theorem sum_mul_eq_of_prod_bitFactor_eq_pow_of_coprime_orderOf {x : A} (γ b : �
     refine (Nat.ModEq.sum fun i _ => ((Nat.mod_modEq (γ i) ℓ₁).symm.mul_right (b i))).trans ?_
     rw [h2]
     simp [Nat.ModEq, Nat.add_mul_mod_self_right]
-  refine ((Nat.modEq_and_modEq_iff_modEq_mul hcop).1 ⟨h3, h1⟩).eq_of_lt_of_lt ?_ hμ
-  calc ∑ i, γ i * b i ≤ ∑ _i : ι, (orderOf x - 1) :=
-        sum_le_sum fun i _ =>
-          (Nat.mul_le_mul_left _ (hb i)).trans (by have := hγ i; rw [mul_one]; omega)
-    _ < ℓ₁ * orderOf x := by
-        simp only [sum_const, card_univ, smul_eq_mul]
-        exact Nat.mul_lt_mul_of_pos_left (by omega) hℓpos
+  exact ((Nat.modEq_and_modEq_iff_modEq_mul hcop).1 ⟨h3, h1⟩).eq_of_lt_of_lt
+    (sum_mul_lt_card_mul γ b hγ hb hℓpos) hμ
 
-/-- **The honest quotient of the second grand product.** For a vector of bits `b` of length
-`ℓ₁ = |ι| > 0` and any weights `γ`, there is `a < ℓ₁` with
+/-- **The honest quotient of the second grand product.** For any `x`, a vector of bits `b` of
+length `ℓ₁ = |ι| > 0` and any weights `γ`, there is `a < ℓ₁` with
 `∏ᵢ ((x ^ (γᵢ mod ℓ₁) - 1) · bᵢ + 1) = x ^ ((⟨γ, b⟩ mod ℓ₁) + a · ℓ₁)`, namely
 `a = ⟨γ mod ℓ₁, b⟩ / ℓ₁`. -/
 theorem exists_prod_bitFactor_mod_eq_pow (x : A) (γ b : ι → ℕ) (hb : ∀ i, b i ≤ 1)
@@ -116,13 +122,7 @@ theorem exists_prod_bitFactor_mod_eq_pow (x : A) (γ b : ι → ℕ) (hb : ∀ i
       x ^ ((∑ i, γ i * b i) % Fintype.card ι + a * Fintype.card ι) := by
   set ℓ₁ := Fintype.card ι
   set s := ∑ i, (γ i % ℓ₁) * b i
-  have hs : s < ℓ₁ * ℓ₁ := by
-    calc s ≤ ∑ _i : ι, (ℓ₁ - 1) :=
-          sum_le_sum fun i _ => (Nat.mul_le_mul_left _ (hb i)).trans
-            (by have := Nat.mod_lt (γ i) hℓpos; rw [mul_one]; omega)
-      _ < ℓ₁ * ℓ₁ := by
-          simp only [sum_const, card_univ, smul_eq_mul]
-          exact Nat.mul_lt_mul_of_pos_left (by omega) hℓpos
+  have hs : s < ℓ₁ * ℓ₁ := sum_mul_lt_card_mul _ b (fun i => Nat.mod_lt (γ i) hℓpos) hb hℓpos
   have hmod : s % ℓ₁ = (∑ i, γ i * b i) % ℓ₁ :=
     Nat.ModEq.sum fun i _ => (Nat.mod_modEq (γ i) ℓ₁).mul_right (b i)
   refine ⟨s / ℓ₁, (Nat.div_lt_iff_lt_mul hℓpos).2 hs, ?_⟩
