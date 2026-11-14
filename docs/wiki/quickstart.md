@@ -26,7 +26,8 @@ revisions; Mathlib and PolyFun arrive through those packages. `lake-manifest.jso
 exact resolved revision of every package, so read it, not this page, for the current versions.
 Dependency updates normally use CompPoly and doc-gen4 release/patch tags matching ArkLib's Lean
 toolchain, and an exact VCVio commit reachable from upstream `main`. doc-gen4 is pinned in
-`docbuild/lakefile.toml`; bump it and `docbuild/lean-toolchain` with `lean-toolchain`. An
+`docbuild/lakefile.toml`; bump it with `lean-toolchain`. `docbuild/` has no toolchain file of its
+own and inherits the root `lean-toolchain`, as the docs CI action expects. An
 unreleased CompPoly fix may use a documented exception in the dependency PR body: state why the
 matching release is insufficient, link the upstream change, and identify the actual merged commit
 used. Preserve this rationale when rebasing or rewriting that PR; the manifest alone does not

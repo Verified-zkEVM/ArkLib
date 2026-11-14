@@ -62,8 +62,9 @@ blueprint, including the abstract binary tower. It keeps those references availa
 
 doc-gen4 and `checkdecls` are required by the separate package in `docbuild/`, not by ArkLib's
 root lakefile, because every package that requires ArkLib resolves every root `require`.
-`docbuild` requires ArkLib by path and shares its `.lake/packages` and build. Its manifest is not
-committed, so refresh it from ArkLib's before use. For a direct declaration check, run:
+`docbuild` requires ArkLib by path and shares its `.lake/packages` and build. Its manifest and
+`lean-toolchain` are not committed: `lake update Arklib` refreshes the manifest from ArkLib's and
+copies the root toolchain, so run it before use. For a direct declaration check, run:
 
 ```bash
 lake build ArkLib ArkLibBlueprint
