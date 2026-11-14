@@ -258,7 +258,7 @@ Ports owned by the oracle-access tests:
 [routeWhole]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L275
 [payload]: ../../../ArkLib/Interaction/Core/Oracle/Routing.lean#L97
 [appendLaw]: ../../../ArkLib/Interaction/Core/Oracle/Routing.lean#L119
-[substitution]: ../../../ArkLib/Interaction/Core/Composition.lean#L335
+[substitution]: ../../../ArkLib/Interaction/Core/Composition.lean#L400
 [sourceClosing]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L255
 [unitRuntime]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L292
 [optionalClosing]: ../../../ArkLib/Interaction/Core/Oracle/LoggedExecution.lean#L93
