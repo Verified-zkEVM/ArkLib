@@ -498,6 +498,126 @@ No challenge-indexed parent output interface is required.
 The required targeted reverse-dependency build and guard commands are the acceptance checks for
 this branch. The disposition record gives their scope. No whole-library validation is requested.
 
+### `combineDraw` combines errors
+
+The composite error is `combineDraw (m := fun _ => ℝ≥0∞) l s₁ s₂ ε₁ ε₂`: the combinator that
+combines the prefix and suffix draws, at a constant result family. Prefix challenge nodes keep the
+prefix error, and suffix challenge nodes keep the error of the suffix at their prefix path. No
+separate error traversal is added.
+
+## 20. State restoration under P2: authored output selection
+
+Approved premise P2 says that challenges and oracle messages never select protocol shape.
+`Path s` therefore retains public prover messages and erases challenges. The frozen fixtures'
+challenge-selected `Fin 8`/`Fin 9` statement carriers are **premise-required and retired under P2**.
+They are not a missing parent dependency, as entry 26 also records.
+
+The replacement fixture prepends a prover-authored Boolean `b` to the original one- or two-round
+protocol. That public message selects the exact statement carriers `Fin 8` and `Fin 9`. The
+challenge remains independent and continues to control acceptance, rejection and knowledge-state
+transitions. The fixtures quantify over both selectors and every original challenge, statement,
+message and output witness. In particular the diagonal selectors reproduce the numerical frozen
+replays, while all four selector/challenge combinations are checked by universal theorems.
+The frozen output oracle stays `PUnit → Fin 8`, with the original interface and payload. A
+separate `varyingVerifier`/`varyingGame` fixture additionally checks genuinely path-dependent
+output oracle carriers and interfaces; it does not replace the frozen rows.
+
+### Games and execution
+
+`selectedPlainGame`, `selectedClosedGame` and the two-round `PublicSelection.game` restore the
+original adversary and evaluate the full verifier on the public-selector-prefixed transcript.
+Their output is dependent on that returned transcript. The public selector makes no restoration
+oracle query, so the original salted keys, adaptive repeated query, query counts and error
+charges are unchanged. The suffix verifier at each fixed selector is used to instantiate the
+generic soundness theorem. Observation equations and party-run correspondence identify its
+output with the full verifier's output; the game is not a manually predicted verdict.
+
+`plainScriptedRun_eq` and `replayResult_eq` return payload seven on every Boolean challenge, in
+both exact statement carriers. `selectedScriptedRun_eq` and `oracleReplayResult_eq` separately
+retain rejection on a false challenge. The one-round `selectedGame_eval_run` and two-round
+`PublicSelection.game_eval_run` connect restored games to actual `OracleVerifier.run` executions.
+The one-round `selected_fresh` checks the complete interaction's uniform challenge marginal,
+independently of input, authored selector and oracle payload.
+
+### Branch-specific interfaces
+
+The [disposition record](../interaction-layer/state-restoration-disposition.md) gives exact frozen
+and target declarations, endpoint correspondences and the P1/P2 classification for each port.
+This branch adds the following restoration interfaces on the parent's state functions:
+
+| Interface | Restoration-specific contract |
+| --- | --- |
+| `verificationGame`, `closedVerificationGame` | Complete the adaptive selection, then return the transcript and its path-indexed passive observation. |
+| `complete_support_matches`, `run_scriptedProver_of_mem_support` | Every supported open completion carries the selected messages and replays through the actual interpreted party runner. |
+| Uniform, private-coin and nonuniform knowledge bounds | Read the supplied adversary witness at the completed transcript; retain `(Q + rounds.length) * error` or `Q * max + sum`. |
+| `programAlong_budget_le_protocol`, `programAlong_budget_le_protocol_zero` | Count message/challenge stages per round, with explicit root/leaf terms and the frozen zero-endpoint specialization. |
+| Authored-selector fixtures | A public prover Boolean selects exact `Fin 8`/`Fin 9` statement carriers; challenges still control acceptance and knowledge transitions. |
+
+Unmeasured restoration retains independent input, intermediate and terminal witness universes.
+Probabilistic game outputs remain small; deterministic observations accept general move universes.
+The record explains these constraints and the change from arbitrary terminal results to optional
+passive decisions and explicit output-law implications.
+
+### Shared extraction laws and carrier constraints
+
+This branch adds root-failure localization and child restriction laws beside the parent's
+extraction definitions in `Security/KnowledgeComposition/Extraction.lean`. The keyed conclusion
+`BadChallengeOnCompletion F stmt messages table w key` retains the witness extracted from the
+actual suffix and supplied output witness. Only `BadChallengeOnCompletion.mem_badChallenge`
+forgets that witness for the probability bound. The [parent inventory](../interaction-layer/knowledge-composition-disposition.md)
+describes the shared certificate signatures; the [restoration record](../interaction-layer/state-restoration-disposition.md)
+identifies this branch's consumers and source assertions.
+
+The remaining small carriers follow these exact declarations at VCVio pin
+`fc54dd3d7691d6f5db7dc829e321a727f095bc2d`:
+
+- `SampleableType (β : Type)` in
+  `VCVio/OracleComp/Constructions/SampleableType/Basic.lean:51` forces
+  `Round.sampleChallenge` to sample small challenges. `protocol` uses `OraclePoly.{0}`,
+  whose messages and challenges share the move universe. Round-specific pure keyed laws
+  therefore remain on this small protocol; the shared extraction laws are general.
+- `ProbComp : Type → Type` in `VCVio/OracleComp/ProbComp/Basic.lean:31` keeps random
+  outputs small in the restoration games and bounds. It does not restrict `readOut`
+  or the certificate's input, intermediate or terminal witness universes.
+- `OracleComp.BudgetedProgram {Input Result : Type}` in
+  `VCVio/OracleComp/QueryTracking/MeasuredProgram.lean:156` fixes root results, step
+  inputs/results and leaf inputs to `Type`. `KnowledgeStateFunction.MeasuredStages`
+  (`Core/Security/MeasuredResources.lean:99`) applies this interface to the actual extraction
+  maps. Its restoration budget theorems and the packaged measured game theorem retain
+  small input, intermediate and terminal witnesses. `OracleComp.MeasuredProgram` at line 66
+  also fixes the cost carrier `ω` to `Type`.
+
+### Frozen-source dispositions
+
+The [state-restoration disposition record](../interaction-layer/state-restoration-disposition.md)
+contains one table per frozen production or test file. It covers 86 production declarations,
+all 53 frozen fixture assertions, and six proof-bearing measured fixture definitions. It replaces
+the one-round and two-round tables previously kept here, with exact file/line references and one
+status per row. The record distinguishes P1/P2 restrictions, retired adapters and equivalent laws;
+it includes the proved support-to-replay bridge and zero-endpoint budget specialization.
+
+### Validation
+
+On 2026-11-11, the ancestry check against `feat/interaction-migrate-core-3` passed, and both
+prescribed checks exited zero from this worktree:
+
+```sh
+~/claude-work/restack-1110/check.sh feat/interaction-migrate-core-3 build
+DOC_BASE=feat/interaction-migrate-core-3 ~/claude-work/restack-1110/check.sh \
+    feat/interaction-migrate-core-3 guards
+```
+
+The build includes both restoration test modules, their executable replay assertions, and the
+transitive axiom checks on the new game and replay theorems. The guards cover documentation,
+frozen paths, forbidden proof escapes, headers, imports and Lean source style. The parent's
+ancestry, build and guards were also rerun successfully from its worktree. Every changed Lean
+file has fewer than 1500 lines and no line exceeds 100 characters.
+
+Independent statement review checked the P2 dispositions, all original non-carrier quantifiers,
+actual party runs, keyed witnesses, nonuniform errors and measured costs. Blind read-back of the
+production declarations independently confirmed their dependent output types and witness
+universes.
+
 ## 21. Round-by-round soundness implies soundness for lawful distribution monads
 
 The probability-free escape theory is polymorphic in protocol positions and moves. Only the
