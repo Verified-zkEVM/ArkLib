@@ -45,8 +45,9 @@ knowledge-state function are not formalized here.
 
 `reduceAt` evaluates directly with coefficient reduction and is executable. `honestMessage` and
 `claimPoly` are mathematical objects: their construction uses Mathlib's noncomputable polynomial
-ring operations, and an implementation of the prover would compute the same polynomial in a
-computational representation.
+ring operations. An implementation of the prover would compute `honestMessage` in a computational
+representation; `claimPoly` is the error polynomial of the soundness argument, which no party
+computes.
 
 Paper-specific correspondence and remaining formalization work are recorded in the
 [BitZ KB](https://github.com/Verified-zkEVM/ArkLib/blob/main/docs/kb/papers/BGKLSW26.md).
