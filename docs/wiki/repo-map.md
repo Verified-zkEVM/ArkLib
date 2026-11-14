@@ -253,7 +253,7 @@ home_page/            site assets and assembled website root
 - `ArkLib/Commitments/Functional/BitZ/` holds the supporting algebra and probability bounds of
   BitZ: `ExponentLift` for the bit inner product in an exponent, `Round1` for the honest-message
   coefficient bound and fixed-witness fingerprinting error, `Round2` for the deterministic
-  tensor implication, `OutOfDomain` for the multilinear-list collision bound, and `Bitification`
+  tensor implication, `OutOfDomain` for the multilinear-list collision bound, `Bitification`
   for the bit decomposition of a witness over a finitely generated ring, `FixedWitnessError` for
   the fixed-witness error of Rounds 1 and 2, and `BitifiedClaim` for the bitified weights, the
   identification of the two claims and the same bound for the bitified claim. There is no

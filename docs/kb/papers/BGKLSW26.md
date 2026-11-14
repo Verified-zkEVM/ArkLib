@@ -187,8 +187,8 @@ ordinary callers outside `noncomputable section`, and records these results (rat
 | `BitZ.Round2Check`, `BitZ.GrandProductClaim` | Leaf / 1 | Decidable through instances (the second over a field with decidable equality). With explicit constant polynomials as lifts they run: the message `0` passes both, and each other case fails exactly one condition (grand product, range, weighted sum). |
 | `BitZ.Round2Satisfiable` | Architectural / 8 | An existential over all second messages, so a mathematical event; its executable parts are `Round2Check` and `GrandProductClaim`. |
 
-Runtime checks live in the existing Round 1/2, fingerprint-probability and bitification acceptance
-modules.
+Runtime checks live in the existing Round 1/2, fingerprint-probability, bitification and
+fixed-witness error acceptance modules.
 The future protocol implementation must use executable representations (including the existing
 CompPoly MLE APIs where appropriate), carry sampler data explicitly, and prove agreement with
 these mathematical views. An abstract nonempty finite prime set alone does not supply an
