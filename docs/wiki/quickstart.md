@@ -25,11 +25,12 @@ leave that work intact.
 revisions; Mathlib and PolyFun arrive through those packages. `lake-manifest.json` records the
 exact resolved revision of every package, so read it, not this page, for the current versions.
 Dependency updates normally use CompPoly and doc-gen4 release/patch tags matching ArkLib's Lean
-toolchain, and an exact VCVio commit reachable from upstream `main`. An unreleased CompPoly fix may
-use a documented exception in the dependency PR body: state why the matching release is
-insufficient, link the upstream change, and identify the actual merged commit used. Preserve this
-rationale when rebasing or rewriting that PR; the manifest alone does not explain it. Do not invent
-a release tag or assume a PR head will be its eventual merge revision.
+toolchain, and an exact VCVio commit reachable from upstream `main`. doc-gen4 is pinned in
+`docbuild/lakefile.toml`; bump it and `docbuild/lean-toolchain` with `lean-toolchain`. An
+unreleased CompPoly fix may use a documented exception in the dependency PR body: state why the
+matching release is insufficient, link the upstream change, and identify the actual merged commit
+used. Preserve this rationale when rebasing or rewriting that PR; the manifest alone does not
+explain it. Do not invent a release tag or assume a PR head will be its eventual merge revision.
 
 A side-branch dependency pin is for a **draft integration PR only**, with the upstream PR and a
 repin-before-merge obligation recorded. After upstream merge, use the actual post-squash/rebase

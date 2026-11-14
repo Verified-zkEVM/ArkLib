@@ -1,0 +1,30 @@
+# Documentation-only package. Every package that requires ArkLib resolves every `require` in the
+# root lakefile, so the documentation tools are required here instead, with ArkLib by path.
+# Packages are shared with the root, so a warm root build is reused. This package's manifest is
+# not committed: Lake would check out its pins into the shared directory over the root's, so
+# refresh it from ArkLib's manifest first, as docgen-action does. From this directory:
+#   MATHLIB_NO_CACHE_ON_UPDATE=1 lake update Arklib
+#   lake build ArkLib:docs ArkLibBlueprint:docs
+#   lake build BlueprintDecls && lake exe checkdecls ../blueprint/lean_decls
+name = "docbuild"
+reservoir = false
+packagesDir = "../.lake/packages"
+defaultTargets = ["BlueprintDecls"]
+
+[[require]]
+name = "Arklib"
+path = ".."
+
+[[require]]
+scope = "leanprover"
+name = "doc-gen4"
+rev = "v4.35.0"
+
+[[require]]
+name = "checkdecls"
+git = "https://github.com/PatrickMassot/checkdecls.git"
+rev = "lean4.18.0"
+
+# `checkdecls` imports the root package's library roots; from this package that is this library.
+[[lean_lib]]
+name = "BlueprintDecls"

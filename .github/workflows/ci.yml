@@ -322,11 +322,19 @@ jobs:
           name: arklib-blueprint
           path: .
 
+      # checkdecls is required by the docbuild package rather than by ArkLib, so ArkLib's dependents
+      # never resolve it. BlueprintDecls imports ArkLib and ArkLibBlueprint from the build above.
       - name: Check generated blueprint declarations
-        run: lake exe checkdecls blueprint/lean_decls
+        working-directory: docbuild
+        run: |
+          MATHLIB_NO_CACHE_ON_UPDATE=1 lake update Arklib
+          lake build BlueprintDecls
+          lake exe checkdecls ../blueprint/lean_decls
 
       # Reuse the existing project build for API documentation on trusted main pushes.
       # The blueprint was rendered separately; this action cannot publish from the read-only job.
+      # The action rewrites docbuild/lakefile.toml with its own template, which requires the same
+      # ArkLib path and doc-gen4 tag; ArkLib's lakefile does not need to require doc-gen4.
       - name: Build API documentation
         uses: leanprover-community/docgen-action@10db47458f91456d87804787d3dfcd914b9a19e3 # 2026-06-07
         env:
