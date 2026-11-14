@@ -420,7 +420,9 @@ home_page/            site assets and assembled website root
     `liftShort` is *derived* from `H₀ ≡ 0` rather than assumed); `ZeroCheck/Reduction` is the
     corrected Lemma 10 (`m₀ + m₁` scalar challenge rounds with `k = 2` each, extracted through the
     nested evaluation tree of `ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean` — Mathlib-level,
-    `k`-ary, individual degree `< k` — with the computable view in
+    with `k i` branches at level `i` and individual degree `< k i`, so a tree may mix arities, and
+    the Cartesian-grid zero test of `Data/MvPolynomial/Interpolation` is its path-independent
+    case — with the computable view in
     `ArkLib/ToCompPoly/Multilinear/NestedEvaluationTree.lean`; its named
     `nestedZeroCheckExtractor` is an executable all-left lookup into
     `ChallengeTree.LeafWitnesses`, with no runtime relation search; the weak-binding failure mode
