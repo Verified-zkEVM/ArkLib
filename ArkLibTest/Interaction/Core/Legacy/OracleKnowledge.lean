@@ -95,7 +95,7 @@ example {σ : Type} [∀ i, SampleableType (twoWay.Challenge i)] (init : ProbCom
     (relIn : Set ((Nat × ∀ i, InStmt i) × Nat)) (relOut : Set ((Nat × ∀ i, OutCopy i) × Nat))
     (ε : NNReal) :
     letI : MeasurableSpace (Observation oracleSig (oracleProtocol twoWay)
-      (fun _ => (Nat × (∀ i, OutCopy i)) × Nat) (Nat × (∀ i, OutCopy i))) := ⊤
+      (fun _ => (Nat × (∀ i, OutCopy i)) × Nat) (fun _ => Nat × (∀ i, OutCopy i))) := ⊤
     letI : MeasurableSpace Nat := ⊤
     knowledgeSoundnessWith
         ((embedOracleVerifier sharedVerifier).classicalModel init impl
@@ -112,7 +112,7 @@ example {σ : Type} [∀ i, SampleableType (twoWay.Challenge i)] (init : ProbCom
     (relIn : Set ((Nat × ∀ i, InStmt i) × Nat)) (relOut : Set ((Nat × ∀ i, OutCopy i) × Nat))
     (ε : NNReal) :
     letI : MeasurableSpace (Observation oracleSig (oracleProtocol twoWay)
-      (fun _ => (Nat × (∀ i, OutCopy i)) × Nat) (Nat × (∀ i, OutCopy i))) := ⊤
+      (fun _ => (Nat × (∀ i, OutCopy i)) × Nat) (fun _ => Nat × (∀ i, OutCopy i))) := ⊤
     letI : MeasurableSpace Nat := ⊤
     knowledgeSoundness
         ((embedOracleVerifier sharedVerifier).classicalModel init impl
@@ -158,7 +158,7 @@ def legacyAnswers (b : Bool) : QueryImpl (shared + [twoWay.Challenge]ₒ) Id :=
 /-- The verdict, the verifier's output oracles, and the extracted witness of an oracle
 extraction game. -/
 def gameOutputs (z : Observation oracleSig (oracleProtocol twoWay)
-    (fun _ => (Nat × (∀ i, OutCopy i)) × Nat) (Nat × (∀ i, OutCopy i)) × Option Nat) :
+    (fun _ => (Nat × (∀ i, OutCopy i)) × Nat) (fun _ => Nat × (∀ i, OutCopy i)) × Option Nat) :
     Option (Nat × Nat × Nat) × Option Nat :=
   (z.1.2.2.map fun t => (t.1, t.2 true, t.2 false), z.2)
 
