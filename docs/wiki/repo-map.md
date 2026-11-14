@@ -258,8 +258,7 @@ home_page/            site assets and assembled website root
   fixed-witness error of Rounds 1 and 2, `BitifiedClaim` for the bitified weights, the
   identification of the two claims and the same bound for the bitified claim, and
   `HonestMessages` for the honest second message and the honest first message of a bitified claim.
-  There is no
-  `Commitment.Scheme` instance or composed protocol security theorem yet. The
+  There is no `Commitment.Scheme` instance or composed protocol security theorem yet. The
   [BitZ paper page](../kb/papers/BGKLSW26.md) maps statements to the paper and records the remaining
   protocol obligations.
   Binary-encoding bounds and injectivity live under `Data/Nat/BitSum`; other generic helpers are

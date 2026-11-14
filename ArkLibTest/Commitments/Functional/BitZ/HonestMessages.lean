@@ -93,14 +93,15 @@ example {k : ℕ} {ι₁ ι₂ R F : Type*} [Fintype ι₁] [Fintype ι₂] [Com
       ⟨round2Check_honestRound2Message a b hf q α,
         grandProductClaim_honestRound2Message g a hf q α⟩⟩
 
-/-- The honest message `⟨X₀ ⊗ 1, (1)⟩` has degree at most `2` and coefficients bounded by
-`C(1 + 1, 1) · 1 · 1 = 2`; the norm bound is the one of `Round1`, now about the named message. -/
+/-- The honest message `⟨X₀ ⊗ 1, (1)⟩` has total degree at most `2 · 1`. -/
 example :
     (honestMessage (fun _ : Fin 1 => (X 0 : MvPolynomial (Fin 1) ℤ))
       (fun _ : Fin 1 => (C 1 : MvPolynomial (Fin 1) ℤ)) (fun _ => 1)).totalDegree ≤ 2 * 1 :=
   totalDegree_honestMessage_le (fun _ => (totalDegree_X _).le)
     (fun _ => (totalDegree_C _).le.trans (Nat.zero_le _))
 
+/-- The coefficients of the honest message `⟨X₀ ⊗ 1, (1)⟩` are bounded by
+`C(1 + 1, 1) · 1 · 1 = 2`. -/
 example (s : Fin 1 →₀ ℕ) :
     ((honestMessage (fun _ : Fin 1 => (X 0 : MvPolynomial (Fin 1) ℤ))
       (fun _ : Fin 1 => (C 1 : MvPolynomial (Fin 1) ℤ)) (fun _ => 1)).coeff s).natAbs ≤

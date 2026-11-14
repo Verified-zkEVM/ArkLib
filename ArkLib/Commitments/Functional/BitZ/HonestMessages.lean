@@ -35,9 +35,7 @@ which is not formalized here.
   bounded digits, which form the bitification [BGKLSW26, (46)] of the witness that the honest prover
   of [BGKLSW26, Construction 4.13] uses.
 
-`honestRound2Message` is executable. `honestMessage` uses Mathlib's noncomputable polynomial ring
-operations, so it is a mathematical object; an implementation of the prover would compute the
-same polynomial in a computational representation.
+`honestRound2Message` is executable.
 
 Paper-specific correspondence and remaining formalization work are recorded in the
 [BitZ KB](https://github.com/Verified-zkEVM/ArkLib/blob/main/docs/kb/papers/BGKLSW26.md).

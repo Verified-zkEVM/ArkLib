@@ -43,9 +43,10 @@ knowledge-state function are not formalized here.
   `BitZ.avg_card_claim_le_logb` gives the bound `κ₀` of [BGKLSW26, Lemma 4.3].
 * `BitZ.prEvent_claim_le` gives the bound for a uniform prime followed by a uniform field point.
 
-`reduceAt` evaluates directly with coefficient reduction and is executable. `claimPoly` is a
-mathematical error polynomial for the soundness proof: its construction uses Mathlib's
-noncomputable polynomial ring operations. It is not an implementation of the prover.
+`reduceAt` evaluates directly with coefficient reduction and is executable. `honestMessage` and
+`claimPoly` are mathematical objects: their construction uses Mathlib's noncomputable polynomial
+ring operations, and an implementation of the prover would compute the same polynomial in a
+computational representation.
 
 Paper-specific correspondence and remaining formalization work are recorded in the
 [BitZ KB](https://github.com/Verified-zkEVM/ArkLib/blob/main/docs/kb/papers/BGKLSW26.md).
