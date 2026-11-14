@@ -326,3 +326,50 @@ run extracts `w.val`.
 
 This keeps to record D7, whose problems already index witness types by the claim; D7 fixes no
 constant output witness type for either notion.
+
+## 19. Produced per-slot provenance under the passive schedule
+
+**Status: equivalent for produced prefix, owner, query-group and log correspondence assertions;
+premise-required for intermediate verifier actions retired by P1.**
+`Oracle/SlotTrace.lean` instruments participant strategies with a list-valued writer layer;
+`TwoParty.Lens.run` remains the sole recursive executor. `OracleVerifier.executeWith` owns the
+interaction, terminal decision and output-closing sequence. The ordinary runner, full trace
+and ambient trace specialize this mechanism without narrowing the ordinary runner's universes.
+`Oracle/Provenance.lean` supplies erasure and interpretation laws. Each executed
+participant slot records the actual preceding moves and ordered query/answer log. Ownership is
+derived from the slot constructor. The final verifier decision is its own terminal phase;
+`runWithSetupTrace` also retains an explicitly separate prover setup action.
+
+`SlotInstrumentation.run_natural` supplies the general runner naturality law missing from the
+pinned PolyFun interface. It works for arbitrary polynomials, ownership lenses, environments
+and PolyFun's existing `MonadHom` morphisms. `observeInteraction_log` specializes it to concatenation of slot query
+logs in the writer layer. Erasure uses this general law and monad laws, without an independent
+recursive execution algorithm or a protocol-specific execution equivalence induction.
+`runWithLog` is the full-log projection of the trace runner.
+`runWithTrace_logView`, `runWithTrace_ambientLog` and `runWithTrace_erase` recover the existing
+full logged, ambient logged and ordinary executions exactly. `phases_queries` states ordered
+ambient-log concatenation, and `simulateQ_runWithTrace_logView` preserves the correspondence under
+lawful interpreters, including stateful runtimes. The existing full-log universe restriction in
+entry 18 applies to the full-log trace result. `runWithAmbientTrace` uses the same instrumented
+strategies and shared sequencing mechanism, returning only ambient decision queries and preserving
+independent input-data, input-query and
+oracle-node-query universes. `runWithAmbientLog` is its aggregate projection;
+`runWithAmbientTrace_erase` gives ordinary erasure. `runWithTrace_ambientView` identifies the
+full trace with this ambient view at small query universes, including every slot prefix and owner.
+
+`Oracle/PrefixResources.lean` defines available payload families at actual prefixes, intrinsic
+node names, prefix-resource inclusion and typed query inclusion. `includeQuery_name` and
+`familyInclusion_query` relate canonical naming to actual query routing;
+`pathResourcesInclusion_data` identifies completed-prefix data with the payloads used by the
+verifier. `runWithTrace_prefixes` certifies that each produced phase precedes the actual completed
+transcript, and `available_at_terminal` transports its availability certificate.
+`runWithAmbientTrace_prefixes` gives the same provenance certificate for independent query
+universes. A compile-time acceptance canary checks these universe parameters directly. `joinToTerminal_name` preserves names from an appended protocol's actual seam to its
+terminal prefix. The append route continues to use `prefixRoute_payload` and `splitOutputs`.
+
+The acceptance client keeps the aggregate tests and adds per-slot runtime observations, actual
+join and terminal membership, canonical availability and future-slot exclusion. Its distinguishing
+test moves one ambient request across a fixed public message: ordinary observations and aggregate
+logs remain equal, while the traced query prefixes differ. P1 retires intermediate effectful
+verifier actions and their former query groups; it does not retire prover slots or their prefixes.
+The disposition inventory records those qualifications separately.
