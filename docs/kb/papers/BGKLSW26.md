@@ -195,8 +195,8 @@ ordinary callers outside `noncomputable section`, and records these results (rat
 | `BitZ.honestRound2Message` | Leaf / 1 | Executable given executable lifts: for lifts `(1, 2)` of constant polynomials, bits `(1, 1)` and `q = 3` it runs as `[3]`, and the check and the claim accept it. |
 | `BitZ.honestMessage` | Architectural / 8 | Uses Mathlib's noncomputable polynomial multiplication and sum; it is the proof object for the verifier's bounds, not the prover implementation. An executable prover needs a computational polynomial representation and an agreement bridge. |
 
-Runtime checks live in the existing Round 1/2, fingerprint-probability, bitification and
-honest-message acceptance modules.
+Runtime checks live in the existing Round 1/2, fingerprint-probability, bitification,
+fixed-witness error and honest-message acceptance modules.
 The future protocol implementation must use executable representations (including the existing
 CompPoly MLE APIs where appropriate), carry sampler data explicitly, and prove agreement with
 these mathematical views. An abstract nonempty finite prime set alone does not supply an

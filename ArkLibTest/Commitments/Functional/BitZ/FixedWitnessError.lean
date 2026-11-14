@@ -14,10 +14,10 @@ import ArkLibTest.Commitments.Functional.BitZ.Rounds
 The decidable `Round2Check` and `GrandProductClaim` run on explicit constant polynomials. The bound
 needs the grand-product claim: for the data below the check alone accepts the message `0` at every
 prime and every point. The overflow hypothesis `ℓ₁ · (q - 1) < |F| - 1` is necessary: with the same
-weights and message, the check and the claim hold in `ZMod 7` (where the hypothesis fails) with a
-false reduced claim, and the reduced claim follows in `ZMod 17` (where it holds). The probability
-bound is instantiated with the nontrivial error `2 / 11`. The generator `g7` of `(ZMod 7)ˣ` is
-shared from `Basic` and the primes `{11, 13}` from `Rounds`.
+weights, the message `0` passes the check and satisfies the claim in `ZMod 7` (where the hypothesis
+fails) although the reduced claim is false, and in `ZMod 17` (where it holds) the message `12` gives
+the reduced claim. The probability bound is instantiated with the nontrivial error `2 / 11`. The
+generator `g7` of `(ZMod 7)ˣ` is shared from `Basic` and the primes `{11, 13}` from `Rounds`.
 -/
 
 open BitZ MvPolynomial Finset

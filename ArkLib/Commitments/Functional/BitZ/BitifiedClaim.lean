@@ -88,10 +88,10 @@ theorem dotProduct_bitWeights_tensor [Fintype ι₁] [Fintype ι₂] [Fintype M]
 
 variable [Fintype ι₁] [Fintype ι₂] [DecidableEq ι₁] [DecidableEq ι₂] [Fintype M]
 
-/-- **The original claim is the bitified claim.** For `v = v₁ ⊗ v₂` and a vector of bits `g`, the
-original inner product `⟨v, ψ(L g)⟩` equals the sum of `v₁ i * u₂ j * g((i, j))` over the pairs
-`(i, j)`, where `u₂ = bitWeights ψ γ B v₂` and the column `j = (i₂, k, j')` ranges over
-`ι₂ × Fin B × M`. -/
+/-- **The original claim is the bitified claim.** For `v = v₁ ⊗ v₂` and any `g` with natural entries
+(in particular a vector of bits), the original inner product `⟨v, ψ(L g)⟩` equals the sum of
+`v₁ i * u₂ j * g((i, j))` over the pairs `(i, j)`, where `u₂ = bitWeights ψ γ B v₂` and the column
+`j = (i₂, k, j')` ranges over `ι₂ × Fin B × M`. -/
 theorem dotProduct_tensor_map_bitMatrix_mulVec (γ : M → S) (B : ℕ) (v₁ : ι₁ → R) (v₂ : ι₂ → R)
     (g : (ι₁ × ι₂) × Fin B × M → ℕ) :
     (fun p : ι₁ × ι₂ => v₁ p.1 * v₂ p.2) ⬝ᵥ
