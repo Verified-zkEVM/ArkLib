@@ -1,8 +1,8 @@
 {
   "counts": {
-    "files_with_citations": 528,
-    "keys_cited": 77,
-    "total_citation_edges": 713
+    "files_with_citations": 538,
+    "keys_cited": 79,
+    "total_citation_edges": 727
   },
   "files": {
     "ArkLib/AGM/Basic.lean": [
@@ -12,7 +12,19 @@
     "ArkLib/Commitments/Functional/Basic.lean": [
       "CGKY25"
     ],
+    "ArkLib/Commitments/Functional/BitZ/Bitification.lean": [
+      "BGKLSW26"
+    ],
+    "ArkLib/Commitments/Functional/BitZ/BitifiedClaim.lean": [
+      "BGKLSW26"
+    ],
     "ArkLib/Commitments/Functional/BitZ/ExponentLift.lean": [
+      "BGKLSW26"
+    ],
+    "ArkLib/Commitments/Functional/BitZ/FixedWitnessError.lean": [
+      "BGKLSW26"
+    ],
+    "ArkLib/Commitments/Functional/BitZ/HonestMessages.lean": [
       "BGKLSW26"
     ],
     "ArkLib/Commitments/Functional/BitZ/OutOfDomain.lean": [
@@ -665,6 +677,25 @@
       "MS77",
       "ST20"
     ],
+    "ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear.lean": [
+      "ABF26",
+      "GLMRSW22"
+    ],
+    "ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear/BerP.lean": [
+      "GLMRSW22"
+    ],
+    "ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear/Defs.lean": [
+      "GLMRSW22"
+    ],
+    "ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear/Main.lean": [
+      "GLMRSW22"
+    ],
+    "ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear/NotRare.lean": [
+      "GLMRSW22"
+    ],
+    "ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear/Types.lean": [
+      "GLMRSW22"
+    ],
     "ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon.lean": [
       "ABF26",
       "AGGLZ25",
@@ -825,7 +856,10 @@
     ],
     "ArkLib/Data/CodingTheory/ProximityGap/LineDecoding.lean": [
       "ABF26",
-      "GG25"
+      "AHIV22",
+      "BKS18",
+      "GG25",
+      "Hab25"
     ],
     "ArkLib/Data/CodingTheory/ProximityGap/Separation.lean": [
       "ABF26",
@@ -1791,6 +1825,7 @@
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds/KKH26Asymptotic.lean",
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds/LargeAlphabet.lean",
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds/Linear.lean",
+      "ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear.lean",
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon.lean",
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds/SubspaceDesign.lean",
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean",
@@ -1866,7 +1901,8 @@
       "ArkLib/Data/CodingTheory/InterleavedCode.lean",
       "ArkLib/Data/CodingTheory/Prelims.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/AHIV22.lean",
-      "ArkLib/Data/CodingTheory/ProximityGap/AHIV22Support.lean"
+      "ArkLib/Data/CodingTheory/ProximityGap/AHIV22Support.lean",
+      "ArkLib/Data/CodingTheory/ProximityGap/LineDecoding.lean"
     ],
     "Ajt96": [
       "ArkLib/Commitments/Ordinary/Ajtai/Simple/Scheme.lean",
@@ -1994,7 +2030,11 @@
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean"
     ],
     "BGKLSW26": [
+      "ArkLib/Commitments/Functional/BitZ/Bitification.lean",
+      "ArkLib/Commitments/Functional/BitZ/BitifiedClaim.lean",
       "ArkLib/Commitments/Functional/BitZ/ExponentLift.lean",
+      "ArkLib/Commitments/Functional/BitZ/FixedWitnessError.lean",
+      "ArkLib/Commitments/Functional/BitZ/HonestMessages.lean",
       "ArkLib/Commitments/Functional/BitZ/OutOfDomain.lean",
       "ArkLib/Commitments/Functional/BitZ/Round1.lean",
       "ArkLib/Commitments/Functional/BitZ/Round2.lean",
@@ -2009,6 +2049,9 @@
     "BKR06": [
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon.lean",
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean"
+    ],
+    "BKS18": [
+      "ArkLib/Data/CodingTheory/ProximityGap/LineDecoding.lean"
     ],
     "BRW26": [
       "ArkLib/ProofSystem/RingSwitching/Packing/ClaimLayout/Quirky.lean",
@@ -2365,6 +2408,12 @@
     ],
     "GLMRSW22": [
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds/Linear.lean",
+      "ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear/BerP.lean",
+      "ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear/Defs.lean",
+      "ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear/Main.lean",
+      "ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear/NotRare.lean",
+      "ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear/Types.lean",
+      "ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear.lean",
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean"
     ],
     "GMW25": [
@@ -2411,6 +2460,9 @@
       "ArkLib/ProofSystem/RingSwitching/Lift/Presentation.lean",
       "ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean",
       "ArkLib/ProofSystem/RingSwitching/Lift.lean"
+    ],
+    "Hab25": [
+      "ArkLib/Data/CodingTheory/ProximityGap/LineDecoding.lean"
     ],
     "JH01": [
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon.lean",
