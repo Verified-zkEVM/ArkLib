@@ -523,6 +523,30 @@ def OracleVerifier.decideWith {ι : Type uι} {ambient : OracleSpec.{uι, u} ι}
   simulateQ (QueryImpl.addLift (QueryImpl.id' ambient)
     ((pathResources inputs s p).answer data)) (V.decide stmt p v).run
 
+/-- Interpreting ambient queries after closing resource queries agrees with closing them
+together under the ambient handler. -/
+theorem OracleVerifier.simulateQ_decideWith {ι : Type uι}
+    {ambient : OracleSpec.{uι, u} ι} {s : OracleProtocol.{u, q}} {S : Type uS}
+    {T : Path s → Type u}
+    {J : Path s → Type uJ} {B : (p : Path s) → J p → Type u}
+    {inputs : Resources.{u, uI, dI}}
+    {outputs : (p : Path s) → OracleFamily.{uJ, u, wJ} (J p) (B p)}
+    {m : Type u → Type v} [Monad m] [LawfulMonad m]
+    (V : OracleVerifier ambient s S T inputs outputs) (impl : QueryImpl ambient m)
+    (stmt : S) (p : Path s) (v : View s p)
+    (data : (pathResources inputs s p).Data) :
+    simulateQ impl (V.decideWith stmt p v data) =
+      simulateQ (QueryImpl.addLift impl
+        ((pathResources inputs s p).answer data))
+        (V.decide stmt p v).run := by
+  unfold OracleVerifier.decideWith
+  refine QueryImpl.simulateQ_simulateQ_eq_of_apply (fun q => ?_) _
+  rcases q with q | q
+  · simp [QueryImpl.addLift_def]
+  · simp only [QueryImpl.addLift_def]
+    change simulateQ impl (pure _) = pure _
+    simp
+
 /-- The shared execution mechanism: run PolyFun's interaction once through the supplied monad
 layer, then interpret one terminal decision and close its output from the same transcript. -/
 def OracleVerifier.executeWith {ι : Type u} {ambient : OracleSpec.{u, u} ι}

@@ -170,7 +170,7 @@ by this implication. This record adds no second inventory of those constraints.
 [state-local]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L312
 [prefix-bound]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L526
 [prefix-sound]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L597
-[prefix-run]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L144
+[prefix-run]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L164
 [escape-general]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L69
 [rank-sum]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L635
 [plain-local]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L670
@@ -187,8 +187,8 @@ by this implication. This record adds no second inventory of those constraints.
 [action-at]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L274
 [plain-bridge]: ../../../ArkLib/Interaction/Core/Security/Soundness.lean#L161
 [oracle-bridge]: ../../../ArkLib/Interaction/Core/Security/Soundness.lean#L201
-[plain-acc]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L322
-[oracle-acc]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L386
+[plain-acc]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L373
+[oracle-acc]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L471
 [fresh]: ../../../ArkLib/Interaction/Core/Execution.lean#L55
 [fresh-state]: ../../../ArkLib/Interaction/Core/Execution.lean#L75
 [half-mass]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L503

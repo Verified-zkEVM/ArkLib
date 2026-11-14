@@ -743,6 +743,9 @@ public import ArkLib.Interaction.Core.Security.Completeness
 public import ArkLib.Interaction.Core.Security.CompositionSoundness
 public import ArkLib.Interaction.Core.Security.Implications
 public import ArkLib.Interaction.Core.Security.Knowledge
+public import ArkLib.Interaction.Core.Security.KnowledgeComposition
+public import ArkLib.Interaction.Core.Security.KnowledgeComposition.Extraction
+public import ArkLib.Interaction.Core.Security.MeasuredResources
 public import ArkLib.Interaction.Core.Security.RoundByRound
 public import ArkLib.Interaction.Core.Security.Soundness
 public import ArkLib.Interaction.Core.Signature

@@ -6,7 +6,7 @@ Authors: Quang Dao
 
 import ArkLib.Interaction.Core.Composition
 import ArkLib.Interaction.Core.Security.Knowledge
-import ArkLib.Interaction.Core.Security.RoundByRound
+import ArkLib.Interaction.Core.Security.KnowledgeComposition
 
 /-!
 # Components that are not run outputs live in their own universes
@@ -15,11 +15,13 @@ Ambient oracle indices, input oracle indices, output oracle indices, input and o
 query types, input statements and input witnesses each take their own universe. The instances
 below put an oracle index in `Type 1` with responses in `Type 0`, input oracle queries in
 `Type 1`, output oracle queries in `Type 2`, an input statement in `Type 2` and an input witness
-in `Type 1`, while moves, run outputs and oracle responses stay in `Type 0`. They typecheck
-against `Verifier`, `OracleVerifier`, `Reduction`, both appends, the oracle routing laws, oracle
+in `Type 1`, while the initial examples keep moves, run outputs and oracle responses in `Type 0`.
+They typecheck against `Verifier`, `OracleVerifier`, `Reduction`, both appends, the oracle routing
+laws, oracle
 runs, the classical security and extraction models and round-by-round knowledge state functions,
 whose intermediate witnesses lie in their own universe. A run returns the output oracle data
-`∀ j, B p j`, so the run's output index is in `Type 0`.
+`∀ j, B p j`. The run's output index is in `Type 0`. The final pure extraction client sends
+a move in `Type 1` with a payload-dependent witness carrier in `Type 2`.
 -/
 
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle OracleComp MeasureTheory
@@ -472,12 +474,13 @@ types, in `Type 1`, while its input witness is the unit, in `Type 0`. The root e
 type to the unit. -/
 def typeCertificate {P : PFunctor.{1, 0}} (l : PFunctor.Lens P TwoParty.Lens.rolePoly)
     {S : Type v} (validOutput : S → PathAlong l (.pure ⟨⟩ : FreeM P PUnit) → Unit → Prop) :
-    KnowledgeStateFunction.{v, 0, 1} l (.pure ⟨⟩) S (fun _ => Unit) Unit (fun _ => True)
+    KnowledgeStateFunction.{v, 0, 1} l (.pure ⟨⟩) S (fun _ _ => Unit) (fun _ => Unit)
+    (fun _ => True)
       (fun _ _ => True) validOutput where
-  Witness _ _ := Type
-  toFun _ _ _ _ := True
+  Witness _ {_} _ _ := Type
+  toFun _ {_} _ _ _ := True
   extractRoot _ _ := ()
-  extractStep _ _ _ _ _ := Unit
+  extractStep _ {_ _} sp := nomatch sp
   extractLeaf _ _ _ _ := Unit
   root _ _ _ _ := trivial
   send sp _ _ _ := nomatch sp
@@ -485,21 +488,180 @@ def typeCertificate {P : PFunctor.{1, 0}} (l : PFunctor.Lens P TwoParty.Lens.rol
 
 /-- Round-by-round knowledge with intermediate witnesses in `Type 1`, a small input witness and an
 input statement in `Type 2`. -/
-example : rbrKnowledgeSoundness.{2, 0, 1} plainSig done (fun (_ : Type 1) => True)
+example : rbrKnowledgeSoundnessOfNodes.{2, 0, 1} plainSig done (fun (_ : Type 1) => True)
     (fun _ (_ : Unit) => True) (fun _ _ (_ : Unit) => True) (fun c => c.val.elim) (fun _ => 0) :=
   ⟨typeCertificate plainSig _, fun _ _ _ _ sp => nomatch sp⟩
 
 /-- The plain verifier wrapper at the same unequal universes. -/
-example : Verifier.rbrKnowledgeSoundness.{2, 0, 1} reduction.verifier plainAmbientTrue
-    (fun _ => True) (fun _ (_ : Unit) => True) (fun _ _ (_ : Unit) => True) noPlainChallenges
+example : Verifier.rbrKnowledgeSoundnessOfNodes.{2, 0, 1} reduction.verifier plainAmbientTrue
+    (fun _ => True) (fun _ (_ : Unit) => True) (fun _ _ _ (_ : Unit) => True) noPlainChallenges
     (fun _ => 0) :=
   ⟨typeCertificate plainSig _, fun _ _ _ _ sp => nomatch sp⟩
 
 /-- The oracle verifier wrapper for `runnable`, with intermediate witnesses in `Type 1`, a small
 input witness, an input statement in `Type 2` and an input index in `Type 1`. -/
-example : OracleVerifier.rbrKnowledgeSoundness.{2, 0, 1, 1, 0, 1, 0} runnable ambientTrue
-    (fun _ => True) (fun _ (_ : Unit) => True) (fun _ _ (_ : Unit) => True) noChallenges
+example : OracleVerifier.rbrKnowledgeSoundnessOfNodes.{2, 0, 1, 0} runnable ambientTrue
+    (fun _ => True) (fun _ (_ : Unit) => True) (fun _ _ _ (_ : Unit) => True) noChallenges
     (fun _ => 0) :=
   ⟨typeCertificate oracleSig _, fun _ _ _ _ sp => nomatch sp⟩
+
+/-- Statement-dependent finite witnesses at three independent universes. -/
+def indexedLargeCertificate : KnowledgeStateFunction.{2, 2, 1} plainSig done
+    (Type 1 × Nat) (fun stmt _ => Fin (stmt.2 + 1))
+    (fun stmt => ULift.{2} (Fin (stmt.2 + 1))) (fun _ => True) (fun _ _ => True)
+    (fun _ _ _ => True) where
+  Witness stmt {_} _ _ := ULift.{1} (Fin (stmt.2 + 1))
+  toFun _ {_} _ _ _ := True
+  extractRoot _ w := ⟨w.down⟩
+  extractStep _ {_ _} sp := nomatch sp
+  extractLeaf _ _ _ w := ⟨w⟩
+  root _ _ _ _ := trivial
+  send sp := nomatch sp
+  leaf _ _ _ _ _ := trivial
+
+/-- The suffix extracts a small finite input witness from a large intermediate witness. -/
+def indexedSmallCertificate : KnowledgeStateFunction.{2, 0, 1} plainSig done
+    (Type 1 × Nat) (fun stmt _ => Fin (stmt.2 + 1))
+    (fun stmt => Fin (stmt.2 + 1)) (fun _ => True) (fun _ _ => True)
+    (fun _ _ _ => True) where
+  Witness stmt {_} _ _ := ULift.{1} (Fin (stmt.2 + 1))
+  toFun _ {_} _ _ _ := True
+  extractRoot _ w := w.down
+  extractStep _ {_ _} sp := nomatch sp
+  extractLeaf _ _ _ w := ⟨w⟩
+  root _ _ _ _ := trivial
+  send sp := nomatch sp
+  leaf _ _ _ _ _ := trivial
+
+/-- Composition keeps the large statement-indexed input carrier and small seam carrier. -/
+example (stmt : Type 1 × Nat) (w : Fin (stmt.2 + 1)) :
+    (KnowledgeStateFunction.append (s₂ := fun _ => done)
+      (W := fun stmt _ => Fin (stmt.2 + 1)) (validOutput := fun _ _ _ => True)
+      (admissible₂ := fun _ _ => True) (relMid := fun _ _ _ => True)
+      indexedLargeCertificate (fun _ =>
+    indexedSmallCertificate)
+      (fun _ _ _ _ => trivial)).extractAlong stmt ⟨⟩ w = ULift.up w := rfl
+
+/-- Lifting preserves statement-dependent witnesses and the root extraction map. -/
+example (stmt : Type 1 × Nat) (w : Fin (stmt.2 + 1)) :
+    (indexedLargeCertificate.lift.{2, 2, 1, 0, 1, 0, 3}).extractRoot stmt ⟨⟨w⟩⟩ = ULift.up w := rfl
+
+/-- Lifting a bound retains the same dependent input and output carriers at a larger universe. -/
+example : rbrKnowledgeSoundnessOfNodes.{2, 2, 3} plainSig done
+    (fun (_ : Type 1 × Nat) => True)
+    (fun stmt (_ : ULift.{2} (Fin (stmt.2 + 1))) => True)
+    (fun stmt _ (_ : Fin (stmt.2 + 1)) => True) noPlainChallenges (fun _ => 0) :=
+  rbrKnowledgeSoundness.lift.{2, 2, 1, 0, 1, 3} plainSig
+    ⟨indexedLargeCertificate, fun _ _ _ _ sp => nomatch sp⟩
+
+/-- Pure backward maps accept types themselves as terminal, seam and input witnesses. -/
+def largeTerminalCertificate : KnowledgeStateFunction.{0, v + 1, v + 1, v + 1} plainSig done Unit
+    (fun _ _ => Type v) (fun _ => Type v) (fun _ => True) (fun _ _ => True)
+    (fun _ _ _ => True) where
+  Witness _ {_} _ _ := Type v
+  toFun _ {_} _ _ _ := True
+  extractRoot _ w := w
+  extractStep _ {_ _} sp := nomatch sp
+  extractLeaf _ _ _ w := w
+  root _ _ _ _ := trivial
+  send sp := nomatch sp
+  leaf _ _ _ _ _ := trivial
+
+/-- Composition passes a terminal witness in `Type 1` through a seam in `Type 1` directly. -/
+example (A : Type) :
+    (KnowledgeStateFunction.append (s₂ := fun _ => done)
+      (W := fun _ _ => Type) (validOutput := fun _ _ _ => True)
+      (admissible₂ := fun _ _ => True) (relMid := fun _ _ _ => True)
+      largeTerminalCertificate (fun _ => largeTerminalCertificate)
+      (fun _ _ _ _ => trivial)).extractAlong () ⟨⟩ A = A := rfl
+
+/-- The same pure composition accepts a terminal and seam carrier in `Type 2`. -/
+example (A : Type 1) :
+    (KnowledgeStateFunction.append (s₂ := fun _ => done)
+      (W := fun _ _ => Type 1) (validOutput := fun _ _ _ => True)
+      (admissible₂ := fun _ _ => True) (relMid := fun _ _ _ => True)
+      largeTerminalCertificate (fun _ => largeTerminalCertificate)
+      (fun _ _ _ _ => trivial)).extractAlong () ⟨⟩ A = A := rfl
+
+/-- Lifting intermediate witnesses keeps the large terminal and input carriers directly. -/
+example (A : Type) :
+    (largeTerminalCertificate.lift.{0, 1, 1, 1, 1, 0, 2}).extractAlong () ⟨⟩ A = A := rfl
+
+/-- The terminal witness may be a type even when the extracted input witness is small. -/
+def largeOutputCertificate {P : PFunctor.{1, 0}} (l : PFunctor.Lens P TwoParty.Lens.rolePoly)
+    {S : Type v} (validOutput : S → PathAlong l (.pure ⟨⟩ : FreeM P PUnit) → Type → Prop) :
+    KnowledgeStateFunction.{v, 0, 1, 1} l (.pure ⟨⟩) S (fun _ _ => Type) (fun _ => Unit)
+      (fun _ => True) (fun _ _ => True) validOutput where
+  Witness _ {_} _ _ := Type
+  toFun _ {_} _ _ _ := True
+  extractRoot _ _ := ()
+  extractStep _ {_ _} sp := nomatch sp
+  extractLeaf _ _ _ w := w
+  root _ _ _ _ := trivial
+  send sp := nomatch sp
+  leaf _ _ _ _ _ := trivial
+
+/-- The plain wrapper accepts large terminal witnesses independently of its run output. -/
+example : Verifier.rbrKnowledgeSoundnessOfNodes.{2, 0, 1, 1} reduction.verifier plainAmbientTrue
+    (fun _ => True) (fun _ (_ : Unit) => True) (fun _ _ _ (_ : Type) => True)
+    noPlainChallenges (fun _ => 0) :=
+  ⟨largeOutputCertificate plainSig _, fun _ _ _ _ sp => nomatch sp⟩
+
+/-- The oracle wrapper also accepts large terminal witnesses independently of its run output. -/
+example : OracleVerifier.rbrKnowledgeSoundnessOfNodes.{2, 0, 1, 1} runnable ambientTrue
+    (fun _ => True) (fun _ (_ : Unit) => True) (fun _ _ _ (_ : Type) => True)
+    noChallenges (fun _ => 0) :=
+  ⟨largeOutputCertificate oracleSig _, fun _ _ _ _ sp => nomatch sp⟩
+
+/-! ### Pure extraction after a large oracle payload -/
+
+/-- The oracle query and its answer are both in the payload's universe. -/
+@[instance_reducible]
+def largePayloadInterface : OracleInterface.{1, 1} (ULift.{1} Nat) where
+  Query := PUnit.{2}
+  toOC.spec := fun _ => ULift.{1} Nat
+  toOC.impl _ := read
+
+/-- A prover sends a natural-number payload in `Type 1`. -/
+def largePayloadProtocol : OracleProtocol.{1} :=
+  .liftBind (.oracle (ULift.{1} Nat) largePayloadInterface) (fun _ => .pure ⟨⟩)
+
+/-- The terminal carrier depends on the full oracle payload, which is erased from the shape. -/
+def largePayloadWitness (tr : PathAlong oracleSig largePayloadProtocol) : Type 2 :=
+  ULift.{2} (Fin (tr.1.down + 1))
+
+-- Disposition KC-318.
+/-- Extraction sends a payload-dependent finite witness back to a natural-number witness. -/
+def largePayloadCertificate : KnowledgeStateFunction.{0, 2, 2, 2} oracleSig largePayloadProtocol
+    Unit (fun _ => largePayloadWitness) (fun _ => ULift.{2} Nat)
+    (fun _ => True) (fun _ _ => True) (fun _ _ _ => True) where
+  Witness _ {_} sp history := match sp, history with
+    | .root _, _ => ULift.{2} Nat
+    | .down _ _, history => ULift.{2} (Fin (history.1.1.down + 1))
+  toFun _ {_} _ _ _ := True
+  extractRoot _ w := w
+  extractStep _ {_ _} sp _ _ w := by
+    cases sp with
+    | root => exact ⟨w.down.val⟩
+    | down _ tail => cases tail
+  extractLeaf _ sp history w := by
+    cases sp with
+    | down _ tail =>
+      cases tail
+      exact w
+  root _ _ _ _ := trivial
+  send _ _ _ _ _ _ _ := trivial
+  leaf _ _ _ _ _ := trivial
+
+-- Disposition KC-322.
+/-- The ordinary-import client extracts six after sending the large payload seven. -/
+theorem largePayload_extractAlong :
+    (largePayloadCertificate.extractAlong ()
+      ⟨(⟨7⟩ : ULift.{1} Nat), ⟨⟩⟩ (⟨⟨6, by decide⟩⟩ : ULift.{2} (Fin 8))).down = 6 := rfl
+
+/-- Lifting intermediate witnesses also accepts the large move through the public API. -/
+example :
+    ((largePayloadCertificate.lift.{0, 2, 2, 2, 2, 1, 3}).extractAlong ()
+      ⟨(⟨7⟩ : ULift.{1} Nat), ⟨⟩⟩ (⟨⟨6, by decide⟩⟩ : ULift.{2} (Fin 8))).down = 6 := rfl
 
 end Interaction.Core.UniverseCanaryTests

@@ -39,6 +39,7 @@ The status is one of equivalent, premise-required, retired or unresolved.
 | 18 | Input data, input queries and oracle-node queries have independent universes; families specialize the general resource API | equivalent: `Resources` inputs remove the realization/response coupling, and `OracleProtocol.{u, q}` separates node queries from moves |
 | 18 | Run outputs and a prover's ambient index remain in the monad universe `u` | equivalent: the retained D2 runner contract is `m : Type u → Type u`; neither P1 nor P2 changes this contract |
 | 18 | The full-log runner returns only small resource-query logs; ambient-log execution supports arbitrary resource-query universes | unresolved: a parent logging interface that returns large query indices through the small computation monad is missing |
+| 26 | Full-prefix knowledge composition with independent witness carriers and measured root, step and leaf maps | equivalent; node-indexed bounds specialize full-prefix bounds, see the knowledge inventory below |
 | 21 | Round-by-round soundness implies soundness for lawful distribution monads, with prefix-indexed freshness | equivalent; see the soundness disposition record below |
 
 The [resource and node universe inventory](resource-universes-disposition.md) records the frozen
@@ -116,3 +117,14 @@ schedule. There is no separate recursive slot executor: instrumented strategies 
 full-trace and ambient-trace APIs share `OracleVerifier.executeWith`. Erasure specializes a
 general runner naturality law and writer laws. The premise-required rows identify the intermediate
 verifier actions and phase assignments retired by P1.
+
+## Knowledge composition and measured extraction
+
+The [assertion disposition record](knowledge-composition-disposition.md) maps the frozen
+production laws and acceptance assertions to the composition and measured-extraction port. It
+records the public prover selector required by P2, the explicit zero root and leaf budgets that
+recover the frozen bound, and VCVio's small-carrier restriction on measured programs. Pure
+backward maps accept large terminal and seam witnesses directly. The shared full-prefix sampler
+retains earlier public challenges and prover messages in both distributions and local errors.
+P1 retires oracle-payload-dependent challenge selection and effectful receiver actions only.
+The inventory marks the already constant KC-065 schedule equivalent.
