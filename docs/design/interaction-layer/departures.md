@@ -37,6 +37,7 @@ The status is one of equivalent, premise-required, retired or unresolved.
 | 19 | Writer instrumentation of the authoritative runner produces per-slot prefix, owner and query provenance with exact log erasure, in `Oracle/SlotTrace.lean`, `Oracle/Provenance.lean` and `Oracle/PrefixResources.lean` | equivalent |
 | 19 | P1 retires intermediate verifier queries and their former phase assignments; prover slots and their prefixes remain | premise-required |
 | 18 | Input data, input queries and oracle-node queries have independent universes; families specialize the general resource API | equivalent: `Resources` inputs remove the realization/response coupling, and `OracleProtocol.{u, q}` separates node queries from moves |
+| 18 | Agreement preserves path-dependent output statements, oracle indices, carriers and interfaces, general resource inputs, and statement-dependent RBR knowledge relations | equivalent: F7 and 3A use the unchanged owner interfaces; see the [Agreement inventory](sumcheck.md#agreement-universes-and-parent-limits) |
 | 18 | Run outputs and a prover's ambient index remain in the monad universe `u` | equivalent: the retained D2 runner contract is `m : Type u → Type u`; neither P1 nor P2 changes this contract |
 | 18 | The full-log runner returns only small resource-query logs; ambient-log execution supports arbitrary resource-query universes | unresolved: a parent logging interface that returns large query indices through the small computation monad is missing |
 | 26 | Full-prefix knowledge composition with independent witness carriers and measured root, step and leaf maps | equivalent; node-indexed bounds specialize full-prefix bounds, see the knowledge inventory below |
@@ -59,6 +60,23 @@ are in [`legacy-embedding.md`](legacy-embedding.md#departures).
 Entries 15 and 16 are the two hypotheses that a client of the round-by-round transfers must
 check. Entry 15 applies to the direction into the interaction layer, and entry 16 to the
 direction out of it.
+
+## Sumcheck: entry 22
+
+Entry 22 covers Sumcheck in the interaction layer. Its two departures are described in
+[`sumcheck.md`](sumcheck.md#departures).
+
+| Entry | Departure |
+| --- | --- |
+| [22](sumcheck.md#the-transferred-completeness-is-in-its-own-module) | The transferred completeness is in its own module, `LegacyCompleteness`. |
+| [22](sumcheck.md#the-verifier-has-no-interval-start) | Full-run verifiers have no interval start; #1488 owns interval endpoints and composition. |
+
+Entry 22 records the full-run verifier interface; #1488 covers interval endpoints and
+composition. The [exact-row disposition](sumcheck.md#migration-disposition) records interval
+execution, projection and append clients as remaining work, and marks behavior-guarantee
+interfaces unresolved. Full-run, committed and randomized soundness in the interaction layer use
+the generic round-by-round-to-soundness implication directly over arbitrary indexed domains and lists with
+repetitions.
 
 Entry [21](../interaction-rebuild/IMPLEMENTATION-NOTES.md#21-round-by-round-soundness-implies-soundness-for-lawful-distribution-monads)
 records the generic soundness implication. The

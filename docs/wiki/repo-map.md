@@ -43,8 +43,22 @@ home_page/            site assets and assembled website root
   `Execution.lean` runs a verifier against an arbitrary prover and keeps rejection as a returned
   verdict. `Composition.lean` appends verifiers, provers and oracle routes. `Security/` holds
   completeness and soundness over adversary models, classical straight-line and transcript-only
-  extraction, and round-by-round soundness and knowledge on cursor prefixes. Its acceptance
-  tests live in `ArkLibTest/Interaction/Core/`.
+  extraction, and round-by-round soundness and knowledge on cursor prefixes;
+  `Security/Agreement.lean` transfers runs, logged runs and every security notion between two
+  oracle verifiers whose decisions and output maps agree, and along an equality of protocol
+  trees. `Legacy/` embeds legacy protocol specifications
+  ([legacy embedding](../design/interaction-layer/legacy-embedding.md)), including the oracle
+  tree of appended specifications (`Legacy/OracleAppend.lean`) and pure challenge slots
+  (`Legacy/PureSlots.lean`). Its acceptance tests live in `ArkLibTest/Interaction/Core/`.
+- `ProofSystem/Sumcheck/Core/` contains native Sumcheck statements and arithmetic (`Types`,
+  `Domain`), its fixed protocol (`Tree`), and its indexed verifier and round-by-round proof
+  (`Indexed`). `Soundness` derives full-run bounds over arbitrary maps and lists, including
+  repeated points, through the core soundness implication. `DomainEquivalence` and
+  `LegacyEquivalence` check legacy agreement separately; `LegacySoundness` retains the old
+  transferred bound for comparison. The compatibility honest prover, completeness and knowledge
+  transfers remain available. [The Sumcheck design page](../design/interaction-layer/sumcheck.md)
+  gives exact ownership and migration dispositions. Tests live in
+  `ArkLibTest/ProofSystem/Sumcheck/Core/`.
 - The descriptions below cover the frozen interaction modules outside `Core/`.
 - `ArkLib/Interaction/Oracle/` refines generic type trees with public/oracle positions, keeps
   structural `BranchPath` separate from concrete `ExecutionPath` messages, and adds position-typed

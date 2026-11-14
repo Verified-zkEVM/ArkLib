@@ -16,7 +16,8 @@ interaction-layer protocol is related to a legacy protocol built by appending.
 * `appendRoute` answers the message queries of `p₁ ++ₚ p₂` with handlers for the two halves;
   `appendRoute_sumEquiv` routes a query named by its half to that half's handler.
 * `simulateQ_queryAlongHEq` answers a query transported along an equality of oracle interfaces
-  by answering the original query.
+  by answering the original query, and `queryAlongHEq_heq` identifies the transported query with
+  the original one.
 * `ChallengeFn` lists the challenge entries of a legacy specification, one at each
   verifier-to-prover position.
 * `challenges_append_fst` and `challenges_append_snd` split the challenges of an appended full
@@ -86,6 +87,15 @@ theorem simulateQ_queryAlongHEq {A B : Type} (OA : OracleInterface A) (OB : Orac
   cases eq_of_heq h
   cases eq_of_heq hxy
   exact hk q
+
+/-- A transported query is the original query, up to the equality of the query types. -/
+theorem queryAlongHEq_heq {A B : Type} (OA : OracleInterface A) (OB : OracleInterface B)
+    (hType : A = B) (h : HEq OA OB) (k : (q : OB.Query) → OracleComp spec (OB.Response q))
+    (q : OA.Query) :
+    ∃ q' : OB.Query, HEq q q' ∧ HEq (OracleVerifier.queryAlongHEq OA OB hType h k q) (k q') := by
+  subst hType
+  cases eq_of_heq h
+  exact ⟨q, HEq.rfl, HEq.rfl⟩
 
 end Append
 
