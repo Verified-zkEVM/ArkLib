@@ -7,8 +7,10 @@ that challenge. In the security analysis this oracle is a random oracle.
 
 ArkLib formalizes the basic (or slow) variant, which hashes the whole statement and message prefix
 for each challenge. The same challenge oracle serves as the state-restoration oracle, so the
-definitions below carry both names. Salted variants are covered by placing the salts in the input
-statement.
+definitions below carry both names. In the single-salt state-restoration game
+(\Cref{def:ip_state_restoration_game}), each challenge query includes the original statement, a
+prover-chosen salt, and the preceding prover messages. The IP verifier receives the original
+statement and the full transcript.
 
 \subsection{The Challenge Oracle}\label{sec:fiat_shamir_oracle_interface}
 
@@ -25,9 +27,8 @@ $\pSpec.\MessagesUpTo\ k$ for the prover messages among the first $k$ rounds.
         \item \textbf{Response type}: $\pSpec.\Challenge\ i$;
         \item \textbf{Oracle behavior}: return the challenge itself.
     \end{itemize}
-    The Lean name is $\mathsf{challengeOracleInterfaceSR}$, with alias
-    $\mathsf{challengeOracleInterfaceFS}$.
-    \lean{ProtocolSpec.challengeOracleInterfaceSR, ProtocolSpec.challengeOracleInterfaceFS}
+    The Lean name is $\mathsf{challengeOracleInterfaceSR}$.
+    \lean{ProtocolSpec.challengeOracleInterfaceSR}
     \leanok
 \end{definition}
 
@@ -164,8 +165,7 @@ $\oSpec \mathrel{+} \mathsf{srChallengeOracle}\ \StmtIn\ \pSpec$.
     \end{itemize}
     State-restoration knowledge soundness itself is proved for fixed-round oracle protocols in
     the interaction layer, from round-by-round knowledge certificates, with error $(Q + k)\cdot\epsilon$
-    (\Cref{thm:sr_knowledge_soundness}). The two transfers above are not formalized, and
-    zero-knowledge is not defined (\Cref{def:simulator}). \texttt{docs/design/00-current-status.md}
+    (\Cref{thm:sr_knowledge_soundness}). The two transfers above are not formalized. \texttt{docs/design/00-current-status.md}
     records the status of this work.
 \end{remark}
 

@@ -13,8 +13,8 @@ We begin by defining how to compose protocol specifications and their associated
 
 \begin{definition}[Protocol Specification Append]
     \label{def:protocol_spec_append}
-    Given two protocol specifications $\pSpec_1 : \ProtocolSpec\ m$ and $\pSpec_2 : \ProtocolSpec\ n$, their sequential composition is:
-    \[ \pSpec_1 \mathrel{++_\mathsf{p}} \pSpec_2 : \ProtocolSpec\ (m + n) \]
+    Given two protocol specifications \(\pSpec_1 : \ProtocolSpec\ m\) and \(\pSpec_2 : \ProtocolSpec\ n\), their sequential composition is:
+    \begin{equation*} \pSpec_1 \mathrel{++_\mathsf{p}} \pSpec_2 : \ProtocolSpec\ (m + n) \end{equation*}
     \lean{ProtocolSpec.append}
     \leanok
     \uses{def:protocol_spec}
@@ -22,8 +22,8 @@ We begin by defining how to compose protocol specifications and their associated
 
 \begin{definition}[Full Transcript Append]
     \label{def:transcript_append}
-    Given full transcripts $T_1 : \FullTranscript\ \pSpec_1$ and $T_2 : \FullTranscript\ \pSpec_2$, their sequential composition is:
-    \[ T_1 \mathrel{++_\mathsf{t}} T_2 : \FullTranscript\ (\pSpec_1 \mathrel{++_\mathsf{p}} \pSpec_2) \]
+    Given full transcripts \(T_1 : \FullTranscript\ \pSpec_1\) and \(T_2 : \FullTranscript\ \pSpec_2\), their sequential composition is:
+    \begin{equation*} T_1 \mathrel{++_\mathsf{t}} T_2 : \FullTranscript\ (\pSpec_1 \mathrel{++_\mathsf{p}} \pSpec_2) \end{equation*}
     \lean{ProtocolSpec.FullTranscript.append}
     \leanok
     \uses{def:transcript}
@@ -33,17 +33,17 @@ We begin by defining how to compose protocol specifications and their associated
 
 \begin{definition}[Prover Append]
     \label{def:prover_append}
-    Given provers $P_1 : \Prover\ \pSpec_1\ \oSpec\ \StmtIn_1\ \WitIn_1\ \StmtOut_1\ \WitOut_1$ and $P_2 : \Prover\ \pSpec_2\ \oSpec\ \StmtOut_1\ \WitOut_1\ \StmtOut_2\ \WitOut_2$, their sequential composition is:
-    \[ P_1.\append\ P_2 : \Prover\ (\pSpec_1 \mathrel{++_\mathsf{p}} \pSpec_2)\ \oSpec\ \StmtIn_1\ \WitIn_1\ \StmtOut_2\ \WitOut_2 \]
+    Given provers \(P_1 : \Prover\ \pSpec_1\ \oSpec\ \StmtIn_1\ \WitIn_1\ \StmtOut_1\ \WitOut_1\) and \(P_2 : \Prover\ \pSpec_2\ \oSpec\ \StmtOut_1\ \WitOut_1\ \StmtOut_2\ \WitOut_2\), their sequential composition is:
+    \begin{equation*} P_1.\append\ P_2 : \Prover\ (\pSpec_1 \mathrel{++_\mathsf{p}} \pSpec_2)\ \oSpec\ \StmtIn_1\ \WitIn_1\ \StmtOut_2\ \WitOut_2 \end{equation*}
 
     The composed prover works by:
     \begin{itemize}
-        \item Running $P_1$ on the input context to produce an intermediate context
-        \item Using this intermediate context as input to $P_2$
-        \item Outputting the final context from $P_2$
+        \item Running \(P_1\) on the input context to produce an intermediate context
+        \item Using this intermediate context as input to \(P_2\)
+        \item Outputting the final context from \(P_2\)
     \end{itemize}
     Equality with two separate prover runs requires an execution condition such as the one in
-    Theorem~\ref{thm:completeness_append}; output queries can otherwise cross an opening challenge.
+    \Cref{thm:completeness_append}; output queries can otherwise cross an opening challenge.
     \lean{Prover.append}
     \leanok
     \uses{def:prover, def:protocol_spec_append}
@@ -51,10 +51,10 @@ We begin by defining how to compose protocol specifications and their associated
 
 \begin{definition}[Verifier Append]
     \label{def:verifier_append}
-    Given verifiers $V_1 : \Verifier\ \pSpec_1\ \oSpec\ \StmtIn_1\ \StmtOut_1$ and $V_2 : \Verifier\ \pSpec_2\ \oSpec\ \StmtOut_1\ \StmtOut_2$, their sequential composition is:
-    \[ V_1.\append\ V_2 : \Verifier\ (\pSpec_1 \mathrel{++_\mathsf{p}} \pSpec_2)\ \oSpec\ \StmtIn_1\ \StmtOut_2 \]
+    Given verifiers \(V_1 : \Verifier\ \pSpec_1\ \oSpec\ \StmtIn_1\ \StmtOut_1\) and \(V_2 : \Verifier\ \pSpec_2\ \oSpec\ \StmtOut_1\ \StmtOut_2\), their sequential composition is:
+    \begin{equation*} V_1.\append\ V_2 : \Verifier\ (\pSpec_1 \mathrel{++_\mathsf{p}} \pSpec_2)\ \oSpec\ \StmtIn_1\ \StmtOut_2 \end{equation*}
 
-    The composed verifier first runs $V_1$ on the first part of the transcript, then runs $V_2$ on the second part using the intermediate statement from $V_1$.
+    The composed verifier first runs \(V_1\) on the first part of the transcript, then runs \(V_2\) on the second part using the intermediate statement from \(V_1\).
     \lean{Verifier.append}
     \leanok
     \uses{def:verifier, def:protocol_spec_append}
@@ -63,7 +63,7 @@ We begin by defining how to compose protocol specifications and their associated
 \begin{definition}[Reduction Append]
     \label{def:reduction_append}
     Sequential composition of reductions combines the corresponding provers and verifiers:
-    \[ R_1.\append\ R_2 : \Reduction\ (\pSpec_1 \mathrel{++_\mathsf{p}} \pSpec_2)\ \oSpec\ \StmtIn_1\ \WitIn_1\ \StmtOut_2\ \WitOut_2 \]
+    \begin{equation*} R_1.\append\ R_2 : \Reduction\ (\pSpec_1 \mathrel{++_\mathsf{p}} \pSpec_2)\ \oSpec\ \StmtIn_1\ \WitIn_1\ \StmtOut_2\ \WitOut_2 \end{equation*}
     \lean{Reduction.append}
     \leanok
     \uses{def:reduction, def:prover_append, def:verifier_append}
@@ -83,8 +83,8 @@ For composing an arbitrary number of reductions, we provide a general compositio
 
 \begin{definition}[General Protocol Specification Composition]
     \label{def:protocol_spec_compose}
-    Given a family of protocol specifications $\pSpec : \forall i : \Fin(m+1), \ProtocolSpec\ (n\ i)$, their composition is:
-    \[ \compose\ m\ n\ \pSpec : \ProtocolSpec\ (\sum_{i} n\ i) \]
+    Given a family of protocol specifications \(\pSpec : \forall i : \Fin(m+1), \ProtocolSpec\ (n\ i)\), their composition is:
+    \begin{equation*} \compose\ m\ n\ \pSpec : \ProtocolSpec\ (\sum_{i} n\ i) \end{equation*}
     \lean{ProtocolSpec.seqCompose}
     \leanok
     \uses{def:protocol_spec}
@@ -114,19 +114,19 @@ For composing an arbitrary number of reductions, we provide a general compositio
 \subsubsection{Security Properties of Sequential Composition}
 
 Completeness composition requires control of the prover execution order and of the shared
-oracle state. Fix one stateful oracle implementation on a state space $\Sigma$ and an initial
-state distribution $\mu$. The second component receives the state left by the first component.
-A guarantee for the second component initialized separately from $\mu$ does not cover this state.
+oracle state. Fix one stateful oracle implementation on a state space \(\OracleHandlerStateSpace\) and an initial
+state distribution \(\mu\). The second component receives the state left by the first component.
+A guarantee for the second component initialized separately from \(\mu\) does not cover this state.
 
 The composition theorems below are proved under their stated hypotheses. Soundness and
-knowledge soundness require guarded verifiers (Definition~\ref{def:guarded_verifier}): the first
+knowledge soundness require guarded verifiers (\Cref{def:guarded_verifier}): the first
 verifier for binary composition, and every verifier for finite chains. Bounds for later components
 must hold from every deterministic shared oracle state, and knowledge soundness composes extractors
 that are pure functions of the input statement, the output witness and the transcript.
 
 \begin{theorem}[Completeness Preservation under Append]
     \label{thm:completeness_append}
-    Let $R_1$ and $R_2$ have compatible input, intermediate, and output relations.
+    Let \(R_1\) and \(R_2\) have compatible input, intermediate, and output relations.
     Assume both verifiers are pure and total: each returns a deterministic function of its input
     statement and transcript, without oracle queries or rejection. Assume also that at least one
     of the following execution conditions holds:
@@ -135,9 +135,9 @@ that are pure functions of the input statement, the output witness and the trans
         \item the second protocol is empty;
         \item the second protocol starts with a prover message.
     \end{itemize}
-    Suppose $R_1$ is complete with error $\epsilon_1$ from $\mu$, and for every $s \in \Sigma$,
-    $R_2$ is complete with error $\epsilon_2$ when initialized deterministically at $s$.
-    Then $R_1.\append\ R_2$ is complete from $\mu$ with error $\epsilon_1 + \epsilon_2$.
+    Suppose \(R_1\) is complete with error \(\epsilon_1\) from \(\mu\), and for every \(s \in \OracleHandlerStateSpace\),
+    \(R_2\) is complete with error \(\epsilon_2\) when initialized deterministically at \(s\).
+    Then \(R_1.\append\ R_2\) is complete from \(\mu\) with error \(\epsilon_1 + \epsilon_2\).
     \lean{Reduction.append_completeness_of_pure_verifiers}
     \leanok
     \uses{def:completeness, def:reduction_append}
@@ -146,9 +146,9 @@ that are pure functions of the input statement, the output witness and the trans
 \begin{theorem}[Perfect Completeness Preservation under Append]
     \label{thm:perfect_completeness_append}
     Under the pure-verifier and execution hypotheses of
-    Theorem~\ref{thm:completeness_append}, suppose $R_1$ is perfectly complete from $\mu$ and
-    $R_2$ is perfectly complete from every deterministic shared state.
-    Then $R_1.\append\ R_2$ is perfectly complete from $\mu$.
+    \Cref{thm:completeness_append}, suppose \(R_1\) is perfectly complete from \(\mu\) and
+    \(R_2\) is perfectly complete from every deterministic shared state.
+    Then \(R_1.\append\ R_2\) is perfectly complete from \(\mu\).
     \lean{Reduction.append_perfectCompleteness_of_pure_verifiers}
     \leanok
     \uses{def:perfect_completeness, def:reduction_append, thm:completeness_append}
@@ -156,9 +156,9 @@ that are pure functions of the input statement, the output witness and the trans
 
 \begin{theorem}[Soundness Preservation under Append]
     \label{thm:soundness_append}
-    Suppose $V_1$ is guarded and sound with error $\epsilon_1$ from the initial distribution $\mu$,
-    and $V_2$ is sound with error $\epsilon_2$ from every deterministic shared state. Then
-    $V_1.\append\ V_2$ is sound from $\mu$ with error $\epsilon_1 + \epsilon_2$. The second verifier
+    Suppose \(V_1\) is guarded and sound with error \(\epsilon_1\) from the initial distribution \(\mu\),
+    and \(V_2\) is sound with error \(\epsilon_2\) from every deterministic shared state. Then
+    \(V_1.\append\ V_2\) is sound from \(\mu\) with error \(\epsilon_1 + \epsilon_2\). The second verifier
     needs no guard. Some restriction is necessary: a later verifier that queries the shared oracle
     can be steered by the prover's queries in an earlier stage. The every-state hypothesis is needed
     because the intermediate statement is chosen after oracle answers; it holds for lazily sampled
@@ -170,12 +170,12 @@ that are pure functions of the input statement, the output witness and the trans
 
 \begin{theorem}[Knowledge Soundness Preservation under Append]
     \label{thm:knowledge_soundness_append}
-    Suppose $V_1$ is guarded. Suppose there are fixed pure extractors $e_1$ and $e_2$, each a
-    function of the input statement, the transcript and the output witness, such that $e_1$
-    satisfies the knowledge game of $V_1$ with error $\epsilon_1$ from $\mu$, and this same $e_2$
-    satisfies the knowledge game of $V_2$ with error $\epsilon_2$ from every deterministic shared
-    state. Then $V_1.\append\ V_2$ is
-    knowledge sound from $\mu$ with error $\epsilon_1 + \epsilon_2$, with the extractor that runs the
+    Suppose \(V_1\) is guarded. Suppose there are fixed pure extractors \(e_1\) and \(e_2\), each a
+    function of the input statement, the transcript and the output witness, such that \(e_1\)
+    satisfies the knowledge game of \(V_1\) with error \(\epsilon_1\) from \(\mu\), and this same \(e_2\)
+    satisfies the knowledge game of \(V_2\) with error \(\epsilon_2\) from every deterministic shared
+    state. Then \(V_1.\append\ V_2\) is
+    knowledge sound from \(\mu\) with error \(\epsilon_1 + \epsilon_2\), with the extractor that runs the
     second extractor and then the first.
     \lean{Verifier.append_knowledgeSoundness}
     \leanok
@@ -186,15 +186,15 @@ Round-by-round guarantees and a guarded first verifier give the following compos
 
 \begin{theorem}[Round-by-Round Knowledge Soundness under a Guarded First Verifier]
     \label{thm:rbr_knowledge_soundness_append_guarded}
-    Suppose $V_1$ is guarded: it returns a deterministic verdict when its check passes and aborts
-    otherwise. Suppose $V_1$ and $V_2$ are round-by-round knowledge sound for every fixed
-    transcript prefix, with intermediate relation $R_2$ shared between them. Then
-    $V_1.\append\ V_2$ is round-by-round knowledge sound for every fixed transcript prefix, and
+    Suppose \(V_1\) is guarded: it returns a deterministic verdict when its check passes and aborts
+    otherwise. Suppose \(V_1\) and \(V_2\) are round-by-round knowledge sound for every fixed
+    transcript prefix, with intermediate relation \(R_2\) shared between them. Then
+    \(V_1.\append\ V_2\) is round-by-round knowledge sound for every fixed transcript prefix, and
     each challenge keeps its component's error. The composed extractor runs the second extractor
     from the first verdict and then the first extractor. The composed knowledge state is the first
     one up to the seam, and after it is the first check together with the second knowledge state at
-    the first verdict. At the seam, the second knowledge state at round $0$ places the verdict in
-    $R_2$, and a passing check makes that verdict a positive-probability output of $V_1$.
+    the first verdict. At the seam, the second knowledge state at round \(0\) places the verdict in
+    \(R_2\), and a passing check makes that verdict a positive-probability output of \(V_1\).
     \lean{Verifier.append_rbrKnowledgeSoundnessWith_of_guarded_first,
       Verifier.append_rbrKnowledgeSoundness_of_guarded_first}
     \leanok
@@ -207,11 +207,11 @@ round-by-round knowledge soundness.
 
 \begin{theorem}[General Completeness Preservation]
     \label{thm:completeness_compose}
-    Let $R_0, \ldots, R_{k-1}$ be a finite chain with compatible consecutive relations.
+    Let \(R_0, \ldots, R_{k-1}\) be a finite chain with compatible consecutive relations.
     Every prover has pure output and every verifier is pure and total.
-    For each $i$ and each $s \in \Sigma$, assume $R_i$ is complete with error $\epsilon_i$
-    from the deterministic initial state $s$. Then the chain is complete from any initial
-    distribution $\mu$, with error $\sum_{i=0}^{k-1} \epsilon_i$.
+    For each \(i\) and each \(s \in \OracleHandlerStateSpace\), assume \(R_i\) is complete with error \(\epsilon_i\)
+    from the deterministic initial state \(s\). Then the chain is complete from any initial
+    distribution \(\mu\), with error \(\sum_{i=0}^{k-1} \epsilon_i\).
     \lean{Reduction.seqCompose_completeness_of_pure}
     \leanok
     \uses{def:completeness, def:reduction_compose, thm:completeness_append}
@@ -219,9 +219,9 @@ round-by-round knowledge soundness.
 
 \begin{theorem}[General Soundness Preservation]
     \label{thm:soundness_compose}
-    Let $V_0, \ldots, V_{k-1}$ be guarded verifiers, each sound with error $\epsilon_i$ from every
+    Let \(V_0, \ldots, V_{k-1}\) be guarded verifiers, each sound with error \(\epsilon_i\) from every
     deterministic shared state. Then their sequential composition is sound from any initial
-    distribution with error $\sum_{i=0}^{k-1} \epsilon_i$.
+    distribution with error \(\sum_{i=0}^{k-1} \epsilon_i\).
     \lean{Verifier.seqCompose_soundness}
     \leanok
     \uses{def:guarded_verifier, def:soundness, def:verifier_compose}
@@ -229,12 +229,12 @@ round-by-round knowledge soundness.
 
 \begin{theorem}[General Knowledge Soundness Preservation]
     \label{thm:knowledge_soundness_compose}
-    Let $V_0, \ldots, V_{k-1}$ be guarded verifiers. For each component $i$, choose one pure
-    extractor $e_i$, a function of the input statement, the transcript and the output witness, that
-    satisfies the knowledge game of $V_i$ with error $\epsilon_i$ from every deterministic initial
+    Let \(V_0, \ldots, V_{k-1}\) be guarded verifiers. For each component \(i\), choose one pure
+    extractor \(e_i\), a function of the input statement, the transcript and the output witness, that
+    satisfies the knowledge game of \(V_i\) with error \(\epsilon_i\) from every deterministic initial
     shared state. Then their
     sequential composition is knowledge sound from any initial distribution with error
-    $\sum_{i=0}^{k-1} \epsilon_i$, with the extractors folded backwards over the chain.
+    \(\sum_{i=0}^{k-1} \epsilon_i\), with the extractors folded backwards over the chain.
     \lean{Verifier.seqCompose_knowledgeSoundness}
     \leanok
     \uses{def:guarded_verifier, def:knowledge_soundness, def:verifier_compose}
@@ -245,7 +245,7 @@ round-by-round knowledge soundness.
     If every verifier of a finite chain is guarded and round-by-round knowledge sound for every
     fixed transcript prefix between consecutive relations, so is the chain. Each combined
     challenge keeps the error of the component challenge it corresponds to. The proof iterates
-    Theorem~\ref{thm:rbr_knowledge_soundness_append_guarded}.
+    \Cref{thm:rbr_knowledge_soundness_append_guarded}.
     \lean{Verifier.seqCompose_rbrKnowledgeSoundness_of_guarded}
     \leanok
     \uses{def:guarded_verifier, def:round_by_round_knowledge_soundness, def:verifier_compose,
@@ -263,10 +263,10 @@ and an inner context: one projects inputs inward, the other lifts outputs back o
 
 \begin{definition}[Statement Lens]
     \label{def:statement_lens}
-    A statement lens between outer context types $(\StmtIn_{\mathsf{outer}}, \StmtOut_{\mathsf{outer}})$ and inner context types $(\StmtIn_{\mathsf{inner}}, \StmtOut_{\mathsf{inner}})$ consists of:
+    A statement lens between outer context types \((\StmtIn_{\mathsf{outer}}, \StmtOut_{\mathsf{outer}})\) and inner context types \((\StmtIn_{\mathsf{inner}}, \StmtOut_{\mathsf{inner}})\) consists of:
     \begin{itemize}
-        \item $\projStmt : \StmtIn_{\mathsf{outer}} \to \StmtIn_{\mathsf{inner}}$ (projection to inner context)
-        \item $\liftStmt : \StmtIn_{\mathsf{outer}} \to \StmtOut_{\mathsf{inner}} \to \StmtOut_{\mathsf{outer}}$ (lifting back to outer context)
+        \item \(\projStmt : \StmtIn_{\mathsf{outer}} \to \StmtIn_{\mathsf{inner}}\) (projection to inner context)
+        \item \(\liftStmt : \StmtIn_{\mathsf{outer}} \to \StmtOut_{\mathsf{inner}} \to \StmtOut_{\mathsf{outer}}\) (lifting back to outer context)
     \end{itemize}
     \lean{Statement.Lens}
     \leanok
@@ -276,8 +276,8 @@ and an inner context: one projects inputs inward, the other lifts outputs back o
     \label{def:witness_lens}
     A witness lens, used by the prover, consists of:
     \begin{itemize}
-        \item $\projWit : \StmtIn_{\mathsf{outer}} \times \WitIn_{\mathsf{outer}} \to \WitIn_{\mathsf{inner}}$ (projection to inner context)
-        \item $\liftWit : \StmtIn_{\mathsf{outer}} \times \WitIn_{\mathsf{outer}} \to \StmtOut_{\mathsf{inner}} \times \WitOut_{\mathsf{inner}} \to \WitOut_{\mathsf{outer}}$ (lifting back to outer context)
+        \item \(\projWit : \StmtIn_{\mathsf{outer}} \times \WitIn_{\mathsf{outer}} \to \WitIn_{\mathsf{inner}}\) (projection to inner context)
+        \item \(\liftWit : \StmtIn_{\mathsf{outer}} \times \WitIn_{\mathsf{outer}} \to \StmtOut_{\mathsf{inner}} \times \WitOut_{\mathsf{inner}} \to \WitOut_{\mathsf{outer}}\) (lifting back to outer context)
     \end{itemize}
     The statements are part of both maps because the prover sees its full context.
     \lean{Witness.Lens}
@@ -310,8 +310,8 @@ and an inner context: one projects inputs inward, the other lifts outputs back o
     An extractor runs from output witnesses back to input witnesses, so lifting an extractor needs a
     witness lens in the reverse direction. An \emph{inverse witness lens} consists of:
     \begin{itemize}
-        \item a projection $\StmtIn_{\mathsf{outer}} \times \WitOut_{\mathsf{outer}} \to \WitOut_{\mathsf{inner}}$ of output witnesses;
-        \item a lifting $\StmtIn_{\mathsf{outer}} \times \WitOut_{\mathsf{outer}} \to \WitIn_{\mathsf{inner}} \to \WitIn_{\mathsf{outer}}$ of extracted input witnesses.
+        \item a projection \(\StmtIn_{\mathsf{outer}} \times \WitOut_{\mathsf{outer}} \to \WitOut_{\mathsf{inner}}\) of output witnesses;
+        \item a lifting \(\StmtIn_{\mathsf{outer}} \times \WitOut_{\mathsf{outer}} \to \WitIn_{\mathsf{inner}} \to \WitIn_{\mathsf{outer}}\) of extracted input witnesses.
     \end{itemize}
     An extractor lens pairs a statement lens with an inverse witness lens.
     \lean{Witness.InvLens, Extractor.Lens}
@@ -325,7 +325,7 @@ Given a context lens, we can lift reductions from inner contexts to outer contex
 
 \begin{definition}[Prover Context Lifting]
     \label{def:prover_lift_context}
-    Given a prover $P$ for the inner context and a context lens, the lifted prover works by:
+    Given a prover \(P\) for the inner context and a context lens, the lifted prover works by:
     \begin{itemize}
         \item Projecting the outer input to the inner context
         \item Running the inner prover
@@ -404,8 +404,8 @@ verifier can actually produce on the projected input, for some transcript.
 
 \begin{theorem}[Completeness Preservation under Context Lifting]
     \label{thm:lift_context_completeness}
-    If a reduction is complete with error $\epsilon$ and the context lens is
-    completeness-preserving, then the lifted reduction is complete with error $\epsilon$. The same
+    If a reduction is complete with error \(\epsilon\) and the context lens is
+    completeness-preserving, then the lifted reduction is complete with error \(\epsilon\). The same
     holds for perfect completeness.
     \lean{Reduction.liftContext_completeness, Reduction.liftContext_perfectCompleteness}
     \leanok
@@ -414,8 +414,8 @@ verifier can actually produce on the projected input, for some transcript.
 
 \begin{theorem}[Soundness Preservation under Context Lifting]
     \label{thm:lift_context_soundness}
-    If a verifier is sound with error $\epsilon$ and the statement lens is soundness-preserving,
-    then the lifted verifier is sound with error $\epsilon$. The inner output statement type must
+    If a verifier is sound with error \(\epsilon\) and the statement lens is soundness-preserving,
+    then the lifted verifier is sound with error \(\epsilon\). The inner output statement type must
     be inhabited.
     \lean{Verifier.liftContext_soundness}
     \leanok
@@ -424,9 +424,9 @@ verifier can actually produce on the projected input, for some transcript.
 
 \begin{theorem}[Knowledge Soundness Preservation under Context Lifting]
     \label{thm:lift_context_knowledge_soundness}
-    If a verifier is knowledge sound with error $\epsilon$ and the extractor lens is
+    If a verifier is knowledge sound with error \(\epsilon\) and the extractor lens is
     knowledge-soundness-preserving, then the verifier lifted along its statement lens is knowledge
-    sound with error $\epsilon$. The inner output statement and inner input witness types must be
+    sound with error \(\epsilon\). The inner output statement and inner input witness types must be
     inhabited: when the inner extractor fails, the lifted extractor lifts a default inner witness.
     That default is a valid outer input witness when the shortcut disjunct of the lens condition
     holds; failure in the other branch is charged to the inner knowledge error.
@@ -437,7 +437,7 @@ verifier can actually produce on the projected input, for some transcript.
 
 \begin{theorem}[RBR Soundness Preservation under Context Lifting]
     \label{thm:lift_context_rbr_soundness}
-    If a verifier is round-by-round sound with error $\epsilon$ and the statement lens is
+    If a verifier is round-by-round sound with error \(\epsilon\) and the statement lens is
     soundness-preserving, then the lifted verifier is round-by-round sound with the same error at
     every challenge.
     \lean{Verifier.liftContext_rbrSoundness}
@@ -447,7 +447,7 @@ verifier can actually produce on the projected input, for some transcript.
 
 \begin{theorem}[RBR Knowledge Soundness Preservation under Context Lifting]
     \label{thm:lift_context_rbr_knowledge_soundness}
-    If a verifier is round-by-round knowledge sound with error $\epsilon$ and the extractor lens is
+    If a verifier is round-by-round knowledge sound with error \(\epsilon\) and the extractor lens is
     knowledge-soundness-preserving, then the lifted verifier is round-by-round knowledge sound with
     the same error at every challenge. The named form keeps the lifted extractor and knowledge
     state function explicit.

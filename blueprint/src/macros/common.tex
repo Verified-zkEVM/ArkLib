@@ -5,18 +5,29 @@
 % The theorem-like environments defined below are those that appear by default
 % in the dependency graph. See the README of leanblueprint if you need help to
 % customize this.
-% The configuration below use the theorem counter for all those environments
-% (this is what the [theorem] arguments mean) and never resets it.
+% The configuration below shares the theorem counter across these environments
+% without resetting it. The output-specific \newsharedtheorem helper preserves
+% each environment's name in references as well as its shared numbering.
 % If you want for instance to number them within chapters then you can add
 % [chapter] at the end of the next line.
 \newtheorem{theorem}{Theorem}
-\newtheorem{proposition}[theorem]{Proposition}
-\newtheorem{lemma}[theorem]{Lemma}
-\newtheorem{corollary}[theorem]{Corollary}
+\newsharedtheorem{proposition}{Proposition}
+\newsharedtheorem{claim}{Claim}
+\newsharedtheorem{lemma}{Lemma}
+\newsharedtheorem{corollary}{Corollary}
 
 \theoremstyle{definition}
-\newtheorem{definition}[theorem]{Definition}
-\newtheorem{remark}[theorem]{Remark}
+\newsharedtheorem{definition}{Definition}
+\newsharedtheorem{construction}{Construction}
+\newsharedtheorem{remark}{Remark}
+
+% Match the DSFS paper: capitalize reference names, link the whole reference,
+% and omit parentheses around equation numbers.
+\creflabelformat{equation}{#2\textup{#1}#3}
+\crefname{step}{Step}{Steps}
+\crefname{claim}{Claim}{Claims}
+\crefname{definition}{Definition}{Definitions}
+\crefname{construction}{Construction}{Constructions}
 
 \newcommand{\Type}{\mathsf{Type}}
 \newcommand{\Dir}{\mathsf{Dir}}
@@ -256,3 +267,221 @@
 \newcommand{\degcorr}{\mathsf{DegCor}}
 \newcommand{\parl}{\mathsf{par}\ell}
 \newcommand{\gen}{\mathsf{Gen}}
+
+% Duplex-sponge Fiat--Shamir notation
+\newcommand{\Alphabet}{\Sigma}
+\newcommand{\SpongePermutationWidth}{\SpongeRate+\SpongeCapacity}
+\newcommand{\SpongeRate}{r}
+\newcommand{\SpongeCapacity}{c}
+\newcommand{\SpongeHash}{h}
+\newcommand{\SpongePermutation}{p}
+\newcommand{\SpongeInversePermutation}{p^{-1}}
+\newcommand{\SpongeOracles}{\SpongeHash,\SpongePermutation,\SpongeInversePermutation}
+\newcommand{\IPSymbol}{\mathrm{IP}}
+\newcommand{\IPProver}{\mathbf{P}}
+\newcommand{\IPVerifier}{\mathbf{V}}
+\newcommand{\NARGSymbol}{\mathsf{NARG}}
+\newcommand{\DSFSSymbol}{\mathsf{DSFS}}
+\newcommand{\DSFSCodec}{\mathsf{cdc}}
+\newcommand{\CodecEncoder}{\varphi}
+\newcommand{\CodecDecoder}{\psi}
+\newcommand{\IPProverMessageEncoders}{\vec{\CodecEncoder}}
+\newcommand{\IPVerifierMessageDecoders}{\vec{\CodecDecoder}}
+\newcommand{\PublicOracleQueryBound}{t}
+\newcommand{\SpongeHashQueryBound}{t_{\SpongeHash}}
+\newcommand{\SpongePermutationQueryBound}{t_{\SpongePermutation}}
+\newcommand{\SpongeInversePermutationQueryBound}{t_{\SpongeInversePermutation}}
+\newcommand{\SpongeOracleDistribution}{\mathcal{D}_{\mathfrak S}}
+\newcommand{\FSOracleDistribution}{\mathcal{D}_{\mathrm{IP}}}
+\newcommand{\SpongeSymbol}{\mathsf{DS}}
+\newcommand{\SpongeStart}{\mathsf{Start}}
+\newcommand{\SpongeAbsorb}{\mathsf{Absorb}}
+\newcommand{\SpongeSqueeze}{\mathsf{Squeeze}}
+\newcommand{\DSFSProverTransform}{\mathsf{D2SAlgo}}
+\newcommand{\DSFSQueryWrapper}{\mathsf{D2SQuery}}
+\newcommand{\DSFSTraceTransform}{\mathsf{D2STrace}}
+\newcommand{\DSFSStandardTrace}{\mathsf{StdTrace}}
+\newcommand{\DSFSBacktrack}{\mathsf{BackTrack}}
+\newcommand{\DSFSLookahead}{\mathsf{LookAhead}}
+\newcommand{\DSFSBadEvent}{E}
+\newcommand{\DSFSProgramBlocks}{\mathsf{ProgramBlocks}}
+\newcommand{\DSFSCompile}{\mathsf{Compile}}
+\newcommand{\DSFSInstallPermutationUpdates}{\mathsf{Install}}
+\newcommand{\NARGProver}{\mathcal{P}}
+\newcommand{\NARGVerifier}{\mathcal{V}}
+\newcommand{\IORProver}{\mathcal{P}}
+\newcommand{\IORVerifier}{\mathcal{V}}
+\newcommand{\NARGZKSimulator}{\mathcal S}
+\newcommand{\NARGExtractor}{\mathcal E}
+\newcommand{\IPHVZKSimulator}{\mathbf S}
+\newcommand{\SRExtractor}{\mathbf E^{\mathrm{sr}}}
+\newcommand{\Hyb}[1]{\mathsf{Hyb}_{#1}}
+% Figure-style hybrid alternatives; SVG color names also work in KaTeX previews.
+\newcommand{\HybOneAlt}[1]{\colorbox{PapayaWhip}{$\displaystyle #1$}}
+\newcommand{\HybTwoAlt}[1]{\colorbox{Lavender}{$\displaystyle #1$}}
+\newcommand{\HybThreeAlt}[1]{\colorbox{Wheat}{$\displaystyle #1$}}
+\newcommand{\HybFourAlt}[1]{\colorbox{LightSteelBlue}{$\displaystyle #1$}}
+\newcommand{\EventStart}{E_{\mathsf{start}}}
+\newcommand{\EventSqueeze}{E_{\mathsf{squeeze}}}
+\newcommand{\EventGuess}{E_{\mathsf{guess}}}
+\newcommand{\EventVerifier}{E_{\NARGVerifier}}
+\newcommand{\DSFSHashCollisionEvent}{E_{\SpongeHash}}
+\newcommand{\DSFSForwardCapacityCollisionEvent}{E_{\SpongePermutation}}
+\newcommand{\DSFSInverseCapacityCollisionEvent}{E_{\SpongeInversePermutation}}
+\newcommand{\DSFSFunctionalityEvent}{E_{\mathsf{func}}}
+\newcommand{\DSFSPermutationCollisionEvent}{E_{\mathsf{prp}}}
+\newcommand{\DSFSInverseQueryEvent}{E_{\mathsf{inv}}}
+\newcommand{\DSFSForkEvent}{E_{\mathsf{fork}}}
+\newcommand{\DSFSTraceOrderEvent}{E_{\mathsf{time}}}
+\newcommand{\DSFSCodecSoundnessBound}{\Theta}
+\newcommand{\SaltLength}{\delta}
+\newcommand{\Instance}{\mathbbm{x}}
+\newcommand{\WitnessValue}{\bbw}
+\newcommand{\InstanceSpace}{\mathcal X}
+\newcommand{\WitnessSpace}{\mathcal W}
+\newcommand{\OutputStatementSpace}{\mathcal Y}
+\newcommand{\Relation}{\mathcal{R}}
+\newcommand{\Language}{\mathcal{L}}
+\newcommand{\InputRelation}{\Relation_{\mathrm{in}}}
+\newcommand{\OutputRelation}{\Relation_{\mathrm{out}}}
+\newcommand{\InputLanguage}{\Language_{\mathrm{in}}}
+\newcommand{\OutputLanguage}{\Language_{\mathrm{out}}}
+\newcommand{\StatisticalDistance}[2]{\Delta\left(#1,#2\right)}
+\newcommand{\concat}{\mathbin{\|}}
+
+% Shared notation for probability, public-coin IPs, and Fiat--Shamir.
+\providecommand{\DefineEqual}{\defeq}
+\providecommand{\Uniform}{\mathsf{U}}
+\providecommand{\Cardinality}[1]{\left|#1\right|}
+\providecommand{\abs}[1]{\left|#1\right|}
+\providecommand{\prob}[1]{\Pr\left[#1\right]}
+\providecommand{\GivenExperiment}{\;\middle|\;}
+\providecommand{\ConditionedOn}{\;\middle|\;}
+\providecommand{\StateExperiment}[1]{\begin{array}{l}#1\end{array}}
+\providecommand{\InstanceSizeOf}[1]{|#1|}
+\providecommand{\RelationLanguage}[1]{L(#1)}
+\providecommand{\Bits}{\{0,1\}}
+\providecommand{\secpar}{\lambda}
+\providecommand{\InstanceSizeBound}{n}
+\providecommand{\OracleDistribution}{\mathcal{D}}
+\providecommand{\OracleFunction}{f}
+\providecommand{\OracleFamily}{\boldsymbol{\OracleFunction}}
+\providecommand{\DSFSEncodedOracle}{g}
+\providecommand{\DSFSDecodedOutputOracle}{e}
+\providecommand{\DSFSEncodedOracles}{\boldsymbol{\DSFSEncodedOracle}}
+\providecommand{\DSFSDecodedOutputOracles}{\boldsymbol{\DSFSDecodedOutputOracle}}
+\providecommand{\DSFSEncodedOracleDistribution}{\OracleDistribution_{\Alphabet}}
+\providecommand{\DSFSDecodedOutputOracleDistribution}{\OracleDistribution_{\DSFSDecodedOutputOracle}}
+\providecommand{\SRChallengeOracleDistribution}{\OracleDistribution_{\mathrm{sr}}}
+\providecommand{\SpongeQueryBudget}{\mathcal T}
+\providecommand{\AmbientOracles}{\mathcal O}
+\providecommand{\OracleHandlerStateSpace}{\Sigma}
+\providecommand{\ExtractorAuxiliaryOracles}{\AmbientOracles_E}
+\providecommand{\DSFSChainFamily}{\mathcal S}
+\providecommand{\DSFSBacktrackChainFamily}{\DSFSChainFamily_{\mathrm{BT}}}
+\providecommand{\DSFSLookaheadChainFamily}{\DSFSChainFamily_{\mathrm{LA}}}
+\providecommand{\QueryLog}{\mathsf{tr}}
+\providecommand{\TranscriptValue}{T}
+\providecommand{\ROSpace}[1]{\mathcal{Z}_{#1}}
+\providecommand{\NARGString}{\pi}
+\providecommand{\NARGSerializer}{\mathsf{ser}}
+\providecommand{\NARGDeserializer}{\mathsf{parse}}
+\providecommand{\NARGSystem}{(\NARGProver,\NARGVerifier)}
+\providecommand{\NARGMaliciousProver}{\tilde{\mathcal{P}}}
+\providecommand{\NARGSoundnessError}{\varepsilon_{\mathrm{NARG}}}
+\providecommand{\NARGKnowledgeSoundnessError}{\kappa_{\mathrm{NARG}}}
+\providecommand{\NARGAdaptiveZKError}{z_{\mathrm{NARG}}}
+\providecommand{\IPHVZKError}{z_{\mathrm{IP}}}
+\providecommand{\NARGKnowledgeTime}{\tau_{\mathsf{ks}}}
+\providecommand{\DecisionBit}{b}
+\providecommand{\BlackBox}[1]{\mathsf{blackbox}(#1)}
+% Rounds use the paper's notation; general schedules keep separate counts.
+\providecommand{\ProtoRoundComplexity}{\mathsf{k}}
+\providecommand{\IPRoundComplexity}{\ProtoRoundComplexity}
+\providecommand{\IPProverMessageCount}{\ProtoRoundComplexity_{\mathrm P}}
+\providecommand{\IPVerifierMessageCount}{\ProtoRoundComplexity_{\mathrm V}}
+\providecommand{\IPMessageCount}{N}
+\providecommand{\IPProverPositions}{I_P}
+\providecommand{\IPVerifierPositions}{I_V}
+\providecommand{\RoundIndex}{i}
+\providecommand{\onerange}[1]{\{1,\ldots,#1\}}
+\providecommand{\IPSystem}{(\IPProver,\IPVerifier)}
+\providecommand{\IPProverMessage}{\alpha}
+\providecommand{\IPVerifierMessage}{\rho}
+% A message and its complete tuple are distinct; indices remain at the call site.
+\providecommand{\IPProverMessages}{\boldsymbol{\IPProverMessage}}
+\providecommand{\IPVerifierMessages}{\boldsymbol{\IPVerifierMessage}}
+\providecommand{\EncodedIPProverMessage}{\Encoded{\IPProverMessage}}
+\providecommand{\EncodedIPVerifierMessage}{\Encoded{\IPVerifierMessage}}
+\providecommand{\EncodedIPProverMessages}{\Encoded{\IPProverMessages}}
+\providecommand{\EncodedIPVerifierMessages}{\Encoded{\IPVerifierMessages}}
+\providecommand{\IPProverMessageSpace}[1]{\mathcal M_{\IPProver,#1}}
+\providecommand{\IPVerifierMessageSpace}[1]{\mathcal M_{\IPVerifier,#1}}
+\providecommand{\IPTuple}[1]{(#1_{1},\ldots,#1_{\IPRoundComplexity})}
+\providecommand{\IPVerifierInput}{\Instance,\IPProverMessages,\IPVerifierMessages}
+\providecommand{\IPHonestVerifierView}{\mathsf{View}_{\IPSymbol}}
+\providecommand{\SRMoveBound}{t}
+\providecommand{\SRRandomness}{f}
+\providecommand{\SRROSpace}{\prod_{i=1}^{\IPRoundComplexity}\Uniform(\ROSpace{i})}
+\providecommand{\IPMaliciousSRProver}{\widetilde{\mathbf P}^{\mathrm{sr}}}
+\providecommand{\IPStateRestorationGame}[3]{\mathsf{Game}^{\mathrm{sr}}_{\IPSymbol}(#1,#2,#3)}
+\providecommand{\IPSRGameStateEntry}[1]{(\Instance,\SaltString,\IPProverMessage_1,\ldots,\IPProverMessage_{#1})}
+\providecommand{\IPSROutput}{(\Instance,\SaltString,\IPProverMessages,\IPVerifierMessages)}
+\providecommand{\SRTrace}{T_{\mathsf{sr}}}
+\providecommand{\IPSRSoundnessError}{\varepsilon_{\mathrm{IP}}^{\mathrm{sr}}}
+\providecommand{\IPSRKnowledgeSoundnessError}{\kappa_{\mathrm{IP}}^{\mathrm{sr}}}
+\providecommand{\IPSRRewindKnowledgeError}{\varepsilon_{\mathsf{rks}}}
+\providecommand{\IPSRKnowledgeTime}{\tau_{\mathsf{rks}}}
+\providecommand{\ProverFailureProbability}[1]{p_{\mathsf{fail}}^{#1}}
+\providecommand{\ProverRunningTime}[1]{t_{#1}}
+\providecommand{\FiatShamir}{\mathsf{FS}}
+\providecommand{\SlowSaltString}{\SaltString}
+\providecommand{\SlowFSARGString}{(\SaltString,\IPProverMessage_1,\ldots,\IPProverMessage_{\IPRoundComplexity})}
+\providecommand{\SlowFSLaterQuery}[1]{(\Instance,\SaltString,\IPProverMessage_1,\ldots,\IPProverMessage_{#1})}
+\providecommand{\SpongeCapacitySpace}{\Alphabet^{\SpongeCapacity}}
+\providecommand{\SpongeRateSpace}{\Alphabet^{\SpongeRate}}
+\providecommand{\BinaryInstanceSpace}{\Bits^{\le \InstanceSizeBound}}
+\providecommand{\DSFSSaltSpace}{\Alphabet^{\SaltLength}}
+\providecommand{\DSFSTransform}{\mathsf{DSFS}[\IPSymbol,\DSFSCodec,\SaltLength]}
+\providecommand{\CodecSystem}{(\IPProverMessageEncodedLength,\IPVerifierMessageEncodedLength,\IPProverMessageEncoders,\IPVerifierMessageDecoders)}
+\providecommand{\DSFSCodecBias}[1]{\varepsilon_{\mathrm{cdc},#1}}
+\providecommand{\IPProverMessageEncodedLength}{\ell_{\IPProver}}
+\providecommand{\IPVerifierMessageEncodedLength}{\ell_{\IPVerifier}}
+\providecommand{\SpongeProverMessageBlockCount}{L_{\IPProver}}
+\providecommand{\SpongeVerifierMessageBlockCount}{L_{\IPVerifier}}
+\providecommand{\SpongeStateName}[2]{state}
+\providecommand{\SpongeStateSpace}{\mathsf{DState}}
+\providecommand{\SpongeState}{\mathsf{st}}
+\providecommand{\SpongePermutationState}{s}
+\providecommand{\SpongeRateSegment}{\SpongePermutationState_{\mathrm R}}
+\providecommand{\SpongeCapacitySegment}{\SpongePermutationState_{\mathrm C}}
+\providecommand{\SpongeAbsorbIndex}{i_A}
+\providecommand{\SpongeSqueezeIndex}{i_S}
+\providecommand{\HashOutput}{z}
+\providecommand{\HashOutputLen}{m}
+\providecommand{\DSFSQueryState}{\mathsf{st}}
+\providecommand{\SaltString}{\tau}
+\providecommand{\SaltType}{\mathsf{Salt}}
+\providecommand{\DSFSSaltEncoding}{\mathsf{bin}}
+\providecommand{\OracleProgramming}{\mu}
+\providecommand{\IPFirstProverMessageProbabilityBound}{\mu}
+\providecommand{\SpongeSqueezedSymbol}{\rho}
+\providecommand{\Encoded}[1]{\widehat{#1}}
+\providecommand{\NARGStringTuple}{(\SaltString,\IPProverMessage_1,\ldots,\IPProverMessage_{\IPRoundComplexity})}
+\providecommand{\BitSize}[1]{|#1|_{\mathsf{bits}}}
+\providecommand{\defemph}[1]{\textbf{\emph{#1}}}
+\providecommand{\DoQuote}[1]{``#1''}
+\providecommand{\FunctionImage}{\operatorname{Im}}
+\providecommand{\CountedQueryBound}{t}
+\providecommand{\adv}{\mathcal{A}}
+\providecommand{\set}[1]{\left\{#1\right\}}
+\providecommand{\ZeroRange}[1]{[0,#1]}
+\providecommand{\Distribution}{\mathcal{D}}
+\providecommand{\PMF}{\mathsf{PMF}}
+\providecommand{\Support}{\mathsf{supp}}
+\providecommand{\OracleSpec}{\mathsf{OracleSpec}}
+\providecommand{\OracleQuery}{\mathsf{Query}}
+\providecommand{\OracleAnswer}{\mathsf{Answer}}
+\providecommand{\OracleTrace}{\mathsf{Trace}}
+\providecommand{\OracleRun}{\mathsf{Run}}
+\providecommand{\Fiber}{\mathsf{fiber}}

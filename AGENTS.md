@@ -34,6 +34,9 @@ Start with [`README.md`](README.md) for the project overview.
   theory. It is meant to replace the legacy layer ([`README.md`](README.md#two-layers)).
 - `ArkLib/OracleReduction/` - the legacy layer: IOR abstractions and security theory.
 - `ArkLib/ProofSystem/` - protocol formalizations built on the core.
+- `ArkLib/InteractiveProof/` - interactive-proof security using the legacy protocol representation.
+- `ArkLib/NonInteractiveArgument/` - protocol-independent NARG games and explicit legacy adapters.
+- `ArkLib/Security/` - shared security games and private-coin operations.
 - `ArkLib/Commitments/` - commitments and opening arguments.
 - `ArkLib/AGM/` - algebraic group model representations.
 - `ArkLib/ToCompPoly/` - bridges to CompPoly's computable representations.

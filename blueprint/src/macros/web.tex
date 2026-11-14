@@ -4,6 +4,15 @@
 % Typically the printed version could have more fancy decorations.
 % This will probably be a very short file.
 
+% plasTeX's native \Cref already prints the full capitalized name and links it
+% with the number, without equation parentheses. Consume the matching PDF
+% settings here: plasTeX does not implement these cleveref configuration commands.
+\providecommand{\creflabelformat}[2]{}
+\providecommand{\crefname}[3]{}
+
+% plasTeX identifies theorem types by their captions, independently of counters.
+\newcommand{\newsharedtheorem}[2]{\newtheorem{#1}[theorem]{#2}}
+
 % Dummy macros that make sense only for web version.
 \newcommand{\lean}[1]{}
 \newcommand{\discussion}[1]{}
@@ -21,3 +30,6 @@
 %  {\clist_map_inline:nn{#1}{\vphantom{\ref{##1}}}%
 %   \ignorespaces}
 % \ExplSyntaxOff
+% Arrow label naming a Lean theorem. MathJax renders the math, so the web version shows the
+% name only; the sentence after each such display carries the \ref link.
+\newcommand{\leanArrowLabel}[2]{\mathtt{#2}}

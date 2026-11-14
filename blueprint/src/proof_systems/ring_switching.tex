@@ -58,7 +58,7 @@ The column inverse
 \]
 is derived from the row inverse and the reconstruction laws.
 
-Laws \eqref{eq:rs-rows}--\eqref{eq:rs-cols} fix the coordinate convention of
+The laws in \Cref{eq:rs-rows} and \Cref{eq:rs-cols} fix the coordinate convention of
 \cite[\S2.5]{DP24}. They are data-layer reconstruction laws, not completeness or soundness
 statements. Protocol correctness additionally needs identities connecting these coordinates to
 packing, the honest folded element, and the batched multiplier. Together with the inverse laws,
@@ -252,7 +252,7 @@ decoding radius.
   \]
   where $\varepsilon_{\mathrm{BBF}}$ is the concrete Binary Basefold opening's closed-form upper
   bound. Exact codeword encodings give the separate completeness relation in
-  Theorem~\ref{thm:ring_switching_completeness}.
+  \Cref{thm:ring_switching_completeness}.
 \end{theorem}
 
 Every checking verifier aborts on a failed check, so each verifier above has a guarded form and
@@ -268,7 +268,7 @@ the round-by-round guarantees imply ordinary knowledge soundness at the summed e
   \uses{thm:ring_switching_core_soundness, thm:binius_ring_switching_soundness,
     thm:rbr_knowledge_soundness_implies_knowledge_soundness}
   \label{thm:ring_switching_knowledge_soundness}
-  Under the hypotheses of Theorem~\ref{thm:ring_switching_soundness} on $C$, the batching rule
+  Under the hypotheses of \Cref{thm:ring_switching_soundness} on $C$, the batching rule
   and oracle compatibility, the shared protocol is knowledge sound, from its input relation to
   the contextual evaluation relation, with error
   $\varepsilon_{\mathrm{batch}} + 2m/\lvert C\rvert$. If oracle compatibility is functional, the

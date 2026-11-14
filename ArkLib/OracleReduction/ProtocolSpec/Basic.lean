@@ -52,6 +52,17 @@ def empty : ProtocolSpec 0 := ⟨!v[], !v[]⟩
 def MessageIdx (pSpec : ProtocolSpec n) :=
   {i : Fin n // pSpec.dir i = Direction.P_to_V}
 
+/-- The first step of a nonempty protocol is a prover message. -/
+abbrev StartsWithProverMessage (pSpec : ProtocolSpec (n + 1)) : Prop :=
+  pSpec.dir 0 = .P_to_V
+
+/-- A verifier message occurs strictly after this protocol step. -/
+def HasLaterVerifierMessage (p : ProtocolSpec n) (j : Fin n) : Prop :=
+  ∃ k : Fin n, j < k ∧ p.dir k = .V_to_P
+
+instance (p : ProtocolSpec n) (j : Fin n) : Decidable (HasLaterVerifierMessage p j) :=
+  inferInstanceAs (Decidable (∃ k : Fin n, j < k ∧ p.dir k = .V_to_P))
+
 /-- Subtype of `Fin n` for the indices corresponding to challenges in a protocol specification -/
 @[reducible, simp]
 def ChallengeIdx (pSpec : ProtocolSpec n) :=
@@ -335,6 +346,16 @@ end Instances
 
 variable {pSpec : ProtocolSpec n}
 
+/-- The prefix ending immediately after the last prover message; zero when there are none. -/
+def proverMessageEnd (pSpec : ProtocolSpec n) : Fin (n + 1) :=
+  Finset.univ.sup (fun j : pSpec.MessageIdx => j.1.succ)
+
+/-- Every prover message belongs to the prefix ending at `proverMessageEnd`. -/
+theorem message_lt_proverMessageEnd (pSpec : ProtocolSpec n) (j : pSpec.MessageIdx) :
+    j.1.val < (proverMessageEnd pSpec).val := by
+  have h := Finset.le_sup (f := fun j : pSpec.MessageIdx => j.1.succ) (Finset.mem_univ j)
+  exact Nat.lt_of_succ_le h
+
 namespace MessagesUpTo
 
 variable {k : Fin (n + 1)}
@@ -344,9 +365,24 @@ def take (j : Fin (k + 1)) (messages : MessagesUpTo k pSpec) :
     MessagesUpTo (j.castLE (by omega)) pSpec :=
   fun i => messages ⟨i.val.castLE (by simp; omega), i.property⟩
 
+/-- View a prefix containing every prover message as the full message tuple. -/
+def completeMessages (i : Fin (n + 1)) (messages : pSpec.MessagesUpTo i)
+    (h : ∀ j : pSpec.MessageIdx, j.1.val < i.val) : pSpec.Messages :=
+  fun j => messages ⟨⟨j.1.val, h j⟩, j.2⟩
+
 end MessagesUpTo
 
 namespace Messages
+
+/-- Read a complete message tuple at a message round, exposing the protocol's ambient round type
+rather than the proof-indexed `Message` alias. -/
+def get (messages : Messages pSpec) (i : Fin n) (hi : pSpec.dir i = .P_to_V) :
+    pSpec.«Type» i :=
+  messages ⟨i, hi⟩
+
+/-- View a complete message tuple as the prefix containing all protocol rounds. -/
+def asUpTo (messages : Messages pSpec) : MessagesUpTo (Fin.last n) pSpec :=
+  fun ⟨i, hi⟩ => get messages i (by exact hi)
 
 /-- Take the messages up to round `j : Fin (n + 1)` -/
 def take (j : Fin (n + 1)) (messages : Messages pSpec) : MessagesUpTo j pSpec :=
@@ -483,6 +519,22 @@ def extend {k : Fin n} (challenges : ChallengesUpTo k.castSucc pSpec)
   --     haveI := i.property
   --     simp_all [Fin.castLE])
 
+/-- Read the challenge at the final round of a nonempty challenge prefix. -/
+def last {k : Fin n} (cs : ChallengesUpTo k.succ pSpec) (h : pSpec.dir k = .V_to_P) :
+    pSpec.Challenge ⟨k, h⟩ :=
+  cs ⟨Fin.last k.1, by
+    have hlast : (Fin.last k.1).castLE (by omega) = k := by ext; rfl
+    change pSpec.dir ((Fin.last k.1).castLE (by omega)) = .V_to_P
+    rw [hlast]
+    exact h⟩
+
+/-- Read a globally indexed challenge from a prefix known to contain its round. -/
+def getAt {k : Fin (n + 1)} (cs : ChallengesUpTo k pSpec) (i : pSpec.ChallengeIdx)
+    (hi : i.1.1 < k.1) : pSpec.Challenge i :=
+  cs ⟨⟨i.1.1, hi⟩, by
+    change pSpec.dir i.1 = .V_to_P
+    exact i.2⟩
+
 end ChallengesUpTo
 
 namespace Transcript
@@ -513,6 +565,12 @@ instance : Unique (Transcript 0 pSpec) where
 abbrev concat {m : Fin n} (msg : pSpec.«Type» m) (T : Transcript m.castSucc pSpec) :
     Transcript m.succ pSpec :=
   Fin.snoc T msg
+
+/-- Append one protocol-round value while keeping the restricted transcript representation opaque
+to downstream rewriting tactics. -/
+def appendRound {m : Fin n} (msg : pSpec.«Type» m) (T : Transcript m.castSucc pSpec) :
+    Transcript m.succ pSpec :=
+  concat msg T
 
 /-- Appending a message preserves every earlier transcript entry. -/
 @[simp]
@@ -601,8 +659,9 @@ def equivMessagesChallenges :
   invFun := ofMessagesChallenges.uncurry
   left_inv := fun T => by
     ext i
-    simp [ofMessagesChallenges, toMessagesChallenges, toMessagesUpTo, toChallengesUpTo]
-    split <;> simp
+    unfold ofMessagesChallenges toMessagesChallenges toMessagesUpTo toChallengesUpTo
+    dsimp only [Function.uncurry]
+    split <;> rfl
   right_inv := fun ⟨messages, challenges⟩ => by
     ext i
     · have : pSpec.dir (i.val.castLE (by omega)) = Direction.P_to_V := i.property
@@ -611,8 +670,6 @@ def equivMessagesChallenges :
     · have : pSpec.dir (i.val.castLE (by omega)) = Direction.V_to_P := i.property
       simp [ofMessagesChallenges, toMessagesChallenges, toChallengesUpTo]
       split <;> aesop
-
--- Message projection equations for `Transcript.concat` appear below with reconstruction helpers.
 
 end Transcript
 
@@ -835,8 +892,6 @@ def challengeOracleInterfaceSR (StmtIn : Type) (pSpec : ProtocolSpec n) :
     toOC.spec := fun _ => pSpec.Challenge i
     toOC.impl := fun _ => read }
 
-alias challengeOracleInterfaceFS := challengeOracleInterfaceSR
-
 /-- The oracle interface for Fiat-Shamir.
 
 This is the (inefficient) version where we hash the input statement and the entire transcript up to
@@ -844,9 +899,9 @@ the point of deriving a new challenge. To be precise:
 - The domain of the oracle is `Statement × pSpec.MessagesUpTo i.1.castSucc`
 - The range of the oracle is `pSpec.Challenge i`
 
-Some variants of Fiat-Shamir takes in a salt each round. We assume that such salts are included in
-the input statement (i.e. we can always transform a given reduction into one where every round has a
-random salt). -/
+Single-salt Fiat-Shamir and its state-restoration game instantiate the query context
+`Statement` with `StmtIn × Salt`. The salt is chosen by the prover and included in each query;
+the original IP verifier still receives only `StmtIn` and the protocol transcript. -/
 @[inline, reducible]
 def srChallengeOracle (Statement : Type) {n : ℕ} (pSpec : ProtocolSpec n) :
     OracleSpec
@@ -854,6 +909,10 @@ def srChallengeOracle (Statement : Type) {n : ℕ} (pSpec : ProtocolSpec n) :
   [pSpec.Challenge]ₒ'(challengeOracleInterfaceSR Statement pSpec)
 
 alias fsChallengeOracle := srChallengeOracle
+
+-- Fiat-Shamir completeness rewrites computations under `srChallengeOracle` handlers
+-- using terms typed with `fsChallengeOracle`.
+attribute [reducible] fsChallengeOracle
 
 /-- Define the query implementation for the state-restoration / (slow) Fiat-Shamir oracle (returns a
     challenge given messages up to that point) in terms of `ProbComp`.
@@ -886,12 +945,19 @@ def srChallengeQueryImpl' {Statement : Type} {pSpec : ProtocolSpec n}
 
 alias fsChallengeQueryImpl' := srChallengeQueryImpl'
 
+/-- Query one state-restoration / Fiat-Shamir challenge, with the dependent response type kept
+behind a named wrapper so clients need not unfold the oracle-interface encoding. -/
+def getChallengeSR {ι : Type} {oSpec : OracleSpec ι} {Statement : Type}
+    (i : pSpec.ChallengeIdx) (input : Statement × pSpec.MessagesUpTo i.1.castSucc) :
+    OracleComp (oSpec + srChallengeOracle Statement pSpec) (pSpec.Challenge i) :=
+  query (spec := srChallengeOracle Statement pSpec) ⟨i, input⟩
+
 namespace MessagesUpTo
 
-/-- Auxiliary function for deriving the transcript up to round `k` from the (full) messages, via
-  querying the state-restoration / Fiat-Shamir oracle for the challenges.
+/-- Derive the transcript before round `j ≤ k` from the supplied prover messages before `k`,
+querying the state-restoration / Fiat-Shamir oracle at each challenge round.
 
-  This is used to define `deriveTranscriptFS`. -/
+This is used to define `deriveTranscriptSR` and its alias `deriveTranscriptFS`. -/
 def deriveTranscriptSRAux {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
     (stmt : StmtIn) (k : Fin (n + 1)) (messages : pSpec.MessagesUpTo k)
     (j : Fin (k + 1)) :
@@ -904,10 +970,11 @@ def deriveTranscriptSRAux {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
       match hDir : pSpec.dir (i.castLE (by omega)) with
       | .V_to_P =>
         let challenge : pSpec.Challenge ⟨i.castLE (by omega), hDir⟩ ←
-          query (spec := fsChallengeOracle _ _) ⟨⟨i.castLE (by omega), hDir⟩,
-            (stmt, messages.take i.castSucc)⟩
-        return prevTranscript.concat challenge
-      | .P_to_V => return prevTranscript.concat (messages ⟨i, hDir⟩))
+          getChallengeSR (oSpec := oSpec) ⟨i.castLE (by omega), hDir⟩
+            (stmt, messages.take i.castSucc)
+        return Transcript.appendRound (pSpec := pSpec) challenge prevTranscript
+      | .P_to_V =>
+        return Transcript.appendRound (pSpec := pSpec) (messages ⟨i, hDir⟩) prevTranscript)
     j
 
 /-- Reconstruction starts with the empty transcript. -/
@@ -942,13 +1009,15 @@ end MessagesUpTo
 
 namespace Messages
 
-/-- Derive the transcript up to round `k` from the (full) messages, via querying the
-    state-restoration / Fiat-Shamir oracle for the challenges. -/
+/-- Derive the full transcript from the prover messages, querying the state-restoration /
+Fiat-Shamir oracle at each challenge round. -/
 def deriveTranscriptSR {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
     (stmt : StmtIn) (messages : pSpec.Messages) :
     OracleComp (oSpec + fsChallengeOracle StmtIn pSpec) pSpec.FullTranscript := do
-  MessagesUpTo.deriveTranscriptSR stmt (Fin.last n) messages
+  MessagesUpTo.deriveTranscriptSR stmt (Fin.last n) (asUpTo messages)
 
+/-- **[CO25, Construction 3.17]** Derive the transcript from the messages via the Fiat–Shamir
+oracle; alias of `deriveTranscriptSR`. -/
 alias deriveTranscriptFS := deriveTranscriptSR
 
 end Messages
