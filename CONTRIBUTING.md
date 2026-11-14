@@ -200,6 +200,15 @@ when in doubt.
   role, not the underlying type)
 * `s`, `t`, ...                : Sets or lists
 
+### Readable Components
+
+Use meaningful component names when nested tuple projections obscure the mathematics,
+especially in protocol definitions and security relations. Prefer
+`{ ⟨⟨stmtIn, oStmtIn⟩, witIn⟩ | ... }` to conditions written with `sw.1.1.2`;
+use `In`/`Out` only when those roles apply. Ordinary projections and named fields are
+fine when clear, or when needed for dependent types. Preserve meaning and readability
+during refactors; do not rewrite unrelated code just to follow this preference.
+
 ### Symbol Naming Dictionary
 
 When translating theorem statements into names, we use standard mappings for symbols:

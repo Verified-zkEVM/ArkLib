@@ -20,6 +20,7 @@ guard. Every challenge has the degree-two collision bound; the terminal adds no 
 
 noncomputable section
 namespace RingSwitching.Packing.ProductSumcheck
+open Sumcheck.Structured (Multiplier)
 open OracleSpec OracleComp ProtocolSpec MvPolynomial
 open scoped NNReal
 variable {P C Context : Type} [CommRing P] [CommRing C] [Algebra P C] {m : ℕ}

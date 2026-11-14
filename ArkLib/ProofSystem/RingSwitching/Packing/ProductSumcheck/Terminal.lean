@@ -23,6 +23,7 @@ challenge error.
 
 noncomputable section
 namespace RingSwitching.Packing.ProductSumcheck.Terminal
+open Sumcheck.Structured (Multiplier)
 open Probability OracleSpec OracleComp ProtocolSpec MvPolynomial ProbabilityTheory
 variable {P C Context : Type} [CommRing P] [CommRing C] [Algebra P C] {m : ℕ}
   (multiplier : Multiplier Context C m) (pc : PackedCommitment P m)

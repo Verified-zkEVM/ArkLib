@@ -7,6 +7,7 @@ module
 
 public import ArkLib.Data.MvPolynomial.Hypercube
 public import ArkLib.ProofSystem.RingSwitching.Packing.PackedCommitment
+public import ArkLib.ProofSystem.Sumcheck.Structured
 
 /-!
 # The same-commitment product-sumcheck relation
@@ -23,25 +24,8 @@ packed polynomial; the public multiplier is determined by the retained query con
 noncomputable section
 namespace RingSwitching.Packing.ProductSumcheck
 open Polynomial MvPolynomial
+open Sumcheck.Structured (Multiplier)
 variable {P C Context : Type} [CommRing P] [CommRing C] [Algebra P C] {m : ℕ}
-
-/-- A public multilinear multiplier with a certified point evaluator. -/
-structure Multiplier (Context C : Type) [CommRing C] (m : ℕ) where
-  /-- The polynomial used to define the product-sumcheck relation. -/
-  polynomial : Context → C⦃≤ 1⦄[X Fin m]
-  /-- The verifier's point evaluator. -/
-  evaluate : Context → (Fin m → C) → C
-  /-- The evaluator computes the multiplier polynomial. -/
-  evaluate_eq : ∀ ctx r, evaluate ctx r = (polynomial ctx).val.eval r
-
-instance : CoeFun (Multiplier Context C m) (fun _ => Context → C⦃≤ 1⦄[X Fin m]) :=
-  ⟨Multiplier.polynomial⟩
-
-/-- Polynomial evaluation supplies a multiplier evaluator. -/
-def Multiplier.ofPolynomial (A : Context → C⦃≤ 1⦄[X Fin m]) : Multiplier Context C m where
-  polynomial := A
-  evaluate ctx r := (A ctx).val.eval r
-  evaluate_eq _ _ := rfl
 
 /-- The challenge-algebra product of the multiplier and coefficient-mapped packed polynomial. -/
 def productPoly (A : C⦃≤ 1⦄[X Fin m]) (p : P⦃≤ 1⦄[X Fin m]) : C⦃≤ 2⦄[X Fin m] :=
@@ -64,21 +48,28 @@ structure Statement (Context C : Type) {m : ℕ} (i : Fin (m + 1)) where
   challenges : Fin i → C
   target : C
 
+/-- The context and target of a round-`0` statement: the data of its product claim. -/
+def Statement.claim (s : Statement Context C (0 : Fin (m + 1))) : Context × C :=
+  (s.ctx, s.target)
+
 /-- The exact residual-sum relation at a fixed challenge prefix. -/
 def rel (multiplier : Multiplier Context C m) (pc : PackedCommitment P m)
     (i : Fin (m + 1)) :
     Set (((Statement Context C i) × (∀ j, pc.OStmt j)) × P⦃≤ 1⦄[X Fin m]) :=
-  {x | x.1.1.target = hypercubeSum m (productPoly (multiplier x.1.1.ctx) x.2).val
-      i x.1.1.challenges ∧ pc.commitsTo x.1.2 x.2}
+  { ⟨⟨stmt, oStmt⟩, wit⟩ |
+    stmt.target = hypercubeSum m (productPoly (multiplier stmt.ctx) wit).val
+      i stmt.challenges ∧ pc.commitsTo oStmt wit }
 
 /-- The initial relation is the Boolean cube sum of the challenge-algebra product. -/
 theorem rel_zero (multiplier : Multiplier Context C m) (pc : PackedCommitment P m)
-    (ctx : Context) (target : C) (oStmt : ∀ j, pc.OStmt j)
+    (s : Statement Context C (0 : Fin (m + 1))) (oStmt : ∀ j, pc.OStmt j)
     (p : P⦃≤ 1⦄[X Fin m]) :
-    ((⟨ctx, Fin.elim0, target⟩, oStmt), p) ∈ rel multiplier pc 0 ↔
-      target = ∑ y : Fin m → Fin 2,
-        (multiplier ctx).val.eval (y : Fin m → C) *
+    ((s, oStmt), p) ∈ rel multiplier pc 0 ↔
+      s.target = ∑ y : Fin m → Fin 2,
+        (multiplier s.ctx).val.eval (y : Fin m → C) *
           aeval (y : Fin m → C) p.val ∧ pc.commitsTo oStmt p := by
+  obtain ⟨ctx, challenges, target⟩ := s
+  obtain rfl : challenges = Fin.elim0 := funext fun i => Fin.elim0 i
   change (target = hypercubeSum m (productPoly (multiplier ctx) p).val 0 Fin.elim0) ∧ _ ↔ _
   rw [hypercubeSum_zero]
   simp only [productPoly_eval]

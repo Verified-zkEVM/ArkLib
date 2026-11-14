@@ -118,7 +118,7 @@ def fullReduction (γ : ℕ) := OracleReduction.append
 /-- Each full-protocol challenge keeps its component's error bound. -/
 def fullError (γ : ℕ) : (pSpec κ K β (ϑ := ϑ) h_rate (ℓ' := ℓ') γ).ChallengeIdx → ℝ≥0 :=
   Sum.elim (TensorPrefix.rbrError (biniusProfile κ L K β))
-    (BinaryBasefold.Opening.openingError K β γ (ϑ := ϑ) (h_rate := h_rate)) ∘
+    (BinaryBasefold.ProductClaim.openingError K β γ (ϑ := ϑ) (h_rate := h_rate)) ∘
       ChallengeIdx.sumEquiv.symm
 
 omit [DecidableEq K] [Fact (β 0 = 1)] [Fact (Fintype.card K = 2)] [NeZero R] in
@@ -128,13 +128,13 @@ set_option backward.isDefEq.respectTransparency false in
 theorem fullError_sum (γ : ℕ) :
     (∑ j, fullError κ K β (ϑ := ϑ) h_rate (ℓ' := ℓ') γ j) =
       (κ : ℝ≥0) / Fintype.card L + (ℓ' : ℝ≥0) * (2 / Fintype.card L) +
-        ∑ j, BinaryBasefold.Opening.openingError K β γ (ϑ := ϑ) (h_rate := h_rate) j :=
+        ∑ j, BinaryBasefold.ProductClaim.openingError K β γ (ϑ := ϑ) (h_rate := h_rate) j :=
   RingSwitching.Packing.RingSwitch.append_rbrError_sum
     (M := (biniusProfile κ L K β).A) (PackingData.ofBasis (biniusProfile κ L K β).basis) ℓ'
     (BatchingStrategy.eqFold L κ)
     ((!p[] : ProtocolSpec 0) ++ₚ BinaryBasefold.fullPSpec K β γ
       (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate))
-    (BinaryBasefold.Opening.openingError K β γ (ϑ := ϑ) (h_rate := h_rate))
+    (BinaryBasefold.ProductClaim.openingError K β γ (ϑ := ϑ) (h_rate := h_rate))
 
 omit [DecidableEq K] [Fact (β 0 = 1)] in
 /-- The challenge sum is bounded by the frontend loss and the opening's closed-form bound. -/
@@ -144,7 +144,7 @@ theorem fullError_sum_le (γ : ℕ) :
         BinaryBasefold.FullBinaryBasefold.concreteBinaryBasefoldKnowledgeError L ℓ' R γ := by
   rw [fullError_sum]
   exact add_le_add (le_refl _)
-    (BinaryBasefold.Opening.openingError_sum_le_concrete K β γ
+    (BinaryBasefold.ProductClaim.openingError_sum_le_concrete K β γ
       (ϑ := ϑ) (h_rate := h_rate))
 
 omit [DecidableEq K] [Fact (β 0 = 1)] [NeZero R] in

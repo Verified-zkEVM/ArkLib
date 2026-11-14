@@ -872,6 +872,7 @@ public import ArkLib.ProofSystem.Binius.BinaryBasefold.Opening
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Prelude
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Prelude.Fibers
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Prelude.Folding
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.ProductClaim
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.QueryPhase
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.QueryPhase.Completeness
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.QueryPhase.Execution
@@ -900,6 +901,8 @@ public import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps.Relay
 public import ArkLib.ProofSystem.Binius.FRIBinius.Conformance
 public import ArkLib.ProofSystem.Binius.FRIBinius.Prelude
 public import ArkLib.ProofSystem.Binius.FRIBinius.RingSwitch
+public import ArkLib.ProofSystem.Binius.FRIBinius.Unrolled.General
+public import ArkLib.ProofSystem.Binius.FRIBinius.Unrolled.Spec
 public import ArkLib.ProofSystem.Component.CheckClaim
 public import ArkLib.ProofSystem.Component.DoNothing
 public import ArkLib.ProofSystem.Component.GeneratorBatch

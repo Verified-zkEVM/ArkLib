@@ -68,7 +68,20 @@ abbrev relIn (a : AbstractOStmtIn L ℓ') :=
   Head.relIn (PackingData.ofBasis P.basis) ℓ' (layout P h_l) (commitment a)
 
 section Program
-variable [SampleableType L] (a : AbstractOStmtIn L ℓ')
+variable [SampleableType L]
+
+/-- The public multiplier of the batched product claim. Its evaluator computes
+`compute_final_eq_value` (`multiplier_evaluate_eq_compute_final_eq_value`). -/
+abbrev multiplier :=
+  Head.multiplier (PackingData.ofBasis P.basis) ℓ' (layout P h_l) (BatchingRule.eqFold L κ)
+
+/-- The batching head's output relation: the product claim for the committed packed polynomial
+with `multiplier`. -/
+abbrev headRelOut (a : AbstractOStmtIn L ℓ') :=
+  Head.relOut (PackingData.ofBasis P.basis) ℓ' (layout P h_l) (BatchingRule.eqFold L κ)
+    (commitment a)
+
+variable (a : AbstractOStmtIn L ℓ')
 
 /-- The unchanged carrier/challenge wire followed by the shared scalar rounds. -/
 abbrev pSpec := RingSwitch.pSpec (M := P.A) (PackingData.ofBasis P.basis) ℓ'
@@ -96,6 +109,36 @@ theorem perfectCompleteness {σ : Type} (init : ProbComp σ)
   RingSwitch.perfectCompleteness (PackingData.ofBasis P.basis) ℓ' (layout P h_l)
     (messageEquiv P) (BatchingRule.eqFold L κ) (commitment a) init impl
 
+/-- The original carrier message followed by the batching challenge. -/
+abbrev headPSpec := Head.pSpec (M := P.A) (PackingData.ofBasis P.basis) (BatchingRule.eqFold L κ)
+
+/-- The tensor batching head alone: the original carrier message and the batching challenge.
+It reduces the original claim to the product claim `headRelOut`, for a backend that runs its own
+product sum-check instead of the shared one. -/
+def headVerifier := Head.verifier (PackingData.ofBasis P.basis) ℓ' (layout P h_l)
+  (messageEquiv P) (BatchingRule.eqFold L κ) (commitment a)
+
+open scoped Classical in
+/-- The batching head's guard: the original carrier check, then the product claim. -/
+def headGuardedForm : (headVerifier P h_l a).toVerifier.GuardedForm :=
+  Head.guardedForm (PackingData.ofBasis P.basis) ℓ' (layout P h_l) (messageEquiv P)
+    (BatchingRule.eqFold L κ) (commitment a)
+
+/-- The honest prover and verifier of the tensor batching head. -/
+def headReduction := Head.reduction (PackingData.ofBasis P.basis) ℓ' (layout P h_l)
+  (messageEquiv P) (BatchingRule.eqFold L κ) (commitment a)
+
+/-- Using strict compatibility leaves the head's prover and verifier unchanged. -/
+theorem headReduction_strictView_eq : headReduction P h_l a.strictView = headReduction P h_l a :=
+  rfl
+
+/-- The head is perfectly complete from every valid original claim to the product claim. -/
+theorem headReduction_perfectCompleteness {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    (headReduction P h_l a).perfectCompleteness init impl (relIn P h_l a) (headRelOut P h_l a) :=
+  Head.perfectCompleteness (PackingData.ofBasis P.basis) ℓ' (layout P h_l)
+    (messageEquiv P) (BatchingRule.eqFold L κ) (commitment a) init impl
+
 omit [SampleableType L] in
 /-- The head verifier decodes the original carrier before the original scalar check. -/
 theorem check_iff [DecidableEq L] (r : Fin ℓ → L) (s : L) (z : P.A) :
@@ -117,15 +160,14 @@ theorem derivedTarget_messageEquiv_eq_compute_s0 (z : P.A) (c : Fin κ → L) :
 
 open scoped Classical in
 /-- The shared head executes the original carrier check and row target. -/
-theorem head_verifier_eq :
-    Head.verifier (PackingData.ofBasis P.basis) ℓ' (layout P h_l)
-        (messageEquiv P) (BatchingRule.eqFold L κ) (commitment a) =
+theorem headVerifier_eq :
+    headVerifier P h_l a =
       scalarRoundOracleVerifier (oSpec := []ₒ) (OStmt := (commitment a).OStmt)
         (fun stmt z => performCheckOriginalEvaluation κ L K P ℓ ℓ' h_l stmt.2 stmt.1 z = true)
         (fun stmt z c => (⟨(stmt.1, c), Fin.elim0, compute_s0 κ L K P z c⟩ :
           Head.Output (PackingData.ofBasis P.basis) ℓ' (layout P h_l)
             (BatchingRule.eqFold L κ))) := by
-  unfold Head.verifier
+  unfold headVerifier Head.verifier
   congr 1
   · funext stmt z
     exact propext (check_iff P h_l stmt.1 stmt.2 z)
@@ -174,9 +216,7 @@ theorem components_symm_unpack_eq_unpackMLE (p : MultilinearPoly L ℓ') :
 /-- The matrix terminal evaluates the original public equality multiplier. -/
 theorem multiplier_evaluate_eq_compute_final_eq_value (r : Fin ℓ → L) (c : Fin κ → L) (r' : Fin
     ℓ' → L) :
-    (Head.multiplier (PackingData.ofBasis P.basis) ℓ' (layout P h_l)
-        (BatchingRule.eqFold L κ)).evaluate (r, c) r' =
-      compute_final_eq_value κ L K P ℓ ℓ' h_l r r' c := by
+    (multiplier P h_l).evaluate (r, c) r' = compute_final_eq_value κ L K P ℓ ℓ' h_l r r' c := by
   rw [(Head.multiplier (PackingData.ofBasis P.basis) ℓ' (layout P h_l)
     (BatchingRule.eqFold L κ)).evaluate_eq]
   rw [compute_final_eq_value_eq_eval, compute_A_MLE_eq_multiplier]
@@ -228,6 +268,15 @@ theorem pr_exists_target_collision_le_of_embedded_eval_eq
       (messageEquiv P (embedded_MLP_eval κ L K P ℓ ℓ' h_l p r)) p
       (columns_embedded_MLP_eval P h_l p r)
 
+/-- The batching loss on the head's one challenge. -/
+abbrev headRbrError : (headPSpec P).ChallengeIdx → ℝ≥0 :=
+  Head.rbrError (M := P.A) (PackingData.ofBasis P.basis) (BatchingStrategy.eqFold L κ)
+
+/-- The head's challenge-error sum is the batching loss `κ/|L|`. -/
+theorem headRbrError_sum : ∑ i, headRbrError P i = (κ : ℝ≥0) / Fintype.card L := by
+  change ∑ _i : (headPSpec P).ChallengeIdx, (κ : ℝ≥0) / Fintype.card L = _
+  rw [Finset.sum_const, Finset.card_univ, Head.card_challengeIdx, one_smul]
+
 /-- The shared strategy assigns the original batching loss to the carrier wire. -/
 abbrev rbrError := RingSwitch.rbrError (M := P.A) (PackingData.ofBasis P.basis) ℓ'
   (BatchingStrategy.eqFold L κ)
@@ -240,6 +289,32 @@ theorem rbrKnowledgeSoundness (h : a.Functional) {σ : Type} (init : ProbComp σ
   RingSwitch.rbrKnowledgeSoundness (PackingData.ofBasis P.basis) ℓ' (layout P h_l)
     (messageEquiv P) (BatchingStrategy.eqFold L κ) (commitment a) (commitment_functional a h)
     (fun _ _ h => h) init impl
+
+/-- The tensor batching head is round-by-round knowledge sound from the original claim to the
+product claim at the head's extractor and knowledge-state function, with the batching loss
+`κ/|L|` on its one challenge. -/
+theorem headVerifier_rbrKnowledgeSoundnessWith (h : a.Functional) {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    Verifier.rbrKnowledgeSoundnessWith init impl (relIn P h_l a) (headRelOut P h_l a)
+      (headVerifier P h_l a).toVerifier
+      (Head.WitMid (PackingData.ofBasis P.basis) ℓ' (layout P h_l))
+      (Head.extractor (M := P.A) (PackingData.ofBasis P.basis) ℓ' (layout P h_l)
+        (BatchingRule.eqFold L κ) (commitment a))
+      (Head.knowledgeStateFunction (PackingData.ofBasis P.basis) ℓ' (layout P h_l)
+        (messageEquiv P) (BatchingRule.eqFold L κ) (commitment a) init impl)
+      (headRbrError P) :=
+  Head.rbrKnowledgeSoundnessWith (PackingData.ofBasis P.basis) ℓ' (layout P h_l)
+    (messageEquiv P) (BatchingStrategy.eqFold L κ) (commitment a) (commitment_functional a h)
+    (fun _ _ h => h) init impl
+
+/-- The tensor batching head is round-by-round knowledge sound from the original claim to the
+product claim, with the batching loss `κ/|L|` on its one challenge. -/
+theorem headVerifier_rbrKnowledgeSoundness (h : a.Functional) {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    (headVerifier P h_l a).toVerifier.rbrKnowledgeSoundness init impl (relIn P h_l a)
+      (headRelOut P h_l a) (headRbrError P) :=
+  (Verifier.rbrKnowledgeSoundness_iff_exists_with init impl _ _ _ _).mpr
+    ⟨_, _, _, headVerifier_rbrKnowledgeSoundnessWith P h_l a h init impl⟩
 
 /-- The challenge-index sum is `κ/|L| + 2ℓ'/|L|`. -/
 theorem rbrError_sum : ∑ i, rbrError (ℓ' := ℓ') P i =
