@@ -129,13 +129,13 @@ theorem exists_prod_bitFactor_mod_eq_pow (x : A) (γ b : ι → ℕ) (hb : ∀ i
   rw [prod_bitFactor_eq_pow x (fun i => γ i % ℓ₁) b hb, ← hmod, Nat.mod_add_div' s ℓ₁]
 
 /-- **The CRT exponent lift as an iff.** Let `x` be an element of a commutative ring with
-`N := orderOf x`, let `γᵢ < N` and let `b` be a vector of bits of length `ℓ₁ = |ι| > 0`, with `ℓ₁`
+`N := orderOf x`, let `γᵢ < N` and let `b` be a vector of bits of length `ℓ₁ = |ι|`, with `ℓ₁`
 coprime to `N`, `ℓ₁² < N` and `μ < ℓ₁ · N`. Then `∏ᵢ ((x ^ γᵢ - 1) · bᵢ + 1) = x ^ μ` and
 `∏ᵢ ((x ^ (γᵢ mod ℓ₁) - 1) · bᵢ + 1) = x ^ ((μ mod ℓ₁) + a · ℓ₁)` for some `a < ℓ₁` if and only if
 `∑ᵢ γᵢ · bᵢ = μ` over `ℕ`. -/
 theorem prod_bitFactor_eq_pow_and_exists_iff_of_coprime_orderOf {x : A} (γ b : ι → ℕ)
     (hγ : ∀ i, γ i < orderOf x) (hb : ∀ i, b i ≤ 1) {μ : ℕ}
-    (hμ : μ < Fintype.card ι * orderOf x) (hℓpos : 0 < Fintype.card ι)
+    (hμ : μ < Fintype.card ι * orderOf x)
     (hcop : (Fintype.card ι).Coprime (orderOf x)) (hℓ : Fintype.card ι ^ 2 < orderOf x) :
     (∏ i, ((x ^ γ i - 1) * (b i : A) + 1) = x ^ μ ∧
       ∃ a < Fintype.card ι, ∏ i, ((x ^ (γ i % Fintype.card ι) - 1) * (b i : A) + 1) =
@@ -144,7 +144,7 @@ theorem prod_bitFactor_eq_pow_and_exists_iff_of_coprime_orderOf {x : A} (γ b : 
     sum_mul_eq_of_prod_bitFactor_eq_pow_of_coprime_orderOf γ b hγ hb hμ ha hcop hℓ hgp hgp',
     fun h => ⟨by rw [prod_bitFactor_eq_pow x γ b hb, h], ?_⟩⟩
   subst h
-  exact exists_prod_bitFactor_mod_eq_pow x γ b hb hℓpos
+  exact exists_prod_bitFactor_mod_eq_pow x γ b hb (Nat.pos_of_mul_pos_right (Nat.zero_lt_of_lt hμ))
 
 end General
 

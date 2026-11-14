@@ -69,7 +69,7 @@ second grand product. -/
 example : ∃ a < 3, ∏ i : Fin 3, (((2 : ZMod 11) ^ (γ₁ i % 3) - 1) * (ones 3 i : ZMod 11) + 1) =
     2 ^ (24 % 3 + a * 3) := by
   refine ((prod_bitFactor_eq_pow_and_exists_iff_of_coprime_orderOf (x := (2 : ZMod 11)) γ₁ (ones 3)
-    ?_ (fun _ => le_rfl) ?_ ?_ ?_ ?_).2 ?_).2 <;>
+    ?_ (fun _ => le_rfl) ?_ ?_ ?_).2 ?_).2 <;>
     (try simp only [orderOf_two_zmod11, Fintype.card_fin]) <;> decide
 
 /-- The second grand product is needed: with `μ = 4` the first product also holds, because
