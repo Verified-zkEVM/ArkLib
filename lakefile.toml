@@ -15,20 +15,12 @@ linter.mathlibStandardSet = true
 linter.style.longFile = 1500
 linter.style.header = false
 
+# Every package that requires ArkLib resolves every `require` here. Documentation tools
+# (doc-gen4, checkdecls) are therefore required by the separate package in `docbuild/`.
 [[require]]
 name = "VCVio"
 git = "https://github.com/Verified-zkEVM/VCVio"
 rev = "fc54dd3d7691d6f5db7dc829e321a727f095bc2d"
-
-[[require]]
-name = "«doc-gen4»"
-git = "https://github.com/leanprover/doc-gen4"
-rev = "v4.35.0"
-
-[[require]]
-name = "checkdecls"
-git = "https://github.com/PatrickMassot/checkdecls.git"
-rev = "lean4.18.0"
 
 [[require]]
 name = "CompPoly"

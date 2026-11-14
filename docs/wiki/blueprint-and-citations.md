@@ -59,12 +59,23 @@ DISABLE_EQUATIONS=1 ./scripts/build-web.sh
 The nondefault `ArkLibBlueprint` library imports dependency declarations cited only by the
 blueprint, including the abstract binary tower. It keeps those references available to
 `checkdecls` without adding them to the production `ArkLib` import graph or default build.
-For a direct declaration check, run:
+
+doc-gen4 and `checkdecls` are required by the separate package in `docbuild/`, not by ArkLib's
+root lakefile, because every package that requires ArkLib resolves every root `require`.
+`docbuild` requires ArkLib by path and shares its `.lake/packages` and build. Its manifest and
+`lean-toolchain` are not committed: `lake update Arklib` refreshes the manifest from ArkLib's and
+copies the root toolchain, so run it before use. For a direct declaration check, run:
 
 ```bash
 lake build ArkLib ArkLibBlueprint
-lake exe checkdecls blueprint/lean_decls
+cd docbuild
+MATHLIB_NO_CACHE_ON_UPDATE=1 lake update Arklib
+lake build BlueprintDecls
+lake exe checkdecls ../blueprint/lean_decls
 ```
+
+`checkdecls` imports the library roots of the package it runs from; `docbuild/BlueprintDecls.lean`
+imports `ArkLib` and `ArkLibBlueprint` for that purpose.
 
 If blueprint output matters and `leanblueprint` is missing:
 
@@ -78,14 +89,15 @@ uv tool install --python 3.12 leanblueprint
 on a separate read-only runner using the pinned TeXLive action. Its artifact contains only the
 rendered PDF, web directory and generated `blueprint/lean_decls`; it contains no Lean build
 cache. The required `build` job checks rendering success explicitly, then runs the normal Lean
-validation and `lake exe checkdecls blueprint/lean_decls` against its existing `ArkLibBlueprint`
+validation and `checkdecls` (from `docbuild/`) against its existing `ArkLibBlueprint`
 build. Rendering or declaration failures block the build check on PRs and merge groups too.
 The renderer installs `leanblueprint` with pip inside the TeX Live container, where the
 runner's uv is not available. It is the only CI step that does not run Python through uv.
 
 On trusted main pushes, the pinned
 [`leanprover-community/docgen-action`](https://github.com/leanprover-community/docgen-action)
-generates API documentation from that same Lean build in an isolated `docbuild` project.
+generates API documentation from that same Lean build in `docbuild/`, rewriting its lakefile
+with an equivalent template that requires ArkLib by path and doc-gen4 at the toolchain's tag.
 A following step adds `ArkLibBlueprint:docs`, since the action selects only default-target API
 facets. The local preview builds `ArkLib:docs` then `ArkLibBlueprint:docs` sequentially for the
 same coverage; both facets update shared indexes.

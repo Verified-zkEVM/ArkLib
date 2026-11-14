@@ -23,6 +23,7 @@ docs/kb/             persistent paper, concept, audit, and query knowledge base
 docs/wiki/            reference pages and conventions
 docs/design/          interaction-layer design chapters and status
 scripts/              repo utilities
+docbuild/             documentation package: doc-gen4 and checkdecls, requiring ArkLib by path
 home_page/            site assets and assembled website root
 ```
 

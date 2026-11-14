@@ -33,7 +33,7 @@ Default checks:
 
 Optional checks:
   --lint    Deprecated compatibility flag; style linting is always enforced
-  --docs    Run DISABLE_EQUATIONS=1 lake build ArkLib:docs
+  --docs    Run DISABLE_EQUATIONS=1 lake build ArkLib:docs in docbuild/
   --site    Run ./scripts/build-web.sh (implies --docs)
   --axioms  Test the axiomsweep tool, then run the axiom/sorry regression gate
 EOF
@@ -160,7 +160,8 @@ fi
 if (( run_docs )); then
   echo ""
   echo "# Building API docs"
-  DISABLE_EQUATIONS=1 lake build ArkLib:docs
+  (cd docbuild && MATHLIB_NO_CACHE_ON_UPDATE=1 lake update Arklib &&
+    DISABLE_EQUATIONS=1 lake build ArkLib:docs)
 fi
 
 if (( run_site )); then

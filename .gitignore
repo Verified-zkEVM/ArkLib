@@ -37,3 +37,9 @@ __pycache__/
 # Generated documentation and temporary comparison
 /home_page/docs/
 /home_page/docs_original/
+
+# Documentation build package. `lake update Arklib` regenerates the manifest and copies the root
+# `lean-toolchain`, so neither is committed.
+/docbuild/.lake/
+/docbuild/lake-manifest.json
+/docbuild/lean-toolchain
