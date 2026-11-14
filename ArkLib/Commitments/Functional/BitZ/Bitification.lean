@@ -20,7 +20,8 @@ matrix `L = I ⊗ (1, 2, …, 2^{B-1}) ⊗ γ`, independently of any commitment 
 
 ## Main statements
 
-* `BitZ.boundedCombos γ B` is the set of sums `∑ⱼ hⱼ · γⱼ` with integer coefficients `0 ≤ hⱼ < 2^B`.
+* `BitZ.boundedCombos γ B` is the set of sums `∑ⱼ hⱼ · γⱼ` with natural-number coefficients
+  `hⱼ < 2^B`.
   For `γ` the monomials of total degree `< D` in the generators of `S`, it is the set `S^{<D}_{≤B}`
   of [BGKLSW26]. Indexing `γ` by exponent tuples gives the definition of [BGKLSW26, §3.1], and
   indexing it by the distinct monomials gives the one recalled in [BGKLSW26, §4.5]. The two can
