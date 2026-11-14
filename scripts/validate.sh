@@ -160,6 +160,8 @@ fi
 if (( run_docs )); then
   echo ""
   echo "# Building API docs"
+  # doc-gen4 reads the bibliography from the docbuild package, as in CI's docgen-action.
+  mkdir -p docbuild/docs && cp blueprint/src/references.bib docbuild/docs/references.bib
   (cd docbuild && MATHLIB_NO_CACHE_ON_UPDATE=1 lake update Arklib &&
     DISABLE_EQUATIONS=1 lake build ArkLib:docs)
 fi

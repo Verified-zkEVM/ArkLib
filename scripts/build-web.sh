@@ -11,6 +11,10 @@ lake build ArkLibBlueprint
 # doc-gen4 and checkdecls are required by the separate docbuild package, which requires ArkLib
 # by path and shares its packages and build; see docbuild/lakefile.toml.
 echo "Resolving Documentation Package..."
+# doc-gen4 reads the bibliography from docs/references.bib in the package it runs in; CI's
+# docgen-action copies `blueprint/src/references.bib` there the same way.
+mkdir -p docbuild/docs
+cp blueprint/src/references.bib docbuild/docs/references.bib
 (cd docbuild && MATHLIB_NO_CACHE_ON_UPDATE=1 lake update Arklib)
 
 echo "Building Project Documentation..."
