@@ -106,12 +106,12 @@ example (s : Fin 1 →₀ ℕ) :
   exact natAbs_coeff_honestMessage_le (D := 1) (N := 1) (fun _ => le_rfl)
     (fun _ => (totalDegree_X _).le) (fun _ s => hX s) (fun _ s => hC s) s
 
-private theorem primes_eleven_thirteen : ∀ q ∈ ({11, 13} : Finset ℕ), q.Prime := by
+theorem primes_eleven_thirteen : ∀ q ∈ ({11, 13} : Finset ℕ), q.Prime := by
   intro q hq
   simp only [mem_insert, mem_singleton] at hq
   rcases hq with rfl | rfl <;> decide
 
-private instance : Nonempty ↥({11, 13} : Finset ℕ) := ⟨⟨11, by simp⟩⟩
+instance : Nonempty ↥({11, 13} : Finset ℕ) := ⟨⟨11, by simp⟩⟩
 
 /-- The challenge sampler of Round 1 with one variable and two primes: `π_canon` sends `X₀` to `1`,
 so the claim `⟨1 ⊗ 1, 1⟩ = 1 = µ + 1` is false for `µ = 0`, and the cheating message `µ' = 0`
