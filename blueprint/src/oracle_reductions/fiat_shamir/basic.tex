@@ -1,0 +1,159 @@
+\subsection{Basic Fiat--Shamir}
+
+\paragraph{Non-Interactive Arguments and Fiat--Shamir}
+\label{sec:basic_fs}
+
+For a fixed protocol and fixed statement and salt spaces, the oracle distribution \(\FSOracleDistribution\) of \Cref{def:basic_fs_oracle_distribution} samples the function list \(\OracleFamily\) used by the non-interactive argument.
+
+The security theorems allow the protocol and oracle distribution to depend on the public security parameter \(\secpar\) and instance-size bound \(\InstanceSizeBound\). Both the state-restoration and NARG failure events require \(\InstanceSizeOf{\Instance}\le\InstanceSizeBound\). At each configuration the two experiments use the same distribution of round functions. The distribution in \Cref{def:basic_fs_oracle_distribution} is the independent uniform choice.
+
+\paragraph{Basic Fiat--Shamir Formalization Details}
+\label{sec:basic_fs_interface}
+
+\begin{definition}[Basic Fiat--Shamir oracle distribution]
+\label{def:basic_fs_oracle_distribution}
+Let \(\InstanceSpace,\SaltType\) be finite statement and salt spaces, and let the message spaces of the public-coin IP be finite and nonempty. Number the verifier messages \(1,\ldots,\IPVerifierMessageCount\), and let \(m_i\) count the prover messages preceding verifier message \(i\). The basic-FS oracle distribution \(\FSOracleDistribution\) samples independently
+\begin{equation*}
+  \OracleFunction_i\leftarrow\Uniform\!\left(
+    \InstanceSpace\times\SaltType\times
+      \prod_{j=1}^{m_i}\IPProverMessageSpace{j}
+       \longrightarrow\IPVerifierMessageSpace{i}\right)
+       \qquad(i\in[\IPVerifierMessageCount]).
+\end{equation*}
+The \(i\)-th round oracle answers a query \((\Instance,\SaltString,\IPProverMessage_1,\ldots,\IPProverMessage_{m_i})\) with the corresponding value of \(\OracleFunction_i\). Repeating a query to the same round oracle returns the same answer. If no prover message precedes round \(i\), its oracle input consists only of the instance and salt. The paper uses \(\InstanceSpace=\Bits^{\le\InstanceSizeBound}\) and \(\SaltType=\Bits^{\SaltLength}\).
+\lean{OracleReduction.sampleFiatShamirChallengeTable, ProtocolSpec.fsChallengeOracle}
+\leanok
+\uses{def:fiat_shamir_spec}
+\end{definition}
+
+\begin{construction}[Basic Fiat--Shamir {\cite[Construction~3.17]{CO25}~\cite[Construction~14.1.1]{snarg-book}}]
+\label{constr:basic_fiat_shamir}
+Given a public-coin IP \(\IPSymbol=(\IPProver,\IPVerifier)\) and a salt length \(\SaltLength\), define the argument \(\NARGSymbol=\FiatShamir[\IPSymbol,\SaltLength]\) as follows. Both algorithms have query access to \(\OracleFamily=(\OracleFunction_i)_i\) sampled from \Cref{def:basic_fs_oracle_distribution}, with \(\SaltType=\Bits^{\SaltLength}\). Write \(\IPProverMessageCount\) and \(\IPVerifierMessageCount\) for the numbers of prover and verifier messages, respectively, and retain the preceding-message counts \(m_i\) from that definition.
+
+\emph{Non-interactive argument prover \(\NARGProver^{\OracleFamily}(\Instance,\WitnessValue)\):}
+\begin{enumerate}
+\item Sample \(\SaltString\leftarrow\Uniform(\Bits^{\SaltLength})\).
+\item Run \(\IPProver(\Instance,\WitnessValue)\) through the protocol's message schedule. At each prover position, compute and record its next message. At the \(i\)-th verifier position, compute
+\begin{equation*}
+  \IPVerifierMessage_i:=\OracleFunction_i(\Instance,\SaltString,
+    \IPProverMessage_1,\ldots,\IPProverMessage_{m_i})
+\end{equation*}
+and supply this message to the prover. The Lean prover runs the full schedule,
+including verifier positions after the last prover message. In
+\cite[Construction~3.17]{CO25}, the prover stops after its last message.
+\item Return \(\NARGString=(\SaltString,(\IPProverMessage_j)_{j\in[\IPProverMessageCount]})\).
+\end{enumerate}
+
+\emph{Non-interactive argument verifier \(\NARGVerifier^{\OracleFamily}(\Instance,\NARGString)\):}
+\begin{enumerate}
+\item Write \(\NARGString=(\SaltString,(\IPProverMessage_j)_{j\in[\IPProverMessageCount]})\).
+\item For \(i=1,\ldots,\IPVerifierMessageCount\), compute
+\begin{equation*}
+  \IPVerifierMessage_i:=\OracleFunction_i(\Instance,\SaltString,
+    \IPProverMessage_1,\ldots,\IPProverMessage_{m_i}).
+\end{equation*}
+\item Return \(\IPVerifier(\Instance,
+  (\IPProverMessage_j)_{j\in[\IPProverMessageCount]},
+  (\IPVerifierMessage_i)_{i\in[\IPVerifierMessageCount]})\).
+\end{enumerate}
+The verifier reconstructs the full IP transcript from the supplied prover messages and these verifier messages, in their protocol order. This is the same reconstruction used in the single-salt state-restoration game. The byte-facing compiler serializes the typed NARG string as in \Cref{def:narg_serializer}.
+\lean{InteractiveProtocol.fiatShamir, InteractiveProtocol.fiatShamirTyped, InteractiveProtocol.fiatShamir_prover, InteractiveProtocol.fiatShamir_verifier, Prover.compileFiatShamir, Verifier.compileFiatShamir, Reduction.compileFiatShamir, ProtocolSpec.Messages.deriveTranscriptFS, ProtocolSpec.Messages.deriveTranscriptSR, ProtocolSpec.MessagesUpTo.deriveTranscriptSRAux}
+\leanok
+\uses{def:public_coin_ip_structure, def:basic_fs_oracle_distribution, def:ip_state_restoration_game, def:transcript}
+\end{construction}
+
+\begin{theorem}[Completeness of basic Fiat--Shamir]
+\label{thm:basic_fs_completeness}
+\lean{InteractiveProtocol.fiatShamir_completeness, InteractiveProtocol.compileFiatShamir_completeness, fiatShamirSalted_completeness, canonicalFiatShamir_completeness_randomOracle, fiatShamir_completeness_randomOracle}
+\leanok
+\uses{constr:basic_fiat_shamir, def:completeness}
+If \(\IPSymbol\) has completeness error at most \(\epsilon\ge0\) for relation \(\Relation\), then \(\FiatShamir[\IPSymbol,\SaltLength]\) has completeness error at most \(\epsilon\) in the oracle distribution of \Cref{def:basic_fs_oracle_distribution}. In particular, the transformation preserves perfect completeness.
+\end{theorem}
+
+\begin{proof}
+\uses{constr:basic_fiat_shamir}
+Fix \((\Instance,\WitnessValue)\in\Relation\) and condition on the sampled salt. During the argument prover's execution, the \(i\)-th verifier message is obtained from a round function that has not previously been queried. Its answer is therefore uniform in \(\IPVerifierMessageSpace{i}\), independently of the preceding transcript. Induction over the message schedule shows that the resulting transcript has the same distribution as an honest IP interaction. The argument verifier evaluates the same round functions at the same inputs, reconstructs this transcript, and applies the same decision predicate. Its acceptance probability is consequently at least \(1-\epsilon\).
+\leanok
+\end{proof}
+
+The following security statements allow public parameters \((\secpar,\InstanceSizeBound)\). Fix the relation \(\Relation\), the size function \(\InstanceSizeOf{\cdot}\), and an IP family indexed by these parameters. For each salt size \(s\), also fix the salt space and verifier message function distribution. The basic-FS argument uses salt size \(s(\secpar,\InstanceSizeBound)\) and the same distribution as its state-restoration premise. For these security statements, the distribution may be any joint distribution of round functions; the completeness theorem above uses the independent uniform distribution. All these families are fixed before the query budget and malicious prover are chosen. The salt is supplied separately from the IP statement, as in \Cref{def:ip_state_restoration_game}.
+
+\begin{theorem}[Basic Fiat--Shamir soundness {\cite[Theorem~3.18]{CO25}~\cite[Theorem~14.3.1]{snarg-book}}]
+\label{thm:basic_fs_soundness}
+For each \(\secpar\), suppose that the IP family has state-restoration soundness error \(\IPSRSoundnessError(\secpar;s,\InstanceSizeBound,\SRMoveBound)\) for all salt sizes, instance-size bounds, and move budgets. Then the basic-FS argument has adaptive soundness error satisfying, for every \(\secpar,\InstanceSizeBound,\CountedQueryBound\),
+\begin{equation*}
+  \NARGSoundnessError(\secpar,\InstanceSizeBound,\CountedQueryBound)
+    \le\IPSRSoundnessError(\secpar;s(\secpar,\InstanceSizeBound),\InstanceSizeBound,\CountedQueryBound).
+\end{equation*}
+\lean{CanonicalFS.publicCoin_soundness}
+\leanok
+\uses{constr:basic_fiat_shamir, def:ip_state_restoration_soundness, def:narg_adaptive_soundness}
+\end{theorem}
+
+\begin{proof}
+\uses{def:ip_state_restoration_soundness, constr:basic_fiat_shamir}
+Fix \(\secpar,\InstanceSizeBound,\CountedQueryBound\) and a \(\CountedQueryBound\)-query malicious argument prover \(\NARGMaliciousProver\). Construct an SR prover by running \(\NARGMaliciousProver\), forwarding each round-oracle query as the identical SR move, and returning \((\Instance,\SaltString,\IPProverMessages)\) when \(\NARGMaliciousProver\) returns \((\Instance,(\SaltString,\IPProverMessages))\). Each public query gives exactly one move, so the SR prover makes at most \(\CountedQueryBound\) moves.
+
+Couple the two executions by using the same round functions and prover randomness. Their answers and prover outputs agree. The SR game and argument verifier then reconstruct the same full transcript and apply the same IP verifier. Thus the event
+\begin{equation*}
+  \InstanceSizeOf{\Instance}\le\InstanceSizeBound
+  \quad\land\quad\Instance\notin\RelationLanguage{\Relation}
+  \quad\land\quad b=1
+\end{equation*}
+has the same probability in both experiments. A missing output is nonaccepting in both. The final transcript-reconstruction queries do not count toward the adversary's budget in either experiment. Applying the SR soundness bound gives the claimed inequality.
+\leanok
+\end{proof}
+
+\begin{definition}[Basic Fiat--Shamir extractor from a state-restoration extractor]
+\label{def:basic_fs_straightline_extractor}
+Let \(\SRExtractor\) be a straightline SR knowledge extractor. Define the basic-FS extractor \(\NARGExtractor_{\mathrm{std}}\) on an instance \(\Instance\), NARG string \((\SaltString,\IPProverMessages)\), and public query--answer logs \(\QueryLog_P,\QueryLog_V\) of the argument prover and verifier as follows:
+\begin{enumerate}
+\item For each \(i\in[\IPVerifierMessageCount]\), read from \(\QueryLog_V\) the answer \(\IPVerifierMessage_i\) to
+\begin{equation*}
+  \OracleFunction_i(\Instance,\SaltString,
+    \IPProverMessage_1,\ldots,\IPProverMessage_{m_i}).
+\end{equation*}
+If this query is absent, use a fixed default message in \(\IPVerifierMessageSpace{i}\).
+\item Return
+\begin{equation*}
+  \WitnessValue\leftarrow\SRExtractor
+    (\Instance,\SaltString,\IPProverMessages,\IPVerifierMessages,\QueryLog_P).
+\end{equation*}
+\end{enumerate}
+The verifier log reconstructs the full IP transcript; the prover log is the SR move--response trace supplied to \(\SRExtractor\). The extractor makes no oracle queries and does not invoke the prover. It returns \(\bot\) if \(\SRExtractor\) does. On logs from the argument verifier, every required query is present, so the default messages are unused.
+\uses{def:sr_knowledge_soundness, def:adaptive_narg_knowledge_soundness, constr:basic_fiat_shamir}
+\lean{CanonicalFS.publicCoinExtractor}
+\leanok
+\end{definition}
+
+\begin{theorem}[Basic Fiat--Shamir knowledge soundness {\cite[Theorem~3.19]{CO25}~\cite[Theorem~14.4.1]{snarg-book}}]
+\label{thm:fiat_shamir_straightline_knowledge_soundness}
+For each \(\secpar\), suppose that the IP family has straightline state-restoration knowledge-soundness error \(\IPSRKnowledgeSoundnessError(\secpar;s,\InstanceSizeBound,\SRMoveBound)\), witnessed by one SR extractor family for all salt sizes, instance-size bounds, and move budgets. Then the basic-FS argument has adaptive straightline knowledge-soundness error satisfying, for every \(\secpar,\InstanceSizeBound,\CountedQueryBound\),
+\begin{equation*}
+  \NARGKnowledgeSoundnessError(\secpar,\InstanceSizeBound,\CountedQueryBound)
+    \le\IPSRKnowledgeSoundnessError(\secpar;s(\secpar,\InstanceSizeBound),\InstanceSizeBound,\CountedQueryBound).
+\end{equation*}
+The resulting NARG extractor family is chosen before the query budget and adversary.
+Here straightline refers to the log-based interface of
+\Cref{def:adaptive_narg_knowledge_soundness}. The extractor can use private randomness
+and receives both public query logs. The paper's deterministic extractor receives the
+prover's log as its only query log. The Lean statement gives a bound on error.
+\uses{constr:basic_fiat_shamir, def:adaptive_narg_knowledge_soundness, def:sr_knowledge_soundness, def:basic_fs_straightline_extractor}
+\leanok
+\lean{CanonicalFS.publicCoin_knowledge_soundness_withExtractor,
+  CanonicalFS.publicCoin_knowledge_soundness}
+\end{theorem}
+
+\begin{proof}
+\uses{def:basic_fs_straightline_extractor, thm:basic_fs_soundness}
+Choose an SR extractor family from the premise and use \Cref{def:basic_fs_straightline_extractor} at salt size \(s(\secpar,\InstanceSizeBound)\). This defines one NARG extractor family for all public parameters and query budgets.
+
+Fix the parameters and a malicious argument prover, and construct the SR prover as in the soundness proof. Under the same coupling, \(\QueryLog_P\) is exactly its SR move--response trace, while \(\QueryLog_V\) recovers the verifier messages used by the SR game. Hence the SR extractor receives the same instance, salt, transcript, and move trace in both experiments. Coupling its randomness as well makes its returned witness (including \(\bot\)) and the verifier decision agree. Therefore the event
+\begin{equation*}
+  \InstanceSizeOf{\Instance}\le\InstanceSizeBound
+  \quad\land\quad b=1
+  \quad\land\quad(\Instance,\WitnessValue)\notin\Relation
+\end{equation*}
+has the same probability in the two experiments. The SR prover makes at most \(\CountedQueryBound\) moves, so the assumed SR knowledge-soundness bound applies.
+\leanok
+\end{proof}

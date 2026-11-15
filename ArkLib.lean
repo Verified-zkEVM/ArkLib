@@ -769,6 +769,7 @@ public import ArkLib.InteractiveProof.Soundness
 public import ArkLib.InteractiveProof.StateRestorationSoundness
 public import ArkLib.InteractiveProof.ZeroKnowledge
 public import ArkLib.NonInteractiveArgument.Legacy
+public import ArkLib.NonInteractiveArgument.Legacy.Serialization
 public import ArkLib.NonInteractiveArgument.NARG
 public import ArkLib.NonInteractiveArgument.ZeroKnowledge
 public import ArkLib.OracleReduction.BCS.Basic
@@ -802,10 +803,16 @@ public import ArkLib.OracleReduction.Execution
 public import ArkLib.OracleReduction.Execution.NonInteractive
 public import ArkLib.OracleReduction.FiatShamir.Basic
 public import ArkLib.OracleReduction.FiatShamir.Canonical
+public import ArkLib.OracleReduction.FiatShamir.Canonical.Completeness
+public import ArkLib.OracleReduction.FiatShamir.Canonical.Ordinary
+public import ArkLib.OracleReduction.FiatShamir.Canonical.RandomOracleCompleteness
 public import ArkLib.OracleReduction.FiatShamir.Completeness
 public import ArkLib.OracleReduction.FiatShamir.Protocol
 public import ArkLib.OracleReduction.FiatShamir.Protocol.Canonical
+public import ArkLib.OracleReduction.FiatShamir.Protocol.CanonicalCompleteness
+public import ArkLib.OracleReduction.FiatShamir.Protocol.ReductionCompleteness
 public import ArkLib.OracleReduction.FiatShamir.Protocol.Serialization
+public import ArkLib.OracleReduction.FiatShamir.Protocol.SerializationSecurity
 public import ArkLib.OracleReduction.LiftContext.Lens
 public import ArkLib.OracleReduction.LiftContext.OracleReduction
 public import ArkLib.OracleReduction.LiftContext.Purity
@@ -1248,3 +1255,4 @@ public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.PrincipalOpen
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.PrincipalOpenParametrization
 public import ArkLib.ToMathlib.RingTheory.Radical.Representative
 public import ArkLib.ToMathlib.Set.Finite
+public import ArkLib.VCVioStaging.OracleComp.SimSemantics.OptionT
