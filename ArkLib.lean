@@ -530,6 +530,7 @@ public import ArkLib.Data.Domain.FftDomain.Ops
 public import ArkLib.Data.Domain.FftDomain.Subdomain
 public import ArkLib.Data.Domain.FftDomain.ToSubgroup
 public import ArkLib.Data.EllipticCurve.BN254
+public import ArkLib.Data.Encoding.Serializer
 public import ArkLib.Data.Equiv.FiberCycle
 public import ArkLib.Data.FieldTheory.BinaryTrace
 public import ArkLib.Data.Fin.Basic
@@ -798,8 +799,13 @@ public import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
 public import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
 public import ArkLib.OracleReduction.Equiv
 public import ArkLib.OracleReduction.Execution
+public import ArkLib.OracleReduction.Execution.NonInteractive
 public import ArkLib.OracleReduction.FiatShamir.Basic
+public import ArkLib.OracleReduction.FiatShamir.Canonical
 public import ArkLib.OracleReduction.FiatShamir.Completeness
+public import ArkLib.OracleReduction.FiatShamir.Protocol
+public import ArkLib.OracleReduction.FiatShamir.Protocol.Canonical
+public import ArkLib.OracleReduction.FiatShamir.Protocol.Serialization
 public import ArkLib.OracleReduction.LiftContext.Lens
 public import ArkLib.OracleReduction.LiftContext.OracleReduction
 public import ArkLib.OracleReduction.LiftContext.Purity
