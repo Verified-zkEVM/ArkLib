@@ -5,6 +5,7 @@ Authors: ArkLib Contributors
 -/
 
 import ArkLib.OracleReduction.FiatShamir.Protocol.Canonical
+import ArkLib.OracleReduction.FiatShamir.Protocol.DuplexSponge
 
 /-!
 # Fiat–Shamir protocol interface regressions
