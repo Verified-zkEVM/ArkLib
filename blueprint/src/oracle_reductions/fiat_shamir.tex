@@ -13,13 +13,13 @@ Let \(T\) be a typed NARG-string space, and \(B=\{0,1\}^8\) the byte alphabet. A
 \NARGDeserializer(\NARGSerializer(t))=t,\qquad
 \NARGDeserializer(b)=t\ \Longrightarrow\ \NARGSerializer(t)=b.
 \end{equation*}
-Its encodings are prefix-free: \(\NARGSerializer(t)\mathbin\Vert s=\NARGSerializer(t')\) implies \(|s|=0\). Thus every nonempty suffix after a complete encoding causes rejection, including one that might otherwise encode a different value. The typed NARG-string space includes every required validity condition, such as subgroup membership or a canonical integer range. The serializer converts typed NARG strings to bytes and parses them back. Verifier messages are reconstructed rather than serialized in the NARG string.
+Its encodings are prefix-free: \(\NARGSerializer(t)\mathbin\Vert s=\NARGSerializer(t')\) implies \(|s|=0\). Thus every nonempty suffix after a complete encoding causes rejection, including one that might otherwise encode a different value. The typed NARG-string space includes every required validity condition, such as subgroup membership or a canonical integer range. The serializer converts typed NARG strings to bytes and parses them back. It is separate from the codec, which encodes protocol messages into sponge units and decodes sponge output into verifier messages. Verifier messages are reconstructed rather than serialized in the NARG string.
 
 \end{definition}
 
 \paragraph{Lean correspondence.}
-The security proofs use the general reduction definitions below. The conversion to a reduction supplies a dummy terminal prover output, which NARG-string generation never executes, and embeds the verifier's Boolean decision without adding oracle queries. After these output conversions, the protocol execution and the canonical transformation agree with their reduction formulations, including oracle queries. The security hypotheses are unchanged.
-\lean{InteractiveProtocol.toReduction_verdict, InteractiveProver.compileFiatShamir_eq_sendMessage, InteractiveVerifier.compileFiatShamir_eq_verify}
+The security proofs use the general reduction definitions below. The conversion to a reduction supplies a dummy terminal prover output, which NARG-string generation never executes, and embeds the verifier's Boolean decision without adding oracle queries. After these output conversions, the protocol execution and both transformations agree with their reduction formulations, including oracle queries. The security hypotheses are unchanged.
+\lean{InteractiveProtocol.toReduction_verdict, InteractiveProver.compileFiatShamir_eq_sendMessage, InteractiveVerifier.compileFiatShamir_eq_verify, InteractiveProver.duplexSpongeFiatShamirPayload_sendMessage, InteractiveVerifier.duplexSpongeFiatShamirPayload_verify}
 
 In the reduction formulation, the prover computes all prover messages at once, and the verifier reconstructs the verifier messages from oracle queries on the statement and the preceding prover messages.
 

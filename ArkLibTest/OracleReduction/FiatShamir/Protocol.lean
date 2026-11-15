@@ -5,6 +5,7 @@ Authors: Chung Thai Nguyen, Yuxi Zheng, Michele Orrù
 -/
 
 import ArkLib.OracleReduction.FiatShamir.Protocol.Canonical
+import ArkLib.OracleReduction.FiatShamir.Protocol.DuplexSponge
 
 /-!
 # Fiat–Shamir protocol interface regressions

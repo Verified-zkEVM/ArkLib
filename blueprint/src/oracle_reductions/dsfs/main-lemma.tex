@@ -1,0 +1,26 @@
+% !TEX root = ../print.tex
+% !TEX program = xelatex
+
+\begin{definition}[\(L\): rate-block budget]
+  \label{def:dsfs_query_error}
+  Let \(\SpongeRate>0\) be the sponge rate, \(\SaltLength\) the salt length in alphabet symbols,
+  and \(\IPProverPositions,\IPVerifierPositions\) the prover- and verifier-message positions.
+  Write \(\IPProverMessageEncodedLength(i),\IPVerifierMessageEncodedLength(i)\) for their encoded lengths.
+  Following~\cite[Eqs.~(7)--(8)]{CO25}, define
+  \begin{equation*}
+  \begin{gathered}
+    \SpongeProverMessageBlockCount(i):=\left\lceil\frac{\IPProverMessageEncodedLength(i)}\SpongeRate\right\rceil\ (i\in \IPProverPositions),\qquad
+    \SpongeVerifierMessageBlockCount(i):=\left\lceil\frac{\IPVerifierMessageEncodedLength(i)}\SpongeRate\right\rceil\ (i\in \IPVerifierPositions),\\
+    L_{\SaltLength}:=\left\lceil\frac\SaltLength \SpongeRate\right\rceil,\qquad
+    \SpongeProverMessageBlockCount:=\sum_{i\in \IPProverPositions}\SpongeProverMessageBlockCount(i),\qquad
+    \SpongeVerifierMessageBlockCount:=\sum_{i\in \IPVerifierPositions}\SpongeVerifierMessageBlockCount(i),\\
+    L:=L_{\SaltLength}+\SpongeProverMessageBlockCount+\SpongeVerifierMessageBlockCount.
+  \end{gathered}
+  \end{equation*}
+\lean{ProtocolSpec.L_totalRateBlocks}
+\leanok
+\end{definition}
+
+The bound of \(L\) permutation queries for the honest argument verifier is used in the
+security proof. The salt and first prover message may share a rate block, so the actual
+query count can be smaller.
