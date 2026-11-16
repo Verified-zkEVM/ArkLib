@@ -8,11 +8,12 @@ module
 public import ArkLib.ProofSystem.ConstraintSystem.Basic
 public import ArkLib.ProofSystem.ConstraintSystem.R1CS
 public import ArkLib.ProofSystem.ConstraintSystem.Plonk
+public import ArkLib.ProofSystem.ConstraintSystem.Air
 
 /-!
 # Concrete instances of the universal `ConstraintSystem`
 
-This file packages the R1CS and Plonkish relations as indexed constraint systems.
+This file packages the R1CS, Plonkish and AIR relations as indexed constraint systems.
 
 - `R1CS.toConstraintSystem R` packages R1CS of every size `(m, n, n_w)` over a commutative
   semiring `R` as a single constraint system. The three matrices `A, B, C` live in the
@@ -21,6 +22,10 @@ This file packages the R1CS and Plonkish relations as indexed constraint systems
   `(numWires, numGates, ℓ)` over a commutative ring `R`. The gate layout itself lives in
   the oracle-statement slot. Public inputs occupy the prefix of the wire assignment,
   followed by the private witness.
+- `Air.toConstraintSystem F` packages AIRs over a field `F`. The height, the constraints and
+  the periodic columns form the index, the public values the statement, and the preprocessed
+  columns the oracle statement. Only the main trace is the witness, so the prover cannot pick
+  the public values together with the trace.
 
 Each instance is accompanied by a trivial verification lemma showing the `satisfies`
 predicate agrees with the original relation by definitional equality.
@@ -82,4 +87,36 @@ def Plonk.toConstraintSystem (𝓡 : Type) [CommRing 𝓡] : _root_.ConstraintSy
     (wit : Fin (s.numWires - s.ℓ) → 𝓡) :
     (Plonk.toConstraintSystem 𝓡).satisfies s stmt cs wit ↔
       Plonk.relation cs s.ℓ s.hℓ stmt wit :=
+  Iff.rfl
+
+/-- The index data of an AIR: the height of the trace, the constraints with their domains,
+and the periodic columns, which the verifier knows in full. -/
+structure Air.Shape (F : Type*) [Field F] where
+  /-- Number of rows of the trace. -/
+  height : ℕ
+  /-- The constraints, each with its domain. -/
+  constraints : List (Air.Constraint F)
+  /-- The periodic columns, already expanded to one value per row. -/
+  periodic : ℕ → ℕ → F
+
+/-- AIRs over a fixed field, packaged as a universal `ConstraintSystem`. The index holds the
+height, the constraints and the periodic columns, the in-the-clear statement holds the public
+values, the oracle statement holds the preprocessed columns, and the witness holds the main
+trace. -/
+def Air.toConstraintSystem (F : Type*) [Field F] : ConstraintSystem where
+  Index := Air.Shape F
+  Stmt := fun _ => ℕ → F
+  OStmt := fun _ => ℕ → ℕ → F
+  toRelation := Interaction.Oracle.Relation.ofPredicate
+    (fun _ _ => ℕ → ℕ → F)
+    (fun sh c main => Air.SatisfiesOn sh.constraints
+      { height := sh.height, main := main, prep := c.2, pub := c.1, periodic := sh.periodic })
+
+@[simp] theorem Air.toConstraintSystem_satisfies
+    (F : Type*) [Field F] (sh : Air.Shape F)
+    (pub : ℕ → F) (prep : ℕ → ℕ → F) (main : ℕ → ℕ → F) :
+    (Air.toConstraintSystem F).satisfies sh pub prep main ↔
+      Air.SatisfiesOn sh.constraints
+        { height := sh.height, main := main, prep := prep, pub := pub,
+          periodic := sh.periodic } :=
   Iff.rfl
