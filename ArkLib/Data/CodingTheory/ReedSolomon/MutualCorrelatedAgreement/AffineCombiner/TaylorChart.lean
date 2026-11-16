@@ -5,7 +5,8 @@ Authors: Thomas Coratger
 -/
 module
 
-public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.LineEvaluation
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.LineEvaluation
 public import ArkLib.Data.Polynomial.Differential.RationalTaylorJointDegree
 public import ArkLib.Data.Polynomial.Differential.TaylorChart
 public import ArkLib.ToMathlib.MvPolynomial.CurriedDegree
