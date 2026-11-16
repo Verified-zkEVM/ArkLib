@@ -11,14 +11,15 @@ public import Mathlib.RingTheory.MvPolynomial.WeightedHomogeneous
 /-!
 # Trivariate polynomials along an affine challenge line
 
-The proof of the affine-combiner bound interpolates a trivariate polynomial `Q(X, Y, Z)` and
-evaluates it along the challenge line: `Y ↦ α + β X` and `Z ↦ P(X)`. This file fixes the
-variables and the two weights used to measure `Q`.
+The proof interpolates a polynomial `Q(X, Y, Z)` and evaluates it along a challenge line.
 
-The variables are `AffineVar = Option (Fin 2)`: `none` is the root variable `Z`, `some 0` is `X`
-and `some 1` is the challenge variable `Y`. The `(Y, Z)`-weight gives `X` weight `0`, so it
-measures the joint degree in `Y` and `Z`. The line weight `(1, 1, d)` bounds the degree in `X`
-after a substitution `Y ↦ α + β X` and `Z ↦ P` with `deg P ≤ d`.
+The evaluation sends `Y` to `α + β X` and `Z` to a candidate `P(X)`.
+
+## Weights
+
+The `(Y, Z)`-weight ignores `X`, so it measures the joint degree in `Y` and `Z`.
+
+The line weight `(1, 1, d)` bounds the degree after the evaluation, when `deg P ≤ d`.
 
 ## Main definitions
 
@@ -28,8 +29,7 @@ after a substitution `Y ↦ α + β X` and `Z ↦ P` with `deg P ≤ d`.
 
 ## Main statements
 
-* `ReedSolomon.natDegree_affineLineEval_le`: the evaluation has degree at most the line-weighted
-  degree of `Q`.
+* `ReedSolomon.natDegree_affineLineEval_le`: the degree of the line evaluation.
 
 ## References
 
@@ -78,8 +78,7 @@ noncomputable def affineLineEval (α β : K) (P : K[X]) : MvPolynomial AffineVar
     affineLineEval α β P (MvPolynomial.X (some 1)) = affineMultiplier α β := by
   simp [affineLineEval]
 
-/-- **Degree along the line.** If `deg P ≤ d`, then `Q(X, α + β X, P(X))` has degree at most the
-`(1, 1, d)`-weighted degree of `Q`. -/
+/-- If `deg P ≤ d`, the line evaluation has degree at most the line-weighted degree of `Q`. -/
 theorem natDegree_affineLineEval_le (α β : K) {P : K[X]} {d : ℕ} (hP : P.natDegree ≤ d)
     (Q : MvPolynomial AffineVar K) :
     (affineLineEval α β P Q).natDegree ≤ Q.weightedTotalDegree (affineLineWeight d) := by
