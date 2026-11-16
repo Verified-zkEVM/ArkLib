@@ -10,19 +10,34 @@ public import Mathlib.Algebra.MvPolynomial.Eval
 /-!
 # Algebraic intermediate representations
 
-An AIR constrains a trace: a table of field elements with n rows.
+An AIR constrains a trace: a table of field elements with `n` rows.
 
-Each constraint is a polynomial in the cells of two consecutive rows.
+Each constraint is a polynomial in two consecutive rows, the public values and periodic columns.
 
-It may also read the public values and the periodic columns.
-
-A trace satisfies the AIR when every constraint vanishes on every row it applies to.
+A trace satisfies the AIR when every constraint vanishes on every row of its domain.
 
 This follows the AIR of [EthStark21], which [BBHR18] introduces.
 
-Plonky3 writes every constraint as one polynomial that applies on every row.
+## Main definitions
 
-It restricts the constraint with three selector variables:
+- `Air.Instance`: a trace with its public data.
+- `Air.rowEnv`: the values of the variables on one row.
+- `Air.SatisfiesOn`: satisfaction of constraints with domains.
+- `Air.Satisfies`: satisfaction of constraints that apply on every row.
+
+## Main statements
+
+- `Air.eval_selector`: on a row of the trace, a selector is the 0/1 indicator of its domain.
+- `Air.satisfies_selector_iff`: the selector form and the domain form describe the same traces.
+- `Air.transition_vacuous_of_height_one`: on one row, a transition constraint asks nothing.
+
+## Selectors and domains
+
+A constraint domain is the set of rows a constraint applies to.
+
+Plonky3 instead writes every constraint as one polynomial that applies on every row.
+
+It restricts that polynomial with three selector variables:
 
 ```text
     row i of n:     is_first_row  = [i = 0]
@@ -33,11 +48,7 @@ It restricts the constraint with three selector variables:
 
 The next row of the last row is row 0.
 
-A constraint with no selector therefore also relates the last row to the first.
-
-A constraint domain is the set of rows a constraint applies to.
-
-The selector form and the domain form describe the same traces.
+So a constraint with no selector also relates the last row to the first.
 
 ## Selectors are 0/1 indicators
 
@@ -45,39 +56,35 @@ Here a selector is 1 on its domain and 0 off it.
 
 Plonky3 only promises a value that is nonzero on the domain and zero off it.
 
-Its two-adic STARK, for instance, gives the first-row selector the value n on row 0.
+For instance, its two-adic STARK gives the first-row selector the value `n` on row 0.
 
 Multiplying a whole constraint by a selector means the same under both conventions.
 
-Other uses, such as `isFirstRow - 1`, depend on the 0/1 values fixed here.
+Other uses, such as `is_first_row - 1`, depend on the 0/1 values fixed here.
 
 ## Shape of the data
 
 The columns are already-expanded evaluations, one value per row.
 
-Nothing in the type fixes the number of columns or of public values.
+The type does not fix the number of columns or of public values.
 
 A periodic column is any table of row values: nothing forces it to repeat.
 
-The caller checks these shapes, for example that a periodic column has a period dividing n.
+The caller checks these shapes, for example that each period divides `n`.
 
-The cells are total functions of the column index.
+Cells are total functions of the column index.
 
-A constraint should read only columns below the trace width.
-
-A cell past the width is not part of the trace, and a constraint that reads it reads junk.
+A constraint should read only columns below the trace width: a cell past it is junk.
 
 ## Computability
 
 The row environment is executable.
 
-This file is not an executable constraint checker: satisfaction is a proposition.
+Satisfaction is a proposition, so this file is not an executable constraint checker.
 
-The domain selectors are noncomputable.
+The domain selectors are noncomputable multivariate polynomials.
 
-They are multivariate polynomials, which Mathlib builds on finitely supported functions.
-
-Code generation fails on the zero of that algebra, so they cannot be compiled.
+Mathlib builds those on finitely supported functions, whose zero does not compile.
 
 ## References
 
@@ -106,22 +113,22 @@ inductive Var where
 
 /-- A trace with its public data.
 
-It holds n rows of main and preprocessed cells, the public values, and the periodic columns. -/
+It holds `n` rows of main and preprocessed cells, the public values and the periodic columns. -/
 structure Instance (F : Type _) where
-  /-- The number of rows n. -/
+  /-- The number of rows `n`. -/
   height : ℕ
-  /-- The main cell on a row and a column; only rows below n are read. -/
+  /-- The main cell at a row and a column, read only on rows below `n`. -/
   main : ℕ → ℕ → F
-  /-- The preprocessed cell on a row and a column; only rows below n are read. -/
+  /-- The preprocessed cell at a row and a column, read only on rows below `n`. -/
   prep : ℕ → ℕ → F
-  /-- The public values; their number is not fixed by the type. -/
+  /-- The public values, in a number the type does not fix. -/
   pub : ℕ → F
-  /-- The periodic column j on row i, already expanded; nothing forces it to repeat. -/
+  /-- The value of periodic column `j` on row `i`, already expanded and not forced to repeat. -/
   periodic : ℕ → ℕ → F
 
 variable {F : Type _} [Field F]
 
-/-- The values of the variables on row i: the next row wraps to row 0. -/
+/-- The values of the variables on row `i`, where the row after the last is row 0. -/
 def rowEnv (T : Instance F) (i : ℕ) : Var → F
   | .main 0 c => T.main i c
   | .main 1 c => T.main ((i + 1) % T.height) c
@@ -144,15 +151,11 @@ inductive Domain where
   | lastRow
   | transition
 
-/-- Row i of n lies in the domain: every row, row 0, row n - 1, or a row with a successor.
+/-- Row `i` lies in the domain of a trace with `n` rows.
 
-It is a test relative to the height n, meaningful only for i < n.
+The test is meaningful only for `i < n`, a bound the satisfaction predicates add.
 
-Without that bound it also holds outside the trace.
-
-For instance, when n = 0 the every-row domain contains row 100 and the first-row domain row 0.
-
-The satisfaction predicates add the bound i < n themselves. -/
+Without it, for `n = 0` the every-row domain contains row 100 and the first-row domain row 0. -/
 def Domain.Contains (n i : ℕ) : Domain → Prop
   | .everyRow => True
   | .firstRow => i = 0
@@ -174,7 +177,7 @@ structure Constraint (F : Type _) [CommSemiring F] where
   domain : Domain
   poly : MvPolynomial Var F
 
-/-- A trace satisfies constraints with domains when each one vanishes on each row of its domain. -/
+/-- A trace satisfies constraints with domains when each vanishes on each row of its domain. -/
 def SatisfiesOn (C : List (Constraint F)) (T : Instance F) : Prop :=
   ∀ c ∈ C, ∀ i < T.height, c.domain.Contains T.height i →
     MvPolynomial.eval (rowEnv T i) c.poly = 0

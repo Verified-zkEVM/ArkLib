@@ -22,10 +22,11 @@ This file packages the R1CS, Plonkish and AIR relations as indexed constraint sy
   `(numWires, numGates, ℓ)` over a commutative ring `R`. The gate layout itself lives in
   the oracle-statement slot. Public inputs occupy the prefix of the wire assignment,
   followed by the private witness.
-- `Air.toConstraintSystem F` packages AIRs over a field `F`. The height, the constraints and
-  the periodic columns form the index, the public values the statement, and the preprocessed
-  columns the oracle statement. Only the main trace is the witness, so the prover cannot pick
-  the public values together with the trace.
+- `Air.toConstraintSystem F` packages AIRs over a field `F`:
+  - the index holds the height, the constraints and the periodic columns;
+  - the statement holds the public values;
+  - the oracle statement holds the preprocessed columns;
+  - the witness is the main trace alone, so the prover cannot pick the public values.
 
 Each instance is accompanied by a trivial verification lemma showing the `satisfies`
 predicate agrees with the original relation by definitional equality.
@@ -89,8 +90,9 @@ def Plonk.toConstraintSystem (𝓡 : Type) [CommRing 𝓡] : _root_.ConstraintSy
       Plonk.relation cs s.ℓ s.hℓ stmt wit :=
   Iff.rfl
 
-/-- The index data of an AIR: the height of the trace, the constraints with their domains,
-and the periodic columns, which the verifier knows in full. -/
+/-- The index data of an AIR, which the verifier knows in full.
+
+It holds the trace height, the constraints with their domains and the periodic columns. -/
 structure Air.Shape (F : Type*) [Field F] where
   /-- Number of rows of the trace. -/
   height : ℕ
@@ -99,10 +101,12 @@ structure Air.Shape (F : Type*) [Field F] where
   /-- The periodic columns, already expanded to one value per row. -/
   periodic : ℕ → ℕ → F
 
-/-- AIRs over a fixed field, packaged as a universal `ConstraintSystem`. The index holds the
-height, the constraints and the periodic columns, the in-the-clear statement holds the public
-values, the oracle statement holds the preprocessed columns, and the witness holds the main
-trace. -/
+/-- AIRs over a fixed field, packaged as a universal `ConstraintSystem`.
+
+- index: the height, the constraints and the periodic columns;
+- statement in the clear: the public values;
+- oracle statement: the preprocessed columns;
+- witness: the main trace. -/
 def Air.toConstraintSystem (F : Type*) [Field F] : ConstraintSystem where
   Index := Air.Shape F
   Stmt := fun _ => ℕ → F
