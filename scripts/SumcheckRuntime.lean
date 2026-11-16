@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 import ArkLib.ProofSystem.Sumcheck.Interaction.ComputableCompleteness
+import ArkLib.ProofSystem.Sumcheck.Counting
 import Mathlib.Algebra.Field.ZMod
 
 /-!
@@ -184,8 +185,38 @@ def quadraticChecks : IO Unit := do
   check "zero rounds retain computational original without sampling" fun _ =>
     quadraticZeroObserve == (some (16, 4, 4, 16), [])
 
+/-- Linear messages `(a, b)` for `a + b X`, with the explicit Boolean sum check. -/
+def linearOps : Sumcheck.MessageOps F (F × F) :=
+  Sumcheck.plainOps ({0, 1} : Finset F) fun m x => m.1 + m.2 * x
+
+/-- Replay of compressed messages against the fixed challenges `4, 3`, in `ZMod 17`.
+
+For `g = x^2 + y + 1`:
+- the Boolean sum is `8`;
+- the rounds are `2X^2 + 3` and `Y`;
+- `g(4, 3) = 20 = 3`.
+
+For `g = x + 2y + 3`:
+- the Boolean sum is `18 = 1`;
+- the rounds are `2X + 8` and `2Y + 7`;
+- `g(4, 3) = 13`.
+
+Replaying the same messages from the false claim `2` ends at `8`, not at `13`.
+-/
+def replayChecks : IO Unit := do
+  check "quadratic replay with a nonzero X^2 coefficient ends at g(r)" fun _ =>
+    Sumcheck.Counting.replay Sumcheck.quadraticOps (8 : F) [(3, 2), (0, 0)] [4, 3] == some 3
+  check "quadratic replay of linear rounds ends at g(r)" fun _ =>
+    Sumcheck.Counting.replay Sumcheck.quadraticOps (1 : F) [(8, 0), (7, 0)] [4, 3] == some 13
+  check "quadratic replay from a false claim misses g(r)" fun _ =>
+    Sumcheck.Counting.replay Sumcheck.quadraticOps (2 : F) [(8, 0), (7, 0)] [4, 3] == some 8
+  check "replay rejects a failed sum check" fun _ =>
+    Sumcheck.Counting.replay linearOps (5 : F) [(2, 1)] [4] == some 6 &&
+    Sumcheck.Counting.replay linearOps (6 : F) [(2, 1)] [4] == none
+
 end SumcheckRuntime
 
 def main : IO Unit := do
   SumcheckRuntime.runChecks
   SumcheckRuntime.quadraticChecks
+  SumcheckRuntime.replayChecks
