@@ -8,32 +8,39 @@ module
 public import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
 
 /-!
-# Affine combiners and mutual correlated agreement with agreement loss
+# Affine combiners: mutual correlated agreement with agreement loss
 
-Two received words `f g : D → F` are combined by a multiplier polynomial `L` into the word
-`x ↦ f x + L(x) g x`. A scalar combiner uses a constant `L = α`. An affine combiner uses
-`L = α + β X`, which raises the degree by one, so the second witness has a smaller degree bound.
+Two received words `f, g` are combined into `f + L g` by a multiplier polynomial `L`.
 
-A candidate `P` agrees with the combined word on a set `S`. Polynomials `F₀ G₀` with
-`P = F₀ + L G₀` witness `P` with agreement loss at most `s` if at most `s` points of `S` fail
-`F₀ = f` or `G₀ = g`. The challenge is exceptional when some candidate of degree at most `d`
-agrees on at least `A` points and has no witness within the degree bounds with agreement loss
-at most `s`.
+A scalar combiner uses `L = α`.
 
-The MCA error is the largest fraction of exceptional challenges over all pairs of received words.
-For the affine combiner the witness degrees are at most `d` for `F₀` and below `d` for `G₀`, so
-the output degree stays `d`. For the scalar combiner both witness degrees are at most `d`.
+An affine combiner uses `L = α + β X`, so the second witness has degree below `d`.
 
-The paper assumes `1 ≤ d < n` and `1 ≤ A ≤ n`. Outside that range the definitions are junk values:
-for `A > n` no candidate is exceptional, and for `d = 0` the affine witness `G₀` is zero.
+A challenge is exceptional when a close candidate has no witness pair.
+
+The error is the worst fraction of exceptional challenges over all received words.
+
+## Witnesses with agreement loss
+
+A pair `F₀, G₀` witnesses a candidate `P` when `P = F₀ + L G₀`.
+
+Its agreement loss counts the agreement points of `P` where `F₀ ≠ f` or `G₀ ≠ g`.
+
+## Junk values
+
+The paper assumes `1 ≤ d < n` and `1 ≤ A ≤ n`.
+
+For `A > n`, nothing is exceptional.
+
+For `d = 0`, the affine witness `G₀` must be zero.
 
 ## Computability
 
-The exceptional predicates quantify over all polynomials, so they are not decidable in general,
-and the two error functions are noncomputable mathematical views. The multiplier
-`affineMultiplier α β` is a Mathlib polynomial, whose ring operations are noncomputable. The
-combined word of an executable multiplier is the evaluation `x ↦ f x + (α + β x) g x`, given by
-`combinedWord_affineMultiplier`.
+The exceptional predicates quantify over all polynomials, so the two errors are noncomputable.
+
+The affine multiplier is a Mathlib polynomial, whose arithmetic is noncomputable.
+
+Its combined word is the plain evaluation `f x + (α + β x) g x`.
 
 ## Main definitions
 
@@ -60,7 +67,7 @@ open Polynomial Finset
 
 variable {F : Type*} [Field F] {ι : Type*}
 
-/-- The combined word `x ↦ f x + L(x) g x` on the evaluation domain. -/
+/-- The word `x ↦ f x + L(x) g x` on the evaluation domain. -/
 def combinedWord (domain : ι ↪ F) (f g : ι → F) (L : F[X]) : ι → F :=
   fun i ↦ f i + L.eval (domain i) * g i
 
@@ -88,20 +95,20 @@ theorem combinedWord_C (domain : ι ↪ F) (f g : ι → F) (α : F) (i : ι) :
 
 variable [DecidableEq F] [Fintype ι]
 
-/-- The agreement points of `P` with the combined word `f + L g` where the witnesses `F₀ G₀` do
-not both agree with `f g`. -/
+/-- The agreement points of `P` with `f + L g` where `F₀ ≠ f` or `G₀ ≠ g`. -/
 def agreementLoss (domain : ι ↪ F) (f g : ι → F) (L P F₀ G₀ : F[X]) : Finset ι :=
   (polynomialAgreementSet domain (combinedWord domain f g L) P).filter fun i ↦
     F₀.eval (domain i) ≠ f i ∨ G₀.eval (domain i) ≠ g i
 
-/-- `F₀ G₀` witness `P` for the multiplier `L` with agreement loss at most `s`: `P = F₀ + L G₀`,
-and at most `s` agreement points of `P` with `f + L g` have `F₀ ≠ f` or `G₀ ≠ g`. -/
+/-- `P = F₀ + L G₀`, with at most `s` points of agreement loss. -/
 def IsLossWitness (domain : ι ↪ F) (f g : ι → F) (s : ℕ) (L P F₀ G₀ : F[X]) : Prop :=
   P = F₀ + L * G₀ ∧ (agreementLoss domain f g L P F₀ G₀).card ≤ s
 
-/-- The challenge `(α, β)` makes `P` exceptional for the affine combiner: `P` has degree at most
-`d`, agrees with `f + (α + β x) g` on at least `A` points, and no pair `F₀ G₀` with
-`deg F₀ ≤ d` and `deg G₀ < d` witnesses it with agreement loss at most `s`. -/
+/-- The challenge `(α, β)` makes `P` exceptional for the affine combiner.
+
+`P` has degree at most `d` and agrees with `f + (α + β x) g` on at least `A` points.
+
+No witness pair with `deg F₀ ≤ d` and `deg G₀ < d` has agreement loss at most `s`. -/
 def IsAffineExceptional (domain : ι ↪ F) (f g : ι → F) (d A s : ℕ) (α β : F) (P : F[X]) :
     Prop :=
   P.degree ≤ d ∧
@@ -109,9 +116,11 @@ def IsAffineExceptional (domain : ι ↪ F) (f g : ι → F) (d A s : ℕ) (α �
     ∀ F₀ G₀ : F[X], F₀.degree ≤ d → G₀.degree < d →
       ¬ IsLossWitness domain f g s (affineMultiplier α β) P F₀ G₀
 
-/-- The challenge `α` makes `P` exceptional for the scalar combiner: `P` has degree at most `d`,
-agrees with `f + α g` on at least `A` points, and no pair `F₀ G₀` of degree at most `d`
-witnesses it with agreement loss at most `s`. -/
+/-- The challenge `α` makes `P` exceptional for the scalar combiner.
+
+`P` has degree at most `d` and agrees with `f + α g` on at least `A` points.
+
+No witness pair of degree at most `d` has agreement loss at most `s`. -/
 def IsScalarExceptional (domain : ι ↪ F) (f g : ι → F) (d A s : ℕ) (α : F) (P : F[X]) : Prop :=
   P.degree ≤ d ∧
     A ≤ (polynomialAgreementSet domain (combinedWord domain f g (C α)) P).card ∧
@@ -119,18 +128,18 @@ def IsScalarExceptional (domain : ι ↪ F) (f g : ι → F) (d A s : ℕ) (α :
       ¬ IsLossWitness domain f g s (C α) P F₀ G₀
 
 open Classical in
-/-- The affine-combiner MCA error at output degree `d`, agreement threshold `A` and agreement
-loss `s`: the largest fraction, over all pairs of received words, of challenges `(α, β) ∈ F²`
-that make some candidate exceptional. -/
+/-- The affine MCA error at output degree `d`, threshold `A` and agreement loss `s`.
+
+It is the largest fraction of exceptional challenges `(α, β) ∈ F²` over all received words. -/
 noncomputable def affineMCAError [Fintype F] (domain : ι ↪ F) (d A s : ℕ) : ℝ :=
   ⨆ w : (ι → F) × (ι → F),
     (#{c : F × F | ∃ P, IsAffineExceptional domain w.1 w.2 d A s c.1 c.2 P} : ℝ) /
       (Fintype.card F : ℝ) ^ 2
 
 open Classical in
-/-- The scalar-combiner MCA error at degree `d`, agreement threshold `A` and agreement loss `s`:
-the largest fraction, over all pairs of received words, of challenges `α ∈ F` that make some
-candidate exceptional. -/
+/-- The scalar MCA error at degree `d`, threshold `A` and agreement loss `s`.
+
+It is the largest fraction of exceptional challenges `α ∈ F` over all received words. -/
 noncomputable def scalarMCAError [Fintype F] (domain : ι ↪ F) (d A s : ℕ) : ℝ :=
   ⨆ w : (ι → F) × (ι → F),
     (#{α : F | ∃ P, IsScalarExceptional domain w.1 w.2 d A s α P} : ℝ) / (Fintype.card F : ℝ)
@@ -140,7 +149,7 @@ section Error
 variable [Fintype F] (domain : ι ↪ F)
 
 open Classical in
-/-- One pair of received words bounds the affine MCA error from below. -/
+/-- One pair of received words bounds the affine error from below. -/
 theorem le_affineMCAError (d A s : ℕ) (f g : ι → F) :
     (#{c : F × F | ∃ P, IsAffineExceptional domain f g d A s c.1 c.2 P} : ℝ) /
         (Fintype.card F : ℝ) ^ 2 ≤ affineMCAError domain d A s :=
@@ -149,7 +158,7 @@ theorem le_affineMCAError (d A s : ℕ) (f g : ι → F) :
       (Fintype.card F : ℝ) ^ 2) (Set.finite_range _).bddAbove (f, g)
 
 open Classical in
-/-- One pair of received words bounds the scalar MCA error from below. -/
+/-- One pair of received words bounds the scalar error from below. -/
 theorem le_scalarMCAError (d A s : ℕ) (f g : ι → F) :
     (#{α : F | ∃ P, IsScalarExceptional domain f g d A s α P} : ℝ) / (Fintype.card F : ℝ) ≤
       scalarMCAError domain d A s :=
@@ -157,8 +166,8 @@ theorem le_scalarMCAError (d A s : ℕ) (f g : ι → F) :
     (#{α : F | ∃ P, IsScalarExceptional domain w.1 w.2 d A s α P} : ℝ) /
       (Fintype.card F : ℝ)) (Set.finite_range _).bddAbove (f, g)
 
-/-- A bound on the exceptional challenges of every pair of received words bounds the affine MCA
-error. -/
+/-- A count `B` of exceptional challenges for every pair of words bounds the error by `B / q²`.
+-/
 theorem affineMCAError_le_of_forall_exists {d A s : ℕ} {B : ℝ}
     (h : ∀ f g : ι → F, ∃ E : Finset (F × F), (E.card : ℝ) ≤ B ∧
       ∀ c ∉ E, ∀ P, ¬ IsAffineExceptional domain f g d A s c.1 c.2 P) :
@@ -176,9 +185,11 @@ theorem affineMCAError_le_of_forall_exists {d A s : ℕ} {B : ℝ}
         exact hgood c hcE P hP
     _ ≤ B := hE
 
+/-- The affine error is nonnegative. -/
 theorem affineMCAError_nonneg (d A s : ℕ) : 0 ≤ affineMCAError domain d A s :=
   le_trans (by positivity) (le_affineMCAError domain d A s 0 0)
 
+/-- The affine error is at most one. -/
 theorem affineMCAError_le_one (d A s : ℕ) : affineMCAError domain d A s ≤ 1 := by
   classical
   refine ciSup_le fun w ↦ ?_
@@ -202,9 +213,11 @@ theorem IsAffineExceptional.mono_threshold {domain : ι ↪ F} {f g : ι → F} 
     IsAffineExceptional domain f g d A' s α β P :=
   ⟨h.1, hA.trans h.2.1, h.2.2⟩
 
-/-- **Honest words are never exceptional.** If `g` is the evaluation of `G₀` with `deg G₀ < d`
-and `f` is the evaluation of any `F₀`, then no challenge makes any candidate exceptional, for
-every threshold and loss: `P - (α + β X) G₀` and `G₀` witness `P` with no agreement loss. -/
+/-- Honest words are never exceptional.
+
+If `g` evaluates a polynomial `G₀` of degree below `d`, no candidate is exceptional.
+
+The witnesses are `P - (α + β X) G₀` and `G₀`, with no agreement loss. -/
 theorem not_isAffineExceptional_of_eval {domain : ι ↪ F} {d A s : ℕ} (F₀ G₀ : F[X])
     (hG : G₀.degree < d) (α β : F) (P : F[X]) :
     ¬ IsAffineExceptional domain (fun i ↦ F₀.eval (domain i)) (fun i ↦ G₀.eval (domain i)) d A s

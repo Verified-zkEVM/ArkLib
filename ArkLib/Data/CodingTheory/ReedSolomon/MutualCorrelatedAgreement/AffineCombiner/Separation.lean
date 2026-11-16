@@ -11,20 +11,27 @@ public import Mathlib.LinearAlgebra.Lagrange
 /-!
 # Lower bounds on the error of scalar and affine combiners
 
-Explicit pairs of received words with many exceptional challenges, on a domain of size `n` in a
-field of size `q`.
+Each bound comes from one explicit pair of received words with many exceptional challenges.
 
-For the affine combiner without agreement loss, `f = 0` and `g` vanishes on `A - 1` coordinates
-and is one elsewhere.
-Every challenge `(-β z, β)` with `β ≠ 0` and `z` off those coordinates makes the zero candidate
-exceptional, which gives `(n - A + 1)(q - 1)` challenges.
+## Affine combiner without agreement loss
 
-For the scalar combiner with agreement loss `s`, `g` is the vanishing polynomial of `A - s - 1`
-coordinates, so no polynomial of degree at most `d` agrees with `g` on more than `A - s - 1`
-coordinates.
-The other coordinates are cut into blocks of `s + 1`, each with its own challenge `γ`, and
-`f = -γ g` on the block of `γ`.
-Each full block makes the zero candidate exceptional for its challenge.
+Take `f = 0`, and let `g` vanish on `A - 1` points and equal one elsewhere.
+
+A challenge `(-β z, β)` with `β ≠ 0` vanishes at the single extra point `z`.
+
+So the zero candidate agrees on `A` points, and no witness can match `g(z) = 1`.
+
+This gives `(n - A + 1)(q - 1)` exceptional challenges.
+
+## Scalar combiner with agreement loss `s`
+
+Let `g` be the vanishing polynomial of `A - s - 1` points.
+
+No polynomial of degree at most `d` agrees with `g` on more points than that.
+
+Cut the other points into blocks of `s + 1`, and give each block its own challenge `γ`.
+
+Set `f = -γ g` on the block of `γ`, so each full block makes the zero candidate exceptional.
 
 ## Main statements
 
@@ -48,8 +55,9 @@ open Polynomial Finset
 
 variable {F : Type*} [Field F] [DecidableEq F] {ι : Type*} [Fintype ι]
 
-/-- The coordinates whose position in a fixed enumeration lies in `U` are as many as `U`, when
-every element of `U` is a position. -/
+/-- In a fixed enumeration, the coordinates whose position lies in `U` number exactly `#U`.
+
+Every element of `U` must be a valid position. -/
 private theorem card_filter_equivFin_mem (U : Finset ℕ) (hU : ∀ k ∈ U, k < Fintype.card ι) :
     #{i : ι | (Fintype.equivFin ι i : ℕ) ∈ U} = #U := by
   classical
@@ -64,7 +72,7 @@ private theorem card_filter_equivFin_mem (U : Finset ℕ) (hU : ∀ k ∈ U, k <
   · intro hk
     exact ⟨(Fintype.equivFin ι).symm ⟨k, hU k hk⟩, by simpa using hk, by simp⟩
 
-/-- Without agreement loss, the affine combiner has error at least `(n - A + 1)(q - 1) / q²`. -/
+/-- Without agreement loss, the affine error is at least `(n - A + 1)(q - 1) / q²`. -/
 theorem affineMCAError_zero_loss_ge [Fintype F] (domain : ι ↪ F) {d A : ℕ}
     (hdA : d + 1 < A) (hAn : A ≤ Fintype.card ι) :
     ((Fintype.card ι - A + 1 : ℕ) : ℝ) * ((Fintype.card F : ℝ) - 1) / (Fintype.card F : ℝ) ^ 2 ≤
@@ -156,7 +164,7 @@ theorem affineMCAError_zero_loss_ge [Fintype F] (domain : ι ↪ F) {d A : ℕ}
         ring
     _ ≤ _ := by exact_mod_cast card_le_card hEsub
 
-/-- Without agreement loss, the affine combiner has error at least `(n - A + 1) / (2q)`. -/
+/-- Without agreement loss, the affine error is at least `(n - A + 1) / (2q)`. -/
 theorem affineMCAError_zero_loss_ge_half [Fintype F] (domain : ι ↪ F) {d A : ℕ}
     (hdA : d + 1 < A) (hAn : A ≤ Fintype.card ι) :
     ((Fintype.card ι - A + 1 : ℕ) : ℝ) / (2 * (Fintype.card F : ℝ)) ≤
@@ -168,8 +176,7 @@ theorem affineMCAError_zero_loss_ge_half [Fintype F] (domain : ι ↪ F) {d A : 
   nlinarith [mul_nonneg (mul_nonneg hN (by linarith : (0 : ℝ) ≤ Fintype.card F))
     (by linarith : (0 : ℝ) ≤ Fintype.card F - 2)]
 
-/-- With agreement loss `s`, the scalar combiner has error at least
-`(1 + ⌊(n - A) / (s + 1)⌋) / q`. -/
+/-- With agreement loss `s`, the scalar error is at least `(1 + ⌊(n - A) / (s + 1)⌋) / q`. -/
 theorem scalarMCAError_ge [Fintype F] (domain : ι ↪ F) {d A s : ℕ}
     (hdA : d + s + 1 < A) (hAn : A ≤ Fintype.card ι) :
     ((1 + (Fintype.card ι - A) / (s + 1) : ℕ) : ℝ) / (Fintype.card F : ℝ) ≤

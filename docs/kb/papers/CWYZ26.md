@@ -16,15 +16,18 @@ related_modules:
 
 ## At A Glance
 
-The paper combines two received words `f g` by the affine multiplier `α + β x`, forming
-`f + (α + β x) g` with independent uniform `α β`. The witnesses have degrees `d` and `d - 1`, so
-the combined polynomial still has degree `d`. With one coordinate of agreement loss, the mutual
-correlated agreement error at the threshold `A = ⌈(√ρ + η) n⌉` is
-`4 / (η q) + 2¹⁴ n² / (ρ³ η¹⁰ q²)` (Theorem 1.1), over every finite field and every domain.
-Scalar combiners have worst-case error `Ω(n / q)` at the same threshold and loss (Section 6), so
-for `q ≥ n²` affine combiners save a factor `n`.
+The paper combines two received words `f, g` into `f + (α + β x) g`, with uniform `α, β`.
 
-The statement numbering below follows the **13 November 2026 ePrint revision**.
+The witnesses have degrees `d` and `d - 1`, so the combination still has degree `d`.
+
+With one coordinate of agreement loss, the MCA error at `A = ⌈(√ρ + η) n⌉` is
+`4 / (η q) + 2¹⁴ n² / (ρ³ η¹⁰ q²)` (Theorem 1.1).
+
+Scalar combiners have error `Ω(n / q)` at the same threshold and loss (Section 6).
+
+So for `q ≥ n²`, affine combiners save a factor `n`.
+
+The numbering follows the **13 November 2026 ePrint revision**.
 
 ## What ArkLib Uses From This Paper
 
@@ -69,16 +72,19 @@ Each row is one pull request. A row is done when its declarations are on `main`.
 
 ## Known Divergences From ArkLib
 
-- The error is a worst-case fraction of challenges rather than a probability under a sampler; for
-  the uniform distribution the two agree.
-- Persistence is stated with an explicit numerator `H` and denominator `L` of `G`. The first
-  rational function `F = P - (α + β X) G` agrees with `f` at every agreement point of `P` where
-  `G` agrees with `g`, so only the condition on `G` is stated.
+- The error is a worst-case fraction of challenges, not a probability under a sampler.
+  For uniform challenges the two agree.
+- Persistence names the numerator `H` and the denominator `L` of `G`.
+  The partner `F = P - (α + β X) G` then agrees with `f` wherever `G` agrees with `g`.
+  So only the condition on `G` is stated.
 
 ## Open Formalization Gaps
 
-The units marked planned or deferred in the port ledger. The paper's own Lean formalization covers
-Theorem 1.1 and is not public; Sections 5 and 7 are not covered by it.
+The units marked planned or deferred in the port ledger.
+
+The paper's own Lean formalization covers Theorem 1.1 and is not public.
+
+It does not cover Sections 5 and 7.
 
 ## Source Access
 
