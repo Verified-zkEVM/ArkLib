@@ -9,6 +9,7 @@ source_metadata: ../sources/CWYZ26/metadata.yml
 status: seeded
 related_modules:
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Basic.lean
+  - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Separation.lean
 ---
 
 # CWYZ26
@@ -30,6 +31,8 @@ The statement numbering below follows the **13 November 2026 ePrint revision**.
 | Paper statement | Lean interface | Scope |
 | --- | --- | --- |
 | Section 1.1, definition of the MCA error with agreement loss; Definition 3.1 | `ReedSolomon.combinedWord`, `ReedSolomon.affineMultiplier`, `ReedSolomon.agreementLoss`, `ReedSolomon.IsLossWitness`, `ReedSolomon.IsAffineExceptional`, `ReedSolomon.IsScalarExceptional`, `ReedSolomon.affineMCAError`, `ReedSolomon.scalarMCAError` | The error is the worst-case fraction of exceptional challenges over all pairs of received words, which is the uniform probability of the paper. The domain is any finite index type embedded in the field. |
+| Proposition 6.1 | `ReedSolomon.scalarMCAError_ge` | With agreement loss `s` and `d + s + 1 < A ≤ n`, the scalar error is at least `(1 + ⌊(n - A) / (s + 1)⌋) / q`. The blocks of size `s + 1` are consecutive positions in a fixed enumeration of the domain. |
+| Proposition 6.2 | `ReedSolomon.affineMCAError_zero_loss_ge`, `ReedSolomon.affineMCAError_zero_loss_ge_half` | Without agreement loss and with `d + 1 < A ≤ n`, the affine error is at least `(n - A + 1)(q - 1) / q²`, hence at least `(n - A + 1) / (2q)`. |
 
 ## Port Ledger
 
@@ -37,7 +40,7 @@ Each row is one pull request. A row is done when its declarations are on `main`.
 
 | Unit | Paper | Content | Depends on | Status |
 | --- | --- | --- | --- | --- |
-| 1 | §1.1, Def 3.1, Props 6.1, 6.2 | Definitions; scalar `Ω(n / q)` lower bound with loss `s`; affine lower bound without loss | — | in progress |
+| 1 | §1.1, Def 3.1, Props 6.1, 6.2 | Definitions; scalar `Ω(n / q)` lower bound with loss `s`; affine lower bound without loss | — | done |
 | 2 | Lemmas 4.4, 4.5 | Exceptional challenges of one rational pair; persistent triples and their count by the Johnson bound for set families | 1 | planned |
 | 3 | Theorem 5.1 | Equal-degree combiner and linear claims, reduced to the affine error plus `ℓ₀ / q` | 1 | planned |
 | 4 | Prop 6.3 | Scalar `Ω(n / q)` lower bound with constant fractional loss on additive domains (subspace polynomials) | 1 | planned |
@@ -54,6 +57,9 @@ Each row is one pull request. A row is done when its declarations are on `main`.
 - [`AffineCombiner/Basic.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Basic.lean)
   owns the combined words, the witnesses with agreement loss, the exceptional predicates and the
   two error functions.
+- [`AffineCombiner/Separation.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Separation.lean)
+  owns the two lower bounds of Section 6: the scalar combiner with agreement loss and the affine
+  combiner without loss.
 - The core count reuses the Johnson bound for set families
   (`Finset.card_mul_sq_sub_card_mul_le_of_inter_card_le`), the rational Hensel numerators of
   `Data/Polynomial/RationalFunctions/` and `Data/Polynomial/Differential/RationalTaylor.lean`, the
