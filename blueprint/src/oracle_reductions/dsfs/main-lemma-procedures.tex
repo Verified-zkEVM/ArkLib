@@ -1,0 +1,454 @@
+\subsubsection{Trace and Translation Procedures}
+\label{sec:dsfs_main_lemma_traces}
+
+Throughout, \(\Alphabet\) is the sponge alphabet, a permutation state is written \(\SpongePermutationState = (\SpongeRateSegment, \SpongeCapacitySegment) \in \Alphabet^{\SpongeRate} \times \Alphabet^{\SpongeCapacity}\), instances live in a set \(\InstanceSpace\), and salts in \(\Alphabet^{\SaltLength}\). There are \(\IPProverMessageCount\) prover messages and \(\IPVerifierMessageCount\) verifier messages, numbered separately in protocol order; \(m_i\) is the number of prover messages preceding verifier message \(i\). The encoded lengths are \(\IPProverMessageEncodedLength(j)\) for \(j\in[\IPProverMessageCount]\) and \(\IPVerifierMessageEncodedLength(i)\) for \(i\in[\IPVerifierMessageCount]\), measured in alphabet symbols, and \(\SpongeVerifierMessageBlockCount(i) \defeq \lceil \IPVerifierMessageEncodedLength(i) / \SpongeRate \rceil\) is the number of rate blocks squeezed in round \(i\) (\(\IPVerifierMessageEncodedLength(i) > 0\) by the nondegenerate-rounds assumption). For a string \(x\) we write \(x[a{:}b]\) for the slice of positions \(a, \dots, b-1\).
+
+\paragraph{Query-answer traces}
+
+\begin{definition}[\((\SpongeOracles)\)-trace]
+\label{def:dsfs_query_answer_trace}
+\lean{DuplexSpongeFS.DSTraceStorage.DuplexSpongeTrace, OracleSpec.duplexSpongeTraceEntry}
+\leanok
+\uses{def:dsfs_duplex_state, def:oracle_run, def:dsfs_oracle_distribution}
+Let \(\InstanceSpace\) be the instance space and \(\Alphabet\) the sponge alphabet. A \emph{\((\SpongeOracles)\)-trace} \(\QueryLog\) is a finite list of tuples, each of one of the following three shapes:
+\begin{itemize}
+\item \((\mathsf{h}, \Instance, \SpongeCapacitySegment)\): a query \(\Instance \in \InstanceSpace\) to \(\SpongeHash\) with answer \(\SpongeCapacitySegment \in \Alphabet^{\SpongeCapacity}\);
+\item \((\mathsf{p}, \SpongePermutationState^{\mathrm{in}}, \SpongePermutationState^{\mathrm{out}})\): a query \(\SpongePermutationState^{\mathrm{in}} \in \Alphabet^{\SpongePermutationWidth}\) to \(\SpongePermutation\) with answer \(\SpongePermutationState^{\mathrm{out}} \in \Alphabet^{\SpongePermutationWidth}\);
+\item \((\mathsf{p}^{-1}, \SpongePermutationState^{\mathrm{out}}, \SpongePermutationState^{\mathrm{in}})\): a query \(\SpongePermutationState^{\mathrm{out}} \in \Alphabet^{\SpongePermutationWidth}\) to \(\SpongeInversePermutation\) with answer \(\SpongePermutationState^{\mathrm{in}} \in \Alphabet^{\SpongePermutationWidth}\).
+\end{itemize}
+We use \(\cdot\) as a placeholder for any component of these tuples. For an index \(j\), the prefix traces \(\QueryLog_{\SpongeHash}^{<j}\), \(\QueryLog_{\SpongePermutation}^{<j}\), and \(\QueryLog_{\SpongeInversePermutation}^{<j}\) are obtained by taking the first \(j-1\) entries of \(\QueryLog\), then filtering for the form \((\mathsf{h},\cdot,\cdot)\), \((\mathsf{p},\cdot,\cdot)\), and \((\mathsf{p}^{-1},\cdot,\cdot)\), respectively. A trace records query-answer pairs without requiring functional consistency or inverse consistency.
+\end{definition}
+
+\begin{definition}[Query-answer index \(\QueryLog_{\nabla}\)]
+\label{def:dsfs_trace_tables}
+\lean{DuplexSpongeFS.DSTraceStorage.TraceNabla, DuplexSpongeFS.DSTraceStorage.TraceNabla.IsSubsetOfQueryLog, DuplexSpongeFS.DSTraceStorage.TraceNabla.MirrorsQueryLog, DuplexSpongeFS.DSTraceStorage.TraceNabla.ofQueryLog, DuplexSpongeFS.DSTraceStorage.TraceNabla.ofQueryLogForwardOnly, DuplexSpongeFS.DSTraceStorage.TraceTableOps.insert, DuplexSpongeFS.DSTraceStorage.ListBacked.ListTraceTable, DuplexSpongeFS.DSTraceStorage.ListBacked.DefaultTraceDelta, DuplexSpongeFS.DSTraceStorage.PermutationForwardFirst, DuplexSpongeFS.DSTraceStorage.buildForwardPermutationIndex}
+\leanok
+\uses{def:dsfs_query_answer_trace}
+A \emph{query-answer lookup table} \(T\) is a data structure storing finitely many pairs \((u,v)\in\mathcal Q\times\mathcal A\), where \(\mathcal Q\) is the query space and \(\mathcal A\) is the answer space. It supports insertion and lookup in either direction:
+\begin{itemize}
+\item \(T.\mathsf{add}(u,v)\): add one occurrence of the query-answer pair \((u,v)\). Its variant \(T.\mathsf{insert}(u,v)\) adds the pair only if that exact pair is not already stored.
+\item \(T.\mathsf{inlu}(u)\): return the unique answer stored for query \(u\).
+\item \(T.\mathsf{outlu}(v)\): return the unique query stored with answer \(v\).
+\end{itemize}
+Either lookup returns \(\bot\) if there are no matches or several distinct matches; repeated copies of the same pair do not affect the result. We write \(|T|\) for the number of stored entries.
+
+For an \((\SpongeOracles)\)-trace \(\QueryLog\), a \emph{query-answer index} \(\QueryLog_{\nabla}\) consists of two lookup tables storing selected pairs from \(\QueryLog\):
+\begin{itemize}
+\item \(\QueryLog_{\nabla}.\mathsf h\) stores pairs \((\Instance,\SpongeCapacitySegment)\in\InstanceSpace\times\Alphabet^{\SpongeCapacity}\) from hash queries.
+\item \(\QueryLog_{\nabla}.\mathsf p\) stores pairs \((\SpongePermutationState^{\mathrm{in}},\SpongePermutationState^{\mathrm{out}})\in\Alphabet^{\SpongePermutationWidth}\times\Alphabet^{\SpongePermutationWidth}\) from forward or inverse permutation queries. An inverse-query record \((\mathsf p^{-1},\SpongePermutationState^{\mathrm{out}},\SpongePermutationState^{\mathrm{in}})\) is stored as \((\SpongePermutationState^{\mathrm{in}},\SpongePermutationState^{\mathrm{out}})\).
+\end{itemize}
+
+\textbf{Variants}
+
+We build the forward-only index and obtain the forward-first restriction as follows:
+\begin{itemize}
+\item \emph{Forward-only} (\(\QueryLog_{\nabla}^{\to}\)): start with empty tables, read \(\QueryLog\), and use \(\mathsf{insert()}\) to store each distinct hash or forward-query pair once; skip inverse-query entries.
+\item \emph{Forward-first} (\(\QueryLog_{\nabla}^{\mathrm{ff}}\)): derive this restriction from the supplied index, reusing its \(\mathsf{.h}\) table and filtering its \(\mathsf{.p}\) table. For each stored permutation pair \((u,v)\), find its first occurrence in the original \(\QueryLog\), counting both \((\mathsf p,u,v)\) and \((\mathsf p^{-1},v,u)\). \textbf{Keep the pair only if that first occurrence is \((\mathsf p,u,v)\).}
+\end{itemize}
+\(\DSFSQueryWrapper\) (\Cref{def:dsfs_d2squery}) maintains one full index \(\QueryLog_{\nabla}\), updating its \(\mathsf{.h}\) and \(\mathsf{.p}\) tables as queries are answered.
+
+\(\DSFSStandardTrace\) (\Cref{def:dsfs_stdtrace}), inside \(\DSFSTraceTransform\) (\Cref{def:dsfs_d2strace}), builds one forward-only index \(\QueryLog_{\nabla}^{\to}\) once from its entire input trace \(\QueryLog\). \(\DSFSLookahead\) (\Cref{def:dsfs_lookahead}) reads \(\QueryLog_{\nabla}^{\to}.\mathsf p\) directly.
+
+Both procedures call \(\DSFSBacktrack_{\mathrm{fwd}}\) (\Cref{def:dsfs_backtrack}), which derives the forward-first restriction temporarily at the time of that call.
+\end{definition}
+
+\paragraph{Backtracking procedure}
+
+Between permutation calls, absorption overwrites only rate symbols and leaves the capacity unchanged. Backtracking therefore follows matching capacities to reconstruct a candidate chain; replaying the absorb/squeeze schedule then checks whether its rate symbols encode a valid prefix.
+
+\begin{definition}[Backtracking sequences]
+\label{def:dsfs_backtrack_sequence}
+\lean{DuplexSpongeFS.Backtrack.BacktrackSequence, DuplexSpongeFS.Backtrack.BacktrackSequenceFamily, DuplexSpongeFS.Backtrack.S_BT}
+\leanok
+\uses{def:dsfs_query_answer_trace, def:dsfs_duplex_state}
+Let \(\QueryLog\) be a trace and \(\SpongePermutationState \in \Alphabet^{\SpongePermutationWidth}\) be a permutation state. A family \(\DSFSBacktrackChainFamily(\QueryLog, \SpongePermutationState) = \{S^{(k)}\}_k\) is a supplied finite set of sequences
+\begin{equation*}
+S^{(k)} \defeq
+\big(\Instance^{(k)};\;
+\SpongePermutationState^{\mathrm{in},(k)}_0, \SpongePermutationState^{\mathrm{out},(k)}_0,\;
+\SpongePermutationState^{\mathrm{in},(k)}_1, \SpongePermutationState^{\mathrm{out},(k)}_1,\;
+\dots,\;
+\SpongePermutationState^{\mathrm{in},(k)}_{m_k-1}, \SpongePermutationState^{\mathrm{out},(k)}_{m_k-1},\;
+\SpongePermutationState^{\mathrm{in},(k)}_{m_k}
+\big)
+\end{equation*}
+such that
+\begin{enumerate}
+\item (\emph{target}) \(\SpongePermutationState^{\mathrm{in},(k)}_{m_k} = \SpongePermutationState\);
+\item (\emph{hash anchor})
+  \((\mathsf{h}, \Instance^{(k)}, \SpongePermutationState^{\mathrm{in},(k)}_{0,\mathrm C}) \in \QueryLog\);
+\item (\emph{agreement with \(\SpongePermutation\)}) for all \(\iota < m_k\),
+  \((\mathsf{p}, \SpongePermutationState^{\mathrm{in},(k)}_\iota, \SpongePermutationState^{\mathrm{out},(k)}_\iota) \in \QueryLog\) or
+  \((\mathsf{p}^{-1}, \SpongePermutationState^{\mathrm{out},(k)}_\iota, \SpongePermutationState^{\mathrm{in},(k)}_\iota) \in \QueryLog\);
+\item (\emph{capacity sharing}) for all \(\iota < m_k\),
+  \(\SpongePermutationState^{\mathrm{out},(k)}_{\iota,\mathrm C} = \SpongePermutationState^{\mathrm{in},(k)}_{\iota+1,\mathrm C}\);
+\item (\emph{no loops}) for all \(\iota < m_k\),
+  \(\SpongePermutationState^{\mathrm{in},(k)}_{\iota,\mathrm C} \neq \SpongePermutationState^{\mathrm{out},(k)}_{\iota,\mathrm C}\);
+\item (\emph{maximality}) within the supplied family, for distinct members with the same instance,
+  neither flattened state list is a subsequence of the other: neither can be
+  obtained from the other by deleting entries while preserving order.
+\end{enumerate}
+The family invariant compares its own members only; it neither asserts global maximality nor enumerates all valid chains. In particular, an empty family is allowed.
+\end{definition}
+
+\begin{definition}[Backtracking index lists]
+\label{def:dsfs_backtrack_index_list}
+\lean{DuplexSpongeFS.Backtrack.BacktrackSequence.Index, DuplexSpongeFS.Backtrack.BacktrackIndexList, DuplexSpongeFS.Backtrack.J_BT}
+\leanok
+\uses{def:dsfs_backtrack_sequence}
+Let \(\DSFSBacktrackChainFamily(\QueryLog,\SpongePermutationState)=\{S^{(k)}\}_k\) be a backtracking family as in \Cref{def:dsfs_backtrack_sequence}, and let \(m_k\) count the permutation pairs in \(S^{(k)}\). Its associated family of index lists is \(\mathcal J_{\mathrm{BT}}(\QueryLog,\SpongePermutationState)=\{J^{(k)}\}_k\), where
+\begin{equation*}
+J^{(k)} \defeq (j^{(k)}_{\SpongeHash}; j^{(k)}_0, \dots, j^{(k)}_{m_k-1}, j^{(k)}_{m_k})
+\end{equation*}
+and, for each \(k\),
+\begin{itemize}
+\item \(j^{(k)}_{\SpongeHash}\) is the index in \(\QueryLog\) of the first occurrence of \((\mathsf{h}, \Instance^{(k)}, \SpongePermutationState^{\mathrm{in},(k)}_{0,\mathrm C})\);
+\item for \(\iota < m_k\), \(j^{(k)}_\iota\) is the index in \(\QueryLog\) of the first occurrence of
+  \begin{equation*}
+  \begin{gathered}
+  (\mathsf{p}, \SpongePermutationState^{\mathrm{in},(k)}_\iota, \SpongePermutationState^{\mathrm{out},(k)}_\iota)\\
+  \text{or of}\quad
+  (\mathsf{p}^{-1}, \SpongePermutationState^{\mathrm{out},(k)}_\iota, \SpongePermutationState^{\mathrm{in},(k)}_\iota);
+  \end{gathered}
+  \end{equation*}
+\item \(j^{(k)}_{m_k} \defeq |\QueryLog| + 1\), a convenience value standing for the upcoming query with input \(\SpongePermutationState\).
+\end{itemize}
+\end{definition}
+
+\begin{definition}[BackTrack]
+\label{def:dsfs_backtrack}
+\lean{DuplexSpongeFS.Backtrack.BacktrackOutput, DuplexSpongeFS.Backtrack.linearScanBackwards, DuplexSpongeFS.Backtrack.walkPos, DuplexSpongeFS.Backtrack.linearBackTrack, DuplexSpongeFS.Backtrack.backTrack, DuplexSpongeFS.Backtrack.backTrackFwd, DuplexSpongeFS.Backtrack.backTrackFwd_eq_backTrack_of_forwardOnly}
+\leanok
+\uses{def:dsfs_query_answer_trace, def:dsfs_trace_tables, def:dsfs_backtrack_sequence, def:dsfs_backtrack_index_list, def:dsfs_duplex_state, constr:dsfs_duplex_sponge, constr:dsfs_transformation}
+The backtracking procedure \(\DSFSBacktrack\) tries to recover the instance, salt, and encoded prover-message prefix leading to a given state at the start of a verifier-message squeeze. It receives as input an \((\SpongeOracles)\)-trace \(\QueryLog\), a query-answer index \(\QueryLog_{\nabla}\) of \(\QueryLog\) (\Cref{def:dsfs_trace_tables}), and a permutation state \(\SpongePermutationState\in\Alphabet^{\SpongePermutationWidth}\). It returns a special symbol \(\mathsf{err}\) or \(\mathsf{none}\), or a tuple \((i,\Instance,\SaltString,(\EncodedIPProverMessage_j)_{j\le m_i})\) consisting of a verifier-message index, an instance \(\Instance\in\InstanceSpace\), a salt \(\SaltString\in\Alphabet^{\SaltLength}\), and the preceding encoded prover messages \(\EncodedIPProverMessage_j\in\Alphabet^{\IPProverMessageEncodedLength(j)}\). Here \(i\in[\IPVerifierMessageCount]\) numbers the verifier messages in protocol order, and \(m_i\) counts the prover messages before verifier message \(i\).
+
+\medskip\noindent\textbf{Linear backward scan.}
+The duplex sponge preserves the capacity segment between calls to \(\SpongePermutation\). To recover the preceding permutation call, \(\DSFSBacktrack\) looks up the current capacity among the output capacities in \(\QueryLog_{\nabla}.\mathsf p\), starting with \(\SpongeCapacitySegment\). If it finds exactly one pair \((\SpongePermutationState^{\mathrm{in}},\SpongePermutationState^{\mathrm{out}})\), it repeats the lookup with \(\SpongePermutationState^{\mathrm{in}}_{\mathrm C}\). This traces the sequence of permutation calls backwards until no matching pair remains. The procedure then looks up the remaining capacity in \(\QueryLog_{\nabla}.\mathsf h\) to recover a candidate instance \(\Instance\). If there is exactly one such instance, \(\mathsf{ParseChain}\) checks the recovered sequence and tries to extract the salt and encoded prover-message prefix.
+
+If a lookup has more than one distinct match, or the search encounters a capacity already seen, the procedure returns \(\mathsf{err}\). A missing hash match or reaching the scan limit returns \(\mathsf{none}\). In the pseudocode below, \(Q\) lists the recovered permutation pairs in forward order, and \(C\) is the set of capacity segments already encountered.
+\begin{equation*}
+\begin{gathered}
+\DSFSBacktrack(\QueryLog,\QueryLog_{\nabla},\SpongePermutationState)\\[2pt]
+\left[\begin{array}{rl}
+1.& \SpongePermutationState^{\mathrm{cur}}:=\SpongePermutationState;\quad Q:=[];\quad C:=\{\SpongeCapacitySegment\}.\\
+2.& \text{for }a=1,\ldots,|\QueryLog|+1:\\
+3.& \quad E:=\{(\SpongePermutationState^{\mathrm{in}},\SpongePermutationState^{\mathrm{out}})\in \QueryLog_{\nabla}.\mathsf p:\SpongePermutationState^{\mathrm{out}}_{\mathrm C}=\SpongePermutationState^{\mathrm{cur}}_{\mathrm C}\}.\\
+4.& \quad\text{if }|E|>1,\ \text{return }\mathsf{err}.\\
+5.& \quad\text{if }E=\varnothing:\\
+6.& \qquad X:=\{\Instance:(\Instance,\SpongePermutationState^{\mathrm{cur}}_{\mathrm C})\in \QueryLog_{\nabla}.\mathsf h\}.\\
+7.& \qquad\text{if }X=\varnothing,\ \text{return }\mathsf{none}.\\
+8.& \qquad\text{if }|X|>1,\ \text{return }\mathsf{err}.\\
+9.& \qquad\text{take the unique }\Instance\in X;\quad\text{return }\mathsf{ParseChain}(\Instance;Q;\SpongePermutationState).\\
+10.& \quad\text{take the unique }(\SpongePermutationState^{\mathrm{in}},\SpongePermutationState^{\mathrm{out}})\in E.\\
+11.& \quad\text{if }\SpongePermutationState^{\mathrm{in}}_{\mathrm C}=\SpongePermutationState^{\mathrm{out}}_{\mathrm C}\text{ or }\SpongePermutationState^{\mathrm{in}}_{\mathrm C}\in C,\ \text{return }\mathsf{err}.\\
+12.& \quad\text{prepend }(\SpongePermutationState^{\mathrm{in}},\SpongePermutationState^{\mathrm{out}})\text{ to }Q.\\
+13.& \quad C:=C\cup\{\SpongePermutationState^{\mathrm{in}}_{\mathrm C}\};\quad \SpongePermutationState^{\mathrm{cur}}:=\SpongePermutationState^{\mathrm{in}}.\\
+14.& \text{return }\mathsf{none}.
+\end{array}\right]
+\end{gathered}
+\end{equation*}
+\medskip\noindent\emph{Parsing details: salt and prover messages.}
+The sponge absorbs the salt and encoded prover messages by writing their symbols into the rate segment. The subroutine \(\mathsf{ParseChain}\) recovers these strings from the input-rate segments, using their prescribed lengths and their positions in the sponge computation. It also compares rate segments that the corresponding absorb or squeeze operation must leave unchanged. If these checks pass and the sequence ends at the start of a verifier-message squeeze, it returns the recovered tuple; otherwise, it returns \(\mathsf{none}\). Write \(m=|Q|\) and list the recovered sequence in forward order:
+\begin{equation*}
+S=(\Instance;\SpongePermutationState^{\mathrm{in}}_0,\SpongePermutationState^{\mathrm{out}}_0,\ldots,\SpongePermutationState^{\mathrm{in}}_{m-1},\SpongePermutationState^{\mathrm{out}}_{m-1},\SpongePermutationState^{\mathrm{in}}_m=\SpongePermutationState).
+\end{equation*}
+A message need not start at the beginning of a rate block: the salt and a prover message may share a block. To locate each message, track the block index \(b\) and the sponge's absorb and squeeze positions \(\SpongeAbsorbIndex,\SpongeSqueezeIndex\). Write \(\mathsf A_\ell\) and \(\mathsf S_\ell\) for the updates to \((b,\SpongeAbsorbIndex,\SpongeSqueezeIndex)\) when absorbing or squeezing \(\ell\) symbols. Set \(\mathsf A_0=\mathsf S_0=\mathrm{id}\), and for \(\ell>0\),
+\begin{equation*}
+\begin{aligned}
+\mathsf A_\ell(b,\SpongeAbsorbIndex,\SpongeSqueezeIndex)&:=
+ \bigl(b+\lfloor(\SpongeAbsorbIndex+\ell-1)/\SpongeRate\rfloor,\ 1+((\SpongeAbsorbIndex+\ell-1)\bmod \SpongeRate),\ \SpongeRate\bigr),\\
+\mathsf S_\ell(b,\SpongeAbsorbIndex,\SpongeSqueezeIndex)&:=
+ \bigl(b+\lfloor(\SpongeSqueezeIndex+\ell-1)/\SpongeRate\rfloor,\ 0,\ 1+((\SpongeSqueezeIndex+\ell-1)\bmod \SpongeRate)\bigr).
+\end{aligned}
+\end{equation*}
+Start at \(\mathsf A_{\SaltLength}(0,0,\SpongeRate)\), then apply \(\mathsf A_{\IPProverMessageEncodedLength(j)}\) or \(\mathsf S_{\IPVerifierMessageEncodedLength(i)}\) in protocol order. The parser uses these positions as follows:
+\begin{itemize}
+\item To extract prover message \(j\), use its starting block and absorb cursor \((b_j,i^P_{A,j})\).
+\item To check the boundary before verifier message \(i\), use its block and absorb cursor \((B_i,i^V_{A,i})\). Write \(B_i^+\) for the block index after squeezing that message.
+\end{itemize}
+Write \(\EncodedIPProverMessages\) for the encodings recovered so far, indexed by prover-message position. In the suffix check below, \(\beta_i\) holds when verifier message \(i\) is the first protocol message, or when its last preceding prover message \(j_i\) exists and has \(\IPProverMessageEncodedLength(j_i)>0\).
+\begin{equation*}
+\begin{gathered}
+\mathsf{ParseChain}(\Instance;Q;\SpongePermutationState)\quad\text{(with }S\text{ as above)}\\[2pt]
+\left[\begin{array}{rl}
+& \textit{// Salt extraction.}\\
+1.& R:=\SpongePermutationState^{\mathrm{in}}_{0,\mathrm R}\|\cdots\|\SpongePermutationState^{\mathrm{in}}_{m,\mathrm R};\quad \EncodedIPProverMessages:=\varnothing;\quad \SpongePermutationState^{\mathrm{out}}_{-1,\mathrm R}:=0^{\SpongeRate}.\\
+2.& \text{if }|R|<\SaltLength,\ \text{return }\mathsf{none}.\\
+3.& \SaltString:=R[0:\SaltLength].\\
+4.& \text{for }i=1,\ldots,\IPVerifierMessageCount:\\
+& \quad\textit{// Prover-message recovery.}\\
+5.& \quad\text{if }B_i>m,\ \text{return }\mathsf{none}.\\
+6.& \quad j_i:=\text{last prover-message index before verifier message }i\text{, if any}.\\
+7.& \quad\text{if }j_i\text{ exists, write }j:=j_i:\\
+8.& \qquad t:=\SpongeRate{}b_j+i^P_{A,j};\quad\text{if }t+\IPProverMessageEncodedLength(j)>|R|,\ \text{return }\mathsf{none}.\\
+9.& \qquad \EncodedIPProverMessage_j:=R[t:t+\IPProverMessageEncodedLength(j)].\\
+& \quad\textit{// Untouched rate-suffix check.}\\
+10.& \quad\text{if }\beta_i\text{ and }i^V_{A,i}\ne \SpongeRate:\\
+11.& \qquad\mathbf z_i:=\SpongePermutationState^{\mathrm{in}}_{B_i,\mathrm R}[i^V_{A,i}:\SpongeRate].\\
+12.& \qquad\text{if }\mathbf z_i\ne \SpongePermutationState^{\mathrm{out}}_{B_i-1,\mathrm R}[i^V_{A,i}:\SpongeRate],\ \text{return }\mathsf{none}.\\
+& \quad\textit{// Squeeze-boundary test.}\\
+13.& \quad\text{if }B_i=m:\\
+14.& \qquad\text{if some }j\le m_i\text{ is absent from }\EncodedIPProverMessages,\ \text{return }\mathsf{none}.\\
+15.& \qquad\text{return }(i,\Instance,\SaltString,(\EncodedIPProverMessage_j)_{j\le m_i}).\\
+& \quad\textit{// Internal squeeze checks.}\\
+16.& \quad\text{if }B_i^+>m,\ \text{return }\mathsf{none}.\\
+17.& \quad D_i:=B_i^+-B_i;\quad\text{for }h\in\mathbb N\text{ with }h+1<D_i:\\
+18.& \qquad\text{if }\SpongePermutationState^{\mathrm{in}}_{B_i+h+1,\mathrm R}\ne \SpongePermutationState^{\mathrm{out}}_{B_i+h,\mathrm R},\ \text{return }\mathsf{none}.\\
+19.& \text{return }\mathsf{none}.
+\end{array}\right]
+\end{gathered}
+\end{equation*}
+For \(B_i=0\), the suffix check compares with the initial zero rate segment, including when the salt is empty. The internal squeeze check excludes the last output block, which the next prover message may overwrite.
+
+\medskip\noindent\textbf{Version used by \(\DSFSQueryWrapper\) and \(\DSFSStandardTrace\).}
+These callers use the same scan and parser on the temporary forward-first restriction of \Cref{def:dsfs_trace_tables}, leaving the supplied index unchanged:
+\begin{equation*}
+\DSFSBacktrack_{\mathrm{fwd}}(\QueryLog,\QueryLog_{\nabla},\SpongePermutationState)
+\defeq \DSFSBacktrack(\QueryLog,\QueryLog_{\nabla}^{\mathrm{ff}},\SpongePermutationState).
+\end{equation*}
+Neither variant enumerates \(\DSFSBacktrackChainFamily\); this differs from the paper's family-based search. A \(\mathsf{none}\) result does not assert that no valid chain exists.
+
+\end{definition}
+
+\paragraph{Lookahead procedure}
+
+\begin{definition}[LookAhead]
+\label{def:dsfs_lookahead}
+\lean{DuplexSpongeFS.Lookahead.LookaheadSequence, DuplexSpongeFS.Lookahead.LookaheadSequenceFamily, DuplexSpongeFS.Lookahead.S_LA, DuplexSpongeFS.Lookahead.linearScanForwards, DuplexSpongeFS.Lookahead.sampleVerifierMessageFromSequence, DuplexSpongeFS.Lookahead.linearLookAhead, DuplexSpongeFS.Lookahead.lookAhead}
+\leanok
+\uses{def:dsfs_query_answer_trace, def:dsfs_trace_tables, def:dsfs_duplex_state, constr:dsfs_transformation}
+The lookahead procedure \(\DSFSLookahead\) recovers an encoded verifier message from the output-rate blocks of one chain starting at \(\SpongePermutationState\). It receives the permutation table \(\QueryLog_{\nabla}.\mathsf p\), a state \(\SpongePermutationState\in\Alphabet^{\SpongePermutationWidth}\), and a verifier-message index \(i\). It returns \(\mathsf{err}\), \(\mathsf{none}\), or an encoded verifier message \(\EncodedIPVerifierMessage_i\in\Alphabet^{\IPVerifierMessageEncodedLength(i)}\).
+
+During a squeeze, each permutation output becomes the input to the next permutation call, and the rate segments supply the encoded verifier message. \(\DSFSLookahead\) reconstructs these calls by looking up \(\SpongePermutationState\) in \(\QueryLog_{\nabla}.\mathsf p\), then continuing from the output of each matching pair. At most \(\SpongeVerifierMessageBlockCount(i)=\lceil\IPVerifierMessageEncodedLength(i)/\SpongeRate\rceil\) rate blocks are needed. If the search ends without error, the procedure returns \(\mathsf{none}\) for an empty sequence. For a sequence of \(m>0\) pairs, it samples the remaining \(\SpongeVerifierMessageBlockCount(i)-m\) rate blocks independently and uniformly, concatenates all the blocks, and returns the first \(\IPVerifierMessageEncodedLength(i)\) symbols.
+
+The search stops when no pair matches the current input, or when the matching pair has equal input and output capacities; the latter pair is not included. If two distinct outputs match the same input, the procedure returns \(\mathsf{err}\), even if earlier pairs have already been recovered. It works as follows.
+
+\medskip\noindent\textbf{Forward scan and completion.}
+\begin{equation*}
+\begin{gathered}
+\DSFSLookahead(\QueryLog_{\nabla}.\mathsf p,\SpongePermutationState,i)\\[2pt]
+\left[\begin{array}{rl}
+& \textit{// Forward scan.}\\
+1.& \SpongePermutationState^{\mathrm{in}}:=\SpongePermutationState;\quad m:=0.\\
+2.& \text{for }a=1,\ldots,\SpongeVerifierMessageBlockCount(i):\\
+3.& \quad V:=\{\SpongePermutationState^{\mathrm{out}}:(\SpongePermutationState^{\mathrm{in}},\SpongePermutationState^{\mathrm{out}})\in \QueryLog_{\nabla}.\mathsf p\}.\\
+4.& \quad \text{if }|V|>1,\ \text{return }\mathsf{err}.\\
+5.& \quad \text{if }V=\varnothing,\ \text{break}.\\
+6.& \quad \text{let }\SpongePermutationState^{\mathrm{out}}\text{ be the unique element of }V.\\
+7.& \quad \text{if }\SpongePermutationState^{\mathrm{in}}_{\mathrm C}=\SpongePermutationState^{\mathrm{out}}_{\mathrm C},\ \text{break}.\\
+8.& \quad \SpongePermutationState^{\mathrm{out}}_{m,\mathrm R}:=\SpongePermutationState^{\mathrm{out}}_{\mathrm R};\quad m:=m+1;\quad \SpongePermutationState^{\mathrm{in}}:=\SpongePermutationState^{\mathrm{out}}.\\
+& \textit{// Message completion.}\\
+9.& \text{if }m=0,\ \text{return }\mathsf{none}.\\
+10.& \text{for }j=m,\ldots,\SpongeVerifierMessageBlockCount(i)-1:\\
+11.& \quad\SpongePermutationState^{\mathrm{out}}_{j,\mathrm R}\leftarrow\Uniform(\Alphabet^{\SpongeRate})\quad\text{independently}.\\
+12.& \text{return }(\SpongePermutationState^{\mathrm{out}}_{0,\mathrm R}\|\cdots\|\SpongePermutationState^{\mathrm{out}}_{\SpongeVerifierMessageBlockCount(i)-1,\mathrm R})[0:\IPVerifierMessageEncodedLength(i)].
+\end{array}\right]
+\end{gathered}
+\end{equation*}
+\end{definition}
+
+\paragraph{Prover transformation}
+
+\begin{definition}[D2SQuery]
+\label{def:dsfs_d2squery}
+\lean{DuplexSpongeFS.ProverTransform.D2SQueryState, DuplexSpongeFS.ProverTransform.d2sQueryOracles, DuplexSpongeFS.ProverTransform.d2sRateBlocksFromVerifierMessage, DuplexSpongeFS.ProverTransform.d2sQueryStep, DuplexSpongeFS.ProverTransform.d2sQueryImpl}
+\leanok
+\uses{def:dsfs_query_answer_trace, def:dsfs_trace_tables, def:dsfs_backtrack, def:dsfs_codec, def:basic_fs_oracle_distribution, def:dsfs_oracle_distribution, constr:dsfs_transformation}
+The oracle wrapper \(\DSFSQueryWrapper\) uses intermediate round oracles to answer queries to \((\SpongeOracles)\). Number the \(\IPVerifierMessageCount\) verifier messages in protocol order, and let \(m_i\) count the prover messages preceding verifier message \(i\). Write \(\IPProverMessageEncodedLength(j)\) and \(\IPVerifierMessageEncodedLength(i)\) for their encoded lengths, and set \(\SpongeVerifierMessageBlockCount(i)=\lceil\IPVerifierMessageEncodedLength(i)/\SpongeRate\rceil\). The intermediate oracle distribution is
+\begin{equation*}
+\DSFSEncodedOracleDistribution:=\Uniform\Bigl(
+ \bigl(\InstanceSpace\times\Alphabet^{\SaltLength}\times
+ \prod_{j=1}^{m_i}\Alphabet^{\IPProverMessageEncodedLength(j)}\to\Alphabet^{\IPVerifierMessageEncodedLength(i)}\bigr)_{i\in[\IPVerifierMessageCount]}
+\Bigr).
+\end{equation*}
+Write \(\DSFSEncodedOracles=(\DSFSEncodedOracle_i)_{i\in[\IPVerifierMessageCount]}\) for oracles sampled from \(\DSFSEncodedOracleDistribution\). The oracle wrapper answers queries one at a time and records each query-answer pair in \(\QueryLog\), including repeated queries. It starts with an empty trace \(\QueryLog\), query-answer index \(\QueryLog_{\nabla}\), and cache \(\mathsf{Cache}_\SpongePermutation\), using the table operations of \Cref{def:dsfs_trace_tables}.
+
+An answer from \(\DSFSEncodedOracle_i\) specifies an entire encoded verifier message, whereas one query to \(\SpongePermutation\) returns a single permutation state. When choosing fresh permutation outputs from this message, the oracle wrapper uses its first rate block immediately and keeps the remaining blocks in \(\mathsf{Cache}_\SpongePermutation\). An entry \((\SpongePermutationState,(\SpongeRateSegment^{(0)},\ldots,\SpongeRateSegment^{(a-1)}))\), where \(a>0\) and \(\SpongeRateSegment^{(j)}\in\Alphabet^{\SpongeRate}\), specifies the rate blocks for a squeeze continuing from \(\SpongePermutationState\). Each output capacity is sampled only when the corresponding forward query is answered. All fresh samples below are independent of preceding samples.
+
+For a hash or inverse query, the oracle wrapper returns the answer found in \(\QueryLog_{\nabla}.\mathsf h\) or \(\QueryLog_{\nabla}.\mathsf p\), respectively. If the lookup returns \(\bot\), it samples an answer uniformly from the appropriate space. These two procedures are defined as follows.
+\begin{equation*}
+\begin{gathered}
+\DSFSQueryWrapper^{\DSFSEncodedOracles}(\mathsf h,\Instance)\\[2pt]
+\left[\begin{array}{rl}
+1.& \SpongePermutationState^{\mathrm{out}}_{\mathrm C}:=\QueryLog_{\nabla}.\mathsf h.\mathsf{inlu}(\Instance).\\
+2.& \text{if }\SpongePermutationState^{\mathrm{out}}_{\mathrm C}=\bot:\\
+3.& \quad \SpongePermutationState^{\mathrm{out}}_{\mathrm C}\leftarrow\Uniform(\Alphabet^{\SpongeCapacity});\quad
+    \QueryLog_{\nabla}.\mathsf h.\mathsf{insert}(\Instance,\SpongePermutationState^{\mathrm{out}}_{\mathrm C}).\\
+4.& \text{append }(\mathsf h,\Instance,\SpongePermutationState^{\mathrm{out}}_{\mathrm C})\text{ to }\QueryLog.\\
+5.& \text{return }\SpongePermutationState^{\mathrm{out}}_{\mathrm C}.
+\end{array}\right]
+\end{gathered}
+\end{equation*}
+\begin{equation*}
+\begin{gathered}
+\DSFSQueryWrapper^{\DSFSEncodedOracles}(\mathsf p^{-1},\SpongePermutationState^{\mathrm{out}})\\[2pt]
+\left[\begin{array}{rl}
+1.& \SpongePermutationState^{\mathrm{in}}:=\QueryLog_{\nabla}.\mathsf p.\mathsf{outlu}(\SpongePermutationState^{\mathrm{out}}).\\
+2.& \text{if }\SpongePermutationState^{\mathrm{in}}=\bot:\\
+3.& \quad \SpongePermutationState^{\mathrm{in}}\leftarrow\Uniform(\Alphabet^{\SpongeRate+\SpongeCapacity});\quad
+    \QueryLog_{\nabla}.\mathsf p.\mathsf{insert}(\SpongePermutationState^{\mathrm{in}},\SpongePermutationState^{\mathrm{out}}).\\
+4.& \text{append }(\mathsf p^{-1},\SpongePermutationState^{\mathrm{out}},\SpongePermutationState^{\mathrm{in}})\text{ to }\QueryLog.\\
+5.& \text{return }\SpongePermutationState^{\mathrm{in}}.
+\end{array}\right]
+\end{gathered}
+\end{equation*}
+For a forward query \(\SpongePermutationState^{\mathrm{in}}\), the oracle wrapper first checks whether \(\mathsf{Cache}_\SpongePermutation\) contains remaining squeeze blocks for this input. If so, it answers using the next rate block and a fresh capacity. Otherwise, \(\DSFSBacktrack_{\mathrm{fwd}}\) tries to recover the instance, salt, and encoded prover-message prefix needed to query \(\DSFSEncodedOracle_i\). It receives the full index \(\QueryLog_{\nabla}\) and searches its forward-first restriction (\Cref{def:dsfs_trace_tables}). A recovered tuple \(q=(i,\Instance,\SaltString,(\EncodedIPProverMessage_j)_{j\le m_i})\) is \emph{encodable} when \(\EncodedIPProverMessage_j\in\operatorname{Im}(\CodecEncoder_j)\) for every \(j\le m_i\); \(\mathsf{none}\) is not encodable.
+
+In the pseudocode, \(\mathsf{Pop}(\mathsf{Cache}_\SpongePermutation,\SpongePermutationState^{\mathrm{in}})\) returns the first matching block list together with the cache obtained by removing that entry, or \(\bot\) if none matches.
+\begin{equation*}
+\begin{gathered}
+\DSFSQueryWrapper^{\DSFSEncodedOracles}(\mathsf p,\SpongePermutationState^{\mathrm{in}})\\[2pt]
+\left[\begin{array}{rl}
+& \textit{// Pending squeeze continuation.}\\
+1.& B:=\mathsf{Pop}(\mathsf{Cache}_\SpongePermutation,\SpongePermutationState^{\mathrm{in}}).\\
+2.& \text{if }B=((\SpongeRateSegment^{(0)},\ldots,\SpongeRateSegment^{(a-1)}),\mathsf{Cache}'_\SpongePermutation):\\
+3.& \quad \SpongePermutationState^{\mathrm{out}}_{\mathrm C}\leftarrow\Uniform(\Alphabet^{\SpongeCapacity});\quad \SpongePermutationState^{\mathrm{out}}:=(\SpongeRateSegment^{(0)},\SpongePermutationState^{\mathrm{out}}_{\mathrm C}).\\
+4.& \quad \mathsf{Cache}_\SpongePermutation:=\mathsf{Cache}'_\SpongePermutation.\\
+5.& \quad \text{if }a>1:\\
+6.& \qquad\text{prepend }(\SpongePermutationState^{\mathrm{out}},(\SpongeRateSegment^{(j)})_{j=1}^{a-1})\text{ to }\mathsf{Cache}_\SpongePermutation.\\
+7.& \quad \QueryLog_{\nabla}.\mathsf p.\mathsf{insert}(\SpongePermutationState^{\mathrm{in}},\SpongePermutationState^{\mathrm{out}}).\\
+8.& \quad\text{append }(\mathsf p,\SpongePermutationState^{\mathrm{in}},\SpongePermutationState^{\mathrm{out}})\text{ to }\QueryLog;\quad\text{return }\SpongePermutationState^{\mathrm{out}}.\\
+& \textit{// Intermediate-oracle query.}\\
+9.& q:=\DSFSBacktrack_{\mathrm{fwd}}(\QueryLog,\QueryLog_{\nabla},\SpongePermutationState^{\mathrm{in}}).\\
+10.& \text{if }q=\mathsf{err},\ \text{abort}.\\
+11.& \text{if }q=(i,\Instance,\SaltString,\EncodedIPProverMessages)\text{ is encodable}:\\
+12.& \quad\EncodedIPVerifierMessage_i\leftarrow \DSFSEncodedOracle_i(\Instance,\SaltString,\EncodedIPProverMessages).\\
+& \textit{// Stored-answer lookup and sampling.}\\
+13.& \SpongePermutationState^{\mathrm{out}}:=\QueryLog_{\nabla}.\mathsf p.\mathsf{inlu}(\SpongePermutationState^{\mathrm{in}}).\\
+14.& \text{if }\SpongePermutationState^{\mathrm{out}}=\bot:\\
+15.& \quad\text{if }q\text{ is not encodable}:\quad \SpongePermutationState^{\mathrm{out}}\leftarrow\Uniform(\Alphabet^{\SpongeRate+\SpongeCapacity}).\\
+16.& \quad\text{else}:\quad \ell_z:=\SpongeRate\SpongeVerifierMessageBlockCount(i)-\IPVerifierMessageEncodedLength(i);\quad \mathbf z\leftarrow\Uniform(\Alphabet^{\ell_z}).\\
+17.& \qquad (\SpongeRateSegment^{(0)},\ldots,\SpongeRateSegment^{(\SpongeVerifierMessageBlockCount(i)-1)}):=\mathsf{Split}_{\SpongeRate}(\EncodedIPVerifierMessage_i\|\mathbf z).\\
+18.& \qquad\text{if }\SpongeVerifierMessageBlockCount(i)=0,\ \text{abort}.\\
+19.& \qquad \SpongePermutationState^{\mathrm{out}}_{\mathrm C}\leftarrow\Uniform(\Alphabet^{\SpongeCapacity});\quad \SpongePermutationState^{\mathrm{out}}:=(\SpongeRateSegment^{(0)},\SpongePermutationState^{\mathrm{out}}_{\mathrm C}).\\
+20.& \qquad\text{if }\SpongeVerifierMessageBlockCount(i)>1:\\
+21.& \qquad\quad\text{append }(\SpongePermutationState^{\mathrm{out}},(\SpongeRateSegment^{(j)})_{j=1}^{\SpongeVerifierMessageBlockCount(i)-1})\text{ to }\mathsf{Cache}_\SpongePermutation.\\
+22.& \quad \QueryLog_{\nabla}.\mathsf p.\mathsf{insert}(\SpongePermutationState^{\mathrm{in}},\SpongePermutationState^{\mathrm{out}}).\\
+& \textit{// Answer recording.}\\
+23.& \text{append }(\mathsf p,\SpongePermutationState^{\mathrm{in}},\SpongePermutationState^{\mathrm{out}})\text{ to }\QueryLog;\quad\text{return }\SpongePermutationState^{\mathrm{out}}.
+\end{array}\right]
+\end{gathered}
+\end{equation*}
+Here \(\mathsf{Split}_{\SpongeRate}\) splits a string into consecutive rate blocks. Blocks left over from a cache entry are placed at the front of the cache; blocks retained when constructing a new permutation answer are placed at the end. When backtracking yields an encodable tuple, the oracle wrapper queries \(\DSFSEncodedOracle_i\) before looking for a stored permutation answer, even if that answer is already present. The padding string \(\mathbf z\) fills the last rate block and is empty when the message length is a multiple of \(\SpongeRate\). The zero-block abort cannot occur when \(\IPVerifierMessageEncodedLength(i)>0\).
+\end{definition}
+
+\begin{definition}[D2SAlgo]
+\label{def:dsfs_d2salgo}
+\lean{D2SAlgoTransform, DuplexSpongeFS.ProverTransform.d2sCodecBridgeImpl, DuplexSpongeFS.ProverTransform.D2SAlgoMemo, DuplexSpongeFS.ProverTransform.d2sCodecBridgeImplMemo, DuplexSpongeFS.ProverTransform.D2FQueryProver, DuplexSpongeFS.ProverTransform.d2sAlgo}
+\leanok
+\uses{def:dsfs_d2squery, def:dsfs_codec, def:basic_fs_oracle_distribution}
+Let \(\NARGMaliciousProver\) be a malicious DSFS prover, and let \(\OracleFamily=(\OracleFunction_i)_{i\in[\IPVerifierMessageCount]}\) be the basic Fiat--Shamir round oracles of \Cref{def:basic_fs_oracle_distribution}. The procedure \(\DSFSProverTransform^{\OracleFamily}(\NARGMaliciousProver)\) converts this prover into a basic-FS prover by answering its \((\SpongeOracles)\)-queries through \(\DSFSQueryWrapper\). To supply the intermediate oracles required by \(\DSFSQueryWrapper\), it translates each encoded prover-message prefix into a query to \(\OracleFunction_i\) and chooses an encoding of the reply as described below. It returns the prover's instance and NARG string with the salt encoded for basic Fiat--Shamir, or aborts if the oracle simulation aborts.
+
+Here \(\IPVerifierMessageCount\) counts verifier messages in protocol order, \(m_i\) counts prover messages before verifier message \(i\), and \(\IPProverMessageCount\) counts all prover messages. Let \(\DSFSSaltEncoding:\Alphabet^{\SaltLength}\to\SaltType\) be an injective salt encoding. The procedure works as follows.
+\begin{equation*}
+\begin{gathered}
+\DSFSProverTransform^{\OracleFamily}(\NARGMaliciousProver)\\[2pt]
+\left[\begin{array}{rl}
+1.& \QueryLog_i:=[]\quad(i\in[\IPVerifierMessageCount]).\\
+2.& \text{initialize }\DSFSQueryWrapper^{\DSFSEncodedOracles}\text{ with the handlers }\DSFSEncodedOracle_i\text{ below}.\\
+3.& (\Instance,(\SaltString,\IPProverMessage_1,\ldots,\IPProverMessage_{\IPProverMessageCount}))\leftarrow\NARGMaliciousProver^{\DSFSQueryWrapper^{\DSFSEncodedOracles}}.\\
+4.& \text{return }(\Instance,(\DSFSSaltEncoding(\SaltString),\IPProverMessage_1,\ldots,\IPProverMessage_{\IPProverMessageCount})).
+\end{array}\right]
+\end{gathered}
+\end{equation*}
+\medskip\noindent\emph{Intermediate-oracle handler.}
+To answer a query to \(\DSFSEncodedOracle_i\), encode the salt, decode each prover message using \(\CodecEncoder_j^{-1}\), and query \(\OracleFunction_i\) on the resulting tuple. Its reply \(\IPVerifierMessage_i\) is an IP verifier message; the oracle wrapper needs an encoded string that decodes to it. For a new query, choose this string uniformly from \(\CodecDecoder_i^{-1}(\IPVerifierMessage_i)\) and store it in \(\QueryLog_i\). For a repeated query, reuse the stored string so that the encoded answer is unchanged. In the pseudocode, \(\QueryLog_i[K]\) denotes the first answer stored for the query tuple \(K\), or \(\bot\) if no answer is stored.
+\begin{equation*}
+\begin{gathered}
+\DSFSEncodedOracle_i(\Instance,\SaltString,(\EncodedIPProverMessage_j)_{j\le m_i})\\[2pt]
+\left[\begin{array}{rl}
+& \textit{// Query conversion.}\\
+1.& \check\SaltString:=\DSFSSaltEncoding(\SaltString);\quad K:=(\Instance,\check\SaltString,(\EncodedIPProverMessage_j)_{j\le m_i}).\\
+2.& \EncodedIPVerifierMessage_i:=\QueryLog_i[K].\\
+3.& \text{if some }\EncodedIPProverMessage_j\notin\operatorname{Im}(\CodecEncoder_j),\ \text{abort}.\\
+4.& \IPProverMessage_j:=\CodecEncoder_j^{-1}(\EncodedIPProverMessage_j)\quad(j\le m_i).\\
+& \textit{// Basic-FS query and reply encoding.}\\
+5.& \IPVerifierMessage_i\leftarrow \OracleFunction_i(\Instance,\check\SaltString,(\IPProverMessage_j)_{j\le m_i}).\\
+6.& \text{if }\EncodedIPVerifierMessage_i\ne\bot,\ \text{return }\EncodedIPVerifierMessage_i.\\
+7.& \EncodedIPVerifierMessage_i\leftarrow\Uniform(\CodecDecoder_i^{-1}(\IPVerifierMessage_i)).\\
+8.& \text{append }(K,\EncodedIPVerifierMessage_i)\text{ to }\QueryLog_i;\quad\text{return }\EncodedIPVerifierMessage_i.
+\end{array}\right]
+\end{gathered}
+\end{equation*}
+\(\CodecEncoder_j^{-1}(\EncodedIPProverMessage_j)\) denotes a unique prover message, whereas \(\CodecDecoder_i^{-1}(\IPVerifierMessage_i)\) denotes a set of encoded strings. \(\DSFSQueryWrapper\) calls \(\DSFSEncodedOracle_i\) only on encodable prefixes. A repeated query still makes the corresponding \(\OracleFunction_i\)-query in line 5, but reuses the previously sampled encoding. Queries outside \((\SpongeOracles)\) pass through unchanged. For binary salts one may take \(\SaltType=\{0,1\}^{\SaltLength_\star}\), where \(\SaltLength_\star=\lceil\log_2(|\Alphabet|^{\SaltLength})\rceil\).
+\end{definition}
+
+\paragraph{Trace transformation}
+
+\begin{definition}[StdTrace]
+\label{def:dsfs_stdtrace}
+\lean{DuplexSpongeFS.TraceTransform.StdTraceEntry, DuplexSpongeFS.TraceTransform.StdTraceState, DuplexSpongeFS.TraceTransform.stdTraceDelta, DuplexSpongeFS.TraceTransform.stdTraceLookupOrLookAhead, DuplexSpongeFS.TraceTransform.stdTraceHandleBacktrackTuple, DuplexSpongeFS.TraceTransform.stdTraceHandlePQuery, DuplexSpongeFS.TraceTransform.hybEncodedProverMessagesBefore?}
+\leanok
+\uses{def:dsfs_query_answer_trace, def:dsfs_trace_tables, def:dsfs_backtrack, def:dsfs_lookahead, def:dsfs_codec, def:dsfs_d2squery}
+The procedure \(\DSFSStandardTrace\) translates recorded sponge queries into queries and answers for the intermediate oracles \(\DSFSEncodedOracles\) of \Cref{def:dsfs_d2squery}. It receives an \((\SpongeOracles)\)-trace \(\QueryLog\) and returns the translated trace \(\QueryLog_{\mathrm{std}}\), or aborts. For each forward query, \(\DSFSBacktrack_{\mathrm{fwd}}\) tries to recover the instance, salt, and encoded prover-message prefix. If these form an encodable query to \(\DSFSEncodedOracle_i\), \(\DSFSLookahead\) supplies the corresponding encoded verifier message, unless an answer to this query has already been recovered. Thus backtracking determines the query and lookahead supplies its answer.
+
+The forward-only index \(\QueryLog_{\nabla}^{\to}\) is built once from the entire input trace as in \Cref{def:dsfs_trace_tables}. Both searches may therefore use entries that occur later than the forward query being translated. The procedure visits forward queries in their original order and keeps every translated occurrence, including repeats. To give repeated queries the same answer, it stores each answer in \(\QueryLog_{\mathrm{std}}^{\mathrm{LA}}\) and reuses it instead of running \(\DSFSLookahead\) again. Write \(\QueryLog_{\mathrm{std}}^{\mathrm{LA}}[q]=\bot\) when no answer has been stored for \(q=(i,\Instance,\SaltString,(\EncodedIPProverMessage_j)_{j\le m_i})\), where \(m_i\) counts prover messages before verifier message \(i\). The procedure works as follows.
+\begin{equation*}
+\begin{gathered}
+\DSFSStandardTrace(\QueryLog)\\[2pt]
+\left[\begin{array}{rl}
+& \textit{// Index construction from the entire trace.}\\
+1.& \QueryLog_{\mathrm{std}}:=[];\quad \QueryLog_{\mathrm{std}}^{\mathrm{LA}}:=[];\quad\text{initialize empty }\QueryLog_{\nabla}^{\to}.\\
+2.& \text{for each }(\mathsf h,\Instance,\SpongePermutationState^{\mathrm{out}}_{\mathrm C})\in\QueryLog:\\
+  & \quad\QueryLog_{\nabla}^{\to}.\mathsf h.\mathsf{insert}(\Instance,\SpongePermutationState^{\mathrm{out}}_{\mathrm C}).\\
+3.& \text{for each }(\mathsf p,\SpongePermutationState^{\mathrm{in}},\SpongePermutationState^{\mathrm{out}})\in\QueryLog:\\
+  & \quad\QueryLog_{\nabla}^{\to}.\mathsf p.\mathsf{insert}(\SpongePermutationState^{\mathrm{in}},\SpongePermutationState^{\mathrm{out}}).\\
+& \textit{// Forward-entry translation in trace order.}\\
+4.& \text{for }j=1,\ldots,|\QueryLog|:\\
+5.& \quad\text{if }\QueryLog_j\text{ is not }(\mathsf p,\SpongePermutationState^{\mathrm{in}},\SpongePermutationState^{\mathrm{out}}),\ \text{continue}.\\
+6.& \quad q:=\DSFSBacktrack_{\mathrm{fwd}}(\QueryLog,\QueryLog_{\nabla}^{\to},\SpongePermutationState^{\mathrm{in}}).\\
+7.& \quad\text{if }q=\mathsf{err},\ \text{abort}.\\
+8.& \quad\text{if }q=\mathsf{none}\text{ or }q\text{ is not encodable},\ \text{continue}.\\
+9.& \quad\text{write }q=(i,\Instance,\SaltString,(\EncodedIPProverMessage_\iota)_{\iota\le m_i}).\\
+& \quad\textit{// Memo lookup and LookAhead.}\\
+10.& \quad\EncodedIPVerifierMessage_i:=\QueryLog_{\mathrm{std}}^{\mathrm{LA}}[q].\\
+11.& \quad\text{if }\EncodedIPVerifierMessage_i=\bot:\\
+12.& \qquad\EncodedIPVerifierMessage_i\leftarrow\DSFSLookahead(\QueryLog_{\nabla}^{\to}.\mathsf p,\SpongePermutationState^{\mathrm{in}},i).\\
+13.& \qquad\text{if }\EncodedIPVerifierMessage_i\in\{\mathsf{err},\mathsf{none}\},\ \text{abort}.\\
+14.& \qquad\text{append }(q,\EncodedIPVerifierMessage_i)\text{ to }\QueryLog_{\mathrm{std}}^{\mathrm{LA}}.\\
+15.& \quad\text{append }(q,\EncodedIPVerifierMessage_i)\text{ to }\QueryLog_{\mathrm{std}}.\\
+16.& \text{return }\QueryLog_{\mathrm{std}}.
+\end{array}\right]
+\end{gathered}
+\end{equation*}
+Encodability is the codec-image test in \Cref{def:dsfs_d2squery}. \(\DSFSBacktrack_{\mathrm{fwd}}\) searches the forward-first restriction of \(\QueryLog_{\nabla}^{\to}\); \(\DSFSLookahead\) reads the unchanged \(\QueryLog_{\nabla}^{\to}.\mathsf p\) (\Cref{def:dsfs_trace_tables}).
+\end{definition}
+
+\begin{remark}[{Comparison with~\cite[Section~5.5, StdTrace Item~4(a)]{CO25}}]
+\label{rem:dsfs_stdtrace_comparison}
+\uses{def:dsfs_stdtrace}
+In its \(\DSFSLookahead\) branch, the paper's \(\DSFSStandardTrace\) aborts on \(\mathsf{err}\) and asserts that \(\mathsf{none}\) cannot occur because \((\mathsf p,\SpongePermutationState^{\mathrm{in}},\SpongePermutationState^{\mathrm{out}})\in\QueryLog\). Our procedure aborts on either result in this branch.
+\end{remark}
+
+\begin{definition}[D2STrace]
+\label{def:dsfs_d2strace}
+\lean{D2STraceTransform, DuplexSpongeFS.TraceTransform.stdTraceEntryToFSQuerySalted?, DuplexSpongeFS.TraceTransform.d2sTraceSalted}
+\leanok
+\uses{def:dsfs_stdtrace, def:dsfs_codec, def:basic_fs_oracle_distribution}
+The procedure \(\DSFSTraceTransform\) translates an \((\SpongeOracles)\)-trace \(\QueryLog\) into a query-answer trace for the basic Fiat--Shamir round oracles, or aborts. \(\DSFSStandardTrace\) first reconstructs queries and answers for the intermediate oracles. To obtain basic-FS queries and answers, \(\DSFSTraceTransform\) then recovers each prover message using \(\CodecEncoder_j^{-1}\), decodes each verifier message using \(\CodecDecoder_i\), and maps each salt into the basic-FS salt space. Let \(m_i\) count the prover messages before verifier message \(i\), and let \(\DSFSSaltEncoding:\Alphabet^{\SaltLength}\to\SaltType\) be the injective salt encoding. It works as follows.
+\begin{equation*}
+\begin{gathered}
+\DSFSTraceTransform(\QueryLog)\\[2pt]
+\left[\begin{array}{rl}
+& \textit{// Intermediate-trace reconstruction.}\\
+1.& \widehat{\QueryLog}_{\mathrm{std}}\leftarrow\DSFSStandardTrace(\QueryLog);\quad \QueryLog_{\mathrm{std}}:=[].\\
+& \textit{// Basic-FS query and answer conversion.}\\
+2.& \text{for each }((i,\Instance,\SaltString,(\EncodedIPProverMessage_j)_{j\le m_i}),\EncodedIPVerifierMessage_i)\text{ in }\widehat{\QueryLog}_{\mathrm{std}}:\\
+3.& \quad\text{if some }\EncodedIPProverMessage_j\notin\operatorname{Im}(\CodecEncoder_j),\ \text{continue}.\\
+4.& \quad\IPProverMessage_j:=\CodecEncoder_j^{-1}(\EncodedIPProverMessage_j)\quad(j\le m_i).\\
+5.& \quad\IPVerifierMessage_i:=\CodecDecoder_i(\EncodedIPVerifierMessage_i);\quad\check\SaltString:=\DSFSSaltEncoding(\SaltString).\\
+6.& \quad\text{append }((i,\Instance,\check\SaltString,(\IPProverMessage_j)_{j\le m_i}),\IPVerifierMessage_i)\text{ to }\QueryLog_{\mathrm{std}}.\\
+7.& \text{return }\QueryLog_{\mathrm{std}}.
+\end{array}\right]
+\end{gathered}
+\end{equation*}
+Any randomness comes from \(\DSFSLookahead\), which samples the rate blocks missing from the input trace; decoding the messages and encoding the salt introduce no further randomness. If \(\DSFSStandardTrace\) aborts, so does \(\DSFSTraceTransform\). The image condition in line 3 is already checked by \(\DSFSStandardTrace\).
+
+When the input trace also records whether each query came from the prover or verifier, each translated entry keeps that designation. The implementation converts each entry as soon as \(\DSFSStandardTrace\) produces it, so a forward query gives at most one translated entry. Queries and answers for oracles outside \((\SpongeOracles)\) are copied unchanged, in their original order relative to the translated entries.
+\end{definition}
+
+\begin{remark}[Time complexity]
+\label{rem:dsfs_procedures_time}
+\uses{def:dsfs_backtrack, def:dsfs_lookahead, def:dsfs_d2squery, def:dsfs_stdtrace}
+The paper's runtime estimates assume efficient sorted lookup structures. The formal development verifies query counts and output distributions, not those runtime estimates. Its list-backed query-answer index \(\QueryLog_{\nabla}\) and forward-first restriction \(\QueryLog_{\nabla}^{\mathrm{ff}}\) (\Cref{def:dsfs_trace_tables}) do not provide logarithmic lookup guarantees.
+\end{remark}

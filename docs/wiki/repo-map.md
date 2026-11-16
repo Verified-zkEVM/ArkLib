@@ -306,6 +306,9 @@ See [the construction guide](fiat-shamir-initial-objects.md) for the security ex
   These reference executions are proof support, not additional
   canonical compilers.
   `QueryBounds.lean` owns shared sponge query bounds.
+  `Security/Proofs/TraceDataStructures/` owns the recorded trace.
+  `Backtrack/`, `Lookahead.lean`, and `ProverTransform/` implement the Section 5
+  reconstruction and translation procedures.
 - General DSFS probability and sampling infrastructure comes from VCV-io: `discreteTVDist` with
   mixture and triangle bounds in `VCVio/EvalDist/DiscreteTVDist` and
   `VCVio/OracleComp/EvalDist/DiscreteTVDistBind`, finitely supported comparisons in
