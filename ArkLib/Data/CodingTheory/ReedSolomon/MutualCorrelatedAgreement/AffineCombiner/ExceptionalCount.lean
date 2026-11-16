@@ -175,8 +175,9 @@ variable {F : Type*} [Field F] [DecidableEq F] {ι : Type*} [Fintype ι]
 
 /-- Outside few challenges, no candidate is exceptional.
 
-The excluded challenges are those of a given set, outside which exceptional candidates are not
-persistent, plus at most `D² + 4 d² M² D³ (n / (A - B))²` others. -/
+The excluded challenges are a given set plus at most `D² + 4 d² M² D³ (n / (A - B))²` others.
+
+Outside the given set, exceptional candidates must not be persistent. -/
 theorem exists_affineExceptional_finset_card_le_of_interpolant [Finite F] (domain : ι ↪ F)
     (f g : ι → F) {d A B m D M : ℕ} {Q : MvPolynomial AffineVar F}
     (hQ : IsAffineInterpolant domain f g d A m D M Q) (hd : 1 ≤ d) (hdB : d ≤ B) (hBA : B < A)
