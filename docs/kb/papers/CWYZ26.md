@@ -40,7 +40,7 @@ Each row is one pull request. A row is done when its declarations are on `main`.
 
 | Unit | Paper | Content | Depends on | Status |
 | --- | --- | --- | --- | --- |
-| 1 | §1.1, Def 3.1, Props 6.1, 6.2 | Definitions; scalar `Ω(n / q)` lower bound with loss `s`; affine lower bound without loss | — | done |
+| 1 | §1.1, Def 3.1, Props 6.1, 6.2 | Definitions; scalar `Ω(n / q)` lower bound with loss `s`; affine lower bound without loss | — | in review |
 | 2 | Lemmas 4.4, 4.5 | Exceptional challenges of one rational pair; persistent triples and their count by the Johnson bound for set families | 1 | planned |
 | 3 | Theorem 5.1 | Equal-degree combiner and linear claims, reduced to the affine error plus `ℓ₀ / q` | 1 | planned |
 | 4 | Prop 6.3 | Scalar `Ω(n / q)` lower bound with constant fractional loss on additive domains (subspace polynomials) | 1 | planned |

@@ -581,6 +581,11 @@ home_page/            site assets and assembled website root
   `ArkLib/Data/CodingTheory/ReedSolomon.lean`, and the folded/interleaved/multiplicity/multilinear
   variants under `ArkLib/Data/CodingTheory/ReedSolomon/` (see
   [coding-theory-conventions.md](coding-theory-conventions.md)).
+- `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/` ports the
+  affine combiners of [CWYZ26]: `Basic` defines the combined word `f + (α + β x) g`, witnesses with
+  agreement loss, the exceptional predicates and the two worst-case MCA errors, and `Separation`
+  proves the scalar and loss-free lower bounds. The [paper page](../kb/papers/CWYZ26.md) carries
+  the port ledger for the remaining units.
 - **Two different "folds" coexist and must not be confused.** GR08 *alphabet-enlarging* folding —
   a codeword symbol packs `(f̂(x), f̂(xω), …, f̂(xω^{s-1}))`, the degree bound is unchanged, and the
   code lives in `ι → Fin s → F` — is `ArkLib/Data/CodingTheory/ReedSolomon/Folded.lean`. The
