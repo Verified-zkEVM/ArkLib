@@ -25,6 +25,9 @@ total jet degree at most `v`, the numerator of `c_l` has joint degree at most
 `(2(l - r) - 1) * (v - 1 + h) + 1`, linear in the order `l`. Padding to an exponent
 `τ ≥ 2(l - r) - 1` gives the bound `1 + τ * (v - 1 + h)`, which does not depend on `l`.
 
+The recursion bound holds for any coefficient algebra once the numerators are read through an
+algebra map into a polynomial ring.
+
 ## Main statements
 
 * `coeffNatDegreeLE_initialJetSeparant`, `coeffNatDegreeLE_universalTaylorJet`,
@@ -32,6 +35,11 @@ total jet degree at most `v`, the numerator of `c_l` has joint degree at most
   `coeffNatDegreeLE_universalTaylorResidual_coeff`: at a constant center, the parameter degree
   of `Q` bounds that of the separant and of the residual.
 * `jointTotalDegree_initialJetSeparant_le`: the separant has joint degree at most `v - 1 + h`.
+* `totalDegree_algHom_rationalTaylorNumeratorOver_le`,
+  `totalDegree_algHom_rationalTaylorNumeratorOver_le_of_lt`,
+  `totalDegree_algHom_commonTaylorNumeratorOver_le` and
+  `totalDegree_algHom_commonTaylorNumeratorOver_le_of_lt`: the recursion bound through any
+  algebra map into a polynomial ring, for an arbitrary coefficient algebra.
 * `jointTotalDegree_rationalTaylorNumeratorOver_le`: the recursion bound, from a bound `b` on
   the separant and `b + 1` on the residual coefficients.
 * `jointTotalDegree_rationalTaylorNumeratorOver_le_of_coeffNatDegreeLE`: the bound
@@ -120,6 +128,139 @@ end CommSemiring
 
 variable {F : Type*} [Field F] {r : ℕ}
 
+section AlgHom
+
+variable {A K σ : Type*} [CommRing A] [Algebra F A] [CommRing K] [Algebra F K]
+
+/-- One step of the recursion: bounds on the earlier numerators give the sharp bound at `l`. -/
+private theorem totalDegree_algHom_rationalTaylorNumeratorOver_step
+    (φ : MvPolynomial (Fin (r + 1)) A →ₐ[F] MvPolynomial σ K)
+    (center : A) (Q : DifferentialPolynomial A r) (b v : ℕ)
+    (hS : (φ (initialJetSeparant center Q)).totalDegree ≤ b)
+    (hres : ∀ l, r < l → ∀ m ∈
+      ((optionEquivLeft A (Fin l) (universalTaylorResidual l center Q)).coeff (l - r)).support,
+      (φ (C (((optionEquivLeft A (Fin l)
+        (universalTaylorResidual l center Q)).coeff (l - r)).coeff m))).totalDegree +
+          m.degree ≤ v)
+    {l : ℕ} (hl : r < l)
+    (hN : ∀ i < l, (φ (rationalTaylorNumeratorOver F center Q i)).totalDegree ≤
+      (2 * (i - r) - 1) * b + 1) :
+    (φ (rationalTaylorNumeratorOver F center Q l)).totalDegree ≤
+      (2 * (l - r) - 2) * b + v := by
+  rw [rationalTaylorNumeratorOver, dite_eq_right_of_eq_false (eq_false (by omega)), map_mul,
+    map_neg]
+  have hc : φ (C (algebraMap F A ((l.choose r : F)⁻¹))) =
+      C (algebraMap F K ((l.choose r : F)⁻¹)) := by
+    rw [← MvPolynomial.algebraMap_apply, φ.commutes, MvPolynomial.algebraMap_apply]
+  rw [hc]
+  refine (totalDegree_mul _ _).trans ?_
+  rw [totalDegree_neg, totalDegree_C, zero_add]
+  change (φ.toRingHom (clearedSubstitution C _ _ _ _ _)).totalDegree ≤ _
+  rw [ringHom_clearedSubstitution]
+  exact totalDegree_clearedSubstitution_le_of_coeff _ _ _ _ _ b v _ hS
+    (fun i ↦ hN i.val i.isLt)
+    (fun m hm ↦ denominator_weight_le_of_mem_universalTaylorResidual_coeff
+      (by omega : l ≤ r + (l - r)) center Q m hm) (hres l hl)
+
+/-- Degree of the numerators read through an algebra map `φ` into a polynomial ring.
+
+Assume `φ` sends the jet variables to degree at most `1` and the separant to degree at most `b`.
+
+Assume each residual monomial, with its mapped coefficient degree added, has degree at most `v`.
+
+If `v ≤ b + 1`, the numerator of `c_l` has degree at most `(2(l - r) - 1) * b + 1` after `φ`. -/
+theorem totalDegree_algHom_rationalTaylorNumeratorOver_le
+    (φ : MvPolynomial (Fin (r + 1)) A →ₐ[F] MvPolynomial σ K)
+    (center : A) (Q : DifferentialPolynomial A r) (b v : ℕ) (hv : v ≤ b + 1)
+    (hX : ∀ i, (φ (X i)).totalDegree ≤ 1)
+    (hS : (φ (initialJetSeparant center Q)).totalDegree ≤ b)
+    (hres : ∀ l, r < l → ∀ m ∈
+      ((optionEquivLeft A (Fin l) (universalTaylorResidual l center Q)).coeff (l - r)).support,
+      (φ (C (((optionEquivLeft A (Fin l)
+        (universalTaylorResidual l center Q)).coeff (l - r)).coeff m))).totalDegree +
+          m.degree ≤ v)
+    (l : ℕ) :
+    (φ (rationalTaylorNumeratorOver F center Q l)).totalDegree ≤
+      (2 * (l - r) - 1) * b + 1 := by
+  induction l using Nat.strong_induction_on with
+  | h l ih =>
+    by_cases hl : l < r + 1
+    · rw [rationalTaylorNumeratorOver, dite_eq_left_of_eq_true (eq_true hl)]
+      exact (hX _).trans (Nat.le_add_left _ _)
+    · have h := totalDegree_algHom_rationalTaylorNumeratorOver_step φ center Q b v hS hres
+        (by omega) ih
+      have he : 2 * (l - r) - 1 = (2 * (l - r) - 2) + 1 := by omega
+      rw [he, Nat.add_mul, one_mul, Nat.add_assoc]
+      omega
+
+/-- The sharper bound `(2(l - r) - 2) * b + v` for `l > r`, under the same hypotheses. -/
+theorem totalDegree_algHom_rationalTaylorNumeratorOver_le_of_lt
+    (φ : MvPolynomial (Fin (r + 1)) A →ₐ[F] MvPolynomial σ K)
+    (center : A) (Q : DifferentialPolynomial A r) (b v : ℕ) (hv : v ≤ b + 1)
+    (hX : ∀ i, (φ (X i)).totalDegree ≤ 1)
+    (hS : (φ (initialJetSeparant center Q)).totalDegree ≤ b)
+    (hres : ∀ l, r < l → ∀ m ∈
+      ((optionEquivLeft A (Fin l) (universalTaylorResidual l center Q)).coeff (l - r)).support,
+      (φ (C (((optionEquivLeft A (Fin l)
+        (universalTaylorResidual l center Q)).coeff (l - r)).coeff m))).totalDegree +
+          m.degree ≤ v)
+    {l : ℕ} (hl : r < l) :
+    (φ (rationalTaylorNumeratorOver F center Q l)).totalDegree ≤
+      (2 * (l - r) - 2) * b + v :=
+  totalDegree_algHom_rationalTaylorNumeratorOver_step φ center Q b v hS hres hl
+    fun i _ ↦ totalDegree_algHom_rationalTaylorNumeratorOver_le φ center Q b v hv hX hS hres i
+
+/-- Under the same hypotheses, the common numerator has degree at most `1 + τ * b` after `φ`.
+
+The exponent must satisfy `2(l - r) - 1 ≤ τ`. -/
+theorem totalDegree_algHom_commonTaylorNumeratorOver_le
+    (φ : MvPolynomial (Fin (r + 1)) A →ₐ[F] MvPolynomial σ K)
+    (center : A) (Q : DifferentialPolynomial A r) (b v : ℕ) (hv : v ≤ b + 1)
+    (hX : ∀ i, (φ (X i)).totalDegree ≤ 1)
+    (hS : (φ (initialJetSeparant center Q)).totalDegree ≤ b)
+    (hres : ∀ l, r < l → ∀ m ∈
+      ((optionEquivLeft A (Fin l) (universalTaylorResidual l center Q)).coeff (l - r)).support,
+      (φ (C (((optionEquivLeft A (Fin l)
+        (universalTaylorResidual l center Q)).coeff (l - r)).coeff m))).totalDegree +
+          m.degree ≤ v)
+    {τ l : ℕ} (hl : 2 * (l - r) - 1 ≤ τ) :
+    (φ (commonTaylorNumeratorOver F center Q τ l)).totalDegree ≤ 1 + τ * b := by
+  have hN := totalDegree_algHom_rationalTaylorNumeratorOver_le φ center Q b v hv hX hS hres l
+  have hp := (totalDegree_pow (φ (initialJetSeparant center Q))
+    (τ - (2 * (l - r) - 1))).trans (Nat.mul_le_mul_left _ hS)
+  rw [commonTaylorNumeratorOver, map_mul, map_pow]
+  refine (totalDegree_mul _ _).trans ?_
+  have he : τ * b = (2 * (l - r) - 1) * b + (τ - (2 * (l - r) - 1)) * b := by
+    rw [← Nat.add_mul, Nat.add_sub_cancel' hl]
+  omega
+
+/-- The sharper common-numerator bound `(τ - 1) * b + v` for `l > r` and `2(l - r) - 1 ≤ τ`. -/
+theorem totalDegree_algHom_commonTaylorNumeratorOver_le_of_lt
+    (φ : MvPolynomial (Fin (r + 1)) A →ₐ[F] MvPolynomial σ K)
+    (center : A) (Q : DifferentialPolynomial A r) (b v : ℕ) (hv : v ≤ b + 1)
+    (hX : ∀ i, (φ (X i)).totalDegree ≤ 1)
+    (hS : (φ (initialJetSeparant center Q)).totalDegree ≤ b)
+    (hres : ∀ l, r < l → ∀ m ∈
+      ((optionEquivLeft A (Fin l) (universalTaylorResidual l center Q)).coeff (l - r)).support,
+      (φ (C (((optionEquivLeft A (Fin l)
+        (universalTaylorResidual l center Q)).coeff (l - r)).coeff m))).totalDegree +
+          m.degree ≤ v)
+    {τ l : ℕ} (hlr : r < l) (hl : 2 * (l - r) - 1 ≤ τ) :
+    (φ (commonTaylorNumeratorOver F center Q τ l)).totalDegree ≤ (τ - 1) * b + v := by
+  have hN := totalDegree_algHom_rationalTaylorNumeratorOver_le_of_lt φ center Q b v hv hX hS
+    hres hlr
+  have hp := (totalDegree_pow (φ (initialJetSeparant center Q))
+    (τ - (2 * (l - r) - 1))).trans (Nat.mul_le_mul_left _ hS)
+  rw [commonTaylorNumeratorOver, map_mul, map_pow]
+  refine (totalDegree_mul _ _).trans ?_
+  have he : (τ - 1) * b = (2 * (l - r) - 2) * b + (τ - (2 * (l - r) - 1)) * b := by
+    rw [← Nat.add_mul]
+    congr 1
+    omega
+  omega
+
+end AlgHom
+
 /-- If the initial separant has joint total degree at most `b`, and for every `l > r` each
 monomial `m` of the coefficient of `ξ ^ (l - r)` in the universal residual satisfies
 `jointTotalDegree (C (coeff m)) + degree m ≤ b + 1`, then the numerator of `c_l` has joint total
@@ -135,39 +276,10 @@ theorem jointTotalDegree_rationalTaylorNumeratorOver_le
           MvPolynomial (Fin (r + 1)) (Polynomial F)) + m.degree ≤ b + 1)
     (l : ℕ) :
     jointTotalDegree (rationalTaylorNumeratorOver F center Q l) ≤
-      (2 * (l - r) - 1) * b + 1 := by
-  induction l using Nat.strong_induction_on with
-  | h l ih =>
-    rw [rationalTaylorNumeratorOver]
-    split_ifs with hl
-    · simp only [jointTotalDegree_X]
-      omega
-    · have hden : ∀ m ∈ ((optionEquivLeft (Polynomial F) (Fin l)
-          (universalTaylorResidual l center Q)).coeff (l - r)).support,
-          Finsupp.weight (fun i : Fin l ↦ 2 * (i.val - r) - 1) m ≤ 2 * (l - r) - 2 :=
-        fun m hm ↦ denominator_weight_le_of_mem_universalTaylorResidual_coeff
-          (by omega : l ≤ r + (l - r)) center Q m hm
-      have hd := jointTotalDegree_clearedSubstitution_le
-        (initialJetSeparant center Q)
-        (fun i : Fin l ↦ rationalTaylorNumeratorOver F center Q i.val)
-        (fun i ↦ 2 * (i.val - r) - 1) (2 * (l - r) - 2) b (b + 1)
-        ((optionEquivLeft (Polynomial F) (Fin l)
-          (universalTaylorResidual l center Q)).coeff (l - r)) hS
-        (fun i ↦ ih i.val i.isLt) hden (hres l (by omega))
-      have hm := jointTotalDegree_mul_le
-        (-C (algebraMap F (Polynomial F) ((l.choose r : F)⁻¹)) :
-          MvPolynomial (Fin (r + 1)) (Polynomial F))
-        (clearedSubstitution C (initialJetSeparant center Q)
-          (fun i : Fin l ↦ rationalTaylorNumeratorOver F center Q i.val)
-          (fun i ↦ 2 * (i.val - r) - 1) (2 * (l - r) - 2)
-          ((optionEquivLeft (Polynomial F) (Fin l)
-            (universalTaylorResidual l center Q)).coeff (l - r)))
-      simp only [jointTotalDegree_neg, Polynomial.algebraMap_eq, jointTotalDegree_C_C,
-        zero_add] at hm
-      have he : 2 * (l - r) - 1 = (2 * (l - r) - 2) + 1 := by omega
-      rw [he]
-      simp only [Polynomial.algebraMap_eq]
-      nlinarith [hm.trans hd]
+      (2 * (l - r) - 1) * b + 1 :=
+  totalDegree_algHom_rationalTaylorNumeratorOver_le
+    (optionEquivRight F (Fin (r + 1))).symm.toAlgHom center Q b (b + 1) le_rfl
+    (fun i ↦ (jointTotalDegree_X (R := F) i).le) hS hres l
 
 /-- Let `Q` have total jet degree at most `v`, and let the initial separant and every
 displacement coefficient of every universal residual have coefficient degree at most `h` in the
