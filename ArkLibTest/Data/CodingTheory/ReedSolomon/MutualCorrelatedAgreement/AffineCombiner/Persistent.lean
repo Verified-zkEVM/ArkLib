@@ -1,0 +1,109 @@
+/-
+Copyright (c) 2026 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Thomas Coratger
+-/
+
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Persistent
+import Mathlib.Algebra.Field.ZMod
+
+/-! # Persistence at poles and rational-pair counting -/
+
+open Polynomial ReedSolomon Finset
+
+private instance : Fact (Nat.Prime 5) := ⟨by decide⟩
+
+private def fullDomain : ZMod 5 ↪ ZMod 5 := Function.Embedding.refl _
+
+private def spike (i : ZMod 5) : ZMod 5 := if i = 0 then 1 else 0
+
+-- `H = 0`, `L = X` explains four coordinates, while the value at the pole is excluded.
+example : IsAffinePersistent fullDomain 0 spike 0 4 0 1 0 := by
+  refine ⟨0, X, X_ne_zero, by simp, by simp, ?_⟩
+  change 4 ≤ #{i ∈ polynomialAgreementSet fullDomain
+    (combinedWord fullDomain 0 spike (affineMultiplier 0 1)) 0 |
+      X.eval (fullDomain i) ≠ 0 ∧ (0 : (ZMod 5)[X]).eval (fullDomain i) =
+        X.eval (fullDomain i) * spike i}
+  have hset : {i ∈ polynomialAgreementSet fullDomain
+      (combinedWord fullDomain 0 spike (affineMultiplier 0 1)) 0 |
+        X.eval (fullDomain i) ≠ 0 ∧ (0 : (ZMod 5)[X]).eval (fullDomain i) =
+          X.eval (fullDomain i) * spike i} = univ.erase 0 := by
+    ext i
+    by_cases hi : i = 0 <;> simp [fullDomain, spike, hi]
+  rw [hset]
+  norm_num [ZMod.card]
+
+private theorem mem_of_card_ge {s : Finset (ZMod 5)} (h : 5 ≤ #s) (i : ZMod 5) : i ∈ s := by
+  have hcard : #s = Fintype.card (ZMod 5) :=
+    Nat.le_antisymm s.card_le_univ (by simpa using h)
+  rw [s.eq_univ_of_card hcard]
+  exact mem_univ i
+
+-- Counting the pole as agreement would incorrectly make this example persistent at all five
+-- coordinates. A constant numerator vanishing at `1` must also vanish at `0`.
+example : ¬ IsAffinePersistent fullDomain 0 spike 0 5 0 1 0 := by
+  rintro ⟨H, L, _, _, hH, hB⟩
+  have h0 := mem_of_card_ge hB 0
+  have h1 := mem_of_card_ge hB 1
+  change 0 ∈ {i ∈ polynomialAgreementSet fullDomain
+    (combinedWord fullDomain 0 spike (affineMultiplier 0 1)) 0 |
+      L.eval (fullDomain i) ≠ 0 ∧ H.eval (fullDomain i) = L.eval (fullDomain i) * spike i} at h0
+  change 1 ∈ {i ∈ polynomialAgreementSet fullDomain
+    (combinedWord fullDomain 0 spike (affineMultiplier 0 1)) 0 |
+      L.eval (fullDomain i) ≠ 0 ∧ H.eval (fullDomain i) = L.eval (fullDomain i) * spike i} at h1
+  have hconstant : H = C (H.coeff 0) := degree_le_zero_iff.mp hH
+  simp only [mem_filter] at h0 h1
+  have h0 := h0.2
+  have h1 := h1.2
+  have heval (x : ZMod 5) : H.eval x = H.coeff 0 := by
+    simpa only [eval_C] using congrArg (fun Q : (ZMod 5)[X] ↦ Q.eval x) hconstant
+  have hL : L.eval 0 ≠ 0 := by simpa [fullDomain] using h0.1
+  have hH0 : H.coeff 0 = L.eval 0 := by
+    simpa [fullDomain, spike, heval] using h0.2
+  have hH1 : H.coeff 0 = 0 := by
+    simpa [fullDomain, spike, heval] using h1.2
+  exact hL (hH0.symm.trans hH1)
+
+-- A nonpolynomial explanation: `G = 1 / X` gives `X * G = 1` away from the pole.
+example : IsAffinePersistent fullDomain 0 (fun i ↦ i⁻¹) 1 4 0 1 1 := by
+  refine ⟨1, X, X_ne_zero, by simp, by simp, ?_⟩
+  change 4 ≤ #{i ∈ polynomialAgreementSet fullDomain
+    (combinedWord fullDomain 0 (fun i ↦ i⁻¹) (affineMultiplier 0 1)) 1 |
+      X.eval (fullDomain i) ≠ 0 ∧ (1 : (ZMod 5)[X]).eval (fullDomain i) =
+        X.eval (fullDomain i) * i⁻¹}
+  have hset : {i ∈ polynomialAgreementSet fullDomain
+      (combinedWord fullDomain 0 (fun i ↦ i⁻¹) (affineMultiplier 0 1)) 1 |
+        X.eval (fullDomain i) ≠ 0 ∧ (1 : (ZMod 5)[X]).eval (fullDomain i) =
+          X.eval (fullDomain i) * i⁻¹} = univ.erase 0 := by
+    ext i
+    by_cases hi : i = 0 <;> simp [fullDomain, hi]
+  rw [hset]
+  norm_num [ZMod.card]
+
+-- The second branch of Lemma 4.4 applies to `G = 1 / X` at every degree bound.
+open Classical in
+example (d : ℕ) :
+    #{c : ZMod 5 × ZMod 5 | ∃ P : (ZMod 5)[X], P.degree ≤ d ∧
+      algebraMap (ZMod 5)[X] (RatFunc (ZMod 5)) P =
+        algebraMap (ZMod 5)[X] (RatFunc (ZMod 5)) (affineMultiplier c.1 c.2) *
+          (algebraMap (ZMod 5)[X] (RatFunc (ZMod 5)) X)⁻¹} ≤ 5 := by
+  classical
+  have hx : algebraMap (ZMod 5)[X] (RatFunc (ZMod 5)) X ≠ 0 :=
+    (map_ne_zero_iff _ (RatFunc.algebraMap_injective (ZMod 5))).mpr X_ne_zero
+  have hnot : ¬ ∃ F₁ G₁ : (ZMod 5)[X],
+      algebraMap (ZMod 5)[X] (RatFunc (ZMod 5)) F₁ = 0 ∧
+      algebraMap (ZMod 5)[X] (RatFunc (ZMod 5)) G₁ =
+        (algebraMap (ZMod 5)[X] (RatFunc (ZMod 5)) X)⁻¹ ∧
+      F₁.degree ≤ d ∧ G₁.degree < d := by
+    rintro ⟨_, G₁, _, hG, _, _⟩
+    have hmul : algebraMap (ZMod 5)[X] (RatFunc (ZMod 5)) (G₁ * X) =
+        algebraMap (ZMod 5)[X] (RatFunc (ZMod 5)) 1 := by
+      rw [map_mul, hG, inv_mul_cancel₀ hx, map_one]
+    have hpoly := RatFunc.algebraMap_injective (ZMod 5) hmul
+    have := congrArg (Polynomial.eval (0 : ZMod 5)) hpoly
+    norm_num at this
+  simpa [ZMod.card] using card_ratFunc_combination_le 0
+    (algebraMap (ZMod 5)[X] (RatFunc (ZMod 5)) X)⁻¹ hnot
+
+#print axioms ReedSolomon.card_ratFunc_combination_le
+#print axioms ReedSolomon.card_isAffineExceptional_persistent_le

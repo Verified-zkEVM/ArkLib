@@ -25,6 +25,7 @@ Each pair explains at most `max q (n choose 2)` exceptional challenges.
 
 ## Main definitions
 
+* `ReedSolomon.affinePersistenceSet`: agreement points explained by `H / L`, excluding poles.
 * `ReedSolomon.IsAffinePersistent`: persistence of a candidate at a threshold.
 
 ## Main statements
@@ -48,6 +49,12 @@ open Polynomial Finset
 
 variable {F : Type*} [Field F] [DecidableEq F] {ι : Type*} [Fintype ι]
 
+/-- The agreement points of `P` where `L` does not vanish and `H = L g`. -/
+noncomputable def affinePersistenceSet (domain : ι ↪ F) (f g : ι → F) (α β : F) (P H L : F[X]) :
+    Finset ι :=
+  {i ∈ polynomialAgreementSet domain (combinedWord domain f g (affineMultiplier α β)) P |
+    L.eval (domain i) ≠ 0 ∧ H.eval (domain i) = L.eval (domain i) * g i}
+
 /-- `P` is persistent at threshold `B` for the challenge `(α, β)`.
 
 Some `G = H / L`, with `deg H ≤ d`, `L ≠ 0` and `deg L ≤ 1`, agrees with `g` at `B` points.
@@ -57,14 +64,7 @@ These points agree with `P` and avoid the root of `L`.
 The partner `F = P - (α + β X) G` then agrees with `f` there too. -/
 def IsAffinePersistent (domain : ι ↪ F) (f g : ι → F) (d B : ℕ) (α β : F) (P : F[X]) : Prop :=
   ∃ H L : F[X], L ≠ 0 ∧ L.degree ≤ 1 ∧ H.degree ≤ d ∧
-    B ≤ #{i ∈ polynomialAgreementSet domain (combinedWord domain f g (affineMultiplier α β)) P |
-      L.eval (domain i) ≠ 0 ∧ H.eval (domain i) = L.eval (domain i) * g i}
-
-/-- The agreement points of `P` where `L` does not vanish and `H = L g`. -/
-private noncomputable def persistenceSet (domain : ι ↪ F) (f g : ι → F) (α β : F) (P H L : F[X]) :
-    Finset ι :=
-  {i ∈ polynomialAgreementSet domain (combinedWord domain f g (affineMultiplier α β)) P |
-    L.eval (domain i) ≠ 0 ∧ H.eval (domain i) = L.eval (domain i) * g i}
+    B ≤ #(affinePersistenceSet domain f g α β P H L)
 
 /-- The rational pair `(P - (α + β X) H / L, H / L)`. -/
 private noncomputable def persistentPair (α β : F) (P H L : F[X]) : RatFunc F × RatFunc F :=
@@ -74,20 +74,22 @@ private noncomputable def persistentPair (α β : F) (P H L : F[X]) : RatFunc F 
 
 open Classical in
 /-- Persistent candidates with distinct rational pairs share at most `d + 1` points. -/
-private theorem card_inter_persistenceSet_le {domain : ι ↪ F} {f g : ι → F} {d : ℕ}
+private theorem card_inter_affinePersistenceSet_le {domain : ι ↪ F} {f g : ι → F} {d : ℕ}
     {α₀ β₀ α₁ β₁ : F} {P₀ H₀ L₀ P₁ H₁ L₁ : F[X]} (hP₀ : P₀.degree ≤ d) (hP₁ : P₁.degree ≤ d)
     (hL₀ : L₀ ≠ 0) (hL₁ : L₁ ≠ 0) (hL₀d : L₀.degree ≤ 1) (hL₁d : L₁.degree ≤ 1)
     (hH₀ : H₀.degree ≤ d) (hH₁ : H₁.degree ≤ d)
     (hne : persistentPair α₀ β₀ P₀ H₀ L₀ ≠ persistentPair α₁ β₁ P₁ H₁ L₁) :
-    #(persistenceSet domain f g α₀ β₀ P₀ H₀ L₀ ∩ persistenceSet domain f g α₁ β₁ P₁ H₁ L₁) ≤
+    #(affinePersistenceSet domain f g α₀ β₀ P₀ H₀ L₀ ∩
+      affinePersistenceSet domain f g α₁ β₁ P₁ H₁ L₁) ≤
       d + 1 := by
-  set s := persistenceSet domain f g α₀ β₀ P₀ H₀ L₀ ∩ persistenceSet domain f g α₁ β₁ P₁ H₁ L₁
+  set s := affinePersistenceSet domain f g α₀ β₀ P₀ H₀ L₀ ∩
+      affinePersistenceSet domain f g α₁ β₁ P₁ H₁ L₁
   have hmem : ∀ i ∈ s, (P₀.eval (domain i) = f i + (α₀ + β₀ * domain i) * g i ∧
       H₀.eval (domain i) = L₀.eval (domain i) * g i) ∧
       (P₁.eval (domain i) = f i + (α₁ + β₁ * domain i) * g i ∧
       H₁.eval (domain i) = L₁.eval (domain i) * g i) := by
     intro i hi
-    simp only [s, persistenceSet, mem_inter, mem_filter, mem_polynomialAgreementSet,
+    simp only [s, affinePersistenceSet, mem_inter, mem_filter, mem_polynomialAgreementSet,
       combinedWord_affineMultiplier] at hi
     exact ⟨⟨hi.1.1, hi.1.2.2⟩, ⟨hi.2.1, hi.2.2.2⟩⟩
   have hinj : Set.InjOn domain (s : Set ι) := domain.injective.injOn
@@ -157,7 +159,7 @@ theorem card_isAffineExceptional_persistent_le [Fintype F] (domain : ι ↪ F) (
   set M := max (Fintype.card F) ((Fintype.card ι).choose 2)
   have hdata : ∀ c : F × F, ∃ P H L : F[X], c ∈ C →
       IsAffineExceptional domain f g d A 1 c.1 c.2 P ∧ L ≠ 0 ∧ L.degree ≤ 1 ∧ H.degree ≤ d ∧
-        B ≤ #(persistenceSet domain f g c.1 c.2 P H L) := by
+        B ≤ #(affinePersistenceSet domain f g c.1 c.2 P H L) := by
     intro c
     by_cases hc : c ∈ C
     · obtain ⟨P, hex, H, L, hL, hLd, hH, hB⟩ := (mem_filter.mp hc).2
@@ -181,11 +183,12 @@ theorem card_isAffineExceptional_persistent_le [Fintype F] (domain : ι ↪ F) (
   have hrep : ∀ p ∈ T, ∃ c ∈ C, π c = p := fun p hp ↦ mem_image.mp hp
   choose! rep hrepC hrepπ using hrep
   have hJT := card_mul_sq_sub_card_mul_le_of_inter_card_le T
-    (fun p ↦ persistenceSet domain f g (rep p).1 (rep p).2 (P (rep p)) (H (rep p)) (L (rep p)))
+    (fun p ↦ affinePersistenceSet domain f g (rep p).1 (rep p).2
+      (P (rep p)) (H (rep p)) (L (rep p)))
     B (d + 1) (fun p hp ↦ (hdata _ (hrepC p hp)).2.2.2.2) fun p hp p' hp' hne ↦ by
       have h₀ := hdata _ (hrepC p hp)
       have h₁ := hdata _ (hrepC p' hp')
-      refine card_inter_persistenceSet_le h₀.1.1 h₁.1.1 h₀.2.1 h₁.2.1 h₀.2.2.1 h₁.2.2.1
+      refine card_inter_affinePersistenceSet_le h₀.1.1 h₁.1.1 h₀.2.1 h₁.2.1 h₀.2.2.1 h₁.2.2.1
         h₀.2.2.2.1 h₁.2.2.2.1 fun h ↦ hne ?_
       rw [← hrepπ p hp, ← hrepπ p' hp']
       exact h
