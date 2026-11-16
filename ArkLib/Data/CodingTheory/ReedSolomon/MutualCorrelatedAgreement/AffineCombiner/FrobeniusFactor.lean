@@ -16,7 +16,9 @@ public import ArkLib.ToMathlib.MvPolynomial.FrobeniusPullback
 Over a perfect field of exponential characteristic `p`, let `Q` be irreducible with positive
 `Z`-degree.
 
-Then `Q(X^s, Y^s, Z) = R^s` with `s = p^e` and `R` irreducible with nonzero `Z`-derivative.
+There is an irreducible `R` with nonzero `Z`-derivative, built so that `Q(X^s, Y^s, Z) = R^s`.
+
+Here `s = p^e`.
 
 A root `P` of `Q` along the line `α + β X` gives the root `P(X^s)` of `R` along the line
 `α^{1/s} + β^{1/s} X`.

@@ -27,4 +27,4 @@ example {F : Type*} [Field F] [DecidableEq F] {ι : Type*} [Fintype ι] (domain 
     ∃ Q, IsAffineInterpolant domain f g d (affineThreshold d (Fintype.card ι) η)
       (affineMultiplicity η) (affineYZBudget d (Fintype.card ι) η)
       (affineRootBudget d (Fintype.card ι) η) Q :=
-  exists_isAffineInterpolant domain f g h.yzBudget_le h.surplus
+  exists_isAffineInterpolant domain f g h.surplus

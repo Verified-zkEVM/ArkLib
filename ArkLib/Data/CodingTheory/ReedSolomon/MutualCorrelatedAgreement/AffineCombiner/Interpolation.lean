@@ -16,9 +16,11 @@ public import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 /-!
 # Trivariate interpolation along affine lines
 
-A nonzero `Q(X, Y, Z)` of bounded degree vanishes to order `m` at every `(z, f(z) + Y g(z))`.
+A nonzero `Q(X, Y, Z)` of bounded degree is built to vanish to order `m` at every point.
 
-Then `Q(X, α + β X, P(X)) = 0` whenever `P` agrees with `f + (α + β X) g` on `A` points.
+The points are `(z, f(z) + Y g(z))`, one per domain point `z`.
+
+Then `Q(X, α + β X, P(X)) = 0` whenever `P` agrees with `f + (α + β X) g` on at least `A` points.
 
 Such a `Q` exists as soon as there are more unknown coefficients than linear constraints.
 
@@ -154,7 +156,7 @@ variable {F : Type*} [Field F] [DecidableEq F] {ι : Type*} [Fintype ι]
 
 /-- A nonzero `Q` of bounded degrees that vanishes along every line with an agreeing candidate.
 
-The candidate has degree `≤ d` and agrees with the combined word on `A` points. -/
+The candidate has degree `≤ d` and agrees with the combined word on at least `A` points. -/
 structure IsAffineInterpolant (domain : ι ↪ F) (f g : ι → F) (d A m D M : ℕ)
     (Q : MvPolynomial AffineVar F) : Prop where
   /-- The interpolant is nonzero. -/
@@ -173,7 +175,6 @@ structure IsAffineInterpolant (domain : ι ↪ F) (f g : ι → F) (d A m D M : 
 open Polynomial.SymbolicInterpolation in
 /-- An interpolant exists when the unknowns outnumber the constraints. -/
 theorem exists_isAffineInterpolant (domain : ι ↪ F) (f g : ι → F) {d A m D M : ℕ}
-    (hD : D ≤ m * A)
     (hsurplus : Fintype.card ι * (constraintSupport m (D + 1)).card <
       (monomialSupport d (m * A - D) (M + 1) (D + 1)).card) :
     ∃ Q, IsAffineInterpolant domain f g d A m D M Q := by
