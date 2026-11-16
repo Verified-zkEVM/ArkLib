@@ -138,7 +138,9 @@ theorem exists_affineExceptional_finset_card_le_of_interpolation [Fintype F] (do
   have hpers := card_isAffineExceptional_persistent_le domain f g (A := A) hdB hJ
   exact ⟨Ex, by linarith, hgood⟩
 
-/-- The affine MCA error at the threshold `⌈(√ρ + η) n⌉`, for any interpolation parameters. -/
+/-- The affine MCA error at the threshold `⌈(√ρ + η) n⌉`, for any interpolation parameters.
+
+The persistent part uses the real Johnson factor `ℓ`, not its floor. -/
 theorem affineMCAError_le_of_interpolation [Fintype F] (domain : ι ↪ F) {d m D M : ℕ} {η : ℝ}
     (hd : 1 ≤ d) (hdn : d < Fintype.card ι) (hη : 0 < η)
     (hη1 : η < 1 - √((d : ℝ) / Fintype.card ι))
@@ -158,7 +160,11 @@ theorem affineMCAError_le_of_interpolation [Fintype F] (domain : ι ↪ F) {d m 
   exact affineMCAError_le_of_forall_exists domain fun f g ↦
     exists_affineExceptional_finset_card_le_of_interpolation domain f g hd hdn hη hη1 hsurplus hJ
 
-/-- Theorem 1.1, counting form. -/
+/-- With one point of agreement loss, few challenges are exceptional.
+
+Here `ρ = d / n`, `0 < η < 1 - √ρ` and `n η² ≥ 4 / ρ`.
+
+At most `4 q / η + 2^14 n² / (ρ³ η¹⁰)` challenges are exceptional at `⌈(√ρ + η) n⌉`. -/
 theorem exists_affineExceptional_finset_card_le [Fintype F] (domain : ι ↪ F) (f g : ι → F)
     {d : ℕ} {η : ℝ} (hd : 1 ≤ d) (hdn : d < Fintype.card ι) (hη : 0 < η)
     (hη1 : η < 1 - √((d : ℝ) / Fintype.card ι))
@@ -275,7 +281,9 @@ theorem exists_affineExceptional_finset_card_le [Fintype F] (domain : ι ↪ F) 
       D ^ 2 + 4 * (d * M) ^ 2 * D ^ 3 * ((n : ℝ) / (A - B : ℕ)) ^ 2 := by ring
   linarith [hnum, hpers, hfin, hterm]
 
-/-- Theorem 1.1. -/
+/-- With one point of loss, the affine MCA error is at most `4 / (η q) + 2^14 n² / (ρ³ η¹⁰ q²)`.
+
+Here `ρ = d / n`, `0 < η < 1 - √ρ`, `n η² ≥ 4 / ρ` and the threshold is `⌈(√ρ + η) n⌉`. -/
 theorem affineMCAError_le [Fintype F] (domain : ι ↪ F) {d : ℕ} {η : ℝ}
     (hd : 1 ≤ d) (hdn : d < Fintype.card ι) (hη : 0 < η)
     (hη1 : η < 1 - √((d : ℝ) / Fintype.card ι))
