@@ -821,9 +821,27 @@ public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.InitialObject.Execu
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Nondegeneracy
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.QueryBounds
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Completeness
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.Backtrack
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.Backtrack.Algorithm
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.Backtrack.Basic
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.Backtrack.Converse
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.Backtrack.HonestChain
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.Completeness
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.D2SRateOnlyCache
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.Execution
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.Lookahead
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.MessageLaw
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.ProverTransform
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.ProverTransform.D2SAlgo
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.ProverTransform.Query
+public import
+  ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.ProverTransform.RateOnly
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.TraceDataStructures
+public import
+  ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.TraceDataStructures.Basic
+public import
+  ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.TraceDataStructures.ListBacked
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.TraceTransform
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.ZeroKnowledge.Defs
 public import
   ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.ZeroKnowledge.SaltAbsorption
@@ -1283,4 +1301,7 @@ public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.PrincipalOpenParametri
 public import ArkLib.ToMathlib.RingTheory.Radical.Representative
 public import ArkLib.ToMathlib.Set.Finite
 public import ArkLib.VCVioStaging.OracleComp.Constructions.RandomPermutation.Basic
+public import ArkLib.VCVioStaging.OracleComp.Constructions.SampleableType
+public import ArkLib.VCVioStaging.OracleComp.QueryTracking.AbortZeroBound
+public import ArkLib.VCVioStaging.OracleComp.QueryTracking.QueryBound
 public import ArkLib.VCVioStaging.OracleComp.SimSemantics.OptionT

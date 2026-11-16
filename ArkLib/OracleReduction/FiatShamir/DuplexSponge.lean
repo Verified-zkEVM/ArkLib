@@ -8,6 +8,10 @@ module
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Defs
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Nondegeneracy
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.QueryBounds
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.Backtrack
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.Lookahead
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.ProverTransform
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.TraceTransform
 public import
   ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.ZeroKnowledge.SimulationReduction
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Salted
