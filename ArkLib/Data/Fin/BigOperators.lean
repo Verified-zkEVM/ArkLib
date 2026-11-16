@@ -11,9 +11,11 @@ public import Mathlib.Algebra.BigOperators.Fin
 
 /-! # Sums over finite coordinate domains
 
-This file owns splitting dependent finite products into their first coordinate and tail,
-transport of uniform product sums along equality of dimensions, and counting tuples by their
-first coordinate.
+This file splits dependent finite products into their first coordinate and tail.
+
+It transports uniform product sums along equality of dimensions.
+
+It counts tuples by their first coordinate.
 -/
 
 @[expose] public section

@@ -14,17 +14,19 @@ public import Mathlib.Tactic.Ring
 
 Here a quadratic is a polynomial of degree at most 2.
 
-A message is its value at zero and its coefficient of `X ^ 2`.
+Its message is its value at zero and its coefficient of `X ^ 2`.
 
 The running claim determines the linear coefficient.
 
-Decoding enforces the Boolean sum, so acceptance is unconditional.
+Decoding is a bijection onto the quadratics whose Boolean sum is the claim.
 
-Decoding is a bijection between messages and the quadratics whose Boolean sum is the claim.
+## Scope
+
+Decoding enforces the Boolean sum, so acceptance is unconditional.
 
 No division or restriction on the characteristic is needed.
 
-Only degree 2 is compressed here; no encoder is given for a general degree bound.
+Only degree 2 is compressed: there is no encoder for a general degree bound.
 -/
 
 @[expose] public section

@@ -189,13 +189,17 @@ def quadraticChecks : IO Unit := do
 def linearOps : Sumcheck.MessageOps F (F × F) :=
   Sumcheck.plainOps ({0, 1} : Finset F) fun m x => m.1 + m.2 * x
 
-/-- Replay of compressed messages against fixed challenges `4, 3`.
+/-- Replay of compressed messages against the fixed challenges `4, 3`, in `ZMod 17`.
 
-For `g = x^2 + y + 1` the Boolean sum is `8`, the rounds are `2X^2 + 3` and `Y`, and
-`g(4, 3) = 20 = 3`.
+For `g = x^2 + y + 1`:
+- the Boolean sum is `8`;
+- the rounds are `2X^2 + 3` and `Y`;
+- `g(4, 3) = 20 = 3`.
 
-For `g = x + 2y + 3` the Boolean sum is `18 = 1`, the rounds are `2X + 8` and `2Y + 7`, and
-`g(4, 3) = 13`.
+For `g = x + 2y + 3`:
+- the Boolean sum is `18 = 1`;
+- the rounds are `2X + 8` and `2Y + 7`;
+- `g(4, 3) = 13`.
 
 Replaying the same messages from the false claim `2` ends at `8`, not at `13`.
 -/
