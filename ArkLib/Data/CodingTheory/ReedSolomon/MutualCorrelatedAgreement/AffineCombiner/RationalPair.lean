@@ -9,18 +9,25 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Aff
 public import Mathlib.FieldTheory.RatFunc.Basic
 
 /-!
-# Exceptional challenges compatible with one rational pair
+# Exceptional challenges explained by one rational pair
 
-Fix two rational functions `F₀ G₀` over `F`.
-A challenge `(α, β)` is compatible with the pair when `F₀ + (α + β X) G₀` is a polynomial `P`.
-This file bounds the number of compatible challenges that make `P` exceptional with agreement
-loss one.
+Fix two rational functions `F₀, G₀`.
 
-When `F₀ G₀` are polynomials within the witness degree bounds, two lost agreement points of `P`
-determine the challenge, so at most `n choose 2` challenges are exceptional.
+A challenge `(α, β)` is compatible with them when `F₀ + (α + β X) G₀` is a polynomial.
 
-Otherwise the challenges for which the combination is a polynomial of degree at most `d` form a
-proper affine subspace of `F²`, which has at most `q` points.
+## Polynomial pairs within the degree bounds
+
+An exceptional challenge loses at least two agreement points.
+
+At each lost point `x`, the value `α + β x` is fixed by the pair.
+
+Two points fix `(α, β)`, so at most `n choose 2` challenges are exceptional.
+
+## Other pairs
+
+The compatible challenges of degree at most `d` form a proper affine subspace of `F²`.
+
+So there are at most `q` of them.
 
 ## Main statements
 
@@ -45,8 +52,7 @@ open Polynomial Finset
 
 variable {F : Type*} [Field F] [DecidableEq F] {ι : Type*} [Fintype ι]
 
-/-- Two challenges that both lose the agreement point `i` of `F₀ + (α + β X) G₀` take the same
-multiplier value at `i`. -/
+/-- Two challenges that both lose the point `i` take the same multiplier value there. -/
 theorem eval_affineMultiplier_eq_of_mem_agreementLoss {domain : ι ↪ F} {f g : ι → F}
     {F₀ G₀ : F[X]} {α β α' β' : F} {i : ι}
     (h : i ∈ agreementLoss domain f g (affineMultiplier α β)
@@ -69,7 +75,7 @@ theorem eval_affineMultiplier_eq_of_mem_agreementLoss {domain : ι ↪ F} {f g :
   · exact absurd (sub_eq_zero.mp h) hG
 
 open Classical in
-/-- Polynomial pair within the degree bounds: at most `n choose 2` challenges. -/
+/-- A polynomial pair within the degree bounds explains at most `n choose 2` challenges. -/
 theorem card_isAffineExceptional_add_mul_le [Fintype F] (domain : ι ↪ F) (f g : ι → F)
     {d A : ℕ} (F₀ G₀ : F[X]) (hF : F₀.degree ≤ d) (hG : G₀.degree < d) :
     #{c : F × F | IsAffineExceptional domain f g d A 1 c.1 c.2
@@ -102,8 +108,9 @@ theorem card_isAffineExceptional_add_mul_le [Fintype F] (domain : ι ↪ F) (f g
 
 omit [DecidableEq F] in
 open Classical in
-/-- A rational pair that is not a polynomial pair within the degree bounds: at most `q`
-challenges make the combination a polynomial of degree at most `d`. -/
+/-- Any other rational pair is compatible with at most `q` challenges.
+
+Compatible means the combination is a polynomial of degree at most `d`. -/
 theorem card_ratFunc_combination_le [Fintype F] {d : ℕ} (F₀ G₀ : RatFunc F)
     (h : ¬ ∃ F₁ G₁ : F[X], algebraMap F[X] (RatFunc F) F₁ = F₀ ∧
       algebraMap F[X] (RatFunc F) G₁ = G₀ ∧ F₁.degree ≤ d ∧ G₁.degree < d) :
@@ -169,7 +176,7 @@ theorem card_ratFunc_combination_le [Fintype F] {d : ℕ} (F₀ G₀ : RatFunc F
   exact_mod_cast (show G₁.natDegree + 1 ≤ d by exact_mod_cast hQ)
 
 open Classical in
-/-- Every rational pair: at most `max q (n choose 2)` exceptional challenges. -/
+/-- Every rational pair explains at most `max q (n choose 2)` exceptional challenges. -/
 theorem card_isAffineExceptional_ratFunc_le [Fintype F] (domain : ι ↪ F) (f g : ι → F)
     {d A : ℕ} (F₀ G₀ : RatFunc F) :
     #{c : F × F | ∃ P : F[X], algebraMap F[X] (RatFunc F) P =

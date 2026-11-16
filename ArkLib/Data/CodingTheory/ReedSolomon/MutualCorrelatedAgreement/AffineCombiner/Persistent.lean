@@ -13,16 +13,15 @@ public import ArkLib.Data.Polynomial.SpecializationAvoidance
 /-!
 # Persistent exceptional challenges
 
-A candidate `P` for the challenge `(α, β)` is persistent at threshold `B` when a rational function
-`G = H / L` with `deg H ≤ d` and `deg L ≤ 1` agrees with `g` at `B` agreement points of `P`.
+A candidate is persistent when a rational function `G = H / L` explains many agreements.
 
-The paired rational function `F = P - (α + β X) G` then agrees with `f` at the same points.
+Here `deg H ≤ d`, `deg L ≤ 1`, and `G` agrees with `g` at `B` agreement points.
 
-Two distinct rational pairs that arise this way share at most `d + 1` such points, so the Johnson
-bound for set families limits the number of pairs.
+Two distinct explaining pairs share at most `d + 1` points.
 
-Each pair accounts for at most `max q (n choose 2)` exceptional challenges, which bounds the
-persistent exceptional challenges.
+So the Johnson bound for set families limits the number of pairs.
+
+Each pair explains at most `max q (n choose 2)` exceptional challenges.
 
 ## Main definitions
 
@@ -49,10 +48,13 @@ open Polynomial Finset
 
 variable {F : Type*} [Field F] [DecidableEq F] {ι : Type*} [Fintype ι]
 
-/-- `(α, β, P)` is persistent at threshold `B` when some `G = H / L` with `deg H ≤ d`, `L ≠ 0`
-and `deg L ≤ 1` agrees with `g` at `B` agreement points of `P` where `L` does not vanish.
+/-- `P` is persistent at threshold `B` for the challenge `(α, β)`.
 
-The paired `F = P - (α + β X) G` then agrees with `f` at those points automatically. -/
+Some `G = H / L`, with `deg H ≤ d`, `L ≠ 0` and `deg L ≤ 1`, agrees with `g` at `B` points.
+
+These points agree with `P` and avoid the root of `L`.
+
+The partner `F = P - (α + β X) G` then agrees with `f` there too. -/
 def IsAffinePersistent (domain : ι ↪ F) (f g : ι → F) (d B : ℕ) (α β : F) (P : F[X]) : Prop :=
   ∃ H L : F[X], L ≠ 0 ∧ L.degree ≤ 1 ∧ H.degree ≤ d ∧
     B ≤ #{i ∈ polynomialAgreementSet domain (combinedWord domain f g (affineMultiplier α β)) P |
@@ -71,8 +73,7 @@ private noncomputable def persistentPair (α β : F) (P H L : F[X]) : RatFunc F 
     algebraMap F[X] (RatFunc F) H / algebraMap F[X] (RatFunc F) L)
 
 open Classical in
-/-- Two persistent candidates with distinct rational pairs share at most `d + 1` points of their
-persistence sets. -/
+/-- Persistent candidates with distinct rational pairs share at most `d + 1` points. -/
 private theorem card_inter_persistenceSet_le {domain : ι ↪ F} {f g : ι → F} {d : ℕ}
     {α₀ β₀ α₁ β₁ : F} {P₀ H₀ L₀ P₁ H₁ L₁ : F[X]} (hP₀ : P₀.degree ≤ d) (hP₁ : P₁.degree ≤ d)
     (hL₀ : L₀ ≠ 0) (hL₁ : L₁ ≠ 0) (hL₀d : L₀.degree ≤ 1) (hL₁d : L₁.degree ≤ 1)
@@ -142,8 +143,9 @@ private theorem card_inter_persistenceSet_le {domain : ι ↪ F} {f g : ι → F
       · exact (natDegree_mul_le).trans (by omega)
 
 open Classical in
-/-- Persistent exceptional challenges number at most `ℓ · max q (n choose 2)`, where
-`ℓ = n (B - d - 1) / (B² - n (d + 1))` bounds the number of rational pairs. -/
+/-- There are at most `ℓ · max q (n choose 2)` persistent exceptional challenges.
+
+The factor `ℓ = n (B - d - 1) / (B² - n (d + 1))` bounds the number of rational pairs. -/
 theorem card_isAffineExceptional_persistent_le [Fintype F] (domain : ι ↪ F) (f g : ι → F)
     {d A B : ℕ} (hdB : d + 1 < B) (hJ : Fintype.card ι * (d + 1) < B ^ 2) :
     (#{c : F × F | ∃ P, IsAffineExceptional domain f g d A 1 c.1 c.2 P ∧
