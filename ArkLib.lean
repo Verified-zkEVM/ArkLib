@@ -824,10 +824,13 @@ public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Completene
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.Completeness
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.Execution
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.MessageLaw
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.ZeroKnowledge.Defs
 public import
   ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.ZeroKnowledge.SaltAbsorption
 public import
   ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.ZeroKnowledge.SaltForest
+public import
+  ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.ZeroKnowledge.SimulationReduction
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Salted
 public import ArkLib.OracleReduction.FiatShamir.Protocol
 public import ArkLib.OracleReduction.FiatShamir.Protocol.Canonical

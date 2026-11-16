@@ -1,0 +1,279 @@
+\subsection{DSFS zero knowledge}
+\label{sec:duplex_sponge_zero_knowledge}
+
+This section formalizes the zero-knowledge reduction for the duplex-sponge Fiat--Shamir (DSFS) transformation of Chiesa and Orr\`u~\cite{CO25}. The argument passes through the paper's adaptive zero-knowledge experiments:
+\begin{equation*}
+  \Distribution_{\mathrm{real}}=\Hyb{0}
+    \longrightarrow\Hyb{1}
+    \longrightarrow\Distribution_{\mathrm{sim}}.
+\end{equation*}
+Here equality with \(\Hyb{0}\) is equality of output distributions. The hybrid runs the honest prover through the entire IP schedule, including steps after its last prover message. Omitting these extra steps preserves the NARG string and the adversary's output distribution: both versions use the same sampled \(\SpongeOracles\), which these steps do not modify. Permutation programming gives the first transition, including the honest sponge's capacity-collision cost. The remaining transitions use the verifier message-decoding bias and the public-coin honest-verifier zero-knowledge guarantee of \Cref{def:hvzk}. Throughout, \(\IPHonestVerifierView(\IPProver,\Instance,\WitnessValue)\) denotes the honest-verifier view random variable from \Cref{def:ip_verifier_view}, specialized to uniform independent verifier messages and private uniform prover coins. The final IP and NARG verification procedures are not executed in these zero-knowledge experiments.
+
+Each hybrid lemma fixes the protocol, finite oracle spaces, sponge parameters and codec, and uses independent uniform samples for private randomness. It assumes the nondegenerate-rounds condition stated below. No polynomial running-time guarantee is formalized.
+
+The final theorem allows the protocol, codec, alphabet, sponge dimensions and salt length to depend on public \((\secpar,\InstanceSizeBound)\). The hybrid lemmas below are stated at one fixed configuration; the final theorem applies them to the valid pairs with \(\InstanceSizeOf{\Instance}\le\InstanceSizeBound\), using the same honest-verifier simulator and its size-dependent error envelope.
+
+\subsubsection{DSFS simulator}
+
+Write \(\Alphabet\) for the alphabet, \(\SpongeRate>0\) for the rate, \(\SpongeCapacity>0\) for the capacity, and \(\SaltLength\) for the salt length in alphabet symbols. Instantiate \Cref{def:adaptive_zk} with \((\SpongeOracles)\leftarrow\SpongeOracleDistribution\) and permutation programming. The interactive prover uses only private uniform randomness; the theorem does not add an arbitrary stateful auxiliary oracle to that prover. The adversary's budget \(\PublicOracleQueryBound\) counts its queries to \(\SpongeOracles\) before and after receiving the NARG string, excluding private randomness. In particular, it bounds the permutation queries before receiving the NARG string.
+
+\begin{definition}[DSFS simulator]
+  \label{def:dsfs_zk_simulator}
+  Let \(\Alphabet\) be the finite alphabet, \(\SpongeRate,\SpongeCapacity>0\) the sponge rate and capacity, and \(\SaltLength\in\mathbb N\) the salt length in alphabet symbols. Let \(\IPHVZKSimulator\) be a simulator for the public-coin view \(\IPHonestVerifierView(\IPProver,\Instance,\WitnessValue)\) of \Cref{def:hvzk}. This simulator takes only the statement \(\Instance\) and uses private randomness; it does not receive the witness or query the DSFS oracles. Let \(\IPProverPositions,\IPVerifierPositions\) be the prover- and verifier-message positions in protocol order, and let \(\IPProverMessageEncodedLength(i),\IPVerifierMessageEncodedLength(i)\) be their encoded lengths. The decoder \(\CodecDecoder_i:\Alphabet^{\IPVerifierMessageEncodedLength(i)}\to\IPVerifierMessageSpace{i}\) is surjective, where \(\IPVerifierMessageSpace{i}\) is the finite nonempty verifier-message space. Write \(\CodecDecoder^{-1}_{\mathsf{unif}}(\IPVerifierMessages)\) for independently sampling each encoded verifier message uniformly among the encodings that decode to \(\IPVerifierMessage_i\). The DSFS simulator receives \(\Instance\) and query access to the original \(\SpongeHash,\SpongePermutation\). It returns a NARG string \(\NARGString\) and an oracle programming list \(\OracleProgramming\) of permutation query-answer pairs, as follows:
+  \begin{equation*}
+  \left[\begin{array}{l}
+    (\Instance',\IPVerifierMessages,\IPProverMessages)\leftarrow\IPHVZKSimulator(\Instance);\\
+    \EncodedIPVerifierMessages\leftarrow\CodecDecoder^{-1}_{\mathsf{unif}}(\IPVerifierMessages);\\
+    (\NARGString,\OracleProgramming)\leftarrow\DSFSCompile^{\SpongeHash,\SpongePermutation}_{\Instance}(\IPProverMessages,\EncodedIPVerifierMessages);\\
+    \text{return }(\NARGString,\OracleProgramming).
+  \end{array}\right]
+  \end{equation*}
+  Here \((\IPProverMessages,\IPVerifierMessages)\) is an IP transcript (\Cref{def:transcript}) with prover messages \(\IPProverMessages=(\IPProverMessage_i)_{i\in \IPProverPositions}\) and verifier messages \(\IPVerifierMessages=(\IPVerifierMessage_i)_{i\in \IPVerifierPositions}\). The simulator uses its input statement \(\Instance\) to initialize the sponge, even if the IP simulator returns a different \(\Instance'\); it discards \(\Instance'\).
+
+  \(\DSFSCompile\) performs the sponge operations and assembles the NARG string and permutation updates in \cite[Construction~7.5]{CO25}. It takes prover messages \(\IPProverMessages\) and encoded verifier messages \(\EncodedIPVerifierMessages=(\EncodedIPVerifierMessage_i)_{i\in \IPVerifierPositions}\):
+  \begin{equation*}
+  \begin{gathered}
+    \DSFSCompile^{\SpongeHash,\SpongePermutation}_{\Instance}(\IPProverMessages,\EncodedIPVerifierMessages)\\[2pt]
+    \left[\begin{array}{l}
+      \SaltString\leftarrow\Uniform(\Alphabet^{\SaltLength});\\
+      \SpongeState\leftarrow\SpongeSymbol.\SpongeStart^\SpongeHash(\Instance);\\
+      \SpongeState\leftarrow\SpongeSymbol.\SpongeAbsorb^\SpongePermutation(\SpongeState,\SaltString);\quad\OracleProgramming:=[];\\
+      \text{for }j\in \IPProverPositions\cup \IPVerifierPositions\text{ in protocol order:}\\
+      \quad\text{if }j\in \IPProverPositions:\\
+      \qquad\EncodedIPProverMessage_j:=\CodecEncoder_j(\IPProverMessage_j);\\
+      \qquad\SpongeState\leftarrow\SpongeSymbol.\SpongeAbsorb^\SpongePermutation(\SpongeState,\EncodedIPProverMessage_j);\\
+      \quad\text{else }(j\in \IPVerifierPositions):\\
+      \qquad(\SpongeState,\OracleProgramming_j)\leftarrow\DSFSProgramBlocks(j,\SpongeState,\EncodedIPVerifierMessage_j);\\
+      \qquad\OracleProgramming:=\OracleProgramming\mathbin{\|}\OracleProgramming_j;\\
+      \NARGString:=(\SaltString,\IPProverMessages);\\
+      \text{return }(\NARGString,\OracleProgramming).
+    \end{array}\right]
+  \end{gathered}
+  \end{equation*}
+  Here \(\SpongeState\) contains the permutation state and both sponge cursors, \(\mathbin{\|}\) denotes list concatenation, and \(\DSFSProgramBlocks\) returns the updated sponge state together with its permutation edges. The programming list \(\OracleProgramming\) corresponds to the forward query-answer list \(\OracleProgramming_\SpongePermutation\) of \cite[Construction~7.5]{CO25}, the inverse list \(\OracleProgramming_{\SpongeInversePermutation}\) is derived from it when the edges are installed, and the hash list \(\OracleProgramming_\SpongeHash\) is empty because the hash is unchanged. All absorption uses the original permutation. The compiler produces the programming list; the simulated experiment applies it only before resuming \(\adv\).
+
+  The following \(\DSFSProgramBlocks\) corrects the padding and final sponge cursors in \cite[Construction~7.5]{CO25}. It constructs permutation edges intended to make the sponge squeeze a prescribed encoded verifier message. Write \(\SpongeState=(\SpongePermutationState,\SpongeAbsorbIndex,\SpongeSqueezeIndex)\), where \(\SpongePermutationState\in\Alphabet^{\SpongeRate+\SpongeCapacity}\) is the permutation state and \(\SpongeAbsorbIndex,\SpongeSqueezeIndex\) are the absorb and squeeze cursors, and let \(\SpongeVerifierMessageBlockCount(i):=\lceil\IPVerifierMessageEncodedLength(i)/\SpongeRate\rceil\) be the number of rate blocks. For a positive encoded length, the procedure represents a squeeze starting at \(\SpongeSqueezeIndex=\SpongeRate\):
+  \begin{equation*}
+  \begin{gathered}
+    \DSFSProgramBlocks(i,\SpongeState,\EncodedIPVerifierMessage_i)\\[2pt]
+    \left[\begin{array}{l}
+      \text{if }\IPVerifierMessageEncodedLength(i)=0:\ \text{return }(\SpongeState,[]);\\
+      d:=\SpongeRate\SpongeVerifierMessageBlockCount(i)-\IPVerifierMessageEncodedLength(i);\\
+      z\leftarrow\Uniform(\Alphabet^d);\\
+      \text{parse }\EncodedIPVerifierMessage_i\concat z=a_1\concat\cdots\concat a_{\SpongeVerifierMessageBlockCount(i)},
+        \quad a_j\in\Alphabet^{\SpongeRate};\\
+      u_0:=\SpongePermutationState;\\
+      \text{for }j=1,\ldots,\SpongeVerifierMessageBlockCount(i):\\
+      \quad c_j\leftarrow\Uniform(\Alphabet^{\SpongeCapacity});\\
+      \quad u_j:=a_j\concat c_j;\\
+      \OracleProgramming_i:=[(u_{j-1},u_j)]_{j=1}^{\SpongeVerifierMessageBlockCount(i)};\\
+      \SpongeState':=(u_{\SpongeVerifierMessageBlockCount(i)},0,1+((\IPVerifierMessageEncodedLength(i)-1)\bmod \SpongeRate));\\
+      \text{return }(\SpongeState',\OracleProgramming_i).
+    \end{array}\right]
+  \end{gathered}
+  \end{equation*}
+  Here \(a_j\) is the \(j\)th rate block, \(c_j\) its independently sampled capacity segment, and \(\OracleProgramming_i\) lists the edges in increasing block order. The padding \(z\) is independent of all capacity segments; when \(\SpongeRate\mid\IPVerifierMessageEncodedLength(i)\), \(d=0\) and \(z\) is empty.
+
+  \lean{DuplexSpongeFS.ZeroKnowledge.dsfsZKSimulator,
+    DuplexSpongeFS.ZeroKnowledge.compilePlannedView,
+    DuplexSpongeFS.ZeroKnowledge.programBlocks}
+  \uses{def:hvzk, def:transcript, def:dsfs_codec, constr:dsfs_duplex_sponge}
+  \leanok
+\end{definition}
+
+\begin{remark}[Simulator conventions]
+  The Lean implementations of Hybrids~1--3 sample their verifier-message tuples and encodings before running the prover, then compile its messages. The numbered experiment below interleaves these operations, following the presentation of~\cite[Figure~5]{CO25}. Only the current verifier message is revealed to the prover at its turn; future messages and their encodings remain hidden. The message samples and compiler coins are independent of the prover's private coins, and the compiler reads the original fixed oracles. Thus this interleaving preserves the joint distribution of the NARG string and programming list. In Hybrid~3 the decoded messages are independent uniform elements of the protocol's verifier-message spaces, exactly as in \Cref{def:ip_verifier_view}. Hybrids~1 and~2 instead use the distributions obtained by decoding uniform encodings; those distributions need not be uniform.
+\end{remark}
+
+\subsubsection{Hybrid argument}
+
+Write \(q=|\Alphabet|\). Nondegenerate rounds (\Cref{def:dsfs_nondegenerate_rounds}) alternate strictly, contain both prover and verifier messages, and have positive encoded lengths. Either party may send the first or last message.
+\begin{definition}[Zero-knowledge hybrids {\cite[Figure~5]{CO25}}]
+\label{def:dsfs_zk_hybrids}
+Let \(\Alphabet\) be the finite alphabet and \(\IPProverPositions,\IPVerifierPositions\) the prover- and verifier-message positions in protocol order. Let \(\OracleFamily=(\SpongeOracles)\) be the sampled DSFS oracles. At position \(i\), \(\IPVerifierMessageEncodedLength(i)\) is the encoded length and \(\CodecDecoder_i\) the decoder to \(\IPVerifierMessageSpace{i}\). The tuples \(\IPProverMessages,\IPVerifierMessages,\EncodedIPVerifierMessages\) contain the prover messages, verifier messages and encoded verifier messages, respectively. The compiler \(\DSFSCompile^{\SpongeHash,\SpongePermutation}_{\Instance}\) of \Cref{def:dsfs_zk_simulator} turns \((\IPProverMessages,\EncodedIPVerifierMessages)\) into a salted NARG string \(\NARGString\) and an oracle programming list \(\OracleProgramming\) of permutation query-answer pairs, using the original \(\SpongeHash,\SpongePermutation\).
+
+Hybrids~1--4 install this list before resuming the adversary. For a permutation \(\SpongePermutation\) and an ordered list \(\OracleProgramming\) of permutation edges, define
+\begin{equation*}
+\begin{gathered}
+  \DSFSInstallPermutationUpdates(\SpongePermutation,\OracleProgramming)\\[2pt]
+  \left[\begin{array}{l}
+    \SpongePermutation':=\SpongePermutation;\\
+    \text{for }(a,b)\text{ in }\OracleProgramming\text{, in list order:}\\
+    \quad \SpongePermutation':=\mathsf{swap}(\SpongePermutation'(a),b)\circ \SpongePermutation';\\
+    \text{return }\SpongePermutation'.
+  \end{array}\right]
+\end{gathered}
+\end{equation*}
+For each edge \((a,b)\), swap the current output values \(\SpongePermutation'(a)\) and \(b\). If currently \(\SpongePermutation'(a)=u\) and \(\SpongePermutation'(v)=b\), the update changes
+\begin{equation*}
+  a\mapsto u,\quad v\mapsto b
+  \qquad\longrightarrow\qquad
+  a\mapsto b,\quad v\mapsto u.
+\end{equation*}
+All other mappings stay unchanged, so the update preserves bijectivity. If \(\SpongePermutation'(a)=b\) already, nothing changes. Each edge uses the permutation resulting from the preceding updates. Write \(\OracleFamily[\OracleProgramming]=(\SpongeHash,\SpongePermutation',\SpongePermutation'^{-1})\), where \(\SpongePermutation'=\DSFSInstallPermutationUpdates(\SpongePermutation,\OracleProgramming)\); the hash is unchanged. Conflicting edges can invalidate earlier ones, so transcript consistency requires the collision analysis below.
+
+The adversary \(\adv\) chooses \((\Instance,\WitnessValue)\in\Relation\) and retains private state \(\mathsf{aux}\); it resumes on input \((\mathsf{aux},\NARGString)\). Here \(\IPHVZKSimulator\) is the statement-only IP-view simulator and \(\NARGZKSimulator\) is its DSFS simulator from \Cref{def:dsfs_zk_simulator}. Write \(\NARGProver_{\mathsf{full}}\) for the salted DSFS prover that processes the full IP schedule, including terminal verifier messages. It samples a uniform salt and obtains verifier messages by actual sponge squeezing with \(\SpongePermutation\). Hybrid~0 is the real experiment of \Cref{def:adaptive_zk}:
+\begin{equation*}
+\begin{gathered}
+  \Hyb{0}(\adv)\\[2pt]
+\left[\begin{array}{rl}
+  1.& \OracleFamily=(\SpongeOracles)\leftarrow\SpongeOracleDistribution;\\
+  2.& (\Instance,\WitnessValue,\mathsf{aux})\leftarrow\adv^{\OracleFamily};\\
+  3.& \NARGString\leftarrow\NARGProver_{\mathsf{full}}^{\SpongeHash,\SpongePermutation}(\Instance,\WitnessValue);\\
+  4.& \text{return }\adv^{\OracleFamily}(\mathsf{aux},\NARGString).
+\end{array}\right]
+\end{gathered}
+\end{equation*}
+Its output distribution equals that of the optimized salted DSFS prover.
+
+Hybrids~1--4 share the following numbered experiment. At each verifier-message position, execute only the sampling row labelled \(\Hyb{b}\). Here \(\CodecDecoder_i^{-1}(\IPVerifierMessage_i):=\{u\in\Alphabet^{\IPVerifierMessageEncodedLength(i)}:\CodecDecoder_i(u)=\IPVerifierMessage_i\}\) is the set of encoded preimages, and all fresh draws use independent coins. The honest prover \(\IPProver(\Instance,\WitnessValue)\) retains private state \(\mathsf{aux}_{\IPProver}\) throughout its interaction. At each scheduled message, it updates this state and may use fresh private uniform coins.
+\begin{equation*}
+\begin{gathered}
+  \Hyb{b}(\adv),\qquad b\in\{1,2,3,4\}\\[2pt]
+\left[\begin{array}{rl}
+  1.& \OracleFamily=(\SpongeOracles)\leftarrow\SpongeOracleDistribution;\\
+  2.& (\Instance,\WitnessValue,\mathsf{aux})\leftarrow\adv^{\OracleFamily};\\
+  3.& \SaltString\leftarrow\Uniform(\Alphabet^{\SaltLength});\\
+  4.& \SpongeState\leftarrow\SpongeSymbol.\SpongeStart^\SpongeHash(\Instance);\\
+  5.& \SpongeState\leftarrow\SpongeSymbol.\SpongeAbsorb^\SpongePermutation(\SpongeState,\SaltString);\quad\OracleProgramming:=[];\\
+  6.& \HybFourAlt{\text{if }b=4:\quad(\Instance',\IPVerifierMessages,\IPProverMessages)\leftarrow\IPHVZKSimulator(\Instance);}\\
+  7.& \text{if }b\in\{1,2,3\}:\quad\text{start }\IPProver(\Instance,\WitnessValue)\text{ with private state }\mathsf{aux}_{\IPProver};\\
+  8.& \text{for }i\in \IPProverPositions\cup \IPVerifierPositions\text{ in protocol order:}\\
+  9.& \quad\text{if }i\in \IPProverPositions:\\
+  10.& \qquad\text{if }b\in\{1,2,3\}:\quad
+    \text{receive }\IPProverMessage_i\text{ from }\IPProver;\quad\text{update }\mathsf{aux}_{\IPProver};\\
+  11.& \qquad\SpongeState\leftarrow
+    \SpongeSymbol.\SpongeAbsorb^\SpongePermutation(\SpongeState,\CodecEncoder_i(\IPProverMessage_i));\\
+  12.& \quad\text{else }(i\in \IPVerifierPositions):\\
+  13.& \qquad\HybOneAlt{\Hyb{1}:\quad\EncodedIPVerifierMessage_i\leftarrow\Uniform(\Alphabet^{\IPVerifierMessageEncodedLength(i)});\quad
+    \IPVerifierMessage_i:=\CodecDecoder_i(\EncodedIPVerifierMessage_i);}\\[2pt]
+  & \qquad\HybTwoAlt{\Hyb{2}:\quad\EncodedIPVerifierMessage'_i\leftarrow\Uniform(\Alphabet^{\IPVerifierMessageEncodedLength(i)});\quad
+    \IPVerifierMessage_i:=\CodecDecoder_i(\EncodedIPVerifierMessage'_i);\quad
+    \EncodedIPVerifierMessage_i\leftarrow\Uniform(\CodecDecoder_i^{-1}(\IPVerifierMessage_i));}\\[2pt]
+  & \qquad\HybThreeAlt{\Hyb{3}:\quad\IPVerifierMessage_i\leftarrow\Uniform(\IPVerifierMessageSpace{i});\quad
+    \EncodedIPVerifierMessage_i\leftarrow\Uniform(\CodecDecoder_i^{-1}(\IPVerifierMessage_i));}\\[2pt]
+  & \qquad\HybFourAlt{\Hyb{4}:\quad\EncodedIPVerifierMessage_i\leftarrow\Uniform(\CodecDecoder_i^{-1}(\IPVerifierMessage_i));}\\[2pt]
+  14.& \qquad(\SpongeState,\OracleProgramming_i)\leftarrow
+    \DSFSProgramBlocks(i,\SpongeState,\EncodedIPVerifierMessage_i);\\
+  15.& \qquad\OracleProgramming:=\OracleProgramming\mathbin{\|}\OracleProgramming_i;\\
+  16.& \qquad\text{if }b\in\{1,2,3\}:\quad
+    \text{send }\IPVerifierMessage_i\text{ to }\IPProver;\quad\text{update }\mathsf{aux}_{\IPProver};\\
+  17.& \text{end for};\\
+  18.& \NARGString:=(\SaltString,\IPProverMessages);\\
+  19.& \SpongePermutation':=\DSFSInstallPermutationUpdates(\SpongePermutation,\OracleProgramming);\\
+  20.& \text{return }\adv^{\SpongeHash,\SpongePermutation',\SpongePermutation'^{-1}}(\mathsf{aux},\NARGString).
+\end{array}\right]
+\\[4pt]
+\HybOneAlt{\Hyb{1}}\quad\HybTwoAlt{\Hyb{2}}\quad
+\HybThreeAlt{\Hyb{3}}\quad\HybFourAlt{\Hyb{4}}
+\end{gathered}
+\end{equation*}
+The loop includes all protocol positions, including terminal verifier messages. In Hybrids~1--3, the prover derives \(\IPProverMessage_i\) at step~10 from its current private state and receives \(\IPVerifierMessage_i\) only at step~16. Hybrid~4 instead uses the message tuples from step~6 throughout the loop, without running \(\IPProver\). The salt, sponge operations, list accumulation and NARG-string assembly expand \(\DSFSCompile\) from \Cref{def:dsfs_zk_simulator}, now interleaved with prover execution and verifier-message sampling. They use the original input \(\Instance\) and original \(\SpongeHash,\SpongePermutation\) throughout; \(\Instance'\) is discarded. The entire programming list is installed only at step~19, after the loop and before resuming \(\adv\). Hybrid~4 has the same output distribution as the simulated experiment \(\Distribution_{\mathrm{sim}}(\NARGZKSimulator,\adv)\) for the simulator above. For \(i\in \IPVerifierPositions\), \(\DSFSCodecBias{i}\) denotes the codec's statistical-distance bound between \(\CodecDecoder_i(\Uniform(\Alphabet^{\IPVerifierMessageEncodedLength(i)}))\) and \(\Uniform(\IPVerifierMessageSpace{i})\) (\Cref{def:dsfs_codec}); all codec sums below range over \(\IPVerifierPositions\).
+\lean{DuplexSpongeFS.ZeroKnowledge.hyb0Exp, DuplexSpongeFS.ZeroKnowledge.hyb1Exp,
+  DuplexSpongeFS.ZeroKnowledge.hyb2Exp, DuplexSpongeFS.ZeroKnowledge.hyb3Exp,
+  DuplexSpongeFS.ZeroKnowledge.hyb4Exp,
+  OracleComp.PermutationConditioning.install,
+  DuplexSpongeFS.ZeroKnowledge.hyb4Exp_eq_adaptiveNARGZKSimExp}
+\uses{def:adaptive_zk, def:ip_verifier_view, def:dsfs_zk_simulator, def:dsfs_codec}
+\leanok
+\end{definition}
+
+\begin{lemma}[\(\Hyb{1}\equiv\Hyb{2}\) {\cite[Claim~7.9]{CO25}}]
+  \label{lem:dsfs_zk_hyb1_hyb2}
+  In \Cref{def:dsfs_zk_hybrids}, Hybrid~1 samples encoded verifier messages uniformly; Hybrid~2 additionally resamples each encoding uniformly among those with the same decoding. At verifier-message position \(i\), with alphabet \(\Alphabet\), encoded length \(\IPVerifierMessageEncodedLength(i)\), and decoder \(\CodecDecoder_i\), these steps are
+  \begin{equation*}
+  \begin{aligned}
+    \Hyb{1}:\quad &\EncodedIPVerifierMessage_i\leftarrow\Uniform(\Alphabet^{\IPVerifierMessageEncodedLength(i)});\quad
+      \IPVerifierMessage_i:=\CodecDecoder_i(\EncodedIPVerifierMessage_i);\\
+    \Hyb{2}:\quad &\EncodedIPVerifierMessage'_i\leftarrow\Uniform(\Alphabet^{\IPVerifierMessageEncodedLength(i)});\quad
+      \IPVerifierMessage_i:=\CodecDecoder_i(\EncodedIPVerifierMessage'_i);\quad
+      \EncodedIPVerifierMessage_i\leftarrow\Uniform(\CodecDecoder_i^{-1}(\IPVerifierMessage_i)).
+  \end{aligned}
+  \end{equation*}
+  Here \(\CodecDecoder_i^{-1}(\IPVerifierMessage_i)\) is the set of encodings that decode to \(\IPVerifierMessage_i\). Both use the same honest prover, DSFS compilation, and oracle programming strategy for Squeeze steps: \(\DSFSProgramBlocks\) constructs the permutation pairs, and \(\DSFSInstallPermutationUpdates\) applies their concatenation before resuming the adversary. For every adversary \(\adv\) that always chooses \((\Instance,\WitnessValue)\in\Relation\), \(\Hyb{1}(\adv)\) and \(\Hyb{2}(\adv)\) have identical output distributions.
+  \lean{DuplexSpongeFS.ZeroKnowledge.evalDist_hyb1Exp_eq_hyb2Exp}
+  \uses{def:dsfs_zk_hybrids, def:dsfs_codec}
+  \leanok
+\end{lemma}
+\begin{proof}
+  \uses{lem:dsfs_bias_map_and_back}
+  For a uniform encoded message, resampling uniformly in the fiber of its decoding preserves the joint distribution of the encoded message and its decoding. Applying this independently to every verifier message leaves the complete hybrid unchanged, since all remaining steps are identical.
+  \leanok
+\end{proof}
+
+\begin{lemma}[\(\Hyb{2}\approx\Hyb{3}\) {\cite[Claim~7.10]{CO25}}]
+  \label{lem:dsfs_zk_hyb2_hyb3}
+  Let \(\IPVerifierPositions\) be the verifier-message positions, \(\Alphabet\) the alphabet and \(\IPVerifierMessageEncodedLength(i)\) the encoded length at position \(i\), with codec decoder \(\CodecDecoder_i:\Alphabet^{\IPVerifierMessageEncodedLength(i)}\to\IPVerifierMessageSpace{i}\). In \Cref{def:dsfs_zk_hybrids}, Hybrid~2 decodes uniform encoded verifier messages, whereas Hybrid~3 samples verifier messages uniformly:
+  \begin{equation*}
+  \begin{aligned}
+    \Hyb{2}:\quad &\EncodedIPVerifierMessage'_i\leftarrow\Uniform(\Alphabet^{\IPVerifierMessageEncodedLength(i)});\quad
+      \IPVerifierMessage_i:=\CodecDecoder_i(\EncodedIPVerifierMessage'_i);\\
+    \Hyb{3}:\quad &\IPVerifierMessage_i\leftarrow\Uniform(\IPVerifierMessageSpace{i}).
+  \end{aligned}
+  \end{equation*}
+  Both then sample \(\EncodedIPVerifierMessage_i\leftarrow\Uniform(\CodecDecoder_i^{-1}(\IPVerifierMessage_i))\), uniformly among encodings that decode to \(\IPVerifierMessage_i\). They use the same honest prover, DSFS compilation, and oracle programming strategy for Squeeze steps: \(\DSFSProgramBlocks\) constructs the permutation pairs, and \(\DSFSInstallPermutationUpdates\) applies their concatenation before resuming the adversary. The decoder has error bound \(\DSFSCodecBias{i}\) from \Cref{def:dsfs_codec}, meaning
+  \begin{equation*}
+    \StatisticalDistance{\CodecDecoder_i(\Uniform(\Alphabet^{\IPVerifierMessageEncodedLength(i)}))}
+      {\Uniform(\IPVerifierMessageSpace{i})}\leq\DSFSCodecBias{i}.
+  \end{equation*}
+  For every adversary \(\adv\) that always chooses \((\Instance,\WitnessValue)\in\Relation\),
+  \begin{equation*}
+    \StatisticalDistance{\Hyb{2}(\adv)}{\Hyb{3}(\adv)}
+      \leq \sum_{i\in \IPVerifierPositions}\DSFSCodecBias{i}.
+  \end{equation*}
+  \lean{DuplexSpongeFS.ZeroKnowledge.discreteTVDist_hyb2Exp_hyb3Exp_le}
+  \uses{def:dsfs_zk_hybrids, def:dsfs_codec}
+  \leanok
+\end{lemma}
+\begin{proof}
+  Replace decoded verifier messages by independent uniform verifier messages. Their joint distance is at most the sum of the round errors. The common uniform preimage sampling, honest prover, DSFS compilation, installation of the Squeeze programming list, and resumed adversary computation cannot increase that distance.
+  \leanok
+\end{proof}
+
+\begin{lemma}[\(\Hyb{3}\approx\Hyb{4}\) {\cite[Claim~7.11]{CO25}}]
+  \label{lem:dsfs_zk_hyb3_hyb4}
+  Let \(\IPProver\) be a prover for a public-coin protocol, using private uniform coins, and let \(\IPHVZKSimulator\) be a statement-only IP-view simulator. In \Cref{def:dsfs_zk_hybrids}, Hybrid~3 samples independent uniform verifier messages and runs the honest prover against them; Hybrid~4 samples both message tuples jointly from \(\IPHVZKSimulator(\Instance)\). Write \(\IPProverMessages,\IPVerifierMessages\) for the prover- and verifier-message tuples, \(\IPVerifierPositions\) for the verifier-message positions, and \(\CodecDecoder_i\) for the codec decoder at position \(i\). The changes occur at three separate locations in~\cite[Figure~5]{CO25}.
+
+  \emph{Line~6, before the round loop (IP simulation):}
+  \begin{equation*}
+  \begin{aligned}
+    \Hyb{3}:\quad &\text{skip};\\
+    \Hyb{4}:\quad &(\Instance',\IPVerifierMessages,\IPProverMessages)\leftarrow\IPHVZKSimulator(\Instance).
+  \end{aligned}
+  \end{equation*}
+  \emph{Line~8, inside the round loop (prover message):} Hybrid~3 runs \(\IPProver\) to produce the next \(\IPProverMessage_i\), using \((\Instance,\WitnessValue)\) initially and its saved private state and previously received verifier message thereafter. Hybrid~4 skips this prover call and uses \(\IPProverMessage_i\) from line~6.
+
+  \emph{Line~11, after absorbing the encoded prover message (verifier-message sampling):}
+  \begin{equation*}
+  \begin{aligned}
+    \Hyb{3}:\quad &\IPVerifierMessage_i\leftarrow\Uniform(\IPVerifierMessageSpace{i});\quad
+      \EncodedIPVerifierMessage_i\leftarrow\Uniform(\CodecDecoder_i^{-1}(\IPVerifierMessage_i));\\
+    \Hyb{4}:\quad &\EncodedIPVerifierMessage_i\leftarrow\Uniform(\CodecDecoder_i^{-1}(\IPVerifierMessage_i))
+      \quad\text{using }\IPVerifierMessage_i\text{ from line~6}.
+  \end{aligned}
+  \end{equation*}
+  Here \(\IPVerifierMessageSpace{i}\) is the verifier-message space and \(\CodecDecoder_i^{-1}(\IPVerifierMessage_i)\) is the set of encodings that decode to \(\IPVerifierMessage_i\). Hybrid~4 uses the simulator's verifier messages without an additional independent draw. These paper locations correspond respectively to steps~6, 10 and~13 of the numbered experiment in \Cref{def:dsfs_zk_hybrids}; the intervening sponge operations remain in the loop. The Lean implementation batches the verifier-message sampling before prover execution and sponge compilation, with the same output distribution as this interleaved presentation. Both use the original input \(\Instance\) to compile the messages into a DSFS NARG string and oracle programming list. Their oracle programming strategy for Squeeze steps is the same: \(\DSFSProgramBlocks\) constructs the permutation pairs, and \(\DSFSInstallPermutationUpdates\) applies their concatenation before resuming the adversary. Suppose that, for every \((\Instance,\WitnessValue)\in\Relation\),
+  \begin{equation*}
+    \Delta\bigl(\IPHonestVerifierView(\IPProver,\Instance,\WitnessValue),
+      \IPHVZKSimulator(\Instance)\bigr)
+      \le \IPHVZKError,
+  \end{equation*}
+  where \(\IPHVZKError\ge0\). Then, for every adversary \(\adv\) that always chooses \((\Instance,\WitnessValue)\in\Relation\),
+  \begin{equation*}
+    \StatisticalDistance{\Hyb{3}(\adv)}{\Hyb{4}(\adv)}
+      \leq \IPHVZKError.
+  \end{equation*}
+  This transition requires no query bound before or after the adversary receives the NARG string.
+  \lean{DuplexSpongeFS.ZeroKnowledge.discreteTVDist_hyb3Exp_hyb4Exp_le}
+  \uses{def:hvzk, def:adaptive_zk, def:dsfs_zk_hybrids}
+  \leanok
+\end{lemma}
+\begin{proof}
+  Let the sampled public oracles and the initial output \((\Instance,\WitnessValue,\mathsf{aux})\) be given. In Hybrid~3, conditional on the uniform verifier messages \(\IPVerifierMessages\), the prover's private coins and the sampled encodings \(\EncodedIPVerifierMessages\) are independent. We can therefore first sample \((\Instance,\IPVerifierMessages,\IPProverMessages)\leftarrow \IPHonestVerifierView(\IPProver,\Instance,\WitnessValue)\) and then the uniform preimages \(\EncodedIPVerifierMessages\leftarrow\CodecDecoder^{-1}_{\mathsf{unif}}(\IPVerifierMessages)\). This reordering preserves the joint distribution, including the encodings used to construct the programming list.
+
+  Hybrid~4 substitutes \(\IPHVZKSimulator(\Instance)\) for that view. Both experiments then apply the same probabilistic procedure: discard the view's statement component, use the original \(\Instance\) to compile the messages, apply the programming list, and resume \(\adv\) on \((\mathsf{aux},\NARGString)\). Statistical distance cannot increase under this common procedure. The pointwise view bound applies because \((\Instance,\WitnessValue)\in\Relation\), and averaging over the common initial execution gives the stated bound. No verifier check or acceptance conditioning is introduced.
+  \lean{DuplexSpongeFS.ZeroKnowledge.evalDist_hyb3PlannedView_eq_honestVerifierView_bind_planVerifierView,
+    DuplexSpongeFS.ZeroKnowledge.evalDist_hyb3Exp_eq_hyb3NormalizedPlanExp,
+    DuplexSpongeFS.ZeroKnowledge.evalDist_hyb4PlanExp_eq_hyb4Exp}
+  \leanok
+\end{proof}

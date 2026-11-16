@@ -8,6 +8,8 @@ module
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Defs
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Nondegeneracy
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.QueryBounds
+public import
+  ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.ZeroKnowledge.SimulationReduction
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Salted
 
 /-!

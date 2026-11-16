@@ -295,6 +295,9 @@ See [the construction guide](fiat-shamir-initial-objects.md) for the security ex
   `Security/Proofs/Execution.lean` contains the explicitly named full reference runner used in proofs;
   `Security/Proofs/MessageLaw.lean` proves equality of NARG-string laws under stateless handlers.
   `Security/Proofs/Completeness.lean` contains shared transcript reconstruction and acceptance laws.
+  `Security/Proofs/ZeroKnowledge/Defs.lean` owns the simulator and hybrid experiments.
+  `Security/Proofs/ZeroKnowledge/SimulationReduction.lean` proves the transitions from
+  Hybrid 1 to the simulated experiment.
   Generic one-message execution and stateless completeness lemmas live in
   `OracleReduction/Execution.lean` and `OracleReduction/Security/Basic.lean`; read-only handler
   simulation lives upstream in `VCVio/OracleComp/SimSemantics/StateT/Basic.lean`.
