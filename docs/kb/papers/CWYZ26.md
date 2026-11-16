@@ -10,6 +10,7 @@ status: seeded
 related_modules:
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Basic.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Separation.lean
+  - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Probability.lean
 ---
 
 # CWYZ26
@@ -33,9 +34,9 @@ The numbering follows the **13 November 2026 ePrint revision**.
 
 | Paper statement | Lean interface | Scope |
 | --- | --- | --- |
-| Section 1.1, definition of the MCA error with agreement loss; Definition 3.1 | `ReedSolomon.combinedWord`, `ReedSolomon.affineMultiplier`, `ReedSolomon.agreementLoss`, `ReedSolomon.IsLossWitness`, `ReedSolomon.IsAffineExceptional`, `ReedSolomon.IsScalarExceptional`, `ReedSolomon.affineMCAError`, `ReedSolomon.scalarMCAError` | The error is the worst-case fraction of exceptional challenges over all pairs of received words, which is the uniform probability of the paper. The domain is any finite index type embedded in the field. |
-| Proposition 6.1 | `ReedSolomon.scalarMCAError_ge` | With agreement loss `s` and `d + s + 1 < A ≤ n`, the scalar error is at least `(1 + ⌊(n - A) / (s + 1)⌋) / q`. The blocks of size `s + 1` are consecutive positions in a fixed enumeration of the domain. |
-| Proposition 6.2 | `ReedSolomon.affineMCAError_zero_loss_ge`, `ReedSolomon.affineMCAError_zero_loss_ge_half` | Without agreement loss and with `d + 1 < A ≤ n`, the affine error is at least `(n - A + 1)(q - 1) / q²`, hence at least `(n - A + 1) / (2q)`. |
+| Section 1.1, definition of the MCA error with agreement loss; Definition 3.1 | `ReedSolomon.combinedWord`, `ReedSolomon.affineMultiplier`, `ReedSolomon.agreementLoss`, `ReedSolomon.IsLossWitness`, `ReedSolomon.IsAffineExceptional`, `ReedSolomon.IsScalarExceptional`, `ReedSolomon.affineMcaError`, `ReedSolomon.scalarMcaError` | The error is the worst-case fraction of exceptional challenges over all pairs of received words, which is the uniform probability of the paper. The domain is any finite index type embedded in the field. |
+| Proposition 6.1 | `ReedSolomon.scalarMcaError_ge` | With agreement loss `s` and `d + s + 1 < A ≤ n`, the scalar error is at least `(1 + ⌊(n - A) / (s + 1)⌋) / q`. The blocks of size `s + 1` are consecutive positions in a fixed enumeration of the domain. |
+| Proposition 6.2 | `ReedSolomon.affineMcaError_zero_loss_ge`, `ReedSolomon.affineMcaError_zero_loss_ge_half` | Without agreement loss and with `d + 1 < A ≤ n`, the affine error is at least `(n - A + 1)(q - 1) / q²`, hence at least `(n - A + 1) / (2q)`. |
 
 ## Port Ledger
 
@@ -63,6 +64,9 @@ Each row is one pull request. A row is done when its declarations are on `main`.
 - [`AffineCombiner/Separation.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Separation.lean)
   owns the two lower bounds of Section 6: the scalar combiner with agreement loss and the affine
   combiner without loss.
+- [`AffineCombiner/Probability.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Probability.lean)
+  supplies native probability characterizations, the zero-loss scalar MCA bridge and its
+  canonical lower-bound corollary.
 - The core count reuses the Johnson bound for set families
   (`Finset.card_mul_sq_sub_card_mul_le_of_inter_card_le`), the rational Hensel numerators of
   `Data/Polynomial/RationalFunctions/` and `Data/Polynomial/Differential/RationalTaylor.lean`, the
@@ -70,10 +74,17 @@ Each row is one pull request. A row is done when its declarations are on `main`.
   `Data/Polynomial/ResultantDegree.lean`, and the agreement-incidence induction of
   `ToMathlib/RingTheory/Nullstellensatz/AgreementIncidence.lean`.
 
-## Known Divergences From ArkLib
+## Representation Choices
 
-- The error is a worst-case fraction of challenges, not a probability under a sampler.
-  For uniform challenges the two agree.
+- The canonical errors have type `ENNReal` and a sampler-free counting definition.
+  `affineMcaError_eq_iSup_prob` and `scalarMcaError_eq_iSup_prob` identify them with the
+  worst-case native probabilities under uniform sampling.
+- `scalarMcaError_zero_eq_mcaError` identifies zero-loss scalar error with ArkLib's canonical
+  affine-line MCA error at the matching integer agreement threshold.
+  `mcaError_affineLine_ge_of_threshold` states the zero-loss lower bound on that existing value.
+- The output and first affine witness have degree at most `d`, hence message length `d + 1`.
+  The second affine witness has degree below `d`, hence message length `d`.
+  `affine_witnesses_mem_code` supplies both code memberships.
 - Persistence names the numerator `H` and the denominator `L` of `G`.
   The partner `F = P - (α + β X) G` then agrees with `f` wherever `G` agrees with `g`.
   So only the condition on `G` is stated.
@@ -82,9 +93,11 @@ Each row is one pull request. A row is done when its declarations are on `main`.
 
 The units marked planned or deferred in the port ledger.
 
-The paper's own Lean formalization covers Theorem 1.1 and is not public.
+The paper reports a Lean formalization of Theorem 1.1.
 
-It does not cover Sections 5 and 7.
+It states that Section 5 and the Reed–Muller extension in Section 7 and Appendix A are not covered.
+
+The paper does not cite a formalization artifact.
 
 ## Source Access
 

@@ -9,6 +9,7 @@ correlated agreement. For code carriers and distance types, see
 
 | Module | Contents |
 | --- | --- |
+| `ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Probability.lean` | Affine/scalar errors with agreement loss, native sampling characterizations, and the scalar zero-loss bridge to `mcaError` |
 | `ProximityGenerator/Basic.lean` | Generator-parametric mutual correlated agreement: `IsMCA`, `mcaError`, and `IsMCAGenerator` |
 | `ProximityGap/Errors.lean` | `caError`, `epsPg`, `epsCa`, `epsMca`, their order properties, predicate bridges, and affine-line MCA comparison theorems |
 | `ProximityGap/Basic.lean` | Predicate forms of proximity gap and correlated agreement |
@@ -160,6 +161,22 @@ introducing a second predicate.
 | radius quantified by `IsMCAGenerator` | `I`, the closed unit interval |
 | numeric error value or probability | `ENNReal` |
 | error bound | `ℝ≥0` |
+
+Canonical probability-valued errors use `ENNReal`, matching native event probabilities and
+allowing suprema without separate boundedness proofs. Prove an upper bound of one for each
+error; infinity is a feature of the ambient type, not an additional possible failure probability.
+
+For a nonempty finite uniform challenge space, the definition may use either native `Pr` or
+counting fractions in `ENNReal` (including `ENNReal.ofReal` of a nonnegative real fraction).
+A counting definition must have a proved native-probability characterization under
+`[SampleableType S]`. Keep its event predicates and counting theorems sampler-free; add sampler
+assumptions at the probability boundary. Use one canonical error value, with characterization
+lemmas and real-valued views, rather than independent counting and probability errors.
+`ReedSolomon.affineMcaError` and `scalarMcaError`, with the characterizations in
+`ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Probability.lean`, follow this pattern.
+
+Counts remain `ℕ`; algebraic bound formulas may use `ℝ` with explicit `ENNReal.ofReal`
+conversion. This does not change the `ℝ≥0` type of nonnegative error budgets.
 
 Compare an `ENNReal` value with a nonnegative bound using a coercion, for example
 `mcaError G C δ ≤ (ε : ENNReal)`. Use `mcaError_ne_top` before applying `ENNReal.toNNReal`.

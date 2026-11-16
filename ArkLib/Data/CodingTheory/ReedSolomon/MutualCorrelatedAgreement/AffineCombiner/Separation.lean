@@ -35,10 +35,10 @@ Set `f = -γ g` on the block of `γ`, so each full block makes the zero candidat
 
 ## Main statements
 
-* `ReedSolomon.affineMCAError_zero_loss_ge` and `ReedSolomon.affineMCAError_zero_loss_ge_half`:
+* `ReedSolomon.affineMcaError_zero_loss_ge` and `ReedSolomon.affineMcaError_zero_loss_ge_half`:
   without agreement loss, the affine error is at least `(n - A + 1)(q - 1) / q²`, hence at least
   `(n - A + 1) / (2q)` (Proposition 6.2 of [CWYZ26]).
-* `ReedSolomon.scalarMCAError_ge`: with agreement loss `s`, the scalar error is at least
+* `ReedSolomon.scalarMcaError_ge`: with agreement loss `s`, the scalar error is at least
   `(1 + ⌊(n - A) / (s + 1)⌋) / q` (Proposition 6.1 of [CWYZ26]).
 
 ## References
@@ -73,10 +73,11 @@ private theorem card_filter_equivFin_mem (U : Finset ℕ) (hU : ∀ k ∈ U, k <
     exact ⟨(Fintype.equivFin ι).symm ⟨k, hU k hk⟩, by simpa using hk, by simp⟩
 
 /-- Without agreement loss, the affine error is at least `(n - A + 1)(q - 1) / q²`. -/
-theorem affineMCAError_zero_loss_ge [Fintype F] (domain : ι ↪ F) {d A : ℕ}
+theorem affineMcaError_zero_loss_ge [Fintype F] (domain : ι ↪ F) {d A : ℕ}
     (hdA : d + 1 < A) (hAn : A ≤ Fintype.card ι) :
-    ((Fintype.card ι - A + 1 : ℕ) : ℝ) * ((Fintype.card F : ℝ) - 1) / (Fintype.card F : ℝ) ^ 2 ≤
-      affineMCAError domain d A 0 := by
+    ENNReal.ofReal (((Fintype.card ι - A + 1 : ℕ) : ℝ) * ((Fintype.card F : ℝ) - 1) /
+        (Fintype.card F : ℝ) ^ 2) ≤
+      affineMcaError domain d A 0 := by
   classical
   set n := Fintype.card ι
   set pos : ι → ℕ := fun i ↦ (Fintype.equivFin ι i : ℕ)
@@ -156,7 +157,8 @@ theorem affineMCAError_zero_loss_ge [Fintype F] (domain : ι ↪ F) {d A : ℕ}
     obtain ⟨⟨z, β⟩, hzβ, rfl⟩ := mem_image.mp hc
     simp only [mem_product, mem_filter, mem_univ, true_and, mem_Ico, mem_erase] at hzβ
     exact mem_filter.mpr ⟨mem_univ _, 0, hexc z β hzβ.1.1 hzβ.2.1⟩
-  refine le_trans ?_ (le_affineMCAError domain d A 0 0 g)
+  refine le_trans ?_ (le_affineMcaError domain d A 0 0 g)
+  apply ENNReal.ofReal_le_ofReal
   apply div_le_div_of_nonneg_right _ (by positivity)
   calc ((n - A + 1 : ℕ) : ℝ) * ((q : ℝ) - 1) = (#E : ℝ) := by
         rw [hEcard, show n - A + 1 = n - (A - 1) by omega]
@@ -165,11 +167,13 @@ theorem affineMCAError_zero_loss_ge [Fintype F] (domain : ι ↪ F) {d A : ℕ}
     _ ≤ _ := by exact_mod_cast card_le_card hEsub
 
 /-- Without agreement loss, the affine error is at least `(n - A + 1) / (2q)`. -/
-theorem affineMCAError_zero_loss_ge_half [Fintype F] (domain : ι ↪ F) {d A : ℕ}
+theorem affineMcaError_zero_loss_ge_half [Fintype F] (domain : ι ↪ F) {d A : ℕ}
     (hdA : d + 1 < A) (hAn : A ≤ Fintype.card ι) :
-    ((Fintype.card ι - A + 1 : ℕ) : ℝ) / (2 * (Fintype.card F : ℝ)) ≤
-      affineMCAError domain d A 0 := by
-  refine le_trans ?_ (affineMCAError_zero_loss_ge domain hdA hAn)
+    ENNReal.ofReal (((Fintype.card ι - A + 1 : ℕ) : ℝ) /
+        (2 * (Fintype.card F : ℝ))) ≤
+      affineMcaError domain d A 0 := by
+  refine le_trans ?_ (affineMcaError_zero_loss_ge domain hdA hAn)
+  apply ENNReal.ofReal_le_ofReal
   have hq : (2 : ℝ) ≤ Fintype.card F := by exact_mod_cast Fintype.one_lt_card
   have hN : (0 : ℝ) ≤ ((Fintype.card ι - A + 1 : ℕ) : ℝ) := Nat.cast_nonneg _
   rw [div_le_div_iff₀ (by positivity) (by positivity)]
@@ -177,10 +181,11 @@ theorem affineMCAError_zero_loss_ge_half [Fintype F] (domain : ι ↪ F) {d A : 
     (by linarith : (0 : ℝ) ≤ Fintype.card F - 2)]
 
 /-- With agreement loss `s`, the scalar error is at least `(1 + ⌊(n - A) / (s + 1)⌋) / q`. -/
-theorem scalarMCAError_ge [Fintype F] (domain : ι ↪ F) {d A s : ℕ}
+theorem scalarMcaError_ge [Fintype F] (domain : ι ↪ F) {d A s : ℕ}
     (hdA : d + s + 1 < A) (hAn : A ≤ Fintype.card ι) :
-    ((1 + (Fintype.card ι - A) / (s + 1) : ℕ) : ℝ) / (Fintype.card F : ℝ) ≤
-      scalarMCAError domain d A s := by
+    ENNReal.ofReal (((1 + (Fintype.card ι - A) / (s + 1) : ℕ) : ℝ) /
+        (Fintype.card F : ℝ)) ≤
+      scalarMcaError domain d A s := by
   classical
   set n := Fintype.card ι
   set pos : ι → ℕ := fun i ↦ (Fintype.equivFin ι i : ℕ)
@@ -261,7 +266,8 @@ theorem scalarMCAError_ge [Fintype F] (domain : ι ↪ F) {d A s : ℕ}
     have := natDegree_le_of_degree_le hG
     rw [← sub_eq_zero.mp hzero, hVdeg] at this
     omega
-  refine le_trans ?_ (le_scalarMCAError domain d A s f g)
+  refine le_trans ?_ (le_scalarMcaError domain d A s f g)
+  apply ENNReal.ofReal_le_ofReal
   apply div_le_div_of_nonneg_right _ (by positivity)
   have : k ≤ #(univ.filter fun c : F ↦ ∃ P, IsScalarExceptional domain f g d A s c P) := by
     rw [← card_range k]

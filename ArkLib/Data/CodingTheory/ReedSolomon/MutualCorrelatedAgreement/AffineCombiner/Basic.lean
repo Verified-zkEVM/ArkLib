@@ -50,7 +50,7 @@ Its combined word is the plain evaluation `f x + (α + β x) g x`.
 * `ReedSolomon.IsLossWitness`: `P = F₀ + L G₀` with agreement loss at most `s`.
 * `ReedSolomon.IsAffineExceptional` and `ReedSolomon.IsScalarExceptional`: exceptional candidates
   for the affine and the scalar combiner.
-* `ReedSolomon.affineMCAError` and `ReedSolomon.scalarMCAError`: the worst-case fractions of
+* `ReedSolomon.affineMcaError` and `ReedSolomon.scalarMcaError`: the worst-case fractions of
   exceptional challenges.
 
 ## References
@@ -100,6 +100,19 @@ def agreementLoss (domain : ι ↪ F) (f g : ι → F) (L P F₀ G₀ : F[X]) : 
   (polynomialAgreementSet domain (combinedWord domain f g L) P).filter fun i ↦
     F₀.eval (domain i) ≠ f i ∨ G₀.eval (domain i) ≠ g i
 
+open Classical in
+/-- Lost agreements are exactly the candidate's agreement set minus common witness agreement.
+
+The coordinate equality needed by finset difference is local to this characterization. -/
+theorem agreementLoss_eq_sdiff (domain : ι ↪ F) (f g : ι → F) (L P F₀ G₀ : F[X]) :
+    agreementLoss domain f g L P F₀ G₀ =
+      polynomialAgreementSet domain (combinedWord domain f g L) P \
+        commonPolynomialAgreementSet domain f g F₀ G₀ := by
+  classical
+  ext i
+  simp only [agreementLoss, mem_filter, mem_sdiff, mem_commonPolynomialAgreementSet]
+  tauto
+
 /-- `P = F₀ + L G₀`, with at most `s` points of agreement loss. -/
 def IsLossWitness (domain : ι ↪ F) (f g : ι → F) (s : ℕ) (L P F₀ G₀ : F[X]) : Prop :=
   P = F₀ + L * G₀ ∧ (agreementLoss domain f g L P F₀ G₀).card ≤ s
@@ -128,21 +141,26 @@ def IsScalarExceptional (domain : ι ↪ F) (f g : ι → F) (d A s : ℕ) (α :
       ¬ IsLossWitness domain f g s (C α) P F₀ G₀
 
 open Classical in
-/-- The affine MCA error at output degree `d`, threshold `A` and agreement loss `s`.
+/-- The worst-case uniform probability of an affine exceptional challenge.
 
-It is the largest fraction of exceptional challenges `(α, β) ∈ F²` over all received words. -/
-noncomputable def affineMCAError [Fintype F] (domain : ι ↪ F) (d A s : ℕ) : ℝ :=
+The counting definition needs no sampler. Its native probability characterization is
+`affineMcaError_eq_iSup_prob` in `AffineCombiner.Probability`. -/
+noncomputable def affineMcaError [Fintype F] (domain : ι ↪ F) (d A s : ℕ) : ENNReal :=
   ⨆ w : (ι → F) × (ι → F),
-    (#{c : F × F | ∃ P, IsAffineExceptional domain w.1 w.2 d A s c.1 c.2 P} : ℝ) /
-      (Fintype.card F : ℝ) ^ 2
+    ENNReal.ofReal
+      ((#{c : F × F | ∃ P, IsAffineExceptional domain w.1 w.2 d A s c.1 c.2 P} : ℝ) /
+        (Fintype.card F : ℝ) ^ 2)
 
 open Classical in
-/-- The scalar MCA error at degree `d`, threshold `A` and agreement loss `s`.
+/-- The worst-case uniform probability of a scalar exceptional challenge.
 
-It is the largest fraction of exceptional challenges `α ∈ F` over all received words. -/
-noncomputable def scalarMCAError [Fintype F] (domain : ι ↪ F) (d A s : ℕ) : ℝ :=
+The counting definition needs no sampler. At zero loss it is the canonical affine-line
+`CoreDefinitions.mcaError`; see `scalarMcaError_zero_eq_mcaError`. -/
+noncomputable def scalarMcaError [Fintype F] (domain : ι ↪ F) (d A s : ℕ) : ENNReal :=
   ⨆ w : (ι → F) × (ι → F),
-    (#{α : F | ∃ P, IsScalarExceptional domain w.1 w.2 d A s α P} : ℝ) / (Fintype.card F : ℝ)
+    ENNReal.ofReal
+      ((#{α : F | ∃ P, IsScalarExceptional domain w.1 w.2 d A s α P} : ℝ) /
+        (Fintype.card F : ℝ))
 
 section Error
 
@@ -150,30 +168,29 @@ variable [Fintype F] (domain : ι ↪ F)
 
 open Classical in
 /-- One pair of received words bounds the affine error from below. -/
-theorem le_affineMCAError (d A s : ℕ) (f g : ι → F) :
-    (#{c : F × F | ∃ P, IsAffineExceptional domain f g d A s c.1 c.2 P} : ℝ) /
-        (Fintype.card F : ℝ) ^ 2 ≤ affineMCAError domain d A s :=
-  le_ciSup (f := fun w : (ι → F) × (ι → F) ↦
-    (#{c : F × F | ∃ P, IsAffineExceptional domain w.1 w.2 d A s c.1 c.2 P} : ℝ) /
-      (Fintype.card F : ℝ) ^ 2) (Set.finite_range _).bddAbove (f, g)
+theorem le_affineMcaError (d A s : ℕ) (f g : ι → F) :
+    ENNReal.ofReal
+      ((#{c : F × F | ∃ P, IsAffineExceptional domain f g d A s c.1 c.2 P} : ℝ) /
+        (Fintype.card F : ℝ) ^ 2) ≤ affineMcaError domain d A s := by
+  unfold affineMcaError
+  exact le_iSup_of_le (f, g) le_rfl
 
 open Classical in
 /-- One pair of received words bounds the scalar error from below. -/
-theorem le_scalarMCAError (d A s : ℕ) (f g : ι → F) :
-    (#{α : F | ∃ P, IsScalarExceptional domain f g d A s α P} : ℝ) / (Fintype.card F : ℝ) ≤
-      scalarMCAError domain d A s :=
-  le_ciSup (f := fun w : (ι → F) × (ι → F) ↦
-    (#{α : F | ∃ P, IsScalarExceptional domain w.1 w.2 d A s α P} : ℝ) /
-      (Fintype.card F : ℝ)) (Set.finite_range _).bddAbove (f, g)
+theorem le_scalarMcaError (d A s : ℕ) (f g : ι → F) :
+    ENNReal.ofReal
+      ((#{α : F | ∃ P, IsScalarExceptional domain f g d A s α P} : ℝ) /
+        (Fintype.card F : ℝ)) ≤ scalarMcaError domain d A s := by
+  unfold scalarMcaError
+  exact le_iSup_of_le (f, g) le_rfl
 
-/-- A count `B` of exceptional challenges for every pair of words bounds the error by `B / q²`.
--/
-theorem affineMCAError_le_of_forall_exists {d A s : ℕ} {B : ℝ}
+/-- A uniform count of affine exceptional challenges bounds the error by `B / q²`. -/
+theorem affineMcaError_le_of_forall_exists {d A s : ℕ} {B : ℝ}
     (h : ∀ f g : ι → F, ∃ E : Finset (F × F), (E.card : ℝ) ≤ B ∧
       ∀ c ∉ E, ∀ P, ¬ IsAffineExceptional domain f g d A s c.1 c.2 P) :
-    affineMCAError domain d A s ≤ B / (Fintype.card F : ℝ) ^ 2 := by
+    affineMcaError domain d A s ≤ ENNReal.ofReal (B / (Fintype.card F : ℝ) ^ 2) := by
   classical
-  refine ciSup_le fun w ↦ ?_
+  refine iSup_le fun w ↦ ENNReal.ofReal_le_ofReal ?_
   obtain ⟨E, hE, hgood⟩ := h w.1 w.2
   gcongr
   calc (#{c : F × F | ∃ P, IsAffineExceptional domain w.1 w.2 d A s c.1 c.2 P} : ℝ)
@@ -185,19 +202,43 @@ theorem affineMCAError_le_of_forall_exists {d A s : ℕ} {B : ℝ}
         exact hgood c hcE P hP
     _ ≤ B := hE
 
-/-- The affine error is nonnegative. -/
-theorem affineMCAError_nonneg (d A s : ℕ) : 0 ≤ affineMCAError domain d A s :=
-  le_trans (by positivity) (le_affineMCAError domain d A s 0 0)
+/-- A uniform count of scalar exceptional challenges bounds the error by `B / q`. -/
+theorem scalarMcaError_le_of_forall_exists {d A s : ℕ} {B : ℝ}
+    (h : ∀ f g : ι → F, ∃ E : Finset F, (E.card : ℝ) ≤ B ∧
+      ∀ α ∉ E, ∀ P, ¬ IsScalarExceptional domain f g d A s α P) :
+    scalarMcaError domain d A s ≤ ENNReal.ofReal (B / (Fintype.card F : ℝ)) := by
+  classical
+  refine iSup_le fun w ↦ ENNReal.ofReal_le_ofReal ?_
+  obtain ⟨E, hE, hgood⟩ := h w.1 w.2
+  gcongr
+  calc (#{α : F | ∃ P, IsScalarExceptional domain w.1 w.2 d A s α P} : ℝ)
+      ≤ E.card := by
+        gcongr
+        intro α hα
+        by_contra hαE
+        obtain ⟨P, hP⟩ := (Finset.mem_filter.mp hα).2
+        exact hgood α hαE P hP
+    _ ≤ B := hE
 
 /-- The affine error is at most one. -/
-theorem affineMCAError_le_one (d A s : ℕ) : affineMCAError domain d A s ≤ 1 := by
+theorem affineMcaError_le_one (d A s : ℕ) : affineMcaError domain d A s ≤ 1 := by
   classical
-  refine ciSup_le fun w ↦ ?_
-  have hq : (0 : ℝ) < (Fintype.card F : ℝ) ^ 2 := by positivity
-  rw [div_le_one hq]
+  refine iSup_le fun w ↦ ?_
+  rw [← ENNReal.ofReal_one]
+  apply ENNReal.ofReal_le_ofReal
+  rw [div_le_one (by positivity)]
   calc (#{c : F × F | ∃ P, IsAffineExceptional domain w.1 w.2 d A s c.1 c.2 P} : ℝ)
       ≤ (Finset.univ : Finset (F × F)).card := by exact_mod_cast Finset.card_filter_le _ _
     _ = (Fintype.card F : ℝ) ^ 2 := by simp [sq]
+
+/-- The scalar error is at most one. -/
+theorem scalarMcaError_le_one (d A s : ℕ) : scalarMcaError domain d A s ≤ 1 := by
+  classical
+  refine iSup_le fun w ↦ ?_
+  rw [← ENNReal.ofReal_one]
+  apply ENNReal.ofReal_le_ofReal
+  rw [div_le_one (by positivity)]
+  exact_mod_cast Finset.card_filter_le (univ : Finset F) _
 
 end Error
 
@@ -218,9 +259,9 @@ theorem IsAffineExceptional.mono_threshold {domain : ι ↪ F} {f g : ι → F} 
 If `g` evaluates a polynomial `G₀` of degree below `d`, no candidate is exceptional.
 
 The witnesses are `P - (α + β X) G₀` and `G₀`, with no agreement loss. -/
-theorem not_isAffineExceptional_of_eval {domain : ι ↪ F} {d A s : ℕ} (F₀ G₀ : F[X])
+theorem not_isAffineExceptional_of_eval {domain : ι ↪ F} {d A s : ℕ} (f : ι → F) (G₀ : F[X])
     (hG : G₀.degree < d) (α β : F) (P : F[X]) :
-    ¬ IsAffineExceptional domain (fun i ↦ F₀.eval (domain i)) (fun i ↦ G₀.eval (domain i)) d A s
+    ¬ IsAffineExceptional domain f (fun i ↦ G₀.eval (domain i)) d A s
       α β P := by
   rintro ⟨hP, -, h⟩
   refine h (P - affineMultiplier α β * G₀) G₀ ?_ hG ⟨by ring, ?_⟩

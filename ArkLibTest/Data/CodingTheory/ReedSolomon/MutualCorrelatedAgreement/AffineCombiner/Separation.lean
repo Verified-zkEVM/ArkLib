@@ -17,15 +17,15 @@ private instance : Fact (Nat.Prime 5) := ⟨by decide⟩
 private def fullDomain : ZMod 5 ↪ ZMod 5 := Function.Embedding.refl _
 
 /-- Without loss, the affine error at `d = 1`, `A = 3` on `F₅` is at least `12 / 25`. -/
-example : (12 : ℝ) / 25 ≤ affineMCAError fullDomain 1 3 0 := by
-  have h := affineMCAError_zero_loss_ge fullDomain (d := 1) (A := 3) (by norm_num)
+example : (12 : ENNReal) / 25 ≤ affineMcaError fullDomain 1 3 0 := by
+  have h := affineMcaError_zero_loss_ge fullDomain (d := 1) (A := 3) (by norm_num)
     (by simp [ZMod.card])
-  norm_num [ZMod.card] at h
+  norm_num [ZMod.card, ENNReal.ofReal_div_of_pos] at h
   exact h
 
 /-- With loss `1`, the scalar error at `d = 0`, `A = 3` on `F₅` is at least `2 / 5`. -/
-example : (2 : ℝ) / 5 ≤ scalarMCAError fullDomain 0 3 1 := by
-  have h := scalarMCAError_ge fullDomain (d := 0) (A := 3) (s := 1) (by norm_num)
+example : (2 : ENNReal) / 5 ≤ scalarMcaError fullDomain 0 3 1 := by
+  have h := scalarMcaError_ge fullDomain (d := 0) (A := 3) (s := 1) (by norm_num)
     (by simp [ZMod.card])
-  norm_num [ZMod.card] at h
+  norm_num [ZMod.card, ENNReal.ofReal_div_of_pos] at h
   exact h
