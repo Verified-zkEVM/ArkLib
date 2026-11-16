@@ -1132,6 +1132,7 @@ public import ArkLib.ToCompPoly.Univariate.Basic
 public import ArkLib.ToCompPoly.Univariate.Lagrange
 public import ArkLib.ToCompPoly.Univariate.Primitive
 public import ArkLib.ToCompPoly.Univariate.Size
+public import ArkLib.ToMathlib.Algebra.CharP.NatCast
 public import ArkLib.ToMathlib.Algebra.Order.Floor.Ratio
 public import ArkLib.ToMathlib.Algebra.Order.Floor.RelativeError
 public import ArkLib.ToMathlib.Algebra.Order.Floor.Semiring

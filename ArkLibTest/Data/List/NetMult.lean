@@ -49,6 +49,9 @@ private def netMultRuntimeChecks : IO Unit := do
   check (witness (List.replicate 7 1) [1] = [0]) "Seven queries do not wrap in ZMod 7"
   -- One multiplicity per table entry, all on the last copy of a repeated value.
   check (witness [2] [2, 2, 2] = [0, 0, 1]) "Incorrect witness over a repeated table"
+  -- The largest count: 1 occurs three times; the empty list has largest count 0.
+  check (List.maxCount [1, 2, 1, 3, 1] = 3) "Incorrect largest count"
+  check (List.maxCount ([] : List ℕ) = 0) "Empty list has a nonzero largest count"
   IO.println "Net multiplicity runtime checks passed."
 
 /-- info: Net multiplicity runtime checks passed. -/

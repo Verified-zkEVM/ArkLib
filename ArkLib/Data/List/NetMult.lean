@@ -7,6 +7,7 @@ module
 
 public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 public import Mathlib.Data.Nat.Cast.Defs
+public import Mathlib.Data.Finset.Lattice.Fold
 
 /-!
 # Net multiplicities of keyed lists
@@ -22,6 +23,7 @@ A keyed list is balanced when every key has net multiplicity zero.
 - Net multiplicities are additive in the list and commute with additive maps.
 - A sum over the pairs, additive in the multiplicity, regroups as a sum over the keys.
 - With unit multiplicities, the net multiplicity of a value is its count.
+- The largest count of a list bounds every count, and the length bounds it.
 - Given a query list f and a table t, a multiplicity list for t puts each count of f
   on the last occurrence of its value in t.
 
@@ -90,6 +92,18 @@ theorem sum_map_eq_sum_netMult (g : κ → R →+ M) (l : List (κ × R)) (S : F
 end AddCommMonoid
 
 section Count
+
+/-- The largest number of times any value occurs in the list. -/
+def maxCount (l : List κ) : ℕ :=
+  l.toFinset.sup l.count
+
+theorem count_le_maxCount (l : List κ) (v : κ) : l.count v ≤ l.maxCount := by
+  by_cases hv : v ∈ l
+  · exact Finset.le_sup (f := l.count) (mem_toFinset.2 hv)
+  · simp [count_eq_zero.2 hv]
+
+theorem maxCount_le_length (l : List κ) : l.maxCount ≤ l.length :=
+  Finset.sup_le fun _ _ => count_le_length
 
 variable [AddCommMonoidWithOne R]
 

@@ -7,7 +7,7 @@ module
 
 public import ArkLib.Data.List.NetMult
 public import Mathlib.FieldTheory.RatFunc.Basic
-public import Mathlib.Algebra.CharP.Defs
+public import ArkLib.ToMathlib.Algebra.CharP.NatCast
 public import Mathlib.Algebra.Polynomial.BigOperators
 
 /-!
@@ -19,20 +19,33 @@ For a keyed list of pairs (v_k, m_k) over a field F, consider the rational funct
 
 It is the logarithmic derivative of prod_k (X - v_k)^(m_k) when the m_k are integers.
 
-These identities underlie lookups by logarithmic derivatives.
+These identities underlie lookups by logarithmic derivatives [Hab22].
 
-That is Haböck, "Multivariate lookups based on logarithmic derivatives", eprint 2022/1530.
+This file is the algebra core for the LogUp protocol.
+
+A LogUp protocol spec, such as a revived PR #503, should build on it rather than keep a second
+proof of the same facts.
 
 ## Results
 
 - The sum vanishes exactly when every key has net multiplicity zero.
-- Set inclusion (Lemma 5): f ⊆ t exactly when, for some multiplicities m,
+- Set inclusion ([Hab22], Lemma 5): f ⊆ t exactly when, for some multiplicities m,
   sum_j 1 / (X - f_j) = sum_i m_i / (X - t_i).
-- Permutations (Lemma 3): two lists are permutations exactly when their sums of
+- Permutations ([Hab22], Lemma 3): two lists are permutations exactly when their sums of
   1 / (X - x) agree.
-- Both need a characteristic above the number of queries.
 
-The reason: in characteristic p, p equal queries cancel.
+Only one direction of each needs a hypothesis on F.
+
+Set inclusion gives equal sums in every field, and so does a permutation.
+
+Going back from equal sums needs each of 1, 2, ..., up to the largest count of a value, to be
+nonzero in F.
+
+Characteristic zero, or a characteristic above the largest count, is enough.
+
+The number of queries bounds the largest count, so a characteristic above it is enough too.
+
+Without the bound the converse fails: in characteristic p > 0, p equal queries cancel.
 
 ## Computability
 
@@ -48,6 +61,10 @@ are noncomputable too.
 The executable content is the net multiplicity and the witness multiplicities.
 
 Every statement here reduces the rational identity to those.
+
+## References
+
+* [Haböck, U., *Multivariate lookups based on logarithmic derivatives*][Hab22]
 -/
 
 @[expose] public section
@@ -56,7 +73,8 @@ namespace RatFunc
 
 open Polynomial Finset
 open List (netMult Balanced lastMults length_lastMults netMult_append netMult_map_snd
-  netMult_of_not_mem netMult_map_one netMult_zip_lastMults sum_map_eq_sum_netMult)
+  netMult_of_not_mem netMult_map_one netMult_zip_lastMults sum_map_eq_sum_netMult
+  count_le_maxCount maxCount_le_length)
 
 variable {F : Type*} [Field F]
 
@@ -139,66 +157,112 @@ theorem logDerivSum_eq_iff [DecidableEq F] (l l' : List (F × F)) :
   simp only [AddMonoidHom.neg_apply, AddMonoidHom.id_apply] at h
   rw [netMult_append, h, ← sub_eq_add_neg, sub_eq_zero]
 
-/-! ## Counts in small characteristic -/
-
-/-- Counts up to L inject into F when no positive count up to L vanishes. -/
-theorem natCast_inj_of_le {L : ℕ} (hp : ∀ n : ℕ, 0 < n → n ≤ L → (n : F) ≠ 0) {a b : ℕ}
-    (ha : a ≤ L) (hb : b ≤ L) (h : (a : F) = b) : a = b := by
-  rcases le_total a b with hab | hab
-  · by_contra hne
-    exact hp (b - a) (by omega) (by omega) (by push_cast [Nat.cast_sub hab]; rw [h, sub_self])
-  · by_contra hne
-    exact hp (a - b) (by omega) (by omega) (by push_cast [Nat.cast_sub hab]; rw [h, sub_self])
-
-/-- In characteristic p, no positive count below p vanishes. -/
-theorem natCast_ne_zero_of_lt (p : ℕ) [CharP F p] {L : ℕ} (hL : L < p) :
-    ∀ n : ℕ, 0 < n → n ≤ L → (n : F) ≠ 0 := fun n hn hnL h =>
-  absurd (Nat.le_of_dvd hn ((CharP.cast_eq_zero_iff F p n).1 h)) (by omega)
-
 /-! ## Lookups -/
 
-/-- **Set inclusion (Lemma 5).**
+/-- With the last-occurrence multiplicities, queries inside the table give equal sums.
 
-In characteristic above the number of queries, f ⊆ t exactly when, for some multiplicities,
+This holds in every characteristic. -/
+theorem logDerivSum_eq_zip_lastMults_of_subset [DecidableEq F] {f t : List F} (hf : f ⊆ t) :
+    logDerivSum (f.map (·, 1)) = logDerivSum (t.zip (lastMults F f t)) := by
+  rw [logDerivSum_eq_iff]; intro v
+  rw [netMult_map_one, netMult_zip_lastMults]
+  split_ifs with hv
+  · rfl
+  · rw [List.count_eq_zero.2 fun hvf => hv (hf hvf), Nat.cast_zero]
+
+/-- Queries inside the table have multiplicities giving equal sums, in every characteristic. -/
+theorem exists_logDerivSum_eq_of_subset {f t : List F} (hf : f ⊆ t) :
+    ∃ m : List F, m.length = t.length ∧
+      logDerivSum (f.map (·, 1)) = logDerivSum (t.zip m) := by
+  classical
+  exact ⟨lastMults F f t, length_lastMults f t, logDerivSum_eq_zip_lastMults_of_subset hf⟩
+
+/-- Equal sums force the queries into the table when no count of a query vanishes in F.
+
+The multiplicities m are arbitrary field elements; only the query counts must stay nonzero. -/
+theorem subset_of_logDerivSum_eq [DecidableEq F] {f t m : List F}
+    (hp : NatCastNeZeroUpTo F f.maxCount) (hm : m.length = t.length)
+    (h : logDerivSum (f.map (·, 1)) = logDerivSum (t.zip m)) : f ⊆ t := by
+  intro v hv
+  by_contra hvt
+  have h1 := (logDerivSum_eq_iff _ _).1 h v
+  rw [netMult_map_one, netMult_of_not_mem (by rwa [List.map_fst_zip (by omega)])] at h1
+  exact hp _ (List.count_pos_iff.2 hv) (f.count_le_maxCount v) h1
+
+/-- **Set inclusion.**
+
+When no count of a query vanishes in F, f ⊆ t exactly when, for some multiplicities,
 sum_j 1 / (X - f_j) = sum_i m_i / (X - t_i). -/
-theorem subset_iff_exists_logDerivSum_eq (f t : List F)
-    (hp : ∀ n : ℕ, 0 < n → n ≤ f.length → (n : F) ≠ 0) :
+theorem subset_iff_exists_logDerivSum_eq [DecidableEq F] (f t : List F)
+    (hp : NatCastNeZeroUpTo F f.maxCount) :
+    f ⊆ t ↔ ∃ m : List F, m.length = t.length ∧
+      logDerivSum (f.map (·, 1)) = logDerivSum (t.zip m) :=
+  ⟨exists_logDerivSum_eq_of_subset, fun ⟨_, hm, h⟩ => subset_of_logDerivSum_eq hp hm h⟩
+
+/-- Set inclusion, with the number of queries as the bound. -/
+theorem subset_iff_exists_logDerivSum_eq_of_length (f t : List F)
+    (hp : NatCastNeZeroUpTo F f.length) :
     f ⊆ t ↔ ∃ m : List F, m.length = t.length ∧
       logDerivSum (f.map (·, 1)) = logDerivSum (t.zip m) := by
   classical
-  refine ⟨fun hf => ⟨lastMults F f t, length_lastMults f t, ?_⟩, ?_⟩
-  · rw [logDerivSum_eq_iff]; intro v
-    rw [netMult_map_one, netMult_zip_lastMults]
-    split_ifs with hv
-    · rfl
-    · rw [List.count_eq_zero.2 fun hvf => hv (hf hvf), Nat.cast_zero]
-  · rintro ⟨m, hm, h⟩ v hv
-    by_contra hvt
-    have h1 := (logDerivSum_eq_iff _ _).1 h v
-    rw [netMult_map_one, netMult_of_not_mem (by rwa [List.map_fst_zip (by omega)])] at h1
-    exact hp _ (List.count_pos_iff.2 hv) List.count_le_length h1
+  exact subset_iff_exists_logDerivSum_eq f t (hp.mono f.maxCount_le_length)
 
-/-- **Permutations (Lemma 3).**
+/-- Set inclusion in characteristic zero. -/
+theorem subset_iff_exists_logDerivSum_eq_of_charZero [CharZero F] (f t : List F) :
+    f ⊆ t ↔ ∃ m : List F, m.length = t.length ∧
+      logDerivSum (f.map (·, 1)) = logDerivSum (t.zip m) := by
+  classical
+  exact subset_iff_exists_logDerivSum_eq f t (.of_charZero F _)
 
-In characteristic above both lengths, two lists are permutations of each other exactly when
-sum_j 1 / (X - a_j) = sum_j 1 / (X - b_j). -/
-theorem perm_iff_logDerivSum_eq (a b : List F) {L : ℕ} (ha : a.length ≤ L)
-    (hb : b.length ≤ L) (hp : ∀ n : ℕ, 0 < n → n ≤ L → (n : F) ≠ 0) :
+/-- Permuting a keyed list keeps its sum, in every characteristic. -/
+theorem logDerivSum_eq_of_perm {l l' : List (F × F)} (h : l.Perm l') :
+    logDerivSum l = logDerivSum l' :=
+  (h.map _).sum_eq
+
+/-- Equal sums force a permutation when no count in either list vanishes in F. -/
+theorem perm_of_logDerivSum_eq [DecidableEq F] {a b : List F}
+    (hp : NatCastNeZeroUpTo F (max a.maxCount b.maxCount))
+    (h : logDerivSum (a.map (·, 1)) = logDerivSum (b.map (·, 1))) : a.Perm b := by
+  rw [List.perm_iff_count]; intro v
+  have h1 := (logDerivSum_eq_iff _ _).1 h v
+  rw [netMult_map_one, netMult_map_one] at h1
+  exact hp.natCast_inj ((a.count_le_maxCount v).trans (le_max_left _ _))
+    ((b.count_le_maxCount v).trans (le_max_right _ _)) h1
+
+/-- **Permutations.**
+
+When no count in either list vanishes in F, two lists are permutations of each other exactly
+when sum_j 1 / (X - a_j) = sum_j 1 / (X - b_j). -/
+theorem perm_iff_logDerivSum_eq [DecidableEq F] (a b : List F)
+    (hp : NatCastNeZeroUpTo F (max a.maxCount b.maxCount)) :
+    a.Perm b ↔ logDerivSum (a.map (·, 1)) = logDerivSum (b.map (·, 1)) :=
+  ⟨fun h => logDerivSum_eq_of_perm (h.map _), perm_of_logDerivSum_eq hp⟩
+
+/-- Permutations, with a common bound on both lengths. -/
+theorem perm_iff_logDerivSum_eq_of_length (a b : List F) {L : ℕ} (ha : a.length ≤ L)
+    (hb : b.length ≤ L) (hp : NatCastNeZeroUpTo F L) :
     a.Perm b ↔ logDerivSum (a.map (·, 1)) = logDerivSum (b.map (·, 1)) := by
   classical
-  rw [logDerivSum_eq_iff, List.perm_iff_count]
-  refine forall_congr' fun v => ?_
-  rw [netMult_map_one, netMult_map_one]
-  exact ⟨fun h => by rw [h], natCast_inj_of_le hp (List.count_le_length.trans ha)
-    (List.count_le_length.trans hb)⟩
+  exact perm_iff_logDerivSum_eq a b (hp.mono (max_le (a.maxCount_le_length.trans ha)
+    (b.maxCount_le_length.trans hb)))
+
+/-- Permutations in characteristic zero. -/
+theorem perm_iff_logDerivSum_eq_of_charZero [CharZero F] (a b : List F) :
+    a.Perm b ↔ logDerivSum (a.map (·, 1)) = logDerivSum (b.map (·, 1)) := by
+  classical
+  exact perm_iff_logDerivSum_eq a b (.of_charZero F _)
 
 /-- **Overflow.**
 
-In characteristic p, p queries of one value balance against an empty table. -/
-theorem logDerivSum_replicate_eq_zero (p : ℕ) [CharP F p] (v : F) :
-    logDerivSum ((List.replicate p v).map (·, (1 : F))) = 0 := by
+In characteristic p > 0, p queries of one value match the empty table with no multiplicities.
+
+The value is not in the empty table, so equal sums alone do not give set inclusion. -/
+theorem logDerivSum_replicate_eq_nil_and_not_subset (p : ℕ) [CharP F p] (hp : 0 < p) (v : F) :
+    logDerivSum ((List.replicate p v).map (·, 1)) = logDerivSum (([] : List F).zip []) ∧
+      ¬ List.replicate p v ⊆ [] := by
   classical
-  rw [logDerivSum_eq_zero_iff]; intro w
+  refine ⟨?_, fun h => List.not_mem_nil (h (List.mem_replicate.2 ⟨hp.ne', rfl⟩))⟩
+  rw [logDerivSum_eq_iff]; intro w
   rw [netMult_map_one, List.count_replicate]; split_ifs <;> simp
 
 end RatFunc
