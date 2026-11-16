@@ -17,11 +17,15 @@ Two received words `f g : D → F` are combined by a multiplier polynomial `L` i
 A candidate `P` agrees with the combined word on a set `S`. Polynomials `F₀ G₀` with
 `P = F₀ + L G₀` witness `P` with agreement loss at most `s` if at most `s` points of `S` fail
 `F₀ = f` or `G₀ = g`. The challenge is exceptional when some candidate of degree at most `d`
-agrees on at least `A` points and has no witness within the degree bounds.
+agrees on at least `A` points and has no witness within the degree bounds with agreement loss
+at most `s`.
 
 The MCA error is the largest fraction of exceptional challenges over all pairs of received words.
-For the affine combiner the witness degrees are `d` for `F₀` and at most `d - 1` for `G₀`, so the
-output degree stays `d`. For the scalar combiner both witness degrees are `d`.
+For the affine combiner the witness degrees are at most `d` for `F₀` and below `d` for `G₀`, so
+the output degree stays `d`. For the scalar combiner both witness degrees are at most `d`.
+
+The paper assumes `1 ≤ d < n` and `1 ≤ A ≤ n`. Outside that range the definitions are junk values:
+for `A > n` no candidate is exceptional, and for `d = 0` the affine witness `G₀` is zero.
 
 ## Computability
 
@@ -97,7 +101,7 @@ def IsLossWitness (domain : ι ↪ F) (f g : ι → F) (s : ℕ) (L P F₀ G₀ 
 
 /-- The challenge `(α, β)` makes `P` exceptional for the affine combiner: `P` has degree at most
 `d`, agrees with `f + (α + β x) g` on at least `A` points, and no pair `F₀ G₀` with
-`deg F₀ ≤ d` and `deg G₀ ≤ d - 1` witnesses it with agreement loss at most `s`. -/
+`deg F₀ ≤ d` and `deg G₀ < d` witnesses it with agreement loss at most `s`. -/
 def IsAffineExceptional (domain : ι ↪ F) (f g : ι → F) (d A s : ℕ) (α β : F) (P : F[X]) :
     Prop :=
   P.degree ≤ d ∧
@@ -198,15 +202,29 @@ theorem IsAffineExceptional.mono_threshold {domain : ι ↪ F} {f g : ι → F} 
     IsAffineExceptional domain f g d A' s α β P :=
   ⟨h.1, hA.trans h.2.1, h.2.2⟩
 
-/-- **Honest words are never exceptional.** If `f` and `g` are the evaluations of `F₀` and `G₀`
-with `deg F₀ ≤ d` and `deg G₀ ≤ d - 1`, then no challenge makes the honest combination
-`F₀ + (α + β X) G₀` exceptional, for every threshold and loss. -/
+/-- **Honest words are never exceptional.** If `g` is the evaluation of `G₀` with `deg G₀ < d`
+and `f` is the evaluation of any `F₀`, then no challenge makes any candidate exceptional, for
+every threshold and loss: `P - (α + β X) G₀` and `G₀` witness `P` with no agreement loss. -/
 theorem not_isAffineExceptional_of_eval {domain : ι ↪ F} {d A s : ℕ} (F₀ G₀ : F[X])
-    (hF : F₀.degree ≤ d) (hG : G₀.degree < d) (α β : F) :
+    (hG : G₀.degree < d) (α β : F) (P : F[X]) :
     ¬ IsAffineExceptional domain (fun i ↦ F₀.eval (domain i)) (fun i ↦ G₀.eval (domain i)) d A s
-      α β (F₀ + affineMultiplier α β * G₀) := by
-  rintro ⟨-, -, h⟩
-  refine h F₀ G₀ hF hG ⟨rfl, ?_⟩
-  simp [agreementLoss]
+      α β P := by
+  rintro ⟨hP, -, h⟩
+  refine h (P - affineMultiplier α β * G₀) G₀ ?_ hG ⟨by ring, ?_⟩
+  · refine (degree_sub_le _ _).trans (max_le hP ?_)
+    by_cases hG0 : G₀ = 0
+    · simp [hG0]
+    have hn : G₀.natDegree < d := by rwa [degree_eq_natDegree hG0, Nat.cast_lt] at hG
+    calc (affineMultiplier α β * G₀).degree
+        ≤ (affineMultiplier α β).degree + G₀.degree := degree_mul_le _ _
+      _ ≤ 1 + (G₀.natDegree : WithBot ℕ) :=
+          add_le_add (degree_affineMultiplier_le α β) degree_le_natDegree
+      _ ≤ d := by norm_cast; omega
+  · simp only [agreementLoss]
+    rw [Finset.card_eq_zero.mpr]
+    · exact Nat.zero_le _
+    refine Finset.filter_eq_empty_iff.mpr fun i hi ↦ ?_
+    rw [mem_polynomialAgreementSet, combinedWord] at hi
+    simp [hi]
 
 end ReedSolomon
