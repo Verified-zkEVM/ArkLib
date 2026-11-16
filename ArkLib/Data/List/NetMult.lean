@@ -12,7 +12,7 @@ public import Mathlib.Data.Finset.Lattice.Fold
 /-!
 # Net multiplicities of keyed lists
 
-A keyed list is a list of pairs (k, m): a key k carrying a multiplicity m.
+A keyed list is a list of pairs `(k, m)`: a key `k` carrying a multiplicity `m`.
 
 The net multiplicity of a key is the sum of the multiplicities it carries.
 
@@ -24,8 +24,7 @@ A keyed list is balanced when every key has net multiplicity zero.
 - A sum over the pairs, additive in the multiplicity, regroups as a sum over the keys.
 - With unit multiplicities, the net multiplicity of a value is its count.
 - The largest count of a list bounds every count, and the length bounds it.
-- Given a query list f and a table t, a multiplicity list for t puts each count of f
-  on the last occurrence of its value in t.
+- For queries `f` and a table `t`, each count of `f` can sit on its value's last place in `t`.
 
 All definitions here are executable.
 -/
@@ -116,7 +115,7 @@ theorem netMult_map_one (f : List κ) (v : κ) :
     rw [map_cons, netMult_cons, ih, count_cons]; by_cases h : a = v <;> simp [h, add_comm]
 
 variable (R) in
-/-- Multiplicities for a table t: each count of f sits on the last occurrence of its value. -/
+/-- Multiplicities for a table `t`: each count of `f` sits on its value's last occurrence. -/
 def lastMults (f : List κ) : List κ → List R
   | [] => []
   | v :: t => (if v ∈ t then 0 else (f.count v : R)) :: lastMults f t

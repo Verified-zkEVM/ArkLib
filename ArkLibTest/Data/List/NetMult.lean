@@ -18,7 +18,7 @@ The tables include duplicate entries, and the queries include values outside the
 
 namespace ArkLibTest.NetMult
 
-/-- A lookup witness in ZMod 7, computed by an ordinary caller. -/
+/-- A lookup witness in `ZMod 7`, computed by an ordinary caller. -/
 private def witness (f t : List ℕ) : List (ZMod 7) :=
   List.lastMults (ZMod 7) f t
 
@@ -27,13 +27,14 @@ private def check (ok : Bool) (msg : String) : IO Unit :=
 
 -- This ordinary caller requires generated code for the public list API.
 private def netMultRuntimeChecks : IO Unit := do
-  -- Net multiplicities sum per key; an absent key gets zero.
+  -- Net multiplicities sum per key.
+  -- An absent key gets zero.
   check (List.netMult [(1, 2), (2, 3), (1, 4)] 1 = 6) "Incorrect net multiplicity of key 1"
   check (List.netMult [(1, 2), (2, 3), (1, 4)] 2 = 3) "Incorrect net multiplicity of key 2"
   check (List.netMult [(1, 2), (2, 3), (1, 4)] 5 = 0) "Absent key has nonzero multiplicity"
-  -- Opposite multiplicities balance in ZMod 7.
+  -- Opposite multiplicities balance in `ZMod 7`.
   check (List.netMult [(1, (3 : ZMod 7)), (1, 4)] 1 = 0) "Opposite multiplicities do not cancel"
-  -- Queries 1, 1, 2 against table 1, 2, 1, 3: the duplicate 1 carries the count once.
+  -- Queries `1, 1, 2` against table `1, 2, 1, 3`: the duplicate `1` carries the count once.
   check (List.lastMults ℕ [1, 1, 2] [1, 2, 1, 3] = [0, 1, 2, 0])
     "Incorrect witness over a table with a duplicate entry"
   check (witness [1, 1, 2] [1, 2, 1, 3] = [0, 1, 2, 0])
@@ -45,11 +46,12 @@ private def netMultRuntimeChecks : IO Unit := do
     "Unqueried table value carries a nonzero multiplicity"
   -- A query outside the table gets no multiplicity.
   check (witness [4, 4] [1, 2] = [0, 0]) "Query outside the table gets a multiplicity"
-  -- Seven equal queries wrap to zero in ZMod 7.
+  -- Seven equal queries wrap to zero in `ZMod 7`.
   check (witness (List.replicate 7 1) [1] = [0]) "Seven queries do not wrap in ZMod 7"
   -- One multiplicity per table entry, all on the last copy of a repeated value.
   check (witness [2] [2, 2, 2] = [0, 0, 1]) "Incorrect witness over a repeated table"
-  -- The largest count: 1 occurs three times; the empty list has largest count 0.
+  -- The largest count: `1` occurs three times.
+  -- The empty list has largest count 0.
   check (List.maxCount [1, 2, 1, 3, 1] = 3) "Incorrect largest count"
   check (List.maxCount ([] : List ℕ) = 0) "Empty list has a nonzero largest count"
   IO.println "Net multiplicity runtime checks passed."

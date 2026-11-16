@@ -13,39 +13,40 @@ public import Mathlib.Algebra.Polynomial.BigOperators
 /-!
 # Sums of logarithmic derivatives
 
-For a keyed list of pairs (v_k, m_k) over a field F, consider the rational function
+A keyed list of pairs `(v_k, m_k)` over a field `F` gives the sum `sum_k m_k / (X - v_k)` in `F(X)`.
 
-  sum_k m_k / (X - v_k)  in F(X).
+For integer `m_k`, it is the logarithmic derivative of `prod_k (X - v_k)^(m_k)`.
 
-It is the logarithmic derivative of prod_k (X - v_k)^(m_k) when the m_k are integers.
+This file is the algebra core of lookups by logarithmic derivatives (LogUp) [Hab22].
 
-These identities underlie lookups by logarithmic derivatives [Hab22].
+A LogUp protocol spec, such as a revived PR #503, should build on it, not on a second proof.
 
-This file is the algebra core for the LogUp protocol.
+## Main statements
 
-A LogUp protocol spec, such as a revived PR #503, should build on it rather than keep a second
-proof of the same facts.
+- `RatFunc.logDerivSum_eq_zero_iff`: the sum vanishes exactly when every key nets to zero.
+- `RatFunc.subset_iff_exists_logDerivSum_eq`: set inclusion ([Hab22], Lemma 5).
+- `RatFunc.perm_iff_logDerivSum_eq`: permutations ([Hab22], Lemma 3).
+- `RatFunc.logDerivSum_replicate_eq_nil_and_not_subset`: the converse fails without a bound.
 
-## Results
+## The two identities
 
-- The sum vanishes exactly when every key has net multiplicity zero.
-- Set inclusion ([Hab22], Lemma 5): f ⊆ t exactly when, for some multiplicities m,
-  sum_j 1 / (X - f_j) = sum_i m_i / (X - t_i).
-- Permutations ([Hab22], Lemma 3): two lists are permutations exactly when their sums of
-  1 / (X - x) agree.
+Set inclusion: `f ⊆ t` exactly when `sum_j 1 / (X - f_j) = sum_i m_i / (X - t_i)` for some `m`.
 
-Only one direction of each needs a hypothesis on F.
+Permutations: two lists are permutations exactly when their sums of `1 / (X - x)` agree.
+
+## Characteristic hypotheses
+
+Only one direction of each equivalence needs a hypothesis on `F`.
 
 Set inclusion gives equal sums in every field, and so does a permutation.
 
-Going back from equal sums needs each of 1, 2, ..., up to the largest count of a value, to be
-nonzero in F.
+Going back needs each of `1, 2, ...` up to the largest count of a value to be nonzero in `F`.
 
 Characteristic zero, or a characteristic above the largest count, is enough.
 
 The number of queries bounds the largest count, so a characteristic above it is enough too.
 
-Without the bound the converse fails: in characteristic p > 0, p equal queries cancel.
+Without the bound the converse fails: in characteristic `p > 0`, `p` equal queries cancel.
 
 ## Computability
 
@@ -55,8 +56,7 @@ Mathlib builds polynomials on finitely supported functions with classical decida
 
 So it marks polynomial constants and polynomial addition noncomputable.
 
-Division in Mathlib's rational functions, and the embedding of polynomials into them,
-are noncomputable too.
+Division of rational functions and the embedding of polynomials into them are noncomputable too.
 
 The executable content is the net multiplicity and the witness multiplicities.
 
@@ -80,7 +80,7 @@ variable {F : Type*} [Field F]
 
 local notation "ι" => algebraMap F[X] (RatFunc F)
 
-/-- The logarithmic-derivative sum: sum_k m_k / (X - v_k) in F(X). -/
+/-- The logarithmic-derivative sum `sum_k m_k / (X - v_k)` in `F(X)`. -/
 noncomputable def logDerivSum (l : List (F × F)) : RatFunc F :=
   (l.map fun p => ι (C p.2) / ι (X - C p.1)).sum
 
@@ -106,7 +106,7 @@ theorem logDerivSum_eq_sum [DecidableEq F] (l : List (F × F)) (S : Finset F)
       map_add' := fun a b => by simp [add_div] }
   exact sum_map_eq_sum_netMult g l S hS
 
-/-- Distinct poles: sum_v n_v / (X - v) vanishes only when every n_v does. -/
+/-- Distinct poles: `sum_v n_v / (X - v)` vanishes only when every `n_v` does. -/
 theorem sum_div_X_sub_C_eq_zero_iff (S : Finset F) (n : F → F) :
     ∑ v ∈ S, ι (C (n v)) / ι (X - C v) = 0 ↔ ∀ v ∈ S, n v = 0 := by
   classical
@@ -137,7 +137,7 @@ theorem sum_div_X_sub_C_eq_zero_iff (S : Finset F) (n : F → F) :
 
 /-- **The log-derivative identity.**
 
-The sum of m / (X - v) vanishes in F(X) exactly when the list is balanced. -/
+The sum of `m / (X - v)` vanishes in `F(X)` exactly when the list is balanced. -/
 theorem logDerivSum_eq_zero_iff [DecidableEq F] (l : List (F × F)) :
     logDerivSum l = 0 ↔ Balanced l := by
   rw [logDerivSum_eq_sum l (l.map (·.1)).toFinset (fun p hp => by simpa using ⟨p.2, hp⟩),
@@ -177,9 +177,11 @@ theorem exists_logDerivSum_eq_of_subset {f t : List F} (hf : f ⊆ t) :
   classical
   exact ⟨lastMults F f t, length_lastMults f t, logDerivSum_eq_zip_lastMults_of_subset hf⟩
 
-/-- Equal sums force the queries into the table when no count of a query vanishes in F.
+/-- Equal sums force the queries into the table when no count of a query vanishes in `F`.
 
-The multiplicities m are arbitrary field elements; only the query counts must stay nonzero. -/
+The multiplicities are arbitrary field elements.
+
+Only the query counts must stay nonzero. -/
 theorem subset_of_logDerivSum_eq [DecidableEq F] {f t m : List F}
     (hp : NatCastNeZeroUpTo F f.maxCount) (hm : m.length = t.length)
     (h : logDerivSum (f.map (·, 1)) = logDerivSum (t.zip m)) : f ⊆ t := by
@@ -191,8 +193,9 @@ theorem subset_of_logDerivSum_eq [DecidableEq F] {f t m : List F}
 
 /-- **Set inclusion.**
 
-When no count of a query vanishes in F, f ⊆ t exactly when, for some multiplicities,
-sum_j 1 / (X - f_j) = sum_i m_i / (X - t_i). -/
+When no count of a query vanishes in `F`, these are equivalent:
+- `f ⊆ t`;
+- `sum_j 1 / (X - f_j) = sum_i m_i / (X - t_i)` for some multiplicities `m`. -/
 theorem subset_iff_exists_logDerivSum_eq [DecidableEq F] (f t : List F)
     (hp : NatCastNeZeroUpTo F f.maxCount) :
     f ⊆ t ↔ ∃ m : List F, m.length = t.length ∧
@@ -219,7 +222,7 @@ theorem logDerivSum_eq_of_perm {l l' : List (F × F)} (h : l.Perm l') :
     logDerivSum l = logDerivSum l' :=
   (h.map _).sum_eq
 
-/-- Equal sums force a permutation when no count in either list vanishes in F. -/
+/-- Equal sums force a permutation when no count in either list vanishes in `F`. -/
 theorem perm_of_logDerivSum_eq [DecidableEq F] {a b : List F}
     (hp : NatCastNeZeroUpTo F (max a.maxCount b.maxCount))
     (h : logDerivSum (a.map (·, 1)) = logDerivSum (b.map (·, 1))) : a.Perm b := by
@@ -231,8 +234,9 @@ theorem perm_of_logDerivSum_eq [DecidableEq F] {a b : List F}
 
 /-- **Permutations.**
 
-When no count in either list vanishes in F, two lists are permutations of each other exactly
-when sum_j 1 / (X - a_j) = sum_j 1 / (X - b_j). -/
+When no count in either list vanishes in `F`, these are equivalent:
+- `a` and `b` are permutations of each other;
+- `sum_j 1 / (X - a_j) = sum_j 1 / (X - b_j)`. -/
 theorem perm_iff_logDerivSum_eq [DecidableEq F] (a b : List F)
     (hp : NatCastNeZeroUpTo F (max a.maxCount b.maxCount)) :
     a.Perm b ↔ logDerivSum (a.map (·, 1)) = logDerivSum (b.map (·, 1)) :=
@@ -254,7 +258,7 @@ theorem perm_iff_logDerivSum_eq_of_charZero [CharZero F] (a b : List F) :
 
 /-- **Overflow.**
 
-In characteristic p > 0, p queries of one value match the empty table with no multiplicities.
+In characteristic `p > 0`, `p` queries of one value match the empty table.
 
 The value is not in the empty table, so equal sums alone do not give set inclusion. -/
 theorem logDerivSum_replicate_eq_nil_and_not_subset (p : ℕ) [CharP F p] (hp : 0 < p) (v : F) :

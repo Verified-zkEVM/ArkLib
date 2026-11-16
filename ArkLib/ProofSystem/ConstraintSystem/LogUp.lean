@@ -13,13 +13,16 @@ public import ArkLib.Data.Polynomial.LogDerivative
 
 LogUp checks a lookup with one identity of rational functions [Hab22].
 
-The algebra lives with the rational functions.
-
-This file states it for the lookup relation over lists ([Hab22], Lemma 5).
+This file states that identity for the lookup relation over lists ([Hab22], Lemma 5).
 
 The forward direction holds in every field.
 
-The converse needs each of 1, 2, ..., up to the largest count of a query, to be nonzero in F.
+The converse needs each of `1, 2, ...` up to the largest query count to be nonzero in `F`.
+
+## Main statements
+
+- `Lookup.LogUp.relation_iff_exists_logDerivSum_eq`: the bound is the largest query count.
+- `Lookup.LogUp.relation_iff_exists_logDerivSum_eq_of_length`: the bound is the query count.
 
 ## References
 
@@ -36,8 +39,9 @@ variable {F : Type*} [Field F]
 
 /-- **Lookups by logarithmic derivatives.**
 
-When no count of a query vanishes in F, the queries lie in the table exactly when,
-for some multiplicities, sum_j 1 / (X - f_j) = sum_i m_i / (X - t_i). -/
+When no count of a query vanishes in `F`, these are equivalent:
+- the queries lie in the table;
+- `sum_j 1 / (X - f_j) = sum_i m_i / (X - t_i)` for some multiplicities `m`. -/
 theorem relation_iff_exists_logDerivSum_eq [DecidableEq F] (f t : List F)
     (hp : NatCastNeZeroUpTo F f.maxCount) :
     (f, t) ∈ Lookup.relation ↔
