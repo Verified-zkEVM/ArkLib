@@ -18,9 +18,7 @@ It may also read the public values and the periodic columns.
 
 A trace satisfies the AIR when every constraint vanishes on every row it applies to.
 
-This follows the AIR of the ethSTARK documentation (eprint 2021/582).
-
-Ben-Sasson, Bentov, Horesh and Riabzev introduce it in eprint 2018/046.
+This follows the AIR of [EthStark21], which [BBHR18] introduces.
 
 Plonky3 writes every constraint as one polynomial that applies on every row.
 
@@ -40,8 +38,55 @@ A constraint with no selector therefore also relates the last row to the first.
 A constraint domain is the set of rows a constraint applies to.
 
 The selector form and the domain form describe the same traces.
--/
 
+## Selectors are 0/1 indicators
+
+Here a selector is 1 on its domain and 0 off it.
+
+Plonky3 only promises a value that is nonzero on the domain and zero off it.
+
+Its two-adic STARK, for instance, gives the first-row selector the value n on row 0.
+
+Multiplying a whole constraint by a selector means the same under both conventions.
+
+Other uses, such as `isFirstRow - 1`, depend on the 0/1 values fixed here.
+
+## Shape of the data
+
+The columns are already-expanded evaluations, one value per row.
+
+Nothing in the type fixes the number of columns or of public values.
+
+A periodic column is any table of row values: nothing forces it to repeat.
+
+The caller checks these shapes, for example that a periodic column has a period dividing n.
+
+The cells are total functions of the column index.
+
+A constraint should read only columns below the trace width.
+
+A cell past the width is not part of the trace, and a constraint that reads it reads junk.
+
+## Computability
+
+The row environment is executable.
+
+This file is not an executable constraint checker: satisfaction is a proposition.
+
+The domain selectors are noncomputable.
+
+They are multivariate polynomials, which Mathlib builds on finitely supported functions.
+
+Code generation fails on the zero of that algebra, so they cannot be compiled.
+
+## References
+
+* [Ben-Sasson, E., *ethSTARK Documentation*][EthStark21]
+* [Ben-Sasson, E., Bentov, I., Horesh, Y., and Riabzev, M., *Scalable, transparent, and
+    post-quantum secure computational integrity*][BBHR18]
+* Plonky3 `p3-air`, the selector convention:
+  https://github.com/Plonky3/Plonky3/blob/0d803737b681774186cd283b1fd2d8e493655c82/air/src/builder.rs
+-/
 @[expose] public section
 
 namespace Air
@@ -63,10 +108,15 @@ inductive Var where
 
 It holds n rows of main and preprocessed cells, the public values, and the periodic columns. -/
 structure Instance (F : Type _) where
+  /-- The number of rows n. -/
   height : ℕ
+  /-- The main cell on a row and a column; only rows below n are read. -/
   main : ℕ → ℕ → F
+  /-- The preprocessed cell on a row and a column; only rows below n are read. -/
   prep : ℕ → ℕ → F
+  /-- The public values; their number is not fixed by the type. -/
   pub : ℕ → F
+  /-- The periodic column j on row i, already expanded; nothing forces it to repeat. -/
   periodic : ℕ → ℕ → F
 
 variable {F : Type _} [Field F]
@@ -94,7 +144,15 @@ inductive Domain where
   | lastRow
   | transition
 
-/-- Row i of n lies in the domain: every row, row 0, row n - 1, or a row with a successor. -/
+/-- Row i of n lies in the domain: every row, row 0, row n - 1, or a row with a successor.
+
+It is a test relative to the height n, meaningful only for i < n.
+
+Without that bound it also holds outside the trace.
+
+For instance, when n = 0 the every-row domain contains row 100 and the first-row domain row 0.
+
+The satisfaction predicates add the bound i < n themselves. -/
 def Domain.Contains (n i : ℕ) : Domain → Prop
   | .everyRow => True
   | .firstRow => i = 0
