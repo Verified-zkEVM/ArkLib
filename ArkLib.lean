@@ -406,6 +406,8 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Aff
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.LineEvaluation
 public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.PersistenceDescent
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Persistent
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Probability
@@ -1174,6 +1176,7 @@ public import ArkLib.ToMathlib.LinearAlgebra.LagrangeLine
 public import ArkLib.ToMathlib.LinearAlgebra.LineInjectivity
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.Determinant
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.InvertibleCombination
+public import ArkLib.ToMathlib.LinearAlgebra.Matrix.KernelDescent
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.Pivot
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.PrimitiveKernel
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.Rank
