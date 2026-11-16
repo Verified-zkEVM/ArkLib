@@ -5,18 +5,15 @@ Authors: Thomas Coratger
 -/
 module
 
-public import Mathlib.Algebra.MvPolynomial.Equiv
-public import Mathlib.Algebra.Polynomial.Roots
-public import Mathlib.Algebra.BigOperators.Fin
-public import Mathlib.Data.Fintype.Pi
-public import Mathlib.Tactic.ComputeDegree
+public import ArkLib.Data.Fin.BigOperators
+public import ArkLib.Data.MvPolynomial.Hypercube
+public import ArkLib.Data.Polynomial.PointCollision
+public import ArkLib.ProofSystem.Sumcheck.Message.Quadratic
 
 /-!
 # Sumcheck: soundness by counting, and compressed round messages
 
-This is the sumcheck protocol of Lund, Fortnow, Karloff and Nisan.
-
-It follows Thaler, "Proofs, Arguments, and Zero-Knowledge", Section 4.1.
+This is the sum-check protocol of [LFKN92], in the presentation of [Tha22, Section 4.1].
 
 The prover claims that `H = sum_{b in {0,1}^n} g(b)`.
 
@@ -29,222 +26,216 @@ The polynomial `g` has degree at most `d` in each variable.
     end:      the verifier checks g(r) = c_n
 ```
 
+A prover is a deterministic strategy from challenge vectors to round messages.
+
+It is causal when round `i` reads only the challenges before `i`.
+
 ## Results
 
-- completeness: the honest prover is accepted on every challenge vector.
-- soundness: a false claim passes on at most `n d |F|^(n-1)` of the `|F|^n` challenge vectors.
+- Completeness: the honest prover is accepted on every challenge vector.
+- Soundness: a false claim passes on at most `n d |F|^(n-1)` of the `|F|^n` challenge vectors.
 
-The soundness error is therefore `n d / |F|`, against any causal prover.
+Against a causal prover the soundness error is therefore `n d / |F|`.
 
 ## Compressed round messages
 
-The prover may send a short message `m_i` instead of `g_i`.
+A message model decodes a round message under the running claim into a polynomial of degree at
+most `d`.
 
-The verifier decodes `g_i = dec(c_i, m_i)` from the message and the running claim.
+The executable verifier replays the messages: in each round it runs the model's acceptance check
+and moves the claim to the message's evaluation at the challenge.
 
-Every decoding has degree at most `d` and passes the sum check by construction.
+It accepts when the replay ends at `g(r)`.
 
-- decoded acceptance: this verifier accepts exactly when the verifier above does.
-- decoded soundness and completeness: both bounds carry over to the messages.
-- quadratic rounds: the message `(h(0), coefficient of X^2)` is such a decoding.
+- Decoded acceptance: the replay accepts exactly when the verifier above accepts the decoded
+  polynomials, for the Boolean domain `{0, 1}`.
+- Decoded soundness and completeness: both bounds carry over to the messages.
+- Quadratic rounds: the message `(h(0), coefficient of X^2)` is such a model, so the bounds hold
+  for the shared quadratic message operations with `d = 2`.
 
-In the quadratic case the verifier recovers `h(1) = c - h(0)`.
+## Relation to the interaction-layer execution
 
-Every admissible quadratic has a message.
+The interaction-layer executor samples each challenge in turn and lets an effectful prover answer.
 
-The statements need only mathlib.
+It succeeds when every sum check passes and the exported original evaluation equals the last
+message evaluated at the last challenge.
 
-They complement the `OracleComp` development in `ArkLib.ProofSystem.Sumcheck.Interaction`.
+On the Boolean domain with messages of degree at most `d`, that is the event counted here.
+
+Here the prover is deterministic and causal, and the bound counts challenge vectors instead of
+measuring a sampled run.
+
+For a deterministic prover with uniform independent challenges the count divided by `|F|^n` is the
+success probability, and `n d / |F|` matches the executor's soundness bound.
+
+## Computability
+
+The honest prover, the decoded polynomials and the final claim are Mathlib polynomials.
+
+They are the mathematical view, and are noncomputable because Mathlib polynomial arithmetic is.
+
+The replay runs only the executable message operations, and is proved to agree with that view.
+
+## Provenance
+
+Ported from Plonky3-lean, where it specifies the Plonky3 sumcheck verifier.
+
+Repository: https://github.com/Plonky3/Plonky3-lean
+
+Commit: `fdef3385014bd2e0d12d959c9afe70e2a9134775`
+
+Paths: `Plonky3Lean/Spec/Sumcheck.lean`, `Plonky3Lean/Proofs/Sumcheck/Protocol.lean`,
+`Plonky3Lean/Proofs/Sumcheck/Decoded.lean`, `Plonky3Lean/Proofs/Sumcheck/Quadratic.lean`
+
+## References
+
+* [Lund, C., Fortnow, L., Karloff, H., and Nisan, N., *Algebraic methods for interactive proof
+    systems*][LFKN92]
+* [Thaler, J., *Proofs, Arguments, and Zero-Knowledge*][Tha22]
 -/
 
 @[expose] public section
 
 namespace Sumcheck.Counting
 
-open Finset
+open Finset MvPolynomial
 
 section Spec
 
-open MvPolynomial
-
-variable {F : Type _} [CommRing F] [DecidableEq F]
-
-/-- The Boolean cube {0,1}^n, as points of F^n. -/
-def cube (n : ℕ) : Finset (Fin n → F) := Fintype.piFinset fun _ => {0, 1}
-
-/-- The sum of g over the Boolean cube. -/
-noncomputable def cubeSum {n : ℕ} (g : MvPolynomial (Fin n) F) : F :=
-  ∑ b ∈ cube n, eval b g
-
-/-- g has degree at most d in each variable. -/
-def IndividualDegreeLE {n : ℕ} (g : MvPolynomial (Fin n) F) (d : ℕ) : Prop :=
-  ∀ i, g.degreeOf i ≤ d
-
-/-- g with its first variable set to a. -/
-noncomputable def fixFirst {n : ℕ} (a : F) (g : MvPolynomial (Fin (n + 1)) F) :
-    MvPolynomial (Fin n) F :=
-  Polynomial.eval (C a) (finSuccEquiv F n g)
-
-/-- The honest first message: the first variable is kept, the others are summed over the cube.
-
-```text
-    s(X) = sum_{b in {0,1}^n} g(X, b)
-```
--/
-noncomputable def honestMessage {n : ℕ} (g : MvPolynomial (Fin (n + 1)) F) : Polynomial F :=
-  ∑ b ∈ cube n, (finSuccEquiv F n g).map (eval b)
+variable {F : Type} [CommRing F]
 
 /-- The honest prover.
 
-Round 0 sends the honest first message.
+Round 0 sends the first coordinate-line restriction summed over the Boolean cube.
 
-Later rounds recurse on g with its first variable set to r_0.
+Later rounds recurse on `g` with its first variable set to `r_0`.
 -/
 noncomputable def honestProver :
     {n : ℕ} → MvPolynomial (Fin n) F → Fin n → (Fin n → F) → Polynomial F
   | 0, _ => fun i => i.elim0
-  | _ + 1, g => fun i r =>
-    Fin.cases (honestMessage g) (fun j => honestProver (fixFirst (r 0) g) j (Fin.tail r)) i
+  | n + 1, g => fun i r =>
+    Fin.cases (∑ x : Fin (n + 1 - (0 + 1)) → Fin 2, g.evalExcept 0 (hypercubeSuffix 0 Fin.elim0 x))
+      (fun j => honestProver (fixFirstVariablesOfMQP (n + 1) ⟨1, by omega⟩ g (fun _ => r 0)) j
+        (Fin.tail r)) i
 
-/-- A prover strategy is causal when its message in round i reads only the challenges before i. -/
+/-- A prover strategy is causal when its message in round `i` reads only the challenges before
+`i`. -/
 def Causal {α : Type _} {n : ℕ} (P : Fin n → (Fin n → F) → α) : Prop :=
   ∀ i r r', (∀ j : Fin n, j < i → r j = r' j) → P i r = P i r'
 
-/-- The verifier accepts the claim c against the prover P on the challenges r.
+/-- The verifier accepts the claim `c` against the prover `P` on the challenges `r`.
 
-Every round checks the degree bound and the sum g_i(0) + g_i(1) = c_i.
+Every round checks the degree bound and the sum `g_i(0) + g_i(1) = c_i`.
 
-The last check is g(r) = c_n.
+The last check is `g(r) = c_n`.
 -/
 def Accepts (d : ℕ) :
     {n : ℕ} → MvPolynomial (Fin n) F → F → (Fin n → (Fin n → F) → Polynomial F) →
     (Fin n → F) → Prop
   | 0, g, c, _, r => eval r g = c
-  | _ + 1, g, c, P, r =>
+  | n + 1, g, c, P, r =>
     (P 0 r).natDegree ≤ d ∧ (P 0 r).eval 0 + (P 0 r).eval 1 = c ∧
-      Accepts d (fixFirst (r 0) g) ((P 0 r).eval (r 0))
-        (fun i r' => P i.succ (Fin.cons (r 0) r')) (Fin.tail r)
+      Accepts d (fixFirstVariablesOfMQP (n + 1) ⟨1, by omega⟩ g (fun _ => r 0))
+        ((P 0 r).eval (r 0)) (fun i r' => P i.succ (Fin.cons (r 0) r')) (Fin.tail r)
 
 end Spec
 
 section Proofs
 
-open MvPolynomial
+variable {F : Type} [CommRing F]
 
-variable {F : Type _} [CommRing F] [DecidableEq F]
+/-! ## The first variable -/
 
-/-! ## The cube and the first variable -/
+/-- Fixing the first variable evaluates by prepending its value. -/
+theorem eval_fixFirstVariablesOfMQP_cons {n : ℕ} (a : F) (g : MvPolynomial (Fin (n + 1)) F)
+    (s : Fin n → F) :
+    eval s (fixFirstVariablesOfMQP (n + 1) ⟨1, by omega⟩ g (fun _ => a)) =
+      eval (Fin.cons a s) g := by
+  rw [eval_fixFirstVariablesOfMQP_one (ℓ := n + 1) (h := by omega) (H := g) (c := a) (x := s)]
+  rfl
 
-theorem sum_cube_succ {M : Type _} [AddCommMonoid M] {n : ℕ} (f : (Fin (n + 1) → F) → M) :
-    ∑ b ∈ cube (n + 1), f b =
-      ∑ a ∈ ({0, 1} : Finset F), ∑ b ∈ cube n, f (Fin.cons a b) := by
-  rw [← Finset.sum_product']
-  refine Finset.sum_nbij' (fun b => (b 0, Fin.tail b)) (fun p => Fin.cons p.1 p.2) ?_ ?_ ?_ ?_ ?_
-  · intro b hb
-    simp only [cube, Fintype.mem_piFinset] at hb
-    simp [cube, Fin.tail, hb]
-  · rintro ⟨a, b⟩ h
-    simp only [mem_product, cube, Fintype.mem_piFinset] at h ⊢
-    intro i
-    exact Fin.cases (by simpa using h.1) (fun j => by simpa using h.2 j) i
-  · intro b _; simp
-  · rintro ⟨a, b⟩ _; simp
-  · intro b _; simp
+/-! ## The honest prover -/
 
-omit [DecidableEq F] in
-theorem eval_fixFirst {n : ℕ} (a : F) (g : MvPolynomial (Fin (n + 1)) F) (s : Fin n → F) :
-    eval s (fixFirst a g) = eval (Fin.cons a s) g := by
-  rw [eval_eq_eval_mv_eval', fixFirst, Polynomial.eval_map, Polynomial.eval, Polynomial.hom_eval₂]
-  simp
+/-- The honest first message evaluates to the hypercube sum with the first variable fixed. -/
+theorem eval_honestProver_zero {n : ℕ} (g : MvPolynomial (Fin (n + 1)) F) (r : Fin (n + 1) → F)
+    (a : F) :
+    (honestProver g 0 r).eval a =
+      hypercubeSum n (fixFirstVariablesOfMQP (n + 1) ⟨1, by omega⟩ g (fun _ => a)) 0
+        Fin.elim0 := by
+  refine (eval_sum_evalExcept_hypercube g 0 Fin.elim0 a).trans ?_
+  refine Eq.trans ?_ (hypercubeSum_eq_fixFirstVariablesOfMQP g ⟨1, by omega⟩ (fun _ => a))
+  unfold hypercubeSum
+  refine Finset.sum_congr rfl fun x _ => ?_
+  congr 1
 
-theorem eval_honestMessage {n : ℕ} (g : MvPolynomial (Fin (n + 1)) F) (a : F) :
-    (honestMessage g).eval a = cubeSum (fixFirst a g) := by
-  simp [honestMessage, cubeSum, Polynomial.eval_finsetSum, eval_fixFirst, eval_eq_eval_mv_eval']
+/-- The honest first message passes the sum check against the true sum. -/
+theorem honestProver_zero_sum {n : ℕ} (g : MvPolynomial (Fin (n + 1)) F) (r : Fin (n + 1) → F) :
+    (honestProver g 0 r).eval 0 + (honestProver g 0 r).eval 1 =
+      hypercubeSum (n + 1) g 0 Fin.elim0 :=
+  sum_eval_sum_evalExcept_hypercube g 0 Fin.elim0
 
-theorem cubeSum_succ {n : ℕ} (g : MvPolynomial (Fin (n + 1)) F) :
-    cubeSum g = cubeSum (fixFirst 0 g) + cubeSum (fixFirst 1 g) := by
-  by_cases h : (0 : F) = 1
-  · have : Subsingleton F := subsingleton_of_zero_eq_one h
-    simp [Subsingleton.elim (cubeSum g) 0, Subsingleton.elim (cubeSum (fixFirst 0 g)) 0,
-      Subsingleton.elim (cubeSum (fixFirst 1 g)) 0]
-  · simp [cubeSum, sum_cube_succ, Finset.sum_pair h, eval_fixFirst]
-
-theorem honestMessage_sum {n : ℕ} (g : MvPolynomial (Fin (n + 1)) F) :
-    (honestMessage g).eval 0 + (honestMessage g).eval 1 = cubeSum g := by
-  rw [eval_honestMessage, eval_honestMessage, cubeSum_succ]
-
-/-! ## Degrees -/
-
-theorem natDegree_honestMessage_le {n d : ℕ} {g : MvPolynomial (Fin (n + 1)) F}
-    (hg : IndividualDegreeLE g d) : (honestMessage g).natDegree ≤ d :=
+/-- The honest first message has degree at most the degree bound of `g`. -/
+theorem natDegree_honestProver_zero_le {n d : ℕ} {g : MvPolynomial (Fin (n + 1)) F}
+    (hg : g ∈ restrictDegree (Fin (n + 1)) F d) (r : Fin (n + 1) → F) :
+    (honestProver g 0 r).natDegree ≤ d :=
   Polynomial.natDegree_sum_le_of_forall_le _ _ fun _ _ =>
-    (Polynomial.natDegree_map_le).trans ((natDegree_finSuccEquiv g).le.trans (hg 0))
+    (natDegree_evalExcept_le 0 _ g).trans ((mem_restrictDegree_iff_degreeOf_le g d).mp hg 0)
 
-omit [DecidableEq F] in
-theorem individualDegreeLE_fixFirst {n d : ℕ} {g : MvPolynomial (Fin (n + 1)) F}
-    (hg : IndividualDegreeLE g d) (a : F) : IndividualDegreeLE (fixFirst a g) d := by
-  intro i
-  rw [fixFirst, Polynomial.eval_eq_sum, Polynomial.sum_def]
-  refine (degreeOf_sum_le _ _ _).trans (Finset.sup_le fun k _ => ?_)
-  rw [← map_pow]
-  exact (degreeOf_mul_C_le _ _ _).trans ((degreeOf_coeff_finSuccEquiv g i k).trans (hg i.succ))
+/-- After the first challenge the honest prover is the honest prover of the fixed polynomial. -/
+theorem honestProver_succ {n : ℕ} (g : MvPolynomial (Fin (n + 1)) F) (a : F) :
+    (fun i r' => honestProver g i.succ (Fin.cons a r')) =
+      honestProver (fixFirstVariablesOfMQP (n + 1) ⟨1, by omega⟩ g (fun _ => a)) := by
+  funext i r'
+  simp only [honestProver, Fin.cases_succ, Fin.cons_zero, Fin.tail_cons]
+
+/-- The honest prover is causal. -/
+theorem honestProver_causal :
+    ∀ {n : ℕ} (g : MvPolynomial (Fin n) F), Causal (honestProver g)
+  | 0, _ => fun i => i.elim0
+  | n + 1, g => fun i r r' h => by
+    refine Fin.cases (fun _ => rfl) (fun j h => ?_) i h
+    have h0 : r 0 = r' 0 := h 0 (Fin.succ_pos j)
+    simp only [honestProver, Fin.cases_succ, h0]
+    exact honestProver_causal _ j _ _ fun k hk => h k.succ (Fin.succ_lt_succ_iff.mpr hk)
 
 /-! ## Completeness -/
 
 /-- The honest prover makes the verifier accept the true sum, on every challenge vector. -/
 theorem completeness {d : ℕ} :
-    ∀ {n : ℕ} (g : MvPolynomial (Fin n) F), IndividualDegreeLE g d →
-    ∀ r, Accepts d g (cubeSum g) (honestProver g) r
+    ∀ {n : ℕ} (g : MvPolynomial (Fin n) F), g ∈ restrictDegree (Fin n) F d →
+    ∀ r, Accepts d g (hypercubeSum n g 0 Fin.elim0) (honestProver g) r
   | 0, g, _, r => by
-    simp [Accepts, cubeSum, cube, Subsingleton.elim r (fun i => i.elim0)]
-    rfl
+    simp only [Accepts, Subsingleton.elim (Fin.elim0 : Fin 0 → F) r]
+    exact (hypercubeSum_last 0 g r).symm
   | n + 1, g, hg, r => by
-    refine ⟨natDegree_honestMessage_le hg, honestMessage_sum g, ?_⟩
-    simp only [honestProver, Fin.cases_zero, Fin.cases_succ, Fin.tail_cons]
-    rw [eval_honestMessage]
-    exact completeness _ (individualDegreeLE_fixFirst hg _) _
+    refine ⟨natDegree_honestProver_zero_le hg r, honestProver_zero_sum g r, ?_⟩
+    have h := completeness (n := n) (fixFirstVariablesOfMQP (n + 1) ⟨1, by omega⟩ g (fun _ => r 0))
+      (fixFirstVariablesOfMQP_degreeLE (n + 1) ⟨1, by omega⟩ hg) (Fin.tail r)
+    rw [← honestProver_succ g (r 0), ← eval_honestProver_zero g r (r 0)] at h
+    exact h
 
 /-! ## Soundness -/
 
-omit [CommRing F] [DecidableEq F] in
-theorem card_filter_succ {n : ℕ} [Fintype F] (p : (Fin (n + 1) → F) → Prop)
-    [DecidablePred p] :
-    #{r | p r} = ∑ a : F, #{t : Fin n → F | p (Fin.cons a t)} := by
-  simp only [card_filter]
-  rw [← Fintype.sum_equiv (Fin.consEquiv fun _ => F)
-    (fun x => if p (Fin.cons x.1 x.2) then 1 else 0)
-    _ (fun _ => rfl), Fintype.sum_prod_type]
-
-/-- Two distinct polynomials of degree at most d agree at most at d points. -/
-theorem card_eval_eq_le [IsDomain F] [Fintype F] {d : ℕ} {p q : Polynomial F} (hpq : p ≠ q)
-    (hp : p.natDegree ≤ d) (hq : q.natDegree ≤ d) : #{a | p.eval a = q.eval a} ≤ d := by
-  have h0 : p - q ≠ 0 := sub_ne_zero.mpr hpq
-  calc #{a | p.eval a = q.eval a} ≤ (p - q).roots.toFinset.card :=
-        card_le_card fun a ha => by simpa [h0, sub_eq_zero] using ha
-    _ ≤ (p - q).roots.card := Multiset.toFinset_card_le _
-    _ ≤ (p - q).natDegree := Polynomial.card_roots' _
-    _ ≤ d := (Polynomial.natDegree_sub_le _ _).trans (max_le hp hq)
-
 open scoped Classical in
-/-- Against a false claim, at most n d |F|^(n-1) challenge vectors accept.
+/-- Against a false claim, at most `n d |F|^(n-1)` challenge vectors accept.
 
 This holds for every causal prover.
 -/
 theorem soundness [IsDomain F] [Fintype F] {d : ℕ} :
-    ∀ {n : ℕ} (g : MvPolynomial (Fin n) F), IndividualDegreeLE g d →
-      ∀ (H : F), H ≠ cubeSum g →
+    ∀ {n : ℕ} (g : MvPolynomial (Fin n) F), g ∈ restrictDegree (Fin n) F d →
+      ∀ (H : F), H ≠ hypercubeSum n g 0 Fin.elim0 →
       ∀ P, Causal P → #{r | Accepts d g H P r} * Fintype.card F ≤ n * d * Fintype.card F ^ n
   | 0, g, _, H, hH, P, _ => by
     have : ∀ r : Fin 0 → F, ¬ Accepts d g H P r := fun r h => hH <| by
       simp only [Accepts] at h
-      simp [← h, cubeSum, cube, Subsingleton.elim r (fun i => i.elim0)]
-      rfl
+      rw [← h, Subsingleton.elim (Fin.elim0 : Fin 0 → F) r]
+      exact (hypercubeSum_last 0 g r).symm
     simp [Finset.filter_false_of_mem fun r _ => this r]
   | n + 1, g, hg, H, hH, P, hP => by
     -- The first message reads no challenge.
     set p := P 0 (fun _ => 0)
     have hp : ∀ r, P 0 r = p := fun r => hP 0 _ _ fun j hj => absurd hj (Fin.not_lt_zero j)
-    set s := honestMessage g
+    set s := honestProver g 0 (fun _ => 0)
     by_cases hacc : ∃ r, Accepts d g H P r
     swap
     · push Not at hacc
@@ -252,7 +243,7 @@ theorem soundness [IsDomain F] [Fintype F] {d : ℕ} :
     -- A first message that passes the sum check is not the honest one.
     obtain ⟨r₀, hr₀⟩ := hacc
     simp only [Accepts, hp] at hr₀
-    have hps : p ≠ s := fun he => hH (hr₀.2.1 ▸ he ▸ honestMessage_sum g)
+    have hps : p ≠ s := fun he => hH (hr₀.2.1 ▸ he ▸ honestProver_zero_sum g _)
     -- On the first challenge a, the rest of the run is a sumcheck of g(a, .) against p(a).
     set Q : F → Fin n → (Fin n → F) → Polynomial F := fun a i r' => P i.succ (Fin.cons a r')
     have hQ : ∀ a, Causal (Q a) := fun a i r r' h => hP _ _ _ fun j hj => by
@@ -264,13 +255,15 @@ theorem soundness [IsDomain F] [Fintype F] {d : ℕ} :
       split_ifs with ha
       · exact Nat.mul_le_mul_right _ ((card_le_univ _).trans (by simp))
       · refine le_trans (Nat.mul_le_mul_right _ (card_le_card fun t ht => ?_))
-          (soundness _ (individualDegreeLE_fixFirst hg a) (p.eval a)
-            (by rwa [← eval_honestMessage]) (Q a) (hQ a))
+          (soundness _ (fixFirstVariablesOfMQP_degreeLE (n + 1) ⟨1, by omega⟩ hg) (p.eval a)
+            (fun h => ha (h.trans (eval_honestProver_zero g (fun _ => 0) a).symm)) (Q a) (hQ a))
         simp only [mem_filter, mem_univ, true_and, Accepts, hp, Fin.cons_zero,
           Fin.tail_cons] at ht ⊢
         exact ht.2.2
-    have hroots := card_eval_eq_le hps hr₀.1 (natDegree_honestMessage_le hg)
-    rw [card_filter_succ, Finset.sum_mul]
+    have hroots : #{a | p.eval a = s.eval a} ≤ d :=
+      Polynomial.card_le_of_eval_eq hps hr₀.1 (natDegree_honestProver_zero_le hg _) _
+        fun a ha => (mem_filter.mp ha).2
+    rw [Fin.card_filter_cons, Finset.sum_mul]
     refine (Finset.sum_le_sum fun a _ => key a).trans ?_
     rw [Finset.sum_ite, Finset.sum_const, Finset.sum_const, smul_eq_mul, smul_eq_mul]
     have := card_le_univ (univ.filter fun a => ¬ p.eval a = s.eval a)
@@ -283,25 +276,44 @@ end Proofs
 
 section Decoded
 
-open MvPolynomial
+variable {F : Type} [CommRing F] {Msg : Type}
 
-variable {F : Type _} [CommRing F] [DecidableEq F] {Msg : Type _}
+/-- The executable verifier's replay of the messages against the challenges.
 
-/-- The claim left after replaying the messages against the challenges. -/
-def finalClaim (dec : F → Msg → Polynomial F) (c : F) : List Msg → List F → F
-  | m :: ms, r :: rs => finalClaim dec ((dec c m).eval r) ms rs
-  | _, _ => c
+Each round runs the acceptance check and moves the claim to the message's evaluation at the
+challenge.
 
-omit [DecidableEq F] in
-theorem finalClaim_snoc (dec : F → Msg → Polynomial F) (c : F) :
-    ∀ (ms : List Msg) (rs : List F), ms.length = rs.length → ∀ m r,
-      finalClaim dec c (ms ++ [m]) (rs ++ [r]) = (dec (finalClaim dec c ms rs) m).eval r
-  | [], [], _, _, _ => rfl
-  | m' :: ms, r' :: rs, h, m, r => by
-    simp only [List.cons_append, finalClaim]
-    exact finalClaim_snoc dec _ ms rs (by simpa using h) m r
+The result is the final claim, or nothing if some round rejects.
+-/
+def replay (ops : MessageOps F Msg) : F → List Msg → List F → Option F
+  | c, m :: ms, r :: rs => if ops.accept c m then replay ops (ops.evaluate c m r) ms rs else none
+  | c, _, _ => some c
 
-/-- The polynomials the verifier decodes, as a prover strategy of Section 4.1. -/
+/-- The final claim of the mathematical view: the decoded polynomials replayed against the
+challenges. -/
+noncomputable def finalClaim (dec : F → Msg → Polynomial F) : F → List Msg → List F → F
+  | c, m :: ms, r :: rs => finalClaim dec ((dec c m).eval r) ms rs
+  | c, _, _ => c
+
+/-- When every message is accepted, the replay ends at the final claim of the decoded
+polynomials. -/
+theorem replay_eq_some_finalClaim (ops : MessageOps F Msg) (dec : F → Msg → Polynomial F)
+    (hev : ∀ c m x, ops.evaluate c m x = (dec c m).eval x) (hacc : ∀ c m, ops.accept c m = true) :
+    ∀ (c : F) (ms : List Msg) (rs : List F), replay ops c ms rs = some (finalClaim dec c ms rs)
+  | _, [], _ => by simp [replay, finalClaim]
+  | _, _ :: _, [] => by simp [replay, finalClaim]
+  | c, m :: ms, r :: rs => by
+    simp only [replay, finalClaim, hacc, ↓reduceIte, hev]
+    exact replay_eq_some_finalClaim ops dec hev hacc _ ms rs
+
+/-- Replaying quadratic messages with the executable operations ends at the final claim of the
+decoded quadratics. -/
+theorem replay_quadraticOps (c : F) (ms : List (F × F)) (rs : List F) :
+    replay quadraticOps c ms rs = some (finalClaim (fun c m => (quadratic c m).val) c ms rs) :=
+  replay_eq_some_finalClaim _ _ (fun _ _ _ => by simp [quadraticOps, quadratic])
+    (fun _ _ => rfl) c ms rs
+
+/-- The polynomials the verifier decodes, as a prover strategy. -/
 noncomputable def induced (dec : F → Msg → Polynomial F) :
     {n : ℕ} → F → (Fin n → (Fin n → F) → Msg) → Fin n → (Fin n → F) →
       Polynomial F
@@ -311,25 +323,25 @@ noncomputable def induced (dec : F → Msg → Polynomial F) :
       (fun j => induced dec ((dec c (M 0 r)).eval (r 0)) (fun i r' => M i.succ (Fin.cons (r 0) r'))
         j (Fin.tail r)) i
 
-omit [CommRing F] [DecidableEq F] in
+omit [CommRing F] in
+/-- A causal strategy's first message reads no challenge. -/
 theorem causal_zero {α : Type _} {n : ℕ} {M : Fin (n + 1) → (Fin (n + 1) → F) → α}
-    (hM : Causal M)
-    (r r' : Fin (n + 1) → F) : M 0 r = M 0 r' :=
+    (hM : Causal M) (r r' : Fin (n + 1) → F) : M 0 r = M 0 r' :=
   hM 0 r r' fun j hj => absurd hj (Fin.not_lt_zero j)
 
-omit [CommRing F] [DecidableEq F] in
+omit [CommRing F] in
+/-- After the first challenge a causal strategy stays causal. -/
 theorem causal_shift {α : Type _} {n : ℕ} {M : Fin (n + 1) → (Fin (n + 1) → F) → α}
-    (hM : Causal M)
-    (a : F) : Causal fun (i : Fin n) r' => M i.succ (Fin.cons a r') := fun i r r' h =>
-  hM _ _ _ fun j hj =>
+    (hM : Causal M) (a : F) : Causal fun (i : Fin n) r' => M i.succ (Fin.cons a r') :=
+  fun i r r' h => hM _ _ _ fun j hj =>
     Fin.cases (fun _ => rfl) (fun k hk => by simp [h k (Fin.succ_lt_succ_iff.mp hk)]) j hj
 
-omit [DecidableEq F] in
+/-- The first decoded polynomial is the decoding of the first message under the claim. -/
 theorem induced_zero (dec : F → Msg → Polynomial F) {n : ℕ} (c : F)
     (M : Fin (n + 1) → (Fin (n + 1) → F) → Msg) (r : Fin (n + 1) → F) :
     induced dec c M 0 r = dec c (M 0 r) := rfl
 
-omit [DecidableEq F] in
+/-- After the first challenge the decoded strategy decodes from the updated claim. -/
 theorem induced_succ (dec : F → Msg → Polynomial F) {n : ℕ} (c : F)
     {M : Fin (n + 1) → (Fin (n + 1) → F) → Msg} (hM : Causal M) (r : Fin (n + 1) → F) :
     (fun i r' => induced dec c M i.succ (Fin.cons (r 0) r')) =
@@ -338,7 +350,6 @@ theorem induced_succ (dec : F → Msg → Polynomial F) {n : ℕ} (c : F)
   simp only [induced, Fin.cases_succ, Fin.cons_zero, Fin.tail_cons,
     causal_zero hM (Fin.cons (r 0) r') r]
 
-omit [DecidableEq F] in
 /-- A causal message strategy decodes to a causal prover. -/
 theorem induced_causal (dec : F → Msg → Polynomial F) :
     ∀ {n : ℕ} (c : F) (M : Fin n → (Fin n → F) → Msg), Causal M →
@@ -351,128 +362,119 @@ theorem induced_causal (dec : F → Msg → Polynomial F) :
     refine induced_causal dec _ _ (causal_shift hM _) j _ _ fun k hk => ?_
     simpa [Fin.tail] using h k.succ (Fin.succ_lt_succ_iff.mpr hk)
 
-omit [DecidableEq F] in
-/-- The verifier of Section 4.1 accepts the decoded polynomials exactly when g(r) is the end claim.
+variable [DecidableEq F] {ops : MessageOps F Msg} {d : ℕ}
 
-The end claim comes from replaying the messages against the challenges.
+/-- The verifier above accepts the decoded polynomials exactly when the replay ends at `g(r)`.
+
+Here the messages are decoded by a message model on the Boolean domain.
 -/
-theorem accepts_induced_iff (dec : F → Msg → Polynomial F) {d : ℕ}
-    (hdeg : ∀ c m, (dec c m).natDegree ≤ d)
-    (hsum : ∀ c m, (dec c m).eval 0 + (dec c m).eval 1 = c) :
+theorem accepts_induced_iff [Nontrivial F] (model : MessageModel ({0, 1} : Finset F) ops d) :
     ∀ {n : ℕ} (g : MvPolynomial (Fin n) F) (c : F) (M : Fin n → (Fin n → F) → Msg),
       Causal M →
-      ∀ r, Accepts d g c (induced dec c M) r ↔
-        eval r g = finalClaim dec c (List.ofFn fun i => M i r) (List.ofFn r)
-  | 0, g, c, M, _, r => by simp [Accepts, finalClaim]
+      ∀ r, Accepts d g c (induced (fun c m => (model.interpret c m).val) c M) r ↔
+        replay ops c (List.ofFn fun i => M i r) (List.ofFn r) = some (eval r g)
+  | 0, g, c, M, _, r => by
+    simp [Accepts, replay, eq_comm]
   | n + 1, g, c, M, hM, r => by
-    simp only [Accepts, induced_zero, hdeg, hsum, true_and, List.ofFn_succ, finalClaim]
-    rw [induced_succ dec c hM r, accepts_induced_iff dec hdeg hsum _ _ _ (causal_shift hM _),
-      eval_fixFirst, Fin.cons_self_tail]
-    rfl
+    have hdeg : (model.interpret c (M 0 r)).val.natDegree ≤ d :=
+      Polynomial.natDegree_le_iff_degree_le.mpr
+        (Polynomial.mem_degreeLE.mp (model.interpret c (M 0 r)).property)
+    have hsum := model.accept_iff c (M 0 r)
+    rw [Finset.sum_pair zero_ne_one] at hsum
+    have ih := accepts_induced_iff model (n := n)
+      (fixFirstVariablesOfMQP (n + 1) ⟨1, by omega⟩ g (fun _ => r 0))
+      ((model.interpret c (M 0 r)).val.eval (r 0)) (fun i r' => M i.succ (Fin.cons (r 0) r'))
+      (causal_shift hM _) (Fin.tail r)
+    rw [← induced_succ (fun c m => (model.interpret c m).val) c hM r,
+      eval_fixFirstVariablesOfMQP_cons, Fin.cons_self_tail] at ih
+    simp only [Accepts, induced_zero, hdeg, true_and, List.ofFn_succ, replay,
+      model.evaluate_eq]
+    by_cases hacc : ops.accept c (M 0 r) = true
+    · simp only [hacc, ↓reduceIte, hsum.mp hacc, true_and]
+      exact ih
+    · simp only [hacc, hsum.not.mp hacc, false_and, Bool.false_eq_true, ↓reduceIte,
+        reduceCtorEq]
 
 open scoped Classical in
-/-- Against a false claim, at most n d |F|^(n-1) challenge vectors replay to g(r).
+/-- Against a false claim, at most `n d |F|^(n-1)` challenge vectors replay to `g(r)`.
 
 This holds for every causal message strategy.
 -/
-theorem soundness_decoded [IsDomain F] [Fintype F] (dec : F → Msg → Polynomial F) {d : ℕ}
-    (hdeg : ∀ c m, (dec c m).natDegree ≤ d)
-    (hsum : ∀ c m, (dec c m).eval 0 + (dec c m).eval 1 = c)
-    {n : ℕ} (g : MvPolynomial (Fin n) F) (hg : IndividualDegreeLE g d) (H : F)
-    (hH : H ≠ cubeSum g)
+theorem soundness_decoded [IsDomain F] [Fintype F]
+    (model : MessageModel ({0, 1} : Finset F) ops d)
+    {n : ℕ} (g : MvPolynomial (Fin n) F) (hg : g ∈ restrictDegree (Fin n) F d) (H : F)
+    (hH : H ≠ hypercubeSum n g 0 Fin.elim0)
     (M : Fin n → (Fin n → F) → Msg) (hM : Causal M) :
-    #{r | eval r g = finalClaim dec H (List.ofFn fun i => M i r) (List.ofFn r)} * Fintype.card F ≤
-      n * d * Fintype.card F ^ n := by
-  have := soundness g hg H hH _ (induced_causal dec H M hM)
-  simpa only [accepts_induced_iff dec hdeg hsum g H M hM] using this
+    #{r | replay ops H (List.ofFn fun i => M i r) (List.ofFn r) = some (eval r g)} *
+        Fintype.card F ≤ n * d * Fintype.card F ^ n := by
+  have := soundness g hg H hH _
+    (induced_causal (fun c m => (model.interpret c m).val) H M hM)
+  simpa only [accepts_induced_iff model g H M hM] using this
 
-/-- The honest messages replay to g(r).
+/-- Encoding the honest messages and decoding them under the true running claims gives the honest
+prover back. -/
+theorem induced_encode_honestProver [Nontrivial F] (model : MessageModel ({0, 1} : Finset F) ops d)
+    (enc : Polynomial F → Msg)
+    (henc : ∀ c p, p.natDegree ≤ d → p.eval 0 + p.eval 1 = c →
+      (model.interpret c (enc p)).val = p) :
+    ∀ {n : ℕ} (g : MvPolynomial (Fin n) F), g ∈ restrictDegree (Fin n) F d →
+      induced (fun c m => (model.interpret c m).val) (hypercubeSum n g 0 Fin.elim0)
+        (fun i r => enc (honestProver g i r)) = honestProver g
+  | 0, _, _ => funext fun i => i.elim0
+  | n + 1, g, hg => by
+    funext i r
+    have h0 := henc _ _ (natDegree_honestProver_zero_le hg r) (honestProver_zero_sum g r)
+    refine Fin.cases ?_ (fun j => ?_) i
+    · exact h0
+    · simp only [induced, Fin.cases_succ, h0, eval_honestProver_zero]
+      have := induced_encode_honestProver model enc henc
+        (fixFirstVariablesOfMQP (n + 1) ⟨1, by omega⟩ g (fun _ => r 0))
+        (fixFirstVariablesOfMQP_degreeLE (n + 1) ⟨1, by omega⟩ hg)
+      rw [← honestProver_succ] at this
+      have h := congrFun (congrFun this j) (Fin.tail r)
+      simp only [Fin.cons_self_tail] at h
+      exact h
 
-This needs a message for every polynomial of degree at most d with g_i(0) + g_i(1) = c.
+/-- The encoded honest messages replay to `g(r)` from the true sum.
+
+This needs a message for every polynomial of degree at most `d` whose Boolean sum is the claim.
 -/
-theorem completeness_decoded (dec : F → Msg → Polynomial F) (enc : Polynomial F → Msg)
-    {d : ℕ}
-    (henc : ∀ c p, p.natDegree ≤ d → p.eval 0 + p.eval 1 = c → dec c (enc p) = p) :
-    ∀ {n : ℕ} (g : MvPolynomial (Fin n) F), IndividualDegreeLE g d → ∀ r,
-      eval r g = finalClaim dec (cubeSum g) (List.ofFn fun i => enc (honestProver g i r))
-        (List.ofFn r)
-  | 0, g, _, r => by
-    simp [finalClaim, cubeSum, cube, Subsingleton.elim r (fun i => i.elim0)]
-    rfl
-  | n + 1, g, hg, r => by
-    simp only [List.ofFn_succ, finalClaim, honestProver, Fin.cases_zero, Fin.cases_succ]
-    rw [henc _ _ (natDegree_honestMessage_le hg) (honestMessage_sum g), eval_honestMessage,
-      ← Fin.cons_self_tail r, ← eval_fixFirst]
-    simpa using
-      completeness_decoded dec enc henc _ (individualDegreeLE_fixFirst hg (r 0)) (Fin.tail r)
+theorem completeness_decoded [Nontrivial F] (model : MessageModel ({0, 1} : Finset F) ops d)
+    (enc : Polynomial F → Msg)
+    (henc : ∀ c p, p.natDegree ≤ d → p.eval 0 + p.eval 1 = c →
+      (model.interpret c (enc p)).val = p)
+    {n : ℕ} (g : MvPolynomial (Fin n) F) (hg : g ∈ restrictDegree (Fin n) F d) (r : Fin n → F) :
+    replay ops (hypercubeSum n g 0 Fin.elim0) (List.ofFn fun i => enc (honestProver g i r))
+      (List.ofFn r) = some (eval r g) := by
+  have hM : Causal fun i r => enc (honestProver g i r) := fun i r r' h =>
+    congrArg enc (honestProver_causal g i r r' h)
+  refine (accepts_induced_iff model g _ _ hM r).mp ?_
+  rw [induced_encode_honestProver model enc henc g hg]
+  exact completeness g hg r
+
+/-! ## Quadratic rounds -/
+
+open scoped Classical in
+/-- Soundness for quadratic messages replayed with the shared executable operations. -/
+theorem soundness_quadratic [IsDomain F] [Fintype F]
+    {n : ℕ} (g : MvPolynomial (Fin n) F) (hg : g ∈ restrictDegree (Fin n) F 2) (H : F)
+    (hH : H ≠ hypercubeSum n g 0 Fin.elim0)
+    (M : Fin n → (Fin n → F) → F × F) (hM : Causal M) :
+    #{r | replay quadraticOps H (List.ofFn fun i => M i r) (List.ofFn r) = some (eval r g)} *
+        Fintype.card F ≤ n * 2 * Fintype.card F ^ n :=
+  soundness_decoded quadraticModel g hg H hH M hM
+
+omit [DecidableEq F] in
+/-- Completeness for quadratic messages: the encoded honest messages replay to `g(r)`. -/
+theorem completeness_quadratic [Nontrivial F] {n : ℕ} (g : MvPolynomial (Fin n) F)
+    (hg : g ∈ restrictDegree (Fin n) F 2) (r : Fin n → F) :
+    replay quadraticOps (hypercubeSum n g 0 Fin.elim0)
+      (List.ofFn fun i => quadraticEncode (honestProver g i r)) (List.ofFn r) =
+        some (eval r g) := by
+  classical
+  exact completeness_decoded quadraticModel quadraticEncode
+    (fun _ _ hp hc => quadratic_quadraticEncode hp hc) g hg r
 
 end Decoded
-
-section Quadratic
-
-open Polynomial
-
-variable {F : Type _} [Field F]
-
-/-- The quadratic with values e0, e1 at 0, 1 and coefficient e_inf on X^2. -/
-noncomputable def quad (e0 e1 e_inf : F) : F[X] :=
-  C e0 * (1 - X) + C e1 * X + C e_inf * (X * (X - 1))
-
-theorem natDegree_quad (e0 e1 e_inf : F) : (quad e0 e1 e_inf).natDegree ≤ 2 := by
-  unfold quad; compute_degree
-
-theorem quad_eq (e0 e1 e_inf : F) :
-    quad e0 e1 e_inf = C e0 + C (e1 - e0 - e_inf) * X + C e_inf * X ^ 2 := by
-  simp only [quad, map_sub]; ring
-
-theorem eval_zero_quad (e0 e1 e_inf : F) : (quad e0 e1 e_inf).eval 0 = e0 := by simp [quad]
-
-theorem eval_one_quad (e0 e1 e_inf : F) : (quad e0 e1 e_inf).eval 1 = e1 := by simp [quad]
-
-theorem coeff_two_quad (e0 e1 e_inf : F) : (quad e0 e1 e_inf).coeff 2 = e_inf := by
-  simp [quad_eq]
-
-/-- A polynomial of degree at most 2 is determined by p(0), p(1) and its X^2 coefficient. -/
-theorem eq_quad {p : F[X]} (hp : p.natDegree ≤ 2) :
-    p = quad (p.eval 0) (p.eval 1) (p.coeff 2) := by
-  have h1 : p.eval 1 = p.coeff 0 + p.coeff 1 + p.coeff 2 := by
-    simp [eval_eq_sum_range' (show p.natDegree < 3 by omega), Finset.sum_range_succ]
-  rw [quad_eq, h1, ← coeff_zero_eq_eval_zero]
-  ext (_ | _ | _ | n)
-  · simp
-  · simp [coeff_C]; ring
-  · simp
-  · simp [coeff_eq_zero_of_natDegree_lt (show p.natDegree < n + 3 by omega)]
-
-/-- For p and q of degree at most 1, the X^2 coefficient of p q is the product of their slopes. -/
-theorem coeff_two_mul_of_linear {p q : F[X]} (hp : p.natDegree ≤ 1) (hq : q.natDegree ≤ 1) :
-    (p * q).coeff 2 = (p.eval 1 - p.eval 0) * (q.eval 1 - q.eval 0) := by
-  rw [eq_X_add_C_of_natDegree_le_one hp, eq_X_add_C_of_natDegree_le_one hq,
-    show (C (p.coeff 1) * X + C (p.coeff 0)) * (C (q.coeff 1) * X + C (q.coeff 0)) =
-      C (p.coeff 1 * q.coeff 1) * X ^ 2 + (C (p.coeff 1 * q.coeff 0 + p.coeff 0 * q.coeff 1) * X +
-        C (p.coeff 0 * q.coeff 0)) by simp only [map_mul, map_add]; ring]
-  simp only [coeff_add, coeff_C_mul_X_pow, coeff_C_mul_X, coeff_C]
-  simp
-
-/-! ## The evaluation basis -/
-
-/-- The polynomial a message [h(0), h(inf)] stands for under the claim c. -/
-noncomputable def decEval (c : F) (m : F × F) : F[X] := quad m.1 (c - m.1) m.2
-
-/-- The message of a quadratic: its value at 0 and its X^2 coefficient. -/
-noncomputable def encEval (p : F[X]) : F × F := (p.eval 0, p.coeff 2)
-
-theorem natDegree_decEval (c : F) (m : F × F) : (decEval c m).natDegree ≤ 2 :=
-  natDegree_quad _ _ _
-
-theorem decEval_sum (c : F) (m : F × F) : (decEval c m).eval 0 + (decEval c m).eval 1 = c := by
-  simp [decEval, eval_zero_quad, eval_one_quad]
-
-theorem decEval_encEval {c : F} {p : F[X]} (hp : p.natDegree ≤ 2) (hc : p.eval 0 + p.eval 1 = c) :
-    decEval c (encEval p) = p := by
-  rw [eq_quad hp]
-  simp [decEval, encEval, eval_zero_quad, coeff_two_quad, ← hc]
-
-end Quadratic
 
 end Sumcheck.Counting
