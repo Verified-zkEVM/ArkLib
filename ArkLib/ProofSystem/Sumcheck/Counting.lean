@@ -15,9 +15,9 @@ public import ArkLib.ProofSystem.Sumcheck.Message.Quadratic
 
 This is the sum-check protocol of [LFKN92], in the presentation of [Tha22, Section 4.1].
 
-The prover claims that `H = sum_{b in {0,1}^n} g(b)`.
+The prover claims `H = sum_{b in {0,1}^n} g(b)` for `g` of degree at most `d` in each variable.
 
-The polynomial `g` has degree at most `d` in each variable.
+Soundness counts the challenge vectors on which a false claim passes.
 
 ```text
     round i:  the prover sends g_i, of degree at most d
@@ -26,66 +26,73 @@ The polynomial `g` has degree at most `d` in each variable.
     end:      the verifier checks g(r) = c_n
 ```
 
+## Main statements
+
+- `Sumcheck.Counting.completeness`: the honest prover is accepted on every challenge vector.
+- `Sumcheck.Counting.soundness`: a false claim passes on at most `n d |F|^(n-1)` vectors.
+- `Sumcheck.Counting.accepts_induced_iff`: replaying messages is checking their decodings.
+- `Sumcheck.Counting.soundness_decoded`: the soundness bound carries over to messages.
+- `Sumcheck.Counting.completeness_decoded`: so does completeness.
+- `Sumcheck.Counting.soundness_quadratic`: soundness for quadratic messages, with `d = 2`.
+- `Sumcheck.Counting.completeness_quadratic`: completeness for quadratic messages.
+
+## Provers
+
 A prover is a deterministic strategy from challenge vectors to round messages.
 
 It is causal when round `i` reads only the challenges before `i`.
-
-## Results
-
-- Completeness: the honest prover is accepted on every challenge vector.
-- Soundness: a false claim passes on at most `n d |F|^(n-1)` of the `|F|^n` challenge vectors.
 
 Against a causal prover the soundness error is therefore `n d / |F|`.
 
 ## Compressed round messages
 
-A message model decodes a round message under the running claim into a polynomial of degree at
-most `d`.
+A message model decodes a round message under the running claim.
 
-The executable verifier replays the messages: in each round it runs the model's acceptance check
-and moves the claim to the message's evaluation at the challenge.
+The result is a polynomial of degree at most `d`.
 
-It accepts when the replay ends at `g(r)`.
+The executable verifier replays the messages on the Boolean domain `{0, 1}`.
 
-- Decoded acceptance: the replay accepts exactly when the verifier above accepts the decoded
-  polynomials, for the Boolean domain `{0, 1}`.
-- Decoded soundness and completeness: both bounds carry over to the messages.
-- Quadratic rounds: the message `(h(0), coefficient of X^2)` is such a model, so the bounds hold
-  for the shared quadratic message operations with `d = 2`.
+Each round runs the acceptance check, then moves the claim to the message's value at the challenge.
+
+The verifier accepts when the replay ends at `g(r)`.
+
+The quadratic message `(h(0), coefficient of X^2)` is such a model.
 
 ## Relation to the interaction-layer execution
 
 The interaction-layer executor samples each challenge in turn and lets an effectful prover answer.
 
-It succeeds when every sum check passes and the exported original evaluation equals the last
-message evaluated at the last challenge.
+It succeeds when every sum check passes and the final check holds.
+
+That check compares the exported original evaluation with the last message at the last challenge.
 
 On the Boolean domain with messages of degree at most `d`, that is the event counted here.
 
-Here the prover is deterministic and causal, and the bound counts challenge vectors instead of
-measuring a sampled run.
+Here the prover is deterministic and causal, and challenge vectors are counted, not sampled.
 
-For a deterministic prover with uniform independent challenges the count divided by `|F|^n` is the
-success probability, and `n d / |F|` matches the executor's soundness bound.
+With uniform independent challenges, the count divided by `|F|^n` is the success probability.
+
+So `n d / |F|` matches the executor's soundness bound.
 
 ## Computability
 
 The honest prover, the decoded polynomials and the final claim are Mathlib polynomials.
 
-They are the mathematical view, and are noncomputable because Mathlib polynomial arithmetic is.
+They form the mathematical view, noncomputable because Mathlib polynomial arithmetic is.
 
-The replay runs only the executable message operations, and is proved to agree with that view.
+The replay runs only the executable message operations and is proved to agree with that view.
 
 ## Provenance
 
 Ported from Plonky3-lean, where it specifies the Plonky3 sumcheck verifier.
 
-Repository: https://github.com/Plonky3/Plonky3-lean
-
-Commit: `fdef3385014bd2e0d12d959c9afe70e2a9134775`
-
-Paths: `Plonky3Lean/Spec/Sumcheck.lean`, `Plonky3Lean/Proofs/Sumcheck/Protocol.lean`,
-`Plonky3Lean/Proofs/Sumcheck/Decoded.lean`, `Plonky3Lean/Proofs/Sumcheck/Quadratic.lean`
+- Repository: https://github.com/Plonky3/Plonky3-lean
+- Commit: `fdef3385014bd2e0d12d959c9afe70e2a9134775`
+- Paths:
+  - `Plonky3Lean/Spec/Sumcheck.lean`
+  - `Plonky3Lean/Proofs/Sumcheck/Protocol.lean`
+  - `Plonky3Lean/Proofs/Sumcheck/Decoded.lean`
+  - `Plonky3Lean/Proofs/Sumcheck/Quadratic.lean`
 
 ## References
 
@@ -118,8 +125,7 @@ noncomputable def honestProver :
       (fun j => honestProver (fixFirstVariablesOfMQP (n + 1) ⟨1, by omega⟩ g (fun _ => r 0)) j
         (Fin.tail r)) i
 
-/-- A prover strategy is causal when its message in round `i` reads only the challenges before
-`i`. -/
+/-- A strategy is causal when its message in round `i` reads only the challenges before `i`. -/
 def Causal {α : Type _} {n : ℕ} (P : Fin n → (Fin n → F) → α) : Prop :=
   ∀ i r r', (∀ j : Fin n, j < i → r j = r' j) → P i r = P i r'
 
@@ -280,8 +286,7 @@ variable {F : Type} [CommRing F] {Msg : Type}
 
 /-- The executable verifier's replay of the messages against the challenges.
 
-Each round runs the acceptance check and moves the claim to the message's evaluation at the
-challenge.
+Each round runs the acceptance check, then moves the claim to the message's value at the challenge.
 
 The result is the final claim, or nothing if some round rejects.
 -/
@@ -289,14 +294,14 @@ def replay (ops : MessageOps F Msg) : F → List Msg → List F → Option F
   | c, m :: ms, r :: rs => if ops.accept c m then replay ops (ops.evaluate c m r) ms rs else none
   | c, _, _ => some c
 
-/-- The final claim of the mathematical view: the decoded polynomials replayed against the
-challenges. -/
+/-- The final claim of the mathematical view.
+
+It replays the decoded polynomials against the challenges. -/
 noncomputable def finalClaim (dec : F → Msg → Polynomial F) : F → List Msg → List F → F
   | c, m :: ms, r :: rs => finalClaim dec ((dec c m).eval r) ms rs
   | c, _, _ => c
 
-/-- When every message is accepted, the replay ends at the final claim of the decoded
-polynomials. -/
+/-- When every message is accepted, the replay ends at the decoded polynomials' final claim. -/
 theorem replay_eq_some_finalClaim (ops : MessageOps F Msg) (dec : F → Msg → Polynomial F)
     (hev : ∀ c m x, ops.evaluate c m x = (dec c m).eval x) (hacc : ∀ c m, ops.accept c m = true) :
     ∀ (c : F) (ms : List Msg) (rs : List F), replay ops c ms rs = some (finalClaim dec c ms rs)
@@ -306,8 +311,7 @@ theorem replay_eq_some_finalClaim (ops : MessageOps F Msg) (dec : F → Msg → 
     simp only [replay, finalClaim, hacc, ↓reduceIte, hev]
     exact replay_eq_some_finalClaim ops dec hev hacc _ ms rs
 
-/-- Replaying quadratic messages with the executable operations ends at the final claim of the
-decoded quadratics. -/
+/-- The executable replay of quadratic messages ends at the decoded quadratics' final claim. -/
 theorem replay_quadraticOps (c : F) (ms : List (F × F)) (rs : List F) :
     replay quadraticOps c ms rs = some (finalClaim (fun c m => (quadratic c m).val) c ms rs) :=
   replay_eq_some_finalClaim _ _ (fun _ _ _ => by simp [quadraticOps, quadratic])
@@ -411,8 +415,7 @@ theorem soundness_decoded [IsDomain F] [Fintype F]
     (induced_causal (fun c m => (model.interpret c m).val) H M hM)
   simpa only [accepts_induced_iff model g H M hM] using this
 
-/-- Encoding the honest messages and decoding them under the true running claims gives the honest
-prover back. -/
+/-- Decoding the encoded honest messages under the true running claims gives the honest prover. -/
 theorem induced_encode_honestProver [Nontrivial F] (model : MessageModel ({0, 1} : Finset F) ops d)
     (enc : Polynomial F → Msg)
     (henc : ∀ c p, p.natDegree ≤ d → p.eval 0 + p.eval 1 = c →

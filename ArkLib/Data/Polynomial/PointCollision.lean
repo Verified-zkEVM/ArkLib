@@ -91,8 +91,9 @@ section Domain
 
 variable {R ι κ : Type*} [CommRing R] [IsDomain R] [Fintype ι]
 
-/-- **Collisions of two polynomials.** Two distinct polynomials of natural degree at most `d`
-agree on at most `d` points.
+/-- **Collisions of two polynomials.**
+
+Two distinct polynomials of natural degree at most `d` agree on at most `d` points.
 
 Every agreement point is a root of their nonzero difference. -/
 theorem card_le_of_eval_eq {p q : R[X]} (hpq : p ≠ q) {d : ℕ} (hp : p.natDegree ≤ d)
