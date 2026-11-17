@@ -5,7 +5,6 @@ Authors: Thomas Coratger
 -/
 module
 
-public import Mathlib.Algebra.CharP.Two
 public import Mathlib.Algebra.Module.ZMod
 public import Mathlib.FieldTheory.Finite.Basic
 public import Mathlib.LinearAlgebra.FiniteDimensional.Defs
