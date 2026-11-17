@@ -22,7 +22,7 @@ on a (public-coin) interactive reduction (IR) `R` that:
 - Includes `τ` in the NARG string.
 - Prefixes every Fiat-Shamir oracle query with separate salt context `(stmtIn, τ)`. Concretely,
   the salted oracle is
-  `fsChallengeOracle (StmtIn × Salt) pSpec`.
+  `fsVerifierMessageOracle (StmtIn × Salt) pSpec`.
 
 The public `fiatShamirSalted` constructors use `Vector U saltLength`. The abstract `Salt` compiler
 is an internal encoding adapter used by security proofs; its application statement types stay
@@ -85,10 +85,10 @@ unchanged.
 @[inline, specialize]
 def Prover.processRoundFSSalted {Salt : Type} [VCVCompatible Salt] (j : Fin n)
     (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
-    (currentResult : OracleComp (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)
+    (currentResult : OracleComp (oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec)
       (pSpec.MessagesUpTo j.castSucc ×
         (StmtIn × Salt) × prover.PrvState j.castSucc)) :
-      OracleComp (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)
+      OracleComp (oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec)
         (pSpec.MessagesUpTo j.succ ×
           (StmtIn × Salt) × prover.PrvState j.succ) :=
   (CanonicalFS.contextProver (Salt := Salt) prover).processRoundFS j currentResult
@@ -102,7 +102,7 @@ def Prover.runToRoundFSSalted {Salt : Type} [VCVCompatible Salt]
     (salt : Salt) (i : Fin (n + 1))
     (stmt : StmtIn) (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (state : prover.PrvState 0) :
-        OracleComp (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)
+        OracleComp (oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec)
           (pSpec.MessagesUpTo i × (StmtIn × Salt) × prover.PrvState i) :=
   (CanonicalFS.contextProver prover).runToRoundFS i (stmt, salt) state
 
@@ -121,7 +121,7 @@ def Prover.compileFiatShamir {Salt : Type} [VCVCompatible Salt]
     (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (sampleSalt : OracleComp oSpec Salt) :
     NonInteractiveProver (Message := FSSaltedNARGString pSpec Salt)
-      (oSpec := oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)
+      (oSpec := oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec)
       StmtIn WitIn StmtOut WitOut where
   PrvState := fun i => match i with
     | 0 => StmtIn × P.PrvState 0
@@ -147,7 +147,7 @@ Adapted from **[snarg-book, Construction 14.1.1]** (single salt instead of per-r
 def Verifier.compileFiatShamir {Salt : Type} [VCVCompatible Salt]
     (V : Verifier oSpec StmtIn StmtOut pSpec) :
     NonInteractiveVerifier (FSSaltedNARGString pSpec Salt)
-      (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) StmtIn StmtOut where
+      (oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec) StmtIn StmtOut where
   verify := fun stmtIn nargString => do
     let saltedNARGString : FSSaltedNARGString pSpec Salt := nargString 0
     let salt : Salt := saltedNARGString.1
@@ -166,7 +166,7 @@ def Reduction.compileFiatShamir {Salt : Type} [VCVCompatible Salt]
     (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (sampleSalt : OracleComp oSpec Salt) :
     NonInteractiveReduction (FSSaltedNARGString pSpec Salt)
-      (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)
+      (oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec)
       StmtIn WitIn StmtOut WitOut where
   prover := R.prover.compileFiatShamir sampleSalt
   verifier := R.verifier.compileFiatShamir
@@ -177,7 +177,7 @@ the DSFS Section 5 `Hyb₄`/basic-FS game so both games refer to the same verifi
 def fsSaltedVerify {Salt : Type} [VCVCompatible Salt]
     (V : Verifier oSpec StmtIn StmtOut pSpec) :
     StmtIn → FSSaltedNARGString pSpec Salt →
-      OptionT (OracleComp (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)) StmtOut :=
+      OptionT (OracleComp (oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec)) StmtOut :=
   fun stmtIn nargString =>
     (Verifier.compileFiatShamir (Salt := Salt) V).verify stmtIn
       (Fin.cons nargString (fun i => i.elim0))
@@ -191,7 +191,7 @@ abbrev FiatShamirNARGString (pSpec : ProtocolSpec n) (U : Type) (saltLength : Na
 not an augmented application statement or relation. -/
 abbrev ProtocolSpec.canonicalFSOracle (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n)
     (U : Type) (saltLength : Nat) :=
-  fsChallengeOracle (StmtIn × Vector U saltLength) pSpec
+  fsVerifierMessageOracle (StmtIn × Vector U saltLength) pSpec
 
 /-- Canonical Fiat-Shamir prover. Sample one salt of the configured length using only the ambient
 oracle, then reuse it in every verifier-message query. Fresh uniform private salt randomness is
@@ -248,7 +248,7 @@ adding queries. The FS and single-salt SR query types coincide, so the original 
 including private sampling through `privateSpec`, are retained. -/
 def srInducedProver {Salt : Type} [VCVCompatible Salt]
     {κ : Type} {privateSpec : OracleSpec κ}
-    (P : OracleComp ((oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) + privateSpec)
+    (P : OracleComp ((oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec) + privateSpec)
       (StmtIn × FSSaltedNARGString pSpec Salt)) :
     Prover.StateRestoration.Soundness oSpec privateSpec StmtIn pSpec (Salt := Salt) := do
   let ⟨x, nargString⟩ ← P
@@ -261,7 +261,7 @@ omit [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)]
 makes *exactly* the queries `P` makes. -/
 lemma srInducedProver_eq_map {Salt : Type} [VCVCompatible Salt]
     {κ : Type} {privateSpec : OracleSpec κ}
-    (P : OracleComp ((oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) + privateSpec)
+    (P : OracleComp ((oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec) + privateSpec)
       (StmtIn × FSSaltedNARGString pSpec Salt)) :
     srInducedProver (Salt := Salt) P
       = (fun p => ((p.1, p.2.1), p.2.2)) <$> P := by
@@ -274,7 +274,7 @@ The unit value `()` supplies the generic SR interface's output witness. As with
 `srInducedProver`, the oracle calls and their order are unchanged. -/
 def srInducedProverKS {Salt : Type} [VCVCompatible Salt]
     {κ : Type} {privateSpec : OracleSpec κ}
-    (P : OracleComp ((oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) + privateSpec)
+    (P : OracleComp ((oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec) + privateSpec)
       (StmtIn × FSSaltedNARGString pSpec Salt)) :
     Prover.StateRestoration.KnowledgeSoundness
       oSpec privateSpec StmtIn Unit pSpec (Salt := Salt) := do
@@ -288,7 +288,7 @@ omit [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)]
 it makes *exactly* the queries `P` makes. -/
 lemma srInducedProverKS_eq_map {Salt : Type} [VCVCompatible Salt]
     {κ : Type} {privateSpec : OracleSpec κ}
-    (P : OracleComp ((oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) + privateSpec)
+    (P : OracleComp ((oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec) + privateSpec)
       (StmtIn × FSSaltedNARGString pSpec Salt)) :
     srInducedProverKS (Salt := Salt) P
       = (fun p => ((p.1, p.2.1), p.2.2, ())) <$> P := by
@@ -310,7 +310,7 @@ and one invocation of `E`. -/
 def fsSRDelegatingExtractor {Salt : Type} [VCVCompatible Salt]
     (E : Extractor.StateRestoration oSpec StmtIn WitIn Unit pSpec (Salt := Salt))
     (x : StmtIn) (π : FSSaltedNARGString pSpec Salt)
-    (tr_P tr_V : QueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)) :
+    (tr_P tr_V : QueryLog (oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec)) :
     OptionT (OracleComp (oSpec + unifSpec)) WitIn :=
   E x π.1 ()
     (FullTranscript.ofMessagesChallenges π.2
@@ -322,10 +322,11 @@ The verifier message and helper slots are available in the ambient type but are 
 def fsSRDelegatingNARGExtractor {Salt : Type} [VCVCompatible Salt]
     (E : Extractor.StateRestoration oSpec StmtIn WitIn Unit pSpec (Salt := Salt))
     (x : StmtIn) (π : FSSaltedNARGString pSpec Salt)
-    (tr_P tr_V : QueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)) :
-    OptionT (OracleComp ((oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) + unifSpec)) WitIn :=
+    (tr_P tr_V : QueryLog (oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec)) :
+    OptionT (OracleComp ((oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec) + unifSpec))
+      WitIn :=
   OptionT.mk (liftComp (fsSRDelegatingExtractor E x π tr_P tr_V).run
-    ((oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) + unifSpec))
+    ((oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec) + unifSpec))
 
 omit [VCVCompatible StmtIn] [∀ i, SampleableType (pSpec.Challenge i)] in
 /-- Canonical verifier logs reconstruct the SR inputs exactly. This is equality of entire
@@ -334,7 +335,7 @@ preserved under any common interpretation. -/
 lemma fsSRDelegatingExtractor_canonical {Salt : Type} [VCVCompatible Salt]
     (E : Extractor.StateRestoration oSpec StmtIn WitIn Unit pSpec (Salt := Salt))
     (x : StmtIn) (π : FSSaltedNARGString pSpec Salt)
-    (tr_P : QueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec))
+    (tr_P : QueryLog (oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec))
     (tr_V : QueryLog oSpec)
     (cs : pSpec.ChallengesUpTo ⟨n, Nat.lt_succ_self n⟩) :
     fsSRDelegatingExtractor E x π tr_P
@@ -357,7 +358,8 @@ private lemma fsSaltedVerify_eq_deriveTranscriptSR {Salt : Type} [VCVCompatible 
     (V : Verifier oSpec StmtIn StmtOut pSpec) (x : StmtIn) (π : FSSaltedNARGString pSpec Salt) :
     (fsSaltedVerify V x π).run =
       (Messages.deriveTranscriptSR (oSpec := oSpec) (x, π.1) π.2 : OracleComp _ _) >>=
-        fun t => liftComp (V.verify x t).run (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) := by
+        fun t => liftComp (V.verify x t).run
+          (oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec) := by
   dsimp only [fsSaltedVerify, Verifier.compileFiatShamir,
     ProtocolSpec.Messages.deriveTranscriptFS]
   simp only [OptionT.liftM_def, OptionT.run_bind, Option.elimM, OptionT.run_lift, bind_assoc,
@@ -365,10 +367,10 @@ private lemma fsSaltedVerify_eq_deriveTranscriptSR {Salt : Type} [VCVCompatible 
   simp only [Fin.cons_zero]
   refine bind_congr fun t => ?_
   rw [show (liftM (V.verify x t).run :
-      OptionT (OracleComp (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec))
+      OptionT (OracleComp (oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec))
         (Option StmtOut)) =
     OptionT.lift (liftM (V.verify x t).run :
-      OracleComp (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) (Option StmtOut)) from
+      OracleComp (oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec) (Option StmtOut)) from
     (OracleComp.monadLift_liftM_OptionT _).symm]
   simp only [OptionT.run_lift, bind_assoc, pure_bind, Option.elim_some,
     OracleComp.liftComp_eq_liftM]
@@ -391,13 +393,13 @@ private lemma logged_fsSaltedVerify {Salt : Type} [VCVCompatible Salt]
         (liftComp ((simulateQ loggingOracle
             ((V.verify x (Transcript.ofMessagesChallenges
               (π.2.take ⟨n, Nat.lt_succ_self n⟩) cs)).run)).run)
-          (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)) >>= fun q =>
+          (oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec)) >>= fun q =>
           pure (q.1, QueryLog.inr (canonChalLog (x, π.1) π.2 ⟨n, Nat.lt_succ_self n⟩ cs)
             ++ QueryLog.inl q.2) := by
   rw [fsSaltedVerify_eq_deriveTranscriptSR]
   refine Eq.trans (OracleComp.withQueryLog_bind _ _) ?_
   rw [show (Messages.deriveTranscriptSR (oSpec := oSpec) (x, π.1) π.2 :
-      OracleComp (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) _).withQueryLog
+      OracleComp (oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec) _).withQueryLog
     = chalTupleUpTo (oSpec := oSpec) (x, π.1) π.2 ⟨n, Nat.lt_succ_self n⟩ >>= fun cs =>
         pure (Transcript.ofMessagesChallenges (π.2.take ⟨n, Nat.lt_succ_self n⟩) cs,
           QueryLog.inr (canonChalLog (x, π.1) π.2 ⟨n, Nat.lt_succ_self n⟩ cs))
@@ -407,13 +409,13 @@ private lemma logged_fsSaltedVerify {Salt : Type} [VCVCompatible Salt]
   change ((Prod.map id
       fun l => (canonChalLog (x, π.1) π.2 ⟨n, Nat.lt_succ_self n⟩ cs).inr ++ l) <$>
     ((V.verify x (Transcript.ofMessagesChallenges (Messages.take ⟨n, Nat.lt_succ_self n⟩ π.2)
-      cs)).run.liftComp (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)).withQueryLog) = _
+      cs)).run.liftComp (oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec)).withQueryLog) = _
   rw [show ((liftComp ((V.verify x (Transcript.ofMessagesChallenges
         (π.2.take ⟨n, Nat.lt_succ_self n⟩) cs)).run)
-        (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec))).withQueryLog
+        (oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec))).withQueryLog
     = (liftComp ((simulateQ loggingOracle ((V.verify x (Transcript.ofMessagesChallenges
           (π.2.take ⟨n, Nat.lt_succ_self n⟩) cs)).run)).run)
-        (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)) >>= fun p =>
+        (oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec)) >>= fun p =>
         pure (p.1, QueryLog.inl p.2)
     from withQueryLog_liftComp_left_of_query (fun t => rfl) _]
   refine Eq.trans (map_bind _ _ _) ?_
@@ -431,17 +433,17 @@ private lemma fsKSExtractionSetup_eq_map_srKSExtractionSetup {Salt : Type} [VCVC
     {κ : Type} {privateSpec : OracleSpec κ}
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (E : Extractor.StateRestoration oSpec StmtIn WitIn Unit pSpec (Salt := Salt))
-    (P : OracleComp ((oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) + privateSpec)
+    (P : OracleComp ((oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec) + privateSpec)
       (StmtIn × FSSaltedNARGString pSpec Salt)) :
     (do
       let ⟨⟨x, π⟩, tr⟩ ← (simulateQ loggingOracle P).run
       (fun a => (x, fsSRDelegatingExtractor E x π tr.fst a.2, a.1)) <$>
         liftComp (simulateQ loggingOracle (fsSaltedVerify V x π).run).run
-          ((oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) + privateSpec)
+          ((oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec) + privateSpec)
           (h := instMonadLiftTOfMonadLift
-            (OracleQuery (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec))
-            (OracleQuery (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec))
-            (OracleQuery ((oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) + privateSpec))))
+            (OracleQuery (oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec))
+            (OracleQuery (oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec))
+            (OracleQuery ((oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec) + privateSpec))))
     = (fun out : (StmtIn × Salt) × OptionT (OracleComp (oSpec + unifSpec)) WitIn ×
         Option StmtOut × Unit =>
         (out.1.1, out.2.1, out.2.2.1)) <$>
@@ -449,7 +451,7 @@ private lemma fsKSExtractionSetup_eq_map_srKSExtractionSetup {Salt : Type} [VCVC
         let ⟨⟨stmtIn, messages, _unit⟩, tr⟩ ←
           (simulateQ loggingOracle (srInducedProverKS P)).run
         let transcript ← liftComp (messages.deriveTranscriptSR (oSpec := oSpec) stmtIn)
-          ((oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) + privateSpec)
+          ((oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec) + privateSpec)
         let ⟨stmtOut, tr_V⟩ ←
           liftComp (simulateQ loggingOracle
             (V.run stmtIn.1 transcript).run).run _
@@ -475,19 +477,19 @@ private lemma fsKSExtractionSetup_eq_map_srKSExtractionSetup {Salt : Type} [VCVC
   conv_rhs =>
     enter [1]
     erw [liftComp_bind (h := instMonadLiftTOfMonadLift
-      (OracleQuery (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec))
-      (OracleQuery (oSpec + (fsChallengeOracle (StmtIn × Salt) pSpec + privateSpec)))
-      (OracleQuery (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec + privateSpec)))]
+      (OracleQuery (oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec))
+      (OracleQuery (oSpec + (fsVerifierMessageOracle (StmtIn × Salt) pSpec + privateSpec)))
+      (OracleQuery (oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec + privateSpec)))]
   simp only [bind_assoc]
   rw [liftComp_inst_irrel
     (i₁ := instMonadLiftTOfMonadLift
-      (OracleQuery (oSpec + srChallengeOracle (StmtIn × Salt) pSpec))
-      (OracleQuery (oSpec + srChallengeOracle (StmtIn × Salt) pSpec))
-      (OracleQuery (oSpec + srChallengeOracle (StmtIn × Salt) pSpec + privateSpec)))
+      (OracleQuery (oSpec + srVerifierMessageOracle (StmtIn × Salt) pSpec))
+      (OracleQuery (oSpec + srVerifierMessageOracle (StmtIn × Salt) pSpec))
+      (OracleQuery (oSpec + srVerifierMessageOracle (StmtIn × Salt) pSpec + privateSpec)))
     (i₂ := instMonadLiftTOfMonadLift
-      (OracleQuery (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec))
-      (OracleQuery (oSpec + (fsChallengeOracle (StmtIn × Salt) pSpec + privateSpec)))
-      (OracleQuery (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec + privateSpec)))
+      (OracleQuery (oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec))
+      (OracleQuery (oSpec + (fsVerifierMessageOracle (StmtIn × Salt) pSpec + privateSpec)))
+      (OracleQuery (oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec + privateSpec)))
     (fun t => by rcases t with t | t <;> rfl)
     (chalTupleUpTo (oSpec := oSpec) (p.1.1, p.1.2.1) p.1.2.2 ⟨n, Nat.lt_succ_self n⟩)]
   refine bind_congr fun cs => ?_
@@ -509,17 +511,18 @@ private lemma fsKSShared_failure_eq {Salt : Type} [VCVCompatible Salt]
     {κ : Type} {privateSpec : OracleSpec κ} (privateImpl : QueryImpl privateSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (E : Extractor.StateRestoration oSpec StmtIn WitIn Unit pSpec (Salt := Salt))
-    (fsInit : ProbComp (QueryImpl (srChallengeOracle (StmtIn × Salt) pSpec) Id))
+    (fsInit : ProbComp (QueryImpl (srVerifierMessageOracle (StmtIn × Salt) pSpec) Id))
     (fsImpl : QueryImpl oSpec
-      (StateT (QueryImpl (srChallengeOracle (StmtIn × Salt) pSpec) Id) ProbComp))
+      (StateT (QueryImpl (srVerifierMessageOracle (StmtIn × Salt) pSpec) Id) ProbComp))
     (relIn : Set (StmtIn × WitIn)) (langOut : Set StmtOut)
-    (P : OracleComp ((oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) + privateSpec)
+    (P : OracleComp ((oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec) + privateSpec)
       (StmtIn × FSSaltedNARGString pSpec Salt)) :
     Pr{let out ← adaptiveNARGKnowledgeSoundnessExp fsInit
           (fsImpl.addLift srChallengeQueryImpl') privateImpl
           ((fsImpl.addLift (srChallengeQueryImpl'
           (Statement := StmtIn × Salt) (pSpec := pSpec)) : QueryImpl _
-            (StateT (QueryImpl (srChallengeOracle (StmtIn × Salt) pSpec) Id) ProbComp)).addLift
+            (StateT (QueryImpl (srVerifierMessageOracle (StmtIn × Salt) pSpec) Id)
+              ProbComp)).addLift
           (QueryImpl.id' unifSpec))
           (Verifier.compileFiatShamir (Salt := Salt) V)
           (fsSRDelegatingNARGExtractor E) P}[nargKSFailEvent relIn langOut out] =
@@ -527,31 +530,31 @@ private lemma fsKSShared_failure_eq {Salt : Type} [VCVCompatible Salt]
         fsInit fsImpl privateImpl E
         relIn {yu : StmtOut × Unit | yu.1 ∈ langOut}
         V (srInducedProverKS P) := by
-  let publicImpl : QueryImpl (oSpec + srChallengeOracle (StmtIn × Salt) pSpec)
-      (StateT (QueryImpl (srChallengeOracle (StmtIn × Salt) pSpec) Id) ProbComp) :=
+  let publicImpl : QueryImpl (oSpec + srVerifierMessageOracle (StmtIn × Salt) pSpec)
+      (StateT (QueryImpl (srVerifierMessageOracle (StmtIn × Salt) pSpec) Id) ProbComp) :=
     fsImpl.addLift (srChallengeQueryImpl' (Statement := StmtIn × Salt) (pSpec := pSpec))
   have hbase : (publicImpl.addLift (QueryImpl.id' unifSpec) : QueryImpl _
-      (StateT (QueryImpl (srChallengeOracle (StmtIn × Salt) pSpec) Id) ProbComp)) ∘ₛ
+      (StateT (QueryImpl (srVerifierMessageOracle (StmtIn × Salt) pSpec) Id) ProbComp)) ∘ₛ
       (fun q => liftM (OracleSpec.query q) : QueryImpl (oSpec + unifSpec)
-        (OracleComp ((oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) + unifSpec))) =
+        (OracleComp ((oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec) + unifSpec))) =
       fsImpl.addLift (QueryImpl.id' unifSpec) := by
     funext q
     cases q with
     | inl q =>
       change simulateQ _ (liftM
-        (((oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) + unifSpec).query
+        (((oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec) + unifSpec).query
           (.inl (.inl q)))) = _
       rw [simulateQ_spec_query]
       rfl
     | inr q =>
       change simulateQ _ (liftM
-        (((oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) + unifSpec).query
+        (((oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec) + unifSpec).query
           (.inr q))) = _
       rw [simulateQ_spec_query]
       rfl
   dsimp only [publicImpl] at hbase
   have h := congrArg (fun computation =>
-    StateT.run' (σ := QueryImpl (srChallengeOracle (StmtIn × Salt) pSpec) Id)
+    StateT.run' (σ := QueryImpl (srVerifierMessageOracle (StmtIn × Salt) pSpec) Id)
       (m := ProbComp) (do
       let out ← simulateQ (publicImpl.addLift privateImpl) computation
       let w ← simulateQ (fsImpl.addLift (QueryImpl.id' unifSpec)) out.2.1.run
@@ -588,12 +591,12 @@ theorem canonicalFiatShamir_knowledgeSoundness_of_fixedExtractor
     {κ : Type} (privateSpec : OracleSpec κ) (privateImpl : QueryImpl privateSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (relIn : Set (StmtIn × WitIn)) (langOut : Set StmtOut)
-    (fsInit : ProbComp (QueryImpl (srChallengeOracle (StmtIn × Salt) pSpec) Id))
+    (fsInit : ProbComp (QueryImpl (srVerifierMessageOracle (StmtIn × Salt) pSpec) Id))
     (fsImpl : QueryImpl oSpec
-      (StateT (QueryImpl (srChallengeOracle (StmtIn × Salt) pSpec) Id) ProbComp))
+      (StateT (QueryImpl (srVerifierMessageOracle (StmtIn × Salt) pSpec) Id) ProbComp))
     (E : Extractor.StateRestoration oSpec StmtIn WitIn Unit pSpec (Salt := Salt))
     (queryBoundSelector srQueryBoundSelector :
-      ((oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) + privateSpec).Domain → Prop)
+      ((oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec) + privateSpec).Domain → Prop)
     [DecidablePred queryBoundSelector] [DecidablePred srQueryBoundSelector]
     (hCount : ∀ q, srQueryBoundSelector q → queryBoundSelector q)
     (t : ℕ) (ε : ENNReal)
@@ -604,13 +607,14 @@ theorem canonicalFiatShamir_knowledgeSoundness_of_fixedExtractor
         fsInit fsImpl privateImpl E
         relIn {yu : StmtOut × Unit | yu.1 ∈ langOut}
         V P ≤ ε) :
-    ∀ P : OracleComp ((oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) + privateSpec)
+    ∀ P : OracleComp ((oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec) + privateSpec)
       (StmtIn × FSSaltedNARGString pSpec Salt), P.IsQueryBoundP queryBoundSelector t →
       Pr{let out ← adaptiveNARGKnowledgeSoundnessExp fsInit
           (fsImpl.addLift srChallengeQueryImpl') privateImpl
           ((fsImpl.addLift (srChallengeQueryImpl'
           (Statement := StmtIn × Salt) (pSpec := pSpec)) : QueryImpl _
-            (StateT (QueryImpl (srChallengeOracle (StmtIn × Salt) pSpec) Id) ProbComp)).addLift
+            (StateT (QueryImpl (srVerifierMessageOracle (StmtIn × Salt) pSpec) Id)
+              ProbComp)).addLift
           (QueryImpl.id' unifSpec))
           (Verifier.compileFiatShamir (Salt := Salt) V)
           (fsSRDelegatingNARGExtractor E) P}[nargKSFailEvent relIn langOut out] ≤ ε := by
@@ -656,11 +660,11 @@ theorem canonicalFiatShamir_soundness_withSampler
     {κ : Type} (privateSpec : OracleSpec κ) (privateImpl : QueryImpl privateSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (langIn : Set StmtIn) (langOut : Set StmtOut)
-    (fsInit : ProbComp (QueryImpl (srChallengeOracle (StmtIn × Salt) pSpec) Id))
+    (fsInit : ProbComp (QueryImpl (srVerifierMessageOracle (StmtIn × Salt) pSpec) Id))
     (fsImpl : QueryImpl oSpec
-      (StateT (QueryImpl (srChallengeOracle (StmtIn × Salt) pSpec) Id) ProbComp))
+      (StateT (QueryImpl (srVerifierMessageOracle (StmtIn × Salt) pSpec) Id) ProbComp))
     (queryBoundSelector srQueryBoundSelector :
-      ((oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) + privateSpec).Domain → Prop)
+      ((oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec) + privateSpec).Domain → Prop)
     [DecidablePred queryBoundSelector] [DecidablePred srQueryBoundSelector]
     (hCount : ∀ q, srQueryBoundSelector q → queryBoundSelector q)
     (t : ℕ) (ε : ENNReal)
@@ -669,7 +673,7 @@ theorem canonicalFiatShamir_soundness_withSampler
       P.IsQueryBoundP srQueryBoundSelector t →
       Verifier.StateRestoration.soundnessFailureProb (Salt := Salt) fsInit fsImpl privateImpl
         langIn langOut V P ≤ ε) :
-    ∀ P : OracleComp ((oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) + privateSpec)
+    ∀ P : OracleComp ((oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec) + privateSpec)
       (StmtIn × FSSaltedNARGString pSpec Salt), P.IsQueryBoundP queryBoundSelector t →
       Pr{let out ← adaptiveNARGSoundnessExp fsInit (fsImpl.addLift srChallengeQueryImpl')
           privateImpl (Verifier.compileFiatShamir (Salt := Salt) V) P}[
@@ -695,11 +699,11 @@ theorem canonicalFiatShamir_soundness_withSampler
   refine bind_congr (m := ProbComp) fun state => ?_
   rw [← StateT.run'_map', ← StateT.run'_map', ← simulateQ_map, ← simulateQ_map]
   apply congrArg (fun computation :
-    StateT (QueryImpl (srChallengeOracle (StmtIn × Salt) pSpec) Id) ProbComp Prop =>
+    StateT (QueryImpl (srVerifierMessageOracle (StmtIn × Salt) pSpec) Id) ProbComp Prop =>
       computation.run' state)
   apply congrArg (simulateQ _)
   rw [show (liftM P : OptionT
-      (OracleComp ((oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) + privateSpec))
+      (OracleComp ((oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec) + privateSpec))
       (StmtIn × FSSaltedNARGString pSpec Salt)) = OptionT.lift P from rfl]
   simp only [srInducedProver_eq_map, fsSaltedNIV_verify,
     fsSaltedVerify_eq_deriveTranscriptSR, Verifier.run,
@@ -709,17 +713,17 @@ theorem canonicalFiatShamir_soundness_withSampler
   refine bind_congr fun p => ?_
   rw [liftComp_inst_irrel
     (i₁ := instMonadLiftTOfMonadLift
-      (OracleQuery (oSpec + srChallengeOracle (StmtIn × Salt) pSpec))
-      (OracleQuery (oSpec + srChallengeOracle (StmtIn × Salt) pSpec))
-      (OracleQuery ((oSpec + srChallengeOracle (StmtIn × Salt) pSpec) + privateSpec)))
+      (OracleQuery (oSpec + srVerifierMessageOracle (StmtIn × Salt) pSpec))
+      (OracleQuery (oSpec + srVerifierMessageOracle (StmtIn × Salt) pSpec))
+      (OracleQuery ((oSpec + srVerifierMessageOracle (StmtIn × Salt) pSpec) + privateSpec)))
     (i₂ := instMonadLiftTOfMonadLift
-      (OracleQuery (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec))
-      (OracleQuery (oSpec + (fsChallengeOracle (StmtIn × Salt) pSpec + privateSpec)))
-      (OracleQuery ((oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) + privateSpec)))
+      (OracleQuery (oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec))
+      (OracleQuery (oSpec + (fsVerifierMessageOracle (StmtIn × Salt) pSpec + privateSpec)))
+      (OracleQuery ((oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec) + privateSpec)))
     (fun q => by cases q <;> rfl)
     (Messages.deriveTranscriptSR (oSpec := oSpec) (p.1, p.2.1) p.2.2)]
   refine bind_congr (m := OracleComp
-    ((oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) + privateSpec)) fun transcript => ?_
+    ((oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec) + privateSpec)) fun transcript => ?_
   refine OracleComp.bind_congr' ?_ fun out => ?_
   · refine liftComp_liftComp ?_ (V.verify p.1 transcript).run
     intro q
@@ -740,11 +744,11 @@ theorem canonicalFiatShamir_knowledgeSoundness_withSampler
     {κ : Type} (privateSpec : OracleSpec κ) (privateImpl : QueryImpl privateSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (relIn : Set (StmtIn × WitIn)) (langOut : Set StmtOut)
-    (fsInit : ProbComp (QueryImpl (srChallengeOracle (StmtIn × Salt) pSpec) Id))
+    (fsInit : ProbComp (QueryImpl (srVerifierMessageOracle (StmtIn × Salt) pSpec) Id))
     (fsImpl : QueryImpl oSpec
-      (StateT (QueryImpl (srChallengeOracle (StmtIn × Salt) pSpec) Id) ProbComp))
+      (StateT (QueryImpl (srVerifierMessageOracle (StmtIn × Salt) pSpec) Id) ProbComp))
     (queryBoundSelector srQueryBoundSelector :
-      ((oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) + privateSpec).Domain → Prop)
+      ((oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec) + privateSpec).Domain → Prop)
     [DecidablePred queryBoundSelector] [DecidablePred srQueryBoundSelector]
     (hCount : ∀ q, srQueryBoundSelector q → queryBoundSelector q)
     (ε : ℕ → ENNReal)
@@ -757,16 +761,18 @@ theorem canonicalFiatShamir_knowledgeSoundness_withSampler
           relIn {yu : StmtOut × Unit | yu.1 ∈ langOut}
           V P ≤ ε t) :
     ∃ extractor : StmtIn → FSSaltedNARGString pSpec Salt →
-      QueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) →
-      QueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) →
-      OptionT (OracleComp ((oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) + unifSpec)) WitIn,
-      ∀ t, ∀ P : OracleComp ((oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) + privateSpec)
+      QueryLog (oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec) →
+      QueryLog (oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec) →
+      OptionT (OracleComp ((oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec) + unifSpec))
+        WitIn,
+      ∀ t, ∀ P : OracleComp ((oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec) + privateSpec)
         (StmtIn × FSSaltedNARGString pSpec Salt), P.IsQueryBoundP queryBoundSelector t →
         Pr{let out ← adaptiveNARGKnowledgeSoundnessExp fsInit
             (fsImpl.addLift srChallengeQueryImpl') privateImpl
             ((fsImpl.addLift (srChallengeQueryImpl'
           (Statement := StmtIn × Salt) (pSpec := pSpec)) : QueryImpl _
-            (StateT (QueryImpl (srChallengeOracle (StmtIn × Salt) pSpec) Id) ProbComp)).addLift
+            (StateT (QueryImpl (srVerifierMessageOracle (StmtIn × Salt) pSpec) Id)
+              ProbComp)).addLift
           (QueryImpl.id' unifSpec))
             (Verifier.compileFiatShamir (Salt := Salt) V) extractor P}[
               nargKSFailEvent relIn langOut out] ≤ ε t := by
@@ -787,12 +793,12 @@ theorem canonicalFiatShamir_soundness
     {Salt : Type} [VCVCompatible Salt]
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (langIn : Set StmtIn) (langOut : Set StmtOut)
-    (fsInit : ProbComp (QueryImpl (srChallengeOracle (StmtIn × Salt) pSpec) Id))
+    (fsInit : ProbComp (QueryImpl (srVerifierMessageOracle (StmtIn × Salt) pSpec) Id))
     (fsImpl : QueryImpl oSpec
-      (StateT (QueryImpl (srChallengeOracle (StmtIn × Salt) pSpec) Id) ProbComp))
+      (StateT (QueryImpl (srVerifierMessageOracle (StmtIn × Salt) pSpec) Id) ProbComp))
     (queryBoundSelector :
-      (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec).Domain → Prop)
-    (srQueryBoundSelector : (oSpec + srChallengeOracle (StmtIn × Salt) pSpec).Domain → Prop)
+      (oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec).Domain → Prop)
+    (srQueryBoundSelector : (oSpec + srVerifierMessageOracle (StmtIn × Salt) pSpec).Domain → Prop)
     [DecidablePred queryBoundSelector] [DecidablePred srQueryBoundSelector]
     (hCount : ∀ q, srQueryBoundSelector q → queryBoundSelector q)
     (t : ℕ) (ε : ENNReal)
@@ -818,12 +824,12 @@ theorem canonicalFiatShamir_knowledgeSoundness
     {Salt : Type} [VCVCompatible Salt]
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (relIn : Set (StmtIn × WitIn)) (langOut : Set StmtOut)
-    (fsInit : ProbComp (QueryImpl (srChallengeOracle (StmtIn × Salt) pSpec) Id))
+    (fsInit : ProbComp (QueryImpl (srVerifierMessageOracle (StmtIn × Salt) pSpec) Id))
     (fsImpl : QueryImpl oSpec
-      (StateT (QueryImpl (srChallengeOracle (StmtIn × Salt) pSpec) Id) ProbComp))
+      (StateT (QueryImpl (srVerifierMessageOracle (StmtIn × Salt) pSpec) Id) ProbComp))
     (queryBoundSelector :
-      (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec).Domain → Prop)
-    (srQueryBoundSelector : (oSpec + srChallengeOracle (StmtIn × Salt) pSpec).Domain → Prop)
+      (oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec).Domain → Prop)
+    (srQueryBoundSelector : (oSpec + srVerifierMessageOracle (StmtIn × Salt) pSpec).Domain → Prop)
     [DecidablePred queryBoundSelector] [DecidablePred srQueryBoundSelector]
     (hCount : ∀ q, srQueryBoundSelector q → queryBoundSelector q)
     (ε : ℕ → ENNReal)
@@ -835,7 +841,8 @@ theorem canonicalFiatShamir_knowledgeSoundness
       fsInit (fsImpl.addLift (srChallengeQueryImpl' (pSpec := pSpec)))
       ((fsImpl.addLift (srChallengeQueryImpl'
           (Statement := StmtIn × Salt) (pSpec := pSpec)) : QueryImpl _
-            (StateT (QueryImpl (srChallengeOracle (StmtIn × Salt) pSpec) Id) ProbComp)).addLift
+            (StateT (QueryImpl (srVerifierMessageOracle (StmtIn × Salt) pSpec) Id)
+              ProbComp)).addLift
           (QueryImpl.id' unifSpec))
       (Verifier.compileFiatShamir (Salt := Salt) V) relIn langOut queryBoundSelector ε := by
   exact canonicalFiatShamir_knowledgeSoundness_withSampler
@@ -854,13 +861,15 @@ theorem fiatShamir_soundness
     {U : Type} [VCVCompatible U] (saltLength : ℕ)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (langIn : Set StmtIn) (langOut : Set StmtOut)
-    (fsInit : ProbComp (QueryImpl (srChallengeOracle (StmtIn × Vector U saltLength) pSpec) Id))
+    (fsInit : ProbComp
+      (QueryImpl (srVerifierMessageOracle (StmtIn × Vector U saltLength) pSpec) Id))
     (fsImpl : QueryImpl oSpec
-      (StateT (QueryImpl (srChallengeOracle (StmtIn × Vector U saltLength) pSpec) Id) ProbComp))
+      (StateT (QueryImpl (srVerifierMessageOracle (StmtIn × Vector U saltLength) pSpec) Id)
+        ProbComp))
     (queryBoundSelector :
-      (oSpec + fsChallengeOracle (StmtIn × Vector U saltLength) pSpec).Domain → Prop)
+      (oSpec + fsVerifierMessageOracle (StmtIn × Vector U saltLength) pSpec).Domain → Prop)
     (srQueryBoundSelector :
-      (oSpec + srChallengeOracle (StmtIn × Vector U saltLength) pSpec).Domain → Prop)
+      (oSpec + srVerifierMessageOracle (StmtIn × Vector U saltLength) pSpec).Domain → Prop)
     [DecidablePred queryBoundSelector] [DecidablePred srQueryBoundSelector]
     (hCount : ∀ q, srQueryBoundSelector q → queryBoundSelector q)
     (t : ℕ) (ε : ENNReal)
@@ -883,13 +892,15 @@ theorem fiatShamir_knowledgeSoundness
     {U : Type} [VCVCompatible U] (saltLength : ℕ)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (relIn : Set (StmtIn × WitIn)) (langOut : Set StmtOut)
-    (fsInit : ProbComp (QueryImpl (srChallengeOracle (StmtIn × Vector U saltLength) pSpec) Id))
+    (fsInit : ProbComp
+      (QueryImpl (srVerifierMessageOracle (StmtIn × Vector U saltLength) pSpec) Id))
     (fsImpl : QueryImpl oSpec
-      (StateT (QueryImpl (srChallengeOracle (StmtIn × Vector U saltLength) pSpec) Id) ProbComp))
+      (StateT (QueryImpl (srVerifierMessageOracle (StmtIn × Vector U saltLength) pSpec) Id)
+        ProbComp))
     (queryBoundSelector :
-      (oSpec + fsChallengeOracle (StmtIn × Vector U saltLength) pSpec).Domain → Prop)
+      (oSpec + fsVerifierMessageOracle (StmtIn × Vector U saltLength) pSpec).Domain → Prop)
     (srQueryBoundSelector :
-      (oSpec + srChallengeOracle (StmtIn × Vector U saltLength) pSpec).Domain → Prop)
+      (oSpec + srVerifierMessageOracle (StmtIn × Vector U saltLength) pSpec).Domain → Prop)
     [DecidablePred queryBoundSelector] [DecidablePred srQueryBoundSelector]
     (hCount : ∀ q, srQueryBoundSelector q → queryBoundSelector q)
     (ε : ℕ → ENNReal)
@@ -902,7 +913,7 @@ theorem fiatShamir_knowledgeSoundness
       ((fsImpl.addLift (srChallengeQueryImpl'
           (Statement := StmtIn × Vector U saltLength) (pSpec := pSpec)) : QueryImpl _
             (StateT (QueryImpl
-              (srChallengeOracle (StmtIn × Vector U saltLength) pSpec) Id) ProbComp)).addLift
+              (srVerifierMessageOracle (StmtIn × Vector U saltLength) pSpec) Id) ProbComp)).addLift
           (QueryImpl.id' unifSpec))
       (V.fiatShamirSalted (U := U) saltLength) relIn langOut queryBoundSelector ε := by
   exact canonicalFiatShamir_knowledgeSoundness (Salt := Vector U saltLength)

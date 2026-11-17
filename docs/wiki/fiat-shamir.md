@@ -127,7 +127,7 @@ Its generic abstract-salt
 `compileFiatShamir` is an internal encoding adapter used by the DS-to-FS security bridge.
 The state-restoration API takes the original verifier, input language or relation, and a separate
 salt type. An SR prover returns `((x, τ), messages)`; its moves query the existing
-`srChallengeOracle (StmtIn × Salt) pSpec` interface. The product here is query context, not the
+`srVerifierMessageOracle (StmtIn × Salt) pSpec` interface. The product here is query context, not the
 IP statement space. Transcript reconstruction uses `(x, τ)`, verification receives only `x`,
 and an SR extractor receives `x` and `τ` as separate arguments. The canonical FS
 premises therefore use the original language and relation directly. No salted-verifier wrapper
@@ -176,10 +176,12 @@ admission debt; native-compiler trust is never allowlisted.
 
 ## Deterministic overwrite duplex execution
 
-`Data/Hash/DuplexSponge/CapacityInitialization.lean` defines `capacityInit`, matching
-current Spongefish capacity seeding: zero rate, encoded session identifier at the
-start of capacity, zero remaining capacity, cursors zero and rate. This is separate
-from ideal-hash `start` and rate-absorbed initial objects.
+`Data/Hash/DuplexSponge/CapacityInitialization.lean` defines `capacityInit`. It places an
+encoded session identifier at the start of capacity and zeros the rate and remaining
+capacity. The absorb and squeeze cursors start at zero and the rate, respectively.
+`start` fills the capacity from an ideal hash oracle. `absorbInitialObject` absorbs through
+the rate from a fixed zero state, as the overwrite-mode constructor does for session
+identifiers in [Spongefish v0.9.0](https://github.com/arkworks-rs/spongefish/blob/v0.9.0/spongefish/src/duplex_sponge.rs).
 `Data/Hash/DuplexSponge/Deterministic.lean` interprets the existing chunk implementations
 with one shared permutation function. It proves that concatenated command lists compose
 their executions, and gives execution laws for copying available output and evaluating

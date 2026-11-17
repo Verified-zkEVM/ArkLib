@@ -29,7 +29,7 @@ No terminal reduction output is executed. -/
 def InteractiveProver.compileFiatShamir [VCVCompatible Salt]
     (P : InteractiveProver oSpec Statement Witness pSpec)
     (sampleSalt : OracleComp oSpec Salt) (stmt : Statement) (wit : Witness) :
-    OracleComp (oSpec + fsChallengeOracle (Statement × Salt) pSpec)
+    OracleComp (oSpec + fsVerifierMessageOracle (Statement × Salt) pSpec)
       (FSSaltedNARGString pSpec Salt) := do
   let salt ← sampleSalt
   let (messages, _, _) ← P.toReductionProver.runToRoundFSSalted salt (Fin.last n)
@@ -40,7 +40,7 @@ def InteractiveProver.compileFiatShamir [VCVCompatible Salt]
 def InteractiveVerifier.compileFiatShamir [VCVCompatible Salt]
     (V : InteractiveVerifier oSpec Statement pSpec)
     (stmt : Statement) (nargString : FSSaltedNARGString pSpec Salt) :
-    OracleComp (oSpec + fsChallengeOracle (Statement × Salt) pSpec) Bool := do
+    OracleComp (oSpec + fsVerifierMessageOracle (Statement × Salt) pSpec) Bool := do
   let transcript ← nargString.2.deriveTranscriptFS (oSpec := oSpec) (stmt, nargString.1)
   (V.verify stmt transcript).liftComp _
 
@@ -48,7 +48,7 @@ def InteractiveVerifier.compileFiatShamir [VCVCompatible Salt]
 def InteractiveProtocol.compileFiatShamir [VCVCompatible Salt]
     (protocol : InteractiveProtocol oSpec Statement Witness pSpec)
     (sampleSalt : OracleComp oSpec Salt) :
-    NonInteractiveArgument (oSpec + fsChallengeOracle (Statement × Salt) pSpec)
+    NonInteractiveArgument (oSpec + fsVerifierMessageOracle (Statement × Salt) pSpec)
       Statement Witness (FSSaltedNARGString pSpec Salt) where
   prover := protocol.prover.compileFiatShamir sampleSalt
   verifier := protocol.verifier.compileFiatShamir

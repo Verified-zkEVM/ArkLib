@@ -40,7 +40,7 @@ The key insight of the Fiat--Shamir transformation is to replace interactive ver
     The oracle specification is
     \begin{equation*}
       \begin{gathered}
-        \mathsf{fsChallengeOracle}\;\StmtIn\;\pSpec:
+        \mathsf{fsVerifierMessageOracle}\;\StmtIn\;\pSpec:
           \OracleSpec\!\left(\sum_{i:\pSpec.\ChallengeIdx}Q_i\right),\\
         (i,q)\longmapsto\pSpec.\Challenge\;i.
       \end{gathered}
@@ -50,7 +50,7 @@ The key insight of the Fiat--Shamir transformation is to replace interactive ver
     A sampled function table supplies deterministic, repeatable answers; choosing that
     table uniformly gives the random-oracle model. In the salted construction, oracle queries
     use \((\Instance,\SaltString)\), while the original statement remains \(\Instance\).
-    \lean{ProtocolSpec.fsChallengeOracle, ProtocolSpec.srChallengeOracle, ProtocolSpec.MessagesUpTo}
+    \lean{ProtocolSpec.fsVerifierMessageOracle, ProtocolSpec.srVerifierMessageOracle, ProtocolSpec.MessagesUpTo}
     \uses{def:protocol_spec_components, def:transcript}
     \leanok
 \end{definition}
@@ -129,7 +129,7 @@ reconstructs the full protocol transcript:
 \begin{equation*}
 \begin{aligned}
   &\mathsf{messages}.\mathsf{deriveTranscriptFS}\;\mathsf{stmt} :\\
-  &\quad\OracleComp\;(\oSpec\mathrel{++_\mathsf{o}}\mathsf{fsChallengeOracle}\;\StmtIn\;\pSpec)
+  &\quad\OracleComp\;(\oSpec\mathrel{++_\mathsf{o}}\mathsf{fsVerifierMessageOracle}\;\StmtIn\;\pSpec)
     \;(\FullTranscript\;\pSpec)
 \end{aligned}
 \end{equation*}

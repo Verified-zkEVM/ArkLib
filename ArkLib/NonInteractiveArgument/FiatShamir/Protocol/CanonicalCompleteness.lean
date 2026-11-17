@@ -29,7 +29,8 @@ set_option backward.isDefEq.respectTransparency false in
 theorem InteractiveProtocol.compileFiatShamir_completeness_iff [VCVCompatible Salt]
     (P : InteractiveProtocol oSpec Statement Witness pSpec)
     (sampleSalt : OracleComp oSpec Salt) (init : ProbComp σ)
-    (impl : QueryImpl (oSpec + fsChallengeOracle (Statement × Salt) pSpec) (StateT σ ProbComp))
+    (impl : QueryImpl (oSpec + fsVerifierMessageOracle (Statement × Salt) pSpec)
+      (StateT σ ProbComp))
     (relation : Set (Statement × Witness)) (ε : ℝ≥0) :
     (P.toReduction.compileFiatShamir sampleSalt).completeness init impl relation acceptRejectRel ε ↔
       (P.compileFiatShamir sampleSalt).completeness init impl relation ε := by
@@ -51,13 +52,13 @@ theorem InteractiveProtocol.compileFiatShamir_completeness_iff [VCVCompatible Sa
 /-- The typed basic Fiat–Shamir argument preserves arbitrary interactive completeness error. -/
 theorem InteractiveProtocol.compileFiatShamir_completeness [VCVCompatible Salt]
     [∀ i, SampleableType (pSpec.Challenge i)]
-    [DecidableEq (srChallengeOracle (Statement × Salt) pSpec).Domain]
+    [DecidableEq (srVerifierMessageOracle (Statement × Salt) pSpec).Domain]
     (P : InteractiveProtocol oSpec Statement Witness pSpec)
     (impl : QueryImpl oSpec ProbComp) (sampleSalt : OracleComp oSpec Salt)
     (relation : Set (Statement × Witness)) (ε : ℝ≥0)
     (h : P.completeness (pure ()) (impl.liftTarget (StateT Unit ProbComp)) relation ε) :
     (P.compileFiatShamir sampleSalt).completeness
-      (pure ((), (∅ : (srChallengeOracle (Statement × Salt) pSpec).QueryCache)))
+      (pure ((), (∅ : (srVerifierMessageOracle (Statement × Salt) pSpec).QueryCache)))
       (CanonicalFS.randomOracleImpl (pSpec := pSpec) (StmtIn := Statement) (Salt := Salt) impl)
       relation ε := by
   apply (P.compileFiatShamir_completeness_iff sampleSalt _ _ relation ε).mp
@@ -67,14 +68,15 @@ theorem InteractiveProtocol.compileFiatShamir_completeness [VCVCompatible Salt]
 /-- Canonical byte serialization adds no completeness error to basic Fiat–Shamir. -/
 theorem InteractiveProtocol.fiatShamir_completeness [VCVCompatible U] (saltLength : ℕ)
     [∀ i, SampleableType (pSpec.Challenge i)]
-    [DecidableEq (srChallengeOracle (Statement × Vector U saltLength) pSpec).Domain]
+    [DecidableEq (srVerifierMessageOracle (Statement × Vector U saltLength) pSpec).Domain]
     (P : InteractiveProtocol oSpec Statement Witness pSpec)
     (serializer : Serializer (FiatShamirNARGString pSpec U saltLength))
     (impl : QueryImpl oSpec ProbComp) (sampleSalt : OracleComp oSpec (Vector U saltLength))
     (relation : Set (Statement × Witness)) (ε : ℝ≥0)
     (h : P.completeness (pure ()) (impl.liftTarget (StateT Unit ProbComp)) relation ε) :
     (P.fiatShamir saltLength serializer sampleSalt).completeness
-      (pure ((), (∅ : (srChallengeOracle (Statement × Vector U saltLength) pSpec).QueryCache)))
+      (pure ((),
+        (∅ : (srVerifierMessageOracle (Statement × Vector U saltLength) pSpec).QueryCache)))
       (CanonicalFS.randomOracleImpl (pSpec := pSpec) (StmtIn := Statement)
         (Salt := Vector U saltLength) impl) relation ε := by
   rw [InteractiveProtocol.fiatShamir, NonInteractiveArgument.serialize_completeness_iff]

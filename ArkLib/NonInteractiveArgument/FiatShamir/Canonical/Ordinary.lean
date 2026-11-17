@@ -35,14 +35,14 @@ variable {n : ℕ} {pSpec : ProtocolSpec n} {Statement Witness : Type}
   [∀ i, SampleableType (pSpec.Challenge i)]
 
 /-- The NARG's public handler answers only the pre-sampled round functions. -/
-def publicCoinOracleImpl : QueryImpl ([]ₒ + fsChallengeOracle (Statement × Salt) pSpec)
-    (StateT (QueryImpl (srChallengeOracle (Statement × Salt) pSpec) Id) ProbComp) :=
+def publicCoinOracleImpl : QueryImpl ([]ₒ + fsVerifierMessageOracle (Statement × Salt) pSpec)
+    (StateT (QueryImpl (srVerifierMessageOracle (Statement × Salt) pSpec) Id) ProbComp) :=
   (IP.emptyImpl (σ := QueryImpl
-    (srChallengeOracle (Statement × Salt) pSpec) Id)).addLift srChallengeQueryImpl'
+    (srVerifierMessageOracle (Statement × Salt) pSpec) Id)).addLift srChallengeQueryImpl'
 
 private def extractionImpl :
-    QueryImpl (([]ₒ + fsChallengeOracle (Statement × Salt) pSpec) + unifSpec)
-      (StateT (QueryImpl (srChallengeOracle (Statement × Salt) pSpec) Id) ProbComp) :=
+    QueryImpl (([]ₒ + fsVerifierMessageOracle (Statement × Salt) pSpec) + unifSpec)
+      (StateT (QueryImpl (srVerifierMessageOracle (Statement × Salt) pSpec) Id) ProbComp) :=
   publicCoinOracleImpl.addLift (QueryImpl.id' unifSpec)
 
 omit [VCVCompatible Salt] [∀ i, SampleableType (pSpec.Challenge i)] in
@@ -61,7 +61,7 @@ variable [∀ i, VCVCompatible (pSpec.Challenge i)]
 private def standaloneExtractor
     (E : Extractor.StateRestoration []ₒ Statement Witness Unit pSpec (Salt := Salt))
     (x : Statement) (π : FSSaltedNARGString pSpec Salt)
-    (trP trV : QueryLog ([]ₒ + fsChallengeOracle (Statement × Salt) pSpec)) :
+    (trP trV : QueryLog ([]ₒ + fsVerifierMessageOracle (Statement × Salt) pSpec)) :
     OptionT ProbComp Witness :=
   OptionT.mk (simulateQ (((fun q => nomatch q) : QueryImpl []ₒ ProbComp) +
       QueryImpl.id' unifSpec)
@@ -71,7 +71,7 @@ private def standaloneExtractor
 Only the prover's SR move-response trace is supplied as the extractor's query log. -/
 def publicCoinExtractor
     (E : IP.SRExtractor Statement Witness pSpec (Salt := Salt)) :
-    NARG.Extractor ([]ₒ + fsChallengeOracle (Statement × Salt) pSpec)
+    NARG.Extractor ([]ₒ + fsVerifierMessageOracle (Statement × Salt) pSpec)
       Statement Witness (FSSaltedNARGString pSpec Salt) :=
   fun x π trP trV => E x π.1
     (FullTranscript.ofMessagesChallenges π.2
@@ -82,7 +82,7 @@ omit [∀ i, SampleableType (pSpec.Challenge i)] in
 theorem publicCoinExtractor_apply
     (E : IP.SRExtractor Statement Witness pSpec (Salt := Salt))
     (x : Statement) (π : FSSaltedNARGString pSpec Salt)
-    (trP trV : QueryLog ([]ₒ + fsChallengeOracle (Statement × Salt) pSpec)) :
+    (trP trV : QueryLog ([]ₒ + fsVerifierMessageOracle (Statement × Salt) pSpec)) :
     publicCoinExtractor E x π trP trV =
       E x π.1
         (FullTranscript.ofMessagesChallenges π.2
@@ -102,7 +102,7 @@ private theorem standaloneExtractor_toReduction
 private theorem standaloneExtractor_simulate
     (E : Extractor.StateRestoration []ₒ Statement Witness Unit pSpec (Salt := Salt))
     (x : Statement) (π : FSSaltedNARGString pSpec Salt)
-    (trP trV : QueryLog ([]ₒ + fsChallengeOracle (Statement × Salt) pSpec)) :
+    (trP trV : QueryLog ([]ₒ + fsVerifierMessageOracle (Statement × Salt) pSpec)) :
     simulateQ extractionImpl (fsSRDelegatingNARGExtractor E x π trP trV).run =
       StateT.lift (standaloneExtractor E x π trP trV).run := by
   unfold fsSRDelegatingNARGExtractor standaloneExtractor
@@ -117,16 +117,16 @@ private theorem standaloneExtractor_simulate
   | inl q => nomatch q
   | inr q =>
     change simulateQ extractionImpl
-      (liftM ((([]ₒ + fsChallengeOracle (Statement × Salt) pSpec) + unifSpec).query
+      (liftM ((([]ₒ + fsVerifierMessageOracle (Statement × Salt) pSpec) + unifSpec).query
         (.inr q))) = _
     rw [simulateQ_spec_query]
     rfl
 
 private theorem standaloneExtractor_experiment_eq
-    (init : ProbComp (QueryImpl (srChallengeOracle (Statement × Salt) pSpec) Id))
+    (init : ProbComp (QueryImpl (srVerifierMessageOracle (Statement × Salt) pSpec) Id))
     (V : IP.Verifier Statement pSpec)
     (E : Extractor.StateRestoration []ₒ Statement Witness Unit pSpec (Salt := Salt))
-    (P : NARG.Prover ([]ₒ + fsChallengeOracle (Statement × Salt) pSpec)
+    (P : NARG.Prover ([]ₒ + fsVerifierMessageOracle (Statement × Salt) pSpec)
       Statement (FSSaltedNARGString pSpec Salt)) :
     adaptiveNARGKnowledgeSoundnessExp init publicCoinOracleImpl (QueryImpl.id' unifSpec)
       ((QueryImpl.id' unifSpec).liftTarget (StateT _ ProbComp))
@@ -174,7 +174,7 @@ variable {Statement Witness : Type}
   [∀ sec n i, SampleableType ((pSpec sec n).Challenge i)]
   [∀ sec n i, VCVCompatible ((pSpec sec n).Challenge i)]
   (init : ∀ sec s n, ProbComp
-    (QueryImpl (srChallengeOracle (Statement × Salt sec s n) (pSpec sec n)) Id))
+    (QueryImpl (srVerifierMessageOracle (Statement × Salt sec s n) (pSpec sec n)) Id))
   (V : ∀ sec n, IP.Verifier Statement (pSpec sec n))
   (size : Statement → ℕ) (saltSize : ℕ → ℕ → ℕ)
 
@@ -186,7 +186,8 @@ theorem publicCoin_soundness (language : Set Statement)
     (hSR : ∀ sec, IP.srSoundness (init sec) (fun _ n => V sec n)
       language size (error sec)) :
     NARG.adaptiveSoundness
-      (fun sec n => []ₒ + fsChallengeOracle (Statement × Salt sec (saltSize sec n) n) (pSpec sec n))
+      (fun sec n => []ₒ +
+        fsVerifierMessageOracle (Statement × Salt sec (saltSize sec n) n) (pSpec sec n))
       (fun sec n => init sec (saltSize sec n) n)
       (fun _ _ => publicCoinOracleImpl)
       (fun sec n => NARG.Verifier.ofPublic
@@ -217,7 +218,8 @@ theorem publicCoin_knowledge_soundness_withExtractor
     (hE : ∀ sec, IP.srKnowledgeSoundnessWithExtractor
       (init sec) (fun _ n => V sec n) relation size (E sec) (error sec)) :
     NARG.adaptiveKnowledgeSoundnessWithExtractor
-      (fun sec n => []ₒ + fsChallengeOracle (Statement × Salt sec (saltSize sec n) n) (pSpec sec n))
+      (fun sec n => []ₒ +
+        fsVerifierMessageOracle (Statement × Salt sec (saltSize sec n) n) (pSpec sec n))
       (fun sec n => init sec (saltSize sec n) n)
       (fun _ _ => publicCoinOracleImpl)
       (fun sec n => NARG.Verifier.ofPublic
@@ -269,7 +271,8 @@ theorem publicCoin_knowledge_soundness (relation : Set (Statement × Witness))
     (hSR : ∀ sec, IP.srKnowledgeSoundness (init sec) (fun _ n => V sec n)
       relation size (error sec)) :
     NARG.adaptiveKnowledgeSoundness
-      (fun sec n => []ₒ + fsChallengeOracle (Statement × Salt sec (saltSize sec n) n) (pSpec sec n))
+      (fun sec n => []ₒ +
+        fsVerifierMessageOracle (Statement × Salt sec (saltSize sec n) n) (pSpec sec n))
       (fun sec n => init sec (saltSize sec n) n)
       (fun _ _ => publicCoinOracleImpl)
       (fun sec n => NARG.Verifier.ofPublic

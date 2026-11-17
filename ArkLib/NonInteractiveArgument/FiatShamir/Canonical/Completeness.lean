@@ -34,12 +34,12 @@ variable [VCVCompatible Salt]
 namespace CanonicalFS
 
 private abbrev fixedImpl (impl : QueryImpl oSpec ProbComp)
-    (f : QueryImpl (fsChallengeOracle (StmtIn × Salt) pSpec) Id) :
-    QueryImpl (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) ProbComp :=
-  impl + (fun q => pure (f q) : QueryImpl (fsChallengeOracle (StmtIn × Salt) pSpec) ProbComp)
+    (f : QueryImpl (fsVerifierMessageOracle (StmtIn × Salt) pSpec) Id) :
+    QueryImpl (oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec) ProbComp :=
+  impl + (fun q => pure (f q) : QueryImpl (fsVerifierMessageOracle (StmtIn × Salt) pSpec) ProbComp)
 
 private def reconstruct
-    (f : QueryImpl (fsChallengeOracle (StmtIn × Salt) pSpec) Id)
+    (f : QueryImpl (fsVerifierMessageOracle (StmtIn × Salt) pSpec) Id)
     (stmt : StmtIn × Salt) (messages : pSpec.Messages) (i : Fin (n + 1)) :
     pSpec.Transcript i :=
   Fin.induction (fun j => j.elim0) (fun j prev =>
@@ -49,7 +49,7 @@ private def reconstruct
 
 set_option backward.isDefEq.respectTransparency false in
 private theorem sim_round (impl : QueryImpl oSpec ProbComp)
-    (f : QueryImpl (fsChallengeOracle (StmtIn × Salt) pSpec) Id)
+    (f : QueryImpl (fsVerifierMessageOracle (StmtIn × Salt) pSpec) Id)
     (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) (j : Fin n)
     (salt : Salt) (stmt : StmtIn) (state : P.PrvState 0) :
     simulateQ (fixedImpl impl f) (P.runToRoundFSSalted salt j.succ stmt state) = (do
@@ -72,9 +72,9 @@ private theorem sim_round (impl : QueryImpl oSpec ProbComp)
     apply bind_congr
     intro recv
     change (simulateQ (fixedImpl impl f)
-      (liftComp (query (spec := fsChallengeOracle (StmtIn × Salt) pSpec)
+      (liftComp (query (spec := fsVerifierMessageOracle (StmtIn × Salt) pSpec)
         ⟨⟨j, by assumption⟩, (r.2.1, r.1)⟩ :
-          OracleComp (fsChallengeOracle (StmtIn × Salt) pSpec) _) _) >>= _) = _
+          OracleComp (fsVerifierMessageOracle (StmtIn × Salt) pSpec) _) _) >>= _) = _
     rw [QueryImpl.simulateQ_liftComp_right_eq_of_apply (fixedImpl impl f)
       (fun q => pure (f q)) (fun _ => rfl)]
     rw [simulateQ_HasQuery_query]
@@ -85,7 +85,7 @@ private theorem sim_round (impl : QueryImpl oSpec ProbComp)
 omit [VCVCompatible Salt] in
 set_option backward.isDefEq.respectTransparency false in
 private theorem sim_derive_aux (impl : QueryImpl oSpec ProbComp)
-    (f : QueryImpl (fsChallengeOracle (StmtIn × Salt) pSpec) Id)
+    (f : QueryImpl (fsVerifierMessageOracle (StmtIn × Salt) pSpec) Id)
     (stmt : StmtIn × Salt) (messages : pSpec.Messages) (i : Fin (n + 1)) :
     simulateQ (fixedImpl impl f)
       (MessagesUpTo.deriveTranscriptSRAux stmt (Fin.last n) (Messages.asUpTo messages) i) =
@@ -101,9 +101,9 @@ private theorem sim_derive_aux (impl : QueryImpl oSpec ProbComp)
     split <;> split <;> try solve | exfalso; simp_all
     · simp only [simulateQ_bind, simulateQ_pure]
       change (simulateQ (fixedImpl impl f)
-        (liftComp (query (spec := fsChallengeOracle (StmtIn × Salt) pSpec)
+        (liftComp (query (spec := fsVerifierMessageOracle (StmtIn × Salt) pSpec)
           ⟨⟨i, by assumption⟩, (stmt, messages.take i.castSucc)⟩ :
-            OracleComp (fsChallengeOracle (StmtIn × Salt) pSpec) _) _) >>= _) = _
+            OracleComp (fsVerifierMessageOracle (StmtIn × Salt) pSpec) _) _) >>= _) = _
       rw [QueryImpl.simulateQ_liftComp_right_eq_of_apply (fixedImpl impl f)
         (fun q => pure (f q)) (fun _ => rfl)]
       rw [simulateQ_HasQuery_query]
@@ -112,7 +112,7 @@ private theorem sim_derive_aux (impl : QueryImpl oSpec ProbComp)
 
 omit [VCVCompatible Salt] in
 private theorem sim_derive (impl : QueryImpl oSpec ProbComp)
-    (f : QueryImpl (fsChallengeOracle (StmtIn × Salt) pSpec) Id)
+    (f : QueryImpl (fsVerifierMessageOracle (StmtIn × Salt) pSpec) Id)
     (stmt : StmtIn × Salt) (messages : pSpec.Messages) :
     simulateQ (fixedImpl impl f) (messages.deriveTranscriptFS stmt) =
       pure (reconstruct f stmt messages (Fin.last n)) :=
@@ -123,7 +123,7 @@ variable [∀ i, SampleableType (pSpec.Challenge i)]
 set_option backward.isDefEq.respectTransparency false in
 private theorem reconstruct_supported (salt : Salt)
     (impl : QueryImpl oSpec ProbComp)
-    (f : QueryImpl (fsChallengeOracle (StmtIn × Salt) pSpec) Id)
+    (f : QueryImpl (fsVerifierMessageOracle (StmtIn × Salt) pSpec) Id)
     (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (stmt : StmtIn) (wit : WitIn) (i : Fin (n + 1)) (messages : pSpec.Messages)
     (z : pSpec.MessagesUpTo i × (StmtIn × Salt) × P.PrvState i)
@@ -199,7 +199,7 @@ private def nargTranscript (salt : Salt) (messages : pSpec.Messages) :
 omit [∀ i, SampleableType (pSpec.Challenge i)] in
 set_option backward.isDefEq.respectTransparency false in
 private theorem sim_run (impl : QueryImpl oSpec ProbComp)
-    (f : QueryImpl (fsChallengeOracle (StmtIn × Salt) pSpec) Id)
+    (f : QueryImpl (fsVerifierMessageOracle (StmtIn × Salt) pSpec) Id)
     (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (sampleSalt : OracleComp oSpec Salt) (stmt : StmtIn) (wit : WitIn) :
     simulateQ (fixedImpl impl f + challengeQueryImpl)
@@ -259,7 +259,7 @@ private theorem sim_ip_run (impl : QueryImpl oSpec ProbComp)
 set_option backward.isDefEq.respectTransparency false in
 private theorem fixed_perfectCompleteness {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl oSpec ProbComp)
-    (f : QueryImpl (fsChallengeOracle (StmtIn × Salt) pSpec) Id)
+    (f : QueryImpl (fsVerifierMessageOracle (StmtIn × Salt) pSpec) Id)
     (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (sampleSalt : OracleComp oSpec Salt)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
@@ -301,13 +301,13 @@ result; arbitrary completeness error is preserved under the random-oracle assump
 `canonicalFiatShamir_completeness_randomOracle`. -/
 theorem canonicalFiatShamir_perfectCompleteness {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl oSpec ProbComp)
-    (fsInit : ProbComp (QueryImpl (fsChallengeOracle (StmtIn × Salt) pSpec) Id))
+    (fsInit : ProbComp (QueryImpl (fsVerifierMessageOracle (StmtIn × Salt) pSpec) Id))
     (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (sampleSalt : OracleComp oSpec Salt)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (h : R.perfectCompleteness init (impl.liftTarget (StateT σ ProbComp)) relIn relOut) :
     (R.compileFiatShamir sampleSalt).perfectCompleteness fsInit
-      ((impl.liftTarget (StateT (QueryImpl (fsChallengeOracle (StmtIn × Salt) pSpec) Id)
+      ((impl.liftTarget (StateT (QueryImpl (fsVerifierMessageOracle (StmtIn × Salt) pSpec) Id)
         ProbComp)).addLift fsChallengeQueryImpl') relIn relOut := by
   rw [Reduction.perfectCompleteness_eq_prob_one]
   intro stmt wit hIn
@@ -334,13 +334,14 @@ theorem canonicalFiatShamir_perfectCompleteness {σ : Type}
 The private ambient sampler is invoked once per NARG string. -/
 theorem fiatShamirSalted_perfectCompleteness {σ U : Type} [VCVCompatible U] (saltLength : ℕ)
     (init : ProbComp σ) (impl : QueryImpl oSpec ProbComp)
-    (fsInit : ProbComp (QueryImpl (fsChallengeOracle (StmtIn × Vector U saltLength) pSpec) Id))
+    (fsInit : ProbComp
+      (QueryImpl (fsVerifierMessageOracle (StmtIn × Vector U saltLength) pSpec) Id))
     (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (sampleSalt : OracleComp oSpec (Vector U saltLength))
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (h : R.perfectCompleteness init (impl.liftTarget (StateT σ ProbComp)) relIn relOut) :
     (R.fiatShamirSalted saltLength sampleSalt).perfectCompleteness fsInit
       ((impl.liftTarget (StateT
-        (QueryImpl (fsChallengeOracle (StmtIn × Vector U saltLength) pSpec) Id)
+        (QueryImpl (fsVerifierMessageOracle (StmtIn × Vector U saltLength) pSpec) Id)
         ProbComp)).addLift fsChallengeQueryImpl') relIn relOut := by
   exact canonicalFiatShamir_perfectCompleteness init impl fsInit R sampleSalt relIn relOut h

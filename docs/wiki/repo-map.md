@@ -323,7 +323,7 @@ See [the construction guide](fiat-shamir-initial-objects.md) for the security ex
 - For Fiat–Shamir, `InteractiveProof/StateRestorationSoundness.lean` owns the legacy
   state-restoration prover types, experiments, and predicates.
   Its single-salt game keeps `Salt` separate from the IP statement, verifier, and input relation;
-  `srChallengeOracle (StmtIn × Salt) pSpec` supplies the query format directly.
+  `srVerifierMessageOracle (StmtIn × Salt) pSpec` supplies the query format directly.
   Its `knowledgeSoundnessProverVerifierExp` retains the transcript and public query logs before extraction.
   Protocol-specific encodings and theorem assembly stay in their protocol directories.
   The adaptive and coin-bearing SR predicates take a `queryBoundSelector` predicate and an

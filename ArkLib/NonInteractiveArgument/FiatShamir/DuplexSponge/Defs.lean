@@ -515,7 +515,7 @@ noncomputable def D_IP_salted.sample
     {n : ℕ} {StmtIn Salt : Type} (pSpec : ProtocolSpec n)
     [VCVCompatible StmtIn] [VCVCompatible Salt]
     [∀ i, VCVCompatible (pSpec.Message i)] [∀ i, VCVCompatible (pSpec.Challenge i)] :
-    ProbComp (QueryImpl (fsChallengeOracle (StmtIn × Salt) pSpec) Id) :=
+    ProbComp (QueryImpl (fsVerifierMessageOracle (StmtIn × Salt) pSpec) Id) :=
   OracleReduction.sampleFiatShamirChallengeTable (Statement := StmtIn × Salt) pSpec
 
 /-- Bridge: `SampleableType` for `eSpec` (Hyb₂ `e`) derived from
@@ -1115,7 +1115,7 @@ Polymorphic over:
   memoized bridge `d2sCodecBridgeImplMemo`; `PUnit` for hybrids with inline `gᵢ`
   realizations such as `Hyb_1` / `Hyb_2`);
 - basic-FS verifier message spec `verifierMessageSpec` (e.g. `gSpec` / `eSpec` /
-  `fsChallengeOracle (StmtIn × Salt) pSpec` per-hybrid).
+  `fsVerifierMessageOracle (StmtIn × Salt) pSpec` per-hybrid).
 
 Used by `d2sCodecBridgeImplMemo`, `d2fOuterImpl`, `d2fProverRaw` (this file) and by
 `KeyLemma.hybridGame` / `hybridGameDist` / inline `Hyb_i` `gImpl` realizations. -/
@@ -1133,7 +1133,7 @@ variable {Salt : Type}
 abbrev D2SAlgoTransform :=
   MaliciousProver oSpec pSpec StmtIn U δ →
     AbortComp (oSpec +
-      D2SVerifierMessagePlusUnitOracle (U := U) (fsChallengeOracle (StmtIn × Salt) pSpec))
+      D2SVerifierMessagePlusUnitOracle (U := U) (fsVerifierMessageOracle (StmtIn × Salt) pSpec))
       (StmtIn × FSSaltedNARGString pSpec Salt)
 
 /-- **[CO25, Lemma 5.1]** Type of the §5.8 line-4 trace maps (e.g. `D2STrace`, `(φ⁻¹, ψ)(tr)`).
@@ -1142,7 +1142,7 @@ auxiliary uniform sampling. -/
 abbrev D2STraceTransform {κ : Type} (verifierMessageSpec : OracleSpec κ) :=
   TaggedQueryLog (oSpec + verifierMessageSpec) →
     UnitSampleM U
-      (TaggedQueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec))
+      (TaggedQueryLog (oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec))
 
 end TransformTypes
 

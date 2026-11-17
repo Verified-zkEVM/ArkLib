@@ -5,9 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import CompPoly.Data.Classes.HasSize
 public import ArkLib.Data.Classes.Initialize
-public import CompPoly.Data.Classes.Serialize
 public import VCVio.OracleComp.SimSemantics.Append
 
 /-!
@@ -16,11 +14,8 @@ public import VCVio.OracleComp.SimSemantics.Append
   This file contains the API for the duplex sponge, which is a sponge that can be used to hash
   data.
 
-  The API is based on the [spongefish](https://github.com/arkworks-rs/spongefish) Rust library.
-
-  The API is designed to be as close as possible to the Rust implementation (as of June 22, 2025).
-
-  The API is subject to change as spongefish changes.
+  The duplex operations are based on the June 2025 version of the
+  [spongefish](https://github.com/arkworks-rs/spongefish) Rust library.
 -/
 
 @[expose] public section
@@ -113,93 +108,25 @@ def permutationOracleImpl (α : Type*) [Permute α] [LawfulPermute α] :
 
 end move_elsewhere
 
-/-- **[CO25, Construction 3.3]** Type class for types that can be used as units in a cryptographic
-sponge.
+/-- **[CO25, Construction 3.3]** A symbol type for a cryptographic sponge. The zero symbol
+initializes sponge states, as in the `Unit` interface of
+[spongefish v0.9.0](https://github.com/arkworks-rs/spongefish/blob/v0.9.0/spongefish/src/duplex_sponge.rs#L30-L33). -/
+class SpongeUnit (α : Type) extends Zero α
 
-Following the [spongefish](https://github.com/arkworks-rs/spongefish) Rust library, we require the
-following:
+/-- Functional interface for duplex sponge states over the alphabet `U`.
 
-- The type has a zero (i.e. `Zero` in Lean, simpler than a `zeroize` method)
-- The type can be serialized and deserialized to/from `ByteArray`
-- The type has a fixed size in bytes
-- The type implements `write` and `read` methods, which are used to write and read the unit to/from
-  an IO stream. They are implemented by default using the `serialize` and `deserialize` methods, and
-  the `IO.FS.Stream.{read/write}` functions.
--/
-class SpongeUnit (α : Type) extends Zero α, Serde α ByteArray, HasSize α UInt8 where
-  /--
-  Rust interface:
-  ```rust
-    /// Write a bunch of units in the wire.
-    fn write(bunch: &[Self], w: &mut impl std::io::Write) -> Result<(), std::io::Error>;
-  ```
-  Default implementation: serialize each unit of `α`, then write to stream
-  -/
-  write (stream : IO.FS.Stream) : Array α → IO Unit :=
-    Array.foldlM (fun _ a => IO.FS.Stream.write stream (serialize a)) ()
-  /--
-  Rust interface:
-  ```rust
-    /// Read a bunch of units from the wire
-    fn read(r: &mut impl std::io::Read, bunch: &mut [Self]) -> Result<(), std::io::Error>;
-  ```
-  Default implementation: read `byteSize * array.length` bytes from stream, deserialize each
-  unit of `α`, then return the array if there is no error, otherwise throw an error
-  -/
-  read (stream : IO.FS.Stream) : Array α → IO (Array α) :=
-    fun arr => do
-      let bytes ← arr.mapM (fun _ => IO.FS.Stream.read stream (USize.ofNat (HasSize.size α UInt8)))
-      let units := bytes.mapM deserialize
-      if h : units.isSome
-        then return units.get h
-        else throw <| IO.userError "Failed to read units"
-
-/-- Type class for types that can be used as a duplex sponge, with respect to the sponge unit type
-  `U`.
-
-Following the [spongefish](https://github.com/arkworks-rs/spongefish) Rust library, we require the
-following:
-
-- The type is inhabited (`Default` in Rust), and can be zeroized (i.e. `Zeroize` in Rust)
-- The type can be initialized from a 32-byte vector (seed)
-- There are 3 methods:
-  - `absorbUnchecked` to absorb an array of units in the sponge
-  - `squeezeUnchecked` to squeeze out an array of units, changing the state of the sponge
-  - `ratchetUnchecked` to ratchet the state of the sponge
--/
+The absorb and squeeze methods correspond to the operations in
+[Spongefish v0.9.0](https://github.com/arkworks-rs/spongefish/blob/v0.9.0/spongefish/src/duplex_sponge.rs).
+Lean also exposes a zero state, 32-byte initialization through `Initialize`, and a ratchet.
+Spongefish exposes session initialization through its separate `DuplexSpongeInit` trait. -/
 class DuplexSpongeInterface (U : Type) [SpongeUnit U] (α : Type*)
     extends Inhabited α, Zero α, Initialize α (Vector UInt8 32) where
-  /-- Absorb new elements in the sponge.
-  ```rust
-    fn absorb_unchecked(&mut self, input: &[U]) -> &mut Self;
-  ```
-  -/
+  /-- Absorb an array of symbols and return the updated sponge. -/
   absorbUnchecked : α × Array U → α
-
-  /-- Squeeze out new elements, changing the state of the sponge.
-  ```rust
-    fn squeeze_unchecked(&mut self, output: &mut [U]) -> &mut Self;
-  ```
-  -/
+  /-- Fill the output array and return it with the updated sponge. -/
   squeezeUnchecked : α × Array U → α × Array U
-
-  /-- Ratcheting.
-  ```rust
-    fn ratchet_unchecked(&mut self) -> &mut Self;
-  ```
-
-  More notes from the Rust implementation:
-  ```rust
-    /// This operations makes sure that different elements are processed in different blocks.
-    /// Right now, this is done by:
-    /// - permuting the state.
-    /// - zero rate elements.
-    /// This has the effect that state holds no information about the elements absorbed so far.
-    /// The resulting state is compressed.
-  ```
-  -/
+  /-- Permute the state, clear the rate, and move the squeeze cursor to the end of the rate. -/
   ratchetUnchecked : α → α
-
 
 /-- **[CO25, Construction 3.3]** Type class for storing the length & rate of a sponge
 permutation. -/
@@ -422,21 +349,14 @@ instance : Zero (DuplexSponge U C) where
   refine lt_of_le_of_lt ?_ SpongeSize.R_lt_N
   omega
 
-/-- **[CO25, Construction 3.3]** Start the duplex sponge, assuming access to an oracle from
-  some other type `α` and an element `a : α`.
+/-- **[CO25, Construction 3.3]** Start the ideal-model duplex sponge. Query the hash oracle
+at `a` to fill the capacity and set the rate to zero. The absorb cursor starts at zero and the
+squeeze cursor starts at `R`. The salted DSFS construction and its security analysis use this
+initializer.
 
-We query the oracle to get the capacity segment of the sponge (the last `C` elements), then set the
-rate segment to be all-zero. We also set `absorbPos` to 0 and `squeezePos` to `R`.
-
-Relationship to the Rust reference implementation: this is the paper's **ideal-model** `Start`
-([CO25, Construction 3.3]), where the capacity segment is the answer of an ideal hash oracle on
-the initialization input `a`. It deliberately differs from `spongefish`'s concrete
-`init(session_id)` (`duplex_sponge.rs`), which copies an encoded session identifier into
-the capacity and zero-pads the unused capacity. The security analysis (and all three §5.8 claims)
-is carried out against the paper's construction, which reaches the sponge only through `start`.
-The concrete capacity layout is modeled separately by `DuplexSponge.capacityInit` in
-`ArkLib.Data.Hash.DuplexSponge.CapacityInitialization`.
--/
+`DuplexSponge.absorbInitialObject` instead absorbs an encoded object through the rate from a
+fixed zero state. That layout models session initialization for the overwrite-mode sponge in
+[Spongefish v0.9.0](https://github.com/arkworks-rs/spongefish/blob/v0.9.0/spongefish/src/duplex_sponge.rs). -/
 def start {α : Type} (a : α) : OracleComp (α →ₒ Vector U SpongeSize.C) (DuplexSponge U C) := do
   let capacitySegment : Vector U SpongeSize.C ← query (spec := α →ₒ Vector U SpongeSize.C) a
   let vecSponge := (Vector.replicate SpongeSize.R (0 : U)) ++ capacitySegment
@@ -446,9 +366,8 @@ def start {α : Type} (a : α) : OracleComp (α →ₒ Vector U SpongeSize.C) (D
     squeezePos := Fin.last SpongeSize.R
   }
 
-/-- Delegate initialization to the underlying state instance. This generic interface does not
-establish the current Rust capacity-seeding convention. In particular, the canonical vector state
-instance uses zero and ignores the seed; use `DuplexSponge.capacityInit` for the explicit layout. -/
+/-- Delegate initialization to the underlying state instance, with cursors zero and `R`.
+The canonical vector state instance ignores the seed and returns the zero state. -/
 instance : Initialize (DuplexSponge U C) (Vector UInt8 32) where
   new iv := {
     state := Initialize.new iv,
@@ -669,14 +588,8 @@ def squeezeUnchecked [Permute C] (sponge : DuplexSponge U C) (arr : Array U) :
     DuplexSponge U C × Array U :=
   Id.run <| simulateQ (forwardPermutationOracleImpl C) (squeezeInto sponge arr)
 
-/--
-### Ratchet the sponge state for domain separation
-Algorithm (from Rust implementation):
-1. Permute the state (ensures domain separation from previous operations)
-2. Zero out the rate portion: state[0..R] = all zeros
-   (This erases any information about previously absorbed elements)
-3. Set squeeze_pos = R (forces permutation on next squeeze operation)
--/
+/-- Permute the state, clear the rate segment, and move the squeeze cursor to `R` so the next
+nonempty squeeze permutes again. The absorb cursor is carried forward. -/
 def ratchet (sponge : DuplexSponge U C) :
     OracleComp (forwardPermutationOracle C) (DuplexSponge U C) := do
   let permutedState : C ← query (spec := forwardPermutationOracle C) sponge.state
@@ -692,7 +605,7 @@ def ratchet (sponge : DuplexSponge U C) :
     state := newVecState,
     squeezePos := Fin.last SpongeSize.R }
 
-/-- This is the Rust version once we fix an implementation of the permutation. -/
+/-- Run `ratchet` with the selected permutation implementation. -/
 def ratchetUnchecked [Permute C] (sponge : DuplexSponge U C) : DuplexSponge U C :=
   simulateQ (forwardPermutationOracleImpl C) (ratchet sponge)
 
@@ -723,27 +636,4 @@ theorem absorb_append (s : DuplexSponge U C) (xs ys : List U) :
 
 end DuplexSponge
 
-namespace UInt8
-
--- Implement SpongeUnit for UInt8
-
-instance : Serialize UInt8 ByteArray where
-  serialize byte := ByteArray.mk #[byte]
-
-/-- Deserialize a single byte from a byte array. Gives `none` if the array is not of size 1. -/
-instance : DeserializeOption UInt8 ByteArray where
-  deserialize bytes :=
-    if h : bytes.size = 1 then
-      some bytes[0]
-    else
-      none
-
-instance : Serde UInt8 ByteArray where
-
-instance : HasSize UInt8 UInt8 where
-  size := 1
-  toFun := ⟨fun byte => #v[byte], by intro x y; simp⟩
-
 instance : SpongeUnit UInt8 where
-
-end UInt8

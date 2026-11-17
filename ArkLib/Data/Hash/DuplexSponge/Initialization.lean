@@ -6,6 +6,7 @@ Authors: Chung Thai Nguyen, Yuxi Zheng, Michele Orrù
 module
 
 public import ArkLib.Data.Hash.DuplexSponge
+public import CompPoly.Data.Classes.HasSize
 
 /-!
 # Fixed-state duplex initialization

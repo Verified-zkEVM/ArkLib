@@ -60,9 +60,9 @@ theorem compileFiatShamir_run_option
       let vr ← liftM (R.verifier.verify stmt tr).run
       pure (vr.map (fun v =>
         ((Fin.cons (salt, messages.toMessages) (fun i => i.elim0), ctx), v))) :
-        OracleComp (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) _).liftComp
-          (spec := oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)
-          ((oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) +
+        OracleComp (oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec) _).liftComp
+          (spec := oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec)
+          ((oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec) +
             [(⟨!v[.P_to_V], !v[FSSaltedNARGString pSpec Salt]⟩ :
               ProtocolSpec 1).Challenge]ₒ'challengeOracleInterface)
           (h := ⟨fun q => ⟨Sum.inl q.input, q.cont⟩⟩) := by
@@ -92,7 +92,7 @@ theorem compileFiatShamir_run_option
 set_option backward.isDefEq.respectTransparency false in
 /-- Conditioning on the salt identifies the public compiler with the core context compiler. -/
 theorem compileFiatShamir_outputs {μ : Type → Type} [Monad μ] [LawfulMonad μ]
-    (handler : QueryImpl (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) μ)
+    (handler : QueryImpl (oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec) μ)
     (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (sampleSalt : OracleComp oSpec Salt) (stmt : StmtIn) (wit : WitIn) :
     (Option.map (fun x => (x.1.2, x.2))) <$>
@@ -108,16 +108,16 @@ theorem compileFiatShamir_outputs {μ : Type → Type} [Monad μ] [LawfulMonad �
   rfl
 
 variable [∀ i, SampleableType (pSpec.Challenge i)]
-  [DecidableEq (srChallengeOracle (StmtIn × Salt) pSpec).Domain]
+  [DecidableEq (srVerifierMessageOracle (StmtIn × Salt) pSpec).Domain]
 
-local instance : ∀ q : (srChallengeOracle (StmtIn × Salt) pSpec).Domain,
-    SampleableType ((srChallengeOracle (StmtIn × Salt) pSpec).Range q) :=
+local instance : ∀ q : (srVerifierMessageOracle (StmtIn × Salt) pSpec).Domain,
+    SampleableType ((srVerifierMessageOracle (StmtIn × Salt) pSpec).Range q) :=
   fun q => inferInstanceAs (SampleableType (pSpec.Challenge q.1))
 
 /-- Shared lazy random functions for the public-salt construction. -/
 def randomOracleImpl (impl : QueryImpl oSpec ProbComp) :
-    QueryImpl (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)
-      (StateT (Unit × (srChallengeOracle (StmtIn × Salt) pSpec).QueryCache) ProbComp) :=
+    QueryImpl (oSpec + fsVerifierMessageOracle (StmtIn × Salt) pSpec)
+      (StateT (Unit × (srVerifierMessageOracle (StmtIn × Salt) pSpec).QueryCache) ProbComp) :=
   FiatShamir.fsRandomOracleImpl (impl.liftTarget (StateT Unit ProbComp))
 
 set_option backward.isDefEq.respectTransparency false in
@@ -128,12 +128,12 @@ theorem compileFiatShamir_randomOracle_split
     (sampleSalt : OracleComp oSpec Salt) (stmt : StmtIn) (wit : WitIn) :
     (Option.map (fun x => (x.1.2, x.2))) <$>
       ((simulateQ ((randomOracleImpl impl).addLift challengeQueryImpl : QueryImpl _
-        (StateT (Unit × (srChallengeOracle (StmtIn × Salt) pSpec).QueryCache) ProbComp))
+        (StateT (Unit × (srVerifierMessageOracle (StmtIn × Salt) pSpec).QueryCache) ProbComp))
         ((R.compileFiatShamir sampleSalt).run stmt wit).run).run' ((), ∅)) = (do
       let salt ← simulateQ impl sampleSalt
       (Option.map (fun x => (x.1.2, x.2))) <$>
         ((simulateQ ((randomOracleImpl impl).addLift challengeQueryImpl : QueryImpl _
-          (StateT (Unit × (srChallengeOracle (StmtIn × Salt) pSpec).QueryCache) ProbComp))
+          (StateT (Unit × (srVerifierMessageOracle (StmtIn × Salt) pSpec).QueryCache) ProbComp))
           (((contextReduction R).fiatShamir).run (stmt, salt) wit).run).run' ((), ∅))) := by
   have hp := compileFiatShamir_outputs (randomOracleImpl impl) R sampleSalt stmt wit
   simp only [addLift_challengeQueryImpl_eq_add_empty (randomOracleImpl impl)]
@@ -141,12 +141,12 @@ theorem compileFiatShamir_randomOracle_split
   simp only [StateT.run'_eq, StateT.run_map, StateT.run_bind, map_bind,
     Functor.map_map] at he
   rw [show (simulateQ (randomOracleImpl impl) (sampleSalt.liftComp _)).run ((), ∅) =
-      (fun salt => (salt, (), (∅ : (srChallengeOracle (StmtIn × Salt) pSpec).QueryCache))) <$>
+      (fun salt => (salt, (), (∅ : (srVerifierMessageOracle (StmtIn × Salt) pSpec).QueryCache))) <$>
         simulateQ impl sampleSalt by
     change (simulateQ
       ((impl.liftTarget (StateT Unit ProbComp)).addLift
-        (srChallengeOracle (StmtIn × Salt) pSpec).randomOracle : QueryImpl _
-          (StateT (Unit × (srChallengeOracle (StmtIn × Salt) pSpec).QueryCache) ProbComp))
+        (srVerifierMessageOracle (StmtIn × Salt) pSpec).randomOracle : QueryImpl _
+          (StateT (Unit × (srVerifierMessageOracle (StmtIn × Salt) pSpec).QueryCache) ProbComp))
       (liftM sampleSalt)).run ((), ∅) = _
     rw [simulateQ_addLift_run_left]
     simp [simulateQ_liftTarget]] at he
@@ -159,7 +159,7 @@ theorem compileFiatShamir_randomOracle_outputs
     (sampleSalt : OracleComp oSpec Salt) (stmt : StmtIn) (wit : WitIn) :
     (Option.map (fun x => (x.1.2, x.2))) <$>
       ((simulateQ ((randomOracleImpl impl).addLift challengeQueryImpl : QueryImpl _
-        (StateT (Unit × (srChallengeOracle (StmtIn × Salt) pSpec).QueryCache) ProbComp))
+        (StateT (Unit × (srVerifierMessageOracle (StmtIn × Salt) pSpec).QueryCache) ProbComp))
         ((R.compileFiatShamir sampleSalt).run stmt wit).run).run' ((), ∅)) =ᵈ
     (Option.map (fun x => (x.1.2, x.2))) <$>
       ((simulateQ ((impl.liftTarget (StateT Unit ProbComp)).addLift challengeQueryImpl :
@@ -187,14 +187,14 @@ theorem canonicalFiatShamir_completeness_randomOracle
     {n : ℕ} {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
     {StmtIn WitIn StmtOut WitOut Salt : Type} [VCVCompatible Salt]
     [∀ i, SampleableType (pSpec.Challenge i)]
-    [DecidableEq (srChallengeOracle (StmtIn × Salt) pSpec).Domain]
+    [DecidableEq (srVerifierMessageOracle (StmtIn × Salt) pSpec).Domain]
     (impl : QueryImpl oSpec ProbComp)
     (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (sampleSalt : OracleComp oSpec Salt)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut)) (ε : ℝ≥0)
     (h : R.completeness (pure ()) (impl.liftTarget (StateT Unit ProbComp)) relIn relOut ε) :
     (R.compileFiatShamir sampleSalt).completeness
-      (pure ((), (∅ : (srChallengeOracle (StmtIn × Salt) pSpec).QueryCache)))
+      (pure ((), (∅ : (srVerifierMessageOracle (StmtIn × Salt) pSpec).QueryCache)))
       (CanonicalFS.randomOracleImpl (pSpec := pSpec) (StmtIn := StmtIn) (Salt := Salt) impl)
       relIn relOut ε := by
   intro stmt wit hin
@@ -218,14 +218,14 @@ theorem fiatShamirSalted_completeness
     {n : ℕ} {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
     {StmtIn WitIn StmtOut WitOut U : Type} [VCVCompatible U] (saltLength : ℕ)
     [∀ i, SampleableType (pSpec.Challenge i)]
-    [DecidableEq (srChallengeOracle (StmtIn × Vector U saltLength) pSpec).Domain]
+    [DecidableEq (srVerifierMessageOracle (StmtIn × Vector U saltLength) pSpec).Domain]
     (impl : QueryImpl oSpec ProbComp)
     (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (sampleSalt : OracleComp oSpec (Vector U saltLength))
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut)) (ε : ℝ≥0)
     (h : R.completeness (pure ()) (impl.liftTarget (StateT Unit ProbComp)) relIn relOut ε) :
     (R.fiatShamirSalted saltLength sampleSalt).completeness
-      (pure ((), (∅ : (srChallengeOracle (StmtIn × Vector U saltLength) pSpec).QueryCache)))
+      (pure ((), (∅ : (srVerifierMessageOracle (StmtIn × Vector U saltLength) pSpec).QueryCache)))
       (CanonicalFS.randomOracleImpl (pSpec := pSpec) (StmtIn := StmtIn)
         (Salt := Vector U saltLength) impl) relIn relOut ε :=
   canonicalFiatShamir_completeness_randomOracle impl R sampleSalt relIn relOut ε h

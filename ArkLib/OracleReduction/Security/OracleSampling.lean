@@ -61,7 +61,7 @@ def sampleRandomOracleTable {ι : Type} (spec : OracleSpec ι)
 
 /-! ### Ideal-protocol Fiat-Shamir challenge sampler
 
-The Fiat-Shamir challenge oracle (`fsChallengeOracle` / `srChallengeOracle`) answers
+The Fiat-Shamir challenge oracle (`fsVerifierMessageOracle` / `srVerifierMessageOracle`) answers
 `(i, x, α[<i])` with a value of type `pSpec.Challenge i`. Here `x : Statement` is the query
 context and `α[<i]` is the preceding prover-message tuple. In the single-salt setting,
 `Statement := StmtIn × Salt`, so the query context is `(𝕩, τ)`.
@@ -76,7 +76,7 @@ noncomputable def sampleableTypeFSChallengeOracle
     [Fintype Statement]
     [∀ i, Fintype (pSpec.Message i)]
     [∀ i, Fintype (pSpec.Challenge i)] [∀ i, Inhabited (pSpec.Challenge i)] :
-    SampleableType (QueryImpl (ProtocolSpec.fsChallengeOracle Statement pSpec) Id) := by
+    SampleableType (QueryImpl (ProtocolSpec.fsVerifierMessageOracle Statement pSpec) Id) := by
   -- Each prefix message type is definitionally the corresponding message type in `pSpec`.
   letI : ∀ k : Fin (n + 1), Fintype (pSpec.MessagesUpTo k) := fun k => by
     letI : ∀ i : pSpec.MessageIdxUpTo k, Fintype (pSpec.MessageUpTo k i) :=
@@ -84,20 +84,20 @@ noncomputable def sampleableTypeFSChallengeOracle
         Fintype (pSpec.Message ⟨i.1.castLE (by omega), i.property⟩))
     infer_instance
   -- The challenge-oracle domain is a sigma of a challenge index and its finite query type.
-  letI : Fintype (ProtocolSpec.fsChallengeOracle Statement pSpec).Domain := by
-    dsimp only [ProtocolSpec.fsChallengeOracle, ProtocolSpec.srChallengeOracle,
+  letI : Fintype (ProtocolSpec.fsVerifierMessageOracle Statement pSpec).Domain := by
+    dsimp only [ProtocolSpec.fsVerifierMessageOracle, ProtocolSpec.srVerifierMessageOracle,
       OracleInterface.toOracleSpec, ProtocolSpec.challengeOracleInterfaceSR,
       OracleSpec.toPFunctor, OracleInterface.Query]
     infer_instance
   -- Spell out the dependent range family to keep synthesis from repeatedly unfolding the spec.
-  letI : ∀ q : (ProtocolSpec.fsChallengeOracle Statement pSpec).Domain,
-      Fintype ((ProtocolSpec.fsChallengeOracle Statement pSpec).Range q) :=
+  letI : ∀ q : (ProtocolSpec.fsVerifierMessageOracle Statement pSpec).Domain,
+      Fintype ((ProtocolSpec.fsVerifierMessageOracle Statement pSpec).Range q) :=
     fun q => (inferInstance : Fintype (pSpec.Challenge q.1))
-  letI : Fintype (QueryImpl (ProtocolSpec.fsChallengeOracle Statement pSpec) Id) :=
-    show Fintype ((q : (ProtocolSpec.fsChallengeOracle Statement pSpec).Domain) →
-      (ProtocolSpec.fsChallengeOracle Statement pSpec).Range q) from Fintype.ofFinite _
+  letI : Fintype (QueryImpl (ProtocolSpec.fsVerifierMessageOracle Statement pSpec) Id) :=
+    show Fintype ((q : (ProtocolSpec.fsVerifierMessageOracle Statement pSpec).Domain) →
+      (ProtocolSpec.fsVerifierMessageOracle Statement pSpec).Range q) from Fintype.ofFinite _
   -- A challenge table is nonempty because every challenge response type is inhabited.
-  letI : Nonempty (QueryImpl (ProtocolSpec.fsChallengeOracle Statement pSpec) Id) :=
+  letI : Nonempty (QueryImpl (ProtocolSpec.fsVerifierMessageOracle Statement pSpec) Id) :=
     ⟨fun q => (default : pSpec.Challenge q.1)⟩
   apply SampleableType.ofFintype
 
@@ -109,7 +109,7 @@ noncomputable def sampleFiatShamirChallengeTable {n : ℕ} (Statement : Type) (p
     [Fintype Statement]
     [∀ i, Fintype (pSpec.Message i)]
     [∀ i, Fintype (pSpec.Challenge i)] [∀ i, Inhabited (pSpec.Challenge i)] :
-    ProbComp (QueryImpl (ProtocolSpec.fsChallengeOracle Statement pSpec) Id) :=
+    ProbComp (QueryImpl (ProtocolSpec.fsVerifierMessageOracle Statement pSpec) Id) :=
   sampleRandomOracleTable (instSampleable := sampleableTypeFSChallengeOracle)
 
 end SamplingExamples

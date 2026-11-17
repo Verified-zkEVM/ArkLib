@@ -21,7 +21,7 @@ Let \(\InstanceSpace,\SaltType\) be finite statement and salt spaces, and let th
        \qquad(i\in[\IPVerifierMessageCount]).
 \end{equation*}
 The \(i\)-th round oracle answers a query \((\Instance,\SaltString,\IPProverMessage_1,\ldots,\IPProverMessage_{m_i})\) with the corresponding value of \(\OracleFunction_i\). Repeating a query to the same round oracle returns the same answer. If no prover message precedes round \(i\), its oracle input consists only of the instance and salt. The paper uses \(\InstanceSpace=\Bits^{\le\InstanceSizeBound}\) and \(\SaltType=\Bits^{\SaltLength}\).
-\lean{OracleReduction.sampleFiatShamirChallengeTable, ProtocolSpec.D_IP_salted.sample, ProtocolSpec.fsChallengeOracle}
+\lean{OracleReduction.sampleFiatShamirChallengeTable, ProtocolSpec.D_IP_salted.sample, ProtocolSpec.fsVerifierMessageOracle}
 \leanok
 \uses{def:fiat_shamir_spec}
 \end{definition}

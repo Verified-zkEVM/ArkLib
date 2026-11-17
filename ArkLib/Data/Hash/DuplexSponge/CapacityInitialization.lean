@@ -10,10 +10,10 @@ public import ArkLib.Data.Hash.DuplexSponge.Initialization
 /-!
 # Capacity-seeded initialization
 
-The current overwrite-mode Rust duplex copies an encoded session identifier into the capacity,
-leaving the rate and unused capacity zero. This initializer is separate from the ideal hash-oracle
-`start` and the rate-absorbing `absorbInitialObject`. Encoding correctness is a caller obligation;
-the input here is the already encoded list, with an explicit capacity bound.
+This layout places an encoded session identifier at the start of the capacity and fills the rate
+and remaining capacity with zeros. Callers supply the encoding and prove that it fits in the
+capacity. The ideal hash-oracle `start` and rate-absorbing `absorbInitialObject` are separate
+initializers.
 -/
 
 @[expose] public section
@@ -22,7 +22,7 @@ namespace DuplexSponge
 
 variable {U : Type} [SpongeUnit U] [SpongeSize]
 
-/-- Current Rust overwrite-mode initialization, parameterized by the encoded session identifier. -/
+/-- Seed the capacity with an encoded session identifier. -/
 def capacityInit (encoded : List U) (_fits : encoded.length ≤ SpongeSize.C) :
     CanonicalDuplexSponge U where
   state := Vector.ofFn fun i =>

@@ -92,7 +92,7 @@ example : NonInteractiveReduction (FiatShamirNARGString !p[] UInt8 0)
 
 /-- The upstream unsalted compiler and salt-bearing compiler coexist in one import closure. -/
 example : NonInteractiveReduction ((!p[] : ProtocolSpec 0).Messages)
-    (spec + fsChallengeOracle Unit !p[]) Unit Unit Unit Unit :=
+    (spec + fsVerifierMessageOracle Unit !p[]) Unit Unit Unit Unit :=
   reduction.fiatShamir
 
 end CanonicalParameters
@@ -105,11 +105,11 @@ open OracleComp OracleSpec ProtocolSpec
 abbrev protocol : ProtocolSpec 1 := ⟨!v[.V_to_P], !v[Bool]⟩
 
 /-- Distinct salts address distinct challenge entries for the same original statement. -/
-def table : QueryImpl (srChallengeOracle (Bool × Bool) protocol) Id :=
+def table : QueryImpl (srVerifierMessageOracle (Bool × Bool) protocol) Id :=
   fun | ⟨⟨⟨0, _⟩, _⟩, ((_, salt), _)⟩ => salt
 
 def impl : QueryImpl []ₒ
-    (StateT (QueryImpl (srChallengeOracle (Bool × Bool) protocol) Id) ProbComp) :=
+    (StateT (QueryImpl (srVerifierMessageOracle (Bool × Bool) protocol) Id) ProbComp) :=
   fun q => nomatch q
 
 def challengeVerifier : Verifier []ₒ Bool Bool protocol where

@@ -47,7 +47,7 @@ def reduction : Reduction []ₒ Unit Unit Unit Unit spec where
 def impl : QueryImpl []ₒ (StateT Unit ProbComp) := fun q => nomatch q
 
 /-- The old initialization always answered with the default Boolean. -/
-def defaultTable : QueryImpl (srChallengeOracle Unit spec) Id :=
+def defaultTable : QueryImpl (srVerifierMessageOracle Unit spec) Id :=
   fun ⟨⟨⟨0, _⟩, _⟩, _⟩ => (default : Bool)
 
 /-- The transcript of the single challenge round. -/
@@ -95,10 +95,10 @@ theorem fixed_default_not_complete :
   intro h
   have hr : (simulateQ
       ((impl.addLift fsChallengeQueryImpl' :
-        QueryImpl ([]ₒ + srChallengeOracle Unit spec)
-          (StateT (Unit × QueryImpl (srChallengeOracle Unit spec) Id) ProbComp)).addLift
+        QueryImpl ([]ₒ + srVerifierMessageOracle Unit spec)
+          (StateT (Unit × QueryImpl (srVerifierMessageOracle Unit spec) Id) ProbComp)).addLift
           challengeQueryImpl :
-        QueryImpl _ (StateT (Unit × QueryImpl (srChallengeOracle Unit spec) Id) ProbComp))
+        QueryImpl _ (StateT (Unit × QueryImpl (srVerifierMessageOracle Unit spec) Id) ProbComp))
       (reduction.fiatShamir.run () ()).run).run' ((), defaultTable) = pure none := by
     rw [Reduction.fiatShamir_run_option]
     simp only [liftComp_eq_liftM]
@@ -142,10 +142,10 @@ instance : VCVCompatible UInt8 where
   default := 0
 
 /-- Exercise the public byte theorem with a nontrivial error and the zero-salt boundary. -/
-example [DecidableEq (srChallengeOracle (Unit × Vector UInt8 0) spec).Domain] :
+example [DecidableEq (srVerifierMessageOracle (Unit × Vector UInt8 0) spec).Domain] :
     (protocol.fiatShamir 0 ((Serializer.vector 0).ofEquiv emptyPayloadEquiv)
       (pure #v[])).completeness
-      (pure ((), (∅ : (srChallengeOracle (Unit × Vector UInt8 0) spec).QueryCache)))
+      (pure ((), (∅ : (srVerifierMessageOracle (Unit × Vector UInt8 0) spec).QueryCache)))
       (CanonicalFS.randomOracleImpl (pSpec := spec) (StmtIn := Unit)
         (Salt := Vector UInt8 0) (fun q => nomatch q : QueryImpl []ₒ ProbComp))
       Set.univ (1 / 2) := by
