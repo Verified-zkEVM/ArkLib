@@ -121,10 +121,10 @@ example {K : Type*} [Field K] [CharP K 2] :
     pow_one]
   exact sub_pow_char _ _
 
--- The factorization API must use a positive characteristic-two exponent here.
 /-- The polynomial `Y - Z²` over `ZMod 2`, with zero `Z`-derivative. -/
 private noncomputable def inseparableQ : MvPolynomial AffineVar (ZMod 2) :=
   MvPolynomial.X (some 1) - MvPolynomial.X none ^ 2
+
 private theorem irreducible_inseparableQ : Irreducible inseparableQ := by
   let φ := (MvPolynomial.renameEquiv (ZMod 2) (Equiv.swap (none : AffineVar) (some 1))).trans
     (MvPolynomial.optionEquivLeft (ZMod 2) (Fin 2))
@@ -141,8 +141,11 @@ private theorem degreeOf_inseparableQ_none : inseparableQ.degreeOf none = 2 := b
   simp only [inseparableQ, map_sub, map_pow, affineNested_X_y, affineNested_X_none]
   rw [Polynomial.natDegree_sub_eq_right_of_natDegree_lt (by simp)]
   simp
+
 private theorem pderiv_inseparableQ : MvPolynomial.pderiv none inseparableQ = 0 := by
   simp [inseparableQ, smul_eq_mul, CharTwo.two_eq_zero]
+
+-- The factorization API must use a positive characteristic-two exponent here.
 example : ∃ e, ∃ R : MvPolynomial AffineVar (ZMod 2),
     0 < e ∧ MvPolynomial.pderiv none R ≠ 0 ∧
       R ^ (2 ^ e) = MvPolynomial.variablePowerSubstitution

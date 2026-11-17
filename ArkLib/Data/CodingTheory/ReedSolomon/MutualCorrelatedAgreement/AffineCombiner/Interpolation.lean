@@ -33,10 +33,10 @@ space of linear constraints.
 
 ## References
 
+The interpolation is Lemma 4.2 of [CWYZ26].
+
 The interface omits the positive `Z`-degree conclusion of Lemma 4.2 in [CWYZ26].
 The factor count treats content free of `Z` separately.
-
-The interpolation is Lemma 4.2 of [CWYZ26].
 
 * [Chiesa, A., Weissenberg, G., Yogev, E., and Zheng, K. Z.,
     *Affine combiners for Reed–Solomon proximity gaps*][CWYZ26]

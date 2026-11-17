@@ -56,7 +56,7 @@ example : affineMultiplicity (1 / 2) = 4 ∧ affineYZBudget 16 100 (1 / 2) = 42 
   rw [hsqrt']
   norm_num [affineMultiplicity, hceil]
 
--- Truncating the constraint order at a free root budget can strictly reduce the count.
+-- The 146 unknowns exceed the truncated count 145, but not the full constraint count 150.
 open Polynomial.SymbolicInterpolation in
 example : (monomialSupport 1 (4 * 5 - 3) (2 + 1) (3 + 1)).card = 146 ∧
     5 * (constraintSupport 4 (3 + 1)).card = 150 ∧
