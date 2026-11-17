@@ -8,7 +8,17 @@ import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineComb
 import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.InterpolationParams
 
-/-! # Acceptance cases for the affine interpolation -/
+/-!
+# Acceptance cases for affine interpolation
+
+The numerical cases check the parameter choice and the full-constraint sufficient condition.
+The free-budget example distinguishes that condition from (4.5) in [CWYZ26].
+
+## References
+
+* [Chiesa, A., Weissenberg, G., Yogev, E., and Zheng, K. Z.,
+    *Affine combiners for Reed–Solomon proximity gaps*][CWYZ26]
+-/
 
 open ReedSolomon
 
@@ -29,7 +39,7 @@ example {F : Type*} [Field F] [DecidableEq F] {ι : Type*} [Fintype ι] (domain 
       (affineRootBudget d (Fintype.card ι) η) Q :=
   exists_isAffineInterpolant domain f g h.surplus
 
--- The paper's parameter choice has these exact finite budgets.
+-- An explicit parameter choice has these exact finite budgets.
 example : affineMultiplicity (1 / 2) = 4 ∧ affineYZBudget 16 100 (1 / 2) = 42 ∧
     affineThreshold 16 100 (1 / 2) = 90 ∧ affinePersistenceThreshold 16 100 (1 / 2) = 64 ∧
     affineRootBudget 16 100 (1 / 2) = 19 := by
@@ -46,7 +56,7 @@ example : affineMultiplicity (1 / 2) = 4 ∧ affineYZBudget 16 100 (1 / 2) = 42 
   rw [hsqrt']
   norm_num [affineMultiplicity, hceil]
 
--- The general sufficient count is stricter than (4.5) when M is freely chosen.
+-- Truncating the constraint order at a free root budget can strictly reduce the count.
 open Polynomial.SymbolicInterpolation in
 example : (monomialSupport 1 (4 * 5 - 3) (2 + 1) (3 + 1)).card = 146 ∧
     5 * (constraintSupport 4 (3 + 1)).card = 150 ∧

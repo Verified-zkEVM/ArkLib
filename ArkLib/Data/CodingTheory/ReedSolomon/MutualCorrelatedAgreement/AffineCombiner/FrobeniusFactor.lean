@@ -62,12 +62,13 @@ private theorem affineLineEval_variablePowerSubstitution (p e : ℕ) [ExpChar E 
         rw [← iterateFrobeniusEquiv_def, RingEquiv.apply_symm_apply]
       simp [affineMultiplier, add_pow_expChar_pow, mul_pow, ← C_pow, hfr]
 
-/-- An irreducible `Q` of positive `Z`-degree has a Frobenius normalization `R`.
+/-- An irreducible `Q` of positive `Z`-degree has a Frobenius normalization `R`
+over a perfect field of exponential characteristic `p`.
 
 * `R` is irreducible with nonzero `Z`-derivative.
-* `R ^ (p ^ e) = Q(X^(p^e), Y^(p^e), Z)`.
-* Its `(Y, Z)`-degree is at most that of `Q`.
-* The exponent `s = p^e` is at most the `Z`-degree of `Q`.
+* The `(Y, Z)`-degree of `R` is at most that of `Q`.
+* The exponent `s = p^e`, for some `e : ℕ`, is at most the `Z`-degree of `Q`.
+* `R^s = Q(X^s, Y^s, Z)`.
 * A root `P` of `Q` on the line `α + β X` gives the root `P(X^s)` of `R` on the line
   `α^{1/s} + β^{1/s} X`. -/
 theorem exists_affineFrobeniusFactor (p : ℕ) [ExpChar E p] [PerfectRing E p]

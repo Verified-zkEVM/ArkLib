@@ -19,7 +19,8 @@ total degree of the coefficient.
 
 * `MvPolynomial.sumAlgEquiv_monomial`: currying a monomial.
 * `MvPolynomial.coeff_coeff_sumAlgEquiv`: coefficients of the curried polynomial.
-* `MvPolynomial.totalDegree_coeff_add_weight_sumAlgEquiv_symm_le`: the monomialwise degree bound.
+* `MvPolynomial.totalDegree_coeff_add_weight_le_weightedTotalDegree_sumAlgEquiv_symm`:
+  the monomialwise degree bound.
 -/
 
 @[expose] public section
@@ -62,7 +63,8 @@ theorem coeff_coeff_sumAlgEquiv (p : MvPolynomial (S₁ ⊕ S₂) R) (k : S₁ �
 /-- For a monomial `m` of `P`, its `w`-weight plus its coefficient degree is bounded by `P` flat.
 
 The flat weight is `w` on `S₁` and `1` on `S₂`. -/
-theorem totalDegree_coeff_add_weight_sumAlgEquiv_symm_le (w : S₁ → ℕ)
+theorem totalDegree_coeff_add_weight_le_weightedTotalDegree_sumAlgEquiv_symm
+    (w : S₁ → ℕ)
     (P : MvPolynomial S₁ (MvPolynomial S₂ R)) {m : S₁ →₀ ℕ} (hm : m ∈ P.support) :
     (P.coeff m).totalDegree + Finsupp.weight w m ≤
       ((sumAlgEquiv R S₁ S₂).symm P).weightedTotalDegree (Sum.elim w 1) := by

@@ -77,7 +77,7 @@ structure AffineParams (d n : ℕ) (η : ℝ) : Prop where
   pos : 0 < η
   /-- The threshold `√ρ + η` is below one. -/
   lt_one_sub : η < 1 - √((d : ℝ) / n)
-  /-- The paper's condition `4 / ρ ≤ n η²`.
+  /-- The condition `4 / (d / n) ≤ n η²` on the slack parameter.
   For positive `d` and `n`, it is equivalent to `4 ≤ d η²`, independently of `n`.
   The separate positivity hypotheses matter because real division by zero is zero. -/
   four_div_le : 4 / ((d : ℝ) / n) ≤ n * η ^ 2

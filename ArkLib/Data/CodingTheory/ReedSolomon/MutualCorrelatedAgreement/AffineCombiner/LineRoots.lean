@@ -296,5 +296,4 @@ theorem card_filter_affineDiscriminant_eq_zero_le [DecidableEq E] {F : Type*}
     ((affineMultiplier_injective.comp hφ).injOn) fun _ hc ↦ (Finset.mem_filter.mp hc).2).trans
     (natDegree_affineDiscriminant_le hR)
 
-
 end ReedSolomon

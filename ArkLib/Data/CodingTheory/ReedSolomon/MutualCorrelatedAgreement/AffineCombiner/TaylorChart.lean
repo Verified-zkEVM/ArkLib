@@ -52,8 +52,8 @@ The coefficient formulas and the polynomial-root reconstruction specialize Lemma
 The existence and uniqueness of its formal power series are not stated by these declarations.
 The reconstruction map, cleared cuts, and their degree budget implement the map and hyperplanes
 used in Claim 4.9.
-The sharper positive-order numerator bound also covers the zero-degree case `h = 0`.
-Its formula must not be replaced by the coarser bound through truncated subtraction.
+`ReedSolomon.totalDegree_affineChartNumerator_le_of_pos` also covers `h = 0`.
+Truncated subtraction in `ℕ` prevents deriving that case from the coarser bound.
 
 ## References
 
@@ -441,7 +441,8 @@ private theorem totalDegree_residual_coeff_add_degree_le (c : E)
   set Res := universalTaylorResidual l (C c) (affineLineEquation R)
   rw [mem_support_iff, optionEquivLeft_coeff_coeff] at hm
   rw [optionEquivLeft_coeff_coeff, ← MvPolynomial.weight_optionElim_zero_one m t]
-  refine (totalDegree_coeff_add_weight_sumAlgEquiv_symm_le w Res (mem_support_iff.mpr hm)).trans ?_
+  refine (totalDegree_coeff_add_weight_le_weightedTotalDegree_sumAlgEquiv_symm
+    w Res (mem_support_iff.mpr hm)).trans ?_
   set flat := (sumAlgEquiv E (Option (Fin l)) (Fin 2)).symm
   have hflat : flat Res = aeval (fun v ↦ flat (aeval
       (fun i : Option (Fin (0 + 1)) ↦ i.elim (C (C c) + X none)

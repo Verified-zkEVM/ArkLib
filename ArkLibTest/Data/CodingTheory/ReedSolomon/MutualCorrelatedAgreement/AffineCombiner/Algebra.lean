@@ -9,6 +9,7 @@ import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.PersistenceDescent
 import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.FrobeniusFactor
+import Mathlib.Algebra.CharP.Two
 import Mathlib.Basic.Complex.Basic
 
 /-! # Acceptance cases for coefficient descent and regular Taylor reconstruction -/
@@ -119,3 +120,40 @@ example {K : Type*} [Field K] [CharP K 2] :
   simp only [map_sub, map_pow, variablePowerSubstitution_X, Option.elim_none, Option.elim_some,
     pow_one]
   exact sub_pow_char _ _
+
+-- The factorization API must use a positive characteristic-two exponent here.
+/-- The polynomial `Y - Z²` over `ZMod 2`, with zero `Z`-derivative. -/
+private noncomputable def inseparableQ : MvPolynomial AffineVar (ZMod 2) :=
+  MvPolynomial.X (some 1) - MvPolynomial.X none ^ 2
+private theorem irreducible_inseparableQ : Irreducible inseparableQ := by
+  let φ := (MvPolynomial.renameEquiv (ZMod 2) (Equiv.swap (none : AffineVar) (some 1))).trans
+    (MvPolynomial.optionEquivLeft (ZMod 2) (Fin 2))
+  apply (MulEquiv.irreducible_iff φ).mp
+  simp only [φ, AlgEquiv.trans_apply, inseparableQ, map_sub, map_pow,
+    MvPolynomial.renameEquiv_apply, MvPolynomial.rename_X, Equiv.swap_apply_left,
+    Equiv.swap_apply_right, MvPolynomial.optionEquivLeft_X_none,
+    MvPolynomial.optionEquivLeft_X_some]
+  rw [← Polynomial.C_pow]
+  exact Polynomial.irreducible_X_sub_C _
+
+private theorem degreeOf_inseparableQ_none : inseparableQ.degreeOf none = 2 := by
+  rw [← natDegree_affineNested]
+  simp only [inseparableQ, map_sub, map_pow, affineNested_X_y, affineNested_X_none]
+  rw [Polynomial.natDegree_sub_eq_right_of_natDegree_lt (by simp)]
+  simp
+private theorem pderiv_inseparableQ : MvPolynomial.pderiv none inseparableQ = 0 := by
+  simp [inseparableQ, smul_eq_mul, CharTwo.two_eq_zero]
+example : ∃ e, ∃ R : MvPolynomial AffineVar (ZMod 2),
+    0 < e ∧ MvPolynomial.pderiv none R ≠ 0 ∧
+      R ^ (2 ^ e) = MvPolynomial.variablePowerSubstitution
+        (fun v : AffineVar ↦ v.elim 1 fun _ ↦ 2 ^ e) inseparableQ := by
+  obtain ⟨e, R, -, hder, -, -, hidentity, -⟩ := exists_affineFrobeniusFactor 2
+    irreducible_inseparableQ (by rw [degreeOf_inseparableQ_none]; norm_num)
+  have he : 0 < e := by
+    by_contra h
+    have he0 : e = 0 := Nat.eq_zero_of_not_pos h
+    have hRQ : R = inseparableQ := by simpa [he0, inseparableQ] using hidentity
+    apply hder
+    rw [hRQ]
+    exact pderiv_inseparableQ
+  exact ⟨e, R, he, hder, hidentity⟩

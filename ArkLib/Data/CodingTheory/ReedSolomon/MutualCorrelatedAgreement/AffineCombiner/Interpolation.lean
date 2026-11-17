@@ -33,6 +33,9 @@ space of linear constraints.
 
 ## References
 
+The interface omits the positive `Z`-degree conclusion of Lemma 4.2 in [CWYZ26].
+The factor count treats content free of `Z` separately.
+
 The interpolation is Lemma 4.2 of [CWYZ26].
 
 * [Chiesa, A., Weissenberg, G., Yogev, E., and Zheng, K. Z.,
@@ -149,7 +152,7 @@ variable {F : Type*} [Field F] [DecidableEq F] {ι : Type*} [Fintype ι]
 
 /-- A nonzero `Q` of bounded degrees that vanishes along every line with an agreeing candidate.
 
-The paper's additional assertion `1 ≤ deg_Z Q` is not part of this structure.
+No positive lower bound on the `Z`-degree is required.
 The candidate has degree `≤ d` and agrees with the combined word on at least `A` points. -/
 structure IsAffineInterpolant (domain : ι ↪ F) (f g : ι → F) (d A m D M : ℕ)
     (Q : MvPolynomial AffineVar F) : Prop where
@@ -172,7 +175,7 @@ open Polynomial.SymbolicInterpolation in
 The monomials are `Z^j X^i Y^t` with `j ≤ M`, `j + t ≤ D`, and `i + d j < m A - D`.
 At each domain point, constraints have indices `(s, r, t)` with `s + r < m` and `s + t ≤ D`.
 Their number is `∑_{s < m} (m - s)(D + 1 - s)`, with natural-number subtraction.
-The paper's separate conclusion `1 ≤ deg_Z Q` is not exported. -/
+No positive lower bound on the resulting `Z`-degree is asserted. -/
 theorem exists_isAffineInterpolant (domain : ι ↪ F) (f g : ι → F) {d A m D M : ℕ}
     (hsurplus : Fintype.card ι * (constraintSupport m (D + 1)).card <
       (monomialSupport d (m * A - D) (M + 1) (D + 1)).card) :
