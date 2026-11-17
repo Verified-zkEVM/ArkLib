@@ -38,9 +38,9 @@ $\pSpec.\MessagesUpTo\ k$ for the prover messages among the first $k$ rounds.
     \[ \mathsf{srVerifierMessageOracle}\ \StmtIn\ \pSpec : \OracleSpec\ \big((i : \pSpec.\ChallengeIdx) \times (\StmtIn \times \pSpec.\MessagesUpTo\ i.\mathsf{val}.\mathsf{castSucc})\big), \]
     which answers the query $\langle i, (x, m) \rangle$ with a value of type $\pSpec.\Challenge\ i$.
     The index type pairs a challenge round with a query of the interface of
-    \Cref{def:fiat_shamir_challenge_oracle_interface}. The name $\mathsf{fsChallengeOracle}$ is an
+    \Cref{def:fiat_shamir_challenge_oracle_interface}. The name $\mathsf{fsVerifierMessageOracle}$ is an
     alias.
-    \lean{ProtocolSpec.srVerifierMessageOracle, ProtocolSpec.fsChallengeOracle}
+    \lean{ProtocolSpec.srVerifierMessageOracle, ProtocolSpec.fsVerifierMessageOracle}
     \leanok
     \uses{def:fiat_shamir_challenge_oracle_interface}
 \end{definition}

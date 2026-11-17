@@ -85,7 +85,7 @@ lemma Prover.processRoundFS_simulate (P : Prover oSpec StmtIn WitIn StmtOut WitO
 omit [∀ i, SampleableType (pSpec.Challenge i)] in
 /-- Separate the previous FS rounds from the current round. -/
 lemma Prover.processRoundFS_bind (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
-    (j : Fin n) (current : OracleComp (oSpec + fsChallengeOracle StmtIn pSpec)
+    (j : Fin n) (current : OracleComp (oSpec + fsVerifierMessageOracle StmtIn pSpec)
       (pSpec.MessagesUpTo j.castSucc × StmtIn × P.PrvState j.castSucc)) :
     P.processRoundFS j current = current >>= fun x => P.processRoundFS j (pure x) := by
   simp [processRoundFS]
@@ -180,9 +180,9 @@ lemma Reduction.fiatShamir_run_option
       let tr ← messages.toMessages.deriveTranscriptFS (oSpec := oSpec) stmt
       let vr ← liftM (R.verifier.verify stmt tr).run
       pure (vr.map (fun v => ((messages.toMessages.fsTranscript, ctx), v))) :
-        OracleComp (oSpec + fsChallengeOracle StmtIn pSpec) _).liftComp
-          (spec := oSpec + fsChallengeOracle StmtIn pSpec)
-          ((oSpec + fsChallengeOracle StmtIn pSpec) +
+        OracleComp (oSpec + fsVerifierMessageOracle StmtIn pSpec) _).liftComp
+          (spec := oSpec + fsVerifierMessageOracle StmtIn pSpec)
+          ((oSpec + fsVerifierMessageOracle StmtIn pSpec) +
             [(⟨!v[.P_to_V], !v[(i : pSpec.MessageIdx) → pSpec.Message i]⟩ :
               ProtocolSpec 1).Challenge]ₒ'challengeOracleInterface)
           (h := ⟨fun q => ⟨Sum.inl q.input, q.cont⟩⟩) := by

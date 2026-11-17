@@ -297,7 +297,7 @@ per-range binders such as `[∀ t, Fintype (spec.Range t)]`, and
   `linear_mca_relevant_pairs` requires; the D2 `Finite` generalization of that private lemma is
   reverted.
 - ArkLib's instances concluding the retired classes are removed: `[v]ₒ.DecidableEq/Fintype/
-  Inhabited` in `OracleInterface`, the `srVerifierMessageOracle`/`fsChallengeOracle` instances in
+  Inhabited` in `OracleInterface`, the `srVerifierMessageOracle`/`fsVerifierMessageOracle` instances in
   `ProtocolSpec/Basic`, and the bundled QueryRound instances in `BatchedFri/Security`, which now
   provide per-range `Inhabited`/`Fintype` and build the empty message spec's
   `UniformAnswerMeasure` from `queryRoundMessage_domain_false`.

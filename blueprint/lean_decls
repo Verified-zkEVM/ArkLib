@@ -168,7 +168,7 @@ Verifier.StateFunction.liftContext
 Verifier.KnowledgeStateFunction.liftContext
 ProtocolSpec.challengeOracleInterfaceSR
 ProtocolSpec.srVerifierMessageOracle
-ProtocolSpec.fsChallengeOracle
+ProtocolSpec.fsVerifierMessageOracle
 Prover.processRoundFS
 Prover.runToRoundFS
 Prover.fiatShamir
