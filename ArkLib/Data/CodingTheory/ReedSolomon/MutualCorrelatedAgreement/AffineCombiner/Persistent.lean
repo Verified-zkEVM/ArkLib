@@ -18,7 +18,7 @@ if `G` agrees with `g` there.
 A candidate is persistent at threshold `B` if one such function explains at least `B` agreements.
 The numerator has degree at most `d`, and the nonzero denominator has degree at most one.
 Only points where `L` does not vanish count toward persistence.
-The rational partner `F = P - (α + β X) G` agrees with `f` at those points as well.
+The rational partner `F₀ = P - (α + β X) G` agrees with `f` at those points as well.
 The degree bound on `P` is supplied by exceptionality, rather than the persistence predicate.
 
 Write `n` for the domain size and `q` for the field size.
