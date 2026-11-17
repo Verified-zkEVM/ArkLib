@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Michele Orrù, Chung Thai Nguyen, Yuxi Zheng
+Authors: Chung Thai Nguyen, Yuxi Zheng, Michele Orrù
 -/
 module
 
@@ -42,12 +42,12 @@ variable {n : ℕ} {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι} 
 unfolding the newer `ProtocolSpec.take` representation during log rewrites. -/
 def canonChalEntry (stmt : Statement) (m : pSpec.Messages) (i : Fin n)
     (h : pSpec.dir i = .V_to_P) (c : pSpec.Challenge ⟨i, h⟩) :
-    (t : (srChallengeOracle Statement pSpec).Domain) ×
-      (srChallengeOracle Statement pSpec).Range t :=
+    (t : (srVerifierMessageOracle Statement pSpec).Domain) ×
+      (srVerifierMessageOracle Statement pSpec).Range t :=
   ⟨⟨⟨i, h⟩, (stmt, m.take i.castSucc)⟩, c⟩
 
 /-- Decidable equality on the query domain of the state-restoration / Fiat-Shamir challenge
-oracle. This replaces the bundled `OracleSpec.DecidableEq (srChallengeOracle Statement pSpec)`
+oracle. This replaces the bundled `OracleSpec.DecidableEq (srVerifierMessageOracle Statement pSpec)`
 instance that the retired bundled class provided. -/
 instance instDecidableEqSRChallengeDomain [DecidableEq Statement]
     [∀ i, DecidableEq (pSpec.Message i)] :
@@ -59,7 +59,7 @@ instance instDecidableEqSRChallengeDomain [DecidableEq Statement]
 returning the tuple of sampled challenges.  Explicit form of the transcript derivation
 `deriveTranscriptSR`: see `Messages.deriveTranscriptSR_eq_chalTupleUpTo`. -/
 def chalTupleUpTo (stmt : Statement) (m : pSpec.Messages) (j : Fin (n + 1)) :
-    OracleComp (oSpec + srChallengeOracle Statement pSpec) (pSpec.ChallengesUpTo j) :=
+    OracleComp (oSpec + srVerifierMessageOracle Statement pSpec) (pSpec.ChallengesUpTo j) :=
   Fin.induction
     (pure (fun ⟨i, _⟩ => i.elim0))
     (fun i ih => do
@@ -75,9 +75,9 @@ def chalTupleUpTo (stmt : Statement) (m : pSpec.Messages) (j : Fin (n + 1)) :
 entry per challenge round `i < j`, keyed by the statement and message prefix and answered by
 that round's challenge. -/
 def canonChalLog (stmt : Statement) (m : pSpec.Messages) (j : Fin (n + 1))
-    (cs : pSpec.ChallengesUpTo j) : QueryLog (srChallengeOracle Statement pSpec) :=
+    (cs : pSpec.ChallengesUpTo j) : QueryLog (srVerifierMessageOracle Statement pSpec) :=
   Fin.induction (motive := fun j => pSpec.ChallengesUpTo j →
-      QueryLog (srChallengeOracle Statement pSpec))
+      QueryLog (srVerifierMessageOracle Statement pSpec))
     (fun _ => [])
     (fun i ih cs =>
       match hDir : pSpec.dir i with
@@ -127,8 +127,8 @@ lemma withQueryLog_getChallengeSR_inr
           pure (u, [⟨Sum.inr ⟨i, input⟩, u⟩]) := by
   unfold getChallengeSR
   exact OracleComp.withQueryLog_query
-    (spec := oSpec + srChallengeOracle Statement pSpec)
-    (Sum.inr (⟨i, input⟩ : (srChallengeOracle Statement pSpec).Domain))
+    (spec := oSpec + srVerifierMessageOracle Statement pSpec)
+    (Sum.inr (⟨i, input⟩ : (srVerifierMessageOracle Statement pSpec).Domain))
 
 /-- **Logged transcript-derivation characterization.** Derive the challenges before round `j`,
 then combine them with the supplied prover messages to return the transcript and canonical log.
@@ -152,8 +152,8 @@ lemma logged_deriveTranscriptSRAux_eq (stmt : Statement) (m : pSpec.Messages)
     unfold MessagesUpTo.deriveTranscriptSRAux chalTupleUpTo at ih ⊢
     simp only [Fin.induction_succ, Fin.castLE_refl]
     refine Eq.trans (OracleComp.withQueryLog_bind _ _) ?_
-    refine Eq.trans (congrArg (fun z : OracleComp (oSpec + srChallengeOracle Statement pSpec)
-      (pSpec.Transcript i.castSucc × QueryLog (oSpec + srChallengeOracle Statement pSpec)) =>
+    refine Eq.trans (congrArg (fun z : OracleComp (oSpec + srVerifierMessageOracle Statement pSpec)
+      (pSpec.Transcript i.castSucc × QueryLog (oSpec + srVerifierMessageOracle Statement pSpec)) =>
         z >>= _) ih) ?_
     simp only [bind_assoc, pure_bind]
     refine bind_congr fun cs => ?_
@@ -218,7 +218,7 @@ lemma lookup?_canonChalLog (stmt : Statement)
     · -- challenge round `i`: the log gains the round-`i` entry at the end
       rename_i hDir
       rw [show (Fin.induction (motive := fun j => pSpec.ChallengesUpTo j →
-            QueryLog (srChallengeOracle Statement pSpec)) _ _ i.castSucc)
+            QueryLog (srVerifierMessageOracle Statement pSpec)) _ _ i.castSucc)
           = canonChalLog stmt m i.castSucc from rfl]
       rw [QueryLog.lookup?_append, ih]
       simp only [Fin.val_castSucc, Fin.val_succ]
@@ -241,14 +241,14 @@ lemma lookup?_canonChalLog (stmt : Statement)
         · rw [dite_eq_right (by omega)]
           rw [QueryLog.lookup?_cons]
           rw [dite_eq_right (fun hkey => heq (by
-            have := congrArg (fun d : (srChallengeOracle Statement pSpec).Domain =>
+            have := congrArg (fun d : (srVerifierMessageOracle Statement pSpec).Domain =>
               d.1.1.1) hkey
             simpa only [canonChalEntry] using this.symm))]
           rfl
     · -- message round `i`: the log is unchanged, and `r ≠ i` since `r` is a challenge round
       rename_i hDir
       rw [show (Fin.induction (motive := fun j => pSpec.ChallengesUpTo j →
-            QueryLog (srChallengeOracle Statement pSpec)) _ _ i.castSucc)
+            QueryLog (srVerifierMessageOracle Statement pSpec)) _ _ i.castSucc)
           = canonChalLog stmt m i.castSucc from rfl]
       rw [ih]
       simp only [Fin.val_castSucc, Fin.val_succ]
@@ -272,7 +272,7 @@ This is the Fiat-Shamir extractor's transcript reconstruction, reading the chall
 verifier's trace. It is computable and scans the log once per round. No extraction-time
 bound is established by this definition. -/
 def Messages.challengesOfLog (stmt : Statement) (m : pSpec.Messages)
-    (log : QueryLog (srChallengeOracle Statement pSpec)) :
+    (log : QueryLog (srVerifierMessageOracle Statement pSpec)) :
     pSpec.Challenges :=
   fun i => (log.lookup? ⟨i, (stmt, m.take i.1.castSucc)⟩).getD (default : pSpec.Challenge i)
 
@@ -293,7 +293,7 @@ lemma Messages.challengesOfLog_canonChalLog (stmt : Statement) (m : pSpec.Messag
 preceding entries leave each challenge key unanswered. Later entries cannot override a match. -/
 lemma Messages.challengesOfLog_append_canonChalLog (stmt : Statement) (m : pSpec.Messages)
     (cs : pSpec.ChallengesUpTo ⟨n, Nat.lt_succ_self n⟩)
-    (earlier later : QueryLog (srChallengeOracle Statement pSpec))
+    (earlier later : QueryLog (srVerifierMessageOracle Statement pSpec))
     (hEarlier : ∀ r : pSpec.ChallengeIdx,
       earlier.lookup? ⟨r, (stmt, m.take r.1.castSucc)⟩ = none) :
     Messages.challengesOfLog stmt m
@@ -316,15 +316,15 @@ variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
   {n : ℕ} {pSpec : ProtocolSpec n}
 
 private theorem simulateQ_getChallengeSR {m : Type → Type} [Monad m] [LawfulMonad m]
-    (impl : QueryImpl (oSpec + srChallengeOracle StmtIn pSpec) m)
+    (impl : QueryImpl (oSpec + srVerifierMessageOracle StmtIn pSpec) m)
     (i : pSpec.ChallengeIdx) (input : StmtIn × pSpec.MessagesUpTo i.1.castSucc) :
     simulateQ impl (getChallengeSR i input) = impl (.inr ⟨i, input⟩) :=
   simulateQ_spec_query _ _
 
 private theorem simulateQ_chalTupleUpTo_eq
     {κ : Type} {otherSpec : OracleSpec κ} {m : Type → Type} [Monad m] [LawfulMonad m]
-    (left : QueryImpl (oSpec + srChallengeOracle StmtIn pSpec) m)
-    (right : QueryImpl (otherSpec + srChallengeOracle StmtIn pSpec) m)
+    (left : QueryImpl (oSpec + srVerifierMessageOracle StmtIn pSpec) m)
+    (right : QueryImpl (otherSpec + srVerifierMessageOracle StmtIn pSpec) m)
     (h : ∀ q, left (.inr q) = right (.inr q))
     (x : StmtIn) (messages : pSpec.Messages) (j : Fin (n + 1)) :
     simulateQ left (chalTupleUpTo x messages j) =
@@ -344,8 +344,8 @@ private theorem simulateQ_chalTupleUpTo_eq
 /-- Transcript reconstruction only queries the verifier-message oracle. -/
 theorem simulateQ_deriveTranscriptSR_eq
     {κ : Type} {otherSpec : OracleSpec κ} {m : Type → Type} [Monad m] [LawfulMonad m]
-    (left : QueryImpl (oSpec + srChallengeOracle StmtIn pSpec) m)
-    (right : QueryImpl (otherSpec + srChallengeOracle StmtIn pSpec) m)
+    (left : QueryImpl (oSpec + srVerifierMessageOracle StmtIn pSpec) m)
+    (right : QueryImpl (otherSpec + srVerifierMessageOracle StmtIn pSpec) m)
     (h : ∀ q, left (.inr q) = right (.inr q)) (x : StmtIn) (messages : pSpec.Messages) :
     simulateQ left (messages.deriveTranscriptSR x) =
       simulateQ right (messages.deriveTranscriptSR x) := by

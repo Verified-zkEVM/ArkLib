@@ -14,7 +14,8 @@ open OracleComp OracleSpec ProtocolSpec
 
 namespace StateRestorationCoinsTest
 /-- A legacy prover over the public interface still embeds without private sampling. -/
-def legacySRProver : OracleComp ([]ₒ + srChallengeOracle (Unit × Unit) (default : ProtocolSpec 0))
+def legacySRProver :
+    OracleComp ([]ₒ + srVerifierMessageOracle (Unit × Unit) (default : ProtocolSpec 0))
     ((Unit × Unit) × (default : ProtocolSpec 0).Messages) := pure (((), ()), default)
 
 def embeddedSRProver : Prover.StateRestoration.Soundness []ₒ unifSpec Unit
@@ -27,7 +28,7 @@ def randomizedSRExtractor : Extractor.StateRestoration []ₒ Unit (Fin 7) Unit
     liftM (samplePrivateUniform (publicSpec := []ₒ) (Fin 7))
   else failure
 
-def emptySRImpl : QueryImpl ([]ₒ + srChallengeOracle (Unit × Unit) (default : ProtocolSpec 0))
+def emptySRImpl : QueryImpl ([]ₒ + srVerifierMessageOracle (Unit × Unit) (default : ProtocolSpec 0))
     ProbComp := fun
   | .inl q => nomatch q
   | .inr ⟨i, _⟩ => nomatch i.val
@@ -37,9 +38,9 @@ def emptyImpl : QueryImpl []ₒ ProbComp := fun q => nomatch q
 namespace SRBudget
 
 abbrev pSpec : ProtocolSpec 1 := ⟨!v[.V_to_P], !v[Fin 7]⟩
-abbrev publicSpec := []ₒ + srChallengeOracle (Unit × Unit) pSpec
+abbrev publicSpec := []ₒ + srVerifierMessageOracle (Unit × Unit) pSpec
 
-abbrev firstMove : (srChallengeOracle (Unit × Unit) pSpec).Domain :=
+abbrev firstMove : (srVerifierMessageOracle (Unit × Unit) pSpec).Domain :=
   ⟨⟨0, rfl⟩, ((), ()), fun i => Fin.elim0 i.val⟩
 
 def request : OracleComp (publicSpec + unifSpec)
@@ -80,7 +81,7 @@ namespace SRSpecializationTest
 
 abbrev pSpec : ProtocolSpec 1 := ⟨!v[.V_to_P], !v[Fin 7]⟩
 abbrev ambient := Unit →ₒ ℕ
-abbrev publicSpec := ambient + srChallengeOracle (Unit × Bool) pSpec
+abbrev publicSpec := ambient + srVerifierMessageOracle (Unit × Bool) pSpec
 
 local instance : ∀ i, DecidableEq (pSpec.Message i) := fun i => isEmptyElim i
 
@@ -90,14 +91,14 @@ local instance : ∀ i, Inhabited (pSpec.Challenge i) := fun i => by
   exact inferInstanceAs (Inhabited (Fin 7))
 
 -- The final salt changes the reconstructed challenge. It is not passed to the IP verifier.
-def table : QueryImpl (srChallengeOracle (Unit × Bool) pSpec) Id := fun q => by
+def table : QueryImpl (srVerifierMessageOracle (Unit × Bool) pSpec) Id := fun q => by
   obtain ⟨i, x, messages⟩ := q
   have hi : i = ⟨0, rfl⟩ := Subtype.ext (Fin.eq_zero _)
   subst i
   change Fin 7
   exact if x.2 then 5 else 2
 
-def impl : QueryImpl ambient (StateT (QueryImpl (srChallengeOracle (Unit × Bool) pSpec) Id)
+def impl : QueryImpl ambient (StateT (QueryImpl (srVerifierMessageOracle (Unit × Bool) pSpec) Id)
     ProbComp) := fun _ => pure 9
 
 def verifier : Verifier ambient Unit ℕ pSpec where

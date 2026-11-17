@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Yuxi Zheng, Chung Thai Nguyen, Michele Orrù
+Authors: Chung Thai Nguyen, Yuxi Zheng, Michele Orrù
 -/
 module
 
@@ -41,14 +41,15 @@ abbrev SRProver (Statement : Type) {Salt : Type} {n : ℕ} (pSpec : ProtocolSpec
 statement, chosen salt, final transcript, and SR move-response trace. It may use private coins
 and may fail; it receives no prover handle or private sampling log. -/
 abbrev SRExtractor (Statement Witness : Type) {Salt : Type} {n : ℕ} (pSpec : ProtocolSpec n) :=
-  Statement → Salt → pSpec.FullTranscript → QueryLog (srChallengeOracle (Statement × Salt) pSpec) →
+  Statement → Salt → pSpec.FullTranscript →
+    QueryLog (srVerifierMessageOracle (Statement × Salt) pSpec) →
     OptionT ProbComp Witness
 
 /-- Run an ordinary SR adversary and reconstruct its final transcript using the same
 verifier-message functions queried during its moves. -/
 def srGame {Statement Salt : Type} {n : ℕ} {pSpec : ProtocolSpec n}
     (P : SRProver Statement pSpec (Salt := Salt)) :
-    OracleComp (([]ₒ + srChallengeOracle (Statement × Salt) pSpec) + unifSpec)
+    OracleComp (([]ₒ + srVerifierMessageOracle (Statement × Salt) pSpec) + unifSpec)
       (pSpec.FullTranscript × (Statement × Salt)) :=
   srSoundnessGame (Salt := Salt) P
 
@@ -97,7 +98,7 @@ variable {Statement Witness Salt : Type} {n : ℕ} {pSpec : ProtocolSpec n}
   [∀ i, SampleableType (pSpec.Challenge i)]
   [DecidableEq Statement] [∀ i, DecidableEq (pSpec.Message i)]
   [∀ i, DecidableEq (pSpec.Challenge i)]
-  (init : ProbComp (QueryImpl (srChallengeOracle (Statement × Salt) pSpec) Id))
+  (init : ProbComp (QueryImpl (srVerifierMessageOracle (Statement × Salt) pSpec) Id))
 
 /-- Extraction failure for an ordinary SR adversary. The dummy witness is introduced only
 inside the general backend; the adversary and extractor interfaces do not expose it. -/
@@ -141,7 +142,7 @@ variable {Statement Witness : Type} {Salt : ℕ → ℕ → Type}
   [DecidableEq Statement] [∀ s n i, DecidableEq ((pSpec s n).Message i)]
   [∀ s n i, DecidableEq ((pSpec s n).Challenge i)]
   (init : ∀ s n, ProbComp
-    (QueryImpl (srChallengeOracle (Statement × Salt s n) (pSpec s n)) Id))
+    (QueryImpl (srVerifierMessageOracle (Statement × Salt s n) (pSpec s n)) Id))
   (V : ∀ s n, Verifier Statement (pSpec s n))
 
 /-- **[snarg-book, state-restoration soundness]** SR soundness for every public salt-size

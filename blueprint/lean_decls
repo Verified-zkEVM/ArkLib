@@ -167,7 +167,7 @@ Extractor.RoundByRound.liftContext
 Verifier.StateFunction.liftContext
 Verifier.KnowledgeStateFunction.liftContext
 ProtocolSpec.challengeOracleInterfaceSR
-ProtocolSpec.srChallengeOracle
+ProtocolSpec.srVerifierMessageOracle
 ProtocolSpec.fsChallengeOracle
 Prover.processRoundFS
 Prover.runToRoundFS

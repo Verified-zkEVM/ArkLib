@@ -61,7 +61,7 @@ def sampleRandomOracleTable {ι : Type} (spec : OracleSpec ι)
 
 /-! ### Ideal-protocol Fiat-Shamir challenge sampler
 
-The Fiat-Shamir challenge oracle (`fsChallengeOracle` / `srChallengeOracle`) answers
+The Fiat-Shamir challenge oracle (`fsChallengeOracle` / `srVerifierMessageOracle`) answers
 `(i, x, α[<i])` with a value of type `pSpec.Challenge i`. Here `x : Statement` is the query
 context and `α[<i]` is the preceding prover-message tuple. In the single-salt setting,
 `Statement := StmtIn × Salt`, so the query context is `(𝕩, τ)`.
@@ -85,7 +85,7 @@ noncomputable def sampleableTypeFSChallengeOracle
     infer_instance
   -- The challenge-oracle domain is a sigma of a challenge index and its finite query type.
   letI : Fintype (ProtocolSpec.fsChallengeOracle Statement pSpec).Domain := by
-    dsimp only [ProtocolSpec.fsChallengeOracle, ProtocolSpec.srChallengeOracle,
+    dsimp only [ProtocolSpec.fsChallengeOracle, ProtocolSpec.srVerifierMessageOracle,
       OracleInterface.toOracleSpec, ProtocolSpec.challengeOracleInterfaceSR,
       OracleSpec.toPFunctor, OracleInterface.Query]
     infer_instance
