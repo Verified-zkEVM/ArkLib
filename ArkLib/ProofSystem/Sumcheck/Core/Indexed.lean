@@ -5,8 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.Domain
-public import ArkLib.ProofSystem.Sumcheck.Core.Tree
+public import ArkLib.ProofSystem.Sumcheck.Core.Interval
 public import ArkLib.Interaction.Core.Security.Implications
 
 /-! # Sumcheck verification over indexed domains
@@ -24,30 +23,9 @@ open Polynomial MvPolynomial PFunctor FreeM Interaction.Core Interaction.TwoPart
 
 variable {R : Type} [CommSemiring R] {deg n d : ℕ}
 
-/-- The public claim with `k` rounds remaining. -/
-structure IndexedClaim (R : Type) (n k : ℕ) where
-  /-- The current round. -/
-  round : Fin (n + 1)
-  /-- The current round and remaining rounds partition the full run. -/
-  round_add : round.val + k = n
-  /-- The current target and challenge prefix. -/
-  statement : RoundStatement R n round
-
-/-- The next variable when a round remains. -/
-def IndexedClaim.index {k : ℕ} (st : IndexedClaim R n (k + 1)) : Fin n :=
-  ⟨st.round, by have := st.round_add; omega⟩
-
-/-- Updating a claim with the evaluation of the sent message at the new challenge. -/
-def IndexedClaim.next {k : ℕ} (st : IndexedClaim R n (k + 1)) (value r : R) :
-    IndexedClaim R n k where
-  round := st.index.succ
-  round_add := by have := st.round_add; change st.round.val + 1 + k = n; omega
-  statement := ⟨value, Fin.snoc st.statement.challenges r⟩
-
-/-- Read the final evaluation claim after all variables have been fixed. -/
-def IndexedClaim.finish (st : IndexedClaim R n 0) : RoundStatement R n (Fin.last n) :=
-  ⟨st.statement.target, st.statement.challenges ∘ Fin.cast (by
-    have := st.round_add; simp only [Fin.val_last]; omega)⟩
+/-- The public claim with `k` rounds remaining in a full run: an interval claim that ends at the
+last round. -/
+abbrev IndexedClaim (R : Type) (n k : ℕ) := IntervalClaim R n (Fin.last n) k
 
 /-- The initial claim has an empty challenge prefix. -/
 def IndexedClaim.initial (stmt : RoundStatement R n 0) : IndexedClaim R n n :=
@@ -61,84 +39,24 @@ noncomputable def indexedNext {k : ℕ} (st : Option (IndexedClaim R n (k + 1)))
   st.bind fun st => if (∑ a : Fin d, msg.val.eval (D a)) = st.statement.target then
     some (st.next (msg.val.eval r) r) else none
 
-/-- The verdict obtained by checking every round of a completed transcript. -/
-noncomputable def indexedVerdict : (k : ℕ) → Option (IndexedClaim R n k) →
-    PathAlong oracleSig (protocol R deg k) → Option (RoundStatement R n (Fin.last n))
-  | 0, st, _ => st.map IndexedClaim.finish
-  | k + 1, st, tr => indexedVerdict k (indexedNext D st (headMessage tr) (headChallenge tr))
-      (tailTranscript tr)
+/-- The verdict obtained by checking every round of a completed transcript: the interval verdict
+to the last round, after a possible earlier rejection. -/
+noncomputable def indexedVerdict (k : ℕ) (st : Option (IndexedClaim R n k))
+    (tr : PathAlong oracleSig (protocol R deg k)) : Option (RoundStatement R n (Fin.last n)) :=
+  st.bind fun st => intervalVerdict D k st tr
 
-/-- Query the first round polynomial at a field or semiring element. -/
-def indexedHeadQuery {k : ℕ} : (p : Path (protocol R deg (k + 1))) → R →
-    OracleComp (oracles (protocol R deg (k + 1)) p) R
-  | ⟨⟨⟩, ⟨⟨⟩, p⟩⟩, r => liftM
-      ((oracles (protocol R deg (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩).query ⟨.inl ⟨⟩, r⟩)
-
-omit [DecidableEq R] in
-/-- The transcript payload answers a query to the first round polynomial. -/
-theorem simulateQ_indexedHeadQuery {k : ℕ}
-    (tr : PathAlong oracleSig (protocol R deg (k + 1))) (r : R) :
-    simulateQ (payloadImpl (protocol R deg (k + 1)) tr)
-      (indexedHeadQuery (projectPathAlong oracleSig _ tr) r) = (headMessage tr).val.eval r := by
-  rcases tr with ⟨msg, chal, tail⟩
-  rfl
-
-/-- The shape path of the remaining Sumcheck rounds. -/
-def indexedTailPath {k : ℕ} : Path (protocol R deg (k + 1)) → Path (protocol R deg k)
-  | ⟨⟨⟩, ⟨⟨⟩, p⟩⟩ => p
-
-/-- Lift a query from the remaining rounds along a full Sumcheck shape path. -/
-def indexedTailLift {k : ℕ} (p : Path (protocol R deg (k + 1))) :
-    QueryImpl (oracles (protocol R deg k) (indexedTailPath p))
-      (OracleComp (oracles (protocol R deg (k + 1)) p)) := by
-  rcases p with ⟨⟨⟩, ⟨⟨⟩, p⟩⟩
-  exact tailLift R deg k p
-
-/-- Read the first challenge from a verifier view. -/
-def indexedViewChallenge {k : ℕ} {p : Path (protocol R deg (k + 1))}
-    (v : View (protocol R deg (k + 1)) p) : R := v.1.2.1
-
-/-- Restrict a verifier view to the remaining rounds. -/
-def indexedTailView {k : ℕ} {p : Path (protocol R deg (k + 1))}
-    (v : View (protocol R deg (k + 1)) p) : View (protocol R deg k) (indexedTailPath p) :=
-  ⟨v.1.2.2, (protocolPath_eq R deg k _).trans (protocolPath_eq R deg k _).symm⟩
-
-omit [DecidableEq R] in
-/-- Answering lifted suffix queries uses precisely the suffix transcript's payloads. -/
-theorem simulateQ_indexedTailLift {k : ℕ}
-    (tr : PathAlong oracleSig (protocol R deg (k + 1))) {α : Type}
-    (oa : OracleComp (oracles (protocol R deg k)
-      (indexedTailPath (projectPathAlong oracleSig _ tr))) α) :
-    simulateQ (payloadImpl (protocol R deg (k + 1)) tr)
-        (simulateQ (indexedTailLift (projectPathAlong oracleSig _ tr)) oa) =
-      simulateQ (payloadImpl (protocol R deg k) (tailTranscript tr)) oa := by
-  refine QueryImpl.simulateQ_simulateQ_eq_of_apply (fun q => ?_) oa
-  rcases tr with ⟨msg, chal, tail⟩
-  rfl
-
-/-- Query the sent message at every domain index before continuing to the next round. -/
-def indexedDecision : (k : ℕ) → Option (IndexedClaim R n k) →
+/-- Query the sent messages through the interval checks, after a possible earlier rejection. -/
+def indexedDecision (k : ℕ) : Option (IndexedClaim R n k) →
     (p : Path (protocol R deg k)) → View (protocol R deg k) p →
     OracleComp (oracles (protocol R deg k) p) (Option (RoundStatement R n (Fin.last n)))
-  | 0, st, _, _ => pure (st.map IndexedClaim.finish)
-  | k + 1, st, p, v => do
-      match st with
-      | none => return none
-      | some st =>
-        let values ← (List.finRange d).mapM fun a => indexedHeadQuery p (D a)
-        if values.sum = st.statement.target then
-          let r := indexedViewChallenge v
-          let value ← indexedHeadQuery p r
-          simulateQ (indexedTailLift p) (indexedDecision k (some (st.next value r))
-            (indexedTailPath p) (indexedTailView v))
-        else return none
+  | none, _, _ => pure none
+  | some st, p, v => foldDecision (intervalCheck D) IntervalClaim.finish k st p v
 
 /-- Lift the round-message queries into the verifier's final resource interface. -/
 def indexedDecisionLift {ι : Type} (ambient : OracleSpec ι) (p : Path (protocol R deg n)) :
     QueryImpl (oracles (protocol R deg n) p)
       (OracleComp (ambient + (pathResources (polyFamily R deg n) (protocol R deg n) p).spec)) :=
-  fun q => liftM ((ambient +
-    (pathResources (polyFamily R deg n) (protocol R deg n) p).spec).query (.inr (.inr q)))
+  pathLift ambient (polyFamily R deg n) p
 
 omit [DecidableEq R] in
 /-- Answering the lifted message queries is a pure computation of the transcript payloads. -/
@@ -150,14 +68,8 @@ theorem simulateQ_indexedDecisionLift_monad {ι : Type} {ambient : OracleSpec ι
     simulateQ (QueryImpl.addLift impl ((pathResources (polyFamily R deg n) (protocol R deg n)
       p).answer (data, pl))) (simulateQ (indexedDecisionLift ambient p) oa) =
       (pure (simulateQ ((pathFamily (protocol R deg n) p).behaviorOfRealizations pl) oa) :
-        m α) := by
-  refine (QueryImpl.simulateQ_simulateQ_eq_of_apply
-    (impl := ((pathFamily (protocol R deg n) p).behaviorOfRealizations pl).liftTarget m)
-    (fun t => ?_) oa).trans ?_
-  · simp only [QueryImpl.addLift_def]
-    exact QueryImpl.simulateQ_add_query_right _ _ _
-  · rw [simulateQ_liftTarget]
-    rfl
+        m α) :=
+  simulateQ_pathLift impl p data pl oa
 
 /-- The passive Sumcheck verifier counts all domain indices in its final decision. -/
 def indexedVerifier (R : Type) [CommSemiring R] [DecidableEq R] (deg n : ℕ)
@@ -175,57 +87,32 @@ def indexedVerifier (R : Type) [CommSemiring R] [DecidableEq R] (deg n : ℕ)
 
 /-- A rejected prefix stays rejected through every remaining round. -/
 @[simp] theorem indexedVerdict_none : ∀ (k : ℕ)
-    (tr : PathAlong oracleSig (protocol R deg k)), indexedVerdict (n := n) D k none tr = none := by
-  intro k
-  induction k with
-  | zero => intro tr; rfl
-  | succ k ih => intro tr; exact ih (tailTranscript tr)
+    (tr : PathAlong oracleSig (protocol R deg k)), indexedVerdict (n := n) D k none tr = none :=
+  fun _ _ => rfl
+
+/-- One more round applies the public update to the head message and challenge. -/
+theorem indexedVerdict_succ (k : ℕ) (st : Option (IndexedClaim R n (k + 1)))
+    (tr : PathAlong oracleSig (protocol R deg (k + 1))) :
+    indexedVerdict D (k + 1) st tr = indexedVerdict D k
+      (indexedNext D st (Interpreted.message tr) (Interpreted.challenge tr))
+      (Interpreted.tail tr) := by
+  cases st with
+  | none => rfl
+  | some st =>
+    change foldVerdict (intervalCheck D) IntervalClaim.finish (k + 1) st tr = _
+    rw [foldVerdict_succ, roundVerdict_intervalCheck]
+    unfold indexedNext
+    dsimp only [Option.bind_some]
+    split <;> rfl
 
 /-- Answering the indexed decision from a transcript computes the indexed verdict. -/
-theorem simulateQ_indexedDecision : ∀ (k : ℕ) (st : Option (IndexedClaim R n k))
-    (tr : PathAlong oracleSig (protocol R deg k)),
+theorem simulateQ_indexedDecision (k : ℕ) (st : Option (IndexedClaim R n k))
+    (tr : PathAlong oracleSig (protocol R deg k)) :
     simulateQ (payloadImpl (protocol R deg k) tr)
       (indexedDecision D k st _ (toView _ tr)) = indexedVerdict D k st tr := by
-  intro k
-  induction k with
-  | zero => intro st tr; rfl
-  | succ k ih =>
-      intro st tr
-      rcases tr with ⟨msg, chal, tail⟩
-      cases st with
-      | none =>
-        change (none : Option (RoundStatement R n (Fin.last n))) =
-          indexedVerdict D (k + 1) none _
-        simp only [indexedVerdict_none]
-      | some st =>
-        rw [indexedDecision]
-        simp only [simulateQ_bind, simulateQ_list_mapM]
-        change ((List.finRange d).mapM (fun a => (pure (msg.val.eval (D a)) : Id R)) >>= _) = _
-        simp only [List.mapM_pure, LawfulMonad.pure_bind]
-        by_cases hs : (∑ a : Fin d, msg.val.eval (D a)) = st.statement.target
-        · have hl : (List.map (fun a => msg.val.eval (D a)) (List.finRange d)).sum =
-              st.statement.target := by
-            rwa [← List.ofFn_eq_map, List.sum_ofFn]
-          simp only [hl, ite_true]
-          rw [simulateQ_bind, simulateQ_indexedHeadQuery]
-          change simulateQ _ (simulateQ
-            (indexedTailLift (projectPathAlong oracleSig _ ⟨msg, chal, tail⟩))
-            (indexedDecision D k (some (st.next (msg.val.eval chal) chal)) _
-              (indexedTailView (toView (protocol R deg (k + 1)) ⟨msg, chal, tail⟩)))) = _
-          rw [simulateQ_indexedTailLift (R := R) (deg := deg) (k := k)
-            (⟨msg, chal, tail⟩ : PathAlong oracleSig (protocol R deg (k + 1)))]
-          change simulateQ (payloadImpl (protocol R deg k) tail)
-            (indexedDecision D k (some (st.next (msg.val.eval chal) chal))
-              (projectPathAlong oracleSig (protocol R deg k) tail)
-              (toView (protocol R deg k) tail)) = _
-          rw [ih _ tail]
-          simp [indexedVerdict, indexedNext, hs, headMessage, headChallenge, tailTranscript]
-        · have hl : (List.map (fun a => msg.val.eval (D a)) (List.finRange d)).sum ≠
-              st.statement.target := by
-            rwa [← List.ofFn_eq_map, List.sum_ofFn]
-          simp only [hl, ite_false, simulateQ_pure]
-          simp [indexedVerdict, indexedNext, hs, headMessage]
-          rfl
+  cases st with
+  | none => rfl
+  | some st => exact Interpreted.simulate_decision _ _ k st tr
 
 omit [DecidableEq R] in
 /-- A false current sum can become a true successor sum only at an agreement point of two
@@ -310,7 +197,7 @@ noncomputable def indexedGood (p : R⦃≤ deg⦄[X Fin n]) (k : ℕ)
 omit [DecidableEq R] in
 /-- At the final round, truth of the current claim is exactly valid evaluation acceptance. -/
 theorem indexedGood_zero (p : R⦃≤ deg⦄[X Fin n]) (st : Option (IndexedClaim R n 0)) :
-    indexedGood D p 0 st ↔ ∃ t, st.map IndexedClaim.finish = some t ∧
+    indexedGood D p 0 st ↔ ∃ t, st.map IntervalClaim.finish = some t ∧
       p.val.eval t.challenges = t.target := by
   cases st with
   | none => simp [indexedGood]
@@ -318,7 +205,7 @@ theorem indexedGood_zero (p : R⦃≤ deg⦄[X Fin n]) (st : Option (IndexedClai
     rcases st with ⟨round, ha, stmt⟩
     have heq : round = Fin.last n := Fin.ext (by simpa using ha)
     subst round
-    simp [indexedGood, IndexedClaim.finish, indexedRelation_last]
+    simp [indexedGood, IntervalClaim.finish, indexedRelation_last]
 
 /-- Truth at a terminal prefix is the indexed verdict's final evaluation claim. -/
 theorem foldPrefix_indexed_leaf (p : R⦃≤ deg⦄[X Fin n]) :
@@ -334,7 +221,7 @@ theorem foldPrefix_indexed_leaf (p : R⦃≤ deg⦄[X Fin n]) :
     intro st sp history
     change Cursor.Spine (P := OraclePoly) (.pure PUnit.unit) _ at sp
     cases sp
-    exact indexedGood_zero D p st
+    cases st <;> exact indexedGood_zero D p _
   | succ k ih =>
     intro st sp history
     change Cursor.Spine (P := OraclePoly) (.liftBind (.oracle (R⦃≤ deg⦄[X]) inferInstance)
@@ -343,7 +230,9 @@ theorem foldPrefix_indexed_leaf (p : R⦃≤ deg⦄[X Fin n]) :
     | down b tail =>
       cases b
       cases tail with
-      | down b tail => exact ih _ tail history.2.2
+      | down b tail =>
+        rw [indexedVerdict_succ]
+        exact ih _ tail history.2.2
 
 /-- An incorrect remaining claim becomes correct with probability at most `deg / |R|`. -/
 theorem indexedGood_flip_le [IsDomain R] [Fintype R] [SampleableType R]
@@ -366,7 +255,7 @@ theorem indexedGood_flip_le [IsDomain R] [Fintype R] [SampleableType R]
               indexedRelation D st.index.succ
                 ⟨msg.val.eval r, Fin.snoc st.statement.challenges r⟩ p) := by
           funext r
-          simp [indexedGood, indexedNext, hs, ht, IndexedClaim.next]
+          simp [indexedGood, indexedNext, hs, ht, IntervalClaim.next]
         rw [hevent]
         exact bound
       · simp [indexedGood, indexedNext, hs]
@@ -467,7 +356,7 @@ omit [DecidableEq R] in
 /-- Sum the first message's query answers in the supplied list order. -/
 def indexedSumQueries {k : ℕ} (domain : List R) (p : Path (protocol R deg (k + 1))) :
     OracleComp (oracles (protocol R deg (k + 1)) p) R := do
-  let values ← domain.mapM (indexedHeadQuery p)
+  let values ← domain.mapM (Interpreted.headQuery p)
   pure values.sum
 
 omit [DecidableEq R] in
@@ -476,7 +365,7 @@ theorem simulateQ_indexedSumQueries {k : ℕ} (domain : List R)
     (tr : PathAlong oracleSig (protocol R deg (k + 1))) :
     simulateQ (payloadImpl (protocol R deg (k + 1)) tr)
       (indexedSumQueries domain (projectPathAlong oracleSig _ tr)) =
-      (domain.map (fun x => (headMessage tr).val.eval x)).sum := by
+      (domain.map (fun x => (Interpreted.message tr).val.eval x)).sum := by
   rcases tr with ⟨msg, r, tail⟩
   unfold indexedSumQueries
   rw [simulateQ_bind, simulateQ_list_mapM]
@@ -492,7 +381,7 @@ theorem simulateQ_indexedSumQueries_monad {k : ℕ} (domain : List R)
     {m : Type → Type} [Monad m] [LawfulMonad m] :
     simulateQ ((payloadImpl (protocol R deg (k + 1)) tr).liftTarget m)
       (indexedSumQueries domain (projectPathAlong oracleSig _ tr)) =
-      (pure (domain.map (fun x => (headMessage tr).val.eval x)).sum : m R) := by
+      (pure (domain.map (fun x => (Interpreted.message tr).val.eval x)).sum : m R) := by
   rw [simulateQ_liftTarget, simulateQ_indexedSumQueries]
   rfl
 
@@ -634,9 +523,10 @@ theorem indexedVerifier_run_one {ι : Type} (ambient : OracleSpec ι)
   refine bind_congr fun r => ?_
   change R at r
   congr 2
-  simp only [indexedVerdict, indexedNext, headMessage, headChallenge,
-    roundTranscript, IndexedClaim.initial, Option.bind_some,
-    Option.map_map]
+  rw [indexedVerdict_succ]
+  simp only [indexedVerdict, intervalVerdict, Interpreted.verdict, indexedNext,
+    Interpreted.message, Interpreted.challenge, roundTranscript, IndexedClaim.initial,
+    Option.bind_some]
   split <;> rename_i h <;> simp only [h, ite_true, ite_false] <;> rfl
 
 /-- Answer the unique one-round challenge with a supplied computation. -/

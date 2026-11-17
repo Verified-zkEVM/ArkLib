@@ -507,6 +507,35 @@ abbrev OracleVerifier.Output {s : OracleProtocol.{u, q}} (T : Path s → Type u)
     {J : Path s → Type u} (B : (p : Path s) → J p → Type u) (p : Path s) : Type u :=
   T p × (∀ j, B p j)
 
+/-- Lift the queries to the oracle nodes of a completed path into the query interface of a
+decision on that path. Compiler inlining keeps the input family, which only fixes the query
+interface, out of execution. -/
+@[macro_inline]
+def pathLift {ι : Type uι} {I : Type uI} (ambient : OracleSpec.{uι, u} ι) {A : I → Type u}
+    (inputs : OracleFamily.{uI, u, wI} I A) {s : OracleProtocol.{u}} (p : Path s) :
+    QueryImpl (oracles s p) (OracleComp (ambient + (pathResources inputs s p).spec)) :=
+  fun q => liftM ((ambient + (pathResources inputs s p).spec).query
+    (.inr (.inr q)))
+
+/-- Lifted path-oracle queries, answered from input data and path payloads with ambient queries
+answered in any lawful monad, are a pure computation of the path payloads: they make no ambient
+query. -/
+theorem simulateQ_pathLift {ι : Type uι} {I : Type uI}
+    {ambient : OracleSpec.{uι, u} ι} {A : I → Type u}
+    {inputs : OracleFamily.{uI, u, wI} I A} {m : Type u → Type v} [Monad m] [LawfulMonad m]
+    (amb : QueryImpl ambient m) {s : OracleProtocol.{u}} (p : Path s) (x : ∀ i, A i)
+    (pl : ∀ i, OracleData s p i) {α : Type u} (oa : OracleComp (oracles s p) α) :
+    simulateQ (QueryImpl.addLift amb ((pathResources inputs s p).answer (x, pl)))
+        (simulateQ (pathLift ambient inputs p) oa) =
+      (pure (simulateQ ((pathFamily s p).behaviorOfRealizations pl) oa) : m α) := by
+  refine (QueryImpl.simulateQ_simulateQ_eq_of_apply
+    (impl := ((pathFamily s p).behaviorOfRealizations pl).liftTarget m)
+    (fun t => ?_) oa).trans ?_
+  · simp only [QueryImpl.addLift_def]
+    exact QueryImpl.simulateQ_add_query_right _ _ _
+  · rw [simulateQ_liftTarget]
+    rfl
+
 /-- The decision with resource queries answered from concrete data; ambient queries remain.
 
 Its possible results, with every ambient answer allowed, are the statements the decision can
@@ -623,6 +652,34 @@ theorem OracleVerifier.run_eq {ι : Type u} {ambient : OracleSpec.{u, u} ι}
   pure ⟨tr, out, verdict.map fun t => (t, (V.outputMap stmt p view).f resources)⟩
 ) := by
   simp [OracleVerifier.run, OracleVerifier.executeWith, _root_.map_bind, bind_map_left]
+
+/-- A run is the interaction, then the decision answered from the input and the run's payloads,
+with its ambient queries sent to the ambient part of the run's oracle. -/
+theorem OracleVerifier.run_eq_decideWith {ι : Type u} {I : Type uI} {ambient : OracleSpec.{u, u} ι}
+    {s : OracleProtocol.{u}} {S : Type uS} {T : Path s → Type u} {A : I → Type u}
+    {J : Path s → Type u} {B : (p : Path s) → J p → Type u}
+    {inputs : OracleFamily.{uI, u, wI} I A}
+    {outputs : (p : Path s) → OracleFamily.{u, u, wJ} (J p) (B p)}
+    {Out : PathAlong oracleSig s → Type u}
+    (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (x : ∀ i, A i)
+    (prover : Prover oracleSig ambient s Out) :
+    V.run stmt x prover = (do
+      let ⟨tr, out, _⟩ ← TwoParty.Lens.run s
+        (prover.simulate fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q)))
+        (sampler oracleSig s fun c => liftM ((ambient + challengeSpec oracleSig s).query (.inr c)))
+      let verdict ← simulateQ
+        (fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q)) :
+          QueryImpl ambient (OracleComp (ambient + challengeSpec oracleSig s)))
+        (V.decideWith stmt _ (toView s tr) (x, payloads s tr))
+      pure ⟨tr, out, verdict.map fun t =>
+        (t, (V.outputMap stmt _ (toView s tr)).f (x, payloads s tr))⟩) := by
+  rw [OracleVerifier.run_eq]
+  refine bind_congr fun y => ?_
+  obtain ⟨tr, o, ⟨⟩⟩ := y
+  dsimp only
+  exact congrArg (fun d => d >>= _)
+    (OracleVerifier.simulateQ_decideWith V _ stmt _ (toView s tr)
+      (x, payloads s tr)).symm
 
 section ResourceInterpretation
 
