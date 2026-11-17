@@ -30,6 +30,7 @@ explicit result types describe trees whose leaves retain authored return values.
 abbrev OracleProtocol (Result : Type u := PUnit.{u + 1}) := FreeM OraclePoly.{u, q} Result
 
 /-- The oracle verifier's observation, over a specified shape path. -/
+@[reducible]
 def View (s : OracleProtocol.{u, q}) (p : Path s) : Type u :=
   {v : PathAlong viewSig s // projectPathAlong viewSig s v = p}
 
