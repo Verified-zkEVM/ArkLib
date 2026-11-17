@@ -88,6 +88,7 @@ Most friction in this subtree comes from picking the wrong numeric type, so chec
 | Proximity radius `δ` as a *quantifier on an error bound* | `I` (`= [0,1]`) | `IsMCAGenerator`'s `∀ δ : I` — this is the one place the sources' `[0,1]` binds |
 | Real-valued bounds | `ℝ`, then wrapped | right-hand sides of capacity bounds, `JohnsonBound.Jqℓ`, `Jcap` |
 | ε-errors (`ε_pg`, `ε_ca`, `ε_mca`) — value | `ENNReal` | supremum of probabilities, including finite counting definitions with proved sampling characterizations |
+| Exact computable combiner errors | `ℚ≥0` | `affineMcaErrorRat`, `scalarMcaErrorRat`, `equalDegreeMcaErrorRat`; `ofReal_*` gives the semantic value |
 | ε-errors — *bound*, compared with `↑` not `ENNReal.ofReal` | `I → ℝ≥0` | `IsMCAGenerator`'s `ε_mca` |
 | Probabilities | `ENNReal` | the `Pr{let x ← mx}[p x]` notation ([probability conventions](probability-conventions.md)) |
 | List sizes | `ℕ∞`, cast to `ENNReal` for real-valued bounds | `Lambda`, built from `closeCodewordsRel`'s `.encard` |

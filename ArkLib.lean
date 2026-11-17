@@ -406,7 +406,11 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Aff
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.ChartIncidence
 public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Computable
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.EqualDegree
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.EqualDegreeComputable
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.EqualDegreeSampling
 public import
@@ -753,6 +757,7 @@ public import ArkLib.Data.Polynomial.UniversalHenselNumerator
 public import ArkLib.Data.Probability.Combinatorial
 public import ArkLib.Data.Probability.FiniteChernoff
 public import ArkLib.Data.Probability.FiniteEntropy
+public import ArkLib.Data.Probability.FiniteError
 public import ArkLib.Data.Probability.Instances
 public import ArkLib.Data.Probability.KoalaBear
 public import ArkLib.Data.Probability.Uniform
@@ -1160,6 +1165,7 @@ public import ArkLib.ToCompPoly.Univariate.ArithmeticPolynomial
 public import ArkLib.ToCompPoly.Univariate.ArithmeticPolynomialCost
 public import ArkLib.ToCompPoly.Univariate.ArithmeticPower
 public import ArkLib.ToCompPoly.Univariate.Basic
+public import ArkLib.ToCompPoly.Univariate.Finite
 public import ArkLib.ToCompPoly.Univariate.Lagrange
 public import ArkLib.ToCompPoly.Univariate.Primitive
 public import ArkLib.ToCompPoly.Univariate.Size

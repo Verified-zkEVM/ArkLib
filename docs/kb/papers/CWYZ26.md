@@ -11,6 +11,7 @@ related_modules:
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Basic.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Separation.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Probability.lean
+  - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Computable.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/RationalPair.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Persistent.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/LineEvaluation.lean
@@ -25,6 +26,7 @@ related_modules:
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Theorem.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/EqualDegree.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/EqualDegreeSampling.lean
+  - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/EqualDegreeComputable.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/SubspaceSeparation.lean
 ---
 
@@ -85,15 +87,15 @@ A unit is done when its declarations are on `main`.
 
 | Unit | Paper | Content | Depends on | Status |
 | --- | --- | --- | --- | --- |
-| 1 | §1.1, Definition 3.1, Propositions 6.1–6.2 | Definitions and error lower bounds for scalar combiners with loss `s` and affine combiners without loss | — | in review |
-| 2 | Lemmas 4.4–4.5 | Counts for one rational pair and for persistent exceptional challenges | 1 | in review |
-| 3 | Theorem 5.1 | Equal-degree error `≤ εaff + ℓ₀/q` and linear-claim error `≤ εaff + 2ℓ₀/q` | 1 | equal-degree bound in review ([#1506](https://github.com/Verified-zkEVM/ArkLib/pull/1506)); linear claims planned |
-| 4 | Proposition 6.3 | Scalar lower bound with constant fractional loss on additive domains | 1 | in review ([#1507](https://github.com/Verified-zkEVM/ArkLib/pull/1507)) |
-| 5 | Lemma 4.2 | Trivariate interpolation of `(1,1,d)`-weighted degree below `mA`, with multiplicity `m` along each received line, and vanishing after substitution | 1 | in review |
-| 6 | Section 4 factorization and Lemma 4.3 | Frobenius normalization, excluded challenges `#E ≤ D²`, and simple roots outside `E` | 5 | in review |
-| 7 | Lemma 3.11 | Rational Taylor coefficients `Nⱼ/S^(2j-1)` for `j ≥ 1`, numerator degree bounds, and polynomial-root reconstruction | — | coefficient and polynomial-root interfaces in review; power-series existence and uniqueness open |
-| 8 | Claims 4.8–4.9 and Lemma 4.7 | Agreement-hyperplane induction, a cover of dimension at most two, and the nonpersistent count | 2, 6, 7 | in review |
-| 9 | Lemma 4.1 and Theorems 1.1, 4.10 | Parameter bounds and the final affine error bounds | 2, 5, 6, 8 | in review |
+| 1 | §1.1, Definition 3.1, Propositions 6.1–6.2 | Definitions and error lower bounds for scalar combiners with loss `s` and affine combiners without loss | — | done ([#1504](https://github.com/Verified-zkEVM/ArkLib/pull/1504)) |
+| 2 | Lemmas 4.4–4.5 | Counts for one rational pair and for persistent exceptional challenges | 1 | done ([#1505](https://github.com/Verified-zkEVM/ArkLib/pull/1505)) |
+| 3 | Theorem 5.1 | Equal-degree error `≤ εaff + ℓ₀/q` and linear-claim error `≤ εaff + 2ℓ₀/q` | 1 | equal-degree bound on `main` ([#1506](https://github.com/Verified-zkEVM/ArkLib/pull/1506)); linear claims open |
+| 4 | Proposition 6.3 | Scalar lower bound with constant fractional loss on additive domains | 1 | done ([#1507](https://github.com/Verified-zkEVM/ArkLib/pull/1507)) |
+| 5 | Lemma 4.2 | Trivariate interpolation of `(1,1,d)`-weighted degree below `mA`, with multiplicity `m` along each received line, and vanishing after substitution | 1 | done ([#1508](https://github.com/Verified-zkEVM/ArkLib/pull/1508)); positive `Z`-degree conclusion open |
+| 6 | Section 4 factorization and Lemma 4.3 | Frobenius normalization, excluded challenges `#E ≤ D²`, and simple roots outside `E` | 5 | done ([#1508](https://github.com/Verified-zkEVM/ArkLib/pull/1508)) |
+| 7 | Lemma 3.11 | Rational Taylor coefficients `Nⱼ/S^(2j-1)` for `j ≥ 1`, numerator degree bounds, and polynomial-root reconstruction | — | coefficient and polynomial-root interfaces on `main` ([#1508](https://github.com/Verified-zkEVM/ArkLib/pull/1508)); power-series existence and uniqueness open |
+| 8 | Claims 4.8–4.9 and Lemma 4.7 | Nonpersistent count through a three-coordinate chart and persistence descent | 2, 6, 7 | done ([#1509](https://github.com/Verified-zkEVM/ArkLib/pull/1509)) |
+| 9 | Lemma 4.1 and Theorems 1.1, 4.10 | Parameter bounds and the final affine error bounds | 2, 5, 6, 8 | headline bound on `main` ([#1509](https://github.com/Verified-zkEVM/ArkLib/pull/1509)); exact free-budget variant of Theorem 4.10 open |
 | 10 | Theorem 5.2 | For `k = 2ʳ` rows, shared folding with degree `d + r`, threshold `A + r`, loss `r`, and error at most `rε`, where `ε` bounds every round. The proof packs rows into `F_{q^t}` with base-field challenges | 9 | deferred |
 | 11 | Theorem 7.1 and Appendix A | Reed–Muller extension on subfield grids through the Pellikaan–Wu reduction | 9 | deferred |
 
@@ -141,11 +143,19 @@ Unit 10 applies the equal-degree guarantee in each folding round.
 - [`AffineCombiner/Theorem.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Theorem.lean)
   proves the finite interpolation bound and the explicit bound of Theorem 1.1.
 
+- [`AffineCombiner/Computable.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Computable.lean)
+  computes the affine and scalar errors as exact nonnegative rationals and proves their
+  equality to the semantic error values.
+
 - [`AffineCombiner/EqualDegree.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/EqualDegree.lean)
   defines the equal-degree error and proves its reduction to the affine error with the rounded Johnson bound.
 
 - [`AffineCombiner/EqualDegreeSampling.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/EqualDegreeSampling.lean)
   identifies this error with the supremum of native uniform probabilities over three challenges.
+
+- [`AffineCombiner/EqualDegreeComputable.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/EqualDegreeComputable.lean)
+  computes the equal-degree error as an exact nonnegative rational and proves its equality
+  to the semantic error.
 
 - [`AffineCombiner/SubspaceSeparation.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/SubspaceSeparation.lean)
   proves the scalar lower bound with constant fractional agreement loss on additive domains.
@@ -173,6 +183,15 @@ The error values have type `ENNReal` and counting definitions without sampler as
 them with suprema of native uniform probabilities.
 `ReedSolomon.scalarMcaError_zero_eq_mcaError` identifies the scalar error at loss zero with
 `CoreDefinitions.mcaError` at the matching integer agreement threshold.
+
+`ReedSolomon.affineMcaErrorRat`, `ReedSolomon.scalarMcaErrorRat`, and
+`ReedSolomon.equalDegreeMcaErrorRat` compute exact values in `ℚ≥0`.
+`ReedSolomon.ofReal_affineMcaErrorRat`, `ReedSolomon.ofReal_scalarMcaErrorRat`, and
+`ReedSolomon.ofReal_equalDegreeMcaErrorRat` identify the values with the semantic `ENNReal` errors.
+The finite search uses CompPoly arithmetic and degree-bounded coefficient enumerations.
+The definitions select no classical decisions or samplers.
+Execution requires computable field operations, equality decisions, and finite enumerations.
+The exhaustive search can be expensive for large fields or domains.
 
 The output and first affine witness have degree at most `d`, which gives message length `d + 1`.
 The second affine witness has degree below `d`, which gives message length `d`.
@@ -208,10 +227,18 @@ Both arguments are complete.
 
 ## Open Formalization Gaps
 
-The planned and deferred units in the ledger have no complete formalization in this port.
+The remaining Section 5 results are the linear-claims guarantee in Theorem 5.1 and the
+shared-challenge interleaving theorem, Theorem 5.2.
+The explicit numerical corollary of the equal-degree bound is not exported as a general theorem.
+The Reed–Muller extension in Theorem 7.1 and Appendix A is deferred.
+
 The affine-chart interface for Lemma 3.11 does not export formal-power-series existence and uniqueness.
-The lower bound from Proposition 6.1 is exported, while its constructed received words and
-separate global agreement assertion are internal to the proof.
+The interpolant interface omits Lemma 4.2's positive `Z`-degree conclusion.
+The general bound associated with Theorem 4.10 uses a stronger sufficient interpolation condition
+for free budgets. It also uses an unrounded Johnson factor.
+The lower bound from Proposition 6.1 is exported.
+Its separate received-word construction, global agreement assertion, and exact-agreement
+probability bound are not exported as standalone interfaces.
 
 The paper reports a Lean formalization of Theorem 1.1.
 It states that the equal-degree reductions in Section 5 and the Reed–Muller extension in

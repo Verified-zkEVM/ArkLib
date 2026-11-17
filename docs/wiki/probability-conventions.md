@@ -38,6 +38,19 @@ composition theorems and retains the chosen component samplers through dependent
 Rebuilding the entire family's samplers with `SampleableType.ofFintype` can preserve the
 probabilities while changing the sampler programs.
 
+## Computable values and semantic probabilities
+
+An executable sampler describes how to draw a value.
+The `ENNReal` event probability `Pr{…}[…]` is a semantic quantity and is noncomputable.
+An executable sampler alone does not make a quantified event decidable.
+
+For finite families of decidable events, `Probability.maxEventProbability` computes an exact
+nonnegative rational by exhaustive counting.
+Its equality theorem embeds that value into the `ENNReal` supremum of counting fractions.
+The combiner interfaces use bounded CompPoly representations to decide candidate and witness
+searches, then identify their rational errors with the semantic error definitions.
+These counters have no sampler assumptions.
+
 ## Event proofs
 
 Use VCVio's `prEvent_mono`, `prEvent_congr`, `prEvent_or_le`, `prEvent_exists_le`, and

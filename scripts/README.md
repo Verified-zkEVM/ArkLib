@@ -12,6 +12,7 @@ This directory contains various utility scripts for the ArkLib project.
 - **`build_timing_metadata.py`** - Versioned attribution metadata writer/validator for timing artifacts
 - **`test-build-timing-report.sh`** - Deterministic report, metadata, and workflow-policy fixtures
 - **`update-lib.sh`** - Update ArkLib.lean with all imports from source files
+- **`test-update-lib.py`** - Check import wrapping, tracked-file guards, and output preservation
 - **`check-imports.sh`** - Check whether `ArkLib.lean` is up to date with all tracked source modules
 - **`check-warning-log.py`** - Fail on scoped warning classes found in a captured build log
 - **`AxiomSweep.lean`** (`lake exe axiomsweep`) - Kernel-level axiom/`sorry` accounting with a

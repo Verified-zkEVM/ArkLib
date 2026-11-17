@@ -36,9 +36,15 @@ The errors have type `ENNReal` and counting definitions that require no sampler.
 `ReedSolomon.affineMcaError_eq_iSup_prob` and `ReedSolomon.scalarMcaError_eq_iSup_prob` in
 `AffineCombiner.Probability` identify them with suprema of native uniform probabilities.
 The counting definitions use classical decidability for predicates over polynomial witnesses.
-The multiplier uses noncomputable polynomial arithmetic.
+
+`ReedSolomon.affineMultiplier` uses noncomputable Mathlib polynomial arithmetic.
 Its value at `x` is `α + β * x`.
-The combined word has value `f x + (α + β * x) * g x`.
+The combined word at index `i` has value `f i + (α + β * domain i) * g i`.
+
+`ReedSolomon.affineMcaErrorRat` and `ReedSolomon.scalarMcaErrorRat` in
+`AffineCombiner.Computable` compute the same values as nonnegative rationals by finite searches.
+`ReedSolomon.ofReal_affineMcaErrorRat` and `ReedSolomon.ofReal_scalarMcaErrorRat`
+identify them with the semantic errors.
 
 ## Main definitions
 

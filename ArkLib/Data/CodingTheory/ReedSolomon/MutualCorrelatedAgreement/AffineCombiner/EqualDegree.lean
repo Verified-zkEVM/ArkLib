@@ -30,6 +30,10 @@ The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records the corresp
 
 The error is a mathematical supremum with classical decidability for polynomial witnesses.
 Its counting definition requires no sampler.
+`ReedSolomon.equalDegreeMcaErrorRat` in `EqualDegreeComputable` computes an exact rational
+value by finite searches.
+`ReedSolomon.ofReal_equalDegreeMcaErrorRat` identifies the embedded rational value with
+`ReedSolomon.equalDegreeMcaError`.
 `ReedSolomon.equalDegreeMcaError_eq_iSup_prob` in `EqualDegreeSampling` identifies it with
 native uniform probabilities.
 

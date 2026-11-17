@@ -159,7 +159,8 @@ introducing a second predicate.
 | radius passed to `IsMCA`, `mcaError`, or `Code.Lambda` | `ℝ` |
 | radius passed to `caError`, `epsPg`, `epsCa`, or `epsMca` | `ℝ≥0` |
 | radius quantified by `IsMCAGenerator` | `I`, the closed unit interval |
-| numeric error value or probability | `ENNReal` |
+| semantic error value or probability | `ENNReal` |
+| exact computable finite error | `ℚ≥0` |
 | error bound | `ℝ≥0` |
 
 Probability-valued security errors use `ENNReal`, as native event probabilities do.
@@ -173,6 +174,20 @@ For example, `ReedSolomon.affineMcaError_eq_iSup_prob` and
 native probabilities under `[SampleableType F]`.
 The event predicates and counting theorems have no sampler assumptions.
 The sampling characterizations provide the connection to probability bounds for protocols.
+
+The combiner interfaces also expose exact computable values in `ℚ≥0`:
+`ReedSolomon.affineMcaErrorRat`, `scalarMcaErrorRat`, and `equalDegreeMcaErrorRat`.
+`ReedSolomon.ofReal_affineMcaErrorRat`, `ReedSolomon.ofReal_scalarMcaErrorRat`, and
+`ReedSolomon.ofReal_equalDegreeMcaErrorRat` identify the results with the semantic `ENNReal` errors.
+They enumerate received words, challenges, and bounded CompPoly candidates and witnesses.
+The definitions select no classical decision procedures or samplers.
+Execution requires computable field operations, equality decisions, and finite enumerations.
+The exhaustive search can be expensive for large fields or domains.
+
+`Probability.maxEventProbability` is the reusable finite-family counter in
+[`FiniteError.lean`](../../ArkLib/Data/Probability/FiniteError.lean).
+The generic `mcaError` accepts abstract codes and real radii without executable membership
+or threshold decisions, so its semantic definition remains noncomputable.
 
 Counts use `ℕ`, and algebraic bound formulas can use `ℝ` with explicit `ENNReal.ofReal`
 conversion.

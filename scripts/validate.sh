@@ -27,6 +27,7 @@ Default checks:
   - fail on non-`sorry` warnings under ArkLib/
   - ./scripts/test-retiredsweep.sh and lake exe retiredsweep --require-empty
   - ./scripts/check-imports.sh
+  - python3 ./scripts/test-update-lib.py
   - ./scripts/test-build-timing-report.sh
   - uv run --no-project --python 3.12 python ./scripts/check-docs-integrity.py
   - uv run --no-project --python 3.12 python ./scripts/kb/lint.py
@@ -130,6 +131,10 @@ lake exe fri-extractor-runtime
 echo ""
 echo "# Checking umbrella imports"
 ./scripts/check-imports.sh
+
+echo ""
+echo "# Testing umbrella import generation"
+python3 ./scripts/test-update-lib.py
 
 echo ""
 echo "# Testing build timing report fixtures"

@@ -27,7 +27,11 @@ ordinary feature PRs do not (see below).
 - `./scripts/update-lib.sh` only uses tracked `ArkLib/**/*.lean` files, and fails fast if
   untracked Lean files would be skipped. `git add` new paths before running validation.
 - The generator wraps any `public import` that would exceed 100 characters, placing its module
-  name on an indented continuation line.
+  name on an indented continuation line when that leaves room within the limit.
+  Module names of 99 or 100 characters start at column zero.
+  A longer module name fails generation without replacing the previous umbrella file.
+  `python3 scripts/test-update-lib.py` checks these boundaries, repeated generation, and the
+  untracked-file guard. The default validation wrapper runs these fixtures.
 - After merging `main` into a branch that adds Lean files, rerun `./scripts/update-lib.sh` and
   stage `ArkLib.lean`. Resolving the umbrella conflict with only one side can omit the branch's
   modules. Branches predating the module-system migration also need the
