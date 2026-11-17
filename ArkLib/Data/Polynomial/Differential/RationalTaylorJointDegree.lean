@@ -165,9 +165,7 @@ private theorem totalDegree_algHom_rationalTaylorNumeratorOver_step
 /-- Degree of the numerators read through an algebra map `φ` into a polynomial ring.
 
 Assume `φ` sends the jet variables to degree at most `1` and the separant to degree at most `b`.
-
 Assume each residual monomial, with its mapped coefficient degree added, has degree at most `v`.
-
 If `v ≤ b + 1`, the numerator of `c_l` has degree at most `(2(l - r) - 1) * b + 1` after `φ`. -/
 theorem totalDegree_algHom_rationalTaylorNumeratorOver_le
     (φ : MvPolynomial (Fin (r + 1)) A →ₐ[F] MvPolynomial σ K)
@@ -193,7 +191,11 @@ theorem totalDegree_algHom_rationalTaylorNumeratorOver_le
       rw [he, Nat.add_mul, one_mul, Nat.add_assoc]
       omega
 
-/-- The sharper bound `(2(l - r) - 2) * b + v` for `l > r`, under the same hypotheses. -/
+/-- For `l > r`, the mapped Taylor numerator has degree at most `(2(l - r) - 2) * b + v`.
+
+The map sends jet variables to degree at most one and the separant to degree at most `b`.
+Each residual monomial has degree at most `v` after adding its mapped coefficient degree,
+and `v ≤ b + 1`. -/
 theorem totalDegree_algHom_rationalTaylorNumeratorOver_le_of_lt
     (φ : MvPolynomial (Fin (r + 1)) A →ₐ[F] MvPolynomial σ K)
     (center : A) (Q : DifferentialPolynomial A r) (b v : ℕ) (hv : v ≤ b + 1)
@@ -210,9 +212,11 @@ theorem totalDegree_algHom_rationalTaylorNumeratorOver_le_of_lt
   totalDegree_algHom_rationalTaylorNumeratorOver_step φ center Q b v hS hres hl
     fun i _ ↦ totalDegree_algHom_rationalTaylorNumeratorOver_le φ center Q b v hv hX hS hres i
 
-/-- Under the same hypotheses, the common numerator has degree at most `1 + τ * b` after `φ`.
+/-- The mapped common numerator has degree at most `1 + τ * b` when `2(l - r) - 1 ≤ τ`.
 
-The exponent must satisfy `2(l - r) - 1 ≤ τ`. -/
+The map sends jet variables to degree at most one and the separant to degree at most `b`.
+Each residual monomial has degree at most `v` after adding its mapped coefficient degree,
+and `v ≤ b + 1`. -/
 theorem totalDegree_algHom_commonTaylorNumeratorOver_le
     (φ : MvPolynomial (Fin (r + 1)) A →ₐ[F] MvPolynomial σ K)
     (center : A) (Q : DifferentialPolynomial A r) (b v : ℕ) (hv : v ≤ b + 1)
@@ -234,7 +238,12 @@ theorem totalDegree_algHom_commonTaylorNumeratorOver_le
     rw [← Nat.add_mul, Nat.add_sub_cancel' hl]
   omega
 
-/-- The sharper common-numerator bound `(τ - 1) * b + v` for `l > r` and `2(l - r) - 1 ≤ τ`. -/
+/-- For `l > r` and `2(l - r) - 1 ≤ τ`, the mapped common numerator has degree at most
+`(τ - 1) * b + v`.
+
+The map sends jet variables to degree at most one and the separant to degree at most `b`.
+Each residual monomial has degree at most `v` after adding its mapped coefficient degree,
+and `v ≤ b + 1`. -/
 theorem totalDegree_algHom_commonTaylorNumeratorOver_le_of_lt
     (φ : MvPolynomial (Fin (r + 1)) A →ₐ[F] MvPolynomial σ K)
     (center : A) (Q : DifferentialPolynomial A r) (b v : ℕ) (hv : v ≤ b + 1)

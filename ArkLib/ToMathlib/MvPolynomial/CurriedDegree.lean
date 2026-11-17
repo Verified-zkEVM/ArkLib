@@ -13,10 +13,8 @@ public import Mathlib.RingTheory.MvPolynomial.WeightedHomogeneous
 # Degrees of curried polynomials
 
 A polynomial in `S₁ ⊕ S₂` can be read as a polynomial in `S₁` with coefficients in `S₂`.
-
 A weighted degree of the flat polynomial bounds, monomial by monomial, the outer weight plus the
 total degree of the coefficient.
-
 A partial derivative in a variable heavier than the whole polynomial vanishes.
 
 ## Main statements
@@ -37,9 +35,9 @@ theorem sumAlgEquiv_monomial (k : S₁ ⊕ S₂ →₀ ℕ) (a : R) :
     sumAlgEquiv R S₁ S₂ (monomial k a) =
       monomial (Finsupp.sumFinsuppAddEquivProdFinsupp k).1
         (monomial (Finsupp.sumFinsuppAddEquivProdFinsupp k).2 a) := by
-  simp only [sumAlgEquiv, AlgEquiv.trans_apply]
-  erw [AddMonoidAlgebra.domCongr_single]
-  exact AddMonoidAlgebra.curryAlgEquiv_single _ _ _
+  simp only [Finsupp.sumFinsuppAddEquivProdFinsupp, Finsupp.sumFinsuppEquivProdFinsupp]
+  ext s
+  simp [sumAlgEquiv, monomial, Finsupp.comapDomain]
 
 /-- Coefficients of the curried polynomial, read at the two halves of `k`, are those at `k`. -/
 theorem coeff_coeff_sumAlgEquiv (p : MvPolynomial (S₁ ⊕ S₂) R) (k : S₁ ⊕ S₂ →₀ ℕ) :

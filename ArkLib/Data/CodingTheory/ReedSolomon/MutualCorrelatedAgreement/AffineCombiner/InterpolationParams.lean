@@ -11,11 +11,10 @@ public import Mathlib.Analysis.SpecialFunctions.Pow.Real
 /-!
 # Parameters of the affine interpolation
 
-The interpolation fixes a degree `d`, a length `n`, the rate `ρ = d / n` and a gap `η`.
-
+The interpolation fixes a degree `d`, a length `n`, the degree fraction `ρ = d / n` and a gap `η`.
 From them it builds a multiplicity, two degree budgets and two agreement thresholds.
-
 Under the standing hypotheses, there are more unknowns than linear constraints.
+The parameter definitions use real square roots and ceilings and are noncomputable.
 
 ## Main definitions
 
@@ -66,9 +65,9 @@ noncomputable def affineRootBudget (d n : ℕ) (η : ℝ) : ℕ :=
 
 /-- The standing hypotheses on the degree `d`, the length `n` and the gap `η`. -/
 structure AffineParams (d n : ℕ) (η : ℝ) : Prop where
-  /-- The degree is positive, so the rate is positive. -/
+  /-- The degree is positive, so the degree fraction is positive. -/
   one_le : 1 ≤ d
-  /-- The rate is below one. -/
+  /-- The degree fraction is below one. -/
   lt_card : d < n
   /-- The gap is positive. -/
   pos : 0 < η
@@ -85,25 +84,25 @@ variable {d n : ℕ} {η : ℝ}
 theorem card_pos (h : AffineParams d n η) : (0 : ℝ) < n :=
   Nat.cast_pos.mpr (Nat.zero_lt_of_lt h.lt_card)
 
-/-- The rate `d / n` is positive. -/
-theorem rate_pos (h : AffineParams d n η) : (0 : ℝ) < (d : ℝ) / n :=
+/-- The degree fraction `d / n` is positive. -/
+theorem degreeFraction_pos (h : AffineParams d n η) : (0 : ℝ) < (d : ℝ) / n :=
   div_pos (by exact_mod_cast h.one_le) h.card_pos
 
-/-- The rate `d / n` is below one. -/
-theorem rate_lt_one (h : AffineParams d n η) : (d : ℝ) / n < 1 :=
+/-- The degree fraction `d / n` is below one. -/
+theorem degreeFraction_lt_one (h : AffineParams d n η) : (d : ℝ) / n < 1 :=
   (div_lt_one h.card_pos).mpr (by exact_mod_cast h.lt_card)
 
-/-- The square root of the rate is positive. -/
-theorem sqrt_rate_pos (h : AffineParams d n η) : 0 < √((d : ℝ) / n) :=
-  Real.sqrt_pos.mpr h.rate_pos
+/-- The square root of the degree fraction is positive. -/
+theorem sqrt_degreeFraction_pos (h : AffineParams d n η) : 0 < √((d : ℝ) / n) :=
+  Real.sqrt_pos.mpr h.degreeFraction_pos
 
-/-- The square root of the rate is below one. -/
-theorem sqrt_rate_lt_one (h : AffineParams d n η) : √((d : ℝ) / n) < 1 :=
-  (Real.sqrt_lt' one_pos).mpr (by simpa using h.rate_lt_one)
+/-- The square root of the degree fraction is below one. -/
+theorem sqrt_degreeFraction_lt_one (h : AffineParams d n η) : √((d : ℝ) / n) < 1 :=
+  (Real.sqrt_lt' one_pos).mpr (by simpa using h.degreeFraction_lt_one)
 
 /-- The gap is below one. -/
 theorem lt_one (h : AffineParams d n η) : η < 1 := by
-  linarith [h.lt_one_sub, h.sqrt_rate_pos]
+  linarith [h.lt_one_sub, h.sqrt_degreeFraction_pos]
 
 /-- The multiplicity is at least `3`. -/
 theorem three_le_multiplicity (h : AffineParams d n η) : 3 ≤ affineMultiplicity η := by
@@ -132,9 +131,9 @@ theorem ceil_add_yzBudget_le (h : AffineParams d n η) :
   set m : ℝ := (affineMultiplicity η : ℝ) with hm
   set r := √((d : ℝ) / n) with hr
   have hn := h.card_pos
-  have hr0 := h.sqrt_rate_pos
-  have hr1 := h.sqrt_rate_lt_one
-  have hrr : r ^ 2 = (d : ℝ) / n := Real.sq_sqrt h.rate_pos.le
+  have hr0 := h.sqrt_degreeFraction_pos
+  have hr1 := h.sqrt_degreeFraction_lt_one
+  have hrr : r ^ 2 = (d : ℝ) / n := Real.sq_sqrt h.degreeFraction_pos.le
   have hdr : (d : ℝ) = n * r ^ 2 := by rw [hrr]; field_simp
   have hm2 := h.two_le_multiplicity_mul
   have hm3 := h.multiplicity_mul_lt
@@ -161,7 +160,7 @@ theorem ceil_add_yzBudget_le (h : AffineParams d n η) :
           nlinarith
         _ = n := mul_one _
     have : (4 : ℝ) < 4 / ((d : ℝ) / n) := by
-      rw [lt_div_iff₀ h.rate_pos]; nlinarith [h.rate_lt_one]
+      rw [lt_div_iff₀ h.degreeFraction_pos]; nlinarith [h.degreeFraction_lt_one]
     linarith
   -- The real inequality `U + D + 1 ≤ m (√ρ + η) n`.
   have key : (m + 1 / 2) * n * r + (m + 1 / 2) ^ 2 * (n * η ^ 2 / 4) / 3 + 1 ≤
@@ -190,9 +189,9 @@ theorem ceil_add_yzBudget_le (h : AffineParams d n η) :
 theorem ceil_eq_yzBudget_add_one (h : AffineParams d n η) :
     ⌈((affineMultiplicity η : ℝ) + 1 / 2) ^ 2 / (3 * √((d : ℝ) / n) ^ 2)⌉₊ =
       affineYZBudget d n η + 1 := by
-  rw [Real.sq_sqrt h.rate_pos.le, affineYZBudget, Nat.sub_add_cancel]
+  rw [Real.sq_sqrt h.degreeFraction_pos.le, affineYZBudget, Nat.sub_add_cancel]
   exact Nat.one_le_iff_ne_zero.mpr (Nat.pos_iff_ne_zero.mp
-    (Nat.ceil_pos.mpr (div_pos (by positivity) (mul_pos three_pos h.rate_pos))))
+    (Nat.ceil_pos.mpr (div_pos (by positivity) (mul_pos three_pos h.degreeFraction_pos))))
 
 /-- More unknowns than linear constraints: `n |constraints| < |monomials|`. -/
 theorem surplus (h : AffineParams d n η) :
@@ -200,8 +199,9 @@ theorem surplus (h : AffineParams d n η) :
       (monomialSupport d (affineMultiplicity η * affineThreshold d n η - affineYZBudget d n η)
         (affineRootBudget d n η + 1) (affineYZBudget d n η + 1)).card := by
   have hcount := card_constraints_lt_monomials n d (affineMultiplicity η) √((d : ℝ) / n)
-    (Nat.zero_lt_of_lt h.lt_card) h.three_le_multiplicity h.sqrt_rate_pos
-    h.sqrt_rate_lt_one.le (by rw [Real.sq_sqrt h.rate_pos.le]; field_simp [h.card_pos.ne'])
+    (Nat.zero_lt_of_lt h.lt_card) h.three_le_multiplicity h.sqrt_degreeFraction_pos
+    h.sqrt_degreeFraction_lt_one.le
+    (by rw [Real.sq_sqrt h.degreeFraction_pos.le]; field_simp [h.card_pos.ne'])
   rw [h.ceil_eq_yzBudget_add_one] at hcount
   refine hcount.trans_le (Finset.card_le_card ?_)
   have hkey := h.ceil_add_yzBudget_le
@@ -227,10 +227,10 @@ theorem threshold_le (h : AffineParams d n η) : affineThreshold d n η ≤ n :=
 theorem le_persistenceThreshold (h : AffineParams d n η) :
     d ≤ affinePersistenceThreshold d n η := by
   have hlt : (d : ℝ) < (√((d : ℝ) / n) + η / 2) * n := by
-    have hr0 := h.sqrt_rate_pos
-    have hr1 := h.sqrt_rate_lt_one
+    have hr0 := h.sqrt_degreeFraction_pos
+    have hr1 := h.sqrt_degreeFraction_lt_one
     have hdr : (d : ℝ) = n * √((d : ℝ) / n) ^ 2 := by
-      rw [Real.sq_sqrt h.rate_pos.le]; field_simp [h.card_pos.ne']
+      rw [Real.sq_sqrt h.degreeFraction_pos.le]; field_simp [h.card_pos.ne']
     have hn := h.card_pos
     have hη := h.pos
     set r := √((d : ℝ) / n)
@@ -246,7 +246,7 @@ theorem persistenceThreshold_lt (h : AffineParams d n η) :
   have hmono : ⌈(√((d : ℝ) / n) + η / 2) * n⌉₊ ≤ affineThreshold d n η :=
     Nat.ceil_mono (mul_le_mul_of_nonneg_right (by linarith [h.pos]) h.card_pos.le)
   have hpos : 0 < affineThreshold d n η :=
-    Nat.ceil_pos.mpr (mul_pos (add_pos h.sqrt_rate_pos h.pos) h.card_pos)
+    Nat.ceil_pos.mpr (mul_pos (add_pos h.sqrt_degreeFraction_pos h.pos) h.card_pos)
   unfold affinePersistenceThreshold
   omega
 
@@ -259,10 +259,10 @@ theorem card_div_sub_le (h : AffineParams d n η) :
   -- `B < (√ρ + η / 2) n` and `(√ρ + η) n ≤ A`, so `η n / 2 < A - B`.
   have hB : (affinePersistenceThreshold d n η : ℝ) < (√((d : ℝ) / n) + η / 2) * n := by
     have hceil := Nat.ceil_lt_add_one
-      (mul_pos (add_pos h.sqrt_rate_pos (half_pos hη)) hn).le
+      (mul_pos (add_pos h.sqrt_degreeFraction_pos (half_pos hη)) hn).le
     have h1 : 1 ≤ ⌈(√((d : ℝ) / n) + η / 2) * n⌉₊ := Nat.one_le_iff_ne_zero.mpr
       (Nat.pos_iff_ne_zero.mp (Nat.ceil_pos.mpr
-        (mul_pos (add_pos h.sqrt_rate_pos (half_pos hη)) hn)))
+        (mul_pos (add_pos h.sqrt_degreeFraction_pos (half_pos hη)) hn)))
     have hle : (affinePersistenceThreshold d n η : ℝ) + 1 =
         (⌈(√((d : ℝ) / n) + η / 2) * n⌉₊ : ℕ) := by
       unfold affinePersistenceThreshold

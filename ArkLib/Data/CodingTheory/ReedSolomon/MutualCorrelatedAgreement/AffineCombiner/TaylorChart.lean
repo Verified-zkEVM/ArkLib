@@ -15,11 +15,15 @@ public import ArkLib.ToMathlib.Polynomial.FrobeniusTaylor
 /-!
 # The Taylor chart of a root along an affine challenge line
 
-A root `P` of `R(X, a + b X, Z)` is determined by its value at a center and the challenge `(a, b)`.
+At a center where the derivative in `Z` is nonzero, a root `P` of
+`R(X, a + b X, Z)` is determined by its initial value and the challenge `(a, b)`.
+For each positive order `l`, its Taylor coefficient is a rational function
+`N_l / S ^ (2l - 1)` of the chart point `(y₀, a, b)`.
+The numerator has joint degree at most `1 + (2l - 1)(h - 1)`, where `h` bounds the
+`(Y, Z)`-degree and `S` is the nonzero separant at the center.
 
-Its Taylor coefficients are rational functions `N_l / S ^ (2l - 1)` of the chart point `(y₀, a, b)`.
-
-The numerators have joint degree at most `1 + (2l - 1)(h - 1)`, where `h` is the `(Y, Z)`-degree.
+The chart maps and reconstructions are noncomputable mathematical views of polynomial
+rings and rational Taylor coefficients.
 
 ## Main statements
 
@@ -44,8 +48,6 @@ The numerators have joint degree at most `1 + (2l - 1)(h - 1)`, where `h` is the
 
 namespace ReedSolomon
 
-noncomputable section
-
 open MvPolynomial PolynomialDifferential
 
 variable {E : Type*} [Field E]
@@ -54,58 +56,64 @@ variable {E : Type*} [Field E]
 abbrev AffineChartVar : Type := Fin 1 ⊕ Fin 2
 
 /-- The equation `R(X, a + b X, Y₀)` as an order-zero differential equation over `E[a, b]`. -/
-def affineLineEquation (R : MvPolynomial AffineVar E) :
+noncomputable def affineLineEquation (R : MvPolynomial AffineVar E) :
     DifferentialPolynomial (MvPolynomial (Fin 2) E) 0 :=
   aeval (fun v ↦ v.elim (X (some 0)) ![X none, C (X 0) + C (X 1) * X none]) R
 
 /-- Polynomials in `y₀` over `E[a, b]` read as polynomials in the three chart variables. -/
-def affineChartFlatten :
+noncomputable def affineChartFlatten :
     MvPolynomial (Fin 1) (MvPolynomial (Fin 2) E) ≃ₐ[E] MvPolynomial AffineChartVar E :=
   (sumAlgEquiv E (Fin 1) (Fin 2)).symm
 
 /-- The chart substitution `Z ↦ y₀`, `X ↦ c`, `Y ↦ a + c b`. -/
-def affineChartSubstitution (c : E) : AffineVar → MvPolynomial AffineChartVar E :=
+noncomputable def affineChartSubstitution (c : E) : AffineVar → MvPolynomial AffineChartVar E :=
   fun v ↦ v.elim (X (.inl 0)) ![C c, X (.inr 0) + C c * X (.inr 1)]
 
-/-- The chart hypersurface `R(c, a + c b, y₀) = 0`. -/
-def affineChartEquation (c : E) (R : MvPolynomial AffineVar E) : MvPolynomial AffineChartVar E :=
+/-- The polynomial defining the chart hypersurface `R(c, a + c b, y₀) = 0`. -/
+noncomputable def affineChartEquation (c : E) (R : MvPolynomial AffineVar E) :
+    MvPolynomial AffineChartVar E :=
   affineChartFlatten (initialJetEquation (C c) (affineLineEquation R))
 
 /-- The chart separant `R_Z(c, a + c b, y₀)`. -/
-def affineChartSeparant (c : E) (R : MvPolynomial AffineVar E) : MvPolynomial AffineChartVar E :=
+noncomputable def affineChartSeparant (c : E) (R : MvPolynomial AffineVar E) :
+    MvPolynomial AffineChartVar E :=
   affineChartFlatten (initialJetSeparant (C c) (affineLineEquation R))
 
-/-- The numerator of the Taylor coefficient `c_l` at center `c`, over the denominator `S ^ τ`. -/
-def affineChartNumerator (c : E) (R : MvPolynomial AffineVar E) (τ l : ℕ) :
+/-- The Taylor numerator at order `l` and center `c`, padded to separant exponent `τ`.
+
+It represents the coefficient over `S ^ τ` when `2l - 1 ≤ τ` and the separant `S` is nonzero. -/
+noncomputable def affineChartNumerator (c : E) (R : MvPolynomial AffineVar E) (τ l : ℕ) :
     MvPolynomial AffineChartVar E :=
   affineChartFlatten (commonTaylorNumeratorOver E (C c) (affineLineEquation R) τ l)
 
-/-- The cut at `x`: the reconstruction takes the value `u + (a ^ s + x b ^ s) v` at `x`.
+/-- The polynomial obtained by clearing `S ^ τ` in the reconstruction discrepancy at `x`.
 
-The denominator `S ^ τ` is cleared. -/
-def affineChartCut (c : E) (R : MvPolynomial AffineVar E) (s d τ : ℕ) (x u v : E) :
+When `S ≠ 0` and `2 s d - 1 ≤ τ`, it vanishes exactly when the reconstruction takes the
+value `u + (a ^ s + x b ^ s) v` at `x`. -/
+noncomputable def affineChartCut (c : E) (R : MvPolynomial AffineVar E) (s d τ : ℕ) (x u v : E) :
     MvPolynomial AffineChartVar E :=
   (∑ j ∈ Finset.range (d + 1), C ((x - c ^ s) ^ j) * affineChartNumerator c R τ (s * j)) -
     (C u + (X (.inr 0) ^ s + C x * X (.inr 1) ^ s) * C v) * affineChartSeparant c R ^ τ
 
 /-- The line equation with the challenge specialized to `(ab 0, ab 1)`. -/
-def affineSpecializedLine (R : MvPolynomial AffineVar E) (ab : Fin 2 → E) :
+noncomputable def affineSpecializedLine (R : MvPolynomial AffineVar E) (ab : Fin 2 → E) :
     DifferentialPolynomial E 0 :=
   map (aeval ab).toRingHom (affineLineEquation R)
 
 /-- The rational Taylor coefficient `c_l` at center `c` of the chart point `pt`. -/
-def affineChartCoefficient (c : E) (R : MvPolynomial AffineVar E) (pt : AffineChartVar → E)
-    (l : ℕ) : E :=
+noncomputable def affineChartCoefficient (c : E) (R : MvPolynomial AffineVar E)
+    (pt : AffineChartVar → E) (l : ℕ) : E :=
   rationalTaylorCoefficient c (affineSpecializedLine R (pt ∘ Sum.inr)) (pt ∘ Sum.inl) l
 
 /-- The reconstruction `∑_{j ≤ d} c_{s j}(pt) (X - c ^ s) ^ j`. -/
-def affineChartPolynomial (c : E) (R : MvPolynomial AffineVar E) (s d : ℕ)
+noncomputable def affineChartPolynomial (c : E) (R : MvPolynomial AffineVar E) (s d : ℕ)
     (pt : AffineChartVar → E) : Polynomial E :=
   ∑ j ∈ Finset.range (d + 1), Polynomial.C (affineChartCoefficient c R pt (s * j)) *
     (Polynomial.X - Polynomial.C (c ^ s)) ^ j
 
 /-- The chart point `(P(c ^ s), a, b)` of a root `expand s P` on the line `(a, b)`. -/
-def affineChartPoint (c : E) (s : ℕ) (a b : E) (P : Polynomial E) : AffineChartVar → E :=
+noncomputable def affineChartPoint (c : E) (s : ℕ) (a b : E) (P : Polynomial E) :
+    AffineChartVar → E :=
   Sum.elim (fun _ ↦ (Polynomial.expand E s P).eval c) ![a, b]
 
 /-! ### Flattening and evaluation -/
@@ -379,7 +387,7 @@ theorem totalDegree_affineChartEquation_le (c : E) {R : MvPolynomial AffineVar E
   rw [affineChartEquation_eq]
   exact (totalDegree_aeval_affineChartSubstitution_le c R).trans hR
 
-/-- The chart separant has degree at most `h - 1`. -/
+/-- If `R` has `(Y, Z)`-degree at most `h`, the chart separant has degree at most `h - 1`. -/
 theorem totalDegree_affineChartSeparant_le (c : E) {R : MvPolynomial AffineVar E} {h : ℕ}
     (hR : R.weightedTotalDegree affineYZWeight ≤ h) :
     (affineChartSeparant c R).totalDegree ≤ h - 1 := by
@@ -465,11 +473,12 @@ private theorem totalDegree_residual_coeff_add_degree_le (c : E)
       · exact X_mem_restrictWeightedDegree (Sum.elim w (1 : Fin 2 → ℕ)) 1 (.inr 0) le_rfl
       · have h1 := X_mem_restrictWeightedDegree (R := E)
           (Sum.elim w (1 : Fin 2 → ℕ)) 1 (.inr 1) le_rfl
-        have h0 : (C c + X (.inl none) : MvPolynomial (Option (Fin l) ⊕ Fin 2) E) ∈
+        have h0 : (C c + X (R := E) (Sum.inl none : Option (Fin l) ⊕ Fin 2) :
+            MvPolynomial (Option (Fin l) ⊕ Fin 2) E) ∈
             restrictWeightedDegree (Sum.elim w 1) 0 :=
           Submodule.add_mem _ (C_mem_restrictWeightedDegree _ 0 c)
             (X_mem_restrictWeightedDegree _ 0 _ le_rfl)
-        exact mul_mem_restrictWeightedDegree h1 h0
+        exact mul_mem_restrictWeightedDegree (d := 1) (e := 0) h1 h0
 
 /-- The flattening map satisfies the hypotheses of the joint numerator bound. -/
 private theorem affineChartFlatten_numerator_hypotheses (c : E) {R : MvPolynomial AffineVar E}
@@ -500,7 +509,8 @@ theorem totalDegree_affineChartNumerator_le (c : E) {R : MvPolynomial AffineVar 
   exact totalDegree_algHom_commonTaylorNumeratorOver_le affineChartFlatten.toAlgHom (C c)
     (affineLineEquation R) (h - 1) h (by omega) hX hS hres (by simpa using hl)
 
-/-- For `l > 0` the numerator has the sharper degree bound `(τ - 1)(h - 1) + h`. -/
+/-- For `l > 0` and `2l - 1 ≤ τ`, the numerator has degree at most `(τ - 1)(h - 1) + h`,
+where `h` bounds the `(Y, Z)`-degree of `R`. -/
 theorem totalDegree_affineChartNumerator_le_of_pos (c : E) {R : MvPolynomial AffineVar E}
     {h τ l : ℕ} (hR : R.weightedTotalDegree affineYZWeight ≤ h) (hl0 : 0 < l)
     (hl : 2 * l - 1 ≤ τ) :
@@ -509,7 +519,8 @@ theorem totalDegree_affineChartNumerator_le_of_pos (c : E) {R : MvPolynomial Aff
   exact totalDegree_algHom_commonTaylorNumeratorOver_le_of_lt affineChartFlatten.toAlgHom
     (C c) (affineLineEquation R) (h - 1) h (by omega) hX hS hres hl0 (by simpa using hl)
 
-/-- The cut with `τ = 2 s d - 1` has degree at most `2 s d h`. -/
+/-- For positive `s` and `d`, the cut with `τ = 2 s d - 1` has degree at most `2 s d h`,
+where `h` bounds the `(Y, Z)`-degree of `R`. -/
 theorem totalDegree_affineChartCut_le (c : E) {R : MvPolynomial AffineVar E} {s d h : ℕ}
     (hR : R.weightedTotalDegree affineYZWeight ≤ h) (hd : 1 ≤ d) (hs : 1 ≤ s) (x u v : E) :
     (affineChartCut c R s d (2 * s * d - 1) x u v).totalDegree ≤ 2 * s * d * h := by
@@ -546,7 +557,9 @@ theorem totalDegree_affineChartCut_le (c : E) {R : MvPolynomial AffineVar E} {s 
     · refine (totalDegree_mul _ _).trans ?_
       have hpow := (totalDegree_pow (affineChartSeparant c R) (2 * s * d - 1)).trans
         (Nat.mul_le_mul_left _ (totalDegree_affineChartSeparant_le c hR))
-      have hlin : (C u + (X (.inr 0) ^ s + C x * X (.inr 1) ^ s) * C v :
+      have hlin : (C u +
+          (X (R := E) (Sum.inr (0 : Fin 2) : AffineChartVar) ^ s +
+            C x * X (R := E) (Sum.inr (1 : Fin 2) : AffineChartVar) ^ s) * C v :
           MvPolynomial AffineChartVar E).totalDegree ≤ s := by
         refine (totalDegree_add _ _).trans (max_le (by simp) ?_)
         refine (totalDegree_mul _ _).trans ?_
@@ -558,7 +571,5 @@ theorem totalDegree_affineChartCut_le (c : E) {R : MvPolynomial AffineVar E} {s 
           exact (totalDegree_pow _ _).trans (by simp [totalDegree_X])
       have : s ≤ 2 * s * d := by nlinarith
       omega
-
-end
 
 end ReedSolomon

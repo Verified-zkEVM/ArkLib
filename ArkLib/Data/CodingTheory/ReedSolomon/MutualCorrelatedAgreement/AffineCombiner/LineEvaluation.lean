@@ -12,13 +12,11 @@ public import Mathlib.RingTheory.MvPolynomial.WeightedHomogeneous
 # Trivariate polynomials along an affine challenge line
 
 The proof interpolates a polynomial `Q(X, Y, Z)` and evaluates it along a challenge line.
-
 The evaluation sends `Y` to `α + β X` and `Z` to a candidate `P(X)`.
 
 ## Weights
 
 The `(Y, Z)`-weight ignores `X`, so it measures the joint degree in `Y` and `Z`.
-
 The line weight `(1, 1, d)` bounds the degree after the evaluation, when `deg P ≤ d`.
 
 ## Main definitions

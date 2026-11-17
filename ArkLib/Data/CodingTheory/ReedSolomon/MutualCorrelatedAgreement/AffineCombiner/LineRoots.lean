@@ -17,18 +17,13 @@ public import ArkLib.ToMathlib.MvPolynomial.RootContraction
 # Lines through the roots of a trivariate polynomial
 
 A trivariate `G(X, Y, Z)` is read as a polynomial in `Z` over `E[X][Y]`.
+A nonzero `G` free of `Z` vanishes identically on at most `deg_Y G` lines `Y = α + β X`.
 
-Along a line `Y = α + β X`, a nonzero `G` free of `Z` vanishes for at most `deg_Y G` lines.
-
-The `Z`-discriminant of `R` is a polynomial in `Y` of degree at most `h (h - 1)`.
-
-Here `h` is the `(Y, Z)`-degree of `R`.
-
+For a polynomial `R` of positive `Z`-degree, its `Z`-discriminant is a polynomial in `Y`
+of degree at most `h (h - 1)`, where `h` bounds the `(Y, Z)`-degree of `R`.
 Where the discriminant does not vanish on the line, every root of `R` along the line is simple.
-
-It is a resultant with declared degrees, so this holds even if the leading `Z`-coefficient
-vanishes on the line.
-
+The discriminant is a resultant with declared degrees, so this implication also holds when
+the line makes the leading `Z`-coefficient vanish.
 The nested presentation is noncomputable because Mathlib's polynomial rings are.
 
 ## Main definitions
@@ -210,16 +205,6 @@ theorem affineLineEval_eq_nested (α β : E) (P : E[X]) (G : MvPolynomial Affine
     rcases v with _ | i
     · simp [hG]
     · fin_cases i <;> simp [hG]
-
-/-- Distinct pairs `(α, β)` give distinct lines `α + β X`. -/
-theorem affineMultiplier_injective :
-    Function.Injective fun c : E × E ↦ affineMultiplier c.1 c.2 := by
-  rintro ⟨a, b⟩ ⟨a', b'⟩ h
-  have h0 := congrArg (coeff · 0) h
-  have h1 := congrArg (coeff · 1) h
-  simp only [affineMultiplier, coeff_add, coeff_C, coeff_C_mul, coeff_X] at h0 h1
-  simp at h0 h1
-  simp [h0, h1]
 
 open Classical in
 /-- A nonzero `G` free of `Z` vanishes along at most `deg_Y G` lines indexed injectively by `S`.

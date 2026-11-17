@@ -12,9 +12,7 @@ public import Mathlib.Data.Matrix.Mul
 # Kernel vectors descend along coefficient maps
 
 Let `A` be a matrix over a field `K` and `f : K →+* S` a ring homomorphism.
-
 A kernel vector of the mapped matrix with a nonzero coordinate `j` gives one of `A` over `K`.
-
 Otherwise the coordinate `j` is a combination of the rows of `A`, and that identity maps to `S`.
 
 ## Main statements

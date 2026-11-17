@@ -16,13 +16,12 @@ public import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 /-!
 # Trivariate interpolation along affine lines
 
-A nonzero `Q(X, Y, Z)` of bounded degree is built to vanish to order `m` at every point.
-
-The points are `(z, f(z) + Y g(z))`, one per domain point `z`.
-
-Then `Q(X, α + β X, P(X)) = 0` whenever `P` agrees with `f + (α + β X) g` on at least `A` points.
-
-Such a `Q` exists as soon as there are more unknown coefficients than linear constraints.
+A nonzero `Q(X, Y, Z)` of `(1, 1, d)`-weighted degree below `m A` is built to vanish
+to order `m` along each line `(z, Y, f(z) + Y g(z))` indexed by a domain point `z`.
+Consequently, `Q(X, α + β X, P(X)) = 0` for every candidate of degree at most `d` that
+agrees with `f + (α + β X) g` on at least `A` domain points.
+Such an interpolant exists when its coefficient space has greater dimension than the
+space of linear constraints.
 
 ## Main definitions
 

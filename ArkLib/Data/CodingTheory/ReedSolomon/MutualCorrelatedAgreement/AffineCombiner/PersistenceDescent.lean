@@ -12,13 +12,19 @@ public import ArkLib.ToMathlib.LinearAlgebra.Matrix.KernelDescent
 /-!
 # Persistence witnesses over the base field
 
-A ratio `H / L` with `deg H ≤ d` and `deg L ≤ 1` may match given values over an extension field.
+Suppose polynomials over an extension field satisfy `H(x) = L(x) v` at finitely many
+base-field points, with `deg H ≤ d`, `deg L ≤ 1`, and `L ≠ 0`.
+These identities are linear in the coefficients, so a kernel argument gives polynomials over
+the base field with the same bounds and identities.
+The denominator may vanish at an agreement point.
+Starting with `B + 1` common agreements leaves at least `B` where the ratio is defined,
+which proves persistence.
 
-Then a ratio of the same shape matches them over the base field.
-
-The matching conditions are linear in the coefficients of `H` and `L`, with base-field coefficients.
-
-A ratio that matches `g` on more than `B` agreement points makes the candidate persistent.
+The paper's Claim 4.8 chooses a second base-field triple in an affine space defined over
+that field.
+The chart proof instead constructs a second regular point over the algebraic closure and
+uses coefficient descent to obtain base-field identities.
+This lemma supports that difference in proof method.
 
 ## Main statements
 
@@ -27,7 +33,7 @@ A ratio that matches `g` on more than `B` agreement points makes the candidate p
 
 ## References
 
-The descent fills the field-of-definition step of Claim 4.8 of [CWYZ26], case `c > B`.
+The persistence argument corresponds to Claim 4.8 of [CWYZ26], case `c > B`.
 
 * [Chiesa, A., Weissenberg, G., Yogev, E., and Zheng, K. Z.,
     *Affine combiners for Reed–Solomon proximity gaps*][CWYZ26]
@@ -102,9 +108,10 @@ end LineRatio
 
 variable {F : Type*} [Field F]
 
-/-- A ratio `H / L` that matches the values at the points after a field embedding descends.
+/-- Identities `H(x) = L(x) v` at finitely many base-field points descend along a field embedding.
 
-The descended ratio keeps `deg H ≤ d`, `L ≠ 0` and `deg L ≤ 1`. -/
+The descended polynomials satisfy `deg H ≤ d`, `L ≠ 0`, and `deg L ≤ 1`.
+The identities do not assert that `L(x) ≠ 0` at every point. -/
 theorem exists_lineRatioWitness_of_map {E : Type*} [Field E] (φ : F →+* E) {κ : Type*}
     [Finite κ] (pts vals : κ → F) (d : ℕ) {H L : E[X]} (hL : L ≠ 0) (hL1 : L.degree ≤ 1)
     (hH : H.degree ≤ d) (h : ∀ k, H.eval (φ (pts k)) = L.eval (φ (pts k)) * φ (vals k)) :
@@ -139,9 +146,10 @@ theorem exists_lineRatioWitness_of_map {E : Type*} [Field E] (φ : F →+* E) {�
 
 variable [DecidableEq F] {ι : Type*} [Fintype ι]
 
-/-- A ratio `H / L` with `H = L g` on `B + 1` agreement points makes `P` persistent at `B`.
+/-- If `H = L g` on at least `B + 1` candidate agreement points, then `P` is persistent at `B`.
 
-`L` has at most one root, so at least `B` of these points survive. -/
+The bounds are `deg H ≤ d`, `deg L ≤ 1`, and `L ≠ 0`.
+At most one of these points is a root of `L`, leaving at least `B` where the ratio is defined. -/
 theorem isAffinePersistent_of_commonAgreement (domain : ι ↪ F) (f g : ι → F) {d B : ℕ}
     {α β : F} {P H L : F[X]} (T : Finset ι)
     (hT : B + 1 ≤ T.card) (hagree : T ⊆ polynomialAgreementSet domain
@@ -155,8 +163,7 @@ theorem isAffinePersistent_of_commonAgreement (domain : ι ↪ F) (f g : ι → 
     (card_le_natDegree_of_injOn_of_eval_eq_zero hL domain.injective.injOn
       fun i hi ↦ (mem_filter.mp hi).2).trans (natDegree_le_of_degree_le hL1)
   have hsub : {i ∈ T | ¬ L.eval (domain i) = 0} ⊆
-      {i ∈ polynomialAgreementSet domain (combinedWord domain f g (affineMultiplier α β)) P |
-        L.eval (domain i) ≠ 0 ∧ H.eval (domain i) = L.eval (domain i) * g i} := fun i hi ↦ by
+      affinePersistenceSet domain f g α β P H L := fun i hi ↦ by
     obtain ⟨hiT, hi0⟩ := mem_filter.mp hi
     exact mem_filter.mpr ⟨hagree hiT, hi0, h i hiT⟩
   have := card_filter_add_card_filter_not (s := T) fun i ↦ L.eval (domain i) = 0
