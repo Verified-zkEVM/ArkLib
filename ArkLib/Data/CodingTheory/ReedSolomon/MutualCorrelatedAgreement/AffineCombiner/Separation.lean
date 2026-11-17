@@ -9,37 +9,39 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Aff
 public import Mathlib.LinearAlgebra.Lagrange
 
 /-!
-# Lower bounds on the error of scalar and affine combiners
+# Lower bounds for scalar and affine combiner errors
 
-Each bound comes from one explicit pair of received words with many exceptional challenges.
+Write `n` for the domain size and `q` for the field size.
+Each lower bound uses an explicit received word pair with many exceptional challenges.
+The bounds formalize Propositions 6.1 and 6.2 of [CWYZ26].
+The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records their hypotheses and scope.
 
 ## Affine combiner without agreement loss
 
-Take `f = 0`, and let `g` vanish on `A - 1` points and equal one elsewhere.
+Let `f = 0`, and let `g` be zero on a set `C` of size `A - 1` and one elsewhere.
+For `z` outside `C` and `β ≠ 0`, the affine multiplier of the challenge `(-β z, β)` vanishes
+at `z` and nowhere else.
+The zero candidate therefore agrees on `C ∪ {z}`, a set of size `A`.
+If `d + 1 < A`, a witness of degree below `d` that vanishes on `C` must be zero, so it
+cannot agree with `g` at `z`.
+The `(n - A + 1)(q - 1)` distinct challenges give the zero-loss lower bound.
 
-A challenge `(-β z, β)` with `β ≠ 0` vanishes at the single extra point `z`.
+## Scalar combiner with agreement loss
 
-So the zero candidate agrees on `A` points, and no witness can match `g(z) = 1`.
-
-This gives `(n - A + 1)(q - 1)` exceptional challenges.
-
-## Scalar combiner with agreement loss `s`
-
-Let `g` be the vanishing polynomial of `A - s - 1` points.
-
-No polynomial of degree at most `d` agrees with `g` on more points than that.
-
-Cut the other points into blocks of `s + 1`, and give each block its own challenge `γ`.
-
-Set `f = -γ g` on the block of `γ`, so each full block makes the zero candidate exceptional.
+Let `g` evaluate the vanishing polynomial of a set of size `A - s - 1`.
+If `d + s + 1 < A`, no polynomial of degree at most `d` agrees with `g` on `A - s` positions.
+Partition the remaining coordinates into blocks of size `s + 1`, with a smaller final block
+if necessary, and give each block a distinct challenge `γ`.
+On that block set `f = -γ g`.
+Each full block makes the zero candidate agree on at least `A` positions without witnesses
+of loss at most `s`.
 
 ## Main statements
 
-* `ReedSolomon.affineMcaError_zero_loss_ge` and `ReedSolomon.affineMcaError_zero_loss_ge_half`:
-  without agreement loss, the affine error is at least `(n - A + 1)(q - 1) / q²`, hence at least
-  `(n - A + 1) / (2q)` (Proposition 6.2 of [CWYZ26]).
-* `ReedSolomon.scalarMcaError_ge`: with agreement loss `s`, the scalar error is at least
-  `(1 + ⌊(n - A) / (s + 1)⌋) / q` (Proposition 6.1 of [CWYZ26]).
+* `ReedSolomon.le_affineMcaError_zero_loss`: the bound `(n - A + 1)(q - 1) / q²`.
+* `ReedSolomon.le_affineMcaError_zero_loss_div_two`: the bound `(n - A + 1) / (2q)`.
+* `ReedSolomon.le_scalarMcaError_of_degree_add_loss_add_one_lt`:
+  the bound `(1 + ⌊(n - A) / (s + 1)⌋) / q`.
 
 ## References
 
@@ -72,8 +74,9 @@ private theorem card_filter_equivFin_mem (U : Finset ℕ) (hU : ∀ k ∈ U, k <
   · intro hk
     exact ⟨(Fintype.equivFin ι).symm ⟨k, hU k hk⟩, by simpa using hk, by simp⟩
 
-/-- Without agreement loss, the affine error is at least `(n - A + 1)(q - 1) / q²`. -/
-theorem affineMcaError_zero_loss_ge [Fintype F] (domain : ι ↪ F) {d A : ℕ}
+/-- If `d + 1 < A ≤ n`, the affine error at loss zero is at least
+`(n - A + 1)(q - 1) / q²`, where `n = |ι|` and `q = |F|`. -/
+theorem le_affineMcaError_zero_loss [Fintype F] (domain : ι ↪ F) {d A : ℕ}
     (hdA : d + 1 < A) (hAn : A ≤ Fintype.card ι) :
     ENNReal.ofReal (((Fintype.card ι - A + 1 : ℕ) : ℝ) * ((Fintype.card F : ℝ) - 1) /
         (Fintype.card F : ℝ) ^ 2) ≤
@@ -166,13 +169,14 @@ theorem affineMcaError_zero_loss_ge [Fintype F] (domain : ι ↪ F) {d A : ℕ}
         ring
     _ ≤ _ := by exact_mod_cast card_le_card hEsub
 
-/-- Without agreement loss, the affine error is at least `(n - A + 1) / (2q)`. -/
-theorem affineMcaError_zero_loss_ge_half [Fintype F] (domain : ι ↪ F) {d A : ℕ}
+/-- If `d + 1 < A ≤ n`, the affine error at loss zero is at least `(n - A + 1) / (2q)`,
+where `n = |ι|` and `q = |F|`. -/
+theorem le_affineMcaError_zero_loss_div_two [Fintype F] (domain : ι ↪ F) {d A : ℕ}
     (hdA : d + 1 < A) (hAn : A ≤ Fintype.card ι) :
     ENNReal.ofReal (((Fintype.card ι - A + 1 : ℕ) : ℝ) /
         (2 * (Fintype.card F : ℝ))) ≤
       affineMcaError domain d A 0 := by
-  refine le_trans ?_ (affineMcaError_zero_loss_ge domain hdA hAn)
+  refine le_trans ?_ (le_affineMcaError_zero_loss domain hdA hAn)
   apply ENNReal.ofReal_le_ofReal
   have hq : (2 : ℝ) ≤ Fintype.card F := by exact_mod_cast Fintype.one_lt_card
   have hN : (0 : ℝ) ≤ ((Fintype.card ι - A + 1 : ℕ) : ℝ) := Nat.cast_nonneg _
@@ -180,8 +184,9 @@ theorem affineMcaError_zero_loss_ge_half [Fintype F] (domain : ι ↪ F) {d A : 
   nlinarith [mul_nonneg (mul_nonneg hN (by linarith : (0 : ℝ) ≤ Fintype.card F))
     (by linarith : (0 : ℝ) ≤ Fintype.card F - 2)]
 
-/-- With agreement loss `s`, the scalar error is at least `(1 + ⌊(n - A) / (s + 1)⌋) / q`. -/
-theorem scalarMcaError_ge [Fintype F] (domain : ι ↪ F) {d A s : ℕ}
+/-- If `d + s + 1 < A ≤ n`, the scalar error at loss `s` is at least
+`(1 + ⌊(n - A) / (s + 1)⌋) / q`, where `n = |ι|` and `q = |F|`. -/
+theorem le_scalarMcaError_of_degree_add_loss_add_one_lt [Fintype F] (domain : ι ↪ F) {d A s : ℕ}
     (hdA : d + s + 1 < A) (hAn : A ≤ Fintype.card ι) :
     ENNReal.ofReal (((1 + (Fintype.card ι - A) / (s + 1) : ℕ) : ℝ) /
         (Fintype.card F : ℝ)) ≤

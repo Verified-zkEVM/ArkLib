@@ -162,21 +162,22 @@ introducing a second predicate.
 | numeric error value or probability | `ENNReal` |
 | error bound | `ℝ≥0` |
 
-Canonical probability-valued errors use `ENNReal`, matching native event probabilities and
-allowing suprema without separate boundedness proofs. Prove an upper bound of one for each
-error; infinity is a feature of the ambient type, not an additional possible failure probability.
+Probability-valued security errors use `ENNReal`, as native event probabilities do.
+This type supports suprema without separate boundedness proofs.
+The bound `ε ≤ 1` shows that an error value is finite.
 
-For a nonempty finite uniform challenge space, the definition may use either native `Pr` or
-counting fractions in `ENNReal` (including `ENNReal.ofReal` of a nonnegative real fraction).
-A counting definition must have a proved native-probability characterization under
-`[SampleableType S]`. Keep its event predicates and counting theorems sampler-free; add sampler
-assumptions at the probability boundary. Use one canonical error value, with characterization
-lemmas and real-valued views, rather than independent counting and probability errors.
-`ReedSolomon.affineMcaError` and `scalarMcaError`, with the characterizations in
-`ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Probability.lean`, follow this pattern.
+On a nonempty finite uniform challenge space, an error can use a counting definition with
+values in `ENNReal`, including `ENNReal.ofReal` of a nonnegative real fraction.
+For example, `ReedSolomon.affineMcaError_eq_iSup_prob` and
+`ReedSolomon.scalarMcaError_eq_iSup_prob` identify the counting definitions with suprema of
+native probabilities under `[SampleableType F]`.
+The event predicates and counting theorems have no sampler assumptions.
+The sampling characterizations provide the connection to probability bounds for protocols.
 
-Counts remain `ℕ`; algebraic bound formulas may use `ℝ` with explicit `ENNReal.ofReal`
-conversion. This does not change the `ℝ≥0` type of nonnegative error budgets.
+Counts use `ℕ`, and algebraic bound formulas can use `ℝ` with explicit `ENNReal.ofReal`
+conversion.
+Nonnegative error budgets use `ℝ≥0`.
+Characterization lemmas and real-valued views describe the same error value.
 
 Compare an `ENNReal` value with a nonnegative bound using a coercion, for example
 `mcaError G C δ ≤ (ε : ENNReal)`. Use `mcaError_ne_top` before applying `ENNReal.toNNReal`.

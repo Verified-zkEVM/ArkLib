@@ -8,50 +8,54 @@ module
 public import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
 
 /-!
-# Affine combiners: mutual correlated agreement with agreement loss
+# Affine combiners with agreement loss
 
-Two received words `f, g` are combined into `f + L g` by a multiplier polynomial `L`.
+A multiplier polynomial `L` combines received words `f, g` into `x ↦ f x + L(x) g x`.
+Scalar combiners use a constant multiplier, while affine combiners use `L = α + β X`.
+For an output degree bound `d`, affine witnesses have degrees `≤ d` and `< d` so that
+`F₀ + L G₀` has degree at most `d`.
 
-A scalar combiner uses `L = α`.
+A witness pair decomposes a candidate polynomial `P` as `P = F₀ + L G₀`.
+Its agreement loss counts positions where `P` agrees with the combined word but either witness
+fails to agree with its received word.
+Consider a candidate of degree at most `d` with at least `A` agreements with the combined word.
+It is exceptional if no witness pair within the degree bounds has loss at most `s`.
+The error is the supremum, over received word pairs, of the fraction of challenges for which
+some candidate is exceptional.
 
-An affine combiner uses `L = α + β X`, so the second witness has degree below `d`.
-
-A challenge is exceptional when a close candidate has no witness pair.
-
-The error is the worst fraction of exceptional challenges over all received words.
-
-## Witnesses with agreement loss
-
-A pair `F₀, G₀` witnesses a candidate `P` when `P = F₀ + L G₀`.
-
-Its agreement loss counts the agreement points of `P` where `F₀ ≠ f` or `G₀ ≠ g`.
-
-## Junk values
-
-The paper assumes `1 ≤ d < n` and `1 ≤ A ≤ n`.
-
-For `A > n`, nothing is exceptional.
-
-For `d = 0`, the affine witness `G₀` must be zero.
+The definitions follow Section 1.1 of [CWYZ26].
+Definition 3.1 is the affine exceptional predicate at `s = 1`.
+The paper uses `1 ≤ d < n` and `1 ≤ A ≤ n`, where `n` is the domain size.
+The Lean definitions also cover boundary values: `A > n` gives no exceptional candidates,
+and `d = 0` forces the second affine witness to be zero.
+The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records the statement correspondence.
 
 ## Computability
 
-The exceptional predicates quantify over all polynomials, so the two errors are noncomputable.
-
-The affine multiplier is a Mathlib polynomial, whose arithmetic is noncomputable.
-
-Its combined word is the plain evaluation `f x + (α + β x) g x`.
+The errors have type `ENNReal` and counting definitions that require no sampler.
+`ReedSolomon.affineMcaError_eq_iSup_prob` and `ReedSolomon.scalarMcaError_eq_iSup_prob` in
+`AffineCombiner.Probability` identify them with suprema of native uniform probabilities.
+The counting definitions use classical decidability for predicates over polynomial witnesses.
+The multiplier also uses noncomputable polynomial arithmetic, while its evaluation is
+`f x + (α + β x) g x`.
 
 ## Main definitions
 
-* `ReedSolomon.combinedWord`: the word `f + L g` on the domain.
-* `ReedSolomon.affineMultiplier`: the multiplier `α + β X`.
-* `ReedSolomon.agreementLoss`: the agreement points of `P` lost by the witnesses `F₀ G₀`.
-* `ReedSolomon.IsLossWitness`: `P = F₀ + L G₀` with agreement loss at most `s`.
-* `ReedSolomon.IsAffineExceptional` and `ReedSolomon.IsScalarExceptional`: exceptional candidates
-  for the affine and the scalar combiner.
-* `ReedSolomon.affineMcaError` and `ReedSolomon.scalarMcaError`: the worst-case fractions of
-  exceptional challenges.
+* `ReedSolomon.combinedWord`: the combined word `f + L g`.
+* `ReedSolomon.affineMultiplier`: the polynomial `α + β X`.
+* `ReedSolomon.agreementLoss` and `ReedSolomon.IsLossWitness`: lost positions and witness pairs.
+* `ReedSolomon.IsAffineExceptional` and `ReedSolomon.IsScalarExceptional`: exceptional candidates.
+* `ReedSolomon.affineMcaError` and `ReedSolomon.scalarMcaError`: uniform error probabilities.
+
+## Main statements
+
+* `ReedSolomon.agreementLoss_eq_sdiff`: loss is agreement minus common witness agreement.
+* `ReedSolomon.affineMcaError_le_of_forall_exists` and
+  `ReedSolomon.scalarMcaError_le_of_forall_exists`: uniform counts bound the errors.
+* `ReedSolomon.affineMcaError_le_one` and `ReedSolomon.scalarMcaError_le_one`:
+  each error is at most one.
+* `ReedSolomon.not_isAffineExceptional_of_eval`: a second word of degree below `d`
+  excludes exceptionality.
 
 ## References
 
@@ -101,9 +105,7 @@ def agreementLoss (domain : ι ↪ F) (f g : ι → F) (L P F₀ G₀ : F[X]) : 
     F₀.eval (domain i) ≠ f i ∨ G₀.eval (domain i) ≠ g i
 
 open Classical in
-/-- Lost agreements are exactly the candidate's agreement set minus common witness agreement.
-
-The coordinate equality needed by finset difference is local to this characterization. -/
+/-- Lost agreements are the candidate's agreement set minus common witness agreement. -/
 theorem agreementLoss_eq_sdiff (domain : ι ↪ F) (f g : ι → F) (L P F₀ G₀ : F[X]) :
     agreementLoss domain f g L P F₀ G₀ =
       polynomialAgreementSet domain (combinedWord domain f g L) P \
@@ -117,10 +119,9 @@ theorem agreementLoss_eq_sdiff (domain : ι ↪ F) (f g : ι → F) (L P F₀ G�
 def IsLossWitness (domain : ι ↪ F) (f g : ι → F) (s : ℕ) (L P F₀ G₀ : F[X]) : Prop :=
   P = F₀ + L * G₀ ∧ (agreementLoss domain f g L P F₀ G₀).card ≤ s
 
-/-- The challenge `(α, β)` makes `P` exceptional for the affine combiner.
+/-- `P` is exceptional for the affine challenge `(α, β)` at threshold `A` and loss `s`.
 
-`P` has degree at most `d` and agrees with `f + (α + β x) g` on at least `A` points.
-
+It has degree at most `d` and agrees with `f + (α + β x) g` on at least `A` points.
 No witness pair with `deg F₀ ≤ d` and `deg G₀ < d` has agreement loss at most `s`. -/
 def IsAffineExceptional (domain : ι ↪ F) (f g : ι → F) (d A s : ℕ) (α β : F) (P : F[X]) :
     Prop :=
@@ -129,10 +130,9 @@ def IsAffineExceptional (domain : ι ↪ F) (f g : ι → F) (d A s : ℕ) (α �
     ∀ F₀ G₀ : F[X], F₀.degree ≤ d → G₀.degree < d →
       ¬ IsLossWitness domain f g s (affineMultiplier α β) P F₀ G₀
 
-/-- The challenge `α` makes `P` exceptional for the scalar combiner.
+/-- `P` is exceptional for the scalar challenge `α` at threshold `A` and loss `s`.
 
-`P` has degree at most `d` and agrees with `f + α g` on at least `A` points.
-
+It has degree at most `d` and agrees with `f + α g` on at least `A` points.
 No witness pair of degree at most `d` has agreement loss at most `s`. -/
 def IsScalarExceptional (domain : ι ↪ F) (f g : ι → F) (d A s : ℕ) (α : F) (P : F[X]) : Prop :=
   P.degree ≤ d ∧
@@ -141,10 +141,12 @@ def IsScalarExceptional (domain : ι ↪ F) (f g : ι → F) (d A s : ℕ) (α :
       ¬ IsLossWitness domain f g s (C α) P F₀ G₀
 
 open Classical in
-/-- The worst-case uniform probability of an affine exceptional challenge.
+/-- The supremum over received word pairs `(f, g)` of the probability that some candidate
+is exceptional for a uniform challenge `(α, β)`.
 
-The counting definition needs no sampler. Its native probability characterization is
-`affineMcaError_eq_iSup_prob` in `AffineCombiner.Probability`. -/
+The output degree bound is `d`, the agreement threshold is `A`, and the allowed loss is `s`.
+Witness degrees are at most `d` and below `d`.
+`ReedSolomon.affineMcaError_eq_iSup_prob` gives the native sampling characterization. -/
 noncomputable def affineMcaError [Fintype F] (domain : ι ↪ F) (d A s : ℕ) : ENNReal :=
   ⨆ w : (ι → F) × (ι → F),
     ENNReal.ofReal
@@ -152,10 +154,14 @@ noncomputable def affineMcaError [Fintype F] (domain : ι ↪ F) (d A s : ℕ) :
         (Fintype.card F : ℝ) ^ 2)
 
 open Classical in
-/-- The worst-case uniform probability of a scalar exceptional challenge.
+/-- The supremum over received word pairs `(f, g)` of the probability that some candidate
+is exceptional for a uniform scalar challenge `α`.
 
-The counting definition needs no sampler. At zero loss it is the canonical affine-line
-`CoreDefinitions.mcaError`; see `scalarMcaError_zero_eq_mcaError`. -/
+The output and witness degree bound is `d`, the agreement threshold is `A`, and the allowed
+loss is `s`.
+`ReedSolomon.scalarMcaError_eq_iSup_prob` gives the native sampling characterization.
+`ReedSolomon.scalarMcaError_zero_eq_mcaError` identifies the zero-loss value with
+`CoreDefinitions.mcaError` for the affine-line generator and message length `d + 1`. -/
 noncomputable def scalarMcaError [Fintype F] (domain : ι ↪ F) (d A s : ℕ) : ENNReal :=
   ⨆ w : (ι → F) × (ι → F),
     ENNReal.ofReal
@@ -184,7 +190,8 @@ theorem le_scalarMcaError (d A s : ℕ) (f g : ι → F) :
   unfold scalarMcaError
   exact le_iSup_of_le (f, g) le_rfl
 
-/-- A uniform count of affine exceptional challenges bounds the error by `B / q²`. -/
+/-- If every word pair has a set of at most `B` challenges containing every affine exceptional
+challenge, the error is at most `B / |F|²`. -/
 theorem affineMcaError_le_of_forall_exists {d A s : ℕ} {B : ℝ}
     (h : ∀ f g : ι → F, ∃ E : Finset (F × F), (E.card : ℝ) ≤ B ∧
       ∀ c ∉ E, ∀ P, ¬ IsAffineExceptional domain f g d A s c.1 c.2 P) :
@@ -202,7 +209,8 @@ theorem affineMcaError_le_of_forall_exists {d A s : ℕ} {B : ℝ}
         exact hgood c hcE P hP
     _ ≤ B := hE
 
-/-- A uniform count of scalar exceptional challenges bounds the error by `B / q`. -/
+/-- If every word pair has a set of at most `B` challenges containing every scalar exceptional
+challenge, the error is at most `B / |F|`. -/
 theorem scalarMcaError_le_of_forall_exists {d A s : ℕ} {B : ℝ}
     (h : ∀ f g : ι → F, ∃ E : Finset F, (E.card : ℝ) ≤ B ∧
       ∀ α ∉ E, ∀ P, ¬ IsScalarExceptional domain f g d A s α P) :
@@ -243,20 +251,32 @@ theorem scalarMcaError_le_one (d A s : ℕ) : scalarMcaError domain d A s ≤ 1 
 end Error
 
 /-- An affine exceptional candidate stays exceptional for a smaller agreement loss. -/
-theorem IsAffineExceptional.mono_loss {domain : ι ↪ F} {f g : ι → F} {d A s s' : ℕ} {α β : F}
+theorem IsAffineExceptional.anti_loss {domain : ι ↪ F} {f g : ι → F} {d A s s' : ℕ} {α β : F}
     {P : F[X]} (h : IsAffineExceptional domain f g d A s α β P) (hs : s' ≤ s) :
     IsAffineExceptional domain f g d A s' α β P :=
   ⟨h.1, h.2.1, fun F₀ G₀ hF hG hw ↦ h.2.2 F₀ G₀ hF hG ⟨hw.1, hw.2.trans hs⟩⟩
 
 /-- An affine exceptional candidate stays exceptional for a smaller agreement threshold. -/
-theorem IsAffineExceptional.mono_threshold {domain : ι ↪ F} {f g : ι → F} {d A A' s : ℕ}
+theorem IsAffineExceptional.anti_threshold {domain : ι ↪ F} {f g : ι → F} {d A A' s : ℕ}
     {α β : F} {P : F[X]} (h : IsAffineExceptional domain f g d A s α β P) (hA : A' ≤ A) :
     IsAffineExceptional domain f g d A' s α β P :=
   ⟨h.1, hA.trans h.2.1, h.2.2⟩
 
-/-- Honest words are never exceptional.
+/-- Scalar exceptionality is preserved when the allowed agreement loss decreases. -/
+theorem IsScalarExceptional.anti_loss {domain : ι ↪ F} {f g : ι → F} {d A s s' : ℕ} {α : F}
+    {P : F[X]} (h : IsScalarExceptional domain f g d A s α P) (hs : s' ≤ s) :
+    IsScalarExceptional domain f g d A s' α P :=
+  ⟨h.1, h.2.1, fun F₀ G₀ hF hG hw ↦ h.2.2 F₀ G₀ hF hG ⟨hw.1, hw.2.trans hs⟩⟩
 
-If `g` evaluates a polynomial `G₀` of degree below `d`, no candidate is exceptional.
+/-- Scalar exceptionality is preserved when the agreement threshold decreases. -/
+theorem IsScalarExceptional.anti_threshold {domain : ι ↪ F} {f g : ι → F} {d A A' s : ℕ}
+    {α : F} {P : F[X]} (h : IsScalarExceptional domain f g d A s α P) (hA : A' ≤ A) :
+    IsScalarExceptional domain f g d A' s α P :=
+  ⟨h.1, hA.trans h.2.1, h.2.2⟩
+
+/-- If `g` evaluates a polynomial `G₀` of degree below `d`, no candidate is exceptional
+for any first received word `f`.
+The threshold `A` and allowed loss `s` are unrestricted.
 
 The witnesses are `P - (α + β X) G₀` and `G₀`, with no agreement loss. -/
 theorem not_isAffineExceptional_of_eval {domain : ι ↪ F} {d A s : ℕ} (f : ι → F) (G₀ : F[X])

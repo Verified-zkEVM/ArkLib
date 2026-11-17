@@ -17,86 +17,102 @@ related_modules:
 
 ## At A Glance
 
-The paper combines two received words `f, g` into `f + (α + β x) g`, with uniform `α, β`.
+Fix a domain `D ⊆ Fq` of size `n` and an integer output degree bound `1 ≤ d < n`.
+The affine combiner samples `α, β` independently and uniformly and forms `f(x) + (α + βx) g(x)`.
+Its witnesses have degrees at most `d` and below `d`, so their combination has degree at most `d`.
 
-The witnesses have degrees `d` and `d - 1`, so the combination still has degree `d`.
+Set `ρ = d/n` and `A = ⌈(√ρ + η)n⌉`.
+If `0 < η < 1 - √ρ` and `nη² ≥ 4/ρ`, Theorem 1.1 bounds the error with one lost agreement by
+`4/(ηq) + 2¹⁴ n²/(ρ³ η¹⁰ q²)`.
+This bound holds for every such domain in every finite field of size `q ≥ n`.
+Theorem 1.1 is a planned unit in the port ledger below.
 
-With one coordinate of agreement loss, the MCA error at `A = ⌈(√ρ + η) n⌉` is
-`4 / (η q) + 2¹⁴ n² / (ρ³ η¹⁰ q²)` (Theorem 1.1).
+For fixed `ρ, η` in that range and sufficiently large `n`, scalar combiners have error
+`Ω_{ρ,η}(n/q)` at the same threshold and loss.
+For `q ≥ n²`, the affine bound is `O_{ρ,η}(1/q)`, giving an improvement by a factor of `Ω_{ρ,η}(n)`.
+Proposition 6.2 also shows that affine combiners have error `Ω_{ρ,η}(n/q)` when no agreement
+loss is allowed.
 
-Scalar combiners have error `Ω(n / q)` at the same threshold and loss (Section 6).
-
-So for `q ≥ n²`, affine combiners save a factor `n`.
-
-The numbering follows the **13 November 2026 ePrint revision**.
+All statement numbers refer to the **13 November 2026 ePrint revision**.
 
 ## What ArkLib Uses From This Paper
 
+Here `n = Fintype.card ι` and `q = Fintype.card F`, with `domain : ι ↪ F`.
+The embedding already implies `n ≤ q`.
+
 | Paper statement | Lean interface | Scope |
 | --- | --- | --- |
-| Section 1.1, definition of the MCA error with agreement loss; Definition 3.1 | `ReedSolomon.combinedWord`, `ReedSolomon.affineMultiplier`, `ReedSolomon.agreementLoss`, `ReedSolomon.IsLossWitness`, `ReedSolomon.IsAffineExceptional`, `ReedSolomon.IsScalarExceptional`, `ReedSolomon.affineMcaError`, `ReedSolomon.scalarMcaError` | The error is the worst-case fraction of exceptional challenges over all pairs of received words, which is the uniform probability of the paper. The domain is any finite index type embedded in the field. |
-| Proposition 6.1 | `ReedSolomon.scalarMcaError_ge` | With agreement loss `s` and `d + s + 1 < A ≤ n`, the scalar error is at least `(1 + ⌊(n - A) / (s + 1)⌋) / q`. The blocks of size `s + 1` are consecutive positions in a fixed enumeration of the domain. |
-| Proposition 6.2 | `ReedSolomon.affineMcaError_zero_loss_ge`, `ReedSolomon.affineMcaError_zero_loss_ge_half` | Without agreement loss and with `d + 1 < A ≤ n`, the affine error is at least `(n - A + 1)(q - 1) / q²`, hence at least `(n - A + 1) / (2q)`. |
+| Section 1.1 and Definition 3.1 | `ReedSolomon.combinedWord`, `ReedSolomon.affineMultiplier`, `ReedSolomon.agreementLoss`, `ReedSolomon.IsLossWitness`, `ReedSolomon.IsAffineExceptional`, `ReedSolomon.IsScalarExceptional`, `ReedSolomon.affineMcaError`, `ReedSolomon.scalarMcaError` | The errors are suprema over received word pairs of the uniform probability that some candidate is exceptional. Definition 3.1 is the affine predicate at loss `s = 1`. |
+| Proposition 6.1, error lower bound | `ReedSolomon.le_scalarMcaError_of_degree_add_loss_add_one_lt` | For `d + s + 1 < A ≤ n`, the scalar error is at least `(1 + ⌊(n - A)/(s + 1)⌋)/q`. The proof constructs words using a vanishing polynomial and blocks of size `s + 1`. It does not export the proposition's separate global agreement claim or its exact-agreement probability bound. |
+| Proposition 6.2 | `ReedSolomon.le_affineMcaError_zero_loss`, `ReedSolomon.le_affineMcaError_zero_loss_div_two` | For `d + 1 < A ≤ n`, the affine error at loss zero is at least `(n - A + 1)(q - 1)/q²`, hence at least `(n - A + 1)/(2q)`. |
 
 ## Port Ledger
 
-Each row is one pull request. A row is done when its declarations are on `main`.
+The units describe the port plan, including results without Lean declarations.
+A unit is done when its declarations are on `main`.
 
 | Unit | Paper | Content | Depends on | Status |
 | --- | --- | --- | --- | --- |
-| 1 | §1.1, Def 3.1, Props 6.1, 6.2 | Definitions; scalar `Ω(n / q)` lower bound with loss `s`; affine lower bound without loss | — | in review |
-| 2 | Lemmas 4.4, 4.5 | Exceptional challenges of one rational pair; persistent triples and their count by the Johnson bound for set families | 1 | planned |
-| 3 | Theorem 5.1 | Equal-degree combiner and linear claims, reduced to the affine error plus `ℓ₀ / q` | 1 | planned |
-| 4 | Prop 6.3 | Scalar `Ω(n / q)` lower bound with constant fractional loss on additive domains (subspace polynomials) | 1 | planned |
-| 5 | Lemma 4.2 | Trivariate interpolation along affine lines: `(1, 1, d)`-weighted degree, multiplicity `m` at `(z, f(z) + Y g(z))`, vanishing of `Q(X, α + βX, P(X))` | 1 | planned |
-| 6 | §4 factorization, Lemma 4.3 | Factorization with Frobenius normalization, excluded pairs `|E| ≤ D²`, simple roots outside `E` | 5 | planned |
-| 7 | Lemma 3.11 | Hensel lifting along `Y + V X` with coefficients `N_j / S^(2j-1)` | — | planned |
-| 8 | Claims 4.8, 4.9, Lemma 4.7 | Agreement-hyperplane induction; cover by algebraic sets of dimension at most two; nonpersistent count | 2, 6, 7 | planned |
-| 9 | Lemma 4.1, Theorems 1.1, 4.10 | Parameter arithmetic and the final bound | 2, 5, 6, 8 | planned |
-| 10 | Theorem 5.2 | Interleaving through packing into `F_{q^t}`; needs the core count with words over an extension field | 9 | deferred |
-| 11 | §7, Appendix A | Reed–Muller extension through the Pellikaan–Wu reduction | 9 | deferred |
+| 1 | §1.1, Definition 3.1, Propositions 6.1–6.2 | Definitions and error lower bounds for scalar combiners with loss `s` and affine combiners without loss | — | in review |
+| 2 | Lemmas 4.4–4.5 | Counts for one rational pair and for persistent exceptional challenges | 1 | planned |
+| 3 | Theorem 5.1 | Equal-degree error `≤ εaff + ℓ₀/q` and linear-claim error `≤ εaff + 2ℓ₀/q` | 1 | planned |
+| 4 | Proposition 6.3 | Scalar lower bound with constant fractional loss on additive domains | 1 | planned |
+| 5 | Lemma 4.2 | Trivariate interpolation of `(1,1,d)`-weighted degree below `mA`, with multiplicity `m` along each received line, and vanishing after substitution | 1 | planned |
+| 6 | Section 4 factorization and Lemma 4.3 | Frobenius normalization, excluded challenges `|E| ≤ D²`, and simple roots outside `E` | 5 | planned |
+| 7 | Lemma 3.11 | Simple-root Hensel lifting along affine substitutions, with coefficients `Nⱼ/S^(2j-1)` for `j ≥ 1` and numerator degree bounds | — | planned |
+| 8 | Claims 4.8–4.9 and Lemma 4.7 | Agreement-hyperplane induction, a cover of dimension at most two, and the nonpersistent count | 2, 6, 7 | planned |
+| 9 | Lemma 4.1 and Theorems 1.1, 4.10 | Parameter bounds and the final affine error bounds | 2, 5, 6, 8 | planned |
+| 10 | Theorem 5.2 | For `k = 2ʳ` rows, shared folding with degree `d + r`, threshold `A + r`, loss `r`, and error at most `rε`, where `ε` bounds every round. The proof packs rows into `F_{q^t}` with base-field challenges | 9 | deferred |
+| 11 | Theorem 7.1 and Appendix A | Reed–Muller extension on subfield grids through the Pellikaan–Wu reduction | 9 | deferred |
+
+In unit 3, `ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋` is the Johnson list bound from Theorem 5.1.
+The quotient is real, and the floor rounds down.
+Unit 10 applies the equal-degree guarantee in each folding round.
 
 ## Main ArkLib Touchpoints
 
 - [`AffineCombiner/Basic.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Basic.lean)
-  owns the combined words, the witnesses with agreement loss, the exceptional predicates and the
-  two error functions.
+  defines combined words, witnesses with agreement loss, exceptional candidates, and the error values.
 - [`AffineCombiner/Separation.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Separation.lean)
-  owns the two lower bounds of Section 6: the scalar combiner with agreement loss and the affine
-  combiner without loss.
+  proves the two error lower bounds from Section 6.
 - [`AffineCombiner/Probability.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Probability.lean)
-  supplies native probability characterizations, the zero-loss scalar MCA bridge and its
-  canonical lower-bound corollary.
-- The core count reuses the Johnson bound for set families
-  (`Finset.card_mul_sq_sub_card_mul_le_of_inter_card_le`), the rational Hensel numerators of
-  `Data/Polynomial/RationalFunctions/` and `Data/Polynomial/Differential/RationalTaylor.lean`, the
-  Frobenius pullback of `ToMathlib/MvPolynomial/FrobeniusPullback.lean`, resultant degree bounds of
-  `Data/Polynomial/ResultantDegree.lean`, and the agreement-incidence induction of
-  `ToMathlib/RingTheory/Nullstellensatz/AgreementIncidence.lean`.
+  identifies the errors with native probabilities.
+  Its zero-loss scalar equivalence and error equality use `CoreDefinitions.IsMCA` and
+  `CoreDefinitions.mcaError` for the affine-line generator and `ReedSolomon.code domain (d + 1)`.
+  `ReedSolomon.le_mcaError_affineLine_of_ceil_eq` gives a lower bound on this value.
+
+The planned algebraic units can use the Hensel numerator bounds in
+[`RationalFunctions/`](../../../ArkLib/Data/Polynomial/RationalFunctions/), the affine Taylor
+expansion in [`RationalTaylor.lean`](../../../ArkLib/Data/Polynomial/Differential/RationalTaylor.lean),
+and the Frobenius substitutions in
+[`FrobeniusPullback.lean`](../../../ArkLib/ToMathlib/MvPolynomial/FrobeniusPullback.lean).
+Other available primitives include the resultant degree bounds in
+[`ResultantDegree.lean`](../../../ArkLib/Data/Polynomial/ResultantDegree.lean) and the incidence
+induction in [`AgreementIncidence.lean`](../../../ArkLib/ToMathlib/RingTheory/Nullstellensatz/AgreementIncidence.lean).
+The planned units have not yet connected these primitives into the paper's complete argument.
 
 ## Representation Choices
 
-- The canonical errors have type `ENNReal` and a sampler-free counting definition.
-  `affineMcaError_eq_iSup_prob` and `scalarMcaError_eq_iSup_prob` identify them with the
-  worst-case native probabilities under uniform sampling.
-- `scalarMcaError_zero_eq_mcaError` identifies zero-loss scalar error with ArkLib's canonical
-  affine-line MCA error at the matching integer agreement threshold.
-  `mcaError_affineLine_ge_of_threshold` states the zero-loss lower bound on that existing value.
-- The output and first affine witness have degree at most `d`, hence message length `d + 1`.
-  The second affine witness has degree below `d`, hence message length `d`.
-  `affine_witnesses_mem_code` supplies both code memberships.
-- Persistence names the numerator `H` and the denominator `L` of `G`.
-  The partner `F = P - (α + β X) G` then agrees with `f` wherever `G` agrees with `g`.
-  So only the condition on `G` is stated.
+The error values have type `ENNReal` and counting definitions without sampler assumptions.
+`ReedSolomon.affineMcaError_eq_iSup_prob` and `ReedSolomon.scalarMcaError_eq_iSup_prob` identify
+them with suprema of native uniform probabilities.
+`ReedSolomon.scalarMcaError_zero_eq_mcaError` identifies the scalar error at loss zero with
+`CoreDefinitions.mcaError` at the matching integer agreement threshold.
+
+The output and first affine witness have degree at most `d`, which gives message length `d + 1`.
+The second affine witness has degree below `d`, which gives message length `d`.
+`ReedSolomon.evalOnPoints_mem_code_succ_of_degree_le` and
+`ReedSolomon.evalOnPoints_mem_code_of_degree_lt` provide these code memberships.
 
 ## Open Formalization Gaps
 
-The units marked planned or deferred in the port ledger.
+The planned and deferred units in the ledger have no complete formalization in this port.
+The lower bound from Proposition 6.1 is exported, while its constructed received words and
+separate global agreement assertion are internal to the proof.
 
 The paper reports a Lean formalization of Theorem 1.1.
-
-It states that Section 5 and the Reed–Muller extension in Section 7 and Appendix A are not covered.
-
+It states that the equal-degree reductions in Section 5 and the Reed–Muller extension in
+Section 7 and Appendix A are outside that formalization.
 The paper does not cite a formalization artifact.
 
 ## Source Access

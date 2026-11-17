@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Thomas Coratger
+Authors: Alexander Hicks
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Probability
@@ -43,7 +43,7 @@ example (domain : ι ↪ F) (f g : ι → F) (d A : ℕ) (α : F) :
 example (domain : ι ↪ F) (F₀ G₀ : F[X]) {d : ℕ}
     (hF : F₀.degree ≤ d) (hG : G₀.degree < d) :
     evalOnPoints domain F₀ ∈ code domain (d + 1) ∧ evalOnPoints domain G₀ ∈ code domain d :=
-  affine_witnesses_mem_code domain F₀ G₀ hF hG
+  ⟨evalOnPoints_mem_code_succ_of_degree_le hF, evalOnPoints_mem_code_of_degree_lt hG⟩
 
 end Algebra
 
@@ -51,20 +51,20 @@ private instance : Fact (Nat.Prime 5) := ⟨by decide⟩
 
 private def fullDomain : ZMod 5 ↪ ZMod 5 := Function.Embedding.refl _
 
--- This lower bound targets the pre-existing MCA API, at nonzero degree and radius.
+-- This lower bound concerns `CoreDefinitions.mcaError` at nonzero degree and radius.
 example : (3 : ENNReal) / 5 ≤
     mcaError (AffineLineGenerator (ZMod 5)) (code fullDomain 2) (2 / 5 : ℝ) := by
-  have h := mcaError_affineLine_ge_of_threshold fullDomain (d := 1) (A := 3)
+  have h := le_mcaError_affineLine_of_ceil_eq fullDomain (d := 1) (A := 3)
     (2 / 5) (by norm_num) (by norm_num [ZMod.card]) (by norm_num [ZMod.card])
   norm_num [ZMod.card, ENNReal.ofReal_div_of_pos] at h
   exact h
 
--- The new error has exactly the old error's value, with the inclusive degree translated.
+-- The scalar error equals `CoreDefinitions.mcaError` at the matching integer threshold.
 example : scalarMcaError fullDomain 1 3 0 =
     mcaError (AffineLineGenerator (ZMod 5)) (code fullDomain 2) (2 / 5 : ℝ) := by
   exact scalarMcaError_zero_eq_mcaError fullDomain 1 3 (2 / 5) (by norm_num [ZMod.card])
 
--- The sampling interface uses native probabilities and the same canonical error.
+-- The affine error bounds the native probability of an exceptional candidate.
 example (f g : ZMod 5 → ZMod 5) :
     Pr{let c ← $ᵗ (ZMod 5 × ZMod 5)}[∃ P,
       IsAffineExceptional fullDomain f g 1 3 1 c.1 c.2 P] ≤
@@ -72,5 +72,5 @@ example (f g : ZMod 5 → ZMod 5) :
   prob_isAffineExceptional_le fullDomain f g 1 3 1
 
 #print axioms ReedSolomon.scalarMcaError_zero_eq_mcaError
-#print axioms ReedSolomon.mcaError_affineLine_ge_of_threshold
+#print axioms ReedSolomon.le_mcaError_affineLine_of_ceil_eq
 #print axioms ReedSolomon.affineMcaError_eq_iSup_prob

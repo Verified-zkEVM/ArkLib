@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Thomas Coratger
+Authors: Alexander Hicks
 -/
 module
 
@@ -11,23 +11,38 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ful
 public import ArkLib.Data.CodingTheory.ProximityGenerator.Interleaving
 
 /-!
-# Affine-combiner probabilities and compatibility with scalar MCA
+# Uniform probabilities for affine combiners and scalar MCA
 
-The counting errors are uniform exceptional-event probabilities in VCVio's native semantics.
-The algebraic and counting modules remain independent of a sampler instance.
+`ReedSolomon.affineMcaError` and `ReedSolomon.scalarMcaError` are suprema of native uniform
+exceptional-event probabilities.
+Their counting definitions and counting bounds do not require a sampler instance.
+This module supplies the sampling characterizations under `SampleableType F`.
 
-With zero agreement loss, the scalar event is exactly ArkLib's projection-bad event for
-`code domain (d + 1)`. At a radius with integer threshold `A`, the scalar error equals the
-canonical affine-line MCA error. The scalar separation bound therefore applies to that error.
-Affine witness degrees `≤ d` and `< d` correspond to message lengths `d + 1` and `d`.
+At loss zero, the scalar exceptional event equals `Code.IsProjectionBad` for
+`CoreDefinitions.AffineLineGenerator F` and `ReedSolomon.code domain (d + 1)`.
+At a radius with integer agreement threshold `A`, its probability supremum is
+`CoreDefinitions.mcaError` for that generator and code.
+The scalar lower bound therefore gives a lower bound on this value.
+An affine witness of degree at most `d` evaluates to a word in `code domain (d + 1)` by
+`ReedSolomon.evalOnPoints_mem_code_succ_of_degree_le`.
+The second witness, of degree below `d`, uses `ReedSolomon.evalOnPoints_mem_code_of_degree_lt`
+and message length `d`.
+
+The errors use the agreement-loss definition in Section 1.1 of [CWYZ26].
+The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) gives the statement correspondence.
 
 ## Main statements
 
-* `affineMcaError_eq_iSup_prob` and `scalarMcaError_eq_iSup_prob`: native sampling meanings.
-* `exists_isScalarExceptional_zero_iff_isProjectionBad`: zero-loss scalar event compatibility.
-* `scalarMcaError_zero_eq_mcaError`: equality with the existing MCA error.
-* `mcaError_affineLine_ge_of_threshold`: the scalar lower bound for canonical MCA.
-* `affine_witnesses_mem_code`: translation of both witness degree bounds to RS codes.
+* `ReedSolomon.prob_isAffineExceptional_eq` and `ReedSolomon.prob_isScalarExceptional_eq`:
+  uniform probabilities as counting fractions.
+* `ReedSolomon.affineMcaError_eq_iSup_prob` and `ReedSolomon.scalarMcaError_eq_iSup_prob`:
+  error values as suprema of native probabilities.
+* `ReedSolomon.prob_isAffineExceptional_le` and `ReedSolomon.prob_isScalarExceptional_le`:
+  the error values bound the probability for each received word pair.
+* `ReedSolomon.exists_isScalarExceptional_zero_iff_isProjectionBad` and
+  `ReedSolomon.exists_isScalarExceptional_zero_iff_isMCA`: scalar event equivalences.
+* `ReedSolomon.scalarMcaError_zero_eq_mcaError`: scalar error equality at a matching threshold.
+* `ReedSolomon.le_mcaError_affineLine_of_ceil_eq`: the lower bound `(1 + n - A) / q`.
 
 ## References
 
@@ -46,26 +61,14 @@ variable {F ι : Type} [Field F]
 
 private theorem degree_lt_succ_iff_degree_le (P : F[X]) {d : ℕ} :
     P.degree < (d + 1 : ℕ) ↔ P.degree ≤ d := by
-  classical
-  by_cases hP : P = 0
-  · simp [hP]
-  · rw [degree_eq_natDegree hP]
-    norm_cast
-    omega
-
-/-- The asymmetric witness degrees give RS message lengths `d + 1` and `d`. -/
-theorem affine_witnesses_mem_code (domain : ι ↪ F) {d : ℕ} (F₀ G₀ : F[X])
-    (hF : F₀.degree ≤ d) (hG : G₀.degree < d) :
-    evalOnPoints domain F₀ ∈ code domain (d + 1) ∧
-      evalOnPoints domain G₀ ∈ code domain d :=
-  ⟨evalOnPoints_mem_code_of_degree_lt ((degree_lt_succ_iff_degree_le F₀).mpr hF),
-    evalOnPoints_mem_code_of_degree_lt hG⟩
+  rw [← mem_degreeLT, degreeLT_succ_eq_degreeLE, mem_degreeLE]
 
 variable [DecidableEq F] [Fintype ι]
 
-/-- At zero loss, scalar exceptionality is precisely the canonical projection-bad event.
+/-- A scalar challenge has an exceptional candidate at loss zero exactly when
+`Code.IsProjectionBad` holds for the affine-line generator and `code domain (d + 1)`.
 
-No decoding-threshold hypothesis is needed: an extension `G₀` of `g` supplies the partner
+For every threshold `A`, an extension `G₀` of `g` supplies the partner
 `P - C α * G₀` on the entire agreement set. -/
 theorem exists_isScalarExceptional_zero_iff_isProjectionBad (domain : ι ↪ F)
     (f g : ι → F) (d A : ℕ) (α : F) :
@@ -124,7 +127,9 @@ theorem exists_isScalarExceptional_zero_iff_isProjectionBad (domain : ι ↪ F)
         rw [projectedWord_mem_code_iff_exists_polynomial]
         exact ⟨G₀, (degree_lt_succ_iff_degree_le G₀).mpr hG, fun i hi ↦ (hagree i hi).2⟩
 
-/-- At an integer threshold `A`, zero-loss scalar exceptionality is the existing MCA event. -/
+/-- If `⌈n (1 - δ)⌉₊ = A`, scalar exceptionality at loss zero is
+`CoreDefinitions.IsMCA` for the affine-line generator, `code domain (d + 1)`, and radius `δ`,
+where `n = |ι|`. -/
 theorem exists_isScalarExceptional_zero_iff_isMCA [Fintype F] (domain : ι ↪ F)
     (f g : ι → F) (d A : ℕ) (α : F) (δ : ℝ)
     (hδ : ⌈(Fintype.card ι : ℝ) * (1 - δ)⌉₊ = A) :
@@ -186,7 +191,9 @@ theorem prob_isScalarExceptional_le (domain : ι ↪ F) (f g : ι → F) (d A s 
   rw [prob_isScalarExceptional_eq]
   exact le_scalarMcaError domain d A s f g
 
-/-- At zero loss the scalar error is the canonical affine-line MCA error. -/
+/-- If `⌈n (1 - δ)⌉₊ = A`, `scalarMcaError domain d A 0` equals
+`CoreDefinitions.mcaError` for the affine-line generator, `code domain (d + 1)`, and radius `δ`,
+where `n = |ι|`. -/
 theorem scalarMcaError_zero_eq_mcaError (domain : ι ↪ F) (d A : ℕ) (δ : ℝ)
     (hδ : ⌈(Fintype.card ι : ℝ) * (1 - δ)⌉₊ = A) :
     scalarMcaError domain d A 0 =
@@ -207,15 +214,17 @@ theorem scalarMcaError_zero_eq_mcaError (domain : ι ↪ F) (d A : ℕ) (δ : �
     exact le_iSup_of_le (U 0, U 1) le_rfl
 
 omit [DecidableEq F] in
-/-- The zero-loss scalar separation bound is a lower bound on canonical MCA. -/
-theorem mcaError_affineLine_ge_of_threshold (domain : ι ↪ F) {d A : ℕ} (δ : ℝ)
+/-- If `d + 1 < A ≤ n` and `⌈n (1 - δ)⌉₊ = A`, the affine-line MCA error for
+`code domain (d + 1)` at radius `δ` is at least `(1 + n - A) / q`,
+where `n = |ι|` and `q = |F|`. -/
+theorem le_mcaError_affineLine_of_ceil_eq (domain : ι ↪ F) {d A : ℕ} (δ : ℝ)
     (hdA : d + 1 < A) (hAn : A ≤ Fintype.card ι)
     (hδ : ⌈(Fintype.card ι : ℝ) * (1 - δ)⌉₊ = A) :
     ENNReal.ofReal (((1 + (Fintype.card ι - A) : ℕ) : ℝ) / (Fintype.card F : ℝ)) ≤
       mcaError (AffineLineGenerator F) (code domain (d + 1)) δ := by
   classical
   rw [← scalarMcaError_zero_eq_mcaError domain d A δ hδ]
-  simpa using scalarMcaError_ge domain (s := 0) hdA hAn
+  simpa using le_scalarMcaError_of_degree_add_loss_add_one_lt domain (s := 0) hdA hAn
 
 end Sampling
 
