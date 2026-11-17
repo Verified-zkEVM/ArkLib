@@ -772,6 +772,36 @@ public import ArkLib.InteractiveProof.IP
 public import ArkLib.InteractiveProof.Soundness
 public import ArkLib.InteractiveProof.StateRestorationSoundness
 public import ArkLib.InteractiveProof.ZeroKnowledge
+public import ArkLib.NonInteractiveArgument.FiatShamir.Basic
+public import ArkLib.NonInteractiveArgument.FiatShamir.Canonical
+public import ArkLib.NonInteractiveArgument.FiatShamir.Canonical.Completeness
+public import ArkLib.NonInteractiveArgument.FiatShamir.Canonical.Ordinary
+public import ArkLib.NonInteractiveArgument.FiatShamir.Canonical.RandomOracleCompleteness
+public import ArkLib.NonInteractiveArgument.FiatShamir.Completeness
+public import ArkLib.NonInteractiveArgument.FiatShamir.DuplexSponge
+public import ArkLib.NonInteractiveArgument.FiatShamir.DuplexSponge.Defs
+public import ArkLib.NonInteractiveArgument.FiatShamir.DuplexSponge.Execution
+public import ArkLib.NonInteractiveArgument.FiatShamir.DuplexSponge.Execution.LazySampling
+public import ArkLib.NonInteractiveArgument.FiatShamir.DuplexSponge.InitialObject
+public import ArkLib.NonInteractiveArgument.FiatShamir.DuplexSponge.InitialObject.Execution
+public import ArkLib.NonInteractiveArgument.FiatShamir.DuplexSponge.Nondegeneracy
+public import ArkLib.NonInteractiveArgument.FiatShamir.DuplexSponge.QueryBounds
+public import ArkLib.NonInteractiveArgument.FiatShamir.DuplexSponge.Security.Completeness
+public import ArkLib.NonInteractiveArgument.FiatShamir.DuplexSponge.Security.Proofs.Completeness
+public import ArkLib.NonInteractiveArgument.FiatShamir.DuplexSponge.Security.Proofs.Execution
+public import ArkLib.NonInteractiveArgument.FiatShamir.DuplexSponge.Security.Proofs.MessageLaw
+public import
+  ArkLib.NonInteractiveArgument.FiatShamir.DuplexSponge.Security.Proofs.ZeroKnowledge.SaltAbsorption
+public import
+  ArkLib.NonInteractiveArgument.FiatShamir.DuplexSponge.Security.Proofs.ZeroKnowledge.SaltForest
+public import ArkLib.NonInteractiveArgument.FiatShamir.DuplexSponge.Security.Salted
+public import ArkLib.NonInteractiveArgument.FiatShamir.Protocol
+public import ArkLib.NonInteractiveArgument.FiatShamir.Protocol.Canonical
+public import ArkLib.NonInteractiveArgument.FiatShamir.Protocol.CanonicalCompleteness
+public import ArkLib.NonInteractiveArgument.FiatShamir.Protocol.DuplexSponge
+public import ArkLib.NonInteractiveArgument.FiatShamir.Protocol.ReductionCompleteness
+public import ArkLib.NonInteractiveArgument.FiatShamir.Protocol.Serialization
+public import ArkLib.NonInteractiveArgument.FiatShamir.Protocol.SerializationSecurity
 public import ArkLib.NonInteractiveArgument.Legacy
 public import ArkLib.NonInteractiveArgument.Legacy.Serialization
 public import ArkLib.NonInteractiveArgument.NARG
@@ -806,36 +836,6 @@ public import ArkLib.OracleReduction.Equiv
 public import ArkLib.OracleReduction.Execution
 public import ArkLib.OracleReduction.Execution.NonInteractive
 public import ArkLib.OracleReduction.Execution.Transcript
-public import ArkLib.OracleReduction.FiatShamir.Basic
-public import ArkLib.OracleReduction.FiatShamir.Canonical
-public import ArkLib.OracleReduction.FiatShamir.Canonical.Completeness
-public import ArkLib.OracleReduction.FiatShamir.Canonical.Ordinary
-public import ArkLib.OracleReduction.FiatShamir.Canonical.RandomOracleCompleteness
-public import ArkLib.OracleReduction.FiatShamir.Completeness
-public import ArkLib.OracleReduction.FiatShamir.DuplexSponge
-public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Defs
-public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Execution
-public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Execution.LazySampling
-public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.InitialObject
-public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.InitialObject.Execution
-public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Nondegeneracy
-public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.QueryBounds
-public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Completeness
-public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.Completeness
-public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.Execution
-public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.MessageLaw
-public import
-  ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.ZeroKnowledge.SaltAbsorption
-public import
-  ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Proofs.ZeroKnowledge.SaltForest
-public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Salted
-public import ArkLib.OracleReduction.FiatShamir.Protocol
-public import ArkLib.OracleReduction.FiatShamir.Protocol.Canonical
-public import ArkLib.OracleReduction.FiatShamir.Protocol.CanonicalCompleteness
-public import ArkLib.OracleReduction.FiatShamir.Protocol.DuplexSponge
-public import ArkLib.OracleReduction.FiatShamir.Protocol.ReductionCompleteness
-public import ArkLib.OracleReduction.FiatShamir.Protocol.Serialization
-public import ArkLib.OracleReduction.FiatShamir.Protocol.SerializationSecurity
 public import ArkLib.OracleReduction.LiftContext.Lens
 public import ArkLib.OracleReduction.LiftContext.OracleReduction
 public import ArkLib.OracleReduction.LiftContext.Purity

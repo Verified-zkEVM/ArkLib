@@ -2,7 +2,7 @@
 
 ## Separate initial object
 
-`OracleReduction/FiatShamir/DuplexSponge/InitialObject.lean` defines a generic fixed-zero
+`NonInteractiveArgument/FiatShamir/DuplexSponge/InitialObject.lean` defines a generic fixed-zero
 runner for any injectively encoded, fixed-length initial object. The intended object is
 `(session identifier, statement)`. The proof salt is a separate argument and is absorbed next.
 The interactive protocol specification, challenge codecs and prover-message tuple are unchanged.

@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.OracleReduction.FiatShamir.Protocol.CanonicalCompleteness
+import ArkLib.NonInteractiveArgument.FiatShamir.Protocol.CanonicalCompleteness
 
 /-!
 # Fixed default challenges do not preserve completeness error

@@ -144,7 +144,7 @@ entry says so, the specification is not claimed to be executable.
   one witness-sending stage shared by Plonk and Spartan (`SendWitness.lean`) and batched quotient
   zero tests.
 - **Fiat-Shamir**: the basic transform and its completeness under fixed tables and a lazy random
-  oracle ([`OracleReduction/FiatShamir/`](ArkLib/OracleReduction/FiatShamir/)).
+  oracle ([`NonInteractiveArgument/FiatShamir/`](ArkLib/NonInteractiveArgument/FiatShamir/)).
 - **Interaction layer** ([`ArkLib/Interaction/`](ArkLib/Interaction/)): execution,
   soundness, round-by-round soundness, generic knowledge certificates and their composition, and
   state-restoration knowledge soundness for fixed-round public-coin protocols with error

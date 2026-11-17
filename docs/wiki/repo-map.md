@@ -14,6 +14,7 @@ ArkLib/
   OracleReduction/    core IOR abstractions and security theory
   InteractiveProof/   public-coin interactive-proof security (legacy protocol representation)
   NonInteractiveArgument/  protocol-independent NARG games and legacy adapters
+    FiatShamir/       canonical and duplex-sponge Fiat-Shamir constructions and proofs
   Security/           shared game execution and private-coin operations
   Commitments/        commitments and opening arguments
   AGM/                algebraic group model representations
@@ -76,12 +77,10 @@ home_page/            site assets and assembled website root
   errors (`StateRestorationBudget`). The measured forms are described under measured extraction
   below. `ProofSystem/Sumcheck/Interaction/RoundByRound.lean` is the interaction-layer Sumcheck client.
 - `ArkLib/OracleReduction/` remains the conceptual center of the legacy reduction and security
-  layer while protocol clients migrate. `FiatShamir/Basic.lean` owns the transform;
-  `FiatShamir/Completeness.lean` adds fixed-table perfect completeness and shared lazy
-  random-oracle completeness.
-  Core transcript operations live in `ProtocolSpec/Basic.lean`. Message and challenge prefix
-  lemmas live in `ProtocolSpec/PrefixLemmas.lean`;
-  round and optional-run factorization lemmas live in `Execution.lean`.
+  layer while protocol clients migrate. Core transcript operations live in
+  `ProtocolSpec/Basic.lean`. Message and challenge prefix lemmas live in
+  `ProtocolSpec/PrefixLemmas.lean`; round and optional-run factorization lemmas live in
+  `Execution.lean`.
 - `ArkLib/InteractiveProof/` owns the `IP` contracts (`IP.lean`), adaptive interactive security
   (`Soundness.lean`), state-restoration security and its private-coin preservation lemmas
   (`StateRestorationSoundness.lean`), and honest-verifier zero knowledge. These modules still use
@@ -93,6 +92,10 @@ home_page/            site assets and assembled website root
   interaction layer. `Legacy.lean` converts legacy one-message verifiers/provers and
   proves the experiment and predicate equivalences, and transports the legacy NARG experiments
   across private-sampling adapters.
+- `ArkLib/NonInteractiveArgument/FiatShamir/` contains the canonical and duplex-sponge compilers
+  and their security proofs. `Basic.lean` owns the shared transform, and `Completeness.lean` adds
+  fixed-table perfect completeness and shared lazy random-oracle completeness. The protocol
+  acceptance tests live in `ArkLibTest/NonInteractiveArgument/FiatShamir/`.
 - `ArkLib/Security/` contains only shared security machinery: `Game.lean` initializes
   and executes a shared oracle, and `PrivateCoins.lean` separates private samples from
   public-query budgets and logs. With `open scoped QueryImpl`, `left + right` also combines
@@ -116,7 +119,7 @@ home_page/            site assets and assembled website root
 
 Generic fixed-zero initialization is owned by `Data/Hash/DuplexSponge/Initialization.lean`.
 The separate initial-object runner and its execution and verifier bridges live under
-`OracleReduction/FiatShamir/DuplexSponge/InitialObject/`; the reusable product encoding is in
+`NonInteractiveArgument/FiatShamir/DuplexSponge/InitialObject/`; the reusable product encoding is in
 `ToCompPoly/HasSize.lean`. Concrete suites belong in example clients under `ArkLibTest/`.
 See [the construction guide](fiat-shamir-initial-objects.md) for the security experiment boundary.
 
@@ -1163,8 +1166,8 @@ Shared DSFS codec primitives (`ZeroKnowledge.EncodedVerifierMessage` and
 
 `ArkLib/Data/Encoding/Serializer.lean` owns executable whole-input byte serializers, inverse
 laws, prefix freedom, fixed-size/vector construction, equivalence transport, and subtype validity
-checks. `ArkLib/OracleReduction/FiatShamir/Protocol/Serialization.lean` owns the generic byte-facing
-argument wrapper and its exact execution/completeness correspondence. The security transfers for
+checks. `ArkLib/NonInteractiveArgument/FiatShamir/Protocol/Serialization.lean` owns the generic
+byte-facing argument wrapper and its exact execution and completeness correspondence. The security transfers for
 legacy verifier adapters live in `ArkLib/NonInteractiveArgument/Legacy/Serialization.lean`. DSFS keeps its
 `DSFSTypedNARGString` (salt and typed prover messages) for internal security games and uses
 `DSFSNARGString = ByteArray` publicly. `Codec` remains the sponge-message encoding interface. See
