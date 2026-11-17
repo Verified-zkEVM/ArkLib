@@ -13,29 +13,36 @@ public import ArkLib.Data.Polynomial.SpecializationAvoidance
 /-!
 # Persistent exceptional challenges
 
-A candidate is persistent when a rational function `G = H / L` explains many agreements.
+A rational function `G = H / L` explains an agreement of a candidate `P`
+if `G` agrees with `g` there.
+A candidate is persistent at threshold `B` if one such function explains at least `B` agreements.
+The numerator has degree at most `d`, and the nonzero denominator has degree at most one.
+Only points where `L` does not vanish count toward persistence.
+The rational partner `F = P - (α + β X) G` agrees with `f` at those points as well.
+The degree bound on `P` is supplied by exceptionality, rather than the persistence predicate.
 
-Here `deg H ≤ d`, `deg L ≤ 1`, and `G` agrees with `g` at `B` agreement points.
+Write `n` for the domain size and `q` for the field size.
+For candidates of degree at most `d`, distinct rational pairs have persistence sets with
+at most `d + 1` common points.
+Under `d + 1 < B` and `n (d + 1) < B²`, the Johnson bound limits the number of pairs.
+Each pair accounts for at most `max q (n choose 2)` exceptional challenges with agreement loss one.
 
-Two distinct explaining pairs share at most `d + 1` points.
-
-So the Johnson bound for set families limits the number of pairs.
-
-Each pair explains at most `max q (n choose 2)` exceptional challenges.
+The count formalizes Lemma 4.5 of [CWYZ26].
+It bounds all persistent exceptional challenges, including any excluded challenges from the
+paper's interpolation argument.
+The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records the statement correspondence.
 
 ## Main definitions
 
-* `ReedSolomon.affinePersistenceSet`: agreement points explained by `H / L`, excluding poles.
-* `ReedSolomon.IsAffinePersistent`: persistence of a candidate at a threshold.
+* `ReedSolomon.affinePersistenceSet`: candidate agreements explained by `H / L`, excluding poles.
+* `ReedSolomon.IsAffinePersistent`: persistence of a candidate at threshold `B`.
 
 ## Main statements
 
-* `ReedSolomon.card_isAffineExceptional_persistent_le`: the count of persistent exceptional
-  challenges.
+* `ReedSolomon.mem_affinePersistenceSet`: membership in the persistence set.
+* `ReedSolomon.card_isAffineExceptional_persistent_le`: the persistent exceptional count.
 
 ## References
-
-The count is Lemma 4.5 of [CWYZ26].
 
 * [Chiesa, A., Weissenberg, G., Yogev, E., and Zheng, K. Z.,
     *Affine combiners for Reed–Solomon proximity gaps*][CWYZ26]
@@ -55,13 +62,20 @@ noncomputable def affinePersistenceSet (domain : ι ↪ F) (f g : ι → F) (α 
   {i ∈ polynomialAgreementSet domain (combinedWord domain f g (affineMultiplier α β)) P |
     L.eval (domain i) ≠ 0 ∧ H.eval (domain i) = L.eval (domain i) * g i}
 
-/-- `P` is persistent at threshold `B` for the challenge `(α, β)`.
+/-- A persistence point is a candidate agreement where `L` is nonzero and `H = L g`. -/
+@[simp]
+theorem mem_affinePersistenceSet (domain : ι ↪ F) (f g : ι → F) (α β : F)
+    (P H L : F[X]) (i : ι) :
+    i ∈ affinePersistenceSet domain f g α β P H L ↔
+      P.eval (domain i) = f i + (α + β * domain i) * g i ∧
+        L.eval (domain i) ≠ 0 ∧ H.eval (domain i) = L.eval (domain i) * g i := by
+  simp [affinePersistenceSet]
 
-Some `G = H / L`, with `deg H ≤ d`, `L ≠ 0` and `deg L ≤ 1`, agrees with `g` at `B` points.
-
-These points agree with `P` and avoid the root of `L`.
-
-The partner `F = P - (α + β X) G` then agrees with `f` there too. -/
+/-- `P` is persistent at threshold `B` for challenge `(α, β)` if a rational function `G = H / L`
+agrees with `g` on at least `B` candidate agreement points where `L` does not vanish.
+The numerator and denominator satisfy `deg H ≤ d`, `L ≠ 0`, and `deg L ≤ 1`.
+The partner `P - (α + β X) G` agrees with `f` there too.
+This predicate imposes no degree bound on `P`. -/
 def IsAffinePersistent (domain : ι ↪ F) (f g : ι → F) (d B : ℕ) (α β : F) (P : F[X]) : Prop :=
   ∃ H L : F[X], L ≠ 0 ∧ L.degree ≤ 1 ∧ H.degree ≤ d ∧
     B ≤ #(affinePersistenceSet domain f g α β P H L)
@@ -73,7 +87,8 @@ private noncomputable def persistentPair (α β : F) (P H L : F[X]) : RatFunc F 
     algebraMap F[X] (RatFunc F) H / algebraMap F[X] (RatFunc F) L)
 
 open Classical in
-/-- Persistent candidates with distinct rational pairs share at most `d + 1` points. -/
+/-- Persistence sets for candidates of degree at most `d` with distinct rational pairs
+have at most `d + 1` common points. -/
 private theorem card_inter_affinePersistenceSet_le {domain : ι ↪ F} {f g : ι → F} {d : ℕ}
     {α₀ β₀ α₁ β₁ : F} {P₀ H₀ L₀ P₁ H₁ L₁ : F[X]} (hP₀ : P₀.degree ≤ d) (hP₁ : P₁.degree ≤ d)
     (hL₀ : L₀ ≠ 0) (hL₁ : L₁ ≠ 0) (hL₀d : L₀.degree ≤ 1) (hL₁d : L₁.degree ≤ 1)
@@ -89,8 +104,7 @@ private theorem card_inter_affinePersistenceSet_le {domain : ι ↪ F} {f g : ι
       (P₁.eval (domain i) = f i + (α₁ + β₁ * domain i) * g i ∧
       H₁.eval (domain i) = L₁.eval (domain i) * g i) := by
     intro i hi
-    simp only [s, affinePersistenceSet, mem_inter, mem_filter, mem_polynomialAgreementSet,
-      combinedWord_affineMultiplier] at hi
+    simp only [s, mem_inter, mem_affinePersistenceSet] at hi
     exact ⟨⟨hi.1.1, hi.1.2.2⟩, ⟨hi.2.1, hi.2.2.2⟩⟩
   have hinj : Set.InjOn domain (s : Set ι) := domain.injective.injOn
   have hL₀' : algebraMap F[X] (RatFunc F) L₀ ≠ 0 :=
@@ -145,9 +159,10 @@ private theorem card_inter_affinePersistenceSet_le {domain : ι ↪ F} {f g : ι
       · exact (natDegree_mul_le).trans (by omega)
 
 open Classical in
-/-- There are at most `ℓ · max q (n choose 2)` persistent exceptional challenges.
-
-The factor `ℓ = n (B - d - 1) / (B² - n (d + 1))` bounds the number of rational pairs. -/
+/-- If `d + 1 < B` and `n (d + 1) < B²`, the number of challenges with a persistent
+exceptional candidate at agreement loss one is at most `ℓ · max q (n choose 2)`, where
+`n = |ι|`, `q = |F|`, and `ℓ = n (B - d - 1) / (B² - n (d + 1))`.
+The count is cast to `ℝ`, and the arithmetic defining `ℓ` is real arithmetic. -/
 theorem card_isAffineExceptional_persistent_le [Fintype F] (domain : ι ↪ F) (f g : ι → F)
     {d A B : ℕ} (hdB : d + 1 < B) (hJ : Fintype.card ι * (d + 1) < B ^ 2) :
     (#{c : F × F | ∃ P, IsAffineExceptional domain f g d A 1 c.1 c.2 P ∧

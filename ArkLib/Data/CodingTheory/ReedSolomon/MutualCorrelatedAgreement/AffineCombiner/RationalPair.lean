@@ -9,36 +9,31 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Aff
 public import Mathlib.FieldTheory.RatFunc.Basic
 
 /-!
-# Exceptional challenges explained by one rational pair
+# Exceptional challenges for one rational pair
 
-Fix two rational functions `F₀, G₀`.
+Fix rational functions `F₀, G₀` over a finite field of size `q` and a domain of size `n`.
+A challenge `(α, β)` is compatible with this pair at degree bound `d` if
+`F₀ + (α + β X) G₀` is a polynomial of degree at most `d`.
+The results formalize Lemma 4.4 of [CWYZ26] for agreement loss one.
+The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records their statement correspondence.
 
-A challenge `(α, β)` is compatible with them when `F₀ + (α + β X) G₀` is a polynomial.
+If `F₀, G₀` are polynomials of degrees `≤ d` and `< d`, an exceptional candidate loses at
+least two agreement points with these witnesses.
+At each lost point, the multiplier value is determined by the rational pair and received words.
+Two distinct points determine `(α, β)`, so at most `n choose 2` challenges are exceptional.
 
-## Polynomial pairs within the degree bounds
-
-An exceptional challenge loses at least two agreement points.
-
-At each lost point `x`, the value `α + β x` is fixed by the pair.
-
-Two points fix `(α, β)`, so at most `n choose 2` challenges are exceptional.
-
-## Other pairs
-
-The compatible challenges of degree at most `d` form a proper affine subspace of `F²`.
-
-So there are at most `q` of them.
+For a pair outside these degree bounds, at most `q` challenges are compatible.
+The proof shows that more than `q` compatible challenges would force both rational functions
+to be polynomials within the witness degree bounds.
+Combining the cases gives at most `max q (n choose 2)` exceptional challenges for any rational pair.
 
 ## Main statements
 
-* `ReedSolomon.card_isAffineExceptional_add_mul_le`: the polynomial case.
-* `ReedSolomon.card_ratFunc_combination_le`: the case outside the degree bounds.
-* `ReedSolomon.card_isAffineExceptional_ratFunc_le`: every rational pair has at most
-  `max q (n choose 2)` exceptional challenges.
+* `ReedSolomon.card_isAffineExceptional_add_mul_le`: the polynomial witness case.
+* `ReedSolomon.card_ratFunc_combination_le`: compatibility outside the witness degree bounds.
+* `ReedSolomon.card_isAffineExceptional_ratFunc_le`: the bound for every rational pair.
 
 ## References
-
-The results are Lemma 4.4 of [CWYZ26].
 
 * [Chiesa, A., Weissenberg, G., Yogev, E., and Zheng, K. Z.,
     *Affine combiners for Reed–Solomon proximity gaps*][CWYZ26]
@@ -75,7 +70,8 @@ theorem eval_affineMultiplier_eq_of_mem_agreementLoss {domain : ι ↪ F} {f g :
   · exact absurd (sub_eq_zero.mp h) hG
 
 open Classical in
-/-- A polynomial pair within the degree bounds explains at most `n choose 2` challenges. -/
+/-- If `deg F₀ ≤ d` and `deg G₀ < d`, at most `n choose 2` challenges `(α, β)` make
+`F₀ + (α + β X) G₀` exceptional with agreement loss one, where `n` is the domain size. -/
 theorem card_isAffineExceptional_add_mul_le [Fintype F] (domain : ι ↪ F) (f g : ι → F)
     {d A : ℕ} (F₀ G₀ : F[X]) (hF : F₀.degree ≤ d) (hG : G₀.degree < d) :
     #{c : F × F | IsAffineExceptional domain f g d A 1 c.1 c.2
@@ -108,9 +104,9 @@ theorem card_isAffineExceptional_add_mul_le [Fintype F] (domain : ι ↪ F) (f g
 
 omit [DecidableEq F] in
 open Classical in
-/-- Any other rational pair is compatible with at most `q` challenges.
-
-Compatible means the combination is a polynomial of degree at most `d`. -/
+/-- If `(F₀, G₀)` is not a pair of polynomials with `deg F₀ ≤ d` and `deg G₀ < d`,
+at most `q = |F|` challenges `(α, β)` make `F₀ + (α + β X) G₀` a polynomial
+of degree at most `d`. -/
 theorem card_ratFunc_combination_le [Fintype F] {d : ℕ} (F₀ G₀ : RatFunc F)
     (h : ¬ ∃ F₁ G₁ : F[X], algebraMap F[X] (RatFunc F) F₁ = F₀ ∧
       algebraMap F[X] (RatFunc F) G₁ = G₀ ∧ F₁.degree ≤ d ∧ G₁.degree < d) :
@@ -176,7 +172,9 @@ theorem card_ratFunc_combination_le [Fintype F] {d : ℕ} (F₀ G₀ : RatFunc F
   exact_mod_cast (show G₁.natDegree + 1 ≤ d by exact_mod_cast hQ)
 
 open Classical in
-/-- Every rational pair explains at most `max q (n choose 2)` exceptional challenges. -/
+/-- For any rational pair `(F₀, G₀)`, at most `max q (n choose 2)` challenges `(α, β)`
+make `F₀ + (α + β X) G₀` a polynomial exceptional with agreement loss one.
+Here `n` is the domain size and `q` is the field size. -/
 theorem card_isAffineExceptional_ratFunc_le [Fintype F] (domain : ι ↪ F) (f g : ι → F)
     {d A : ℕ} (F₀ G₀ : RatFunc F) :
     #{c : F × F | ∃ P : F[X], algebraMap F[X] (RatFunc F) P =
