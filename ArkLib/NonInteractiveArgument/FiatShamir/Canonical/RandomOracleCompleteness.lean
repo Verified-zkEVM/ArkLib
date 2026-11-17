@@ -29,10 +29,7 @@ variable {n : ℕ} {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
 /-- Carry a public salt in the input while running the original interactive algorithms. -/
 def contextReduction (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) :
     Reduction oSpec (StmtIn × Salt) WitIn StmtOut WitOut pSpec where
-  prover := {
-    toProverRound := R.prover.toProverRound
-    input := fun ctx => R.prover.input (ctx.1.1, ctx.2)
-    output := R.prover.output }
+  prover := contextProver R.prover
   verifier := { verify := fun ctx => R.verifier.verify ctx.1 }
 
 /-- The context adapter leaves interactive execution unchanged. -/

@@ -56,6 +56,26 @@ theorem serialize_soundnessQueryBounded
   exact NARGSerialization.soundnessQueryBounded serializer fallback init impl
     argument.toVerifier (some false) language {true} (by simp) counts t error h
 
+/-- Parsing the proof and running the supplied extractor preserves its knowledge-soundness bound. -/
+theorem serialize_knowledgeSoundnessQueryBoundedWithExtractor
+    (argument : NonInteractiveArgument oSpec Stmt Wit Payload)
+    (serializer : Serializer Payload) (fallback : Payload)
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (extractorImpl : QueryImpl extractorSpec (StateT σ ProbComp))
+    (E : Stmt → Payload → QueryLog oSpec → QueryLog oSpec →
+      OptionT (OracleComp extractorSpec) Wit)
+    (relation : Set (Stmt × Wit)) (counts : ι → Prop) [DecidablePred counts]
+    (t : ℕ) (error : ENNReal)
+    (h : argument.toVerifier.adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor
+      init impl extractorImpl relation {true} E counts t error) :
+    Verifier.adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor
+      init impl extractorImpl (argument.serialize serializer).toVerifier
+      relation {true} (NARGSerialization.extractor serializer E)
+      counts t error := by
+  rw [serialize_toVerifier]
+  exact NARGSerialization.knowledgeSoundnessQueryBoundedWithExtractor serializer fallback init impl
+    extractorImpl argument.toVerifier E (some false) relation {true} (by simp) counts t error h
+
 /-- A single byte-facing extractor preserves the typed argument's knowledge-soundness bound. -/
 theorem serialize_knowledgeSoundnessQueryBounded
     (argument : NonInteractiveArgument oSpec Stmt Wit Payload)

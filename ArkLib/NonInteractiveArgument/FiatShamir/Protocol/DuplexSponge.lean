@@ -89,20 +89,10 @@ theorem InteractiveVerifier.duplexSpongeFiatShamirPayload_verify (δ : ℕ)
     ((V.toReductionVerifier.duplexSpongeFiatShamir (U := U) δ).verify stmt
       (Fin.cons nargString (fun i => i.elim0))).run =
       some <$> V.duplexSpongeFiatShamirPayload δ stmt nargString := by
-  simp only [Nat.reduceAdd, Fin.vcons_fin_zero, Verifier.duplexSpongeFiatShamir,
-    Fin.isValue, ← monadLift_liftM_OptionT, toReductionVerifier, OptionT.run_lift,
-    bind_pure_comp, liftM_map, Option.getM, bind_map_left, bind_pure, Fin.cons_zero,
-    OptionT.run_bind, OptionT.run_monadLift, monadLift_self, Option.elimM_map,
-    Option.elim_some, duplexSpongeFiatShamirPayload, duplexSpongeFiatShamirPayloadForward,
-    liftComp_eq_liftM, liftM_bind, map_bind]
-  apply bind_congr
-  intro t
-  induction (V.verify stmt t.2) using OracleComp.inductionOn with
-  | pure x => rfl
-  | query_bind q k ih =>
-    simp only [liftM_bind, map_bind]
-    apply bind_congr
-    exact ih
+  simp [Verifier.duplexSpongeFiatShamir, Verifier.liftOracles,
+    Verifier.duplexSpongeFiatShamirForward, duplexSpongeFiatShamirPayload,
+    duplexSpongeFiatShamirPayloadForward, toReductionVerifier, ← monadLift_liftM_OptionT,
+    Option.getM]
 
 /-- Generate the public byte-serialized DSFS NARG string. The serializer is independent of the
 sponge alphabet and must enforce every validity condition of the payload type. -/

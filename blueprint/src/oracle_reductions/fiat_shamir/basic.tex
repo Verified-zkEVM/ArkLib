@@ -120,7 +120,7 @@ If this query is absent, use a fixed default message in \(\IPVerifierMessageSpac
     (\Instance,\SaltString,\IPProverMessages,\IPVerifierMessages,\QueryLog_P).
 \end{equation*}
 \end{enumerate}
-The verifier log reconstructs the full IP transcript; the prover log is the SR move--response trace supplied to \(\SRExtractor\). The extractor makes no oracle queries and does not invoke the prover. It returns \(\bot\) if \(\SRExtractor\) does. On logs from the argument verifier, every required query is present, so the default messages are unused.
+The verifier log reconstructs the full IP transcript; the prover log is the SR move--response trace supplied to \(\SRExtractor\). The extractor may use private randomness, makes no public oracle queries, and does not invoke the prover. It returns \(\bot\) if \(\SRExtractor\) does. On logs from the argument verifier, every required query is present, so the default messages are unused.
 \uses{def:sr_knowledge_soundness, def:adaptive_narg_knowledge_soundness, constr:basic_fiat_shamir}
 \lean{CanonicalFS.publicCoinExtractor}
 \leanok
@@ -133,7 +133,8 @@ For each \(\secpar\), suppose that the IP family has straightline state-restorat
   \NARGKnowledgeSoundnessError(\secpar,\InstanceSizeBound,\CountedQueryBound)
     \le\IPSRKnowledgeSoundnessError(\secpar;s(\secpar,\InstanceSizeBound),\InstanceSizeBound,\CountedQueryBound).
 \end{equation*}
-The resulting NARG extractor family is chosen before the query budget and adversary.
+The bound holds for the extractor family constructed from the supplied SR extractor as in
+\Cref{def:basic_fs_straightline_extractor}. This family is fixed before the query budget and adversary.
 Here straightline refers to the log-based interface of
 \Cref{def:adaptive_narg_knowledge_soundness}. The extractor can use private randomness
 and receives both public query logs. The paper's deterministic extractor receives the
@@ -152,7 +153,7 @@ Fix the parameters and a malicious argument prover, and construct the SR prover 
 \begin{equation*}
   \InstanceSizeOf{\Instance}\le\InstanceSizeBound
   \quad\land\quad b=1
-  \quad\land\quad(\Instance,\WitnessValue)\notin\Relation
+  \quad\land\quad\bigl(\WitnessValue=\bot\ \lor\ (\Instance,\WitnessValue)\notin\Relation\bigr)
 \end{equation*}
 has the same probability in the two experiments. The SR prover makes at most \(\CountedQueryBound\) moves, so the assumed SR knowledge-soundness bound applies.
 \leanok

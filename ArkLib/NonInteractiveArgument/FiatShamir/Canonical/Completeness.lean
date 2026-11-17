@@ -62,8 +62,8 @@ private theorem sim_round (impl : QueryImpl oSpec ProbComp)
       | .P_to_V => do
         let sent ← simulateQ impl (P.sendMessage ⟨j, hd⟩ state)
         pure (messages.concat hd sent.1, augStmt, sent.2)) := by
-  simp only [Prover.runToRoundFSSalted, Fin.induction_succ, Prover.processRoundFSSalted,
-    simulateQ_bind]
+  simp only [Prover.runToRoundFSSalted, Prover.runToRoundFS, Fin.induction_succ,
+    Prover.processRoundFS, contextProver, simulateQ_bind]
   apply bind_congr
   intro r
   split <;> split <;> try solve | exfalso; simp_all
@@ -135,7 +135,7 @@ private theorem reconstruct_supported (salt : Salt)
         (simulateQ (impl + challengeQueryImpl) (P.runToRound i stmt wit)) := by
   induction i using Fin.induction with
   | zero =>
-    simp only [Prover.runToRoundFSSalted, Fin.induction_zero, simulateQ_pure,
+    simp only [Prover.runToRoundFSSalted, Prover.runToRoundFS, Fin.induction_zero, simulateQ_pure,
       support_pure, Set.mem_singleton_iff] at hz
     subst z
     simp only [reconstruct, Fin.induction_zero, Prover.runToRound, simulateQ_pure,

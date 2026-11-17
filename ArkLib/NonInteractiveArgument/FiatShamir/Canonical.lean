@@ -66,6 +66,15 @@ Canonical Fiat-Shamir NARG string: pair of a public salt and the prover's messag
 abbrev FSSaltedNARGString (pSpec : ProtocolSpec n) (Salt : Type) :=
   Salt × pSpec.Messages
 
+/-- Carry the salt in the public oracle context and pass only the statement to the prover. -/
+@[inline]
+def CanonicalFS.contextProver {Salt : Type}
+    (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) :
+    Prover oSpec (StmtIn × Salt) WitIn StmtOut WitOut pSpec where
+  toProverRound := P.toProverRound
+  input := fun ctx => P.input (ctx.1.1, ctx.2)
+  output := P.output
+
 /--
 Prover's per-round step for the canonical Fiat-Shamir transformation.
 
@@ -81,17 +90,8 @@ def Prover.processRoundFSSalted {Salt : Type} [VCVCompatible Salt] (j : Fin n)
         (StmtIn × Salt) × prover.PrvState j.castSucc)) :
       OracleComp (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)
         (pSpec.MessagesUpTo j.succ ×
-          (StmtIn × Salt) × prover.PrvState j.succ) := do
-  let ⟨messages, augStmt, state⟩ ← currentResult
-  match hDir : pSpec.dir j with
-  | .V_to_P => do
-    let f ← prover.receiveChallenge ⟨j, hDir⟩ state
-    let verifierMessage ← query (spec := fsChallengeOracle (StmtIn × Salt) pSpec)
-                      ⟨⟨j, hDir⟩, ⟨augStmt, messages⟩⟩
-    return ⟨messages.extend hDir, augStmt, f verifierMessage⟩
-  | .P_to_V => do
-    let ⟨msg, newState⟩ ← prover.sendMessage ⟨j, hDir⟩ state
-    return ⟨messages.concat hDir msg, augStmt, newState⟩
+          (StmtIn × Salt) × prover.PrvState j.succ) :=
+  (CanonicalFS.contextProver (Salt := Salt) prover).processRoundFS j currentResult
 
 /--
 Run the prover up to round `i` under the canonical Fiat-Shamir transformation, given an
@@ -104,10 +104,7 @@ def Prover.runToRoundFSSalted {Salt : Type} [VCVCompatible Salt]
     (state : prover.PrvState 0) :
         OracleComp (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)
           (pSpec.MessagesUpTo i × (StmtIn × Salt) × prover.PrvState i) :=
-  Fin.induction
-    (pure ⟨default, ⟨stmt, salt⟩, state⟩)
-    prover.processRoundFSSalted
-    i
+  (CanonicalFS.contextProver prover).runToRoundFS i (stmt, salt) state
 
 /--
 Canonical Fiat-Shamir transformation for the prover ([CO25, Construction 3.17] prover surface).

@@ -142,6 +142,30 @@ end CanonicalFS
 
 namespace CanonicalFS
 
+/-- Restricting the input size commutes with compiling the public verifier. -/
+private theorem ofPublic_compileFiatShamir_restrictSize {n : ℕ} {pSpec : ProtocolSpec n}
+    {Statement Salt : Type} [VCVCompatible Salt]
+    (V : IP.Verifier Statement pSpec) (size : Statement → ℕ) (limit : ℕ) :
+    NARG.Verifier.ofPublic
+      (_root_.Verifier.compileFiatShamir (Salt := Salt) (V.restrictSize size limit)) =
+    (NARG.Verifier.ofPublic (_root_.Verifier.compileFiatShamir (Salt := Salt) V)).restrictSize
+      size limit := by
+  ext x tr
+  apply OptionT.ext
+  simp only [NARG.Verifier.ofPublic, NARG.Verifier.restrictSize, _root_.Verifier.liftOracles,
+    _root_.Verifier.compileFiatShamir, _root_.Verifier.restrictSize,
+    OptionT.run_map]
+  simp only [OptionT.liftM_def, OptionT.run_bind, Option.elimM, OptionT.run_lift, bind_assoc,
+    pure_bind, Option.elim_some, liftComp_bind, OptionT.run_mk, map_bind]
+  apply bind_congr
+  intro derived
+  simp only [liftM_map, OptionT.run_map, liftComp_map, bind_map_left]
+  apply bind_congr
+  intro accepted
+  cases accepted with
+  | none => rfl
+  | some accepted => cases accepted <;> rfl
+
 section Families
 
 variable {Statement Witness : Type}
@@ -170,30 +194,9 @@ theorem publicCoin_soundness (language : Set Statement)
       language size (fun sec n t => error sec (saltSize sec n) n t) := by
   classical
   intro sec n t P hP
-  have hCompile
-      (V : IP.Verifier Statement (pSpec sec n)) :
-      NARG.Verifier.ofPublic
-        (_root_.Verifier.compileFiatShamir (Salt := Salt sec (saltSize sec n) n)
-          (V.restrictSize size n)) =
-      (NARG.Verifier.ofPublic
-        (_root_.Verifier.compileFiatShamir (Salt := Salt sec (saltSize sec n) n) V)).restrictSize
-          size n := by
-      ext x tr
-      apply OptionT.ext
-      simp only [NARG.Verifier.ofPublic, NARG.Verifier.restrictSize, _root_.Verifier.liftOracles,
-        _root_.Verifier.compileFiatShamir, _root_.Verifier.restrictSize,
-        OptionT.run_map]
-      simp only [OptionT.liftM_def, OptionT.run_bind, Option.elimM, OptionT.run_lift, bind_assoc,
-        pure_bind, Option.elim_some, liftComp_bind, OptionT.run_mk, map_bind]
-      apply bind_congr
-      intro derived
-      simp only [liftM_map, OptionT.run_map, liftComp_map, bind_map_left]
-      apply bind_congr
-      intro accepted
-      cases accepted with
-      | none => rfl
-      | some accepted => cases accepted <;> rfl
-  rw [← NARG.soundnessExperiment_restrictSize_failureProb_eq, ← hCompile]
+  rw [← NARG.soundnessExperiment_restrictSize_failureProb_eq,
+    ← ofPublic_compileFiatShamir_restrictSize (Salt := Salt sec (saltSize sec n) n)
+      (V sec n) size n]
   rw [NARG.soundnessExperiment_ofPublic]
   have h := canonicalFiatShamir_soundness ((V sec n).restrictSize size n) language {true}
     (init sec (saltSize sec n) n) IP.emptyImpl
@@ -223,30 +226,9 @@ theorem publicCoin_knowledge_soundness_withExtractor
       (fun sec n t => error sec (saltSize sec n) n t) := by
   classical
   intro sec n t P hP
-  have hCompile
-      (V : IP.Verifier Statement (pSpec sec n)) :
-      NARG.Verifier.ofPublic
-        (_root_.Verifier.compileFiatShamir (Salt := Salt sec (saltSize sec n) n)
-          (V.restrictSize size n)) =
-      (NARG.Verifier.ofPublic
-        (_root_.Verifier.compileFiatShamir (Salt := Salt sec (saltSize sec n) n) V)).restrictSize
-          size n := by
-      ext x tr
-      apply OptionT.ext
-      simp only [NARG.Verifier.ofPublic, NARG.Verifier.restrictSize, _root_.Verifier.liftOracles,
-        _root_.Verifier.compileFiatShamir, _root_.Verifier.restrictSize,
-        OptionT.run_map]
-      simp only [OptionT.liftM_def, OptionT.run_bind, Option.elimM, OptionT.run_lift, bind_assoc,
-        pure_bind, Option.elim_some, liftComp_bind, OptionT.run_mk, map_bind]
-      apply bind_congr
-      intro derived
-      simp only [liftM_map, OptionT.run_map, liftComp_map, bind_map_left]
-      apply bind_congr
-      intro accepted
-      cases accepted with
-      | none => rfl
-      | some accepted => cases accepted <;> rfl
-  rw [← NARG.knowledgeSoundnessExperiment_restrictSize_failureProb_eq, ← hCompile]
+  rw [← NARG.knowledgeSoundnessExperiment_restrictSize_failureProb_eq,
+    ← ofPublic_compileFiatShamir_restrictSize (Salt := Salt sec (saltSize sec n) n)
+      (V sec n) size n]
   rw [NARG.knowledgeSoundnessExperiment_ofPublic]
   have hGeneric := IP.srKnowledgeSoundnessQueryBoundedWithExtractor_to_generic
     (init sec (saltSize sec n) n) relation ((V sec n).restrictSize size n)

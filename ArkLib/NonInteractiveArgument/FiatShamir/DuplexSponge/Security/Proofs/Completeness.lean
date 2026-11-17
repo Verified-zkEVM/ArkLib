@@ -379,13 +379,18 @@ private theorem sim_full_execution (salt : Vector U δ)
   simp only [sim_forward, pure_bind, ScheduledExecution.interp_liftComp_left]
   apply bind_congr
   intro proverOutput
-  simp only [Verifier.duplexSpongeFiatShamir, nargTranscript,
+  simp only [Verifier.duplexSpongeFiatShamir, Verifier.liftOracles,
+    Verifier.duplexSpongeFiatShamirForward, nargTranscript, OptionT.run_mk,
     OptionT.run_bind, Option.elimM, ← monadLift_liftM_OptionT,
-    OptionT.run_monadLift, monadLift_self, ← liftComp_eq_liftM,
+    OptionT.run_monadLift, monadLift_self, ← liftComp_eq_liftM, liftComp_bind,
     simulateQ_bind, bind_map_left, Option.elim_some]
   simp only [sim_derive, pure_bind]
-  simp only [ScheduledExecution.interp_liftComp_left, simulateQ_getM_run,
-    bind_pure]
+  rw [liftComp_liftComp (spec₁ := oSpec) (spec₂ := oSpec + duplexSpongeForwardOracle StmtIn U)
+    (spec₃ := oSpec + duplexSpongeOracle StmtIn U) (fun _ => rfl)]
+  simp only [ScheduledExecution.interp_liftComp_left, bind_assoc]
+  apply bind_congr
+  intro result
+  cases result <;> simp [Option.getM]
 
 omit [SpongeSize] in
 private theorem sim_ip_run

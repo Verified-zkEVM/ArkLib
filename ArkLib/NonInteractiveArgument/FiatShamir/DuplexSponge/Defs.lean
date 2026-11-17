@@ -951,27 +951,6 @@ def ProtocolSpec.Messages.deriveTranscriptDSFS {ι : Type} {oSpec : OracleSpec �
   ProtocolSpec.Messages.deriveTranscriptDSFSAux (pSpec := pSpec) (oSpec := oSpec) (U := U)
     sponge messages (Fin.last n)
 
-/-- **[CO25, Construction 4.4]** Salted DSFS verifier surface (Construction 4.4-facing, wide-spec).
-
-Wide-spec wrapper around the forward-only helper `deriveTranscriptDSFS`. Kept at the wide
-`oSpec + duplexSpongeOracle StmtIn U` for compatibility with
-`Reduction.duplexSpongeFiatShamir`. For the strict `𝒱^{h,p}` typing used inside §5.8
-security games, see `Verifier.duplexSpongeFiatShamirForward`. -/
-def Verifier.duplexSpongeFiatShamir (δ : Nat)
-    (V : Verifier oSpec StmtIn StmtOut pSpec) :
-    NonInteractiveVerifier (DSFSTypedNARGString (pSpec := pSpec) (U := U) δ)
-      (oSpec + duplexSpongeOracle StmtIn U)
-      StmtIn StmtOut where
-  verify := fun stmtIn nargString => do
-    let saltedNARGString : DSFSTypedNARGString (pSpec := pSpec) (U := U) δ := nargString 0
-    let salt : Vector U δ := saltedNARGString.1
-    let messages : pSpec.Messages := saltedNARGString.2
-    let ⟨_, transcript⟩ ←
-      messages.deriveTranscriptDSFS
-        (pSpec := pSpec) (oSpec := oSpec) (U := U) stmtIn salt
-    let v ← (V.verify stmtIn transcript).run
-    v.getM
-
 /-- **[CO25, Construction 4.4]** Narrow-typed salted DSFS verifier surface — [CO25, Figure 4,
 line 3] (`𝒱^{h,p}`) for the salted Construction 4.4 path.
 
@@ -991,6 +970,14 @@ def Verifier.duplexSpongeFiatShamirForward (δ : Nat)
         (pSpec := pSpec) (oSpec := oSpec) (U := U) stmtIn salt
     let v ← (V.verify stmtIn transcript).run
     v.getM
+
+/-- **[CO25, Construction 4.4]** Embed the forward-only verifier in the shared oracle
+specification used by the prover and verifier. -/
+def Verifier.duplexSpongeFiatShamir (δ : Nat)
+    (V : Verifier oSpec StmtIn StmtOut pSpec) :
+    NonInteractiveVerifier (DSFSTypedNARGString (pSpec := pSpec) (U := U) δ)
+      (oSpec + duplexSpongeOracle StmtIn U) StmtIn StmtOut :=
+  (V.duplexSpongeFiatShamirForward δ).liftOracles
 
 /-- **[CO25, Construction 4.4]** — Argument prover for an interactive proof. The final output is an
 accepting claim; only the verifier decides whether the NARG string is accepted. -/
@@ -1075,23 +1062,9 @@ theorem Verifier.duplexSpongeFiatShamir_verify (δ : ℕ)
     (tr : FullTranscript ⟨!v[.P_to_V], !v[DSFSTypedNARGString (pSpec := pSpec) (U := U) δ]⟩) :
     (V.duplexSpongeFiatShamir δ).verify stmt tr =
       OptionT.mk (runForwardVerifierWide δ V stmt (tr 0)) := by
-  symm
-  unfold Verifier.duplexSpongeFiatShamir
-  apply OptionT.ext
-  simp only [runForwardVerifierWide, Verifier.duplexSpongeFiatShamirForward,
-    Verifier.run, liftComp_bind, ← monadLift_liftM_OptionT,
-    OptionT.run_monadLift, monadLift_self, bind_map_left, Option.elimM, Option.elim_some,
-    OptionT.run_bind]
-  apply bind_congr
-  intro t
-  simp only [← liftComp_eq_liftM]
-  induction (V.verify stmt t.2).run using OracleComp.inductionOn with
-  | pure x => cases x <;> simp [Option.getM]
-  | query_bind q k ih =>
-    simp only [liftComp_bind]
-    simp only [bind_assoc]
-    congr 1
-    exact funext ih
+  simp only [Verifier.duplexSpongeFiatShamir, Verifier.liftOracles, runForwardVerifierWide,
+    Verifier.run]
+  congr 3
 
 end SaltedConstruction
 
