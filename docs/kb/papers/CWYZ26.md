@@ -58,7 +58,7 @@ A unit is done when its declarations are on `main`.
 | 3 | Theorem 5.1 | Equal-degree error `≤ εaff + ℓ₀/q` and linear-claim error `≤ εaff + 2ℓ₀/q` | 1 | planned |
 | 4 | Proposition 6.3 | Scalar lower bound with constant fractional loss on additive domains | 1 | planned |
 | 5 | Lemma 4.2 | Trivariate interpolation of `(1,1,d)`-weighted degree below `mA`, with multiplicity `m` along each received line, and vanishing after substitution | 1 | planned |
-| 6 | Section 4 factorization and Lemma 4.3 | Frobenius normalization, excluded challenges `|E| ≤ D²`, and simple roots outside `E` | 5 | planned |
+| 6 | Section 4 factorization and Lemma 4.3 | Frobenius normalization, excluded challenges `#E ≤ D²`, and simple roots outside `E` | 5 | planned |
 | 7 | Lemma 3.11 | Simple-root Hensel lifting along affine substitutions, with coefficients `Nⱼ/S^(2j-1)` for `j ≥ 1` and numerator degree bounds | — | planned |
 | 8 | Claims 4.8–4.9 and Lemma 4.7 | Agreement-hyperplane induction, a cover of dimension at most two, and the nonpersistent count | 2, 6, 7 | planned |
 | 9 | Lemma 4.1 and Theorems 1.1, 4.10 | Parameter bounds and the final affine error bounds | 2, 5, 6, 8 | planned |
