@@ -296,8 +296,7 @@ theorem equalDegreeMcaError_le_affineMcaError_add [Fintype F] (domain : ι ↪ F
         exact_mod_cast h
       push_cast [hA1, hden_nat, show d ≤ A - 1 by omega] at h'
       linarith
-    have hBfloor : (#B : ℝ) ≤
-        (ℓ₀ : ℝ) := by
+    have hBfloor : (#B : ℝ) ≤ (ℓ₀ : ℝ) := by
       dsimp only [ℓ₀]
       exact_mod_cast Nat.le_floor hB
     have hcount :
