@@ -6,7 +6,6 @@ Authors: Thomas Coratger
 module
 
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Basic
-public import ArkLib.ToMathlib.MvPolynomial.PDeriv
 public import Mathlib.RingTheory.MvPolynomial.WeightedHomogeneous
 
 /-!
@@ -125,6 +124,5 @@ theorem map_affineLineEval {L : Type*} [Field L] (φ : K →+* L) (α β : K) (P
     rcases v with _ | ⟨i⟩
     · simp
     · fin_cases i <;> simp [affineMultiplier]
-
 
 end ReedSolomon

@@ -12,6 +12,7 @@ public import
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Interpolation
 public import ArkLib.Data.MvPolynomial.WeightedDegree.Products
+public import ArkLib.ToMathlib.MvPolynomial.PDeriv
 public import ArkLib.ToMathlib.MvPolynomial.RadicalSplit
 public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 
