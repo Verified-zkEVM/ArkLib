@@ -44,7 +44,7 @@ The general bound corresponds to Theorem 4.10 of [CWYZ26], with a stronger suffi
 interpolation condition for freely chosen budgets, as described below.
 The full constraint count includes every order `s < m`; (4.5) stops at `min(m - 1, M)`.
 `AffineParams.surplus` proves the full condition for the parameter choice used in Theorem 1.1.
-The final bound is its Theorem 1.1.
+The final bound is Theorem 1.1 of [CWYZ26].
 
 * [Chiesa, A., Weissenberg, G., Yogev, E., and Zheng, K. Z.,
     *Affine combiners for Reed–Solomon proximity gaps*][CWYZ26]

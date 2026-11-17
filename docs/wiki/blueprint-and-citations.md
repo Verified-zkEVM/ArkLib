@@ -48,7 +48,6 @@ wiki routes contributors to them.
 - `docs/kb/_generated/lean-citations.json` is the generated map from Lean files to cited keys.
   Do not commit `_generated` changes from feature PRs.
 
-
 Check rendered tables when editing a curated paper page.
 A blank line ends a table, so later lines starting with `|` can render as plain text.
 Verify that each statement mapping appears as a row of the table.
