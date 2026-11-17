@@ -10,35 +10,31 @@ public import ArkLib.Data.FieldTheory.BinaryAddSubgroup
 public import ArkLib.Data.Polynomial.SubspacePolynomial
 
 /-!
-# A lower bound for scalar combiners on additive domains
+# Scalar lower bounds on additive domains
 
-Scalar combiners keep an error of order `n / q`, even with a constant fraction of agreement loss.
+Over a finite field of characteristic two, scalar combiners retain error of order `n/q`
+even when a constant fraction of agreements may be lost.
+The domain is an additive subgroup of size `n = 2^k ≥ 16`.
+At degree `d = n/4`, threshold `A ≤ 9n/16`, and loss `s < 3n/16`, the error is at least
+`(n - 8)/q`, where `q` is the field size.
 
-The domain is an additive subgroup `D` of a field of characteristic two, of size `n = 2 ^ k ≥ 16`.
+Choose a subgroup `U` of index eight, with subspace polynomial `W`.
+The received words are the evaluations of `W X^(n/2)` and `W X^(n/4)`.
+A polynomial of degree at most `n/4` agrees with the second word on at most `3n/8` points.
+Each index-two subgroup `H` has subspace polynomial `X^(n/2) + α_H X^(n/4) + R_H`, with
+`deg R_H ≤ n/8`.
+The candidate `-W R_H` agrees with the combination at challenge `α_H` exactly on `U ∪ H`.
+The `n - 8` subgroups that do not contain `U` give distinct challenges with `9n/16` agreements.
+The permitted loss leaves too many agreements for any witness pair.
 
-## The construction
+The bound formalizes Proposition 6.3 of [CWYZ26].
+The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records its statement correspondence.
+The counting argument uses no sampler, and the error's native probability interface is
+`ReedSolomon.scalarMcaError_eq_iSup_prob`.
 
-Fix a subgroup `U ≤ D` of index `8`, with subspace polynomial `W`.
+## Main statement
 
-The received words are `f = W X ^ (n / 2)` and `g = W X ^ (n / 4)` on `D`.
-
-A polynomial of degree at most `n / 4` agrees with `g` on at most `3n / 8` points.
-
-Each index-two subgroup `H` has subspace polynomial `X ^ (n / 2) + α_H X ^ (n / 4) + R_H`.
-
-The remainder `R_H` has degree at most `n / 8`, and `α_H` determines `H`.
-
-The candidate `-W R_H` agrees with `f + α_H g` exactly on `U ∪ H`.
-
-When `H` does not contain `U`, this set has `9n / 16` points.
-
-So each of these `n - 8` subgroups gives an exceptional challenge `α_H`.
-
-## Main statements
-
-* `ReedSolomon.scalarMCAError_ge_of_addSubgroup`: on an additive domain of size `n = 2 ^ k ≥ 16`,
-  with `d = n / 4`, `A ≤ 9n / 16` and `s < 3n / 16`, the scalar error is at least `(n - 8) / q`
-  (Proposition 6.3 of [CWYZ26]).
+* `ReedSolomon.le_scalarMcaError_of_addSubgroup`: the lower bound `(n - 8)/q`.
 
 ## References
 
@@ -136,16 +132,16 @@ private theorem card_ker_inf_ker_dotHom {m : ℕ} (c c' : BinarySpace m) :
     AddSubgroup (BinarySpace m))) hr
   omega
 
-/-- On an additive domain of size `n = 2 ^ k ≥ 16`, the scalar error at degree `n / 4` is large.
-
-It is at least `(n - 8) / q` for every threshold `A ≤ 9n / 16` and loss `s < 3n / 16`. -/
-theorem scalarMCAError_ge_of_addSubgroup {F : Type*} [Field F] [DecidableEq F] [Fintype F]
+/-- Over a finite field of characteristic two, an additive domain of size `n = 2 ^ k ≥ 16`
+has scalar error at least `(n - 8)/q` at degree `n/4`, threshold `A ≤ 9n/16`,
+and agreement loss `s < 3n/16`, where `q` is the field size. -/
+theorem le_scalarMcaError_of_addSubgroup {F : Type*} [Field F] [DecidableEq F] [Fintype F]
     [CharP F 2] {ι : Type*} [Fintype ι] (V : AddSubgroup F) (domain : ι ↪ F)
     (hV : ∀ x, x ∈ V ↔ ∃ i, domain i = x) (h16 : 16 ≤ Fintype.card ι)
     (hpow : ∃ k, Fintype.card ι = 2 ^ k) {A s : ℕ} (hA : A ≤ 9 * Fintype.card ι / 16)
     (hs : s < 3 * Fintype.card ι / 16) :
-    ((Fintype.card ι - 8 : ℕ) : ℝ) / Fintype.card F ≤
-      scalarMCAError domain (Fintype.card ι / 4) A s := by
+    ENNReal.ofReal (((Fintype.card ι - 8 : ℕ) : ℝ) / Fintype.card F) ≤
+      scalarMcaError domain (Fintype.card ι / 4) A s := by
   classical
   -- Write `n = 16 N` with `N = 2 ^ m`.
   obtain ⟨k, hk⟩ := hpow
@@ -330,7 +326,8 @@ theorem scalarMCAError_ge_of_addSubgroup {F : Type*} [Field F] [DecidableEq F] [
     have := sub_eq_zero.mp hzero
     simp only [hL] at this
     rw [this]
-  refine le_trans ?_ (le_scalarMCAError domain (4 * N) A s f g)
+  refine le_trans ?_ (le_scalarMcaError domain (4 * N) A s f g)
+  apply ENNReal.ofReal_le_ofReal
   apply div_le_div_of_nonneg_right _ (by positivity)
   have : #T ≤ #{a | ∃ Q, IsScalarExceptional domain f g (4 * N) A s a Q} :=
     card_le_card_of_injOn α (fun c hc ↦ mem_filter.mpr

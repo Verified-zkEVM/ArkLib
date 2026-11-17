@@ -280,9 +280,9 @@ theorem subspaceTopPoly_sub_mem_degreeLT {P : F[X]} (hP : IsTwoLinearized P) (hm
         · simp
       rw [this]; ring
 
-/-- A monic `2`-linearized `P` of degree `2 ^ (v + 2)` has two terms above degree `2 ^ v`.
-
-They are `X ^ (2 ^ (v + 2))` and `c X ^ (2 ^ (v + 1))`, where `c` is the coefficient of `P`. -/
+/-- Removing the leading term and the possible term of degree `2 ^ (v + 1)` from a monic
+`2`-linearized polynomial of degree `2 ^ (v + 2)` leaves degree at most `2 ^ v`.
+The coefficient of the second removed term may be zero. -/
 theorem IsTwoLinearized.degree_sub_top_two_le {P : F[X]} (hP : IsTwoLinearized P)
     (hmon : P.Monic) {v : ℕ} (hdeg : P.natDegree = 2 ^ (v + 2)) :
     (P - X ^ 2 ^ (v + 2) - C (P.coeff (2 ^ (v + 1))) * X ^ 2 ^ (v + 1)).degree ≤
