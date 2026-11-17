@@ -233,6 +233,13 @@ lemma evalOnPoints_mem_code_of_degree_lt {α : ι ↪ F} {p : F[X]} (h_deg : p.d
     evalOnPoints α p ∈ code α n :=
   mem_code_of_polynomial_of_degree_lt_of_eval p h_deg (by simp [evalOnPoints])
 
+/-- A polynomial of degree at most `d` evaluates to a word in the Reed–Solomon code
+of message length `d + 1`. -/
+lemma evalOnPoints_mem_code_succ_of_degree_le {α : ι ↪ F} {p : F[X]} {d : ℕ}
+    (hdeg : p.degree ≤ d) : evalOnPoints α p ∈ code α (d + 1) := by
+  apply evalOnPoints_mem_code_of_degree_lt
+  rwa [← mem_degreeLT, degreeLT_succ_eq_degreeLE, mem_degreeLE]
+
 /-- `evalOnPoints α p` belongs to an RS-code of degree `n`,
   if `p.natDegree < n`. -/
 lemma evalOnPoints_mem_code_of_natDegree_lt {α : ι ↪ F} {p : F[X]} (h_deg : p.natDegree < n) :

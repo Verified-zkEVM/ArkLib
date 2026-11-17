@@ -35,6 +35,8 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
 - [`papers/BBS24.md`](papers/BBS24.md) - formal verification reference for sum-check.
 - [`papers/CHA24.md`](papers/CHA24.md) - integer fingerprinting provenance from the Zaratan
   framework and its reusable multivariate counting layer.
+- [`papers/CWYZ26.md`](papers/CWYZ26.md) - affine combiners for Reed–Solomon proximity gaps:
+  MCA error with one coordinate of agreement loss, scalar lower bounds, and the port ledger.
 - [`papers/DG25.md`](papers/DG25.md) - interleaved-code proximity gaps and the DG25 formalization
   subtree.
 - [`papers/DP24.md`](papers/DP24.md) - binary-tower multilinear proof reference for the Binius

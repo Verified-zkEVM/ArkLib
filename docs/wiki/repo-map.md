@@ -581,6 +581,9 @@ home_page/            site assets and assembled website root
   `ArkLib/Data/CodingTheory/ReedSolomon.lean`, and the folded/interleaved/multiplicity/multilinear
   variants under `ArkLib/Data/CodingTheory/ReedSolomon/` (see
   [coding-theory-conventions.md](coding-theory-conventions.md)).
+- `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/` ports the
+  affine combiners of [CWYZ26].
+  The [paper page](../kb/papers/CWYZ26.md) maps each module to the paper and tracks open units.
 - **Two different "folds" coexist and must not be confused.** GR08 *alphabet-enlarging* folding —
   a codeword symbol packs `(f̂(x), f̂(xω), …, f̂(xω^{s-1}))`, the degree bound is unchanged, and the
   code lives in `ι → Fin s → F` — is `ArkLib/Data/CodingTheory/ReedSolomon/Folded.lean`. The
