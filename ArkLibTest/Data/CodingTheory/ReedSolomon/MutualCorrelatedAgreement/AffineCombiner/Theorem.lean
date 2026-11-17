@@ -11,13 +11,16 @@ import Mathlib.FieldTheory.Finite.GaloisField
 
 open ReedSolomon
 
+private theorem sqrt_degreeFraction : √((16 : ℝ) / 100) = 2 / 5 := by
+  rw [Real.sqrt_eq_iff_mul_self_eq_of_pos (by norm_num)]
+  norm_num
+
 /-- The bound applies at `d = 16`, `n = 100`, `η = 1/2`, where `√ρ = 2/5` and `A = 90`. -/
 example {F : Type*} [Field F] [DecidableEq F] [Fintype F] (domain : Fin 100 ↪ F) :
     affineMcaError domain 16 90 1 ≤
       ENNReal.ofReal (8 / Fintype.card F + 2 ^ 22 * 5 ^ 10 / (Fintype.card F : ℝ) ^ 2) := by
   have hsqrt : √((16 : ℕ) / ((Fintype.card (Fin 100) : ℕ) : ℝ)) = 2 / 5 := by
-    rw [Fintype.card_fin, Real.sqrt_eq_iff_mul_self_eq_of_pos (by norm_num)]
-    norm_num
+    simpa using sqrt_degreeFraction
   have h := affineMcaError_le domain (d := 16) (η := 1 / 2) (by norm_num) (by simp)
     (by norm_num) (by rw [hsqrt]; norm_num) (by simp; norm_num)
   rw [hsqrt, Fintype.card_fin] at h
@@ -44,8 +47,7 @@ open Classical in
 private theorem largeDomain_error_lt :
     affineMcaError largeDomain 16 90 1 < (1 : ENNReal) / 2 ^ 60 := by
   have hsqrt : √((16 : ℕ) / ((Fintype.card (Fin 100) : ℕ) : ℝ)) = 2 / 5 := by
-    rw [Fintype.card_fin, Real.sqrt_eq_iff_mul_self_eq_of_pos (by norm_num)]
-    norm_num
+    simpa using sqrt_degreeFraction
   have h := affineMcaError_le largeDomain (d := 16) (η := 1 / 2)
     (by norm_num) (by simp) (by norm_num) (by rw [hsqrt]; norm_num) (by simp; norm_num)
   rw [hsqrt, Fintype.card_fin, field_card] at h
@@ -60,9 +62,18 @@ private theorem largeDomain_error_lt :
         (ENNReal.ofReal_lt_ofReal_iff (by positivity)).mpr hreal
     _ = _ := by norm_num [ENNReal.ofReal_div_of_pos, one_div]
 
+/-- info: 'ReedSolomon.affineMcaError_le' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.affineMcaError_le
+/-- info: 'ReedSolomon.exists_affineExceptional_finset_card_le' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.exists_affineExceptional_finset_card_le
-#print axioms ReedSolomon.card_affineNonpersistent_le
+/-- info: 'ReedSolomon.card_le_of_affineNonpersistent_roots' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.card_le_of_affineNonpersistent_roots
 
 open scoped ProbabilityTheory
 

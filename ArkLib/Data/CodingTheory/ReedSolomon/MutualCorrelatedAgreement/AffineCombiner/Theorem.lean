@@ -40,7 +40,9 @@ The counting bounds have no sampler assumptions.
 
 ## References
 
-The general bound is Theorem 4.10 of [CWYZ26], and the final bound is its Theorem 1.1.
+The general bound corresponds to Theorem 4.10 of [CWYZ26], with a stronger sufficient
+interpolation condition for freely chosen budgets, as described below.
+The final bound is its Theorem 1.1.
 
 * [Chiesa, A., Weissenberg, G., Yogev, E., and Zheng, K. Z.,
     *Affine combiners for Reed–Solomon proximity gaps*][CWYZ26]
@@ -110,10 +112,17 @@ variable {F : Type*} [Field F] [DecidableEq F] {ι : Type*} [Fintype ι]
 
 Here `n` is the domain size, `q` is the field size, `1 ≤ d < n`, `ρ = d/n`, and
 `0 < η < 1 - √ρ`.
-The interpolation parameters `m, D, M` satisfy the surplus condition.
-The persistence threshold `B = ⌈(√ρ + η/2)n⌉ - 1` satisfies `n(d + 1) < B²`.
-The bound has a persistent part `ℓ · max q (n choose 2)` and a nonpersistent part,
-where `ℓ = n(B - d - 1)/(B² - n(d + 1))`. -/
+Set `B = ⌈(√ρ + η/2)n⌉ - 1` and assume `n(d + 1) < B²`.
+The real Johnson factor is `J = n(B - d - 1)/(B² - n(d + 1))`, without a floor.
+The bound is `#Ex ≤ J max q (n choose 2) + K`, where
+`K = D² + 4d²M²D³(n/(A - B))²`.
+
+The sufficient interpolation condition is
+`n ∑_{s < m} (m - s)(D + 1 - s) < ∑_{j ≤ M} (mA - D - dj)(D + 1 - j)`,
+with subtractions in `ℕ`.
+For freely chosen `M`, this can be stronger than (4.5) in [CWYZ26], which stops the left sum
+at `min(m - 1, M)`.
+`AffineParams.surplus` proves this sufficient condition for the paper's parameter choice. -/
 theorem exists_affineExceptional_finset_card_le_of_interpolation [Fintype F] (domain : ι ↪ F)
     (f g : ι → F) {d m D M : ℕ} {η : ℝ} (hd : 1 ≤ d) (hdn : d < Fintype.card ι) (hη : 0 < η)
     (hη1 : η < 1 - √((d : ℝ) / Fintype.card ι))
@@ -151,12 +160,21 @@ theorem exists_affineExceptional_finset_card_le_of_interpolation [Fintype F] (do
   have hpers := card_isAffineExceptional_persistent_le domain f g (A := A) hdB hJ
   exact ⟨Ex, by linarith, hgood⟩
 
-/-- The affine error at loss one and threshold `A = ⌈(√ρ + η)n⌉` is bounded by interpolation.
+/-- The affine error at loss one and threshold `A = ⌈(√ρ + η)n⌉` is at most
+`ENNReal.ofReal ((J max q (n choose 2) + K)/q²)`.
 
-Here `n` is the domain size, `1 ≤ d < n`, `ρ = d/n`, and `0 < η < 1 - √ρ`.
-The parameters `m, D, M` satisfy the surplus condition, and the persistence threshold
-`B = ⌈(√ρ + η/2)n⌉ - 1` satisfies `n(d + 1) < B²`.
-The persistent part uses the real Johnson factor `n(B - d - 1)/(B² - n(d + 1))`. -/
+Here `n` is the domain size, `q` is the field size, `1 ≤ d < n`, `ρ = d/n`, and
+`0 < η < 1 - √ρ`.
+Set `B = ⌈(√ρ + η/2)n⌉ - 1` and assume `n(d + 1) < B²`.
+The real Johnson factor is `J = n(B - d - 1)/(B² - n(d + 1))`, without a floor, and
+`K = D² + 4d²M²D³(n/(A - B))²`.
+
+The sufficient interpolation condition is
+`n ∑_{s < m} (m - s)(D + 1 - s) < ∑_{j ≤ M} (mA - D - dj)(D + 1 - j)`,
+with subtractions in `ℕ`.
+For freely chosen `M`, it can be stronger than (4.5) in [CWYZ26], whose left sum stops at
+`min(m - 1, M)`.
+`AffineParams.surplus` establishes this condition for the paper's parameter choice. -/
 theorem affineMcaError_le_of_interpolation [Fintype F] (domain : ι ↪ F) {d m D M : ℕ} {η : ℝ}
     (hd : 1 ≤ d) (hdn : d < Fintype.card ι) (hη : 0 < η)
     (hη1 : η < 1 - √((d : ℝ) / Fintype.card ι))
@@ -181,7 +199,7 @@ theorem affineMcaError_le_of_interpolation [Fintype F] (domain : ι ↪ F) {d m 
 
 Here `n` is the domain size, `q` is the field size, `1 ≤ d < n`, and `ρ = d / n`.
 Assume `0 < η < 1 - √ρ` and `n η² ≥ 4 / ρ`.
-At most `4 q / η + 2^14 n² / (ρ³ η¹⁰)` challenges are exceptional at `⌈(√ρ + η) n⌉`. -/
+At most `4 q / η + 2¹⁴ n² / (ρ³ η¹⁰)` challenges are exceptional at `⌈(√ρ + η) n⌉`. -/
 theorem exists_affineExceptional_finset_card_le [Fintype F] (domain : ι ↪ F) (f g : ι → F)
     {d : ℕ} {η : ℝ} (hd : 1 ≤ d) (hdn : d < Fintype.card ι) (hη : 0 < η)
     (hη1 : η < 1 - √((d : ℝ) / Fintype.card ι))
@@ -298,7 +316,7 @@ theorem exists_affineExceptional_finset_card_le [Fintype F] (domain : ι ↪ F) 
       D ^ 2 + 4 * (d * M) ^ 2 * D ^ 3 * ((n : ℝ) / (A - B : ℕ)) ^ 2 := by ring
   linarith [hnum, hpers, hfin, hterm]
 
-/-- With one point of loss, the affine MCA error is at most `4 / (η q) + 2^14 n² / (ρ³ η¹⁰ q²)`.
+/-- With one point of loss, the affine MCA error is at most `4 / (η q) + 2¹⁴ n² / (ρ³ η¹⁰ q²)`.
 
 Here `n` is the domain size, `q` is the field size, `1 ≤ d < n`, and `ρ = d / n`.
 Assume `0 < η < 1 - √ρ` and `n η² ≥ 4 / ρ`.

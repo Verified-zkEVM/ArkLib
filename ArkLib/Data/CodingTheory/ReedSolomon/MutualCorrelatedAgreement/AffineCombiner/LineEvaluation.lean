@@ -6,7 +6,7 @@ Authors: Thomas Coratger
 module
 
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Basic
-public import Mathlib.Algebra.MvPolynomial.PDeriv
+public import ArkLib.ToMathlib.MvPolynomial.PDeriv
 public import Mathlib.RingTheory.MvPolynomial.WeightedHomogeneous
 
 /-!
@@ -27,9 +27,6 @@ The line weight `(1, 1, d)` bounds the degree after the evaluation, when `deg P 
 * `ReedSolomon.affineLineEval`: the evaluation `Q ↦ Q(X, α + β X, P(X))`.
 
 ## Main statements
-
-* `ReedSolomon.map_affineLineEval`: line evaluation commutes with a field embedding.
-* `ReedSolomon.degreeOf_none_pos_of_pderiv_ne_zero`: a nonzero `Z`-derivative needs `Z`.
 
 * `ReedSolomon.natDegree_affineLineEval_le`: the degree of the line evaluation.
 
@@ -129,11 +126,5 @@ theorem map_affineLineEval {L : Type*} [Field L] (φ : K →+* L) (α β : K) (P
     · simp
     · fin_cases i <;> simp [affineMultiplier]
 
-/-- A polynomial with a nonzero `Z`-derivative has positive `Z`-degree. -/
-theorem degreeOf_none_pos_of_pderiv_ne_zero {Q : MvPolynomial AffineVar K}
-    (hQ : MvPolynomial.pderiv none Q ≠ 0) : 0 < Q.degreeOf none := by
-  refine Nat.pos_of_ne_zero fun h ↦ hQ (MvPolynomial.pderiv_eq_zero_of_notMem_vars ?_)
-  rw [MvPolynomial.mem_vars_iff_degreeOf_ne_zero]
-  exact not_not.mpr h
 
 end ReedSolomon

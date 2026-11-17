@@ -45,34 +45,6 @@ namespace ReedSolomon
 open MvPolynomial
 open scoped Finset
 
-section Lines
-
-variable {E : Type*} [Field E]
-
-/-- A polynomial free of `Z` has the same evaluation along a line for every candidate. -/
-theorem affineLineEval_eq_of_degreeOf_none_eq_zero {G : MvPolynomial AffineVar E}
-    (hZ : G.degreeOf none = 0) (α β : E) (P P' : Polynomial E) :
-    affineLineEval α β P G = affineLineEval α β P' G := by
-  have hC : affineNested G = Polynomial.C ((affineNested G).coeff 0) :=
-    Polynomial.eq_C_of_natDegree_eq_zero ((natDegree_affineNested G).trans hZ)
-  rw [affineLineEval_eq_nested, affineLineEval_eq_nested, hC]
-  simp
-
-open Classical in
-/-- A nonzero discriminant of `R` vanishes on at most `h (h - 1)` lines indexed injectively by `S`,
-where `h` bounds the `(Y, Z)`-degree of `R`. -/
-theorem card_filter_affineDiscriminant_eq_zero_le {F : Type*} {R : MvPolynomial AffineVar E}
-    {h : ℕ} (hR0 : affineDiscriminant R ≠ 0) (hR : R.weightedTotalDegree affineYZWeight ≤ h)
-    (S : Finset (F × F)) (φ : F × F → E × E) (hφ : φ.Injective) :
-    #(S.filter fun c ↦
-      (affineDiscriminant R).eval (affineMultiplier (φ c).1 (φ c).2) = 0) ≤ h * (h - 1) :=
-  (Polynomial.card_le_natDegree_of_injOn_of_eval_eq_zero hR0
-    (x := fun c ↦ affineMultiplier (φ c).1 (φ c).2)
-    ((affineMultiplier_injective.comp hφ).injOn) fun _ hc ↦ (Finset.mem_filter.mp hc).2).trans
-    (natDegree_affineDiscriminant_le hR)
-
-end Lines
-
 /-- If `δ + Σ h ≤ D`, then `δ + Σ h (h - 1) ≤ D²` and `Σ h³ ≤ D³`. -/
 private theorem budget_le {α : Type*} (s : Finset α) (h : α → ℕ) {δ D : ℕ}
     (hD : δ + ∑ c ∈ s, h c ≤ D) :
@@ -119,7 +91,7 @@ theorem exists_affineFactor_finset_card_le [Finite F] [IsAlgClosed E] (domain : 
         IsAffinePersistent domain f g d B c.1 c.2 P := by
   classical
   have := Fintype.ofFinite F
-  obtain ⟨e, R, hRirr, hRder, hRdeg, hpe, hroot⟩ := exists_affineFrobeniusFactor p hirr hpos
+  obtain ⟨e, R, hRirr, hRder, hRdeg, hpe, -, hroot⟩ := exists_affineFrobeniusFactor p hirr hpos
   set fr := (iterateFrobeniusEquiv E p e).symm
   have hRh : R.weightedTotalDegree affineYZWeight ≤ h := hRdeg.trans hQ
   -- The lines where the discriminant of `R` vanishes.
@@ -160,7 +132,8 @@ theorem exists_affineFactor_finset_card_le [Finite F] [IsAlgClosed E] (domain : 
     have hce : c ∉ ex := fun h ↦ hc (Finset.mem_union_right _ h)
     have hR := hroot _ _ _ hP
     refine hgood c hce P hdeg hR ?_ hA
-    refine affineLineEval_pderiv_ne_zero (degreeOf_none_pos_of_pderiv_ne_zero hRder) hR ?_
+    refine affineLineEval_pderiv_ne_zero
+      (MvPolynomial.degreeOf_pos_of_pderiv_ne_zero none hRder) hR ?_
     intro h0
     exact hcd (Finset.mem_filter.mpr ⟨Finset.mem_univ _, h0⟩)
 

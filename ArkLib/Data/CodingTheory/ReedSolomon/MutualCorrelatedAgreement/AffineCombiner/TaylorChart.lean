@@ -37,7 +37,6 @@ rings and rational Taylor coefficients.
 ## Main statements
 
 * `ReedSolomon.pderiv_affineChartEquation`: the initial-value derivative is the chart separant.
-
 * `ReedSolomon.affineChartCut_eq_zero_iff`: a cleared cut says the reconstruction takes a value.
 * `ReedSolomon.degree_affineChartPolynomial_le` and
   `ReedSolomon.eval_affineChartPolynomial_center`: the reconstruction has degree at most `d` and

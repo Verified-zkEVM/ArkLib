@@ -24,11 +24,16 @@ whose reconstructions yield persistence after descent to the base field.
 The agreement cuts are noncomputable polynomial constructions.
 The excluded set is a predicate, with no algorithmic witness selection.
 
+## Main definitions
+
+* `ReedSolomon.affineChartAgreementCut`: a polynomial for one agreement position.
+* `ReedSolomon.affineChartExcluded`: points sharing `B + 1` cuts with a different challenge.
+
 ## Main statements
 
-* `ReedSolomon.affineChart_terminal`: a positive-dimensional component with `B + 1` cuts has
-  its regular points in the excluded set.
-* `ReedSolomon.card_affineNonpersistent_le`: the count of nonpersistent challenges of one factor.
+* `ReedSolomon.regularLocus_subset_affineChartExcluded`: the regular points of a
+  positive-dimensional component with `B + 1` cuts belong to the excluded set.
+* `ReedSolomon.card_le_of_affineNonpersistent_roots`: the count for one factor.
 * `ReedSolomon.exists_affineNonpersistent_finset_card_le`: outside a small set of challenges,
   every regular root of the factor with `A` agreements is persistent.
 
@@ -100,7 +105,8 @@ theorem eq_of_affineChartAgreementCut (domain : ι ↪ F) (f g : ι → F) (φ :
 
 Assume the separant is not in the prime ideal, `d ≤ B`, and `2 s d - 1 ≤ τ`.
 The regular locus is infinite, and two of its points on the same challenge are equal. -/
-theorem affineChart_terminal [IsAlgClosed E] (domain : ι ↪ F) (f g : ι → F) (φ : F →+* E)
+theorem regularLocus_subset_affineChartExcluded [IsAlgClosed E] (domain : ι ↪ F)
+    (f g : ι → F) (φ : F →+* E)
     (c : E) (R : MvPolynomial AffineVar E) {s d τ B : ℕ} (hτ : 2 * s * d - 1 ≤ τ)
     (hdB : d ≤ B) (J : Ideal (MvPolynomial AffineChartVar E)) (hJ : J.IsPrime)
     (hs : affineChartSeparant c R ∉ J) (hdim : 0 < (affineHilbertPolynomial J).natDegree)
@@ -219,12 +225,14 @@ theorem isAffinePersistent_of_mem_affineChartExcluded [IsAlgClosed E] (domain : 
   exact isAffinePersistent_of_commonAgreement domain f g T hT hagree hL₀ hL₀1 hH₀
     fun i hi ↦ h₀ ⟨i, hi⟩
 
-/-- Few challenges carry a simple, nonpersistent root `P(X ^ (p ^ e))` of one factor.
+/-- The set `S` of challenges with chosen simple, nonpersistent roots has bounded size.
 
 Assume `1 ≤ d ≤ B < A ≤ n`, where `n` is the domain size.
-For candidates of degree at most `d` with at least `A` agreements, the bound is
+For each `c ∈ S`, the chosen candidate `w c` has degree at most `d` and at least `A` agreements.
+Its expansion is a simple, nonpersistent root of the factor along `c`.
+The bound on `#S` is
 `h · (n · 2 p^e d h / (A - B)) ^ 2`, where `h` bounds the factor's `(Y, Z)`-degree. -/
-theorem card_affineNonpersistent_le [IsAlgClosed E] (domain : ι ↪ F) (f g : ι → F)
+theorem card_le_of_affineNonpersistent_roots [IsAlgClosed E] (domain : ι ↪ F) (f g : ι → F)
     (φ : F →+* E) (p e : ℕ) [ExpChar E p] (R : MvPolynomial AffineVar E) {d h A B : ℕ}
     (hd : 1 ≤ d) (hdB : d ≤ B) (hBA : B < A) (hAn : A ≤ Fintype.card ι)
     (hR : R.weightedTotalDegree affineYZWeight ≤ h)
@@ -267,7 +275,8 @@ theorem card_affineNonpersistent_le [IsAlgClosed E] (domain : ι ↪ F) (f g : �
     (fun i ↦ totalDegree_affineChartCut_le c hR hd (Nat.one_le_pow _ _ (expChar_pos E p)) _ _ _)
     (L := B + 1) (A := A) (by omega) (by omega)
     (affineChartExcluded domain f g φ c R (p ^ e) d (2 * p ^ e * d - 1) B)
-    (fun J hJ hsJ _ _ hdim hL ↦ affineChart_terminal domain f g φ c R le_rfl hdB J hJ hsJ hdim hL)
+    (fun J hJ hsJ _ _ hdim hL ↦
+      regularLocus_subset_affineChartExcluded domain f g φ c R le_rfl hdB J hJ hsJ hdim hL)
     (S.image pt)
     (by
       intro x hx
@@ -326,7 +335,7 @@ theorem exists_affineNonpersistent_finset_card_le [Finite F] [IsAlgClosed E] (do
   have hw (c) (hc : c ∈ ex) : Bad c (w c) := by
     have hc' : ∃ P, Bad c P := (Finset.mem_filter.mp hc).2
     simpa only [w, hc', ↓reduceDIte] using hc'.choose_spec
-  refine ⟨ex, card_affineNonpersistent_le domain f g φ p e R hd hdB hBA hAn hR ex w
+  refine ⟨ex, card_le_of_affineNonpersistent_roots domain f g φ p e R hd hdB hBA hAn hR ex w
     (fun c hc ↦ (hw c hc).1) (fun c hc ↦ (hw c hc).2.1) (fun c hc ↦ (hw c hc).2.2.1)
     (fun c hc ↦ (hw c hc).2.2.2.1) (fun c hc ↦ (hw c hc).2.2.2.2), ?_⟩
   intro c hc P hP hroot hsep hA
